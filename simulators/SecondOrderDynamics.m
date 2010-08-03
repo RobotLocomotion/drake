@@ -9,7 +9,7 @@ classdef SecondOrderDynamics < Dynamics
     %   variables (implying num_q*2 states) and num_inputs control inputs.
 
 %      if (nargin>0)
-        obj = obj@Dynamics(num_q*2,num_inputs)
+        obj = obj@Dynamics(num_q*2,num_inputs);
 %      end
     end
   end
