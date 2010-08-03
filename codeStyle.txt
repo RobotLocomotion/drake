@@ -37,6 +37,10 @@ In Java:
 
   Every class and method should have a brief "javadoc" associated with it.
 
+  All java classes should be in packages relative to the locomotion svn root, e.g.:
+   package robotlib.examples.Pendulum;
+   package robots.compassTripod;
+
 
 In Matlab: 
 
@@ -45,6 +49,7 @@ In Matlab:
      Variable names that describe a matrix (instead of vector/scalar) are Under_scored.
   Calls to Matlab class member functions use obj = memberFunc(obj,...) .
   All methods begin by checking their inputs (e.g. with typecheck.m).
+
 
 In C++: 
   
