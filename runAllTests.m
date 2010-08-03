@@ -40,13 +40,24 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
     if (files(i).isdir)
       % then recurse into the directory
       if (files(i).name(1)~='.')  % skip . directories
-        info = run_tests_in(files(i).name,info,~strcmpi(files(i).name,'test'));
+        info = run_tests_in(files(i).name,info,bOnlyLookForTestDirs && ~strcmpi(files(i).name,'test'));
       end
       continue;
-    elseif bOnlyLookForTestDirs || ~strcmpi(files(i).name(end-1:end),'.m')
-      % then it's not a directory or an m file.  skip it.
+    end
+    if (bOnlyLookForTestDirs) continue; end
+    if (~strcmpi(files(i).name(end-1:end),'.m')) continue; end
+    if (strcmpi(files(i).name,'Contents.m')) continue; end
+    
+    % check if it's a function or classdef
+    fid=fopen(files(i).name);
+    if (strfind(lower(fgetl(fid)),'classdef')) 
+      fclose(fid);
       continue;
     end
+    fclose(fid);
+    
+    % If I made it to here, then actually run the file.
+    
     testname = files(i).name;
     ind=find(testname=='.',1);
     testname=testname(1:(ind-1));
@@ -67,6 +78,10 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
         rethrow(lasterror);
       end
     end
+    
+    close all;
+    stop(timerfind);
+    
   end 
   
   cd(p);
