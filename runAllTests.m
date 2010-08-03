@@ -1,4 +1,4 @@
-function run_all_tests(bAbortOnFail)
+function runAllTests(bAbortOnFail)
 
 % Recurses through the robotlib directories, running all test scripts (in 
 % test subdirectories).
@@ -34,8 +34,6 @@ fprintf(1,'\n Executed %d tests.  %d passed.  %d failed.\n',info.passcount+info.
 end
 
 function info = run_tests_in(pdir,info)
-  global passcount failcount;
-
   p = pwd;
   cd(pdir);
   files=dir('*.m');

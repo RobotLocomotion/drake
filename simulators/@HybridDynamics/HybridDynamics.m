@@ -1,11 +1,10 @@
 classdef HybridDynamics < Dynamics
-  
-  % HybridDynamics class
-  % Contains multiple dynamics objects, and rules for transition events and
-  % transition dynamics between them.  The state space of the hybrid
-  % dynamics has x(1) as the (discrete valued) mode, and x(2:end) as the
-  % state of the dynamics in that mode.  Note that this means the dimension
-  % of the state vector may not be constant.
+% A class that contains mode Dynamics and mode switches.
+%   Contains multiple dynamics objects, and rules for transition events and
+%   transition dynamics between them.  The state space of the hybrid
+%   dynamics has x(1) as the (discrete valued) mode, and x(2:end) as the
+%   state of the dynamics in that mode.  Note that this means the dimension
+%   of the state vector may not be constant.
   
   properties (Access=public)
     mode_dynamics={};              % cell array - instances of the Dynamics class

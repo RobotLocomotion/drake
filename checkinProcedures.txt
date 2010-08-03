@@ -1,0 +1,27 @@
+
+This document defines the requirements that must be met before anything 
+is committed to the main branch of the robotlib repository.
+
+ - Russ, August 1, 2010
+
+
+Unit tests
+  Whenever possible, add test files (in any subdirectory test) any code 
+  that you have added or modified.  These take a little time initially, 
+  but can save incredible amounts of time later.
+
+Run all tests
+  Before committing anything to the repository, the code must pass all of 
+  the unit tests.  Use the following script to check:
+    robotlib/runAllTests.m 
+
+Matlab Reports
+  There are a number of helpful matlab reports, that can be run using: 
+    Desktop>Current Directory,
+  then 
+    Action>Reports  (the Action menu is the gear icon)
+
+  Before a commit, your code should pass the following reports:
+    Contents report
+    Help report  (with all but the Copyright options checked)
+  And you should run the M-Link Code Check report to look for useful suggestions.

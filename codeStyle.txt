@@ -17,6 +17,9 @@ It makes use of the follow shortcuts for naming schemes:
   ALL_CAPITALS: All capital letters, with words separated by underscores.
 
 
+Some of the files in the repository were written before this style guide.  
+If you find one, rather than trying to change it yourself, log a bug in bugzilla.
+
 
 In General: 
 
@@ -37,8 +40,9 @@ In Java:
 
 In Matlab: 
 
-  All of the above rules hold.
-  Variable names that describe a matrix (instead of vector/scalar) are Under_scored.
+  All of the above rules hold, except:
+     Member variables need not start with m_ since the requirement that they are referenced with obj.var makes the distinction from local variables clear
+     Variable names that describe a matrix (instead of vector/scalar) are Under_scored.
   Calls to Matlab class member functions use obj = memberFunc(obj,...) .
   All methods begin by checking their inputs (e.g. with typecheck.m).
 

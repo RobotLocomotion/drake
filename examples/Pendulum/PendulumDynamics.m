@@ -7,26 +7,21 @@ classdef PendulumDynamics < SecondOrderDynamics
     lc = .5; % m
     I = .25; %m*l^2; % kg*m^2
     g = 9.8; % m/s^2
-
-    xG = [pi;0];  % goal position
-    uG = 0;       % control at goal
   end
   
   methods
     function obj = PendulumDynamics()
-      obj.numQ = 1;
-      obj.numStates = 2;
-      obj.numInputs = 1;
-      obj.umin = -3;
-      obj.umax = 3;
+      obj = obj@SecondOrderDynamics(1,1);
+      torque_limit = 3;
+      obj = setInputLimits(obj,-torque_limit,torque_limit);
     end
     
     function qdd = sodynamics(obj,t,q,qd,u)
       qdd = (u - obj.m*obj.g*obj.lc*sin(q) - obj.b*qd)/obj.I;
     end
     
-    function df = sodynamics_gradients(obj,t,q,qd,u,order)
-      if (nargin>4 && order>3) df = sodynamics_gradients@SecondOrderDynamics(obj,t,x,u,order); end
+    function df = sodynamicsGradients(obj,t,q,qd,u,order)
+      if (nargin>4 && order>3) df = sodynamicsGradients@SecondOrderDynamics(obj,t,x,u,order); end
       if (nargin<5) order=1; end
       
       dfdt = 0;

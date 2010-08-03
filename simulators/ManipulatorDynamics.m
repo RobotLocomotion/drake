@@ -1,14 +1,15 @@
 classdef ManipulatorDynamics < SecondOrderDynamics
-  % An interface class 
+% An abstract class that wraps H(q)qddot + C(q,qdot) = B(q)u.
 
   methods (Abstract=true)
     %  H(q)qdd + C(q,qd,f_ext) = Bu
-    [H,C,B] = manipulator_dynamics(obj,q,qd);
+    [H,C,B] = manipulatorDynamics(obj,q,qd);
   end
 
   methods
     function qdd = sodynamics(obj,t,q,qd,u)
-      [H,C,B] = manipulator_dynamics(obj,q,qd);
+    % Provides the SecondOrderDynamics interface to the manipulatorDynamics.
+      [H,C,B] = manipulatorDynamics(obj,q,qd);
       qdd = H\(B*u - C);
     end
 

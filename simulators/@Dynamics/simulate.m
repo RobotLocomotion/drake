@@ -1,19 +1,21 @@
-function xtraj = simulate(obj,control,tspan,x0)
+function xtraj = simulate(obj,tspan,x0,control)
+% Integrates the (potentially closed-loop) dynamics forward.
 
-typecheck(control,'Control');
 typecheck(tspan,'double');
 typecheck(x0,'double');
+if (nargin>3)
+  typecheck(control,'Control');
+else
+  control = ConstantControl(getDefaultInput(obj));
+end
 
-if (length(x0)~=obj.numStates) error('x0 is the wrong size'); end
-if (obj.numInputs ~= control.numInputs) error('dynamics and control have a different number of inputs'); end
-if (~isempty(control.numStates) && obj.numStates ~= control.numStates) error('dynamics and control have a different number of states'); end
+if (length(x0)~=obj.num_states) error('x0 is the wrong size'); end
+if (obj.num_inputs ~= control.num_inputs) error('dynamics and control have a different number of inputs'); end
+if (control.numStates~=0 && obj.num_states ~= control.num_states) error('dynamics and control have a different number of states'); end
 
-%todo: check this somewhere else (wrap those guys?)
-if (length(obj.umin)~=obj.numInputs || length(obj.umax)~=obj.numInputs) error('inputs limits are the wrong size'); end
+if (control.control_dt~=0) error('sampled-data control is not re-implemented yet'); end
 
-if (control.controlDT~=0) error('sampled-data control is not re-implemented yet'); end
-
-sol = obj.odesolver(@closed_loop_dynamics,tspan,x0,obj.odeoptions);
+sol = obj.ode_solver(@closed_loop_dynamics,tspan,x0,obj.ode_options);
 xtraj = ODESolTrajectory(sol);
 
   function xdot = closed_loop_dynamics(t,x)
