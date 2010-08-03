@@ -7,9 +7,9 @@ classdef SecondOrderDynamics < Dynamics
     % SecondOrderDynamics(num_q, num_inputs)
     %   Constructs a SecondOrderDynamics object with num_q configuration
     %   variables (implying num_q*2 states) and num_inputs control inputs.
-      if (nargin>0)
+%      if (nargin>0)
         obj = obj@Dynamics(num_q*2,num_inputs)
-      end
+%      end
     end
   end
   
@@ -23,18 +23,18 @@ classdef SecondOrderDynamics < Dynamics
       error('not implemented yet');
     end
     
-    function obj = setNumQ(num_q)
+    function obj = setNumQ(obj,num_q)
     % Guards the num_q variable to make sure it stays consistent 
     % with num_states.
       obj = setNumStates(obj,num_q*2);
     end
 
-    function obj = setNumStates(num_states)
+    function obj = setNumStates(obj,num_states)
     % Guards the num_states variable to make sure it stays consistent
     % with num_q
       if (num_states<2 || rem(num_states,2)) error('num_states must be even and >= 2 for a SecondOrderDynamics'); end 
       obj.num_q = num_states/2;
-      obj.setNumStates@Dynamics(obj,num_states);
+      obj = setNumStates@Dynamics(obj,num_states);
     end
     
     function xdot = dynamics(obj,t,x,u);

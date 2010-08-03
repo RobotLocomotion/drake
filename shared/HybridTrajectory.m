@@ -1,7 +1,5 @@
 classdef HybridTrajectory < Trajectory
-  
-  % HybridTrajectory: container class for a set of continuous trajectories 
-  % punctuated by collision events
+% Container class for a set of continuous trajectories punctuated by collision events
   
   properties
     traj
@@ -10,6 +8,7 @@ classdef HybridTrajectory < Trajectory
   
   methods
     function obj = HybridTrajectory(trajectories)
+      % Construct container from a cell array of Trajectories
       if (nargin>0)
         if ~iscell(trajectories), trajectories = {trajectories}; end
         obj.traj = trajectories;
@@ -28,10 +27,12 @@ classdef HybridTrajectory < Trajectory
     end
     
     function te = getEvents(obj)
+      % return the events (times where the trajectory switches)
       te = obj.te;
     end
     
     function t = getBreaks(obj)
+      % return the combined break points of all trajectories with event times included.
       t=obj.traj{1}.getBreaks();
       for i=2:length(obj.traj)
         b = obj.traj{i}.getBreaks();
@@ -40,6 +41,7 @@ classdef HybridTrajectory < Trajectory
     end
     
     function y = eval(obj,t)
+      % look into and evaluate correct trajectory based on the time
       if (any(t<obj.tspan(1)) || any(t>obj.tspan(end))) 
         error('outside tspan'); 
       end

@@ -10,7 +10,7 @@ classdef Dynamics
       % Dynamics class constructor
       %   sets the dimension of the state and input vectors
       if (nargin>0)
-        obj = setNumStates(obj,num_states);
+        obj = setNumStates(obj,num_states);  
         obj = setNumInputs(obj,num_inputs);
       end
     end

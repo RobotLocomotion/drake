@@ -1,7 +1,5 @@
 classdef LCMCoder
-% LCMCoder
-%   Interface for classes which code and decode robot-specific messages
-%   from LCM.
+% Interface for classes which encode and decode robot-specific messages from LCM.
 
   methods 
     str = getRobotName(obj)

@@ -1,8 +1,8 @@
 classdef ManipulatorDynamics < SecondOrderDynamics
-% An abstract class that wraps H(q)qddot + C(q,qdot) = B(q)u.
+% An abstract class that wraps H(q)qddot + C(q,qdot,f_ext) = B(q)u.
 
   methods (Abstract=true)
-    %  H(q)qdd + C(q,qd,f_ext) = Bu
+    %  H(q)qddot + C(q,qdot,f_ext) = Bu
     [H,C,B] = manipulatorDynamics(obj,q,qd);
   end
 
