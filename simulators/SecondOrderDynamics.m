@@ -7,6 +7,7 @@ classdef SecondOrderDynamics < Dynamics
     % SecondOrderDynamics(num_q, num_inputs)
     %   Constructs a SecondOrderDynamics object with num_q configuration
     %   variables (implying num_q*2 states) and num_inputs control inputs.
+
 %      if (nargin>0)
         obj = obj@Dynamics(num_q*2,num_inputs)
 %      end
