@@ -5,7 +5,7 @@ tspan = xtraj.getBreaks();
 t0 = tspan(1);
 
 tic;
-ti = timer('TimerFcn',{@timer_draw,obj,tspan,xtraj},'ExecutionMode','fixedRate','Period',max(obj.display_dt/visualizer.playbackSpeed,.01),'TasksToExecute',(tspan(end)-tspan(1))/obj.display_dt,'BusyMode','drop');
+ti = timer('TimerFcn',{@timer_draw,obj,tspan,xtraj},'ExecutionMode','fixedRate','Period',max(obj.display_dt/obj.playback_speed,.01),'TasksToExecute',(tspan(end)-tspan(1))/obj.display_dt,'BusyMode','drop');
 start(ti); 
 wait(ti);  % unfortunately, you can't try/catch a ctrl-c in matlab
 delete(ti);

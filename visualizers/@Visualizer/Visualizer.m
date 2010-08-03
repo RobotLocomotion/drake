@@ -7,8 +7,8 @@ classdef Visualizer
 
   properties 
     display_dt=0.05;  % requested time between display frames
-    playbackSpeed=1;  % 1=realtime
-    bDrawAxes=false;  % when making movies true=gcf,false=gca
+    playback_speed=1;  % 1=realtime
+    draw_axes=false;  % when making movies true=gcf,false=gca
   end
   
 end

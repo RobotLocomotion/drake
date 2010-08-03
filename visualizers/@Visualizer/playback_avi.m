@@ -14,14 +14,14 @@ tspan = breaks(1):obj.display_dt:breaks(end);
 if (breaks(end)-tspan(end)>eps) tspan=[tspan;breaks(end)]; end
 
 if (ispc)
-  mov = avifile(options.filename,'fps',1/obj.display_dt,'compression','Cinepak');
+  mov = avifile(options.filename,'fps',obj.playback_speed/obj.display_dt,'compression','Cinepak');
 else
-  mov = avifile(options.filename,'fps',1/obj.display_dt);
+  mov = avifile(options.filename,'fps',obj.playback_speed/obj.display_dt);
 end
 
 for i=1:length(tspan)
   if (obj.draw(tspan(i),eval(xtraj,tspan(i)),[])), stop(obj), end;
-  if (obj.bDrawAxes)
+  if (obj.draw_axes)
     mov = addframe(mov,getframe(gcf));
   else
     mov = addframe(mov,getframe(gca));

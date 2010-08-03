@@ -1,5 +1,6 @@
 classdef PendulumDynamics < SecondOrderDynamics
-
+% Defines the dynamics for the Pendulum.
+  
   properties
     m = 1;   % kg
     l = .5;  % m
@@ -11,16 +12,19 @@ classdef PendulumDynamics < SecondOrderDynamics
   
   methods
     function obj = PendulumDynamics()
+      % Construct a new PendulumDynamics
       obj = obj@SecondOrderDynamics(1,1);
       torque_limit = 3;
       obj = setInputLimits(obj,-torque_limit,torque_limit);
     end
     
     function qdd = sodynamics(obj,t,q,qd,u)
+      % Implement the second-order dynamics
       qdd = (u - obj.m*obj.g*obj.lc*sin(q) - obj.b*qd)/obj.I;
     end
     
     function df = sodynamicsGradients(obj,t,q,qd,u,order)
+      % Implement the Taylor expansion of the second-order gradients
       if (nargin>4 && order>3) df = sodynamicsGradients@SecondOrderDynamics(obj,t,x,u,order); end
       if (nargin<5) order=1; end
       
@@ -44,6 +48,7 @@ classdef PendulumDynamics < SecondOrderDynamics
     end
     
     function x = getInitialState(obj)
+      % Start me anywhere!
       x = randn(2,1);
     end
     
