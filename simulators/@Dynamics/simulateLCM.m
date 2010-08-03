@@ -1,4 +1,4 @@
-function timerobj = simulateLCM(obj,lcm_coder,dt,x0)
+function timerobj = simulateLCM(obj,lcm_coder,dt,x0,visualizer)
 % Starts an LCM simulation node which listens for inputs and publishes state.
 %   timerobj = simulateLCM(obj,lcm_coder[,dt,x0]) runs the dynamics as an LCM client,
 %   listening for input messages and publishing regular state messages.
@@ -9,11 +9,11 @@ function timerobj = simulateLCM(obj,lcm_coder,dt,x0)
 
 
 lc = lcm.lcm.LCM.getSingleton();
-%aggregator = lcm.lcm.MessageAggregator();
-%aggregator.setMaxMessages(1);  % make it a last-message-only queue
+aggregator = lcm.lcm.MessageAggregator();
+aggregator.setMaxMessages(1);  % make it a last-message-only queue
 
-name = getRobotName(lcm_coder);
-%lc.subscribe([name,'_input'],aggregator);
+name=lcm_coder.getRobotName();
+lc.subscribe([name,'_input'],aggregator);
 
 if (nargin<3) dt = 0.01; end
 if (nargin<4) x0 = getInitialState(obj); end
@@ -25,15 +25,35 @@ end
 
 x = x0;
 
+last_display_t = 0;
+
 tic;
-timerobj = timer('TimerFcn',{@timer_simulate,dt,name,lcm_coder,x},'ExecutionMode','fixedRate','Period',dt,'TasksToExecute',inf,'BusyMode','error','ErrorFcn','disp(''Timer error: Probably fell behind.  Consider increasing dt.'')');
+timerobj = timer('TimerFcn',{@timer_simulate},'ExecutionMode','fixedRate','Period',dt,'TasksToExecute',inf); %,'BusyMode','error','ErrorFcn','disp(''Timer error: Probably fell behind.  Consider increasing dt.'')');
 start(timerobj); 
 
 
-  function timer_simulate(timerobj,event,dt,name,lcm_coder,x)
+  function timer_simulate(timerobj,event)
     t=toc;
-    msg = encodeState(lcm_coder,t,x);
-    lc.publish([name,'_state'], msg);
+    dt = timerobj.InstantPeriod;
+    
+    if (~isnan(dt))
+      if (aggregator.numMessagesAvailable()>0)
+        umsg = getNextMessage(aggregator);
+        u = decodeInput(lcm_coder,umsg);
+      else
+        u = getDefaultInput(obj);
+      end
+
+      x = x + dt*obj.dynamics(t,x,u);
+      if (~isempty(visualizer) && t>(last_display_t+visualizer.display_dt))
+        last_display_t = t;
+        visualizer.draw(t,x,[]);
+        drawnow;
+      end
+    end
+    
+    xmsg = encodeState(lcm_coder,t,x);
+    lc.publish([name,'_state'], xmsg);
   end
 
 end

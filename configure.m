@@ -40,6 +40,7 @@ original_path = path;
 % add robotlib directories to the matlab path 
 addpath([conf.root,'/simulators']);
 addpath([conf.root,'/controllers']);
+addpath([conf.root,'/controllers/tools']);
 addpath([conf.root,'/visualizers']);
 addpath([conf.root,'/estimators']);
 addpath([conf.root,'/shared']);

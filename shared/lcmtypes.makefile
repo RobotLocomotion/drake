@@ -5,7 +5,8 @@
 
 # Note 2: make will automatically delete intermediate files (google "make chains of implicit rules")
 
-PACKAGEDIR = $(PACKAGE:%.=%/)
+PACKAGEDIR = $(subst .,/,$(PACKAGE))
+PACKAGEDIRLIST = $(subst ., ,$(PACKAGE))
 
 LCMFILES = $(wildcard *.lcm)
 HFILES = $(LCMFILES:%.lcm=%.h)
@@ -17,6 +18,10 @@ CLASSFILES = $(JAVAFILES:%.java=%.class)
 LIBS = $(PACKAGE).a
 
 all: $(LIBS) $(CLASSFILES)
+
+java : $(CLASSFILES)
+
+c : $(LIBS)
 
 .INTERMEDIATE : $(OBJFILES)
 .PRECIOUS : $(LCMFILES) $(JAVAFILES)
@@ -35,8 +40,8 @@ $(PACKAGE).a : $(OBJFILES)
 
 %.java : %.lcm
 	-lcm-gen -j --jpath="." --jdefaultpkg="$(PACKAGE)" $<
-#	mv $(PACKAGEDIR)/$@ .
-#	rm -rf 
+	mv $(PACKAGEDIR)/$@ .
+	rm -rf $(firstword $(PACKAGEDIRLIST))
 
 clean : 
 	-rm -f $(LIBS) $(HFILES) $(CFILES) $(OBJFILES) $(JAVAFILES) $(CLASSFILES)

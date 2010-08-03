@@ -23,22 +23,30 @@ info.failcount = 0;
 disp('');
 
 pause off;
-info=run_tests_in('./test',info);
-info=run_tests_in('tools/test',info);
-info=run_tests_in('robots/test',info);
-info=run_tests_in('./examples',info);
+info=run_tests_in('.',info,true);
+info=run_tests_in('examples',info,false);
 pause on;
 
 fprintf(1,'\n Executed %d tests.  %d passed.  %d failed.\n',info.passcount+info.failcount, info.passcount, info.failcount);
 
 end
 
-function info = run_tests_in(pdir,info)
+function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
   p = pwd;
   cd(pdir);
-  files=dir('*.m');
+  files=dir('.');
   
   for i=1:length(files)
+    if (files(i).isdir)
+      % then recurse into the directory
+      if (files(i).name(1)~='.')  % skip . directories
+        info = run_tests_in(files(i).name,info,~strcmpi(files(i).name,'test'));
+      end
+      continue;
+    elseif bOnlyLookForTestDirs || ~strcmpi(files(i).name(end-1:end),'.m')
+      % then it's not a directory or an m file.  skip it.
+      continue;
+    end
     testname = files(i).name;
     ind=find(testname=='.',1);
     testname=testname(1:(ind-1));
