@@ -17,6 +17,7 @@ classdef PendulumLCMCoder < LCMCoder
     
     function [x,t] = decodeState(obj,msg)
       % decodes the state message
+      msg = robotlib.examples.Pendulum.lcmt_pendulum_state(msg.data);
       x = [msg.theta; msg.thetaDot];
       t = msg.timestamp/1000;
     end
@@ -30,6 +31,7 @@ classdef PendulumLCMCoder < LCMCoder
     
     function [u,t] = decodeInput(obj,msg)
       % decodes the input message
+      msg = robotlib.examples.Pendulum.lcmt_pendulum_input(msg.data);
       u = msg.tau;
       t = msg.timestamp/1000;
     end
