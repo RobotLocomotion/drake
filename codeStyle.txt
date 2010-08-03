@@ -1,0 +1,61 @@
+
+This document defines a style guide which should be followed by all code 
+that is written in the Robot Locomotion Group.  Being consistent with this style will
+make the code easier to read, debug, and maintain. 
+
+ - Russ, August 1, 2010
+
+
+This document was inspired by the c++ style guide for ROS: 
+http://www.ros.org/wiki/CppStyleGuide
+It makes use of the follow shortcuts for naming schemes:
+
+  CamelCased: The name starts with a capital letter, and has a capital letter for each new word, with no underscores.
+  camelCased: Like CamelCase, but with a lower-case first letter
+  under_scored: The name uses only lower-case letters, with words separated by underscores.
+  Under_scored: The name starts with a capital letter, then uses under_score.
+  ALL_CAPITALS: All capital letters, with words separated by underscores.
+
+
+
+In General: 
+
+  Robot Names are CamelCased.
+
+
+In Java:
+
+  Class names (and therefore class filenames/directories) are CamelCased
+  Methods names are camelCased
+  Variable names are under_scored
+  Member variables are under_scored with a leading m_ added
+  Global variables are under_scored with a leading g_ added
+  Constants are ALL_CAPITALS
+
+  Every class and method should have a brief "javadoc" associated with it.
+
+
+In Matlab: 
+
+  All of the above rules hold.
+  Variable names that describe a matrix (instead of vector/scalar) are Under_scored.
+  Calls to Matlab class member functions use obj = memberFunc(obj,...) .
+  All methods begin by checking their inputs (e.g. with typecheck.m).
+
+In C++: 
+  
+  All of the above rules still hold.
+  Filenames for .cpp and .h files which define a single class are CamelCased.
+  Filenames for .cpp and .h files which define a single method are camelCased.  
+  Filenames for any other .cpp and .h files are under_scored.
+
+LCM:
+  
+  LCM types are under_scored with a leading lcmt_ added. If the type is specific to a particular robot, then it begins with lcmt_robotname_.
+  Channel names are under_scored, and ALWAYS begin with robotname_. 
+  Variable names in LCM types follow the rules above.
+
+
+Makefiles: 
+
+  %  garratt says use CMAKE??
