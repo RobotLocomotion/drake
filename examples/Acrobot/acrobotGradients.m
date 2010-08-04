@@ -1,4 +1,4 @@
-function df = acrobot_gradients(r,t,x,u,order)
+function df = acrobotGradients(r,t,x,u,order)
 
 % This file evaluates the gradients of the robot dynamics.
 % Usage:  df = acrobot_gradients(r,t,x,u,order)
@@ -8,6 +8,9 @@ function df = acrobot_gradients(r,t,x,u,order)
 %   u 		- 1-by-1 input vector
 %   order 	- order of gradients to compute (1<=order<=3)
 % This is an auto-generated file.  See <a href="matlab: help robot>generate_dynamics_func_gradients">robot>generate_dynamics_func_gradients</a>. 
+
+% NOTEST  % this tag tells my runAllTests script that this file can't be run as a unit test
+
 
 % Check inputs:
 if (~isa(r,'AcrobotDynamics')) error(' r must be an AcrobotDynamics class object'); end

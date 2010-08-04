@@ -1,7 +1,7 @@
 function runAllTests(bAbortOnFail)
 
 % Recurses through the robotlib directories, running all test scripts (in 
-% test subdirectories).
+% test subdirectories) and all methods/scripts in the examples directory.
 %   Usage:  run_all_tests([bAbortOnFail]);
 %   Defaults: bAbortOnFail = true;
 %
@@ -9,6 +9,9 @@ function runAllTests(bAbortOnFail)
 % fails, and returns without error if the test passes.  If bAbortOnFail is
 % true, then the error is rethrown immediately, so that you can go in and
 % debug the failure.
+%
+% A .m file in the test or examples directories will not be run if it has
+% the string "classdef" or "NOTEST" anywhere in the file. 
 %
 % This script should always be run (and all tests should pass) before 
 % anything is committed back into the robotlib repository.
@@ -19,6 +22,7 @@ if (nargin<1) bAbortOnFail = true; end
 info.bAbortOnFail = bAbortOnFail;
 info.passcount = 0;
 info.failcount = 0;
+info.initialpwd = pwd;
 
 disp('');
 
@@ -51,12 +55,9 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
     if (strcmpi(files(i).name,'Contents.m')) continue; end
     
     % check if it's a function or classdef
-    fid=fopen(files(i).name);
-    if (strfind(lower(fgetl(fid)),'classdef')) 
-      fclose(fid);
-      continue;
+    if (checkFile(files(i).name,{'classdef','NOTEST'}))
+      continue; 
     end
-    fclose(fid);
     
     % If I made it to here, then actually run the file.
     
@@ -76,7 +77,7 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
       fprintf(1,'[FAILED]\n');
       info.failcount = info.failcount+1;
       if (info.bAbortOnFail)
-        cd(p);
+        cd(info.initialpwd);
         rethrow(lasterror);
       end
     end
@@ -89,4 +90,29 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
   end 
   
   cd(p);
+end
+
+function bfound = checkFile(filename,strings)
+% opens the file and checks for the existence of the string (or strings)
+
+if ~iscell(strings), strings = {strings}; end
+
+bfound = false;
+fid=fopen(filename);
+if (fid<0) return; end  % couldn't open the file.  skip it.
+while true  % check the file for the string "NOTEST" (case specific)
+  tline = fgetl(fid);
+  if (~ischar(tline))
+    break;
+  end
+  for i=1:length(strings)
+    if (strfind(tline,strings{i}))
+      fclose(fid);
+      bfound = true;
+      return;
+    end
+  end
+end
+fclose(fid);
+
 end
