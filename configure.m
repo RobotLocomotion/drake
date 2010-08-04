@@ -76,6 +76,7 @@ end
 end
 
 function conf = setconf(conf,field,longname,candidates)
+% prompts the user to select which configuration from a set of candidates
   fprintf(1,'\n%s:\n',longname);
   bDefault = isfield(conf,field) && ~isempty(getfield(conf,field));
   if (bDefault)
@@ -110,6 +111,9 @@ end
 
 
 function dir = findfile(fname)
+% locate a support file on the harddrive
+
+% todo: don't depend on locate being installed
   [a,b]=system(['locate ',fname]);
   if (a~=0) 
     warning('looks like you don''t have locate'); 
@@ -134,7 +138,7 @@ end
 
 
 function [obj,lib,libprefix] = extensions
-
+% define library extensions for different platforms
   if strcmp(computer,'PCWIN')|| strcmp(computer,'PCWIN64')
     obj = 'obj';
     lib = 'lib';

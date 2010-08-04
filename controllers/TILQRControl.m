@@ -1,4 +1,7 @@
 classdef TILQRControl < LQRControl
+% Time-invariant LQR control (Continuous Time)
+%
+% See also: TVLQRControl, TIDLQRControl
   
   properties
     dynamics=[]; 
@@ -11,6 +14,7 @@ classdef TILQRControl < LQRControl
   
   methods 
     function obj=TILQRControl(dynamics,x0,u0,Q,R)
+      % Construct and design the LQR controller
       obj = obj@LQRControl(length(x0),length(u0));
       if (nargin>0)
         obj.dynamics = dynamics;
@@ -21,6 +25,7 @@ classdef TILQRControl < LQRControl
     end
 
     function [obj,K,S] = design(obj,Q,R)
+      % extracts A and B from dynamics and call matlab's lqr
       nX = length(obj.x0);
       nU = length(obj.u0);
 
@@ -37,11 +42,14 @@ classdef TILQRControl < LQRControl
     end
     
     function u = control(obj,t,x)
+      % implements the actual LQR controller
       x = wrap(obj,obj.x0,x);
       xbar = x-obj.x0;
       u = obj.u0-obj.K*xbar;
     end
-    function du = control_gradients(obj,t,x,order)
+    
+    function du = controlGradients(obj,t,x,order)
+      % Computes Taylor expansion of the control function
       if (nargin<4) order=1; end
       du{1} = [zeros(1,size(K,1)),-K];
       if (order>1) error('not implemented yet');  end % it's all zeros... just need to fill in the struct 

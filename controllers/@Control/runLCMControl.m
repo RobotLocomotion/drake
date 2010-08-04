@@ -28,7 +28,7 @@ end
       xmsg = getNextMessage(aggregator);
       [x,t] = decodeState(lcm_coder,xmsg);
 
-      u = obj.control(t,x)
+      u = obj.control(t,x);
       
       umsg = encodeInput(lcm_coder,t,u);
       lc.publish([name,'_input'], umsg);

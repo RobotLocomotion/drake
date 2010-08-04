@@ -5,12 +5,9 @@ classdef LQRControl < Control
 
   methods 
     function obj = LQRControl(num_states,num_inputs)
+      % construct an LQR controller
       obj = obj@Control(num_states,num_inputs);
     end
-  end
-  
-  properties (SetAccess=protected,GetAccess=public)
-    bWrap=[]; xWrap=[];  % used in execution of the policy
   end
   
   methods (Abstract=true)
@@ -26,7 +23,12 @@ classdef LQRControl < Control
   end
 
   methods
-    function obj = set_wrapping(obj,bWrap,xWrap)
+    function obj = setWrapping(obj,bWrap,xWrap)
+      % sets up wrapping coordinate systems (e.g., trig systems live on the torus)  
+      
+      % todo: consider yanking this in favor of the
+      % dynamics.stateVectorNorm, etc.
+      
       % bWrap is a vector of booleans of length(dim(x))
       % xWrap is a matrix of [low,high] values of size (dim(x),2)
       if (length(bWrap)~=size(xWrap,1)) error('xWrap must be the same length as bWrap'); end
@@ -36,7 +38,7 @@ classdef LQRControl < Control
     end
     
     function x = wrap(obj,x0,x)
-      % implement wrapping.  
+      % implement the wrapping.  
       
       % note: this is not necessarily optimal (e.g., if
       % the pendulum is in theta=0, but has so much velocity that the lower
@@ -51,6 +53,11 @@ classdef LQRControl < Control
       end
     end
       
+  end
+  
+  properties (SetAccess=protected,GetAccess=public)
+    bWrap=[];  % bWrap(i) = true if x(i) is wrapped
+    xWrap=[];  % xWrap(i,1) is lower limit xwrap(i,2) is upper limit
   end
   
 end

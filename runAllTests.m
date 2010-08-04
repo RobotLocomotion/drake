@@ -32,6 +32,8 @@ fprintf(1,'\n Executed %d tests.  %d passed.  %d failed.\n',info.passcount+info.
 end
 
 function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
+% runs tests in a particular trajectory; gets called recursively
+
   p = pwd;
   cd(pdir);
   files=dir('.');
@@ -78,9 +80,11 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
         rethrow(lasterror);
       end
     end
-    
+
+    % now clean up for the next guy:
     close all;
-    stop(timerfind);
+    t = timerfind;
+    if (~isempty(t)) stop(t); end
     
   end 
   

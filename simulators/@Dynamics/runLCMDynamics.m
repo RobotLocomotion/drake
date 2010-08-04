@@ -1,4 +1,4 @@
-function timerobj = simulateLCM(obj,lcm_coder,dt,x0,visualizer)
+function timerobj = runLCMDynamics(obj,lcm_coder,dt,x0,visualizer)
 % Starts an LCM simulation node which listens for inputs and publishes state.
 %   timerobj = simulateLCM(obj,lcm_coder[,dt,x0]) runs the dynamics as an LCM client,
 %   listening for input messages and publishing regular state messages.
@@ -17,6 +17,7 @@ lc.subscribe([name,'_input'],aggregator);
 
 if (nargin<3) dt = 0.01; end
 if (nargin<4) x0 = getInitialState(obj); end
+if (nargin<5) visualizer=[]; end
 
 if (dt<.001) 
   warning('Setting dt to .001, which is the minimum for matlab timers'); 
