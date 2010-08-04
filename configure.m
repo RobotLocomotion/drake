@@ -11,7 +11,10 @@ catch
 end
 
 v=ver('matlab');
-if (str2num(v.Version) < 7.6) 
+ind = find(v.Version,'.','first');
+major_ver = str2num(v.Version(1:ind));
+minor_ver = str2num(v.Version((ind+2):end));
+if (major_ver < 7 || (major_ver==7 && minor_ver < 6)) 
   error('RobotLib reguires MATLAB version 7.6 or above.');
   % because I rely on the new matlab classes with classdef
 end
