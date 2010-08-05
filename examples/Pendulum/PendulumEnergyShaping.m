@@ -18,7 +18,7 @@ classdef PendulumEnergyShaping < Control
         u = obj.lqr.control(t,x);
       else
         Etilde = .5*obj.p.m*obj.p.l^2*x(2)^2 - obj.p.m*obj.p.g*obj.p.l*cos(x(1)) - 1.2*obj.p.m*obj.p.g*obj.p.l;
-        u = -.1*x(2)*Etilde;
+        u = -.01*x(2)*Etilde;
       end
     end
   end 

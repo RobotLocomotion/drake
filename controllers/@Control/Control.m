@@ -42,5 +42,4 @@ classdef Control
     control_dt = 0;  % zero for ct control
   end
   
-  
 end

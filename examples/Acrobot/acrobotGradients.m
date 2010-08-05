@@ -20,7 +20,7 @@ if (any(size(u)~=[1,1])) error('u must be a 1-by-1 vector'); end
 if ((order<1) || (order>3)) error('1<=order<=3'); end
 
 % Symbol table:
-l1=r.l1; l2=r.l2; m1=r.m1; m2=r.m2; g=r.g; b1=r.b1; b2=r.b2; lc1=r.lc1; lc2=r.lc2; I1=r.I1; I2=r.I2; xG=r.xG; uG=r.uG;
+l1=r.l1; l2=r.l2; m1=r.m1; m2=r.m2; g=r.g; b1=r.b1; b2=r.b2; lc1=r.lc1; lc2=r.lc2; I1=r.I1; I2=r.I2; 
 x1=x(1);x2=x(2);x3=x(3);x4=x(4);
 u1=u(1);
 

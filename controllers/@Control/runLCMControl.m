@@ -1,12 +1,14 @@
 function timerobj = runLCMControl(obj,lcm_coder)
 % Starts an LCM control node which listens for state and publishes inputs
 
-lc = lcm.lcm.LCM.getSingleton();
+lc = lcm.lcm.LCM('udpm://239.255.76.67:7667?ttl=1');
+
+%lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
 aggregator.setMaxMessages(1);  % make it a last-message-only queue
 
 name=lcm_coder.getRobotName();
-lc.subscribe([name,'_state'],aggregator);
+lc.subscribe([lower(name),'_state'],aggregator);
 
 
 
@@ -31,7 +33,7 @@ end
       u = obj.control(t,x);
       
       umsg = encodeInput(lcm_coder,t,u);
-      lc.publish([name,'_input'], umsg);
+      lc.publish([lower(name),'_input'], umsg);
     end
   end
 

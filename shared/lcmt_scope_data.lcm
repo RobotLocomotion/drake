@@ -1,0 +1,8 @@
+package robotlib.shared;
+
+struct lcmt_scope_data
+{
+	int64_t timestamp;
+  int64_t scope_id;
+  double data;
+}

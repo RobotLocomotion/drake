@@ -1,6 +1,6 @@
 function timerobj = runLCMDynamics(obj,lcm_coder,dt,x0,visualizer)
 % Starts an LCM simulation node which listens for inputs and publishes state.
-%   timerobj = simulateLCM(obj,lcm_coder[,dt,x0]) runs the dynamics as an LCM client,
+%   timerobj = runLCMDynamics(obj,lcm_coder[,dt,x0,visualizer]) runs the dynamics as an LCM client,
 %   listening for input messages and publishing regular state messages.
 %   The timerobj that is returned will run forever unless it is stopped.
 %   
@@ -13,7 +13,7 @@ aggregator = lcm.lcm.MessageAggregator();
 aggregator.setMaxMessages(1);  % make it a last-message-only queue
 
 name=lcm_coder.getRobotName();
-lc.subscribe([name,'_input'],aggregator);
+lc.subscribe([lower(name),'_input'],aggregator);
 
 if (nargin<3) dt = 0.01; end
 if (nargin<4) x0 = getInitialState(obj); end
@@ -54,7 +54,7 @@ start(timerobj);
     end
     
     xmsg = encodeState(lcm_coder,t,x);
-    lc.publish([name,'_state'], xmsg);
+    lc.publish([lower(name),'_state'], xmsg);
   end
 
 end

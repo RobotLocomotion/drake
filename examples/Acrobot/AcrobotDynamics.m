@@ -1,4 +1,4 @@
-classdef AcrobotDynamics < SecondOrderDynamics 
+classdef AcrobotDynamics < ManipulatorDynamics 
   
   properties
     l1 = 1; l2 = 2;  
@@ -11,31 +11,30 @@ classdef AcrobotDynamics < SecondOrderDynamics
   
   methods
     function obj = AcrobotDynamics
-      obj = obj@SecondOrderDynamics(2,1);
+      obj = obj@ManipulatorDynamics(2,1);
       obj = setInputLimits(obj,-3,3);
     end
     
-    function qdd = sodynamics(obj,t,q,qd,u)
+    function [H,C,B] = manipulatorDynamics(obj,q,qd)
       % keep it readable:
       m1=obj.m1; m2=obj.m2; l1=obj.l1; l2=obj.l2; g=obj.g; lc1=obj.lc1; lc2=obj.lc2; I1=obj.I1; I2=obj.I2; b1=obj.b1; b2=obj.b2;
 
       % vectorized version:  using phi = B*u - C*x(3:4) - G
       c = cos(q(1:2,:));  s = sin(q(1:2,:));  s12 = sin(q(1,:)+q(2,:));
-      h11 = I1 + I2 + m2*l1^2 + 2*m2*l1*lc2*c(2,:);
-      h12 = I2 + m2*l1*lc2*c(2,:);
-      h22 = I2;
+      H(1,1) = I1 + I2 + m2*l1^2 + 2*m2*l1*lc2*c(2);
+      H(1,2) = I2 + m2*l1*lc2*c(2);
+      H(2,1) = H(1,2);
+      H(2,2) = I2;
       
-      phi1 = 2*m2*l1*lc2*s(2,:).*qd(1,:).*qd(2,:) + m2*l1*lc2*s(2,:).*qd(2,:).^2 - (m1*lc1 + m2*l1)*g*s(1,:) - m2*g*lc2*s12;
-      phi2 = u(1,:) - m2*l1*lc2*s(2,:).*qd(1,:).^2 - m2*g*lc2*s12;
+      C(1,1) = -2*m2*l1*lc2*s(2).*qd(1).*qd(2) - m2*l1*lc2*s(2).*qd(2).^2 + (m1*lc1 + m2*l1)*g*s(1) + m2*g*lc2*s12;
+      C(2,1) = m2*l1*lc2*s(2).*qd(1).^2 + m2*g*lc2*s12;
       
       % add a damping term:
-      phi1 = phi1 - b1*qd(1,:);
-      phi2 = phi2 - b2*qd(2,:);
-      
-      detH = h11.*h22 - h12.^2;
-      
-      qdd = [(h22.*phi1 - h12.*phi2)./detH; (-h12.*phi1 + h11.*phi2)./detH];
+      C = C + [b1;b2].*qd;
+
+      B = [0; 1];
     end
+    
     function df = dynamicsGradients(obj,t,x,u,order)
       if (nargin<5) order=1; end
       df = acrobotGradients(obj,t,x,u,order);
