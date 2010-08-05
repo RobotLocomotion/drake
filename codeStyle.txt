@@ -62,6 +62,7 @@ LCM:
   
   LCM types are under_scored with a leading lcmt_ added. If the type is specific to a particular robot, then it begins with lcmt_robotname_.
   Channel names are under_scored, and ALWAYS begin with robotname_. 
+  ** although robotnames are CamelCased, their use in lcm channels and types should be all lowercase **
   Variable names in LCM types follow the rules above.
 
 
