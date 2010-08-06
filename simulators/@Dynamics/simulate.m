@@ -12,8 +12,14 @@ if (control.num_states~=0 && obj.num_states ~= control.num_states) error('dynami
 if (control.control_dt~=0) error('sampled-data control is not re-implemented yet'); end
 if (length(closed_loop_dynamics(tspan(1),x0))~=obj.num_states) error('the closed loop dynamics is not returning an xdot of the correct size'); end
 
+%global g_scope_enable;
+%sebk = g_scope_enable;
+%g_scope_enable = false;
+
 sol = obj.ode_solver(@closed_loop_dynamics,tspan,x0,obj.ode_options);
 xtraj = ODESolTrajectory(sol);
+
+%g_scope_enable = sebk;
 
   function xdot = closed_loop_dynamics(t,x)
     u = control.control(t,x);

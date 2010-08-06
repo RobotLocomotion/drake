@@ -2,27 +2,30 @@ function lcmScope(robotname)
 
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
-aggregator.setMaxMessages(1);  % make it a last-message-only queue
+%aggregator.setMaxMessages(1);  % make it a last-message-only queue
 
 varname_index = length(robotname)+length('_scope_')+1;
-lc.subscribe([lower(robotname),'_scope_thetaDot'],aggregator);
+lc.subscribe([lower(robotname),'_scope_.*'],aggregator);
 
 scope_data=[];
 
-num_points = 200;  % todo: get this from lcm message
+num_points = 2000;  % todo: get this from lcm message
 
-h=figure(1); set(h,'WindowStyle','modal'); hold on; 
+h=figure(1); 
+set(h,'MenuBar','none','Renderer','OpenGL','Toolbar','none','DoubleBuffer','on'); 
+setAlwaysOnTop(h,true); 
+hold on; 
 
 while true
-  if (aggregator.numMessagesAvailable()>0)
-    msg = getNextMessage(aggregator);
-    
+  msg = getNextMessage(aggregator,0);
+  if (isempty(msg)) drawnow;
+  else
     channel = char(msg.channel);
     varname = channel(varname_index:end);
     data = robotlib.shared.lcmt_scope_data(msg.data);
     t = data.timestamp/1000;
     val = data.data;
-
+    
     if (isempty(scope_data) || ~isfield(scope_data,varname))
       d = struct('t',repmat(t,1,num_points),'val',repmat(val(:),1,num_points),'handle',[]);
       d.handle=plot(d.t,d.val);
@@ -41,8 +44,6 @@ while true
     end
     
     set(d.handle,'XData',d.t,'YData',d.val);
-      
-    drawnow;
   end
 end
 
