@@ -28,7 +28,8 @@ java : robotlib.jar
 c : robotlib.a
 
 robotlib.jar : $(CLASSFILES)
-	jar -cf $@ $^
+	cd ..; jar -cf $@ $(CLASSFILES:%=robotlib/%); 
+	mv ../robotlib.jar $@
 
 robotlib.a : $(OBJFILES)
 	ar rc $@ $^
