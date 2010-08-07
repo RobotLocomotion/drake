@@ -34,27 +34,6 @@ if (~isfield(conf,'libpre') || isempty(conf.libpre))
   conf.libpre=c;
 end
 
-conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
-if (~conf.lcm_enabled)
-  disp(' LCM not found.  LCM support will be disabled.  To re-enable, add lcm-###.jar to your matlab classpath (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.5.1.jar'') into your startup.m .');
-end
-
-conf.snopt_enabled = logical(exist('snopt'));
-if (~conf.snopt_enabled) 
-  disp(' SNOPT not found.  SNOPT support will be disabled.  To re-enable, add the SNOPT matlab folder to your path and rerun configure.  SNOPT can be obtained from https://tig.csail.mit.edu/software/ .');
-end
-
-conf.sedumi_enabled = logical(exist('sedumi'));
-if (~conf.sedumi_enabled)
-  disp(' SeDuMi not found.  SeDuMi support will be disabled.  To re-enable, add SeDuMi to your matlab path and rerun configure.  SeDuMi can be downloaded for free from http://sedumi.ie.lehigh.edu/ ');
-end
-
-conf.spot_enabled = logical(exist('msspoly'));
-if (~conf.spot_enabled)
-  disp(' SPOT not found.  SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/russt/code/spot/ ');
-end
-
-
 original_path = path;
 
 % look for POT, add to matlab path 
@@ -74,6 +53,28 @@ addpath([conf.root,'/shared']);
 % user to do it?)
 if (~exist('robotlib.shared.lcmt_scope_data'))
   error(['Can''t find robotlib files in your matlab java classpath.  I recommend doing the following:',10,' 1) >> edit startup.m',10,' 2) add the line "javaaddpath(''',conf.root,'/robotlib.jar'');" to the end of startup.m',10,' 3) >> startup.m']);
+end
+
+% check for all dependencies
+
+conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
+if (~conf.lcm_enabled)
+  disp(' LCM not found.  LCM support will be disabled.  To re-enable, add lcm-###.jar to your matlab classpath (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.5.1.jar'') into your startup.m .');
+end
+
+conf.snopt_enabled = logical(exist('snopt'));
+if (~conf.snopt_enabled) 
+  disp(' SNOPT not found.  SNOPT support will be disabled.  To re-enable, add the SNOPT matlab folder to your path and rerun configure.  SNOPT can be obtained from https://tig.csail.mit.edu/software/ .');
+end
+
+conf.sedumi_enabled = logical(exist('sedumi'));
+if (~conf.sedumi_enabled)
+  disp(' SeDuMi not found.  SeDuMi support will be disabled.  To re-enable, add SeDuMi to your matlab path and rerun configure.  SeDuMi can be downloaded for free from http://sedumi.ie.lehigh.edu/ ');
+end
+
+conf.spot_enabled = logical(exist('msspoly'));
+if (~conf.spot_enabled)
+  disp(' SPOT not found.  SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/russt/code/spot/ ');
 end
 
 
