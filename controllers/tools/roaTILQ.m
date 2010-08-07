@@ -1,4 +1,5 @@
 function rho = roaTILQ(system,x0,u0,K,S,options)
+    checkDependency('spot_enabled');
 
     nx = length(x0);
     nu = length(u0);

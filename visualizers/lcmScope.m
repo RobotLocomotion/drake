@@ -1,5 +1,7 @@
 function lcmScope(robotname)
 
+checkDependency('lcm_enabled');
+
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
 %aggregator.setMaxMessages(1);  % make it a last-message-only queue

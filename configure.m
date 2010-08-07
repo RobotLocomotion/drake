@@ -96,6 +96,8 @@ if (~strcmp(original_path,path))
   end
 end
 
+clear shared/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
+
 end
 
 function conf = setconf(conf,field,longname,candidates)

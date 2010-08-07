@@ -22,6 +22,7 @@
 %  Umin -- m-by-1 lower limit on commands.
 %
 function rho = roa_tilq_poly(x,u,f,x0,u0,K,S,options)
+    checkDependency('spot_enabled');
     if size(x0,1) ~= size(x,1), error('x and x0 do not match.'); end
     if size(u0,1) ~= size(u,1), error('u and u0 do not match.'); end
     nx = size(x0,1);

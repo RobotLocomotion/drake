@@ -1,17 +1,17 @@
 function scope(robotname,varname,scope_id,t,val)
 
-typecheck(robotname,'char');
-typecheck(varname,'char');
-typecheck(scope_id,'double'); 
-if (length(t)>1) error('t should be a scalar'); end
-typecheck(val,'double');  
-
 % todo: add support for different figures/subfigures
 global g_scope_enable;
 
 if (isempty(g_scope_enable)) g_scope_enable=true; end
 
-if (g_scope_enable)
+if (g_scope_enable || ~checkDependency('lcm_enabled'))
+  typecheck(robotname,'char');
+  typecheck(varname,'char');
+  typecheck(scope_id,'double'); 
+  if (length(t)>1) error('t should be a scalar'); end
+  typecheck(val,'double');  
+
   lc = lcm.lcm.LCM.getSingleton();
   
   msg = robotlib.shared.lcmt_scope_data();

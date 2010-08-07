@@ -1,6 +1,8 @@
 function timerobj = runLCMControl(obj,lcm_coder)
 % Starts an LCM control node which listens for state and publishes inputs
 
+checkDepedency('lcm_enabled');
+
 lc = lcm.lcm.LCM('udpm://239.255.76.67:7667?ttl=1');
 
 %lc = lcm.lcm.LCM.getSingleton();
@@ -9,8 +11,6 @@ aggregator.setMaxMessages(1);  % make it a last-message-only queue
 
 name=lcm_coder.getRobotName();
 lc.subscribe([lower(name),'_state'],aggregator);
-
-
 
 if (obj.control_dt>0)
   % try to run on a clock

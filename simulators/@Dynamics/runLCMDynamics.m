@@ -7,6 +7,7 @@ function timerobj = runLCMDynamics(obj,lcm_coder,dt,x0,visualizer)
 %   The default value for dt is .01.
 %   The default value for x0 is obj.getInitialState().
 
+checkDependency('lcm_enabled');
 
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
