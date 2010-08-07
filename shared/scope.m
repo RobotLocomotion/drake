@@ -1,5 +1,11 @@
 function scope(robotname,varname,scope_id,t,val)
 
+typecheck(robotname,'char');
+typecheck(varname,'char');
+typecheck(scope_id,'double'); 
+if (length(t)>1) error('t should be a scalar'); end
+typecheck(val,'double');  
+
 % todo: add support for different figures/subfigures
 global g_scope_enable;
 

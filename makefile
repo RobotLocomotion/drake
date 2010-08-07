@@ -23,12 +23,12 @@ CLASSFILES = $(LCM_CLASSFILES)
 
 all: java 
 
-java : ../robotlib.jar
+java : robotlib.jar
 
 c : robotlib.a
 
-../robotlib.jar : $(CLASSFILES)
-	cd ..; jar -cf robotlib.jar $(CLASSFILES:%=robotlib/%)
+robotlib.jar : $(CLASSFILES)
+	cd ..; jar -cf robotlib/robotlib.jar $(CLASSFILES:%=robotlib/%)
 
 robotlib.a : $(OBJFILES)
 	ar rc $@ $^
