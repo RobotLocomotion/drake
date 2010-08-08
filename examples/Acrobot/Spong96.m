@@ -8,17 +8,13 @@ classdef Spong96 < Control
         typecheck(acrobot_dynamics,'AcrobotDynamics');
         obj.dyn = acrobot_dynamics;
 
-        Q = diag([10,10,1,1]); R = 20;
-        obj.lqr = TILQRControl(obj.dyn,obj.xG,obj.uG,Q,R);
-        obj.lqr = obj.lqr.verify();
+        obj.lqr = AcrobotLQR(acrobot_dynamics);
         obj.control_dt = 0;
       end
     end
     
     function u = control(obj,t,x)
       scope('Acrobot','Energy',1,t,energy(obj,x));
-      u = 0;
-      return;
       
       if obj.lqr.isVerified(x)
         u = obj.lqr.control(t,x);
