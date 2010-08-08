@@ -9,7 +9,7 @@ classdef AcrobotLQR < TILQRControl
       
       checkDependency('spot_enabled');
       options = struct('plant_order',3);
-      obj = obj.verify(options)
+      obj = obj.verify(options);
     end
   end
   

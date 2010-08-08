@@ -1,4 +1,4 @@
-function scope(robotname,varname,scope_id,t,val)
+function scope(robotname,varname,scope_id,t,val,linespec,num_points)
 
 % todo: add support for different figures/subfigures
 global g_scope_enable;
@@ -16,9 +16,24 @@ if (g_scope_enable || ~checkDependency('lcm_enabled'))
   
   msg = robotlib.shared.lcmt_scope_data();
   msg.timestamp = 1000*t;
-  msg.scope_id = 1;
-  msg.data = val(1);
+  msg.scope_id = scope_id;
+  
+  msg.datalen = prod(size(val));
+  msg.data = val(:);
+  
+  if (nargin>5) 
+    typecheck(linespec,'char');
+    msg.linespec = linespec;
+  else
+    msg.linespec = '';
+  end
 
+  if (nargin>6)
+    msg.num_points = num_points;
+  else
+    msg.num_points = 200;  % just some reasonable default
+  end
+  
   lc.publish([lower(robotname),'_scope_',varname],msg);
 end
 

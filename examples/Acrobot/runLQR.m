@@ -4,6 +4,8 @@ d = AcrobotDynamics;
 v = AcrobotVisualizer(d);
 c = AcrobotLQR(d);
 
+c.rho
+
 for i = 1:5
   x0 = c.x0 + .1*randn(4,1);
   bVerify = c.isVerified(x0);

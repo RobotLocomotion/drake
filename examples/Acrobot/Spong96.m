@@ -8,22 +8,20 @@ classdef Spong96 < Control
         typecheck(acrobot_dynamics,'AcrobotDynamics');
         obj.dyn = acrobot_dynamics;
 
-        obj.lqr = AcrobotLQR(acrobot_dynamics);
+%        obj.lqr = AcrobotLQR(acrobot_dynamics);
         obj.control_dt = 0;
       end
     end
     
     function u = control(obj,t,x)
-      scope('Acrobot','Energy',1,t,energy(obj,x));
-      
-      if obj.lqr.isVerified(x)
+      if false; %obj.lqr.isVerified(x)
         u = obj.lqr.control(t,x);
       else
         Etilde = energy(obj,x) - energy(obj,obj.xG);
-        scope('Acrobot','Etilde',1,t,Etilde);
+        scope('Acrobot','Etilde',1,t,Etilde,'r');
         
         theta2ddot_d = - obj.k1*x(2) - obj.k2*x(4) + sat(obj.k3*Etilde*x(3),obj.k3limit);
-        scope('Acrobot','theta2ddot_d',1,t,theta2ddot_d);
+        scope('Acrobot','theta2ddot_d',2,t,theta2ddot_d);
         u = collocated_pfl(obj,x,theta2ddot_d);
       end
       
@@ -56,8 +54,8 @@ classdef Spong96 < Control
     lqr;  % The LQR controller at the top
     xG = [pi;0;0;0];  % The goal state
     uG = 0;           % Equilibrium torque at the goal state
-    k1 = 10;  % x(2) D gain 
-    k2 = 5;   % x(4) D gain
+    k1 = 0;%10;  % x(2) D gain 
+    k2 = 0;%5;   % x(4) D gain
     k3 = 0.3; % Etilde gain
     k3limit = 100;  % Etilde desired q2ddot limit
   end

@@ -2,7 +2,13 @@ package robotlib.shared;
 
 struct lcmt_scope_data
 {
-  int64_t timestamp;
-  int64_t scope_id;
-  double data;
+  // plot settings (shouldn't change often):
+  int64_t scope_id;      // which subplot to draw in
+  int32_t datalen;       // the size of the data vector sent with every packet
+  int32_t num_points;    // the length of the history to use for this trace 
+  string linespec;       // matlab plot command linespec 
+
+  // unique data from this packet:
+  int64_t timestamp;     // a timestamp (typically in ms)
+  double data[datalen];  // the actual data to plot
 }
