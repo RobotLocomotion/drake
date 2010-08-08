@@ -5,6 +5,6 @@ pv = PendulumVisualizer;
 c = PendulumEnergyShaping(pd);
 
 for i=1:5
-  xtraj = simulate(pd,[0 6],randn(2,1),c);
+  xtraj = simulate(pd,c,[0 6]);
   playback(pv,xtraj);
 end

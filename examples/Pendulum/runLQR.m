@@ -17,7 +17,7 @@ bndr = repmat(c.x0,1,2*K) + ...
 for i = 1:2*K
     x0 = bndr(:,i);
     bVerify = c.isVerified(x0);
-    xtraj=simulate(pd,[0 3],x0,c);
+    xtraj=simulate(pd,c,[0 3],x0);
     playback(pv,xtraj);
     breaks=xtraj.getBreaks();
     xf = xtraj.eval(breaks(end));

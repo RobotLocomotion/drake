@@ -16,8 +16,8 @@ scope_data=[];
 
 num_points = 2000;  % todo: get this from lcm message
 
-h=figure(1); 
-set(h,'MenuBar','none','Renderer','OpenGL','Toolbar','none','DoubleBuffer','on'); 
+h=figure(103); 
+set(h,'Name',['LCM Scope: ',robotname],'NumberTitle','off','MenuBar','none','Renderer','OpenGL','Toolbar','none','DoubleBuffer','on'); 
 setAlwaysOnTop(h,true); 
 hold on; 
 

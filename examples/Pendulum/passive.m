@@ -4,5 +4,5 @@ function passive
 pd = PendulumDynamics;
 pv = PendulumVisualizer;
 
-traj = simulate(pd,[0 5]);
+traj = simulate(pd,ConstantControl(0),[0 5]);
 playback(pv,traj);
