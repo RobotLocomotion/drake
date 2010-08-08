@@ -16,6 +16,10 @@ classdef Spong96 < Control
     end
     
     function u = control(obj,t,x)
+      scope('Acrobot','Energy',1,t,energy(obj,x));
+      u = 0;
+      return;
+      
       if obj.lqr.isVerified(x)
         u = obj.lqr.control(t,x);
       else
@@ -35,8 +39,10 @@ classdef Spong96 < Control
   
     function [E,T,U] = energy(obj,x)
       c = cos(x(1:2,:)); s = sin(x(1:2,:)); c12 = cos(x(1,:)+x(2,:));
-      T = .5*(obj.dyn.I1 + obj.dyn.m2*obj.dyn.l1^2 + obj.dyn.I2 + 2*obj.dyn.m2*obj.dyn.l1*obj.dyn.lc2*c(2,:)).*x(3,:).^2 + .5*obj.dyn.I2*x(4,:).^2 + (obj.dyn.I2 + obj.dyn.m2*obj.dyn.l1*obj.dyn.lc2*c(2,:)).*x(3,:).*x(4,:);
-      U = -obj.dyn.m1*obj.dyn.g*obj.dyn.lc1*c(1,:) - obj.dyn.m2*obj.dyn.g*(obj.dyn.l1*c(1,:) + obj.dyn.l2*c12);
+      m1=obj.dyn.m1; m2=obj.dyn.m2; l1=obj.dyn.l1; g=obj.dyn.g; lc1=obj.dyn.lc1; lc2=obj.dyn.lc2; I1=obj.dyn.I1; I2=obj.dyn.I2; b1=obj.dyn.b1; b2=obj.dyn.b2;
+      
+      T = .5*(I1 + m2*l1^2 + I2 + 2*m2*l1*lc2*c(2,:)).*x(3,:).^2 + .5*I2*x(4,:).^2 + (I2 + m2*l1*lc2*c(2,:)).*x(3,:).*x(4,:);
+      U = -m1*g*lc1*c(1,:) - m2*g*(l1*c(1,:) + lc2*c12);
       E = T+U;
     end
 
