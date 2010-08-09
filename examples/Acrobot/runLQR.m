@@ -4,6 +4,10 @@ d = AcrobotDynamics;
 v = AcrobotVisualizer(d);
 c = AcrobotLQR(d);
 
+
+%options = struct('plant_order',3);
+%c = c.verify(options);
+
 c.rho
 
 for i = 1:5

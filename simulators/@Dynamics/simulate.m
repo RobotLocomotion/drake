@@ -33,7 +33,8 @@ g_scope_enable = sebk;
   function status = outfun(t,x,flag)
     if (isempty(flag))
       g_scope_enable = true;
-      u = control.control(t(end),x(:,end));  % run control in case there were any scopes
+%      u = control.control(t(end),x(:,end));  % run control in case there were any scopes
+      closed_loop_dynamics(t(end),x(:,end));
       g_scope_enable = false;
     end
     status=0;
