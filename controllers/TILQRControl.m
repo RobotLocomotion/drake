@@ -56,12 +56,14 @@ classdef TILQRControl < LQRControl
     end
     
     function J = costToGo(obj,t,x)
+      % Evaluates x'*S*x using the Riccati soln
       x = wrap(obj,obj.x0,x);
       xbar = x-repmat(obj.x0,1,size(x,2));
       J = sum((obj.S*xbar).*xbar,1);
     end
 
     function [obj,rho] = verify(obj,options)
+      % Estimates the region of attraction of the controller
       if (nargin<3) options = struct(); end
       if (obj.control_dt>0) error('not implemented yet'); end
       %      rho =
@@ -71,6 +73,7 @@ classdef TILQRControl < LQRControl
     end
     
     function [bVerified,verified_time,confidence] = isVerified(obj,x,time_to_check)
+      % Check if the current state is inside the estimated region of attraction
       if (isempty(obj.rho))  % need to run verify() first
         bVerified = false;
         verified_time = 0; 
@@ -83,6 +86,7 @@ classdef TILQRControl < LQRControl
     end
     
     function plotNominal(obj,options)
+      % plots the goal
       nX=length(obj.x0);
       if (nargin<2) options=struct(); end
       if (~isfield(options,'plotDims')) options.plotDims = [1,2]; end
@@ -105,6 +109,7 @@ classdef TILQRControl < LQRControl
     end
     
     function plotFunnel(obj,options)
+      % plots the funnel (in 2D)
       % Plot Funnel (2D)
       %  Options:
       %    Nsamples
@@ -128,6 +133,8 @@ classdef TILQRControl < LQRControl
     end
     
     function plotSat(obj,domain,options)
+      % plots the input saturation constraints in state space
+      
       % todo: handle plotDims, etc.
 
       domain=reshape(domain,[],1);  % make sure it's a column vector

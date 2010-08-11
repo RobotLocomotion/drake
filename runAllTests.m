@@ -1,7 +1,7 @@
 function runAllTests(bAbortOnFail)
 
-% Recurses through the robotlib directories, running all test scripts (in 
-% test subdirectories) and all methods/scripts in the examples directory.
+% Recurses through the robotlib directories, running all test scripts 
+% (in test subdirectories) and all methods/scripts in the examples directory.
 %   Usage:  run_all_tests([bAbortOnFail]);
 %   Defaults: bAbortOnFail = true;
 %

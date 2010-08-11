@@ -1,5 +1,5 @@
 function configure
-
+% Checks dependencies and sets up matlab path.
 % Searches the machine for necessary support programs, and generates
 % config.mat.  If required tools aren't found, it tries to be helpful in
 % directing you to their location.
