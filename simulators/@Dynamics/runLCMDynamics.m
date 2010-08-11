@@ -6,6 +6,7 @@ function timerobj = runLCMDynamics(obj,lcm_coder,dt,x0,visualizer)
 %   
 %   The default value for dt is .01.
 %   The default value for x0 is obj.getInitialState().
+%   Input values of [] for dt or x0 will also result in using the defaults.
 
 checkDependency('lcm_enabled');
 
@@ -16,8 +17,8 @@ aggregator.setMaxMessages(1);  % make it a last-message-only queue
 name=lcm_coder.getRobotName();
 lc.subscribe([lower(name),'_input'],aggregator);
 
-if (nargin<3) dt = 0.01; end
-if (nargin<4) x0 = getInitialState(obj); end
+if (nargin<3 || isempty(dt)) dt = 0.01; end
+if (nargin<4 || isempty(x0)) x0 = getInitialState(obj); end
 if (nargin<5) visualizer=[]; end
 
 if (dt<.001) 

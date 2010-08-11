@@ -4,8 +4,8 @@
 #LCMFILES = $(wildcard *.lcm)
 
 LCMFILES = shared/lcmt_scope_data.lcm \
-		examples/Pendulum/lcmt_pendulum_input.lcm examples/Pendulum/lcmt_pendulum_state.lcm
-
+		examples/Pendulum/lcmt_pendulum_input.lcm examples/Pendulum/lcmt_pendulum_state.lcm \
+    examples/PerchingGlider/lcmt_glider_input.lcm examples/PerchingGlider/lcmt_glider_state.lcm
 
 
 LCM_HFILES = $(LCMFILES:%.lcm=%.h)

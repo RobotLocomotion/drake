@@ -1,0 +1,14 @@
+package robotlib.examples.PerchingGlider;
+
+struct lcmt_glider_state
+{
+  int64_t timestamp; 
+
+  double x;
+  double z;
+  double theta;
+  double phi;
+  double xdot;
+  double zdot;
+  double thetadot;
+}
