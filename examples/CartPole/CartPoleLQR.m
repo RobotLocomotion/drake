@@ -1,12 +1,13 @@
-classdef PendulumLQR < TILQRControl
+classdef CartPoleLQR < TILQRControl
 
   methods
-    function obj = PendulumLQR(dyn)
-      typecheck(dyn,'PendulumDynamics');
-
-      Q = diag([10,1]); R = 1;
-      obj = obj@TILQRControl(dyn,[pi;0],0,Q,R);
-      obj = setWrapping(obj,[1,0],[-pi/2,3*pi/2;-inf,inf]);
+    function obj = CartPoleLQR(dyn)
+      typecheck(dyn,'CartPoleDynamics');
+      
+      Q = diag([100,10,1,1]); R = 10;
+      xG = [0;pi;0;0]; uG = 0;
+      obj = obj@TILQRControl(dyn,xG,uG,Q,R);
+      obj = setWrapping(obj,[0,1,0,0],[-inf,inf;0,2*pi;-inf,inf;-inf,inf]);
       obj.control_dt = 0;
       
       if (checkDependency('spot_enabled'))
