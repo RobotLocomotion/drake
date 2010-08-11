@@ -1,6 +1,6 @@
 package robotlib.examples.Pendulum;
 
-struct lcmt_pendulum_input
+struct lcmt_pendulum_u
 {
 	int64_t timestamp;
 

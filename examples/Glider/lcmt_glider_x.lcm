@@ -1,6 +1,6 @@
-package robotlib.examples.PerchingGlider;
+package robotlib.examples.Glider;
 
-struct lcmt_glider_state
+struct lcmt_glider_x
 {
   int64_t timestamp; 
 

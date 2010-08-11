@@ -8,7 +8,7 @@ aggregator = lcm.lcm.MessageAggregator();
 aggregator.setMaxMessages(1);  % make it a last-message-only queue
 
 name=lcm_coder.getRobotName();
-lc.subscribe([lower(name),'_state'],aggregator);
+lc.subscribe([lower(name),'_xhat'],aggregator);
 
 % just draw as fast as I can...
 while true

@@ -1,8 +1,0 @@
-package robotlib.examples.PerchingGlider;
-
-struct lcmt_glider_input
-{
-  int64_t timestamp; 
-
-  double phidot;
-}

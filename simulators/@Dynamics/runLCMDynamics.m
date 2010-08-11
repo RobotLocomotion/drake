@@ -15,7 +15,7 @@ aggregator = lcm.lcm.MessageAggregator();
 aggregator.setMaxMessages(1);  % make it a last-message-only queue
 
 name=lcm_coder.getRobotName();
-lc.subscribe([lower(name),'_input'],aggregator);
+lc.subscribe([lower(name),'_u'],aggregator);
 
 if (nargin<3 || isempty(dt)) dt = 0.01; end
 if (nargin<4 || isempty(x0)) x0 = getInitialState(obj); end
@@ -56,7 +56,7 @@ start(timerobj);
     end
     
     xmsg = encodeState(lcm_coder,t,x);
-    lc.publish([lower(name),'_state'], xmsg);
+    lc.publish([lower(name),'_xhat'], xmsg);
   end
 
 end

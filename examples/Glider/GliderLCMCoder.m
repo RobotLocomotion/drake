@@ -4,12 +4,12 @@ classdef PerchingGliderLCMCoder < LCMCoder
   methods
     function str = getRobotName(obj)
       % robot name
-      str = 'PerchingGlider';
+      str = 'Glider';
     end
     
     function msg = encodeState(obj,t,x)
       % encodes the state message
-      msg = robotlib.examples.PerchingGlider.lcmt_glider_state();
+      msg = robotlib.examples.PerchingGlider.lcmt_glider_x();
       msg.timestamp = t*1000;
       msg.x = x(1);
       msg.z = x(2);
@@ -22,21 +22,21 @@ classdef PerchingGliderLCMCoder < LCMCoder
     
     function [x,t] = decodeState(obj,msg)
       % decodes the state message
-      msg = robotlib.examples.Pendulum.lcmt_glider_state(msg.data);
+      msg = robotlib.examples.Pendulum.lcmt_glider_x(msg.data);
       t = msg.timestamp/1000;
       x = [msg.x; msg.z; msg.theta; msg.phi; msg.xdot; msg.zdot; msg.thetaDot];
     end
     
     function msg = encodeInput(obj,t,u)
       % encodes the input message
-      msg = robotlib.examples.Pendulum.lcmt_glider_input();
+      msg = robotlib.examples.Pendulum.lcmt_glider_u();
       msg.timestamp = t*1000;
       msg.phidot = u(1);
     end
     
     function [u,t] = decodeInput(obj,msg)
       % decodes the input message
-      msg = robotlib.examples.Pendulum.lcmt_glider_input(msg.data);
+      msg = robotlib.examples.Pendulum.lcmt_glider_u(msg.data);
       t = msg.timestamp/1000;
       u = msg.phidot;
     end
