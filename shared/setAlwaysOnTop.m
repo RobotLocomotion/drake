@@ -44,6 +44,8 @@ if ~islogical(bool) || length(bool)~=1
     error('SETALWAYSONTOP:boolean','Second Arg. Must be a Boolean Scalar')
 end
 
+pause(.1);  % seems to be needed on some platforms: http://www.mathworks.com/matlabcentral/fileexchange/14103-set-figure-window-to-be-always-on-top
+
 % Flush the Event Queue of Graphic Objects and Update the Figure Window.
 drawnow expose
 
