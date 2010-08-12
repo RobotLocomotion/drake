@@ -10,7 +10,7 @@ classdef CartPoleDynamics < ManipulatorDynamics
   methods
     function obj = CartPoleDynamics
       obj = obj@ManipulatorDynamics(2,1);
-%      obj = setInputLimits(obj,-3,3);
+      obj = setInputLimits(obj,-30,30);
     end
         
     function [H,C,B] = manipulatorDynamics(obj,q,qd)

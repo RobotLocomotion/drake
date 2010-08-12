@@ -18,14 +18,14 @@ classdef EnergyShaping < Control
         u = obj.lqr.control(t,x);
       else
         Etilde = energy(obj,x) - energy(obj,obj.xG);
-        scope('Acrobot','Etilde',2,t,Etilde,'r');
+        scope('Acrobot','Etilde',t,Etilde,struct('scope_id',2,'linespec','r'));
 
         q2wrapped = mod(x(2)+pi,2*pi)-pi;
         u = -obj.k1*q2wrapped - obj.k2*x(4) -obj.k3*x(4)*Etilde;
       end
       
-      scope('Acrobot','tau',1,t,u);
-      scope('Acrobot','lqr',1,t,10*double(obj.lqr.isVerified(x)),'r');
+      scope('Acrobot','tau',t,u);
+      scope('Acrobot','lqr',t,10*double(obj.lqr.isVerified(x)),struct('linespec','r'));
       
     end
     

@@ -20,12 +20,10 @@ for i = 1:2*K
     bVerify = c.isVerified(x0);
     xtraj=simulate(d,c,[0 6],x0);
     figure(1);
-%    fnplt(xtraj)
     b = 0:0.1:6;
     x = eval(xtraj,b);
     plot(b,x);
     playback(v,xtraj);
-    keyboard;
     breaks=xtraj.getBreaks();
     xf = xtraj.eval(breaks(end));
     if (bVerify && any(abs(xf-c.x0)>.1)) error('Verified initial condition didn''t make it to the goal'); end

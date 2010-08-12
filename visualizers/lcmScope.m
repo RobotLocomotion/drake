@@ -1,18 +1,20 @@
-function lcmScope(robotname)
+function lcmScope(robotname,exitMatlabOnClose)
 
-if (nargin>0)
-  typecheck(robotname,'char');
+if (nargin<1)
+  robotname = '.*';
 else
-%  robotname = '.*';  % need to fix varname_index for this to work
-  error('you must specify a robot name: lcmScope(robotname)');
+  typecheck(robotname,'char');
 end
+if (nargin<2)
+  exitMatlabOnClose = false;
+end
+
 checkDependency('lcm_enabled');
 
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
 %aggregator.setMaxMessages(1);  % make it a last-message-only queue
 
-varname_index = length(robotname)+length('_scope_')+1;
 lc.subscribe([lower(robotname),'_scope_.*'],aggregator);
 
 scope_data=[];
@@ -22,7 +24,8 @@ scope_cols = 1;
 
 warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
 h=figure(103); clf;
-set(h,'Name',['LCM Scope: ',robotname],'NumberTitle','off','MenuBar','none','Renderer','OpenGL','Toolbar','none','DoubleBuffer','on'); 
+set(h,'Name',['LCM Scope: ',robotname],'NumberTitle','off','Renderer','OpenGL','DoubleBuffer','on');%'MenuBar','none','Toolbar','none', 
+if (exitMatlabOnClose) set(h,'CloseRequestFcn','delete(gcf); exit;'); end
 setAlwaysOnTop(h,true); 
 hold on; 
 
@@ -31,12 +34,13 @@ while true
   if (isempty(msg)) 
     drawnow;
     while(isempty(msg))  % after I've drawn once, block for long periods until a new message arrives
-      msg = getNextMessage(aggregator,1000);  
+      msg = getNextMessage(aggregator,1000);
+      drawnow;
     end
   end
   
   channel = char(msg.channel);
-  varname = channel(varname_index:end);
+  varname = channel((strfind(channel,'_scope_')+7):end);
   data = robotlib.shared.lcmt_scope_data(msg.data);
 
   breset = false;
@@ -51,12 +55,10 @@ while true
   end
 
   if (breset)  % reset the current variable.  redraw the current axis.
-    t = data.timestamp/1000;
-    val = data.data;
     num_points = data.num_points;
     d=[];
-    d.t = repmat(data.timestamp/1000,1,num_points);
-    d.val = repmat(data.data(:),1,num_points);
+    d.x = repmat(data.xdata,1,num_points);
+    d.y = repmat(data.ydata,1,num_points);
     d.scope_id = data.scope_id;
 
     breplot_all = false;
@@ -80,10 +82,10 @@ while true
       scope_data = plotTrace(scope_data,varname,scope_rows,scope_cols);
     end
   else
-    d.t = [d.t(2:end),data.timestamp/1000];
-    d.val = [d.val(:,2:end),data.data(:)];
+    d.x = [d.x(2:end),data.xdata];
+    d.y = [d.y(2:end),data.ydata];
     scope_data = setfield(scope_data,varname,d);
-    set(d.handle,'XData',d.t,'YData',d.val);
+    set(d.handle,'XData',d.x,'YData',d.y);
   end
   
 end  
@@ -95,7 +97,7 @@ function scope_data = plotTrace(scope_data,varname,scope_rows,scope_cols)
   d = getfield(scope_data,varname);
   hsubfig = subplot(scope_rows,scope_cols,d.scope_id);
   hold on;
-  d.handle=plot(d.t,d.val,d.linespec);
+  d.handle=plot(d.x,d.y,d.linespec);
   [legh,objh,outh,outm] = legend(hsubfig);
   if (isempty(outh)) legend(d.handle,varname);
   else
@@ -106,10 +108,9 @@ function scope_data = plotTrace(scope_data,varname,scope_rows,scope_cols)
 end
 
 function bchanged = fieldchanged(scope_var,data)
-  bchanged = (data.timestamp/1000 < scope_var.t(end)) || ...
+  bchanged = (data.resetOnXval && data.xdata < scope_var.x(end)) || ...
     (data.scope_id ~= scope_var.scope_id) || ...
-    (data.datalen ~= size(scope_var.val,1)) || ...
-    (data.num_points ~= length(scope_var.t)) || ...
+    (data.num_points ~= length(scope_var.x)) || ...
     ~strcmpi(char(data.linespec),scope_var.linespec);
 end
 

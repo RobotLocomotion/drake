@@ -1,9 +1,14 @@
-function xtraj = simulate(obj,control,tspan,x0)
+function xtraj = simulate(obj,control,tspan,x0,visualizer)
 % Integrates the (potentially closed-loop) dynamics forward.
 
 typecheck(control,'Control');
 typecheck(tspan,'double');
-if (nargin>3) typecheck(x0,'double'); else x0 = getInitialState(obj); end
+if (nargin<4 || isempty(x0))
+  x0 = getInitialState(obj);
+else
+  typecheck(x0,'double');
+end
+if (nargin<5) visualizer = []; end
 
 if (length(x0)~=obj.num_states) error('x0 is the wrong size'); end
 if (obj.num_inputs ~= control.num_inputs) error('dynamics and control have a different number of inputs'); end
@@ -36,6 +41,8 @@ g_scope_enable = sebk;
 %      u = control.control(t(end),x(:,end));  % run control in case there were any scopes
       closed_loop_dynamics(t(end),x(:,end));
       g_scope_enable = false;
+
+      if (~isempty(visualizer)) visualizer.draw(t(end),x(:,end)); end
     end
     status=0;
   end

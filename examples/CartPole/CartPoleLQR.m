@@ -15,7 +15,7 @@ classdef CartPoleLQR < TILQRControl
         obj = obj.verify(options);
       else
         warning('Since you don''t have SPOT, I''ll just use a reasonable guess for the region of attraction');
-        obj.rho = 4;
+        obj.rho = 1e3;
       end
     end
   end

@@ -31,15 +31,15 @@ classdef Spong96 < Control
         u = obj.lqr.control(t,x);
       else
         Etilde = energy(obj,x) - energy(obj,obj.xG);
-        scope('Acrobot','Etilde',2,t,Etilde,'r');
+        scope('Acrobot','Etilde',t,Etilde,struct('linespec','r','scope_id',2));
         
         q2wrapped = mod(x(2)+pi,2*pi)-pi;
         q2dd_d = - obj.k1*q2wrapped - obj.k2*x(4) + obj.k3*sat(Etilde*x(3),obj.k3limit);
         u = collocated_pfl(obj,x,q2dd_d);
       end
       
-      scope('Acrobot','tau',1,t,u);
-      scope('Acrobot','lqr',1,t,10*double(obj.lqr.isVerified(x)),'r');
+      scope('Acrobot','tau',t,u);
+      scope('Acrobot','lqr',t,10*double(obj.lqr.isVerified(x)),struct('linespec','r'));
       
         function u = sat(u,lim)
           u = max(min(u,lim),-lim);
