@@ -51,15 +51,18 @@ addpath([conf.root,'/shared']);
 % todo: setup java classpath (not hard to do it once... but how can I set
 % it up for future sessions as well?  maybe write to startup.m, or prompt
 % user to do it?)
-if (~exist('robotlib.shared.lcmt_scope_data'))
-  error(['Can''t find robotlib files in your matlab java classpath.  I recommend doing the following:',10,' 1) >> edit startup.m',10,' 2) add the line "javaaddpath(''',conf.root,'/robotlib.jar'');" to the end of startup.m',10,' 3) >> startup.m']);
-end
 
 % check for all dependencies
 
 conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
 if (~conf.lcm_enabled)
   disp(' LCM not found.  LCM support will be disabled.  To re-enable, add lcm-###.jar to your matlab classpath (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.5.1.jar'') into your startup.m .');
+elseif (~exist('robotlib.shared.lcmt_scope_data'))
+  % todo: if robotlib java should ever exist outside of lcm, then I can
+  % change this, but i'll need to check for a class that is not
+  % lcm-dependent (lcmt_scope_data fails if robotlib.jar is in the
+  % classpath but lcm.jar is not)
+  error(['Can''t find robotlib files in your matlab java classpath.  I recommend doing the following:',10,' 1) >> edit startup.m',10,' 2) add the line "javaaddpath(''',conf.root,'/robotlib.jar'');" to the end of startup.m',10,' 3) >> startup.m']);
 end
 
 conf.snopt_enabled = logical(exist('snopt'));
