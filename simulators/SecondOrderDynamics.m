@@ -3,13 +3,13 @@ classdef SecondOrderDynamics < Dynamics
 %   A specialization of the Dynamics class for systems of second order.  
   
   methods
-    function obj = SecondOrderDynamics(num_q, num_inputs)
-    % SecondOrderDynamics(num_q, num_inputs)
+    function obj = SecondOrderDynamics(num_q, num_u)
+    % SecondOrderDynamics(num_q, num_u)
     %   Constructs a SecondOrderDynamics object with num_q configuration
-    %   variables (implying num_q*2 states) and num_inputs control inputs.
+    %   variables (implying num_q*2 states) and num_u control inputs.
 
 %      if (nargin>0)
-        obj = obj@Dynamics(num_q*2,num_inputs);
+        obj = obj@Dynamics(num_q*2,num_u);
 %      end
     end
   end
@@ -26,16 +26,16 @@ classdef SecondOrderDynamics < Dynamics
     
     function obj = setNumQ(obj,num_q)
     % Guards the num_q variable to make sure it stays consistent 
-    % with num_states.
-      obj = setNumStates(obj,num_q*2);
+    % with num_x.
+      obj = setNumX(obj,num_q*2);
     end
 
-    function obj = setNumStates(obj,num_states)
-    % Guards the num_states variable to make sure it stays consistent
+    function obj = setNumX(obj,num_x)
+    % Guards the num_x variable to make sure it stays consistent
     % with num_q
-      if (num_states<2 || rem(num_states,2)) error('num_states must be even and >= 2 for a SecondOrderDynamics'); end 
-      obj.num_q = num_states/2;
-      obj = setNumStates@Dynamics(obj,num_states);
+      if (num_x<2 || rem(num_x,2)) error('num_x must be even and >= 2 for a SecondOrderDynamics'); end 
+      obj.num_q = num_x/2;
+      obj = setNumX@Dynamics(obj,num_x);
     end
     
     function xdot = dynamics(obj,t,x,u);
@@ -50,8 +50,8 @@ classdef SecondOrderDynamics < Dynamics
       if (nargin<5) order=1; end
       q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
       df = obj.sodynamicsGradients(t,q,qd,u,order);
-      df{1} = [zeros(obj.num_q,1+obj.num_q), eye(obj.num_q), zeros(obj.num_q,obj.num_inputs); df{1}];
-      z = zeros(obj.num_q,1+2*obj.num_q+obj.num_inputs);
+      df{1} = [zeros(obj.num_q,1+obj.num_q), eye(obj.num_q), zeros(obj.num_q,obj.num_u); df{1}];
+      z = zeros(obj.num_q,1+2*obj.num_q+obj.num_u);
       for o=2:length(df)
         df{o} = addzeros(df{o});
       end

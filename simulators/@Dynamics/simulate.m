@@ -10,12 +10,12 @@ else
 end
 if (nargin<5) visualizer = []; end
 
-if (length(x0)~=obj.num_states) error('x0 is the wrong size'); end
-if (obj.num_inputs ~= control.num_inputs) error('dynamics and control have a different number of inputs'); end
-if (control.num_states~=0 && obj.num_states ~= control.num_states) error('dynamics and control have a different number of states'); end
+if (length(x0)~=obj.num_x) error('x0 is the wrong size'); end
+if (obj.num_u ~= control.num_u) error('dynamics and control have a different number of inputs'); end
+if (control.num_x~=0 && obj.num_x ~= control.num_x) error('dynamics and control have a different number of states'); end
 
 if (control.control_dt~=0) error('sampled-data control is not re-implemented yet'); end
-if (length(closed_loop_dynamics(tspan(1),x0))~=obj.num_states) error('the closed loop dynamics is not returning an xdot of the correct size'); end
+if (length(closed_loop_dynamics(tspan(1),x0))~=obj.num_x) error('the closed loop dynamics is not returning an xdot of the correct size'); end
 
 global g_scope_enable;
 sebk = g_scope_enable;

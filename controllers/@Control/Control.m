@@ -2,10 +2,10 @@ classdef Control
 % An abstract class that provides the control interface and support routines.
   
   methods
-    function obj = Control(num_states,num_inputs)
-      % Construct new controller which expects num_states and outputs num_inputs.
-      obj = setNumStates(obj,num_states);
-      obj = setNumInputs(obj,num_inputs);
+    function obj = Control(num_x,num_u)
+      % Construct new controller which expects num_x and outputs num_u.
+      obj = setNumX(obj,num_x);
+      obj = setNumU(obj,num_u);
     end
   end
   
@@ -21,24 +21,24 @@ classdef Control
       error('control gradients not implemented yet');
     end
     
-    function obj = setNumStates(obj,num_states)
+    function obj = setNumX(obj,num_x)
       % Guards the number of feedback state variables
-      if (num_states<0) error('num_states must be >=0'); end
-      obj.num_states = num_states;
+      if (num_x<0) error('num_x must be >=0'); end
+      obj.num_x = num_x;
     end
         
-    function obj = setNumInputs(obj,num_inputs)
+    function obj = setNumU(obj,num_u)
       % Guards the number of dynamics inputs (outputs of the controller)
-      if (num_inputs<1) error('num_inputs must be >0'); end
-      obj.num_inputs = num_inputs;
+      if (num_u<1) error('num_u must be >0'); end
+      obj.num_u = num_u;
     end
 
     
   end
     
   properties (SetAccess=protected)
-    num_states;      % the number of dynamics states (feedback inputs to controller)
-    num_inputs;      % the number of dynamics inputs (outputs of the controller)
+    num_x;      % the number of dynamics states (feedback inputs to controller)
+    num_u;      % the number of dynamics inputs (outputs of the controller)
     control_dt = 0;  % zero for ct control
   end
   

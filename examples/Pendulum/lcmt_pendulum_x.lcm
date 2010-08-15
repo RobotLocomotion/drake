@@ -1,4 +1,3 @@
-package robotlib.examples.Pendulum;
 
 struct lcmt_pendulum_x
 {

@@ -26,10 +26,10 @@ info.initialpwd = pwd;
 
 disp('');
 
-pause off;
+%pause off;
 info=run_tests_in('.',info,true);
 info=run_tests_in('examples',info,false);
-pause on;
+%pause on;
 
 fprintf(1,'\n Executed %d tests.  %d passed.  %d failed.\n',info.passcount+info.failcount, info.passcount, info.failcount);
 

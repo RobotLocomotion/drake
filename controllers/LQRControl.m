@@ -4,9 +4,9 @@ classdef LQRControl < Control
 % Type <a href="matlab: help lqr_trajectory>lqr_trajectory">help lqr_trajectory>lqr_trajectory</a> for help with the constructor.
 
   methods 
-    function obj = LQRControl(num_states,num_inputs)
+    function obj = LQRControl(num_x,num_u)
       % construct an LQR controller
-      obj = obj@Control(num_states,num_inputs);
+      obj = obj@Control(num_x,num_u);
     end
   end
   

@@ -1,4 +1,3 @@
-package robotlib.examples.CartPole;
 
 struct lcmt_cartpole_x
 {

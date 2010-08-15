@@ -12,7 +12,9 @@ lc.subscribe([lower(name),'_xhat'],aggregator);
 
 % just draw as fast as I can...
 while true
-  xmsg = getNextMessage(aggregator);
-  [x,t] = decodeState(lcm_coder,xmsg);
-  draw(obj,t,x,[]);
+  xmsg = getNextMessage(aggregator,1000);
+  if (~isempty(xmsg))
+    [x,t] = decodeX(lcm_coder,xmsg);
+    draw(obj,t,x,[]);
+  end
 end

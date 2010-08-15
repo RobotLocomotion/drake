@@ -7,7 +7,7 @@ classdef CartPoleLCMCoder < LCMCoder
       str = 'CartPole';
     end
     
-    function msg = encodeState(obj,t,x)
+    function msg = encodeX(obj,t,x)
       % encodes the state message
       msg = robotlib.examples.CartPole.lcmt_cartpole_x();
       msg.timestamp = t*1000;
@@ -17,21 +17,21 @@ classdef CartPoleLCMCoder < LCMCoder
       msg.thetaDot = x(4);
     end
     
-    function [x,t] = decodeState(obj,msg)
+    function [x,t] = decodeX(obj,msg)
       % decodes the state message
       msg = robotlib.examples.CartPole.lcmt_cartpole_x(msg.data);
       x = [msg.x; msg.theta; msg.xdot; msg.thetaDot];
       t = msg.timestamp/1000;
     end
     
-    function msg = encodeInput(obj,t,u)
+    function msg = encodeU(obj,t,u)
       % encodes the input message
       msg = robotlib.examples.CartPole.lcmt_cartpole_u();
       msg.timestamp = t*1000;
       msg.f = u(1);
     end
     
-    function [u,t] = decodeInput(obj,msg)
+    function [u,t] = decodeU(obj,msg)
       % decodes the input message
       msg = robotlib.examples.CartPole.lcmt_cartpole_u(msg.data);
       u = msg.f;

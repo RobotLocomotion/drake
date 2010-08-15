@@ -26,7 +26,7 @@ for i = 1:2*K
     playback(v,xtraj);
     breaks=xtraj.getBreaks();
     xf = xtraj.eval(breaks(end));
-    if (bVerify && any(abs(xf-c.x0)>.1)) error('Verified initial condition didn''t make it to the goal'); end
+    if (checkDependency('spot_enabled') && bVerify && any(abs(xf-c.x0)>.1)) error('Verified initial condition didn''t make it to the goal'); end
 end
 
 end

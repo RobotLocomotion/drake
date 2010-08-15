@@ -1,4 +1,3 @@
-package robotlib.shared;
 
 struct lcmt_scope_data
 {

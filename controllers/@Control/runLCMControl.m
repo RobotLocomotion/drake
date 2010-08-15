@@ -28,11 +28,11 @@ end
     
     if (aggregator.numMessagesAvailable()>0)
       xmsg = getNextMessage(aggregator);
-      [x,t] = decodeState(lcm_coder,xmsg);
+      [x,t] = decodeX(lcm_coder,xmsg);
 
       u = obj.control(t,x);
       
-      umsg = encodeInput(lcm_coder,t,u);
+      umsg = encodeU(lcm_coder,t,u);
       lc.publish([lower(name),'_u'], umsg);
     end
   end

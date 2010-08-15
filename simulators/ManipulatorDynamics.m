@@ -2,8 +2,8 @@ classdef ManipulatorDynamics < SecondOrderDynamics
 % An abstract class that wraps H(q)qddot + C(q,qdot,f_ext) = B(q)u.
 
   methods
-    function obj = ManipulatorDynamics(num_q, num_inputs)
-      obj = obj@SecondOrderDynamics(num_q,num_inputs);
+    function obj = ManipulatorDynamics(num_q, num_u)
+      obj = obj@SecondOrderDynamics(num_q,num_u);
     end
   end
   
