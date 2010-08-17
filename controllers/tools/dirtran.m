@@ -201,7 +201,7 @@ function [f,G] = userfun(w,dynamics,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options)
         t=dt*(i-1);
 
         xdot = dynamics.dynamics(t,xtape(:,i),utape(:,i));
-        dxdot = dynamics.dynamics_gradients(t,xtape(:,i),utape(:,i),1);
+        dxdot = dynamics.dynamicsGradients(t,xtape(:,i),utape(:,i),1);
         f = [f; xtape(:,i+1) - xtape(:,i) - dt*xdot];
         % df = df/d[T;xi;ui]
         df = -dt*dxdot{1};  
@@ -223,26 +223,26 @@ function [f,G] = userfun(w,dynamics,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options)
         % NOTE: this code currently assumes a zero-order hold on actions
         
         xdot = dynamics.dynamics(t,xtape(:,i),utape(:,i));
-        df = dynamics.dynamics_gradients(t,xtape(:,i),utape(:,i));
+        df = dynamics.dynamicsGradients(t,xtape(:,i),utape(:,i));
         k1 = dt*xdot;
         % dk1 = dk1/d[T;xi;ui]
         dk1 = dt*df{1};  
         dk1(:,1) = dk1(:,1) + ddtdT*xdot;
 
         xdot = dynamics.dynamics(t+dt/2,xtape(:,i)+k1/2,utape(:,i));
-        df = dynamics.dynamics_gradients(t+dt/2,xtape(:,i)+k1/2,utape(:,i),1);
+        df = dynamics.dynamicsGradients(t+dt/2,xtape(:,i)+k1/2,utape(:,i),1);
         k2 = dt*xdot;
         dk2 = dt*df{1}*[dtdT + ddtdT/2,zeros(1,nX+nU); dk1/2+[zeros(nX,1),eye(nX),zeros(nX,nU)]; zeros(nU,1+nX), eye(nU)];
         dk2(:,1) = dk2(:,1) + ddtdT*xdot;
         
         xdot = dynamics.dynamics(t+dt/2,xtape(:,i)+k2/2,utape(:,i));
-        df = dynamics.dynamics_gradients(t+dt/2,xtape(:,i)+k2/2,utape(:,i));
+        df = dynamics.dynamicsGradients(t+dt/2,xtape(:,i)+k2/2,utape(:,i));
         k3 = dt*xdot;
         dk3 = dt*df{1}*[dtdT + ddtdT/2,zeros(1,nX+nU); dk2/2+[zeros(nX,1),eye(nX),zeros(nX,nU)];  zeros(nU,1+nX), eye(nU)];  
         dk3(:,1) = dk3(:,1) + ddtdT*xdot;
 
         xdot = dynamics.dynamics(t+dt,xtape(:,i)+k3,utape(:,i+1));
-        df = dynamics.dynamics_gradients(t+dt,xtape(:,i)+k3,utape(:,i+1));
+        df = dynamics.dynamicsGradients(t+dt,xtape(:,i)+k3,utape(:,i+1));
         k4 = dt*xdot;
         dk4 = dt*df{1}*[dtdT + ddtdT,zeros(1,nX+nU); dk3+[zeros(nX,1),eye(nX),zeros(nX,nU)];  zeros(nU,1+nX), zeros(nU)];  
         dk4(:,1) = dk4(:,1) + ddtdT*xdot;

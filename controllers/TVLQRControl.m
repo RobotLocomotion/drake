@@ -23,6 +23,7 @@ classdef TVLQRControl < LQRControl
   
   methods
     function obj = TVLQRControl(dynamics,x0traj,u0traj,Q,R,Qf)
+      obj = obj@LQRControl(size(Q,1),size(R,1));
       if (nargin>0)
         obj.dynamics = dynamics;
         obj.x0 = x0traj;
@@ -46,7 +47,7 @@ classdef TVLQRControl < LQRControl
     end
     
     function [obj,K,S,Sdot] = design(obj)
-      obj.S = matrix_ode(obj.dynamics.odesolver,@(t,S)Sdynamics(t,S,obj.dynamics,obj.Q,obj.R,obj.x0,obj.u0),obj.tspan(end:-1:1),obj.Qf);
+      obj.S = matrixODE(obj.dynamics.ode_solver,@(t,S)Sdynamics(t,S,obj.dynamics,obj.Q,obj.R,obj.x0,obj.u0),obj.tspan(end:-1:1),obj.Qf,obj.dynamics.ode_options);
       obj.K = FunctionHandleTrajectory(@(t)Ksoln(t,obj.dynamics,obj.S,obj.R,obj.x0,obj.u0),[obj.x0.dim obj.u0.dim],obj.S.getBreaks());
       obj.Sdot = FunctionHandleTrajectory(@(t)Sdynamics(t,obj.S.eval(t),obj.dynamics,obj.Q,obj.R,obj.x0,obj.u0),[obj.x0.dim obj.x0.dim],obj.S.getBreaks());
 
@@ -60,7 +61,7 @@ classdef TVLQRControl < LQRControl
         x0 = xtraj.eval(t); u0 = utraj.eval(t);
         Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
         nX = length(x0); nU = length(u0);
-        df = dynamics.dynamics_gradients(t,x0,u0);
+        df = dynamics.dynamicsGradients(t,x0,u0);
         A = df{1}(:,1+(1:nX));
         B = df{1}(:,nX+1+(1:nU));
         Sdot = -(Q - S*B*Ri*B'*S + S*A + A'*S);
@@ -69,7 +70,7 @@ classdef TVLQRControl < LQRControl
       function K = Ksoln(t,dynamics,Straj,Rtraj,xtraj,utraj)
         S = Straj.eval(t); Ri = inv(Rtraj.eval(t)); x0=xtraj.eval(t); u0 = utraj.eval(t);
         nX = length(x0); nU = length(u0);
-        df = dynamics.dynamics_gradients(t,x0,u0);
+        df = dynamics.dynamicsGradients(t,x0,u0);
         B = df{1}(:,nX+1+(1:nU));
         K = Ri*B'*S;
       end

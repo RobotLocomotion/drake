@@ -3,7 +3,7 @@ function timerobj = runLCMControl(obj,lcm_coder)
 
 checkDependency('lcm_enabled');
 
-lc = lcm.lcm.LCM('udpm://239.255.76.67:7667?ttl=1');
+lc = lcm.lcm.LCM.getSingleton(); %('udpm://239.255.76.67:7667?ttl=1');
 
 %lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();

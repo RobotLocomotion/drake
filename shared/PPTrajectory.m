@@ -11,11 +11,11 @@ classdef PPTrajectory < Trajectory
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
     end
     function ydot = deriv(obj,t)
-      ydot = ppval_safe(fnder(obj.pp),t);
+      ydot = ppvalSafe(fnder(obj.pp),t);
     end
 
     function y = eval(obj,t)
-      y = ppval_safe(obj.pp,t);
+      y = ppvalSafe(obj.pp,t);
     end
 
     function dtraj = fnder(obj)
