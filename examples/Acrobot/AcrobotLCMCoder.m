@@ -20,7 +20,7 @@ classdef AcrobotLCMCoder < LCMCoder
     function [x,t] = decodeX(obj,msg)
       % decodes the state message
       msg = robotlib.examples.Acrobot.lcmt_acrobot_x(msg.data);
-      x = [msg.theta; msg.thetaDot];
+      x = [msg.theta1; msg.theta2; msg.theta1Dot; msg.thetaDot];
       t = msg.timestamp/1000;
     end
     
