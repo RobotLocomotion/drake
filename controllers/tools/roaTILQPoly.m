@@ -43,7 +43,7 @@ function rho = roaTILQPoly(x,u,f,x0,u0,K,S,options)
     A = double(subs(diff(f,x),[x;u],[x0;u0]));
     B = double(subs(diff(f,u),[x;u],[x0;u0]));
     T = balanceQuadForm(S,S*(A-B*K)+(A-B*K)'*S);
-    
+    T = eye(size(x,1)); % disable temporarily
     f = inv(T)*subss(f,x,x0+T*x); 
     K = K*T;
     S = T'*S*T;
@@ -139,7 +139,7 @@ end
 % Determine rho at which the controller enters a particular
 % saturation condition.
 function rhoi = saturation_qp(Q,xc,A,b)
-    xstar = quadprog(Q,-Q*xc,A,b,[],[],[],[],[],optimset('LargeScale','off'));
+    xstar = quadprog((Q+Q')/2,-Q*xc,A,b,[],[],[],[],[],optimset('LargeScale','off'));
     rhoi = (xstar-xc)'*Q*(xstar-xc);
 end
 
