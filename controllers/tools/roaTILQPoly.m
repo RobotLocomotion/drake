@@ -20,8 +20,8 @@
 %  epsilon -- Convergence rate for exponential stability.
 %  Umax -- m-by-1 upper limit on commands.
 %  Umin -- m-by-1 lower limit on commands.
-%
-function rho = roa_tilq_poly(x,u,f,x0,u0,K,S,options)
+%  rho0 -- Initial guess for rho (default: 1).
+function rho = roaTILQPoly(x,u,f,x0,u0,K,S,options)
     checkDependency('spot_enabled');
     if size(x0,1) ~= size(x,1), error('x and x0 do not match.'); end
     if size(u0,1) ~= size(u,1), error('u and u0 do not match.'); end
@@ -29,6 +29,7 @@ function rho = roa_tilq_poly(x,u,f,x0,u0,K,S,options)
     nu = size(u0,1);
     
     if nargin < 8, options = struct(); end
+    if ~isfield(options,'rho0'), options.rho0 = 1; end
     if ~isfield(options,'epsilon'), options.epsilon = 1e-3; end
     if options.epsilon < 0, error(['options.epsilon must be ' ...
                             'non-negative.']); end
@@ -37,6 +38,16 @@ function rho = roa_tilq_poly(x,u,f,x0,u0,K,S,options)
     if size(u0,2) ~= 1, error('u0 must be a column.'); end
     if size(S) ~= [nx nx], error('S size does not match.'); end
     if size(K) ~= [nu nu], error('K size does not match.'); end
+
+    % Begin change of basis
+    A = double(subs(diff(f,x),[x;u],[x0;u0]));
+    B = double(subs(diff(f,u),[x;u],[x0;u0]));
+    T = balanceQuadForm(S,S*(A-B*K)+(A-B*K)'*S);
+    
+    f = inv(T)*subss(f,x,x0+T*x); 
+    K = K*T;
+    S = T'*S*T;
+    % end change of basis
     
     V   = x'*S*x;  % Lyapunov Function
     W   = options.epsilon*V;    
@@ -57,7 +68,7 @@ function rho = roa_tilq_poly(x,u,f,x0,u0,K,S,options)
     
     ui = [];
     gi = [];
-    
+
     for i = 1:nu
         if options.Umax(i) < Inf  %  u0-Kx >= umax
             gmax = options.Umax(i) - (u0(i)-K(i,:)*x);
@@ -100,7 +111,7 @@ function rho = roa_tilq_poly(x,u,f,x0,u0,K,S,options)
         else
             rhoi = 0;
         end
-        fi(:,i) = subss(f,[x;u],[x+x0;us]);
+        fi(:,i) = subss(f,[u],[us]);
     end
 
     pi = diff(V,x)*fi + W;
@@ -112,7 +123,7 @@ function rho = roa_tilq_poly(x,u,f,x0,u0,K,S,options)
     end
 
     p0 = pi(origin);
-    
+
     if ~all(double(subs(p0,x,0*x)) == 0)
         error('x0 is not an equilibrium.');
     end
@@ -122,7 +133,7 @@ function rho = roa_tilq_poly(x,u,f,x0,u0,K,S,options)
                'options.epsilon):' num2str(max(eig(double(subs(diff(diff(p0,x)',x),x,0*x)))))]);
     end
 
-    rho = roa_locus_regions_test(x,V,pi',gi,rhoi);
+    rho = roa_locus_regions_test(x,V,pi',gi,rhoi,options.rho0);
 end
 
 % Determine rho at which the controller enters a particular
@@ -144,10 +155,12 @@ end
 %  rhoi -- l-by-1 positive numbers
 %
 %
-function rho = roa_locus_regions_test(x,V,pi,gi,rhoi)
+function rho = roa_locus_regions_test(x,V,pi,gi,rhoi,rho0)
     if nargin < 5
         error('See Usage.');
     end
+    min_iter = 5;
+    max_iter = 20;
 
     [rhoi,I] = sort(rhoi);
     pi = pi(I,:);
@@ -161,7 +174,7 @@ function rho = roa_locus_regions_test(x,V,pi,gi,rhoi)
         error('Sizes do not match.');
     end
     
-    rho = Inf;
+    rho = Inf; 
     i = 1;
     while i <= l && rho > rhoi(i) 
         g = gi(i,:);
@@ -170,15 +183,57 @@ function rho = roa_locus_regions_test(x,V,pi,gi,rhoi)
             msk(j) =  double(g(j)) ~= 0; 
         end
         g = g(logical(msk));
+        %        rho = roa_locus_region_test(x,V,pi(i),g');
+        if rhoi(i) == 0, rhon = rho0;
+        else, rhon = rhoi(i); end
         
-        rho = roa_locus_region_test(x,V,pi(i),g');
+        test = @(rho) double(roa_locus_region_test_L_step(x,V,pi(i),g',rho));
+        
+        gamma = test(rhon);
+        
+        if gamma < 0
+            uu = rhon;
+            while gamma < 0
+                ll = uu; uu = uu*2;
+                gamma = test(uu);
+            end
+        else
+            ll = rhon;
+            while gamma > 0
+                uu = ll; ll = ll/2;
+                gamma = test(ll);
+            end
+        end
+        
+        rhon = ll;
+        for iter = 1:max_iter
+            [gamma,L,M] = roa_locus_region_test_L_step(x,V,pi(i),g',rhon);
+            rhonn = roa_locus_region_test_rho_step(x,V,pi(i),g',L, ...
+                                                   M);
+            if (rhonn-rhon)/rhonn < 0.001, 
+                break; 
+            end
+            rhon = rhonn;
+        end
+        % TODO: If you can prove that a region is fully contained,
+        % then we do not need to use rhon as an upper bound.
+        %
+        % min rho, subj to. rho - V - L'g >= 0
+        %
+        % For dealing with saturations only this shouldn't be too
+        % big a deal.
+        rho = min(rho,rhon);
         i = i+1;
+    end
+    if rho < 0, 
+        warning(['No reasonable rho was found, please adjust ' ...
+                 'Lagrange multipliers.']);
+        rho = 0;
     end
 end
 
 
 
-%  
 % rho = locus_region_test(V,p,g,Lmonom,Mmonom)
 %
 %  V -- 1-by-1 msspoly.
@@ -188,7 +243,56 @@ end
 %  Attempts to max. rho subject to:
 %  x ~= 0, p(x) = 0, g(x) <= 0 ==> V(x) > rho.
 %
-function rho = roa_locus_region_test(x,V,p,g,Lmonom,Mmonom)
+function [gamma,L,M] = roa_locus_region_test_L_step(x,V,p,g,rho,Lmonom,Mmonom)
+    if nargin < 4, g = []; end
+
+    if ~isempty(g) && size(g,2) ~= 1, error('g must be k-by-1.'); end
+        
+    k = size(g,1);
+
+    prog = mssprog;
+    [prog,gamma] = new(prog,1,'free');
+
+    if nargin < 6 % Just a guess.
+        Lmonom = monomials(x,0:deg(p,x)-deg(V,x)+2);
+    end
+    
+    [prog,l] = new(prog,length(Lmonom),'free');
+    L = l'*Lmonom;
+    
+    if all(double(subs(g,x,0*x)) <= 0) 
+        w = x'*x;
+    else, w = 1; end
+    w=1;
+    if k > 0
+        if nargin < 7
+            Mmonom = repmat(monomials(x,0:deg(p,x)-deg(g,x)+2),1,k);
+        end
+        [prog,m] = new(prog,prod(size(Mmonom)),'free');
+        M = sum(reshape(m,size(Mmonom,1),size(Mmonom,2)).*Mmonom,1);
+        
+        prog.sos = M;
+        prog.sos = L*(V - rho) + M*g - p  +  w*gamma;
+    else
+        prog.sos = L*(V - rho) - p +  w*gamma;
+    end
+
+    [prog,info] = sedumi(prog,gamma);
+    if k > 0, M = prog(M); else M = []; end
+    L = prog(L);
+    gamma = prog(gamma);
+end
+
+% rho = locus_region_test(V,p,g,Lmonom,Mmonom)
+%
+%  V -- 1-by-1 msspoly.
+%  p -- 1-by-1 msspoly.
+%  g -- k-by-1 msspoly.
+%
+%  Attempts to max. rho subject to:
+%  x ~= 0, p(x) = 0, g(x) <= 0 ==> V(x) > rho.
+%
+function rho = roa_locus_region_test_rho_step(x,V,p,g,L,M)
     if nargin < 4, g = []; end
 
     if ~isempty(g) && size(g,2) ~= 1, error('g must be k-by-1.'); end
@@ -204,25 +308,10 @@ function rho = roa_locus_region_test(x,V,p,g,Lmonom,Mmonom)
         Lmonom = monomials(x,0:deg(p,x));
     end
     
-    [prog,l] = new(prog,length(Lmonom),'free');
-    L = l'*Lmonom;
-    
-    % origin is in feasible set.
-    if all(double(subs(g,x,0*x)) <= 0) 
-        w = x'*x;
-    else, w = 1; end
-
     if k > 0
-        if nargin < 6
-            Mmonom = repmat(monomials(x,0:2*deg(p,x)-deg(g,x)),1,k);
-        end
-        [prog,m] = new(prog,prod(size(Mmonom)),'free');
-        M = sum(reshape(m,size(Mmonom,1),size(Mmonom,2)).*Mmonom,1);
-        
-        prog.sos = M;
-        prog.sos = w*(V - rho) + M*g +  L*p;
+        prog.sos = L*(V - rho) + M*g - p;
     else
-        prog.sos = w*(V - rho) +  L*p;
+        prog.sos = L*(V - rho) - p;
     end
 
     [prog,info] = sedumi(prog,-rho);
