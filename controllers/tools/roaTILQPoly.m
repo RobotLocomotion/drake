@@ -139,7 +139,7 @@ end
 % Determine rho at which the controller enters a particular
 % saturation condition.
 function rhoi = saturation_qp(Q,xc,A,b)
-    xstar = quadprog((Q+Q')/2,-Q*xc,A,b,[],[],[],[],[],optimset('LargeScale','off'));
+    xstar = quadprog((Q+Q')/2,-Q*xc,A,b,[],[],[],[],[],optimset('LargeScale','off','Display','off'));
     rhoi = (xstar-xc)'*Q*(xstar-xc);
 end
 
@@ -159,6 +159,7 @@ function rho = roa_locus_regions_test(x,V,pi,gi,rhoi,rho0)
     if nargin < 5
         error('See Usage.');
     end
+
     min_iter = 5;
     max_iter = 20;
 
@@ -174,57 +175,42 @@ function rho = roa_locus_regions_test(x,V,pi,gi,rhoi,rho0)
         error('Sizes do not match.');
     end
     
-    rho = Inf; 
-    i = 1;
-    while i <= l && rho > rhoi(i) 
-        g = gi(i,:);
-        msk = zeros(size(g));
-        for j = 1:length(g)
-            msk(j) =  double(g(j)) ~= 0; 
-        end
-        g = g(logical(msk));
-        %        rho = roa_locus_region_test(x,V,pi(i),g');
-        if rhoi(i) == 0, rhon = rho0;
-        else, rhon = rhoi(i); end
-        
-        test = @(rho) double(roa_locus_region_test_L_step(x,V,pi(i),g',rho));
-        
-        gamma = test(rhon);
-        
-        if gamma < 0
-            uu = rhon;
-            while gamma < 0
-                ll = uu; uu = uu*2;
-                gamma = test(uu);
+    
+    % rhoi -- rho at which a constraint activates.
+    rhon = rho0;
+    for i = 1:max_iter
+        % Pick active constraints.
+        ii = (rhon >= rhoi);
+        gs = gi(ii,:); 
+        ps = pi(ii);
+
+        L = repmat(V,1,length(ps)); M = gs';
+        for j = 1:length(ps)
+            p = ps(j);
+            g = gs(j,:); 
+            msk = zeros(size(g));
+            for k = 1:length(g)
+                msk(k) =  double(g(k)) ~= 0; 
             end
+            g = g(logical(msk));
+            [gamma,L(:,j),Mj] = ...
+                roa_locus_region_test_L_step(x,V,p,g',rhon);
+            M(:,j) = [Mj'; zeros(size(M,1)-size(Mj',1),1)];
+        end
+
+        rhonn = roa_locus_region_test_rho_step(x,repmat(V,1,length(ps)),...
+                                               ps',gs',L,M);
+        if rhonn <= 0, 
+            rhon = rhon/2;
         else
-            ll = rhon;
-            while gamma > 0
-                uu = ll; ll = ll/2;
-                gamma = test(ll);
-            end
-        end
-        
-        rhon = ll;
-        for iter = 1:max_iter
-            [gamma,L,M] = roa_locus_region_test_L_step(x,V,pi(i),g',rhon);
-            rhonn = roa_locus_region_test_rho_step(x,V,pi(i),g',L, ...
-                                                   M);
             if (rhonn-rhon)/rhonn < 0.001, 
                 break; 
             end
             rhon = rhonn;
         end
-        % TODO: If you can prove that a region is fully contained,
-        % then we do not need to use rhon as an upper bound.
-        %
-        % min rho, subj to. rho - V - L'g >= 0
-        %
-        % For dealing with saturations only this shouldn't be too
-        % big a deal.
-        rho = min(rho,rhon);
-        i = i+1;
     end
+    rho = rhonn;
+    
     if rho < 0, 
         warning(['No reasonable rho was found, please adjust ' ...
                  'Lagrange multipliers.']);
@@ -277,7 +263,7 @@ function [gamma,L,M] = roa_locus_region_test_L_step(x,V,p,g,rho,Lmonom,Mmonom)
         prog.sos = L*(V - rho) - p +  w*gamma;
     end
 
-    [prog,info] = sedumi(prog,gamma);
+    [prog,info] = sedumi(prog,gamma,0);
     if k > 0, M = prog(M); else M = []; end
     L = prog(L);
     gamma = prog(gamma);
@@ -285,19 +271,24 @@ end
 
 % rho = locus_region_test(V,p,g,Lmonom,Mmonom)
 %
-%  V -- 1-by-1 msspoly.
-%  p -- 1-by-1 msspoly.
-%  g -- k-by-1 msspoly.
+%  x -- n-by-1 msspoly.
+%  V -- 1-by-N msspoly.
+%  p -- 1-by-N msspoly.
+%  g -- k-by-N msspoly.
+%  L -- 1-by-N msspoly, LaGrange multipliers.
+%  M -- k-by-N msspoly, LaGrange multipliers.
 %
 %  Attempts to max. rho subject to:
 %  x ~= 0, p(x) = 0, g(x) <= 0 ==> V(x) > rho.
 %
 function rho = roa_locus_region_test_rho_step(x,V,p,g,L,M)
-    if nargin < 4, g = []; end
+    if nargin < 4, g = []; M = []; end
 
-    if ~isempty(g) && size(g,2) ~= 1, error('g must be k-by-1.'); end
-        
+    if ~all(size(V,2) == [size(p,2) size(L,2)])
+        error('Regions of V,p,g,L,M not do not match.');
+    end
     k = size(g,1);
+    if ~all(size(g) == size(M)), error('g and M must match'); end
 
     prog = mssprog;
     
@@ -307,16 +298,18 @@ function rho = roa_locus_region_test_rho_step(x,V,p,g,L,M)
     if nargin < 5 % Just a guess.
         Lmonom = monomials(x,0:deg(p,x));
     end
-    
+
     if k > 0
-        prog.sos = L*(V - rho) + M*g - p;
+        prog.sos = L.*(V - rho) + sum(M.*g,1) - p;
     else
-        prog.sos = L*(V - rho) - p;
+        prog.sos = L.*(V - rho) - p;
     end
 
-    [prog,info] = sedumi(prog,-rho);
+    [prog,info] = sedumi(prog,-rho,0);
     if info.dinf ~= 0
         rho = Inf;
+    elseif info.pinf ~= 0
+        rho = -Inf;
     else
         rho = double(prog(rho));
     end
