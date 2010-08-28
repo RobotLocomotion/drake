@@ -1,15 +1,16 @@
-classdef SecondOrderDynamics < Dynamics
+classdef SecondOrderPlant < Plant
 % An abstract class that wraps qddot = f(t,q,qdot,u).
 %   A specialization of the Dynamics class for systems of second order.  
   
   methods
-    function obj = SecondOrderDynamics(num_q, num_u)
+    function obj = SecondOrderPlant(num_q, num_u)
     % SecondOrderDynamics(num_q, num_u)
     %   Constructs a SecondOrderDynamics object with num_q configuration
     %   variables (implying num_q*2 states) and num_u control inputs.
 
 %      if (nargin>0)
-        obj = obj@Dynamics(num_q*2,num_u);
+        obj = obj@Plant(num_q*2,num_u);
+        obj.num_q = num_q;
 %      end
     end
   end
@@ -35,7 +36,7 @@ classdef SecondOrderDynamics < Dynamics
     % with num_q
       if (num_x<2 || rem(num_x,2)) error('num_x must be even and >= 2 for a SecondOrderDynamics'); end 
       obj.num_q = num_x/2;
-      obj = setNumX@Dynamics(obj,num_x);
+      obj = setNumX@Plant(obj,num_x);
     end
     
     function xdot = dynamics(obj,t,x,u);

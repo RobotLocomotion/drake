@@ -1,6 +1,6 @@
 function runSpong96
 
-d = AcrobotDynamics;
+d = AcrobotPlant;
 d.ode_options = odeset('RelTol',1e-6);
 d.setInputLimits(-inf,inf);
 

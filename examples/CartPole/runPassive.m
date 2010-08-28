@@ -1,6 +1,6 @@
 function runPassive
 
-d = CartPoleDynamics;
+d = CartPolePlant;
 c = ConstantControl(0);
 v = CartPoleVisualizer(d);
 

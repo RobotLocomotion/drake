@@ -1,10 +1,10 @@
-function [xtraj,utraj,info] = dirtran(dynamics,COSTFUN,FINALCOSTFUN,x0,utraj0,options)
+function [xtraj,utraj,info] = dirtran(plant,COSTFUN,FINALCOSTFUN,x0,utraj0,options)
 
 % Open-loop trajectory optimization using the direct collocation method via
 % SNOPT.  Roughly following the implementation described in Betts01, section 4.5.
 %
 % Inputs are:
-%    dynamics                    - a class which implements the Dynamics interface
+%    plant                       - a class which implements the Plant interface
 %    [g,dg] = COSTFUN(t,x,u)     - the cost function, including gradients
 %    [h,dh] = FINALCOSTFUN(t,x)  - the final time cost, including gradients
 %    x0                          - initial conditions
@@ -58,10 +58,10 @@ if (~isfield(options,'Tmin')) options.Tmin = 0;  end
 if (~isfield(options,'Tmax')) options.Tmax = inf; end
 if (~isfield(options,'Xmin')) options.Xmin = repmat(-inf,nX,1); end
 if (~isfield(options,'Xmax')) options.Xmax = repmat(inf,nX,1); end
-if (length(dynamics.umin)~=nU) error('umin is the wrong size'); end
-if (length(dynamics.umax)~=nU) error('umax is the wrong size'); end
-if (~isfield(options,'Umin')) options.Umin = dynamics.umin; end
-if (~isfield(options,'Umax')) options.Umax = dynamics.umax;  end
+if (length(plant.umin)~=nU) error('umin is the wrong size'); end
+if (length(plant.umax)~=nU) error('umax is the wrong size'); end
+if (~isfield(options,'Umin')) options.Umin = plant.umin; end
+if (~isfield(options,'Umax')) options.Umax = plant.umax;  end
 if (~isfield(options,'bWarning')) options.bWarning = true; end
 if (~isfield(options,'bGradTest')) options.bGradTest = false; end
 if (~isfield(options,'user_constraint_fun')) options.user_constraint_fun = {}; end
@@ -76,7 +76,7 @@ if (~isfield(options,'xtraj0'))
   if (~isempty(options.xf) && isa(options.xf,'double'))
     for i=1:nX, xtape0(i,:) = linspace(x0(i),options.xf(i),nT); end
   else
-    options.xtraj0 = dynamics.simulate(OpenloopControl(utraj0),tspan,x0);
+    options.xtraj0 = plant.simulate(OpenloopControl(utraj0),tspan,x0);
   end
 end
 if (isempty(xtape0))
@@ -100,7 +100,7 @@ xlow = [options.Tmin; repmat(options.Xmin,nT,1); repmat(options.Umin,nT,1)];
 N = length(w0);
 
 global SNOPT_USERFUN;
-SNOPT_USERFUN = @(w) userfun(w,dynamics,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options);
+SNOPT_USERFUN = @(w) userfun(w,plant,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options);
 
 [nf,iGfun,jGvar,Fhigh,Flow] = userfun_grad_ind(nT,nX,nU,options);
 
@@ -131,7 +131,7 @@ end
   utape = reshape(w(1+nX*nT+(1:nU*nT)),nU,nT);
 
   for i=1:nT
-    xdot(:,i) = dynamics.dynamics(tspan(i),xtape(:,i),utape(:,i));
+    xdot(:,i) = plant.dynamics(tspan(i),xtape(:,i),utape(:,i));
   end
   xtraj = PPTrajectory(piecewiseCubicPoly(tspan,xtape,xdot(:,1:(end-1)),xdot(:,2:end)));
   utraj = PPTrajectory(zoh(tspan,utape));
@@ -145,13 +145,13 @@ end
     utape0 = reshape(repmat(utape,2,1),nU,[]);
     utraj = PPTrajectory(zoh(tspan(1:end-1),utape0(:,1:end-1)));
     options.xtraj = xtraj;
-    [xtraj,utraj,info] = dirtran(dynamics,COSTFUN,FINALCOSTFUN,xtraj.eval(tspan(1)),utraj,options);
+    [xtraj,utraj,info] = dirtran(plant,COSTFUN,FINALCOSTFUN,xtraj.eval(tspan(1)),utraj,options);
   end
   
 end
 
 
-function [f,G] = userfun(w,dynamics,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options)
+function [f,G] = userfun(w,plant,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options)
   tf = w(1);
   xtape = reshape(w(1 + (1:nX*nT)),nX,nT);
   utape = reshape(w(1+nX*nT+(1:nU*nT)),nU,nT);
@@ -200,8 +200,8 @@ function [f,G] = userfun(w,dynamics,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options)
       for i=1:(nT-1)
         t=dt*(i-1);
 
-        xdot = dynamics.dynamics(t,xtape(:,i),utape(:,i));
-        dxdot = dynamics.dynamicsGradients(t,xtape(:,i),utape(:,i),1);
+        xdot = plant.dynamics(t,xtape(:,i),utape(:,i));
+        dxdot = plant.dynamicsGradients(t,xtape(:,i),utape(:,i),1);
         f = [f; xtape(:,i+1) - xtape(:,i) - dt*xdot];
         % df = df/d[T;xi;ui]
         df = -dt*dxdot{1};  
@@ -222,27 +222,27 @@ function [f,G] = userfun(w,dynamics,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options)
         dtdT = ddtdT*(i-1);
         % NOTE: this code currently assumes a zero-order hold on actions
         
-        xdot = dynamics.dynamics(t,xtape(:,i),utape(:,i));
-        df = dynamics.dynamicsGradients(t,xtape(:,i),utape(:,i));
+        xdot = plant.dynamics(t,xtape(:,i),utape(:,i));
+        df = plant.dynamicsGradients(t,xtape(:,i),utape(:,i));
         k1 = dt*xdot;
         % dk1 = dk1/d[T;xi;ui]
         dk1 = dt*df{1};  
         dk1(:,1) = dk1(:,1) + ddtdT*xdot;
 
-        xdot = dynamics.dynamics(t+dt/2,xtape(:,i)+k1/2,utape(:,i));
-        df = dynamics.dynamicsGradients(t+dt/2,xtape(:,i)+k1/2,utape(:,i),1);
+        xdot = plant.dynamics(t+dt/2,xtape(:,i)+k1/2,utape(:,i));
+        df = plant.dynamicsGradients(t+dt/2,xtape(:,i)+k1/2,utape(:,i),1);
         k2 = dt*xdot;
         dk2 = dt*df{1}*[dtdT + ddtdT/2,zeros(1,nX+nU); dk1/2+[zeros(nX,1),eye(nX),zeros(nX,nU)]; zeros(nU,1+nX), eye(nU)];
         dk2(:,1) = dk2(:,1) + ddtdT*xdot;
         
-        xdot = dynamics.dynamics(t+dt/2,xtape(:,i)+k2/2,utape(:,i));
-        df = dynamics.dynamicsGradients(t+dt/2,xtape(:,i)+k2/2,utape(:,i));
+        xdot = plant.dynamics(t+dt/2,xtape(:,i)+k2/2,utape(:,i));
+        df = plant.dynamicsGradients(t+dt/2,xtape(:,i)+k2/2,utape(:,i));
         k3 = dt*xdot;
         dk3 = dt*df{1}*[dtdT + ddtdT/2,zeros(1,nX+nU); dk2/2+[zeros(nX,1),eye(nX),zeros(nX,nU)];  zeros(nU,1+nX), eye(nU)];  
         dk3(:,1) = dk3(:,1) + ddtdT*xdot;
 
-        xdot = dynamics.dynamics(t+dt,xtape(:,i)+k3,utape(:,i+1));
-        df = dynamics.dynamicsGradients(t+dt,xtape(:,i)+k3,utape(:,i+1));
+        xdot = plant.dynamics(t+dt,xtape(:,i)+k3,utape(:,i+1));
+        df = plant.dynamicsGradients(t+dt,xtape(:,i)+k3,utape(:,i+1));
         k4 = dt*xdot;
         dk4 = dt*df{1}*[dtdT + ddtdT,zeros(1,nX+nU); dk3+[zeros(nX,1),eye(nX),zeros(nX,nU)];  zeros(nU,1+nX), zeros(nU)];  
         dk4(:,1) = dk4(:,1) + ddtdT*xdot;

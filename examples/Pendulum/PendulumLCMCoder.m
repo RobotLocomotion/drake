@@ -2,6 +2,10 @@ classdef PendulumLCMCoder < LCMCoder
 % Encodes and Decodes pendulum-specific LCM smessages 
 
   methods
+    function obj = PendulumLCMCoder
+      obj = obj@LCMCoder(2,1);
+    end
+    
     function str = getRobotName(obj)
       % robot name
       str = 'Pendulum';

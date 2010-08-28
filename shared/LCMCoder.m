@@ -2,6 +2,15 @@ classdef LCMCoder
 % Interface for classes which encode and decode robot-specific messages from LCM.
 
   methods 
+    function obj = LCMCoder(dim_x,dim_u)
+      if (nargin>0)
+        obj.dim_x = dim_x;
+        obj.dim_u = dim_u;
+      end
+    end
+  end
+
+  methods (Abstract=true)
     str = getRobotName(obj)
     
     msg = encodeX(obj,t,x)
@@ -10,19 +19,10 @@ classdef LCMCoder
     msg = encodeU(obj,t,u)
     [u,t] = decodeU(obj,msg)
   end
-
-  methods
-    function msg = encodeState(obj,t,x)
-      error('please use encodeX now');
-    end
-    function [x,t] = decodeState(obj,msg)
-      error('please use decodeX now');
-    end
-    function msg = encodeInput(obj,t,u)
-      error('please use encodeU now');
-    end
-    function [u,t] = decodeInput(obj,msg)
-      error('please use decodeU now');
-    end
+  
+  properties
+    dim_x = 0;  % length of the x vector
+    dim_u = 0;  % length of the u vector
   end
+  
 end

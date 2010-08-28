@@ -1,6 +1,6 @@
 function energyShaping
 
-pd = PendulumDynamics;
+pd = PendulumPlant;
 pv = PendulumVisualizer;
 c = PendulumEnergyShaping(pd);
 

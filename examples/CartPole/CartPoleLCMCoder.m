@@ -2,6 +2,10 @@ classdef CartPoleLCMCoder < LCMCoder
 % Encodes and Decodes pendulum-specific LCM smessages 
 
   methods
+    function obj = CartPoleLCMCoder
+      obj = obj@LCMCoder(4,1);
+    end
+    
     function str = getRobotName(obj)
       % robot name
       str = 'CartPole';

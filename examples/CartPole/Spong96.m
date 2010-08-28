@@ -4,17 +4,17 @@ classdef Spong96 < Control
   
   properties
     lqr
-    system
+    plant
     k1 = 10; k2 = 5; k3 = 10; k3limit = 50;
   end
   
   methods
-    function obj = Spong96(system)
+    function obj = Spong96(plant)
       obj = obj@Control(4,1);
       if (nargin>0)
-        typecheck(system,'CartPoleDynamics')
-        obj.system = system;
-        obj.lqr = CartPoleLQR(system);
+        typecheck(plant,'CartPolePlant')
+        obj.plant = plant;
+        obj.lqr = CartPoleLQR(plant);
       end
     end
     
@@ -38,7 +38,7 @@ classdef Spong96 < Control
     end
     
     function E = pend_energy(obj,x)
-      E = .5*obj.system.mp*obj.system.l^2*x(4,:).^2 - obj.system.mp*obj.system.g*obj.system.l*cos(x(2,:));
+      E = .5*obj.plant.mp*obj.plant.l^2*x(4,:).^2 - obj.plant.mp*obj.plant.g*obj.plant.l*cos(x(2,:));
     end
     
   end

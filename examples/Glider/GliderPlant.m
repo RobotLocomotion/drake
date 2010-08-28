@@ -1,4 +1,4 @@
-classdef PerchingGliderDynamics < Dynamics
+classdef PerchingGliderPlant < Plant
 % Defines the dynamics for the perching glider.  Translated from Rick Cory's code in 
 % https://svn.csail.mit.edu/russt/robots/perchingGlider/ 
   
@@ -19,9 +19,8 @@ classdef PerchingGliderDynamics < Dynamics
   end
   
   methods
-    function obj = PerchingGliderDynamics()
-      % Construct a new PendulumDynamics
-      obj = obj@Dynamics(7,1);
+    function obj = PerchingGliderPlant()
+      obj = obj@Plant(7,1);
       ulimit = 13; % max servo velocity
       obj = setInputLimits(obj,-ulimit,ulimit);
     end
@@ -68,7 +67,7 @@ classdef PerchingGliderDynamics < Dynamics
     
     function df = dynamicsGradients(obj,t,x,u,order)
       % Implement the Taylor expansion of the second-order gradients
-      if (nargin>4 && order>1) df = dynamicsGradients@Dynamics(obj,t,x,u,order); return; end
+      if (nargin>4 && order>1) df = dynamicsGradients@Plant(obj,t,x,u,order); return; end
 
       df = glider_grads(obj,t,x,u);
     end

@@ -4,14 +4,14 @@ classdef AcrobotVisualizer < Visualizer
   methods
     function obj = AcrobotVisualizer(varargin)
       % Construct visualizer, and set l1 and l2 parameters
-      %   AcrobotVisualizer(AcrobotDynamics) will take the necessary
-      %   parameters from the dynamics class
+      %   AcrobotVisualizer(AcrobotPlant) will take the necessary
+      %   parameters from the plant class
       %
       %   AcrobotVisualizer(l1,l2) will use the specified parameters
       %
       %   AcrobotVisualizer() will use default parameters
       
-      if (length(varargin)==1 && isa(varargin{1},'AcrobotDynamics'))
+      if (length(varargin)==1 && isa(varargin{1},'AcrobotPlant'))
         obj.l1 = varargin{1}.l1;
         obj.l2 = varargin{1}.l2;
       elseif (length(varargin)==2 && isa(varargin{1},'double') && isa(varargin{2},'double'))

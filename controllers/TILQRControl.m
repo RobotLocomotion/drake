@@ -4,7 +4,7 @@ classdef TILQRControl < LQRControl
 % See also: TVLQRControl, TIDLQRControl
   
   properties
-    dynamics=[]; 
+    plant=[]; 
     x0=[]; 
     u0=[]; 
     K=[]; 
@@ -13,11 +13,11 @@ classdef TILQRControl < LQRControl
   end
   
   methods 
-    function obj=TILQRControl(dynamics,x0,u0,Q,R)
+    function obj=TILQRControl(plant,x0,u0,Q,R)
       % Construct and design the LQR controller
       obj = obj@LQRControl(length(x0),length(u0));
       if (nargin>0)
-        obj.dynamics = dynamics;
+        obj.plant = plant;
         obj.x0 = x0;
         obj.u0 = u0;
         obj = obj.design(Q,R);
@@ -29,9 +29,9 @@ classdef TILQRControl < LQRControl
       nX = length(obj.x0);
       nU = length(obj.u0);
 
-      xdot = obj.dynamics.dynamics(0,obj.x0,obj.u0);
+      xdot = obj.plant.dynamics(0,obj.x0,obj.u0);
       if (any(abs(xdot)>1e-6)) error('you can only do tilqr around a fixed point'); end 
-      df = obj.dynamics.dynamicsGradients(0,obj.x0,obj.u0);
+      df = obj.plant.dynamicsGradients(0,obj.x0,obj.u0);
 
       A = full(df{1}(:,1+(1:nX)));
       B = full(df{1}(:,nX+1+(1:nU)));
@@ -67,8 +67,8 @@ classdef TILQRControl < LQRControl
       if (nargin<3) options = struct(); end
       if (obj.control_dt>0) error('not implemented yet'); end
       %      rho =
-      %      tilqr_verify(obj.dynamics,obj.x0,obj.u0,obj.K,obj.S,options);
-      rho = roaTILQ(obj.dynamics,obj.x0,obj.u0,obj.K,obj.S,options);
+      %      tilqr_verify(obj.plant,obj.x0,obj.u0,obj.K,obj.S,options);
+      rho = roaTILQ(obj.plant,obj.x0,obj.u0,obj.K,obj.S,options);
       obj.rho = rho;
     end
     

@@ -1,6 +1,6 @@
 function runLQR
 
-d = AcrobotDynamics;
+d = AcrobotPlant;
 v = AcrobotVisualizer(d);
 c = AcrobotLQR(d);
 

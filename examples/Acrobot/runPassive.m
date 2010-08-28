@@ -1,7 +1,7 @@
 function runPassive
 % Simulate the passive acrobot
 
-d = AcrobotDynamics;
+d = AcrobotPlant;
 v = AcrobotVisualizer(d);
 c = ConstantControl(0);
 

@@ -1,4 +1,4 @@
-classdef AcrobotDynamics < ManipulatorDynamics 
+classdef AcrobotPlant < ManipulatorPlant 
   
   properties
     % parameters from Spong95 (except inertias are now relative to the
@@ -15,8 +15,8 @@ classdef AcrobotDynamics < ManipulatorDynamics
   end
   
   methods
-    function obj = AcrobotDynamics
-      obj = obj@ManipulatorDynamics(2,1);
+    function obj = AcrobotPlant
+      obj = obj@ManipulatorPlant(2,1);
       obj = setInputLimits(obj,-10,10);
       obj.I1 = 0.083 + obj.m1*obj.lc1^2;
       obj.I2 = 0.33 + obj.m2*obj.lc2^2;

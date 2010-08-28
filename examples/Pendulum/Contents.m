@@ -3,7 +3,7 @@
 % RobotLib Pendulum Example
 %
 % Define the Pendulum Robot:
-%   PendulumDynamics   - Defines the dynamics for the Pendulum.
+%   PendulumPlant   - Defines the dynamics for the Pendulum.
 %   PendulumVisualizer - Implements the draw function for the Pendulum 
 %
 % Define the LCM protocols:

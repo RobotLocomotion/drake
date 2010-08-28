@@ -1,14 +1,14 @@
 classdef EnergyShaping < Control
   
   methods
-    function obj = EnergyShaping(acrobot_dynamics)
+    function obj = EnergyShaping(plant)
       obj = obj@Control(4,1);
       
       if (nargin>0)
-        typecheck(acrobot_dynamics,'AcrobotDynamics');
-        obj.dyn = acrobot_dynamics;
+        typecheck(plant,'AcrobotPlant');
+        obj.plant = plant;
 
-        obj.lqr = AcrobotLQR(acrobot_dynamics);
+        obj.lqr = AcrobotLQR(plant);
         obj.control_dt = 0;
       end
     end
@@ -31,9 +31,9 @@ classdef EnergyShaping < Control
     
     function [E,T,U] = energy(obj,x)
       c = cos(x(1:2,:)); s = sin(x(1:2,:)); c12 = cos(x(1,:)+x(2,:));
-      m1=obj.dyn.m1; m2=obj.dyn.m2; l1=obj.dyn.l1; g=obj.dyn.g; lc1=obj.dyn.lc1; lc2=obj.dyn.lc2; I1=obj.dyn.I1; I2=obj.dyn.I2; b1=obj.dyn.b1; b2=obj.dyn.b2;
+      m1=obj.plant.m1; m2=obj.plant.m2; l1=obj.plant.l1; g=obj.plant.g; lc1=obj.plant.lc1; lc2=obj.plant.lc2; I1=obj.plant.I1; I2=obj.plant.I2; b1=obj.plant.b1; b2=obj.plant.b2;
       
-      [H,phi,B] = manipulatorDynamics(obj.dyn,x(1:2),x(3:4));
+      [H,phi,B] = manipulatorDynamics(obj.plant,x(1:2),x(3:4));
       T = .5*x(3:4)'*H*x(3:4);
       %      T = .5*(I1 + m2*l1^2 + I2 + 2*m2*l1*lc2*c(2,:)).*x(3,:).^2 + .5*I2*x(4,:).^2 + (I2 + m2*l1*lc2*c(2,:)).*x(3,:).*x(4,:);
       U = -m1*g*lc1*c(1,:) - m2*g*(l1*c(1,:) + lc2*c12);
@@ -43,7 +43,7 @@ classdef EnergyShaping < Control
   end
   
   properties
-    dyn;  % AcrobotDynamics class.. used in the design and in the feedback linearization
+    plant;  % AcrobotPlant class.. used in the design and in the feedback linearization
     lqr;  % The LQR controller at the top
     xG = [pi;0;0;0];  % The goal state
     uG = 0;           % Equilibrium torque at the goal state

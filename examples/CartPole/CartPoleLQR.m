@@ -1,12 +1,12 @@
 classdef CartPoleLQR < TILQRControl
 
   methods
-    function obj = CartPoleLQR(dyn)
-      typecheck(dyn,'CartPoleDynamics');
+    function obj = CartPoleLQR(plant)
+      typecheck(plant,'CartPolePlant');
       
       Q = diag([100,10,1,1]); R = 10;
       xG = [0;pi;0;0]; uG = 0;
-      obj = obj@TILQRControl(dyn,xG,uG,Q,R);
+      obj = obj@TILQRControl(plant,xG,uG,Q,R);
       obj = setWrapping(obj,[0,1,0,0],[-inf,inf;0,2*pi;-inf,inf;-inf,inf]);
       obj.control_dt = 0;
       

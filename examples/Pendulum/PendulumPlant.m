@@ -1,4 +1,4 @@
-classdef PendulumDynamics < SecondOrderDynamics
+classdef PendulumPlant < SecondOrderPlant
 % Defines the dynamics for the Pendulum.
   
   properties
@@ -11,9 +11,9 @@ classdef PendulumDynamics < SecondOrderDynamics
   end
   
   methods
-    function obj = PendulumDynamics()
-      % Construct a new PendulumDynamics
-      obj = obj@SecondOrderDynamics(1,1);
+    function obj = PendulumPlant()
+      % Construct a new PendulumPlant
+      obj = obj@SecondOrderPlant(1,1);
       torque_limit = 3;
       obj = setInputLimits(obj,-torque_limit,torque_limit);
     end
@@ -25,7 +25,7 @@ classdef PendulumDynamics < SecondOrderDynamics
     
     function df = sodynamicsGradients(obj,t,q,qd,u,order)
       % Implement the Taylor expansion of the second-order gradients
-      if (nargin>4 && order>3) df = sodynamicsGradients@SecondOrderDynamics(obj,t,x,u,order); end
+      if (nargin>4 && order>3) df = sodynamicsGradients@SecondOrderPlant(obj,t,x,u,order); end
       if (nargin<5) order=1; end
       
       dfdt = 0;

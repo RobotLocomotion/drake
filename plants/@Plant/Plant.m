@@ -1,45 +1,45 @@
-classdef Dynamics
+classdef Plant
 % An abstract class which wraps a dynamics function xdot=f(t,x,u).
 %   Provides a common interface and many supporting methods to work with 
-%   the dynamics. 
-%
+%   the dynamics, and implements an S-Function interface (so also 
+%   works as a simulink block.) 
+  
 
-
+  % constructor
   methods 
-    function obj = Dynamics(num_x,num_u)
-      % Dynamics class constructor
+    function obj = Plant(num_x,num_u)
+      % Plant class constructor
       %   sets the dimension of the state and input vectors
       if (nargin>0)
         obj = setNumX(obj,num_x);  
         obj = setNumU(obj,num_u);
       end
-    end
+    end      
   end
   
   % methods that MUST be implemented
   methods (Abstract=true)
-    xdot = dynamics(obj,t,x,u);  % implements xdot = f(t,x,u)
+    xdot = dynamics(obj,t,x,u);   % implements xdot = f(t,x,u)
   end
   
-  % methods that CAN be implemented/overridden
+  % methods that CAN/SHOULD be implemented/overridden
   methods
-
     function df = dynamicsGradients(obj,t,x,u,order)
       % Computes the Taylor-expansion of the dynamics around a point.
- 
-      % todo: implement symbolic gradients here?
       error('not implemented yet');
     end
-    
+  end  
+  
+  % methods that wrap basic functionality
+  methods 
     function obj = setNumX(obj,num_x)
-      % Guards the num_x variable
-      if (num_x<1) error('Dynamics objects must have at least one state'); end
+      % Guards the num_states variable
+      if (num_x<1) error('num_x must be > 0'); end
       obj.num_x = num_x;
     end
     
     function x = getInitialState(obj)
       % Returns the default initial conditions
-
       x = zeros(obj.num_x,1);
     end
     
@@ -50,7 +50,7 @@ classdef Dynamics
       if (num_u<0) error('num_u must be >=0'); end
       obj.num_u = num_u;
       
-      % cut umin and umax to the right size, and pad new inputs with
+       % cut umin and umax to the right size, and pad new inputs with
       % [-inf,inf]
       if (length(obj.umin)~=1 && length(obj.umin)~=num_u)
         obj.umin = [obj.umin(1:num_u); -inf*ones(max(num_u-length(obj.umin),0),1)];
@@ -77,42 +77,8 @@ classdef Dynamics
       % received yet.
       u = zeros(obj.num_u,1);
     end
-    
-    function [v dvdy] = stateVectorDiff(obj,X,y)
-      % Computes the vector between two points in state space.  
-      %   Many algorithms need to this vector, and it's computation can 
-      %   be complicated by things like wrapping coordinate systems.  All 
-      %   of those details for a given system should be encapsulated in the
-      %   stateVectorDiff method.  The default behavior
-      %   implemented here simply subtracts the two vectors.
-      %
-      %   usage:  v = stateVectorDiff(obj,X,y) computes v(:,i) = X(:,i)-y
-      %     optional second output dvdy is the gradients of this vector.
-      %     Note: to return dvdy, X must be a column vector.
-      %
-
-      if (size(X,1)~=obj.num_x) error('X should have num_x rows'); end
-      if (size(y,1)~=obj.num_x) error('y should have num_x rows'); end
-      if (size(y,2)~=1) error('y can only have a single column'); end
-        
-      v = X-repmat(y,1,size(X,2));
-      if (nargout>1)
-        if (size(X,2)>1) error('gradients only for column vector inputs'); end
-        dvdy = -eye(length(y));
-      end
-    end
-    
-    function d = stateVectorNorm(obj,X,y)
-      % Computes the distance between points in state space.  
-      %   The default behavior implemented here is the Euclidean distance 
-      %   on the stateVectorDiff.
-
-      % note: input error checking with happen immediately in stateVectorDiff
-      v = stateVectorDiff(obj,X,y);
-      d = sqrt(sum(v.^2,1));
-    end
   end
-
+    
   properties (SetAccess=private, GetAccess = public)
     num_x;  % dimension of x
     num_u;  % dimension of u

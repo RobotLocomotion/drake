@@ -12,7 +12,7 @@ classdef TVLQRControl < LQRControl
     x0=[]; u0=[]; K=[]; S=[]; Sdot=[]; rho=[];  
     Q=[]; R=[]; Qf=[];
     tspan;
-    dynamics;
+    plant;
   end
   
   properties (SetAccess=protected,GetAccess=public)
@@ -22,10 +22,10 @@ classdef TVLQRControl < LQRControl
   end
   
   methods
-    function obj = TVLQRControl(dynamics,x0traj,u0traj,Q,R,Qf)
+    function obj = TVLQRControl(plant,x0traj,u0traj,Q,R,Qf)
       obj = obj@LQRControl(size(Q,1),size(R,1));
       if (nargin>0)
-        obj.dynamics = dynamics;
+        obj.plant = plant;
         obj.x0 = x0traj;
         obj.u0 = u0traj;
         
@@ -47,9 +47,9 @@ classdef TVLQRControl < LQRControl
     end
     
     function [obj,K,S,Sdot] = design(obj)
-      obj.S = matrixODE(obj.dynamics.ode_solver,@(t,S)Sdynamics(t,S,obj.dynamics,obj.Q,obj.R,obj.x0,obj.u0),obj.tspan(end:-1:1),obj.Qf,obj.dynamics.ode_options);
-      obj.K = FunctionHandleTrajectory(@(t)Ksoln(t,obj.dynamics,obj.S,obj.R,obj.x0,obj.u0),[obj.x0.dim obj.u0.dim],obj.S.getBreaks());
-      obj.Sdot = FunctionHandleTrajectory(@(t)Sdynamics(t,obj.S.eval(t),obj.dynamics,obj.Q,obj.R,obj.x0,obj.u0),[obj.x0.dim obj.x0.dim],obj.S.getBreaks());
+      obj.S = matrixODE(obj.plant.ode_solver,@(t,S)Sdynamics(t,S,obj.plant,obj.Q,obj.R,obj.x0,obj.u0),obj.tspan(end:-1:1),obj.Qf,obj.plant.ode_options);
+      obj.K = FunctionHandleTrajectory(@(t)Ksoln(t,obj.plant,obj.S,obj.R,obj.x0,obj.u0),[obj.x0.dim obj.u0.dim],obj.S.getBreaks());
+      obj.Sdot = FunctionHandleTrajectory(@(t)Sdynamics(t,obj.S.eval(t),obj.plant,obj.Q,obj.R,obj.x0,obj.u0),[obj.x0.dim obj.x0.dim],obj.S.getBreaks());
 
       if (nargout>1)
         K = obj.K;
@@ -57,20 +57,20 @@ classdef TVLQRControl < LQRControl
         Sdot = obj.Sdot;
       end
       
-      function Sdot = Sdynamics(t,S,dynamics,Qtraj,Rtraj,xtraj,utraj)
+      function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj)
         x0 = xtraj.eval(t); u0 = utraj.eval(t);
         Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
         nX = length(x0); nU = length(u0);
-        df = dynamics.dynamicsGradients(t,x0,u0);
+        df = plant.dynamicsGradients(t,x0,u0);
         A = df{1}(:,1+(1:nX));
         B = df{1}(:,nX+1+(1:nU));
         Sdot = -(Q - S*B*Ri*B'*S + S*A + A'*S);
       end
       
-      function K = Ksoln(t,dynamics,Straj,Rtraj,xtraj,utraj)
+      function K = Ksoln(t,plant,Straj,Rtraj,xtraj,utraj)
         S = Straj.eval(t); Ri = inv(Rtraj.eval(t)); x0=xtraj.eval(t); u0 = utraj.eval(t);
         nX = length(x0); nU = length(u0);
-        df = dynamics.dynamicsGradients(t,x0,u0);
+        df = plant.dynamicsGradients(t,x0,u0);
         B = df{1}(:,nX+1+(1:nU));
         K = Ri*B'*S;
       end
@@ -107,9 +107,9 @@ classdef TVLQRControl < LQRControl
     end
 
     function [obj,rhotraj] = verify(obj,rhof,options)
-    %rhotraj = tvlqr_verify(@(t,x,u,order)PLANTFUN(obj.dynamics,t, ...
+    %rhotraj = tvlqr_verify(@(t,x,u,order)PLANTFUN(obj.plant,t, ...
     %                                                x,u,order),obj.x0,obj.u0,obj.K,obj.S,obj.Sdot,rhof,options);
-      rhotraj = invset_tvlq(obj.dynamics,obj.x0,obj.u0,obj.K,obj.S,rhof,options);
+      rhotraj = invset_tvlq(obj.plant,obj.x0,obj.u0,obj.K,obj.S,rhof,options);
 
       obj.rho = rhotraj;
     end

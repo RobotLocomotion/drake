@@ -3,9 +3,9 @@ If you want to run the pendulum simulation demos over LCM, just launch
 three separate instances of matlab and run the following (one line in 
 each instance):
 
->> runLCMDynamics(PendulumDynamics,PendulumLCMCoder)
+>> runLCMPlant(PendulumPlant,PendulumLCMCoder)
 
 >> runLCMVisualizer(PendulumVisualizer,PendulumLCMCoder)
 
->> runLCMControl(PendulumEnergyShaping(PendulumDynamics),PendulumLCMCoder)
+>> runLCMControl(PendulumEnergyShaping(PendulumPlant),PendulumLCMCoder)
 

@@ -1,9 +1,9 @@
-classdef ManipulatorDynamics < SecondOrderDynamics
+classdef ManipulatorPlant < SecondOrderPlant
 % An abstract class that wraps H(q)qddot + C(q,qdot,f_ext) = B(q)u.
 
   methods
-    function obj = ManipulatorDynamics(num_q, num_u)
-      obj = obj@SecondOrderDynamics(num_q,num_u);
+    function obj = ManipulatorPlant(num_q, num_u)
+      obj = obj@SecondOrderPlant(num_q,num_u);
     end
   end
   

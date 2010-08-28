@@ -8,7 +8,7 @@ classdef CartPoleVisualizer < Visualizer
     function obj = CartPoleVisualizer(l)
       if (nargin>0)
         if (isa(l,'double')) obj.l = l;
-        elseif (isa(l,'CartPoleDynamics')) obj.l = l.l;
+        elseif (isa(l,'CartPolePlant')) obj.l = l.l;
         end
       end
     end

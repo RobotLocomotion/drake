@@ -1,6 +1,6 @@
 function runLQR
 
-pd = PendulumDynamics;
+pd = PendulumPlant;
 pv = PendulumVisualizer;
 c = PendulumLQR(pd);
 

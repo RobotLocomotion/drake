@@ -13,7 +13,7 @@ function df = acrobotGradients(r,t,x,u,order)
 
 
 % Check inputs:
-if (~isa(r,'AcrobotDynamics')) error(' r must be an AcrobotDynamics class object'); end
+if (~isa(r,'AcrobotPlant')) error(' r must be an AcrobotPlant class object'); end
 if (length(t)~=1) error('t must be a scalar'); end
 if (any(size(x)~=[4,1])) error('x must be a 4-by-1 vector'); end
 if (any(size(u)~=[1,1])) error('u must be a 1-by-1 vector'); end

@@ -1,6 +1,6 @@
 function runTrajectorySwingup
 
-pd = PendulumDynamics;
+pd = PendulumPlant;
 pv = PendulumVisualizer;
 c = TrajectorySwingup(pd);
 

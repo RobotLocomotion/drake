@@ -41,7 +41,7 @@ original_path = path;
 % look for snopt, add to matlab path 
 
 % add robotlib directories to the matlab path 
-addpath([conf.root,'/simulators']);
+addpath([conf.root,'/plants']);
 addpath([conf.root,'/controllers']);
 addpath([conf.root,'/controllers/tools']);
 addpath([conf.root,'/visualizers']);
@@ -77,7 +77,7 @@ end
 
 conf.spot_enabled = logical(exist('msspoly'));
 if (~conf.spot_enabled)
-  disp(' SPOT not found.  SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/russt/code/spot/ ');
+  disp(' SPOT not found.  SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/spot/ ');
 end
 
 

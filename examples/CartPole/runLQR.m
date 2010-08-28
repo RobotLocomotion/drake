@@ -1,6 +1,6 @@
 function runLQR
 
-d = CartPoleDynamics;
+d = CartPolePlant;
 v = CartPoleVisualizer;
 c = CartPoleLQR(d);
 

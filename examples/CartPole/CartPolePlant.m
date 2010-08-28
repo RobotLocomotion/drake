@@ -1,4 +1,4 @@
-classdef CartPoleDynamics < ManipulatorDynamics
+classdef CartPolePlant < ManipulatorPlant
 
   properties
     mc = 10;   % mass of the cart in kg
@@ -8,8 +8,8 @@ classdef CartPoleDynamics < ManipulatorDynamics
   end
   
   methods
-    function obj = CartPoleDynamics
-      obj = obj@ManipulatorDynamics(2,1);
+    function obj = CartPolePlant
+      obj = obj@ManipulatorPlant(2,1);
       obj = setInputLimits(obj,-30,30);
     end
         

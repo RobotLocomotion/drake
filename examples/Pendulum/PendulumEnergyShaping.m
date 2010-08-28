@@ -6,10 +6,10 @@ classdef PendulumEnergyShaping < Control
   end
   
   methods
-    function obj = PendulumEnergyShaping(dyn)
+    function obj = PendulumEnergyShaping(plant)
       obj = obj@Control(2,1);
-      obj.p = dyn;
-      obj.lqr = PendulumLQR(dyn);
+      obj.p = plant;
+      obj.lqr = PendulumLQR(plant);
       obj.control_dt = 0;
     end
     
