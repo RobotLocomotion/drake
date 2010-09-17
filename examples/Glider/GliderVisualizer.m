@@ -1,4 +1,4 @@
-classdef PerchingGliderVisualizer < Visualizer
+classdef GliderVisualizer < Visualizer
 % Implements the draw function for the Pendulum 
 
 % todo: use correct pendulum parameters (possibly acquire them via a

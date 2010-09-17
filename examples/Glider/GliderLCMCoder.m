@@ -1,4 +1,4 @@
-classdef PerchingGliderLCMCoder < LCMCoder
+classdef GliderLCMCoder < LCMCoder
 % Encodes and Decodes glider-specific LCM smessages 
 
   methods

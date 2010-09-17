@@ -1,4 +1,4 @@
-classdef PerchingGliderPlant < Plant
+classdef GliderPlant < Plant
 % Defines the dynamics for the perching glider.  Translated from Rick Cory's code in 
 % https://svn.csail.mit.edu/russt/robots/perchingGlider/ 
   
@@ -19,7 +19,7 @@ classdef PerchingGliderPlant < Plant
   end
   
   methods
-    function obj = PerchingGliderPlant()
+    function obj = GliderPlant()
       obj = obj@Plant(7,1);
       ulimit = 13; % max servo velocity
       obj = setInputLimits(obj,-ulimit,ulimit);
