@@ -68,7 +68,9 @@ classdef TILQRControl < LQRControl
       if (obj.control_dt>0) error('not implemented yet'); end
       %      rho =
       %      tilqr_verify(obj.plant,obj.x0,obj.u0,obj.K,obj.S,options);
+      disp('estimating region of attraction...');
       rho = roaTILQ(obj.plant,obj.x0,obj.u0,obj.K,obj.S,options);
+      disp('done estimating roa.');
       obj.rho = rho;
     end
     

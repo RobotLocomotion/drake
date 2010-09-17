@@ -19,7 +19,7 @@ classdef GliderVisualizer < Visualizer
       persistent hFig;
 
       if (isempty(hFig))
-        hFig = figure(25);
+        hFig = sfigure(25);
         set(hFig,'DoubleBuffer', 'on');
       end
       

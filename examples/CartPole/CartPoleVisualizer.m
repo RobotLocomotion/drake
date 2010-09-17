@@ -17,7 +17,7 @@ classdef CartPoleVisualizer < Visualizer
       l=obj.l;
       persistent hFig base a1 raarm wb lwheel rwheel;
       if (isempty(hFig))
-        hFig = figure(25);
+        hFig = sfigure(25);
         set(hFig,'DoubleBuffer', 'on');
         
         a1 = l+0.25;
@@ -33,7 +33,7 @@ classdef CartPoleVisualizer < Visualizer
         raarm = [(arm(:,1).^2+arm(:,2).^2).^.5, atan2(arm(:,2),arm(:,1))];
       end
       
-      figure(hFig); cla; hold on; view(0,90);
+      sfigure(hFig); cla; hold on; view(0,90);
       patch(x(1)+base(:,1), base(:,2),0*base(:,1),'b','FaceColor',[.3 .6 .4])
       patch(x(1)+lwheel(:,1), lwheel(:,2), 0*lwheel(:,1),'k');
       patch(x(1)+wb+lwheel(:,1), lwheel(:,2), 0*lwheel(:,1),'k');

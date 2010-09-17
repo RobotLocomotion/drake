@@ -28,7 +28,7 @@ classdef AcrobotVisualizer < Visualizer
       l1=obj.l1; l2=obj.l2;
   
       if (isempty(hFig))
-        hFig = figure(32);
+        hFig = sfigure(32);
         set(hFig,'DoubleBuffer','on');
         av = pi/2*[1:.05:3];
         r = .04*min([l1 l2]);
@@ -42,7 +42,7 @@ classdef AcrobotVisualizer < Visualizer
         L2a = atan2(L2y,L2x);
       end
   
-      figure(hFig);
+      sfigure(hFig);
       clf;
       
       patch(L1r.*sin(L1a+x(1)),-L1r.*cos(L1a+x(1)),0*L1a,'r');
@@ -51,7 +51,7 @@ classdef AcrobotVisualizer < Visualizer
       plot3(0,0,2,'k+');
       axis image
       view(0,90)
-      axis off
+      set(gca,'XTick',[],'YTick',[])
       axis((l1+l2)*1.1*[-1 1 -1 1 -1 1000]);
       
       title(['t = ', num2str(t,'%.2f') ' sec']);

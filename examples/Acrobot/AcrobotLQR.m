@@ -7,7 +7,7 @@ classdef AcrobotLQR < TILQRControl
       obj = setWrapping(obj,[1,1,0,0],[0,2*pi;-pi,pi;-inf,inf;-inf,inf]);
       obj.control_dt = 0;
       
-      if (checkDependency('spot_enabled'))
+      if (0)%checkDependency('spot_enabled'))
         options = struct('plant_order',3);
         obj = obj.verify(options);
       else

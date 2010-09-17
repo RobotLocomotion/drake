@@ -9,7 +9,7 @@ classdef PendulumLQR < TILQRControl
       obj = setWrapping(obj,[1,0],[-pi/2,3*pi/2;-inf,inf]);
       obj.control_dt = 0;
       
-      if (0) % waiting for mark to fix this   %  checkDependency('spot_enabled'))
+      if (checkDependency('spot_enabled'))
         options = struct('plant_order',3);
         obj = obj.verify(options);
       else

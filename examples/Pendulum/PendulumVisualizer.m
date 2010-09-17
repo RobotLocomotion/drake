@@ -10,7 +10,7 @@ classdef PendulumVisualizer < Visualizer
       persistent hFig base a1 a2 ac1 ac2 raarm t0;
 
       if (isempty(hFig))
-        hFig = figure(25);
+        hFig = sfigure(25);
         set(hFig,'DoubleBuffer', 'on');
         
         a1 = 0.75;  ac1 = 0.415;
@@ -27,7 +27,7 @@ classdef PendulumVisualizer < Visualizer
         return;
       end
       
-      figure(hFig); cla; hold on; view(0,90);
+      sfigure(hFig); cla; hold on; view(0,90);
       patch(base(:,1), base(:,2),1+0*base(:,1),'b','FaceColor',[.3 .6 .4])
       patch(raarm(:,1).*sin(raarm(:,2)+x(1)-pi),...
         -raarm(:,1).*cos(raarm(:,2)+x(1)-pi), ...
