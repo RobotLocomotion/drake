@@ -26,7 +26,7 @@ for n=1:length(iGfun)
 
   hN = ceil(options.N/2);
   if (abs(y(i,hN-1)-f(i)-G(n)*samples(hN-1))>options.threshold)  % some threshold on plotting
-    figure(109);
+    sfigure(109);
     plot(x(j)+samples,y(i,:),x(j),f(i),'r*');
     if (isempty(options.iname))
       xlabel(['a(',num2str(j),')']);
