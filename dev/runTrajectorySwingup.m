@@ -1,5 +1,8 @@
 function runTrajectorySwingup
 
+load robotlib_config;
+addpath([conf.root,'/examples/Acrobot'])
+
 d = AcrobotPlant;
 v = AcrobotVisualizer;
 c = TrajectorySwingup(d);
