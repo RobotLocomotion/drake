@@ -72,7 +72,7 @@ end
 conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
 if (~conf.lcm_enabled)
   disp(' LCM not found.  LCM support will be disabled.  To re-enable, add lcm-###.jar to your matlab classpath (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.5.1.jar'') into your startup.m .');
-elseif (~exist('robotlib.shared.lcmt_scope_data'))
+elseif (~exist('robotlib.util.lcmt_scope_data'))
   % todo: if robotlib java should ever exist outside of lcm, then I can
   % change this, but i'll need to check for a class that is not
   % lcm-dependent (lcmt_scope_data fails if robotlib.jar is in the
