@@ -23,7 +23,7 @@ if (g_scope_enable && checkDependency('lcm_enabled'))
   
   lc = lcm.lcm.LCM.getSingleton();
   
-  msg = robotlib.shared.lcmt_scope_data();
+  msg = robotlib.util.lcmt_scope_data();
   msg.scope_id = options.scope_id;
   msg.xdata = xval;
   msg.ydata = yval;
