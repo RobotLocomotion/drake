@@ -10,12 +10,13 @@ classdef GliderVisualizer < Visualizer
   end
 
   methods
-    function obj = PerchingGliderVisualizer
+    function obj = GliderVisualizer
+      obj = obj@Visualizer(7);
       obj.playback_speed = .2;
       obj.display_dt = 0;
     end
     
-    function status = draw(obj,t,x,flag)
+    function draw(obj,t,x)
       persistent hFig;
 
       if (isempty(hFig))
@@ -73,8 +74,6 @@ classdef GliderVisualizer < Visualizer
       R = [cos(pitch), -sin(pitch); sin(pitch), cos(pitch)];
       talon_pos = x(1:2) + R*obj.talon_b;
       plot(talon_pos(1),talon_pos(2),'bo','MarkerSize',4,'MarkerFaceColor',[0 1 0]);
-      
-      status = 0;
     end    
   end
   

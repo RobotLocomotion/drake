@@ -3,7 +3,6 @@ function runPassive
 
 d = AcrobotPlant;
 v = AcrobotVisualizer(d);
-c = ConstantControl(0);
 
-traj = simulate(d,c,[0 5]);
+traj = simulate(d,[0 5],.5*randn(4,1));
 playback(v,traj);

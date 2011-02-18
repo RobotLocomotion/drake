@@ -13,7 +13,7 @@ classdef PendulumPlant < SecondOrderPlant
   methods
     function obj = PendulumPlant()
       % Construct a new PendulumPlant
-      obj = obj@SecondOrderPlant(1,1);
+      obj = obj@SecondOrderPlant(1,1,true);
       torque_limit = 3;
       obj = setInputLimits(obj,-torque_limit,torque_limit);
     end
@@ -51,7 +51,14 @@ classdef PendulumPlant < SecondOrderPlant
       % Start me anywhere!
       x = randn(2,1);
     end
-    
   end  
-  
+
+  methods(Static)
+    function run()  % runs the passive system
+      pd = PendulumPlant;
+      pv = PendulumVisualizer;
+      traj = simulate(pd,[0 5],randn(2,1));
+      playback(pv,traj);
+    end
+  end
 end

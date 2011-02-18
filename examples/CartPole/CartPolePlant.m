@@ -36,4 +36,13 @@ classdef CartPolePlant < ManipulatorPlant
     
   end
   
+  methods (Static)
+    function run()
+      d = CartPolePlant;
+      v = CartPoleVisualizer(d);
+      xtraj = simulate(d,[0 5]);
+      playback(v,xtraj);    
+    end
+  end
+  
 end

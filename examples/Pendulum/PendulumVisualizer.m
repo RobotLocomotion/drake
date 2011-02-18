@@ -5,7 +5,11 @@ classdef PendulumVisualizer < Visualizer
 % constructor?)
 
   methods
-    function status = draw(obj,t,x,flag)
+    function obj = PendulumVisualizer()
+      obj = obj@Visualizer(2);
+    end
+    
+    function draw(obj,t,x)
       % Draw the pendulum.  
       persistent hFig base a1 a2 ac1 ac2 raarm t0;
 
@@ -22,11 +26,7 @@ classdef PendulumVisualizer < Visualizer
           aw*sin(av-pi/2) aw*sin(av+pi/2)]';
         raarm = [(arm(:,1).^2+arm(:,2).^2).^.5, atan2(arm(:,2),arm(:,1))];
       end
-      
-      if (strcmp(flag,'done'))
-        return;
-      end
-      
+            
       sfigure(hFig); cla; hold on; view(0,90);
       patch(base(:,1), base(:,2),1+0*base(:,1),'b','FaceColor',[.3 .6 .4])
       patch(raarm(:,1).*sin(raarm(:,2)+x(1)-pi),...
@@ -40,8 +40,6 @@ classdef PendulumVisualizer < Visualizer
       
       axis image; axis([-1.0 1.0 -1.0 1.0]);
       drawnow;
-      
-      status = 0;
     end    
   end
   

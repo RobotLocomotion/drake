@@ -41,18 +41,33 @@ original_path = path;
 % look for snopt, add to matlab path 
 
 % add robotlib directories to the matlab path 
+addpath([conf.root,'/systems']);
 addpath([conf.root,'/plants']);
 addpath([conf.root,'/controllers']);
 addpath([conf.root,'/controllers/tools']);
-addpath([conf.root,'/visualizers']);
 addpath([conf.root,'/estimators']);
-addpath([conf.root,'/shared']);
+addpath([conf.root,'/trajectories']);
+addpath([conf.root,'/util']);
 
 % todo: setup java classpath (not hard to do it once... but how can I set
 % it up for future sessions as well?  maybe write to startup.m, or prompt
 % user to do it?)
 
 % check for all dependencies
+
+v=ver('simulink');
+if (isempty(v)) conf.simulink_enabled = false;
+else  
+  ind = find(v.Version,'.','first');
+  major_ver = str2num(v.Version(1:ind));
+  minor_ver = str2num(v.Version((ind+2):end));
+  if (major_ver < 7 || (major_ver==7 && minor_ver < 3)) 
+    warning('Some features of Robotlib reguires SIMULINK version 7.3 or above.');
+    % haven't actually tested with lower versions
+    conf.simulink_enabled = false;
+  end
+conf.simulink_enabled = true;
+end
 
 conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
 if (~conf.lcm_enabled)
@@ -83,12 +98,12 @@ end
 
 % save configuration options to config.mat
 conf
-save([conf.root,'/shared/robotlib_config.mat'],'conf');
+save([conf.root,'/util/robotlib_config.mat'],'conf');
 
 disp('To manually change any of these entries, use:')
 disp('  load robotlib_config.mat;');
 disp('  conf.field = val;');
-disp('  save([conf.root,''/shared/robotlib_config.mat''],''conf'');');
+disp('  save([conf.root,''/util/robotlib_config.mat''],''conf'');');
 
 % if changes have been made to the matlab path, prompt user with option to 
 % save the path for future matlab sessions.

@@ -1,8 +1,13 @@
+% Builds all mex files in the directory 
 
 disp('compiling mex files...');
 
-cd shared;
+cd util;
 mex realtime.cpp
+cd ..
+
+cd systems;
+mex RLCSFunction.cpp
 cd ..
 
 disp('done.');

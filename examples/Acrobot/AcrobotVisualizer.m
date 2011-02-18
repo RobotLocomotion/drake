@@ -11,6 +11,8 @@ classdef AcrobotVisualizer < Visualizer
       %
       %   AcrobotVisualizer() will use default parameters
       
+      obj = obj@Visualizer(4);
+      
       if (length(varargin)==1 && isa(varargin{1},'AcrobotPlant'))
         obj.l1 = varargin{1}.l1;
         obj.l2 = varargin{1}.l2;
@@ -22,7 +24,7 @@ classdef AcrobotVisualizer < Visualizer
       end
     end
     
-    function status = draw(obj,t,x,flag)
+    function draw(obj,t,x)
       % draw the acrobot
       persistent hFig L1r L1a L2r L2a;
       l1=obj.l1; l2=obj.l2;
@@ -56,8 +58,6 @@ classdef AcrobotVisualizer < Visualizer
       
       title(['t = ', num2str(t,'%.2f') ' sec']);
       drawnow;
-      
-      status = 0;
     end
   end
 

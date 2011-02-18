@@ -2,8 +2,8 @@ classdef PendulumLCMCoder < LCMCoder
 % Encodes and Decodes pendulum-specific LCM smessages 
 
   methods
-    function obj = PendulumLCMCoder
-      obj = obj@LCMCoder(2,1);
+    function obj = PendulumLCMCoder()
+      obj = obj@LCMCoder(2,1,2);
     end
     
     function str = getRobotName(obj)
@@ -37,6 +37,22 @@ classdef PendulumLCMCoder < LCMCoder
       % decodes the input message
       msg = robotlib.examples.Pendulum.lcmt_pendulum_u(msg.data);
       u = msg.tau;
+      t = msg.timestamp/1000;
+    end
+    
+    function msg = encodeY(obj,t,y)
+      % encodes the input message
+      msg = Pendulum.lcmt_pendulum_y();
+      msg.timestamp = t*1000;
+      msg.theta = y(1);
+      msg.tau = y(2);
+    end
+    
+    function [y,t] = decodeY(obj,msg)
+      % decodes the input message
+      msg = Pendulum.lcmt_pendulum_y(msg.data);
+      y(1) = msg.theta;
+      y(2) = msg.tau;
       t = msg.timestamp/1000;
     end
   end

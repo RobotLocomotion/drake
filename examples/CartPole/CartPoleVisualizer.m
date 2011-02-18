@@ -6,6 +6,7 @@ classdef CartPoleVisualizer < Visualizer
   
   methods
     function obj = CartPoleVisualizer(l)
+      obj = obj@Visualizer(4);
       if (nargin>0)
         if (isa(l,'double')) obj.l = l;
         elseif (isa(l,'CartPolePlant')) obj.l = l.l;
@@ -13,7 +14,7 @@ classdef CartPoleVisualizer < Visualizer
       end
     end
     
-    function status = draw(obj,t,x,flag)
+    function draw(obj,t,x)
       l=obj.l;
       persistent hFig base a1 raarm wb lwheel rwheel;
       if (isempty(hFig))
@@ -47,8 +48,6 @@ classdef CartPoleVisualizer < Visualizer
       axis image;
       axis([-2.5 2.5 -2.5*l 2.5*l]);
       drawnow;
-      
-      status = 0;
     end
   end
 end
