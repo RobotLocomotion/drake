@@ -1,4 +1,4 @@
-function runAllTests(bAbortOnFail)
+function runAllTests(numToSkip,bAbortOnFail)
 
 % Recurses through the robotlib directories, running all test scripts 
 % (in test subdirectories) and all methods/scripts in the examples directory.
@@ -17,9 +17,11 @@ function runAllTests(bAbortOnFail)
 % anything is committed back into the robotlib repository.
 %
 
-if (nargin<1) bAbortOnFail = true; end
+if (nargin<1) numToSkip = 0; end
+if (nargin<2) bAbortOnFail = true; end
 
 info.bAbortOnFail = bAbortOnFail;
+info.numToSkip = numToSkip;
 info.passcount = 0;
 info.failcount = 0;
 info.initialpwd = pwd;
@@ -27,8 +29,8 @@ info.initialpwd = pwd;
 disp('');
 
 %pause off;
-info=run_tests_in('.',info,true);
 info=run_tests_in('examples',info,false);
+info=run_tests_in('.',info,true);
 %pause on;
 
 fprintf(1,'\n Executed %d tests.  %d passed.  %d failed.\n',info.passcount+info.failcount, info.passcount, info.failcount);
@@ -40,12 +42,13 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
 
   p = pwd;
   cd(pdir);
+  disp([pdir,'/']);drawnow;
   files=dir('.');
   
   for i=1:length(files)
     if (files(i).isdir)
       % then recurse into the directory
-      if (files(i).name(1)~='.')  % skip . directories
+      if (files(i).name(1)~='.' && ~any(strcmpi(files(i).name,{'dev','slprj'})))  % skip . and dev directories
         info = run_tests_in(files(i).name,info,bOnlyLookForTestDirs && ~strcmpi(files(i).name,'test'));
       end
       continue;
@@ -54,20 +57,33 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
     if (~strcmpi(files(i).name(end-1:end),'.m')) continue; end
     if (strcmpi(files(i).name,'Contents.m')) continue; end
     
-    % check if it's a function or classdef
-    if (checkFile(files(i).name,{'classdef','NOTEST'}))
+    % reject if there is a notest
+    if (checkFile(files(i).name,'NOTEST'))
       continue; 
     end
-    
-    % If I made it to here, then actually run the file.
     
     testname = files(i).name;
     ind=find(testname=='.',1);
     testname=testname(1:(ind-1));
 
+    % if it's a class, see if it implements the static run method()
+    isClass = checkFile(files(i).name,'classdef');
+    if (isClass && ~ismethod(testname,'run'))
+      continue;  % skip classes that aren't runnable
+    end
+    
+    if (info.numToSkip>info.passcount) 
+      info.passcount=info.passcount+1;
+      continue;
+    end
+    
+    % If I made it to here, then actually run the file.
+
+    force_close_system();
     close all;
     try
-      feval(testname);
+      if (isClass) feval([testname,'.run']); 
+      else feval(testname); end
       fprintf(1,'%-40s ',testname);
       fprintf(1,'[PASSED]\n');
       info.passcount = info.passcount+1;
@@ -76,6 +92,7 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
       fprintf(1,'%-40s ',testname);
       fprintf(1,'[FAILED]\n');
       info.failcount = info.failcount+1;
+      disp(['Run runAllTests(',num2str(info.passcount),') to continue where you left off']);
       if (info.bAbortOnFail)
         cd(info.initialpwd);
         rethrow(lasterror);
@@ -83,7 +100,9 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
     end
 
     % now clean up for the next guy:
+    force_close_system;
     close all;
+    
     t = timerfind;
     if (~isempty(t)) stop(t); end
     

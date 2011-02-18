@@ -1,22 +1,22 @@
-classdef SecondOrderPlant < Plant
+classdef SecondOrderPlant < RobotLibSystem
 % An abstract class that wraps qddot = f(t,q,qdot,u).
 %   A specialization of the Dynamics class for systems of second order.  
   
   methods
-    function obj = SecondOrderPlant(num_q, num_u)
-    % SecondOrderDynamics(num_q, num_u)
-    %   Constructs a SecondOrderDynamics object with num_q configuration
+    function obj = SecondOrderPlant(num_q, num_u,timeInvariantFlag)
+    % SecondOrderPlant(num_q, num_u)
+    %   Constructs a SecondOrderPlant object with num_q configuration
     %   variables (implying num_q*2 states) and num_u control inputs.
 
 %      if (nargin>0)
-        obj = obj@Plant(num_q*2,num_u);
+        obj = obj@RobotLibSystem(num_q*2,0,num_u,num_q*2,false,timeInvariantFlag);
         obj.num_q = num_q;
 %      end
     end
   end
   
   methods (Abstract=true)
-    qdd = sodynamics(obj,t,q,qd,u);  % implements qdd = f(t,q,qd,u)
+    qdd = sodynamics(obj,t,q,qd,u)  % implements qdd = f(t,q,qd,u)
   end
 
   methods
@@ -39,13 +39,18 @@ classdef SecondOrderPlant < Plant
       obj = setNumX@Plant(obj,num_x);
     end
     
-    function xdot = dynamics(obj,t,x,u);
+    function xdot = dynamics(obj,t,x,u)
     % Provides the dynamics interface for sodynamics
       q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
       qdd = obj.sodynamics(t,q,qd,u);
       xdot = [qd;qdd];
     end
-
+    
+    function y = output(obj,t,x,u)
+      % default output is the full state
+      y = x;
+    end
+    
     function df = dynamicsGradients(obj,t,x,u,order)
     % Provides the Taylor-expansion of the dynamics
       if (nargin<5) order=1; end
@@ -67,6 +72,13 @@ classdef SecondOrderPlant < Plant
         end
       end
       
+    end
+    
+    function dy = outputGradients(obj,t,x,u,order)
+      % gradients of the full state feedback 
+      if (nargin>4 && order>1) error('not implemented yet, but trivial'); end
+      dy{1} = [zeros(length(x),1),eye(length(x)),zeros(length(x),length(u))];
+      % because length(y) = length(x)
     end
     
   end

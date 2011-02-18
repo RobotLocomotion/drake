@@ -1,16 +1,20 @@
+% Toolbox RobotLib
+% Version 3.0.0 05-Feb-2011
 % 
 % MIT Robot Locomotion Group
-% RobotLib Simulators
+% RobotLib Main Directory
 %
 % 
 % Sub-Directories
-%   simulators  - modules to simulate dynamics
-%   controllers - modules that design and implement controllers
-%   estimators  - modules for state estimation
-%   visualizers - modules for visualization
+%   systems     - core dynamical systems functionality
+%   plants      - systems that implement plant dynamics
+%   controllers - systems that design and implement controllers
+%   estimators  - systems for state estimation
+%   util        - shared code used by multiple components
 %   drivers     - interface code for sensors and actuators
-%   examples    - example code for the model systems
+%   examples    - dynamics and control examples for a number of model systems
 %
 % Scripts in this folder
 %   configure   - Checks dependencies and sets up matlab path.
+%   make        - Builds all mex files in the directory 
 %   runAllTests - Recurses through the robotlib directories, running all test scripts 

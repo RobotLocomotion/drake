@@ -1,25 +1,19 @@
-classdef PendulumEnergyShaping < Control
+classdef PendulumEnergyShaping < RobotLibSystem
   
   properties 
     p
-    lqr;
   end
   
   methods
     function obj = PendulumEnergyShaping(plant)
-      obj = obj@Control(2,1);
+      obj = obj@RobotLibSystem(0,0,2,1,true,true);
+      typecheck(plant,'PendulumPlant');
       obj.p = plant;
-      obj.lqr = PendulumLQR(plant);
-      obj.control_dt = 0;
     end
     
-    function u = control(obj,t,x)
-      if obj.lqr.isVerified(x)
-        u = obj.lqr.control(t,x);
-      else
-        Etilde = .5*obj.p.m*obj.p.l^2*x(2)^2 - obj.p.m*obj.p.g*obj.p.l*cos(x(1)) - 1.2*obj.p.m*obj.p.g*obj.p.l;
-        u = -.1*x(2)*Etilde;
-      end
+    function u = output(obj,t,junk,x)
+      Etilde = .5*obj.p.m*obj.p.l^2*x(2)^2 - obj.p.m*obj.p.g*obj.p.l*cos(x(1)) - 1.2*obj.p.m*obj.p.g*obj.p.l;
+      u = +obj.p.b*x(2)-.1*x(2)*Etilde;
     end
   end 
   

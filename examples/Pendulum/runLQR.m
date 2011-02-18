@@ -3,6 +3,14 @@ function runLQR
 pd = PendulumPlant;
 pv = PendulumVisualizer;
 c = PendulumLQR(pd);
+sys = cascade(feedback(pd,c),pv);
+
+for i=1:5
+  simulate(sys,[0 4],[pi;0]+0.2*randn(2,1));
+end
+
+return;
+
 
 c.rho
 
@@ -17,7 +25,7 @@ bndr = repmat(c.x0,1,2*K) + ...
 for i = 1:2*K
     x0 = bndr(:,i);
     bVerify = c.isVerified(x0);
-    xtraj=simulate(pd,c,[0 3],x0);
+    xtraj=simulate(sys,[0 3],x0);
     playback(pv,xtraj);
     breaks=xtraj.getBreaks();
     xf = xtraj.eval(breaks(end));

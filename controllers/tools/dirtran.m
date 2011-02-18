@@ -1,40 +1,17 @@
-function [xtraj,utraj,info] = dirtran(plant,COSTFUN,FINALCOSTFUN,x0,utraj0,options)
+function [utraj,xtraj,info] = dirtran(sys,costFun,finalCostFun,x0,utraj0,con,options)
 
-% Open-loop trajectory optimization using the direct collocation method via
+% Open-loop trajectory optimization using the direct transcription method via
 % SNOPT.  Roughly following the implementation described in Betts01, section 4.5.
 %
 % Inputs are:
-%    plant                       - a class which implements the Plant interface
-%    [g,dg] = COSTFUN(t,x,u)     - the cost function, including gradients
-%    [h,dh] = FINALCOSTFUN(t,x)  - the final time cost, including gradients
+%    sys                         - a class which implements the RobotLibSystem interface
+%    [g,dg] = costFun(t,x,u)     - the cost function, including gradients
+%    [h,dh] = finalCostFun(t,x)  - the final time cost, including gradients
 %    x0                          - initial conditions
 %    utape0                      - an initial guess for the open-loop control
+%    con                         - constraint structure
 %    options                     - options struct populated by the fields below
 %    
-% Additionally, we have the following options
-%    transcription               - 'euler' or 'runge-kutta'
-%    Tmin,Tmax,Xmax,Xmin,Umax,Umin
-%                                - impose hard constraints
-%    bx0free                     - remove initial conditions constraint (default false)
-%    xf                          - impose final value constraint
-%                                  can be a state vector, a Trajectory, or
-%                                  a TrajectoryLibrary
-%    xtraj0                      - initial guess for the xtape.  Default is
-%                                  the result of simulating utape0 from x0,
-%                                  or (if xf is set) a straight line from
-%                                  x0 to xf.
-%    maxDT                       - a limit on the step-size; if the tape is
-%                                  stretched in time to exceed this, it will 
-%                                  be lengthened and resampled as necessary.
-%    user_constraint_fun         - cell array of function pointers that
-%                                  specificy extra constraints.  each
-%                                  function should implement two
-%                                  interfaces:
-%            [nf,iGfun,jGvar,Fhigh,Flow] = user_constraint_fun(nT,nX,nU,[])
-%            [f,G] = user_constraint_fun(nT,nX,nU,w)
-%
-%    snopt_options               - type help snopt_options for details
-%
 
 checkDependency('snopt_enabled');
 
@@ -110,8 +87,10 @@ if (options.bGradTest)
   iname = {'tf'};
   for i=1:nT, for j=1:nX, iname= {iname{:},['x',num2str(j),'(',num2str(i),')']}; end, end
   for i=1:nT, for j=1:nU, iname= {iname{:},['u',num2str(j),'(',num2str(i),')']}; end, end
-  
-  snopt_gradtest(w0,'snopt_userfun',iGfun,jGvar,struct('iname',{iname}));  return;
+
+  [nf,iGfun,jGvar,Fhigh,Flow,oname] = userfun_grad_ind(nT,nX,nU,options);
+
+  gradTest(@(w)gradTestFun(w,iGfun,jGvar),w0,struct('input_name',{{iname}},'output_name',{oname},'tol',.01));
 end
   
 %% Run SNOPT
@@ -269,7 +248,7 @@ function [f,G] = userfun(w,plant,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options)
   end
 end
   
-function [nf, iGfun, jGvar, Fhigh, Flow] = userfun_grad_ind(nT,nX,nU,options)
+function [nf, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_ind(nT,nX,nU,options)
 
   N = 1 + nX*nT + nU*nT;
   
@@ -277,16 +256,23 @@ function [nf, iGfun, jGvar, Fhigh, Flow] = userfun_grad_ind(nT,nX,nU,options)
   jGvar = [1:N]';      % dJ/d[T,X,U]
 
   nf = 1;
-
+  if (nargout>5) oname = {'J'}; end
+  
   if (~options.bx0free)
     iGfun = [iGfun; nf+(1:nX)'];
     jGvar = [jGvar; 1+(1:nX)'];
     nf = nf+nX;
+    if (nargout>5) 
+      for i=1:nX, oname= {oname{:},['x0_',num2str(i)]}; end
+    end
   end
   if (~isempty(options.xf))
     iGfun = [iGfun; repmat(nf+(1:nX)',nX,1)]; 
     jGvar = [jGvar; 1+(nT-1)*nX+reshape(repmat(1:nX,nX,1),nX*nX,1)];
     nf = nf+nX;
+    if (nargout>5) 
+      for i=1:nX, oname= {oname{:},['xf_',num2str(i)]}; end
+    end
   end
 
   switch (options.transcription)
@@ -302,6 +288,9 @@ function [nf, iGfun, jGvar, Fhigh, Flow] = userfun_grad_ind(nT,nX,nU,options)
           1 + i*nX + (1:nX)' ];                               % df(j)/dx(j,i+1)
 
         nf = nf + nX;
+        if (nargout>5)
+          for j=1:nX, oname= {oname{:},['x',num2str(j),'(',num2str(i+1),')']}; end
+        end
       end
 
     case 'runge-kutta'
@@ -317,6 +306,9 @@ function [nf, iGfun, jGvar, Fhigh, Flow] = userfun_grad_ind(nT,nX,nU,options)
           1 + i*nX + (1:nX)' ];                                   % df(j)/dx(j,i+1)
 
         nf = nf + nX;
+        if (nargout>5)
+          for j=1:nX, oname= {oname{:},['x',num2str(j),'(',num2str(i+1),')']}; end
+        end
       end
       
     otherwise
@@ -337,6 +329,16 @@ function [nf, iGfun, jGvar, Fhigh, Flow] = userfun_grad_ind(nT,nX,nU,options)
     Fhigh = [Fhigh; uFhigh];
     Flow = [Flow; uFlow];
     nf = nf + unf;
+    if (nargout>5)
+      for j=1:unf, oname= {oname{:},['user',num2str(j)]}; end
+    end
   end
 end
+
+
+function [f,df] = gradTestFun(w,iGfun,jGvar)
+  [f,G] = snopt_userfun(w);
+  df = sparse(iGfun,jGvar,G);
+end
+
 

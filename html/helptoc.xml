@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding="utf-8"?>
+<toc version="2.0">
+
+    <tocitem target="robotlib_product_page.html">RobotLib Toolbox
+        <tocitem target="getting_started.html" image="HelpIcon.GETTING_STARTED">
+            Getting Started with the RobotLib Toolbox
+        </tocitem>
+    </tocitem>
+</toc>

@@ -1,20 +1,20 @@
-classdef ConstantControl < Control
+classdef ConstantControl < RobotLibSystem
 % Trivial control class that always outputs a constant u.
   
   methods
-    function obj = ConstantControl(const_u)
-      % Create ConstantControl object by specifying u.
-      obj = obj@Control(0,length(const_u));
-      obj.const_u = const_u;
+    function obj = ConstantControl(const_y)
+      % Create ConstantControl object by specifying y.
+      obj = obj@RobotLibSystem(0,0,0,length(const_y),false,true);
+      obj.const_y = const_y;
     end
-    function u = control(obj,t,x)
+    function y = output(obj,t,x,u)
       % Implement control.
-      u = obj.const_u;
+      y = obj.const_y;
     end
   end
   
   properties
-    const_u;
+    const_y;
   end
   
 end

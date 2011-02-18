@@ -3,7 +3,7 @@ classdef ManipulatorPlant < SecondOrderPlant
 
   methods
     function obj = ManipulatorPlant(num_q, num_u)
-      obj = obj@SecondOrderPlant(num_q,num_u);
+      obj = obj@SecondOrderPlant(num_q,num_u,true);
     end
   end
   
@@ -19,6 +19,9 @@ classdef ManipulatorPlant < SecondOrderPlant
       qdd = H\(B*u - C);
     end
 
+    function dqdd = sodynamicsGradients(obj,t,q,qd,u,order)
+      error('not implemented yet');
+    end
   end
   
 end

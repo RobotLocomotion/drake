@@ -1,4 +1,4 @@
-classdef GliderPlant < Plant
+classdef GliderPlant < RobotLibSystem
 % Defines the dynamics for the perching glider.  Translated from Rick Cory's code in 
 % https://svn.csail.mit.edu/russt/robots/perchingGlider/ 
   
@@ -20,7 +20,7 @@ classdef GliderPlant < Plant
   
   methods
     function obj = GliderPlant()
-      obj = obj@Plant(7,1);
+      obj = obj@RobotLibSystem(7,0,1,7);
       ulimit = 13; % max servo velocity
       obj = setInputLimits(obj,-ulimit,ulimit);
     end
@@ -70,6 +70,14 @@ classdef GliderPlant < Plant
       if (nargin>4 && order>1) df = dynamicsGradients@Plant(obj,t,x,u,order); return; end
 
       df = glider_grads(obj,t,x,u);
+    end
+    
+    function y = output(obj,t,x,u)
+      y = x;
+    end
+    
+    function dy = outputGradients(obj,t,x,u,order)
+      error('implement this (it''s trivial)'); 
     end
     
     function x = getInitialState(obj)

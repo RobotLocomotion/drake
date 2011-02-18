@@ -1,0 +1,8 @@
+
+struct lcmt_pendulum_y
+{
+	int64_t timestamp;
+
+	double theta;       // measured position
+	double tau;         // measured actual torque
+}
