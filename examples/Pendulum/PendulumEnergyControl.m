@@ -5,6 +5,7 @@ classdef PendulumEnergyControl < FiniteStateMachine
       obj = obj.addMode(PendulumEnergyShaping(plant));
       lqr = PendulumLQR(plant);
       obj = obj.addMode(lqr);
+      obj = obj.setAngleFlags([1;0],[],0);
 
       % todo: build closed-loop lqr system and do verification on it to
       % determine transition boundary.
@@ -12,11 +13,10 @@ classdef PendulumEnergyControl < FiniteStateMachine
       obj.S = lqr.S;
       obj.rho = 4;
 
-      lqr_in = inline('(x-obj.x0)''*obj.S*(x-obj.x0) - obj.rho','obj','t','junk','x');
-      lqr_out = inline('obj.rho - (x-obj.x0)''*obj.S*(x-obj.x0)','obj','t','junk','x');
+      in_lqr_roa = inline('obj.wrapInput(x-obj.x0)''*obj.S*obj.wrapInput(x-obj.x0) - obj.rho','obj','t','junk','x');
       
-      obj = obj.addTransition(1,2,lqr_in,[],true,true);
-      obj = obj.addTransition(2,1,lqr_out,[],true,true);
+      obj = obj.addTransition(1,2,in_lqr_roa,[],true,true);
+      obj = obj.addTransition(2,1,not_guard(obj,in_lqr_roa),[],true,true);
       
       obj.output_mode = false;
     end

@@ -16,6 +16,7 @@ classdef PendulumPlant < SecondOrderPlant
       obj = obj@SecondOrderPlant(1,1,true);
       torque_limit = 3;
       obj = setInputLimits(obj,-torque_limit,torque_limit);
+      obj = setAngleFlags(obj,0,[1;0],[1;0]);
     end
     
     function qdd = sodynamics(obj,t,q,qd,u)

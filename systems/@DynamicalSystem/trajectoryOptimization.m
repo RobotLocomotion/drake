@@ -1,3 +1,8 @@
+function [utraj,xtraj,info] = trajectoryOptimization(sys,transcriptionFun,costFun,finalCostFun,x0,utraj0,con,options)
+% trajectoryOptimization
+%
+% Todo:
+%
 % Help file for trajectory design constraints. 
 %
 % All of the trajectory design algorithms support all of 
@@ -48,6 +53,15 @@
 % Periodicity Constraints
 %  con.periodic = true       x(t0) = x(tf)
 %
+%
+% The following options are supported by one or more of the trajectory
+% design algorithms:
+%
+%  ode_solver   - name of a <a href="http://www.mathworks.com/help/toolbox/simulink/ug/f11-69449.html">Simulink ode solver</a>
+%  optimizer    - 'fmincon','snopt', ... 
+%  grad_method  - 'numerical', 'bptt', 'rtrl', ...
+%  grad_test    - true or false
+
 
 
 % More things to implement / think about:
@@ -56,4 +70,43 @@
 %    computation time?  it's important at the trajectory level, but probably
 %    not at the individual x level, right?=======
 % todo:  do i ever need to handle c(t,x,u) type constraints?
+
+
+
+
+
+global SNOPT_USERFUN;
+
+checkDependency('snopt_enabled');
+
+if (nargin<6) con = struct(); end
+if (nargin<7) options = struct(); end
+if (~isfield(options,'grad_test')) options.grad_test = false; end
+if (~isfield(options,'warning')) options.warning = true; end
+
+[w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,SNOPT_USERFUN,wrapupfun,iname,oname] = dircol_snopt_transcription(sys,costFun,finalCostFun,x0,utraj0,con,options);
+
+if (options.grad_test)
+  gradTest(@(w)gradTestFun(w,iGfun,jGvar),w0',struct('input_name',{{iname}},'output_name',{oname},'tol',.01));
+end
+
+%% Run SNOPT
+snset('superbasics=100');  % to do: make this an option?
+[w,F,info] = snopt(w0',wlow',whigh',Flow',Fhigh','snopt_userfun',0,1,[],[],[],iGfun',jGvar');
+
+if (info~=1 && options.warning) 
+  [str,cat] = snopt_info(info);
+  warning(['SNOPT exited w/ info = ',num2str(info),'.\n',cat,': ',str,'\n  Check p19 of Gill06 for more information.']);  
+end
+
+[utraj,xtraj] = wrapupfun(w);
+
+end
+
+
+function [f,df] = gradTestFun(w,iGfun,jGvar)
+  [f,G] = snopt_userfun(w);
+  df = sparse(iGfun,jGvar,G);
+end
+
 

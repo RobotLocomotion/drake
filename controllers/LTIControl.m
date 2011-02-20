@@ -20,7 +20,7 @@ classdef LTIControl < RobotLibSystem
     function u = output(obj,t,junk,x)
       % implements the actual control function
       %      x = wrap(obj,obj.x0,x);
-      u = obj.u0-obj.K*(x-obj.x0);
+      u = obj.u0-obj.K*obj.wrapInput(x-obj.x0);
     end
     
     function du = controlGradients(obj,t,x,order)

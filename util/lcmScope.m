@@ -34,7 +34,7 @@ while true
   if (isempty(msg)) 
     drawnow;
     while(isempty(msg))  % after I've drawn once, block for long periods until a new message arrives
-      msg = getNextMessage(aggregator,1000);
+      msg = getNextMessage(aggregator,100);
       drawnow;
     end
   end
