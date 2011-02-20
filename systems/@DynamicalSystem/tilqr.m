@@ -32,6 +32,7 @@ if (any(any(abs(C-eye(getNumStates(obj)))>tol)) || any(abs(D(:))>tol))
 end
 
 ltisys = LTIControl(x0,u0,K,S);
+ltisys = setAngleFlags(ltisys,obj.output_angle_flag,[],obj.input_angle_flag);
 
 end
 

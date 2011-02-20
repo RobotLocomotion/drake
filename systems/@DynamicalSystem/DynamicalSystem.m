@@ -16,7 +16,6 @@ classdef DynamicalSystem
     xcdot = dynamics(obj,t,x,u);
     xdn = update(obj,t,x,u);
     y = output(obj,t,x,u);
-
   end
   
   % construction methods
@@ -155,6 +154,32 @@ classdef DynamicalSystem
       obj.time_invariant_flag = bval;
     end
 
+    function u = wrapInput(obj,u)
+      i=find(obj.input_angle_flag);
+      u(i) = mod(u(i)+pi,2*pi)-pi;
+    end
+    function y = wrapOutput(obj,y)
+      i=find(obj.output_angle_flag);
+      y(i) = mod(y(i)-pi,2*pi)-pi;
+    end
+    function obj = setAngleFlags(obj,in_angle_flag,state_angle_flag,out_angle_flag)
+      if (~isempty(in_angle_flag))
+        typecheck(in_angle_flag,{'logical','double'});
+        sizecheck(in_angle_flag,[obj.getNumInputs() 1]);
+        obj.input_angle_flag = in_angle_flag;
+      end
+      if (~isempty(state_angle_flag))
+        typecheck(state_angle_flag,{'logical','double'});
+        sizecheck(state_angle_flag,[obj.getNumStates() 1]);
+        obj.state_angle_flag = state_angle_flag;
+      end
+      if (~isempty(out_angle_flag))
+        typecheck(out_angle_flag,{'logical','double'});
+        sizecheck(out_angle_flag,[obj.getNumOutputs() 1]);
+        obj.output_angle_flag = out_angle_flag;
+      end
+    end
+    
     function xs = stateVectorToStructure(obj,xv)
       if (isempty(obj.structured_x))
         obj.structured_x = Simulink.BlockDiagram.getInitialState(getModel(obj));
@@ -267,5 +292,10 @@ classdef DynamicalSystem
     simulink_params=struct();
     structured_x;  % save a little time by caching this structure
   end
-  
+  properties (SetAccess=private,GetAccess=public)
+    input_angle_flag = [];
+    state_angle_flag = [];
+    output_angle_flag = [];
+  end
+
 end
