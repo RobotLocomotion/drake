@@ -5,25 +5,24 @@ p = CompassGaitPlant();
 x0 = zeros(4,1); tf0 = 1; xf = zeros(4,1);
 utraj0 = {PPTrajectory(foh(linspace(0,tf0,15),randn(1,15))),PPTrajectory(foh(linspace(0,tf0,15),randn(1,15)))};
 
-con.mode = struct();
-con.mode(1).mode_num = 1;
-con.mode(2).mode_num = 2;
+con.mode{1}.mode_num = 1;
+con.mode{2}.mode_num = 2;
 
-con.mode(1).u.lb = p.umin;
-con.mode(1).u.ub = p.umax;
-con.mode(2).u.lb = p.umin;
-con.mode(2).u.ub = p.umax;
+con.mode{1}.u.lb = p.umin;
+con.mode{1}.u.ub = p.umax;
+con.mode{2}.u.lb = p.umin;
+con.mode{2}.u.ub = p.umax;
 
-con.mode(1).x0.lb = x0;
-con.mode(1).x0.ub = x0;
-con.mode(1).xf.lb = [pi/8;-inf;-inf;-inf];
-con.mode(2).xf.lb = xf;
-con.mode(2).xf.ub = xf;
+con.mode{1}.x0.lb = x0;
+con.mode{1}.x0.ub = x0;
+con.mode{1}.xf.lb = [pi/8;-inf;-inf;-inf];
+con.mode{2}.xf.lb = xf;
+con.mode{2}.xf.ub = xf;
 
-con.mode(1).T.lb = .1;   
-con.mode(1).T.ub = 2;
-con.mode(2).T.lb = .1;   
-con.mode(2).T.ub = 2;
+con.mode{1}.T.lb = .1;   
+con.mode{1}.T.ub = 2;
+con.mode{2}.T.lb = .1;   
+con.mode{2}.T.ub = 2;
 
 options=struct();
 tic
