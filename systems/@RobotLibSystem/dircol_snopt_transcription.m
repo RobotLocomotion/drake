@@ -38,29 +38,73 @@ whigh = [ tscale, repmat(inf,1,prod(size(x))), repmat(inf,1,prod(size(u)))];
 wlow = [ tscale, repmat(-inf,1,prod(size(x))), repmat(-inf,1,prod(size(u)))];
 
 % handle constraints
-% todo: handle the rest of the constraints or alarm for unsupported constraints
-if isfield(con,'x0')
-  if isfield(con.x0,'lb'), wlow(1 + (1:nX)) = con.x0.lb; end
-  if isfield(con.x0,'ub'), whigh(1 + (1:nX)) = con.x0.ub; end
-end
-if isfield(con,'xf')
-  xfind = 1 + nX*(nT-1) + (1:nX);
-  if isfield(con.xf,'lb'), wlow(xfind) = con.xf.lb; end
-  if isfield(con.xf,'ub'), whigh(xfind) = con.xf.ub; end
-  if all(wlow(xfind)==whigh(xfind))  % final value constraint
-    for i=1:nX
-      x(i,:) = linspace(x0(i),wlow(xfind(i)),nT);
-    end
-    w0(1+(1:(nT*nX))) = x(:);
+  function conwarn(f1,f2)
+    if (iscell(f1)) f1 = f1{1}; end
+    if (nargin>1)
+      if (iscell(f2)) f2 = f2{1}; end
+      warning([f1,'.',f2,' constraint is not supported by dircol (at least not yet)']);
+    else
+      warning([f1,' constraint is not supported by dircol (at least not yet)']);
+    end      
   end
-end
-if isfield(con,'u')
-  if isfield(con.u,'lb'), wlow(1 + nX*nT + 1 : end) = reshape(repmat(con.u.lb,1,nT),1,[]); end
-  if isfield(con.u,'ub'), whigh(1 + nX*nT + 1 : end) = reshape(repmat(con.u.ub,1,nT),1,[]); end
-end
-if isfield(con,'T')
-  if isfield(con.T,'lb'), wlow(1) = con.T.lb/(t(end)-t(1)); end
-  if isfield(con.T,'ub'), whigh(1) = con.T.ub/(t(end)-t(1)); end
+
+for f1 = fieldnames(con)'
+  switch(f1{1})
+    case 'x0'
+      for f2 = fieldnames(con.x0)'
+        switch(f2{1})
+          case 'lb'
+            wlow(1 + (1:nX)) = con.x0.lb;
+          case 'ub'
+            whigh(1 + (1:nX)) = con.x0.ub;
+          otherwise 
+            conwarn(f1,f2);
+        end
+      end
+    case 'xf'
+      xfind = 1 + nX*(nT-1) + (1:nX);
+      for f2 = fieldnames(con.xf)'
+        switch(f2{1})
+          case 'lb'
+            wlow(xfind) = con.xf.lb;
+          case 'ub'
+            whigh(xfind) = con.xf.ub;
+          otherwise 
+            conwarn(f1,f2);
+        end
+      end
+      if all(wlow(xfind)==whigh(xfind))  % final value constraint
+        for i=1:nX
+          x(i,:) = linspace(x0(i),wlow(xfind(i)),nT);
+        end
+        w0(1+(1:(nT*nX))) = x(:);
+      end
+    case 'u'
+      for f2 = fieldnames(con.u)'
+        switch(f2{1})
+          case 'lb'
+            wlow(1 + nX*nT + 1 : end) = reshape(repmat(con.u.lb,1,nT),1,[]);
+          case 'ub'
+            whigh(1 + nX*nT + 1 : end) = reshape(repmat(con.u.ub,1,nT),1,[]);
+          otherwise 
+            conwarn(f1,f2);
+        end
+      end
+    case 'T'
+      for f2 = fieldnames(con.T)'
+        switch(f2{1})
+          case 'lb'
+            wlow(1) = con.T.lb/(t(end)-t(1));
+          case 'ub'
+            whigh(1) = con.T.ub/(t(end)-t(1));
+          otherwise 
+            conwarn(f1,f2);
+        end
+      end
+      
+    otherwise
+      conwarn(f1);
+  end
 end
 
 userfun = @(w) dircol_userfun(sys,w,costFun,finalCostFun,t,nX,nU,con,options);

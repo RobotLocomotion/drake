@@ -41,13 +41,13 @@ function [utraj,xtraj,info] = trajectoryOptimization(sys,transcriptionFun,costFu
 %
 % Hybrid Mode Constraints
 % For hybrid systems, all of the constraints above can exist inside a
-% mode structure, e.g.
-%  con.mode(i).mode_num    
-%  con.mode(i).u    input (for this mode) constraint structure defined above
-%  con.mode(i).x    state (for this mode) constraint structure defined above
-%  con.mode(i).x0   initial (for this mode) state constraint structure defined above
-%  con.mode(i).xf   final (for this mode) state constraint structure defined above
-%  con.mode(i).T    time (for this mode) constraint structure defined above
+% mode cell array, e.g.
+%  con.mode{i}.mode_num    
+%  con.mode{i}.u    input (for this mode) constraint structure defined above
+%  con.mode{i}.x    state (for this mode) constraint structure defined above
+%  con.mode{i}.x0   initial (for this mode) state constraint structure defined above
+%  con.mode{i}.xf   final (for this mode) state constraint structure defined above
+%  con.mode{i}.T    time (for this mode) constraint structure defined above
 % Note that the mode indices enforce a total ordering of the modes in the solution 
 %
 % Periodicity Constraints

@@ -6,7 +6,7 @@ function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = 
   end
   for m=1:length(con.mode)
     % todo: check here that utraj0{m} starts at t=0?
-    [w0{m},wlow{m},whigh{m},Flow{m},Fhigh{m},iGfun{m},jGvar{m},mode_userfun{m},mode_wrapup{m},mode_iname{m},mode_oname{m}] = dircol_snopt_transcription(sys.modes{con.mode(m).mode_num},costFun{m},finalCostFun{m},x0{m},utraj0{m},con.mode(m),options);
+    [w0{m},wlow{m},whigh{m},Flow{m},Fhigh{m},iGfun{m},jGvar{m},mode_userfun{m},mode_wrapup{m},mode_iname{m},mode_oname{m}] = dircol_snopt_transcription(sys.modes{con.mode{m}.mode_num},costFun{m},finalCostFun{m},x0{m},utraj0{m},rmfield(con.mode{m},'mode_num'),options);
     tOrig{m} = utraj0{m}.getBreaks();
     N(m) = length(w0{m});
     nT(m) = length(tOrig{m});
@@ -25,8 +25,20 @@ function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = 
   [nf(m), iGfun{m}, jGvar{m}, Fhigh{m}, Flow{m}, fsm_oname] = fsmObjFun_ind(sys,N,nT,options);
   iGfun{m} = iGfun{m}+sum(nf(1:m-1));
   w0=[w0{:}]; wlow=[wlow{:}]; whigh=[whigh{:}]; Flow=[Flow{:}]; Fhigh=[Fhigh{:}]; iGfun=[iGfun{:}]; jGvar=[jGvar{:}];
+
+  % handle additional constraints
+  for f=fieldnames(con)'
+    switch(f{1})
+      case 'mode'
+        continue  %handled above
+      otherwise
+        warning([f,' constraint not handled by FSM dircol (at least not yet)']);
+    end
+  end
+  
   userfun = @(w) dircol_userfun(sys,w,mode_userfun,tOrig,N,con,options);
-  wrapupfun = @(w) dircol_wrapup(sys,w,mode_wrapup,tOrig,N,con,options);;
+  wrapupfun = @(w) dircol_wrapup(sys,w,mode_wrapup,tOrig,N,con,options);
+  
   if (options.grad_test)
     iname = {};  oname = {};
     for i=1:length(con.mode), 
@@ -43,6 +55,8 @@ function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = 
     oname={};
   end
 
+  
+  
 end
 
 function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
@@ -63,8 +77,8 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
   nU = sys.getNumInputs();
   %% additional fsm constraints:
   for m=1:length(N)-1
-    from_mode = con.mode(m).mode_num; 
-    to_mode = con.mode(m+1).mode_num;
+    from_mode = con.mode{m}.mode_num; 
+    to_mode = con.mode{m+1}.mode_num;
     
     % final value for each mode (except the last) needs to have or(relevant zcs=0).  not
     % just any zc, but a zc that transitions me to the correct next node.
@@ -151,7 +165,7 @@ function [utraj,xtraj] = dircol_wrapup(sys,w,mode_wrapupfun,tOrig,N,con,options)
     tnext=t+w(ind+1)*tOrig{m}(end);
     ind = ind+N(m);
 
-    mtraj=PPTrajectory(zoh([t tnext],repmat(con.mode(m).mode_num,1,2)));
+    mtraj=PPTrajectory(zoh([t tnext],repmat(con.mode{m}.mode_num,1,2)));
     xtraj{m} = MixedTrajectory({mtraj,mode_xtraj},{1,1+[1:sys.getNumContStates()]});
     t=tnext;
   end
