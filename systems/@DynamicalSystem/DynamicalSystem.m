@@ -287,7 +287,7 @@ classdef DynamicalSystem
 
   end
   
-  properties (SetAccess=private,GetAccess=private)
+  properties (SetAccess=private,GetAccess=protected)
     time_invariant_flag = false;  % set to true if you know the system is time invariant
     simulink_params=struct();
     structured_x;  % save a little time by caching this structure
