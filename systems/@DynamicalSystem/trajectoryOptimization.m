@@ -84,7 +84,7 @@ if (nargin<7) options = struct(); end
 if (~isfield(options,'grad_test')) options.grad_test = false; end
 if (~isfield(options,'warning')) options.warning = true; end
 
-[w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,SNOPT_USERFUN,wrapupfun,iname,oname] = dircol_snopt_transcription(sys,costFun,finalCostFun,x0,utraj0,con,options);
+[w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,SNOPT_USERFUN,wrapupfun,iname,oname] = transcriptionFun(sys,costFun,finalCostFun,x0,utraj0,con,options);
 
 if (options.grad_test)
   gradTest(@(w)gradTestFun(w,iGfun,jGvar),w0',struct('input_name',{{iname}},'output_name',{oname},'tol',.01));

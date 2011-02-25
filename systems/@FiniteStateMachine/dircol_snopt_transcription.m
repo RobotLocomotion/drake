@@ -43,10 +43,10 @@ function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = 
     iname = {};  oname = {};
     for i=1:length(con.mode), 
       for j=1:length(mode_iname{i}), 
-        iname = {iname{:},['m',num2str(i),' ',mode_iname{i}{j}]};
+        iname = {iname{:},['mode(',num2str(i),') ',mode_iname{i}{j}]};
       end
       for j=1:length(mode_oname{i}),
-        oname = {oname{:},['m',num2str(i),' ',mode_oname{i}{j}]};
+        oname = {oname{:},['mode(',num2str(i),') ',mode_oname{i}{j}]};
       end
     end
     oname = {oname{:},fsm_oname{:}};
@@ -106,7 +106,7 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     to_ind = from_ind+N(m);
     to_x0 =  w(to_ind+1+(1:nX));
     [to_x,status,dto_x] = sys.update{from_mode}{min_g_ind}(sys,tc,xc,uc);
-    dto_x = dto_x{1};  dto_x(1,:) = dto_x(1,:)*tOrig{m}(end);
+    dto_x = dto_x{1};  dto_x(:,1) = dto_x(:,1)*tOrig{m}(end);
     f = [f; to_x - to_x0];
     G = [G; dto_x(:); -ones(nX,1)];  % df/d[tc,xc,uc]; df/d[to_x0]
   end
@@ -145,7 +145,7 @@ function [nf, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind(sys,N,nT,options
     if (options.grad_test) 
       oname = {oname{:}, ['mode(',num2str(m),').xf zc']};
       for j=1:nX, 
-        oname = {oname{:}, ['update(mode(',num2str(m),').xf)(i) - mode(',num2str(m+1),').x0']}; 
+        oname = {oname{:}, ['update(mode(',num2str(m),').x_',num2str(j),'(tf)) - mode(',num2str(m+1),').x_',num2str(j),'(t0)']}; 
       end
     end
   end

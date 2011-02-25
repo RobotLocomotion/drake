@@ -76,9 +76,19 @@ classdef SecondOrderPlant < RobotLibSystem
     
     function dy = outputGradients(obj,t,x,u,order)
       % gradients of the full state feedback 
-      if (nargin>4 && order>1) error('not implemented yet, but trivial'); end
       dy{1} = [zeros(length(x),1),eye(length(x)),zeros(length(x),length(u))];
       % because length(y) = length(x)
+
+      if (nargin>4 && order>1)
+      % fill in the rest with zeros
+        for o=2:order
+          dy{o} = recursiveZeros(o,obj.getNumOutputs(),1+length(x)+length(u));
+        end
+      end
+      function d=recursiveZeros(o,ny,ntxu)
+        if (o==1) d=sparse(ny,ntxu);
+        else for i=1:ntxu, d{i}=recursiveZeros(o-1,ny,ntxu); end, end
+      end
     end
     
   end

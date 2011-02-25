@@ -113,8 +113,8 @@ wrapupfun = @(w) dircol_wrapup(sys,w,t,nX,nU);
 if (options.grad_test)
   % print out the debugging key:
   iname = {'tscale'};
-  for i=1:nT, for j=1:nX, iname= {iname{:},['x',num2str(j),'(',num2str(i),')']}; end, end
-  for i=1:nT, for j=1:nU, iname= {iname{:},['u',num2str(j),'(',num2str(i),')']}; end, end
+  for i=1:nT, for j=1:nX, iname= {iname{:},['x_',num2str(j),'(',num2str(i),')']}; end, end
+  for i=1:nT, for j=1:nU, iname= {iname{:},['u_',num2str(j),'(',num2str(i),')']}; end, end
   
   [nf,iGfun,jGvar,Fhigh,Flow,oname] = userfun_grad_ind(nT,nX,nU,options);
 else
@@ -197,7 +197,7 @@ function [nf, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_ind(nT,nX,nU,opti
     jGvar = [jGvar, reshape(repmat([1,1+nX*(i-1)+(1:nX),1+nX*nT+nU*(i-1)+(1:nU),1+nX*i+(1:nX),1+nX*nT+nU*i+(1:nU)],nX,1),1,[])];
     nf = nf+nX;
     if (nargout>5)
-      for j=1:nX, oname= {oname{:},['d',num2str(j),'(',num2str(i),')']}; end
+      for j=1:nX, oname= {oname{:},['d_',num2str(j),'(',num2str(i),')']}; end
     end
   end    
   

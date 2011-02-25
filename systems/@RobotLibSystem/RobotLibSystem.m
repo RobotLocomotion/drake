@@ -2,14 +2,14 @@ classdef RobotLibSystem < DynamicalSystem
 
   % constructor
   methods
-    function obj = RobotLibSystem(num_xc,num_xd,num_u,num_y,directFeedthroughFlag,timeInvariantFlag)
+    function obj = RobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag)
       if (nargin>0)
         obj = setNumContStates(obj,num_xc);
         obj = setNumDiscStates(obj,num_xd);
         obj = setNumInputs(obj,num_u);
         if (nargin>=4) obj = setNumOutputs(obj,num_y); end
-        if (nargin>=5) obj = setDirectFeedthrough(obj,directFeedthroughFlag); end
-        if (nargin>=6) obj = setTIFlag(obj,timeInvariantFlag); end
+        if (nargin>=5) obj = setDirectFeedthrough(obj,direct_feedthrough_flag); end
+        if (nargin>=6) obj = setTIFlag(obj,time_invariant_flag); end
       end
       obj.uid = datestr(now,'MMSSFFF');
     end      
@@ -69,10 +69,10 @@ classdef RobotLibSystem < DynamicalSystem
       ts = [0;0];  % continuous time, no offset
     end
     function tf = isDirectFeedthrough(obj)
-      tf = obj.directFeedthroughFlag;
+      tf = obj.direct_feedthrough_flag;
     end
     function obj = setDirectFeedthrough(obj,tf);
-      obj.directFeedthroughFlag = tf;
+      obj.direct_feedthrough_flag = tf;
     end
     function mdl = getModel(obj)
       % make a simulink model from this block
@@ -218,7 +218,7 @@ classdef RobotLibSystem < DynamicalSystem
     num_u=0;  % dimension of u
     num_y=0;  % dimension of the output y
     uid;    % unique identifier for simulink models of this block instance
-    directFeedthroughFlag=true;  % true/false: does the output depend on u?  set false if you can!
+    direct_feedthrough_flag=true;  % true/false: does the output depend on u?  set false if you can!
   end
   properties (SetAccess=private, GetAccess=public)
     umin=-inf;   % constrains u>=umin (default umin=-inf)
