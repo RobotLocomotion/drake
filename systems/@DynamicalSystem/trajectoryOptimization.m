@@ -1,4 +1,4 @@
-function [utraj,xtraj,info] = trajectoryOptimization(sys,transcriptionFun,costFun,finalCostFun,x0,utraj0,con,options)
+function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0,utraj0,con,options)
 % trajectoryOptimization
 %
 % Todo:
@@ -83,6 +83,16 @@ if (nargin<6) con = struct(); end
 if (nargin<7) options = struct(); end
 if (~isfield(options,'grad_test')) options.grad_test = false; end
 if (~isfield(options,'warning')) options.warning = true; end
+if (~isfield(options,'method')) options.method = 'dircol'; end
+
+switch (options.method)
+  case 'dircol'
+    transcriptionFun=@dircolSNOPTtranscription;
+  case 'rtrl'
+    transcriptionFun=@rtrlSNOPTtranscription;
+  otherwise
+    error(['method ', options.method,' unknown, or not implemented yet']);
+end
 
 [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,SNOPT_USERFUN,wrapupfun,iname,oname] = transcriptionFun(sys,costFun,finalCostFun,x0,utraj0,con,options);
 

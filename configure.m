@@ -44,7 +44,7 @@ original_path = path;
 addpath([conf.root,'/systems']);
 addpath([conf.root,'/plants']);
 addpath([conf.root,'/controllers']);
-addpath([conf.root,'/controllers/tools']);
+addpath([conf.root,'/controllers']);
 addpath([conf.root,'/estimators']);
 addpath([conf.root,'/trajectories']);
 addpath([conf.root,'/util']);

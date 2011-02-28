@@ -14,10 +14,10 @@ con.xf.ub = xf;
 con.T.lb = 2;   
 con.T.ub = 6;
 
-options=struct();
+options.method='dircol';
 tic
 %options.grad_test = true;
-[utraj,xtraj,info] = dircol(p,@cost,@finalcost,x0,utraj0,con,options);
+[utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj0,con,options);
 if (info~=1) error('failed to find a trajectory'); end
 toc
 

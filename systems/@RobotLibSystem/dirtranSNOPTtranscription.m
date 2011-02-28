@@ -13,6 +13,8 @@ function [utraj,xtraj,info] = dirtran(sys,costFun,finalCostFun,x0,utraj0,con,opt
 %    options                     - options struct populated by the fields below
 %    
 
+error('need to update this interface to be a transcription, instead of a complete trajectoryOptimization method'); 
+
 checkDependency('snopt_enabled');
 
 if (nargin<6) options = struct(); end
