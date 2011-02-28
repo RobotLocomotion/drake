@@ -27,7 +27,7 @@ oldpath = addpath([conf.root,'/examples/Acrobot']);
 p = AcrobotPlant();
 x0=randn(4,1);
 fun=@(t,x,u)dynamics(p,t,x,u);
-N=50;
+N=20;
 tic
 for i=1:N
   [xdot_taylor,dxdot_taylor]=taylor(fun,order,t0,x0,u0);

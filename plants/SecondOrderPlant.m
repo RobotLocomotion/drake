@@ -57,7 +57,7 @@ classdef SecondOrderPlant < RobotLibSystem
       q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
       df = obj.sodynamicsGradients(t,q,qd,u,order);
       df{1} = [zeros(obj.num_q,1+obj.num_q), eye(obj.num_q), zeros(obj.num_q,obj.num_u); df{1}];
-      z = zeros(obj.num_q,1+2*obj.num_q+obj.num_u);
+      z = sparse(obj.num_q,1+2*obj.num_q+obj.num_u);
       for o=2:length(df)
         df{o} = addzeros(df{o});
       end

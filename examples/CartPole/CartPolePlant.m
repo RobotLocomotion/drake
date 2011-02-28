@@ -11,6 +11,7 @@ classdef CartPolePlant < ManipulatorPlant
     function obj = CartPolePlant
       obj = obj@ManipulatorPlant(2,1);
       obj = setInputLimits(obj,-30,30);
+      obj = setAngleFlags(obj,0,[0;1;0;0],[0;1;0;0]);
     end
         
     function [H,C,B] = manipulatorDynamics(obj,q,qd)

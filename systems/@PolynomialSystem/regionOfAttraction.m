@@ -10,6 +10,9 @@ if (~isTI(sys)) error('only for TI systems so far'); end
 typecheck(x0,'double');
 sizecheck(x0,[getNumStates(sys),1]);
 
+% check fixed point
+% check Hessian Vdot at origin, to make sure it's negative def. 
+
 x = sys.p_x;
 % f is time-invariant zero-input dynamics relative to x0
 f = subss(sys.p_dynamics,[sys.p_t;x;sys.p_u],[0;x - x0;zeros(sys.num_u,1)]);
@@ -41,6 +44,7 @@ prog.sos = (x'*x)*(V - rho) +  L*Vdot;
 prog.sedumi = -rho;
     
 rho = double(prog(rho))
+if (rho<=0) error('optimization failed'); end
 
 V = V/rho;
 

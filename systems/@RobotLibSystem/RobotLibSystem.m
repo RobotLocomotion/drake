@@ -184,6 +184,14 @@ classdef RobotLibSystem < DynamicalSystem
 %       end
 %     end
 
+    function sys=feedback(sys1,sys2)
+      try 
+        sys=FeedbackSystem(sys1,sys2);  % try to keep it a robotlibsystem
+      catch
+        sys=feedback@DynamicalSystem(sys1,sys2);
+      end
+    end
+
     function gradTest(obj)
       if (getNumContStates(obj))
         gradTest(@dynamicsTest,0,getInitialState(obj),getDefaultInput(obj),struct('tol',.01))

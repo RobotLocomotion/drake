@@ -22,8 +22,4 @@ if (n>1) error('not implemented yet... but I just have to find the right syntax'
 
 [varargout{1},varargout{2}]=eval(fun(a{:}));
 
-if (order==1)  % just output the double matrix (not a cell) if we're just asking for the 1st order gradients
-  varargout{2}=varargout{2}{1};
-end
-
 end
