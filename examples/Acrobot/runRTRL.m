@@ -1,4 +1,4 @@
-function [xtraj,utraj,info]=acrobotRTRLTest(xInit,xDes)
+function [xtraj,utraj,info]=runRTRL(xInit,xDes)
 %Do not try the swing up case, due to the ill conditioning of the Hessian
 %matrix, this takes extremly long time to swing up!!!!!
 

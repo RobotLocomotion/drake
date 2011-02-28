@@ -4,7 +4,9 @@ classdef TaylorVar
 
 % the internal representation is 
 % m=prod(size(f)), n=prod(size(x));
-% df{o} is a m x n^o sparse matrix
+% df{o} is a m x n^o sparse matrix , where e.g. 
+%        d^2 f(i,j)/dx_k dx_l =
+%             df{o}(sub2ind(obj.dim,i,j),sub2ind([n n],k,l))
 
   properties
     f   % value at the nominal point
@@ -24,10 +26,28 @@ classdef TaylorVar
     function [f,df]=eval(obj)
       f=reshape(obj.f,obj.dim);
       df=obj.df;
+      
+      if (length(df)==1) % for 1st order only, make it a matrix instead of a cell.
+        df=df{1};
+      end
+      % note: would love to reshape the df's into ND arrays, but matlab
+      % can't handle sparse ND arrays.  and making them full.could be very
+      % inefficient!
     end
     
     function p = getmsspoly(obj,p_x)
-      error('not implemented yet'); 
+      if (~isvector(p_x)) error('p_x should be a vector'); end
+      if (length(obj.dim)>2) error('msspolys are not defined for ND arrays'); end
+      p_x=p_x(:); % make sure p_x is a column vector
+      
+      p=reshape(obj.f,obj.dim);
+      nX=obj.nX;
+      x=1;
+      for o=1:length(obj.df)
+        % x needs to be nX^o-by-1 
+        x=reshape(x(:)*p_x',nX^o,1)/o;
+        p=p+reshape(obj.df{o}*x,obj.dim(1),obj.dim(2));
+      end
     end
     
     function varargout=size(obj,dim)
@@ -248,8 +268,8 @@ classdef TaylorVar
 
     function tv = horzcat(varargin)
       % find the index of the first TaylorVar
-      for i=1:length(varargin), if (isa(varargin{i},'TaylorVar')), tvi=i; break; end; end
-      nX=varargin{tvi}.nX; order=length(varargin{tvi}.df);
+      for i=1:length(varargin), if (isa(varargin{i},'TaylorVar')), obj=varargin{i}; break; end; end
+      nX=obj.nX; order=length(obj.df);
       
       f=[];
       for o=1:order, df{o}=sparse(0,0); end
@@ -351,8 +371,21 @@ classdef TaylorVar
       end
     end
     
-    function tv=subsasgn(a,s,b)
-      error('not implemented yet');
+    function a=subsasgn(a,s,b)
+      a.f=subsasgn(a.f,s,b.f);
+
+      tags=zeros(a.dim);
+      subsasgn(tags,s,1);
+      ind=find(tags(:));
+      if (isa(b,'TaylorVar'))
+        for o=1:length(a.df)
+          a.df{o}(ind,:)=b.df{o};
+        end
+      else % b is a const
+        for o=1:length(a.df)
+          a.df{o}(ind,:)=0;
+        end
+      end
     end
     function tv=subindex(a)
       error('not implemented yet');
@@ -438,6 +471,15 @@ classdef TaylorVar
         tv=TaylorVar(f,df);
       else
         tv=f;
+      end
+    end
+    
+    function X=mod(X,Y)
+      if (isa(Y,'TaylorVar'))
+        error('not implemented yet'); % but shouldn't be hard
+      else % X is TaylorVar, Y is a const
+        X.f = reshape(mod(reshape(X.f,X.dim),Y),[],1);
+        % no change to gradients
       end
     end
     

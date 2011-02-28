@@ -14,7 +14,7 @@ classdef CartPoleEnergyControl < FiniteStateMachine
       obj.S = lqr.S;
       obj.rho = 100;
 
-      in_lqr_roa = inline('(x-obj.x0)''*obj.S*(x-obj.x0) - obj.rho','obj','t','junk','x');
+      in_lqr_roa = inline('obj.wrapInput(x-obj.x0)''*obj.S*obj.wrapInput(x-obj.x0) - obj.rho','obj','t','junk','x');
 %      in_lqr_roa = inline('(x([2,4])-obj.x0)''*obj.S*(x([2,4])-obj.x0) - obj.rho','obj','t','junk','x');
       notin_lqr_roa = not_guard(obj,in_lqr_roa);
       

@@ -9,7 +9,7 @@ fun=@(t,x,u)dynamics(p,t,x,u);
 order=3;
 
 profile on;
-for i=1:100
+for i=1:50
   x0=randn(4,1);
   [xdot_taylor,dxdot_taylor]=taylor(fun,order,t0,x0,u0);
 end
