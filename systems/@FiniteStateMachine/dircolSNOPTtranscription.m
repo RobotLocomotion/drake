@@ -6,7 +6,7 @@ function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = 
   end
   for m=1:length(con.mode)
     % todo: check here that utraj0{m} starts at t=0?
-    [w0{m},wlow{m},whigh{m},Flow{m},Fhigh{m},iGfun{m},jGvar{m},mode_userfun{m},mode_wrapup{m},mode_iname{m},mode_oname{m}] = dircol_snopt_transcription(sys.modes{con.mode{m}.mode_num},costFun{m},finalCostFun{m},x0{m},utraj0{m},rmfield(con.mode{m},'mode_num'),options);
+    [w0{m},wlow{m},whigh{m},Flow{m},Fhigh{m},iGfun{m},jGvar{m},mode_userfun{m},mode_wrapup{m},mode_iname{m},mode_oname{m}] = dircolSNOPTtranscription(sys.modes{con.mode{m}.mode_num},costFun{m},finalCostFun{m},x0{m},utraj0{m},rmfield(con.mode{m},'mode_num'),options);
     tOrig{m} = utraj0{m}.getBreaks();
     N(m) = length(w0{m});
     nT(m) = length(tOrig{m});

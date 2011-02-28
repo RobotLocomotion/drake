@@ -24,10 +24,10 @@ con.mode{1}.T.ub = 2;
 con.mode{2}.T.lb = .1;   
 con.mode{2}.T.ub = 2;
 
-options=struct();
+options.method='dircol';
 tic
 %options.grad_test = true;
-[utraj,xtraj,info] = dircol(p,{@cost,@cost},{@finalcost,@finalcost},{x0, [-pi/4;pi/4;2.0;0]},utraj0,con,options);
+[utraj,xtraj,info] = trajectoryOptimization(p,{@cost,@cost},{@finalcost,@finalcost},{x0, [-pi/4;pi/4;2.0;0]},utraj0,con,options);
 if (info~=1) error('failed to find a trajectory'); end
 toc
 
