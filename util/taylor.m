@@ -9,7 +9,7 @@ function varargout=taylor(fun,order,varargin)
 % create TaylorVars out of the nominal inputs (no matter what the size)
 avec=[];
 for i=1:length(varargin), avec=[avec; varargin{i}(:)]; end
-ta=TaylorVar(avec,order);
+ta=TaylorVar.init(avec,order);
 ind=0;
 for i=1:length(varargin)
   n=prod(size(varargin{i}));
