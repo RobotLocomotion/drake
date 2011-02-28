@@ -6,7 +6,7 @@ p = AcrobotPlant();
 t0=0;
 u0=0;
 fun=@(t,x,u)dynamics(p,t,x,u);
-order=1;
+order=3;
 
 profile on;
 for i=1:100

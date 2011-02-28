@@ -173,13 +173,13 @@ classdef TaylorVar
         % dcdx is size [ma,nb,nX]
         ma=a.dim(1); na=a.dim(2); mb=b.dim(1); nb=b.dim(2); nX=a.nX;
 % this version works, but is expensive       
-%        btmp = repmat({reduceOrder(b)},1,nX);
-%        dcdx = reshape(reshape(diff(a),ma,na*nX)*blkdiag(btmp{:}),[ma,nb,nX]) + ...
-%          reshape(reduceOrder(a)*reshape(diff(b),mb,nb*nX),[ma,nb,nX]);
+        btmp = repmat({reduceOrder(b)},1,nX);
+        dcdx = reshape(reshape(diff(a),ma,na*nX)*blkdiag(btmp{:}),[ma,nb,nX]) + ...
+          reshape(reduceOrder(a)*reshape(diff(b),mb,nb*nX),[ma,nb,nX]);
 % trying this version instead:
-        dcdx=reshape(reduceOrder(a)*reshape(diff(b),mb,nb*nX),[ma,nb,nX]);
-        da=diff(a);rb=reduceOrder(b);
-        for i=1:nX, dcdx(:,:,i)=dcdx(:,:,i)+da(:,:,i)*rb; end
+%        dcdx=reshape(reduceOrder(a)*reshape(diff(b),mb,nb*nX),[ma,nb,nX]);
+%        da=diff(a);rb=reduceOrder(b);
+%        for i=1:nX, dcdx(:,:,i)=dcdx(:,:,i)+da(:,:,i)*rb; end
 % end new version        
         if (isa(dcdx,'TaylorVar'))
           a=int(dcdx,f);

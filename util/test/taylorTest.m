@@ -3,7 +3,7 @@ function taylorTest
 load robotlib_config;
 oldpath = addpath([conf.root,'/examples/Pendulum']);
 
-order=1;
+order=2;
 
 p = PendulumPlant();
 t0=0;
