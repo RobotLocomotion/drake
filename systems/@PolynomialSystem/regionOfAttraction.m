@@ -7,8 +7,12 @@ function V = regionOfAttraction(sys,x0,V0,options)
 if (~isCT(sys)) error('only handle CT case so far'); end
 if (~isTI(sys)) error('only for TI systems so far'); end
 
-typecheck(x0,'double');
-sizecheck(x0,[getNumStates(sys),1]);
+if (nargin<2)
+  x0=zeros(sys.getNumStates(),1);
+else
+  typecheck(x0,'double');
+  sizecheck(x0,[getNumStates(sys),1]);
+end
 
 % check fixed point
 % check Hessian Vdot at origin, to make sure it's negative def. 

@@ -6,16 +6,13 @@ classdef CartPoleEnergyControl < FiniteStateMachine
       lqr = CartPoleLQR(plant);
       obj = obj.addMode(lqr);
 
-      % todo: build closed-loop lqr system and do verification on it to
-      % determine transition boundary.
-%      obj.x0 = [pi;0];
+      sys = feedback(plant,lqr);
+      pp = sys.taylorApprox(0,lqr.x0,0,3);  % make polynomial approximation
       obj.x0 = lqr.x0;
-%      obj.S = lqr.S([2,4],[2,4]);
-      obj.S = lqr.S;
-      obj.rho = 100;
+      obj.p_x = pp.p_x;
+      obj.V = regionOfAttraction(pp);
 
-      in_lqr_roa = inline('obj.wrapInput(x-obj.x0)''*obj.S*obj.wrapInput(x-obj.x0) - obj.rho','obj','t','junk','x');
-%      in_lqr_roa = inline('(x([2,4])-obj.x0)''*obj.S*(x([2,4])-obj.x0) - obj.rho','obj','t','junk','x');
+      in_lqr_roa = inline('double(subs(obj.V,obj.p_x,obj.wrapInput(x-obj.x0)))-1','obj','t','junk','x');
       notin_lqr_roa = not_guard(obj,in_lqr_roa);
       
       obj = obj.addTransition(1,2,in_lqr_roa,[],true,true);
@@ -29,10 +26,11 @@ classdef CartPoleEnergyControl < FiniteStateMachine
   methods (Static)
     function run()
       cp = CartPolePlant;
+      cp = setInputLimits(cp,-inf,inf);  % need to do this for ROA code (for now)
       v = CartPoleVisualizer;
       c = CartPoleEnergyControl(cp);
 
-      sys = feedback(cp,c);
+      sys = feedback(cp,c,true);
 
       for i=1:5
         xtraj = simulate(sys,[0 10]);
@@ -43,8 +41,8 @@ classdef CartPoleEnergyControl < FiniteStateMachine
   
   properties
     x0
-    S
-    rho
+    p_x
+    V
   end
   
 end
