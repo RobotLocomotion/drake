@@ -69,6 +69,8 @@ for f1 = fieldnames(con)'
             wlow(xfind) = con.xf.lb;
           case 'ub'
             whigh(xfind) = con.xf.ub;
+          case {'c','ceq'}
+            % intentionally pass through... these get handled in the userfun
           otherwise 
             conwarn(f1,f2);
         end
@@ -116,9 +118,9 @@ if (options.grad_test)
   for i=1:nT, for j=1:nX, iname= {iname{:},['x_',num2str(j),'(',num2str(i),')']}; end, end
   for i=1:nT, for j=1:nU, iname= {iname{:},['u_',num2str(j),'(',num2str(i),')']}; end, end
   
-  [nf,iGfun,jGvar,Fhigh,Flow,oname] = userfun_grad_ind(nT,nX,nU,options);
+  [nf,iGfun,jGvar,Fhigh,Flow,oname] = userfun_grad_ind(nT,nX,nU,con,x,options);
 else
-  [nf,iGfun,jGvar,Fhigh,Flow] = userfun_grad_ind(length(t),nX,nU,options);
+  [nf,iGfun,jGvar,Fhigh,Flow] = userfun_grad_ind(length(t),nX,nU,con,x,options);
   iname={};
   oname={};
 end
@@ -174,15 +176,28 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
 %    dd(:,:,i)=dxdotcol;
   end
   [h,dh] = finalCostFun(t(end),x(:,end)); dh = dh{1}; dh(1)=dh(1)*dtdw1(end);
-  
+
   J = h + sum(g);
   dJ = [dh(1)+sum(dg(1,1,:)), reshape(dg(1,1+(1:nX),:),1,[]), dh(1,2:end), reshape(dg(1,1+nX+(1:nU),:),1,[]), zeros(1,nU)];
   
   f = [J; d(:)];
   G = [dJ(:); dd(:)];
+
+  if (isfield(con,'xf'))
+    if (isfield(con,'c'))
+      [c,dc] = feval(con.xf.c,x(:,end));
+      f = [f; c(:)]; G = [G; dc{1}(:)];
+    end
+    if (isfield(con.xf,'ceq'))
+      [c,dc] = feval(con.xf.ceq,x(:,end));
+      f = [f; c(:)]; G = [G; dc{1}(:)];
+    end
+  end
+
 end
 
-function [nf, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_ind(nT,nX,nU,options)
+function [nf, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_ind(nT,nX,nU,con,x,options)
+
   % dJ:
   nf = 1;
   iGfun = repmat(1,1,1+nX*nT+nU*nT);  
@@ -203,6 +218,33 @@ function [nf, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_ind(nT,nX,nU,opti
   
   Fhigh = [Fhigh,zeros(1,nf-1)];
   Flow = [Flow,zeros(1,nf-1)];
+
+  if (isfield(con,'xf'))
+    if (isfield(con,'c'))
+      c = feval(con.xf.c,x(:,end));
+      n=length(c);
+      iGfun = [iGfun, nf+reshape(repmat((1:nX)',1,n),1,[])];
+      jGvar = [jGvar, 1+nX*(nT-1)+reshape(repmat(1:nX,n,1),1,[])];
+      Fhigh = [Fhigh,zeros(1,n)];
+      Flow = [Flow,repmat(-inf,1,n)];
+      if (nargout>5)
+        for j=1:nX, oname= {oname{:},['con.xf.c_',num2str(j)]}; end
+      end
+      nf = nf+n;
+    end
+    if (isfield(con.xf,'ceq'))
+      c = feval(con.xf.ceq,x(:,end));
+      n=length(c);
+      iGfun = [iGfun, nf+reshape(repmat((1:n)',1,n),1,[])];
+      jGvar = [jGvar, 1+nX*(nT-1)+reshape(repmat(1:nX,n,1),1,[])];
+      Fhigh = [Fhigh,zeros(1,n)];
+      Flow = [Flow,zeros(1,n)];
+      if (nargout>5)
+        for j=1:nX, oname= {oname{:},['con.xf.ceq_',num2str(j)]}; end
+      end
+      nf = nf+n;
+    end
+  end
 end
 
 

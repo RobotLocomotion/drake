@@ -11,6 +11,7 @@ con.x0.lb = x0;
 con.x0.ub = x0;
 con.xf.lb = xf;
 con.xf.ub = xf;
+con.xf.ceq = @finalConstraint;
 con.T.lb = 2;   
 con.T.ub = 6;
 
@@ -32,8 +33,6 @@ v = PendulumVisualizer();
 v.playback(xtraj);
 
 end
-
-
 
       function [g,dg] = cost(t,x,u);
         xd = repmat([pi;0],1,size(x,2));

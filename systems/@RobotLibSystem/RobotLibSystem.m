@@ -184,7 +184,11 @@ classdef RobotLibSystem < DynamicalSystem
 %       end
 %     end
 
-    function sys=feedback(sys1,sys2)
+    function sys=feedback(sys1,sys2,donttry)
+      if(nargin>2 && donttry) % backdoor until I get RLCSFunction working better
+        sys=feedback@DynamicalSystem(sys1,sys2);
+        return;
+      end        
       try 
         sys=FeedbackSystem(sys1,sys2);  % try to keep it a robotlibsystem
       catch
