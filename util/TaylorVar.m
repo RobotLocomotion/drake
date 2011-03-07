@@ -23,15 +23,15 @@ classdef TaylorVar
       obj.nX = size(df{1},2);
     end
     
-    function [f,df]=eval(obj)
-      f=reshape(obj.f,obj.dim);
-      df=obj.df;
+    function varargout=eval(obj)
+      varargout{1}=reshape(obj.f,obj.dim);
       
-      if (length(df)==1) % for 1st order only, make it a matrix instead of a cell.
-        df=df{1};
+      for i=2:min(nargout,length(obj.df)+1)
+        varargout{i}=obj.df{i-1};
       end
+     
       % note: would love to reshape the df's into ND arrays, but matlab
-      % can't handle sparse ND arrays.  and making them full.could be very
+      % can't handle sparse ND arrays.  and making them full could be very
       % inefficient!
     end
     

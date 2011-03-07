@@ -1,4 +1,4 @@
-classdef SimplePend < RobotLibSystem
+classdef SimplePend < SmoothRobotLibSystem
   % demonstration of feedback linearization (used in lecture 1 of 6.832)
   % Double Pendulum is made "feedback equivalent" to a Simple Pendulum
   
@@ -8,7 +8,7 @@ classdef SimplePend < RobotLibSystem
   
   methods
     function obj = SimplePend(plant)
-      obj = obj@RobotLibSystem(0,0,4,2,true,true);
+      obj = obj@SmoothRobotLibSystem(0,0,4,2,true,true);
       obj.p = plant;
     end
     

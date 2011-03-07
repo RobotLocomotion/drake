@@ -46,7 +46,7 @@ end
           dgdt = 0;
           dgdx = 2*xerr'*Q;
           dgdu = 2*u'*R;
-          dg{1} = [dgdt,dgdx,dgdu];
+          dg = [dgdt,dgdx,dgdu];
         end
       end
       
@@ -59,6 +59,6 @@ end
         h = sum((Qf*xerr).*xerr,1);
         
         if (nargout>1)
-          dh{1} = [0, 2*xerr'*Qf];
+          dh = [0, 2*xerr'*Qf];
         end
       end

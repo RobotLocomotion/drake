@@ -147,14 +147,14 @@ function [f,G] = userfun(w,plant,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options)
     t=dt*(i-1);
     dtdT = ddtdT*(i-1);
     
-    [g,dg] = COSTFUN(t,xtape(:,i),utape(:,i));
+    [g,dg] = geval(COSTFUN,t,xtape(:,i),utape(:,i));
     f = f+dt*g;
     G(1) = G(1) + ddtdT*g;
     dg{1}(1) = dg{1}(1)*dtdT;
     ind = [1,1+(i-1)*nX+(1:nX),1+nX*nT+(i-1)*nU+(1:nU)];
     G(ind) = G(ind)+dt*dg{1}';  % dJ/d[T;xi;ui]
   end    
-  [h,dh] = FINALCOSTFUN(tf,xtape(:,end));
+  [h,dh] = geval(FINALCOSTFUN,tf,xtape(:,end));
   f = f+h;
   ind = [1,1+(nT-1)*nX+(1:nX)];
   G(ind) = G(ind)+dh{1}';
@@ -181,11 +181,10 @@ function [f,G] = userfun(w,plant,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options)
       for i=1:(nT-1)
         t=dt*(i-1);
 
-        xdot = plant.dynamics(t,xtape(:,i),utape(:,i));
-        dxdot = plant.dynamicsGradients(t,xtape(:,i),utape(:,i),1);
+        [xdot,dxdot] = geval(@plant.dynamics,t,xtape(:,i),utape(:,i));
         f = [f; xtape(:,i+1) - xtape(:,i) - dt*xdot];
         % df = df/d[T;xi;ui]
-        df = -dt*dxdot{1};  
+        df = -dt*dxdot;  
         df(:,1) = df(:,1) - ddtdT*xdot;
         df(:,1+(1:nX)) = df(:,1+(1:nX)) - eye(nX);
 
@@ -203,29 +202,25 @@ function [f,G] = userfun(w,plant,COSTFUN,FINALCOSTFUN,x0,nT,nX,nU,options)
         dtdT = ddtdT*(i-1);
         % NOTE: this code currently assumes a zero-order hold on actions
         
-        xdot = plant.dynamics(t,xtape(:,i),utape(:,i));
-        df = plant.dynamicsGradients(t,xtape(:,i),utape(:,i));
+        [xdot,df] = geval(@plant.dynamics,t,xtape(:,i),utape(:,i));
         k1 = dt*xdot;
         % dk1 = dk1/d[T;xi;ui]
-        dk1 = dt*df{1};  
+        dk1 = dt*df;  
         dk1(:,1) = dk1(:,1) + ddtdT*xdot;
 
-        xdot = plant.dynamics(t+dt/2,xtape(:,i)+k1/2,utape(:,i));
-        df = plant.dynamicsGradients(t+dt/2,xtape(:,i)+k1/2,utape(:,i),1);
+        [xdot,df] = geval(@plant.dynamics,t+dt/2,xtape(:,i)+k1/2,utape(:,i));
         k2 = dt*xdot;
-        dk2 = dt*df{1}*[dtdT + ddtdT/2,zeros(1,nX+nU); dk1/2+[zeros(nX,1),eye(nX),zeros(nX,nU)]; zeros(nU,1+nX), eye(nU)];
+        dk2 = dt*df*[dtdT + ddtdT/2,zeros(1,nX+nU); dk1/2+[zeros(nX,1),eye(nX),zeros(nX,nU)]; zeros(nU,1+nX), eye(nU)];
         dk2(:,1) = dk2(:,1) + ddtdT*xdot;
         
-        xdot = plant.dynamics(t+dt/2,xtape(:,i)+k2/2,utape(:,i));
-        df = plant.dynamicsGradients(t+dt/2,xtape(:,i)+k2/2,utape(:,i));
+        [xdot,df] = geval(@plant.dynamics,t+dt/2,xtape(:,i)+k2/2,utape(:,i));
         k3 = dt*xdot;
-        dk3 = dt*df{1}*[dtdT + ddtdT/2,zeros(1,nX+nU); dk2/2+[zeros(nX,1),eye(nX),zeros(nX,nU)];  zeros(nU,1+nX), eye(nU)];  
+        dk3 = dt*df*[dtdT + ddtdT/2,zeros(1,nX+nU); dk2/2+[zeros(nX,1),eye(nX),zeros(nX,nU)];  zeros(nU,1+nX), eye(nU)];  
         dk3(:,1) = dk3(:,1) + ddtdT*xdot;
 
-        xdot = plant.dynamics(t+dt,xtape(:,i)+k3,utape(:,i+1));
-        df = plant.dynamicsGradients(t+dt,xtape(:,i)+k3,utape(:,i+1));
+        [xdot,df] = geval(@plant.dynamics,t+dt,xtape(:,i)+k3,utape(:,i+1));
         k4 = dt*xdot;
-        dk4 = dt*df{1}*[dtdT + ddtdT,zeros(1,nX+nU); dk3+[zeros(nX,1),eye(nX),zeros(nX,nU)];  zeros(nU,1+nX), zeros(nU)];  
+        dk4 = dt*df*[dtdT + ddtdT,zeros(1,nX+nU); dk3+[zeros(nX,1),eye(nX),zeros(nX,nU)];  zeros(nU,1+nX), zeros(nU)];  
         dk4(:,1) = dk4(:,1) + ddtdT*xdot;
 
         f = [f; xtape(:,i+1) - xtape(:,i) - 1/6*(k1+2*k2+2*k3+k4)];

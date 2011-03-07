@@ -1,6 +1,6 @@
-function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = dircol_snopt_transcription(sys,costFun,finalCostFun,x0,utraj0,con,options)
+function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = dircolSNOPTtranscription(sys,costFun,finalCostFun,x0,utraj0,con,options)
 
-  if (~isfield(con,'mode')) error('con.mode must be defined for FiniteStateMachines'); end
+  if (~isfield(con,'mode')) error('con.mode must be defined for HybridRobotLibSystems'); end
   for i=1:length(x0)
     if (length(x0{i})~=sys.getNumContStates()), error('x0 should NOT have the mode variable as the first element.'); end
   end
@@ -89,8 +89,8 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     zc = 1; dzc = zeros(1,1+nX+nU);  % d/d[tscale,xc,uc]
     min_g = inf; min_g_ind = 0;
     for i=find(sys.target_mode{from_mode}==to_mode)
-      [g,dg] = sys.guard{from_mode}{i}(sys,tc,xc,uc);
-      dg = dg{1}; dg(1) = dg(1)*tOrig{m}(end);
+      [g,dg] = geval(sys.guard{from_mode}{i},sys,tc,xc,uc);
+      dg(1) = dg(1)*tOrig{m}(end);
       if (g<min_g), min_g = g; min_g_ind = i; end 
       dzc = dzc*g + zc*dg;
       zc = zc*g;  % multiply zcs to implement logical OR.
@@ -105,8 +105,8 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     if (min_g_ind<1) error('no applicable zero crossings defined'); end
     to_ind = from_ind+N(m);
     to_x0 =  w(to_ind+1+(1:nX));
-    [to_x,status,dto_x] = sys.update{from_mode}{min_g_ind}(sys,tc,xc,uc);
-    dto_x = dto_x{1};  dto_x(:,1) = dto_x(:,1)*tOrig{m}(end);
+    [to_x,status,dto_x] = geval(sys.transition{from_mode}{min_g_ind},sys,tc,xc,uc);
+    dto_x(:,1) = dto_x(:,1)*tOrig{m}(end);
     f = [f; to_x - to_x0];
     G = [G; dto_x(:); -ones(nX,1)];  % df/d[tc,xc,uc]; df/d[to_x0]
   end
@@ -145,7 +145,7 @@ function [nf, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind(sys,N,nT,options
     if (options.grad_test) 
       oname = {oname{:}, ['mode(',num2str(m),').xf zc']};
       for j=1:nX, 
-        oname = {oname{:}, ['update(mode(',num2str(m),').x_',num2str(j),'(tf)) - mode(',num2str(m+1),').x_',num2str(j),'(t0)']}; 
+        oname = {oname{:}, ['transition(mode(',num2str(m),').x_',num2str(j),'(tf)) - mode(',num2str(m+1),').x_',num2str(j),'(t0)']}; 
       end
     end
   end

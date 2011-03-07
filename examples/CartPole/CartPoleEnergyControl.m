@@ -1,4 +1,4 @@
-classdef CartPoleEnergyControl < FiniteStateMachine
+classdef CartPoleEnergyControl < HybridRobotLibSystem
   
   methods
     function obj = CartPoleEnergyControl(plant)
@@ -13,7 +13,7 @@ classdef CartPoleEnergyControl < FiniteStateMachine
       obj.V = regionOfAttraction(pp);
 
       in_lqr_roa = inline('double(subs(obj.V,obj.p_x,obj.wrapInput(x-obj.x0)))-1','obj','t','junk','x');
-      notin_lqr_roa = not_guard(obj,in_lqr_roa);
+      notin_lqr_roa = notGuard(obj,in_lqr_roa);
       
       obj = obj.addTransition(1,2,in_lqr_roa,[],true,true);
       obj = obj.addTransition(2,1,notin_lqr_roa,[],true,true);
@@ -30,7 +30,7 @@ classdef CartPoleEnergyControl < FiniteStateMachine
       v = CartPoleVisualizer;
       c = CartPoleEnergyControl(cp);
 
-      sys = feedback(cp,c,true);
+      sys = feedback(cp,c);
 
       for i=1:5
         xtraj = simulate(sys,[0 10]);

@@ -1,4 +1,4 @@
-classdef Trajectory < RobotLibSystem
+classdef Trajectory% < RobotLibSystem
   
   properties
     dim
@@ -14,7 +14,7 @@ classdef Trajectory < RobotLibSystem
  
   methods 
     function obj = Trajectory(dim)
-      obj = obj@RobotLibSystem(0,0,0,dim,false,false);
+%      obj = obj@RobotLibSystem(0,0,0,dim,false,false);
       obj.dim = dim;
     end
     

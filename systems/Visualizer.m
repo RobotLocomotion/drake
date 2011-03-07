@@ -11,6 +11,16 @@ classdef Visualizer < RobotLibSystem
       obj=obj@RobotLibSystem(0,0,num_u,0,true);
     end
     
+    function x0 = getInitialState(obj)
+      x0=[];
+    end
+    function xcdot = dynamics(obj,t,x,u)
+      error('shouldn''t get here'); 
+    end
+    function xdn = update(obj,t,x,u)
+      error('shouldn''t get here');
+    end
+    
     function y = output(obj,t,x,u)
       draw(obj,t,u);
       y=[];

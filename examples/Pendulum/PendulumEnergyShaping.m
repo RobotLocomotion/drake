@@ -1,4 +1,4 @@
-classdef PendulumEnergyShaping < RobotLibSystem
+classdef PendulumEnergyShaping < SmoothRobotLibSystem
   
   properties 
     p
@@ -6,7 +6,7 @@ classdef PendulumEnergyShaping < RobotLibSystem
   
   methods
     function obj = PendulumEnergyShaping(plant)
-      obj = obj@RobotLibSystem(0,0,2,1,true,true);
+      obj = obj@SmoothRobotLibSystem(0,0,2,1,true,true);
       typecheck(plant,'PendulumPlant');
       obj.p = plant;
     end

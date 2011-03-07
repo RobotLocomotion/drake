@@ -1,4 +1,4 @@
-classdef GliderPlant < RobotLibSystem
+classdef GliderPlant < SmoothRobotLibSystem
 % Defines the dynamics for the perching glider.  Translated from Rick Cory's code in 
 % https://svn.csail.mit.edu/russt/robots/perchingGlider/ 
   
@@ -20,7 +20,7 @@ classdef GliderPlant < RobotLibSystem
   
   methods
     function obj = GliderPlant()
-      obj = obj@RobotLibSystem(7,0,1,7);
+      obj = obj@SmoothRobotLibSystem(7,0,1,7);
       ulimit = 13; % max servo velocity
       obj = setInputLimits(obj,-ulimit,ulimit);
     end
@@ -65,19 +65,11 @@ classdef GliderPlant < RobotLibSystem
       % phi_lo_limit < x(4) < phi_up_limit
     end
     
-    function df = dynamicsGradients(obj,t,x,u,order)
-      % Implement the Taylor expansion of the second-order gradients
-      if (nargin>4 && order>1) df = dynamicsGradients@Plant(obj,t,x,u,order); return; end
-
-      df = glider_grads(obj,t,x,u);
-    end
-    
-    function y = output(obj,t,x,u)
+    function [y,dy] = output(obj,t,x,u)
       y = x;
-    end
-    
-    function dy = outputGradients(obj,t,x,u,order)
-      error('implement this (it''s trivial)'); 
+      if (nargout>1)
+        dy=[zeros(obj.num_y,1),eye(obj.num_y),zeros(obj.num_y,obj.num_u)];
+      end
     end
     
     function x = getInitialState(obj)

@@ -25,7 +25,7 @@ static void mdlCheckParameters(SimStruct *S)
 {
   const mxArray *psys = ssGetSFcnParam(S,0);
   if (!isa(psys,"RobotLibSystem"))
-    ssSetErrorStatus(S,"First dialog parameter must be a RobotLibSystem class.");
+    ssSetErrorStatus(S,"First dialog parameter must be a RobotLibSystem of HybridRobotLibSystem class.");
 }
 #endif /* MDL_CHECK_PARAMETERS */
 
@@ -93,7 +93,7 @@ static void mdlInitializeSizes(SimStruct *S)
   ssSetNumIWork(S, 0);
   ssSetNumPWork(S, 0);
   
-  if (isa(psys,"FiniteStateMachine")) {
+  if (isa(psys,"HybridRobotLibSystem")) {
     ssSetNumModes(S, 1);
 
     if (mexCallMATLAB(1,plhs,1,&psys,"getNumZeroCrossings")) return;
@@ -102,7 +102,7 @@ static void mdlInitializeSizes(SimStruct *S)
 
     // i need a memoryless fsm for many of the hybrid controllers.  i now think this is not required: 
     //    if (ssGetNumContStates(S)<1) 
-    //     ssSetErrorStatus(S,"FiniteStateMachines must have numContStates>0");
+    //     ssSetErrorStatus(S,"HybridRobotLibSystems must have numContStates>0");
   } else {    
     ssSetNumModes(S, 0);
     ssSetNumNonsampledZCs(S, 0);
@@ -136,7 +136,7 @@ static void mdlInitializeConditions(SimStruct *S)
   real_T* x0 = ssGetContStates(S);
   real_T* x = mxGetPr(plhs[0]);
 
-  if (isa(psys,"FiniteStateMachine")) {
+  if (isa(psys,"HybridRobotLibSystem")) {
     int_T* mode = ssGetModeVector(S);
     mode[0] = (int) x[0];
     x++;
@@ -168,7 +168,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   const real_T *u; 
   real_T *y = (num_y>0) ? ssGetOutputPortRealSignal(S, 0) : NULL;
   mxArray* plhs[2];
-  bool fsm = isa(psys,"FiniteStateMachine");
+  bool fsm = isa(psys,"HybridRobotLibSystem");
   int_T *mode = (fsm ? ssGetModeVector(S) : NULL);
 
   mxArray *prhs[4];
@@ -195,7 +195,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
 
   if (fsm && ssIsMajorTimeStep(S)) {
     // then check for zero-crossing events and apply and discontinuous changes 
-    if (mexCallMATLAB(2, plhs, 4, prhs, "transition_update")) return;
+    if (mexCallMATLAB(2, plhs, 4, prhs, "transitionUpdate")) return;
     real_T *pxn = mxGetPr(plhs[0]);
     memcpy(px,pxn,sizeof(real_T)*(num_xc+1));  // copy over to the state input used for the rest of this function
     // update the actual state vectors:
@@ -272,7 +272,7 @@ static void mdlDerivatives(SimStruct *S)
   const real_T *u = num_u>0 ? ssGetInputPortRealSignal(S,0) : NULL;
   real_T *xcdot = ssGetdX(S);
   mxArray* plhs[1];
-  bool fsm = isa(psys,"FiniteStateMachine");
+  bool fsm = isa(psys,"HybridRobotLibSystem");
   int_T *mode = (fsm ? ssGetModeVector(S) : NULL);
 
   mxArray *prhs[4];

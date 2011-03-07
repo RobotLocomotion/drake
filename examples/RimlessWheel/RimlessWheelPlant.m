@@ -1,4 +1,4 @@
-classdef RimlessWheelPlant < FiniteStateMachine
+classdef RimlessWheelPlant < HybridRobotLibSystem
   
   properties
     m = 1;
@@ -13,7 +13,6 @@ classdef RimlessWheelPlant < FiniteStateMachine
   
   methods 
     function obj = RimlessWheelPlant()
-      obj = obj@FiniteStateMachine();
       sys = RimlessWheelStancePlant();
       sys.m = obj.m;
       sys.l = obj.l;
@@ -22,16 +21,16 @@ classdef RimlessWheelPlant < FiniteStateMachine
       
       fc1=inline('x(1)-obj.gamma+obj.alpha','obj','t','x','u');  % theta<=gamma-alpha
       fc2=inline('x(2)','obj','t','x','u'); % thetadot<=0
-      obj = addTransition(obj,1,1,and_guards(obj,fc1,fc2),@forward_collision_dynamics,false,true);
+      obj = addTransition(obj,1,1,andGuards(obj,fc1,fc2),@forwardCollisionDynamics,false,true);
 
       rc1=inline('obj.gamma+obj.alpha-x(1)','obj','t','x','u');  % theta>=gamma+alpha
       rc2=inline('-x(2)','obj','t','x','u'); % thetadot>=0
-      obj = addTransition(obj,1,1,and_guards(obj,rc1,rc2),@reverse_collision_dynamics,false,true);
+      obj = addTransition(obj,1,1,andGuards(obj,rc1,rc2),@reverseCollisionDynamics,false,true);
 
 %      obj.ode_options = odeset('InitialStep',1e-3, 'Refine',1,'MaxStep',0.02);
     end
 
-    function [xn,status] = forward_collision_dynamics(obj,t,x,u)
+    function [xn,status] = forwardCollisionDynamics(obj,t,x,u)
       xn = [obj.gamma + obj.alpha; 
         x(2)*cos(2*obj.alpha);
         x(3) - 2*obj.l*sin(obj.alpha)];
@@ -41,7 +40,7 @@ classdef RimlessWheelPlant < FiniteStateMachine
       end
     end          
     
-    function [xn,status] = reverse_collision_dynamics(obj,t,x,u)
+    function [xn,status] = reverseCollisionDynamics(obj,t,x,u)
       xn = [obj.gamma - obj.alpha; 
         x(2)*cos(2*obj.alpha);
         x(3) + 2*obj.l*sin(obj.alpha)];

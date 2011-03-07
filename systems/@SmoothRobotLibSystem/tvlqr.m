@@ -37,17 +37,17 @@ function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj)
 x0 = xtraj.eval(t); u0 = utraj.eval(t);
 Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
 nX = length(x0); nU = length(u0);
-df = plant.dynamicsGradients(t,x0,u0);
-A = df{1}(:,1+(1:nX));
-B = df{1}(:,nX+1+(1:nU));
+[f,df] = geval(@plant.dynamics,t,x0,u0);
+A = df(:,1+(1:nX));
+B = df(:,nX+1+(1:nU));
 Sdot = -(Q - S*B*Ri*B'*S + S*A + A'*S);
 end
 
 function K = Ksoln(t,plant,Straj,Rtraj,xtraj,utraj)
 S = Straj.eval(t); Ri = inv(Rtraj.eval(t)); x0=xtraj.eval(t); u0 = utraj.eval(t);
 nX = length(x0); nU = length(u0);
-df = plant.dynamicsGradients(t,x0,u0);
-B = df{1}(:,nX+1+(1:nU));
+[f,df] = geval(@plant.dynamics,t,x0,u0);
+B = df(:,nX+1+(1:nU));
 K = Ri*B'*S;
 end
     

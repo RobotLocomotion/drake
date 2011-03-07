@@ -1,4 +1,4 @@
-classdef PolynomialSystem < RobotLibSystem, 
+classdef PolynomialSystem < SmoothRobotLibSystem, 
 
   properties (SetAccess=private)
     p_t
@@ -11,7 +11,7 @@ classdef PolynomialSystem < RobotLibSystem,
 
   methods
     function obj = PolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,p_dynamics,p_update,p_output)
-      obj = obj@RobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
+      obj = obj@SmoothRobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
 
       % Now create the msspoly versions of the dynamics,update,and output:
       obj.p_t=msspoly('t',1);

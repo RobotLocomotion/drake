@@ -18,10 +18,6 @@ classdef ManipulatorPlant < SecondOrderPlant
       [H,C,B] = manipulatorDynamics(obj,q,qd);
       qdd = H\(B*u - C);
     end
-
-    function dqdd = sodynamicsGradients(obj,t,q,qd,u,order)
-      error('not implemented yet');
-    end
   end
   
 end
