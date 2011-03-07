@@ -1,9 +1,9 @@
-classdef LTVControl < RobotLibSystem
+classdef LTVControl < SmoothRobotLibSystem
 % Time-varying linear feedback
 
   methods 
     function obj=LTVControl(x0,u0,K,S,Sdot)
-      obj = obj@RobotLibSystem(0,0,x0.dim,u0.dim,true,true);
+      obj = obj@SmoothRobotLibSystem(0,0,x0.dim,u0.dim,true,true);
       obj.x0 = x0;
       obj.u0 = u0;
       obj.K = K;
@@ -26,9 +26,6 @@ classdef LTVControl < RobotLibSystem
       u = obj.u0.eval(t)-obj.K.eval(t)*(x-obj.x0.eval(t));
     end
     
-    function du = controlGradients(obj,t,x,order)
-      error('not implemented yet');
-    end
   end
   
   properties 

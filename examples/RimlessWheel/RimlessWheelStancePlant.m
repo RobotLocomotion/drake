@@ -1,4 +1,4 @@
-classdef RimlessWheelStancePlant < RobotLibSystem 
+classdef RimlessWheelStancePlant < SmoothRobotLibSystem 
 
   properties
     m, l, g
@@ -6,7 +6,7 @@ classdef RimlessWheelStancePlant < RobotLibSystem
   
   methods 
     function obj = RimlessWheelStancePlant(m,g,l)
-      obj = obj@RobotLibSystem(3,0,0,3,false,true); % [theta; thetadot; position of toe] 
+      obj = obj@SmoothRobotLibSystem(3,0,0,3,false,true); % [theta; thetadot; position of toe] 
       if (nargin>0)
         obj.m = m;
         obj.g = g;

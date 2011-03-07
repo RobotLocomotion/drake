@@ -1,4 +1,4 @@
-classdef TrajectorySwingup < FiniteStateMachine
+classdef TrajectorySwingup < HybridRobotLibSystem
   
   methods
     function obj = TrajectorySwingup(plant)

@@ -1,4 +1,4 @@
-classdef PendulumEnergyControl < FiniteStateMachine
+classdef PendulumEnergyControl < HybridRobotLibSystem
   
   methods
     function obj = PendulumEnergyControl(plant)
@@ -16,7 +16,7 @@ classdef PendulumEnergyControl < FiniteStateMachine
       in_lqr_roa = inline('obj.wrapInput(x-obj.x0)''*obj.S*obj.wrapInput(x-obj.x0) - obj.rho','obj','t','junk','x');
       
       obj = obj.addTransition(1,2,in_lqr_roa,[],true,true);
-      obj = obj.addTransition(2,1,not_guard(obj,in_lqr_roa),[],true,true);
+      obj = obj.addTransition(2,1,notGuard(obj,in_lqr_roa),[],true,true);
       
       obj.output_mode = false;
     end

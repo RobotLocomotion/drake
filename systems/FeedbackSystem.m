@@ -1,4 +1,4 @@
-classdef FeedbackSystem < RobotLibSystem
+classdef FeedbackSystem < SmoothRobotLibSystem
   
   properties
     sys1
@@ -9,11 +9,11 @@ classdef FeedbackSystem < RobotLibSystem
   
   methods
     function obj = FeedbackSystem(sys1,sys2)
-      obj = obj@RobotLibSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
+      obj = obj@SmoothRobotLibSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
         sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
         0, sys1.getNumOutputs(), false, sys1.isTI() & sys2.isTI());
-      typecheck(sys1,'RobotLibSystem');
-      typecheck(sys2,'RobotLibSystem');
+      typecheck(sys1,'SmoothRobotLibSystem');
+      typecheck(sys2,'SmoothRobotLibSystem');
       obj.sys1=sys1;
       obj.sys2=sys2;
 

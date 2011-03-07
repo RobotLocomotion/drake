@@ -1,12 +1,18 @@
 classdef CompassGaitStancePlant < ManipulatorPlant 
 
   properties
-    m, mh, a, b, l, g;
+    m = 5;
+    mh = 10;
+    a = 0.5;
+    b = 0.5;
+    g = 9.8;
+    l;
   end
   
   methods 
     function obj = CompassGaitStancePlant(m,mh,a,b,l,g)
       obj = obj@ManipulatorPlant(2,1);
+      obj.l=obj.a+obj.b;
       if (nargin>0)
         obj.m=m; obj.mh=mh; obj.a=a; obj.b=b; obj.l=l; obj.g=g;
       end
@@ -22,10 +28,12 @@ classdef CompassGaitStancePlant < ManipulatorPlant
       C=C*qdot+G;
       B = [-1;1];
     end
-    
-    function df = dynamicsGradients(obj,t,x,u,order)
-      if (nargin<5) order=1; end
-      df = compassGaitGradients(obj,t,x,u,order);
+
+    function [f,df] = dynamics(obj,t,x,u)
+      f = dynamics@ManipulatorPlant(obj,t,x,u);
+      if (nargout>1)
+        df= dynamicsGradients(obj,t,x,u,nargout-1);
+      end
     end
     
     function x0 = getInitialState(obj)

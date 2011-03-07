@@ -1,4 +1,5 @@
 classdef RobotLibSystem < DynamicalSystem
+% Abstract class that provides common functionality for Smooth- and Hybrid- RobotLib Systems
 
   % constructor
   methods
@@ -15,39 +16,6 @@ classdef RobotLibSystem < DynamicalSystem
     end      
   end
       
-  % default methods - these should be implemented or overwritten
-  % 
-  methods
-    function x0 = getInitialState(obj)
-      x0 = zeros(obj.num_xd+obj.num_xc,1);
-    end
-    
-    function xcdot = dynamics(obj,t,x,u)
-      error('systems with continuous states must implement Derivatives');
-    end
-    function dxcdot = dynamicsGradients(obj,t,x,u,order)
-      error('not implemented yet');
-      % todo: implement numerical gradients here
-    end
-    
-    function xdn = update(obj,t,x,u)
-      error('systems with discrete states must implement Update');
-    end
-    function dxdn = updateGradients(obj,t,x,u,order)
-      error('not implemented yet');
-      % todo: implement numerical gradients here
-    end
-    
-    function y = output(obj,t,x,u)
-      error('default is intentionally not implemented');
-    end
-    function dy = outputGradients(obj,t,x,u,order)
-      error('not implemented yet');
-      % todo: implement numerical gradients here
-    end
-    
-  end      
-
   % access methods
   methods
     function n = getNumContStates(obj)
@@ -160,67 +128,17 @@ classdef RobotLibSystem < DynamicalSystem
 
   % utility methods
   methods
-%     function [A,B,C,D,x0dot,y0] = linearize(obj,t,x0,u0)
-%       if (~isCT(obj) || getNumDiscStates(obj)>0)  % boot if it's not the simple case
-%         [A,B,C,D,x0dot,y0] = linearize@DynamicalSystem(obj,t,x0,u0);
-%       end
-%       
-%       nX = getNumContStates(obj);
-%       nU = getNumInputs(obj);
-%       df = dynamicsGradients(obj,t,x0,u0);
-%       A = df{1}(:,1+(1:nX));
-%       B = df{1}(:,nX+1+(1:nU));
-%       
-%       if (nargout>2)
-%         dy = outputGradients(obj,t,x0,u0);
-%         C = dy{1}(:,1+(1:nX));
-%         D = dy{1}(:,nX+1+(1:nU));
-%         if (nargout>4)
-%           x0dot = dynamics(obj,t,x0,u0);
-%           if (nargout>5)
-%             y0 = output(obj,t,x0,u0);
-%           end
-%         end
-%       end
-%     end
-
-    function sys=feedback(sys1,sys2,donttry)
-      if(nargin>2 && donttry) % backdoor until I get RLCSFunction working better
-        sys=feedback@DynamicalSystem(sys1,sys2);
-        return;
-      end        
-      try 
-        sys=FeedbackSystem(sys1,sys2);  % try to keep it a robotlibsystem
-      catch
-        sys=feedback@DynamicalSystem(sys1,sys2);
-      end
-    end
-
     function gradTest(obj)
       if (getNumContStates(obj))
-        gradTest(@dynamicsTest,0,getInitialState(obj),getDefaultInput(obj),struct('tol',.01))
-      end
-      function [f,df] = dynamicsTest(t,x,u)
-        f = dynamics(obj,t,x,u);
-        df = dynamicsGradients(obj,t,x,u,1);
+        gradTest(@obj.dynamics,0,getInitialState(obj),getDefaultInput(obj),struct('tol',.01))
       end
       if (getNumDiscStates(obj))
-        gradTest(@updateTest,0,getInitialState(obj),getDefaultInput(obj),struct('tol',.01))
-      end
-      function [f,df] = updateTest(t,x,u)
-        f = update(obj,t,x,u);
-        df = updateGradients(obj,t,x,u,1);
+        gradTest(@obj.update,0,getInitialState(obj),getDefaultInput(obj),struct('tol',.01))
       end
       if (getNumOutputs(obj))
-        gradTest(@outputTest,0,getInitialState(obj),getDefaultInput(obj),struct('tol',.01))
-      end
-      function [f,df] = outputTest(t,x,u)
-        f = output(obj,t,x,u);
-        df = outputGradients(obj,t,x,u,1);
+        gradTest(@obj.output,0,getInitialState(obj),getDefaultInput(obj),struct('tol',.01))
       end
     end
-    
-
   end
   
   properties (SetAccess=private, GetAccess=protected)

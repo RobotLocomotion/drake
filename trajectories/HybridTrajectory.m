@@ -43,8 +43,8 @@ classdef HybridTrajectory < Trajectory
     
     function y = eval(obj,t)
       % look into and evaluate correct trajectory based on the time
-      if (any(t<obj.tspan(1)) || any(t>obj.tspan(end))) 
-        error('outside tspan'); 
+      if (any(t<obj.tspan(1)) || any(t>obj.tspan(end)))
+        error('outside tspan');
       end
       if (length(t)==1)
         trajind=find(t>=[obj.tspan(1),obj.te],1,'last');
@@ -52,20 +52,23 @@ classdef HybridTrajectory < Trajectory
       else  % vectorized version
         t=sort(t);
         ind = 1;
-        for i=1:length(obj.te)
-          nind = find(t(ind:end)>obj.te(i),1,'first');  % first (relative) index beyond this segment
+        for i=1:length(obj.te)+1
+          nind = [];
+          if(i<=length(obj.te))
+            nind = find(t(ind:end)>obj.te(i),1,'first');  % first (relative) index beyond this segment
+          end
           if (isempty(nind)) % the rest must belong to this segment
             c = ind:length(t);
           elseif (nind==1) % none in this segment
-            continue; 
+            continue;
           else
-            c = ind:(ind+nind-2);  
-          end 
+            c = ind:(ind+nind-2);
+          end
           y(:,c) = obj.traj{i}.eval(t(c));
           ind=ind+nind-1;
         end
       end
     end
+    
   end
-  
 end

@@ -1,4 +1,4 @@
-function trajectoryTest
+function runDircol
 
 p = CompassGaitPlant();
 
@@ -47,11 +47,11 @@ end
       function [g,dg] = cost(t,x,u);
         R = 1;
         g = sum((R*u).*u,1);
-        dg{1} = [zeros(1,1+size(x,1)),2*u'*R];
+        dg = [zeros(1,1+size(x,1)),2*u'*R];
       end
       
       function [h,dh] = finalcost(t,x)
         h=t;
-        dh{1} = [1,zeros(1,size(x,1))];
+        dh = [1,zeros(1,size(x,1))];
       end
       

@@ -1,4 +1,4 @@
-classdef SecondOrderPlant < RobotLibSystem
+classdef SecondOrderPlant < SmoothRobotLibSystem
 % An abstract class that wraps qddot = f(t,q,qdot,u).
 %   A specialization of the Dynamics class for systems of second order.  
   
@@ -9,7 +9,7 @@ classdef SecondOrderPlant < RobotLibSystem
     %   variables (implying num_q*2 states) and num_u control inputs.
 
 %      if (nargin>0)
-        obj = obj@RobotLibSystem(num_q*2,0,num_u,num_q*2,false,timeInvariantFlag);
+        obj = obj@SmoothRobotLibSystem(num_q*2,0,num_u,num_q*2,false,timeInvariantFlag);
         obj.num_q = num_q;
 %      end
     end
@@ -20,11 +20,6 @@ classdef SecondOrderPlant < RobotLibSystem
   end
 
   methods
-    function df = sodynamicsGradients(obj,t,q,qd,u,order)
-    % Provides the Taylor-expansion of the dynamics.
-      error('not implemented yet');
-    end
-    
     function obj = setNumQ(obj,num_q)
     % Guards the num_q variable to make sure it stays consistent 
     % with num_x.
@@ -50,47 +45,7 @@ classdef SecondOrderPlant < RobotLibSystem
       % default output is the full state
       y = x;
     end
-    
-    function df = dynamicsGradients(obj,t,x,u,order)
-    % Provides the Taylor-expansion of the dynamics
-      if (nargin<5) order=1; end
-      q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
-      df = obj.sodynamicsGradients(t,q,qd,u,order);
-      df{1} = [zeros(obj.num_q,1+obj.num_q), eye(obj.num_q), zeros(obj.num_q,obj.num_u); df{1}];
-      z = sparse(obj.num_q,1+2*obj.num_q+obj.num_u);
-      for o=2:length(df)
-        df{o} = addzeros(df{o});
-      end
-      
-      function d = addzeros(d)
-        if (iscell(d))
-          for i=1:length(d)
-            d{i} = addzeros(d{i});
-          end
-        else
-          d = [z;d];
-        end
-      end
-      
-    end
-    
-    function dy = outputGradients(obj,t,x,u,order)
-      % gradients of the full state feedback 
-      dy{1} = [zeros(length(x),1),eye(length(x)),zeros(length(x),length(u))];
-      % because length(y) = length(x)
-
-      if (nargin>4 && order>1)
-      % fill in the rest with zeros
-        for o=2:order
-          dy{o} = recursiveZeros(o,obj.getNumOutputs(),1+length(x)+length(u));
-        end
-      end
-      function d=recursiveZeros(o,ny,ntxu)
-        if (o==1) d=sparse(ny,ntxu);
-        else for i=1:ntxu, d{i}=recursiveZeros(o-1,ny,ntxu); end, end
-      end
-    end
-    
+        
   end
   
   properties (SetAccess = private, GetAccess = public)

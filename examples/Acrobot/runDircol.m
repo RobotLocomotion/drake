@@ -36,7 +36,7 @@ end
       function [g,dg] = cost(t,x,u);
         R = 1;
         g = sum((R*u).*u,1);
-        dg{1} = [zeros(1,1+size(x,1)),2*u'*R];
+        dg = [zeros(1,1+size(x,1)),2*u'*R];
         return;
         
         xd = repmat([pi;0;0;0],1,size(x,2));
@@ -51,13 +51,13 @@ end
           dgdt = 0;
           dgdx = 2*xerr'*Q;
           dgdu = 2*u'*R;
-          dg{1} = [dgdt,dgdx,dgdu];
+          dg = [dgdt,dgdx,dgdu];
         end
       end
       
       function [h,dh] = finalcost(t,x)
         h = t;
-        dh{1} = [1,zeros(1,size(x,1))];
+        dh = [1,zeros(1,size(x,1))];
         return;
         
         xd = repmat([pi;0;0;0],1,size(x,2));
@@ -68,7 +68,7 @@ end
         h = sum((Qf*xerr).*xerr,1);
         
         if (nargout>1)
-          dh{1} = [0, 2*xerr'*Qf];
+          dh = [0, 2*xerr'*Qf];
         end
       end
       

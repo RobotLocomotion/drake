@@ -148,15 +148,13 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   dd = zeros(nX,1+2*nX+2*nU,nT-1);
   
   % iterate through time
-  xdot(:,1) = sys.dynamics(t(1),x(:,1),u(:,1));  
-  df = sys.dynamicsGradients(t(1),x(:,1),u(:,1),1);
-  dxdot(:,:,1) = df{1};  dxdot(:,1,1) = dxdot(:,1,1)*dtdw1(1); % d/d[tscale; x(:,1); u(:,1)]
+  [xdot(:,1),dxdot(:,:,1)] = geval(@sys.dynamics,t(1),x(:,1),u(:,1));  
+  dxdot(:,1,1) = dxdot(:,1,1)*dtdw1(1); % d/d[tscale; x(:,1); u(:,1)]
   for i=1:(nT-1)  % compute dynamics and cost
-    [g(i),dgc] = costFun(t(i),x(:,i),u(:,i));  dg(1,:,i) = dgc{1}; dg(1,1,i)=dg(1,1,i)*dtdw1(i);  % d/d[tscale; x(:,i); u(:,i)]
+    [g(i),dg(1,:,i)] = geval(costFun,t(i),x(:,i),u(:,i));  dg(1,1,i)=dg(1,1,i)*dtdw1(i);  % d/d[tscale; x(:,i); u(:,i)]
     dg(1,:,i) = [g(i)*ddtdw1(i),zeros(1,nX+nU)]+dt(i)*dg(1,:,i);  g(i) = g(i)*dt(i);  
-    xdot(:,i+1) = sys.dynamics(t(i+1),x(:,i+1),u(:,i+1));
-    df = sys.dynamicsGradients(t(i+1),x(:,i+1),u(:,i+1),1);
-    dxdot(:,:,i+1) = df{1};  dxdot(:,1,1)=dxdot(:,1,1)*dtdw1(i+1); % d/d[tscale; x(:,i+1); u(:,i+1)]
+    [xdot(:,i+1),dxdot(:,:,i+1)] = geval(@sys.dynamics,t(i+1),x(:,i+1),u(:,i+1));
+    dxdot(:,1,1)=dxdot(:,1,1)*dtdw1(i+1); % d/d[tscale; x(:,i+1); u(:,i+1)]
     xcol = .5*(x(:,i)+x(:,i+1)) + dt(i)/8*(xdot(:,i)-xdot(:,i+1));
     dxcol = .5*[zeros(nX,1),eye(nX),zeros(nX,nU),eye(nX),zeros(nX,nU)] + ...
       [ddtdw1(i)/8*(xdot(:,i)-xdot(:,i+1)), zeros(nX,nX+nU+nX+nU)] + ...
@@ -167,15 +165,15 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
       -.25*[dxdot(:,:,i),zeros(nX,nX+nU)] + ...
       -.25*[dxdot(:,1,i+1),zeros(nX,nX+nU),dxdot(:,2:end,i+1)]; % d/d[tscale;x(:,i);u(:,i);x(:,i+1);u(:,i+1)]
     % collocation constraint:
-    d(:,i)= sys.dynamics(tcol(i),xcol,ucol(:,i)) - xdotcol;
-    df = sys.dynamicsGradients(tcol(i),xcol,ucol(:,i),1);
-    dd(:,:,i) = df{1}*[dtcoldw1(i),zeros(1,2*nX+2*nU); dxcol; zeros(nU,1+nX), .5*eye(nU), zeros(nU,nX), .5*eye(nU)] - dxdotcol;  % d/d[tscale;x(:,i);u(:,i);x(:,i+1);u(:,i+1)]
+    [d(:,i),df]= geval(@sys.dynamics,tcol(i),xcol,ucol(:,i));
+    d(:,i) = d(:,i) - xdotcol;
+    dd(:,:,i) = df*[dtcoldw1(i),zeros(1,2*nX+2*nU); dxcol; zeros(nU,1+nX), .5*eye(nU), zeros(nU,nX), .5*eye(nU)] - dxdotcol;  % d/d[tscale;x(:,i);u(:,i);x(:,i+1);u(:,i+1)]
 
     % for debugging
 %    d(:,i)=xdotcol;
 %    dd(:,:,i)=dxdotcol;
   end
-  [h,dh] = finalCostFun(t(end),x(:,end)); dh = dh{1}; dh(1)=dh(1)*dtdw1(end);
+  [h,dh] = geval(finalCostFun,t(end),x(:,end)); dh(1)=dh(1)*dtdw1(end);
 
   J = h + sum(g);
   dJ = [dh(1)+sum(dg(1,1,:)), reshape(dg(1,1+(1:nX),:),1,[]), dh(1,2:end), reshape(dg(1,1+nX+(1:nU),:),1,[]), zeros(1,nU)];

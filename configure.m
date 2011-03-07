@@ -19,9 +19,9 @@ if (major_ver < 7 || (major_ver==7 && minor_ver < 6))
   % because I rely on the new matlab classes with classdef
 end
 
-if (~isfield(conf,'root') || isempty(conf.root))
-  conf.root=pwd;
-end
+%if (~isfield(conf,'root') || isempty(conf.root))  
+  conf.root=pwd;  % always set the root
+%end
 
 [a,b,c]=extensions;
 if (~isfield(conf,'objext') || isempty(conf.objext))
@@ -39,6 +39,30 @@ original_path = path;
 % look for POT, add to matlab path 
 % look for Sedumi, add to matlab path 
 % look for snopt, add to matlab path 
+
+% remove any existing robotlib directories that are in a different root
+y=strread(path,'%s','delimiter',pathsep);
+ind=strfind(y,'robotlib');
+old_robotlibs={}; old_robotlibs_delete=[];
+for i=1:length(ind);  % check current paths 
+  if ~isempty(ind{i}) % does it have 'robotlib'?
+    old_rl = [y{i}(1:ind{i}-1),'robotlib'];
+    if ~strncmpi(old_rl,pwd,ind{i})  % is it the current directory, or a different copy of robotlib?
+      j = find(strcmp(old_robotlibs,old_rl),1);  % is it already in our list of old robotlibs?  (only want to ask the user once)
+      if isempty(j)  % then it's old and I haven't seen it before.  prompt user to see if i can delete.
+        old_robotlibs{end+1} = old_rl;
+        a = input(['I found a robotlib install in ', old_rl,' in your path.\n  This might confuse things.\n  Ok if I remove it from your path now? (y/n)? '], 's');
+        old_robotlibs_delete = [old_robotlibs_delete;(lower(a(1))=='y')];
+        j=length(old_robotlibs_delete);
+      end
+      % if i'm allowed to delete, then rmpath this entry
+      if (old_robotlibs_delete(j));
+        rmpath(y{i});
+      end
+    end
+  end
+end
+
 
 % add robotlib directories to the matlab path 
 addpath([conf.root,'/systems']);

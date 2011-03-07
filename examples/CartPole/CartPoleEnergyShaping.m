@@ -1,4 +1,4 @@
-classdef CartPoleEnergyShaping < RobotLibSystem
+classdef CartPoleEnergyShaping < SmoothRobotLibSystem
   % technically not the same controller as Spong96.  He goes through PFL.
   % I'm just doing energy shaping on the non-PFL'd system here.
   
@@ -9,7 +9,7 @@ classdef CartPoleEnergyShaping < RobotLibSystem
   
   methods
     function obj = CartPoleEnergyShaping(plant)
-      obj = obj@RobotLibSystem(0,0,4,1,true,true);
+      obj = obj@SmoothRobotLibSystem(0,0,4,1,true,true);
       if (nargin>0)
         typecheck(plant,'CartPolePlant')
         obj.p = plant;

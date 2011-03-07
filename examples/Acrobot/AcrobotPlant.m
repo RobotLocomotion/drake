@@ -45,10 +45,13 @@ classdef AcrobotPlant < ManipulatorPlant
     % todo: also implement sodynamics here so that I can keep the
     % vectorized version?
     
-    function df = dynamicsGradients(obj,t,x,u,order)
-      if (nargin<5) order=1; end
-      df = acrobotGradients(obj,t,x,u,order);
+    function [f,df,d2f,d3f] = dynamics(obj,t,x,u)
+      f = dynamics@ManipulatorPlant(obj,t,x,u);
+      if (nargout>1)
+        [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
+      end
     end
+    
     function x = getInitialState(obj)
       x = .1*randn(4,1);
     end

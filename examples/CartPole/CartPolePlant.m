@@ -26,9 +26,11 @@ classdef CartPolePlant < ManipulatorPlant
       C = C*qd + G;
     end
     
-    function df = dynamicsGradients(obj,t,x,u,order)
-      if (nargin<5) order=1; end
-      df = cartpole_gradients(obj,t,x,u,order);
+    function [f,df,d2f,d3f] = dynamics(obj,t,x,u)
+      f = dynamics@ManipulatorPlant(obj,t,x,u);
+      if (nargout>1)
+        [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
+      end
     end
     
     function x0 = getInitialState(obj)
