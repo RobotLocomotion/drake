@@ -63,7 +63,8 @@ if (nargout>0)
           if (i>0) warning('successive zero crossings'); end
           continue;
         end
-        pptraj = {pptraj{:},makeSubTrajectory(t(inds),y(:,inds))};
+%        pptraj = {pptraj{:},makeSubTrajectory(t(inds),y(:,inds))};
+        pptraj = {pptraj{:},makeSubTrajectory([t(max(inds(1)-1,1));t(inds(2:end))],y(:,inds))};  % use time of zc instead of 1e-10 past it.
       end
       if (length(pptraj)>1)
         traj = HybridTrajectory(pptraj);

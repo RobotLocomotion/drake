@@ -57,6 +57,18 @@ classdef SmoothRobotLibSystem < RobotLibSystem
       end
     end
 
+    function traj = simulateODE(obj,tspan,x0,options) 
+      odeoptions = obj.simulink_params;
+      odefun = @(t,x)obj.dynamics(t,x,zeros(obj.getNumInputs(),1));
+      if (isfield(obj.simulink_params,'Solver'))
+        sol = feval(obj.simulink_params.Solver,odefun,tspan,x0,odeoptions);
+      else
+        sol = ode45(odefun,tspan,x0,odeoptions);
+      end
+      xtraj = ODESolTrajectory(sol);
+      traj = FunctionHandleTrajectory(@(t)obj.output(t,xtraj.eval(t),zeros(obj.getNumInputs(),1)),[obj.getNumOutputs,1],tspan);
+    end
+    
     function sys=feedback(sys1,sys2)
       try 
         sys=FeedbackSystem(sys1,sys2);  % try to keep it a smoothrobotlibsystem
