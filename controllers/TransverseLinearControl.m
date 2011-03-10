@@ -26,7 +26,9 @@ methods
     function u = output(obj,t,junk,x)
       % implements the actual control function
       %      x = wrap(obj,obj.x0,x);
+
       tau = computeTau(obj,x);
+      if (isempty(tau)) u=zeros(obj.u0.dim,1); return; end  % this should go away when computeTau is working better
      
       [Pi, ~] = obj.TransSurf.getPi(tau);
       xperp = Pi*(x-obj.x0.eval(tau));
@@ -70,6 +72,7 @@ methods
       xdiff = repmat(x,1,size(x0s,2))-x0s;
       zdotx = dot(zs,xdiff);
       indices_z = find(zdotx.^2<1e-3);
+      if (isempty(indices_z)) tau=[]; zeroval=nan; exitflag=1; return; end
       
       [r, subindex] = min(abs(index_euclid-indices_z));
       i = indices_z(subindex);
