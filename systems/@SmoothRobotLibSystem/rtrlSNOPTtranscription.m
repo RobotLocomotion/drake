@@ -1,5 +1,5 @@
-function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname]=...
-    rtrl_snopt_transcription(sys,costFun,finalCostFun,x0,utraj0,con,options)
+function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,iname,oname]=...
+    rtrlSNOPTtranscription(sys,costFun,finalCostFun,x0,utraj0,con,options)
 %Can only handle the equality final value constraint I*xf=con.xf.beq; so
 %con.xf.Aeq has to be identity matrix.
 %The options are left vacant. To-do: to implement the gradient test.
@@ -9,7 +9,8 @@ t=utraj0.getBreaks();
 u=utraj0.eval(t);
 nT = length(t);
 
-w0=vec(u)';
+w0=vec(u);
+A=[]; iAfun=[]; jAvar=[];
 if(~isfield(con,'u'))
     con.u.ub=sys.umax;
     con.u.lb=sys.umin;
@@ -21,21 +22,26 @@ if(~isfield(con.u,'lb'))
     con.u.lb=sys.umin;
 end
 end
-whigh=repmat(con.u.ub,nT,1)';
-wlow=repmat(con.u.lb,nT,1)';
-if(~isequal(con.xf.Aeq,eye(nX)))
-    error('Cannot handle this final value constraint')
+if(sys.getNumDiscStates()>0)
+    error('not implemented yet (but should be very straightforward)');
 end
-if(~isfield(con.xf,'beq'))
-    iGfun=ones((nT)*nU,1)';
-    jGvar=(1:(nT)*nU);
+
+ts = sys.getSampleTime();
+if (size(ts,2)>1 || any(ts~=0))
+  error('not implemented yet (but should be very straightforward)');
+end
+whigh=repmat(con.u.ub,nT,1);
+wlow=repmat(con.u.lb,nT,1);
+if(~isfield(con.xf,'ub')&&~isfield(con.xf,'lb'))
+    iGfun=ones((nT)*nU,1);
+    jGvar=(1:(nT)*nU)';
     Fhigh=inf;
     Flow=-inf;
 else
-    iGfun=vec(((1:(nX+1))'*ones(1,(nT)*nU))')';
-    jGvar=repmat((1:(nT)*nU)',1+nX,1)';
-    Fhigh=[inf;zeros(nX,1)]';
-    Flow=[-inf;zeros(nX,1)]';
+    iGfun=vec(((1:(nX+1))'*ones(1,(nT)*nU))');
+    jGvar=repmat((1:(nT)*nU)',1+nX,1);
+    Fhigh=[inf;con.xf.ub];
+    Flow=[-inf;con.xf.lb];
 end
 iname={};
 oname={};
@@ -51,7 +57,7 @@ dJdalpha=zeros(1,(nT)*nU);
 u=reshape(w,nU,nT);
 x=zeros(nX,nT);
 x(:,1)=x0;
-finalStateConstraintEnable=isfield(con.xf,'beq');
+finalStateConstraintEnable=(isfield(con.xf,'lb')|isfield(con.xf,'ub'));
 if(finalStateConstraintEnable)
      f=zeros(1+nX,1);
      G=zeros((1+nX)*nU*(nT),1);
@@ -87,7 +93,7 @@ dJdalpha=dJdalpha+dhdx*P;
 G(1:(nT)*nU)=dJdalpha';
 if(finalStateConstraintEnable)
     G((nT)*nU+(1:nX*(nT)*nU))=vec(P');
-    f(1+(1:nX))=x(:,nT)-con.xf.beq;
+    f(1+(1:nX))=x(:,nT);
 end
 f(1)=J;
 end

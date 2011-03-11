@@ -90,19 +90,21 @@ switch (options.method)
     transcriptionFun=@dircolSNOPTtranscription;
   case 'rtrl'
     transcriptionFun=@rtrlSNOPTtranscription;
+  case 'multipleShooting'
+    transcriptionFun=@multipleShootingSNOPTtranscription;
   otherwise
     error(['method ', options.method,' unknown, or not implemented yet']);
 end
 
-[w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,SNOPT_USERFUN,wrapupfun,iname,oname] = transcriptionFun(sys,costFun,finalCostFun,x0,utraj0,con,options);
+[w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,SNOPT_USERFUN,wrapupfun,iname,oname] = transcriptionFun(sys,costFun,finalCostFun,x0,utraj0,con,options);
 
 if (options.grad_test)
-  gradTest(@(w)gradTestFun(w,iGfun,jGvar),w0',struct('input_name',{{iname}},'output_name',{oname},'tol',.01));
+  gradTest(@(w)gradTestFun(w,iGfun,jGvar),w0,struct('input_name',{{iname}},'output_name',{oname},'tol',.01));
 end
 
 %% Run SNOPT
 snset('superbasics=100');  % to do: make this an option?
-[w,F,info] = snopt(w0',wlow',whigh',Flow',Fhigh','snopt_userfun',0,1,[],[],[],iGfun',jGvar');
+[w,F,info] = snopt(w0,wlow,whigh,Flow,Fhigh,'snopt_userfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
 
 if (info~=1 && options.warning) 
   [str,cat] = snopt_info(info);

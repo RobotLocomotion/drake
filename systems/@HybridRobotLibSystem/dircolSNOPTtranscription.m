@@ -1,4 +1,4 @@
-function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = dircolSNOPTtranscription(sys,costFun,finalCostFun,x0,utraj0,con,options)
+function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,iname,oname] = dircolSNOPTtranscription(sys,costFun,finalCostFun,x0,utraj0,con,options)
 
   if (~isfield(con,'mode')) error('con.mode must be defined for HybridRobotLibSystems'); end
   for i=1:length(x0)
@@ -6,7 +6,7 @@ function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = 
   end
   for m=1:length(con.mode)
     % todo: check here that utraj0{m} starts at t=0?
-    [w0{m},wlow{m},whigh{m},Flow{m},Fhigh{m},iGfun{m},jGvar{m},mode_userfun{m},mode_wrapup{m},mode_iname{m},mode_oname{m}] = dircolSNOPTtranscription(sys.modes{con.mode{m}.mode_num},costFun{m},finalCostFun{m},x0{m},utraj0{m},rmfield(con.mode{m},'mode_num'),options);
+    [w0{m},wlow{m},whigh{m},Flow{m},Fhigh{m},A{m},iAfun{m},jAvar{m},iGfun{m},jGvar{m},mode_userfun{m},mode_wrapup{m},mode_iname{m},mode_oname{m}] = dircolSNOPTtranscription(sys.modes{con.mode{m}.mode_num},costFun{m},finalCostFun{m},x0{m},utraj0{m},rmfield(con.mode{m},'mode_num'),options);
     tOrig{m} = utraj0{m}.getBreaks();
     N(m) = length(w0{m});
     nT(m) = length(tOrig{m});
@@ -15,6 +15,9 @@ function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = 
       nf(m)=nf(m)-1;  % don't duplicate cost function
       Flow{1}(1)=Flow{1}(1)+Flow{m}(1); Flow{m} = Flow{m}(2:end);
       Fhigh{1}(1)=Fhigh{1}(1)+Fhigh{m}(1); Fhigh{m} = Fhigh{m}(2:end);
+      njind = (iAfun{m}~=1); 
+      iAfun{m}(njind) = iAfun{m}(njind)+sum(nf(1:m-1))-1;  %subtract 1 to remove J ind
+      jAvar{m} = jAvar{m}+sum(N(1:m-1));
       njind = (iGfun{m}~=1);  
       iGfun{m}(njind) = iGfun{m}(njind)+sum(nf(1:m-1))-1;  %subtract 1 to remove J ind
       jGvar{m} = jGvar{m}+sum(N(1:m-1));
@@ -22,17 +25,19 @@ function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = 
     end
   end
   m=m+1;
-  [nf(m), iGfun{m}, jGvar{m}, Fhigh{m}, Flow{m}, fsm_oname] = fsmObjFun_ind(sys,N,nT,options);
+  [nf(m), A{m} ,iAfun{m} ,jAvar{m}, iGfun{m}, jGvar{m}, Fhigh{m}, Flow{m}, fsm_oname] = fsmObjFun_ind(sys,N,nT,con,options);
   iGfun{m} = iGfun{m}+sum(nf(1:m-1));
-  w0=[w0{:}]; wlow=[wlow{:}]; whigh=[whigh{:}]; Flow=[Flow{:}]; Fhigh=[Fhigh{:}]; iGfun=[iGfun{:}]; jGvar=[jGvar{:}];
+  w0=cell2mat(w0'); wlow=cell2mat(wlow'); whigh=cell2mat(whigh'); Flow=cell2mat(Flow'); Fhigh=cell2mat(Fhigh'); A=cell2mat(A'); iAfun=cell2mat(iAfun'); jAvar=cell2mat(jAvar'); iGfun=cell2mat(iGfun'); jGvar=cell2mat(jGvar');
 
   % handle additional constraints
   for f=fieldnames(con)'
     switch(f{1})
       case 'mode'
         continue  %handled above
+      case 'periodic'
+        continue  %handled in fsmObjFun_ind
       otherwise
-        warning([f,' constraint not handled by FSM dircol (at least not yet)']);
+        warning([f{1},' constraint not handled by hybrid dircol (at least not yet)']);
     end
   end
   
@@ -110,26 +115,31 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     f = [f; to_x - to_x0];
     G = [G; dto_x(:); -ones(nX,1)];  % df/d[tc,xc,uc]; df/d[to_x0]
   end
+
+  if (isfield(con,'periodic') && con.periodic)
+    f = [f;zeros(nX,1)];  % implemented as linear constraint below
+  end
   
 end
 
 
-function [nf, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind(sys,N,nT,options)
+function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind(sys,N,nT,con,options)
   nX = sys.getNumContStates();
   nU = sys.getNumInputs();
  
   %% additional fsm constraints:
   nf = 0;
   iGfun=[]; jGvar=[];   oname={};
+  A=[]; iAfun=[]; jAvar=[];
   
   % for debugging
 %  Fhigh=[]; Flow=[]; return
   
   for m=1:length(N)-1
     % final value for each mode (except the last) needs to have zc=0.
-    if (m>1) from_ind = cumsum(N(1:m-1)); else from_ind = 0; end
-    iGfun = [iGfun, nf + ones(1,1+nX+nU)];
-    jGvar = [jGvar, from_ind + [1,1+(nT(m)-1)*nX+(1:nX),1+nT(m)*nX+(nT(m)-1)*nU+(1:nU)]];  
+    if (m>1) from_ind = sum(N(1:m-1)); else from_ind = 0; end
+    iGfun = [iGfun; nf + ones(1+nX+nU,1)];
+    jGvar = [jGvar; from_ind + [1,1+(nT(m)-1)*nX+(1:nX),1+nT(m)*nX+(nT(m)-1)*nU+(1:nU)]'];  
     nf = nf + 1;
     
     % for debugging
@@ -138,8 +148,8 @@ function [nf, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind(sys,N,nT,options
     % initial value for each mode (except the first) needs to equal final
     % value of the previous after the transition update.
     to_ind = from_ind+N(m);
-    iGfun = [iGfun, nf + reshape(repmat(1:nX,1+nX+nU,1)',1,[]), nf + (1:nX)];
-    jGvar = [jGvar, from_ind + reshape(repmat([1,1+(nT(m)-1)*nX+(1:nX),1+nT(m)*nX+(nT(m)-1)*nU+(1:nU)],nX,1),1,[]), to_ind+1+(1:nX)];
+    iGfun = [iGfun; nf + reshape(repmat(1:nX,1+nX+nU,1)',[],1); nf + (1:nX)'];
+    jGvar = [jGvar; from_ind + reshape(repmat([1,1+(nT(m)-1)*nX+(1:nX),1+nT(m)*nX+(nT(m)-1)*nU+(1:nU)],nX,1),[],1); to_ind+1+(1:nX)'];
     nf = nf + nX;
 
     if (options.grad_test) 
@@ -149,8 +159,23 @@ function [nf, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind(sys,N,nT,options
       end
     end
   end
-  Fhigh = zeros(1,nf);
+  Fhigh = zeros(nf,1);
   Flow = Fhigh;
+
+  if (isfield(con,'periodic') && con.periodic)
+    % then add linear constraints  x0[i]=xf[i].  
+    A = [A; repmat([1;-1],nX,1)];
+    iAfun = nf+reshape(repmat(1:nX,2,1),[],1);
+    x0ind = 1+(1:nX)'; xfind = sum(N)-nU*nT(end)-nX + (1:nX)';
+    jAvar = [x0ind; xfind];
+    Fhigh = [Fhigh; zeros(nX,1)];
+    Flow = [Flow; zeros(nX,1)];
+    if (nargout>5)
+        for j=1:nX, oname= {oname{:},['con.periodic_',num2str(j)]}; end
+    end      
+    nf = nf + nX;
+  end
+
 end
 
 function [utraj,xtraj] = dircol_wrapup(sys,w,mode_wrapupfun,tOrig,N,con,options)

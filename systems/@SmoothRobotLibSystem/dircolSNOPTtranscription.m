@@ -1,4 +1,4 @@
-function [w0,wlow,whigh,Flow,Fhigh,iGfun,jGvar,userfun,wrapupfun,iname,oname] = dircol_snopt_transcription(sys,costFun,finalCostFun,x0,utraj0,con,options)
+function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,iname,oname] = dircolSNOPTtranscription(sys,costFun,finalCostFun,x0,utraj0,con,options)
 
 % Direct collocation method.
 %   Basic algorithm:  
@@ -33,9 +33,12 @@ x = .1*randn(length(x0),length(t));   x(:,1) = x0;
 nT = length(t);
 
 %% Set up snopt inputs
-w0 = [tscale; x(:); u(:)]';
-whigh = [ tscale, repmat(inf,1,prod(size(x))), repmat(inf,1,prod(size(u)))];
-wlow = [ tscale, repmat(-inf,1,prod(size(x))), repmat(-inf,1,prod(size(u)))];
+w0 = [tscale; x(:); u(:)];
+whigh = [ tscale; repmat(inf,prod(size(x)),1); repmat(inf,prod(size(u)),1)];
+wlow = [ tscale; repmat(-inf,prod(size(x)),1); repmat(-inf,prod(size(u)),1)];
+A=[];
+iAfun=[];
+jAvar=[];
 
 % handle constraints
   function conwarn(f1,f2)
@@ -57,6 +60,8 @@ for f1 = fieldnames(con)'
             wlow(1 + (1:nX)) = con.x0.lb;
           case 'ub'
             whigh(1 + (1:nX)) = con.x0.ub;
+          case {'c','ceq'}
+            % intentionally pass through.. these get handled in the usefun
           otherwise 
             conwarn(f1,f2);
         end
@@ -104,6 +109,9 @@ for f1 = fieldnames(con)'
         end
       end
       
+    case 'periodic'
+      % intentionally pass through.  this is implemented in userfun_ind
+      
     otherwise
       conwarn(f1);
   end
@@ -118,9 +126,9 @@ if (options.grad_test)
   for i=1:nT, for j=1:nX, iname= {iname{:},['x_',num2str(j),'(',num2str(i),')']}; end, end
   for i=1:nT, for j=1:nU, iname= {iname{:},['u_',num2str(j),'(',num2str(i),')']}; end, end
   
-  [nf,iGfun,jGvar,Fhigh,Flow,oname] = userfun_grad_ind(nT,nX,nU,con,x,options);
+  [nf,A,iAfun,jAvar,iGfun,jGvar,Fhigh,Flow,oname] = userfun_grad_ind(nT,nX,nU,con,x,options);
 else
-  [nf,iGfun,jGvar,Fhigh,Flow] = userfun_grad_ind(length(t),nX,nU,con,x,options);
+  [nf,A,iAfun,jAvar,iGfun,jGvar,Fhigh,Flow] = userfun_grad_ind(length(t),nX,nU,con,x,options);
   iname={};
   oname={};
 end
@@ -191,40 +199,56 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
       f = [f; c(:)]; G = [G; dc{1}(:)];
     end
   end
+  
+  if (isfield(con,'x0'))
+    if (isfield(con,'c'))
+      [c,dc] = feval(con.x0.c,x(:,1));
+      f = [f; c(:)]; G = [G; dc{1}(:)];
+    end
+    if (isfield(con.x0,'ceq'))
+      [c,dc] = feval(con.x0.ceq,x(:,1));
+      f = [f; c(:)]; G = [G; dc{1}(:)];
+    end
+  end
+
+  if (isfield(con,'periodic') && con.periodic)
+    f = [f;zeros(nX,1)];  % implemented as linear constraint below
+  end
 
 end
 
-function [nf, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_ind(nT,nX,nU,con,x,options)
+function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_ind(nT,nX,nU,con,x,options)
 
   % dJ:
   nf = 1;
-  iGfun = repmat(1,1,1+nX*nT+nU*nT);  
-  jGvar = (1:(1+nX*nT+nU*nT));
+  A = []; iAfun = []; jAvar = [];
+  iGfun = repmat(1,1+nX*nT+nU*nT,1);  
+  jGvar = (1:(1+nX*nT+nU*nT))';
   oname{1} = 'J';
   
   Fhigh = inf;  Flow = -inf;
   
   % collocation constraints:
   for i=1:(nT-1)
-    iGfun = [iGfun, nf+reshape(repmat(1:nX,(1+2*nX+2*nU),1)',1,[])];
-    jGvar = [jGvar, reshape(repmat([1,1+nX*(i-1)+(1:nX),1+nX*nT+nU*(i-1)+(1:nU),1+nX*i+(1:nX),1+nX*nT+nU*i+(1:nU)],nX,1),1,[])];
+    iGfun = [iGfun; nf+reshape(repmat(1:nX,(1+2*nX+2*nU),1)',[],1)];
+    jGvar = [jGvar; reshape(repmat([1,1+nX*(i-1)+(1:nX),1+nX*nT+nU*(i-1)+(1:nU),1+nX*i+(1:nX),1+nX*nT+nU*i+(1:nU)],nX,1),[],1)];
     nf = nf+nX;
     if (nargout>5)
       for j=1:nX, oname= {oname{:},['d_',num2str(j),'(',num2str(i),')']}; end
     end
   end    
   
-  Fhigh = [Fhigh,zeros(1,nf-1)];
-  Flow = [Flow,zeros(1,nf-1)];
+  Fhigh = [Fhigh;zeros(nf-1,1)];
+  Flow = [Flow;zeros(nf-1,1)];
 
   if (isfield(con,'xf'))
-    if (isfield(con,'c'))
+    if (isfield(con.xf,'c'))
       c = feval(con.xf.c,x(:,end));
       n=length(c);
-      iGfun = [iGfun, nf+reshape(repmat((1:nX)',1,n),1,[])];
-      jGvar = [jGvar, 1+nX*(nT-1)+reshape(repmat(1:nX,n,1),1,[])];
-      Fhigh = [Fhigh,zeros(1,n)];
-      Flow = [Flow,repmat(-inf,1,n)];
+      iGfun = [iGfun; nf+reshape(repmat((1:nX)',1,n),[],1)];
+      jGvar = [jGvar; 1+nX*(nT-1)+reshape(repmat(1:nX,n,1),[],1)];
+      Fhigh = [Fhigh;zeros(n,1)];
+      Flow = [Flow;repmat(-inf,n,1)];
       if (nargout>5)
         for j=1:nX, oname= {oname{:},['con.xf.c_',num2str(j)]}; end
       end
@@ -233,15 +257,55 @@ function [nf, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_ind(nT,nX,nU,con,
     if (isfield(con.xf,'ceq'))
       c = feval(con.xf.ceq,x(:,end));
       n=length(c);
-      iGfun = [iGfun, nf+reshape(repmat((1:n)',1,n),1,[])];
-      jGvar = [jGvar, 1+nX*(nT-1)+reshape(repmat(1:nX,n,1),1,[])];
-      Fhigh = [Fhigh,zeros(1,n)];
-      Flow = [Flow,zeros(1,n)];
+      iGfun = [iGfun; nf+reshape(repmat((1:n)',1,n),[],1)];
+      jGvar = [jGvar; 1+nX*(nT-1)+reshape(repmat(1:nX,n,1),[],1)];
+      Fhigh = [Fhigh;zeros(n,1)];
+      Flow = [Flow;zeros(n,1)];
       if (nargout>5)
         for j=1:nX, oname= {oname{:},['con.xf.ceq_',num2str(j)]}; end
       end
       nf = nf+n;
     end
+  end
+  
+  if (isfield(con,'x0'))
+    if (isfield(con.x0,'c'))
+      c = feval(con.x0.c,x(:,1));
+      n=length(c);
+      iGfun = [iGfun; nf+reshape(repmat((1:nX)',1,n),[],1)];
+      jGvar = [jGvar; 1+reshape(repmat(1:nX,n,1),[],1)];
+      Fhigh = [Fhigh,zeros(n,1)];
+      Flow = [Flow,repmat(-inf,n,1)];
+      if (nargout>5)
+        for j=1:nX, oname= {oname{:},['con.x0.c_',num2str(j)]}; end
+      end
+      nf = nf+n;
+    end
+    if (isfield(con.x0,'ceq'))
+      c = feval(con.x0.ceq,x(:,1));
+      n=length(c);
+      iGfun = [iGfun; nf+reshape(repmat((1:n)',1,n),[],1)];
+      jGvar = [jGvar; 1+reshape(repmat(1:nX,n,1),[],1)];
+      Fhigh = [Fhigh;zeros(1,n)];
+      Flow = [Flow;zeros(1,n)];
+      if (nargout>5)
+        for j=1:nX, oname= {oname{:},['con.x0.ceq_',num2str(j)]}; end
+      end
+      nf = nf+n;
+    end
+  end
+  
+  if (isfield(con,'periodic') && con.periodic)
+    % then add linear constraints  x0[i]=xf[i].  
+    A = [A; repmat([1;-1],nX,1)];
+    iAfun = nf+reshape(repmat(1:nX,2,1),[],1);
+    jAvar = 1+reshape([1:nX; nX*(nT-1) + (1:nX)],[],1);
+    Fhigh = [Fhigh; zeros(nX,1)];
+    Flow = [Flow; zeros(nX,1)];
+    if (nargout>5)
+        for j=1:nX, oname= {oname{:},['con.periodic_',num2str(j)]}; end
+    end      
+    nf = nf + nX;
   end
 end
 
