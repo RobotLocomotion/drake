@@ -1,4 +1,6 @@
-function runDircol
+function runDircolStep
+% from an initial balancing condition, take one step and return to the
+% balance upright.
 
 p = CompassGaitPlant();
 
