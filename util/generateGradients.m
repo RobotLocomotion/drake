@@ -190,12 +190,12 @@ fprintf(fp,'[f1{:}]=geval(fun,in{:},struct(''grad_method'',''user''));\n');
 fprintf(fp,'\nf2=cell(1,%d);\n',order+1);
 fprintf(fp,'[f2{:}]=geval(fun,in{:},struct(''grad_method'',''taylorvar''));\n');
 fprintf(fp,'\nfor i=1:%d\n',order+1);
-fprintf(fp,'  if (any(abs(f1{i}-f2{i})>1e-5))\n');
-fprintf(fp,'    setpath(oldpath);\n');
+fprintf(fp,'  if (any(abs(f1{i}(:)-f2{i}(:))>1e-5))\n');
+fprintf(fp,'    path(oldpath);\n');
 fprintf(fp,'    error(''gradients don''''t match!'');\n');
 fprintf(fp,'  end\n');
 fprintf(fp,'end\n\n');
-fprintf(fp,'setpath(oldpath);\n');
+fprintf(fp,'path(oldpath);\n');
 fclose(fp);
 
 fprintf(1,'Success!  Gradient code written to %s.\n',mfile);

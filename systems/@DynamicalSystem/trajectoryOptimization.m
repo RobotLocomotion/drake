@@ -99,16 +99,16 @@ end
 [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,SNOPT_USERFUN,wrapupfun,iname,oname] = transcriptionFun(sys,costFun,finalCostFun,x0,utraj0,con,options);
 
 if (options.grad_test)
-  gradTest(@(w)gradTestFun(w,iGfun,jGvar),w0,struct('input_name',{{iname}},'output_name',{oname},'tol',.01));
+  gradTest(@(w)gradTestFun(w,A,iAfun,jAvar,iGfun,jGvar),w0,struct('input_name',{{iname}},'output_name',{oname},'tol',.01));
 end
 
 %% Run SNOPT
-snset('superbasics=100');  % to do: make this an option?
-[w,F,info] = snopt(w0,wlow,whigh,Flow,Fhigh,'snopt_userfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
+snset('superbasics=200');  % to do: make this an option?
+[w,F,info] = snopt(w0,wlow,whigh,Flow,Fhigh,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
 
 if (info~=1 && options.warning) 
-  [str,cat] = snopt_info(info);
-  warning(['SNOPT exited w/ info = ',num2str(info),'.\n',cat,': ',str,'\n  Check p19 of Gill06 for more information.']);  
+  [str,cat] = snoptInfo(info);
+  warning('SNOPT:InfoNotOne',['SNOPT exited w/ info = ',num2str(info),'.\n',cat,': ',str,'\n  Check p19 of Gill06 for more information.']);  
 end
 
 [utraj,xtraj] = wrapupfun(w);
@@ -116,9 +116,10 @@ end
 end
 
 
-function [f,df] = gradTestFun(w,iGfun,jGvar)
-  [f,G] = snopt_userfun(w);
-  df = sparse(iGfun,jGvar,G);
+function [f,df] = gradTestFun(w,A,iAfun,jAvar,iGfun,jGvar)
+  [f,G] = snoptUserfun(w);
+  f  = sparse(iAfun,jAvar,A,length(f),length(w))*w + f;
+  df = sparse(iAfun,jAvar,A,length(f),length(w)) + sparse(iGfun,jGvar,G,length(f),length(w));
 end
 
 

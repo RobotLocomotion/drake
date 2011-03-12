@@ -4,6 +4,7 @@ function [f,G] = snopt_userfun(x)
 global SNOPT_USERFUN;
 %try % snopt crashes if the userfun crashes
   [f,G] = SNOPT_USERFUN(x);
+  G=full(G);  % it seems that snopt can't handle sparse matrices.
 % catch
 %   err=lasterror
 %   for i=1:length(err.stack)

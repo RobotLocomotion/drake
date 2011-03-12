@@ -13,6 +13,8 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
 %  todo: handle full set of constraints / options
 %  todo: cost function should be on the outputs?  or just on the states?
 
+if (~isfield(options,'xtape0')) options.xtape0='rand'; end
+
 
 nU = sys.getNumInputs();
 nX = sys.getNumContStates();
@@ -29,7 +31,13 @@ end
 t = utraj0.getBreaks();
 tscale = 1;  % stretch time by this amount
 u = utraj0.eval(t);
-x = .1*randn(length(x0),length(t));   x(:,1) = x0;
+if (strcmp(options.xtape0,'simulate'))
+  xtraj = simulate(sys,[t(1),t(end)],x0);
+  x = xtraj.eval(t);
+else % options.xtape0='rand' is catch-all
+  x = .1*randn(length(x0),length(t));   x(:,1) = x0;
+end
+  
 nT = length(t);
 
 %% Set up snopt inputs

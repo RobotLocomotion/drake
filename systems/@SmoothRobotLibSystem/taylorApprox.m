@@ -1,5 +1,7 @@
 function polysys=taylorApprox(sys,t0,x0,u0,order)
 
+checkDependency('spot_enabled');
+
 nX=sys.getNumStates();
 nU=sys.getNumInputs();
 

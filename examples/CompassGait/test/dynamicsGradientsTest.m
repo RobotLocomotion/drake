@@ -14,10 +14,10 @@ f2=cell(1,2);
 [f2{:}]=geval(fun,in{:},struct('grad_method','taylorvar'));
 
 for i=1:2
-  if (any(abs(f1{i}-f2{i})>1e-5))
-    setpath(oldpath);
+  if (any(abs(f1{i}(:)-f2{i}(:))>1e-10))
+    path(oldpath);
     error('gradients don''t match!');
   end
 end
 
-setpath(oldpath);
+path(oldpath);

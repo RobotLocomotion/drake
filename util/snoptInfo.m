@@ -1,4 +1,4 @@
-function [str,category] = snopt_info(info)
+function [str,category] = snoptInfo(info)
 
 switch (floor(info/10))
   case 0

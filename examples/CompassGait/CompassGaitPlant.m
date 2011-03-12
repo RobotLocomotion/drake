@@ -50,7 +50,7 @@ classdef CompassGaitPlant < HybridRobotLibSystem
         dalpha = [1 -1];  % d/dq
         dQpdalpha = [m*b*l*sin(alpha), m*l*b*sin(alpha); 0, m*b*l*sin(alpha) ];
         dQpidalpha = -Qpi*dQpdalpha*Qpi;
-        dQmdalpha = [0, -2*m*a*l*sin(alpha); 0, 0];
+        dQmdalpha = [0, -(mh*l^2 + 2*m*a*l)*sin(alpha); 0, 0];
         dxpdxm = zeros(4);
         dxpdxm(1:2,1:2) = [ 0 1 ; 1 0];
         dxpdxm(3:4,3:4) = Qpi*Qm;
