@@ -26,6 +26,7 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
   end
   m=m+1;
   [nf(m), A{m} ,iAfun{m} ,jAvar{m}, iGfun{m}, jGvar{m}, Fhigh{m}, Flow{m}, fsm_oname] = fsmObjFun_ind(sys,N,nT,con,options);
+  iAfun{m} = iAfun{m}+sum(nf(1:m-1));
   iGfun{m} = iGfun{m}+sum(nf(1:m-1));
   w0=cell2mat(w0'); wlow=cell2mat(wlow'); whigh=cell2mat(whigh'); Flow=cell2mat(Flow'); Fhigh=cell2mat(Fhigh'); A=cell2mat(A'); iAfun=cell2mat(iAfun'); jAvar=cell2mat(jAvar'); iGfun=cell2mat(iGfun'); jGvar=cell2mat(jGvar');
 
@@ -48,10 +49,10 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
     iname = {};  oname = {};
     for i=1:length(con.mode), 
       for j=1:length(mode_iname{i}), 
-        iname = {iname{:},['mode(',num2str(i),') ',mode_iname{i}{j}]};
+        iname = {iname{:},['mode ',num2str(i),', ',mode_iname{i}{j}]};
       end
       for j=1:length(mode_oname{i}),
-        oname = {oname{:},['mode(',num2str(i),') ',mode_oname{i}{j}]};
+        oname = {oname{:},['mode ',num2str(i),', ',mode_oname{i}{j}]};
       end
     end
     oname = {oname{:},fsm_oname{:}};
@@ -65,6 +66,7 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
 end
 
 function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
+
   ind = 0;
   f=0;
   G=[];
@@ -75,8 +77,8 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     f = [f; cf(2:end)]; % tally up constraints
     G = [G; cG];
   end
-  
-%  return;
+
+%   figure(1); clf; hold on;
   
   nX = sys.getNumContStates();
   nU = sys.getNumInputs();
@@ -84,12 +86,17 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
   for m=1:length(N)-1
     from_mode = con.mode{m}.mode_num; 
     to_mode = con.mode{m+1}.mode_num;
+    if (m>1) from_ind = sum(N(1:m-1)); else from_ind = 0; end
+    nT = length(tOrig{m}); 
+
+    % plot trajectory (this is just a debugging hack for the compass gait):
+%     x=reshape(w(from_ind+1+(1:nX*nT)),nX,nT); 
+%     plot(x(1,:),x(3,:),'r');
+%     plot(x(2,:),x(4,:),'b');
     
     % final value for each mode (except the last) needs to have or(relevant zcs=0).  not
     % just any zc, but a zc that transitions me to the correct next node.
-    if (m>1) from_ind = cumsum(N(1:m-1)); else from_ind = 0; end
     tscale = w(from_ind+1);
-    nT = length(tOrig{m}); 
     tc = tscale*tOrig{m}(end); xc = w(from_ind+1+(nT-1)*nX+(1:nX));  uc = w(from_ind+1+nT*nX+(nT-1)*nU+(1:nU));
     zc = 1; dzc = zeros(1,1+nX+nU);  % d/d[tscale,xc,uc]
     min_g = inf; min_g_ind = 0;
@@ -110,14 +117,22 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     if (min_g_ind<1) error('no applicable zero crossings defined'); end
     to_ind = from_ind+N(m);
     to_x0 =  w(to_ind+1+(1:nX));
-    [to_x,status,dto_x] = geval(sys.transition{from_mode}{min_g_ind},sys,tc,xc,uc);
+    [to_x,status,dto_x] = geval(2,sys.transition{from_mode}{min_g_ind},sys,tc,xc,uc);
     dto_x(:,1) = dto_x(:,1)*tOrig{m}(end);
     f = [f; to_x - to_x0];
     G = [G; dto_x(:); -ones(nX,1)];  % df/d[tc,xc,uc]; df/d[to_x0]
   end
+  
+  % draw last mode
+%   from_ind = sum(N(1:end-1));
+%   x=reshape(w(from_ind + 1+(1:nX*nT)),nX,nT);
+%   plot(x(1,:),x(3,:),'r');
+%   plot(x(2,:),x(4,:),'b');
+%   drawnow;
+
 
   if (isfield(con,'periodic') && con.periodic)
-    f = [f;zeros(nX,1)];  % implemented as linear constraint below
+    f = [f;zeros(nX,1)];  % implemented as linear constraint below, just put in zero here
   end
   
 end
@@ -153,9 +168,9 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind
     nf = nf + nX;
 
     if (options.grad_test) 
-      oname = {oname{:}, ['mode(',num2str(m),').xf zc']};
+      oname = {oname{:}, ['mode ',num2str(m),', x(tf) zc']};
       for j=1:nX, 
-        oname = {oname{:}, ['transition(mode(',num2str(m),').x_',num2str(j),'(tf)) - mode(',num2str(m+1),').x_',num2str(j),'(t0)']}; 
+        oname = {oname{:}, ['transition(mode ',num2str(m),', x_',num2str(j),'(tf)) - mode ',num2str(m+1),', x_',num2str(j),'(t0)']}; 
       end
     end
   end
@@ -167,7 +182,7 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind
     A = [A; repmat([1;-1],nX,1)];
     iAfun = nf+reshape(repmat(1:nX,2,1),[],1);
     x0ind = 1+(1:nX)'; xfind = sum(N)-nU*nT(end)-nX + (1:nX)';
-    jAvar = [x0ind; xfind];
+    jAvar = reshape([x0ind'; xfind'],[],1);
     Fhigh = [Fhigh; zeros(nX,1)];
     Flow = [Flow; zeros(nX,1)];
     if (nargout>5)

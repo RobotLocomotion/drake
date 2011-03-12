@@ -122,7 +122,7 @@ classdef TaylorVar
           a.df{o}=a.df{o}+b.df{o};
         end
       else  % b is a constant
-        a.f=a.f+b;
+        a.f=reshape(reshape(a.f,a.dim)+b,[],1);
         % a.df doesn't change
       end
     end
@@ -256,11 +256,20 @@ classdef TaylorVar
       error('not implemented yet');
     end
     
-    function ctranspose(a)
-      error('not implemented yet');
+    function a=ctranspose(a)
+      if (~any(imag(a.f)))  % strictly real
+        a=transpose(a);
+      else
+        error('not implemented yet');
+      end
     end
-    function transpose(a)
-      error('not implemented yet');
+    function a=transpose(a)
+      map = reshape(reshape(1:prod(a.dim),a.dim)',[],1);  % easy (but inefficient) way to figure out the index map
+      a.f = a.f(map);
+      a.dim = [a.dim(2),a.dim(1)];  % transpose on ND arrays is not defined
+      for o=1:length(a.df)
+        a.df{o}=a.df{o}(map,:);
+      end
     end
     
 %    function display(a)
@@ -356,32 +365,29 @@ classdef TaylorVar
     end
     
     function obj = subsref(obj,s)
-      f=subsref(reshape(obj.f,obj.dim),s);
-      obj.dim=size(f);
-      obj.f=f(:);
-
       % figure out indices corresponding to s
-      tags=zeros(obj.dim);
-      subsasgn(tags,s,1);
-      ind=find(tags(:));
+      tags = reshape(1:length(obj.f),obj.dim);
+      ind = subsref(tags,s);
+      obj.dim = size(ind);
+      ind = ind(:);
 
-      % extract the relavent gradients
+      obj.f = obj.f(ind);
+      % extract the relevant gradients
       for o=1:length(obj.df)
         obj.df{o}=obj.df{o}(ind,:);
       end
     end
     
     function a=subsasgn(a,s,b)
-      a.f=subsasgn(a.f,s,b.f);
-
-      tags=zeros(a.dim);
-      subsasgn(tags,s,1);
-      ind=find(tags(:));
+      tags = reshape(1:length(a.f),a.dim);
+      ind = reshape(subsref(tags,s),[],1);
       if (isa(b,'TaylorVar'))
+        a.f(ind)=b.f;
         for o=1:length(a.df)
           a.df{o}(ind,:)=b.df{o};
         end
       else % b is a const
+        a.f(ind)=b;
         for o=1:length(a.df)
           a.df{o}(ind,:)=0;
         end

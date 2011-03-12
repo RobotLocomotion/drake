@@ -1,10 +1,10 @@
 function testLCMPlant
 
+checkDependency('lcm_enabled')
+
 load robotlib_config;
 
-p = path;
-
-addpath([conf.root,'/examples/Pendulum']);
+p = addpath([conf.root,'/examples/Pendulum']);
 
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();

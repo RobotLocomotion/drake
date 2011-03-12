@@ -18,6 +18,6 @@ if (isempty(conf))
 end
 
 ok = isfield(conf,conf_var) && getfield(conf,conf_var);
-if (nargin<1 && ~ok)
+if (nargout<1 && ~ok)
   error(['Cannot run this function because ', conf_var, ' was not set in the configure script']);
 end
