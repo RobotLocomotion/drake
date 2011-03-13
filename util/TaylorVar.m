@@ -143,10 +143,17 @@ classdef TaylorVar
         tmp=a; a=b; b=tmp;    % switch them (so we have less cases below)
       end
       
-      if (isa(b,'TaylorVar'))
-        a.f=a.f .* b.f;
-        for o=1:length(a.df)
-          a.df{o}=a.df{o}.*repmat(b.f,1,a.nX^o) + repmat(a.f,1,a.nX^o).*b.df{o};
+      if (isa(b,'TaylorVar')) % then both are taylorvars
+        f=a.f .* b.f;
+        m=prod(a.dim);
+        ra = reshape(a,m,1); rb=reshape(b,m,1);
+        dcdx = reshape(diff(ra),m,a.nX).*repmat(reduceOrder(rb),1,a.nX) + ...
+          repmat(reduceOrder(ra),1,a.nX).*reshape(diff(b),m,b.nX);
+        if (isa(dcdx,'TaylorVar'))
+          a=reshape(int(dcdx,f),a.dim);
+        else
+          dcdx = reshape(dcdx,[],a.nX);
+          a=TaylorVar(reshape(f,a.dim),{dcdx});
         end
       else
         b=b(:);
@@ -178,8 +185,8 @@ classdef TaylorVar
         else
           f = reshape(a.f,a.dim)*b; 
           for o=1:length(a.df)  % note: this one is less efficient because I have to repmat b below
-            a.df{o} = reshape(reshape(a.df{o},m,k*obj.nX^o)*repmat(b,obj.nX^o,1),m*n,obj.nX^o);
-            error('this is not correct.  need blkdiag.  see below');
+            btmp = repmat({b},1,a.nX^o);
+            a.df{o} = reshape(reshape(a.df{o},m,k*a.nX^o)*blkdiag(btmp{:}),m*k,a.nX^o);
           end
         end
         a.f=f(:); tv.dim=size(f);
@@ -252,8 +259,90 @@ classdef TaylorVar
     function tv=power(a,b)
       error('not implemented yet');
     end   
-    function tv=mpower(a,b)
-      error('not implemented yet');
+    function a=mpower(a,k)
+      % only defined for square matrices (including scalars)
+      if (k==0)
+        a=eye(a.dim(1));  % just a constant
+      else
+        a=a*a^(k-1);  % compute gradients using mtimes (at least for now)
+      end
+    end
+    
+    function l=lt(a,b)
+      if (isa(a,'TaylorVar'))
+        a=reshape(a.f,a.dim);
+      end
+      if (isa(b,'TaylorVar'))
+        b=reshape(b.f,b.dim);
+      end
+      l=lt(a,b);  
+    end
+    function l=gt(a,b)
+      if (isa(a,'TaylorVar'))
+        a=reshape(a.f,a.dim);
+      end
+      if (isa(b,'TaylorVar'))
+        b=reshape(b.f,b.dim);
+      end
+      l=gt(a,b);  
+    end
+    function l=le(a,b)
+      if (isa(a,'TaylorVar'))
+        a=reshape(a.f,a.dim);
+      end
+      if (isa(b,'TaylorVar'))
+        b=reshape(b.f,b.dim);
+      end
+      l=le(a,b);  
+    end
+    function l=ge(a,b)
+      if (isa(a,'TaylorVar'))
+        a=reshape(a.f,a.dim);
+      end
+      if (isa(b,'TaylorVar'))
+        b=reshape(b.f,b.dim);
+      end
+      l=ge(a,b);  
+    end
+    function l=ne(a,b)
+      if (isa(a,'TaylorVar'))
+        a=reshape(a.f,a.dim);
+      end
+      if (isa(b,'TaylorVar'))
+        b=reshape(b.f,b.dim);
+      end
+      l=ne(a,b);  
+    end
+    function l=eq(a,b)
+      if (isa(a,'TaylorVar'))
+        a=reshape(a.f,a.dim);
+      end
+      if (isa(b,'TaylorVar'))
+        b=reshape(b.f,b.dim);
+      end
+      l=eq(a,b);  
+    end
+    function l=and(a,b)
+      if (isa(a,'TaylorVar'))
+        a=reshape(a.f,a.dim);
+      end
+      if (isa(b,'TaylorVar'))
+        b=reshape(b.f,b.dim);
+      end
+      l=and(a,b);  
+    end
+    function l=or(a,b)
+      if (isa(a,'TaylorVar'))
+        a=reshape(a.f,a.dim);
+      end
+      if (isa(b,'TaylorVar'))
+        b=reshape(b.f,b.dim);
+      end
+      l=or(a,b);  
+    end
+    function l=not(a)
+      a=reshape(a.f,a.dim);
+      l=not(a)  
     end
     
     function a=ctranspose(a)
@@ -452,6 +541,14 @@ classdef TaylorVar
     function tv = cos(obj)
       tv=elementwise(obj,@cos,inline('-sin(x)','x'));
     end
+    function a=abs(a)
+      s=sign(a.f);
+      a.f=abs(a.f);
+      for o=1:length(a.df)
+        a.df{o}=a.df{o}.*repmat(s,1,a.nX^o);
+      end
+    end
+    
     
     function tv = diag(v,k)
       % v is a TaylorVar
@@ -487,6 +584,21 @@ classdef TaylorVar
         X.f = reshape(mod(reshape(X.f,X.dim),Y),[],1);
         % no change to gradients
       end
+    end
+    
+    function a=sum(a,d)
+      if (nargin<2)
+        d = min(find(a.dim~=1));
+        if isempty(d), d = 1; end
+      end
+      a.f = sum(reshape(a.f,a.dim),d);
+      newdim = size(a.f);
+      a.f = a.f(:);
+      
+      for o=1:length(a.df)
+        a.df{o}=reshape(sum(reshape(a.df{o},[a.dim,a.nX^o]),d),[prod(newdim),a.nX^o]);
+      end
+      a.dim = newdim;
     end
     
 %    function obj=blkdiagcpy(obj,c)

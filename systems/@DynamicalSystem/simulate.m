@@ -43,6 +43,7 @@ if (nargout>0)
     pstruct.SaveOutput = 'on';
     pstruct.OutputSaveName = 'yout';
     pstruct.Refine = '3';
+%    pstruct.SaveOnModelUpdate = 'false';
     
     simout = sim(mdl,pstruct);
     
@@ -54,17 +55,29 @@ if (nargout>0)
     if (length(zcs)>0) % then we have a hybrid trajectory
       zcs = [0;zcs;length(t)];
       pptraj = {};
-      for i=1:(length(zcs)-1)
+      i=1;
+      while i<length(zcs)  % while instead of for so that I can zap zcs inside this loop (if they are fake zcs)
+        % is there really a jump here? 
+        if (i>1 && ~any(abs(y(:,zcs(i))-y(:,zcs(i)+1))>1e-6))
+          % no jump that I can see.  remove this zc
+          zcs=zcs([1:i-1,i+1:end]);
+        else
+          i=i+1;
+        end
+      end
+      for i=1:length(zcs)-1
+        % compute indices of this segment
         inds = (zcs(i)+1):zcs(i+1);
-        if (length(inds)<2) % successive zero crossings.
+        if (length(inds)<2) % successive zero crossings?
           % commands like this are useful for debugging here:
           %  plot(y(2,:),y(3,:),'.-',y(2,zcs(2:end)),y(3,zcs(2:end)),'r*')
           %  keyboard;
-          if (i>0) warning('successive zero crossings'); end
+          warning('successive zero crossings');
+          i=i+1;
           continue;
         end
-%        pptraj = {pptraj{:},makeSubTrajectory(t(inds),y(:,inds))};
-        pptraj = {pptraj{:},makeSubTrajectory([t(max(inds(1)-1,1));t(inds(2:end))],y(:,inds))};  % use time of zc instead of 1e-10 past it.
+        pptraj = {pptraj{:},makeSubTrajectory(t([max(inds(1)-1,1),inds(2:end)]),y(:,inds))};  % use time of zc instead of 1e-10 past it.
+        i=i+1;
       end
       if (length(pptraj)>1)
         traj = HybridTrajectory(pptraj);

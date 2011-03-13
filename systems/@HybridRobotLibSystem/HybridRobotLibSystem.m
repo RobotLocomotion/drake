@@ -64,34 +64,34 @@ classdef HybridRobotLibSystem < RobotLibSystem
       guard = @(obj,t,x,u)andGuardFun(obj,t,x,u,varargin{:});
       % todo: support different levels of derivatives
       
-      function [phi,dphi] = andGuardFun(obj,t,x,u,varargin)
-        if (nargout>1)
-          for i=1:length(varargin)
-            [phi(i),dphi{i}] = varargin{i}(obj,t,x,u);
+      function varargout = andGuardFun(obj,t,x,u,varargin)
+        varargout=cell(1,nargout);
+        [varargout{:}] = varargin{1}(obj,t,x,u);
+        for i=2:length(varargin)
+          [phi{1:nargout}]=varargin{i}(obj,t,x,u);
+          if (phi{1}>varargout{1})
+            varargout=phi;
           end
-          [phi,ind] = max(phi);
-          dphi = dphi{ind};
-        else
-          for i=1:length(varargin)
-            phi(i) = varargin{i}(obj,t,x,u);
-          end
-          phi = max(phi);
         end
+        % original argument (with none of the complexity of gradients)
+        %  for i=1:length(varargin)
+        %    phi(i) = varargin{i}(obj,t,x,u);
+        %  end
+        %  phi = max(phi);
       end
     end  
 
     function guard = notGuard(obj,orig_guard)
       guard = @(obj,t,x,u)notGuardFun(obj,t,x,u,orig_guard);
       
-      function [phi,dphi] = notGuardFun(obj,t,x,u,guard)
-        if (nargout>1)
-          [phi,dphi] = guard(obj,t,x,u);
-          if (length(dphi)>1) error('not implemented yet'); end
-          dphi = -dphi;
-        else
-          phi = guard(obj,t,x,u);
+      function varargout = notGuardFun(obj,t,x,u,guard)
+        [varargout{1:nargout}]= guard(obj,t,x,u);
+        for i=1:length(varargout)  % invert guard and all gradients
+          varargout{i}=-varargout{i};
         end
-        phi = -phi;
+        % not gradient version was:
+        % phi = guard(obj,t,x,u);
+        % phi = -phi;
       end
     end
     

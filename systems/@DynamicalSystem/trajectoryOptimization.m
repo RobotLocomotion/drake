@@ -109,6 +109,13 @@ snset('superbasics=200');  % to do: make this an option?
 if (info~=1 && options.warning) 
   [str,cat] = snoptInfo(info);
   warning('SNOPT:InfoNotOne',['SNOPT exited w/ info = ',num2str(info),'.\n',cat,': ',str,'\n  Check p19 of Gill06 for more information.']);  
+
+%   if (floor(info/10)==4)  % in the 40's... gradients are suspicious
+%     disp('since the gradients are suspicious, i''ll run gradtest:');
+%     options.grad_test=true;
+%     [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,SNOPT_USERFUN,wrapupfun,iname,oname] = transcriptionFun(sys,costFun,finalCostFun,x0,utraj0,con,options);
+%     gradTest(@(x)gradTestFun(x,A,iAfun,jAvar,iGfun,jGvar),w,struct('input_name',{{iname}},'output_name',{oname},'tol',.01));
+%   end
 end
 
 [utraj,xtraj] = wrapupfun(w);
