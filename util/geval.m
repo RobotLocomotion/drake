@@ -89,8 +89,12 @@ if (method==0) % user then taylorvar
     % then just call it with the requested and catch if it fails:
     try
       [varargout{:}]=feval(fun,varargin{:});
-    catch
-      method=2;  % it failed, assume it only has one argument (so force the taylor var version)
+    catch exception
+      if (strcmp(exception.identifier,'MATLAB:maxlhs'))
+        method=2;  % it failed, assume it only has one argument (so force the taylor var version)
+      else  % it was some different error
+        rethrow(exception);
+      end
     end
     if (method==1) % then it passed, and we're done
       return
