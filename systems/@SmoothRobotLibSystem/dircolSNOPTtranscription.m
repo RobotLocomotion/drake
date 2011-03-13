@@ -167,7 +167,7 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   [xdot(:,1),dxdot(:,:,1)] = geval(@sys.dynamics,t(1),x(:,1),u(:,1));  
   dxdot(:,1,1) = dxdot(:,1,1)*dtdw1(1); % d/d[tscale; x(:,1); u(:,1)]
   for i=1:(nT-1)  % compute dynamics and cost
-    [g(i),dg(1,:,i)] = geval(costFun,t(i),x(:,i),u(:,i));  dg(1,1,i)=dg(1,1,i)*dtdw1(i);  % d/d[tscale; x(:,i); u(:,i)]
+    [g(i),dg(1,:,i)] = geval(costFun,t(i),x(:,i),u(:,i),options);  dg(1,1,i)=dg(1,1,i)*dtdw1(i);  % d/d[tscale; x(:,i); u(:,i)]
     dg(1,:,i) = [g(i)*ddtdw1(i),zeros(1,nX+nU)]+dt(i)*dg(1,:,i);  g(i) = g(i)*dt(i);  
     [xdot(:,i+1),dxdot(:,:,i+1)] = geval(@sys.dynamics,t(i+1),x(:,i+1),u(:,i+1));
     dxdot(:,1,1)=dxdot(:,1,1)*dtdw1(i+1); % d/d[tscale; x(:,i+1); u(:,i+1)]
@@ -181,7 +181,7 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
       -.25*[dxdot(:,:,i),zeros(nX,nX+nU)] + ...
       -.25*[dxdot(:,1,i+1),zeros(nX,nX+nU),dxdot(:,2:end,i+1)]; % d/d[tscale;x(:,i);u(:,i);x(:,i+1);u(:,i+1)]
     % collocation constraint:
-    [d(:,i),df]= geval(@sys.dynamics,tcol(i),xcol,ucol(:,i));
+    [d(:,i),df]= geval(@sys.dynamics,tcol(i),xcol,ucol(:,i),options);
     d(:,i) = d(:,i) - xdotcol;
     dd(:,:,i) = df*[dtcoldw1(i),zeros(1,2*nX+2*nU); dxcol; zeros(nU,1+nX), .5*eye(nU), zeros(nU,nX), .5*eye(nU)] - dxdotcol;  % d/d[tscale;x(:,i);u(:,i);x(:,i+1);u(:,i+1)]
 
@@ -189,7 +189,7 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
 %    d(:,i)=xdotcol;
 %    dd(:,:,i)=dxdotcol;
   end
-  [h,dh] = geval(finalCostFun,t(end),x(:,end)); dh(1)=dh(1)*dtdw1(end);
+  [h,dh] = geval(finalCostFun,t(end),x(:,end),options); dh(1)=dh(1)*dtdw1(end);
 
   J = h + sum(g);
   dJ = [dh(1)+sum(dg(1,1,:)), reshape(dg(1,1+(1:nX),:),1,[]), dh(1,2:end), reshape(dg(1,1+nX+(1:nU),:),1,[]), zeros(1,nU)];
