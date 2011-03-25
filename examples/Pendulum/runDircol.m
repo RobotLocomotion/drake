@@ -1,9 +1,11 @@
-function runDircol
+function [utraj,xtraj]=runDircol(p);
 
-p = PendulumPlant();
+if (nargin<1)
+  p = PendulumPlant();
+end
 
 x0 = [0;0]; tf0 = 4; xf = [pi;0];
-utraj0 = PPTrajectory(foh(linspace(0,tf0,11),randn(1,11)));
+utraj0 = PPTrajectory(foh(linspace(0,tf0,21),randn(1,21)));
 
 con.u.lb = p.umin;
 con.u.ub = p.umax;
@@ -20,6 +22,10 @@ tic
 [utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj0,con,options);
 if (info~=1) error('failed to find a trajectory'); end
 toc
+
+if (nargout>0) 
+  return;
+end
 
 c = tvlqr(p,xtraj,utraj,eye(2),1,eye(2));
 

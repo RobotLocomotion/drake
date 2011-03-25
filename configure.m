@@ -119,6 +119,11 @@ if (~conf.spot_enabled)
   disp(' SPOT not found.  SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/spot/ ');
 end
 
+conf.yalmip_enabled = logical(exist('sdpvar'));
+if (~conf.yalmip_enabled)
+  disp(' YALMIP not found.  YALMIP support will be disabled.  To re-enable, install YALMIP and rerun configure.'); 
+end
+
 
 % save configuration options to config.mat
 conf

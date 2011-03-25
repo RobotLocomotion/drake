@@ -1,4 +1,4 @@
-function yy = ppval_safe(pp,xx,bLimitStart,bLimitEnd)
+function yy = ppvalSafe(pp,xx,bLimitStart,bLimitEnd)
 
 % PPVAL (SAFE)
 %    Checks to see if xx is beyond the breaks in pp before evaluating

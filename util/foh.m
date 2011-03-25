@@ -9,8 +9,9 @@ D = size(y0); L = D(end)-1; D = D(1:(end-1));
 if (length(t0)~=L+1) error('t0 and y0 do not match'); end
 
 y0 = reshape(y0,[],L+1);
+t0 = reshape(t0,1,L+1);
 coefs(:,2) = reshape(y0(:,1:L),[],1);
-coefs(:,1) = reshape(diff(y0,1,2),[],1);
+coefs(:,1) = reshape(diff(y0,1,2)./repmat(diff(t0),[size(y0,1) 1]),[],1);
 ypp = mkpp(t0,coefs,D);
 
 

@@ -7,10 +7,11 @@ classdef CartPoleEnergyControl < HybridRobotLibSystem
       obj = obj.addMode(lqr);
 
       sys = feedback(plant,lqr);
-      pp = sys.taylorApprox(0,lqr.x0,0,3);  % make polynomial approximation
+      pp = sys.taylorApprox(0,lqr.x0,[],3);  % make polynomial approximation
       obj.x0 = lqr.x0;
       obj.p_x = pp.p_x;
-      obj.V = regionOfAttraction(pp);
+      options.monom_order = 1;
+      obj.V = regionOfAttraction(pp,[],lqr.S,options);
 
       in_lqr_roa = inline('double(subs(obj.V,obj.p_x,obj.wrapInput(x-obj.x0)))-1','obj','t','junk','x');
       notin_lqr_roa = notGuard(obj,in_lqr_roa);

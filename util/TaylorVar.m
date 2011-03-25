@@ -457,6 +457,7 @@ classdef TaylorVar
       % figure out indices corresponding to s
       tags = reshape(1:length(obj.f),obj.dim);
       ind = subsref(tags,s);
+      if (isempty(ind)) obj=[]; return; end
       obj.dim = size(ind);
       ind = ind(:);
 
