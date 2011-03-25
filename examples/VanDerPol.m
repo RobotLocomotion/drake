@@ -28,7 +28,8 @@ classdef VanDerPol < PolynomialSystem
       hold on
       
       rvdp = timeReverse(vdp);
-      V=regionOfAttraction(rvdp,zeros(2,1));
+      options.monom_order=3;
+      V=regionOfAttraction(rvdp,zeros(2,1),[],options);
       xroa=getLevelSet(V);
       fill(xroa(1,:),xroa(2,:),0.9*ones(1,3));
     end

@@ -23,7 +23,12 @@ classdef LTVControl < SmoothRobotLibSystem
     function u = output(obj,t,junk,x)
       % implements the actual control function
       %      x = wrap(obj,obj.x0,x);
-      u = obj.u0.eval(t)-obj.K.eval(t)*(x-obj.x0.eval(t));
+      K = obj.K.eval(t);
+      if (iscell(K))
+        u = obj.u0.eval(t)-K{1}*(x-obj.x0.eval(t))-K{2};
+      else
+        u = obj.u0.eval(t)-K*(x-obj.x0.eval(t));
+      end
     end
     
   end

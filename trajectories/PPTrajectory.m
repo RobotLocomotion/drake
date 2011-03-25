@@ -10,10 +10,6 @@ classdef PPTrajectory < Trajectory
       obj.pp = ppform;
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
     end
-    function ydot = deriv(obj,t)
-      ydot = ppvalSafe(fnder(obj.pp),t);
-    end
-
     function y = eval(obj,t)
       y = ppvalSafe(obj.pp,t);
     end

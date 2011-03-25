@@ -13,9 +13,10 @@ x0=[0;pi;0;0];
 %sys=p;
 %x0 = zeros(2,1);
 
-pp = sys.taylorApprox(0,x0,0,3);  % make polynomial approximation
+pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
 
-V=regionOfAttraction(pp);
+options.monom_order=1;
+V=regionOfAttraction(pp,[],c.S,options);
 
 xroa=getLevelSet(subs(V,pp.p_x([1 3]),zeros(2,1)));
 figure(1);

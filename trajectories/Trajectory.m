@@ -21,6 +21,10 @@ classdef Trajectory% < RobotLibSystem
     function dtraj = fnder(obj)
       error('not implemented yet');
     end
+
+    function ydot = deriv(obj,t)
+      ydot = eval(fnder(obj.pp),t);
+    end
     
     function obj = shiftTime(obj,offset)
       error('not implemented yet');
@@ -28,6 +32,10 @@ classdef Trajectory% < RobotLibSystem
     
     function sizecheck(obj,sizemat)
       s = obj.dim;
+      if (length(sizemat)<2)
+        if (sizemat==0) sizemat = [0,0]; 
+        else sizemat=[sizemat,1]; end 
+      end
       if (length(s)<2) s = [s,1]; end
       if (length(s)~=length(sizemat) || any(s~=sizemat))
         error(['Wrong size.  Expected [',num2str(sizemat),'] but got a [', num2str(s), '] instead.']);
