@@ -1,5 +1,10 @@
 function [ltvsys,Vtraj] = tvlqr(obj,xtraj,utraj,Q,R,Qf)
 
+% implements the time-varying linear (or affine) quadratic regulator
+%  note:  Qf can be an nxn matrix, a cell array (for initializing the
+%  affine) or an msspoly (e.g. as would happen if you hand it back
+%  Vtraj.eval(0) from a previous tvlqr trajectory).
+
 typecheck(xtraj,'Trajectory');
 sizecheck(xtraj,[getNumStates(obj),1]);
 typecheck(utraj,'Trajectory');
@@ -20,16 +25,38 @@ typecheck(Q,'Trajectory');
 sizecheck(Q,[nX,nX]);
 typecheck(R,'Trajectory');
 sizecheck(R,[nU,nU]);
-typecheck(Qf,'double');
-sizecheck(Qf,[nX,nX]);
 
+switch class(Qf)
+  case 'cell'
+  case 'double'
+    sizecheck(Qf,[nX,nX]);
+    Qf = {Qf,zeros(nX,1),0};
+  case 'msspoly'
+    Vf=Qf;
+    sizecheck(Vf,1);
+    x=decomp(Vf);
+    Qf=cell(3,1);
+    Qf{1}=double(.5*subs(diff(diff(Vf,x)',x),x,0*x));
+    Qf{2}=double(subs(diff(Vf,x),x,0*x))';
+    Qf{3}=double(subs(Vf,x,0*x));
+  otherwise
+    error('Qf must be a double, a 3x1 cell array, or an msspoly');
+end
+sizecheck(Qf,3);
+typecheck(Qf{1},'double');
+sizecheck(Qf{1},[nX,nX]);
+typecheck(Qf{2},'double');
+sizecheck(Qf{2},[nX,1]);
+typecheck(Qf{3},'double');
+sizecheck(Qf{3},1);
+  
 if (~isCT(obj)) error('only handle CT case so far'); end
 
 xdottraj = fnder(xtraj);
 
-Sold = matrixODE(@ode45,@(t,S)Sdynamics(t,S,obj,Q,R,xtraj,utraj),tspan(end:-1:1),Qf);
+%Sold = matrixODE(@ode45,@(t,S)Sdynamics(t,S,obj,Q,R,xtraj,utraj),tspan(end:-1:1),Qf);
 %K = FunctionHandleTrajectory(@(t)Ksoln(t,obj,S,R,xtraj,utraj),[nX nU],tspan);
-Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,R,xtraj,utraj,xdottraj),tspan(end:-1:1),{Qf^(1/2),zeros(nX,1),0});
+Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,R,xtraj,utraj,xdottraj),tspan(end:-1:1),{Qf{1}^(1/2),Qf{2},Qf{3}});
 S = FunctionHandleTrajectory(@(t) recompS(Ssqrt.eval(t)),[nX,nX],tspan);
 K = FunctionHandleTrajectory(@(t)affineKsoln(t,obj,S,R,xtraj,utraj),[nX nU],tspan);
 
@@ -38,11 +65,11 @@ ltvsys = LTVControl(xtraj,utraj,K); %,S,Sdot);
 if (nargout>1)
   p_x=msspoly('x',nX);
   p_t=msspoly('t',1);
-  Sdotold = @(t)Sdynamics(t,Sold.eval(t),obj,Q,R,xtraj,utraj);
+%  Sdotold = @(t)Sdynamics(t,Sold.eval(t),obj,Q,R,xtraj,utraj);
 %  Vtraj = FunctionHandleTrajectory(@(t) p_x'*(S.eval(t) + Sdot(t)*(p_t-t))*p_x, [1 1],tspan);
   Sdotsqrt = @(t)affineSdynamics(t,Ssqrt.eval(t),obj,Q,R,xtraj,utraj,xdottraj);
   Sdot = @(t) recompSdot(Ssqrt.eval(t),Sdotsqrt(t));
-  Vtraj = FunctionHandleTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),p_x,p_t), [1 1],tspan);
+  Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),p_x,p_t), tspan);
   % todo: i could dig into the ODESolution with taylorvar to get higher
   % order, if Vddot was ever needed.
 end

@@ -5,7 +5,7 @@ if (nargin<1)
 end
 
 x0 = zeros(4,1); tf0 = 4; xf = [0;pi;0;0];
-utraj0 = PPTrajectory(foh(linspace(0,tf0,21),randn(1,21)));
+utraj0 = PPTrajectory(foh(linspace(0,tf0,41),randn(1,41)));
 
 %con.u.lb = p.umin;
 %con.u.ub = p.umax;

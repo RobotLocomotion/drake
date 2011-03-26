@@ -6,10 +6,6 @@ if (nargin<2 || isempty(x0)) x0=zeros(size(x,1),1); end
 if (nargin<3) options=struct(); end
 if (~isfield(options,'tol')) options.tol = 2e-3; end % default tolerance of fplot
 
-if (double(subs(V,x,x0))>1) 
-  error('x0 is not in the one sub level-set of V'); 
-end
-
 if (deg(V,x)<=2)  % interrogate the quadratic level-set
   H = doubleSafe(0.5*diff(diff(V,x)',x));
   b = -0.5*(H\doubleSafe(subs(diff(V,x),x,0*x)'));
@@ -28,13 +24,16 @@ if (deg(V,x)<=2)  % interrogate the quadratic level-set
 
 else % do the more general thing
 
-  if (length(x) ~= 2) error('not supported yet'); end 
+  if (length(x) ~= 2) error('not supported yet'); end
 
   % assume star convexity (about x0).
+  if (double(subs(V,x,x0))>1)
+    error('x0 is not in the one sub level-set of V');
+  end
 
   r = msspoly('r',1);
   [theta,r]=fplot(@getRadius,[0 pi],options.tol);
-  y=[repmat(r(:,1),1,2).*[cos(theta),sin(theta)]; repmat(r(:,2),1,2).*[cos(theta),sin(theta)]]';
+  y=repmat(x0,1,size(theta,2))+[repmat(r(:,1),1,2).*[cos(theta),sin(theta)]; repmat(r(:,2),1,2).*[cos(theta),sin(theta)]]';
 
 end
 

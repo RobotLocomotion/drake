@@ -294,8 +294,8 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_
       n=length(c);
       iGfun = [iGfun; nf+reshape(repmat((1:n)',1,n),[],1)];
       jGvar = [jGvar; 1+reshape(repmat(1:nX,n,1),[],1)];
-      Fhigh = [Fhigh;zeros(1,n)];
-      Flow = [Flow;zeros(1,n)];
+      Fhigh = [Fhigh;zeros(n,1)];
+      Flow = [Flow;zeros(n,1)];
       if (nargout>5)
         for j=1:nX, oname= {oname{:},['con.x0.ceq_',num2str(j)]}; end
       end
