@@ -15,15 +15,18 @@ poly = taylorApprox(sys,xtraj,[],3);
 %ts = linspace(xtraj.tspan(1),xtraj.tspan(end)/8,21);
 %plotVdot(poly,V,ts);
 
+close all;
 options = struct();
-options.rho0_tau = 6;
+options.rho0_tau = 10;
 options.max_iterations = 3;
 V=sampledFiniteTimeInvariance(poly,.1*eye(4),V,xtraj.getBreaks(),options);
 
-return;
 figure(1); clf
-Vsub = FunctionHandleTrajectory(@(t) subs(V.eval(t),poly.p_x([1 3]),[0;0]),[1 1],V.tspan);
-plotFunnel(xtraj,Vsub);
+plotFunnel(xtraj,V,[2 4]);
+fnplt(xtraj,[2 4]); 
+xlabel('theta');
+ylabel('theta dot');
+title('CartPole Swing-up Funnel')
 
 
 end

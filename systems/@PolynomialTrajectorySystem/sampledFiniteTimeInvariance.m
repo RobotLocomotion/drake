@@ -27,31 +27,35 @@ end
 typecheck(G,'msspoly');
 sizecheck(G,[1 1]);
 
+typecheck(Vtraj0,'PolynomialTrajectory');
+sizecheck(Vtraj0,[1 1]);
+
+
+% for now, let's require that G matches V at the final conditions
+if (any(abs(gets(G)-gets(subs(Vtraj0.eval(ts(end)),t,ts(end))))>1e-4))
+  error('for now, I require that G matches V at the final conditions');
+end
+rhof = 1;   % todo: handle the more general case and get it from containment
+
 N = length(ts);
 Vmin = zeros(N-1,1);
 
 % evaluate dynamics and Vtraj at every ts once (for efficiency/clarity)
 for i=1:N
   V{i}=Vtraj0.eval(ts(i));
-  f{i}=sys.p_dynamics_traj.eval(ts(i));
+  f=sys.p_dynamics_traj.eval(ts(i));
   if (num_u)
-    f{i}=subs(f{i},sys.p_u,u);
+    f=subs(f,sys.p_u,u);
   end
+  Vdot{i}=diff(V{i},x)*f + Vtraj0.deriv(ts(i));
 
   % balancing 
-  A = doubleSafe(subs(diff(f{i},x),x,zeros(num_x,1)));
-  pS = 0.5*diff(diff(V{i},x)',x);
-  S = doubleSafe(subs(pS,[x;t],[0*x;ts(i)]));
-%  Sdot = doubleSafe(subs(mss_v2s(diff(mss_s2v(pS),t)),t,ts(i)));
-  [T{i},D] = balanceQuadForm(S,(S*A+A'*S)/2);%+Sdot);
-
-%  V{i} = x'*(S+Sdot*(t-ts(i)))*x;  % throw away affine terms, for debugging
- 
-  V{i}=subss(V{i},x,T{i}*x);
-  f{i}=inv(T{i})*subss(f{i},x,T{i}*x);
-
-  Vdot{i}=subs(diff(V{i},x)*f{i} + diff(V{i},t),t,ts(i));
-  V{i}=subs(V{i},t,ts(i));
+  S1=.5*doubleSafe(subs(diff(diff(V{i},x)',x),x,0*x));
+  S2=.5*doubleSafe(subs(diff(diff(Vdot{i},x)',x),x,0*x));
+  [T,D] = balanceQuadForm(S1,S2);
+  
+  V{i}=subss(V{i},x,T*x);
+  Vdot{i}=subss(Vdot{i},x,T*x);
   
   Vmin(i) = minimumV(x,V{i});
 end
@@ -61,11 +65,8 @@ if (~isfield(options,'monom_order'))
 end
 
 % conservative initial guess (need to do something smarter here)
-rhof = .4;  % todo: get this from containment.  
 dts = diff(ts);
-
 rho = flipud(rhof*exp(-options.rho0_tau*(ts-ts(1))/(ts(end)-ts(1))))+max(Vmin);
-
 rhodot = diff(rho)./dts;
 
 % check accuracy by sampling
@@ -79,15 +80,19 @@ if (max(m)>0)
 end
 
 % perform bilinear search the actual verification here
+rhointegral=0;
 for iter=1:options.max_iterations
-  last_rhointegral = inf; 
+  last_rhointegral = rhointegral; 
   L=findMultipliers(x,V,Vdot,rho,rhodot,options);
   [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof);
   rhodot = diff(rho)./dts;
-%  rhopp=mkpp(ts,[rhodot,rho(1:end-1)]);
   rhopp=foh(ts,rho');
+
+  % plot current rho
   figure(10); fnplt(rhopp); title(['iteration ',num2str(iter)]); drawnow;
-  if ((rhointegral - last_rhointegral)/last_rhointegral > options.converged_tol)  % see if it's converged
+
+  % check for convergence
+  if ((rhointegral - last_rhointegral) < options.converged_tol*last_rhointegral)  % see if it's converged
     break;
   end
 end
@@ -101,7 +106,7 @@ if (max(m)>0)
   error('infeasible rho.  increase c');
 end
 
-Vtraj = FunctionHandleTrajectory(@(t) Vtraj0.eval(t)/ppvalSafe(rhopp,t),[1 1],unique([Vtraj0.getBreaks(),ts']));
+Vtraj = PolynomialTrajectory(@(t) Vtraj0.eval(t)/ppvalSafe(rhopp,t),unique([Vtraj0.getBreaks(),ts']));
 
 
 end
@@ -137,10 +142,9 @@ function L=findMultipliers(x,V,Vdot,rho,rhodot,options)
   % note: compute L for each sample point in parallel using parfor
 
   N = length(V)-1;
-%  if (matlabpool('size')==0) matlabpool; end
+  if (matlabpool('size')==0) matlabpool; end
  
-% todo: make this a parfor
-  for i=fliplr(1:N)
+  parfor i=1:N
     prog = mssprog;
     Lxmonom = monomials(x,0:options.monom_order);
     [prog,l] = new(prog,length(Lxmonom),'free');
@@ -149,15 +153,20 @@ function L=findMultipliers(x,V,Vdot,rho,rhodot,options)
     [prog,gamma] = new(prog,1,'free');
     prog.sos = gamma-(Vdot{i}-rhodot(i) + L1*(V{i}-rho(i)));
     
-    [prog,info] = sedumi(prog,gamma,0);
-    if (doubleSafe(prog(gamma))>1e-4 || info.pinf~=0 || info.dinf~=0)
+    [prog,info{i}] = sedumi(prog,gamma,0);
+    slack{i}=double(prog(gamma));
+    L{i} = prog(L1);
+  end
+  
+  for i=1:N
+    if (slack{i}>1e-4 || info{i}.pinf~=0 || info{i}.dinf~=0)
       if (length(x)~=2)
-        dims=[2;4]; d=ones(length(x),1); d(dims)=0; d=logical(d); 
+        dims=[2;4]; d=ones(length(x),1); d(dims)=0; d=logical(d);
         [m,b]=minimumV(x,V{i});
         Vdot{i}=subs(Vdot{i},x(d),b(d));
         V{i}=subs(V{i},x(d),b(d));
         x=x(dims);
-      end        
+      end
       figure(1); clf; plotPoly(x,Vdot{i}-rhodot(i));
       figure(2); clf; plotPoly(x,V{i}-rho(i));
       doubleSafe(prog(gamma))
@@ -165,7 +174,6 @@ function L=findMultipliers(x,V,Vdot,rho,rhodot,options)
       N
       error('rho is infeasible');
     end
-    L{i} = prog(L1);
   end
 end
 

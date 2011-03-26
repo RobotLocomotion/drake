@@ -15,9 +15,8 @@ classdef PolynomialTrajectorySystem < SmoothRobotLibSystem
       checkDependency('spot_enabled');
 
       if (nargin>0 && ~isempty(p_dynamics_traj))
-        typecheck(p_dynamics_traj,'Trajectory');
+        typecheck(p_dynamics_traj,'PolynomialTrajectory');
         dyn = p_dynamics_traj.eval(p_dynamics_traj.tspan(1));
-        typecheck(dyn,'msspoly');
         num_xc = dyn.m;
         if (dyn.n ~= 1) error('dynamics should be a column vector msspoly'); end 
         obj.p_dynamics_traj=p_dynamics_traj;
@@ -26,9 +25,8 @@ classdef PolynomialTrajectorySystem < SmoothRobotLibSystem
       end
       
       if (nargin>1 && ~isempty(p_update_traj))
-        typecheck(p_update_traj,'Trajectory'); 
+        typecheck(p_update_traj,'PolynomialTrajectory'); 
         up = p_update_traj.eval(p_update_traj.tspan(1));
-        typecheck(up,'msspoly');
         num_xd = up.m;
         if (up.n ~= 1) error('update should be a column vector msspoly'); end
         obj.p_update_traj = p_update_traj;
@@ -37,9 +35,8 @@ classdef PolynomialTrajectorySystem < SmoothRobotLibSystem
       end
       
       if (nargin>2 && ~isempty(p_output_traj))
-        typecheck(p_output_traj,'Trajectory'); 
+        typecheck(p_output_traj,'PolynomialTrajectory'); 
         out = p_output_traj.eval(p_output_traj.tspan(1));
-        typecheck(out,'msspoly');
         num_y = out.m;
         if (out.n ~= 1) error('output should be a column vector msspoly'); end
         obj.p_output_traj=p_output_traj;

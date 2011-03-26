@@ -30,45 +30,21 @@ classdef Trajectory% < RobotLibSystem
       error('not implemented yet');
     end
     
-    function sizecheck(obj,sizemat)
-      s = obj.dim;
-      if (length(sizemat)<2)
-        if (sizemat==0) sizemat = [0,0]; 
-        else sizemat=[sizemat,1]; end 
-      end
-      if (length(s)<2) s = [s,1]; end
-      if (length(s)~=length(sizemat) || any(s~=sizemat))
-        error(['Wrong size.  Expected [',num2str(sizemat),'] but got a [', num2str(s), '] instead.']);
-      end
+    function s = size(obj,dim)
+      s=obj.dim;
+      if (length(s)==1) s=[s,1]; end
+      if (nargin>1) s=s(dim); end
     end
-      
+    
     function h=fnplt(obj,plotdims)
-      if (nargin<2) plotdims=[1,2]; end
-      if (obj.dim~=2) error('not implemented yet'); end
       breaks=obj.getBreaks();
       pts = obj.eval(breaks);
-      panels = [];
-      if (isempty(obj.bWrap) || isempty(obj.xWrap))
-        plot(pts(plotdims(1),:),pts(plotdims(2),:),'b.-','LineWidth',1,'MarkerSize',5);
+      if (prod(obj.dim)==1)
+        plot(breaks,pts,'b.-','LineWidth',1,'MarkerSize',5);
       else
-        for i=1:obj.dim %find(obj.bWrap)
-          if (obj.bWrap(i))
-            panel = unique(floor((pts(i,:)-obj.xWrap(i,1))/(obj.xWrap(i,2)-obj.xWrap(i,1))));
-            % plot entire trajectory over, shifted appropriately for each unique panel
-            % (the easiest way to get the lines across the
-            % boundaries correct)
-            panels = [repmat(panels,1,length(panel)); reshape(repmat(panel,max(length(panels),1),1),1,[])];
-          else
-            panels = [panels;zeros(1,max(1,size(panels,2)))];
-          end
-        end
-        for i=1:size(panels,2)
-          shift = panels(:,i).*(obj.xWrap(:,2)-obj.xWrap(:,1));
-          shift(isnan(shift)) = 0;
-          ppts = pts - repmat(shift,1,size(pts,2));
-          plot(ppts(plotdims(1),:),ppts(plotdims(2),:),'b.-','LineWidth',1,'MarkerSize',5);
-        end
-      end        
+        if (nargin<2) plotdims=[1,2]; end
+        plot(pts(plotdims(1),:),pts(plotdims(2),:),'b.-','LineWidth',1,'MarkerSize',5);
+      end
     end
     
     function [dmin,tmin,xwrapped] = distance(obj,x)

@@ -41,21 +41,20 @@ if (isa(varargin{1},'Trajectory'))
   
   xdot0traj = fnder(x0traj);
   if (num_xc)
-    xdothat = FunctionHandleTrajectory(@(t)build_poly(@sys.dynamics,t,x0traj.eval(t),u0traj.eval(t),order,xubar,xdot0traj.eval(t)),[num_xc,1],breaks);
-%    xdothat = FunctionHandleTrajectory(@(t)build_poly(@sys.dynamics,t,x0traj.eval(t),u0traj.eval(t),order,xubar),[num_xc,1],breaks);
+    xdothat = PolynomialTrajectory(@(t)build_poly(@sys.dynamics,t,x0traj.eval(t),u0traj.eval(t),order,xubar,xdot0traj.eval(t)),breaks);
     if (num_xd>0) error('need to pass in only xdot as f0 in the line above'); end
   else
     xdothat=[];
   end
 
   if (num_xd) 
-    xnhat = FunctionHandleTrajectory(@(t)build_poly(@sys.update,t,x0traj.eval(t),u0traj.eval(t),order,xubar),[sys.getNumDiscStates(),1],breaks);
+    xnhat = PolynomialTrajectory(@(t)build_poly(@sys.update,t,x0traj.eval(t),u0traj.eval(t),order,xubar),breaks);
   else
     xnhat=[];
   end
   
   if (num_y)
-    yhat = FunctionHandleTrajectory(@(t)build_poly(@sys.output,t,x0traj.eval(t),u0traj.eval(t),order,xubar),[sys.getNumOutputs(),1],breaks);
+    yhat = PolynomialTrajectory(@(t)build_poly(@sys.output,t,x0traj.eval(t),u0traj.eval(t),order,xubar),breaks);
   else
     yhat=[];
   end
