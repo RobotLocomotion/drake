@@ -109,20 +109,20 @@ classdef TaylorVar
         tmp=a; a=b; b=tmp;    % switch them (so we have less cases below)
       end
         
-      if (isa(b,'TaylorVar'))
-        if (a.nX~=b.nX) 
-          error('orders don''t match'); 
-        end
-        if (any(a.dim~=b.dim)) 
-          error('dimensions don''t match'); 
-        end
-        if (length(a.df)~=length(b.df)) error('orders don''t match'); end
+      if (isa(b,'TaylorVar'))  % both are TaylorVars
+        if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
+        if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
+        
         a.f=a.f + b.f;
         for o=1:length(a.df)
           a.df{o}=a.df{o}+b.df{o};
         end
       else  % b is a constant
+        try 
         a.f=reshape(reshape(a.f,a.dim)+b,[],1);
+        catch 
+          keyboard
+        end
         % a.df doesn't change
       end
     end
@@ -144,13 +144,16 @@ classdef TaylorVar
       end
       
       if (isa(b,'TaylorVar')) % then both are taylorvars
+        if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
+        if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
+        
         f=a.f .* b.f;
         m=prod(a.dim);
         ra = reshape(a,m,1); rb=reshape(b,m,1);
         dcdx = reshape(diff(ra),m,a.nX).*repmat(reduceOrder(rb),1,a.nX) + ...
           repmat(reduceOrder(ra),1,a.nX).*reshape(diff(b),m,b.nX);
         if (isa(dcdx,'TaylorVar'))
-          a=reshape(int(dcdx,f),a.dim);
+          a=int(dcdx,reshape(f,a.dim));
         else
           dcdx = reshape(dcdx,[],a.nX);
           a=TaylorVar(reshape(f,a.dim),{dcdx});
@@ -167,7 +170,7 @@ classdef TaylorVar
       if (~isa(a,'TaylorVar'))  % then only b is a TaylorVar
         [m,k] = size(a); n=b.dim(2);
         if (m==1 && k==1) % handle scalar case
-          f = a*b.f;
+          f = a*reshape(b.f,b.dim);
           for o=1:length(b.df), b.df{o}=a*b.df{o}; end
         else
           f = a*reshape(b.f,b.dim); 
@@ -181,7 +184,7 @@ classdef TaylorVar
         m=a.dim(1); [k,n] = size(b); 
         if (k==1 && n==1) % handle scalar case
           f = a.f*b;
-          for o=1:length(a.df), df{o}=a.df{o}*b; end
+          for o=1:length(a.df), a.df{o}=a.df{o}*b; end
         else
           f = reshape(a.f,a.dim)*b; 
           for o=1:length(a.df)  % note: this one is less efficient because I have to repmat b below
@@ -217,10 +220,14 @@ classdef TaylorVar
       end
     end
     function tv=rdivide(a,b)
-      error('not implemented yet');
+      if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
+      if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
+      tv = a.*(b.^(-1));
     end 
     function tv=ldivide(a,b)
-      error('not implemented yet');
+      if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
+      if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
+      tv = (a.^(-1)).*b;
     end   
     function a=mrdivide(a,b)
       if (~isa(b,'TaylorVar')) % then a is a TaylorVar, b is a const
@@ -256,15 +263,25 @@ classdef TaylorVar
       % todo: could make this better (more efficient/accurate?) if I handle
       % all the cases to use the actual \ call.
     end   
-    function tv=power(a,b)
-      error('not implemented yet');
+    function tv=power(a,k)
+      if (isa(k,'TaylorVar')) error('not implemented yet'); end
+      if (k==0)
+        tv=ones(a.dim);  % just a constant
+      elseif (k==1)
+        tv = a;
+      else
+        tv=elementwise(a,@(x)power(x,k),@(x) k*x.^(k-1));
+      end
     end   
     function a=mpower(a,k)
+      if (isa(k,'TaylorVar')) error('not implemented yet'); end
       % only defined for square matrices (including scalars)
       if (k==0)
         a=eye(a.dim(1));  % just a constant
-      else
+      elseif (k>0)
         a=a*a^(k-1);  % compute gradients using mtimes (at least for now)
+      else 
+        error('not implemented yet');
       end
     end
     
@@ -469,7 +486,17 @@ classdef TaylorVar
     end
     
     function a=subsasgn(a,s,b)
-      tags = reshape(1:length(a.f),a.dim);
+      if (~isa(a,'TaylorVar'))  % then turn it into one
+        n = prod(size(a));
+        for o=1:length(b.df)  % b must be a taylorvar
+          da{o} = sparse(n,(b.nX)^o);
+        end
+        a=TaylorVar(a,da);
+      end
+            
+      % note: this will fail if the assignment makes a get bigger.  i'll
+      % handle that case later (if necessary)
+      tags = reshape(1:prod(a.dim),a.dim);
       ind = reshape(subsref(tags,s),[],1);
       if (isa(b,'TaylorVar'))
         a.f(ind)=b.f;
@@ -519,20 +546,21 @@ classdef TaylorVar
         obj.df = {obj.df{1:end-order}};
       end
     end
-    function tv=elementwise(obj,fun,dfun)
-      f=fun(obj.f);
-      if (length(obj.df)>0)
-        df=diff(obj); dim=size(df);
-        dfsub=repmat(dfun(reduceOrder(obj)),[1,dim(2:end)]).*df;
+    function a=elementwise(a,fun,dfun)  % fun and dfun must be vectorized
+      f=fun(a.f);
+      if (length(a.df)>0)
+        df=diff(a); dim=size(df);
+        dfsub=repmat(dfun(reduceOrder(a)),[0*a.dim+1,a.nX]).*df;
+%        dfsub=repmat(dfun(reduceOrder(obj)),[1,dim(2:end)]).*df;
 %        dfsub=diag(dfun(reduceOrder(obj)))*diff(obj);
         if (isa(dfsub,'TaylorVar'))
-          tv=int(dfsub,f);
+          a=int(dfsub,reshape(f,a.dim));
         else
-          dfsub = reshape(dfsub,[],obj.nX);
-          tv=TaylorVar(f,{dfsub});
+          a.f = f;
+          a.df = {reshape(dfsub,[],a.nX)}; 
         end
       else
-        tv=reshape(f,obj.dim);
+        a=reshape(f,a.dim);
       end
     end
     
@@ -540,7 +568,10 @@ classdef TaylorVar
       tv=elementwise(obj,@sin,@cos);
     end
     function tv = cos(obj)
-      tv=elementwise(obj,@cos,inline('-sin(x)','x'));
+      tv=elementwise(obj,@cos,@(x)-sin(x));
+    end
+    function tv = atan(obj)
+      tv=elementwise(obj,@atan,@(x) ones(size(x))./(1+x.^2));
     end
     function a=abs(a)
       s=sign(a.f);
@@ -587,6 +618,14 @@ classdef TaylorVar
       end
     end
     
+    function a=conj(a)
+      % intentionally left blank.  i've assumed real everywhere in here.
+    end
+    
+    function a=sqrt(a)
+      a=a.^(1/2);
+    end
+    
     function a=sum(a,d)
       if (nargin<2)
         d = min(find(a.dim~=1));
@@ -597,7 +636,7 @@ classdef TaylorVar
       a.f = a.f(:);
       
       for o=1:length(a.df)
-        a.df{o}=reshape(sum(reshape(a.df{o},[a.dim,a.nX^o]),d),[prod(newdim),a.nX^o]);
+        a.df{o}=sparse(reshape(sum(reshape(full(a.df{o}),[a.dim,a.nX^o]),d),[prod(newdim),a.nX^o]));
       end
       a.dim = newdim;
     end

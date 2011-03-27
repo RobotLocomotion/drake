@@ -2,6 +2,17 @@ classdef GliderPlant < SmoothRobotLibSystem
 % Defines the dynamics for the perching glider.  Translated from Rick Cory's code in 
 % https://svn.csail.mit.edu/russt/robots/perchingGlider/ 
   
+  % state:  
+  %  x(1) - x position
+  %  x(2) - z position
+  %  x(3) - pitch (theta)
+  %  x(4) - elevator (phi)
+  %  x(5) - x velocity
+  %  x(6) - z velocity
+  %  x(7) - pitch velocity (thetadot)
+  % input:
+  %  u(1) - elevator velocity (phidot)
+
   properties  % took parameters from Rick's "R1 = no dihedral" model
     S_w = 0.0385; % wing + fus + tail.
     S_e = 0.0147;
@@ -12,7 +23,7 @@ classdef GliderPlant < SmoothRobotLibSystem
     m = 0.082;
     g = 9.81; % m/s^2
     rho = 1.292; % kg/m^3
-%    xd = [0,0,pi/4,0,0,-.5,-0.5]'% the goal
+    xd = [0,0,pi/4,0,0,-.5,-0.5]';% the goal
     phi_lo_limit = -0.9473; % lower elevator angle limit
     phi_up_limit = 0.4463; % upper elevator angle limit
 %    talon_b = [0 -.043]'; % talon coordinates, about cg in body coords (meters).
@@ -25,7 +36,7 @@ classdef GliderPlant < SmoothRobotLibSystem
       obj = setInputLimits(obj,-ulimit,ulimit);
     end
     
-    function xdot = dynamics(obj,t,x,u)
+    function [xdot,df] = dynamics(obj,t,x,u)
       q=x(1:4); qdot=x(5:7); 
       m=obj.m; g=obj.g; rho=obj.rho; S_w=obj.S_w;
       S_e=obj.S_e; I=obj.I; l_h=obj.l_h; l_w=obj.l_w; l_e=obj.l_e;
@@ -56,13 +67,14 @@ classdef GliderPlant < SmoothRobotLibSystem
       r = [r_w r_e]; %  combined moment vector
       M = r(1,:).*F(2,:) - r(2,:).*F(1,:); % moments
       
-      xdot(1:3,1) = qdot;
-      xdot(4,1) = u(1);
-      xdot(5:6,1) = (sum(F,2) + F_grav)/m;
-      xdot(7,:) = sum(M)/I;
+      xdot = [qdot; u(1); (sum(F,2) + F_grav)/m; sum(M)/I; ];
       
       % todo: enforce elevator constraints
       % phi_lo_limit < x(4) < phi_up_limit
+      
+      if (nargout>1)
+        [df]= dynamicsGradients(obj,t,x,u,nargout-1);
+      end
     end
     
     function [y,dy] = output(obj,t,x,u)
@@ -73,7 +85,7 @@ classdef GliderPlant < SmoothRobotLibSystem
     end
     
     function x = getInitialState(obj)
-      x = [-3.5 .1 0 0 7.0 0 0]';
+      x = [-3.5 .4 0 0 7.0 0 0]';
     end
     
   end  

@@ -38,12 +38,12 @@ if (order<1) error('order should be >=1'); end
 typecheck(fname,'char');
 if (length(varargin)<1) error('fun must have at least one input'); end
 if (isstruct(varargin{end}))
-  options = varargin{end}
-  varargin = varargin{1:end-1};
+  options = varargin{end};
+  varargin = {varargin{1:end-1}};
 else
   options = struct();
 end
-if (~isfield(options,'bSimplify')) options.bSimplify = true; end
+if (~isfield(options,'simplify')) options.simplify = true; end
 
 reserved_strs={'order','df'};
 for o=2:order
@@ -99,6 +99,7 @@ end
 
 % now call the actual function
 f = feval(fun,a{:});
+if (options.simplify) d = simple(f); end
 
 m = prod(size(f));
 n = length(s);
@@ -106,11 +107,11 @@ n = length(s);
 % differentiate dynamics symbolically
 disp('Generating order 1 gradients...');
 df{1} = jacobian(f,s);
-if (options.bSimplify) df{1} = simple(df{1}); end
+if (options.simplify) df{1} = simple(df{1}); end
 for o=2:order
   disp(['Generating order ',num2str(o),' gradients...']);
   df{o} = reshape(jacobian(reshape(df{o-1},m*n^(o-1),1),s),m,n^o);
-  if (options.bSimplify) df{o} = simple(df{o}); end
+  if (options.simplify) df{o} = simple(df{o}); end
 end
 disp('Writing gradients to file...');
 

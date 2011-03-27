@@ -11,7 +11,8 @@ a = lcm.lcm.MessageAggregator();
 coder = PendulumLCMCoder;
 lc.subscribe('pendulum_u',a);
 
-job = batch('runPendLCMControl','Workspace',struct());
+if (matlabpool('size')>0), matlabpool('close'); end
+job = batch('runPendLCMControl','Workspace',struct(),'Matlabpool',0);
 
 waitForState(job,'running');
 

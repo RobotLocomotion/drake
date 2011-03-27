@@ -61,13 +61,27 @@ jAvar=[];
 
 for f1 = fieldnames(con)'
   switch(f1{1})
+    case 'x'
+      xind=1+(1:prod(size(x)));
+      for f2 = fieldnames(con.x)'
+        switch(f2{1})
+          case 'lb'
+            c = repmat(con.x.lb,nT,1);
+            wlow(xind) = max(wlow(xind),c);
+          case 'ub'
+            c = repmat(con.x.ub,nT,1);
+            whigh(xind) = min(whigh(xind),c);
+          otherwise
+            conwarn(f1,f2);
+        end
+      end
     case 'x0'
       for f2 = fieldnames(con.x0)'
         switch(f2{1})
           case 'lb'
-            wlow(1 + (1:nX)) = con.x0.lb;
+            wlow(1 + (1:nX)) = max(wlow(1 + (1:nX)),con.x0.lb);
           case 'ub'
-            whigh(1 + (1:nX)) = con.x0.ub;
+            whigh(1 + (1:nX)) = min(whigh(1 + (1:nX)),con.x0.ub);
           case {'c','ceq'}
             % intentionally pass through.. these get handled in the usefun
           otherwise 
@@ -79,9 +93,9 @@ for f1 = fieldnames(con)'
       for f2 = fieldnames(con.xf)'
         switch(f2{1})
           case 'lb'
-            wlow(xfind) = con.xf.lb;
+            wlow(xfind) = max(wlow(xfind),con.xf.lb);
           case 'ub'
-            whigh(xfind) = con.xf.ub;
+            whigh(xfind) = min(whigh(xfind),con.xf.ub);
           case {'c','ceq'}
             % intentionally pass through... these get handled in the userfun
           otherwise 
@@ -153,6 +167,9 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   tcol = t(1:end-1)+dt/2;  dtcoldw1 = dtdw1(1:end-1)+ddtdw1/2;
   ucol = .5*(u(1:end-1)+u(2:end));  
 
+%  figure(1); clf; plot(x(1,:),x(2,:)); drawnow;
+
+  
   %% todo: vectorize this when possible
 
   % preallocate vars
