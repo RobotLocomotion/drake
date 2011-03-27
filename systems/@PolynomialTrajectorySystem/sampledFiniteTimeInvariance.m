@@ -19,7 +19,7 @@ if (nargin<5) options = struct(); end
 if (~isfield(options,'rho0_tau')) options.rho0_tau=1; end
 if (~isfield(options,'max_iterations')) options.max_iterations=10; end
 if (~isfield(options,'converged_tol')) options.converged_tol=.01; end
-
+if (~isfield(options,'stability')) options.stability=false; end  % true implies that we want exponential stability
 
 if (isnumeric(G) && ismatrix(G) && all(size(G)==[num_x,num_x]))
   G = x'*G*x;
@@ -84,7 +84,7 @@ rhointegral=0;
 for iter=1:options.max_iterations
   last_rhointegral = rhointegral; 
   L=findMultipliers(x,V,Vdot,rho,rhodot,options);
-  [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof);
+  [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof,options);
   rhodot = diff(rho)./dts;
   rhopp=foh(ts,rho');
 
@@ -114,7 +114,7 @@ end
 
 
 % fix lagrange multipliers, optimize rho
-function [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof)
+function [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof,options)
   N = length(V)-1;
   prog = mssprog;
   [prog,rho] = new(prog,N,'pos');
@@ -124,7 +124,13 @@ function [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof)
   for i=1:N
     rhodot(i,1) = (rho(i+1)-rho(i))/dts(i);
     rhointegral = rho(i)*dts(i)+.5*rhodot(i)*dts(i)^2;
-    prog.sos = -(Vdot{i}-rhodot(i)+L{i}*(V{i}-rho(i)));
+
+    if (options.stability)
+      Vdot{i} = Vdot{i}*rho(i)-V{i}*rhodot(i);
+      prog.sos = -Vdot{i} + L{i}*(V{i}-rho(i)); 
+    else
+      prog.sos = -(Vdot{i}-rhodot(i)+L{i}*(V{i}-rho(i)));
+    end
   end
 %  prog = sedumi(prog,ones(1,N)*slack-rhointegral,1,struct());
   [prog,info] = sedumi(prog,-rhointegral,0); %1,struct());
@@ -151,42 +157,61 @@ function L=findMultipliers(x,V,Vdot,rho,rhodot,options)
     L1 = l'*Lxmonom;
     
     [prog,gamma] = new(prog,1,'free');
-    prog.sos = gamma-(Vdot{i}-rhodot(i) + L1*(V{i}-rho(i)));
+    if (options.stability)
+
+%      [prog,l2] = new(prog,length(Lxmonom),'free');
+%      L2 = l2'*Lxmonom;
+      
+      Vdot{i} = Vdot{i}*rho(i)-V{i}*rhodot(i);  % intentionally skip 1/rho^2 term
+      prog.sos = gamma*V{i} - Vdot{i} + L1*(V{i}-rho(i));% + L2*(.1-V{i});
+      prog.sos = L1;
+%      prog.sos = L2;
+    else
+      prog.sos = gamma-(Vdot{i}-rhodot(i) + L1*(V{i}-rho(i)));
+    end
     
     [prog,info{i}] = sedumi(prog,gamma,0);
-    slack{i}=double(prog(gamma));
+    if (info{i}.pinf==0 && info{i}.dinf==0)
+      slack{i}=double(prog(gamma));
+    end
     L{i} = prog(L1);
   end
   
-  for i=1:N
+  for i=fliplr(1:N)
     if (slack{i}>1e-4 || info{i}.pinf~=0 || info{i}.dinf~=0)
       if (length(x)~=2)
         dims=[2;4]; d=ones(length(x),1); d(dims)=0; d=logical(d);
         [m,b]=minimumV(x,V{i});
-        Vdot{i}=subs(Vdot{i},x(d),b(d));
         V{i}=subs(V{i},x(d),b(d));
+        Vdot{i}=subs(Vdot{i},x(d),b(d));
         x=x(dims);
       end
-      figure(1); clf; plotPoly(x,Vdot{i}-rhodot(i));
-      figure(2); clf; plotPoly(x,V{i}-rho(i));
-      doubleSafe(prog(gamma))
-      i
-      N
+        figure(2); clf; [minVmRho,junk]=plotPoly(x,V{i}-rho(i));
+      if (options.stability)
+        figure(1); clf; [junk,maxVdot]=plotPoly(x,Vdot{i});
+        fprintf(1,'segment %d of %d, slack=%f,\n sampledmax(d/dt(V/rho))=%f, sampledmin(V-rho)=%f\n info:\n',i,N,maxVdot,minVmRho,slack{i});
+      else
+        figure(1); clf; [junk,maxVdotmRhodot]=plotPoly(x,Vdot{i}-rhodot(i));
+        fprintf(1,'segment %d of %d, slack=%f,\n sampledmax(Vdot-rhodot)=%f, sampledmin(V-rho)=%f\n info:\n',i,N,maxVdotmRhodot,minVmRho,slack{i});
+      end
+      info{i}
       error('rho is infeasible');
     end
   end
 end
 
 
-function plotPoly(x,P)
+function [mi,ma]=plotPoly(x,P,rho)
+  if(nargin<3) rho=0; end
   [X1,X2]=ndgrid(-2:.1:2,-2:.1:2);
   Ps=reshape(doubleSafe(msubs(P,x,[X1(:)';X2(:)'])),size(X1));
-  max(max(Ps))
-  min(min(Ps))
+  mi=min(min(Ps));
+  ma=max(max(Ps));
   surf(X1,X2,Ps); colorbar;
   view(0,90);
   hold on;
-  contour(X1,X2,Ps,[0,0],'Color',[1 1 1],'LineWidth',4);
+  [c,h]=contour3(X1,X2,Ps,[rho,rho]);
+  set(h,'EdgeColor',[1 1 1],'LineWidth',4);
 end
 
 function [Vmin,b] = minimumV(x,V)

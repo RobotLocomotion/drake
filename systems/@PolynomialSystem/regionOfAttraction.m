@@ -95,6 +95,7 @@ function [slack,info] = checkRho(rho, x,V,Vdot,prog,L)
   [prog,slack] = new(prog,1,'free');
   
   prog.sos = -Vdot + L*(V - rho) - slack*V;
+  prog.sos = L;
   
   [prog,info] = sedumi(prog,-slack,0);
   if (info.numerr>1)
