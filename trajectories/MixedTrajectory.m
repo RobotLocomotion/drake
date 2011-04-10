@@ -15,12 +15,21 @@ classdef MixedTrajectory < Trajectory
       
       obj.trajs = trajs;
       obj.indices = indices;
-      
+
+      for i=1:length(trajs)
+        typecheck(trajs{i},'Trajectory');
+        if (~isvector(trajs{i}) || size(trajs{i},2)~=1) error('individual trajectories must be column vectors'); end
+      end
+      if (length(unique([indices{:}]))~=obj.dim) % check if 1:obj.dim are all in indices
+        error('all indices must be accounted for.  some are missing.');
+      end
+
       obj.breaks = getBreaks(trajs{1});
       for i=2:length(trajs)
         obj.breaks = [obj.breaks,getBreaks(trajs{i})];
       end
       obj.breaks = unique(obj.breaks);
+      obj.tspan = [min(obj.breaks),max(obj.breaks)];
     end
     
     function ydot = deriv(obj,t)
@@ -44,6 +53,18 @@ classdef MixedTrajectory < Trajectory
     
     function t = getBreaks(obj)
       t = obj.breaks;
+    end
+    
+    function traj = subTrajectory(obj,ind)
+      % check the case that ind is exactly one of the sub trajectories
+      for i=1:length(obj.trajs)
+        if (length(ind)==length(obj.indices{i}) && all(ind==obj.indices{i}))
+          traj = obj.trajs{i};
+          return;
+        end
+      end
+      
+      error('not implemented yet');
     end
   end
 end

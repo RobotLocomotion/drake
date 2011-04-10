@@ -5,21 +5,28 @@ p = setInputLimits(p,-inf,inf);
 
 [utraj,xtraj]=runDircol(p);
 
-[c,V] = tvlqr(p,xtraj,utraj,diag([10,10,1,1]),.1,diag([10,10,1,1]));
-
-sys = feedback(p,c);
-
-poly = taylorApprox(sys,xtraj,[],3);
-%poly = taylorApprox(p,xtraj,utraj,3);
-
-%ts = linspace(xtraj.tspan(1),xtraj.tspan(end)/8,21);
-%plotVdot(poly,V,ts);
+Q=diag([10,10,1,1]); R=.1;
 
 close all;
 options = struct();
 options.rho0_tau = 10;
 options.max_iterations = 3;
-V=sampledFiniteTimeInvariance(poly,.1*eye(4),V,xtraj.getBreaks(),options);
+
+% for debugging (the old way)
+%[ltvsys,Vtraj] = tvlqr(p,xtraj,utraj,Q,R,Q);
+%ltvsys = LTVControlTest(ltvsys.x0,ltvsys.u0,ltvsys.K);
+%psystest = taylorApprox(feedback(p,ltvsys),xtraj,[],3);
+%try 
+%V=sampledFiniteTimeInvariance(psystest,Q,Vtraj,xtraj.getBreaks());
+%catch
+%  disp('funnel code threw error... continuing');
+%end
+% end debugging
+
+[tv,sys,xtraj,utraj,V,Vf] = tvlqrClosedLoop(p,xtraj,utraj,Q,R,Q);
+poly = taylorApprox(sys,xtraj,[],3);
+
+V=sampledFiniteTimeInvariance(poly,Vf,V,xtraj.getBreaks(),options);
 
 figure(1); clf
 plotFunnel(xtraj,V,[2 4]);

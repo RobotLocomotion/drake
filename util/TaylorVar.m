@@ -35,6 +35,15 @@ classdef TaylorVar
       % inefficient!
     end
     
+    function d=double(obj)
+      d = reshape(obj.f,obj.dim);
+      for o=1:length(obj.df)
+        if (any(obj.df{o}(:)))
+          warning('converting taylorvar to double even though it has non-zero gradients.  gradient information will be lost!'); 
+        end
+      end
+    end
+    
     function p = getmsspoly(obj,p_x)
       if (~isvector(p_x)) error('p_x should be a vector'); end
       if (length(obj.dim)>2) error('msspolys are not defined for ND arrays'); end
@@ -50,6 +59,12 @@ classdef TaylorVar
       end
     end
     
+    function classname=superiorfloat(varargin)
+      classname='double';
+    end
+    function tf=isnan(obj)
+      tf=isnan(reshape(obj.f,obj.dim));
+    end
     function varargout=size(obj,dim)
       if (nargin>1)  
         varargout{1}=obj.dim(dim);
@@ -118,10 +133,13 @@ classdef TaylorVar
           a.df{o}=a.df{o}+b.df{o};
         end
       else  % b is a constant
+        if (isscalar(a)&&~isscalar(b))
+          a=repmat(a,size(b));
+        end
         try 
         a.f=reshape(reshape(a.f,a.dim)+b,[],1);
-        catch 
-          keyboard
+        catch
+          keyboard;
         end
         % a.df doesn't change
       end
@@ -170,7 +188,11 @@ classdef TaylorVar
       if (~isa(a,'TaylorVar'))  % then only b is a TaylorVar
         [m,k] = size(a); n=b.dim(2);
         if (m==1 && k==1) % handle scalar case
+          try 
           f = a*reshape(b.f,b.dim);
+          catch 
+            keyboard
+          end
           for o=1:length(b.df), b.df{o}=a*b.df{o}; end
         else
           f = a*reshape(b.f,b.dim); 
@@ -641,6 +663,71 @@ classdef TaylorVar
       a.dim = newdim;
     end
     
+    function [c,i]=max(a,b,dim)
+      if (nargin<2 || nargin>2) error('not implemented yet'); end
+      if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
+      if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
+      if (~isa(a,'TaylorVar'))% then b is the TaylorVar.
+        tmp=a; a=b; b=tmp;    % switch them (so we have less cases below)
+      end
+      if (isa(b,'TaylorVar')) % then both are TaylorVars
+        error('not implemented yet');
+      else % then just a is a TaylorVar
+        c = reshape(max(reshape(a.f,a.dim),b),[],1);
+        ind=find(c~=a.f);
+        for o=1:length(a.df)
+          a.df{o}(ind,:)=0;
+        end
+      end
+    end
+    
+    function [c,i]=min(a,b,dim)
+      if (nargin<2 || nargin>2) error('not implemented yet'); end
+      if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
+      if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
+      if (~isa(a,'TaylorVar'))% then b is the TaylorVar.
+        tmp=a; a=b; b=tmp;    % switch them (so we have less cases below)
+      end
+      if (isa(b,'TaylorVar')) % then both are TaylorVars
+        error('not implemented yet');
+      else % then just a is a TaylorVar
+        c = reshape(min(reshape(a.f,a.dim),b),[],1);
+        ind=find(c~=a.f);
+        for o=1:length(a.df)
+          a.df{o}(ind,:)=0;
+        end
+      end
+    end    
+    
+    function B = cumprod(A,dim)
+      if (nargin<2) dim=1; end
+      if (dim~=1) error('not implemented yet'); end
+      if (~ismatrix(A)) error('not implemented yet'); end
+      B = A;
+      for i=2:size(A,1)
+        % B(i,:)=B(i-1,:).*A(i,:);  % can't call subsref indirectly from
+        % inside the class, so call it explicitly:
+        si=substruct('()',{i,':'});
+        sim=substruct('()',{i-1,':'});
+        subsasgn(B,si,subsref(B,sim).*subsref(A,si));
+      end
+    end
+    
+    function n=norm(A,p)
+      if (~isvector(A)) error('not implemented yet'); end
+      if (nargin<2) p=2; end
+      if (isinf(p))
+        if (p>0) n=max(abs(A));
+        else     n=min(abs(A)); 
+        end
+      elseif p==2  % break out special case just because mpower isn't full implemented yet
+        n=sqrt(sum(A.^2));
+      else
+        % will error until I complete mpower
+        n=sum(abs(A).^p)^(1/p);
+      end
+    end
+    
 %    function obj=blkdiagcpy(obj,c)
 %      if (length(obj.dim)~=2) error('only for 2D matrices'); end
 %      m=obj.dim(1);n=obj.dim(2);
@@ -657,7 +744,7 @@ classdef TaylorVar
   end
   
   methods (Static)
-    function tv=init(x,order)
+    function tv=init(x,order,inds)
       dim=size(x);
       if (length(dim)>2 || dim(2)~=1), error('x must be a column vector'); end  
       n = length(x);

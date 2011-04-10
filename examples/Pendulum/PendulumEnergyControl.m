@@ -3,8 +3,9 @@ classdef PendulumEnergyControl < HybridRobotLibSystem
   methods
     function obj = PendulumEnergyControl(plant)
       obj = obj.addMode(PendulumEnergyShaping(plant));
-      lqr = PendulumLQR(plant);
+      [lqr,V] = PendulumLQR(plant);
       obj = obj.addMode(lqr);
+      obj = obj.setModeOutputFlag(false);
       obj = obj.setAngleFlags([1;0],[],0);
 
       % todo: build closed-loop lqr system and do verification on it to
@@ -15,10 +16,19 @@ classdef PendulumEnergyControl < HybridRobotLibSystem
 
       in_lqr_roa = inline('obj.wrapInput(x-obj.x0)''*obj.S*obj.wrapInput(x-obj.x0) - obj.rho','obj','t','junk','x');
       
-      obj = obj.addTransition(1,2,in_lqr_roa,[],true,true);
-      obj = obj.addTransition(2,1,notGuard(obj,in_lqr_roa),[],true,true);
+      obj = obj.addTransition(1,in_lqr_roa,@transitionToLQR,true,true);
+      obj = obj.addTransition(2,notGuard(obj,in_lqr_roa),@transitionFromLQR,true,true);
       
-      obj.output_mode = false;
+    end
+    
+    function [x,m,status] = transitionToLQR(obj,m,t,x,u)
+      status=0;
+      m=2;
+    end
+    
+    function [x,m,status] = transitionFromLQR(obj,m,t,x,u)
+      status=0;
+      m=1;
     end
     
   end

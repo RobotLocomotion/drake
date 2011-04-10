@@ -1,19 +1,23 @@
 function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0,utraj0,con,options)
 % trajectoryOptimization
 %
-% Todo:
+% This file describes the interface used by all of the trajectory
+% optimization tools in robotlib.  
 %
-% Help file for trajectory design constraints. 
+%  sys - a DynamicalSystem
+%  costFun - handle to scalar function g(t,x(t),u(t)).  total cost is
+%            integral of g over the trajectory + h
+%  finalCostFun - handle to a scalar function h(tf,x(tf)).  
+%  x0 -  a double vector which describes the initial condition
+%  utraj0 - a Trajectory object which the initial u(t)
+%  con  - a structure describing the constraints (details below)
+%  options - a structure describing an options (details below)
 %
 % All of the trajectory design algorithms support all of 
 % these constraints (or produce a warning if they do not).
 %
 % Assuming that the constraint structure is name 'con', valid 
 % constraints specified in the structure are:
-%
-% Input constraints:
-%  con.u.lb        forall t, lb <= u(t) <= ub
-%  con.u.ub 
 %
 % State constraints: 
 %  con.x.lb        forall t, lb <= x(t) <= ub
@@ -27,13 +31,23 @@ function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0
 %     % to provide gradients of the constraint, these functions should
 %     % output  [f,dfdx] = c(x) , where size(dfdx) = [len(f),len(x)]
 %
-% Initial State Constraints:
+% Initial state Constraints:
 %  con.x0.*  
 % can take any of the fields described for con.x , but applies only for t = t0.
 %
-% Final State Constraints:
+% Final state Constraints:
 %  con.xf.*  
 % can take any of the fields described for con.x , but applies only for t = tf.
+%
+%
+% Input constraints:
+%  con.u.lb        forall t, lb <= u(t) <= ub
+%  con.u.ub 
+%
+% Initial input constraints:
+%  con.u0.*
+% Final input constraints:
+%  con.uf.*
 %
 % Time Constraints:
 %  con.T.lb     lb <= tf - t0 <= ub
@@ -61,7 +75,11 @@ function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0
 %  optimizer    - 'fmincon','snopt', ... 
 %  grad_method  - 'numerical', 'bptt', 'rtrl', ...
 %  grad_test    - true or false
-
+%  xtape0       - 'rand', 'simulate', 'x0toxf', ...
+%  trajectory_cost_fun - function handle to a one-shot cost function Jtraj(T,X,U),
+%        with T=[t0,t1,...tN],X=[x0,x1,...,xN],U=[u0,u1,...,uN], which is
+%        added to the original cost.  e.g., 
+%           J = Jtraj(T,X,U) + h(tf,x(tf)) + int_t0^tf g(t,x,u)dt
 
 
 % More things to implement / think about:

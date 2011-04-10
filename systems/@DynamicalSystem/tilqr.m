@@ -1,4 +1,4 @@
-function ltisys = tilqr(obj,x0,u0,Q,R)
+function [ltisys,V] = tilqr(obj,x0,u0,Q,R)
 
 % ts is a simulink sample time
 if (~isTI(obj)) error('I don''t know that this system is time invariant.  Set the TI flags and rerun this method if you believe the system to be.'); end
@@ -33,6 +33,9 @@ end
 
 ltisys = LTIControl(x0,u0,K,S);
 ltisys = setAngleFlags(ltisys,obj.output_angle_flag,[],obj.input_angle_flag);
+
+x=msspoly('x',getNumStates(obj));
+V = x'*S*x;
 
 end
 

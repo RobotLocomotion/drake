@@ -33,6 +33,7 @@ info=run_tests_in('examples',info,false);
 info=run_tests_in('.',info,true);
 %pause on;
 
+clear robotlib_unit_test;
 fprintf(1,'\n Executed %d tests.  %d passed.  %d failed.\n',info.passcount+info.failcount, info.passcount, info.failcount);
 
 end

@@ -35,11 +35,11 @@ plot(x(1,:),x(2,:));
 v = PendulumVisualizer();
 v.playback(xtraj);
 
-disp('Computing tvlqr...')
-cfull = tvlqr(p,xtraj,utraj,eye(2),1,1*eye(2));
-disp('Simulating...')
-sysfull = cascade(feedback(p,cfull),v);
-simulate(sysfull,xtraj.tspan*0.99,xi);
+%disp('Computing tvlqr...')
+%cfull = tvlqr(p,xtraj,utraj,eye(2),1,1*eye(2));
+%disp('Simulating...')
+%sysfull = cascade(feedback(p,cfull),v);
+%simulate(sysfull,xtraj.tspan*0.99,xi);
 
 
 w= randn(2,1);

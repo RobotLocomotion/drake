@@ -5,7 +5,7 @@ if (nargin<1)
 end
 
 x0 = zeros(4,1); tf0 = 4; xf = [0;pi;0;0];
-utraj0 = PPTrajectory(foh(linspace(0,tf0,41),randn(1,41)));
+utraj0 = PPTrajectory(foh(linspace(0,tf0,31),randn(1,31)));
 
 %con.u.lb = p.umin;
 %con.u.ub = p.umax;
@@ -22,6 +22,13 @@ tic
 [utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj0,con,options);
 if (info~=1) error('failed to find a trajectory'); end
 toc
+
+%con.uf.lb = 0;
+%con.uf.ub = 0;
+%options.xtape='simulate';
+%[utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj,con,options);
+%if (info~=1) error('failed to improve the trajectory'); end
+
 
 if (nargout>0) 
   return;

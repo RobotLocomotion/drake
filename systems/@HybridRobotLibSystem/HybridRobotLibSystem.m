@@ -3,10 +3,9 @@ classdef HybridRobotLibSystem < RobotLibSystem
   % some restrictions on the mode systems:
   %  must be CT only 
   
-  properties 
+  properties (SetAccess=private)
     modes={};       % cell array of systems representing each state (or mode)
     % transitions:
-    target_mode={}; % target_mode{i}(j) describes the target for the jth transition out of the ith mode
     guard={};       % guard{i}{j} is for the jth transition from the ith mode
     transition={};      % transition{i}{j} is for the jth transition from the ith mode
     num_zcs = 0;    % number of zero-crossings.
@@ -16,37 +15,49 @@ classdef HybridRobotLibSystem < RobotLibSystem
   % construction
   methods
     function obj = HybridRobotLibSystem()
-      obj = obj@RobotLibSystem(0,1,0,0,false,true);
+      obj = obj@RobotLibSystem(0,1,0,1,false,true);
+    end
+    
+    function obj = setModeOutputFlag(obj,tf)
+      if (obj.output_mode) obj=setNumOutputs(obj,getNumOutputs(obj)-1); end
+      obj.output_mode = logical(tf);
+      if (obj.output_mode) obj=setNumOutputs(obj,getNumOutputs(obj)+1); end
     end
     
     function [obj,mode_num] = addMode(obj,mode_sys)
       typecheck(mode_sys,'SmoothRobotLibSystem');
-      if (getNumStates(mode_sys)>0 && ~mode_sys.isCT()) error('only CT modes are allowed for now'); end
+%      if (getNumStates(mode_sys)>0 && ~mode_sys.isCT()) error('only CT modes are allowed for now'); end
       obj.modes = {obj.modes{:},mode_sys};
       mode_num = length(obj.modes);
-      obj.target_mode = {obj.target_mode{:},[]};
       obj.guard = {obj.guard{:},{}};
       obj.transition = {obj.transition{:},{}};
       obj = setNumContStates(obj,max(getNumContStates(obj),getNumContStates(mode_sys)));
+      obj = setNumDiscStates(obj,max(getNumDiscStates(obj),1+getNumDiscStates(mode_sys)));
       obj = setNumInputs(obj,max(getNumInputs(obj),getNumInputs(mode_sys)));
-      obj = setNumOutputs(obj,max(1+getNumContStates(obj),1+getNumContStates(mode_sys)));
+      if (obj.output_mode)
+        obj = setNumOutputs(obj,max(getNumOutputs(obj),1+getNumOutputs(mode_sys)));
+      else
+        obj = setNumOutputs(obj,max(getNumOutputs(obj),getNumOutputs(mode_sys)));
+      end
       obj = setDirectFeedthrough(obj,isDirectFeedthrough(obj) || isDirectFeedthrough(mode_sys));
       obj = setTIFlag(obj,isTI(obj) && isTI(mode_sys));
     end
     
-    function obj = addTransition(obj,from_mode_num,to_mode_num,guard,transition,directFeedthrough,timeInvariant)
+    function obj = addTransition(obj,from_mode_num,guard,transition,directFeedthrough,timeInvariant,~)
       % guard is a function pointer with style:  
       %    phi = guard(fsm_obj,t,mode_x,u)
       %    with phi a scalar, which indicates a transition when phi<=0.
       % transition is a function pointer with style:
-      %    [to_mode_xn,status] = transition(fsm_obj,t,mode_x,u)
+      %    [to_mode_xn,to_mode_num,status] = transition(obj,from_mode_num,t,mode_x,u)
       
       if (from_mode_num<1 || from_mode_num>length(obj.modes)) error('invalid from mode'); end
-      if (to_mode_num<1 || to_mode_num>length(obj.modes)) error('invalid to mode'); end
+      if (isnumeric(guard))
+        error('the syntax for the hybrid models has changed (sorry).  to_mode_num is now an output of the transition function instead of an argument to addTransition.  this was necessary for more complicated transitions.  type ''help @HybridRobotLibSystem/addTransition'' for details.'); 
+        % todo: zap trailing ~ from argument list when i zap this version change notification.
+      end
       typecheck(guard,{'function_handle','inline'});
       if (~isempty(transition)) typecheck(transition,{'function_handle','inline'}); end
-      tid = length(obj.target_mode{from_mode_num})+1;
-      obj.target_mode{from_mode_num}(tid) = to_mode_num;
+      tid = length(obj.guard{from_mode_num})+1;
       obj.guard{from_mode_num}{tid} = guard;
       obj.transition{from_mode_num}{tid} = transition;
       obj = setDirectFeedthrough(obj,obj.isDirectFeedthrough() || directFeedthrough);
@@ -119,32 +130,49 @@ classdef HybridRobotLibSystem < RobotLibSystem
       m = getInitialMode(obj);
       x0 = [m; getInitialState(obj.modes{m})];
       % pad if necessary:
-      x0 = [x0;repmat(0,1+getNumContStates(obj)-length(x0),1)];
+      x0 = [x0;repmat(0,getNumStates(obj)-length(x0),1)];
+    end
+
+    function x0 = getInitialStateWInput(obj,t,x,u);
+      x0=[x(1); getInitialStateWInput(obj.modes{x(1)},t,x(2:end),u)];
+      % pad if necessary:
+      x0 = [x0;repmat(0,getNumStates(obj)-length(x0),1)];
     end
     
     function xcdot = dynamics(obj,t,x,u)
       m = x(1);
-      xcdot = dynamics(obj.modes{m},t,x(2:end),u);
+      if (getNumContStates(obj.modes{m}))
+        xcdot = dynamics(obj.modes{m},t,x(2:end),u);
+      else
+        xcdot=[];
+      end
       % pad if necessary:
       xcdot = [xcdot;repmat(0,getNumContStates(obj)-length(xcdot),1)];
     end
 
     function xdn = update(obj,t,x,u)
-      error('shouldn''t get here'); % all hybrid systems should have a continuous sample time
+      m = x(1);
+      if (getNumDiscStates(obj.modes{m}))
+        xdn = update(obj.modes{m},t,x(2:end),u);
+      else
+        xdn=[];
+      end
+      % pad if necessary:
+      xdn = [xdn;repmat(0,getNumDiscStates(obj)-length(xdn)-1,1)];
     end
     
     function y = output(obj,t,x,u)
       m = x(1);
       y = output(obj.modes{m},t,x(2:end),u);
+      if (obj.output_mode) y = [m;y]; end
       % pad if necessary:
       y = [y;repmat(0,getNumOutputs(obj)-length(y),1)];
-      if (obj.output_mode) y = [m;y]; end
     end
     
     function zcs = guards(obj,t,x,u)
       m = x(1);
       zcs=[];
-      for i=1:length(obj.target_mode{m})
+      for i=1:length(obj.guard{m})
         zcs(i) = obj.guard{m}{i}(obj,t,x(2:end),u);
       end
       % pad if necessary:
@@ -161,15 +189,10 @@ classdef HybridRobotLibSystem < RobotLibSystem
         return;
       end
       if (length(active_id)>1) error('multiple guards tripped at the same time.  behavior is undefined.  consider reducing the step size'); end
-      if (isempty(obj.transition{m}{active_id}))
-        mode_xn = x(2:end);
-        status = 0;
-      else
-        [mode_xn,status] = obj.transition{m}{active_id}(obj,t,x(2:end),u);
-      end
-      xn = [obj.target_mode{m}(active_id);mode_xn];
+      [mode_xn,to_mode_num,status] = obj.transition{m}{active_id}(obj,m,t,x(2:end),u);
+      xn = [to_mode_num;mode_xn];
       % pad if necessary:
-      xn = [xn;repmat(0,1+getNumContStates(obj)-length(xn),1)];
+      xn = [xn;repmat(0,getNumStates(obj)-length(xn),1)];
       if (any(guards(obj,t,xn,u)<0)), keyboard; end % useful for debugging successive zcs.
     end
   end

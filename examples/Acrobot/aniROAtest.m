@@ -1,3 +1,5 @@
+function aniROATest
+
 robot = AcrobotPlant;
 robot = robot.setInputLimits(-inf,inf);
 c = AcrobotLQR(robot);

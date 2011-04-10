@@ -9,6 +9,10 @@ utraj0 = PPTrajectory(foh(linspace(0,tf0,21),randn(1,21)));
 
 con.u.lb = p.umin;
 con.u.ub = p.umax;
+con.u0.lb = 0;
+con.u0.ub = 0;
+con.uf.lb = 0;
+con.uf.ub = 0;
 con.x0.lb = x0;
 con.x0.ub = x0;
 con.xf.lb = xf;
@@ -27,44 +31,24 @@ if (nargout>0)
   return;
 end
 
-c = tvlqr(p,xtraj,utraj,eye(2),1,eye(2));
-
-t = xtraj.getBreaks();
-t = linspace(t(1),t(end),100);
-x = xtraj.eval(t);
-plot(x(1,:),x(2,:));
-
 v = PendulumVisualizer();
 v.playback(xtraj);
 
 end
 
       function [g,dg] = cost(t,x,u);
-        xd = repmat([pi;0],1,size(x,2));
-        xerr = x-xd;
-        xerr(1,:) = mod(xerr(1,:)+pi,2*pi)-pi;
-        
-        Q = diag([10,1]);
-        R = 100;
-        g = sum((Q*xerr).*xerr,1) + (R*u).*u;
+        R = 10;
+        g = (R*u).*u;
         
         if (nargout>1)
-          dgdt = 0;
-          dgdx = 2*xerr'*Q;
-          dgdu = 2*u'*R;
-          dg = [dgdt,dgdx,dgdu];
+          dg = [zeros(1,3),2*u'*R];
         end
       end
       
       function [h,dh] = finalcost(t,x)
-        xd = repmat([pi;0],1,size(x,2));
-        xerr = x-xd;
-        xerr(1,:) = mod(xerr(1,:)+pi,2*pi)-pi;
-        
-        Qf = 100*diag([10,1]);
-        h = sum((Qf*xerr).*xerr,1);
-        
+        h = t;
         if (nargout>1)
-          dh = [0, 2*xerr'*Qf];
+          dh = [1, zeros(1,2)];
         end
       end
+      

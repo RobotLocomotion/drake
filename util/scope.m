@@ -19,19 +19,20 @@ if (g_scope_enable && checkDependency('lcm_enabled'))
   typecheck(varname,'char');
   typecheck(xval,'double');
   typecheck(yval,'double');
-  if (length(xval)>1 || length(yval)>1) error('data values should be scalars'); end
+  if (length(xval)>1 ) error('x values should be scalars'); end
   
-  lc = lcm.lcm.LCM.getSingleton();
-  
-  msg = robotlib.util.lcmt_scope_data();
-  msg.scope_id = options.scope_id;
-  msg.xdata = xval;
-  msg.ydata = yval;
-  msg.linespec = options.linespec;
-  msg.num_points = options.num_points;
-  msg.resetOnXval = options.resetOnXval;
-  
-  lc.publish([lower(robotname),'_scope_',varname],msg);
+  for i = 1:length(yval)
+      varnameExt = [varname num2str(i)];
+      lc = lcm.lcm.LCM.getSingleton();
+      msg = robotlib.util.lcmt_scope_data();
+      msg.scope_id = options.scope_id;
+      msg.xdata = xval;
+      msg.ydata = yval(i);
+      msg.linespec = options.linespec;
+      msg.num_points = options.num_points;
+      msg.resetOnXval = options.resetOnXval;
+      lc.publish([lower(robotname),'_scope_',varnameExt],msg);
+  end
 end
 
 end

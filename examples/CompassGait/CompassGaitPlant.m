@@ -17,8 +17,8 @@ classdef CompassGaitPlant < HybridRobotLibSystem
       obj = obj.addMode(p);
       obj = obj.addMode(p);
 
-      obj = addTransition(obj,1,2,andGuards(obj,@footCollisionGuard1,@footCollisionGuard2),@collisionDynamics,false,true);
-      obj = addTransition(obj,2,1,andGuards(obj,@footCollisionGuard1,@footCollisionGuard2),@collisionDynamics,false,true);
+      obj = addTransition(obj,1,andGuards(obj,@footCollisionGuard1,@footCollisionGuard2),@collisionDynamics,false,true);
+      obj = addTransition(obj,2,andGuards(obj,@footCollisionGuard1,@footCollisionGuard2),@collisionDynamics,false,true);
 
       %      obj.ode_options = odeset('InitialStep',1e-3, 'Refine',1,'MaxStep',0.02);
       obj = setSimulinkParam(obj,'InitialStep','1e-3','MaxStep','0.05');
@@ -35,8 +35,11 @@ classdef CompassGaitPlant < HybridRobotLibSystem
       dg = [0,-1,0,0,0,0];
     end
       
-    function [xp,status,dxp] = collisionDynamics(obj,t,xm,u)
+    function [xp,mode,status,dxp] = collisionDynamics(obj,mode,t,xm,u)
       m=obj.m; mh=obj.mh; a=obj.a; b=obj.b; l=obj.l;
+      
+      if (mode==1) mode=2;  % switch modes
+      else mode=1; end
       
       alpha = (xm(1) - xm(2));
       Qm = [ -m*a*b, -m*a*b + (mh*l^2 + 2*m*a*l)*cos(alpha); 0, -m*a*b ];
@@ -56,7 +59,7 @@ classdef CompassGaitPlant < HybridRobotLibSystem
         dxpdxm(3:4,3:4) = Qpi*Qm;
         dxpdxm(3:4,1) = (dQpidalpha*dalpha(1))*Qm*xm(3:4) + Qpi*(dQmdalpha*dalpha(1))*xm(3:4);
         dxpdxm(3:4,2) = (dQpidalpha*dalpha(2))*Qm*xm(3:4) + Qpi*(dQmdalpha*dalpha(2))*xm(3:4);
-        dxp = [zeros(4,1),dxpdxm,zeros(4,1)];
+        dxp = [zeros(4,2),dxpdxm,zeros(4,1)];
       end
       status = 0;
     end

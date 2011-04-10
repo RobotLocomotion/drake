@@ -117,7 +117,9 @@ switch (method)
     
     avec=[];
     for i=1:length(varargin),
-      if (~isobject(varargin{i}) || isa(varargin{i},'sym'))
+      if (isa(varargin{i},'TaylorVar'))
+        error('nested gevals not supported (at least not yet)');
+      elseif (~isobject(varargin{i}) || isa(varargin{i},'sym'))
         avec=[avec; varargin{i}(:)];
       end
     end
@@ -138,9 +140,13 @@ switch (method)
     for i=1:p
       if (isa(f{i},'TaylorVar'))
         [varargout{i:p:nargout}]=eval(f{i});
-      else
+      elseif (isa(f{i},'double'))
         varargout{i}=f{i};
-        if (nargout>=(p+i)) error('not implemented yet'); end
+        for o=1:order  % return zeros for the gradients
+          varargout{o*p+i}=zeros(prod(size(f{i})),ind^o);
+        end
+      else
+        error('non-double outputs not supported (yet?)');
       end
     end
   otherwise
