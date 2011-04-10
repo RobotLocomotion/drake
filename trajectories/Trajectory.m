@@ -3,8 +3,6 @@ classdef Trajectory% < RobotLibSystem
   properties
     dim
     tspan
-    bWrap=[]
-    xWrap=[]
   end
   
   methods (Abstract=true)
@@ -36,14 +34,21 @@ classdef Trajectory% < RobotLibSystem
       if (nargin>1) s=s(dim); end
     end
     
+    function traj = subTrajectory(obj,ind)
+      error('not implemented yet');
+    end
+    
     function h=fnplt(obj,plotdims)
       breaks=obj.getBreaks();
-      pts = obj.eval(breaks);
+      m=5; t=linspace(0,1,m)'; n=length(breaks)-1;
+      ts = repmat(1-t,1,n).*repmat(breaks(1:end-1),m,1) + repmat(t,1,n).*repmat(breaks(2:end),m,1);
+      ts = ts(:);
+      pts = obj.eval(ts);
       if (prod(obj.dim)==1)
-        plot(breaks,pts,'b.-','LineWidth',1,'MarkerSize',5);
+        h=plot(ts,pts,'b.-','LineWidth',1,'MarkerSize',5);
       else
         if (nargin<2) plotdims=[1,2]; end
-        plot(pts(plotdims(1),:),pts(plotdims(2),:),'b.-','LineWidth',1,'MarkerSize',5);
+        h=plot(pts(plotdims(1),:),pts(plotdims(2),:),'b.-','LineWidth',1,'MarkerSize',5);
       end
     end
     

@@ -16,10 +16,14 @@ classdef HybridTrajectory < Trajectory
         % check that one trajectory follows the other sequentially in time
         te = trajectories{1}.getBreaks();  
         obj.tspan = [te(1),te(end)];
+        obj.dim = trajectories{1}.dim;
         te = te(end);
         for i=2:length(trajectories)
           t = trajectories{i}.getBreaks();
           if (abs(t(1)-te(end))>1e-10) error('trajectories must line up in time'); end
+          if (length(obj.dim)~=length(trajectories{i}.dim)  || any(obj.dim ~= trajectories{i}.dim))
+            error('trajectories must all have the same dimension');
+          end
           te = [te,t(end)];
           obj.tspan(2) = t(end);
         end
@@ -70,5 +74,26 @@ classdef HybridTrajectory < Trajectory
       end
     end
     
+    
+    function h=fnplt(obj,plotdims)
+      if (nargin<2) plotdims=[1,2]; end
+      h=[]; 
+      ho=ishold;
+      for i=1:length(obj.traj)
+        hn=fnplt(obj.traj{i},plotdims);
+        if (mod(i,2))
+          set(hn,'Color',[1 0 0]);
+        end
+        if (i==1) hold on; 
+        else
+          xp = [get(h(end),'XData'); get(h(end),'YData')];
+          xn = [get(hn,'XData'); get(hn,'YData')];
+          plot([xp(1,end),xn(1,1)],[xp(2,end),xn(2,1)],'k--');
+        % todo: add dashed line here?
+        end
+        h=[h,hn];
+      end
+      if (~ho) hold off; end
+    end
   end
 end

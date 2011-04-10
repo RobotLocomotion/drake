@@ -16,10 +16,21 @@ classdef CartPoleEnergyControl < HybridRobotLibSystem
       in_lqr_roa = inline('double(subs(obj.V,obj.p_x,obj.wrapInput(x-obj.x0)))-1','obj','t','junk','x');
       notin_lqr_roa = notGuard(obj,in_lqr_roa);
       
-      obj = obj.addTransition(1,2,in_lqr_roa,[],true,true);
-      obj = obj.addTransition(2,1,notin_lqr_roa,[],true,true);
+      obj = obj.addTransition(1,in_lqr_roa,@transitionIntoLQR,true,true);
+      obj = obj.addTransition(2,notin_lqr_roa,@transitionOutOfLQR,true,true);
       
-      obj.output_mode = false;
+      obj = setModeOutputFlag(obj,false);
+    end
+
+    function [xn,to_mode,status]=transitionIntoLQR(obj,mode,t,x,u)
+      xn=[];
+      to_mode=2;
+      status=0;
+    end
+    function [xn,to_mode,status]=transitionOutOfLQR(obj,mode,t,x,u)
+      xn=[];
+      to_mode=1;
+      status=0;
     end
     
   end
@@ -33,7 +44,7 @@ classdef CartPoleEnergyControl < HybridRobotLibSystem
 
       sys = feedback(cp,c);
 
-      for i=1:5
+      for i=1:2
         xtraj = simulate(sys,[0 10]);
         playback(v,xtraj);
       end

@@ -30,6 +30,9 @@ classdef RobotLibSystem < DynamicalSystem
     function n = getNumOutputs(obj)
       n = obj.num_y;
     end
+    function x0 = getInitialStateWInput(obj,t,x,u)  % hook in case a system needs to initial state based on current time and/or input.  note that this will override inputs supplied by simset.
+      x0=x;  % by default, do nothing. 
+    end
     function ts = getSampleTime(obj)  
       % as described at http://www.mathworks.com/help/toolbox/simulink/sfg/f6-58760.html
       % to set multiple sample times, specify one *column* for each sample

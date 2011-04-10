@@ -15,7 +15,6 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
 
 if (~isfield(options,'xtape0')) options.xtape0='rand'; end
 
-
 nU = sys.getNumInputs();
 nX = sys.getNumContStates();
 nXd = sys.getNumDiscStates();
@@ -28,7 +27,7 @@ if (size(ts,2)>1 || any(ts~=0))
   error('not implemented yet (but should be very straightforward)');
 end
 
-t = utraj0.getBreaks();
+t = utraj0.getBreaks(); t=t(:);
 tscale = 1;  % stretch time by this amount
 u = utraj0.eval(t);
 if (strcmp(options.xtape0,'simulate'))
@@ -110,15 +109,41 @@ for f1 = fieldnames(con)'
       end
     case 'u'
       for f2 = fieldnames(con.u)'
+        uind = 1 + nX*nT + 1 : length(wlow);
         switch(f2{1})
           case 'lb'
-            wlow(1 + nX*nT + 1 : end) = reshape(repmat(con.u.lb,1,nT),1,[]);
+            wlow(uind) = max(wlow(uind),repmat(con.u.lb,nT,1));
           case 'ub'
-            whigh(1 + nX*nT + 1 : end) = reshape(repmat(con.u.ub,1,nT),1,[]);
+            whigh(uind) = min(whigh(uind),repmat(con.u.ub,nT,1));
           otherwise 
             conwarn(f1,f2);
         end
       end
+    case 'u0'
+      for f2 = fieldnames(con.u0)'
+        uind = 1 + nX*nT + (1 : nU);
+        switch(f2{1})
+          case 'lb'
+            wlow(uind) = max(wlow(uind),con.u0.lb);
+          case 'ub'
+            whigh(uind) = min(whigh(uind),con.u0.ub);
+          otherwise 
+            conwarn(f1,f2);
+        end
+      end
+    case 'uf'
+      for f2 = fieldnames(con.uf)'
+        uind = 1 + nX*nT + nU*(nT-1) + (1 : nU);
+        switch(f2{1})
+          case 'lb'
+            wlow(uind) = max(wlow(uind),con.uf.lb);
+          case 'ub'
+            whigh(uind) = min(whigh(uind),con.uf.ub);
+          otherwise 
+            conwarn(f1,f2);
+        end
+      end
+      
     case 'T'
       for f2 = fieldnames(con.T)'
         switch(f2{1})
@@ -210,6 +235,13 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
 
   J = h + sum(g);
   dJ = [dh(1)+sum(dg(1,1,:)), reshape(dg(1,1+(1:nX),:),1,[]), dh(1,2:end), reshape(dg(1,1+nX+(1:nU),:),1,[]), zeros(1,nU)];
+
+  if (isfield(options,'trajectory_cost_fun'))
+    [Jtraj,dJtraj]=geval(options.trajectory_cost_fun,t,x,u);
+    J = J+Jtraj;
+    dJ(1) = dJ(1)+dJtraj(1:nT)*dtdw1;
+    dJ(2:end) = dJ(2:end)+dJtraj(nT+1:end);
+  end
   
   f = [J; d(:)];
   G = [dJ(:); dd(:)];

@@ -165,18 +165,18 @@ classdef DynamicalSystem
     function obj = setAngleFlags(obj,in_angle_flag,state_angle_flag,out_angle_flag)
       if (~isempty(in_angle_flag))
         typecheck(in_angle_flag,{'logical','double'});
-        sizecheck(in_angle_flag,[obj.getNumInputs() 1]);
-        obj.input_angle_flag = in_angle_flag;
+        sizecheck(in_angle_flag,obj.getNumInputs());
+        obj.input_angle_flag = in_angle_flag(:);
       end
       if (~isempty(state_angle_flag))
         typecheck(state_angle_flag,{'logical','double'});
-        sizecheck(state_angle_flag,[obj.getNumStates() 1]);
-        obj.state_angle_flag = state_angle_flag;
+        sizecheck(state_angle_flag,obj.getNumStates());
+        obj.state_angle_flag = state_angle_flag(:);
       end
       if (~isempty(out_angle_flag))
         typecheck(out_angle_flag,{'logical','double'});
-        sizecheck(out_angle_flag,[obj.getNumOutputs() 1]);
-        obj.output_angle_flag = out_angle_flag;
+        sizecheck(out_angle_flag,obj.getNumOutputs());
+        obj.output_angle_flag = out_angle_flag(:);
       end
     end
     

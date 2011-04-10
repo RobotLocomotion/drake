@@ -13,7 +13,7 @@ checkDependency('lcm_enabled');
 
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
-%aggregator.setMaxMessages(1);  % make it a last-message-only queue
+aggregator.setMaxMessages(10);  % make it a last-message-only queue
 
 lc.subscribe([lower(robotname),'_scope_.*'],aggregator);
 
@@ -98,12 +98,12 @@ function scope_data = plotTrace(scope_data,varname,scope_rows,scope_cols)
   hsubfig = subplot(scope_rows,scope_cols,d.scope_id);
   hold on;
   d.handle=plot(d.x,d.y,d.linespec);
-  [legh,objh,outh,outm] = legend(hsubfig);
-  if (isempty(outh)) legend(d.handle,varname);
-  else
-    keep = ishandle(outh);
-    legend([outh(keep);d.handle],{outm{keep},varname});
-  end
+%   [legh,objh,outh,outm] = legend(hsubfig);
+%   if (isempty(outh)) legend(d.handle,varname);
+%   else
+%     keep = ishandle(outh);
+%     legend([outh(keep);d.handle],{outm{keep},varname});
+%   end
   scope_data = setfield(scope_data,varname,d);
 end
 

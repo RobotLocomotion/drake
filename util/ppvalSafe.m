@@ -16,6 +16,7 @@ if (bLimitStart && any(sx~=xx))
 end
 
 ex = min(sx,pp.breaks(end));
-if (bLimitEnd && any(ex~=sx)) error('attempted to evaluate past the end of the spline'); end
+if (bLimitEnd && any(ex~=sx)) 
+  error('attempted to evaluate past the end of the spline'); end
 
 yy = ppval(pp,ex);

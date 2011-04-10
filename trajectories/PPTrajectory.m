@@ -11,6 +11,7 @@ classdef PPTrajectory < Trajectory
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
     end
     function y = eval(obj,t)
+      t=max(min(t,obj.tspan(end)),obj.tspan(1));
       y = ppvalSafe(obj.pp,t);
     end
 

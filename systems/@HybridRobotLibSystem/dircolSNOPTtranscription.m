@@ -1,11 +1,15 @@
 function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,iname,oname] = dircolSNOPTtranscription(sys,costFun,finalCostFun,x0,utraj0,con,options)
 
+  hybrid_options=options;  % keep a backup
   if (~isfield(con,'mode')) error('con.mode must be defined for HybridRobotLibSystems'); end
   for i=1:length(x0)
     if (length(x0{i})~=sys.getNumContStates()), error('x0 should NOT have the mode variable as the first element.'); end
   end
   for m=1:length(con.mode)
     % todo: check here that utraj0{m} starts at t=0?
+    if (isfield(hybrid_options,'trajectory_cost_fun'))
+      options.trajectory_cost_fun = hybrid_options.trajectory_cost_fun{m};
+    end
     [w0{m},wlow{m},whigh{m},Flow{m},Fhigh{m},A{m},iAfun{m},jAvar{m},iGfun{m},jGvar{m},mode_userfun{m},mode_wrapup{m},mode_iname{m},mode_oname{m}] = dircolSNOPTtranscription(sys.modes{con.mode{m}.mode_num},costFun{m},finalCostFun{m},x0{m},utraj0{m},rmfield(con.mode{m},'mode_num'),options);
     tOrig{m} = utraj0{m}.getBreaks();
     N(m) = length(w0{m});
@@ -100,7 +104,7 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     tc = tscale*tOrig{m}(end); xc = w(from_ind+1+(nT-1)*nX+(1:nX));  uc = w(from_ind+1+nT*nX+(nT-1)*nU+(1:nU));
     zc = 1; dzc = zeros(1,1+nX+nU);  % d/d[tscale,xc,uc]
     min_g = inf; min_g_ind = 0;
-    for i=find(sys.target_mode{from_mode}==to_mode)
+    for i=1:length(sys.guard{from_mode})%find(sys.target_mode{from_mode}==to_mode)
       [g,dg] = geval(sys.guard{from_mode}{i},sys,tc,xc,uc,options);
       dg(1) = dg(1)*tOrig{m}(end);
       if (g<min_g), min_g = g; min_g_ind = i; end 
@@ -117,8 +121,9 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     if (min_g_ind<1) error('no applicable zero crossings defined'); end
     to_ind = from_ind+N(m);
     to_x0 =  w(to_ind+1+(1:nX));
-    [to_x,status,dto_x] = geval(2,sys.transition{from_mode}{min_g_ind},sys,tc,xc,uc,options);
+    [to_x,to_mode,status,dto_x] = geval(3,sys.transition{from_mode}{min_g_ind},sys,from_mode,tc,xc,uc,options);
     dto_x(:,1) = dto_x(:,1)*tOrig{m}(end);
+    dto_x(:,2) = []; % zap grad with respect to mode
     f = [f; to_x - to_x0];
     G = [G; dto_x(:); -ones(nX,1)];  % df/d[tc,xc,uc]; df/d[to_x0]
   end

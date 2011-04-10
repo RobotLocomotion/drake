@@ -12,6 +12,10 @@ t=msspoly('t',1);
 ts=ts(:);
 
 num_x = sys.getNumStates();
+num_xd = sys.getNumDiscStates();
+num_xc = sys.getNumContStates();
+if (num_xd), xd = x(1:num_xd); end
+x = x(num_xd + (1:num_xc));
 num_u = sys.getNumInputs();
 u = zeros(num_u,1);
 
@@ -46,6 +50,14 @@ for i=1:N
   f=sys.p_dynamics_traj.eval(ts(i));
   if (num_u)
     f=subs(f,sys.p_u,u);
+  end
+  if (num_xd>0)
+    xn=sys.p_update_traj.eval(ts(i));
+    [a,b,c]=decomp(xn - sys.p_x(1:num_xd));
+    if ~(isempty(a) && isempty(b) && isempty(c))
+      error('discrete states are not supported yet (unless they''re constants)');
+    end
+    f=subs(f,xd,zeros(num_xd,1));  
   end
   Vdot{i}=diff(V{i},x)*f + Vtraj0.deriv(ts(i));
 

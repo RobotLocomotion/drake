@@ -39,10 +39,13 @@ if (isa(varargin{1},'Trajectory'))
     breaks = unique([x0traj.getBreaks(),u0traj.getBreaks()]);
   end
   
-  xdot0traj = fnder(x0traj);
   if (num_xc)
+    if (num_xd)
+      xdot0traj = fnder(x0traj.subTrajectory(num_xd + (1:num_xc)));
+    else
+      xdot0traj = fnder(x0traj);
+    end
     xdothat = PolynomialTrajectory(@(t)build_poly(@sys.dynamics,t,x0traj.eval(t),u0traj.eval(t),order,xubar,xdot0traj.eval(t)),breaks);
-    if (num_xd>0) error('need to pass in only xdot as f0 in the line above'); end
   else
     xdothat=[];
   end
@@ -120,10 +123,13 @@ end
   
 end
 
-  function p=build_poly(fun,t,x0,u0,order,xubar,f0)
+  function p=build_poly(fun,t,x0,u0,order,xubar,f0,leaveout_inds)
     if (nargin<7) f0=feval(fun,t,x0,u0); end
+    if (nargin<8) leaveout_inds=[]; end
     nX=length(x0); nU=length(u0);
-    xu=TaylorVar.init([x0;u0],order);
+    xu0=[x0;u0];
+    xu=TaylorVar.init(xu0,order);
+    xu(leaveout_inds)=0+xu0(leaveout_inds);  % turn leaveout_inds into constants (no grad info)
     x0=xu(1:nX); u0=xu(nX+(1:nU));
     p=getmsspoly(feval(fun,t,x0,u0)-f0,xubar);
   end

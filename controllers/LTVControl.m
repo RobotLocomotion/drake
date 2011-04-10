@@ -3,7 +3,7 @@ classdef LTVControl < SmoothRobotLibSystem
 
   methods 
     function obj=LTVControl(x0,u0,K,S,Sdot)
-      obj = obj@SmoothRobotLibSystem(0,0,x0.dim,u0.dim,true,true);
+      obj = obj@SmoothRobotLibSystem(0,1,x0.dim,u0.dim,true,true);
       obj.x0 = x0;
       obj.u0 = u0;
       obj.K = K;
@@ -15,14 +15,29 @@ classdef LTVControl < SmoothRobotLibSystem
       end
     end
     
+    function t0=getInitialState(obj)
+      t0=-inf;
+    end
+    function t0=getInitialStateWInput(obj,t,t0,x)
+      t0=t;  % todo: call function to figure out best initial time
+    end
+    
     function ts = getSampleTime(obj)
       % make sure that this static function uses an inherited sample time
       ts = [-1;0];  % inherited sample time
     end
     
-    function u = output(obj,t,junk,x)
+    function t0n = update(obj,t,t0,x)
+      t0n=t0;  % do nothing
+    end
+    
+    function u = output(obj,t,t0,x)
       % implements the actual control function
       %      x = wrap(obj,obj.x0,x);
+      
+      t = t-t0;
+      if (t<obj.x0.tspan(1)) t=obj.x0.tspan(1); end
+      if (t>obj.x0.tspan(end)) t=obj.x0.tspan(end); end
       K = obj.K.eval(t);
       if (iscell(K))
         u = obj.u0.eval(t)-K{1}*(x-obj.x0.eval(t))-K{2};
@@ -30,7 +45,6 @@ classdef LTVControl < SmoothRobotLibSystem
         u = obj.u0.eval(t)-K*(x-obj.x0.eval(t));
       end
     end
-    
   end
   
   properties 
