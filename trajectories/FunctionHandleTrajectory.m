@@ -25,7 +25,15 @@ classdef FunctionHandleTrajectory < Trajectory
     
     function y = eval(obj,t)
     % trajectory eval = function handle feval
-      y = feval(obj.handle,t);
+      if (length(t)>1)  
+        n=prod(obj.dim);
+        for i=1:length(t)
+          y(:,i)=reshape(feval(obj.handle,t(i)),n,1);
+        end
+        y=reshape(y,[obj.dim,length(t)]);
+      else
+        y = feval(obj.handle,t);
+      end
     end
     function ydot = deriv(obj,t)
     % evaluate the derivative handle
@@ -35,6 +43,12 @@ classdef FunctionHandleTrajectory < Trajectory
     function t = getBreaks(obj)
     % return the list of accurate/reliable points
       t = obj.breaks;
+    end
+    
+    function pp = flipToPP(obj,ppbuilder)
+      if (nargin<2) ppbuilder=@foh; end
+      y=eval(obj,obj.breaks);
+      pp=PPTrajectory(ppbuilder(obj.breaks,y));
     end
   end
 end

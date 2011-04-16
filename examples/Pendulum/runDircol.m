@@ -9,10 +9,10 @@ utraj0 = PPTrajectory(foh(linspace(0,tf0,21),randn(1,21)));
 
 con.u.lb = p.umin;
 con.u.ub = p.umax;
-con.u0.lb = 0;
-con.u0.ub = 0;
-con.uf.lb = 0;
-con.uf.ub = 0;
+%con.u0.lb = 0;
+%con.u0.ub = 0;
+%con.uf.lb = 0;
+%con.uf.ub = 0;
 con.x0.lb = x0;
 con.x0.ub = x0;
 con.xf.lb = xf;

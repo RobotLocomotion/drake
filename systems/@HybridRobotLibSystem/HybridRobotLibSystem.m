@@ -171,12 +171,11 @@ classdef HybridRobotLibSystem < RobotLibSystem
     
     function zcs = guards(obj,t,x,u)
       m = x(1);
-      zcs=[];
-      for i=1:length(obj.guard{m})
+      zcs=ones(obj.num_zcs,1);
+      n=length(obj.guard{m});
+      for i=1:n
         zcs(i) = obj.guard{m}{i}(obj,t,x(2:end),u);
       end
-      % pad if necessary:
-      zcs = [zcs;repmat(1,getNumZeroCrossings(obj)-length(zcs),1)];
     end
     
     function [xn,status] = transitionUpdate(obj,t,x,u)
@@ -190,10 +189,17 @@ classdef HybridRobotLibSystem < RobotLibSystem
       end
       if (length(active_id)>1) error('multiple guards tripped at the same time.  behavior is undefined.  consider reducing the step size'); end
       [mode_xn,to_mode_num,status] = obj.transition{m}{active_id}(obj,m,t,x(2:end),u);
+%      to_mode_num
       xn = [to_mode_num;mode_xn];
       % pad if necessary:
       xn = [xn;repmat(0,getNumStates(obj)-length(xn),1)];
-      if (any(guards(obj,t,xn,u)<0)), keyboard; end % useful for debugging successive zcs.
+      if (any(guards(obj,t,xn,u)<0)),
+        zcs2=guards(obj,t,xn,u);
+        active_id2 = find(zcs2<0);
+        disp(obj);
+        fprintf('transitioned from mode %d to mode %d, and immediately triggered mode %d''s guard number %d\n',m,to_mode_num,to_mode_num,active_id2);
+        keyboard; 
+      end % useful for debugging successive zcs.
     end
   end
   

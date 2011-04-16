@@ -21,7 +21,7 @@ classdef Trajectory% < RobotLibSystem
     end
 
     function ydot = deriv(obj,t)
-      ydot = eval(fnder(obj.pp),t);
+      ydot = eval(fnder(obj),t);
     end
     
     function obj = shiftTime(obj,offset)
@@ -45,10 +45,10 @@ classdef Trajectory% < RobotLibSystem
       ts = ts(:);
       pts = obj.eval(ts);
       if (prod(obj.dim)==1)
-        h=plot(ts,pts,'b.-','LineWidth',1,'MarkerSize',5);
+        h=plot(ts,squeeze(pts),'b.-','LineWidth',1,'MarkerSize',5);
       else
         if (nargin<2) plotdims=[1,2]; end
-        h=plot(pts(plotdims(1),:),pts(plotdims(2),:),'b.-','LineWidth',1,'MarkerSize',5);
+        h=plot(pts(plotdims(1),1:m:end),pts(plotdims(2),1:m:end),'b.',pts(plotdims(1),:),pts(plotdims(2),:),'b-','LineWidth',1,'MarkerSize',5);
       end
     end
     

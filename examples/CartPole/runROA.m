@@ -16,15 +16,15 @@ x0=[0;pi;0;0];
 pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
 
 options.monom_order=1;
-V=regionOfAttraction(pp,[],c.S,options);
+V=regionOfAttraction(pp,x0,c.S,options);
 
-xroa=getLevelSet(subs(V,pp.p_x([1 3]),zeros(2,1)));
-figure(1);
-plot(xroa(1,:)+x0(1),xroa(2,:)+x0(2),'r');
-return;
+figure(1); clf
+plotFunnel(V,x0);
+%return;
 
+xroa=getLevelSet(V,x0);
 for i = 1:5
-  x=x0+xroa(:,ceil(size(xroa,2)*rand));  % pick random point on the boundary
+  x=xroa(:,ceil(size(xroa,2)*rand));  % pick random point on the boundary
   xinside=.99*x+.01*x0;  % make a point just inside
   xtraj=simulate(sys,[0 3],xinside);
 %  playback(v,xtraj);

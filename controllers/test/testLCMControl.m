@@ -1,5 +1,8 @@
 function testLCMControl
 
+% NOTEST  
+% this one is not playing nicely with matlabpool (at least not consistently).  
+
 checkDependency('lcm_enabled');
 
 load robotlib_config;

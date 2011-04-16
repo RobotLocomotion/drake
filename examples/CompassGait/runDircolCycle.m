@@ -1,7 +1,9 @@
-function runDircolCycle
+function [utraj,xtraj]=runDircolCycle(p);
 % find stable limit cycle 
 
-p = CompassGaitPlant();
+if (nargin<1)
+  p = CompassGaitPlant();
+end
 
 % numbers from the first step of the passive sim 
 x0 = [0;0;2;-.4];  
@@ -25,6 +27,7 @@ con.mode{1}.x0.lb = [0;-inf;-inf;-inf];
 con.mode{1}.x0.ub = [0;inf;inf;inf];
 con.mode{1}.xf.lb = [.1;-inf;-inf;-inf];
 
+con.u_const_across_transitions=true;
 con.periodic = true;
 
 con.mode{1}.T.lb = .2;   
@@ -40,16 +43,18 @@ tic
 if (info~=1) error('failed to find a trajectory'); end
 toc
 
-t = xtraj.getBreaks();
-t = linspace(t(1),t(end),100);
-x = xtraj.eval(t);
-plot(t,x);
-x(:,1)
-x(:,end)
-
-v = CompassGaitVisualizer(p);
-v.playback_speed = .2;
-playback(v,xtraj);
+if (nargout<1)
+  figure(1); clf;
+  fnplt(utraj);
+  
+  figure(2); clf; hold on;
+  fnplt(xtraj,[2 4]);
+  fnplt(xtraj,[3 5]);
+  
+  v = CompassGaitVisualizer(p);
+  v.playback_speed = .2;
+  playback(v,xtraj);
+end
 
 end
 

@@ -60,7 +60,7 @@ classdef PolynomialTrajectory < Trajectory
     % return the list of accurate/reliable points
       t = obj.breaks;
     end
-    
+        
   end
   
 end

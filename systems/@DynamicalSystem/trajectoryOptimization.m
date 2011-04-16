@@ -58,11 +58,15 @@ function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0
 % mode cell array, e.g.
 %  con.mode{i}.mode_num    
 %  con.mode{i}.u    input (for this mode) constraint structure defined above
+%  con.mode{i}.u0
+%  con.mode{i}.uf
 %  con.mode{i}.x    state (for this mode) constraint structure defined above
 %  con.mode{i}.x0   initial (for this mode) state constraint structure defined above
 %  con.mode{i}.xf   final (for this mode) state constraint structure defined above
 %  con.mode{i}.T    time (for this mode) constraint structure defined above
 % Note that the mode indices enforce a total ordering of the modes in the solution 
+% You can also impose the following inter-mode constraints:
+%  con.u_const_across_transitions = true
 %
 % Periodicity Constraints
 %  con.periodic = true       x(t0) = x(tf)
@@ -103,6 +107,7 @@ if (~isfield(options,'grad_test')) options.grad_test = false; end
 if (~isfield(options,'warning')) options.warning = true; end
 if (~isfield(options,'method')) options.method = 'dircol'; end
 
+
 switch (options.method)
   case 'dircol'
     transcriptionFun=@dircolSNOPTtranscription;
@@ -120,8 +125,18 @@ if (options.grad_test)
   gradTest(@(w)gradTestFun(w,A,iAfun,jAvar,iGfun,jGvar),w0,struct('input_name',{{iname}},'output_name',{oname},'tol',.01));
 end
 
+%% set up snopt params
+% note: use options.param = val to set, where param is the string below
+% with all whitespaces removed!
+setSNOPTParam(options,'Major Iterations Limit',1000);
+setSNOPTParam(options,'Minor Iterations Limit',500);
+setSNOPTParam(options,'Major Optimality Tolerance',1e-6);
+setSNOPTParam(options,'Major Feasibility Tolerance',1e-6);
+setSNOPTParam(options,'Minor Feasibility Tolerance',1e-6);
+setSNOPTParam(options,'Superbasics Limit',200);
+
+
 %% Run SNOPT
-snset('superbasics=200');  % to do: make this an option?
 [w,F,info] = snopt(w0,wlow,whigh,Flow,Fhigh,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
 
 if (info~=1 && options.warning) 
@@ -147,4 +162,11 @@ function [f,df] = gradTestFun(w,A,iAfun,jAvar,iGfun,jGvar)
   df = sparse(iAfun,jAvar,A,length(f),length(w)) + sparse(iGfun,jGvar,G,length(f),length(w));
 end
 
-
+function setSNOPTParam(options,paramstring,default)
+  str=paramstring(~isspace(paramstring));
+  if (isfield(options,str))
+    snset([paramstring,'=',num2str(getfield(options,str))]);
+  else
+    snset([paramstring,'=',num2str(default)]);
+  end
+end

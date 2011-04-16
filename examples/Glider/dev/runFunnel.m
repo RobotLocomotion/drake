@@ -32,10 +32,10 @@ poly = taylorApprox(sys,xtraj,[],3);
 %ts = linspace(xtraj.tspan(1),xtraj.tspan(end)/8,21);
 %plotVdot(poly,V,ts);
 
-V=sampledFiniteTimeInvariance(poly,diag([10,1]),V,xtraj.getBreaks());
+V=sampledFiniteTimeVerification(poly,diag([10,1]),V,xtraj.getBreaks());
 
 figure(1); clf; hold on;
-plotFunnel(xtraj,V);
+plotFunnel(V,xtraj);
 fnplt(xtraj); 
 
 end

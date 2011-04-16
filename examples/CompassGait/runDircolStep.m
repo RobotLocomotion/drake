@@ -18,10 +18,11 @@ con.mode{1}.uf.lb = 0;
 con.mode{1}.uf.ub = 0;
 con.mode{2}.u.lb = p.umin;
 con.mode{2}.u.ub = p.umax;
-con.mode{2}.u0.lb = 0;
-con.mode{2}.u0.ub = 0;
-con.mode{2}.uf.lb = 0;
-con.mode{2}.uf.ub = 0;
+%con.mode{2}.u0.lb = 0;
+%con.mode{2}.u0.ub = 0;
+%con.mode{2}.uf.lb = 0;
+%con.mode{2}.uf.ub = 0;
+con.u_const_across_transitions=true;
 
 con.mode{1}.x0.lb = x0;
 con.mode{1}.x0.ub = x0;
@@ -42,10 +43,10 @@ tic
 if (info~=1) error('failed to find a trajectory'); end
 toc
 
-figure(1);
+figure(1); clf;
 fnplt(utraj);
  
-figure(2);
+figure(2); clf;
 fnplt(xtraj,[2 4]);
 
 figure(3); clf

@@ -11,9 +11,9 @@ classdef CartPoleEnergyControl < HybridRobotLibSystem
       obj.x0 = lqr.x0;
       obj.p_x = pp.p_x;
       options.monom_order = 1;
-      obj.V = regionOfAttraction(pp,[],lqr.S,options);
+      obj.V = regionOfAttraction(pp,lqr.x0,lqr.S,options);
 
-      in_lqr_roa = inline('double(subs(obj.V,obj.p_x,obj.wrapInput(x-obj.x0)))-1','obj','t','junk','x');
+      in_lqr_roa = inline('double(subs(obj.V,obj.p_x,obj.wrapInput(x-obj.x0)+obj.x0))-1','obj','t','junk','x');
       notin_lqr_roa = notGuard(obj,in_lqr_roa);
       
       obj = obj.addTransition(1,in_lqr_roa,@transitionIntoLQR,true,true);

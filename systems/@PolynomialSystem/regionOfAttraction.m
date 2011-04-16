@@ -1,8 +1,6 @@
 function V = regionOfAttraction(sys,x0,V0,options)
 % estimates the region of attraction, defined as the interior region for
-% the level-set V<=1 surrounding the origin.  V0 is the initial guess for V.  
-% Both V0 and V are specified relative to x0 (e.g. V(0) is the value of the
-% Lyapunov function at x0).  
+% the level-set V<=1 surrounding x0. 
 
 if (nargin<4) options=struct(); end
 if (~isfield(options,'method')) options.method='pablo'; end
@@ -33,8 +31,8 @@ if (nargin<3 || isempty(V0))
   V = x'*P*x;
 elseif (isnumeric(V0) && ismatrix(V0) && all(size(V0)==[num_x,num_x]))  % then use this quadratic form
   V = x'*V0*x;
-else
-  V = V0;
+else % take the V0 candidate, but center it around x0
+  V = subss(V0,x,x+x0);
 end
 
 typecheck(V,'msspoly');
@@ -67,6 +65,9 @@ end
 
 %% undo balancing
 V = subss(V,x,inv(T)*x);
+
+%% shift back to x0
+V = subss(V,x,x-x0);
 
 end
 
@@ -126,7 +127,7 @@ function V = pabloMethod(x,V,Vdot,options)
     error('problem looks infeasible.  try increasing the order of the lagrange multipliers');
   end
   
-  rho = doubleSafe(prog(rho))
+  rho = doubleSafe(prog(rho));
   if (rho<=0) error('optimization failed'); end
 
   V = V/rho;

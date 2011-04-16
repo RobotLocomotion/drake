@@ -212,7 +212,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
     memcpy(mxGetPr(prhs[3]), u, sizeof(real_T)*num_u);
   } // else: leave u at random values (shouldn't be used)
   mxDestroyArray(plhs[0]);
-  
+
   if (ssGetIWorkValue(S, 0) == 1) {
     if (mexCallMATLAB(1,plhs,4,prhs,"getInitialStateWInput")) {
       ssSetErrorStatus(S,"error in getInitialStateWInput");

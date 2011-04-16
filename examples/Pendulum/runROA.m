@@ -19,12 +19,13 @@ x0=[pi;0];
 pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
 
 options=struct();
-V=regionOfAttraction(pp,zeros(2,1),[],options);
-xroa=getLevelSet(V);
-plot(xroa(1,:)+x0(1),xroa(2,:)+x0(2),'r');
+V=regionOfAttraction(pp,x0,[],options);
+xroa=getLevelSet(V,x0);
+figure(1); clf; hold on;
+plot(xroa(1,:),xroa(2,:),'r');
 
 for i = 1:5
-  x=x0+xroa(:,ceil(size(xroa,2)*rand));  % pick random point on the boundary
+  x=xroa(:,ceil(size(xroa,2)*rand));  % pick random point on the boundary
   xinside=.99*x+.01*x0;  % make a point just inside
   xtraj=simulate(sys,[0 3],xinside);
 %  playback(v,xtraj);

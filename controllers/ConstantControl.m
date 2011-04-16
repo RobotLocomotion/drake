@@ -7,7 +7,7 @@ classdef ConstantControl < SmoothRobotLibSystem
       obj = obj@SmoothRobotLibSystem(0,0,0,length(const_y),false,true);
       obj.const_y = const_y;
     end
-    function y = output(obj,t,x,u)
+    function y = output(obj,~,~,~)
       % Implement control.
       y = obj.const_y;
     end

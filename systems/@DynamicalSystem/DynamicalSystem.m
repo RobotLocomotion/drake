@@ -20,7 +20,8 @@ classdef DynamicalSystem
   
   % construction methods
   methods
-    function newsys = cascade(sys1,sys2)
+    function newsys = cascade(sys1,sys2,bsys1out)
+      if (nargin<3) bsys1out=false; end
       mdl = ['Cascade_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
@@ -39,9 +40,16 @@ classdef DynamicalSystem
         add_line(mdl,'in/1','system1/1');
       end
       
-      if (getNumOutputs(sys2)>0)
-        add_block('simulink3/Sinks/Out1',[mdl,'/out']);
-        add_line(mdl,'system2/1','out/1');
+      if (bsys1out)
+        if (getNumOutputs(sys1)>0)
+          add_block('simulink3/Sinks/Out1',[mdl,'/out']);
+          add_line(mdl,'system1/1','out/1');
+        end
+      else
+        if (getNumOutputs(sys2)>0)
+          add_block('simulink3/Sinks/Out1',[mdl,'/out']);
+          add_line(mdl,'system2/1','out/1');
+        end
       end
       
       newsys = SimulinkModel(mdl);

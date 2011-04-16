@@ -215,7 +215,7 @@ static void mdlUpdate(SimStruct *S, int_T tid)
     tosleep.tv_nsec = tv_diff.tv_usec * 1000;
     nanosleep(&tosleep, NULL);
   } else if (tv_diff.tv_sec<-1) {  // then I'm behind by more than 1 second
-    mexPrintf("%d sec, %d usec\n", tv_diff.tv_sec, tv_diff.tv_usec);
+    mexPrintf("at time %d, I'm behind by %d sec, %d usec\n", tv_sim_time.tv_sec, tv_diff.tv_sec, tv_diff.tv_usec);
     ssSetErrorStatus(S, "Simulink is not keeping up with real time.  Consider reducing demands on your ODE solver, or optimizing your code.");
   }
 }
