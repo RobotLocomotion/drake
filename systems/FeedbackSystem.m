@@ -75,6 +75,19 @@ classdef FeedbackSystem < SmoothRobotLibSystem
       y=y1;
     end
     
+    function x0=getInitialState(obj)
+      x0=encodeX(obj,getInitialState(obj.sys1),getInitialState(obj.sys2));
+    end
+
+    function x0=getInitialStateWInput(obj,t,x,u)
+      [x1,x2]=decodeX(obj,x);
+      [y1,y2]=getOutputs(obj,t,x,u);
+      x1=getInitialStateWInput(obj.sys1,t,x1,y2);
+      x2=getInitialStateWInput(obj.sys2,t,x2,y1);
+      x0=encodeX(obj,x1,x2);
+      % note: this is not perfect (y2 could change after updating x1).  how
+      % does simulink do it on the backend? 
+    end
   end
   
 end

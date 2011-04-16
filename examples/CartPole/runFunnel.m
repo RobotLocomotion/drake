@@ -26,10 +26,10 @@ options.max_iterations = 3;
 [tv,sys,xtraj,utraj,V,Vf] = tvlqrClosedLoop(p,xtraj,utraj,Q,R,Q);
 poly = taylorApprox(sys,xtraj,[],3);
 
-V=sampledFiniteTimeInvariance(poly,Vf,V,xtraj.getBreaks(),options);
+V=sampledFiniteTimeVerification(poly,Vf,V,xtraj.getBreaks(),xtraj,utraj,options);
 
 figure(1); clf
-plotFunnel(xtraj,V,[2 4]);
+plotFunnel(V,xtraj,[2 4]);
 fnplt(xtraj,[2 4]); 
 xlabel('theta');
 ylabel('theta dot');

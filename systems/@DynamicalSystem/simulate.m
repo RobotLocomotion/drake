@@ -42,6 +42,7 @@ if (nargout>0)
     pstruct.SaveState = 'off';
     pstruct.SaveOutput = 'on';
     pstruct.OutputSaveName = 'yout';
+    pstruct.LimitDataPoints = 'off';
     pstruct.Refine = '3';
 %    pstruct.SaveOnModelUpdate = 'false';
     

@@ -1,11 +1,9 @@
 function polysys=taylorApprox(sys,varargin)  
 % performs a taylorApproximation around a point or trajectory
 % usage:
-%    taylorApprox(sys,t0,x0,u0,order)
-% or taylorApprox(sys,x0traj,u0traj,order)
-% it returns a polynomial system (or polynomial trajectory system) with a
-% coordinate system centered at x0 (or x0traj).  (e.g., x0 is now the
-% origin)
+%    taylorApprox(sys,t0,x0,u0,order[,ignores])
+% or taylorApprox(sys,x0traj,u0traj,order[,ignores])
+% it returns a polynomial system (or polynomial trajectory system) 
 
 checkDependency('spot_enabled');
 
@@ -15,8 +13,8 @@ num_xd=sys.getNumDiscStates();
 num_u=sys.getNumInputs();
 num_y=sys.getNumOutputs();
 
-if (num_x) xbar = msspoly('x',num_x); else xbar=[]; end
-if (num_u) ubar = msspoly('u',num_u); else ubar=[]; end
+if (num_x) p_x = msspoly('x',num_x); else p_x=[]; end
+if (num_u) p_u = msspoly('u',num_u); else p_u=[]; end
 
 if (length(varargin)<1) error('usage: taylorApprox(sys,t0,x0,u0,order), or taylorApprox(sys,xtraj,utraj,order)'); end
 
@@ -25,12 +23,13 @@ if (isa(varargin{1},'Trajectory'))
   x0traj = varargin{1};
   u0traj = varargin{2};
   order = varargin{3};
+  if (length(varargin)<4) ignores=[]; else ignores=varargin{4}; end
 
+  p_xu = [p_x; p_u];
+  
   sizecheck(x0traj,num_x);
   sizecheck(u0traj,num_u);
   
-  xubar=[xbar;ubar];
-
   if (isempty(u0traj))
     % make an empty trajectory object
     u0traj = FunctionHandleTrajectory(@(t)zeros(0),[0 0],x0traj.tspan);
@@ -40,24 +39,19 @@ if (isa(varargin{1},'Trajectory'))
   end
   
   if (num_xc)
-    if (num_xd)
-      xdot0traj = fnder(x0traj.subTrajectory(num_xd + (1:num_xc)));
-    else
-      xdot0traj = fnder(x0traj);
-    end
-    xdothat = PolynomialTrajectory(@(t)build_poly(@sys.dynamics,t,x0traj.eval(t),u0traj.eval(t),order,xubar,xdot0traj.eval(t)),breaks);
+    xdothat = PolynomialTrajectory(@(t)build_poly(@sys.dynamics,t,x0traj.eval(t),u0traj.eval(t),order,p_xu,ignores),breaks);
   else
     xdothat=[];
   end
 
   if (num_xd) 
-    xnhat = PolynomialTrajectory(@(t)build_poly(@sys.update,t,x0traj.eval(t),u0traj.eval(t),order,xubar),breaks);
+    xnhat = PolynomialTrajectory(@(t)build_poly(@sys.update,t,x0traj.eval(t),u0traj.eval(t),order,p_xu,ignores),breaks);
   else
     xnhat=[];
   end
   
   if (num_y)
-    yhat = PolynomialTrajectory(@(t)build_poly(@sys.output,t,x0traj.eval(t),u0traj.eval(t),order,xubar),breaks);
+    yhat = PolynomialTrajectory(@(t)build_poly(@sys.output,t,x0traj.eval(t),u0traj.eval(t),order,p_xu,ignores),breaks);
   else
     yhat=[];
   end
@@ -65,12 +59,13 @@ if (isa(varargin{1},'Trajectory'))
   polysys = PolynomialTrajectorySystem(xdothat,xnhat,yhat,num_u,sys.isDirectFeedthrough());
 
   if (0) %num_xc==2 && num_xd==0)  % very useful for debugging.  consider making it an option
-    comparePhasePlots(sys,polysys,x0traj,u0traj,linspace(breaks(1),breaks(end),408));
+    comparePhasePlots(sys,polysys,x0traj,u0traj,linspace(breaks(1),breaks(end),15));
   end
 
   
 else
   if (length(varargin)<4) error('this usage: taylorApprox(sys,t0,x0,u0,order)'); end
+  if (length(varargin)>4) error('ignores not implemented yet'); end
   t0=varargin{1};
   x0=varargin{2};
   u0=varargin{3};
@@ -80,8 +75,8 @@ else
   sizecheck(x0,num_x);
   sizecheck(u0,num_u);
 
-  tbar = msspoly('t',1);
-  txubar=[tbar;xbar;ubar];
+  p_t = msspoly('t',1);
+  txubar=[p_t-t0;p_x-x0;p_u-u0];
 
   % make TaylorVars
   txu=TaylorVar.init([t0;x0;u0],order);
@@ -123,46 +118,43 @@ end
   
 end
 
-  function p=build_poly(fun,t,x0,u0,order,xubar,f0,leaveout_inds)
-    if (nargin<7) f0=feval(fun,t,x0,u0); end
-    if (nargin<8) leaveout_inds=[]; end
+  function p=build_poly(fun,t,x0,u0,order,p_xu,ignores)
     nX=length(x0); nU=length(u0);
     xu0=[x0;u0];
     xu=TaylorVar.init(xu0,order);
-    xu(leaveout_inds)=0+xu0(leaveout_inds);  % turn leaveout_inds into constants (no grad info)
+    xu(ignores)=xu0(ignores);  % turn leaveout_inds into constants (no grad info)
     x0=xu(1:nX); u0=xu(nX+(1:nU));
-    p=getmsspoly(feval(fun,t,x0,u0)-f0,xubar);
+    p=getmsspoly(feval(fun,t,x0,u0),p_xu-xu0);
   end
   
 
-  function comparePhasePlots(sys,psys,x0traj,u0traj,ts,xdot0traj)
+  function comparePhasePlots(sys,psys,x0traj,u0traj,ts)
 
   figure(1);
   xs=x0traj.eval(linspace(ts(1),ts(end),100));
-  if (nargin<6)
-    xdot0traj = fnder(x0traj);
-  end
-
+  
+%  if (getNumStates(sys)~=2) error('not implmented yet'); end
+  num_xd=getNumDiscStates(sys);
+  plotdims = [1 2];
   for t=ts
     clf; hold on;
-    x0=x0traj.eval(t); u0=u0traj.eval(t); xdot0=xdot0traj.eval(t);
-    [Q,Qdot] = ndgrid(x0(1)+linspace(-1,1,11),x0(2)+linspace(-1,1,11));
-    Qddot=Q;
-    pQdot=Q;
-    pQddot=Q;
-    for i=1:prod(size(Q))
-      xdot = sys.dynamics(t,[Q(i);Qdot(i)],u0);
-      Qddot(i) = xdot(2);
-      pxdot = xdot0+psys.dynamics(t,[Q(i);Qdot(i)]-x0,zeros(size(u0)));
-      pQdot(i) = pxdot(1);
-      pQddot(i) = pxdot(2);
+    x0=x0traj.eval(t); u0=u0traj.eval(t); 
+    [X1,X2] = ndgrid(linspace(-1,1,11),linspace(-1,1,11));
+    X1dot=X1; X2dot=X1;
+    pX1dot=X1; pX2dot=X1;
+    for i=1:prod(size(X1))
+      x=x0; x(num_xd+plotdims)=x(num_xd+plotdims)+[X1(i);X2(i)];
+      xdot = sys.dynamics(t,x,u0);
+      X1dot(i)=xdot(plotdims(1)); X2dot(i)=xdot(plotdims(2));
+      pxdot = psys.dynamics(t,x,u0);
+      pX1dot(i) = pxdot(plotdims(1)); pX2dot(i) = pxdot(plotdims(2));
     end
-    quiver(Q,Qdot,Qdot,Qddot,'Color',[0 0 1]);
-    quiver(Q,Qdot,pQdot,pQddot,'Color',[0 1 0]);
-    plot(xs(1,:),xs(2,:),'r','LineWidth',3);
-    plot(x0(1),x0(2),'r*','MarkerSize',10);
-    axis([x0(1)-1,x0(1)+1,x0(2)-1,x0(2)+1]);
+    quiver(x0(num_xd+plotdims(1))+X1,x0(num_xd+plotdims(2))+X2,X1dot,X2dot,'Color',[0 0 1]);
+    quiver(x0(num_xd+plotdims(1))+X1,x0(num_xd+plotdims(2))+X2,pX1dot,pX2dot,'Color',[0 1 0]);
+    plot(xs(num_xd+plotdims(1),:),xs(num_xd+plotdims(2),:),'r','LineWidth',3);
+    plot(x0(num_xd+plotdims(1)),x0(num_xd+plotdims(2)),'r*','MarkerSize',10);
+    axis([x0(num_xd+plotdims(1))-1,x0(num_xd+plotdims(1))+1,x0(num_xd+plotdims(2))-1,x0(num_xd+plotdims(2))+1]);
     title(['t = ',num2str(t)]);
     drawnow;
   end
-  end
+end

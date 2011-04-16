@@ -35,6 +35,7 @@ switch class(Qf)
     Vf=Qf;
     sizecheck(Vf,1);
     x=decomp(Vf);
+    Vf=subss(Vf,x,x+xtraj.eval(tspan(end)));
     Qf=cell(3,1);
     Qf{1}=double(.5*subs(diff(diff(Vf,x)',x),x,0*x));
     Qf{2}=double(subs(diff(Vf,x),x,0*x))';
@@ -69,7 +70,7 @@ if (nargout>1)
 %  Vtraj = FunctionHandleTrajectory(@(t) p_x'*(S.eval(t) + Sdot(t)*(p_t-t))*p_x, [1 1],tspan);
   Sdotsqrt = @(t)affineSdynamics(t,Ssqrt.eval(t),obj,Q,R,xtraj,utraj,xdottraj);
   Sdot = @(t) recompSdot(Ssqrt.eval(t),Sdotsqrt(t));
-  Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),p_x,p_t), tspan);
+  Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan);
   % todo: i could dig into the ODESolution with taylorvar to get higher
   % order, if Vddot was ever needed.
 end
@@ -134,7 +135,7 @@ function Sdot = recompSdot(Ssqrt,Sdotsqrt)
   Sdot{3} = Sdotsqrt{3};
 end
 
-function V=affineLyapunov(t,S,Sdot,p_x,p_t)
-  V = p_x'*(S{1}+Sdot{1}*(p_t-t))*p_x + p_x'*(S{2}+Sdot{2}*(p_t-t)) + S{3}+Sdot{3}*(p_t-t);
+function V=affineLyapunov(t,S,Sdot,x0,p_x,p_t)
+  V = (p_x-x0)'*(S{1}+Sdot{1}*(p_t-t))*(p_x-x0) + (p_x-x0)'*(S{2}+Sdot{2}*(p_t-t)) + S{3}+Sdot{3}*(p_t-t);
 end
 

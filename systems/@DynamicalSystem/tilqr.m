@@ -35,7 +35,7 @@ ltisys = LTIControl(x0,u0,K,S);
 ltisys = setAngleFlags(ltisys,obj.output_angle_flag,[],obj.input_angle_flag);
 
 x=msspoly('x',getNumStates(obj));
-V = x'*S*x;
+V = (x-x0)'*S*(x-x0);
 
 end
 

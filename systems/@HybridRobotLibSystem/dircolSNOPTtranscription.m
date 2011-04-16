@@ -41,6 +41,8 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
         continue  %handled above
       case 'periodic'
         continue  %handled in fsmObjFun_ind
+      case 'u_const_across_transitions'
+        continue  %handled in fsmObjFun_ind
       otherwise
         warning([f{1},' constraint not handled by hybrid dircol (at least not yet)']);
     end
@@ -139,6 +141,9 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
   if (isfield(con,'periodic') && con.periodic)
     f = [f;zeros(nX,1)];  % implemented as linear constraint below, just put in zero here
   end
+  if (isfield(con,'u_const_across_transitions') && con.u_const_across_transitions)
+    f = [f;zeros((length(N)-1)*nU,1)];
+  end
   
 end
 
@@ -185,15 +190,31 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind
   if (isfield(con,'periodic') && con.periodic)
     % then add linear constraints  x0[i]=xf[i].  
     A = [A; repmat([1;-1],nX,1)];
-    iAfun = nf+reshape(repmat(1:nX,2,1),[],1);
+    iAfun = [iAfun; nf+reshape(repmat(1:nX,2,1),[],1)];
     x0ind = 1+(1:nX)'; xfind = sum(N)-nU*nT(end)-nX + (1:nX)';
-    jAvar = reshape([x0ind'; xfind'],[],1);
+    jAvar = [jAvar; reshape([x0ind'; xfind'],[],1)];
     Fhigh = [Fhigh; zeros(nX,1)];
     Flow = [Flow; zeros(nX,1)];
     if (nargout>5)
-        for j=1:nX, oname= {oname{:},['con.periodic_',num2str(j)]}; end
+      for j=1:nX, oname= {oname{:},['con.periodic_',num2str(j)]}; end
     end      
     nf = nf + nX;
+  end
+  
+  if (isfield(con,'u_const_across_transitions') && con.u_const_across_transitions)
+    for i=1:length(N)-1
+      A = [A; repmat([1;-1],nU,1)];
+      iAfun = [iAfun;nf+reshape(repmat(1:nU,2,1),[],1)];
+      u0ind = sum(N(1:i))+1+nX*nT(i+1)+(1:nU);
+      ufind = sum(N(1:(i-1)))+1+nX*nT(i)+nU*(nT(i)-1)+(1:nU);
+      jAvar = [jAvar; reshape([u0ind'; ufind'],[],1)];
+      Fhigh = [Fhigh; zeros(nU,1)];
+      Flow = [Flow; zeros(nU,1)];
+      if (nargout>5)
+        for j=1:nU, oname= {oname{:},['(mode',num2str(i+1),'.uf - mode',num2str(i),'.u0)_',num2str(j)]}; end
+      end
+      nf = nf + nU;
+    end
   end
 
 end

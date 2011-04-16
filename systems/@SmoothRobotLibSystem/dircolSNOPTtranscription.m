@@ -249,22 +249,22 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   if (isfield(con,'xf'))
     if (isfield(con,'c'))
       [c,dc] = feval(con.xf.c,x(:,end));
-      f = [f; c(:)]; G = [G; dc{1}(:)];
+      f = [f; c(:)]; G = [G; dc(:)];
     end
     if (isfield(con.xf,'ceq'))
       [c,dc] = feval(con.xf.ceq,x(:,end));
-      f = [f; c(:)]; G = [G; dc{1}(:)];
+      f = [f; c(:)]; G = [G; dc(:)];
     end
   end
   
   if (isfield(con,'x0'))
     if (isfield(con,'c'))
       [c,dc] = feval(con.x0.c,x(:,1));
-      f = [f; c(:)]; G = [G; dc{1}(:)];
+      f = [f; c(:)]; G = [G; dc(:)];
     end
     if (isfield(con.x0,'ceq'))
       [c,dc] = feval(con.x0.ceq,x(:,1));
-      f = [f; c(:)]; G = [G; dc{1}(:)];
+      f = [f; c(:)]; G = [G; dc(:)];
     end
   end
 

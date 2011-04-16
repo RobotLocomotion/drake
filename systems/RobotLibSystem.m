@@ -157,4 +157,5 @@ classdef RobotLibSystem < DynamicalSystem
     umin=-inf;   % constrains u>=umin (default umin=-inf)
     umax=inf;    % constrains u<=uman (default umax=inf)
   end
+  
 end

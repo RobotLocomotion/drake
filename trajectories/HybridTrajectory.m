@@ -87,7 +87,7 @@ classdef HybridTrajectory < Trajectory
         if (i==1) hold on; 
         else
           xp = [get(h(end),'XData'); get(h(end),'YData')];
-          xn = [get(hn,'XData'); get(hn,'YData')];
+          xn = [get(hn(end),'XData'); get(hn(end),'YData')];
           plot([xp(1,end),xn(1,1)],[xp(2,end),xn(2,1)],'k--');
         % todo: add dashed line here?
         end

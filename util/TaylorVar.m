@@ -258,9 +258,9 @@ classdef TaylorVar
           for o=1:length(a.df), a.df{o}=a.df{o}/b; end
         else
           error('not implemented yet');
-        end          
+        end
       else
-        error('not implemented yet');
+        a=a*inv(b);  % note: could do this better (more accurately)
       end
     end
     function tv=inv(a)
@@ -663,7 +663,7 @@ classdef TaylorVar
       a.dim = newdim;
     end
     
-    function [c,i]=max(a,b,dim)
+    function [a,i]=max(a,b,dim)
       if (nargin<2 || nargin>2) error('not implemented yet'); end
       if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
       if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
@@ -678,11 +678,12 @@ classdef TaylorVar
         for o=1:length(a.df)
           a.df{o}(ind,:)=0;
         end
+        a.f=c;
       end
     end
     
-    function [c,i]=min(a,b,dim)
-      if (nargin<2 || nargin>2) error('not implemented yet'); end
+    function [a,i]=min(a,b,dim)
+      if (nargin<2 || nargin>2 || nargout>1) error('not implemented yet'); end
       if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
       if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
       if (~isa(a,'TaylorVar'))% then b is the TaylorVar.
@@ -696,6 +697,7 @@ classdef TaylorVar
         for o=1:length(a.df)
           a.df{o}(ind,:)=0;
         end
+        a.f=c;
       end
     end    
     
