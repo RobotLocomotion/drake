@@ -25,6 +25,8 @@ if (~isfield(options,'converged_tol')) options.converged_tol=.01; end
 if (~isfield(options,'stability')) options.stability=false; end  % true implies that we want exponential stability
 if (~isfield(options,'plot_rho')) options.plot_rho = true; end
 
+if (isfield(options,'monom_order')) error('monom_order is no longer used.  try degL1'); end
+
 if (isnumeric(G) && ismatrix(G) && all(size(G)==[num_x,num_x]))
   xf=xtraj.eval(ts(end)); xf=xf(num_xd+(1:num_xc));
   G = (x-xf)'*G*(x-xf);
@@ -75,8 +77,8 @@ for i=1:N
   Vmin(i) = minimumV(x,V{i});
 end
 
-if (~isfield(options,'monom_order'))
-  options.monom_order = deg(Vdot{1},x);  % just a guess
+if (~isfield(options,'degL1'))
+  options.degL1 = deg(Vdot{1},x);  % just a guess
 end
 
 % conservative initial guess (need to do something smarter here)
@@ -169,7 +171,7 @@ function L=findMultipliers(x,V,Vdot,rho,rhodot,options)
  
   parfor i=1:N
     prog = mssprog;
-    Lxmonom = monomials(x,0:options.monom_order);
+    Lxmonom = monomials(x,0:options.degL1);
     [prog,l] = new(prog,length(Lxmonom),'free');
     L1 = l'*Lxmonom;
     

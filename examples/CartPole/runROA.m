@@ -15,11 +15,19 @@ x0=[0;pi;0;0];
 
 pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
 
-options.monom_order=1;
+figure(1); clf; hold on; axis([-pi/2,3*pi/2,-5,5]);
+
+options.degL1=1;
+%options.method = 'bilinear';
 V=regionOfAttraction(pp,x0,c.S,options);
 
-figure(1); clf
 plotFunnel(V,x0);
+
+options.method = 'pablo';
+V=regionOfAttraction(pp,x0,c.S,options);
+
+plotFunnel(V,x0);
+
 %return;
 
 xroa=getLevelSet(V,x0);

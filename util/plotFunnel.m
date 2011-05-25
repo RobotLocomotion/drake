@@ -9,11 +9,13 @@ if (nargin<4) options=struct(); end
 if (~isfield(options,'color')) options.color=.7*[1 1 1]; end
 if (~isfield(options,'tol')) options.tol = .01; end
 
+hold on;
+view(0,90);
 
 if (isa(V,'msspoly'))
   sizecheck(V,[1 1]);
   typecheck(x0,'double');  % not actually a trajectory
- 
+   
   p_x=decomp(V);
   if (length(x0)~=length(p_x)) error('need to handle this case better'); end
   no_plot_dims=1:length(x0);  no_plot_dims(plot_dims)=[];
@@ -30,10 +32,8 @@ else
   sizecheck(V,[1 1]);
 
   ts = V.getBreaks();
-
   hold on;
-  view(0,90);
-  
+
   for i=length(ts)-1:-1:1
     xfun0 = getLevel(ts(i),V,plot_dims,options);
     xfun1 = getLevel(ts(i+1)-eps,V,plot_dims,options);

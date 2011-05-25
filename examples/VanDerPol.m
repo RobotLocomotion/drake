@@ -22,13 +22,18 @@ classdef VanDerPol < PolynomialSystem
       % simulate to obtain the nominal limit cycle
       x_limit_cycle = simulate(vdp,[0 6.69],[-0.1144;2.0578]);
 
-      figure(1);
+      figure(1); clf
       ts=x_limit_cycle.getBreaks(); xlim=eval(x_limit_cycle,ts);
       fill(xlim(1,:),xlim(2,:),[0.8 0.8 0.2])
       hold on
       
       rvdp = timeReverse(vdp);
-      options.monom_order=3;
+%      options.degV=6;
+%      options.degL1=6;
+      options.max_iterations=100;
+      options.converged_tol = 1e-5;
+%      options.method='pablo'; options.degL1=3;
+      options.method='bilinear';
       V=regionOfAttraction(rvdp,zeros(2,1),[],options);
       xroa=getLevelSet(V);
       fill(xroa(1,:),xroa(2,:),0.9*ones(1,3));

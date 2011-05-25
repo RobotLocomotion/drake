@@ -1,0 +1,49 @@
+classdef PlanePlant < SmoothRobotLibSystem
+% Defines the dynamics for the powered plane.
+  
+  properties
+    m = 0.082;
+    g = 9.81; % m/s^2
+  end
+  
+  methods
+    function obj = PlanePlant()
+      obj = obj@SmoothRobotLibSystem(4,0,1,4,0);
+    end
+    
+    function [xdot, df, d2f, d3f] = dynamics(obj,t,x,u)
+        % x = [ x; y; theta; thetadot ]
+        % u = [ thetadotdot ]
+        
+        
+        theta = x(3);
+        
+        v = 10;
+        
+        
+        xdot = [ -v * sin(theta);  v * cos(theta); x(4); u(1) ];
+        
+        
+        if (nargout>1)
+            [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
+        end
+        
+    end
+    
+    function [y,dy] = output(obj,t,x,u)
+      y = x;
+      
+      if (nargout>1)
+        %dy=[zeros(obj.num_y,1),eye(obj.num_y),zeros(obj.num_y,obj.num_u)];
+        dy = 0;
+        disp('Warning: output dy not implemented yet.')
+      end
+    end
+    
+    function x = getInitialState(obj)
+      x = [0 0 0 0]';
+    end
+    
+  end
+  
+end

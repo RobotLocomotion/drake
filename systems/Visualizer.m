@@ -84,7 +84,7 @@ classdef Visualizer < RobotLibSystem
       %
       
       if (nargin<3)
-        options.filename = uiputfile('*.avi','Save playback to AVI');
+        filename = uiputfile('*.avi','Save playback to AVI');
       end
       
       if (obj.display_dt==0)
@@ -96,7 +96,7 @@ classdef Visualizer < RobotLibSystem
       tspan = breaks(1):obj.display_dt:breaks(end);
       if (breaks(end)-tspan(end)>eps) tspan=[tspan,breaks(end)]; end
       
-      mov = VideoWriter(options.filename,'Motion JPEG AVI');
+      mov = VideoWriter(filename,'Motion JPEG AVI');
       mov.FrameRate = obj.playback_speed/obj.display_dt;
       open(mov);
       

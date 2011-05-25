@@ -52,7 +52,7 @@ if (nargout<1)
   fnplt(xtraj,[3 5]);
   
   v = CompassGaitVisualizer(p);
-  v.playback_speed = .2;
+  v.playback_speed = .4;
   playback(v,xtraj);
 end
 

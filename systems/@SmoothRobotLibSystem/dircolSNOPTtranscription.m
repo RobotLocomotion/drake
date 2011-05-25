@@ -13,7 +13,7 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
 %  todo: handle full set of constraints / options
 %  todo: cost function should be on the outputs?  or just on the states?
 
-if (~isfield(options,'xtape0')) options.xtape0='rand'; end
+if (~isfield(options,'xtape0')) options.xtape0='free'; end
 
 nU = sys.getNumInputs();
 nX = sys.getNumContStates();
@@ -31,9 +31,10 @@ t = utraj0.getBreaks(); t=t(:);
 tscale = 1;  % stretch time by this amount
 u = utraj0.eval(t);
 if (strcmp(options.xtape0,'simulate'))
-  xtraj = simulate(sys,[t(1),t(end)],x0);
+  drivensys = cascade(utraj0,sys);
+  xtraj = simulate(drivensys,[t(1),t(end)],x0);
   x = xtraj.eval(t);
-else % options.xtape0='rand' is catch-all
+else % options.xtape0='rand' or 'free'
   x = .1*randn(length(x0),length(t));   x(:,1) = x0;
 end
   
@@ -70,6 +71,8 @@ for f1 = fieldnames(con)'
           case 'ub'
             c = repmat(con.x.ub,nT,1);
             whigh(xind) = min(whigh(xind),c);
+          case 'c'
+            % intentionally pass through... these get handled in the userfun
           otherwise
             conwarn(f1,f2);
         end
@@ -82,7 +85,7 @@ for f1 = fieldnames(con)'
           case 'ub'
             whigh(1 + (1:nX)) = min(whigh(1 + (1:nX)),con.x0.ub);
           case {'c','ceq'}
-            % intentionally pass through.. these get handled in the usefun
+            % intentionally pass through.. these get handled in the userfun
           otherwise 
             conwarn(f1,f2);
         end
@@ -101,7 +104,7 @@ for f1 = fieldnames(con)'
             conwarn(f1,f2);
         end
       end
-      if all(wlow(xfind)==whigh(xfind))  % final value constraint
+      if strcmp(options.xtape0,'free') && all(wlow(xfind)==whigh(xfind))  % final value constraint
         for i=1:nX
           x(i,:) = linspace(x0(i),wlow(xfind(i)),nT);
         end
@@ -205,6 +208,9 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   d = zeros(nX,nT-1);
   dd = zeros(nX,1+2*nX+2*nU,nT-1);
   
+  bxc = isfield(con,'x') && isfield(con.x,'c');  % eval boolean once (not repititively inside the loop)
+  fxc = [];  Gxc=[];
+  
   % iterate through time
   [xdot(:,1),dxdot(:,:,1)] = geval(@sys.dynamics,t(1),x(:,1),u(:,1));  
   dxdot(:,1,1) = dxdot(:,1,1)*dtdw1(1); % d/d[tscale; x(:,1); u(:,1)]
@@ -226,7 +232,12 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
     [d(:,i),df]= geval(@sys.dynamics,tcol(i),xcol,ucol(:,i),options);
     d(:,i) = d(:,i) - xdotcol;
     dd(:,:,i) = df*[dtcoldw1(i),zeros(1,2*nX+2*nU); dxcol; zeros(nU,1+nX), .5*eye(nU), zeros(nU,nX), .5*eye(nU)] - dxdotcol;  % d/d[tscale;x(:,i);u(:,i);x(:,i+1);u(:,i+1)]
-
+    
+    if (bxc)
+      [c,dc] = geval(con.x.c,x(:,i));
+      fxc = [fxc; c(:)]; Gxc = [Gxc; dc(:)];
+    end
+    
     % for debugging
 %    d(:,i)=xdotcol;
 %    dd(:,:,i)=dxdotcol;
@@ -246,24 +257,34 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   f = [J; d(:)];
   G = [dJ(:); dd(:)];
 
+  if (bxc)
+    % add xf
+    [c,dc] = geval(con.x.c,x(:,end),options);
+    fxc = [fxc; c(:)]; Gxc = [Gxc; dc(:)];
+
+    % put everything into the main f and G
+    f = [f; fxc]; 
+    G = [G; Gxc]; 
+  end
+  
   if (isfield(con,'xf'))
     if (isfield(con,'c'))
-      [c,dc] = feval(con.xf.c,x(:,end));
+      [c,dc] = geval(con.xf.c,x(:,end),options);
       f = [f; c(:)]; G = [G; dc(:)];
     end
     if (isfield(con.xf,'ceq'))
-      [c,dc] = feval(con.xf.ceq,x(:,end));
+      [c,dc] = geval(con.xf.ceq,x(:,end),options);
       f = [f; c(:)]; G = [G; dc(:)];
     end
   end
   
   if (isfield(con,'x0'))
     if (isfield(con,'c'))
-      [c,dc] = feval(con.x0.c,x(:,1));
+      [c,dc] = geval(con.x0.c,x(:,1),options);
       f = [f; c(:)]; G = [G; dc(:)];
     end
     if (isfield(con.x0,'ceq'))
-      [c,dc] = feval(con.x0.ceq,x(:,1));
+      [c,dc] = geval(con.x0.ceq,x(:,1),options);
       f = [f; c(:)]; G = [G; dc(:)];
     end
   end
@@ -298,11 +319,28 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_
   Fhigh = [Fhigh;zeros(nf-1,1)];
   Flow = [Flow;zeros(nf-1,1)];
 
+  if (isfield(con,'x'))
+    if (isfield(con.x,'c'))
+      c = feval(con.x.c,x(:,end));
+      n=length(c);
+      for i=1:nT
+        iGfun = [iGfun; nf+reshape(repmat((1:n)',1,nX),[],1)];
+        jGvar = [jGvar; 1+nX*(i-1)+reshape(repmat(1:nX,n,1),[],1)];
+        Fhigh = [Fhigh;zeros(n,1)];
+        Flow = [Flow;repmat(-inf,n,1)];
+        if (nargout>5)
+          for j=1:nX, oname= {oname{:},['con.x(',num2str(i),').c_',num2str(j)]}; end
+        end
+        nf = nf+n;
+      end
+    end
+  end
+  
   if (isfield(con,'xf'))
     if (isfield(con.xf,'c'))
       c = feval(con.xf.c,x(:,end));
       n=length(c);
-      iGfun = [iGfun; nf+reshape(repmat((1:nX)',1,n),[],1)];
+      iGfun = [iGfun; nf+reshape(repmat((1:n)',1,nX),[],1)];
       jGvar = [jGvar; 1+nX*(nT-1)+reshape(repmat(1:nX,n,1),[],1)];
       Fhigh = [Fhigh;zeros(n,1)];
       Flow = [Flow;repmat(-inf,n,1)];
@@ -314,7 +352,7 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_
     if (isfield(con.xf,'ceq'))
       c = feval(con.xf.ceq,x(:,end));
       n=length(c);
-      iGfun = [iGfun; nf+reshape(repmat((1:n)',1,n),[],1)];
+      iGfun = [iGfun; nf+reshape(repmat((1:n)',1,nX),[],1)];
       jGvar = [jGvar; 1+nX*(nT-1)+reshape(repmat(1:nX,n,1),[],1)];
       Fhigh = [Fhigh;zeros(n,1)];
       Flow = [Flow;zeros(n,1)];
@@ -329,7 +367,7 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_
     if (isfield(con.x0,'c'))
       c = feval(con.x0.c,x(:,1));
       n=length(c);
-      iGfun = [iGfun; nf+reshape(repmat((1:nX)',1,n),[],1)];
+      iGfun = [iGfun; nf+reshape(repmat((1:n)',1,nX),[],1)];
       jGvar = [jGvar; 1+reshape(repmat(1:nX,n,1),[],1)];
       Fhigh = [Fhigh,zeros(n,1)];
       Flow = [Flow,repmat(-inf,n,1)];
@@ -341,7 +379,7 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_
     if (isfield(con.x0,'ceq'))
       c = feval(con.x0.ceq,x(:,1));
       n=length(c);
-      iGfun = [iGfun; nf+reshape(repmat((1:n)',1,n),[],1)];
+      iGfun = [iGfun; nf+reshape(repmat((1:n)',1,nX),[],1)];
       jGvar = [jGvar; 1+reshape(repmat(1:nX,n,1),[],1)];
       Fhigh = [Fhigh;zeros(n,1)];
       Flow = [Flow;zeros(n,1)];

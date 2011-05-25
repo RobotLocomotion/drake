@@ -35,7 +35,8 @@ disp('Computing transverse lqr...')
 disp('Estimating funnel...')
 psys = taylorApprox(sys,xtraj2,[],3,3);  %ignore var 3 (tau)
 options=struct();
-options.rho0_tau=8;
+options.rho0_tau=10;
+options.max_iterations=25;
 V=sampledTransverseVerification(psys,Vf,Vtraj,Vtraj.getBreaks(),xtraj,utraj2,transSurf,options);
 
 figure(3); clf;

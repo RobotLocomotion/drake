@@ -8,7 +8,7 @@ x0 = c.x0;
 pp = sys.taylorApprox(0,x0,[],3);
 
 options=struct();
-options.monom_order=1;
+options.degL1=1;
 options.method='pablo';
 
 V = regionOfAttraction(pp,x0,[],options);

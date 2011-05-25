@@ -82,24 +82,36 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
 
     force_close_system();
     close all;
-    try
-      if (isClass) feval([testname,'.run']); 
-      else feval(testname); end
-      fprintf(1,'%-40s ',testname);
-      fprintf(1,'[PASSED]\n');
-      info.passcount = info.passcount+1;
-      
-    catch
-      fprintf(1,'%-40s ',testname);
-      fprintf(1,'[FAILED]\n');
-      info.failcount = info.failcount+1;
-      disp(['Run runAllTests(',num2str(info.passcount),') to continue where you left off']);
-      if (info.bAbortOnFail)
-        cd(info.initialpwd);
-        rethrow(lasterror);
+    
+    attemptsleft=1;
+    if (checkFile(files(i).name,'OKTOFAIL'));
+      attemptsleft=3;
+    end
+    
+    while (attemptsleft)
+      attemptsleft=attemptsleft-1;
+      try
+        if (isClass) feval([testname,'.run']);
+        else feval(testname); end
+        fprintf(1,'%-40s ',testname);
+        fprintf(1,'[PASSED]\n');
+        info.passcount = info.passcount+1;
+      catch
+        fprintf(1,'%-40s ',testname);
+        if (attemptsleft>0)
+          fprintf(1,'[RETRY]\n');
+        else
+          fprintf(1,'[FAILED]\n');
+          info.failcount = info.failcount+1;
+          disp(['Run runAllTests(',num2str(info.passcount),') to continue where you left off']);
+          if (info.bAbortOnFail)
+            cd(info.initialpwd);
+            rethrow(lasterror);
+          end
+        end
       end
     end
-
+    
     % now clean up for the next guy:
     force_close_system;
     close all;
