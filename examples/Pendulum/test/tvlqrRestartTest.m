@@ -5,6 +5,7 @@ oldpath = addpath('..');
 p = PendulumPlant();
 p = setInputLimits(p,-inf,inf);
 
+% OKTOFAIL
 [utraj,xtraj]=runDircol(p);
 
 Q=diag([10,1]);R=.1;

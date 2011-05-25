@@ -18,10 +18,12 @@ x0=[pi;0];
 
 pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
 
+figure(1); clf; hold on; axis([-pi/2,3*pi/2,-5,5]);
+
 options=struct();
+%options.method='bilinear';
 V=regionOfAttraction(pp,x0,[],options);
 xroa=getLevelSet(V,x0);
-figure(1); clf; hold on;
 plot(xroa(1,:),xroa(2,:),'r');
 
 for i = 1:5

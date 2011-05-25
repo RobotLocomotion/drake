@@ -39,6 +39,7 @@ if (~isfield(options,'stability')) options.stability=false; end  % true implies 
 if (~isfield(options,'plot_rho')) options.plot_rho = true; end
 
 if (options.stability) error('not implemented yet'); end
+if (isfield(options,'monom_order')) error('monom_order is no longer used.  try degL1'); end
 
 if (isnumeric(G) && ismatrix(G) && all(size(G)==[num_xp,num_xp]))
   xf=xtraj.eval(ts(end));
@@ -57,7 +58,7 @@ if (~equalpoly(G,Vtraj0.eval(ts(end))))
   error('for now, I require that G matches V at the final conditions');
 end  
 
-rhof = .01;   % todo: handle the more general case and get it from containment
+rhof = .01;  % todo: handle the more general case and get it from containment
 
 N = length(ts);
 Vmin = zeros(N-1,1);
@@ -120,8 +121,8 @@ for i=1:N
   
 end
 
-if (~isfield(options,'monom_order'))
-  options.monom_order = deg(DV,p_xp);  % just a guess
+if (~isfield(options,'degL1'))
+  options.degL1 = deg(DV,p_xp);  % just a guess
 end
 
 % conservative initial guess (need to do something smarter here)
@@ -230,12 +231,12 @@ function L=findMultipliers(xp,precomp,rho,rhodot,options)
   % note: compute L for each sample point in parallel using parfor
 
   N = length(precomp)-1;
- % if (matlabpool('size')==0) matlabpool; end
+  if (matlabpool('size')==0) matlabpool; end
  
-%  parfor i=1:N
-   for i=fliplr(1:N)
+  parfor i=1:N
+%   for i=fliplr(1:N)
     prog = mssprog;
-    Lxmonom = monomials(xp,0:options.monom_order);
+    Lxmonom = monomials(xp,0:options.degL1);
     [prog,l] = new(prog,length(Lxmonom),'free');
     L1 = l'*Lxmonom;
     [prog,l] = new(prog,length(Lxmonom),'free');

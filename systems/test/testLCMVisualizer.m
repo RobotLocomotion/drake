@@ -1,5 +1,7 @@
 function testLCMVisualizer
 
+% NOTEST
+
 load robotlib_config;
 
 p = path;
@@ -8,7 +10,8 @@ addpath([conf.root,'/examples/Pendulum']);
 
 job1 = batch('runPendulum','Workspace',struct(),'CaptureDiary',true);
 
-waitForState(job1,'running');
+ok = waitForState(job1,'running',10);
+if (~ok) error('failed'); end
 
 runLCMVisualizer(PendulumVisualizer,PendulumLCMCoder,struct('tspan',[0 2]))
 

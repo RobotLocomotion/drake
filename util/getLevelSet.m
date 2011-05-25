@@ -36,7 +36,7 @@ else % do the more general thing
 
   r = msspoly('r',1);
   [theta,r]=fplot(@getRadius,[0 pi],options.tol);
-  y=repmat(x0,1,size(theta,2))+[repmat(r(:,1),1,2).*[cos(theta),sin(theta)]; repmat(r(:,2),1,2).*[cos(theta),sin(theta)]]';
+  y=repmat(x0,1,2*size(theta,1))+[repmat(r(:,1),1,2).*[cos(theta),sin(theta)]; repmat(r(:,2),1,2).*[cos(theta),sin(theta)]]';
 
 end
 

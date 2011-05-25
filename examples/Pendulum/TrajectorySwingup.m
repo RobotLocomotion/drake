@@ -9,7 +9,7 @@ disp('constructing LQR balance controller');
 disp('estimating ROA for balance controller');
 sys = feedback(p,ti);
 psys = taylorApprox(sys,0,ti.x0,[],3);
-Vf = regionOfAttraction(psys,ti.x0,Vf,struct('monom_order',3));
+Vf = regionOfAttraction(psys,ti.x0,Vf,struct('degL1',3));
 
 Vf = Vf*5;  % artificially prune, since ROA is solved without input limits
 
@@ -36,7 +36,7 @@ Q = diag([10 1]);  R=1;
 disp('estimating swingup funnel');
 psys = taylorApprox(sys,xtraj2,[],3);
 
-options.monom_order=2;
+options.degL1=2;
 V=sampledFiniteTimeVerification(psys,Vf,Vtraj,xtraj2.getBreaks(),xtraj2,utraj2,options);
 
 figure(1); 

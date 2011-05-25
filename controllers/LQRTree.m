@@ -258,7 +258,7 @@ classdef LQRTree < HybridRobotLibSystem
       %     plot_dims          - default [1,2].  (but can be multiple rows for
       %                                           multiple subplots)
       %     plant_order        - default is 3
-      %     monom_order        - default is sampledFiniteTimeInvariance default
+      %     degL1        - default is sampledFiniteTimeInvariance default
       %
       %     verify - default is true (occasionally useful for faster debugging)
       
@@ -286,7 +286,7 @@ classdef LQRTree < HybridRobotLibSystem
       if (options.verify)
         sys = feedback(p_nolim,ti);
         psys = taylorApprox(sys,0,xG,[],3);
-        Vf = regionOfAttraction(psys,xG,Vf,struct('monom_order',3));
+        Vf = regionOfAttraction(psys,xG,Vf,struct('degL1',3));
       
         if (isa(p,'PendulumPlant'))
           warning('artificially trimming pendulum tilqr ROA, since we don''t have saturations implemented yet');

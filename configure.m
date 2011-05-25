@@ -67,7 +67,7 @@ end
 % add robotlib directories to the matlab path 
 addpath([conf.root,'/systems']);
 addpath([conf.root,'/plants']);
-addpath([conf.root,'/controllers']);
+addpath([conf.root,'/plants/obstacles']);
 addpath([conf.root,'/controllers']);
 addpath([conf.root,'/estimators']);
 addpath([conf.root,'/trajectories']);

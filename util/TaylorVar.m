@@ -118,6 +118,21 @@ classdef TaylorVar
       end
       obj.dim=siz;
     end
+    function a=bsxfun(fun,a,b)
+      if (isa(a,'TaylorVar'))
+        if (any(a.dim~=size(b)))
+          error('not implemented yet'); 
+        end
+        for i=1:prod(a.dim)
+%          a(i)=feval(fun,a(i),b(i));  % want this, but can't call subsref
+%          indirectly from inside the class, so do it the hard way
+          si=substruct('()',{i});
+          subsasgn(a,si,feval(fun,subsref(a,si),subsref(b,si)));
+        end
+      else % only b is a TaylorVar
+        error('not implemented yet');
+      end
+    end
     
     function a=plus(a,b)
       if (~isa(a,'TaylorVar'))% then b is the TaylorVar.
@@ -361,6 +376,10 @@ classdef TaylorVar
       end
       l=eq(a,b);  
     end
+    function l=sign(a) 
+      a=reshape(a.f,a.dim);
+      l=sign(a);  % no grad info
+    end
     function l=and(a,b)
       if (isa(a,'TaylorVar'))
         a=reshape(a.f,a.dim);
@@ -532,8 +551,8 @@ classdef TaylorVar
         end
       end
     end
-    function tv=subindex(a)
-      error('not implemented yet');
+    function ind=subsindex(a)
+      ind = reshape(a.f,a.dim);  % just return the nominal value to be used as an index
     end
     
     function tv=diff(obj)  % removes one order  (tv.f=obj.df{1}, etc)
@@ -592,8 +611,26 @@ classdef TaylorVar
     function tv = cos(obj)
       tv=elementwise(obj,@cos,@(x)-sin(x));
     end
+    function tv = sec(obj)
+      tv=elementwise(obj,@sec,@(x)sec(x).*tan(x));
+    end
+    function tv = tan(obj)
+      tv=elementwise(obj,@tan,@(x)sec(x).^2);
+    end
+    function tv = asin(obj)
+      tv=elementwise(obj,@asin,@(x) ones(size(x))./sqrt(1-x.^2));
+    end
+    function tv = acos(obj)
+      tv=elementwise(obj,@acos,@(x) -ones(size(x))./sqrt(1-x.^2));  
+    end
     function tv = atan(obj)
       tv=elementwise(obj,@atan,@(x) ones(size(x))./(1+x.^2));
+    end
+    function tv = acot(obj)
+      tv=elementwise(obj,@acot,@(x) -ones(size(x))./(1+x.^2));
+    end
+    function tv = tanh(obj)
+      tv=elementwise(obj,@tanh,@(x) ones(size(x))-tanh(x).^2);
     end
     function a=abs(a)
       s=sign(a.f);
@@ -664,33 +701,54 @@ classdef TaylorVar
     end
     
     function [a,i]=max(a,b,dim)
-      if (nargin<2 || nargin>2) error('not implemented yet'); end
-      if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
-      if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
-      if (~isa(a,'TaylorVar'))% then b is the TaylorVar.
-        tmp=a; a=b; b=tmp;    % switch them (so we have less cases below)
-      end
-      if (isa(b,'TaylorVar')) % then both are TaylorVars
-        error('not implemented yet');
-      else % then just a is a TaylorVar
-        c = reshape(max(reshape(a.f,a.dim),b),[],1);
-        ind=find(c~=a.f);
-        for o=1:length(a.df)
-          a.df{o}(ind,:)=0;
+      if (nargin>2) error('not implemented yet'); end
+      if (nargin<2)
+        if (~isvector(a)) error('not implemented yet'); end
+        [v,i] = max(a.f);
+        si=substruct('()',{i});
+        a=subsref(a,si);
+      else
+        if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
+        if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
+        if (~isa(a,'TaylorVar'))% then b is the TaylorVar.
+          tmp=a; a=b; b=tmp;    % switch them (so we have less cases below)
         end
-        a.f=c;
+        if (isa(b,'TaylorVar')) % then both are TaylorVars
+          error('not implemented yet');
+        else % then just a is a TaylorVar
+          c = reshape(max(reshape(a.f,a.dim),b),[],1);
+          ind=find(c~=a.f);
+          for o=1:length(a.df)
+            a.df{o}(ind,:)=0;
+          end
+          a.f=c;
+        end
       end
     end
     
     function [a,i]=min(a,b,dim)
-      if (nargin<2 || nargin>2 || nargout>1) error('not implemented yet'); end
+      if (nargin>2) error('not implemented yet'); end
+      if (nargin<2) % then just look over the TaylorVar a
+        if (isvector(a))
+          [m,i] = min(a.f);
+          a = subsref(a,substruct('()',{i}));
+          return;
+        else
+          error('not implemented yet');
+        end
+      end
       if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
       if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
       if (~isa(a,'TaylorVar'))% then b is the TaylorVar.
         tmp=a; a=b; b=tmp;    % switch them (so we have less cases below)
       end
       if (isa(b,'TaylorVar')) % then both are TaylorVars
-        error('not implemented yet');
+        c = reshape(min(reshape(a.f,a.dim),reshape(b.f,b.dim)),[],1);
+        ind=find(c~=a.f);
+        for o=1:length(a.df)
+          a.df{o}(ind,:)=b.df{o}(ind,:);
+        end
+        a.f=c;
       else % then just a is a TaylorVar
         c = reshape(min(reshape(a.f,a.dim),b),[],1);
         ind=find(c~=a.f);

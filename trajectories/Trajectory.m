@@ -1,4 +1,4 @@
-classdef Trajectory% < RobotLibSystem
+classdef Trajectory < RobotLibSystem
   
   properties
     dim
@@ -12,8 +12,33 @@ classdef Trajectory% < RobotLibSystem
  
   methods 
     function obj = Trajectory(dim)
-%      obj = obj@RobotLibSystem(0,0,0,dim,false,false);
+      if (isnumeric(dim))
+        numout = prod(dim);
+      else
+        numout = 1;  % just output nan for now
+      end
+      obj = obj@RobotLibSystem(0,0,0,numout,false,false);
       obj.dim = dim;
+    end
+    
+    function x0 = getInitialState(obj)
+      x0 = []; % no state
+    end
+
+    function xcdot = dynamics(obj,t,x,u)
+      xcdot = []; % no state
+    end
+    
+    function xdn = update(obj,t,x,u)
+      xdn = [];  % no state
+    end
+    
+    function y = output(obj,t,x,u)
+      if (isnumeric(obj.dim))
+        y = reshape(obj.eval(t),1,[]);
+      else 
+        y=nan;
+      end
     end
     
     function dtraj = fnder(obj)
@@ -108,5 +133,7 @@ classdef Trajectory% < RobotLibSystem
     function alpha = setParameters(obj)
       error('parameters are not implemented for this type of trajetory'); 
     end
+    
+    
   end
 end

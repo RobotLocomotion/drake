@@ -50,5 +50,6 @@ for i=1:length(ctrans)
   options.rho0_tau=8;
   V{i}=sampledTransverseVerification(psys,V{i}.eval(V{i}.tspan(end)),V{i},V{i}.getBreaks(),xtraji,utraji,transSurf{i},options);
 
+  transSurf{i}.plotFunnel(V{i},xtraji,[1 3]);
 end
 

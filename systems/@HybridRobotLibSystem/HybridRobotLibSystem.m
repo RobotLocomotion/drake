@@ -134,15 +134,18 @@ classdef HybridRobotLibSystem < RobotLibSystem
     end
 
     function x0 = getInitialStateWInput(obj,t,x,u);
-      x0=[x(1); getInitialStateWInput(obj.modes{x(1)},t,x(2:end),u)];
+      m = x(1); 
+      xm = x(1+(1:getNumStates(obj.modes{m})));
+      x0=[x(1); getInitialStateWInput(obj.modes{m},t,xm,u)];
       % pad if necessary:
       x0 = [x0;repmat(0,getNumStates(obj)-length(x0),1)];
     end
     
     function xcdot = dynamics(obj,t,x,u)
-      m = x(1);
+      m = x(1); 
       if (getNumContStates(obj.modes{m}))
-        xcdot = dynamics(obj.modes{m},t,x(2:end),u);
+        xm = x(1+(1:getNumStates(obj.modes{m})));
+        xcdot = dynamics(obj.modes{m},t,xm,u);
       else
         xcdot=[];
       end
@@ -151,9 +154,10 @@ classdef HybridRobotLibSystem < RobotLibSystem
     end
 
     function xdn = update(obj,t,x,u)
-      m = x(1);
+      m = x(1); 
       if (getNumDiscStates(obj.modes{m}))
-        xdn = update(obj.modes{m},t,x(2:end),u);
+        xm = x(1+(1:getNumStates(obj.modes{m})));
+        xdn = update(obj.modes{m},t,xm,u);
       else
         xdn=[];
       end
@@ -163,7 +167,8 @@ classdef HybridRobotLibSystem < RobotLibSystem
     
     function y = output(obj,t,x,u)
       m = x(1);
-      y = output(obj.modes{m},t,x(2:end),u);
+      xm = x(1+(1:getNumStates(obj.modes{m})));
+      y = output(obj.modes{m},t,xm,u);
       if (obj.output_mode) y = [m;y]; end
       % pad if necessary:
       y = [y;repmat(0,getNumOutputs(obj)-length(y),1)];
@@ -171,10 +176,11 @@ classdef HybridRobotLibSystem < RobotLibSystem
     
     function zcs = guards(obj,t,x,u)
       m = x(1);
+      xm = x(1+(1:getNumStates(obj.modes{m})));
       zcs=ones(obj.num_zcs,1);
       n=length(obj.guard{m});
       for i=1:n
-        zcs(i) = obj.guard{m}{i}(obj,t,x(2:end),u);
+        zcs(i) = obj.guard{m}{i}(obj,t,xm,u);
       end
     end
     
@@ -188,7 +194,8 @@ classdef HybridRobotLibSystem < RobotLibSystem
         return;
       end
       if (length(active_id)>1) error('multiple guards tripped at the same time.  behavior is undefined.  consider reducing the step size'); end
-      [mode_xn,to_mode_num,status] = obj.transition{m}{active_id}(obj,m,t,x(2:end),u);
+      xm = x(1+(1:getNumStates(obj.modes{m})));
+      [mode_xn,to_mode_num,status] = obj.transition{m}{active_id}(obj,m,t,xm,u);
 %      to_mode_num
       xn = [to_mode_num;mode_xn];
       % pad if necessary:

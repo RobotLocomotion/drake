@@ -25,3 +25,15 @@ Matlab Reports
     Contents report
     Help report  (with all but the Copyright options checked)
   And you should run the M-Link Code Check report to look for useful suggestions.
+
+
+
+-------------------
+
+Note: if you don't have write permissions to the repository, then please make sure that your changes meet the requirements above, then email a patch to Russ by running
+
+svn diff > my_patch.diff 
+
+in your main robotlib directory, then email me the diff file.
+
+- Russ
