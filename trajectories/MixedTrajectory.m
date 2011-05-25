@@ -66,5 +66,13 @@ classdef MixedTrajectory < Trajectory
       
       error('not implemented yet');
     end
+    
+    function obj = shiftTime(obj, tshift)
+      for i=1:length(obj.trajs)
+        obj.trajs{i} = obj.trajs{i}.shiftTime(tshift);
+      end
+      obj.tspan = obj.tspan + [tshift tshift];
+      obj.breaks = obj.breaks + repmat(tshift, 1, length(obj.breaks));
+    end
   end
 end

@@ -290,7 +290,7 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   end
 
   if (isfield(con,'periodic') && con.periodic)
-    f = [f;zeros(nX,1)];  % implemented as linear constraint below
+    f = [f;zeros(nX+nU,1)];  % implemented as linear constraint below
   end
 
 end
@@ -391,16 +391,19 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_
   end
   
   if (isfield(con,'periodic') && con.periodic)
-    % then add linear constraints  x0[i]=xf[i].  
-    A = [A; repmat([1;-1],nX,1)];
-    iAfun = nf+reshape(repmat(1:nX,2,1),[],1);
-    jAvar = 1+reshape([1:nX; nX*(nT-1) + (1:nX)],[],1);
-    Fhigh = [Fhigh; zeros(nX,1)];
-    Flow = [Flow; zeros(nX,1)];
+    % then add linear constraints  x0[i]=xf[i] and u0[i]=uf[i]
+    A = [A; repmat([1;-1],nX+nU,1)];
+    iAfun = [iAfun; nf+reshape(repmat(1:(nX+nU),2,1),[],1)];
+    x0ind = 1+(1:nX); xfind = 1+nX*(nT-1) + (1:nX);
+    u0ind = 1+nX*nT+(1:nU); ufind = 1+nX*nT+nU*(nT-1) + (1:nU);   
+    jAvar = [jAvar; reshape([x0ind,u0ind; xfind,ufind],[],1)];
+    Fhigh = [Fhigh; zeros(nX+nU,1)];
+    Flow = [Flow; zeros(nX+nU,1)];
     if (nargout>5)
-        for j=1:nX, oname= {oname{:},['con.periodic_',num2str(j)]}; end
+      for j=1:nX, oname= {oname{:},['con.periodic_x',num2str(j)]}; end
+      for j=1:nU, oname= {oname{:},['con.periodic_u',num2str(j)]}; end
     end      
-    nf = nf + nX;
+    nf = nf + nX+nU;  
   end
 end
 

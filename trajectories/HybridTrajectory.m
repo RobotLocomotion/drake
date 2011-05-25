@@ -14,8 +14,8 @@ classdef HybridTrajectory < Trajectory
         if ~iscell(trajectories), trajectories = {trajectories}; end
         obj.traj = trajectories;
         % check that one trajectory follows the other sequentially in time
-        te = trajectories{1}.getBreaks();  
-        obj.tspan = [te(1),te(end)];
+        te = trajectories{1}.tspan(2);  
+        obj.tspan = trajectories{1}.tspan; 
         obj.dim = trajectories{1}.dim;
         te = te(end);
         for i=2:length(trajectories)
@@ -63,6 +63,8 @@ classdef HybridTrajectory < Trajectory
           end
           if (isempty(nind)) % the rest must belong to this segment
             c = ind:length(t);
+            y(:,c) = obj.traj{i}.eval(t(c));
+            return;
           elseif (nind==1) % none in this segment
             continue;
           else
@@ -94,6 +96,14 @@ classdef HybridTrajectory < Trajectory
         h=[h,hn];
       end
       if (~ho) hold off; end
+    end
+    
+    function obj = shiftTime(obj, timeShift)
+      for i = 1:length(obj.traj)
+        obj.traj{i} = obj.traj{i}.shiftTime(timeShift);
+      end
+      obj.tspan = obj.tspan + timeShift;
+      obj.te = obj.te + timeShift;
     end
   end
 end
