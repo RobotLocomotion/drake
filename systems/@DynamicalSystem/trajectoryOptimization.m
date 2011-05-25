@@ -69,7 +69,7 @@ function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0
 %  con.u_const_across_transitions = true
 %
 % Periodicity Constraints
-%  con.periodic = true       x(t0) = x(tf)
+%  con.periodic = true       x(t0)=x(tf) and u(t0)=u(tf)
 %
 %
 % The following options are supported by one or more of the trajectory

@@ -139,7 +139,7 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
 
 
   if (isfield(con,'periodic') && con.periodic)
-    f = [f;zeros(nX,1)];  % implemented as linear constraint below, just put in zero here
+    f = [f;zeros(nX+nU,1)];  % implemented as linear constraint below, just put in zero here
   end
   if (isfield(con,'u_const_across_transitions') && con.u_const_across_transitions)
     f = [f;zeros((length(N)-1)*nU,1)];
@@ -188,17 +188,19 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind
   Flow = Fhigh;
 
   if (isfield(con,'periodic') && con.periodic)
-    % then add linear constraints  x0[i]=xf[i].  
-    A = [A; repmat([1;-1],nX,1)];
-    iAfun = [iAfun; nf+reshape(repmat(1:nX,2,1),[],1)];
-    x0ind = 1+(1:nX)'; xfind = sum(N)-nU*nT(end)-nX + (1:nX)';
-    jAvar = [jAvar; reshape([x0ind'; xfind'],[],1)];
-    Fhigh = [Fhigh; zeros(nX,1)];
-    Flow = [Flow; zeros(nX,1)];
+    % then add linear constraints  x0[i]=xf[i] and u0[i]=uf[i]
+    A = [A; repmat([1;-1],nX+nU,1)];
+    iAfun = [iAfun; nf+reshape(repmat(1:(nX+nU),2,1),[],1)];
+    x0ind = 1+(1:nX); xfind = sum(N)-nU*nT(end)-nX + (1:nX);
+    u0ind = 1+nX*nT(1)+(1:nU); ufind = sum(N)-nU + (1:nU);   
+    jAvar = [jAvar; reshape([x0ind,u0ind; xfind,ufind],[],1)];
+    Fhigh = [Fhigh; zeros(nX+nU,1)];
+    Flow = [Flow; zeros(nX+nU,1)];
     if (nargout>5)
-      for j=1:nX, oname= {oname{:},['con.periodic_',num2str(j)]}; end
+      for j=1:nX, oname= {oname{:},['con.periodic_x',num2str(j)]}; end
+      for j=1:nU, oname= {oname{:},['con.periodic_u',num2str(j)]}; end
     end      
-    nf = nf + nX;
+    nf = nf + nX+nU;
   end
   
   if (isfield(con,'u_const_across_transitions') && con.u_const_across_transitions)
@@ -207,7 +209,7 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind
       iAfun = [iAfun;nf+reshape(repmat(1:nU,2,1),[],1)];
       u0ind = sum(N(1:i))+1+nX*nT(i+1)+(1:nU);
       ufind = sum(N(1:(i-1)))+1+nX*nT(i)+nU*(nT(i)-1)+(1:nU);
-      jAvar = [jAvar; reshape([u0ind'; ufind'],[],1)];
+      jAvar = [jAvar; reshape([u0ind; ufind],[],1)];
       Fhigh = [Fhigh; zeros(nU,1)];
       Flow = [Flow; zeros(nU,1)];
       if (nargout>5)

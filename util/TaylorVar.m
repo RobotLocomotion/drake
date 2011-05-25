@@ -632,6 +632,9 @@ classdef TaylorVar
     function tv = tanh(obj)
       tv=elementwise(obj,@tanh,@(x) ones(size(x))-tanh(x).^2);
     end
+    function tv = exp(obj)
+      tv=elementwise(obj,@exp,@exp); 
+    end
     function a=abs(a)
       s=sign(a.f);
       a.f=abs(a.f);
