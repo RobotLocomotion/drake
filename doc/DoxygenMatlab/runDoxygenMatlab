@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# check to make sure the temp file does not exist
+if [ -e $1.preprocess.m ]; then
+    echo "Preprocessor temp file exists.  Please remove $1.preprocess.m"
+    exit 1
+fi
+
+# first run the preprocessor
+
+doc/DoxygenMatlab/preprocess.pl $1 > $1.preprocess.m
+
+# now run the actual processor
+
+doc/DoxygenMatlab/m2cpp.pl $1.preprocess.m
+
+# delete the temp file
+rm $1.preprocess.m
