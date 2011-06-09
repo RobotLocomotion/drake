@@ -11,6 +11,10 @@ else
 
 open(my $in, $fname);
 
+
+# set to 1 to use <pre> above and below in places where there are not @ commands and the comments are long
+$usePre = 0;
+
 $incommentblock = 0;
 $functionDef = "";
 $commentString = "";
@@ -21,6 +25,16 @@ $firstCommentLineEndsNum = -1;
 
 $firstAt = -1;
 $lastAt = -1;
+
+$optionStartString = "%> <dl>\n%> <dt>\n%> <b>\n%> Options:\n%> </b>\n%> </dt>\n%> <dd>\n%> <table border=\"0\" cellpadding=\"0\" cellspacing=\"2\">";
+
+$optionString = $optionStartString;
+
+$optionEndString = "\n%> </table>\n%> </dd>\n%> </dl>\n";
+
+$haveOption = 0;
+$lastWasOption = 0;
+$lastWasBlank = 0;
 
 while (<$in>)
 {
@@ -37,8 +51,6 @@ while (<$in>)
             $thisComment =~ s/\s*%/%>/;
             #$thisComment =~ s/[\n\r]/<br>\n/;
             
-            
-            
             # if the line doesn't have and @ in it, double-break it to make the output look good
             # since the user is likely formatting their comments with line breaks
             
@@ -51,103 +63,115 @@ while (<$in>)
                 
                 $lastAt = length($commentString . $thisComment);
             }
-            #} else {
-#                if ($thisComment =~ m/(\s*).*/)
-#                {
-#                #    $thisComment = $thisComment . $1 . "%>\n";
-#                    #$thisComment = $thisComment;
-#                }
-            #}
             
-            if ($firstCommentLineEndsNum < 0 && $thisComment =~ m/[^%>\s]/)
+            # check to see if this is an @option that we are parsing ourselves
+            if ($thisComment =~ m/^[\s%>]*\@option ([^ ]*) (.*)/)
             {
-                $firstCommentLineEndsNum = length($commentString . $thisComment);
+                
+                # read this option as @option <option_name> <option description (might be long)>
+                #
+                # ex: @option t_max               - longest trajectory (default 10s)
+                
+                $thisOptionName = $1;
+                $thisOptionDesc = $2;
+                
+                if ($lastWasOption == 1)
+                {
+                    $optionString = $optionString . "\n%> </td>\n%> </tr>";
+                }
+                
+                $optionString = $optionString . "\n%> <tr>\n%> <td valign=\"top\">\n%> <em>" . $thisOptionName . "</em>&nbsp;\n%> </td>\n%> <td valign=\"top\">" . $thisOptionDesc;
+                
+                $haveOption = 1;
+                $lastWasOption = 1;
+                
+                
+            } else {
+
+                if ($lastWasOption == 1 && $lastWasBlank == 1 && $thisComment !~ m/^[\s%>]*[\n\r]/)
+                {
+                    # put option down since this is text that isn't an option anymore
+                    
+                    $optionString = $optionString . "\n%> </td>\n%> </tr>";
+                    
+                    $commentString = $commentString . $optionString . $optionEndString;
+                    
+                    $lastWasOption = 0;
+                    $haveOption = 0;
+                    $optionString = $optionStartString;
+                    
+                    $commentString = $commentString . $thisComment;
+                    
+                } elsif ($lastWasOption == 1) {
+                    # this is a line-wrapped option (not blank, but not @option)
+                    
+                    # strip out the comment
+                  #  $thisComment =~ s/%>//;
+                    
+                    $optionString = $optionString . "\n" . $thisComment;
+                } else {
+            
+
+                
+                    if ($firstCommentLineEndsNum < 0 && $thisComment =~ m/[^%>\s]/)
+                    {
+                        $firstCommentLineEndsNum = length($commentString . $thisComment);
+                    }
+                    
+                    $commentString = $commentString . $thisComment;
+                    
+                    $numCommentLines = $numCommentLines + 1;
+                }
             }
             
-            if ($numCommentLines > 2)
+            if ($thisComment != m/^[\s%>]*[\n\r]/)
             {
-                # we're going to be processing with <pre>'s since the comment is long
-                #$thisComment =~ s/%>/%> <pre>/;
-                #$thisComment =~ s/[\n\r]/<\/pre>\n/;
-                #$thisComment = "%> <pre>" . $thisComment . "</pre>";
-                
-                # close a pre if we detect and @param or @retval
-                
-                #if (($thisComment =~ s/\@param/<\/pre>\@param/) || ($thisComment =~ s/\@retval/<\/pre>\@retval/))
-                #{
-                 #   $lastLineHadCommand = 1;
-                    #$thisComment = $thisComment . "%> <pre>\n";
-                #}
-                
-                
-                
+                $lastWasBlank = 1;
+            } else {
+                $lastWasBlank = 0;
             }
             
-            $commentString = $commentString . $thisComment;
-            
-            $numCommentLines = $numCommentLines + 1;
         } else {
             $incommentblock = 0;
+            
+            if ($haveOption == 1)
+            {
+                $commentString = $commentString . $optionString . $optionEndString;
+            }
+            
             #print("not searching for comments right after functions anymore!\n");
-            
-            # we want to use preformatted text since our comments are formatted directly in matlab source
-            # to do this, first strip out the leading tabs (but keep extra tabs)
-#            if ($commentString =~ m/(\s*)%>/)
-#            {
-#                $beginningTabs = $1;
-#                print "\n-------\n" . $beginningTabs . "\n------\n";
-#                
-##                $commentString =~ s/$beginningTabs/\n/g;
-#            }
-            
+################## uncomment to use <pre> ##############
             # swap the order of the comments and the function definitions
             # the last $_ adds this line to the ouptut, since we should include it in the normal
             # order of things
-            if ($numCommentLines > 2)
-            {
-                # since this is a long comment, we'll want to consider use preformatting everywhere we don't have
-                # @param, or other @commands
-                
-                # add a <pre> to the first line
-                
-                #$commentString = "%> <pre>\n%> " . $commentString;
-                
-                if ($firstAt > 0 && $lastAt > 0)
-                {
-                    $firstCommentLine = substr $commentString, 0, $firstCommentLineEndsNum;
-                    $commentStringBeforeAt = substr $commentString, $firstCommentLineEndsNum, ($firstAt - $firstCommentLineEndsNum);
-                    $commentStringBetweenAt = substr $commentString, $firstAt, ($lastAt - $firstAt);
-                    $commentStringAfterAt = substr $commentString, $lastAt;
-                    
-                    
-                    $commentString = $firstCommentLine . "%> \n%> <pre>\n%> \n" . $commentStringBeforeAt . "%> \n%> </pre>\n%> \n" . $commentStringBetweenAt . "%> \n%> <pre>\n%> \n" . $commentStringAfterAt . "%> \n%> </pre>\n%> \n";
-                    
-                } else {
-                    $firstCommentLine = substr $commentString, 0, $firstCommentLineEndsNum;
-                    $commentStringRest = substr $commentString, $firstCommentLineEndsNum;
-                    $commentString = $firstCommentLine . "%> \n%> <pre>\n%> \n" . $commentStringRest . "%> \n%> </pre>\n%> \n";
-                
-                }
-                
-                
-                # check to see if the person is using "@param", "@retval", or "<pre>" options
-                # if not, do it for them
-                
-                #if ($commentString =~ m/(\@param|\@retval|<pre>)/)
-                #{
-                    # let the user do their own formatting.
-                #} else {
-                    #$commentString =~ s/[\n\r]/\n%> <pre>\n/;
-                    
-                    
-                        
-                    
-                    #$commentString = $commentString . "%> </pre>\n";
-    #                $commentString = $firstCommentLine . "%> <pre>\n" . $commentString . "%> </pre>\n";;
-                #}
-            }
+#            if ($numCommentLines > 2 && $usePre == 1)
+#            {
+#                # since this is a long comment, we'll want to consider use preformatting everywhere we don't have
+#                # @param, or other @commands
+#                
+#                # add a <pre> to the first line
+#                
+#                #$commentString = "%> <pre>\n%> " . $commentString;
+#                
+#                if ($firstAt > 0 && $lastAt > 0)
+#                {
+#                    $firstCommentLine = substr $commentString, 0, $firstCommentLineEndsNum;
+#                    $commentStringBeforeAt = substr $commentString, $firstCommentLineEndsNum, ($firstAt - $firstCommentLineEndsNum);
+#                    $commentStringBetweenAt = substr $commentString, $firstAt, ($lastAt - $firstAt);
+#                    $commentStringAfterAt = substr $commentString, $lastAt;
+#                    
+#                    
+#                    $commentString = $firstCommentLine . "%> \n%> <pre>\n%> \n" . $commentStringBeforeAt . "%> \n%> </pre>\n%> \n" . $commentStringBetweenAt . "%> \n%> <pre>\n%> \n" . $commentStringAfterAt . "%> \n%> </pre>\n%> \n";
+#                    
+#                } else {
+#                    $firstCommentLine = substr $commentString, 0, $firstCommentLineEndsNum;
+#                    $commentStringRest = substr $commentString, $firstCommentLineEndsNum;
+#                    $commentString = $firstCommentLine . "%> \n%> <pre>\n%> \n" . $commentStringRest . "%> \n%> </pre>\n%> \n";
+#                
+#                }
+#            }
+########################################################
 
-#            $commentString = substr $commentString, 0, -1;
             $output = $output . $commentString;
             
             $output = $output . $functionDef . $_;
@@ -158,6 +182,10 @@ while (<$in>)
             $firstAt = -1;
             $lastAt = -1;
             $firstCommentLineEndsNum = -1;
+            $optionString = $optionStartString;
+            $lastWasOption = 0;
+            $haveOption = 0;
+            $lastWasBlank = 0;
         }
 
     } elsif ((/(^\s*function)\s*([\] \w\d,_\[]+=)?\s*([.\w\d_-]*)\s*\(?([\w\d\s,~]*)\)?(%?.*)/) || (/(^\s*classdef)\s*(\s*\([\{\}\?\w,=\s]+\s*\))?\s*([\w\d_]+)\s*<?\s*([\s\w\d._&]+)?(.*)/))

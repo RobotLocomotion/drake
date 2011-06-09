@@ -1,4 +1,4 @@
-function [utraj,xtraj,info] = dirtran(sys,costFun,finalCostFun,x0,utraj0,con,options)
+function [utraj,xtraj,info] = dirtranSNOPTtranscription(sys,costFun,finalCostFun,x0,utraj0,con,options)
 
 % Open-loop trajectory optimization using the direct transcription method via
 % SNOPT.  Roughly following the implementation described in Betts01, section 4.5.

@@ -1,9 +1,26 @@
 classdef RobotLibSystem < DynamicalSystem
 % Abstract class that provides common functionality for Smooth- and Hybrid- RobotLib Systems
+%
+% It is a DynamicalSystem with the functionality (dynamics, update, outputs, 
+% etc) implemented in matlab, so that it is amenable to, for instance, symbolic
+% manipulations.  These functions are wrapped as an S-Function in
+% RLCSFunction.cpp.
 
   % constructor
   methods
     function obj = RobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag)
+      % Construct a RobotLibSystem
+      %
+      % @param num_xc number of continuous-time state variables
+      % @param num_xd number of discrete-time state variables
+      % @param num_u number of inputs
+      % @param num_y number of outputs
+      % @param direct_feedthrough_flag true means that the output depends
+      %   directly on the input.  Set to false if possible.
+      % @param time_invariant_flag true means that the
+      %   dynamics/update/output do not depend on time.  Set to true if
+      %   possible.
+      
       if (nargin>0)
         obj = setNumContStates(obj,num_xc);
         obj = setNumDiscStates(obj,num_xd);
@@ -30,19 +47,24 @@ classdef RobotLibSystem < DynamicalSystem
     function n = getNumOutputs(obj)
       n = obj.num_y;
     end
-    function x0 = getInitialStateWInput(obj,t,x,u)  % hook in case a system needs to initial state based on current time and/or input.  note that this will override inputs supplied by simset.
+    function x0 = getInitialStateWInput(obj,t,x,u)  
+      % Hook in case a system needs to initial state based on current time and/or input.  
+      % This gets called after getInitialState(), and unfortunately will override inputs supplied by simset.
       x0=x;  % by default, do nothing. 
     end
     function ts = getSampleTime(obj)  
-      % as described at http://www.mathworks.com/help/toolbox/simulink/sfg/f6-58760.html
+      % As described at http://www.mathworks.com/help/toolbox/simulink/sfg/f6-58760.html
       % to set multiple sample times, specify one *column* for each sample
       % time/offset pair.
       ts = [0;0];  % continuous time, no offset
     end
     function tf = isDirectFeedthrough(obj)
+      % Check if the system is direct feedthrough (e.g., if the output
+      % depends on the immediate input)
       tf = obj.direct_feedthrough_flag;
     end
     function obj = setDirectFeedthrough(obj,tf);
+      % Set the direct feedthrough flag
       obj.direct_feedthrough_flag = tf;
     end
     function mdl = getModel(obj)
@@ -124,6 +146,7 @@ classdef RobotLibSystem < DynamicalSystem
       obj.umax = umax;
     end
     function obj = setNumOutputs(obj,num_y)
+      % Guards the number of outputs to make sure it's consistent
       if (num_y<0) error('num_y must be >=0'); end
       obj.num_y = num_y;
     end
@@ -132,6 +155,8 @@ classdef RobotLibSystem < DynamicalSystem
   % utility methods
   methods
     function gradTest(obj)
+      % Compare numerical and analytical derivatives of dynamics,update,and
+      % output
       if (getNumContStates(obj))
         gradTest(@obj.dynamics,0,getInitialState(obj),getDefaultInput(obj),struct('tol',.01))
       end

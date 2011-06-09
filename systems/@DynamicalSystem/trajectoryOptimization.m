@@ -4,14 +4,13 @@ function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0
 % This file describes the interface used by all of the trajectory
 % optimization tools in robotlib.  
 %
-%  sys - a DynamicalSystem
-%  costFun - handle to scalar function g(t,x(t),u(t)).  total cost is
+% @param costFun handle to scalar function g(t,x(t),u(t)).  total cost is
 %            integral of g over the trajectory + h
-%  finalCostFun - handle to a scalar function h(tf,x(tf)).  
-%  x0 -  a double vector which describes the initial condition
-%  utraj0 - a Trajectory object which the initial u(t)
-%  con  - a structure describing the constraints (details below)
-%  options - a structure describing an options (details below)
+% @param finalCostFun handle to a scalar function h(tf,x(tf)).  
+% @param x0 a double vector which describes the initial condition
+% @param utraj0 a Trajectory object which the initial u(t)
+% @param con a structure describing the constraints (details below)
+% @param options a structure describing the options (details below)
 %
 % All of the trajectory design algorithms support all of 
 % these constraints (or produce a warning if they do not).
@@ -19,6 +18,7 @@ function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0
 % Assuming that the constraint structure is name 'con', valid 
 % constraints specified in the structure are:
 %
+% <pre>
 % State constraints: 
 %  con.x.lb        forall t, lb <= x(t) <= ub
 %  con.x.ub 
@@ -28,8 +28,8 @@ function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0
 %  con.x.beq
 %  con.x.c         forall t, c(x(t)) <= 0
 %  con.x.ceq       forall t, ceq(x(t)) == 0
-%     % to provide gradients of the constraint, these functions should
-%     % output  [f,dfdx] = c(x) , where size(dfdx) = [len(f),len(x)]
+%      to provide gradients of the constraint, these functions should
+%      output  [f,dfdx] = c(x) , where size(dfdx) = [len(f),len(x)]
 %
 % Initial state Constraints:
 %  con.x0.*  
@@ -70,17 +70,17 @@ function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0
 %
 % Periodicity Constraints
 %  con.periodic = true       x(t0)=x(tf) and u(t0)=u(tf)
-%
+% </pre>
 %
 % The following options are supported by one or more of the trajectory
 % design algorithms:
 %
-%  ode_solver   - name of a <a href="http://www.mathworks.com/help/toolbox/simulink/ug/f11-69449.html">Simulink ode solver</a>
-%  optimizer    - 'fmincon','snopt', ... 
-%  grad_method  - 'numerical', 'bptt', 'rtrl', ...
-%  grad_test    - true or false
-%  xtape0       - 'rand', 'simulate', 'x0toxf', ...
-%  trajectory_cost_fun - function handle to a one-shot cost function Jtraj(T,X,U),
+%  @options ode_solver name of a <a href="http://www.mathworks.com/help/toolbox/simulink/ug/f11-69449.html">Simulink ode solver</a>
+%  @options optimizer 'fmincon','snopt', ... 
+%  @options grad_method 'numerical', 'bptt', 'rtrl', ...
+%  @options grad_test true or false
+%  @options xtape0 'rand', 'simulate', 'x0toxf', ...
+%  @options trajectory_cost_fun function handle to a one-shot cost function Jtraj(T,X,U),
 %        with T=[t0,t1,...tN],X=[x0,x1,...,xN],U=[u0,u1,...,uN], which is
 %        added to the original cost.  e.g., 
 %           J = Jtraj(T,X,U) + h(tf,x(tf)) + int_t0^tf g(t,x,u)dt

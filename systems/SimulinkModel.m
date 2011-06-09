@@ -1,11 +1,14 @@
 classdef SimulinkModel < DynamicalSystem
-% An interface class for a state-space dynamical system (also a simulink model)
-%  with a single (vector) input u 
-%  and a single (vector) state x composed of a combination of continuous time and discrete time variables, which is also the output
-                                                 
+% Implements the DynamicalSystem interface for any existing simulink model
+% with one (vector) input and one (vector) output
+
   % constructor
   methods
     function obj = SimulinkModel(mdl)
+      % Construct a simulink model DynamicalSystem
+      %
+      % @param mdl a string containing the name of an existing simulink model
+      
       load_system(mdl);
       obj.mdl = mdl;
       sys = feval(mdl,[],[],[],'sizes');
@@ -53,10 +56,9 @@ classdef SimulinkModel < DynamicalSystem
       % the following two lines are a bizarre work-around to a bug I've
       % submitted to the mathworks.  they should be deleted if i figure out
       % what's going on.
-      Simulink.BlockDiagram.getInitialState(obj.mdl);
-      xcdot = feval(obj.mdl,t,x,u,'derivs');
-
-      xcdot = stateStructureToVector(obj,xcdot);
+%      Simulink.BlockDiagram.getInitialState(obj.mdl);
+%      xcdot = feval(obj.mdl,t,x,u,'derivs');
+%      xcdot = stateStructureToVector(obj,xcdot);
     end
     
     function xdn = update(obj,t,x,u)

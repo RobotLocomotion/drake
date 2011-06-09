@@ -1,4 +1,12 @@
 function traj = simulate(obj,tspan,x0,options)
+% Simulates the dynamical system (using the simulink solvers)
+%
+% @param tspan a 1x2 vector of the form [t0 tf]
+% @param x0 a vector of length(getNumStates) which contains the initial
+% state
+% @param options 
+%
+% No options implemented yet
 
 typecheck(tspan,'double');
 if (length(tspan)<2) error('length(tspan) must be > 1'); end

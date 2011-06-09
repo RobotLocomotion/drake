@@ -63,7 +63,8 @@ foreach $my_fic (@listeFic)
     
     #if inside a property block, we'll take all the comments, not just ones pointed
     # explicitly at us (ue take % and %> comments)
-    if ($listeProperties == 1 && (/(^\s*)(%)(.*)/))
+    # also do this for an abstract method block
+    if ( ($listeProperties == 1 && (/(^\s*)(%)(.*)/)) || ($inAbstractMethodBlock == 1 && (/(^\s*)(%)(.*)/))  )
     {
       $output=$output."$1///$3";
     }
@@ -143,19 +144,12 @@ foreach $my_fic (@listeFic)
         }
       }
     }
-    #print "default var:".$_ . "\n";
-    if (/(^\s*function)\s*([\] \w\d,_\[]+=)?\s*([.\w\d_-]*)\s*\(?([\w\d\s,~]*)\)?(%?.*)/)
-#    if (/(^\s*function)\s*([\] \w\d,_\[]+=)?\s*([.\w\d_-]*)\s*\(?([\w\d\s,~]*)\)?(%?.*)(.*)/)
-# we're going to need negative lookahead, I think
-    
-#     if (/(^\s*function)\s*([\] \w\d,_\[]+=)?\s*([.\w\d_-]*)\s*\(?([\w\d\s,~]*)\)?(%?.*)[\n\r]+%(.*)/)    
-#     (?s)(\s*%.*?)(?-s).+\s*[^\s%]/)
+    if (/(^\s*function)\s*([\] \w\d,_\[]+=)?\s*([.\w\d_-]*)\s*\(?([\w\d\s,~=]*)\)?(%?.*)/)
     {
       $functionKeyWord = $1;
       $functionName = $3;
       $arguments = $4;
 #      $linecomment = $5;
-#      $comments = $6;
       if ($inClass == 0)
       {
         $output = $declTypeDef.$output;
@@ -169,8 +163,6 @@ foreach $my_fic (@listeFic)
       {
         $arguments = "";
       }
-#      print "\n\n". $functionKeyWord." ". $functionName."(".$arguments.");\n\n";
-#      print "\n----------------->>>>\nlinecomment: ".$linecomment."\n>>>>--------\ncomment: ".$comments."\n----------------\n";
       $ligne = "$methodAttribute $functionKeyWord $functionName($arguments);"; 
       $output=$output.$ligne;
     }
