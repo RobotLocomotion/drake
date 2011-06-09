@@ -701,8 +701,8 @@ INPUT_FILTER           =
 # info on how filters are used. If FILTER_PATTERNS is empty, INPUT_FILTER 
 # is applied to all files.
 
-#FILTER_PATTERNS        = *.m=doc/DoxygenMatlab/m2cpp.pl
-FILTER_PATTERNS        = *.m=doc/DoxygenMatlab/runDoxygenMatlab 
+FILTER_PATTERNS        = *.m=doc/DoxygenMatlab/m2cpp.pl
+#FILTER_PATTERNS        = *.m=doc/DoxygenMatlab/runDoxygenMatlab 
 
 # If the FILTER_SOURCE_FILES tag is set to YES, the input filter (if set using 
 # INPUT_FILTER) will be used to filter the input files when producing source 
