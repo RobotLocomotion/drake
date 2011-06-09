@@ -1,4 +1,16 @@
 function runLCM(obj,lcmCoder,in,out,options)
+% Runs the system as an lcm node.
+% 
+%  @param lcmCoder an LCMCoder object which defines all of the messages
+%  @param in the name of the message to subscribe to for the input.  Must be
+%    'x','xhat','u', or 'y'.  The robotname is automatically prepended.
+%  @param out the name of the message to publish for the output.  Must be
+%    'x','xhat','u', or 'y'.  The robotname is automatically prepended.
+%  @param options 
+%
+%  @option tspan a 1x2 vector defining the start and end time of the simulation.  default [0,inf]
+
+
 
 if (nargin<5) options = struct(); end
 if (isfield(options,'tspan'))

@@ -1,4 +1,18 @@
 function [ltisys,V] = tilqr(obj,x0,u0,Q,R)
+% Computes an LQR controller to stabilize the system around (x0,u0)
+%
+% Linearizes the system around the nominal point then calls lqr (if the
+% input and output sample times of the model are continuous) otherwise
+% calls dlinearize/dlqr.
+%
+% The system must be time-invariant.
+%
+% @param x0 the nominal/goal state
+% @param u0 the nominal input
+% @param Q,R describe the LQR cost function \int dt (x'*Q*r + u'*R*u)
+%
+% @retval ltisys a system which implements the control u=-K*x
+% @retval V an msspoly representation of the cost-to-go function x'*S*x
 
 % ts is a simulink sample time
 if (~isTI(obj)) error('I don''t know that this system is time invariant.  Set the TI flags and rerun this method if you believe the system to be.'); end

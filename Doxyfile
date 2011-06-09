@@ -188,7 +188,9 @@ TAB_SIZE               = 16
 # will result in a user-defined paragraph with heading "Side Effects:". 
 # You can put \n's in the value part of an alias to insert newlines.
 
-ALIASES                = 
+#ALIASES                = "option=\xrefitem option \"Options\" \"Options2\""
+#ALIASES                = "options=\par \"Options:\n\""
+ALIASES                = "default=@n @a Default: "
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C 
 # sources only. Doxygen will then generate output that is more tailored for C. 
@@ -644,7 +646,9 @@ EXCLUDE_SYMLINKS       = NO
 # against the file with absolute path, so to exclude all test directories 
 # for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       =
+EXCLUDE_PATTERNS       = */dev/* \
+                         */test/* \
+                         */lcmt_*
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names 
 # (namespaces, classes, functions, etc.) that should be excluded from the 

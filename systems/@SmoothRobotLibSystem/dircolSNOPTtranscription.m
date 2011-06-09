@@ -1,5 +1,4 @@
 function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,iname,oname] = dircolSNOPTtranscription(sys,costFun,finalCostFun,x0,utraj0,con,options)
-
 % Direct collocation method.
 %   Basic algorithm:  
 %     u(t) is represented as a first-order spline
@@ -9,9 +8,6 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
 %   updates to match the spline derivatives, etc.
 %
 %  I use the algorithm as described in Enright91 and Hargraves86
-
-%  todo: handle full set of constraints / options
-%  todo: cost function should be on the outputs?  or just on the states?
 
 if (~isfield(options,'xtape0')) options.xtape0='free'; end
 
