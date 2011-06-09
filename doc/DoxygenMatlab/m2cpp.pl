@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+require "doc/DoxygenMatlab/preprocess.pl";
+
 if ($#ARGV != 0)
 {
   die "Argument must contain filename $#ARGV"
@@ -27,8 +29,9 @@ if ($fname =~ /^(.*)\@([\d\w-_]*)[\/\\](\2)\.m/)
       @listeFic[$i] = $my_test;
     }
   }
+
 }
-# otherwise @-folder, but .m with a different name : ignore it
+# otherwise @-folder, but .m with a different name : ignore it (we read it when we read the main class file)
 elsif ($fname =~ /^(.*)\@([\d\w-_]*)[\/\\](.*)\.m/)
 {
 }
@@ -40,8 +43,8 @@ else
 $output = "";
 foreach $my_fic (@listeFic)
 {
-
-  open(my $in, $my_fic);
+  $my_fic2 = preprocess($my_fic);
+  open(my $in, $my_fic2);
 
   $declTypeDef="";
   $inClass = 0;
@@ -49,12 +52,16 @@ foreach $my_fic (@listeFic)
   $listeProperties = 0;
   $listeEnumeration = 0;
   $inComment = 0;
-
-  $methodAttribute = "";
+  $listeEvents = 0;
+  
+  #default to public methods since if we're in a file that is not the main class file
+  # we might end up not hitting a method block first, in which case the functions should be public
+  $methodAttribute = "public:";
 
 
   while (<$in>)
   {
+  
     # convert matlab sytle comments to C sytle comments
     if (/(^\s*)(%>)(.*)/)
     {
@@ -64,8 +71,17 @@ foreach $my_fic (@listeFic)
     #if inside a property block, we'll take all the comments, not just ones pointed
     # explicitly at us (ue take % and %> comments)
     # also do this for an abstract method block
-    if ( ($listeProperties == 1 && (/(^\s*)(%)(.*)/)) || ($inAbstractMethodBlock == 1 && (/(^\s*)(%)(.*)/))  )
+    if ( $listeProperties == 1 )
     {
+        if  ((/(^\s*)(%)(.*)/)) 
+        {
+            $output=$output."$1///$3";
+        }
+    }
+    
+    if ( ($inAbstractMethodBlock == 1 && (/(^\s*)(%)(.*)/))  )
+    {
+      
       $output=$output."$1///$3";
     }
     
@@ -79,26 +95,29 @@ foreach $my_fic (@listeFic)
       $inAbstractMethodBlock = 0;
     }
     
-    if (($listeProperties == 1) && (/^\s*([\w\d]*)\s*(=\s*[\w\d{}'',\s\[\]\.]*)?.*(%>.*)?/))
+    if (($listeProperties == 1) && (/^\s*([\w\d]*)\s*(=\s*[\w\d{}'',\s\[\]\.]*)?[;\s]*(%[>]?.*)?/))
     {
       $propertyName = $1;
       $propertyValue = $2;
       $propertyComment = $3;
+      
       if (!($propertyName =~ /^$/))
       {
         if ($typeProperties =~ /Constant/)
         {
-          $properties = $propertyName."$propertyValue;$propertyComment";
+          $properties = $propertyName."$propertyValue;";
         }
         else
         {
-          $properties = $propertyName.";$propertyComment";
+          $properties = $propertyName.";";
         }
 
         # replace all "%>"s and "%"s with "//"
         $properties =~ s/%>/\/\/\//g;
-        $properties =~ s/%/\/\//g;
-        $output=$output.$typeProperties."Property ".$properties;
+        $properties =~ s/%/\/\/\//g;
+        $propertyComment =~ s/%>/\/\/\//;
+        $propertyComment =~ s/%/\/\/\//;
+        $output=$output.$propertyComment . "\n" . $typeProperties."Property ".$properties;
       }
     }
     if (($listeEnumeration == 1) && (/(^\s*\bend\b\s*)/))
@@ -269,6 +288,10 @@ foreach $my_fic (@listeFic)
     $output=$output."\n";
   }
   close $in;
+  
+  # delete the preprocess file
+  unlink($my_fic2);
+  
 }
 $output=$output."};\n";
 #print $output;
