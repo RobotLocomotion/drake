@@ -3,31 +3,30 @@
 
 LCMFILES = $(shell find . -iname "*.lcm" | tr "\n" " " | sed "s|\./||g")
 
-LCM_CFILES = $(LCMFILES:%.lcm=%.c) #$(shell echo $(LCMFILES) | sed "s|$<[A-Za-z0-9._/]*/|src/|g" | sed "s|\.lcm$<|.c|g")
-LCM_OBJFILES = $(LCM_CFILES:%.c=%.o)
-LCM_JAVAFILES = $(LCMFILES:%.lcm=%.java)
-LCM_CLASSFILES = $(JAVAFILES:%.java=%.class)
-
-#  this looks stupid and redundant, but soon i will want to make more than just LCM files
+LCM_CFILES = $(LCMFILES:%.lcm=%.c) 
 CFILES = $(LCM_CFILES)
-OBJFILES = $(LCM_OBJFILES)
-JAVAFILES = $(LCM_JAVAFILES)
-CLASSFILES = $(LCM_CLASSFILES)
+LCM_JAVAFILES = $(LCMFILES:%.lcm=%.java)
+OTHER_JAVAFILES = util/MyLCMTypeDatabase.java
+JAVAFILES = $(LCM_JAVAFILES) $(OTHER_JAVAFILES)
+
+OBJFILES = $(CFILES:%.c=%.o)
+CLASSFILES = $(JAVAFILES:%.java=%.class) 
+EXTRACLASSFILES = util/MyLCMTypeDatabase*MyClassVisitor.class
 
 all: java c
 
 java : robotlib.jar
 
 c : robotlib.a
-	
+
 robotlib.jar : $(CLASSFILES)
-	cd ..; jar -cf robotlib/robotlib.jar $(CLASSFILES:%=robotlib/%)
+	cd ..; jar -cf robotlib/robotlib.jar $(CLASSFILES:%=robotlib/%) $(EXTRACLASSFILES:%=robotlib/%)
 
 robotlib.a : $(OBJFILES)
 	ar rc $@ $^
 
 .INTERMEDIATE : $(OBJFILES) $(CLASSFILES)
-.PRECIOUS : $(LCMFILES) 
+.PRECIOUS : $(LCMFILES) $(OTHER_JAVAFILES)
 
 %.class : %.java
 	javac $<
@@ -44,5 +43,5 @@ robotlib.a : $(OBJFILES)
 	lcm-gen -j --jdefaultpkg="robotlib.$(shell echo $< | sed "s|/[A-Za-z0-9._]*\.lcm||g" | tr "/" ".")" --jpath=".." $<
 
 clean : 
-	-rm -f robotlib.jar robotlib.a $(LIBS) $(HFILES) $(CFILES) $(OBJFILES) $(JAVAFILES) $(CLASSFILES)
+	-rm -f robotlib.jar robotlib.a $(LIBS) $(LCM_HFILES) $(LCM_CFILES) $(OBJFILES) $(LCM_JAVAFILES) $(CLASSFILES) $(EXTRACLASSFILES)
 
