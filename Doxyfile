@@ -581,7 +581,7 @@ INPUT                  =
 # also the default input encoding. Doxygen uses libiconv (or the iconv built 
 # into libc) for the transcoding. 
 
-INPUT_ENCODING         = ISO-8859-1
+#INPUT_ENCODING         = ISO-8859-1
 
 # If the value of the INPUT tag contains directories, you can use the 
 # FILE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -646,7 +646,8 @@ EXCLUDE_SYMLINKS       = NO
 # against the file with absolute path, so to exclude all test directories 
 # for example use the pattern */test/*
 
-EXCLUDE_PATTERNS       = */dev/* \
+EXCLUDE_PATTERNS       = */.svn/* \
+			 */dev/* \
                          */test/* \
                          */lcmt_*
 

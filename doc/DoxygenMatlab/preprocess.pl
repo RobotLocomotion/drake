@@ -120,7 +120,7 @@ sub preprocess
                     }
                 }
                 
-                if ($thisComment != m/^[\s%>]*[\n\r]/)
+                if ($thisComment !~ m/^[\s%>]*[\n\r]/)
                 {
                     $lastWasBlank = 1;
                 } else {
