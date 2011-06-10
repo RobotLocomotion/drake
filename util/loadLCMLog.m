@@ -18,15 +18,28 @@ function data = loadLCMLog(logfile,classpathtosearch)
 %   utime = [data.channel(:).utime];  
 % where channel is replaced by a true channel name.
 %
+% See also loadLCMRobotLibLog 
 
 if (nargin<1 || isempty(logfile))
-  logfile=uigetfile('*');
+  [filename,pathname]=uigetfile('*');
+  logfile=[pathname,filename];
 end
 if (nargin<2)
-  classpathtosearch=javaclasspath('-dynamic'); %getenv('CLASSPATH');
+  %classpathtosearch=getenv('CLASSPATH');
+  
+  % munge javaclasspath return into a colon separated list
+  classpathtosearch=javaclasspath('-dynamic')'; 
+  classpathtosearch=[classpathtosearch; repmat({':'},1,length(classpathtosearch))];
+  classpathtosearch=[classpathtosearch{:}]; 
+  classpathtosearch=classpathtosearch(1:end-1);  % remove extra ':'
+  
   disp(['Searching for lcmtypes in the following classpath:\n',classpathtosearch]);
 end
-log = lcm.logging.Log(logfile,'r');
+try 
+  log = lcm.logging.Log(logfile,'r');
+catch
+  disp(['Can''t load log file: ',logfile]);
+end
 handlers = robotlib.util.MyLCMTypeDatabase(classpathtosearch);
 
 data=struct();
