@@ -7,4 +7,4 @@
 %> Use the panels above to get started (I recommend checking out the <a href="inherits.html">class
 %> hierarchy</a>)
 %>
-%> Russ (russt@mit.edu)
+%> Russ (russt@mit.edu) and Andy (abarry@csail.mit.edu)
