@@ -20,7 +20,12 @@ import java.lang.reflect.*;
 
 import lcm.lcm.*;
 
-/** Searches classpath for objects that implement LCSpyPlugin using reflection. **/
+/** Searches classpath for objects that implement LCSpyPlugin using reflection. 
+ * This is a direct copy of lcm.spy.LCMTypeDatabase, with an additional 
+ * constructor added to handle a string classpath.  This was necessary 
+ * because MATLAB's classpath is filled with a huge a huge number of classes,
+ * which make the ClassDiscoverer inefficient and even break it.  
+ **/
 public class MyLCMTypeDatabase
 {
     HashMap<Long, Class> classes = new HashMap<Long, Class>();
