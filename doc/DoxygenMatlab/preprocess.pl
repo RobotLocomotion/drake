@@ -31,6 +31,8 @@ sub preprocess
     my $haveOption = 0;
     my $lastWasOption = 0;
     my $lastWasBlank = 0;
+    my $functionReturnVals = "";
+    my $functionDefsReturns = 0;
 
     while (<$in>)
     {
@@ -40,6 +42,13 @@ sub preprocess
         
         if ($incommentblock == 1)
         {
+            # check to see if this line defines return values
+            if ((/\@retval/))
+            {
+                $functionDefsReturns = 1;
+            }
+            
+            
             if ((/^\s*%/))
             {
                 #print ("this is a comment right after a function!\n");
@@ -106,7 +115,7 @@ sub preprocess
                         
                         $optionString = $optionString . "\n" . $thisComment;
                     } else {
-                
+                        # end stuff dealing with @option
 
                     
                         if ($firstCommentLineEndsNum < 0 && $thisComment =~ m/[^%>\s]/)
@@ -117,7 +126,7 @@ sub preprocess
                         $commentString = $commentString . $thisComment;
                         
                         $numCommentLines = $numCommentLines + 1;
-                    }
+                    } #end if
                 }
                 
                 if ($thisComment !~ m/^[\s%>]*[\n\r]/)
@@ -128,11 +137,33 @@ sub preprocess
                 }
                 
             } else {
+                # this line isn't a comment (just left a comment block)
+                
                 $incommentblock = 0;
                 
                 if ($haveOption == 1)
                 {
                     $commentString = $commentString . $optionString . $optionEndString;
+                }
+                
+                # check to see if the comment ever defined return values
+                # if not, do it for the user
+                if ($functionDefsReturns == 0 && $functionReturnVals =~ m/\w/)
+                {
+                    # this function doesn't comment the return values, so do it for the user
+                    
+                    # the list ends when we find a "="
+                    # and replace each comma with a new line and a @retval
+                    
+                    $functionReturnVals =~ s/,/\n%> \@retval /g;
+                    
+                    $functionReturnVals =~ s/[\[\]=]//g;
+                    
+                    $functionReturnVals = "\n%> \@retval " . $functionReturnVals . "\n";
+                    
+                    #print ">>>> " . $functionReturnVals . "\n";
+                    $commentString = $commentString . $functionReturnVals;
+                    
                 }
                 
                 #print("not searching for comments right after functions anymore!\n");
@@ -182,6 +213,8 @@ sub preprocess
                 $lastWasOption = 0;
                 $haveOption = 0;
                 $lastWasBlank = 0;
+                $functionReturnVals = "";
+                $functionDefsReturns = 0;
             }
 
         } elsif ((/(^\s*function)\s*([\] \w\d,_\[]+=)?\s*([.\w\d_-]*)\s*\(?([\w\d\s,~]*)\)?(%?.*)/) || (/(^\s*classdef)\s*(\s*\([\{\}\?\w,=\s]+\s*\))?\s*([\w\d_]+)\s*<?\s*([\s\w\d._&]+)?(.*)/))
@@ -190,6 +223,9 @@ sub preprocess
             $functionDef = $_;
             
             $incommentblock = 1;
+            
+            $functionReturnVals = $2;
+            
         } else {
             # nothing special happening... just move along
             $output = $output . $_;
