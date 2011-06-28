@@ -66,11 +66,11 @@ end
 
 % add robotlib directories to the matlab path 
 addpath([conf.root,'/systems']);
-addpath([conf.root,'/plants']);
-addpath([conf.root,'/plants/obstacles']);
-addpath([conf.root,'/controllers']);
-addpath([conf.root,'/estimators']);
-addpath([conf.root,'/trajectories']);
+addpath([conf.root,'/systems/plants']);
+addpath([conf.root,'/systems/plants/obstacles']);
+addpath([conf.root,'/systems/controllers']);
+addpath([conf.root,'/systems/estimators']);
+addpath([conf.root,'/systems/trajectories']);
 addpath([conf.root,'/util']);
 
 % todo: setup java classpath (not hard to do it once... but how can I set

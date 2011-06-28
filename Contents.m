@@ -7,9 +7,6 @@
 % 
 % Sub-Directories
 %   systems     - core dynamical systems functionality
-%   plants      - systems that implement plant dynamics
-%   controllers - systems that design and implement controllers
-%   estimators  - systems for state estimation
 %   util        - shared code used by multiple components
 %   drivers     - interface code for sensors and actuators
 %   examples    - dynamics and control examples for a number of model systems
