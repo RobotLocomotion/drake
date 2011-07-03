@@ -31,7 +31,7 @@ classdef VanDerPol < PolynomialSystem
 %      options.degV=6;
 %      options.degL1=6;
       options.max_iterations=100;
-      options.converged_tol = 1e-5;
+      options.converged_tol = 1e-2;
 %      options.method='pablo'; options.degL1=3;
       options.method='bilinear';
       % NOTEST  % (Current bilinear alternation ends in numerical errors; remove when fixed)

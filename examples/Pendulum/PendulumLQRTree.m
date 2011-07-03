@@ -12,5 +12,7 @@ R = 1;
 options.num_branches=5;
 %options.verify=false;
 options.xs = [0;0]; 
+options.Tslb = 2;   
+options.Tsub = 6;
 options.degL1=4;
 c = LQRTree.buildLQRTree(p,xG,uG,@()rand(2,1).*[2*pi;10]-[pi;5],Q,R,options);

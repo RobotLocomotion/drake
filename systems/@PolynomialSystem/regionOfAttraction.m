@@ -44,7 +44,8 @@ if any([V.m V.n]~=1) error('V0 must be a scalar msspoly'); end
 
 if (strcmp(options.method,'bilinear'))
   V0 = V;
-  rho = 1;  % todo: consider running pablo's method (always) first, to get a feasible initial guess
+  S0 = .5*doubleSafe(subs(diff(diff(V0,x)',x),x,0*x));
+  rho = 1;  
 
   if (~isfield(options,'degL1'))
     options.degL1 = options.degV-1 + deg(f,x);  % just a guess
@@ -53,27 +54,32 @@ if (strcmp(options.method,'bilinear'))
     options.degL2 = options.degL1;
   end
 
-  %% perform balancing (just once)
-  S = .5*doubleSafe(subs(diff(diff(V,x)',x),x,zeros(size(x0))));  % extract Hessian
-  [T,D] = balanceQuadForm(S,(S*A+A'*S));
-%  T=eye(num_x);
-  L1monom = monomials(x,0:options.degL1);
-  L2monom = monomials(x,0:options.degL2);
-  Vmonom = monomials(x,0:options.degV);
+ L1monom = monomials(x,0:options.degL1);
+ L2monom = monomials(x,0:options.degL2);
+ Vmonom = monomials(x,0:options.degV);
+  
+%   L1monom = hermite_basis(monomials(x,0:options.degL1));
+%   L2monom = hermite_basis(monomials(x,0:options.degL2));
+%   Vmonom = hermite_basis(monomials(x,0:options.degV));
+  
+  
+  %% perform balancing 
+% S1 = S0/rho;
+% S2 = S1*A+A'*S1;
+% [T,D] = balanceQuadForm(S1,S2);
+
+  % todo: run pablo's method (always) first, to get a feasible initial
+  % guess?
   
   vol=0;
   for iter=1:options.max_iterations
     last_vol = vol;
     
     % balance on every iteration (since V and Vdot are changing):
-%    S1=.5*doubleSafe(subs(diff(diff(V,x)',x),x,0*x));
-%    S2 = S1*A+A'*S1;
-%%    Vdot = diff(V,x)*f;
-%%    S2=.5*doubleSafe(subs(diff(diff(Vdot,x)',x),x,0*x));
-%    [T,D] = balanceQuadForm(S1,S2);
-%     L1monom = balanced_gaussian_orthogonal_basis(x,options.degL1,inv(D),D);
-%     L2monom = balanced_gaussian_orthogonal_basis(x,options.degL2,inv(D),D);
-%     Vmonom = balanced_gaussian_orthogonal_basis(x,options.degV,inv(D),D);
+     S1 = S0/rho;
+     S2 = S1*A+A'*S1;
+     [T,D] = balanceQuadForm(S1,S2);
+    
     Ti = inv(T);
     Vbal=subss(V,x,T*x);
     V0bal=subss(V0,x,T*x);
@@ -152,9 +158,9 @@ function [L1,sigma1] = findL1(x,f,V,Lxmonom,options)
 
   % run SeDuMi and check output
   [prog,info] = sedumi(prog,-sigma1,0);
-  if (info.numerr>1)
-    error('sedumi had numerical issues.');
-  end
+%  if (info.numerr>1)
+%    error('sedumi had numerical issues.');
+%  end
   if (info.pinf || info.dinf)
     error('problem looks infeasible.');
   end
@@ -176,9 +182,9 @@ function L2 = findL2(x,V,V0,rho,Lxmonom,options)
   prog.sos = L2;
   
   [prog,info] = sedumi(prog,slack,0);
-  if (info.numerr>1)
-    error('sedumi had numerical issues.');
-  end
+%  if (info.numerr>1)
+%    error('sedumi had numerical issues.');
+%  end
   if (info.pinf || info.dinf)
     error('problem looks infeasible.');
   end  
@@ -196,12 +202,11 @@ function [V,rho]=optimizeV(x,f,L1,L2,V0,sigma1,Vxmonom,options)
   
   % construct rho
   [prog,rho] = new(prog,1,'pos');
-  [prog,sigma2] = new(prog,1,'pos');
   
   % setup SOS constraints
   prog.sos = -Vdot + L1*(V - 1) - sigma1*V/2;
   prog.sos = -(V-1) + L2*(V0 - rho); 
-  prog.sos = V-sigma2*x'*x;
+  prog.sos = V; 
   
   % run SeDuMi and check output
   [prog,info] = sedumi(prog,-rho,0);
@@ -220,7 +225,8 @@ end
 %% Pablo's method (jointly convex in rho and lagrange multipliers)
 function V = pabloMethod(x,V,Vdot,options)
   prog = mssprog;
-  Lmonom = monomials(x,0:options.degL1);
+%  Lmonom = monomials(x,0:options.degL1);
+  Lmonom = hermite_basis(monomials(x,0:options.degL1));
 
   rho = msspoly('r');
   prog.free = rho;
@@ -237,7 +243,7 @@ function V = pabloMethod(x,V,Vdot,options)
     error('problem looks infeasible.  try increasing the order of the lagrange multipliers');
   end
   
-  rho = doubleSafe(prog(rho));
+  rho = doubleSafe(prog(rho))
   if (rho<=0) error('optimization failed'); end
 
   V = V/rho;

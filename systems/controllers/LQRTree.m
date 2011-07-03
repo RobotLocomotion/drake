@@ -260,14 +260,22 @@ classdef LQRTree < HybridRobotLibSystem
       %     plant_order        - default is 3
       %     degL1        - default is sampledFiniteTimeInvariance default
       %
+      %     con    - trajectory optimization constraints
+      %
+      %     xs,Tslb,Tsub - use these as initial samples first
+      %     stabilize_goal - default is true 
+      %     Vf - default final condition
       %     verify - default is true (occasionally useful for faster debugging)
       
       if (nargin<7) options = struct(); end
       if (~isfield(options,'num_samples_before_done')) options.num_samples_before_done = 100; end
       if (~isfield(options,'num_branches')) options.num_branches = inf; end
       if (~isfield(options,'verify')) options.verify = true; end        
+      if (~isfield(options,'stabilize_goal')) options.stabilize_goal = true; end        
       if (~isfield(options,'plotdims')) options.plotdims = [1 2]; end
       if (~isfield(options,'xs')) options.xs=[]; end
+      if (isfield(options,'con')) con=options.con; end
+      
       options.method='dircol';
 %      options.warning=false;
       options.plot_rho=false;
@@ -278,11 +286,18 @@ classdef LQRTree < HybridRobotLibSystem
       
       p_nolim=setInputLimits(p,repmat(-inf,nU,1),repmat(inf,nU,1));
       
-      figure(1); clf; hold on;
+%      figure(1); clf; hold on;
       
       % compute stabilizing controller and estimate ROA
-      disp('building and verifying time-invariant controller...')
-      [ti,Vf] = tilqr(p,xG,uG,Q,R);
+      if (options.stabilize_goal)
+        disp('building and verifying time-invariant controller...')
+        [ti,Vf] = tilqr(p,xG,uG,Q,R);
+      else
+        ti = LTIControl(xG,uG,zeros(getNumInputs(p),getNumStates(p)));
+      end
+      if (isfield(options,'Vf'))
+        Vf = options.Vf;
+      end
       if (options.verify)
         sys = feedback(p_nolim,ti);
         psys = taylorApprox(sys,0,xG,[],3);
@@ -301,31 +316,46 @@ classdef LQRTree < HybridRobotLibSystem
       % create LQR Tree
       c = LQRTree(ti,Vf);
 
-      options.MajorIterationsLimit=50;
-      options.MinorIterationsLimit=100;
-      options.MajorOptimalityTolerance=1e-3;
-      options.MajorFeasibilityTolerance=1e-3;
-      options.MinorFeasibilityTolerance=1e-3;
+%      options.MajorOptimalityTolerance=1e-3;
+%      options.MajorFeasibilityTolerance=1e-3;
+%      options.MinorFeasibilityTolerance=1e-3;
+      options.MajorOptimalityTolerance=1e-2;
+      options.MajorFeasibilityTolerance=1e-2;
+      options.MinorFeasibilityTolerance=1e-2;
       
       num_branches=0;
       num_consecutive_samples=0;
-      nbreaks=11;
       tf0=.5;
+
       while (true)
         if (isempty(options.xs))
           xs=xSampleDistFun();
+          nbreaks=11;
+          con.T.lb = .1;
+          %        con.T.ub = nbreaks/10;  % effective dt=.1
+          con.T.ub = .4;
+          options.MajorIterationsLimit=50;
+          options.MinorIterationsLimit=100;
         else
           xs=options.xs(:,1);
           options.xs = options.xs(:,2:end);
+          nbreaks=21;
+          con.T.lb=options.Tslb;
+          con.T.ub=options.Tsub;
+          options.MajorIterationsLimit=1000;
+          options.MinorIterationsLimit=500;
         end
-        Vmin=checkFunnels(c,xs)
-        if (Vmin<1)
-          % then i'm already in the basin
-          num_consecutive_samples=num_consecutive_samples+1;
-          if (num_consecutive_samples>=options.num_samples_before_done) break; end
-          continue;
+        
+        if (options.verify)
+          Vmin=checkFunnels(c,xs)
+          if (Vmin<1)
+            % then i'm already in the basin
+            num_consecutive_samples=num_consecutive_samples+1;
+            if (num_consecutive_samples>=options.num_samples_before_done) break; end
+            continue;
+          end
+          num_consecutive_samples=0;
         end
-        num_consecutive_samples=0;
         
         % try to find a trajectory
         utraj0 = PPTrajectory(foh(linspace(0,tf0,nbreaks),randn(nU,nbreaks)));
@@ -338,8 +368,6 @@ classdef LQRTree < HybridRobotLibSystem
 %        con.uf.lb=uG;
 %        con.uf.ub=uG;
         con.xf.ceq=@c.finalTreeConstraint;
-        con.T.lb = .1;
-        con.T.ub = nbreaks/10;  % effective dt=.1
         [utraj,xtraj,info] = trajectoryOptimization(p,@(t,x,u)trajCost(t,x,u,.01),@trajFinalCost,xs,utraj0,con,options);
         if (info~=1) % failed to find a trajectory
           if (all(info~=[3,13,32]))
@@ -380,6 +408,9 @@ classdef LQRTree < HybridRobotLibSystem
         
         num_branches=num_branches+1;
         if (num_branches>=options.num_branches) break; end
+        if (num_branches==3)
+          options=rmfield(options,'trajectory_cost_fun'); % stop plotting everything
+        end
       end
     end % end buildLQRTree
     
