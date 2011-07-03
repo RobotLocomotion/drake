@@ -9,16 +9,16 @@ classdef ObstacleField < handle
            
            % from Michael's code
            %function obs_map=gen_rand_obstacles(x_low,x_high,z_low,z_high,seedval)
-           x_low = 0;
-           x_high = 10;
+           x_low = 1;
+           x_high = 9;
            z_low = 0;
-           z_high = 10;
+           z_high = 9;
            
            seedval = 5;
            
            
             %Obstacle parameters
-            OBSTACLE_DENSITY=1.2; %obstacles per 1 unit in z
+            OBSTACLE_DENSITY=.9; %obstacles per 1 unit in z
             NUM_OBSTACLES=floor((z_high-z_low)*OBSTACLE_DENSITY);
             OBS_MIN_EDGE=4;
             OBS_MAX_EDGE=6;

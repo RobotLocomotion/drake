@@ -81,6 +81,8 @@ classdef SmoothRobotLibSystem < RobotLibSystem
       % @param options options structure
       %
       % No options implemented yet
+
+      if (nargin<3) x0=getInitialState(obj); end
       
       odeoptions = obj.simulink_params;
       odefun = @(t,x)obj.dynamics(t,x,zeros(obj.getNumInputs(),1));
