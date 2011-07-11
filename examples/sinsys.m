@@ -1,5 +1,26 @@
 classdef sinsys < SmoothRobotLibSystem
-
+% Simple example of SOS region of attraction using Taylor approximation
+%
+% This is a simple follow-on example to the example in xcubed.m 
+%
+% Consider the system given by
+%   xdot = -sin(x)
+% Simple inspection reveals that this system has a fixed point at each 
+%   x = n*pi for all integers n  (e.g., n=[..,-2,-1,0,1,2,...])
+% The fixed points even n are stable, at odd n are unstable.
+% 
+% In the example below we estimate the region of attraction to the fixed 
+% point at x=0 using the toolbox.  Note that we use a Taylor approximation 
+% to find a polynomial approximation of the system around the origin. 
+%
+% The resulting plot demonstrates that the region of attraction estimate is
+% tight for the approximate polynomial system, but only an approximation 
+% for the original nonlinear system (it is conservative here, but is not 
+% guaranteed to be always conservative). 
+%
+% Note that the same example can be done without approximation using 
+% 'Trig-SOS' when we release that code. 
+   
   methods
     function obj = sinsys()
       obj = obj@SmoothRobotLibSystem(1,0,0,1,false,true);

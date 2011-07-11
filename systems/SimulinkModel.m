@@ -58,7 +58,7 @@ classdef SimulinkModel < DynamicalSystem
       % what's going on.
 %      Simulink.BlockDiagram.getInitialState(obj.mdl);
 %      xcdot = feval(obj.mdl,t,x,u,'derivs');
-%      xcdot = stateStructureToVector(obj,xcdot);
+      xcdot = stateStructureToVector(obj,xcdot);
     end
     
     function xdn = update(obj,t,x,u)

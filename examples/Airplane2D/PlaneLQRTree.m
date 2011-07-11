@@ -25,7 +25,7 @@ drawnow
 
 
 %options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u,[1 2]);  % for debugging
-options.num_branches=25;
+options.num_branches=5;
 options.verify=false;
 options.stabilize_goal=false;
 options.con=con;

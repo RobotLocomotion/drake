@@ -1,5 +1,7 @@
 function aniROATest
 
+oldpath = addpath('..');
+
 robot = AcrobotPlant;
 robot = robot.setInputLimits(-inf,inf);
 c = AcrobotLQR(robot);
@@ -8,8 +10,9 @@ x0 = c.x0;
 pp = sys.taylorApprox(0,x0,[],3);
 
 options=struct();
-options.degL1=3;
-options.method='bilinear';
+options.degL1=1;
+%options.degL1=3;
+%options.method='bilinear';
 
 %V = regionOfAttraction(pp,x0,[],options);
 V2 = regionOfAttraction(pp,x0,10*(pp.p_x-x0)'*c.S*(pp.p_x-x0),options);
@@ -24,4 +27,4 @@ plot(xroa2(1,:),xroa2(2,:),'b');
 
 legend('without guess','with guess');
 
-
+path(oldpath);
