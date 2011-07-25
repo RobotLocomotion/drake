@@ -4,13 +4,15 @@ function traj = simulate(obj,tspan,x0,options)
 % @param tspan a 1x2 vector of the form [t0 tf]
 % @param x0 a vector of length(getNumStates) which contains the initial
 % state
-% @param options 
 %
-% No options implemented yet
+% @option FixedStep   for fixed-step solver only, generate output at the dt spaced time points
+% @option OutputOption 'RefineOutputTimes' | 'AdditionalOutputTimes' | 'SpecifiedOutputTimes' 
+%            For variable step solver only
+% @option OutputTimes to generate output in the time sequence options.OutputTimes
 
 typecheck(tspan,'double');
 if (length(tspan)<2) error('length(tspan) must be > 1'); end
-if (nargin>3) error('no options implemented yet'); end
+if (nargin<4) options=struct([]); end
 mdl = getModel(obj);
 
 if (strcmp(get_param(mdl,'SimulationStatus'),'paused'))
@@ -20,7 +22,14 @@ end
 pstruct = obj.simulink_params;
 pstruct.StartTime = num2str(tspan(1));
 pstruct.StopTime = num2str(tspan(end));
-
+if(isfield(options,'dt'))%if using fixed-step solver and want to generate output at a dt spaced time line.
+    solver=get_param(mdl,'Solver');
+    if(strcmp(solver,'ode1')||strcmp(solver,'ode2')||strcmp(solver,'ode3')||strcmp(solver,'ode4')||strcmp(solver,'ode5'))
+        pstruct.FixedStep=num2str(options.FixedStep);
+    else
+        warning('FixedStep option can only be used for fixed-step solver');
+    end
+end
 if (nargin>2) % handle initial conditions
   x0 = obj.stateVectorToStructure(x0);
   assignin('base',[mdl,'_x0'],x0);
@@ -52,6 +61,15 @@ if (nargout>0)
     pstruct.OutputSaveName = 'yout';
     pstruct.LimitDataPoints = 'off';
     pstruct.Refine = '3';
+%If we are using variable-step solver, and want to specify the output time   
+    if(isfield(options,'OutputOption'))
+        %pstruct.OutputOption='SpecifiedOutputTimes';
+        pstruct.OutputOption=options.OutputOption;
+    end
+    if(isfield(options,'OutputTimes'))
+        pstruct.OutputTimes=['[',num2str(options.OutputTimes),']'];
+    end
+    
 %    pstruct.SaveOnModelUpdate = 'false';
     
     simout = sim(mdl,pstruct);

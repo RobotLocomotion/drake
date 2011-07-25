@@ -5,7 +5,8 @@ p = p.setInputLimits(-inf,inf);
 v = CartPoleVisualizer;
 
 % up fp:
-c = CartPoleLQR(p);
+%c = CartPoleLQR(p);
+c = CartPoleHinf(p);
 sys = feedback(p,c);
 x0=[0;pi;0;0];
 
@@ -15,20 +16,22 @@ x0=[0;pi;0;0];
 
 pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
 
-figure(1); clf; hold on; axis([-pi/2,3*pi/2,-5,5]);
+figure(1); clf;%hold on; axis([-pi/2,3*pi/2,-5,5]);
 
-options.degL1=1;
-%options.method = 'bilinear';
+options.degL1 = 1;%3;
+options.method = 'levelset';%,'bilinear'};
+V=regionOfAttraction(pp,x0,c.S,options);
+
+plotFunnel(V,x0,[2 4]);
+
+return;
+
+options.method = 'levelset';
 V=regionOfAttraction(pp,x0,c.S,options);
 
 plotFunnel(V,x0);
 
-options.method = 'pablo';
-V=regionOfAttraction(pp,x0,c.S,options);
-
-plotFunnel(V,x0);
-
-%return;
+return;
 
 xroa=getLevelSet(V,x0);
 for i = 1:5
