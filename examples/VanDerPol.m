@@ -28,16 +28,14 @@ classdef VanDerPol < PolynomialSystem
       hold on
       
       rvdp = timeReverse(vdp);
-%      options.degV=6;
-%      options.degL1=6;
       options.max_iterations=100;
       options.converged_tol = 1e-2;
-%      options.method='pablo'; options.degL1=3;
-      options.method='bilinear';
-      % NOTEST  % (Current bilinear alternation ends in numerical errors; remove when fixed)
+      options.method={'levelSet','bilinear'};
       V=regionOfAttraction(rvdp,zeros(2,1),[],options);
-      xroa=getLevelSet(V);
-      fill(xroa(1,:),xroa(2,:),0.9*ones(1,3));
+      
+      clf; hold on
+      fill(xlim(1,:),xlim(2,:),[0.8 0.8 0.2])
+      plotFunnel(V,zeros(2,1));
     end
   end
 end

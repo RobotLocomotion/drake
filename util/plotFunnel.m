@@ -1,6 +1,14 @@
 function plotFunnel(V,x0,plot_dims,options)
 
 % plots the one-level set of V
+% option.inclusion = { 'restriction' | 'projection' }
+%    'slice' -- include the points in the plane of the given
+%        dimensions for which V(x) < 1.
+%    'projection' -- plot the projection of {x | V(x) < 1} into the
+%        given plane.
+%
+%                     
+%
 
 % todo: support wrapping coordinates
 
@@ -8,9 +16,13 @@ if (nargin<3 || isempty(plot_dims)) plot_dims = [1,2]; end
 if (nargin<4) options=struct(); end
 if (~isfield(options,'color')) options.color=.7*[1 1 1]; end
 if (~isfield(options,'tol')) options.tol = .01; end
+if (~isfield(options,'inclusion'))
+        options.inclusion = 'slice';
+end
 
 hold on;
 view(0,90);
+
 
 if (isa(V,'msspoly'))
   sizecheck(V,[1 1]);
@@ -20,10 +32,18 @@ if (isa(V,'msspoly'))
   if (length(x0)~=length(p_x)) error('need to handle this case better'); end
   no_plot_dims=1:length(x0);  no_plot_dims(plot_dims)=[];
   
-  if (~isempty(no_plot_dims))
-    V=subs(V,p_x(no_plot_dims),x0(no_plot_dims));
+  % TODO: Here we split between projection and slice.
+  if strcmp(options.inclusion,'slice')
+      if (~isempty(no_plot_dims))
+          V=subs(V,p_x(no_plot_dims),x0(no_plot_dims));
+      end
+      
+      x=getLevelSet(V,x0(plot_dims),struct('tol',options.tol));
+  elseif strcmp(options.inclusion,'projection')
+      x=getProjection(V,x0,plot_dims,struct('tol',options.tol));
+  else
+      error(['Unknown inclusion method: ' options.inclusion]);
   end
-  x=getLevelSet(V,x0(plot_dims),struct('tol',options.tol));
 
   fill3(x(1,:),x(2,:),repmat(0,1,size(x,2)),options.color,'LineStyle','-','LineWidth',2);
 
@@ -64,12 +84,18 @@ end
     if (deg(V,p_x)>2) error('only works for quadratics'); end
     H = doubleSafe(0.5*diff(diff(V,p_x)',p_x));
     b = -0.5*(H\doubleSafe(subs(diff(V,p_x),p_x,0*p_x)'));
-
-    if (~isempty(no_plot_dims))
-      V = subs(V,p_x(no_plot_dims),b(no_plot_dims));
-      b=b(plot_dims);
+    
+    if strcmp(options.inclusion,'slice')
+        if (~isempty(no_plot_dims))
+            V = subs(V,p_x(no_plot_dims),b(no_plot_dims));
+            b=b(plot_dims);
+        end
+        x=getLevelSet(V,b,struct('tol',options.tol));
+    elseif strcmp(options.inclusion,'projection')
+        x=getProjection(V,b,plot_dims,struct('tol',options.tol));
+    else
+        error(['Unknown inclusion method: ' options.inclusion]);
     end
-    x=getLevelSet(V,b,struct('tol',options.tol));
   end
 
 

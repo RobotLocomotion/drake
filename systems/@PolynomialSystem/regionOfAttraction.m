@@ -1,9 +1,37 @@
 function V = regionOfAttraction(sys,x0,V0,options)
-% estimates the region of attraction, defined as the interior region for
-% the level-set V<=1 surrounding x0. 
+% Estimates the region of attraction around x0 using V0 as an initial guess.
+% The resulting region of attraction is defined by the sub-level set V<=1 surrounding x0.
+%
+% @param x0 The fixed point (if the system has inputs, they are set to
+% zero)
+% @param V0 The initial Lyapunov candidate.  
+%
+% @option method The method to use.  Must be one of
+% 'bilinear','levelset','levelset_yalmip', or 'binary'.  You may also pass
+% in a cell array of methods to run them one after another (e.g. use
+% options.method={'levelset','bilinear'} to use the levelset method to
+% optimize the initial V0 before starting bilinear alternations).
+% 
+% @option degV The degree of the Lyapunov function to search over.
+% @default 2
+% @option degL1 The degree of the first Lagrange multiplier.  It's
+% implementation is method specific.  @default degV + deg(f) - 1 
+% @option degL2 The degree of the second Lagrange multiplier, if used.
+% @default degL1
+%
+% @option max_iterations The maximum number of iterations in the iterative
+% methods (e.g. biinear)
+% @option converged_tol The convergence tolerance in the iterative methods
+% (e.g. bilinear).  The algorithm terminates if the estimated volume
+% changes by less than this percentage.
+% 
 
 if (nargin<4) options=struct(); end
-if (~isfield(options,'method')) options.method='pablo'; end
+if (~isfield(options,'method')) 
+  options.method={'levelset'}; 
+elseif (~iscell(options.method))
+  options.method={options.method};
+end
 if (~isfield(options,'degV')) options.degV = 4; end
 if (~isfield(options,'max_iterations')) options.max_iterations=10; end
 if (~isfield(options,'converged_tol')) options.converged_tol=.01; end
@@ -21,7 +49,6 @@ else
 end
 
 % check fixed point
-% check Hessian Vdot at origin, to make sure it's negative def. 
 
 x = sys.p_x;
 % f is time-invariant zero-input dynamics relative to x0
@@ -42,94 +69,27 @@ end
 typecheck(V,'msspoly');
 if any([V.m V.n]~=1) error('V0 must be a scalar msspoly'); end
 
-if (strcmp(options.method,'bilinear'))
-  V0 = V;
-  S0 = .5*doubleSafe(subs(diff(diff(V0,x)',x),x,0*x));
-  rho = 1;  
+if (~isfield(options,'degL1'))
+  options.degL1 = options.degV-1 + deg(f,x);  % just a guess
+end
+if (~isfield(options,'degL2'))
+  options.degL2 = options.degL1;
+end
 
-  if (~isfield(options,'degL1'))
-    options.degL1 = options.degV-1 + deg(f,x);  % just a guess
-  end
-  if (~isfield(options,'degL2'))
-    options.degL2 = options.degL1;
-  end
-
- L1monom = monomials(x,0:options.degL1);
- L2monom = monomials(x,0:options.degL2);
- Vmonom = monomials(x,0:options.degV);
-  
-%   L1monom = hermite_basis(monomials(x,0:options.degL1));
-%   L2monom = hermite_basis(monomials(x,0:options.degL2));
-%   Vmonom = hermite_basis(monomials(x,0:options.degV));
-  
-  
-  %% perform balancing 
-% S1 = S0/rho;
-% S2 = S1*A+A'*S1;
-% [T,D] = balanceQuadForm(S1,S2);
-
-  % todo: run pablo's method (always) first, to get a feasible initial
-  % guess?
-  
-  vol=0;
-  for iter=1:options.max_iterations
-    last_vol = vol;
-    
-    % balance on every iteration (since V and Vdot are changing):
-     S1 = S0/rho;
-     S2 = S1*A+A'*S1;
-     [T,D] = balanceQuadForm(S1,S2);
-    
-    Ti = inv(T);
-    Vbal=subss(V,x,T*x);
-    V0bal=subss(V0,x,T*x);
-    fbal=Ti*subss(f,x,T*x);
-    
-    [L1,sigma1] = findL1(x,fbal,Vbal,L1monom,options);
-    L2 = findL2(x,Vbal,V0bal,rho,L2monom,options);
-    [Vbal,rho] = optimizeV(x,fbal,L1,L2,V0bal,sigma1,Vmonom,options);
-    vol = rho
-    
-    % undo balancing (for the next iteration, or if i'm done)
-    V = subss(Vbal,x,Ti*x);
-    plotFunnel(V,0*x0); plotFunnel(V0/rho,0*x0,[],struct('color',[.9 .3 .2])); drawnow;
-    
-    % check for convergence
-    if ((vol - last_vol) < options.converged_tol*last_vol)
-      break;
-    end
-  end
-  
-else
-
-  %% perform balancing (just once)
-  S = .5*doubleSafe(subs(diff(diff(V,x)',x),x,zeros(size(x0))));  % extract Hessian
-  [T,D] = balanceQuadForm(S,(S*A+A'*S));
-  V=subss(V,x,T*x);
-  f=inv(T)*subss(f,x,T*x);
-  
-  %% compute Vdot
-  Vdot = diff(V,x)*f;
-
-  if (~isfield(options,'degL1'))
-    options.degL1 = deg(Vdot,x);  % just a guess
-  end
-  
+for i=1:length(options.method)
   %% compute level set
-  switch (options.method)
-    case 'pablo'
-      V = pabloMethod(x,V,Vdot,options);
-    case 'pablo_yalmip'
-      V = pabloMethodYalmip(x,V,Vdot,options);
+  switch (lower(options.method{i}))
+    case 'bilinear'
+      V = bilinear(x,V,f,options);
+    case 'levelset'
+      V = levelSetMethod(x,V,f,options);
+    case 'levelset_yalmip'
+      V = levelSetYalmip(x,V,f,options);
     case 'binary'
-      V = rhoLineSearch(x,V,Vdot,options);
-    % note: bilinear implemented above
+      V = rhoLineSearch(x,V,f,options);
     otherwise
       error(['don''t know method: ', options.method]);
   end
-  
-  %% undo balancing
-  V = subss(V,x,inv(T)*x);
 end
 
 %% shift back to x0
@@ -137,7 +97,60 @@ V = subss(V,x,x-x0);
 
 end
 
+
+function [T,Vbal,fbal,S,A] = balance(x,V,f,S,A)
+  if (nargin<4 || isempty(S))
+    S=.5*doubleSafe(subs(diff(diff(V,x)',x),x,0*x));  % extract Hessian
+  end
+  if (nargin<5 || isempty(A))
+    A = doubleSafe(subs(diff(f,x),x,0*x));
+  end
+  
+  [T,D] = balanceQuadForm(S,(S*A+A'*S));
+  
+  if (nargout>1)
+    Vbal=subss(V,x,T*x);
+    if (nargout>2)
+      fbal=inv(T)*subss(f,x,T*x);
+    end
+  end
+end
+
 %% for the bilinear search
+function V = bilinear(x,V0,f,options)
+
+  num_x = length(x);
+  V=V0;
+  [T,V0bal,fbal,S0,A] = balance(x,V0,f);
+  rho = 1;  
+
+  L1monom = monomials(x,0:options.degL1);
+  L2monom = monomials(x,0:options.degL2);
+  Vmonom = monomials(x,0:options.degV);
+  
+  vol=0;
+  for iter=1:options.max_iterations
+    last_vol = vol;
+    
+    % balance on every iteration (since V and Vdot are changing):
+    [T,Vbal,fbal]=balance(x,V,f,S0/rho,A);
+    V0bal=subss(V0,x,T*x);
+    
+    [L1,sigma1] = findL1(x,fbal,Vbal,L1monom,options);
+    L2 = findL2(x,Vbal,V0bal,rho,L2monom,options);
+    [Vbal,rho] = optimizeV(x,fbal,L1,L2,V0bal,sigma1,Vmonom,options);
+    vol = rho
+    
+    % undo balancing (for the next iteration, or if i'm done)
+    V = subss(Vbal,x,inv(T)*x);
+    plotFunnel(V,zeros(num_x,1)); plotFunnel(V0/rho,zeros(num_x,1),[],struct('color',[.9 .3 .2])); drawnow;
+    
+    % check for convergence
+    if ((vol - last_vol) < options.converged_tol*last_vol)
+      break;
+    end
+  end
+end
 
 function [L1,sigma1] = findL1(x,f,V,Lxmonom,options)
   prog = mssprog;
@@ -223,10 +236,18 @@ end
 
 
 %% Pablo's method (jointly convex in rho and lagrange multipliers)
-function V = pabloMethod(x,V,Vdot,options)
+function V = levelSetMethod(x,V,f,options)
+
+  [T,V,f] = balance(x,V,f);
+
+  %% compute Vdot
+  Vdot = diff(V,x)*f;
+
+% check Hessian Vdot at origin, to make sure it's negative def. 
+
   prog = mssprog;
-%  Lmonom = monomials(x,0:options.degL1);
-  Lmonom = hermite_basis(monomials(x,0:options.degL1));
+  Lmonom = monomials(x,0:options.degL1);
+%  Lmonom = hermite_basis(monomials(x,0:options.degL1));
 
   rho = msspoly('r');
   prog.free = rho;
@@ -247,10 +268,20 @@ function V = pabloMethod(x,V,Vdot,options)
   if (rho<=0) error('optimization failed'); end
 
   V = V/rho;
+  
+  %% undo balancing
+  V = subss(V,x,inv(T)*x);
 end
 
-function V=pabloMethodYalmip(x,V,Vdot,options)
+function V=levelSetMethodYalmip(x,V,Vdot,options)
   checkDependency('yalmip_enabled');
+
+  [T,V,f] = balance(x,V,f);
+
+  %% compute Vdot
+  Vdot = diff(V,x)*f;
+
+  % check Hessian Vdot at origin, to make sure it's negative def. 
 
   % flip to sdpvars
   xs = sdpvar(length(x),1);
@@ -269,11 +300,19 @@ function V=pabloMethodYalmip(x,V,Vdot,options)
   rho = double(rho)
   
   V = V/rho;
+
+  %% undo balancing
+  V = subss(V,x,inv(T)*x);
 end
 
 %% Line search
 
-function V = rhoLineSearch(x,V,Vdot,options)
+function V = rhoLineSearch(x,V,f,options)
+  [T,V,f] = balance(x,V,f);
+
+  %% compute Vdot
+  Vdot = diff(V,x)*f;
+
   prog = mssprog;
 
   Lmonom = monomials(x,0:options.degL1);
@@ -292,6 +331,9 @@ function V = rhoLineSearch(x,V,Vdot,options)
   rho = fzero(@(rho) checkRho(rho, x,V,Vdot,prog,L1),[rhomin rhomax])
 
   V = V/rho;
+
+  %% undo balancing
+  V = subss(V,x,inv(T)*x);
 end
 
 function [slack,info] = checkRho(rho, x,V,Vdot,prog,L)

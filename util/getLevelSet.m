@@ -34,9 +34,11 @@ else % do the more general thing
   
   V=subss(V,x,x+x0);  % move to origin
 
-  r = msspoly('r',1);
-  [theta,r]=fplot(@getRadius,[0 pi],options.tol);
-  y=repmat(x0,1,2*size(theta,1))+[repmat(r(:,1),1,2).*[cos(theta),sin(theta)]; repmat(r(:,2),1,2).*[cos(theta),sin(theta)]]';
+
+  y = repmat(x0,1,100)+getRadii(linspace(-pi,pi,100))';
+  %  r = msspoly('r',1);
+  %   [theta,r]=fplot(@getRadius,[0 pi],options.tol);
+  %   y=repmat(x0,1,2*size(theta,1))+[repmat(r(:,1),1,2).*[cos(theta),sin(theta)]; repmat(r(:,2),1,2).*[cos(theta),sin(theta)]]';
 
 end
 
@@ -44,7 +46,28 @@ if (any(imag(y(:))))
   error('something is wrong.  i got imaginary outputs'); 
 end
 
-
+% Assumes that the function is radially monotonic.  This could
+% break things later.
+function y=getRadii(thetas)  % needs to be vectorized
+    rU = ones(size(thetas));
+    rL = zeros(size(thetas));
+    CS = [cos(thetas); sin(thetas)];
+    evaluate = @(r) double(msubs(V,x,repmat(r,2,1).*CS));
+    msk = evaluate(rU) < 1;
+    while any(msk)
+        rU(msk) = 2*rU(msk);
+        msk = evaluate(rU) < 1;
+    end
+    
+    while (rU-rL) > 0.0001*(rU+rL) 
+        r = (rU+rL)/2;
+        msk = evaluate(r) < 1;
+        rL(msk) = r(msk);
+        rU(~msk) = r(~msk);
+    end
+    
+    y = (repmat(r,2,1).*CS)';
+end
 function y=getRadius(theta)  % needs to be vectorized
   circ = [cos(theta);sin(theta)];
   for i=1:length(theta)

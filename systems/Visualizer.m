@@ -84,7 +84,8 @@ classdef Visualizer < RobotLibSystem
       %
       
       if (nargin<3)
-        filename = uiputfile('*.avi','Save playback to AVI');
+        [filename,pathname] = uiputfile('*.avi','Save playback to AVI');
+        filename = [pathname,'/',filename];
       end
       
       if (obj.display_dt==0)

@@ -14,6 +14,7 @@ R = [0.1 0.05; 0.05 0.1];  %R = diag([0.1 0.1]);
 sys = feedback(p,c);
 
 pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
+options=struct();
 options.degL1=2;
 %options.method='bilinear';
 %options.degV=4;
