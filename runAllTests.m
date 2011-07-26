@@ -73,7 +73,9 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
       continue;  % skip classes that aren't runnable
     end
     
-    if (info.numToSkip>info.passcount) 
+    if (info.numToSkip>info.passcount)
+      fprintf(1,'%-40s ',testname);
+      fprintf(1,'[SKIPPED]\n');
       info.passcount=info.passcount+1;
       continue;
     end
@@ -96,6 +98,7 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
         fprintf(1,'%-40s ',testname);
         fprintf(1,'[PASSED]\n');
         info.passcount = info.passcount+1;
+        attemptsleft=0;
       catch
         fprintf(1,'%-40s ',testname);
         if (attemptsleft>0)
