@@ -1,13 +1,20 @@
 function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,iname,oname] = dircolSNOPTtranscription(sys,costFun,finalCostFun,x0,utraj0,con,options)
-% Direct collocation method.
-%   Basic algorithm:  
-%     u(t) is represented as a first-order spline
-%     xc(t) is represented as a cubic spline
-%     xd(t) is represented as a zero-order spline (zoh)
-%   At every knot point, add a constraint enforcing the derivatives and
-%   updates to match the spline derivatives, etc.
+% Direct collocation method.  
+%  This function should not be called directly.  Use the
+%  trajectoryOptimization interface. 
 %
 %  I use the algorithm as described in Enright91 and Hargraves86
+%  Basic algorithm:  
+%    u(t) is represented as a first-order spline
+%    xc(t) is represented as a cubic spline
+%    xd(t) is represented as a zero-order spline (zoh)
+%  At every knot point, add a constraint enforcing the derivatives and
+%  updates to match the spline derivatives, etc.
+%
+%  Since I don't know many details about the model (e.g. hybrid events
+%  can be hidden), this implementation assumes things are smooth and tries
+%  to power through unknown difficulties.  
+%
 
 if (~isfield(options,'xtape0')) options.xtape0='free'; end
 
@@ -20,7 +27,8 @@ end
 
 ts = sys.getSampleTime();
 if (size(ts,2)>1 || any(ts~=0))
-  error('not implemented yet (but should be very straightforward)');
+  warning('found non-continuous sample times.  i''ll proceed assuming everything is continuous'); 
+%  error('not implemented yet (but should be very straightforward)');
 end
 
 t = utraj0.getBreaks(); t=t(:);

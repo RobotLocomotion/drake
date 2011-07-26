@@ -15,7 +15,7 @@ Model {
       Name		      "x"
     }
     ParameterArgumentNames  ""
-    ComputedModelVersion    "1.41"
+    ComputedModelVersion    "1.44"
     NumModelReferences	    0
     NumTestPointedSignals   0
   }
@@ -32,8 +32,8 @@ Model {
   MinMaxOverflowArchiveMode "Overwrite"
   MaxMDLFileLineLength	  120
   UserBdParams		  "PhysicalModelingChecksum;PhysicalModelingParameterChecksum;PhysicalModelingProducts"
-  PhysicalModelingChecksum "4169830807"
-  PhysicalModelingParameterChecksum "4010260251"
+  PhysicalModelingChecksum "2343382810"
+  PhysicalModelingParameterChecksum "1709917827"
   PhysicalModelingProducts "SimMechanics"
   Created		  "Thu Oct 11 21:32:10 2001"
   Creator		  "MathWorks"
@@ -41,9 +41,9 @@ Model {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "russt"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Jan 14 22:45:06 2011"
-  RTWModifiedTimeStamp	  216943867
-  ModelVersionFormat	  "1.%<AutoIncrement:41>"
+  LastModifiedDate	  "Tue Jun 14 13:08:39 2011"
+  RTWModifiedTimeStamp	  229957620
+  ModelVersionFormat	  "1.%<AutoIncrement:44>"
   ConfigurationManager	  "None"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -593,7 +593,7 @@ Model {
 	      WarnOnSingularInitialAssembly off
 	      ShowCutJoints	      off
 	      VisOnUpdateDiagram      off
-	      VisDuringSimulation     on
+	      VisDuringSimulation     off
 	      EnableVisSimulationTime on
 	      VisSampleTime	      "0"
 	      DisableBodyVisControl   off
@@ -720,7 +720,7 @@ Model {
   }
   System {
     Name		    "mech"
-    Location		    [835, 309, 1299, 580]
+    Location		    [835, 375, 1299, 646]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -854,8 +854,8 @@ Model {
       ClassName		      "Ground"
       CoordPosition	      "[0 0 0]"
       CoordPositionUnits      "m"
-      StateVectorMgrId	      "16"
-      MachineId		      "[17 0]"
+      StateVectorMgrId	      "-1"
+      MachineId		      "[0 0]"
       ShowEnvPort	      on
     }
     Block {
@@ -895,49 +895,6 @@ Model {
       DialogClass	      "MechanicalActuatorBlock"
       Primitive		      "R1"
       ReferenceFrame	      "Absolute (World)"
-    }
-    Block {
-      BlockType		      Reference
-      Name		      "Joint Initial Condition"
-      SID		      "13"
-      Ports		      [0, 0, 0, 0, 0, 0, 1]
-      Position		      [190, 125, 230, 165]
-      LibraryVersion	      "1.1"
-      DialogController	      "MECH.DynMechDlgSource"
-      SourceBlock	      "mblibv1/Sensors & \nActuators/Joint Initial Condition"
-      SourceType	      "Joint Initial Condition"
-      ShowPortLabels	      "FromPortIcon"
-      SystemSampleTime	      "-1"
-      FunctionWithSeparateData off
-      RTWMemSecFuncInitTerm   "Inherit from model"
-      RTWMemSecFuncExecute    "Inherit from model"
-      RTWMemSecDataConstants  "Inherit from model"
-      RTWMemSecDataInternal   "Inherit from model"
-      RTWMemSecDataParameters "Inherit from model"
-      GeneratePreprocessorConditionals off
-      UpdateFromCAD	      "off"
-      LeftPortType	      "blob"
-      RightPortType	      "blob"
-      PhysicalDomain	      "mechanical"
-      ClassName		      "InitialCondition"
-      DialogClass	      "InitialConditionBlock"
-      InitialConditions	      "P1$false$0$m$deg$0$m/s$deg/s#P2$false$0$m$deg$0$m/s$deg/s#P3$false$0$m$deg$0$m/s$deg/s#"
-      "R1$true$0$m$rad$0$m/s$rad/s#R2$false$0$m$deg$0$m/s$deg/s#R3$false$0$m$deg$0$m/s$deg/s#S$false$0$m$deg$0$m/s$deg/"
-      "s"
-      P1PIC		      "0"
-      P1VIC		      "0"
-      P2PIC		      "0"
-      P2VIC		      "0"
-      P3PIC		      "0"
-      P3VIC		      "0"
-      R1PIC		      "0"
-      R1VIC		      "0"
-      R2PIC		      "0"
-      R2VIC		      "0"
-      R3PIC		      "0"
-      R3VIC		      "0"
-      SPIC		      "0"
-      SVIC		      "0"
     }
     Block {
       BlockType		      Reference
@@ -1052,7 +1009,7 @@ Model {
       RedundancyAnalysisTolerance "1e-14"
       StatePerturbationType   "Fixed"
       PerturbationSize	      "1e-5"
-      VisualizeMachine	      on
+      VisualizeMachine	      off
       BodyVisualizationType   "Use model default body geometries"
       BodyColorSelMode	      "Use model default"
       DefaultBodyColor	      "[1 0 0]"
@@ -1071,8 +1028,8 @@ Model {
       BlockType		      Reference
       Name		      "Revolute"
       SID		      "7"
-      Ports		      [0, 0, 0, 0, 0, 3, 2]
-      Position		      [210, 29, 260, 81]
+      Ports		      [0, 0, 0, 0, 0, 2, 2]
+      Position		      [210, 31, 260, 84]
       BlockMirror	      on
       LibraryVersion	      "1.1"
       DialogController	      "MECH.DynMechDlgSource"
@@ -1082,10 +1039,10 @@ Model {
       SubClassName	      "Unknown"
       LeftPortType	      "blob"
       RightPortType	      "blob"
-      LConnTagsString	      "__newl0|SA1|SA2"
+      LConnTagsString	      "__newl0|SA1"
       RConnTagsString	      "__newr0|SA1"
       UpdateFromCAD	      "off"
-      NumSAPorts	      "3"
+      NumSAPorts	      "2"
       CutJoint		      "off"
       MarkAsCut		      "off"
       Primitives	      "revolute"
@@ -1105,6 +1062,7 @@ Model {
       LineType		      "Connection"
       SrcBlock		      "Ground"
       SrcPort		      RConn1
+      Points		      [-85, 0]
       DstBlock		      "Revolute"
       DstPort		      LConn1
     }
@@ -1112,7 +1070,7 @@ Model {
       LineType		      "Connection"
       SrcBlock		      "Revolute"
       SrcPort		      LConn2
-      Points		      [30, 0; 0, 55; -30, 0]
+      Points		      [30, 0; 0, 35; -30, 0]
       DstBlock		      "Joint Sensor"
       DstPort		      LConn1
     }
@@ -1167,14 +1125,6 @@ Model {
       SrcPort		      1
       DstBlock		      "Joint Actuator"
       DstPort		      1
-    }
-    Line {
-      LineType		      "Connection"
-      SrcBlock		      "Joint Initial Condition"
-      SrcPort		      RConn1
-      Points		      [15, 0; 0, -45; 15, 0]
-      DstBlock		      "Revolute"
-      DstPort		      LConn3
     }
     Annotation {
       Name		      "Adapted from mech_spen.mdl demo file."

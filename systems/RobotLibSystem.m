@@ -32,7 +32,13 @@ classdef RobotLibSystem < DynamicalSystem
       obj.uid = datestr(now,'MMSSFFF');
     end      
   end
-      
+  
+  methods
+    function zcs = zeroCrossings(obj,t,x,u)
+      error('systems with zero crossings must implement the zeroCrossings method'); 
+    end
+  end
+  
   % access methods
   methods
     function n = getNumContStates(obj)
@@ -150,6 +156,15 @@ classdef RobotLibSystem < DynamicalSystem
       if (num_y<0) error('num_y must be >=0'); end
       obj.num_y = num_y;
     end
+    function n = getNumZeroCrossings(obj)
+      % Returns the number of zero crossings
+      n = obj.num_zcs;
+    end
+    function obj = setNumZeroCrossings(obj,num_zcs)
+      % Guards the number of zero crossings to make sure it's valid.
+      if (num_zcs<0) error('num_zcs must be >=0'); end
+      obj.num_zcs = num_zcs;
+    end
   end
 
   % utility methods
@@ -175,6 +190,7 @@ classdef RobotLibSystem < DynamicalSystem
     num_x=0;  % dimension of x (= num_xc + num_xd)
     num_u=0;  % dimension of u
     num_y=0;  % dimension of the output y
+    num_zcs = 0;  % number of zero-crossings.  % Default: 0
     uid;    % unique identifier for simulink models of this block instance
     direct_feedthrough_flag=true;  % true/false: does the output depend on u?  set false if you can!
   end

@@ -7,7 +7,7 @@ mex realtime.cpp
 cd ..
 
 cd systems;
-mex RLCSFunction.cpp
+mex -g RLCSFunction.cpp
 cd ..
 
 disp('done.');
