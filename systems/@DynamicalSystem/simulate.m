@@ -35,6 +35,10 @@ if (nargin>2) % handle initial conditions
   assignin('base',[mdl,'_x0'],x0);
   pstruct.InitialState = [mdl,'_x0'];
   pstruct.LoadInitialState = 'on';
+
+  if (~isempty(find_system(mdl,'ClassName','InitialCondition')))
+    warning('Your model appears to have an initial conditions block in it (e.g., from SimMechanics).  That block will overwrite any initial conditions that you pass in to simulate.');
+  end
 end
 
   function traj = makeSubTrajectory(t,y)

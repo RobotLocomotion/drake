@@ -1,4 +1,4 @@
-classdef PolynomialSystem < SmoothRobotLibSystem, 
+classdef PolynomialSystem < SmoothRobotLibSystem
 
   properties (SetAccess=private)
     p_t
@@ -10,6 +10,10 @@ classdef PolynomialSystem < SmoothRobotLibSystem,
   end
 
   methods
+%    function x0=getInitialState(obj)
+%      x0=zeros(getNumStates(obj),1);
+%    end
+    
     function obj = PolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,p_dynamics,p_update,p_output)
       obj = obj@SmoothRobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
 

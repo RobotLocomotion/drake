@@ -5,6 +5,11 @@
 #include <math.h>
 #include "simstruc.h"
 
+// indices of the IWork vector
+#define IC_IDX 0
+#define IS_HYBRID_IDX 1
+#define IS_STOCHASTIC_IDX 2 
+
 bool isa(const mxArray* mxa, const char* class_str)
 // mxIsClass seems to not be able to handle derived classes. so i'll implement what I need by calling back to matlab
 {
@@ -55,13 +60,20 @@ static void mdlInitializeSizes(SimStruct *S)
   ssSetNumDiscStates(S, (int)mxGetScalar(plhs[0]));
   mxDestroyArray(plhs[0]);
   
-
   if (mexCallMATLAB(1,plhs,1,&psys,"getNumInputs")) return;
   int num_u = (int)mxGetScalar(plhs[0]);
   mxDestroyArray(plhs[0]);
 
+  int num_w=0;
+  if (isa(psys,"StochasticRobotLibSystem")) {
+    if (mexCallMATLAB(1,plhs,1,&psys,"getNumDisturbances")) return;
+    num_w = mxGetScalar(plhs[0]);
+    mxDestroyArray(plhs[0]);
+  }
+  
+  if (!ssSetNumInputPorts(S,(int)(num_u>0)+(int)(num_w>0))) return;
+  
   if (num_u>0) {
-    if (!ssSetNumInputPorts(S, 1)) return;
     ssSetInputPortWidth(S,0,num_u);
 
     // note: can actually be directfeedthrough even if num_y == 0 (e.g., for the visualizer)
@@ -72,6 +84,13 @@ static void mdlInitializeSizes(SimStruct *S)
     ssSetInputPortRequiredContiguous(S,0,1);
   } else {
     if (!ssSetNumInputPorts(S, 0)) return;
+  }
+
+  if (num_w>0) {
+    int portnum=ssGetNumInputPorts(S)-1;  // portnums start from zero
+    ssSetInputPortWidth(S,portnum,num_w);
+    ssSetInputPortDirectFeedThrough(S,portnum,1);  // go ahead and say yes to direct feed-through.  there is no threat of algebraic loops here
+    ssSetInputPortRequiredContiguous(S,portnum,1);
   }
   
   if (mexCallMATLAB(1,plhs,1,&psys,"getNumOutputs")) return;
@@ -89,26 +108,21 @@ static void mdlInitializeSizes(SimStruct *S)
   ssSetNumSampleTimes(S, mxGetN(plhs[0]));
   mxDestroyArray(plhs[0]);
 
-  ssSetNumRWork(S, 0);
-  ssSetNumIWork(S, 1);  // one iwork to handle getInitialStateWInput
-  ssSetNumPWork(S, 0);
-  
+  if (mexCallMATLAB(1, plhs, 1, &psys, "getNumZeroCrossings")) return;
+  ssSetNumNonsampledZCs(S, (int)mxGetScalar(plhs[0]));
+  mxDestroyArray(plhs[0]);
+
   if (isa(psys,"HybridRobotLibSystem")) {
     ssSetNumModes(S, 1);
     ssSetNumDiscStates(S, ssGetNumDiscStates(S)-1);  // pull out the mode
-
-    if (mexCallMATLAB(1,plhs,1,&psys,"getNumZeroCrossings")) return;
-    ssSetNumNonsampledZCs(S, (int)mxGetScalar(plhs[0]));
-    mxDestroyArray(plhs[0]);
-
-    // i need a memoryless fsm for many of the hybrid controllers.  i now think this is not required: 
-    //    if (ssGetNumContStates(S)<1) 
-    //     ssSetErrorStatus(S,"HybridRobotLibSystems must have numContStates>0");
   } else {    
     ssSetNumModes(S, 0);
-    ssSetNumNonsampledZCs(S, 0);
   }
 
+  ssSetNumRWork(S, 0);
+  ssSetNumIWork(S, 3);  // see #define for indices at top
+  ssSetNumPWork(S, 0);
+  
   ssSetSimStateCompliance(S, USE_DEFAULT_SIM_STATE);
 
   ssSetOptions(S, 0);
@@ -144,7 +158,11 @@ static void mdlInitializeConditions(SimStruct *S)
     int_T* mode = ssGetModeVector(S);
     mode[0] = (int) x[0];
     x++;
+    ssSetIWorkValue(S, IS_HYBRID_IDX, 1);
+  } else {
+    ssSetIWorkValue(S,IS_HYBRID_IDX,0);
   }
+  ssSetIWorkValue(S, IS_STOCHASTIC_IDX, isa(psys,"StochasticRobotLibSystem"));
 
   if (num_xd) {
     memcpy(xd0,x,sizeof(real_T)*num_xd);
@@ -176,17 +194,21 @@ static void mdlOutputs(SimStruct *S, int_T tid)
 
   setScopeEnable(S);
   
+  bool sds = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
+  int num_w = sds ? ssGetInputPortWidth(S,num_u>0 ? 1 : 0) : 0;
+
   mxArray *psys = const_cast<mxArray*>(ssGetSFcnParam(S, 0));
   time_T t = ssGetT(S);
   real_T *xd = ssGetDiscStates(S);
   real_T *xc = ssGetContStates(S);
   const real_T *u; 
+  const real_T *w = num_w>0 ? ssGetInputPortRealSignal(S,num_u>0?1:0) : NULL;
   real_T *y = (num_y>0) ? ssGetOutputPortRealSignal(S, 0) : NULL;
   mxArray* plhs[2];
-  bool fsm = isa(psys,"HybridRobotLibSystem");
+  bool fsm = ssGetIWorkValue(S,IS_HYBRID_IDX);
   int_T *mode = (fsm ? ssGetModeVector(S) : NULL);
 
-  mxArray *prhs[4];
+  mxArray *prhs[5];
   prhs[0] = psys;                                  // obj
   prhs[1] = mxCreateDoubleScalar(t);               // t
 
@@ -213,7 +235,10 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   } // else: leave u at random values (shouldn't be used)
   mxDestroyArray(plhs[0]);
 
-  if (ssGetIWorkValue(S, 0) == 1) {
+  prhs[4] = mxCreateDoubleMatrix(num_w, 1, mxREAL); // w
+  if (num_w>0) memcpy(mxGetPr(prhs[4]), w, sizeof(real_T)*num_w);
+  
+  if (ssGetIWorkValue(S, IC_IDX) == 1) {
     if (mexCallMATLAB(1,plhs,4,prhs,"getInitialStateWInput")) {
       ssSetErrorStatus(S,"error in getInitialStateWInput");
       return;
@@ -232,7 +257,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
     if (num_xc) {
       memcpy(xc, px0, sizeof(real_T)*num_xc);
     }
-    ssSetIWorkValue(S,0,2);
+    ssSetIWorkValue(S,IC_IDX,2);
     mxDestroyArray(plhs[0]);
   }
   
@@ -262,7 +287,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
     mxDestroyArray(plhs[1]);
   }
 
-  if (mexCallMATLAB(1, plhs, 4, prhs, "output")) { // call it even if there are no outputs (e.g., for visualizers)
+  if (mexCallMATLAB(1, plhs, sds?5:4, prhs, "output")) { // call it even if there are no outputs (e.g., for visualizers)
     ssSetErrorStatus(S,"error in output");
     return;  
   }
@@ -274,6 +299,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   mxDestroyArray(prhs[1]);
   mxDestroyArray(prhs[2]);
   mxDestroyArray(prhs[3]);
+  mxDestroyArray(prhs[4]);
 }
 
 #define MDL_ZERO_CROSSINGS   /* Change to #undef to remove function */
@@ -317,8 +343,8 @@ static void mdlZeroCrossings(SimStruct *S)
   prhs[3] = mxCreateDoubleMatrix(num_u, 1, mxREAL);  // u
   if (num_u>0) memcpy(mxGetPr(prhs[3]), u, sizeof(real_T)*num_u);
 
-  if (mexCallMATLAB(1,plhs,4,prhs,"guards")) {
-    ssSetErrorStatus(S,"error in guards");
+  if (mexCallMATLAB(1,plhs,4,prhs,"zeroCrossings")) {
+    ssSetErrorStatus(S,"error in zeroCrossings");
     return;
   }
   memcpy(zcs,mxGetPr(plhs[0]),sizeof(real_T)*num_zcs);
@@ -339,6 +365,9 @@ static void mdlDerivatives(SimStruct *S)
   int num_xd = ssGetNumDiscStates(S);
   int num_u = ssGetNumInputPorts(S) ? ssGetInputPortWidth(S,0) : 0;
 
+  bool sds = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
+  int num_w = sds ? ssGetInputPortWidth(S,num_u>0 ? 1 : 0) : 0;
+
   setScopeEnable(S);
 
   mxArray *psys = const_cast<mxArray*>(ssGetSFcnParam(S, 0));
@@ -346,12 +375,13 @@ static void mdlDerivatives(SimStruct *S)
   real_T *xd = ssGetDiscStates(S);
   real_T *xc = ssGetContStates(S);
   const real_T *u = num_u>0 ? ssGetInputPortRealSignal(S,0) : NULL;
+  const real_T *w = num_w>0 ? ssGetInputPortRealSignal(S,num_u>0?1:0) : NULL;
   real_T *xcdot = ssGetdX(S);
   mxArray* plhs[1];
-  bool fsm = isa(psys,"HybridRobotLibSystem");
+  bool fsm = ssGetIWorkValue(S,IS_HYBRID_IDX);
   int_T *mode = (fsm ? ssGetModeVector(S) : NULL);
 
-  mxArray *prhs[4];
+  mxArray *prhs[5];
   prhs[0] = psys;                                  // obj
   prhs[1] = mxCreateDoubleScalar(t);               // t
 
@@ -372,8 +402,11 @@ static void mdlDerivatives(SimStruct *S)
   
   prhs[3] = mxCreateDoubleMatrix(num_u,1,mxREAL);  // u
   if (num_u>0) memcpy(mxGetPr(prhs[3]),u,sizeof(real_T)*num_u); 
+
+  prhs[4] = mxCreateDoubleMatrix(num_w, 1, mxREAL); // w
+  if (num_w>0) memcpy(mxGetPr(prhs[4]), w, sizeof(real_T)*num_w);
   
-  if (mexCallMATLAB(1,plhs,4,prhs,"dynamics")) {
+  if (mexCallMATLAB(1,plhs,sds?5:4,prhs,"dynamics")) {
    ssSetErrorStatus(S,"error in dynamics");
    return;
   }
@@ -383,6 +416,7 @@ static void mdlDerivatives(SimStruct *S)
   mxDestroyArray(prhs[1]);
   mxDestroyArray(prhs[2]);
   mxDestroyArray(prhs[3]);
+  mxDestroyArray(prhs[4]);
 }
 #endif /* MDL_DERIVATIVES */
 
@@ -396,6 +430,9 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   int num_xc = ssGetNumContStates(S);
   int num_u = ssGetNumInputPorts(S) ? ssGetInputPortWidth(S,0) : 0;
 
+  bool sds = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
+  int num_w = sds ? ssGetInputPortWidth(S,num_u>0 ? 1 : 0) : 0;
+  
   setScopeEnable(S);
 
   mxArray *psys = const_cast<mxArray*>(ssGetSFcnParam(S, 0));
@@ -403,11 +440,12 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   real_T *xd = ssGetDiscStates(S);
   real_T *xc = ssGetContStates(S);
   const real_T *u = num_u>0 ? ssGetInputPortRealSignal(S,0) : NULL;
+  const real_T *w = num_w>0 ? ssGetInputPortRealSignal(S,num_u>0?1:0) : NULL;
   mxArray* plhs[1];
-  bool fsm = isa(psys,"HybridRobotLibSystem");
+  bool fsm = ssGetIWorkValue(S,IS_HYBRID_IDX);
   int_T *mode = (fsm ? ssGetModeVector(S) : NULL);
-
-  mxArray *prhs[4];
+  
+  mxArray *prhs[5];
   prhs[0] = psys;                                  // obj
   prhs[1] = mxCreateDoubleScalar(t);               // t
 
@@ -428,8 +466,11 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   
   prhs[3] = mxCreateDoubleMatrix(num_u,1,mxREAL);  // u
   if (num_u>0) memcpy(mxGetPr(prhs[3]),u,sizeof(real_T)*num_u); 
+
+  prhs[4] = mxCreateDoubleMatrix(num_w, 1, mxREAL); // w
+  if (num_w>0) memcpy(mxGetPr(prhs[4]), w, sizeof(real_T)*num_w);
   
-  if (mexCallMATLAB(1,plhs,4,prhs,"update")) {
+  if (mexCallMATLAB(1,plhs,sds?5:4,prhs,"update")) {
    ssSetErrorStatus(S,"error in update");
    return;
   }
@@ -439,6 +480,7 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   mxDestroyArray(prhs[1]);
   mxDestroyArray(prhs[2]);
   mxDestroyArray(prhs[3]);  
+  mxDestroyArray(prhs[4]);
 }
 #endif /* MDL_UPDATE */
 

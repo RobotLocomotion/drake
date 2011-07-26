@@ -46,7 +46,7 @@ classdef SimulinkModel < DynamicalSystem
       x0 = stateStructureToVector(obj,x0);
     end
     
-    function xcdot = dynamics(obj,t,x,u)
+    function [xcdot,df] = dynamics(obj,t,x,u)
       x = stateVectorToStructure(obj,x);
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         feval(obj.mdl,[],[],[],'compile');
@@ -58,7 +58,14 @@ classdef SimulinkModel < DynamicalSystem
       % what's going on.
 %      Simulink.BlockDiagram.getInitialState(obj.mdl);
 %      xcdot = feval(obj.mdl,t,x,u,'derivs');
+
       xcdot = stateStructureToVector(obj,xcdot);
+
+      if (nargout>1)
+        [A,B] = linearize(obj,t,x,u);
+        df = [zeros(obj.num_xc,1), A, B];
+      end
+      
     end
     
     function xdn = update(obj,t,x,u)
@@ -70,12 +77,17 @@ classdef SimulinkModel < DynamicalSystem
       xdn = stateStructureToVector(obj,xdn);
     end
     
-    function y = output(obj,t,x,u)
+    function [y,dy] = output(obj,t,x,u)
       x = stateVectorToStructure(obj,x);
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         feval(obj.mdl,[],[],[],'compile');
       end
       y = feval(obj.mdl,t,x,u,'outputs');
+
+      if (nargout>1)
+        [A,B,C,D] = linearize(obj,t,x,u);  % should it ever be dlinearize?
+        dy = [zeros(obj.num_y,1), C, D];
+      end
     end
     
   end

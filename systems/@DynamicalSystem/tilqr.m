@@ -42,7 +42,7 @@ end
 if (any(any(abs(C-eye(getNumStates(obj)))>tol)) || any(abs(D(:))>tol))
   C
   D
-  error('i''ve assumed C=I,D=0 so far.');
+  warning('i''ve assumed C=I,D=0 so far.');
 end
 
 ltisys = LTIControl(x0,u0,K,S);

@@ -124,8 +124,8 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     to_ind = from_ind+N(m);
     to_x0 =  w(to_ind+1+(1:nX));
     [to_x,to_mode,status,dto_x] = geval(3,sys.transition{from_mode}{min_g_ind},sys,from_mode,tc,xc,uc,options);
+    dto_x(:,1) = []; % zap grad with respect to mode
     dto_x(:,1) = dto_x(:,1)*tOrig{m}(end);
-    dto_x(:,2) = []; % zap grad with respect to mode
     f = [f; to_x - to_x0];
     G = [G; dto_x(:); -ones(nX,1)];  % df/d[tc,xc,uc]; df/d[to_x0]
   end

@@ -8,7 +8,6 @@ classdef HybridRobotLibSystem < RobotLibSystem
     % transitions:
     guard={};       % guard{i}{j} is for the jth transition from the ith mode
     transition={};      % transition{i}{j} is for the jth transition from the ith mode
-    num_zcs = 0;    % number of zero-crossings.
     output_mode = true;
   end
   
@@ -62,7 +61,7 @@ classdef HybridRobotLibSystem < RobotLibSystem
       obj.transition{from_mode_num}{tid} = transition;
       obj = setDirectFeedthrough(obj,obj.isDirectFeedthrough() || directFeedthrough);
       obj = setTIFlag(obj,obj.isTI() && timeInvariant);
-      obj.num_zcs = max(obj.num_zcs,tid);
+      obj = setNumZeroCrossings(obj,max(getNumZeroCrossings(obj),tid));
     end
     
     function guard = andGuards(obj,varargin)
@@ -113,10 +112,6 @@ classdef HybridRobotLibSystem < RobotLibSystem
     function mode_sys = getMode(obj,mode_num)
       if (mode_num<1 || mode_num>length(systems)) error('bad mode num'); end
       mode_sys = systems{mode_num};
-    end
-    
-    function n = getNumZeroCrossings(obj)
-      n = obj.num_zcs;
     end
   end
   
@@ -174,7 +169,7 @@ classdef HybridRobotLibSystem < RobotLibSystem
       y = [y;repmat(0,getNumOutputs(obj)-length(y),1)];
     end
     
-    function zcs = guards(obj,t,x,u)
+    function zcs = zeroCrossings(obj,t,x,u)
       m = x(1);
       xm = x(1+(1:getNumStates(obj.modes{m})));
       zcs=ones(obj.num_zcs,1);
@@ -187,7 +182,7 @@ classdef HybridRobotLibSystem < RobotLibSystem
     function [xn,status] = transitionUpdate(obj,t,x,u)
       status = 0;
       m = x(1);
-      zcs = guards(obj,t,x,u);
+      zcs = zeroCrossings(obj,t,x,u);
       active_id = find(zcs<0);
       if (isempty(active_id)) % no transition (return the original state)
         xn = x;
@@ -200,8 +195,8 @@ classdef HybridRobotLibSystem < RobotLibSystem
       xn = [to_mode_num;mode_xn];
       % pad if necessary:
       xn = [xn;repmat(0,getNumStates(obj)-length(xn),1)];
-      if (any(guards(obj,t,xn,u)<0)),
-        zcs2=guards(obj,t,xn,u);
+      if (any(zeroCrossings(obj,t,xn,u)<0)),
+        zcs2=zeroCrossings(obj,t,xn,u);
         active_id2 = find(zcs2<0);
         disp(obj);
         fprintf('transitioned from mode %d to mode %d, and immediately triggered mode %d''s guard number %d\n',m,to_mode_num,to_mode_num,active_id2);
