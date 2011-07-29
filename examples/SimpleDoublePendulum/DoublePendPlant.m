@@ -42,4 +42,14 @@ classdef DoublePendPlant < ManipulatorPlant
     end
     
   end
+  
+  methods(Static)
+    function run()  % runs the passive system
+      pd = DoublePendPlant;
+      pv = DoublePendVisualizer;
+      traj = simulate(pd,[0 5],randn(4,1));
+      playback(pv,traj);
+    end
+  end
+  
 end

@@ -4,6 +4,7 @@ In order to fork a copy (branch) of robotlib, e.g. for development,  you probabl
 cd into your /locomotion directory
 svn cp robotlib robotlib-mydev
 svn propdel -R rlg:email robotlib-mydev 
+svn commit robotlib-mydev
 
 where "robotlib-mydev" can be replaced with whatever you'd like to call your local copy. 
 

@@ -82,8 +82,6 @@ static void mdlInitializeSizes(SimStruct *S)
     mxDestroyArray(plhs[0]);
 
     ssSetInputPortRequiredContiguous(S,0,1);
-  } else {
-    if (!ssSetNumInputPorts(S, 0)) return;
   }
 
   if (num_w>0) {
@@ -162,8 +160,7 @@ static void mdlInitializeConditions(SimStruct *S)
   } else {
     ssSetIWorkValue(S,IS_HYBRID_IDX,0);
   }
-  ssSetIWorkValue(S, IS_STOCHASTIC_IDX, isa(psys,"StochasticRobotLibSystem"));
-
+  
   if (num_xd) {
     memcpy(xd0,x,sizeof(real_T)*num_xd);
     x+=num_xd;
@@ -175,6 +172,15 @@ static void mdlInitializeConditions(SimStruct *S)
   ssSetIWorkValue(S,0,1);
 
   mxDestroyArray(plhs[0]);
+  
+  if (isa(psys,"StochasticRobotLibSystem")) {
+    if (mexCallMATLAB(1,plhs,1,&psys,"getNumDisturbances")) return;
+    int num_w = mxGetScalar(plhs[0]);
+    mxDestroyArray(plhs[0]);
+    ssSetIWorkValue(S, IS_STOCHASTIC_IDX, num_w);
+  } else {
+    ssSetIWorkValue(S, IS_STOCHASTIC_IDX, 0);
+  }
 }
 #endif /* MDL_INITIALIZE_CONDITIONS */
 
@@ -189,14 +195,13 @@ static void mdlOutputs(SimStruct *S, int_T tid)
 {
   int num_xd = ssGetNumDiscStates(S);
   int num_xc = ssGetNumContStates(S);
-  int num_u = ssGetNumInputPorts(S) ? ssGetInputPortWidth(S,0) : 0;
+  int num_w = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
+  bool sds = num_w>0;
+  int num_u = ssGetNumInputPorts(S)-sds ? ssGetInputPortWidth(S,0) : 0;
   int num_y = ssGetNumOutputPorts(S) ? ssGetOutputPortWidth(S,0) : 0;
-
+  
   setScopeEnable(S);
   
-  bool sds = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
-  int num_w = sds ? ssGetInputPortWidth(S,num_u>0 ? 1 : 0) : 0;
-
   mxArray *psys = const_cast<mxArray*>(ssGetSFcnParam(S, 0));
   time_T t = ssGetT(S);
   real_T *xd = ssGetDiscStates(S);
@@ -287,7 +292,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
     mxDestroyArray(plhs[1]);
   }
 
-  if (mexCallMATLAB(1, plhs, sds?5:4, prhs, "output")) { // call it even if there are no outputs (e.g., for visualizers)
+  if (mexCallMATLAB(1, plhs, sds?5:4, prhs, sds?"stochasticOutput":"output")) { // call it even if there are no outputs (e.g., for visualizers)
     ssSetErrorStatus(S,"error in output");
     return;  
   }
@@ -308,7 +313,9 @@ static void mdlZeroCrossings(SimStruct *S)
 { 
   int num_xd = ssGetNumDiscStates(S);
   int num_xc = ssGetNumContStates(S);
-  int num_u = ssGetNumInputPorts(S) ? ssGetInputPortWidth(S,0) : 0;
+  int num_w = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
+  bool sds = num_w>0;
+  int num_u = ssGetNumInputPorts(S)-sds ? ssGetInputPortWidth(S,0) : 0;
   int num_zcs = ssGetNumNonsampledZCs(S);
 
   mxArray *psys = const_cast<mxArray*>(ssGetSFcnParam(S, 0));
@@ -362,11 +369,11 @@ static void mdlDerivatives(SimStruct *S)
 {
   int num_xc = ssGetNumContStates(S);
   if (num_xc<1) return;
+  
   int num_xd = ssGetNumDiscStates(S);
-  int num_u = ssGetNumInputPorts(S) ? ssGetInputPortWidth(S,0) : 0;
-
-  bool sds = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
-  int num_w = sds ? ssGetInputPortWidth(S,num_u>0 ? 1 : 0) : 0;
+  int num_w = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
+  bool sds = num_w>0;
+  int num_u = ssGetNumInputPorts(S)-sds ? ssGetInputPortWidth(S,0) : 0;
 
   setScopeEnable(S);
 
@@ -406,7 +413,7 @@ static void mdlDerivatives(SimStruct *S)
   prhs[4] = mxCreateDoubleMatrix(num_w, 1, mxREAL); // w
   if (num_w>0) memcpy(mxGetPr(prhs[4]), w, sizeof(real_T)*num_w);
   
-  if (mexCallMATLAB(1,plhs,sds?5:4,prhs,"dynamics")) {
+  if (mexCallMATLAB(1,plhs,sds?5:4,prhs,sds?"stochasticDynamics":"dynamics")) {
    ssSetErrorStatus(S,"error in dynamics");
    return;
   }
@@ -428,10 +435,9 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   int num_xd = ssGetNumDiscStates(S);
   if (num_xd<1) return;
   int num_xc = ssGetNumContStates(S);
-  int num_u = ssGetNumInputPorts(S) ? ssGetInputPortWidth(S,0) : 0;
-
-  bool sds = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
-  int num_w = sds ? ssGetInputPortWidth(S,num_u>0 ? 1 : 0) : 0;
+  int num_w = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
+  bool sds = num_w>0;
+  int num_u = ssGetNumInputPorts(S)-sds ? ssGetInputPortWidth(S,0) : 0;
   
   setScopeEnable(S);
 
@@ -470,7 +476,7 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   prhs[4] = mxCreateDoubleMatrix(num_w, 1, mxREAL); // w
   if (num_w>0) memcpy(mxGetPr(prhs[4]), w, sizeof(real_T)*num_w);
   
-  if (mexCallMATLAB(1,plhs,sds?5:4,prhs,"update")) {
+  if (mexCallMATLAB(1,plhs,sds?5:4,prhs,sds?"stochasticUpdate":"update")) {
    ssSetErrorStatus(S,"error in update");
    return;
   }

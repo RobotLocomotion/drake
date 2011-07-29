@@ -172,7 +172,7 @@ classdef HybridRobotLibSystem < RobotLibSystem
     function zcs = zeroCrossings(obj,t,x,u)
       m = x(1);
       xm = x(1+(1:getNumStates(obj.modes{m})));
-      zcs=ones(obj.num_zcs,1);
+      zcs=ones(getNumZeroCrossings(obj),1);
       n=length(obj.guard{m});
       for i=1:n
         zcs(i) = obj.guard{m}{i}(obj,t,xm,u);
@@ -195,6 +195,7 @@ classdef HybridRobotLibSystem < RobotLibSystem
       xn = [to_mode_num;mode_xn];
       % pad if necessary:
       xn = [xn;repmat(0,getNumStates(obj)-length(xn),1)];
+      if(status==0)
       if (any(zeroCrossings(obj,t,xn,u)<0)),
         zcs2=zeroCrossings(obj,t,xn,u);
         active_id2 = find(zcs2<0);
@@ -202,6 +203,7 @@ classdef HybridRobotLibSystem < RobotLibSystem
         fprintf('transitioned from mode %d to mode %d, and immediately triggered mode %d''s guard number %d\n',m,to_mode_num,to_mode_num,active_id2);
         keyboard; 
       end % useful for debugging successive zcs.
+      end
     end
   end
   
