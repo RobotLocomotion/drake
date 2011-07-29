@@ -47,13 +47,15 @@ while(1)
         [d,t]=decodeU(lcm_coder,ev);
       case 'y'
         [d,t]=decodeY(lcm_coder,ev);
+      otherwise
+            continue;
     end
     tfield = ['t_',channel];
     if (isfield(data,channel))
-      data = setfield(data,channel,[getfield(data,channel),d]);
+      data = setfield(data,channel,[getfield(data,channel),reshape(d,numel(d),1)]);
       data = setfield(data,tfield,[getfield(data,tfield),t]);
     else
-      data = setfield(data,channel,d);
+      data = setfield(data,channel,reshape(d,numel(d),1));
       data = setfield(data,tfield,t);
     end
   end

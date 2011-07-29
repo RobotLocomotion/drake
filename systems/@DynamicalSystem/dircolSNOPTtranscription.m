@@ -197,8 +197,8 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   u = reshape(w((2+nT*nX):end),nU,nT);
 
   tcol = t(1:end-1)+dt/2;  dtcoldw1 = dtdw1(1:end-1)+ddtdw1/2;
-  ucol = .5*(u(1:end-1)+u(2:end));  
-
+  ucol = .5*(u(:,1:end-1)+u(:,2:end));  
+  
 %  figure(1); clf; plot(x(1,:),x(2,:)); drawnow;
 
   
@@ -216,12 +216,12 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   fxc = [];  Gxc=[];
   
   % iterate through time
-  [xdot(:,1),dxdot(:,:,1)] = geval(@sys.dynamics,t(1),x(:,1),u(:,1));  
+  [xdot(:,1),dxdot(:,:,1)] = geval(@sys.dynamics,t(1),x(:,1),u(:,1),options);  
   dxdot(:,1,1) = dxdot(:,1,1)*dtdw1(1); % d/d[tscale; x(:,1); u(:,1)]
   for i=1:(nT-1)  % compute dynamics and cost
     [g(i),dg(1,:,i)] = geval(costFun,t(i),x(:,i),u(:,i),options);  dg(1,1,i)=dg(1,1,i)*dtdw1(i);  % d/d[tscale; x(:,i); u(:,i)]
     dg(1,:,i) = [g(i)*ddtdw1(i),zeros(1,nX+nU)]+dt(i)*dg(1,:,i);  g(i) = g(i)*dt(i);  
-    [xdot(:,i+1),dxdot(:,:,i+1)] = geval(@sys.dynamics,t(i+1),x(:,i+1),u(:,i+1));
+    [xdot(:,i+1),dxdot(:,:,i+1)] = geval(@sys.dynamics,t(i+1),x(:,i+1),u(:,i+1),options);
     dxdot(:,1,1)=dxdot(:,1,1)*dtdw1(i+1); % d/d[tscale; x(:,i+1); u(:,i+1)]
     xcol = .5*(x(:,i)+x(:,i+1)) + dt(i)/8*(xdot(:,i)-xdot(:,i+1));
     dxcol = .5*[zeros(nX,1),eye(nX),zeros(nX,nU),eye(nX),zeros(nX,nU)] + ...
@@ -238,7 +238,7 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
     dd(:,:,i) = df*[dtcoldw1(i),zeros(1,2*nX+2*nU); dxcol; zeros(nU,1+nX), .5*eye(nU), zeros(nU,nX), .5*eye(nU)] - dxdotcol;  % d/d[tscale;x(:,i);u(:,i);x(:,i+1);u(:,i+1)]
     
     if (bxc)
-      [c,dc] = geval(con.x.c,x(:,i));
+      [c,dc] = geval(con.x.c,x(:,i),options);
       fxc = [fxc; c(:)]; Gxc = [Gxc; dc(:)];
     end
     
@@ -252,7 +252,7 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   dJ = [dh(1)+sum(dg(1,1,:)), reshape(dg(1,1+(1:nX),:),1,[]), dh(1,2:end), reshape(dg(1,1+nX+(1:nU),:),1,[]), zeros(1,nU)];
 
   if (isfield(options,'trajectory_cost_fun'))
-    [Jtraj,dJtraj]=geval(options.trajectory_cost_fun,t,x,u);
+    [Jtraj,dJtraj]=geval(options.trajectory_cost_fun,t,x,u,options);
     J = J+Jtraj;
     dJ(1) = dJ(1)+dJtraj(1:nT)*dtdw1;
     dJ(2:end) = dJ(2:end)+dJtraj(nT+1:end);
