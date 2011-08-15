@@ -25,7 +25,7 @@ classdef LinearGaussianExample < StochasticPolynomialSystem
      S=.5; tspan=[0 1]; x0=0;
      options.rho0 = 1;
      stochasticFiniteTimeVerification(sys,S,tspan,x0,options);
-     prob=monteCarlo(sys,S,tspan,x0)
+%     prob=monteCarlo(sys,S,tspan,x0)
    end
  end
  

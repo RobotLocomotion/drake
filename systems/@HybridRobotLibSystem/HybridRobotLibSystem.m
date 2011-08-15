@@ -6,6 +6,7 @@ classdef HybridRobotLibSystem < RobotLibSystem
   properties (SetAccess=private)
     modes={};       % cell array of systems representing each state (or mode)
     % transitions:
+    target_mode={}; % target_mode{i}(j) describes the target for the jth transition out of the ith mode    
     guard={};       % guard{i}{j} is for the jth transition from the ith mode
     transition={};      % transition{i}{j} is for the jth transition from the ith mode
     output_mode = true;
@@ -28,6 +29,7 @@ classdef HybridRobotLibSystem < RobotLibSystem
 %      if (getNumStates(mode_sys)>0 && ~mode_sys.isCT()) error('only CT modes are allowed for now'); end
       obj.modes = {obj.modes{:},mode_sys};
       mode_num = length(obj.modes);
+      obj.target_mode = {obj.target_mode{:},[]};
       obj.guard = {obj.guard{:},{}};
       obj.transition = {obj.transition{:},{}};
       obj = setNumContStates(obj,max(getNumContStates(obj),getNumContStates(mode_sys)));
@@ -38,18 +40,23 @@ classdef HybridRobotLibSystem < RobotLibSystem
       else
         obj = setNumOutputs(obj,max(getNumOutputs(obj),getNumOutputs(mode_sys)));
       end
+      if (mode_sys.getNumZeroCrossings()>0)
+        error('i don''t handle this case yet, but it would be pretty simple.');
+      end
       obj = setDirectFeedthrough(obj,isDirectFeedthrough(obj) || isDirectFeedthrough(mode_sys));
       obj = setTIFlag(obj,isTI(obj) && isTI(mode_sys));
     end
     
-    function obj = addTransition(obj,from_mode_num,guard,transition,directFeedthrough,timeInvariant,~)
+    function obj = addTransition(obj,from_mode_num,guard,transition,directFeedthrough,timeInvariant,to_mode_num)
       % guard is a function pointer with style:  
       %    phi = guard(fsm_obj,t,mode_x,u)
       %    with phi a scalar, which indicates a transition when phi<=0.
       % transition is a function pointer with style:
       %    [to_mode_xn,to_mode_num,status] = transition(obj,from_mode_num,t,mode_x,u)
+      % if to_mode_num is not supplied, or is 0, then it means that the to_mode is only given by the transition update.
       
       if (from_mode_num<1 || from_mode_num>length(obj.modes)) error('invalid from mode'); end
+      if (nargin<7) to_mode_num=0; end
       if (isnumeric(guard))
         error('the syntax for the hybrid models has changed (sorry).  to_mode_num is now an output of the transition function instead of an argument to addTransition.  this was necessary for more complicated transitions.  type ''help @HybridRobotLibSystem/addTransition'' for details.'); 
         % todo: zap trailing ~ from argument list when i zap this version change notification.
@@ -57,6 +64,8 @@ classdef HybridRobotLibSystem < RobotLibSystem
       typecheck(guard,{'function_handle','inline'});
       if (~isempty(transition)) typecheck(transition,{'function_handle','inline'}); end
       tid = length(obj.guard{from_mode_num})+1;
+      if (to_mode_num<0 || to_mode_num>length(obj.modes)) error('invalid to mode'); end
+      obj.target_mode{from_mode_num}(tid) = to_mode_num;
       obj.guard{from_mode_num}{tid} = guard;
       obj.transition{from_mode_num}{tid} = transition;
       obj = setDirectFeedthrough(obj,obj.isDirectFeedthrough() || directFeedthrough);
@@ -136,7 +145,7 @@ classdef HybridRobotLibSystem < RobotLibSystem
       x0 = [x0;repmat(0,getNumStates(obj)-length(x0),1)];
     end
     
-    function xcdot = dynamics(obj,t,x,u)
+    function [xcdot,df] = dynamics(obj,t,x,u)
       m = x(1); 
       if (getNumContStates(obj.modes{m}))
         xm = x(1+(1:getNumStates(obj.modes{m})));
@@ -191,6 +200,9 @@ classdef HybridRobotLibSystem < RobotLibSystem
       if (length(active_id)>1) error('multiple guards tripped at the same time.  behavior is undefined.  consider reducing the step size'); end
       xm = x(1+(1:getNumStates(obj.modes{m})));
       [mode_xn,to_mode_num,status] = obj.transition{m}{active_id}(obj,m,t,xm,u);
+      if (obj.target_mode{m}(active_id)>0 && obj.target_mode{m}(active_id)~=to_mode_num)
+        error('transition to_mode_num differs from specified target mode'); 
+      end
 %      to_mode_num
       xn = [to_mode_num;mode_xn];
       % pad if necessary:

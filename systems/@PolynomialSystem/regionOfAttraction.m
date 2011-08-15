@@ -243,7 +243,9 @@ function V = levelSetMethod(x,V,f,options)
   %% compute Vdot
   Vdot = diff(V,x)*f;
 
-% check Hessian Vdot at origin, to make sure it's negative def. 
+  % check Hessian Vdot at origin, to make sure it's negative def.
+  H=.5*doubleSafe(subs(diff(diff(Vdot,x)',x),x,0*x));  % extract Hessian
+  if (~isPositiveDefinite(-H)) error('Vdot must be negative definite at the origin'); end
 
   prog = mssprog;
   Lmonom = monomials(x,0:options.degL1);
@@ -282,6 +284,8 @@ function V=levelSetMethodYalmip(x,V,Vdot,options)
   Vdot = diff(V,x)*f;
 
   % check Hessian Vdot at origin, to make sure it's negative def. 
+  H=.5*doubleSafe(subs(diff(diff(Vdot,x)',x),x,0*x));  % extract Hessian
+  if (~isPositiveDefinite(-H)) error('Vdot must be negative definite at the origin'); end
 
   % flip to sdpvars
   xs = sdpvar(length(x),1);

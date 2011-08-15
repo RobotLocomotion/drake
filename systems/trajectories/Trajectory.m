@@ -71,6 +71,8 @@ classdef Trajectory < RobotLibSystem
       pts = obj.eval(ts);
       if (prod(obj.dim)==1)
         h=plot(ts,squeeze(pts),'b.-','LineWidth',1,'MarkerSize',5);
+      elseif (nargin>1 && length(plotdims)==1)
+        h=plot(ts,squeeze(pts(plotdims,:)),'b.-','LineWidth',1,'MarkerSize',5);
       else
         if (nargin<2) plotdims=[1,2]; end
         h=plot(pts(plotdims(1),1:m:end),pts(plotdims(2),1:m:end),'b.',pts(plotdims(1),:),pts(plotdims(2),:),'b-','LineWidth',1,'MarkerSize',5);

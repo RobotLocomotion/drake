@@ -1,4 +1,4 @@
-classdef SimulationConstructionSetRobot < RobotLibSystem
+classdef SimulationConstructionSetRobot < SmoothRobotLibSystem
 % Implements the DynamicalSystem interface for a SimulationConstructionSet robot.
 % SimulationConstructionSet is developed by IHMC.
 
@@ -24,15 +24,16 @@ classdef SimulationConstructionSetRobot < RobotLibSystem
       % javaaddpath([eclipse_root,'DoublePendulum/classes']);
 
       % todo: compute correct number of states and inputs here
-      obj=obj@RobotLibSystem(0,0,0,0,0,1);
+      obj=obj@SmoothRobotLibSystem(0,0,0,0,0,1);
       
-      if (~isa(robotobj,'com.yobotics.simulationconstructionset.Robot'))
-        error('Must pass in a simulation construction set robot java object');
-      end
+      checkDependency('simulationconstructionset_enabled');
+      
+      typecheck(robotobj,'com.yobotics.simulationconstructionset.Robot');
       obj.robotobj=robotobj;
       
       obj = setNumContStates(obj,obj.robotobj.getStateVectorLength());
-      obj = setNumOutputs(obj,obj.getNumStates());
+      obj.numGCstates = obj.robotobj.getDiscStateVectorLength();
+      obj = setNumOutputs(obj,obj.robotobj.getContStateVectorLength());
       obj = setNumInputs(obj,obj.robotobj.getInputVectorLength());
     end
   end
@@ -46,13 +47,14 @@ classdef SimulationConstructionSetRobot < RobotLibSystem
     
     function [xcdot,df] = dynamics(obj,t,x,u)
       if (nargout<2)
-        xcdot = obj.robotobj.matlabDynamics(x,u);
+        xcdot = [obj.robotobj.matlabDynamics(t,x,u);zeros(obj.numGCstates,1)];
       else
         nX = obj.getNumStates();
+        nXc = nX - obj.numGCstates;
         nU = obj.getNumInputs();
-        m = obj.robotobj.matlabDynamicsAndGradients(x,u);
-        xcdot = m(1:nX);
-        df = [zeros(nX,1), reshape(m(nX+(1:nX*nX)),nX,nX), reshape(m(nX+nX*nX+(1:nX*nU)),nX,nU)];
+        m = obj.robotobj.matlabDynamicsAndGradients(t,x,u);
+        xcdot = [m(1:nXc);zeros(obj.numGCstates,1)];
+        df = [[zeros(nXc,1), reshape(m(nXc+(1:nXc*nX)),nXc,nX), reshape(m(nXc+nXc*nX+(1:nXc*nU)),nXc,nU)];zeros(obj.numGCstates,1+nX+nU)];
       end
     end
     
@@ -61,16 +63,17 @@ classdef SimulationConstructionSetRobot < RobotLibSystem
     end
     
     function [y,dy] = output(obj,t,x,u)
-      y = x;
+      nY = obj.getNumOutputs();
+      y = x(1:nY);
       if (nargout>0)
-        nY = obj.getNumOutputs();
-        dy = [zeros(nY,1),eye(nY),zeros(nY,obj.getNumInputs())];
+        dy = [zeros(nY,1),eye(nY),zeros(nY,obj.numGCstates+obj.getNumInputs())];
       end
     end
   end
 
   properties (SetAccess=private, GetAccess=public)
     robotobj;   % a instance of the robot java object
+    numGCstates;
   end
   
 end

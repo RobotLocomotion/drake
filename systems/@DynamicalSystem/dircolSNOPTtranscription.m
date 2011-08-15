@@ -39,7 +39,7 @@ if (strcmp(options.xtape0,'simulate'))
   xtraj = simulate(drivensys,[t(1),t(end)],x0);
   x = xtraj.eval(t);
 else % options.xtape0='rand' or 'free'
-  x = .1*randn(length(x0),length(t));   x(:,1) = x0;
+  x = repmat(x0,1,length(t));%+.1*randn(length(x0),length(t));   x(:,1) = x0;
 end
   
 nT = length(t);
@@ -251,7 +251,7 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   J = h + sum(g);
   dJ = [dh(1)+sum(dg(1,1,:)), reshape(dg(1,1+(1:nX),:),1,[]), dh(1,2:end), reshape(dg(1,1+nX+(1:nU),:),1,[]), zeros(1,nU)];
 
-  if (isfield(options,'trajectory_cost_fun'))
+  if (isfield(options,'trajectory_cost_fun') && ~isempty(options.trajectory_cost_fun))
     [Jtraj,dJtraj]=geval(options.trajectory_cost_fun,t,x,u,options);
     J = J+Jtraj;
     dJ(1) = dJ(1)+dJtraj(1:nT)*dtdw1;

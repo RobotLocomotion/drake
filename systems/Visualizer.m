@@ -101,14 +101,21 @@ classdef Visualizer < RobotLibSystem
       mov.FrameRate = obj.playback_speed/obj.display_dt;
       open(mov);
       
-      
+      width=[]; height=[];
       for i=1:length(tspan)
         obj.draw(tspan(i),eval(xtraj,tspan(i)));
         if (obj.draw_axes)
-          writeVideo(mov,getframe(gcf));
+          f=gcf;
         else
-          writeVideo(mov,getframe(gca));
+          f=gca;
         end
+        if (isempty(width))
+          fr=getframe(f);
+          [width,height,~]=size(fr.cdata);
+        else
+          fr=getframe(f,[0 0 width height]);  % explicitly ask for the same size, otherwise videowriter will complain
+        end
+        writeVideo(mov,fr);
       end
       
       close(mov);

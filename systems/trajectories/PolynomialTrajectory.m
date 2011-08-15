@@ -27,7 +27,8 @@ classdef PolynomialTrajectory < Trajectory
       end      
     end
 
-    function p = eval(obj,t)  % returns the msspoly
+    function p = eval(obj,t)  
+      % returns the msspoly
       sizecheck(t,1);  % only handle single time requests
       t=max(min(t,obj.tspan(end)),obj.tspan(1));
       p = obj.handle(t);
@@ -36,7 +37,8 @@ classdef PolynomialTrajectory < Trajectory
       end
     end
     
-    function y = polyeval(obj,t,x)  % returns the double of the msspoly evaluated at x
+    function y = polyeval(obj,t,x)  
+      % returns the double of the msspoly evaluated at x
       p = eval(obj,t);
       y = doubleSafe(msubs(p,obj.p_x,x));
     end

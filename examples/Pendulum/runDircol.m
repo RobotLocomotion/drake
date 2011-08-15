@@ -21,6 +21,9 @@ con.T.lb = 2;
 con.T.ub = 6;
 
 options.method='dircol';
+%options.grad_method='numerical';
+options.grad_method={'user','numerical'};
+
 tic
 %options.grad_test = true;
 [utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj0,con,options);

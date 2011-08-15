@@ -4,11 +4,12 @@ function generateGradients(fun,order,fname,varargin)
 %   generate a file.
 %   Usage: generateGradients(fun,order,filename,a1,a2,...,an[,options])
 %
-%   fun is a function handle to the function you want to provide gradients for
-%   order is the order of the Taylor expansion (0 is no gradients, 1 is
-%           linearization, ...0
-%   fname is the filename to write result to
-%   a1, a2, ...  are some nominal inputs, which are just used to provide
+%   @param fun is a function handle to the function you want to provide gradients for
+%   @param order is the order of the Taylor expansion (0 is no gradients, 1 is
+%       linearization, ...0
+%   @param fname is the filename to write result to.  if fname is empty,
+%       then just return the symbolic structures
+%   @param a1,a2,...  are some nominal inputs, which are just used to provide
 %       information about the size and types of the inputs.  If the first
 %       argument is a matlab class, then the code will be generated
 %       appropriately (using the class properties as parameters when the
@@ -16,10 +17,7 @@ function generateGradients(fun,order,fname,varargin)
 %       Note: an (the last input) must not be a struct... or it will be
 %       confused with an options struct (if this is a problem, then the
 %       remedy is just to add an extra empty options struct on the end)
-%   options 
-%
-%   Options:
-%     bSimplify - boolean (default: true)
+%   @option bSimplify - boolean (default: true)
 %
 %   Example:
 %     cd examples/Pendulum
@@ -70,8 +68,17 @@ for i=1:length(varargin)
       
       % make the sym:
       try
-        placeHolder=sym(fields{j},'real');
-        a{i}=setfield(a{i},fields{j},placeHolder);
+        fieldval=getfield(a{i},fields{j});
+        if (isscalar(fieldval))
+          placeHolder=sym(fields{j},'real');
+          a{i}=setfield(a{i},fields{j},placeHolder);
+        else
+          if (exist('ai')), clear ai; end
+          for k=1:prod(size(fieldval))
+            ai(k)= sym([fields{j},'_',num2str(k)],'real');
+          end
+          a{i}=setfield(a{i},fields{j},reshape(ai,size(fieldval)));
+        end
       catch exception
         string = ['Variable ' fields{j} ' not symbolicisized'];
         disp(string);
@@ -99,14 +106,14 @@ end
 
 % now call the actual function
 f = feval(fun,a{:});
-if (options.simplify) d = simple(f); end
+if (options.simplify) f = simple(f); end
 
 m = prod(size(f));
 n = length(s);
 
 % differentiate dynamics symbolically
 disp('Generating order 1 gradients...');
-df{1} = jacobian(f,s);
+df{1} = jacobian(reshape(f,m,1),s);
 if (options.simplify) df{1} = simple(df{1}); end
 for o=2:order
   disp(['Generating order ',num2str(o),' gradients...']);

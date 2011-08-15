@@ -38,7 +38,7 @@ elsif ($fname =~ /^(.*)\@([\d\w-_]*)[\/\\](.*)\.m/)
 # otherwise
 else
 {
-  $listeFic[0] = $fname;
+  @listeFic[0] = $fname;
 }
 $output = "";
 foreach $my_fic (@listeFic)
@@ -51,7 +51,7 @@ foreach $my_fic (@listeFic)
   $inAbstractMethodBlock = 0;
   $listeProperties = 0;
   $listeEnumeration = 0;
-#  $inComment = 0;
+  $inComment = 0;
   $listeEvents = 0;
   
   #default to public methods since if we're in a file that is not the main class file
@@ -205,7 +205,7 @@ foreach $my_fic (@listeFic)
     {
       $className = $3;
       $classInheritance = $4;
-#      $classAttributes = $2;
+      $classAttributes = $2;
       if (!($classInheritance =~ /^$/))
       {
         $classInheritance =~ s/&/,public /g;
