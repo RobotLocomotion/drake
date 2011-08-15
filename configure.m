@@ -124,6 +124,13 @@ if (~conf.yalmip_enabled)
   disp(' YALMIP not found.  YALMIP support will be disabled.  To re-enable, install YALMIP and rerun configure.'); 
 end
 
+conf.simulationconstructionset_enabled = ...
+    logical(exist('com.yobotics.simulationconstructionset.Robot'));
+if (~conf.simulationconstructionset_enabled)
+  disp(' SimulationConstructionSet not found.  SCS support will be disabled.  To re-enable, get SCS on your machine and add all of the necessary class directories and jar files to your matlab java class path');
+end
+  
+
 
 % save configuration options to config.mat
 conf

@@ -82,8 +82,8 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
     
     % If I made it to here, then actually run the file.
 
-    force_close_system();
     close all;
+    megaclear
     
     attemptsleft=1;
     if (checkFile(files(i).name,'OKTOFAIL'));
@@ -115,9 +115,10 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
       end
     end
     
-    % now clean up for the next guy:
-    force_close_system;
-    close all;
+    a=warning;
+    if (~strcmp(a(1).state,'on'))
+      error('somebody turned off warnings on me!');  % see bug 
+    end
     
     t = timerfind;
     if (~isempty(t)) stop(t); end

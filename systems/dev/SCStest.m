@@ -5,6 +5,12 @@ javaaddpath([eclipse_root,'DoublePendulum/classes']);
 
 r = com.yobotics.exampleSimulations.doublePendulum.DoublePendulumRobot();
 
+javaaddpath([eclipse_root,'ThirdParty/ThirdPartyJars/filedrop.jar']);
+%sim = com.yobotics.simulationconstructionset.Simulation(r,8192);
+scs = com.yobotics.simulationconstructionset.SimulationConstructionSet(r);
+
+return
+
 p=SimulationConstructionSetRobot(r);
 
 

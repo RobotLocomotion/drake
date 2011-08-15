@@ -7,8 +7,8 @@ function bound = stochasticFiniteTimeVerification(sys,S,ts,x0,options)
 %
 % Given the region of interest (x-x0)'*S*(x-x0) < 1, this implementation of the 
 % algorithm searches for a c-super-martingale of the form
-%   B = exp((x-x0)'*(S/rho)*(x-x0)) - 1
-% which (kind of) tries to optimize the stochastic bound, by performing
+%   B = exp((x-x0)'*(S*rho)*(x-x0)) - 1
+% which (approximately) tries to optimize the stochastic bound, by performing
 % an alternating search to maximize rho and minimize c.  
 
 if (~isCT(sys)) error('only handle CT case so far'); end
@@ -31,7 +31,7 @@ sizecheck(x0,[num_x,1]);
 if (nargin<6 || isempty(options)) options=struct(); end
 
 if (~isfield(options,'max_iterations')) options.max_iterations=10; end
-if (~isfield(options,'converged_tol')) options.converged_tol=.01; end
+if (~isfield(options,'converged_tol')) options.converged_tol=.0001; end
 if (~isfield(options,'degL')) options.degL = 2; end
 if (~isfield(options,'rho0')) options.rho0 = 1; end
 
@@ -47,30 +47,36 @@ g0 = doubleSafe(subs(g,[sys.p_t;sys.p_x],[ts(1);x0]));
 rho = options.rho0;
 
 %% perform bilinear alternations
+fprintf('|  rho\t|   c\t| prob\t|\n');
 for iter=1:options.max_iterations
   last_rho = rho; 
-  [c,L]=findMultipliers(sys.p_t,sys.p_x,f,g,S,rho,options)
-  rho=optimizeRho(sys.p_t,sys.p_x,f,g,S,c,L,options)
+  [c,L]=findMultipliers(sys.p_t,sys.p_x,f,g,S,rho,options);
+  c=1.1*c;  % give a little wiggle room for rho to grow
+  rho=optimizeRho(sys.p_t,sys.p_x,f,g,S,c,L,options);
   
+  fprintf('| %3.3f\t| %3.3f\t| %3.3f\t|\n',[rho,c,(martingale(S*rho,x0) + c*T)/(exp(rho)-1)]);
+
   % check for convergence
-  if ((rho - last_rho) < options.converged_tol*last_rho)  % see if it's converged
+  if (abs(rho - last_rho) < options.converged_tol*last_rho)  % see if it's converged
+    % compute the actual c again.
+    [c,L]=findMultipliers(sys.p_t,sys.p_x,f,g,S,rho,options);
     break;
   end
 end
 
 %% plot some things (useful for debugging)
- xs = linspace(-2,2,21);
- for i=1:length(xs)
-   B(i) = martingale(S/rho,xs(i));
-   [AB(i),AB1(i),AB2(i)] = expectedDeriv(sys,f,g,S/rho,0,0,xs(i));
- end
- subplot(2,1,1);plot(xs,B); xlabel('x');ylabel('B');
- subplot(2,1,2);plot(xs,AB,xs,AB1,xs,AB2); xlabel('x');legend('AB','AB1','AB2'); 
+% xs = linspace(-2,2,21);
+% for i=1:length(xs)
+%   B(i) = martingale(S*rho,xs(i));
+%   [AB(i),AB1(i),AB2(i)] = expectedDeriv(sys,f,g,S*rho,0,0,xs(i));
+% end
+% subplot(2,1,1);plot(xs,B); xlabel('x');ylabel('B');
+% subplot(2,1,2);plot(xs,AB,xs,AB1,xs,AB2); xlabel('x');legend('AB','AB1','AB2'); 
 
 %% compute actual bound
-boundFromOrigin = (martingale(S/rho,x0) + c*T)/(exp(1/rho)-1)
+boundFromOrigin = (martingale(S*rho,x0) + c*T)/(exp(rho)-1)
 % sanity check: this one only works for scalar x
-%boundFromOrigin = (martingale(S/rho,x0) + c*T)/martingale(S/rho,sqrt(1/S))
+%boundFromOrigin = (martingale(S*rho,x0) + c*T)/martingale(S*rho,sqrt(1/S))
 
 
 end
@@ -96,7 +102,7 @@ function [c,L] = findMultipliers(t,x,f,g,S,rho,options)
   Lxmonom=monomials(x,0:options.degL);
   [prog,lcoef] = new(prog,length(Lxmonom),'free');
   L = lcoef'*Lxmonom;
-  Sr=S/rho;
+  Sr=S*rho;
   
   f=subs(f,t,0*t); g=subs(g,t,0*g); % todo: handle time. 
   prog.sos = c*(1-x'*Sr*x)-2*x'*Sr*f-trace(g'*Sr*g)-2*x'*Sr*g*g'*Sr*x+L*(x'*S*x-1);
@@ -109,29 +115,29 @@ function [c,L] = findMultipliers(t,x,f,g,S,rho,options)
   if (info.pinf || info.dinf)
     error('problem looks infeasible.  try decreasing options.rho0.');
   end
-  c = doubleSafe(prog(c));
+  c = doubleSafe(prog(c));  
   L = prog(L);
 end
 
 function rho=optimizeRho(t,x,f,g,S,c,L,options)
   prog = mssprog;
-  [prog,rhoinv] = new(prog,1,'pos');
-  Sr=S*rhoinv;
+  [prog,rho] = new(prog,1,'pos');
+  Sr=S*rho;
   
   f=subs(f,t,0*t); g=subs(g,t,0*g); % todo: handle time. 
 
-%  prog.sos = c*(1-x'*S*x)-2*x'*S*f-trace(g'*S*g)-2*x'*S*g*g'*S*x+L*(x'*S*x-1);
-%  oops:  this is not linear in rhoinv, so here's the schur complement 
-  prog.sss = [ .5, x'*Sr*g; g'*Sr*x, c*(1-x'*Sr*x)-2*x'*Sr*f-trace(g'*Sr*g) + L*(x'*S*x-1) ]; 
+%  prog.sos = c*(1-x'*Sr*x)-2*x'*Sr*f-trace(g'*Sr*g)-2*x'*Sr*g*g'*Sr*x+L*(x'*S*x-1);
+%  oops:  this is not linear in rho, so here's the schur complement 
+  prog.sss = [ .5, g'*Sr*x; x'*Sr*g, c*(1-x'*Sr*x)-2*x'*Sr*f-trace(g'*Sr*g) + L*(x'*S*x-1) ]; 
 
-  [prog,info] = sedumi(prog,rhoinv,0);
+  [prog,info] = sedumi(prog,-rho,0);
   if (info.numerr>1)
     error('sedumi failed due to numerical errors');
   end
   if (info.pinf || info.dinf)
     error('problem looks infeasible.');
   end
-  rho = 1/doubleSafe(prog(rhoinv));
+  rho = doubleSafe(prog(rho));
 end
 
 function y=doubleSafe(x)

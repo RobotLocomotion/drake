@@ -106,7 +106,7 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     tc = tscale*tOrig{m}(end); xc = w(from_ind+1+(nT-1)*nX+(1:nX));  uc = w(from_ind+1+nT*nX+(nT-1)*nU+(1:nU));
     zc = 1; dzc = zeros(1,1+nX+nU);  % d/d[tscale,xc,uc]
     min_g = inf; min_g_ind = 0;
-    for i=1:length(sys.guard{from_mode})%find(sys.target_mode{from_mode}==to_mode)
+    for i=find(sys.target_mode{from_mode}==to_mode | sys.target_mode{from_mode}==0)
       [g,dg] = geval(sys.guard{from_mode}{i},sys,tc,xc,uc,options);
       dg(1) = dg(1)*tOrig{m}(end);
       if (g<min_g), min_g = g; min_g_ind = i; end 

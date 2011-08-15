@@ -83,7 +83,7 @@ end
 
 % conservative initial guess (need to do something smarter here)
 dts = diff(ts);
-rho = flipud(rhof*exp(-options.rho0_tau*(ts-ts(1))/(ts(end)-ts(1))))+max(Vmin);
+rho = flipud(rhof*exp(-options.rho0_tau*(ts-ts(1))/(ts(end)-ts(1))))+max(Vmin); 
 rhodot = diff(rho)./dts;
 
 % check accuracy by sampling

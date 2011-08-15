@@ -16,7 +16,7 @@ classdef LTVControl < SmoothRobotLibSystem
     end
     
     function t0=getInitialState(obj)
-      t0=-inf;
+      t0=-1e6;
     end
     function t0=getInitialStateWInput(obj,t,t0,x)
       t0=t;  % todo: call function to figure out best initial time
