@@ -1,4 +1,4 @@
-function runLCM(obj,lcmCoder,in,out,options)
+function runLCM(obj,lcmCoder,in,out,x0,options)
 % Runs the system as an lcm node.
 % 
 %  @param lcmCoder an LCMCoder object which defines all of the messages
@@ -6,13 +6,14 @@ function runLCM(obj,lcmCoder,in,out,options)
 %    'x','xhat','u', or 'y'.  The robotname is automatically prepended.
 %  @param out the name of the message to publish for the output.  Must be
 %    'x','xhat','u', or 'y'.  The robotname is automatically prepended.
-%  @param options 
+%  @param x0 initial conditions.  Use [] for the default initial
+%  conditions.
 %
 %  @option tspan a 1x2 vector defining the start and end time of the simulation.  default [0,inf]
 
 
-
-if (nargin<5) options = struct(); end
+if (nargin<5) x0=[]; end
+if (nargin<6) options = struct(); end
 if (isfield(options,'tspan'))
   typecheck(options.tspan,'double');
   sizecheck(options.tspan,[1 2]);
@@ -115,13 +116,25 @@ else % otherwise set up the LCM blocks and run simulink.
     add_block('simulink3/Sinks/Terminator',[mdl,'/terminator']);
     add_line(mdl,'system/1','terminator/1');
   end
-  
+
   % add realtime block
   add_block('robotlib/realtime',[mdl,'/realtime']);
   
   pstruct = obj.simulink_params;
   pstruct.StartTime = num2str(options.tspan(1));
   pstruct.StopTime = num2str(options.tspan(2));
+
+  if (~isempty(x0)) % handle initial conditions
+    x0 = obj.stateVectorToStructure(x0,mdl);
+    assignin('base',[mdl,'_x0'],x0);
+    pstruct.InitialState = [mdl,'_x0'];
+    pstruct.LoadInitialState = 'on';
+
+    if (~isempty(find_system(mdl,'ClassName','InitialCondition')))
+      warning('Your model appears to have an initial conditions block in it (e.g., from SimMechanics).  That block will overwrite any initial conditions that you pass in to simulate.');
+    end
+  end  
+  
   sim(mdl,pstruct);
 end
 

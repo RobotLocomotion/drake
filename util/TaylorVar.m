@@ -852,7 +852,7 @@ classdef TaylorVar
   end
   
   methods (Static)
-    function tv=init(x,order,inds)
+    function tv=init(x,order)
       dim=size(x);
       if (length(dim)>2 || dim(2)~=1), error('x must be a column vector'); end  
       n = length(x);

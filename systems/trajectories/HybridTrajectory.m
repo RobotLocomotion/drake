@@ -28,6 +28,7 @@ classdef HybridTrajectory < Trajectory
           obj.tspan(2) = t(end);
         end
         obj.te = te(1:(end-1));
+        obj = setNumOutputs(obj,prod(obj.dim));
       end
     end
     

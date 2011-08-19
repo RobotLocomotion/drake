@@ -214,7 +214,7 @@ classdef SpringFlamingoVisualizer < Visualizer
       zoom = 1;
       line(Q(1)+[-zoom,zoom],[0,0],'Color',[0 0 0]);
       axis([Q(1)+[-zoom,zoom],Q(2)+[-zoom,zoom]]);
-      title(['t = ',num2str(t)]);
+      title(sprintf('t = %3.2f',t));
       drawnow;
     end
   end
