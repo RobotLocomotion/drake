@@ -3,7 +3,7 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
   hybrid_options=options;  % keep a backup
   if (~isfield(con,'mode')) error('con.mode must be defined for HybridRobotLibSystems'); end
   for i=1:length(x0)
-    if (length(x0{i})~=sys.getNumContStates()), error('x0 should NOT have the mode variable as the first element.'); end
+    if (length(x0{i})~=sys.modes{con.mode{i}.mode_num}.getNumContStates()), error('x0 should NOT have the mode variable as the first element.'); end
   end
   for m=1:length(con.mode)
     % todo: check here that utraj0{m} starts at t=0?
@@ -92,6 +92,10 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
   for m=1:length(N)-1
     from_mode = con.mode{m}.mode_num; 
     to_mode = con.mode{m+1}.mode_num;
+    nXm=sys.modes{from_mode}.getNumContStates();%This is the number of states in the prior mode,m for "minus"
+    nUm=sys.modes{from_mode}.getNumInputs();%Number of inputs in the prior mode
+    nXp=sys.modes{to_mode}.getNumContStates();%This is the number of states in the posterior mode, p for "plus"
+    nUp=sys.modes{to_mode}.getNumInputs();%This is the number of inputs in the posterior mode.
     if (m>1) from_ind = sum(N(1:m-1)); else from_ind = 0; end
     nT = length(tOrig{m}); 
 
@@ -103,8 +107,9 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     % final value for each mode (except the last) needs to have or(relevant zcs=0).  not
     % just any zc, but a zc that transitions me to the correct next node.
     tscale = w(from_ind+1);
-    tc = tscale*tOrig{m}(end); xc = w(from_ind+1+(nT-1)*nX+(1:nX));  uc = w(from_ind+1+nT*nX+(nT-1)*nU+(1:nU));
-    zc = 1; dzc = zeros(1,1+nX+nU);  % d/d[tscale,xc,uc]
+    tc = tscale*tOrig{m}(end);
+    xc=w(from_ind+1+(nT-1)*nXm+(1:nXm));uc=w(from_ind+1+nT*nXm+(nT-1)*nUm+(1:nUm));
+    zc = 1; dzc = zeros(1,1+nXm+nUm);  % d/d[tscale,xc,uc]
     min_g = inf; min_g_ind = 0;
     for i=find(sys.target_mode{from_mode}==to_mode | sys.target_mode{from_mode}==0)
       [g,dg] = geval(sys.guard{from_mode}{i},sys,tc,xc,uc,options);
@@ -122,12 +127,12 @@ function [f,G] = dircol_userfun(sys,w,userfun,tOrig,N,con,options)
     % value of the previous after the transition update.
     if (min_g_ind<1) error('no applicable zero crossings defined'); end
     to_ind = from_ind+N(m);
-    to_x0 =  w(to_ind+1+(1:nX));
+    to_x0 =  w(to_ind+1+(1:nXp));
     [to_x,to_mode,status,dto_x] = geval(3,sys.transition{from_mode}{min_g_ind},sys,from_mode,tc,xc,uc,options);
-    dto_x(:,1) = []; % zap grad with respect to mode
-    dto_x(:,1) = dto_x(:,1)*tOrig{m}(end);
+    dto_x(:,1) = []; 
+    dto_x(:,1) = dto_x(:,1)*tOrig{m}(end);; % zap grad with respect to mode
     f = [f; to_x - to_x0];
-    G = [G; dto_x(:); -ones(nX,1)];  % df/d[tc,xc,uc]; df/d[to_x0]
+    G = [G; dto_x(:); -ones(nXp,1)];  % df/d[tc,xc,uc]; df/d[to_x0]
   end
   
   % draw last mode
@@ -151,6 +156,7 @@ end
 function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind(sys,N,nT,con,options)
   nX = sys.getNumContStates();
   nU = sys.getNumInputs();
+  
  
   %% additional fsm constraints:
   nf = 0;
@@ -161,10 +167,16 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind
 %  Fhigh=[]; Flow=[]; return
   
   for m=1:length(N)-1
+    from_mode = con.mode{m}.mode_num; 
+    to_mode = con.mode{m+1}.mode_num;
+    nXm=sys.modes{from_mode}.getNumContStates();%This is the number of states in the prior mode,m for "minus"
+    nUm=sys.modes{from_mode}.getNumInputs();%Number of inputs in the prior mode
+    nXp=sys.modes{to_mode}.getNumContStates();%This is the number of states in the posterior mode, p for "plus"
+    nUp=sys.modes{to_mode}.getNumInputs();%This is the number of inputs in the posterior mode.
     % final value for each mode (except the last) needs to have zc=0.
     if (m>1) from_ind = sum(N(1:m-1)); else from_ind = 0; end
-    iGfun = [iGfun; nf + ones(1+nX+nU,1)];
-    jGvar = [jGvar; from_ind + [1,1+(nT(m)-1)*nX+(1:nX),1+nT(m)*nX+(nT(m)-1)*nU+(1:nU)]'];  
+    iGfun = [iGfun; nf + ones(1+nXm+nUm,1)];
+    jGvar = [jGvar; from_ind + [1,1+(nT(m)-1)*nXm+(1:nXm),1+nT(m)*nXm+(nT(m)-1)*nUm+(1:nUm)]'];  
     nf = nf + 1;
     
     % for debugging
@@ -173,9 +185,9 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind
     % initial value for each mode (except the first) needs to equal final
     % value of the previous after the transition update.
     to_ind = from_ind+N(m);
-    iGfun = [iGfun; nf + reshape(repmat(1:nX,1+nX+nU,1)',[],1); nf + (1:nX)'];
-    jGvar = [jGvar; from_ind + reshape(repmat([1,1+(nT(m)-1)*nX+(1:nX),1+nT(m)*nX+(nT(m)-1)*nU+(1:nU)],nX,1),[],1); to_ind+1+(1:nX)'];
-    nf = nf + nX;
+    iGfun = [iGfun; nf + reshape(repmat(1:nXp,1+nXm+nUm,1)',[],1); nf + (1:nXp)'];
+    jGvar = [jGvar; from_ind + reshape(repmat([1,1+(nT(m)-1)*nXm+(1:nXm),1+nT(m)*nXm+(nT(m)-1)*nUm+(1:nUm)],nXp,1),[],1); to_ind+1+(1:nXp)'];
+    nf = nf + nXp;
 
     if (options.grad_test) 
       oname = {oname{:}, ['mode ',num2str(m),', x(tf) zc']};
@@ -205,17 +217,23 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = fsmObjFun_ind
   
   if (isfield(con,'u_const_across_transitions') && con.u_const_across_transitions)
     for i=1:length(N)-1
-      A = [A; repmat([1;-1],nU,1)];
-      iAfun = [iAfun;nf+reshape(repmat(1:nU,2,1),[],1)];
-      u0ind = sum(N(1:i))+1+nX*nT(i+1)+(1:nU);
-      ufind = sum(N(1:(i-1)))+1+nX*nT(i)+nU*(nT(i)-1)+(1:nU);
-      jAvar = [jAvar; reshape([u0ind; ufind],[],1)];
-      Fhigh = [Fhigh; zeros(nU,1)];
-      Flow = [Flow; zeros(nU,1)];
+        from_mode = con.mode{i}.mode_num; 
+        to_mode = con.mode{i+1}.mode_num;
+        nXm=sys.modes{from_mode}.getNumContStates();%This is the number of states in the prior mode,m for "minus"
+        nUm=sys.modes{from_mode}.getNumInputs();%Number of inputs in the prior mode
+        nXp=sys.modes{to_mode}.getNumContStates();%This is the number of states in the posterior mode, p for "plus"
+        nUp=sys.modes{to_mode}.getNumInputs();%This is the number of inputs in the posterior mode.
+      A = [A; repmat([1;-1],nUm,1)];
+      iAfun = [iAfun;nf+reshape(repmat(1:nUm,2,1),[],1)];
+      u0ind = sum(N(1:i))+1+nXp*nT(i+1)+(1:nUp);
+      ufind = sum(N(1:(i-1)))+1+nXm*nT(i)+nUm*(nT(i)-1)+(1:nUm);
+      jAvar = [jAvar; reshape([u0ind'; ufind'],[],1)];
+      Fhigh = [Fhigh; zeros(nUm,1)];
+      Flow = [Flow; zeros(nUm,1)];
       if (nargout>5)
-        for j=1:nU, oname= {oname{:},['(mode',num2str(i+1),'.uf - mode',num2str(i),'.u0)_',num2str(j)]}; end
+        for j=1:nUm, oname= {oname{:},['(mode',num2str(i+1),'.uf - mode',num2str(i),'.u0)_',num2str(j)]}; end
       end
-      nf = nf + nU;
+      nf = nf + nUm;
     end
   end
 
@@ -234,7 +252,15 @@ function [utraj,xtraj] = dircol_wrapup(sys,w,mode_wrapupfun,tOrig,N,con,options)
     ind = ind+N(m);
 
     mtraj=PPTrajectory(zoh([t tnext],repmat(con.mode{m}.mode_num,1,2)));
-    xtraj{m} = MixedTrajectory({mtraj,mode_xtraj},{1,1+[1:sys.getNumContStates()]});
+    mode_numxc = sys.modes{con.mode{m}.mode_num}.getNumContStates();
+    numxc = sys.getNumContStates();
+    if (mode_numxc<numxc)
+        zeropadding = PPTrajectory(zoh([t tnext],zeros(numxc-mode_numxc,2)));
+        xtraj{m} = MixedTrajectory({mtraj,mode_xtraj,zeropadding},{1,1+[1:mode_numxc],1+[1+mode_numxc:numxc]});
+    else
+        xtraj{m} = MixedTrajectory({mtraj,mode_xtraj},{1,1+[1:sys.getNumContStates()]});
+    end
+    %xtraj{m} = MixedTrajectory({mtraj,mode_xtraj},{1,1+[1:sys.modes{con.mode{m}.mode_num}.getNumContStates()]});
     t=tnext;
   end
   

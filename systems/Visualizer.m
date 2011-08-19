@@ -120,6 +120,63 @@ classdef Visualizer < RobotLibSystem
       
       close(mov);
     end
+    
+    function playbackSWF(obj,xtraj,filename)
+      if (nargin<3)
+        [filename,pathname] = uiputfile('*.swf','Save playback to SWF');
+        filename = [pathname,'/',filename];
+      end
+      
+      dirname = [filename,'_frames'];
+      mkdir(dirname);
+      
+      if (obj.display_dt==0)
+        if (ishandle(obj)) error('i assumed it wasn''t a handle'); end
+        obj.display_dt = 1/30;  % just for the remainder of this file.
+      end
+      
+      breaks = getBreaks(xtraj);
+      tspan = breaks(1):obj.display_dt:breaks(end);
+      if (breaks(end)-tspan(end)>eps) tspan=[tspan,breaks(end)]; end
+            
+      width=[]; height=[];
+      num_chars=length(num2str(length(tspan)));
+      for i=1:length(tspan)
+        obj.draw(tspan(i),eval(xtraj,tspan(i)));
+        if (~obj.draw_axes) axis off; end
+        frame_fname=[dirname,'/',repmat('0',1,num_chars-length(num2str(i))),num2str(i)];
+        saveas(gcf,[frame_fname '.eps'],'epsc');
+      end
+
+      % convert to pdfs
+      cmd{1}=['ls ',dirname,'/*.eps | xargs -n 1 -P 8 epstopdf'];
+
+      % merge pdfs
+      cmd{2}=['pdftk `ls ',dirname,'/*.pdf` cat output ',dirname,'/merge.pdf'];
+
+      % convert pdf to swf
+      cmd{3}=['pdf2swf -s framerate=30 ',dirname,'/merge.pdf ',filename];
+
+      % set the framerate to 30 (the framerate command above doesn't seem
+      % to work in pdf2swf 0.8.1)
+      cmd{4}=['swfcombine -r 30 -d ',filename,' -o ',filename];
+      
+      for i=1:length(cmd)
+        try
+          if (system(cmd{i}) ~= 0) error('command failed'); end
+        catch
+          fprintf(1,'\n\n\ntry running this on the command line:\n  ');
+          disp(cmd{i});
+          disp('... go head.  i''ll wait.');
+          input('just hit RETURN when you''re done');
+        end
+      end      
+
+      disp([filename,' generated successfully']);
+      
+      rmdir(dirname,'s');
+
+      end
   end
   
   properties 

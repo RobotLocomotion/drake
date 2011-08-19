@@ -53,8 +53,9 @@ classdef SpringFlamingoPlant < HybridSimulationConstructionSetRobot
         simulate(sys,[0 inf]);
       else
         traj=simulate(p,[0 10]);
+        save jerry.mat traj;
         playback(pv,traj);
-        %      playbackAVI(pv,traj,'jerry');
+%        playbackSWF(pv,traj,'jerry.swf');
       end
     end
   end

@@ -6,8 +6,8 @@ x0 = [pi;zeros(3,1)]; tf0 = 4; xf = zeros(4,1);
 N=21;
 utraj0 = PPTrajectory(foh(linspace(0,tf0,N),[zeros(1,N);randn(1,N)]));
 
-con.u.lb = [0;p.umin];
-con.u.ub = [0;p.umax];
+con.u.lb = p.umin;
+con.u.ub = p.umax;
 con.x0.lb = x0;
 con.x0.ub = x0;
 con.xf.lb = xf;

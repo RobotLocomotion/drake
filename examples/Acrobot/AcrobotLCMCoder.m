@@ -3,7 +3,7 @@ classdef AcrobotLCMCoder < LCMCoder
 
   methods
     function obj = AcrobotLCMCoder
-      obj = obj@LCMCoder(4,1);
+      obj = obj@LCMCoder(4,1,4);
     end
     
     function str = getRobotName(obj)
@@ -39,6 +39,22 @@ classdef AcrobotLCMCoder < LCMCoder
       % decodes the input message
       msg = robotlib.examples.Acrobot.lcmt_acrobot_u(msg.data);
       u = msg.tau;
+      t = msg.timestamp/1000;
+    end
+    
+    function msg = encodeY(obj,t,y)
+      msg = robotlib.examples.Acrobot.lcmt_acrobot_y();
+      msg.timestamp = t*1000;
+      msg.theta1 = y(1);
+      msg.theta2 = y(2);
+      warning('tau as output is not implemented yet'); 
+      msg.tau = 0;  
+    end
+    
+    function [y,t] = decodeY(obj,msg)  
+      msg = robotlib.examples.Acrobot.lcmt_acrobot_y(msg.data);
+      y = [msg.theta1; msg.theta2; 0; 0]; 
+      warning('thetadot not implemented yet'); 
       t = msg.timestamp/1000;
     end
   end

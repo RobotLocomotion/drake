@@ -1,4 +1,4 @@
-function trajectoryTest
+function [xtraj,utraj]=runDircol
 
 p = AcrobotPlant();
 

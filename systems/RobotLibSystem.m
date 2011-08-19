@@ -131,16 +131,17 @@ classdef RobotLibSystem < DynamicalSystem
       %  Also pads umin and umax for any new inputs with [-inf,inf].
 
       if (num_u<0) error('num_u must be >=0 or DYNAMICALLY_SIZED'); end
-      obj.num_u = num_u;
       
        % cut umin and umax to the right size, and pad new inputs with
       % [-inf,inf]
-      if (length(obj.umin)~=1 && length(obj.umin)~=num_u)
-        obj.umin = [obj.umin(1:num_u); -inf*ones(max(num_u-length(obj.umin),0),1)];
+      if (length(obj.umin)~=num_u)
+        obj.umin = [obj.umin; -inf*ones(max(num_u-length(obj.umin),0),1)];
       end
-      if (length(obj.umax)~=1 && length(obj.umax)~=num_u)
-        obj.umax = [obj.umax(1:num_u); inf*ones(max(num_u-obj.length(obj.umax),0),1)];
+      if (length(obj.umax)~=num_u)
+        obj.umax = [obj.umax; inf*ones(max(num_u-length(obj.umax),0),1)];
       end
+      
+      obj.num_u = num_u;
     end
     function obj = setInputLimits(obj,umin,umax)
       % Guards the input limits to make sure it stay consistent
@@ -195,8 +196,8 @@ classdef RobotLibSystem < DynamicalSystem
     direct_feedthrough_flag=true;  % true/false: does the output depend on u?  set false if you can!
   end
   properties (SetAccess=private, GetAccess=public)
-    umin=-inf;   % constrains u>=umin (default umin=-inf)
-    umax=inf;    % constrains u<=uman (default umax=inf)
+    umin=[];   % constrains u>=umin (default umin=-inf)
+    umax=[];    % constrains u<=uman (default umax=inf)
   end
   
 end

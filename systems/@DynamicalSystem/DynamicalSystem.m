@@ -261,10 +261,15 @@ classdef DynamicalSystem
       end
     end
     
-    function xs = stateVectorToStructure(obj,xv)
+    function xs = stateVectorToStructure(obj,xv,mdl)
       % Converts the vector state xv to the structure xs for simulink state
+      % @param xv the state (in vector form)
+      % @param mdl optional - pass in a model (default: getModel(obj))
+      
+      if (nargin<3) mdl = getModel(obj); end
+      
       if (isempty(obj.structured_x))
-        obj.structured_x = Simulink.BlockDiagram.getInitialState(getModel(obj));
+        obj.structured_x = Simulink.BlockDiagram.getInitialState(mdl);
       end
       xs = obj.structured_x;
       if (length(xs.signals)>1)
@@ -283,6 +288,7 @@ classdef DynamicalSystem
     
     function xv = stateStructureToVector(obj,xs)
       % Converts the simulink state structure representation back to the vector state
+      % @param xs the state (in simulink structure format)
       if (length(xs.signals)>1)
         l = {xs.signals(:).label};
         ind = [find(strcmp(l,'DSTATE')), find(strcmp(l,'CSTATE'))];
@@ -377,33 +383,45 @@ classdef DynamicalSystem
       end
     end
     
-    function runLCMPlant(obj,lcmCoder,options)
+    function runLCMPlant(obj,lcmCoder,x0,options)
       % Runs the system as an LCM client which subscribes to u and publishes xhat
       % @param lcmCoder an LCMCoder object, which defines all the messages
+      %  @param x0 initial conditions.  Use [] for the default initial
+      %  conditions.
       % @param options see the options for the runLCM() method
-      if (nargin<3) options = struct(); end
-      runLCM(obj,lcmCoder,'u','xhat',options);
+      if (nargin<3) x0=[]; end
+      if (nargin<4) options = struct(); end
+      runLCM(obj,lcmCoder,'u','xhat',x0,options);
     end
-    function runLCMControl(obj,lcmCoder,options)
+    function runLCMControl(obj,lcmCoder,x0,options)
       % Runs the system as an LCM client which subscribes to xhat and publishes u
       % @param lcmCoder an LCMCoder object, which defines all the messages
+      %  @param x0 initial conditions.  Use [] for the default initial
+      %  conditions.
       % @param options see the options for the runLCM() method
-      if (nargin<3) options = struct(); end
-      runLCM(obj,lcmCoder,'xhat','u',options);
+      if (nargin<3) x0=[]; end
+      if (nargin<4) options = struct(); end
+      runLCM(obj,lcmCoder,'xhat','u',x0,options);
     end
-    function runLCMEstimator(obj,lcmCoder,options)
+    function runLCMEstimator(obj,lcmCoder,x0,options)
       % Runs the system as an LCM client which subscribes to y and publishes xhat
       % @param lcmCoder an LCMCoder object, which defines all the messages
+      %  @param x0 initial conditions.  Use [] for the default initial
+      %  conditions.
       % @param options see the options for the runLCM() method
-      if (nargin<3) options = struct(); end
-      runLCM(obj,lcmCoder,'y','xhat',options);
+      if (nargin<3) x0=[]; end
+      if (nargin<4) options = struct(); end
+      runLCM(obj,lcmCoder,'y','xhat',x0,options);
     end
-    function runLCMVisualizer(obj,lcmCoder,options)
+    function runLCMVisualizer(obj,lcmCoder,x0,options)
       % Runs the system as an LCM client which subscribes to xhat and publishes nothing
       % @param lcmCoder an LCMCoder object, which defines all the messages
+      %  @param x0 initial conditions.  Use [] for the default initial
+      %  conditions.
       % @param options see the options for the runLCM() method
-      if (nargin<3) options = struct(); end
-      runLCM(obj,lcmCoder,'xhat',[],options);
+      if (nargin<3) x0=[]; end
+      if (nargin<4) options = struct(); end
+      runLCM(obj,lcmCoder,'xhat',[],x0,options);
     end
 
   end
