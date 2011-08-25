@@ -12,6 +12,7 @@ sub preprocess
     my $usePre = 0;
 
     my $incommentblock = 0;
+    my $blankLineCheck = 0;
     my $functionDef = "";
     my $commentString = "";
     my $output = "";
@@ -52,6 +53,11 @@ sub preprocess
             if ((/^\s*%/))
             {
                 #print ("this is a comment right after a function!\n");
+                
+                # since we're seeing a comment, we don't need to worry about skipping a line for the comment block
+                $blankLineCheck = 0;
+
+                
                 $thisComment = $_;
                 $thisComment =~ s/\s*%/%>/;
                 #$thisComment =~ s/[\n\r]/<br>\n/;
@@ -136,8 +142,17 @@ sub preprocess
                     $lastWasBlank = 0;
                 }
                 
+            } elsif ($blankLineCheck == 1) {
+                # we are in a comment block, but didn't see a comment on the first line.
+                $blankLineCheck = 0;
+                
             } else {
+            
+            
+            
                 # this line isn't a comment (just left a comment block)
+                
+                
                 
                 $incommentblock = 0;
                 
@@ -223,6 +238,7 @@ sub preprocess
             $functionDef = $_;
             
             $incommentblock = 1;
+            $blankLineCheck = 1; # check for a single blank line before the comment block
             
             $functionReturnVals = $2;
             
