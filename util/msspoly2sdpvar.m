@@ -8,7 +8,14 @@ typecheck(xm,'msspoly');
 typecheck(xs,'sdpvar');
 typecheck(pm,'msspoly');
 
+
 [x,p,M] = decomp(pm);
+% decomp places the variables in a different order.
+% we must sort xs to match this order.
+[~,xn]  = isfree(x);  % extract ids of x.
+[~,xmn] = isfree(xm); % extract ids of xm.
+perm = mss_match(xmn,xn); % compute permutation.
+xs = xs(perm);
 
 % want to use this (from decomp), but yalmip doesn't have prod(x,dim):
 %ps=reshape(M*prod(repmat(xs',size(p,1),1).^p,2),size(pm));

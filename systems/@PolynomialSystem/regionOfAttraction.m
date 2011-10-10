@@ -84,7 +84,7 @@ for i=1:length(options.method)
     case 'levelset'
       V = levelSetMethod(x,V,f,options);
     case 'levelset_yalmip'
-      V = levelSetYalmip(x,V,f,options);
+      V = levelSetMethodYalmip(x,V,f,options);
     case 'binary'
       V = rhoLineSearch(x,V,f,options);
     otherwise
@@ -256,8 +256,8 @@ function V = levelSetMethod(x,V,f,options)
     
   [prog,l] = new(prog,length(Lmonom),'free');
   L = l'*Lmonom;
-  
-  prog.sos = (x'*x)*(V - rho) +  L*Vdot;
+
+  prog.sos = (x'*x)^floor((options.degL1 + deg(Vdot)-deg(V))/2)*(V - rho) +  L*Vdot;
   [prog,info] = sedumi(prog,-rho,0); %1,struct());
   if (info.numerr>1)
     error('sedumi had numerical issues.  try reducing the order of the lagrange multipliers');
@@ -275,7 +275,7 @@ function V = levelSetMethod(x,V,f,options)
   V = subss(V,x,inv(T)*x);
 end
 
-function V=levelSetMethodYalmip(x,V,Vdot,options)
+function V=levelSetMethodYalmip(x,V,f,options)
   checkDependency('yalmip_enabled');
 
   [T,V,f] = balance(x,V,f);
