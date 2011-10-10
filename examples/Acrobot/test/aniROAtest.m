@@ -10,8 +10,7 @@ x0 = c.x0;
 pp = sys.taylorApprox(0,x0,[],3);
 
 options=struct();
-options.degL1=1;
-%options.degL1=3;
+options.degL1=4;
 %options.method='bilinear';
 
 %V = regionOfAttraction(pp,x0,[],options);
