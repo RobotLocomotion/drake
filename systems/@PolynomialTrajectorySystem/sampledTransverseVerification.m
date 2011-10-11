@@ -1,11 +1,34 @@
 function [VtrajXP,VtrajX] = sampledTransverseVerification(sys,G,Vtraj0,ts,xtraj,utraj,transSurf,options)
-
-% Attempts to find the largest funnel, defined by the time-varying
-% one-level set of Vtraj, which verifies (using SOS over state at finite 
-% sample points in time) initial conditions to end inside the one-level set
-% of the goal region G at time ts(end).  
+% Attempts to find the largest funnel around xtraj using transverse
+% surfaces.
 % 
-% Implements the algorithm described in http://arxiv.org/pdf/1010.3013v1
+% Implements the algorithm described in "Transverse Dynamics and Regions of Stability for
+% Nonlinear Hybrid Limit Cycles" by Ian R. Manchester
+%   http://arxiv.org/abs/1010.2241
+%
+% @param sys plant
+% @param G goal region (in one less dimension then the dynamics
+% @param Vtraj0 initial guess at the lyapunov function
+% @param ts time span to verify over
+% @param xtraj trajectory to verify over
+% @param utraj control trajectory
+% @param transSurf TransversalSurface to use, usally created with
+%    TransversalSurface.design()
+% @param options structure
+%  
+% @option rho0_tau initial guess at scaling
+%   @default 2
+% @option max_iterations maximum number of times to do bilinear
+%    optimization
+%   @default 10
+% @option convered_tol convergence tolerance
+%   @default 0.01
+% @option stability unimplemented (leave as false)
+% @option plot_rho plot rho during optimization
+%   @default true
+% @option degL1
+
+
 
 ts=ts(:);
 

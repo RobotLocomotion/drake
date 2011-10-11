@@ -92,7 +92,7 @@ classdef RobotLibSystem < DynamicalSystem
         
         if (any(~isinf([obj.umin,obj.umax]))) % then add saturation block
           add_block('simulink3/Nonlinear/Saturation',[mdl,'/sat'],...
-            'UpperLimit',['[',num2str(obj.umax),']'],'LowerLimit',['[',num2str(obj.umin),']']);
+            'UpperLimit',mat2str(obj.umax),'LowerLimit',mat2str(obj.umin));
           add_line(mdl,'in/1','sat/1');
           add_line(mdl,'sat/1','RobotLibSys/1');
         else

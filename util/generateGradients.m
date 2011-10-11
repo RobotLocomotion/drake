@@ -165,7 +165,17 @@ for i=1:length(v)
     j=str2num(vi(ind+1:end));
     fprintf(fp,'%s=a%d(%d);\n',vi,i,j);
   else % then it must be a field from the object
-    fprintf(fp,'%s=a1.%s;\n',vi,vi);
+      % check to see if it is inside a matrix in a field from the object
+      ind=find(vi=='_');
+      if (isempty(ind))
+          fprintf(fp,'%s=a1.%s;\n',vi,vi);  
+      else
+          ind = ind(end);
+          % this is in a property that is a matrix
+          property_name = vi(1:ind-1);
+          j=str2num(vi(ind+1:end));
+          fprintf(fp,'%s=a1.%s(%d);\n',vi,property_name,j);
+      end
   end
 end
 

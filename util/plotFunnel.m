@@ -1,13 +1,17 @@
 function plotFunnel(V,x0,plot_dims,options)
-
-% plots the one-level set of V
-% option.inclusion = { 'restriction' | 'projection' }
+% Plots the one-level set of V
+%
+% @param V funnel to plot. Can either be a msspoly or a PolynomialTrajectory
+% @param x0 either a point or a trajectory to plot along
+% @param plot_dims dimensions of V to plot given as a 1x2 array
+%   @default [1, 2]
+% @param options options structure
+%
+% @option inclusion = { 'slice' | 'projection' }
 %    'slice' -- include the points in the plane of the given
 %        dimensions for which V(x) < 1.
 %    'projection' -- plot the projection of {x | V(x) < 1} into the
 %        given plane.
-%
-%                     
 %
 
 % todo: support wrapping coordinates

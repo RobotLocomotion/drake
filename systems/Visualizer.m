@@ -43,6 +43,8 @@ classdef Visualizer < RobotLibSystem
     function playback(obj,xtraj)
       %   Animates the trajectory in quasi- correct time using a matlab timer
       %     optional controlobj will playback the corresponding control scopes
+      %
+      %   @param xtraj trajectory to visualize
       
       tspan = xtraj.getBreaks();
       t0 = tspan(1);
@@ -82,6 +84,9 @@ classdef Visualizer < RobotLibSystem
       %   The filename argument is optional; if not specified, a gui will prompt
       %   for one.
       %
+      %  @param xtraj trajectory to visulalize
+      %  @param filename file to produce (optional, if not given a GUI will
+      %    pop up and ask for it)
       
       if (nargin<3)
         [filename,pathname] = uiputfile('*.avi','Save playback to AVI');
@@ -122,6 +127,27 @@ classdef Visualizer < RobotLibSystem
     end
     
     function playbackSWF(obj,xtraj,filename)
+      % Creates a SWF (Flash) movie of the trajectory.  This is often
+      % useful for presentations because the movie is all vector graphics,
+      % so will scale losslessly.
+      %
+      % You must have <b>pdftk</b> and <b>swftools</b> installed for this
+      % to work.
+      %
+      % If you want to print axes, you'll want to set your visualizer to
+      % draw axes: my_visualizer.draw_axes = true
+      %
+      % This scales the output file to look the same as the onscreen
+      % figure, so if you want to change the dimensions, change the
+      % onscreen figure's size and then run playbackSWF.
+      %
+      % Note that you can control the length/speed of your video by
+      % changing your visualizer's display_dt property.
+      %
+      % @param xtraj Trajectory to make the movie around
+      % @param filename name of swf file. (optional, if it isn't given a GUI will pop
+      %   up and ask for it.)
+      
       if (nargin<3)
         [filename,pathname] = uiputfile('*.swf','Save playback to SWF');
         filename = [pathname,'/',filename];
@@ -141,25 +167,60 @@ classdef Visualizer < RobotLibSystem
             
       width=[]; height=[];
       num_chars=length(num2str(length(tspan)));
+      
       for i=1:length(tspan)
         obj.draw(tspan(i),eval(xtraj,tspan(i)));
         if (~obj.draw_axes) axis off; end
         frame_fname=[dirname,'/',repmat('0',1,num_chars-length(num2str(i))),num2str(i)];
-        saveas(gcf,[frame_fname '.eps'],'epsc');
+        
+        % Backup previous settings
+        prePaperType = get(gcf,'PaperType');
+        prePaperUnits = get(gcf,'PaperUnits');
+        preUnits = get(gcf,'Units');
+        prePaperPosition = get(gcf,'PaperPosition');
+        prePaperSize = get(gcf,'PaperSize');
+
+        % Make changing paper type possible
+        set(gcf,'PaperType','<custom>');
+
+        % Set units to all be the same
+        set(gcf,'PaperUnits','inches');
+        set(gcf,'Units','inches');
+
+        % Set the page size and position to match the figure's onscreen
+        % dimensions
+        position = get(gcf,'Position');
+        set(gcf,'PaperPosition',[0,0,position(3:4)]);
+        set(gcf,'PaperSize',position(3:4));
+
+        
+        % Save the pdf
+        % we do this instead of going to eps so that we'll print onto a
+        % page, which keeps our size the same between frames that have
+        % different sizes.
+        print(gcf,'-dpdf',[frame_fname '.pdf']);
+        
+        % Restore the previous settings
+        set(gcf,'PaperType',prePaperType);
+        set(gcf,'PaperUnits',prePaperUnits);
+        set(gcf,'Units',preUnits);
+        set(gcf,'PaperPosition',prePaperPosition);
+        set(gcf,'PaperSize',prePaperSize);
+        
       end
-
-      % convert to pdfs
-      cmd{1}=['ls ',dirname,'/*.eps | xargs -n 1 -P 8 epstopdf'];
-
+      
       % merge pdfs
-      cmd{2}=['pdftk `ls ',dirname,'/*.pdf` cat output ',dirname,'/merge.pdf'];
+      cmd{1}=['pdftk `ls ',dirname,'/*.pdf` cat output ',dirname,'/merge.pdf'];
 
       % convert pdf to swf
-      cmd{3}=['pdf2swf -s framerate=30 ',dirname,'/merge.pdf ',filename];
+      cmd{2}=['pdf2swf -s framerate=30 ',dirname,'/merge.pdf ',filename];
 
       % set the framerate to 30 (the framerate command above doesn't seem
       % to work in pdf2swf 0.8.1)
-      cmd{4}=['swfcombine -r 30 -d ',filename,' -o ',filename];
+      % also combine with swfstop.swf which is a flash file that is in
+      % robotlib/util that sends the stop command to prevent the movie from
+      % looping
+      cmd{3}=['swfcombine -r 30 --cat ',filename,' -o ',filename, ' ', getRobotlibPath(), '/util/swfstop.swf'];
       
       for i=1:length(cmd)
         try

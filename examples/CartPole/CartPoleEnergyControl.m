@@ -3,7 +3,7 @@ classdef CartPoleEnergyControl < HybridRobotLibSystem
   methods
     function obj = CartPoleEnergyControl(plant)
       obj = obj.addMode(CartPoleEnergyShaping(plant));
-      lqr = CartPoleLQR(plant);
+      [lqr,V] = CartPoleLQR(plant);
       obj = obj.addMode(lqr);
 
       sys = feedback(plant,lqr);
@@ -11,7 +11,7 @@ classdef CartPoleEnergyControl < HybridRobotLibSystem
       obj.x0 = lqr.x0;
       obj.p_x = pp.p_x;
       options.degL1 = 1;
-      obj.V = regionOfAttraction(pp,lqr.x0,lqr.S,options);
+      obj.V = regionOfAttraction(pp,lqr.x0,V,options);
 
       in_lqr_roa = inline('double(subs(obj.V,obj.p_x,obj.wrapInput(x-obj.x0)+obj.x0))-1','obj','t','junk','x');
       notin_lqr_roa = notGuard(obj,in_lqr_roa);

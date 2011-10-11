@@ -54,12 +54,12 @@ if (isempty(S))
   error('L2 gain gamma is infeasible.  Try increasing gamma.');
 end
 
-ltisys = LTIControl(x0,u0,K,S);
+ltisys = LTIControl(x0,u0,K);
 ltisys = setAngleFlags(ltisys,obj.output_angle_flag,[],obj.input_angle_flag);
 
 if (nargout>1)
   x=msspoly('x',getNumStates(obj));
-  V = x'*S*x;
+  V = (x-x0)'*S*(x-x0);
 end
 
 end

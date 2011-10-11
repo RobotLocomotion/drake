@@ -6,7 +6,7 @@ v = CartPoleVisualizer;
 
 % up fp:
 %c = CartPoleLQR(p);
-c = CartPoleHinf(p);
+[c,V] = CartPoleHinf(p);
 sys = feedback(p,c);
 x0=[0;pi;0;0];
 
@@ -18,9 +18,8 @@ pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
 
 figure(1); clf;%hold on; axis([-pi/2,3*pi/2,-5,5]);
 
-options.degL1 = 1;%3;
-options.method = 'levelset';%,'bilinear'};
-V=regionOfAttraction(pp,x0,c.S,options);
+options.degL1 = 1;
+V=regionOfAttraction(pp,x0,V,options);
 
 plotFunnel(V,x0,[2 4]);
 

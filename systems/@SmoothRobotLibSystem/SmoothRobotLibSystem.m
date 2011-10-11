@@ -18,9 +18,9 @@ classdef SmoothRobotLibSystem < RobotLibSystem
       %   possible.
 
       obj = obj@RobotLibSystem(num_xc,num_xd,num_u,num_y);
-      if (nargin>=4) obj = setNumOutputs(obj,num_y); end
-      if (nargin>=5) obj = setDirectFeedthrough(obj,direct_feedthrough_flag); end
-      if (nargin>=6) obj = setTIFlag(obj,time_invariant_flag); end
+      if (nargin>=4 && ~isempty(num_y)) obj = setNumOutputs(obj,num_y); end
+      if (nargin>=5 && ~isempty(direct_feedthrough_flag)) obj = setDirectFeedthrough(obj,direct_feedthrough_flag); end
+      if (nargin>=6 && ~isempty(time_invariant_flag)) obj = setTIFlag(obj,time_invariant_flag); end
     end      
   end
       
@@ -32,11 +32,11 @@ classdef SmoothRobotLibSystem < RobotLibSystem
     end
     
     function xcdot = dynamics(obj,t,x,u)
-      error('systems with continuous states must implement Derivatives');
+      error('systems with continuous states must implement Derivatives (ie overload dynamics function)');
     end
     
     function xdn = update(obj,t,x,u)
-      error('systems with discrete states must implement Update');
+      error('systems with discrete states must implement Update (ie overload update function)');
     end
     
     function y = output(obj,t,x,u)
