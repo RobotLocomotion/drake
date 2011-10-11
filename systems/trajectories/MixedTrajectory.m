@@ -1,13 +1,27 @@
 classdef MixedTrajectory < Trajectory
-  
+  % Creates a trajectory that concatenates dynamics.  In other words, if
+  % you have two trajectories, one that is 2-dimensional and one that is
+  % 1-dimensional, you can create a mixed trajectory that will be three
+  % dimensional and will return the value of the first trajectory for the
+  % first two dimensions and the value of the second trajectory for the
+  % third dimension.
+  %
   properties
-    trajs
-    indices
-    breaks
+    trajs % component trajectories
+    indices % list of which component trajectories correspond to which output dimensions
+    breaks % union of all breaks in the component trajectories
   end
   
   methods
     function obj = MixedTrajectory(trajs,indices)
+        % MixedTrajectory constructor.
+        % @param trajs trajectories (as a cell array) to concatenate
+        % @param indices list of which trajectories should correspond to
+        %    which dimensions in the output MixedTrajectory (as a cell
+        %    array)
+        %
+        % @retval obj MixedTrajectory output
+        
       obj = obj@Trajectory(max([indices{:}]));
       if (~iscell(trajs) || ~iscell(indices) || length(trajs)~=length(indices))
         error('trajs must be a cell array of component trajectories, and indices must be a list of the output indices to be drawn from each component.');

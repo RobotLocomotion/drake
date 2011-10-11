@@ -11,6 +11,6 @@ p = setInputLimits(p,[0;-inf],[0;inf]);
 
 if (nargout<1)
   pv = SCSDoublePendVisualizer(r);
-  traj = simulate(p,[0 5],[pi 0 -pi/2 0]);
+  traj = simulate(p,[0 5],[pi 0 -pi/2 0]');
   playback(pv,traj);
 end

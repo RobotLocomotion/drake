@@ -16,6 +16,8 @@ con.xf.ub = xf;
 con.T.lb = 2;   
 con.T.ub = 6;
 
+% OKTOFAIL
+
 options.method='dircol';
 tic
 %options.grad_test = true;

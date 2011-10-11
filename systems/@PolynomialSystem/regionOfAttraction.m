@@ -35,6 +35,7 @@ end
 if (~isfield(options,'degV')) options.degV = 4; end
 if (~isfield(options,'max_iterations')) options.max_iterations=10; end
 if (~isfield(options,'converged_tol')) options.converged_tol=.01; end
+if (~isfield(options,'optimize')) options.optimize=true; end
 
 if (~isCT(sys)) error('only handle CT case so far'); end
 if (~isTI(sys)) error('only for TI systems so far'); end
@@ -74,6 +75,11 @@ if (~isfield(options,'degL1'))
 end
 if (~isfield(options,'degL2'))
   options.degL2 = options.degL1;
+end
+
+if (options.optimize == false)
+  checkConstantRho(x, f, V, options);
+  return;
 end
 
 for i=1:length(options.method)
@@ -339,6 +345,59 @@ function V = rhoLineSearch(x,V,f,options)
   %% undo balancing
   V = subss(V,x,inv(T)*x);
 end
+
+function [slack,info] = checkConstantRho(x, f, V, options)
+  %[T,V,f] = balance(x,V,f);
+
+  %% compute Vdot
+  Vdot = diff(V,x)*f;
+  
+  %% visualize Vdot
+%{
+  step = 0.5;
+
+  xmin = 8;
+  xstep = .25;
+  xmax = 10;
+  
+  ymin = 0;
+  ystep = 0.5;
+  ymax = 10;
+  
+  [X, Y] = meshgrid(xmin:xstep:xmax, ymin:ystep:ymax);
+
+  for i = 1:size(X,2)
+    for j = 1:size(Y,1)
+
+      Z(j,i) = double(subs(f, x, [X(j,i); Y(j,i);]));
+    end
+  end
+
+  surf(X,Y,Z)
+  
+  title(strcat('t=',num2str(t),', x3 (angle)=',num2str(x3val)));
+  xlabel('x0');
+  ylabel('x1');
+  drawnow;
+  %}
+  
+  %% back to the normal script after visualizing
+  prog = mssprog;
+
+  %Lmonom = monomials(x,0:options.degL1);
+  Lmonom = hermite_basis(monomials(x,0:options.degL1));
+  
+  
+  [prog,l] = new(prog,length(Lmonom),'free');
+  L1 = l'*Lmonom;
+  prog.sos = L1;
+  
+
+[slack,info] = checkRho(1, x, V, Vdot, prog, L1)
+  
+  
+end
+  
 
 function [slack,info] = checkRho(rho, x,V,Vdot,prog,L)
   [prog,slack] = new(prog,1,'free');

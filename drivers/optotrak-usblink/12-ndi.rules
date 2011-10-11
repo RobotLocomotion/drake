@@ -1,0 +1,1 @@
+BUS=="usb", SYSFS{idVendor}=="0403", SYSFS{idProduct}=="da77", GROUP="plugdev" 

@@ -1,7 +1,12 @@
 classdef TaylorVar
 % does inline autodiff
 % overloads operators: http://www.mathworks.com/help/techdoc/matlab_oop/br02znk-1.html  
-
+%
+% Use TaylorVar.init(...) to create a new TaylorVar.
+%
+% Use getmsspoly(...) to get the approximation around a point close to where
+% you initialized the TaylorVar.
+%
 % the internal representation is 
 % m=prod(size(f)), n=prod(size(x));
 % df{o} is a m x n^o sparse matrix , where e.g. 

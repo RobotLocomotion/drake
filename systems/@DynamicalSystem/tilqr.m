@@ -45,7 +45,7 @@ if (any(any(abs(C-eye(getNumStates(obj)))>tol)) || any(abs(D(:))>tol))
   warning('i''ve assumed C=I,D=0 so far.');
 end
 
-ltisys = LTIControl(x0,u0,K,S);
+ltisys = LTIControl(x0,u0,K);
 ltisys = setAngleFlags(ltisys,obj.output_angle_flag,[],obj.input_angle_flag);
 
 x=msspoly('x',getNumStates(obj));

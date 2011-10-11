@@ -65,9 +65,18 @@ classdef PolynomialTrajectorySystem < SmoothRobotLibSystem
     % Implement default methods using msspoly vars explicitly
     function xcdot = dynamics(obj,t,x,u)
       % should only get here if constructor specified p_dynamics
+      %
+      % @param t time to evaluate dyanmics at
+      % @param x state to evaluate dynmaics at (as a column vector)
+      % @param u control action to evaluate dyanmics at (as a column
+      % vector)
+      %
+      % @retval xcdot approximated dynamics
+      
       if (isempty(obj.p_dynamics_traj)) error('dynamics is not defined.  how did you get here?'); end
       xcdot = double(subs(obj.p_dynamics_traj.eval(t),[obj.p_x;obj.p_u],[x;u]));
     end
+    
     function xdn = update(obj,t,x,u)
       if (isempty(obj.p_update_traj)) error('update is not defined.  how did you get here?'); end
       xdn = double(subs(obj.p_update_traj.eval(t),[obj.p_x;obj.p_u],[x;u]));

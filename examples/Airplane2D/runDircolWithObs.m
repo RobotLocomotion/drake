@@ -23,7 +23,7 @@ con.T.ub = 3;
 % add obstacles
 disp('Adding obstacles...');
 field = ObstacleField();
-field.GenerateRandomObstacles();
+field = field.GenerateRandomObstacles();
 con = field.AddConstraints(con);
 
 figure(25); clf;  hold on;

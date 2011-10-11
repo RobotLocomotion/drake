@@ -1,10 +1,24 @@
 function Vtraj = sampledFiniteTimeVerification(sys,G,Vtraj0,ts,xtraj,utraj,options)
-
 % Attempts to find the largest funnel, defined by the time-varying
 % one-level set of Vtraj, which verifies (using SOS over state at finite 
 % sample points in time) initial conditions to end inside the one-level set
 % of the goal region G at time ts(end).  
 % 
+% Uses a moving coordinate system to check Vdot along the trajectory.  This
+% means that if you try to check Vdot yourself, it may not be always less
+% than zero, unless you also move the coordinate system along the
+% trajectory.
+%
+% @param sys PolynomialTrajectorySystem that you want to verify.
+% @param ...
+%
+% @param options options structure
+%   @options rho0_tau initial rho (set large to make the initial guess drop
+%   rho quickly)
+%   @
+%
+% @retval Vtraj Lyapunov function along a trajectory
+%
 % Implements the algorithm described in http://arxiv.org/pdf/1010.3013v1
 
 x=sys.p_x;

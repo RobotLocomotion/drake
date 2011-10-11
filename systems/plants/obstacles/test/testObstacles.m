@@ -3,7 +3,7 @@ function testObstacles
 close all
 
 f = ObstacleField
-f.GenerateRandomObstacles
+f = f.GenerateRandomObstacles();
 
 
 xmin = -2;
@@ -18,7 +18,7 @@ xlabel('X')
 ylabel('Y')
 hold on
 
-for (q=1:8)%f.number_of_obstacles)
+for (q=1:f.number_of_obstacles)
   disp(q)
   x = f.obstacles{q}.getConstraints;
   func = x.x.c;
