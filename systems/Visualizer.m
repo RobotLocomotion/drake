@@ -126,7 +126,7 @@ classdef Visualizer < RobotLibSystem
       close(mov);
     end
     
-    function playbackSWF(obj,xtraj,filename)
+    function playbackSWF(obj,xtraj,filename,options)
       % Creates a SWF (Flash) movie of the trajectory.  This is often
       % useful for presentations because the movie is all vector graphics,
       % so will scale losslessly.
@@ -152,6 +152,10 @@ classdef Visualizer < RobotLibSystem
         [filename,pathname] = uiputfile('*.swf','Save playback to SWF');
         filename = [pathname,'/',filename];
       end
+      if (strcmp(lower(filename(end-4:end)),'.swf')) filename=filename(1:end-5); end
+      
+      if (nargin<4) options=struct(); end
+      if (~isfield(options,'poster')) options.poster=false; end
       
       dirname = [filename,'_frames'];
       mkdir(dirname);
@@ -161,8 +165,8 @@ classdef Visualizer < RobotLibSystem
         obj.display_dt = 1/30;  % just for the remainder of this file.
       end
       
-      breaks = getBreaks(xtraj);
-      tspan = breaks(1):obj.display_dt:breaks(end);
+      breaks = getBreaks(xtraj)/obj.playback_speed;
+      tspan = obj.playback_speed*(breaks(1):obj.display_dt:breaks(end));
       if (breaks(end)-tspan(end)>eps) tspan=[tspan,breaks(end)]; end
             
       width=[]; height=[];
@@ -213,18 +217,24 @@ classdef Visualizer < RobotLibSystem
       cmd{1}=['pdftk `ls ',dirname,'/*.pdf` cat output ',dirname,'/merge.pdf'];
 
       % convert pdf to swf
-      cmd{2}=['pdf2swf -s framerate=30 ',dirname,'/merge.pdf ',filename];
+      cmd{2}=['pdf2swf -s framerate=30 ',dirname,'/merge.pdf ',filename,'.swf'];
 
       % set the framerate to 30 (the framerate command above doesn't seem
       % to work in pdf2swf 0.8.1)
       % also combine with swfstop.swf which is a flash file that is in
       % robotlib/util that sends the stop command to prevent the movie from
       % looping
-      cmd{3}=['swfcombine -r 30 --cat ',filename,' -o ',filename, ' ', getRobotlibPath(), '/util/swfstop.swf'];
+      cmd{3}=['swfcombine -r 30 --cat ',filename,'.swf -o ',filename, '.swf ', getRobotlibPath(), '/util/swfstop.swf'];
       
+      if (options.poster)
+        % copy poster pdf next to swf output (useful for beamer)
+        cmd{4}=['cp ',dirname,'/',repmat('0',1,num_chars-1),'1.pdf ',filename,'.pdf'];
+      end
+
+      load robotlib_config;
       for i=1:length(cmd)
         try
-          if (system(cmd{i}) ~= 0) error('command failed'); end
+          if (system([conf.system_preload, cmd{i}]) ~= 0) error('command failed'); end
         catch
           fprintf(1,'\n\n\ntry running this on the command line:\n  ');
           disp(cmd{i});

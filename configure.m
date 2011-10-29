@@ -130,6 +130,9 @@ if (~conf.simulationconstructionset_enabled)
   disp(' SimulationConstructionSet not found.  SCS support will be disabled.  To re-enable, get SCS on your machine and add all of the necessary class directories and jar files to your matlab java class path');
 end
   
+conf.system_preload = [];  % string which gets added to system calls (e.g. to set up the shell).  
+% For instance, on Russ' laptop, I use 
+% conf.system_preload = 'source ~/.zshrc; export DYLD_LIBRARY_PATH=/opt/local/lib:DYLD_LIBRARY_PATH; ';
 
 
 % save configuration options to config.mat
