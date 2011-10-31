@@ -1,26 +1,22 @@
-classdef AcrobotPlant < ManipulatorPlant 
-  
+classdef ConstrainedAcrobotPlant < ManipulatorPlant 
+% Simple plant to test the bilateral constraints implementation in
+% ManipulatorPlant
+
   properties
-    % parameters from Spong95 (except inertias are now relative to the
-    % joints)
-    % axis)
     l1 = 1; l2 = 2;  
     m1 = 1; m2 = 1;  
     g = 9.81;
     b1=.1;  b2=.1;
-%    b1=0; b2=0;
     lc1 = .5; lc2 = 1; 
-%    I1 = 0.083 + m1*lc1^2;  I2 = 0.33 + m2*lc2^2;  
     I1=[]; I2 = [];  % set in constructor
   end
   
   methods
-    function obj = AcrobotPlant
-      obj = obj@ManipulatorPlant(2,1);
+    function obj = ConstrainedAcrobotPlant
+      obj = obj@ManipulatorPlant(2,1,1);
       obj = setInputLimits(obj,-10,10);
       obj.I1 = 0.083 + obj.m1*obj.lc1^2;
       obj.I2 = 0.33 + obj.m2*obj.lc2^2;
-
     end
     
     function [H,C,B] = manipulatorDynamics(obj,q,qd)
@@ -41,19 +37,14 @@ classdef AcrobotPlant < ManipulatorPlant
 
       B = [0; 1];
     end
-    
-    % todo: also implement sodynamics here so that I can keep the
-    % vectorized version?
-    
-    function [f,df,d2f,d3f] = dynamics(obj,t,x,u)
-      f = dynamics@ManipulatorPlant(obj,t,x,u);
-      if (nargout>1)
-        [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
-      end
+
+    function phi = bilateralConstraints(obj,q)
+      phi = q(1);  % constrain first link to zero
     end
     
     function x = getInitialState(obj)
       x = .1*randn(4,1);
+      x([1,3]) = 0;  % to satisfy the constraints
     end
     
   end

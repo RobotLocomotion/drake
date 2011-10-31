@@ -1,8 +1,0 @@
-
-Most of the functionality is based around the DynamicalSystem interface class.  You can make a DynamicalSystem out of any simulink model or simulink block.  
-
-Most of the systems that we have authored in matlab derive from the subclass RobotLibBlock.  The advantage of using this block over providing your own S-Function wrapper is that it imposes some structure on the S-Function implementation, and gives a way to short-circuit simulink when we need to do things like symbolic manipulations of the dynamics functions.  Please derive from this class if you can!
-
-The subclasses of RobotLibBlock impose further structure on the system (e.g. that the dynamics are polynomial).  We provide this additional structure iff there is an algorithm which can take advantage of that structure. 
-
-As a rule, all of your updates, dynamics, outputs, collision detectors, and collision dynamics should all be smooth.  if they're not, you're probably doing something wrong.

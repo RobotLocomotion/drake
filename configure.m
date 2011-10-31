@@ -36,10 +36,6 @@ end
 
 original_path = path;
 
-% look for POT, add to matlab path 
-% look for Sedumi, add to matlab path 
-% look for snopt, add to matlab path 
-
 % remove any existing robotlib directories that are in a different root
 y=strread(path,'%s','delimiter',pathsep);
 ind=strfind(y,'robotlib');
@@ -72,6 +68,7 @@ addpath([conf.root,'/systems/controllers']);
 addpath([conf.root,'/systems/estimators']);
 addpath([conf.root,'/systems/trajectories']);
 addpath([conf.root,'/util']);
+addpath([conf.root,'/thirdParty/spatial']);
 
 % todo: setup java classpath (not hard to do it once... but how can I set
 % it up for future sessions as well?  maybe write to startup.m, or prompt
@@ -130,10 +127,10 @@ if (~conf.simulationconstructionset_enabled)
   disp(' SimulationConstructionSet not found.  SCS support will be disabled.  To re-enable, get SCS on your machine and add all of the necessary class directories and jar files to your matlab java class path');
 end
   
-conf.system_preload = [];  % string which gets added to system calls (e.g. to set up the shell).  
-% For instance, on Russ' laptop, I use 
-% conf.system_preload = 'source ~/.zshrc; export DYLD_LIBRARY_PATH=/opt/local/lib:DYLD_LIBRARY_PATH; ';
-
+conf.featherstone_enabled = logical(exist('HandCp'));
+if (~conf.featherstone_enabled)
+  disp(' Featherstone''s Spatial Vector and Rigid-Body Dynamics tools not found.  To re-enable, download the zip file from http://users.cecs.anu.edu.au/~roy/spatial/documentation.html and put the directory into your matlab path');
+end
 
 % save configuration options to config.mat
 conf
