@@ -3,6 +3,7 @@ function ctrans=runTransverseSwingup
 p = PendulumPlant();
 
 [utraj,xtraj]=runDircol(p);
+% OKTOFAIL
 
 % artificially truncate trajectory to test
 %tspan = .6*utraj.tspan; breaks=utraj.getBreaks();  breaks=breaks(breaks<tspan(end));

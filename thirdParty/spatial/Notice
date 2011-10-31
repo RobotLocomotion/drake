@@ -1,0 +1,7 @@
+This directory contains version 1 of the spatial vector and dynamics software
+library for Matlab (R) by Roy Featherstone.  Its contents are (c) 2008 Roy
+Featherstone.  This software was written and tested using Matlab version 7.1,
+and is believed to be correct.  However, the software is intended for
+education and research, and has not been tested rigorously.  Thus, users use
+it strictly at their own risk.  The author does not accept responsibility for
+any harm caused by its use.

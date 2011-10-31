@@ -10,7 +10,7 @@ classdef SecondOrderPlant < SmoothRobotLibSystem
 
 %      if (nargin>0)
         obj = obj@SmoothRobotLibSystem(num_q*2,0,num_u,num_q*2,false,timeInvariantFlag);
-        obj.num_q = num_q;
+        obj = obj.setNumDOF(num_q);
 %      end
     end
   end
@@ -20,18 +20,19 @@ classdef SecondOrderPlant < SmoothRobotLibSystem
   end
 
   methods
-    function obj = setNumQ(obj,num_q)
+    function obj = setNumDOF(obj,num_q)
     % Guards the num_q variable to make sure it stays consistent 
     % with num_x.
-      obj = setNumX(obj,num_q*2);
+      obj = setNumContStates(obj,num_q*2);
     end
 
-    function obj = setNumX(obj,num_x)
-    % Guards the num_x variable to make sure it stays consistent
+    function obj = setNumContStates(obj,num_xc)
+    % Guards the num_xc variable to make sure it stays consistent
     % with num_q
-      if (num_x<2 || rem(num_x,2)) error('num_x must be even and >= 2 for a SecondOrderDynamics'); end 
-      obj.num_q = num_x/2;
-      obj = setNumX@Plant(obj,num_x);
+      if (num_xc<0 || rem(num_xc,2)) error('num_x must be even for a SecondOrderDynamics'); end 
+      obj.num_q = num_xc/2;
+      obj = setNumContStates@SmoothRobotLibSystem(obj,num_xc);
+      obj = setNumOutputs(obj,num_xc); 
     end
     
     function xdot = dynamics(obj,t,x,u)

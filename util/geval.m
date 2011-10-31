@@ -3,6 +3,7 @@ function varargout = geval(fun,varargin)
 %   It will use user-supplied gradients when possible, and taylor
 %   expansion gradients when necessary.
 %
+% <pre>
 % For a single-output (+ user gradients) function
 %      [f,df,d2f,...,dnf] = fun(a1,a2,a3,...)
 % the call 
@@ -18,12 +19,18 @@ function varargout = geval(fun,varargin)
 % use the notation 
 %      geval(p,fun,varargin) 
 % to tell geval that there are p different outputs.
-% 
-
-% todo: implement options? (without sacrificing too much performance?)
-%% Options:
-%%   grad_method:  {'user_then_taylorvar','user','taylorvar','numerical','symbolic'}
-%         default is user_then_taylorvar
+%
+% Higher order gradients are output as a q x r^o sparse matrix , where 
+%    q is the dimension of the output, r is the dimension of the input, and o is the order.
+%    e.g. 
+%        d^2 f(i,j)/da1_k da1_l =
+%             d2f(sub2ind(size(f),i,j),sub2ind([p p],k,l))
+%        where p = prod(size(a1))
+%
+%</pre>
+%
+% @option grad_method {'user_then_taylorvar','user','taylorvar','numerical','symbolic'}
+%         @default user_then_taylorvar
 
 p=1;
 if (isnumeric(fun)) 
