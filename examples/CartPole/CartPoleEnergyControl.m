@@ -12,7 +12,8 @@ classdef CartPoleEnergyControl < HybridRobotLibSystem
       obj.p_x = pp.p_x;
       options.degL1 = 1;
       obj.V = regionOfAttraction(pp,lqr.x0,V,options);
-
+      obj.V = obj.V*1e-4;  % artificially assume basin is much bigger
+      
       in_lqr_roa = inline('double(subs(obj.V,obj.p_x,obj.wrapInput(x-obj.x0)+obj.x0))-1','obj','t','junk','x');
       notin_lqr_roa = notGuard(obj,in_lqr_roa);
       
@@ -24,7 +25,7 @@ classdef CartPoleEnergyControl < HybridRobotLibSystem
 
     function [xn,to_mode,status]=transitionIntoLQR(obj,mode,t,x,u)
       xn=[];
-      to_mode=2;
+      to_mode=2
       status=0;
     end
     function [xn,to_mode,status]=transitionOutOfLQR(obj,mode,t,x,u)
@@ -44,8 +45,9 @@ classdef CartPoleEnergyControl < HybridRobotLibSystem
 
       sys = feedback(cp,c);
 
-      for i=1:2
+      for i=1:4
         xtraj = simulate(sys,[0 10]);
+        figure(2); clf; xtraj.fnplt([2;4]);
         playback(v,xtraj);
       end
     end

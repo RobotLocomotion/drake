@@ -4,7 +4,7 @@ classdef CartPoleEnergyShaping < SmoothRobotLibSystem
   
   properties
     p  % plant
-    k1 = 10; k2 = 5; k3 = 10; k3limit = 50;
+    k1 = 40; k2 = 15; k3 = 10; k3limit = 50;
   end
   
   methods
