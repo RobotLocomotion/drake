@@ -7,7 +7,7 @@ c = CartPoleLQR(d);
 sys = cascade(feedback(d,c),v); 
 
 for i=1:5
-  simulate(sys,[0 8],c.x0+.3*randn(4,1));
+  simulate(sys,[0 8],c.x0+.4*randn(4,1));
 end
 
 return
