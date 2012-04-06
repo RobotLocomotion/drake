@@ -1,18 +1,13 @@
 
 In order to fork a copy (branch) of robotlib, e.g. for development,  you probably want to be careful to unset the property which emails the entire locomotion group on every commit.  Use the following commands:
 
-cd into your /locomotion directory
-svn cp robotlib robotlib-mydev
-svn propdel -R rlg:email robotlib-mydev 
-svn commit robotlib-mydev
+svn cp https://svn.csail.mit.edu/locomotion/robotlib/trunk https://svn.csail.mit.edu/locomotion/robotlib/branches/mydev
+cd into your existing robotlib checkout
+svn switch https://svn.csail.mit.edu/locomotion/robotlib/branches/mydev
+svn propdel -R rlg:email mydev 
+svn commit -m "removing email broadcast property"
 
-where "robotlib-mydev" can be replaced with whatever you'd like to call your local copy. 
+where "mydev" can be replaced with whatever you'd like to call your local copy. 
 
-And you probably want to edit /afs/csail.mit.edu/group/locomotion/repository/conf/dav.conf to have an entry
-
-[/robotlib-mydev]
-@mylab = 
-your_svn_name = rw
-scriptuser = r
 
 
