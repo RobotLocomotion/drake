@@ -209,6 +209,11 @@ classdef DynamicalSystem
       ts = getSampleTime(obj);
       tf = (size(ts,2)==1 && ts(1)==0); % only one sample time and continuous
     end
+    function tf = isInheritedTime(obj)
+      % Returns true if the system has only one sample time [a b], with b==-1
+      ts = getSampleTime(obj);
+      tf = (size(ts,2)==1 && ts(1)==-1); % only one sample time and continuous
+    end
     
     function tf = isTI(obj)  
       % Returns true if the system is time-invariant

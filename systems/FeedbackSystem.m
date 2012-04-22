@@ -5,6 +5,7 @@ classdef FeedbackSystem < SmoothRobotLibSystem
     sys2
     sys1ind=[]
     sys2ind=[]
+    ts
   end
   
   methods
@@ -35,6 +36,20 @@ classdef FeedbackSystem < SmoothRobotLibSystem
       obj.sys1ind = [obj.sys1ind; ind+(1:n)'];  ind=ind+n;
       n=obj.sys2.getNumContStates();
       obj.sys2ind = [obj.sys2ind; ind+(1:n)'];  
+      
+      % handle the sample times
+      obj.ts = obj.sys1.getSampleTime();  ts2 = obj.sys2.getSampleTime();
+      if (size(obj.ts,2) ~= size(ts2,2)) || any(any(obj.ts ~= ts2))
+        if (isInheritedTime(obj.sys1)) 
+          obj.ts = ts2;
+        elseif (isInheritedTime(obj.sys2))
+          % then ok with ts from sys1
+          % (intentionally blank)
+        else
+          error('Feedback combinations of systems with different sample times not supported as a robotlib system (yet)');
+          % it's ok, it will end up being a simulink model
+        end
+      end
     end
     
     function [x1,x2] = decodeX(obj,x)
@@ -78,7 +93,7 @@ classdef FeedbackSystem < SmoothRobotLibSystem
     function x0=getInitialState(obj)
       x0=encodeX(obj,getInitialState(obj.sys1),getInitialState(obj.sys2));
     end
-
+    
     function x0=getInitialStateWInput(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
       [y1,y2]=getOutputs(obj,t,x,u);
@@ -87,6 +102,10 @@ classdef FeedbackSystem < SmoothRobotLibSystem
       x0=encodeX(obj,x1,x2);
       % note: this is not perfect (y2 could change after updating x1).  how
       % does simulink do it on the backend? 
+    end
+    
+    function ts=getSampleTime(obj)
+      ts = obj.ts;
     end
   end
   
