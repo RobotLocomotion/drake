@@ -51,6 +51,7 @@ classdef SimulinkModel < DynamicalSystem
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         feval(obj.mdl,[],[],[],'compile');
       end
+      feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
       xcdot = feval(obj.mdl,t,x,u,'derivs');
       
       % the following two lines are a bizarre work-around to a bug I've
@@ -73,6 +74,7 @@ classdef SimulinkModel < DynamicalSystem
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         feval(obj.mdl,[],[],[],'compile');
       end
+      feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
       xdn = feval(obj.mdl,t,x,u,'update');
       xdn = stateStructureToVector(obj,xdn);
     end

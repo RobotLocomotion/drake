@@ -1,0 +1,88 @@
+\tolerance=10000
+\documentclass{book}
+\usepackage{amsmath,times,graphicx,url,verbatim,mcode}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows}
+\tikzstyle{block} = [draw, fill=blue!20, rectangle, 
+    minimum height=3em, minimum width=6em]
+\tikzstyle{sum} = [draw, fill=blue!20, circle, node distance=1cm]
+\tikzstyle{pinstyle} = [pin edge={to-,thin,black}]
+%\pgfsysdriver{pgfsys-tex4ht.def} 
+
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\bq}{{\bf q}}
+\newcommand{\bx}{{\bf x}}
+\newcommand{\bu}{{\bf u}}
+\newcommand{\bw}{{\bf w}}
+\newcommand{\bz}{{\bf z}}
+\newcommand{\bK}{{\bf K}}
+\newcommand{\balpha}{{\bf \alpha}}
+\newcommand{\bbeta}{{\bf \beta}}
+\newcommand{\avg}[1]{E\left[ #1 \right]}
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\sgn}{sgn}
+
+\usepackage{xspace}
+\newcommand{\robotlib}{RobotLib\xspace}
+\newcommand{\matlab}{MATLAB\xspace}
+\newcommand{\simulink}{Simulink\xspace}
+\newtheorem{example}{Example}
+
+\usepackage{xcolor}
+% switch to other comment command to remove all comments.
+\newcommand{\todo}[1]{\marginpar{\tiny\color{blue}#1\raggedright}}
+
+
+\title{\Huge \robotlib Documentation}
+\author{\Large Robot Locomotion Group}
+
+\begin{document}
+\maketitle
+
+\tableofcontents 
+
+% preface/intro.  acknowledgements/contributors
+% getting help:  help command.  doc command.  doxygen documentation (searchable)
+
+\chapter{Installation and QuickStart}
+
+\include{modeling}
+
+
+\chapter{Analysis}
+
+\section{Fixed Points}
+
+\subsection{Local Stability}
+
+\subsection{Global Stability}
+
+\subsection{Regions of Attraction}
+
+\section{Limit Cycles}
+
+\subsection{Local Stability}
+
+\subsection{Regions of Attraction}
+
+\section{Trajectories}
+
+\subsection{Finite-time invariant regions}
+
+
+\chapter{Planning}
+
+\chapter{Feedback Design}
+
+\chapter{System Identification}
+
+\chapter{State Estimation}
+
+\chapter{External Interfaces}
+
+Controlling real robots. 
+
+\bibliographystyle{plain}
+\bibliography{local} %,elib
+
+\end{document}

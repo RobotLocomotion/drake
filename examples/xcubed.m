@@ -36,5 +36,19 @@ classdef xcubed < PolynomialSystem
       % the levelset V<1 is the region of attraction
       V=regionOfAttraction(p,0)
     end
+    
+    function animate()
+      p=xcubed();
+      v=xcubed_visualizer();
+
+      x1=p.simulate([0 5],.8);
+      x2=p.simulate([0 1.5],1.02);
+      x2=x2.shiftTime(5);
+      x3=p.simulate([0 5],-.9);
+      x3=x3.shiftTime(6.5);
+      x=HybridTrajectory({x1,x2,x3});
+%      v.playback(x);
+      v.playbackSWF(x,'xcubed');
+    end
   end
 end

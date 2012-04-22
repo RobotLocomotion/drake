@@ -55,9 +55,6 @@ classdef AcrobotVisualizer < Visualizer
       view(0,90)
       set(gca,'XTick',[],'YTick',[])
       axis((l1+l2)*1.1*[-1 1 -1 1 -1 1000]);
-      
-      title(['t = ', num2str(t,'%.2f') ' sec']);
-      drawnow;
     end
   end
 

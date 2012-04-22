@@ -57,6 +57,10 @@ classdef Visualizer < RobotLibSystem
           t = tspan(1)+obj.playback_speed*toc;
           x = xtraj.eval(t);
           obj.draw(t,x);
+          if (obj.display_time)
+            title(['t = ', num2str(t,'%.2f') ' sec']);
+          end
+          drawnow;
         end
       else
         ti = timer('TimerFcn',{@timer_draw},'ExecutionMode','fixedRate','Period',max(obj.display_dt/obj.playback_speed,.01),'TasksToExecute',(tspan(end)-tspan(1))/max(obj.display_dt,eps),'BusyMode','drop');
@@ -75,6 +79,10 @@ classdef Visualizer < RobotLibSystem
         end
         x = xtraj.eval(t);
         obj.draw(t,x);
+        if (obj.display_time)
+          title(['t = ', num2str(t,'%.2f') ' sec']);
+        end
+        drawnow;
       end
       
     end
@@ -109,6 +117,9 @@ classdef Visualizer < RobotLibSystem
       width=[]; height=[];
       for i=1:length(tspan)
         obj.draw(tspan(i),eval(xtraj,tspan(i)));
+        if (obj.display_time)
+          title(['t = ', num2str(t,'%.2f') ' sec']);
+        end
         if (obj.draw_axes)
           f=gcf;
         else
@@ -126,13 +137,21 @@ classdef Visualizer < RobotLibSystem
       close(mov);
     end
     
-    function playbackSWF(obj,xtraj,filename,options)
+    function playbackSWF(obj,xtraj,swf,options)
       % Creates a SWF (Flash) movie of the trajectory.  This is often
       % useful for presentations because the movie is all vector graphics,
       % so will scale losslessly.
       %
-      % You must have <b>pdftk</b> and <b>swftools</b> installed for this
-      % to work.
+      % @param xtraj a Trajectory object that will be played back
+      % @param swf either the filename of the swf file to write, or an
+      % instance of the SWFWriter class.  If swf is empty, then you will be
+      % prompted for a filename (with the gui).
+      % 
+      % @option poster set to true to export a pdf of the first frame.
+      % @default false
+      %
+      % Note: You must have <b>pdftk</b> and <b>swftools</b> installed for 
+      % this to work.
       %
       % If you want to print axes, you'll want to set your visualizer to
       % draw axes: my_visualizer.draw_axes = true
@@ -148,17 +167,22 @@ classdef Visualizer < RobotLibSystem
       % @param filename name of swf file. (optional, if it isn't given a GUI will pop
       %   up and ask for it.)
       
-      if (nargin<3)
-        [filename,pathname] = uiputfile('*.swf','Save playback to SWF');
-        filename = [pathname,'/',filename];
+      bCloseAtEnd = true;
+      if (nargin<3 || isempty(swf))
+        swf = SWFWriter();  % this will prompt for a filename
+      elseif isa(swf,'char') % then it's a filename
+        swf = SWFWriter(swf); 
+      else
+        bCloseAtEnd = false;
       end
-      if (strcmp(lower(filename(end-4:end)),'.swf')) filename=filename(1:end-5); end
       
       if (nargin<4) options=struct(); end
-      if (~isfield(options,'poster')) options.poster=false; end
-      
-      dirname = [filename,'_frames'];
-      mkdir(dirname);
+      if (isfield(options,'poster')) 
+        swf.poster = options.poster;
+      end
+      if (isfield(options,'loop'))
+        swf.loop = options.loop;
+      end
       
       if (obj.display_dt==0)
         if (ishandle(obj)) error('i assumed it wasn''t a handle'); end
@@ -169,91 +193,27 @@ classdef Visualizer < RobotLibSystem
       tspan = obj.playback_speed*(breaks(1):obj.display_dt:breaks(end));
       if (breaks(end)-tspan(end)>eps) tspan=[tspan,breaks(end)]; end
             
-      width=[]; height=[];
-      num_chars=length(num2str(length(tspan)));
-      
       for i=1:length(tspan)
         obj.draw(tspan(i),eval(xtraj,tspan(i)));
-        if (~obj.draw_axes) axis off; end
-        frame_fname=[dirname,'/',repmat('0',1,num_chars-length(num2str(i))),num2str(i)];
-        
-        % Backup previous settings
-        prePaperType = get(gcf,'PaperType');
-        prePaperUnits = get(gcf,'PaperUnits');
-        preUnits = get(gcf,'Units');
-        prePaperPosition = get(gcf,'PaperPosition');
-        prePaperSize = get(gcf,'PaperSize');
-
-        % Make changing paper type possible
-        set(gcf,'PaperType','<custom>');
-
-        % Set units to all be the same
-        set(gcf,'PaperUnits','inches');
-        set(gcf,'Units','inches');
-
-        % Set the page size and position to match the figure's onscreen
-        % dimensions
-        position = get(gcf,'Position');
-        set(gcf,'PaperPosition',[0,0,position(3:4)]);
-        set(gcf,'PaperSize',position(3:4));
-
-        
-        % Save the pdf
-        % we do this instead of going to eps so that we'll print onto a
-        % page, which keeps our size the same between frames that have
-        % different sizes.
-        print(gcf,'-dpdf',[frame_fname '.pdf']);
-        
-        % Restore the previous settings
-        set(gcf,'PaperType',prePaperType);
-        set(gcf,'PaperUnits',prePaperUnits);
-        set(gcf,'Units',preUnits);
-        set(gcf,'PaperPosition',prePaperPosition);
-        set(gcf,'PaperSize',prePaperSize);
-        
-      end
-      
-      % merge pdfs
-      cmd{1}=['pdftk `ls ',dirname,'/*.pdf` cat output ',dirname,'/merge.pdf'];
-
-      % convert pdf to swf
-      cmd{2}=['pdf2swf -s framerate=30 ',dirname,'/merge.pdf ',filename,'.swf'];
-
-      % set the framerate to 30 (the framerate command above doesn't seem
-      % to work in pdf2swf 0.8.1)
-      % also combine with swfstop.swf which is a flash file that is in
-      % robotlib/util that sends the stop command to prevent the movie from
-      % looping
-      cmd{3}=['swfcombine -r 30 --cat ',filename,'.swf -o ',filename, '.swf ', getRobotlibPath(), '/util/swfstop.swf'];
-      
-      if (options.poster)
-        % copy poster pdf next to swf output (useful for beamer)
-        cmd{4}=['cp ',dirname,'/',repmat('0',1,num_chars-1),'1.pdf ',filename,'.pdf'];
-      end
-
-      load robotlib_config;
-      for i=1:length(cmd)
-        try
-          if (system([conf.system_preload, cmd{i}]) ~= 0) error('command failed'); end
-        catch
-          fprintf(1,'\n\n\ntry running this on the command line:\n  ');
-          disp(cmd{i});
-          disp('... go head.  i''ll wait.');
-          input('just hit RETURN when you''re done');
+        if (obj.display_time)
+          title(['t = ', num2str(tspan(i),'%.2f') ' sec']);
         end
-      end      
-
-      disp([filename,' generated successfully']);
-      
-      rmdir(dirname,'s');
-
+        if (~obj.draw_axes) axis off; end
+        swf.addFrame();
       end
+      
+      if (bCloseAtEnd)
+        swf.close();
+      end
+
+    end
   end
   
   properties 
-    display_dt=0.05;  % requested time between display frames (use 0 for drawing as fast as possible)
+    display_dt=0 %0.05;  % requested time between display frames (use 0 for drawing as fast as possible)
     playback_speed=1;  % 1=realtime
     draw_axes=false;  % when making movies true=gcf,false=gca
+    display_time=true; % when true, time is written to figure title
   end
   
 end

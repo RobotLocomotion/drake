@@ -35,7 +35,7 @@ classdef CompassGaitVisualizer < Visualizer
       hip = l*[-sin(q(2)); cos(q(2))];
       swfoot = hip - l*[-sin(q(1)); cos(q(1))];
       
-      x = hip(1) + 1.5*[-1,1];
+      x = hip(1) + 1*[-1,1];
       line(x, tan(-obj.gamma)*x,'Color',[0 1 0]);
       
       line([0, hip(1)], [0, hip(2)],'LineWidth',2.0,'Color',[(1-m) 0 m]);
@@ -50,7 +50,6 @@ classdef CompassGaitVisualizer < Visualizer
       %  axis off;
       hold off;
       
-      title(['t = ', num2str(t)]);
       drawnow;
     end
   end

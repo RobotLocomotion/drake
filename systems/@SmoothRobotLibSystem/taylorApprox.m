@@ -57,7 +57,8 @@ if (isa(varargin{1},'Trajectory'))
   end
 
   polysys = PolynomialTrajectorySystem(xdothat,xnhat,yhat,num_u,sys.isDirectFeedthrough());
-
+  polysys = setInputLimits(polysys,sys.umin,sys.umax);
+  
   if (0) %num_xc==2 && num_xd==0)  % very useful for debugging.  consider making it an option
     comparePhasePlots(sys,polysys,x0traj,u0traj,linspace(breaks(1),breaks(end),15));
   end
@@ -101,6 +102,9 @@ else
   end
   
   polysys = PolynomialSystem(num_xc,num_xd,num_u,num_y,sys.isDirectFeedthrough(),sys.isTI(),xdothat,xnhat,yhat);
+  if (num_u)
+    polysys = setInputLimits(polysys,sys.umin,sys.umax);
+  end
 
   if (0) % num_xc==2 && num_xd==0)   % useful for debugging... consider making it an option
     x0traj = FunctionHandleTrajectory(@(t) x0, [num_x,1],[0 0]);

@@ -17,7 +17,7 @@ classdef PendulumVisualizer < Visualizer
         hFig = sfigure(25);
         set(hFig,'DoubleBuffer', 'on');
         
-        a1 = 0.75;  ac1 = 0.415;
+        a1 = 0.75;  ac1 = 0.75; %415;
         av = pi*[0:.05:1];
         rb = .03; hb=.07;
         aw = .01;
@@ -33,13 +33,11 @@ classdef PendulumVisualizer < Visualizer
         -raarm(:,1).*cos(raarm(:,2)+x(1)-pi), ...
         0*raarm(:,1),'r','FaceColor',[.9 .1 0])
       plot3(ac1*sin(x(1)), -ac1*cos(x(1)),1, 'ko',...
-        'MarkerSize',10,'MarkerFaceColor','b')
+        'MarkerSize',14,'MarkerFaceColor','b')
       plot3(0,0,1.5,'k.')
-      title(['t = ', num2str(t(1),'%.2f') ' sec']);
       set(gca,'XTick',[],'YTick',[])
       
       axis image; axis([-1.0 1.0 -1.0 1.0]);
-      drawnow;
     end    
   end
   

@@ -53,34 +53,38 @@ end
 if (nargout>0)
   if (getNumOutputs(obj)<1) error('this dynamical system doesn''t have any outputs'); end
   
+  pstruct.SaveFormat = 'StructureWithTime';
+  pstruct.SaveTime = 'on';
+  pstruct.TimeSaveName = 'tout';
+  pstruct.SaveState = 'off';
+  pstruct.SaveOutput = 'on';
+  pstruct.OutputSaveName = 'yout';
+  pstruct.LimitDataPoints = 'off';
+
+  if (~isDT(obj))
+    pstruct.Refine = '3';  % shouldn't do anything for DT systems
+  end
+  
+  %If we are using variable-step solver, and want to specify the output time
+  if(isfield(options,'OutputOption'))
+    %pstruct.OutputOption='SpecifiedOutputTimes';
+    pstruct.OutputOption=options.OutputOption;
+  end
+  if(isfield(options,'OutputTimes'))
+    pstruct.OutputTimes=['[',num2str(options.OutputTimes),']'];
+  end
+  %    pstruct.SaveOnModelUpdate = 'false';
+  
+  simout = sim(mdl,pstruct);
+  
+  t = simout.get('tout');
+  y = simout.get('yout').signals.values';
+
   if (isDT(obj))
-    error('dt outputs not handled yet (but it should be trivial');
+    traj = DTTrajectory(t',y);
   else
     % note: could make this more exact.  see comments in bug# 623.
-    pstruct.SaveFormat = 'StructureWithTime';
-    pstruct.SaveTime = 'on';
-    pstruct.TimeSaveName = 'tout';
-    pstruct.SaveState = 'off';
-    pstruct.SaveOutput = 'on';
-    pstruct.OutputSaveName = 'yout';
-    pstruct.LimitDataPoints = 'off';
-    pstruct.Refine = '3';
-%If we are using variable-step solver, and want to specify the output time   
-    if(isfield(options,'OutputOption'))
-        %pstruct.OutputOption='SpecifiedOutputTimes';
-        pstruct.OutputOption=options.OutputOption;
-    end
-    if(isfield(options,'OutputTimes'))
-        pstruct.OutputTimes=['[',num2str(options.OutputTimes),']'];
-    end
-    
-%    pstruct.SaveOnModelUpdate = 'false';
-    
-    simout = sim(mdl,pstruct);
-    
-    t = simout.get('tout');
-    y = simout.get('yout').signals.values';
-    
+
     % find any zero-crossing events (they won't have the extra refine steps)
     zcs = find(diff(t)<1e-10);
     if (length(zcs)>0) % then we have a hybrid trajectory

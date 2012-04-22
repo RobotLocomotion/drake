@@ -1,8 +1,4 @@
 function Vtraj = tvlyap(obj,xtraj,Q,Qf,tspan)
-% implements the time-varying linear (or affine) quadratic regulator
-%  note:  Qf can be an nxn matrix, a cell array (for initializing the
-%  affine) or an msspoly (e.g. as would happen if you hand it back
-%  Vtraj.eval(0) from a previous tvlqr trajectory).
 
 typecheck(xtraj,'Trajectory');
 sizecheck(xtraj,[getNumStates(obj),1]);

@@ -12,7 +12,7 @@ if (length(sizemat)==1)
     error(['Wrong size.  Expected [',num2str(sizemat),' 1] or [1 ', num2str(sizemat),'], but got [',num2str(s),'] intead.']);
   end
 else
-  if (length(s)~=length(sizemat) || any(s~=sizemat))
+  if (prod(sizemat)>0 && (length(s)~=length(sizemat) || any(s~=sizemat)))
     error(['Wrong size.  Expected [',num2str(sizemat),'] but got a [', num2str(s), '] instead.']);
   end
 end
