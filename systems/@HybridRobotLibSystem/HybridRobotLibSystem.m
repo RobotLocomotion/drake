@@ -26,7 +26,7 @@ classdef HybridRobotLibSystem < RobotLibSystem
     
     function [obj,mode_num] = addMode(obj,mode_sys)
       typecheck(mode_sys,'SmoothRobotLibSystem');
-%      if (getNumStates(mode_sys)>0 && ~mode_sys.isCT()) error('only CT modes are allowed for now'); end
+      if (getNumStates(mode_sys)>0 && ~(mode_sys.isCT() || mode_sys.isInheritedTime())) error('only CT or inherited sample time modes are allowed for now'); end
       obj.modes = {obj.modes{:},mode_sys};
       mode_num = length(obj.modes);
       obj.target_mode = {obj.target_mode{:},[]};
@@ -143,6 +143,10 @@ classdef HybridRobotLibSystem < RobotLibSystem
       x0=[x(1); getInitialStateWInput(obj.modes{m},t,xm,u)];
       % pad if necessary:
       x0 = [x0;repmat(0,getNumStates(obj)-length(x0),1)];
+    end
+    
+    function ts = getSampleTime(obj)  
+      ts = [0;0];  % continuous
     end
     
     function [xcdot,df] = dynamics(obj,t,x,u)

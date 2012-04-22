@@ -11,8 +11,6 @@ classdef PlanarURDFVisualizer < Visualizer
     function obj = PlanarURDFVisualizer(urdf_filename,axis)
       obj=obj@Visualizer(0);
       
-      checkDependency('featherstone_enabled');
-      
       if (nargin<1)
         urdf_filename=uigetfile('*.urdf');
       end

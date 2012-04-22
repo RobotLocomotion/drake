@@ -12,8 +12,6 @@ classdef PlanarURDFManipulator < ManipulatorPlant
     function obj = PlanarURDFManipulator(urdf_filename)
       obj = obj@ManipulatorPlant(0,0,0);
 
-      checkDependency('featherstone_enabled');
-      
       if (nargin<1)
         urdf_filename=uigetfile('*.urdf');
       end

@@ -33,6 +33,20 @@ classdef CascadeSystem < SmoothRobotLibSystem
       obj.sys1ind = [obj.sys1ind; ind+(1:n)'];  ind=ind+n;
       n=obj.sys2.getNumContStates();
       obj.sys2ind = [obj.sys2ind; ind+(1:n)'];  
+      
+      % handle the sample times
+      obj.ts = obj.sys1.getSampleTime();  ts2 = obj.sys2.getSampleTime();
+      if (size(obj.ts,2) ~= size(ts2,2)) || any(any(obj.ts ~= ts2))
+        if (isInheritedTime(obj.sys1)) 
+          obj.ts = ts2;
+        elseif (isInheritedTime(obj.sys2))
+          % then ok with ts from sys1
+          % (intentionally blank)
+        else
+          error('Cascade combinations of systems with different sample times not supported as a robotlib system (yet)');
+          % it's ok, it will end up being a simulink model
+        end
+      end
     end
     
     function [x1,x2] = decodeX(obj,x)
@@ -71,6 +85,10 @@ classdef CascadeSystem < SmoothRobotLibSystem
       x1=getInitialStateWInput(obj.sys1,t,x1,u);
       x2=getInitialStateWInput(obj.sys2,t,x2,obj.sys1.output(t,x1,u));
       x0=encodeX(obj,x1,x2);
+    end
+    
+    function ts=getSampleTime(obj)
+      ts = obj.ts;
     end
   end
   
