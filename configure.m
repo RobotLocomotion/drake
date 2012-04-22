@@ -126,11 +126,7 @@ conf.simulationconstructionset_enabled = ...
 if (~conf.simulationconstructionset_enabled)
   disp(' SimulationConstructionSet not found.  SCS support will be disabled.  To re-enable, get SCS on your machine and add all of the necessary class directories and jar files to your matlab java class path');
 end
-  
-conf.featherstone_enabled = logical(exist('HandCp'));
-if (~conf.featherstone_enabled)
-  disp(' Featherstone''s Spatial Vector and Rigid-Body Dynamics tools not found.  To re-enable, download the zip file from http://users.cecs.anu.edu.au/~roy/spatial/documentation.html and put the directory into your matlab path');
-end
+
 
 % save configuration options to config.mat
 conf

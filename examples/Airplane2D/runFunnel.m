@@ -6,6 +6,7 @@ end
 
 p = setInputLimits(p,-inf,inf);
 
+% OKTOFAIL
 [utraj, xtraj] = runDircol(p);
 
 Q = eye(4);

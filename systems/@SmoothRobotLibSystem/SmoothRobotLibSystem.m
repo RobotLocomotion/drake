@@ -24,27 +24,6 @@ classdef SmoothRobotLibSystem < RobotLibSystem
     end      
   end
       
-  % default methods - these should be implemented or overwritten
-  % 
-  methods
-    function x0 = getInitialState(obj)
-      x0 = zeros(obj.num_xd+obj.num_xc,1);
-    end
-    
-    function xcdot = dynamics(obj,t,x,u)
-      error('systems with continuous states must implement Derivatives (ie overload dynamics function)');
-    end
-    
-    function xdn = update(obj,t,x,u)
-      error('systems with discrete states must implement Update (ie overload update function)');
-    end
-    
-    function y = output(obj,t,x,u)
-      error('default is intentionally not implemented');
-    end
-    
-  end      
-
   % utility methods
   methods
     function [A,B,C,D,x0dot,y0] = linearize(obj,t0,x0,u0)
@@ -84,6 +63,8 @@ classdef SmoothRobotLibSystem < RobotLibSystem
 
       if (nargin<3) x0=getInitialState(obj); end
       
+      if (obj.num_xcon>0) warning('system has constraints, but they are not explicitly satisfied during simulation (yet - it should be an easy fix in the ode suite)'); end
+      
       odeoptions = obj.simulink_params;
       odefun = @(t,x)obj.dynamics(t,x,zeros(obj.getNumInputs(),1));
       if (isfield(obj.simulink_params,'Solver'))
@@ -95,15 +76,17 @@ classdef SmoothRobotLibSystem < RobotLibSystem
       traj = FunctionHandleTrajectory(@(t)obj.output(t,xtraj.eval(t),zeros(obj.getNumInputs(),1)),[obj.getNumOutputs,1],tspan);
     end
     
-    function sys=feedback(sys1,sys2)
+    function sys=feedback(sys1,sys2,options)
       % Constructs a feedback combination of sys1 and sys2.  
-      % Tries to keey the system as a SmoothRobotLibSystem, but will fail
+      % Tries to keep the system as a SmoothRobotLibSystem, but will fail
       % if one of the systems has discontinuities, for instance from an
       % input saturation.  In that case, it returns a DynamicalSystem
       % object.
       %
       % @param sys1 first DynamicalSystem (on the forward path)
       % @param sys2 second DynamicalSystem (on the backward path)
+      % @option try_to_be_robotlibsystem set to false if you want to return
+      % a simulink model. @default true
       %
       % The input to the feedback model is added to the output of sys2
       % before becoming the input for sys1.  The output of the feedback
@@ -114,7 +97,15 @@ classdef SmoothRobotLibSystem < RobotLibSystem
         sys=feedback@DynamicalSystem(sys1,sys2);
       end
     end
-
+    
+    function sys=cascade(sys1,sys2)
+      try
+        sys=CascadeSystem(sys1,sys2);   % try to keep it a smoothrobotlibsystem 
+      catch
+        sys=cascade@DynamicalSystem(sys1,sys2);
+      end
+    end
+    
   end
     
 

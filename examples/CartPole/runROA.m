@@ -5,8 +5,8 @@ p = p.setInputLimits(-inf,inf);
 v = CartPoleVisualizer;
 
 % up fp:
-%c = CartPoleLQR(p);
-[c,V] = CartPoleHinf(p);
+[c,V] = CartPoleLQR(p);
+%[c,V] = CartPoleHinf(p);
 sys = feedback(p,c);
 x0=[0;pi;0;0];
 
@@ -18,10 +18,17 @@ pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
 
 figure(1); clf;%hold on; axis([-pi/2,3*pi/2,-5,5]);
 
-options.degL1 = 1;
+options.degL1 = 3;
+options.method='levelset'; 
+%options.method={'levelSet','bilinear'}; options.degV=2; % does optimization help? 
+%options.method={'levelset','sampling'}; % check tightness w/ sampling. 
 V=regionOfAttraction(pp,x0,V,options);
 
-plotFunnel(V,x0,[2 4]);
+vol = getLevelSetVolume(V)
+umax=max(abs(c.K*getLevelSet(V)))
+
+clf;
+plotFunnel(V,x0,[2 4]);%,struct('inclusion','projection'));
 
 return;
 

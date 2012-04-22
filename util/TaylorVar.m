@@ -220,10 +220,13 @@ classdef TaylorVar
     end
     function a=mtimes(a,b)  % only allowed for scalars and 2D matrices
       if (~isa(a,'TaylorVar'))  % then only b is a TaylorVar
-        [m,k] = size(a); n=b.dim(2);
+        [m,k] = size(a); [l,n]=size(b);
         if (m==1 && k==1) % handle scalar case
           f = a*reshape(b.f,b.dim);
           for o=1:length(b.df), b.df{o}=a*b.df{o}; end
+        elseif (l==1 && n==1) %other scalar case
+          f = a*b.f;
+          for o=1:length(b.df), b.df{o}=repmat(a(:),1,b.nX^o).*repmat(b.df{o},numel(a),1); end
         else
           f = a*reshape(b.f,b.dim); 
           for o=1:length(b.df)
@@ -239,19 +242,26 @@ classdef TaylorVar
         if (length(a.df)<1 || length(b.df)<1) error('shouldn''t get here'); end
         % length of a.df and b.df should be >0 to get through the previous cases
 
-        % want dcdx = dadx*b + a*dbdx.  tvdiff(a) gives dadx, but will be >2D for matrices, 
+        % want dcdx = dadx*b + a*dbdx.  tvdiff(a) gives dadx, but will be >2D for matrices,
         % so i have to handle the multiplies properly (as above)
         % dcdx is size [ma,nb,nX]
         ma=a.dim(1); na=a.dim(2); mb=b.dim(1); nb=b.dim(2); nX=a.nX;
-% this version works, but is expensive       
-        btmp = repmat({reduceOrder(b)},1,nX);
-        dcdx = reshape(reshape(tvdiff(a),ma,na*nX)*blkdiag(btmp{:}),[ma,nb,nX]) + ...
-          reshape(reduceOrder(a)*reshape(tvdiff(b),mb,nb*nX),[ma,nb,nX]);
-% trying this version instead:
-%        dcdx=reshape(reduceOrder(a)*reshape(tvdiff(b),mb,nb*nX),[ma,nb,nX]);
-%        da=tvdiff(a);rb=reduceOrder(b);
-%        for i=1:nX, dcdx(:,:,i)=dcdx(:,:,i)+da(:,:,i)*rb; end
-% end new version        
+        if isscalar(a) 
+          % tvdiff(a) will be [1,1,nX]
+          dcdx = reshape(reshape(reduceOrder(b),mb*nb,1)*reshape(tvdiff(a),1,nX) + reduceOrder(a)*reshape(tvdiff(b),mb*nb,nX),[mb,nb,nX]);
+        elseif isscalar(b)
+          dcdx = reshape(reduceOrder(b)*reshape(tvdiff(a),ma*na,nX) + reshape(reduceOrder(a),ma*na,1)*reshape(tvdiff(b),1,nX),[ma,na,nX]);
+        else
+          % this version works, but is expensive
+          btmp = repmat({reduceOrder(b)},1,nX);
+          dcdx = reshape(reshape(tvdiff(a),ma,na*nX)*blkdiag(btmp{:}),[ma,nb,nX]) + ...
+            reshape(reduceOrder(a)*reshape(tvdiff(b),mb,nb*nX),[ma,nb,nX]);
+          % trying this version instead:
+          %        dcdx=reshape(reduceOrder(a)*reshape(tvdiff(b),mb,nb*nX),[ma,nb,nX]);
+          %        da=tvdiff(a);rb=reduceOrder(b);
+          %        for i=1:nX, dcdx(:,:,i)=dcdx(:,:,i)+da(:,:,i)*rb; end
+          % end new version
+        end
         if (isa(dcdx,'TaylorVar'))
           a=tvint(dcdx,f);
         else
@@ -532,27 +542,48 @@ classdef TaylorVar
     
     function a=subsasgn(a,s,b)
       if (~isa(a,'TaylorVar'))  % then turn it into one
-        n = prod(size(a));
+        n = numel(a);
         for o=1:length(b.df)  % b must be a taylorvar
           da{o} = sparse(n,(b.nX)^o);
         end
         a=TaylorVar(a,da);
       end
-            
-      % note: this will fail if the assignment makes a get bigger.  i'll
-      % handle that case later (if necessary)
-      tags = reshape(1:prod(a.dim),a.dim);
-      ind = reshape(subsref(tags,s),[],1);
+      
+      function cleanup_subs
+        if (length(s.subs) ~= length(size(f)))
+          if (length(s.subs)==1 && length(size(f))~=1)
+            % handle a matrix by a scalar index, e.g. A(1)=3 when size(A)=[2 2]
+            ind=s.subs{1};
+            if (ind==':')
+              ind=1:prod(size(f));
+            end
+            s.subs=cell(1,length(size(f)));
+            [s.subs{:}]=ind2sub(size(f),ind);
+          else
+            error('didn''t handle this case.  don''t *think* i should ever get here.');
+          end
+        end
+      end
+      
       if (isa(b,'TaylorVar'))
-        a.f(ind)=b.f;
+        % handle the case where the assignment will make the matrix bigger
+        f = subsasgn(reshape(a.f,a.dim),s,reshape(b.f,b.dim));
+        a.f = reshape(f,numel(f),1);
+        cleanup_subs();
+        s.subs{end+1}=':';
         for o=1:length(a.df)
-          a.df{o}(ind,:)=b.df{o};
+          a.df{o} = sparse(reshape(subsasgn(reshape(full(a.df{o}),[a.dim,(a.nX)^o]),s,reshape(full(b.df{o}),[b.dim,(b.nX)^o])),numel(a.f),a.nX^o));
         end
+        a.dim = size(f);
       else % b is a const
-        a.f(ind)=b;
+        f = subsasgn(reshape(a.f,a.dim),s,b);
+        a.f = reshape(f,numel(f),1);
+        cleanup_subs();
+        s.subs{end+1}=':';
         for o=1:length(a.df)
-          a.df{o}(ind,:)=0;
+          a.df{o} = sparse(reshape(subsasgn(reshape(full(a.df{o}),[a.dim,(a.nX)^o]),s,0),numel(a.f),a.nX^o));
         end
+        a.dim = size(f);
       end
     end
     function ind=subsindex(a)
@@ -783,6 +814,7 @@ classdef TaylorVar
   end
   
   methods (Access=private)
+    
     function tv=tvdiff(obj)  % removes one order  (tv.f=obj.df{1}, etc)
       f=reshape(full(obj.df{1}),[obj.dim,obj.nX]);
       m=prod(obj.dim); n=obj.nX;

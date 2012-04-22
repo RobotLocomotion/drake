@@ -1,9 +1,12 @@
-function [ltvsys,Vtraj] = tvlqr(obj,xtraj,utraj,Q,R,Qf)
+function [ltvsys,Vtraj] = tvlqr(obj,xtraj,utraj,Q,R,Qf,options)
 
 % implements the time-varying linear (or affine) quadratic regulator
 %  note:  Qf can be an nxn matrix, a cell array (for initializing the
 %  affine) or an msspoly (e.g. as would happen if you hand it back
 %  Vtraj.eval(0) from a previous tvlqr trajectory).
+
+if (nargin<7) options=struct(); end
+% no real options here, but options get's passed through to geval
 
 typecheck(xtraj,'Trajectory');
 sizecheck(xtraj,[getNumStates(obj),1]);
@@ -55,11 +58,11 @@ if (~isCT(obj)) error('only handle CT case so far'); end
 
 xdottraj = fnder(xtraj);
 
-%Sold = matrixODE(@ode45,@(t,S)Sdynamics(t,S,obj,Q,R,xtraj,utraj),tspan(end:-1:1),Qf);
-%K = FunctionHandleTrajectory(@(t)Ksoln(t,obj,S,R,xtraj,utraj),[nX nU],tspan);
-Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,R,xtraj,utraj,xdottraj),tspan(end:-1:1),{Qf{1}^(1/2),Qf{2},Qf{3}});
+%Sold = matrixODE(@ode45,@(t,S)Sdynamics(t,S,obj,Q,R,xtraj,utraj,options),tspan(end:-1:1),Qf);
+%K = FunctionHandleTrajectory(@(t)Ksoln(t,obj,S,R,xtraj,utraj,options),[nX nU],tspan);
+Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,R,xtraj,utraj,xdottraj,options),tspan(end:-1:1),{Qf{1}^(1/2),Qf{2},Qf{3}});
 S = FunctionHandleTrajectory(@(t) recompS(Ssqrt.eval(t)),[nX,nX],tspan);
-K = FunctionHandleTrajectory(@(t)affineKsoln(t,obj,S,R,xtraj,utraj),[nX nU],tspan);
+K = FunctionHandleTrajectory(@(t)affineKsoln(t,obj,S,R,xtraj,utraj,options),[nX nU],tspan);
 
 ltvsys = LTVControl(xtraj,utraj,K); %,S,Sdot);
 
@@ -68,7 +71,7 @@ if (nargout>1)
   p_t=msspoly('t',1);
 %  Sdotold = @(t)Sdynamics(t,Sold.eval(t),obj,Q,R,xtraj,utraj);
 %  Vtraj = FunctionHandleTrajectory(@(t) p_x'*(S.eval(t) + Sdot(t)*(p_t-t))*p_x, [1 1],tspan);
-  Sdotsqrt = @(t)affineSdynamics(t,Ssqrt.eval(t),obj,Q,R,xtraj,utraj,xdottraj);
+  Sdotsqrt = @(t)affineSdynamics(t,Ssqrt.eval(t),obj,Q,R,xtraj,utraj,xdottraj,options);
   Sdot = @(t) recompSdot(Ssqrt.eval(t),Sdotsqrt(t));
   Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan);
   % todo: i could dig into the ODESolution with taylorvar to get higher
@@ -79,30 +82,30 @@ end
 
 
 
-function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj)
+function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,options)
   x0 = xtraj.eval(t); u0 = utraj.eval(t);
   Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
   nX = length(x0); nU = length(u0);
-  [f,df] = geval(@plant.dynamics,t,x0,u0);
+  [f,df] = geval(@plant.dynamics,t,x0,u0,options);
   A = df(:,1+(1:nX));
   B = df(:,nX+1+(1:nU));
   Sdot = -(Q - S*B*Ri*B'*S + S*A + A'*S);
   if (min(eig(S))<0) warning('S is not positive definite'); end
 end
 
-function K = Ksoln(t,plant,Straj,Rtraj,xtraj,utraj)
+function K = Ksoln(t,plant,Straj,Rtraj,xtraj,utraj,options)
   S = Straj.eval(t); Ri = inv(Rtraj.eval(t)); x0=xtraj.eval(t); u0 = utraj.eval(t);
   nX = length(x0); nU = length(u0);
-  [f,df] = geval(@plant.dynamics,t,x0,u0);
+  [f,df] = geval(@plant.dynamics,t,x0,u0,options);
   B = df(:,nX+1+(1:nU));
   K = Ri*B'*S;
 end
 
-function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,xdottraj)
+function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,xdottraj,options)
   x0 = xtraj.eval(t); u0 = utraj.eval(t); xdot0 = xdottraj.eval(t);
   Q=Qtraj.eval(t);  Ri=inv(Rtraj.eval(t));
   nX = length(x0); nU = length(u0);
-  [xdot,df] = geval(@plant.dynamics,t,x0,u0);
+  [xdot,df] = geval(@plant.dynamics,t,x0,u0,options);
   A = df(:,1+(1:nX));
   B = df(:,nX+1+(1:nU));
   c = xdot - xdot0;
@@ -114,10 +117,10 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,xdottraj)
   Sdot{3} = -(-S{2}'*B*Ri*B'*S{2}/4 + S{2}'*c);  
 end
     
-function K = affineKsoln(t,plant,Straj,Rtraj,xtraj,utraj)
+function K = affineKsoln(t,plant,Straj,Rtraj,xtraj,utraj,options)
   S = Straj.eval(t); Ri = inv(Rtraj.eval(t)); x0=xtraj.eval(t); u0 = utraj.eval(t);
   nX = length(x0); nU = length(u0);
-  [f,df] = geval(@plant.dynamics,t,x0,u0);
+  [f,df] = geval(@plant.dynamics,t,x0,u0,options);
   B = df(:,nX+1+(1:nU));
   K{1} = Ri*B'*S{1};
   K{2} = .5*Ri*B'*S{2};

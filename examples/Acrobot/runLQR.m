@@ -4,10 +4,11 @@ d = AcrobotPlant;
 v = AcrobotVisualizer(d);
 c = AcrobotLQR(d);
 
-sys = cascade(feedback(d,c),v);
+sys = feedback(d,c);
 
 for i=1:5
-  simulate(sys,[0 5],c.x0+0.025*randn(4,1));
+  xtraj = simulate(sys,[0 5],c.x0+0.025*randn(4,1));
+  v.playback(xtraj);
 end
 
 return

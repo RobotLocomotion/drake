@@ -33,9 +33,31 @@ classdef RobotLibSystem < DynamicalSystem
     end      
   end
   
+  % default methods - these should be implemented or overwritten
+  % 
   methods
+    function x0 = getInitialState(obj)
+      x0 = zeros(obj.num_xd+obj.num_xc,1);
+    end
+    
+    function xcdot = dynamics(obj,t,x,u)
+      error('systems with continuous states must implement Derivatives (ie overload dynamics function)');
+    end
+    
+    function xdn = update(obj,t,x,u)
+      error('systems with discrete states must implement Update (ie overload update function)');
+    end
+    
+    function y = output(obj,t,x,u)
+      error('default is intentionally not implemented');
+    end
+    
     function zcs = zeroCrossings(obj,t,x,u)
       error('systems with zero crossings must implement the zeroCrossings method'); 
+    end
+    
+    function con = stateConstraints(obj,x)
+      error('systems with state constraints must implement the constraints method');
     end
   end
   
@@ -62,7 +84,22 @@ classdef RobotLibSystem < DynamicalSystem
       % As described at http://www.mathworks.com/help/toolbox/simulink/sfg/f6-58760.html
       % to set multiple sample times, specify one *column* for each sample
       % time/offset pair.
-      ts = [0;0];  % continuous time, no offset
+      % The default behavior is continuous time for systems with only continuous
+      % states, and discrete time (with sample period 1s) for systems only
+      % discrete states, and inherited for systems with no states.  For
+      % systems with both discrete and continuous states, an error is
+      % thrown saying that this function should be overloaded to set the
+      % desired behavior.  
+
+      if (obj.num_xc>0 && obj.num_xd==0)
+        ts = [0;0];  % continuous time, no offset
+      elseif (obj.num_xc==0 && obj.num_xd>0)
+        ts = [1;0];  % discrete time, with period 1s.
+      elseif (obj.num_xc==0 && obj.num_xd==0)
+        ts = [-1;0]; % inherited sample time
+      else
+        error('systems with both discrete and continuous states must implement the getSampleTime method to specify the desired behavior');
+      end
     end
     function tf = isDirectFeedthrough(obj)
       % Check if the system is direct feedthrough (e.g., if the output
@@ -103,6 +140,36 @@ classdef RobotLibSystem < DynamicalSystem
         add_block('simulink3/Sinks/Out1',[mdl,'/out']);
         add_line(mdl,'RobotLibSys/1','out/1');
       end
+      
+      if (obj.num_xcon>0)
+        warning('system has constraints, but they aren''t enforced in the simulink model yet.');
+      end
+    end
+    
+    function x = resolveConstraints(obj,x0,v)
+      % attempts to find a x which satisfies the constraints,
+      % using x0 as the initial guess.
+      %
+      % @param x0 initial guess for state satisfying constraints
+      % @param v (optional) a visualizer that should be called while the
+      % solver is doing it's thing
+
+      if (obj.num_con < 1)
+        x=x0;
+        return;
+      end
+      
+      function stop=drawme(x,optimValues,state)
+        stop=false;
+        v.draw(0,x);
+      end
+        
+      if (nargin>1 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
+        options=optimset('Display','iter','Algorithm','levenberg-marquardt','OutputFcn',@drawme,'TolX',1e-9);
+      else
+        options=optimset('Display','off','Algorithm','levenberg-marquardt');
+      end
+      x = fsolve(@(x)stateConstraints(obj,x),x0,options);      
     end
   end  
   
@@ -146,8 +213,11 @@ classdef RobotLibSystem < DynamicalSystem
     function obj = setInputLimits(obj,umin,umax)
       % Guards the input limits to make sure it stay consistent
       
-      if (length(umin)~=1 && length(umin)~=obj.num_u) error('umin is the wrong size'); end
-      if (length(umax)~=1 && length(umax)~=obj.num_u) error('umax is the wrong size'); end
+      if (isscalar(umin)) umin=repmat(umin,obj.num_u,1); end
+      if (isscalar(umax)) umax=repmat(umax,obj.num_u,1); end
+      
+      sizecheck(umin,[obj.num_u,1]);
+      sizecheck(umax,[obj.num_u,1]);
       if (any(obj.umax<obj.umin)) error('umin must be less than umax'); end
       obj.umin = umin;
       obj.umax = umax;
@@ -165,6 +235,15 @@ classdef RobotLibSystem < DynamicalSystem
       % Guards the number of zero crossings to make sure it's valid.
       if (num_zcs<0) error('num_zcs must be >=0'); end
       obj.num_zcs = num_zcs;
+    end
+    function n = getNumStateConstraints(obj)
+      % Returns the number of zero crossings
+      n = obj.num_xcon;
+    end
+    function obj = setNumStateConstraints(obj,num_xcon)
+      % Guards the number of zero crossings to make sure it's valid.
+      if (num_xcon<0) error('num_xcon must be >=0'); end
+      obj.num_xcon = num_xcon;
     end
   end
 
@@ -191,7 +270,8 @@ classdef RobotLibSystem < DynamicalSystem
     num_x=0;  % dimension of x (= num_xc + num_xd)
     num_u=0;  % dimension of u
     num_y=0;  % dimension of the output y
-    num_zcs = 0;  % number of zero-crossings.  % Default: 0
+    num_zcs = 0;  % number of zero-crossings.  @default: 0
+    num_xcon = 0; % number of state constraints. @default: 0
     uid;    % unique identifier for simulink models of this block instance
     direct_feedthrough_flag=true;  % true/false: does the output depend on u?  set false if you can!
   end

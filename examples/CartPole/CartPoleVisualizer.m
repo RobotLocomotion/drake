@@ -21,7 +21,7 @@ classdef CartPoleVisualizer < Visualizer
         hFig = sfigure(25);
         set(hFig,'DoubleBuffer', 'on');
         
-        a1 = l+0.25;
+        a1 = l;
         av = pi*[0:.05:1];
         theta = pi*[0:0.05:2];
         wb = .3; hb=.15;
@@ -40,14 +40,12 @@ classdef CartPoleVisualizer < Visualizer
       patch(x(1)+wb+lwheel(:,1), lwheel(:,2), 0*lwheel(:,1),'k');
       patch(x(1)+raarm(:,1).*sin(raarm(:,2)+x(2)-pi),-raarm(:,1).*cos(raarm(:,2)+x(2)-pi), 1+0*raarm(:,1),'r','FaceColor',[.9 .1 0])
       plot3(x(1)+l*sin(x(2)), -l*cos(x(2)),1, 'ko',...
-        'MarkerSize',10,'MarkerFaceColor','b')
+        'MarkerSize',14,'MarkerFaceColor','b')
       plot3(x(1),0,1.5,'k.')
-      title(['t = ', num2str(t,'%.2f') ' sec']);
       set(gca,'XTick',[],'YTick',[])
       
       axis image;
       axis([-2.5 2.5 -2.5*l 2.5*l]);
-      drawnow;
     end
   end
 end

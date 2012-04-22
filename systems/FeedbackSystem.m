@@ -21,20 +21,20 @@ classdef FeedbackSystem < SmoothRobotLibSystem
         error('algebraic loop');
       end
       if (any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax])))
-        error('saturations not supported yet');
+        error('RobotLib:FeedbackSystem:NotSupported','saturations not supported');
       end
       
       ind=0;
       n=obj.sys1.getNumDiscStates();
-      obj.sys1ind = ind+(1:n);
+      obj.sys1ind = ind+(1:n)';
       ind=ind+n;
       n=obj.sys2.getNumDiscStates();
-      obj.sys2ind=  ind+(1:n); ind=ind+n;
+      obj.sys2ind=  ind+(1:n)'; ind=ind+n;
 
       n=obj.sys1.getNumContStates();
-      obj.sys1ind = [obj.sys1ind, ind+(1:n)];  ind=ind+n;
+      obj.sys1ind = [obj.sys1ind; ind+(1:n)'];  ind=ind+n;
       n=obj.sys2.getNumContStates();
-      obj.sys2ind = [obj.sys2ind, ind+(1:n)];  
+      obj.sys2ind = [obj.sys2ind; ind+(1:n)'];  
     end
     
     function [x1,x2] = decodeX(obj,x)

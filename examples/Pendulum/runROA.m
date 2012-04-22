@@ -1,27 +1,30 @@
 function runROA
 
 p = PendulumPlant;
-p = p.setInputLimits(-inf,inf);
 v = PendulumVisualizer;
-
-% up fp:
-c = PendulumLQR(p);
-sys = feedback(p,c);
 x0=[pi;0];
 
-% down fp (no feedback):
-%sys=p;
-%x0 = zeros(2,1);
+%% for testing polytopic code
+%pp = p.taylorApprox(0,x0,0,3);
+%c = PendulumLQR(pp);
+%pp = pp.setInputLimits(-inf,inf);  % just for testing
+%sys=feedback(pp,c);
+%figure(); clf; axis([c.x0(1)+[-pi,pi],c.x0(2)+[-5,5]]);
+%plotRegions(sys); 
+%%
 
-%phasePortrait(sys);
-%hold on;
+p = p.setInputLimits(-inf,inf);  % for now
+c = PendulumLQR(p);
+sys = feedback(p,c);
 
 pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
 
 figure(1); clf; hold on; axis([-pi/2,3*pi/2,-5,5]);
 
 options=struct();
+%options.method='sampling';
 %options.method='bilinear';
+options.method='levelSet'
 V=regionOfAttraction(pp,x0,[],options);
 xroa=getLevelSet(V,x0);
 plot(xroa(1,:),xroa(2,:),'r');

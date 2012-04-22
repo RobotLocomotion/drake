@@ -13,11 +13,12 @@ Vf = regionOfAttraction(psys,ti.x0,Vf,struct('degL1',3));
 
 Vf = Vf*5;  % artificially prune, since ROA is solved without input limits
 
+%x=msspoly('x',2); Vf=(x-ti.x0)'*diag([10,1])*(x-ti.x0);  % for debugging
+
 figure(1); clf; hold on;
 plotFunnel(Vf,ti.x0); drawnow;
 
 
-%x=msspoly('x',2); Vf=x'*diag([10,1])*x;  % for debugging
 
 % create LQR Tree
 c = LQRTree(ti,Vf);

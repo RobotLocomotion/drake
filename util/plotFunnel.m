@@ -1,4 +1,4 @@
-function plotFunnel(V,x0,plot_dims,options)
+function h=plotFunnel(V,x0,plot_dims,options)
 % Plots the one-level set of V
 %
 % @param V funnel to plot. Can either be a msspoly or a PolynomialTrajectory
@@ -13,6 +13,7 @@ function plotFunnel(V,x0,plot_dims,options)
 %    'projection' -- plot the projection of {x | V(x) < 1} into the
 %        given plane.
 %
+% @retval h column vector of handles for any graphics objects created
 
 % todo: support wrapping coordinates
 
@@ -49,7 +50,7 @@ if (isa(V,'msspoly'))
       error(['Unknown inclusion method: ' options.inclusion]);
   end
 
-  fill3(x(1,:),x(2,:),repmat(0,1,size(x,2)),options.color,'LineStyle','-','LineWidth',2);
+  h=fill3(x(1,:),x(2,:),repmat(0,1,size(x,2)),options.color,'LineStyle','-','LineWidth',2);
 
 else
   typecheck(V,'PolynomialTrajectory');
@@ -58,6 +59,7 @@ else
   ts = V.getBreaks();
   hold on;
 
+  h=[];
   for i=length(ts)-1:-1:1
     xfun0 = getLevel(ts(i),V,plot_dims,options);
     xfun1 = getLevel(ts(i+1)-eps,V,plot_dims,options);
@@ -69,14 +71,14 @@ else
     
     x = [xfun0,xfun1(:,end:-1:1)];
     k = convhull(x(1,:),x(2,:));
-    fill3(x(1,k),x(2,k),repmat(0,1,length(k)),options.color,'LineStyle','none');
-    plot3(x(1,k),x(2,k),repmat(-.1,1,length(k)),'k','LineWidth',5);
+    h=[h;fill3(x(1,k),x(2,k),repmat(0,1,length(k)),options.color,'LineStyle','none')];
+    h=[h;plot3(x(1,k),x(2,k),repmat(-.1,1,length(k)),'k','LineWidth',5)];
     
-    plot3(xfun0(1,:),xfun0(2,:),repmat(.1,1,size(xfun0,2)),'k','LineWidth',.5);
+    h=[h;plot3(xfun0(1,:),xfun0(2,:),repmat(.1,1,size(xfun0,2)),'k','LineWidth',.5)];
   end
   
   % draw level-set at the beginning
-  plot3(xfun0(1,:),xfun0(2,:),repmat(.1,1,size(xfun0,2)),'k','LineWidth',2);
+  h=[h;plot3(xfun0(1,:),xfun0(2,:),repmat(.1,1,size(xfun0,2)),'k','LineWidth',2)];
 end
 
 end

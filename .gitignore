@@ -1,0 +1,4 @@
+*.autosave
+*.mex*
+*.o*
+robotlib_config.mat

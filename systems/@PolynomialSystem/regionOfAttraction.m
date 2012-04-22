@@ -6,8 +6,10 @@ function V = regionOfAttraction(sys,x0,V0,options)
 % zero)
 % @param V0 The initial Lyapunov candidate.  
 %
+% @retval V The verified Lyapunov candidate (with V<=1 verified)
+%
 % @option method The method to use.  Must be one of
-% 'bilinear','levelset','levelset_yalmip', or 'binary'.  You may also pass
+% 'bilinear','levelset','levelset_yalmip', 'binary', or 'sampling'.  You may also pass
 % in a cell array of methods to run them one after another (e.g. use
 % options.method={'levelset','bilinear'} to use the levelset method to
 % optimize the initial V0 before starting bilinear alternations).
@@ -24,6 +26,11 @@ function V = regionOfAttraction(sys,x0,V0,options)
 % @option converged_tol The convergence tolerance in the iterative methods
 % (e.g. bilinear).  The algorithm terminates if the estimated volume
 % changes by less than this percentage.
+% @option optimize Set to false to simply check whether V0 is an ROA.
+% @default true
+%
+% @options numSamples Number of samples to use (on every iteration)q if method is set to
+% 'sampling'.  @default 10^(dim(x)+2)
 % 
 
 if (nargin<4) options=struct(); end
@@ -40,6 +47,9 @@ if (~isfield(options,'optimize')) options.optimize=true; end
 if (~isCT(sys)) error('only handle CT case so far'); end
 if (~isTI(sys)) error('only for TI systems so far'); end
 
+if (sys.num_xcon>0) error('state constraints not implemented yet'); end
+if (~isempty(sys.p_mass_matrix)) error('rational dynamics not supported yet'); end
+
 num_x = sys.getNumStates();
 num_u = sys.getNumInputs();
 if (nargin<2 || isempty(x0))
@@ -49,7 +59,9 @@ else
   sizecheck(x0,[num_x,1]);
 end
 
-% check fixed point
+if (~isfield(options,'numSamples')) options.numSamples = 10^(num_x+1); end 
+
+% todo: check that (x0,u0) is a fixed point
 
 x = sys.p_x;
 % f is time-invariant zero-input dynamics relative to x0
@@ -93,6 +105,8 @@ for i=1:length(options.method)
       V = levelSetMethodYalmip(x,V,f,options);
     case 'binary'
       V = rhoLineSearch(x,V,f,options);
+    case 'sampling'
+      V = sampling(x,V,f,options);
     otherwise
       error(['don''t know method: ', options.method]);
   end
@@ -412,6 +426,85 @@ function [slack,info] = checkRho(rho, x,V,Vdot,prog,L)
     error('problem looks infeasible.  try increasing the order of the lagrange multipliers');
   end
   slack = doubleSafe(prog(slack));
+end
+
+
+function V = sampling(x,V,f,options)
+%  No SOS here.  Just use lots and lots of samples to try to estimate level
+%  set of V candidate.
+  if (deg(V,x)>2) error('only checks quadratics'); end
+
+  [T,V,f] = balance(x,V,f);
+
+  %% compute Vdot
+  Vdot = diff(V,x)*f;
+
+  %% bracket the solution
+  rhomin=0; rhomax=1;
+  while ( samplingCheckRho(rhomax, x,V,Vdot,options) <= 0 )
+    rhomin = rhomax;
+    rhomax = 1.2*rhomax;
+  end
+  if (rhomin==0)  % need to find a non-zero rhomin
+    rhomin = rhomax/2;
+    while (samplingCheckRho(rhomin, x,V,Vdot,options) > 0)
+      rhomax = rhomin;
+      rhomin = rhomin/2;
+    end
+  end
+  
+  %% now do binary search (mark's version might be better here)
+  rho=-1;
+  while (rho<0)
+    try
+      rho = fzero(@(rho) samplingCheckRho(rho, x,V,Vdot,options),[rhomin rhomax]);
+    catch ex
+      if (strcmp(ex.identifier,'MATLAB:fzero:ValuesAtEndPtsSameSign'))
+        rho=-1;  % fzero could fail due to randomness in the sampling evaluation.  keep looping until it succeeds.
+      else
+        throw(ex)
+      end
+    end
+  end
+  
+  rho
+  V = V/rho;
+
+  %% undo balancing
+  V = subss(V,x,inv(T)*x);
+end
+
+function m = samplingCheckRho(rho,x,V,Vdot,options)
+  % to be consistent with the code above, return max 
+  % value of m such that Vdot(x)<-m*V(x).  
+  % (m is like the slack variable)
+  % if m < 0, then the rho level set is not an ROA
+  if (deg(V,x)>2) error('only checks quadratics'); end
+  
+  % First find a random sample inside the rho ellipse
+  %  xs'*H*xs = rho
+  % with xs = (H/rho)^{-.5}*xrand
+  % where xrand is a random vector of length between 0 and 1
+  
+  rho
+%  h=plotFunnel(V/rho,zeros(size(x)));
+  
+  n=length(x);
+  K=options.numSamples;
+  xs = randn(n,K);
+  xs = (xs./repmat(sqrt(sum(xs.^2,1)),n,1)).*repmat(rand(1,K),n,1);
+
+  H = doubleSafe(0.5*diff(diff(V,x)',x));
+  xs = (H/rho)^(-1/2)*xs;
+
+%  h=[h;plot(xs(1,:),xs(2,:),'.')];
+
+  ms = double(msubs(Vdot,x,xs));
+%  ms = -double(msubs(Vdot,x,xs))./double(msubs(V,x,xs));
+  m=max(ms);
+
+%  drawnow;
+%  delete(h);
 end
 
 function y=doubleSafe(x)
