@@ -79,7 +79,7 @@ classdef HybridTrajectory < Trajectory
     
     
     function h=fnplt(obj,plotdims)
-      if (nargin<2) plotdims=[1,2]; end
+      if (nargin<2) plotdims=[]; end
       h=[]; 
       ho=ishold;
       for i=1:length(obj.traj)
