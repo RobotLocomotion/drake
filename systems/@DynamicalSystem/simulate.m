@@ -43,11 +43,16 @@ end
 
   function traj = makeSubTrajectory(t,y)
     if (length(t)<2) keyboard; end
+    
+    ts = getSampleTime(obj);
+    dt_idx=[];
+    for i=1:size(ts,2)
+      if (ts(1,i)>0) % then this is a DT sample time.  try to find outputs that update only on this sample time
+        tidx = floor((t-ts(2,i))/ts(1,i)); 
+%        yvar = 
+      end
+    end
     traj = PPTrajectory(spline(t,y));
-    % todo: check for discrete outputs, and handle them by making a zoh
-    % for discrete and cubic for continuous, then returning a
-    % MixedTrajectory object.  Or just manually set the pp values for
-    % higher orders to zero for the dt variables.
   end
 
 if (nargout>0)

@@ -10,8 +10,8 @@ classdef SimpleDTExample < RobotLibSystem
          false, ... % because the output does not depend on u
          true);  % because the update and output do not depend on t
     end
-    function xn = update(obj,t,x,u)
-      xn = x^3;
+    function xnext = update(obj,t,x,u)
+      xnext = x^3;
     end
     function y=output(obj,t,x,u)
       y=x;

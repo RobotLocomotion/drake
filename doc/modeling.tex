@@ -65,12 +65,31 @@ Consider the system \begin{gather*}x[n+1] = x^3[n],\\ y[n] = x[n].\end{gather*} 
 
 \subsubsection{Mixed Discrete and Continous Dynamics}
 
-It is also possible to implement systems that have both continuous dynamics and discrete dynamics.   There are two subtleties that must be addressed.  First, we'll denote the discrete states as $x_d$ and the continuous states as $x_c$, and the entire state vector $x = [x_d^T, x_c^T]^T$.   Second, we must define the timing of the discrete dynamics update relative to the continuous time variable $t$; we'll denote this period with $dt$.  Then a mixed system can be written as:\begin{gather*} \dot{x}_c = f_c(t,x,u),\\ x_d(t+dt) = f_d(t,x,u),\\ y=g(t,x,u). \end{gather*}
-To implement this, derive from RobotLibSystem and implement the \mcode{dynamics}, \mcode{update}, \mcode{output} methods for $f_c()$, $f_d()$, and $g()$, respectively.  To define the timing, you must also implement the \mcode{getSampleTime} method.  Type \mcode{help RobotLibSystem/getSampleTime} at the \matlab prompt for more information.  
+It is also possible to implement systems that have both continuous
+dynamics and discrete dynamics.  There are two subtleties that must be
+addressed.  First, we'll denote the discrete states as $x_d$ and the
+continuous states as $x_c$, and the entire state vector $x = [x_d^T,
+x_c^T]^T$.  Second, we must define the timing of the discrete dynamics
+update relative to the continuous time variable $t$; we'll denote this
+period with $\Delta_t$.  Then a mixed system can be written
+as:\begin{gather*} \dot{x}_c = f_c(t,x,u),\\ x_d(t+t') = f_d(t,x,u),
+  \quad \forall t \in \{0,\Delta_t,2\Delta_t,...\},\forall t' \in
+  (0,\Delta_t] \\ y=g(t,x,u). \end{gather*} Note that, unlike the
+purley discrete time example, the solution of the discrete time variable is defined
+for all $t$.  To implement this, derive from RobotLibSystem and
+implement the \mcode{dynamics}, \mcode{update}, \mcode{output} methods
+for $f_c()$, $f_d()$, and $g()$, respectively.  To define the timing,
+you must also implement the \mcode{getSampleTime} method.  Type
+\mcode{help RobotLibSystem/getSampleTime} at the \matlab prompt for
+more information.
 
-\todo{implement a simple example here}
-%\begin{example}[A mixed discrete- and continuous-time example]
-%\end{example}
+\begin{example}[A mixed discrete- and continuous-time example]
+Consider the system \begin{gather*}x_1(t+t') = x_1^3(t), \quad \forall
+  t \in \{0,1,2,..\}, \forall t' \in (0,1], \\\dot{x}_2 =
+  -x_2(t) + x_2^3(t), \end{gather*} which is the combination of the
+previous two examples into a single system.  It can be implemented in \robotlib using the following code:
+\lstinputlisting{../examples/SimpleMixedCTDTExample.m}
+\end{example}
 
 \subsubsection{Systems w/ Constraints}
 

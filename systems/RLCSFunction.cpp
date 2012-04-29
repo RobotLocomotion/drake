@@ -9,6 +9,7 @@
 #define IC_IDX 0
 #define IS_HYBRID_IDX 1
 #define IS_STOCHASTIC_IDX 2 
+#define DT_SAMPLE_TIME_IDX 3
 
 bool isa(const mxArray* mxa, const char* class_str)
 // mxIsClass seems to not be able to handle derived classes. so i'll implement what I need by calling back to matlab
@@ -118,7 +119,7 @@ static void mdlInitializeSizes(SimStruct *S)
   }
 
   ssSetNumRWork(S, 0);
-  ssSetNumIWork(S, 3);  // see #define for indices at top
+  ssSetNumIWork(S, 4);  // see #define for indices at top
   ssSetNumPWork(S, 0);
   
   ssSetSimStateCompliance(S, USE_DEFAULT_SIM_STATE);
@@ -133,8 +134,8 @@ static void mdlInitializeSampleTimes(SimStruct *S)
   if (mexCallMATLAB(1,plhs,1,&psys,"getSampleTime")) return;
   double* pts = mxGetPr(plhs[0]);
   for (int i=0; i<ssGetNumSampleTimes(S); i++) {
-    ssSetSampleTime(S, 0, *pts++);
-    ssSetOffsetTime(S, 0, *pts++);
+    ssSetSampleTime(S, i, *pts++);
+    ssSetOffsetTime(S, i, *pts++);
   }
 }
 
@@ -181,6 +182,18 @@ static void mdlInitializeConditions(SimStruct *S)
   } else {
     ssSetIWorkValue(S, IS_STOCHASTIC_IDX, 0);
   }
+
+  // setup work vector with sample time information
+  // note: wanted to do this in initializeSampleTimes, but you're not allowed to touch work vectors there
+  ssSetIWorkValue(S, DT_SAMPLE_TIME_IDX, -1);
+  for (int i=0; i<ssGetNumSampleTimes(S); i++) {
+    if (ssGetSampleTime(S, i)>0) {
+      if (ssGetIWorkValue(S,DT_SAMPLE_TIME_IDX)>=0)
+        ssSetErrorStatus(S, "RobotLibSystems may only have one discrete sample time (for now)");
+      ssSetIWorkValue(S, DT_SAMPLE_TIME_IDX, i);
+    }
+  }
+
 }
 #endif /* MDL_INITIALIZE_CONDITIONS */
 
@@ -432,6 +445,10 @@ static void mdlDerivatives(SimStruct *S)
 #if defined(MDL_UPDATE)
 static void mdlUpdate(SimStruct *S, int_T tid)
 {
+  int sample_time_idx = ssGetIWorkValue(S,DT_SAMPLE_TIME_IDX);
+  if (sample_time_idx<0 || !ssIsSampleHit(S,sample_time_idx,tid))
+    return;
+  
   int num_xd = ssGetNumDiscStates(S);
   if (num_xd<1) return;
   int num_xc = ssGetNumContStates(S);

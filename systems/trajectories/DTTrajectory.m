@@ -19,7 +19,7 @@ classdef DTTrajectory < Trajectory
     end
     function y = eval(obj,t)  
       ind = find(obj.ts==t);  % only return on exact matches.  For interpolation, you should be using zoh or foh to make PPTrajectories
-      y = xs(:,ind);
+      y = obj.xs(:,ind);
     end
     
     function t = getBreaks(obj)
