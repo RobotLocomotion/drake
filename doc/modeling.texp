@@ -224,19 +224,95 @@ then the new system is a DynamicalSystem, but not a PolynomialSystem.
 
 \section{Simulation}
 
-The simulate command.
+Once you have acquired a DynamicalSystem object describing the
+dynamics of interest, the most basic thing that you can do is to
+simulate it.  This is accomplished with the \mcode{simulate} method in
+the DynamicalSystem class, which takes the timespan of the simulation
+as a 1x2 vector of the form \mcode{[t0 tf]} and optionally a vector
+initial condition as input.  Type \mcode{help
+  DynamicalSystem/simulate} for further documentation about simulation
+options.  
 
-Simulation options.  
+Every \mcode{simulate} method outputs a instance of the
+\mcode{Trajectory} class.  To inspect
+the output, you may want to evaluate the trajectory at any snapshot in time
+using \mcode{eval}, plot the output using \mcode{fnplt}, or hand the
+trajectory to a visualizer (described in Section~\ref{s:visualizer}).  
 
-The realtime block.
+\begin{example}
+Use the following code to instantiate the \mcode{SimpleCTExample},
+simulate it, and plot the results:
+\begin{lstlisting}
+>> sys = SimpleCTExample;
+>> traj = simulate(sys, [0 5], .99);
+>> fnplt(traj);
+\end{lstlisting}
+The arguments passed to \mcode{simulate} set the initial time to $t_0=0$,
+final time to $t_f=5$, and initial condition to $x_0=.99$.  The code looks the same for the \mcode{SimpleDTExample}:
+\begin{lstlisting}
+>> sys = SimpleDTExample;
+>> traj = simulate(sys, [0 5], .99);
+>> fnplt(traj);
+\end{lstlisting}
+These generate the plots in Figure~\ref{f:simulate_examples}
+\begin{figure}[!h]
+\hfill
+\begin{matlabFigure}[width=.45\textwidth]
+load robotlib_config;
+cd([conf.root,'/examples/']);
+sys = SimpleCTExample;
+traj = simulate(sys, [0 5], .99);
+fnplt(traj);
+set(gca,'FontSize',20);
+\end{matlabFigure}
+\hfill
+\begin{matlabFigure}[width=.45\textwidth]
+load robotlib_config;
+cd([conf.root,'/examples/']);
+sys = SimpleDTExample;
+traj = simulate(sys, [0 10], .99);
+fnplt(traj);
+set(gca,'FontSize',20);
+\end{matlabFigure}
+\hfill\
+\caption{Simulation of \mcode{SimpleCTSystem} on the left, and
+  \mcode{SimpleDTSystem} on the right.}
+\label{f:simulate_examples}
+\end{figure}
+\end{example}
 
-Zero crossings.
+The \mcode{simulate} method sets the input, $u$, to the
+system to zero.  In order to simulate with an input tape, you should
+\mcode{cascade} a Trajectory object describing $u(t)$ with the system,
+then simulate.  If you do not specify the initial conditions on your
+call to \mcode{simulate}, then the \mcode{getInitialState()} method is
+called on your DynamicalSystem object.  The default
+\mcode{getInitialState} method sets $x_0 = 0$; you should consider
+overloading this method in your DynamicalSystem class.  In special
+cases, you may need to set initial conditions based on the initial
+time or input - in this case you should overload the method
+\mcode{getInitialStateWInput}.  
 
-setting default initial conditions.
+% todo: consider mentioning the realtime block in here?  Add it as an
+% option to simulate?  probably not unless somebody requests it.
+% (avoid feature creep)
 
-\section{Visualization}
+By default, \robotlib uses the \simulink backend for simulation, and
+makes use of a number of \simulink's advanced features.  For example,
+input limits can cause discontinuities in the derivative of a
+continuous time system, which can potenially lead to inaccuracy and inefficiency
+in simulation with variable-step solvers; \robotlib avoids this by
+registering ``zero-crossings'' for each input saturation which allow
+the solver to handle the derivative discontinuity event explicitly,
+without reducing the step-size to achieve the accuracy tolerance.
+For SmoothRobotLibSystems, you can optionally use the \matlab's \mcode{ode45}
+suite of solvers using the method \mcode{simulateODE}.  
+
+\section{Visualization} \label{s:visualizer}
 
 Playback
+
+Use ball bouncing as an example.  
 
 Cascading.   Use the realtime block.
 
