@@ -244,14 +244,14 @@ Use the following code to instantiate the \mcode{SimpleCTExample},
 simulate it, and plot the results:
 \begin{lstlisting}
 >> sys = SimpleCTExample;
->> traj = simulate(sys, [0 5], .99);
+>> traj = simulate(sys, [0 10], .99);
 >> fnplt(traj);
 \end{lstlisting}
 The arguments passed to \mcode{simulate} set the initial time to $t_0=0$,
 final time to $t_f=5$, and initial condition to $x_0=.99$.  The code looks the same for the \mcode{SimpleDTExample}:
 \begin{lstlisting}
 >> sys = SimpleDTExample;
->> traj = simulate(sys, [0 5], .99);
+>> traj = simulate(sys, [0 10], .99);
 >> fnplt(traj);
 \end{lstlisting}
 These generate the plots in Figure~\ref{f:simulate_examples}
@@ -261,7 +261,7 @@ These generate the plots in Figure~\ref{f:simulate_examples}
 load robotlib_config;
 cd([conf.root,'/examples/']);
 sys = SimpleCTExample;
-traj = simulate(sys, [0 5], .99);
+traj = simulate(sys, [0 10], .99);
 fnplt(traj);
 set(gca,'FontSize',20);
 \end{matlabFigure}
