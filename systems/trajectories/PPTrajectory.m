@@ -12,7 +12,7 @@ classdef PPTrajectory < Trajectory
     end
     function y = eval(obj,t)
       t=max(min(t,obj.tspan(end)),obj.tspan(1));
-      y = ppval(obj.pp,t);
+      y = ppvalSafe(obj.pp,t);  % still benefits from being safe (e.g. for supporting TaylorVar)
     end
 
     function dtraj = fnder(obj)
