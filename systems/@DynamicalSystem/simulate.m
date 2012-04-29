@@ -44,15 +44,33 @@ end
   function traj = makeSubTrajectory(t,y)
     if (length(t)<2) keyboard; end
     
+    %% attempt to identify DT outputs, and avoid interpolating them (badly) as smooth polynomials
     ts = getSampleTime(obj);
-    dt_idx=[];
+    traj={}; idx={}; yidx=1:size(y,1);
     for i=1:size(ts,2)
       if (ts(1,i)>0) % then this is a DT sample time.  try to find outputs that update only on this sample time
-        tidx = floor((t-ts(2,i))/ts(1,i)); 
-%        yvar = 
+        n = ceil((t-ts(2,i))/ts(1,i));  % counts 0 to N
+        nidx=find([1;diff(n)]);
+        ydiff = y(yidx,:)-y(yidx,nidx(n-n(1)+1));
+        dtidx = yidx(all(abs(ydiff)<eps,2));  
+        if (~isempty(dtidx))
+          n=unique(n);
+          tt=(n(2:end)-1)*ts(1,i)+ts(2,i);
+          traj={traj{:}, PPTrajectory(zoh([t(1);tt+eps(tt);t(end)]',[y(dtidx,1),y(dtidx,nidx(2:end)),y(dtidx,end)]))};
+          idx = {idx{:}, dtidx};
+          yidx = setdiff(yidx,dtidx);
+        end
       end
     end
-    traj = PPTrajectory(spline(t,y));
+    
+    if (isempty(traj)) % only CT outputs
+      traj = PPTrajectory(spline(t,y));
+    elseif (~isempty(yidx)) % add the CT outputs and make MixedTrajectory
+      traj = {traj{:},PPTrajectory(spline(t,y(yidx,:)))};
+      idx = {idx{:}, yidx};
+      traj = MixedTrajectory(traj,idx);
+    end
+    
   end
 
 if (nargout>0)

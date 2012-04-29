@@ -8,12 +8,12 @@ try
 
   for i=1:10  % run the test 10 times with random initial conditions
     x0 = 2*rand(2,1)-1;  % unstable for |x|>1
-    xtraj = simulate(sys,[0 5],x0);
-    xtrajdt = simulate(dtsys,[0 5],x0(1));
-    xtrajct = simulate(ctsys,[0 5],x0(2));
+    xtraj = simulate(sys,[0 3],x0);
+    xtrajdt = simulate(dtsys,[0 3],x0(1));
+    xtrajct = simulate(ctsys,[0 3],x0(2));
 
-    xf=eval(xtraj,1);
-    if (any(abs(xf-[eval(xtrajdt,5);eval(xtrajct,5)])>1e-6))
+    xf=eval(xtraj,2);
+    if (any(abs(xf-[eval(xtrajdt,2);eval(xtrajct,2)])>1e-6))
     
       figure(1); clf
       subplot(1,2,1);

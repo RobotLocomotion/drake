@@ -81,7 +81,9 @@ implement the \mcode{dynamics}, \mcode{update}, \mcode{output} methods
 for $f_c()$, $f_d()$, and $g()$, respectively.  To define the timing,
 you must also implement the \mcode{getSampleTime} method.  Type
 \mcode{help RobotLibSystem/getSampleTime} at the \matlab prompt for
-more information.
+more information.  Note that currently \robotlib only supports a
+single DT sample time. % since it there is there is only a single
+                       % update method published by the robotlibsystem class.  
 
 \begin{example}[A mixed discrete- and continuous-time example]
 Consider the system \begin{gather*}x_1(t+t') = x_1^3(t), \quad \forall
