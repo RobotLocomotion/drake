@@ -3,7 +3,7 @@ function traj = simulate(obj,tspan,x0,options)
 %
 % @param tspan a 1x2 vector of the form [t0 tf]
 % @param x0 a vector of length(getNumStates) which contains the initial
-% state
+% state (@default calls getInitialState())
 %
 % @option FixedStep   for fixed-step solver only, generate output at the FixedStep spaced time points
 % @option OutputOption 'RefineOutputTimes' | 'AdditionalOutputTimes' | 'SpecifiedOutputTimes' 
