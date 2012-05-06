@@ -19,7 +19,6 @@ classdef RimlessWheelVisualizer < Visualizer
     end
     
     function draw(obj,t,x)
-      x = x(2:end);  % first variable is the mode, which is always 1.
       l = obj.l;  alpha = obj.alpha; gamma = obj.gamma;
       
       persistent hFig;

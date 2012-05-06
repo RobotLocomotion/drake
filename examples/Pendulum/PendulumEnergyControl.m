@@ -5,7 +5,6 @@ classdef PendulumEnergyControl < HybridRobotLibSystem
       obj = obj.addMode(PendulumEnergyShaping(plant));
       [obj.lqr,obj.V] = PendulumLQR(plant);
       obj = obj.addMode(obj.lqr);
-      obj = obj.setModeOutputFlag(false);
       obj = obj.setAngleFlags([1;0],[],0);
 
 %      in_lqr_roa = inline('obj.wrapInput(x-obj.x0)''*obj.S*obj.wrapInput(x-obj.x0) - obj.rho','obj','t','junk','x');

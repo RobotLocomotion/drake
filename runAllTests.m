@@ -84,32 +84,41 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
 
     close all;
     megaclear
-    
-    attemptsleft=1;
-    if (checkFile(files(i).name,'OKTOFAIL'));
-      attemptsleft=3;
-    end
-    
-    while (attemptsleft)
-      attemptsleft=attemptsleft-1;
-      try
-        if (isClass) feval([testname,'.run']);
-        else feval(testname); end
-        fprintf(1,'%-40s ',testname);
-        fprintf(1,'[PASSED]\n');
-        info.passcount = info.passcount+1;
-        attemptsleft=0;
-      catch
-        fprintf(1,'%-40s ',testname);
-        if (attemptsleft>0)
-          fprintf(1,'[RETRY]\n');
-        else
-          fprintf(1,'[FAILED]\n');
-          info.failcount = info.failcount+1;
-          disp(['Run runAllTests(',num2str(info.passcount),') to continue where you left off']);
-          if (info.bAbortOnFail)
-            cd(info.initialpwd);
-            rethrow(lasterror);
+
+    s=dbstatus;
+    if (any(strcmp('error',{s.cond})))  % when 'dbstop if error' is on, then run without try catch (for debugging) 
+      if (isClass) feval([testname,'.run']);
+      else feval(testname); end
+      fprintf(1,'%-40s ',testname);
+      fprintf(1,'[PASSED]\n');
+      info.passcount = info.passcount+1;
+    else
+      attemptsleft=1;
+      if (checkFile(files(i).name,'OKTOFAIL'));
+        attemptsleft=3;
+      end
+      
+      while (attemptsleft)
+        attemptsleft=attemptsleft-1;
+        try
+          if (isClass) feval([testname,'.run']);
+          else feval(testname); end
+          fprintf(1,'%-40s ',testname);
+          fprintf(1,'[PASSED]\n');
+          info.passcount = info.passcount+1;
+          attemptsleft=0;
+        catch
+          fprintf(1,'%-40s ',testname);
+          if (attemptsleft>0)
+            fprintf(1,'[RETRY]\n');
+          else
+            fprintf(1,'[FAILED]\n');
+            info.failcount = info.failcount+1;
+            disp(['Run runAllTests(',num2str(info.passcount),') to continue where you left off']);
+            if (info.bAbortOnFail)
+              cd(info.initialpwd);
+              rethrow(lasterror);
+            end
           end
         end
       end

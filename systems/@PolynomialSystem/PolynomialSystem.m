@@ -23,7 +23,7 @@ classdef PolynomialSystem < SmoothRobotLibSystem
     function obj = PolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,p_dynamics,p_update,p_output)
       % initialize PolynomialSystem
       %
-      % There are effectively three ways to initialize a poly system
+      % There are effectively four ways to initialize a poly system
       %
       % Method 1:
       %   Call this constructor by handing in the msspoly objects for
@@ -43,7 +43,13 @@ classdef PolynomialSystem < SmoothRobotLibSystem
       %   'pullEmptyPolysFromMethods'.  This seemingly bizarre calling
       %   method is necessary because method 2 does not work if the
       %   dynamics, update, or output methods of your subclass rely on
-      %   being initialized (e.g. in the subclass constructor).  
+      %   being initialized (e.g. in the subclass constructor). 
+      %
+      % Method 4:
+      %   Call this constructor handing in function handles, taking 
+      %   input arguments (t,x,u), in the place of the msspoly objects.  
+      %   The constructor will try to automatically construct the 
+      %   relevant polynomials by calling the function handle methods.
       
       obj = obj@SmoothRobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
 
@@ -61,32 +67,41 @@ classdef PolynomialSystem < SmoothRobotLibSystem
       % these will error if the system is not polynomial (should I catch
       % and rethrow the error with more information?)
       if (nargin>6 && num_xc>0)
-        if ~isempty(p_dynamics)  % support method 3
+        if isempty(p_dynamics)  % support method 3
+        elseif isa(p_dynamics,'function_handle') % support method 4
+          obj.p_dynamics = p_dynamics(obj.p_t,obj.p_x,obj.p_u);
+        else % method 1
           typecheck(p_dynamics,'msspoly');
           if any([p_dynamics.m,p_dynamics.n] ~= [num_xc,1]) error('p_dynamics does not match num_xc'); end
           obj.p_dynamics=p_dynamics;
         end
-      elseif (num_xc>0)
+      elseif (num_xc>0) % method 2
         obj.p_dynamics=obj.dynamics(obj.p_t,obj.p_x,obj.p_u);
       end
       
       if (nargin>7 && num_xd>0)
-        if ~isempty(p_update) % support method 3
+        if isempty(p_update) % support method 3
+        elseif isa(p_update,'function_handle') % method 4
+          obj.p_update = p_update(obj.p_t,obj.p_x,obj.p_u);
+        else % method 1
           typecheck(p_update,'msspoly');
           if any([p_update.m,p_update.n] ~= [num_xd,1]) error('p_update does not match num_xd'); end
           obj.p_update = p_update;
         end
-      elseif (num_xd>0)
+      elseif (num_xd>0) % method 2
         obj.p_update=obj.update(obj.p_t,obj.p_x,obj.p_u);
       end
       
       if (nargin>8 && num_y>0)
-        if ~isempty(p_output) % support method 3
+        if isempty(p_output) % support method 3
+        elseif isa(p_output,'function_handle') % method 4
+          obj.p_output = p_output(obj.p_t,obj.p_x,obj.p_u);
+        else % method 1
           typecheck(p_output,'msspoly');
           if any([p_output.m,p_output.n] ~= [num_y,1]) error('p_output does not match num_y'); end
           obj.p_output=p_output;
         end
-      elseif (num_y>0)
+      elseif (num_y>0) % method 2
         obj.p_output=obj.output(obj.p_t,obj.p_x,obj.p_u);
       end
     end
@@ -162,6 +177,31 @@ classdef PolynomialSystem < SmoothRobotLibSystem
     end
     
     % todo: implement gradients (it's trivial)
+
+    function obj = setNumContStates(obj,num_xc)
+      obj = setNumContStates@SmoothRobotLibSystem(obj,num_xc);
+      if (obj.num_xc+obj.num_xd>0)
+        obj.p_x=msspoly('x',obj.num_xc+obj.num_xd);
+      else
+        obj.p_x = [];
+      end
+    end
+    function obj = setNumDiscStates(obj,num_xd)
+      obj = setNumDiscStates@SmoothRobotLibSystem(obj,num_xd);
+      if (obj.num_xc+obj.num_xd>0)
+        obj.p_x=msspoly('x',obj.num_xc+obj.num_xd);
+      else
+        obj.p_x = [];
+      end
+    end
+    function obj = setNumInputs(obj,num_u)
+      obj = setNumInputs@SmoothRobotLibSystem(obj,num_u);
+      if (obj.num_u>0)
+        obj.p_u=msspoly('u',obj.num_u);
+      else
+        obj.p_u = [];
+      end
+    end      
   end
   
   methods  % for constructing and manipulating polynomial systems
