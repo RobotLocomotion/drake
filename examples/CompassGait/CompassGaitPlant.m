@@ -23,6 +23,8 @@ classdef CompassGaitPlant < HybridRobotLibSystem
       %      obj.ode_options = odeset('InitialStep',1e-3, 'Refine',1,'MaxStep',0.02);
       obj = setSimulinkParam(obj,'InitialStep','1e-3','MaxStep','0.05');
       obj = setInputLimits(obj,-50,50);
+      
+      obj = setModeOutputFlag(obj,true);
     end
     
     function [g,dg] = footCollisionGuard1(obj,t,x,u)

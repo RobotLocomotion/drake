@@ -8,7 +8,7 @@ end
 
 
 methods
-  function obj = FunctionHandleSystem(num_xc,num_xd,num_u,num_y,hDynamics,hUpdate,hOutput,direct_feedthrough_flag,time_invariant_flag)
+  function obj = FunctionHandleSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,hDynamics,hUpdate,hOutput)
     obj = obj@SmoothRobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
     obj.hDynamics = hDynamics;
     obj.hUpdate = hUpdate;
@@ -24,7 +24,7 @@ methods
   end
   
   function y = output(obj,t,x,u)
-    y = feval(obj.Output,t,x,u);
+    y = feval(obj.hOutput,t,x,u);
   end
 end
 

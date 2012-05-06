@@ -4,12 +4,17 @@ classdef HybridRobotLibSystem < RobotLibSystem
   %  must be CT only 
   
   properties (SetAccess=private)
-    modes={};       % cell array of systems representing each state (or mode)
+    % modes:
+    modes={};       % cell array of systems representing each state (or mode) 
+    mode_names={};
+    
     % transitions:
     target_mode={}; % target_mode{i}(j) describes the target for the jth transition out of the ith mode    
     guard={};       % guard{i}{j} is for the jth transition from the ith mode
     transition={};      % transition{i}{j} is for the jth transition from the ith mode
-    output_mode = true;
+
+    output_mode = false;
+    sample_time = [-1;0];
   end
   
   % construction
@@ -24,8 +29,10 @@ classdef HybridRobotLibSystem < RobotLibSystem
       if (obj.output_mode) obj=setNumOutputs(obj,getNumOutputs(obj)+1); end
     end
     
-    function [obj,mode_num] = addMode(obj,mode_sys)
-      typecheck(mode_sys,'SmoothRobotLibSystem');
+    function [obj,mode_num] = addMode(obj,mode_sys,name)
+      typecheck(mode_sys,'RobotLibSystem');
+      if isa(mode_sys,'HybridRobotLibSystem') error('hybrid modes are not supported (yet)'); end
+      if isa(mode_sys,'StochasticRobotLibSystem') error('stochastic modes are not supported (yet)'); end
       if (getNumStates(mode_sys)>0 && ~(mode_sys.isCT() || mode_sys.isInheritedTime())) error('only CT or inherited sample time modes are allowed for now'); end
       obj.modes = {obj.modes{:},mode_sys};
       mode_num = length(obj.modes);
@@ -40,11 +47,42 @@ classdef HybridRobotLibSystem < RobotLibSystem
       else
         obj = setNumOutputs(obj,max(getNumOutputs(obj),getNumOutputs(mode_sys)));
       end
-      if (mode_sys.getNumZeroCrossings()>0)
+      if (getNumZeroCrossings(mode_sys)>0)
         error('i don''t handle this case yet, but it would be pretty simple.');
       end
+      if (getNumStateConstraints(mode_sys)>0)
+        error('i don''t handle this case yet, but it would be pretty simple.');
+      end
+      
+      function ts = mergeSampleTimes(ts1,ts2)
+        ts = unique([ts1,ts2]','rows')';
+
+        % only a few possibilities are allowed/supported
+        %   inherited, single continuous, single discrete, single continuous+single
+        %   discrete
+        if size(ts,2)>1  % if only one ts, then all is well
+          if any(ts(1,:)==-1)  % zap superfluous inherited 
+            ts=ts(:,find(ts(1,:)~=-1));
+          end
+          if sum(ts(1,:)==0)>1 % then multiple continuous
+            error('cannot build a hybrid system using modes that have both ''continuous time'' and ''continuous time, fixed in minor offset'' sample times');
+          end
+          if sum(ts(1,:)>0)>1 % then multiple discrete
+            error('cannot build a hybrid system using modes that have different discrete sample times');
+          end
+        end
+      end
+      
+      obj.sample_time = mergeSampleTimes(obj.sample_time,getSampleTime(mode_sys));
       obj = setDirectFeedthrough(obj,isDirectFeedthrough(obj) || isDirectFeedthrough(mode_sys));
       obj = setTIFlag(obj,isTI(obj) && isTI(mode_sys));
+      
+      if (nargin>2)
+        typecheck(name,'char');
+        obj.mode_names{mode_num}=name;
+      else
+        obj.mode_names{mode_num}=int2str(mode_num);
+      end
     end
     
     function obj = addTransition(obj,from_mode_num,guard,transition,directFeedthrough,timeInvariant,to_mode_num)
@@ -114,6 +152,16 @@ classdef HybridRobotLibSystem < RobotLibSystem
       end
     end
     
+    function drawModeGraph(obj)
+      % depends on having graphviz2mat installed (from matlabcentral)
+      % todo: make that a dependency in configure?
+      
+      A = zeros(length(obj.modes));
+      for i=1:length(obj.modes)
+        A(i,obj.target_mode{i}) = 1;
+      end
+      graph_draw(A,'node_labels',obj.mode_names);
+    end
   end
 
   % access methods
@@ -138,21 +186,22 @@ classdef HybridRobotLibSystem < RobotLibSystem
     end
 
     function x0 = getInitialStateWInput(obj,t,x,u);
-      m = x(1); 
-      xm = x(1+(1:getNumStates(obj.modes{m})));
+      m = x(1); nX = getNumStates(obj.modes{m});
+      if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
       x0=[x(1); getInitialStateWInput(obj.modes{m},t,xm,u)];
       % pad if necessary:
       x0 = [x0;repmat(0,getNumStates(obj)-length(x0),1)];
     end
     
     function ts = getSampleTime(obj)  
-      ts = [0;0];  % continuous
+      ts = obj.sample_time;
     end
     
     function [xcdot,df] = dynamics(obj,t,x,u)
       m = x(1); 
       if (getNumContStates(obj.modes{m}))
-        xm = x(1+(1:getNumStates(obj.modes{m})));
+        nX = getNumStates(obj.modes{m});
+        if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
         xcdot = dynamics(obj.modes{m},t,xm,u);
       else
         xcdot=[];
@@ -164,7 +213,8 @@ classdef HybridRobotLibSystem < RobotLibSystem
     function xdn = update(obj,t,x,u)
       m = x(1); 
       if (getNumDiscStates(obj.modes{m}))
-        xm = x(1+(1:getNumStates(obj.modes{m})));
+        nX = getNumStates(obj.modes{m});
+        if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
         xdn = update(obj.modes{m},t,xm,u);
       else
         xdn=[];
@@ -174,8 +224,8 @@ classdef HybridRobotLibSystem < RobotLibSystem
     end
     
     function y = output(obj,t,x,u)
-      m = x(1);
-      xm = x(1+(1:getNumStates(obj.modes{m})));
+      m = x(1); nX = getNumStates(obj.modes{m});
+      if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
       y = output(obj.modes{m},t,xm,u);
       if (obj.output_mode) y = [m;y]; end
       % pad if necessary:
@@ -183,8 +233,8 @@ classdef HybridRobotLibSystem < RobotLibSystem
     end
     
     function zcs = zeroCrossings(obj,t,x,u)
-      m = x(1);
-      xm = x(1+(1:getNumStates(obj.modes{m})));
+      m = x(1); nX = getNumStates(obj.modes{m});
+      if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
       zcs=ones(getNumZeroCrossings(obj),1);
       n=length(obj.guard{m});
       for i=1:n
@@ -196,17 +246,22 @@ classdef HybridRobotLibSystem < RobotLibSystem
       status = 0;
       m = x(1);
       zcs = zeroCrossings(obj,t,x,u);
+%      disp(obj.mode_names{m}); zcs 
       active_id = find(zcs<0);
       if (isempty(active_id)) % no transition (return the original state)
         xn = x;
         return;
       end
       if (length(active_id)>1) error('multiple guards tripped at the same time.  behavior is undefined.  consider reducing the step size'); end
-      xm = x(1+(1:getNumStates(obj.modes{m})));
+      nX = getNumStates(obj.modes{m});
+      if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
       [mode_xn,to_mode_num,status] = obj.transition{m}{active_id}(obj,m,t,xm,u);
       if (obj.target_mode{m}(active_id)>0 && obj.target_mode{m}(active_id)~=to_mode_num)
         error('transition to_mode_num differs from specified target mode'); 
       end
+      
+%      disp(obj.mode_names{to_mode_num});
+      
 %      to_mode_num
       xn = [to_mode_num;mode_xn];
       % pad if necessary:
@@ -215,9 +270,9 @@ classdef HybridRobotLibSystem < RobotLibSystem
       if (any(zeroCrossings(obj,t,xn,u)<0)),
         zcs2=zeroCrossings(obj,t,xn,u);
         active_id2 = find(zcs2<0);
-        disp(obj);
-        fprintf('transitioned from mode %d to mode %d, and immediately triggered mode %d''s guard number %d\n',m,to_mode_num,to_mode_num,active_id2);
-        keyboard; 
+%        disp(obj);
+        warning('RobotLib:HybridRobotLibSystem:SuccessiveZeroCrossings','Transitioned from mode %s to mode %s, and immediately triggered guard number %d\n',obj.mode_names{m},obj.mode_names{to_mode_num},active_id2);
+%        keyboard; 
       end % useful for debugging successive zcs.
       end
     end

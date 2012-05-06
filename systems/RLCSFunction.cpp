@@ -25,6 +25,30 @@ bool isa(const mxArray* mxa, const char* class_str)
   return tf;
 }
 
+bool mexCallMATLABsafe(SimStruct* S, int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], const char* filename)
+{
+  int i;
+  mxArray* ex = mexCallMATLABWithTrap(nlhs,plhs,nrhs,prhs,filename);
+  if (ex) {
+    mexPrintf("RobotLibSystem S-Function: error when calling ''%s'' with the following arguments:\n",filename);
+    for (i=0; i<nrhs; i++)
+      mexCallMATLAB(0,NULL,1,&prhs[i],"disp");
+    mexPrintf("\n");
+    ssSetErrorStatus(S,"RobotLibSystem S-Function: error in MATLAB callback. See debugging information above");
+    return true;
+  }
+  for (i=0; i<nlhs; i++)
+    if (!plhs[i]) {
+      mexPrintf("RobotLibSystem S-Function: error when calling ''%s'' with the following arguments:\n", filename);
+      for (i=0; i<nrhs; i++)
+        mexCallMATLAB(0,NULL,1,&prhs[i],"disp");
+      mexPrintf("Asked for %d outputs, but function only returned %d\n",nrhs,i);
+      ssSetErrorStatus(S,"RobotLibSystem S-Function: not enough outputs");
+      return true;
+    }
+  return false;
+}
+
 #define MDL_CHECK_PARAMETERS  
 #if defined(MDL_CHECK_PARAMETERS) && defined(MATLAB_MEX_FILE)
 static void mdlCheckParameters(SimStruct *S)
@@ -53,21 +77,21 @@ static void mdlInitializeSizes(SimStruct *S)
   mxArray *psys = const_cast<mxArray*>(ssGetSFcnParam(S, 0));
   mxArray* plhs[1];
 
-  if (mexCallMATLAB(1,plhs,1,&psys,"getNumContStates")) return;
+  if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getNumContStates")) return;
   ssSetNumContStates(S, (int)mxGetScalar(plhs[0]));
   mxDestroyArray(plhs[0]);
   
-  if (mexCallMATLAB(1,plhs,1,&psys,"getNumDiscStates")) return;
+  if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getNumDiscStates")) return;
   ssSetNumDiscStates(S, (int)mxGetScalar(plhs[0]));
   mxDestroyArray(plhs[0]);
   
-  if (mexCallMATLAB(1,plhs,1,&psys,"getNumInputs")) return;
+  if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getNumInputs")) return;
   int num_u = (int)mxGetScalar(plhs[0]);
   mxDestroyArray(plhs[0]);
 
   int num_w=0;
   if (isa(psys,"StochasticRobotLibSystem")) {
-    if (mexCallMATLAB(1,plhs,1,&psys,"getNumDisturbances")) return;
+    if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getNumDisturbances")) return;
     num_w = mxGetScalar(plhs[0]);
     mxDestroyArray(plhs[0]);
   }
@@ -78,7 +102,7 @@ static void mdlInitializeSizes(SimStruct *S)
     ssSetInputPortWidth(S,0,num_u);
 
     // note: can actually be directfeedthrough even if num_y == 0 (e.g., for the visualizer)
-    if (mexCallMATLAB(1,plhs,1,&psys,"isDirectFeedthrough")) return;
+    if (mexCallMATLABsafe(S,1,plhs,1,&psys,"isDirectFeedthrough")) return;
     ssSetInputPortDirectFeedThrough(S, 0, (int)mxGetScalar(plhs[0]));
     mxDestroyArray(plhs[0]);
 
@@ -92,7 +116,7 @@ static void mdlInitializeSizes(SimStruct *S)
     ssSetInputPortRequiredContiguous(S,portnum,1);
   }
   
-  if (mexCallMATLAB(1,plhs,1,&psys,"getNumOutputs")) return;
+  if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getNumOutputs")) return;
   int num_y = (int)mxGetScalar(plhs[0]);
   mxDestroyArray(plhs[0]);
   
@@ -103,11 +127,11 @@ static void mdlInitializeSizes(SimStruct *S)
     if (!ssSetNumOutputPorts(S, 0)) return;
   }
 
-  if (mexCallMATLAB(1,plhs,1,&psys,"getSampleTime")) return;
+  if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getSampleTime")) return;
   ssSetNumSampleTimes(S, mxGetN(plhs[0]));
   mxDestroyArray(plhs[0]);
 
-  if (mexCallMATLAB(1, plhs, 1, &psys, "getNumZeroCrossings")) return;
+  if (mexCallMATLABsafe(S,1, plhs, 1, &psys, "getNumZeroCrossings")) return;
   ssSetNumNonsampledZCs(S, (int)mxGetScalar(plhs[0]));
   mxDestroyArray(plhs[0]);
 
@@ -131,7 +155,7 @@ static void mdlInitializeSampleTimes(SimStruct *S)
 {
   mxArray *psys = const_cast<mxArray*>(ssGetSFcnParam(S, 0));
   mxArray* plhs[1];
-  if (mexCallMATLAB(1,plhs,1,&psys,"getSampleTime")) return;
+  if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getSampleTime")) return;
   double* pts = mxGetPr(plhs[0]);
   for (int i=0; i<ssGetNumSampleTimes(S); i++) {
     ssSetSampleTime(S, i, *pts++);
@@ -175,7 +199,7 @@ static void mdlInitializeConditions(SimStruct *S)
   mxDestroyArray(plhs[0]);
   
   if (isa(psys,"StochasticRobotLibSystem")) {
-    if (mexCallMATLAB(1,plhs,1,&psys,"getNumDisturbances")) return;
+    if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getNumDisturbances")) return;
     int num_w = mxGetScalar(plhs[0]);
     mxDestroyArray(plhs[0]);
     ssSetIWorkValue(S, IS_STOCHASTIC_IDX, num_w);
@@ -246,7 +270,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   }
   
   prhs[3] = mxCreateDoubleMatrix(num_u, 1, mxREAL);  // u
-  if (mexCallMATLAB(1, plhs, 1, &psys, "isDirectFeedthrough")) return;
+  if (mexCallMATLABsafe(S,1, plhs, 1, &psys, "isDirectFeedthrough")) return;
   if (num_u>0 && (int)mxGetScalar(plhs[0])) { // not allowed to reference the input port signal unless it's feedthrough
     u = ssGetInputPortRealSignal(S,0);
     memcpy(mxGetPr(prhs[3]), u, sizeof(real_T)*num_u);
@@ -257,10 +281,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   if (num_w>0) memcpy(mxGetPr(prhs[4]), w, sizeof(real_T)*num_w);
   
   if (ssGetIWorkValue(S, IC_IDX) == 1) {
-    if (mexCallMATLAB(1,plhs,4,prhs,"getInitialStateWInput")) {
-      ssSetErrorStatus(S,"error in getInitialStateWInput");
-      return;
-    }
+    if (mexCallMATLABsafe(S,1,plhs,4,prhs,"getInitialStateWInput")) return;
     real_T* px0 = mxGetPr(plhs[0]); // copy over to the state input used for the rest of this function
     memcpy(px,px0,sizeof(real_T)*((fsm?1:0)+num_xd+num_xc));
     // update the actual state vectors:
@@ -281,10 +302,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   
   if (fsm && ssIsMajorTimeStep(S)) {
     // then check for zero-crossing events and apply and discontinuous changes 
-    if (mexCallMATLAB(2, plhs, 4, prhs, "transitionUpdate")) {
-      ssSetErrorStatus(S,"error in transitionUpdate");
-      return;
-    }
+    if (mexCallMATLABsafe(S, 2, plhs, 4, prhs, "transitionUpdate")) return;
     real_T *pxn = mxGetPr(plhs[0]);
     memcpy(px,pxn,sizeof(real_T)*(1+num_xd+num_xc));  // copy over to the state input used for the rest of this function
     // update the actual state vectors:
@@ -305,10 +323,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
     mxDestroyArray(plhs[1]);
   }
 
-  if (mexCallMATLAB(1, plhs, sds?5:4, prhs, sds?"stochasticOutput":"output")) { // call it even if there are no outputs (e.g., for visualizers)
-    ssSetErrorStatus(S,"error in output");
-    return;  
-  }
+  if (mexCallMATLABsafe(S, 1, plhs, sds?5:4, prhs, sds?"stochasticOutput":"output")) return; // call it even if there are no outputs (e.g., for visualizers)
   if (num_y>0) {
     memcpy(y, mxGetPr(plhs[0]), sizeof(real_T)*num_y);
     mxDestroyArray(plhs[0]);
@@ -336,7 +351,8 @@ static void mdlZeroCrossings(SimStruct *S)
   real_T *xc = num_xc>0 ? ssGetContStates(S) : NULL;
   real_T *xd = num_xd>0 ? ssGetDiscStates(S) : NULL;
   const real_T *u = num_u>0 ? ssGetInputPortRealSignal(S,0) : NULL;
-  int_T *mode = ssGetModeVector(S);
+  bool fsm = ssGetIWorkValue(S,IS_HYBRID_IDX);
+  int_T *mode = (fsm ? ssGetModeVector(S) : NULL);
   real_T *zcs = ssGetNonsampledZCs(S);  
 
   mxArray* plhs[1];
@@ -344,14 +360,15 @@ static void mdlZeroCrossings(SimStruct *S)
   prhs[0] = psys;                                  // obj
   prhs[1] = mxCreateDoubleScalar(t);               // t
 
-  prhs[2] = mxCreateDoubleMatrix(1+num_xd+num_xc,1,mxREAL); // x
+  prhs[2] = mxCreateDoubleMatrix((fsm?1:0)+num_xd+num_xc,1,mxREAL); // x
   real_T* px = mxGetPr(prhs[2]);
   real_T* pxtmp=px;
 
-  // i know it's an fsm
-  pxtmp[0] = (real_T) mode[0];
-  pxtmp++;
-  
+  if (fsm) {
+    pxtmp[0] = (real_T) mode[0];
+    pxtmp++;
+  }
+
   if (num_xd) {
     memcpy(pxtmp,xd,sizeof(real_T)*num_xd);
     pxtmp+=num_xd;
@@ -363,10 +380,7 @@ static void mdlZeroCrossings(SimStruct *S)
   prhs[3] = mxCreateDoubleMatrix(num_u, 1, mxREAL);  // u
   if (num_u>0) memcpy(mxGetPr(prhs[3]), u, sizeof(real_T)*num_u);
 
-  if (mexCallMATLAB(1,plhs,4,prhs,"zeroCrossings")) {
-    ssSetErrorStatus(S,"error in zeroCrossings");
-    return;
-  }
+  if (mexCallMATLABsafe(S,1,plhs,4,prhs,"zeroCrossings")) return;
   memcpy(zcs,mxGetPr(plhs[0]),sizeof(real_T)*num_zcs);
   mxDestroyArray(plhs[0]);
 
@@ -426,10 +440,7 @@ static void mdlDerivatives(SimStruct *S)
   prhs[4] = mxCreateDoubleMatrix(num_w, 1, mxREAL); // w
   if (num_w>0) memcpy(mxGetPr(prhs[4]), w, sizeof(real_T)*num_w);
   
-  if (mexCallMATLAB(1,plhs,sds?5:4,prhs,sds?"stochasticDynamics":"dynamics")) {
-   ssSetErrorStatus(S,"error in dynamics");
-   return;
-  }
+  if (mexCallMATLABsafe(S,1,plhs,sds?5:4,prhs,sds?"stochasticDynamics":"dynamics")) return;
   memcpy(xcdot,mxGetPr(plhs[0]),sizeof(real_T)*num_xc);
   mxDestroyArray(plhs[0]);
 
@@ -493,10 +504,7 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   prhs[4] = mxCreateDoubleMatrix(num_w, 1, mxREAL); // w
   if (num_w>0) memcpy(mxGetPr(prhs[4]), w, sizeof(real_T)*num_w);
   
-  if (mexCallMATLAB(1,plhs,sds?5:4,prhs,sds?"stochasticUpdate":"update")) {
-   ssSetErrorStatus(S,"error in update");
-   return;
-  }
+  if (mexCallMATLABsafe(S,1,plhs,sds?5:4,prhs,sds?"stochasticUpdate":"update")) return;
   memcpy(xd,mxGetPr(plhs[0]),sizeof(real_T)*num_xd);
   mxDestroyArray(plhs[0]);
 

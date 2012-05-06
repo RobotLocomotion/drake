@@ -1,9 +1,13 @@
 classdef Visualizer < RobotLibSystem
-% an interface for a draw method. listens on LCM for robot_xhat and displays  
-%  note:  could make this a dynamicalsystem, but it's not right now
+% An interface class which draws (e.g., produces a plot) the output of
+% another dynamical system.  An example might be a set of plotting commands
+% to draw a pendulum given the position of the pendulum.  Visualizers can
+% be cascaded onto the output of a DynamicalSystem so that the
+% visualization occurs at the time of simulation, or can 'playback' the
+% trajectory that is the result of a simulation. 
 
   methods (Abstract=true)
-    draw(obj,t,x); % draw function interface
+    draw(obj,t,y); % draw function interface
   end
 
   methods 
@@ -27,11 +31,13 @@ classdef Visualizer < RobotLibSystem
     end
     
     function ts = getSampleTime(obj)
-      ts = [-1;1];  % inherited sample time, fixed in minor offset
+      if (obj.display_dt>0)
+        ts = [obj.display_dt;0];
+      else
+        ts = [-1;1];  % inherited sample time, fixed in minor offset
+      end
     end
-%    function x0 = getInitialState(obj)
-%      x0 = [];
-%    end
+    
     function status = ode_draw(obj,t,x,flag)
       status=0;
       if (strcmp(flag,'done'))
@@ -210,7 +216,7 @@ classdef Visualizer < RobotLibSystem
   end
   
   properties 
-    display_dt=0 %0.05;  % requested time between display frames (use 0 for drawing as fast as possible)
+    display_dt=0; %0.05;  % requested time between display frames (use 0 for drawing as fast as possible)
     playback_speed=1;  % 1=realtime
     draw_axes=false;  % when making movies true=gcf,false=gca
     display_time=true; % when true, time is written to figure title

@@ -1,6 +1,6 @@
 \tolerance=10000
 \documentclass{book}
-\usepackage{amsmath,times,graphicx,url,verbatim,mcode}
+\usepackage{amsmath,times,graphicx,hyperref,verbatim,mcode}
 \usepackage{tikz}
 \usetikzlibrary{shapes,arrows}
 \tikzstyle{block} = [draw, fill=blue!20, rectangle, 
@@ -8,6 +8,9 @@
 \tikzstyle{sum} = [draw, fill=blue!20, circle, node distance=1cm]
 \tikzstyle{pinstyle} = [pin edge={to-,thin,black}]
 %\pgfsysdriver{pgfsys-tex4ht.def} 
+\pgfdeclarelayer{background}
+\pgfdeclarelayer{foreground}
+\pgfsetlayers{background,main,foreground}
 
 \newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
 \newcommand{\bq}{{\bf q}}
@@ -27,6 +30,7 @@
 \newcommand{\matlab}{MATLAB\xspace}
 \newcommand{\simulink}{Simulink\xspace}
 \newtheorem{example}{Example}
+\newcommand{\doxygen}{https://groups.csail.mit.edu/locomotion/private/robotlibdoc/DoxygenMatlab/html}
 
 \usepackage{xcolor}
 % switch to other comment command to remove all comments.
@@ -81,6 +85,12 @@
 \chapter{External Interfaces}
 
 Controlling real robots. 
+
+\appendix
+
+\include{developers}
+
+
 
 \bibliographystyle{plain}
 \bibliography{local} %,elib

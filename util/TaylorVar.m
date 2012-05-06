@@ -158,6 +158,13 @@ classdef TaylorVar
         tmp=a; a=b; b=tmp;    % switch them (so we have less cases below)
       end
         
+      if (isempty(a)) % handle the empty cases
+        a=b; return;
+      end
+      if (isempty(b))
+        return;
+      end
+      
       if (isa(b,'TaylorVar'))  % both are TaylorVars
         if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
         if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
