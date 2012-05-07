@@ -24,7 +24,7 @@ plotFunnel(Vf,ti.x0); drawnow;
 c = LQRTree(ti,Vf);
 
 disp('construct swingup trajectory');
-[utraj,xtraj]=runDircol(p);
+[utraj,xtraj]=runDircol(p);  % OKTOFAIL
 
 figure(1); 
 fnplt(xtraj); drawnow;
