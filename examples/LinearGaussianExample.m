@@ -2,7 +2,15 @@ classdef LinearGaussianExample < StochasticPolynomialSystem
 
  methods 
    function obj = LinearGaussianExample
-     obj = obj@StochasticPolynomialSystem(1,0,0,1,false,true,1,.01);
+     obj = obj@StochasticPolynomialSystem(...
+	 1, ... % number of continuous states
+	 0, ... % number of discrete states
+	 0, ... % number of inputs
+	 1, ... % number of outputs
+	 false, ...  % not direct feedthrough
+	 true, ...   % time invariant
+	 1, ... % number of noise inputs
+	 .01);  % time constant of w(t) 
    end
    
    function xcdot = stochasticDynamics(obj,t,x,u,w)
