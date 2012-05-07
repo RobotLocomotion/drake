@@ -253,9 +253,9 @@ end
 
 \subsubsection{Important Special Cases} \label{s:system_subclasses}
 
-There are many special cases of smooth systems with structure in the
+There are many special cases of dynamical systems with structure in the
 dynamics which can be exploited by our algorithms.  Special cases of
-smooth dynamical systems implemented in RobotLib include
+dynamical systems implemented in RobotLib include
 \begin{itemize}
 \item Smooth systems.  Any mixture of continuous and discrete time dynamics, where the functions governing the dynamics ($f(), g(),$ ...) are smooth functions.  Smooth functions are functions that are continuous with derivatives that exist everywhere  and are smooth\cite{wiki:Smooth_Function}.   
 \item Piecewise-smooth systems. 
