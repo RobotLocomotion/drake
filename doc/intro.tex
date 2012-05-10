@@ -1,0 +1,20 @@
+\chapter{Introduction and Goals}
+
+
+
+\section{What is \robotlib?}
+
+\subsection{Relative to \simulink and SimMechanics}
+
+Roughly speaking, \matlab's \simunlink provides a very nice interface for describing dynamical systems (as S-Functions), a graphical interface for combining these systems in very nontrivial ways, and a number of powerful solvers for simulating the resulting systems.  For simulation analysis, it provides everything we need.   However the S-Function abstraction which makes \simulink powerful also hides some of the detailed structure available in the equations governing a dynamical system; for the purposes of control design and analysis I would like to be able to declare that a particular system is governed by analytic equations, or polynomial equations, or even linear equations, and for many of the tools it is important to be able to manipulate these equations symbolically.   
+
+You can think of \robotlib as a layer built on top of the \simulink engine which allows you to defined structured dynamical systems.  Every dynamical system in \robotlib can be simulated using the \simulink engine, but \robotlib also provides a number of tools for analysis and controller design which take advantage of the system structure.  While it is possible to use the \simulink GUI with \robotlib, the standard workflow makes use of command-line methods which provide a restricted set of tools for combining systems in ways that, whenever possible, preserve the structure in the equations.  
+
+Like SimMechanics, \robotlib provides a number of tools for working specifically with multi-link rigid body systems.  In SimMechanics, you can describe the system directly in the GUI whereas in \robotlib you describe the system in an XML file.  SimMechanics has a number of nice features, such as integration with SolidWorks, and almost certainly provides more richness and faster code for simulating complex rigid body systems.  \robotlib on the other hand will provide more sophisticated tools for analysis and design, but likely will never support as many gears, friction models, etc. as SimMechanics.  
+
+\subsection{More than just \matlab}
+
+\subsection{As a component in R.O.S.}
+
+\subsection{For controlling real hardware}
+
