@@ -395,7 +395,15 @@ classdef LQRTree < HybridRobotLibSystem
         [tv,sys,xtraj2,utraj2,Vtraj,Vftraj] = tvlqrClosedLoop(p_nolim,xtraj,utraj,Q,R,Vparent);
         if (options.verify)
           psys = taylorApprox(sys,xtraj2,[],3);
-          V=sampledFiniteTimeVerification(psys,Vftraj,Vtraj,xtraj2.getBreaks(),xtraj2,utraj2,options);
+          try 
+            V=sampledFiniteTimeVerification(psys,Vftraj,Vtraj,xtraj2.getBreaks(),xtraj2,utraj2,options);
+          catch ex
+            if (strcmp(ex.identifier,'RobotLib:PolynomialTrajectorySystem:InfeasibleRho'))
+              warning('RobotLib:LQRTree:InfeasibleRho','verification failed due to infeasible rho.  discarding trajectory.');
+              continue;
+            end
+            rethrow(ex);  % otherwise, it's a real error
+          end
           plotFunnel(V,xtraj,options.plotdims); drawnow;
         else
           V=PolynomialTrajectory(@(t) 1e5*Vtraj.eval(t),Vtraj.getBreaks());

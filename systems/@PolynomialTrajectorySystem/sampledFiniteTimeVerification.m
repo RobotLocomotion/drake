@@ -107,7 +107,7 @@ end
 if (max(m)>0)
   figure(4);clf;fnplt(foh(ts,rho')); 
   figure(5);clf;plot(ts(1:end-1),m); drawnow;
-  error('infeasible rho. increase options.rho0tau');
+  error('RobotLib:PolynomialTrajectorySystem:InfeasibleRho','infeasible rho. increase options.rho0tau');
 end
 
 % perform bilinear search the actual verification here
