@@ -6,7 +6,7 @@ classdef StorageFunction
   end
 
   methods
-    V = eval(t,x,u);  
+    V = eval(t,x,u,y);  
   end
   
 end

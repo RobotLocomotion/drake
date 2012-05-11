@@ -5,8 +5,10 @@ classdef CoordinateFrame < handle
 % systems.
   
   properties
-    name
-    transforms={};
+    name;           % string name for this coordinate system
+    dim;            % scalar dimension of this coordinate system
+    transforms={};  % handles to CoordinateTransform objects
+    coordinates={}; % list of coordinate names
   end
   
   methods
