@@ -6,15 +6,19 @@ classdef CoordinateFrame < handle
   
   properties
     name;           % string name for this coordinate system
-    dim;            % scalar dimension of this coordinate system
+%    dim;            % scalar dimension of this coordinate system
     transforms={};  % handles to CoordinateTransform objects
-    coordinates={}; % list of coordinate names
+%    coordinates={}; % list of coordinate names
   end
   
   methods
-    function obj=CoordinateFrame(name)
+    function obj=CoordinateFrame(name,dim)
       typecheck(name,'char');
       obj.name = name;
+      
+%      typecheck(dim,'double');
+%      sizecheck(dim,[1 1]);
+%      obj.dim = dim;
     end
   end
   

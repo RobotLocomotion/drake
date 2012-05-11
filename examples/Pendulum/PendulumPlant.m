@@ -1,4 +1,4 @@
-classdef PendulumPlant < SecondOrderPlant
+classdef PendulumPlant < SecondOrderSystem
 % Defines the dynamics for the Pendulum.
   
   properties
@@ -13,7 +13,7 @@ classdef PendulumPlant < SecondOrderPlant
   methods
     function obj = PendulumPlant()
       % Construct a new PendulumPlant
-      obj = obj@SecondOrderPlant(1,1,true);
+      obj = obj@SecondOrderSystem(1,1,true);
       torque_limit = 3;
       obj = setInputLimits(obj,-torque_limit,torque_limit);
       obj = setAngleFlags(obj,0,[1;0],[1;0]);

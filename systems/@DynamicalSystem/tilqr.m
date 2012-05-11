@@ -45,7 +45,18 @@ if (any(any(abs(C-eye(getNumStates(obj)))>tol)) || any(abs(D(:))>tol))
   warning('i''ve assumed C=I,D=0 so far.');
 end
 
-ltisys = LTIControl(x0,u0,K);
+ltisys = TimeInvariantLinearSystem([],[],[],[],[],K);
+if (all(x0==0))
+  ltisys.input_frame = obj.state_frame;
+else
+  ltisys.input_frame = CoordinateFrame([obj.state_frame.name,' - x0']);
+  
+end
+if (all(u0==0))
+  ltisys.output_frame = obj.input_frame;
+else
+  ltisys.output_frame = CoordinateFrame([obj.input_frame.name,' + u0']);
+end
 ltisys = setAngleFlags(ltisys,obj.output_angle_flag,[],obj.input_angle_flag);
 
 x=msspoly('x',getNumStates(obj));

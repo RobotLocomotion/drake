@@ -3,13 +3,13 @@ classdef SecondOrderSystem < RobotLibSystem
 %   A specialization of the Dynamics class for systems of second order.  
   
   methods
-    function obj = SecondOrderPlant(num_q, num_u,timeInvariantFlag)
+    function obj = SecondOrderSystem(num_q, num_u,timeInvariantFlag)
     % SecondOrderPlant(num_q, num_u)
     %   Constructs a SecondOrderPlant object with num_q configuration
     %   variables (implying num_q*2 states) and num_u control inputs.
 
 %      if (nargin>0)
-        obj = obj@SmoothRobotLibSystem(num_q*2,0,num_u,num_q*2,false,timeInvariantFlag);
+        obj = obj@RobotLibSystem(num_q*2,0,num_u,num_q*2,false,timeInvariantFlag);
         obj = obj.setNumDOF(num_q);
 %      end
     end
@@ -31,7 +31,7 @@ classdef SecondOrderSystem < RobotLibSystem
     % with num_q
       if (num_xc<0 || rem(num_xc,2)) error('num_x must be even for a SecondOrderDynamics'); end 
       obj.num_q = num_xc/2;
-      obj = setNumContStates@SmoothRobotLibSystem(obj,num_xc);
+      obj = setNumContStates@RobotLibSystem(obj,num_xc);
       obj = setNumOutputs(obj,num_xc); 
     end
     

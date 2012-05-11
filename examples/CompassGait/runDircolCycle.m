@@ -44,16 +44,16 @@ if (info~=1) error('failed to find a trajectory'); end
 toc
 
 if (nargout<1)
+  v = CompassGaitVisualizer(p);
+  v.playback_speed = .4;
+  playback(v,xtraj);
+  
   figure(1); clf;
   fnplt(utraj);
   
   figure(2); clf; hold on;
   fnplt(xtraj,[2 4]);
   fnplt(xtraj,[3 5]);
-  
-  v = CompassGaitVisualizer(p);
-  v.playback_speed = .4;
-  playback(v,xtraj);
 end
 
 end
