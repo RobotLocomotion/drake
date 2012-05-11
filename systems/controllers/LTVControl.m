@@ -1,5 +1,5 @@
-classdef LTVControl < SmoothRobotLibSystem
-% Time-varying linear feedback
+classdef TimeVaryingLinearSystem < TimeVaryingPolynomialSystem
+% dynamics, update, output are linear in x and u, but not necessarily in t
 
   methods 
     function obj=LTVControl(x0,u0,K,S,Sdot)

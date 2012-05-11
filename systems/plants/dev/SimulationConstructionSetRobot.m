@@ -1,4 +1,4 @@
-classdef SimulationConstructionSetRobot < SmoothRobotLibSystem
+classdef SimulationConstructionSetRobot < RobotLibSystem
 % Implements the DynamicalSystem interface for a SimulationConstructionSet robot.
 % SimulationConstructionSet is developed by IHMC.
 

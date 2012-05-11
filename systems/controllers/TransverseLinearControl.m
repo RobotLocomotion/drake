@@ -1,4 +1,4 @@
-classdef TransverseLinearControl < SmoothRobotLibSystem
+classdef TransverseLinearControl < RobotLibSystem
 % Orbital stabilization via the transverse linearization
 
 % irm@mit.edu
