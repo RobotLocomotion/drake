@@ -43,27 +43,29 @@ tic
 if (info~=1) error('failed to find a trajectory'); end
 toc
 
-figure(1); clf;
-fnplt(utraj);
- 
-figure(2); clf;
-fnplt(xtraj,[2 4]);
-
-figure(3); clf
-fnplt(xtraj,[2 3]);
-xlabel('theta_st');
-ylabel('theta_sw');
 % plot collision surface here
 %gx = .6*[-1,1]; gy = -gx -2*p.gamma;
 %hold on; plot(gx,gy,'g--','LineWidth',2);
 %T=utraj.getBreaks(); T=T(T>=utraj.getEvents()); X=xtraj.eval(T); X=X(2:5,:); U=utraj.eval(T);
 %postImpactTrajCost(T,X,U,p)
 
-return;
-
-v = CompassGaitVisualizer(p);
-v.playback_speed = .2;
-playback(v,xtraj);
+if (nargout<1)
+  figure(1); clf;
+  fnplt(utraj);
+  
+  figure(2); clf; hold on;
+  fnplt(xtraj,[2 4]);
+  fnplt(xtraj,[3 5]);
+  
+  figure(3); clf
+  fnplt(xtraj,[2 3]);
+  xlabel('theta_st');
+  ylabel('theta_sw');
+  
+  v = CompassGaitVisualizer(p);
+  v.playback_speed = .4;
+  playback(v,xtraj);
+end
 
 end
 
