@@ -1,4 +1,4 @@
-classdef Manipulator < SecondOrderSystem
+classdef ManipulatorPlant < SecondOrderPlant
 % An abstract class that wraps H(q)qddot + C(q,qdot,f_ext) = B(q)u.
 % Coming soon:  will also support bilateral constraints of the form: phi(q)=0.
 

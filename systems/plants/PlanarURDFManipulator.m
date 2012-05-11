@@ -1,4 +1,4 @@
-classdef PlanarURDFManipulator < Manipulator
+classdef PlanarURDFManipulator < ManipulatorPlant
   % This class wraps the planar pieces of the spatial vector library (v1) 
   % provided by Roy Featherstone on his website: 
   %   http://users.cecs.anu.edu.au/~roy/spatial/documentation.html

@@ -1,4 +1,4 @@
-classdef SecondOrderSystem < RobotLibSystem
+classdef SecondOrderPlant < SmoothRobotLibSystem
 % An abstract class that wraps qddot = f(t,q,qdot,u).
 %   A specialization of the Dynamics class for systems of second order.  
   

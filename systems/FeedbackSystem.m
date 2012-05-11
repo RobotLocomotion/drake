@@ -1,4 +1,4 @@
-classdef FeedbackSystem < RobotLibSystem
+classdef FeedbackSystem < SmoothRobotLibSystem
   
   properties
     sys1
