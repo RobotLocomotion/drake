@@ -12,13 +12,13 @@ classdef CascadeSystem < RobotLibSystem
       obj = obj@SmoothRobotLibSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
         sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
         sys1.getNumInputs(), sys2.getNumOutputs(), sys1.isDirectFeedthrough() & sys2.isDirectFeedthrough(), sys1.isTI() & sys2.isTI());
-      typecheck(sys1,'SmoothRobotLibSystem');
-      typecheck(sys2,'SmoothRobotLibSystem');
+      typecheck(sys1,'RobotLibSystem');
+      typecheck(sys2,'RobotLibSystem');
       obj.sys1=sys1;
       obj.sys2=sys2;
 
       if (any(~isinf([sys2.umin;sys2.umax])))
-        error('saturations on system 2 are not supported yet');
+        error('RobotLib:CascadeSystem:NotSupported','saturations on system 2 are not supported yet');
       end
       obj = obj.setInputLimits(sys1.umin,sys2.umax);
       
@@ -43,7 +43,7 @@ classdef CascadeSystem < RobotLibSystem
           % then ok with ts from sys1
           % (intentionally blank)
         else
-          error('Cascade combinations of systems with different sample times not supported as a robotlib system (yet)');
+          error('RobotLib:CascadeSystem:NotSupported','Cascade combinations of systems with different sample times not supported as a robotlib system (yet)');
           % it's ok, it will end up being a simulink model
         end
       end
