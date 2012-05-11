@@ -1,7 +1,5 @@
-classdef TimeVaryingPolynomialSystem < RobotLibSystem
-% dynamics, update, output are polynomial in x and u, but not necessarily
-% polynomial in t.
-  
+classdef PolynomialTrajectorySystem < SmoothRobotLibSystem
+
   properties (SetAccess=private)
     p_x=[]
     p_u=[]

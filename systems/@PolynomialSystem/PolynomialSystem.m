@@ -1,7 +1,6 @@
-classdef PolynomialSystem < TimeVaryingPolynomialSystem 
+classdef PolynomialSystem < SmoothRobotLibSystem 
   % A dynamical system described by rational polynomial dynamics, and
-  % polynomial outputs.  note: they can be time-varying, but the dependence
-  % on time must now also be polynomial.
+  % polynomial outputs.
 
   properties (SetAccess=private)
     p_t

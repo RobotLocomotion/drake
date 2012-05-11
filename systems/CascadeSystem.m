@@ -1,4 +1,4 @@
-classdef CascadeSystem < RobotLibSystem
+classdef CascadeSystem < SmoothRobotLibSystem
   
   properties
     sys1
