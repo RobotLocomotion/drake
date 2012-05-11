@@ -10,16 +10,16 @@ classdef FeedbackSystem < RobotLibSystem
   
   methods
     function obj = FeedbackSystem(sys1,sys2)
-      obj = obj@SmoothRobotLibSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
+      obj = obj@RobotLibSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
         sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
         0, sys1.getNumOutputs(), false, sys1.isTI() & sys2.isTI());
-      typecheck(sys1,'SmoothRobotLibSystem');
-      typecheck(sys2,'SmoothRobotLibSystem');
+      typecheck(sys1,'RobotLibSystem');
+      typecheck(sys2,'RobotLibSystem');
       obj.sys1=sys1;
       obj.sys2=sys2;
 
       if (sys1.isDirectFeedthrough() && sys2.isDirectFeedthrough())
-        error('algebraic loop');
+        error('RobotLib:FeedbackSystem:AlgebraicLoop','algebraic loop');
       end
       if (any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax])))
         error('RobotLib:FeedbackSystem:NotSupported','saturations not supported');
@@ -46,7 +46,7 @@ classdef FeedbackSystem < RobotLibSystem
           % then ok with ts from sys1
           % (intentionally blank)
         else
-          error('Feedback combinations of systems with different sample times not supported as a robotlib system (yet)');
+          error('RobotLib:FeedbackSystem:NotSupported','Feedback combinations of systems with different sample times not supported as a robotlib system (yet)');
           % it's ok, it will end up being a simulink model
         end
       end

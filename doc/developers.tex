@@ -100,3 +100,20 @@ svn diff > my_patch.diff
 \end{lstlisting}
 in your main \robotlib directory, then email the diff file.
 
+\section{Version Number}
+
+Version number has format W.X.Y.Z where
+\begin{itemize}
+\item W= major release number
+\item X = minor release number
+\item Y = development stage*
+\item Z = build
+\end{itemize}
+* Development stage is one of four values:
+\begin{itemize}
+\item 0 = alpha (buggy, not for use)
+\item 1 = beta (mostly bug-free, needs more testing)
+\item 2 = release candidate (rc) (stable)
+\item 3 = release
+\end{itemize}
+Z (build) is optional. This is probably not needed but could just refer to the revision of the repo at the time of snapshot. Numbered versions should be referenced via tags.
