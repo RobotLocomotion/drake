@@ -1,4 +1,4 @@
-classdef ConstantControl < SmoothRobotLibSystem
+classdef ConstantOrPassthroughSystem < TimeInvariantLinearSystem
 % Trivial control class that always outputs a constant u.
   
   methods

@@ -1,4 +1,4 @@
-classdef LTIControl < AffineSystem
+classdef TimeInvariantLinearSystem < AffineSystem & TimeVaryingLinearSystem
 % Implements a linear time-invariant control policy, u = u0 - K*(x-x0)
   
   methods 

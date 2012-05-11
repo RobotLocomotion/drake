@@ -1,4 +1,4 @@
-classdef FunctionHandleSystem < SmoothRobotLibSystem
+classdef FunctionHandleSystem < RobotLibSystem
 
 properties (SetAccess=private)
   hDynamics
