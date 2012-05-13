@@ -1,13 +1,8 @@
 classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem 
   % A dynamical system described by rational polynomial dynamics, and
-  % polynomial outputs.  note: they can be time-varying, but the dependence
-  % on time must now also be polynomial.
+  % polynomial outputs.  
 
   properties (SetAccess=private)
-    p_t
-    p_x
-    p_u
-
     p_dynamics % msspoly representations of dynamics, update,and output
     p_update
     p_output
@@ -21,7 +16,7 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
 %      x0=zeros(getNumStates(obj),1);
 %    end
     
-    function obj = PolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,p_dynamics,p_update,p_output)
+    function obj = PolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,p_dynamics,p_update,p_output)
       % initialize PolynomialSystem
       %
       % There are effectively four ways to initialize a poly system
@@ -52,63 +47,79 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       %   The constructor will try to automatically construct the 
       %   relevant polynomials by calling the function handle methods.
       
-      obj = obj@RobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
+      obj = obj@RobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,true);
 
       checkDependency('spot_enabled');
       
       % Now create the msspoly versions of the dynamics,update,and output:
-      obj.p_t=msspoly('t',1);
-      if (num_xc+num_xd>0)
-        obj.p_x=msspoly('x',num_xc+num_xd);
-      end
-      if (num_u>0)
-        obj.p_u=msspoly('u',num_u);
-      end
+      p_t=msspoly('t',1);
+      p_x=obj.getStateFrame.poly;
+      p_u=obj.getInputFrame.poly;
       
       % these will error if the system is not polynomial (should I catch
       % and rethrow the error with more information?)
       if (nargin>6 && num_xc>0)
         if isempty(p_dynamics)  % support method 3
         elseif isa(p_dynamics,'function_handle') % support method 4
-          obj.p_dynamics = p_dynamics(obj.p_t,obj.p_x,obj.p_u);
+          obj.p_dynamics = p_dynamics(p_t,p_x,p_u);
         else % method 1
           typecheck(p_dynamics,'msspoly');
           if any([p_dynamics.m,p_dynamics.n] ~= [num_xc,1]) error('p_dynamics does not match num_xc'); end
+          if ~isempty(setdiff(decomp(p_dynamics),[p_x;p_u]))
+            error('p_dynamics depends on variables that do not match my free variables representing t, x, and u.'); 
+          end
           obj.p_dynamics=p_dynamics;
         end
       elseif (num_xc>0) % method 2
-        obj.p_dynamics=obj.dynamics(obj.p_t,obj.p_x,obj.p_u);
+        obj.p_dynamics=obj.dynamics(p_t,p_x,p_u);
+      end
+      if ~isempty(obj.p_dynamics) && deg(obj.p_dynamics,p_t)>0
+        error('polynomial dynamics must be time invariant');
       end
       
       if (nargin>7 && num_xd>0)
         if isempty(p_update) % support method 3
         elseif isa(p_update,'function_handle') % method 4
-          obj.p_update = p_update(obj.p_t,obj.p_x,obj.p_u);
+          obj.p_update = p_update(p_t,p_x,p_u);
         else % method 1
           typecheck(p_update,'msspoly');
           if any([p_update.m,p_update.n] ~= [num_xd,1]) error('p_update does not match num_xd'); end
+          if ~isempty(setdiff(decomp(p_update),[p_t;p_x;p_u]))
+            error('p_update depends on variables that do not match my free variables representing t, x, and u.'); 
+          end
           obj.p_update = p_update;
         end
       elseif (num_xd>0) % method 2
-        obj.p_update=obj.update(obj.p_t,obj.p_x,obj.p_u);
+        obj.p_update=obj.update(p_t,p_x,p_u);
+      end
+      if ~isempty(obj.p_update) && deg(obj.p_update,p_t)>0
+        error('polynomial update must be time invariant');
       end
       
       if (nargin>8 && num_y>0)
         if isempty(p_output) % support method 3
         elseif isa(p_output,'function_handle') % method 4
-          obj.p_output = p_output(obj.p_t,obj.p_x,obj.p_u);
+          obj.p_output = p_output(p_t,p_x,p_u);
         else % method 1
           typecheck(p_output,'msspoly');
           if any([p_output.m,p_output.n] ~= [num_y,1]) error('p_output does not match num_y'); end
+          if ~isempty(setdiff(decomp(p_output),[p_t;p_x;p_u]))
+            error('p_output depends on variables that do not match my free variables representing t, x, and u.'); 
+          end
           obj.p_output=p_output;
         end
       elseif (num_y>0) % method 2
         obj.p_output=obj.output(obj.p_t,obj.p_x,obj.p_u);
       end
+      if ~isempty(obj.p_output) && deg(obj.p_output,p_t)>0
+        error('polynomial output must be time invariant');
+      end
     end
     
     function obj = addStateConstraints(obj,p_state_constraints)
       typecheck(p_state_constraints,'msspoly');
+      p_x = obj.getStateFrame.poly;
+      if ~isempty(setdiff(decomp(p_state_constraints),p_x))
       if (any(match(obj.p_x,decomp(p_state_constraints))==0))
         error('state constraints must depend only on x');
       end
