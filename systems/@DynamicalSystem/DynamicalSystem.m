@@ -54,20 +54,26 @@ classdef DynamicalSystem
   
   % construction methods
   methods
-    function newsys = cascade(sys1,sys2,bsys1out)
-      % Creates a new system with the output of system 1 connected to the input of system 2. 
+    function newsys = cascade(sys1,sys2)
+      % Creates a new system with the output of system 1 connected to the
+      % input of system 2. The input coordinate frame of system 2 must match
+      % the output coordinate frame of system 1, or system 1's output frame
+      % must know how to transform between the frames.
       %
       % @param sys1 the first DynamicalSystem  
       % @param sys2 the second DynamicalSystem
-      % @param bsys1out defines the output of system1 to be the output of the 
-      %   new system.  Useful, for instance, when cascading a plant with a 
-      %   visualizer (which has no outputs) so that you can still access the
-      %   output of the plant.  @default false
-      %   
       %
       % @retval newsys the new DynamicalSystem
 
-      if (nargin<3) bsys1out=false; end
+      if (getOutputFrame(sys1)~=getInputFrame(sys2))
+        tf = findTransform(getOutputFrame(sys1),getInputFrame(sys2));
+        if (isempty(tf))
+          error('Input frame of sys2 does not match output frame of sys1, and I cannot find a CoordinateTransform to make the connection'); 
+        end
+        % otherwise, add the transform to the front of sys2 and continue
+        sys2=cascade(tf,sys2);
+      end
+      
       mdl = ['Cascade_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
@@ -86,28 +92,37 @@ classdef DynamicalSystem
         add_line(mdl,'in/1','system1/1');
       end
       
-      if (bsys1out)
-        if (getNumOutputs(sys1)>0)
-          add_block('simulink3/Sinks/Out1',[mdl,'/out']);
-          add_line(mdl,'system1/1','out/1');
-        end
-      else
-        if (getNumOutputs(sys2)>0)
-          add_block('simulink3/Sinks/Out1',[mdl,'/out']);
-          add_line(mdl,'system2/1','out/1');
-        end
+      if (getNumOutputs(sys2)>0)
+        add_block('simulink3/Sinks/Out1',[mdl,'/out']);
+        add_line(mdl,'system2/1','out/1');
       end
       
       newsys = SimulinkModel(mdl);
+      newsys = setInputFrame(newsys,getInputFrame(sys1));
+      newsys = setOutputFrame(newsys,getOutputFrame(sys2));
       newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
       newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);
     end
     function newsys = feedback(sys1,sys2)
       % Creates a new systems with sys1 and sys2 in a feedback interconnect 
-      % (with sys1 on the forward path, and sys2 on the return path).  
+      % (with sys1 on the forward path, and sys2 on the return path). 
+      % the input of the new system gets added into the input of sys1
       % the output of sys1 will be the output of the new system.
-      if (getNumOutputs(sys1)<1 || getNumOutputs(sys2)<1 || getNumOutputs(sys1)~=getNumInputs(sys2) || getNumOutputs(sys2)~=getNumInputs(sys1))
-        error('these systems can''t be combined in feedback because they don''t have a compatible number of inputs / outputs');
+      if (getOutputFrame(sys1)~=getInputFrame(sys2))
+        tf = findTransform(getOutputFrame(sys1),getInputFrame(sys2));
+        if (isempty(tf))
+          error('Input frame of sys2 does not match output frame of sys1, and I cannot find a CoordinateTransform to make the connection'); 
+        end
+        % otherwise, add the transform to the front of sys2 and continue
+        sys2=cascade(tf,sys2);
+      end
+      if (getOutputFrame(sys2)~=getInputFrame(sys1))
+        tf = findTransform(getOutputFrame(sys2),getInputFrame(sys1));
+        if (isempty(tf))
+          error('Input frame of sys1 does not match output frame of sys2, and I cannot find a CoordinateTransform to make the connection'); 
+        end
+        % otherwise, add the transform to the output of sys2 and continue
+        sys2=cascade(sys2,tf);
       end
       
       mdl = ['Feedback_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
@@ -115,6 +130,10 @@ classdef DynamicalSystem
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
       
       load_system('simulink3');
+      add_block('simulink3/Sources/In1',[mdl,'/in']);
+      add_block('simulink3/Math/Sum',[mdl,'/sum']);
+      add_line(mdl,'in/1','sum/1');
+
       add_block('simulink3/Subsystems/Subsystem',[mdl,'/system1']);
       Simulink.SubSystem.deleteContents([mdl,'/system1']);
       Simulink.BlockDiagram.copyContentsToSubSystem(sys1.getModel(),[mdl,'/system1']);
@@ -122,13 +141,18 @@ classdef DynamicalSystem
       Simulink.SubSystem.deleteContents([mdl,'/system2']);
       Simulink.BlockDiagram.copyContentsToSubSystem(sys2.getModel(),[mdl,'/system2']);
 
+      add_line(mdl,'sum/1','system1/1');
       add_line(mdl,'system1/1','system2/1');
-      add_line(mdl,'system2/1','system1/1');
+      add_line(mdl,'system2/1','sum/2');
 
       add_block('simulink3/Sinks/Out1',[mdl,'/out']);
       add_line(mdl,'system1/1','out/1');
       
-      newsys = SimulinkModel(mdl);      
+      newsys = SimulinkModel(mdl);
+      newsys = setInputFrame(newsys,getInputFrame(sys1));
+      newsys = setOutputFrame(newsys,getOutputFrame(sys1));
+      newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
+      newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);
     end
     function newsys = sampledData(sys,tsin,tsout)
       % Creates a new system which is a sampled data (e.g. discretized in time) version of the original system.  

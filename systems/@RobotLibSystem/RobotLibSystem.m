@@ -1,7 +1,5 @@
 classdef RobotLibSystem < DynamicalSystem
-% Abstract class that provides common functionality for Smooth- and Hybrid- RobotLib Systems
-%
-% It is a DynamicalSystem with the functionality (dynamics, update, outputs, 
+% A DynamicalSystem with the functionality (dynamics, update, outputs, 
 % etc) implemented in matlab, so that it is amenable to, for instance, symbolic
 % manipulations.  These functions are wrapped as an S-Function in
 % RLCSFunction.cpp.
@@ -30,9 +28,9 @@ classdef RobotLibSystem < DynamicalSystem
         if (nargin>=4) obj = setNumOutputs(obj,num_y); end
         if (nargin>=5) obj = setDirectFeedthrough(obj,direct_feedthrough_flag); end
         if (nargin>=6) obj = setTIFlag(obj,time_invariant_flag); end
-        if (num_u) obj=setInputFrame(obj,CoordinateFrame([class(obj),'.u'],num_u)); end
-        if (num_xc+num_xd) obj=setStateFrame(obj,CoordinateFrame([class(obj),'.x'],num_xc+num_xd)); end
-        if (num_y) obj=setOutputFrame(obj,CoordinateFrame([class(obj),'.y'],num_y)); end
+        if (num_u) obj=setInputFrame(obj,CoordinateFrame([class(obj),':u'],num_u)); end
+        if (num_xc+num_xd) obj=setStateFrame(obj,CoordinateFrame([class(obj),':x'],num_xc+num_xd)); end
+        if (num_y) obj=setOutputFrame(obj,CoordinateFrame([class(obj),':y'],num_y)); end
       end
       
     end      
