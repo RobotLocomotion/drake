@@ -180,12 +180,8 @@ the graph) by calling \mcode{addTransition}.  Note that it is often
 useful to create guard out of a logical combination of smooth guards
 (e.g. $x(1)>0$ and $x(2)<.5$); to accomplish this you should use the
 \mcode{andGuard} and \mcode{notGuard} methods.
-
-By default, the output of a \mcode{HybridRobotLibSystem} is the output
-of the active mode.  In some cases, it is desirable to include the
-identifier of the active mode as one of the outputs; use
-\mcode{setModeOutputFlag} to toggle whether the mode number is
-automatically prepended onto the output.  
+The output of a \mcode{HybridRobotLibSystem} is the output
+of the active mode.  
 
 \begin{example}[The bouncing ball: an event-driven system example]
   The dynamics of a vertically bouncing ball can be described by a
@@ -368,6 +364,10 @@ but it wouldn't be hard.
 \todo{Make sure that feedback and cascade handle all of the cases
   described above (especially blocks with different sample times,
   hybrid systems, etc)}
+
+Coordinate frames.  Must match to allow combination.  Hybrid modes automatically inherit the input and output coordinate
+frame of the hybrid system; the hybrid system does not have a
+coordinate frame for the state.
 
 \section{Simulation}
 

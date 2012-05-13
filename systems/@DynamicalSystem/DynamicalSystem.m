@@ -225,6 +225,32 @@ classdef DynamicalSystem
       obj.time_invariant_flag = bval;
     end
 
+    function f=getInputFrame(obj)
+      f=obj.input_frame;
+    end
+    function obj=setInputFrame(obj,f)
+      typecheck(f,'CoordinateFrame');
+      if (f.dim ~= obj.getNumInputs()) error('frame dimension does not match number of inputs'); end
+      obj.input_frame=f;
+    end
+    function f=getStateFrame(obj)
+      f=obj.state_frame;
+    end
+    function obj=setStateFrame(obj,f)
+      typecheck(f,'CoordinateFrame');
+      if (f.dim ~= obj.getNumStates()) error('frame dimension does not match number of states'); end
+      obj.state_frame=f;
+    end
+    function f=getOutputFrame(obj)
+      f=obj.output_frame;
+    end
+    function obj=setOutputFrame(obj,f)
+      typecheck(f,'CoordinateFrame');
+      if (f.dim ~= obj.getNumOutputs()) error('frame dimension does not match number of outputs'); end
+      obj.output_frame=f;
+    end
+    
+    
     function xs = stateVectorToStructure(obj,xv,mdl)
       % Converts the vector state xv to the structure xs for simulink state
       % @param xv the state (in vector form)
@@ -394,9 +420,7 @@ classdef DynamicalSystem
     time_invariant_flag = false;  % set to true if you know the system is time invariant
     simulink_params=struct();     % simulink model parameters
     structured_x;                 % simulink state structure (cached for efficiency)
-  end
 
-  properties (SetAccess=protected, GetAccess=public) % at least until I make access methods
     input_frame;  % named coordinate systems for input, state, and output
     state_frame;
     output_frame;
