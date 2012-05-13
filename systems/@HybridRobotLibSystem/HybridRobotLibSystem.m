@@ -13,40 +13,31 @@ classdef HybridRobotLibSystem < RobotLibSystem
     guard={};       % guard{i}{j} is for the jth transition from the ith mode
     transition={};      % transition{i}{j} is for the jth transition from the ith mode
 
-    output_mode = false;
     sample_time = [-1;0];
   end
   
   % construction
   methods
-    function obj = HybridRobotLibSystem()
-      obj = obj@RobotLibSystem(0,1,0,1,false,true);
+    function obj = HybridRobotLibSystem(num_u,num_y)
+      obj = obj@RobotLibSystem(0,1,num_u,num_y,false,true);
     end
-    
-    function obj = setModeOutputFlag(obj,tf)
-      if (obj.output_mode) obj=setNumOutputs(obj,getNumOutputs(obj)-1); end
-      obj.output_mode = logical(tf);
-      if (obj.output_mode) obj=setNumOutputs(obj,getNumOutputs(obj)+1); end
-    end
-    
+        
     function [obj,mode_num] = addMode(obj,mode_sys,name)
       typecheck(mode_sys,'RobotLibSystem');
       if isa(mode_sys,'HybridRobotLibSystem') error('hybrid modes are not supported (yet)'); end
       if isa(mode_sys,'StochasticRobotLibSystem') error('stochastic modes are not supported (yet)'); end
       if (getNumStates(mode_sys)>0 && ~(mode_sys.isCT() || mode_sys.isInheritedTime())) error('only CT or inherited sample time modes are allowed for now'); end
-      obj.modes = {obj.modes{:},mode_sys};
-      mode_num = length(obj.modes);
       obj.target_mode = {obj.target_mode{:},[]};
       obj.guard = {obj.guard{:},{}};
       obj.transition = {obj.transition{:},{}};
       obj = setNumContStates(obj,max(getNumContStates(obj),getNumContStates(mode_sys)));
       obj = setNumDiscStates(obj,max(getNumDiscStates(obj),1+getNumDiscStates(mode_sys)));
-      obj = setNumInputs(obj,max(getNumInputs(obj),getNumInputs(mode_sys)));
-      if (obj.output_mode)
-        obj = setNumOutputs(obj,max(getNumOutputs(obj),1+getNumOutputs(mode_sys)));
-      else
-        obj = setNumOutputs(obj,max(getNumOutputs(obj),getNumOutputs(mode_sys)));
-      end
+
+      if (getNumInputs(mode_sys) ~= getNumInputs(obj)) error('must have the same number of inputs as the hybrid system'); end
+      if (getNumInputs(obj)) mode_sys=setInputFrame(mode_sys,getInputFrame(obj)); end
+      if (getNumOutputs(mode_sys) ~= getNumOutputs(obj)) error('must have the same number of outputs as the hybrid system'); end
+      if (getNumOutputs(obj)) mode_sys=setOutputFrame(mode_sys,getOutputFrame(obj)); end
+
       if (getNumZeroCrossings(mode_sys)>0)
         error('i don''t handle this case yet, but it would be pretty simple.');
       end
@@ -77,6 +68,9 @@ classdef HybridRobotLibSystem < RobotLibSystem
       obj = setDirectFeedthrough(obj,isDirectFeedthrough(obj) || isDirectFeedthrough(mode_sys));
       obj = setTIFlag(obj,isTI(obj) && isTI(mode_sys));
       
+      obj.modes = {obj.modes{:},mode_sys};
+      mode_num = length(obj.modes);
+
       if (nargin>2)
         typecheck(name,'char');
         obj.mode_names{mode_num}=name;
@@ -197,6 +191,10 @@ classdef HybridRobotLibSystem < RobotLibSystem
       ts = obj.sample_time;
     end
     
+    function f=getStateFrame(obj)
+      error('RobotLib:HybridRobotLibSystem:StateFrame','Hybrid systems do not have a unique state frame.  You should get the individual mode state-frames instead'); 
+    end
+    
     function [xcdot,df] = dynamics(obj,t,x,u)
       m = x(1); 
       if (getNumContStates(obj.modes{m}))
@@ -227,7 +225,6 @@ classdef HybridRobotLibSystem < RobotLibSystem
       m = x(1); nX = getNumStates(obj.modes{m});
       if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
       y = output(obj.modes{m},t,xm,u);
-      if (obj.output_mode) y = [m;y]; end
       % pad if necessary:
       y = [y;repmat(0,getNumOutputs(obj)-length(y),1)];
     end

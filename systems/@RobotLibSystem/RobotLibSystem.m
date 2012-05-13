@@ -30,13 +30,9 @@ classdef RobotLibSystem < DynamicalSystem
         if (nargin>=4) obj = setNumOutputs(obj,num_y); end
         if (nargin>=5) obj = setDirectFeedthrough(obj,direct_feedthrough_flag); end
         if (nargin>=6) obj = setTIFlag(obj,time_invariant_flag); end
-        obj.input_frame=CoordinateFrame([class(obj),'.u'],num_xc+num_xd);
-        obj.state_frame=CoordinateFrame([class(obj),'.x'],num_xc+num_xd);
-        obj.output_frame=CoordinateFrame([class(obj),'.y'],num_xc+num_xd);
-      else
-        obj.input_frame=CoordinateFrame([class(obj),'.u'],0);
-        obj.state_frame=CoordinateFrame([class(obj),'.x'],0);
-        obj.output_frame=CoordinateFrame([class(obj),'.y'],0);
+        if (num_u) obj=setInputFrame(obj,CoordinateFrame([class(obj),'.u'],num_u)); end
+        if (num_xc+num_xd) obj=setStateFrame(obj,CoordinateFrame([class(obj),'.x'],num_xc+num_xd)); end
+        if (num_y) obj=setOutputFrame(obj,CoordinateFrame([class(obj),'.y'],num_y)); end
       end
       
     end      

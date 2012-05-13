@@ -83,6 +83,9 @@ if (nargout>0)
   pstruct.SaveOutput = 'on';
   pstruct.OutputSaveName = 'yout';
   pstruct.LimitDataPoints = 'off';
+  %pstruct.SaveOnModelUpdate = 'false';
+  %pstruct.AutoSaveOptions.SaveModelOnUpdate = 'false';
+  %pstruct.AutoSaveOptions.SaveBackupOnVersionUpgrade = 'false';
 
   if (~isDT(obj))
     pstruct.Refine = '3';  % shouldn't do anything for DT systems
@@ -96,7 +99,6 @@ if (nargout>0)
   if(isfield(options,'OutputTimes'))
     pstruct.OutputTimes=['[',num2str(options.OutputTimes),']'];
   end
-  %    pstruct.SaveOnModelUpdate = 'false';
   
   simout = sim(mdl,pstruct);
   
