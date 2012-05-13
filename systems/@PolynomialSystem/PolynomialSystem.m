@@ -1,4 +1,4 @@
-classdef PolynomialSystem < TimeVaryingPolynomialSystem 
+classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem 
   % A dynamical system described by rational polynomial dynamics, and
   % polynomial outputs.  note: they can be time-varying, but the dependence
   % on time must now also be polynomial.
@@ -52,7 +52,7 @@ classdef PolynomialSystem < TimeVaryingPolynomialSystem
       %   The constructor will try to automatically construct the 
       %   relevant polynomials by calling the function handle methods.
       
-      obj = obj@SmoothRobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
+      obj = obj@RobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
 
       checkDependency('spot_enabled');
       
@@ -180,7 +180,7 @@ classdef PolynomialSystem < TimeVaryingPolynomialSystem
     % todo: implement gradients (it's trivial)
 
     function obj = setNumContStates(obj,num_xc)
-      obj = setNumContStates@SmoothRobotLibSystem(obj,num_xc);
+      obj = setNumContStates@RobotLibSystem(obj,num_xc);
       if (obj.num_xc+obj.num_xd>0)
         obj.p_x=msspoly('x',obj.num_xc+obj.num_xd);
       else
@@ -188,7 +188,7 @@ classdef PolynomialSystem < TimeVaryingPolynomialSystem
       end
     end
     function obj = setNumDiscStates(obj,num_xd)
-      obj = setNumDiscStates@SmoothRobotLibSystem(obj,num_xd);
+      obj = setNumDiscStates@RobotLibSystem(obj,num_xd);
       if (obj.num_xc+obj.num_xd>0)
         obj.p_x=msspoly('x',obj.num_xc+obj.num_xd);
       else
@@ -196,7 +196,7 @@ classdef PolynomialSystem < TimeVaryingPolynomialSystem
       end
     end
     function obj = setNumInputs(obj,num_u)
-      obj = setNumInputs@SmoothRobotLibSystem(obj,num_u);
+      obj = setNumInputs@RobotLibSystem(obj,num_u);
       if (obj.num_u>0)
         obj.p_u=msspoly('u',obj.num_u);
       else

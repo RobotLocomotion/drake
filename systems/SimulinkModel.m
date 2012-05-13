@@ -16,6 +16,10 @@ classdef SimulinkModel < DynamicalSystem
       obj.num_xd = sys(2);
       obj.num_y = sys(3);
       obj.num_u = sys(4);
+
+      obj.input_frame=CoordinateFrame([mdl,'.u']);
+      obj.state_frame=CoordinateFrame([mdl,'.x']);
+      obj.output_frame=CoordinateFrame([mdl,'.y']);
     end
   end
   

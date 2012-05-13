@@ -225,47 +225,6 @@ classdef DynamicalSystem
       obj.time_invariant_flag = bval;
     end
 
-    
-    function u = wrapInput(obj,u)
-      % Wraps all input signals with input_angle_flag==true to be inside [-pi,pi]
-      i=find(obj.input_angle_flag);
-      u(i) = mod(u(i)+pi,2*pi)-pi;
-    end
-    function x = wrapState(obj,x)
-      % Wraps all state variables with state_angle_flag==true to be inside [-pi,pi]
-      i=find(obj.state_angle_flag);
-      x(i) = mod(x(i)-pi,2*pi)-pi;
-    end
-    function y = wrapOutput(obj,y)
-      % Wraps all output signals with output_angle_flag==true to be inside [-pi,pi]
-      i=find(obj.output_angle_flag);
-      y(i) = mod(y(i)-pi,2*pi)-pi;
-    end
-    function obj = setAngleFlags(obj,in_angle_flag,state_angle_flag,out_angle_flag)
-      % Set the input,state, and output angle flags
-      % @param in_angle_flag a vector of length(getNumInputs), where
-      % in_angle_flag(i)==true means that input i is an angle and should be
-      % wrapped around 2*pi when appropriate
-      % @param state_angle_flag the corresponding vector of length(getNumStates) 
-      % @param out_angle_flag the corresponding vector of length(getNumOutputs) 
-      % @retval obj the DynamicalSystem object with updated angle flags
-      if (~isempty(in_angle_flag))
-        typecheck(in_angle_flag,{'logical','double'});
-        sizecheck(in_angle_flag,obj.getNumInputs());
-        obj.input_angle_flag = in_angle_flag(:);
-      end
-      if (~isempty(state_angle_flag))
-        typecheck(state_angle_flag,{'logical','double'});
-        sizecheck(state_angle_flag,obj.getNumStates());
-        obj.state_angle_flag = state_angle_flag(:);
-      end
-      if (~isempty(out_angle_flag))
-        typecheck(out_angle_flag,{'logical','double'});
-        sizecheck(out_angle_flag,obj.getNumOutputs());
-        obj.output_angle_flag = out_angle_flag(:);
-      end
-    end
-    
     function xs = stateVectorToStructure(obj,xv,mdl)
       % Converts the vector state xv to the structure xs for simulink state
       % @param xv the state (in vector form)
@@ -436,10 +395,10 @@ classdef DynamicalSystem
     simulink_params=struct();     % simulink model parameters
     structured_x;                 % simulink state structure (cached for efficiency)
   end
-  properties (SetAccess=private,GetAccess=public)
-    input_angle_flag = [];  % in_angle_flag(i)==true means that input i is an angle and should be wrapped around 2*pi when appropriate
-    state_angle_flag = [];  % state_angle_flag(i)==true means that state i is an angle and should be wrapped around 2*pi when appropriate
-    output_angle_flag = []; % out_angle_flag(i)==true means that output i is an angle and should be wrapped around 2*pi when appropriate
-  end
 
+  properties (SetAccess=protected, GetAccess=public) % at least until I make access methods
+    input_frame;  % named coordinate systems for input, state, and output
+    state_frame;
+    output_frame;
+  end
 end

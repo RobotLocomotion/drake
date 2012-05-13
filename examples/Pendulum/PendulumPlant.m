@@ -16,7 +16,8 @@ classdef PendulumPlant < SecondOrderSystem
       obj = obj@SecondOrderSystem(1,1,true);
       torque_limit = 3;
       obj = setInputLimits(obj,-torque_limit,torque_limit);
-      obj = setAngleFlags(obj,0,[1;0],[1;0]);
+      obj.output_frame=obj.state_frame;  % output is same as state
+      obj.state_frame.setAngleFlags([true;false]);
     end
     
     function qdd = sodynamics(obj,t,q,qd,u)
@@ -25,7 +26,7 @@ classdef PendulumPlant < SecondOrderSystem
     end
     
     function [f,df,d2f,d3f]=dynamics(obj,t,x,u)
-      f=dynamics@SecondOrderPlant(obj,t,x,u);
+      f=dynamics@SecondOrderSystem(obj,t,x,u);
       if (nargout>1)
         [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
       end

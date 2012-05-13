@@ -1,4 +1,4 @@
-classdef CoordinateTransform < RobotLibSystem & handle
+classdef CoordinateTransform < RobotLibSystem 
     
   methods
     function obj=CoordinateTransform(from,to)
