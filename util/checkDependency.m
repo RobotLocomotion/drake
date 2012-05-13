@@ -4,7 +4,7 @@ function ok = checkDependency(conf_var)
 %   example:
 %     checkDependency('spot_enabled')
 % or 
-%     if (checkDependency('spot_enabled')) error('my error'); end
+%     if (~checkDependency('spot_enabled')) error('my error'); end
 
 
 persistent conf;

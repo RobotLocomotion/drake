@@ -45,22 +45,27 @@ if (any(any(abs(C-eye(getNumStates(obj)))>tol)) || any(abs(D(:))>tol))
   warning('i''ve assumed C=I,D=0 so far.');
 end
 
+
 ltisys = TimeInvariantLinearSystem([],[],[],[],[],K);
 if (all(x0==0))
   ltisys.input_frame = obj.state_frame;
 else
-  ltisys.input_frame = CoordinateFrame([obj.state_frame.name,' - x0']);
-  
+  ltisys.input_frame = CoordinateFrame([obj.state_frame.name,' - ', mat2str(x0,2)],length(x0));
+  obj.state_frame.addTransform(AffineTransform(obj.state_frame,ltisys.input_frame,eye(size(x0)),-x0));
+  ltisys.input_frame.addTransform(AffineTransform(ltisys.input_frame,obj.state_frame,eye(size(x0)),+x0));
 end
 if (all(u0==0))
   ltisys.output_frame = obj.input_frame;
 else
-  ltisys.output_frame = CoordinateFrame([obj.input_frame.name,' + u0']);
+  ltisys.output_frame = CoordinateFrame([obj.input_frame.name,' + ',mat2str(u0,2)],length(u0));
+  ltisys.output_frame.addTransform(AffineTransform(ltisys.output_frame,obj.input_frame,eye(size(u0)),u0));
+  obj.input_frame.addTransform(AffineTransform(obj.input_frame,ltisys.output_frame,eye(size(u0)),-u0));
 end
-ltisys = setAngleFlags(ltisys,obj.output_angle_flag,[],obj.input_angle_flag);
 
-x=msspoly('x',getNumStates(obj));
-V = (x-x0)'*S*(x-x0);
+if (nargout>1)
+  x=ltisys.input_frame.poly; %msspoly('x',getNumStates(obj));
+  V=PolynomialLyapunovFunction(ltisys.input_frame,x'*S*x);
+end
 
 end
 

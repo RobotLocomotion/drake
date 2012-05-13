@@ -1,4 +1,4 @@
-classdef TimeInvariantLinearSystem < AffineSystem & TimeVaryingLinearSystem
+classdef TimeInvariantLinearSystem < AffineSystem %& TimeVaryingLinearSystem
   
   methods 
     function obj=TimeInvariantLinearSystem(Ac,Bc,Ad,Bd,C,D)

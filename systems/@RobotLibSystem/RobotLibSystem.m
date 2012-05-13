@@ -22,9 +22,6 @@ classdef RobotLibSystem < DynamicalSystem
       %   possible.
       
       obj.uid = datestr(now,'MMSSFFF');
-      obj.input_frame=CoordinateFrame([class(obj),'.u']);
-      obj.state_frame=CoordinateFrame([class(obj),'.x']);
-      obj.output_frame=CoordinateFrame([class(obj),'.y']);
 
       if (nargin>0)
         obj = setNumContStates(obj,num_xc);
@@ -33,7 +30,15 @@ classdef RobotLibSystem < DynamicalSystem
         if (nargin>=4) obj = setNumOutputs(obj,num_y); end
         if (nargin>=5) obj = setDirectFeedthrough(obj,direct_feedthrough_flag); end
         if (nargin>=6) obj = setTIFlag(obj,time_invariant_flag); end
+        obj.input_frame=CoordinateFrame([class(obj),'.u'],num_xc+num_xd);
+        obj.state_frame=CoordinateFrame([class(obj),'.x'],num_xc+num_xd);
+        obj.output_frame=CoordinateFrame([class(obj),'.y'],num_xc+num_xd);
+      else
+        obj.input_frame=CoordinateFrame([class(obj),'.u'],0);
+        obj.state_frame=CoordinateFrame([class(obj),'.x'],0);
+        obj.output_frame=CoordinateFrame([class(obj),'.y'],0);
       end
+      
     end      
   end
   
@@ -367,11 +372,6 @@ classdef RobotLibSystem < DynamicalSystem
   properties (SetAccess=private, GetAccess=public)
     umin=[];   % constrains u>=umin (default umin=-inf)
     umax=[];    % constrains u<=uman (default umax=inf)
-  end
-  properties (SetAccess=protected, GetAccess=public) % at least until I make access methods
-    input_frame;  % named coordinate systems for input, state, and output
-    state_frame;
-    output_frame;
   end
   
 end
