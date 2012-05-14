@@ -12,8 +12,6 @@ classdef HybridRobotLibSystem < RobotLibSystem
     target_mode={}; % target_mode{i}(j) describes the target for the jth transition out of the ith mode    
     guard={};       % guard{i}{j} is for the jth transition from the ith mode
     transition={};      % transition{i}{j} is for the jth transition from the ith mode
-
-    sample_time = [-1;0];
   end
   
   % construction
@@ -45,26 +43,7 @@ classdef HybridRobotLibSystem < RobotLibSystem
         error('i don''t handle this case yet, but it would be pretty simple.');
       end
       
-      function ts = mergeSampleTimes(ts1,ts2)
-        ts = unique([ts1,ts2]','rows')';
-
-        % only a few possibilities are allowed/supported
-        %   inherited, single continuous, single discrete, single continuous+single
-        %   discrete
-        if size(ts,2)>1  % if only one ts, then all is well
-          if any(ts(1,:)==-1)  % zap superfluous inherited 
-            ts=ts(:,find(ts(1,:)~=-1));
-          end
-          if sum(ts(1,:)==0)>1 % then multiple continuous
-            error('cannot build a hybrid system using modes that have both ''continuous time'' and ''continuous time, fixed in minor offset'' sample times');
-          end
-          if sum(ts(1,:)>0)>1 % then multiple discrete
-            error('cannot build a hybrid system using modes that have different discrete sample times');
-          end
-        end
-      end
-      
-      obj.sample_time = mergeSampleTimes(obj.sample_time,getSampleTime(mode_sys));
+      obj = setSampleTime(obj,[getSampleTime(obj),getSampleTime(mode_sys)]);
       obj = setDirectFeedthrough(obj,isDirectFeedthrough(obj) || isDirectFeedthrough(mode_sys));
       obj = setTIFlag(obj,isTI(obj) && isTI(mode_sys));
       
@@ -185,10 +164,6 @@ classdef HybridRobotLibSystem < RobotLibSystem
       x0=[x(1); getInitialStateWInput(obj.modes{m},t,xm,u)];
       % pad if necessary:
       x0 = [x0;repmat(0,getNumStates(obj)-length(x0),1)];
-    end
-    
-    function ts = getSampleTime(obj)  
-      ts = obj.sample_time;
     end
     
     function f=getStateFrame(obj)

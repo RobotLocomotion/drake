@@ -6,7 +6,7 @@ classdef AffineSystem < PolynomialSystem
 
   methods
     function obj = AffineSystem(Ac,Bc,xcdot0,Ad,Bd,xdn0,C,D,y0)
-      obj = obj@PolynomialSystem(0,0,0,0,false,true,[],[],[]);
+      obj = obj@PolynomialSystem(0,0,0,0,false,[],[],[]);
 
       num_xc = max([size(Ac,1),size(Bc,1),size(xcdot0,1)]);
       num_xd = max([size(Ad,1),size(Bd,1),size(xdn0,1)]);
