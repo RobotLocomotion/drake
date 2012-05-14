@@ -15,21 +15,12 @@ classdef PendulumPlant < SecondOrderSystem
       % Construct a new PendulumPlant
       obj = obj@SecondOrderSystem(1,1,true);
 
-      % setup input
-      input_frame = CoordinateFrame.getSingleton('Pendulum:u',1);
-      input_frame.setCoordinateNames({'tau'});
-      obj = setInputFrame(obj,input_frame);
+      obj = setInputFrame(obj,PendulumInput);
       torque_limit = 3;
       obj = setInputLimits(obj,-torque_limit,torque_limit);
       
-      % setup state
-      state_frame = CoordinateFrame.getSingleton('Pendulum:x',2);
-      state_frame.setCoordinateNames({'\theta','\dot\theta'});
-      state_frame.setAngleFlags([true;false]);
-      obj = setStateFrame(obj,state_frame);
-      
-      % setup output
-      obj = setOutputFrame(obj,state_frame);  % output is same as state
+      obj = setStateFrame(obj,PendulumState);
+      obj = setOutputFrame(obj,PendulumState);
     end
     
     function qdd = sodynamics(obj,t,q,qd,u)

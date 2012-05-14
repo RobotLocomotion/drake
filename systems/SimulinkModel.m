@@ -17,9 +17,9 @@ classdef SimulinkModel < DynamicalSystem
       obj.num_y = sys(3);
       obj.num_u = sys(4);
 
-      obj=obj.setInputFrame(CoordinateFrame([mdl,':u'],obj.num_u));
-      obj=obj.setStateFrame(CoordinateFrame([mdl,':x'],obj.num_xc+obj.num_xd));
-      obj=obj.setOutputFrame(CoordinateFrame([mdl,':y'],obj.num_y));
+      obj=obj.setInputFrame(CoordinateFrame([mdl,'Input'],obj.num_u,'u'));
+      obj=obj.setStateFrame(CoordinateFrame([mdl,'State'],obj.num_xc+obj.num_xd,'x'));
+      obj=obj.setOutputFrame(CoordinateFrame([mdl,'Output'],obj.num_y,'y'));
     end
   end
   

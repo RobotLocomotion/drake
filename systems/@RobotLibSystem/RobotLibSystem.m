@@ -28,9 +28,9 @@ classdef RobotLibSystem < DynamicalSystem
         if (nargin>=4) obj = setNumOutputs(obj,num_y); end
         if (nargin>=5) obj = setDirectFeedthrough(obj,direct_feedthrough_flag); end
         if (nargin>=6) obj = setTIFlag(obj,time_invariant_flag); end
-        if (num_u) obj=setInputFrame(obj,CoordinateFrame([class(obj),':u'],num_u)); end
-        if (num_xc+num_xd) obj=setStateFrame(obj,CoordinateFrame([class(obj),':x'],num_xc+num_xd)); end
-        if (num_y) obj=setOutputFrame(obj,CoordinateFrame([class(obj),':y'],num_y)); end
+        if (num_u) obj=setInputFrame(obj,CoordinateFrame([class(obj),'Input'],num_u,'u')); end
+        if (num_xc+num_xd) obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],num_xc+num_xd,'x')); end
+        if (num_y) obj=setOutputFrame(obj,CoordinateFrame([class(obj),'Output'],num_y,'y')); end
       end
       
     end      
@@ -319,7 +319,7 @@ classdef RobotLibSystem < DynamicalSystem
       % before becoming the input for sys1.  The output of the feedback
       % model is the output of sys1.
       try 
-        sys=FeedbackSystem(sys1,sys2);  % try to keep it a smoothrobotlibsystem
+        sys=FeedbackSystem(sys1,sys2);  % try to keep it a robotlibsystem
       catch
         sys=feedback@DynamicalSystem(sys1,sys2);
       end
@@ -327,7 +327,7 @@ classdef RobotLibSystem < DynamicalSystem
     
     function sys=cascade(sys1,sys2)
       try
-        sys=CascadeSystem(sys1,sys2);   % try to keep it a smoothrobotlibsystem 
+        sys=CascadeSystem(sys1,sys2);   % try to keep it a robotlibsystem 
       catch
         sys=cascade@DynamicalSystem(sys1,sys2);
       end
