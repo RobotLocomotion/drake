@@ -94,15 +94,40 @@ classdef RobotLibSystem < DynamicalSystem
       % thrown saying that this function should be overloaded to set the
       % desired behavior.  
 
-      if (obj.num_xc>0 && obj.num_xd==0)
+      if ~isempty(obj.ts)
+        ts = obj.ts;
+      elseif (obj.num_xc>0 && obj.num_xd==0)
         ts = [0;0];  % continuous time, no offset
       elseif (obj.num_xc==0 && obj.num_xd>0)
         ts = [1;0];  % discrete time, with period 1s.
       elseif (obj.num_xc==0 && obj.num_xd==0)
         ts = [-1;0]; % inherited sample time
       else
-        error('RobotLib:RobotLibSystem:NotImplemented','systems with both discrete and continuous states must implement the getSampleTime method to specify the desired behavior');
+        error('RobotLib:RobotLibSystem:NotImplemented','systems with both discrete and continuous states must implement the getSampleTime method or call setSampleTime to specify the desired behavior');
       end
+    end
+    function obj = setSampleTime(obj,ts)
+      % robust method for setting default sample time
+      % 
+      % @param ts a 2-by-n matrix with each column containing a sample time
+      %    redundant colums are eliminated automatically.  
+      ts = unique(ts','rows')';
+
+      % only a few possibilities are allowed/supported
+      %   inherited, single continuous, single discrete, single continuous+single
+      %   discrete
+      if size(ts,2)>1  % if only one ts, then all is well
+        if any(ts(1,:)==-1)  % zap superfluous inherited
+          ts=ts(:,find(ts(1,:)~=-1));
+        end
+        if sum(ts(1,:)==0)>1 % then multiple continuous
+          error('cannot define a robotlibsystem using modes that have both ''continuous time'' and ''continuous time, fixed in minor offset'' sample times');
+        end
+        if sum(ts(1,:)>0)>1 % then multiple discrete
+          error('cannot define a robotlibsystem using modes that have different discrete sample times');
+        end
+      end
+      obj.ts = ts;
     end
     function tf = isDirectFeedthrough(obj)
       % Check if the system is direct feedthrough (e.g., if the output
@@ -362,6 +387,7 @@ classdef RobotLibSystem < DynamicalSystem
     num_xcon = 0; % number of state constraints. @default: 0
     uid;    % unique identifier for simulink models of this block instance
     direct_feedthrough_flag=true;  % true/false: does the output depend on u?  set false if you can!
+    ts=[];    % default sample times of the model
   end
   properties (SetAccess=private, GetAccess=public)
     umin=[];   % constrains u>=umin (default umin=-inf)

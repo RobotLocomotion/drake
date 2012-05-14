@@ -9,44 +9,34 @@ classdef CascadeSystem < RobotLibSystem
   
   methods
     function obj = CascadeSystem(sys1,sys2)
-      obj = obj@SmoothRobotLibSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
+      obj = obj@RobotLibSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
         sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
         sys1.getNumInputs(), sys2.getNumOutputs(), sys1.isDirectFeedthrough() & sys2.isDirectFeedthrough(), sys1.isTI() & sys2.isTI());
       typecheck(sys1,'RobotLibSystem');
       typecheck(sys2,'RobotLibSystem');
-      obj.sys1=sys1;
-      obj.sys2=sys2;
 
-      if (any(~isinf([sys2.umin;sys2.umax])))
-        error('RobotLib:CascadeSystem:NotSupported','saturations on system 2 are not supported yet');
-      end
+      [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
+
       obj = obj.setInputLimits(sys1.umin,sys2.umax);
       
       ind=0;
-      n=obj.sys1.getNumDiscStates();
+      n=sys1.getNumDiscStates();
       obj.sys1ind = ind+(1:n)';
       ind=ind+n;
-      n=obj.sys2.getNumDiscStates();
+      n=sys2.getNumDiscStates();
       obj.sys2ind=  ind+(1:n)'; ind=ind+n;
 
-      n=obj.sys1.getNumContStates();
+      n=sys1.getNumContStates();
       obj.sys1ind = [obj.sys1ind; ind+(1:n)'];  ind=ind+n;
-      n=obj.sys2.getNumContStates();
+      n=sys2.getNumContStates();
       obj.sys2ind = [obj.sys2ind; ind+(1:n)'];  
       
-      % handle the sample times
-      obj.ts = obj.sys1.getSampleTime();  ts2 = obj.sys2.getSampleTime();
-      if (size(obj.ts,2) ~= size(ts2,2)) || any(any(obj.ts ~= ts2))
-        if (isInheritedTime(obj.sys1)) 
-          obj.ts = ts2;
-        elseif (isInheritedTime(obj.sys2))
-          % then ok with ts from sys1
-          % (intentionally blank)
-        else
-          error('RobotLib:CascadeSystem:NotSupported','Cascade combinations of systems with different sample times not supported as a robotlib system (yet)');
-          % it's ok, it will end up being a simulink model
-        end
-      end
+      obj = setNumZeroCrossings(obj,sys1.getNumZeroCrossings()+sys2.getNumZeroCrossings()+sum(~isinf([sys2.umin;sys2.umax])));
+      obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
+      obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
+      
+      obj.sys1=sys1;
+      obj.sys2=sys2;
     end
     
     function [x1,x2] = decodeX(obj,x)
@@ -62,18 +52,18 @@ classdef CascadeSystem < RobotLibSystem
       [x1,x2]=decodeX(obj,x);
       xdn=[];
       if (obj.sys1.getNumDiscStates()) xdn=[xdn;update(obj.sys1,t,x1,u)]; end
-      if (obj.sys2.getNumDiscStates()) xdn=[xdn;update(obj.sys2,t,x2,output(obj.sys1,t,x1,u))]; end
+      if (obj.sys2.getNumDiscStates()) xdn=[xdn;update(obj.sys2,t,x2,sat2(obj,output(obj.sys1,t,x1,u)))]; end
     end
     function xcdot = dynamics(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
       xcdot=[];
       if (obj.sys1.getNumContStates()) xcdot=[xcdot;dynamics(obj.sys1,t,x1,u)]; end
-      if (obj.sys2.getNumContStates()) xcdot=[xcdot;dynamics(obj.sys2,t,x2,output(obj.sys1,t,x1,u))]; end
+      if (obj.sys2.getNumContStates()) xcdot=[xcdot;dynamics(obj.sys2,t,x2,sat2(obj,output(obj.sys1,t,x1,u)))]; end
     end
     function y = output(obj,t,x,u)
       if (nargin<4) u=[]; end  % easiest way to handle the non-direct feedthrough case
       [x1,x2]=decodeX(obj,x);
-      y = obj.sys2.output(t,x2,obj.sys1.output(t,x1,u));
+      y = obj.sys2.output(t,x2,sat2(obj,output(obj.sys1,t,x1,u)));
     end
     
     function x0=getInitialState(obj)
@@ -83,14 +73,48 @@ classdef CascadeSystem < RobotLibSystem
     function x0=getInitialStateWInput(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
       x1=getInitialStateWInput(obj.sys1,t,x1,u);
-      x2=getInitialStateWInput(obj.sys2,t,x2,obj.sys1.output(t,x1,u));
+      x2=getInitialStateWInput(obj.sys2,t,x2,sat2(obj,output(obj.sys1,t,x1,u)));
       x0=encodeX(obj,x1,x2);
     end
     
-    function ts=getSampleTime(obj)
-      ts = obj.ts;
+    function zcs = zeroCrossings(obj,t,x,u)
+      [x1,x2]=decodeX(obj,x);
+      [y1,y2]=getOutputs(obj,t,x,u);
+      if (getNumZeroCrossings(obj.sys1)>0)
+        zcs=zeroCrossings(obj.sys1,t,x1,sat1(obj,y2+u));
+      else
+        zcs=[];
+      end
+      if (getNumZeroCrossings(obj.sys2)>0)
+        zcs=[zcs;zeroCrossings(obj.sys2,t,x2,sat2(obj,y1))];
+      end
+      
+      % sys2 umin
+      ind=find(~isinf(obj.sys2.umin));
+      if (~isempty(ind)) zcs=[zcs;y1(ind) - obj.sys2.umin(ind)]; end
+      
+      % sys2 umax
+      ind=find(~isinf(obj.sys2.umax));
+      if (~isempty(ind)) zcs=[zcs;obj.sys2.umax(ind) - y1(ind)]; end
+    end
+    
+    function con = stateConstraints(obj,x)
+      [x1,x2]=decodeX(obj,x);
+      if (getNumStateConstraints(obj.sys1)>0)
+        con=stateConstraints(obj.sys1,x1);
+      else
+        con=[];
+      end
+      if (getNumStateConstraints(obj.sys2)>0)
+        con=[con;stateConstraints(obj.sys2,x2)];
+      end
     end
   end
   
+  methods (Access=private)
+    function u2=sat2(obj,u2)
+      u2=min(max(u2,obj.sys2.umin),obj.sys2.umax);
+    end
+  end
 end
     

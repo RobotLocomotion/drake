@@ -54,6 +54,34 @@ classdef DynamicalSystem
   
   % construction methods
   methods
+    function [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,attach_tranform_to_sys1)
+      % A utility method which checks if the output of sys1 is in the same
+      % frame as the input to sys2, or if there is a known transform for
+      % the conversion. If the two cannot be combined, then it throws an error.
+      %
+      % @param sys1 the first DynamicalSystem
+      % @param sys2 the second DynamicalSystem
+      % @param attach_transform_to_sys1 if a CoordinateTranform needs to be
+      % applied, then it can be applied to the input of sys1 (true) or the output
+      % of sys2.  @default false
+
+      if (nargin<3) attach_tranform_to_sys1 = false; end
+      
+      if (getOutputFrame(sys1)~=getInputFrame(sys2))
+        tf = findTransform(getOutputFrame(sys1),getInputFrame(sys2));
+        if (isempty(tf))
+          error('Input frame of sys2 does not match output frame of sys1, and I cannot find a CoordinateTransform to make the connection'); 
+        end
+        
+        if (attach_transform_to_sys1)
+          sys1=cascade(sys1,tf);
+        else
+          sys2=cascade(tf,sys2);
+        end
+      end
+      
+    end
+    
     function newsys = cascade(sys1,sys2)
       % Creates a new system with the output of system 1 connected to the
       % input of system 2. The input coordinate frame of system 2 must match
@@ -65,14 +93,7 @@ classdef DynamicalSystem
       %
       % @retval newsys the new DynamicalSystem
 
-      if (getOutputFrame(sys1)~=getInputFrame(sys2))
-        tf = findTransform(getOutputFrame(sys1),getInputFrame(sys2));
-        if (isempty(tf))
-          error('Input frame of sys2 does not match output frame of sys1, and I cannot find a CoordinateTransform to make the connection'); 
-        end
-        % otherwise, add the transform to the front of sys2 and continue
-        sys2=cascade(tf,sys2);
-      end
+      [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
       
       mdl = ['Cascade_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');
@@ -108,22 +129,9 @@ classdef DynamicalSystem
       % (with sys1 on the forward path, and sys2 on the return path). 
       % the input of the new system gets added into the input of sys1
       % the output of sys1 will be the output of the new system.
-      if (getOutputFrame(sys1)~=getInputFrame(sys2))
-        tf = findTransform(getOutputFrame(sys1),getInputFrame(sys2));
-        if (isempty(tf))
-          error('Input frame of sys2 does not match output frame of sys1, and I cannot find a CoordinateTransform to make the connection'); 
-        end
-        % otherwise, add the transform to the front of sys2 and continue
-        sys2=cascade(tf,sys2);
-      end
-      if (getOutputFrame(sys2)~=getInputFrame(sys1))
-        tf = findTransform(getOutputFrame(sys2),getInputFrame(sys1));
-        if (isempty(tf))
-          error('Input frame of sys1 does not match output frame of sys2, and I cannot find a CoordinateTransform to make the connection'); 
-        end
-        % otherwise, add the transform to the output of sys2 and continue
-        sys2=cascade(sys2,tf);
-      end
+      
+      [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,false);
+      [sys2,sys1] = matchCoordinateFramesForCombination(sys2,sys1,true);
       
       mdl = ['Feedback_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');
@@ -440,7 +448,7 @@ classdef DynamicalSystem
 
   end
   
-  properties (SetAccess=private,GetAccess=protected)
+  properties (SetAccess=private,GetAccess=private)
     time_invariant_flag = false;  % set to true if you know the system is time invariant
     simulink_params=struct();     % simulink model parameters
     structured_x;                 % simulink state structure (cached for efficiency)
