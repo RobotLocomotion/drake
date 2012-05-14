@@ -9,7 +9,6 @@ classdef CoordinateFrame < handle
     dim;            % scalar dimension of this coordinate system
     transforms={};  % handles to CoordinateTransform objects
 
-    prefix;         % string used as an automatic prefix for coordinates if they are not named manually
     coordinates={}; % list of coordinate names
 
     angle_flag=[];  % angle_flag(i)=true iff variable i wraps around 2pi
@@ -17,7 +16,7 @@ classdef CoordinateFrame < handle
   end
   
   methods
-    function obj=CoordinateFrame(name,dim)
+    function obj=CoordinateFrame(name,dim,prefix)
       typecheck(name,'char');
       obj.name = name;
       
@@ -25,23 +24,28 @@ classdef CoordinateFrame < handle
       sizecheck(dim,[1 1]);
       obj.dim = dim;
       
-      ind = strfind(name,':');
-      if isempty(ind)
-        obj.prefix = name;
+      if (nargin<3)
+        ind = strfind(name,':');
+        if isempty(ind)
+          prefix = name(1);
+        else
+          prefix = name(ind(end)+[1:2]);
+        end
       else
-        obj.prefix = name(ind(end)+1:end);
+        typecheck(prefix,'char');
+        sizecheck(prefix,[1 1]);
       end
       
       ind=1;
       function str=coordinateName(~);
-        str=[obj.prefix,num2str(ind)];
+        str=[prefix,num2str(ind)];
         ind=ind+1;
       end
       obj.coordinates=cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
       
       if checkDependency('spot_enabled')
-        if (obj.prefix(1)=='t') error('oops.  destined for a collision with msspoly representing time'); end
-        obj.poly = msspoly(obj.prefix(1),dim);
+        if (prefix=='t') error('oops.  destined for a collision with msspoly representing time'); end
+        obj.poly = msspoly(prefix,dim);
       end
       
       obj.angle_flag = repmat(false,dim,1);
@@ -82,36 +86,6 @@ classdef CoordinateFrame < handle
       end
     end
   end
-  
-  methods (Static)
-    function obj = getSingleton(name,dim)  
-      % in some places, it may be enforce that only a single coordinate
-      % frame exists with a given name. use this method to
-      % create/access a singleton.  
-      % 
-      % @param name string name for the coordinate frame
-      % @param dim dimension of the coordinate frame.  
-      
-      persistent objectStore;
-      
-      if (isempty(objectStore)) 
-        objectStore={}; 
-        ind=[];
-      else
-        ind=find(cellfun(@(frame)strcmp(frame.name,name),objectStore));
-      end
-      
-      if isempty(ind)
-        obj = CoordinateFrame(name,dim);
-        objectStore{end+1}=obj;
-      else
-        if (length(ind)>1) error('found multiple matches in object store.  this shouldn''t happen'); end
-        if (objectStore{ind}.dim ~= dim)
-          error('found singleton with same name, but different dim.  this is not allowed'); 
-        end
-        obj = objectStore{ind};
-      end
-    end
-  end
+
   % todo: consider putting LCM encode/decode in here
 end

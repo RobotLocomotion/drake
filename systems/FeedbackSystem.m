@@ -12,9 +12,11 @@ classdef FeedbackSystem < RobotLibSystem
     function obj = FeedbackSystem(sys1,sys2)
       obj = obj@RobotLibSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
         sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
-        0, sys1.getNumOutputs(), false, sys1.isTI() & sys2.isTI());
+        sys1.getNumInputs(), sys1.getNumOutputs(), false, sys1.isTI() & sys2.isTI());
       typecheck(sys1,'RobotLibSystem');
       typecheck(sys2,'RobotLibSystem');
+      
+      
       obj.sys1=sys1;
       obj.sys2=sys2;
 
@@ -22,6 +24,7 @@ classdef FeedbackSystem < RobotLibSystem
         error('RobotLib:FeedbackSystem:AlgebraicLoop','algebraic loop');
       end
       if (any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax])))
+        % todo: support these in dynamics and add zero crossings
         error('RobotLib:FeedbackSystem:NotSupported','saturations not supported');
       end
       
@@ -67,7 +70,7 @@ classdef FeedbackSystem < RobotLibSystem
         y2=output(obj.sys2,t,x2,y1);
       else % do sys2 first
         y2=output(obj.sys2,t,x2);  % doesn't need u
-        y1=output(obj.sys1,t,x1,y2);
+        y1=output(obj.sys1,t,x1,y2+u);
       end
     end
     
@@ -75,14 +78,14 @@ classdef FeedbackSystem < RobotLibSystem
       [x1,x2]=decodeX(obj,x);
       [y1,y2]=getOutputs(obj,t,x,u);
       xdn=[];
-      if (obj.sys1.getNumDiscStates()) xdn=[xdn;update(obj.sys1,t,x1,y2)]; end
+      if (obj.sys1.getNumDiscStates()) xdn=[xdn;update(obj.sys1,t,x1,y2+u)]; end
       if (obj.sys2.getNumDiscStates()) xdn=[xdn;update(obj.sys2,t,x2,y1)]; end
     end
     function xcdot = dynamics(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
       [y1,y2]=getOutputs(obj,t,x,u);
       xcdot=[];
-      if (obj.sys1.getNumContStates()) xcdot=[xcdot;dynamics(obj.sys1,t,x1,y2)]; end
+      if (obj.sys1.getNumContStates()) xcdot=[xcdot;dynamics(obj.sys1,t,x1,y2+u)]; end
       if (obj.sys2.getNumContStates()) xcdot=[xcdot;dynamics(obj.sys2,t,x2,y1)]; end
     end
     function y = output(obj,t,x,u)
@@ -97,7 +100,7 @@ classdef FeedbackSystem < RobotLibSystem
     function x0=getInitialStateWInput(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
       [y1,y2]=getOutputs(obj,t,x,u);
-      x1=getInitialStateWInput(obj.sys1,t,x1,y2);
+      x1=getInitialStateWInput(obj.sys1,t,x1,y2+u);
       x2=getInitialStateWInput(obj.sys2,t,x2,y1);
       x0=encodeX(obj,x1,x2);
       % note: this is not perfect (y2 could change after updating x1).  how

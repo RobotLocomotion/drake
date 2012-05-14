@@ -120,7 +120,7 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       typecheck(p_state_constraints,'msspoly');
       p_x = obj.getStateFrame.poly;
       if ~isempty(setdiff(decomp(p_state_constraints),p_x))
-      if (any(match(obj.p_x,decomp(p_state_constraints))==0))
+%      if (any(match(obj.p_x,decomp(p_state_constraints))==0))
         error('state constraints must depend only on x');
       end
       if (~iscolumn(p_state_constraints))
@@ -136,19 +136,35 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       else
         typecheck(p_mass_matrix,'msspoly');
         sizecheck(p_mass_matrix,[length(obj.p_dynamics),obj.num_xc]);
+        if ~isempty(setdiff(decomp(p_state_constraints),p_x))
+          error('mass matrix must depend only on x');
+        end
         obj.p_mass_matrix = p_mass_matrix;
       end
     end
     
     function obj = pullEmptyPolysFromMethods(obj)
+      p_t=msspoly('t',1);
+      p_x=obj.getStateFrame.poly;
+      p_u=obj.getInputFrame.poly;
+      
       if (isempty(obj.p_dynamics) && obj.num_xc>0)
-        obj.p_dynamics=obj.dynamics(obj.p_t,obj.p_x,obj.p_u);
+        obj.p_dynamics=obj.dynamics(p_t,p_x,p_u);
+        if deg(obj.p_dynamics,p_t)>0
+          error('polynomial dynamics must be time invariant');
+        end
       end
       if (isempty(obj.p_update) && obj.num_xd>0)
-        obj.p_update=obj.update(obj.p_t,obj.p_x,obj.p_u);
+        obj.p_update=obj.update(p_t,p_x,p_u);
+        if deg(obj.p_update,p_t)>0
+          error('polynomial update must be time invariant');
+        end
       end
       if (isempty(obj.p_output) && obj.num_y>0)
-        obj.p_output=obj.output(obj.p_t,obj.p_x,obj.p_u);
+        obj.p_output=obj.output(p_t,p_x,p_u);
+        if deg(obj.p_output,p_t)>0
+          error('polynomial output must be time invariant');
+        end
       end
     end
     
@@ -156,40 +172,43 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
     function [xcdot,df] = dynamics(obj,t,x,u)
       % should only get here if constructor specified p_dynamics
       if (isempty(obj.p_dynamics)) error('p_dynamics is not defined.  how did you get here?'); end
-      xcdot = double(subs(obj.p_dynamics,[obj.p_t;obj.p_x;obj.p_u],[t;x;u]));
+      p_x=obj.getStateFrame.poly;
+      p_u=obj.getInputFrame.poly;
+      xcdot = double(subs(obj.p_dynamics,[p_x;p_u],[x;u]));
       if (nargout>1)
-        df = double(subs(diff(obj.p_dynamics,[obj.p_t;obj.p_x;obj.p_u]),[obj.p_t;obj.p_x;obj.p_u],[t;x;u]));
+        df = [zeros(obj.num_xc,1),double(subs(diff(obj.p_dynamics,[p_t;p_x;p_u]),[p_x;p_u],[x;u]))];
       end
       if (~isempty(obj.p_mass_matrix))
-        e = double(subs(obj.p_mass_matrix,obj.p_x,x));
+        e = double(subs(obj.p_mass_matrix,p_x,x));
         xcdot = e\xcdot;
         if (nargout>1) 
           % e(x)xdot = f(x) => dexdotdx + e(x)*dxdotdx = dfdx
           %  where the columns of dexdotdx are dedxi*xdot
           nX = obj.num_xc; cellxcdot=cell(1,nX); [cellxcdot{:}]=deal(xcdot); 
-          dexdotdx = reshape(double(subs(diff(obj.p_mass_matrix(:),obj.p_x),obj.p_x,x)),nX,[])*blkdiag(cellxcdot{:}); 
+          dexdotdx = reshape(double(subs(diff(obj.p_mass_matrix(:),p_x),p_x,x)),nX,[])*blkdiag(cellxcdot{:}); 
           df = e\(df - [zeros(nX,1),dexdotdx,zeros(nX,obj.num_u)]);
         end
       end
     end
     function [xdn,df] = update(obj,t,x,u)
       if (isempty(obj.p_update)) error('p_update is not defined.  how did you get here?'); end
-      xdn = double(subs(obj.p_update,[obj.p_t;obj.p_x;obj.p_u],[t;x;u]));
+      p_x=obj.getStateFrame.poly;
+      p_u=obj.getInputFrame.poly;
+      xdn = double(subs(obj.p_update,[p_x;p_u],[x;u]));
       if (nargout>1)
-        df = double(subs(diff(obj.p_update,[obj.p_t;obj.p_x;obj.p_u]),[obj.p_t;obj.p_x;obj.p_u],[t;x;u]));
+        df = [zeros(obj.num_xd,1),double(subs(diff(obj.p_update,[p_x;p_u]),[p_x;p_u],[x;u]))];
       end
     end
     function [y,dy] = output(obj,t,x,u)
       if (isempty(obj.p_output)) error('p_output is not defined.  how did you get here?'); end
-      if (nargin<4) p_u=[]; u=[]; else p_u=obj.p_u; end  % ok for systems without direct feedthrough
-      y = double(subs(obj.p_output,[obj.p_t;obj.p_x;p_u],[t;x;u]));
+      p_x=obj.getStateFrame.poly;
+      if (nargin<4) p_u=[]; u=[]; else p_u=obj.getInputFrame.poly; end  % ok for systems without direct feedthrough
+      y = double(subs(obj.p_output,[p_x;p_u],[x;u]));
       if (nargout>1)
-        dy = double(subs(diff(obj.p_output,[obj.p_t;obj.p_x;p_u]),[obj.p_t;obj.p_x;obj.p_u],[t;x;u]));
+        dy = [zeros(obj.num_y,1),double(subs(diff(obj.p_output,[p_x;p_u]),[p_x;obj.p_u],[x;u]))];
       end
     end
     
-    % todo: implement gradients (it's trivial)
-
     function obj = setNumContStates(obj,num_xc)
       obj = setNumContStates@RobotLibSystem(obj,num_xc);
       if (obj.num_xc+obj.num_xd>0)
