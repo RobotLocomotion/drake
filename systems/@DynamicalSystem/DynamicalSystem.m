@@ -54,7 +54,7 @@ classdef DynamicalSystem
   
   % construction methods
   methods
-    function [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,attach_tranform_to_sys1)
+    function [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,attach_transform_to_sys1)
       % A utility method which checks if the output of sys1 is in the same
       % frame as the input to sys2, or if there is a known transform for
       % the conversion. If the two cannot be combined, then it throws an error.
@@ -65,7 +65,7 @@ classdef DynamicalSystem
       % applied, then it can be applied to the input of sys1 (true) or the output
       % of sys2.  @default false
 
-      if (nargin<3) attach_tranform_to_sys1 = false; end
+      if (nargin<3) attach_transform_to_sys1 = false; end
       
       if (getOutputFrame(sys1)~=getInputFrame(sys2))
         tf = findTransform(getOutputFrame(sys1),getInputFrame(sys2));

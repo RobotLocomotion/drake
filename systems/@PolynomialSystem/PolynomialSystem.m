@@ -53,8 +53,8 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       
       % Now create the msspoly versions of the dynamics,update,and output:
       p_t=msspoly('t',1);
-      if (obj.num_x) p_x=obj.getStateFrame.poly; else p_x=[]; end
-      if (obj.num_u) p_u=obj.getInputFrame.poly; else p_u=[]; end
+      p_x=obj.getStateFrame.poly;
+      p_u=obj.getInputFrame.poly;
       
       % these will error if the system is not polynomial (should I catch
       % and rethrow the error with more information?)
@@ -118,7 +118,7 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
     
     function obj = addStateConstraints(obj,p_state_constraints)
       typecheck(p_state_constraints,'msspoly');
-      if (obj.num_x) p_x=obj.getStateFrame.poly; else p_x=[]; end
+      p_x=obj.getStateFrame.poly;
       if ~isempty(setdiff(decomp(p_state_constraints),p_x))
 %      if (any(match(obj.p_x,decomp(p_state_constraints))==0))
         error('state constraints must depend only on x');
@@ -136,6 +136,7 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       else
         typecheck(p_mass_matrix,'msspoly');
         sizecheck(p_mass_matrix,[length(obj.p_dynamics),obj.num_xc]);
+        p_x=obj.getStateFrame.poly;
         if ~isempty(setdiff(decomp(p_state_constraints),p_x))
           error('mass matrix must depend only on x');
         end
@@ -145,8 +146,8 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
     
     function obj = pullEmptyPolysFromMethods(obj)
       p_t=msspoly('t',1);
-      if (obj.num_x) p_x=obj.getStateFrame.poly; else p_x=[]; end
-      if (obj.num_u) p_u=obj.getInputFrame.poly; else p_u=[]; end
+      p_x=obj.getStateFrame.poly;
+      p_u=obj.getInputFrame.poly;
       
       if (isempty(obj.p_dynamics) && obj.num_xc>0)
         obj.p_dynamics=obj.dynamics(p_t,p_x,p_u);
@@ -172,8 +173,8 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
     function [xcdot,df] = dynamics(obj,t,x,u)
       % should only get here if constructor specified p_dynamics
       if (isempty(obj.p_dynamics)) error('p_dynamics is not defined.  how did you get here?'); end
-      if (obj.num_x) p_x=obj.getStateFrame.poly; else p_x=[]; end
-      if (obj.num_u) p_u=obj.getInputFrame.poly; else p_u=[]; end
+      p_x=obj.getStateFrame.poly; 
+      p_u=obj.getInputFrame.poly; 
       xcdot = double(subs(obj.p_dynamics,[p_x;p_u],[x;u]));
       if (nargout>1)
         df = [zeros(obj.num_xc,1),double(subs(diff(obj.p_dynamics,[p_t;p_x;p_u]),[p_x;p_u],[x;u]))];
@@ -192,8 +193,8 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
     end
     function [xdn,df] = update(obj,t,x,u)
       if (isempty(obj.p_update)) error('p_update is not defined.  how did you get here?'); end
-      if (obj.num_x) p_x=obj.getStateFrame.poly; else p_x=[]; end
-      if (obj.num_u) p_u=obj.getInputFrame.poly; else p_u=[]; end
+      p_x=obj.getStateFrame.poly;
+      p_u=obj.getInputFrame.poly;
       xdn = double(subs(obj.p_update,[p_x;p_u],[x;u]));
       if (nargout>1)
         df = [zeros(obj.num_xd,1),double(subs(diff(obj.p_update,[p_x;p_u]),[p_x;p_u],[x;u]))];
@@ -201,7 +202,7 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
     end
     function [y,dy] = output(obj,t,x,u)
       if (isempty(obj.p_output)) error('p_output is not defined.  how did you get here?'); end
-      if (obj.num_x) p_x=obj.getStateFrame.poly; else p_x=[]; end
+      p_x=obj.getStateFrame.poly;
       if (nargin<4 || obj.num_u<1) p_u=[]; u=[]; else p_u=obj.getInputFrame.poly; end  % ok for systems without direct feedthrough
       y = double(subs(obj.p_output,[p_x;p_u],[x;u]));
       if (nargout>1)

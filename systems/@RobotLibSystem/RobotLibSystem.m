@@ -25,12 +25,9 @@ classdef RobotLibSystem < DynamicalSystem
         obj = setNumContStates(obj,num_xc);
         obj = setNumDiscStates(obj,num_xd);
         obj = setNumInputs(obj,num_u);
-        if (nargin>=4) obj = setNumOutputs(obj,num_y); end
+        if (nargin>=4) obj = setNumOutputs(obj,num_y); else obj = setNumOutputs(obj,0); end
         if (nargin>=5) obj = setDirectFeedthrough(obj,direct_feedthrough_flag); end
         if (nargin>=6) obj = setTIFlag(obj,time_invariant_flag); end
-        if (num_u) obj=setInputFrame(obj,CoordinateFrame([class(obj),'Input'],num_u,'u')); end
-        if (num_xc+num_xd) obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],num_xc+num_xd,'x')); end
-        if (num_y) obj=setOutputFrame(obj,CoordinateFrame([class(obj),'Output'],num_y,'y')); end
       end
       
     end      
@@ -214,12 +211,14 @@ classdef RobotLibSystem < DynamicalSystem
       if (num_xc<0) error('num_xc must be >= 0'); end
       obj.num_xc = num_xc;
       obj.num_x = obj.num_xd + obj.num_xc;
+      obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],obj.num_x,'x'));
     end
     function obj = setNumDiscStates(obj,num_xd)
       % Guards the num_states variable
       if (num_xd<0) error('num_xd must be >= 0'); end
       obj.num_xd = num_xd;
       obj.num_x = obj.num_xc + obj.num_xd;
+      obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],obj.num_x,'x'));
     end
     function obj = setNumInputs(obj,num_u)
       % Guards the num_u variable.
@@ -237,6 +236,7 @@ classdef RobotLibSystem < DynamicalSystem
       end
       
       obj.num_u = num_u;
+      obj=setInputFrame(obj,CoordinateFrame([class(obj),'Input'],num_u,'u'));
     end
     function obj = setInputLimits(obj,umin,umax)
       % Guards the input limits to make sure it stay consistent
@@ -254,6 +254,7 @@ classdef RobotLibSystem < DynamicalSystem
       % Guards the number of outputs to make sure it's consistent
       if (num_y<0) error('num_y must be >=0'); end
       obj.num_y = num_y;
+      obj=setOutputFrame(obj,CoordinateFrame([class(obj),'Output'],num_y,'y'));
     end
     function n = getNumZeroCrossings(obj)
       % Returns the number of zero crossings

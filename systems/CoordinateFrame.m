@@ -12,7 +12,7 @@ classdef CoordinateFrame < handle
     coordinates={}; % list of coordinate names
 
     angle_flag=[];  % angle_flag(i)=true iff variable i wraps around 2pi
-    poly;           % optional msspoly variables for this frame
+    poly=[];           % optional msspoly variables for this frame
   end
   
   methods
@@ -43,7 +43,7 @@ classdef CoordinateFrame < handle
       end
       obj.coordinates=cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
       
-      if checkDependency('spot_enabled')
+      if checkDependency('spot_enabled') && dim>0
         if (prefix=='t') error('oops.  destined for a collision with msspoly representing time'); end
         obj.poly = msspoly(prefix,dim);
       end

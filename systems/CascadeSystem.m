@@ -17,7 +17,7 @@ classdef CascadeSystem < RobotLibSystem
 
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
 
-      obj = obj.setInputLimits(sys1.umin,sys2.umax);
+      obj = obj.setInputLimits(sys1.umin,sys1.umax);
       
       ind=0;
       n=sys1.getNumDiscStates();
@@ -34,6 +34,9 @@ classdef CascadeSystem < RobotLibSystem
       obj = setNumZeroCrossings(obj,sys1.getNumZeroCrossings()+sys2.getNumZeroCrossings()+sum(~isinf([sys2.umin;sys2.umax])));
       obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
       obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
+
+      obj = setInputFrame(obj,sys1.getInputFrame());
+      obj = setOutputFrame(obj,sys2.getOutputFrame());
       
       obj.sys1=sys1;
       obj.sys2=sys2;
