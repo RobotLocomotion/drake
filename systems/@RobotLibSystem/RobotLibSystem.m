@@ -329,7 +329,7 @@ classdef RobotLibSystem < DynamicalSystem
       traj = FunctionHandleTrajectory(@(t)obj.output(t,xtraj.eval(t),zeros(obj.getNumInputs(),1)),[obj.getNumOutputs,1],tspan);
     end
     
-    function sys=feedback(sys1,sys2,options)
+    function sys=feedback(sys1,sys2)
       % Constructs a feedback combination of sys1 and sys2.  
       % Tries to keep the system as a SmoothRobotLibSystem, but will fail
       % if one of the systems has discontinuities, for instance from an
@@ -344,17 +344,18 @@ classdef RobotLibSystem < DynamicalSystem
       % The input to the feedback model is added to the output of sys2
       % before becoming the input for sys1.  The output of the feedback
       % model is the output of sys1.
-      try 
+
+      if isa(sys2,'RobotLibSystem')
         sys=FeedbackSystem(sys1,sys2);  % try to keep it a robotlibsystem
-      catch
+      else
         sys=feedback@DynamicalSystem(sys1,sys2);
       end
     end
     
     function sys=cascade(sys1,sys2)
-      try
+      if isa(sys2,'RobotLibSystem')
         sys=CascadeSystem(sys1,sys2);   % try to keep it a robotlibsystem 
-      catch
+      else
         sys=cascade@DynamicalSystem(sys1,sys2);
       end
     end

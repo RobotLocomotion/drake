@@ -51,15 +51,15 @@ if (all(x0==0))
   ltisys.input_frame = obj.state_frame;
 else
   ltisys.input_frame = CoordinateFrame([obj.state_frame.name,' - ', mat2str(x0,3)],length(x0));
-  obj.state_frame.addTransform(AffineTransform(obj.state_frame,ltisys.input_frame,eye(size(x0)),-x0));
-  ltisys.input_frame.addTransform(AffineTransform(ltisys.input_frame,obj.state_frame,eye(size(x0)),+x0));
+  obj.state_frame.addTransform(AffineTransform(obj.state_frame,ltisys.input_frame,eye(length(x0)),-x0));
+  ltisys.input_frame.addTransform(AffineTransform(ltisys.input_frame,obj.state_frame,eye(length(x0)),+x0));
 end
 if (all(u0==0))
   ltisys.output_frame = obj.input_frame;
 else
   ltisys.output_frame = CoordinateFrame([obj.input_frame.name,' + ',mat2str(u0,3)],length(u0));
-  ltisys.output_frame.addTransform(AffineTransform(ltisys.output_frame,obj.input_frame,eye(size(u0)),u0));
-  obj.input_frame.addTransform(AffineTransform(obj.input_frame,ltisys.output_frame,eye(size(u0)),-u0));
+  ltisys.output_frame.addTransform(AffineTransform(ltisys.output_frame,obj.input_frame,eye(length(u0)),u0));
+  obj.input_frame.addTransform(AffineTransform(obj.input_frame,ltisys.output_frame,eye(length(u0)),-u0));
 end
 
 if (nargout>1)
