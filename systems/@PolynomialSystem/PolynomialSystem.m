@@ -227,7 +227,7 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
     
     function sys = feedback(sys1,sys2,options)
       % try to keep feedback between polynomial systems polynomial.  else,
-      % kick out to SmoothRobotLibSystem
+      % kick out to RobotLibSystem
       %
       % @option try_to_be_robotlibsystem set to false if you want to return
       % a simulink model. @default true
@@ -414,7 +414,7 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       end
       
       if (isempty(sys))
-        sys = feedback@SmoothRobotLibSystem(sys1,sys2,options);
+        sys = feedback@RobotLibSystem(sys1,sys2,options);
       end
     end
   end
