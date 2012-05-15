@@ -38,6 +38,9 @@ classdef FeedbackSystem < RobotLibSystem
       obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
       obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
       
+      obj = setInputFrame(obj,sys1.getInputFrame());
+      obj = setOutputFrame(obj,sys1.getOutputFrame());
+
       obj.sys1=sys1;
       obj.sys2=sys2;
     end
