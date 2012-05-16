@@ -118,10 +118,10 @@ classdef RobotLibSystem < DynamicalSystem
           ts=ts(:,find(ts(1,:)~=-1));
         end
         if sum(ts(1,:)==0)>1 % then multiple continuous
-          error('cannot define a robotlibsystem using modes that have both ''continuous time'' and ''continuous time, fixed in minor offset'' sample times');
+          error('RobotLib:RobotLibSystem:UnsupportedSampleTime','cannot define a robotlibsystem using modes that have both ''continuous time'' and ''continuous time, fixed in minor offset'' sample times');
         end
         if sum(ts(1,:)>0)>1 % then multiple discrete
-          error('cannot define a robotlibsystem using modes that have different discrete sample times');
+          error('RobotLib:RobotLibSystem:UnsupportedSampleTime','cannot define a robotlibsystem using modes that have different discrete sample times');
         end
       end
       obj.ts = ts;
@@ -346,7 +346,16 @@ classdef RobotLibSystem < DynamicalSystem
       % model is the output of sys1.
 
       if isa(sys2,'RobotLibSystem')
-        sys=FeedbackSystem(sys1,sys2);  % try to keep it a robotlibsystem
+        try 
+          sys=FeedbackSystem(sys1,sys2);  % try to keep it a robotlibsystem
+        catch ex
+          if (strcmp(ex.identifier, 'RobotLib:RobotLibSystem:UnsupportedSampleTime'))
+            warning('RobotLib:RobotLibSystem:UnsupportedSampleTime','Aborting feedback combination as a RobotLibSystem due to incompatible sample times');
+            sys = feedback@DynamicalSystem(sys1,sys2);
+          else
+            rethrow(ex);
+          end
+        end
       else
         sys=feedback@DynamicalSystem(sys1,sys2);
       end
@@ -354,7 +363,16 @@ classdef RobotLibSystem < DynamicalSystem
     
     function sys=cascade(sys1,sys2)
       if isa(sys2,'RobotLibSystem')
-        sys=CascadeSystem(sys1,sys2);   % try to keep it a robotlibsystem 
+        try
+          sys=CascadeSystem(sys1,sys2);   % try to keep it a robotlibsystem
+        catch ex
+          if (strcmp(ex.identifier, 'RobotLib:RobotLibSystem:UnsupportedSampleTime'))
+            warning('RobotLib:RobotLibSystem:UnsupportedSampleTime','Aborting cascade combination as a RobotLibSystem due to incompatible sample times');
+            sys = cascade@DynamicalSystem(sys1,sys2);
+          else
+            rethrow(ex);
+          end
+        end
       else
         sys=cascade@DynamicalSystem(sys1,sys2);
       end

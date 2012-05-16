@@ -37,10 +37,10 @@ classdef FeedbackSystem < RobotLibSystem
       obj = setNumZeroCrossings(obj,sys1.getNumZeroCrossings()+sys2.getNumZeroCrossings()+sum(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax])));
       obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
       obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
-      
+
       obj = setInputFrame(obj,sys1.getInputFrame());
       obj = setOutputFrame(obj,sys1.getOutputFrame());
-
+      
       obj.sys1=sys1;
       obj.sys2=sys2;
     end
