@@ -46,25 +46,25 @@ if (any(any(abs(C-eye(getNumStates(obj)))>tol)) || any(abs(D(:))>tol))
 end
 
 
-ltisys = TimeInvariantLinearSystem([],[],[],[],[],K);
+ltisys = TimeInvariantLinearSystem([],[],[],[],[],-K);
 if (all(x0==0))
-  ltisys.input_frame = obj.state_frame;
+  ltisys = setInputFrame(ltisys,obj.getStateFrame);
 else
-  ltisys.input_frame = CoordinateFrame([obj.state_frame.name,' - ', mat2str(x0,3)],length(x0));
-  obj.state_frame.addTransform(AffineTransform(obj.state_frame,ltisys.input_frame,eye(length(x0)),-x0));
-  ltisys.input_frame.addTransform(AffineTransform(ltisys.input_frame,obj.state_frame,eye(length(x0)),+x0));
+  ltisys = setInputFrame(ltisys,CoordinateFrame([obj.getStateFrame.name,' - ', mat2str(x0,3)],length(x0)));
+  obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ltisys.getInputFrame,eye(length(x0)),-x0));
+  ltisys.getInputFrame.addTransform(AffineTransform(ltisys.getInputFrame,obj.getStateFrame,eye(length(x0)),+x0));
 end
 if (all(u0==0))
-  ltisys.output_frame = obj.input_frame;
+  ltisys = setOutputFrame(ltisys,obj.getInputFrame);
 else
-  ltisys.output_frame = CoordinateFrame([obj.input_frame.name,' + ',mat2str(u0,3)],length(u0));
-  ltisys.output_frame.addTransform(AffineTransform(ltisys.output_frame,obj.input_frame,eye(length(u0)),u0));
-  obj.input_frame.addTransform(AffineTransform(obj.input_frame,ltisys.output_frame,eye(length(u0)),-u0));
+  ltisys = setOutputFrame(ltisys,CoordinateFrame([obj.getInputFrame.name,' + ',mat2str(u0,3)],length(u0)));
+  ltisys.getOutputFrame.addTransform(AffineTransform(ltisys.getOutputFrame,obj.getInputFrame,eye(length(u0)),u0));
+  obj.getInputFrame.addTransform(AffineTransform(obj.getInputFrame,ltisys.getOutputFrame,eye(length(u0)),-u0));
 end
 
 if (nargout>1)
-  x=ltisys.input_frame.poly; %msspoly('x',getNumStates(obj));
-  V=PolynomialLyapunovFunction(ltisys.input_frame,x'*S*x);
+  x=ltisys.getInputFrame.poly; %msspoly('x',getNumStates(obj));
+  V=PolynomialLyapunovFunction(ltisys.getInputFrame,x'*S*x);
 end
 
 end

@@ -58,12 +58,6 @@ classdef SimulinkModel < DynamicalSystem
       feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
       xcdot = feval(obj.mdl,t,x,u,'derivs');
       
-      % the following two lines are a bizarre work-around to a bug I've
-      % submitted to the mathworks.  they should be deleted if i figure out
-      % what's going on.
-%      Simulink.BlockDiagram.getInitialState(obj.mdl);
-%      xcdot = feval(obj.mdl,t,x,u,'derivs');
-
       xcdot = stateStructureToVector(obj,xcdot);
 
       if (nargout>1)
