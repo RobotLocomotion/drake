@@ -64,8 +64,8 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
           obj.p_dynamics = p_dynamics(p_t,p_x,p_u);
         else % method 1
           typecheck(p_dynamics,'msspoly');
-          if any([p_dynamics.m,p_dynamics.n] ~= [num_xc,1]) error('p_dynamics does not match num_xc'); end
-          if ~isempty(setdiff(decomp(p_dynamics),[p_x;p_u]))
+          sizecheck(p_dynamics,[num_xc,1]);
+          if any(match([p_t;p_x;p_u],decomp(p_dynamics))==0)
             error('p_dynamics depends on variables that do not match my free variables representing t, x, and u.'); 
           end
           obj.p_dynamics=p_dynamics;
@@ -83,8 +83,8 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
           obj.p_update = p_update(p_t,p_x,p_u);
         else % method 1
           typecheck(p_update,'msspoly');
-          if any([p_update.m,p_update.n] ~= [num_xd,1]) error('p_update does not match num_xd'); end
-          if ~isempty(setdiff(decomp(p_update),[p_t;p_x;p_u]))
+          sizecheck(p_update,[num_xd,1]);
+          if any(match([p_t;p_x;p_u],decomp(p_update))==0)
             error('p_update depends on variables that do not match my free variables representing t, x, and u.'); 
           end
           obj.p_update = p_update;
@@ -102,8 +102,8 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
           obj.p_output = p_output(p_t,p_x,p_u);
         else % method 1
           typecheck(p_output,'msspoly');
-          if any([p_output.m,p_output.n] ~= [num_y,1]) error('p_output does not match num_y'); end
-          if ~isempty(setdiff(decomp(p_output),[p_t;p_x;p_u]))
+          sizecheck(p_output,[num_y,1]);
+          if any(match([p_t;p_x;p_u],decomp(p_output))==0)
             error('p_output depends on variables that do not match my free variables representing t, x, and u.'); 
           end
           obj.p_output=p_output;
@@ -119,7 +119,7 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
     function obj = addStateConstraints(obj,p_state_constraints)
       typecheck(p_state_constraints,'msspoly');
       p_x=obj.getStateFrame.poly;
-      if ~isempty(setdiff(decomp(p_state_constraints),p_x))
+      if any(match(p_x,decomp(p_state_constraints))==0)
 %      if (any(match(obj.p_x,decomp(p_state_constraints))==0))
         error('state constraints must depend only on x');
       end
@@ -137,7 +137,7 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
         typecheck(p_mass_matrix,'msspoly');
         sizecheck(p_mass_matrix,[length(obj.p_dynamics),obj.num_xc]);
         p_x=obj.getStateFrame.poly;
-        if ~isempty(setdiff(decomp(p_state_constraints),p_x))
+        if any(match(p_x,decomp(p_mass_matrix))==0)
           error('mass matrix must depend only on x');
         end
         obj.p_mass_matrix = p_mass_matrix;
@@ -166,6 +166,9 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
         if deg(obj.p_output,p_t)>0
           error('polynomial output must be time invariant');
         end
+      end
+      if (isempty(obj.p_state_constraints) && obj.num_xcon>0)
+        obj.p_state_constraints=obj.stateConstraints(p_x);
       end
     end
     
@@ -230,6 +233,52 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       end
     end
     
+    function obj = setInputFrame(obj,frame)
+      if frame.dim>0
+        if obj.getNumStates()>0 && any(match(obj.getStateFrame.poly,frame.poly)~=0)
+          error('input frame poly clashes with current state frame poly.  this could lead to massive confusion');
+        end
+
+        if ~isempty(obj.p_dynamics)
+          obj.p_dynamics = subss(obj.p_dynamics,obj.getInputFrame.poly,frame.poly);
+        end
+        if ~isempty(obj.p_update)
+          obj.p_update = subss(obj.p_update,obj.getInputFrame.poly,frame.poly);
+        end
+        if ~isempty(obj.p_output)
+          obj.p_output = subss(obj.p_output,obj.getInputFrame.poly,frame.poly);
+        end
+      end
+      
+      obj = setInputFrame@RobotLibSystem(obj,frame);
+    end
+    
+    function obj = setStateFrame(obj,frame)
+      if frame.dim>0
+        if obj.getNumInputs()>0 && any(match(obj.getInputFrame.poly,frame.poly)~=0)
+          error('state frame poly clashes with current input frame poly.  this could lead to massive confusion');
+        end
+        
+        if ~isempty(obj.p_dynamics)
+          obj.p_dynamics = subs(obj.p_dynamics,obj.getStateFrame.poly,frame.poly);
+        end
+        if ~isempty(obj.p_update)
+          obj.p_update = subs(obj.p_update,obj.getStateFrame.poly,frame.poly);
+        end
+        if ~isempty(obj.p_output)
+          obj.p_output = subs(obj.p_output,obj.getStateFrame.poly,frame.poly);
+        end
+        if ~isempty(obj.p_state_constraints)
+          obj.p_state_constraints = subs(obj.p_state_constraints,obj.getStateFrame.poly,frame.poly);
+        end
+        if ~isempty(obj.p_mass_matrix)
+          obj.p_mass_matrix = subs(obj.p_mass_matrix,obj.getStateFrame.poly,frame.poly);
+        end
+      end
+      
+      obj = setStateFrame@RobotLibSystem(obj,frame);
+    end
+    
     function sys = feedback(sys1,sys2)
       % try to keep feedback between polynomial systems polynomial.  else,
       % kick out to RobotLibSystem
@@ -250,8 +299,16 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
         error('polynomialsystems aren''t supposed to have zero crossings'); 
       end
       
-      p_x = msspoly('x',sys1.getNumStates()+sys2.getNumStates());  % note: this assumes that the default state frame in the polynomial constructor below uses the prefix 'x'
-      p_u = getInputFrame(sys1).poly;  % note: this assumes that the default input frame in the poly constructor uses the same prefix as sys1.getInputFrame
+      sys = PolynomialSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
+        sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
+        sys1.getNumInputs(), sys1.getNumOutputs(), sys1.isDirectFeedthrough, ...
+        [],[],[]);
+      
+      sys = setInputFrame(sys,sys1.getInputFrame());
+      sys = setOutputFrame(sys,sys1.getOutputFrame());
+
+      p_x = sys.getStateFrame.poly;
+      p_u = sys.getInputFrame.poly;
       
       ind=0;
       n=sys1.getNumDiscStates();
@@ -268,34 +325,28 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       p_x2 = [p_x2; p_x(ind+(1:n)')];
       
       if (~sys1.isDirectFeedthrough()) % do sys1 first
-        p_y1 = subs(sys1.p_output,sys1.getStateframe.poly,p_x1); % doesn't need u
-        p_y2 = subss(sys2.p_output,[sys2.getStateFrame.poly;sys2.p_u],[p_x2;p_y1]);
+        p_y1 = subs(sys1.p_output,sys1.getStateFrame.poly,p_x1); % doesn't need u
+        p_y2 = subss(sys2.p_output,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1]);
       else % do sys2 first
         p_y2 = subs(sys2.p_output,sys2.getStateFrame.poly,p_x2); % doesn't need u
         p_y1 = subss(sys1.p_output,[sys1.getStateFrame.poly;p_u],[p_x1;p_y2+p_u]);
       end
       
-      p_dynamics = []; p_update=[]; p_output=[]; 
       if (sys1.getNumContStates()>0)
-        p_dynamics=[p_dynamics;subss(sys1.p_dynamics,[sys1.getStateFrame.poly;p_u],[p_x1;p_y2+p_u])];
+        sys.p_dynamics=[sys.p_dynamics;subss(sys1.p_dynamics,[sys1.getStateFrame.poly;p_u],[p_x1;p_y2+p_u])];
       end
       if (sys2.getNumContStates()>0)
-        p_dynamics=[p_dynamics;subss(sys2.p_dynamics,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
+        sys.p_dynamics=[sys.p_dynamics;subss(sys2.p_dynamics,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
       end
       if (sys1.getNumDiscStates()>0)
-        p_update = [p_update;subss(sys1.p_update,[sys1.getStateFrame.poly;p_u],[p_x1;p_y2+p_u])];
+        sys.p_update = [sys.p_update;subss(sys1.p_update,[sys1.getStateFrame.poly;p_u],[p_x1;p_y2+p_u])];
       end
       if (sys2.getNumDiscStates()>0)
-        p_update = [p_update; subss(sys2.p_update,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
+        sys.p_update = [sys.p_update; subss(sys2.p_update,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
       end
       if (sys1.getNumOutputs()>0)
-        p_output = p_y1;
+        sys.p_output = p_y1;
       end
-      
-      sys = PolynomialSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
-        sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
-        sys1.getNumInputs(), sys1.getNumOutputs(), sys1.isDirectFeedthrough, ...
-        p_dynamics,p_update,p_output);
       
       % handle state constraints
       p_state_constraints=[];
@@ -305,7 +356,9 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       if (sys2.getNumStateConstraints()>0)
         p_state_constraints=[p_state_constraints;subss(sys2.p_state_constraints,sys2.getStateFrame.poly,p_x2)];
       end
-      sys = addStateConstraints(sys,p_state_constraints);
+      if ~isempty(p_state_constraints)
+        sys = addStateConstraints(sys,p_state_constraints);
+      end
       
       try 
         sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to robotlibsystem?
@@ -317,9 +370,6 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
           rethrow(ex)
         end
       end
-      
-      sys = setInputFrame(sys,sys1.getInputFrame());
-      sys = setOutputFrame(sys,sys1.getOutputFrame());
       
       % set mass matrix
       if isempty(sys1.p_mass_matrix)
@@ -353,8 +403,16 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
         error('polynomialsystems aren''t supposed to have zero crossings'); 
       end
       
-      p_x = msspoly('x',sys1.getNumStates()+sys2.getNumStates());  % note: this assumes that the default state frame in the polynomial constructor below uses the prefix 'x'
-      p_u = sys1.getInputFrame.poly;  % note: this assumes that the default input frame in the poly constructor uses the same prefix as sys1.getInputFrame
+      sys = PolynomialSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
+        sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
+        sys1.getNumInputs(), sys2.getNumOutputs(), sys1.isDirectFeedthrough & sys2.isDirectFeedthrough, ...
+        [],[],[]);
+
+      sys = setInputFrame(sys,sys1.getInputFrame());
+      sys = setOutputFrame(sys,sys2.getOutputFrame());
+      
+      p_x = sys.getStateFrame.poly;
+      p_u = sys.getInputFrame.poly;
       
       ind=0;
       n=sys1.getNumDiscStates();
@@ -376,27 +434,21 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
         p_y1 = sys1.p_output;
       end
 
-      p_dynamics = []; p_update=[]; p_output=[]; 
       if (sys1.getNumContStates()>0)
-        p_dynamics=[p_dynamics;subss(sys1.p_dynamics,sys1.getStateFrame.poly,p_x1)];
+        sys.p_dynamics=[sys.p_dynamics;subss(sys1.p_dynamics,sys1.getStateFrame.poly,p_x1)];
       end
       if (sys2.getNumContStates()>0)
-        p_dynamics=[p_dynamics;subss(sys2.p_dynamics,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
+        sys.p_dynamics=[sys.p_dynamics;subss(sys2.p_dynamics,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
       end
       if (sys1.getNumDiscStates()>0)
-        p_update = [p_update;subss(sys1.p_update,sys1.getStateFrame.poly,p_x1)];
+        sys.p_update = [sys.p_update;subss(sys1.p_update,sys1.getStateFrame.poly,p_x1)];
       end
       if (sys2.getNumDiscStates()>0)
-        p_update = [p_update; subss(sys2.p_update,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
+        sys.p_update = [sys.p_update; subss(sys2.p_update,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
       end
       if (sys1.getNumOutputs()>0)
-        p_output = subss(sys2.p_output,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1]);
+        sys.p_output = subss(sys2.p_output,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1]);
       end
-      
-      sys = PolynomialSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
-        sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
-        sys1.getNumInputs(), sys2.getNumOutputs(), sys1.isDirectFeedthrough & sys2.isDirectFeedthrough, ...
-        p_dynamics,p_update,p_output);
       
       % handle state constraints
       p_state_constraints=[];
@@ -406,7 +458,9 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       if (sys2.getNumStateConstraints()>0)
         p_state_constraints=[p_state_constraints;subss(sys2.p_state_constraints,sys2.getStateFrame.poly,p_x2)];
       end
-      sys = addStateConstraints(sys,p_state_constraints);
+      if ~isempty(p_state_constraints)
+        sys = addStateConstraints(sys,p_state_constraints);
+      end
       
       try 
         sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to robotlibsystem?
@@ -418,9 +472,6 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
           rethrow(ex)
         end
       end
-      
-      sys = setInputFrame(sys,sys1.getInputFrame());
-      sys = setOutputFrame(sys,sys1.getOutputFrame());
       
       % set mass matrix
       if isempty(sys1.p_mass_matrix)

@@ -13,6 +13,10 @@ num_xd=sys.getNumDiscStates();
 num_u=sys.getNumInputs();
 num_y=sys.getNumOutputs();
 
+if (sys.getNumStateConstraints()>0)
+  error('cannot taylorApprox systems with state constraints');  % should I consider allowing it, but simply dropping the constraint?
+end
+
 if (num_x) p_x = msspoly('x',num_x); else p_x=[]; end
 if (num_u) p_u = msspoly('u',num_u); else p_u=[]; end
 
@@ -101,11 +105,15 @@ else
     yhat=[];
   end
   
-  polysys = PolynomialSystem(num_xc,num_xd,num_u,num_y,sys.isDirectFeedthrough(),sys.isTI(),xdothat,xnhat,yhat);
+  polysys = PolynomialSystem(num_xc,num_xd,num_u,num_y,sys.isDirectFeedthrough(),xdothat,xnhat,yhat);
   if (num_u)
     polysys = setInputLimits(polysys,sys.umin,sys.umax);
   end
-
+  polysys = setInputFrame(polysys,sys.getInputFrame);
+  polysys = setStateFrame(polysys,sys.getStateFrame);
+  polysys = setOutputFrame(polysys,sys.getOutputFrame);
+  polysys = setSampleTime(polysys,sys.getSampleTime);
+  
   if (0) % num_xc==2 && num_xd==0)   % useful for debugging... consider making it an option
     x0traj = FunctionHandleTrajectory(@(t) x0, [num_x,1],[0 0]);
     xdot0traj = FunctionHandleTrajectory(@(t) zeros(num_x,1),[num_x,1],[0 0]);

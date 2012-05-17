@@ -36,8 +36,8 @@ try
       end
     end
   end
-  
-  
+
+  % polynomial feedback 
   p = taylorApprox(p,0,[pi;0],0,3);
   p = setInputLimits(p,-inf,inf);  % todo: another case where I get rid of this
   sys1=feedback(p,c);
