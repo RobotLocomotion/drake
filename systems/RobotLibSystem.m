@@ -111,6 +111,13 @@ classdef RobotLibSystem < DynamicalSystem
       obj.direct_feedthrough_flag = tf;
     end
     function mdl = getModel(obj)
+         % First, make sure we have a compiled RLCSFunction
+        if(exist('RLCSFunction') ~=3)
+            errorMsg={'Sorry, you have not run ''make'' yet in the robotlib root,'
+                'which means you do not have the compiled MEX files needed to run this program.'
+                'Running configure and make in the robotlib root directory will fix this.'};
+            error(sprintf('%s\n',errorMsg{:}))
+        end
       % make a simulink model from this block
       mdl = [class(obj),'_',obj.uid];  % use the class name + uid as the model name
       close_system(mdl,0);  % close it if there is an instance already open
@@ -146,7 +153,7 @@ classdef RobotLibSystem < DynamicalSystem
       end
     end
     
-    function x = resolveConstraints(obj,x0,v)
+    function [x,success] = resolveConstraints(obj,x0,v)
       % attempts to find a x which satisfies the constraints,
       % using x0 as the initial guess.
       %
@@ -154,8 +161,9 @@ classdef RobotLibSystem < DynamicalSystem
       % @param v (optional) a visualizer that should be called while the
       % solver is doing it's thing
 
-      if (obj.num_con < 1)
+      if (obj.num_xcon < 1)
         x=x0;
+        success=true;
         return;
       end
       
@@ -164,12 +172,16 @@ classdef RobotLibSystem < DynamicalSystem
         v.draw(0,x);
       end
         
-      if (nargin>1 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
+      if (nargin>2 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
         options=optimset('Display','iter','Algorithm','levenberg-marquardt','OutputFcn',@drawme,'TolX',1e-9);
       else
         options=optimset('Display','off','Algorithm','levenberg-marquardt');
       end
-      x = fsolve(@(x)stateConstraints(obj,x),x0,options);      
+      [x,~,exitflag] = fsolve(@(x)stateConstraints(obj,x),x0,options);      
+      success=(exitflag==1);
+      if (nargout<2 && ~success)
+        error('failed to resolve constraints');
+      end
     end
   end  
   

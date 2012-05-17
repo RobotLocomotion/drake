@@ -18,8 +18,16 @@ classdef ManipulatorPlant < SecondOrderPlant
 
   methods
     function x0 = getInitialState(obj)
-      x0 = randn(obj.num_xd+obj.num_xc,1);
-      x0 = resolveConstraints(obj,x0(1:obj.num_q));
+      valid=false;
+      count=0;
+      while (~valid)
+        if (count>=10)
+          error('tried 10 random initial conditions and still cannot resolve the constraints.');
+        end
+        x0 = randn(obj.num_xd+obj.num_xc,1);
+        [x0,valid] = resolveConstraints(obj,x0(1:obj.num_q));
+        count=count+1;
+      end
     end
 
     function qdd = sodynamics(obj,t,q,qd,u)
@@ -51,34 +59,21 @@ classdef ManipulatorPlant < SecondOrderPlant
     
     function obj = setNumBilateralConstraints(obj,num_bilateral_constraints)
     % Set the number of bilateral constraints
-    if (~isscalar(num_bilateral_constraints) || num_bilateral_constraints <0)
+      if (~isscalar(num_bilateral_constraints) || num_bilateral_constraints <0)
         error('num_bilateral_constraints must be a non-negative scalar');
       end
       obj.num_bilateral_constraints=num_bilateral_constraints;
+      obj = setNumStateConstraints(obj,num_bilateral_constraints);
     end
     
     function phi = bilateralConstraints(obj,q)
       error('manipulators with constraints must implement the bilateralConstraints method');
     end
     
-    function q = resolveConstraints(obj,q0)
-      % attempts to find a q which satisfies the bilateral constraints,
-      % using q0 as the initial guess.
-
-      function stop=drawme(q,optimValues,state)
-        stop=false;
-        v.draw(0,q);
-      end
-        
-      if (0)  % useful for debugging (only but only works for URDF manipulators)
-        v=obj.constructVisualizer();
-        options=optimset('Display','iter','Algorithm','levenberg-marquardt','OutputFcn',@drawme,'TolX',1e-9);
-      else
-        options=optimset('Display','off','Algorithm','levenberg-marquardt');
-      end
-      q = fsolve(@(x)bilateralConstraints(obj,x),q0,options);
-
+    function phi = stateConstraints(obj,x)
+      phi = bilateralConstraints(obj,x(1:obj.num_q));
     end
+    
   end
   
   

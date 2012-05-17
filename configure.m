@@ -107,6 +107,23 @@ if (~conf.snopt_enabled)
 end
 
 conf.sedumi_enabled = logical(exist('sedumi'));
+if (conf.sedumi_enabled)
+    disp('You seem to have SeDuMi installed, so I am just going to check that it runs properly.');
+    disp('-------------------------------------------------------------------------------------');
+    sedumiA=[10,2,3,4;5,7,6,4];
+    sedumib=[4;6];
+    sedumic=[0;1;0;1];
+    sedumiT=sedumi(sedumiA,sedumib,sedumic);
+    if(~sedumiT)
+        error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
+        disp('-------------------------------------------------------------------------------------');
+    else 
+        disp('SeDuMi seems to be working - that''s what all the output, above, is showing.');
+        disp('-------------------------------------------------------------------------------------');
+    end
+    
+end
+
 if (~conf.sedumi_enabled)
   disp(' SeDuMi not found.  SeDuMi support will be disabled.  To re-enable, add SeDuMi to your matlab path and rerun configure.  SeDuMi can be downloaded for free from http://sedumi.ie.lehigh.edu/ ');
 end

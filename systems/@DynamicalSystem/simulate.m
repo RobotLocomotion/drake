@@ -10,6 +10,10 @@ function traj = simulate(obj,tspan,x0,options)
 %            For variable step solver only
 % @option OutputTimes to generate output in the time sequence options.OutputTimes
 
+if(exist('RLCSFunction') ~=3)
+    error('Sorry, it looks like yo have not run make yet. Please run configure and make, then rerun robotlib.')
+end
+
 typecheck(tspan,'double');
 if (length(tspan)<2) error('length(tspan) must be > 1'); end
 if (nargin<4) options=struct([]); end

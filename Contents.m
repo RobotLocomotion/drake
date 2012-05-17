@@ -1,5 +1,5 @@
-% Toolbox RobotLib
-% Version 3.0.0 05-Feb-2011
+% MIT RobotLib
+% Version 3.0.0 (2012a) 05-Feb-2011
 % 
 % MIT Robot Locomotion Group
 % RobotLib Main Directory
