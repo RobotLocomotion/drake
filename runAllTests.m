@@ -83,7 +83,12 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
     % If I made it to here, then actually run the file.
 
     close all;
-    megaclear
+    megaclear;
+    if (exist('rng')) 
+      rng('shuffle'); % init rng to current date
+    else  % for older versions of matlab
+      rand('seed',sum(100*clock));
+    end
 
     s=dbstatus;
     if (any(strcmp('error',{s.cond})))  % when 'dbstop if error' is on, then run without try catch (for debugging) 
