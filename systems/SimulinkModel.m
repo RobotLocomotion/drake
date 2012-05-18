@@ -82,7 +82,9 @@ classdef SimulinkModel < DynamicalSystem
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         feval(obj.mdl,[],[],[],'compile');
       end
-      y = feval(obj.mdl,t,x,u,'outputs');
+      su.signals(1).values=u;
+      su.time=t;
+      y = feval(obj.mdl,t,x,su,'outputs');
 
       if (nargout>1)
         [A,B,C,D] = linearize(obj,t,x,u);  % should it ever be dlinearize?
