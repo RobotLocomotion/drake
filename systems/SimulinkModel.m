@@ -55,6 +55,7 @@ classdef SimulinkModel < DynamicalSystem
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         feval(obj.mdl,[],[],[],'compile');
       end
+      feval(obj.mdl,[],[],[],'all');
       feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
       xcdot = feval(obj.mdl,t,x,u,'derivs');
       
@@ -72,6 +73,7 @@ classdef SimulinkModel < DynamicalSystem
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         feval(obj.mdl,[],[],[],'compile');
       end
+      feval(obj.mdl,[],[],[],'all');
       feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
       xdn = feval(obj.mdl,t,x,u,'update');
       xdn = stateStructureToVector(obj,xdn);
@@ -82,9 +84,9 @@ classdef SimulinkModel < DynamicalSystem
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         feval(obj.mdl,[],[],[],'compile');
       end
-      su.signals(1).values=u;
-      su.time=t;
-      y = feval(obj.mdl,t,x,su,'outputs');
+%      tu=mat2str([t reshape(u,1,numel(u))]);
+      feval(obj.mdl,[],[],[],'all');
+      y = feval(obj.mdl,t,x,u,'outputs');
 
       if (nargout>1)
         [A,B,C,D] = linearize(obj,t,x,u);  % should it ever be dlinearize?
