@@ -18,7 +18,7 @@ options.method='dircol';
 tic
 %options.grad_test = true;
 [utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj0,con,options);
-if (info~=1) error('failed to find a trajectory'); end
+if (info~=1) error('failed to find a trajectory'); end  % OKTOFAIL
 toc
 
 t = xtraj.getBreaks();
