@@ -288,6 +288,7 @@ classdef DynamicalSystem
       % @param xv the state (in vector form)
       % @param mdl optional - pass in a model (default: getModel(obj))
       
+      if (obj.getNumStates()<1) xs=[]; return; end
       if (nargin<3) mdl = getModel(obj); end
       
       if (isempty(obj.structured_x))

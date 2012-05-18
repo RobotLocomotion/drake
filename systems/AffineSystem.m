@@ -78,21 +78,28 @@ classdef AffineSystem < PolynomialSystem
     end
 
     function [xcdot,df] = dynamics(obj,t,x,u)
-      xcdot = obj.Ac*x + obj.Bc*u + obj.xcdot0;
+      xcdot=obj.Ac*x;
+      if (obj.num_u) xcdot=xcdot+obj.Bc*u; end
+      if ~isempty(obj.xcdot0) xcdot=xcdot+obj.xcdot0; end
       if (nargout>1)
         df = [0*xcdot, obj.Ac, obj.Bc];
       end
     end
     
     function [xdn,df] = update(obj,t,x,u)
-      xdn = obj.Ad*x + obj.Bd*u + obj.xdn0;
+      xdn=obj.Ad*x;
+      if (obj.num_u) xdn=xdn+obj.Bd*u; end
+      if ~isempty(obj.xdn0) xdn=xdn+obj.xdn0; end
       if (nargout>1)
         df = [0*xdn,obj.Ad,obj.Bd];
       end
     end
     
     function [y,dy] = output(obj,t,x,u)
-      y = obj.C*x + obj.D*u + obj.y0;
+      y=zeros(obj.num_y,1);
+      if (obj.num_x) y=y+obj.C*x; end
+      if (obj.num_u) y=y+obj.D*u; end
+      if ~isempty(obj.y0) y=y+obj.y0; end
       if (nargout>1)
         dy = [0*y,obj.C,obj.D];
       end
