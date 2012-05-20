@@ -102,6 +102,17 @@ classdef CascadeSystem < RobotLibSystem
         con=[con;stateConstraints(obj.sys2,x2)];
       end
     end
+    
+    % todo: implement cascade, and if sys1 or sys2 can be cascaded more
+    % efficient (e.g. two affinesystems), then do it internally instead of
+    % adding a nested cascade system.  Will require getting precendence over
+    % the polynomial class heirarchy, so that this method is called even
+    % when the *second* argument is a cascade system.
+    % http://www.mathworks.com/help/techdoc/matlab_oop/f1-6987.html
+    % also note that:
+    % "Subclasses do not inherit a superclass InferiorClasses attribute.
+    % Only instances of the classes specified in the subclass InferiorClasses 
+    % attribute are inferior to subclass objects."
   end
   
   methods (Access=private)
