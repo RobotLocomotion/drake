@@ -1,0 +1,19 @@
+classdef ConstOrPassthroughSystem < AffineSystem 
+% Passes through a signal from input to output, optionally replacing some
+% outputs with constant values.  This is useful, for instance, when
+% emulating saturated signals.
+% 
+% To allow signals to pass through, set the const_y value to NaN.  
+  
+  methods 
+    function obj = ConstOrPassthroughSystem(const_y)
+      typecheck(const_y,'double');
+      if (~isvector(const_y)) error('const_y must be a vector'); end
+      n=length(const_y);
+      ind=~isnan(const_y);
+      D=zeros(n);  D(~ind,~ind)=eye(sum(~ind));
+      y0=zeros(n,1); y0(ind)=const_y(ind);
+      obj = obj@AffineSystem([],[],[],[],[],[],[],D,y0);
+    end
+  end
+end
