@@ -82,6 +82,20 @@ classdef DynamicalSystem
       
     end
     
+    function [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2)
+      ind=0;
+      n=sys1.getNumDiscStates();
+      sys1ind = ind+(1:n)';
+      ind=ind+n;
+      n=sys2.getNumDiscStates();
+      sys2ind=  ind+(1:n)'; ind=ind+n;
+
+      n=sys1.getNumContStates();
+      sys1ind = [sys1ind; ind+(1:n)'];  ind=ind+n;
+      n=sys2.getNumContStates();
+      sys2ind = [sys2ind; ind+(1:n)'];  
+    end
+    
     function newsys = cascade(sys1,sys2)
       % Creates a new system with the output of system 1 connected to the
       % input of system 2. The input coordinate frame of system 2 must match

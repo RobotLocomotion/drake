@@ -310,19 +310,9 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       p_x = sys.getStateFrame.poly;
       p_u = sys.getInputFrame.poly;
       
-      ind=0;
-      n=sys1.getNumDiscStates();
-      p_x1 = p_x(ind+(1:n)');
-      ind=ind+n;
-      n=sys2.getNumDiscStates();
-      p_x2 = p_x(ind+(1:n)');
-      ind=ind+n;
-      
-      n=sys1.getNumContStates();
-      p_x1 = [p_x1; p_x(ind+(1:n)')];
-      ind=ind+n;
-      n=sys2.getNumContStates();
-      p_x2 = [p_x2; p_x(ind+(1:n)')];
+      [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2);
+      p_x1 = p_x(sys1ind);
+      p_x2 = p_x(sys2ind);
       
       if (~sys1.isDirectFeedthrough()) % do sys1 first
         p_y1 = subs(sys1.p_output,sys1.getStateFrame.poly,p_x1); % doesn't need u
@@ -414,19 +404,9 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       p_x = sys.getStateFrame.poly;
       p_u = sys.getInputFrame.poly;
       
-      ind=0;
-      n=sys1.getNumDiscStates();
-      p_x1 = p_x(ind+(1:n)');
-      ind=ind+n;
-      n=sys2.getNumDiscStates();
-      p_x2 = p_x(ind+(1:n)');
-      ind=ind+n;
-      
-      n=sys1.getNumContStates();
-      p_x1 = [p_x1; p_x(ind+(1:n)')];
-      ind=ind+n;
-      n=sys2.getNumContStates();
-      p_x2 = [p_x2; p_x(ind+(1:n)')];
+      [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2);
+      p_x1 = p_x(sys1ind);
+      p_x2 = p_x(sys2ind);
       
       if (sys1.getNumStates()>0)
         p_y1 = subss(sys1.p_output,sys1.getStateFrame.poly,p_x1);

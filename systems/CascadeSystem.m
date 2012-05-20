@@ -19,17 +19,7 @@ classdef CascadeSystem < RobotLibSystem
 
       obj = obj.setInputLimits(sys1.umin,sys1.umax);
       
-      ind=0;
-      n=sys1.getNumDiscStates();
-      obj.sys1ind = ind+(1:n)';
-      ind=ind+n;
-      n=sys2.getNumDiscStates();
-      obj.sys2ind=  ind+(1:n)'; ind=ind+n;
-
-      n=sys1.getNumContStates();
-      obj.sys1ind = [obj.sys1ind; ind+(1:n)'];  ind=ind+n;
-      n=sys2.getNumContStates();
-      obj.sys2ind = [obj.sys2ind; ind+(1:n)'];  
+      [obj.sys1ind,obj.sys2ind] = stateIndicesForCombination(sys1,sys2);
       
       obj = setNumZeroCrossings(obj,sys1.getNumZeroCrossings()+sys2.getNumZeroCrossings()+sum(~isinf([sys2.umin;sys2.umax])));
       obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
