@@ -46,7 +46,7 @@ if (any(any(abs(C-eye(getNumStates(obj)))>tol)) || any(abs(D(:))>tol))
 end
 
 
-ltisys = TimeInvariantLinearSystem([],[],[],[],[],-K);
+ltisys = LTISystem([],[],[],[],[],-K);
 if (all(x0==0))
   ltisys = setInputFrame(ltisys,obj.getStateFrame);
 else
