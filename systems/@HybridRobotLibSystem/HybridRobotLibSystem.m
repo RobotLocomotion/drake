@@ -1,4 +1,4 @@
-classdef HybridRobotLibSystem < RobotLibSystem
+classdef (InferiorClasses = {?RobotLibSystem}) HybridRobotLibSystem < RobotLibSystem
 
   % some restrictions on the mode systems:
   %  must be CT only 
@@ -247,6 +247,15 @@ classdef HybridRobotLibSystem < RobotLibSystem
 %        keyboard; 
       end % useful for debugging successive zcs.
       end
+    end
+    
+    function sys = feedback(sys1,sys2)
+      warning('feedback combinations with hybrid systems not implemented yet.  kicking out to a simulink combination.');
+      sys = feedback(SimulinkModel(sys1.getModel()),sys2);
+    end
+    function sys = cascade(sys1,sys2)
+      warning('cascade combinations with hybrid systems not implemented yet.  kicking out to a simulink combination.');
+      sys = cascade(SimulinkModel(sys1.getModel()),sys2);
     end
   end
   

@@ -3,8 +3,8 @@ classdef Manipulator < SecondOrderSystem
 % Coming soon:  will also support bilateral constraints of the form: phi(q)=0.
 
   methods
-    function obj = ManipulatorPlant(num_q, num_u, num_bilateral_constraints)
-      obj = obj@SecondOrderPlant(num_q,num_u,true);
+    function obj = Manipulator(num_q, num_u, num_bilateral_constraints)
+      obj = obj@SecondOrderSystem(num_q,num_u,true);
       if (nargin>2)  % else num_bilateral_constraints=0 by default
         obj = obj.setNumBilateralConstraints(num_bilateral_constraints);
       end
@@ -79,6 +79,23 @@ classdef Manipulator < SecondOrderSystem
       q = fsolve(@(x)bilateralConstraints(obj,x),q0,options);
 
     end
+    
+    function sys = feedback(sys1,sys2)
+      if (isa(sys2,'Manipulator'))
+        % todo: implement this (or decide that it doesn't ever make sense)
+        warning('feedback combinations of manipulators not handled explicitly yet. kicking out to a combination of SecondOrderSystems');
+      end
+      sys = feedback@SecondOrderSystem(sys1,sys2);
+    end
+    
+    function sys = cascade(sys1,sys2)
+      if (isa(sys2,'Manipulator'))
+        % todo: implement this (or decide that it doesn't ever make sense)
+        warning('cascade combinations of manipulators not handled explicitly yet. kicking out to a combination of SecondOrderSystems');
+      end
+      sys = cascade@SecondOrderSystem(sys1,sys2);
+    end
+    
   end
   
   
