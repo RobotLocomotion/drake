@@ -1,9 +1,17 @@
-function runAllTests(numToSkip,bAbortOnFail)
+function runAllTests(numToSkip,options)
 
 % Recurses through the robotlib directories, running all test scripts 
 % (in test subdirectories) and all methods/scripts in the examples directory.
-%   Usage:  run_all_tests([bAbortOnFail]);
-%   Defaults: bAbortOnFail = true;
+%
+% @param numToSkip number of tests to skip over.  useful to continue tests
+% where you left off last.
+%
+% @option abort_on_fail stops when one of the scripts throws any error.
+% @default true
+%
+% @options check_dependencies instead of running the tests, simply
+% accumulates a list of toolbox dependencies for the files that would have
+% run. @default false
 %
 % A test function is any valid .m file which calls error() if the test
 % fails, and returns without error if the test passes.  If bAbortOnFail is
@@ -18,9 +26,13 @@ function runAllTests(numToSkip,bAbortOnFail)
 %
 
 if (nargin<1) numToSkip = 0; end
-if (nargin<2) bAbortOnFail = true; end
+if (nargin<2) options=struct(); end
 
-info.bAbortOnFail = bAbortOnFail;
+if ~isfield(options,'abort_on_fail') options.abort_on_fail = true; end
+if ~isfield(options,'check_dependencies') options.check_dependencies = false; end
+
+info.bAbortOnFail = options.abort_on_fail;
+info.bCheckDeps = options.check_dependencies;
 info.numToSkip = numToSkip;
 info.passcount = 0;
 info.failcount = 0;
@@ -36,6 +48,16 @@ info=run_tests_in('.',info,true);
 clear robotlib_unit_test;
 fprintf(1,'\n Executed %d tests.  %d passed.  %d failed.\n',info.passcount+info.failcount, info.passcount, info.failcount);
 
+if (options.check_dependencies)
+  global deps;
+  disp('');
+  disp('');
+  disp('Toolbox Depedencies:');
+  disp('--------------------');
+  cellfun(@disp,deps);
+  clear global deps;
+end
+
 end
 
 function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
@@ -45,6 +67,10 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
   cd(pdir);
   disp([pdir,'/']);drawnow;
   files=dir('.');
+  
+  if (info.bCheckDeps)
+    global deps; if isempty(deps), deps={}; end
+  end
   
   for i=1:length(files)
     if (files(i).isdir)
@@ -77,6 +103,19 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
       fprintf(1,'%-40s ',testname);
       fprintf(1,'[SKIPPED]\n');
       info.passcount=info.passcount+1;
+      continue;
+    end
+
+    if (info.bCheckDeps)
+      % toolbox dependency analysis:
+      d=dependencies.toolboxDependencyAnalysis({testname});
+      d = unique({deps{:},d{:}});
+%      if (length(d)~=length(deps))  % switch this with the line below for more info
+      if 0
+        disp(['picked up new dependencies in ',testname,':']);
+        cellfun(@disp,setdiff(d,deps));
+      end
+      deps=d;
       continue;
     end
     
@@ -166,3 +205,4 @@ end
 fclose(fid);
 
 end
+
