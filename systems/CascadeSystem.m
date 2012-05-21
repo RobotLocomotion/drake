@@ -15,6 +15,13 @@ classdef CascadeSystem < RobotLibSystem
       typecheck(sys1,'RobotLibSystem');
       typecheck(sys2,'RobotLibSystem');
 
+      if (isa(sys1,'HybridRobotLibSystem') || isa(sys2,'HybridRobotLibSystem'))
+        error('RobotLib:CascadeSystem:NoHybridSupport','cascade combinations with hybrid systems not implemented yet.');
+      end
+      if (isa(sys1,'StochasticRobotLibSystem') || isa(sys2,'StochasticRobotLibSystem'))
+        error('RobotLib:CascadeSystem:NoStochasticSupport','cascade combinations with stochastic systems not implemented yet.');
+      end
+      
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
 
       obj = obj.setInputLimits(sys1.umin,sys1.umax);

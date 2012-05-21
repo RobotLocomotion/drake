@@ -3,7 +3,7 @@ classdef SecondOrderSystem < RobotLibSystem
 %   A specialization of the Dynamics class for systems of second order.  
   
   methods
-    function obj = SecondOrderSystem(num_q, num_u,timeInvariantFlag)
+    function obj = SecondOrderSystem(num_q,num_u,timeInvariantFlag)
     % SecondOrderPlant(num_q, num_u)
     %   Constructs a SecondOrderPlant object with num_q configuration
     %   variables (implying num_q*2 states) and num_u control inputs.
@@ -47,6 +47,23 @@ classdef SecondOrderSystem < RobotLibSystem
       y = x;
     end
         
+    
+    function sys = feedback(sys1,sys2)
+      if (isa(sys2,'SecondOrderSystem'))
+        % todo: implement this
+        warning('feedback combinations of second order systems not handled explicitly yet. kicking out to a combination of RobotLibSystems');
+      end
+      sys = feedback@RobotLibSystem(sys1,sys2);
+    end
+    
+    function sys = cascade(sys1,sys2)
+      if (isa(sys2,'SecondOrderSystem'))
+        % todo: implement this
+        warning('cascade combinations of second order systems not handled explicitly yet. kicking out to a combination of RobotLibSystems');
+      end
+      sys = cascade@RobotLibSystem(sys1,sys2);
+    end
+    
   end
   
   properties (SetAccess = private, GetAccess = public)

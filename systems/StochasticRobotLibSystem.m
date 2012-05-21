@@ -1,4 +1,4 @@
-classdef StochasticRobotLibSystem < RobotLibSystem
+classdef (InferiorClasses = {?RobotLibSystem}) StochasticRobotLibSystem < RobotLibSystem
 % Interface a nonlinear stochastic discrete/continuous system 
 % with (band-limited) white noise input
   
@@ -80,6 +80,20 @@ classdef StochasticRobotLibSystem < RobotLibSystem
     function n = getNumDisturbances(obj)
       n=obj.num_w;
     end
+    
+    function sys = feedback(sys1,sys2)  % note: sys2 could be the stochastic one because I've set the inferior class attribute
+      warning('feedback combinations with stochastic systems not implemented yet.  kicking out to a simulink combination.');
+      if (isa(sys1,'StochasticRobotLibSystem')) sys1=SimulinkModel(sys1.getModel); end
+      if (isa(sys2,'StochasticRobotLibSystem')) sys2=SimulinkModel(sys2.getModel); end
+      sys = feedback(sys1,sys2);
+    end
+    function sys = cascade(sys1,sys2) % note: sys2 could be the stochastic one because I've set the inferior class attribute
+      warning('cascade combinations with stochastic systems not implemented yet.  kicking out to a simulink combination.');
+      if (isa(sys1,'StochasticRobotLibSystem')) sys1=SimulinkModel(sys1.getModel); end
+      if (isa(sys2,'StochasticRobotLibSystem')) sys2=SimulinkModel(sys2.getModel); end
+      sys = feedback(sys1,sys2);
+    end
+    
   end
   
   properties (SetAccess=private, GetAccess=protected)

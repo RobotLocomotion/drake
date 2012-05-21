@@ -15,6 +15,13 @@ classdef FeedbackSystem < RobotLibSystem
       typecheck(sys1,'RobotLibSystem');
       typecheck(sys2,'RobotLibSystem');
       
+      if (isa(sys1,'HybridRobotLibSystem') || isa(sys2,'HybridRobotLibSystem'))
+        error('RobotLib:FeedbackSystem:NoHybridSupport','feedback combinations with hybrid systems not implemented yet.');
+      end
+      if (isa(sys1,'StochasticRobotLibSystem') || isa(sys2,'StochasticRobotLibSystem'))
+        error('RobotLib:FeedbackSystem:NoStochasticSupport','feedback combinations with stochastic systems not implemented yet.');
+      end
+      
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,false);
       [sys2,sys1] = matchCoordinateFramesForCombination(sys2,sys1,true);
 
