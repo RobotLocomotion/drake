@@ -1,11 +1,11 @@
-classdef HybridSimulationConstructionSetRobot < HybridRobotLibSystem
+classdef HybridSimulationConstructionSetRobot < HybridDrakeSystem
 % Simulation Construction Set robots that have ground contact models or
 % collision models are not smooth.  Use this class to wrap them in a hybrid
 % model. 
   
   methods
     function obj=HybridSimulationConstructionSetRobot(robotobj)
-      obj = obj@HybridRobotLibSystem();
+      obj = obj@HybridDrakeSystem();
       typecheck(robotobj,'com.yobotics.simulationconstructionset.Robot');
 
       obj.robotobj = robotobj;  %store a local copy, too

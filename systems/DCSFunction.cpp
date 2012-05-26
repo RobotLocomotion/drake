@@ -1,5 +1,5 @@
 
-#define S_FUNCTION_NAME  RLCSFunction
+#define S_FUNCTION_NAME  DCSFunction  // for Drake C S-Function
 #define S_FUNCTION_LEVEL 2
 
 #include <math.h>
@@ -30,20 +30,20 @@ bool mexCallMATLABsafe(SimStruct* S, int nlhs, mxArray* plhs[], int nrhs, mxArra
   int i;
   mxArray* ex = mexCallMATLABWithTrap(nlhs,plhs,nrhs,prhs,filename);
   if (ex) {
-    mexPrintf("RobotLibSystem S-Function: error when calling ''%s'' with the following arguments:\n",filename);
+    mexPrintf("DrakeSystem S-Function: error when calling ''%s'' with the following arguments:\n",filename);
     for (i=0; i<nrhs; i++)
       mexCallMATLAB(0,NULL,1,&prhs[i],"disp");
     mexPrintf("\n");
-    ssSetErrorStatus(S,"RobotLibSystem S-Function: error in MATLAB callback. See debugging information above");
+    ssSetErrorStatus(S,"DrakeSystem S-Function: error in MATLAB callback. See debugging information above");
     return true;
   }
   for (i=0; i<nlhs; i++)
     if (!plhs[i]) {
-      mexPrintf("RobotLibSystem S-Function: error when calling ''%s'' with the following arguments:\n", filename);
+      mexPrintf("DrakeSystem S-Function: error when calling ''%s'' with the following arguments:\n", filename);
       for (i=0; i<nrhs; i++)
         mexCallMATLAB(0,NULL,1,&prhs[i],"disp");
       mexPrintf("Asked for %d outputs, but function only returned %d\n",nrhs,i);
-      ssSetErrorStatus(S,"RobotLibSystem S-Function: not enough outputs");
+      ssSetErrorStatus(S,"DrakeSystem S-Function: not enough outputs");
       return true;
     }
   return false;
@@ -54,8 +54,8 @@ bool mexCallMATLABsafe(SimStruct* S, int nlhs, mxArray* plhs[], int nrhs, mxArra
 static void mdlCheckParameters(SimStruct *S)
 {
   const mxArray *psys = ssGetSFcnParam(S,0);
-  if (!isa(psys,"RobotLibSystem"))
-    ssSetErrorStatus(S,"First dialog parameter must be a RobotLibSystem of HybridRobotLibSystem class.");
+  if (!isa(psys,"DrakeSystem"))
+    ssSetErrorStatus(S,"First dialog parameter must be a DrakeSystem of HybridDrakeSystem class.");
 }
 #endif /* MDL_CHECK_PARAMETERS */
 
@@ -90,7 +90,7 @@ static void mdlInitializeSizes(SimStruct *S)
   mxDestroyArray(plhs[0]);
 
   int num_w=0;
-  if (isa(psys,"StochasticRobotLibSystem")) {
+  if (isa(psys,"StochasticDrakeSystem")) {
     if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getNumDisturbances")) return;
     num_w = mxGetScalar(plhs[0]);
     mxDestroyArray(plhs[0]);
@@ -135,7 +135,7 @@ static void mdlInitializeSizes(SimStruct *S)
   ssSetNumNonsampledZCs(S, (int)mxGetScalar(plhs[0]));
   mxDestroyArray(plhs[0]);
 
-  if (isa(psys,"HybridRobotLibSystem")) {
+  if (isa(psys,"HybridDrakeSystem")) {
     ssSetNumModes(S, 1);
     ssSetNumDiscStates(S, ssGetNumDiscStates(S)-1);  // pull out the mode
   } else {    
@@ -177,7 +177,7 @@ static void mdlInitializeConditions(SimStruct *S)
   int_T num_xd = ssGetNumDiscStates(S);
   int_T num_xc = ssGetNumContStates(S);
   
-  if (isa(psys,"HybridRobotLibSystem")) {
+  if (isa(psys,"HybridDrakeSystem")) {
     int_T* mode = ssGetModeVector(S);
     mode[0] = (int) x[0];
     x++;
@@ -198,7 +198,7 @@ static void mdlInitializeConditions(SimStruct *S)
 
   mxDestroyArray(plhs[0]);
   
-  if (isa(psys,"StochasticRobotLibSystem")) {
+  if (isa(psys,"StochasticDrakeSystem")) {
     if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getNumDisturbances")) return;
     int num_w = mxGetScalar(plhs[0]);
     mxDestroyArray(plhs[0]);
@@ -213,7 +213,7 @@ static void mdlInitializeConditions(SimStruct *S)
   for (int i=0; i<ssGetNumSampleTimes(S); i++) {
     if (ssGetSampleTime(S, i)>0) {
       if (ssGetIWorkValue(S,DT_SAMPLE_TIME_IDX)>=0)
-        ssSetErrorStatus(S, "RobotLibSystems may only have one discrete sample time (for now)");
+        ssSetErrorStatus(S, "DrakeSystems may only have one discrete sample time (for now)");
       ssSetIWorkValue(S, DT_SAMPLE_TIME_IDX, i);
     }
   }

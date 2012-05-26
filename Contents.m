@@ -1,8 +1,8 @@
-% Toolbox RobotLib
+% Drake Toolbox 
 % Version 3.1.0 11-May-2012
 % 
 % MIT Robot Locomotion Group
-% RobotLib Main Directory
+% Drake Main Directory
 %
 % 
 % Sub-Directories
@@ -14,4 +14,4 @@
 % Scripts in this folder
 %   configure   - Checks dependencies and sets up matlab path.
 %   make        - Builds all mex files in the directory 
-%   runAllTests - Recurses through the robotlib directories, running all test scripts 
+%   runAllTests - Recurses through the drake directories, running all test scripts 

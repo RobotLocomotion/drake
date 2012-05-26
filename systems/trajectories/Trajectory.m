@@ -1,4 +1,4 @@
-classdef Trajectory < RobotLibSystem
+classdef Trajectory < DrakeSystem
   
   properties
     dim
@@ -17,7 +17,7 @@ classdef Trajectory < RobotLibSystem
       else
         numout = 1;  % just output nan for now
       end
-      obj = obj@RobotLibSystem(0,0,0,numout,false,false);
+      obj = obj@DrakeSystem(0,0,0,numout,false,false);
       obj.dim = dim;
     end
     

@@ -1,4 +1,4 @@
-classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem 
+classdef PolynomialSystem < DrakeSystem %TimeVaryingPolynomialSystem 
   % A dynamical system described by rational polynomial dynamics, and
   % polynomial outputs.  
 
@@ -47,7 +47,7 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       %   The constructor will try to automatically construct the 
       %   relevant polynomials by calling the function handle methods.
       
-      obj = obj@RobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,true);
+      obj = obj@DrakeSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,true);
 
       checkDependency('spot_enabled');
       
@@ -250,7 +250,7 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
         end
       end
       
-      obj = setInputFrame@RobotLibSystem(obj,frame);
+      obj = setInputFrame@DrakeSystem(obj,frame);
     end
     
     function obj = setStateFrame(obj,frame)
@@ -276,23 +276,23 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
         end
       end
       
-      obj = setStateFrame@RobotLibSystem(obj,frame);
+      obj = setStateFrame@DrakeSystem(obj,frame);
     end
     
     function sys = feedback(sys1,sys2)
       % try to keep feedback between polynomial systems polynomial.  else,
-      % kick out to RobotLibSystem
+      % kick out to DrakeSystem
       %
       
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,false);
       [sys2,sys1] = matchCoordinateFramesForCombination(sys2,sys1,true);
 
       if ~isa(sys2,'PolynomialSystem') || any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax]))
-        sys = feedback@RobotLibSystem(sys1,sys2)
+        sys = feedback@DrakeSystem(sys1,sys2)
       end
         
       if (sys1.isDirectFeedthrough() && sys2.isDirectFeedthrough())
-        error('RobotLib:PolynomalSystem:AlgebraicLoop','algebraic loop');
+        error('Drake:PolynomalSystem:AlgebraicLoop','algebraic loop');
       end
       
       if (getNumZeroCrossings(sys1)>0 || getNumZeroCrossings(sys2)>0)
@@ -351,11 +351,11 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       end
       
       try 
-        sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to robotlibsystem?
+        sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to drakesystem?
       catch ex
-        if (strcmp(ex.identifier, 'RobotLib:RobotLibSystem:UnsupportedSampleTime'))
-          warning('RobotLib:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial feedback because of incompatible sample times'); 
-          sys = feedback@RobotLibSystem(sys1,sys2);
+        if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
+          warning('Drake:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial feedback because of incompatible sample times'); 
+          sys = feedback@DrakeSystem(sys1,sys2);
         else
           rethrow(ex)
         end
@@ -380,13 +380,13 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
     
     function sys = cascade(sys1,sys2)
       % try to keep cascade between polynomial systems polynomial.  else,
-      % kick out to RobotLibSystem
+      % kick out to DrakeSystem
       %
 
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
 
       if ~isa(sys2,'PolynomialSystem') || any(~isinf([sys2.umin;sys2.umax]))
-        sys = cascade@RobotLibSystem(sys1,sys2)
+        sys = cascade@DrakeSystem(sys1,sys2)
       end
         
       if (getNumZeroCrossings(sys1)>0 || getNumZeroCrossings(sys2)>0)
@@ -443,11 +443,11 @@ classdef PolynomialSystem < RobotLibSystem %TimeVaryingPolynomialSystem
       end
       
       try 
-        sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to robotlibsystem?
+        sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to drakesystem?
       catch ex
-        if (strcmp(ex.identifier, 'RobotLib:RobotLibSystem:UnsupportedSampleTime'))
-          warning('RobotLib:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial cascade because of incompatible sample times'); 
-          sys = cascade@RobotLibSystem(sys1,sys2);
+        if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
+          warning('Drake:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial cascade because of incompatible sample times'); 
+          sys = cascade@DrakeSystem(sys1,sys2);
         else
           rethrow(ex)
         end

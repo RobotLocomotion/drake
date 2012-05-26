@@ -96,12 +96,12 @@ else % otherwise set up the LCM blocks and run simulink.
   Simulink.BlockDiagram.copyContentsToSubSystem(obj.getModel(),[mdl,'/system']);
   
   assignin('base',[mdl,'_lcmCoder'],lcmCoder);
-  load_system('robotlib');
+  load_system('drake');
   if (in)
     channel = ['''',lower(getRobotName(lcmCoder)),'_',in,''''];
     i=findstr(decoder,'lcmCoder');
     decoder = [decoder(1:(i-1)),mdl,'_',decoder(i:end)];
-    add_block('robotlib/lcmInput',[mdl,'/lcmInput'],'channel',channel,'dim',num2str(dim_in),'decode_fcn',decoder);
+    add_block('drake/lcmInput',[mdl,'/lcmInput'],'channel',channel,'dim',num2str(dim_in),'decode_fcn',decoder);
     add_line(mdl,'lcmInput/1','system/1');
   end
   % note: if obj has inputs, but no lcminput is specified, then it will just have the default input behavior (e.g. zeros)
@@ -110,7 +110,7 @@ else % otherwise set up the LCM blocks and run simulink.
     channel = ['''',lower(getRobotName(lcmCoder)),'_',out,''''];
     i=findstr(encoder,'lcmCoder');
     encoder = [encoder(1:(i-1)),mdl,'_',encoder(i:end)];
-    add_block('robotlib/lcmOutput',[mdl,'/lcmOutput'],'channel',channel,'dim',num2str(dim_out),'encode_fcn',encoder);
+    add_block('drake/lcmOutput',[mdl,'/lcmOutput'],'channel',channel,'dim',num2str(dim_out),'encode_fcn',encoder);
     add_line(mdl,'system/1','lcmOutput/1');
   elseif (getNumOutputs(obj)>0)
     add_block('simulink3/Sinks/Terminator',[mdl,'/terminator']);
@@ -118,7 +118,7 @@ else % otherwise set up the LCM blocks and run simulink.
   end
 
   % add realtime block
-  add_block('robotlib/realtime',[mdl,'/realtime']);
+  add_block('drake/realtime',[mdl,'/realtime']);
   
   pstruct = obj.simulink_params;
   pstruct.StartTime = num2str(options.tspan(1));

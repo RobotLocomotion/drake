@@ -1,10 +1,10 @@
 
 %> @mainpage
 %>
-%> Welcome to the Robot Locomotion Group's RobotLib documentation.  
+%> Welcome to the Drake documentation.  
 %>
 %> <p>
 %> Use the panels above to get started (I recommend checking out the <a href="inherits.html">class
 %> hierarchy</a>)
 %>
-%> Russ (russt@mit.edu) and Andy (abarry@csail.mit.edu)
+%> Brought to you by the MIT Robot Locomotion Group, http://groups.csail.mit.edu/locomotion/

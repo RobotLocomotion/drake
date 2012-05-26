@@ -1,4 +1,4 @@
-classdef CascadeSystem < RobotLibSystem
+classdef CascadeSystem < DrakeSystem
   
   properties
     sys1
@@ -9,17 +9,17 @@ classdef CascadeSystem < RobotLibSystem
   
   methods
     function obj = CascadeSystem(sys1,sys2)
-      obj = obj@RobotLibSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
+      obj = obj@DrakeSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
         sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
         sys1.getNumInputs(), sys2.getNumOutputs(), sys1.isDirectFeedthrough() & sys2.isDirectFeedthrough(), sys1.isTI() & sys2.isTI());
-      typecheck(sys1,'RobotLibSystem');
-      typecheck(sys2,'RobotLibSystem');
+      typecheck(sys1,'DrakeSystem');
+      typecheck(sys2,'DrakeSystem');
 
-      if (isa(sys1,'HybridRobotLibSystem') || isa(sys2,'HybridRobotLibSystem'))
-        error('RobotLib:CascadeSystem:NoHybridSupport','cascade combinations with hybrid systems not implemented yet.');
+      if (isa(sys1,'HybridDrakeSystem') || isa(sys2,'HybridDrakeSystem'))
+        error('Drake:CascadeSystem:NoHybridSupport','cascade combinations with hybrid systems not implemented yet.');
       end
-      if (isa(sys1,'StochasticRobotLibSystem') || isa(sys2,'StochasticRobotLibSystem'))
-        error('RobotLib:CascadeSystem:NoStochasticSupport','cascade combinations with stochastic systems not implemented yet.');
+      if (isa(sys1,'StochasticDrakeSystem') || isa(sys2,'StochasticDrakeSystem'))
+        error('Drake:CascadeSystem:NoStochasticSupport','cascade combinations with stochastic systems not implemented yet.');
       end
       
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);

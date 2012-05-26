@@ -13,7 +13,7 @@ classdef PendulumLCMCoder < LCMCoder
     
     function msg = encodeX(obj,t,x)
       % encodes the state message
-      msg = robotlib.examples.Pendulum.lcmt_pendulum_x();
+      msg = drake.examples.Pendulum.lcmt_pendulum_x();
       msg.timestamp = t*1000;
       msg.theta = x(1);
       msg.thetaDot = x(2);
@@ -21,21 +21,21 @@ classdef PendulumLCMCoder < LCMCoder
     
     function [x,t] = decodeX(obj,msg)
       % decodes the state message
-      msg = robotlib.examples.Pendulum.lcmt_pendulum_x(msg.data);
+      msg = drake.examples.Pendulum.lcmt_pendulum_x(msg.data);
       x = [msg.theta; msg.thetaDot];
       t = msg.timestamp/1000;
     end
     
     function msg = encodeU(obj,t,u)
       % encodes the input message
-      msg = robotlib.examples.Pendulum.lcmt_pendulum_u();
+      msg = drake.examples.Pendulum.lcmt_pendulum_u();
       msg.timestamp = t*1000;
       msg.tau = u(1);
     end
     
     function [u,t] = decodeU(obj,msg)
       % decodes the input message
-      msg = robotlib.examples.Pendulum.lcmt_pendulum_u(msg.data);
+      msg = drake.examples.Pendulum.lcmt_pendulum_u(msg.data);
       u = msg.tau;
       t = msg.timestamp/1000;
     end

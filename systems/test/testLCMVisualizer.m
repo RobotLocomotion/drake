@@ -2,7 +2,7 @@ function testLCMVisualizer
 
 % NOTEST
 
-load robotlib_config;
+load drake_config;
 
 p = path;
 

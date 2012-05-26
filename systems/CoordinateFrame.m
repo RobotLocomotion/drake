@@ -1,5 +1,5 @@
 classdef CoordinateFrame < handle
-% Every input, state, and output in a RobotLibSystem has a coordinate frame
+% Every input, state, and output in a DynamicalSystem has a coordinate frame
 % attached to it.  Many bugs can be avoided by forcing developers to be 
 % explicit about these coordinate systems when they make combinations of
 % systems.

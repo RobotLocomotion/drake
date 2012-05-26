@@ -1,4 +1,4 @@
-classdef RobotLibSystem < DynamicalSystem
+classdef DrakeSystem < DynamicalSystem
 % A DynamicalSystem with the functionality (dynamics, update, outputs, 
 % etc) implemented in matlab, so that it is amenable to, for instance, symbolic
 % manipulations.  These functions are wrapped as an S-Function in
@@ -6,8 +6,8 @@ classdef RobotLibSystem < DynamicalSystem
 
   % constructor
   methods
-    function obj = RobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag)
-      % Construct a RobotLibSystem
+    function obj = DrakeSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag)
+      % Construct a DrakeSystem
       %
       % @param num_xc number of continuous-time state variables
       % @param num_xd number of discrete-time state variables
@@ -41,23 +41,23 @@ classdef RobotLibSystem < DynamicalSystem
     end
     
     function xcdot = dynamics(obj,t,x,u)
-      error('RobotLib:RobotLibSystem:AbstractMethod','systems with continuous states must implement Derivatives (ie overload dynamics function)');
+      error('Drake:DrakeSystem:AbstractMethod','systems with continuous states must implement Derivatives (ie overload dynamics function)');
     end
     
     function xdn = update(obj,t,x,u)
-      error('RobotLib:RobotLibSystem:AbstractMethod','systems with discrete states must implement Update (ie overload update function)');
+      error('Drake:DrakeSystem:AbstractMethod','systems with discrete states must implement Update (ie overload update function)');
     end
     
     function y = output(obj,t,x,u)
-      error('RobotLib:RobotLibSystem:AbstractMethod','default is intentionally not implemented');
+      error('Drake:DrakeSystem:AbstractMethod','default is intentionally not implemented');
     end
     
     function zcs = zeroCrossings(obj,t,x,u)
-      error('RobotLib:RobotLibSystem:AbstractMethod','systems with zero crossings must implement the zeroCrossings method'); 
+      error('Drake:DrakeSystem:AbstractMethod','systems with zero crossings must implement the zeroCrossings method'); 
     end
     
     function con = stateConstraints(obj,x)
-      error('RobotLib:RobotLibSystem:AbstractMethod','systems with state constraints must implement the constraints method');
+      error('Drake:DrakeSystem:AbstractMethod','systems with state constraints must implement the constraints method');
     end
   end
   
@@ -100,7 +100,7 @@ classdef RobotLibSystem < DynamicalSystem
       elseif (obj.num_xc==0 && obj.num_xd==0)
         ts = [-1;0]; % inherited sample time
       else
-        error('RobotLib:RobotLibSystem:NotImplemented','systems with both discrete and continuous states must implement the getSampleTime method or call setSampleTime to specify the desired behavior');
+        error('Drake:DrakeSystem:NotImplemented','systems with both discrete and continuous states must implement the getSampleTime method or call setSampleTime to specify the desired behavior');
       end
     end
     function obj = setSampleTime(obj,ts)
@@ -118,10 +118,10 @@ classdef RobotLibSystem < DynamicalSystem
           ts=ts(:,find(ts(1,:)~=-1));
         end
         if sum(ts(1,:)==0)>1 % then multiple continuous
-          error('RobotLib:RobotLibSystem:UnsupportedSampleTime','cannot define a robotlibsystem using modes that have both ''continuous time'' and ''continuous time, fixed in minor offset'' sample times');
+          error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have both ''continuous time'' and ''continuous time, fixed in minor offset'' sample times');
         end
         if sum(ts(1,:)>0)>1 % then multiple discrete
-          error('RobotLib:RobotLibSystem:UnsupportedSampleTime','cannot define a robotlibsystem using modes that have different discrete sample times');
+          error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have different discrete sample times');
         end
       end
       obj.ts = ts;
@@ -146,8 +146,8 @@ classdef RobotLibSystem < DynamicalSystem
       
       load_system('simulink');
       load_system('simulink3');
-      add_block('simulink/User-Defined Functions/S-Function',[mdl,'/RobotLibSys'], ...
-        'FunctionName','RLCSFunction', ...
+      add_block('simulink/User-Defined Functions/S-Function',[mdl,'/DrakeSys'], ...
+        'FunctionName','DCSFunction', ...
         'parameters',[mdl,'_obj']);
       if (getNumInputs(obj)>0)
         add_block('simulink3/Sources/In1',[mdl,'/in']);
@@ -156,18 +156,18 @@ classdef RobotLibSystem < DynamicalSystem
           add_block('simulink3/Nonlinear/Saturation',[mdl,'/sat'],...
             'UpperLimit',mat2str(obj.umax),'LowerLimit',mat2str(obj.umin));
           add_line(mdl,'in/1','sat/1');
-          add_line(mdl,'sat/1','RobotLibSys/1');
+          add_line(mdl,'sat/1','DrakeSys/1');
         else
-          add_line(mdl,'in/1','RobotLibSys/1');
+          add_line(mdl,'in/1','DrakeSys/1');
         end
       end
       if (getNumOutputs(obj)>0)
         add_block('simulink3/Sinks/Out1',[mdl,'/out']);
-        add_line(mdl,'RobotLibSys/1','out/1');
+        add_line(mdl,'DrakeSys/1','out/1');
       end
       
       if (obj.num_xcon>0)
-        warning('RobotLib:RobotLibSystem:NotImplemented','system has constraints, but they aren''t enforced in the simulink model yet.');
+        warning('Drake:DrakeSystem:NotImplemented','system has constraints, but they aren''t enforced in the simulink model yet.');
       end
     end
     
@@ -331,26 +331,20 @@ classdef RobotLibSystem < DynamicalSystem
     
     function sys=feedback(sys1,sys2)
       % Constructs a feedback combination of sys1 and sys2.  
-      % Tries to keep the system as a SmoothRobotLibSystem, but will fail
-      % if one of the systems has discontinuities, for instance from an
-      % input saturation.  In that case, it returns a DynamicalSystem
-      % object.
       %
       % @param sys1 first DynamicalSystem (on the forward path)
       % @param sys2 second DynamicalSystem (on the backward path)
-      % @option try_to_be_robotlibsystem set to false if you want to return
-      % a simulink model. @default true
       %
       % The input to the feedback model is added to the output of sys2
       % before becoming the input for sys1.  The output of the feedback
       % model is the output of sys1.
 
-      if isa(sys2,'RobotLibSystem')
+      if isa(sys2,'DrakeSystem')
         try 
-          sys=FeedbackSystem(sys1,sys2);  % try to keep it a robotlibsystem
+          sys=FeedbackSystem(sys1,sys2);  % try to keep it a drakesystem
         catch ex
-          if (strcmp(ex.identifier, 'RobotLib:RobotLibSystem:UnsupportedSampleTime'))
-            warning('RobotLib:RobotLibSystem:UnsupportedSampleTime','Aborting feedback combination as a RobotLibSystem due to incompatible sample times');
+          if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
+            warning('Drake:DrakeSystem:UnsupportedSampleTime','Aborting feedback combination as a DrakeSystem due to incompatible sample times');
             sys = feedback@DynamicalSystem(sys1,sys2);
           else
             rethrow(ex);
@@ -362,12 +356,12 @@ classdef RobotLibSystem < DynamicalSystem
     end
     
     function sys=cascade(sys1,sys2)
-      if isa(sys2,'RobotLibSystem')
+      if isa(sys2,'DrakeSystem')
         try
-          sys=CascadeSystem(sys1,sys2);   % try to keep it a robotlibsystem
+          sys=CascadeSystem(sys1,sys2);   % try to keep it a drakesystem
         catch ex
-          if (strcmp(ex.identifier, 'RobotLib:RobotLibSystem:UnsupportedSampleTime'))
-            warning('RobotLib:RobotLibSystem:UnsupportedSampleTime','Aborting cascade combination as a RobotLibSystem due to incompatible sample times');
+          if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
+            warning('Drake:DrakeSystem:UnsupportedSampleTime','Aborting cascade combination as a DrakeSystem due to incompatible sample times');
             sys = cascade@DynamicalSystem(sys1,sys2);
           else
             rethrow(ex);

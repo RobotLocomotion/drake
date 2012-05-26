@@ -2,7 +2,7 @@ function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0
 % trajectoryOptimization
 %
 % This file describes the interface used by all of the trajectory
-% optimization tools in robotlib.  
+% optimization tools in drake.  
 %
 % @param costFun handle to scalar function g(t,x(t),u(t)).  total cost is
 %            integral of g over the trajectory + h

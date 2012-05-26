@@ -5,7 +5,7 @@ function testLCMControl
 
 checkDependency('lcm_enabled');
 
-load robotlib_config;
+load drake_config;
 
 p = addpath([conf.root,'/examples/Pendulum']);
 

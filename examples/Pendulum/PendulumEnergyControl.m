@@ -1,4 +1,4 @@
-classdef PendulumEnergyControl < HybridRobotLibSystem
+classdef PendulumEnergyControl < HybridDrakeSystem
   
   methods
     function obj = PendulumEnergyControl(plant)

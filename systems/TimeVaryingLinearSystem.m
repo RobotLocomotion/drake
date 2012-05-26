@@ -3,7 +3,7 @@ classdef TimeVaryingLinearSystem < TimeVaryingPolynomialSystem
 
   methods 
     function obj=LTVControl(x0,u0,K,S,Sdot)
-      obj = obj@SmoothRobotLibSystem(0,1,x0.dim,u0.dim,true,true);
+      obj = obj@DrakeSystem(0,1,x0.dim,u0.dim,true,true);
       obj.x0 = x0;
       obj.u0 = u0;
       obj.K = K;

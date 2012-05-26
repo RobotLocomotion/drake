@@ -1,4 +1,4 @@
-classdef FeedbackSystem < RobotLibSystem
+classdef FeedbackSystem < DrakeSystem
   
   properties
     sys1
@@ -9,24 +9,24 @@ classdef FeedbackSystem < RobotLibSystem
   
   methods
     function obj = FeedbackSystem(sys1,sys2)
-      obj = obj@RobotLibSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
+      obj = obj@DrakeSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
         sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
         sys1.getNumInputs(), sys1.getNumOutputs(), false, sys1.isTI() & sys2.isTI());
-      typecheck(sys1,'RobotLibSystem');
-      typecheck(sys2,'RobotLibSystem');
+      typecheck(sys1,'DrakeSystem');
+      typecheck(sys2,'DrakeSystem');
       
-      if (isa(sys1,'HybridRobotLibSystem') || isa(sys2,'HybridRobotLibSystem'))
-        error('RobotLib:FeedbackSystem:NoHybridSupport','feedback combinations with hybrid systems not implemented yet.');
+      if (isa(sys1,'HybridDrakeSystem') || isa(sys2,'HybridDrakeSystem'))
+        error('Drake:FeedbackSystem:NoHybridSupport','feedback combinations with hybrid systems not implemented yet.');
       end
-      if (isa(sys1,'StochasticRobotLibSystem') || isa(sys2,'StochasticRobotLibSystem'))
-        error('RobotLib:FeedbackSystem:NoStochasticSupport','feedback combinations with stochastic systems not implemented yet.');
+      if (isa(sys1,'StochasticDrakeSystem') || isa(sys2,'StochasticDrakeSystem'))
+        error('Drake:FeedbackSystem:NoStochasticSupport','feedback combinations with stochastic systems not implemented yet.');
       end
       
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,false);
       [sys2,sys1] = matchCoordinateFramesForCombination(sys2,sys1,true);
 
       if (sys1.isDirectFeedthrough() && sys2.isDirectFeedthrough())
-        error('RobotLib:FeedbackSystem:AlgebraicLoop','algebraic loop');
+        error('Drake:FeedbackSystem:AlgebraicLoop','algebraic loop');
       end
       
       [obj.sys1ind,obj.sys2ind] = stateIndicesForCombination(sys1,sys2);

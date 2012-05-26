@@ -1,7 +1,5 @@
 
-load robotlib_config;
-
-oldpath = addpath([conf.root,'/examples/Acrobot']);
+oldpath = addpath([getDrakePath(),'/examples/Acrobot']);
 p = AcrobotPlant();
 t0=0;
 u0=0;

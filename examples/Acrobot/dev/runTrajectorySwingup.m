@@ -1,6 +1,6 @@
 function runTrajectorySwingup
 
-load robotlib_config;
+load drake_config;
 addpath([conf.root,'/examples/Acrobot'])
 
 d = AcrobotPlant;

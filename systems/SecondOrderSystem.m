@@ -1,4 +1,4 @@
-classdef SecondOrderSystem < RobotLibSystem
+classdef SecondOrderSystem < DrakeSystem
 % An abstract class that wraps qddot = f(t,q,qdot,u).
 %   A specialization of the Dynamics class for systems of second order.  
   
@@ -9,7 +9,7 @@ classdef SecondOrderSystem < RobotLibSystem
     %   variables (implying num_q*2 states) and num_u control inputs.
 
 %      if (nargin>0)
-        obj = obj@RobotLibSystem(num_q*2,0,num_u,num_q*2,false,timeInvariantFlag);
+        obj = obj@DrakeSystem(num_q*2,0,num_u,num_q*2,false,timeInvariantFlag);
         obj = obj.setNumDOF(num_q);
 %      end
     end
@@ -31,7 +31,7 @@ classdef SecondOrderSystem < RobotLibSystem
     % with num_q
       if (num_xc<0 || rem(num_xc,2)) error('num_x must be even for a SecondOrderDynamics'); end 
       obj.num_q = num_xc/2;
-      obj = setNumContStates@RobotLibSystem(obj,num_xc);
+      obj = setNumContStates@DrakeSystem(obj,num_xc);
       obj = setNumOutputs(obj,num_xc); 
     end
     
@@ -51,17 +51,17 @@ classdef SecondOrderSystem < RobotLibSystem
     function sys = feedback(sys1,sys2)
       if (isa(sys2,'SecondOrderSystem'))
         % todo: implement this
-        warning('feedback combinations of second order systems not handled explicitly yet. kicking out to a combination of RobotLibSystems');
+        warning('feedback combinations of second order systems not handled explicitly yet. kicking out to a combination of DrakeSystems');
       end
-      sys = feedback@RobotLibSystem(sys1,sys2);
+      sys = feedback@DrakeSystem(sys1,sys2);
     end
     
     function sys = cascade(sys1,sys2)
       if (isa(sys2,'SecondOrderSystem'))
         % todo: implement this
-        warning('cascade combinations of second order systems not handled explicitly yet. kicking out to a combination of RobotLibSystems');
+        warning('cascade combinations of second order systems not handled explicitly yet. kicking out to a combination of DrakeSystems');
       end
-      sys = cascade@RobotLibSystem(sys1,sys2);
+      sys = cascade@DrakeSystem(sys1,sys2);
     end
     
   end

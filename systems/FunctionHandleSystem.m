@@ -1,4 +1,4 @@
-classdef FunctionHandleSystem < RobotLibSystem
+classdef FunctionHandleSystem < DrakeSystem
 
 properties (SetAccess=private)
   hDynamics
@@ -9,7 +9,7 @@ end
 
 methods
   function obj = FunctionHandleSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,hDynamics,hUpdate,hOutput)
-    obj = obj@SmoothRobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
+    obj = obj@DrakeSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
     obj.hDynamics = hDynamics;
     obj.hUpdate = hUpdate;
     obj.hOutput = hOutput;

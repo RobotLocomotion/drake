@@ -1,5 +1,5 @@
 
-load robotlib_config;
+load drake_config;
 p = path;
 addpath([conf.root,'/examples/Pendulum']);
 

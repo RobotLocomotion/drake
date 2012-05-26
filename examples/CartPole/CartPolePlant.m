@@ -1,4 +1,4 @@
-classdef CartPolePlant < ManipulatorPlant
+classdef CartPolePlant < Manipulator
 
   properties
     mc = 10;   % mass of the cart in kg

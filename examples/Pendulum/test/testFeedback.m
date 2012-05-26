@@ -1,6 +1,6 @@
 function testFeedback
 
-load robotlib_config;
+load drake_config;
 oldpath=addpath([conf.root,'/examples/Pendulum']);
 
 try 
@@ -8,7 +8,7 @@ try
   c = PendulumLQR(p);
   
   sys1=feedback(p,c);
-  typecheck(sys1,'RobotLibSystem');
+  typecheck(sys1,'DrakeSystem');
   
   p2 = SimulinkModel(p.getModel());
   p2 = setInputFrame(p2,p.getInputFrame());

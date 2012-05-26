@@ -4,7 +4,7 @@ function [utraj,xtraj,info] = dirtranSNOPTtranscription(sys,costFun,finalCostFun
 % SNOPT.  Roughly following the implementation described in Betts01, section 4.5.
 %
 % Inputs are:
-%    sys                         - a class which implements the RobotLibSystem interface
+%    sys                         - a class which implements the DrakeSystem interface
 %    [g,dg] = costFun(t,x,u)     - the cost function, including gradients
 %    [h,dh] = finalCostFun(t,x)  - the final time cost, including gradients
 %    x0                          - initial conditions

@@ -1,8 +1,8 @@
-classdef BallPlant < HybridRobotLibSystem
+classdef BallPlant < HybridDrakeSystem
   
   methods
     function obj = BallPlant()
-      obj = obj@HybridRobotLibSystem(...
+      obj = obj@HybridDrakeSystem(...
         0, ...  % number of inputs
         1);     % number of outputs
       

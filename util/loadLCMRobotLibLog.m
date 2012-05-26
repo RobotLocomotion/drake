@@ -1,4 +1,4 @@
-function data = loadLCMRobotLibLog(logfile,lcm_coder)
+function data = loadLCMDrakeLog(logfile,lcm_coder)
 % Loads an LCM log file into a MATLAB structure using an LCMCoder.
 %
 % @param logfile Filename of the lcm log.  If empty, then a file

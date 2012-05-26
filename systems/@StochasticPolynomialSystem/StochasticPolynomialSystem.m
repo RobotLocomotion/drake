@@ -1,4 +1,4 @@
-classdef StochasticPolynomialSystem < StochasticRobotLibSystem & PolynomialSystem
+classdef StochasticPolynomialSystem < StochasticDrakeSystem & PolynomialSystem
   
   properties (SetAccess=private)
     p_w
@@ -9,7 +9,7 @@ classdef StochasticPolynomialSystem < StochasticRobotLibSystem & PolynomialSyste
   
   methods
     function obj = StochasticPolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,num_w,ts_w); % todo: handle msspoly inputs if/when necessary
-      obj = obj@StochasticRobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,num_w,ts_w);
+      obj = obj@StochasticDrakeSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,num_w,ts_w);
       obj = obj@PolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
 
       % Now create the msspoly versions of the dynamics,update,and output:
@@ -30,13 +30,13 @@ classdef StochasticPolynomialSystem < StochasticRobotLibSystem & PolynomialSyste
 
     % resolve multiple inheritance conflicts
     function xcdot = dynamics(obj,t,x,u)
-      xcdot = dynamics@StochasticRobotLibSystem(obj,t,x,u);
+      xcdot = dynamics@StochasticDrakeSystem(obj,t,x,u);
     end
     function xdn = update(obj,t,x,u)
-      xdn = update@StochasticRobotLibSystem(obj,t,x,u);
+      xdn = update@StochasticDrakeSystem(obj,t,x,u);
     end
     function y = output(obj,t,x,u)
-      y = output@StochasticRobotLibSystem(obj,t,x,u);
+      y = output@StochasticDrakeSystem(obj,t,x,u);
     end
       
   end
