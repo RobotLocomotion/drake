@@ -1,4 +1,4 @@
-classdef MarkovDecisionProcess < RobotLibSystem
+classdef MarkovDecisionProcess < DrakeSystem
 % implements a model-based (transition probabilities are known)
 % finite-state, finite-action, discrete time markov decision process.
 
@@ -15,7 +15,7 @@ classdef MarkovDecisionProcess < RobotLibSystem
   
   methods
     function obj = MarkovDecisionProcess(S,A,T,C,gamma,ts)
-      obj = obj@RobotLibSystem(0,1,size(A,1),size(S,1),false,true);
+      obj = obj@DrakeSystem(0,1,size(A,1),size(S,1),false,true);
       obj.S = S;
       obj.A = A;
       obj.T = T;

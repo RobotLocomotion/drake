@@ -1,5 +1,5 @@
 Library {
-  Name			  "robotlib"
+  Name			  "drake"
   Version		  7.6
   MdlSubVersion		  0
   SavedCharacterEncoding  "ISO-8859-1"
@@ -15,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "russt"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Jan  5 00:09:40 2011"
-  RTWModifiedTimeStamp	  216086409
-  ModelVersionFormat	  "1.%<AutoIncrement:19>"
+  LastModifiedDate	  "Fri May 25 21:45:50 2012"
+  RTWModifiedTimeStamp	  259883146
+  ModelVersionFormat	  "1.%<AutoIncrement:20>"
   ConfigurationManager	  "None"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -602,8 +602,8 @@ Library {
     }
   }
   System {
-    Name		    "robotlib"
-    Location		    [1080, 279, 1660, 539]
+    Name		    "drake"
+    Location		    [1081, 302, 1661, 562]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -620,14 +620,14 @@ Library {
     SIDHighWatermark	    "5"
     Block {
       BlockType		      "S-Function"
-      Name		      "RobotLibSystem"
+      Name		      "DrakeSystem"
       SID		      "5"
       Ports		      [1, 1]
       Position		      [170, 45, 230, 75]
       FunctionName	      "RLCSFunction"
       Parameters	      "sysobj"
       EnableBusSupport	      off
-      MaskPromptString	      "class('RobotLibSystem') object"
+      MaskPromptString	      "class('DrakeSystem') object"
       MaskStyleString	      "edit"
       MaskVariables	      "sysobj=@1;"
       MaskTunableValueString  "off"

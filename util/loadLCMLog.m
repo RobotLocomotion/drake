@@ -18,7 +18,7 @@ function data = loadLCMLog(logfile,classpathtosearch)
 %   utime = [data.channel(:).utime];  
 % where channel is replaced by a true channel name.
 %
-% See also loadLCMRobotLibLog 
+% See also loadLCMDrakeLog 
 
 if (nargin<1 || isempty(logfile))
   [filename,pathname]=uigetfile('*');
@@ -40,7 +40,7 @@ try
 catch
   disp(['Can''t load log file: ',logfile]);
 end
-handlers = robotlib.util.MyLCMTypeDatabase(classpathtosearch);
+handlers = drake.util.MyLCMTypeDatabase(classpathtosearch);
 
 data=struct();
 

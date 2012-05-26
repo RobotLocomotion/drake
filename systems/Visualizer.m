@@ -1,4 +1,4 @@
-classdef Visualizer < RobotLibSystem
+classdef Visualizer < DrakeSystem
 % An interface class which draws (e.g., produces a plot) the output of
 % another dynamical system.  An example might be a set of plotting commands
 % to draw a pendulum given the position of the pendulum.  Visualizers can
@@ -12,7 +12,7 @@ classdef Visualizer < RobotLibSystem
 
   methods 
     function obj=Visualizer(num_u)
-      obj=obj@RobotLibSystem(0,0,num_u,0,true);
+      obj=obj@DrakeSystem(0,0,num_u,0,true);
     end
     
     function x0 = getInitialState(obj)

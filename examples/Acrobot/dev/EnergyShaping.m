@@ -1,8 +1,8 @@
-classdef EnergyShaping < SmoothRobotLibSystem
+classdef EnergyShaping < DrakeSystem
   
   methods
     function obj = EnergyShaping(plant)
-      obj = obj@SmoothRobotLibSystem(0,0,4,1);
+      obj = obj@DrakeSystem(0,0,4,1);
       
       if (nargin>0)
         typecheck(plant,'AcrobotPlant');

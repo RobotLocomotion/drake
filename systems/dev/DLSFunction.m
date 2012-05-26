@@ -1,4 +1,4 @@
-function RLSFunction(block)
+function DLSFunction(block)
 % Simulink block which implements the Dynamical System
 % Dialog Paramaters:
 %    object of type 'DynamicalSystem'
@@ -10,7 +10,7 @@ end
 
 function mdlSetup(block)
   sys = block.DialogPrm(1).Data;
-  typecheck(sys,'RobotLibSystem');
+  typecheck(sys,'DrakeSystem');
 
   % Register number of ports
   block.NumInputPorts  = 1;

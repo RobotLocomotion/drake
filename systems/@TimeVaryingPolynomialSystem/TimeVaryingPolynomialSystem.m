@@ -1,4 +1,4 @@
-classdef TimeVaryingPolynomialSystem < RobotLibSystem
+classdef TimeVaryingPolynomialSystem < DrakeSystem
 % dynamics, update, output are polynomial in x and u, but not necessarily
 % polynomial in t.
   
@@ -12,7 +12,7 @@ classdef TimeVaryingPolynomialSystem < RobotLibSystem
     
   methods
     function obj = PolynomialTrajectorySystem(p_dynamics_traj,p_update_traj,p_output_traj,num_u,direct_feedthrough_flag)
-      obj = obj@SmoothRobotLibSystem(0,0,0,0,direct_feedthrough_flag,false);
+      obj = obj@SmoothDrakeSystem(0,0,0,0,direct_feedthrough_flag,false);
 
       checkDependency('spot_enabled');
 

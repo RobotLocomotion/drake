@@ -1,6 +1,6 @@
 function runAllTests(numToSkip,bAbortOnFail)
 
-% Recurses through the robotlib directories, running all test scripts 
+% Recurses through the Drake directories, running all test scripts 
 % (in test subdirectories) and all methods/scripts in the examples directory.
 %   Usage:  run_all_tests([bAbortOnFail]);
 %   Defaults: bAbortOnFail = true;
@@ -14,7 +14,7 @@ function runAllTests(numToSkip,bAbortOnFail)
 % the string "classdef" or "NOTEST" anywhere in the file. 
 %
 % This script should always be run (and all tests should pass) before 
-% anything is committed back into the robotlib repository.
+% anything is committed back into the Drake repository.
 %
 
 if (nargin<1) numToSkip = 0; end
@@ -33,7 +33,6 @@ info=run_tests_in('examples',info,false);
 info=run_tests_in('.',info,true);
 %pause on;
 
-clear robotlib_unit_test;
 fprintf(1,'\n Executed %d tests.  %d passed.  %d failed.\n',info.passcount+info.failcount, info.passcount, info.failcount);
 
 end

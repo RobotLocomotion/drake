@@ -1,4 +1,4 @@
-classdef Luenberger < SmoothRobotLibSystem
+classdef Luenberger < DrakeSystem
 % Implements the Luenberger observer.
 % <pre>
 % For the system

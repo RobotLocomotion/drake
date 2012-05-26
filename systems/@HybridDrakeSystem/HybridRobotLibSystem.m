@@ -1,4 +1,4 @@
-classdef (InferiorClasses = {?RobotLibSystem}) HybridRobotLibSystem < RobotLibSystem
+classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
 
   % some restrictions on the mode systems:
   %  must be CT only 
@@ -16,14 +16,14 @@ classdef (InferiorClasses = {?RobotLibSystem}) HybridRobotLibSystem < RobotLibSy
   
   % construction
   methods
-    function obj = HybridRobotLibSystem(num_u,num_y)
-      obj = obj@RobotLibSystem(0,1,num_u,num_y,false,true);
+    function obj = HybridDrakeSystem(num_u,num_y)
+      obj = obj@DrakeSystem(0,1,num_u,num_y,false,true);
     end
         
     function [obj,mode_num] = addMode(obj,mode_sys,name)
-      typecheck(mode_sys,'RobotLibSystem');
-      if isa(mode_sys,'HybridRobotLibSystem') error('hybrid modes are not supported (yet)'); end
-      if isa(mode_sys,'StochasticRobotLibSystem') error('stochastic modes are not supported (yet)'); end
+      typecheck(mode_sys,'DrakeSystem');
+      if isa(mode_sys,'HybridDrakeSystem') error('hybrid modes are not supported (yet)'); end
+      if isa(mode_sys,'StochasticDrakeSystem') error('stochastic modes are not supported (yet)'); end
       if (getNumStates(mode_sys)>0 && ~(mode_sys.isCT() || mode_sys.isInheritedTime())) error('only CT or inherited sample time modes are allowed for now'); end
       obj.target_mode = {obj.target_mode{:},[]};
       obj.guard = {obj.guard{:},{}};
@@ -69,7 +69,7 @@ classdef (InferiorClasses = {?RobotLibSystem}) HybridRobotLibSystem < RobotLibSy
       if (from_mode_num<1 || from_mode_num>length(obj.modes)) error('invalid from mode'); end
       if (nargin<7) to_mode_num=0; end
       if (isnumeric(guard))
-        error('the syntax for the hybrid models has changed (sorry).  to_mode_num is now an output of the transition function instead of an argument to addTransition.  this was necessary for more complicated transitions.  type ''help @HybridRobotLibSystem/addTransition'' for details.'); 
+        error('the syntax for the hybrid models has changed (sorry).  to_mode_num is now an output of the transition function instead of an argument to addTransition.  this was necessary for more complicated transitions.  type ''help @HybridDrakeSystem/addTransition'' for details.'); 
         % todo: zap trailing ~ from argument list when i zap this version change notification.
       end
       typecheck(guard,{'function_handle','inline'});
@@ -167,7 +167,7 @@ classdef (InferiorClasses = {?RobotLibSystem}) HybridRobotLibSystem < RobotLibSy
     end
     
     function f=getStateFrame(obj)
-      error('RobotLib:HybridRobotLibSystem:StateFrame','Hybrid systems do not have a unique state frame.  You should get the individual mode state-frames instead'); 
+      error('Drake:HybridDrakeSystem:StateFrame','Hybrid systems do not have a unique state frame.  You should get the individual mode state-frames instead'); 
     end
     
     function [xcdot,df] = dynamics(obj,t,x,u)
@@ -243,7 +243,7 @@ classdef (InferiorClasses = {?RobotLibSystem}) HybridRobotLibSystem < RobotLibSy
         zcs2=zeroCrossings(obj,t,xn,u);
         active_id2 = find(zcs2<0);
 %        disp(obj);
-        warning('RobotLib:HybridRobotLibSystem:SuccessiveZeroCrossings','Transitioned from mode %s to mode %s, and immediately triggered guard number %d\n',obj.mode_names{m},obj.mode_names{to_mode_num},active_id2);
+        warning('Drake:HybridDrakeSystem:SuccessiveZeroCrossings','Transitioned from mode %s to mode %s, and immediately triggered guard number %d\n',obj.mode_names{m},obj.mode_names{to_mode_num},active_id2);
 %        keyboard; 
       end % useful for debugging successive zcs.
       end

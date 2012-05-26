@@ -18,7 +18,7 @@ if (options.tight)
   
   % then use epsc and epstopdf
   print(h,'-depsc',[filename '.eps']);
-  if (system(['epstopdf --outfile=', filename, '.pdf ', filename, '.eps']) ~= 0) error('epstopdf failed.  make sure it''s installed, and consider adding to robotlib_config  conf.system_preload to resolve path / library issues.'); end
+  if (system(['epstopdf --outfile=', filename, '.pdf ', filename, '.eps']) ~= 0) error('epstopdf failed.  make sure it''s installed, and consider adding to drake_config.  conf.system_preload to resolve path / library issues.'); end
   delete([filename,'.eps']);
   
 else

@@ -1,4 +1,4 @@
-classdef SimulationConstructionSetRobot < RobotLibSystem
+classdef SimulationConstructionSetRobot < DrakeSystem
 % Implements the DynamicalSystem interface for a SimulationConstructionSet robot.
 % SimulationConstructionSet is developed by IHMC.
 
@@ -24,7 +24,7 @@ classdef SimulationConstructionSetRobot < RobotLibSystem
       % javaaddpath([eclipse_root,'DoublePendulum/classes']);
 
       % todo: compute correct number of states and inputs here
-      obj=obj@SmoothRobotLibSystem(0,0,0,0,0,1);
+      obj=obj@DrakeSystem(0,0,0,0,0,1);
       
       checkDependency('simulationconstructionset_enabled');
       

@@ -1,7 +1,6 @@
 function taylorTest
 
-load robotlib_config;
-oldpath = addpath([conf.root,'/examples/Pendulum']);
+oldpath = addpath([getDrakePath(),'/examples/Pendulum']);
 
 order=2;
 

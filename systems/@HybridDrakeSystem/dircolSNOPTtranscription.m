@@ -1,7 +1,7 @@
 function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,iname,oname] = dircolSNOPTtranscription(sys,costFun,finalCostFun,x0,utraj0,con,options)
 
   hybrid_options=options;  % keep a backup
-  if (~isfield(con,'mode')) error('con.mode must be defined for HybridRobotLibSystems'); end
+  if (~isfield(con,'mode')) error('con.mode must be defined for HybridDrakeSystems'); end
   for i=1:length(x0)
     if (length(x0{i})~=sys.modes{con.mode{i}.mode_num}.getNumContStates()), error('x0 should NOT have the mode variable as the first element.'); end
   end

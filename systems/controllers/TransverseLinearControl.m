@@ -1,11 +1,11 @@
-classdef TransverseLinearControl < RobotLibSystem
+classdef TransverseLinearControl < DrakeSystem
 % Orbital stabilization via the transverse linearization
 
 % irm@mit.edu
 
 methods 
     function obj=TransverseLinearControl(x0,u0,K,TransSurf,S,Sdot, Qtraj, Rtraj, plant)
-      obj = obj@SmoothRobotLibSystem(1,0,x0.dim,u0.dim,false,false);
+      obj = obj@DrakeSystem(1,0,x0.dim,u0.dim,false,false);
       obj.x0 = x0;
       obj.u0 = u0;
       obj.plant = plant;

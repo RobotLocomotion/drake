@@ -5,7 +5,7 @@ function configure
 % directing you to their location.
 
 try 
-  load robotlib_config.mat; 
+  load drake_config.mat; 
 catch
   conf=struct();
 end
@@ -15,7 +15,7 @@ ind = find(v.Version,'.','first');
 major_ver = str2num(v.Version(1:ind));
 minor_ver = str2num(v.Version((ind+2):end));
 if (major_ver < 7 || (major_ver==7 && minor_ver < 6)) 
-  error('RobotLib reguires MATLAB version 7.6 or above.');
+  error('Drake reguires MATLAB version 7.6 or above.');
   % because I rely on the new matlab classes with classdef
 end
 
@@ -36,23 +36,23 @@ end
 
 original_path = path;
 
-% remove any existing robotlib directories that are in a different root
+% remove any existing drake directories that are in a different root
 y=strread(path,'%s','delimiter',pathsep);
-ind=strfind(y,'robotlib');
-old_robotlibs={}; old_robotlibs_delete=[];
+ind=strfind(y,'drake');
+old_drakes={}; old_drakes_delete=[];
 for i=1:length(ind);  % check current paths 
-  if ~isempty(ind{i}) % does it have 'robotlib'?
-    old_rl = [y{i}(1:ind{i}-1),'robotlib'];
-    if ~strncmpi(old_rl,pwd,ind{i})  % is it the current directory, or a different copy of robotlib?
-      j = find(strcmp(old_robotlibs,old_rl),1);  % is it already in our list of old robotlibs?  (only want to ask the user once)
+  if ~isempty(ind{i}) % does it have 'drake'?
+    old_d = [y{i}(1:ind{i}-1),'drake'];
+    if ~strncmpi(old_d,pwd,ind{i})  % is it the current directory, or a different copy of drake?
+      j = find(strcmp(old_drakes,old_d),1);  % is it already in our list of old drakes?  (only want to ask the user once)
       if isempty(j)  % then it's old and I haven't seen it before.  prompt user to see if i can delete.
-        old_robotlibs{end+1} = old_rl;
-        a = input(['I found a robotlib install in ', old_rl,' in your path.\n  This might confuse things.\n  Ok if I remove it from your path now? (y/n)? '], 's');
-        old_robotlibs_delete = [old_robotlibs_delete;(lower(a(1))=='y')];
-        j=length(old_robotlibs_delete);
+        old_drakes{end+1} = old_d;
+        a = input(['I found a drake install in ', old_d,' in your path.\n  This might confuse things.\n  Ok if I remove it from your path now? (y/n)? '], 's');
+        old_drakes_delete = [old_drakes_delete;(lower(a(1))=='y')];
+        j=length(old_drakes_delete);
       end
       % if i'm allowed to delete, then rmpath this entry
-      if (old_robotlibs_delete(j));
+      if (old_drakes_delete(j));
         rmpath(y{i});
       end
     end
@@ -60,7 +60,7 @@ for i=1:length(ind);  % check current paths
 end
 
 
-% add robotlib directories to the matlab path 
+% add drake directories to the matlab path 
 addpath([conf.root,'/systems']);
 addpath([conf.root,'/systems/plants']);
 addpath([conf.root,'/systems/controllers']);
@@ -83,7 +83,7 @@ else
   major_ver = str2num(v.Version(1:ind));
   minor_ver = str2num(v.Version((ind+2):end));
   if (major_ver < 7 || (major_ver==7 && minor_ver < 3)) 
-    warning('Some features of Robotlib reguires SIMULINK version 7.3 or above.');
+    warning('Some features of Drake reguires SIMULINK version 7.3 or above.');
     % haven't actually tested with lower versions
     conf.simulink_enabled = false;
   end
@@ -93,12 +93,13 @@ end
 conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
 if (~conf.lcm_enabled)
   disp(' LCM not found.  LCM support will be disabled.  To re-enable, add lcm-###.jar to your matlab classpath (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.5.1.jar'') into your startup.m .');
-elseif (~exist('robotlib.util.lcmt_scope_data'))
-  % todo: if robotlib java should ever exist outside of lcm, then I can
+elseif (~exist('drake.util.lcmt_scope_data'))
+  % todo: if drake java should ever exist outside of lcm, then I can
   % change this, but i'll need to check for a class that is not
-  % lcm-dependent (lcmt_scope_data fails if robotlib.jar is in the
+  % lcm-dependent (lcmt_scope_data fails if drake.jar is in the
   % classpath but lcm.jar is not)
-  error(['Can''t find robotlib files in your matlab java classpath.  I recommend doing the following:',10,' 1) >> edit startup.m',10,' 2) add the line "javaaddpath(''',conf.root,'/robotlib.jar'');" to the end of startup.m',10,' 3) >> startup.m']);
+  warning(['Can''t find drake files in your matlab java classpath.  Disabling LCM.  I recommend doing the following:',10,' 1) >> edit startup.m',10,' 2) add the line "javaaddpath(''',conf.root,'/drake.jar'');" to the end of startup.m',10,' 3) >> startup.m']);
+  conf.lcm_enabled = false;
 end
 
 conf.snopt_enabled = logical(exist('snopt'));
@@ -130,12 +131,12 @@ end
 
 % save configuration options to config.mat
 conf
-save([conf.root,'/util/robotlib_config.mat'],'conf');
+save([conf.root,'/util/drake_config.mat'],'conf');
 
 disp('To manually change any of these entries, use:')
-disp('  load robotlib_config.mat;');
+disp('  load drake_config.mat;');
 disp('  conf.field = val;');
-disp('  save([conf.root,''/util/robotlib_config.mat''],''conf'');');
+disp('  save([conf.root,''/util/drake_config.mat''],''conf'');');
 
 % if changes have been made to the matlab path, prompt user with option to 
 % save the path for future matlab sessions.

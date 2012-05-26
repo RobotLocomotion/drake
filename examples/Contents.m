@@ -1,4 +1,4 @@
-% Robotlib Examples
+% Drake Examples
 %
 % Simple Manipulators:
 %   Pendulum

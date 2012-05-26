@@ -9,12 +9,10 @@ disp('compiling mex files...');
 
 cd util;
 mex realtime.cpp
-%eval(['mex ' simulinkIncludeDir ' realtime.cpp']);
 cd ..
 
 cd systems;
-mex -g RLCSFunction.cpp
-%eval(['mex -g ' simulinkIncludeDir ' RLCSFunction.cpp']);
+mex -g DCSFunction.cpp
 cd ..
 
 disp('done.');

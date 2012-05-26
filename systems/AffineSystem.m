@@ -107,7 +107,7 @@ classdef AffineSystem < PolynomialSystem
     
     function sys = feedback(sys1,sys2)
       % try to keep feedback between polynomial systems polynomial.  else,
-      % kick out to RobotLibSystem
+      % kick out to DrakeSystem
       %
       
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,false);
@@ -118,7 +118,7 @@ classdef AffineSystem < PolynomialSystem
       end
         
       if (sys1.isDirectFeedthrough() && sys2.isDirectFeedthrough())
-        error('RobotLib:AffineSystem:AlgebraicLoop','algebraic loop');
+        error('Drake:AffineSystem:AlgebraicLoop','algebraic loop');
       end
       
       if (getNumZeroCrossings(sys1)>0 || getNumZeroCrossings(sys2)>0)
@@ -155,10 +155,10 @@ classdef AffineSystem < PolynomialSystem
       sys = setOutputFrame(sys,sys1.getOutputFrame());
 
       try 
-        sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to robotlibsystem?
+        sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to drakesystem?
       catch ex
-        if (strcmp(ex.identifier, 'RobotLib:RobotLibSystem:UnsupportedSampleTime'))
-          warning('RobotLib:AffineSystem:UnsupportedSampleTime','Aborting affine feedback because of incompatible sample times'); 
+        if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
+          warning('Drake:AffineSystem:UnsupportedSampleTime','Aborting affine feedback because of incompatible sample times'); 
           sys = feedback@PolynomialSystem(sys1,sys2);
         else
           rethrow(ex)
@@ -168,13 +168,13 @@ classdef AffineSystem < PolynomialSystem
     
     function sys = cascade(sys1,sys2)
       % try to keep cascade between polynomial systems polynomial.  else,
-      % kick out to RobotLibSystem
+      % kick out to DrakeSystem
       %
 
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
 
       if ~isa(sys2,'PolynomialSystem') || any(~isinf([sys2.umin;sys2.umax]))
-        sys = cascade@RobotLibSystem(sys1,sys2)
+        sys = cascade@DrakeSystem(sys1,sys2)
       end
         
       if (getNumZeroCrossings(sys1)>0 || getNumZeroCrossings(sys2)>0)
@@ -208,11 +208,11 @@ classdef AffineSystem < PolynomialSystem
       sys = setOutputFrame(sys,sys2.getOutputFrame());
       
       try 
-        sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to robotlibsystem?
+        sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to drakesystem?
       catch ex
-        if (strcmp(ex.identifier, 'RobotLib:RobotLibSystem:UnsupportedSampleTime'))
-          warning('RobotLib:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial cascade because of incompatible sample times'); 
-          sys = cascade@RobotLibSystem(sys1,sys2);
+        if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
+          warning('Drake:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial cascade because of incompatible sample times'); 
+          sys = cascade@DrakeSystem(sys1,sys2);
         else
           rethrow(ex)
         end
@@ -221,7 +221,7 @@ classdef AffineSystem < PolynomialSystem
     
     function sys = extractLTISystem(obj)
       if any([obj.xcdot0;obj.xdn0;obj.y0]~=0) 
-        warning('RobotLib:AffineSystem:extractLTISystem','extract linear terms but affine terms are not all zero');
+        warning('Drake:AffineSystem:extractLTISystem','extract linear terms but affine terms are not all zero');
       end
       
       sys = LTISystem(obj.Ac,obj.Bc,obj.Ad,obj.Bd,obj.C,obj.D);
