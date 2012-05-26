@@ -1,8 +1,8 @@
-classdef SimpleMixedCTDTExample < RobotLibSystem
+classdef SimpleMixedCTDTExample < DrakeSystem
   methods
     function obj = SimpleMixedCTDTExample()
       % call the parent class constructor:
-      obj = obj@RobotLibSystem(...  
+      obj = obj@DrakeSystem(...  
          1, ... % number of continuous states
          1, ... % number of discrete states
          0, ... % number of inputs

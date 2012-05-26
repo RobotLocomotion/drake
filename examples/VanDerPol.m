@@ -2,7 +2,7 @@ classdef VanDerPol < PolynomialSystem
 
   methods
     function obj = VanDerPol()
-      obj = obj@PolynomialSystem(2,0,0,2,false,true);
+      obj = obj@PolynomialSystem(2,0,0,2,false);
     end
     function xdot = dynamics(obj,t,x,u)
       xdot = [x(2); -x(1)-x(2)*(x(1)^2-1)];
