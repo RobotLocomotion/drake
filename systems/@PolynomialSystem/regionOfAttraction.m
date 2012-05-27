@@ -1,10 +1,17 @@
-function V = regionOfAttraction(sys,x0,V0,options)
-% Estimates the region of attraction around x0 using V0 as an initial guess.
-% The resulting region of attraction is defined by the sub-level set V<=1 surrounding x0.
+function V = regionOfAttraction(sys,varargin)
+% Estimates the region of attraction.
+%    
+% V = regionOfAttraction(sys,V0,options)
+%   uses the LyapunovFunction V0 as the initial guess
+% V = regionOfAttraction(sys,x0,options)
+%   attempts to construct a LyapunovFunction around the fixed point x0
 %
-% @param x0 The fixed point (if the system has inputs, they are set to
-% zero)
-% @param V0 The initial Lyapunov candidate.  
+% The resulting region of attraction is defined by the sub-level set V<=1 
+% containing the origin in the LyapunovFunction reference frame.
+%
+% @param V0 A LyapunovFunction object used as the initial candidate.  
+% @param x0 A fixed point of the system (if the system has inputs, they are set to
+% zero) @default origin of the system's state frame
 %
 % @retval V The verified Lyapunov candidate (with V<=1 verified)
 %
@@ -16,10 +23,9 @@ function V = regionOfAttraction(sys,x0,V0,options)
 % 
 % @option degV The degree of the Lyapunov function to search over.
 % @default 2
-% @option degL1 The degree of the first Lagrange multiplier.  It's
-% implementation is method specific.  @default degV + deg(f) - 1 
-% @option degL2 The degree of the second Lagrange multiplier, if used.
-% @default degL1
+% @option degL The degree of the Lagrange multiplier used in the S-procedure.  It's
+% implementation is method specific.  Set degL to a vector if there are multiple Langrange multiplier degrees to set.  
+% @default the degree required to kill terms in the main polynomial.
 %
 % @option max_iterations The maximum number of iterations in the iterative
 % methods (e.g. biinear)
@@ -33,7 +39,63 @@ function V = regionOfAttraction(sys,x0,V0,options)
 % 'sampling'.  @default 10^(dim(x)+2)
 % 
 
-if (nargin<4) options=struct(); end
+if (~isCT(sys)) error('only handle CT case so far'); end
+
+if (sys.num_xcon>0) error('state constraints not implemented yet'); end
+if (~isempty(sys.p_mass_matrix)) error('rational dynamics not supported yet'); end
+
+f = sys.p_dynamics;
+
+%% zero all inputs
+if (sys.getNumInputs>0)
+  f = subs(f,sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
+end
+
+%% get Lyapunov candidate
+num_x = sys.getNumStates();
+if nargin<2 || isnumeric(varargin{1})
+  if nargin<2 || all(varargin{1}==0), x0 = zeros(num_x,1);
+    frame=sys.getStateFrame;
+  else
+    x0 = varargin{1}; 
+    sizecheck(x0,[num_x,1]);
+    frame=CoordinateFrame('LyapunovState',num_x,'x');
+    frame.addTransform(AffineTransform(frame,sys.getStateFrame,eye(length(x0)),+x0));
+    sys.getStateFrame.addTransform(AffineTransform(sys.getStateFrame,frame,eye(length(x0)),-x0));
+  end
+  
+  % check that x0 is a fixed point
+  x = sys.getStateFrame.poly;
+  if any(abs(double(subs(f,x,zeros(num_x,1))))>1e-5)
+    error('x0 must be a fixed point of the system');
+  end
+    
+  % solve a lyapunov equation on the linearized dynamics to get a Lyapunov candidate
+  A = doubleSafe(subs(diff(f,x),x,zeros(num_x,1)));
+  Q = eye(sys.num_x);  % todo: take this as a parameter?
+  P = lyap(A',Q);
+  V = PolynomialLyapunovFunction(frame,x'*P*x);
+elseif isa(varargin{1},'PolynomialLyapunovFunction')
+  V = varargin{1};
+else
+  error('the second argument must be either a PolynomialLyapunovFunction or a double representing x0');
+end
+typecheck(V,'LyapunovFunction');
+
+if (V.frame ~= sys.getStateFrame)
+  % convert f to Lyapunov function coordinates
+  tf = findTransform(V.frame,sys.getStateFrame);
+  if isempty(tf) error('couldn''t find a coordinate transform from the state frame to the frame of the Lyapunov candidate'); end
+  f = subss(f,sys.getStateFrame.poly,tf.output(0,[],V.frame.poly));
+  
+  tf = findTransform(sys.getStateFrame,V.frame);
+  if isempty(tf) error('couldn''t find a coordinate transform from the Lyapunov frame to teh state frame'); end
+  error('need to convert xdot to V.frame, too');
+end
+
+%% handle options
+if (nargin>2) options=varargin{2};
+else options=struct(); end
 if (~isfield(options,'method')) 
   options.method={'levelset'}; 
 elseif (~iscell(options.method))
@@ -44,43 +106,7 @@ if (~isfield(options,'max_iterations')) options.max_iterations=10; end
 if (~isfield(options,'converged_tol')) options.converged_tol=.01; end
 if (~isfield(options,'optimize')) options.optimize=true; end
 
-if (~isCT(sys)) error('only handle CT case so far'); end
-if (~isTI(sys)) error('only for TI systems so far'); end
-
-if (sys.num_xcon>0) error('state constraints not implemented yet'); end
-if (~isempty(sys.p_mass_matrix)) error('rational dynamics not supported yet'); end
-
-num_x = sys.getNumStates();
-num_u = sys.getNumInputs();
-if (nargin<2 || isempty(x0))
-  x0=zeros(num_x,1);
-else
-  typecheck(x0,'double');
-  sizecheck(x0,[num_x,1]);
-end
-
 if (~isfield(options,'numSamples')) options.numSamples = 10^(num_x+1); end 
-
-% todo: check that (x0,u0) is a fixed point
-
-x = sys.p_x;
-% f is time-invariant zero-input dynamics relative to x0
-f = subss(sys.p_dynamics,[sys.p_t;x;sys.p_u],[0;x + x0;zeros(num_u,1)]);
-A = doubleSafe(subs(diff(f,x),x,zeros(num_x,1)));
-
-
-if (nargin<3 || isempty(V0)) 
-  Q = eye(sys.num_x);  % todo: take this as a parameter?
-  P = lyap(A',Q);
-  V = x'*P*x;
-elseif (isnumeric(V0) && ismatrix(V0) && all(size(V0)==[num_x,num_x]))  % then use this quadratic form
-  V = x'*V0*x;
-else % take the V0 candidate, but center it around x0
-  V = subss(V0,x,x+x0);
-end
-
-typecheck(V,'msspoly');
-if any([V.m V.n]~=1) error('V0 must be a scalar msspoly'); end
 
 if (~isfield(options,'degL1'))
   options.degL1 = options.degV-1 + deg(f,x);  % just a guess
@@ -90,7 +116,7 @@ if (~isfield(options,'degL2'))
 end
 
 if (options.optimize == false)
-  checkConstantRho(x, f, V, options);
+  checkConstantRho(V,f,options);
   return;
 end
 
@@ -98,22 +124,19 @@ for i=1:length(options.method)
   %% compute level set
   switch (lower(options.method{i}))
     case 'bilinear'
-      V = bilinear(x,V,f,options);
+      V = bilinear(V,f,options);
     case 'levelset'
-      V = levelSetMethod(x,V,f,options);
+      V = levelSetMethod(V,f,options);
     case 'levelset_yalmip'
-      V = levelSetMethodYalmip(x,V,f,options);
+      V = levelSetMethodYalmip(V,f,options);
     case 'binary'
-      V = rhoLineSearch(x,V,f,options);
+      V = rhoLineSearch(V,f,options);
     case 'sampling'
-      V = sampling(x,V,f,options);
+      V = sampling(V,f,options);
     otherwise
       error(['don''t know method: ', options.method]);
   end
 end
-
-%% shift back to x0
-V = subss(V,x,x-x0);
 
 end
 
@@ -137,11 +160,12 @@ function [T,Vbal,fbal,S,A] = balance(x,V,f,S,A)
 end
 
 %% for the bilinear search
-function V = bilinear(x,V0,f,options)
+function V = bilinear(V0,f,options)
 
+  x = V0.frame.poly;
   num_x = length(x);
-  V=V0;
-  [T,V0bal,fbal,S0,A] = balance(x,V0,f);
+  V=V0.Vpoly;
+  [T,V0bal,fbal,S0,A] = balance(x,V0.Vpoly,f);
   rho = 1;  
 
   L1monom = monomials(x,0:options.degL1);
@@ -170,6 +194,8 @@ function V = bilinear(x,V0,f,options)
       break;
     end
   end
+  
+  V = PolynomialLyapunovFunction(V0.frame,V);
 end
 
 function [L1,sigma1] = findL1(x,f,V,Lxmonom,options)
@@ -256,9 +282,10 @@ end
 
 
 %% Pablo's method (jointly convex in rho and lagrange multipliers)
-function V = levelSetMethod(x,V,f,options)
+function V = levelSetMethod(V0,f,options)
 
-  [T,V,f] = balance(x,V,f);
+  x = V0.frame.poly;
+  [T,V,f] = balance(x,V0.Vpoly,f);
 
   %% compute Vdot
   Vdot = diff(V,x)*f;
@@ -286,19 +313,21 @@ function V = levelSetMethod(x,V,f,options)
     error('problem looks infeasible.  try increasing the order of the lagrange multipliers');
   end
   
-  rho = doubleSafe(prog(rho))
+  rho = doubleSafe(prog(rho));
   if (rho<=0) error('optimization failed'); end
 
   V = V/rho;
   
   %% undo balancing
   V = subss(V,x,inv(T)*x);
+  V = PolynomialLyapunovFunction(V0.frame,V);
 end
 
-function V=levelSetMethodYalmip(x,V,f,options)
+function V=levelSetMethodYalmip(V0,f,options)
   checkDependency('yalmip_enabled');
 
-  [T,V,f] = balance(x,V,f);
+  x = V0.frame.poly;
+  [T,V,f] = balance(x,V0.Vpoly,f);
 
   %% compute Vdot
   Vdot = diff(V,x)*f;
@@ -327,12 +356,14 @@ function V=levelSetMethodYalmip(x,V,f,options)
 
   %% undo balancing
   V = subss(V,x,inv(T)*x);
+  V = PolynomialLyapunovFunction(V0.frame,V);
 end
 
 %% Line search
 
-function V = rhoLineSearch(x,V,f,options)
-  [T,V,f] = balance(x,V,f);
+function V = rhoLineSearch(V0,f,options)
+  x = V0.frame.poly;
+  [T,V,f] = balance(x,V0.Vpoly,f);
 
   %% compute Vdot
   Vdot = diff(V,x)*f;
@@ -358,10 +389,12 @@ function V = rhoLineSearch(x,V,f,options)
 
   %% undo balancing
   V = subss(V,x,inv(T)*x);
+  V = PolynomialLyapunovFunction(V0.frame,V);
 end
 
-function [slack,info] = checkConstantRho(x, f, V, options)
-  %[T,V,f] = balance(x,V,f);
+function [slack,info] = checkConstantRho(V0,f,options)
+  x = V0.frame.poly;
+  [T,V,f] = balance(x,V0.Vpoly,f);
 
   %% compute Vdot
   Vdot = diff(V,x)*f;
@@ -407,13 +440,12 @@ function [slack,info] = checkConstantRho(x, f, V, options)
   prog.sos = L1;
   
 
-[slack,info] = checkRho(1, x, V, Vdot, prog, L1)
-  
+  [slack,info] = checkRho(1, x, V, Vdot, prog, L1)
   
 end
   
 
-function [slack,info] = checkRho(rho, x,V,Vdot,prog,L)
+function [slack,info] = checkRho(rho,x,V,Vdot,prog,L)
   [prog,slack] = new(prog,1,'free');
   
   prog.sos = -Vdot + L*(V - rho) - slack*V;
@@ -429,12 +461,15 @@ function [slack,info] = checkRho(rho, x,V,Vdot,prog,L)
 end
 
 
-function V = sampling(x,V,f,options)
+function V = sampling(V0,f,options)
 %  No SOS here.  Just use lots and lots of samples to try to estimate level
 %  set of V candidate.
+
+  x = V0.frame.poly;
+  [T,V,f] = balance(x,V0.Vpoly,f);
+
   if (deg(V,x)>2) error('only checks quadratics'); end
 
-  [T,V,f] = balance(x,V,f);
 
   %% compute Vdot
   Vdot = diff(V,x)*f;
@@ -472,6 +507,7 @@ function V = sampling(x,V,f,options)
 
   %% undo balancing
   V = subss(V,x,inv(T)*x);
+  V = PolynomialLyapunovFunction(V0.frame,V);
 end
 
 function m = samplingCheckRho(rho,x,V,Vdot,options)
