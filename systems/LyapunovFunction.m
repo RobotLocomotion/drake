@@ -20,5 +20,9 @@ classdef LyapunovFunction
         obj.time_invariant_flag = time_invariant_flag;
       end
     end
+    
+    function display(obj)
+      display(obj.Vpoly);
+    end
   end
 end

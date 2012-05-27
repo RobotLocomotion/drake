@@ -1,4 +1,4 @@
-classdef xcubed < PolynomialSystem
+classdef XCubed < PolynomialSystem
 % Simple SOS region of attraction example.
 %
 % Consider the first-order, one-dimensional, dynamical system governed by
@@ -12,12 +12,12 @@ classdef xcubed < PolynomialSystem
 % In this example, we obtain the same result using the toolbox.  By
 % constructing a simple PolynomialSystem object and populating the dynamics
 % method, we can simply call "regionOfAttraction" which should return
-% an msspoly object equivalent to V=x^2.  The region of attraction is the
+% an LyapunovFunction object equivalent to V=x^2.  The region of attraction is the
 % one-sub-level set {x : V(x)<1} of the this polynomial, or x=(-1,1) 
   
   methods
-    function obj = xcubed()
-      obj = obj@PolynomialSystem(1,0,0,1,false,true);
+    function obj = XCubed()
+      obj = obj@PolynomialSystem(1,0,0,1,false);
     end
     function xdot = dynamics(obj,t,x,u)
       xdot = -x+x^3;
@@ -30,16 +30,17 @@ classdef xcubed < PolynomialSystem
   methods (Static=true)
     function run()
       % create a new xcubed object
-      p = xcubed();
+      p = XCubed();
 
       % compute region of attraction       
       % the levelset V<1 is the region of attraction
-      V=regionOfAttraction(p,0)
+      V=regionOfAttraction(p,0);
+      display(V);
     end
     
     function animate()
-      p=xcubed();
-      v=xcubed_visualizer();
+      p=XCubed();
+      v=XCubedVisualizer();
 
       x1=p.simulate([0 5],.8);
       x2=p.simulate([0 1.5],1.02);
@@ -47,8 +48,8 @@ classdef xcubed < PolynomialSystem
       x3=p.simulate([0 5],-.9);
       x3=x3.shiftTime(6.5);
       x=HybridTrajectory({x1,x2,x3});
-%      v.playback(x);
-      v.playbackSWF(x,'xcubed');
+      v.playback(x);
+%      v.playbackSWF(x,'xcubed');
     end
   end
 end
