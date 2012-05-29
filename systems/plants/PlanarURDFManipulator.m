@@ -10,7 +10,7 @@ classdef PlanarURDFManipulator < Manipulator
   
   methods
     function obj = PlanarURDFManipulator(urdf_filename)
-      obj = obj@ManipulatorPlant(0,0,0);
+      obj = obj@Manipulator(0,0,0);
 
       if (nargin<1)
         urdf_filename=uigetfile('*.urdf');

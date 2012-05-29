@@ -7,7 +7,7 @@ c = AcrobotLQR(d);
 sys = feedback(d,c);
 
 for i=1:5
-  xtraj = simulate(sys,[0 5],c.x0+0.025*randn(4,1));
+  xtraj = simulate(sys,[0 5],[pi;0;0;0]+0.025*randn(4,1));
   v.playback(xtraj);
 end
 

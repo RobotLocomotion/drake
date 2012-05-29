@@ -223,7 +223,7 @@ classdef PolynomialSystem < DrakeSystem %TimeVaryingPolynomialSystem
   methods  % for constructing and manipulating polynomial systems
     function polysys = timeReverse(obj)
       if (obj.num_xd>0) error('only for CT systems'); end
-      polysys = PolynomialSystem(obj.num_xc,obj.num_xd,obj.num_u,obj.num_u,obj.direct_feedthrough_flag,obj.time_invariant_flag,...
+      polysys = PolynomialSystem(obj.num_xc,obj.num_xd,obj.num_u,obj.num_u,obj.direct_feedthrough_flag,...
         -obj.p_dynamics,[],obj.p_output);
       if (obj.num_xcon)
         polysys = polysys.addStateConstraints(obj.p_state_constraints);

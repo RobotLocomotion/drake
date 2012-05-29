@@ -21,6 +21,7 @@ classdef AcrobotPlant < Manipulator
       obj.I1 = 0.083 + obj.m1*obj.lc1^2;
       obj.I2 = 0.33 + obj.m2*obj.lc2^2;
 
+      obj = setOutputFrame(obj,obj.getStateFrame);
     end
     
     function [H,C,B] = manipulatorDynamics(obj,q,qd)
@@ -46,7 +47,7 @@ classdef AcrobotPlant < Manipulator
     % vectorized version?
     
     function [f,df,d2f,d3f] = dynamics(obj,t,x,u)
-      f = dynamics@ManipulatorPlant(obj,t,x,u);
+      f = dynamics@Manipulator(obj,t,x,u);
       if (nargout>1)
         [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
       end
