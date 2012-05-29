@@ -1,4 +1,4 @@
-classdef sinsys < SmoothRobotLibSystem
+classdef SineSys < DrakeSystem
 % Simple example of SOS region of attraction using Taylor approximation
 %
 % This is a simple follow-on example to the example in xcubed.m 
@@ -22,8 +22,8 @@ classdef sinsys < SmoothRobotLibSystem
 % 'Trig-SOS' when we release that code. 
    
   methods
-    function obj = sinsys()
-      obj = obj@SmoothRobotLibSystem(1,0,0,1,false,true);
+    function obj = SineSys()
+      obj = obj@DrakeSystem(1,0,0,1,false,true);
     end
     function xdot = dynamics(obj,t,x,u)
       xdot = -sin(x);
@@ -35,19 +35,25 @@ classdef sinsys < SmoothRobotLibSystem
   
   methods (Static=true)
     function run()
+      
+    end
+    
+    function runTaylor()
       % create a new xcubed object
-      p = sinsys();
+      p = SineSys();
       
       % taylor expand around the origin (t0=0,x0=0,u0=[]) to order 3.
-      pp = taylorApprox(p,0,0,[],3)
+      pp = taylorApprox(p,0,0,[],3);
       
       % compute region of attraction around x0=0       
       % the levelset V<1 is the region of attraction
-      V=regionOfAttraction(pp,0)
+      V=regionOfAttraction(pp,0);
 
+      if (V.frame ~= pp.getStateFrame) error('oops.  i assumed this was ok'); end
+      
       % plot everything.
       xs = -5:.01:5;
-      plot(xs,-sin(xs),xs,double(msubs(pp.p_dynamics,pp.p_x,xs)),xs,double(msubs(V,pp.p_x,xs))-1,xs,0*xs,'linewidth',2);
+      plot(xs,-sin(xs),xs,double(msubs(pp.p_dynamics,pp.getStateFrame.poly,xs)),xs,double(msubs(V.Vpoly,V.frame.poly,xs))-1,xs,0*xs,'linewidth',2);
       axis([-5,5,-1.5,1.5])
       legend('-sin(xs)','poly approx','roa (V-1)');
     end

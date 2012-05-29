@@ -164,7 +164,8 @@ function V = bilinear(V0,f,options)
 
   x = V0.frame.poly;
   num_x = length(x);
-  V=V0.Vpoly;
+  V=V0;
+  
   [T,V0bal,fbal,S0,A] = balance(x,V0.Vpoly,f);
   rho = 1;  
 
@@ -177,17 +178,18 @@ function V = bilinear(V0,f,options)
     last_vol = vol;
     
     % balance on every iteration (since V and Vdot are changing):
-    [T,Vbal,fbal]=balance(x,V,f,S0/rho,A);
-    V0bal=subss(V0,x,T*x);
+    [T,Vbal,fbal]=balance(x,V.Vpoly,f,S0/rho,A);
+    V0bal=subss(V0.Vpoly,x,T*x);
     
     [L1,sigma1] = findL1(x,fbal,Vbal,L1monom,options);
     L2 = findL2(x,Vbal,V0bal,rho,L2monom,options);
     [Vbal,rho] = optimizeV(x,fbal,L1,L2,V0bal,sigma1,Vmonom,options);
-    vol = rho
+%    vol = rho
     
     % undo balancing (for the next iteration, or if i'm done)
-    V = subss(Vbal,x,inv(T)*x);
-    plotFunnel(V,zeros(num_x,1)); plotFunnel(V0/rho,zeros(num_x,1),[],struct('color',[.9 .3 .2])); drawnow;
+    V.Vpoly = subss(Vbal,x,inv(T)*x);
+    plotFunnel(V,zeros(num_x,1)); 
+    plotFunnel(PolynomialLyapunovFunction(V0.frame,V0.Vpoly/rho),zeros(num_x,1),[],struct('color',[.9 .3 .2])); drawnow;
     
     % check for convergence
     if ((vol - last_vol) < options.converged_tol*last_vol)
@@ -195,7 +197,6 @@ function V = bilinear(V0,f,options)
     end
   end
   
-  V = PolynomialLyapunovFunction(V0.frame,V);
 end
 
 function [L1,sigma1] = findL1(x,f,V,Lxmonom,options)

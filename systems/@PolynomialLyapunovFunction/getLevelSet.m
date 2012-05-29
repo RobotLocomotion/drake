@@ -1,15 +1,15 @@
 function y=getLevelSet(V,x0,options)
 
-typecheck(V,'msspoly');
-x = decomp(V);
+x = V.frame.poly;
+
 if (nargin<3) options=struct(); end
 if (~isfield(options,'tol')) options.tol = 2e-3; end % default tolerance of fplot
 
-if (deg(V,x)<=2)  % interrogate the quadratic level-set
+if (deg(V.Vpoly,x)<=2)  % interrogate the quadratic level-set
   % note: don't need (or use) x0 in here
   
-  H = doubleSafe(0.5*diff(diff(V,x)',x));
-  b = -0.5*(H\doubleSafe(subs(diff(V,x),x,0*x)'));
+  H = doubleSafe(0.5*diff(diff(V.Vpoly,x)',x));
+  b = -0.5*(H\doubleSafe(subs(diff(V.Vpoly,x),x,0*x)'));
   
   n=length(x);
   K=100;
@@ -21,18 +21,20 @@ if (deg(V,x)<=2)  % interrogate the quadratic level-set
     X = X./repmat(sqrt(sum(X.^2,1)),n,1);
   end
 
-  y = repmat(b,1,K) + (H/(doubleSafe(1-subs(V,x,b))))^(-1/2)*X;
+  y = repmat(b,1,K) + (H/(doubleSafe(1-subs(V.Vpoly,x,b))))^(-1/2)*X;
 else % do the more general thing
 
   if (length(x) ~= 2) error('not supported yet'); end
   if (nargin<2 || isempty(x0)) x0=zeros(size(x,1),1); end
 
+  pV = V.Vpoly;
+  
   % assume star convexity (about x0).
-  if (double(subs(V,x,x0))>1)
+  if (double(subs(pV,x,x0))>1)
     error('x0 is not in the one sub level-set of V');
   end
   
-  V=subss(V,x,x+x0);  % move to origin
+  pV=subss(pV,x,x+x0);  % move to origin
 
 
   y = repmat(x0,1,100)+getRadii(linspace(-pi,pi,100))';
@@ -52,7 +54,7 @@ function y=getRadii(thetas)  % needs to be vectorized
     rU = ones(size(thetas));
     rL = zeros(size(thetas));
     CS = [cos(thetas); sin(thetas)];
-    evaluate = @(r) double(msubs(V,x,repmat(r,2,1).*CS));
+    evaluate = @(r) double(msubs(pV,x,repmat(r,2,1).*CS));
     msk = evaluate(rU) < 1;
     while any(msk)
         rU(msk) = 2*rU(msk);
@@ -71,7 +73,7 @@ end
 function y=getRadius(theta)  % needs to be vectorized
   circ = [cos(theta);sin(theta)];
   for i=1:length(theta)
-    [a,p,M] = decomp(subss(1-V,x,r*circ(:,i)));
+    [a,p,M] = decomp(subss(1-pV,x,r*circ(:,i)));
     c(max(p)+1-p)=M;
     z=roots(c);  % roots of poly 1-V along the line defined by th(i)
     z=z(find(~imag(z)));  % only keep the real roots

@@ -6,8 +6,8 @@ robot = AcrobotPlant;
 robot = robot.setInputLimits(-inf,inf);
 [c,V] = AcrobotLQR(robot);
 sys = feedback(robot,c);
-x0 = c.x0;
-pp = sys.taylorApprox(0,x0,[],3);
+x0 = [pi;0;0;0];
+pp = sys.taylorApprox(0,x0,0,3);
 
 options=struct();
 options.degL1=6;
