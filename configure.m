@@ -4,6 +4,9 @@ function configure
 % config.mat.  If required tools aren't found, it tries to be helpful in
 % directing you to their location.
 
+% toggle the name of the package here
+packageName = ['robotlib'];
+
 try 
   load robotlib_config.mat; 
 catch
@@ -36,31 +39,31 @@ end
 
 original_path = path;
 
-% remove any existing robotlib directories that are in a different root
+% remove any existing package directories that are in a different root
 y=strread(path,'%s','delimiter',pathsep);
 ind=strfind(y,'robotlib');
-old_robotlibs={}; old_robotlibs_delete=[];
+old_packagelibs={}; old_packagelibs_delete=[];
 for i=1:length(ind);  % check current paths 
-  if ~isempty(ind{i}) % does it have 'robotlib'?
-    old_rl = [y{i}(1:ind{i}-1),'robotlib'];
-    if ~strncmpi(old_rl,pwd,ind{i})  % is it the current directory, or a different copy of robotlib?
-      j = find(strcmp(old_robotlibs,old_rl),1);  % is it already in our list of old robotlibs?  (only want to ask the user once)
+  if ~isempty(ind{i}) % does it have the name of our package?
+    old_rl = [y{i}(1:ind{i}-1), packageName];
+    if ~strcmpi(old_rl,pwd)  % is it the current directory, or a different copy of robotlib?
+      j = find(strcmp(old_packagelibs,old_rl),1);  % is it already in our list of old robotlibs?  (only want to ask the user once)
       if isempty(j)  % then it's old and I haven't seen it before.  prompt user to see if i can delete.
-        old_robotlibs{end+1} = old_rl;
-        a = input(['I found a robotlib install in ', old_rl,' in your path.\n  This might confuse things.\n  Ok if I remove it from your path now? (y/n)? '], 's');
-        old_robotlibs_delete = [old_robotlibs_delete;(lower(a(1))=='y')];
-        j=length(old_robotlibs_delete);
+        old_packagelibs{end+1} = old_rl;
+        a = input(['I found another installation in ', y{i},' in your path.\n  This might confuse things.\n  Ok if I remove it from your path now? (y/n)? '], 's');
+        old_packagelibs_delete = [old_packagelibs_delete;(lower(a(1))=='y')];
+        j=length(old_packagelibs_delete);
       end
       % if i'm allowed to delete, then rmpath this entry
-      if (old_robotlibs_delete(j));
+      if (old_packagelibs_delete(j));
         rmpath(y{i});
       end
     end
   end
-end
+end 
 
 
-% add robotlib directories to the matlab path 
+% add package directories to the matlab path 
 addpath([conf.root,'/systems']);
 addpath([conf.root,'/systems/plants']);
 addpath([conf.root,'/systems/plants/obstacles']);
@@ -83,7 +86,7 @@ else
   major_ver = str2num(v.Version(1:ind));
   minor_ver = str2num(v.Version((ind+2):end));
   if (major_ver < 7 || (major_ver==7 && minor_ver < 3)) 
-    warning('Some features of Robotlib reguires SIMULINK version 7.3 or above.');
+    warning('Some features of ', packageName, ' requires SIMULINK version 7.3 or above.');
     % haven't actually tested with lower versions
     conf.simulink_enabled = false;
   end
@@ -98,7 +101,7 @@ elseif (~exist('robotlib.util.lcmt_scope_data'))
   % change this, but i'll need to check for a class that is not
   % lcm-dependent (lcmt_scope_data fails if robotlib.jar is in the
   % classpath but lcm.jar is not)
-  error(['Can''t find robotlib files in your matlab java classpath.  I recommend doing the following:',10,' 1) >> edit startup.m',10,' 2) add the line "javaaddpath(''',conf.root,'/robotlib.jar'');" to the end of startup.m',10,' 3) >> startup.m']);
+  error(['Can''t find ', packageName, ' files in your matlab java classpath.  I recommend doing the following:',10,' 1) >> edit startup.m',10,' 2) add the line "javaaddpath(''',conf.root,'/robotlib.jar'');" to the end of startup.m',10,' 3) >> startup.m']);
 end
 
 conf.snopt_enabled = logical(exist('snopt'));
@@ -115,9 +118,11 @@ if (conf.sedumi_enabled)
     sedumic=[0;1;0;1];
     sedumiT=sedumi(sedumiA,sedumib,sedumic);
     if(~sedumiT)
+        disp('-------------------------------------------------------------------------------------');
         error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
         disp('-------------------------------------------------------------------------------------');
     else 
+        disp('-------------------------------------------------------------------------------------');        
         disp('SeDuMi seems to be working - that''s what all the output, above, is showing.');
         disp('-------------------------------------------------------------------------------------');
     end
