@@ -42,7 +42,7 @@ classdef LQRTree < HybridDrakeSystem
       
       % precompute quadratic forms
       x=obj.p_x;
-      if (deg(V,x)>2) errror('precomputation assumes quadratic forms for now'); end
+      if (deg(V,x)>2) error('precomputation assumes quadratic forms for now'); end
       obj.S1=sparse(doubleSafe(.5*subs(diff(diff(V,x)',x),x,0*x)));
       obj.s2=sparse(doubleSafe(subs(diff(V,x),x,0*x)));
       obj.s3=doubleSafe(subs(V,x,0*x));
@@ -293,7 +293,7 @@ classdef LQRTree < HybridDrakeSystem
         disp('building and verifying time-invariant controller...')
         [ti,Vf] = tilqr(p,xG,uG,Q,R);
       else
-        ti = LTIControl(xG,uG,zeros(getNumInputs(p),getNumStates(p)));
+        ti = AffineSystem([],[],[],[],[],[],[],zeros(getNumInputs(p),getNumStates(p)),uG);
       end
       if (isfield(options,'Vf'))
         Vf = options.Vf;

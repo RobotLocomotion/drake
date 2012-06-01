@@ -90,7 +90,10 @@ if (V.frame ~= sys.getStateFrame)
   
   tf = findTransform(sys.getStateFrame,V.frame);
   if isempty(tf) error('couldn''t find a coordinate transform from the Lyapunov frame to teh state frame'); end
-  error('need to convert xdot to V.frame, too');
+
+  if (~isa(tf,'AffineTransform') || tf.getNumStates || any(any(tf.D - eye(sys.getNumStates))))
+    error('need to convert xdot to V.frame, too');
+  end
 end
 
 %% handle options
