@@ -12,7 +12,8 @@ classdef CoordinateFrame < handle
     coordinates={}; % list of coordinate names
 
     angle_flag=[];  % angle_flag(i)=true iff variable i wraps around 2pi
-    poly=[];           % optional msspoly variables for this frame
+    poly=[];        % optional msspoly variables for this frame
+    prefix;
   end
   
   methods
@@ -35,6 +36,7 @@ classdef CoordinateFrame < handle
         typecheck(prefix,'char');
         sizecheck(prefix,[1 1]);
       end
+      obj.prefix = prefix;
       
       ind=1;
       function str=coordinateName(~);
@@ -84,6 +86,15 @@ classdef CoordinateFrame < handle
       else
         error('cnames must be a cell vector of length dim populated with strings'); 
       end
+    end
+    
+    function fr=subFrame(obj,dims)
+      if ~isnumeric(dims) || ~isvector(dims) error('dims must be a numeric vector'); end
+      if (any(dims>obj.dim | dims<1)) error(['dims must be between 1 and ',obj.dim]); end
+      fr = CoordinateFrame([obj.name,mat2str(dims)], length(dims), obj.prefix);
+      fr.coordinates = obj.coordinates(dims);
+      fr.angle_flag = obj.angle_flag(dims);
+      fr.poly = obj.poly(dims);
     end
   end
 
