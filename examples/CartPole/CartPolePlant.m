@@ -9,9 +9,9 @@ classdef CartPolePlant < Manipulator
   
   methods
     function obj = CartPolePlant
-      obj = obj@ManipulatorPlant(2,1);
+      obj = obj@Manipulator(2,1);
       obj = setInputLimits(obj,-30,30);
-      obj = setAngleFlags(obj,0,[0;1;0;0],[0;1;0;0]);
+%      obj = setAngleFlags(obj,0,[0;1;0;0],[0;1;0;0]);
     end
         
     function [H,C,B] = manipulatorDynamics(obj,q,qd)
@@ -27,7 +27,7 @@ classdef CartPolePlant < Manipulator
     end
     
     function [f,df,d2f,d3f] = dynamics(obj,t,x,u)
-      f = dynamics@ManipulatorPlant(obj,t,x,u);
+      f = dynamics@Manipulator(obj,t,x,u);
       if (nargout>1)
         [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
       end
