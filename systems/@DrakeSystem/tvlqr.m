@@ -2,7 +2,7 @@ function [ltvsys,Vtraj] = tvlqr(obj,xtraj,utraj,Q,R,Qf,options)
 
 % implements the time-varying linear (or affine) quadratic regulator
 %  note:  Qf can be an nxn matrix, a cell array (for initializing the
-%  affine) or an msspoly (e.g. as would happen if you hand it back
+%  affine) or an PolynomialLyapunovFunction (e.g. as would happen if you hand it back
 %  Vtraj.eval(0) from a previous tvlqr trajectory).
 
 if (nargin<7) options=struct(); end

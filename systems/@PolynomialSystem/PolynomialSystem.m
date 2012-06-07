@@ -245,7 +245,7 @@ classdef PolynomialSystem < DrakeSystem %TimeVaryingPolynomialSystem
         if ~isempty(obj.p_update)
           obj.p_update = subss(obj.p_update,obj.getInputFrame.poly,frame.poly);
         end
-        if ~isempty(obj.p_output)
+        if ~isempty(obj.p_output) && obj.isDirectFeedthrough()
           obj.p_output = subss(obj.p_output,obj.getInputFrame.poly,frame.poly);
         end
       end

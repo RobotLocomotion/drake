@@ -58,4 +58,16 @@ classdef AcrobotPlant < Manipulator
     end
     
   end
+  
+  methods (Static)
+    function run()
+      % Simulate the passive acrobot
+
+      d = AcrobotPlant;
+      v = AcrobotVisualizer(d);
+
+      traj = simulate(d,[0 5],.5*randn(4,1));
+      playback(v,traj);
+    end
+  end
 end

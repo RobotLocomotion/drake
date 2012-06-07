@@ -66,12 +66,12 @@ if nargin<2 || isnumeric(varargin{1})
   
   % check that x0 is a fixed point
   x = sys.getStateFrame.poly;
-  if any(abs(double(subs(f,x,zeros(num_x,1))))>1e-5)
+  if any(abs(double(subs(f,x,x0)))>1e-5)
     error('x0 must be a fixed point of the system');
   end
     
   % solve a lyapunov equation on the linearized dynamics to get a Lyapunov candidate
-  A = doubleSafe(subs(diff(f,x),x,zeros(num_x,1)));
+  A = doubleSafe(subs(diff(f,x),x,x0));
   Q = eye(sys.num_x);  % todo: take this as a parameter?
   P = lyap(A',Q);
   V = PolynomialLyapunovFunction(frame,x'*P*x);
@@ -112,7 +112,7 @@ if (~isfield(options,'optimize')) options.optimize=true; end
 if (~isfield(options,'numSamples')) options.numSamples = 10^(num_x+1); end 
 
 if (~isfield(options,'degL1'))
-  options.degL1 = options.degV-1 + deg(f,x);  % just a guess
+  options.degL1 = options.degV-1 + deg(f,V.frame.poly);  % just a guess
 end
 if (~isfield(options,'degL2'))
   options.degL2 = options.degL1;
