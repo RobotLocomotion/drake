@@ -12,8 +12,8 @@ else
   plant = plant.setInputLimits(-inf,inf);  % for now
   pp = feedback(plant.taylorApprox(0,x0,u0,3),c);
   options=struct();
-  options.method='levelSet'
-  V=regionOfAttraction(pp,x0,[],options);
+  options.method='levelSet';
+  V=regionOfAttraction(pp,V,options);
 end
 
 % NOTEST

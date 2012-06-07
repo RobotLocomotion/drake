@@ -64,11 +64,16 @@ classdef CoordinateFrame < handle
       obj.transforms{end+1}=transform;
     end
     
-    function tf=findTransform(obj,target)
+    function tf=findTransform(obj,target,throw_error_if_fail)
       typecheck(target,'CoordinateFrame');
       ind=find(cellfun(@(a)getOutputFrame(a)==target,obj.transforms));
       if (isempty(ind))
         tf=[];
+        if (nargin>2 && throw_error_if_fail)
+          error(['Could not find any transform between ',obj.name,' and ', target.name]);
+        end
+      elseif length(ind)>1
+        error(['Found multiple transforms between ',obj.name,' and ', target.name]);
       else
         tf=obj.transforms{ind};
       end

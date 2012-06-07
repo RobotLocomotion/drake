@@ -2,21 +2,22 @@ function c=TrajectorySwingup
 
 p = PendulumPlant;
 p = p.setInputLimits(-inf,inf);  % note: take out artificial pruning below if I remove this
+x0 = [pi;0];
 
 disp('constructing LQR balance controller');
 [ti,Vf] = PendulumLQR(p);
 
 disp('estimating ROA for balance controller');
 sys = feedback(p,ti);
-psys = taylorApprox(sys,0,ti.x0,[],3);
-Vf = regionOfAttraction(psys,ti.x0,Vf,struct('degL1',3));
+psys = taylorApprox(sys,0,x0,0,3);
+Vf = regionOfAttraction(psys,Vf,struct('degL1',3));
 
-Vf = Vf*5;  % artificially prune, since ROA is solved without input limits
+Vf.Vpoly = Vf.Vpoly*5;  % artificially prune, since ROA is solved without input limits
 
 %x=msspoly('x',2); Vf=(x-ti.x0)'*diag([10,1])*(x-ti.x0);  % for debugging
 
 figure(1); clf; hold on;
-plotFunnel(Vf,ti.x0); drawnow;
+plotFunnel(Vf,x0); drawnow;
 
 
 

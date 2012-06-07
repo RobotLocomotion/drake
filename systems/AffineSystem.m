@@ -65,7 +65,9 @@ classdef AffineSystem < PolynomialSystem
       else
         sizecheck(D,[num_y,num_u]); 
         obj.D = D;
-        obj = setDirectFeedthrough(obj,true);
+        if (any(D(:)))  % only if D is non-zero
+          obj = setDirectFeedthrough(obj,true);
+        end
       end
       if (isempty(y0)) 
         obj.y0 = sparse(num_y,1);

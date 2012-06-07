@@ -6,30 +6,26 @@ classdef LQRTree < HybridDrakeSystem
     num_tvlqr_modes=0;
 %    Vf
     Vtv={};
-    p_x
     
     % precompute some values to optimize speed of guards and transitions
     S1=[];
     s2=[];
     s3=[];
-    x0=[];
+%    x0=[];
     t0=[];
     m=[];
   end
   
   methods
     function obj=LQRTree(tilqr,V)
-      typecheck(tilqr,'LTIControl');
-      typecheck(V,'msspoly');
-      
-      obj = setModeOutputFlag(obj,false);
-      
-%      obj.Vf = V;
-      obj.p_x=decomp(V);
-      
+      typecheck(tilqr,'AffineSystem');
+      typecheck(V,'PolynomialLyapunovFunction');
+      obj=obj@HybridDrakeSystem(tilqr.getNumInputs(),tilqr.getNumOutputs());
+      obj = obj.setInputFrame(tilqr.getInputFrame());
+      obj = obj.setOutputFrame(tilqr.getOutputFrame());
+            
       % add a "do nothing" controller (aka zero controller)
-      nU = length(tilqr.u0);
-      [obj,obj.zero_mode_num] = addMode(obj,ConstantControl(zeros(nU,1)));
+      [obj,obj.zero_mode_num] = addMode(obj,ConstOrPassthroughSystem(zeros(obj.num_y,1),obj.num_u));
       
       % switch from zero control to any controller
       obj = addTransition(obj,obj.zero_mode_num,@inAnyFunnelGuard,@transitionIntoAnyFunnel,true,true);
@@ -38,15 +34,24 @@ classdef LQRTree < HybridDrakeSystem
       [obj,obj.tilqr_mode_num] = addMode(obj,tilqr);
 
       % switch from ti controller to any controller
-      obj = addTransition(obj,obj.tilqr_mode_num,@(obj,~,~,x)1-double(subs(V,obj.p_x,x)),@transitionIntoAnyFunnel,true,true);
+      obj = addTransition(obj,obj.tilqr_mode_num,@(obj,~,t,x)1-eval(V,t,x),@transitionIntoAnyFunnel,true,true);
       
-      % precompute quadratic forms
-      x=obj.p_x;
-      if (deg(V,x)>2) error('precomputation assumes quadratic forms for now'); end
-      obj.S1=sparse(doubleSafe(.5*subs(diff(diff(V,x)',x),x,0*x)));
-      obj.s2=sparse(doubleSafe(subs(diff(V,x),x,0*x)));
-      obj.s3=doubleSafe(subs(V,x,0*x));
-      obj.x0=tilqr.x0;
+      %% precompute quadratic forms
+      % switch to object coordinates
+      xVf=V.frame; xinf=obj.getInputFrame;
+      xV=xVf.poly; xin = xinf.poly;
+      if (xVf ~= xinf)
+        tf=findTransform(xinf,xVf,true);  typecheck(tf,'AffineTransform');
+        Vpoly = msubs(V.Vpoly,xV,tf.D*xin+tf.y0);
+      else
+        Vpoly = V.Vpoly;
+      end
+      
+      if (deg(Vpoly,xV)>2) error('precomputation assumes quadratic forms for now'); end
+      obj.S1=sparse(doubleSafe(.5*subs(diff(diff(Vpoly,xin)',xin),xin,0*xin)));
+      obj.s2=sparse(doubleSafe(subs(diff(Vpoly,xin),xin,0*xin)));
+      obj.s3=doubleSafe(subs(V.Vpoly,xin,0*xin));
+%      obj.x0=tilqr.x0;
       obj.t0=0;
       obj.m=obj.tilqr_mode_num;
     end
