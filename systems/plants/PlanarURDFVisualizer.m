@@ -6,6 +6,8 @@ classdef PlanarURDFVisualizer < Visualizer
   % URDF file is essentially ignored.  Joints that act out of
   % plane are not supported.  All geometry out of plane is projected onto
   % the plane.
+
+  % NORELEASE
   
   methods
     function obj = PlanarURDFVisualizer(urdf_filename,axis)

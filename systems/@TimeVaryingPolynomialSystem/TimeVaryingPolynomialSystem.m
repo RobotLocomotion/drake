@@ -2,93 +2,128 @@ classdef TimeVaryingPolynomialSystem < DrakeSystem
 % dynamics, update, output are polynomial in x and u, but not necessarily
 % polynomial in t.
   
-  properties (SetAccess=private)
-    p_x=[]
-    p_u=[]
+  properties (SetAccess=private,GetAccess=private)
     p_dynamics_traj=[] % msspoly representations of dynamics, update,and output
     p_update_traj=[]
     p_output_traj=[]
+
+%   todo: implement these   
+%    p_state_constraints_traj=[];
+%    p_mass_matrix_traj=[]; % msspoly representation for e(x), as in e(x)xdot=f(x).  if empty then the default is e(x)=I.  must be invertible for all x.
   end
     
   methods
-    function obj = PolynomialTrajectorySystem(p_dynamics_traj,p_update_traj,p_output_traj,num_u,direct_feedthrough_flag)
-      obj = obj@SmoothDrakeSystem(0,0,0,0,direct_feedthrough_flag,false);
+    function obj = TimeVaryingPolynomialSystem(varargin)
+      % Method 1:
+      %   TimeVaryingPolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag)
+      %   and implement the polydynamics, polyupdate, and polyoutput
+      %   methods
+      %   
+      % Method 2: 
+      %   TimeVaryingPolynomialSystem(p_dynamics_traj, p_update_traj,num_u, p_output_traj,direct_feedthrough_flag)
+      %   where the _traj variables are PolynomialTrajectories (or the
+      %   empty matrix)
+
+      obj = obj@DrakeSystem(0,0,0,0,true,false);
 
       checkDependency('spot_enabled');
 
-      if (nargin>0 && ~isempty(p_dynamics_traj))
+      if nargin<5, error('must supply 5 arguments'); end
+      
+      if (isempty(varargin{1})
+        % then do nothing
+      elseif (isnumeric(varargin{1}))
+        % then it's just num_xc
+        obj = setNumConstStates(obj,varargin{1});
+        if (varargin{1}>0)  % run a quick sanity check
+          typecheck(polydynamics(obj,0),'msspoly');
+          sizecheck(polydynamics(obj,0),[getNumContStates(obj),1]);
+        end
+      else
+        % must be a polynomialTrajectory
+        p_dynamics_traj = varargin{1};
         typecheck(p_dynamics_traj,'PolynomialTrajectory');
-        dyn = p_dynamics_traj.eval(p_dynamics_traj.tspan(1));
-        num_xc = dyn.m;
-        if (dyn.n ~= 1) error('dynamics should be a column vector msspoly'); end 
+        if ~iscolumn(p_dynamics_traj), error('dynamics must be a column vector'); end
+        obj = setNumContStates(obj,size(p_dynamics_traj,1));
         obj.p_dynamics_traj=p_dynamics_traj;
-      else
-        num_xc = 0;
       end
       
-      if (nargin>1 && ~isempty(p_update_traj))
-        typecheck(p_update_traj,'PolynomialTrajectory'); 
-        up = p_update_traj.eval(p_update_traj.tspan(1));
-        num_xd = up.m;
-        if (up.n ~= 1) error('update should be a column vector msspoly'); end
+      if (isempty(varargin{2}))
+        % then do nothing
+      elseif isnumeric(varargin{2})
+        obj = setNumDiscStates(obj,varargin{2});
+        if (varargin{2}>0)  % run a quick sanity check
+          typecheck(polyupdate(obj,0),'msspoly');
+          sizecheck(polyupdate(obj,0),[getNumDiscStates(obj),1]);
+        end
+      else
+        p_update_traj = varargin{2};
+        typecheck(p_update_traj,'PolynomialTrajectory');
+        if ~iscolumn(p_update_traj), error('update must be a column vector'); end
+        obj = setNumDiscStates(obj,size(p_update_traj,1));
         obj.p_update_traj = p_update_traj;
-      else
-        num_xd = 0;
       end
       
-      if (nargin>2 && ~isempty(p_output_traj))
-        typecheck(p_output_traj,'PolynomialTrajectory'); 
-        out = p_output_traj.eval(p_output_traj.tspan(1));
-        num_y = out.m;
-        if (out.n ~= 1) error('output should be a column vector msspoly'); end
+      if ~isnumeric(varargin{3}) || isempty(varargin{3}), error('argument 3 must be the number of inputs'); end
+      obj = setNumInputs(obj,varargin{3});
+      
+      if (isempty(varargin{4})
+        % then do nothing
+      elseif isnumeric(varargin{4})
+        obj = setNumOutputs(obj,varargin{4});
+        if (varargin{3}>0)  % run a quick sanity check
+          typecheck(polyoutput(obj,0),'msspoly');
+          sizecheck(polyoutput(obj,0),[getNumOutputs(obj),1]);
+        end
+      else
+        p_output_traj = varargin{4};
+        typecheck(p_output_traj,'PolynomialTrajectory');
+        if ~iscolumn(p_output_traj), error('output must be a column vector'); end
+        obj = setNumOutput(obj,size(p_output_traj,1));
         obj.p_output_traj=p_output_traj;
-      else
-        num_y = 0;
       end
       
-      if (nargin<4)
-        num_u = 0;
+      obj = setDirectFeedthroughFlag(obj,varargin{5});
+      if ~isDirectFeedthrough(obj) && ~isempty(obj.p_output_traj)
+        % sanity check, make sure there is no input dependence at tspan(1)
+        if (deg(obj.p_output_traj.eval(obj.p_output_traj.tspan(1)),obj.getInputFrame.poly)>0)
+          error('found dependence of the output on u in a system that claimed to be not direct feedthrough');
+        end
       end
-      
-      if (num_xc+num_xd>0)
-        obj.p_x=msspoly('x',num_xc+num_xd);
-        obj = setNumContStates(obj,num_xc);
-        obj = setNumDiscStates(obj,num_xd);
-      end
-      if (num_u>0)
-        obj.p_u=msspoly('u',num_u);
-        obj = setNumInputs(obj,num_u);
-      end
-
-      obj = setNumOutputs(obj,num_y);
-      
     end
     
-    % Implement default methods using msspoly vars explicitly
     function xcdot = dynamics(obj,t,x,u)
-      % should only get here if constructor specified p_dynamics
-      %
-      % @param t time to evaluate dyanmics at
-      % @param x state to evaluate dynmaics at (as a column vector)
-      % @param u control action to evaluate dyanmics at (as a column
-      % vector)
-      %
-      % @retval xcdot approximated dynamics
-      
-      if (isempty(obj.p_dynamics_traj)) error('dynamics is not defined.  how did you get here?'); end
-      xcdot = double(subs(obj.p_dynamics_traj.eval(t),[obj.p_x;obj.p_u],[x;u]));
+      xcdot = double(subs(polydynamics(obj,t),[obj.getStateFrame.poly;obj.getInputFrame.poly],[x;u]));
     end
     
     function xdn = update(obj,t,x,u)
-      if (isempty(obj.p_update_traj)) error('update is not defined.  how did you get here?'); end
-      xdn = double(subs(obj.p_update_traj.eval(t),[obj.p_x;obj.p_u],[x;u]));
+      xdn = double(subs(polyupdate(obj,t),[obj.getStateFrame.poly;obj.getInputFrame.poly],[x;u]));
     end
+    
     function y = output(obj,t,x,u)
-      if (isempty(obj.p_output_traj)) error('output is not defined.  how did you get here?'); end
-      y = double(subs(obj.p_output_traj.eval(t),[obj.p_x;obj.p_u],[x;u]));
+      y = double(subs(polyoutput(obj,t),[obj.getStateFrame.poly;obj.getInputFrame.poly],[x;u]));
     end
     
     % todo: implement gradients (it's trivial)
   end
+  
+  methods  % overload these methods in subclasses (instead of dynamics, update, output)
+    function p_dynamics = polydynamics(obj,t)
+      if (isempty(obj.p_dynamics_traj)) error('dynamics is not defined.  how did you get here?'); end
+      p_dynamics = obj.p_dynamics_traj.eval(t);
+    end
+
+    function p_update = polyupdate(obj,t)
+      if (isempty(obj.p_update_traj)) error('update is not defined.  how did you get here?'); end
+      p_update = obj.p_update_traj.eval(t);
+    end
+
+    function p_output = polyoutput(obj,t)
+      if (isempty(obj.p_output_traj)) error('output is not defined.  how did you get here?'); end
+      p_output = obj.p_output_traj.eval(t);
+    end
+  end
     
+  
+  % todo: implement feedback and cascade
 end

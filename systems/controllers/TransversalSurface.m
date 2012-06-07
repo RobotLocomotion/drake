@@ -1,7 +1,8 @@
 classdef TransversalSurface
 % Transversal surfaces for orbital stabilization
 % irm@mit.edu
-    
+
+% NORELEASE
     methods
         function obj=TransversalSurface(z,w)
             if (isempty(z)) error('must run designSurfaceNormal first'); end

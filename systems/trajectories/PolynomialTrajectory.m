@@ -40,7 +40,7 @@ classdef PolynomialTrajectory < Trajectory
     function y = polyeval(obj,t,x)  
       % returns the double of the msspoly evaluated at x
       p = eval(obj,t);
-      y = doubleSafe(msubs(p,obj.p_x,x));
+      y = double(msubs(p,obj.p_x,x));
     end
     
     function p = deriv(obj,t)
@@ -67,8 +67,3 @@ classdef PolynomialTrajectory < Trajectory
   
 end
 
-
-function y=doubleSafe(x)
-  y=double(x);
-  if (~isa(y,'double')) error('double failed'); end
-end

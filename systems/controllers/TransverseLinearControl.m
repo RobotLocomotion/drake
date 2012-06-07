@@ -2,6 +2,7 @@ classdef TransverseLinearControl < DrakeSystem
 % Orbital stabilization via the transverse linearization
 
 % irm@mit.edu
+% NORELEASE
 
 methods 
     function obj=TransverseLinearControl(x0,u0,K,TransSurf,S,Sdot, Qtraj, Rtraj, plant)
