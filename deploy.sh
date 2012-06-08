@@ -57,7 +57,7 @@ echo "Done."
 ## Remove NORELEASE files
 echo "Getting rid of NORELEASE files..."
 for file in `find . -type f` 
-do head -n5 $file | grep -q NORELEASE && rm $file
+do grep -q NORELEASE $file && rm $file
 done
 
 echo "Done."
