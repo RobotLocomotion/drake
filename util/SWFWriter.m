@@ -17,6 +17,9 @@ properties (SetAccess=private)
   width=[]; height=[];
 end
 
+properties (SetAccess=private,GetAccess=public)
+  bbox;  % set automatically on write (useful for referencing the bbox in the future)
+end
 
 methods
   function obj = SWFWriter(filename)
@@ -49,10 +52,10 @@ methods
     % grab the bounding boxes from all eps files
     system(['more ', obj.dirname, '/*.eps | grep BoundingBox | sed -e "s/.*://g" > ',obj.dirname,'/bbox.txt']);
     bbox = dlmread([obj.dirname,'/bbox.txt']);
-    bbox=[min(bbox(:,1:2)),max(bbox(:,3:4))];
+    obj.bbox=[min(bbox(:,1:2)),max(bbox(:,3:4))];
     
     % set common bounding box
-    cmd{1}=['ls ', obj.dirname,'/*.eps | xargs sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(bbox),'/g" -i ""'];
+    cmd{1}=['ls ', obj.dirname,'/*.eps | xargs sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(obj.bbox),'/g" -i ""'];
     
     % convert eps to pdf
     cmd{2}=['ls ', obj.dirname,'/*.eps | xargs -n1 epstopdf'];

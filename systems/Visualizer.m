@@ -220,6 +220,7 @@ classdef Visualizer < DrakeSystem
     playback_speed=1;  % 1=realtime
     draw_axes=false;  % when making movies true=gcf,false=gca
     display_time=true; % when true, time is written to figure title
+    axis;  % set this to non-empty for a fixed view (must be implemented by the draw method)
   end
   
 end

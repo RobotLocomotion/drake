@@ -21,6 +21,7 @@ classdef TimeVaryingAffineSystem < TimeVaryingPolynomialSystem
       if (isempty(Ac)) 
         obj.Ac = sparse(num_xc,num_xc+num_xd);
       else
+        if isnumeric(Ac) Ac = ConstantTrajectory(Ac); end
         typecheck(Ac,'Trajectory');
         sizecheck(Ac,[num_xc,num_xc+num_xd]);
         obj.Ac = Ac;
@@ -28,6 +29,7 @@ classdef TimeVaryingAffineSystem < TimeVaryingPolynomialSystem
       if (isempty(Bc)) 
         obj.Bc = sparse(num_xc,num_u);
       else
+        if isnumeric(Bc) Bc = ConstantTrajectory(Bc); end
         typecheck(Bc,'Trajectory');
         sizecheck(Bc,[num_xc,num_u]); 
         obj.Bc = Bc;
@@ -35,6 +37,7 @@ classdef TimeVaryingAffineSystem < TimeVaryingPolynomialSystem
       if (isempty(xcdot0)) 
         obj.xcdot0 = sparse(num_xc,1);
       else
+        if isnumeric(xdot0) xcdot0 = ConstantTrajectory(xcdot0); end
         typecheck(xcdot0,'Trajectory');
         sizecheck(xcdot0,[num_xc,1]); 
         obj.xcdot0 = xcdot0;
@@ -42,6 +45,7 @@ classdef TimeVaryingAffineSystem < TimeVaryingPolynomialSystem
       if (isempty(Ad))
         obj.Ad = sparse(num_xd,num_xc+num_xd);
       else
+        if isnumeric(Ad) Ad = ConstantTrajectory(Ad); end
         typecheck(Ad,'Trajectory');
         sizecheck(Ad,[num_xd,num_xc+num_xd]); 
         obj.Ad = Ad;
@@ -49,6 +53,7 @@ classdef TimeVaryingAffineSystem < TimeVaryingPolynomialSystem
       if (isempty(Bd)) 
         obj.Bd = sparse(num_xd,num_u);
       else
+        if isnumeric(Bd) Bd = ConstantTrajectory(Bd); end
         typecheck(Bd,'Trajectory');
         sizecheck(Bd,[num_xd,num_u]);
         obj.Bd = Bd;
@@ -56,6 +61,7 @@ classdef TimeVaryingAffineSystem < TimeVaryingPolynomialSystem
       if (isempty(xdn0)) 
         obj.xdn0 = sparse(num_xd,1);
       else
+        if isnumeric(xdn0) xdn0 = ConstantTrajectory(xdn0); end
         typecheck(xdn0,'Trajectory');
         sizecheck(xdn0,[num_xd,1]); 
         obj.xdn0 = xdn0;
@@ -63,6 +69,7 @@ classdef TimeVaryingAffineSystem < TimeVaryingPolynomialSystem
       if (isempty(C)) 
         obj.C = sparse(num_y,num_xc+num_xd);
       else
+        if isnumeric(C) C = ConstantTrajectory(C); end
         typecheck(C,'Trajectory');
         sizecheck(C,[num_y,num_xc+num_xd]); 
         obj.C = C;
@@ -70,6 +77,7 @@ classdef TimeVaryingAffineSystem < TimeVaryingPolynomialSystem
       if (isempty(D)) 
         obj.D = sparse(num_y,num_u);
       else
+        if isnumeric(D) D = ConstantTrajectory(D); end
         typcheck(D,'Trajectory');
         sizecheck(D,[num_y,num_u]); 
         obj.D = D;
@@ -80,6 +88,7 @@ classdef TimeVaryingAffineSystem < TimeVaryingPolynomialSystem
       if (isempty(y0)) 
         obj.y0 = sparse(num_y,1);
       else
+        if isnumeric(y0) y0 = ConstantTrajectory(y0); end
         typecheck(y0,'Trajectory');
         sizecheck(y0,[num_y,1]); 
         obj.y0 = y0;

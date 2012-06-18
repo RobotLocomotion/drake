@@ -57,15 +57,10 @@ classdef PlanarURDFVisualizer < Visualizer
       if (obj.axis)
         axis(obj.axis);
       end
-      title(['t = ', num2str(t,'%.2f') ' sec']);
-      drawnow;
-
-      
     end
   end
 
   properties
     model;
-    axis;
   end
 end

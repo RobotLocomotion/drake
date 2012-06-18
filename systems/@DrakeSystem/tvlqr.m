@@ -1,4 +1,4 @@
-function [ltvsys,Vtraj] = tvlqr(obj,xtraj,utraj,Q,R,Qf,options)
+function [ltvsys,V] = tvlqr(obj,xtraj,utraj,Q,R,Qf,options)
 
 % implements the time-varying linear (or affine) quadratic regulator
 %  note:  Qf can be an nxn matrix, a cell array (for initializing the
@@ -62,9 +62,31 @@ xdottraj = fnder(xtraj);
 %K = FunctionHandleTrajectory(@(t)Ksoln(t,obj,S,R,xtraj,utraj,options),[nX nU],tspan);
 Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,R,xtraj,utraj,xdottraj,options),tspan(end:-1:1),{Qf{1}^(1/2),Qf{2},Qf{3}});
 S = FunctionHandleTrajectory(@(t) recompS(Ssqrt.eval(t)),[nX,nX],tspan);
+
+% note that this returns what we would normally call -K.  here u(t) = u_0(t) + K(t) (x(t) - x_0(t)) 
 K = FunctionHandleTrajectory(@(t)affineKsoln(t,obj,S,R,xtraj,utraj,options),[nX nU],tspan);
 
-ltvsys = LTVControl(xtraj,utraj,K); %,S,Sdot);
+
+if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
+  warning('designing full-state feedback controller but plant has different output frame than state frame'); 
+end
+  
+ltvsys = TimeVaryingLinearSystem([],[],[],[],[],K);
+error('implementing coordinate frames.  got here');
+
+ltvsys = setInputFrame(ltisys,CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix));
+obj.getStateFrame.addTransform(TimeVaryingAffineTransform(obj.getStateFrame,ltvsys.getInputFrame,eye(nX),-xtraj));
+ltvsys.getInputFrame.addTransform(TimeVaryingAffineTransform(ltvsys.getInputFrame,obj.getStateFrame,eye(nX),xtraj));
+
+ltisys = setOutputFrame(ltisys,CoordinateFrame([obj.getInputFrame.name,' + ',mat2str(u0,3)],length(u0),obj.getInputFrame.prefix));
+ltisys.getOutputFrame.addTransform(AffineTransform(ltisys.getOutputFrame,obj.getInputFrame,eye(length(u0)),u0));
+obj.getInputFrame.addTransform(AffineTransform(obj.getInputFrame,ltisys.getOutputFrame,eye(length(u0)),-u0));
+
+if (nargout>1)
+  x=ltvsys.getInputFrame.poly; %msspoly('x',getNumStates(obj));
+  V=PolynomialLyapunovFunction(ltisys.getInputFrame,x'*S*x);
+end
+
 
 if (nargout>1)
   p_x=msspoly('x',nX);
@@ -122,8 +144,8 @@ function K = affineKsoln(t,plant,Straj,Rtraj,xtraj,utraj,options)
   nX = length(x0); nU = length(u0);
   [f,df] = geval(@plant.dynamics,t,x0,u0,options);
   B = df(:,nX+1+(1:nU));
-  K{1} = Ri*B'*S{1};
-  K{2} = .5*Ri*B'*S{2};
+  K{1} = -Ri*B'*S{1};
+  K{2} = -.5*Ri*B'*S{2};
 end
 
 function S = recompS(Ssqrt)

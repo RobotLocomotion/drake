@@ -49,6 +49,10 @@ classdef Trajectory < DrakeSystem
       ydot = eval(fnder(obj),t);
     end
     
+    function mobj = uminus(obj);
+      mobj = FunctionHandleTrajectory(@(t)-obj.eval(t),obj.dim,obj.breaks,@(t)-obj.deriv(t));
+    end
+    
     function obj = shiftTime(obj,offset)
       error('not implemented yet');
     end

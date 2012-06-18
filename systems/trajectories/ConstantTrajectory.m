@@ -1,13 +1,13 @@
-classdef FixedPointTrajectory < Trajectory
-% Trivial instance of a trajectory as a fixed point.
+classdef ConstantTrajectory < Trajectory
+% Trivial instance of a trajectory as a constant.
   
   properties
     pt
   end
   
   methods 
-    function obj = FixedPointTrajectory(pt)
-    % Construct FixedPointTrajectory from a pt
+    function obj = ConstantTrajectory(pt)
+    % Construct ConstantTrajectory from a pt
       if (nargin>0)
         obj.pt=pt;
         obj.tspan = [-inf,inf];
@@ -17,7 +17,7 @@ classdef FixedPointTrajectory < Trajectory
     
     function dtraj = fnder(obj)
     % Implements the (trivial) derivative.
-      dtraj = FixedPointTrajectory(0*obj.pt);
+      dtraj = ConstantTrajectory(0*obj.pt);
     end
     
     function y = eval(obj,t)
