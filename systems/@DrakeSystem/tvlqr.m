@@ -72,30 +72,25 @@ if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a
 end
   
 ltvsys = TimeVaryingLinearSystem([],[],[],[],[],K);
-error('implementing coordinate frames.  got here');
 
-ltvsys = setInputFrame(ltisys,CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix));
+ltvsys = setInputFrame(ltvsys,CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix));
 obj.getStateFrame.addTransform(TimeVaryingAffineTransform(obj.getStateFrame,ltvsys.getInputFrame,eye(nX),-xtraj));
 ltvsys.getInputFrame.addTransform(TimeVaryingAffineTransform(ltvsys.getInputFrame,obj.getStateFrame,eye(nX),xtraj));
 
-ltisys = setOutputFrame(ltisys,CoordinateFrame([obj.getInputFrame.name,' + ',mat2str(u0,3)],length(u0),obj.getInputFrame.prefix));
-ltisys.getOutputFrame.addTransform(AffineTransform(ltisys.getOutputFrame,obj.getInputFrame,eye(length(u0)),u0));
-obj.getInputFrame.addTransform(AffineTransform(obj.getInputFrame,ltisys.getOutputFrame,eye(length(u0)),-u0));
+ltvsys = setOutputFrame(ltvsys,CoordinateFrame([obj.getInputFrame.name,' + u0(t)'],nU,obj.getInputFrame.prefix));
+ltvsys.getOutputFrame.addTransform(TimeVaryingAffineTransform(ltvsys.getOutputFrame,obj.getInputFrame,eye(nU),utraj));
+obj.getInputFrame.addTransform(TimeVaryingAffineTransform(obj.getInputFrame,ltvsys.getOutputFrame,eye(nU),-utraj));
 
 if (nargout>1)
-  x=ltvsys.getInputFrame.poly; %msspoly('x',getNumStates(obj));
-  V=PolynomialLyapunovFunction(ltisys.getInputFrame,x'*S*x);
-end
-
-
-if (nargout>1)
-  p_x=msspoly('x',nX);
+  p_x=ltvsys.getInputFrame.poly; %msspoly('x',getNumStates(obj));
   p_t=msspoly('t',1);
 %  Sdotold = @(t)Sdynamics(t,Sold.eval(t),obj,Q,R,xtraj,utraj);
 %  Vtraj = FunctionHandleTrajectory(@(t) p_x'*(S.eval(t) + Sdot(t)*(p_t-t))*p_x, [1 1],tspan);
   Sdotsqrt = @(t)affineSdynamics(t,Ssqrt.eval(t),obj,Q,R,xtraj,utraj,xdottraj,options);
   Sdot = @(t) recompSdot(Ssqrt.eval(t),Sdotsqrt(t));
   Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan);
+  Vtraj = setStateFrame(Vtraj,ltvsys.getInputFrame());
+  V=TimeVaryingPolynomialLyapunovFunction(Vtraj);
   % todo: i could dig into the ODESolution with taylorvar to get higher
   % order, if Vddot was ever needed.
 end

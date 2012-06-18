@@ -18,7 +18,7 @@ classdef TimeVaryingPolynomialLyapunovFunction < LyapunovFunction
     
     function fr = getFrame(obj)
       % ignore obj.frame field
-      fr = obj.Vtrajpoly.getOutputFrame();
+      fr = obj.Vtrajpoly.getStateFrame();
     end
   end
 end
