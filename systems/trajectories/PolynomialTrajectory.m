@@ -4,11 +4,11 @@ classdef PolynomialTrajectory < Trajectory
     handle
     breaks
     p_t=[]
-    p_x
   end
   
   methods 
     function obj = PolynomialTrajectory(handle,breaks)
+      error('todo: handle frames in here (like in PolynomialSystem)');
       obj = obj@Trajectory(0);
       if (nargin>0)
         if (~isa(handle,'function_handle')) error('handle should be a function handle'); end

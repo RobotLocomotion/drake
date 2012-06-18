@@ -12,13 +12,16 @@ if (nargin<2 || isempty(h))
 end
 if (nargin<3) options=struct(); end
 if (~isfield(options,'tight')) options.tight=false; end
+if (~isfield(options,'bbox')) options.bbox=[]; end
 
-
-if (options.tight)
+if (options.tight || ~isempty(options.bbox))
   
   % then use epsc and epstopdf
   print(h,'-depsc',[filename '.eps']);
-  if (system(['epstopdf --outfile=', filename, '.pdf ', filename, '.eps']) ~= 0) error('epstopdf failed.  make sure it''s installed, and consider adding to drake_config.  conf.system_preload to resolve path / library issues.'); end
+  if (~isempty(options.bbox))
+    system(['sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(options.bbox),'/g" -i "" ', filename,'.eps']);
+  end
+  if (system(['epstopdf --outfile=', filename, '.pdf ', filename, '.eps']) ~= 0) error('epstopdf failed.'); end
   delete([filename,'.eps']);
   
 else

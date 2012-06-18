@@ -1,4 +1,4 @@
-classdef CompassGaitPlant < HybridRobotLibSystem
+classdef CompassGaitPlant < HybridDrakeSystem
   
   properties
     m = 5;
@@ -12,6 +12,7 @@ classdef CompassGaitPlant < HybridRobotLibSystem
   
   methods 
     function obj = CompassGaitPlant()
+      obj = obj@HybridDrakeSystem(1,4);
       obj.l=obj.a+obj.b;
       p = CompassGaitStancePlant(obj.m,obj.mh,obj.a,obj.b,obj.l,obj.g);
       obj = obj.addMode(p);
@@ -23,8 +24,6 @@ classdef CompassGaitPlant < HybridRobotLibSystem
       %      obj.ode_options = odeset('InitialStep',1e-3, 'Refine',1,'MaxStep',0.02);
       obj = setSimulinkParam(obj,'InitialStep','1e-3','MaxStep','0.05');
       obj = setInputLimits(obj,-50,50);
-      
-      obj = setModeOutputFlag(obj,true);
     end
     
     function [g,dg] = footCollisionGuard1(obj,t,x,u)

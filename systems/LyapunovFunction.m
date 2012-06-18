@@ -1,7 +1,7 @@
 classdef LyapunovFunction 
 % interface class for Lyapunov functions
   
-  properties (SetAccess=private,GetAccess=public)
+  properties (SetAccess=private,GetAccess=private)
     frame
     time_invariant_flag = false;
   end
@@ -23,6 +23,10 @@ classdef LyapunovFunction
     
     function display(obj)
       display(obj.Vpoly);
+    end
+    
+    function fr=getFrame(obj)
+      fr = obj.frame;
     end
   end
 end

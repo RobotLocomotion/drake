@@ -26,6 +26,10 @@ classdef PPTrajectory < Trajectory
       obj.pp.breaks = obj.pp.breaks + offset;
     end
     
+    function obj = uminus(obj)
+      obj.pp.coefs = -obj.pp.coefs;
+    end
+    
     function t = getBreaks(obj)
       t = obj.pp.breaks;
     end
