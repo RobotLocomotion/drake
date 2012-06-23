@@ -9,6 +9,7 @@ classdef PlanePlant < DrakeSystem
   methods
     function obj = PlanePlant()
       obj = obj@DrakeSystem(4,0,1,4,0,1);
+      obj = setOutputFrame(obj,getStateFrame(obj));  % allow full state feedback
     end
     
     function [xdot, df, d2f, d3f] = dynamics(obj,t,x,u)

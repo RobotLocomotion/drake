@@ -1,6 +1,6 @@
 function y=getLevelSet(V,x0,options)
 
-x = V.frame.poly;
+x = V.getFrame.poly;
 
 if (nargin<3) options=struct(); end
 if (~isfield(options,'tol')) options.tol = 2e-3; end % default tolerance of fplot

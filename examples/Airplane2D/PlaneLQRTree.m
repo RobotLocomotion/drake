@@ -33,8 +33,8 @@ options.xs = [4.5; 0; 0; 0];
 options.Tslb = .2;
 options.Tsub = 3;
 
-px=msspoly('x',4);
-options.Vf = px'*Qf*px;
+px = p.getStateFrame.poly;
+options.Vf = PolynomialLyapunovFunction(p.getStateFrame,1e4*px'*Qf*px);
 c = LQRTree.buildLQRTree(p,xG,uG,@()rand(4,1).*[6;6;pi/2;4]-[-2;0;pi/4;2],Q,R,options);
 
 end

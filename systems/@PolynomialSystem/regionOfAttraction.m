@@ -82,13 +82,13 @@ else
 end
 typecheck(V,'LyapunovFunction');
 
-if (V.frame ~= sys.getStateFrame)
+if (V.getFrame ~= sys.getStateFrame)
   % convert f to Lyapunov function coordinates
-  tf = findTransform(V.frame,sys.getStateFrame);
+  tf = findTransform(V.getFrame,sys.getStateFrame);
   if isempty(tf) error('couldn''t find a coordinate transform from the state frame to the frame of the Lyapunov candidate'); end
-  f = subss(f,sys.getStateFrame.poly,tf.output(0,[],V.frame.poly));
+  f = subss(f,sys.getStateFrame.poly,tf.output(0,[],V.getFrame.poly));
   
-  tf = findTransform(sys.getStateFrame,V.frame);
+  tf = findTransform(sys.getStateFrame,V.getFrame);
   if isempty(tf) error('couldn''t find a coordinate transform from the Lyapunov frame to teh state frame'); end
 
   if (~isa(tf,'AffineTransform') || tf.getNumStates || any(any(tf.D - eye(sys.getNumStates))))
@@ -288,7 +288,7 @@ end
 %% Pablo's method (jointly convex in rho and lagrange multipliers)
 function V = levelSetMethod(V0,f,options)
 
-  x = V0.frame.poly;
+  x = V0.getFrame.poly;
   [T,V,f] = balance(x,V0.Vpoly,f);
 
   %% compute Vdot
@@ -324,7 +324,7 @@ function V = levelSetMethod(V0,f,options)
   
   %% undo balancing
   V = subss(V,x,inv(T)*x);
-  V = PolynomialLyapunovFunction(V0.frame,V);
+  V = PolynomialLyapunovFunction(V0.getFrame,V);
 end
 
 function V=levelSetMethodYalmip(V0,f,options)
