@@ -4,14 +4,14 @@ classdef LQRTree < HybridDrakeSystem
     zero_mode_num=1;
     tilqr_mode_num=2;
     num_tvlqr_modes=0;
-%    Vf
+    Vf
     Vtv={};
     
     % precompute some values to optimize speed of guards and transitions
     S1=[];
     s2=[];
     s3=[];
-%    x0=[];
+    x0=[];
     t0=[];
     m=[];
   end
@@ -38,7 +38,7 @@ classdef LQRTree < HybridDrakeSystem
       
       %% precompute quadratic forms
       % switch to object coordinates
-      xVf=V.frame; xinf=obj.getInputFrame;
+      xVf=V.getFrame; xinf=obj.getInputFrame;
       xV=xVf.poly; xin = xinf.poly;
       if (xVf ~= xinf)
         tf=findTransform(xinf,xVf,true);  typecheck(tf,'AffineTransform');
@@ -51,7 +51,7 @@ classdef LQRTree < HybridDrakeSystem
       obj.S1=sparse(doubleSafe(.5*subs(diff(diff(Vpoly,xin)',xin),xin,0*xin)));
       obj.s2=sparse(doubleSafe(subs(diff(Vpoly,xin),xin,0*xin)));
       obj.s3=doubleSafe(subs(V.Vpoly,xin,0*xin));
-%      obj.x0=tilqr.x0;
+      obj.x0=zeros(tilqr.getNumInputs,1); % tree controller is in the coordinate frame of the tilqr controller
       obj.t0=0;
       obj.m=obj.tilqr_mode_num;
     end
@@ -299,6 +299,8 @@ classdef LQRTree < HybridDrakeSystem
         [ti,Vf] = tilqr(p,xG,uG,Q,R);
       else
         ti = AffineSystem([],[],[],[],[],[],[],zeros(getNumInputs(p),getNumStates(p)),uG);
+        ti = setInputFrame(ti,p.getOutputFrame);
+        ti = setOutputFrame(ti,p.getInputFrame);
       end
       if (isfield(options,'Vf'))
         Vf = options.Vf;
@@ -314,8 +316,6 @@ classdef LQRTree < HybridDrakeSystem
         end
         
         plotFunnel(Vf,xG); drawnow;
-      else
-        Vf=1e4*Vf;  % make cost artificially very high
       end
       
       % create LQR Tree
