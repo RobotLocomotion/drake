@@ -6,66 +6,95 @@ classdef AffineSystem < PolynomialSystem
 
   methods
     function obj = AffineSystem(Ac,Bc,xcdot0,Ad,Bd,xdn0,C,D,y0)
-      obj = obj@PolynomialSystem(0,0,0,0,false,[],[],[]);
-
       num_xc = max([size(Ac,1),size(Bc,1),size(xcdot0,1)]);
       num_xd = max([size(Ad,1),size(Bd,1),size(xdn0,1)]);
       num_u = max([size(Bc,2),size(Bd,2),size(D,2)]);
       num_y = max([size(C,1),size(D,1),size(y0,1)]);
-      
-      obj = setNumContStates(obj,num_xc);
-      obj = setNumDiscStates(obj,num_xd);
-      obj = setNumInputs(obj,num_u);
-      obj = setNumOutputs(obj,num_y);
+      tiflag = isnumeric(Ac) && isnumeric(Bc) && isnumeric(xcdot0) ...
+        && isnumeric(Ad) && isnumeric(Bd) && isnumeric(xdn0) ...
+        && isnumeric(C) && isnumeric(D) && isnumeric(y0);
+      obj = obj@PolynomialSystem(num_xc,num_xd,num_u,num_y,false,tiflag,false);
       
       if (isempty(Ac)) 
         obj.Ac = sparse(num_xc,num_xc+num_xd);
       else
         sizecheck(Ac,[num_xc,num_xc+num_xd]);
+        if ~tiflag
+          if isnumeric(Ac) Ac = ConstantTrajectory(Ac); end
+          typecheck(Ac,'Trajectory');
+        end
         obj.Ac = Ac;
       end
       if (isempty(Bc)) 
         obj.Bc = sparse(num_xc,num_u);
       else
         sizecheck(Bc,[num_xc,num_u]); 
+        if ~tiflag
+          if isnumeric(Bc) Bc = ConstantTrajectory(Bc); end
+          typecheck(Bc,'Trajectory');
+        end
         obj.Bc = Bc;
       end
       if (isempty(xcdot0)) 
         obj.xcdot0 = sparse(num_xc,1);
       else
         sizecheck(xcdot0,[num_xc,1]); 
+        if ~tiflag
+          if isnumeric(xcdot0) xcdot0 = ConstantTrajectory(xcdot0); end
+          typecheck(xcdot0,'Trajectory');
+        end
         obj.xcdot0 = xcdot0;
       end
       if (isempty(Ad))
         obj.Ad = sparse(num_xd,num_xc+num_xd);
       else
         sizecheck(Ad,[num_xd,num_xc+num_xd]); 
+        if ~tiflag
+          if isnumeric(Ad) Ad = ConstantTrajectory(Ad); end
+          typecheck(Ad,'Trajectory');
+        end
         obj.Ad = Ad;
       end
       if (isempty(Bd)) 
         obj.Bd = sparse(num_xd,num_u);
       else
         sizecheck(Bd,[num_xd,num_u]);
+        if ~tiflag
+          if isnumeric(Bd) Bd = ConstantTrajectory(Bd); end
+          typecheck(Bd,'Trajectory');
+        end
         obj.Bd = Bd;
       end
       if (isempty(xdn0)) 
         obj.xdn0 = sparse(num_xd,1);
       else
         sizecheck(xdn0,[num_xd,1]); 
+        if ~tiflag
+          if isnumeric(xdn0) xdn0 = ConstantTrajectory(xdn0); end
+          typecheck(xdn0,'Trajectory');
+        end
         obj.xdn0 = xdn0;
       end
       if (isempty(C)) 
         obj.C = sparse(num_y,num_xc+num_xd);
       else
         sizecheck(C,[num_y,num_xc+num_xd]); 
+        if ~tiflag
+          if isnumeric(C) C = ConstantTrajectory(C); end
+          typecheck(C,'Trajectory');
+        end
         obj.C = C;
       end
       if (isempty(D)) 
         obj.D = sparse(num_y,num_u);
       else
         sizecheck(D,[num_y,num_u]); 
+        if ~tiflag
+          if isnumeric(D) D = ConstantTrajectory(D); end
+          typecheck(D,'Trajectory');
+        end
         obj.D = D;
-        if (any(D(:)))  % only if D is non-zero
+        if (tiflag || any(D(:)))  % only if D is non-zero
           obj = setDirectFeedthrough(obj,true);
         end
       end
@@ -73,37 +102,58 @@ classdef AffineSystem < PolynomialSystem
         obj.y0 = sparse(num_y,1);
       else
         sizecheck(y0,[num_y,1]); 
+        if ~tiflag
+          if isnumeric(y0) y0 = ConstantTrajectory(y0); end
+          typecheck(y0,'Trajectory');
+        end
         obj.y0 = y0;
       end
-      
-      obj = pullEmptyPolysFromMethods(obj);
     end
 
     function [xcdot,df] = dynamics(obj,t,x,u)
-      xcdot=obj.Ac*x;
-      if (obj.num_u) xcdot=xcdot+obj.Bc*u; end
-      if ~isempty(obj.xcdot0) xcdot=xcdot+obj.xcdot0; end
-      if (nargout>1)
-        df = [0*xcdot, obj.Ac, obj.Bc];
+      if (isTI(obj))
+        xcdot=obj.Ac*x;
+        if (obj.num_u) xcdot=xcdot+obj.Bc*u; end
+        if ~isempty(obj.xcdot0) xcdot=xcdot+obj.xcdot0; end
+        if (nargout>1)
+          df = [0*xcdot, obj.Ac, obj.Bc];
+        end
+      else
+        xcdot=obj.Ac.eval(t)*x;
+        if (obj.num_u) xcdot=xcdot+obj.Bc.eval(t)*u; end
+        if ~isempty(obj.xcdot0) xcdot=xcdot+obj.xcdot0.eval(t); end
       end
     end
     
     function [xdn,df] = update(obj,t,x,u)
-      xdn=obj.Ad*x;
-      if (obj.num_u) xdn=xdn+obj.Bd*u; end
-      if ~isempty(obj.xdn0) xdn=xdn+obj.xdn0; end
-      if (nargout>1)
-        df = [0*xdn,obj.Ad,obj.Bd];
-      end
+      if (isTI(obj))
+        xdn=obj.Ad*x;
+        if (obj.num_u) xdn=xdn+obj.Bd*u; end
+        if ~isempty(obj.xdn0) xdn=xdn+obj.xdn0; end
+        if (nargout>1)
+          df = [0*xdn,obj.Ad,obj.Bd];
+        end
+      else
+        xdn=obj.Ad.eval(t)*x;
+        if (obj.num_u) xdn=xdn+obj.Bd.eval(t)*u; end
+        if ~isempty(obj.xdn0) xdn=xdn+obj.xdn0.eval(t); end
+      end        
     end
     
     function [y,dy] = output(obj,t,x,u)
-      y=zeros(obj.num_y,1);
-      if (obj.num_x) y=y+obj.C*x; end
-      if (obj.num_u) y=y+obj.D*u; end
-      if ~isempty(obj.y0) y=y+obj.y0; end
-      if (nargout>1)
-        dy = [0*y,obj.C,obj.D];
+      if (isTI(obj))
+        y=zeros(obj.num_y,1);
+        if (obj.num_x) y=y+obj.C*x; end
+        if (obj.num_u) y=y+obj.D*u; end
+        if ~isempty(obj.y0) y=y+obj.y0; end
+        if (nargout>1)
+          dy = [0*y,obj.C,obj.D];
+        end
+      else
+        y=zeros(obj.num_y,1);
+        if (obj.num_x) y=y+obj.C.eval(t)*x; end
+        if (obj.num_u) y=y+obj.D.eval(t)*u; end
+        if ~isempty(obj.y0) y=y+obj.y0.eval(t); end
       end
     end
     
@@ -111,6 +161,10 @@ classdef AffineSystem < PolynomialSystem
       % try to keep feedback between polynomial systems polynomial.  else,
       % kick out to DrakeSystem
       %
+      
+      if ~isTI(sys1) || ~isTI(sys2)
+        error('time-varying not implemented yet');
+      end
       
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,false);
       [sys2,sys1] = matchCoordinateFramesForCombination(sys2,sys1,true);
@@ -178,6 +232,10 @@ classdef AffineSystem < PolynomialSystem
       % try to keep cascade between polynomial systems polynomial.  else,
       % kick out to DrakeSystem
       %
+      
+      if ~isTI(sys1) || ~isTI(sys2)
+        error('time-varying not implemented yet');
+      end
 
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
 
@@ -227,12 +285,12 @@ classdef AffineSystem < PolynomialSystem
       end
     end
     
-    function sys = extractLTISystem(obj)
+    function sys = extractLinearSystem(obj)
       if any([obj.xcdot0;obj.xdn0;obj.y0]~=0) 
-        warning('Drake:AffineSystem:extractLTISystem','extract linear terms but affine terms are not all zero');
+        warning('Drake:AffineSystem:extractLinearSystem','affine terms are not all zero');
       end
       
-      sys = LTISystem(obj.Ac,obj.Bc,obj.Ad,obj.Bd,obj.C,obj.D);
+      sys = LinearSystem(obj.Ac,obj.Bc,obj.Ad,obj.Bd,obj.C,obj.D);
 
       sys = setInputFrame(sys,obj.getInputFrame());
       sys = setStateFrame(sys,obj.getStateFrame());

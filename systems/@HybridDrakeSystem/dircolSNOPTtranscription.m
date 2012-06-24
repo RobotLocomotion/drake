@@ -265,6 +265,8 @@ function [utraj,xtraj] = dircol_wrapup(sys,w,mode_wrapupfun,tOrig,N,con,options)
   end
   
   utraj = HybridTrajectory(utraj);
+  utraj = setOutputFrame(utraj,sys.getInputFrame);
   xtraj = HybridTrajectory(xtraj);
+  xtraj = setOutputFrame(xtraj,sys.getStateFrame);
 
 end

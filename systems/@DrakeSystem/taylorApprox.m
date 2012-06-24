@@ -17,8 +17,8 @@ if (sys.getNumStateConstraints()>0)
   error('cannot taylorApprox systems with state constraints');  % should I consider allowing it, but simply dropping the constraint?
 end
 
-if (num_x) p_x = msspoly('x',num_x); else p_x=[]; end
-if (num_u) p_u = msspoly('u',num_u); else p_u=[]; end
+if (num_x) p_x = sys.getStateFrame; else p_x=[]; end
+if (num_u) p_u = sys.getInputFrame; else p_u=[]; end
 
 if (length(varargin)<1) error('usage: taylorApprox(sys,t0,x0,u0,order), or taylorApprox(sys,xtraj,utraj,order)'); end
 
@@ -33,12 +33,16 @@ if (isa(varargin{1},'Trajectory'))
   
   sizecheck(x0traj,num_x);
   sizecheck(u0traj,num_u);
-  
+
+  % note: i should probably search for the transform before kicking out an error
+  if (x0traj.getOutputFrame ~= sys.getStateFrame) error('x0traj does not match state frame'); end
   if (isempty(u0traj))
     % make an empty trajectory object
     u0traj = FunctionHandleTrajectory(@(t)zeros(0),[0 0],x0traj.tspan);
+    u0traj = setOutputFrame(u0traj,sys.getInputFrame);
     breaks = x0traj.getBreaks();
   else
+    if (u0traj.getOutputFrame ~= sys.getInputFrame) error('u0traj does not match input frame'); end
     breaks = unique([x0traj.getBreaks(),u0traj.getBreaks()]);
   end
   

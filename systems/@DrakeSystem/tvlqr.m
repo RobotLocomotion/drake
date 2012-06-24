@@ -64,7 +64,7 @@ Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,R,xtraj,utraj,xdottraj,op
 S = FunctionHandleTrajectory(@(t) recompS(Ssqrt.eval(t)),[nX,nX],tspan);
 
 % note that this returns what we would normally call -K.  here u(t) = u_0(t) + K(t) (x(t) - x_0(t)) 
-K = FunctionHandleTrajectory(@(t)affineKsoln(t,obj,S,R,xtraj,utraj,options),[nX nU],tspan);
+K = FunctionHandleTrajectory(@(t)affineKsoln(t,obj,S,R,xtraj,utraj,options),[nU nX],tspan);
 
 
 if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
@@ -88,8 +88,7 @@ if (nargout>1)
 %  Vtraj = FunctionHandleTrajectory(@(t) p_x'*(S.eval(t) + Sdot(t)*(p_t-t))*p_x, [1 1],tspan);
   Sdotsqrt = @(t)affineSdynamics(t,Ssqrt.eval(t),obj,Q,R,xtraj,utraj,xdottraj,options);
   Sdot = @(t) recompSdot(Ssqrt.eval(t),Sdotsqrt(t));
-  Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan);
-  Vtraj = setStateFrame(Vtraj,ltvsys.getInputFrame());
+  Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan, obj.getStateFrame);
   V=TimeVaryingPolynomialLyapunovFunction(Vtraj);
   % todo: i could dig into the ODESolution with taylorvar to get higher
   % order, if Vddot was ever needed.

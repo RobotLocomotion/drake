@@ -252,5 +252,7 @@ for i=1:nSubTraj
 end
 xdot(:,nT)=sys.dynamics(t(nT),x(:,nT),u(:,nT));
 xtraj=PPTrajectory(pchipDeriv(t,x,xdot));
+xtraj=setOutputFrame(xtraj,sys.getStateFrame);
 utraj=PPTrajectory(foh(t,u));
+utraj=setOutputFrame(utraj,sys.getInputFrame);
 end

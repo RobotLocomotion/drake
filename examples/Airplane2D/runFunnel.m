@@ -19,7 +19,7 @@ options.rho0_tau = 10;
 
 %xtraj
 
-[tv,sys,xtrajClosedLoop,utraj,V,Vf] = tvlqrClosedLoop(p,xtraj,utraj,Q,R,diag([1 1 10 10]));
+[c,V]=tvlqr(p,xtraj,utraj,Q,R,diag([1 1 10 10]));
 poly = taylorApprox(sys,xtrajClosedLoop,[],3);
 
 %options.stability = true;
