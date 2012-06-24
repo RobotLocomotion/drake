@@ -42,9 +42,9 @@ function V = regionOfAttraction(sys,varargin)
 if (~isCT(sys)) error('only handle CT case so far'); end
 
 if (sys.num_xcon>0) error('state constraints not implemented yet'); end
-if (~isempty(sys.p_mass_matrix)) error('rational dynamics not supported yet'); end
+if (isRational(sys)) error('rational dynamics not supported yet'); end
 
-f = sys.p_dynamics;
+f = sys.polyDynamics;
 
 %% zero all inputs
 if (sys.getNumInputs>0)

@@ -9,6 +9,7 @@ tf0 = .7;
 xf = [5; 9; 0; 0];
 
 utraj0 = PPTrajectory(foh(linspace(0,tf0,11),0*randn(1,11)));
+utraj0 = setOutputFrame(utraj0,p.getInputFrame);
 
 %con.u.lb = p.umin;
 %con.u.ub = p.umax;
@@ -46,7 +47,7 @@ toc
 % upsample
 ts = linspace(utraj.tspan(1),utraj.tspan(2),41);
 options.xtape0='simulate';
-utraj0 = PPTrajectory(foh(ts,utraj.eval(ts)));
+utraj0 = PPTrajectory(foh(ts,utraj.eval(ts))); utraj0 = setOutputFrame(utraj0,utraj.getOutputFrame);
 [utraj,xtraj,info] = trajectoryOptimization(p,@(t,x,u)cost(t,x,u,field),@finalcost,x0,utraj0,con,options);
 if (info~=1) error('failed to improve the trajectory'); end
 

@@ -76,14 +76,13 @@ classdef TimeVaryingAffineSystem < TimeVaryingPolynomialSystem
       end
       if (isempty(D)) 
         obj.D = sparse(num_y,num_u);
+        obj = setDirectFeedthrough(obj,false);
       else
         if isnumeric(D) D = ConstantTrajectory(D); end
-        typcheck(D,'Trajectory');
+        typecheck(D,'Trajectory');
         sizecheck(D,[num_y,num_u]); 
         obj.D = D;
-        if (any(D(:)))  % only if D is non-zero
-          obj = setDirectFeedthrough(obj,true);
-        end
+        obj = setDirectFeedthrough(obj,true);
       end
       if (isempty(y0)) 
         obj.y0 = sparse(num_y,1);
@@ -93,8 +92,6 @@ classdef TimeVaryingAffineSystem < TimeVaryingPolynomialSystem
         sizecheck(y0,[num_y,1]); 
         obj.y0 = y0;
       end
-      
-      obj = pullEmptyPolysFromMethods(obj);
     end
 
     function xcdot = dynamics(obj,t,x,u)

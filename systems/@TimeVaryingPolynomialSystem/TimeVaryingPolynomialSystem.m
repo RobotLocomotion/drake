@@ -3,9 +3,9 @@ classdef TimeVaryingPolynomialSystem < DrakeSystem
 % polynomial in t.
   
   properties (SetAccess=private,GetAccess=private)
-    p_dynamics_traj=[] % msspoly representations of dynamics, update,and output
-    p_update_traj=[]
-    p_output_traj=[]
+    p_dynamics_handle=[] % function handles
+    p_update_handle=[]
+    p_output_handle=[]
 
 %   todo: implement these   
 %    p_state_constraints_traj=[];
@@ -20,9 +20,8 @@ classdef TimeVaryingPolynomialSystem < DrakeSystem
       %   methods
       %   
       % Method 2: 
-      %   TimeVaryingPolynomialSystem(p_dynamics_traj, p_update_traj,num_u, p_output_traj,direct_feedthrough_flag)
-      %   where the _traj variables are PolynomialTrajectories (or the
-      %   empty matrix)
+      %   TimeVaryingPolynomialSystem(p_dynamics_fcn, p_update_fcn, num_u, p_output_fcn,direct_feedthrough_flag)
+      %   where the _fcn variables are function handles (or the empty matrix)
 
       obj = obj@DrakeSystem(0,0,0,0,true,false);
 
@@ -30,11 +29,11 @@ classdef TimeVaryingPolynomialSystem < DrakeSystem
 
       if nargin<5, error('must supply 5 arguments'); end
       
-      if (isempty(varargin{1})
+      if (isempty(varargin{1}))
         % then do nothing
       elseif (isnumeric(varargin{1}))
         % then it's just num_xc
-        obj = setNumConstStates(obj,varargin{1});
+        obj = setNumContStates(obj,varargin{1});
         if (varargin{1}>0)  % run a quick sanity check
           typecheck(polydynamics(obj,0),'msspoly');
           sizecheck(polydynamics(obj,0),[getNumContStates(obj),1]);
@@ -67,7 +66,7 @@ classdef TimeVaryingPolynomialSystem < DrakeSystem
       if ~isnumeric(varargin{3}) || isempty(varargin{3}), error('argument 3 must be the number of inputs'); end
       obj = setNumInputs(obj,varargin{3});
       
-      if (isempty(varargin{4})
+      if (isempty(varargin{4}))
         % then do nothing
       elseif isnumeric(varargin{4})
         obj = setNumOutputs(obj,varargin{4});
@@ -83,7 +82,7 @@ classdef TimeVaryingPolynomialSystem < DrakeSystem
         obj.p_output_traj=p_output_traj;
       end
       
-      obj = setDirectFeedthroughFlag(obj,varargin{5});
+      obj = setDirectFeedthrough(obj,varargin{5});
       if ~isDirectFeedthrough(obj) && ~isempty(obj.p_output_traj)
         % sanity check, make sure there is no input dependence at tspan(1)
         if (deg(obj.p_output_traj.eval(obj.p_output_traj.tspan(1)),obj.getInputFrame.poly)>0)

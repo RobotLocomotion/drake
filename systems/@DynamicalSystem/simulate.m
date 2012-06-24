@@ -148,6 +148,7 @@ if (nargout>0)
       traj = makeSubTrajectory(t,y);
     end
   end
+  traj = setOutputFrame(traj,obj.getOutputFrame);
 else
   sim(mdl,pstruct);
 end

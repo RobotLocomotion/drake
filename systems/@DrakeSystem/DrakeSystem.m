@@ -211,14 +211,18 @@ classdef DrakeSystem < DynamicalSystem
       if (num_xc<0) error('num_xc must be >= 0'); end
       obj.num_xc = num_xc;
       obj.num_x = obj.num_xd + obj.num_xc;
-      obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],obj.num_x,'x'));
+      if (obj.num_x~=obj.getStateFrame.dim)
+        obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],obj.num_x,'x'));
+      end
     end
     function obj = setNumDiscStates(obj,num_xd)
       % Guards the num_states variable
       if (num_xd<0) error('num_xd must be >= 0'); end
       obj.num_xd = num_xd;
       obj.num_x = obj.num_xc + obj.num_xd;
-      obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],obj.num_x,'x'));
+      if (obj.num_x~=obj.getStateFrame.dim)
+        obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],obj.num_x,'x'));
+      end
     end
     function obj = setNumInputs(obj,num_u)
       % Guards the num_u variable.
@@ -236,7 +240,9 @@ classdef DrakeSystem < DynamicalSystem
       end
       
       obj.num_u = num_u;
-      obj=setInputFrame(obj,CoordinateFrame([class(obj),'Input'],num_u,'u'));
+      if (obj.num_u~=obj.getInputFrame.dim)
+        obj=setInputFrame(obj,CoordinateFrame([class(obj),'Input'],num_u,'u'));
+      end
     end
     function obj = setInputLimits(obj,umin,umax)
       % Guards the input limits to make sure it stay consistent
@@ -254,7 +260,9 @@ classdef DrakeSystem < DynamicalSystem
       % Guards the number of outputs to make sure it's consistent
       if (num_y<0) error('num_y must be >=0'); end
       obj.num_y = num_y;
-      obj=setOutputFrame(obj,CoordinateFrame([class(obj),'Output'],num_y,'y'));
+      if (obj.num_y~=obj.getOutputFrame.dim)
+        obj=setOutputFrame(obj,CoordinateFrame([class(obj),'Output'],num_y,'y'));
+      end
     end
     function n = getNumZeroCrossings(obj)
       % Returns the number of zero crossings

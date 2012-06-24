@@ -70,7 +70,7 @@ classdef DynamicalSystem
       if (getOutputFrame(sys1)~=getInputFrame(sys2))
         tf = findTransform(getOutputFrame(sys1),getInputFrame(sys2));
         if (isempty(tf))
-          error(['Input frame ,' sys2.getInputFrame().name, ' does not match output frame ', sys1.getOutputFrame().name, ' and I cannot find a CoordinateTransform to make the connection']); 
+          error(['Input frame ' sys2.getInputFrame().name, ' does not match output frame ', sys1.getOutputFrame().name, ' and I cannot find a CoordinateTransform to make the connection']); 
         end
         
         if (attach_transform_to_sys1)

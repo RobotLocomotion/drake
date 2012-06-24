@@ -8,11 +8,9 @@ classdef ConstantTrajectory < Trajectory
   methods 
     function obj = ConstantTrajectory(pt)
     % Construct ConstantTrajectory from a pt
-      if (nargin>0)
-        obj.pt=pt;
-        obj.tspan = [-inf,inf];
-        obj.dim = length(pt);
-      end
+      obj = obj@Trajectory(size(pt));
+      obj.pt=pt;
+      obj.tspan = [-inf,inf];
     end
     
     function dtraj = fnder(obj)

@@ -115,7 +115,9 @@ end
     xdot(:,i) = plant.dynamics(tspan(i),xtape(:,i),utape(:,i));
   end
   xtraj = PPTrajectory(piecewiseCubicPoly(tspan,xtape,xdot(:,1:(end-1)),xdot(:,2:end)));
+  xtraj = setOutputFrame(xtraj,sys.getStateFrame);
   utraj = PPTrajectory(zoh(tspan,utape));
+  utraj = setOutputFrame(utraj,sys.getInputFrame);
 
   
   if (info==1 && tf/N > options.maxDT)  % then add more elements to the tape and call dircol again
