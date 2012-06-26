@@ -85,9 +85,9 @@ classdef CascadeSystem < DrakeSystem
     
     function zcs = zeroCrossings(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
-      [y1,y2]=getOutputs(obj,t,x,u);
+      y1=output(obj.sys1,t,x1,u);
       if (getNumZeroCrossings(obj.sys1)>0)
-        zcs=zeroCrossings(obj.sys1,t,x1,sat1(obj,y2+u));
+        zcs=zeroCrossings(obj.sys1,t,x1,u);
       else
         zcs=[];
       end
@@ -119,7 +119,7 @@ classdef CascadeSystem < DrakeSystem
     % todo: implement cascade, and if sys1 or sys2 can be cascaded more
     % efficient (e.g. two affinesystems), then do it internally instead of
     % adding a nested cascade system.  Will require getting precendence over
-    % the polynomial class heirarchy, so that this method is called even
+    % the polynomial class hierarchy, so that this method is called even
     % when the *second* argument is a cascade system.
     % http://www.mathworks.com/help/techdoc/matlab_oop/f1-6987.html
     % also note that:

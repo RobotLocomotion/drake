@@ -44,7 +44,7 @@ if (~isCT(sys)) error('only handle CT case so far'); end
 if (sys.num_xcon>0) error('state constraints not implemented yet'); end
 if (isRational(sys)) error('rational dynamics not supported yet'); end
 
-f = sys.polyDynamics;
+f = sys.getPolyDynamics;
 
 %% zero all inputs
 if (sys.getNumInputs>0)
@@ -112,7 +112,7 @@ if (~isfield(options,'optimize')) options.optimize=true; end
 if (~isfield(options,'numSamples')) options.numSamples = 10^(num_x+1); end 
 
 if (~isfield(options,'degL1'))
-  options.degL1 = options.degV-1 + deg(f,V.frame.poly);  % just a guess
+  options.degL1 = options.degV-1 + deg(f,V.getFrame.poly);  % just a guess
 end
 if (~isfield(options,'degL2'))
   options.degL2 = options.degL1;

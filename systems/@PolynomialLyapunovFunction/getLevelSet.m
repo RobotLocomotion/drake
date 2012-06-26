@@ -1,4 +1,11 @@
 function y=getLevelSet(V,x0,options)
+% return points on the level set V(x)==1
+% @param x0 the fixed point around which the Lyapunov function is
+% constructed
+% @option num_samples number of samples to produce @default 100
+
+if (nargin<3) options=struct(); end
+if ~isfield(options,'num_samples') options.num_samples = 100; end
 
 x = V.getFrame.poly;
 
@@ -12,7 +19,7 @@ if (deg(V.Vpoly,x)<=2)  % interrogate the quadratic level-set
   b = -0.5*(H\doubleSafe(subs(diff(V.Vpoly,x),x,0*x)'));
   
   n=length(x);
-  K=100;
+  K=options.num_samples;
   if (n==2)  % produce them in a nice order, suitable for plotting
     th=linspace(0,2*pi,K);
     X = [sin(th);cos(th)];
@@ -37,7 +44,7 @@ else % do the more general thing
   pV=subss(pV,x,x+x0);  % move to origin
 
 
-  y = repmat(x0,1,100)+getRadii(linspace(-pi,pi,100))';
+  y = repmat(x0,1,options.num_samples)+getRadii(linspace(-pi,pi,options.num_samples))';
   %  r = msspoly('r',1);
   %   [theta,r]=fplot(@getRadius,[0 pi],options.tol);
   %   y=repmat(x0,1,2*size(theta,1))+[repmat(r(:,1),1,2).*[cos(theta),sin(theta)]; repmat(r(:,2),1,2).*[cos(theta),sin(theta)]]';

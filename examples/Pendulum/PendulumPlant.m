@@ -40,13 +40,145 @@ classdef PendulumPlant < SecondOrderSystem
       x = randn(2,1);
     end
   end  
+  
+  methods 
+    function [c,V]=balanceLQR(obj)
+      x0=[pi;0]; u0=0;
+      Q = diag([10 1]); R = 1;
+      if (nargout<2)
+        c = tilqr(obj,x0,u0,Q,R);
+      else
+        if any(~isinf([obj.umin;obj.umax]))
+          error('currently, you must disable input limits to estimate the ROA');
+        end
+        [c,V] = tilqr(obj,x0,u0,Q,R);
+        pp = feedback(obj.taylorApprox(0,x0,u0,3),c);
+        options.method='levelSet';
+        V=regionOfAttraction(pp,V,options);
+      end
+    end
+    
+    function [utraj,xtraj]=swingupTrajectory(obj)
+      x0 = [0;0]; tf0 = 4; xf = [pi;0];
+
+      con.u.lb = obj.umin;
+      con.u.ub = obj.umax;
+      %con.u0.lb = 0;
+      %con.u0.ub = 0;
+      %con.uf.lb = 0;
+      %con.uf.ub = 0;
+      con.x0.lb = x0;
+      con.x0.ub = x0;
+      con.xf.lb = xf;
+      con.xf.ub = xf;
+      con.T.lb = 2;
+      con.T.ub = 6;
+      
+      options.method='dircol';
+      %options.grad_method='numerical';
+      %options.grad_method={'user','numerical'};
+      
+      function [g,dg] = cost(t,x,u);
+        R = 10;
+        g = (R*u).*u;
+        
+        if (nargout>1)
+          dg = [zeros(1,3),2*u'*R];
+        end
+      end
+      
+      function [h,dh] = finalcost(t,x)
+        h = t;
+        if (nargout>1)
+          dh = [1, zeros(1,2)];
+        end
+      end
+      
+      info=0;
+      while (info~=1)
+        utraj0 = PPTrajectory(foh(linspace(0,tf0,21),randn(1,21)));
+        tic
+        %options.grad_test = true;
+        [utraj,xtraj,info] = trajectoryOptimization(obj,@cost,@finalcost,x0,utraj0,con,options);
+        toc
+      end
+    end
+    
+    function c=balanceLQRTree(p)
+      xG=[pi;0]; uG=0;
+      Q = diag([10 1]); R = 1;
+
+      options.num_branches=5;
+      %options.verify=false;
+      options.xs = [0;0];
+      options.Tslb = 2;
+      options.Tsub = 6;
+      options.degL1=4;
+      c = LQRTree.buildLQRTree(p,xG,uG,@()rand(2,1).*[2*pi;10]-[pi;5],Q,R,options);
+    end
+
+  end
 
   methods(Static)
-    function run()  % runs the passive system
+    function runPassive()  
+    % runs the passive system
       pd = PendulumPlant;
       pv = PendulumVisualizer;
       traj = simulate(pd,[0 5],randn(2,1));
       playback(pv,traj);
+    end
+    
+    function runLQR()
+    % run the lqr controller from a handful of initial conditions
+      pd = PendulumPlant;
+      pv = PendulumVisualizer;
+      c = balanceLQR(pd);
+      sys = feedback(pd,c);
+      for i=1:5
+        xtraj=simulate(sys,[0 4],[pi;0]+0.2*randn(2,1));
+        pv.playback(xtraj);
+      end
+    end
+    
+    function runLQRTest()
+    % run the lqr controller from a handful of initial conditions on the
+    % boundary of the estimated ROA and verify that it gets to the top
+      pd = PendulumPlant;
+      pd = pd.setInputLimits(-inf,inf);  % for now
+      pv = PendulumVisualizer;
+      [c,V] = balanceLQR(pd);
+      sys = feedback(pd,c);
+      n=10;
+      x0=[pi;0];
+      y=getLevelSet(V,x0,struct('num_samples',n));
+      for i=1:n
+        xtraj=simulate(sys,[0 4],x0 + .99*(y(:,i)-x0));
+        if (norm(xtraj.eval(4)-x0)>1e-2)
+          error('initial condition from verified ROA didn''t get to the top (in 4 seconds)');
+        end
+      end
+    end
+    
+    function runDLQR()
+      pd = sampledData(PendulumPlant,.1);
+      pv = PendulumVisualizer;
+      x0=[pi;0]; u0=0;
+      Q = diag([10 1]); R = 1;
+      c = tilqr(pd,x0,u0,Q,R);
+      sys = feedback(pd,c);
+      for i=1:5
+        xtraj=simulate(sys,[0 4],[pi;0]+0.2*randn(2,1));
+        pv.playback(xtraj);
+      end
+    end  
+    
+    function runSwingup()
+      pd = PendulumPlant;
+      pv = PendulumVisualizer;
+      utraj = swingupTrajectory(pd);
+      sys = cascade(utraj,pd);
+      xtraj=simulate(sys,utraj.tspan,[0;0]);
+      pv.playback(xtraj);
     end
   end
 end

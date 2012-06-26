@@ -10,9 +10,15 @@ classdef SpotPolynomialSystem < PolynomialSystem
   end
   
   methods
-    function obj = SpotPolynomialSystem(input_frame,state_frame,output_frame,p_dynamics_rhs,p_dynamics_lhs,p_update,num_u,p_output,p_state_constraints)
-      obj = obj@PolynomialSystem(0,0,num_u,0,false,true,false);
+    function obj = SpotPolynomialSystem(input_frame,state_frame,output_frame,p_dynamics_rhs,p_dynamics_lhs,p_update,p_output,p_state_constraints)
+      obj = obj@PolynomialSystem(size(p_dynamics_rhs,1),size(p_update,1),input_frame.dim,size(p_output,1),false,true,false);
 
+      if (state_frame.dim~=obj.getNumStates())
+        error('state dimension mismatch');
+      end
+      if (output_frame.dim~=obj.getNumOutputs())
+        error('output dimension mismatch');
+      end
       obj.p_t = msspoly('t',1);
       obj = setInputFrame(obj,input_frame);
       obj = setStateFrame(obj,state_frame);
@@ -20,7 +26,9 @@ classdef SpotPolynomialSystem < PolynomialSystem
       obj = setPolyDynamics(obj,p_dynamics_rhs,p_dynamics_lhs);
       obj = setPolyUpdate(obj,p_update);
       obj = setPolyOutput(obj,p_output);
-      obj = setPolyStateConstraints(obj,p_state_constraints);
+      if (nargin>8)
+        obj = setPolyStateConstraints(obj,p_state_constraints);
+      end
     end
     
     % Implement default methods using msspoly vars explicitly
@@ -134,7 +142,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
           error('p_dynamics_lhs depends on variables other than t,x, and u (from the current state and input frames)');
         end
       end
-      obj = setRationalFlag(~isempty(p_dynamics_lhs));
+      obj = setRationalFlag(obj,~isempty(p_dynamics_lhs));
       obj.p_dynamics_rhs = p_dynamics_rhs;
       obj.p_dynamics_lhs = p_dynamics_lhs;
     end
@@ -166,7 +174,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
       obj.p_update = p_update;
     end
     
-    function xdn = getPolyUpdate(obj,t)
+    function p_update = getPolyUpdate(obj,t)
       p_update = obj.p_update;
       if (nargin>1 && obj.num_xd>0)
         p_update = subs(p_update,obj.p_t,t);
@@ -189,7 +197,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
       obj.p_output = p_output;      
     end
     
-    function xdn = getPolyOutput(obj,t)
+    function p_output = getPolyOutput(obj,t)
       p_output = obj.p_output;
       if (nargin>1 && obj.num_y>0)
         p_output = subs(p_output,obj.p_t,t);

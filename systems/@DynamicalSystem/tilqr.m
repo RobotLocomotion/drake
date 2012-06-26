@@ -1,4 +1,4 @@
-function [ltisys,V] = tilqr(obj,x0,u0,Q,R)
+function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R)
 % Computes an LQR controller to stabilize the system around (x0,u0)
 %
 % Linearizes the system around the nominal point then calls lqr (if the
@@ -12,7 +12,7 @@ function [ltisys,V] = tilqr(obj,x0,u0,Q,R)
 % @param Q,R describe the LQR cost function \int dt (x'*Q*r + u'*R*u)
 %
 % @retval ltisys a system which implements the control u=-K*x
-% @retval V an msspoly representation of the cost-to-go function x'*S*x
+% @retval Vcandidate an msspoly representation of the cost-to-go function x'*S*x
 
 % ts is a simulink sample time
 if (~isTI(obj)) error('I don''t know that this system is time invariant.  Set the TI flags and rerun this method if you believe the system to be.'); end
@@ -50,7 +50,7 @@ if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a
 end
 
   
-ltisys = LTISystem([],[],[],[],[],-K);
+ltisys = LinearSystem([],[],[],[],[],-K);
 if (all(x0==0))
   ltisys = setInputFrame(ltisys,obj.getStateFrame);
 else
@@ -68,7 +68,7 @@ end
 
 if (nargout>1)
   x=ltisys.getInputFrame.poly; %msspoly('x',getNumStates(obj));
-  V=PolynomialLyapunovFunction(ltisys.getInputFrame,x'*S*x);
+  Vcandidate=PolynomialLyapunovFunction(ltisys.getInputFrame,x'*S*x);
 end
 
 end

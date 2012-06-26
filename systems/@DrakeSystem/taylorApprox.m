@@ -17,8 +17,8 @@ if (sys.getNumStateConstraints()>0)
   error('cannot taylorApprox systems with state constraints');  % should I consider allowing it, but simply dropping the constraint?
 end
 
-if (num_x) p_x = sys.getStateFrame; else p_x=[]; end
-if (num_u) p_u = sys.getInputFrame; else p_u=[]; end
+if (num_x) p_x = sys.getStateFrame.poly; else p_x=[]; end
+if (num_u) p_u = sys.getInputFrame.poly; else p_u=[]; end
 
 if (length(varargin)<1) error('usage: taylorApprox(sys,t0,x0,u0,order), or taylorApprox(sys,xtraj,utraj,order)'); end
 
@@ -109,7 +109,7 @@ else
     yhat=[];
   end
   
-  polysys = PolynomialSystem(num_xc,num_xd,num_u,num_y,sys.isDirectFeedthrough(),xdothat,xnhat,yhat);
+  polysys = SpotPolynomialSystem(sys.getInputFrame,sys.getStateFrame,sys.getOutputFrame,xdothat,[],xnhat,yhat);
   if (num_u)
     polysys = setInputLimits(polysys,sys.umin,sys.umax);
   end
