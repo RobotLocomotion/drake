@@ -4,7 +4,7 @@ classdef AffineTransform < CoordinateTransform & AffineSystem
   methods
     function obj=AffineTransform(from,to,T,b)
       obj=obj@AffineSystem([],[],[],[],[],[],[],T,b);
-      obj=obj@CoordinateTransform(from,to,true,false);
+      obj=obj@CoordinateTransform(from,to,true,isnumeric(T)&&isnumeric(b));
       typecheck(from,'CoordinateFrame');
       typecheck(to,'CoordinateFrame');
       obj=setInputFrame(obj,from);

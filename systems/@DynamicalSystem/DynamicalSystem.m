@@ -213,6 +213,9 @@ classdef DynamicalSystem
       end
       
       newsys = SimulinkModel(mdl);
+      newsys = setInputFrame(newsys,getInputFrame(sys));
+      newsys = setStateFrame(newsys,getStateFrame(sys));
+      newsys = setOutputFrame(newsys,getOutputFrame(sys));
       newsys.time_invariant_flag = sys.time_invariant_flag;
       newsys.simulink_params = sys.simulink_params;  
     end

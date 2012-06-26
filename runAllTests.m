@@ -66,7 +66,8 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
     ind=find(testname=='.',1);
     testname=testname(1:(ind-1));
 
-    % if it's a class, see if it implements the static run method()
+    % if it's a class, check if it is "runnable"
+    % todo: run any public, static, non-hidden, non-abstract methods?
     isClass = checkFile(files(i).name,'classdef');
     if (isClass && ~ismethod(testname,'run'))
       continue;  % skip classes that aren't runnable

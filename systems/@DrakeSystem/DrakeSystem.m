@@ -211,7 +211,7 @@ classdef DrakeSystem < DynamicalSystem
       if (num_xc<0) error('num_xc must be >= 0'); end
       obj.num_xc = num_xc;
       obj.num_x = obj.num_xd + obj.num_xc;
-      if (obj.num_x~=obj.getStateFrame.dim)
+      if (isempty(obj.getStateFrame) || obj.num_x~=obj.getStateFrame.dim)
         obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],obj.num_x,'x'));
       end
     end
@@ -220,7 +220,7 @@ classdef DrakeSystem < DynamicalSystem
       if (num_xd<0) error('num_xd must be >= 0'); end
       obj.num_xd = num_xd;
       obj.num_x = obj.num_xc + obj.num_xd;
-      if (obj.num_x~=obj.getStateFrame.dim)
+      if (isempty(obj.getStateFrame) || obj.num_x~=obj.getStateFrame.dim)
         obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],obj.num_x,'x'));
       end
     end
@@ -240,7 +240,7 @@ classdef DrakeSystem < DynamicalSystem
       end
       
       obj.num_u = num_u;
-      if (obj.num_u~=obj.getInputFrame.dim)
+      if (isempty(obj.getInputFrame) || obj.num_u~=obj.getInputFrame.dim)
         obj=setInputFrame(obj,CoordinateFrame([class(obj),'Input'],num_u,'u'));
       end
     end
@@ -260,7 +260,7 @@ classdef DrakeSystem < DynamicalSystem
       % Guards the number of outputs to make sure it's consistent
       if (num_y<0) error('num_y must be >=0'); end
       obj.num_y = num_y;
-      if (obj.num_y~=obj.getOutputFrame.dim)
+      if (isempty(obj.getOutputFrame) || obj.num_y~=obj.getOutputFrame.dim)
         obj=setOutputFrame(obj,CoordinateFrame([class(obj),'Output'],num_y,'y'));
       end
     end
