@@ -46,7 +46,15 @@ classdef FunctionHandleTrajectory < Trajectory
     end
     
     function pp = flipToPP(obj,ppbuilder)
-      if (nargin<2) ppbuilder=@foh; end
+      if (nargin<2) 
+        if isempty(obj.dhandle) ppbuilder=@foh;
+        else
+          y=eval(obj,obj.breaks);
+          ydot=deriv(obj,obj.breaks);
+          pp=PPTrajectory(pchipDeriv(obj.breaks,y,ydot));
+          return;
+        end
+      end
       y=eval(obj,obj.breaks);
       pp=PPTrajectory(ppbuilder(obj.breaks,y));
     end
