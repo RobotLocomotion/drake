@@ -243,22 +243,26 @@ classdef PolynomialSystem < DrakeSystem
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
 
       if ~isa(sys2,'PolynomialSystem') || ~isTI(sys1) || ~isTI(sys2) || any(~isinf([sys2.umin;sys2.umax]))
-        sys = cascade@DrakeSystem(sys1,sys2)
+        sys = cascade@DrakeSystem(sys1,sys2);
+        return;
       end
         
       if (getNumZeroCrossings(sys1)>0 || getNumZeroCrossings(sys2)>0)
         error('polynomialsystems aren''t supposed to have zero crossings'); 
       end
       
-      sys = SpotPolynomialSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
-        sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
-        sys1.getNumInputs(), sys2.getNumOutputs(), sys1.isDirectFeedthrough & sys2.isDirectFeedthrough, true);
-
-      sys = setInputFrame(sys,sys1.getInputFrame());
-      sys = setOutputFrame(sys,sys2.getOutputFrame());
+      input_frame = sys1.getInputFrame();
+      output_frame = sys2.getOutputFrame();
+      if (sys1.getNumStates==0) 
+        state_frame = sys2.getStateFrame();
+      elseif (sys2.getNumStates==0)
+        state_frame = sys1.getStateFrame();
+      else
+        state_frame = CoordinateFrame('FeedbackState',sys1.getNumState()+sys2.getNumStates(),'x');
+      end
       
-      p_x = sys.getStateFrame.poly;
-      p_u = sys.getInputFrame.poly;
+      p_x = state_frame.poly;
+      p_u = input_frame.poly;
       
       [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2);
       p_x1 = p_x(sys1ind);
@@ -277,30 +281,44 @@ classdef PolynomialSystem < DrakeSystem
         p_y1 = p1_output;
       end
 
+      p_dynamics_rhs=[]; p_dynamics_lhs=[]; p_update=[]; p_output=[]; p_state_constraints=[];
       if (sys1.getNumContStates()>0)
-        sys.p_dynamics=[sys.p_dynamics;subss(p1_dynamics,sys1.getStateFrame.poly,p_x1)];
+        p_dynamics_rhs=[p_dynamics_rhs;subss(p1_dynamics,sys1.getStateFrame.poly,p_x1)];
       end
       if (sys2.getNumContStates()>0)
-        sys.p_dynamics=[sys.p_dynamics;subss(p2_dynamics,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
+        p_dynamics_rhs=[p_dynamics_rhs;subss(p2_dynamics,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
+      end
+      if isRational(sys1)
+        if isRational(sys2)
+          p_dynamics_lhs=blkdiag(subss(p_dynamics_lhs,sys1.getStateFrame.poly,p_x1),subss(sys2.p_dynamics_lhs,sys2.getStateFrame.poly,p_x2));
+        else
+          p_dynamics_lhs=blkdiag(subss(p_dynamics_lhs,sys1.getStateFrame.poly,p_x1),eye(getNumContStates(sys2)));
+        end
+      else
+        if isRational(sys2)
+          p_dynamics_lhs=blkdiag(eye(getNumContStates(sys1)),subss(p_dynamics_lhs,sys2.getStateFrame.poly,p_x2));
+        else
+          p_dynamics_lhs=[];
+        end
       end
       if (sys1.getNumDiscStates()>0)
-        sys.p_update = [sys.p_update;subss(p1_update,sys1.getStateFrame.poly,p_x1)];
+        p_update = [p_update;subss(p1_update,sys1.getStateFrame.poly,p_x1)];
       end
       if (sys2.getNumDiscStates()>0)
-        sys.p_update = [sys.p_update; subss(p2_update,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
+        p_update = [p_update; subss(p2_update,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
       end
       if (sys1.getNumOutputs()>0)
-        sys.p_output = subss(p2_output,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1]);
+        p_output = subss(p2_output,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1]);
       end
-      
-      % handle state constraints
       if (sys1.getNumStateConstraints()>0)
-        sys.p_state_constraints=[sys.p_state_constraints;subss(p1_state_constraints,sys1.getStateFrame.poly,p_x1)];
+        p_state_constraints=[p_state_constraints;subss(p1_state_constraints,sys1.getStateFrame.poly,p_x1)];
       end
       if (sys2.getNumStateConstraints()>0)
-        sys.p_state_constraints=[sys.p_state_constraints;subss(p2_state_constraints,sys2.getStateFrame.poly,p_x2)];
+        p_state_constraints=[p_state_constraints;subss(p2_state_constraints,sys2.getStateFrame.poly,p_x2)];
       end
-      
+
+      sys = SpotPolynomialSystem(input_frame,state_frame,output_frame,p_dynamics_rhs,p_dynamics_lhs,p_update,p_output,p_state_constraints);
+
       try 
         sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to drakesystem?
       catch ex
@@ -312,20 +330,6 @@ classdef PolynomialSystem < DrakeSystem
         end
       end
       
-      % set lhs dynamics
-      if isRational(sys1)
-        if isRational(sys2)
-          sys.p_dynamics_lhs=blkdiag(subss(sys1.p_dynamics_lhs,sys1.getStateFrame.poly,p_x1),subss(sys2.p_dynamics_lhs,sys2.getStateFrame.poly,p_x2));
-        else
-          sys.p_dynamics_lhs=blkdiag(subss(sys1.p_dynamics_lhs,sys1.getStateFrame.poly,p_x1),eye(getNumContStates(sys2)));
-        end
-      else
-        if isRational(sys2)
-          sys.p_dynamics_lhs=blkdiag(eye(getNumContStates(sys1)),subss(sys2.p_dynamics_lhs,sys2.getStateFrame.poly,p_x2));
-        else
-          sys.p_dynamics_lhs=[];
-        end
-      end
     end
   end
     

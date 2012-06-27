@@ -73,12 +73,12 @@ end
 ltvsys = LinearSystem([],[],[],[],[],K);
 
 ltvsys = setInputFrame(ltvsys,CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix));
-obj.getStateFrame.addTransform(TimeVaryingAffineTransform(obj.getStateFrame,ltvsys.getInputFrame,eye(nX),-xtraj));
-ltvsys.getInputFrame.addTransform(TimeVaryingAffineTransform(ltvsys.getInputFrame,obj.getStateFrame,eye(nX),xtraj));
+obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ltvsys.getInputFrame,eye(nX),-xtraj));
+ltvsys.getInputFrame.addTransform(AffineTransform(ltvsys.getInputFrame,obj.getStateFrame,eye(nX),xtraj));
 
 ltvsys = setOutputFrame(ltvsys,CoordinateFrame([obj.getInputFrame.name,' + u0(t)'],nU,obj.getInputFrame.prefix));
-ltvsys.getOutputFrame.addTransform(TimeVaryingAffineTransform(ltvsys.getOutputFrame,obj.getInputFrame,eye(nU),utraj));
-obj.getInputFrame.addTransform(TimeVaryingAffineTransform(obj.getInputFrame,ltvsys.getOutputFrame,eye(nU),-utraj));
+ltvsys.getOutputFrame.addTransform(AffineTransform(ltvsys.getOutputFrame,obj.getInputFrame,eye(nU),utraj));
+obj.getInputFrame.addTransform(AffineTransform(obj.getInputFrame,ltvsys.getOutputFrame,eye(nU),-utraj));
 
 if (nargout>1)
   p_x=ltvsys.getInputFrame.poly; %msspoly('x',getNumStates(obj));
