@@ -94,7 +94,7 @@ classdef AffineSystem < PolynomialSystem
           typecheck(D,'Trajectory');
         end
         obj.D = D;
-        if (tiflag || any(D(:)))  % only if D is non-zero
+        if (~tiflag || any(D(:)))  % only if D is non-zero
           obj = setDirectFeedthrough(obj,true);
         end
       end

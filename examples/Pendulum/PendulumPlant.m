@@ -58,7 +58,7 @@ classdef PendulumPlant < SecondOrderSystem
       end
     end
     
-    function [utraj,xtraj]=swingupTrajectory(obj)
+    function [utraj,xtraj]=swingUpTrajectory(obj)
       x0 = [0;0]; tf0 = 4; xf = [pi;0];
 
       con.u.lb = obj.umin;
@@ -102,6 +102,22 @@ classdef PendulumPlant < SecondOrderSystem
         [utraj,xtraj,info] = trajectoryOptimization(obj,@cost,@finalcost,x0,utraj0,con,options);
         toc
       end
+    end
+    
+    function c=trajectorySwingUpAndBalance(obj)
+      [ti,Vf] = balanceLQR(obj);
+      Vf.Vpoly = Vf.Vpoly*5;  % artificially prune, since ROA is solved without input limits
+
+%      c = LQRTree(ti,Vf);
+      [utraj,xtraj]=swingUpTrajectory(obj);  
+      
+      Q = diag([10 1]);  R=1;
+      [tv,Vtraj] = tvlqr(obj,xtraj,utraj,Q,R,Vf);
+      psys = taylorApprox(feedback(obj,tv),xtraj,[],3);
+      options.degL1=2;
+      Vtraj=sampledFiniteTimeVerification(psys,Vf,Vtraj,xtraj.getBreaks(),xtraj,utraj,options);
+
+      c = c.addTrajectory(tv,Vtraj);
     end
     
     function c=balanceLQRTree(p)
@@ -175,10 +191,22 @@ classdef PendulumPlant < SecondOrderSystem
     function runSwingup()
       pd = PendulumPlant;
       pv = PendulumVisualizer;
-      utraj = swingupTrajectory(pd);
+      utraj = swingUpTrajectory(pd);
       sys = cascade(utraj,pd);
       xtraj=simulate(sys,utraj.tspan,[0;0]);
       pv.playback(xtraj);
+    end
+    
+    function runTrajectorySwingUpAndBalance()
+      pd = PendulumPlant;
+      pd = pd.setInputLimits(-inf,inf);  % for now
+      pv = PendulumVisualizer;
+      c = trajectorySwingUpAndBalance(pd);
+      sys = feedback(pd,c);
+      for i=1:5
+        xtraj=simulate(sys,[0 6]);
+        pv.playback(xtraj);
+      end
     end
   end
 end

@@ -34,10 +34,9 @@ switch class(Qf)
   case 'double'
     sizecheck(Qf,[nX,nX]);
     Qf = {Qf,zeros(nX,1),0};
-  case 'msspoly'
-    Vf=Qf;
-    sizecheck(Vf,1);
-    x=decomp(Vf);
+  case 'PolynomialLyapunovFunction'
+    Vf=Qf.Vpoly;
+    x=Qf.getFrame.poly;
     Vf=subss(Vf,x,x+xtraj.eval(tspan(end)));
     Qf=cell(3,1);
     Qf{1}=double(.5*subs(diff(diff(Vf,x)',x),x,0*x));
@@ -71,7 +70,7 @@ if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a
   warning('designing full-state feedback controller but plant has different output frame than state frame'); 
 end
   
-ltvsys = TimeVaryingLinearSystem([],[],[],[],[],K);
+ltvsys = LinearSystem([],[],[],[],[],K);
 
 ltvsys = setInputFrame(ltvsys,CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix));
 obj.getStateFrame.addTransform(TimeVaryingAffineTransform(obj.getStateFrame,ltvsys.getInputFrame,eye(nX),-xtraj));
