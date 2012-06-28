@@ -63,7 +63,7 @@ name=lcmCoder.getRobotName();
 if (~isempty(in) && getNumStates(obj)<1) % if there are no state variables, then just trigger on input
   decoder = eval(decoder);
   if (~isempty(out)) encoder = eval(encoder); end
-  lc = lcm.lcm.LCM.getSingleton(); %('udpm://239.255.76.67:7667?ttl=1');
+  lc = lcm.lcm.LCM.getSingleton(); %('udpm://239.255.76.67:7667?ttl=0');
   aggregator = lcm.lcm.MessageAggregator();
   aggregator.setMaxMessages(1);  % make it a last-message-only queue
   
