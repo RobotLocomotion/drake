@@ -113,7 +113,7 @@ classdef PendulumPlant < SecondOrderSystem
       
       Q = diag([10 1]);  R=1;
       [tv,Vtraj] = tvlqr(obj,xtraj,utraj,Q,R,Vf);
-      psys = taylorApprox(feedback(obj,tv),xtraj,[],3);
+      psys = taylorApprox(feedback(obj,tv),xtraj,zoh(xtraj.getTimeSpan,[0 0]),3);
       options.degL1=2;
       Vtraj=sampledFiniteTimeVerification(psys,Vf,Vtraj,xtraj.getBreaks(),xtraj,utraj,options);
 
