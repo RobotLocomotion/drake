@@ -63,14 +63,14 @@ Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,R,xtraj,utraj,xdottraj,op
 S = FunctionHandleTrajectory(@(t) recompS(Ssqrt.eval(t)),[nX,nX],tspan);
 
 % note that this returns what we would normally call -K.  here u(t) = u_0(t) + K(t) (x(t) - x_0(t)) 
-K = FunctionHandleTrajectory(@(t)affineKsoln(t,obj,S,R,xtraj,utraj,options),[nU nX],tspan);
-
+K1 = FunctionHandleTrajectory(@(t)affineKsoln1(t,obj,S,R,xtraj,utraj,options),[nU nX],tspan);
+K2 = FunctionHandleTrajectory(@(t)affineKsoln2(t,obj,S,R,xtraj,utraj,options),[nU nU],tspan);
 
 if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
   warning('designing full-state feedback controller but plant has different output frame than state frame'); 
 end
   
-ltvsys = LinearSystem([],[],[],[],[],K);
+ltvsys = AffineSystem([],[],[],[],[],[],[],K1,K2);
 
 ltvsys = setInputFrame(ltvsys,CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix));
 obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ltvsys.getInputFrame,eye(nX),-xtraj));
@@ -132,13 +132,20 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,xdottraj,optio
   Sdot{3} = -(-S{2}'*B*Ri*B'*S{2}/4 + S{2}'*c);  
 end
     
-function K = affineKsoln(t,plant,Straj,Rtraj,xtraj,utraj,options)
+function K1 = affineKsoln1(t,plant,Straj,Rtraj,xtraj,utraj,options)
   S = Straj.eval(t); Ri = inv(Rtraj.eval(t)); x0=xtraj.eval(t); u0 = utraj.eval(t);
   nX = length(x0); nU = length(u0);
   [f,df] = geval(@plant.dynamics,t,x0,u0,options);
   B = df(:,nX+1+(1:nU));
-  K{1} = -Ri*B'*S{1};
-  K{2} = -.5*Ri*B'*S{2};
+  K1 = -Ri*B'*S{1};
+end
+
+function K2 = affineKsoln2(t,plant,Straj,Rtraj,xtraj,utraj,options)
+  S = Straj.eval(t); Ri = inv(Rtraj.eval(t)); x0=xtraj.eval(t); u0 = utraj.eval(t);
+  nX = length(x0); nU = length(u0);
+  [f,df] = geval(@plant.dynamics,t,x0,u0,options);
+  B = df(:,nX+1+(1:nU));
+  K2 = -.5*Ri*B'*S{2};
 end
 
 function S = recompS(Ssqrt)

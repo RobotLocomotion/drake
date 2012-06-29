@@ -161,11 +161,7 @@ classdef AffineSystem < PolynomialSystem
       % try to keep feedback between polynomial systems polynomial.  else,
       % kick out to DrakeSystem
       %
-      
-      if ~isTI(sys1) || ~isTI(sys2)
-        error('time-varying not implemented yet');
-      end
-      
+            
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,false);
       [sys2,sys1] = matchCoordinateFramesForCombination(sys2,sys1,true);
 
@@ -190,18 +186,24 @@ classdef AffineSystem < PolynomialSystem
       
       [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2);
 
-      Ac(:,sys1ind) = [sys1.Ac + sys1.Bc*sys2.D*sys1.C; sys2.Bc*sys1.C];
-      Ac(:,sys2ind) = [sys1.Bc*sys2.C; sys2.Ac + sys2.Bc*sys1.D*sys2.C];
+      Ac=[]; Ad=[]; C=[];
+      if ~isempty(sys1ind)
+        Ac(:,sys1ind) = [sys1.Ac + sys1.Bc*sys2.D*sys1.C; sys2.Bc*sys1.C];
+        Ad(:,sys1ind) = [sys1.Ad + sys1.Bd*sys2.D*sys1.C; sys2.Bd*sys1.C];
+        C(:,sys1ind) = sys1.C;
+      end
+      if ~isempty(sys2ind)
+        Ac(:,sys2ind) = [sys1.Bc*sys2.C; sys2.Ac + sys2.Bc*sys1.D*sys2.C];
+        Ad(:,sys2ind) = [sys1.Bd*sys2.C; sys2.Ad + sys2.Bd*sys1.D*sys2.C];
+        C(:,sys2ind) = sys1.D*sys2.C;
+      end
+        
       Bc = [sys1.Bc; sys2.Bc*sys1.D];
       xcdot0 = [sys1.Bc*sys2.D*sys1.y0 + sys1.Bc*sys2.y0 + sys1.xcdot0; sys2.Bc*sys1.D*sys2.y0 + sys2.Bc*sys1.y0 + sys2.xcdot0];
       
-      Ad(:,sys1ind) = [sys1.Ad + sys1.Bd*sys2.D*sys1.C; sys2.Bd*sys1.C];
-      Ad(:,sys2ind) = [sys1.Bd*sys2.C; sys2.Ad + sys2.Bd*sys1.D*sys2.C];
       Bd = [sys1.Bd; sys2.Bd*sys1.D];
       xdn0 = [sys1.Bd*sys2.D*sys1.y0 + sys1.Bd*sys2.y0 + sys1.xdn0; sys2.Bd*sys1.D*sys2.y0 + sys2.Bd*sys1.y0 + sys2.xdn0];
       
-      C(:,sys1ind) = sys1.C;
-      C(:,sys2ind) = sys1.D*sys2.C;
       D = sys1.D;
       y0 = sys1.D*sys2.y0 + sys1.y0;
       
@@ -233,10 +235,6 @@ classdef AffineSystem < PolynomialSystem
       % kick out to DrakeSystem
       %
       
-      if ~isTI(sys1) || ~isTI(sys2)
-        error('time-varying not implemented yet');
-      end
-
       [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
 
       if ~isa(sys2,'PolynomialSystem') || any(~isinf([sys2.umin;sys2.umax]))
@@ -253,18 +251,24 @@ classdef AffineSystem < PolynomialSystem
       
       [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2);
 
-      Ac(:,sys1ind) = [sys1.Ac; sys2.Bc*sys1.C]; 
-      Ac(:,sys2ind) = [zeros(getNumContStates(sys1),getNumStates(sys2)); sys2.Ac];
+      Ac=[]; Ad=[]; C=[];
+      if ~isempty(sys1ind)
+        Ac(:,sys1ind) = [sys1.Ac; sys2.Bc*sys1.C];
+        Ad(:,sys1ind) = [sys1.Ad; sys2.Bd*sys1.C];
+        C(:,sys1ind) = sys2.D*sys1.C;
+      end
+      if ~isempty(sys2ind)
+        Ac(:,sys2ind) = [zeros(getNumContStates(sys1),getNumStates(sys2)); sys2.Ac];
+        Ad(:,sys2ind) = [zeros(getNumDiscStates(sys1),getNumStates(sys2)); sys2.Ad];
+        C(:,sys2ind) = sys2.C;
+      end
+        
       Bc = [sys1.Bc; sys2.Bc*sys1.D];
       xcdot0 = [sys1.xcdot0; sys2.Bc*sys1.y0 + sys2.xcdot0];
       
-      Ad(:,sys1ind) = [sys1.Ad; sys2.Bd*sys1.C]; 
-      Ad(:,sys2ind) = [zeros(getNumDiscStates(sys1),getNumStates(sys2)); sys2.Ad];
       Bd = [sys1.Bd; sys2.Bd*sys1.D];
       xdn0 = [sys1.xdn0; sys2.Bd*sys1.y0 + sys2.xdn0];
 
-      C(:,sys1ind) = sys2.D*sys1.C;
-      C(:,sys2ind) = sys2.C;
       D = sys2.D*sys1.D;
       y0 = sys2.D*sys1.y0 + sys2.y0;
       
