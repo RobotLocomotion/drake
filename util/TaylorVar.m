@@ -44,7 +44,7 @@ classdef TaylorVar
       d = reshape(obj.f,obj.dim);
       for o=1:length(obj.df)
         if (any(obj.df{o}(:)))
-          warning('converting taylorvar to double even though it has non-zero gradients.  gradient information will be lost!'); 
+          warning('Drake:TaylorVar:DoubleConversion','converting taylorvar to double even though it has non-zero gradients.  gradient information will be lost!'); 
         end
       end
     end
