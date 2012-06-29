@@ -111,10 +111,10 @@ classdef Trajectory < DrakeSystem
       a = FunctionHandleTrajectory(@(t) subsasgn(a.eval(t),s,b.eval(t)),size(subsasgn(a.eval(breaks(1)),s,b.eval(breaks(1)))),breaks);
     end
 
-    function b = subsref(a,s)
-      breaks = a.getBreaks();
-      b = FunctionHandleTrajectory(@(t) subsref(a.eval(t),s),size(subsref(a.eval(breaks(1)),s)),breaks);
-    end
+%    function b = subsref(a,s)
+%      breaks = a.getBreaks();
+%      b = FunctionHandleTrajectory(@(t) subsref(a.eval(t),s),size(subsref(a.eval(breaks(1)),s)),breaks);
+%    end
     
     function obj = shiftTime(obj,offset)
       error('not implemented yet');
