@@ -35,7 +35,7 @@ switch class(Qf)
     sizecheck(Qf,[nX,nX]);
     Qf = {Qf,zeros(nX,1),0};
   case 'PolynomialLyapunovFunction'
-    Vf=Qf.Vpoly;
+    Vf=Qf.getPoly(tspan(end));
     x=Qf.getFrame.poly;
     Vf=subss(Vf,x,x+xtraj.eval(tspan(end)));
     Qf=cell(3,1);
@@ -87,8 +87,8 @@ if (nargout>1)
 %  Vtraj = FunctionHandleTrajectory(@(t) p_x'*(S.eval(t) + Sdot(t)*(p_t-t))*p_x, [1 1],tspan);
   Sdotsqrt = @(t)affineSdynamics(t,Ssqrt.eval(t),obj,Q,R,xtraj,utraj,xdottraj,options);
   Sdot = @(t) recompSdot(Ssqrt.eval(t),Sdotsqrt(t));
-  Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan, obj.getStateFrame);
-  V=TimeVaryingPolynomialLyapunovFunction(Vtraj);
+  Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan);
+  V=PolynomialLyapunovFunction(ltvsys.getInputFrame,Vtraj);
   % todo: i could dig into the ODESolution with taylorvar to get higher
   % order, if Vddot was ever needed.
 end

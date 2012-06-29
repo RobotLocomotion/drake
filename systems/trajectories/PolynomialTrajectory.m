@@ -1,16 +1,26 @@
-classdef PolynomialTrajectory < Trajectory
+classdef PolynomialTrajectory 
+% Like a trajectory object, but it returns an msspoly for each t (via
+% function handles).  Note that it does not derive from trajectory because
+% it does not make sense as a trajectory in some contents (e.g. it should
+% not be a DrakeSystem)
+  
+% todo: replace this with a class for polynomials with Time-Varying
+% Coefficients (from a trajectory).  get rid of the PolynomialTrajectory
+% class completely.  see Bug 1006.
 
+  
   properties
     handle
     breaks
-    polyframe
+    tspan
+    dim
     p_t
+%    p_x
   end
   
   methods 
-    function obj = PolynomialTrajectory(handle,breaks,polyframe)
-      error('obsolete.  trying not to use this anymore'); 
-      obj = obj@Trajectory(0);
+    function obj = PolynomialTrajectory(handle,breaks)
+      checkDependency('spot_enabled');
       if (nargin>0)
         if (~isa(handle,'function_handle')) error('handle should be a function handle'); end
         obj.handle=handle;
@@ -19,17 +29,10 @@ classdef PolynomialTrajectory < Trajectory
         typecheck(p,'msspoly');
         obj.dim = size(p);
         obj.tspan = [min(breaks), max(breaks)];
-
-        typecheck(frame,'CoordinateFrame');
-        obj.polyframe = frame;
-
-        v=decomp(p);
-        t_ind = match(msspoly('t',1),v);
-        if (any(t_ind)) % could be empty.. that's ok.
-          obj.p_t = v(find(t_ind)); 
-        end
-        b = match([obj.p_t;obj.polyframe.poly],v);
-        if (any(b==0)) error('polynomial contains terms that are not in the output frame'); end
+        p_t = msspoly('t',1);
+%        x=decomp(p);
+%        t_ind = match(p_t,x);
+%        obj.p_x = x(find(~t_ind));  % x is everything except t
       end      
     end
 
@@ -43,12 +46,6 @@ classdef PolynomialTrajectory < Trajectory
       end
     end
     
-    function y = polyeval(obj,t,x)  
-      % returns the double of the msspoly evaluated at x
-      p = eval(obj,t);
-      y = double(msubs(p,obj.polyframe.poly,x));
-    end
-    
     function p = deriv(obj,t)
       sizecheck(t,1);  % only handle single time requests
       p = obj.handle(t);
@@ -59,14 +56,15 @@ classdef PolynomialTrajectory < Trajectory
       end
     end
     
-    function y = polyderiv(obj,t,x)
-      p = deriv(obj,t);
-      y = double(msubs(p,obj.polyframe.poly,x));
-    end
-    
     function t = getBreaks(obj)
     % return the list of accurate/reliable points
       t = obj.breaks;
+    end
+    
+    function s = size(obj,dim)
+      s=obj.dim;
+      if (length(s)==1) s=[s,1]; end
+      if (nargin>1) s=s(dim); end
     end
         
   end

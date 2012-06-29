@@ -1,7 +1,7 @@
 classdef LyapunovFunction 
 % interface class for Lyapunov functions
   
-  properties (SetAccess=private,GetAccess=private)
+  properties (SetAccess=protected,GetAccess=private)
     frame
     time_invariant_flag = false;
   end
@@ -27,6 +27,10 @@ classdef LyapunovFunction
     
     function fr=getFrame(obj)
       fr = obj.frame;
+    end
+    
+    function b = isTI(obj)
+      b = obj.time_invariant_flag;
     end
   end
 end

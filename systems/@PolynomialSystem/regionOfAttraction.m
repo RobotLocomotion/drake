@@ -289,7 +289,7 @@ end
 function V = levelSetMethod(V0,f,options)
 
   x = V0.getFrame.poly;
-  [T,V,f] = balance(x,V0.Vpoly,f);
+  [T,V,f] = balance(x,V0.getPoly,f);
 
   %% compute Vdot
   Vdot = diff(V,x)*f;
