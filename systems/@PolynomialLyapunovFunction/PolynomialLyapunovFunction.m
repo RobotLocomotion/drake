@@ -27,9 +27,9 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
     
     function V = eval(obj,t,x)  
       if isempty(obj.Vpoly)
-        V = double(subs(obj.Vpolytraj.eval(t),[obj.p_t;obj.frame.poly],[t;x]));
+        V = double(subs(obj.Vpolytraj.eval(t),[obj.p_t;obj.getFrame.poly],[t;x]));
       else
-        V = double(subs(obj.Vpoly,[obj.p_t;obj.frame.poly],[t;x]));
+        V = double(subs(obj.Vpoly,[obj.p_t;obj.getFrame.poly],[t;x]));
       end
     end
     

@@ -1,27 +1,39 @@
-function Vtraj = sampledFiniteTimeVerification(sys,G,Vtraj0,ts,xtraj,utraj,options)
+function V = sampledFiniteTimeVerification(sys,ts,G,varargin) 
 % Attempts to find the largest funnel, defined by the time-varying
-% one-level set of Vtraj, which verifies (using SOS over state at finite 
+% one-level set of V, which verifies (using SOS over state at finite 
 % sample points in time) initial conditions to end inside the one-level set
 % of the goal region G at time ts(end).  
+%
+% V = sampledFinitTimeVerification(sys,ts,G,V0,options)
+%   uses the LyapunovFunction V0 as the initial guess
+% V = sampledFinitTimeVerification(sys,ts,G,x0,options)
+%   attempts to construct a LyapunovFunction around the trajectory x0
 % 
-% Uses a moving coordinate system to check Vdot along the trajectory.  This
-% means that if you try to check Vdot yourself, it may not be always less
-% than zero, unless you also move the coordinate system along the
-% trajectory.
-%
-% @param sys PolynomialTrajectorySystem that you want to verify.
-% @param ...
-%
-% @param options options structure
-%   @options rho0_tau initial rho (set large to make the initial guess drop
+% @param sys PolynomialSystem that you want to verify.
+% @param ts sample times
+% @param G the goal region.  can be a PolynomialLyapunovFunction or a nX by
+% nX matrix which defines a quadratic form centered at the goal.
+% @param V0 a PolynomialLyapunovFunction which is the initial guess
+% @param x0 a Trajectory in the state frame of sys around which an initial
+% Lyapunov candidate is defined.
+% 
+% @option rho0_tau initial rho (set large to make the initial guess drop
 %   rho quickly)
-%   @
+% @option max_iterations limit on number of alternations in bilinear search
+% @option converged_tol tolerance (in units of cost-to-go) for bilinear
+% alternations
+% @option stability set to true to additionally verify that trajectories
+% converge (exponentially) to x0 (or the origin in the V0 frame)
+% @option plot_rho set to true for visual progress/debugging output
+% @option degL1 polynomial degree of the first lagrange multiplier
+% @option degL2 polynomial degree of the second lagrange multiplier
 %
-% @retval Vtraj Lyapunov function along a trajectory
+% @retval V a time-varying PolynomialLyapunovFunction who's one-level set
+% defines the verified invariant region.
 %
 % Implements the algorithm described in http://arxiv.org/pdf/1010.3013v1
 
-x=sys.p_x;
+x=sys.getStateFrame.poly;
 t=msspoly('t',1);
 ts=ts(:);
 
@@ -39,21 +51,19 @@ if (~isfield(options,'converged_tol')) options.converged_tol=.01; end
 if (~isfield(options,'stability')) options.stability=false; end  % true implies that we want exponential stability
 if (~isfield(options,'plot_rho')) options.plot_rho = true; end
 
-if (isfield(options,'monom_order')) error('monom_order is no longer used.  try degL1'); end
-
-if (isnumeric(G) && ismatrix(G) && all(size(G)==[num_x,num_x]))
+if (isnumeric(G) && ismatrix(G) && all(size(G)==[num_xc,num_xc]))
+  fr = CoordinateFrame([sys.getStateFrame.name,' - xG'],num_xc,'x');
   xf=xtraj.eval(ts(end)); xf=xf(num_xd+(1:num_xc));
-  G = (x-xf)'*G*(x-xf);
+  sys.getStateFrame.addTransform(AffineTransform(sys.getStateFrame,fr,[zeros(num_xc,num_xd),eye(num_xc)],-xf));
+  fr.addTransform(AffineTransform(fr,sys.getStateFrame,[zeros(num_xd,num_xc);eye(num_xc)],xf));
+  G = PolynomialLyapunovFunction(fr,fr.poly'*G*fr.poly);
 end
-typecheck(G,'msspoly');
-sizecheck(G,[1 1]);
-
-typecheck(Vtraj0,'PolynomialTrajectory');
-sizecheck(Vtraj0,[1 1]);
+typecheck(G,'PolynomialLyapunovFunction');
+typecheck(Vtraj0,'PolynomialLyapunovFunction');
 
 
 %% for now, let's require that G matches V at the final conditions
-if (~equalpoly(G,Vtraj0.eval(ts(end))))
+if (~equalpoly(G.getPoly(ts(end)),Vtraj0.getPoly(ts(end))))
   error('for now, I require that G matches V at the final conditions');
 end  
 
@@ -283,11 +293,6 @@ function m=sampleCheck(x,V,Vdot,rho,rhodot)
   end
 end
 
-
-function y=doubleSafe(x)
-  y=double(x);
-  if (~isa(y,'double')) error('double failed'); end
-end
 
 function tf=equalpoly(A,B)
 

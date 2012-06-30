@@ -31,9 +31,9 @@ if (isa(varargin{1},'Trajectory'))
 
   p_xu = [p_x; p_u];
   
+  typecheck(x0traj,'Trajectory');
   sizecheck(x0traj,num_x);
-  sizecheck(u0traj,num_u);
-
+  
   % note: i should probably search for the transform before kicking out an error
   if (x0traj.getOutputFrame ~= sys.getStateFrame) error('x0traj does not match state frame'); end
   if (isempty(u0traj))
@@ -42,6 +42,8 @@ if (isa(varargin{1},'Trajectory'))
     u0traj = setOutputFrame(u0traj,sys.getInputFrame);
     breaks = x0traj.getBreaks();
   else
+    typecheck(u0traj,'Trajectory');
+    sizecheck(u0traj,num_u);
     if (u0traj.getOutputFrame ~= sys.getInputFrame) error('u0traj does not match input frame'); end
     breaks = unique([x0traj.getBreaks(),u0traj.getBreaks()]);
   end
@@ -64,7 +66,7 @@ if (isa(varargin{1},'Trajectory'))
     yhat=[];
   end
 
-  polysys = PolynomialTrajectorySystem(xdothat,xnhat,yhat,num_u,sys.isDirectFeedthrough());
+  polysys = PolynomialTrajectorySystem(sys.getInputFrame,sys.getStateFrame,sys.getOutputFrame,xdothat,xnhat,yhat,sys.isDirectFeedthrough());
   polysys = setInputLimits(polysys,sys.umin,sys.umax);
   
   if (0) %num_xc==2 && num_xd==0)  % very useful for debugging.  consider making it an option
