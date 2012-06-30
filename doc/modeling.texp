@@ -24,11 +24,11 @@ vector $y$.
 \end{tikzpicture}
 \end{center}
 
-As we will see, dynamical systems in \robotlib can be instantiated in a number of different ways.  A system can be described by a block of C code (see for instance section~\ref{s:simulinksystem}), but many of the algorithms implemented in \robotlib operate symbolically on the governing equations of the dynamical systems.  For this reason, the preferred approach is (for rigid body dynamics) to use the Drake URDF interface or alternatively to describe your dynamics in \matlab code by deriving from the \mcode{DrakeSystem} interface class.
-
+As we will see, dynamical systems in \robotlib can be instantiated in a number of different ways.  A system can be described by a block of C code (see for instance section~\ref{s:simulinksystem}), but many of the algorithms implemented in \robotlib operate symbolically on the governing equations of the dynamical systems.  For this reason, the preferred approach is to use the Drake URDF interface (for rigid body dynamics) or alternatively to describe your dynamics in \matlab code by deriving from the \mcode{DrakeSystem} interface class.
 
 \subsection{Universal Robot Description Format (URDF)}
 
+Coming soon.  
 
 \subsection{Writing your own dynamics}
 
@@ -281,17 +281,8 @@ These special cases are implemented by classes derived from \mcode{DrakeSystem}.
 You should always attempt to derive from the deepest class in the hierarchy that
 describes your system.  
 
-
-Some of the algorithms available for simulation and
-analysis of dynamical systems need to make assumptions about the
-smoothness of the equations governing the dynamics of the systems they
-are operating on.  For this reason, the methods for implementing
-dynamical systems are designed to force you to be explicit about when
-these smoothness assumptions are valid.  
-
-
 In some cases it is possible to convert between these derived
-classes.  For example, converting a rigid-body system to a rational
+classes.  For example, it is possible to convert a rigid-body system to a rational
 polynomial system (e.g., by changing coordinates through a
 stereographic projection).  Methods which implement these conversions are
 provided whenever possible.  
@@ -299,7 +290,8 @@ provided whenever possible.
 \todo{xcubed example again, but this time deriving from
 polynomialsystem}.
 
-\subsubsection{Providing User Gradients}
+\todo{describe user gradients}
+%\subsubsection{Providing User Gradients}
 
 
 
@@ -361,7 +353,8 @@ if a polynomial system is feedback combined with a \simulink Block,
 then the new system is a DynamicalSystem, but not a PolynomialSystem.  
 
 A combination of two systems should return a system of the type that
-is the least common ancestor in the \href{\doxygen/inherits.html}{class hierarchy}.  With two exceptions:  combinations with
+is the least common ancestor in the
+\href{\doxygen/inherits.html}{class hierarchy}.  There are two exceptions:  combinations with
 a hybrid system stay hybrid, and combinations with a stochastic system
 stay stochastic.  \todo{Stochastic Hybrid Systems are not implemented yet,
 but it wouldn't be hard.}
