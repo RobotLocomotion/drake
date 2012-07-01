@@ -1,4 +1,4 @@
-classdef StateMachineControl < HybridRobotLibSystem
+classdef StateMachineControl < HybridDrakeSystem
 % This controller is my reconstruction of Raibert's 3 part
 % controller.  A few gaps have been filled in, but I believe that
 % it is very close to the original. -- Russ
@@ -17,7 +17,7 @@ classdef StateMachineControl < HybridRobotLibSystem
   
   methods
     function obj = StateMachineControl(desired_speed)
-      obj = obj@HybridRobotLibSystem();
+      obj = obj@HybridDrakeSystem();
       
       if (nargin<1) desired_speed = .5; end
       T_s = .425;

@@ -1,4 +1,4 @@
-classdef PlanarQuadPlant < SecondOrderPlant
+classdef PlanarQuadPlant < SecondOrderSystem
 
   % state:  
   %  q(1) - x position
@@ -17,7 +17,7 @@ classdef PlanarQuadPlant < SecondOrderPlant
   
   methods
     function obj = PlanarQuadPlant()
-      obj = obj@SecondOrderPlant(3,2,true);
+      obj = obj@SecondOrderSystem(3,2,true);
     end
     
     function qdd = sodynamics(obj,t,q,qd,u)
