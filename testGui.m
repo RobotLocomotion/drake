@@ -3,14 +3,16 @@ function testGui
 h=figure(1302); clf
 clear global runNode_mutex;
 
-root = uitreenode('v0','tests','All Tests',[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
+data=struct('pass',0,'fail',0,'wait',0);
+root = uitreenode('v0','All Tests',sprintf('<html>All Tests &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait),[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
+set(root,'UserData',data);
 crawlDir('examples',root,false);
 
 [tree,cont] = uitree('v0','Root',root);
 expandAll(tree,root);
 %crawlDir('.',root,true);
 
-set(tree,'NodeSelectedCallback', @runNode);
+set(tree,'NodeSelectedCallback', @runSelectedNode);
 set(cont,'BusyAction','queue');
 resizeFcn([],[],cont);
 set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,cont),'WindowStyle','docked');
@@ -34,7 +36,9 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs)
   p = pwd;
   cd(pdir);
   
-  node = uitreenode('v0',pdir,pdir,[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
+  data=struct('pass',0,'fail',0,'wait',0);
+  node = uitreenode('v0',pdir,['<html>',pdir,sprintf(' &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait)],[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
+  set(node,'UserData',data);
   pnode.add(node);
   files=dir('.');
   
@@ -63,6 +67,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs)
       m = staticMethods(testname);
       for j=1:length(m)
         if (checkMethod(files(i).name,m{j},'NOTEST'))
+          disp(['skipping ',testname,'.',m{j}]);
           continue;
         end
         
@@ -86,43 +91,89 @@ function node = addTest(node,testname)
   n = uitreenode('v0',testname,['<html>',testname,'</html>'],[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],true);
   set(n,'UserData',data);
   node.add(n);
+  
+  updateParentNodes(node,'wait',1);
 end
 
-function runNode(tree,ev)
-  nodes = tree.getSelectedNodes;
-  node = nodes(1);
+function updateParentNodes(node,field,delta)
   data = get(node,'UserData');
-
-  global runNode_mutex;
-  if ~isempty(runNode_mutex)
-    node.setName(['<html><font color="gray">[WAITING]</font> ',data.test,'</html>']);
-    tree.reloadNode(node);
-    runNode_mutex{end+1}=ev;
-    return;
-  end
-  runNode_mutex{1}=ev;
-  
-  node.setName(['<html><font color="blue">[RUNNING]</font> ',data.test,'</html>']);
-  tree.reloadNode(node);
-  pass = runTest(data.path,data.test);
-  if (pass)
-    node.setName(['<html><font color="green">[PASSED]</font> ',data.test,'</html>']);
+  data = setfield(data,field,getfield(data,field)+delta);
+  set(node,'UserData',data);
+  v = get(node,'Value');
+  if (data.fail>0)
+    node.setName(['<html>',v,sprintf(' &nbsp;&nbsp;<i>(passed:%d, <font color="red"><b>failed:%d</b></font>, not yet run:%d)</i></html>',data.pass,data.fail,data.wait)]);
   else
-    node.setName(['<html><font color="red"><b>[FAILED]</b></font> ',data.test,'</html>']);
+    node.setName(['<html>',v,sprintf(' &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait)]);
   end
-  tree.reloadNode(node);
-  torun = runNode_mutex(2:end);
-  runNode_mutex = [];
   
-  for i=1:length(torun)
-    runNode(tree,torun{i});
+  if ~isempty(node.getParent)
+    updateParentNodes(node.getParent,field,delta);
+  end
+end
+
+function runSelectedNode(tree,ev)
+  nodes = tree.getSelectedNodes; node=nodes(1);
+  runNode(tree,node);
+end
+
+function runNode(tree,node)
+  data = get(node,'UserData');
+  if (isfield(data,'test'))
+    global runNode_mutex;
+    if ~isempty(runNode_mutex)
+      node.setName(['<html><font color="gray">[WAITING]</font> ',data.test,'</html>']);
+      tree.reloadNode(node);
+      runNode_mutex{end+1}=ev;
+      return;
+    end
+    runNode_mutex{1}=node;
+    
+    node.setName(['<html><font color="blue">[RUNNING]</font> ',data.test,'</html>']);
+    tree.reloadNode(node);
+    pass = runTest(data.path,data.test);
+    switch(data.status)
+      case 0
+        updateParentNodes(node.getParent,'wait',-1);
+      case 1
+        updateParentNodes(node.getParent,'pass',-1);
+      case 2
+        updateParentNodes(node.getParent,'fail',-1);
+    end
+      
+    if (pass)
+      node.setName(['<html><font color="green">[PASSED]</font> ',data.test,'</html>']);
+      data.status = 1;
+      updateParentNodes(node.getParent,'pass',1);
+      set(node,'UserData',data);
+    else
+      node.setName(['<html><font color="red"><b>[FAILED]</b></font> ',data.test,'</html>']);
+      data.status = 2;
+      updateParentNodes(node.getParent,'fail',1);
+      set(node,'UserData',data);
+    end
+    tree.reloadNode(node);
+    torun = runNode_mutex(2:end);
+    runNode_mutex = [];
+    
+    for i=1:length(torun)
+      runNode(tree,node);
+    end
+  else
+    iter = node.breadthFirstEnumeration;
+    while iter.hasMoreElements
+      n=iter.nextElement;
+      d=get(n,'UserData');
+      if isfield(d,'test')
+        runNode(tree,n);
+      end
+    end
   end
 end
 
 function pass = runTest(path,test)
   p=pwd;
   cd(path);
-  disp(['running ',path,'/',test,'...']);
+%  disp(['running ',path,'/',test,'...']);
   try
     feval(test);
   catch ex
@@ -221,8 +272,7 @@ while true  % check the file for the strings
     end
   end
   if (bInMethod)
-    strings={'for','while','switch','try','if'};
-    endcount = endcount + length(keywordfind(tline,strings));
+    endcount = endcount + length(keywordfind(tline,{'for','while','switch','try','if'}));
     endcount = endcount - length(keywordfind(tline,'end'));
     
     for i=1:length(strings)
