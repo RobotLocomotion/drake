@@ -1,4 +1,4 @@
-function runAllTests(numToSkip,bAbortOnFail)
+function runAllTests(numToSkip,options)
 
 % Recurses through the Drake directories, running all test scripts 
 % (in test subdirectories) and all methods/scripts in the examples directory.
@@ -18,15 +18,23 @@ function runAllTests(numToSkip,bAbortOnFail)
 %
 
 if (nargin<1) numToSkip = 0; end
-if (nargin<2) bAbortOnFail = true; end
+if (nargin<2) options = struct(); end
 
-info.bAbortOnFail = bAbortOnFail;
+if ~isfield(options,'abort_on_fail') options.abort_on_fail = false; end
+
+info.bAbortOnFail = options.abort_on_fail;
 info.numToSkip = numToSkip;
 info.passcount = 0;
 info.failcount = 0;
 info.initialpwd = pwd;
 
 disp('');
+
+if (options.show_gui)
+  figure(301);
+  info.gui_parent = uitreenode('v0','root','All Tests',[],false);
+  [tree,control] = uitree('v0','Root',info.gui_parent);
+end
 
 %pause off;
 info=run_tests_in('examples',info,false);
@@ -57,11 +65,6 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
     if (~strcmpi(files(i).name(end-1:end),'.m')) continue; end
     if (strcmpi(files(i).name,'Contents.m')) continue; end
     
-    % reject if there is a notest
-    if (checkFile(files(i).name,'NOTEST'))
-      continue; 
-    end
-    
     testname = files(i).name;
     ind=find(testname=='.',1);
     testname=testname(1:(ind-1));
@@ -69,6 +72,17 @@ function info = run_tests_in(pdir,info,bOnlyLookForTestDirs)
     % if it's a class, check if it is "runnable"
     % todo: run any public, static, non-hidden, non-abstract methods?
     isClass = checkFile(files(i).name,'classdef');
+    if (isClass)
+      if (checkClass(files(i).name,'NOTEST'))
+        continue; 
+      end
+      
+    else
+      % reject if there is a notest
+      if (checkFile(files(i).name,'NOTEST'))
+        continue;
+      end
+    end
     if (isClass && ~ismethod(testname,'run'))
       continue;  % skip classes that aren't runnable
     end
@@ -145,13 +159,13 @@ if ~iscell(strings), strings = {strings}; end
 bfound = false;
 fid=fopen(filename);
 if (fid<0) return; end  % couldn't open the file.  skip it.
-while true  % check the file for the string "NOTEST" (case specific)
+while true  % check the file for the strings
   tline = fgetl(fid);
   if (~ischar(tline))
     break;
   end
   for i=1:length(strings)
-    if (strfind(tline,strings{i}))
+    if (~isempty(strfind(tline,strings{i})))
       fclose(fid);
       bfound = true;
       return;
@@ -159,5 +173,115 @@ while true  % check the file for the string "NOTEST" (case specific)
   end
 end
 fclose(fid);
+
+end
+
+function bfound = checkClass(filename,strings)
+
+if ~iscell(strings), strings = {strings}; end
+strings = lower(strings);
+
+bfound = false;
+bInMethod = false;
+endcount = 0;
+fid=fopen(filename);
+if (fid<0) return; end  % couldn't open the file.  skip it.
+while true  % check the file for the strings
+  tline = fgetl(fid);
+  if (~ischar(tline))
+    break;
+  end
+  tline = lower(tline);
+  commentind = strfind(tline,'%');
+  if (~isempty(commentind)) tline = tline(1:commentind(1)-1); end
+  if (~bInMethod && ~isempty(strfind(tline,'function')))
+    bInMethod = true;
+    endcount=0;
+  end
+  if (bInMethod)
+    strings={'for','while','switch','try','if'};
+    endcount = endcount + length(keywordfind(tline,strings));
+    endcount = endcount - length(keywordfind(tline,'end'));
+%    disp([num2str(endcount,'%2d'),': ',tline]);
+    if endcount<0
+      bInMethod=false;
+    end
+  end
+end
+fclose(fid);
+
+end
+
+function bfound = checkMethod(class,methodname,strings)
+
+if ~iscell(strings), strings = {strings}; end
+strings = lower(strings);
+
+bfound = false;
+bInMethod = false;
+endcount = 0;
+fid=fopen(filename);
+if (fid<0) return; end  % couldn't open the file.  skip it.
+while true  % check the file for the strings
+  tline = fgetl(fid);
+  if (~ischar(tline))
+    break;
+  end
+  tline = lower(tline);
+  commentind = strfind(tline,'%');
+  if (~isempty(commentind)) tline = tline(1:commentind(1)-1); end
+  if (~bInMethod && ~isempty(strfind(tline,'function')))
+    if (~isempty(strfind(tline,lower(methodname))))
+      bInMethod = true;
+      endcount=0;
+    end
+  end
+  if (bInMethod)
+    strings={'for','while','switch','try','if'};
+    endcount = endcount + length(keywordfind(tline,strings));
+    endcount = endcount - length(keywordfind(tline,'end'));
+    
+    for i=1:length(strings)
+      if (~isempty(strfind(tline,strings{i})))
+        fclose(fid);
+        bfound = true;
+        return;
+      end
+    end
+%    disp([num2str(endcount,'%2d'),': ',tline]);
+    if endcount<0
+      fclose(fid);
+      return;
+    end
+  end
+end
+fclose(fid);
+
+end
+
+
+function inds = keywordfind(line,strs)
+
+if (~iscell(strs)) strs={strs}; end
+
+inds=[];
+for i=1:length(strs)
+  s = strs{i};
+  a = strfind(line,s);
+  % check that it is bracketed by a non-letter
+  j=1;
+  while j<=length(a)
+    if (a(j)~=1 && isletter(line(a(j)-1)))
+      a(j)=[];
+      continue;
+    end
+    if (a(j)+length(s)<=length(line) && isletter(line(a(j)+length(s))))
+      a(j)=[];
+      continue;
+    end
+    inds=[inds,a(j)];
+    j=j+1;
+  end
+end  
 
 end

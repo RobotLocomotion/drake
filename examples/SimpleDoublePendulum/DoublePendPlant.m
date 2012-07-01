@@ -1,4 +1,4 @@
-classdef DoublePendPlant < ManipulatorPlant 
+classdef DoublePendPlant < Manipulator
   
   properties
     % parameters from Spong95 (except inertias are now relative to the
@@ -13,7 +13,7 @@ classdef DoublePendPlant < ManipulatorPlant
   
   methods
     function obj = DoublePendPlant
-      obj = obj@ManipulatorPlant(2,2);
+      obj = obj@Manipulator(2,2);
       obj.I1 = obj.m1*obj.l1^2;
       obj.I2 = obj.m2*obj.l2^2;
     end

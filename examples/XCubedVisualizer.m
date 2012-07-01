@@ -1,9 +1,9 @@
-classdef xcubedVisualizer < Visualizer
+classdef XCubedVisualizer < Visualizer
 % just for fun, plot a ball on a hill (who's negative gradient is the 
 % \dot{x} = -x + x^3 dynamics)
 
 methods 
-  function obj=xcubedVisualizer()
+  function obj=XCubedVisualizer()
     obj=obj@Visualizer(1);
   end
   

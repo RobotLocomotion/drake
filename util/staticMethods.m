@@ -10,7 +10,12 @@ function m=staticMethods(classname)
 %m = m1(static_ind);
 
 %% a better? way
-c=meta.class.fromName(classname);
+try 
+  c=meta.class.fromName(classname);
+catch ex
+  disp(['parse error in ',classname]);
+  rethrow(ex);
+end
 m=c.Methods;
 b=cellfun(@(a) a.Static && ~a.Hidden && ~a.Abstract && strcmp(a.Access,'public'),m);
 m=cellfun(@(a) a.Name,m(b),'UniformOutput',false);

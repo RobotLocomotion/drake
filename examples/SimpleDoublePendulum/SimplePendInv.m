@@ -1,4 +1,4 @@
-classdef SimplePendInv < SmoothRobotLibSystem
+classdef SimplePendInv < DrakeSystem
   % demonstration of feedback linearization (used in lecture 1 of 6.832)
   % Double Pendulum is made "feedback equivalent" to a Simple Pendulum
   
@@ -8,7 +8,7 @@ classdef SimplePendInv < SmoothRobotLibSystem
   
   methods
     function obj = SimplePendInv(plant)
-      obj = obj@SmoothRobotLibSystem(0,0,4,2,true,true);
+      obj = obj@DrakeSystem(0,0,4,2,true,true);
       obj.p = plant;
     end
     

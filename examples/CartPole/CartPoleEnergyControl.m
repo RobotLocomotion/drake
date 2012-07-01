@@ -1,4 +1,4 @@
-classdef CartPoleEnergyControl < HybridRobotLibSystem
+classdef CartPoleEnergyControl < HybridDrakeSystem
   
   methods
     function obj = CartPoleEnergyControl(plant)
