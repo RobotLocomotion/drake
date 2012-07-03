@@ -33,12 +33,12 @@ expandAll(tree,root);
 
 hbutton1 = uicontrol('String','Reload (keep history)','callback',@(h,env) cleanup(h,env,tree),'BusyAction','cancel');
 hbutton2 = uicontrol('String','Reload (flush history)','callback',@(h,env) reloadGui(h,env,tree),'BusyAction','cancel');
-%hbutton3 = uicontrol('String','Edit Selected','callback',@(h,env) editSelected(h,env,tree));
+htext = uicontrol('Style','text','String','Click to run tests.  Shift-click to edit test file.','BackgroundColor',[1 1 1]);
 
 set(tree,'NodeSelectedCallback', @runSelectedNode);
 set(treecont,'BusyAction','queue');
-resizeFcn([],[],treecont,hbutton1,hbutton2);
-set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,treecont,hbutton1,hbutton2));
+resizeFcn([],[],treecont,hbutton1,hbutton2,htext);
+set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,treecont,hbutton1,hbutton2,htext));
 set(h,'HandleVisibility','off');%,'WindowStyle','docked'%,'CloseRequestFcn',[]);
 
 jtree = handle(tree.getTree,'CallbackProperties');
@@ -161,12 +161,13 @@ function node=findNode(tree,data)
   node=[];
 end
 
-function resizeFcn(src,ev,treecont,hbutton1,hbutton2)
+function resizeFcn(src,ev,treecont,hbutton1,hbutton2,htext)
   pos = get(1302,'Position');
   set(hbutton1,'Position',[0,pos(4)-20,pos(3)/2,20]);
   set(hbutton2,'Position',[pos(3)/2,pos(4)-20,pos(3)/2,20]);
 %  set(hbutton3,'Position',[2*pos(3)/3,pos(4)-20,pos(3)/3,20]);
-  set(treecont,'Position',[0,0,pos(3),pos(4)-20]);
+  set(htext,'Position',[0,pos(4)-40,pos(3),18]);
+  set(treecont,'Position',[0,0,pos(3),pos(4)-38]);
 end
 
 function expandAll(tree,node)
