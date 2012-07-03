@@ -1,4 +1,4 @@
-function testGui
+function tree=testGui
 
 % Opens a gui for running unit tests
 %
@@ -13,19 +13,79 @@ root = uitreenode('v0','All Tests',sprintf('<html>All Tests &nbsp;&nbsp;<i>(pass
 set(root,'UserData',data);
 crawlDir('examples',root,false);
 
-[tree,cont] = uitree('v0','Root',root);
+[tree,treecont] = uitree('v0','Root',root);
 expandAll(tree,root);
 %crawlDir('.',root,true);
 
+hbutton1 = uicontrol('String','Halt Tests','callback',@(h,env) cleanup(h,env,tree),'BusyAction','cancel');
+hbutton2 = uicontrol('String','Reset Unit Tests','callback',@(h,env) reloadGui(h,env,tree),'BusyAction','cancel');
+
 set(tree,'NodeSelectedCallback', @runSelectedNode);
-set(cont,'BusyAction','queue');
-resizeFcn([],[],cont);
-set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,cont),'WindowStyle','docked');
+set(treecont,'BusyAction','queue');
+resizeFcn([],[],treecont,hbutton1,hbutton2);
+set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,treecont,hbutton1,hbutton2),'WindowStyle','docked');
 
 end
 
-function resizeFcn(src,ev,cont)
-  set(cont,'Position',get(gcf,'Position')*[zeros(2,4);zeros(2),eye(2)]);
+function tree=reloadGui(h,env,tree)
+  megaclear;
+  load drake_config;
+  cd(conf.root);
+  tree=testGui;
+end
+
+function cleanup(h,env,tree)
+  userdata={};
+  iter = tree.getRoot.breadthFirstEnumeration;
+  while iter.hasMoreElements;
+    node = iter.nextElement;
+    if (node.isLeaf)
+      d = get(node,'UserData');
+      if ~isfield(d,'test'), continue; end  % false leaf
+      userdata{end+1} = get(node,'UserData');
+    end
+  end
+  backupname = '.testGuiData.mat';
+  save(backupname,'userdata');
+  tree=reloadGui(h,env,tree);
+  load(backupname);
+  delete(backupname);
+  
+  iter = tree.getRoot.breadthFirstEnumeration;
+  while iter.hasMoreElements;
+    node = iter.nextElement;
+    if (node.isLeaf)
+      d = get(node,'UserData');
+      if ~isfield(d,'test'), continue; end % false leaf
+      pathmatches = userdata(strcmp(d.path,cellfun(@(a) getfield(a,'path'),userdata,'UniformOutput',false)));
+      if (~isempty(pathmatches))
+        testmatch = pathmatches(strcmp(d.test,cellfun(@(a) getfield(a,'test'),pathmatches,'UniformOutput',false)));
+        if (~isempty(testmatch))
+          set(node,'UserData',testmatch{1});
+          switch (testmatch{1}.status)
+            case 0
+              % do nothing, already set to wait
+            case 1
+              updateParentNodes(node.getParent,'wait',-1);
+              updateParentNodes(node.getParent,'pass',1);
+              node.setName(['<html><font color="green">[PASSED]</font> ',d.test,'</html>']);
+            case 2
+              updateParentNodes(node.getParent,'wait',-1);
+              updateParentNodes(node.getParent,'fail',1);
+              node.setName(['<html><font color="red"><b>[FAILED]</b></font> ',d.test,'</html>']);
+          end
+          tree.reloadNode(node);
+        end
+      end
+    end
+  end
+end
+
+function resizeFcn(src,ev,treecont,hbutton1,hbutton2)
+  pos = get(gcf,'Position');
+  set(hbutton1,'Position',[0,pos(4)-20,pos(3)/2,20]);
+  set(hbutton2,'Position',[pos(3)/2,pos(4)-20,pos(3)/2,20]);
+  set(treecont,'Position',[0,0,pos(3),pos(4)-20]);
 end
 
 function expandAll(tree,node)
@@ -192,7 +252,7 @@ function pass = runTest(path,test)
 
   s=dbstatus;
   % useful for debugging: if 'dbstop if error' is on, then don't use try catch. 
-  if ~all(cellfun(@isempty,strfind({s.cond},'error'))) || ~all(cellfun(@isempty,strfind({s.cond},'warning')))
+  if any(strcmp('error',{s.cond})) ||any(strcmp('warning',{s.cond}))
     feval(test);
   else
     try
@@ -205,6 +265,12 @@ function pass = runTest(path,test)
       return;
     end
   end
+  
+  a=warning;
+  if (~strcmp(a(1).state,'on'))
+    error('somebody turned off warnings on me!');  % see bug
+  end
+  
   pass = true;
   cd(p);
 end
