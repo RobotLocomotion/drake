@@ -14,6 +14,9 @@ function tree=unitTest(autorun)
 % All unit tests should always be run (and all tests should pass) before 
 % anything is committed back into the Drake repository.
 
+% todo: figure out a good way to clear classes before/after runTest,
+% without doing the clear all that zaps the gui content, too.
+
 h=figure(1302);   
 clear global runNode_mutex;
 set(h,'HandleVisibility','on');
@@ -360,6 +363,9 @@ function pass = runTest(path,test)
   else  % for older versions of matlab
     rand('seed',sum(100*clock));
   end
+  force_close_system();
+  close all;
+  clearvars -global -except runNode_mutex;
 
   s=dbstatus;
   % useful for debugging: if 'dbstop if error' is on, then don't use try catch. 
@@ -392,7 +398,7 @@ function pass = runTest(path,test)
   force_close_system();
   close all;
   clearvars -global -except runNode_mutex;
-
+  
   t = timerfind;
   if (~isempty(t)) stop(t); end
   
