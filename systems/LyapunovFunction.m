@@ -22,7 +22,7 @@ classdef LyapunovFunction
     end
     
     function display(obj)
-      display(obj.Vpoly);
+      display(obj.getPoly);
     end
     
     function fr=getFrame(obj)

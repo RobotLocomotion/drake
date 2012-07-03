@@ -49,11 +49,11 @@ classdef SineSys < DrakeSystem
       % the levelset V<1 is the region of attraction
       V=regionOfAttraction(pp,0);
 
-      if (V.frame ~= pp.getStateFrame) error('oops.  i assumed this was ok'); end
+      if (V.getFrame ~= pp.getStateFrame) error('oops.  i assumed this was ok'); end
       
       % plot everything.
       xs = -5:.01:5;
-      plot(xs,-sin(xs),xs,double(msubs(pp.p_dynamics,pp.getStateFrame.poly,xs)),xs,double(msubs(V.Vpoly,V.frame.poly,xs))-1,xs,0*xs,'linewidth',2);
+      plot(xs,-sin(xs),xs,double(msubs(pp.getPolyDynamics,pp.getStateFrame.poly,xs)),xs,double(msubs(V.getPoly,V.getFrame.poly,xs))-1,xs,0*xs,'linewidth',2);
       axis([-5,5,-1.5,1.5])
       legend('-sin(xs)','poly approx','roa (V-1)');
     end

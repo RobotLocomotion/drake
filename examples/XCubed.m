@@ -17,9 +17,9 @@ classdef XCubed < PolynomialSystem
   
   methods
     function obj = XCubed()
-      obj = obj@PolynomialSystem(1,0,0,1,false);
+      obj = obj@PolynomialSystem(1,0,0,1,false,true,false);
     end
-    function xdot = dynamics(obj,t,x,u)
+    function xdot = dynamicsRHS(obj,t,x,u)
       xdot = -x+x^3;
     end
     function y=output(obj,t,x,u)

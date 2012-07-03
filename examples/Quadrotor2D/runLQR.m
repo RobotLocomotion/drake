@@ -1,41 +1,44 @@
-function c = runLQR(p)
+function c = runLQR
 
-if (nargin<1)
-  p = PlanarQuadPlant;
-end
+p = PlanarQuadPlant;
+v = PlanarQuadVisualizer();
 
-x0 = zeros(6,1);
-u0 = p.m*p.g/2 * [1;1];
-Q = diag([10 10 10 1 1 (p.L/2/pi)]);  %Q = diag([10*ones(1,3) ones(1,3)]);
-R = [0.1 0.05; 0.05 0.1];  %R = diag([0.1 0.1]);
+[c,V] = hoverLQR(p);
 
-[c,V0] = tilqr(p,x0,u0,Q,R);
+%sys = feedback(p,c);
+%for i=1:5
+%  xtraj = simulate(sys,[0 4]);
+%  v.playback(xtraj);
+%end
+%return;
 
-sys = feedback(p,c);
-
-pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
-options=struct();
-options.degL1=2;
-%options.method='bilinear';
-%options.degV=4;
-V=regionOfAttraction(pp,x0,2*V0,options);
-
-figure(1); plotFunnel(V,x0,[3 6]); 
+figure(1); plotFunnel(V,[],[3 6]); 
 xlabel('$\theta$','interpreter','latex');
 ylabel('$\dot\theta$','interpreter','latex');
 
-if (nargout<1)
 
-  v = PlanarQuadVisualizer();
-  
-  % compute points on the boundary
-  x = pp.p_x;
-  S = double(diff(diff(V,x)',x))/2;
+n=10;
+x0=zeros(6,1);
+y=getLevelSet(V,[],struct('num_samples',n));
+for i=1:n
+  xtraj=simulate(sys,[0 4],x0 + .99*y(:,i));
+  figure(1); fnplt(xtraj,[3 6]);
+  figure(25);
+  v.playback(xtraj);
+  if (norm(xtraj.eval(4)-x0)>1e-2)
+    error('initial condition from verified ROA didn''t get to the top (in 4 seconds)');
+  end
+end
 
-  K = 5;
-  X = randn(2,K);
-  X = X./repmat(sqrt(sum(X.^2,1)),2,1);
-  X = chol(S([3 6],[3 6]))\X;
+
+% compute points on the boundary
+x = pp.p_x;
+S = double(diff(diff(V,x)',x))/2;
+
+K = 5;
+X = randn(2,K);
+X = X./repmat(sqrt(sum(X.^2,1)),2,1);
+X = chol(S([3 6],[3 6]))\X;
   X = [0 0 ; 0 0 ; 1 0; 0 0 ; 0 0; 0 1]*X;
 
   for i = 1:K

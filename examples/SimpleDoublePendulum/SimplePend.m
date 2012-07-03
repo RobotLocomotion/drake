@@ -10,6 +10,8 @@ classdef SimplePend < DrakeSystem
     function obj = SimplePend(plant)
       obj = obj@DrakeSystem(0,0,4,2,true,true);
       obj.p = plant;
+      obj = obj.setInputFrame(plant.getStateFrame);
+      obj = obj.setOutputFrame(plant.getInputFrame);
     end
     
     function u = output(obj,t,junk,x)

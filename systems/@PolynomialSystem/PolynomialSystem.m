@@ -14,15 +14,9 @@ classdef PolynomialSystem < DrakeSystem
       obj = obj@DrakeSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
       obj.rational_flag = rational_flag;
     end
-
-    function lhs = dynamicsLHS(obj,t,x,u)
-      error('rational polynomial systems with continuous state must implement this');
-    end
-
-    function rhs = dynamicsRHS(obj,t,x,u)
-      error('polynomial systems with continuous state must implement this');
-    end
-    
+  end
+  
+  methods (Sealed=true)
     function xcdot = dynamics(obj,t,x,u)
       xcdot = dynamicsRHS(obj,t,x,u);
       if (obj.rational_flag)
@@ -36,7 +30,19 @@ classdef PolynomialSystem < DrakeSystem
 %          dexdotdx = reshape(double(subs(diff(obj.p_mass_matrix(:),p_x),p_x,x)),nX,[])*blkdiag(cellxcdot{:}); 
 %          df = e\(df - [zeros(nX,1),dexdotdx,zeros(nX,obj.num_u)]);
     end
-    
+  end    
+
+  
+  
+  methods
+    function lhs = dynamicsLHS(obj,t,x,u)
+      error('rational polynomial systems with continuous state must implement this');
+    end
+
+    function rhs = dynamicsRHS(obj,t,x,u)
+      error('polynomial systems with continuous state must implement this');
+    end
+
     function obj = setRationalFlag(obj,tf)
       obj.rational_flag = tf;
     end
@@ -104,7 +110,7 @@ classdef PolynomialSystem < DrakeSystem
       [p_dynamics_rhs,p_dynamics_lhs]=getPolyDynamics(obj);
       p_output=getPolyOutput(obj);
       p_state_constraints=getPolyStateConstraints(obj);
-      polysys = SpotPolynomialSystem(obj.num_xc,0,obj.num_u,obj.num_u,obj.direct_feedthrough_flag,obj.time_invariant_flag,...
+      polysys = SpotPolynomialSystem(obj.getInputFrame,obj.getStateFrame,obj.getOutputFrame,...
         -p_dynamics_rhs,p_dynamics_lhs,[],p_output,p_state_constraints);
     end
     
