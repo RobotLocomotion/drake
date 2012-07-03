@@ -167,8 +167,12 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       x0 = [x0;repmat(0,getNumStates(obj)-length(x0),1)];
     end
     
+      
     function f=getStateFrame(obj)
       error('Drake:HybridDrakeSystem:StateFrame','Hybrid systems do not have a unique state frame.  You should get the individual mode state-frames instead'); 
+    end
+    function obj=refreshStateFrame(obj)
+      % intentionally do nothing.  hybrid systems don't have a state frame
     end
     
     function [xcdot,df] = dynamics(obj,t,x,u)

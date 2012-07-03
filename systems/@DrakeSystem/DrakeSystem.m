@@ -211,15 +211,18 @@ classdef DrakeSystem < DynamicalSystem
       if (num_xc<0) error('num_xc must be >= 0'); end
       obj.num_xc = num_xc;
       obj.num_x = obj.num_xd + obj.num_xc;
-      if (isempty(obj.getStateFrame) || obj.num_x~=obj.getStateFrame.dim)
-        obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],obj.num_x,'x'));
-      end
+      obj = refreshStateFrame(obj);
     end
     function obj = setNumDiscStates(obj,num_xd)
       % Guards the num_states variable
       if (num_xd<0) error('num_xd must be >= 0'); end
       obj.num_xd = num_xd;
       obj.num_x = obj.num_xc + obj.num_xd;
+      obj = refreshStateFrame(obj);
+    end
+    function obj = refreshStateFrame(obj)
+      % checks if the dimension of state frame matched num_x.  if it does
+      % not, then it creates a new frame of the correct size
       if (isempty(obj.getStateFrame) || obj.num_x~=obj.getStateFrame.dim)
         obj=setStateFrame(obj,CoordinateFrame([class(obj),'State'],obj.num_x,'x'));
       end
