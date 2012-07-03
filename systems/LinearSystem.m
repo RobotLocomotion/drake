@@ -8,12 +8,16 @@ classdef LinearSystem < AffineSystem
 
     function sys=feedback(sys1,sys2)
       sys = feedback@AffineSystem(sys1,sys2);
-      sys = extractLinearSystem(sys);
+      if isa(sys2,'LinearSystem')
+        sys = extractLinearSystem(sys);
+      end
     end
 
     function sys=cascade(sys1,sys2)
       sys = cascade@AffineSystem(sys1,sys2);
-      sys = extractLinearSystem(sys);
+      if isa(sys2,'LinearSystem')
+        sys = extractLinearSystem(sys);
+      end
     end
   end
 end
