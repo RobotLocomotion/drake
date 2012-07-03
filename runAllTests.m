@@ -1,3 +1,3 @@
 function runAllTests()
 
-testGui(true);
+unitTest(true);

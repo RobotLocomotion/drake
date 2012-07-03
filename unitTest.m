@@ -1,4 +1,4 @@
-function tree=testGui(autorun)
+function tree=unitTest(autorun)
 
 % Opens a gui for running unit tests
 %
@@ -46,7 +46,7 @@ function tree=reloadGui(h,env,tree)
   megaclear;
   load drake_config;
   cd(conf.root);
-  tree=testGui;
+  tree=unitTest;
 end
 
 function cleanup(h,env,tree)
@@ -56,7 +56,7 @@ function cleanup(h,env,tree)
 end
 
 function saveTree(tree)
-  backupname = '.testGuiData.mat';
+  backupname = '.unitTestData.mat';
   userdata={};
   iter = tree.getRoot.breadthFirstEnumeration;
   while iter.hasMoreElements;
@@ -67,12 +67,12 @@ function saveTree(tree)
       userdata{end+1} = get(node,'UserData');
     end
   end
-  backupname = '.testGuiData.mat';
+  backupname = '.unitTestData.mat';
   save(backupname,'userdata');
 end
 
 function loadTree(tree)
-  backupname = '.testGuiData.mat';
+  backupname = '.unitTestData.mat';
   load(backupname);
   
   iter = tree.getRoot.breadthFirstEnumeration;
