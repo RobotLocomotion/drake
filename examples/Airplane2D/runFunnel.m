@@ -1,5 +1,5 @@
 function [V, utraj,xtraj]=runFunnel(p)
-clear all
+
 if (nargin<1)
   p = PlanePlant();
 end
@@ -17,10 +17,11 @@ options = struct();
 options.rho0_tau = 10;
 %options.max_iterations = 3;
 
-%xtraj
 
 [c,V]=tvlqr(p,xtraj,utraj,Q,R,diag([1 1 10 10]));
-poly = taylorApprox(sys,xtrajClosedLoop,[],3);
+sys = feedback(p,c);
+utraj = ConstantTrajectory(zeros(p.getNumInputs,1)); utraj=utraj.setOutputFrame(p.getInputFrame); 
+poly = taylorApprox(sys,xtraj,utraj,3);
 
 %options.stability = true;
 

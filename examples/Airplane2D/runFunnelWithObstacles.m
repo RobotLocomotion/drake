@@ -1,5 +1,5 @@
 function [V, utraj,xtraj]=runFunnelWithObstacles(p)
-clear all
+
 if (nargin<1)
   p = PlanePlant();
 end
@@ -10,7 +10,6 @@ p = setInputLimits(p,-inf,inf);
 hold on;
 h=fnplt(xtraj,[1 2]);
 set(h,'Color',[1 0 0]);
-%keyboard;
 hold off
 delete(h);
 
@@ -22,15 +21,9 @@ options = struct();
 options.rho0_tau = 10;
 %options.max_iterations = 3;
 
-[tv,sys,xtrajClosedLoop,utraj,V,Vf] = tvlqrClosedLoop(p,xtraj,utraj,Q,R,Qf);
-
-% useful for tuning Q,R,and Qf
-% figure(25);
-% plotFunnel(V,xtraj,[1 2]);
-% fnplt(xtraj,[1 2]); 
-% return;
-
-poly = taylorApprox(sys,xtrajClosedLoop,[],3);
+[c,V]=tvlqr(p,xtraj,utraj,Q,R,diag([1 1 10 10]));
+sys = feedback(p,c);
+utraj = ConstantTrajectory(zeros(p.getNumInputs,1)); utraj=utraj.setOutputFrame(p.getInputFrame); 
 
 options.stability = true;
 options.max_iterations=20;

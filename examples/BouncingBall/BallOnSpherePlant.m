@@ -53,9 +53,31 @@ classdef BallOnSpherePlant < HybridDrakeSystem
     function run
       b=BallOnSpherePlant;
       v=BallOnSphereVisualizer;
-      x=b.simulate([0 5],[.190;1.2;0;0]);   % not zeno
-%      x=b.simulate([0 5],[.191;1.2;0;0]);  % zeno
+
+      zeno = false;
+      try 
+        x=b.simulate([0 5],[.190;1.2;0;0]);   % not zeno
+      catch ex
+        if strcmp(ex.identifier,'Simulink:Engine:SolverConsecutiveZCNum')
+          zeno=true;
+        else
+          rethrow(ex);
+        end
+      end
       v.playback(x);
+      if (zeno) error('hit zeno for initial conditions that should not zeno'); end
+      
+      zeno = false;
+      try
+        x=b.simulate([0 5],[.191;1.2;0;0]);  % zeno
+      catch ex
+        if strcmp(ex.identifier,'Simulink:Engine:SolverConsecutiveZCNum')
+          zeno=true;
+        else
+          rethrow(ex);
+        end
+      end
+      if (~zeno) error('should have zeno''d from these initial conditions, but did not'); end
     end
   end
   

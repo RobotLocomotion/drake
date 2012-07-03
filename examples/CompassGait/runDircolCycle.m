@@ -13,6 +13,8 @@ tf = .713;
 xf = x0;
 N=15;
 utraj0 = {PPTrajectory(foh(linspace(0,t1,N),zeros(1,N))),PPTrajectory(foh(linspace(0,tf-t1,N),zeros(1,N)))};
+utraj0{1} = utraj0{1}.setOutputFrame(p.getInputFrame);
+utraj0{2} = utraj0{2}.setOutputFrame(p.getInputFrame);
 
 con.mode{1}.mode_num = 1;
 con.mode{2}.mode_num = 2;
@@ -37,6 +39,7 @@ con.mode{2}.T.ub = .5;
 
 options.method='dircol';
 options.xtape0='simulate';
+
 tic
 %options.grad_test = true;
 [utraj,xtraj,info] = trajectoryOptimization(p,{@cost,@cost},{@finalcost,@finalcost},{x0, x1},utraj0,con,options);
