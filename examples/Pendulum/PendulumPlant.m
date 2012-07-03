@@ -166,7 +166,7 @@ classdef PendulumPlant < SecondOrderSystem
       sys = feedback(pd,c);
       n=10;
       x0=[pi;0];
-      y=getLevelSet(V,x0,struct('num_samples',n));
+      y=getLevelSet(V,[],struct('num_samples',n));
       for i=1:n
         xtraj=simulate(sys,[0 4],x0 + .99*y(:,i));
         if (norm(xtraj.eval(4)-x0)>1e-2)

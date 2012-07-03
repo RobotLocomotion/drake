@@ -110,7 +110,7 @@ classdef AffineSystem < PolynomialSystem
       end
     end
 
-    function [xcdot,df] = dynamics(obj,t,x,u)
+    function [xcdot,df] = dynamicsRHS(obj,t,x,u)
       if (isTI(obj))
         xcdot=obj.Ac*x;
         if (obj.num_u) xcdot=xcdot+obj.Bc*u; end

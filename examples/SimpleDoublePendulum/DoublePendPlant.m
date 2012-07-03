@@ -16,6 +16,7 @@ classdef DoublePendPlant < Manipulator
       obj = obj@Manipulator(2,2);
       obj.I1 = obj.m1*obj.l1^2;
       obj.I2 = obj.m2*obj.l2^2;
+      obj = obj.setOutputFrame(obj.getStateFrame);
     end
     
     function [H,C,B] = manipulatorDynamics(obj,q,qd)

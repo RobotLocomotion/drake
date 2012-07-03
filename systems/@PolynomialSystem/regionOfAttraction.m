@@ -165,11 +165,11 @@ end
 %% for the bilinear search
 function V = bilinear(V0,f,options)
 
-  x = V0.frame.poly;
+  x = V0.getFrame.poly;
   num_x = length(x);
   V=V0;
   
-  [T,V0bal,fbal,S0,A] = balance(x,V0.Vpoly,f);
+  [T,V0bal,fbal,S0,A] = balance(x,V0.getPoly,f);
   rho = 1;  
 
   L1monom = monomials(x,0:options.degL1);
@@ -181,8 +181,8 @@ function V = bilinear(V0,f,options)
     last_vol = vol;
     
     % balance on every iteration (since V and Vdot are changing):
-    [T,Vbal,fbal]=balance(x,V.Vpoly,f,S0/rho,A);
-    V0bal=subss(V0.Vpoly,x,T*x);
+    [T,Vbal,fbal]=balance(x,V.getPoly,f,S0/rho,A);
+    V0bal=subss(V0.getPoly,x,T*x);
     
     [L1,sigma1] = findL1(x,fbal,Vbal,L1monom,options);
     L2 = findL2(x,Vbal,V0bal,rho,L2monom,options);
@@ -190,9 +190,9 @@ function V = bilinear(V0,f,options)
 %    vol = rho
     
     % undo balancing (for the next iteration, or if i'm done)
-    V.Vpoly = subss(Vbal,x,inv(T)*x);
+    V = PolynomialLyapunovFunction(V.getFrame,subss(Vbal,x,inv(T)*x));
     plotFunnel(V,zeros(num_x,1)); 
-    plotFunnel(PolynomialLyapunovFunction(V0.frame,V0.Vpoly/rho),zeros(num_x,1),[],struct('color',[.9 .3 .2])); drawnow;
+    plotFunnel(PolynomialLyapunovFunction(V0.getFrame,V0.getPoly/rho),zeros(num_x,1),[],struct('color',[.9 .3 .2])); drawnow;
     
     % check for convergence
     if ((vol - last_vol) < options.converged_tol*last_vol)

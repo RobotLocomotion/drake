@@ -1,6 +1,7 @@
+function simpleCTtest
 
-
-oldpath = addpath('..');
+oldpath = path;
+addpath('..');
 
 try 
 

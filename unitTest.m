@@ -28,19 +28,40 @@ crawlDir('examples',root,false);
 expandAll(tree,root);
 %crawlDir('.',root,true);
 
-hbutton1 = uicontrol('String','Halt Tests','callback',@(h,env) cleanup(h,env,tree),'BusyAction','cancel');
-hbutton2 = uicontrol('String','Reset Unit Tests','callback',@(h,env) reloadGui(h,env,tree),'BusyAction','cancel');
+hbutton1 = uicontrol('String','Reload (keep history)','callback',@(h,env) cleanup(h,env,tree),'BusyAction','cancel');
+hbutton2 = uicontrol('String','Reload (flush history)','callback',@(h,env) reloadGui(h,env,tree),'BusyAction','cancel');
+%hbutton3 = uicontrol('String','Edit Selected','callback',@(h,env) editSelected(h,env,tree));
 
 set(tree,'NodeSelectedCallback', @runSelectedNode);
 set(treecont,'BusyAction','queue');
 resizeFcn([],[],treecont,hbutton1,hbutton2);
-set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,treecont,hbutton1,hbutton2),'WindowStyle','docked','HandleVisibility','off');%,'CloseRequestFcn',[]);
+set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,treecont,hbutton1,hbutton2));
+set(h,'HandleVisibility','off');%,'WindowStyle','docked'%,'CloseRequestFcn',[]);
+
+jtree = handle(tree.getTree,'CallbackProperties');
+set(jtree,'KeyPressedCallback', @keyPressedCallback);
+set(jtree,'KeyReleasedCallback', @keyReleasedCallback);
 
 if (nargin>0 && autorun)
   tree.setSelectedNode(root);
 end
 
 end
+
+function keyPressedCallback(hTree,eventData)
+  global shift_down;
+  if (eventData.getKeyCode()==16)
+    shift_down = true;
+  end
+end
+
+function keyReleasedCallback(hTree,eventData)
+  global shift_down;
+  if (eventData.getKeyCode()==16)
+    shift_down = [];
+  end
+end
+
 
 function tree=reloadGui(h,env,tree)
   megaclear;
@@ -96,7 +117,7 @@ function loadTree(tree)
             case 2
               updateParentNodes(node.getParent,'wait',-1);
               updateParentNodes(node.getParent,'fail',1);
-              node.setName(['<html><font color="red"><b>[FAILED]</b></font> ',d.test,'</html>']);
+              node.setName(['<html><font color="red"><b>[FAILED]</b></font> ',d.test,'&nbsp;&nbsp;<font color="red"><i>',testmatch{1}.errmsg,'</i></font></html>']);
           end
           tree.reloadNode(node);
         end
@@ -138,9 +159,10 @@ function node=findNode(tree,data)
 end
 
 function resizeFcn(src,ev,treecont,hbutton1,hbutton2)
-  pos = get(gcf,'Position');
+  pos = get(1302,'Position');
   set(hbutton1,'Position',[0,pos(4)-20,pos(3)/2,20]);
   set(hbutton2,'Position',[pos(3)/2,pos(4)-20,pos(3)/2,20]);
+%  set(hbutton3,'Position',[2*pos(3)/3,pos(4)-20,pos(3)/3,20]);
   set(treecont,'Position',[0,0,pos(3),pos(4)-20]);
 end
 
@@ -207,7 +229,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs)
 end
 
 function node = addTest(node,testname)
-  data=struct('path',pwd,'test',testname,'status',0);
+  data=struct('path',pwd,'test',testname,'status',0,'errmsg','');
   n = uitreenode('v0',testname,['<html>',testname,'</html>'],[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],true);
   set(n,'UserData',data);
   node.add(n);
@@ -235,8 +257,24 @@ function runSelectedNode(tree,ev)
   nodes = tree.getSelectedNodes;
   if (~isempty(nodes))
     node=nodes(1);
-    tree=runNode(tree,node);
     tree.setSelectedNode([]);
+    global shift_down;
+    if ~isempty(shift_down) && shift_down
+      editNode(node);
+      shift_down = []; % because I'm about to move focus away and will miss the keyRelease event
+    else
+      tree=runNode(tree,node);
+    end
+  end
+end
+
+function editNode(node)
+  data=get(node,'UserData');
+  if isfield(data,'test')
+    p = pwd;
+    cd (data.path);
+    edit(data.test);
+    cd(p);
   end
 end
 
@@ -286,8 +324,9 @@ function tree=runNode(tree,node)
       updateParentNodes(node.getParent,'pass',1);
       set(node,'UserData',data);
     else
-      node.setName(['<html><font color="red"><b>[FAILED]</b></font> ',data.test,'</html>']);
       data.status = 2;
+      data.errmsg = lasterr;
+      node.setName(['<html><font color="red"><b>[FAILED]</b></font> ',data.test,'&nbsp;&nbsp;<font color="red"><i>',data.errmsg,'</i></font></html>']);
       updateParentNodes(node.getParent,'fail',1);
       set(node,'UserData',data);
     end
@@ -316,13 +355,19 @@ function pass = runTest(path,test)
   cd(path);
 %  disp(['running ',path,'/',test,'...']);
 
+  if (exist('rng'))
+    rng('shuffle'); % init rng to current date
+  else  % for older versions of matlab
+    rand('seed',sum(100*clock));
+  end
+
   s=dbstatus;
   % useful for debugging: if 'dbstop if error' is on, then don't use try catch. 
   if any(strcmp('error',{s.cond})) ||any(strcmp('warning',{s.cond}))
-    feval(test);
+    feval_in_contained_workspace(test);
   else
     try
-      feval(test);
+      feval_in_contained_workspace(test);
     catch ex
       pass = false;
       cd(p);
@@ -333,6 +378,7 @@ function pass = runTest(path,test)
       disp('*******************************************************');
       disp(getReport(ex,'extended'));
       disp('*******************************************************');
+      lasterr(ex.message,ex.identifier);
       %    rethrow(ex);
       return;
     end
@@ -352,6 +398,10 @@ function pass = runTest(path,test)
   
   pass = true;
   cd(p);
+end
+
+function feval_in_contained_workspace(f) % helps with scripts
+  feval(f);
 end
 
 function bfound = checkFile(filename,strings)
