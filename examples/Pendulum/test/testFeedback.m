@@ -5,7 +5,7 @@ oldpath=addpath([conf.root,'/examples/Pendulum']);
 
 try 
   p = PendulumPlant();
-  c = PendulumLQR(p);
+  c = balanceLQR(p);
   
   sys1=feedback(p,c);
   typecheck(sys1,'DrakeSystem');
