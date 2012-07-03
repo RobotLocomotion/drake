@@ -1,14 +1,25 @@
-function tree=testGui
+function tree=testGui(autorun)
 
 % Opens a gui for running unit tests
 %
+% Recurses through the Drake directories, locating all test scripts 
+% (in test subdirectories) and all testable methods/scripts/class static methods 
+% in the examples directory.
+%
+% A test function is any valid .m file which calls error() if the test
+% fails, and returns without error if the test passes. 
+%
+% crawls static methods, looks for NOTEST, ...
+%
+% All unit tests should always be run (and all tests should pass) before 
+% anything is committed back into the Drake repository.
 
-% todo: add buttons on the top for (a) reloading unit tests, (b) megaclear
-
-h=figure(1302); clf
+h=figure(1302);   
 clear global runNode_mutex;
+set(h,'HandleVisibility','on');
+clf;
 
-data=struct('pass',0,'fail',0,'wait',0);
+data=struct('pass',0,'fail',0,'wait',0,'path',pwd);
 root = uitreenode('v0','All Tests',sprintf('<html>All Tests &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait),[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
 set(root,'UserData',data);
 crawlDir('examples',root,false);
@@ -23,7 +34,11 @@ hbutton2 = uicontrol('String','Reset Unit Tests','callback',@(h,env) reloadGui(h
 set(tree,'NodeSelectedCallback', @runSelectedNode);
 set(treecont,'BusyAction','queue');
 resizeFcn([],[],treecont,hbutton1,hbutton2);
-set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,treecont,hbutton1,hbutton2),'WindowStyle','docked');
+set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,treecont,hbutton1,hbutton2),'WindowStyle','docked','HandleVisibility','off');%,'CloseRequestFcn',[]);
+
+if (nargin>0 && autorun)
+  tree.setSelectedNode(root);
+end
 
 end
 
@@ -35,6 +50,13 @@ function tree=reloadGui(h,env,tree)
 end
 
 function cleanup(h,env,tree)
+  saveTree(tree);
+  tree=reloadGui(h,env,tree);
+  loadTree(tree);
+end
+
+function saveTree(tree)
+  backupname = '.testGuiData.mat';
   userdata={};
   iter = tree.getRoot.breadthFirstEnumeration;
   while iter.hasMoreElements;
@@ -47,9 +69,11 @@ function cleanup(h,env,tree)
   end
   backupname = '.testGuiData.mat';
   save(backupname,'userdata');
-  tree=reloadGui(h,env,tree);
+end
+
+function loadTree(tree)
+  backupname = '.testGuiData.mat';
   load(backupname);
-  delete(backupname);
   
   iter = tree.getRoot.breadthFirstEnumeration;
   while iter.hasMoreElements;
@@ -81,6 +105,38 @@ function cleanup(h,env,tree)
   end
 end
 
+function saveMutex()
+  backupname = '.drake_unit_test_mutex.mat';
+  global runNode_mutex;
+  node_data = cellfun(@(a) get(a,'UserData'),runNode_mutex,'UniformOutput',false);
+  save(backupname,'node_data');
+end
+
+function loadMutex(tree)
+  backupname = '.drake_unit_test_mutex.mat';
+  global runNode_mutex;
+  load(backupname);
+  if ~isempty(node_data)
+    runNode_mutex = cellfun(@(a) findNode(tree,a),node_data,'UniformOutput',false);
+  end
+end
+
+function node=findNode(tree,data)
+  iter = tree.getRoot.breadthFirstEnumeration;
+  while iter.hasMoreElements
+    node = iter.nextElement;
+    d = get(node,'UserData');
+    if strcmp(d.path,data.path)
+      if isfield(data,'test') && isfield(d,'test') && strcmp(d.test,data.test)
+        return;
+      elseif ~isfield(data,'test') && ~isfield(d,'test') % matching directory node
+        return;
+      end
+    end
+  end
+  node=[];
+end
+
 function resizeFcn(src,ev,treecont,hbutton1,hbutton2)
   pos = get(gcf,'Position');
   set(hbutton1,'Position',[0,pos(4)-20,pos(3)/2,20]);
@@ -101,7 +157,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs)
   p = pwd;
   cd(pdir);
   
-  data=struct('pass',0,'fail',0,'wait',0);
+  data=struct('pass',0,'fail',0,'wait',0,'path',pdir);
   node = uitreenode('v0',pdir,['<html>',pdir,sprintf(' &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait)],[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
   set(node,'UserData',data);
   pnode.add(node);
@@ -132,7 +188,6 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs)
       m = staticMethods(testname);
       for j=1:length(m)
         if (checkMethod(files(i).name,m{j},'NOTEST'))
-          disp(['skipping ',testname,'.',m{j}]);
           continue;
         end
         
@@ -180,12 +235,12 @@ function runSelectedNode(tree,ev)
   nodes = tree.getSelectedNodes;
   if (~isempty(nodes))
     node=nodes(1);
-    runNode(tree,node);
+    tree=runNode(tree,node);
     tree.setSelectedNode([]);
   end
 end
 
-function runNode(tree,node)
+function tree=runNode(tree,node)
   data = get(node,'UserData');
   if (isfield(data,'test'))
     global runNode_mutex;
@@ -193,14 +248,28 @@ function runNode(tree,node)
       node.setName(['<html><font color="gray">[WAITING]</font> ',data.test,'</html>']);
       tree.reloadNode(node);
       runNode_mutex{end+1}=node;
+      saveMutex();
       return;
     end
     runNode_mutex{1}=node;
+    saveMutex();
     
     node.setName(['<html><font color="blue">[RUNNING]</font> ',data.test,'</html>']);
     tree.reloadNode(node);
     
+    saveTree(tree);
     pass = runTest(data.path,data.test);
+    if ~isa(tree,'javahandle_withcallbacks.com.mathworks.hg.peer.UITreePeer')
+      % somebody did a close all
+      tree=reloadGui([],[],tree);
+      loadTree(tree);
+    end
+    if ~exist('runNode_mutex')
+      % somebody did a clear all. 
+      global runNode_mutex;
+      loadMutex(tree);
+      node=findNode(tree,data);
+    end
     
     switch(data.status)
       case 0
@@ -223,23 +292,20 @@ function runNode(tree,node)
       set(node,'UserData',data);
     end
     tree.reloadNode(node);
-    if (exist('runNode_mutex'))
-      torun = runNode_mutex(2:end);
-      runNode_mutex = [];
+    torun = runNode_mutex(2:end);
+    runNode_mutex = [];
     
-      for i=1:length(torun)
-        runNode(tree,torun{i});
-      end
-    else
-      warning(['test:', data.test,' cleared the global variables. bad form. the queue of waiting tests has been lost']); 
+    for i=1:length(torun)
+      tree=runNode(tree,torun{i});
     end
   else
     iter = node.depthFirstEnumeration;
     while iter.hasMoreElements
       n=iter.nextElement;
       d=get(n,'UserData');
+      n=findNode(tree,d);  % in case I had to reload
       if isfield(d,'test')
-        runNode(tree,n);
+        tree=runNode(tree,n);
       end
     end
   end
@@ -260,7 +326,13 @@ function pass = runTest(path,test)
     catch ex
       pass = false;
       cd(p);
+      disp(' ');
+      disp(' ');
+      disp('*******************************************************');
+      disp(['* error in ',path,'/',test]);
+      disp('*******************************************************');
       disp(getReport(ex,'extended'));
+      disp('*******************************************************');
       %    rethrow(ex);
       return;
     end
@@ -270,6 +342,13 @@ function pass = runTest(path,test)
   if (~strcmp(a(1).state,'on'))
     error('somebody turned off warnings on me!');  % see bug
   end
+  
+  force_close_system();
+  close all;
+  clearvars -global -except runNode_mutex;
+
+  t = timerfind;
+  if (~isempty(t)) stop(t); end
   
   pass = true;
   cd(p);
@@ -352,9 +431,7 @@ while true  % check the file for the strings
     break;
   end
   tline = lower(tline);
-  commentind = strfind(tline,'%');
-  if (~isempty(commentind)) tline = tline(1:commentind(1)-1); end
-  if (~bInMethod && ~isempty(strfind(tline,'function')))
+  if (~bInMethod && ~isempty(keywordfind(tline,'function')))
     if (~isempty(strfind(tline,lower(methodname))))
       bInMethod = true;
       endcount=0;
@@ -386,6 +463,9 @@ end
 function inds = keywordfind(line,strs)
 
 if (~iscell(strs)) strs={strs}; end
+
+commentind = strfind(line,'%');
+if (~isempty(commentind)) line = line(1:commentind(1)-1); end
 
 inds=[];
 for i=1:length(strs)
