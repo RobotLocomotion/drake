@@ -6,7 +6,7 @@ p = PendulumPlant();
 p = setInputLimits(p,-inf,inf);
 
 % OKTOFAIL
-[utraj,xtraj]=runDircol(p);
+[utraj,xtraj]=swingUpTrajectory(p);
 
 Q=diag([10,1]);R=.1;
 [c,V] = tvlqr(p,xtraj,utraj,Q,R,Q);

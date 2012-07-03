@@ -1,5 +1,10 @@
 function testGui
 
+% Opens a gui for running unit tests
+%
+
+% todo: add buttons on the top for (a) reloading unit tests, (b) megaclear
+
 h=figure(1302); clf
 clear global runNode_mutex;
 
@@ -112,8 +117,12 @@ function updateParentNodes(node,field,delta)
 end
 
 function runSelectedNode(tree,ev)
-  nodes = tree.getSelectedNodes; node=nodes(1);
-  runNode(tree,node);
+  nodes = tree.getSelectedNodes;
+  if (~isempty(nodes))
+    node=nodes(1);
+    runNode(tree,node);
+    tree.setSelectedNode([]);
+  end
 end
 
 function runNode(tree,node)
@@ -123,14 +132,16 @@ function runNode(tree,node)
     if ~isempty(runNode_mutex)
       node.setName(['<html><font color="gray">[WAITING]</font> ',data.test,'</html>']);
       tree.reloadNode(node);
-      runNode_mutex{end+1}=ev;
+      runNode_mutex{end+1}=node;
       return;
     end
     runNode_mutex{1}=node;
     
     node.setName(['<html><font color="blue">[RUNNING]</font> ',data.test,'</html>']);
     tree.reloadNode(node);
+    
     pass = runTest(data.path,data.test);
+    
     switch(data.status)
       case 0
         updateParentNodes(node.getParent,'wait',-1);
@@ -152,14 +163,18 @@ function runNode(tree,node)
       set(node,'UserData',data);
     end
     tree.reloadNode(node);
-    torun = runNode_mutex(2:end);
-    runNode_mutex = [];
+    if (exist('runNode_mutex'))
+      torun = runNode_mutex(2:end);
+      runNode_mutex = [];
     
-    for i=1:length(torun)
-      runNode(tree,node);
+      for i=1:length(torun)
+        runNode(tree,torun{i});
+      end
+    else
+      warning(['test:', data.test,' cleared the global variables. bad form. the queue of waiting tests has been lost']); 
     end
   else
-    iter = node.breadthFirstEnumeration;
+    iter = node.depthFirstEnumeration;
     while iter.hasMoreElements
       n=iter.nextElement;
       d=get(n,'UserData');
@@ -174,13 +189,21 @@ function pass = runTest(path,test)
   p=pwd;
   cd(path);
 %  disp(['running ',path,'/',test,'...']);
-  try
+
+  s=dbstatus;
+  % useful for debugging: if 'dbstop if error' is on, then don't use try catch. 
+  if ~all(cellfun(@isempty,strfind({s.cond},'error'))) || ~all(cellfun(@isempty,strfind({s.cond},'warning')))
     feval(test);
-  catch ex
-    pass = false;
-    cd(p);
-    disp(getReport(ex,'extended'));
-    return;
+  else
+    try
+      feval(test);
+    catch ex
+      pass = false;
+      cd(p);
+      disp(getReport(ex,'extended'));
+      %    rethrow(ex);
+      return;
+    end
   end
   pass = true;
   cd(p);
