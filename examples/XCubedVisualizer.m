@@ -24,6 +24,7 @@ end
 methods (Static)
   function y=hill(x)
     y = .5*x.^2 - .25*x.^4;
+    % NOTEST
   end
 end
 
