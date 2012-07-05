@@ -29,6 +29,10 @@ classdef LyapunovFunction
       fr = obj.frame;
     end
     
+    function V=inFrame(obj)
+      error('not implemented yet'); % todo: implement this with function handles (need to make something like FunctionHandleLyapunovFunction)
+    end
+    
     function b = isTI(obj)
       b = obj.time_invariant_flag;
     end

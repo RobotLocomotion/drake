@@ -64,8 +64,8 @@ classdef BallOnSpherePlant < HybridDrakeSystem
           rethrow(ex);
         end
       end
-      v.playback(x);
       if (zeno) error('hit zeno for initial conditions that should not zeno'); end
+      v.playback(x);
       
       zeno = false;
       try

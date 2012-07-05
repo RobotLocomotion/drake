@@ -1,9 +1,9 @@
-function runLQR
+function runHinf
 
 d = CartPolePlant;
 d = setInputLimits(d,-inf,inf);
 v = CartPoleVisualizer;
-[c,V] = balanceLQR(d);
+[c,V] = balanceHinf(d);
 
 sys = feedback(d,c); 
 

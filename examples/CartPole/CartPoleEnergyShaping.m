@@ -13,10 +13,12 @@ classdef CartPoleEnergyShaping < DrakeSystem
       if (nargin>0)
         typecheck(plant,'CartPolePlant')
         obj.p = plant;
+        obj = obj.setInputFrame(plant.getStateFrame);
+        obj = obj.setOutputFrame(plant.getInputFrame);
       end
     end
     
-    function u = output(obj,t,junk,x)
+    function u = output(obj,t,~,x)
       Etilde = pend_energy(obj,x) - 1.05*pend_energy(obj,[0;pi;0;0]);
       u = -obj.k1*x(1) - obj.k2*x(3) + sat(obj.k3*Etilde*cos(x(2))*x(4),obj.k3limit);
       scope('CartPole','phase',x(2),x(4),struct('resetOnXval',false));

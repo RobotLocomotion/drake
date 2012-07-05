@@ -31,14 +31,16 @@ crawlDir('examples',root,false);
 expandAll(tree,root);
 %crawlDir('.',root,true);
 
-hbutton1 = uicontrol('String','Reload (keep history)','callback',@(h,env) cleanup(h,env,tree),'BusyAction','cancel');
-hbutton2 = uicontrol('String','Reload (flush history)','callback',@(h,env) reloadGui(h,env,tree),'BusyAction','cancel');
+hb = [];
+hb = [hb,uicontrol('String','Dock','callback',@dock)];
+hb = [hb,uicontrol('String','Reload (keep history)','callback',@(h,env) cleanup(h,env,tree),'BusyAction','cancel')];
+hb = [hb,uicontrol('String','Reload (flush history)','callback',@(h,env) reloadGui(h,env,tree),'BusyAction','cancel')];
 htext = uicontrol('Style','text','String','Click to run tests.  Shift-click to edit test file.','BackgroundColor',[1 1 1]);
 
 set(tree,'NodeSelectedCallback', @runSelectedNode);
 set(treecont,'BusyAction','queue');
-resizeFcn([],[],treecont,hbutton1,hbutton2,htext);
-set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,treecont,hbutton1,hbutton2,htext));
+resizeFcn([],[],treecont,hb,htext);
+set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,treecont,hb,htext));
 set(h,'HandleVisibility','off');%,'WindowStyle','docked'%,'CloseRequestFcn',[]);
 
 jtree = handle(tree.getTree,'CallbackProperties');
@@ -47,6 +49,20 @@ set(jtree,'KeyReleasedCallback', @keyReleasedCallback);
 
 if (nargin>0 && autorun)
   tree.setSelectedNode(root);
+end
+
+end
+
+function dock(h,env)
+
+% todo: replace string with the dock / undock icons?
+
+if (strcmp(get(1302,'WindowStyle'),'docked'))
+  set(1302,'WindowStyle','normal')
+  set(h,'String','Dock');
+else
+  set(1302,'WindowStyle','dock')
+  set(h,'String','Undock');
 end
 
 end
@@ -80,6 +96,8 @@ function cleanup(h,env,tree)
 end
 
 function saveTree(tree)
+  load drake_config;
+  cd(conf.root);
   backupname = '.unitTestData.mat';
   userdata={};
   iter = tree.getRoot.breadthFirstEnumeration;
@@ -96,6 +114,8 @@ function saveTree(tree)
 end
 
 function loadTree(tree)
+  load drake_config;
+  cd(conf.root);
   backupname = '.unitTestData.mat';
   load(backupname);
   
@@ -130,6 +150,8 @@ function loadTree(tree)
 end
 
 function saveMutex()
+  load drake_config;
+  cd(conf.root);
   backupname = '.drake_unit_test_mutex.mat';
   global runNode_mutex;
   node_data = cellfun(@(a) get(a,'UserData'),runNode_mutex,'UniformOutput',false);
@@ -137,6 +159,8 @@ function saveMutex()
 end
 
 function loadMutex(tree)
+  load drake_config;
+  cd(conf.root);
   backupname = '.drake_unit_test_mutex.mat';
   global runNode_mutex;
   load(backupname);
@@ -161,11 +185,11 @@ function node=findNode(tree,data)
   node=[];
 end
 
-function resizeFcn(src,ev,treecont,hbutton1,hbutton2,htext)
+function resizeFcn(src,ev,treecont,hb,htext)
   pos = get(1302,'Position');
-  set(hbutton1,'Position',[0,pos(4)-20,pos(3)/2,20]);
-  set(hbutton2,'Position',[pos(3)/2,pos(4)-20,pos(3)/2,20]);
-%  set(hbutton3,'Position',[2*pos(3)/3,pos(4)-20,pos(3)/3,20]);
+  for i=1:length(hb)
+    set(hb(i),'Position',[(i-1)*pos(3)/length(hb),pos(4)-20,pos(3)/length(hb),20]);
+  end
   set(htext,'Position',[0,pos(4)-40,pos(3),18]);
   set(treecont,'Position',[0,0,pos(3),pos(4)-38]);
 end

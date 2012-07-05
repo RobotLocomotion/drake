@@ -2,25 +2,18 @@ classdef CartPoleEnergyControl < HybridDrakeSystem
   
   methods
     function obj = CartPoleEnergyControl(plant)
+      obj = obj@HybridDrakeSystem(4,1);
+      
       obj = obj.addMode(CartPoleEnergyShaping(plant));
-      [lqr,V] = CartPoleLQR(plant);
+      [lqr,V] = balanceLQR(plant);
+      V = V.inFrame(plant.getStateFrame);
       obj = obj.addMode(lqr);
 
-      sys = feedback(plant,lqr);
-      pp = sys.taylorApprox(0,lqr.x0,[],3);  % make polynomial approximation
-      obj.x0 = lqr.x0;
-      obj.p_x = pp.p_x;
-      options.degL1 = 1;
-      obj.V = regionOfAttraction(pp,lqr.x0,V,options);
-%      obj.V = obj.V*1e-4;  % artificially assume basin is much bigger
-      
-      in_lqr_roa = inline('double(subs(obj.V,obj.p_x,obj.wrapInput(x-obj.x0)+obj.x0))-1','obj','t','junk','x');
+      in_lqr_roa = @(t,~,x) V.eval(t,x)-1;
       notin_lqr_roa = notGuard(obj,in_lqr_roa);
       
       obj = obj.addTransition(1,in_lqr_roa,@transitionIntoLQR,true,true);
       obj = obj.addTransition(2,notin_lqr_roa,@transitionOutOfLQR,true,true);
-      
-      obj = setModeOutputFlag(obj,false);
     end
 
     function [xn,to_mode,status]=transitionIntoLQR(obj,mode,t,x,u)
@@ -52,11 +45,5 @@ classdef CartPoleEnergyControl < HybridDrakeSystem
       end
     end
   end
-  
-  properties
-    x0
-    p_x
-    V
-  end
-  
+    
 end

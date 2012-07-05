@@ -1,4 +1,4 @@
-function [ltisys,V] = tiHinf(obj,x0,u0,Q,R,Bw,gamma)
+function [ltisys,Vcandidate] = tiHinf(obj,x0,u0,Q,R,Bw,gamma)
 % Suboptimal state-feedback H-infinity controller for LTI system with bound gamma.
 %
 % For continuous systems, the design is based on the dynamics
@@ -54,12 +54,30 @@ if (isempty(S))
   error('L2 gain gamma is infeasible.  Try increasing gamma.');
 end
 
-ltisys = LTIControl(x0,u0,K);
-ltisys = setAngleFlags(ltisys,obj.output_angle_flag,[],obj.input_angle_flag);
+if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
+  warning('designing full-state feedback controller but plant has different output frame than state frame'); 
+end
+
+  
+ltisys = LinearSystem([],[],[],[],[],-K);
+if (all(x0==0))
+  ltisys = setInputFrame(ltisys,obj.getStateFrame);
+else
+  ltisys = setInputFrame(ltisys,CoordinateFrame([obj.getStateFrame.name,' - ', mat2str(x0,3)],length(x0),obj.getStateFrame.prefix));
+  obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ltisys.getInputFrame,eye(length(x0)),-x0));
+  ltisys.getInputFrame.addTransform(AffineTransform(ltisys.getInputFrame,obj.getStateFrame,eye(length(x0)),+x0));
+end
+if (all(u0==0))
+  ltisys = setOutputFrame(ltisys,obj.getInputFrame);
+else
+  ltisys = setOutputFrame(ltisys,CoordinateFrame([obj.getInputFrame.name,' + ',mat2str(u0,3)],length(u0),obj.getInputFrame.prefix));
+  ltisys.getOutputFrame.addTransform(AffineTransform(ltisys.getOutputFrame,obj.getInputFrame,eye(length(u0)),u0));
+  obj.getInputFrame.addTransform(AffineTransform(obj.getInputFrame,ltisys.getOutputFrame,eye(length(u0)),-u0));
+end
 
 if (nargout>1)
-  x=msspoly('x',getNumStates(obj));
-  V = (x-x0)'*S*(x-x0);
+  x=ltisys.getInputFrame.poly; %msspoly('x',getNumStates(obj));
+  Vcandidate=PolynomialLyapunovFunction(ltisys.getInputFrame,x'*S*x);
 end
 
 end
