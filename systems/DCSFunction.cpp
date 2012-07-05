@@ -33,8 +33,10 @@ bool mexCallMATLABsafe(SimStruct* S, int nlhs, mxArray* plhs[], int nrhs, mxArra
     mexPrintf("DrakeSystem S-Function: error when calling ''%s'' with the following arguments:\n",filename);
     for (i=0; i<nrhs; i++)
       mexCallMATLAB(0,NULL,1,&prhs[i],"disp");
-    mexPrintf("\n");
-    ssSetErrorStatus(S,"DrakeSystem S-Function: error in MATLAB callback. See debugging information above");
+    mxArray *report;
+    mexCallMATLAB(1,&report,1,&ex,"getReport");
+    mexPrintf(mxArrayToString(report));
+    ssSetErrorStatus(S,"\n\nDrakeSystem S-Function: error in MATLAB callback.\nSee additional debugging information above");
     return true;
   }
   for (i=0; i<nlhs; i++)
