@@ -3,17 +3,19 @@ classdef CartPoleEnergyControl < HybridDrakeSystem
   methods
     function obj = CartPoleEnergyControl(plant)
       obj = obj@HybridDrakeSystem(4,1);
+      obj = obj.setInputFrame(plant.getStateFrame);
+      obj = obj.setOutputFrame(plant.getInputFrame);
       
       obj = obj.addMode(CartPoleEnergyShaping(plant));
       [lqr,V] = balanceLQR(plant);
       V = V.inFrame(plant.getStateFrame);
       obj = obj.addMode(lqr);
 
-      in_lqr_roa = @(t,~,x) V.eval(t,x)-1;
+      in_lqr_roa = @(~,t,~,x) V.eval(t,x)-.9;
       notin_lqr_roa = notGuard(obj,in_lqr_roa);
       
-      obj = obj.addTransition(1,in_lqr_roa,@transitionIntoLQR,true,true);
-      obj = obj.addTransition(2,notin_lqr_roa,@transitionOutOfLQR,true,true);
+      obj = obj.addTransition(1,in_lqr_roa,@transitionIntoLQR,true,true,2);
+      obj = obj.addTransition(2,notin_lqr_roa,@transitionOutOfLQR,true,true,1);
     end
 
     function [xn,to_mode,status]=transitionIntoLQR(obj,mode,t,x,u)
@@ -24,6 +26,7 @@ classdef CartPoleEnergyControl < HybridDrakeSystem
     function [xn,to_mode,status]=transitionOutOfLQR(obj,mode,t,x,u)
       xn=[];
       to_mode=1
+      error('should not transition out of verified lqr');
       status=0;
     end
     
