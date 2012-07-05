@@ -166,11 +166,13 @@ classdef PendulumPlant < SecondOrderSystem
       sys = feedback(pd,c);
       n=10;
       x0=[pi;0];
+      V = V.inFrame(pd.getStateFrame);
       y=getLevelSet(V,[],struct('num_samples',n));
       for i=1:n
-        xtraj=simulate(sys,[0 4],x0 + .99*y(:,i));
-        if (norm(xtraj.eval(4)-x0)>1e-2)
-          error('initial condition from verified ROA didn''t get to the top (in 4 seconds)');
+        xtraj=simulate(sys,[0 4],.01*x0 + .99*y(:,i));
+        if (V.eval(4,xtraj.eval(4))>V.eval(0,xtraj.eval(0)))
+          xtraj.eval(4)-x0
+          error('simulation appears to be going uphill on the Lyapunov function');
         end
       end
     end

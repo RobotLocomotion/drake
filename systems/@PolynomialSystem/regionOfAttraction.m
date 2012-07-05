@@ -89,7 +89,7 @@ if (V.getFrame ~= sys.getStateFrame)
   f = subss(f,sys.getStateFrame.poly,tf.output(0,[],V.getFrame.poly));
   
   tf = findTransform(sys.getStateFrame,V.getFrame);
-  if isempty(tf) error('couldn''t find a coordinate transform from the Lyapunov frame to teh state frame'); end
+  if isempty(tf) error('couldn''t find a coordinate transform from the Lyapunov frame to the state frame'); end
 
   if (~isa(tf,'AffineTransform') || tf.getNumStates || any(any(tf.D - eye(sys.getNumStates))))
     error('need to convert xdot to V.frame, too');

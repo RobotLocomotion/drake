@@ -42,6 +42,17 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
         Vpoly=subs(obj.Vpoly,obj.p_t,t);
       end
     end
+    
+    function V = inFrame(obj,frame)
+      if (frame==obj.getFrame)
+        V = obj;
+      else
+        tf = findTransform(frame,obj.getFrame);
+        if isempty(tf) error('couldn''t find a coordinate transform from the Lyapunov frame to the requested frame'); end
+        Vpoly = subss(obj.Vpoly,obj.getFrame.poly,tf.output(0,[],frame.poly));
+        V = PolynomialLyapunovFunction(frame,Vpoly);
+      end
+    end
   end
 
   % todo: move over getLevelSet, getProjection, plotFunnel, ...
