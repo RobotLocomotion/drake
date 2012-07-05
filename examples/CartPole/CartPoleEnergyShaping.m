@@ -4,7 +4,7 @@ classdef CartPoleEnergyShaping < DrakeSystem
   
   properties
     p  % plant
-    k1 = 40; k2 = 15; k3 = 10; k3limit = 50;
+    k1 = 40; k2 = 15; k3 = 15; k3limit = 50;
   end
   
   methods

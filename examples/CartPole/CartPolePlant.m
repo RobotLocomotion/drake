@@ -44,7 +44,7 @@ classdef CartPolePlant < Manipulator
     function [c,V]=balanceLQR(obj)
       x0 = [0;pi;0;0]; u0 = 0;
       Q = diag([1 50 1 50]);
-      R = .2;
+      R = 2;%.2;
 
       if (nargout<2)
         c = tilqr(obj,x0,u0,Q,R);
