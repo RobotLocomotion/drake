@@ -153,6 +153,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
     end
 
     function x0 = getInitialState(obj)
+      disp('in HybridDrakeSystem:getInitialState');
       m = getInitialMode(obj);
       x0 = [m; getInitialState(obj.modes{m})];
       % pad if necessary:

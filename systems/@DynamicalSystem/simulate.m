@@ -1,4 +1,4 @@
-function traj = simulate(obj,tspan,x0,options)
+function [ytraj,xtraj] = simulate(obj,tspan,x0,options)
 % Simulates the dynamical system (using the simulink solvers)
 %
 % @param tspan a 1x2 vector of the form [t0 tf]
@@ -79,7 +79,12 @@ if (nargout>0)
   pstruct.SaveFormat = 'StructureWithTime';
   pstruct.SaveTime = 'on';
   pstruct.TimeSaveName = 'tout';
-  pstruct.SaveState = 'off';
+  if (nargout>1)
+    pstruct.SaveState = 'on';
+  else
+    pstruct.SaveState = 'off';
+  end
+  pstruct.StateSaveName = 'xout';
   pstruct.SaveOutput = 'on';
   pstruct.OutputSaveName = 'yout';
   pstruct.LimitDataPoints = 'off';
@@ -103,10 +108,14 @@ if (nargout>0)
   simout = sim(mdl,pstruct);
   
   t = simout.get('tout');
+  if (nargout>1) x = simout.get('xout').signals.values'; end
   y = simout.get('yout').signals.values';
 
   if (isDT(obj))
-    traj = DTTrajectory(t',y);
+    ytraj = DTTrajectory(t',y);
+    if (nargout>1)
+      xtraj = DTTrajectory(t',x);
+    end
   else
     % note: could make this more exact.  see comments in bug# 623.
 
@@ -114,17 +123,8 @@ if (nargout>0)
     zcs = find(diff(t)<1e-10);
     if (length(zcs)>0) % then we have a hybrid trajectory
       zcs = [0;zcs;length(t)];
-      pptraj = {};
-      i=1;
-      while i<length(zcs)  % while instead of for so that I can zap zcs inside this loop (if they are fake zcs)
-        % is there really a jump here? 
-        if (i>1 && ~any(abs(y(:,zcs(i))-y(:,zcs(i)+1))>1e-6))
-          % no jump that I can see.  remove this zc
-          zcs=zcs([1:i-1,i+1:end]);
-        else
-          i=i+1;
-        end
-      end
+      ypptraj={}; xpptraj={};
+      
       for i=1:length(zcs)-1
         % compute indices of this segment
         inds = (zcs(i)+1):zcs(i+1);
@@ -136,19 +136,34 @@ if (nargout>0)
           i=i+1;
           continue;
         end
-        pptraj = {pptraj{:},makeSubTrajectory(t([max(inds(1)-1,1),inds(2:end)]),y(:,inds))};  % use time of zc instead of 1e-10 past it.
+        ypptraj = {ypptraj{:},makeSubTrajectory(t([max(inds(1)-1,1),inds(2:end)]),y(:,inds))};  % use time of zc instead of 1e-10 past it.
+        if (nargout>1)
+          xpptraj = {xpptraj{:},makeSubTrajectory(t([max(inds(1)-1,1),inds(2:end)]),x(:,inds))};
+        end
         i=i+1;
       end
-      if (length(pptraj)>1)
-        traj = HybridTrajectory(pptraj);
+      if (length(ypptraj)>1)
+        ytraj = HybridTrajectory(ypptraj);
+        if (nargout>1)
+          xtraj = HybridTrajectory(xpptraj);
+        end
       else
-        traj = pptraj{1};
+        ytraj = ypptraj{1};
+        if (nargout>1)
+          xtraj = xpptraj{1};
+        end
       end
     else
-      traj = makeSubTrajectory(t,y);
+      ytraj = makeSubTrajectory(t,y);
+      if (nargout>1)
+        xtraj = makeSubTrajectory(t,x);
+      end
     end
   end
-  traj = setOutputFrame(traj,obj.getOutputFrame);
+  ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
+  if (nargout>1)
+    xtraj = cleanUpModeState(obj,xtraj);  % necessary for Hybrid systems
+  end
 else
   sim(mdl,pstruct);
 end

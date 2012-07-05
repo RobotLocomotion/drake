@@ -35,8 +35,24 @@ bool mexCallMATLABsafe(SimStruct* S, int nlhs, mxArray* plhs[], int nrhs, mxArra
       mexCallMATLAB(0,NULL,1,&prhs[i],"disp");
     mxArray *report;
     mexCallMATLAB(1,&report,1,&ex,"getReport");
-    mexPrintf(mxArrayToString(report));
-    ssSetErrorStatus(S,"\n\nDrakeSystem S-Function: error in MATLAB callback.\nSee additional debugging information above");
+    char *errmsg = mxArrayToString(report);
+    mexPrintf(errmsg);
+    mxFree(errmsg);
+    mxDestroyArray(report);
+    ssSetErrorStatus(S, "\n\nDrakeSystem S-Function: error in MATLAB callback.\nSee additional debugging information above");
+
+    // note: would prefer to give this more useful feedback, but it crashes the gui for some reason:
+/*
+    mxArray *in[2]; in[0] = ex; in[1] = mxCreateString("basic");
+    mexCallMATLAB(1,&report,2,in,"getReport");
+    errmsg = mxArrayToString(report);
+    ssSetErrorStatus(S, errmsg); //"\n\nDrakeSystem S-Function: error in MATLAB callback.\nSee additional debugging information above");
+    // mxFree(errmsg); // note: can't do this.  error status needs it to stay in memory.
+    mxDestroyArray(report);
+    mxDestroyArray(in[1]);
+ */
+    
+    mxDestroyArray(ex);
     return true;
   }
   for (i=0; i<nlhs; i++)

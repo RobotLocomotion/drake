@@ -32,10 +32,10 @@ expandAll(tree,root);
 %crawlDir('.',root,true);
 
 hb = [];
-hb = [hb,uicontrol('String','Dock','callback',@dock)];
+hb = [hb,uicontrol('String','Dock','callback',@dock)]; if strcmp(get(h,'WindowStyle'),'docked'), set(hb(end),'String','Undock'); end
 hb = [hb,uicontrol('String','Reload (keep history)','callback',@(h,env) cleanup(h,env,tree),'BusyAction','cancel')];
 hb = [hb,uicontrol('String','Reload (flush history)','callback',@(h,env) reloadGui(h,env,tree),'BusyAction','cancel')];
-htext = uicontrol('Style','text','String','Click to run tests.  Shift-click to edit test file.','BackgroundColor',[1 1 1]);
+htext = uicontrol('Style','text','String','Click triangles to run tests.  Shift-click to edit test file.','BackgroundColor',[1 1 1]);
 
 set(tree,'NodeSelectedCallback', @runSelectedNode);
 set(treecont,'BusyAction','queue');
@@ -97,6 +97,7 @@ end
 
 function saveTree(tree)
   load drake_config;
+  p=pwd;
   cd(conf.root);
   backupname = '.unitTestData.mat';
   userdata={};
@@ -111,10 +112,12 @@ function saveTree(tree)
   end
   backupname = '.unitTestData.mat';
   save(backupname,'userdata');
+  cd(p);
 end
 
 function loadTree(tree)
   load drake_config;
+  p=pwd;
   cd(conf.root);
   backupname = '.unitTestData.mat';
   load(backupname);
@@ -147,19 +150,23 @@ function loadTree(tree)
       end
     end
   end
+  cd(p);
 end
 
 function saveMutex()
   load drake_config;
+  p=pwd;
   cd(conf.root);
   backupname = '.drake_unit_test_mutex.mat';
   global runNode_mutex;
   node_data = cellfun(@(a) get(a,'UserData'),runNode_mutex,'UniformOutput',false);
   save(backupname,'node_data');
+  cd(p);
 end
 
 function loadMutex(tree)
   load drake_config;
+  p=pwd;
   cd(conf.root);
   backupname = '.drake_unit_test_mutex.mat';
   global runNode_mutex;
@@ -167,6 +174,7 @@ function loadMutex(tree)
   if ~isempty(node_data)
     runNode_mutex = cellfun(@(a) findNode(tree,a),node_data,'UniformOutput',false);
   end
+  cd(p);
 end
 
 function node=findNode(tree,data)
@@ -190,8 +198,8 @@ function resizeFcn(src,ev,treecont,hb,htext)
   for i=1:length(hb)
     set(hb(i),'Position',[(i-1)*pos(3)/length(hb),pos(4)-20,pos(3)/length(hb),20]);
   end
-  set(htext,'Position',[0,pos(4)-40,pos(3),18]);
-  set(treecont,'Position',[0,0,pos(3),pos(4)-38]);
+  set(htext,'Position',[0,-1,pos(3),18]);
+  set(treecont,'Position',[0,17,pos(3),pos(4)-38]);
 end
 
 function expandAll(tree,node)

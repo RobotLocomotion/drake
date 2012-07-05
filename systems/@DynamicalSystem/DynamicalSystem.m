@@ -219,6 +219,12 @@ classdef DynamicalSystem
       newsys.time_invariant_flag = sys.time_invariant_flag;
       newsys.simulink_params = sys.simulink_params;  
     end
+    
+    function xtraj = cleanUpModeState(obj,xtraj)
+      % this essentially empty function called at the end of simulate 
+      % does much more work in the derived class HybridDrakeSystem
+      xtraj = setOutputFrame(obj.getStateFrame);
+    end
   end
   
   % utility methods
