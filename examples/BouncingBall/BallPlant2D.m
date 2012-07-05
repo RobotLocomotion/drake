@@ -38,7 +38,7 @@ classdef BallPlant2D < HybridDrakeSystem
     function run
       b=BallPlant2D;
       v=BallVisualizer2D;
-      x=b.simulate([0 5],[-5;5;2;0]);
+      x=b.simulate([0 5],[1;-5;5;2;0]);
       v.playback(x);
     end
   end

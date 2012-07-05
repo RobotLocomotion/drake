@@ -153,7 +153,6 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
     end
 
     function x0 = getInitialState(obj)
-      disp('in HybridDrakeSystem:getInitialState');
       m = getInitialMode(obj);
       x0 = [m; getInitialState(obj.modes{m})];
       % pad if necessary:
@@ -194,20 +193,18 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       if (getNumDiscStates(obj.modes{m}))
         nX = getNumStates(obj.modes{m});
         if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
-        xdn = update(obj.modes{m},t,xm,u);
+        xdn = [m;update(obj.modes{m},t,xm,u)];
       else
-        xdn=[];
+        xdn=m;
       end
       % pad if necessary:
-      xdn = [xdn;repmat(0,getNumDiscStates(obj)-length(xdn)-1,1)];
+      xdn = [xdn;repmat(0,getNumDiscStates(obj)-length(xdn),1)];
     end
     
     function y = output(obj,t,x,u)
       m = x(1); nX = getNumStates(obj.modes{m});
       if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
       y = output(obj.modes{m},t,xm,u);
-      % pad if necessary:
-      y = [y;repmat(0,getNumOutputs(obj)-length(y),1)];
     end
     
     function zcs = zeroCrossings(obj,t,x,u)

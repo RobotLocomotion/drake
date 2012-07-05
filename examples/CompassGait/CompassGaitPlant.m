@@ -71,7 +71,7 @@ classdef CompassGaitPlant < HybridDrakeSystem
     function run()
       r = CompassGaitPlant();
       v = CompassGaitVisualizer(r);
-      traj = simulate(r,[0 10],[1;0; 0; 2.0; -0.4]);
+      traj = simulate(r,[0 10]);%,[2;0; 0; 2.0; -0.4]);
       playback(v,traj);    
     end
   end  

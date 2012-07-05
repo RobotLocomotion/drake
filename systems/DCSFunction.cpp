@@ -153,13 +153,7 @@ static void mdlInitializeSizes(SimStruct *S)
   ssSetNumNonsampledZCs(S, (int)mxGetScalar(plhs[0]));
   mxDestroyArray(plhs[0]);
 
-  if (isa(psys,"HybridDrakeSystem")) {
-    ssSetNumModes(S, 1);
-    ssSetNumDiscStates(S, ssGetNumDiscStates(S)-1);  // pull out the mode
-  } else {    
-    ssSetNumModes(S, 0);
-  }
-
+  ssSetNumModes(S, 0);
   ssSetNumRWork(S, 0);
   ssSetNumIWork(S, 4);  // see #define for indices at top
   ssSetNumPWork(S, 0);
@@ -196,9 +190,6 @@ static void mdlInitializeConditions(SimStruct *S)
   int_T num_xc = ssGetNumContStates(S);
   
   if (isa(psys,"HybridDrakeSystem")) {
-    int_T* mode = ssGetModeVector(S);
-    mode[0] = (int) x[0];
-    x++;
     ssSetIWorkValue(S, IS_HYBRID_IDX, 1);
   } else {
     ssSetIWorkValue(S,IS_HYBRID_IDX,0);
@@ -266,19 +257,14 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   real_T *y = (num_y>0) ? ssGetOutputPortRealSignal(S, 0) : NULL;
   mxArray* plhs[2];
   bool fsm = ssGetIWorkValue(S,IS_HYBRID_IDX);
-  int_T *mode = (fsm ? ssGetModeVector(S) : NULL);
 
   mxArray *prhs[5];
   prhs[0] = psys;                                  // obj
   prhs[1] = mxCreateDoubleScalar(t);               // t
 
-  prhs[2] = mxCreateDoubleMatrix((fsm?1:0) + num_xd + num_xc,1,mxREAL); // x
+  prhs[2] = mxCreateDoubleMatrix(num_xd + num_xc,1,mxREAL); // x
   real_T* px = mxGetPr(prhs[2]);
   real_T* pxtmp=px;
-  if (fsm) { 
-    pxtmp[0] = (real_T) mode[0];
-    pxtmp++;
-  }
   if (num_xd>0) {
     memcpy(pxtmp,xd,sizeof(real_T)*num_xd);
     pxtmp+=num_xd;
@@ -301,12 +287,8 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   if (ssGetIWorkValue(S, IC_IDX) == 1) {
     if (mexCallMATLABsafe(S,1,plhs,4,prhs,"getInitialStateWInput")) return;
     real_T* px0 = mxGetPr(plhs[0]); // copy over to the state input used for the rest of this function
-    memcpy(px,px0,sizeof(real_T)*((fsm?1:0)+num_xd+num_xc));
+    memcpy(px,px0,sizeof(real_T)*(num_xd+num_xc));
     // update the actual state vectors:
-    if (fsm) {
-      mode[0] = (int) px0[0];
-      px0++;
-    }
     if (num_xd) {
       memcpy(xd,px0,sizeof(real_T)*num_xd);
       px0+=num_xd;
@@ -322,15 +304,12 @@ static void mdlOutputs(SimStruct *S, int_T tid)
     // then check for zero-crossing events and apply and discontinuous changes 
     if (mexCallMATLABsafe(S, 2, plhs, 4, prhs, "transitionUpdate")) return;
     real_T *pxn = mxGetPr(plhs[0]);
-    memcpy(px,pxn,sizeof(real_T)*(1+num_xd+num_xc));  // copy over to the state input used for the rest of this function
+    memcpy(px,pxn,sizeof(real_T)*(num_xd+num_xc));  // copy over to the state input used for the rest of this function
     // update the actual state vectors:
-    mode[0] = (int) pxn[0];
-    pxn++;
-    
-    if (num_xd) {
+    //if (num_xd) {  // for fsm's, it's guaranteed that num_xd>0
       memcpy(xd,pxn,sizeof(real_T)*num_xd);
       pxn+=num_xd;
-    }
+    //}
     if (num_xc) {
       memcpy(xc,pxn,sizeof(real_T)*num_xc);
     }
@@ -369,8 +348,6 @@ static void mdlZeroCrossings(SimStruct *S)
   real_T *xc = num_xc>0 ? ssGetContStates(S) : NULL;
   real_T *xd = num_xd>0 ? ssGetDiscStates(S) : NULL;
   const real_T *u = num_u>0 ? ssGetInputPortRealSignal(S,0) : NULL;
-  bool fsm = ssGetIWorkValue(S,IS_HYBRID_IDX);
-  int_T *mode = (fsm ? ssGetModeVector(S) : NULL);
   real_T *zcs = ssGetNonsampledZCs(S);  
 
   mxArray* plhs[1];
@@ -378,14 +355,9 @@ static void mdlZeroCrossings(SimStruct *S)
   prhs[0] = psys;                                  // obj
   prhs[1] = mxCreateDoubleScalar(t);               // t
 
-  prhs[2] = mxCreateDoubleMatrix((fsm?1:0)+num_xd+num_xc,1,mxREAL); // x
+  prhs[2] = mxCreateDoubleMatrix(num_xd+num_xc,1,mxREAL); // x
   real_T* px = mxGetPr(prhs[2]);
   real_T* pxtmp=px;
-
-  if (fsm) {
-    pxtmp[0] = (real_T) mode[0];
-    pxtmp++;
-  }
 
   if (num_xd) {
     memcpy(pxtmp,xd,sizeof(real_T)*num_xd);
@@ -430,20 +402,14 @@ static void mdlDerivatives(SimStruct *S)
   const real_T *w = num_w>0 ? ssGetInputPortRealSignal(S,num_u>0?1:0) : NULL;
   real_T *xcdot = ssGetdX(S);
   mxArray* plhs[1];
-  bool fsm = ssGetIWorkValue(S,IS_HYBRID_IDX);
-  int_T *mode = (fsm ? ssGetModeVector(S) : NULL);
 
   mxArray *prhs[5];
   prhs[0] = psys;                                  // obj
   prhs[1] = mxCreateDoubleScalar(t);               // t
 
-  prhs[2] = mxCreateDoubleMatrix((fsm?1:0)+num_xd+num_xc,1,mxREAL); // x
+  prhs[2] = mxCreateDoubleMatrix(num_xd+num_xc,1,mxREAL); // x
   real_T* px = mxGetPr(prhs[2]);
   real_T* pxtmp=px;
-  if (fsm) { 
-    pxtmp[0] = (real_T) mode[0];
-    pxtmp++;
-  }
   if (num_xd) {
     memcpy(pxtmp,xd,sizeof(real_T)*num_xd); 
     pxtmp+=num_xd;
@@ -494,20 +460,14 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   const real_T *u = num_u>0 ? ssGetInputPortRealSignal(S,0) : NULL;
   const real_T *w = num_w>0 ? ssGetInputPortRealSignal(S,num_u>0?1:0) : NULL;
   mxArray* plhs[1];
-  bool fsm = ssGetIWorkValue(S,IS_HYBRID_IDX);
-  int_T *mode = (fsm ? ssGetModeVector(S) : NULL);
   
   mxArray *prhs[5];
   prhs[0] = psys;                                  // obj
   prhs[1] = mxCreateDoubleScalar(t);               // t
 
-  prhs[2] = mxCreateDoubleMatrix((fsm?1:0)+num_xd+num_xc,1,mxREAL); // x
+  prhs[2] = mxCreateDoubleMatrix(num_xd+num_xc,1,mxREAL); // x
   real_T* px = mxGetPr(prhs[2]);
   real_T* pxtmp=px;
-  if (fsm) { 
-    pxtmp[0] = (real_T) mode[0];
-    pxtmp++;
-  }
   if (num_xd) {
     memcpy(pxtmp,xd,sizeof(real_T)*num_xd); 
     pxtmp+=num_xd;
