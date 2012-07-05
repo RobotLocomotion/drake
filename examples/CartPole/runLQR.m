@@ -2,7 +2,7 @@ function runLQR
 
 d = CartPolePlant;
 d = setInputLimits(d,-inf,inf);
-v = CartPoleVisualizer;
+v = CartPoleVisualizer(d);
 [c,V] = balanceLQR(d);
 
 sys = feedback(d,c); 

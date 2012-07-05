@@ -11,8 +11,10 @@ classdef Visualizer < DrakeSystem
   end
 
   methods 
-    function obj=Visualizer(num_u)
-      obj=obj@DrakeSystem(0,0,num_u,0,true);
+    function obj=Visualizer(input_frame)
+      typecheck(input_frame,'CoordinateFrame');
+      obj=obj@DrakeSystem(0,0,input_frame.dim,0,true);
+      obj = setInputFrame(obj,input_frame);
     end
     
     function x0 = getInitialState(obj)
@@ -51,6 +53,11 @@ classdef Visualizer < DrakeSystem
       %     optional controlobj will playback the corresponding control scopes
       %
       %   @param xtraj trajectory to visualize
+      
+      typecheck(xtraj,'Trajectory');
+      if (xtraj.getOutputFrame()~=obj.getInputFrame)
+        xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
+      end
       
       tspan = xtraj.getBreaks();
       t0 = tspan(1);
@@ -101,6 +108,11 @@ classdef Visualizer < DrakeSystem
       %  @param xtraj trajectory to visulalize
       %  @param filename file to produce (optional, if not given a GUI will
       %    pop up and ask for it)
+      
+      typecheck(xtraj,'Trajectory');
+      if (xtraj.getOutputFrame()~=obj.getInputFrame)
+        xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
+      end
       
       if (nargin<3)
         [filename,pathname] = uiputfile('*.avi','Save playback to AVI');
@@ -172,6 +184,11 @@ classdef Visualizer < DrakeSystem
       % @param xtraj Trajectory to make the movie around
       % @param filename name of swf file. (optional, if it isn't given a GUI will pop
       %   up and ask for it.)
+      
+      typecheck(xtraj,'Trajectory');
+      if (xtraj.getOutputFrame()~=obj.getInputFrame)
+        xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
+      end
       
       bCloseAtEnd = true;
       if (nargin<3 || isempty(swf))

@@ -2,26 +2,15 @@ classdef AcrobotVisualizer < Visualizer
 % Implements the draw function for the Acrobot 
 
   methods
-    function obj = AcrobotVisualizer(varargin)
-      % Construct visualizer, and set l1 and l2 parameters
+    function obj = AcrobotVisualizer(plant)
+      % Construct visualizer
       %   AcrobotVisualizer(AcrobotPlant) will take the necessary
       %   parameters from the plant class
-      %
-      %   AcrobotVisualizer(l1,l2) will use the specified parameters
-      %
-      %   AcrobotVisualizer() will use default parameters
       
-      obj = obj@Visualizer(4);
-      
-      if (length(varargin)==1 && isa(varargin{1},'AcrobotPlant'))
-        obj.l1 = varargin{1}.l1;
-        obj.l2 = varargin{1}.l2;
-      elseif (length(varargin)==2 && isa(varargin{1},'double') && isa(varargin{2},'double'))
-        obj.l1 = varargin{1};
-        obj.l2 = varargin{2};
-      elseif (length(varargin)>0)
-        error('don''t know how to handle this input');
-      end
+      typecheck(plant,'AcrobotPlant');
+      obj = obj@Visualizer(plant.getOutputFrame);
+      obj.l1 = plant.l1;
+      obj.l2 = plant.l2;
     end
     
     function draw(obj,t,x)

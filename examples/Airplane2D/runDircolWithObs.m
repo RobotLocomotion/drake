@@ -28,7 +28,7 @@ field = field.GenerateRandomObstacles();
 con = field.AddConstraints(con);
 
 figure(25); clf;  hold on;
-v = PlaneVisualizer(field);
+v = PlaneVisualizer(p,field);
 v.draw(0,x0);
 drawnow
 

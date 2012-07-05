@@ -56,7 +56,7 @@ classdef BallOnSpherePlant < HybridDrakeSystem
 
       zeno = false;
       try 
-        x=b.simulate([0 5],[.190;1.2;0;0]);   % not zeno
+        x=b.simulate([0 5],[1;.190;1.2;0;0]);   % not zeno
       catch ex
         if strcmp(ex.identifier,'Simulink:Engine:SolverConsecutiveZCNum')
           zeno=true;
@@ -69,7 +69,7 @@ classdef BallOnSpherePlant < HybridDrakeSystem
       
       zeno = false;
       try
-        x=b.simulate([0 5],[.191;1.2;0;0]);  % zeno
+        x=b.simulate([0 5],[1;.191;1.2;0;0]);  % zeno
       catch ex
         if strcmp(ex.identifier,'Simulink:Engine:SolverConsecutiveZCNum')
           zeno=true;

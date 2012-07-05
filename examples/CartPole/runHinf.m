@@ -2,7 +2,7 @@ function runHinf
 
 d = CartPolePlant;
 d = setInputLimits(d,-inf,inf);
-v = CartPoleVisualizer;
+v = CartPoleVisualizer(d);
 [c,V] = balanceHinf(d);
 
 sys = feedback(d,c); 

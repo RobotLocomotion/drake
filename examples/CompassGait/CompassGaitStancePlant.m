@@ -18,6 +18,7 @@ classdef CompassGaitStancePlant < Manipulator
       end
       
       obj = obj.setInputLimits(-inf,inf);
+      obj = setOutputFrame(obj,getStateFrame(obj));
     end
     
     function [H,C,B] = manipulatorDynamics(obj,q,qdot)

@@ -83,7 +83,7 @@ end
 Vtrim = PolynomialTrajectory(@(t) V.eval(t)/ppvalSafe(foh(ts,rho),t),ts);
 
 clf;
-v = PlaneVisualizer(field);
+v = PlaneVisualizer(p,field);
 v.draw(0,x0);
 plotFunnel(Vtrim,xtraj,[1 2]);
 h=fnplt(xtraj,[1 2]); 

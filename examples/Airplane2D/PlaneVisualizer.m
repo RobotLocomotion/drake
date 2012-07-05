@@ -8,11 +8,14 @@ classdef PlaneVisualizer < Visualizer
   end
 
   methods
-    function obj = PlaneVisualizer(obstaclefield)
-      obj = obj@Visualizer(8);
+    function obj = PlaneVisualizer(plant,obstaclefield)
+      typecheck(plant,'PlanePlant');
+      obj = obj@Visualizer(plant.getOutputFrame);
       obj.playback_speed = .2;
       obj.display_dt = 0;
-      if (nargin>0) obj.obstaclefield = obstaclefield; end
+      if (nargin>1)
+        obj.obstaclefield = obstaclefield;
+      end
     end
     
     function draw(obj,t,x)
