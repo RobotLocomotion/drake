@@ -1,7 +1,7 @@
 function runPassiveWithObstacles
 
 pp = PlanePlant();
-pv = PlaneVisualizer();
+pv = PlaneVisualizer(pp);
 
 % generate obstacles
 field = ObstacleField();

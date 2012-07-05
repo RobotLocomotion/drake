@@ -5,19 +5,13 @@ classdef CompassGaitVisualizer < Visualizer
   end
   
   methods 
-    function obj = CompassGaitVisualizer(a,b,l,gamma)
-      obj = obj@Visualizer(4);
-      if (isa(a,'CompassGaitPlant'))
-        obj.a = a.a;
-        obj.b = a.b;
-        obj.l = a.l;
-        obj.gamma = a.gamma;
-      else
-        obj.a = a;
-        obj.b = b;
-        obj.l = l;
-        obj.gamma = gamma;
-      end
+    function obj = CompassGaitVisualizer(plant)
+      typecheck(plant,'CompassGaitPlant');
+      obj = obj@Visualizer(plant.getOutputFrame);
+      obj.a = plant.a;
+      obj.b = plant.b;
+      obj.l = plant.l;
+      obj.gamma = plant.gamma;
     end
     
     function draw(obj,t,x)

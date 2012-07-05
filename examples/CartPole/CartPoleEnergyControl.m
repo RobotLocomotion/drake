@@ -35,17 +35,20 @@ classdef CartPoleEnergyControl < HybridDrakeSystem
     function run()
       cp = CartPolePlant;
       cp = setInputLimits(cp,-inf,inf);  % need to do this for ROA code (for now)
-      v = CartPoleVisualizer;
+      v = CartPoleVisualizer(cp);
       c = CartPoleEnergyControl(cp);
 
       sys = feedback(cp,c);
 
       for i=1:4
-        xtraj = simulate(sys,[0 10]);
-        figure(2); clf; xtraj.fnplt([2;4]);
-        playback(v,xtraj);
+        [ytraj,xtraj] = simulate(sys,[0 10]);
+        figure(2); clf; ytraj.fnplt([2;4]);
+        playback(v,ytraj);
         if (isa(xtraj,'HybridTrajectory') && length(xtraj.getEvents())>1)
-          error('The controller must have transitioned out of the region verified as invariant for the balancing controller'); 
+          m = cellfun(@(a) subsref(a.eval(a.tspan(1)),substruct('()',{1})), xtraj.traj);
+          if (any(find(m==1)>find(m==2,1,'first')))
+            error('The controller transitioned out of the region verified as invariant for the balancing controller');
+          end
         end
       end
     end

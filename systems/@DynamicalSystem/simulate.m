@@ -108,13 +108,19 @@ if (nargout>0)
   simout = sim(mdl,pstruct);
   
   t = simout.get('tout');
-  if (nargout>1) x = simout.get('xout').signals.values'; end
+  if (nargout>1) 
+    xout=simout.get('xout');
+    l = {xout.signals(:).label};
+    xd = xout.signals(find(strcmp(l,'DSTATE'))).values';
+    xc = xout.signals(find(strcmp(l,'CSTATE'))).values';
+    x = [xd;xc];
+  end
   y = simout.get('yout').signals.values';
 
   if (isDT(obj))
     ytraj = DTTrajectory(t',y);
     if (nargout>1)
-      xtraj = DTTrajectory(t',x);
+      xtraj = DTTrajectory(t',xd);
     end
   else
     % note: could make this more exact.  see comments in bug# 623.
@@ -162,7 +168,7 @@ if (nargout>0)
   end
   ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
   if (nargout>1)
-    xtraj = cleanUpModeState(obj,xtraj);  % necessary for Hybrid systems
+    xtraj = setOutputFrame(xtraj,obj.getStateFrame);
   end
 else
   sim(mdl,pstruct);

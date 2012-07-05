@@ -32,7 +32,7 @@ while (info~=1)
 end
 
 if (nargout<1)
-  v = PlaneVisualizer();
+  v = PlaneVisualizer(p);
   v.playback(xtraj);
 end
 

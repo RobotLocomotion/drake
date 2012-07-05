@@ -167,14 +167,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       x0 = [x0;repmat(0,getNumStates(obj)-length(x0),1)];
     end
     
-      
-    function f=getStateFrame(obj)
-      error('Drake:HybridDrakeSystem:StateFrame','Hybrid systems do not have a unique state frame.  You should get the individual mode state-frames instead'); 
-    end
-    function obj=refreshStateFrame(obj)
-      % intentionally do nothing.  hybrid systems don't have a state frame
-    end
-    
+          
     function [xcdot,df] = dynamics(obj,t,x,u)
       m = x(1); 
       if (getNumContStates(obj.modes{m}))
@@ -249,6 +242,22 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
         warning('Drake:HybridDrakeSystem:SuccessiveZeroCrossings','Transitioned from mode %s to mode %s, and immediately triggered guard number %d\n',obj.mode_names{m},obj.mode_names{to_mode_num},active_id2);
 %        keyboard; 
       end % useful for debugging successive zcs.
+      end
+    end
+    
+    function xtraj = cleanUpModeState(obj,xtraj)
+      if isa(xtraj,'HybridTrajectory')
+        for i=1:length(xtraj.traj)
+          traj = xtraj.traj{i};
+          m = traj.eval(traj.tspan(1));
+          traj = traj(2:end);
+          traj = setOutputFrame(traj,obj.modes{m}.getStateFrame);
+          xtraj.traj{i} = traj;
+        end
+      else
+        m = xtraj.eval(xtraj.tspan(1));
+        xtraj = xtraj(2:end);
+        xtraj = setOutputFrame(xtraj,obj.modes{m}.getStateFrame);
       end
     end
     

@@ -1,8 +1,9 @@
 classdef BallVisualizer2D < Visualizer
   
   methods 
-    function obj = BallVisualizer2D()
-      obj = obj@Visualizer(2);  % number of inputs = 2
+    function obj = BallVisualizer2D(ballplant)
+      typecheck(ballplant,'BallPlant2D');
+      obj = obj@Visualizer(ballplant.getOutputFrame);  % number of inputs = 2
     end
     
     function draw(obj,t,y)
