@@ -34,6 +34,7 @@ classdef GliderPlant < DrakeSystem
       obj = obj@DrakeSystem(7,0,1,7);
       ulimit = 13; % max servo velocity
       obj = setInputLimits(obj,-ulimit,ulimit);
+      obj = setOutputFrame(obj,getStateFrame(obj));
     end
     
     function [xdot,df] = dynamics(obj,t,x,u)

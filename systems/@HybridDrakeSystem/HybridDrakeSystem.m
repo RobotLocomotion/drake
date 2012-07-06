@@ -29,9 +29,11 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       obj.target_mode = {obj.target_mode{:},[]};
       obj.guard = {obj.guard{:},{}};
       obj.transition = {obj.transition{:},{}};
+      
+      oldStateFrame=getStateFrame(obj);
       obj = setNumContStates(obj,max(getNumContStates(obj),getNumContStates(mode_sys)));
       obj = setNumDiscStates(obj,max(getNumDiscStates(obj),1+getNumDiscStates(mode_sys)));
-
+      
       if (getNumInputs(mode_sys) ~= getNumInputs(obj)) error('must have the same number of inputs as the hybrid system'); end
       if (getNumInputs(obj)) mode_sys=setInputFrame(mode_sys,getInputFrame(obj)); end
       if (getNumOutputs(mode_sys) ~= getNumOutputs(obj)) error('must have the same number of outputs as the hybrid system'); end
@@ -51,6 +53,28 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       obj.modes = {obj.modes{:},mode_sys};
       mode_num = length(obj.modes);
 
+      if (getStateFrame(obj)~=oldStateFrame)
+        % todo: remove old transforms (from mode states to oldStateFrame)
+        % if I create those
+        
+        for i=1:mode_num  % support multiple modes have the same state frame
+          tf = obj.getStateFrame.findTransform(getStateFrame(obj.modes{i}));
+          if isempty(tf)
+            obj.getStateFrame.addTransform(HybridStateTransform(obj,obj.modes{i},i));
+          elseif isa(tf,'HybridStateTransform')
+            obj.getStateFrame.updateTransform(tf.addModeNumber(i));
+          end
+        end
+      else
+        % just add the transform for this mode
+        tf = obj.getStateFrame.findTransform(getStateFrame(obj.modes{mode_num}));
+        if isempty(tf)
+          obj.getStateFrame.addTransform(HybridStateTransform(obj,obj.modes{mode_num},mode_num));
+        elseif isa(tf,'HybridStateTransform')
+          obj.getStateFrame.updateTransform(tf.addModeNumber(mode_num));
+        end
+      end
+      
       if (nargin>2)
         typecheck(name,'char');
         obj.mode_names{mode_num}=name;
@@ -245,19 +269,17 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       end
     end
     
-    function xtraj = cleanUpModeState(obj,xtraj)
-      if isa(xtraj,'HybridTrajectory')
-        for i=1:length(xtraj.traj)
-          traj = xtraj.traj{i};
-          m = traj.eval(traj.tspan(1));
-          traj = traj(2:end);
-          traj = setOutputFrame(traj,obj.modes{m}.getStateFrame);
-          xtraj.traj{i} = traj;
-        end
-      else
-        m = xtraj.eval(xtraj.tspan(1));
-        xtraj = xtraj(2:end);
-        xtraj = setOutputFrame(xtraj,obj.modes{m}.getStateFrame);
+    function obj = setOutputFrame(obj,frame)
+      obj = setOutputFrame@DrakeSystem(obj,frame);
+      for i=1:length(obj.modes)
+        obj.modes{i}=setOutputFrame(obj.modes{i},frame);
+      end
+    end
+
+    function obj = setInputFrame(obj,frame)
+      obj = setInputFrame@DrakeSystem(obj,frame);
+      for i=1:length(obj.modes)
+        obj.modes{i}=setInputFrame(obj.modes{i},frame);
       end
     end
     

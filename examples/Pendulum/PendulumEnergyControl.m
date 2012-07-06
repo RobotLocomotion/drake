@@ -2,8 +2,10 @@ classdef PendulumEnergyControl < HybridDrakeSystem
   
   methods
     function obj = PendulumEnergyControl(plant)
+      typecheck(plant,'PendulumPlant');
+      obj = obj@HybridDrakeSystem(2,1);
       obj = obj.addMode(PendulumEnergyShaping(plant));
-      [obj.lqr,obj.V] = PendulumLQR(plant);
+      [obj.lqr,obj.V] = balanceLQR(plant);
       obj = obj.addMode(obj.lqr);
       obj = obj.setAngleFlags([1;0],[],0);
 
@@ -32,7 +34,7 @@ classdef PendulumEnergyControl < HybridDrakeSystem
   methods (Static)
     function run()
       pd = PendulumPlant;
-      pv = PendulumVisualizer;
+      pv = PendulumVisualizer(pd);
       c = PendulumEnergyControl(pd);
 
       sys = feedback(pd,c);

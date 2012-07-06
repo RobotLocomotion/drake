@@ -1,8 +1,9 @@
 classdef BallOnSphereVisualizer < Visualizer
   
   methods 
-    function obj = BallOnSphereVisualizer()
-      obj = obj@Visualizer(2);  % number of inputs = 2
+    function obj = BallOnSphereVisualizer(b)
+      typecheck(b,'BallOnSpherePlant');
+      obj = obj@Visualizer(b.getOutputFrame);  % number of inputs = 2
     end
     
     function draw(obj,t,y)

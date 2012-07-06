@@ -5,8 +5,8 @@ classdef PendulumVisualizer < Visualizer
 % constructor?)
 
   methods
-    function obj = PendulumVisualizer()
-      obj = obj@Visualizer(2);
+    function obj = PendulumVisualizer(plant)
+      obj = obj@Visualizer(plant.getOutputFrame);
     end
     
     function draw(obj,t,x)

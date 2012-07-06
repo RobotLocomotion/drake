@@ -52,10 +52,11 @@ classdef Trajectory < DrakeSystem
     function mobj = inFrame(obj,frame)
       tf = findTransform(obj.getOutputFrame,frame);
       if isempty(tf) error('couldn''t find a coordinate transform from the trajectory frame %s to the requested frame %s',obj.getOutputFrame.name,frame.name); end
-      mobj = FunctionHandleTrajectory(@(t) tf.output(t,[],obj.eval(t)), frame.dim, obj.breaks);
+      mobj = FunctionHandleTrajectory(@(t) tf.output(t,[],obj.eval(t)), frame.dim, obj.getBreaks);
+      mobj = setOutputFrame(mobj,frame);
     end
     
-    function mobj = uminus(obj);
+    function mobj = uminus(obj)
       mobj = FunctionHandleTrajectory(@(t)-obj.eval(t),obj.dim,obj.breaks,@(t)-obj.deriv(t));
     end
     

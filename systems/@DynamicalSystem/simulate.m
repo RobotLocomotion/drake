@@ -143,8 +143,10 @@ if (nargout>0)
           continue;
         end
         ypptraj = {ypptraj{:},makeSubTrajectory(t([max(inds(1)-1,1),inds(2:end)]),y(:,inds))};  % use time of zc instead of 1e-10 past it.
+        ypptraj{end} = setOutputFrame(ypptraj{end},obj.getOutputFrame);
         if (nargout>1)
           xpptraj = {xpptraj{:},makeSubTrajectory(t([max(inds(1)-1,1),inds(2:end)]),x(:,inds))};
+          xpptraj{end} = setOutputFrame(xpptraj{end},obj.getStateFrame);
         end
         i=i+1;
       end
@@ -161,14 +163,12 @@ if (nargout>0)
       end
     else
       ytraj = makeSubTrajectory(t,y);
+      ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
       if (nargout>1)
         xtraj = makeSubTrajectory(t,x);
+        xtraj = setOutputFrame(xtraj,obj.getStateFrame);
       end
     end
-  end
-  ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
-  if (nargout>1)
-    xtraj = setOutputFrame(xtraj,obj.getStateFrame);
   end
 else
   sim(mdl,pstruct);

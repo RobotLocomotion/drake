@@ -64,6 +64,20 @@ classdef CoordinateFrame < handle
       obj.transforms{end+1}=transform;
     end
     
+    function obj=updateTransform(obj,newtransform)
+      % find a current transform with the same target frame and replace it
+      % with the new transform
+      typecheck(newtransform,'CoordinateTransform');
+      ind=find(cellfun(@(a)getOutputFrame(a)==newtransform.getOutputFrame,obj.transforms));
+      if (isempty(ind))
+        error('no transform to update');
+      elseif length(ind)>1
+        error('found multiple transforms');
+      else
+        obj.transforms{ind}=newtransform;
+      end
+    end
+    
     function tf=findTransform(obj,target,throw_error_if_fail)
       typecheck(target,'CoordinateFrame');
       ind=find(cellfun(@(a)getOutputFrame(a)==target,obj.transforms));

@@ -16,10 +16,13 @@ classdef StateMachineControl < HybridDrakeSystem
   end
   
   methods
-    function obj = StateMachineControl(desired_speed)
-      obj = obj@HybridDrakeSystem();
+    function obj = StateMachineControl(plant,desired_speed)
+      typecheck(plant,'HopperPlant');
+      obj = obj@HybridDrakeSystem(plant.getNumOutputs,plant.getNumInputs);
+      obj = setInputFrame(obj,plant.getOutputFrame);
+      obj = setOutputFrame(obj,plant.getInputFrame);
       
-      if (nargin<1) desired_speed = .5; end
+      if (nargin<2) desired_speed = .5; end
       T_s = .425;
       
       %% add individual control modes
@@ -37,7 +40,7 @@ classdef StateMachineControl < HybridDrakeSystem
       c = FunctionHandleSystem(0,0,10,2,true,true,[],[],@(t,x,u) flightControl(t,x,u));
       [obj,FLIGHT] = addMode(obj,c,'FLIGHT');
 
-      [obj,LOADING] = addMode(obj,ConstantControl([0;0],10),'LOADING');
+      [obj,LOADING] = addMode(obj,ConstOrPassthroughSystem([0;0],10),'LOADING');
       
       c = PolynomialSystem(0,0,10,2,true,true,[],[],@(t,x,u) [0; bodyAttitudeControl(t,x,u)]); 
       [obj,COMPRESSION] = addMode(obj,c,'COMPRESSION');
@@ -45,8 +48,8 @@ classdef StateMachineControl < HybridDrakeSystem
       c = PolynomialSystem(0,0,10,2,true,true,[],[],@(t,x,u) [obj.thrust; bodyAttitudeControl(t,x,u)]);
       [obj,THRUST] = addMode(obj,c,'THRUST');
       
-      [obj,UNLOADING] = addMode(obj,ConstantControl([0;0],10),'UNLOADING');
-      [obj,ESCAPE] = addMode(obj,ConstantControl([0;0],10),'ESCAPE');
+      [obj,UNLOADING] = addMode(obj,ConstOrPassthroughSystem([0;0],10),'UNLOADING');
+      [obj,ESCAPE] = addMode(obj,ConstOrPassthroughSystem([0;0],10),'ESCAPE');
 
 
       %% add transitions
@@ -92,8 +95,8 @@ classdef StateMachineControl < HybridDrakeSystem
   methods (Static=true)
     function run
       h=HopperPlant();
-      c=StateMachineControl();
-      v=HopperVisualizer();
+      c=StateMachineControl(h);
+      v=HopperVisualizer(h);
 %      sys = cascade(feedback(h,c),v);
 %      simulate(sys,[0 inf]);
       y=simulate(feedback(h,c),[0 3]);

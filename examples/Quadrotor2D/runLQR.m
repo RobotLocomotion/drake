@@ -1,7 +1,7 @@
 function c = runLQR
 
 p = PlanarQuadPlant;
-v = PlanarQuadVisualizer();
+v = PlanarQuadVisualizer(p);
 
 [c,V] = hoverLQR(p);
 
