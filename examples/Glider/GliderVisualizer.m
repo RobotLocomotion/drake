@@ -10,8 +10,8 @@ classdef GliderVisualizer < Visualizer
   end
 
   methods
-    function obj = GliderVisualizer
-      obj = obj@Visualizer(7);
+    function obj = GliderVisualizer(plant)
+      obj = obj@Visualizer(plant.getOutputFrame);
       obj.playback_speed = .2;
       obj.display_dt = 0;
     end

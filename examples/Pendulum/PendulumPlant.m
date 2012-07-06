@@ -140,7 +140,7 @@ classdef PendulumPlant < SecondOrderSystem
     function runPassive()  
     %% runs the passive system
       pd = PendulumPlant;
-      pv = PendulumVisualizer;
+      pv = PendulumVisualizer(pd);
       traj = simulate(pd,[0 5],randn(2,1));
       playback(pv,traj);
     end
@@ -148,7 +148,7 @@ classdef PendulumPlant < SecondOrderSystem
     function runLQR()
     %% run the lqr controller from a handful of initial conditions
       pd = PendulumPlant;
-      pv = PendulumVisualizer;
+      pv = PendulumVisualizer(pd);
       c = balanceLQR(pd);
       sys = feedback(pd,c);
       for i=1:5
@@ -180,7 +180,7 @@ classdef PendulumPlant < SecondOrderSystem
     function runDLQR()
     %% runs lqr on a sampled-data version of the plant dynamics
       pd = sampledData(PendulumPlant,.1);
-      pv = PendulumVisualizer;
+      pv = PendulumVisualizer(pd);
       x0=[pi;0]; u0=0;
       Q = diag([10 1]); R = 1;
       c = tilqr(pd,x0,u0,Q,R);
@@ -194,7 +194,7 @@ classdef PendulumPlant < SecondOrderSystem
     function runSwingup()
     %% runs trajectory optimization and animates open-loop playback
       pd = PendulumPlant;
-      pv = PendulumVisualizer;
+      pv = PendulumVisualizer(pd);
       utraj = swingUpTrajectory(pd);
       sys = cascade(utraj,pd);
       xtraj=simulate(sys,utraj.tspan,[0;0]);
@@ -205,7 +205,7 @@ classdef PendulumPlant < SecondOrderSystem
     %% tilqr + funnel at the top, traj opt + tvlqr + funnel for swingup
       pd = PendulumPlant;
       pd = pd.setInputLimits(-inf,inf);  % for now
-      pv = PendulumVisualizer;
+      pv = PendulumVisualizer(pd);
       c = trajectorySwingUpAndBalance(pd);
       sys = feedback(pd,c);
       for i=1:5

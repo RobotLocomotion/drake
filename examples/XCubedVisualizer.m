@@ -3,8 +3,9 @@ classdef XCubedVisualizer < Visualizer
 % \dot{x} = -x + x^3 dynamics)
 
 methods 
-  function obj=XCubedVisualizer()
-    obj=obj@Visualizer(1);
+  function obj=XCubedVisualizer(plant)
+    typecheck(plant,'XCubed');
+    obj=obj@Visualizer(plant.getOutputFrame);
   end
   
   function draw(obj,t,x)

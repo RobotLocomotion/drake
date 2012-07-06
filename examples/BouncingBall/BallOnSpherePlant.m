@@ -52,7 +52,7 @@ classdef BallOnSpherePlant < HybridDrakeSystem
   methods (Static=true)
     function run
       b=BallOnSpherePlant;
-      v=BallOnSphereVisualizer;
+      v=BallOnSphereVisualizer(b);
 
       zeno = false;
       try 

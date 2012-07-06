@@ -261,12 +261,12 @@ function [utraj,xtraj] = dircol_wrapup(sys,w,mode_wrapupfun,tOrig,N,con,options)
         xtraj{m} = MixedTrajectory({mtraj,mode_xtraj},{1,1+[1:sys.getNumContStates()]});
     end
     %xtraj{m} = MixedTrajectory({mtraj,mode_xtraj},{1,1+[1:sys.modes{con.mode{m}.mode_num}.getNumContStates()]});
+    xtraj{m} = setOutputFrame(xtraj{m},sys.getStateFrame);
     t=tnext;
   end
   
   utraj = HybridTrajectory(utraj);
   utraj = setOutputFrame(utraj,sys.getInputFrame);
   xtraj = HybridTrajectory(xtraj);
-  xtraj = setOutputFrame(xtraj,sys.getStateFrame);
 
 end

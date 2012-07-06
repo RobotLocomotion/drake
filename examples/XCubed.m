@@ -40,7 +40,7 @@ classdef XCubed < PolynomialSystem
     
     function animate()
       p=XCubed();
-      v=XCubedVisualizer();
+      v=XCubedVisualizer(p);
 
       x1=p.simulate([0 5],.8);
       x2=p.simulate([0 1.5],1.02);

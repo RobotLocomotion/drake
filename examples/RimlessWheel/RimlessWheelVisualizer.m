@@ -5,17 +5,12 @@ classdef RimlessWheelVisualizer < Visualizer
   end
   
   methods 
-    function obj = RimlessWheelVisualizer(l,alpha,gamma)
-      obj = obj@Visualizer(4);
-      if (isa(l,'RimlessWheelPlant'))
-        obj.l = l.l;
-        obj.alpha = l.alpha;
-        obj.gamma = l.gamma;
-      else
-        obj.l = l;
-        obj.alpha = alpha;
-        obj.gamma = gamma;
-      end
+    function obj = RimlessWheelVisualizer(plant)
+      typecheck(plant,'RimlessWheelPlant');
+      obj = obj@Visualizer(plant.getOutputFrame);
+      obj.l = plant.l;
+      obj.alpha = plant.alpha;
+      obj.gamma = plant.gamma;
     end
     
     function draw(obj,t,x)

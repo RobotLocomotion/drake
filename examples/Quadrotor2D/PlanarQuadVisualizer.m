@@ -6,17 +6,10 @@ classdef PlanarQuadVisualizer < Visualizer
   end
 
   methods
-    function obj = PlanarQuadVisualizer(L)
-      obj = obj@Visualizer(6);
-      if (nargin>1)
-        if (isa(L,'PlanarQuadPlant'))
-          obj.L=L.L;
-        else
-          typecheck(L,'double');
-          sizecheck(L,[1 1]);
-          obj.L = L;
-        end
-      end
+    function obj = PlanarQuadVisualizer(plant)
+      typecheck(plant,'PlanarQuadPlant');
+      obj = obj@Visualizer(plant.getOutputFrame);
+      obj.L=plant.L;
     end
     
     function draw(obj,t,x)

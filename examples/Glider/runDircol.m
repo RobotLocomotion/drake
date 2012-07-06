@@ -32,7 +32,7 @@ if (nargout>0)
   return;
 end
 
-v = GliderVisualizer;
+v = GliderVisualizer(p);
 v.playback(xtraj);
 
 end

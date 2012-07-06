@@ -34,6 +34,7 @@ classdef HopperPlant < DrakeSystem
       obj = obj@DrakeSystem(10,0,2,10,false,true);
       obj = setNumZeroCrossings(obj,3);
       obj = setInputLimits(obj,[-inf;-50],[inf;50]);
+      obj = setOutputFrame(obj,getStateFrame(obj));  % allow full state feedback
     end
     
     function x0 = getInitialState(obj)

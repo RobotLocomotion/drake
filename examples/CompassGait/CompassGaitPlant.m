@@ -15,6 +15,8 @@ classdef CompassGaitPlant < HybridDrakeSystem
       obj = obj@HybridDrakeSystem(1,4);
       obj.l=obj.a+obj.b;
       p = CompassGaitStancePlant(obj.m,obj.mh,obj.a,obj.b,obj.l,obj.g);
+      obj = setOutputFrame(obj,p.getOutputFrame);
+      
       obj = obj.addMode(p);
       obj = obj.addMode(p);
 
