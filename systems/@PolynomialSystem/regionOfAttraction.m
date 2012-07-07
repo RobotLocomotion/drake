@@ -187,7 +187,7 @@ function V = bilinear(V0,f,options)
     [L1,sigma1] = findL1(x,fbal,Vbal,L1monom,options);
     L2 = findL2(x,Vbal,V0bal,rho,L2monom,options);
     [Vbal,rho] = optimizeV(x,fbal,L1,L2,V0bal,sigma1,Vmonom,options);
-%    vol = rho
+    vol = rho;
     
     % undo balancing (for the next iteration, or if i'm done)
     V = PolynomialLyapunovFunction(V.getFrame,subss(Vbal,x,inv(T)*x));
@@ -221,11 +221,11 @@ function [L1,sigma1] = findL1(x,f,V,Lxmonom,options)
 
   % run SeDuMi and check output
   [prog,info] = sedumi(prog,-sigma1,0);
-%  if (info.numerr>1)
-%    error('sedumi had numerical issues.');
-%  end
+  if (info.numerr>1)
+    error('Drake:PolynomialSystem:RegionOfAttraction:NumericalIssues','sedumi had numerical issues.');
+  end
   if (info.pinf || info.dinf)
-    error('problem looks infeasible.');
+    error('Drake:PolynomialSystem:RegionOfAttraction:InfeasibleProgram','problem looks infeasible.');
   end
 
   L1 = prog(L1);
@@ -245,11 +245,11 @@ function L2 = findL2(x,V,V0,rho,Lxmonom,options)
   prog.sos = L2;
   
   [prog,info] = sedumi(prog,slack,0);
-%  if (info.numerr>1)
-%    error('sedumi had numerical issues.');
-%  end
+  if (info.numerr>1)
+    error('Drake:PolynomialSystem:RegionOfAttraction:NumericalIssues','sedumi had numerical issues.');
+  end
   if (info.pinf || info.dinf)
-    error('problem looks infeasible.');
+    error('Drake:PolynomialSystem:RegionOfAttraction:InfeasibleProgram','problem looks infeasible.');
   end  
 
   L2 = prog(L2);
@@ -274,10 +274,10 @@ function [V,rho]=optimizeV(x,f,L1,L2,V0,sigma1,Vxmonom,options)
   % run SeDuMi and check output
   [prog,info] = sedumi(prog,-rho,0);
   if (info.numerr>1)
-    error('sedumi had numerical issues.');
+    error('Drake:PolynomialSystem:RegionOfAttraction:NumericalIssues','sedumi had numerical issues.');
   end
   if (info.pinf || info.dinf)
-    error('problem looks infeasible.');
+    error('Drake:PolynomialSystem:RegionOfAttraction:InfeasibleProgram','problem looks infeasible.');
   end
 
   V = prog(V);
