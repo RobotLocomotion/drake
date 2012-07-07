@@ -37,13 +37,14 @@ switch class(Qf)
   case 'PolynomialLyapunovFunction'
     Vf=Qf.getPoly(tspan(end));
     x=Qf.getFrame.poly;
+    % todo: check frames and convert frames (if necessary) here
     Vf=subss(Vf,x,x+xtraj.eval(tspan(end)));
     Qf=cell(3,1);
     Qf{1}=double(.5*subs(diff(diff(Vf,x)',x),x,0*x));
     Qf{2}=double(subs(diff(Vf,x),x,0*x))';
     Qf{3}=double(subs(Vf,x,0*x));
   otherwise
-    error('Qf must be a double, a 3x1 cell array, or an msspoly');
+    error('Qf must be a double, a 3x1 cell array, or a PolynomialLyapunovFunction');
 end
 sizecheck(Qf,3);
 typecheck(Qf{1},'double');
