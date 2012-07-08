@@ -212,7 +212,7 @@ classdef DynamicalSystem
         add_line(mdl,'zoh2/1','out/1');
       end
       
-      newsys = SimulinkModel(mdl,sys1.getNumInputs);
+      newsys = SimulinkModel(mdl,sys.getNumInputs);
       newsys = setInputFrame(newsys,getInputFrame(sys));
       newsys = setStateFrame(newsys,getStateFrame(sys));
       newsys = setOutputFrame(newsys,getOutputFrame(sys));
@@ -423,47 +423,6 @@ classdef DynamicalSystem
       end
     end
     
-    function runLCMPlant(obj,lcmCoder,x0,options)
-      % Runs the system as an LCM client which subscribes to u and publishes xhat
-      % @param lcmCoder an LCMCoder object, which defines all the messages
-      %  @param x0 initial conditions.  Use [] for the default initial
-      %  conditions.
-      % @param options see the options for the runLCM() method
-      if (nargin<3) x0=[]; end
-      if (nargin<4) options = struct(); end
-      runLCM(obj,lcmCoder,'u','xhat',x0,options);
-    end
-    function runLCMControl(obj,lcmCoder,x0,options)
-      % Runs the system as an LCM client which subscribes to xhat and publishes u
-      % @param lcmCoder an LCMCoder object, which defines all the messages
-      %  @param x0 initial conditions.  Use [] for the default initial
-      %  conditions.
-      % @param options see the options for the runLCM() method
-      if (nargin<3) x0=[]; end
-      if (nargin<4) options = struct(); end
-      runLCM(obj,lcmCoder,'xhat','u',x0,options);
-    end
-    function runLCMEstimator(obj,lcmCoder,x0,options)
-      % Runs the system as an LCM client which subscribes to y and publishes xhat
-      % @param lcmCoder an LCMCoder object, which defines all the messages
-      %  @param x0 initial conditions.  Use [] for the default initial
-      %  conditions.
-      % @param options see the options for the runLCM() method
-      if (nargin<3) x0=[]; end
-      if (nargin<4) options = struct(); end
-      runLCM(obj,lcmCoder,'y','xhat',x0,options);
-    end
-    function runLCMVisualizer(obj,lcmCoder,x0,options)
-      % Runs the system as an LCM client which subscribes to xhat and publishes nothing
-      % @param lcmCoder an LCMCoder object, which defines all the messages
-      %  @param x0 initial conditions.  Use [] for the default initial
-      %  conditions.
-      % @param options see the options for the runLCM() method
-      if (nargin<3) x0=[]; end
-      if (nargin<4) options = struct(); end
-      runLCM(obj,lcmCoder,'xhat',[],x0,options);
-    end
-
   end
   
   properties (SetAccess=private,GetAccess=private)
