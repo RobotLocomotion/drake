@@ -25,6 +25,9 @@ clf;
 data=struct('pass',0,'fail',0,'wait',0,'path',pwd);
 root = uitreenode('v0','All Tests',sprintf('<html>All Tests &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait),[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
 set(root,'UserData',data);
+crawlDir('systems',root,true);
+crawlDir('drivers',root,true);
+crawlDir('util',root,true);
 crawlDir('examples',root,false);
 
 [tree,treecont] = uitree('v0','Root',root);
@@ -260,6 +263,11 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs)
       node = addTest(node,testname);
     end
     
+  end
+  
+  data = get(node,'UserData');
+  if (data.wait==0)  % then there was nothing underneath me
+    pnode.remove(node);
   end
   cd(p);
 end

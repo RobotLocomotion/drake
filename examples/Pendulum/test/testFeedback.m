@@ -35,7 +35,7 @@ try
     if (i<5)  % these are slower
       y1=simulate(sys1,[0 1],x);
       y2=simulate(sys2,[0 1],x);
-      valuecheck(y1.eval(1),y2.eval(1));
+      valuecheck(y1.eval(1),y2.eval(1),1e-4);
     end
   end
 

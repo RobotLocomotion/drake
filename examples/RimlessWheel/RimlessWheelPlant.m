@@ -18,6 +18,8 @@ classdef RimlessWheelPlant < HybridDrakeSystem
       sys.m = obj.m;
       sys.l = obj.l;
       sys.g = obj.g;
+      obj = setInputFrame(obj,sys.getInputFrame);
+      obj = setOutputFrame(obj,sys.getOutputFrame);
       obj = addMode(obj,sys);
       
       fc1=inline('x(1)-obj.gamma+obj.alpha','obj','t','x','u');  % theta<=gamma-alpha

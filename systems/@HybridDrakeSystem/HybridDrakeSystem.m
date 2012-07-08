@@ -16,7 +16,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
   
   % construction
   methods
-    function obj = HybridDrakeSystem(num_u,num_y)
+    function obj = HybridDrakeSystem(num_u, num_y)
       obj = obj@DrakeSystem(0,1,num_u,num_y,false,true);
       obj = setSampleTime(obj,[-1;0]);  % use inherited sample time until modes are added
     end

@@ -38,18 +38,23 @@ classdef StateMachineControl < HybridDrakeSystem
       end
       
       c = FunctionHandleSystem(0,0,10,2,true,true,[],[],@(t,x,u) flightControl(t,x,u));
+      c = setInputFrame(c,obj.getInputFrame); c = setOutputFrame(c,obj.getOutputFrame);
       [obj,FLIGHT] = addMode(obj,c,'FLIGHT');
 
-      [obj,LOADING] = addMode(obj,ConstOrPassthroughSystem([0;0],10),'LOADING');
+      c0 = ConstOrPassthroughSystem([0;0],10);
+      c0 = setInputFrame(c0,obj.getInputFrame); c0 = setOutputFrame(c0,obj.getOutputFrame);
+      [obj,LOADING] = addMode(obj,c0,'LOADING');
       
-      c = PolynomialSystem(0,0,10,2,true,true,[],[],@(t,x,u) [0; bodyAttitudeControl(t,x,u)]); 
+      c = FunctionHandleSystem(0,0,10,2,true,true,[],[],@(t,x,u) [0; bodyAttitudeControl(t,x,u)]); 
+      c = setInputFrame(c,obj.getInputFrame); c = setOutputFrame(c,obj.getOutputFrame);
       [obj,COMPRESSION] = addMode(obj,c,'COMPRESSION');
       
-      c = PolynomialSystem(0,0,10,2,true,true,[],[],@(t,x,u) [obj.thrust; bodyAttitudeControl(t,x,u)]);
+      c = FunctionHandleSystem(0,0,10,2,true,true,[],[],@(t,x,u) [obj.thrust; bodyAttitudeControl(t,x,u)]);
+      c = setInputFrame(c,obj.getInputFrame); c = setOutputFrame(c,obj.getOutputFrame);
       [obj,THRUST] = addMode(obj,c,'THRUST');
       
-      [obj,UNLOADING] = addMode(obj,ConstOrPassthroughSystem([0;0],10),'UNLOADING');
-      [obj,ESCAPE] = addMode(obj,ConstOrPassthroughSystem([0;0],10),'ESCAPE');
+      [obj,UNLOADING] = addMode(obj,c0,'UNLOADING');
+      [obj,ESCAPE] = addMode(obj,c0,'ESCAPE');
 
 
       %% add transitions

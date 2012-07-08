@@ -20,12 +20,12 @@ classdef CartPoleEnergyControl < HybridDrakeSystem
 
     function [xn,to_mode,status]=transitionIntoLQR(obj,mode,t,x,u)
       xn=[];
-      to_mode=2
+      to_mode=2;
       status=0;
     end
     function [xn,to_mode,status]=transitionOutOfLQR(obj,mode,t,x,u)
       xn=[];
-      to_mode=1
+      to_mode=1;
       status=0;
     end
     

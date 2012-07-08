@@ -143,6 +143,7 @@ classdef Trajectory < DrakeSystem
     
     function h=fnplt(obj,plotdims)
       if (nargin>1 && ~isempty(plotdims) && any(plotdims>obj.dim | plotdims<1)) error('plotdims out of range'); end
+      if (nargin<2 || isempty(plotdims)) plotdims=[1 2]; end
       breaks=obj.getBreaks();
       m=5; t=linspace(0,1,m)'; n=length(breaks)-1;
       ts = repmat(1-t,1,n).*repmat(breaks(1:end-1),m,1) + repmat(t,1,n).*repmat(breaks(2:end),m,1);
