@@ -1,6 +1,6 @@
 
   
-sys = TimeInvariantLinearSystem([],[],[],[],[],eye(2));
+sys = LinearSystem([],[],[],[],[],eye(2));
 
 sys2 = SimulinkModel(sys.getModel());
 
