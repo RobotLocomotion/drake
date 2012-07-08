@@ -19,6 +19,8 @@ figure(1); plotFunnel(V,[],[2 4],struct('inclusion','projection'));
 xlabel('$\theta$','interpreter','latex');
 ylabel('$\dot\theta$','interpreter','latex');
 
+%  xa = [.02178;2.437;-.4347;3.091];
+%  keyboard;
 
 n=5;
 y=getLevelSet(V,[],struct('num_samples',n));

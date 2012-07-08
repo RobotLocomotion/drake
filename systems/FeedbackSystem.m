@@ -16,7 +16,7 @@ classdef FeedbackSystem < DrakeSystem
       typecheck(sys2,'DrakeSystem');
       
       if (isa(sys1,'HybridDrakeSystem') || isa(sys2,'HybridDrakeSystem'))
-        error('Drake:FeedbackSystem:NoHybridSupport','feedback combinations with hybrid systems not implemented yet.');
+        error('Drake:FeedbackSystem:NoHybridSupport','feedback combinations with hybrid systems should be created using the hybrid system feedback method.');
       end
       if (isa(sys1,'StochasticDrakeSystem') || isa(sys2,'StochasticDrakeSystem'))
         error('Drake:FeedbackSystem:NoStochasticSupport','feedback combinations with stochastic systems not implemented yet.');
