@@ -19,32 +19,32 @@ classdef HybridSystemSampleTimeTest < DrakeSystem
     function run()
       % run a barrage of tests on sample time merging behavior
       
-      sys=HybridDrakeSystem();
+      sys=HybridDrakeSystem(0,0);
       sys=addMode(sys,HybridSystemSampleTimeTest([-1;0]));
       sys=addMode(sys,HybridSystemSampleTimeTest([-1;0]));
       ts = sys.getSampleTime();
       if (~isequal(ts,[-1;0])) error('merging inherited sample times should result in inherited sample time'); end
 
-      sys=HybridDrakeSystem();
+      sys=HybridDrakeSystem(0,0);
       sys=addMode(sys,HybridSystemSampleTimeTest([0;0]));
       sys=addMode(sys,HybridSystemSampleTimeTest([-1;0]));
       ts = sys.getSampleTime();
       if (~isequal(ts,[0;0])) error('hybrid sample times error'); end
 
-      sys=HybridDrakeSystem();
+      sys=HybridDrakeSystem(0,0);
       sys=addMode(sys,HybridSystemSampleTimeTest([0;0]));
       sys=addMode(sys,HybridSystemSampleTimeTest([-1;0]));
       sys=addMode(sys,HybridSystemSampleTimeTest([2;2]));
       ts = sys.getSampleTime();
       if (~isequal(ts,[0 2;0 2])) error('hybrid sample times error'); end
 
-      sys=HybridDrakeSystem();
+      sys=HybridDrakeSystem(0,0);
       sys=addMode(sys,HybridSystemSampleTimeTest([-1;0]));
       sys=addMode(sys,HybridSystemSampleTimeTest([2;2]));
       ts = sys.getSampleTime();
       if (~isequal(ts,[2;2])) error('hybrid sample times error'); end
 
-      sys=HybridDrakeSystem();
+      sys=HybridDrakeSystem(0,0);
       sys=addMode(sys,HybridSystemSampleTimeTest([0;0]));
       failed=false;
       try 
@@ -54,7 +54,7 @@ classdef HybridSystemSampleTimeTest < DrakeSystem
       end
       if (~failed) error('hybrid sample times error'); end
 
-      sys=HybridDrakeSystem();
+      sys=HybridDrakeSystem(0,0);
       sys=addMode(sys,HybridSystemSampleTimeTest([1;0]));
       failed=false;
       try 
@@ -64,7 +64,7 @@ classdef HybridSystemSampleTimeTest < DrakeSystem
       end
       if (~failed) error('hybrid sample times error'); end
       
-      sys=HybridDrakeSystem();
+      sys=HybridDrakeSystem(0,0);
       sys=addMode(sys,HybridSystemSampleTimeTest([2;0]));
       sys=addMode(sys,HybridSystemSampleTimeTest([-1;0]));
       failed=false;
