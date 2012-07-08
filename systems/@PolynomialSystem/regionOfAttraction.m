@@ -222,7 +222,7 @@ function [L1,sigma1] = findL1(x,f,V,Lxmonom,options)
   % run SeDuMi and check output
   [prog,info] = sedumi(prog,-sigma1,0);
   if (info.numerr>1)
-    error('Drake:PolynomialSystem:RegionOfAttraction:NumericalIssues','sedumi had numerical issues.');
+    warning('Drake:PolynomialSystem:RegionOfAttraction:NumericalIssues','sedumi had numerical issues during lagrange multiplier step');
   end
   if (info.pinf || info.dinf)
     error('Drake:PolynomialSystem:RegionOfAttraction:InfeasibleProgram','problem looks infeasible.');
@@ -246,7 +246,7 @@ function L2 = findL2(x,V,V0,rho,Lxmonom,options)
   
   [prog,info] = sedumi(prog,slack,0);
   if (info.numerr>1)
-    error('Drake:PolynomialSystem:RegionOfAttraction:NumericalIssues','sedumi had numerical issues.');
+    warning('Drake:PolynomialSystem:RegionOfAttraction:NumericalIssues','sedumi had numerical issues during lagrange multiplier step');
   end
   if (info.pinf || info.dinf)
     error('Drake:PolynomialSystem:RegionOfAttraction:InfeasibleProgram','problem looks infeasible.');

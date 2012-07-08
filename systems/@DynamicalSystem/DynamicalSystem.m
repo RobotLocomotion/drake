@@ -62,8 +62,8 @@ classdef DynamicalSystem
       % @param sys1 the first DynamicalSystem
       % @param sys2 the second DynamicalSystem
       % @param attach_transform_to_sys1 if a CoordinateTranform needs to be
-      % applied, then it can be applied to the input of sys1 (true) or the output
-      % of sys2.  @default false
+      % applied, then it can be applied to the input of sys1 (if true) or the output
+      % of sys2 (if false).  @default false
 
       if (nargin<3) attach_transform_to_sys1 = false; end
       

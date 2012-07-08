@@ -34,11 +34,21 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       obj = setNumContStates(obj,max(getNumContStates(obj),getNumContStates(mode_sys)));
       obj = setNumDiscStates(obj,max(getNumDiscStates(obj),1+getNumDiscStates(mode_sys)));
       
-      if (getNumInputs(mode_sys) ~= getNumInputs(obj)) error('must have the same number of inputs as the hybrid system'); end
-      if (getNumInputs(obj)) mode_sys=setInputFrame(mode_sys,getInputFrame(obj)); end
-      if (getNumOutputs(mode_sys) ~= getNumOutputs(obj)) error('must have the same number of outputs as the hybrid system'); end
-      if (getNumOutputs(obj)) mode_sys=setOutputFrame(mode_sys,getOutputFrame(obj)); end
-
+      if (obj.getInputFrame ~= mode_sys.getInputFrame)
+        tf = findTransform(obj.getInputFrame,mode_sys.getInputFrame);
+        if (isempty(tf))
+          error(['Input frame ' mode_sys.getInputFrame().name, ' does not match input frame ', obj.getInputFrame().name, ' and I cannot find a CoordinateTransform to make the connection']); 
+        end
+        mode_sys = cascade(tf,mode_sys);
+      end
+      if (obj.getOutputFrame ~= mode_sys.getOutputFrame)
+        tf = findTransform(mode_sys.getOutputFrame,obj.getOutputFrame);
+        if (isempty(tf))
+          error(['Output frame ' mode_sys.getOutputFrame().name, ' does not match output frame ', obj.getOutputFrame().name, ' and I cannot find a CoordinateTransform to make the connection']); 
+        end
+        mode_sys = cascade(mode_sys,tf);
+      end
+      
       if (getNumZeroCrossings(mode_sys)>0)
         error('i don''t handle this case yet, but it would be pretty simple.');
       end

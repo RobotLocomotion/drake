@@ -11,7 +11,7 @@ classdef CartPoleEnergyControl < HybridDrakeSystem
       obj.V = V.inFrame(plant.getStateFrame);
       obj = obj.addMode(lqr);
 
-      in_lqr_roa = @(obj,t,~,x) obj.V.eval(t,x)-.9;
+      in_lqr_roa = @(obj,t,~,x) obj.V.eval(t,x)-1;
       notin_lqr_roa = @(obj,t,~,x) 1-obj.V.eval(t,x); 
       
       obj = obj.addTransition(1,in_lqr_roa,@transitionIntoLQR,true,true,2);
@@ -46,6 +46,7 @@ classdef CartPoleEnergyControl < HybridDrakeSystem
         playback(v,ytraj);
         if (isa(xtraj,'HybridTrajectory') && length(xtraj.getEvents())>1)
           m = cellfun(@(a) subsref(a.eval(a.tspan(1)),substruct('()',{1})), xtraj.traj);
+          keyboard
           if (any(find(m==1)>find(m==2,1,'first')))
             error('The controller transitioned out of the region verified as invariant for the balancing controller');
           end
