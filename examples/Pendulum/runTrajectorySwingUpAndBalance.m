@@ -3,7 +3,7 @@ function runTrajectorySwingUpAndBalance()
 
 pd = PendulumPlant;
 pd = pd.setInputLimits(-inf,inf);  % for now
-pv = PendulumVisualizer(pd);
+pv = PendulumVisualizer();
 c = trajectorySwingUpAndBalance(pd);
 sys = feedback(pd,c);
 for i=1:5

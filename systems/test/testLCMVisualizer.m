@@ -13,7 +13,7 @@ job1 = batch('runPendulum','Workspace',struct(),'CaptureDiary',true);
 ok = waitForState(job1,'running',10);
 if (~ok) error('failed'); end
 
-runLCMVisualizer(PendulumVisualizer,PendulumLCMCoder,struct('tspan',[0 2]))
+runLCMVisualizer(PendulumVisualizer,[],struct('tspan',[0 2]))
 
 diary(job1);
 destroy(job1);

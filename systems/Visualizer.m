@@ -29,6 +29,7 @@ classdef Visualizer < DrakeSystem
     
     function y = output(obj,t,x,u)
       draw(obj,t,u);
+      drawnow;
       y=[];
     end
     

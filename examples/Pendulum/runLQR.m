@@ -2,7 +2,7 @@ function runLQR()
 
 % run the lqr controller from a handful of initial conditions
 pd = PendulumPlant;
-pv = PendulumVisualizer(pd);
+pv = PendulumVisualizer();
 c = balanceLQR(pd);
 sys = feedback(pd,c);
 for i=1:5

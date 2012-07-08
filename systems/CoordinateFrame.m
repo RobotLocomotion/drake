@@ -115,7 +115,34 @@ classdef CoordinateFrame < handle
       fr.angle_flag = obj.angle_flag(dims);
       fr.poly = obj.poly(dims);
     end
+    
+    function generateLCMType(obj)
+      % writes an lcm type specification to file from the coordinate frame
+      % description. not to be used frequently.
+      
+      name = lower(obj.name);
+      typename = ['lcmt_',name];
+      fname = [typename,'.lcm'];
+      if strcmpi(input(['About to write file ',fname,' .  Should I proceed (y/n)? '],'s'),'y')
+        fptr=fopen(fname,'w');
+        
+        fprintf(fptr,'// Note: this file was automatically generated using the\n// CoordinateFrame.generateLCMType() method.\n\n');
+        fprintf(fptr,'struct %s\n{\n  int64_t timestamp;\n\n',typename);
+        for i=1:obj.dim
+          fprintf(fptr,'  double %s;\n',stripSpecialChars(obj.coordinates{i}));
+        end
+        fprintf(fptr,'}\n\n');
+        fclose(fptr);
+        disp('file written successfully.  done.');
+      end
+    end
   end
 
+  methods (Static=true,Hidden=true)
+    function s=stripSpecialChars(s)
+      s=regexprep(s,'\\','');
+    end
+  end
+  
   % todo: consider putting LCM encode/decode in here
 end

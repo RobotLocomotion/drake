@@ -1,6 +1,5 @@
 function testLCMControl
 
-% NOTEST  
 % this one is not playing nicely with matlabpool (at least not consistently).  
 
 checkDependency('lcm_enabled');
@@ -11,7 +10,6 @@ p = addpath([conf.root,'/examples/Pendulum']);
 
 lc = lcm.lcm.LCM.getSingleton();
 a = lcm.lcm.MessageAggregator();
-coder = PendulumLCMCoder;
 lc.subscribe('pendulum_u',a);
 
 if (matlabpool('size')>0), matlabpool('close'); end
