@@ -170,7 +170,7 @@ classdef DynamicalSystem
       add_block('simulink3/Sinks/Out1',[mdl,'/out']);
       add_line(mdl,'system1/1','out/1');
       
-      newsys = SimulinkModel(mdl);
+      newsys = SimulinkModel(mdl,sys1.getNumInputs);
       newsys = setInputFrame(newsys,getInputFrame(sys1));
       newsys = setOutputFrame(newsys,getOutputFrame(sys1));
       newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
@@ -212,7 +212,7 @@ classdef DynamicalSystem
         add_line(mdl,'zoh2/1','out/1');
       end
       
-      newsys = SimulinkModel(mdl);
+      newsys = SimulinkModel(mdl,sys1.getNumInputs);
       newsys = setInputFrame(newsys,getInputFrame(sys));
       newsys = setStateFrame(newsys,getStateFrame(sys));
       newsys = setOutputFrame(newsys,getOutputFrame(sys));

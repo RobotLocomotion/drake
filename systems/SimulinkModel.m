@@ -4,7 +4,7 @@ classdef SimulinkModel < DynamicalSystem
 
   % constructor
   methods
-    function obj = SimulinkModel(mdl)
+    function obj = SimulinkModel(mdl,num_u)
       % Construct a simulink model DynamicalSystem
       %
       % @param mdl a string containing the name of an existing simulink model
@@ -15,7 +15,11 @@ classdef SimulinkModel < DynamicalSystem
       obj.num_xc = sys(1);
       obj.num_xd = sys(2);
       obj.num_y = sys(3);
-      obj.num_u = sys(4);
+      if (nargin<2)
+        obj.num_u = sys(4);
+      else
+        obj.num_u = num_u;  % temporary hack to get around bug 1022
+      end
 
       obj=obj.setInputFrame(CoordinateFrame([mdl,'Input'],obj.num_u,'u'));
       obj=obj.setStateFrame(CoordinateFrame([mdl,'State'],obj.num_xc+obj.num_xd,'x'));

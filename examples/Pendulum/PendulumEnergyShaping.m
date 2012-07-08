@@ -9,6 +9,8 @@ classdef PendulumEnergyShaping < DrakeSystem
       obj = obj@DrakeSystem(0,0,2,1,true,true);
       typecheck(plant,'PendulumPlant');
       obj.p = plant;
+      obj = setInputFrame(obj,plant.getOutputFrame);
+      obj = setOutputFrame(obj,plant.getInputFrame);
     end
     
     function u = output(obj,t,junk,x)

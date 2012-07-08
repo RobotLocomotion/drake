@@ -4,17 +4,19 @@ classdef PendulumEnergyControl < HybridDrakeSystem
     function obj = PendulumEnergyControl(plant)
       typecheck(plant,'PendulumPlant');
       obj = obj@HybridDrakeSystem(2,1);
+      obj = setInputFrame(obj,plant.getOutputFrame);
+      obj = setOutputFrame(obj,plant.getInputFrame);
       obj = obj.addMode(PendulumEnergyShaping(plant));
-      [obj.lqr,obj.V] = balanceLQR(plant);
-      obj = obj.addMode(obj.lqr);
-      obj = obj.setAngleFlags([1;0],[],0);
 
-%      in_lqr_roa = inline('obj.wrapInput(x-obj.x0)''*obj.S*obj.wrapInput(x-obj.x0) - obj.rho','obj','t','junk','x');
-      p_x=decomp(obj.V);
-      in_lqr_roa = @(p,t,junk,x) double(subs(obj.V,p_x,obj.wrapInput(x-obj.lqr.x0)+obj.lqr.x0))-1;
+      [lqr,V] = balanceLQR(plant);
+      obj.V = V.inFrame(plant.getStateFrame);
+      obj = obj.addMode(lqr);
+
+      in_lqr_roa = @(obj,t,~,x) obj.V.eval(t,x)-1;
+      notin_lqr_roa = @(obj,t,~,x) 1-obj.V.eval(t,x); 
       
-      obj = obj.addTransition(1,in_lqr_roa,@transitionToLQR,true,true);
-      obj = obj.addTransition(2,notGuard(obj,in_lqr_roa),@transitionFromLQR,true,true);
+      obj = obj.addTransition(1,in_lqr_roa,@transitionToLQR,true,true,2);
+      obj = obj.addTransition(2,notin_lqr_roa,@transitionFromLQR,true,true,1);
 
       obj = setSimulinkParam(obj,'InitialStep','1e-3','MaxStep','0.05');
     end
@@ -34,13 +36,14 @@ classdef PendulumEnergyControl < HybridDrakeSystem
   methods (Static)
     function run()
       pd = PendulumPlant;
+      pd = setInputLimits(pd,-inf,inf);
       pv = PendulumVisualizer(pd);
       c = PendulumEnergyControl(pd);
 
       sys = feedback(pd,c);
       
       figure(2);
-      plotFunnel(c.V,c.lqr.x0);
+      plotFunnel(c.V);
       
       for i=1:5
         xtraj = simulate(sys,[0 6]);
@@ -52,7 +55,6 @@ classdef PendulumEnergyControl < HybridDrakeSystem
   end
   
   properties
-    lqr
     V
   end
   

@@ -28,10 +28,11 @@ end
 hold on;
 view(0,90);
 
+if (nargin<2 || isempty(x0)), x0=zeros(V.getFrame.dim,1); 
+elseif (length(x0)~=V.getFrame.dim) error('need to handle this case better'); end
+
 typecheck(x0,'double');  % not actually a trajectory
 
-if isempty(x0), x0=zeros(V.getFrame.dim,1); 
-elseif (length(x0)~=V.getFrame.dim) error('need to handle this case better'); end
 no_plot_dims=1:length(x0);  no_plot_dims(plot_dims)=[];
   
 % TODO: Here we split between projection and slice.

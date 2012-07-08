@@ -8,6 +8,8 @@ classdef BallPlant2D < HybridDrakeSystem
       
       % create flight mode system
       sys = BallFlightPhasePlant2D();
+      obj = setInputFrame(obj,sys.getInputFrame);
+      obj = setOutputFrame(obj,sys.getOutputFrame);
       [obj,flight_mode] = addMode(obj,sys);  % add the single mode
       
       g1=inline('x(2)-obj.r','obj','t','x','u');  % q-r<=0

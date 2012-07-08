@@ -1,17 +1,17 @@
 classdef HybridSystemSampleTimeTest < DrakeSystem
   
   properties 
-    ts
+    sample_time
   end
   
   methods 
     function obj=HybridSystemSampleTimeTest(ts)
       obj = obj@DrakeSystem(0,0,0,0,false,true);
-      obj.ts = ts;
+      obj.sample_time = ts;
     end
     
     function ts = getSampleTime(obj)
-      ts = obj.ts;
+      ts = obj.sample_time;
     end
   end
   
