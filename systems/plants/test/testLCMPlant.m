@@ -8,7 +8,7 @@ p = addpath([conf.root,'/examples/Pendulum']);
 
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
-lc.subscribe('pendulum_xhat',aggregator);
+lc.subscribe('PendulumState',aggregator);
 
 runLCM(PendulumPlant,[],struct('tspan',[0 5]));
 
