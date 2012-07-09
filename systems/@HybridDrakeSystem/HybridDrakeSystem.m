@@ -34,14 +34,14 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       obj = setNumContStates(obj,max(getNumContStates(obj),getNumContStates(mode_sys)));
       obj = setNumDiscStates(obj,max(getNumDiscStates(obj),1+getNumDiscStates(mode_sys)));
       
-      if (obj.getInputFrame ~= mode_sys.getInputFrame)
+      if (obj.getNumInputs>0 && obj.getInputFrame ~= mode_sys.getInputFrame)
         tf = findTransform(obj.getInputFrame,mode_sys.getInputFrame);
         if (isempty(tf))
           error(['Input frame ' mode_sys.getInputFrame().name, ' does not match input frame ', obj.getInputFrame().name, ' and I cannot find a CoordinateTransform to make the connection']); 
         end
         mode_sys = cascade(tf,mode_sys);
       end
-      if (obj.getOutputFrame ~= mode_sys.getOutputFrame)
+      if (obj.getNumOutputs>0 && obj.getOutputFrame ~= mode_sys.getOutputFrame)
         tf = findTransform(mode_sys.getOutputFrame,obj.getOutputFrame);
         if (isempty(tf))
           error(['Output frame ' mode_sys.getOutputFrame().name, ' does not match output frame ', obj.getOutputFrame().name, ' and I cannot find a CoordinateTransform to make the connection']); 

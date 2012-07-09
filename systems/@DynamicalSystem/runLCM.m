@@ -40,7 +40,7 @@ if (obj.getNumInputs>0 && getNumStates(obj)<1) % if there are no state variables
   global g_scope_enable; g_scope_enable = true;
   
   % just run as fast as possible
-  t=options.tspan(1);
+  t=options.tspan(1); tic;
   while (t<=options.tspan(2))
     umsg = getNextMessage(aggregator,1000);
     if (~isempty(umsg))
@@ -50,6 +50,8 @@ if (obj.getNumInputs>0 && getNumStates(obj)<1) % if there are no state variables
         ymsg = fout.encode(t,y);
         lc.publish(options.outchannel,ymsg);
       end
+    else
+      t=options.tspan(1)+toc
     end
   end
 else % otherwise set up the LCM blocks and run simulink.

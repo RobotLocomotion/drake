@@ -1,8 +1,9 @@
 
 load drake_config;
-p = path;
-addpath([conf.root,'/examples/Pendulum']);
+oldpath = addpath([conf.root,'/examples/Pendulum']);
 
-runLCM(PendulumEnergyControl(PendulumPlant));
+p=PendulumPlant;
+p = setInputLimits(p,-inf,inf);
+runLCM(PendulumEnergyControl(p),[],struct('tspan',[0 2]));
 
-% NOTEST
+path(oldpath);
