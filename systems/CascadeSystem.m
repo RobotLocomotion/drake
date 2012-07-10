@@ -22,7 +22,7 @@ classdef CascadeSystem < DrakeSystem
         error('Drake:CascadeSystem:NoStochasticSupport','cascade combinations with stochastic systems not implemented yet.');
       end
       
-      [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
 
       obj = obj.setInputLimits(sys1.umin,sys1.umax);
       

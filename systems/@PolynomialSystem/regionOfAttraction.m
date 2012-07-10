@@ -43,13 +43,8 @@ if (~isCT(sys)) error('only handle CT case so far'); end
 
 if (sys.num_xcon>0) error('state constraints not implemented yet'); end
 if (isRational(sys)) error('rational dynamics not supported yet'); end
-
-f = sys.getPolyDynamics;
-
-%% zero all inputs
-if (sys.getNumInputs>0)
-  f = subs(f,sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
-end
+if (~isTI(sys)) error('only works for time-invariant systems (so far)'); end
+  
 
 %% get Lyapunov candidate
 num_x = sys.getNumStates();
@@ -66,6 +61,12 @@ if nargin<2 || isnumeric(varargin{1})
   
   % check that x0 is a fixed point
   x = sys.getStateFrame.poly;
+  f = sys.getPolyDynamics;
+  %% zero all inputs
+  if (sys.getNumInputs>0)
+    f = subs(f,sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
+  end
+  
   if any(abs(double(subs(f,x,x0)))>1e-5)
     error('x0 must be a fixed point of the system');
   end
@@ -82,18 +83,11 @@ else
 end
 typecheck(V,'LyapunovFunction');
 
-if (V.getFrame ~= sys.getStateFrame)
-  % convert f to Lyapunov function coordinates
-  tf = findTransform(V.getFrame,sys.getStateFrame);
-  if isempty(tf) error('couldn''t find a coordinate transform from the state frame to the frame of the Lyapunov candidate'); end
-  f = subss(f,sys.getStateFrame.poly,tf.output(0,[],V.getFrame.poly));
-  
-  tf = findTransform(sys.getStateFrame,V.getFrame);
-  if isempty(tf) error('couldn''t find a coordinate transform from the Lyapunov frame to the state frame'); end
-
-  if (~isa(tf,'AffineTransform') || tf.getNumStates || any(any(tf.D - eye(sys.getNumStates))))
-    error('need to convert xdot to V.frame, too');
-  end
+sys = sys.inStateFrame(V.getFrame); % convert system to Lyapunov function coordinates
+f = sys.getPolyDynamics;
+%% zero all inputs
+if (sys.getNumInputs>0)
+  f = subs(f,sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
 end
 
 %% handle options

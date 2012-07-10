@@ -22,8 +22,8 @@ classdef FeedbackSystem < DrakeSystem
         error('Drake:FeedbackSystem:NoStochasticSupport','feedback combinations with stochastic systems not implemented yet.');
       end
       
-      [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,false);
-      [sys2,sys1] = matchCoordinateFramesForCombination(sys2,sys1,true);
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
+      sys2 = sys2.inOutputFrame(sys1.getInputFrame);
 
       if (sys1.isDirectFeedthrough() && sys2.isDirectFeedthrough())
         error('Drake:FeedbackSystem:AlgebraicLoop','algebraic loop');

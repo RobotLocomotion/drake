@@ -134,13 +134,51 @@ classdef PolynomialSystem < DrakeSystem
       obj = setStateFrame@DrakeSystem(obj,frame);
     end
     
+    function sys = inStateFrame(sys,frame)
+      if (~isCT(sys) || isRational(sys) || getNumStateConstraints(sys)>0), error('not implemented yet'); end   % though some of them would be easy to implement
+
+      ctf = findTransform(getStateFrame(sys),frame,true);
+      dtf = findTransform(frame,getStateFrame(sys),true);
+      if ~isa(ctf,'PolynomialSystem') || ~isa(dtf,'PolynomialSystem') || getNumStates(ctf)>0 || getNumStates(dtf)>0
+        error('unsupported transform');
+      end
+
+      % from xdot = f(t,x,u) to zdot = g(t,z,u) via z=c(t,x) and x=d(t,z)
+      % zdot = dcdt(t,d(t,z)) + dcdx(t,d(t,z)*f(t,d(t,z),u)
+      
+      x = sys.getStateFrame.poly; z=frame.poly;
+      if isTI(sys) && isTI(ctf) && isTI(dtf)
+        c = subs(ctf.getPolyOutput,ctf.getInputFrame.poly,x);
+        d = subs(dtf.getPolyOutput,dtf.getInputFrame.poly,z);
+        g = diff(c,x)*sys.getPolyDynamics;
+        g = subss(g,x,d);
+        y = subss(sys.getPolyOutput,x,d);
+        sys = SpotPolynomialSystem(sys.getInputFrame,frame,sys.getOutputFrame,g,[],[],y);
+      else % time-varying case
+        y = @(t) subss(sys.getPolyOutput(t),x,subs(dtf.getPolyOutput(t),dtf.getInputFrame.poly,z));
+        % todo: note the breaks in the polynomialtrajectory systems below are a hack. need to handle that better.  
+        sys = PolynomialTrajectorySystem(sys.getInputFrame,frame,sys.getOutputFrame,PolynomialTrajectory(@(t) newdyn(t,sys,frame,ctf,dtf),[0 inf]),[],PolynomialTrajectory(y,[0 inf]),sys.isDirectFeedthrough);
+      end
+      
+        function g = newdyn(t,sys,frame,ctf,dtf)
+          x = sys.getStateFrame.poly; z=frame.poly;
+          p_t = msspoly('t',1);
+          c = subs(ctf.getPolyOutput(t),ctf.getInputFrame.poly,x);
+          d = subs(dtf.getPolyOutput(t),dtf.getInputFrame.poly,z);
+          g = subs(diff(c,p_t),p_t,t) + diff(c,x)*sys.getPolyDynamics(t);
+          g = subss(g,x,d);
+        end
+      
+      
+    end
+    
     function sys = feedback(sys1,sys2)
       % try to keep feedback between polynomial systems polynomial.  else,
       % kick out to DrakeSystem
       %
       
-      [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,false);
-      [sys2,sys1] = matchCoordinateFramesForCombination(sys2,sys1,true);
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
+      sys2 = sys2.inOutputFrame(sys1.getInputFrame);
 
       if ~isa(sys2,'PolynomialSystem') || ~isTI(sys1) || ~isTI(sys2) || any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax]))
         sys = feedback@DrakeSystem(sys1,sys2);
@@ -246,7 +284,7 @@ classdef PolynomialSystem < DrakeSystem
       % kick out to DrakeSystem
       %
 
-      [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
 
       if ~isa(sys2,'PolynomialSystem') || ~isTI(sys1) || ~isTI(sys2) || any(~isinf([sys2.umin;sys2.umax]))
         sys = cascade@DrakeSystem(sys1,sys2);

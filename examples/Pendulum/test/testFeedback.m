@@ -20,7 +20,7 @@ try
   
   valuecheck(dynamics(p,0,[pi;0],0),zeros(2,1));
   valuecheck(output(c,0,[],zeros(2,1)),0);
-  [~,c2]=matchCoordinateFramesForCombination(p,c,false); 
+  c2 = c.inInputFrame(p.getOutputFrame);
   valuecheck(output(c2,0,[],[pi;0]),0);
   valuecheck(output(SimulinkModel(c.getModel()),0,[],zeros(2,1)),0);
   valuecheck(output(SimulinkModel(c2.getModel()),0,[],[pi;0]),0);

@@ -54,33 +54,25 @@ classdef DynamicalSystem
   
   % construction methods
   methods
-    function [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,attach_transform_to_sys1)
-      % A utility method which checks if the output of sys1 is in the same
-      % frame as the input to sys2, or if there is a known transform for
-      % the conversion. If the two cannot be combined, then it throws an error.
-      %
-      % @param sys1 the first DynamicalSystem
-      % @param sys2 the second DynamicalSystem
-      % @param attach_transform_to_sys1 if a CoordinateTranform needs to be
-      % applied, then it can be applied to the input of sys1 (if true) or the output
-      % of sys2 (if false).  @default false
 
-      if (nargin<3) attach_transform_to_sys1 = false; end
-      
-      if (getOutputFrame(sys1)~=getInputFrame(sys2))
-        tf = findTransform(getOutputFrame(sys1),getInputFrame(sys2));
-        if (isempty(tf))
-          error(['Input frame ' sys2.getInputFrame().name, ' does not match output frame ', sys1.getOutputFrame().name, ' and I cannot find a CoordinateTransform to make the connection']); 
-        end
-        
-        if (attach_transform_to_sys1)
-          sys1=cascade(sys1,tf);
-        else
-          sys2=cascade(tf,sys2);
-        end
+    function sys = inInputFrame(sys,frame)
+      if (getInputFrame(sys)~=frame)
+        tf = findTransform(frame,getInputFrame(sys),true);
+        sys = cascade(tf,sys);
       end
-      
     end
+    
+    function sys = inStateFrame(sys,frame)
+      error('not implemented yet');  % but shouldn't be too hard using functionhandle systems.
+    end
+    
+    function sys = inOutputFrame(sys,frame)
+      if (frame ~= sys.getOutputFrame)
+        tf = findTransform(getOutputFrame(sys),frame,true);
+        sys = cascade(sys,tf);
+      end
+    end
+    
     
     function [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2)
       ind=0;
@@ -107,7 +99,7 @@ classdef DynamicalSystem
       %
       % @retval newsys the new DynamicalSystem
 
-      [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
       
       mdl = ['Cascade_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');
@@ -144,8 +136,8 @@ classdef DynamicalSystem
       % the input of the new system gets added into the input of sys1
       % the output of sys1 will be the output of the new system.
       
-      [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,false);
-      [sys2,sys1] = matchCoordinateFramesForCombination(sys2,sys1,true);
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
+      sys2 = sys2.inOutputFrame(sys1.getInputFrame);
       
       mdl = ['Feedback_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');

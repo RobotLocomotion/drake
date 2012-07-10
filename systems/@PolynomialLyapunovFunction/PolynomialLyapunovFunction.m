@@ -14,13 +14,15 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
       if (isa(Vpoly,'msspoly'))
         obj.Vpoly=Vpoly;
         if (deg(Vpoly,obj.p_t)>0) obj.time_invariant_flag = false; end
+        t=0;
       else
         typecheck(Vpoly,'PolynomialTrajectory');
         obj.Vpolytraj = Vpoly;
         obj.time_invariant_flag = false;
+        t=Vpoly.tspan(1);
       end
       
-      if any(match(frame.poly,decomp(getPoly(obj)))==0)
+      if any(match(frame.poly,decomp(getPoly(obj,t)))==0)
         error('polynomial depends on variables other than t and those defined in frame');
       end
     end
@@ -33,14 +35,24 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
       end
     end
     
+    function Vdot = evalDeriv(obj,sys,t,x)
+      error('not implemented yet');
+    end
+    
     function Vpoly = getPoly(obj,t)
+      if (nargin<2)
+        if isTI(obj), t=0;
+        else error('you must specify t'); end
+      end
       if isempty(obj.Vpoly)
-        if (nargin<2) t=obj.Vpolytraj.tspan(1); end
         Vpoly = subs(obj.Vpolytraj.eval(t),obj.p_t,t);
       else
-        if (nargin<2) t=0; end
         Vpoly=subs(obj.Vpoly,obj.p_t,t);
       end
+    end
+    
+    function Vdotpoly = getPolyDeriv(obj,sys,t)
+      error('not implemented yet');
     end
     
     function V = inFrame(obj,frame)
