@@ -1,15 +1,15 @@
-function Vtraj = tvlyap(obj,xtraj,Q,Qf,tspan)
+function V = tvlyap(obj,xtraj,Q,Qf) % note: no options yet
 
 typecheck(xtraj,'Trajectory');
 sizecheck(xtraj,[getNumStates(obj),1]);
 
 nX = xtraj.dim;
 nU = getNumInputs(obj);
-%tspan=xtraj.getBreaks(); %TODO: pass in options for tspan
+tspan=xtraj.getBreaks(); %TODO: pass in options for tspan
 %tspan = linspace(tspan(1), tspan(end), 100);
 
 if (isa(Q,'double'))
-  Q = PPTrajectory(zoh(tspan([1,end]),repmat(Q,[1 1 2])));
+  Q = ConstantTrajectory(Q);
 end
 
 typecheck(Q,'Trajectory');  
@@ -20,17 +20,17 @@ switch class(Qf)
   case 'double'
     sizecheck(Qf,[nX,nX]);
     Qf = {Qf,zeros(nX,1),0};
-  case 'msspoly'
-    Vf=Qf;
-    sizecheck(Vf,1);
-    x=decomp(Vf);
+  case 'PolynomialLyapunovFunction'
+    Vf=Qf.getPoly(tspan(end));
+    x=Qf.getFrame.poly;
+    % todo: check frames and convert frames (if necessary) here
     Vf=subss(Vf,x,x+xtraj.eval(tspan(end)));
     Qf=cell(3,1);
     Qf{1}=double(.5*subs(diff(diff(Vf,x)',x),x,0*x));
     Qf{2}=double(subs(diff(Vf,x),x,0*x))';
     Qf{3}=double(subs(Vf,x,0*x));
   otherwise
-    error('Qf must be a double, a 3x1 cell array, or an msspoly');
+    error('Qf must be a double, a 3x1 cell array, or a PolynomialLyapunovFunction');
 end
 sizecheck(Qf,3);
 typecheck(Qf{1},'double');
@@ -49,12 +49,17 @@ Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,xtraj,xdottraj),tspan(end
 S = FunctionHandleTrajectory(@(t) recompS(Ssqrt.eval(t)),[nX,nX],tspan);
 %S_nonAffine = matrixODE(@ode45,@(t,S)Sdynamics(t,S,obj,Q,xtraj),tspan(end:-1:1),Qf{1},odeoptions);
 
-p_x=msspoly('x',nX);
+fr = CoordinateFrame([sys.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix);
+obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,fr,eye(nX),-xtraj));
+fr.addTransform(AffineTransform(fr,obj.getStateFrame,eye(nX),xtraj));
+
+p_x=fr.poly;
 p_t=msspoly('t',1);
 %Sdot = @(t)Sdynamics(t,S.eval(t),obj,Q,xtraj);
 %Vtraj = PolynomialTrajectory(@(t) lyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan);
 Sdot = @(t)recompSdot(Ssqrt.eval(t),affineSdynamics(t,Ssqrt.eval(t),obj,Q,xtraj,xdottraj));
 Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan);
+V = PolynomialLyapunovFunction(fr,Vtraj);
 
 end
 

@@ -44,7 +44,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & Singleton
       for i=1:length(constructors)
         f = constructors(i).getParameterTypes;
         if ~isempty(f) && strncmp('[B',char(f(1).getName),2)
-          obj.decode_constructor = constructors(i)
+          obj.decode_constructor = constructors(i);
         end
       end
       if isempty(obj.decode_constructor)
@@ -71,6 +71,10 @@ classdef LCMCoordinateFrame < CoordinateFrame & Singleton
       end
       t = msg.timestamp/1000;
     end
+    
+%    function obj = setCoordinateNames(obj,coordinates)
+%      error('resetting names of LCM coordinate frames is not allowed.  the names must match the names in the lcm type file');
+%    end
   end
   
   properties

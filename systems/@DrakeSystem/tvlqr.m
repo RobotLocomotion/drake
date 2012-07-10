@@ -18,10 +18,10 @@ nU = utraj.dim;
 tspan=utraj.getBreaks();
 
 if (isa(Q,'double'))
-  Q = PPTrajectory(zoh(tspan([1,end]),repmat(Q,[1 1 2])));
+  Q = ConstantTrajectory(Q);
 end
 if (isa(R,'double'))
-  R = PPTrajectory(zoh(tspan([1,end]),repmat(R,[1 1 2])));
+  R = ConstantTrajectory(R);
 end
 
 typecheck(Q,'Trajectory');  

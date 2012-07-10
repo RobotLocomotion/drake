@@ -112,11 +112,11 @@ classdef PendulumPlant < SecondOrderSystem
       [utraj,xtraj]=swingUpTrajectory(obj);  
       
       Q = diag([10 1]);  R=1;
-      [tv,Vtraj] = tvlqr(obj,xtraj,utraj,Q,R,Vf);
-      u0traj = PPTrajectory(zoh(xtraj.getTimeSpan,[0 0])); u0traj=setOutputFrame(u0traj,utraj.getOutputFrame);
+      [tv,Vswingup] = tvlqr(obj,xtraj,utraj,Q,R,Vf);
+      u0traj = ConstantTrajectory(0); u0traj=setOutputFrame(u0traj,utraj.getOutputFrame);
       psys = taylorApprox(feedback(obj,tv),xtraj,u0traj,3);
       options.degL1=2;
-      Vtraj=sampledFiniteTimeVerification(psys,Vf,Vtraj,xtraj.getBreaks(),xtraj,utraj,options);
+      Vswingup=sampledFiniteTimeVerification(psys,xtraj.getBreaks(),Vf,Vswingup,options);
 
       c = c.addTrajectory(tv,Vtraj);
     end

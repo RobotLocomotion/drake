@@ -40,30 +40,35 @@ ts=ts(:);
 num_x = sys.getNumStates();
 num_xd = sys.getNumDiscStates();
 num_xc = sys.getNumContStates();
-if (num_xd), xd = x(1:num_xd); end
-x = x(num_xd + (1:num_xc));
+if (num_xd), xd = x(1:num_xd); x = x(num_xd + (1:num_xc)); end
 num_u = sys.getNumInputs();
 
-if (nargin<7) options = struct(); end
+if (nargin>4), options = varargin{2};
+else options = struct();  end
 if (~isfield(options,'rho0_tau')) options.rho0_tau=2; end
 if (~isfield(options,'max_iterations')) options.max_iterations=10; end
 if (~isfield(options,'converged_tol')) options.converged_tol=.01; end
 if (~isfield(options,'stability')) options.stability=false; end  % true implies that we want exponential stability
 if (~isfield(options,'plot_rho')) options.plot_rho = true; end
 
+if (isa(varargin{1},'Trajectory'))
+  x0 = varargin{1}.inFrame(sys.getStateFrame);
+  Q = eye(num_xc);
+  V0 = tvlyap(sys,x0,Q,Q);
+else
+  V0 = varargin{1};
+end
+
 if (isnumeric(G) && ismatrix(G) && all(size(G)==[num_xc,num_xc]))
-  fr = CoordinateFrame([sys.getStateFrame.name,' - xG'],num_xc,'x');
-  xf=xtraj.eval(ts(end)); xf=xf(num_xd+(1:num_xc));
-  sys.getStateFrame.addTransform(AffineTransform(sys.getStateFrame,fr,[zeros(num_xc,num_xd),eye(num_xc)],-xf));
-  fr.addTransform(AffineTransform(fr,sys.getStateFrame,[zeros(num_xd,num_xc);eye(num_xc)],xf));
+  fr = V0.getFrame;
   G = PolynomialLyapunovFunction(fr,fr.poly'*G*fr.poly);
 end
 typecheck(G,'PolynomialLyapunovFunction');
-typecheck(Vtraj0,'PolynomialLyapunovFunction');
+typecheck(V0,'PolynomialLyapunovFunction');
 
 
 %% for now, let's require that G matches V at the final conditions
-if (~equalpoly(G.getPoly(ts(end)),Vtraj0.getPoly(ts(end))))
+if (~equalpoly(G.getPoly(ts(end)),V0.getPoly(ts(end))))
   error('for now, I require that G matches V at the final conditions');
 end  
 
@@ -72,23 +77,19 @@ rhof = 1;   % todo: handle the more general case and get it from containment
 N = length(ts);
 Vmin = zeros(N-1,1);
 
-if (num_xd)
-  xdottraj = fnder(xtraj.subTrajectory(num_xd + (1:num_xc)));
-else
-  xdottraj = fnder(xtraj);
-end
+sys = sys.inStateFrame(V0.getFrame); % convert system to Lyapunov function coordinates
 
 % evaluate dynamics and Vtraj at every ts once (for efficiency/clarity)
 for i=1:N
-  x0=xtraj.eval(ts(i)); x0=x0(num_xd+(1:num_xc));
-  V{i}=subss(Vtraj0.eval(ts(i)),x,x+x0);
-  f=subss(sys.p_dynamics_traj.eval(ts(i)),x,x+x0)-xdottraj.eval(ts(i));
-  if (num_u)
-    u0=utraj.eval(ts(i));
-    f=subs(f,sys.p_u,u0);
+  V{i}=V0.getPoly(ts(i));
+
+  f = sys.getPolyDynamics(ts(i));
+  if (sys.getNumInputs>0)   % zero all inputs
+    f = subs(f,sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
   end
-    
-  Vdot{i}=diff(V{i},x)*f + subss(Vtraj0.deriv(ts(i)),x,x+x0);
+  
+  % got here
+  Vdot{i}=diff(V{i},x)*f + subss(V0.deriv(ts(i)),x,x+x0);
 
   % balancing 
   S1=.5*doubleSafe(subs(diff(diff(V{i},x)',x),x,0*x));
@@ -149,8 +150,8 @@ if (max(m)>0)
   error('infeasible rho.  increase c');
 end
 
-Vtraj = PolynomialTrajectory(@(t) Vtraj0.eval(t)/ppvalSafe(rhopp,t),unique([Vtraj0.getBreaks(),ts']));
-
+Vtraj = PolynomialTrajectory(@(t) V0.getPoly(t)/ppvalSafe(rhopp,t),unique([V0.getBreaks(),ts']));
+V = PolynomialLyapunovFunction(V0.getFrame,Vtraj);
 
 end
 
@@ -314,4 +315,10 @@ if (any(abs(doubleSafe(subs(diff(diff(C,x)',x),x,0*x)))>1e-4))
 end
 
 tf=true;
+end
+
+
+function y=doubleSafe(x)
+  y=double(x);
+  if (~isa(y,'double')) error('double failed'); end
 end

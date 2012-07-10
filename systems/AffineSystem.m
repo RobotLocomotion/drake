@@ -162,8 +162,8 @@ classdef AffineSystem < PolynomialSystem
       % kick out to DrakeSystem
       %
             
-      [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2,false);
-      [sys2,sys1] = matchCoordinateFramesForCombination(sys2,sys1,true);
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
+      sys2 = sys2.inOutputFrame(sys1.getInputFrame);
 
       if ~isa(sys2,'AffineSystem') || any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax]))
         sys = feedback@PolynomailSystem(sys1,sys2)
@@ -235,7 +235,7 @@ classdef AffineSystem < PolynomialSystem
       % kick out to DrakeSystem
       %
       
-      [sys1,sys2] = matchCoordinateFramesForCombination(sys1,sys2);
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
 
       if ~isa(sys2,'PolynomialSystem') || any(~isinf([sys2.umin;sys2.umax]))
         sys = cascade@DrakeSystem(sys1,sys2)
