@@ -56,6 +56,13 @@ classdef Trajectory < DrakeSystem
       mobj = setOutputFrame(mobj,frame);
     end
     
+    function traj = trajfun(traj,fhandle)
+      % analagous to cellfun, this returns a new trajectory which is
+      % equivalent to applying fhandle to traj at every t.
+      
+      error('not implemented yet');  
+    end
+    
     function mobj = uminus(obj)
       mobj = FunctionHandleTrajectory(@(t)-obj.eval(t),obj.dim,obj.breaks,@(t)-obj.deriv(t));
     end
@@ -143,7 +150,6 @@ classdef Trajectory < DrakeSystem
     
     function h=fnplt(obj,plotdims)
       if (nargin>1 && ~isempty(plotdims) && any(plotdims>obj.dim | plotdims<1)) error('plotdims out of range'); end
-      if (nargin<2 || isempty(plotdims)) plotdims=[1 2]; end
       breaks=obj.getBreaks();
       m=5; t=linspace(0,1,m)'; n=length(breaks)-1;
       ts = repmat(1-t,1,n).*repmat(breaks(1:end-1),m,1) + repmat(t,1,n).*repmat(breaks(2:end),m,1);
