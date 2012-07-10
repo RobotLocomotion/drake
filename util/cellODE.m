@@ -39,11 +39,7 @@ if (nargout>1)
   varargout{2} = Aout;
 else
   soln = ODESOLVER(@odefun_wrapper,tspan,y0,varargin{:});
-  dim={};
-  for i=1:length(A0)
-    dim={dim{:},size(A0{i})};
-  end
-  varargout{1} = FunctionHandleTrajectory(@(t)cell_deval(t,soln,A0),dim,sort(soln.x),@(t)ODEFUN(t,cell_deval(t,soln,A0)));
+  varargout{1} = ODESolTrajectory(soln,cellfun(@size,A0,'UniformOutput',false));
 end
 
 % helper function
@@ -64,11 +60,3 @@ end
 
 end
 
-function A = cell_deval(t,soln,A0)
-  y = deval(soln,t);
-  for i=1:length(A0)
-    n = prod(size(A0{i}));
-    A{i} = reshape(y(1:n),size(A0{i}));
-    y = y(n+1:end);
-  end
-end
