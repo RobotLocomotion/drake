@@ -64,7 +64,7 @@ classdef Trajectory < DrakeSystem
     end
     
     function mobj = uminus(obj)
-      mobj = FunctionHandleTrajectory(@(t)-obj.eval(t),obj.dim,obj.breaks,@(t)-obj.deriv(t));
+      mobj = FunctionHandleTrajectory(@(t)-obj.eval(t),obj.dim,obj.getBreaks,@(t)-obj.deriv(t));
     end
     
     function [a,b,breaks] = setupTrajectoryPair(a,b)
@@ -79,6 +79,10 @@ classdef Trajectory < DrakeSystem
         
         breaks = unique([reshape(a.getBreaks,[],1);reshape(b.getBreaks,[],1)]);
         breaks = breaks(breaks>=tspan(1) & breaks<=tspan(2));
+    end
+    
+    function b = ctranspose(a)
+      b = FunctionHandleTrajectory(@(t) ctranspose(a.eval(t)),a.dim([end,1:end-1]),a.getBreaks);
     end
     
     function c = vertcat(a,varargin)
@@ -138,6 +142,15 @@ classdef Trajectory < DrakeSystem
       s=obj.dim;
       if (length(s)==1) s=[s,1]; end
       if (nargin>1) s=s(dim); end
+    end
+    
+    function l = length(obj)
+      s = size(obj);
+      l = max(s);
+    end
+    
+    function n = numel(obj)
+      n = prod(size(obj));
     end
     
     function ts = getTimeSpan(obj)
