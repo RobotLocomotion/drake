@@ -1,4 +1,4 @@
-classdef (InferiorClasses = {?Trajectory}) PolynomialWTimeVaryingCoefficients 
+classdef (InferiorClasses = {?Trajectory,?FunctionHandleTrajectory,?PPTrajectory,?ODESolTrajectory}) PolynomialWTimeVaryingCoefficients 
   % defines a polynomial (represented by an msspoly) with time-varying
   % coefficients (represented as a trajectory)
   
@@ -48,65 +48,51 @@ classdef (InferiorClasses = {?Trajectory}) PolynomialWTimeVaryingCoefficients
         typecheck(coefpoly,'msspoly');
         typecheck(coeftraj,'Trajectory'); 
         if (~iscolumn(coeftraj)) error('arg 3 must be a column vector trajectory'); end
+        if (deg(poly,coefpoly)<1) obj = PolynomialWTimeVaryingCoefficients(poly); end
         
-        [x,p,M]=decomp(poly);
-        b=match(coefpoly,x);
-        polydims=b==0; trajdims=b>0;
+%        [x,p,M]=decomp(poly);
+%        b=match(coefpoly,x);
+%        polydims=b==0; trajdims=b>0;
         
-        [ppoly,i,j]=unique(p(:,polydims),'rows');
-        repmat(x(polydims)',size(ppoly,1),1).^ppoly;
-        keyboard;
+%        [ppoly,i,j]=unique(p(:,polydims),'rows');
+%        repmat(x(polydims)',size(ppoly,1),1).^ppoly;
         
         % unfortunately, I have to play with msspoly internals here (for now).  
-        [ms,ns]=size(poly.s);
+        [m,n]=size(poly);
+        s=gets(poly);
+        [ms,ns]=size(s);
         
-        obj.coefpoly = PolynomialWTimeVaryingCoefficients.getUniquePoly(poly,coefpoly,ms);  % make potentially too many coefficients (can clean up later)
         k=round((ns-3)/2);
-        vs=poly.s(:,3:2+k);
-        ds=poly.s(:,3+k:2+2*k);
-        cs=poly.s(:,ns);
+        vs=s(:,3:2+k);
+        ds=s(:,3+k:2+2*k);
+        cs=s(:,ns);
 
+        %% first merge the coefficient trajectories associated with the coefpolys
         [f,xn]=isfree(coefpoly);
         if ~f, error('2nd argument must be a free msspoly column vector'); end
         if size(xn,2)~=1, error('input 2 must be a column'); end
-                
-        ee=mss_match(xn,vs);
-
-        na=length(xn);
-        if na<1, q=p; return; end
-        [f,x]=issimple(b);
-        if ~f, error('3rd argument must be a simple msspoly column vector'); end
-        if size(x,1)~=size(xn,1), error('unequal number of variables'); end
-
         
-        
-        Cs=ones(size(vs));
+        Cs=ConstantTrajectory(ones(size(vs)));
         ee=mss_match(xn,vs);
-        eee=(ee>0);
-        eeee=ee(eee);
-        Cs(eee)=x(eeee,2);
-        vs(eee)=x(eeee,1);
+        Cs(ee>0)=coeftraj(ee(ee>0));
         cs=cs.*prod(Cs.^ds,2);
-        q=msspoly(p.m,p.n,[p.s(:,1:2) vs ds cs]);
+        vs=vs(:,all(ee==0));
+        ds=ds(:,all(ee==0));
         
+        %% now collapse duplicate rows (summing the coefficient trajectories)
+        a=[s(:,1:2) vs ds];
+        [new_a,i,j]=unique(a,'rows');
         
-        if (deg(poly,coefpoly)>1) error('coefpoly appears in poly with deg > 1'); end
-        b=match(coefpoly,x);
-        ind = (b==0);
+        new_cs = ConstantTrajectory(zeros(length(i),1));
+        for k=1:length(cs)
+          new_cs(j(k))=new_cs(j(k))+cs(k);
+        end
         
-
-        x=x(b==0);
-        p=p(:,b==0);
-        
-        
-        % my inverse of decomp
-        % ps=reshape(M*prod(repmat(x',size(p,1),1).^p,2),size(pm));
-        
-        % my recomp
-        [mp,np]=size(p);
-        obj.poly=msspoly(mp,1,[(1:mp)' ones(mp,1) (p>0)*diag(xn) p ones(mp,1)]);
-
-        obj.coefpoly = PolynomialWTimeVaryingCoefficients.getUniquePoly(poly,coefpoly,numel(s));
+        % now replace coefficients with coefpolys and I'm done.
+        obj.coefpoly = PolynomialWTimeVaryingCoefficients.getUniquePoly(poly,coefpoly,[length(i) 1]);  % make potentially too many coefficients (can clean up later)
+        [~,new_v] = isfree(obj.coefpoly); 
+        obj.coeftraj = new_cs;
+        obj.poly=msspoly(m,n,[s(i,1:2),vs(i,:),new_v,ds(i,:),ones(length(i),2)]);
       end
       
     end
@@ -123,6 +109,10 @@ classdef (InferiorClasses = {?Trajectory}) PolynomialWTimeVaryingCoefficients
       error('not implemented yet');
     end
     
+    function s = size(varargin)
+      s = size(varargin{1}.poly,varargin{2:end});
+    end
+    
     function c = mtimes(a,b)
       aistraj = isa(a,'Trajectory') || isnumeric(a); aispoly = isa(a,'PolynomialWTimeVaryingCoefficients');       
       bistraj = isa(b,'Trajectory') || isnumeric(b); bispoly = isa(b,'PolynomialWTimeVaryingCoefficients');       
@@ -132,9 +122,18 @@ classdef (InferiorClasses = {?Trajectory}) PolynomialWTimeVaryingCoefficients
           acoefpoly=PolynomialWTimeVaryingCoefficients.getUniquePoly(b,size(a));
           cpoly = acoefpoly*b.poly;
           c=PolynomialWTimeVaryingCoefficients(cpoly,[b.coefpoly;acoefpoly(:)],[b.coeftraj;a(:)]);
+        elseif (aispoly)
+          % change variables to make sure there are no symbol crashes
+          acoefpoly=PolynomialWTimeVaryingCoefficients.getUniquePoly(b,size(a.coefpoly));
+          cpoly = subs(a.poly,a.coefpoly,acoefpoly)*b.poly;
+          c=PolynomialWTimeVaryingCoefficients(cpoly,[b.coefpoly;acoefpoly(:)],[b.coeftraj;a.coeftraj]);
         else
           error('not implemented yet');
         end
+      elseif (bistraj && aispoly)
+          bcoefpoly=PolynomialWTimeVaryingCoefficients.getUniquePoly(a,size(b));
+          cpoly = a.poly*bcoefpoly;
+          c=PolynomialWTimeVaryingCoefficients(cpoly,[bcoefpoly(:);a.coefpoly],[b(:);a.coeftraj]);
       else
         error('not implemented yet');
       end

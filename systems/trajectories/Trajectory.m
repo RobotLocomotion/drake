@@ -82,7 +82,8 @@ classdef Trajectory < DrakeSystem
     end
     
     function b = ctranspose(a)
-      b = FunctionHandleTrajectory(@(t) ctranspose(a.eval(t)),a.dim([end,1:end-1]),a.getBreaks);
+      s = size(a);
+      b = FunctionHandleTrajectory(@(t) ctranspose(a.eval(t)),s([end,1:end-1]),a.getBreaks);
     end
     
     function c = vertcat(a,varargin)
@@ -108,6 +109,23 @@ classdef Trajectory < DrakeSystem
       end
     end
     
+    function c = power(a,b)
+      [a,b,breaks]=setupTrajectoryPair(a,b);
+      c = FunctionHandleTrajectory(@(t) a.eval(t).^b.eval(t),max(size(a),size(b)),breaks);
+    end
+    
+    function a = prod(x,dim)
+      if (nargin<2)
+        dim=find(size(x)>1,'first');
+      end
+      a = FunctionHandleTrajectory(@(t) prod(x.eval(t),dim), [x.dim(1:dim-1),x.dim(dim+1:end)],x.getBreaks);
+    end
+    
+    function c = times(a,b)
+      [a,b,breaks]=setupTrajectoryPair(a,b);
+      c = FunctionHandleTrajectory(@(t) a.eval(t).*b.eval(t),size(a),breaks);
+    end
+    
     function c = mtimes(a,b)
       if (ndims(a)>2 || ndims(b)>2) error('only defined for two-d matrices'); end
       if (size(a,2) ~= size(b,1)) error('dimension mismatch'); end
@@ -129,10 +147,15 @@ classdef Trajectory < DrakeSystem
       a = FunctionHandleTrajectory(@(t) subsasgn(a.eval(t),s,b.eval(t)),size(subsasgn(a.eval(breaks(1)),s,b.eval(breaks(1)))),breaks);
     end
 
-%    function b = subsref(a,s)
-%      breaks = a.getBreaks();
-%      b = FunctionHandleTrajectory(@(t) subsref(a.eval(t),s),size(subsref(a.eval(breaks(1)),s)),breaks);
-%    end
+    function b = subsref(a,s)
+      switch s(1).type
+        case '.'
+          b = builtin('subsref',a,s);
+        case '()'
+          breaks = a.getBreaks();
+          b = FunctionHandleTrajectory(@(t) subsref(a.eval(t),s),size(subsref(a.eval(breaks(1)),s)),breaks);
+      end
+    end
     
     function obj = shiftTime(obj,offset)
       error('not implemented yet');
