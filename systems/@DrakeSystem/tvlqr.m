@@ -21,13 +21,16 @@ if (isa(Q,'double'))
   Q = ConstantTrajectory(Q);
 end
 if (isa(R,'double'))
-  R = ConstantTrajectory(R);
+  Ri = ConstantTrajectory(inv(R));
+elseif isa(R,'Trajectory')
+  Ri = inv(R);
+else
+  error('R must be a double or a trajectory object');
 end
+sizecheck(Ri,[nU,nU]);
 
 typecheck(Q,'Trajectory');  
 sizecheck(Q,[nX,nX]);
-typecheck(R,'Trajectory');
-sizecheck(R,[nU,nU]);
 
 switch class(Qf)
   case 'cell'
@@ -58,20 +61,19 @@ if (~isCT(obj)) error('only handle CT case so far'); end
 
 xdottraj = fnder(xtraj);
 
-%Sold = matrixODE(@ode45,@(t,S)Sdynamics(t,S,obj,Q,R,xtraj,utraj,options),tspan(end:-1:1),Qf);
-Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,R,xtraj,utraj,xdottraj,options),tspan(end:-1:1),{Qf{1}^(1/2),Qf{2},Qf{3}});
+Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,Ri,xtraj,utraj,xdottraj,options),tspan(end:-1:1),{Qf{1}^(1/2),Qf{2},Qf{3}});
 Ssqrt = flipToPP(Ssqrt);
 S = recompS(Ssqrt);
+B = getBTrajectory(obj,Ssqrt{1}.getBreaks(),xtraj,utraj,options);
 
 % note that this returns what we would normally call -K.  here u(t) = u_0(t) + K(t) (x(t) - x_0(t)) 
-%K = FunctionHandleTrajectory(@(t)Ksoln(t,obj,S,R,xtraj,utraj,options),[nX nU],tspan);
-K = affineKsolntraj(obj,S,R,xtraj,utraj,options);
+K = affineKsoln(S,Ri,B);
 
 if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
   warning('designing full-state feedback controller but plant has different output frame than state frame'); 
 end
   
-ltvsys = AffineSystem([],[],[],[],[],[],[],K1,K2);
+ltvsys = AffineSystem([],[],[],[],[],[],[],K{1},K{2});
 
 ltvsys = setInputFrame(ltvsys,CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix));
 obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ltvsys.getInputFrame,eye(nX),-xtraj));
@@ -82,21 +84,23 @@ ltvsys.getOutputFrame.addTransform(AffineTransform(ltvsys.getOutputFrame,obj.get
 obj.getInputFrame.addTransform(AffineTransform(obj.getInputFrame,ltvsys.getOutputFrame,eye(nU),-utraj));
 
 if (nargout>1)
-  p_x=ltvsys.getInputFrame.poly; %msspoly('x',getNumStates(obj));
-  p_t=msspoly('t',1);
-%  Sdotold = @(t)Sdynamics(t,Sold.eval(t),obj,Q,R,xtraj,utraj);
-%  Vtraj = FunctionHandleTrajectory(@(t) p_x'*(S.eval(t) + Sdot(t)*(p_t-t))*p_x, [1 1],tspan);
-  Sdotsqrt = @(t)affineSdynamics(t,Ssqrt.eval(t),obj,Q,R,xtraj,utraj,xdottraj,options);
-  Sdot = @(t) recompSdot(Ssqrt.eval(t),Sdotsqrt(t));
-  Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan);
-  V=PolynomialLyapunovFunction(ltvsys.getInputFrame,Vtraj);
-  % todo: i could dig into the ODESolution with taylorvar to get higher
-  % order, if Vddot was ever needed.
+  p_x=PolynomialWTimeVaryingCoefficients(ltvsys.getInputFrame.poly); 
+  V=PolynomialLyapunovFunction(ltvsys.getInputFrame,affineLyapunov(S,p_x));
 end
 
 end
 
 
+function B = getBTrajectory(plant,ts,xtraj,utraj,options)
+  nX = length(xtraj); nU = length(utraj);
+  B = zeros([nX,nU,length(ts)]);
+  for i=1:length(ts)
+    x0=xtraj.eval(ts(i)); u0 = utraj.eval(ts(i));
+    [f,df] = geval(@plant.dynamics,ts(i),x0,u0,options);
+    B(:,:,i) = df(:,nX+1+(1:nU));
+  end
+  B = PPTrajectory(spline(ts,B));
+end
 
 function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,options)
   x0 = xtraj.eval(t); u0 = utraj.eval(t);
@@ -109,17 +113,13 @@ function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,options)
   if (min(eig(S))<0) warning('S is not positive definite'); end
 end
 
-function K = Ksoln(t,plant,Straj,Rtraj,xtraj,utraj,options)
-  S = Straj.eval(t); Ri = inv(Rtraj.eval(t)); x0=xtraj.eval(t); u0 = utraj.eval(t);
-  nX = length(x0); nU = length(u0);
-  [f,df] = geval(@plant.dynamics,t,x0,u0,options);
-  B = df(:,nX+1+(1:nU));
+function K = Ksoln(S,Ri,B)
   K = -Ri*B'*S;
 end
 
-function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,xdottraj,options)
+function Sdot = affineSdynamics(t,S,plant,Qtraj,Ritraj,xtraj,utraj,xdottraj,options)
   x0 = xtraj.eval(t); u0 = utraj.eval(t); xdot0 = xdottraj.eval(t);
-  Q=Qtraj.eval(t);  Ri=inv(Rtraj.eval(t));
+  Q=Qtraj.eval(t);  Ri=Ritraj.eval(t);
   nX = length(x0); nU = length(u0);
   [xdot,df] = geval(@plant.dynamics,t,x0,u0,options);
   A = df(:,1+(1:nX));
@@ -133,38 +133,17 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,xdottraj,optio
   Sdot{3} = -(-S{2}'*B*Ri*B'*S{2}/4 + S{2}'*c);  
 end
     
-function K = affineKsoln(t,plant,Straj,Rtraj,xtraj,utraj,options)
-  S1 = Straj{1}.eval(t); S2=Straj{2}.eval(t); Ri = inv(Rtraj.eval(t)); x0=xtraj.eval(t); u0 = utraj.eval(t);
-  nX = length(x0); nU = length(u0);
-  [f,df] = geval(@plant.dynamics,t,x0,u0,options);
-  B = df(:,nX+1+(1:nU));
-  K{1} = -Ri*B'*S1;
-  K{2} = -.5*Ri*B'*S2;
-end
-
-function Ktraj = affineKsolntraj(plant,Straj,Rtraj,xtraj,utraj,options)
-  t=Straj{1}.getBreaks();
-  for i=1:length(t)
-    K=affineKsoln(t(i),plant,Straj,Rtraj,xtraj,utraj,options);
-    K1(:,:,i)=K{1};
-    K2(:,i)=K{2};
-  end
-  Ktraj = {PPTrajectory(spline(t,K1)), PPTrajectory(spline(t,K2))};
-end
-
 function S = recompS(Ssqrt)
   S{1} = Ssqrt{1}*Ssqrt{1}';
   S{2} = Ssqrt{2};
   S{3} = Ssqrt{3};
 end
 
-function Sdot = recompSdot(Ssqrt,Sdotsqrt)
-  Sdot{1} = Sdotsqrt{1}*Ssqrt{1}' + Ssqrt{1}*Sdotsqrt{1}';
-  Sdot{2} = Sdotsqrt{2};
-  Sdot{3} = Sdotsqrt{3};
+function K = affineKsoln(S,Ri,B)
+  K{1} = -Ri*B'*S{1};
+  K{2} = -.5*Ri*B'*S{2};
 end
 
-function V=affineLyapunov(t,S,Sdot,x0,p_x,p_t)
-  V = (p_x-x0)'*(S{1}+Sdot{1}*(p_t-t))*(p_x-x0) + (p_x-x0)'*(S{2}+Sdot{2}*(p_t-t)) + S{3}+Sdot{3}*(p_t-t);
+function V = affineLyapunov(S,p_x)
+  V = p_x'*S{1}*p_x + p_x'*S{2} + S{3}
 end
-
