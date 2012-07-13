@@ -17,6 +17,16 @@ nX = xtraj.dim;
 nU = utraj.dim;
 tspan=utraj.getBreaks();
 
+% create new coordinate frames
+iframe = CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix);
+obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,iframe,eye(nX),-xtraj));
+iframe.addTransform(AffineTransform(iframe,obj.getStateFrame,eye(nX),xtraj));
+
+oframe = CoordinateFrame([obj.getInputFrame.name,' + u0(t)'],nU,obj.getInputFrame.prefix);
+oframe.addTransform(AffineTransform(oframe,obj.getInputFrame,eye(nU),utraj));
+obj.getInputFrame.addTransform(AffineTransform(obj.getInputFrame,oframe,eye(nU),-utraj));
+
+
 if (isa(Q,'double'))
   Q = ConstantTrajectory(Q);
 end
@@ -32,22 +42,24 @@ sizecheck(Ri,[nU,nU]);
 typecheck(Q,'Trajectory');  
 sizecheck(Q,[nX,nX]);
 
-switch class(Qf)
-  case 'cell'
-  case 'double'
-    sizecheck(Qf,[nX,nX]);
-    Qf = {Qf,zeros(nX,1),0};
-  case 'PolynomialLyapunovFunction'
-    Vf=Qf.getPoly(tspan(end));
-    x=Qf.getFrame.poly;
-    % todo: check frames and convert frames (if necessary) here
-    Vf=subss(Vf,x,x+xtraj.eval(tspan(end)));
-    Qf=cell(3,1);
-    Qf{1}=double(.5*subs(diff(diff(Vf,x)',x),x,0*x));
-    Qf{2}=double(subs(diff(Vf,x),x,0*x))';
-    Qf{3}=double(subs(Vf,x,0*x));
-  otherwise
-    error('Qf must be a double, a 3x1 cell array, or a PolynomialLyapunovFunction');
+if iscell(Qf)
+  % intentionally left blank
+elseif isa(Qf,'double')
+  sizecheck(Qf,[nX,nX]);
+  Qf = {Qf,zeros(nX,1),0};
+elseif isa(Qf,'PolynomialLyapunovFunction')
+  Vf = Qf.inFrame(obj.getStateFrame);
+  Vf = Vf.inFrame(iframe);
+  
+  Vf=Qf.getPoly(tspan(end));
+  x=Qf.getFrame.poly;
+
+  Qf=cell(3,1);
+  Qf{1}=double(.5*subs(diff(diff(Vf,x)',x),x,0*x));
+  Qf{2}=double(subs(diff(Vf,x),x,0*x))';
+  Qf{3}=double(subs(Vf,x,0*x));
+else
+  error('Qf must be a double, a 3x1 cell array, or a PolynomialLyapunovFunction');
 end
 sizecheck(Qf,3);
 typecheck(Qf{1},'double');
@@ -74,18 +86,11 @@ if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a
 end
   
 ltvsys = AffineSystem([],[],[],[],[],[],[],K{1},K{2});
-
-ltvsys = setInputFrame(ltvsys,CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix));
-obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ltvsys.getInputFrame,eye(nX),-xtraj));
-ltvsys.getInputFrame.addTransform(AffineTransform(ltvsys.getInputFrame,obj.getStateFrame,eye(nX),xtraj));
-
-ltvsys = setOutputFrame(ltvsys,CoordinateFrame([obj.getInputFrame.name,' + u0(t)'],nU,obj.getInputFrame.prefix));
-ltvsys.getOutputFrame.addTransform(AffineTransform(ltvsys.getOutputFrame,obj.getInputFrame,eye(nU),utraj));
-obj.getInputFrame.addTransform(AffineTransform(obj.getInputFrame,ltvsys.getOutputFrame,eye(nU),-utraj));
+ltvsys = setInputFrame(ltvsys,iframe);
+ltvsys = setOutputFrame(ltvsys,oframe);
 
 if (nargout>1)
-  p_x=PolynomialWTimeVaryingCoefficients(ltvsys.getInputFrame.poly); 
-  V=PolynomialLyapunovFunction(ltvsys.getInputFrame,affineLyapunov(S,p_x));
+  V=QuadraticLyapunovFunction(ltvsys.getInputFrame,S{1},S{2},S{3});
 end
 
 end
@@ -144,6 +149,3 @@ function K = affineKsoln(S,Ri,B)
   K{2} = -.5*Ri*B'*S{2};
 end
 
-function V = affineLyapunov(S,p_x)
-  V = p_x'*S{1}*p_x + p_x'*S{2} + S{3}
-end
