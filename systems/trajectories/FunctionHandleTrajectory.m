@@ -10,6 +10,7 @@ classdef FunctionHandleTrajectory < Trajectory
   methods
     function obj = FunctionHandleTrajectory(handle,dim,breaks,dhandle)
     % Constructs a trajectory from the function handle, and optionally its derivative.
+      warning('Drake:FunctionHandleTrajectory','creating function handle.  this is potentially inefficient.  consider implementing things a different way');
       obj = obj@Trajectory(dim);
       if (nargin>0)
         if (~isa(handle,'function_handle')) error('handle should be a function handle'); end

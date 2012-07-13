@@ -82,6 +82,7 @@ else
   error('the second argument must be either a PolynomialLyapunovFunction or a double representing x0');
 end
 typecheck(V,'LyapunovFunction');
+if ~isTI(V) error('Lyapunov candidate should be time-invariant for region of attraction analysis'); end
 
 sys = sys.inStateFrame(V.getFrame); % convert system to Lyapunov function coordinates
 f = sys.getPolyDynamics;
@@ -89,6 +90,7 @@ f = sys.getPolyDynamics;
 if (sys.getNumInputs>0)
   f = subs(f,sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
 end
+f = f;
 
 %% handle options
 if (nargin>2) options=varargin{2};
@@ -204,7 +206,7 @@ function [L1,sigma1] = findL1(x,f,V,Lxmonom,options)
   L1 = l'*Lxmonom;
 
   % construct Vdot
-  Vdot = diff(V,x)*f;
+  Vdot = clean(diff(V,x)*f);
   
   % construct slack var
   [prog,sigma1] = new(prog,1,'pos');
@@ -318,7 +320,7 @@ function V = levelSetMethod(V0,f,options)
   
   %% undo balancing
   V = subss(V,x,inv(T)*x);
-  V = PolynomialLyapunovFunction(V0.getFrame,V);
+  V = SpotPolynomialLyapunovFunction(V0.getFrame,V);
 end
 
 function V=levelSetMethodYalmip(V0,f,options)

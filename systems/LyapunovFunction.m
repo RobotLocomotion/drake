@@ -21,10 +21,6 @@ classdef LyapunovFunction
       end
     end
     
-    function display(obj)
-      display(obj.getPoly);
-    end
-    
     function fr=getFrame(obj)
       fr = obj.frame;
     end

@@ -33,7 +33,6 @@ function V = sampledFiniteTimeVerification(sys,ts,G,varargin)
 %
 % Implements the algorithm described in http://arxiv.org/pdf/1010.3013v1
 
-x=sys.getStateFrame.poly;
 t=msspoly('t',1);
 ts=ts(:);
 
@@ -60,15 +59,14 @@ else
 end
 
 if (isnumeric(G) && ismatrix(G) && all(size(G)==[num_xc,num_xc]))
-  fr = V0.getFrame;
-  G = PolynomialLyapunovFunction(fr,fr.poly'*G*fr.poly);
+  G = QuadraticLyapunovFunction(V0.frame,G);
 end
 typecheck(G,'PolynomialLyapunovFunction');
 typecheck(V0,'PolynomialLyapunovFunction');
 
 
 %% for now, let's require that G matches V at the final conditions
-if (~equalpoly(G.getPoly(ts(end)),V0.getPoly(ts(end))))
+if (~equalpoly(clean(G.getPoly(ts(end))),clean(V0.getPoly(ts(end)))))
   error('for now, I require that G matches V at the final conditions');
 end  
 
@@ -78,6 +76,7 @@ N = length(ts);
 Vmin = zeros(N-1,1);
 
 sys = sys.inStateFrame(V0.getFrame); % convert system to Lyapunov function coordinates
+x=V0.getFrame.poly;
 
 % evaluate dynamics and Vtraj at every ts once (for efficiency/clarity)
 for i=1:N
@@ -89,15 +88,15 @@ for i=1:N
   end
   
   % got here
-  Vdot{i}=diff(V{i},x)*f + subss(V0.deriv(ts(i)),x,x+x0);
+  Vdot{i}=diff(V{i},x)*f + V0.getPolyTimeDeriv(ts(i));
 
   % balancing 
   S1=.5*doubleSafe(subs(diff(diff(V{i},x)',x),x,0*x));
   S2=.5*doubleSafe(subs(diff(diff(Vdot{i},x)',x),x,0*x));
   [T,D] = balanceQuadForm(S1,S2);
   
-  V{i}=subss(V{i},x,T*x);
-  Vdot{i}=subss(Vdot{i},x,T*x);
+  V{i}=clean(subss(V{i},x,T*x));
+  Vdot{i}=clean(subss(Vdot{i},x,T*x));
   
   Vmin(i) = minimumV(x,V{i});
 end
