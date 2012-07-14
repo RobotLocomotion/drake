@@ -48,6 +48,64 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       traj = PPTrajectory(mkpp(breaks,coefs,d));
     end
     
+    function c = plus(a,b)
+      if ~isequal(size(a),size(b))
+        error('must be the same size');  % should support scalars, too (but don't yet)
+      end
+      if any(size(a)==0)  % handle the empty case
+        c = ConstantTrajectory(zeros(size(a)));
+        return;
+      end
+      if isa(a,'ConstantTrajectory') a=double(a); end
+      if isa(b,'ConstantTrajectory') b=double(b); end
+      
+      if isnumeric(a)  % then only b is a PPTrajectory
+        [breaks,coefs,l,k,d] = unmkpp(b.pp);
+        if length(d)<2, d=[d 1]; elseif length(d)>2, error('plus is not defined for ND arrays'); end
+        coefs = reshape(coefs,[d,l,k]);
+        for i=1:l, 
+          coefs(:,:,i,end)=a+coefs(:,:,i,end);
+        end
+        c=PPTrajectory(mkpp(breaks,coefs,[size(a,1) d(2)]));
+        return;
+      elseif isnumeric(b) % then only a is a PPTrajectory
+        [breaks,coefs,l,k,d] = unmkpp(a.pp);
+        if length(d)<2, d=[d 1]; elseif length(d)>2, error('plus is not defined for ND arrays'); end
+        coefs = reshape(coefs,[d,l,k]);
+        for i=1:l,
+          coefs(:,:,i,end)=coefs(:,:,i,end)+b;
+        end
+        c=PPTrajectory(mkpp(breaks,coefs,[d(1) size(b,2)]));
+        return;
+      end
+
+      
+      if ~isa(a,'PPTrajectory') || ~isa(b,'PPTrajectory')
+        % kick out to general case if they're not both pp trajectories
+        c = plus@Trajectory(a,b);
+        return;
+      end
+      
+      [abreaks,acoefs,al,ak,ad] = unmkpp(a.pp);
+      [bbreaks,bcoefs,bl,bk,bd] = unmkpp(b.pp);
+      
+      if ~isequal(abreaks,bbreaks)
+        breaks = unique([abreaks,bbreaks]);
+        a.pp = pprfn(a.pp,setdiff(breaks,abreaks));
+        b.pp = pprfn(b.pp,setdiff(breaks,bbreaks));
+        
+        [abreaks,acoefs,al,ak,ad] = unmkpp(a.pp);
+        [bbreaks,bcoefs,bl,bk,bd] = unmkpp(b.pp);
+      end
+      if (ak>=bk)
+        coefs=acoefs; coefs(:,end-bk+1:end)=coefs(:,end-bk+1:end)+bcoefs;
+      else
+        coefs=bcoefs; coefs(:,end-ak+1:end)=coefs(:,end-ak+1:end)+acoefs;
+      end
+      
+      c = PPTrajectory(mkpp(abreaks,coefs,ad));
+    end
+    
     function c = mtimes(a,b)
       if any([size(a,1) size(b,2)]==0)  % handle the empty case
         c = ConstantTrajectory(zeros(size(a,1),size(b,2)));
@@ -83,13 +141,21 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         return;
       end
       
+%      c = PPTrajectory(fncmb(a.pp,'*',b.pp));  % this seems to fail on simple test cases??
+      
       [abreaks,acoefs,al,ak,ad] = unmkpp(a.pp);
       [bbreaks,bcoefs,bl,bk,bd] = unmkpp(b.pp);
       
       if ~isequal(abreaks,bbreaks)
-        warning('Drake:PPTrajectory:DifferentBreaks','mtimes for pptrajectories with different breaks not support (yet).  kicking out to function handle version');
-        c = mtimes@Trajectory(a,b);
-        return;
+        breaks = unique([abreaks,bbreaks]);
+        a.pp = pprfn(a.pp,setdiff(breaks,abreaks));
+        b.pp = pprfn(b.pp,setdiff(breaks,bbreaks));
+        
+        [abreaks,acoefs,al,ak,ad] = unmkpp(a.pp);
+        [bbreaks,bcoefs,bl,bk,bd] = unmkpp(b.pp);
+%        warning('Drake:PPTrajectory:DifferentBreaks','mtimes for pptrajectories with different breaks not support (yet).  kicking out to function handle version');
+%        c = mtimes@Trajectory(a,b);
+%        return;
       end
       
       if (length(ad)<2) ad=[ad 1];
@@ -105,13 +171,14 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       cbreaks = abreaks; % also bbreaks, by our assumption above
       cd = [ad(1) bd(2)];
       cl = al;  % also bl, by our assumption that abreaks==bbreaks
-      ck = (ak-1)*(bk-1)+1;
+      ck = ak+bk-1;
       
       ccoefs = zeros([cd,cl,ck]);
       for l=1:cl  
         for j=1:ak  % note: could probably vectorize at least the inner loops
           for k=1:bk
-            ccoefs(:,:,l,(j-1)*(k-1)+1)=acoefs(:,:,l,j)*bcoefs(:,:,l,k);
+%            order_a = ak-j; order_b = bk-k;  order_c = order_a+order*b;
+            ccoefs(:,:,l,ck-(ak-j)-(bk-k))=ccoefs(:,:,l,ck-(ak-j)-(bk-k)) + acoefs(:,:,l,j)*bcoefs(:,:,l,k);
           end
         end
       end

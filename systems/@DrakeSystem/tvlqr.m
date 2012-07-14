@@ -48,16 +48,20 @@ elseif isa(Qf,'double')
   sizecheck(Qf,[nX,nX]);
   Qf = {Qf,zeros(nX,1),0};
 elseif isa(Qf,'PolynomialLyapunovFunction')
-  Vf = Qf.inFrame(obj.getStateFrame);
+  Vf = extractQuadraticLyapunovFunction(Qf);
+  Vf = Vf.inFrame(obj.getStateFrame);
   Vf = Vf.inFrame(iframe);
-  
-  Vf=Qf.getPoly(tspan(end));
-  x=Qf.getFrame.poly;
 
   Qf=cell(3,1);
-  Qf{1}=double(.5*subs(diff(diff(Vf,x)',x),x,0*x));
-  Qf{2}=double(subs(diff(Vf,x),x,0*x))';
-  Qf{3}=double(subs(Vf,x,0*x));
+  if isTI(Vf)
+    Qf{1}=Vf.S;
+    Qf{2}=Vf.s1;
+    Qf{3}=Vf.s2;
+  else
+    Qf{1}=Vf.S.eval(tspan(end));
+    Qf{2}=Vf.s1.eval(tspan(end));
+    Qf{3}=Vf.s2.eval(tspan(end));
+  end
 else
   error('Qf must be a double, a 3x1 cell array, or a PolynomialLyapunovFunction');
 end
