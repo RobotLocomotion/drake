@@ -87,7 +87,6 @@ for i=1:N
     f = subs(f,sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
   end
   
-  % got here
   Vdot{i}=diff(V{i},x)*f + V0.getPolyTimeDeriv(ts(i));
 
   % balancing 
@@ -149,7 +148,7 @@ if (max(m)>0)
   error('infeasible rho.  increase c');
 end
 
-Vtraj = PolynomialTrajectory(@(t) V0.getPoly(t)/ppvalSafe(rhopp,t),unique([V0.getBreaks(),ts']));
+Vtraj = PolynomialTrajectory(@(t) V0.getPoly(t)/ppvalSafe(rhopp,t),ts);
 V = PolynomialLyapunovFunction(V0.getFrame,Vtraj);
 
 end

@@ -154,6 +154,12 @@ classdef AffineSystem < PolynomialSystem
         if (obj.num_x) y=y+obj.C.eval(t)*x; end
         if (obj.num_u) y=y+obj.D.eval(t)*u; end
         if ~isempty(obj.y0) y=y+obj.y0.eval(t); end
+        if (nargout>1)
+          dy = zeros(obj.num_y,1+obj.num_x+obj.num_u);
+          if (obj.num_x) dy(:,1:1+obj.num_x)=dy(:,1:1+obj.num_x) + [obj.C.deriv(t)*x, obj.C.eval(t)]; end
+          if (obj.num_u) dy(:,[1,2+obj.num_x:end])=dy(:,[1,2+obj.num_x:end])+[obj.D.deriv(t)*u,obj.D.eval(t)]; end
+          if ~isempty(obj.y0) dy(:,1)=dy(:,1)+obj.y0.deriv(t); end
+        end
       end
     end
     

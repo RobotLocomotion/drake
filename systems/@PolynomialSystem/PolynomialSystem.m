@@ -163,9 +163,10 @@ classdef PolynomialSystem < DrakeSystem
         function g = newdyn(t,sys,frame,ctf,dtf)
           x = sys.getStateFrame.poly; z=frame.poly;
           p_t = msspoly('t',1);
-          c = subs(ctf.getPolyOutput(t),ctf.getInputFrame.poly,x);
-          d = subs(dtf.getPolyOutput(t),dtf.getInputFrame.poly,z);
-          g = subs(diff(c,p_t),p_t,t) + diff(c,x)*sys.getPolyDynamics(t);
+          [c,dc]=ctf.output(t,[],x);
+          d = dtf.output(t,[],z);
+          dcdt = dc(:,1); dcdx = dc(:,2:end);
+          g = dcdt + dcdx*sys.getPolyDynamics(t);
           g = subss(g,x,d);
         end
       
