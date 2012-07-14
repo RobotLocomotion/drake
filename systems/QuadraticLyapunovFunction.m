@@ -68,7 +68,7 @@ classdef QuadraticLyapunovFunction < PolynomialLyapunovFunction
         tf = findTransform(frame,obj.getFrame,true);
         if isa(tf,'AffineTransform') && getNumStates(tf)==0  % then I can keep it quadratic
           D=tf.D;c=tf.y0;
-          V = QuadraticLyapunovFunction(frame,D'*obj.S*D,2*D'*obj.S*c + D'*obj.s1,c'*obj.S*c + c'*obj.s1,obj.s2);
+          V = QuadraticLyapunovFunction(frame,D'*obj.S*D,2*D'*obj.S*c + D'*obj.s1,c'*obj.S*c + c'*obj.s1 + obj.s2);
         else
           V = inFrame@PolynomialSystem(obj,frame);
         end

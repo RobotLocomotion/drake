@@ -36,6 +36,10 @@ classdef ConstantTrajectory < Trajectory
       obj.pt = -obj.pt;
     end
     
+    function a = ctranspose(a)
+      a = ConstantTrajectory(a.pt');
+    end
+    
     function c = mtimes(a,b)
       if isa(a,'ConstantTrajectory') a=a.pt; end
       if isa(b,'ConstantTrajectory') b=b.pt; end
