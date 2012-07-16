@@ -169,7 +169,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
 %       ( sum a(:,:,j)(t-t0)^(k-j) ) ( sum b(:,:,j)(t-t0)^(k-j) )
 
       cbreaks = abreaks; % also bbreaks, by our assumption above
-      cd = [ad(1) bd(2)];
+      if isscalar(a), cd = bd; elseif isscalar(b) cd = ad; else cd = [ad(1) bd(2)]; end
       cl = al;  % also bl, by our assumption that abreaks==bbreaks
       ck = ak+bk-1;
       
@@ -184,7 +184,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       end
       c = PPTrajectory(mkpp(cbreaks,ccoefs,cd));
     end
-    
+        
     function c = vertcat(a,varargin)
       typecheck(a,'PPTrajectory');  % todo: handle vertcat with non-PP trajectories
       [breaks,coefs,l,k,d] = unmkpp(a.pp);

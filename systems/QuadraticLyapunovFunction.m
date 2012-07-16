@@ -1,4 +1,4 @@
-classdef QuadraticLyapunovFunction < PolynomialLyapunovFunction
+classdef (InferiorClasses = {?ConstantTrajectory,?PPTrajectory,?FunctionHandleTrajectory}) QuadraticLyapunovFunction < PolynomialLyapunovFunction
   % x'*S*x + x'*s1 + s2
   % S,s1,s2 can be doubles or trajectories (yielding a time-varying quadratic)
   
@@ -75,5 +75,18 @@ classdef QuadraticLyapunovFunction < PolynomialLyapunovFunction
       end
     end
 
+    function V = mtimes(a,b)
+      % support simple scaling of Lyapunov functions via multiplication by
+      % a (scalar) double
+      if ~isa(b,'PolynomialLyapunovFunction')
+        % then a must be the lyapunov function.  swap them.
+        tmp=a; a=b; b=a;
+      end
+      typecheck(a,{'numeric','Trajectory'});
+      sizecheck(a,1);
+
+      V = QuadraticLyapunovFunction(b.getFrame, a*b.S, a*b.s1, a*b.s2);
+    end
+    
   end
 end
