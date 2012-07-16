@@ -52,6 +52,36 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
       
       V = QuadraticLyapunovFunction(obj.getFrame,S,s1,s2);
     end
+    
+    function V = mtimes(a,b)
+      % support simple scaling of Lyapunov functions via multiplication by
+      % a (scalar) double
+      error('not implemented yet'); % derived classes should implement this method
+    end
+
+    
+    % since I only care about scalar multiplication / division, i can
+    % support the related calls, too.
+    function V = times(a,b)
+      sizecheck(a,1); sizecheck(b,1);
+      V = mtimes(a,b); 
+    end
+    function V = mrdivide(a,b)
+      sizecheck(a,1); sizecheck(b,1);
+      V = mtimes(a,inv(b));
+    end
+    function mldivide(a,b)
+      sizecheck(a,1); sizecheck(b,1);
+      V = mtimes(inv(a),b);
+    end
+    function rdivide(a,b)
+      sizecheck(a,1); sizecheck(b,1);
+      V = mtimes(a,inv(b));
+    end
+    function ldivide(a,b)
+      sizecheck(a,1); sizecheck(b,1);
+      V = mtimes(inv(a),b);
+    end
   end
 
   % todo: move over getLevelSet, getProjection, plotFunnel, ...

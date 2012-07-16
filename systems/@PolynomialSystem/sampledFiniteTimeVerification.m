@@ -126,10 +126,10 @@ for iter=1:options.max_iterations
   L=findMultipliers(x,V,Vdot,rho,rhodot,options);
   [rho,rhointegral]=optimizeRho(x,V,Vdot,L,dts,Vmin,rhof,options);
   rhodot = diff(rho)./dts;
-  rhopp=foh(ts,rho');
 
   % plot current rho
   if (options.plot_rho)
+    rhopp=foh(ts,rho');
     figure(10); fnplt(rhopp); title(['iteration ',num2str(iter)]); drawnow;
   end
   
@@ -148,8 +148,7 @@ if (max(m)>0)
   error('infeasible rho.  increase c');
 end
 
-Vtraj = PolynomialTrajectory(@(t) V0.getPoly(t)/ppvalSafe(rhopp,t),ts);
-V = PolynomialLyapunovFunction(V0.getFrame,Vtraj);
+V = PPTrajectory(foh(ts,1./rho'))*V0;  % note: the inverse here is an approximation (since 1/rho is not polynomial).  It would be better to rewrite the verification conditions in terms of inv(rho)
 
 end
 

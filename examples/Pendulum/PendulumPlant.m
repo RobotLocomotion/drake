@@ -106,7 +106,7 @@ classdef PendulumPlant < SecondOrderSystem
     
     function c=trajectorySwingUpAndBalance(obj)
       [ti,Vf] = balanceLQR(obj);
-      Vf = SpotPolynomialLyapunovFunction(Vf.getFrame,Vf.getPoly*5);  % artificially prune, since ROA is solved without input limits
+      Vf = 5*Vf;  % artificially prune, since ROA is solved without input limits
 
 %      c = LQRTree(ti,Vf);
       [utraj,xtraj]=swingUpTrajectory(obj);  
@@ -118,7 +118,7 @@ classdef PendulumPlant < SecondOrderSystem
       options.degL1=2;
       Vswingup=sampledFiniteTimeVerification(psys,xtraj.getBreaks(),Vf,Vswingup,options);
 
-      c = c.addTrajectory(tv,Vtraj);
+%      c = c.addTrajectory(tv,Vswingup);
     end
     
     function c=balanceLQRTree(p)

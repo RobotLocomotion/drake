@@ -29,5 +29,18 @@ classdef SpotPolynomialLyapunovFunction < PolynomialLyapunovFunction
         Vpoly=subs(obj.Vpoly,obj.p_t,t);
       end
     end
+    
+    function b = mtimes(a,b)
+      % support simple scaling of Lyapunov functions via multiplication by
+      % a (scalar) double
+      if ~isa(b,'PolynomialLyapunovFunction')
+        % then a must be the lyapunov function.  swap them.
+        tmp=a; a=b; b=a;
+      end
+      typecheck(a,'numeric');
+      sizecheck(a,1);
+
+      b.Vpoly = a*b.Vpoly;
+    end
   end
 end
