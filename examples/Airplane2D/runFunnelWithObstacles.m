@@ -24,16 +24,19 @@ options.rho0_tau = 10;
 [c,V]=tvlqr(p,xtraj,utraj,Q,R,diag([1 1 10 10]));
 sys = feedback(p,c);
 utraj = ConstantTrajectory(zeros(p.getNumInputs,1)); utraj=utraj.setOutputFrame(p.getInputFrame); 
+poly = taylorApprox(sys,xtraj,utraj,3);
 
 options.stability = true;
 options.max_iterations=20;
-options.converged_tol =1e-4;
-
-V=sampledFiniteTimeVerification(poly,Vf,V,xtraj.getBreaks(),xtrajClosedLoop,utraj,options);
+options.converged_tol =1e-5;
+V=sampledFiniteTimeVerification(poly,xtraj.getBreaks(),diag([1 1 10 10]),V,options);
 disp('done');
 
 figure(25);
-plotFunnel(V,xtraj,[1 2]);
+options.plotdims=[1 2];
+options.inclusion='projection';
+%save itall.mat;
+plotFunnel(V.inFrame(p.getStateFrame()),options);
 h=fnplt(xtraj,[1 2]); 
 set(h,'Color',[1 0 0]);
 %keyboard;
@@ -80,12 +83,13 @@ for i=fliplr(1:length(ts)-1)
 %  end
 end
 
+% todo: still need to update this
 Vtrim = PolynomialTrajectory(@(t) V.eval(t)/ppvalSafe(foh(ts,rho),t),ts);
 
 clf;
 v = PlaneVisualizer(p,field);
 v.draw(0,x0);
-plotFunnel(Vtrim,xtraj,[1 2]);
+plotFunnel(Vtrim.inFrame(p.getStateFrame()));
 h=fnplt(xtraj,[1 2]); 
 set(h,'Color',[1 0 0]);
 

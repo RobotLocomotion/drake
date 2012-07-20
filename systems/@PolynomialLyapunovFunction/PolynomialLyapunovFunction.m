@@ -27,6 +27,17 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
       error('not implemented yet');
     end
     
+    function y = getLevelSet(obj,t,options)
+      if (nargin<3) options=struct(); end
+      if isTI(obj) t=0; elseif nargin<2 || isempty(t), error('you must specify a time'); end
+      y = getLevelSet(obj.getFrame.poly,obj.getPoly(t),options);
+    end
+    
+    function v = getLevelSetVolume(obj,t)
+      if isTI(obj) t=0; elseif nargin<2 || isempty(t), error('you must specify a time'); end
+      v = getLevelSetVolume(obj.getFrame.poly,obj.getPoly(t));
+    end
+    
     function V = inFrame(obj,frame)
       if (frame==obj.getFrame)
         V = obj;
@@ -84,5 +95,4 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
     end
   end
 
-  % todo: move over getLevelSet, getProjection, plotFunnel, ...
 end

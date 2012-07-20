@@ -75,7 +75,7 @@ if nargin<2 || isnumeric(varargin{1})
   A = doubleSafe(subs(diff(f,x),x,x0));
   Q = eye(sys.num_x);  % todo: take this as a parameter?
   P = lyap(A',Q);
-  V = PolynomialLyapunovFunction(frame,x'*P*x);
+  V = QuadraticLyapunovFunction(frame,P);
 elseif isa(varargin{1},'PolynomialLyapunovFunction')
   V = varargin{1};
 else
@@ -186,9 +186,9 @@ function V = bilinear(V0,f,options)
     vol = rho;
     
     % undo balancing (for the next iteration, or if i'm done)
-    V = PolynomialLyapunovFunction(V.getFrame,subss(Vbal,x,inv(T)*x));
-    plotFunnel(V,zeros(num_x,1)); 
-    plotFunnel(PolynomialLyapunovFunction(V0.getFrame,V0.getPoly/rho),zeros(num_x,1),[],struct('color',[.9 .3 .2])); drawnow;
+    V = SpotPolynomialLyapunovFunction(V.getFrame,subss(Vbal,x,inv(T)*x));
+    plotFunnel(V); 
+    plotFunnel(V0/rho,struct('color',[.9 .3 .2])); drawnow;
     
     % check for convergence
     if ((vol - last_vol) < options.converged_tol*last_vol)
@@ -356,7 +356,7 @@ function V=levelSetMethodYalmip(V0,f,options)
 
   %% undo balancing
   V = subss(V,x,inv(T)*x);
-  V = PolynomialLyapunovFunction(V0.frame,V);
+  V = SpotPolynomialLyapunovFunction(V0.frame,V);
 end
 
 %% Line search
@@ -389,7 +389,7 @@ function V = rhoLineSearch(V0,f,options)
 
   %% undo balancing
   V = subss(V,x,inv(T)*x);
-  V = PolynomialLyapunovFunction(V0.frame,V);
+  V = SpotPolynomialLyapunovFunction(V0.frame,V);
 end
 
 function [slack,info] = checkConstantRho(V0,f,options)
@@ -507,7 +507,7 @@ function V = sampling(V0,f,options)
 
   %% undo balancing
   V = subss(V,x,inv(T)*x);
-  V = PolynomialLyapunovFunction(V0.frame,V);
+  V = SpotPolynomialLyapunovFunction(V0.frame,V);
 end
 
 function m = samplingCheckRho(rho,x,V,Vdot,options)

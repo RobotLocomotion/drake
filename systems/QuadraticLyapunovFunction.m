@@ -68,7 +68,7 @@ classdef (InferiorClasses = {?ConstantTrajectory,?PPTrajectory,?FunctionHandleTr
         tf = findTransform(frame,obj.getFrame,true);
         if isa(tf,'AffineTransform') && getNumStates(tf)==0  % then I can keep it quadratic
           D=tf.D;c=tf.y0;
-          V = QuadraticLyapunovFunction(frame,D'*obj.S*D,2*D'*obj.S*c + D'*obj.s1,c'*obj.S*c + c'*obj.s1 + obj.s2);
+          V = QuadraticLyapunovFunction(frame,D'*obj.S*D,D'*(obj.S+obj.S')*c + D'*obj.s1,c'*obj.S*c + c'*obj.s1 + obj.s2);
         else
           V = inFrame@PolynomialSystem(obj,frame);
         end
@@ -80,7 +80,7 @@ classdef (InferiorClasses = {?ConstantTrajectory,?PPTrajectory,?FunctionHandleTr
       % a (scalar) double
       if ~isa(b,'PolynomialLyapunovFunction')
         % then a must be the lyapunov function.  swap them.
-        tmp=a; a=b; b=a;
+        tmp=a; a=b; b=tmp;
       end
       typecheck(a,{'numeric','Trajectory'});
       sizecheck(a,1);
@@ -88,5 +88,18 @@ classdef (InferiorClasses = {?ConstantTrajectory,?PPTrajectory,?FunctionHandleTr
       V = QuadraticLyapunovFunction(b.getFrame, a*b.S, a*b.s1, a*b.s2);
     end
     
+    
+    function h=plotFunnel(obj,options)  
+      if nargin<2, options=struct(); end
+      if ~isTI(obj) && ~isfield(options,'ts')
+        % compute natural time samples from trajectory information
+        tspan = [max([obj.S.tspan(1),obj.s1.tspan(1),obj.s2.tspan(1)]),min([obj.S.tspan(2),obj.s1.tspan(2),obj.s2.tspan(2)])];
+        ts = unique([reshape(obj.S.getBreaks(),[],1);reshape(obj.s1.getBreaks(),[],1);reshape(obj.s2.getBreaks(),[],1)]);
+        options.ts = ts(ts>=tspan(1) & ts<=tspan(2));
+      end
+      
+      % then pass it to the main plotFunnel
+      h = plotFunnel@PolynomialLyapunovFunction(obj,options);
+    end
   end
 end

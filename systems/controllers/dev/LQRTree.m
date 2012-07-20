@@ -315,7 +315,7 @@ classdef LQRTree < HybridDrakeSystem
           Vf = Vf*5;  % artificially prune, since ROA is solved without input limits
         end
         
-        plotFunnel(Vf,xG); drawnow;
+        plotFunnel(Vf); drawnow;
       end
       
       % create LQR Tree
@@ -409,7 +409,7 @@ classdef LQRTree < HybridDrakeSystem
             end
             rethrow(ex);  % otherwise, it's a real error
           end
-          plotFunnel(V,xtraj,options.plotdims); drawnow;
+          plotFunnel(V,options); drawnow;
         else
           V=PolynomialTrajectory(@(t) 1e5*Vtraj.eval(t),Vtraj.getBreaks());
         end

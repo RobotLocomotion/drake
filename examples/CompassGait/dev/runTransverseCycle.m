@@ -1,7 +1,5 @@
 function c=runTransverseCycle
 
-% NOTEST
-
 p=CompassGaitPlant();
 [utraj,xtraj] = runDircolCycle;
 

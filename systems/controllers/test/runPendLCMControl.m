@@ -1,3 +1,4 @@
+function runPendLCMControl
 
 load drake_config;
 oldpath = addpath([conf.root,'/examples/Pendulum']);

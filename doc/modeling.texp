@@ -16,11 +16,11 @@ vector $y$.
 
 \begin{center}
 \begin{tikzpicture}[auto, node distance=2cm,>=latex']
-   \node (input) {};
-   \node [block, right of=input] (system) {System};
-   \draw [->] (input) -- node {$u$} (system);
-   \node [right of=system] (output) {};
-   \draw [->] (system) -- node {$y$} (output);
+  \node (input) {};
+  \node [block, right of=input] (system) {System};
+  \draw [->] (input) -- node {$u$} (system);
+  \node [right of=system] (output) {};
+  \draw [->] (system) -- node {$y$} (output);
 \end{tikzpicture}
 \end{center}
 

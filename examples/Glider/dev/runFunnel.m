@@ -35,7 +35,7 @@ poly = taylorApprox(sys,xtraj,[],3);
 V=sampledFiniteTimeVerification(poly,diag([10,1]),V,xtraj.getBreaks());
 
 figure(1); clf; hold on;
-plotFunnel(V,xtraj);
+plotFunnel(V);
 fnplt(xtraj); 
 
 end

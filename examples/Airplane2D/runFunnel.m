@@ -25,12 +25,11 @@ poly = taylorApprox(sys,xtraj,utraj,3);
 
 %options.stability = true;
 
-V=sampledFiniteTimeVerification(poly,Vf,V,xtraj.getBreaks(),xtrajClosedLoop,utraj,options);
+V=sampledFiniteTimeVerification(poly,xtraj.getBreaks(),diag([1 1 10 10]),V,options);
 disp('done');
-V
 
-
-plotFunnel(V,xtraj,[1 2]);
+options.plotdims = [1 2];
+plotFunnel(V.inFrame(p.getStateFrame()),options);
 fnplt(xtraj,[1 2]); 
 
 end

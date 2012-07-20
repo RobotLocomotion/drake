@@ -8,6 +8,11 @@ nU = getNumInputs(obj);
 tspan=xtraj.getBreaks(); %TODO: pass in options for tspan
 %tspan = linspace(tspan(1), tspan(end), 100);
 
+% create new coordinate frame
+fr = CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix);
+obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,fr,eye(nX),-xtraj));
+fr.addTransform(AffineTransform(fr,obj.getStateFrame,eye(nX),xtraj));
+
 if (isa(Q,'double'))
   Q = ConstantTrajectory(Q);
 end
@@ -15,22 +20,28 @@ end
 typecheck(Q,'Trajectory');  
 sizecheck(Q,[nX,nX]);
 
-switch class(Qf)
-  case 'cell'
-  case 'double'
-    sizecheck(Qf,[nX,nX]);
-    Qf = {Qf,zeros(nX,1),0};
-  case 'PolynomialLyapunovFunction'
-    Vf=Qf.getPoly(tspan(end));
-    x=Qf.getFrame.poly;
-    % todo: check frames and convert frames (if necessary) here
-    Vf=subss(Vf,x,x+xtraj.eval(tspan(end)));
-    Qf=cell(3,1);
-    Qf{1}=double(.5*subs(diff(diff(Vf,x)',x),x,0*x));
-    Qf{2}=double(subs(diff(Vf,x),x,0*x))';
-    Qf{3}=double(subs(Vf,x,0*x));
-  otherwise
-    error('Qf must be a double, a 3x1 cell array, or a PolynomialLyapunovFunction');
+if iscell(Qf)
+  % intentionally left blank
+elseif isa(Qf,'double')
+  sizecheck(Qf,[nX,nX]);
+  Qf = {Qf,zeros(nX,1),0};
+elseif isa(Qf,'PolynomialLyapunovFunction')
+  Vf = extractQuadraticLyapunovFunction(Qf);
+  Vf = Vf.inFrame(obj.getStateFrame);
+  Vf = Vf.inFrame(fr);
+
+  Qf=cell(3,1);
+  if isTI(Vf)
+    Qf{1}=Vf.S;
+    Qf{2}=Vf.s1;
+    Qf{3}=Vf.s2;
+  else
+    Qf{1}=Vf.S.eval(tspan(end));
+    Qf{2}=Vf.s1.eval(tspan(end));
+    Qf{3}=Vf.s2.eval(tspan(end));
+  end
+else
+  error('Qf must be a double, a 3x1 cell array, or a PolynomialLyapunovFunction');
 end
 sizecheck(Qf,3);
 typecheck(Qf{1},'double');
@@ -46,20 +57,11 @@ xdottraj = fnder(xtraj);
 
 odeoptions = odeset('RelTol',1e-6,'AbsTol',1e-12);
 Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,xtraj,xdottraj),tspan(end:-1:1),{Qf{1}^(1/2),Qf{2},Qf{3}},odeoptions);
-S = FunctionHandleTrajectory(@(t) recompS(Ssqrt.eval(t)),[nX,nX],tspan);
 %S_nonAffine = matrixODE(@ode45,@(t,S)Sdynamics(t,S,obj,Q,xtraj),tspan(end:-1:1),Qf{1},odeoptions);
+Ssqrt = flipToPP(Ssqrt);
+S = recompS(Ssqrt);
 
-fr = CoordinateFrame([sys.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix);
-obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,fr,eye(nX),-xtraj));
-fr.addTransform(AffineTransform(fr,obj.getStateFrame,eye(nX),xtraj));
-
-p_x=fr.poly;
-p_t=msspoly('t',1);
-%Sdot = @(t)Sdynamics(t,S.eval(t),obj,Q,xtraj);
-%Vtraj = PolynomialTrajectory(@(t) lyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan);
-Sdot = @(t)recompSdot(Ssqrt.eval(t),affineSdynamics(t,Ssqrt.eval(t),obj,Q,xtraj,xdottraj));
-Vtraj = PolynomialTrajectory(@(t) affineLyapunov(t,S.eval(t),Sdot(t),xtraj.eval(t),p_x,p_t), tspan);
-V = PolynomialLyapunovFunction(fr,Vtraj);
+V=QuadraticLyapunovFunction(ltvsys.getInputFrame,S{1},S{2},S{3});
 
 end
 
@@ -72,9 +74,7 @@ function Sdot = Sdynamics(t,S,plant,Qtraj,xtraj)
   
   % f = xdot
   % xtraj.deriv(t) should equal f
-  
-  
-  
+
   A = df(:,1+(1:nX));
   Sdot = -(Q + S*A + A'*S);
   if (min(eig(S))<0) error('S is not positive definite'); end
@@ -100,16 +100,4 @@ function S = recompS(Ssqrt)
   S{3} = Ssqrt{3};
 end
 
-function Sdot = recompSdot(Ssqrt,Sdotsqrt)
-  Sdot{1} = Sdotsqrt{1}*Ssqrt{1}' + Ssqrt{1}*Sdotsqrt{1}';
-  Sdot{2} = Sdotsqrt{2};
-  Sdot{3} = Sdotsqrt{3};
-end
 
-function V=lyapunov(t,S,Sdot,x0,p_x,p_t)
-  V = (p_x-x0)'*(S+Sdot*(p_t-t))*(p_x-x0);
-end
-
-function V=affineLyapunov(t,S,Sdot,x0,p_x,p_t)
-  V = (p_x-x0)'*(S{1}+Sdot{1}*(p_t-t))*(p_x-x0) + (p_x-x0)'*(S{2}+Sdot{2}*(p_t-t)) + S{3}+Sdot{3}*(p_t-t);
-end

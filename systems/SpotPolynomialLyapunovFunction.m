@@ -35,7 +35,7 @@ classdef SpotPolynomialLyapunovFunction < PolynomialLyapunovFunction
       % a (scalar) double
       if ~isa(b,'PolynomialLyapunovFunction')
         % then a must be the lyapunov function.  swap them.
-        tmp=a; a=b; b=a;
+        tmp=a; a=b; b=tmp;
       end
       typecheck(a,'numeric');
       sizecheck(a,1);
