@@ -88,20 +88,25 @@ classdef CoordinateFrame < handle
       typecheck(target,'CoordinateFrame');
       ind=find(cellfun(@(a)getOutputFrame(a)==target,obj.transforms));
       if isempty(ind)
-        % add my children to the queue
-        
-        % now check the my queue for a match
-        
-        
         if (options.depth>1)
           options.depth = options.depth-1;
-          options.dirty_list = {options.dirty_list; obj};
-          for i=1:length(obj.transforms)
-            if ismember(options.dirty_list,obj.transforms{i}.getOutputFrame())
+
+          % add myself to the dirty list
+          options.dirty_list = vertcat(options.dirty_list, obj);
+
+          % add my children to the queue 
+          options.queue = vertcat(options.queue,cellfun(getOutputFrame,obj.transforms));
+          
+          % now check the queue for a match
+          while ~isempty(options.queue)
+            a = options.queue{1};
+            options.queue = options.queue(2:end);
+
+            if ismember(options.dirty_list,a)
               continue;
             end
-            options.queue{end+1} = obj.transforms{i}.getOutputFrame();
-          end
+            
+            [tf,options] = findTransform(a,target,options);
           
             if ~isempty(tf)
               tf = cascade(obj.transforms{i},tf);
