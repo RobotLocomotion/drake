@@ -108,7 +108,7 @@ classdef PendulumPlant < SecondOrderSystem
       [ti,Vf] = balanceLQR(obj);
       Vf = 5*Vf;  % artificially prune, since ROA is solved without input limits
 
-%      c = LQRTree(ti,Vf);
+      c = LQRTree(ti,Vf);
       [utraj,xtraj]=swingUpTrajectory(obj);  
       
       Q = diag([10 1]);  R=1;
@@ -118,7 +118,7 @@ classdef PendulumPlant < SecondOrderSystem
       options.degL1=2;
       Vswingup=sampledFiniteTimeVerification(psys,xtraj.getBreaks(),Vf,Vswingup,options);
 
-%      c = c.addTrajectory(tv,Vswingup);
+      c = c.addTrajectory(tv,Vswingup);
     end
     
     function c=balanceLQRTree(p)

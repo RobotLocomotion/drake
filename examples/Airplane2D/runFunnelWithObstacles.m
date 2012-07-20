@@ -35,11 +35,13 @@ disp('done');
 figure(25);
 options.plotdims=[1 2];
 options.inclusion='projection';
-%save itall.mat;
 plotFunnel(V.inFrame(p.getStateFrame()),options);
 h=fnplt(xtraj,[1 2]); 
 set(h,'Color',[1 0 0]);
-%keyboard;
+
+return;  
+
+% todo: implement trimming properly
 
 ts = V.getBreaks();
 rho(length(ts))=1;
@@ -75,7 +77,7 @@ for i=fliplr(1:length(ts)-1)
 %       Vmin = blah(Vt,V.p_x,A,b)
       x0 = xtraj.eval(ts(i));
       x = [vert;repmat(x0(3:4),1,size(vert,2))];
-      Vvert = V.polyeval(ts(i),x);
+      Vvert = V.eval(ts(i),x);
       if (min(Vvert)<rho(i))
         rho(i) = min(Vvert);
       end
