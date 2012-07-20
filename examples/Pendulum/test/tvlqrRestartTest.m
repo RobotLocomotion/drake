@@ -10,12 +10,12 @@ p = setInputLimits(p,-inf,inf);
 Q=diag([10,1]);R=.1;
 [c,V] = tvlqr(p,xtraj,utraj,Q,R,Q);
 
-[breaks,coefs,l,k,d]=unmkpp(utraj.pp);
+[breaks,coefs,l,k,d]=unmkpp(utraj.pp());
 isplit = floor(l/2);
 utraj1 = PPTrajectory(mkpp(breaks(1:isplit+1),coefs(1:isplit,:),d));
 utraj2 = PPTrajectory(mkpp(breaks(isplit+1:end),coefs(isplit+1:end,:),d));
 
-[breaks,coefs,l,k,d]=unmkpp(xtraj.pp); coefs=reshape(coefs,prod(d),l,k);
+[breaks,coefs,l,k,d]=unmkpp(xtraj.pp()); coefs=reshape(coefs,prod(d),l,k);
 xtraj1 = PPTrajectory(mkpp(breaks(1:isplit+1),coefs(:,1:isplit,:),d));
 xtraj2 = PPTrajectory(mkpp(breaks(isplit+1:end),coefs(:,isplit+1:end,:),d));
 

@@ -25,7 +25,10 @@ classdef LQRTree < HybridDrakeSystem
       obj = obj.setOutputFrame(tilqr.getOutputFrame());
             
       % add a "do nothing" controller (aka zero controller)
-      [obj,obj.zero_mode_num] = addMode(obj,ConstOrPassthroughSystem(zeros(obj.num_y,1),obj.num_u));
+      c0=ConstOrPassthroughSystem(zeros(obj.num_y,1),obj.num_u);
+      c0=c0.setInputFrame(tilqr.getInputFrame());
+      c0=c0.setOutputFrame(tilqr.getOutputFrame());
+      [obj,obj.zero_mode_num] = addMode(obj,c0);
       
       % switch from zero control to any controller
       obj = addTransition(obj,obj.zero_mode_num,@inAnyFunnelGuard,@transitionIntoAnyFunnel,true,true);
@@ -38,27 +41,20 @@ classdef LQRTree < HybridDrakeSystem
       
       %% precompute quadratic forms
       % switch to object coordinates
-      xVf=V.getFrame; xinf=obj.getInputFrame;
-      xV=xVf.poly; xin = xinf.poly;
-      if (xVf ~= xinf)
-        tf=findTransform(xinf,xVf,true);  typecheck(tf,'AffineTransform');
-        Vpoly = msubs(V.Vpoly,xV,tf.D*xin+tf.y0);
-      else
-        Vpoly = V.Vpoly;
-      end
+      if ~isTI(V) error('i''ve assumed so far that the initial controller / lyapunov pair is time invariant'); end
+      V = V.inFrame(obj.getInputFrame).extractQuadraticLyapunovFunction();
       
-      if (deg(Vpoly,xV)>2) error('precomputation assumes quadratic forms for now'); end
-      obj.S1=sparse(doubleSafe(.5*subs(diff(diff(Vpoly,xin)',xin),xin,0*xin)));
-      obj.s2=sparse(doubleSafe(subs(diff(Vpoly,xin),xin,0*xin)));
-      obj.s3=doubleSafe(subs(V.Vpoly,xin,0*xin));
+      obj.S1=V.S;
+      obj.s2=V.s1;
+      obj.s3=V.s2;
       obj.x0=zeros(tilqr.getNumInputs,1); % tree controller is in the coordinate frame of the tilqr controller
       obj.t0=0;
       obj.m=obj.tilqr_mode_num;
     end
     
     function [obj,ind]=addTrajectory(obj,tvlqr,Vtv,parentID,parentT)
-      typecheck(tvlqr,'LTVControl');
-      typecheck(Vtv,'PolynomialTrajectory');
+      typecheck(tvlqr,'AffineSystem');
+      typecheck(Vtv,'QuadraticLyapunovFunction');
       
       N = obj.num_tvlqr_modes;
       if (nargin<4) parentID=obj.tilqr_mode_num; end

@@ -125,7 +125,7 @@ classdef CartPolePlant < Manipulator
       psys = taylorApprox(feedback(obj,tv),xtraj,u0traj,3);
       options.rho0_tau = 10;
       options.max_iterations = 3;
-      Vtraj=sampledFiniteTimeVerification(psys,Vf,Vtraj,xtraj.getBreaks(),xtraj,utraj,options);
+      Vtraj=sampledFiniteTimeVerification(psys,xtraj.getBreaks(),Vf,Vtraj,options);
 
 %      c = c.addTrajectory(tv,Vtraj);
     end  

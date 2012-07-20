@@ -88,6 +88,9 @@ classdef (InferiorClasses = {?ConstantTrajectory,?PPTrajectory,?FunctionHandleTr
       V = QuadraticLyapunovFunction(b.getFrame, a*b.S, a*b.s1, a*b.s2);
     end
     
+    function V = extractQuadraticLyapunovFunction(obj)
+      V=obj;
+    end
     
     function h=plotFunnel(obj,options)  
       if nargin<2, options=struct(); end

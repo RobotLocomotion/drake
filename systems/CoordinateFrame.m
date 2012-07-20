@@ -78,10 +78,38 @@ classdef CoordinateFrame < handle
       end
     end
     
-    function tf=findTransform(obj,target,throw_error_if_fail)
+    function [tf,options]=findTransform(obj,target,options)
+      if (nargin<3) options=struct(); end
+      if ~isfield(options,'depth') options.depth=inf; end
+      if ~isfield(options,'throw_error_if_fail') options.throw_error_if_fail = true; end
+      if ~isfield(options,'dirty_list') options.dirty_list={}; end
+      if ~isfield(options,'queue') options.queue={}; end
+      
       typecheck(target,'CoordinateFrame');
       ind=find(cellfun(@(a)getOutputFrame(a)==target,obj.transforms));
-      if (isempty(ind))
+      if isempty(ind)
+        % add my children to the queue
+        
+        % now check the my queue for a match
+        
+        
+        if (options.depth>1)
+          options.depth = options.depth-1;
+          options.dirty_list = {options.dirty_list; obj};
+          for i=1:length(obj.transforms)
+            if ismember(options.dirty_list,obj.transforms{i}.getOutputFrame())
+              continue;
+            end
+            options.queue{end+1} = obj.transforms{i}.getOutputFrame();
+          end
+          
+            if ~isempty(tf)
+              tf = cascade(obj.transforms{i},tf);
+              return;
+            end
+          end
+        end
+        
         tf=[];
         if (nargin>2 && throw_error_if_fail)
           error(['Could not find any transform between ',obj.name,' and ', target.name]);
