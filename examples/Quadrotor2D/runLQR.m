@@ -12,7 +12,7 @@ sys = feedback(p,c);
 %end
 %return;
 
-figure(1); plotFunnel(V,[],[3 6]); 
+figure(1); plotFunnel(V,struct('plotdims',[3 6])); 
 xlabel('$\theta$','interpreter','latex');
 ylabel('$\dot\theta$','interpreter','latex');
 

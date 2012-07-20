@@ -15,7 +15,7 @@ x0 = [0;pi;0;0];
 
 V = V.inFrame(d.getStateFrame);
 
-figure(1); plotFunnel(V,[],[2 4],struct('inclusion','projection')); 
+figure(1); plotFunnel(V,struct('plotdims',[2 4],'inclusion','projection')); 
 xlabel('$\theta$','interpreter','latex');
 ylabel('$\dot\theta$','interpreter','latex');
 

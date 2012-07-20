@@ -135,6 +135,8 @@ classdef PolynomialSystem < DrakeSystem
     end
     
     function sys = inStateFrame(sys,frame)
+      if (sys.getStateFrame == frame) return; end
+      
       if (~isCT(sys) || isRational(sys) || getNumStateConstraints(sys)>0), error('not implemented yet'); end   % though some of them would be easy to implement
 
       ctf = findTransform(getStateFrame(sys),frame,true);

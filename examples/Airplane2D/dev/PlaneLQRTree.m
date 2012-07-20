@@ -34,7 +34,7 @@ options.Tslb = .2;
 options.Tsub = 3;
 
 px = p.getStateFrame.poly;
-options.Vf = PolynomialLyapunovFunction(p.getStateFrame,1e4*px'*Qf*px);
+options.Vf = QuadraticLyapunovFunction(p.getStateFrame,1e4*Qf);
 c = LQRTree.buildLQRTree(p,xG,uG,@()rand(4,1).*[6;6;pi/2;4]-[-2;0;pi/4;2],Q,R,options);
 
 end

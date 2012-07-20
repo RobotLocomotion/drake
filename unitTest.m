@@ -319,6 +319,8 @@ function editNode(node)
     cd (data.path);
     edit(data.test);
     cd(p);
+  else
+    cd(data.path); 
   end
 end
 

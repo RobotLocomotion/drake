@@ -43,7 +43,7 @@ classdef PendulumEnergyControl < HybridDrakeSystem
       sys = feedback(pd,c);
       
       figure(2);
-      plotFunnel(c.V);
+      plotFunnel(c.V.inFrame(pd.getStateFrame));
       
       for i=1:5
         xtraj = simulate(sys,[0 6]);

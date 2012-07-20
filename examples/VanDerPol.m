@@ -35,7 +35,7 @@ classdef VanDerPol < PolynomialSystem
       
       clf; hold on
       fill(xlim(1,:),xlim(2,:),[0.8 0.8 0.2])
-      plotFunnel(V,zeros(2,1));
+      plotFunnel(V);
     end
   end
 end

@@ -59,7 +59,7 @@ else
 end
 
 if (isnumeric(G) && ismatrix(G) && all(size(G)==[num_xc,num_xc]))
-  G = QuadraticLyapunovFunction(V0.frame,G);
+  G = QuadraticLyapunovFunction(V0.getFrame,G);
 end
 typecheck(G,'PolynomialLyapunovFunction');
 typecheck(V0,'PolynomialLyapunovFunction');
@@ -137,15 +137,6 @@ for iter=1:options.max_iterations
   if ((rhointegral - last_rhointegral) < options.converged_tol*last_rhointegral)  % see if it's converged
     break;
   end
-end
-
-% check accuracy by sampling
-for i=1:N-1
-  m(i)=sampleCheck(x,V{i},Vdot{i},rho(i),rhodot(i));
-end
-if (max(m)>0)
-  figure(5);plot(ts(1:end-1),m); drawnow;
-  error('infeasible rho.  increase c');
 end
 
 V = PPTrajectory(foh(ts,1./rho'))*V0;  % note: the inverse here is an approximation (since 1/rho is not polynomial).  It would be better to rewrite the verification conditions in terms of inv(rho)
