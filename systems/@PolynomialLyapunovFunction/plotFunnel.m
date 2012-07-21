@@ -48,16 +48,19 @@ else
   ts = options.ts;
   
   if isnumeric(options.x0) options.x0 = ConstantTrajectory(options.x0); end
+  x0 = options.x0;
   
   h=[];
   px = obj.getFrame.poly;
   for i=length(ts)-1:-1:1
     if strcmp(options.inclusion,'slice')
+      options.x0 = x0.eval(ts(i));
       xfun0 = getLevelSet(px,obj.getPoly(ts(i)),options);
+      options.x0 = x0.eval(ts(i+1)-eps);
       xfun1 = getLevelSet(px,obj.getPoly(ts(i+1)-eps),options);
     elseif strcmp(options.inclusion,'projection')
-      xfun0 = getProjection(px,obj.getPoly(ts(i)),options.x0.eval(ts(i)),options.plotdims,options);
-      xfun1 = getProjection(px,obj.getPoly(ts(i+1)-eps),options.x0.eval(ts(i+1)-eps),options.plotdims,options);
+      xfun0 = getProjection(px,obj.getPoly(ts(i)),x0.eval(ts(i)),options.plotdims,options);
+      xfun1 = getProjection(px,obj.getPoly(ts(i+1)-eps),x0.eval(ts(i+1)-eps),options.plotdims,options);
     else
       error(['Unknown inclusion method: ' options.inclusion]);
     end

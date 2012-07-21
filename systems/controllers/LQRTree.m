@@ -36,14 +36,15 @@ classdef LQRTree < HybridDrakeSystem
       % add the ti controller
       [obj,obj.tilqr_mode_num] = addMode(obj,tilqr);
 
+      % switch to object coordinates
+      V = V.inFrame(obj.getInputFrame);
+      
       % switch from ti controller to any controller
-      obj = addTransition(obj,obj.tilqr_mode_num,@(obj,~,t,x)1-eval(V,t,x),@transitionIntoAnyFunnel,true,true);
+      obj = addTransition(obj,obj.tilqr_mode_num,@(obj,t,~,x)1-eval(V,t,x),@transitionIntoAnyFunnel,true,true);
       
       %% precompute quadratic forms
-      % switch to object coordinates
       if ~isTI(V) error('i''ve assumed so far that the initial controller / lyapunov pair is time invariant'); end
-      V = V.inFrame(obj.getInputFrame).extractQuadraticLyapunovFunction();
-      
+      V = V.extractQuadraticLyapunovFunction();
       obj.S1=V.S;
       obj.s2=V.s1;
       obj.s3=V.s2;
@@ -81,7 +82,9 @@ classdef LQRTree < HybridDrakeSystem
       
       if isTI(Vtv) error('assuming tv quadratic form'); end
       % from this controller to the parent
-      obj = addTransition(obj,mode_num,@(obj,t,t0,x) Vtv.S.tspan(end)-t+t0,@toParent,false,false);
+      tspan = Vtv.S.tspan();
+      obj = addTransition(obj,mode_num,@(obj,t,~,x) tspan(end)-t,@toParent,false,false);
+%      obj = addTransition(obj,mode_num,@(obj,t,t0,x) tspan(end)-t+t0,@toParent,false,false);
       
       % precompute quadratic forms
       Vtv = Vtv.inFrame(obj.getInputFrame);
@@ -99,8 +102,8 @@ classdef LQRTree < HybridDrakeSystem
       obj.Vtv = {obj.Vtv{:};Vtv};
       
       % fell out of this funnel
-      obj = addTransition(obj,mode_num,@(obj,t,t0,x)1-Vtv.eval(t-t0,x),@transitionIntoAnyFunnel,true,false);
-%      obj = addTransition(obj,mode_num,@(obj,t,t0,x)1,@transitionIntoAnyFunnel,true,false);
+      obj = addTransition(obj,mode_num,@(obj,t,~,x)1-Vtv.eval(t,x),@transitionIntoAnyFunnel,true,false);
+%      obj = addTransition(obj,mode_num,@(obj,t,t0,x)1-Vtv.eval(t-t0,x),@transitionIntoAnyFunnel,true,false);
     end
     
     function ts=getSampleTime(obj)
