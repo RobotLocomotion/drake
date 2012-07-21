@@ -65,12 +65,12 @@ classdef (InferiorClasses = {?ConstantTrajectory,?PPTrajectory,?FunctionHandleTr
       if (frame==obj.getFrame)
         V = obj;
       else
-        tf = findTransform(frame,obj.getFrame,true);
-        if isa(tf,'AffineTransform') && getNumStates(tf)==0  % then I can keep it quadratic
+        tf = findTransform(frame,obj.getFrame,struct('throw_error_if_fail',true));
+        if isa(tf,'AffineSystem') && getNumStates(tf)==0  % then I can keep it quadratic
           D=tf.D;c=tf.y0;
           V = QuadraticLyapunovFunction(frame,D'*obj.S*D,D'*(obj.S+obj.S')*c + D'*obj.s1,c'*obj.S*c + c'*obj.s1 + obj.s2);
         else
-          V = inFrame@PolynomialSystem(obj,frame);
+          V = inFrame@PolynomialLyapunovFunction(obj,frame);
         end
       end
     end

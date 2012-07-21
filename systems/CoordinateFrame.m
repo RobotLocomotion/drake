@@ -78,45 +78,89 @@ classdef CoordinateFrame < handle
       end
     end
     
+    function [tf,loc]=ismember(obj,cell_of_frames)
+      typecheck(cell_of_frames,'cell');
+      loc=find(cellfun(@(a) a==obj,cell_of_frames));
+      tf = ~isempty(loc);
+    end
+    
+    function drawFrameGraph(obj)
+      % depends on having graphviz2mat installed (from matlabcentral)
+      % todo: make that a dependency in configure?
+
+      A = 0;
+      fr = {obj};
+      [A,fr]=recurseTFs(obj,A,fr);
+      
+      function [A,fr]=recurseTFs(obj,A,fr)
+        [~,ind]=ismember(obj,fr);
+        children = cellfun(@getOutputFrame,obj.transforms,'UniformOutput',false);
+        for i=1:length(children)
+          [b,cind]=ismember(children{i},fr);
+          if b
+            A(ind,cind)=1;
+            continue;
+          else
+            fr=vertcat(fr,children(i));
+            A(ind,end+1)=1;
+            [A,fr]=recurseTFs(children{i},A,fr);
+          end
+        end
+      end
+      
+      if (size(A,1)<length(A)) A(length(A),end)=0; end
+      if (size(A,2)<length(A)) A(end,length(A))=0; end
+      graph_draw(A,'node_labels',cellfun(@(a) a.name,fr,'UniformOutput',false));
+    end
+
+    
     function [tf,options]=findTransform(obj,target,options)
       if (nargin<3) options=struct(); end
-      if ~isfield(options,'depth') options.depth=inf; end
-      if ~isfield(options,'throw_error_if_fail') options.throw_error_if_fail = true; end
-      if ~isfield(options,'dirty_list') options.dirty_list={}; end
-      if ~isfield(options,'queue') options.queue={}; end
+      if ~isfield(options,'throw_error_if_fail') options.throw_error_if_fail = false; end
       
       typecheck(target,'CoordinateFrame');
       ind=find(cellfun(@(a)getOutputFrame(a)==target,obj.transforms));
       if isempty(ind)
+        if ~isfield(options,'depth') options.depth=inf; end
+        if ~isfield(options,'dirty_list') options.dirty_list=[]; end
+        if ~isfield(options,'queue') options.queue=[]; end
+        if ~isfield(options,'tf_from_parent') options.tf_from_parent=[]; end
+
+        tf=[];
         if (options.depth>1)
           options.depth = options.depth-1;
 
           % add myself to the dirty list
-          options.dirty_list = vertcat(options.dirty_list, obj);
+          options.dirty_list = horzcat(options.dirty_list, struct('frame',obj,'tf_from_parent',options.tf_from_parent));
 
           % add my children to the queue 
-          options.queue = vertcat(options.queue,cellfun(getOutputFrame,obj.transforms));
+          options.queue = horzcat(options.queue,struct('frame',cellfun(@getOutputFrame,obj.transforms,'UniformOutput',false),'tf_from_parent',obj.transforms));
           
           % now check the queue for a match
-          while ~isempty(options.queue)
-            a = options.queue{1};
+          while isempty(tf) && ~isempty(options.queue)
+            a = options.queue(1);
             options.queue = options.queue(2:end);
+            options.tf_from_parent = a.tf_from_parent;
 
-            if ismember(options.dirty_list,a)
+            if ismember(a.frame,{options.dirty_list(:).frame})
               continue;
             end
             
-            [tf,options] = findTransform(a,target,options);
+            [tf,options] = findTransform(a.frame,target,options);
+          end
           
-            if ~isempty(tf)
-              tf = cascade(obj.transforms{i},tf);
-              return;
+          if ~isempty(tf)  % then reconstruct tf chain
+            parent = options.tf_from_parent;
+            while ~isempty(parent)
+              tf = cascade(parent,tf);
+              [~,loc]=ismember(tf.getInputFrame,{options.dirty_list(:).frame});
+              parent = options.dirty_list(loc).tf_from_parent;
             end
+            return;
           end
         end
         
-        tf=[];
-        if (nargin>2 && throw_error_if_fail)
+        if (nargin>2 && options.throw_error_if_fail)
           error(['Could not find any transform between ',obj.name,' and ', target.name]);
         end
       elseif length(ind)>1

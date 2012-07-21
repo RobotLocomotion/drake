@@ -172,7 +172,8 @@ classdef AffineSystem < PolynomialSystem
       sys2 = sys2.inOutputFrame(sys1.getInputFrame);
 
       if ~isa(sys2,'AffineSystem') || any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax]))
-        sys = feedback@PolynomailSystem(sys1,sys2)
+        sys = feedback@PolynomailSystem(sys1,sys2);
+        return;
       end
         
       if (sys1.isDirectFeedthrough() && sys2.isDirectFeedthrough())
@@ -244,7 +245,8 @@ classdef AffineSystem < PolynomialSystem
       sys2 = sys2.inInputFrame(sys1.getOutputFrame);
 
       if ~isa(sys2,'PolynomialSystem') || any(~isinf([sys2.umin;sys2.umax]))
-        sys = cascade@DrakeSystem(sys1,sys2)
+        sys = cascade@DrakeSystem(sys1,sys2);
+        return;
       end
         
       if (getNumZeroCrossings(sys1)>0 || getNumZeroCrossings(sys2)>0)

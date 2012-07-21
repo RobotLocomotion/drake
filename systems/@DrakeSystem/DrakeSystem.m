@@ -373,6 +373,8 @@ classdef DrakeSystem < DynamicalSystem
           if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
             warning('Drake:DrakeSystem:UnsupportedSampleTime','Aborting cascade combination as a DrakeSystem due to incompatible sample times');
             sys = cascade@DynamicalSystem(sys1,sys2);
+          elseif (strcmp(ex.identifier, 'Drake:CascadeSystem:NoHybridSupport') || strcmp(ex.identifier,'Drake:CascadeSystem:NoStochasticSupport'))
+            sys = cascade@DynamicalSystem(sys1,sys2);
           else
             rethrow(ex);
           end
