@@ -79,12 +79,12 @@ classdef LQRTree < HybridDrakeSystem
         end
       end
       
+      if isTI(Vtv) error('assuming tv quadratic form'); end
       % from this controller to the parent
-      obj = addTransition(obj,mode_num,@(obj,t,t0,x) Vtv.tspan(end)-t+t0,@toParent,false,false);
+      obj = addTransition(obj,mode_num,@(obj,t,t0,x) Vtv.S.tspan(end)-t+t0,@toParent,false,false);
       
       % precompute quadratic forms
       Vtv = Vtv.inFrame(obj.getInputFrame);
-      if isTI(Vtv) error('assuming tv quadratic form'); end
       nX=obj.getNumInputs();
       ts=Vtv.S.getBreaks();
       for i=1:length(ts)
