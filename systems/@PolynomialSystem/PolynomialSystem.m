@@ -1,413 +1,382 @@
-classdef PolynomialSystem < SmoothRobotLibSystem 
+classdef PolynomialSystem < DrakeSystem 
   % A dynamical system described by rational polynomial dynamics, and
-  % polynomial outputs.
+  % polynomial outputs.  If the system is time-varying, then it 
+  % need not be polynomial in time (but for every time, it is polynomial in x and u). 
 
-  properties (SetAccess=private)
-    p_t
-    p_x
-    p_u
-
-    p_dynamics % msspoly representations of dynamics, update,and output
-    p_update
-    p_output
-    
-    p_state_constraints
-    p_mass_matrix % msspoly representation for e(x), as in e(x)xdot=f(x).  if empty then the default is e(x)=I.  must be invertible for all x.
+  properties (SetAccess=private,GetAccess=private)
+    rational_flag=false;
   end
-
+  
   methods
-%    function x0=getInitialState(obj)
-%      x0=zeros(getNumStates(obj),1);
-%    end
-    
-    function obj = PolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,p_dynamics,p_update,p_output)
+    function obj = PolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,rational_flag)
       % initialize PolynomialSystem
-      %
-      % There are effectively four ways to initialize a poly system
-      %
-      % Method 1:
-      %   Call this constructor by handing in the msspoly objects for
-      %   dynamics, update, and output.  Those polys will be used as
-      %   expected.
-      %   
-      % Method 2: 
-      %   Call this constructor without handing in the msspoly objects.
-      %   The constructor will try to automatically construct the relevant
-      %   polynomials by calling the dynamics, update, and output methods.
-      %   You *must* overload those methods in your subclass for this to
-      %   work (otherwise you will recieve an error).
-      %
-      % Method 3:
-      %   Call this constructor handing in [] in the place of the msspoly
-      %   objects.  Then, separately, manually call the method
-      %   'pullEmptyPolysFromMethods'.  This seemingly bizarre calling
-      %   method is necessary because method 2 does not work if the
-      %   dynamics, update, or output methods of your subclass rely on
-      %   being initialized (e.g. in the subclass constructor). 
-      %
-      % Method 4:
-      %   Call this constructor handing in function handles, taking 
-      %   input arguments (t,x,u), in the place of the msspoly objects.  
-      %   The constructor will try to automatically construct the 
-      %   relevant polynomials by calling the function handle methods.
-      
-      obj = obj@SmoothRobotLibSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
-
       checkDependency('spot_enabled');
-      
-      % Now create the msspoly versions of the dynamics,update,and output:
-      obj.p_t=msspoly('t',1);
-      if (num_xc+num_xd>0)
-        obj.p_x=msspoly('x',num_xc+num_xd);
-      end
-      if (num_u>0)
-        obj.p_u=msspoly('u',num_u);
-      end
-      
-      % these will error if the system is not polynomial (should I catch
-      % and rethrow the error with more information?)
-      if (nargin>6 && num_xc>0)
-        if isempty(p_dynamics)  % support method 3
-        elseif isa(p_dynamics,'function_handle') % support method 4
-          obj.p_dynamics = p_dynamics(obj.p_t,obj.p_x,obj.p_u);
-        else % method 1
-          typecheck(p_dynamics,'msspoly');
-          if any([p_dynamics.m,p_dynamics.n] ~= [num_xc,1]) error('p_dynamics does not match num_xc'); end
-          obj.p_dynamics=p_dynamics;
-        end
-      elseif (num_xc>0) % method 2
-        obj.p_dynamics=obj.dynamics(obj.p_t,obj.p_x,obj.p_u);
-      end
-      
-      if (nargin>7 && num_xd>0)
-        if isempty(p_update) % support method 3
-        elseif isa(p_update,'function_handle') % method 4
-          obj.p_update = p_update(obj.p_t,obj.p_x,obj.p_u);
-        else % method 1
-          typecheck(p_update,'msspoly');
-          if any([p_update.m,p_update.n] ~= [num_xd,1]) error('p_update does not match num_xd'); end
-          obj.p_update = p_update;
-        end
-      elseif (num_xd>0) % method 2
-        obj.p_update=obj.update(obj.p_t,obj.p_x,obj.p_u);
-      end
-      
-      if (nargin>8 && num_y>0)
-        if isempty(p_output) % support method 3
-        elseif isa(p_output,'function_handle') % method 4
-          obj.p_output = p_output(obj.p_t,obj.p_x,obj.p_u);
-        else % method 1
-          typecheck(p_output,'msspoly');
-          if any([p_output.m,p_output.n] ~= [num_y,1]) error('p_output does not match num_y'); end
-          obj.p_output=p_output;
-        end
-      elseif (num_y>0) % method 2
-        obj.p_output=obj.output(obj.p_t,obj.p_x,obj.p_u);
-      end
+      obj = obj@DrakeSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
+      obj.rational_flag = rational_flag;
     end
-    
-    function obj = addStateConstraints(obj,p_state_constraints)
-      typecheck(p_state_constraints,'msspoly');
-      if (any(match(obj.p_x,decomp(p_state_constraints))==0))
-        error('state constraints must depend only on x');
+  end
+  
+  methods (Sealed=true)
+    function xcdot = dynamics(obj,t,x,u)
+      xcdot = dynamicsRHS(obj,t,x,u);
+      if (obj.rational_flag)
+        lhs = dynamicsLHS(obj,t,x,u);
+        xcdot = lhs \ xcdot;
       end
-      if (~iscolumn(p_state_constraints))
-        error('state constraints must be a column vector');
-      end
-      obj.p_state_constraints = [obj.p_state_constraints; p_state_constraints];
-      obj = obj.setNumStateConstraints(length(obj.p_state_constraints));
-    end
-    
-    function obj = setMassMatrix(obj,p_mass_matrix)
-      if (isempty(p_mass_matrix)) % setting it back to empty is AOK
-        obj.p_mass_matrix=[];
-      else
-        typecheck(p_mass_matrix,'msspoly');
-        sizecheck(p_mass_matrix,[length(obj.p_dynamics),obj.num_xc]);
-        obj.p_mass_matrix = p_mass_matrix;
-      end
-    end
-    
-    function obj = pullEmptyPolysFromMethods(obj)
-      if (isempty(obj.p_dynamics) && obj.num_xc>0)
-        obj.p_dynamics=obj.dynamics(obj.p_t,obj.p_x,obj.p_u);
-      end
-      if (isempty(obj.p_update) && obj.num_xd>0)
-        obj.p_update=obj.update(obj.p_t,obj.p_x,obj.p_u);
-      end
-      if (isempty(obj.p_output) && obj.num_y>0)
-        obj.p_output=obj.output(obj.p_t,obj.p_x,obj.p_u);
-      end
-    end
-    
-    % Implement default methods using msspoly vars explicitly
-    function [xcdot,df] = dynamics(obj,t,x,u)
-      % should only get here if constructor specified p_dynamics
-      if (isempty(obj.p_dynamics)) error('p_dynamics is not defined.  how did you get here?'); end
-      xcdot = double(subs(obj.p_dynamics,[obj.p_t;obj.p_x;obj.p_u],[t;x;u]));
-      if (nargout>1)
-        df = double(subs(diff(obj.p_dynamics,[obj.p_t;obj.p_x;obj.p_u]),[obj.p_t;obj.p_x;obj.p_u],[t;x;u]));
-      end
-      if (~isempty(obj.p_mass_matrix))
-        e = double(subs(obj.p_mass_matrix,obj.p_x,x));
-        xcdot = e\xcdot;
-        if (nargout>1) 
+      % todo: add gradient info back in
           % e(x)xdot = f(x) => dexdotdx + e(x)*dxdotdx = dfdx
           %  where the columns of dexdotdx are dedxi*xdot
-          nX = obj.num_xc; cellxcdot=cell(1,nX); [cellxcdot{:}]=deal(xcdot); 
-          dexdotdx = reshape(double(subs(diff(obj.p_mass_matrix(:),obj.p_x),obj.p_x,x)),nX,[])*blkdiag(cellxcdot{:}); 
-          df = e\(df - [zeros(nX,1),dexdotdx,zeros(nX,obj.num_u)]);
+%          nX = obj.num_xc; cellxcdot=cell(1,nX); [cellxcdot{:}]=deal(xcdot); 
+%          dexdotdx = reshape(double(subs(diff(obj.p_mass_matrix(:),p_x),p_x,x)),nX,[])*blkdiag(cellxcdot{:}); 
+%          df = e\(df - [zeros(nX,1),dexdotdx,zeros(nX,obj.num_u)]);
+    end
+  end    
+
+  
+  
+  methods
+    function lhs = dynamicsLHS(obj,t,x,u)
+      error('rational polynomial systems with continuous state must implement this');
+    end
+
+    function rhs = dynamicsRHS(obj,t,x,u)
+      error('polynomial systems with continuous state must implement this');
+    end
+
+    function obj = setRationalFlag(obj,tf)
+      obj.rational_flag = tf;
+    end
+    
+    function tf = isRational(obj)
+      tf=obj.rational_flag;
+    end
+    
+    function [p_dynamics_rhs,p_dynamics_lhs] = getPolyDynamics(obj,t)
+      p_dynamics_rhs = [];
+      p_dynamics_lhs = [];
+      if (obj.num_xc>0)
+        if (nargin<2 && ~isTI(obj)) error('you must specify a time'); else t=0; end
+        p_x=obj.getStateFrame.poly;
+        if (obj.num_u>0) p_u=obj.getInputFrame.poly; else p_u=[]; end
+      
+        p_dynamics_rhs=obj.dynamicsRHS(t,p_x,p_u);
+        if (nargout>1 && obj.rational_flag)
+          p_dynamics_lhs=obj.dynamicsLHS(t,p_x,p_u);
         end
       end
     end
-    function [xdn,df] = update(obj,t,x,u)
-      if (isempty(obj.p_update)) error('p_update is not defined.  how did you get here?'); end
-      xdn = double(subs(obj.p_update,[obj.p_t;obj.p_x;obj.p_u],[t;x;u]));
-      if (nargout>1)
-        df = double(subs(diff(obj.p_update,[obj.p_t;obj.p_x;obj.p_u]),[obj.p_t;obj.p_x;obj.p_u],[t;x;u]));
+    function p_update = getPolyUpdate(obj,t)
+      if (obj.num_xd>0)
+        if (nargin<2 && ~isTI(obj)) error('you must specify a time'); else t=0; end
+        p_x=obj.getStateFrame.poly;
+        if (obj.num_u>0) p_u=obj.getInputFrame.poly; else p_u=[]; end
+
+        p_update=obj.update(t,p_x,p_u);
+      else
+        p_update=[];
       end
     end
-    function [y,dy] = output(obj,t,x,u)
-      if (isempty(obj.p_output)) error('p_output is not defined.  how did you get here?'); end
-      if (nargin<4) p_u=[]; u=[]; else p_u=obj.p_u; end  % ok for systems without direct feedthrough
-      y = double(subs(obj.p_output,[obj.p_t;obj.p_x;p_u],[t;x;u]));
-      if (nargout>1)
-        dy = double(subs(diff(obj.p_output,[obj.p_t;obj.p_x;p_u]),[obj.p_t;obj.p_x;obj.p_u],[t;x;u]));
+    function p_output = getPolyOutput(obj,t)
+      if (obj.num_y>0)
+        if (nargin<2 && ~isTI(obj)) error('you must specify a time'); else t=0; end
+        if (obj.num_x>0) p_x=obj.getStateFrame.poly; else p_x=[]; end
+        if (obj.num_u>0) p_u=obj.getInputFrame.poly; else p_u=[]; end
+        
+        p_output=obj.output(t,p_x,p_u);
+      else
+        p_output=[];
+      end
+    end
+    function p_state_constraints = getPolyStateConstraints(obj)
+      if (obj.num_xcon>0)
+        p_x=obj.getStateFrame.poly;
+        obj.p_state_constraints=obj.stateConstraints(p_x);
+      else
+        p_state_constraints = [];
       end
     end
     
-    % todo: implement gradients (it's trivial)
-
-    function obj = setNumContStates(obj,num_xc)
-      obj = setNumContStates@SmoothRobotLibSystem(obj,num_xc);
-      if (obj.num_xc+obj.num_xd>0)
-        obj.p_x=msspoly('x',obj.num_xc+obj.num_xd);
-      else
-        obj.p_x = [];
+    function obj = setNumZeroCrossings(obj,num_zcs)
+      if (num_zcs)
+        error('PolynomialSystems are not allowed to have zero crossings');
       end
     end
-    function obj = setNumDiscStates(obj,num_xd)
-      obj = setNumDiscStates@SmoothRobotLibSystem(obj,num_xd);
-      if (obj.num_xc+obj.num_xd>0)
-        obj.p_x=msspoly('x',obj.num_xc+obj.num_xd);
-      else
-        obj.p_x = [];
-      end
-    end
-    function obj = setNumInputs(obj,num_u)
-      obj = setNumInputs@SmoothRobotLibSystem(obj,num_u);
-      if (obj.num_u>0)
-        obj.p_u=msspoly('u',obj.num_u);
-      else
-        obj.p_u = [];
-      end
-    end      
   end
   
   methods  % for constructing and manipulating polynomial systems
     function polysys = timeReverse(obj)
       if (obj.num_xd>0) error('only for CT systems'); end
-      polysys = PolynomialSystem(obj.num_xc,obj.num_xd,obj.num_u,obj.num_u,obj.direct_feedthrough_flag,obj.time_invariant_flag,...
-        -obj.p_dynamics,[],obj.p_output);
-      if (obj.num_xcon)
-        polysys = polysys.addStateConstraints(obj.p_state_constraints);
-      end
-      if (~isempty(obj.p_mass_matrix))
-        polysys = polysys.setMassMatrix(obj.p_mass_matrix);
-      end
+      if (~isTI(obj)) error('only for time invariant systems'); end
+      [p_dynamics_rhs,p_dynamics_lhs]=getPolyDynamics(obj);
+      p_output=getPolyOutput(obj);
+      p_state_constraints=getPolyStateConstraints(obj);
+      polysys = SpotPolynomialSystem(obj.getInputFrame,obj.getStateFrame,obj.getOutputFrame,...
+        -p_dynamics_rhs,p_dynamics_lhs,[],p_output,p_state_constraints);
     end
     
-    function sys = feedback(sys1,sys2,options)
+    function obj = setInputFrame(obj,frame)
+      if frame.dim>0
+        if obj.getNumStates()>0 && any(match(obj.getStateFrame.poly,frame.poly)~=0)
+          error('input frame poly clashes with current state frame poly.  this could lead to massive confusion');
+        end
+      end
+      
+      obj = setInputFrame@DrakeSystem(obj,frame);
+    end
+    
+    function obj = setStateFrame(obj,frame)
+      if frame.dim>0
+        if obj.getNumInputs()>0 && any(match(obj.getInputFrame.poly,frame.poly)~=0)
+          error('state frame poly clashes with current input frame poly.  this could lead to massive confusion');
+        end
+      end
+      
+      obj = setStateFrame@DrakeSystem(obj,frame);
+    end
+    
+    function sys = inStateFrame(sys,frame)
+      if (sys.getStateFrame == frame) return; end
+      
+      if (~isCT(sys) || isRational(sys) || getNumStateConstraints(sys)>0), error('not implemented yet'); end   % though some of them would be easy to implement
+
+      ctf = findTransform(getStateFrame(sys),frame,struct('throw_error_if_fail',true));
+      dtf = findTransform(frame,getStateFrame(sys),struct('throw_error_if_fail',true));
+      if ~isa(ctf,'PolynomialSystem') || ~isa(dtf,'PolynomialSystem') || getNumStates(ctf)>0 || getNumStates(dtf)>0
+        error('unsupported transform');
+      end
+
+      % from xdot = f(t,x,u) to zdot = g(t,z,u) via z=c(t,x) and x=d(t,z)
+      % zdot = dcdt(t,d(t,z)) + dcdx(t,d(t,z)*f(t,d(t,z),u)
+      
+      x = sys.getStateFrame.poly; z=frame.poly;
+      if isTI(sys) && isTI(ctf) && isTI(dtf)
+        c = subs(ctf.getPolyOutput,ctf.getInputFrame.poly,x);
+        d = subs(dtf.getPolyOutput,dtf.getInputFrame.poly,z);
+        g = diff(c,x)*sys.getPolyDynamics;
+        g = subss(g,x,d);
+        y = subss(sys.getPolyOutput,x,d);
+        sys = SpotPolynomialSystem(sys.getInputFrame,frame,sys.getOutputFrame,g,[],[],y);
+      else % time-varying case
+        y = @(t) subss(sys.getPolyOutput(t),x,subs(dtf.getPolyOutput(t),dtf.getInputFrame.poly,z));
+        % todo: note the breaks in the polynomialtrajectory systems below are a hack. need to handle that better.  
+        sys = PolynomialTrajectorySystem(sys.getInputFrame,frame,sys.getOutputFrame,PolynomialTrajectory(@(t) newdyn(t,sys,frame,ctf,dtf),[0 inf]),[],PolynomialTrajectory(y,[0 inf]),sys.isDirectFeedthrough);
+      end
+      
+        function g = newdyn(t,sys,frame,ctf,dtf)
+          x = sys.getStateFrame.poly; z=frame.poly;
+          p_t = msspoly('t',1);
+          [c,dc]=ctf.output(t,[],x);
+          d = dtf.output(t,[],z);
+          dcdt = dc(:,1); dcdx = dc(:,2:end);
+          g = dcdt + dcdx*sys.getPolyDynamics(t);
+          g = subss(g,x,d);
+        end
+      
+      
+    end
+    
+    function sys = feedback(sys1,sys2)
       % try to keep feedback between polynomial systems polynomial.  else,
-      % kick out to SmoothRobotLibSystem
+      % kick out to DrakeSystem
       %
-      % @option try_to_be_robotlibsystem set to false if you want to return
-      % a simulink model. @default true
-      %
-
-      if (nargin<3) options=struct(); end
-      if (~isfield(options,'try_to_be_robotlibsystem')) options.try_to_be_robotlibsystem=true; end
       
-      if (sys1.num_xcon>0) error('not implemented yet. should be easy.'); end
-      if (~isempty(sys1.p_mass_matrix)) error('not implemented yet, but should be easy (though not supported for every case)'); end
-      
-      sys=[];
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
+      sys2 = sys2.inOutputFrame(sys1.getInputFrame);
 
-      function y=doubleSafe(x)
-        y=double(x);
-        if (~isa(y,'double')) error('double failed'); end
-      end
-
-      function sys = makesys(satflags)
-        p_dynamics = []; p_update=[]; p_output=[];
-
-        sat_y1 = p_y1; 
-        sat_y2 = p_y2; 
-        if (nargin>0) 
-          n = length(umin1);
-          ind = find(satflags(1:n)<0);
-          sat_y2(ind) = umin1(ind);  % note: umin2,etc is only defined inside the sat loop below.  yuck.
-          ind = find(satflags(1:n)>0);
-          sat_y2(ind) = umax1(ind);
-        
-          ind = find(satflags(n+1:end)<0);
-          sat_y1(ind) = umin2(ind);
-          ind = find(satflags(n+1:end)>0);
-          sat_y1(ind) = umax2(ind);
-        end
-        
-        if (sys1.getNumContStates()>0)
-          p_dynamics=[p_dynamics;subss(sys1.p_dynamics,[sys1.p_x;sys1.p_u],[p_x1;sat_y2])];
-        end
-        if (sys2.getNumContStates()>0)
-          p_dynamics=[p_dynamics;subss(sys2.p_dynamics,[sys2.p_x;sys2.p_u],[p_x2;sat_y1])];
-        end
-        if (sys1.getNumDiscStates()>0)
-          p_update = [p_update;subss(sys1.p_update,[sys1.p_x;sys1.p_u],[p_x1;sat_y2])];
-        end
-        if (sys2.getNumDiscStates()>0)
-          p_update = [p_update; subss(sys2.p_update,[sys2.p_x;sys2.p_u],[p_x2;sat_y1])];
-        end
-        if (sys1.getNumOutputs()>0)
-          p_output = p_y1;
-        end
-        
-        sys = PolynomialSystem(sys1.getNumContStates()+sys2.getNumContStates(),...
-          sys1.getNumDiscStates()+sys2.getNumDiscStates(),...
-          0, sys1.getNumOutputs(), false, sys1.isTI() & sys2.isTI(),...
-          p_dynamics,p_update,p_output);
+      if ~isa(sys2,'PolynomialSystem') || ~isTI(sys1) || ~isTI(sys2) || any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax]))
+        sys = feedback@DrakeSystem(sys1,sys2);
+        return;
       end
         
-        
-      if (options.try_to_be_robotlibsystem && isa(sys2,'PolynomialSystem'))
+      if (sys1.isDirectFeedthrough() && sys2.isDirectFeedthrough())
+        error('Drake:PolynomalSystem:AlgebraicLoop','algebraic loop');
+      end
+      
+      if (getNumZeroCrossings(sys1)>0 || getNumZeroCrossings(sys2)>0)
+        error('polynomialsystems aren''t supposed to have zero crossings'); 
+      end
+      
+      input_frame = sys1.getInputFrame();
+      output_frame = sys1.getOutputFrame();
+      if (sys1.getNumStates==0) 
+        state_frame = sys2.getStateFrame();
+      elseif (sys2.getNumStates==0)
+        state_frame = sys1.getStateFrame();
+      else
+        state_frame = CoordinateFrame('FeedbackState',sys1.getNumState()+sys2.getNumStates(),'x');
+      end
 
-        if (sys2.num_xcon>0) error('not implemented yet. should be easy.'); end
-        if (~isempty(sys2.p_mass_matrix)) error('not implemented yet, but should be easy (though not supported for every case)'); end
-
-        
-        p_t = msspoly('t',1);
-
-        p_x = msspoly('x',sys1.getNumStates()+sys2.getNumStates());
-        ind=0;
-        n=sys1.getNumDiscStates();
-        p_x1 = p_x(ind+(1:n)');
-        ind=ind+n;
-        n=sys2.getNumDiscStates();
-        p_x2 = p_x(ind+(1:n)');
-        ind=ind+n;
-        
-        n=sys1.getNumContStates();
-        p_x1 = [p_x1; p_x(ind+(1:n)')];
-        ind=ind+n;
-        n=sys2.getNumContStates();
-        p_x2 = [p_x2; p_x(ind+(1:n)')];
-        
-        if (~sys1.isDirectFeedthrough()) % do sys1 first
-          p_y1 = subs(sys1.p_output,sys1.p_x,p_x1); % doesn't need u
-          p_y2 = subss(sys2.p_output,[sys2.p_x;sys2.p_u],[p_x2;p_y1]);
-        else % do sys2 first
-          p_y2 = subs(sys2.p_output,sys2.p_x,p_x2); % doesn't need u
-          p_y1 = subss(sys1.p_output,[sys1.p_x;sys1.p_u],[p_x1;p_y2]);
-        end
-        
-        if (any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax])))
-          % if possible, create a polytopic polynomial system, else fail
-
-          A=[]; b=[]; subsys={};
-          
-          umin1=sys1.umin; umax1=sys1.umax;
-          sys1=setInputLimits(sys1,-inf,inf);
-          
-          umin2=sys2.umin; umax2=sys2.umax;
-          sys2=setInputLimits(sys2,-inf,inf);
-          
-          subsys={feedback(sys1,sys2)};
-          N = sys1.getNumInputs() + sys2.getNumInputs();
-          satflags={zeros(N,1)};
-          
-          if (any(~isinf([umin1; umax1])))
-            % found saturation.  check if the saturation is a linear
-            % (or affine) function of the state
-            
-            if (deg(p_y2,p_t)>0 || deg(p_y2,p_x)>1)
-              error('RobotLib:PolytopicRobotLibSystem:NotSupported','output of system 2 must be affine in x and independent of t and u');
-            end
-            y0=doubleSafe(subs(p_y2,p_x,double(0*p_x)));
-            dydx=doubleSafe(diff(p_y2,p_x));
-            
-            % y0+dydx*x<=umin
-            inds=find(umin1~=-inf);
-            A = [A;-dydx(inds,:)];
-            b = [b;y0(inds)-umin1(inds)];
-            for i=inds
-              for j=1:length(subsys)
-                sf=satflags{j};
-                sf(i)=-1;
-                satflags={satflags{:},sf};
-                subsys={subsys{:},makesys(sf)};
-              end
-            end
-            
-            % y0+dydx*x>=umax
-            inds=find(umax1~=inf);
-            A = [A;dydx(inds,:)];
-            b = [b;umax1(inds)-y0(inds)];
-            for i=inds
-              for j=1:length(subsys)
-                sf=satflags{j};
-                sf(i)=1;
-                satflags={satflags{:},sf};
-                subsys={subsys{:},makesys(sf)};
-              end
-            end
-            
-          end
-          
-          if (any(~isinf([umin2; umax2])))
-            if (deg(p_y1,p_t)>0 || deg(p_y1,p_x)>1)
-              error('RobotLib:PolytopicRobotLibSystem:NotSupported','output of system 2 must be affine in x and independent of t and u');
-            end
-            y0=doubleSafe(subs(p_y1,p_x,double(0*p_x)));
-            dydx=doubleSafe(diff(p_y1,p_x));
-            
-            % y0+dydx*x<=umin
-            inds=find(umin2~=-inf);
-            A = [A;-dydx(inds,:)];
-            b = [b;y0(inds)-umin2(inds)];
-            for i=inds
-              for j=1:length(subsys)
-                sf=satflags{j};
-                sf(i+length(umin1))=-1;
-                satflags={satflags{:},sf};
-                subsys={subsys{:},makesys(sf)};
-              end
-            end
-            
-            % y0+dydx*x>=umax
-            inds=find(umax2~=inf);
-            A = [A;dydx(inds,:)];
-            b = [b;umax2(inds)-y0(inds)];
-            for i=inds
-              for j=1:length(subsys)
-                sf=satflags{j};
-                sf(i+length(umin1))=1;
-                satflags={satflags{:},sf};
-                subsys={subsys{:},makesys(sf)};
-              end
-            end
-          end
-          
-          sys = PolytopicPolynomialSystem(A,b,subsys);
-          
+      p_x = state_frame.poly;
+      p_u = input_frame.poly;
+      
+      [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2);
+      p_x1 = p_x(sys1ind);
+      p_x2 = p_x(sys2ind);
+      
+      [p1_dynamics_rhs,p1_dynamics_lhs]=getPolyDynamics(sys1);
+      p1_output=getPolyOutput(sys1);
+      p1_state_constraints=getPolyStateConstraints(sys1);
+      [p2_dynamics_rhs,p2_dynamics_lhs]=getPolyDynamics(sys2);
+      p2_output=getPolyOutput(sys2);
+      p2_state_constraints=getPolyStateConstraints(sys2);
+      
+      if (~sys1.isDirectFeedthrough()) % do sys1 first
+        p_y1 = subs(p1_output,sys1.getStateFrame.poly,p_x1); % doesn't need u
+        p_y2 = subss(p2_output,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1]);
+      else % do sys2 first
+        p_y2 = subs(p2_output,sys2.getStateFrame.poly,p_x2); % doesn't need u
+        p_y1 = subss(p1_output,[sys1.getStateFrame.poly;p_u],[p_x1;p_y2+p_u]);
+      end
+      
+      p_dynamics_rhs=[]; p_dynamics_lhs=[]; p_update=[]; p_output=[]; p_state_constraints=[];
+      if (sys1.getNumContStates()>0)
+        p_dynamics_rhs=[p_dynamics_rhs;subss(p1_dynamics_rhs,[sys1.getStateFrame.poly;p_u],[p_x1;p_y2+p_u])];
+      end
+      if (sys2.getNumContStates()>0)
+        p_dynamics_rhs=[p_dynamics_rhs;subss(p2_dynamics_rhs,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
+      end
+      if isRational(sys1)
+        if isRational(sys2)
+          p_dynamics_lhs=blkdiag(subss(p_dynamics_lhs,sys1.getStateFrame.poly,p_x1),subss(sys2.p_dynamics_lhs,sys2.getStateFrame.poly,p_x2));
         else
-          % handle simple case
-          sys = makesys();
+          p_dynamics_lhs=blkdiag(subss(p_dynamics_lhs,sys1.getStateFrame.poly,p_x1),eye(getNumContStates(sys2)));
+        end
+      else
+        if isRational(sys2)
+          p_dynamics_lhs=blkdiag(eye(getNumContStates(sys1)),subss(sys2.p_dynamics_rhs,sys2.getStateFrame.poly,p_x2));
+        else
+          p_dynamics_lhs=[];
+        end
+      end
+      if (sys1.getNumDiscStates()>0)
+        p_update = [p_update;subss(p1_update,[sys1.getStateFrame.poly;p_u],[p_x1;p_y2+p_u])];
+      end
+      if (sys2.getNumDiscStates()>0)
+        p_update = [p_update; subss(p2_update,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
+      end
+      if (sys1.getNumOutputs()>0)
+        p_output = p_y1;
+      end
+      
+      % handle state constraints
+      if (sys1.getNumStateConstraints()>0)
+        p_state_constraints=[p_state_constraints;subss(p1_state_constraints,sys1.getStateFrame.poly,p_x1)];
+      end
+      if (sys2.getNumStateConstraints()>0)
+        p_state_constraints=[p_state_constraints;subss(p2_state_constraints,sys2.getStateFrame.poly,p_x2)];
+      end
+      
+      sys = SpotPolynomialSystem(input_frame,state_frame,output_frame,p_dynamics_rhs,p_dynamics_lhs,p_update,p_output,p_state_constraints);
+      
+      try
+        sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to drakesystem?
+      catch ex
+        if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
+          warning('Drake:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial feedback because of incompatible sample times'); 
+          sys = feedback@DrakeSystem(sys1,sys2);
+          return;
+        else
+          rethrow(ex)
         end
       end
       
-      if (isempty(sys))
-        sys = feedback@SmoothRobotLibSystem(sys1,sys2,options);
+    end
+    
+    function sys = cascade(sys1,sys2)
+      % try to keep cascade between polynomial systems polynomial.  else,
+      % kick out to DrakeSystem
+      %
+
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
+
+      if ~isa(sys2,'PolynomialSystem') || ~isTI(sys1) || ~isTI(sys2) || any(~isinf([sys2.umin;sys2.umax]))
+        sys = cascade@DrakeSystem(sys1,sys2);
+        return;
       end
+        
+      if (getNumZeroCrossings(sys1)>0 || getNumZeroCrossings(sys2)>0)
+        error('polynomialsystems aren''t supposed to have zero crossings'); 
+      end
+      
+      input_frame = sys1.getInputFrame();
+      output_frame = sys2.getOutputFrame();
+      if (sys1.getNumStates==0) 
+        state_frame = sys2.getStateFrame();
+      elseif (sys2.getNumStates==0)
+        state_frame = sys1.getStateFrame();
+      else
+        state_frame = CoordinateFrame('FeedbackState',sys1.getNumState()+sys2.getNumStates(),'x');
+      end
+      
+      p_x = state_frame.poly;
+      p_u = input_frame.poly;
+      
+      [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2);
+      p_x1 = p_x(sys1ind);
+      p_x2 = p_x(sys2ind);
+      
+      [p1_dynamics_rhs,p1_dynamics_lhs]=getPolyDynamics(sys1);
+      p1_output=getPolyOutput(sys1);
+      p1_state_constraints=getPolyStateConstraints(sys1);
+      [p2_dynamics_rhs,p2_dynamics_lhs]=getPolyDynamics(sys2);
+      p2_output=getPolyOutput(sys2);
+      p2_state_constraints=getPolyStateConstraints(sys2);
+
+      if (sys1.getNumStates()>0)
+        p_y1 = subss(p1_output,sys1.getStateFrame.poly,p_x1);
+      else
+        p_y1 = p1_output;
+      end
+
+      p_dynamics_rhs=[]; p_dynamics_lhs=[]; p_update=[]; p_output=[]; p_state_constraints=[];
+      if (sys1.getNumContStates()>0)
+        p_dynamics_rhs=[p_dynamics_rhs;subss(p1_dynamics,sys1.getStateFrame.poly,p_x1)];
+      end
+      if (sys2.getNumContStates()>0)
+        p_dynamics_rhs=[p_dynamics_rhs;subss(p2_dynamics,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
+      end
+      if isRational(sys1)
+        if isRational(sys2)
+          p_dynamics_lhs=blkdiag(subss(p_dynamics_lhs,sys1.getStateFrame.poly,p_x1),subss(sys2.p_dynamics_lhs,sys2.getStateFrame.poly,p_x2));
+        else
+          p_dynamics_lhs=blkdiag(subss(p_dynamics_lhs,sys1.getStateFrame.poly,p_x1),eye(getNumContStates(sys2)));
+        end
+      else
+        if isRational(sys2)
+          p_dynamics_lhs=blkdiag(eye(getNumContStates(sys1)),subss(p_dynamics_lhs,sys2.getStateFrame.poly,p_x2));
+        else
+          p_dynamics_lhs=[];
+        end
+      end
+      if (sys1.getNumDiscStates()>0)
+        p_update = [p_update;subss(p1_update,sys1.getStateFrame.poly,p_x1)];
+      end
+      if (sys2.getNumDiscStates()>0)
+        p_update = [p_update; subss(p2_update,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
+      end
+      if (sys1.getNumOutputs()>0)
+        p_output = subss(p2_output,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1]);
+      end
+      if (sys1.getNumStateConstraints()>0)
+        p_state_constraints=[p_state_constraints;subss(p1_state_constraints,sys1.getStateFrame.poly,p_x1)];
+      end
+      if (sys2.getNumStateConstraints()>0)
+        p_state_constraints=[p_state_constraints;subss(p2_state_constraints,sys2.getStateFrame.poly,p_x2)];
+      end
+
+      sys = SpotPolynomialSystem(input_frame,state_frame,output_frame,p_dynamics_rhs,p_dynamics_lhs,p_update,p_output,p_state_constraints);
+
+      try 
+        sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to drakesystem?
+      catch ex
+        if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
+          warning('Drake:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial cascade because of incompatible sample times'); 
+          sys = cascade@DrakeSystem(sys1,sys2);
+        else
+          rethrow(ex)
+        end
+      end
+      
     end
   end
     

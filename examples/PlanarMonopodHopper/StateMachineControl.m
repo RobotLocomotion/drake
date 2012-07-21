@@ -1,4 +1,4 @@
-classdef StateMachineControl < HybridRobotLibSystem
+classdef StateMachineControl < HybridDrakeSystem
 % This controller is my reconstruction of Raibert's 3 part
 % controller.  A few gaps have been filled in, but I believe that
 % it is very close to the original. -- Russ
@@ -16,10 +16,13 @@ classdef StateMachineControl < HybridRobotLibSystem
   end
   
   methods
-    function obj = StateMachineControl(desired_speed)
-      obj = obj@HybridRobotLibSystem();
+    function obj = StateMachineControl(plant,desired_speed)
+      typecheck(plant,'HopperPlant');
+      obj = obj@HybridDrakeSystem(plant.getNumOutputs,plant.getNumInputs);
+      obj = setInputFrame(obj,plant.getOutputFrame);
+      obj = setOutputFrame(obj,plant.getInputFrame);
       
-      if (nargin<1) desired_speed = .5; end
+      if (nargin<2) desired_speed = .5; end
       T_s = .425;
       
       %% add individual control modes
@@ -35,18 +38,23 @@ classdef StateMachineControl < HybridRobotLibSystem
       end
       
       c = FunctionHandleSystem(0,0,10,2,true,true,[],[],@(t,x,u) flightControl(t,x,u));
+      c = setInputFrame(c,obj.getInputFrame); c = setOutputFrame(c,obj.getOutputFrame);
       [obj,FLIGHT] = addMode(obj,c,'FLIGHT');
 
-      [obj,LOADING] = addMode(obj,ConstantControl([0;0],10),'LOADING');
+      c0 = ConstOrPassthroughSystem([0;0],10);
+      c0 = setInputFrame(c0,obj.getInputFrame); c0 = setOutputFrame(c0,obj.getOutputFrame);
+      [obj,LOADING] = addMode(obj,c0,'LOADING');
       
-      c = PolynomialSystem(0,0,10,2,true,true,[],[],@(t,x,u) [0; bodyAttitudeControl(t,x,u)]); 
+      c = FunctionHandleSystem(0,0,10,2,true,true,[],[],@(t,x,u) [0; bodyAttitudeControl(t,x,u)]); 
+      c = setInputFrame(c,obj.getInputFrame); c = setOutputFrame(c,obj.getOutputFrame);
       [obj,COMPRESSION] = addMode(obj,c,'COMPRESSION');
       
-      c = PolynomialSystem(0,0,10,2,true,true,[],[],@(t,x,u) [obj.thrust; bodyAttitudeControl(t,x,u)]);
+      c = FunctionHandleSystem(0,0,10,2,true,true,[],[],@(t,x,u) [obj.thrust; bodyAttitudeControl(t,x,u)]);
+      c = setInputFrame(c,obj.getInputFrame); c = setOutputFrame(c,obj.getOutputFrame);
       [obj,THRUST] = addMode(obj,c,'THRUST');
       
-      [obj,UNLOADING] = addMode(obj,ConstantControl([0;0],10),'UNLOADING');
-      [obj,ESCAPE] = addMode(obj,ConstantControl([0;0],10),'ESCAPE');
+      [obj,UNLOADING] = addMode(obj,c0,'UNLOADING');
+      [obj,ESCAPE] = addMode(obj,c0,'ESCAPE');
 
 
       %% add transitions
@@ -92,8 +100,8 @@ classdef StateMachineControl < HybridRobotLibSystem
   methods (Static=true)
     function run
       h=HopperPlant();
-      c=StateMachineControl();
-      v=HopperVisualizer();
+      c=StateMachineControl(h);
+      v=HopperVisualizer(h);
 %      sys = cascade(feedback(h,c),v);
 %      simulate(sys,[0 inf]);
       y=simulate(feedback(h,c),[0 3]);

@@ -1,8 +1,8 @@
-classdef BallFlightPhasePlant < RobotLibSystem
+classdef BallFlightPhasePlant < DrakeSystem
   
   methods
     function obj = BallFlightPhasePlant()
-      obj = obj@RobotLibSystem(...
+      obj = obj@DrakeSystem(...
         2, ... % number of continuous states
         0, ... % number of discrete states
         0, ... % number of inputs

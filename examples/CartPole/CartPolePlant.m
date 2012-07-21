@@ -1,4 +1,4 @@
-classdef CartPolePlant < ManipulatorPlant
+classdef CartPolePlant < Manipulator
 
   properties
     mc = 10;   % mass of the cart in kg
@@ -9,9 +9,10 @@ classdef CartPolePlant < ManipulatorPlant
   
   methods
     function obj = CartPolePlant
-      obj = obj@ManipulatorPlant(2,1);
+      obj = obj@Manipulator(2,1);
       obj = setInputLimits(obj,-30,30);
-      obj = setAngleFlags(obj,0,[0;1;0;0],[0;1;0;0]);
+%      obj = setAngleFlags(obj,0,[0;1;0;0],[0;1;0;0]);
+      obj = setOutputFrame(obj,obj.getStateFrame);  % allow full-state feedback
     end
         
     function [H,C,B] = manipulatorDynamics(obj,q,qd)
@@ -27,7 +28,7 @@ classdef CartPolePlant < ManipulatorPlant
     end
     
     function [f,df,d2f,d3f] = dynamics(obj,t,x,u)
-      f = dynamics@ManipulatorPlant(obj,t,x,u);
+      f = dynamics@Manipulator(obj,t,x,u);
       if (nargout>1)
         [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
       end
@@ -38,14 +39,95 @@ classdef CartPolePlant < ManipulatorPlant
     end
     
   end
-  
-  methods (Static)
-    function run()
-      d = CartPolePlant;
-      v = CartPoleVisualizer(d);
-      xtraj = simulate(d,[0 5]);
-      playback(v,xtraj);    
+
+  methods 
+    function [c,V]=balanceLQR(obj)
+      x0 = [0;pi;0;0]; u0 = 0;
+      Q = diag([1 50 1 50]);
+      R = .2;
+
+      if (nargout<2)
+        c = tilqr(obj,x0,u0,Q,R);
+      else
+        if any(~isinf([obj.umin;obj.umax]))
+          error('currently, you must disable input limits to estimate the ROA');
+        end
+        [c,V] = tilqr(obj,x0,u0,Q,R);
+        pp = feedback(obj.taylorApprox(0,x0,u0,3),c);
+        options.method='levelSet';
+        V=regionOfAttraction(pp,V,options);
+      end
     end
+    
+    function [c,V]=balanceHinf(obj)
+      Bw = [zeros(2,2); eye(2)];  %uncertainty affects velocities only
+      Q = diag([1 50 1 50]);
+      R = .1;
+      x0 = [0;pi;0;0]; u0 = 0;
+      gamma = 20;
+      if (nargout<2)
+        c = tiHinf(obj,x0,u0,Q,R,Bw,gamma);
+      else
+        if any(~isinf([obj.umin;obj.umax]))
+          error('currently, you must disable input limits to estimate the ROA');
+        end
+        [c,V]=tiHinf(obj,x0,u0,Q,R,Bw,gamma);
+        pp = feedback(obj.taylorApprox(0,x0,u0,3),c);
+        options.method='levelSet';
+        V=regionOfAttraction(pp,V,options);
+      end        
+    end
+    
+    function [utraj,xtraj]=swingUpTrajectory(obj)
+      x0 = zeros(4,1); tf0 = 4; xf = [0;pi;0;0];
+
+      %con.u.lb = p.umin;
+      %con.u.ub = p.umax;
+      con.x0.lb = x0;
+      con.x0.ub = x0;
+      con.xf.lb = xf;
+      con.xf.ub = xf;
+      con.T.lb = 2;
+      con.T.ub = 6;
+
+      options.method='dircol';
+      
+      function [g,dg] = cost(t,x,u);
+        R = 1;
+        g = sum((R*u).*u,1);
+        dg = [zeros(1,1+size(x,1)),2*u'*R];
+      end
+      
+      function [h,dh] = finalcost(t,x)
+        h = t;
+        dh = [1,zeros(1,size(x,1))];
+      end
+      
+      info=0;
+      while (info~=1)
+        utraj0 = PPTrajectory(foh(linspace(0,tf0,31),randn(1,31)));
+        tic
+        %options.grad_test = true;
+        [utraj,xtraj,info] = trajectoryOptimization(obj,@cost,@finalcost,x0,utraj0,con,options);
+        toc
+      end
+    end
+    
+    function c=trajectorySwingUpAndBalance(obj)
+      [ti,Vf] = balanceLQR(obj);
+
+%      c = LQRTree(ti,Vf);
+      [utraj,xtraj]=swingUpTrajectory(obj);  
+      
+      Q=diag([10,10,1,1]); R=.1;
+      [tv,Vtraj] = tvlqr(obj,xtraj,utraj,Q,R,Vf);
+      u0traj = ConstantTrajectory(0); u0traj=setOutputFrame(u0traj,utraj.getOutputFrame);
+      psys = taylorApprox(feedback(obj,tv),xtraj,u0traj,3);
+      options.rho0_tau = 10;
+      options.max_iterations = 3;
+      Vtraj=sampledFiniteTimeVerification(psys,xtraj.getBreaks(),Vf,Vtraj,options);
+
+%      c = c.addTrajectory(tv,Vtraj);
+    end  
   end
-  
 end

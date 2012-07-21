@@ -1,7 +1,7 @@
-function typcheck(obj,type)
+function typecheck(obj,type)
 
 % TYPECHECK
-%   Usage:  typcheck(obj,type)
+%   Usage:  typecheck(obj,type)
 %   Checks if isa(obj,type), otherwise throws an error.  If type is a cell
 %   array, then obj has to be type{1} OR type{2} OR ... 
 

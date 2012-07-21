@@ -17,6 +17,9 @@ properties (SetAccess=private)
   width=[]; height=[];
 end
 
+properties (SetAccess=private,GetAccess=public)
+  bbox;  % set automatically on write (useful for referencing the bbox in the future)
+end
 
 methods
   function obj = SWFWriter(filename)
@@ -49,10 +52,10 @@ methods
     % grab the bounding boxes from all eps files
     system(['more ', obj.dirname, '/*.eps | grep BoundingBox | sed -e "s/.*://g" > ',obj.dirname,'/bbox.txt']);
     bbox = dlmread([obj.dirname,'/bbox.txt']);
-    bbox=[min(bbox(:,1:2)),max(bbox(:,3:4))];
+    obj.bbox=[min(bbox(:,1:2)),max(bbox(:,3:4))];
     
     % set common bounding box
-    cmd{1}=['ls ', obj.dirname,'/*.eps | xargs sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(bbox),'/g" -i ""'];
+    cmd{1}=['ls ', obj.dirname,'/*.eps | xargs sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(obj.bbox),'/g" -i ""'];
     
     % convert eps to pdf
     cmd{2}=['ls ', obj.dirname,'/*.eps | xargs -n1 epstopdf'];
@@ -66,12 +69,12 @@ methods
     % set the framerate (the framerate command above doesn't seem
     % to work in pdf2swf 0.8.1)
     % also combine with swfstop.swf which is a flash file that is in
-    % robotlib/util that sends the stop command to prevent the movie from
+    % drake/util that sends the stop command to prevent the movie from
     % looping
     if (obj.loop)
       cmd{5}=['swfcombine -r ',num2str(obj.fps),' --dummy ',obj.filename,'.swf -o ',obj.filename, '.swf '];
     else
-      cmd{5}=['swfcombine -r ',num2str(obj.fps),' --cat ',obj.filename,'.swf -o ',obj.filename, '.swf ', getRobotlibPath(), '/util/swfstop.swf'];
+      cmd{5}=['swfcombine -r ',num2str(obj.fps),' --cat ',obj.filename,'.swf -o ',obj.filename, '.swf ', getDrakePath(), '/util/swfstop.swf'];
     end
     
     if (obj.poster)
@@ -87,7 +90,7 @@ methods
       catch
         fprintf(1,'\n\n\nfailed running this on the command line:\n  ');
         disp(['  ',cmd{i}]);
-        fprintf(1,'Make sure that you have the command line tool installed, and consider adding to the system_preload field in robotlib_conf to address path/library issues.\n');
+        fprintf(1,'Make sure that you have the command line tool installed, and consider adding to the system_preload field in drake_config to address path/library issues.\n');
         error('swf writing failed');
       end
     end

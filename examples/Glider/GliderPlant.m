@@ -1,4 +1,4 @@
-classdef GliderPlant < SmoothRobotLibSystem
+classdef GliderPlant < DrakeSystem
 % Defines the dynamics for the perching glider.  Translated from Rick Cory's code in 
 % https://svn.csail.mit.edu/russt/robots/perchingGlider/ 
   
@@ -31,9 +31,10 @@ classdef GliderPlant < SmoothRobotLibSystem
   
   methods
     function obj = GliderPlant()
-      obj = obj@SmoothRobotLibSystem(7,0,1,7);
+      obj = obj@DrakeSystem(7,0,1,7);
       ulimit = 13; % max servo velocity
       obj = setInputLimits(obj,-ulimit,ulimit);
+      obj = setOutputFrame(obj,getStateFrame(obj));
     end
     
     function [xdot,df] = dynamics(obj,t,x,u)

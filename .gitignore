@@ -2,3 +2,4 @@
 *.mex*
 *.o*
 robotlib_config.mat
+util/drake_config.mat

@@ -1,4 +1,4 @@
-classdef CompassGaitStancePlant < ManipulatorPlant 
+classdef CompassGaitStancePlant < Manipulator
 
   properties
     m = 5;
@@ -11,13 +11,14 @@ classdef CompassGaitStancePlant < ManipulatorPlant
   
   methods 
     function obj = CompassGaitStancePlant(m,mh,a,b,l,g)
-      obj = obj@ManipulatorPlant(2,1);
+      obj = obj@Manipulator(2,1);
       obj.l=obj.a+obj.b;
       if (nargin>0)
         obj.m=m; obj.mh=mh; obj.a=a; obj.b=b; obj.l=l; obj.g=g;
       end
       
       obj = obj.setInputLimits(-inf,inf);
+      obj = setOutputFrame(obj,getStateFrame(obj));
     end
     
     function [H,C,B] = manipulatorDynamics(obj,q,qdot)
@@ -30,7 +31,7 @@ classdef CompassGaitStancePlant < ManipulatorPlant
     end
 
     function [f,df] = dynamics(obj,t,x,u)
-      f = dynamics@ManipulatorPlant(obj,t,x,u);
+      f = dynamics@Manipulator(obj,t,x,u);
       if (nargout>1)
         df= dynamicsGradients(obj,t,x,u,nargout-1);
       end

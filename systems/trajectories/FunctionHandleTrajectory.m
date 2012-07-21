@@ -10,6 +10,7 @@ classdef FunctionHandleTrajectory < Trajectory
   methods
     function obj = FunctionHandleTrajectory(handle,dim,breaks,dhandle)
     % Constructs a trajectory from the function handle, and optionally its derivative.
+      warning('Drake:FunctionHandleTrajectory','creating function handle.  this is potentially inefficient.  consider implementing things a different way');
       obj = obj@Trajectory(dim);
       if (nargin>0)
         if (~isa(handle,'function_handle')) error('handle should be a function handle'); end
@@ -46,7 +47,15 @@ classdef FunctionHandleTrajectory < Trajectory
     end
     
     function pp = flipToPP(obj,ppbuilder)
-      if (nargin<2) ppbuilder=@foh; end
+      if (nargin<2) 
+        if isempty(obj.dhandle) ppbuilder=@foh;
+        else
+          y=eval(obj,obj.breaks);
+          ydot=deriv(obj,obj.breaks);
+          pp=PPTrajectory(pchipDeriv(obj.breaks,y,ydot));
+          return;
+        end
+      end
       y=eval(obj,obj.breaks);
       pp=PPTrajectory(ppbuilder(obj.breaks,y));
     end

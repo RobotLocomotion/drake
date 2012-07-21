@@ -3,7 +3,7 @@
 
 \section{Code Style Guide}
 
-This section defines a style guide which should be followed by all code that is written in \robotlib.  Being consistent with this style will make the code easier to read, debug, and maintain.  The section was inspired by the C++ style guide for ROS: \url{http://www.ros.org/wiki/CppStyleGuide}.  It makes use of the follow shortcuts for naming schemes:
+This section defines a style guide which should be followed by all code that is written in \drake.  Being consistent with this style will make the code easier to read, debug, and maintain.  The section was inspired by the C++ style guide for ROS: \url{http://www.ros.org/wiki/CppStyleGuide}.  It makes use of the follow shortcuts for naming schemes:
 
 \begin{itemize}
 \item \mcode{CamelCased}: The name starts with a capital letter, and has a capital letter for each new word, with no underscores.
@@ -32,7 +32,7 @@ If you find one, rather than trying to change it yourself, log a bug in bugzilla
 \item  Constants are \mcode{ALL_CAPITALS}
 \item Every class and method should have a brief "javadoc" associated with it.
 \item  All java classes should be in packages relative to the locomotion svn root, e.g.: \\
-   \mcode{package robotlib.examples.Pendulum;} \\
+   \mcode{package drake.examples.Pendulum;} \\
    \mcode{package robots.compassTripod;}
 \end{itemize}
 \item In \matlab: 
@@ -65,7 +65,7 @@ If you find one, rather than trying to change it yourself, log a bug in bugzilla
 \section{Check-In Procedures}
 
 This section defines the requirements that must be met before anything 
-is committed to the main branch (\mcode{trunk}) of the \robotlib repository.
+is committed to the main branch (\mcode{trunk}) of the \drake repository.
 
 \subsection{Unit tests}
 
@@ -77,7 +77,7 @@ is committed to the main branch (\mcode{trunk}) of the \robotlib repository.
 
   Before committing anything to the repository, the code must pass all of 
   the unit tests.  Use the following script to check:
-     \mcode{robotlib/runAllTests.m} 
+     \mcode{drake/runAllTests.m} 
 
 \subsection{Matlab Reports}
   There are a number of helpful matlab reports, that can be run using: 
@@ -98,5 +98,22 @@ If you don't have write permissions to the repository, then please make sure tha
 \begin{lstlisting}
 svn diff > my_patch.diff
 \end{lstlisting}
-in your main \robotlib directory, then email the diff file.
+in your main \drake directory, then email the diff file.
 
+\section{Version Number}
+
+Version number has format W.X.Y.Z where
+\begin{itemize}
+\item W= major release number
+\item X = minor release number
+\item Y = development stage*
+\item Z = build
+\end{itemize}
+* Development stage is one of four values:
+\begin{itemize}
+\item 0 = alpha (buggy, not for use)
+\item 1 = beta (mostly bug-free, needs more testing)
+\item 2 = release candidate (rc) (stable)
+\item 3 = release
+\end{itemize}
+Z (build) is optional. This is probably not needed but could just refer to the revision of the repo at the time of snapshot. Numbered versions should be referenced via tags.

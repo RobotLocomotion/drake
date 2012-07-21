@@ -1,8 +1,6 @@
 
-% NOTEST
-
-load robotlib_config;
+load drake_config;
 addpath([conf.root,'/examples/Pendulum']);
 
-runLCMPlant(PendulumPlant,PendulumLCMCoder);
+runLCM(PendulumPlant,[],struct('tspan',[0 2]));
 

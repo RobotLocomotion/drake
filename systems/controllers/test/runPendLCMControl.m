@@ -1,8 +1,10 @@
+function runPendLCMControl
 
-load robotlib_config;
-p = path;
-addpath([conf.root,'/examples/Pendulum']);
+load drake_config;
+oldpath = addpath([conf.root,'/examples/Pendulum']);
 
-runLCMControl(PendulumLQR(PendulumPlant),PendulumLCMCoder);
+p=PendulumPlant;
+p = setInputLimits(p,-inf,inf);
+runLCM(PendulumEnergyControl(p),[],struct('tspan',[0 2]));
 
-% NOTEST
+path(oldpath);

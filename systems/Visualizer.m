@@ -1,4 +1,4 @@
-classdef Visualizer < RobotLibSystem
+classdef Visualizer < DrakeSystem
 % An interface class which draws (e.g., produces a plot) the output of
 % another dynamical system.  An example might be a set of plotting commands
 % to draw a pendulum given the position of the pendulum.  Visualizers can
@@ -11,8 +11,10 @@ classdef Visualizer < RobotLibSystem
   end
 
   methods 
-    function obj=Visualizer(num_u)
-      obj=obj@RobotLibSystem(0,0,num_u,0,true);
+    function obj=Visualizer(input_frame)
+      typecheck(input_frame,'CoordinateFrame');
+      obj=obj@DrakeSystem(0,0,input_frame.dim,0,true);
+      obj = setInputFrame(obj,input_frame);
     end
     
     function x0 = getInitialState(obj)
@@ -27,6 +29,7 @@ classdef Visualizer < RobotLibSystem
     
     function y = output(obj,t,x,u)
       draw(obj,t,u);
+      drawnow;
       y=[];
     end
     
@@ -51,6 +54,11 @@ classdef Visualizer < RobotLibSystem
       %     optional controlobj will playback the corresponding control scopes
       %
       %   @param xtraj trajectory to visualize
+      
+      typecheck(xtraj,'Trajectory');
+      if (xtraj.getOutputFrame()~=obj.getInputFrame)
+        xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
+      end
       
       tspan = xtraj.getBreaks();
       t0 = tspan(1);
@@ -101,6 +109,11 @@ classdef Visualizer < RobotLibSystem
       %  @param xtraj trajectory to visulalize
       %  @param filename file to produce (optional, if not given a GUI will
       %    pop up and ask for it)
+      
+      typecheck(xtraj,'Trajectory');
+      if (xtraj.getOutputFrame()~=obj.getInputFrame)
+        xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
+      end
       
       if (nargin<3)
         [filename,pathname] = uiputfile('*.avi','Save playback to AVI');
@@ -173,6 +186,11 @@ classdef Visualizer < RobotLibSystem
       % @param filename name of swf file. (optional, if it isn't given a GUI will pop
       %   up and ask for it.)
       
+      typecheck(xtraj,'Trajectory');
+      if (xtraj.getOutputFrame()~=obj.getInputFrame)
+        xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
+      end
+      
       bCloseAtEnd = true;
       if (nargin<3 || isempty(swf))
         swf = SWFWriter();  % this will prompt for a filename
@@ -220,6 +238,7 @@ classdef Visualizer < RobotLibSystem
     playback_speed=1;  % 1=realtime
     draw_axes=false;  % when making movies true=gcf,false=gca
     display_time=true; % when true, time is written to figure title
+    axis;  % set this to non-empty for a fixed view (must be implemented by the draw method)
   end
   
 end

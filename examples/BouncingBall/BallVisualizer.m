@@ -11,7 +11,7 @@ classdef BallVisualizer < Visualizer
       axisAnnotation('ellipse',...               % draw circle
         [0; y(1); 0; 0] + obj.r*[-1;-1;2;2],...  % [x y w h]
         'FaceColor','r');                        % make it red
-      line([-5,5]*obj.r,[0,0],'Color','k');
+      line([-5,5]*obj.r,[0,0],'Color','k','LineWidth',1.5);
       axis equal;
       axis(obj.r*[-5 5 -.5 9.5]);
     end

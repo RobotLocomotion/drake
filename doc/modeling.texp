@@ -16,23 +16,23 @@ vector $y$.
 
 \begin{center}
 \begin{tikzpicture}[auto, node distance=2cm,>=latex']
-   \node (input) {};
-   \node [block, right of=input] (system) {System};
-   \draw [->] (input) -- node {$u$} (system);
-   \node [right of=system] (output) {};
-   \draw [->] (system) -- node {$y$} (output);
+  \node (input) {};
+  \node [block, right of=input] (system) {System};
+  \draw [->] (input) -- node {$u$} (system);
+  \node [right of=system] (output) {};
+  \draw [->] (system) -- node {$y$} (output);
 \end{tikzpicture}
 \end{center}
 
-As we will see, dynamical systems in \robotlib can be instantiated in a number of different ways.  A system can be described by a block of C code (see for instance section~\ref{s:simulinksystem}), but many of the algorithms implemented in \robotlib operate symbolically on the governing equations of the dynamical systems.  For this reason, the preferred approach is (for rigid body dynamics) to use the RobotLib URDF interface or alternatively to describe your dynamics in \matlab code by deriving from the RobotLibSystem interface class.
-
+As we will see, dynamical systems in \robotlib can be instantiated in a number of different ways.  A system can be described by a block of C code (see for instance section~\ref{s:simulinksystem}), but many of the algorithms implemented in \robotlib operate symbolically on the governing equations of the dynamical systems.  For this reason, the preferred approach is to use the Drake URDF interface (for rigid body dynamics) or alternatively to describe your dynamics in \matlab code by deriving from the \mcode{DrakeSystem} interface class.
 
 \subsection{Universal Robot Description Format (URDF)}
 
+Coming soon.  
 
 \subsection{Writing your own dynamics}
 
-Not every system of interest can be described by the URDF interface.  For example, for some simple model systems, it makes more sense to type in the few lines of \matlab code to describe the system.  In other cases, such as modeling a aircraft, there may be terms required in the dynamics (such as aerodynamic forces) that are not programmed into the rigid-body URDF interface.  Similarly, if you need to write your own control system or state estimator, you will need to write your own code.   In this section, we will describe how you can write your own dynamics class by deriving from the RobotLibSystem interface class. 
+Not every system of interest can be described by the URDF interface.  For example, for some simple model systems, it makes more sense to type in the few lines of \matlab code to describe the system.  In other cases, such as modeling a aircraft, there may be terms required in the dynamics (such as aerodynamic forces) that are not programmed into the rigid-body URDF interface.  Similarly, if you need to write your own control system or state estimator, you will need to write your own code.   In this section, we will describe how you can write your own dynamics class by deriving from the \mcode{DrakeSystem} interface class. 
 
 \subsubsection{Continuous-Time Systems}
 
@@ -40,7 +40,9 @@ Consider a basic continuous-time nonlinear input-output dynamical system describ
 \begin{gather*}
 \dot{x} = f(t,x,u), \\ y = g(t,x,u).
 \end{gather*}
-In \robotlib, you can instantiate a system of this form where $f()$ and $g()$ are anything that you can write into a \matlab function.  This is accomplished by deriving from the RobotLibSystem class, defining the size of the input, state, and output vectors in the constructor, and overloading the \mcode{dynamics} and \mcode{output} methods, as illustrated by the following example:
+In \robotlib, you can instantiate a system of this form where $f()$
+and $g()$ are anything that you can write into a \matlab function.
+This is accomplished by deriving from the \mcode{DrakeSystem} class, defining the size of the input, state, and output vectors in the constructor, and overloading the \mcode{dynamics} and \mcode{output} methods, as illustrated by the following example:
 
 \begin{example}[A simple continuous-time system]
 Consider the system \begin{gather*}\dot{x} = -x + x^3,\\ y = x.\end{gather*}  This system has zero inputs, one (continuous) state variable, and one output.  It can be implemented in \robotlib using the following code:
@@ -55,7 +57,7 @@ Implementing a basic discrete-time system in \robotlib is very analogous to impl
 x[n+1] = f(n,x,u),\\
 y[n] = g(n,x,u),
 \end{gather*}
-can be implemented by deriving from \mcode{RobotLibSystem} and defining the \mcode{update} and \mcode{output} methods, as seen in the following example.  
+can be implemented by deriving from \mcode{DrakeSystem} and defining the \mcode{update} and \mcode{output} methods, as seen in the following example.  
 
 \begin{example}[A simple discrete-time system]
 Consider the system \begin{gather*}x[n+1] = x^3[n],\\ y[n] = x[n].\end{gather*}  This system has zero inputs, one (discrete) state variable, and one output.  It can be implemented in \robotlib using the following code:
@@ -76,11 +78,11 @@ as:\begin{gather*} \dot{x}_c = f_c(t,x,u),\\ x_d(t+t') = f_d(t,x,u),
   \quad \forall t \in \{0,\Delta_t,2\Delta_t,...\},\forall t' \in
   (0,\Delta_t] \\ y=g(t,x,u). \end{gather*} Note that, unlike the
 purley discrete time example, the solution of the discrete time variable is defined
-for all $t$.  To implement this, derive from RobotLibSystem and
+for all $t$.  To implement this, derive from \mcode{DrakeSystem} and
 implement the \mcode{dynamics}, \mcode{update}, \mcode{output} methods
 for $f_c()$, $f_d()$, and $g()$, respectively.  To define the timing,
 you must also implement the \mcode{getSampleTime} method.  Type
-\mcode{help RobotLibSystem/getSampleTime} at the \matlab prompt for
+\mcode{help DrakeSystem/getSampleTime} at the \matlab prompt for
 more information.  Note that currently \robotlib only supports a
 single DT sample time. % since it there is there is only a single
                        % update method published by the robotlibsystem class.  
@@ -171,25 +173,21 @@ from the Hybrid Systems community.  Transitions between individual
 modes are described by a \emph{guard} function, denoted by
 $\phi(t,x,u)$ in Figure~\ref{f:hybrid}, which triggers a transition
 out of the current mode when $\phi \le 0$.  The dynamics of the
-transition are given by the transition function, $x^+ =
+transition are given by the \emph{reset} function, $x^+ =
 \Delta(t,x^-,u)$.  Event-driven systems are constructed by creating
-(or inheriting from) an empty \mcode{HybridRobotLibSystem}, then
+(or inheriting from) an empty \mcode{HybridDrakeSystem}, then
 populating the system with modes (nodes in the graph) by calling
 \mcode{addMode}, and populating the system with transitions (edges in
 the graph) by calling \mcode{addTransition}.  Note that it is often
 useful to create guard out of a logical combination of smooth guards
 (e.g. $x(1)>0$ and $x(2)<.5$); to accomplish this you should use the
 \mcode{andGuard} and \mcode{notGuard} methods.
-
-By default, the output of a \mcode{HybridRobotLibSystem} is the output
-of the active mode.  In some cases, it is desirable to include the
-identifier of the active mode as one of the outputs; use
-\mcode{setModeOutputFlag} to toggle whether the mode number is
-automatically prepended onto the output.  
+The output of a \mcode{HybridDrakeSystem} is the output
+of the active mode.  
 
 \begin{example}[The bouncing ball: an event-driven system example]
   The dynamics of a vertically bouncing ball can be described by a
-  \mcode{HybridRobotLibSystem} with a single continuous mode to model
+  \mcode{HybridDrakeSystem} with a single continuous mode to model
   the flight of the ball through the air and a discrete collision
   event at the moment that the ball hit the ground. This can be
   accompished with the following two classes:
@@ -216,18 +214,18 @@ continuous-time white noise, $w(t)$, is approximated by a band-limited
 white noise signal.  
 
 Stochastic models can be implemented in \robotlib by deriving from
-StochastiRobotLibSystem and implementing the
+\mcode{StochastiDrakeSystem} and implementing the
 \mcode{stochasticDynamics}, \mcode{stochasticUpdate}, and
 \mcode{stochasticOutput} methods.  
 
 \begin{example}[A simple continuous-time stochastic system]
 Consider the system \begin{gather*}\dot{x} = -x + w,\\ y = x.\end{gather*}  This system has zero inputs, one (continuous) state variable, and one output.  It can be implemented in \robotlib using the following code:
 \begin{lstlisting}
-classdef LinearGaussianExample < StochasticRobotLibSystem
+classdef LinearGaussianExample < StochasticDrakeSystem
 
   methods 
      function obj = LinearGaussianExample
-       obj = obj@StochasticRobotLibSystem(...
+       obj = obj@StochasticDrakeSystem(...
           1, ... % number of continuous states
           0, ... % number of discrete states
           0, ... % number of inputs
@@ -255,10 +253,8 @@ end
 
 There are many special cases of dynamical systems with structure in the
 dynamics which can be exploited by our algorithms.  Special cases of
-dynamical systems implemented in RobotLib include
+dynamical systems implemented in Drake include
 \begin{itemize}
-\item Smooth systems.  Any mixture of continuous and discrete time dynamics, where the functions governing the dynamics ($f(), g(),$ ...) are smooth functions.  Smooth functions are functions that are continuous with derivatives that exist everywhere  and are smooth\cite{wiki:Smooth_Function}.   
-\item Piecewise-smooth systems. 
 \item Second-order systems, given by $\ddot{q} = f(t,q,\dot{q},u),$ $y
   = g(t,q,\dot{q},u)$, and $\phi_1(q)=0$ and $\phi_2(q,\dot{q})=0$.  
 \item Rigid-body systems, governed by the manipulator
@@ -266,7 +262,6 @@ dynamical systems implemented in RobotLib include
   \lambda_1 + \pd{\phi_2}{\dot{q}}^T \lambda_2\\ \phi_1(q) = 0, \quad
   \phi_2(q,\dot{q})=0\end{gather*} where $\lambda_1$ and $\lambda_2$
 are forces defined implicitly by the constraints.   
-\item URDF.  Derive from, but add initial conditions, etc.
 \item (Rational) polynomial systems, given by $e(x)\dot{x} =
   f(t,x,u)$, $y = g(t,x,u)$, subject to $\phi(x)=0$, where $e(), f(),
   g(),$ and $\phi()$ are all polynomial.  \todo{also discrete time}
@@ -275,45 +270,43 @@ are forces defined implicitly by the constraints.
 %   these systems?}, given by $\dot{x} = f(t,x,u)$,
 %  $y=g(t,x,u)$, where $f()$ and $g()$ are polynomial in $x$ and $u$,
 %  but not necessarily in $t$.  
-\item Linear time-invariant systems, given by $\dot{x} = Ax + Bu,$
-  $y=Cx + Du$, and $\phi(x)=\{\}$.  \todo{also discrete time}
+\item Linear time-invariant systems, given by \begin{gather*}
+\dot{x}_c = A_c x + B_c u,\\
+x_d[n+1] = A_d x + B_d u, \\
+y = Cx + Du,
+\end{gather*}
+and $\phi(x)=\{\}$. 
 \end{itemize}
-These special cases are implemented by classes derived from SmoothRobotLibSystem.
+These special cases are implemented by classes derived from \mcode{DrakeSystem}.
 You should always attempt to derive from the deepest class in the hierarchy that
 describes your system.  
 
-
-Some of the algorithms available for simulation and
-analysis of dynamical systems need to make assumptions about the
-smoothness of the equations governing the dynamics of the systems they
-are operating on.  For this reason, the methods for implementing
-dynamical systems are designed to force you to be explicit about when
-these smoothness assumptions are valid.  
-
-
 In some cases it is possible to convert between these derived
-classes.  For example, converting a rigid-body system to a rational
+classes.  For example, it is possible to convert a rigid-body system to a rational
 polynomial system (e.g., by changing coordinates through a
 stereographic projection).  Methods which implement these conversions are
 provided whenever possible.  
 
-Todo: xcubed example again, but this time deriving from
-polynomialsystem.
+\todo{xcubed example again, but this time deriving from
+polynomialsystem}.
 
-\subsubsection{Providing User Gradients}
+\todo{describe user gradients}
+%\subsubsection{Providing User Gradients}
 
 
 
 \subsection{Existing \simulink Models/Blocks}\label{s:simulinksystem}
 
-Although most users of RobotLib never open a \simulink GUI, \robotlib
+Although most users of Drake never open a \simulink GUI, \robotlib
 is built on top of the \matlab \simulink engine.  As such, \robotlib
 systems can be used in any \simulink model, and any existing \simulink
 block or \simulink model (an entire \simulink diagram) which has a
 single (vector) input and single (vector) output can be used with the
 \robotlib infrastructure.  
 
-\subsection{Combinations of Systems}
+\todo{Example of using a simulink model}
+
+\section{Combinations of Systems}
 
 \begin{figure}[h]
 \begin{center}
@@ -360,14 +353,19 @@ if a polynomial system is feedback combined with a \simulink Block,
 then the new system is a DynamicalSystem, but not a PolynomialSystem.  
 
 A combination of two systems should return a system of the type that
-is the least common ancestor in the \href{\doxygen/inherits.html}{class hierarchy}.  With two exceptions:  combinations with
+is the least common ancestor in the
+\href{\doxygen/inherits.html}{class hierarchy}.  There are two exceptions:  combinations with
 a hybrid system stay hybrid, and combinations with a stochastic system
-stay stochastic.  Stochastic Hybrid Systems are not implemented yet,
-but it wouldn't be hard.
+stay stochastic.  \todo{Stochastic Hybrid Systems are not implemented yet,
+but it wouldn't be hard.}
 
 \todo{Make sure that feedback and cascade handle all of the cases
   described above (especially blocks with different sample times,
   hybrid systems, etc)}
+
+\subsection{Coordinate frames}  Must match to allow combination.  Hybrid modes automatically inherit the input and output coordinate
+frame of the hybrid system; the hybrid system does not have a
+coordinate frame for the state.
 
 \section{Simulation}
 
@@ -457,7 +455,7 @@ the solver to handle the derivative discontinuity event explicitly,
 without reducing the step-size to achieve the accuracy tolerance.  You
 can change the \simulink solver parameters using the
 \mcode{setSimulinkParam} method.  
-For SmoothRobotLibSystems, you can optionally use the \matlab's \mcode{ode45}
+For \mcode{DrakeSystems}, you can optionally use the \matlab's \mcode{ode45}
 suite of solvers using the method \mcode{simulateODE}, which can also
 understand (most of) the \simulink solver parameters.  
 

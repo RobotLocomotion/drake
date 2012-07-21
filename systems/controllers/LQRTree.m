@@ -1,12 +1,11 @@
-classdef LQRTree < HybridRobotLibSystem
+classdef LQRTree < HybridDrakeSystem
 
   properties
     zero_mode_num=1;
     tilqr_mode_num=2;
     num_tvlqr_modes=0;
-%    Vf
+    Vf
     Vtv={};
-    p_x
     
     % precompute some values to optimize speed of guards and transitions
     S1=[];
@@ -19,17 +18,17 @@ classdef LQRTree < HybridRobotLibSystem
   
   methods
     function obj=LQRTree(tilqr,V)
-      typecheck(tilqr,'LTIControl');
-      typecheck(V,'msspoly');
-      
-      obj = setModeOutputFlag(obj,false);
-      
-%      obj.Vf = V;
-      obj.p_x=decomp(V);
-      
+      typecheck(tilqr,'AffineSystem');
+      typecheck(V,'PolynomialLyapunovFunction');
+      obj=obj@HybridDrakeSystem(tilqr.getNumInputs(),tilqr.getNumOutputs());
+      obj = obj.setInputFrame(tilqr.getInputFrame());
+      obj = obj.setOutputFrame(tilqr.getOutputFrame());
+            
       % add a "do nothing" controller (aka zero controller)
-      nU = length(tilqr.u0);
-      [obj,obj.zero_mode_num] = addMode(obj,ConstantControl(zeros(nU,1)));
+      c0=ConstOrPassthroughSystem(zeros(obj.num_y,1),obj.num_u);
+      c0=c0.setInputFrame(tilqr.getInputFrame());
+      c0=c0.setOutputFrame(tilqr.getOutputFrame());
+      [obj,obj.zero_mode_num] = addMode(obj,c0);
       
       % switch from zero control to any controller
       obj = addTransition(obj,obj.zero_mode_num,@inAnyFunnelGuard,@transitionIntoAnyFunnel,true,true);
@@ -37,23 +36,25 @@ classdef LQRTree < HybridRobotLibSystem
       % add the ti controller
       [obj,obj.tilqr_mode_num] = addMode(obj,tilqr);
 
-      % switch from ti controller to any controller
-      obj = addTransition(obj,obj.tilqr_mode_num,@(obj,~,~,x)1-double(subs(V,obj.p_x,x)),@transitionIntoAnyFunnel,true,true);
+      % switch to object coordinates
+      V = V.inFrame(obj.getInputFrame);
       
-      % precompute quadratic forms
-      x=obj.p_x;
-      if (deg(V,x)>2) errror('precomputation assumes quadratic forms for now'); end
-      obj.S1=sparse(doubleSafe(.5*subs(diff(diff(V,x)',x),x,0*x)));
-      obj.s2=sparse(doubleSafe(subs(diff(V,x),x,0*x)));
-      obj.s3=doubleSafe(subs(V,x,0*x));
-      obj.x0=tilqr.x0;
+      % switch from ti controller to any controller
+      obj = addTransition(obj,obj.tilqr_mode_num,@(obj,t,~,x)1-eval(V,t,x),@transitionIntoAnyFunnel,true,true);
+      
+      %% precompute quadratic forms
+      if ~isTI(V) error('i''ve assumed so far that the initial controller / lyapunov pair is time invariant'); end
+      V = V.extractQuadraticLyapunovFunction();
+      obj.S1=V.S;
+      obj.s2=V.s1;
+      obj.s3=V.s2;
       obj.t0=0;
       obj.m=obj.tilqr_mode_num;
     end
     
     function [obj,ind]=addTrajectory(obj,tvlqr,Vtv,parentID,parentT)
-      typecheck(tvlqr,'LTVControl');
-      typecheck(Vtv,'PolynomialTrajectory');
+      typecheck(tvlqr,'AffineSystem');
+      typecheck(Vtv,'QuadraticLyapunovFunction');
       
       N = obj.num_tvlqr_modes;
       if (nargin<4) parentID=obj.tilqr_mode_num; end
@@ -79,41 +80,30 @@ classdef LQRTree < HybridRobotLibSystem
         end
       end
       
+      if isTI(Vtv) error('assuming tv quadratic form'); end
       % from this controller to the parent
-      obj = addTransition(obj,mode_num,@(obj,t,t0,x) Vtv.tspan(end)-t+t0,@toParent,false,false);
+      tspan = Vtv.S.tspan();
+      obj = addTransition(obj,mode_num,@(obj,t,~,x) tspan(end)-t,@toParent,false,false);
+%      obj = addTransition(obj,mode_num,@(obj,t,t0,x) tspan(end)-t+t0,@toParent,false,false);
       
       % precompute quadratic forms
-      nX=length(obj.p_x);
-      ts=Vtv.getBreaks();
+      Vtv = Vtv.inFrame(obj.getInputFrame);
+      nX=obj.getNumInputs();
+      ts=Vtv.S.getBreaks();
       for i=1:length(ts)
-        V=Vtv.eval(ts(i));
-        x=decomp(V);
         n=length(obj.t0);
-        if (deg(V,x)>2) errror('precomputation assumes quadratic forms for now'); end
-        S1(:,:,i)=doubleSafe(.5*subs(diff(diff(V,x)',x),x,0*x));
-        obj.S1(nX*n+(1:nX),nX*n+(1:nX))=S1(:,:,i);
-        s2(1,:,i)=doubleSafe(subs(diff(V,x),x,0*x));
-        obj.s2(n+1,nX*n+(1:nX))=s2(1,:,i);
-        s3(i)=doubleSafe(subs(V,x,0*x));
-        obj.s3(n+1,1)=s3(i);
-        obj.x0(n*nX + (1:nX),1)=tvlqr.x0.eval(ts(i));
+        obj.S1(nX*n+(1:nX),nX*n+(1:nX))=Vtv.S.eval(ts(i));
+        obj.s2(n+1,nX*n+(1:nX))=Vtv.s1.eval(ts(i));
+        obj.s3(n+1,1)=Vtv.s2.eval(ts(i));
         obj.t0(n+1)=ts(i);
         obj.m(n+1)=mode_num;
       end
       
-      S1pp=foh(Vtv.getBreaks(),S1);
-      s2pp=foh(Vtv.getBreaks(),s2);
-      s3pp=foh(Vtv.getBreaks(),s3);
-      
-      function V=fastVlookup(t,x,S1pp,s2pp,s3pp)
-        V=x'*ppval(S1pp,t)*x+ppval(s2pp,t)*x+ppval(s3pp,t);
-      end
-      
-      obj.Vtv = {obj.Vtv{:},@(t,x)fastVlookup(t,x,S1pp,s2pp,s3pp)};
+      obj.Vtv = {obj.Vtv{:};Vtv};
       
       % fell out of this funnel
-      obj = addTransition(obj,mode_num,@(obj,t,t0,x)1-fastVlookup(t-t0,x,S1pp,s2pp,s3pp),@transitionIntoAnyFunnel,true,false);
-%      obj = addTransition(obj,mode_num,@(obj,t,t0,x)1,@transitionIntoAnyFunnel,true,false);
+      obj = addTransition(obj,mode_num,@(obj,t,~,x)1-Vtv.eval(t,x),@transitionIntoAnyFunnel,true,false);
+%      obj = addTransition(obj,mode_num,@(obj,t,t0,x)1-Vtv.eval(t-t0,x),@transitionIntoAnyFunnel,true,false);
     end
     
     function ts=getSampleTime(obj)
@@ -178,11 +168,14 @@ classdef LQRTree < HybridRobotLibSystem
          options = optimset('fminbnd');
          options.TolX = 1e-10;
          tvind = mode-obj.tilqr_mode_num;
-         [tmin,Vmin]=fminbnd(@(t) obj.Vtv{tvind}(t,x),a,b,options);
+         [tmin,Vmin]=fminbnd(@(t) eval(obj.Vtv{tvind},t,x),a,b,options);
        end
     end
     
     function [g,dg,m,tmin]=finalTreeConstraint(obj,x)
+      
+      error('still need to update this'); 
+      
       nX = length(x);
       N = length(obj.t0);
       xbar=x(:,ones(1,N))-reshape(obj.x0,nX,N);
@@ -267,6 +260,8 @@ classdef LQRTree < HybridRobotLibSystem
       %     Vf - default final condition
       %     verify - default is true (occasionally useful for faster debugging)
       
+      error('still need to udpate this'); 
+      
       if (nargin<7) options = struct(); end
       if (~isfield(options,'num_samples_before_done')) options.num_samples_before_done = 100; end
       if (~isfield(options,'num_branches')) options.num_branches = inf; end
@@ -293,7 +288,9 @@ classdef LQRTree < HybridRobotLibSystem
         disp('building and verifying time-invariant controller...')
         [ti,Vf] = tilqr(p,xG,uG,Q,R);
       else
-        ti = LTIControl(xG,uG,zeros(getNumInputs(p),getNumStates(p)));
+        ti = AffineSystem([],[],[],[],[],[],[],zeros(getNumInputs(p),getNumStates(p)),uG);
+        ti = setInputFrame(ti,p.getOutputFrame);
+        ti = setOutputFrame(ti,p.getInputFrame);
       end
       if (isfield(options,'Vf'))
         Vf = options.Vf;
@@ -308,9 +305,7 @@ classdef LQRTree < HybridRobotLibSystem
           Vf = Vf*5;  % artificially prune, since ROA is solved without input limits
         end
         
-        plotFunnel(Vf,xG); drawnow;
-      else
-        Vf=1e4*Vf;  % make cost artificially very high
+        plotFunnel(Vf); drawnow;
       end
       
       % create LQR Tree
@@ -398,13 +393,13 @@ classdef LQRTree < HybridRobotLibSystem
           try 
             V=sampledFiniteTimeVerification(psys,Vftraj,Vtraj,xtraj2.getBreaks(),xtraj2,utraj2,options);
           catch ex
-            if (strcmp(ex.identifier,'RobotLib:PolynomialTrajectorySystem:InfeasibleRho'))
-              warning('RobotLib:LQRTree:InfeasibleRho','verification failed due to infeasible rho.  discarding trajectory.');
+            if (strcmp(ex.identifier,'Drake:PolynomialTrajectorySystem:InfeasibleRho'))
+              warning('Drake:LQRTree:InfeasibleRho','verification failed due to infeasible rho.  discarding trajectory.');
               continue;
             end
             rethrow(ex);  % otherwise, it's a real error
           end
-          plotFunnel(V,xtraj,options.plotdims); drawnow;
+          plotFunnel(V,options); drawnow;
         else
           V=PolynomialTrajectory(@(t) 1e5*Vtraj.eval(t),Vtraj.getBreaks());
         end

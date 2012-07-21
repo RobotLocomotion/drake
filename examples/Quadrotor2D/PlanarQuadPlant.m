@@ -1,4 +1,4 @@
-classdef PlanarQuadPlant < SecondOrderPlant
+classdef PlanarQuadPlant < SecondOrderSystem
 
   % state:  
   %  q(1) - x position
@@ -17,7 +17,8 @@ classdef PlanarQuadPlant < SecondOrderPlant
   
   methods
     function obj = PlanarQuadPlant()
-      obj = obj@SecondOrderPlant(3,2,true);
+      obj = obj@SecondOrderSystem(3,2,true);
+      obj = obj.setOutputFrame(obj.getStateFrame);  % allow full-state feedback
     end
     
     function qdd = sodynamics(obj,t,q,qd,u)
@@ -31,6 +32,27 @@ classdef PlanarQuadPlant < SecondOrderPlant
       x = randn(6,1);
     end
     
-  end  
+    function [c,V] = hoverLQR(obj)
+      x0 = zeros(6,1);
+      u0 = obj.m*obj.g/2 * [1;1];
+      Q = diag([10 10 10 1 1 (obj.L/2/pi)]);  %Q = diag([10*ones(1,3) ones(1,3)]);
+      R = [0.1 0.05; 0.05 0.1];  %R = diag([0.1 0.1]);
+
+      if (nargout>1)
+        [c,V0] = tilqr(obj,x0,u0,Q,R);
+        sys = feedback(obj,c);
+
+        pp = sys.taylorApprox(0,x0,zeros(2,1),3);  % make polynomial approximation
+        options=struct();
+        options.degL1=2;
+        %options.method='bilinear';
+        %options.degV=4;
+        V=regionOfAttraction(pp,V0,options);
+      else
+        c = tilqr(obj,x0,u0,Q,R);
+      end
+    end
+    
+  end
   
 end

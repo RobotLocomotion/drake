@@ -8,8 +8,9 @@ classdef HopperVisualizer < Visualizer
   end
   
   methods
-    function obj=HopperVisualizer()
-      obj = obj@Visualizer(10);
+    function obj=HopperVisualizer(plant)
+      typecheck(plant,'HopperPlant');
+      obj = obj@Visualizer(plant.getOutputFrame);
     end
     
     function draw(obj,t,q)

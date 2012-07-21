@@ -1,8 +1,13 @@
-classdef BallPlant < HybridRobotLibSystem
+classdef BallPlant < HybridDrakeSystem
   
   methods
     function obj = BallPlant()
-      sys = BallFlightPhasePlant(); % create flight mode system
+      obj = obj@HybridDrakeSystem(...
+        0, ...  % number of inputs
+        1);     % number of outputs
+      
+      % create flight mode system
+      sys = BallFlightPhasePlant();
       [obj,flight_mode] = addMode(obj,sys);  % add the single mode
       
       g1=inline('x(1)-obj.r','obj','t','x','u');  % q-r<=0
@@ -13,8 +18,6 @@ classdef BallPlant < HybridRobotLibSystem
         @collisionDynamics, ...    % transition method
         false, ...                 % not direct feedthrough
         true);                     % time invariant
-
-      obj=setModeOutputFlag(obj,false); % don't attach mode to the output
     end
 
     function [xn,m,status] = collisionDynamics(obj,m,t,x,u)

@@ -10,7 +10,7 @@ function model = parseURDF(urdf_filename,options)
 % means skip them.  @default true
 %
 % @retval model Structure compatible with the Featherstone Spatial Vector
-% and Dynamics library, with additional robotlib tags added.
+% and Dynamics library, with additional drake tags added.
 
 if (nargin<2) options = struct(); end
 if (~isfield(options,'2D')) options.twoD = true; end

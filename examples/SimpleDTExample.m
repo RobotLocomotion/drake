@@ -1,8 +1,8 @@
-classdef SimpleDTExample < RobotLibSystem
+classdef SimpleDTExample < DrakeSystem
   methods
     function obj = SimpleDTExample()
       % call the parent class constructor:
-      obj = obj@RobotLibSystem(...  
+      obj = obj@DrakeSystem(...  
          0, ... % number of continuous states
          1, ... % number of discrete states
          0, ... % number of inputs

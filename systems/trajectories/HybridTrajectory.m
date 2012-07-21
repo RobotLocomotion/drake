@@ -17,10 +17,18 @@ classdef HybridTrajectory < Trajectory
         te = trajectories{1}.tspan(2);  
         obj.tspan = trajectories{1}.tspan; 
         obj.dim = trajectories{1}.dim;
+        obj = setNumOutputs(obj,prod(obj.dim));
+        obj = setOutputFrame(obj,trajectories{1}.getOutputFrame);
         te = te(end);
         for i=2:length(trajectories)
           t = trajectories{i}.getBreaks();
-          if (abs(t(1)-te(end))>1e-10) error('trajectories must line up in time'); end
+          if (abs(t(1)-te(end))>1e-8) 
+            keyboard;
+            error('trajectories must line up in time'); 
+          end
+          if (trajectories{i}.getOutputFrame~=obj.getOutputFrame)
+            error('trajectories must all be in the same frame'); 
+          end
           if (length(obj.dim)~=length(trajectories{i}.dim)  || any(obj.dim ~= trajectories{i}.dim))
             error('trajectories must all have the same dimension');
           end
@@ -28,7 +36,6 @@ classdef HybridTrajectory < Trajectory
           obj.tspan(2) = t(end);
         end
         obj.te = te(1:(end-1));
-        obj = setNumOutputs(obj,prod(obj.dim));
       end
     end
     

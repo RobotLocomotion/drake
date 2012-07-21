@@ -1,4 +1,4 @@
-classdef HopperPlant < RobotLibSystem
+classdef HopperPlant < DrakeSystem
   
 % state variables:
 %   q(1) - x position of the foot
@@ -31,9 +31,10 @@ classdef HopperPlant < RobotLibSystem
   
   methods
     function obj = HopperPlant()
-      obj = obj@RobotLibSystem(10,0,2,10,false,true);
+      obj = obj@DrakeSystem(10,0,2,10,false,true);
       obj = setNumZeroCrossings(obj,3);
-      obj = setInputLimits(obj,[-inf;-50],[inf;50]);
+%      obj = setInputLimits(obj,[-inf;-50],[inf;50]);  % see bug 1022
+      obj = setOutputFrame(obj,getStateFrame(obj));  % allow full state feedback
     end
     
     function x0 = getInitialState(obj)
