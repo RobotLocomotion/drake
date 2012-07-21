@@ -4,7 +4,7 @@ classdef SimulinkModel < DynamicalSystem
 
   % constructor
   methods
-    function obj = SimulinkModel(mdl)
+    function obj = SimulinkModel(mdl,num_u)
       % Construct a simulink model DynamicalSystem
       %
       % @param mdl a string containing the name of an existing simulink model
@@ -15,7 +15,15 @@ classdef SimulinkModel < DynamicalSystem
       obj.num_xc = sys(1);
       obj.num_xd = sys(2);
       obj.num_y = sys(3);
-      obj.num_u = sys(4);
+      if (nargin<2)
+        obj.num_u = sys(4);
+      else
+        obj.num_u = num_u;  % temporary hack to get around bug 1022
+      end
+
+      obj=obj.setInputFrame(CoordinateFrame([mdl,'Input'],obj.num_u,'u'));
+      obj=obj.setStateFrame(CoordinateFrame([mdl,'State'],obj.num_xc+obj.num_xd,'x'));
+      obj=obj.setOutputFrame(CoordinateFrame([mdl,'Output'],obj.num_y,'y'));
     end
   end
   
@@ -51,15 +59,10 @@ classdef SimulinkModel < DynamicalSystem
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         feval(obj.mdl,[],[],[],'compile');
       end
+      feval(obj.mdl,[],[],[],'all');
       feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
       xcdot = feval(obj.mdl,t,x,u,'derivs');
       
-      % the following two lines are a bizarre work-around to a bug I've
-      % submitted to the mathworks.  they should be deleted if i figure out
-      % what's going on.
-%      Simulink.BlockDiagram.getInitialState(obj.mdl);
-%      xcdot = feval(obj.mdl,t,x,u,'derivs');
-
       xcdot = stateStructureToVector(obj,xcdot);
 
       if (nargout>1)
@@ -74,6 +77,7 @@ classdef SimulinkModel < DynamicalSystem
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         feval(obj.mdl,[],[],[],'compile');
       end
+      feval(obj.mdl,[],[],[],'all');
       feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
       xdn = feval(obj.mdl,t,x,u,'update');
       xdn = stateStructureToVector(obj,xdn);
@@ -84,6 +88,8 @@ classdef SimulinkModel < DynamicalSystem
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         feval(obj.mdl,[],[],[],'compile');
       end
+%      tu=mat2str([t reshape(u,1,numel(u))]);
+      feval(obj.mdl,[],[],[],'all');
       y = feval(obj.mdl,t,x,u,'outputs');
 
       if (nargout>1)

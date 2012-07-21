@@ -1,4 +1,4 @@
-classdef ConstrainedAcrobotPlant < ManipulatorPlant 
+classdef ConstrainedAcrobotPlant < Manipulator
 % Simple plant to test the bilateral constraints implementation in
 % ManipulatorPlant
 
@@ -13,7 +13,7 @@ classdef ConstrainedAcrobotPlant < ManipulatorPlant
   
   methods
     function obj = ConstrainedAcrobotPlant
-      obj = obj@ManipulatorPlant(2,1,1);
+      obj = obj@Manipulator(2,1,1);
       obj = setInputLimits(obj,-10,10);
       obj.I1 = 0.083 + obj.m1*obj.lc1^2;
       obj.I2 = 0.33 + obj.m2*obj.lc2^2;

@@ -11,9 +11,7 @@ classdef ODESolTrajectory < Trajectory
       if (nargin>0)
         obj.sol = sol;
         if (nargin>1)
-          for i=1:length(shape)
-            obj.shape{i}=shape(i);
-          end
+          obj.shape=shape;
         end
         obj.tspan = [min(obj.sol.x), max(obj.sol.x)];
       end
@@ -24,11 +22,35 @@ classdef ODESolTrajectory < Trajectory
         error('outside interval'); 
       end
       y = deval(obj.sol,t);
-      if (~isempty(obj.shape)) y = reshape(y,obj.shape{:},[]); end
+      if isempty(obj.shape)
+        return;
+      elseif iscell(obj.shape)
+        offset = 0;
+        for i=1:length(obj.shape)
+          n = prod(obj.shape{i});
+          yout{i} = reshape(y(offset + (1:n)),obj.shape{i});
+          offset = offset+n;
+        end
+        y=yout;
+      else
+        y = reshape(y,obj.shape);
+      end
     end
     function ydot = deriv(obj,t)
-        ydot = obj.sol.extdata.odefun(t,deval(obj.sol,t));
-        if (~isempty(obj.shape)) ydot = reshape(ydot,obj.shape{:},[]); end
+      ydot = obj.sol.extdata.odefun(t,deval(obj.sol,t));
+      if isempty(obj.shape)
+        return;
+      elseif iscell(obj.shape)
+        offset = 0;
+        for i=1:length(obj.shape)
+          n = prod(obj.shape{i});
+          ydotout{i} = reshape(ydot(offset + (1:n)),obj.shape{i});
+          offset = offset+n;
+        end
+        ydot=ydotout;
+      else
+        ydot = reshape(ydot,obj.shape);
+      end
     end
     
     function t = getBreaks(obj)
@@ -36,6 +58,26 @@ classdef ODESolTrajectory < Trajectory
         t = obj.sol.x(end:-1:1);
       else
         t = obj.sol.x;
+      end
+    end
+    
+    function pptraj=flipToPP(obj)
+      t = getBreaks(obj);
+      y = deval(obj.sol,t); ydot=y;
+      for i=1:length(t)  % don't know if odefun was vectorized
+        ydot(:,i) = obj.sol.extdata.odefun(t(i),y(:,i));
+      end
+      if isempty(obj.shape)
+        pptraj = PPTrajectory(pchipDeriv(t,y,ydot));
+      elseif iscell(obj.shape)
+        offset=0;
+        for i=1:length(obj.shape)
+          n=prod(obj.shape{i});
+          pptraj{i} = PPTrajectory(pchipDeriv(t,y(offset + (1:n),:),ydot(offset + (1:n),:),ydot(offset + (1:n),:),obj.shape{i}));
+          offset = offset+n;
+        end
+      else
+        pptraj = PPTrajectory(pchipDeriv(t,y,ydot,ydot,obj.shape));
       end
     end
   end

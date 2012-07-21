@@ -1,4 +1,4 @@
-classdef RimlessWheelPlant < HybridRobotLibSystem
+classdef RimlessWheelPlant < HybridDrakeSystem
   
   properties
     m = 1;
@@ -13,10 +13,13 @@ classdef RimlessWheelPlant < HybridRobotLibSystem
   
   methods 
     function obj = RimlessWheelPlant()
+      obj = obj@HybridDrakeSystem(0,3);
       sys = RimlessWheelStancePlant();
       sys.m = obj.m;
       sys.l = obj.l;
       sys.g = obj.g;
+      obj = setInputFrame(obj,sys.getInputFrame);
+      obj = setOutputFrame(obj,sys.getOutputFrame);
       obj = addMode(obj,sys);
       
       fc1=inline('x(1)-obj.gamma+obj.alpha','obj','t','x','u');  % theta<=gamma-alpha
@@ -56,6 +59,7 @@ classdef RimlessWheelPlant < HybridRobotLibSystem
       r = RimlessWheelPlant();
       v = RimlessWheelVisualizer(r);
 
+%      v.axis = [0 10 -1 2];
       xtraj = simulate(r,[0 10]);
       playback(v,xtraj);
     end

@@ -1,15 +1,15 @@
-function vol=getLevelSetVolume(V,x0,options)
+function vol=getLevelSetVolume(x,f)
 
-typecheck(V,'msspoly');
-x = decomp(V);
-if (nargin<3) options=struct(); end
-if (~isfield(options,'tol')) options.tol = 2e-3; end % default tolerance of fplot
+typecheck(x,'msspoly');
+if ~issimple(x), error('x must be simple'); end
+typecheck(f,'msspoly');
+sizecheck(f,1);
 
-if (deg(V,x)<=2)  % interrogate the quadratic level-set
+if (deg(f,x)<=2)  % interrogate the quadratic level-set
   % note: don't need (or use) x0 in here
   
-  H = doubleSafe(0.5*diff(diff(V,x)',x));
-  b = -0.5*(H\doubleSafe(subs(diff(V,x),x,0*x)'));
+  H = doubleSafe(0.5*diff(diff(f,x)',x));
+  b = -0.5*(H\doubleSafe(subs(diff(f,x),x,0*x)'));
   
   c=1;  % the one level set
   n=length(x);
@@ -18,7 +18,7 @@ if (deg(V,x)<=2)  % interrogate the quadratic level-set
   
 else % do the more general thing
 
-  error('not implemented yet for deg(V)>2');
+  error('not implemented yet for deg(f)>2');
   % todo:  estimate volume with largest contained ellipse
   
 end

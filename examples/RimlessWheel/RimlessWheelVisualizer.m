@@ -5,17 +5,12 @@ classdef RimlessWheelVisualizer < Visualizer
   end
   
   methods 
-    function obj = RimlessWheelVisualizer(l,alpha,gamma)
-      obj = obj@Visualizer(4);
-      if (isa(l,'RimlessWheelPlant'))
-        obj.l = l.l;
-        obj.alpha = l.alpha;
-        obj.gamma = l.gamma;
-      else
-        obj.l = l;
-        obj.alpha = alpha;
-        obj.gamma = gamma;
-      end
+    function obj = RimlessWheelVisualizer(plant)
+      typecheck(plant,'RimlessWheelPlant');
+      obj = obj@Visualizer(plant.getOutputFrame);
+      obj.l = plant.l;
+      obj.alpha = plant.alpha;
+      obj.gamma = plant.gamma;
     end
     
     function draw(obj,t,x)
@@ -37,9 +32,14 @@ classdef RimlessWheelVisualizer < Visualizer
       end
       t = 0:0.1:2*pi;
       line(hip(1)+0.15*sin(t),hip(2)+0.15*cos(t),'Color',[0 0 0]);
-      fill(hip(1)+0.15*sin(t),hip(2)+0.15*cos(t),[ 0.502 1.000 1.000 ]);
-      line(hip(1)+[-2,2],tan(-gamma)*(hip(1)+[-4,4]));
+      fill(hip(1)+0.15*sin(t),hip(2)+0.15*cos(t),MITlightgray); %[ 0.502 1.000 1.000 ]);
       axis equal;
+      if (isempty(obj.axis))
+        line(hip(1)+[-2,2],tan(-gamma)*(hip(1)+[-4,4]),'LineWidth',1.5,'Color',MITred);
+      else
+        line(obj.axis(1:2),tan(-gamma)*obj.axis(1:2),'LineWidth',1.5,'Color',MITred);
+        axis(obj.axis);
+      end
       
       drawnow;
     end

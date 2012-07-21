@@ -1,17 +1,13 @@
 function [utraj,xtraj]=runDircol(p)
-%clear all
+
 if (nargin<1)
   p = PlanePlant();
 end
-
-% OKTOFAIL
 
 x0 = [0; 0; 0; 0];
 tf0 = .5;
 xf = [0; 5; 0; 0];
 
-% generate a random trajectory
-utraj0 = PPTrajectory(foh(linspace(0,tf0,11),randn(1,11)));
 
 %con.u.lb = p.umin;
 %con.u.ub = p.umax;
@@ -23,32 +19,22 @@ con.T.lb = 0.1;
 con.T.ub = 1;
 
 options.method='dircol';
-tic
 %options.grad_test = true;
-[utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj0,con,options);
-if (info~=1) error('failed to find a trajectory'); end
-toc
 
-%con.uf.lb = 0;
-%con.uf.ub = 0;
-%options.xtape='simulate';
-%[utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj,con,options);
-%if (info~=1) error('failed to improve the trajectory'); end
-
-
-if (nargout>0) 
-  return;
+info = 0;
+while (info~=1)
+  % generate a random trajectory
+  utraj0 = PPTrajectory(foh(linspace(0,tf0,11),randn(1,11)));
+  
+  tic
+  [utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj0,con,options);
+  toc
 end
 
-c = tvlqr(p,xtraj,utraj,eye(4),eye(1),eye(4));
-
-t = xtraj.getBreaks();
-t = linspace(t(1),t(end),100);
-x = xtraj.eval(t);
-%plot(x(2,:),x(4,:));
-
-v = PlaneVisualizer();
-v.playback(xtraj);
+if (nargout<1)
+  v = PlaneVisualizer(p);
+  v.playback(xtraj);
+end
 
 end
 

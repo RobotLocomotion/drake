@@ -1,7 +1,6 @@
 function taylorTest
 
-load robotlib_config;
-oldpath = addpath([conf.root,'/examples/Pendulum']);
+oldpath = addpath([getDrakePath(),'/examples/Pendulum']);
 
 order=2;
 
@@ -13,7 +12,7 @@ u0=0;
 gradTest(@p.dynamics,t0,x0,u0,struct('tol',0.01))
 
 path(oldpath);
-oldpath = addpath([conf.root,'/examples/Acrobot']);
+oldpath = addpath([getDrakePath(),'/examples/Acrobot']);
 
 p = AcrobotPlant();
 x0=randn(4,1);

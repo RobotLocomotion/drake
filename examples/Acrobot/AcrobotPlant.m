@@ -1,4 +1,4 @@
-classdef AcrobotPlant < ManipulatorPlant 
+classdef AcrobotPlant < Manipulator
   
   properties
     % parameters from Spong95 (except inertias are now relative to the
@@ -16,11 +16,12 @@ classdef AcrobotPlant < ManipulatorPlant
   
   methods
     function obj = AcrobotPlant
-      obj = obj@ManipulatorPlant(2,1);
+      obj = obj@Manipulator(2,1);
       obj = setInputLimits(obj,-10,10);
       obj.I1 = 0.083 + obj.m1*obj.lc1^2;
       obj.I2 = 0.33 + obj.m2*obj.lc2^2;
 
+      obj = setOutputFrame(obj,obj.getStateFrame);
     end
     
     function [H,C,B] = manipulatorDynamics(obj,q,qd)
@@ -46,7 +47,7 @@ classdef AcrobotPlant < ManipulatorPlant
     % vectorized version?
     
     function [f,df,d2f,d3f] = dynamics(obj,t,x,u)
-      f = dynamics@ManipulatorPlant(obj,t,x,u);
+      f = dynamics@Manipulator(obj,t,x,u);
       if (nargout>1)
         [df,d2f,d3f]= dynamicsGradients(obj,t,x,u,nargout-1);
       end
@@ -56,5 +57,86 @@ classdef AcrobotPlant < ManipulatorPlant
       x = .1*randn(4,1);
     end
     
+    function [c,V]=balanceLQR(obj)
+      x0=[pi;0;0;0]; u0=0;
+      Q = diag([10,10,1,1]); R = 1;
+      if (nargout<2)
+        c = tilqr(obj,x0,u0,Q,R);
+      else
+        if any(~isinf([obj.umin;obj.umax]))
+          error('currently, you must disable input limits to estimate the ROA');
+        end
+        [c,V] = tilqr(obj,x0,u0,Q,R);
+        pp = feedback(obj.taylorApprox(0,x0,u0,3),c);
+        options.method='levelSet';
+        V=regionOfAttraction(pp,V,options);
+      end
+    end
+    
+    function [utraj,xtraj]=swingUpTrajectory(obj)
+      x0 = zeros(4,1); tf0 = 4; xf = [pi;zeros(3,1)];
+
+      con.u.lb = obj.umin;
+      con.u.ub = obj.umax;
+      con.x0.lb = x0;
+      con.x0.ub = x0;
+      con.xf.lb = xf;
+      con.xf.ub = xf;
+      con.T.lb = 2;
+      con.T.ub = 6;
+
+      options.method='dircol';
+      %options.grad_test = true;
+      info=0;
+      while (info~=1)
+        utraj0 = PPTrajectory(foh(linspace(0,tf0,21),randn(1,21)));
+        tic
+        [utraj,xtraj,info] = trajectoryOptimization(obj,@cost,@finalcost,x0,utraj0,con,options);
+        toc
+      end
+
+      function [g,dg] = cost(t,x,u);
+        R = 1;
+        g = sum((R*u).*u,1);
+        dg = [zeros(1,1+size(x,1)),2*u'*R];
+        return;
+        
+        xd = repmat([pi;0;0;0],1,size(x,2));
+        xerr = x-xd;
+        xerr(1,:) = mod(xerr(1,:)+pi,2*pi)-pi;
+        
+        Q = diag([10,10,1,1]);
+        R = 100;
+        g = sum((Q*xerr).*xerr + (R*u).*u,1);
+        
+        if (nargout>1)
+          dgdt = 0;
+          dgdx = 2*xerr'*Q;
+          dgdu = 2*u'*R;
+          dg = [dgdt,dgdx,dgdu];
+        end
+      end
+      
+      function [h,dh] = finalcost(t,x)
+        h = t;
+        dh = [1,zeros(1,size(x,1))];
+        return;
+        
+        xd = repmat([pi;0;0;0],1,size(x,2));
+        xerr = x-xd;
+        xerr(1,:) = mod(xerr(1,:)+pi,2*pi)-pi;
+        
+        Qf = 100*diag([10,10,1,1]);
+        h = sum((Qf*xerr).*xerr,1);
+        
+        if (nargout>1)
+          dh = [0, 2*xerr'*Qf];
+        end
+      end  
+
+    end
+
+    
   end
+  
 end

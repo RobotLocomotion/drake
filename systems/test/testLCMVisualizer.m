@@ -1,19 +1,16 @@
 function testLCMVisualizer
 
-% NOTEST
+load drake_config;
 
-load robotlib_config;
+p = addpath([conf.root,'/examples/Pendulum']);
 
-p = path;
-
-addpath([conf.root,'/examples/Pendulum']);
-
+if (matlabpool('size')>0), matlabpool('close'); end
 job1 = batch('runPendulum','Workspace',struct(),'CaptureDiary',true);
 
-ok = waitForState(job1,'running',10);
+ok = waitForState(job1,'running');
 if (~ok) error('failed'); end
 
-runLCMVisualizer(PendulumVisualizer,PendulumLCMCoder,struct('tspan',[0 2]))
+runLCM(PendulumVisualizer,[],struct('tspan',[0 5]))
 
 diary(job1);
 destroy(job1);

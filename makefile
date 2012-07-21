@@ -15,14 +15,14 @@ EXTRACLASSFILES = util/MyLCMTypeDatabase*MyClassVisitor.class
 
 all: java c
 
-java : robotlib.jar
+java : drake.jar
 
-c : robotlib.a
+c : drake.a
 
-robotlib.jar : $(CLASSFILES)
-	cd ..; jar -cf robotlib/robotlib.jar $(CLASSFILES:%=robotlib/%) $(EXTRACLASSFILES:%=robotlib/%)
+drake.jar : $(CLASSFILES)
+	cd ..; jar -cf drake/drake.jar $(CLASSFILES:%=drake/%) $(EXTRACLASSFILES:%=drake/%)
 
-robotlib.a : $(OBJFILES)
+drake.a : $(OBJFILES)
 	ar rc $@ $^
 
 .INTERMEDIATE : $(OBJFILES) $(CLASSFILES)
@@ -40,8 +40,8 @@ robotlib.a : $(OBJFILES)
 
 %.java : %.lcm
 	@if grep -i package $< ; then echo "\n *** ERROR: $< has a package specified.  Don't do that. *** \n"; exit 1; fi
-	lcm-gen -j --jdefaultpkg="robotlib.$(shell echo $< | sed "s|/[A-Za-z0-9._]*\.lcm||g" | tr "/" ".")" --jpath=".." $<
+	lcm-gen -j --jdefaultpkg="drake.$(shell echo $< | sed "s|/[A-Za-z0-9._]*\.lcm||g" | tr "/" ".")" --jpath=".." $<
 
 clean : 
-	-rm -f robotlib.jar robotlib.a $(LIBS) $(LCM_HFILES) $(LCM_CFILES) $(OBJFILES) $(LCM_JAVAFILES) $(CLASSFILES) $(EXTRACLASSFILES)
+	-rm -f drake.jar drake.a $(LIBS) $(LCM_HFILES) $(LCM_CFILES) $(OBJFILES) $(LCM_JAVAFILES) $(CLASSFILES) $(EXTRACLASSFILES)
 

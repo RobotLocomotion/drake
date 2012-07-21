@@ -1,19 +1,19 @@
 function ok = checkDependency(conf_var)
-% Robotlib code which depends on an external library or program should
+% Drake code which depends on an external library or program should
 % check that dependency by calling this function immediately.
 %   example:
 %     checkDependency('spot_enabled')
 % or 
-%     if (checkDependency('spot_enabled')) error('my error'); end
+%     if (~checkDependency('spot_enabled')) error('my error'); end
 
 
 persistent conf;
 
 if (isempty(conf))
   try
-    load robotlib_config;
+    load drake_config;
   catch
-    error('You must run configure once in the main robotlib directory');
+    error('You must run configure once in the main Drake directory');
   end
 end
 

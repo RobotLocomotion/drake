@@ -1,16 +1,16 @@
-classdef LinearGaussianExample < StochasticPolynomialSystem
+classdef LinearGaussianExample < StochasticDrakeSystem
 
  methods 
    function obj = LinearGaussianExample
-     obj = obj@StochasticPolynomialSystem(...
-	 1, ... % number of continuous states
-	 0, ... % number of discrete states
-	 0, ... % number of inputs
-	 1, ... % number of outputs
-	 false, ...  % not direct feedthrough
-	 true, ...   % time invariant
-	 1, ... % number of noise inputs
-	 .01);  % time constant of w(t) 
+     obj = obj@StochasticDrakeSystem(...
+       1, ... % number of continuous states
+       0, ... % number of discrete states
+       0, ... % number of inputs
+       1, ... % number of outputs
+       false, ...  % not direct feedthrough
+       true, ...   % time invariant
+       1, ... % number of noise inputs
+       .01);  % time constant of w(t)
    end
    
    function xcdot = stochasticDynamics(obj,t,x,u,w)
@@ -30,9 +30,9 @@ classdef LinearGaussianExample < StochasticPolynomialSystem
    function run
      sys=LinearGaussianExample;
      fnplt(simulate(sys,[0 1]));
-     S=.5; tspan=[0 1]; x0=0;
-     options.rho0 = 1;
-     stochasticFiniteTimeVerification(sys,S,tspan,x0,options);
+%     S=.5; tspan=[0 1]; x0=0;
+%     options.rho0 = 1;
+%     stochasticFiniteTimeVerification(sys,S,tspan,x0,options);
 %     prob=monteCarlo(sys,S,tspan,x0)
    end
  end

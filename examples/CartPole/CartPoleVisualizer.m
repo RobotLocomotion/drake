@@ -5,13 +5,10 @@ classdef CartPoleVisualizer < Visualizer
   end
   
   methods
-    function obj = CartPoleVisualizer(l)
-      obj = obj@Visualizer(4);
-      if (nargin>0)
-        if (isa(l,'double')) obj.l = l;
-        elseif (isa(l,'CartPolePlant')) obj.l = l.l;
-        end
-      end
+    function obj = CartPoleVisualizer(plant)
+      typecheck(plant,'CartPolePlant');
+      obj = obj@Visualizer(plant.getOutputFrame);
+      obj.l = plant.l;
     end
     
     function draw(obj,t,x)

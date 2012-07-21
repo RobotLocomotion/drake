@@ -1,22 +1,24 @@
-classdef CartPoleEnergyShaping < SmoothRobotLibSystem
+classdef CartPoleEnergyShaping < DrakeSystem
   % technically not the same controller as Spong96.  He goes through PFL.
   % I'm just doing energy shaping on the non-PFL'd system here.
   
   properties
     p  % plant
-    k1 = 40; k2 = 15; k3 = 10; k3limit = 50;
+    k1 = 40; k2 = 15; k3 = 15; k3limit = 50;
   end
   
   methods
     function obj = CartPoleEnergyShaping(plant)
-      obj = obj@SmoothRobotLibSystem(0,0,4,1,true,true);
+      obj = obj@DrakeSystem(0,0,4,1,true,true);
       if (nargin>0)
         typecheck(plant,'CartPolePlant')
         obj.p = plant;
+        obj = obj.setInputFrame(plant.getStateFrame);
+        obj = obj.setOutputFrame(plant.getInputFrame);
       end
     end
     
-    function u = output(obj,t,junk,x)
+    function u = output(obj,t,~,x)
       Etilde = pend_energy(obj,x) - 1.05*pend_energy(obj,[0;pi;0;0]);
       u = -obj.k1*x(1) - obj.k2*x(3) + sat(obj.k3*Etilde*cos(x(2))*x(4),obj.k3limit);
       scope('CartPole','phase',x(2),x(4),struct('resetOnXval',false));

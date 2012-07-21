@@ -1,7 +1,7 @@
 function runPassive
 
 pp = PlanePlant();
-pv = PlaneVisualizer();
+pv = PlaneVisualizer(pp);
 
 x0 = [0; 0; 0; 1];
 

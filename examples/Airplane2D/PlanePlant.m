@@ -1,4 +1,4 @@
-classdef PlanePlant < SmoothRobotLibSystem
+classdef PlanePlant < DrakeSystem
 % Defines the dynamics for the powered plane.
   
   properties
@@ -8,7 +8,8 @@ classdef PlanePlant < SmoothRobotLibSystem
   
   methods
     function obj = PlanePlant()
-      obj = obj@SmoothRobotLibSystem(4,0,1,4,0,1);
+      obj = obj@DrakeSystem(4,0,1,4,0,1);
+      obj = setOutputFrame(obj,getStateFrame(obj));  % allow full state feedback
     end
     
     function [xdot, df, d2f, d3f] = dynamics(obj,t,x,u)

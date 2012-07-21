@@ -1,37 +1,37 @@
 classdef DTTrajectory < Trajectory
   
   properties
-    ts
-    xs
+    tt
+    xx
   end
   
   methods
-    function obj = DTTrajectory(ts,xs)
-      obj = obj@Trajectory(size(xs,1));
-      typecheck(ts,'double');
-      typecheck(xs,'double');
-      if (~isrow(ts)) error('ts should be a 1xn list of times'); end
-      if (size(ts,2)~=size(xs,2)) error('xs must have the same number of columns as ts'); end
-      if (~issorted(ts)) error('ts should be monotonically increasing'); end
-      obj.ts = ts;
-      obj.xs = xs;
-      obj.tspan = [min(ts) max(ts)];
+    function obj = DTTrajectory(tt,xx)
+      obj = obj@Trajectory(size(xx,1));
+      typecheck(tt,'double');
+      typecheck(xx,'double');
+      if (~isrow(tt)) error('tt should be a 1xn list of times'); end
+      if (size(tt,2)~=size(xx,2)) error('xx must have the same number of columns as tt'); end
+      if (~issorted(tt)) error('tt should be monotonically increasing'); end
+      obj.tt = tt;
+      obj.xx = xx;
+      obj.tspan = [min(tt) max(tt)];
     end
     function y = eval(obj,t)  
-      ind = find(obj.ts==t);  % only return on exact matches.  For interpolation, you should be using zoh or foh to make PPTrajectories
-      y = obj.xs(:,ind);
+      ind = find(obj.tt==t);  % only return on exact matches.  For interpolation, you should be using zoh or foh to make PPTrajectories
+      y = obj.xx(:,ind);
     end
     
     function t = getBreaks(obj)
-      t = obj.ts;
+      t = obj.tt;
     end
     
     function h=fnplt(obj,plotdims)
       if (prod(obj.dim)==1)
-        h=stem(obj.ts,obj.xs,'b');
+        h=stem(obj.tt,obj.xx,'b');
       else
         if (nargin<2) plotdims=[1,2]; end
-        h=plot(obj.xs(plotdims(1),:),obj.xs(plotdims(2),:),'b.','MarkerSize',5);
+        h=plot(obj.xx(plotdims(1),:),obj.xx(plotdims(2),:),'b.','MarkerSize',5);
       end
     end
   end

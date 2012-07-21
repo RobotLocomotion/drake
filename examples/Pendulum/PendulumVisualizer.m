@@ -6,7 +6,7 @@ classdef PendulumVisualizer < Visualizer
 
   methods
     function obj = PendulumVisualizer()
-      obj = obj@Visualizer(2);
+      obj = obj@Visualizer(PendulumState);
     end
     
     function draw(obj,t,x)

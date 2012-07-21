@@ -54,20 +54,53 @@ classdef DynamicalSystem
   
   % construction methods
   methods
-    function newsys = cascade(sys1,sys2,bsys1out)
-      % Creates a new system with the output of system 1 connected to the input of system 2. 
+
+    function sys = inInputFrame(sys,frame)
+      if (getInputFrame(sys)~=frame)
+        tf = findTransform(frame,getInputFrame(sys),struct('throw_error_if_fail',true));
+        sys = cascade(tf,sys);
+      end
+    end
+    
+    function sys = inStateFrame(sys,frame)
+      error('not implemented yet');  % but shouldn't be too hard using functionhandle systems.
+    end
+    
+    function sys = inOutputFrame(sys,frame)
+      if (frame ~= sys.getOutputFrame)
+        tf = findTransform(getOutputFrame(sys),frame,struct('throw_error_if_fail',true));
+        sys = cascade(sys,tf);
+      end
+    end
+    
+    
+    function [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2)
+      ind=0;
+      n=sys1.getNumDiscStates();
+      sys1ind = ind+(1:n)';
+      ind=ind+n;
+      n=sys2.getNumDiscStates();
+      sys2ind=  ind+(1:n)'; ind=ind+n;
+
+      n=sys1.getNumContStates();
+      sys1ind = [sys1ind; ind+(1:n)'];  ind=ind+n;
+      n=sys2.getNumContStates();
+      sys2ind = [sys2ind; ind+(1:n)'];  
+    end
+    
+    function newsys = cascade(sys1,sys2)
+      % Creates a new system with the output of system 1 connected to the
+      % input of system 2. The input coordinate frame of system 2 must match
+      % the output coordinate frame of system 1, or system 1's output frame
+      % must know how to transform between the frames.
       %
       % @param sys1 the first DynamicalSystem  
       % @param sys2 the second DynamicalSystem
-      % @param bsys1out defines the output of system1 to be the output of the 
-      %   new system.  Useful, for instance, when cascading a plant with a 
-      %   visualizer (which has no outputs) so that you can still access the
-      %   output of the plant.  @default false
-      %   
       %
       % @retval newsys the new DynamicalSystem
 
-      if (nargin<3) bsys1out=false; end
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
+      
       mdl = ['Cascade_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
@@ -86,35 +119,35 @@ classdef DynamicalSystem
         add_line(mdl,'in/1','system1/1');
       end
       
-      if (bsys1out)
-        if (getNumOutputs(sys1)>0)
-          add_block('simulink3/Sinks/Out1',[mdl,'/out']);
-          add_line(mdl,'system1/1','out/1');
-        end
-      else
-        if (getNumOutputs(sys2)>0)
-          add_block('simulink3/Sinks/Out1',[mdl,'/out']);
-          add_line(mdl,'system2/1','out/1');
-        end
+      if (getNumOutputs(sys2)>0)
+        add_block('simulink3/Sinks/Out1',[mdl,'/out']);
+        add_line(mdl,'system2/1','out/1');
       end
       
       newsys = SimulinkModel(mdl);
+      newsys = setInputFrame(newsys,getInputFrame(sys1));
+      newsys = setOutputFrame(newsys,getOutputFrame(sys2));
       newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
       newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);
     end
     function newsys = feedback(sys1,sys2)
       % Creates a new systems with sys1 and sys2 in a feedback interconnect 
-      % (with sys1 on the forward path, and sys2 on the return path).  
+      % (with sys1 on the forward path, and sys2 on the return path). 
+      % the input of the new system gets added into the input of sys1
       % the output of sys1 will be the output of the new system.
-      if (getNumOutputs(sys1)<1 || getNumOutputs(sys2)<1 || getNumOutputs(sys1)~=getNumInputs(sys2) || getNumOutputs(sys2)~=getNumInputs(sys1))
-        error('these systems can''t be combined in feedback because they don''t have a compatible number of inputs / outputs');
-      end
+      
+      sys2 = sys2.inInputFrame(sys1.getOutputFrame);
+      sys2 = sys2.inOutputFrame(sys1.getInputFrame);
       
       mdl = ['Feedback_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
       new_system(mdl,'Model');
       set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
       
       load_system('simulink3');
+      add_block('simulink3/Sources/In1',[mdl,'/in']);
+      add_block('simulink3/Math/Sum',[mdl,'/sum']);
+      add_line(mdl,'in/1','sum/1');
+
       add_block('simulink3/Subsystems/Subsystem',[mdl,'/system1']);
       Simulink.SubSystem.deleteContents([mdl,'/system1']);
       Simulink.BlockDiagram.copyContentsToSubSystem(sys1.getModel(),[mdl,'/system1']);
@@ -122,13 +155,18 @@ classdef DynamicalSystem
       Simulink.SubSystem.deleteContents([mdl,'/system2']);
       Simulink.BlockDiagram.copyContentsToSubSystem(sys2.getModel(),[mdl,'/system2']);
 
+      add_line(mdl,'sum/1','system1/1');
       add_line(mdl,'system1/1','system2/1');
-      add_line(mdl,'system2/1','system1/1');
+      add_line(mdl,'system2/1','sum/2');
 
       add_block('simulink3/Sinks/Out1',[mdl,'/out']);
       add_line(mdl,'system1/1','out/1');
       
-      newsys = SimulinkModel(mdl);      
+      newsys = SimulinkModel(mdl,sys1.getNumInputs);
+      newsys = setInputFrame(newsys,getInputFrame(sys1));
+      newsys = setOutputFrame(newsys,getOutputFrame(sys1));
+      newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
+      newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);
     end
     function newsys = sampledData(sys,tsin,tsout)
       % Creates a new system which is a sampled data (e.g. discretized in time) version of the original system.  
@@ -166,7 +204,10 @@ classdef DynamicalSystem
         add_line(mdl,'zoh2/1','out/1');
       end
       
-      newsys = SimulinkModel(mdl);
+      newsys = SimulinkModel(mdl,sys.getNumInputs);
+      newsys = setInputFrame(newsys,getInputFrame(sys));
+      newsys = setStateFrame(newsys,getStateFrame(sys));
+      newsys = setOutputFrame(newsys,getOutputFrame(sys));
       newsys.time_invariant_flag = sys.time_invariant_flag;
       newsys.simulink_params = sys.simulink_params;  
     end
@@ -225,52 +266,38 @@ classdef DynamicalSystem
       obj.time_invariant_flag = bval;
     end
 
+    function f=getInputFrame(obj)
+      f=obj.input_frame;
+    end
+    function obj=setInputFrame(obj,f)
+      typecheck(f,'CoordinateFrame');
+      if (f.dim ~= obj.getNumInputs()) error('frame dimension does not match number of inputs'); end
+      obj.input_frame=f;
+    end
+    function f=getStateFrame(obj)
+      f=obj.state_frame;
+    end
+    function obj=setStateFrame(obj,f)
+      typecheck(f,'CoordinateFrame');
+      if (f.dim ~= obj.getNumStates()) error('frame dimension does not match number of states'); end
+      obj.state_frame=f;
+    end
+    function f=getOutputFrame(obj)
+      f=obj.output_frame;
+    end
+    function obj=setOutputFrame(obj,f)
+      typecheck(f,'CoordinateFrame');
+      if (f.dim ~= obj.getNumOutputs()) error('frame dimension does not match number of outputs'); end
+      obj.output_frame=f;
+    end
     
-    function u = wrapInput(obj,u)
-      % Wraps all input signals with input_angle_flag==true to be inside [-pi,pi]
-      i=find(obj.input_angle_flag);
-      u(i) = mod(u(i)+pi,2*pi)-pi;
-    end
-    function x = wrapState(obj,x)
-      % Wraps all state variables with state_angle_flag==true to be inside [-pi,pi]
-      i=find(obj.state_angle_flag);
-      x(i) = mod(x(i)-pi,2*pi)-pi;
-    end
-    function y = wrapOutput(obj,y)
-      % Wraps all output signals with output_angle_flag==true to be inside [-pi,pi]
-      i=find(obj.output_angle_flag);
-      y(i) = mod(y(i)-pi,2*pi)-pi;
-    end
-    function obj = setAngleFlags(obj,in_angle_flag,state_angle_flag,out_angle_flag)
-      % Set the input,state, and output angle flags
-      % @param in_angle_flag a vector of length(getNumInputs), where
-      % in_angle_flag(i)==true means that input i is an angle and should be
-      % wrapped around 2*pi when appropriate
-      % @param state_angle_flag the corresponding vector of length(getNumStates) 
-      % @param out_angle_flag the corresponding vector of length(getNumOutputs) 
-      % @retval obj the DynamicalSystem object with updated angle flags
-      if (~isempty(in_angle_flag))
-        typecheck(in_angle_flag,{'logical','double'});
-        sizecheck(in_angle_flag,obj.getNumInputs());
-        obj.input_angle_flag = in_angle_flag(:);
-      end
-      if (~isempty(state_angle_flag))
-        typecheck(state_angle_flag,{'logical','double'});
-        sizecheck(state_angle_flag,obj.getNumStates());
-        obj.state_angle_flag = state_angle_flag(:);
-      end
-      if (~isempty(out_angle_flag))
-        typecheck(out_angle_flag,{'logical','double'});
-        sizecheck(out_angle_flag,obj.getNumOutputs());
-        obj.output_angle_flag = out_angle_flag(:);
-      end
-    end
     
     function xs = stateVectorToStructure(obj,xv,mdl)
       % Converts the vector state xv to the structure xs for simulink state
       % @param xv the state (in vector form)
       % @param mdl optional - pass in a model (default: getModel(obj))
       
+      if (obj.getNumStates()<1) xs=[]; return; end
       if (nargin<3) mdl = getModel(obj); end
       
       if (isempty(obj.structured_x))
@@ -388,58 +415,15 @@ classdef DynamicalSystem
       end
     end
     
-    function runLCMPlant(obj,lcmCoder,x0,options)
-      % Runs the system as an LCM client which subscribes to u and publishes xhat
-      % @param lcmCoder an LCMCoder object, which defines all the messages
-      %  @param x0 initial conditions.  Use [] for the default initial
-      %  conditions.
-      % @param options see the options for the runLCM() method
-      if (nargin<3) x0=[]; end
-      if (nargin<4) options = struct(); end
-      runLCM(obj,lcmCoder,'u','xhat',x0,options);
-    end
-    function runLCMControl(obj,lcmCoder,x0,options)
-      % Runs the system as an LCM client which subscribes to xhat and publishes u
-      % @param lcmCoder an LCMCoder object, which defines all the messages
-      %  @param x0 initial conditions.  Use [] for the default initial
-      %  conditions.
-      % @param options see the options for the runLCM() method
-      if (nargin<3) x0=[]; end
-      if (nargin<4) options = struct(); end
-      runLCM(obj,lcmCoder,'xhat','u',x0,options);
-    end
-    function runLCMEstimator(obj,lcmCoder,x0,options)
-      % Runs the system as an LCM client which subscribes to y and publishes xhat
-      % @param lcmCoder an LCMCoder object, which defines all the messages
-      %  @param x0 initial conditions.  Use [] for the default initial
-      %  conditions.
-      % @param options see the options for the runLCM() method
-      if (nargin<3) x0=[]; end
-      if (nargin<4) options = struct(); end
-      runLCM(obj,lcmCoder,'y','xhat',x0,options);
-    end
-    function runLCMVisualizer(obj,lcmCoder,x0,options)
-      % Runs the system as an LCM client which subscribes to xhat and publishes nothing
-      % @param lcmCoder an LCMCoder object, which defines all the messages
-      %  @param x0 initial conditions.  Use [] for the default initial
-      %  conditions.
-      % @param options see the options for the runLCM() method
-      if (nargin<3) x0=[]; end
-      if (nargin<4) options = struct(); end
-      runLCM(obj,lcmCoder,'xhat',[],x0,options);
-    end
-
   end
   
-  properties (SetAccess=private,GetAccess=protected)
+  properties (SetAccess=private,GetAccess=private)
     time_invariant_flag = false;  % set to true if you know the system is time invariant
     simulink_params=struct();     % simulink model parameters
     structured_x;                 % simulink state structure (cached for efficiency)
-  end
-  properties (SetAccess=private,GetAccess=public)
-    input_angle_flag = [];  % in_angle_flag(i)==true means that input i is an angle and should be wrapped around 2*pi when appropriate
-    state_angle_flag = [];  % state_angle_flag(i)==true means that state i is an angle and should be wrapped around 2*pi when appropriate
-    output_angle_flag = []; % out_angle_flag(i)==true means that output i is an angle and should be wrapped around 2*pi when appropriate
-  end
 
+    input_frame;  % named coordinate systems for input, state, and output
+    state_frame;
+    output_frame;
+  end
 end

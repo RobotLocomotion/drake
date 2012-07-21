@@ -1,4 +1,4 @@
-classdef PendulumEnergyShaping < SmoothRobotLibSystem
+classdef PendulumEnergyShaping < DrakeSystem
   
   properties 
     p
@@ -6,9 +6,11 @@ classdef PendulumEnergyShaping < SmoothRobotLibSystem
   
   methods
     function obj = PendulumEnergyShaping(plant)
-      obj = obj@SmoothRobotLibSystem(0,0,2,1,true,true);
+      obj = obj@DrakeSystem(0,0,2,1,true,true);
       typecheck(plant,'PendulumPlant');
       obj.p = plant;
+      obj = setInputFrame(obj,PendulumState);
+      obj = setOutputFrame(obj,PendulumInput);
     end
     
     function u = output(obj,t,junk,x)

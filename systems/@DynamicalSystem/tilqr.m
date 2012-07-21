@@ -1,4 +1,4 @@
-function [ltisys,V] = tilqr(obj,x0,u0,Q,R)
+function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R)
 % Computes an LQR controller to stabilize the system around (x0,u0)
 %
 % Linearizes the system around the nominal point then calls lqr (if the
@@ -12,7 +12,7 @@ function [ltisys,V] = tilqr(obj,x0,u0,Q,R)
 % @param Q,R describe the LQR cost function \int dt (x'*Q*r + u'*R*u)
 %
 % @retval ltisys a system which implements the control u=-K*x
-% @retval V an msspoly representation of the cost-to-go function x'*S*x
+% @retval Vcandidate an msspoly representation of the cost-to-go function x'*S*x
 
 % ts is a simulink sample time
 if (~isTI(obj)) error('I don''t know that this system is time invariant.  Set the TI flags and rerun this method if you believe the system to be.'); end
@@ -45,11 +45,31 @@ if (any(any(abs(C-eye(getNumStates(obj)))>tol)) || any(abs(D(:))>tol))
   warning('i''ve assumed C=I,D=0 so far.');
 end
 
-ltisys = LTIControl(x0,u0,K);
-ltisys = setAngleFlags(ltisys,obj.output_angle_flag,[],obj.input_angle_flag);
+if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
+  warning('designing full-state feedback controller but plant has different output frame than state frame'); 
+end
 
-x=msspoly('x',getNumStates(obj));
-V = (x-x0)'*S*(x-x0);
+  
+ltisys = LinearSystem([],[],[],[],[],-K);
+if (all(x0==0))
+  ltisys = setInputFrame(ltisys,obj.getStateFrame);
+else
+  ltisys = setInputFrame(ltisys,CoordinateFrame([obj.getStateFrame.name,' - ', mat2str(x0,3)],length(x0),obj.getStateFrame.prefix));
+  obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ltisys.getInputFrame,eye(length(x0)),-x0));
+  ltisys.getInputFrame.addTransform(AffineTransform(ltisys.getInputFrame,obj.getStateFrame,eye(length(x0)),+x0));
+end
+if (all(u0==0))
+  ltisys = setOutputFrame(ltisys,obj.getInputFrame);
+else
+  ltisys = setOutputFrame(ltisys,CoordinateFrame([obj.getInputFrame.name,' + ',mat2str(u0,3)],length(u0),obj.getInputFrame.prefix));
+  ltisys.getOutputFrame.addTransform(AffineTransform(ltisys.getOutputFrame,obj.getInputFrame,eye(length(u0)),u0));
+  obj.getInputFrame.addTransform(AffineTransform(obj.getInputFrame,ltisys.getOutputFrame,eye(length(u0)),-u0));
+end
+
+if (nargout>1)
+  x=ltisys.getInputFrame.poly; %msspoly('x',getNumStates(obj));
+  Vcandidate=QuadraticLyapunovFunction(ltisys.getInputFrame,S);
+end
 
 end
 

@@ -1,8 +1,10 @@
-classdef PlanarURDFManipulator < ManipulatorPlant
+classdef PlanarURDFManipulator < Manipulator
   % This class wraps the planar pieces of the spatial vector library (v1) 
   % provided by Roy Featherstone on his website: 
   %   http://users.cecs.anu.edu.au/~roy/spatial/documentation.html
-    
+
+  % NORELEASE
+  
   properties (SetAccess=private,GetAccess=private)  
     model;     % system model data structure for Featherstone's spatial library
     urdf_filename;
@@ -10,7 +12,7 @@ classdef PlanarURDFManipulator < ManipulatorPlant
   
   methods
     function obj = PlanarURDFManipulator(urdf_filename)
-      obj = obj@ManipulatorPlant(0,0,0);
+      obj = obj@Manipulator(0,0,0);
 
       if (nargin<1)
         urdf_filename=uigetfile('*.urdf');
