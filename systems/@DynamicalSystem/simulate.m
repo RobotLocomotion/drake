@@ -10,6 +10,10 @@ function [ytraj,xtraj] = simulate(obj,tspan,x0,options)
 %            For variable step solver only
 % @option OutputTimes to generate output in the time sequence options.OutputTimes
 
+if(exist('DCSFunction') ~=3)
+    error('Sorry, it looks like yo have not run make yet. Please run configure and make, then rerun drake.')
+end
+
 typecheck(tspan,'double');
 if (length(tspan)<2) error('length(tspan) must be > 1'); end
 if (nargin<4) options=struct([]); end
