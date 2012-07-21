@@ -1,5 +1,5 @@
 % Drake Toolbox 
-% Version 3.1.0 11-May-2012
+% Version 4.0.0 (2019b) 21-July-2012
 % 
 % MIT Robot Locomotion Group
 % Drake Main Directory
