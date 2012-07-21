@@ -57,7 +57,7 @@ classdef DynamicalSystem
 
     function sys = inInputFrame(sys,frame)
       if (getInputFrame(sys)~=frame)
-        tf = findTransform(frame,getInputFrame(sys),true);
+        tf = findTransform(frame,getInputFrame(sys),struct('throw_error_if_fail',true));
         sys = cascade(tf,sys);
       end
     end
@@ -68,7 +68,7 @@ classdef DynamicalSystem
     
     function sys = inOutputFrame(sys,frame)
       if (frame ~= sys.getOutputFrame)
-        tf = findTransform(getOutputFrame(sys),frame,true);
+        tf = findTransform(getOutputFrame(sys),frame,struct('throw_error_if_fail',true));
         sys = cascade(sys,tf);
       end
     end

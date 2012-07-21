@@ -11,7 +11,8 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
     end
     
     function V = eval(obj,t,x)
-      V = double(subs(obj.getPoly,[obj.p_t;obj.getFrame.poly],[t;x]));
+      if isTI(obj) t=0; elseif nargin<2 || isempty(t), error('you must specify a time'); end
+      V = double(subs(obj.getPoly(t),[obj.p_t;obj.getFrame.poly],[t;x]));
     end
     
 %    function display(obj)
@@ -42,7 +43,7 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
       if (frame==obj.getFrame)
         V = obj;
       else
-        tf = findTransform(frame,obj.getFrame,true);
+        tf = findTransform(frame,obj.getFrame,struct('throw_error_if_fail',true));
         if ~isTI(obj) || ~isTI(tf),  error('not implemented yet'); end
         Vpoly = subss(obj.getPoly,obj.getFrame.poly,tf.output(0,[],frame.poly));
         V = SpotPolynomialLyapunovFunction(frame,Vpoly);

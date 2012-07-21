@@ -47,7 +47,6 @@ classdef LQRTree < HybridDrakeSystem
       obj.S1=V.S;
       obj.s2=V.s1;
       obj.s3=V.s2;
-      obj.x0=zeros(tilqr.getNumInputs,1); % tree controller is in the coordinate frame of the tilqr controller
       obj.t0=0;
       obj.m=obj.tilqr_mode_num;
     end
@@ -84,36 +83,23 @@ classdef LQRTree < HybridDrakeSystem
       obj = addTransition(obj,mode_num,@(obj,t,t0,x) Vtv.tspan(end)-t+t0,@toParent,false,false);
       
       % precompute quadratic forms
-      nX=length(obj.p_x);
-      ts=Vtv.getBreaks();
+      Vtv = Vtv.inFrame(obj.getInputFrame);
+      if isTI(Vtv) error('assuming tv quadratic form'); end
+      nX=obj.getNumInputs();
+      ts=Vtv.S.getBreaks();
       for i=1:length(ts)
-        V=Vtv.eval(ts(i));
-        x=decomp(V);
         n=length(obj.t0);
-        if (deg(V,x)>2) errror('precomputation assumes quadratic forms for now'); end
-        S1(:,:,i)=doubleSafe(.5*subs(diff(diff(V,x)',x),x,0*x));
-        obj.S1(nX*n+(1:nX),nX*n+(1:nX))=S1(:,:,i);
-        s2(1,:,i)=doubleSafe(subs(diff(V,x),x,0*x));
-        obj.s2(n+1,nX*n+(1:nX))=s2(1,:,i);
-        s3(i)=doubleSafe(subs(V,x,0*x));
-        obj.s3(n+1,1)=s3(i);
-        obj.x0(n*nX + (1:nX),1)=tvlqr.x0.eval(ts(i));
+        obj.S1(nX*n+(1:nX),nX*n+(1:nX))=Vtv.S.eval(ts(i));
+        obj.s2(n+1,nX*n+(1:nX))=Vtv.s1.eval(ts(i));
+        obj.s3(n+1,1)=Vtv.s2.eval(ts(i));
         obj.t0(n+1)=ts(i);
         obj.m(n+1)=mode_num;
       end
       
-      S1pp=foh(Vtv.getBreaks(),S1);
-      s2pp=foh(Vtv.getBreaks(),s2);
-      s3pp=foh(Vtv.getBreaks(),s3);
-      
-      function V=fastVlookup(t,x,S1pp,s2pp,s3pp)
-        V=x'*ppval(S1pp,t)*x+ppval(s2pp,t)*x+ppval(s3pp,t);
-      end
-      
-      obj.Vtv = {obj.Vtv{:},@(t,x)fastVlookup(t,x,S1pp,s2pp,s3pp)};
+      obj.Vtv = {obj.Vtv{:};Vtv};
       
       % fell out of this funnel
-      obj = addTransition(obj,mode_num,@(obj,t,t0,x)1-fastVlookup(t-t0,x,S1pp,s2pp,s3pp),@transitionIntoAnyFunnel,true,false);
+      obj = addTransition(obj,mode_num,@(obj,t,t0,x)1-Vtv.eval(t-t0,x),@transitionIntoAnyFunnel,true,false);
 %      obj = addTransition(obj,mode_num,@(obj,t,t0,x)1,@transitionIntoAnyFunnel,true,false);
     end
     
@@ -179,11 +165,14 @@ classdef LQRTree < HybridDrakeSystem
          options = optimset('fminbnd');
          options.TolX = 1e-10;
          tvind = mode-obj.tilqr_mode_num;
-         [tmin,Vmin]=fminbnd(@(t) obj.Vtv{tvind}(t,x),a,b,options);
+         [tmin,Vmin]=fminbnd(@(t) eval(obj.Vtv{tvind},t,x),a,b,options);
        end
     end
     
     function [g,dg,m,tmin]=finalTreeConstraint(obj,x)
+      
+      error('still need to update this'); 
+      
       nX = length(x);
       N = length(obj.t0);
       xbar=x(:,ones(1,N))-reshape(obj.x0,nX,N);
@@ -267,6 +256,8 @@ classdef LQRTree < HybridDrakeSystem
       %     stabilize_goal - default is true 
       %     Vf - default final condition
       %     verify - default is true (occasionally useful for faster debugging)
+      
+      error('still need to udpate this'); 
       
       if (nargin<7) options = struct(); end
       if (~isfield(options,'num_samples_before_done')) options.num_samples_before_done = 100; end
