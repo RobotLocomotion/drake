@@ -4,7 +4,12 @@ classdef LQRTree < HybridDrakeSystem
     zero_mode_num=1;
     tilqr_mode_num=2;
     num_tvlqr_modes=0;
+
+    xG
+    uG
     Vf
+    xtraj={};
+    utraj={};
     Vtv={};
     
     % precompute some values to optimize speed of guards and transitions
@@ -17,13 +22,18 @@ classdef LQRTree < HybridDrakeSystem
   end
   
   methods
-    function obj=LQRTree(tilqr,V)
+    function obj=LQRTree(xG,uG,tilqr,V)
       typecheck(tilqr,'AffineSystem');
       typecheck(V,'PolynomialLyapunovFunction');
       obj=obj@HybridDrakeSystem(tilqr.getNumInputs(),tilqr.getNumOutputs());
       obj = obj.setInputFrame(tilqr.getInputFrame());
       obj = obj.setOutputFrame(tilqr.getOutputFrame());
             
+      typecheck(xG,'double');
+      typecheck(uG,'double');
+      obj.xG = xG;
+      obj.uG = uG;
+      
       % add a "do nothing" controller (aka zero controller)
       c0=ConstOrPassthroughSystem(zeros(obj.num_y,1),obj.num_u);
       c0=c0.setInputFrame(tilqr.getInputFrame());
@@ -46,18 +56,26 @@ classdef LQRTree < HybridDrakeSystem
       if ~isTI(V) error('i''ve assumed so far that the initial controller / lyapunov pair is time invariant'); end
       V = V.extractQuadraticLyapunovFunction();
       obj.S1=V.S;
-      obj.s2=V.s1;
+      obj.s2=V.s1';
       obj.s3=V.s2;
       obj.t0=0;
+      obj.x0=zeros(size(xG));
       obj.m=obj.tilqr_mode_num;
     end
     
-    function [obj,ind]=addTrajectory(obj,tvlqr,Vtv,parentID,parentT)
+    function [obj,ind]=addTrajectory(obj,xtraj,utraj,tvlqr,Vtv,parentID,parentT)
+      typecheck(xtraj,'Trajectory');
+      typecheck(utraj,'Trajectory');
+      xtraj = xtraj.inFrame(obj.getInputFrame);
+      utraj = utraj.inFrame(obj.getOutputFrame);
+      obj.xtraj = vertcat(obj.xtraj(:),{xtraj});
+      obj.utraj = vertcat(obj.utraj(:),{utraj});
+      
       typecheck(tvlqr,'AffineSystem');
       typecheck(Vtv,'QuadraticLyapunovFunction');
       
       N = obj.num_tvlqr_modes;
-      if (nargin<4) parentID=obj.tilqr_mode_num; end
+      if (nargin<6) parentID=obj.tilqr_mode_num; end
       typecheck(parentID,'double');
       if (parentID<obj.tilqr_mode_num || parentID>(obj.tilqr_mode_num+obj.num_tvlqr_modes)) error('invalid parent ID'); end
       
@@ -93,13 +111,14 @@ classdef LQRTree < HybridDrakeSystem
       for i=1:length(ts)
         n=length(obj.t0);
         obj.S1(nX*n+(1:nX),nX*n+(1:nX))=Vtv.S.eval(ts(i));
-        obj.s2(n+1,nX*n+(1:nX))=Vtv.s1.eval(ts(i));
+        obj.s2(n+1,nX*n+(1:nX))=Vtv.s1.eval(ts(i))';
         obj.s3(n+1,1)=Vtv.s2.eval(ts(i));
         obj.t0(n+1)=ts(i);
+        obj.x0(:,n+1)=xtraj.eval(ts(i));
         obj.m(n+1)=mode_num;
       end
       
-      obj.Vtv = {obj.Vtv{:};Vtv};
+      obj.Vtv = vertcat(obj.Vtv(:),{Vtv});
       
       % fell out of this funnel
       obj = addTransition(obj,mode_num,@(obj,t,~,x)1-Vtv.eval(t,x),@transitionIntoAnyFunnel,true,false);
@@ -174,7 +193,7 @@ classdef LQRTree < HybridDrakeSystem
     
     function [g,dg,m,tmin]=finalTreeConstraint(obj,x)
       
-      error('still need to update this'); 
+      x = x - obj.xG; % convert from state frame to input frame (is there a better way to do this?)
       
       nX = length(x);
       N = length(obj.t0);
@@ -189,7 +208,7 @@ classdef LQRTree < HybridDrakeSystem
         dg = eye(nX);
       else % closest point is on a trajectory
         % look just ahead and behind this node to estimate best segment
-        xtraj = obj.modes{m}.x0;
+        xtraj = obj.xtraj{m-obj.tilqr_mode_num};
         
         if(imin>1 && obj.m(imin-1)==m) a=obj.t0(imin-1); else a=obj.t0(imin); end
         if(imin<N && obj.m(imin+1)==m) b=obj.t0(imin+1); else b=obj.t0(imin); end
@@ -208,7 +227,8 @@ classdef LQRTree < HybridDrakeSystem
             xdottraj = fnder(xtraj);
             xdotmin = xdottraj.eval(tmin);
             
-            if (min(abs(tmin-xtraj.tspan))<=options.TolX) % then I'm at one of the rails
+            tspan=xtraj.tspan();
+            if (min(abs(tmin-tspan))<=options.TolX) % then I'm at one of the rails
               dtmindx = zeros(1,nX);
             else
               xddotmin = xdottraj.deriv(tmin);
@@ -260,8 +280,6 @@ classdef LQRTree < HybridDrakeSystem
       %     Vf - default final condition
       %     verify - default is true (occasionally useful for faster debugging)
       
-      error('still need to udpate this'); 
-      
       if (nargin<7) options = struct(); end
       if (~isfield(options,'num_samples_before_done')) options.num_samples_before_done = 100; end
       if (~isfield(options,'num_branches')) options.num_branches = inf; end
@@ -274,21 +292,21 @@ classdef LQRTree < HybridDrakeSystem
       options.method='dircol';
 %      options.warning=false;
       options.plot_rho=false;
-      options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u,options.plotdims);  % for debugging
 
       nX=length(xG);
       nU=length(uG);
       
+      if ~isTI(p) error('time-varying plants not supported (yet - wouldn''t be too hard)'); end
       p_nolim=setInputLimits(p,repmat(-inf,nU,1),repmat(inf,nU,1));
       
-%      figure(1); clf; hold on;
+      figure(1); clf; hold on;
       
       % compute stabilizing controller and estimate ROA
       if (options.stabilize_goal)
         disp('building and verifying time-invariant controller...')
         [ti,Vf] = tilqr(p,xG,uG,Q,R);
       else
-        ti = AffineSystem([],[],[],[],[],[],[],zeros(getNumInputs(p),getNumStates(p)),uG);
+        ti = ConstOrPassthroughSystem(uG,nX);
         ti = setInputFrame(ti,p.getOutputFrame);
         ti = setOutputFrame(ti,p.getInputFrame);
       end
@@ -297,26 +315,23 @@ classdef LQRTree < HybridDrakeSystem
       end
       if (options.verify)
         sys = feedback(p_nolim,ti);
-        psys = taylorApprox(sys,0,xG,[],3);
-        Vf = regionOfAttraction(psys,xG,Vf,struct('degL1',3));
+        psys = taylorApprox(sys,0,xG,zeros(size(uG)),3);
+        Vf = regionOfAttraction(psys,Vf,struct('degL1',3));
       
         if (isa(p,'PendulumPlant'))
           warning('artificially trimming pendulum tilqr ROA, since we don''t have saturations implemented yet');
           Vf = Vf*5;  % artificially prune, since ROA is solved without input limits
         end
         
-        plotFunnel(Vf); drawnow;
+        plotFunnel(Vf.inFrame(p.getStateFrame)); drawnow;
       end
       
       % create LQR Tree
-      c = LQRTree(ti,Vf);
+      c = LQRTree(xG,uG,ti,Vf);
 
-%      options.MajorOptimalityTolerance=1e-3;
-%      options.MajorFeasibilityTolerance=1e-3;
-%      options.MinorFeasibilityTolerance=1e-3;
-      options.MajorOptimalityTolerance=1e-2;
-      options.MajorFeasibilityTolerance=1e-2;
-      options.MinorFeasibilityTolerance=1e-2;
+      if ~isfield(options,'MajorOptimalityTolerance') options.MajorOptimalityTolerance=1e-2; end
+      if ~isfield(options,'MajorFeasibilityTolerance') options.MajorFeasibilityTolerance=1e-2; end
+      if ~isfield(options,'MinorFeasibilityTolerance') options.MinorFeasibilityTolerance=1e-2; end
       
       num_branches=0;
       num_consecutive_samples=0;
@@ -342,7 +357,7 @@ classdef LQRTree < HybridDrakeSystem
         end
         
         if (options.verify)
-          Vmin=checkFunnels(c,xs)
+          Vmin=checkFunnels(c,xs-xG)
           if (Vmin<1)
             % then i'm already in the basin
             num_consecutive_samples=num_consecutive_samples+1;
@@ -374,24 +389,28 @@ classdef LQRTree < HybridDrakeSystem
           continue;
         end
         
+        sfigure(1);
         fnplt(xtraj,options.plotdims); drawnow;
                 
-        [~,~,parent_mode_num,parent_T] = finalTreeConstraint(c,xtraj.eval(xtraj.tspan(end)));
+        tspan = xtraj.tspan();
+        [~,~,parent_mode_num,parent_T] = finalTreeConstraint(c,xtraj.eval(tspan(end)));
+        xtraj = xtraj.shiftTime(parent_T-tspan(end));
+        utraj = utraj.shiftTime(parent_T-tspan(end));
         if (parent_mode_num==c.tilqr_mode_num)
           Vparent=Vf;
         else
-          Vparent=Vtv{parent_mode_num-c.tilqr_mode_num}.eval(parent_T);
-          x=msspoly('x',nX+1);
-          Vparent=subs(Vparent,x(2:nX+1),x(1:nX)); % yuck.  this will get undone in tvlqrClosedLoop; but I somehow need them consistent.
+          Vparent=SpotPolynomialLyapunovFunction(Vf.getFrame(),Vtv{parent_mode_num-c.tilqr_mode_num}.inFrame(Vf.getFrame).getPoly(parent_T));
         end
         
         fprintf(1,'stabilizing and verifying branch %d...',num_branches+1);
         % stabilize trajectory and estimate funnel
-        [tv,sys,xtraj2,utraj2,Vtraj,Vftraj] = tvlqrClosedLoop(p_nolim,xtraj,utraj,Q,R,Vparent);
+        [tv,Vtraj] = tvlqr(p_nolim,xtraj,utraj,Q,R,Vparent);
+
         if (options.verify)
-          psys = taylorApprox(sys,xtraj2,[],3);
+          u0traj = ConstantTrajectory(zeros(nU,1)); u0traj=setOutputFrame(u0traj,utraj.getOutputFrame);
+          psys = taylorApprox(feedback(p_nolim,tv),xtraj,u0traj,3);
           try 
-            V=sampledFiniteTimeVerification(psys,Vftraj,Vtraj,xtraj2.getBreaks(),xtraj2,utraj2,options);
+            V=sampledFiniteTimeVerification(psys,xtraj.getBreaks(),Vparent,Vtraj,options);
           catch ex
             if (strcmp(ex.identifier,'Drake:PolynomialTrajectorySystem:InfeasibleRho'))
               warning('Drake:LQRTree:InfeasibleRho','verification failed due to infeasible rho.  discarding trajectory.');
@@ -399,18 +418,22 @@ classdef LQRTree < HybridDrakeSystem
             end
             rethrow(ex);  % otherwise, it's a real error
           end
-          plotFunnel(V,options); drawnow;
+          sfigure(1);
+          plotFunnel(V.inFrame(p.getStateFrame),options); drawnow;
         else
-          V=PolynomialTrajectory(@(t) 1e5*Vtraj.eval(t),Vtraj.getBreaks());
+          V=1e5*Vtraj;
         end
         fprintf(1,'done.\n');
         
         % add tv controller to the tree
-        c = c.addTrajectory(tv,V,parent_mode_num,parent_T);
+        c = c.addTrajectory(xtraj,utraj,tv,V,parent_mode_num,parent_T);
         Vtv{c.num_tvlqr_modes}=V;
         
         num_branches=num_branches+1;
         if (num_branches>=options.num_branches) break; end
+        if isempty(options.xs)
+          options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u,options.plotdims);  % for debugging
+        end
         if (num_branches==3)
           options=rmfield(options,'trajectory_cost_fun'); % stop plotting everything
         end

@@ -19,6 +19,21 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       dtraj = PPTrajectory(fnder(obj.pp));
     end
     
+    function mobj = inFrame(obj,frame)
+      if (obj.getOutputFrame == frame)
+        mobj = obj;
+      else
+        tf = findTransform(obj.getOutputFrame,frame,struct('throw_error_if_fail',true));
+        if isa(tf,'AffineSystem') && getNumStates(tf)==0
+          D=tf.D;c=tf.y0;
+          mobj = D*obj + c;
+          mobj = setOutputFrame(mobj,frame);
+        else
+          mobj = inFrame@Trajectory(obj,frame);
+        end
+      end
+    end
+    
     function obj = shiftTime(obj,offset)
       typecheck(offset,'double');
       sizecheck(offset,[1 1]);
@@ -117,15 +132,17 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       if isnumeric(a)  % then only b is a PPTrajectory
         [breaks,coefs,l,k,d] = unmkpp(b.pp);
         if length(d)<2, d=[d 1]; elseif length(d)>2, error('mtimes is not defined for ND arrays'); end
+        if isscalar(a), cd = d; elseif isscalar(b), cd = size(a); else cd = [size(a,1),d(2)]; end
         coefs = reshape(coefs,[d,l,k]);
         for i=1:l, for j=1:k,
           c(:,:,i,j)=a*coefs(:,:,i,j);
         end, end
-        c=PPTrajectory(mkpp(breaks,c,[size(a,1) d(2)]));
+        c=PPTrajectory(mkpp(breaks,c,cd));
         return;
       elseif isnumeric(b) % then only a is a PPTrajectory
         [breaks,coefs,l,k,d] = unmkpp(a.pp);
         if length(d)<2, d=[d 1]; elseif length(d)>2, error('mtimes is not defined for ND arrays'); end
+        if isscalar(a), cd = d; elseif isscalar(b), cd = size(a); else cd = [size(a,1),d(2)]; end
         coefs = reshape(coefs,[d,l,k]);
         for i=1:l, for j=1:k,
           c(:,:,i,j)=coefs(:,:,i,j)*b;
