@@ -193,7 +193,12 @@ classdef LQRTree < HybridDrakeSystem
     
     function [g,dg,m,tmin]=finalTreeConstraint(obj,x)
       
-      x = x - double(obj.xG); % convert from state frame to input frame (would be cleaner to do this with Point, but don't want to do findTranform on every call)
+      % note: the input x is in the plant state frame (everything else inside this
+      % class is stored in the input frame of the controller)
+      
+      x = x-double(obj.xG);  % convert from plant state frame to input frame
+      % note that I enforced earlier that tf was of the form y=x-c
+      % (otherwise it would change the gradients below)
       
       nX = length(x);
       N = length(obj.t0);
@@ -345,6 +350,8 @@ classdef LQRTree < HybridDrakeSystem
       num_consecutive_samples=0;
       tf0=.5;
 
+      if (xG.getFrame()~=p.getStateFrame()) error('oops.  I assumed this below'); end
+      
       while (true)
         if (isempty(options.xs))
           xs=xSampleDistFun();
@@ -365,7 +372,7 @@ classdef LQRTree < HybridDrakeSystem
         end
         
         if (options.verify)
-          Vmin=checkFunnels(c,xs-xG)
+          Vmin=checkFunnels(c,xs-double(xG))
           if (Vmin<1)
             % then i'm already in the basin
             num_consecutive_samples=num_consecutive_samples+1;
