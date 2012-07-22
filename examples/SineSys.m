@@ -42,15 +42,18 @@ classdef SineSys < DrakeSystem
       % create a new xcubed object
       p = SineSys();
       
+      x0=Point(p.getStateFrame,0);
+      
       % taylor expand around the origin (t0=0,x0=0,u0=[]) to order 3.
-      pp = taylorApprox(p,0,0,[],3);
+      pp = taylorApprox(p,0,x0,[],3);
       
       % compute region of attraction around x0=0       
       % the levelset V<1 is the region of attraction
-      V=regionOfAttraction(pp,0);
-
-      if (V.getFrame ~= pp.getStateFrame) error('oops.  i assumed this was ok'); end
+      V=regionOfAttraction(pp,x0);
       
+      % put Lyapunov function back in the state frame
+      V = V.inFrame(p.getStateFrame);
+
       % plot everything.
       xs = -5:.01:5;
       plot(xs,-sin(xs),xs,double(msubs(pp.getPolyDynamics,pp.getStateFrame.poly,xs)),xs,double(msubs(V.getPoly,V.getFrame.poly,xs))-1,xs,0*xs,'linewidth',2);

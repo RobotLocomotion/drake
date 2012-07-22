@@ -23,10 +23,10 @@ nX=getNumStates(obj);
 nU=getNumInputs(obj);
 nW=size(Bw,2);
 
-typecheck(x0,'double');
-sizecheck(x0,[nX,1]);
-typecheck(u0,'double');
-sizecheck(u0,[nU,1]);
+typecheck(x0,'Point');
+x0 = double(x0.inFrame(obj.getStateFrame));
+typecheck(u0,'Point');
+u0 = double(u0.inFrame(obj.getInputFrame));
 typecheck(Q,'double');
 sizecheck(Q,[nX nX]);
 typecheck(R,'double');

@@ -1,3 +1,5 @@
 function runAllTests()
 
-unitTest(true);
+options.gui = false;
+options.autorun = true;
+unitTest(options);

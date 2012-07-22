@@ -15,7 +15,7 @@ function gradTest(FUN,varargin)
 %   Options:
 %       options.scale  - cell array, which scale{i} is a vector
 %       containing the magnitude to perturb the elements of input i.  the
-%       default is ones(size(ai));
+%       default is .1*ones(size(ai));
 %          Example:  
 %              struct('scale',{{1,.1*ones(13,1),.1*ones(2,1)}})    
 %            for f(t,x(1:13),u(1:2))
@@ -56,7 +56,7 @@ end
 
 if (~isfield(options,'scale'))
   for i=1:length(varargin)
-    options.scale{i} = ones(size(varargin{i}));
+    options.scale{i} = .1*ones(size(varargin{i}));
   end
 end
 %if (~iscell(options.scale)) options.scale = {options.scale}; end
@@ -93,6 +93,7 @@ for v=1:length(varargin)
         numerr = abs(1-numgrad/df{1}(j,input_ind+i));
       end
       if (numerr>=options.tol)
+	
         sfigure(109); clf
         h=plot(x(i)+samples,y(j,:),x(i),f(j),'r*');
         if (iscell(options.input_name{v}))
@@ -119,8 +120,7 @@ for v=1:length(varargin)
             hold off;
           end
         end
-        pause;
-%        keyboard;
+	error('gradients do not match to tolerance'); 
       end
     end
     clear y;

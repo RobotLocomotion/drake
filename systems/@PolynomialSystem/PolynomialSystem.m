@@ -17,29 +17,46 @@ classdef PolynomialSystem < DrakeSystem
   end
   
   methods (Sealed=true)
-    function xcdot = dynamics(obj,t,x,u)
-      xcdot = dynamicsRHS(obj,t,x,u);
-      if (obj.rational_flag)
-        lhs = dynamicsLHS(obj,t,x,u);
-        xcdot = lhs \ xcdot;
-      end
-      % todo: add gradient info back in
+    function [xcdot,dxcdot] = dynamics(obj,t,x,u)
+      if (nargout<2)
+        xcdot = dynamicsRHS(obj,t,x,u);
+        if (obj.rational_flag)
+          lhs = dynamicsLHS(obj,t,x,u);
+          xcdot = lhs \ xcdot;
+        end
+      else
+        if ~isTI(obj) error('not implemented yet'); end  % todo: geval equivalent for t, but poly computations for x,u?
+        
+        p_x=obj.getStateFrame.poly;
+        if (obj.num_u>0) p_u=obj.getInputFrame.poly; else p_u=[]; end
+        
+        if ~obj.rational_flag
+          f = getPolyDynamics(obj,0);
+          xcdot = double(subs(f,[p_x;p_u],[x;u]));
+          dxcdot = double([0*xcdot,subs(diff(f,[p_x;p_u]),[p_x;p_u],[x;u])]);
+        else
+          [f,e] = getPolyDynamics(obj,0);
+          xcdot = double(subs(e,p_x,x))\double(subs(f,[p_x;p_u],[x;u]));
+          df = double([0*xcdot,subs(diff(f,[p_x;p_u]),[p_x;p_u],[x;u])]);
+          
           % e(x)xdot = f(x) => dexdotdx + e(x)*dxdotdx = dfdx
           %  where the columns of dexdotdx are dedxi*xdot
-%          nX = obj.num_xc; cellxcdot=cell(1,nX); [cellxcdot{:}]=deal(xcdot); 
-%          dexdotdx = reshape(double(subs(diff(obj.p_mass_matrix(:),p_x),p_x,x)),nX,[])*blkdiag(cellxcdot{:}); 
-%          df = e\(df - [zeros(nX,1),dexdotdx,zeros(nX,obj.num_u)]);
+          nX = obj.num_xc; cellxcdot=cell(1,nX); [cellxcdot{:}]=deal(xcdot);
+          dexdotdx = reshape(double(subs(diff(e(:),p_x),p_x,x)),nX,[])*blkdiag(cellxcdot{:});
+          dxcdot = double(subs(e,p_x,x))\(df - [zeros(nX,1),dexdotdx,zeros(nX,obj.num_u)]);
+        end
+      end
     end
   end    
 
   
   
   methods
-    function lhs = dynamicsLHS(obj,t,x,u)
+    function [e,de] = dynamicsLHS(obj,t,x,u)
       error('rational polynomial systems with continuous state must implement this');
     end
 
-    function rhs = dynamicsRHS(obj,t,x,u)
+    function [f,df] = dynamicsRHS(obj,t,x,u)
       error('polynomial systems with continuous state must implement this');
     end
 
@@ -196,7 +213,7 @@ classdef PolynomialSystem < DrakeSystem
         error('polynomialsystems aren''t supposed to have zero crossings'); 
       end
       
-      input_frame = sys1.getInputFrame();
+      input_frame = CoordinateFrame('FeedbackInput',sys1.getInputFrame.dim,'u'); %sys1.getInputFrame();
       output_frame = sys1.getOutputFrame();
       if (sys1.getNumStates==0) 
         state_frame = sys2.getStateFrame();
@@ -225,12 +242,12 @@ classdef PolynomialSystem < DrakeSystem
         p_y2 = subss(p2_output,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1]);
       else % do sys2 first
         p_y2 = subs(p2_output,sys2.getStateFrame.poly,p_x2); % doesn't need u
-        p_y1 = subss(p1_output,[sys1.getStateFrame.poly;p_u],[p_x1;p_y2+p_u]);
+        p_y1 = subss(p1_output,[sys1.getStateFrame.poly;sys1.getInputFrame.poly],[p_x1;p_y2+p_u]);
       end
       
       p_dynamics_rhs=[]; p_dynamics_lhs=[]; p_update=[]; p_output=[]; p_state_constraints=[];
       if (sys1.getNumContStates()>0)
-        p_dynamics_rhs=[p_dynamics_rhs;subss(p1_dynamics_rhs,[sys1.getStateFrame.poly;p_u],[p_x1;p_y2+p_u])];
+        p_dynamics_rhs=[p_dynamics_rhs;subss(p1_dynamics_rhs,[sys1.getStateFrame.poly;sys1.getInputFrame.poly],[p_x1;p_y2+p_u])];
       end
       if (sys2.getNumContStates()>0)
         p_dynamics_rhs=[p_dynamics_rhs;subss(p2_dynamics_rhs,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];
@@ -249,7 +266,7 @@ classdef PolynomialSystem < DrakeSystem
         end
       end
       if (sys1.getNumDiscStates()>0)
-        p_update = [p_update;subss(p1_update,[sys1.getStateFrame.poly;p_u],[p_x1;p_y2+p_u])];
+        p_update = [p_update;subss(p1_update,[sys1.getStateFrame.poly;sys1.getInputFrame.poly],[p_x1;p_y2+p_u])];
       end
       if (sys2.getNumDiscStates()>0)
         p_update = [p_update; subss(p2_update,[sys2.getStateFrame.poly;sys2.getInputFrame.poly],[p_x2;p_y1])];

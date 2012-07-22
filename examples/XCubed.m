@@ -34,8 +34,8 @@ classdef XCubed < PolynomialSystem
 
       % compute region of attraction       
       % the levelset V<1 is the region of attraction
-      V=regionOfAttraction(p,0);
-      display(V);
+      V=regionOfAttraction(p,Point(p.getStateFrame,0));
+      display(V.getPoly);
     end
     
     function animate()

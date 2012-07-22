@@ -68,7 +68,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
       if (nargin<4 || obj.num_u<1) p_u=[]; u=[]; else p_u=obj.getInputFrame.poly; end  % ok for systems without direct feedthrough
       y = double(subs(obj.p_output,[p_t;p_x;p_u],[t;x;u]));
       if (nargout>1)
-        dy = double(subs(diff(obj.p_output,[p_t;p_x;p_u]),[p_t;p_x;obj.p_u],[t;x;u]));
+        dy = double(subs(diff(obj.p_output,[p_t;p_x;p_u]),[p_t;p_x;p_u],[t;x;u]));
       end
     end    
     

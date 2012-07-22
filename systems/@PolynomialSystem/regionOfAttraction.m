@@ -48,15 +48,11 @@ if (~isTI(sys)) error('only works for time-invariant systems (so far)'); end
 
 %% get Lyapunov candidate
 num_x = sys.getNumStates();
-if nargin<2 || isnumeric(varargin{1})
-  if nargin<2 || all(varargin{1}==0), x0 = zeros(num_x,1);
-    frame=sys.getStateFrame;
+if nargin<2 || isa(varargin{1},'Point')
+  if nargin<2
+    x0 = Point(sys.getStateFrame,zeros(num_x,1));
   else
     x0 = varargin{1}; 
-    sizecheck(x0,[num_x,1]);
-    frame=CoordinateFrame('LyapunovState',num_x,'x');
-    frame.addTransform(AffineTransform(frame,sys.getStateFrame,eye(length(x0)),+x0));
-    sys.getStateFrame.addTransform(AffineTransform(sys.getStateFrame,frame,eye(length(x0)),-x0));
   end
   
   % check that x0 is a fixed point
@@ -67,19 +63,18 @@ if nargin<2 || isnumeric(varargin{1})
     f = subs(f,sys.getInputFrame.poly,zeros(sys.getNumInputs,1));
   end
   
-  if any(abs(double(subs(f,x,x0)))>1e-5)
+  if any(abs(double(subs(f,x,double(x0.inFrame(sys.getStateFrame)))))>1e-5)
     error('x0 must be a fixed point of the system');
   end
     
-  % solve a lyapunov equation on the linearized dynamics to get a Lyapunov candidate
-  A = doubleSafe(subs(diff(f,x),x,x0));
+  % solve a lyapunov equation on the linearized dynamics to get a
+  % Lyapunov candidate
   Q = eye(sys.num_x);  % todo: take this as a parameter?
-  P = lyap(A',Q);
-  V = QuadraticLyapunovFunction(frame,P);
+  V = tilyap(sys,x0,Q);
 elseif isa(varargin{1},'PolynomialLyapunovFunction')
   V = varargin{1};
 else
-  error('the second argument must be either a PolynomialLyapunovFunction or a double representing x0');
+  error('the second argument must be either a PolynomialLyapunovFunction or a Point representing x0');
 end
 typecheck(V,'LyapunovFunction');
 if ~isTI(V) error('Lyapunov candidate should be time-invariant for region of attraction analysis'); end

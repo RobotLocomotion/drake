@@ -33,8 +33,8 @@ classdef PlanarQuadPlant < SecondOrderSystem
     end
     
     function [c,V] = hoverLQR(obj)
-      x0 = zeros(6,1);
-      u0 = obj.m*obj.g/2 * [1;1];
+      x0 = Point(obj.getStateFrame,zeros(6,1));
+      u0 = Point(obj.getInputFrame,obj.m*obj.g/2 * [1;1]);
       Q = diag([10 10 10 1 1 (obj.L/2/pi)]);  %Q = diag([10*ones(1,3) ones(1,3)]);
       R = [0.1 0.05; 0.05 0.1];  %R = diag([0.1 0.1]);
 
@@ -42,7 +42,7 @@ classdef PlanarQuadPlant < SecondOrderSystem
         [c,V0] = tilqr(obj,x0,u0,Q,R);
         sys = feedback(obj,c);
 
-        pp = sys.taylorApprox(0,x0,zeros(2,1),3);  % make polynomial approximation
+        pp = sys.taylorApprox(0,x0,[],3);  % make polynomial approximation
         options=struct();
         options.degL1=2;
         %options.method='bilinear';

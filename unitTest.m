@@ -1,4 +1,4 @@
-function tree=unitTest(autorun)
+function tree=unitTest(options)
 
 % Opens a gui for running unit tests
 %
@@ -17,41 +17,51 @@ function tree=unitTest(autorun)
 % todo: figure out a good way to clear classes before/after runTest,
 % without doing the clear all that zaps the gui content, too.
 
-h=figure(1302);   
-clear global runNode_mutex;
-set(h,'HandleVisibility','on');
-clf;
+if (nargin<1) options=struct(); end
+if ~isfield(options,'autorun') options.autorun = false; end
+if ~isfield(options,'gui') options.gui = true; end
 
-data=struct('pass',0,'fail',0,'wait',0,'path',pwd);
-root = uitreenode('v0','All Tests',sprintf('<html>All Tests &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait),[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
-set(root,'UserData',data);
-crawlDir('systems',root,true);
-crawlDir('drivers',root,true);
-crawlDir('util',root,true);
-crawlDir('examples',root,false);
+if (options.gui)
+  h=figure(1302);
+  clear global runNode_mutex;
+  set(h,'HandleVisibility','on');
+  clf;
 
-[tree,treecont] = uitree('v0','Root',root);
-expandAll(tree,root);
-%crawlDir('.',root,true);
+  data=struct('pass',0,'fail',0,'wait',0,'path',pwd);
+  root = uitreenode('v0','All Tests',sprintf('<html>All Tests &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait),[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
+  set(root,'UserData',data);
+else
+  root = [];
+end
 
-hb = [];
-hb = [hb,uicontrol('String','Dock','callback',@dock)]; if strcmp(get(h,'WindowStyle'),'docked'), set(hb(end),'String','Undock'); end
-hb = [hb,uicontrol('String','Reload (keep history)','callback',@(h,env) cleanup(h,env,tree),'BusyAction','cancel')];
-hb = [hb,uicontrol('String','Reload (flush history)','callback',@(h,env) reloadGui(h,env,tree),'BusyAction','cancel')];
-htext = uicontrol('Style','text','String','Click triangles to run tests.  Shift-click to edit test file.','BackgroundColor',[1 1 1]);
+crawlDir('systems',root,true,options);
+crawlDir('drivers',root,true,options);
+crawlDir('util',root,true,options);
+crawlDir('examples',root,false,options);
 
-set(tree,'NodeSelectedCallback', @runSelectedNode);
-set(treecont,'BusyAction','queue');
-resizeFcn([],[],treecont,hb,htext);
-set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,treecont,hb,htext));
-set(h,'HandleVisibility','off');%,'WindowStyle','docked'%,'CloseRequestFcn',[]);
+if (options.gui)
+  [tree,treecont] = uitree('v0','Root',root);
+  expandAll(tree,root);
 
-jtree = handle(tree.getTree,'CallbackProperties');
-set(jtree,'KeyPressedCallback', @keyPressedCallback);
-set(jtree,'KeyReleasedCallback', @keyReleasedCallback);
+  hb = [];
+  hb = [hb,uicontrol('String','Dock','callback',@dock)]; if strcmp(get(h,'WindowStyle'),'docked'), set(hb(end),'String','Undock'); end
+  hb = [hb,uicontrol('String','Reload (keep history)','callback',@(h,env) cleanup(h,env,tree),'BusyAction','cancel')];
+  hb = [hb,uicontrol('String','Reload (flush history)','callback',@(h,env) reloadGui(h,env,tree),'BusyAction','cancel')];
+  htext = uicontrol('Style','text','String','Click triangles to run tests.  Shift-click to edit test file.','BackgroundColor',[1 1 1]);
 
-if (nargin>0 && autorun)
-  tree.setSelectedNode(root);
+  set(tree,'NodeSelectedCallback', @runSelectedNode);
+  set(treecont,'BusyAction','queue');
+  resizeFcn([],[],treecont,hb,htext);
+  set(h,'MenuBar','none','ToolBar','none','Name','Drake Unit Tests','NumberTitle','off','ResizeFcn',@(src,ev)resizeFcn(src,ev,treecont,hb,htext));
+  set(h,'HandleVisibility','off');%,'WindowStyle','docked'%,'CloseRequestFcn',[]);
+
+  jtree = handle(tree.getTree,'CallbackProperties');
+  set(jtree,'KeyPressedCallback', @keyPressedCallback);
+  set(jtree,'KeyReleasedCallback', @keyReleasedCallback);
+
+  if (options.autorun)
+    tree.setSelectedNode(root);
+  end
 end
 
 end
@@ -213,22 +223,27 @@ function expandAll(tree,node)
   end
 end
 
-function pnode = crawlDir(pdir,pnode,only_test_dirs)
+function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
 
   p = pwd;
   cd(pdir);
+
+  if (options.gui)
+    data=struct('pass',0,'fail',0,'wait',0,'path',pdir);
+    node = uitreenode('v0',pdir,['<html>',pdir,sprintf(' &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait)],[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
+    set(node,'UserData',data);
+    pnode.add(node);
+  else
+    node=[p,'/',pdir];
+  end
   
-  data=struct('pass',0,'fail',0,'wait',0,'path',pdir);
-  node = uitreenode('v0',pdir,['<html>',pdir,sprintf(' &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait)],[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
-  set(node,'UserData',data);
-  pnode.add(node);
   files=dir('.');
   
   for i=1:length(files)
     if (files(i).isdir)
       % then recurse into the directory
       if (files(i).name(1)~='.' && ~any(strcmpi(files(i).name,{'dev','slprj','autogen-matlab','autogen-posters'})))  % skip . and dev directories
-        crawlDir(files(i).name,node,only_test_dirs && ~strcmpi(files(i).name,'test'));
+        crawlDir(files(i).name,node,only_test_dirs && ~strcmpi(files(i).name,'test'),options);
       end
       continue;
     end
@@ -252,7 +267,11 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs)
           continue;
         end
         
-        node = addTest(node,[testname,'.',m{j}]);
+        if (options.gui)
+          node = addTest(node,[testname,'.',m{j}]);
+        else
+          runCommandLineTest(node,[testname,'.',m{j}]);
+        end
       end
       
     else
@@ -260,14 +279,20 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs)
       if (checkFile(files(i).name,'NOTEST'))
         continue;
       end
-      node = addTest(node,testname);
+      if (options.gui)
+        node = addTest(node,testname);
+      else
+        runCommandLineTest(node,testname);
+      end
     end
     
   end
   
-  data = get(node,'UserData');
-  if (data.wait==0)  % then there was nothing underneath me
-    pnode.remove(node);
+  if (options.gui)
+    data = get(node,'UserData');
+    if (data.wait==0)  % then there was nothing underneath me
+      pnode.remove(node);
+    end
   end
   cd(p);
 end
@@ -393,6 +418,16 @@ function tree=runNode(tree,node)
         tree=runNode(tree,n);
       end
     end
+  end
+end
+
+function pass = runCommandLineTest(path,test)
+  fprintf(1,'%-40s ',test);
+  pass = runTest(path,test);
+  if (pass)
+    fprintf(1,'[PASSED]\n');
+  else
+    fprintf(1,'\n[FAILED]\n');  % \n because runTest will print things
   end
 end
 
