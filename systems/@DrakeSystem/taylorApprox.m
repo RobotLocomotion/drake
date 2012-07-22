@@ -4,6 +4,9 @@ function polysys=taylorApprox(sys,varargin)
 %    taylorApprox(sys,t0,x0,u0,order[,ignores])
 % or taylorApprox(sys,x0traj,u0traj,order[,ignores])
 % it returns a polynomial system (or polynomial trajectory system) 
+% 
+% if u0 or u0traj is [], then the default input (all zeros in the
+% input frame) is used
 
 checkDependency('spot_enabled');
 
@@ -38,7 +41,7 @@ if (isa(varargin{1},'Trajectory'))
   if (x0traj.getOutputFrame ~= sys.getStateFrame) error('x0traj does not match state frame'); end
   if (isempty(u0traj))
     % make an empty trajectory object
-    u0traj = FunctionHandleTrajectory(@(t)zeros(0),[0 0],x0traj.tspan);
+    u0traj = ConstantTrajectory(zeros(num_u,1));
     u0traj = setOutputFrame(u0traj,sys.getInputFrame);
     breaks = x0traj.getBreaks();
   else
@@ -83,9 +86,14 @@ else
   order=varargin{4};
 
   sizecheck(t0,1);
-  sizecheck(x0,num_x);
-  sizecheck(u0,num_u);
-
+  typecheck(x0,'Point');
+  x0 = double(x0.inFrame(sys.getStateFrame));
+  if isempty(u0) % empty is ok, use default
+    if (num_u), u0 = zeros(num_u,1); else, u0=[]; end
+  else
+    typecheck(u0,'Point');
+    u0 = double(u0.inFrame(sys.getInputFrame));
+  end
   p_t = msspoly('t',1);
   txubar=[p_t-t0;p_x-x0;p_u-u0];
 

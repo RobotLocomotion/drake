@@ -5,8 +5,8 @@ if (~isTI(obj)) error('I don''t know that this system is time invariant.  Set th
 if (~isCT(obj)) error('only handle CT case so far'); end
 
 nX = getNumStates(obj);
-typecheck(x0,'double');
-sizecheck(x0,[nX,1]);
+typecheck(x0,'Point');
+x0 = double(x0.inFrame(obj.getStateFrame));
 typecheck(Q,'double');  
 sizecheck(Q,[nX,nX]);
 if (any(eig(Q)<=0)) error('Q must be positive definite'); end
@@ -21,10 +21,13 @@ if (any(abs(xdot0)>tol))
   error('f(x0) is not a fixed point');
 end
 
-S=lyap(A,Q);
+S=lyap(A',Q);
 
-x=msspoly('x',getNumStates(obj));
-V = (x-x0)'*S*(x-x0);
+frame=CoordinateFrame('LyapunovState',nX,'x');
+frame.addTransform(AffineTransform(frame,obj.getStateFrame,eye(length(x0)),+x0));
+obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,frame,eye(length(x0)),-x0));
+
+V = QuadraticLyapunovFunction(frame,S);
 
 end
 

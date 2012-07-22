@@ -29,8 +29,8 @@ classdef LQRTree < HybridDrakeSystem
       obj = obj.setInputFrame(tilqr.getInputFrame());
       obj = obj.setOutputFrame(tilqr.getOutputFrame());
             
-      typecheck(xG,'double');
-      typecheck(uG,'double');
+      typecheck(xG,'Point');
+      typecheck(uG,'Point');
       obj.xG = xG;
       obj.uG = uG;
       
@@ -59,7 +59,7 @@ classdef LQRTree < HybridDrakeSystem
       obj.s2=V.s1';
       obj.s3=V.s2;
       obj.t0=0;
-      obj.x0=zeros(size(xG));
+      obj.x0=double(obj.xG.inFrame(obj.getInputFrame));
       obj.m=obj.tilqr_mode_num;
     end
     
@@ -193,7 +193,7 @@ classdef LQRTree < HybridDrakeSystem
     
     function [g,dg,m,tmin]=finalTreeConstraint(obj,x)
       
-      x = x - obj.xG; % convert from state frame to input frame (is there a better way to do this?)
+      x = x - double(obj.xG); % convert from state frame to input frame (would be cleaner to do this with Point, but don't want to do findTranform on every call)
       
       nX = length(x);
       N = length(obj.t0);
@@ -280,6 +280,17 @@ classdef LQRTree < HybridDrakeSystem
       %     Vf - default final condition
       %     verify - default is true (occasionally useful for faster debugging)
       
+      typecheck(p,'DynamicalSystem');
+      nX=p.getNumStates();
+      nU=p.getNumInputs();
+      typecheck(xG,'Point');
+      typecheck(uG,'Point');
+      typecheck(xSampleDistFun,'function_handle');
+      typecheck(Q,'numeric');
+      sizecheck(Q,[nX,nX]);
+      typecheck(R,'numeric');
+      sizecheck(R,[nU,nU]);
+      
       if (nargin<7) options = struct(); end
       if (~isfield(options,'num_samples_before_done')) options.num_samples_before_done = 100; end
       if (~isfield(options,'num_branches')) options.num_branches = inf; end
@@ -293,9 +304,6 @@ classdef LQRTree < HybridDrakeSystem
 %      options.warning=false;
       options.plot_rho=false;
 
-      nX=length(xG);
-      nU=length(uG);
-      
       if ~isTI(p) error('time-varying plants not supported (yet - wouldn''t be too hard)'); end
       p_nolim=setInputLimits(p,repmat(-inf,nU,1),repmat(inf,nU,1));
       
@@ -315,7 +323,7 @@ classdef LQRTree < HybridDrakeSystem
       end
       if (options.verify)
         sys = feedback(p_nolim,ti);
-        psys = taylorApprox(sys,0,xG,zeros(size(uG)),3);
+        psys = taylorApprox(sys,0,xG,[],3);
         Vf = regionOfAttraction(psys,Vf,struct('degL1',3));
       
         if (isa(p,'PendulumPlant'))
@@ -407,8 +415,7 @@ classdef LQRTree < HybridDrakeSystem
         [tv,Vtraj] = tvlqr(p_nolim,xtraj,utraj,Q,R,Vparent);
 
         if (options.verify)
-          u0traj = ConstantTrajectory(zeros(nU,1)); u0traj=setOutputFrame(u0traj,utraj.getOutputFrame);
-          psys = taylorApprox(feedback(p_nolim,tv),xtraj,u0traj,3);
+          psys = taylorApprox(feedback(p_nolim,tv),xtraj,[],3);
           try 
             V=sampledFiniteTimeVerification(psys,xtraj.getBreaks(),Vparent,Vtraj,options);
           catch ex

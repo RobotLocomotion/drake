@@ -7,8 +7,8 @@ function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R)
 %
 % The system must be time-invariant.
 %
-% @param x0 the nominal/goal state
-% @param u0 the nominal input
+% @param x0 the nominal/goal state (a Point)
+% @param u0 the nominal input (a Point)
 % @param Q,R describe the LQR cost function \int dt (x'*Q*r + u'*R*u)
 %
 % @retval ltisys a system which implements the control u=-K*x
@@ -16,10 +16,11 @@ function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R)
 
 % ts is a simulink sample time
 if (~isTI(obj)) error('I don''t know that this system is time invariant.  Set the TI flags and rerun this method if you believe the system to be.'); end
-typecheck(x0,'double');
-sizecheck(x0,[getNumStates(obj),1]);
-typecheck(u0,'double');
-sizecheck(u0,[getNumInputs(obj),1]);
+typecheck(x0,'Point');
+typecheck(u0,'Point');
+
+x0 = double(x0.inFrame(obj.getStateFrame));
+u0 = double(u0.inFrame(obj.getInputFrame));
 
 ts = max(getInputSampleTimes(obj),getOutputSampleTimes(obj));
 

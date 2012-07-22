@@ -31,7 +31,7 @@ classdef VanDerPol < PolynomialSystem
       options.max_iterations=100;
       options.converged_tol = 1e-2;
       options.method={'levelSet','bilinear'};
-      V=regionOfAttraction(rvdp,zeros(2,1),options);
+      V=regionOfAttraction(rvdp,Point(rvdp.getStateFrame,zeros(2,1)),options);
       
       clf; hold on
       fill(xlim(1,:),xlim(2,:),[0.8 0.8 0.2])

@@ -12,6 +12,9 @@ classdef AcrobotPlant < Manipulator
     lc1 = .5; lc2 = 1; 
 %    I1 = 0.083 + m1*lc1^2;  I2 = 0.33 + m2*lc2^2;  
     I1=[]; I2 = [];  % set in constructor
+    
+    xG
+    uG
   end
   
   methods
@@ -22,6 +25,9 @@ classdef AcrobotPlant < Manipulator
       obj.I2 = 0.33 + obj.m2*obj.lc2^2;
 
       obj = setOutputFrame(obj,obj.getStateFrame);
+      
+      obj.xG = Point(obj.getStateFrame,[pi;0;0;0]);
+      obj.uG = Point(obj.getInputFrame,0);
     end
     
     function [H,C,B] = manipulatorDynamics(obj,q,qd)
@@ -58,23 +64,22 @@ classdef AcrobotPlant < Manipulator
     end
     
     function [c,V]=balanceLQR(obj)
-      x0=[pi;0;0;0]; u0=0;
       Q = diag([10,10,1,1]); R = 1;
       if (nargout<2)
-        c = tilqr(obj,x0,u0,Q,R);
+        c = tilqr(obj,obj.xG,obj.uG,Q,R);
       else
         if any(~isinf([obj.umin;obj.umax]))
           error('currently, you must disable input limits to estimate the ROA');
         end
-        [c,V] = tilqr(obj,x0,u0,Q,R);
-        pp = feedback(obj.taylorApprox(0,x0,u0,3),c);
+        [c,V] = tilqr(obj,obj.xG,obj.uG,Q,R);
+        pp = feedback(obj.taylorApprox(0,obj.xG,obj.uG,3),c);
         options.method='levelSet';
         V=regionOfAttraction(pp,V,options);
       end
     end
     
     function [utraj,xtraj]=swingUpTrajectory(obj)
-      x0 = zeros(4,1); tf0 = 4; xf = [pi;zeros(3,1)];
+      x0 = zeros(4,1); tf0 = 4; xf = double(obj.xG);
 
       con.u.lb = obj.umin;
       con.u.ub = obj.umax;

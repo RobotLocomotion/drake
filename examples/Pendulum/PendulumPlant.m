@@ -8,6 +8,9 @@ classdef PendulumPlant < SecondOrderSystem
     lc = .5; % m
     I = .25; %m*l^2; % kg*m^2
     g = 9.8; % m/s^2
+    
+    xG;
+    uG;
   end
   
   methods
@@ -21,6 +24,9 @@ classdef PendulumPlant < SecondOrderSystem
       
       obj = setStateFrame(obj,PendulumState);
       obj = setOutputFrame(obj,PendulumState);
+      
+      obj.xG = Point(PendulumState,[pi;0]);
+      obj.uG = Point(PendulumInput,0);
     end
     
     function qdd = sodynamics(obj,t,q,qd,u)
@@ -43,23 +49,22 @@ classdef PendulumPlant < SecondOrderSystem
   
   methods 
     function [c,V]=balanceLQR(obj)
-      x0=[pi;0]; u0=0;
       Q = diag([10 1]); R = 1;
       if (nargout<2)
-        c = tilqr(obj,x0,u0,Q,R);
+        c = tilqr(obj,obj.xG,obj.uG,Q,R);
       else
         if any(~isinf([obj.umin;obj.umax]))
           error('currently, you must disable input limits to estimate the ROA');
         end
-        [c,V] = tilqr(obj,x0,u0,Q,R);
-        pp = feedback(obj.taylorApprox(0,x0,u0,3),c);
+        [c,V] = tilqr(obj,obj.xG,obj.uG,Q,R);
+        pp = feedback(obj.taylorApprox(0,obj.xG,obj.uG,3),c);
         options.method='levelSet';
         V=regionOfAttraction(pp,V,options);
       end
     end
     
     function [utraj,xtraj]=swingUpTrajectory(obj)
-      x0 = [0;0]; tf0 = 4; xf = [pi;0];
+      x0 = [0;0]; tf0 = 4; xf = double(obj.xG);
 
       con.u.lb = obj.umin;
       con.u.ub = obj.umax;
@@ -108,21 +113,19 @@ classdef PendulumPlant < SecondOrderSystem
       [ti,Vf] = balanceLQR(obj);
       Vf = 5*Vf;  % artificially prune, since ROA is solved without input limits
 
-      c = LQRTree([pi;0],0,ti,Vf);
+      c = LQRTree(obj.xG,obj.uG,ti,Vf);
       [utraj,xtraj]=swingUpTrajectory(obj);  
       
       Q = diag([10 1]);  R=1;
       [tv,Vswingup] = tvlqr(obj,xtraj,utraj,Q,R,Vf);
-      u0traj = ConstantTrajectory(0); u0traj=setOutputFrame(u0traj,utraj.getOutputFrame);
-      psys = taylorApprox(feedback(obj,tv),xtraj,u0traj,3);
+      psys = taylorApprox(feedback(obj,tv),xtraj,[],3);
       options.degL1=2;
       Vswingup=sampledFiniteTimeVerification(psys,xtraj.getBreaks(),Vf,Vswingup,options);
 
       c = c.addTrajectory(xtraj,utraj,tv,Vswingup);
     end
     
-    function c=balanceLQRTree(p)
-      xG=[pi;0]; uG=0;
+    function c=balanceLQRTree(obj)
       Q = diag([10 1]); R = 1;
 
       options.num_branches=5;
@@ -131,7 +134,7 @@ classdef PendulumPlant < SecondOrderSystem
       options.Tslb = 2;
       options.Tsub = 6;
       options.degL1=4;
-      c = LQRTree.buildLQRTree(p,xG,uG,@()rand(2,1).*[2*pi;10]-[pi;5],Q,R,options);
+      c = LQRTree.buildLQRTree(obj,obj.xG,obj.uG,@()rand(2,1).*[2*pi;10]-[pi;5],Q,R,options);
     end
 
   end

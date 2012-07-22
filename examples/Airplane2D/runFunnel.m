@@ -19,9 +19,7 @@ options.rho0_tau = 10;
 
 
 [c,V]=tvlqr(p,xtraj,utraj,Q,R,diag([1 1 10 10]));
-sys = feedback(p,c);
-utraj = ConstantTrajectory(zeros(p.getNumInputs,1)); utraj=utraj.setOutputFrame(p.getInputFrame); 
-poly = taylorApprox(sys,xtraj,utraj,3);
+poly = taylorApprox(feedback(p,c),xtraj,[],3);
 
 %options.stability = true;
 
