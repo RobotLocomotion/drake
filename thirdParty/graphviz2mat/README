@@ -1,0 +1,33 @@
+Ver 1.2   Apr 2004           Massachusets Institute of Technology, AI Lab
+MATLAB <-> GraphViz   by Dr. Leon Peshkin: pesha @ ai.mit.edu | http://www.ai.mit.edu/~pesha 
+
+this is a README file for `ad hoc' matlab package created to interaface 
+AT&T GraphViz graph layout and MathWorks MATLAB user Interface powers.
+Please make sure you have both Matlab and GraphViz properly installed on your system.
+The package works on Unix and even on Windows. Use at your own risk. 
+
+README          - this file
+graph_to_dot.m  - Creates a GraphViz formated file from a graph given by an adjacency matrix.
+dot_to_graph.m  - Extracts an adjacency matrix, node labels, and layout from a GraphViz file.
+graph_draw.m    - Draws a graph in Matlab with a given layout
+make_layout.m   - used to do a lame layout in case no layout is fed to graph_draw 
+draw_dot.m      - a sample code illustrating use of package functions. 
+                  draws a graph defined by adjacency matrix, by 
+                    -first converting it to a GraphViz file (graph_to_dot)
+                    -then calling NEATO of GraphViz to do a layout
+                    -then importing layout file back into Matlab (dot_to_graph)
+                    -finally calling graph_draw to display the layout
+sample_click.m  - an auxiliary sample code which allows to right-mouse-click on the nodes of 
+                  a graph to call a dummy function currently just printing that node's label
+my_setdiff.m    - my version of setdiff() which works muchfaster 
+                  
+Disclaimers: This code resulted from developing, cleaning up and augmenting a few functions
+which originally came with Kevin Murphy's  Bayesian Net Toolbox. Besides Kevin Murphy, several
+other people get some credit:
+   dot_to_graph.m  
+       Jan 2004   assisted by Alexi Savov:  asavov @ wustl.edu http://artsci.wustl.edu/~azsavov
+   make_layout.m & draw_graph.m 
+      Apr-2000    originally developed by  Ali Taylan Cemgil   <cemgil@mbfys.kun.nl>
+   arrow.m        
+      1995-1997   originally developed by  Erik A. Johnson     <johnsone@uiuc.edu>  
+   
