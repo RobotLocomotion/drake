@@ -10,11 +10,7 @@ catch
   conf=struct();
 end
 
-v=ver('matlab');
-ind = find(v.Version,'.','first');
-major_ver = str2num(v.Version(1:ind));
-minor_ver = str2num(v.Version((ind+2):end));
-if (major_ver < 7 || (major_ver==7 && minor_ver < 6)) 
+if verLessThan('matlab','7.6')
   error('Drake reguires MATLAB version 7.6 or above.');
   % because I rely on the new matlab classes with classdef
 end
@@ -69,6 +65,7 @@ addpath([conf.root,'/systems/trajectories']);
 addpath([conf.root,'/util']);
 addpath([conf.root,'/util/obstacles']);
 addpath([conf.root,'/thirdParty/spatial']);
+addpath([conf.root,'/thirdParty/graphviz2mat']);
 
 % todo: setup java classpath (not hard to do it once... but how can I set
 % it up for future sessions as well?  maybe write to startup.m, or prompt
@@ -132,8 +129,16 @@ if (~conf.sedumi_enabled)
 end
 
 conf.spot_enabled = logical(exist('msspoly'));
-if (~conf.spot_enabled)
-  disp(' SPOT not found.  SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/spot/ ');
+if conf.spot_enabled
+  if ~ismethod('msspoly','clean')
+    disp('  Found an installation of SPOT, but it doesn''t appear to be the right version.');
+    conf.spot_enabled = false;
+  end
+else
+  disp(' SPOT not found.');
+end
+if ~conf.spot_enabled
+  disp('  SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/spot/branches/dev/ ');
 end
 
 conf.yalmip_enabled = logical(exist('sdpvar'));

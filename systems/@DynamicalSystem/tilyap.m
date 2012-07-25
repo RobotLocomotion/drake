@@ -10,7 +10,7 @@ x0 = double(x0.inFrame(obj.getStateFrame));
 typecheck(Q,'double');  
 sizecheck(Q,[nX,nX]);
 if (any(eig(Q)<=0)) error('Q must be positive definite'); end
-if (~issymmetric(Q)) error('Q must be symmetric'); end
+if ~isequal(Q,Q.') error('Q must be symmetric'); end
 
 u0 = zeros(getNumInputs(obj),1);
 

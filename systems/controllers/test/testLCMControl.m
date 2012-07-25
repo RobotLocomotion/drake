@@ -13,9 +13,10 @@ a = lcm.lcm.MessageAggregator();
 lc.subscribe('PendulumInput',a);
 
 if (matlabpool('size')>0), matlabpool('close'); end
-job = batch('runPendLCMControl','Workspace',struct(),'Matlabpool',0);
+job = batch('runPendLCMControl','Workspace',struct(),'matlabpool',0);
 
-waitForState(job,'running');
+%waitForState(job,'running');
+wait(job,'running');
 
 fr = PendulumState;
 while (a.numMessagesAvailable()==0)
@@ -34,5 +35,6 @@ while (a.numMessagesAvailable()==0)
 end
 
 % if I got here, then I got a response to my state query
-destroy(job);
+%destroy(job);
+delete(job);
 path(p);

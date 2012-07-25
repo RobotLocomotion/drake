@@ -22,6 +22,8 @@ if ~isfield(options,'autorun') options.autorun = false; end
 if ~isfield(options,'gui') options.gui = true; end
 
 if (options.gui)
+  warning('off','MATLAB:uitree:DeprecatedFunction');
+    
   h=figure(1302);
   clear global runNode_mutex;
   set(h,'HandleVisibility','on');

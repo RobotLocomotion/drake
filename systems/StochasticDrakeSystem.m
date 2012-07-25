@@ -62,7 +62,11 @@ classdef (InferiorClasses = {?DrakeSystem}) StochasticDrakeSystem < DrakeSystem
       mdl = getModel@DrakeSystem(obj);
 
       if (obj.num_w>0)
-        rand('seed',sum(100*clock));
+        if (exist('rng'))
+          rng('shuffle'); % init rng to current date
+        else  % for older versions of matlab
+          rand('seed',sum(100*clock));
+        end
         add_block('simulink3/Sources/Band-Limited White Noise',[mdl,'/noise'],...
           'Cov',mat2str(ones(obj.num_w,1)),...%mat2str((1/obj.ts_w)*eye(obj.num_w)),...
           'Ts', num2str(obj.ts_w),...

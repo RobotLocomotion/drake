@@ -1,4 +1,4 @@
-
+function testSimInput
   
 sys = LinearSystem([],[],[],[],[],eye(2));
 

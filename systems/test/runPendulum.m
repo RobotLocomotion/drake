@@ -1,3 +1,4 @@
+function runPendulum
 
 load drake_config;
 addpath([conf.root,'/examples/Pendulum']);
