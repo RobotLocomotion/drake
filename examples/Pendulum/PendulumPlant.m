@@ -7,7 +7,7 @@ classdef PendulumPlant < SecondOrderSystem
     b = 0.1; % kg m^2 /s
     lc = .5; % m
     I = .25; %m*l^2; % kg*m^2
-    g = 9.8; % m/s^2
+    g = 9.81; % m/s^2
     
     xG;
     uG;

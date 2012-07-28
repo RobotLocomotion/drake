@@ -1,6 +1,7 @@
 classdef RigidBodyModel
   
   properties
+    name=[];        % name of the rigid body system
     body=[];        % cell array of RigidBody objects
     actuator = [];  % cell array of RigidBodyActuator objects
     loop=[];        % cell array RigidBodyLoop objects
@@ -73,6 +74,7 @@ classdef RigidBodyModel
       
       %disp(['Parsing robot ', char(node.getAttribute('name')), ' from URDF file...']);
       model = RigidBodyModel();
+      model.name = char(node.getAttribute('name'));
       
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()

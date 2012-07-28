@@ -34,7 +34,7 @@
   </joint>
   <link name="arm">
     <inertial> 
-      <!-- note: point mass (implies no inertia about center of mass) -->
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
       <mass value="1"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/> 
     </inertial>
@@ -46,16 +46,17 @@
       <material name="red" />
     </visual> 
   </link>
-  <joint name="shoulder" type="continuous">
+  <joint name="theta" type="continuous">
     <parent link="base"/>
     <child link="arm" />
     <axis xyz="0 1 0" />
+    <dynamics damping="0.1" />
   </joint>
   <link name="arm_com">
     <visual>
       <origin xyz="0 0 -.5"/>
       <geometry>
-        <sphere radius=".05"/>
+        <sphere radius=".025"/>
       </geometry>
       <material name="blue" />
     </visual>
@@ -64,4 +65,9 @@
     <parent link="arm" />
     <child link="arm_com" />
   </joint>
+  <transmission type="SimpleTransmission" name="elbow_trans">
+    <actuator name="tau" />
+    <joint name="theta" />
+    <mechanicalReduction>1</mechanicalReduction>
+  </transmission>
 </robot>

@@ -8,8 +8,8 @@ classdef PlanarRigidBodyVisualizer < Visualizer
   % the plane.
   
   methods
-    function obj = PlanarRigidBodyVisualizer(model)
-      obj=obj@Visualizer(0);
+    function obj = PlanarRigidBodyVisualizer(frame,model)
+      obj=obj@Visualizer(frame);
       
       if (nargin<1)
         urdf_filename=uigetfile('*.urdf');
@@ -20,8 +20,6 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       else
         error('model must be a RigidBodyModel or the name of a urdf file'); 
       end
-
-      obj = obj.setNumInputs(2*obj.model.featherstone.NB);
     end
     
     function draw(obj,t,x)
