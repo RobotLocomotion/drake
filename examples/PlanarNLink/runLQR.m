@@ -23,7 +23,7 @@ sys=feedback(p,c);
 % disp('simulating.');
 
 for i=1:5;
-  xtraj = sys.simulate([0 5],double(x0)+.01*randn(2*N,1));
+  xtraj = sys.simulate([0 2],double(x0)+.01*randn(2*N,1));
   v.playback(xtraj);
 end
 

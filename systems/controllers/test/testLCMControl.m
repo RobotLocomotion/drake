@@ -4,9 +4,7 @@ function testLCMControl
 
 checkDependency('lcm_enabled');
 
-load drake_config;
-
-p = addpath([conf.root,'/examples/Pendulum']);
+p = addpath([getDrakePath,'/examples/Pendulum']);
 
 lc = lcm.lcm.LCM.getSingleton();
 a = lcm.lcm.MessageAggregator();
