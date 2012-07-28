@@ -28,7 +28,8 @@ while (a.numMessagesAvailable()==0)
   nonempty = ~cellfun(@isempty, errmsgs);
   if (any(nonempty))
     celldisp(errmsgs(nonempty))
-    destroy(job);
+    %destroy(job);
+    delete(job);
     path(p);
     error('found LCM error');
   end

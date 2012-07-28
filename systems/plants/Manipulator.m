@@ -143,7 +143,23 @@ classdef Manipulator < SecondOrderSystem
     
     function polysys = makeTrigPolySystem(obj,options)
       if (obj.num_xcon>0) error('not implemented yet.  may not be possible.'); end
-      error('not implemented yet'); 
+      
+      function rhs = dynamics_rhs(obj,t,x,u)
+        q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
+        [H,C,B] = manipulatorDynamics(obj,q,qd);
+        if (obj.num_u>0) tau=B*u; else tau=zeros(obj.num_q,1); end
+        rhs = [qd;tau - C];
+      end
+      function lhs = dynamics_lhs(obj,x)
+        q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
+        H = manipulatorDynamics(obj,q,qd);  % just get H
+        lhs = blkdiag(eye(obj.num_q),H);
+      end        
+      
+      options.rational_dynamics_numerator=@(t,x,u)dynamics_rhs(obj,t,x,u);
+      options.rational_dynamics_denominator=@(x)dynamics_lhs(obj,x);
+      
+      polysys = makeTrigPolySystem@SecondOrderSystem(obj,options);
     end
     
   end

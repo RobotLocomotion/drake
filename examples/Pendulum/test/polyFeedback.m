@@ -17,7 +17,7 @@ try
   sys2 = taylorApprox(feedback(pd,c),0,x0,[],3);
   
   for i=1:1000
-    t=rand(1); x=randn(2,1); u=[];
+    t=rand(1); x=randn(2,1); u=randn(1);
     
     if (any(abs(sys1.dynamics(t,x,u) - sys2.dynamics(t,x,u))>1e-8))
       error('dynamics don''t match'); 

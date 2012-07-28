@@ -26,7 +26,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
       obj = setPolyDynamics(obj,p_dynamics_rhs,p_dynamics_lhs);
       obj = setPolyUpdate(obj,p_update);
       obj = setPolyOutput(obj,p_output);
-      if (nargin>8)
+      if (nargin>7)
         obj = setPolyStateConstraints(obj,p_state_constraints);
       end
     end
@@ -138,7 +138,7 @@ classdef SpotPolynomialSystem < PolynomialSystem
       if ~isempty(p_dynamics_lhs)
         typecheck(p_dynamics_lhs,'msspoly');
         sizecheck(p_dynamics_lhs,[obj.num_xc,obj.num_xc]);
-        if any(match([p_t;p_x;p_u],decomp(p_dynamics_lhs))==0)
+        if ~isempty(decomp(p_dynamics_lhs)) && any(match([p_t;p_x;p_u],decomp(p_dynamics_lhs))==0)
           error('p_dynamics_lhs depends on variables other than t,x, and u (from the current state and input frames)');
         end
       end
@@ -203,6 +203,23 @@ classdef SpotPolynomialSystem < PolynomialSystem
         p_output = subs(p_output,obj.p_t,t);
       end
     end
+    
+    function obj = setPolyStateConstraints(obj,p_state_constraints)
+      if ~isempty(p_state_constraints)
+        typecheck(p_state_constraints,'msspoly');
+        if ~iscolumn(p_state_constraints) error('p_state_constraints must be a column vector'); end
+        if ~isempty(decomp(p_state_constraints)) && any(match(obj.getStateFrame.poly,decomp(p_state_constraints))==0)
+          error('p_state_constraints depends on variables other than x (the current state frame)');
+        end
+      end
+      obj = setNumStateConstraints(obj,length(p_state_constraints));
+      obj.p_state_constraints = p_state_constraints;
+    end
+    
+    function p_state_constraints = getPolyStateConstraints(obj)
+      p_state_constraints = obj.p_state_constraints;
+    end
+    
   end
   
 end
