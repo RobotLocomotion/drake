@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+
+<robot name="Pendulum">
+  <material name="green">
+ 	  <color rgba=".3 .6 .4 1" />
+  </material>
+  <material name="red">
+    <color rgba=".9 .1 0 1" />
+  </material>
+  <material name="blue">
+    <color rgba="0 0 1 1" />
+  </material>
+
+  <link name="base">
+    <visual>
+      <geometry>
+         <box size=".03 .03 .03" />
+      </geometry>
+      <material name="green" />
+    </visual>
+  </link>
+  <link name="base_part2">
+    <visual>
+      <origin xyz="0 0 .015" />
+      <geometry>
+        <sphere radius=".015" />
+      </geometry> 
+      <material name="green" />
+    </visual>
+  </link>
+  <joint name="base_weld" type="fixed">
+    <parent link="base" />
+    <child link="base_part2" />
+  </joint>
+  <link name="arm">
+    <inertial> 
+      <!-- note: point mass (implies no inertia about center of mass) -->
+      <mass value="1"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/> 
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -.375" rpy="0 0 0" />
+      <geometry>
+         <cylinder length=".75" radius=".01" />
+      </geometry>
+      <material name="red" />
+    </visual> 
+  </link>
+  <joint name="shoulder" type="continuous">
+    <parent link="base"/>
+    <child link="arm" />
+    <axis xyz="0 1 0" />
+  </joint>
+  <link name="arm_com">
+    <visual>
+      <origin xyz="0 0 -.5"/>
+      <geometry>
+        <sphere radius=".05"/>
+      </geometry>
+      <material name="blue" />
+    </visual>
+  </link>
+  <joint name="arm_weld" type="fixed">
+    <parent link="arm" />
+    <child link="arm_com" />
+  </joint>
+</robot>

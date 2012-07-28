@@ -2,7 +2,7 @@ function urdfDynamicsTest
 
 oldpath=addpath('..');
 p_orig = AcrobotPlant;
-p_urdf = PlanarURDFManipulator('../Acrobot.urdf');
+p_urdf = PlanarRigidBodyManipulator('../Acrobot.urdf');
 
 for i=1:25
   t = rand;
