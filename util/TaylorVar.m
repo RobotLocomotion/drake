@@ -620,7 +620,7 @@ classdef TaylorVar
       tv=elementwise(obj,@atan,@(x) ones(size(x))./(1+x.^2));
     end
     function tv=atan2(y,x)
-      tv=elementwisetwoarg(y,x,@atan2,@(y,x) x./(x.^2+y.^2),@(y,x) -y./(x.^2+y.^2));
+      tv=elementwisetwoarg(y,x,@atan2,@(y,x) x./max(x.^2+y.^2,eps),@(y,x) -y./max(x.^2+y.^2,eps));
     end
     function tv = acot(obj)
       tv=elementwise(obj,@acot,@(x) -ones(size(x))./(1+x.^2));

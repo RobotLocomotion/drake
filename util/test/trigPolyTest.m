@@ -89,10 +89,12 @@ function checkDynamics(p,tp)
     t=rand; 
     x=Point(p.getStateFrame,randn(p.getNumStates,1));
     u=randn;
-    dt=1e-3;
-    xnp = double(x)+dt*p.dynamics(t,double(x),u);
-    xtp=x.inFrame(tp.getStateFrame);
-    xntp = double(Point(tp.getStateFrame,double(xtp)+dt*tp.dynamics(t,double(xtp),u)).inFrame(p.getStateFrame));
-    valuecheck(xnp,xntp);
+    xdotp = p.dynamics(t,double(x),u);
+    xtp=double(x.inFrame(tp.getStateFrame));
+    xdottp = tp.dynamics(t,xtp,u);
+    tf = findTransform(tp.getStateFrame,p.getStateFrame);
+    [~,dtf] = geval(@output,tf,t,[],xtp);
+    xdottpinp = dtf(:,2:end)*xdottp;
+    valuecheck(xdotp,xdottpinp);
   end
 end

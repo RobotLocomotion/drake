@@ -136,6 +136,10 @@ if (length(xnew)~=sys.num_x)  % only do this if there are some trig vars
   
   tp_dynamics_lhs = [tp_dynamics_lhs*G'; Phi];  % e(x)*G(x)';
   tp_dynamics_rhs=[tp_dynamics_rhs;phidot];
+
+% an experiment: don't add phi to dynamics. 
+%  tp_dynamics_lhs = tp_dynamics_lhs*G';
+%  tp_dynamics_rhs= tp_dynamics_rhs;
 end
 
 % set up new coordinate frame
