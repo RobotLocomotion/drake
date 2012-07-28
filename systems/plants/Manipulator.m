@@ -3,10 +3,13 @@ classdef Manipulator < SecondOrderSystem
 % Coming soon:  will also support bilateral constraints of the form: phi(q)=0.
 
   methods
-    function obj = Manipulator(num_q, num_u, num_bilateral_constraints)
+    function obj = Manipulator(num_q, num_u, num_position_constraints, num_velocity_constraints)
       obj = obj@SecondOrderSystem(num_q,num_u,true);
-      if (nargin>2)  % else num_bilateral_constraints=0 by default
-        obj = obj.setNumBilateralConstraints(num_bilateral_constraints);
+      if (nargin>2)  % else num_position_constraints=0 by default
+        obj = obj.setNumPositionConstraints(num_position_constraints);
+      end
+      if (nargin>3)  % else num_position_constraints=0 by default
+        obj = obj.setNumVelocityConstraints(num_velocity_constraints);
       end
     end
   end
@@ -19,65 +22,107 @@ classdef Manipulator < SecondOrderSystem
   methods
     function x0 = getInitialState(obj)
       x0 = randn(obj.num_xd+obj.num_xc,1);
-      x0 = resolveConstraints(obj,x0(1:obj.num_q));
+      x0 = resolveConstraints(obj,x0);
     end
 
     function qdd = sodynamics(obj,t,q,qd,u)
     % Provides the SecondOrderDynamics interface to the manipulatorDynamics.
+
+      alpha = 10;  % 1/time constant of position constraint satisfaction (see my latex rigid body notes)
+      beta = 0;    % 1/time constant of velocity constraint satisfaction
+    
       [H,C,B] = manipulatorDynamics(obj,q,qd);
+      Hinv = inv(H);
       
       if (obj.num_u>0) tau=B*u; else tau=zeros(obj.num_q,1); end
-      if (obj.num_bilateral_constraints)
-        [phi,J,dJ] = geval(@obj.bilateralConstraints,q);
-
-%        phi
-        tol = 1e-6;
-        % todo: make this a more proper tolerance (which can be set
-        % independently, or which is derived from the ode parameters?)
-%        if (any(abs(phi)>tol)) error('this state violates the bilateral constraints');  end
-        
-        Hinv = inv(H);
-
+      
+      phi=[]; psi=[];
+      if (obj.num_position_constraints>0 && obj.num_velocity_constraints>0)
+        [phi,J,dJ] = geval(@obj.positionConstraints,q);
         Jdotqd = dJ*reshape(qd*qd',obj.num_q^2,1);
-%        k_constraint=1;
-%        kd_constraint=.1;
-        constraint_force = J'*(inv(J*Hinv*J')*(J*Hinv*C - Jdotqd));% - k_constraint*phi - kd_constraint*J*qd);
-        qdd = Hinv*(tau + constraint_force - C);
+
+        [psi,dpsi] = geval(@obj.velocityConstraints,q,qd);
+        dpsidq = dpsi(:,1:obj.num_q);
+        dpsidqd = dpsi(:,obj.num_q+1:end);
+        
+        term1=Hinv*[J;dpsidqd]';
+        term2=Hinv*(tau-C);
+        
+        constraint_force = -[J;dpsidqd]'*inv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi];
+      elseif (obj.num_position_constraints>0)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
+        [phi,J,dJ] = geval(@obj.positionConstraints,q);
+        Jdotqd = dJ*reshape(qd*qd',obj.num_q^2,1);
+
+        constraint_force = -J'*(inv(J*Hinv*J')*(J*Hinv*(tau-C) + Jdotqd + alpha*J*qd));
+      elseif (obj.num_velocity_constraints>0)
+        [psi,J] = geval(@obj.velocityConstraints,q,qd);
+        dpsidq = J(:,1:obj.num_q);
+        dpsidqd = J(:,obj.num_q+1:end);
+        
+        constraint_force = -dpsidqd'*inv(dpsidqd*Hinv*dpsidqd')*(dpsidq*qd + dpsidqd*Hinv*(tau-C)+beta*psi);
       else
-        qdd = H\(tau - C);
+        constraint_force=0*q;
       end
       
+%      [phi;psi]
+
+      % todo: make this a more proper tolerance (which can be set
+      % independently, or which is derived from the ode parameters?)
+      % tol = 1e-4;
+      % if (any(abs([phi;psi])>tol)) error('this state violates the bilateral constraints');  end
+      
+      qdd = Hinv*(tau + constraint_force - C);
+      % note that I used to do this (instead of calling inv(H)):
+      % qdd = H\(tau - C);
     end
     
-    function obj = setNumBilateralConstraints(obj,num_bilateral_constraints)
+    function obj = setNumPositionConstraints(obj,num)
     % Set the number of bilateral constraints
-    if (~isscalar(num_bilateral_constraints) || num_bilateral_constraints <0)
+      if (~isscalar(num) || num <0)
         error('num_bilateral_constraints must be a non-negative scalar');
       end
-      obj.num_bilateral_constraints=num_bilateral_constraints;
+      obj.num_position_constraints=num;
+      obj.num_xcon=2*obj.num_position_constraints+obj.num_velocity_constraints;
     end
     
-    function phi = bilateralConstraints(obj,q)
-      error('manipulators with constraints must implement the bilateralConstraints method');
-    end
-    
-    function q = resolveConstraints(obj,q0)
-      % attempts to find a q which satisfies the bilateral constraints,
-      % using q0 as the initial guess.
-
-      function stop=drawme(q,optimValues,state)
-        stop=false;
-        v.draw(0,q);
+    function obj = setNumVelocityConstraints(obj,num)
+    % Set the number of bilateral constraints
+      if (~isscalar(num) || num <0)
+        error('num_bilateral_constraints must be a non-negative scalar');
       end
-        
-      if (0)  % useful for debugging (only but only works for URDF manipulators)
-        v=obj.constructVisualizer();
-        options=optimset('Display','iter','Algorithm','levenberg-marquardt','OutputFcn',@drawme,'TolX',1e-9);
+      obj.num_velocity_constraints=num;
+      obj.num_xcon=2*obj.num_position_constraints+obj.num_velocity_constraints;
+    end
+    
+    function obj = setNumStateConstraints(obj,num)
+      error('you must set position constraints and velocity constraints explicitly.  cannot set general constraints for manipulator plants');
+    end
+    
+    function phi = positionConstraints(obj,q)
+      error('manipulators with position constraints must overload this function');
+    end
+    
+    function psi = velocityConstraints(obj,q,qd)
+      error('manipulators with velocity constraints must overload this function'); 
+    end
+    
+    function con = stateConstraints(obj,t,x,u)
+      % wraps up the position and velocity constraints into the general constriant
+      % method.  note that each position constraint (phi=0) also imposes an implicit
+      % velocity constraint on the system (phidot=0).
+
+      q=x(1:obj.num_q); qd=x(obj.num_q+1:end);
+      if (obj.num_position_constraints>0)
+        [phi,J] = geval(@obj.positionConstraints,q);
       else
-        options=optimset('Display','off','Algorithm','levenberg-marquardt');
+        phi=[]; J=[];
       end
-      q = fsolve(@(x)bilateralConstraints(obj,x),q0,options);
-
+      if (obj.num_velocity_constraints>0)
+        psi = obj.velocityConstraints(q,qd);
+      else
+        psi=[];
+      end
+      con = [phi; J*qd; psi];  % phi=0, phidot=0, psi=0
     end
     
     function sys = feedback(sys1,sys2)
@@ -96,10 +141,16 @@ classdef Manipulator < SecondOrderSystem
       sys = cascade@SecondOrderSystem(sys1,sys2);
     end
     
+    function polysys = makeTrigPolySystem(obj,options)
+      if (obj.num_xcon>0) error('not implemented yet.  may not be possible.'); end
+      error('not implemented yet'); 
+    end
+    
   end
   
   
   properties (SetAccess = private, GetAccess = public)
-    num_bilateral_constraints = 0  % the number of bilateral constraints of the form phi(q)=0
+    num_position_constraints = 0  % the number of position constraints of the form phi(q)=0
+    num_velocity_constraints = 0  % the number of velocity constraints of the form psi(q,qd)=0
   end
 end

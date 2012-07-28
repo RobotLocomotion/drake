@@ -20,6 +20,7 @@ classdef SineSys < DrakeSystem
 %
 % Note that the same example can be done without approximation using 
 % 'Trig-SOS' when we release that code. 
+%
    
   methods
     function obj = SineSys()
@@ -35,7 +36,69 @@ classdef SineSys < DrakeSystem
   
   methods (Static=true)
     function run()
+      p=SineSys();
+      pp=p.makeTrigPolySystem(struct('replace_output_w_new_state',true));
+      V=tilyap(pp,[sin(0);cos(0)],eye(2));
       
+      xdot=msspoly('d',2);
+      Vdot = diff(V,pp.p_x)*xdot;
+      prog=mssprog;
+
+      L1monom = monomials(pp.p_x,0:2);
+      [prog,a] = new(prog,length(L1monom),'free');
+      L1 = a'*L1monom;
+      L2monom = monomials(pp.p_x,0:2);
+      [prog,b] = new(prog,length(L2monom),'free');
+      L2 = b'*L2monom;
+  
+      % x on unit circle and x not (0,-1) => Vdot<0  
+      prog.sos=-Vdot+L1*(pp.p_mass_matrix*xdot-pp.p_dynamics)+L2*(pp.p_state_constraints);
+      
+      % run SeDuMi and check output
+      [prog,info] = sedumi(prog,-sigma1,0);
+      %  if (info.numerr>1)
+      %    error('sedumi had numerical issues.');
+      %  end
+      if (info.pinf || info.dinf)
+        error('problem looks infeasible.');
+      end
+
+      L1 = prog(L1);
+      sigma1 = prog(sigma1);
+    end
+    
+    function runTrigPolyVectorFields()
+      p=SineSys();
+      
+      pp=p.makeTrigPolySystem(struct('replace_output_w_new_state',true));
+      
+      figure(1);
+      xs=linspace(-2*pi,2*pi,101);
+      plot(xs,p.dynamics(0,xs,[]));
+      line([xs(1),xs(end)],[0 0],'Color','k');
+      axisAnnotation('arrow',[-2,-1.5],[0 0],'Color','k','HeadWidth',100,'HeadLength',100);
+      axisAnnotation('arrow',[2,1.5],[0 0],'Color','k','HeadWidth',100,'HeadLength',100);
+      axisAnnotation('arrow',[4,4.75],[0 0],'Color','k','HeadWidth',100,'HeadLength',100);
+      axisAnnotation('arrow',[-4,-4.75],[0 0],'Color','k','HeadWidth',100,'HeadLength',100);
+      xlabel('x');
+      ylabel('xdot');
+      title('original system');
+      xlim([xs(1),xs(end)]);
+      
+      figure(2);
+      [s,c]=ndgrid(linspace(-1.5,1.5,31),linspace(-1.5,1.5,31));
+      sdot=s; cdot=c;
+      for i=1:numel(s)
+        xdot=pp.dynamics(0,[s(i);c(i)],[]);
+        sdot(i)=xdot(1); cdot(i)=xdot(2);
+      end
+      quiver(s,c,sdot,cdot);
+      axisAnnotation('ellipse',[-1 -1 2 2],'Color','k');
+      xlabel('s');
+      ylabel('c');
+      title('trig-poly system')
+      axis equal
+      axis(1.5*[-1 1 -1 1]);
     end
     
     function runTaylor()
