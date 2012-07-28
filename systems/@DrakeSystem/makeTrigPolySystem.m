@@ -35,7 +35,6 @@ end
 t=msspoly('t',1);
 q=msspoly('q',sys.num_x);
 s=msspoly('s',sys.num_x);
-
 c=msspoly('c',sys.num_x);
 x=TrigPoly(q,s,c);
 u=msspoly('u',sys.num_u);
@@ -89,19 +88,25 @@ all_methods=getmsspoly(all_methods);
 %  => e(x)*inv[G(x)^T*G(x)] G(x)^T ydot = f(x)
 % ...  for my g(x), inv[G(x)^T*G(x)]=I.
 % the additional equations come from the unit circle constraints, which add
-%  phi(y)=0 := s^2+c^2=1 => s*sdot+c*cdot=0 := Phi*y=0 with Phi(i,:) = [0...0 s c 0 ... 0]
+%  phi(y)=0 := s^2+c^2=1 => 2*s*sdot+2*c*cdot=0 := Phi*y=0 with Phi(i,:) = [0...0 2*s 2*c 0 ... 0]
 % but for stability, I impose phidot(y) = -alpha*phi(y)
 
 xnew=[];
 G=msspoly(zeros(sys.num_x)); Phi=msspoly([]); phidot=msspoly([]);
 unit_circle_constraints=[];
+sin_ind=logical(zeros(sys.num_x)); cos_ind=sin_ind; x_ind=sin_ind;
+name=sys.getStateFrame.coordinates; newname={};
 for i=1:sys.num_x
   if (deg(all_methods,s(i))>0 || deg(all_methods,c(i))>0)
     xnew=[xnew;s(i);c(i)];
+    yind=size(xnew,1)-1;
+    sin_ind(yind,i)=true;
+    cos_ind(yind+1,i)=true;
+    newname{yind}=['sin(',name{i},')'];
+    newname{yind+1}=['cos(',name{i},')'];
     if (i<=sys.num_xd)
       error('trig discrete variables not supported yet.  (have to think about if it''s even reasonable...).'); 
     else
-      yind=size(xnew,1)-1;
       G(yind,i)=c(i);
       G(yind+1,i)=-s(i);
       cind=size(unit_circle_constraints,1)+1;
@@ -112,25 +117,47 @@ for i=1:sys.num_x
     unit_circle_constraints=[unit_circle_constraints;s(i)^2+c(i)^2-1];
   else % leave it as poly 
     xnew=[xnew;q(i)];
+    x_ind(length(xnew),i)=true;
+    newname{length(xnew)}=name{i};
     if (i>sys.num_xd)
-      G(end+1,i)=1;
+      G(length(xnew),i)=1;  
     end
   end
 end
 if (length(xnew)~=sys.num_x)  % only do this if there are some trig vars
-  if (isempty(tp_dynamics_lhs))
+  if isempty(tp_dynamics_lhs)
     tp_dynamics_lhs = 0*x(1)+eye(sys.num_xc);
   end
+  
   if (size(Phi,2)<length(xnew)) Phi(end,length(xnew))=0; end  % zero-pad if necessary
+  if (size(sin_ind,1)<length(xnew)) sin_ind(length(xnew),end)=false; end  % zero-pad
+  if (size(cos_ind,1)<length(xnew)) cos_ind(length(xnew),end)=false; end
+  if (size(x_ind,1)<length(xnew)) x_ind(length(xnew),end)=false; end
+  
   tp_dynamics_lhs = [tp_dynamics_lhs*G'; Phi];  % e(x)*G(x)';
   tp_dynamics_rhs=[tp_dynamics_rhs;phidot];
 end
-p_xnew=msspoly('x',length(xnew));
 
+% set up new coordinate frame
+tpframe = CoordinateFrame(['TP',sys.getStateFrame().name],length(xnew),'x');
+tpframe.setCoordinateNames(newname);
+p_xnew=tpframe.poly;
+
+% set up transformations between the frames
+sys.getStateFrame.addTransform(TrigToPolyTransform(sys.getStateFrame,tpframe,sin_ind,cos_ind,x_ind));
+tpframe.addTransform(PolyToTrigTransform(tpframe,sys.getStateFrame,sin_ind,cos_ind,x_ind));
+
+% now populate the dynamics methods using the new frame variables
 if (sys.num_xc)
   p_dynamics_rhs = subs(getmsspoly(tp_dynamics_rhs),xnew,p_xnew);
+  if isempty(tp_dynamics_lhs)
+    p_dynamics_lhs=[];
+  else
+    p_dynamics_lhs = subs(getmsspoly(tp_dynamics_lhs),xnew,p_xnew);
+  end
 else
   p_dynamics_rhs=[];
+  p_dynamics_lhs=[];
 end
 if (sys.num_xd)
   p_update = subs(getmsspoly(tp_update),xnew,p_xnew);
@@ -146,12 +173,15 @@ else
 end
 unit_circle_constraints=subs(unit_circle_constraints,xnew,p_xnew);
 
-polysys = PolynomialSystem(size(G,1),length(p_update),sys.num_u,length(p_output),sys.isDirectFeedthrough(),sys.isTI(),p_dynamics,p_update,p_output);
+if (options.replace_output_w_new_state && sys.num_y>0)
+  outframe = tpframe;
+else
+  outframe = sys.getOutputFrame;
+end
+
+polysys = SpotPolynomialSystem(sys.getInputFrame,tpframe,outframe,p_dynamics_rhs,p_dynamics_lhs,p_update,p_output,unit_circle_constraints);
 if (sys.num_u)
   polysys = setInputLimits(polysys,sys.umin,sys.umax);
 end
-polysys = polysys.addStateConstraints(unit_circle_constraints);
-if (~isempty(tp_mass_matrix))
-  polysys = polysys.setMassMatrix(subs(getmsspoly(tp_mass_matrix),xnew,p_xnew));
-end
+
 

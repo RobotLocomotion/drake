@@ -100,7 +100,7 @@ classdef LQRTree < HybridDrakeSystem
       
       if isTI(Vtv) error('assuming tv quadratic form'); end
       % from this controller to the parent
-      tspan = Vtv.S.tspan();
+      tspan = Vtv.S.tspan;
       obj = addTransition(obj,mode_num,@(obj,t,~,x) tspan(end)-t,@toParent,false,false);
 %      obj = addTransition(obj,mode_num,@(obj,t,t0,x) tspan(end)-t+t0,@toParent,false,false);
       
@@ -232,7 +232,7 @@ classdef LQRTree < HybridDrakeSystem
             xdottraj = fnder(xtraj);
             xdotmin = xdottraj.eval(tmin);
             
-            tspan=xtraj.tspan();
+            tspan=xtraj.tspan;
             if (min(abs(tmin-tspan))<=options.TolX) % then I'm at one of the rails
               dtmindx = zeros(1,nX);
             else
@@ -407,7 +407,7 @@ classdef LQRTree < HybridDrakeSystem
         sfigure(1);
         fnplt(xtraj,options.plotdims); drawnow;
                 
-        tspan = xtraj.tspan();
+        tspan = xtraj.tspan;
         [~,~,parent_mode_num,parent_T] = finalTreeConstraint(c,xtraj.eval(tspan(end)));
         xtraj = xtraj.shiftTime(parent_T-tspan(end));
         utraj = utraj.shiftTime(parent_T-tspan(end));

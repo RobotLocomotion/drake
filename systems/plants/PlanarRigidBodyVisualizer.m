@@ -8,7 +8,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
   % the plane.
   
   methods
-    function obj = PlanarRigidBodyVisualizer(model,axis)
+    function obj = PlanarRigidBodyVisualizer(model)
       obj=obj@Visualizer(0);
       
       if (nargin<1)
@@ -22,9 +22,6 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       end
 
       obj = obj.setNumInputs(2*obj.model.featherstone.NB);
-      if (nargin>1)
-        obj.axis = axis;
-      end
     end
     
     function draw(obj,t,x)
@@ -56,7 +53,6 @@ classdef PlanarRigidBodyVisualizer < Visualizer
         end
       end
 
-      
       axis equal;
       if (obj.xlim)
         xlim(obj.xlim);
@@ -81,7 +77,6 @@ classdef PlanarRigidBodyVisualizer < Visualizer
 
   properties
     model;
-    axis=[];
     xlim=[]
     ylim=[];
   end

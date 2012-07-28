@@ -248,8 +248,9 @@ classdef TrigPoly
       a.p=reshape(a.p,m,n);
     end
     
-    function s=size(a,varargin)
-      s=size(a.p,varargin{:});
+    function varargout=size(a,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}]=size(a.p,varargin{:});
     end
     
     function a=sparse(a)

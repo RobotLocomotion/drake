@@ -151,13 +151,20 @@ classdef Trajectory < DrakeSystem
       a = FunctionHandleTrajectory(@(t) subsasgn(a.eval(t),s,b.eval(t)),size(subsasgn(a.eval(breaks(1)),s,b.eval(breaks(1)))),breaks);
     end
 
-    function b = subsref(a,s)
-      switch s(1).type
-        case '()'
-          breaks = a.getBreaks();
-          b = FunctionHandleTrajectory(@(t) subsref(a.eval(t),s),size(subsref(a.eval(breaks(1)),s)),breaks);
-        otherwise
-          b = builtin('subsref',a,s);
+    function n=numel(varargin)
+      % have to set numel to 1, because calls to subsref 
+      % with . and {} automatically ask for numel outputs.
+      % note that I *hate* that numel ~= prod(size(obj))
+      n=1;
+    end
+    
+    function varargout = subsref(a,s)
+      if (length(s)==1 && strcmp(s(1).type,'()'))
+        breaks = a.getBreaks();
+        varargout = FunctionHandleTrajectory(@(t) subsref(a.eval(t),s),size(subsref(a.eval(breaks(1)),s)),breaks);
+      elseif nargout>0  % use builtin
+        varargout=cell(1,nargout);
+        [varargout{:}] = builtin('subsref',a,s);
       end
     end
     
@@ -176,9 +183,9 @@ classdef Trajectory < DrakeSystem
       l = max(s);
     end
     
-    function n = numel(obj)
-      n = prod(size(obj));
-    end
+%    function n = numel(obj)
+%      n = prod(size(obj));
+%    end
     
     function ts = getTimeSpan(obj)
       ts = obj.tspan;

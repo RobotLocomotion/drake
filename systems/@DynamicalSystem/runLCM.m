@@ -51,7 +51,8 @@ if (obj.getNumInputs>0 && getNumStates(obj)<1) % if there are no state variables
         lc.publish(options.outchannel,ymsg);
       end
     else
-      t=options.tspan(1)+toc
+      t=options.tspan(1)+toc;
+      fprintf(1,'waiting... (t=%f)\n',t);
     end
   end
 else % otherwise set up the LCM blocks and run simulink.

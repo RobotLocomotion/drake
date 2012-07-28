@@ -38,24 +38,30 @@ classdef SineSys < DrakeSystem
     function run()
       p=SineSys();
       pp=p.makeTrigPolySystem(struct('replace_output_w_new_state',true));
-      V=tilyap(pp,[sin(0);cos(0)],eye(2));
+      V=tilyap(pp,Point(pp.getStateFrame,[sin(0);cos(0)]),eye(2));
+      px = pp.getStateFrame.poly;
       
       xdot=msspoly('d',2);
-      Vdot = diff(V,pp.p_x)*xdot;
+      Vdot = diff(V.getPoly,px)*xdot;
       prog=mssprog;
 
-      L1monom = monomials(pp.p_x,0:2);
-      [prog,a] = new(prog,length(L1monom),'free');
+      L1monom = monomials(px,0:2);
+      [prog,a] = new(prog,length(L1monom)*length(xdot),'free');
+      a=reshape(a,length(L1monom),length(xdot));
       L1 = a'*L1monom;
-      L2monom = monomials(pp.p_x,0:2);
-      [prog,b] = new(prog,length(L2monom),'free');
+      L2monom = monomials(px,0:2);
+      [prog,b] = new(prog,length(L2monom)*pp.getNumStateConstraints,'free');
+      b=reshape(b,length(L2monom),pp.getNumStateConstraints);
       L2 = b'*L2monom;
   
       % x on unit circle and x not (0,-1) => Vdot<0  
-      prog.sos=-Vdot+L1*(pp.p_mass_matrix*xdot-pp.p_dynamics)+L2*(pp.p_state_constraints);
+      [prhs,plhs]=getPolyDynamics(pp);
+      pxcon = getPolyStateConstraints(pp);
+      prog.sos=-Vdot+L1'*(plhs*xdot-prhs)+L2'*(pxcon);
       
       % run SeDuMi and check output
-      [prog,info] = sedumi(prog,-sigma1,0);
+      [prog,sigma1] = new(prog,1,'pos');
+      [prog,info] = sedumi(prog,sigma1,0);
       %  if (info.numerr>1)
       %    error('sedumi had numerical issues.');
       %  end
@@ -64,7 +70,7 @@ classdef SineSys < DrakeSystem
       end
 
       L1 = prog(L1);
-      sigma1 = prog(sigma1);
+      L2 = prog(L2);
     end
     
     function runTrigPolyVectorFields()
