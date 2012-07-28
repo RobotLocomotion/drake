@@ -25,6 +25,17 @@ classdef PlanarRigidBodyManipulator < Manipulator
       obj = obj.setNumDOF(obj.model.featherstone.NB);
       obj = obj.setNumOutputs(2*obj.model.featherstone.NB);
       
+      inputframe = CoordinateFrame([obj.model.name,'Input'],size(obj.model.B,2));
+      inputframe = setCoordinateNames(inputframe,{obj.model.actuator.name}');
+
+      stateframe = CoordinateFrame([obj.model.name,'State'],2*obj.model.featherstone.NB,'x');
+      joints={obj.model.body(~cellfun(@isempty,{obj.model.body.parent})).jointname}';
+      stateframe = setCoordinateNames(stateframe,vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false)));
+      
+      obj = setInputFrame(obj,inputframe);
+      obj = setStateFrame(obj,stateframe);
+      obj = setOutputFrame(obj,stateframe);  % output = state
+      
       if (length(obj.model.loop)>0 || size([obj.model.body.ground_contact],2)>0)
         error('haven''t reimplemented position and velocity constraints yet'); 
       end
@@ -114,7 +125,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
     end
     
     function v=constructVisualizer(obj)
-      v = PlanarRigidBodyVisualizer(obj.model);
+      v = PlanarRigidBodyVisualizer(obj.getStateFrame,obj.model);
     end
   end
   
