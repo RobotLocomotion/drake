@@ -15,6 +15,7 @@ classdef RigidBody < handle
     jcode=-1
     Xtree=eye(3);   % velocity space coordinate transform *from parent to this node*
     Ttree=eye(3);   % position space coordinate transform *from this node to parent*
+    wrljoint='';  % tranformation to joint coordinates in wrl syntax
     damping=0
     
     % dynamic properties (e.g. state at runtime)
@@ -118,7 +119,7 @@ classdef RigidBody < handle
                   wrl_transform_str = sprintf('%s\ttranslation %f %f %f\n',wrl_transform_str,x0(1),x0(2),x0(3));
                 case 'rpy'
                   rpy=str2num(char(thisNode.getAttribute('rpy')));
-                  wrl_transform_str = [wrl_transform_str,'\trotation',sprintf(' %f %f %f %f',rpy2axis(rpy)),'\n'];
+                  wrl_transform_str = [wrl_transform_str,'\trotation',sprintf(' %f %f %f %f\n',rpy2axis(rpy))];
               end
             end
           case {'geometry','#text','#comment'}
@@ -220,17 +221,16 @@ classdef RigidBody < handle
       b = leastCommonAncestor(body1.parent,body2);
     end
     
-    function td=writeWRLJoint(body,fp,td)
-      function tabprintf(varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
+    function writeWRLJoint(body,fp)
       if isempty(body.jointname)
-        tabprintf('Transform {\n'); td=td+1;
+        fprintf(fp,'Transform {\n');
       else
-        tabprintf('DEF %s Transform {\n',body.jointname); td=td+1;
+        fprintf(fp,'DEF %s Transform {\n',body.jointname); 
       end
       if (body.jcode==1) % then it's a pin joint (only allowed about the y axis, so far
-        tabprintf('rotation 0 1 0 0\n'); 
+        fprintf(fp,'rotation 0 1 0 0\n'); 
       elseif (body.jcode==2) % then it's a slider
-        tabprintf('translation 0 0 0\n');
+        fprintf(fp,'translation 0 0 0\n');
       end
     end
     

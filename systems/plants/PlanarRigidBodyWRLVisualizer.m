@@ -20,9 +20,17 @@ classdef PlanarRigidBodyWRLVisualizer < Visualizer
       else
         error('model must be a RigidBodyModel or the name of a urdf file'); 
       end
-      obj.wrl = vrworld('Pendulum.wrl');
+      
+      wrlfile = ['/tmp/',obj.model.name,'.wrl'];
+      obj.model.writeWRL(wrlfile);
+      obj.wrl = vrworld(wrlfile);
       open(obj.wrl);
       view(obj.wrl);
+    end
+    
+    function delete(obj)
+      close(obj.wrl);
+      delete(obj.wrl);
     end
     
     function draw(obj,t,x)
@@ -33,7 +41,6 @@ classdef PlanarRigidBodyWRLVisualizer < Visualizer
           switch (b.jcode)
             case 1 % pin joint
               node.rotation=[0 1 0 x(i-1)];
-%              obj.wrl.theta.rotation=[0 1 0 x(i-1)];
             case 2 % x-axis slider
               node.translation=[x(i-1) 0 0];
             case 3 % z-axis slider
