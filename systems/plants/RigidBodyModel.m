@@ -403,6 +403,8 @@ classdef RigidBodyModel
       xz=zeros(2,1);
       theta=0;
       
+      wrl_joint_origin='';
+      
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
         thisNode = childNodes.item(i-1);
@@ -414,9 +416,11 @@ classdef RigidBodyModel
               switch (lower(char(thisAt.getName())))
                 case 'xyz'
                   xyz = reshape(str2num(char(thisAt.getValue())),3,1);
+                  wrl_joint_origin=[wrl_joint_origin,sprintf('\ttranslation %f %f %f\n',xyz(1),xyz(2),xyz(3))];
                   xz = xyz([1 3]); % ignore y
                 case 'rpy'
                   rpy=str2num(char(thisNode.getAttribute('rpy')));
+                  wrl_joint_origin=[wrl_joint_origin,sprintf('\trotation %f %f %f %f\n',rpy2axis(rpy))];
                   theta = rpy(2);
               end
             end
@@ -460,6 +464,10 @@ classdef RigidBodyModel
       
       child.Xtree = Xpln(theta,xz);
       child.Ttree = [rotmat(-theta),xz; 0,0,1];  % note: theta -> -theta from Michael
+
+      if ~isempty(wrl_joint_origin)
+        child.wrljoint = wrl_joint_origin;
+      end
       
     end
     
@@ -571,7 +579,7 @@ classdef RigidBodyModel
       fprintf(fp,'Background {\n\tskyColor 1 1 1\n}\n\n');
       
       % write default viewpoint % todo: get this from urdf?
-      fprintf(fp,'Transform {\n\tscale 1 -1 1\n\tchildren DEF front Viewpoint {\n\t\tdescription "front"\n\t\tposition 0 -2 0\n\t\torientation 1 0 0 1.5708\n\t}\n}\n\n');
+      fprintf(fp,'Transform {\n\tscale 1 -1 1\n\tchildren DEF side Viewpoint {\n\t\tdescription "front"\n\t\tposition 0 -2 0\n\t\torientation 1 0 0 1.5708\n\t}\n}\n\n');
       
       % loop through bodies
       for i=1:length(model.body)
@@ -588,9 +596,13 @@ classdef RigidBodyModel
       if (nargin<4) td=0; end % tab depth
       function tabprintf(varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
       
+      if ~isempty(body.wrljoint)
+        fprintf(fp,'Transform {\n%s\n\tchildren [\n',body.wrljoint);
+      end
+      
       % if there is a a joint between the parent and the body, add it here
       if ~isempty(body.parent)
-        td = writeWRLJoint(body,fp,td);
+        writeWRLJoint(body,fp);
       else
         tabprintf('Transform {\n'); td=td+1;
       end
@@ -603,6 +615,10 @@ classdef RigidBodyModel
       end
       td=td-1; tabprintf(']\n');
       td=td-1; tabprintf('}\n'); % end Transform {
+      
+      if ~isempty(body.wrljoint)
+        fprintf(fp,'\t]\n}\n'); % end wrljoint transform
+      end
     end
   end
 end
