@@ -30,6 +30,7 @@ classdef PlanarRigidBodyWRLVisualizer < Visualizer
       if get(obj.wrl,'Clients')<1
         view(obj.wrl);
       end
+      obj.display_time=false;
     end
     
     function delete(obj)
@@ -53,6 +54,18 @@ classdef PlanarRigidBodyWRLVisualizer < Visualizer
         end
       end
       vrdrawnow;
+    end
+    
+    function playbackAVI(varargin)
+      error('AVI playback not implemented yet for VRML visualizers.  But should be possible');
+    end
+    
+    function playbackSWF(varargin)
+      error('SWF playback not available for VRML visualizers.  The vector graphics equivalent is playbackVRML.');
+    end
+    
+    function playbackVRML(varargin)
+      error('not implemented yet, but should be possible to record the sequence to a VRML movie');
     end
   end
 
