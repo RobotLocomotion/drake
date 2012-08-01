@@ -95,12 +95,7 @@ classdef RigidBody < handle
       zpts = [];
       c = .7*[1 1 1];
       
-      if isempty(body.linkname)
-        wrl_transform_str = 'Transform {\n';
-      else
-        wrl_transform_str = sprintf('DEF %s Transform {\n',body.linkname);
-      end
-      
+      wrl_transform_str = '';
       wrl_shape_str='';
       wrl_appearance_str='';
       
@@ -132,7 +127,14 @@ classdef RigidBody < handle
         end
       end
       
-      wrl_transform_str = [wrl_transform_str,'\tchildren [\n'];
+      if ~isempty(wrl_transform_str)
+        if isempty(body.linkname)
+          wrl_transform_str = ['Transform {\n',wrl_transform_str];
+        else
+          wrl_transform_str = [sprintf('DEF %s Transform {\n',body.linkname),wrl_transform_str];
+        end
+        wrl_transform_str = [wrl_transform_str,'\tchildren [\n'];
+      end
       
       % second pass: through and handle the geometry (after the
       % coordinates)
@@ -156,7 +158,11 @@ classdef RigidBody < handle
       body.geometry{1}.z = zpts;
       body.geometry{1}.c = c;
       
-      body.wrlgeometry = [wrl_transform_str,wrl_shape_str,'\t]\n}'];
+      if isempty(wrl_transform_str)
+        body.wrlgeometry = wrl_shape_str;
+      else
+        body.wrlgeometry = [wrl_transform_str,wrl_shape_str,'\t]\n}'];
+      end
     end
     
     function body = parseCollision(body,node,options)
