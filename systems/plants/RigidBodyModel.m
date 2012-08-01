@@ -279,10 +279,7 @@ classdef RigidBodyModel
             end
             parent.geometry = {parent.geometry{:},body.geometry{j}};
             
-%            ind = strfind(parent.wrlgeometry,'children [');
-%            ind=ind(1)+length('children [')-1; % take the first one
-%            parent.wrlgeometry = [ parent.wrlgeometry(1:ind),sprintf('\n%s\n',body.wrlgeometry),parent.wrlgeometry(ind+1:end) ];
-             parent.wrlgeometry = [ parent.wrlgeometry, sprintf('\n'), body.wrlgeometry ];
+            parent.wrlgeometry = [ parent.wrlgeometry, sprintf('\n'), body.wrlgeometry ];
           end
         end
         
