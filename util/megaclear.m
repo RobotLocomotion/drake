@@ -6,10 +6,12 @@ function megaclear()
     current_breakpoints = dbstatus('-completenames');
 
     force_close_system();
+    vrclose all;
+    vrclear;
     
     evalin('base', 'h=findobj; delete(h(2:end));');  % delete dangling handles first
     evalin('base', 'clear all classes java mex');    % now clear everything else
-    
+
     dbstop(current_breakpoints);
     
 end

@@ -1,5 +1,7 @@
 function runPassiveWRL
 
+% NOTEST (vrml doesn't work on build machine yet)
+
 p = PlanarRigidBodyManipulator('Acrobot.urdf');
 v = p.constructWRLVisualizer;
 

@@ -1,5 +1,7 @@
 function runPassiveWRL
 
+% NOTEST  (vrml doesn't work on build machine)
+
 p = PlanarRigidBodyManipulator('Pendulum.urdf');
 v = p.constructWRLVisualizer;
 
