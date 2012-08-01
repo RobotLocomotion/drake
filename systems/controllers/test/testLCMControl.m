@@ -11,7 +11,7 @@ a = lcm.lcm.MessageAggregator();
 lc.subscribe('PendulumInput',a);
 
 if (matlabpool('size')>0), matlabpool('close'); end
-job = batch('runPendLCMControl','Workspace',struct(),'matlabpool',0);
+job = batch('runPendLCMControl','Workspace',struct(),'matlabpool',0,'AdditionalPaths',[getDrakePath(),'/util']);
 
 %waitForState(job,'running');
 wait(job,'running');
