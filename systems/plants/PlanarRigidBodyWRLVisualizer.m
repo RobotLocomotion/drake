@@ -1,4 +1,4 @@
-classdef PlanarRigidBodyWRLVisualizer < Visualizer
+classdef PlanarRigidBodyWRLVisualizer < Visualizer 
   % Loads a URDF file and implements the draw function.  
   % You could think of this as a very limited version of ROS' RViz. 
   % 
@@ -24,8 +24,12 @@ classdef PlanarRigidBodyWRLVisualizer < Visualizer
       wrlfile = ['/tmp/',obj.model.name,'.wrl'];
       obj.model.writeWRL(wrlfile);
       obj.wrl = vrworld(wrlfile);
-      open(obj.wrl);
-      view(obj.wrl);
+      if ~strcmpi(get(obj.wrl,'Open'),'on')
+        open(obj.wrl);
+      end
+      if get(obj.wrl,'Clients')<1
+        view(obj.wrl);
+      end
     end
     
     function delete(obj)
