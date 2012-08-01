@@ -1,6 +1,6 @@
 function runLQR(N)
 
-if (nargin<1) N=ceil(8*rand); end
+if (nargin<1) N=max(ceil(8*rand),2); end
 
 p = PlanarNLink(N);
 v = p.constructVisualizer();
