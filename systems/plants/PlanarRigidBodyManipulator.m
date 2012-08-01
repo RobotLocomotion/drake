@@ -28,16 +28,17 @@ classdef PlanarRigidBodyManipulator < Manipulator
       if getNumInputs(obj)>0
         inputframe = CoordinateFrame([obj.model.name,'Input'],getNumInputs(obj));
         inputframe = setCoordinateNames(inputframe,{obj.model.actuator.name}');
+        obj = setInputFrame(obj,inputframe);
       end
-
-      stateframe = CoordinateFrame([obj.model.name,'State'],2*obj.model.featherstone.NB,'x');
-      joints={obj.model.body(~cellfun(@isempty,{obj.model.body.parent})).jointname}';
-      stateframe = setCoordinateNames(stateframe,vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false)));
       
-      obj = setInputFrame(obj,inputframe);
-      obj = setStateFrame(obj,stateframe);
-      obj = setOutputFrame(obj,stateframe);  % output = state
-      
+      if getNumStates(obj)>0
+        stateframe = CoordinateFrame([obj.model.name,'State'],2*obj.model.featherstone.NB,'x');
+        joints={obj.model.body(~cellfun(@isempty,{obj.model.body.parent})).jointname}';
+        stateframe = setCoordinateNames(stateframe,vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false)));
+        obj = setStateFrame(obj,stateframe);
+        obj = setOutputFrame(obj,stateframe);  % output = state
+      end
+        
       if (length(obj.model.loop)>0 || size([obj.model.body.ground_contact],2)>0)
         error('haven''t reimplemented position and velocity constraints yet'); 
       end
