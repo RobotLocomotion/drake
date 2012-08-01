@@ -1,0 +1,72 @@
+#VRML V2.0 utf8
+
+## ------------------------------------------------- ##
+## This file was automatically generated using Drake ##
+##   EDITING THIS FILE BY HAND IS NOT RECOMMENDED    ##
+## ------------------------------------------------- ##
+
+Background {
+	skyColor 1 1 1
+}
+
+Transform {
+	scale 1 -1 1
+	children DEF front Viewpoint {
+		description "front"
+		position 0 -2 0
+		orientation 1 0 0 1.5708
+	}
+}
+
+Transform {
+	children [
+		DEF base Transform {
+			children [
+Shape {
+			geometry Box { size 0.030000 0.030000 0.030000 }
+			appearance Appearance { material Material { diffuseColor 0.300000 0.600000 0.400000 } }
+		}
+			]
+}
+		DEF base_part2 Transform {
+			translation 0.000000 0.000000 0.015000
+			children [
+Shape {
+			geometry Sphere { radius 0.015000 }
+			appearance Appearance { material Material { diffuseColor 0.300000 0.600000 0.400000 } }
+		}
+			]
+}
+		DEF theta Transform {
+			rotation 0 1 0 0
+			children [
+				DEF arm Transform {
+					rotation 0.000000 0.000000 0.000000 0.000000
+	translation 0.000000 0.000000 -0.375000
+					children [
+Transform {
+					rotation 1 0 0 1.5708
+					children Shape {
+						geometry Cylinder {
+							height 0.750000
+							radius 0.010000
+						}
+						appearance Appearance { material Material { diffuseColor 0.900000 0.100000 0.000000 } }
+				
+					}
+				}
+					]
+}
+				DEF arm_com Transform {
+					translation 0.000000 0.000000 -0.500000
+					children [
+Shape {
+					geometry Sphere { radius 0.025000 }
+					appearance Appearance { material Material { diffuseColor 0.000000 0.000000 1.000000 } }
+				}
+					]
+}
+			]
+		}
+	]
+}

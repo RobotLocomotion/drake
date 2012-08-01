@@ -21,7 +21,7 @@ classdef RigidBodyModel
       %
       % @param urdf_filename filename of file to parse
       %
-      % @option 2D boolean where true means parse to 2D model, false means parse to 3D model. @default true
+      % @option twoD boolean where true means parse to 2D model, false means parse to 3D model. @default true
       % @options inertial boolean where true means parse dynamics parameters,
       % false means skip them.  @default true
       % @options visual boolean where true means parse graphics parameters, false
@@ -31,7 +31,7 @@ classdef RigidBodyModel
       % and Dynamics library, with additional robotlib tags added.
       
       if (nargin<2) options = struct(); end
-      if (~isfield(options,'2D')) options.twoD = true; end
+      if (~isfield(options,'twoD')) options.twoD = true; end
       if (~isfield(options,'inertial')) options.inertial = true; end
       if (~isfield(options,'visual')) options.visual = true; end
       
@@ -278,6 +278,11 @@ classdef RigidBodyModel
               body.geometry{j}.z(k) = pt1(2);
             end
             parent.geometry = {parent.geometry{:},body.geometry{j}};
+            
+%            ind = strfind(parent.wrlgeometry,'children [');
+%            ind=ind(1)+length('children [')-1; % take the first one
+%            parent.wrlgeometry = [ parent.wrlgeometry(1:ind),sprintf('\n%s\n',body.wrlgeometry),parent.wrlgeometry(ind+1:end) ];
+             parent.wrlgeometry = [ parent.wrlgeometry, sprintf('\n'), body.wrlgeometry ];
           end
         end
         
@@ -540,5 +545,67 @@ classdef RigidBodyModel
       model.actuator=[model.actuator,actuator];
     end
     
+    function writeWRL(model,wrlfile,options)
+      if nargin<2 || isempty(wrlfile)
+        [filename,pathname]=uiputfile('*.wrl','Save WRL File',[model.name,'.wrl']);
+        wrlfile=[pathname,filename];
+      else
+        typecheck(wrlfile,'char');
+        [path,name,ext]=fileparts(wrlfile);
+        if isempty(ext)
+          ext='.wrl';
+        elseif ~strcmpi(ext,'.wrl');
+          error('second argument should point to a wrl file (with extension .wrl)');
+        end
+      end
+      
+      if (nargin<3) options=struct(); end
+      
+      fp = fopen(wrlfile,'w');
+      
+      % write header
+      fprintf(fp,'#VRML V2.0 utf8\n\n');
+      fprintf(fp,'## ------------------------------------------------- ##\n');
+      fprintf(fp,'## This file was automatically generated using Drake ##\n');
+      fprintf(fp,'##   EDITING THIS FILE BY HAND IS NOT RECOMMENDED    ##\n');
+      fprintf(fp,'## ------------------------------------------------- ##\n\n');
+      
+      % write default background color  % todo: get this from urdf?
+      fprintf(fp,'Background {\n\tskyColor 1 1 1\n}\n\n');
+      
+      % write default viewpoint % todo: get this from urdf?
+      fprintf(fp,'Transform {\n\tscale 1 -1 1\n\tchildren DEF front Viewpoint {\n\t\tdescription "front"\n\t\tposition 0 -2 0\n\t\torientation 1 0 0 1.5708\n\t}\n}\n\n');
+      
+      % loop through bodies
+      for i=1:length(model.body)
+        if isempty(model.body(i).parent)
+          writeWRLBodyAndChildren(model,model.body(i),fp);
+        end
+      end
+    end
+    
+  end
+  
+  methods (Access=private)
+    function writeWRLBodyAndChildren(model,body,fp,td)
+      if (nargin<4) td=0; end % tab depth
+      function tabprintf(varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
+      
+      % if there is a a joint between the parent and the body, add it here
+      if ~isempty(body.parent)
+        td = writeWRLJoint(body,fp,td);
+      else
+        tabprintf('Transform {\n'); td=td+1;
+      end
+      tabprintf('children [\n'); td=td+1;
+      td = writeWRLBody(body,fp,td);
+      for i=1:length(model.body)
+        if (model.body(i).parent == body)
+          writeWRLBodyAndChildren(model,model.body(i),fp,td);
+        end
+      end
+      td=td-1; tabprintf(']\n');
+      td=td-1; tabprintf('}\n'); % end Transform {
+    end
   end
 end

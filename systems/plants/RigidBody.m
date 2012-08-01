@@ -5,6 +5,7 @@ classdef RigidBody < handle
     linkname=''  % name of the associated link
     I=zeros(3);  % spatial mass/inertia
     geometry={}  % geometry (compatible w/ patch).  see parseVisual below.
+    wrlgeometry=''; % geometry (compatible w/ wrl).  see parseVisual below.
     dofnum=0     % the index in the state vector corresponding to this joint
     ground_contact=[];  % a 2xn matrix with [x;z] positions of contact points
     
@@ -93,6 +94,15 @@ classdef RigidBody < handle
       zpts = [];
       c = .7*[1 1 1];
       
+      if isempty(body.linkname)
+        wrl_transform_str = 'Transform {\n';
+      else
+        wrl_transform_str = sprintf('DEF %s Transform {\n',body.linkname);
+      end
+      
+      wrl_shape_str='';
+      wrl_appearance_str='';
+      
       % first pass:
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
@@ -105,18 +115,23 @@ classdef RigidBody < handle
               switch (lower(char(thisAt.getName())))
                 case 'xyz'
                   x0 = reshape(str2num(char(thisAt.getValue())),3,1);
+                  wrl_transform_str = sprintf('%s\ttranslation %f %f %f\n',wrl_transform_str,x0(1),x0(2),x0(3));
                 case 'rpy'
                   rpy=str2num(char(thisNode.getAttribute('rpy')));
+                  wrl_transform_str = [wrl_transform_str,'\trotation',sprintf(' %f %f %f %f',rpy2axis(rpy)),'\n'];
               end
             end
           case {'geometry','#text','#comment'}
             % intentionally fall through
           case 'material'
             c = parseMaterial(model,thisNode,options);
+            wrl_appearance_str = sprintf('appearance Appearance { material Material { diffuseColor %f %f %f } }\n',c(1),c(2),c(3)); 
           otherwise
             warning([char(thisNode.getNodeName()),' is not a supported element of robot/link/visual.']);
         end
       end
+      
+      wrl_transform_str = [wrl_transform_str,'\tchildren [\n'];
       
       % second pass: through and handle the geometry (after the
       % coordinates)
@@ -125,7 +140,8 @@ classdef RigidBody < handle
         switch (lower(char(thisNode.getNodeName())))
           case 'geometry'
             if (~isempty(xpts)) error('multiple geometries not handled yet (but would be trivial)'); end
-            [xpts,zpts] = RigidBody.parseGeometry(thisNode,x0,rpy,options);
+            [xpts,zpts,wrlstr] = RigidBody.parseGeometry(thisNode,x0,rpy,wrl_appearance_str,options);
+            wrl_shape_str = [wrl_shape_str,wrlstr];
         end
       end
       
@@ -139,6 +155,7 @@ classdef RigidBody < handle
       body.geometry{1}.z = zpts;
       body.geometry{1}.c = c;
       
+      body.wrlgeometry = [wrl_transform_str,wrl_shape_str,'\t]\n}'];
     end
     
     function body = parseCollision(body,node,options)
@@ -203,16 +220,37 @@ classdef RigidBody < handle
       b = leastCommonAncestor(body1.parent,body2);
     end
     
+    function td=writeWRLJoint(body,fp,td)
+      function tabprintf(varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
+      if isempty(body.jointname)
+        tabprintf('Transform {\n'); td=td+1;
+      else
+        tabprintf('DEF %s Transform {\n',body.jointname); td=td+1;
+      end
+      if (body.jcode==1) % then it's a pin joint (only allowed about the y axis, so far
+        tabprintf('rotation 0 1 0 0\n'); 
+      elseif (body.jcode==2) % then it's a slider
+        tabprintf('translation 0 0 0\n');
+      end
+    end
+    
+    function td=writeWRLBody(body,fp,td)
+      t=''; 
+      for i=1:td, t=[t,'\t']; end
+      s = regexprep(body.wrlgeometry,'\n',['\n',t]);
+      fprintf(fp,[t,s,'\n']);
+    end
   end
   
   methods (Static)
-    function [x,z] = parseGeometry(node,x0,rpy,options)
+    function [x,z,wrlstr] = parseGeometry(node,x0,rpy,wrl_appearance_str,options)
       % param node DOM node for the geometry block
       % param X coordinate transform for the current body
       % option twoD true implies that I can safely ignore y.
       x=[];z=[];
       T = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),x0]; % intentially leave off the bottom row [0,0,0,1];
       
+      wrlstr='';
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
         thisNode = childNodes.item(i-1);
@@ -224,6 +262,8 @@ classdef RigidBody < handle
             cx = s(1)/2*[-1 1 1 -1 -1 1 1 -1];
             cy = s(2)/2*[1 1 1 1 -1 -1 -1 -1];
             cz = s(3)/2*[1 1 -1 -1 -1 -1 1 1];
+
+            wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry Box { size %f %f %f }\n\t%s}\n',s(1),s(2),s(3),wrl_appearance_str)];
             
           case 'cylinder'
             r = str2num(char(thisNode.getAttribute('radius')));
@@ -239,6 +279,10 @@ classdef RigidBody < handle
               error('not implemented yet');
             end
             
+            % default axis for cylinder in urdf is the z-axis, but
+            % the default in vrml is the y-axis. 
+            wrlstr=[wrlstr,sprintf('Transform {\n\trotation 1 0 0 1.5708\n\tchildren Shape {\n\t\tgeometry Cylinder {\n\t\t\theight %f\n\t\t\tradius %f\n\t\t}\n\t\t%s\n\t}\n}\n',l,r,wrl_appearance_str)];
+            
           case 'sphere'
             r = str2num(char(thisNode.getAttribute('radius')));
             if (r==0)
@@ -248,6 +292,8 @@ classdef RigidBody < handle
               cx = r*cos(theta);
               cy = 0*theta;
               cz = r*sin(theta);
+              
+              wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry Sphere { radius %f }\n\t%s}\n',r,wrl_appearance_str)];
             end
           case {'#text','#comment'}
             % intentionally blank
@@ -272,5 +318,6 @@ classdef RigidBody < handle
       end
       
     end
+    
   end
 end
