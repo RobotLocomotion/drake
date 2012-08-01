@@ -127,6 +127,10 @@ classdef PlanarRigidBodyManipulator < Manipulator
     function v=constructVisualizer(obj)
       v = PlanarRigidBodyVisualizer(obj.getStateFrame,obj.model);
     end
+    
+    function v=constructWRLVisualizer(obj)
+      v = PlanarRigidBodyWRLVisualizer(obj.getStateFrame,obj.model);
+    end
   end
   
 end
