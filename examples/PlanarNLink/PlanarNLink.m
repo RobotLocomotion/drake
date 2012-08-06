@@ -53,7 +53,9 @@ function model=addLink(model,mass,len,radius)
     parentlen=-min(body.parent.geometry{1}.z);
     body.Xtree = Xpln(0,[0;-parentlen]);
     body.Ttree = eye(3);  body.Ttree(2,3)=-parentlen;
-    
+  else
+    body.Xtree = eye(3);
+    body.Ttree = eye(3);
   end
   body.damping=.1;
   

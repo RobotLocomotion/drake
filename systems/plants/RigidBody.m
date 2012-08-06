@@ -167,45 +167,25 @@ classdef RigidBody < handle
     function body = parseCollision(body,node,options)
       x0 = zeros(3,1);
       rpy = zeros(3,1);
-      xpts = [];
-      zpts = [];
-      
-      % first pass:
-      childNodes = node.getChildNodes();
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        switch (lower(char(thisNode.getNodeName())))
-          case 'origin'
-            at = thisNode.getAttributes();
-            for j=1:at.getLength()
-              thisAt = at.item(j-1);
-              switch (lower(char(thisAt.getName())))
-                case 'xyz'
-                  x0 = reshape(str2num(char(thisAt.getValue())),3,1);
-                case 'rpy'
-                  rpy=str2num(char(thisNode.getAttribute('rpy')));
-              end
-            end
-          case {'geometry','#text','#comment'}
-            % intentionally fall through
-          otherwise
-            warning([char(thisNode.getNodeName()),' is not a supported element of robot/link/collision.']);
+      xyz=zeros(3,1); rpy=zeros(3,1);
+      origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
+      if ~isempty(origin)
+        if origin.hasAttribute('xyz')
+          xyz = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
+        end
+        if origin.hasAttribute('rpy')
+          rpy = reshape(str2num(char(origin.getAttribute('rpy'))),3,1);
         end
       end
       
-      % second pass: through and handle the geometry (after the
-      % coordinates)
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        switch (lower(char(thisNode.getNodeName())))
-          case 'geometry'
-            if (~isempty(xpts)) error('multiple geometries not handled yet (but would be trivial)'); end
-            [xpts,zpts] = RigidBody.parseGeometry(thisNode,x0,rpy,options);
+      if options.twoD  % todo: implement collisions in 3D
+        % note: could support multiple geometry elements
+        geomnode = node.getElementsByTagName('geometry').item(0);
+        if ~isempty(geomnode)
+          [xpts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,options);
+          body.ground_contact=[xpts; zpts];
         end
       end
-      
-      body.ground_contact = [xpts; zpts];
-
     end
       
     function b=leastCommonAncestor(body1,body2)

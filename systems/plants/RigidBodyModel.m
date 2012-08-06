@@ -391,8 +391,8 @@ classdef RigidBodyModel
       axis=[1;0;0];  % default according to URDF documentation
       axisnode = node.getElementsByTagName('axis').item(0);
       if ~isempty(axisnode)
-        if origin.hasAttribute('xyz')
-          axis = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
+        if axisnode.hasAttribute('xyz')
+          axis = reshape(str2num(char(axisnode.getAttribute('xyz'))),3,1);
           axis = axis/(norm(axis)+eps); % normalize
         end
       end
@@ -460,7 +460,7 @@ classdef RigidBodyModel
         child.Ttree = [rotmat(-rpy(2)),xyz([1 3]); 0,0,1];  % note: theta -> -theta from Michael
       else % 3D
         child.Xtree = Xrotz(rpy(3))*Xroty(rpy(2))*Xrotx(rpy(1))*Xtrans(xyz);
-        
+        child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotz(rpy(1)),xyz; 0,0,0,1];
         
         if dot(axis,[0;0;1])<1-1e-6
           % featherstone dynamics treats all joints as operating around the
