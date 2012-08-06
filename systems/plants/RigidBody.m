@@ -3,7 +3,7 @@ classdef RigidBody < handle
   properties
     % link properties
     linkname=''  % name of the associated link
-    I=zeros(3);  % spatial mass/inertia
+    I=[];  % spatial mass/inertia
     geometry={}  % geometry (compatible w/ patch).  see parseVisual below.
     wrlgeometry=''; % geometry (compatible w/ wrl).  see parseVisual below.
     dofnum=0     % the index in the state vector corresponding to this joint
@@ -12,9 +12,11 @@ classdef RigidBody < handle
     % joint properties
     jointname=''
     parent
-    jcode=-1
-    Xtree=eye(3);   % velocity space coordinate transform *from parent to this node*
-    Ttree=eye(3);   % position space coordinate transform *from this node to parent*
+    pitch=[];        % for featherstone 3D models
+    jcode=-1;        % for featherstone planar models
+    Xtree=[];   % velocity space coordinate transform *from parent to this node*
+    XtreeForChildren=[];
+    Ttree=[];   % position space coordinate transform *from this node to parent*
     wrljoint='';  % tranformation to joint coordinates in wrl syntax
     damping=0
     
@@ -22,7 +24,7 @@ classdef RigidBody < handle
     T  % transformation from this body to world coordinates
 %    X  % motion transform *from world coordinates to to this node*
 %    v  % velocity [omega; v] of this body *in this body coordinates*
-    v  % velocity [omega; v] of this body in world coordinates
+%    v  % velocity [omega; v] of this body in world coordinates
   end
   
   methods
@@ -41,50 +43,45 @@ classdef RigidBody < handle
     
     function body=parseInertial(body,node,options)
       mass = 0;
-      com = zeros(2,1);
-      theta = 0;
-      inertia = 1;
-
-      childNodes = node.getChildNodes();
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        switch (lower(char(thisNode.getNodeName())))
-          case 'origin'
-            at = thisNode.getAttributes();
-            for j=1:at.getLength()
-              thisAt = at.item(j-1);
-              switch (lower(char(thisAt.getName())))
-                case 'xyz'
-                  com = reshape(str2num(char(thisAt.getValue())),3,1);
-                  com = com([1 3]); % ignore y
-                case 'rpy'
-                  rpy=str2num(char(thisNode.getAttribute('rpy')));
-                  theta = rpy(2);
-                  if (any(rpy([1 3])))
-                    warning([obj.linkname{linknum} ,' has an inertial block with out-of-plane rotations.  these will be ignored.']);
-                  end
-              end
-            end
-          case 'mass'
-            mass = str2num(char(thisNode.getAttribute('value')));
-          case 'inertia'
-            at = thisNode.getAttributes();
-            for j=1:at.getLength()
-              thisAt = at.item(j-1);
-              switch (lower(char(thisAt.getName())))
-                case 'iyy'
-                  inertia = str2num(char(thisAt.getValue()));
-                case {'ixx','ixy','ixz','iyz','izz'}
-                  % ignore y
-              end
-            end
-          case {'#text','#comment'}
-            % intentionally empty. ok to skip these quietly.
-          otherwise
-            warning([char(thisNode.getNodeName()),' is not a supported element of robot/link/inertial.']);
+      inertia = eye(3);
+      xyz=zeros(3,1); rpy=zeros(3,1);
+      origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
+      if ~isempty(origin)
+        if origin.hasAttribute('xyz')
+          xyz = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
+        end
+        if origin.hasAttribute('rpy')
+          rpy = reshape(str2num(char(origin.getAttribute('rpy'))),3,1);
         end
       end
-      body.I=mcIp(mass,com,inertia);
+      massnode = node.getElementsByTagName('mass').item(0);
+      if ~isempty(massnode)
+        if (massnode.hasAttribute('value'))
+          mass = str2num(char(massnode.getAttribute('value')));
+        end
+      end
+      inode = node.getElementsByTagName('inertia').item(0);
+      if ~isempty(inode)
+        if inode.hasAttribute('ixx'), I(1,1)=str2num(char(inode.getAttribute('ixx'))); end
+        if inode.hasAttribute('ixy'), I(1,2)=str2num(char(inode.getAttribute('ixy'))); I(2,1)=I(1,2); end
+        if inode.hasAttribute('ixz'), I(1,3)=str2num(char(inode.getAttribute('ixz'))); I(3,1)=I(1,3); end
+        if inode.hasAttribute('iyy'), I(2,2)=str2num(char(inode.getAttribute('iyy'))); end
+        if inode.hasAttribute('iyz'), I(2,3)=str2num(char(inode.getAttribute('iyz'))); I(3,2)=I(2,3); end
+        if inode.hasAttribute('izz'), I(3,3)=str2num(char(inode.getAttribute('izz'))); end
+      end      
+
+      if (options.twoD)
+        if any(rpy)
+          error('rpy in inertia block not implemented yet (but would be easy)');
+        end
+        body.I = mcIp(mass,xyz([1 3]),I(2,2));
+      else
+        if any(rpy)
+          error('rpy in inertia block not implemented yet (but would be easy)');
+        end
+        body.I = mcI(mass,xyz,I);
+      end
+        
     end
 
     function body = parseVisual(body,node,model,options)
@@ -281,7 +278,7 @@ classdef RigidBody < handle
             elseif (options.twoD && abs(mod(rpy(1),pi)-pi/2)<1e-4) % then it just looks like a circle
               error('not implemented yet');
             else  % full cylinder geometry
-              error('not implemented yet');
+              warning('full cylinder geometry not implemented yet');
             end
             
           case 'sphere'

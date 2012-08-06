@@ -328,6 +328,12 @@ classdef RigidBodyModel
     function model=parseLink(model,node,options)
       body = RigidBody();
       body.linkname=char(node.getAttribute('name'));
+      
+      if (options.twoD)
+        body.I = zeros(3);
+      else
+        body.I = zeros(6); % equivalent to mcI(0,zeros(3,1),zeros(3));
+      end
 
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
@@ -369,100 +375,117 @@ classdef RigidBodyModel
       child.parent = parent;
       
       type = char(node.getAttribute('type'));
-      switch (lower(type))
-        case {'revolute','continuous'}
-          child.jcode=1;
-        case 'prismatic'
-          child.jcode=2;
-        case 'planar'
-          % create two links with sliders, then finish this function with
-          % the first of these joints (which need to catch the kinematics)
-          body1=RigidBody();
-          body1.linkname=[child.jointname,'_x'];
-          body1.jointname = body1.linkname;
-          body1.jcode=2;
-          body1.parent=parent;
-          body2=RigidBody();
-          body2.linkname=[child.jointname,'_z'];
-          body2.jointname = body2.linkname;
-          body2.jcode=3;
-          body2.parent = body1;
-          child.jcode=1;
-          child.parent = body2;
-          model.body=[model.body,body1,body2];
-          
-          child=body1;
-        case 'fixed'
-          child.jcode=10;
-        otherwise
-          error(['joint type ',type,' not supported (yet?)']);
-      end
-      
-      xz=zeros(2,1);
-      theta=0;
-      
+      xyz=zeros(3,1); rpy=zeros(3,1);
       wrl_joint_origin='';
-      
-      childNodes = node.getChildNodes();
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        switch (lower(char(thisNode.getNodeName())))
-          case 'origin'
-            at = thisNode.getAttributes();
-            for j=1:at.getLength()
-              thisAt = at.item(j-1);
-              switch (lower(char(thisAt.getName())))
-                case 'xyz'
-                  xyz = reshape(str2num(char(thisAt.getValue())),3,1);
-                  wrl_joint_origin=[wrl_joint_origin,sprintf('\ttranslation %f %f %f\n',xyz(1),xyz(2),xyz(3))];
-                  xz = xyz([1 3]); % ignore y
-                case 'rpy'
-                  rpy=str2num(char(thisNode.getAttribute('rpy')));
-                  wrl_joint_origin=[wrl_joint_origin,sprintf('\trotation %f %f %f %f\n',rpy2axis(rpy))];
-                  theta = rpy(2);
-              end
-            end
-          case 'axis'
-            ax = reshape(str2num(char(thisNode.getAttribute('xyz'))),3,1);
-            switch (type)  % use type instead of jcode so that I remember when it was planar
-              case {'revolute','continuous','planar'}
-                if options.twoD && (abs((ax'*[0; 1; 0]) / (ax'*ax) - 1)>1e-6), error('for 2D processing, revolute and continuous joints must be aligned with [0 1 0]'); end
-              case 'prismatic'
-                if (abs((ax'*[1; 0; 0]) / (ax'*ax) - 1)>1e-6)
-                  if (abs((ax'*[0; 0; 1]) / (ax'*ax) - 1)>1e-6)
-                    error('Currently prismatic joints must have their axis in the x-axis or z-axis are supported right now');
-                  else
-                    child.jcode = 3;
-                  end
-                end
-              case 'fixed'
-                % intentionally blank for fixed joints
-              otherwise
-                error('shouldn''t get here');
-            end
-          case 'dynamics'
-            at = thisNode.getAttributes();
-            for j=1:at.getLength()
-              thisAt = at.item(j-1);
-              switch (lower(char(thisAt.getName())))
-                case 'damping'
-                  child.damping = str2num(char(thisAt.getValue()));
-                otherwise
-                  warning([char(thisAt.getName()),' is not a supported attribute of robot/joint/dynamics.']);
-              end
-            end
-            
-            
-          case {'parent','child','#text','#comment'}
-            % intentionally empty. ok to skip these quietly.
-          otherwise
-            warning([char(thisNode.getNodeName()),' is not a supported element of robot/joint.']);
+      origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
+      if ~isempty(origin)
+        if origin.hasAttribute('xyz')
+          xyz = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
+          wrl_joint_origin=[wrl_joint_origin,sprintf('\ttranslation %f %f %f\n',xyz(1),xyz(2),xyz(3))];
+        end
+        if origin.hasAttribute('rpy')
+          rpy = reshape(str2num(char(origin.getAttribute('rpy'))),3,1);
+          wrl_joint_origin=[wrl_joint_origin,sprintf('\trotation %f %f %f %f\n',rpy2axis(rpy))];
+        end
+      end
+      axis=[1;0;0];  % default according to URDF documentation
+      axisnode = node.getElementsByTagName('axis').item(0);
+      if ~isempty(axisnode)
+        if origin.hasAttribute('xyz')
+          axis = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
+          axis = axis/(norm(axis)+eps); % normalize
+        end
+      end
+      damping=0;
+      dynamics = node.getElementsByTagName('dynamics').item(0);
+      if ~isempty(dynamics)
+        if dynamics.hasAttribute('damping')
+          damping = str2num(char(dynamics.getAttribute('damping')));
         end
       end
       
-      child.Xtree = Xpln(theta,xz);
-      child.Ttree = [rotmat(-theta),xz; 0,0,1];  % note: theta -> -theta from Michael
+      if (options.twoD)
+        switch (lower(type))
+          case {'revolute','continuous'}
+            child.jcode=1;
 
+          case 'prismatic'
+            if dot(axis,[1;0;0])>(1-1e-6)
+              child.jcode=2;
+            elseif dot(axis,[0;0;1])>(1-1e-6)
+              child.jcode=3;
+            else
+              error('Currently only prismatic joints with their axis in the x-axis or z-axis are supported right now (twoD assumes x-z plane)');
+            end              
+            
+          case 'planar'
+            % create two links with sliders, then finish this function with
+            % the first of these joints (which need to catch the kinematics)
+            body1=RigidBody();
+            body1.linkname=[child.jointname,'_x'];
+            body1.jointname = body1.linkname;
+            body1.jcode=2;
+            body1.I = zeros(3);
+            body1.damping=damping;
+            body1.parent=parent;
+            body2=RigidBody();
+            body2.linkname=[child.jointname,'_z'];
+            body2.jointname = body2.linkname;
+            body2.jcode=3;
+            body2.I = zeros(3);
+            body2.damping=damping;
+            body2.parent = body1;
+            child.jcode=1;
+            child.pitch=0;
+            child.parent = body2;
+            model.body=[model.body,body1,body2];
+            
+            child=body1;
+
+          case 'fixed'
+            child.jcode=10;
+            
+          otherwise
+            error(['joint type ',type,' not supported in twoD mode']);
+        end
+        
+        if abs(rpy(1))>1e-4 || abs(rpy(3)>1e-4) 
+          error('joints out of the x-z plane are not supported yet');
+          % note: i should eventually support PI*n, and prismatic joints on
+          % the y axis if rpy rotates it into the z axis, etc.  but I should get pretty far with this.
+        end
+        
+        child.Xtree = Xpln(rpy(2),xyz([1 3]));
+        child.damping = damping;
+        child.Ttree = [rotmat(-rpy(2)),xyz([1 3]); 0,0,1];  % note: theta -> -theta from Michael
+      else % 3D
+        child.Xtree = Xrotz(rpy(3))*Xroty(rpy(2))*Xrotx(rpy(1))*Xtrans(xyz);
+        
+        
+        if dot(axis,[0;0;1])<1-1e-6
+          % featherstone dynamics treats all joints as operating around the
+          % z-axis.  so I have to add a transform from the origin of this
+          % link to align the joint axis with the z-axis, update the spatial
+          % inertia of this joint, and then rotate back to keep the child
+          % frames intact.
+          warning('non-z-axis joints not implemented yet');  
+        end
+        
+        switch lower(type)
+          case {'revolute','continuous'}
+            child.pitch = 0;
+            
+          case 'prismatic'
+            child.pitch = inf;
+            
+          case 'fixed'
+            child.jcode = 10;
+            
+          otherwise
+            error(['joint type ',type,' not supported (yet?)']);
+        end
+      end
+      
       if ~isempty(wrl_joint_origin)
         child.wrljoint = wrl_joint_origin;
       end
