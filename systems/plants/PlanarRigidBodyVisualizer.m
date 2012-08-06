@@ -11,10 +11,12 @@ classdef PlanarRigidBodyVisualizer < Visualizer
     function obj = PlanarRigidBodyVisualizer(frame,model)
       obj=obj@Visualizer(frame);
       
+      options=struct('twoD',true);
       if (nargin<1)
-        urdf_filename=uigetfile('*.urdf');
+        [filename,pathname]=uigetfile('*.urdf');
+        obj.model = RigidBodyModel.parseURDF(fullfile(pathname,filename),options);
       elseif ischar(model)
-        obj.model = RigidBodyModel.parseURDF(model);
+        obj.model = RigidBodyModel.parseURDF(model,options);
       elseif isa(model,'RigidBodyModel')
         obj.model = model;
       else
