@@ -1,18 +1,15 @@
-classdef PlanarRigidBodyWRLVisualizer < Visualizer 
+classdef RigidBodyWRLVisualizer < Visualizer 
   % Loads a URDF file and implements the draw function.  
   % You could think of this as a very limited version of ROS' RViz. 
   % 
-  % This is the planar version of the visualizer.  The y-axis of the 
-  % URDF file is essentially ignored.  Joints that act out of
-  % plane are not supported.  All geometry out of plane is projected onto
-  % the plane.
   
   methods
-    function obj = PlanarRigidBodyWRLVisualizer(frame,model)
+    function obj = RigidBodyWRLVisualizer(frame,model)
       obj=obj@Visualizer(frame);
       
       if (nargin<1)
-        urdf_filename=uigetfile('*.urdf');
+        [filename,pathname]=uigetfile('*.urdf');
+        obj.model = RigidBodyModel.parseURDF(fullfile(pathname,filename));
       elseif ischar(model)
         obj.model = RigidBodyModel.parseURDF(model);
       elseif isa(model,'RigidBodyModel')

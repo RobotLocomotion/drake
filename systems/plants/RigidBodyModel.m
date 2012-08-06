@@ -31,11 +31,9 @@ classdef RigidBodyModel
       % and Dynamics library, with additional robotlib tags added.
       
       if (nargin<2) options = struct(); end
-      if (~isfield(options,'twoD')) options.twoD = true; end
+      if (~isfield(options,'twoD')) options.twoD = false; end
       if (~isfield(options,'inertial')) options.inertial = true; end
       if (~isfield(options,'visual')) options.visual = true; end
-      
-      if (~options.twoD) error('3D not implemented yet'); end
       
       %disp(['Parsing ', urdf_filename]);
       urdf = xmlread(urdf_filename);
@@ -428,7 +426,7 @@ classdef RigidBodyModel
             ax = reshape(str2num(char(thisNode.getAttribute('xyz'))),3,1);
             switch (type)  % use type instead of jcode so that I remember when it was planar
               case {'revolute','continuous','planar'}
-                if (abs((ax'*[0; 1; 0]) / (ax'*ax) - 1)>1e-6) error('for 2D processing, revolute and continuous joints must be aligned with [0 1 0]'); end
+                if options.twoD && (abs((ax'*[0; 1; 0]) / (ax'*ax) - 1)>1e-6), error('for 2D processing, revolute and continuous joints must be aligned with [0 1 0]'); end
               case 'prismatic'
                 if (abs((ax'*[1; 0; 0]) / (ax'*ax) - 1)>1e-6)
                   if (abs((ax'*[0; 0; 1]) / (ax'*ax) - 1)>1e-6)
