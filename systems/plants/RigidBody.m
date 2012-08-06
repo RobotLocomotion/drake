@@ -142,9 +142,11 @@ classdef RigidBody < handle
         thisNode = childNodes.item(i-1);
         switch (lower(char(thisNode.getNodeName())))
           case 'geometry'
-            if (~isempty(xpts)) error('multiple geometries not handled yet (but would be trivial)'); end
-            [xpts,zpts,wrlstr] = RigidBody.parseGeometry(thisNode,x0,rpy,wrl_appearance_str,options);
-            wrl_shape_str = [wrl_shape_str,wrlstr];
+            if (options.twoD)
+              if (~isempty(xpts)) error('multiple geometries not handled yet (but would be trivial)'); end
+              [xpts,zpts] = RigidBody.parseGeometry(thisNode,x0,rpy,options);
+            end
+            wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(thisNode,wrl_appearance_str)];
         end
       end
       
@@ -249,14 +251,13 @@ classdef RigidBody < handle
   end
   
   methods (Static)
-    function [x,z,wrlstr] = parseGeometry(node,x0,rpy,wrl_appearance_str,options)
+    function [x,z] = parseGeometry(node,x0,rpy,options)
       % param node DOM node for the geometry block
       % param X coordinate transform for the current body
       % option twoD true implies that I can safely ignore y.
       x=[];z=[];
       T = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),x0]; % intentially leave off the bottom row [0,0,0,1];
       
-      wrlstr='';
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
         thisNode = childNodes.item(i-1);
@@ -268,8 +269,6 @@ classdef RigidBody < handle
             cx = s(1)/2*[-1 1 1 -1 -1 1 1 -1];
             cy = s(2)/2*[1 1 1 1 -1 -1 -1 -1];
             cz = s(3)/2*[1 1 -1 -1 -1 -1 1 1];
-
-            wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry Box { size %f %f %f }\n\t%s}\n',s(1),s(2),s(3),wrl_appearance_str)];
             
           case 'cylinder'
             r = str2num(char(thisNode.getAttribute('radius')));
@@ -285,10 +284,6 @@ classdef RigidBody < handle
               error('not implemented yet');
             end
             
-            % default axis for cylinder in urdf is the z-axis, but
-            % the default in vrml is the y-axis. 
-            wrlstr=[wrlstr,sprintf('Transform {\n\trotation 1 0 0 1.5708\n\tchildren Shape {\n\t\tgeometry Cylinder {\n\t\t\theight %f\n\t\t\tradius %f\n\t\t}\n\t\t%s\n\t}\n}\n',l,r,wrl_appearance_str)];
-            
           case 'sphere'
             r = str2num(char(thisNode.getAttribute('radius')));
             if (r==0)
@@ -299,7 +294,6 @@ classdef RigidBody < handle
               cy = 0*theta;
               cz = r*sin(theta);
               
-              wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry Sphere { radius %f }\n\t%s}\n',r,wrl_appearance_str)];
             end
           case {'#text','#comment'}
             % intentionally blank
@@ -320,6 +314,40 @@ classdef RigidBody < handle
             i=1;
           end
           x=pts(1,i)';z=pts(3,i)';
+        end
+      end
+      
+    end
+
+    function wrlstr = parseWRLGeometry(node,wrl_appearance_str)
+      % param node DOM node for the geometry block
+      % param X coordinate transform for the current body
+      
+      wrlstr='';
+      childNodes = node.getChildNodes();
+      for i=1:childNodes.getLength()
+        thisNode = childNodes.item(i-1);
+        switch (lower(char(thisNode.getNodeName())))
+          case 'box'
+            s = str2num(char(thisNode.getAttribute('size')));
+            wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry Box { size %f %f %f }\n\t%s}\n',s(1),s(2),s(3),wrl_appearance_str)];
+            
+          case 'cylinder'
+            r = str2num(char(thisNode.getAttribute('radius')));
+            l = str2num(char(thisNode.getAttribute('length')));
+            
+            % default axis for cylinder in urdf is the z-axis, but
+            % the default in vrml is the y-axis. 
+            wrlstr=[wrlstr,sprintf('Transform {\n\trotation 1 0 0 1.5708\n\tchildren Shape {\n\t\tgeometry Cylinder {\n\t\t\theight %f\n\t\t\tradius %f\n\t\t}\n\t\t%s\n\t}\n}\n',l,r,wrl_appearance_str)];
+            
+          case 'sphere'
+            r = str2num(char(thisNode.getAttribute('radius')));
+            wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry Sphere { radius %f }\n\t%s}\n',r,wrl_appearance_str)];
+
+          case {'#text','#comment'}
+            % intentionally blank
+          otherwise
+            warning([char(thisNode.getNodeName()),' is not a supported element of robot/link/visual/material.']);
         end
       end
       
