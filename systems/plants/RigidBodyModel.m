@@ -457,7 +457,7 @@ classdef RigidBodyModel
         
         child.Xtree = Xpln(rpy(2),xyz([1 3]));
         child.damping = damping;
-        child.Ttree = [rotmat(-rpy(2)),xyz([1 3]); 0,0,1];  % note: theta -> -theta from Michael
+        child.Ttree = [rotmat(rpy(2)),xyz([1 3]); 0,0,1];  
       else % 3D
         child.Xtree = Xrotz(rpy(3))*Xroty(rpy(2))*Xrotx(rpy(1))*Xtrans(xyz);
         child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotz(rpy(1)),xyz; 0,0,0,1];
