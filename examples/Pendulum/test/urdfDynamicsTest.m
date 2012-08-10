@@ -2,22 +2,18 @@ function urdfDynamicsTest
 
 oldpath=addpath('..');
 p_orig = PendulumPlant;
-p_urdf = PlanarRigidBodyManipulator('../Pendulum.urdf');
+p_urdf_2D = PlanarRigidBodyManipulator('../Pendulum.urdf');
+p_urdf_3D = RigidBodyManipulator('../Pendulum.urdf');
 
 for i=1:25
   t = rand;
   x = randn(2,1);
   u = randn;
     
-  xdoterr = p_urdf.dynamics(t,x,u) - p_orig.dynamics(t,x,u);
-  if (any(abs(xdoterr)>1e-5))
-    t
-    x
-    u
-    p_urdf.dynamics(t,x,u)
-    p_orig.dynamics(t,x,u)
-    error('dynamics don''t match');
-  end
+  xdot = p_orig.dynamics(t,x,u);
+  valuecheck(p_urdf_2D.dynamics(t,x,u), xdot);
+  valuecheck(p_urdf_3D.dynamics(t,x,u), xdot);
+  
 end
 
 path(oldpath);

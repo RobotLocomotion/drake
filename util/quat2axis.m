@@ -5,9 +5,9 @@ function a=quat2axis(q)
 typecheck(q,'numeric');
 sizecheck(q,4);
 
-s = sqrt(1-q(4)^2)+eps;
-a = q(1:3)/s;
-a(4) = 2*acos(q(4));
+s = sqrt(1-q(1)^2)+eps;
+a = q(2:4)/s;
+a(4) = 2*acos(q(1));
 
 
 

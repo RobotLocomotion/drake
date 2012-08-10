@@ -176,13 +176,7 @@ classdef RigidBodyModel
         b=model.body(inds(i));
         m.parent(i) = b.parent.dofnum;
         m.pitch(i) = b.pitch;
-
-        % todo: rotate into joint axis and out of joint axis here
-        if ~isequal(b.joint_axis,[0;0;1])
-          warning('extracted featherstone model is wrong here');
-        end
-        
-        m.Xtree{i} = b.Xtree;
+        m.Xtree{i} = inv(b.parent.X_joint_to_body)*b.Xtree*b.X_joint_to_body;
         m.I{i} = b.I;
         m.damping(i) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
       end
@@ -206,11 +200,6 @@ classdef RigidBodyModel
         if (any(any(body.I))) 
           % same as the composite inertia calculation in HandC.m
           parent.I = parent.I + body.Xtree' * body.I * body.Xtree;
-        end
-
-        % todo: rotate into joint axis and out of joint axis here
-        if ~isequal(body.joint_axis,[0;0;1])
-          warning('need to implement this, too');
         end
         
         % add wrl geometry into parent
@@ -342,7 +331,9 @@ classdef RigidBodyModel
         % link to align the joint axis with the z-axis, update the spatial
         % inertia of this joint, and then rotate back to keep the child
         % frames intact.
-        warning('non-z-axis joints not implemented yet');
+        axis_angle = [cross([0;0;1],axis); acos(dot([0;0;1],axis))]; % both are already normalized
+        jointrpy = quat2rpy(axis2quat(axis_angle));
+        child.X_joint_to_body=Xrotz(jointrpy(3))*Xroty(jointrpy(2))*Xrotx(jointrpy(1));
       end
       
       switch lower(type)
