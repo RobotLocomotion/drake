@@ -177,7 +177,7 @@ classdef RigidBodyModel
         m.parent(i) = b.parent.dofnum;
         m.pitch(i) = b.pitch;
         m.Xtree{i} = inv(b.parent.X_joint_to_body)*b.Xtree*b.X_joint_to_body;
-        m.I{i} = b.I;
+        m.I{i} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
         m.damping(i) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
       end
       model.featherstone = m;
@@ -325,13 +325,13 @@ classdef RigidBodyModel
       child.Xtree = Xrotz(rpy(3))*Xroty(rpy(2))*Xrotx(rpy(1))*Xtrans(xyz);
       child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotz(rpy(1)),xyz; 0,0,0,1];
       
-      if dot(axis,[0;0;1])<1-1e-6
+      if ~strcmp(lower(type),'fixed') && dot(axis,[0;0;1])<1-1e-6
         % featherstone dynamics treats all joints as operating around the
         % z-axis.  so I have to add a transform from the origin of this
         % link to align the joint axis with the z-axis, update the spatial
         % inertia of this joint, and then rotate back to keep the child
-        % frames intact.
-        axis_angle = [cross([0;0;1],axis); acos(dot([0;0;1],axis))]; % both are already normalized
+        % frames intact.  this happens in extractFeatherstone
+        axis_angle = [cross([0;0;1],axis); atan2(cross([0;0;1],axis),dot([0;0;1],axis))]; % both are already normalized
         jointrpy = quat2rpy(axis2quat(axis_angle));
         child.X_joint_to_body=Xrotz(jointrpy(3))*Xroty(jointrpy(2))*Xrotx(jointrpy(1));
       end
@@ -339,9 +339,11 @@ classdef RigidBodyModel
       switch lower(type)
         case {'revolute','continuous'}
           child.pitch = 0;
+          child.damping = damping;
           
         case 'prismatic'
           child.pitch = inf;
+          child.damping = damping;
           
         case 'fixed'
           child.pitch = nan;
