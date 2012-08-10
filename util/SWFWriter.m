@@ -24,8 +24,13 @@ end
 methods
   function obj = SWFWriter(filename)
     if (nargin<1)
-      [filename,pathname] = uiputfile('*.swf','Save playback to SWF');
-      filename = [pathname,'/',filename];
+      [filename,pathname,filterindex] = uiputfile('*.swf','Save playback to SWF');
+      % check for cancel button or dialog close
+      if (filterindex <= 0)
+          % user canceled or closed the dialog
+          error('User canceled SWF creation.');
+      end
+      filename = fullfile(pathname,filename);
     end
     
     % remove .swf if it's on there (it will be added later)
@@ -55,10 +60,10 @@ methods
     obj.bbox=[min(bbox(:,1:2)),max(bbox(:,3:4))];
     
     % set common bounding box
-    cmd{1}=['ls ', obj.dirname,'/*.eps | xargs sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(obj.bbox),'/g" -i ""'];
+    cmd{1}=['ls ', obj.dirname,'/*.eps | xargs -P 8 sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(obj.bbox),'/g" -i ""'];
     
     % convert eps to pdf
-    cmd{2}=['ls ', obj.dirname,'/*.eps | xargs -n1 epstopdf'];
+    cmd{2}=['ls ', obj.dirname,'/*.eps | xargs -P 8 -n1 epstopdf'];
 
     % merge pdfs
     cmd{3}=['pdftk `ls ',obj.dirname,'/*.pdf` cat output ',obj.dirname,'/merge.pdf'];
