@@ -14,13 +14,13 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       options=struct('twoD',true);
       if (nargin<1)
         [filename,pathname]=uigetfile('*.urdf');
-        obj.model = RigidBodyModel.parseURDF(fullfile(pathname,filename),options);
+        obj.model = PlanarRigidBodyModel(fullfile(pathname,filename),options);
       elseif ischar(model)
-        obj.model = RigidBodyModel.parseURDF(model,options);
-      elseif isa(model,'RigidBodyModel')
+        obj.model = PlanarRigidBodyModel(model,options);
+      elseif isa(model,'PlanarRigidBodyModel')
         obj.model = model;
       else
-        error('model must be a RigidBodyModel or the name of a urdf file'); 
+        error('model must be a PlanarRigidBodyModel or the name of a urdf file'); 
       end
     end
     

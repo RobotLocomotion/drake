@@ -6,7 +6,7 @@ classdef RigidBodyModel
     actuator = [];  % cell array of RigidBodyActuator objects
     loop=[];        % cell array RigidBodyLoop objects
 
-    gravity=[0;-9.81];
+    gravity=[0;0;-9.81];
     
     B = [];         
     featherstone = [];
@@ -14,14 +14,13 @@ classdef RigidBodyModel
     material=[];
   end
 
-  methods (Static=true)
+  methods 
     
-    function model = parseURDF(urdf_filename,options)
-      % Parse URDF 
+    function model = RigidBodyModel(urdf_filename,options)
+      % Parses URDF 
       %
       % @param urdf_filename filename of file to parse
       %
-      % @option twoD boolean where true means parse to 2D model, false means parse to 3D model. @default true
       % @options inertial boolean where true means parse dynamics parameters,
       % false means skip them.  @default true
       % @options visual boolean where true means parse graphics parameters, false
@@ -30,48 +29,29 @@ classdef RigidBodyModel
       % @retval model Structure compatible with the Featherstone Spatial Vector
       % and Dynamics library, with additional robotlib tags added.
       
-      if (nargin<2) options = struct(); end
-      if (~isfield(options,'twoD')) options.twoD = false; end
-      if (~isfield(options,'inertial')) options.inertial = true; end
-      if (~isfield(options,'visual')) options.visual = true; end
+      if (nargin>0 && ~isempty(urdf_filename))
+        if (nargin<2) options = struct(); end
+        if (~isfield(options,'inertial')) options.inertial = true; end
+        if (~isfield(options,'visual')) options.visual = true; end
       
-      %disp(['Parsing ', urdf_filename]);
-      urdf = xmlread(urdf_filename);
-      
-      if (~urdf.hasChildNodes())
-        error('No nodes in URDF file');
-      end
-      
-      bHaveRobot=false;
-      childNodes = urdf.getChildNodes();
-      for i=1:childNodes.getLength()
-        node = childNodes.item(i-1);
-        switch (lower(char(node.getNodeName())))
-          case 'robot'
-            if (bHaveRobot)
-              warning('There are multiple robots in this urdf file.  Only loading the first one');
-            else
-              bHaveRobot=true;
-              model = RigidBodyModel.parseRobot(node,options);
-            end
-          case {'#comment','#text'}
-            % intentionally left blank
-          otherwise
-            warning(['node ',char(node.getNodeName()),' not supported']);
+        %disp(['Parsing ', urdf_filename]);
+        urdf = xmlread(urdf_filename);
+        
+        robot = urdf.getElementsByTagName('robot').item(0);
+        if isempty(robot)
+          error('there are no robots in this urdf file');
         end
+        
+        model = parseRobot(model,robot,options);
+        
+        model=compile(model,options);
       end
-      
-      if (~bHaveRobot)
-        error('didn''t find a robot in the urdf file!');
-      end
-      
     end
     
-    function model=parseRobot(node,options)
+    function model=parseRobot(model,node,options)
       % Constructs a robot from a URDF XML node 
       
       %disp(['Parsing robot ', char(node.getAttribute('name')), ' from URDF file...']);
-      model = RigidBodyModel();
       model.name = char(node.getAttribute('name'));
       
       childNodes = node.getChildNodes();
@@ -88,19 +68,12 @@ classdef RigidBodyModel
             model=parseTransmission(model,thisNode,options);
           case 'material'
             [c,model]=parseMaterial(model,thisNode,options);
-          case {'sensor','gazebo','#text','#comment'}
-            % intentionally empty. ok to skip these quietly.
           otherwise
-            warning([char(thisNode.getNodeName()),' is not a supported element of robot.']);
+            % intentionally empty.  DOM mandate that I skip others quietly
         end
       end
-      
-      model=compile(model);
     end
     
-  end
-  
-  methods 
     function newmodel = copy(model)
       % Makes a deep copy of the model
       % Since RigidBody's are handles, they must be copied more carefully.
@@ -128,7 +101,7 @@ classdef RigidBodyModel
       
     end
     
-    function model = compile(model)
+    function model = compile(model,options)
       % After parsing, compute some relevant data structures that will be
       % accessed in the dynamics and visualization
 
@@ -148,10 +121,9 @@ classdef RigidBodyModel
         end
         i=i+1;
       end
-      
-      
+            
       %% extract featherstone model structure
-      model = extractFeatherstone(model);
+      model = extractFeatherstone(model,options);
       
       %% extract B matrix
       B = sparse(model.featherstone.NB,0);
@@ -175,57 +147,21 @@ classdef RigidBodyModel
         end
       end
       
-      childNodes = node.getChildNodes();
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        switch (lower(char(thisNode.getNodeName())))
-          case 'color'
-            c = str2num(char(thisNode.getAttribute('rgba')));
-            c = c(1:3);
-          case {'texture','#text','#comment'}
-            % intentionally blank
-          otherwise
-            warning([char(thisNode.getNodeName()),' is not a supported element of robot/link/visual/material.']);
-        end
+      colornode = node.getElementsByTagName('color').item(0);
+      if ~isempty(colornode) && colornode.hasAttribute('rgba')
+        c = str2num(char(colornode.getAttribute('rgba')));
+        c = c(1:3);
       end
-      
-      model.material = [model.material,struct('name',name,'c',c)];
-    end
-    
-    function model = doKinematics(model,q,qd)
-      for i=1:length(model.body)
-        body = model.body(i);
-        if (isempty(body.parent))
-          body.T = eye(3);
-%          body.v = zeros(3,1);
-        else
-          TJ = Tjcalcp(body.jcode,q(body.dofnum));
-          [Xj,S] = jcalcp(body.jcode,q(body.dofnum));
-          body.T=body.parent.T*body.Ttree*TJ;
-%          body.v=body.parent.v + S*qd(body.dofnum) + [0; body.parent.v(1)*body.T(1:2,3)];
-        end
+
+      if ~isempty(name)
+        model.material = [model.material,struct('name',name,'c',c)];
       end
     end
-    
-    function model = doVelocities(model,q,qd)
-      error('don''t use this method.  it''s not finished yet');
-      for i=1:length(model.body)
-        body = model.body(i);
-        if (body.dofnum)
-          [ XJ, S ] = jcalcp( body.jcode, q(body.dofnum) );
-          X = XJ * body.Xtree;
-          body.v = X*body.parent.v + S*qd(body.dofnum);
-          body.X = X*body.parent.X;
-        else
-          body.v = zeros(3,1);
-          body.X = body.Xtree;
-        end
-      end
-    end
+
   end
   
   methods  % make these private?
-    function model = extractFeatherstone(model)
+    function model = extractFeatherstone(model,options)
 %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
       dof=0;inds=[];
       for i=1:length(model.body)
@@ -239,7 +175,7 @@ classdef RigidBodyModel
       for i=1:m.NB
         b=model.body(inds(i));
         m.parent(i) = b.parent.dofnum;
-        m.jcode(i) = b.jcode;
+%        m.jcode(i) = b.jcode;
         m.Xtree{i} = b.Xtree;
         m.I{i} = b.I;
         m.damping(i) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
@@ -252,7 +188,7 @@ classdef RigidBodyModel
       % inertia to their parents, and connecting their children directly to
       % their parents
 
-      fixedind = find([model.body.jcode]==10);
+      fixedind = find(isnan([model.body.pitch]));
       
       for i=fixedind(end:-1:1)  % go backwards, since it is presumably more efficient to start from the bottom of the tree
         body = model.body(i);
@@ -265,21 +201,9 @@ classdef RigidBodyModel
           % same as the composite inertia calculation in HandC.m
           parent.I = parent.I + body.Xtree' * body.I * body.Xtree;
         end
-        
-        % add geometry into parent
-        if (~isempty(body.geometry))
-          for j=1:length(body.geometry)
-            for k=1:length(body.geometry{j}.x)
-              pt0 = [body.geometry{j}.x(k); body.geometry{j}.z(k); 1];
-              pt1 = body.Ttree * pt0;  %rotation might be backwards
-              body.geometry{j}.x(k) = pt1(1);
-              body.geometry{j}.z(k) = pt1(2);
-            end
-            parent.geometry = {parent.geometry{:},body.geometry{j}};
-            
-            parent.wrlgeometry = [ parent.wrlgeometry, sprintf('\n'), body.wrlgeometry ];
-          end
-        end
+
+        % add wrl geometry into parent
+        parent.wrlgeometry = [ parent.wrlgeometry, sprintf('\n'), body.wrlgeometry ];
         
         if (~isempty(body.ground_contact))
           parent.ground_contact = [parent.ground_contact, body.Ttree(1:2,1:2)*body.ground_contact + body.Ttree(1:2,3)];
@@ -325,39 +249,25 @@ classdef RigidBodyModel
       end
     end
     
-    function model=parseLink(model,node,options)
+    function body = newBody(model)
       body = RigidBody();
+    end
+    
+    function model=parseLink(model,node,options)
+      body = newBody(model);
+      
       body.linkname=char(node.getAttribute('name'));
       
-      if (options.twoD)
-        body.I = zeros(3);
-        body.Xtree = eye(3);
-        body.Ttree = eye(3);
-      else
-        body.I = zeros(6); % equivalent to mcI(0,zeros(3,1),zeros(3));
-        body.Xtree = eye(6);
-        body.Ttree = eye(4);
+      if (options.inertial && node.getElementsByTagName('inertial').getLength()>0)
+        body = parseInertial(body,node.getElementsByTagName('inertial').item(0),options);
       end
-
-      childNodes = node.getChildNodes();
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        switch (lower(char(thisNode.getNodeName())))
-          case 'inertial'
-            if (options.inertial)
-              body=parseInertial(body,thisNode,options);
-            end
-          case 'visual'
-            if (options.visual)
-              body=parseVisual(body,thisNode,model,options);
-            end
-          case 'collision'
-            body = parseCollision(body,thisNode,options);
-          case {'#text','#comment'}
-            % intentionally empty. ok to skip these quietly.
-          otherwise
-            warning([char(thisNode.getNodeName()),' is not a supported element of robot.']);
-        end
+      
+      if (options.visual && node.getElementsByTagName('visual').getLength()>0)
+        body = parseVisual(body,node.getElementsByTagName('visual').item(0),model,options);
+      end
+      
+      if node.getElementsByTagName('collision').getLength()>0
+        body = parseCollision(body,node.getElementsByTagName('collision').item(0),options);
       end
       
       model.body=[model.body,body];
@@ -408,91 +318,32 @@ classdef RigidBodyModel
         end
       end
       
-      if (options.twoD)
-        switch (lower(type))
-          case {'revolute','continuous'}
-            child.jcode=1;
-
-          case 'prismatic'
-            if dot(axis,[1;0;0])>(1-1e-6)
-              child.jcode=2;
-            elseif dot(axis,[0;0;1])>(1-1e-6)
-              child.jcode=3;
-            else
-              error('Currently only prismatic joints with their axis in the x-axis or z-axis are supported right now (twoD assumes x-z plane)');
-            end              
-            
-          case 'planar'
-            % create two links with sliders, then finish this function with
-            % the first of these joints (which need to catch the kinematics)
-            body1=RigidBody();
-            body1.linkname=[child.jointname,'_x'];
-            body1.jointname = body1.linkname;
-            body1.jcode=2;
-            body1.I = zeros(3);
-            body1.Xtree = eye(3);
-            body1.Ttree = eye(3);
-            body1.damping=damping;
-            body1.parent=parent;
-            body2=RigidBody();
-            body2.linkname=[child.jointname,'_z'];
-            body2.jointname = body2.linkname;
-            body2.jcode=3;
-            body2.I = zeros(3);
-            body2.Xtree = eye(3);
-            body2.Ttree = eye(3);
-            body2.damping=damping;
-            body2.parent = body1;
-            child.jcode=1;
-            child.pitch=0;
-            child.parent = body2;
-            model.body=[model.body,body1,body2];
-            
-            child=body1;
-
-          case 'fixed'
-            child.jcode=10;
-            
-          otherwise
-            error(['joint type ',type,' not supported in twoD mode']);
-        end
-        
-        if abs(rpy(1))>1e-4 || abs(rpy(3)>1e-4) 
-          error('joints out of the x-z plane are not supported yet');
-          % note: i should eventually support PI*n, and prismatic joints on
-          % the y axis if rpy rotates it into the z axis, etc.  but I should get pretty far with this.
-        end
-        
-        child.Xtree = Xpln(rpy(2),xyz([1 3]));
-        child.damping = damping;
-        child.Ttree = [rotmat(rpy(2)),xyz([1 3]); 0,0,1];  
-      else % 3D
-        child.Xtree = Xrotz(rpy(3))*Xroty(rpy(2))*Xrotx(rpy(1))*Xtrans(xyz);
-        child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotz(rpy(1)),xyz; 0,0,0,1];
-        
-        if dot(axis,[0;0;1])<1-1e-6
-          % featherstone dynamics treats all joints as operating around the
-          % z-axis.  so I have to add a transform from the origin of this
-          % link to align the joint axis with the z-axis, update the spatial
-          % inertia of this joint, and then rotate back to keep the child
-          % frames intact.
-          warning('non-z-axis joints not implemented yet');  
-        end
-        
-        switch lower(type)
-          case {'revolute','continuous'}
-            child.pitch = 0;
-            
-          case 'prismatic'
-            child.pitch = inf;
-            
-          case 'fixed'
-            child.jcode = 10;
-            
-          otherwise
-            error(['joint type ',type,' not supported (yet?)']);
-        end
+      child.Xtree = Xrotz(rpy(3))*Xroty(rpy(2))*Xrotx(rpy(1))*Xtrans(xyz);
+      child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotz(rpy(1)),xyz; 0,0,0,1];
+      
+      if dot(axis,[0;0;1])<1-1e-6
+        % featherstone dynamics treats all joints as operating around the
+        % z-axis.  so I have to add a transform from the origin of this
+        % link to align the joint axis with the z-axis, update the spatial
+        % inertia of this joint, and then rotate back to keep the child
+        % frames intact.
+        warning('non-z-axis joints not implemented yet');
       end
+      
+      switch lower(type)
+        case {'revolute','continuous'}
+          child.pitch = 0;
+          
+        case 'prismatic'
+          child.pitch = inf;
+          
+        case 'fixed'
+          child.pitch = nan;
+          
+        otherwise
+          error(['joint type ',type,' not supported (yet?)']);
+      end
+      child.joint_axis = axis;
       
       if ~isempty(wrl_joint_origin)
         child.wrljoint = wrl_joint_origin;
@@ -501,6 +352,7 @@ classdef RigidBodyModel
     end
     
     function model = parseLoopJoint(model,node,options)
+      error('not updated yet');
       
       loop = RigidBodyLoop();
       loop.name = char(node.getAttribute('name'));
@@ -607,8 +459,10 @@ classdef RigidBodyModel
       % write default background color  % todo: get this from urdf?
       fprintf(fp,'Background {\n\tskyColor 1 1 1\n}\n\n');
       
-      % write default viewpoint % todo: get this from urdf?
-      fprintf(fp,'Transform {\n\tscale 1 -1 1\n\tchildren DEF side Viewpoint {\n\t\tdescription "front"\n\t\tposition 0 -2 0\n\t\torientation 1 0 0 1.5708\n\t}\n}\n\n');
+      % write default viewpoints
+      fprintf(fp,'Viewpoint {\n\tdescription "right"\n\tposition 0 -4 0\n\torientation 1 0 0 1.5708\n}\n\n');
+      fprintf(fp,'Viewpoint {\n\tdescription "front"\n\tposition 4 0 0\n\torientation 0 1 0 1.5708\n}\n\n');
+      fprintf(fp,'Viewpoint {\n\tdescription "top"\n\tposition 0 0 4\n}\n\n');
       
       % loop through bodies
       for i=1:length(model.body)
@@ -620,7 +474,7 @@ classdef RigidBodyModel
     
   end
   
-  methods (Access=private)
+  methods (Access=protected)    
     function writeWRLBodyAndChildren(model,body,fp,td)
       if (nargin<4) td=0; end % tab depth
       function tabprintf(varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end

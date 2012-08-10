@@ -3,31 +3,27 @@ classdef RigidBody < handle
   properties
     % link properties
     linkname=''  % name of the associated link
-    I=[];  % spatial mass/inertia
-    geometry={}  % geometry (compatible w/ patch).  see parseVisual below.
+    I=zeros(6);  % spatial mass/inertia
     wrlgeometry=''; % geometry (compatible w/ wrl).  see parseVisual below.
     dofnum=0     % the index in the state vector corresponding to this joint
-    ground_contact=[];  % a 2xn matrix with [x;z] positions of contact points
+    ground_contact=[];  % a 3xn matrix with [x;y;z] positions of contact points
     
     % joint properties
     jointname=''
     parent
-    pitch=[];        % for featherstone 3D models
-    jcode=-1;        % for featherstone planar models
-    Xtree=[];   % velocity space coordinate transform *from parent to this node*
-    XtreeForChildren=[];
-    Ttree=[];   % position space coordinate transform *from this node to parent*
+    pitch=0;        % for featherstone 3D models
+    joint_axis=[1;0;0]; 
+    Xtree=eye(6);   % velocity space coordinate transform *from parent to this node*
+    Ttree=eye(4);   % position space coordinate transform *from this node to parent*
     wrljoint='';  % tranformation to joint coordinates in wrl syntax
-    damping=0
+    damping=0;
     
     % dynamic properties (e.g. state at runtime)
     T  % transformation from this body to world coordinates
-%    X  % motion transform *from world coordinates to to this node*
-%    v  % velocity [omega; v] of this body *in this body coordinates*
-%    v  % velocity [omega; v] of this body in world coordinates
+    v  % velocity [omega; v] of this body in world coordinates
   end
   
-  methods
+  methods    
     function newbody = copy(body)
       % makes a shallow copy of the body
       % note that this functionality is in matlab.mixin.Copyable in newer
@@ -43,7 +39,7 @@ classdef RigidBody < handle
     
     function body=parseInertial(body,node,options)
       mass = 0;
-      inertia = eye(3);
+      I = eye(3);
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
@@ -70,24 +66,14 @@ classdef RigidBody < handle
         if inode.hasAttribute('izz'), I(3,3)=str2num(char(inode.getAttribute('izz'))); end
       end      
 
-      if (options.twoD)
-        if any(rpy)
-          error('rpy in inertia block not implemented yet (but would be easy)');
-        end
-        body.I = mcIp(mass,xyz([1 3]),I(2,2));
-      else
-        if any(rpy)
-          error('rpy in inertia block not implemented yet (but would be easy)');
-        end
-        body.I = mcI(mass,xyz,I);
+      if any(rpy)
+        error('rpy in inertia block not implemented yet (but would be easy)');
       end
-        
+      body.I = mcI(mass,xyz,I);
+      
     end
 
     function body = parseVisual(body,node,model,options)
-      
-      x0=zeros(3,1);
-      rpy=zeros(3,1);
       xpts = [];
       zpts = [];
       c = .7*[1 1 1];
@@ -96,32 +82,27 @@ classdef RigidBody < handle
       wrl_shape_str='';
       wrl_appearance_str='';
       
-      % first pass:
-      childNodes = node.getChildNodes();
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        switch (lower(char(thisNode.getNodeName())))
-          case 'origin'
-            at = thisNode.getAttributes();
-            for j=1:at.getLength()
-              thisAt = at.item(j-1);
-              switch (lower(char(thisAt.getName())))
-                case 'xyz'
-                  x0 = reshape(str2num(char(thisAt.getValue())),3,1);
-                  wrl_transform_str = sprintf('%s\ttranslation %f %f %f\n',wrl_transform_str,x0(1),x0(2),x0(3));
-                case 'rpy'
-                  rpy=str2num(char(thisNode.getAttribute('rpy')));
-                  wrl_transform_str = [wrl_transform_str,'\trotation',sprintf(' %f %f %f %f\n',rpy2axis(rpy))];
-              end
-            end
-          case {'geometry','#text','#comment'}
-            % intentionally fall through
-          case 'material'
-            c = parseMaterial(model,thisNode,options);
-            wrl_appearance_str = sprintf('appearance Appearance { material Material { diffuseColor %f %f %f } }\n',c(1),c(2),c(3)); 
-          otherwise
-            warning([char(thisNode.getNodeName()),' is not a supported element of robot/link/visual.']);
+      xyz=zeros(3,1); rpy=zeros(3,1);
+      origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
+      if ~isempty(origin)
+        if origin.hasAttribute('xyz')
+          xyz = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
         end
+        if origin.hasAttribute('rpy')
+          rpy = reshape(str2num(char(origin.getAttribute('rpy'))),3,1);
+        end
+      end
+      if any(xyz)
+        wrl_transform_str = [wrl_transform_str,'\ttranslation',sprintf(' %f %f %f\n',xyz)];
+      end
+      if any(rpy)
+        wrl_transform_str = [wrl_transform_str,'\trotation',sprintf(' %f %f %f %f\n',rpy2axis(rpy))];
+      end        
+        
+      matnode = node.getElementsByTagName('material').item(0);
+      if ~isempty(matnode)
+        c = parseMaterial(model,matnode,options);
+        wrl_appearance_str = sprintf('appearance Appearance { material Material { diffuseColor %f %f %f } }\n',c(1),c(2),c(3));
       end
       
       if ~isempty(wrl_transform_str)
@@ -133,29 +114,20 @@ classdef RigidBody < handle
         wrl_transform_str = [wrl_transform_str,'\tchildren [\n'];
       end
       
-      % second pass: through and handle the geometry (after the
-      % coordinates)
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        switch (lower(char(thisNode.getNodeName())))
-          case 'geometry'
-            if (options.twoD)
-              if (~isempty(xpts)) error('multiple geometries not handled yet (but would be trivial)'); end
-              [xpts,zpts] = RigidBody.parseGeometry(thisNode,x0,rpy,options);
-            end
-            wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(thisNode,wrl_appearance_str)];
-        end
-      end
-      
+      geomnode = node.getElementsByTagName('geometry').item(0);
+      if ~isempty(geomnode)
+        wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(geomnode,wrl_appearance_str)];
+      end        
+%              [xpts,zpts] = RigidBody.parseGeometry(thisNode,x0,rpy,options);
       % % useful for testing local geometry
       % h=patch(xpts,zpts,.7*[1 1 1]);
       % axis equal
       % pause;
       % delete(h);
       
-      body.geometry{1}.x = xpts;
-      body.geometry{1}.z = zpts;
-      body.geometry{1}.c = c;
+%      body.geometry{1}.x = xpts;
+%      body.geometry{1}.z = zpts;
+%      body.geometry{1}.c = c;
       
       if isempty(wrl_transform_str)
         body.wrlgeometry = wrl_shape_str;
@@ -165,8 +137,6 @@ classdef RigidBody < handle
     end
     
     function body = parseCollision(body,node,options)
-      x0 = zeros(3,1);
-      rpy = zeros(3,1);
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
@@ -212,9 +182,9 @@ classdef RigidBody < handle
       else
         fprintf(fp,'DEF %s Transform {\n',body.jointname); 
       end
-      if (body.jcode==1) % then it's a pin joint (only allowed about the y axis, so far
+      if (body.pitch==0) % then it's a pin joint (only allowed about the y axis, so far
         fprintf(fp,'rotation 0 1 0 0\n'); 
-      elseif (body.jcode==2) % then it's a slider
+      elseif isinf(body.pitch) % then it's a slider
         fprintf(fp,'translation 0 0 0\n');
       end
     end
