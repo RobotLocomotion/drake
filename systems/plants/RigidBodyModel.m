@@ -331,8 +331,12 @@ classdef RigidBodyModel
       
       if (options.twoD)
         body.I = zeros(3);
+        body.Xtree = eye(3);
+        body.Ttree = eye(3);
       else
         body.I = zeros(6); % equivalent to mcI(0,zeros(3,1),zeros(3));
+        body.Xtree = eye(6);
+        body.Ttree = eye(4);
       end
 
       childNodes = node.getChildNodes();
@@ -426,6 +430,8 @@ classdef RigidBodyModel
             body1.jointname = body1.linkname;
             body1.jcode=2;
             body1.I = zeros(3);
+            body1.Xtree = eye(3);
+            body1.Ttree = eye(3);
             body1.damping=damping;
             body1.parent=parent;
             body2=RigidBody();
@@ -433,6 +439,8 @@ classdef RigidBodyModel
             body2.jointname = body2.linkname;
             body2.jcode=3;
             body2.I = zeros(3);
+            body2.Xtree = eye(3);
+            body2.Ttree = eye(3);
             body2.damping=damping;
             body2.parent = body1;
             child.jcode=1;
