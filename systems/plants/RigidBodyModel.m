@@ -197,18 +197,18 @@ classdef RigidBodyModel
         body = model.body(i);
         if (isempty(body.parent))
           body.T = eye(3);
-          body.v = zeros(3,1);
+%          body.v = zeros(3,1);
         else
           TJ = Tjcalcp(body.jcode,q(body.dofnum));
           [Xj,S] = jcalcp(body.jcode,q(body.dofnum));
           body.T=body.parent.T*body.Ttree*TJ;
-          body.v=body.parent.v + S*qd(body.dofnum) + [0; body.parent.v(1)*body.T(1:2,3)];
+%          body.v=body.parent.v + S*qd(body.dofnum) + [0; body.parent.v(1)*body.T(1:2,3)];
         end
       end
     end
     
     function model = doVelocities(model,q,qd)
-      error('don''t trust this method');
+      error('don''t use this method.  it''s not finished yet');
       for i=1:length(model.body)
         body = model.body(i);
         if (body.dofnum)
