@@ -42,7 +42,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
       end
         
       if (length(obj.model.loop)>0 || size([obj.model.body.ground_contact],2)>0)
-        error('haven''t reimplemented position and velocity constraints yet'); 
+        warning('haven''t reimplemented position and velocity constraints yet.  these will be ignored.'); 
       end
 %      obj = obj.setNumPositionConstraints(2*length(obj.model.loop)+size([obj.model.body.ground_contact],2));
 %      obj = obj.setNumVelocityConstraints(0);%size([obj.model.body.ground_contact],2));
