@@ -228,6 +228,9 @@ classdef RigidBodyModel
         for j=1:length(model.body),
           if model.body(j).parent == body
             model.body(j).parent = body.parent;
+            if (body.wrljoint)
+              model.body(j).wrljoint = [ body.wrljoint, sprintf('\n\tchildren [ Transform {\n'),model.body(j).wrljoint, sprintf('\n')];
+            end
           end
         end
         model.body(i)=[];
@@ -299,11 +302,15 @@ classdef RigidBodyModel
       if ~isempty(origin)
         if origin.hasAttribute('xyz')
           xyz = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
-          wrl_joint_origin=[wrl_joint_origin,sprintf('\ttranslation %f %f %f\n',xyz(1),xyz(2),xyz(3))];
+          if any(xyz)
+            wrl_joint_origin=[wrl_joint_origin,sprintf('\ttranslation %f %f %f\n',xyz(1),xyz(2),xyz(3))];
+          end
         end
         if origin.hasAttribute('rpy')
           rpy = reshape(str2num(char(origin.getAttribute('rpy'))),3,1);
-          wrl_joint_origin=[wrl_joint_origin,sprintf('\trotation %f %f %f %f\n',rpy2axis(rpy))];
+          if (any(rpy))
+            wrl_joint_origin=[wrl_joint_origin,sprintf('\trotation %f %f %f %f\n',rpy2axis(rpy))];
+          end
         end
       end
       axis=[1;0;0];  % default according to URDF documentation
@@ -494,21 +501,26 @@ classdef RigidBodyModel
       % if there is a a joint between the parent and the body, add it here
       if ~isempty(body.parent)
         writeWRLJoint(body,fp);
-      else
-        tabprintf('Transform {\n'); td=td+1;
+        tabprintf('children [\n'); td=td+1;
       end
-      tabprintf('children [\n'); td=td+1;
       td = writeWRLBody(body,fp,td);
       for i=1:length(model.body)
         if (model.body(i).parent == body)
           writeWRLBodyAndChildren(model,model.body(i),fp,td);
         end
       end
-      td=td-1; tabprintf(']\n');
-      td=td-1; tabprintf('}\n'); % end Transform {
+      if ~isempty(body.parent)
+        td=td-1; tabprintf(']\n');
+        td=td-1; tabprintf('}\n'); % end Transform {
+      end
       
       if ~isempty(body.wrljoint)
-        fprintf(fp,'\t]\n}\n'); % end wrljoint transform
+        % close brackets that were added during removal of fixed joints
+        brac=body.wrljoint(body.wrljoint=='{'|body.wrljoint=='[');
+        brac=regexprep(brac(end:-1:1),'[',']');
+        brac=regexprep(brac,'{','}');
+        
+        fprintf(fp,']\n%s\n}\n',brac); % end wrljoint transform
       end
     end
   end

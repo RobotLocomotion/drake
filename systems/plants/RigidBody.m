@@ -164,7 +164,7 @@ classdef RigidBody < handle
       else
         fprintf(fp,'DEF %s Transform {\n',body.jointname); 
       end
-      if (body.pitch==0) % then it's a pin joint (only allowed about the y axis, so far
+      if (body.pitch==0) % then it's a pin joint 
         fprintf(fp,'rotation 0 1 0 0\n'); 
       elseif isinf(body.pitch) % then it's a slider
         fprintf(fp,'translation 0 0 0\n');
