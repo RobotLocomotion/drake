@@ -9,10 +9,10 @@ classdef RigidBodyWRLVisualizer < Visualizer
       
       if (nargin<1)
         [filename,pathname]=uigetfile('*.urdf');
-        obj.model = RigidBodyModel.parseURDF(fullfile(pathname,filename));
+        obj.model = RigidBodyModel(fullfile(pathname,filename));
       elseif ischar(model)
-        obj.model = RigidBodyModel.parseURDF(model);
-      elseif isa(model,'RigidBodyModel')
+        obj.model = RigidBodyModel(model);
+      elseif isa(model,'RigidBodyModel')  
         obj.model = model;
       else
         error('model must be a RigidBodyModel or the name of a urdf file'); 
@@ -40,13 +40,12 @@ classdef RigidBodyWRLVisualizer < Visualizer
         b = obj.model.body(i);
         if ~isempty(b.parent)
           node=getfield(obj.wrl,b.jointname);
-          switch (b.jcode)
-            case 1 % pin joint
-              node.rotation=[0 1 0 x(i-1)];
-            case 2 % x-axis slider
-              node.translation=[x(i-1) 0 0];
-            case 3 % z-axis slider
-              node.translation=[0 0 x(i-1)];
+          if (b.pitch==0)
+            node.rotation=[b.joint_axis' x(i-1)];
+          elseif isinf(b.pitch)
+            node.translation=x(i-1)*b.joint_axis';
+          else
+            error('helical joints not implemented yet (but would be simple)');
           end
         end
       end
