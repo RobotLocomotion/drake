@@ -1,27 +1,66 @@
 classdef PlanarRigidBodyModel < RigidBodyModel
   
+  properties
+    x_axis_label;
+    y_axis_label;
+  end
+  
   methods 
       
     function model = PlanarRigidBodyModel(urdf_filename,options)
       % @options view when options.twoD = true, then this defines the axes.
-      %  Use 'front' for Y-Z axes, 'top' for X-Y axes,
-      %  or 'right' for X-Z axes.  @default right
+      %  Use 'front' for Y-Z axes, 'right' for X-Z axes, or 'top' for X-Y 
+      %  axes.  @default right
       
       if (nargin<1) urdf_filename=''; end
       if (nargin<2) options = struct(); end
       if (~isfield(options,'view')) options.view = 'right';
       else
         options.view = lower(options.view);
-        if ~any(strcmp(options.view,{'front','back','top','bottom','right','left'}))
+        if ~any(strcmp(options.view,{'front','right','top'}))
           error('supported view options are front,back,top,bottom,right,or left');
         end
       end
-      model = model@RigidBodyModel(urdf_filename,options);
+      
+      switch options.view % joint_axis = view_axis => counter-clockwise
+        case 'front'
+          options.x_axis = [0;1;0];
+          options.y_axis = [0;0;1];
+          options.view_axis = [1;0;0];  
+        case 'right'
+          options.x_axis = [1;0;0];
+          options.y_axis = [0;0;1];
+          options.view_axis = [0;1;0];
+        case 'top'
+          options.x_axis = [1;0;0];
+          options.y_axis = [0;1;0];
+          options.view_axis = [0;0;1];
+      end
         
-      if any(strcmp(options.view,{'top','bottom'}))
-        model.gravity = [0;0];
-      else
-        model.gravity = [0;-9.81];
+      model = model@RigidBodyModel(urdf_filename,options);
+  
+      switch options.view
+        case 'front'
+          model.x_axis_label='y';
+          model.y_axis_label='z';
+          model.gravity = [0;-9.81];
+
+        case 'right'
+          model.x_axis_label='x';
+          model.y_axis_label='z';
+          model.gravity = [0;-9.81];
+          if ~isempty(model.body)
+            % 'flip' kinematics (since y-axis goes into the page)
+            rootind = find(cellfun(@isempty,{model.body.parent}));
+            for i=1:rootind
+              b = model.body(i);
+              b.Ttree = [-1 0 0; 0 1 0; 0 0 1]*b.Ttree;
+            end
+          end           
+        case 'top'
+          model.x_axis_label='x';
+          model.y_axis_label='y';
+          model.gravity = [0;0];
       end
     end    
     
@@ -29,13 +68,16 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       for i=1:length(model.body)
         body = model.body(i);
         if (isempty(body.parent))
-          body.T = eye(3);
+          body.T = body.Ttree;
           body.v = zeros(3,1);
         else
-          TJ = Tjcalcp(body.jcode,q(body.dofnum));
-          [Xj,S] = jcalcp(body.jcode,q(body.dofnum));
+          qi = body.jsign*q(body.dofnum);
+          qdi = body.jsign*qd(body.dofnum);
+          
+          TJ = Tjcalcp(body.jcode,qi);
+          [~,S] = jcalcp(body.jcode,qi);
           body.T=body.parent.T*body.Ttree*TJ;
-          body.v=body.parent.v + S*qd(body.dofnum) + [0; body.parent.v(1)*body.T(1:2,3)];
+          body.v=body.parent.v + S*qdi + [0; body.parent.v(1)*body.T(1:2,3)];
         end
       end
     end
@@ -51,10 +93,10 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         if (~isempty(body.geometry))
           for j=1:length(body.geometry)
             for k=1:length(body.geometry{j}.x)
-              pt0 = [body.geometry{j}.x(k); body.geometry{j}.z(k); 1];
+              pt0 = [body.geometry{j}.x(k); body.geometry{j}.y(k); 1];
               pt1 = body.Ttree * pt0;  %rotation might be backwards
               body.geometry{j}.x(k) = pt1(1);
-              body.geometry{j}.z(k) = pt1(2);
+              body.geometry{j}.y(k) = pt1(2);
             end
             parent.geometry = {parent.geometry{:},body.geometry{j}};
           end
@@ -116,16 +158,29 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       switch (lower(type))
         case {'revolute','continuous'}
           child.pitch=0;
+          if abs(dot(axis,options.view_axis))<(1-1e-6)
+            axis
+            options.view_axis
+            error('revolute joints must align with the viewing axis');
+          end
           child.joint_axis=axis;
+          child.jsign = sign(dot(axis,options.view_axis));
           child.jcode=1;
           
         case 'prismatic'
           child.pitch=inf;
           child.joint_axis=axis;
-          if dot(axis,[1;0;0])>(1-1e-6)
+          if abs(dot(axis,options.view_axis))>1e-6
+            axis
+            options.view_axis;
+            error('prismatic joints must be orthogonal to the viewing axis');
+          end
+          if abs(dot(axis,options.x_axis))>(1-1e-6)
             child.jcode=2;
-          elseif dot(axis,[0;0;1])>(1-1e-6)
+            child.jsign = sign(dot(axis,options.x_axis));
+          elseif dot(axis,options.z_axis)>(1-1e-6)
             child.jcode=3;
+            child.jsign = sign(dot(axis,options.z_axis));
           else
             error('Currently only prismatic joints with their axis in the x-axis or z-axis are supported right now (twoD assumes x-z plane)');
           end
@@ -133,15 +188,17 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         case 'planar'
           % create two links with sliders, then finish this function with
           % the first of these joints (which need to catch the kinematics)
-          if dot(axis,[0;1;0])<(1-1e-6)
-            error('planar joints only supported in the y axis');
+          if abs(dot(axis,options.view_axis))<(1-1e-6)
+            error('planar joints only supported in the viewing axis');
           end
+          jsign = sign(dot(axis,options.view_axis));
           body1=newBody(model);
           body1.linkname=[child.jointname,'_x'];
           body1.jointname = body1.linkname;
           body1.pitch=inf;
           body1.joint_axis = [1;0;0];
           body1.jcode=2;
+          body1.jsign=jsign;
           body1.damping=damping;
           body1.parent=parent;
           body2=newBody(model);
@@ -150,11 +207,13 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           body2.pitch=inf;
           body1.joint_axis = [0;0;1];
           body2.jcode=3;
+          body2.jsign=jsign;
           body2.damping=damping;
           body2.parent = body1;
           child.pitch=0;
           child.joint_axis=axis;
           child.jcode=1;
+          child.jsign=jsign;
           child.parent = body2;
           model.body=[model.body,body1,body2];
           
@@ -164,18 +223,26 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           child.pitch=nan;
           
         otherwise
-          error(['joint type ',type,' not supported in twoD mode']);
+          error(['joint type ',type,' not supported in planar models']);
       end
       
-      if abs(rpy(1))>1e-4 || abs(rpy(3)>1e-4)
-        error('joints out of the x-z plane are not supported yet');
-        % note: i should eventually support PI*n, and prismatic joints on
-        % the y axis if rpy rotates it into the z axis, etc.  but I should get pretty far with this.
+      if any(rpy)
+        rpya=rpy2axis(rpy); rpyangle=rpya(4); rpyaxis=rpya(1:3);
+        if abs(dot(rpyaxis,options.view_axis))<(1-1e-6)
+          error('joints out of the plane are not supported');
+          % note that if they were, it would change the way that I have to 
+          % parse geometries, inertias, etc, for all of the children.
+        elseif dot(rpyaxis,options.view_axis)<0
+          rpyangle=-rpyangle;
+        end
+      else
+        rpyangle=0;
       end
       
-      child.Xtree = Xpln(rpy(2),xyz([1 3]));
+      xy = [options.x_axis'; options.y_axis']*xyz;
+      child.Xtree = Xpln(rpyangle,xy);
+      child.Ttree = [rotmat(rpyangle),xy; 0,0,1];
       child.damping = damping;
-      child.Ttree = [rotmat(rpy(2)),xyz([1 3]); 0,0,1];
       
       if ~isempty(wrl_joint_origin)
         child.wrljoint = wrl_joint_origin;

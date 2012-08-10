@@ -74,8 +74,6 @@ classdef RigidBody < handle
     end
 
     function body = parseVisual(body,node,model,options)
-      xpts = [];
-      zpts = [];
       c = .7*[1 1 1];
       
       wrl_transform_str = '';
@@ -118,16 +116,6 @@ classdef RigidBody < handle
       if ~isempty(geomnode)
         wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(geomnode,wrl_appearance_str)];
       end        
-%              [xpts,zpts] = RigidBody.parseGeometry(thisNode,x0,rpy,options);
-      % % useful for testing local geometry
-      % h=patch(xpts,zpts,.7*[1 1 1]);
-      % axis equal
-      % pause;
-      % delete(h);
-      
-%      body.geometry{1}.x = xpts;
-%      body.geometry{1}.z = zpts;
-%      body.geometry{1}.c = c;
       
       if isempty(wrl_transform_str)
         body.wrlgeometry = wrl_shape_str;
@@ -148,14 +136,7 @@ classdef RigidBody < handle
         end
       end
       
-      if options.twoD  % todo: implement collisions in 3D
-        % note: could support multiple geometry elements
-        geomnode = node.getElementsByTagName('geometry').item(0);
-        if ~isempty(geomnode)
-          [xpts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,options);
-          body.ground_contact=[xpts; zpts];
-        end
-      end
+      % todo: implement collisions in 3D
     end
       
     function b=leastCommonAncestor(body1,body2)
@@ -198,74 +179,6 @@ classdef RigidBody < handle
   end
   
   methods (Static)
-    function [x,z] = parseGeometry(node,x0,rpy,options)
-      % param node DOM node for the geometry block
-      % param X coordinate transform for the current body
-      % option twoD true implies that I can safely ignore y.
-      x=[];z=[];
-      T = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),x0]; % intentially leave off the bottom row [0,0,0,1];
-      
-      childNodes = node.getChildNodes();
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        cx=[]; cy=[]; cz=[];
-        switch (lower(char(thisNode.getNodeName())))
-          case 'box'
-            s = str2num(char(thisNode.getAttribute('size')));
-            
-            cx = s(1)/2*[-1 1 1 -1 -1 1 1 -1];
-            cy = s(2)/2*[1 1 1 1 -1 -1 -1 -1];
-            cz = s(3)/2*[1 1 -1 -1 -1 -1 1 1];
-            
-          case 'cylinder'
-            r = str2num(char(thisNode.getAttribute('radius')));
-            l = str2num(char(thisNode.getAttribute('length')));
-            
-            if (options.twoD && rpy(1)==0) % then it just looks like a box
-              cx = r*[-1 1 1 -1];
-              cy = [0 0 0 0];
-              cz = l/2*[1 1 -1 -1];
-            elseif (options.twoD && abs(mod(rpy(1),pi)-pi/2)<1e-4) % then it just looks like a circle
-              error('not implemented yet');
-            else  % full cylinder geometry
-              warning('full cylinder geometry not implemented yet');
-            end
-            
-          case 'sphere'
-            r = str2num(char(thisNode.getAttribute('radius')));
-            if (r==0)
-              cx=0; cy=0; cz=0;
-            else
-              theta = 0:.1:2*pi;
-              cx = r*cos(theta);
-              cy = 0*theta;
-              cz = r*sin(theta);
-              
-            end
-          case {'#text','#comment'}
-            % intentionally blank
-          otherwise
-            warning([char(thisNode.getNodeName()),' is not a supported element of robot/link/visual/material.']);
-        end
-        npts = size(cx,2);
-        if (npts>0)
-          % transform into this body's coordinates
-          pts = T*[cx;cy;cz;ones(1,npts)];
-          
-          if (~isempty(x)) error('multiple geometries not handled yet (but would be trivial)'); end
-          
-          % convex hull?
-          if (npts>1) 
-            i = convhull(pts(1,:),pts(3,:)); 
-          else
-            i=1;
-          end
-          x=pts(1,i)';z=pts(3,i)';
-        end
-      end
-      
-    end
-
     function wrlstr = parseWRLGeometry(node,wrl_appearance_str)
       % param node DOM node for the geometry block
       % param X coordinate transform for the current body

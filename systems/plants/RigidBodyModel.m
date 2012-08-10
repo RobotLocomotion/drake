@@ -175,7 +175,13 @@ classdef RigidBodyModel
       for i=1:m.NB
         b=model.body(inds(i));
         m.parent(i) = b.parent.dofnum;
-%        m.jcode(i) = b.jcode;
+        m.pitch(i) = b.pitch;
+
+        % todo: rotate into joint axis and out of joint axis here
+        if ~isequal(b.joint_axis,[0;0;1])
+          warning('extracted featherstone model is wrong here');
+        end
+        
         m.Xtree{i} = b.Xtree;
         m.I{i} = b.I;
         m.damping(i) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
@@ -202,8 +208,17 @@ classdef RigidBodyModel
           parent.I = parent.I + body.Xtree' * body.I * body.Xtree;
         end
 
+        % todo: rotate into joint axis and out of joint axis here
+        if ~isequal(body.joint_axis,[0;0;1])
+          warning('need to implement this, too');
+        end
+        
         % add wrl geometry into parent
-        parent.wrlgeometry = [ parent.wrlgeometry, sprintf('\n'), body.wrlgeometry ];
+        if isempty(body.wrljoint)
+          parent.wrlgeometry = [ parent.wrlgeometry, '\n', body.wrlgeometry ];
+        else
+          parent.wrlgeometry = [ parent.wrlgeometry, '\nTransform {\n', body.wrljoint, '\n children [\n', body.wrlgeometry, '\n]\n}\n'];
+        end
         
         if (~isempty(body.ground_contact))
           parent.ground_contact = [parent.ground_contact, body.Ttree(1:2,1:2)*body.ground_contact + body.Ttree(1:2,3)];
@@ -461,7 +476,7 @@ classdef RigidBodyModel
       
       % write default viewpoints
       fprintf(fp,'Viewpoint {\n\tdescription "right"\n\tposition 0 -4 0\n\torientation 1 0 0 1.5708\n}\n\n');
-      fprintf(fp,'Viewpoint {\n\tdescription "front"\n\tposition 4 0 0\n\torientation 0 1 0 1.5708\n}\n\n');
+      fprintf(fp,'Transform {\n\trotation 0 1 0 1.5708\n\tchildren Viewpoint {\n\tdescription "front"\n\tposition 0 0 4\n\torientation 0 0 1 1.5708\n}\n}\n\n');
       fprintf(fp,'Viewpoint {\n\tdescription "top"\n\tposition 0 0 4\n}\n\n');
       
       % loop through bodies

@@ -36,20 +36,17 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       sfigure(hFig);
       clf; hold on;
       
+      n = obj.model.featherstone.NB;
+      q = x(1:n); qd=x(n+(1:n));
+      obj.model.doKinematics(q,qd);
+      
       for i=1:length(obj.model.body)
         body = obj.model.body(i);
-        if (isempty(body.parent))
-          body.T = eye(3);
-        else
-          TJ = Tjcalcp(body.jcode,x(body.dofnum));
-          body.T=body.parent.T*body.Ttree*TJ;
-        end
-        
         for i=1:length(body.geometry)
           s = size(body.geometry{i}.x); n=prod(s);
-          pts = body.T*[reshape(body.geometry{i}.x,1,n); reshape(body.geometry{i}.z,1,n); ones(1,n)];
-          xpts = reshape(pts(1,:),s); zpts = reshape(pts(2,:),s);
-          patch(xpts,zpts,body.geometry{i}.c); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
+          pts = body.T*[reshape(body.geometry{i}.x,1,n); reshape(body.geometry{i}.y,1,n); ones(1,n)];
+          xpts = reshape(pts(1,:),s); ypts = reshape(pts(2,:),s);
+          patch(xpts,ypts,body.geometry{i}.c); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
         end
       end
 
@@ -63,6 +60,9 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       if (obj.axis)
         axis(obj.axis);
       end
+      
+      xlabel(obj.model.x_axis_label);
+      ylabel(obj.model.y_axis_label);
       
       if (~isempty([obj.model.body.ground_contact]))
         v=axis;
