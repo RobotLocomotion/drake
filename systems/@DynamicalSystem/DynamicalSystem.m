@@ -126,6 +126,11 @@ classdef DynamicalSystem
       
       newsys = SimulinkModel(mdl);
       newsys = setInputFrame(newsys,getInputFrame(sys1));
+      if (getNumStates(sys2)==0)
+        newsys = setStateFrame(newsys,getStateFrame(sys1));
+      elseif (getNumStates(sys1)==0)
+        newsys = setStateFrame(newsys,getStateFrame(sys2));
+      end
       newsys = setOutputFrame(newsys,getOutputFrame(sys2));
       newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
       newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);
@@ -164,6 +169,11 @@ classdef DynamicalSystem
       
       newsys = SimulinkModel(mdl,sys1.getNumInputs);
 %      newsys = setInputFrame(newsys,getInputFrame(sys1));
+      if (getNumStates(sys2)==0)
+        newsys = setStateFrame(newsys,getStateFrame(sys1));
+      elseif (getNumStates(sys1)==0)
+        newsys = setStateFrame(newsys,getStateFrame(sys2));
+      end
       newsys = setOutputFrame(newsys,getOutputFrame(sys1));
       newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
       newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);

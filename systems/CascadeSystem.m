@@ -30,7 +30,11 @@ classdef CascadeSystem < DrakeSystem
       
       obj = setNumZeroCrossings(obj,sys1.getNumZeroCrossings()+sys2.getNumZeroCrossings()+sum(~isinf([sys2.umin;sys2.umax])));
       obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
-      obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
+      
+      if ~isequal(sys1.getSampleTime(),sys2.getSampleTime())
+        error('Drake:CascadeSystem:DifferentSampleTimesNotSupported','combining two objects with different sample times is not supported (yet)');
+      end
+%      obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
 
       obj = setInputFrame(obj,sys1.getInputFrame());
       obj = setOutputFrame(obj,sys2.getOutputFrame());

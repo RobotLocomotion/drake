@@ -35,6 +35,12 @@ if(isfield(options,'FixedStep'))%if using fixed-step solver and want to generate
     end
 end
 if (nargin>2) % handle initial conditions
+  if (isa(x0,'Point'))
+    x0 = double(x0);
+  else
+    typecheck(x0,'double');
+    sizecheck(x0,[p.getStateFrame.dim,1]);
+  end
   x0 = obj.stateVectorToStructure(x0);
   assignin('base',[mdl,'_x0'],x0);
   pstruct.InitialState = [mdl,'_x0'];

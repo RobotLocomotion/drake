@@ -363,7 +363,7 @@ classdef DrakeSystem < DynamicalSystem
         try 
           sys=FeedbackSystem(sys1,sys2);  % try to keep it a drakesystem
         catch ex
-          if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
+          if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime') || strcmp(ex.identifier,'Drake:FeedbackSystem:DifferentSampleTimesNotSupported'))
             warning('Drake:DrakeSystem:UnsupportedSampleTime','Aborting feedback combination as a DrakeSystem due to incompatible sample times');
             sys = feedback@DynamicalSystem(sys1,sys2);
           elseif (strcmp(ex.identifier, 'Drake:FeedbackSystem:NoHybridSupport') || strcmp(ex.identifier,'Drake:FeedbackSystem:NoStochasticSupport'))
@@ -382,7 +382,7 @@ classdef DrakeSystem < DynamicalSystem
         try
           sys=CascadeSystem(sys1,sys2);   % try to keep it a drakesystem
         catch ex
-          if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
+          if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime') || strcmp(ex.identifier,'Drake:CascadeSystem:DifferentSampleTimesNotSupported'))
             warning('Drake:DrakeSystem:UnsupportedSampleTime','Aborting cascade combination as a DrakeSystem due to incompatible sample times');
             sys = cascade@DynamicalSystem(sys1,sys2);
           elseif (strcmp(ex.identifier, 'Drake:CascadeSystem:NoHybridSupport') || strcmp(ex.identifier,'Drake:CascadeSystem:NoStochasticSupport'))
