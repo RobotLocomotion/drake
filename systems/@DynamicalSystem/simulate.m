@@ -39,7 +39,7 @@ if (nargin>2) % handle initial conditions
     x0 = double(x0);
   else
     typecheck(x0,'double');
-    sizecheck(x0,[p.getStateFrame.dim,1]);
+    sizecheck(x0,[obj.getStateFrame.dim,1]);
   end
   x0 = obj.stateVectorToStructure(x0);
   assignin('base',[mdl,'_x0'],x0);
