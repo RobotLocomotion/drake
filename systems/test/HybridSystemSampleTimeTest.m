@@ -31,12 +31,13 @@ classdef HybridSystemSampleTimeTest < DrakeSystem
       ts = sys.getSampleTime();
       if (~isequal(ts,[0;0])) error('hybrid sample times error'); end
 
-      sys=HybridDrakeSystem(0,0);
-      sys=addMode(sys,HybridSystemSampleTimeTest([0;0]));
-      sys=addMode(sys,HybridSystemSampleTimeTest([-1;0]));
-      sys=addMode(sys,HybridSystemSampleTimeTest([2;2]));
-      ts = sys.getSampleTime();
-      if (~isequal(ts,[0 2;0 2])) error('hybrid sample times error'); end
+%     % disabled support for mixed sample times... at least for now.
+%      sys=HybridDrakeSystem(0,0);
+%      sys=addMode(sys,HybridSystemSampleTimeTest([0;0]));
+%      sys=addMode(sys,HybridSystemSampleTimeTest([-1;0]));
+%      sys=addMode(sys,HybridSystemSampleTimeTest([2;2]));
+%      ts = sys.getSampleTime();
+%      if (~isequal(ts,[0 2;0 2])) error('hybrid sample times error'); end
 
       sys=HybridDrakeSystem(0,0);
       sys=addMode(sys,HybridSystemSampleTimeTest([-1;0]));

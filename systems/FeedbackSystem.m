@@ -33,11 +33,7 @@ classdef FeedbackSystem < DrakeSystem
       
       obj = setNumZeroCrossings(obj,sys1.getNumZeroCrossings()+sys2.getNumZeroCrossings()+sum(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax])));
       obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
-
-      if ~isequal(sys1.getSampleTime(),sys2.getSampleTime())
-        error('Drake:FeedbackSystem:DifferentSampleTimesNotSupported','combining two objects with different sample times is not supported (yet)');
-      end
-%      obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
+      obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
 
 %      obj = setInputFrame(obj,sys1.getInputFrame());
       obj = setOutputFrame(obj,sys1.getOutputFrame());
@@ -134,8 +130,8 @@ classdef FeedbackSystem < DrakeSystem
       x2=x(obj.sys2ind);
     end
     function x = encodeX(obj,x1,x2)
-      x(obj.sys2ind)=x2;  % x2 first so it only allocates once
-      x(obj.sys1ind)=x1;
+      x(obj.sys2ind,1)=x2;  % x2 first so it only allocates once
+      x(obj.sys1ind,1)=x1;
     end
     function u1=sat1(obj,u1)
       u1=min(max(u1,obj.sys1.umin),obj.sys1.umax);
