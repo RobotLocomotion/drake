@@ -8,8 +8,12 @@ classdef Point
   methods
     function obj=Point(frame,p)
       typecheck(frame,'CoordinateFrame');
-      typecheck(p,'double');
-      sizecheck(p,[frame.dim,1]);
+      if (nargin<2)
+        p = zeros(frame.dim,1);
+      else
+        typecheck(p,'double');
+        sizecheck(p,[frame.dim,1]);
+      end
       obj.p = p;
       obj.frame = frame;
     end
@@ -24,6 +28,32 @@ classdef Point
     
     function s = size(obj,varargin)
       s = size(obj.p,varargin{:});
+    end
+    
+    function n = numel(obj)
+      n=1;
+    end
+    
+    function display(obj)
+      for i=1:length(obj.p)
+        fprintf(1,'%20s = %f\n',obj.frame.coordinates{i},obj.p(i));
+      end
+    end
+    
+    function varargout = subsasgn(obj,s,val)
+      % support the syntax pt.theta = .5 , where theta is a coordinate name
+      if (length(s)==1 && strcmp(s(1).type,'.'))
+        tf=strcmp(s(1).subs,obj.frame.coordinates);
+        if any(tf)
+          ind = find(tf,1);
+          obj.p(ind)=val;
+          varargout = {obj};
+          return;
+        end
+      end
+      % otherwise, call the builting subsasgn
+      varargout=cell(1,nargout);
+      [varargout{:}] = builtin('subsasgn',obj,s,val);
     end
     
     function pobj = inFrame(obj,fr,t)
