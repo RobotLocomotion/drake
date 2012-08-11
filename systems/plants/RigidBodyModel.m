@@ -176,8 +176,8 @@ classdef RigidBodyModel
         b=model.body(inds(i));
         m.parent(i) = b.parent.dofnum;
         m.pitch(i) = b.pitch;
-        m.Xtree{i} = inv(b.parent.X_joint_to_body)*b.Xtree*b.X_joint_to_body;
-        m.I{i} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
+        m.Xtree{i} = b.X_body_to_joint*b.Xtree*inv(b.parent.X_body_to_joint);
+        m.I{i} = inv(b.X_body_to_joint)'*b.I*inv(b.X_body_to_joint);
         m.damping(i) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
       end
       model.featherstone = m;
@@ -340,7 +340,7 @@ classdef RigidBodyModel
         % frames intact.  this happens in extractFeatherstone
         axis_angle = [cross([0;0;1],axis); atan2(cross([0;0;1],axis),dot([0;0;1],axis))]; % both are already normalized
         jointrpy = quat2rpy(axis2quat(axis_angle));
-        child.X_joint_to_body=Xrotz(jointrpy(3))*Xroty(jointrpy(2))*Xrotx(jointrpy(1));
+        child.X_body_to_joint=Xrotz(jointrpy(3))*Xroty(jointrpy(2))*Xrotx(jointrpy(1));
       end
       
       switch lower(type)
