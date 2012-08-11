@@ -14,3 +14,5 @@ for i=1:5
   xtraj = simulate(sys,[0 4],x0);
   v.playback(xtraj);
 end
+
+% NOTEST (until the build machine can handle VRML)
