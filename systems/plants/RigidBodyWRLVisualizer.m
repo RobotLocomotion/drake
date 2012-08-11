@@ -49,6 +49,7 @@ classdef RigidBodyWRLVisualizer < Visualizer
           end
         end
       end
+      t
       vrdrawnow;
     end
     
