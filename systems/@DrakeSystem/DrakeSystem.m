@@ -112,17 +112,23 @@ classdef DrakeSystem < DynamicalSystem
 
       % only a few possibilities are allowed/supported
       %   inherited, single continuous, single discrete, single continuous+single
-      %   discrete
+      %   discrete (note: disabled single continuous + single discrete
+      %   because it wasn't obviously the right thing... e.g. in the
+      %   visualizer who asked for the output to be at fixed dt, but after
+      %   combination, the output gets called continuously).
       if size(ts,2)>1  % if only one ts, then all is well
         if any(ts(1,:)==-1)  % zap superfluous inherited
           ts=ts(:,find(ts(1,:)~=-1));
         end
-        if sum(ts(1,:)==0)>1 % then multiple continuous
+        if sum(ts(1,:)>=0)>1
           error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have both ''continuous time'' and ''continuous time, fixed in minor offset'' sample times');
         end
-        if sum(ts(1,:)>0)>1 % then multiple discrete
-          error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have different discrete sample times');
-        end
+%        if sum(ts(1,:)==0)>1 % then multiple continuous
+%          error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have both ''continuous time'' and ''continuous time, fixed in minor offset'' sample times');
+%        end
+%        if sum(ts(1,:)>0)>1 % then multiple discrete
+%          error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have different discrete sample times');
+%        end
       end
       obj.ts = ts;
     end
@@ -363,7 +369,7 @@ classdef DrakeSystem < DynamicalSystem
         try 
           sys=FeedbackSystem(sys1,sys2);  % try to keep it a drakesystem
         catch ex
-          if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime') || strcmp(ex.identifier,'Drake:FeedbackSystem:DifferentSampleTimesNotSupported'))
+          if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
             warning('Drake:DrakeSystem:UnsupportedSampleTime','Aborting feedback combination as a DrakeSystem due to incompatible sample times');
             sys = feedback@DynamicalSystem(sys1,sys2);
           elseif (strcmp(ex.identifier, 'Drake:FeedbackSystem:NoHybridSupport') || strcmp(ex.identifier,'Drake:FeedbackSystem:NoStochasticSupport'))
@@ -382,7 +388,7 @@ classdef DrakeSystem < DynamicalSystem
         try
           sys=CascadeSystem(sys1,sys2);   % try to keep it a drakesystem
         catch ex
-          if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime') || strcmp(ex.identifier,'Drake:CascadeSystem:DifferentSampleTimesNotSupported'))
+          if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
             warning('Drake:DrakeSystem:UnsupportedSampleTime','Aborting cascade combination as a DrakeSystem due to incompatible sample times');
             sys = cascade@DynamicalSystem(sys1,sys2);
           elseif (strcmp(ex.identifier, 'Drake:CascadeSystem:NoHybridSupport') || strcmp(ex.identifier,'Drake:CascadeSystem:NoStochasticSupport'))
