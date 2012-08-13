@@ -49,7 +49,7 @@ classdef RigidBodyWRLVisualizer < Visualizer
           end
         end
       end
-      t
+      set(obj.wrl,'Time',t);
       vrdrawnow;
     end
     
