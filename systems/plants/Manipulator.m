@@ -76,6 +76,36 @@ classdef Manipulator < SecondOrderSystem
       % qdd = H\(tau - C);
     end
     
+    function [xdot, dxdot] = dynamics(obj,t,x,u)
+      % Provides the dynamics interface for sodynamics.  This function
+      % does not handle contact or joint limits!
+      q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
+      
+      if nargout > 1
+        if (obj.num_xcon>0)
+          error('Not yet supported.');
+        end
+        
+        % Note: the next line assumes that user gradients are implemented.
+        % If it fails, then it will raise the same exception that I would
+        % want to raise for this method, stating that not all outputs were
+        % assigned.  (since I can't write dxdot anymore)
+        [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,qd);
+        Hinv = inv(H);
+        
+        qdd = Hinv*(B*u - C);
+        dxdot = [zeros(obj.num_q,1+obj.num_q), eye(obj.num_q),...
+          zeros(obj.num_q,obj.num_u);...
+          zeros(obj.num_q,1),...
+          -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) - Hinv*dC(:,1:obj.num_q),...
+          -Hinv*dC(:,1+obj.num_q:end), Hinv*B];
+        xdot = [qd;qdd];
+      else
+        qdd = obj.sodynamics(t,q,qd,u);
+        xdot = [qd;qdd];
+      end
+    end    
+    
     function obj = setNumPositionConstraints(obj,num)
     % Set the number of bilateral constraints
       if (~isscalar(num) || num <0)

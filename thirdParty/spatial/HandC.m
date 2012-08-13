@@ -42,17 +42,12 @@ for i = 1:model.NB
   end
 end
 
+IC = model.I;				% composite inertia calculation
+
 for i = model.NB:-1:1
   C(i,1) = S{i}' * fvp{i};
   if model.parent(i) ~= 0
     fvp{model.parent(i)} = fvp{model.parent(i)} + Xup{i}'*fvp{i};
-  end
-end
-
-IC = model.I;				% composite inertia calculation
-
-for i = model.NB:-1:1
-  if model.parent(i) ~= 0
     IC{model.parent(i)} = IC{model.parent(i)} + Xup{i}'*IC{i}*Xup{i};
   end
 end

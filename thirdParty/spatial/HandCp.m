@@ -53,7 +53,6 @@ for i = model.NB:-1:1
   end
 end
 
-
 % minor adjustment to make TaylorVar work better.
 %H = zeros(model.NB);
 H=zeros(model.NB)*q(1);
