@@ -10,3 +10,12 @@ for i=1:100
   
   [xdot,dxdot] = geval(@p.dynamics,t,x,u,options);
 end
+
+p = RigidBodyManipulator('../../../examples/FurutaPendulum/FurutaPendulum.urdf');
+for i=1:100
+  t = rand;
+  x = randn(4,1);
+  u = randn;
+  
+  [xdot,dxdot] = geval(@p.dynamics,t,x,u,options);
+end

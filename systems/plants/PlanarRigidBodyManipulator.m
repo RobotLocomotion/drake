@@ -186,32 +186,6 @@ classdef PlanarRigidBodyManipulator < Manipulator
       end
     end
     
-    function [xdot, dxdot] = dynamics(obj,t,x,u)
-      % Provides the dynamics interface for sodynamics.  This function
-      % does not handle contact or joint limits!
-      q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
-      
-      if nargout > 1
-        if (obj.num_xcon>0)
-          error('Not yet supported.');
-        end
-        
-        [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,qd);
-        Hinv = inv(H);
-        
-        qdd = Hinv*(B*u - C);
-        dxdot = [zeros(obj.num_q,1+obj.num_q), eye(obj.num_q),...
-          zeros(obj.num_q,obj.num_u);...
-          zeros(obj.num_q,1),...
-          -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) - Hinv*dC(:,1:obj.num_q),...
-          -Hinv*dC(:,1+obj.num_q:end), Hinv*B];
-        xdot = [qd;qdd];
-      else
-        qdd = obj.sodynamics(t,q,qd,u);
-        xdot = [qd;qdd];
-      end
-    end
-    
     function phi = positionConstraints(obj,q)
       error('not implemented yet');  % need to pull from posadev
       phi=[];
