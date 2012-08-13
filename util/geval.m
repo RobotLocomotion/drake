@@ -20,6 +20,9 @@ function varargout = geval(fun,varargin)
 %      geval(p,fun,varargin) 
 % to tell geval that there are p different outputs.
 %
+% If the output is a matrix (or ND-array), then the gradients are reshaped
+% so that size(df) = [prod(size(f)), prod(size(a))]
+%
 % Higher order gradients are output as a q x r^o sparse matrix , where 
 %    q is the dimension of the output, r is the dimension of the input, and o is the order.
 %    e.g. 
