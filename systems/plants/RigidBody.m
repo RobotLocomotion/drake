@@ -20,6 +20,7 @@ classdef RigidBody < handle
     damping=0;
     
     % dynamic properties (e.g. state at runtime)
+    cached_q_qd = []; % the current contents of T and v were computed using these q and qd values 
     T  % transformation from this body to world coordinates
     v  % velocity [omega; v] of this body in world coordinates
   end

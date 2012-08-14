@@ -131,6 +131,13 @@ classdef RigidBodyModel
         B(model.actuator(i).body.dofnum,i) = model.actuator(i).reduction;
       end
       model.B = full(B);
+      
+      %% initialize kinematics caching
+      for i=1:length(model.body)
+        if ~isempty(model.body(i).parent)
+          model.body(i).cached_q_qd = [nan;nan];
+        end
+      end
     end
     
     function [c,model] = parseMaterial(model,node,options)

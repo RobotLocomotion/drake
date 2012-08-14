@@ -65,6 +65,11 @@ classdef PlanarRigidBodyModel < RigidBodyModel
     end    
     
     function model = doKinematics(model,q,qd)
+      if abs([q;qd]-reshape([model.body.cached_q_qd],1,[])')<1e-6  % todo: make this tolerance a parameter
+        % then my kinematics are up to date, don't recompute
+        return
+      end
+      disp('computing kinematics...');
       for i=1:length(model.body)
         body = model.body(i);
         if (isempty(body.parent))
@@ -78,6 +83,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           [~,S] = jcalcp(body.jcode,qi);
           body.T=body.parent.T*body.Ttree*TJ;
           body.v=body.parent.v + S*qdi + [0; body.parent.v(1)*body.T(1:2,3)];
+          body.cached_q_qd = [q(body.dofnum);qd(body.dofnum)];
         end
       end
     end
