@@ -8,7 +8,7 @@ classdef Manipulator < SecondOrderSystem
       if (nargin>2)  % else num_position_constraints=0 by default
         obj = obj.setNumPositionConstraints(num_position_constraints);
       end
-      if (nargin>3)  % else num_position_constraints=0 by default
+      if (nargin>3)  % else num_velocity_constraints=0 by default
         obj = obj.setNumVelocityConstraints(num_velocity_constraints);
       end
     end
