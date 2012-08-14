@@ -53,25 +53,32 @@ classdef RigidBodyModel
       
       %disp(['Parsing robot ', char(node.getAttribute('name')), ' from URDF file...']);
       model.name = char(node.getAttribute('name'));
-      
-      childNodes = node.getChildNodes();
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        switch (lower(char(thisNode.getNodeName())))
-          case 'link'
-            model=parseLink(model,thisNode,options);
-          case 'joint'
-            model=parseJoint(model,thisNode,options);
-          case 'loop_joint'
-            model=parseLoopJoint(model,thisNode,options);
-          case 'transmission'
-            model=parseTransmission(model,thisNode,options);
-          case 'material'
-            [c,model]=parseMaterial(model,thisNode,options);
-          otherwise
-            % intentionally empty.  DOM mandate that I skip others quietly
-        end
+
+      materials = node.getElementsByTagName('material');
+      for i=0:(materials.getLength()-1)
+        [~,model] = parseMaterial(model,materials.item(i),options);
       end
+      
+      links = node.getElementsByTagName('link');
+      for i=0:(links.getLength()-1)
+        model = parseLink(model,links.item(i),options);
+      end
+      
+      joints = node.getElementsByTagName('joint');
+      for i=0:(joints.getLength()-1)
+        model = parseJoint(model,joints.item(i),options);
+      end
+
+      loopjoints = node.getElementsByTagName('loop_joint');
+      for i=0:(loopjoints.getLength()-1)
+        model = parseLoopJoint(model,loopjoints.item(i),options);
+      end
+      
+      transmissions = node.getElementsByTagName('transmission');
+      for i=0:(transmissions.getLength()-1)
+        model = parseTransmission(model,transmissions.item(i),options);
+      end
+
     end
     
     function newmodel = copy(model)
@@ -290,6 +297,9 @@ classdef RigidBodyModel
     function model=parseJoint(model,node,options)
 
       parentNode = node.getElementsByTagName('parent').item(0);
+      if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
+          return
+      end
       parent = findLink(model,char(parentNode.getAttribute('link')));
       
       childNode = node.getElementsByTagName('child').item(0);
@@ -429,6 +439,11 @@ classdef RigidBodyModel
     end
 
     function model=parseTransmission(model,node,options)
+        
+      if isempty(strfind(char(node.getAttribute('type')),'SimpleTransmission'))
+          return; % only parse SimpleTransmissions so far');
+      end
+        
       actuator = RigidBodyActuator();
 
       childNodes = node.getChildNodes();
