@@ -206,6 +206,15 @@ classdef RigidBody < handle
             r = str2num(char(thisNode.getAttribute('radius')));
             wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry Sphere { radius %f }\n\t%s}\n',r,wrl_appearance_str)];
 
+          case 'mesh'
+            filename=char(thisNode.getAttribute('filename'));
+            [path,name,ext] = fileparts(filename);
+            path = strrep(path,'package://','');
+            if strcmpi(ext,'.stl')
+              stl2vrml(fullfile(path,[name,ext]));
+              wrlstr=[wrlstr,sprintf('Inline { url %s }\n',fullfile(path,[name,'.wrl']))];
+            end
+            
           case {'#text','#comment'}
             % intentionally blank
           otherwise
