@@ -158,9 +158,7 @@ conf
 save([conf.root,'/util/drake_config.mat'],'conf');
 
 disp('To manually change any of these entries, use:')
-disp('  load drake_config.mat;');
-disp('  conf.field = val;');
-disp('  save([conf.root,''/util/drake_config.mat''],''conf'');');
+disp('  editDrakeConfig(field,value);');
 
 % if changes have been made to the matlab path, prompt user with option to 
 % save the path for future matlab sessions.
