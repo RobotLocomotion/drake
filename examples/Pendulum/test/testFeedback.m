@@ -1,7 +1,6 @@
 function testFeedback
 
-load drake_config;
-oldpath=addpath([conf.root,'/examples/Pendulum']);
+oldpath=addpath([getDrakePath,'/examples/Pendulum']);
 
 try 
   p = PendulumPlant();

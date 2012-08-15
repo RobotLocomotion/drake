@@ -1,8 +1,6 @@
 function testLCMVisualizer
 
-load drake_config;
-
-p = addpath([conf.root,'/examples/Pendulum']);
+p = addpath([getDrakePath,'/examples/Pendulum']);
 
 if (matlabpool('size')>0), matlabpool('close'); end
 job1 = batch('runPendulum','Workspace',struct(),'CaptureDiary',true);

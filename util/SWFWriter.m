@@ -95,7 +95,7 @@ methods
       catch
         fprintf(1,'\n\n\nfailed running this on the command line:\n  ');
         disp(['  ',cmd{i}]);
-        fprintf(1,'Make sure that you have the command line tool installed, and consider adding to the system_preload field in drake_config to address path/library issues.\n');
+        fprintf(1,'Make sure that you have the command line tool installed and have address all path/library issues.\n');
         error('swf writing failed');
       end
     end

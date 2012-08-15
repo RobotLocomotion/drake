@@ -123,8 +123,7 @@ end
 
 function tree=reloadGui(h,env,tree)
   megaclear;
-  load drake_config;
-  cd(conf.root);
+  cd(getDrakePath);
   tree=unitTest;
 end
 
@@ -135,9 +134,8 @@ function cleanup(h,env,tree)
 end
 
 function saveTree(tree)
-  load drake_config;
   p=pwd;
-  cd(conf.root);
+  cd(getDrakePath);
   backupname = '.unitTestData.mat';
   userdata={};
   iter = tree.getRoot.breadthFirstEnumeration;
@@ -155,9 +153,8 @@ function saveTree(tree)
 end
 
 function loadTree(tree)
-  load drake_config;
   p=pwd;
-  cd(conf.root);
+  cd(getDrakePath);
   backupname = '.unitTestData.mat';
   load(backupname);
   
@@ -193,9 +190,8 @@ function loadTree(tree)
 end
 
 function saveMutex()
-  load drake_config;
   p=pwd;
-  cd(conf.root);
+  cd(getDrakePath);
   backupname = '.drake_unit_test_mutex.mat';
   global runNode_mutex;
   node_data = cellfun(@(a) get(a,'UserData'),runNode_mutex,'UniformOutput',false);
@@ -204,9 +200,8 @@ function saveMutex()
 end
 
 function loadMutex(tree)
-  load drake_config;
   p=pwd;
-  cd(conf.root);
+  cd(getDrakePath);
   backupname = '.drake_unit_test_mutex.mat';
   global runNode_mutex;
   load(backupname);
