@@ -65,7 +65,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
     end    
     
     function model = doKinematics(model,q,qd)
-      if abs([q;qd]-reshape([model.body.cached_q_qd],1,[])')<1e-6  % todo: make this tolerance a parameter
+      if any(abs([q;qd]-reshape([model.body.cached_q_qd],1,[])')<1e-6)  % todo: make this tolerance a parameter
         % then my kinematics are up to date, don't recompute
         return
       end
