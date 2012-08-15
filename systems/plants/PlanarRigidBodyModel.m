@@ -50,11 +50,10 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           model.y_axis_label='z';
           model.gravity = [0;-9.81];
           if ~isempty(model.body)
-            % 'flip' kinematics (since y-axis goes into the page)
-            rootind = find(cellfun(@isempty,{model.body.parent}));
-            for i=1:rootind
-              b = model.body(i);
-              b.Ttree = [-1 0 0; 0 1 0; 0 0 1]*b.Ttree;
+            % 'flip' rotational kinematics (since y-axis goes into the page)
+            rotind = find([model.body.jcode]==1);
+            for i=rotind
+              model.body(i).jsign = -model.body(i).jsign;
             end
           end           
         case 'top'
@@ -65,7 +64,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
     end    
     
     function model = doKinematics(model,q,qd)
-      if any(abs([q;qd]-reshape([model.body.cached_q_qd],1,[])')<1e-6)  % todo: make this tolerance a parameter
+      if 0 %any(abs([q;qd]-reshape([model.body.cached_q_qd],1,[])')<1e-6)  % todo: make this tolerance a parameter
         % then my kinematics are up to date, don't recompute
         return
       end
@@ -97,12 +96,9 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         % add geometry into parent
         if (~isempty(body.geometry))
           for j=1:length(body.geometry)
-            for k=1:length(body.geometry{j}.x)
-              pt0 = [body.geometry{j}.x(k); body.geometry{j}.y(k); 1];
-              pt1 = body.Ttree * pt0;  %rotation might be backwards
-              body.geometry{j}.x(k) = pt1(1);
-              body.geometry{j}.y(k) = pt1(2);
-            end
+            pts = body.Ttree * [body.geometry{j}.x'; body.geometry{j}.y'; ones(1,size(body.geometry{j}.x,1))];
+            body.geometry{j}.x = pts(1,:)';
+            body.geometry{j}.y = pts(2,:)';
             parent.geometry = {parent.geometry{:},body.geometry{j}};
           end
         end
