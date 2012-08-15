@@ -18,7 +18,7 @@ classdef RigidBodyWRLVisualizer < Visualizer
         error('model must be a RigidBodyModel or the name of a urdf file'); 
       end
       
-      wrlfile = [obj.model.name,'.wrl'];
+      wrlfile = fullfile(tempdir,[obj.model.name,'.wrl']);
       obj.model.writeWRL(wrlfile);
       obj.wrl = vrworld(wrlfile);
       if ~strcmpi(get(obj.wrl,'Open'),'on')

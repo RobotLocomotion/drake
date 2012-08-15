@@ -211,11 +211,12 @@ classdef RigidBody < handle
             [path,name,ext] = fileparts(filename);
             path = strrep(path,'package://','');
             if strcmpi(ext,'.stl')
-              stl2vrml(fullfile(path,[name,ext]));
-              txt=fileread([name,'.wrl']);
+              wrlfile = fullfile(tempdir,[name,'.wrl']);
+              stl2vrml(fullfile(path,[name,ext]),tempdir);
+              txt=fileread(wrlfile);
               [~,txt]=strtok(txt,'DEF');
               wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry %s\n\t%s}\n',txt,wrl_appearance_str)];
-%              wrlstr=[wrlstr,sprintf('Inline { url "%s" }\n',[name,'.wrl'])];
+%              wrlstr=[wrlstr,sprintf('Inline { url "%s" }\n',wrlfile)];
             end
             
           case {'#text','#comment'}
