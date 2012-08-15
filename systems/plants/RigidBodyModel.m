@@ -245,6 +245,8 @@ classdef RigidBodyModel
         for j=1:length(model.body),
           if model.body(j).parent == body
             model.body(j).parent = body.parent;
+            model.body(j).Ttree = body.Ttree*model.body(j).Ttree;
+            model.body(j).Xtree = model.body(j).Xtree*body.Xtree;
             if (body.wrljoint)
               model.body(j).wrljoint = [ body.wrljoint, sprintf('\n\tchildren [ Transform {\n'),model.body(j).wrljoint, sprintf('\n')];
             end

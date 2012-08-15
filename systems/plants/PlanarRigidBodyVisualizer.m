@@ -40,16 +40,30 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       q = x(1:n); qd=x(n+(1:n));
       obj.model.doKinematics(q,qd);
       
+      % for debugging:
+      %co = get(gca,'ColorOrder');
+      %h = [];
+      % end debugging
+
       for i=1:length(obj.model.body)
         body = obj.model.body(i);
-        for i=1:length(body.geometry)
-          s = size(body.geometry{i}.x); n=prod(s);
-          pts = body.T*[reshape(body.geometry{i}.x,1,n); reshape(body.geometry{i}.y,1,n); ones(1,n)];
+        for j=1:length(body.geometry)
+          s = size(body.geometry{j}.x); n=prod(s);
+          pts = body.T*[reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n); ones(1,n)];
           xpts = reshape(pts(1,:),s); ypts = reshape(pts(2,:),s);
-          patch(xpts,ypts,body.geometry{i}.c); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
+
+          patch(xpts,ypts,body.geometry{j}.c); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
+
+          % for debugging:
+          %h(i)=patch(xpts,ypts,co(mod(i-2,size(co,1))+1,:));
+          % end debugging
         end
       end
-
+      
+      % for debugging
+      %legend(h,{obj.model.body.linkname},'interpreter','none');
+      % end debugging
+      
       axis equal;
       if (obj.xlim)
         xlim(obj.xlim);

@@ -142,7 +142,7 @@ classdef PlanarRigidBody < RigidBody
             r = str2num(char(thisNode.getAttribute('radius')));
             l = str2num(char(thisNode.getAttribute('length')));
             
-            if (options.view_axis'*T3*[1;0;0;1] == 0) % then it just looks like a box
+            if (options.view_axis'*T3*[0;0;1;1] == 0) % then it just looks like a box
               cx = r/2*[-1 1 1 -1 -1 1 1 -1];
               cy = r/2*[1 1 1 1 -1 -1 -1 -1];
               cz = l/2*[1 1 -1 -1 -1 -1 1 1];
@@ -151,10 +151,12 @@ classdef PlanarRigidBody < RigidBody
               i = convhull(pts(1,:),pts(2,:));
               x=pts(1,i)';y=pts(2,i)';
               
-%            elseif (abs(mod(rpy(1),pi)-pi/2)<1e-4) % then it just looks like a circle
-%              error('not implemented yet');
+            elseif (options.view_axis'*T3*[0;0;1;1] > (1-1e-6)) % then it just looks like a circle
+              theta = 0:.1:2*pi;
+              pts = r*[cos(theta); sin(theta)] + repmat(T*[0;0;0;1],1,length(theta));
+              x=pts(1,:)';y=pts(2,:)';
             else  % full cylinder geometry
-              warning('full cylinder geometry not implemented yet');  % but wouldn't be hard
+              error('full cylinder geometry not implemented yet');  % but wouldn't be hard
             end
             
           case 'sphere'
