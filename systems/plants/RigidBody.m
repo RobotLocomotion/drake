@@ -6,7 +6,7 @@ classdef RigidBody < handle
     I=zeros(6);  % spatial mass/inertia
     wrlgeometry=''; % geometry (compatible w/ wrl).  see parseVisual below.
     dofnum=0     % the index in the state vector corresponding to this joint
-    ground_contact=[];  % a 3xn matrix with [x;y;z] positions of contact points
+    contact_pts=[];  % a 3xn matrix with [x;y;z] positions of contact points
     
     % joint properties
     jointname=''

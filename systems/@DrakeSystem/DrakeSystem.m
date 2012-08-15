@@ -428,10 +428,12 @@ classdef DrakeSystem < DynamicalSystem
     num_u=0;  % dimension of u
     num_y=0;  % dimension of the output y
     num_zcs = 0;  % number of zero-crossings.  @default: 0
-    num_xcon = 0; % number of state constraints. @default: 0
     uid;    % unique identifier for simulink models of this block instance
     direct_feedthrough_flag=true;  % true/false: does the output depend on u?  set false if you can!
     ts=[];    % default sample times of the model
+  end
+  properties (SetAccess=protected, GetAccess=protected)
+    num_xcon = 0; % number of state constraints. @default: 0
   end
   properties (SetAccess=private, GetAccess=public)
     umin=[];   % constrains u>=umin (default umin=-inf)

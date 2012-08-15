@@ -64,7 +64,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       xlabel(obj.model.x_axis_label);
       ylabel(obj.model.y_axis_label);
       
-      if (~isempty([obj.model.body.ground_contact]))
+      if (~isempty([obj.model.body.contact_pts]))
         v=axis;
         line([v(1)-.1*(v(2)-v(1)),v(2)+.1*(v(2)-v(1))],[0 0],'Color','k');
       end

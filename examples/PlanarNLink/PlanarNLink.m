@@ -65,7 +65,7 @@ function model=addLink(model,mass,len,radius)
   if (ind>2)  % leave the first joint as passive
     actuator = RigidBodyActuator();
     actuator.name = ['joint',num2str(ind),'_torque'];
-    actuator.body=body;
+    actuator.joint=body;
     model.actuator = [model.actuator; actuator];
   end
 end

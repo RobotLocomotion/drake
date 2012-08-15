@@ -2,7 +2,7 @@ classdef RigidBodyActuator
 
   properties
     name
-    body
+    joint
     reduction=1
   end
 

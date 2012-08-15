@@ -107,7 +107,7 @@ classdef PlanarRigidBody < RigidBody
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         [xpts,ypts] = PlanarRigidBody.parseGeometry(geomnode,xyz,rpy,options);
-        body.ground_contact=[xpts; ypts];
+        body.contact_pts=[xpts'; ypts'];
       end
     end
   end

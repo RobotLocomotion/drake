@@ -38,7 +38,7 @@ classdef RigidBodyManipulator < Manipulator
       obj = setStateFrame(obj,stateframe);
       obj = setOutputFrame(obj,stateframe);  % output = state
       
-      if (length(obj.model.loop)>0 || size([obj.model.body.ground_contact],2)>0)
+      if (length(obj.model.loop)>0)
         error('haven''t reimplemented position and velocity constraints yet'); 
       end
 %      obj = obj.setNumPositionConstraints(2*length(obj.model.loop)+size([obj.model.body.ground_contact],2));
