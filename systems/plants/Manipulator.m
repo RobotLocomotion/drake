@@ -73,7 +73,8 @@ classdef Manipulator < SecondOrderSystem
       
       qdd = Hinv*(tau + constraint_force - C);
       % note that I used to do this (instead of calling inv(H)):
-      % qdd = H\(tau - C);
+      %   qdd = H\(tau - C)
+      % but I already have and use Hinv, so use it again here
     end
     
     function [xdot, dxdot] = dynamics(obj,t,x,u)
@@ -105,6 +106,11 @@ classdef Manipulator < SecondOrderSystem
         xdot = [qd;qdd];
       end
     end    
+
+%    function tau = computeConstraintTorques(q,qd,H,tau)
+      % C should be C(q,q)qdot + G(q) - B*u
+      
+%    end
     
     function obj = setNumPositionConstraints(obj,num)
     % Set the number of bilateral constraints
@@ -136,7 +142,7 @@ classdef Manipulator < SecondOrderSystem
       error('manipulators with velocity constraints must overload this function'); 
     end
     
-    function con = stateConstraints(obj,t,x,u)
+    function con = stateConstraints(obj,x)
       % wraps up the position and velocity constraints into the general constriant
       % method.  note that each position constraint (phi=0) also imposes an implicit
       % velocity constraint on the system (phidot=0).

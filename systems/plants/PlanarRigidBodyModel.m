@@ -69,7 +69,6 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         % then my kinematics are up to date, don't recompute
         return
       end
-      disp('computing kinematics...');
       for i=1:length(model.body)
         body = model.body(i);
         if (isempty(body.parent))
@@ -168,9 +167,10 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         case {'revolute','continuous'}
           child.pitch=0;
           if abs(dot(axis,options.view_axis))<(1-1e-6)
-            axis
-            options.view_axis
-            error('revolute joints must align with the viewing axis');
+            warning('DRC:PlanarRigidBodyModel:RemovedJoint',['Welded revolute joint ', child.jointname,' because it did not align with the viewing axis']);
+            node.setAttribute('type','fixed');
+            model = parseJoint(model,node,options);
+            return;
           end
           child.joint_axis=axis;
           child.jsign = sign(dot(axis,options.view_axis));
@@ -180,14 +180,15 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           child.pitch=inf;
           child.joint_axis=axis;
           if abs(dot(axis,options.view_axis))>1e-6
-            axis
-            options.view_axis;
-            error('prismatic joints must be orthogonal to the viewing axis');
+            warning('DRC:PlanarRigidBodyModel:RemovedJoint',['Welded prismatic joint ', child.jointname,' because it did not align with the viewing axis']);
+            node.setAttribute('type','fixed');
+            model = parseJoint(model,node,options);
+            return;
           end
           if abs(dot(axis,options.x_axis))>(1-1e-6)
             child.jcode=2;
             child.jsign = sign(dot(axis,options.x_axis));
-          elseif dot(axis,options.z_axis)>(1-1e-6)
+          elseif dot(axis,options.y_axis)>(1-1e-6)
             child.jcode=3;
             child.jsign = sign(dot(axis,options.z_axis));
           else
@@ -257,6 +258,61 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         child.wrljoint = wrl_joint_origin;
       end
       
+    end
+    
+    function model = parseLoopJoint(model,node,options)
+      loop = PlanarRigidBodyLoop();
+      loop.name = char(node.getAttribute('name'));
+      
+      link1Node = node.getElementsByTagName('link1').item(0);
+      link1 = findLink(model,char(link1Node.getAttribute('link')));
+      loop.body1 = link1;
+      loop.T1 = loop.parseLink(link1Node,options);
+      
+      link2Node = node.getElementsByTagName('link2').item(0);
+      link2 = findLink(model,char(link2Node.getAttribute('link')));
+      loop.body2 = link2;
+      loop.T2 = loop.parseLink(link2Node,options);
+      
+      %% find the lowest common ancestor
+      loop.least_common_ancestor = leastCommonAncestor(loop.body1,loop.body2);
+
+      axis=[1;0;0];  % default according to URDF documentation
+      axisnode = node.getElementsByTagName('axis').item(0);
+      if ~isempty(axisnode)
+        if axisnode.hasAttribute('xyz')
+          axis = reshape(str2num(char(axisnode.getAttribute('xyz'))),3,1);
+          axis = axis/(norm(axis)+eps); % normalize
+        end
+      end
+      
+      type = char(node.getAttribute('type'));
+      switch (lower(type))
+        case {'revolute','continuous'}
+          loop.jcode=1;          
+          if dot(axis,options.view_axis)<(1-1e-6)
+            axis
+            options.view_axis
+            error('revolute joints must align with the viewing axis');
+            % note: i don't support negative angles here yet (via jsign),
+            % but could
+          end
+
+        case 'prismatic'
+          if dot(axis,options.x_axis)>(1-1e-6)
+            loop.jcode=2;
+          elseif dot(axis,options.y_axis)>(1-1e-6)
+            loop.jcode=3;
+          else
+            error('axis must be aligned with x or z');
+            % note: i don't support negative angles here yet (via jsign),
+            % but could
+          end
+        otherwise
+          error(['joint type ',type,' not supported (yet?)']);
+      end
+      
+      model.loop=[model.loop,loop];
     end
     
     function model = extractFeatherstone(model,options)

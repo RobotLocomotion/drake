@@ -1,7 +1,8 @@
 function runPassive
 
 p = PlanarRigidBodyManipulator('FourBar.urdf');
-v = PlanarRigidBodyVisualizer('FourBar.urdf',[-8 8 -4 10]);
+v = p.constructVisualizer();
+v.xlim = [-8 8]; v.ylim = [-4 10];
 
 xtraj = p.simulate([0 10]);
 

@@ -56,6 +56,21 @@ classdef Point
       [varargout{:}] = builtin('subsasgn',obj,s,val);
     end
     
+    function varargout = subsref(obj,s)
+      % support the syntax pt.theta, where theta is a coordinate name
+      if (length(s)==1 && strcmp(s(1).type,'.'))
+        tf=strcmp(s(1).subs,obj.frame.coordinates);
+        if any(tf)
+          ind = find(tf,1);
+          varargout = {obj.p(ind)};
+          return;
+        end
+      end
+      % otherwise, call the builting subsref
+      varargout=cell(1,nargout);
+      [varargout{:}] = builtin('subsref',obj,s);
+    end
+    
     function pobj = inFrame(obj,fr,t)
       if (fr == obj.frame)
         pobj = obj;

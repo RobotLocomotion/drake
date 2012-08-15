@@ -135,7 +135,7 @@ classdef RigidBodyModel
       %% extract B matrix
       B = sparse(model.featherstone.NB,0);
       for i=1:length(model.actuator)
-        B(model.actuator(i).body.dofnum,i) = model.actuator(i).reduction;
+        B(model.actuator(i).joint.dofnum,i) = model.actuator(i).reduction;
       end
       model.B = full(B);
       
@@ -223,18 +223,21 @@ classdef RigidBodyModel
           parent.wrlgeometry = [ parent.wrlgeometry, '\nTransform {\n', body.wrljoint, '\n children [\n', body.wrlgeometry, '\n]\n}\n'];
         end
         
-        if (~isempty(body.ground_contact))
-          parent.ground_contact = [parent.ground_contact, body.Ttree(1:2,1:2)*body.ground_contact + body.Ttree(1:2,3)];
+        if (~isempty(body.contact_pts))
+          parent.contact_pts = [parent.contact_pts, body.Ttree(1:end-1,:)*[body.contact_pts;ones(1,size(body.contact_pts,2))]];
         end
         
         % todo: handle loops
-        if (~isempty(model.loop) && (~isempty(model.loop.body1 == body || model.loop.body2 == body)))
+        if (~isempty(model.loop) && any(model.loop.body1 == body || model.loop.body2 == body))
           error('loop_joints connected to fixed links not implemented yet');
         end
           
         % error on actuators
-        if (~isempty(model.actuator) && isempty([model.actuator.body] == body))
-          error('actuators shouldn''t be attached to fixed joints');
+        if (~isempty(model.actuator) && any([model.actuator.joint] == body))
+          model.actuator(find([model.actuator.joint]==body))=[];
+          % actuators could be attached to fixed joints, because I
+          % occasionally weld joints together (e.g. in planar processing of
+          % a 3D robot)
         end
         
         % connect children to parents
@@ -384,7 +387,7 @@ classdef RigidBodyModel
     end
     
     function model = parseLoopJoint(model,node,options)
-      error('not updated yet');
+      error('not implemented yet');
       
       loop = RigidBodyLoop();
       loop.name = char(node.getAttribute('name'));
@@ -453,7 +456,7 @@ classdef RigidBodyModel
           case 'actuator'
             actuator.name = char(thisNode.getAttribute('name'));
           case 'joint'
-            actuator.body = findJoint(model,char(thisNode.getAttribute('name')));
+            actuator.joint = findJoint(model,char(thisNode.getAttribute('name')));
           case 'mechanicalreduction'
             actuator.reduction = str2num(char(thisNode.getFirstChild().getNodeValue()));
           case {'#text','#comment'}
@@ -463,7 +466,7 @@ classdef RigidBodyModel
         end
       end
       
-      if (isempty(actuator.body)) error('transmission elements must specify a joint name'); end
+      if (isempty(actuator.joint)) error('transmission elements must specify a joint name'); end
 
       model.actuator=[model.actuator,actuator];
     end

@@ -41,11 +41,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
         obj = setOutputFrame(obj,stateframe);  % output = state
       end
         
-      if (length(obj.model.loop)>0 || size([obj.model.body.ground_contact],2)>0)
-        warning('haven''t reimplemented position and velocity constraints yet.  these will be ignored.'); 
-      end
-%      obj = obj.setNumPositionConstraints(2*length(obj.model.loop)+size([obj.model.body.ground_contact],2));
-%      obj = obj.setNumVelocityConstraints(0);%size([obj.model.body.ground_contact],2));
+      obj = obj.setNumPositionConstraints(2*length(obj.model.loop));
     end
     
     function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd)
@@ -187,7 +183,6 @@ classdef PlanarRigidBodyManipulator < Manipulator
     end
     
     function phi = positionConstraints(obj,q)
-      error('not implemented yet');  % need to pull from posadev
       phi=[];
 
       % handle kinematic loops
@@ -222,44 +217,8 @@ classdef PlanarRigidBodyManipulator < Manipulator
           error('not implemented yet');
         end
       end
-
-      % handle ground contacts (note: treating all of these as active constraints; should only get here for the active ones)
-      gc_body_inds = find(~cellfun(@isempty,{obj.model.body.ground_contact}));
-      if (~isempty(gc_body_inds)) obj.model = doKinematics(obj.model,q,0*q); end  % note: this is potentially inefficient when automatically computing jacobians
-      for i=gc_body_inds;
-        % adding constraint that z position of ground contact = groundProfile for all contact points
-        body = obj.model.body(i);
-        pts = body.T*[body.ground_contact; ones(1,size(body.ground_contact,2))]; %[0;0;1];
-        phi = [phi; pts(2,:)-obj.groundProfile(pts(1,:))];
-      end
-
     end
 
-    function psi = velocityConstraints(obj,q,qd)
-      error('not implemented yet');  % need to pull from posadev
-
-      psi=[];
-      
-      % implement ground contact xdot = 0 constraints
-      gc_body_inds = find(~cellfun(@isempty,{obj.model.body.ground_contact}));
-      if (isempty(gc_body_inds))
-        return;
-      end
-      
-      obj.model = doKinematics(obj.model,q,qd);  % very inefficient!
-      for i=gc_body_inds;
-        % adding constraint that z position of ground contact = groundProfile for all contact points
-        body = obj.model.body(i);
-        abspts = body.T(2:3,2:3)*body.ground_contact;
-        vpts = body.v(2:3) + body.v(1)*[-abspts(2);abspts(1)];
-        psi = [psi; vpts(2,:)];
-      end
-    end
-    
-    function z=groundProfile(obj,x)
-      z=0*x;
-    end
-    
     function v=constructVisualizer(obj)
       v = PlanarRigidBodyVisualizer(obj.getStateFrame,obj.model);
     end
