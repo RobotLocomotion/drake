@@ -1,7 +1,6 @@
 function runPendLCMControl
 
-load drake_config;
-oldpath = addpath([conf.root,'/examples/Pendulum']);
+oldpath = addpath([getDrakePath,'/examples/Pendulum']);
 
 p=PendulumPlant;
 p = setInputLimits(p,-inf,inf);

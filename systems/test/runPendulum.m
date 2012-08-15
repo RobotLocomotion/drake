@@ -1,7 +1,6 @@
 function runPendulum
 
-load drake_config;
-addpath([conf.root,'/examples/Pendulum']);
+addpath([getDrakePath,'/examples/Pendulum']);
 
 runLCM(PendulumPlant,[],struct('tspan',[0 2]));
 

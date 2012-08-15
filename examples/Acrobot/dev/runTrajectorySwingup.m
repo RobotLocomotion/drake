@@ -1,7 +1,6 @@
 function runTrajectorySwingup
 
-load drake_config;
-addpath([conf.root,'/examples/Acrobot'])
+addpath([getDrakePath,'/examples/Acrobot'])
 
 d = AcrobotPlant;
 v = AcrobotVisualizer;

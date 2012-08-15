@@ -152,13 +152,13 @@ if (~conf.simulationconstructionset_enabled)
   disp(' SimulationConstructionSet not found.  SCS support will be disabled.  To re-enable, get SCS on your machine and add all of the necessary class directories and jar files to your matlab java class path');
 end
 
-
 % save configuration options to config.mat
+conf.additional_unit_test_dirs={};
 conf
 save([conf.root,'/util/drake_config.mat'],'conf');
 
 disp('To manually change any of these entries, use:')
-disp('  editDrakeConfig(field,value);');
+disp('  editDrakeConfig(param,value);');
 
 % if changes have been made to the matlab path, prompt user with option to 
 % save the path for future matlab sessions.
