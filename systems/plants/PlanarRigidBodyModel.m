@@ -119,6 +119,9 @@ classdef PlanarRigidBodyModel < RigidBodyModel
     function model=parseJoint(model,node,options)
 
       parentNode = node.getElementsByTagName('parent').item(0);
+      if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
+          return
+      end
       parent = findLink(model,char(parentNode.getAttribute('link')));
       
       childNode = node.getElementsByTagName('child').item(0);
