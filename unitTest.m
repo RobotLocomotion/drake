@@ -11,6 +11,16 @@ function tree=unitTest(options)
 %
 % crawls static methods, looks for NOTEST, ...
 %
+% @option autorun if true, starts running the tests immediately.  @default
+% false
+% @option gui if true, shows the gui. set to false for the text only, non-interactive version 
+% @default true
+% @option additional_dirs a cell matrix of strings specifying additional
+% directories to use as unit tests.
+% NOTE: you may also add additional unit test directories by using
+%  editDrakeConfig('additional_unit_test_dirs',dirs)
+% where dirs is the cell matrix of strings.
+%
 % All unit tests should always be run (and all tests should pass) before 
 % anything is committed back into the Drake repository.
 
@@ -20,6 +30,17 @@ function tree=unitTest(options)
 if (nargin<1) options=struct(); end
 if ~isfield(options,'autorun') options.autorun = false; end
 if ~isfield(options,'gui') options.gui = true; end
+if ~isfield(options,'additional_dirs') options.additional_dirs = {}; 
+elseif ~iscell(options.additional_dirs) 
+  options.additional_dirs = {options.additional_dirs};
+end
+load drake_config.mat;
+if isfield(conf,'additional_unit_test_dirs')
+  if ~iscell(conf.additional_unit_test_dirs)
+    conf.additional_unit_test_dirs = {conf.additional_unit_test_dirs};
+  end
+  options.additional_dirs = {options.additional_dirs{:},conf.additional_unit_test_dirs{:}};
+end
 
 if (options.gui)
   warning('off','MATLAB:uitree:DeprecatedFunction');
@@ -40,6 +61,9 @@ crawlDir('systems',root,true,options);
 crawlDir('drivers',root,true,options);
 crawlDir('util',root,true,options);
 crawlDir('examples',root,false,options);
+for i=1:numel(options.additional_dirs)
+  crawlDir(options.additional_dirs{1},root,false,options);
+end
 
 if (options.gui)
   [tree,treecont] = uitree('v0','Root',root);
@@ -229,10 +253,15 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
 
   p = pwd;
   cd(pdir);
-
+  if exist('.NOTEST','file')
+    cd(p);
+    return;
+  end
+  
   if (options.gui)
     data=struct('pass',0,'fail',0,'wait',0,'path',pdir);
-    node = uitreenode('v0',pdir,['<html>',pdir,sprintf(' &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait)],[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
+    htmldir = strrep(pdir,'/','&#47');
+    node = uitreenode('v0',htmldir,['<html>',htmldir,sprintf(' &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait)],[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
     set(node,'UserData',data);
     pnode.add(node);
   else
