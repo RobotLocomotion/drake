@@ -494,7 +494,7 @@ classdef RigidBodyModel
       fprintf(fp,'## ------------------------------------------------- ##\n\n');
       
       % write default background color  % todo: get this from urdf?
-      fprintf(fp,'Background {\n\tskyColor 0 0 0\n}\n\n');
+      fprintf(fp,'Background {\n\tskyColor 1 1 1\n}\n\n');
       
       % write default viewpoints
       fprintf(fp,'Viewpoint {\n\tdescription "right"\n\tposition 0 -4 0\n\torientation 1 0 0 1.5708\n}\n\n');
