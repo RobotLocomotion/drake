@@ -79,6 +79,11 @@ classdef RigidBodyModel
         model = parseTransmission(model,transmissions.item(i),options);
       end
 
+      gazebos = node.getElementsByTagName('gazebo');
+      for i=0:(gazebos.getLength()-1)
+        model = parseGazebo(model,gazebos.item(i),options);
+      end
+      
     end
     
     function newmodel = copy(model)
@@ -172,6 +177,31 @@ classdef RigidBodyModel
       end
     end
 
+    function model = parseGazebo(model,node,options)
+      ref = char(node.getAttribute('reference'));
+      if ~isempty(ref)
+        body = findLink(model,ref,false);
+        if ~isempty(body)
+          grav = node.getElementsByTagName('turnGravityOff').item(0);
+          if ~isempty(grav)
+            val='';
+            if grav.hasAttribute('value')
+              val = grav.getAttribute('value');
+            elseif grav.hasChildNodes
+              val = grav.getChildNodes.item(0).getNodeValue();
+            end
+            if strcmpi(val,'true')
+              body.gravity_off = true;
+            end
+          end
+        end
+%        joint = findJoint(model,ref,false)
+%        if ~isempty(joint)
+%          todo: parse initial conditions here?
+%        end
+      end
+    end
+    
   end
   
   methods  % make these private?
@@ -192,6 +222,9 @@ classdef RigidBodyModel
         m.pitch(i) = b.pitch;
         m.Xtree{i} = b.X_body_to_joint*b.Xtree*inv(b.parent.X_body_to_joint);
         m.I{i} = inv(b.X_body_to_joint)'*b.I*inv(b.X_body_to_joint);
+%        if isequal(m.I{i},zeros(6))
+%          error(['Body ',model.body.linkname,' has zero inertia.  that''s bad']);
+%        end
         m.damping(i) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
       end
       model.featherstone = m;
@@ -202,11 +235,17 @@ classdef RigidBodyModel
       % inertia to their parents, and connecting their children directly to
       % their parents
 
-      fixedind = find(isnan([model.body.pitch]));
+      fixedind = find(isnan([model.body.pitch]) | ... % actual fixed joint
+        [model.body.gravity_off] | ...                % gazebo flag turns gravity off
+        cellfun(@(a)~any(any(a)),{model.body.I}));    % body has no inertia (yes, it happens in pr2.urdf)
       
       for i=fixedind(end:-1:1)  % go backwards, since it is presumably more efficient to start from the bottom of the tree
         body = model.body(i);
         parent = body.parent;
+        
+        if ~isnan(body.pitch) && body.gravity_off==false && ~any(any(body.I))
+          warning('DRC:RigidBodyModel:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
+        end
         
         parent.linkname=[parent.linkname,'+',body.linkname];
         
@@ -217,10 +256,12 @@ classdef RigidBodyModel
         end
         
         % add wrl geometry into parent
-        if isempty(body.wrljoint)
-          parent.wrlgeometry = [ parent.wrlgeometry, '\n', body.wrlgeometry ];
-        else
-          parent.wrlgeometry = [ parent.wrlgeometry, '\nTransform {\n', body.wrljoint, '\n children [\n', body.wrlgeometry, '\n]\n}\n'];
+        if ~isempty(body.wrlgeometry)
+          if isempty(body.wrljoint)
+            parent.wrlgeometry = [ parent.wrlgeometry, '\n', body.wrlgeometry ];
+          else
+            parent.wrlgeometry = [ parent.wrlgeometry, '\nTransform {\n', body.wrljoint, '\n children [\n', body.wrlgeometry, '\n]\n}\n'];
+          end
         end
         
         if (~isempty(body.contact_pts))
@@ -241,9 +282,12 @@ classdef RigidBodyModel
         end
         
         % connect children to parents
-        children = find([model.body.parent] == body);
+%        children = find([model.body.parent] == body);
         for j=1:length(model.body),
           if model.body(j).parent == body
+            if (body.gravity_off && ~model.body(j).gravity_off)
+              error([model.body(j).linkname,' has gravity on, but it''s parent, ', body.linkname,' has gravity off']);
+            end
             model.body(j).parent = body.parent;
             model.body(j).Ttree = body.Ttree*model.body(j).Ttree;
             model.body(j).Xtree = model.body(j).Xtree*body.Xtree;
@@ -257,10 +301,14 @@ classdef RigidBodyModel
       end
     end
 
-    function body = findLink(model,linkname)
+    function body = findLink(model,linkname,throw_error)
       ind = strmatch(lower(linkname),lower({model.body.linkname}),'exact');
       if (length(ind)~=1)
-        error(['couldn''t find unique link ' ,linkname]);
+        if (nargin<3 || throw_error)
+          error(['couldn''t find unique link ' ,linkname]);
+        else 
+          body=[];
+        end
       else
         body = model.body(ind);
       end
