@@ -236,8 +236,8 @@ classdef RigidBodyModel
       % their parents
 
       fixedind = find(isnan([model.body.pitch]) | ... % actual fixed joint
-        [model.body.gravity_off] | ...                % gazebo flag turns gravity off
         cellfun(@(a)~any(any(a)),{model.body.I}));    % body has no inertia (yes, it happens in pr2.urdf)
+%        [model.body.gravity_off] | ...                % gazebo flag turns gravity off
       
       for i=fixedind(end:-1:1)  % go backwards, since it is presumably more efficient to start from the bottom of the tree
         body = model.body(i);
