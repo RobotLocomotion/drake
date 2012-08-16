@@ -244,6 +244,10 @@ classdef RigidBodyModel
         parent = body.parent;
         
         if ~isnan(body.pitch) && body.gravity_off==false && ~any(any(body.I))
+          if isempty(parent)
+            % if it happens to be a root joint, then it's allowed.  don't remove this one.
+            continue;
+          end
           warning('DRC:RigidBodyModel:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
         end
         
