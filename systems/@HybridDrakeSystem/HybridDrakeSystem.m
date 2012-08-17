@@ -3,7 +3,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
   % some restrictions on the mode systems:
   %  must be CT only 
   
-  properties (SetAccess=private)
+  properties (SetAccess=private,GetAccess=protected)
     % modes:
     modes={};       % cell array of systems representing each state (or mode) 
     mode_names={};

@@ -248,7 +248,7 @@ classdef RigidBodyModel
             % if it happens to be a root joint, then it's allowed.  don't remove this one.
             continue;
           end
-          warning('DRC:RigidBodyModel:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
+          warning('Drake:RigidBodyModel:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
         end
         
         parent.linkname=[parent.linkname,'+',body.linkname];

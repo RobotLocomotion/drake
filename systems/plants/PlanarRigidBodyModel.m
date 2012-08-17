@@ -206,6 +206,8 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           body1.jcode=2;
           body1.jsign=jsign;
           body1.damping=damping;
+          body1.joint_limit_min = -inf;
+          body1.joint_limit_max = inf;
           body1.parent=parent;
           body2=newBody(model);
           body2.linkname=[child.jointname,'_z'];
@@ -215,6 +217,8 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           body2.jcode=3;
           body2.jsign=jsign;
           body2.damping=damping;
+          body2.joint_limit_min = -inf;
+          body2.joint_limit_max = inf;
           body2.parent = body1;
           child.pitch=0;
           child.joint_axis=axis;
@@ -231,6 +235,19 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         otherwise
           error(['joint type ',type,' not supported in planar models']);
       end
+      
+      child.joint_limit_min=-inf;
+      child.joint_limit_max=inf;
+      limits = node.getElementsByTagName('limit').item(0);
+      if ~isempty(limits)
+        if limits.hasAttribute('lower')
+          child.joint_limit_min = str2num(char(limits.getAttribute('lower')));
+        end
+        if limits.hasAttribute('upper');
+          child.joint_limit_max = str2num(char(limits.getAttribute('upper')));
+        end          
+      end
+      
       
       if any(rpy)
         rpya=rpy2axis(rpy); rpyangle=rpya(4); rpyaxis=rpya(1:3);

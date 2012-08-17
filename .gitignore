@@ -44,3 +44,7 @@ examples/pr2/wrist_roll.wrl
 examples/pr2/wrist_roll.wrl.bak
 doc/derivations/rigidBodyDynamicsWConstraints.aux
 doc/derivations/rigidBodyDynamicsWConstraints.log
+doc/derivations/elib.bib
+doc/derivations/rigidBodyDynamicsWConstraints.bbl
+doc/derivations/rigidBodyDynamicsWConstraints.blg
+doc/derivations/rigidBodyDynamicsWConstraints.tex.bk
