@@ -19,3 +19,5 @@ else
   xtraj = simulate(r,[0 5],x0);
   v.playback(xtraj);
 end
+
+% NOTEST  - hudson can't handle it
