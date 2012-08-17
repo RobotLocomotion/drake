@@ -19,6 +19,8 @@ classdef RigidBody < handle
     Ttree=eye(4);   % position space coordinate transform *from this node to parent*
     wrljoint='';  % tranformation to joint coordinates in wrl syntax
     damping=0;
+    joint_limit_min=[];
+    joint_limit_max=[];
     
     % dynamic properties (e.g. state at runtime)
     cached_q_qd = []; % the current contents of T and v were computed using these q and qd values 

@@ -24,7 +24,6 @@
 
 
 \title{Drake Implementation of Rigid Body Dynamics Algorithms with Constraints}
-\author{Russ Tedrake}
 
 \begin{document}
 \maketitle
@@ -173,6 +172,11 @@ J \dot{q}^-.$$  Substituting this back in above results in
 $$\dot{q}^+ = \left[ I - H^{-1} J^T \left[ J H^{-1} J^T \right]^+ J
 \right] \dot{q}^-.$$
 
+So far, I assume all collisions are inelastic.  Elastic
+collisions are also possible, but require some care implementing
+restitution (especially in the contact case described below).  An
+excellent discussion can be found in chapter 3 of \cite{Mirtich96}.  
+
 
 \section{Contact Constraints}
 
@@ -184,7 +188,7 @@ $$\dot{q}^+ = \left[ I - H^{-1} J^T \left[ J H^{-1} J^T \right]^+ J
 \section{Putting it all together}
 
 
-%\bibliographystyle{plain}
-%\bibliography{elib}
+\bibliographystyle{plain}
+\bibliography{elib}
 
 \end{document}

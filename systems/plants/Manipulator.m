@@ -3,14 +3,8 @@ classdef Manipulator < SecondOrderSystem
 % Coming soon:  will also support bilateral constraints of the form: phi(q)=0.
 
   methods
-    function obj = Manipulator(num_q, num_u, num_position_constraints, num_velocity_constraints)
+    function obj = Manipulator(num_q, num_u)
       obj = obj@SecondOrderSystem(num_q,num_u,true);
-      if (nargin>2)  % else num_position_constraints=0 by default
-        obj = obj.setNumPositionConstraints(num_position_constraints);
-      end
-      if (nargin>3)  % else num_velocity_constraints=0 by default
-        obj = obj.setNumVelocityConstraints(num_velocity_constraints);
-      end
     end
   end
   
@@ -35,7 +29,15 @@ classdef Manipulator < SecondOrderSystem
       Hinv = inv(H);
       
       if (obj.num_u>0) tau=B*u; else tau=zeros(obj.num_q,1); end
+      tau = tau + computeConstraintForce(obj,q,qd,H,C,B,Hinv);
       
+      qdd = Hinv*(tau - C);
+      % note that I used to do this (instead of calling inv(H)):
+      %   qdd = H\(tau - C)
+      % but I already have and use Hinv, so use it again here
+    end
+    
+    function constraint_force = computeConstraintForce(obj,q,qd,H,C,B,Hinv)
       phi=[]; psi=[];
       if (obj.num_position_constraints>0 && obj.num_velocity_constraints>0)
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
@@ -61,22 +63,10 @@ classdef Manipulator < SecondOrderSystem
         
         constraint_force = -dpsidqd'*inv(dpsidqd*Hinv*dpsidqd')*(dpsidq*qd + dpsidqd*Hinv*(tau-C)+beta*psi);
       else
-        constraint_force=0*q;
+        constraint_force = 0*q;
       end
-      
-%      [phi;psi]
-
-      % todo: make this a more proper tolerance (which can be set
-      % independently, or which is derived from the ode parameters?)
-      % tol = 1e-4;
-      % if (any(abs([phi;psi])>tol)) error('this state violates the bilateral constraints');  end
-      
-      qdd = Hinv*(tau + constraint_force - C);
-      % note that I used to do this (instead of calling inv(H)):
-      %   qdd = H\(tau - C)
-      % but I already have and use Hinv, so use it again here
     end
-    
+          
     function [xdot, dxdot] = dynamics(obj,t,x,u)
       % Provides the dynamics interface for sodynamics.  This function
       % does not handle contact or joint limits!

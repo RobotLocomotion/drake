@@ -3,7 +3,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
   % provided by Roy Featherstone on his website: 
   %   http://users.cecs.anu.edu.au/~roy/spatial/documentation.html
     
-  properties (SetAccess=private,GetAccess=private)  
+  properties (SetAccess=private,GetAccess=protected)  
     model;     % PlanarRigidBodyModel object
   end
   
@@ -11,12 +11,11 @@ classdef PlanarRigidBodyManipulator < Manipulator
     function obj = PlanarRigidBodyManipulator(model)
       obj = obj@Manipulator(0,0);
 
-      options=struct('twoD',true);
       if (nargin<1)
         [filename,pathname]=uigetfile('*.urdf');
-        obj.model = PlanarRigidBodyModel(fullfile(pathname,filename),options);
+        obj.model = PlanarRigidBodyModel(fullfile(pathname,filename));
       elseif ischar(model)
-        obj.model = PlanarRigidBodyModel(model,options);
+        obj.model = PlanarRigidBodyModel(model);
       elseif isa(model,'PlanarRigidBodyModel')
         obj.model = model;
       else
@@ -42,6 +41,13 @@ classdef PlanarRigidBodyManipulator < Manipulator
       end
         
       obj = obj.setNumPositionConstraints(2*length(obj.model.loop));
+      
+      if (any([obj.model.body.joint_limit_min]~=-inf) || any([obj.model.body.joint_limit_max]~=inf))
+        warning('Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
+      end
+      if ~isempty([obj.model.body.contact_pts])
+        warning('Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
+      end
     end
     
     function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd)
