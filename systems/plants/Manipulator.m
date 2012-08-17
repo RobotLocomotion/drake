@@ -28,16 +28,16 @@ classdef Manipulator < SecondOrderSystem
       [H,C,B] = manipulatorDynamics(obj,q,qd);
       Hinv = inv(H);
       
-      if (obj.num_u>0) tau=B*u; else tau=zeros(obj.num_q,1); end
-      tau = tau + computeConstraintForce(obj,q,qd,H,C,B,Hinv);
+      if (obj.num_u>0) tau=B*u - C; else tau=-C; end
+      tau = tau + computeConstraintForce(obj,q,qd,H,tau,Hinv);
       
-      qdd = Hinv*(tau - C);
+      qdd = Hinv*tau;
       % note that I used to do this (instead of calling inv(H)):
-      %   qdd = H\(tau - C)
+      %   qdd = H\tau
       % but I already have and use Hinv, so use it again here
     end
     
-    function constraint_force = computeConstraintForce(obj,q,qd,H,C,B,Hinv)
+    function constraint_force = computeConstraintForce(obj,q,qd,H,tau,Hinv)
       phi=[]; psi=[];
       if (obj.num_position_constraints>0 && obj.num_velocity_constraints>0)
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
@@ -48,20 +48,20 @@ classdef Manipulator < SecondOrderSystem
         dpsidqd = dpsi(:,obj.num_q+1:end);
         
         term1=Hinv*[J;dpsidqd]';
-        term2=Hinv*(tau-C);
+        term2=Hinv*tau;
         
         constraint_force = -[J;dpsidqd]'*inv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi];
       elseif (obj.num_position_constraints>0)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
         Jdotqd = dJ*reshape(qd*qd',obj.num_q^2,1);
 
-        constraint_force = -J'*(inv(J*Hinv*J')*(J*Hinv*(tau-C) + Jdotqd + alpha*J*qd));
+        constraint_force = -J'*(inv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + alpha*J*qd));
       elseif (obj.num_velocity_constraints>0)
         [psi,J] = geval(@obj.velocityConstraints,q,qd);
         dpsidq = J(:,1:obj.num_q);
         dpsidqd = J(:,obj.num_q+1:end);
         
-        constraint_force = -dpsidqd'*inv(dpsidqd*Hinv*dpsidqd')*(dpsidq*qd + dpsidqd*Hinv*(tau-C)+beta*psi);
+        constraint_force = -dpsidqd'*inv(dpsidqd*Hinv*dpsidqd')*(dpsidq*qd + dpsidqd*Hinv*tau+beta*psi);
       else
         constraint_force = 0*q;
       end
