@@ -8,6 +8,9 @@ classdef PlanarRigidBodyManipulatorWContact < PlanarRigidBodyManipulator
   
   methods
     function obj=PlanarRigidBodyManipulatorWContact(model)
+      
+      checkDependency('pathlcp_enabled');
+      
       S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
       obj = obj@PlanarRigidBodyManipulator(model);
       warning(S);
@@ -33,18 +36,19 @@ classdef PlanarRigidBodyManipulatorWContact < PlanarRigidBodyManipulator
       end
     end
     
-    function constraint_force = computeConstraintForce(obj,q,qd,H,C,B,Hinv)
+    function constraint_force = computeConstraintForce(obj,q,qd,H,tau,Hinv)
       [phi,J,Jdot] = jointLimits(obj,q);
       phidot = J*qd;
       lambda=zeros(size(J,1),1);
       
-      epsinv = 1/.01;
-      phi
-      phidot
+      epsinv = 0; %1/.01;
       lcp_ind = (phi<=0 & phidot <= -epsinv*phi);
       
-      if ~isempty(lcp_ind)
-        error('not implemented yet');
+      if any(lcp_ind)
+        Jlcp = J(lcp_ind,:);
+        M = Jlcp*Hinv*Jlcp';
+        b = Jdot(lcp_ind,:)*qd + Jlcp*Hinv*tau - 2*epsinv*phidot(lcp_ind) - epsinv^2*phi(lcp_ind);
+        lambda(lcp_ind) = pathlcp(M,b);
       end
       constraint_force = J'*lambda;
     end

@@ -64,6 +64,7 @@ addpath([conf.root,'/systems/estimators']);
 addpath([conf.root,'/systems/trajectories']);
 addpath([conf.root,'/util']);
 addpath([conf.root,'/util/obstacles']);
+addpath([conf.root,'/thirdParty/path']);
 addpath([conf.root,'/thirdParty/spatial']);
 addpath([conf.root,'/thirdParty/graphviz2mat']);
 
@@ -74,17 +75,14 @@ addpath([conf.root,'/thirdParty/graphviz2mat']);
 % check for all dependencies
 
 v=ver('simulink');
-if (isempty(v)) conf.simulink_enabled = false;
-else  
-  ind = find(v.Version,'.','first');
-  major_ver = str2num(v.Version(1:ind));
-  minor_ver = str2num(v.Version((ind+2):end));
-  if (major_ver < 7 || (major_ver==7 && minor_ver < 3)) 
-    warning('Some features of Drake reguires SIMULINK version 7.3 or above.');
-    % haven't actually tested with lower versions
-    conf.simulink_enabled = false;
-  end
-conf.simulink_enabled = true;
+if (isempty(v)) 
+  conf.simulink_enabled = false;
+elseif verLessThan('simulink','7.3')
+  warning('Some features of Drake reguires SIMULINK version 7.3 or above.');
+  % haven't actually tested with lower versions
+  conf.simulink_enabled = false;
+else
+  conf.simulink_enabled = true;
 end
 
 conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
@@ -144,6 +142,13 @@ end
 conf.yalmip_enabled = logical(exist('sdpvar'));
 if (~conf.yalmip_enabled)
   disp(' YALMIP not found.  YALMIP support will be disabled.  To re-enable, install YALMIP and rerun configure.'); 
+end
+
+conf.pathlcp_enabled = ~isempty(getenv('PATH_LICENSE_STRING'));
+if (~conf.pathlcp_enabled)
+  disp('The PATH LCP solver (in the thirdparty directory) needs you to get the setup the license: http://pages.cs.wisc.edu/~ferris/path.html');
+  disp('I recommend adding a setenv(''PATH_LICENSE_STRING'',...) line to your startup.m');
+  disp('The LCP solver will be disabled');
 end
 
 conf.simulationconstructionset_enabled = ...
