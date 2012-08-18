@@ -15,16 +15,28 @@ classdef Manipulator < SecondOrderSystem
 
   methods
     function x0 = getInitialState(obj)
-      x0 = randn(obj.num_xd+obj.num_xc,1);
-      x0 = resolveConstraints(obj,x0);
+      attempts=0;
+      while (1)
+        x0 = randn(obj.num_xd+obj.num_xc,1);
+        try
+          x0 = resolveConstraints(obj,x0);
+        catch ex
+          if strcmp(ex.identifier,'Drake:DrakeSystem:FailedToResolveConstraints');
+            attempts = attempts+1;
+            if (attempts>=10)
+              error('Drake:Manipulator:FailedToResolveConstraints','Failed to resolve state constraints on initial conditions after 10 tries');
+            else
+              continue;
+            end
+          end
+        end
+        break;
+      end
     end
 
     function qdd = sodynamics(obj,t,q,qd,u)
     % Provides the SecondOrderDynamics interface to the manipulatorDynamics.
 
-      alpha = 10;  % 1/time constant of position constraint satisfaction (see my latex rigid body notes)
-      beta = 0;    % 1/time constant of velocity constraint satisfaction
-    
       [H,C,B] = manipulatorDynamics(obj,q,qd);
       Hinv = inv(H);
       
@@ -38,6 +50,9 @@ classdef Manipulator < SecondOrderSystem
     end
     
     function constraint_force = computeConstraintForce(obj,q,qd,H,tau,Hinv)
+      alpha = 10;  % 1/time constant of position constraint satisfaction (see my latex rigid body notes)
+      beta = 0;    % 1/time constant of velocity constraint satisfaction
+    
       phi=[]; psi=[];
       if (obj.num_position_constraints>0 && obj.num_velocity_constraints>0)
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
