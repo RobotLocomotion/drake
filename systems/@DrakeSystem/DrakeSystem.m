@@ -211,7 +211,7 @@ classdef DrakeSystem < DynamicalSystem
       [x,~,exitflag] = fsolve(@(x)stateConstraints(obj,x),x0,options);      
       success=(exitflag==1);
       if (nargout<2 && ~success)
-        error('failed to resolve constraints');
+        error('Drake:DrakeSystem:ResolveConstraintsFailed','failed to resolve constraints');
       end
     end
   end  
