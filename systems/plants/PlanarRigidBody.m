@@ -144,8 +144,8 @@ classdef PlanarRigidBody < RigidBody
             l = str2num(char(thisNode.getAttribute('length')));
             
             if (options.view_axis'*T3*[0;0;1;1] == 0) % then it just looks like a box
-              cx = r/2*[-1 1 1 -1 -1 1 1 -1];
-              cy = r/2*[1 1 1 1 -1 -1 -1 -1];
+              cx = r*[-1 1 1 -1 -1 1 1 -1];
+              cy = r*[1 1 1 1 -1 -1 -1 -1];
               cz = l/2*[1 1 -1 -1 -1 -1 1 1];
               
               pts = T*[cx;cy;cz;ones(1,8)];
