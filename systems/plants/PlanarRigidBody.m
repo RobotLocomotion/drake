@@ -108,7 +108,7 @@ classdef PlanarRigidBody < RigidBody
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         [xpts,ypts] = PlanarRigidBody.parseGeometry(geomnode,xyz,rpy,options);
-        body.contact_pts=[xpts'; ypts'];
+        body.contact_pts=unique([xpts(:), ypts(:)],'rows')';
       end
     end
   end
@@ -185,17 +185,24 @@ classdef PlanarRigidBody < RigidBody
               pts=regexp(txt,'point \[([^\]]*)\]','tokens'); pts = pts{1}{1};
               pts=strread(pts,'%f','delimiter',' ,');
               pts=reshape(pts,3,[]);
+
+%              save testmesh.mat pts ind T;
+
               pts=T*[pts(1:3,:);ones(1,size(pts,2))];
 
               n=max(diff(find(ind==0)));
               if (min(diff(find(ind==0)))~=n), error('need to handle this case'); end
               ind = reshape(ind,n,[]); ind(end,:)=[];
 
+              %% remove repeated indices (from 3D to 2D conversion)
+%              [pts,ipts,iind]=unique(pts','rows'); pts=pts';
+%              ind = iind(ind);
 
               x=pts(1,:); x=x(ind); y=pts(2,:); y=y(ind);
-              h=patch(x,y,.7*[1 1 1],'EdgeColor','none');
-              pause;
-              delete(h);
+%              clf
+%              h=patch(x,y,.7*[1 1 1]);%,'EdgeColor','none');
+%              pause;
+%              delete(h);
             end
 
           case {'#text','#comment'}
@@ -205,7 +212,7 @@ classdef PlanarRigidBody < RigidBody
         end
       end
 
-      
+
     end
   end
   

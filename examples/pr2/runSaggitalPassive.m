@@ -7,7 +7,6 @@ v.display_dt = .05;
 
 x0 = Point(r.getStateFrame);
 v.draw(0,double(x0));
-return;
 
 if (1)
   % Run animation while it is simulating (as fast as possible, but probably
@@ -22,4 +21,3 @@ else
   v.playback(xtraj);
 end
 
-% NOTEST  - hudson can't handle it
