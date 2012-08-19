@@ -12,6 +12,7 @@ classdef PlanarRigidBody < RigidBody
       obj.I = zeros(3);
       obj.Xtree = eye(3);
       obj.Ttree = eye(3);
+      obj.T = eye(3);
     end
     
 
@@ -168,12 +169,42 @@ classdef PlanarRigidBody < RigidBody
               pts = r*[cos(theta); sin(theta)] + repmat(T*[0;0;0;1],1,length(theta));
               x=pts(1,:)';y=pts(2,:)';
             end
+
+          case 'mesh'
+            filename=char(thisNode.getAttribute('filename'));
+            [path,name,ext] = fileparts(filename);
+            path = strrep(path,'package://','');
+            if strcmpi(ext,'.stl')
+              wrlfile = fullfile(tempdir,[name,'.wrl']);
+              stl2vrml(fullfile(path,[name,ext]),tempdir);
+              txt=fileread(wrlfile);
+
+              ind=regexp(txt,'coordIndex \[([^\]]*)\]','tokens'); ind = ind{1}{1};
+              ind=strread(ind,'%d','delimiter',' ,')+1; 
+              
+              pts=regexp(txt,'point \[([^\]]*)\]','tokens'); pts = pts{1}{1};
+              pts=strread(pts,'%f','delimiter',' ,');
+              pts=reshape(pts,3,[]);
+              pts=T*[pts(1:3,:);ones(1,size(pts,2))];
+
+              n=max(diff(find(ind==0)));
+              if (min(diff(find(ind==0)))~=n), error('need to handle this case'); end
+              ind = reshape(ind,n,[]); ind(end,:)=[];
+
+
+              x=pts(1,:); x=x(ind); y=pts(2,:); y=y(ind);
+              h=patch(x,y,.7*[1 1 1],'EdgeColor','none');
+              pause;
+              delete(h);
+            end
+
           case {'#text','#comment'}
             % intentionally blank
           otherwise
             warning([char(thisNode.getNodeName()),' is not a supported element of robot/link/visual/material.']);
         end
       end
+
       
     end
   end

@@ -113,6 +113,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
     
     function model=parseJoint(model,node,options)
 
+
       parentNode = node.getElementsByTagName('parent').item(0);
       if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
           return
@@ -121,12 +122,11 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       
       childNode = node.getElementsByTagName('child').item(0);
       child = findLink(model,char(childNode.getAttribute('link')));
-      
+      child.jointname = char(node.getAttribute('name'));
+
       if (child.parent>=0)
         error('there is already a joint connecting this child to a parent');
       end
-      
-      child.jointname = char(node.getAttribute('name'));
       child.parent = parent;
       
       type = char(node.getAttribute('type'));
@@ -158,6 +158,20 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           damping = str2num(char(dynamics.getAttribute('damping')));
         end
       end
+
+      
+      if any(rpy)
+        rpya=rpy2axis(rpy); rpyangle=rpya(4); rpyaxis=rpya(1:3);
+        if abs(dot(rpyaxis,options.view_axis))<(1-1e-6)
+%          error('joints out of the plane are not supported, and will be removed (along with their descendants)');
+          % note that if they were, it would change the way that I have to 
+          % parse geometries, inertias, etc, for all of the children.
+        elseif dot(rpyaxis,options.view_axis)<0
+          rpyangle=-rpyangle;
+        end
+      else
+        rpyangle=0;
+      end
       
       switch (lower(type))
         case {'revolute','continuous'}
@@ -186,7 +200,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
             child.jsign = sign(dot(axis,options.x_axis));
           elseif dot(axis,options.y_axis)>(1-1e-6)
             child.jcode=3;
-            child.jsign = sign(dot(axis,options.z_axis));
+            child.jsign = sign(dot(axis,options.y_axis));
           else
             error('Currently only prismatic joints with their axis in the x-axis or z-axis are supported right now (twoD assumes x-z plane)');
           end
@@ -248,23 +262,10 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         end          
       end
       
-      
-      if any(rpy)
-        rpya=rpy2axis(rpy); rpyangle=rpya(4); rpyaxis=rpya(1:3);
-        if abs(dot(rpyaxis,options.view_axis))<(1-1e-6)
-          error('joints out of the plane are not supported');
-          % note that if they were, it would change the way that I have to 
-          % parse geometries, inertias, etc, for all of the children.
-        elseif dot(rpyaxis,options.view_axis)<0
-          rpyangle=-rpyangle;
-        end
-      else
-        rpyangle=0;
-      end
-      
       xy = [options.x_axis'; options.y_axis']*xyz;
       child.Xtree = Xpln(rpyangle,xy);
       child.Ttree = [rotmat(rpyangle),xy; 0,0,1];
+      child.T = parent.T*child.Ttree;
       child.damping = damping;
       
       if ~isempty(wrl_joint_origin)
