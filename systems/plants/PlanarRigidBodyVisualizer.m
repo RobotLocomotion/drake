@@ -52,7 +52,8 @@ classdef PlanarRigidBodyVisualizer < Visualizer
           pts = body.T*[reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n); ones(1,n)];
           xpts = reshape(pts(1,:),s); ypts = reshape(pts(2,:),s);
 
-          patch(xpts,ypts,body.geometry{j}.c); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
+          patch(xpts,ypts,body.geometry{j}.c,'LineWidth',2); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
+          patch(xpts,ypts,body.geometry{j}.c,'EdgeColor','none'); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
 
           % for debugging:
           %h(i)=patch(xpts,ypts,co(mod(i-2,size(co,1))+1,:));

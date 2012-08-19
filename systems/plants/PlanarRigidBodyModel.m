@@ -96,9 +96,9 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         % add geometry into parent
         if (~isempty(body.geometry))
           for j=1:length(body.geometry)
-            pts = body.Ttree * [body.geometry{j}.x'; body.geometry{j}.y'; ones(1,size(body.geometry{j}.x,1))];
-            body.geometry{j}.x = pts(1,:)';
-            body.geometry{j}.y = pts(2,:)';
+            pts = body.Ttree * [reshape(body.geometry{j}.x,1,[]); reshape(body.geometry{j}.y,1,[]); ones(1,numel(body.geometry{j}.x))];
+            body.geometry{j}.x = reshape(pts(1,:),size(body.geometry{j}.x));
+            body.geometry{j}.y = reshape(pts(2,:),size(body.geometry{j}.y));
             parent.geometry = {parent.geometry{:},body.geometry{j}};
           end
         end
