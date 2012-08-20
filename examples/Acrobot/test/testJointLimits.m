@@ -1,4 +1,4 @@
-function runPassiveURDF()
+function testJointLimits()
 % Simulate the passive acrobot
 
 %r = PlanarRigidBodyManipulator('../Acrobot.urdf');
