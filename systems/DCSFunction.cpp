@@ -40,18 +40,6 @@ bool mexCallMATLABsafe(SimStruct* S, int nlhs, mxArray* plhs[], int nrhs, mxArra
     mxFree(errmsg);
     mxDestroyArray(report);
     ssSetErrorStatus(S, "\n\nDrakeSystem S-Function: error in MATLAB callback.\nSee additional debugging information above");
-
-    // note: would prefer to give this more useful feedback, but it crashes the gui for some reason:
-/*
-    mxArray *in[2]; in[0] = ex; in[1] = mxCreateString("basic");
-    mexCallMATLAB(1,&report,2,in,"getReport");
-    errmsg = mxArrayToString(report);
-    ssSetErrorStatus(S, errmsg); //"\n\nDrakeSystem S-Function: error in MATLAB callback.\nSee additional debugging information above");
-    // mxFree(errmsg); // note: can't do this.  error status needs it to stay in memory.
-    mxDestroyArray(report);
-    mxDestroyArray(in[1]);
- */
-    
     mxDestroyArray(ex);
     return true;
   }
@@ -483,6 +471,11 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   if (num_w>0) memcpy(mxGetPr(prhs[4]), w, sizeof(real_T)*num_w);
   
   if (mexCallMATLABsafe(S,1,plhs,sds?5:4,prhs,sds?"stochasticUpdate":"update")) return;
+  if (!mxIsDouble(plhs[0]) || mxGetNumberOfElements(plhs[0])!=num_xd) {
+    mexPrintf("I expected xdn to have %d elements, but got  %d.\n",num_xd,mxGetNumberOfElements(plhs[0]));
+    ssSetErrorStatus(S, "\n\nDrakeSystem S-Function: error in MATLAB update callback: update did not return a double with the correct number of elements.");
+  }
+  
   memcpy(xd,mxGetPr(plhs[0]),sizeof(real_T)*num_xd);
   mxDestroyArray(plhs[0]);
 

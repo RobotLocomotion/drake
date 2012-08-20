@@ -61,7 +61,6 @@
     <origin xyz="0 .1 -1" />
     <axis xyz="0 1 0" />
     <dynamics damping="0.1" />
-    <limit lower="-1.5" upper="1.5" />
   </joint>
 
   <transmission type="SimpleTransmission" name="elbow_trans">

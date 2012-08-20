@@ -3,8 +3,10 @@ classdef PlanarRigidBodyManipulator < Manipulator
   % provided by Roy Featherstone on his website: 
   %   http://users.cecs.anu.edu.au/~roy/spatial/documentation.html
     
-  properties (SetAccess=private,GetAccess=protected)  
+  properties (SetAccess=private,GetAccess=public)  
     model;     % PlanarRigidBodyModel object
+    joint_limit_min
+    joint_limit_max
   end
   
   methods
@@ -42,7 +44,9 @@ classdef PlanarRigidBodyManipulator < Manipulator
         
       obj = obj.setNumPositionConstraints(2*length(obj.model.loop));
       
-      if (any([obj.model.body.joint_limit_min]~=-inf) || any([obj.model.body.joint_limit_max]~=inf))
+      obj.joint_limit_min = [obj.model.body.joint_limit_min]';
+      obj.joint_limit_max = [obj.model.body.joint_limit_max]';
+      if (any(obj.joint_limit_min~=-inf) || any(obj.joint_limit_max~=inf))
         warning('Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
       if ~isempty([obj.model.body.contact_pts])
@@ -223,6 +227,13 @@ classdef PlanarRigidBodyManipulator < Manipulator
           error('not implemented yet');
         end
       end
+    end
+    
+    function [phi,J,Jdot] = jointLimits(obj,q)
+      phi = [q-obj.joint_limit_min; obj.joint_limit_max-q]; phi=phi(~isinf(phi));
+      J = [eye(obj.num_q); -eye(obj.num_q)];  
+      J([obj.joint_limit_min==-inf;obj.joint_limit_max==inf],:)=[]; 
+      Jdot = 0*J;
     end
 
     function v=constructVisualizer(obj)

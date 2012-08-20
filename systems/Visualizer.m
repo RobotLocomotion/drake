@@ -65,10 +65,13 @@ classdef Visualizer < DrakeSystem
       
       tic;
       
+      ts = getSampleTime(xtraj); 
+      
       if (obj.playback_speed<=0)  % then playback as quickly as possible
         t=tspan(1);
         while (t<tspan(end))
           t = tspan(1)+obj.playback_speed*toc;
+          if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
           x = xtraj.eval(t);
           obj.draw(t,x);
           if (obj.display_time)
@@ -91,6 +94,7 @@ classdef Visualizer < DrakeSystem
           stop(timerobj);
           return;
         end
+        if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
         x = xtraj.eval(t);
         obj.draw(t,x);
         if (obj.display_time)

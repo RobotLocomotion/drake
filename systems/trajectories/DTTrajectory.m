@@ -13,6 +13,15 @@ classdef DTTrajectory < Trajectory
       if (~isrow(tt)) error('tt should be a 1xn list of times'); end
       if (size(tt,2)~=size(xx,2)) error('xx must have the same number of columns as tt'); end
       if (~issorted(tt)) error('tt should be monotonically increasing'); end
+
+      ts = mean(diff(tt));
+      if (max(diff(tt))-ts>1e-6 || ts-min(diff(tt))>1e-6)
+        error('tt doesn''t appear to have a fixed sample time'); 
+      end
+      obj = obj.setSampleTime([ts;0]);
+      % touch up times to align perfectly with sample times:
+      tt = round(tt/ts)*ts;
+      
       obj.tt = tt;
       obj.xx = xx;
       obj.tspan = [min(tt) max(tt)];
@@ -21,7 +30,7 @@ classdef DTTrajectory < Trajectory
       ind = find(obj.tt==t);  % only return on exact matches.  For interpolation, you should be using zoh or foh to make PPTrajectories
       y = obj.xx(:,ind);
     end
-    
+        
     function t = getBreaks(obj)
       t = obj.tt;
     end
