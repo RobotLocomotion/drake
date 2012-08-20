@@ -237,18 +237,23 @@ classdef RigidBodyModel
 
       fixedind = find(isnan([model.body.pitch]) | ... % actual fixed joint
         cellfun(@(a)~any(any(a)),{model.body.I}));    % body has no inertia (yes, it happens in pr2.urdf)
-%        [model.body.gravity_off] | ...                % gazebo flag turns gravity off
       
       for i=fixedind(end:-1:1)  % go backwards, since it is presumably more efficient to start from the bottom of the tree
         body = model.body(i);
         parent = body.parent;
-        
-        if ~isnan(body.pitch) && body.gravity_off==false && ~any(any(body.I))
-          if isempty(parent)
-            % if it happens to be a root joint, then it's allowed.  don't remove this one.
+        if isempty(parent)
+          % if it happens to be a root joint, then don't remove this one.
+          continue;
+        end
+          
+        if ~isnan(body.pitch)
+          if any(any(body.I))
+            % link has inertia now (from a fixed link coming from a
+            % descendant).  abort removal.
             continue;
+          else
+            warning('Drake:RigidBodyModel:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
           end
-          warning('Drake:RigidBodyModel:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
         end
         
         parent.linkname=[parent.linkname,'+',body.linkname];
