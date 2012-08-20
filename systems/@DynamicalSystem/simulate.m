@@ -129,8 +129,10 @@ if (nargout>0)
 
   if (isDT(obj))
     ytraj = DTTrajectory(t',y);
+    ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
     if (nargout>1)
       xtraj = DTTrajectory(t',xd);
+      xtraj = setOutputFrame(xtraj,obj.getStateFrame);
     end
   else
     % note: could make this more exact.  see comments in bug# 623.

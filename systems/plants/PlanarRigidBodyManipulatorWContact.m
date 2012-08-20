@@ -55,12 +55,6 @@ classdef PlanarRigidBodyManipulatorWContact < PlanarRigidBodyManipulator
   end
   
   methods (Access=private)
-    function [phi,J,Jdot] = jointLimits(obj,q)
-      phi = [q-obj.joint_limit_min; obj.joint_limit_max-q]; phi=phi(~isinf(phi));
-      J = [eye(obj.num_q); -eye(obj.num_q)];  
-      J([obj.joint_limit_min==-inf;obj.joint_limit_max==inf],:)=[]; 
-      Jdot = 0*J;
-    end
   end
   
 end
