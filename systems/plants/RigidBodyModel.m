@@ -209,7 +209,37 @@ classdef RigidBodyModel
 %        end
       end
     end
-    
+
+    function doKinematics(model,q)
+      if 0 %any(abs(q-reshape([model.body.cached_q],1,[])')<1e-6)  % todo: make this tolerance a parameter
+        % then my kinematics are up to date, don't recompute
+        return
+      end
+      for i=1:length(model.body)
+        body = model.body(i);
+        if (isempty(body.parent))
+          body.T = body.Ttree;
+          for j=1:model.featherstone.NB
+            body.dTdq{j} = zeros(4);
+          end
+        else
+          qi = q(body.dofnum);
+          
+          TJ = Tjcalc(body.pitch,qi);
+          body.T=body.parent.T*body.Ttree*TJ;
+
+          % todo: consider pulling this out into a
+          % "doKinematicsAndVelocities" version?  but I'd have to be
+          % careful with caching.
+          for j=1:model.featherstone.NB
+            body.dTdq{j} = body.parent.dTdq{j}*body.Ttree*TJ;
+          end
+          body.dTdq{body.dofnum} = body.dTdq{body.dofnum} + body.parent.T*body.Ttree*dTjcalc(body.pitch,qi);
+          
+          body.cached_q = q(body.dofnum);
+        end
+      end
+    end    
   end
   
   methods  % make these private?
@@ -455,7 +485,99 @@ classdef RigidBodyModel
     end
     
     function model = addFloatingBase(model,options)
-      error('not implemented yet for 3D');  % just need to add a 6DOF base, and I'll do it (for now) using euler angles
+      % for now, just adds x,y,z,roll,pitch,yaw (in euler angles).
+      % todo: consider using quaternions)
+      
+      rootlink = find(cellfun(@isempty,{model.body.parent}));
+      if (length(rootlink)>1)
+        warning('multiple root links');
+      end
+      
+      if strcmpi('world',{model.body.linkname})
+        error('world link already exists.  cannot add floating base.');
+      end
+      world = newBody(model);
+      world.linkname = 'world';
+      world.parent = [];
+      model.body = [model.body,world];
+      
+      for i=1:length(rootlink)
+        child = model.body(i);
+
+        body1=newBody(model);
+        name = [child.linkname,'_x'];
+        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+          error('floating name already exists.  cannot add floating base.');
+        end
+        body1.linkname = name;
+        body1.jointname = name;
+        body1.pitch=inf;
+        body1.joint_axis = [1;0;0];
+        body1.joint_limit_min = -inf;
+        body1.joint_limit_max = inf;
+        body1.parent=world; 
+
+        body2=newBody(model);
+        name = [child.linkname,'_y'];
+        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+          error('floating name already exists.  cannot add floating base.');
+        end
+        body2.linkname = name;
+        body2.jointname = name;
+        body2.pitch=inf;
+        body2.joint_axis = [0;1;0];
+        body2.joint_limit_min = -inf;
+        body2.joint_limit_max = inf;
+        body2.parent = body1;
+        
+        body3=newBody(model);
+        name = [child.linkname,'_z'];
+        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+          error('floating name already exists.  cannot add floating base.');
+        end
+        body3.linkname = name;
+        body3.jointname = name;
+        body3.pitch=inf;
+        body3.joint_axis = [0;0;1];
+        body3.joint_limit_min = -inf;
+        body3.joint_limit_max = inf;
+        body3.parent = body2;
+        
+        body4=newBody(model);
+        name = [child.linkname,'_r'];
+        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+          error('floating name already exists.  cannot add floating base.');
+        end
+        body4.linkname = name;
+        body4.jointname = name;
+        body4.pitch=0;
+        body4.joint_axis = [1;0;0];
+        body4.joint_limit_min = -inf;
+        body4.joint_limit_max = inf;
+        body4.parent = body3;
+        
+        body5=newBody(model);
+        name = [child.linkname,'_p'];
+        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+          error('floating name already exists.  cannot add floating base.');
+        end
+        body5.linkname = name;
+        body5.jointname = name;
+        body5.pitch=0;
+        body5.joint_axis = [0;1;0];
+        body5.joint_limit_min = -inf;
+        body5.joint_limit_max = inf;
+        body5.parent = body4;
+        
+        child.pitch=0;
+        child.jointname = [child.linkname,'_y'];
+        child.joint_axis=[0;0;1];
+        child.joint_limit_min = -inf;
+        child.joint_limit_max = inf;
+        child.parent = body5;
+
+        model.body=[model.body,body1,body2,body3,body4,body5];
+      end
     end
     
     function model = parseLoopJoint(model,node,options)
