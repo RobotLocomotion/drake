@@ -66,13 +66,13 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       % end debugging
       
       axis equal;
-      if (obj.xlim)
+      if ~isempty(obj.xlim)
         xlim(obj.xlim);
       end
-      if (obj.ylim)
+      if ~isempty(obj.ylim)
         ylim(obj.ylim);
       end
-      if (obj.axis)
+      if ~isempty(obj.axis)
         axis(obj.axis);
       end
       

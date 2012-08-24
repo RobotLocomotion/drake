@@ -291,7 +291,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
       %    n(i,:) is the normal for the ith contact
       % @retval D parameterization of the polyhedral approximation of the 
       %    friction cone, in joint coordinates (figure 1 from Stewart96)
-      %    D(m*(i-1)+k,:) is the kth direction vector (of m) for the ith contact
+      %    D{k}(i,:) is the kth direction vector for the ith contact (of nC)
       % @retval mu mu(i,1) is the coefficient of friction for the ith contact 
 
       doKinematics(obj.model,q);
@@ -328,6 +328,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
         t(:,ind) = [ones(1,sum(ind));-normal(1,ind)./normal(2,ind)];
         ind=~ind;
         t(:,ind) = [-normal(2,ind)./normal(1,ind); ones(1,sum(ind))];
+        t = t./repmat(sqrt(sum(t.^2,1)),2,1); % normalize
 
         % recall that dphidx = normal'; n = dphidq = dphidx * dxdq
         % for a single contact, we'd have
@@ -339,8 +340,8 @@ classdef PlanarRigidBodyManipulator < Manipulator
         for i=1:obj.num_contacts
           thisJ = J(2*(i-1)+(1:2),:);
           n(i,:) = normal(:,i)'*thisJ;
-          D(2*i-1,:) = t(:,i)'*thisJ;
-          D(2*i,:) = -t(:,i)'*thisJ;
+          D{1}(i,:) = t(:,i)'*thisJ;
+          D{2}(i,:) = -t(:,i)'*thisJ;
         end
       end
     end
