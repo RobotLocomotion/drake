@@ -5,8 +5,9 @@ classdef PlanarRigidBodyManipulator < Manipulator
     
   properties (SetAccess=private,GetAccess=public)  
     model;     % PlanarRigidBodyModel object
-    joint_limit_min
-    joint_limit_max
+    joint_limit_min;
+    joint_limit_max;
+    num_contacts;
   end
   
   methods
@@ -49,7 +50,8 @@ classdef PlanarRigidBodyManipulator < Manipulator
       if (any(obj.joint_limit_min~=-inf) || any(obj.joint_limit_max~=inf))
         warning('Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
-      if ~isempty([obj.model.body.contact_pts])
+      obj.num_contacts = size([obj.model.body.contact_pts],2);
+      if (obj.num_contacts>0)
         warning('Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
     end
@@ -193,8 +195,11 @@ classdef PlanarRigidBodyManipulator < Manipulator
     end
     
     function phi = positionConstraints(obj,q)
-      phi=[];
-
+      % so far, only loop constraints are implemented
+      phi=loopConstraints;
+    end
+    
+    function phi = loopConstraints(obj,q)
       % handle kinematic loops
       % note: each loop adds two constraints 
       for i=1:length(obj.model.loop)
@@ -235,7 +240,49 @@ classdef PlanarRigidBodyManipulator < Manipulator
       J([obj.joint_limit_min==-inf;obj.joint_limit_max==inf],:)=[]; 
       Jdot = 0*J;
     end
+    
+    function [dist_normal,vel_perp,mu] = contactConstraints(obj,q,qd)
+      % 
+      % @retval dist_normal the distance from the contact point on the robot
+      % to the closes object in the world, projected along the surface
+      % normal of that point.  
+      % @retval vel_perp the distance in the direction perpendicular to the
+      % surface normal.
+      %
+      % these imply the unilateral constraints that dist_normal>=0 (always) and
+      % vel_perp==0 (when dist_normal==0 and inside the friction cone)
+      
+      doKinematics(obj.model,q,qd);
+      
+      contact_pos = zeros(2,obj.num_contacts);
+%      contact_vel = [];
+      count=0;
+      for i=1:length(obj.model.body)
+        body = obj.model.body(i);
+        n = size(body.contact_pts,2);
+        contact_pos(1:2,count+(1:n)) = body.T(1:2,:)*[body.contact_pts; ones(1,n)];
+        count = count + n;
+      end
+      
+      [p,v,n,mu] = collisionDetect(obj,contact_pos);
+      
+      dist_normal = sqrt((contact_pos-p)'*n);  % distance projected along surface normal
+      dist_perp = sqrt(sum((contact_pos - repmat(dist_normal,2,1).*n).^2));
+    end
 
+    function [pos,vel,normal,mu] = collisionDetect(obj,contact_pos)
+      % for each column of contact_pos, find the closest point in the world
+      % geometry, and it's (absolute) position and velocity, (unit) surface
+      % normal, and coefficent of friction.
+      
+      % for now, just implement a ground height at y=0
+      n = size(contact_pos,2);
+      pos = [contact_pos(1,:),zeros(1,n)];
+      vel = zeros(2,n); % statis world assumption (for now)
+      normal = [zeros(1,n); ones(1,n)];
+      mu = .5*ones(2,n);
+    end
+    
     function v=constructVisualizer(obj)
       v = PlanarRigidBodyVisualizer(obj.getStateFrame,obj.model);
     end
