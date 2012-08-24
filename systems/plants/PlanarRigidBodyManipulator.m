@@ -56,6 +56,47 @@ classdef PlanarRigidBodyManipulator < Manipulator
       end
     end
     
+    function [x,success] = resolveConstraints(obj,x0,v)
+      % attempts to find a x which satisfies the constraints,
+      % using x0 as the initial guess.
+      %
+      % @param x0 initial guess for state satisfying constraints
+      % @param v (optional) a visualizer that should be called while the
+      % solver is doing it's thing
+
+      if (all(obj.joint_limit_min==-inf) && all(obj.joint_limit_max==inf) && obj.num_contacts==0)
+        if (nargin<3) v=[]; end
+        [x,success] = resolveConstraints@Manipulator(obj,x0,v);
+        return;
+      end
+      
+      problem.objective = @(x) 0;  % feasibility problem.   empty objective
+      problem.x0 = x0;
+      
+      function [c,ceq] = mycon(x)
+        q = x(1:obj.num_q); qd = x(obj.num_q + (1:obj.num_q));
+        c = -[jointLimits(obj,q); contactConstraints(obj,q)];
+        ceq = stateConstraints(obj,x);
+      end
+      problem.nonlcon = @mycon;
+      problem.solver = 'fmincon';
+
+      function stop=drawme(x,optimValues,state)
+        stop=false;
+        v.draw(0,x);
+      end
+      if (nargin>2 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
+        problem.options=optimset('Algorithm','active-set','Display','iter','OutputFcn',@drawme,'TolX',1e-9);
+      else
+        problem.options=optimset('Algorithm','active-set','Display','off');
+      end
+      [x,~,exitflag] = fmincon(problem);
+      success=(exitflag==1);
+      if (nargout<2 && ~success)
+        error('Drake:PlanarRigidBodyManipulator:ResolveConstraintsFailed','failed to resolve constraints');
+      end
+    end
+  
     function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd)
       m = obj.model.featherstone;
       
@@ -242,33 +283,66 @@ classdef PlanarRigidBodyManipulator < Manipulator
       Jdot = 0*J;
     end
     
-    function [dist_normal,vel_perp,mu] = contactConstraints(obj,q,qd)
+    function [phi,n,D,mu] = contactConstraints(obj,q)
       % 
-      % @retval dist_normal the distance from the contact point on the robot
-      % to the closes object in the world, projected along the surface
-      % normal of that point.  
-      % @retval vel_perp the distance in the direction perpendicular to the
-      % surface normal.
-      %
-      % these imply the unilateral constraints that dist_normal>=0 (always) and
-      % vel_perp==0 (when dist_normal==0 and inside the friction cone)
-      
-      doKinematics(obj.model,q,qd);
-      
+      % @retval phi  phi(i,1) is the signed distance from the contact
+      % point on the robot to the closes object in the world.
+      % @retval n the surface "normal vector", but in joint coordinates  (eq 3 in Anitescu97)
+      %    n(i,:) is the normal for the ith contact
+      % @retval D parameterization of the polyhedral approximation of the 
+      %    friction cone, in joint coordinates (figure 1 from Stewart96)
+      %    D(m*(i-1)+k,:) is the kth direction vector (of m) for the ith contact
+      % @retval mu mu(i,1) is the coefficient of friction for the ith contact 
+
+      doKinematics(obj.model,q);
+        
       contact_pos = zeros(2,obj.num_contacts);
-%      contact_vel = [];
+      if (nargout>1) J = zeros(2*obj.num_contacts,obj.num_q); end
       count=0;
       for i=1:length(obj.model.body)
         body = obj.model.body(i);
-        n = size(body.contact_pts,2);
-        contact_pos(1:2,count+(1:n)) = body.T(1:2,:)*[body.contact_pts; ones(1,n)];
-        count = count + n;
+        nC = size(body.contact_pts,2);
+        if nC>0
+          if (nargout>1)
+            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
+          else
+            contact_pos(:,count+(1:nC)) = forwardKin(body,body.contact_pts);
+          end
+          count = count + nC;
+        end
       end
       
-      [p,v,n,mu] = collisionDetect(obj,contact_pos);
+      [pos,vel,normal,mu] = collisionDetect(obj,contact_pos);
       
-      dist_normal = sqrt((contact_pos-p)'*n);  % distance projected along surface normal
-      dist_perp = sqrt(sum((contact_pos - repmat(dist_normal,2,1).*n).^2));
+      relpos = contact_pos - pos;
+      s = sign(sum(relpos.*normal,1));
+      phi = (sqrt(sum(relpos.^2,1)).*s)';
+      if (nargout>1)
+        %% compute a tangent vector, t
+        % for each n, it looks like:
+        % if (normal(2)>normal(1)) t = [1,-n(1)/n(2)];  
+        % else t = [-n(2)/n(1),1]; end
+        % and the vectorized form is:
+        t=normal; % initialize size
+        ind=normal(2,:)>normal(1,:);
+        t(:,ind) = [ones(1,sum(ind));-normal(1,ind)./normal(2,ind)];
+        ind=~ind;
+        t(:,ind) = [-normal(2,ind)./normal(1,ind); ones(1,sum(ind))];
+
+        % recall that dphidx = normal'; n = dphidq = dphidx * dxdq
+        % for a single contact, we'd have
+        % n = normal'*J;
+        % but have to loop through all the points 
+        % (vectorizing this would appear to require big block diagonal
+        % matrices, and might not be worth it; profiling will tell us)
+        
+        for i=1:obj.num_contacts
+          thisJ = J(2*(i-1)+(1:2),:);
+          n(i,:) = normal(:,i)'*thisJ;
+          D(2*i-1,:) = t(:,i)'*thisJ;
+          D(2*i,:) = -t(:,i)'*thisJ;
+        end
+      end
     end
 
     function [pos,vel,normal,mu] = collisionDetect(obj,contact_pos)
@@ -278,10 +352,10 @@ classdef PlanarRigidBodyManipulator < Manipulator
       
       % for now, just implement a ground height at y=0
       n = size(contact_pos,2);
-      pos = [contact_pos(1,:),zeros(1,n)];
-      vel = zeros(2,n); % statis world assumption (for now)
+      pos = [contact_pos(1,:);zeros(1,n)];
+      vel = zeros(2,n); % static world assumption (for now)
       normal = [zeros(1,n); ones(1,n)];
-      mu = .5*ones(2,n);
+      mu = ones(1,n);
     end
     
     function v=constructVisualizer(obj)

@@ -14,26 +14,6 @@ classdef Manipulator < SecondOrderSystem
   end
 
   methods
-    function x0 = getInitialState(obj)
-      attempts=0;
-      while (1)
-        x0 = randn(obj.num_xd+obj.num_xc,1);
-        try
-          x0 = resolveConstraints(obj,x0);
-        catch ex
-          if strcmp(ex.identifier,'Drake:DrakeSystem:FailedToResolveConstraints');
-            attempts = attempts+1;
-            if (attempts>=10)
-              error('Drake:Manipulator:FailedToResolveConstraints','Failed to resolve state constraints on initial conditions after 10 tries');
-            else
-              continue;
-            end
-          end
-        end
-        break;
-      end
-    end
-
     function qdd = sodynamics(obj,t,q,qd,u)
     % Provides the SecondOrderDynamics interface to the manipulatorDynamics.
 
@@ -156,7 +136,7 @@ classdef Manipulator < SecondOrderSystem
       if (obj.num_position_constraints>0)
         [phi,J] = geval(@obj.positionConstraints,q);
       else
-        phi=[]; J=[];
+        phi=[]; J=zeros(0,obj.num_q);
       end
       if (obj.num_velocity_constraints>0)
         psi = obj.velocityConstraints(q,qd);

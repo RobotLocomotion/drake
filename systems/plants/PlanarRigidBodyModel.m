@@ -63,8 +63,9 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       end
     end    
     
-    function doKinematics(model,q,qd)
-      if 0 %any(abs([q;qd]-reshape([model.body.cached_q_qd],1,[])')<1e-6)  % todo: make this tolerance a parameter
+    
+    function doKinematics(model,q)
+      if 0 %any(abs(q-reshape([model.body.cached_q],1,[])')<1e-6)  % todo: make this tolerance a parameter
         % then my kinematics are up to date, don't recompute
         return
       end
@@ -72,20 +73,28 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         body = model.body(i);
         if (isempty(body.parent))
           body.T = body.Ttree;
-          body.v = zeros(3,1);
+          for j=1:model.featherstone.NB
+            body.dTdq{j} = zeros(3);
+          end
         else
           qi = body.jsign*q(body.dofnum);
-          qdi = body.jsign*qd(body.dofnum);
           
           TJ = Tjcalcp(body.jcode,qi);
-          [~,S] = jcalcp(body.jcode,qi);
           body.T=body.parent.T*body.Ttree*TJ;
-          body.v=body.parent.v + S*qdi + [0; body.parent.v(1)*body.T(1:2,3)];
-          body.cached_q_qd = [q(body.dofnum);qd(body.dofnum)];
+
+          % todo: consider pulling this out into a
+          % "doKinematicsAndVelocities" version?  but I'd have to be
+          % careful with caching.
+          for j=1:model.featherstone.NB
+            body.dTdq{j} = body.parent.dTdq{j}*body.Ttree*TJ;
+          end
+          body.dTdq{body.dofnum} = body.dTdq{body.dofnum} + body.parent.T*body.Ttree*dTjcalcp(body.jcode,qi)*body.jsign;
+          
+          body.cached_q = q(body.dofnum);
         end
       end
     end
-  
+        
     function model=removeFixedJoints(model)
       fixedind = find(isnan([model.body.pitch]));
       
@@ -279,6 +288,14 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         warning('multiple root links');
       end
       
+      if strcmpi('world',{model.body.linkname})
+        error('world link already exists.  cannot add floating base.');
+      end
+      world = newBody(model);
+      world.linkname = 'world';
+      world.parent = [];
+      model.body = [model.body,world];
+      
       for i=1:length(rootlink)
         child = model.body(i);
         body1=newBody(model);
@@ -293,7 +310,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         body1.jcode=2;
         body1.joint_limit_min = -inf;
         body1.joint_limit_max = inf;
-        body1.parent=[];  % this is the new root link
+        body1.parent=world; 
         body2=newBody(model);
         name = [child.linkname,'_z'];
         if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
@@ -310,6 +327,8 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         child.pitch=0;
         child.joint_axis=axis;
         child.jcode=1;
+        child.joint_limit_min = -inf;
+        child.joint_limit_max = inf;
         child.parent = body2;
         model.body=[model.body,body1,body2];
       end

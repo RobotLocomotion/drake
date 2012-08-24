@@ -155,7 +155,7 @@ classdef RigidBodyModel
       %% initialize kinematics caching
       for i=1:length(model.body)
         if ~isempty(model.body(i).parent)
-          model.body(i).cached_q_qd = [nan;nan];
+          model.body(i).cached_q = nan;
         end
       end
     end

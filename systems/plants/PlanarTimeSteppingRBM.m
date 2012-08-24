@@ -17,6 +17,7 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
         case {'char','PlanarRigidBodyModel'}
           % then assume it's a urdf file
           S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
+          warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
           manipulator = PlanarRigidBodyManipulator(manipulator);
           warning(S);
       end
@@ -73,7 +74,6 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       %   J = [JL; JP; JN; JT; -JT; zeros(nC,num_q)]
 
       J = zeros(nL + nP + 4*nC,num_q);
-      mu = 1;
       
       % todo: enforce only active constraints
       
@@ -97,10 +97,9 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       end
       
       if (nC > 0)
-        [phiN,phiT,JN,JT] = obj.manip.contactConstraints(q,qd);
-        J(nL+nP+(1:nC),:) = JN;
-        J(nL+nP+nC+(1:nC),:) = JT;  
-        J(nL+nP+2*nC+(1:nC),:) = -JT;
+        [phi,n,D,mu] = obj.manip.contactConstraints(q);
+        J(nL+nP+(1:nC),:) = n;
+        J(nL+nP+nC+(1:2*nC),:) = D;  
       end
       
       M = zeros(nL+nP+4*nC);
@@ -129,22 +128,21 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       end
       
       %% Contact Forces:
-      % s(nL+nP+(1:nC)) = JN*qdn           (eq7, line 3)
+      % s(nL+nP+(1:nC)) = n*qdn           (eq7, line 3)
       % z(nL+nP+(1:nC)) = cN
-      % s(nL+nP+nC+(1:nC)) = lambda + JT*qdn  (eq7, line 4)
-      % s(nL+nP+2*nC+(1:nC)) = lambda - JT*qdn
+      % s(nL+nP+nC+(1:2*nC)) = lambda + D*qdn  (eq7, line 4)
       % z(nL+nP+nC+(1:2*nC)) = beta
       % s(nL+nP+3*nC+(1:nC)) = mu*cn - beta(1:nC) + beta(1:nC) (eq7, line 5)
       % z(nL+nP+3*nC+(1:nC)) = lambda
       if (nC > 0)
-        w(nL+nP+(1:nC)) = JN*wqdn;
-        M(nL+nP+(1:nC),:) = JN*Mqdn;
+        w(nL+nP+(1:nC)) = n*wqdn;
+        M(nL+nP+(1:nC),:) = n*Mqdn;
         
-        w(nL+nP+nC+(1:2*nC)) = [JT*wqdn; -JT*wqdn];
-        M(nL+nP+nC+(1:2*nC),:) = [JT*Mqdn; -JT*Mqdn];
+        w(nL+nP+nC+(1:2*nC)) = D*wqdn;
+        M(nL+nP+nC+(1:2*nC),:) = D*Mqdn;
         M(nL+nP+nC+(1:2*nC),nL+nP+3*nC+(1:nC)) = [eye(nC);eye(nC)];
 
-        M(nL+nP+3*nC+(1:nC),nL+nP+(1:3*nC)) = [mu*eye(nC), -eye(nC), eye(nC)];
+        M(nL+nP+3*nC+(1:nC),nL+nP+(1:3*nC)) = [diag(mu), -eye(nC), eye(nC)];
       end
       
       z = pathlcp(M,w);  % z = lambda

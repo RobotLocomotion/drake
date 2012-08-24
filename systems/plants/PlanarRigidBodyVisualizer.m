@@ -38,7 +38,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       
       n = obj.model.featherstone.NB;
       q = x(1:n); qd=x(n+(1:n));
-      obj.model.doKinematics(q,qd);
+      obj.model.doKinematics(q);
       
       % for debugging:
       %co = get(gca,'ColorOrder');

@@ -23,9 +23,9 @@ classdef RigidBody < handle
     joint_limit_max=[];
     
     % dynamic properties (e.g. state at runtime)
-    cached_q_qd = []; % the current contents of T and v were computed using these q and qd values 
+    cached_q=[];  % the current kinematics were computed using these q and qd values 
     T = eye(4);  % transformation from this body to world coordinates
-    v  % velocity [omega; v] of this body in world coordinates
+    dTdq = [];
   end
   
   methods    
