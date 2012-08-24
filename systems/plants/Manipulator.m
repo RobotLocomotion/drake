@@ -91,11 +91,6 @@ classdef Manipulator < SecondOrderSystem
         xdot = [qd;qdd];
       end
     end    
-
-%    function tau = computeConstraintTorques(q,qd,H,tau)
-      % C should be C(q,q)qdot + G(q) - B*u
-      
-%    end
     
     function obj = setNumPositionConstraints(obj,num)
     % Set the number of bilateral constraints
@@ -146,6 +141,58 @@ classdef Manipulator < SecondOrderSystem
       con = [phi; J*qd; psi];  % phi=0, phidot=0, psi=0
     end
     
+    function [phi,J,Jdot] = jointLimits(obj,q)
+      phi = [q-obj.joint_limit_min; obj.joint_limit_max-q]; phi=phi(~isinf(phi));
+      J = [eye(obj.num_q); -eye(obj.num_q)];  
+      J([obj.joint_limit_min==-inf;obj.joint_limit_max==inf],:)=[]; 
+      Jdot = 0*J;
+    end
+    
+    function [phi,n,D,mu] = contactConstraints(obj,q)
+      phi=[]; n=zeros(0,obj.num_q); D=cell(); mu=[];
+    end
+    
+    function [x,success] = resolveConstraints(obj,x0,v)
+      % attempts to find a x which satisfies the constraints,
+      % using x0 as the initial guess.
+      %
+      % @param x0 initial guess for state satisfying constraints
+      % @param v (optional) a visualizer that should be called while the
+      % solver is doing it's thing
+
+      if (all(obj.joint_limit_min==-inf) && all(obj.joint_limit_max==inf) && obj.num_contacts==0)
+        if (nargin<3) v=[]; end
+        [x,success] = resolveConstraints@SecondOrderSystem(obj,x0,v);
+        return;
+      end
+      
+      problem.objective = @(x) 0;  % feasibility problem.   empty objective
+      problem.x0 = x0;
+      
+      function [c,ceq] = mycon(x)
+        q = x(1:obj.num_q); qd = x(obj.num_q + (1:obj.num_q));
+        c = -[jointLimits(obj,q); contactConstraints(obj,q)];
+        ceq = stateConstraints(obj,x);
+      end
+      problem.nonlcon = @mycon;
+      problem.solver = 'fmincon';
+
+      function stop=drawme(x,optimValues,state)
+        stop=false;
+        v.draw(0,x);
+      end
+      if (nargin>2 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
+        problem.options=optimset('Algorithm','active-set','Display','iter','OutputFcn',@drawme,'TolX',1e-9);
+      else
+        problem.options=optimset('Algorithm','active-set','Display','off');
+      end
+      [x,~,exitflag] = fmincon(problem);
+      success=(exitflag==1);
+      if (nargout<2 && ~success)
+        error('Drake:PlanarRigidBodyManipulator:ResolveConstraintsFailed','failed to resolve constraints');
+      end
+    end
+    
     function sys = feedback(sys1,sys2)
       if (isa(sys2,'Manipulator'))
         % todo: implement this (or decide that it doesn't ever make sense)
@@ -186,8 +233,11 @@ classdef Manipulator < SecondOrderSystem
   end
   
   
-  properties (SetAccess = private, GetAccess = public)
+  properties (SetAccess = protected, GetAccess = public)
     num_position_constraints = 0  % the number of position constraints of the form phi(q)=0
     num_velocity_constraints = 0  % the number of velocity constraints of the form psi(q,qd)=0
+    joint_limit_min = -inf;
+    joint_limit_max = inf;
+    num_contacts = 0;
   end
 end

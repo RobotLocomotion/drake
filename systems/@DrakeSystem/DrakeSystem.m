@@ -39,9 +39,10 @@ classdef DrakeSystem < DynamicalSystem
     function x0 = getInitialState(obj)
       x0 = zeros(obj.num_xd+obj.num_xc,1);
       attempts=0;
-      while (1)
+      success=false;
+      while (~success)
         try
-          x0 = resolveConstraints(obj,x0);
+          [x0,success] = resolveConstraints(obj,x0);
         catch ex
           if strcmp(ex.identifier,'Drake:DrakeSystem:FailedToResolveConstraints');
             attempts = attempts+1;
@@ -55,7 +56,9 @@ classdef DrakeSystem < DynamicalSystem
             rethrow(ex);
           end
         end
-        break;
+        if (~success)
+          x0 = randn(obj.num_xd+obj.num_xc,1);
+        end
       end
     end
     

@@ -5,9 +5,6 @@ classdef PlanarRigidBodyManipulator < Manipulator
     
   properties (SetAccess=private,GetAccess=public)  
     model;     % PlanarRigidBodyModel object
-    joint_limit_min;
-    joint_limit_max;
-    num_contacts;
   end
   
   methods
@@ -56,47 +53,6 @@ classdef PlanarRigidBodyManipulator < Manipulator
       end
     end
     
-    function [x,success] = resolveConstraints(obj,x0,v)
-      % attempts to find a x which satisfies the constraints,
-      % using x0 as the initial guess.
-      %
-      % @param x0 initial guess for state satisfying constraints
-      % @param v (optional) a visualizer that should be called while the
-      % solver is doing it's thing
-
-      if (all(obj.joint_limit_min==-inf) && all(obj.joint_limit_max==inf) && obj.num_contacts==0)
-        if (nargin<3) v=[]; end
-        [x,success] = resolveConstraints@Manipulator(obj,x0,v);
-        return;
-      end
-      
-      problem.objective = @(x) 0;  % feasibility problem.   empty objective
-      problem.x0 = x0;
-      
-      function [c,ceq] = mycon(x)
-        q = x(1:obj.num_q); qd = x(obj.num_q + (1:obj.num_q));
-        c = -[jointLimits(obj,q); contactConstraints(obj,q)];
-        ceq = stateConstraints(obj,x);
-      end
-      problem.nonlcon = @mycon;
-      problem.solver = 'fmincon';
-
-      function stop=drawme(x,optimValues,state)
-        stop=false;
-        v.draw(0,x);
-      end
-      if (nargin>2 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
-        problem.options=optimset('Algorithm','active-set','Display','iter','OutputFcn',@drawme,'TolX',1e-9);
-      else
-        problem.options=optimset('Algorithm','active-set','Display','off');
-      end
-      [x,~,exitflag] = fmincon(problem);
-      success=(exitflag==1);
-      if (nargout<2 && ~success)
-        error('Drake:PlanarRigidBodyManipulator:ResolveConstraintsFailed','failed to resolve constraints');
-      end
-    end
-  
     function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd)
       m = obj.model.featherstone;
       
@@ -274,13 +230,6 @@ classdef PlanarRigidBodyManipulator < Manipulator
           error('not implemented yet');
         end
       end
-    end
-    
-    function [phi,J,Jdot] = jointLimits(obj,q)
-      phi = [q-obj.joint_limit_min; obj.joint_limit_max-q]; phi=phi(~isinf(phi));
-      J = [eye(obj.num_q); -eye(obj.num_q)];  
-      J([obj.joint_limit_min==-inf;obj.joint_limit_max==inf],:)=[]; 
-      Jdot = 0*J;
     end
     
     function [phi,n,D,mu] = contactConstraints(obj,q)

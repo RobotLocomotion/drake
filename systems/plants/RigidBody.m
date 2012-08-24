@@ -141,8 +141,31 @@ classdef RigidBody < handle
         end
       end
       
-      % todo: implement collisions in 3D
+      % note: could support multiple geometry elements
+      geomnode = node.getElementsByTagName('geometry').item(0);
+      if ~isempty(geomnode)
+        [xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,options);
+        body.contact_pts=unique([xpts(:), ypts(:), zpts(:)],'rows')';
+      end
     end
+    
+    function [x,J] = forwardKin(body,pts)
+      % computes the position of pts (given in the body frame) in the global frame
+      % for efficiency, assumes that "doKinematics" has been called on the model
+      % if pts is a 3xm matrix, then x will be a 3xm matrix
+      %  and (following our gradient convention) J will be a ((3xm)x(q))
+      %  matrix, with [J1;J2;...;Jm] where Ji = dxidq 
+      m = size(pts,2);
+      pts = [pts;ones(1,m)];
+      x = body.T(1:3,:)*pts;
+      if (nargout>1)
+        nq = length(body.dTdq);
+        J = zeros(3*m,nq);
+        for i=1:nq
+          J(:,i) = reshape(body.dTdq{i}(1:3,:)*pts,3*m,1);
+        end
+      end
+    end    
       
     function b=leastCommonAncestor(body1,body2)
       % recursively searches for the lowest body in the tree that is an
@@ -230,6 +253,55 @@ classdef RigidBody < handle
       end
       
     end
-    
+
+    function [x,y,z] = parseGeometry(node,x0,rpy,options)
+      % param node DOM node for the geometry block
+      % param X coordinate transform for the current body
+      % option twoD true implies that I can safely ignore y.
+      x=[];y=[];z=[];
+      T= [quat2rotmat(rpy2quat(rpy)),x0]; % intentially leave off the bottom row [0,0,0,1];
+      
+      childNodes = node.getChildNodes();
+      for i=1:childNodes.getLength()
+        thisNode = childNodes.item(i-1);
+        cx=[]; cy=[]; cz=[];
+        switch (lower(char(thisNode.getNodeName())))
+          case 'box'
+            s = str2num(char(thisNode.getAttribute('size')));
+            
+            cx = s(1)/2*[-1 1 1 -1 -1 1 1 -1];
+            cy = s(2)/2*[1 1 1 1 -1 -1 -1 -1];
+            cz = s(3)/2*[1 1 -1 -1 -1 -1 1 1];
+            
+            pts = T*[cx;cy;cz;ones(1,8)];
+            x=pts(1,:)';y=pts(2,:)'; z=pts(2,:)';
+            
+          case 'cylinder'
+            r = str2num(char(thisNode.getAttribute('radius')));
+            l = str2num(char(thisNode.getAttribute('length')));
+            
+            % treat it as a box, for collisions
+            warning('for efficiency, cylinder geometry will be treated like a box for 3D collisions'); 
+            cx = r*[-1 1 1 -1 -1 1 1 -1];
+            cy = r*[1 1 1 1 -1 -1 -1 -1];
+            cz = l/2*[1 1 -1 -1 -1 -1 1 1];
+              
+            pts = T*[cx;cy;cz;ones(1,8)];
+            x=pts(1,:)';y=pts(2,:)'; z=pts(2,:)';
+              
+          case 'sphere'
+            r = str2num(char(thisNode.getAttribute('radius')));
+            if (r~=0)
+              warning('for efficiency, 3D sphere geometry will be treated like a point (at the center of the sphere)');
+            end
+            cx=0; cy=0; cz=0;
+            pts = T*[0;0;0;1];
+            x=pts(1,:)';y=pts(2,:)'; z=pts(2,:)';
+
+          otherwise
+            % intentionally blank
+        end
+      end
+    end
   end
 end

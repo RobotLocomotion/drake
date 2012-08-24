@@ -45,6 +45,16 @@ classdef RigidBodyManipulator < Manipulator
       end
 %      obj = obj.setNumPositionConstraints(2*length(obj.model.loop)+size([obj.model.body.ground_contact],2));
 %      obj = obj.setNumVelocityConstraints(0);%size([obj.model.body.ground_contact],2));
+
+      obj.joint_limit_min = [obj.model.body.joint_limit_min]';
+      obj.joint_limit_max = [obj.model.body.joint_limit_max]';
+      if (any(obj.joint_limit_min~=-inf) || any(obj.joint_limit_max~=inf))
+        warning('Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
+      end
+      obj.num_contacts = size([obj.model.body.contact_pts],2);
+      if (obj.num_contacts>0)
+        warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
+      end
     end
     
     function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd)
@@ -185,7 +195,88 @@ classdef RigidBodyManipulator < Manipulator
         B = obj.model.B;
       end
     end
-    
+
+    function [phi,n,D,mu] = contactConstraints(obj,q)
+      % 
+      % @retval phi  phi(i,1) is the signed distance from the contact
+      % point on the robot to the closes object in the world.
+      % @retval n the surface "normal vector", but in joint coordinates  (eq 3 in Anitescu97)
+      %    n(i,:) is the normal for the ith contact
+      % @retval D parameterization of the polyhedral approximation of the 
+      %    friction cone, in joint coordinates (figure 1 from Stewart96)
+      %    D{k}(i,:) is the kth direction vector for the ith contact (of nC)
+      % @retval mu mu(i,1) is the coefficient of friction for the ith contact 
+
+      doKinematics(obj.model,q);
+        
+      contact_pos = zeros(3,obj.num_contacts);
+      if (nargout>1) J = zeros(3*obj.num_contacts,obj.num_q); end
+      count=0;
+      for i=1:length(obj.model.body)
+        body = obj.model.body(i);
+        nC = size(body.contact_pts,2);
+        if nC>0
+          if (nargout>1)
+            [contact_pos(:,count+(1:nC)),J(3*count+(1:3*nC),:)] = forwardKin(body,body.contact_pts);
+          else
+            contact_pos(:,count+(1:nC)) = forwardKin(body,body.contact_pts);
+          end
+          count = count + nC;
+        end
+      end
+      
+      [pos,vel,normal,mu] = collisionDetect(obj,contact_pos);
+      
+      relpos = contact_pos - pos;
+      s = sign(sum(relpos.*normal,1));
+      phi = (sqrt(sum(relpos.^2,1)).*s)';
+      if (nargout>1)
+
+        %% compute tangent vectors, according to the description in the last paragraph of Stewart96, p.2678
+        t1=normal; % initialize size
+        % handle the normal = [0;0;1] case
+        ind=(1-normal(3,:))<eps;  % since it's a unit normal, i can just check the z component
+        t1(:,ind) = repmat([1;0;0],1,sum(ind));
+        ind=~ind;
+        % now the general case
+        t1(:,ind) = cross(normal(:,ind),repmat([0;0;1],1,sum(ind)));
+        t1 = t1./repmat(sqrt(sum(t1.^2,1)),3,1); % normalize
+        
+        t2 = cross(t1,normal);
+
+        m = 8;
+        theta = (0:7)*2*pi/m;
+        
+        % recall that dphidx = normal'; n = dphidq = dphidx * dxdq
+        % for a single contact, we'd have
+        % n = normal'*J;
+        % but have to loop through all the points 
+        % (vectorizing this would appear to require big block diagonal
+        % matrices, and might not be worth it; profiling will tell us)
+        
+        for i=1:obj.num_contacts
+          thisJ = J(3*(i-1)+(1:3),:);
+          n(i,:) = normal(:,i)'*thisJ;
+          for k=1:m
+            D{k}(i,:) = (cos(theta(k))*t1(:,i) + sin(theta(k))*t2(:,i))'*thisJ;
+          end
+        end
+      end
+    end
+
+    function [pos,vel,normal,mu] = collisionDetect(obj,contact_pos)
+      % for each column of contact_pos, find the closest point in the world
+      % geometry, and it's (absolute) position and velocity, (unit) surface
+      % normal, and coefficent of friction.
+      
+      % for now, just implement a ground height at y=0
+      n = size(contact_pos,2);
+      pos = [contact_pos(1:2,:);zeros(1,n)];
+      vel = zeros(3,n); % static world assumption (for now)
+      normal = [zeros(2,n); ones(1,n)];
+      mu = ones(1,n);
+    end
+       
     function v=constructVisualizer(obj)
       v = RigidBodyWRLVisualizer(obj.getStateFrame,obj.model);
     end

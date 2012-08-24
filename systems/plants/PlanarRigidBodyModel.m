@@ -319,13 +319,15 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         body2.linkname = name;
         body2.jointname = name;
         body2.pitch=inf;
-        body1.joint_axis = [0;0;1];
+        body2.joint_axis = [0;0;1];
         body2.jcode=3;
         body2.joint_limit_min = -inf;
         body2.joint_limit_max = inf;
         body2.parent = body1;
+
         child.pitch=0;
-        child.joint_axis=axis;
+        child.jointname = [child.linkname,'_p'];
+        child.joint_axis=[0;1;0];
         child.jcode=1;
         child.joint_limit_min = -inf;
         child.joint_limit_max = inf;
