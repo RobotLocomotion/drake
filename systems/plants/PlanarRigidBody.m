@@ -111,6 +111,24 @@ classdef PlanarRigidBody < RigidBody
         body.contact_pts=unique([xpts(:), ypts(:)],'rows')';
       end
     end
+    
+    function [x,J] = forwardKin(body,pts)
+      % computes the position of pts (given in the body frame) in the global frame
+      % for efficiency, assumes that "doKinematics" has been called on the model
+      % if pts is a 2xm matrix, then x will be a 2xm matrix
+      %  and (following our gradient convention) J will be a ((2xm)x(q))
+      %  matrix, with [J1;J2;...;Jm] where Ji = dxidq 
+      m = size(pts,2);
+      pts = [pts;ones(1,m)];
+      x = body.T(1:2,:)*pts;
+      if (nargout>1)
+        nq = length(body.dTdq);
+        J = zeros(2*m,nq);
+        for i=1:nq
+          J(:,i) = reshape(body.dTdq{i}(1:2,:)*pts,2*m,1);
+        end
+      end
+    end
   end
   
   methods (Static)
