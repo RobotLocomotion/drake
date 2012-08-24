@@ -21,6 +21,8 @@ classdef RigidBodyModel
       %
       % @param urdf_filename filename of file to parse
       %
+      % @options floating boolean where true means that a floating joint is
+      % automatically added to the root. @default false
       % @options inertial boolean where true means parse dynamics parameters,
       % false means skip them.  @default true
       % @options visual boolean where true means parse graphics parameters, false
@@ -31,9 +33,10 @@ classdef RigidBodyModel
       
       if (nargin>0 && ~isempty(urdf_filename))
         if (nargin<2) options = struct(); end
+        if (~isfield(options,'floating')) options.floating = false; end
         if (~isfield(options,'inertial')) options.inertial = true; end
         if (~isfield(options,'visual')) options.visual = true; end
-      
+        
         %disp(['Parsing ', urdf_filename]);
         urdf = xmlread(urdf_filename);
         
@@ -82,6 +85,11 @@ classdef RigidBodyModel
       gazebos = node.getElementsByTagName('gazebo');
       for i=0:(gazebos.getLength()-1)
         model = parseGazebo(model,gazebos.item(i),options);
+      end
+      
+      if (options.floating)
+        % then add a floating joint here
+        model = addFloatingBase(model,options);
       end
       
     end
@@ -247,8 +255,9 @@ classdef RigidBodyModel
         end
           
         if ~isnan(body.pitch)
-          if any(any(body.I))
-            % link has inertia now (from a fixed link coming from a
+          if any([model.body.parent] == body) || any(any(body.I))
+            % link has inertial important from child links
+            % pr link has inertia now (from a fixed link coming from a
             % descendant).  abort removal.
             continue;
           else
@@ -445,59 +454,12 @@ classdef RigidBodyModel
       
     end
     
+    function model = addFloatingBase(model,options)
+      error('not implemented yet for 3D');  % just need to add a 6DOF base, and I'll do it (for now) using euler angles
+    end
+    
     function model = parseLoopJoint(model,node,options)
-      error('not implemented yet');
-      
-      loop = RigidBodyLoop();
-      loop.name = char(node.getAttribute('name'));
-      
-      link1Node = node.getElementsByTagName('link1').item(0);
-      link1 = findLink(model,char(link1Node.getAttribute('link')));
-      loop.body1 = link1;
-      loop.T1 = loop.parseLink(link1Node,options);
-      
-      link2Node = node.getElementsByTagName('link2').item(0);
-      link2 = findLink(model,char(link2Node.getAttribute('link')));
-      loop.body2 = link2;
-      loop.T2 = loop.parseLink(link2Node,options);
-      
-      %% find the lowest common ancestor
-      loop.least_common_ancestor = leastCommonAncestor(loop.body1,loop.body2);
-      
-      type = char(node.getAttribute('type'));
-      switch (lower(type))
-        case {'revolute','continuous'}
-          loop.jcode=1;
-        case 'prismatic'
-          loop.jcode=2;
-        otherwise
-          error(['joint type ',type,' not supported (yet?)']);
-      end
-      
-      childNodes = node.getChildNodes();
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        switch (lower(char(thisNode.getNodeName())))
-          case 'axis'
-            ax = reshape(str2num(char(thisNode.getAttribute('xyz'))),3,1);
-            switch (loop.jcode)
-              case 1
-                if (abs((ax'*[0; 1; 0]) / (ax'*ax) - 1)>1e-6) error('for 2D processing, revolute and continuous joints must be aligned with [0 1 0]'); end
-              case 2
-                if (abs((ax'*[1; 0; 0]) / (ax'*ax) - 1)>1e-6)
-                  if (abs((ax'*[0; 0; 1]) / (ax'*ax) - 1)>1e-6)
-                    error('Currently prismatic joints must have their axis in the x-axis or z-axis are supported right now');
-                  else
-                    loop.jcode = 3;
-                  end
-                end
-              otherwise
-                error('shouldn''t get here');
-            end
-        end
-      end
-      
-      model.loop=[model.loop,loop];
+      error('not implemented yet for 3D');
     end
 
     function model=parseTransmission(model,node,options)
