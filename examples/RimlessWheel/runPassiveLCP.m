@@ -7,9 +7,10 @@ m = PlanarRigidBodyModel('RimlessWheel.urdf',options);
 %x0 = p.resolveConstraints(randn(6,1));
 
 p = PlanarTimeSteppingRBM(m,.01);
-x0 = p.manip.resolveConstraints(randn(6,1));
+x0 = p.manip.resolveConstraints([0;1+rand;randn;5*rand;randn;5*rand]);
 
 xtraj = p.simulate([0 10],x0);
 
 v = p.constructVisualizer();
+v.axis = [0 5 -.1 3];
 v.playback(xtraj);

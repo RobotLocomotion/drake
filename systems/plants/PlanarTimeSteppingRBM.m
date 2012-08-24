@@ -68,10 +68,10 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       % use qn = q + h*qdn
       % where H(q)*(qdn - qd)/h = B*u - C(q) + J(q)'*z
       %  or qdn = qd + H\(h*tau + J'*z)
-      %  with z = [h*cL; h*cP; h*cN; h*beta; lambda]
+      %  with z = [h*cL; h*cP; h*cN; h*beta{1}; h*beta{2}; lambda]
       %
       % and implement equation (7) from Anitescu97, by collecting
-      %   J = [JL; JP; JN; JT; -JT; zeros(nC,num_q)]
+      %   J = [JL; JP; n; D{1}; D{2}; zeros(nC,num_q)]
 
       J = zeros(nL + nP + 4*nC,num_q);
       
@@ -97,9 +97,9 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       end
       
       if (nC > 0)
-        [phi,n,D,mu] = obj.manip.contactConstraints(q);
+        [phiC,n,D,mu] = obj.manip.contactConstraints(q);
         J(nL+nP+(1:nC),:) = n;
-        J(nL+nP+nC+(1:2*nC),:) = D;  
+        J(nL+nP+nC+(1:2*nC),:) = [D{1};D{2}];  
       end
       
       M = zeros(nL+nP+4*nC);
@@ -128,24 +128,32 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       end
       
       %% Contact Forces:
-      % s(nL+nP+(1:nC)) = n*qdn           (eq7, line 3)
+      % s(nL+nP+(1:nC)) = phiC+n*qdn  (modified (fixed?) from eq7, line 3)
       % z(nL+nP+(1:nC)) = cN
-      % s(nL+nP+nC+(1:2*nC)) = lambda + D*qdn  (eq7, line 4)
-      % z(nL+nP+nC+(1:2*nC)) = beta
-      % s(nL+nP+3*nC+(1:nC)) = mu*cn - beta(1:nC) + beta(1:nC) (eq7, line 5)
+      % s(nL+nP+nC+(1:nC)) = lambda + D{1}*qdn  (eq7, line 4)
+      % s(nL+nP+2*nC+(1:nC)) = lambda + D{2}*qdn 
+      % z(nL+nP+nC+(1:2*nC)) = [beta_1;beta_2]
+      % s(nL+nP+3*nC+(1:nC)) = mu*cn - sum_m beta_m (eq7, line 5)
       % z(nL+nP+3*nC+(1:nC)) = lambda
       if (nC > 0)
-        w(nL+nP+(1:nC)) = n*wqdn;
-        M(nL+nP+(1:nC),:) = n*Mqdn;
+        w(nL+nP+(1:nC)) = phiC+h*n*wqdn;
+        M(nL+nP+(1:nC),:) = h*n*Mqdn;
         
-        w(nL+nP+nC+(1:2*nC)) = D*wqdn;
-        M(nL+nP+nC+(1:2*nC),:) = D*Mqdn;
+        w(nL+nP+nC+(1:2*nC)) = [D{1}*wqdn; D{2}*wqdn];
+        M(nL+nP+nC+(1:2*nC),:) = [D{1}*Mqdn; D{2}*Mqdn];
         M(nL+nP+nC+(1:2*nC),nL+nP+3*nC+(1:nC)) = [eye(nC);eye(nC)];
 
-        M(nL+nP+3*nC+(1:nC),nL+nP+(1:3*nC)) = [diag(mu), -eye(nC), eye(nC)];
+        M(nL+nP+3*nC+(1:nC),nL+nP+(1:3*nC)) = [diag(mu), -eye(nC), -eye(nC)];
       end
       
-      z = pathlcp(M,w);  % z = lambda
+      z = pathlcp(M,w);  
+      
+      % for debugging
+      %cN = z(nL+nP+(1:nC))
+      %beta1 = z(nL+nP+nC+(1:nC))
+      %beta2 = z(nL+nP+2*nC+(1:nC))
+      %lambda = z(nL+nP+3*nC+(1:nC))
+      % end debugging
       
       qdn = Mqdn*z + wqdn;
       qn = q + h*qdn;
