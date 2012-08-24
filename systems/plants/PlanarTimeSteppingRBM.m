@@ -45,115 +45,113 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       num_q = obj.manip.num_q;
       q=x(1:num_q); qd=x((num_q+1):end);
       h = obj.timestep;
+            [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
+      if (obj.num_u>0) tau = B*u - C; else tau = -C; end
       
-      [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
-      
-      jointForces = B*u;
-      
-      
-      mu = 1;
-      
-%      nC = size(obj.contact_pts,2);
-      nC = 0;
       nL = sum([obj.manip.joint_limit_min~=-inf;obj.manip.joint_limit_max~=inf]); % number of joint limits
-      nL_bi = 0;
-%      nonContactPConst = obj.num_bilateral_constraints - nC;
-%      nL_bi = nonContactPConst - nL;
+      nC = obj.manip.num_contacts;
+      nP = 2*obj.manip.num_position_constraints;  % number of position constraints
+      nV = 2*obj.manip.num_velocity_constraints;  
       
-      if (nC+nL+nL_bi==0)
-        qd_out = qd - h*(H\(C+jointForces));
+      if (nC+nL+nP+nV==0)
+        qd_out = qd + h*H\tau;
         q_out = q + h*qd_out;
         xdn = [q_out; qd_out];
         return;
       end      
+      
+      % Set up the LCP:
+      % z >= 0, Mz + w >= 0, z'*(Mz + w) = 0
+      % for documentation below, use slack vars: s = Mz + w >= 0
+      %
+      % use qn = q + h*qdn
+      % where H(q)*(qdn - qd)/h = B*u - C(q) + J(q)'*z
+      %  or qdn = qd + h*H\(tau + J'*z)
+      %  with z = [cL; cP; cN; beta; lambda]
+      %
+      % and implement equation (7) from Anitescu97, by collecting
+      %   J = [JL; JP; JN; JT; -JT; zeros(nC,num_q)]
 
-%      doKinematics(obj.manip.model,q,qd);
+      J = zeros(nL + nP + 4*nC,num_q);
+      mu = 1;
       
-%      % Handle translational springs and tendons
-%      nSpring = length(obj.model.spring);
-%      if nSpring > 0
-%        fSpring = obj.springForce(q,qd,clutch);
-%        jointForces = jointForces + fSpring;
-%      end
-      
-%      if (~isempty(obj.model.passive_K) && ~isempty(obj.model.passive_B))
-%        % determine which passive joints are active
-%        active_ind = (q < obj.model.passive_max+1e-6).*(q > obj.model.passive_min-1e-6);
-%        
-%        passive_force = (-obj.model.passive_K*(q - obj.model.passive_nom) -...
-%          obj.model.passive_B*qd).*active_ind + obj.model.passive_offset;
-%        
-%        jointForces = jointForces + passive_force;
-%      end
-      
-      HinvJointForces = H\(jointForces);
-      
-      if nL_bi > 0
-        [phi_bi,J_bi] = obj.positionConstraints(q);
-        phi_bi = [phi_bi;-phi_bi];
-        J_bi = [J_bi;-J_bi];
-      else
-        phi_bi = zeros(0,1);
-        J_bi = zeros(0,num_q);
-      end
+      % todo: enforce only active constraints
       
       if (nL > 0)
-        [phi_u,J_u] = obj.manip.jointLimits(q);
-      else
-        phi_u = zeros(0,1);
-        J_u = zeros(0,num_q);
+        [phiL,JL] = obj.manip.jointLimits(q);
+        J(1:nL,:) = JL;
       end
       
-      if nC > 0
-        [phi_c, ~,  ~, ~, J_c]  = contactPositionsAndVelocities(obj,q,qd);
-      else
-        phi_c = zeros(0,1);
-        J_c = zeros(0,num_q);
+      %% Bilateral position constraints 
+      if nP > 0
+        [phiP,JP] = obj.manip.positionConstraints(q);
+        phiP = [phiP;-phiP];
+        JP = [JP; -JP];
+        J(nL+(1:nP),:) = JP; 
       end
       
-      M = zeros(4*nC+nL+2*nL_bi);
-      w = zeros(4*nC+nL+2*nL_bi,1);
+      if (nC > 0)
+        [phiN,phiT,JN,JT] = obj.manip.contactConstraints(q,qd);
+        J(nL+nP+(1:nC),:) = JN;
+        J(nL+nP+nC+(1:nC),:) = JT;  
+        J(nL+nP+2*nC+(1:nC),:) = -JT;
+      end
       
-      J_z = J_c(2:2:end,:);
-      J_x = J_c(1:2:end,:);
+      %% Bilateral velocity constraints
+      if nV > 0
+        error('not implemented yet');
+      end
       
-      if nC > 0
-        w(1:nC) = phi_c(2:2:end) + h*J_z*qd - h^2*J_z*(H\C) + h^2*J_z*HinvJointForces;
-        M(1:nC,:) = [h*J_z*(H\J_z') h*J_z*(H\J_x') -h*J_z*(H\J_x') zeros(nC) h*J_z*(H\J_u') h*J_z*(H\J_bi')];
+      M = zeros(nL+nP+4*nC);
+      w = zeros(nL+nP+4*nC,1);
+
+      % note: I'm inverting H twice here.  Should i do it only once, in a
+      % previous step?
+      wqdn = qd + h*(H\tau);
+      Mqdn = h*(H\J');
+      
+      %% Joint Limits:
+      % phiL(qn) is distance from each limit (in joint space)
+      % phiL_i(qn) >= 0, cL_i >=0, phiL_i(qn) * cL_I = 0
+      % z(1:nL) = cL (nL includes min AND max; 0<=nL<=2*num_q)
+      % s(1:nL) = phiL(qn) approx phiL + h*JL*qdn
+      % finally, cL <= h*cL (since it doesn't matter)
+      if (nL > 0)
+        w(1:nL) = phiL + h*JL*wqdn;
+        M(1:nL,:) = JL*Mqdn;
+      end
+      
+      %% Bilateral Position Constraints:
+      % enforcing eq7, line 2
+      if (nP > 0)
+        w(nL+(1:nP)) = phiP + h*JP*wqdn;
+        M(nL+(1:nP),:) = JP*Mqdn;
+      end
+      
+      %% Contact Forces:
+      % s(nL+nP+(1:nC)) = JN*qdn           (eq7, line 3)
+      % z(nL+nP+(1:nC)) = cN
+      % s(nL+nP+nC+(1:nC)) = lambda + JT*qdn  (eq7, line 4)
+      % s(nL+nP+2*nC+(1:nC)) = lambda - JT*qdn
+      % z(nL+nP+nC+(1:2*nC)) = beta
+      % s(nL+nP+3*nC+(1:nC)) = mu*cn - beta(1:nC) + beta(1:nC) (eq7, line 5)
+      % z(nL+nP+3*nC+(1:nC)) = lambda
+      if (nC > 0)
+        w(nL+nP+(1:nC)) = JN*wqdn;
+        M(nL+nP+(1:nC),:) = JN*Mqdn;
         
-        w(nC+(1:nC)) = J_x*qd - h*J_x*(H\C) + h*J_x*HinvJointForces;
-        M(nC+(1:nC),:) = [J_x*(H\J_z') J_x*(H\J_x') -J_x*(H\J_x') eye(nC) J_x*(H\J_u') h*J_x*(H\J_bi')];
-        
-        w(2*nC+(1:nC)) = -J_x*qd + h*J_x*(H\C) - h*J_x*HinvJointForces;
-        M(2*nC+(1:nC),:) = [-J_x*(H\J_z') -J_x*(H\J_x') J_x*(H\J_x') eye(nC) -J_x*(H\J_u') -h*J_x*(H\J_bi')];
-        
-        M(3*nC+(1:nC),:) = [mu*eye(nC) -eye(nC) -eye(nC) zeros(nC, nC+nL+2*nL_bi)];
+        w(nL+nP+nC+(1:2*nC)) = [JT*wqdn; -JT*wqdn];
+        M(nL+nP+nC+(1:2*nC),:) = [JT*Mqdn; -JT*Mqdn];
+        M(nL+nP+nC+(1:2*nC),nL+nP+3*nC+(1:nC)) = [eye(nC);eye(nC)];
+
+        M(nL+nP+3*nC+(1:nC),nL+nP+(1:3*nC)) = [mu*eye(nC), -eye(nC), eye(nC)];
       end
       
-      if nL > 0
-        w(4*nC+(1:nL)) = phi_u + h*J_u*qd - h^2*J_u*(H\C) + h^2*J_u*HinvJointForces;
-        M(4*nC+(1:nL),:) = [h*J_u*(H\J_z') h*J_u*(H\J_x') -h*J_u*(H\J_x') zeros(nL,nC) h*J_u*(H\J_u') h*J_u*(H\J_bi')];
-      end
+      z = pathlcp(M,w);  % z = lambda
       
-      if nL_bi > 0
-        w(4*nC+nL+(1:2*nL_bi)) = phi_bi + h*J_bi*qd - h^2*J_bi*(H\C) + h^2*J_bi*HinvJointForces;
-        M(4*nC+nL+(1:2*nL_bi),:) = [h*J_bi*(H\J_z') h*J_bi*(H\J_x') -h*J_bi*(H\J_x') zeros(2*nL_bi,nC) h*J_bi*(H\J_u') h*J_bi*(H\J_bi')];
-      end
-      
-      % z >= 0, Mz + w >= 0, z'*(Mz + w) = 0
-      % z = [lambda_z;lambda_x+;lambda_x-;lambda_u;lambda_b];
-      z = pathlcp(M,w);
-      
-      J_full = [J_u; J_bi(1:nL_bi,:);J_c];
-      lambda_z = z(1:nC);
-      lambda_x = z(nC + (1:nC)) - z(2*nC + (1:nC));
-      lambda_u = z(4*nC + (1:nL));
-      lambda_bi = z(4*nC + nL + (1:nL_bi)) -  z(4*nC + nL + nL_bi + (1:nL_bi));
-      lambda = [lambda_u; lambda_bi; reshape([lambda_x lambda_z]',[],1)];
-      
-      qd_out = qd - h*(H\C) + h*HinvJointForces + (H\J_full')*lambda;
-      q_out = q + h*qd_out;
-      xdn = [q_out; qd_out];
+      qdn = Mqdn*z + wqdn;
+      qn = q + h*qdn;
+      xdn = [qn;qdn];
     end
     
     function y = output(obj,t,x,u)
