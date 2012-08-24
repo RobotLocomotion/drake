@@ -158,6 +158,10 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       y = output(obj.manip,t,x,u);
     end
 
+    function phi = stateConstraints(obj,x)
+      phi = stateConstraints(obj.manip,x);
+    end
+    
     function v = constructVisualizer(obj)
       v = constructVisualizer(obj.manip);
     end

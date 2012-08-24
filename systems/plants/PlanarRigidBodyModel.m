@@ -113,7 +113,6 @@ classdef PlanarRigidBodyModel < RigidBodyModel
     
     function model=parseJoint(model,node,options)
 
-
       parentNode = node.getElementsByTagName('parent').item(0);
       if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
           return
@@ -272,6 +271,48 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         child.wrljoint = wrl_joint_origin;
       end
       
+    end
+    
+    function model = addFloatingBase(model,options)
+      rootlink = find(cellfun(@isempty,{model.body.parent}));
+      if (length(rootlink)>1)
+        warning('multiple root links');
+      end
+      
+      for i=1:length(rootlink)
+        child = model.body(i);
+        body1=newBody(model);
+        name = [child.linkname,'_x'];
+        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+          error('floating name already exists.  cannot add floating base.');
+        end
+        body1.linkname = name;
+        body1.jointname = name;
+        body1.pitch=inf;
+        body1.joint_axis = [1;0;0];
+        body1.jcode=2;
+        body1.joint_limit_min = -inf;
+        body1.joint_limit_max = inf;
+        body1.parent=[];  % this is the new root link
+        body2=newBody(model);
+        name = [child.linkname,'_z'];
+        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+          error('floating name already exists.  cannot add floating base.');
+        end
+        body2.linkname = name;
+        body2.jointname = name;
+        body2.pitch=inf;
+        body1.joint_axis = [0;0;1];
+        body2.jcode=3;
+        body2.joint_limit_min = -inf;
+        body2.joint_limit_max = inf;
+        body2.parent = body1;
+        child.pitch=0;
+        child.joint_axis=axis;
+        child.jcode=1;
+        child.parent = body2;
+        model.body=[model.body,body1,body2];
+      end
     end
     
     function model = parseLoopJoint(model,node,options)
