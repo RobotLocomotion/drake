@@ -256,7 +256,7 @@ classdef RigidBodyModel
           
         if ~isnan(body.pitch)
           if any([model.body.parent] == body) || any(any(body.I))
-            % link has inertial important from child links
+            % link has inertial importance from child links
             % pr link has inertia now (from a fixed link coming from a
             % descendant).  abort removal.
             continue;
