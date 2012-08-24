@@ -4,15 +4,16 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="RimlessWheel" xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- I have to add rotational inertia about the COM to the model to have a well-defined flight phase, even though the ideal rimless wheel model does not have it. -->
   <link name="hub">
     <inertial>
       <mass value="1"/>
-      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="1" iyz="0" izz="0"/>
     </inertial>
     <visual>
       <origin rpy="1.5708 0 0"/>
       <geometry>
-        <cylinder length=".1" radius=".2"/>
+        <cylinder length=".2" radius=".2"/>
       </geometry>
     </visual>
   </link>
@@ -27,7 +28,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 1"/>
+      <origin rpy="0 0 0" xyz="0 0 -1.0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
@@ -49,7 +50,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 1"/>
+      <origin rpy="0 0 0" xyz="0 0 -1.0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
@@ -71,7 +72,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 1"/>
+      <origin rpy="0 0 0" xyz="0 0 -1.0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
@@ -93,7 +94,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 1"/>
+      <origin rpy="0 0 0" xyz="0 0 -1.0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
@@ -115,7 +116,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 1"/>
+      <origin rpy="0 0 0" xyz="0 0 -1.0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
@@ -137,7 +138,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 1"/>
+      <origin rpy="0 0 0" xyz="0 0 -1.0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
@@ -159,7 +160,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 1"/>
+      <origin rpy="0 0 0" xyz="0 0 -1.0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
@@ -181,7 +182,7 @@
       </material>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 1"/>
+      <origin rpy="0 0 0" xyz="0 0 -1.0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>

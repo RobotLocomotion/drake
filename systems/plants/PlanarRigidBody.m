@@ -164,6 +164,8 @@ classdef PlanarRigidBody < RigidBody
             r = str2num(char(thisNode.getAttribute('radius')));
             if (r==0)
               cx=0; cy=0; cz=0;
+              pts = T*[0;0;0;1];
+              x=pts(1,:); y=pts(2,:);
             else
               theta = 0:.1:2*pi;
               pts = r*[cos(theta); sin(theta)] + repmat(T*[0;0;0;1],1,length(theta));
