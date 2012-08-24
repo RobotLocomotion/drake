@@ -1,4 +1,4 @@
-classdef PlanarTimeSteppingRBM < DrakeSystem
+classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   % A discrete time system which simulates (an Euler approximation of) the
   % manipulator equations, with contact / limits resolved using the linear
   % complementarity problem formulation of contact in Stewart96.
@@ -6,24 +6,32 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
   properties
     manip  % the CT manipulator
     timestep
+    twoD=false
   end
   
   methods
-    function obj=PlanarTimeSteppingRBM(manipulator,timestep)
-
+    function obj=TimeSteppingRigidBodyManipulator(manipulator,timestep)
       checkDependency('pathlcp_enabled');
       
       switch class(manipulator)
-        case {'char','PlanarRigidBodyModel'}
-          % then assume it's a urdf file
+        case {'char','RigidBodyModel'}
+          % then make the corresponding manipulator
+          S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+          warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+          manipulator = RigidBodyManipulator(manipulator);
+          warning(S);
+        case 'PlanarRigidBodyModel'
           S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
           warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
           manipulator = PlanarRigidBodyManipulator(manipulator);
           warning(S);
       end
-      typecheck(manipulator,'PlanarRigidBodyManipulator');
+      typecheck(manipulator,{'RigidBodyManipulator','PlanarRigidBodyManipulator'});
       obj = obj@DrakeSystem(0,manipulator.getNumStates(),manipulator.getNumInputs(),manipulator.getNumOutputs(),manipulator.isDirectFeedthrough(),manipulator.isTI());
       obj.manip = manipulator;
+      if isa(manipulator,'PlanarRigidBodyManipulator')
+        obj.twoD = true;
+      end
       
       typecheck(timestep,'double');
       sizecheck(timestep,1);
@@ -45,14 +53,16 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       % do LCP time-stepping
       num_q = obj.manip.num_q;
       q=x(1:num_q); qd=x((num_q+1):end);
+      if (obj.twoD) d=2; else d=3; end 
       h = obj.timestep;
-            [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
+
+      [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
       if (obj.num_u>0) tau = B*u - C; else tau = -C; end
       
       nL = sum([obj.manip.joint_limit_min~=-inf;obj.manip.joint_limit_max~=inf]); % number of joint limits
       nC = obj.manip.num_contacts;
-      nP = 2*obj.manip.num_position_constraints;  % number of position constraints
-      nV = 2*obj.manip.num_velocity_constraints;  
+      nP = d*obj.manip.num_position_constraints;  % number of position constraints
+      nV = d*obj.manip.num_velocity_constraints;  
       
       if (nC+nL+nP+nV==0)
         qd_out = qd + h*H\tau;
@@ -68,14 +78,25 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       % use qn = q + h*qdn
       % where H(q)*(qdn - qd)/h = B*u - C(q) + J(q)'*z
       %  or qdn = qd + H\(h*tau + J'*z)
-      %  with z = [h*cL; h*cP; h*cN; h*beta{1}; h*beta{2}; lambda]
+      %  with z = [h*cL; h*cP; h*cN; h*beta{1}; ...; h*beta{mC}; lambda]
       %
       % and implement equation (7) from Anitescu97, by collecting
-      %   J = [JL; JP; n; D{1}; D{2}; zeros(nC,num_q)]
+      %   J = [JL; JP; n; D{1}; ...; D{mC}; zeros(nC,num_q)]
 
-      J = zeros(nL + nP + 4*nC,num_q);
       
       % todo: enforce only active constraints
+      
+      if (nC > 0)
+        [phiC,n,D,mu] = obj.manip.contactConstraints(q);
+        mC = length(D);
+        J = zeros(nL + nP + (mC+2)*nC,num_q);
+        D = vertcat(D{:});
+        J(nL+nP+(1:nC),:) = n;
+        J(nL+nP+nC+(1:mC*nC),:) = D;
+      else
+        mC=0;
+        J = zeros(nL+nP,num_q);
+      end
       
       if (nL > 0)
         [phiL,JL] = obj.manip.jointLimits(q);
@@ -94,12 +115,6 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       %% Bilateral velocity constraints
       if nV > 0
         error('not implemented yet');  % but shouldn't be hard
-      end
-      
-      if (nC > 0)
-        [phiC,n,D,mu] = obj.manip.contactConstraints(q);
-        J(nL+nP+(1:nC),:) = n;
-        J(nL+nP+nC+(1:2*nC),:) = [D{1};D{2}];  
       end
       
       M = zeros(nL+nP+4*nC);
@@ -130,20 +145,19 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       %% Contact Forces:
       % s(nL+nP+(1:nC)) = phiC+n*qdn  (modified (fixed?) from eq7, line 3)
       % z(nL+nP+(1:nC)) = cN
-      % s(nL+nP+nC+(1:nC)) = lambda + D{1}*qdn  (eq7, line 4)
-      % s(nL+nP+2*nC+(1:nC)) = lambda + D{2}*qdn 
-      % z(nL+nP+nC+(1:2*nC)) = [beta_1;beta_2]
-      % s(nL+nP+3*nC+(1:nC)) = mu*cn - sum_m beta_m (eq7, line 5)
-      % z(nL+nP+3*nC+(1:nC)) = lambda
+      % s(nL+nP+nC+(1:mC*nC)) = repmat(lambda,mC,1) + D*qdn  (eq7, line 4)
+      % z(nL+nP+nC+(1:mC*nC)) = [beta_1;...;beta_mC]
+      % s(nL+nP+(mC+1)*nC+(1:nC)) = mu*cn - sum_mC beta_mC (eq7, line 5)
+      % z(nL+nP+(mC+1)*nC+(1:nC)) = lambda
       if (nC > 0)
         w(nL+nP+(1:nC)) = phiC+h*n*wqdn;
         M(nL+nP+(1:nC),:) = h*n*Mqdn;
         
-        w(nL+nP+nC+(1:2*nC)) = [D{1}*wqdn; D{2}*wqdn];
-        M(nL+nP+nC+(1:2*nC),:) = [D{1}*Mqdn; D{2}*Mqdn];
-        M(nL+nP+nC+(1:2*nC),nL+nP+3*nC+(1:nC)) = [eye(nC);eye(nC)];
+        w(nL+nP+nC+(1:mC*nC)) = D*wqdn;
+        M(nL+nP+nC+(1:mC*nC),:) = D*Mqdn; 
+        M(nL+nP+nC+(1:mC*nC),nL+nP+(1+mC)*nC+(1:nC)) = repmat(eye(nC),mC,1);
 
-        M(nL+nP+3*nC+(1:nC),nL+nP+(1:3*nC)) = [diag(mu), -eye(nC), -eye(nC)];
+        M(nL+nP+(mC+1)*nC+(1:nC),nL+nP+(1:(mC+1)*nC)) = [diag(mu), repmat(-eye(nC),1,mC)];
       end
       
       z = pathlcp(M,w);  
