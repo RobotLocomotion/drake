@@ -196,12 +196,13 @@ classdef PlanarRigidBodyManipulator < Manipulator
     
     function phi = positionConstraints(obj,q)
       % so far, only loop constraints are implemented
-      phi=loopConstraints;
+      phi=loopConstraints(obj,q);
     end
     
     function phi = loopConstraints(obj,q)
       % handle kinematic loops
       % note: each loop adds two constraints 
+      phi=[];
       for i=1:length(obj.model.loop)
         % for each loop, add the constraints on T1(q) and T2(q), // todo: finish this
         % where

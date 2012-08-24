@@ -29,15 +29,15 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       obj.timestep = timestep;
       
       obj = setSampleTime(obj,[timestep;0]);
-      
-      if (getNumStateConstraints(obj.manip)>0)
-        error('not implemented yet');
-      end
-      
+            
       obj = setInputFrame(obj,getInputFrame(obj.manip));
       obj = setStateFrame(obj,getStateFrame(obj.manip));
       obj = setOutputFrame(obj,getOutputFrame(obj.manip));
       
+    end
+    
+    function x0 = getInitialState(obj)
+      x0 = obj.manip.getInitialState();
     end
     
     function xdn = update(obj,t,x,u)
@@ -66,8 +66,8 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       %
       % use qn = q + h*qdn
       % where H(q)*(qdn - qd)/h = B*u - C(q) + J(q)'*z
-      %  or qdn = qd + h*H\(tau + J'*z)
-      %  with z = [cL; cP; cN; beta; lambda]
+      %  or qdn = qd + H\(h*tau + J'*z)
+      %  with z = [h*cL; h*cP; h*cN; h*beta; lambda]
       %
       % and implement equation (7) from Anitescu97, by collecting
       %   J = [JL; JP; JN; JT; -JT; zeros(nC,num_q)]
@@ -84,10 +84,16 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       
       %% Bilateral position constraints 
       if nP > 0
-        [phiP,JP] = obj.manip.positionConstraints(q);
+        [phiP,JP] = geval(@positionConstraints,obj.manip,q);
+%        [phiP,JP] = obj.manip.positionConstraints(q);
         phiP = [phiP;-phiP];
         JP = [JP; -JP];
         J(nL+(1:nP),:) = JP; 
+      end
+      
+      %% Bilateral velocity constraints
+      if nV > 0
+        error('not implemented yet');  % but shouldn't be hard
       end
       
       if (nC > 0)
@@ -97,35 +103,29 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
         J(nL+nP+2*nC+(1:nC),:) = -JT;
       end
       
-      %% Bilateral velocity constraints
-      if nV > 0
-        error('not implemented yet');
-      end
-      
       M = zeros(nL+nP+4*nC);
       w = zeros(nL+nP+4*nC,1);
 
       % note: I'm inverting H twice here.  Should i do it only once, in a
       % previous step?
       wqdn = qd + h*(H\tau);
-      Mqdn = h*(H\J');
+      Mqdn = H\J';
       
       %% Joint Limits:
       % phiL(qn) is distance from each limit (in joint space)
       % phiL_i(qn) >= 0, cL_i >=0, phiL_i(qn) * cL_I = 0
       % z(1:nL) = cL (nL includes min AND max; 0<=nL<=2*num_q)
       % s(1:nL) = phiL(qn) approx phiL + h*JL*qdn
-      % finally, cL <= h*cL (since it doesn't matter)
       if (nL > 0)
         w(1:nL) = phiL + h*JL*wqdn;
-        M(1:nL,:) = JL*Mqdn;
+        M(1:nL,:) = h*JL*Mqdn;
       end
       
       %% Bilateral Position Constraints:
       % enforcing eq7, line 2
       if (nP > 0)
         w(nL+(1:nP)) = phiP + h*JP*wqdn;
-        M(nL+(1:nP),:) = JP*Mqdn;
+        M(nL+(1:nP),:) = h*JP*Mqdn;
       end
       
       %% Contact Forces:
@@ -153,7 +153,7 @@ classdef PlanarTimeSteppingRBM < DrakeSystem
       qn = q + h*qdn;
       xdn = [qn;qdn];
     end
-    
+
     function y = output(obj,t,x,u)
       y = output(obj.manip,t,x,u);
     end
