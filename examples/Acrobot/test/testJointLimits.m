@@ -13,4 +13,9 @@ v = r.constructVisualizer;
 traj = simulate(r,[0 5],[pi/4;pi/6;0;7]);
 playback(v,traj);
 
+x=traj.eval(traj.getBreaks());
+if min(x(2,:))<m.body(3).joint_limit_min || max(x(2,:))>m.body(3).joint_limit_max
+  error('joint limits violated');
+end
+
 end
