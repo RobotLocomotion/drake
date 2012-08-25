@@ -223,13 +223,10 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       if any(rpy)
         rpya=rpy2axis(rpy); p=rpya(4); rpyaxis=rpya(1:3);
         if abs(dot(rpyaxis,model.view_axis))<(1-1e-6)
-          i = find(model.view_axis); 
-          if length(i)==1 % then I can salvage it
-            warning('joint axes out of the plane are not supported.  out of plane components of this rotation will be ignored');
-            p = rpy(i);
-          else
-            error('out of plane joint axes + complicated view axis => gak');
-          end
+          warning('joint axes out of the plane are not supported.  the dependent link (and all of it''s decendants) will be zapped');
+          ind = find([model.body]==child);
+          model.body(ind)=[];
+          return;
           % note that if they were, it would change the way that I have to 
           % parse geometries, inertias, etc, for all of the children.
         elseif dot(rpyaxis,model.view_axis)<0
@@ -250,16 +247,24 @@ classdef PlanarRigidBodyModel < RigidBodyModel
     
     function model=parseJoint(model,node,options)
 
-      parentNode = node.getElementsByTagName('parent').item(0);
-      if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
-          return
-      end
-      parent = findLink(model,char(parentNode.getAttribute('link')));
-      
+      name = char(node.getAttribute('name'));
+
       childNode = node.getElementsByTagName('child').item(0);
+      if isempty(childNode) % then it's not the main joint element
+        return;
+      end
       child = findLink(model,char(childNode.getAttribute('link')));
       
-      name = char(node.getAttribute('name'));
+      parentNode = node.getElementsByTagName('parent').item(0);
+      parent = findLink(model,char(parentNode.getAttribute('link')),false);
+      if (isempty(parent))
+        % could have been zapped
+        warning(['joint ',name,' parent link is missing or was deleted.  deleting the child link:', child.linkname,'(too)']);
+        ind = find([model.body]==child);
+        model.body(ind)=[];
+        return;
+      end
+      
       type = char(node.getAttribute('type'));
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
