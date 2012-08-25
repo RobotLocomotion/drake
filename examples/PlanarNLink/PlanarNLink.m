@@ -45,23 +45,16 @@ function model=addLink(model,mass,len,radius)
   co = get(gca,'ColorOrder');
   close(h);
   body.geometry{1}.c = co(mod(ind-2,size(co,1))+1,:);
+  model.body = [model.body, body];
     
   % joint properties
-  body.jointname=['joint',num2str(ind-1)];
-  body.jcode=1;
-  body.parent = model.body(ind-1);
   if (ind>2)
-    parentlen=-min(body.parent.geometry{1}.y);
-    body.Xtree = Xpln(0,[0;-parentlen]);
-    body.Ttree = eye(3);  body.Ttree(2,3)=-parentlen;
+    parentlen=-min(model.body(ind-1).geometry{1}.y);
   else
-    body.Xtree = eye(3);
-    body.Ttree = eye(3);
+    parentlen = 0;
   end
-  body.damping=.1;
+  model = addJoint(model,['joint',num2str(ind-1)],'revolute',model.body(ind-1),body,[0;0;-parentlen],zeros(3,1),model.view_axis,.1,-inf,inf);
   
-  model.body = [model.body, body];
-
   if (ind>2)  % leave the first joint as passive
     actuator = RigidBodyActuator();
     actuator.name = ['joint',num2str(ind),'_torque'];
