@@ -19,5 +19,5 @@ end
 
 ok = isfield(conf,conf_var) && getfield(conf,conf_var);
 if (nargout<1 && ~ok)
-  error(['Cannot run this function because ', conf_var, ' was not set in the configure script']);
+  error(['Drake:MissingDependency:',conf_var],['Cannot run this function because ', conf_var, ' was not set in the configure script']);
 end

@@ -17,6 +17,7 @@ classdef RigidBody < handle
     Xtree=eye(6);   % velocity space coordinate transform *from parent to this node*
     X_body_to_joint=eye(6);  % velocity space coordinate transfrom from joint frame (where joint_axis = z-axis) to body frame 
     Ttree=eye(4);   % position space coordinate transform *from this node to parent*
+    T_body_to_joint=eye(4);
     wrljoint='';  % tranformation to joint coordinates in wrl syntax
     damping=0;
     joint_limit_min=[];
@@ -274,7 +275,7 @@ classdef RigidBody < handle
             cz = s(3)/2*[1 1 -1 -1 -1 -1 1 1];
             
             pts = T*[cx;cy;cz;ones(1,8)];
-            x=pts(1,:)';y=pts(2,:)'; z=pts(2,:)';
+            x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
             
           case 'cylinder'
             r = str2num(char(thisNode.getAttribute('radius')));
@@ -287,7 +288,7 @@ classdef RigidBody < handle
             cz = l/2*[1 1 -1 -1 -1 -1 1 1];
               
             pts = T*[cx;cy;cz;ones(1,8)];
-            x=pts(1,:)';y=pts(2,:)'; z=pts(2,:)';
+            x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
               
           case 'sphere'
             r = str2num(char(thisNode.getAttribute('radius')));
@@ -296,7 +297,7 @@ classdef RigidBody < handle
             end
             cx=0; cy=0; cz=0;
             pts = T*[0;0;0;1];
-            x=pts(1,:)';y=pts(2,:)'; z=pts(2,:)';
+            x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
 
           otherwise
             % intentionally blank

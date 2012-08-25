@@ -5,7 +5,7 @@ function TJ = Tjcalc(pitch,q)
 if pitch == 0				% revolute joint
   TJ = [rotz(q),zeros(3,1);zeros(1,3),1];
 elseif pitch == inf			% prismatic joint
-  TJ = [zeros(4,3),[0;0;q;1]];
+  TJ = [eye(3),[0;0;q];[0 0 0 1]];
 else					% helical joint
   TJ = [rotz(q),[0;0;q*pitch];zeros(1,3),1];
 end
