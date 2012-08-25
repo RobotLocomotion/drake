@@ -2,7 +2,6 @@ function testBrickKinematics
 
 options.floating = true;
 m = RigidBodyModel('FallingBrick.urdf',options);
-v = RigidBodyWRLVisualizer(CoordinateFrame('brickState',12,'x'),m);
 
   function [x,J] = getPoints(m,q)  
     doKinematics(m,q);
