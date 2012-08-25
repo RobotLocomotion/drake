@@ -226,15 +226,15 @@ classdef RigidBodyModel
           qi = q(body.dofnum);
           
           TJ = Tjcalc(body.pitch,qi);
-          body.T=body.parent.T*body.Ttree*TJ;
+          body.T=body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
 
           % todo: consider pulling this out into a
           % "doKinematicsAndVelocities" version?  but I'd have to be
           % careful with caching.
           for j=1:model.featherstone.NB
-            body.dTdq{j} = body.parent.dTdq{j}*body.Ttree*TJ;
+            body.dTdq{j} = body.parent.dTdq{j}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
           end
-          body.dTdq{body.dofnum} = body.dTdq{body.dofnum} + body.parent.T*body.Ttree*dTjcalc(body.pitch,qi);
+          body.dTdq{body.dofnum} = body.dTdq{body.dofnum} + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*dTjcalc(body.pitch,qi)*body.T_body_to_joint;
           
           body.cached_q = q(body.dofnum);
         end
@@ -371,6 +371,22 @@ classdef RigidBodyModel
       end
     end
     
+    function drawKinematicTree(model)
+      % depends on having graphviz2mat installed (from matlabcentral)
+      % todo: make that a dependency in configure?
+      
+      A = zeros(length(model.body));
+      for i=1:length(model.body)
+        if ~isempty(model.body(i).parent)
+          A(i,find(model.body(i).parent==[model.body.parent])) = 1;
+        end
+      end
+      graph_draw(A,'node_labels',{model.body.linkname});
+      % todo: add joint names, etc on edges (like the ros urdf display).  might have to use drawDot
+      %   http://www.mathworks.com/matlabcentral/fileexchange/24652
+      % and write my own .dot file instead of relying on graphviz2mat
+    end
+    
     function body = newBody(model)
       body = RigidBody();
     end
@@ -448,17 +464,10 @@ classdef RigidBodyModel
       end
       
       child.Xtree = Xrotz(rpy(3))*Xroty(rpy(2))*Xrotx(rpy(1))*Xtrans(xyz);
-      child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotz(rpy(1)),xyz; 0,0,0,1];
+      child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];
       
       if ~strcmp(lower(type),'fixed') && dot(axis,[0;0;1])<1-1e-6
-        % featherstone dynamics treats all joints as operating around the
-        % z-axis.  so I have to add a transform from the origin of this
-        % link to align the joint axis with the z-axis, update the spatial
-        % inertia of this joint, and then rotate back to keep the child
-        % frames intact.  this happens in extractFeatherstone
-        axis_angle = [cross([0;0;1],axis); atan2(cross([0;0;1],axis),dot([0;0;1],axis))]; % both are already normalized
-        jointrpy = quat2rpy(axis2quat(axis_angle));
-        child.X_body_to_joint=Xrotz(jointrpy(3))*Xroty(jointrpy(2))*Xrotx(jointrpy(1));
+        [child.X_body_to_joint,child.T_body_to_joint] = RigidBodyModel.bodyToJoint(axis);
       end
       
       switch lower(type)
@@ -513,6 +522,7 @@ classdef RigidBodyModel
         body1.jointname = name;
         body1.pitch=inf;
         body1.joint_axis = [1;0;0];
+        [body1.X_body_to_joint,body1.T_body_to_joint] = RigidBodyModel.bodyToJoint(body1.joint_axis);
         body1.joint_limit_min = -inf;
         body1.joint_limit_max = inf;
         body1.parent=world; 
@@ -526,6 +536,7 @@ classdef RigidBodyModel
         body2.jointname = name;
         body2.pitch=inf;
         body2.joint_axis = [0;1;0];
+        [body2.X_body_to_joint,body2.T_body_to_joint] = RigidBodyModel.bodyToJoint(body2.joint_axis);
         body2.joint_limit_min = -inf;
         body2.joint_limit_max = inf;
         body2.parent = body1;
@@ -539,12 +550,13 @@ classdef RigidBodyModel
         body3.jointname = name;
         body3.pitch=inf;
         body3.joint_axis = [0;0;1];
+        [body3.X_body_to_joint,body3.T_body_to_joint] = RigidBodyModel.bodyToJoint(body3.joint_axis);
         body3.joint_limit_min = -inf;
         body3.joint_limit_max = inf;
         body3.parent = body2;
         
         body4=newBody(model);
-        name = [child.linkname,'_r'];
+        name = [child.linkname,'_roll'];
         if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
           error('floating name already exists.  cannot add floating base.');
         end
@@ -552,12 +564,13 @@ classdef RigidBodyModel
         body4.jointname = name;
         body4.pitch=0;
         body4.joint_axis = [1;0;0];
+        [body4.X_body_to_joint,body4.T_body_to_joint] = RigidBodyModel.bodyToJoint(body4.joint_axis);
         body4.joint_limit_min = -inf;
         body4.joint_limit_max = inf;
         body4.parent = body3;
         
         body5=newBody(model);
-        name = [child.linkname,'_p'];
+        name = [child.linkname,'_pitch'];
         if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
           error('floating name already exists.  cannot add floating base.');
         end
@@ -565,17 +578,19 @@ classdef RigidBodyModel
         body5.jointname = name;
         body5.pitch=0;
         body5.joint_axis = [0;1;0];
+        [body5.X_body_to_joint,body5.T_body_to_joint] = RigidBodyModel.bodyToJoint(body5.joint_axis);
         body5.joint_limit_min = -inf;
         body5.joint_limit_max = inf;
         body5.parent = body4;
         
         child.pitch=0;
-        child.jointname = [child.linkname,'_y'];
+        child.jointname = [child.linkname,'_yaw'];
         child.joint_axis=[0;0;1];
+        [child.X_body_to_joint,child.T_body_to_joint] = RigidBodyModel.bodyToJoint(child.joint_axis);
         child.joint_limit_min = -inf;
         child.joint_limit_max = inf;
         child.parent = body5;
-
+        
         model.body=[model.body,body1,body2,body3,body4,body5];
       end
     end
@@ -629,6 +644,7 @@ classdef RigidBodyModel
       end
       
       if (nargin<3) options=struct(); end
+      if ~isfield(options,'ground') options.ground = false; end
       
       fp = fopen(wrlfile,'w');
       
@@ -641,6 +657,19 @@ classdef RigidBodyModel
       
       % write default background color  % todo: get this from urdf?
       fprintf(fp,'Background {\n\tskyColor 1 1 1\n}\n\n');
+
+      if (0) %options.ground)  % not working yet.
+        m=10; n=10;
+        fprintf(fp,'Shape { geometry ElevationGrid {\n');
+%        fprintf(fp,'  solid "false"\n');
+        fprintf(fp,'  xDimension %d\n',m);
+        fprintf(fp,'  zDimension %d\n',n);
+%        fprintf(fp,'  color 1 0 0\n');
+        fprintf(fp,'  height [');
+        fprintf(fp,' %d', zeros(m,n));
+        fprintf(fp,' ]\n');
+        fprintf(fp,'} appearance Appearance { material Material { diffuseColor 1 0 0 } }}\n\n');
+      end
       
       % write default viewpoints
       fprintf(fp,'Viewpoint {\n\tdescription "right"\n\tposition 0 -4 0\n\torientation 1 0 0 1.5708\n}\n\n');
@@ -690,6 +719,20 @@ classdef RigidBodyModel
         
         fprintf(fp,']\n%s\n}\n',brac); % end wrljoint transform
       end
+    end
+  end
+  
+  methods (Static)
+    function [X,T] = bodyToJoint(axis)
+      % featherstone dynamics treats all joints as operating around the
+      % z-axis.  so I have to add a transform from the origin of this
+      % link to align the joint axis with the z-axis, update the spatial
+      % inertia of this joint, and then rotate back to keep the child
+      % frames intact.  this happens in extractFeatherstone
+      axis_angle = [cross([0;0;1],axis); atan2(norm(cross([0;0;1],axis)),dot([0;0;1],axis))]; % both are already normalized
+      jointrpy = quat2rpy(axis2quat(axis_angle));
+      X=Xrotz(jointrpy(3))*Xroty(jointrpy(2))*Xrotx(jointrpy(1));
+      T=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
     end
   end
 end

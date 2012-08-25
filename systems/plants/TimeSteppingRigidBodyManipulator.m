@@ -117,8 +117,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         error('not implemented yet');  % but shouldn't be hard
       end
       
-      M = zeros(nL+nP+4*nC);
-      w = zeros(nL+nP+4*nC,1);
+      M = zeros(nL+nP+(mC+2)*nC);
+      w = zeros(nL+nP+(mC+2)*nC,1);
 
       % note: I'm inverting H twice here.  Should i do it only once, in a
       % previous step?
