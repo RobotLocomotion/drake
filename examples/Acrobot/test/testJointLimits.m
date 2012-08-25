@@ -6,7 +6,7 @@ function testJointLimits()
 m = PlanarRigidBodyModel('../Acrobot.urdf');
 m.body(3).joint_limit_min=-1.5;
 m.body(3).joint_limit_max=1.5;
-r = PlanarTimeSteppingRBM(m,.01);
+r = TimeSteppingRigidBodyManipulator(m,.01);
 v = r.constructVisualizer;
 
 %traj = simulate(r,[0 5],[1;pi/4;pi/6;0;4]);
