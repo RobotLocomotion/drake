@@ -5,6 +5,8 @@ classdef RigidBodyWRLVisualizer < Visualizer
   
   methods
     function obj = RigidBodyWRLVisualizer(frame,model)
+      checkDependency('vrml_enabled');
+      
       obj=obj@Visualizer(frame);
       
       if (nargin<1)

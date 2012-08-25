@@ -1,7 +1,10 @@
 function runLQR
 
 p = RigidBodyManipulator('FurutaPendulum.urdf');
-v = p.constructVisualizer;
+
+if checkDependency('vrml_enabled')
+  v = p.constructVisualizer;
+end
 
 xG = Point(p.getStateFrame,[0;pi;0;0]);
 uG = Point(p.getInputFrame,0);
@@ -12,7 +15,8 @@ sys = feedback(p,c);
 for i=1:5
   x0 = double(xG)+.2*randn(4,1);
   xtraj = simulate(sys,[0 4],x0);
-  v.playback(xtraj);
+  if checkDependency('vrml_enabled')
+    v.playback(xtraj);
+  end
 end
 
-% NOTEST (until the build machine can handle VRML)

@@ -33,22 +33,27 @@ classdef RigidBodyModel
       
       if (nargin>0 && ~isempty(urdf_filename))
         if (nargin<2) options = struct(); end
-        if (~isfield(options,'floating')) options.floating = false; end
-        if (~isfield(options,'inertial')) options.inertial = true; end
-        if (~isfield(options,'visual')) options.visual = true; end
-        
-        %disp(['Parsing ', urdf_filename]);
-        urdf = xmlread(urdf_filename);
-        
-        robot = urdf.getElementsByTagName('robot').item(0);
-        if isempty(robot)
-          error('there are no robots in this urdf file');
-        end
-        
-        model = parseRobot(model,robot,options);
-        
-        model=compile(model,options);
+        model = parseURDF(model,urdf_filename,options);
       end
+    end
+    
+    function model=parseURDF(model,urdf_filename,options)
+      if (nargin<2) options = struct(); end
+      if (~isfield(options,'floating')) options.floating = false; end
+      if (~isfield(options,'inertial')) options.inertial = true; end
+      if (~isfield(options,'visual')) options.visual = true; end
+        
+      %disp(['Parsing ', urdf_filename]);
+      urdf = xmlread(urdf_filename);
+      
+      robot = urdf.getElementsByTagName('robot').item(0);
+      if isempty(robot)
+        error('there are no robots in this urdf file');
+      end
+      
+      model = parseRobot(model,robot,options);
+      
+      model=compile(model,options);
     end
     
     function model=parseRobot(model,node,options)
@@ -411,6 +416,69 @@ classdef RigidBodyModel
       model.body=[model.body,body];
     end
     
+    function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,joint_lim_min,joint_lim_max,options)
+      if (nargin<6) xyz=zeros(3,1); end
+      if (nargin<7) rpy=zeros(3,1); end
+      if (nargin<8) axis=[1;0;0]; end
+      if (nargin<9) damping=0; end
+      if (nargin<10) joint_lim_min=-inf; end
+      if (nargin<11) joint_lim_max=inf; end
+      if (nargin<12) options=struct(); end % no options yet
+        
+      if ~isempty(child.parent)
+        error('there is already a joint connecting this child to a parent');
+      end
+      
+      child.jointname = name;
+      child.parent = parent;
+      
+      wrl_joint_origin='';
+      if any(xyz)
+        wrl_joint_origin=[wrl_joint_origin,sprintf('\ttranslation %f %f %f\n',xyz(1),xyz(2),xyz(3))];
+      end
+      if (any(rpy))
+        wrl_joint_origin=[wrl_joint_origin,sprintf('\trotation %f %f %f %f\n',rpy2axis(rpy))];
+      end
+      if ~isempty(wrl_joint_origin)
+        child.wrljoint = wrl_joint_origin;
+      end      
+
+      child.Xtree = Xrotz(rpy(3))*Xroty(rpy(2))*Xrotx(rpy(1))*Xtrans(xyz);
+      child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];
+      
+
+      if ~strcmp(lower(type),'fixed') && dot(axis,[0;0;1])<1-1e-6
+        % featherstone dynamics treats all joints as operating around the
+        % z-axis.  so I have to add a transform from the origin of this
+        % link to align the joint axis with the z-axis, update the spatial
+        % inertia of this joint, and then rotate back to keep the child
+        % frames intact.  this happens in extractFeatherstone
+        axis_angle = [cross([0;0;1],axis); atan2(norm(cross([0;0;1],axis)),dot([0;0;1],axis))]; % both are already normalized
+        jointrpy = quat2rpy(axis2quat(axis_angle));
+        child.X_body_to_joint=Xrotz(jointrpy(3))*Xroty(jointrpy(2))*Xrotx(jointrpy(1));
+        child.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
+      end
+
+      switch lower(type)
+        case {'revolute','continuous'}
+          child.pitch = 0;
+          child.damping = damping;
+          
+        case 'prismatic'
+          child.pitch = inf;
+          child.damping = damping;
+          
+        case 'fixed'
+          child.pitch = nan;
+          
+        otherwise
+          error(['joint type ',type,' not supported (yet?)']);
+      end
+      child.joint_axis = axis;
+      child.joint_limit_min = joint_lim_min;
+      child.joint_limit_max = joint_lim_max;
+    end
+    
     function model=parseJoint(model,node,options)
 
       parentNode = node.getElementsByTagName('parent').item(0);
@@ -421,30 +489,17 @@ classdef RigidBodyModel
       
       childNode = node.getElementsByTagName('child').item(0);
       child = findLink(model,char(childNode.getAttribute('link')));
-      
-      if (child.parent>=0)
-        error('there is already a joint connecting this child to a parent');
-      end
-      
-      child.jointname = char(node.getAttribute('name'));
-      child.parent = parent;
-      
+
+      name = char(node.getAttribute('name'));
       type = char(node.getAttribute('type'));
       xyz=zeros(3,1); rpy=zeros(3,1);
-      wrl_joint_origin='';
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
         if origin.hasAttribute('xyz')
           xyz = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
-          if any(xyz)
-            wrl_joint_origin=[wrl_joint_origin,sprintf('\ttranslation %f %f %f\n',xyz(1),xyz(2),xyz(3))];
-          end
         end
         if origin.hasAttribute('rpy')
           rpy = reshape(str2num(char(origin.getAttribute('rpy'))),3,1);
-          if (any(rpy))
-            wrl_joint_origin=[wrl_joint_origin,sprintf('\trotation %f %f %f %f\n',rpy2axis(rpy))];
-          end
         end
       end
       axis=[1;0;0];  % default according to URDF documentation
@@ -463,34 +518,19 @@ classdef RigidBodyModel
         end
       end
       
-      child.Xtree = Xrotz(rpy(3))*Xroty(rpy(2))*Xrotx(rpy(1))*Xtrans(xyz);
-      child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];
-      
-      if ~strcmp(lower(type),'fixed') && dot(axis,[0;0;1])<1-1e-6
-        [child.X_body_to_joint,child.T_body_to_joint] = RigidBodyModel.bodyToJoint(axis);
+      joint_limit_min=-inf;
+      joint_limit_max=inf;
+      limits = node.getElementsByTagName('limit').item(0);
+      if ~isempty(limits)
+        if limits.hasAttribute('lower')
+          joint_limit_min = str2num(char(limits.getAttribute('lower')));
+        end
+        if limits.hasAttribute('upper');
+          joint_limit_max = str2num(char(limits.getAttribute('upper')));
+        end          
       end
       
-      switch lower(type)
-        case {'revolute','continuous'}
-          child.pitch = 0;
-          child.damping = damping;
-          
-        case 'prismatic'
-          child.pitch = inf;
-          child.damping = damping;
-          
-        case 'fixed'
-          child.pitch = nan;
-          
-        otherwise
-          error(['joint type ',type,' not supported (yet?)']);
-      end
-      child.joint_axis = axis;
-      
-      if ~isempty(wrl_joint_origin)
-        child.wrljoint = wrl_joint_origin;
-      end
-      
+      model = model.addJoint(name,type,parent,child,xyz,rpy,axis,damping,joint_limit_min,joint_limit_max);
     end
     
     function model = addFloatingBase(model,options)
@@ -519,13 +559,8 @@ classdef RigidBodyModel
           error('floating name already exists.  cannot add floating base.');
         end
         body1.linkname = name;
-        body1.jointname = name;
-        body1.pitch=inf;
-        body1.joint_axis = [1;0;0];
-        [body1.X_body_to_joint,body1.T_body_to_joint] = RigidBodyModel.bodyToJoint(body1.joint_axis);
-        body1.joint_limit_min = -inf;
-        body1.joint_limit_max = inf;
-        body1.parent=world; 
+        model.body = [model.body,body1];
+        model = addJoint(model,name,'prismatic',world,body1,zeros(3,1),zeros(3,1),[1;0;0],0);
 
         body2=newBody(model);
         name = [child.linkname,'_y'];
@@ -533,13 +568,8 @@ classdef RigidBodyModel
           error('floating name already exists.  cannot add floating base.');
         end
         body2.linkname = name;
-        body2.jointname = name;
-        body2.pitch=inf;
-        body2.joint_axis = [0;1;0];
-        [body2.X_body_to_joint,body2.T_body_to_joint] = RigidBodyModel.bodyToJoint(body2.joint_axis);
-        body2.joint_limit_min = -inf;
-        body2.joint_limit_max = inf;
-        body2.parent = body1;
+        model.body = [model.body,body2];
+        model = addJoint(model,name,'prismatic',body1,body2,zeros(3,1),zeros(3,1),[0;1;0],0);
         
         body3=newBody(model);
         name = [child.linkname,'_z'];
@@ -548,12 +578,8 @@ classdef RigidBodyModel
         end
         body3.linkname = name;
         body3.jointname = name;
-        body3.pitch=inf;
-        body3.joint_axis = [0;0;1];
-        [body3.X_body_to_joint,body3.T_body_to_joint] = RigidBodyModel.bodyToJoint(body3.joint_axis);
-        body3.joint_limit_min = -inf;
-        body3.joint_limit_max = inf;
-        body3.parent = body2;
+        model.body = [model.body,body3];
+        model = addJoint(model,name,'prismatic',body2,body3,zeros(3,1),zeros(3,1),[0;0;1],0);
         
         body4=newBody(model);
         name = [child.linkname,'_roll'];
@@ -561,13 +587,8 @@ classdef RigidBodyModel
           error('floating name already exists.  cannot add floating base.');
         end
         body4.linkname = name;
-        body4.jointname = name;
-        body4.pitch=0;
-        body4.joint_axis = [1;0;0];
-        [body4.X_body_to_joint,body4.T_body_to_joint] = RigidBodyModel.bodyToJoint(body4.joint_axis);
-        body4.joint_limit_min = -inf;
-        body4.joint_limit_max = inf;
-        body4.parent = body3;
+        model.body = [model.body,body4];
+        model = addJoint(model,name,'revolute',body3,body4,zeros(3,1),zeros(3,1),[1;0;0],0);
         
         body5=newBody(model);
         name = [child.linkname,'_pitch'];
@@ -575,23 +596,10 @@ classdef RigidBodyModel
           error('floating name already exists.  cannot add floating base.');
         end
         body5.linkname = name;
-        body5.jointname = name;
-        body5.pitch=0;
-        body5.joint_axis = [0;1;0];
-        [body5.X_body_to_joint,body5.T_body_to_joint] = RigidBodyModel.bodyToJoint(body5.joint_axis);
-        body5.joint_limit_min = -inf;
-        body5.joint_limit_max = inf;
-        body5.parent = body4;
-        
-        child.pitch=0;
-        child.jointname = [child.linkname,'_yaw'];
-        child.joint_axis=[0;0;1];
-        [child.X_body_to_joint,child.T_body_to_joint] = RigidBodyModel.bodyToJoint(child.joint_axis);
-        child.joint_limit_min = -inf;
-        child.joint_limit_max = inf;
-        child.parent = body5;
-        
-        model.body=[model.body,body1,body2,body3,body4,body5];
+        model.body = [model.body,body5];
+        model = addJoint(model,name,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
+        model = addJoint(model,[child.linkname,'_yaw'],'revolute',body5,child,zeros(3,1),zeros(3,1),[0;0;1],0);
+
       end
     end
     
@@ -722,17 +730,4 @@ classdef RigidBodyModel
     end
   end
   
-  methods (Static)
-    function [X,T] = bodyToJoint(axis)
-      % featherstone dynamics treats all joints as operating around the
-      % z-axis.  so I have to add a transform from the origin of this
-      % link to align the joint axis with the z-axis, update the spatial
-      % inertia of this joint, and then rotate back to keep the child
-      % frames intact.  this happens in extractFeatherstone
-      axis_angle = [cross([0;0;1],axis); atan2(norm(cross([0;0;1],axis)),dot([0;0;1],axis))]; % both are already normalized
-      jointrpy = quat2rpy(axis2quat(axis_angle));
-      X=Xrotz(jointrpy(3))*Xroty(jointrpy(2))*Xrotx(jointrpy(1));
-      T=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
-    end
-  end
 end

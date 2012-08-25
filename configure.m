@@ -102,6 +102,8 @@ if (~conf.snopt_enabled)
   disp(' SNOPT not found.  SNOPT support will be disabled.  To re-enable, add the SNOPT matlab folder to your path and rerun configure.  SNOPT can be obtained from https://tig.csail.mit.edu/software/ .');
 end
 
+conf.vrml_enabled = logical(vrinstall('-check'));
+
 conf.sedumi_enabled = logical(exist('sedumi'));
 if (conf.sedumi_enabled)
     disp('You seem to have SeDuMi installed, so I am just going to check that it runs properly.');
