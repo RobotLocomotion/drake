@@ -223,7 +223,13 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       if any(rpy)
         rpya=rpy2axis(rpy); p=rpya(4); rpyaxis=rpya(1:3);
         if abs(dot(rpyaxis,model.view_axis))<(1-1e-6)
-          error('joints out of the plane are not supported, and will be removed (along with their descendants)');
+          i = find(model.view_axis); 
+          if length(i)==1 % then I can salvage it
+            warning('joint axes out of the plane are not supported.  out of plane components of this rotation will be ignored');
+            p = rpy(i);
+          else
+            error('out of plane joint axes + complicated view axis => gak');
+          end
           % note that if they were, it would change the way that I have to 
           % parse geometries, inertias, etc, for all of the children.
         elseif dot(rpyaxis,model.view_axis)<0
