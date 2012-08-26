@@ -110,7 +110,7 @@ classdef CoordinateFrame < handle
       
       if (size(A,1)<length(A)) A(length(A),end)=0; end
       if (size(A,2)<length(A)) A(end,length(A))=0; end
-      graph_draw(A,'node_labels',cellfun(@(a) a.name,fr,'UniformOutput',false));
+      drawGraph(A,cellfun(@(a) a.name,fr,'UniformOutput',false));
     end
 
     

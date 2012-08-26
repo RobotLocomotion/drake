@@ -380,13 +380,15 @@ classdef RigidBodyModel
       % depends on having graphviz2mat installed (from matlabcentral)
       % todo: make that a dependency in configure?
       
-      A = zeros(length(model.body));
+      A = cell(length(model.body));
       for i=1:length(model.body)
         if ~isempty(model.body(i).parent)
-          A(i,find(model.body(i).parent==[model.body.parent])) = 1;
+          A{find(model.body(i).parent==[model.body]),i} = model.body(i).jointname;
         end
       end
-      graph_draw(A,'node_labels',{model.body.linkname});
+      node_names = regexprep({model.body.linkname},'+(.)*','');
+      node_names = regexprep(node_names,'-','_');
+      drawGraph(A,node_names);
       % todo: add joint names, etc on edges (like the ros urdf display).  might have to use drawDot
       %   http://www.mathworks.com/matlabcentral/fileexchange/24652
       % and write my own .dot file instead of relying on graphviz2mat
