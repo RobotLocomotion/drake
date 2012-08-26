@@ -286,6 +286,10 @@ classdef PlanarRigidBodyManipulator < Manipulator
         % (vectorizing this would appear to require big block diagonal
         % matrices, and might not be worth it; profiling will tell us)
         
+        % update: for vectorization, I would just need to construct
+        %  [normal(:,1)' 0 0 0 0; 0 normal(:,2)' 0 0 0; 0 0 normal(:,3') 0 0], 
+        % etc, where each 0 is a 1x3 block zero, then multiply by J
+        
         for i=1:obj.num_contacts
           thisJ = J(2*(i-1)+(1:2),:);
           n(i,:) = normal(:,i)'*thisJ;

@@ -160,11 +160,8 @@ classdef RigidBody < handle
       pts = [pts;ones(1,m)];
       x = body.T(1:3,:)*pts;
       if (nargout>1)
-        nq = length(body.dTdq);
-        J = zeros(3*m,nq);
-        for i=1:nq
-          J(:,i) = reshape(body.dTdq{i}(1:3,:)*pts,3*m,1);
-        end
+        nq = size(body.dTdq,1)/4;
+        J = reshape(body.dTdq(1:3*nq,:)*pts,nq,[])';
       end
     end    
       

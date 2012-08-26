@@ -122,11 +122,8 @@ classdef PlanarRigidBody < RigidBody
       pts = [pts;ones(1,m)];
       x = body.T(1:2,:)*pts;
       if (nargout>1)
-        nq = length(body.dTdq);
-        J = zeros(2*m,nq);
-        for i=1:nq
-          J(:,i) = reshape(body.dTdq{i}(1:2,:)*pts,2*m,1);
-        end
+        nq = size(body.dTdq,1)/3;
+        J = reshape(body.dTdq(1:2*nq,:)*pts,nq,[])';
       end
     end
   end
