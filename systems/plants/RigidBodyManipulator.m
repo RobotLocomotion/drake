@@ -244,23 +244,33 @@ classdef RigidBodyManipulator < Manipulator
         
         t2 = cross(t1,normal);
 
-        m = 8;
+        m = 4;  % must be an even number
         theta = (0:7)*2*pi/m;
         
         % recall that dphidx = normal'; n = dphidq = dphidx * dxdq
         % for a single contact, we'd have
         % n = normal'*J;
-        % but have to loop through all the points 
-        % (vectorizing this would appear to require big block diagonal
-        % matrices, and might not be worth it; profiling will tell us)
-        
-        for i=1:obj.num_contacts
-          thisJ = J(3*(i-1)+(1:3),:);
-          n(i,:) = normal(:,i)'*thisJ;
-          for k=1:m
-            D{k}(i,:) = (cos(theta(k))*t1(:,i) + sin(theta(k))*t2(:,i))'*thisJ;
-          end
+        % For vectorization, I just construct
+        %  [normal(:,1)' 0 0 0 0; 0 normal(:,2)' 0 0 0; 0 0 normal(:,3') 0 0], 
+        % etc, where each 0 is a 1x3 block zero, then multiply by J
+
+        n = sparse(repmat(1:obj.num_contacts,3,1),1:3*obj.num_contacts,normal(:))*J;
+        for k=1:m/2
+          t=cos(theta(k))*t1 + sin(theta(k))*t2;
+          D{k} = sparse(repmat(1:obj.num_contacts,3,1),1:3*obj.num_contacts,t(:))*J;
         end
+        for k=(m/2+1):m
+          D{k} = -D{k-m/2};
+        end
+        
+        % the above is the vectorized version of this:
+%        for i=1:obj.num_contacts
+%          thisJ = J(3*(i-1)+(1:3),:);
+%          n(i,:) = normal(:,i)'*thisJ;
+%          for k=1:m
+%            D{k}(i,:) = (cos(theta(k))*t1(:,i) + sin(theta(k))*t2(:,i))'*thisJ;
+%          end
+%        end
       end
     end
 
