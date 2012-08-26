@@ -166,7 +166,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       
       while (1)
         z = zeros(nL+nP+(mC+2)*nC,1);
-        z(active) = pathlcp(M(active,active),w(active));
+        if any(active)
+          z(active) = pathlcp(M(active,active),w(active));
+        end
         
         inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
         missed = (M(inactive,inactive)*z(inactive)+w(inactive) < 0);

@@ -4,7 +4,9 @@ classdef RigidBodyWRLVisualizer < Visualizer
   % 
   
   methods
-    function obj = RigidBodyWRLVisualizer(frame,model)
+    function obj = RigidBodyWRLVisualizer(frame,model,options)
+      % @option ground set options.ground = true to have ground visualized
+
       checkDependency('vrml_enabled');
       
       obj=obj@Visualizer(frame);
@@ -20,8 +22,12 @@ classdef RigidBodyWRLVisualizer < Visualizer
         error('model must be a RigidBodyModel or the name of a urdf file'); 
       end
       
+      if nargin<3
+        options = struct();
+      end
+      
       wrlfile = fullfile(tempdir,[obj.model.name,'.wrl']);
-      obj.model.writeWRL(wrlfile);
+      obj.model.writeWRL(wrlfile,options);
       obj.wrl = vrworld(wrlfile);
       if ~strcmpi(get(obj.wrl,'Open'),'on')
         open(obj.wrl);
