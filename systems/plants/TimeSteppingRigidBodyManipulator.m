@@ -83,9 +83,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       % and implement equation (7) from Anitescu97, by collecting
       %   J = [JL; JP; n; D{1}; ...; D{mC}; zeros(nC,num_q)]
 
-      
-      % todo: enforce only active constraints
-      
       if (nC > 0)
         [phiC,n,D,mu] = obj.manip.contactConstraints(q);
         mC = length(D);
@@ -119,7 +116,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       
       M = zeros(nL+nP+(mC+2)*nC);
       w = zeros(nL+nP+(mC+2)*nC,1);
-
+      active = repmat(true,nL+nP+(mC+2)*nC,1);
+      active_tol = .01;
+      
       % note: I'm inverting H twice here.  Should i do it only once, in a
       % previous step?
       wqdn = qd + h*(H\tau);
@@ -133,6 +132,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nL > 0)
         w(1:nL) = phiL + h*JL*wqdn;
         M(1:nL,:) = h*JL*Mqdn;
+        active(1:nL) = (phiL + h*JL*qd) < active_tol;
       end
       
       %% Bilateral Position Constraints:
@@ -140,6 +140,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nP > 0)
         w(nL+(1:nP)) = phiP + h*JP*wqdn;
         M(nL+(1:nP),:) = h*JP*Mqdn;
+        active(nL+(1:nP)) = true;
       end
       
       %% Contact Forces:
@@ -158,9 +159,26 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         M(nL+nP+nC+(1:mC*nC),nL+nP+(1+mC)*nC+(1:nC)) = repmat(eye(nC),mC,1);
 
         M(nL+nP+(mC+1)*nC+(1:nC),nL+nP+(1:(mC+1)*nC)) = [diag(mu), repmat(-eye(nC),1,mC)];
+
+        a = (phiC+h*n*qd) < active_tol;
+        active(nL+nP+(1:(mC+2)*nC),:) = repmat(a,mC+2,1);
       end
       
-      z = pathlcp(M,w);  
+      while (1)
+        z = zeros(nL+nP+(mC+2)*nC,1);
+        z(active) = pathlcp(M(active,active),w(active));
+        
+        inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
+        missed = (M(inactive,inactive)*z(inactive)+w(inactive) < 0);
+        if ~any(missed), break; end
+        % otherwise add the missed indices to the active set and repeat
+        disp(['t=',num2str(t),': missed ',num2str(sum(missed)),' constraints.  resolving lcp.']);
+        ind = find(inactive);
+        inactive(ind(missed)) = false;
+        % add back in the related contact terms:
+        inactive = [inactive; repmat(inactive(nL+nP+(1:nC)),mC+1,1)];
+        active = ~inactive;
+      end 
       
       % for debugging
       %cN = z(nL+nP+(1:nC))

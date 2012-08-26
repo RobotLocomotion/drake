@@ -216,17 +216,16 @@ classdef RigidBodyModel
     end
 
     function doKinematics(model,q)
-      if 0 %any(abs(q-reshape([model.body.cached_q],1,[])')<1e-6)  % todo: make this tolerance a parameter
+      if all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
         % then my kinematics are up to date, don't recompute
         return
       end
+      nq = model.featherstone.NB;
       for i=1:length(model.body)
         body = model.body(i);
         if (isempty(body.parent))
           body.T = body.Ttree;
-          for j=1:model.featherstone.NB
-            body.dTdq{j} = zeros(4);
-          end
+          body.dTdq = zeros(4*nq,4);
         else
           qi = q(body.dofnum);
           
@@ -236,10 +235,12 @@ classdef RigidBodyModel
           % todo: consider pulling this out into a
           % "doKinematicsAndVelocities" version?  but I'd have to be
           % careful with caching.
-          for j=1:model.featherstone.NB
-            body.dTdq{j} = body.parent.dTdq{j}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-          end
-          body.dTdq{body.dofnum} = body.dTdq{body.dofnum} + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*dTjcalc(body.pitch,qi)*body.T_body_to_joint;
+          body.dTdq = body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+
+          % note the unusual format of dTdq (chosen for efficiently calculating jacobians from many pts)
+          % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
+          this_dof_ind = body.dofnum+0:nq:4*nq;
+          body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*dTjcalc(body.pitch,qi)*body.T_body_to_joint;
           
           body.cached_q = q(body.dofnum);
         end
