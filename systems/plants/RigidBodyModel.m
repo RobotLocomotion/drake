@@ -386,12 +386,9 @@ classdef RigidBodyModel
           A{find(model.body(i).parent==[model.body]),i} = model.body(i).jointname;
         end
       end
-      node_names = regexprep({model.body.linkname},'+(.)*','');
-      node_names = regexprep(node_names,'-','_');
+      node_names = {model.body.linkname};
+%      node_names = regexprep({model.body.linkname},'+(.)*','');  
       drawGraph(A,node_names);
-      % todo: add joint names, etc on edges (like the ros urdf display).  might have to use drawDot
-      %   http://www.mathworks.com/matlabcentral/fileexchange/24652
-      % and write my own .dot file instead of relying on graphviz2mat
     end
     
     function body = newBody(model)
