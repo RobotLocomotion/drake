@@ -318,7 +318,11 @@ classdef PlanarRigidBodyManipulator < Manipulator
     end
     
     function v=constructWRLVisualizer(obj)
-      v = RigidBodyWRLVisualizer(obj.getStateFrame,obj.model);
+      options=struct();
+      if (obj.num_contacts)
+        options.ground=true;
+      end
+      v = RigidBodyWRLVisualizer(obj.getStateFrame,obj.model,options);
     end
   end
   
