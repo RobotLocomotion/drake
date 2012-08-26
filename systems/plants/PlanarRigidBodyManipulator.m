@@ -282,20 +282,21 @@ classdef PlanarRigidBodyManipulator < Manipulator
         % recall that dphidx = normal'; n = dphidq = dphidx * dxdq
         % for a single contact, we'd have
         % n = normal'*J;
-        % but have to loop through all the points 
-        % (vectorizing this would appear to require big block diagonal
-        % matrices, and might not be worth it; profiling will tell us)
-        
-        % update: for vectorization, I would just need to construct
+        % For vectorization, I just construct
         %  [normal(:,1)' 0 0 0 0; 0 normal(:,2)' 0 0 0; 0 0 normal(:,3') 0 0], 
         % etc, where each 0 is a 1x3 block zero, then multiply by J
+
+        n = sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,normal(:))*J;
+        D{1} = sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,t(:))*J;
+        D{2} = -D{1};
         
-        for i=1:obj.num_contacts
-          thisJ = J(2*(i-1)+(1:2),:);
-          n(i,:) = normal(:,i)'*thisJ;
-          D{1}(i,:) = t(:,i)'*thisJ;
-          D{2}(i,:) = -t(:,i)'*thisJ;
-        end
+        % the above is the vectorized version of this:
+%        for i=1:obj.num_contacts
+%          thisJ = J(2*(i-1)+(1:2),:);
+%          n(i,:) = normal(:,i)'*thisJ;
+%          D{1}(i,:) = t(:,i)'*thisJ;
+%          D{2}(i,:) = -t(:,i)'*thisJ;
+%        end
       end
     end
 
