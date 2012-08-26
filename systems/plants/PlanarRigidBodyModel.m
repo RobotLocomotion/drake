@@ -32,14 +32,20 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           model.x_axis = [0;1;0];
           model.y_axis = [0;0;1];
           model.view_axis = [1;0;0];  
+          model.x_axis_label='y';
+          model.y_axis_label='z';
         case 'right'
           model.x_axis = [1;0;0];
           model.y_axis = [0;0;1];
           model.view_axis = [0;1;0];
+          model.x_axis_label='x';
+          model.y_axis_label='z';
         case 'top'
           model.x_axis = [1;0;0];
           model.y_axis = [0;1;0];
           model.view_axis = [0;0;1];
+          model.x_axis_label='x';
+          model.y_axis_label='y';
       end
         
       if ~isempty(urdf_filename)
@@ -51,13 +57,9 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       
       switch options.view
         case 'front'
-          model.x_axis_label='y';
-          model.y_axis_label='z';
           model.gravity = [0;-9.81];
 
         case 'right'
-          model.x_axis_label='x';
-          model.y_axis_label='z';
           model.gravity = [0;-9.81];
           if ~isempty(model.body)
             % 'flip' rotational kinematics (since y-axis goes into the page)
@@ -67,8 +69,6 @@ classdef PlanarRigidBodyModel < RigidBodyModel
             end
           end           
         case 'top'
-          model.x_axis_label='x';
-          model.y_axis_label='y';
           model.gravity = [0;0];
       end
     end    
@@ -186,16 +186,16 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           jsign = sign(dot(axis,model.view_axis));
 
           body1=newBody(model);
-          body1.linkname=[child.jointname,'_x'];
+          body1.linkname=[name,'_',model.x_axis_label];
           model.body = [model.body,body1];
           model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,jsign*model.x_axis,damping);
 
           body2=newBody(model);
-          body2.linkname=[child.jointname,'_z'];
+          body2.linkname=[name,'_',model.y_axis_label];
           model.body = [model.body,body2];
-          model = addJoint(model,body1.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),jsign*model.y_axis,damping);
+          model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),jsign*model.y_axis,damping);
           
-          model = addJoint(model,name,'revolute',body2,child,zeros(3,1),zeros(3,1),axis,damping);
+          model = addJoint(model,[name,'_p'],'revolute',body2,child,zeros(3,1),zeros(3,1),axis,damping);
           return;
           
         case 'fixed'
@@ -322,26 +322,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       model.body = [model.body,world];
       
       for i=1:length(rootlink)
-        child = model.body(i);
-        body1=newBody(model);
-        name = [child.linkname,'_x'];
-        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
-          error('floating name already exists.  cannot add floating base.');
-        end
-        body1.linkname = name;
-        model.body = [model.body,body1];
-        model = addJoint(model,name,'prismatic',world,body1,zeros(3,1),zeros(3,1),model.x_axis,0,-inf,inf,options);
-
-        body2=newBody(model);
-        name = [child.linkname,'_z'];
-        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
-          error('floating name already exists.  cannot add floating base.');
-        end
-        body2.linkname = name;
-        model.body = [model.body,body2];
-        model = addJoint(model,name,'prismatic',body1,body2,zeros(3,1),zeros(3,1),model.y_axis,0,-inf,inf,options);
-        
-        model = addJoint(model,[child.linkname,'_p'],'revolute',body2,child,zeros(3,1),zeros(3,1),model.view_axis,0,-inf,inf,options);
+        model = addJoint(model,model.body(i).linkname,'planar',world,model.body(i),zeros(3,1),zeros(3,1),model.view_axis,0,-inf,inf,options);
       end
     end
     

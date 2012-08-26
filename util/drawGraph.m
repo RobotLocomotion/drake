@@ -30,14 +30,14 @@ for i=1:size(adj,1)
   for j=1:size(adj,2)
     if isnumeric(adj)
       if adj(i,j)
-        fprintf(fptr,'    %s -> %s;\n',node_labels{i},node_labels{j});
+        fprintf(fptr,'    "%s" -> "%s";\n',node_labels{i},node_labels{j});
       end
     else
       if ~isempty(adj{i,j})
         if isnumeric(adj{i,j})
           adj{i,j} = num2str(adj{i,j});
         end
-        fprintf(fptr,'    %s -> %s [ label = "%s" ];\n',node_labels{i},node_labels{j},adj{i,j});
+        fprintf(fptr,'    "%s" -> "%s" [ label = "%s" ];\n',node_labels{i},node_labels{j},adj{i,j});
       end
     end
   end
