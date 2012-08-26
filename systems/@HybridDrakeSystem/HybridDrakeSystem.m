@@ -168,7 +168,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       for i=1:length(obj.modes)
         A(i,obj.target_mode{i}) = 1;
       end
-      graph_draw(A,'node_labels',obj.mode_names);
+      drawGraph(A,obj.mode_names);
     end
   end
 
