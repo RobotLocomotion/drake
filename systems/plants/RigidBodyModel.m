@@ -227,8 +227,9 @@ classdef RigidBodyModel
     end
 
     function doKinematics(model,q)
-      if all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
+      if isnumeric(q) && all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
         % then my kinematics are up to date, don't recompute
+        % the "isnumeric" check is for the sake of taylorvars
         return
       end
       nq = model.featherstone.NB;
