@@ -45,6 +45,8 @@ end
 
 IC = model.I;				% composite inertia calculation
 
+C = zeros(model.NB,1)*q(1);
+
 for i = model.NB:-1:1
   C(i,1) = S{i}' * fvp{i};
   if model.parent(i) ~= 0
