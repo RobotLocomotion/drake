@@ -75,8 +75,9 @@ classdef PlanarRigidBodyModel < RigidBodyModel
     
     
     function doKinematics(model,q)
-      if all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
+      if isnumeric(q) && all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
         % then my kinematics are up to date, don't recompute
+        % the "isnumeric" check is for the sake of taylorvars
         return
       end
       nq = model.featherstone.NB;
@@ -85,9 +86,6 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         if (isempty(body.parent))
           body.T = body.Ttree;
           body.dTdq = zeros(3*nq,3);
-%          for j=1:model.featherstone.NB
-%            body.dTdq{j} = zeros(3);
-%          end
         else
           qi = body.jsign*q(body.dofnum);
           
