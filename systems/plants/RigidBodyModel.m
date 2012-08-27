@@ -165,6 +165,17 @@ classdef RigidBodyModel
       end
     end
     
+    function fr = constructStateFrame(model)
+      fr = CoordinateFrame([model.name,'State'],2*model.featherstone.NB,'x');
+      joints={model.body(~cellfun(@isempty,{model.body.parent})).jointname}';
+      fr = setCoordinateNames(fr,vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false)));
+    end
+    
+    function fr = constructInputFrame(model)
+      fr = CoordinateFrame([model.name,'Input'],size(model.B,2),'u');
+      fr = setCoordinateNames(fr,{model.actuator.name}');
+    end
+    
     function [c,model] = parseMaterial(model,node,options)
       
       name=char(node.getAttribute('name'));
@@ -445,7 +456,6 @@ classdef RigidBodyModel
 
       child.Xtree = Xrotz(rpy(3))*Xroty(rpy(2))*Xrotx(rpy(1))*Xtrans(xyz);
       child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];
-      
 
       if ~strcmp(lower(type),'fixed') && dot(axis,[0;0;1])<1-1e-6
         % featherstone dynamics treats all joints as operating around the
@@ -453,10 +463,11 @@ classdef RigidBodyModel
         % link to align the joint axis with the z-axis, update the spatial
         % inertia of this joint, and then rotate back to keep the child
         % frames intact.  this happens in extractFeatherstone
-        axis_angle = [cross([0;0;1],axis); atan2(norm(cross([0;0;1],axis)),dot([0;0;1],axis))]; % both are already normalized
+        axis_angle = [cross(axis,[0;0;1]); acos(dot(axis,[0;0;1]))]; % both are already normalized
         jointrpy = quat2rpy(axis2quat(axis_angle));
         child.X_body_to_joint=Xrotz(jointrpy(3))*Xroty(jointrpy(2))*Xrotx(jointrpy(1));
         child.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
+        valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
       end
 
       switch lower(type)
