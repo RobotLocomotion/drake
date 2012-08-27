@@ -465,6 +465,11 @@ classdef RigidBodyModel
         % inertia of this joint, and then rotate back to keep the child
         % frames intact.  this happens in extractFeatherstone
         axis_angle = [cross(axis,[0;0;1]); acos(dot(axis,[0;0;1]))]; % both are already normalized
+        if all(abs(axis_angle(1:3))<1e-6)
+          % then it's a scaling of the z axis.  
+          valuecheck(sin(axis_angle(4)),0,1e-6);  
+          axis_angle(1:3)=[0;1;0];  
+        end
         jointrpy = quat2rpy(axis2quat(axis_angle));
         child.X_body_to_joint=Xrotz(jointrpy(3))*Xroty(jointrpy(2))*Xrotx(jointrpy(1));
         child.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
