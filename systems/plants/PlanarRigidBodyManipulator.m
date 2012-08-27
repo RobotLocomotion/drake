@@ -27,15 +27,11 @@ classdef PlanarRigidBodyManipulator < Manipulator
       obj = obj.setNumOutputs(2*obj.model.featherstone.NB);
       
       if getNumInputs(obj)>0
-        inputframe = CoordinateFrame([obj.model.name,'Input'],getNumInputs(obj));
-        inputframe = setCoordinateNames(inputframe,{obj.model.actuator.name}');
-        obj = setInputFrame(obj,inputframe);
+        obj = setInputFrame(obj,constructInputFrame(model));
       end
       
       if getNumStates(obj)>0
-        stateframe = CoordinateFrame([obj.model.name,'State'],2*obj.model.featherstone.NB,'x');
-        joints={obj.model.body(~cellfun(@isempty,{obj.model.body.parent})).jointname}';
-        stateframe = setCoordinateNames(stateframe,vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false)));
+        stateframe = constructStateFrame(obj.model);
         obj = setStateFrame(obj,stateframe);
         obj = setOutputFrame(obj,stateframe);  % output = state
       end

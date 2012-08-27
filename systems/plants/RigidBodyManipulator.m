@@ -27,15 +27,11 @@ classdef RigidBodyManipulator < Manipulator
       obj = obj.setNumOutputs(2*obj.model.featherstone.NB);
       
       if getNumInputs(obj)>0
-        inputframe = CoordinateFrame([obj.model.name,'Input'],getNumInputs(obj));
-        inputframe = setCoordinateNames(inputframe,{obj.model.actuator.name}');
-        obj = setInputFrame(obj,inputframe);
+        obj = setInputFrame(obj,constructInputFrame(obj.model));
       end
 
       if getNumStates(obj)>0
-        stateframe = CoordinateFrame([obj.model.name,'State'],2*obj.model.featherstone.NB,'x');
-        joints={obj.model.body(~cellfun(@isempty,{obj.model.body.parent})).jointname}';
-        stateframe = setCoordinateNames(stateframe,vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false)));
+        stateframe = constructStateFrame(obj.model);
         obj = setStateFrame(obj,stateframe);
         obj = setOutputFrame(obj,stateframe);  % output = state
       end
@@ -212,6 +208,7 @@ classdef RigidBodyManipulator < Manipulator
       contact_pos = zeros(3,obj.num_contacts);
       if (nargout>1) J = zeros(3*obj.num_contacts,obj.num_q); end
       count=0;
+%      figure(1); clf;  % for debugging
       for i=1:length(obj.model.body)
         body = obj.model.body(i);
         nC = size(body.contact_pts,2);
@@ -222,8 +219,18 @@ classdef RigidBodyManipulator < Manipulator
             contact_pos(:,count+(1:nC)) = forwardKin(body,body.contact_pts);
           end
           count = count + nC;
+          
+          % for debugging
+%          ind = nchoosek(1:nC,2);
+%          for k=1:size(ind,1)
+%            line(contact_pos(1,ind(k,:)),contact_pos(2,ind(k,:)),contact_pos(3,ind(k,:)));
+%          end
+          % end debugging
         end
       end
+%      axis equal;
+%      view(0,10);
+%      drawnow;  % for debugging
       
       [pos,vel,normal,mu] = collisionDetect(obj,contact_pos);
       
