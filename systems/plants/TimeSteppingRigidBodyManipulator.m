@@ -195,7 +195,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function y = output(obj,t,x,u)
-      y = output(obj.manip,t,x,u);
+      if isDirectFeedthrough(obj)
+        y = output(obj.manip,t,x,u);
+      else
+        y = output(obj.manip,t,x);
+      end
     end
 
     function phi = stateConstraints(obj,x)
