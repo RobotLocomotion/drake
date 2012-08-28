@@ -14,12 +14,13 @@ load drake_config;
 cd util;
 mex realtime.cpp
 if checkDependency('eigen3_enabled')
-  mex(['HandCpmex.cpp -I',conf.eigen3_incdir]);
+%  mex('-g','HandCpmex.cpp',['-I',conf.eigen3_incdir]);
+  mex('HandCpmex.cpp',['-I',conf.eigen3_incdir]);
 end
 cd ..
 
 cd systems;
-mex -g DCSFunction.cpp
+mex DCSFunction.cpp
 cd ..
 
 disp('done.');
