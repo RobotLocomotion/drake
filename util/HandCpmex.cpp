@@ -1,5 +1,6 @@
 #include "mex.h"
 #include <Eigen/Dense>
+#include <vector>
 #include <iostream>
 
 using namespace Eigen;
@@ -20,6 +21,7 @@ public:
   int *parent;
   Matrix3d *Xtree;
   Matrix3d* I;
+  Vector3d a_grav;
   
   Vector3d* S;
   Matrix3d* Xup;
@@ -27,6 +29,8 @@ public:
   Vector3d* avp;
   Vector3d* fvp;
   Matrix3d* IC;
+  MatrixXd H;
+  MatrixXd C;
 
   Model(int n) {
     this->NB = n;
@@ -34,6 +38,7 @@ public:
     this->parent = new int[n];
     this->Xtree = new Matrix3d[n];
     this->I = new Matrix3d[n];
+    this->a_grav << 0.0, 0.0, 0.0;
     
     this->S = new Vector3d[n];
     this->Xup = new Matrix3d[n];
@@ -41,6 +46,9 @@ public:
     this->avp = new Vector3d[n];
     this->fvp = new Vector3d[n];
     this->IC = new Matrix3d[n];
+
+    this->H.resize(n,n);
+    this->C.resize(n,1);
   }
   
   ~Model() {
@@ -57,12 +65,6 @@ public:
     delete[] IC;
   }
 };
-
-Model *model = NULL;
-Vector3d a_grav(0.0,0.0,0.0); 
-MatrixXd H(0,0);
-MatrixXd C(0,1);
-
 
 void Xpln(double theta, Vector2d r, Matrix3d* X)
 {
@@ -104,21 +106,22 @@ Matrix3d crfp( Vector3d v )
   return -crmp(v).transpose();
 }
 
+
 void mexFunction( int nlhs, mxArray *plhs[],
                   int nrhs, const mxArray *prhs[] )
 {
   if (nrhs<1) {
-    mexErrMsgIdAndTxt("Drake:HandCpmex:NotEnoughInputs","Usage HandCpmex(model,q,qd,[,f_ext,grav_accn])");
+    mexErrMsgIdAndTxt("Drake:HandCpmex:NotEnoughInputs","Usage model_ptr = HandCpmex(model,[,grav_accn]), then [H,C] = HandCpmex(model_ptr,q,qd[,f_ext]), and finally HandCpmex(model_ptr) to free the memory.");
   }
+
+  Model *model = NULL;
   
   if (mxIsStruct(prhs[0])) { // then it's HandCp(model[,grav_accn]);
-    // set up the model
-    if (model) delete model;
-    
+    // set up the model    
     mxArray* pNB = mxGetField(prhs[0],0,"NB");
     if (!pNB) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't find field model.NB.  Are you passing in the correct structure?");
     model = new Model((int) mxGetScalar(pNB));
-    
+
     mxArray* pparent = mxGetField(prhs[0],0,"parent");
     if (!pparent) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't find field model.parent.");
     double* ppparent = mxGetPr(pparent);
@@ -152,20 +155,39 @@ void mexFunction( int nlhs, mxArray *plhs[],
       if (!mxIsDouble(prhs[1]) || (mxGetNumberOfElements(prhs[1])!=2))
         mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","grav_accn must be a 2x1 double");
       double* p = mxGetPr(prhs[1]);
-      a_grav(1) = p[0];
-      a_grav(2) = p[1];
+      model->a_grav(1) = p[0];
+      model->a_grav(2) = p[1];
     }
     
-    H.resize(model->NB,model->NB);
-    C.resize(model->NB,1);
+    if (nlhs>0) {  // return a pointer to the model
+      mxClassID cid;
+      if (sizeof(model)==4) cid = mxUINT32_CLASS;
+      else if (sizeof(model)==8) cid = mxUINT64_CLASS;
+      else mexErrMsgIdAndTxt("Drake:HandCpmex:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
+        
+      plhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
+      memcpy(mxGetData(plhs[0]),&model,sizeof(model));
+    }
+  } else if (nrhs<2) { // then it's HandCpmex(model_ptr)  : cleanup the model_ptr memory.
+    // first get the model_ptr back from matlab
+    if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
+      mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","first argument should be the model_ptr");
+    memcpy(&model,mxGetData(prhs[0]),sizeof(model));
     
-  } else { // then it's HandCpmex(q,qd)   
+    delete model;
+  } else { // then it's HandCpmex(model_ptr,q,qd)   
+
+    // first get the model_ptr back from matlab
+    if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
+      mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","first argument should be the model_ptr");
+    memcpy(&model,mxGetData(prhs[0]),sizeof(model));
+    
     double *q,*qd;
-    if (mxGetNumberOfElements(prhs[0])!=model->NB || mxGetNumberOfElements(prhs[1])!=model->NB)
+    if (mxGetNumberOfElements(prhs[1])!=model->NB || mxGetNumberOfElements(prhs[2])!=model->NB)
       mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","q and qd must be size %d x 1",model->NB);
-    q = mxGetPr(prhs[0]);
-    qd = mxGetPr(prhs[1]);
-    if (nrhs>2) {
+    q = mxGetPr(prhs[1]);
+    qd = mxGetPr(prhs[2]);
+    if (nrhs>3) {
       mexErrMsgIdAndTxt("Drake:HandCpmex:ExternalForceNotImplementedYet","sorry, f_ext is not implemented yet (but it would be trivial)");
     }
     
@@ -179,7 +201,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
       model->Xup[i] = XJ * model->Xtree[i];
       if (model->parent[i] < 0) {
         model->v[i] = vJ;
-        model->avp[i] = model->Xup[i] * (-a_grav);
+        model->avp[i] = model->Xup[i] * (-model->a_grav);
       } else {
         model->v[i] = model->Xup[i]*model->v[model->parent[i]] + vJ;
         model->avp[i] = model->Xup[i]*model->avp[model->parent[i]] + crmp(model->v[i])*vJ;
@@ -190,32 +212,32 @@ void mexFunction( int nlhs, mxArray *plhs[],
     }      
     
     for (i=(model->NB-1); i>=0; i--) {
-      C(i) = (model->S[i]).transpose() * model->fvp[i];
+      model->C(i) = (model->S[i]).transpose() * model->fvp[i];
       if (model->parent[i] >= 0) {
         model->fvp[model->parent[i]] = model->fvp[model->parent[i]] + (model->Xup[i]).transpose()*model->fvp[i];
         model->IC[model->parent[i]] = model->IC[model->parent[i]] + (model->Xup[i]).transpose()*model->IC[i]*model->Xup[i];
       }
     }
-    
+
     for (i=0; i<model->NB; i++) {
       fh = model->IC[i] * model->S[i];
-      H(i,i) = (model->S[i]).transpose() * fh;
+      model->H(i,i) = (model->S[i]).transpose() * fh;
       j=i;
       while (model->parent[j] >= 0) {
         fh = (model->Xup[j]).transpose() * fh;
         j = model->parent[j];
-        H(i,j) = (model->S[j]).transpose() * fh;
-        H(j,i) = H(i,j);
+        model->H(i,j) = (model->S[j]).transpose() * fh;
+        model->H(j,i) = model->H(i,j);
       }
     }
     
     if (nlhs>0) {
       plhs[0] = mxCreateDoubleMatrix(model->NB,model->NB,mxREAL);
-      memcpy(mxGetPr(plhs[0]),H.data(),sizeof(double)*model->NB*model->NB);
+      memcpy(mxGetPr(plhs[0]),model->H.data(),sizeof(double)*model->NB*model->NB);
     }
     if (nlhs>1) {
       plhs[1] = mxCreateDoubleMatrix(model->NB,1,mxREAL);
-      memcpy(mxGetPr(plhs[1]),C.data(),sizeof(double)*model->NB);
+      memcpy(mxGetPr(plhs[1]),model->C.data(),sizeof(double)*model->NB);
     }
   }
 }

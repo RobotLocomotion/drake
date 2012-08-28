@@ -5,7 +5,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
     
   properties (SetAccess=private,GetAccess=public)  
     model;     % PlanarRigidBodyModel object
-    use_mex = true;
+    mex_model_ptr = 0;
   end
   
   methods
@@ -51,22 +51,14 @@ classdef PlanarRigidBodyManipulator < Manipulator
       
       % warning:  this only works when there is a single planar rigid body model in use at any given time.
       % this simple logic attempts to guard against it.
-      if (obj.use_mex)
-        global HandCpmex_model HandCpmex_gravity;
-        if ~checkDependency('eigen3_enabled')
-          obj.use_mex = false;
-        elseif ~isempty(HandCpmex_model)
-          if ~isequal(HandCpmex_model,obj.model.featherstone) || ~isequal(HandCpmex_gravity,obj.model.gravity)
-            warning('Drake:PlanarRigidBodyManipulator:DisablingMex','The mex version of the planar rigid body manipulator equations only handles one model at a time (for the moment), and one is already allocated.  Disabling mex.  To re-enable, do a megaclear to wipe the old model from memory and try again');
-            obj.use_mex = false;
-          end
-        end
-        if (obj.use_mex)
-          HandCpmex(obj.model.featherstone,obj.model.gravity);
-          HandCpmex_model = obj.model.featherstone;
-          HandCpmex_gravity = obj.model.gravity;
-        end
+      if checkDependency('eigen3_enabled')
+        obj.mex_model_ptr = HandCpmex(obj.model.featherstone,obj.model.gravity);
       end
+    end
+    
+    function deleteMex(obj)
+      HandCpmex(obj.mex_model_ptr);
+      obj.mex_model_ptr = 0;
     end
     
     function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd)
@@ -201,8 +193,8 @@ classdef PlanarRigidBodyManipulator < Manipulator
         B = obj.model.B;
         dB = zeros(m.NB*obj.num_u,2*m.NB);
       else
-        if (obj.use_mex && isnumeric(q) && isnumeric(qd))
-          [H,C] = HandCpmex(q,qd);
+        if 0 %(obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
+          [H,C] = HandCpmex(obj.mex_model_ptr,q,qd);
         else
           [H,C] = HandCp(m,q,qd,{},obj.model.gravity);
         end
