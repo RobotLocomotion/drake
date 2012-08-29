@@ -193,7 +193,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
         B = obj.model.B;
         dB = zeros(m.NB*obj.num_u,2*m.NB);
       else
-        if 0 %(obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
+        if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
           [H,C] = HandCpmex(obj.mex_model_ptr,q,qd);
         else
           [H,C] = HandCp(m,q,qd,{},obj.model.gravity);

@@ -47,8 +47,8 @@ public:
     this->fvp = new Vector3d[n];
     this->IC = new Matrix3d[n];
 
-    this->H.resize(n,n);
-    this->C.resize(n,1);
+    this->H = MatrixXd::Zero(n,n);
+    this->C.resize(n,1); // C gets over-written completely by the algorithm below.
   }
   
   ~Model() {
