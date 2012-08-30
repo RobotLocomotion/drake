@@ -9,7 +9,7 @@ if ((length(size(val))~=length(size(desired_val))) || any(size(val)~=size(desire
   error(['Wrong size.  Expected ', mat2str(size(desired_val)),' but got ', mat2str(size(val))]);
 end
 
-if (any(abs(val-desired_val)>tol))
+if (any(abs(val(:)-desired_val(:))>tol))
   error(['Values don''t match.  Expected ', mat2str(desired_val), ' but got ', mat2str(val)]);
 end
 
