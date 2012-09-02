@@ -165,15 +165,36 @@ classdef RigidBodyModel
       end
     end
     
-    function fr = constructStateFrame(model)
-      fr = CoordinateFrame([model.name,'State'],2*model.featherstone.NB,'x');
-      joints={model.body(~cellfun(@isempty,{model.body.parent})).jointname}';
-      fr = setCoordinateNames(fr,vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false)));
+    function fr = getStateFrame(model)
+      joints = {model.body(~cellfun(@isempty,{model.body.parent})).jointname}';
+      coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
+      fr = SingletonCoordinateFrame([model.name,'State'],2*model.featherstone.NB,'x',coordinates);
     end
     
-    function fr = constructInputFrame(model)
-      fr = CoordinateFrame([model.name,'Input'],size(model.B,2),'u');
-      fr = setCoordinateNames(fr,{model.actuator.name}');
+    function fr = getInputFrame(model)
+      if size(model.B,2)>0
+        coordinates = {model.actuator.name}';
+      else
+        coordinates={};
+      end
+       
+      fr = SingletonCoordinateFrame([model.name,'Input'],size(model.B,2),'u',coordinates);
+    end
+    
+    function fr = getOutputFrameWContactForces(model)
+      stateframe = getStateFrame(model);
+      coordinates = stateframe.coordinates;
+      for b=model.body
+        for j=1:size(b.contact_pts,2)
+          coordinates = vertcat(coordinates,sprintf('%sContact%d_x',b.linkname,j),sprintf('%sContact%d_y',b.linkname,j),sprintf('%sContact%d_z',b.linkname,j));
+        end
+      end      
+      fr = SingletonCoordinateFrame([model.name,'Output'],length(coordinates),'x',coordinates);
+      if isempty(findTransform(fr,stateframe)) 
+        % then create the transform which drops the contact forces and
+        % returns just the states
+        addTransform(fr,AffineTransform(fr,stateframe,[eye(stateframe.dim),zeros(stateframe.dim,length(coordinates)-stateframe.dim)],zeros(stateframe.dim,1)));
+      end
     end
     
     function [c,model] = parseMaterial(model,node,options)

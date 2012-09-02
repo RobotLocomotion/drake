@@ -131,6 +131,22 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       body = PlanarRigidBody();
     end
     
+    function fr = getOutputFrameWContactForces(model)
+      stateframe = getStateFrame(model);
+      coordinates = stateframe.coordinates;
+      for b=model.body
+        for j=1:size(b.contact_pts,2)
+          coordinates = vertcat(coordinates,sprintf('%sContact%d_x',b.linkname,j),sprintf('%sContact%d_y',b.linkname,j));
+        end
+      end      
+      fr = SingletonCoordinateFrame([model.name,'Output'],length(coordinates),'x',coordinates);
+      if isempty(findTransform(fr,stateframe)) 
+        % then create the transform which drops the contact forces and
+        % returns just the states
+        addTransform(fr,AffineTransform(fr,stateframe,[eye(stateframe.dim),zeros(stateframe.dim,length(coordinates)-stateframe.dim)],zeros(stateframe.dim,1)));
+      end
+    end
+    
     function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,joint_lim_min,joint_lim_max,options)
       if (nargin<6) xy=zeros(2,1); end
       if (nargin<7) p=0; end
@@ -142,13 +158,13 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       switch (lower(type))
         case {'revolute','continuous','planar'}
           if abs(dot(axis,model.view_axis))<(1-1e-6)
-            warning('DRC:PlanarRigidBodyModel:RemovedJoint',['Welded revolute joint ', child.jointname,' because it did not align with the viewing axis']);
+            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded revolute joint ', child.jointname,' because it did not align with the viewing axis']);
             model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,joint_lim_min,joint_lim_max,options);
             return;
           end
         case 'prismatic'
           if abs(dot(axis,model.view_axis))>1e-6
-            warning('DRC:PlanarRigidBodyModel:RemovedJoint',['Welded prismatic joint ', child.jointname,' because it did not align with the viewing axis']);
+            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded prismatic joint ', child.jointname,' because it did not align with the viewing axis']);
             model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,joint_lim_min,joint_lim_max,options);
             return;
           end

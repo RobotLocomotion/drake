@@ -57,6 +57,7 @@ classdef Trajectory < DrakeSystem
         if isempty(tf) error('couldn''t find a coordinate transform from the trajectory frame %s to the requested frame %s',obj.getOutputFrame.name,frame.name); end
         mobj = FunctionHandleTrajectory(@(t) tf.output(t,[],obj.eval(t)), frame.dim, obj.getBreaks);
         mobj = setOutputFrame(mobj,frame);
+        mobj = setSampleTime(mobj,obj.getSampleTime);
       end
     end
     
