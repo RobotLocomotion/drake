@@ -5,8 +5,8 @@ classdef CoordinateFrame < handle
 % systems.
   
   properties (SetAccess=private,GetAccess=public)
-    name;           % string name for this coordinate system
-    dim;            % scalar dimension of this coordinate system
+    name='';        % string name for this coordinate system
+    dim=0;          % scalar dimension of this coordinate system
     transforms={};  % handles to CoordinateTransform objects
 
     coordinates={}; % list of coordinate names
@@ -17,7 +17,7 @@ classdef CoordinateFrame < handle
   end
   
   methods
-    function obj=CoordinateFrame(name,dim,prefix)
+    function obj=CoordinateFrame(name,dim,prefix,coordinates)
       typecheck(name,'char');
       obj.name = name;
       
@@ -25,7 +25,7 @@ classdef CoordinateFrame < handle
       sizecheck(dim,[1 1]);
       obj.dim = dim;
       
-      if (nargin<3)
+      if (nargin<3 || isempty(prefix))
         ind = strfind(name,':');
         if isempty(ind)
           prefix = name(1);
@@ -43,8 +43,16 @@ classdef CoordinateFrame < handle
         str=[prefix,num2str(ind)];
         ind=ind+1;
       end
-      obj.coordinates=cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
-      
+      if (nargin<4 || isempty(coordinates))
+        obj.coordinates=cellfun(@coordinateName,cell(dim,1),'UniformOutput',false);
+      else
+        typecheck(coordinates,'cell');
+        sizecheck(coordinates,dim);
+        for i=1:dim
+          typecheck(coordinates{i},'char');
+        end
+        obj.coordinates = coordinates;
+      end
       if checkDependency('spot_enabled') && dim>0
         if (prefix=='t') error('oops.  destined for a collision with msspoly representing time'); end
         obj.poly = msspoly(prefix,dim);

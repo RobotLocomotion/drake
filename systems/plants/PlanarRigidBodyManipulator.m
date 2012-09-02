@@ -28,11 +28,11 @@ classdef PlanarRigidBodyManipulator < Manipulator
       obj = obj.setNumOutputs(2*obj.model.featherstone.NB);
       
       if getNumInputs(obj)>0
-        obj = setInputFrame(obj,constructInputFrame(obj.model));
+        obj = setInputFrame(obj,getInputFrame(obj.model));
       end
       
       if getNumStates(obj)>0
-        stateframe = constructStateFrame(obj.model);
+        stateframe = getStateFrame(obj.model);
         obj = setStateFrame(obj,stateframe);
         obj = setOutputFrame(obj,stateframe);  % output = state
       end
