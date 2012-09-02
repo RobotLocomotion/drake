@@ -41,32 +41,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             
       obj = setInputFrame(obj,getInputFrame(obj.manip));
       obj = setStateFrame(obj,getStateFrame(obj.manip));
-      
-      if (obj.manip.num_contacts>0) % add contact forces to the output
-        if (obj.twoD)
-          obj = setNumOutputs(obj,obj.manip.getNumStates()+2*obj.manip.num_contacts);
-        else
-          obj = setNumOutputs(obj,obj.manip.getNumStates()+3*obj.manip.num_contacts);
-        end
-        obj = setOutputFrame(obj,getOutputFrameWContactForces(obj.manip.model));
-      else
-        obj = setOutputFrame(obj,getOutputFrame(obj.manip));
-      end
+      obj = setOutputFrame(obj,getOutputFrame(obj.manip));
     end
     
     function x0 = getInitialState(obj)
       x0 = obj.manip.getInitialState();
     end
-    
-%     function [obj, HinvCtau, HinvJT, lambda] = contactDynamics(obj,x,u)
-%       if isnumeric(x) isnumeric(u) && all(abs([x;u]-[obj.cached_x_u]')<1e-8)  % todo: make this tolerance a parameter
-%         % then my kinematics are up to date, don't recompute
-%         % the "isnumeric" check is for the sake of taylorvars
-%         return
-%       end
-%       
-%       obj.
-%     end
     
     function xdn = update(obj,t,x,u)
       % do LCP time-stepping
@@ -218,13 +198,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         y = output(obj.manip,t,x,u);
       else
         y = output(obj.manip,t,x);
-      end
-      
-      % todo: write actual contact forces here
-      if (obj.twoD)
-        y = [y; zeros(2*obj.manip.num_contacts,1)];
-      else
-        y = [y; zeros(3*obj.manip.num_contacts,1)];
       end
     end
 

@@ -3,7 +3,7 @@ classdef RigidBodyManipulator < Manipulator
   % provided by Roy Featherstone on his website: 
   %   http://users.cecs.anu.edu.au/~roy/spatial/documentation.html
     
-  properties (SetAccess=private,GetAccess=private)  
+  properties (SetAccess=private,GetAccess=public)  
     model;     % RigidBodyModel object
   end
   
