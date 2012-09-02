@@ -180,23 +180,7 @@ classdef RigidBodyModel
        
       fr = SingletonCoordinateFrame([model.name,'Input'],size(model.B,2),'u',coordinates);
     end
-    
-    function fr = getOutputFrameWContactForces(model)
-      stateframe = getStateFrame(model);
-      coordinates = stateframe.coordinates;
-      for b=model.body
-        for j=1:size(b.contact_pts,2)
-          coordinates = vertcat(coordinates,sprintf('%sContact%d_x',b.linkname,j),sprintf('%sContact%d_y',b.linkname,j),sprintf('%sContact%d_z',b.linkname,j));
-        end
-      end      
-      fr = SingletonCoordinateFrame([model.name,'Output'],length(coordinates),'x',coordinates);
-      if isempty(findTransform(fr,stateframe)) 
-        % then create the transform which drops the contact forces and
-        % returns just the states
-        addTransform(fr,AffineTransform(fr,stateframe,[eye(stateframe.dim),zeros(stateframe.dim,length(coordinates)-stateframe.dim)],zeros(stateframe.dim,1)));
-      end
-    end
-    
+        
     function [c,model] = parseMaterial(model,node,options)
       
       name=char(node.getAttribute('name'));
