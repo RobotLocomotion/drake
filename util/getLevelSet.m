@@ -33,13 +33,13 @@ if (deg(f,x)<=2)  % interrogate the quadratic level-set
   
   % f = x'Ax + b'x + c
   % dfdx = x'(A+A') + b'
-  % H = .5*(A+A')
-  %   dfdx = 0 => xmin = -b'/(A+A');
+  % H = .5*(A+A')   % aka, the symmetric part of A
+  %   dfdx = 0 => xmin = -(A+A')\b = -.5 H\b
   H = doubleSafe(0.5*diff(diff(f,x)',x));
   if ~isPositiveDefinite(H), error('quadratic form is not positive definite'); end
   xmin = -0.5*(H\doubleSafe(subs(diff(f,x),x,0*x)'));
-  ymin = doubleSafe(subs(f,x,xmin));
-  if (ymin>1) 
+  fmin = doubleSafe(subs(f,x,xmin));
+  if (fmin>1) 
     error('minima is >1'); 
   end
   
@@ -52,8 +52,10 @@ if (deg(f,x)<=2)  % interrogate the quadratic level-set
     X = randn(n,K);
     X = X./repmat(sqrt(sum(X.^2,1)),n,1);
   end
-
-  y = repmat(xmin,1,K) + (H/(1-ymin))^(-1/2)*X;
+  
+  % f(x) = fmin + (x-xmin)'*H*(x-xmin)
+  %   => 1 = fmin + (y-xmin)'*H*(y-xmin)
+  y = repmat(xmin,1,K) + (H/(1-fmin))^(-1/2)*X;
 else % do the more general thing
 
   if (length(x) ~= 2) error('not supported yet'); end
