@@ -29,7 +29,12 @@ classdef Singleton < handle
         objectStore{end+1}=obj;
       else
         if (length(ind)>1) error('found multiple matches in the object store.  this shouldn''t happen'); end
-        obj = objectStore{ind};
+        if strcmp(class(obj),class(objectStore{ind}))
+          obj = objectStore{ind};
+        else
+          warning('found object in the store with the same uid, but a different type.  overwriting the store with the new object');
+          objectStore{ind} = obj;
+        end
       end
     end
   end

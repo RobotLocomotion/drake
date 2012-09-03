@@ -9,10 +9,10 @@ classdef SingletonCoordinateFrame < CoordinateFrame & Singleton
       obj = obj@Singleton(name);  % will return an original object if it existed, over-writing the new CoordinateFrame
 
       if (obj.dim~=dim)
-        error('Singleton coordinate frame already exists with that name, but a different dimension');
+        error(['Singleton coordinate frame ', name, ' already exists, but with a different dimension']);
       end
       if (~isempty(prefix) && obj.prefix~=prefix)
-        error('Singleton coordinate frame already exists with that name, but a different prefix');
+        error(['Singleton coordinate frame ', name,' already exists, but a different prefix']);
       end
     end
   end
