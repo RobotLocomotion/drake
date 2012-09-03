@@ -34,18 +34,21 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           model.view_axis = [1;0;0];  
           model.x_axis_label='y';
           model.y_axis_label='z';
+%          model.name = [model.name,'Front'];
         case 'right'
           model.x_axis = [1;0;0];
           model.y_axis = [0;0;1];
           model.view_axis = [0;1;0];
           model.x_axis_label='x';
           model.y_axis_label='z';
+%          model.name = [model.name,'Right'];
         case 'top'
           model.x_axis = [1;0;0];
           model.y_axis = [0;1;0];
           model.view_axis = [0;0;1];
           model.x_axis_label='x';
           model.y_axis_label='y';
+%          model.name = [model.name,'Top'];
       end
         
       if ~isempty(urdf_filename)

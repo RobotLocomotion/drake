@@ -165,20 +165,20 @@ classdef RigidBodyModel
       end
     end
     
-    function fr = getStateFrame(model)
+    function fr = constructStateFrame(model)
       joints = {model.body(~cellfun(@isempty,{model.body.parent})).jointname}';
       coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
-      fr = SingletonCoordinateFrame([model.name,'State'],2*model.featherstone.NB,'x',coordinates);
+      fr = CoordinateFrame([model.name,'State'],2*model.featherstone.NB,'x',coordinates);
     end
     
-    function fr = getInputFrame(model)
+    function fr = constructInputFrame(model)
       if size(model.B,2)>0
         coordinates = {model.actuator.name}';
       else
         coordinates={};
       end
        
-      fr = SingletonCoordinateFrame([model.name,'Input'],size(model.B,2),'u',coordinates);
+      fr = CoordinateFrame([model.name,'Input'],size(model.B,2),'u',coordinates);
     end
         
     function [c,model] = parseMaterial(model,node,options)
