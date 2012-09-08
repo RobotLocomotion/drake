@@ -67,7 +67,7 @@ properties
 
       if nargin>4 && ~isempty(description)
         typecheck(description,'char');
-        fprintf(obj.fhandle,'LOCATION:%s\r\n',description);
+        fprintf(obj.fhandle,'DESCRIPTION:%s\r\n',description);
       end
       
       if nargin>5 && ~isempty(location)
@@ -82,6 +82,32 @@ properties
       
       fprintf(obj.fhandle,'END:VEVENT\r\n');
     end
+    
+    function addTodo(obj,summary,duedatevec,description,rrule)
+      if datenum(duedatevec)<obj.min_datenum || datenum(duedatevec)>obj.max_datenum
+        error('due date out of range.  you may need to update the timezone implementation in the vCalWriter class');
+      end
+      fprintf(obj.fhandle,'BEGIN:VTODO\r\n');
+
+      typecheck(summary,'char');
+      fprintf(obj.fhandle,'SUMMARY:%s\r\n',summary);
+       
+      sizecheck(duedatevec,6);
+      fprintf(obj.fhandle,'DUE;TZID=US-Eastern:%02d%02d%02dT%02d%02d%02d\r\n',duedatevec);
+
+      if nargin>4 && ~isempty(description)
+        typecheck(description,'char');
+        fprintf(obj.fhandle,'DESCRIPTION:%s\r\n',description);
+      end
+      
+      if nargin>6 && ~isempty(rrule)
+        typecheck(rrule,'char');
+        fprintf(obj.fhandle,'RRULE:%s\r\n',rrule);
+      end
+      
+      fprintf(obj.fhandle,'END:VTODO\r\n');
+    end
+        
     
     function delete(obj)
       fprintf(obj.fhandle,'END:VCALENDAR\r\n');
