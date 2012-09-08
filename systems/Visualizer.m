@@ -141,7 +141,7 @@ classdef Visualizer < DrakeSystem
       for i=1:length(tspan)
         obj.draw(tspan(i),eval(xtraj,tspan(i)));
         if (obj.display_time)
-          title(['t = ', num2str(t,'%.2f') ' sec']);
+          title(['t = ', num2str(tspan(i),'%.2f') ' sec']);
         end
         if (obj.draw_axes)
           f=gcf;

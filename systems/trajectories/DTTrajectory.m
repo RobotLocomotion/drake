@@ -27,7 +27,7 @@ classdef DTTrajectory < Trajectory
       obj.tspan = [min(tt) max(tt)];
     end
     function y = eval(obj,t)  
-      ind = find(obj.tt==t);  % only return on exact matches.  For interpolation, you should be using zoh or foh to make PPTrajectories
+      ind = find(abs(obj.tt-t)<1e-10);  % only return on exact matches.  For interpolation, you should be using zoh or foh to make PPTrajectories
       y = obj.xx(:,ind);
     end
         
