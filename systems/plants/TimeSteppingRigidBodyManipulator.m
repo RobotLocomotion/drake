@@ -73,7 +73,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       nV = d*obj.manip.num_velocity_constraints;  
       
       if (nC+nL+nP+nV==0)
-        qd_out = qd + h*H\tau;
+        qd_out = qd + h*(H\tau);
         q_out = q + h*qd_out;
         xdn = [q_out; qd_out];
         if (nargout>1) error('need to implement this case'); end
