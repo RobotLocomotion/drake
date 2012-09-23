@@ -1,24 +1,22 @@
 function [y] = matGradMult(A,b,transposeA)
 % [y] = matGradMult(A,b)
-% If A is the result of dB/dX for matrix B and vector X, as output by
-% geval, then return A*b (a matrix).
-% @param vector b
-% @param gradient of A wrt. a vector, written as a matrix
-% geval)
-% @return A*b
+% If A is the result of dC/dX for matrix C and vector X, as output by
+% geval, then return d(C*b)/dX (a matrix).
+% @param A the gradient of a matrix C with respect to X as output by geval
+% @param b a vector
+% @retval y a matrix, the result of d(C*b)/dX
 
-if exist('transposeA','var')
-  if transposeA
-    n = length(b);
-    m = size(A,2);
-    k = size(A,1)/n;
-    y = zeros(m,n);
-    for i=1:m,
-      y(:,i) = reshape(A(:,i),n,k)'*b;
-    end
-    return;
+if nargin>2 && transposeA
+  n = length(b);
+  m = size(A,2);
+  k = size(A,1)/n;
+  y = zeros(m,n);
+  for i=1:m,
+    y(:,i) = reshape(A(:,i),n,k)'*b;
   end
+  return;
 end
+
 n = length(b);
 m = size(A,2);
 k = size(A,1)/n;

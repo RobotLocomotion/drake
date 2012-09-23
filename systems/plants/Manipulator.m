@@ -80,12 +80,12 @@ classdef Manipulator < SecondOrderSystem
         Hinv = inv(H);
         
         qdd = Hinv*(B*u - C);
+        xdot = [qd;qdd];
         dxdot = [zeros(obj.num_q,1+obj.num_q), eye(obj.num_q),...
           zeros(obj.num_q,obj.num_u);...
           zeros(obj.num_q,1),...
           -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) - Hinv*dC(:,1:obj.num_q),...
           -Hinv*dC(:,1+obj.num_q:end), Hinv*B];
-        xdot = [qd;qdd];
       else
         qdd = obj.sodynamics(t,q,qd,u);
         xdot = [qd;qdd];
