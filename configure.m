@@ -64,6 +64,7 @@ addpath([conf.root,'/systems/estimators']);
 addpath([conf.root,'/systems/trajectories']);
 addpath([conf.root,'/util']);
 addpath([conf.root,'/util/obstacles']);
+addpath([conf.root,'/thirdParty']);
 addpath([conf.root,'/thirdParty/path']);
 addpath([conf.root,'/thirdParty/spatial']);
 addpath([conf.root,'/thirdParty/graphviz2mat']);
