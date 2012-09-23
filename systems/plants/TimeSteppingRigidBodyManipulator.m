@@ -48,15 +48,24 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       x0 = obj.manip.getInitialState();
     end
     
-    function xdn = update(obj,t,x,u)
+    function [xdn,df] = update(obj,t,x,u)
       % do LCP time-stepping
       num_q = obj.manip.num_q;
       q=x(1:num_q); qd=x((num_q+1):end);
       if (obj.twoD) d=2; else d=3; end 
       h = obj.timestep;
 
-      [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
-      if (obj.num_u>0) tau = B*u - C; else tau = -C; end
+      if (nargout<2)
+        [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
+        if (obj.num_u>0) tau = B*u - C; else tau = -C; end
+      else
+        [H,C,B,dH,dC,dB] = manipulatorDynamics(obj.manip,q,qd);
+        if (obj.num_u>0) 
+          tau = B*u - C;  dtaudq = matGradMult(dB,u) - dC; dtaudu = B*u;
+        else
+          tau = -C; dtaudq = -dC; dtaudu = [];
+        end
+      end
       
       nL = sum([obj.manip.joint_limit_min~=-inf;obj.manip.joint_limit_max~=inf]); % number of joint limits
       nC = obj.manip.num_contacts;
@@ -67,6 +76,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         qd_out = qd + h*H\tau;
         q_out = q + h*qd_out;
         xdn = [q_out; qd_out];
+        if (nargout>1) error('need to implement this case'); end
         return;
       end      
       
@@ -89,20 +99,37 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         D = vertcat(D{:});
         J(nL+nP+(1:nC),:) = n;
         J(nL+nP+nC+(1:mC*nC),:) = D;
+        if (nargout>1)
+          dJ = sparse(nL+nP+(mc+2)*nC,num_q^2);
+          error('not implemented yet');
+        end
       else
         mC=0;
         J = zeros(nL+nP,num_q);
+        if (nargout>1)
+          dJ = sparse(nL+nP,num_q^2);
+        end
       end
       
       if (nL > 0)
-        [phiL,JL] = obj.manip.jointLimits(q);
+        if (nargout<2)
+          [phiL,JL] = obj.manip.jointLimits(q);
+        else
+          [phiL,JL,dJL] = obj.manip.jointLimits(q);
+          dJ(1:nL,:) = dJL;
+        end
         J(1:nL,:) = JL;
       end
       
       %% Bilateral position constraints 
       if nP > 0
-        [phiP,JP] = geval(@positionConstraints,obj.manip,q);
-%        [phiP,JP] = obj.manip.positionConstraints(q);
+        if (nargout<2)
+          [phiP,JP] = geval(@positionConstraints,obj.manip,q);
+          %        [phiP,JP] = obj.manip.positionConstraints(q);
+        else
+          [phiP,JP,dJP] = geval(@positionConstraints,obj.manip,q);
+          dJP(nL+(1;nP),:) = [dJP; -dJP];
+        end
         phiP = [phiP;-phiP];
         JP = [JP; -JP];
         J(nL+(1:nP),:) = JP; 
@@ -143,7 +170,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
       
       %% Contact Forces:
-      % s(nL+nP+(1:nC)) = phiC+n*qdn  (modified (fixed?) from eq7, line 3)
+      % s(nL+nP+(1:nC)) = phiC+h*n*qdn  (modified (fixed?) from eq7, line 3)
       % z(nL+nP+(1:nC)) = cN
       % s(nL+nP+nC+(1:mC*nC)) = repmat(lambda,mC,1) + D*qdn  (eq7, line 4)
       % z(nL+nP+nC+(1:mC*nC)) = [beta_1;...;beta_mC]
