@@ -10,6 +10,7 @@ if ((length(size(val))~=length(size(desired_val))) || any(size(val)~=size(desire
   if (nargout>0)
     tf = false;
     warning(['Wrong size.  Expected ', mat2str(size(desired_val)),' but got ', mat2str(size(val))]);
+    return;
   else
     error(['Wrong size.  Expected ', mat2str(size(desired_val)),' but got ', mat2str(size(val))]);
   end

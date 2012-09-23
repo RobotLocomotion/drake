@@ -567,19 +567,14 @@ classdef TaylorVar
       end
       
       function cleanup_subs
-        if (length(s.subs) ~= length(size(f)))
-          if (length(s.subs)==1 && length(size(f))~=1)
-            % handle a matrix by a scalar index, e.g. A(1)=3 when size(A)=[2 2]
-            ind=s.subs{1};
-            if (ind==':')
-              ind=1:prod(size(f));
-            end
-            s.subs=cell(1,length(size(f)));
-            [s.subs{:}]=ind2sub(size(f),ind);
-          else
-            error('didn''t handle this case.  don''t *think* i should ever get here.');
+        % turn all subsrefs into A(ind)=B(:), instead of A(sub1,sub2)=B.
+        for k=1:length(s.subs)
+          if (s.subs{k}==':')
+            s.subs{k}=1:a.dim(k);
           end
         end
+        inds = reshape(1:prod(a.dim),a.dim);
+        s.subs = {reshape(subsref(inds,s),[],1)};
       end
       
       if (isa(b,'TaylorVar'))
@@ -589,7 +584,7 @@ classdef TaylorVar
         cleanup_subs();
         s.subs{end+1}=':';
         for o=1:length(a.df)
-          a.df{o} = sparse(reshape(subsasgn(reshape(full(a.df{o}),[a.dim,(a.nX)^o]),s,reshape(full(b.df{o}),[b.dim,(b.nX)^o])),numel(a.f),a.nX^o));
+          a.df{o} = subsasgn(a.df{o},s,b.df{o});
         end
         a.dim = size(f);
       else % b is a const
@@ -598,7 +593,7 @@ classdef TaylorVar
         cleanup_subs();
         s.subs{end+1}=':';
         for o=1:length(a.df)
-          a.df{o} = sparse(reshape(subsasgn(reshape(full(a.df{o}),[a.dim,(a.nX)^o]),s,0),numel(a.f),a.nX^o));
+          a.df{o} = subsasgn(a.df{o},s,0);
         end
         a.dim = size(f);
       end

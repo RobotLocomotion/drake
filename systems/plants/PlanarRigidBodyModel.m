@@ -77,11 +77,16 @@ classdef PlanarRigidBodyModel < RigidBodyModel
     end    
     
     
-    function doKinematics(model,q)
+    function doKinematics(model,q,b_compute_second_derivatives)
+      if nargin<3, b_compute_second_derivatives=false; end
       if isnumeric(q) && all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
         % then my kinematics are up to date, don't recompute
         % the "isnumeric" check is for the sake of taylorvars
-        return
+        if b_compute_second_derivatives && ~any(cellfun(@isempty,{model.body.ddTdqdq}))
+          % also make sure second derivatives are already computed, if they
+          % are requested
+          return
+        end
       end
       nq = model.featherstone.NB;
       for i=1:length(model.body)
@@ -108,18 +113,21 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           this_dof_ind = body.dofnum+0:nq:3*nq;
           body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T*body.Ttree*dTJ;
 
-          % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
-          body.ddTdqdq = body.parent.ddTdqdq*body.Ttree*TJ;
-
-          ind = 3*nq*(body.dofnum-1) + (1:3*nq);  %ddTdqdqi
-          body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.dTdq*body.Ttree*dTJ;
-
-          ind = reshape(reshape(body.dofnum+0:nq:3*nq*nq,3,[])',[],1); % ddTdqidq
-          body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.dTdq*body.Ttree*dTJ;
-          
-          ind = 3*nq*(body.dofnum-1) + this_dof_ind;  % ddTdqidqi
-          body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.T*body.Ttree*ddTjcalcp(body.jcode,qi);  % body.jsign^2 is there, but unnecessary (since it's always 1)
-          
+          if (b_compute_second_derivatives)
+            % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
+            body.ddTdqdq = body.parent.ddTdqdq*body.Ttree*TJ;
+            
+            ind = 3*nq*(body.dofnum-1) + (1:3*nq);  %ddTdqdqi
+            body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.dTdq*body.Ttree*dTJ;
+            
+            ind = reshape(reshape(body.dofnum+0:nq:3*nq*nq,3,[])',[],1); % ddTdqidq
+            body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.dTdq*body.Ttree*dTJ;
+            
+            ind = 3*nq*(body.dofnum-1) + this_dof_ind;  % ddTdqidqi
+            body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.T*body.Ttree*ddTjcalcp(body.jcode,qi);  % body.jsign^2 is there, but unnecessary (since it's always 1)
+          else          
+            body.ddTdqdq = {};
+          end
           body.cached_q = q(body.dofnum);
         end
       end

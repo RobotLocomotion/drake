@@ -255,12 +255,10 @@ classdef PlanarRigidBodyManipulator < Manipulator
       %    D{k}(i,:) is the kth direction vector for the ith contact (of nC)
       % @retval mu mu(i,1) is the coefficient of friction for the ith contact 
 
-      doKinematics(obj.model,q);
+      doKinematics(obj.model,q,true);
         
-      if ~isa(q,'TaylorVar')
-        contact_pos = zeros(2,obj.num_contacts);
-        if (nargout>1) J = zeros(2*obj.num_contacts,obj.num_q); end
-      end
+      contact_pos = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar
+      if (nargout>1) J = zeros(2*obj.num_contacts,obj.num_q)*q(1); end
       count=0;
       for i=1:length(obj.model.body)
         body = obj.model.body(i);
@@ -269,15 +267,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
           if (nargout>4)
             [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
           elseif (nargout>1)
-            if isa(q,'TaylorVar') % extra steps to help taylorvar. 
-              if ~exist('contact_pos')
-                [contact_pos,J] = forwardKin(body,body.contact_pts);
-              else
-                [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
-              end
-            else
-              [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
-            end
+            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
           else
             contact_pos(:,count+(1:nC)) = forwardKin(body,body.contact_pts);
           end
