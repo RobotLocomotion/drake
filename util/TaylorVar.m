@@ -130,6 +130,16 @@ classdef TaylorVar
       if (nargin==2)
         siz=varargin{1};
       else
+        % look for occurences of []
+        emptyind = find(cellfun(@isempty,varargin));
+        if (length(emptyind)>1)
+          error('You can use only one occurrence of [].');
+        elseif (length(emptyind)==1)
+          varargin{emptyind}=prod(obj.dim)/prod([varargin{:}]);
+          if rem(prod(obj.dim),prod([varargin{:}]))
+            error('there is no integer size for the dimension specified by [] that would make prod(size) = prod(obj.dim)');
+          end
+        end
         siz=[varargin{:}];
       end
       if (prod(siz)~=prod(obj.dim))

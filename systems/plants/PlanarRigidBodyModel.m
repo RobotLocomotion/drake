@@ -89,26 +89,67 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         if (isempty(body.parent))
           body.T = body.Ttree;
           body.dTdq = zeros(3*nq,3);
+          body.ddTdqdq = zeros(3*nq*nq,3);
         else
           qi = body.jsign*q(body.dofnum);
           
           TJ = Tjcalcp(body.jcode,qi);
+          dTJ = dTjcalcp(body.jcode,qi)*body.jsign;
+
           body.T=body.parent.T*body.Ttree*TJ;
 
           % todo: consider pulling this out into a
           % "doKinematicsAndVelocities" version?  but I'd have to be
           % careful with caching.
-          body.dTdq = body.parent.dTdq*body.Ttree*TJ;
-
+          
           % note the unusual format of dTdq (chosen for efficiently calculating jacobians from many pts)
           % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
+          body.dTdq = body.parent.dTdq*body.Ttree*TJ;
           this_dof_ind = body.dofnum+0:nq:3*nq;
-          body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T*body.Ttree*dTjcalcp(body.jcode,qi)*body.jsign;
+          body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T*body.Ttree*dTJ;
+
+          % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
+          body.ddTdqdq = body.parent.ddTdqdq*body.Ttree*TJ;
+
+          ind = 3*nq*(body.dofnum-1) + (1:3*nq);  %ddTdqdqi
+          body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.dTdq*body.Ttree*dTJ;
+
+          ind = reshape(reshape(body.dofnum+0:nq:3*nq*nq,3,[])',[],1); % ddTdqidq
+          body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.dTdq*body.Ttree*dTJ;
+          
+          ind = 3*nq*(body.dofnum-1) + this_dof_ind;  % ddTdqidqi
+          body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.T*body.Ttree*ddTjcalcp(body.jcode,qi);  % body.jsign^2 is there, but unnecessary (since it's always 1)
+          
           body.cached_q = q(body.dofnum);
         end
       end
     end
+    
+    function [x,J,dJ] = kinTest(m,q)
+      % test for kinematic gradients
+      doKinematics(m,q);
         
+      count=0;
+      for i=1:length(m.body)
+        body = m.body(i);
+        for j=1:length(body.geometry)
+          s = size(body.geometry{j}.x); n=prod(s);
+          pts = [reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n)];
+          if (nargout>1)
+            [x(:,count+(1:n)),J(2*count+(1:2*n),:),dJ(2*count+(1:2*n),:)] = forwardKin(body,pts);
+          else
+          if ~exist('x') % extra step to help taylorvar
+            x = forwardKin(body,pts);
+          else
+            xn = forwardKin(body,pts);
+            x=[x,xn];
+          end
+          end
+          count = count + n;
+        end
+      end
+    end
+    
     function model=removeFixedJoints(model)
       fixedind = find(isnan([model.body.pitch]));
       

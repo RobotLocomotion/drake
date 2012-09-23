@@ -112,18 +112,27 @@ classdef PlanarRigidBody < RigidBody
       end
     end
     
-    function [x,J] = forwardKin(body,pts)
-      % computes the position of pts (given in the body frame) in the global frame
-      % for efficiency, assumes that "doKinematics" has been called on the model
+    function [x,J,dJ] = forwardKin(body,pts)
+      % @retval x the position of pts (given in the body frame) in the global frame
+      % @retval J the Jacobian, dxdq
+      % @retval dJ the gradients of the Jacobian, dJdq
+      %
+      % Note: for efficiency, assumes that "doKinematics" has been called on the model
       % if pts is a 2xm matrix, then x will be a 2xm matrix
-      %  and (following our gradient convention) J will be a ((2xm)x(q))
+      %  and (following our gradient convention) J will be a ((2xm)x(nq))
       %  matrix, with [J1;J2;...;Jm] where Ji = dxidq 
+      % and dJ will be a (2xm)x(nq^2) matrix
+
       m = size(pts,2);
       pts = [pts;ones(1,m)];
       x = body.T(1:2,:)*pts;
       if (nargout>1)
         nq = size(body.dTdq,1)/3;
         J = reshape(body.dTdq(1:2*nq,:)*pts,nq,[])';
+        if (nargout>2)
+          ind = repmat(1:2*nq,nq,1)+repmat((0:3*nq:3*nq*(nq-1))',1,2*nq);
+          dJ = reshape(body.ddTdqdq(ind,:)*pts,nq^2,[])';
+        end
       end
     end
   end
