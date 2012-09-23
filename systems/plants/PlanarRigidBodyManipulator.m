@@ -257,23 +257,37 @@ classdef PlanarRigidBodyManipulator < Manipulator
 
       doKinematics(obj.model,q);
         
-      contact_pos = zeros(2,obj.num_contacts);
-      if (nargout>1) J = zeros(2*obj.num_contacts,obj.num_q); end
+%      contact_pos = zeros(2,obj.num_contacts);
+%      if (nargout>1) J = zeros(2*obj.num_contacts,obj.num_q); end
       count=0;
       for i=1:length(obj.model.body)
         body = obj.model.body(i);
         nC = size(body.contact_pts,2);
         if nC>0
-          if (nargout>1)
-            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
+          if (nargout>4)
+            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
+          elseif (nargout>1)
+            if isa(q,'TaylorVar') % extra steps to help taylorvar.  you must also comment out preallocation above
+              if ~exist('contact_pos')
+                [contact_pos,J] = forwardKin(body,body.contact_pts);
+              else
+                [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
+              end
+            else
+              [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
+            end
           else
             contact_pos(:,count+(1:nC)) = forwardKin(body,body.contact_pts);
           end
           count = count + nC;
         end
       end
-      
+
       [pos,vel,normal,mu] = collisionDetect(obj,contact_pos);
+      
+      % note: without asking the collision detector for curvature of the
+      % surface, the best we can do is assume that the world is locally flat.  
+      % e.g. dnormal/dcontact_pos = 0;
       
       relpos = contact_pos - pos;
       s = sign(sum(relpos.*normal,1));
@@ -309,6 +323,14 @@ classdef PlanarRigidBodyManipulator < Manipulator
 %          D{1}(i,:) = t(:,i)'*thisJ;
 %          D{2}(i,:) = -t(:,i)'*thisJ;
 %        end
+
+        if (nargout>4)
+          % dnormal/dx = 0 (see discussion above), so the gradients are simply:
+          dn = sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,normal(:))*dJ;
+          dD{1} = sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,t(:))*dJ;
+          dD{2} = -dD{1};
+        end
+
       end
     end
 
