@@ -19,6 +19,8 @@ function gradTest(FUN,varargin)
 %          Example:  
 %              struct('scale',{{1,.1*ones(13,1),.1*ones(2,1)}})    
 %            for f(t,x(1:13),u(1:2))
+%       alternatively, if options.scale is a scalar, then it sets the scale
+%       to options.scale*ones(size(ai))
 %
 %       options.tol - compare gradients to finite differences, and only
 %       plot the result for a particulare input/output pair if it 
@@ -58,6 +60,12 @@ if (~isfield(options,'scale'))
   for i=1:length(varargin)
     options.scale{i} = .1*ones(size(varargin{i}));
   end
+elseif isscalar(options.scale)
+  scale = options.scale;
+  options.scale = {};
+  for i=1:length(varargin)
+    options.scale{i} = scale*ones(size(varargin{i}));
+  end
 end
 %if (~iscell(options.scale)) options.scale = {options.scale}; end
 if (~isfield(options,'input_name'))
@@ -86,14 +94,19 @@ for v=1:length(varargin)
       y(:,s) = FUN(varargin{1:v-1},varargin{v}+[zeros(i-1,1);samples(s);zeros(length(x)-i,1)],varargin{v+1:end});
     end
     for j=1:length(f)
-      numgrad = (y(j,ind+2) - y(j,ind))/(samples(ind+2)-samples(ind));
-      if (abs(df{1}(j,input_ind+i))<eps)
-        numerr = abs(numgrad);
-      else
-        numerr = abs(1-numgrad/df{1}(j,input_ind+i));
+      grad = df{1}(j,input_ind+i);
+      numgrad(1) = (y(j,ind+1) - y(j,ind))/(samples(ind+1)-samples(ind));
+      numgrad(2) = (y(j,ind) - y(j,ind-1))/(samples(ind)-samples(ind-1));
+      
+      % to better support discontinuities and finite sampling inaccuracies,
+      % anything between numgrad(1) and numgrad(2) is considered zero error.
+      numgrad = sort(numgrad);
+      if (grad<numgrad(1)) numerr=numgrad(1)-grad; 
+      elseif (grad>numgrad(2)) numerr=grad-numgrad(2);
+      else numerr=0; 
       end
+      
       if (numerr>=options.tol)
-	
         sfigure(109); clf
         h=plot(x(i)+samples,y(j,:),'b.-',x(i),f(j),'r*');
         if (iscell(options.input_name{v}))
@@ -106,10 +119,12 @@ for v=1:length(varargin)
         else
           ylabel([options.output_name, '(',num2str(j),')']);
         end
+        h=[h;line(x(i)+options.scale{v}(i)*[-1,1],f(j)+options.scale{v}(i)*numgrad(1)*[-1,1],'color',[0 1 0])];
+        h=[h;line(x(i)+options.scale{v}(i)*[-1,1],f(j)+options.scale{v}(i)*numgrad(2)*[-1,1],'color',[0 1 0])];
         h=[h;line(x(i)+options.scale{v}(i)*[-1,1],f(j)+options.scale{v}(i)*df{1}(j,input_ind+i)*[-1,1],'color',[1 0 0])];
-        title(['abs(1-numgrad/grad) = ',num2str(numerr)]);
+%        title(['abs(1-numgrad/grad) = ',num2str(numerr)]);
         axis tight;
-        legend(h([1,3]),'sampled','grad');
+        legend(h([1 3 4 5]),'sampled','numgrad1','numgrad2','grad');
         if (isfield(options,'drawfun')) 
           for k=1:options.num_samples
             sfigure(109);

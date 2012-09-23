@@ -107,7 +107,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           [phiC,n,D,mu] = obj.manip.contactConstraints(q);
           mC = length(D);
         end
-        J = zeros(nL + nP + (mC+2)*nC,num_q);
+        J = zeros(nL + nP + (mC+2)*nC,num_q)*q(1); % *q(1) is for taylorvar
         D = vertcat(D{:});
         J(nL+nP+(1:nC),:) = n;
         J(nL+nP+nC+(1:mC*nC),:) = D;
@@ -148,8 +148,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         error('not implemented yet');  % but shouldn't be hard
       end
       
-      M = zeros(nL+nP+(mC+2)*nC);
-      w = zeros(nL+nP+(mC+2)*nC,1);
+      M = zeros(nL+nP+(mC+2)*nC)*q(1);
+      w = zeros(nL+nP+(mC+2)*nC,1)*q(1);
       active = true(nL+nP+(mC+2)*nC,1);
       active_tol = .01;
       
@@ -168,6 +168,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         dMqdn = [zeros(prod(size(Mqdn)),1),reshape(Hinv*reshape(dJtranspose - matGradMult(dH(:,1:num_q),Hinv*J'),num_q,[]),prod(size(Mqdn)),[]),zeros(prod(size(Mqdn)),num_q+obj.num_u)];
       end
       
+      % check gradients
+%      xdn = Mqdn;
+%      if (nargout>1)
+%        df = dMqdn;
+%        df = [zeros(prod(size(xdn)),1),reshape(dJ,prod(size(xdn)),[]),zeros(prod(size(xdn)),num_q+obj.num_u)];
+%      end
+%      return;
       
       %% Joint Limits:
       % phiL(qn) is distance from each limit (in joint space)
@@ -219,15 +226,23 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           dD = [zeros(prod(size(D)),1),reshape(dD,prod(size(D)),[]),zeros(prod(size(D)),num_q+obj.num_u)];
           
           dw(nL+nP+(1:nC),:) = [zeros(size(n,1),1),n,zeros(size(n,1),num_q+obj.num_u)]+h*matGradMultMat(n,wqdn,dn,dwqdn);
-          dM(nL+nP+(1:nC),nL+nP+(1:size(Mqdn,2)),:) = reshape(h*matGradMultMat(n,Mqdn,dn,dMqdn),nC,size(Mqdn,2),[]);
+          dM(nL+nP+(1:nC),1:size(Mqdn,2),:) = reshape(h*matGradMultMat(n,Mqdn,dn,dMqdn),nC,size(Mqdn,2),[]);
           
           dw(nL+nP+nC+(1:mC*nC),:) = matGradMultMat(D,wqdn,dD,dwqdn);
-          dM(nL+nP+nC+(1:mC*nC),nL+nP+nC+(1:size(Mqdn,2)),:) = reshape(matGradMultMat(D,Mqdn,dD,dMqdn),mC*nC,size(Mqdn,2),[]);
+          dM(nL+nP+nC+(1:mC*nC),1:size(Mqdn,2),:) = reshape(matGradMultMat(D,Mqdn,dD,dMqdn),mC*nC,size(Mqdn,2),[]);
         end
         
         a = (phiC+h*n*qd) < active_tol;
         active(nL+nP+(1:(mC+2)*nC),:) = repmat(a,mC+2,1);
       end
+      
+      % check gradients
+%      xdn = M;
+%      if (nargout>1)
+%        df = reshape(dM,prod(size(M)),[]);
+%      end
+%      return;
+      
       
       while (1)
         z = zeros(nL+nP+(mC+2)*nC,1);
