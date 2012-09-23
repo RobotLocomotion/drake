@@ -257,8 +257,10 @@ classdef PlanarRigidBodyManipulator < Manipulator
 
       doKinematics(obj.model,q);
         
-%      contact_pos = zeros(2,obj.num_contacts);
-%      if (nargout>1) J = zeros(2*obj.num_contacts,obj.num_q); end
+      if ~isa(q,'TaylorVar')
+        contact_pos = zeros(2,obj.num_contacts);
+        if (nargout>1) J = zeros(2*obj.num_contacts,obj.num_q); end
+      end
       count=0;
       for i=1:length(obj.model.body)
         body = obj.model.body(i);
@@ -267,7 +269,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
           if (nargout>4)
             [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
           elseif (nargout>1)
-            if isa(q,'TaylorVar') % extra steps to help taylorvar.  you must also comment out preallocation above
+            if isa(q,'TaylorVar') % extra steps to help taylorvar. 
               if ~exist('contact_pos')
                 [contact_pos,J] = forwardKin(body,body.contact_pts);
               else
@@ -326,8 +328,8 @@ classdef PlanarRigidBodyManipulator < Manipulator
 
         if (nargout>4)
           % dnormal/dx = 0 (see discussion above), so the gradients are simply:
-          dn = sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,normal(:))*dJ;
-          dD{1} = sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,t(:))*dJ;
+          dn = reshape(sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,normal(:))*dJ,prod(size(n)),[]);
+          dD{1} = reshape(sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,t(:))*dJ,prod(size(n)),[]);
           dD{2} = -dD{1};
         end
 
