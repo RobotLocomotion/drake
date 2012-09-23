@@ -130,6 +130,9 @@ classdef PlanarRigidBody < RigidBody
         nq = size(body.dTdq,1)/3;
         J = reshape(body.dTdq(1:2*nq,:)*pts,nq,[])';
         if (nargout>2)
+          if isempty(body.ddTdqdq)
+            error('you must call doKinematics with the second derivative option enabled'); 
+          end          
           ind = repmat(1:2*nq,nq,1)+repmat((0:3*nq:3*nq*(nq-1))',1,2*nq);
           dJ = reshape(body.ddTdqdq(ind,:)*pts,nq^2,[])';
         end
