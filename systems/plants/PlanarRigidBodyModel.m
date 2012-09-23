@@ -135,7 +135,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
     
     function [x,J,dJ] = kinTest(m,q)
       % test for kinematic gradients
-      doKinematics(m,q);
+      doKinematics(m,q,nargout>2);
         
       count=0;
       for i=1:length(m.body)
