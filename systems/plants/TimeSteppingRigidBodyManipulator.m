@@ -61,9 +61,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       else
         [H,C,B,dH,dC,dB] = manipulatorDynamics(obj.manip,q,qd);
         if (obj.num_u>0) 
-          tau = B*u - C;  dtaudq = matGradMult(dB,u) - dC; dtaudu = B*u;
+          tau = B*u - C;  
+          dtau = [zeros(num_q,1), matGradMult(dB,u) - dC, B];
         else
-          tau = -C; dtaudq = -dC; dtaudu = [];
+          tau = -C; 
+          dtau = [zeros(num_q,1), -dC];;
         end
       end
       
@@ -153,6 +155,16 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       % previous step?
       wqdn = qd + h*(H\tau);
       Mqdn = H\J';
+
+      if (nargout>1)
+        dM = zeros(prod(size(M)),1+2*num_q+obj.num_u);
+        dw = zeros(size(w,1),1+2*num_q+obj.num_u);
+        dwqdn = [zeros(num_q,1+num_q),eye(num_q),zeros(num_q,obj.num_u)] + ...
+          h*H\(dtau - [zeros(num_q,1),matGradMult(dH,H\tau),zeros(num_q,obj.num_u)]);
+        dJtranspose = reshape(permute(reshape(dJ,size(J,1),size(J,2),[]),[2,1,3]),prod(size(J)),[]);
+        dMqdn = H\(dJtranspose - [zeros(num_q,1),matGradMult(dH,H\J'),zeros(num_q,obj.num_u)]);
+      end
+      
       
       %% Joint Limits:
       % phiL(qn) is distance from each limit (in joint space)
@@ -163,6 +175,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         w(1:nL) = phiL + h*JL*wqdn;
         M(1:nL,:) = h*JL*Mqdn;
         active(1:nL) = (phiL + h*JL*qd) < active_tol;
+        if (nargout>1)
+          dw(1:nL,:) = JL + h*matGradMult(dJL,wqdn) + h*JL*dwqdn;
+          dM(1:nL,:) = h*matGradMult(dJL,Mqdn) + h*JL*dMqdn;  % got here.  this line is not finished
+        end
       end
       
       %% Bilateral Position Constraints:
@@ -222,6 +238,44 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       qdn = Mqdn*z + wqdn;
       qn = q + h*qdn;
       xdn = [qn;qdn];
+      
+      if (nargout>1)  % compute gradients
+        % Quick derivation:
+        % The LCP solves for z given that:
+        % M(a)*z + q(a) >= 0
+        % z >= 0
+        % z'*(M(a)*z + q(a)) = 0
+        % where the vector inequalities are element-wise, and 'a' is a vector of  parameters (here the state x and control input u).
+        %
+        % Our goal is to solve for the gradients dz/da.
+        %
+        % First we solve the LCP to obtain z.
+        %
+        % Then, for all i where z_i = 0, then dz_i / da = 0.
+        % Call the remaining active constraints (where z_i >0)  Mbar(a), zbar, and  qbar(a).  then we have
+        % Mbar(a) * zbar + qbar(a) = 0
+        %
+        % and the remaining gradients are given by
+        % for all j, dMbar/da_j * zbar + Mbar * dzbar / da_j + dqbar / da_j = 0
+        % or
+        %
+        % dzbar / da_j =  - inv(Mbar)*(dMbar/da_j * zbar + dqbar / da_j)
+        %
+        % I'm pretty sure that Mbar will always be invertible when the LCP is solvable.
+        
+        dz = zeros(size(z,1),1+obj.num_x+obj.num_u);
+        zposind = find(z>0);
+        Mbar = M(zposind,zposind);
+        dMbar = reshape(dM,size(M,1),size(M,2),[]);
+        dMbar = reshape(dMbar(zposind,zposind,:),prod(size(M)),[]);
+        zbar = z(zposind);
+        dwbar = dw(zposind,:);
+        dz(zposind,:) = -Mbar\(matGradMult(dMbar,zbar) + dwbar);
+        
+        dqdn = matGradMult(dMqdn,z) + Mqdn*dz + dwqdn;
+        df = [ zeros(num_q,1+num_q), eye(num_q), zeros(num_q,obj.num_u); dqdn ]; 
+      end
+      
     end
 
     function y = output(obj,t,x,u)
