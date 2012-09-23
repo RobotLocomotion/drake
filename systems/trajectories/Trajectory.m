@@ -35,7 +35,7 @@ classdef Trajectory < DrakeSystem
     
     function y = output(obj,t,x,u)
       if (isnumeric(obj.dim))
-        y = reshape(obj.eval(t),1,[]);
+        y = reshape(obj.eval(t),[],1);
       else 
         y=nan;
       end
