@@ -428,17 +428,26 @@ classdef DrakeSystem < DynamicalSystem
   
   % utility methods
   methods
-    function gradTest(obj)
+    function gradTest(obj,t,x,u,options)
       % Compare numerical and analytical derivatives of dynamics,update,and
       % output
-      if (getNumContStates(obj))
-        gradTest(@obj.dynamics,0,getInitialState(obj),getDefaultInput(obj),struct('tol',.01))
+      
+      if nargin<2, t=0; end
+      if nargin<3, x=getInitialState(obj); end
+      if nargin<4, u=getDefaultInput(obj); end
+      if nargin<5, options=struct('tol',.01); end
+      if ~isfield(options,'dynamics') options.dynamics=true; end
+      if ~isfield(options,'update') options.update=true; end
+      if ~isfield(options,'output') options.output=true; end
+      
+      if (options.dynamics && getNumContStates(obj))
+        gradTest(@obj.dynamics,t,x,u,options)
       end
-      if (getNumDiscStates(obj))
-        gradTest(@obj.update,0,getInitialState(obj),getDefaultInput(obj),struct('tol',.01))
+      if (options.update && getNumDiscStates(obj))
+        gradTest(@obj.update,t,x,u,options);
       end
-      if (getNumOutputs(obj))
-        gradTest(@obj.output,0,getInitialState(obj),getDefaultInput(obj),struct('tol',.01))
+      if (options.output && getNumOutputs(obj))
+        gradTest(@obj.output,t,x,u,options);
       end
     end
   end

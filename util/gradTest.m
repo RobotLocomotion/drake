@@ -67,7 +67,7 @@ if (~isfield(options,'input_name'))
 end
 if (~isfield(options,'output_name')) options.output_name = 'f'; end
 if (~isfield(options,'num_samples')) options.num_samples = 31; end
-if (~isfield(options,'tol')) options.tol = 0; end
+if (~isfield(options,'tol')) options.tol = 0.01; end
 
 [f,df] = FUN(varargin{1:end});  
 if (~iscell(df)) a{1} = df; df=a; clear a; end
@@ -95,7 +95,7 @@ for v=1:length(varargin)
       if (numerr>=options.tol)
 	
         sfigure(109); clf
-        h=plot(x(i)+samples,y(j,:),x(i),f(j),'r*');
+        h=plot(x(i)+samples,y(j,:),'b.-',x(i),f(j),'r*');
         if (iscell(options.input_name{v}))
           xlabel(options.input_name{v}{i})
         else
@@ -120,7 +120,7 @@ for v=1:length(varargin)
             hold off;
           end
         end
-	error('gradients do not match to tolerance'); 
+        error('gradients do not match to tolerance');
       end
     end
     clear y;
