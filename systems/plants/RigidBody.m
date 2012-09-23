@@ -27,6 +27,7 @@ classdef RigidBody < handle
     cached_q=[];  % the current kinematics were computed using these q and qd values 
     T = eye(4);  % transformation from this body to world coordinates
     dTdq = [];
+    ddTdqdq = [];
   end
   
   methods    
