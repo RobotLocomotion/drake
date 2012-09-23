@@ -175,8 +175,8 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
   % access methods
   methods 
     function mode_sys = getMode(obj,mode_num)
-      if (mode_num<1 || mode_num>length(systems)) error('bad mode num'); end
-      mode_sys = systems{mode_num};
+      if (mode_num<1 || mode_num>length(obj.modes)) error('bad mode num'); end
+      mode_sys = obj.modes{mode_num};
     end
   end
   
