@@ -7,7 +7,6 @@ switch (jcode)
     c = cos(q);
     s = sin(q);
     ddTJ = [-c, s 0; -s -c 0; 0 0 0];
-  case 2 % x-axis prismatic
-  case 3 % y-axis prismatic
+  otherwise 
     ddTJ = zeros(3);
 end

@@ -95,12 +95,14 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nC > 0)
         if (nargout>1)
           [phiC,n,D,mu,dn,dD] = obj.manip.contactConstraints(q);  % this is what I want eventually.
-          dJ = sparse(nL+nP+(mc+2)*nC,num_q^2);
-          error('not implemented yet');
+          mC = length(D);
+          dJ = sparse(nL+nP+(mC+2)*nC,num_q^2);
+          dJ(nL+nP+(1:nC),:) = dn;
+          dJ(nL+nP+nC+(1:mC*nC),:) = vertcat(dD{:});
         else
           [phiC,n,D,mu] = obj.manip.contactConstraints(q);
+          mC = length(D);
         end
-        mC = length(D);
         J = zeros(nL + nP + (mC+2)*nC,num_q);
         D = vertcat(D{:});
         J(nL+nP+(1:nC),:) = n;
