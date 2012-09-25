@@ -414,6 +414,12 @@ classdef RigidBodyModel
     end
     
     function model=parseLink(model,node,options)
+      
+      ignore = char(node.getAttribute('drakeIgnore'));
+      if strcmp(lower(ignore),'true')
+        return;
+      end
+      
       body = newBody(model);
       
       body.linkname=char(node.getAttribute('name'));
@@ -503,6 +509,11 @@ classdef RigidBodyModel
     
     function model=parseJoint(model,node,options)
 
+      ignore = char(node.getAttribute('drakeIgnore'));
+      if strcmp(lower(ignore),'true')
+        return;
+      end
+      
       parentNode = node.getElementsByTagName('parent').item(0);
       if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
           return
