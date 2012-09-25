@@ -316,6 +316,12 @@ classdef PlanarRigidBodyModel < RigidBodyModel
     
     function model=parseJoint(model,node,options)
 
+        
+      ignore = char(node.getAttribute('drakeIgnore'));
+      if strcmp(lower(ignore),'true')
+        return;
+      end
+      
       name = char(node.getAttribute('name'));
 
       childNode = node.getElementsByTagName('child').item(0);

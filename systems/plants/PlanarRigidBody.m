@@ -180,7 +180,7 @@ classdef PlanarRigidBody < RigidBody
               x=pts(1,i)';y=pts(2,i)';
               
             elseif (options.view_axis'*T3*[0;0;1;1] > (1-1e-6)) % then it just looks like a circle
-              theta = 0:.1:2*pi;
+              theta = 0:.4:2*pi;
               pts = r*[cos(theta); sin(theta)] + repmat(T*[0;0;0;1],1,length(theta));
               x=pts(1,:)';y=pts(2,:)';
             else  % full cylinder geometry
@@ -194,7 +194,7 @@ classdef PlanarRigidBody < RigidBody
               pts = T*[0;0;0;1];
               x=pts(1,:); y=pts(2,:);
             else
-              theta = 0:.1:2*pi;
+              theta = 0:.4:2*pi;
               pts = r*[cos(theta); sin(theta)] + repmat(T*[0;0;0;1],1,length(theta));
               x=pts(1,:)';y=pts(2,:)';
             end
