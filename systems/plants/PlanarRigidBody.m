@@ -107,6 +107,7 @@ classdef PlanarRigidBody < RigidBody
       % note: could support multiple geometry elements
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
+        options.collision = true; 
         [xpts,ypts] = PlanarRigidBody.parseGeometry(geomnode,xyz,rpy,options);
         body.contact_pts=unique([xpts(:), ypts(:)],'rows')';
       end
@@ -150,6 +151,8 @@ classdef PlanarRigidBody < RigidBody
       T3= [quat2rotmat(rpy2quat(rpy)),x0]; % intentially leave off the bottom row [0,0,0,1];
       T = [options.x_axis'; options.y_axis']*T3;
       
+
+      
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
         thisNode = childNodes.item(i-1);
@@ -170,7 +173,8 @@ classdef PlanarRigidBody < RigidBody
             r = str2num(char(thisNode.getAttribute('radius')));
             l = str2num(char(thisNode.getAttribute('length')));
             
-            if (options.view_axis'*T3*[0;0;1;1] == 0) % then it just looks like a box
+            if (options.view_axis'*T3*[0;0;1;1] == 0 || ... % then it just looks like a box or
+                (isfield(options,'collision') && options.collision)) % getting contacts, so use bb corners
               cx = r*[-1 1 1 -1 -1 1 1 -1];
               cy = r*[1 1 1 1 -1 -1 -1 -1];
               cz = l/2*[1 1 -1 -1 -1 -1 1 1];
@@ -180,7 +184,7 @@ classdef PlanarRigidBody < RigidBody
               x=pts(1,i)';y=pts(2,i)';
               
             elseif (options.view_axis'*T3*[0;0;1;1] > (1-1e-6)) % then it just looks like a circle
-              theta = 0:.4:2*pi;
+              theta = 0:0.1:2*pi;
               pts = r*[cos(theta); sin(theta)] + repmat(T*[0;0;0;1],1,length(theta));
               x=pts(1,:)';y=pts(2,:)';
             else  % full cylinder geometry
@@ -190,14 +194,16 @@ classdef PlanarRigidBody < RigidBody
           case 'sphere'
             r = str2num(char(thisNode.getAttribute('radius')));
             if (r==0)
-              cx=0; cy=0; cz=0;
-              pts = T*[0;0;0;1];
-              x=pts(1,:); y=pts(2,:);
+                cx=0; cy=0; cz=0;
+                pts = T*[0;0;0;1];
+            elseif (isfield(options,'collision') && options.collision)
+                pts = r*[-1 1 1 -1; 1 1 -1 -1] + repmat(T*[0;0;0;1],1,4);
             else
-              theta = 0:.4:2*pi;
-              pts = r*[cos(theta); sin(theta)] + repmat(T*[0;0;0;1],1,length(theta));
-              x=pts(1,:)';y=pts(2,:)';
+                theta = 0:0.1:2*pi;
+                pts = r*[cos(theta); sin(theta)] + repmat(T*[0;0;0;1],1,length(theta));
             end
+            x=pts(1,:)';y=pts(2,:)';
+
 
           case 'mesh'
             filename=char(thisNode.getAttribute('filename'));
