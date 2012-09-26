@@ -76,7 +76,7 @@ classdef RigidBody < handle
       if any(rpy)
         error('rpy in inertia block not implemented yet (but would be easy)');
       end
-      body.I = mcI(mass,xyz,I);
+      body.I = mcI(mass,-xyz,I);
       
     end
 

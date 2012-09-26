@@ -89,7 +89,7 @@ classdef PlanarRigidBody < RigidBody
         error('rpy in inertia block not implemented yet (but would be easy)');
       end
       xy = [options.x_axis'; options.y_axis']*xyz;
-      body.I = mcIp(mass,xy,I);
+      body.I = mcIp(mass,-xy,I);
     end    
     
     function body = parseCollision(body,node,options)
