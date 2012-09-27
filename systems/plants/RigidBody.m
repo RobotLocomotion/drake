@@ -242,6 +242,11 @@ classdef RigidBody < handle
               [~,txt]=strtok(txt,'DEF');
               wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry %s\n\t%s}\n',txt,wrl_appearance_str)];
 %              wrlstr=[wrlstr,sprintf('Inline { url "%s" }\n',wrlfile)];
+            elseif strcmpi(ext,'.wrl')
+              txt = fileread(filename);
+              [~,txt]=strtok(txt,'DEF');
+              wrlstr=[wrlstr,txt];
+%              wrlstr=[wrlstr,sprintf('Inline { url "%s" }\n',filename)];
             end
             
           case {'#text','#comment'}
