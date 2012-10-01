@@ -14,6 +14,9 @@
 # Project related configuration options
 #---------------------------------------------------------------------------
 
+# include mathjax from the CDN
+USE_MATHJAX =  yes
+
 # This tag specifies the encoding used for all characters in the config file 
 # that follow. The default is UTF-8 which is also the encoding used for all 
 # text before the first occurrence of this tag. Doxygen uses libiconv (or the 
