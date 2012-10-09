@@ -1,8 +1,8 @@
 classdef BallVisualizer < Visualizer
   
   methods 
-    function obj = BallVisualizer()
-      obj = obj@Visualizer(1);  % number of inputs = 1
+    function obj = BallVisualizer(fr)
+      obj = obj@Visualizer(fr);  % number of inputs = 1
     end
     
     function draw(obj,t,y)
