@@ -338,7 +338,18 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       % @param x0 initial guess for the state
       % @param u0 initial guess for the input
       % @param v (optional) a visualizer that should be called while the
-      % solver is doing it's thing      
+      % solver is doing it's thing  
+      %
+      % The algorithm works by solving the problem:
+      %  \begin{eqnarray*}
+      %  \min_{x,u,z}  & & z'(Mz + w) \\
+      %  \text{subject to} & & x = f(x,u,z) \\ 
+      %  & & z >=0 \\
+      %  & & Mz+w >=0
+      %  \end{eqnarray*}
+      % 
+      
+   
       
       if ~isTI(obj) error('only makes sense for time invariant systems'); end
             
