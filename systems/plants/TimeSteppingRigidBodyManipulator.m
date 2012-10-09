@@ -212,6 +212,36 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       % z(nL+nP+nC+(1:mC*nC)) = [beta_1;...;beta_mC]
       % s(nL+nP+(mC+1)*nC+(1:nC)) = mu*cn - sum_mC beta_mC (eq7, line 5)
       % z(nL+nP+(mC+1)*nC+(1:nC)) = lambda
+      %
+      % The second set of conditions gives:
+      %   lambda_i >= the largest projection of the velocity vector
+      %   onto the d vectors (since lambda_i >= -(D*qdn)_i for all i, 
+      % and by construction of d always having the mirror vectors,
+      %   lambda_i >= (D_qdn)_i
+      %
+      % The last eqs give
+      %  lambda_i > 0 iff (sum beta)_i = mu_i*cn_i  
+      % where i is for the ith contact.
+      % Assume for a moment that mu_i*cn_i = 1, then (sum_beta)_i = 1
+      % is like a constraint ensuring that sum_beta_j D_j is like a convex
+      % combination of the D vectors (since beta_j is also > 0)
+      % So lambda_i >0 if forces for the ith contact are on the boundary of
+      % the friction cone (lambda_i could also be > 0 if some of the beta_j
+      % D_j's are internally canceling each other out)
+      %
+      % So one solution is 
+      %  v_i = 0, 
+      %  beta_i >= 0
+      %  lambda_i = 0, 
+      %  sum_d beta_i < mu*cn_i
+      % and another solution is
+      %  v_i > 0  (sliding) 
+      %  lambda_i = max_d (v_i)
+      %  beta_i = mu*cn_i only in the direction of the largest negative velocity
+      %  beta_i = 0 otherwise
+      % By virtue of the eqs of motion connecting v_i and beta_i, only one
+      % of these two can exist. (the first is actually many solutions, with
+      % beta_i in opposite directions canceling each other out).
       if (nC > 0)
         w(nL+nP+(1:nC)) = phiC+h*n*wqdn;
         M(nL+nP+(1:nC),:) = h*n*Mqdn;

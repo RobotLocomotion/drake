@@ -53,7 +53,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
         error('i don''t handle this case yet, but it would be pretty simple.');
       end
       if (getNumStateConstraints(mode_sys)>0)
-        error('i don''t handle this case yet, but it would be pretty simple.');
+        obj = setNumStateConstraints(obj,max(getNumStateConstraints(obj),getNumStateConstraints(mode_sys)));
       end
       
       obj = setSampleTime(obj,[getSampleTime(obj),getSampleTime(mode_sys)]);
@@ -242,6 +242,27 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       for i=1:n
         zcs(i) = obj.guard{m}{i}(obj,t,xm,u);
       end
+    end
+    
+    function con = stateConstraints(obj,x)
+      m = x(1); 
+      % should I publish the constant mode constraint here?
+      
+      nX = getNumStates(obj.modes{m});
+      ncon = getNumStateConstraints(obj.modes{m});
+      con = zeros(getNumStateConstraints(obj),1);
+      if (nX>0 && ncon)
+        xm = x(1+(1:nX)); 
+        con(1:ncon) = stateConstraints(obj.modes{m},xm);
+      end
+    end
+    
+    function [x,success] = resolveConstraints(obj,x,v)
+      m = x(1);
+      nX = getNumStates(obj.modes{m});
+      xm = x(1+(1:nX));
+      if (nargin<3) v=[]; end
+      [x(1+(1:nX)),success] = resolveConstraints(obj.modes{m},xm,v);
     end
     
     function [xn,status] = transitionUpdate(obj,t,x,u)

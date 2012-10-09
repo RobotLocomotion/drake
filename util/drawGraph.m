@@ -15,6 +15,7 @@ dotfile = fullfile(tempdir,'matlabgraph.gv');
 fptr=fopen(dotfile,'w');
 
 fprintf(fptr,'digraph matlabgraph {\n');
+fprintf(fptr,'  node []; \n');
 
 n = max([length(node_labels),size(adj)]);
 
@@ -22,9 +23,8 @@ n = max([length(node_labels),size(adj)]);
 if length(node_labels)<n, node_labels{n}={}; end
 for i=1:n
   if isempty(node_labels{i}) node_labels{i}=num2str(i); end
+  fprintf(fptr,'    "%s";\n',node_labels{i});
 end
-
-fprintf(fptr,'  node []; \n');
 
 for i=1:size(adj,1)
   for j=1:size(adj,2)
