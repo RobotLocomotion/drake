@@ -76,7 +76,7 @@ classdef RigidBody < handle
       if any(rpy)
         error('rpy in inertia block not implemented yet (but would be easy)');
       end
-      body.I = mcI(mass,xyz,I);
+      body.I = mcI(mass,-xyz,I);
       
     end
 
@@ -147,7 +147,7 @@ classdef RigidBody < handle
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         [xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,options);
-        body.contact_pts=unique([xpts(:), ypts(:), zpts(:)],'rows')';
+        body.contact_pts=unique([body.contact_pts';xpts(:), ypts(:), zpts(:)],'rows')';
       end
     end
     

@@ -433,7 +433,11 @@ classdef RigidBodyModel
       end
       
       if node.getElementsByTagName('collision').getLength()>0
-        body = parseCollision(body,node.getElementsByTagName('collision').item(0),options);
+          collisionItem = 0;
+          while(~isempty(node.getElementsByTagName('collision').item(collisionItem)))
+            body = parseCollision(body,node.getElementsByTagName('collision').item(collisionItem),options);
+            collisionItem = collisionItem+1;
+          end
       end
       
       model.body=[model.body,body];
