@@ -25,9 +25,9 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
       % a reminder that somwhere I need to implement the sliding friction
       if any(contact_state>1) error('not implemented yet'); end
       
-      obj = setInputFrame(obj,in_frame);
-      obj = setStateFrame(obj,state_frame);
-      obj = setOutputFrame(obj,out_frame);
+      if (nargin>3) obj = setInputFrame(obj,in_frame); end
+      if (nargin>4) obj = setStateFrame(obj,state_frame); end
+      if (nargin>5) obj = setOutputFrame(obj,out_frame); end
     end
     
 %    function [phi,J,dJ] = positionConstraints(obj,q)
