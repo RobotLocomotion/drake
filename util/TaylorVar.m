@@ -810,6 +810,41 @@ classdef TaylorVar
       y = subsref(x,s1)-subsref(x,s2);
     end
     
+    function v = ppval(pp,xx)
+      % equivalent to ppval.m, but made taylorvar compatible
+      
+      %  obtain the row vector xs equivalent to XX
+      sizexx = size(xx); lx = numel(xx); xs = reshape(xx,1,lx);
+      %  if XX is row vector, suppress its first dimension
+      if length(sizexx)==2&&sizexx(1)==1, sizexx(1) = []; end
+      
+      % take apart PP
+      [b,c,l,k,dd] = unmkpp(pp);
+      
+      % for each evaluation site, compute its breakpoint interval
+      % (mindful of the possibility that xx might be empty)
+      index = sum(repmat(xs.f,1,length(b))>=repmat(b,lx,1),2);
+      
+      % now go to local coordinates ...
+      xs = xs-b(index);
+      
+      d = prod(dd);
+      if d>1 % ... replicate xs and index in case PP is vector-valued ...
+        xs = reshape(xs(ones(d,1),:),1,d*lx);
+        index = d*index; temp = (-d:-1).';
+        index = reshape(1+index(ones(d,1),:)+temp(:,ones(1,lx)), d*lx, 1 );
+      else
+        if length(sizexx)>1, dd = []; else dd = 1; end
+      end
+      v = c(index,1);
+      for i=2:k
+        v = xs'.*v + c(index,i);
+      end
+      v = reshape(v,[dd,sizexx]);
+      
+    end
+    
+    
 %    function obj=blkdiagcpy(obj,c)
 %      if (length(obj.dim)~=2) error('only for 2D matrices'); end
 %      m=obj.dim(1);n=obj.dim(2);

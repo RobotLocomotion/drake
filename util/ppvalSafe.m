@@ -10,7 +10,8 @@ function yy = ppvalSafe(pp,xx,bLimitStart,bLimitEnd)
 if (nargin<3) bLimitStart = true; end
 if (nargin<4) bLimitEnd = true; end
 
-xx=double(xx);  % convert to double (e.g., from TaylorVar.  ppval can't handle taylorvars.  and it will warn if gradient data is lost)
+% update: don't need this anymore, since I added ppval to TaylorVar! 
+%xx=double(xx);  % convert to double (e.g., from TaylorVar.  ppval can't handle taylorvars.  and it will warn if gradient data is lost)
 
 sx = max(xx,pp.breaks(1));
 if (bLimitStart && any(sx~=xx)) 
