@@ -310,13 +310,13 @@ This file has been based upon a similar urdf file for the Nao humanoid robot (by
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0.1226 -0.03 0"/>
+      <origin rpy="0 0 0" xyz="0.199276512 -0.03 0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0.1226 0.03 0"/>
+      <origin rpy="0 0 0" xyz="0.199276512 0.03 0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
@@ -404,13 +404,13 @@ This file has been based upon a similar urdf file for the Nao humanoid robot (by
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0.1226 -0.03 0"/>
+      <origin rpy="0 0 0" xyz="0.199276512 -0.03 0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
     </collision>
     <collision>
-      <origin rpy="0 0 0" xyz="0.1226 0.03 0"/>
+      <origin rpy="0 0 0" xyz="0.199276512 0.03 0"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
