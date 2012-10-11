@@ -109,7 +109,7 @@ classdef PlanarRigidBody < RigidBody
       if ~isempty(geomnode)
         options.collision = true; 
         [xpts,ypts] = PlanarRigidBody.parseGeometry(geomnode,xyz,rpy,options);
-        body.contact_pts=unique([xpts(:), ypts(:)],'rows')';
+        body.contact_pts=unique([body.contact_pts';xpts(:), ypts(:)],'rows')';
       end
     end
     

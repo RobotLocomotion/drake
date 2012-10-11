@@ -255,7 +255,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
       %    D{k}(i,:) is the kth direction vector for the ith contact (of nC)
       % @retval mu mu(i,1) is the coefficient of friction for the ith contact 
 
-      doKinematics(obj.model,q,true);
+      doKinematics(obj.model,q,nargout>4);
         
       contact_pos = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar
       if (nargout>1) J = zeros(2*obj.num_contacts,obj.num_q)*q(1); end
@@ -287,11 +287,11 @@ classdef PlanarRigidBodyManipulator < Manipulator
       if (nargout>1)
         %% compute a tangent vector, t
         % for each n, it looks like:
-        % if (normal(2)>normal(1)) t = [1,-n(1)/n(2)];  
+        % if (abs(normal(2))>abs(normal(1))) t = [1,-n(1)/n(2)];  
         % else t = [-n(2)/n(1),1]; end
         % and the vectorized form is:
         t=normal; % initialize size
-        ind=normal(2,:)>normal(1,:);
+        ind=abs(normal(2,:))>abs(normal(1,:));
         t(:,ind) = [ones(1,sum(ind));-normal(1,ind)./normal(2,ind)];
         ind=~ind;
         t(:,ind) = [-normal(2,ind)./normal(1,ind); ones(1,sum(ind))];
