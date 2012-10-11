@@ -1,4 +1,4 @@
-classdef HybridRigidBodyMode < RigidBodyManipulator
+classdef HybridRigidBodyMode < PlanarRigidBodyManipulator
 
   properties
     joint_limit_state
@@ -9,10 +9,13 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
     function obj = HybridRigidBodyMode(model,joint_limit_state,contact_state,in_frame,state_frame,out_frame)
       S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
       warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-      obj = obj@RigidBodyManipulator(model);
+      obj = obj@PlanarRigidBodyManipulator(model);
       warning(S);
       
+      sizecheck(joint_limit_state,[obj.num_q,1]);
       obj.joint_limit_state = joint_limit_state;
+      
+      sizecheck(contact_state,[obj.num_contacts,1]);
       obj.contact_state = contact_state;
 
       if (obj.num_position_constraints || obj.num_velocity_constraints)
@@ -41,7 +44,7 @@ classdef HybridRigidBodyMode < RigidBodyManipulator
 %    function [psi,J] = velocityConstraints(obj,q,qd)
     function psi = velocityConstraints(obj,q,qd)
       [phi,n,D] = contactConstraints(obj,q);
-      psi = vertcat(D{:}(obj.contact_state==1,1)*qd);
+      psi = D{1}(obj.contact_state==1,:)*qd;
     end
     
     function [x,success] = resolveConstraints(obj,x0,v)

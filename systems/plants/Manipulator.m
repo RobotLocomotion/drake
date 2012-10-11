@@ -45,7 +45,7 @@ classdef Manipulator < SecondOrderSystem
         term1=Hinv*[J;dpsidqd]';
         term2=Hinv*tau;
         
-        constraint_force = -[J;dpsidqd]'*inv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi];
+        constraint_force = -[J;dpsidqd]'*([J*term1;dpsidqd*term1]\[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi]);
       elseif (obj.num_position_constraints>0)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
         Jdotqd = dJ*reshape(qd*qd',obj.num_q^2,1);

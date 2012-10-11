@@ -205,8 +205,8 @@ classdef RigidBodyManipulator < Manipulator
 
       doKinematics(obj.model,q);
         
-      contact_pos = zeros(3,obj.num_contacts);
-      if (nargout>1) J = zeros(3*obj.num_contacts,obj.num_q); end
+      contact_pos = zeros(3,obj.num_contacts)*q(1);  % q(1) to help TaylorVar
+      if (nargout>1) J = zeros(3*obj.num_contacts,obj.num_q)*q(1); end
       count=0;
 %      figure(1); clf;  % for debugging
       for i=1:length(obj.model.body)
