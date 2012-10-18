@@ -302,7 +302,25 @@ classdef RigidBody < handle
             pts = T*[0;0;0;1];
             x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
 
-          otherwise
+          case 'mesh'
+            filename=char(thisNode.getAttribute('filename'));
+            [path,name,ext] = fileparts(filename);
+            path = strrep(path,'package://','');
+            if strcmpi(ext,'.stl')
+              wrlfile = fullfile(tempdir,[name,'.wrl']);
+              stl2vrml(fullfile(path,[name,ext]),tempdir);
+              txt=fileread(wrlfile);
+
+              ind=regexp(txt,'coordIndex \[([^\]]*)\]','tokens'); ind = ind{1}{1};
+              ind=strread(ind,'%d','delimiter',' ,')+1; 
+              
+              pts=regexp(txt,'point \[([^\]]*)\]','tokens'); pts = pts{1}{1};
+              pts=strread(pts,'%f','delimiter',' ,');
+              pts=reshape(pts,3,[]);
+              x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
+            end
+
+           otherwise
             % intentionally blank
         end
       end

@@ -40,6 +40,7 @@ classdef DrakeSystem < DynamicalSystem
       x0 = zeros(obj.num_xd+obj.num_xc,1);
       attempts=0;
       success=false;
+      tries = 0;
       while (~success)
         try
           [x0,success] = resolveConstraints(obj,x0);
@@ -58,6 +59,10 @@ classdef DrakeSystem < DynamicalSystem
         end
         if (~success)
           x0 = randn(obj.num_xd+obj.num_xc,1);
+          tries = tries+1;
+          if (tries>=10)
+              error('failed to resolve constraints after %d attempts',tries);
+          end
         end
       end
     end
