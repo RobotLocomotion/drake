@@ -1,3 +1,4 @@
+% NOTEST
 function testReachability
 
 p = addpath('..');
