@@ -91,8 +91,12 @@ classdef TrigPoly
             a.p(i)=R(zeroind);
             a(i)=a.s(ind)*cos(a(i))+a.c(ind)*sin(a(i));
           end
-        elseif (onecoef-floor(onecoef))~=0  % sin(c*q(ind)+..)   do sin(q(ind) + (c-1)*q(ind)+...) 
-          a.p(i)=(R(oneind)-sign(onecoef))*q(ind)+R(zeroind);
+        elseif (onecoef-floor(onecoef))==0  % sin(c*q(ind)+..)   do sin(q(ind) + (c-1)*q(ind)+...)
+          if (isempty(zeroind))
+            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind);
+          else
+            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
+          end          
           a(i)=a.s(ind)*cos(a(i)) + a.c(ind)*sin(a(i));
         end
       end      
@@ -120,8 +124,12 @@ classdef TrigPoly
             a.p(i)=R(zeroind);
             a(i)=a.c(ind)*cos(a(i)) - a.s(ind)*sin(a(i));
           end
-        elseif (onecoef-floor(onecoef))~=0  % sin(c*q(ind)+..)   do sin(q(ind) + (c-1)*q(ind)+...) 
-          a.p(i)=(R(oneind)-sign(onecoef))*q(ind)+R(zeroind);
+        elseif (onecoef-floor(onecoef))==0  % sin(c*q(ind)+..)   do sin(q(ind) + (c-1)*q(ind)+...) 
+          if (isempty(zeroind))
+            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind);
+          else
+            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
+          end
           a(i)=a.c(ind)*cos(a(i)) - a.s(ind)*sin(a(i));
         end
       end      
@@ -199,6 +207,13 @@ classdef TrigPoly
     
     function a=mpower(a,n)
       a.p=mpower(a.p,n);
+    end
+    
+    function a=power(a,n)
+      if ~isnumeric(n) || any(size(n) ~= 1)
+        error('Power only supports constant exponents')
+      end
+      a.p=mpower(a,n);
     end
     
     function a=mrdivide(a,b)
