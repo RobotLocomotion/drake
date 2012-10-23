@@ -8,7 +8,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
   % the plane.
   
   methods
-    function obj = PlanarRigidBodyVisualizer(frame,model)
+    function obj = PlanarRigidBodyVisualizer(frame,model,options)
       obj=obj@Visualizer(frame);
       
       options=struct('twoD',true);
