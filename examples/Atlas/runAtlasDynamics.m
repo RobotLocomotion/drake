@@ -1,4 +1,5 @@
 function runAtlasDynamics
+% NOTEST
 
 % just runs it as a passive system for now
 options.floating = true;
