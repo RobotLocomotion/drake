@@ -1,7 +1,7 @@
 function coordinateTest(is,js)
 
 if (nargin<1) is=1:10; end
-if (nargin<2) js=1:2; end  % was 1:4
+if (nargin<2) js=1:4; end  
 
 options=struct();
 for i=is
