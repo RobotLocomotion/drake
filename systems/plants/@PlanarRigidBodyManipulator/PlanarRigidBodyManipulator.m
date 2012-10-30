@@ -195,6 +195,8 @@ classdef PlanarRigidBodyManipulator < Manipulator
         
         B = obj.model.B;
         dB = zeros(m.NB*obj.num_u,2*m.NB);
+        
+        dC = diag(jsign)*dC;
       else
         if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
           [H,C] = HandCpmex(obj.mex_model_ptr,q,qd);
@@ -205,7 +207,6 @@ classdef PlanarRigidBodyManipulator < Manipulator
         B = obj.model.B;
       end
       C = jsign.*C;
-      B = jsign.*B;
     end
     
     function phi = positionConstraints(obj,q)
@@ -217,6 +218,9 @@ classdef PlanarRigidBodyManipulator < Manipulator
       % handle kinematic loops
       % note: each loop adds two constraints 
       phi=[];
+      jsign = [obj.model.body(cellfun(@(a)~isempty(a),{obj.model.body.parent})).jsign]';
+      q = jsign.*q;
+      
       for i=1:length(obj.model.loop)
         % for each loop, add the constraints on T1(q) and T2(q), // todo: finish this
         % where

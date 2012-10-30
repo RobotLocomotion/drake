@@ -59,7 +59,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
           %h(i)=patch(xpts,ypts,co(mod(i-2,size(co,1))+1,:));
           % end debugging
         end
-        if (1) % draw extra debugging info
+        if (obj.debug) % draw extra debugging info
           [m,c] = getInertial(body);
           plot(body.T(1,3),body.T(2,3),'k+');
           if (m~=0)
@@ -110,5 +110,6 @@ classdef PlanarRigidBodyVisualizer < Visualizer
     model;
     xlim=[]
     ylim=[];
+    debug = false;  % if true, draws extras, like the coordinate frames and COMs for each link
   end
 end
