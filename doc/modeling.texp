@@ -1,15 +1,15 @@
 \chapter{Modeling and Simulation}
 
-The fundamental object in \robotlib is a dynamical system.  Robots, 
+The fundamental object in \drake is a dynamical system.  Robots, 
 controllers, state estimators, etc. are all instances of dynamical
-systems.  Algorithms in \robotlib operate on dynamical systems.  This
+systems.  Algorithms in \drake operate on dynamical systems.  This
 chapter introduces what you need to know to instantiate the dynamical
 systems that you are interested in, and to simulate and visualize
 their outputs.  
 
 \section{Modeling Input-Ouput Dynamical Systems}
 
-Dynamical systems in \robotlib are represented by their dynamics in
+Dynamical systems in \drake are represented by their dynamics in
 state-space form, with $x$ denoting the state vector.  In addition,
 every dynamical system can have an input vector, $u$, and an output
 vector $y$. 
@@ -24,7 +24,7 @@ vector $y$.
 \end{tikzpicture}
 \end{center}
 
-As we will see, dynamical systems in \robotlib can be instantiated in a number of different ways.  A system can be described by a block of C code (see for instance section~\ref{s:simulinksystem}), but many of the algorithms implemented in \robotlib operate symbolically on the governing equations of the dynamical systems.  For this reason, the preferred approach is to use the Drake URDF interface (for rigid body dynamics) or alternatively to describe your dynamics in \matlab code by deriving from the \mcode{DrakeSystem} interface class.
+As we will see, dynamical systems in \drake can be instantiated in a number of different ways.  A system can be described by a block of C code (see for instance section~\ref{s:simulinksystem}), but many of the algorithms implemented in \drake operate symbolically on the governing equations of the dynamical systems.  For this reason, the preferred approach is to use the Drake URDF interface (for rigid body dynamics) or alternatively to describe your dynamics in \matlab code by deriving from the \mcode{DrakeSystem} interface class.
 
 \subsection{Universal Robot Description Format (URDF)}
 
@@ -40,19 +40,19 @@ Consider a basic continuous-time nonlinear input-output dynamical system describ
 \begin{gather*}
 \dot{x} = f(t,x,u), \\ y = g(t,x,u).
 \end{gather*}
-In \robotlib, you can instantiate a system of this form where $f()$
+In \drake, you can instantiate a system of this form where $f()$
 and $g()$ are anything that you can write into a \matlab function.
 This is accomplished by deriving from the \mcode{DrakeSystem} class, defining the size of the input, state, and output vectors in the constructor, and overloading the \mcode{dynamics} and \mcode{output} methods, as illustrated by the following example:
 
 \begin{example}[A simple continuous-time system]
-Consider the system \begin{gather*}\dot{x} = -x + x^3,\\ y = x.\end{gather*}  This system has zero inputs, one (continuous) state variable, and one output.  It can be implemented in \robotlib using the following code:
+Consider the system \begin{gather*}\dot{x} = -x + x^3,\\ y = x.\end{gather*}  This system has zero inputs, one (continuous) state variable, and one output.  It can be implemented in \drake using the following code:
 \lstinputlisting{../examples/SimpleCTExample.m}
 \end{example}
 
 
 \subsubsection{Discrete-Time Systems}
 
-Implementing a basic discrete-time system in \robotlib is very analogous to implementing a continuous-time system.  The discrete-time system given by:
+Implementing a basic discrete-time system in \drake is very analogous to implementing a continuous-time system.  The discrete-time system given by:
 \begin{gather*}
 x[n+1] = f(n,x,u),\\
 y[n] = g(n,x,u),
@@ -60,7 +60,7 @@ y[n] = g(n,x,u),
 can be implemented by deriving from \mcode{DrakeSystem} and defining the \mcode{update} and \mcode{output} methods, as seen in the following example.  
 
 \begin{example}[A simple discrete-time system]
-Consider the system \begin{gather*}x[n+1] = x^3[n],\\ y[n] = x[n].\end{gather*}  This system has zero inputs, one (discrete) state variable, and one output.  It can be implemented in \robotlib using the following code:
+Consider the system \begin{gather*}x[n+1] = x^3[n],\\ y[n] = x[n].\end{gather*}  This system has zero inputs, one (discrete) state variable, and one output.  It can be implemented in \drake using the following code:
 \lstinputlisting{../examples/SimpleDTExample.m}
 \end{example}
 
@@ -83,15 +83,15 @@ implement the \mcode{dynamics}, \mcode{update}, \mcode{output} methods
 for $f_c()$, $f_d()$, and $g()$, respectively.  To define the timing,
 you must also implement the \mcode{getSampleTime} method.  Type
 \mcode{help DrakeSystem/getSampleTime} at the \matlab prompt for
-more information.  Note that currently \robotlib only supports a
+more information.  Note that currently \drake only supports a
 single DT sample time. % since it there is there is only a single
-                       % update method published by the robotlibsystem class.  
+                       % update method published by the drakesystem class.  
 
 \begin{example}[A mixed discrete- and continuous-time example]
 Consider the system \begin{gather*}x_1(t+t') = x_1^3(t), \quad \forall
   t \in \{0,1,2,..\}, \forall t' \in (0,1], \\\dot{x}_2 =
   -x_2(t) + x_2^3(t), \end{gather*} which is the combination of the
-previous two examples into a single system.  It can be implemented in \robotlib using the following code:
+previous two examples into a single system.  It can be implemented in \drake using the following code:
 \lstinputlisting{../examples/SimpleMixedCTDTExample.m}
 \end{example}
 
@@ -107,7 +107,7 @@ These two types of constraints are handled quite differently.
 
 Input constraints are designed to act in the same way that an actuator limit might work for a mechanical system.  These act as a saturation nonlinearity system attached to the input, where for each element: $$y_i = \begin{cases} u_{max,i} & \text{if } u_i > u_{max,i} \\ u_{min,i} & \text{if } u_i < u_{min,i} \\ u_i & \text{otherwise.}\end{cases}$$  The advantage of using the input limits instead of implementing the saturation in your own code is that the discontinuity associated with hitting or leaving a saturation is communicated to the solver correctly, allowing for more efficient and accurate simulations.  Input constraints are set by calling the \mcode{setInputLimits} method.  
 
-State constraints are additional information that you are providing to the solver and analysis routines.  They should be read as ``this dynamical system will only ever visit states described by $\phi(x)=0$''.  Evaluating the dynamics at a vector $x$ for which $\phi(x) \ne 0$ may lead to an undefined or non-sensible output.   Telling \robotlib about this constraint will allow it to select initial conditions which satisfy the constraint, simulate the system more accurately (with the constraint imposed), and restrict attention during analysis to the manifold defined by the constraints.  However, \emph{the state constraints function should not be used to enforce an additional constraint that is not already imposed on the system by the governing equations.}.  The state constraint should be simply announcing a property that the system already has, if simulated accurately.   Examples might include a passive system with a known total energy, or a four-bar linkage in a rigid body whos dynamics are written as a kinematic tree + constraint forces.   State constraints are implemented by overloading the \mcode{stateConstraints} method \emph{and} by calling \mcode{setNumStateConstraints} to tell the solver what to expect in that method.  
+State constraints are additional information that you are providing to the solver and analysis routines.  They should be read as ``this dynamical system will only ever visit states described by $\phi(x)=0$''.  Evaluating the dynamics at a vector $x$ for which $\phi(x) \ne 0$ may lead to an undefined or non-sensible output.   Telling \drake about this constraint will allow it to select initial conditions which satisfy the constraint, simulate the system more accurately (with the constraint imposed), and restrict attention during analysis to the manifold defined by the constraints.  However, \emph{the state constraints function should not be used to enforce an additional constraint that is not already imposed on the system by the governing equations.}.  The state constraint should be simply announcing a property that the system already has, if simulated accurately.   Examples might include a passive system with a known total energy, or a four-bar linkage in a rigid body whos dynamics are written as a kinematic tree + constraint forces.   State constraints are implemented by overloading the \mcode{stateConstraints} method \emph{and} by calling \mcode{setNumStateConstraints} to tell the solver what to expect in that method.  
  
 \todo{implement example of passive pendulum with and without state constraints, showing the additional accuracy.}
 
@@ -115,7 +115,7 @@ State constraints are additional information that you are providing to the solve
 
 \subsubsection{Event-Driven Systems}
 
-\robotlib supports systems that are modeled as smooth, discrete- or
+\drake supports systems that are modeled as smooth, discrete- or
 continuous- time systems which transition between discrete modes based
 on some event.  \simulink calls these models ``State Machines''.  Examples include a walking robot model which undergoes a
 discrete impulsive collision event (and possibly a change to a
@@ -168,7 +168,7 @@ and continuous-time dynamics.
 \label{f:hybrid}
 \end{figure}
 
-Event-driven systems in \robotlib are described using the language
+Event-driven systems in \drake are described using the language
 from the Hybrid Systems community.  Transitions between individual
 modes are described by a \emph{guard} function, denoted by
 $\phi(t,x,u)$ in Figure~\ref{f:hybrid}, which triggers a transition
@@ -197,7 +197,7 @@ of the active mode.
 
 \subsubsection{Stochastic Systems}
 
-\robotlib also provides limited support for working with stochastic
+\drake also provides limited support for working with stochastic
 systems.  This includes continuous-time stochastic models of the
 form \begin{gather*} \dot{x}(t) = f(t,x(t),u(t),w(t)) \\ y(t) =
   g(t,x(t),u(t),w(t)), \end{gather*} where $w(t)$ is the vector output of a random
@@ -213,13 +213,13 @@ into a nonlinear dynamical system.  Note that for simulation purposes, any
 continuous-time white noise, $w(t)$, is approximated by a band-limited
 white noise signal.  
 
-Stochastic models can be implemented in \robotlib by deriving from
+Stochastic models can be implemented in \drake by deriving from
 \mcode{StochastiDrakeSystem} and implementing the
 \mcode{stochasticDynamics}, \mcode{stochasticUpdate}, and
 \mcode{stochasticOutput} methods.  
 
 \begin{example}[A simple continuous-time stochastic system]
-Consider the system \begin{gather*}\dot{x} = -x + w,\\ y = x.\end{gather*}  This system has zero inputs, one (continuous) state variable, and one output.  It can be implemented in \robotlib using the following code:
+Consider the system \begin{gather*}\dot{x} = -x + w,\\ y = x.\end{gather*}  This system has zero inputs, one (continuous) state variable, and one output.  It can be implemented in \drake using the following code:
 \begin{lstlisting}
 classdef LinearGaussianExample < StochasticDrakeSystem
 
@@ -297,12 +297,12 @@ polynomialsystem}.
 
 \subsection{Existing \simulink Models/Blocks}\label{s:simulinksystem}
 
-Although most users of Drake never open a \simulink GUI, \robotlib
-is built on top of the \matlab \simulink engine.  As such, \robotlib
+Although most users of Drake never open a \simulink GUI, \drake
+is built on top of the \matlab \simulink engine.  As such, \drake
 systems can be used in any \simulink model, and any existing \simulink
 block or \simulink model (an entire \simulink diagram) which has a
 single (vector) input and single (vector) output can be used with the
-\robotlib infrastructure.  
+\drake infrastructure.  
 
 \todo{Example of using a simulink model}
 
@@ -326,7 +326,7 @@ single (vector) input and single (vector) output can be used with the
 \end{center}
 \caption{Feedback combination}
 \end{figure}
-\todo{\robotlib actually currently zaps the input on a feedback system.
+\todo{\drake actually currently zaps the input on a feedback system.
   consider changing that behavior; otherwise update this diagram}
 
 
@@ -406,7 +406,7 @@ These generate the plots in Figure~\ref{f:simulate_examples}
 \begin{figure}[!h]
 \hfill
 \begin{matlabFigure}[width=.45\textwidth]
-load robotlib_config;
+load drake_config;
 cd([conf.root,'/examples/']);
 sys = SimpleCTExample;
 traj = simulate(sys, [0 10], .99);
@@ -415,7 +415,7 @@ set(gca,'FontSize',20);
 \end{matlabFigure}
 \hfill
 \begin{matlabFigure}[width=.45\textwidth]
-load robotlib_config;
+load drake_config;
 cd([conf.root,'/examples/']);
 sys = SimpleDTExample;
 traj = simulate(sys, [0 10], .99);
@@ -445,11 +445,11 @@ time or input - in this case you should overload the method
 % option to simulate?  probably not unless somebody requests it.
 % (avoid feature creep)
 
-By default, \robotlib uses the \simulink backend for simulation, and
+By default, \drake uses the \simulink backend for simulation, and
 makes use of a number of \simulink's advanced features.  For example,
 input limits can cause discontinuities in the derivative of a
 continuous time system, which can potenially lead to inaccuracy and inefficiency
-in simulation with variable-step solvers; \robotlib avoids this by
+in simulation with variable-step solvers; \drake avoids this by
 registering ``zero-crossings'' for each input saturation which allow
 the solver to handle the derivative discontinuity event explicitly,
 without reducing the step-size to achieve the accuracy tolerance.  You
