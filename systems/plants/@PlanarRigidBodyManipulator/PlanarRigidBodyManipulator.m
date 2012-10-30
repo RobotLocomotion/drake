@@ -196,7 +196,8 @@ classdef PlanarRigidBodyManipulator < Manipulator
         B = obj.model.B;
         dB = zeros(m.NB*obj.num_u,2*m.NB);
         
-        dC = diag(jsign)*dC;
+        dH = dH*diag([jsign;jsign]);
+        dC = diag(jsign)*dC*diag([jsign;jsign]);
       else
         if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
           [H,C] = HandCpmex(obj.mex_model_ptr,q,qd);

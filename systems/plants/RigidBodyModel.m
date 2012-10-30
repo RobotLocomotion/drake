@@ -483,6 +483,8 @@ classdef RigidBodyModel
 
       child.Xtree = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
       child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];
+      % note that I only now finally understand that my Ttree*[x;1] is
+      % exactly the same as inv(Xtree)*[x;zeros(3,1)].  sigh.
 
       if ~strcmp(lower(type),'fixed') && dot(axis,[0;0;1])<1-1e-6
         % featherstone dynamics treats all joints as operating around the
@@ -499,6 +501,7 @@ classdef RigidBodyModel
         jointrpy = quat2rpy(axis2quat(axis_angle));
         child.X_body_to_joint=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
         child.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
+        valuecheck(inv(child.X_body_to_joint)*[axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
         valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
       end
 
