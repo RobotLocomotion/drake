@@ -69,6 +69,9 @@ classdef PlanarRigidBodyModel < RigidBodyModel
             rotind = find([model.body.jcode]==1);
             for i=rotind
               model.body(i).jsign = -model.body(i).jsign;
+%              [m,c,I]=getInertial(model.body(i));
+%              c(1)=-c(1);
+%              model.body(i).I = mcIp(m,c,I);
             end
           end           
         case 'top'

@@ -481,7 +481,7 @@ classdef RigidBodyModel
         child.wrljoint = wrl_joint_origin;
       end      
 
-      child.Xtree = Xrotz(rpy(3))*Xroty(rpy(2))*Xrotx(rpy(1))*Xtrans(xyz);
+      child.Xtree = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
       child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];
 
       if ~strcmp(lower(type),'fixed') && dot(axis,[0;0;1])<1-1e-6
@@ -497,7 +497,7 @@ classdef RigidBodyModel
           axis_angle(1:3)=[0;1;0];  
         end
         jointrpy = quat2rpy(axis2quat(axis_angle));
-        child.X_body_to_joint=Xrotz(jointrpy(3))*Xroty(jointrpy(2))*Xrotx(jointrpy(1));
+        child.X_body_to_joint=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
         child.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
         valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
       end

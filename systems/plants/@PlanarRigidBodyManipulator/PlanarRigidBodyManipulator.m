@@ -63,6 +63,9 @@ classdef PlanarRigidBodyManipulator < Manipulator
     
     function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd)
       m = obj.model.featherstone;
+      jsign = [obj.model.body(cellfun(@(a)~isempty(a),{obj.model.body.parent})).jsign]';
+      q = jsign.*q;
+      qd = jsign.*qd;
       
       if (nargout>3)
         % featherstone's HandCp with analytic gradients
@@ -201,6 +204,8 @@ classdef PlanarRigidBodyManipulator < Manipulator
         C=C+m.damping'.*qd;
         B = obj.model.B;
       end
+      C = jsign.*C;
+      B = jsign.*B;
     end
     
     function phi = positionConstraints(obj,q)
