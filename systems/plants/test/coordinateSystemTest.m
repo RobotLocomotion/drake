@@ -2,17 +2,17 @@ function coordinateSystemTest
 
 % just runs it as a passive system for now
 
-for i=3;%1:4
+for i=5;%1:4
 
 options.view = 'right';
-options.floating = true;
-%m = RigidBodyModel(['brick',num2str(i),'.urdf'],options);
-m = PlanarRigidBodyModel(['brick',num2str(i),'.urdf'],options);
+options.floating = (i~=5);
+m = RigidBodyModel(['brick',num2str(i),'.urdf'],options);
+%m = PlanarRigidBodyModel(['brick',num2str(i),'.urdf'],options);
 m.body(end).contact_pts = [];
 r = TimeSteppingRigidBodyManipulator(m,.01);
 
 x0 = Point(r.getStateFrame);
-x0 = resolveConstraints(r.manip,double(x0));
+x0 = resolveConstraints(r.manip,double(x0)+randn);
 x0([1,3:end])=0;
 
 syms q qd;
@@ -34,6 +34,6 @@ v = r.constructVisualizer;
 v.display_dt = .05;
 v.playback(xtraj);
 
-%clf;
-%fnplt(xtraj,1)
+clf;
+fnplt(xtraj,1)
 end

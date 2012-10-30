@@ -19,7 +19,7 @@ end
 if (any(abs(val(:)-desired_val(:))>tol))
   if (nargout>0)
     tf = false;
-    warning(['Values don''t match.  Expected ', mat2str(desired_val), ' but got ', mat2str(val)]);
+%    warning(['Values don''t match.  Expected ', mat2str(desired_val), ' but got ', mat2str(val)]);
   else
     error(['Values don''t match.  Expected ', mat2str(desired_val), ' but got ', mat2str(val)]);
   end
