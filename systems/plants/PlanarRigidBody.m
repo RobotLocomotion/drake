@@ -56,7 +56,7 @@ classdef PlanarRigidBody < RigidBody
     
     function body=parseInertial(body,node,options)
       mass = 0;
-      I = 1;
+      I = 0;
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
@@ -91,6 +91,14 @@ classdef PlanarRigidBody < RigidBody
       xy = [options.x_axis'; options.y_axis']*xyz;
       body.I = mcIp(mass,xy,I);
     end    
+    
+    function [m,c,I] = getInertial(body)
+      % extract mass, center of mass, and inertia information from the
+      % spatial I matrix
+      m = body.I(3,3);
+      c = [body.I(3,1);-body.I(2,1)]/m;
+      I = body.I(1,1) - m*dot(c,c);
+    end
     
     function body = parseCollision(body,node,options)
       xyz=zeros(3,1); rpy=zeros(3,1);
