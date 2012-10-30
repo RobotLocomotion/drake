@@ -409,6 +409,17 @@ classdef RigidBodyModel
       drawGraph(A,node_names);
     end
     
+    function [m,c] = getInertial(model)
+      % return total mass and center of mass for the entire model
+      m = 0;
+      c = zeros(3,1); 
+      for i=1:length(model.body)
+        [bm,bc] = model.body.getInertial();
+        c = (m*c + bm*bc)/(m+bm);
+        m = m + bm;
+      end
+    end
+    
     function body = newBody(model)
       body = RigidBody();
     end

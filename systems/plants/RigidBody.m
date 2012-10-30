@@ -77,9 +77,24 @@ classdef RigidBody < handle
         error('rpy in inertia block not implemented yet (but would be easy)');
       end
       body.I = mcI(mass,xyz,I);
-      
     end
 
+    function [m,c,I] = getInertial(body)
+      % extract mass, center of mass, and inertia information from the
+      % spatial I matrix
+      m = body.I(6,6);
+      mC = body.I(1:3,4:6);
+      
+      function v = skew(A)
+        v = 0.5 * [ A(3,2) - A(2,3);
+          A(1,3) - A(3,1);
+          A(2,1) - A(1,2) ];      
+      end
+      
+      c = skew(mC)/m;
+      I = body.I(1:3,1:3) - mC*mC'/m;
+    end
+    
     function body = parseVisual(body,node,model,options)
       c = .7*[1 1 1];
       

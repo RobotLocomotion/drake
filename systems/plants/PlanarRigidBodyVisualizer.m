@@ -59,6 +59,22 @@ classdef PlanarRigidBodyVisualizer < Visualizer
           %h(i)=patch(xpts,ypts,co(mod(i-2,size(co,1))+1,:));
           % end debugging
         end
+        if (1) % draw extra debugging info
+          [m,c] = getInertial(body);
+          plot(body.T(1,3),body.T(2,3),'k+');
+          if (m~=0)
+            com = body.T*[c;1];
+            plot(com(1),com(2),'ro');
+            line([body.T(1,3),com(1)],[body.T(2,3),com(2)],'Color','r');
+          end
+          if ~isempty(body.parent)
+            line([body.T(1,3),body.parent.T(1,3)],[body.T(2,3),body.parent.T(2,3)],'Color','k');
+          end
+          if ~isempty(body.contact_pts)
+            pts = body.T*[body.contact_pts;ones(1,size(body.contact_pts,2))];
+            plot(pts(1,:),pts(2,:),'g*');
+          end
+        end
       end
       
       % for debugging

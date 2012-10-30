@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<robot name="myfirst">
+  <material name="blue">
+    <color rgba="0 0 1 1" />
+  </material>
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.06 0.06 1.176"/>
+      </geometry>
+      <material name="blue" />
+      <origin xyz="0.1 0 0"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.06 0.06 1.176"/>
+      </geometry>
+      <origin xyz="0.1 0 0"/>
+    </collision>
+    <inertial>
+      <mass value="10"/>
+      <origin xyz="-0.1 0 0"/>
+    </inertial>
+  </link>
+</robot>

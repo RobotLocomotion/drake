@@ -40,7 +40,11 @@ classdef DTTrajectory < Trajectory
         h=stem(obj.tt,obj.xx,'b');
       else
         if (nargin<2) plotdims=[1,2]; end
-        h=plot(obj.xx(plotdims(1),:),obj.xx(plotdims(2),:),'b.','MarkerSize',5);
+        if (length(plotdims)==1)
+          h=stem(obj.tt,obj.xx(plotdims,:),'b','MarkerSize',5);
+        else
+          h=plot(obj.xx(plotdims(1),:),obj.xx(plotdims(2),:),'b.','MarkerSize',5);
+        end
       end
     end
   end
