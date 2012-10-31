@@ -158,8 +158,8 @@ classdef PlanarRigidBody < RigidBody
       x=[];y=[];
       T3= [quat2rotmat(rpy2quat(rpy)),x0]; % intentially leave off the bottom row [0,0,0,1];
       T = [options.x_axis'; options.y_axis']*T3;
-      wrlstr='';
-      wrl_appearance_str='';
+      
+
       
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
@@ -213,7 +213,7 @@ classdef PlanarRigidBody < RigidBody
             x=pts(1,:)';y=pts(2,:)';
 
 
-case 'mesh'
+          case 'mesh'
             filename=char(thisNode.getAttribute('filename'));
             [path,name,ext] = fileparts(filename);
             path = strrep(path,'package://','');
@@ -221,16 +221,35 @@ case 'mesh'
               wrlfile = fullfile(tempdir,[name,'.wrl']);
               stl2vrml(fullfile(path,[name,ext]),tempdir);
               txt=fileread(wrlfile);
-              [~,txt]=strtok(txt,'DEF');
-              wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry %s\n\t%s}\n',txt,wrl_appearance_str)];
-            elseif strcmpi(ext,'.wrl')
-              txt = fileread(filename);
-              [~,txt]=strtok(txt,'DEF');
-              wrlstr=[wrlstr,txt];
+
+              ind=regexp(txt,'coordIndex \[([^\]]*)\]','tokens'); ind = ind{1}{1};
+              ind=strread(ind,'%d','delimiter',' ,')+1; 
+              
+              pts=regexp(txt,'point \[([^\]]*)\]','tokens'); pts = pts{1}{1};
+              pts=strread(pts,'%f','delimiter',' ,');
+              pts=reshape(pts,3,[]);
+
+%              save testmesh.mat pts ind T;
+
+              pts=T*[pts(1:3,:);ones(1,size(pts,2))];
+
+              n=max(diff(find(ind==0)));
+              if (min(diff(find(ind==0)))~=n), error('need to handle this case'); end
+              ind = reshape(ind,n,[]); ind(end,:)=[];
+
+              %% remove repeated indices (from 3D to 2D conversion)
+%              [pts,ipts,iind]=unique(pts','rows'); pts=pts';
+%              ind = iind(ind);
+
+              x=pts(1,:); x=x(ind); y=pts(2,:); y=y(ind);
+%              clf
+%              h=patch(x,y,.7*[1 1 1]);%,'EdgeColor','none');
+%              pause;
+%              delete(h);
             end
 
           case {'#text','#comment'}
-            % do nothing
+            % intentionally blank
           otherwise
             warning([char(thisNode.getNodeName()),' is not a supported element of robot/link/visual/material.']);
         end
