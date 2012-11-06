@@ -191,7 +191,7 @@ classdef PlanarRigidBody < RigidBody
               i = convhull(pts(1,:),pts(2,:));
               x=pts(1,i)';y=pts(2,i)';
               
-            elseif (options.view_axis'*T3*[0;0;1;0] > (1-1e-6)) % then it just looks like a circle
+            elseif (abs(options.view_axis'*T3*[0;0;1;0]) > (1-1e-6)) % then it just looks like a circle
               theta = 0:0.1:2*pi;
               pts = r*[cos(theta); sin(theta)] + repmat(T*[0;0;0;1],1,length(theta));
               x=pts(1,:)';y=pts(2,:)';
