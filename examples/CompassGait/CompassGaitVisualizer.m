@@ -23,6 +23,7 @@ classdef CompassGaitVisualizer < Visualizer
       a = obj.a;  b = obj.b; l = obj.l; 
       
       h = sfigure(25);
+
       set(h,'DoubleBuffer','on');
       clf;
       hold on;

@@ -25,6 +25,7 @@ classdef PlaneVisualizer < Visualizer
             hFig = sfigure(25);
             set(hFig,'DoubleBuffer', 'on');
         end
+        sfigure(hFig);
       
         %Airplane definition
         hull_scale=0.04;

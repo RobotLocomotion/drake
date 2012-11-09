@@ -48,7 +48,7 @@ classdef Visualizer < DrakeSystem
       end
       draw(obj,t,x,[]);
     end
-    
+   
     function playback(obj,xtraj)
       %   Animates the trajectory in quasi- correct time using a matlab timer
       %     optional controlobj will playback the corresponding control scopes
@@ -60,49 +60,97 @@ classdef Visualizer < DrakeSystem
         xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
       end
       
+      f = sfigure(89);
+      set(f, 'Position', [560 528 560 70]);
+      
       tspan = xtraj.getBreaks();
       t0 = tspan(1);
-      
-      tic;
-      
       ts = getSampleTime(xtraj); 
+      time_steps = (tspan(end)-tspan(1))/max(obj.display_dt,eps);
+      speed_format = 'Speed = %.3g';
+      time_format = 'Time = %.3g';
       
-      if (obj.playback_speed<=0)  % then playback as quickly as possible
-        t=tspan(1);
-        while (t<tspan(end))
-          t = tspan(1)+obj.playback_speed*toc;
+      time_slider = uicontrol('Style', 'slider', 'Min', tspan(1), 'Max', tspan(end),...
+        'Value', tspan(1), 'Position', [110, 10, 440, 20],...
+        'Callback',{@update_time_display});
+      speed_slider = uicontrol('Style', 'slider', 'Min', -3, 'Max', 1, ...
+        'Value', log10(obj.playback_speed), 'Position', [185, 35, 365, 20], ...
+        'Callback', {@update_speed});
+      speed_display = uicontrol('Style', 'text', 'Position', [90, 35, 90, 20],...
+        'String', sprintf(speed_format, obj.playback_speed));
+      rewind_button = uicontrol('Style', 'pushbutton', 'String', 'Reset', ...
+        'Position', [10, 35, 35, 20], 'Callback', {@rewind_vis});
+      play_button = uicontrol('Style', 'pushbutton', 'String', 'Play', ...
+        'Position', [50, 35, 35, 20], 'Callback', {@start_playback},...
+        'Interruptible', 'on');
+      time_display = uicontrol('Style', 'text', 'Position', [10, 10, 90, 20],...
+        'String', sprintf(time_format, tspan(1)));
+      function update_speed(source, eventdata)
+        obj.playback_speed = 10 ^ (get(speed_slider, 'Value'));
+        set(speed_display, 'String', sprintf(speed_format, obj.playback_speed));
+      end
+      function rewind_vis(source, eventdata)
+        set(time_slider, 'Value', get(time_slider, 'Min'));
+        update_time_display(time_slider, []);
+      end
+      function update_time_display(source, eventdata)
+        t = get(time_slider, 'Value');
+        set(time_display, 'String', sprintf(time_format, t));
+        obj.draw(t, xtraj.eval(t));
+      end
+      function start_playback(source, eventdata)
+        if get(play_button, 'UserData')
+          set(play_button, 'UserData', 0, 'String', 'Play');
+          return;
+        else
+          set(play_button, 'UserData', 1, 'String', 'Pause');
+        end
+%         set(stop_button, 'UserData', 0);
+        if get(time_slider, 'Value') >= (tspan(end) - 0.02)
+          set(time_slider, 'Value', get(time_slider, 'Min'));
+        end
+        tic;
+        t0 = get(time_slider, 'Value');
+        if (obj.playback_speed<=0)  % then playback as quickly as possible
+          t = t0;
+          while (t<tspan(end))
+            t = t0 + obj.playback_speed*toc;
+            if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
+            x = xtraj.eval(t);
+            set(time_slider, 'Value', t)
+            update_time_display(time_slider, [])
+            drawnow;
+            if ~get(play_button, 'UserData')
+              break;
+            end
+          end
+        else
+          ti = timer('TimerFcn',{@timer_draw},'ExecutionMode','fixedRate',...
+            'Period',max(obj.display_dt/obj.playback_speed,.01),...
+            'TasksToExecute',time_steps,'BusyMode','queue');
+          start(ti);
+          wait(ti);  % unfortunately, you can't try/catch a ctrl-c in matlab
+          delete(ti);
+        end
+        set(play_button, 'UserData', 0, 'String', 'Play');
+        function timer_draw(timerobj,event)
+          t=t0+obj.playback_speed*toc;
+          if (t>tspan(end))
+            stop(timerobj);
+            return;
+          end
           if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
           x = xtraj.eval(t);
-          obj.draw(t,x);
-          if (obj.display_time)
-            title(['t = ', num2str(t,'%.2f') ' sec']);
-          end
+          set(time_slider, 'Value', t)
+          update_time_display(time_slider, [])
           drawnow;
+          if ~get(play_button, 'UserData')
+            stop(timerobj);
+            return;
+          end
         end
-      else
-        ti = timer('TimerFcn',{@timer_draw},'ExecutionMode','fixedRate','Period',max(obj.display_dt/obj.playback_speed,.01),'TasksToExecute',(tspan(end)-tspan(1))/max(obj.display_dt,eps),'BusyMode','drop');
-        start(ti);
-        wait(ti);  % unfortunately, you can't try/catch a ctrl-c in matlab
-        delete(ti);
       end
-      
-      obj.draw(tspan(end),xtraj.eval(tspan(end)));
-      
-      function timer_draw(timerobj,event)
-        t=tspan(1)+obj.playback_speed*toc;
-        if (t>tspan(end))
-          stop(timerobj);
-          return;
-        end
-        if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
-        x = xtraj.eval(t);
-        obj.draw(t,x);
-        if (obj.display_time)
-          title(['t = ', num2str(t,'%.2f') ' sec']);
-        end
-        drawnow;
-      end
-      
+      update_time_display(time_slider, [])
     end
     
     function playbackAVI(obj,xtraj,filename)

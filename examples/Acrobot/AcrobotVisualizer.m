@@ -14,8 +14,10 @@ classdef AcrobotVisualizer < Visualizer
     end
     
     function draw(obj,t,x)
+
       % draw the acrobot
       persistent hFig L1r L1a L2r L2a;
+      
       l1=obj.l1; l2=obj.l2;
   
       if (isempty(hFig))
@@ -32,7 +34,7 @@ classdef AcrobotVisualizer < Visualizer
         L2r = (L2x.^2+L2y.^2).^.5;
         L2a = atan2(L2y,L2x);
       end
-  
+      
       sfigure(hFig);
       clf;
       

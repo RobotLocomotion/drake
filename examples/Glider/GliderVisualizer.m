@@ -35,7 +35,7 @@ classdef GliderVisualizer < Visualizer
       ct = cos(x(3)); st = sin(x(3));
       ctp = cos(x(3)+x(4)); stp = sin(x(3)+x(4));
       
-      figure(25); clf; hold on;
+      sfigure(25); clf; hold on;
       
       %cg
       plot(x(1),x(2),'ro','MarkerSize',4,'MarkerFaceColor',[1 0 0]);
