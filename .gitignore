@@ -69,3 +69,5 @@ doc/modeling.aux
 doc/modeling.tex
 doc/planning.aux
 doc/planning.tex
+examples/CompassGait/runLQR_URDF.m
+.gitignore

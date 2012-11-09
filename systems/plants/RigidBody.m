@@ -254,7 +254,7 @@ classdef RigidBody < handle
               wrlfile = fullfile(tempdir,[name,'.wrl']);
               stl2vrml(fullfile(path,[name,ext]),tempdir);
               txt=fileread(wrlfile);
-              [~,txt]=strtok(txt,'DEF');
+              [~,txt]=strtok(txt,'DEFI');
               wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry %s\n\t%s}\n',txt,wrl_appearance_str)];
 %              wrlstr=[wrlstr,sprintf('Inline { url "%s" }\n',wrlfile)];
             elseif strcmpi(ext,'.wrl')
