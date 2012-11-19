@@ -122,8 +122,8 @@ classdef RigidBody < handle
       matnode = node.getElementsByTagName('material').item(0);
       if ~isempty(matnode)
         c = parseMaterial(model,matnode,options);
-        wrl_appearance_str = sprintf('appearance Appearance { material Material { diffuseColor %f %f %f } }\n',c(1),c(2),c(3));
       end
+      wrl_appearance_str = sprintf('appearance Appearance { material Material { diffuseColor %f %f %f } }\n',c(1),c(2),c(3));
       
       if ~isempty(wrl_transform_str)
         if isempty(body.linkname)

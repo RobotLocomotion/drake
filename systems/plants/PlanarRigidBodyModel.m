@@ -304,6 +304,9 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         elseif dot(rpyaxis,model.view_axis)<0
           p=-p;
         end
+        if strcmp(options.view,'right')  % flip axis for vehicle coordinates
+          p=-p;
+        end
       else
         p=0;
       end

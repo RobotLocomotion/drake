@@ -37,7 +37,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       clf; hold on;
       
       n = obj.model.featherstone.NB;
-      q = x(1:n); qd=x(n+(1:n));
+      q = x(1:n); %qd=x(n+(1:n));
       obj.model.doKinematics(q);
       
       % for debugging:
