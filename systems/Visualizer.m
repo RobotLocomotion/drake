@@ -49,26 +49,38 @@ classdef Visualizer < DrakeSystem
       draw(obj,t,x,[]);
     end
    
-    function playback(obj,xtraj)
+    function playback(obj,xtraj,options)
       %   Animates the trajectory in quasi- correct time using a matlab timer
       %     optional controlobj will playback the corresponding control scopes
       %
       %   @param xtraj trajectory to visualize
+      %   @param options visualizer configuration:
+      %                     slider: create playback slider to control time and speed
       
       typecheck(xtraj,'Trajectory');
       if (xtraj.getOutputFrame()~=obj.getInputFrame)
         xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
       end
+
+      if nargin < 3
+        options = struct();
+      end
+      if ~isfield(options, 'slider')
+        options.slider = false;
+      end
       
       f = sfigure(89);
-      set(f, 'Position', [560 528 560 70]);
+      set(f, 'Visible', 'off');
+      set(f, 'Position', [560 400 560 70]);
       
       tspan = xtraj.getBreaks();
       t0 = tspan(1);
       ts = getSampleTime(xtraj); 
       time_steps = (tspan(end)-tspan(1))/max(obj.display_dt,eps);
+      
       speed_format = 'Speed = %.3g';
       time_format = 'Time = %.3g';
+      
       
       time_slider = uicontrol('Style', 'slider', 'Min', tspan(1), 'Max', tspan(end),...
         'Value', tspan(1), 'Position', [110, 10, 440, 20],...
@@ -85,6 +97,10 @@ classdef Visualizer < DrakeSystem
         'Interruptible', 'on');
       time_display = uicontrol('Style', 'text', 'Position', [10, 10, 90, 20],...
         'String', sprintf(time_format, tspan(1)));
+      
+      % use a little undocumented matlab to get continuous slider feedback:
+      time_slider_listener = handle.listener(time_slider,'ActionEvent',@update_time_display);  
+      
       function update_speed(source, eventdata)
         obj.playback_speed = 10 ^ (get(speed_slider, 'Value'));
         set(speed_display, 'String', sprintf(speed_format, obj.playback_speed));
@@ -151,6 +167,12 @@ classdef Visualizer < DrakeSystem
         end
       end
       update_time_display(time_slider, [])
+      
+      if options.slider
+        set(f, 'Visible', 'on');
+      else
+        start_playback([], []);
+      end
     end
     
     function playbackAVI(obj,xtraj,filename)
