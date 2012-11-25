@@ -89,8 +89,8 @@ classdef HybridRigidBodyManipulator < HybridDrakeSystem
         error('modeNum is out of range');
       end
       
-      state=rem(floor((modeNum-1)*3.^(1-nL+nC:0)),3);
-      joint_limit_state = 0*obj.joint_limit_min;
+      state=rem(floor((modeNum-1)*3.^(1-(nL+nC):0)),3);
+      joint_limit_state = zeros(length(obj.joint_limit_min),1);
       joint_limit_state(joint_w_limits) = state(1:nL);
       contact_state = state(nL+1:end);
     end
