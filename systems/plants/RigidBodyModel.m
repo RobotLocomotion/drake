@@ -149,6 +149,10 @@ classdef RigidBodyModel
             
       %% extract featherstone model structure
       model = extractFeatherstone(model,options);
+      %sanity check
+      if (model.featherstone.NB + 1 ~= length(model.body))
+        error('Expected there to be only one body without a parent (i.e. world)')
+      end
       
       %% extract B matrix
       B = sparse(model.featherstone.NB,0);
@@ -161,6 +165,7 @@ classdef RigidBodyModel
       for i=1:length(model.body)
         if ~isempty(model.body(i).parent)
           model.body(i).cached_q = nan;
+          model.body(i).cached_qd = nan;
         end
       end
     end

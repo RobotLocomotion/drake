@@ -1,4 +1,4 @@
-function [utraj,xtraj,info] = trajectoryOptimization(sys,costFun,finalCostFun,x0,utraj0,con,options)
+function [utraj,xtraj,info,trans_info] = trajectoryOptimization(sys,costFun,finalCostFun,x0,utraj0,con,options)
 % trajectoryOptimization
 %
 % This file describes the interface used by all of the trajectory
@@ -111,6 +111,8 @@ if (~isfield(options,'method')) options.method = 'dircol'; end
 switch (options.method)
   case 'dircol'
     transcriptionFun=@dircolSNOPTtranscription;
+  case 'implicitdirtran'
+    transcriptionFun=@implicitDirtranSNOPTtranscription;
   case 'rtrl'
     transcriptionFun=@rtrlSNOPTtranscription;
   case 'multipleShooting'
@@ -134,6 +136,9 @@ setSNOPTParam(options,'Major Optimality Tolerance',1e-6);
 setSNOPTParam(options,'Major Feasibility Tolerance',1e-6);
 setSNOPTParam(options,'Minor Feasibility Tolerance',1e-6);
 setSNOPTParam(options,'Superbasics Limit',200);
+setSNOPTParam(options,'Derivative Option',0);
+setSNOPTParam(options,'Verify Level',0);
+setSNOPTParam(options,'Iterations Limit',10000);
 
 
 %% Run SNOPT
@@ -151,7 +156,11 @@ if (info~=1 && options.warning)
 %   end
 end
 
-[utraj,xtraj] = wrapupfun(w);
+try
+  [utraj,xtraj,trans_info] = wrapupfun(w);
+catch
+  [utraj,xtraj] = wrapupfun(w);
+end
 
 end
 

@@ -175,14 +175,14 @@
     <child link="left_lower_leg"/>
     <axis xyz="0 1 0"/>
     <origin xyz="0 0 -0.5"/>
-    <limit effort="100" lower="-Inf" upper="0" velocity="100"/>
+    <limit effort="100" lower="0" upper="Inf" velocity="100"/>
   </joint>
   <joint name="right_knee_pin" type="revolute">
     <parent link="right_upper_leg"/>
     <child link="right_lower_leg"/>
     <axis xyz="0 1 0"/>
     <origin xyz="0 0 -0.5"/>
-    <limit effort="100" lower="-Inf" upper="0" velocity="100"/>
+    <limit effort="100" lower="0" upper="Inf" velocity="100"/>
   </joint>
   <transmission name="hip_trans" type="SimpleTransmission">
     <actuator name="hip_torque"/>
