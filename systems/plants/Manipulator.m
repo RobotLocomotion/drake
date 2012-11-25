@@ -141,6 +141,10 @@ classdef Manipulator < SecondOrderSystem
       con = [phi; J*qd; psi];  % phi=0, phidot=0, psi=0
     end
     
+    function n = getNumJointLimits(obj)
+      n = sum(obj.joint_limit_min ~= -inf) + sum(obj.joint_limit_max ~= inf);
+    end
+    
     function [phi,J,dJ] = jointLimits(obj,q)
       phi = [q-obj.joint_limit_min; obj.joint_limit_max-q]; phi=phi(~isinf(phi));
       J = [eye(obj.num_q); -eye(obj.num_q)];  

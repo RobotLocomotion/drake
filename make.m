@@ -16,6 +16,9 @@ mex realtime.cpp
 if checkDependency('eigen3_enabled')
 %  mex('-g','HandCpmex.cpp',['-I',conf.eigen3_incdir]);
   mex('HandCpmex.cpp',['-I',conf.eigen3_incdir]);
+  mex('doKinematicsmex.cpp',['-I',conf.eigen3_incdir]);
+  mex('forwardKinmex.cpp',['-I',conf.eigen3_incdir]);
+  mex('forwardKinVelmex.cpp',['-I',conf.eigen3_incdir]);
 end
 cd ..
 

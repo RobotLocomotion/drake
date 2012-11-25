@@ -1,4 +1,4 @@
-function ddTJ = dTjcalcp(jcode,q)
+function ddTJ = ddTjcalcp(jcode,q)
 % second derivative of single joint kinematic transformation for planar models
 % this is the kinematic analog to jcalcp from the spatial vector library
 

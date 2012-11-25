@@ -52,7 +52,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
       % warning:  this only works when there is a single planar rigid body model in use at any given time.
       % this simple logic attempts to guard against it.
       if checkDependency('eigen3_enabled')
-        obj.mex_model_ptr = HandCpmex(obj.model.featherstone,obj.model.gravity);
+        obj.mex_model_ptr = HandCpmex(struct(obj.model),obj.model.gravity);
       end
     end
     
@@ -61,150 +61,261 @@ classdef PlanarRigidBodyManipulator < Manipulator
       obj.mex_model_ptr = 0;
     end
     
+    function [Hqddot, dHqddot, phi, psi, dPhi, dPsi, H, dH] = implicitDynamics(obj,t,x,u,lambda,cLambda)
+      % Compute the implicit dynamics for trajectory optimization.  This
+      % function is fully implemented for joint limits and contact contraints
+      % @param obj The Manipulator object
+      % @param t Time
+      % @param x State
+      % @param u Input
+      % @param lambda Non-contact constraint forces
+      % @param cLambda Contact constraint forces
+      % @return Hqddot H(q)*qddot from the dynamics equations
+      % @return dHqddot d/dq and d/qdot of H*qddot
+      % @return phi phi(q) the contact point positions
+      % @return psi psi(q) the contact point velocities
+      % @return dPhi dphi/dq
+      % @return dPsi [dpsi/dq dpsi/dqdot]
+      
+      phi = [];
+      psi = [];
+      J = [];
+      dPsi = [];
+      % Compute H*qddot, one form of the implicit dynamics
+      
+      q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
+      nContactConst = obj.num_contacts;
+%       nonContactPConst = obj.num_bilateral_constraints - nContactConst;
+      nonContactPConst = obj.getNumJointLimits;
+      nUniPConstraints = nonContactPConst;
+      dconstraint = 0;
+      constraint = 0;
+      nClutch = 0;
+      
+      [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd);
+%       doKinematicsAndVelocities(obj.model,q,qd);
+      if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
+        doKinematicsmex(obj.mex_model_ptr,q,1)
+      else
+        doKinematics(obj.model,q,true);
+      end
+      
+      if (nUniPConstraints > 0)
+        [phi,J,dJ] = obj.jointLimits(q);
+%         dJdqlambda = zeros(obj.num_q^2,1);
+%         for i=1:obj.num_q^2,
+%           dJdqlambda(i,1) = dJ(:,i)'*lambda(1:nUniPConstraints);
+%         end
+        dJdqlambda = dJ'*lambda(1:nUniPConstraints);
+        dconstraint = [zeros(obj.num_q,1) reshape(dJdqlambda,obj.num_q,obj.num_q)...
+          zeros(obj.num_q) zeros(obj.num_q,obj.num_u) J' ...
+          zeros(obj.num_q,2*nContactConst + nonContactPConst - nUniPConstraints+nClutch)] + dconstraint;
+        constraint = constraint + J'*lambda(1:nUniPConstraints);
+      end
+      
+%       if (nonContactPConst - nUniPConstraints>0)
+%         error('Not yet implemented in trunk version');
+%         [phi,J,dJ] = obj.positionConstraints(q);
+%         dJdqlambda = zeros(obj.num_q^2,1);
+%         for i=1:obj.num_q^2,
+%           dJdqlambda(i,1) = dJ(:,i)'*lambda(nUniPConstraints+1:end);
+%         end
+%         dconstraint = [zeros(obj.num_q,1) reshape(dJdqlambda,obj.num_q,obj.num_q)...
+%           zeros(obj.num_q) zeros(obj.num_q,obj.num_u + nUniPConstraints) J' zeros(obj.num_q,2*nContactConst+nClutch)] + dconstraint;
+%         constraint = constraint + J'*lambda(nUniPConstraints+1:end);
+%       end
+      
+      if (nContactConst > 0)  
+        [phi_n,n,D,mu,dn,dD,psi,dPsi,phi_f,dPhi] = contactConstraints(obj,q,qd);
+%         [phi, psi, dPhi, dPsi, J, dJ]  = contactPositionsAndVelocities(obj,q,qd);
+        
+        %TODO: clean this up instead of just cramming into previous format
+        psi = psi(1,:)';
+        phi = zeros(2*length(phi_n),1);
+        phi(1:2:end) = phi_f;
+        phi(2:2:end) = phi_n;
+        J = zeros(length(phi), obj.num_q);
+        J(1:2:end,:) = D{1};
+        J(2:2:end,:) = n;
+        dJ = zeros(length(phi), obj.num_q^2);
+        dJ(2:2:end,:) = reshape(dn,length(phi_n),[]);
+        dJ(1:2:end,:) = reshape(dD{1},length(phi_n),[]);
+        dPsi = dPsi(1:2:end,:);
+        
+%         dJdqlambda = zeros(obj.num_q^2,1)*x(1);
+%         for i=1:obj.num_q^2,
+%           dJdqlambda(i,1) = dJ(:,i)'*cLambda;
+%         end
+        dJdqlambda = dJ'*cLambda;
+        dconstraint = [zeros(obj.num_q,1) reshape(dJdqlambda,obj.num_q,obj.num_q)...
+          zeros(obj.num_q, obj.num_q + obj.num_u + nonContactPConst) J' zeros(obj.num_q, nClutch)] + dconstraint;
+        constraint = constraint + J'*cLambda;
+      end
+      
+      dHqddot = [zeros(obj.num_q,1) -dC B ...
+        zeros(obj.num_q,nonContactPConst+2*nContactConst+nClutch)] + dconstraint;
+      
+%       if (~isempty(obj.model.passive_K) && ~isempty(obj.model.passive_B))
+%         % determine which passive joints are active
+%         active_ind = (q < obj.model.passive_max+1e-6).*(q > obj.model.passive_min-1e-6);
+%         dHqddot(:,2:(1+2*obj.num_q)) = dHqddot(:,2:(1+2*obj.num_q)) - ...
+%           [obj.model.passive_K*diag(active_ind) obj.model.passive_B*diag(active_ind)];
+%         
+%         passive_force = (-obj.model.passive_K*(q - obj.model.passive_nom) -...
+%           obj.model.passive_B*qd).*active_ind + obj.model.passive_offset;
+%         
+%         Hqddot = B*u - C + constraint + passive_force;
+%       else      
+        Hqddot = B*u - C + constraint;
+%         end
+    end
+    
     function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd)
-      m = obj.model.featherstone;
       jsign = [obj.model.body(cellfun(@(a)~isempty(a),{obj.model.body.parent})).jsign]';
       q = jsign.*q;
       qd = jsign.*qd;
-      
+        
       if (nargout>3)
-        % featherstone's HandCp with analytic gradients
-        a_grav = [0;obj.model.gravity];
-        
-        S = cell(m.NB,1);
-        Xup = cell(m.NB,1);
-      
-        v = cell(m.NB,1);
-        avp = cell(m.NB,1);
-        
-        %Derivatives
-        dXupdq = cell(m.NB,1);
-        dvdq = cell(m.NB,1);  %dvdq{i,j} is d/dq(j) v{i}
-        dvdqd = cell(m.NB,1);
-        davpdq = cell(m.NB,1);
-        davpdqd = cell(m.NB,1);
-        fvp = cell(m.NB,1);
-        dfvpdq = cell(m.NB,1);
-        dfvpdqd = cell(m.NB,1);
-      
-      
-        for i = 1:m.NB
-          dvdq{i} = zeros(3,m.NB)*q(1);
-          dvdqd{i} = zeros(3,m.NB)*q(1);
-          davpdq{i} = zeros(3,m.NB)*q(1);
-          davpdqd{i} = zeros(3,m.NB)*q(1);
-          dfvpdq{i} = zeros(3,m.NB)*q(1);
-          dfvpdqd{i} = zeros(3,m.NB)*q(1);
-
-          [ XJ, S{i} ] = jcalcp( m.jcode(i), q(i) );
-          vJ = S{i}*qd(i);
-          dvJdqd = S{i};
+        if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
+          [H,C,dH,dC] = HandCpmex(obj.mex_model_ptr,q,qd);
+        else
+          m = obj.model.featherstone;
+          % featherstone's HandCp with analytic gradients
+          a_grav = [0;obj.model.gravity];
           
-          Xup{i} = XJ * m.Xtree{i};
-          dXJdq = djcalcp(m.jcode(i), q(i));
-          dXupdq{i} = dXJdq * m.Xtree{i};
+          S = cell(m.NB,1);
+          Xup = cell(m.NB,1);
           
-          if m.parent(i) == 0
-            v{i} = vJ;
-            dvdqd{i}(:,i) = dvJdqd;
+          v = cell(m.NB,1);
+          avp = cell(m.NB,1);
           
-            avp{i} = Xup{i} * -a_grav;
-            davpdq{i}(:,i) = dXupdq{i} * -a_grav;
-          else
-            j = m.parent(i);
-            v{i} = Xup{i}*v{j} + vJ;
-            
-            dvdq{i} = Xup{i}*dvdq{j};
-            dvdq{i}(:,i) = dvdq{i}(:,i) + dXupdq{i}*v{j};
-            
-            dvdqd{i} = Xup{i}*dvdqd{j};
-            dvdqd{i}(:,i) = dvdqd{i}(:,i) + dvJdqd;
-            
-            avp{i} = Xup{i}*avp{j} + crmp(v{i})*vJ;
-            
-            davpdq{i} = Xup{i}*davpdq{j};
-            davpdq{i}(:,i) = davpdq{i}(:,i) + dXupdq{i}*avp{j};
-            for k=1:m.NB,
-              davpdq{i}(:,k) = davpdq{i}(:,k) + ...
-                dcrmp(v{i},vJ,dvdq{i}(:,k),zeros(3,1));
-            end
-            
-            dvJdqd_mat = zeros(3,m.NB);
-            dvJdqd_mat(:,i) = dvJdqd;
-            davpdqd{i} = Xup{i}*davpdqd{j} + dcrmp(v{i},vJ,dvdqd{i},dvJdqd_mat);
-          end
-          fvp{i} = m.I{i}*avp{i} + crfp(v{i})*m.I{i}*v{i};
-          dfvpdq{i} = m.I{i}*davpdq{i} + dcrfp(v{i},m.I{i}*v{i},dvdq{i},m.I{i}*dvdq{i});
-          dfvpdqd{i} = m.I{i}*davpdqd{i} + dcrfp(v{i},m.I{i}*v{i},dvdqd{i},m.I{i}*dvdqd{i});
-        end
-        
-        dC = zeros(m.NB,2*m.NB)*q(1);
-        IC = m.I;				% composite inertia calculation
-        dIC = cell(m.NB, m.NB);
-        dIC = cellfun(@(a) zeros(3), dIC,'UniformOutput',false);
-        
-        for i = m.NB:-1:1
-          C(i,1) = S{i}' * fvp{i};
-          dC(i,:) = S{i}'*[dfvpdq{i} dfvpdqd{i}];
-          if m.parent(i) ~= 0
-            fvp{m.parent(i)} = fvp{m.parent(i)} + Xup{i}'*fvp{i};
-            dfvpdq{m.parent(i)} = dfvpdq{m.parent(i)} + Xup{i}'*dfvpdq{i};
-            dfvpdq{m.parent(i)}(:,i) = dfvpdq{m.parent(i)}(:,i) + dXupdq{i}'*fvp{i};
-            dfvpdqd{m.parent(i)} = dfvpdqd{m.parent(i)} + Xup{i}'*dfvpdqd{i};
-            
-            IC{m.parent(i)} = IC{m.parent(i)} + Xup{i}'*IC{i}*Xup{i};
-            for k=1:m.NB,
-              dIC{m.parent(i),k} = dIC{m.parent(i),k} + Xup{i}'*dIC{i,k}*Xup{i};
-            end
-            dIC{m.parent(i),i} = dIC{m.parent(i),i} + ...
-              dXupdq{i}'*IC{i}*Xup{i} + Xup{i}'*IC{i}*dXupdq{i};
-          end
-        end
-        C=C+m.damping'.*qd;
-        dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
-                
-        % minor adjustment to make TaylorVar work better.
-        %H = zeros(m.NB);
-        H=zeros(m.NB)*q(1);
-        
-        %Derivatives wrt q(k)
-        dH = zeros(m.NB^2,2*m.NB)*q(1);
-        for k = 1:m.NB
+          %Derivatives
+          dXupdq = cell(m.NB,1);
+          dvdq = cell(m.NB,1);  %dvdq{i,j} is d/dq(j) v{i}
+          dvdqd = cell(m.NB,1);
+          davpdq = cell(m.NB,1);
+          davpdqd = cell(m.NB,1);
+          fvp = cell(m.NB,1);
+          dfvpdq = cell(m.NB,1);
+          dfvpdqd = cell(m.NB,1);
+          
+          
           for i = 1:m.NB
-            fh = IC{i} * S{i};
-            dfh = dIC{i,k} * S{i};  %dfh/dqk
-            H(i,i) = S{i}' * fh;
-            dH(i + (i-1)*m.NB,k) = S{i}' * dfh;
-            j = i;
-            while m.parent(j) > 0
-              if j==k,
-                dfh = Xup{j}' * dfh + dXupdq{k}' * fh;
-              else
-                dfh = Xup{j}' * dfh;
-              end
-              fh = Xup{j}' * fh;
+            dvdq{i} = zeros(3,m.NB)*q(1);
+            dvdqd{i} = zeros(3,m.NB)*q(1);
+            davpdq{i} = zeros(3,m.NB)*q(1);
+            davpdqd{i} = zeros(3,m.NB)*q(1);
+            dfvpdq{i} = zeros(3,m.NB)*q(1);
+            dfvpdqd{i} = zeros(3,m.NB)*q(1);
+            
+            [ XJ, S{i} ] = jcalcp( m.jcode(i), q(i) );
+            vJ = S{i}*qd(i);
+            dvJdqd = S{i};
+            
+            Xup{i} = XJ * m.Xtree{i};
+            dXJdq = djcalcp(m.jcode(i), q(i));
+            dXupdq{i} = dXJdq * m.Xtree{i};
+            
+            if m.parent(i) == 0
+              v{i} = vJ;
+              dvdqd{i}(:,i) = dvJdqd;
               
-              j = m.parent(j);
-              H(i,j) = S{j}' * fh;
-              H(j,i) = H(i,j);
-              dH(i + (j-1)*m.NB,k) = S{j}' * dfh;
-              dH(j + (i-1)*m.NB,k) = dH(i + (j-1)*m.NB,k);
+              avp{i} = Xup{i} * -a_grav;
+              davpdq{i}(:,i) = dXupdq{i} * -a_grav;
+            else
+              j = m.parent(i);
+              v{i} = Xup{i}*v{j} + vJ;
+              
+              dvdq{i} = Xup{i}*dvdq{j};
+              dvdq{i}(:,i) = dvdq{i}(:,i) + dXupdq{i}*v{j};
+              
+              dvdqd{i} = Xup{i}*dvdqd{j};
+              dvdqd{i}(:,i) = dvdqd{i}(:,i) + dvJdqd;
+              
+              avp{i} = Xup{i}*avp{j} + crmp(v{i})*vJ;
+              
+              davpdq{i} = Xup{i}*davpdq{j};
+              davpdq{i}(:,i) = davpdq{i}(:,i) + dXupdq{i}*avp{j};
+              for k=1:m.NB,
+                davpdq{i}(:,k) = davpdq{i}(:,k) + ...
+                  dcrmp(v{i},vJ,dvdq{i}(:,k),zeros(3,1));
+              end
+              
+              dvJdqd_mat = zeros(3,m.NB);
+              dvJdqd_mat(:,i) = dvJdqd;
+              davpdqd{i} = Xup{i}*davpdqd{j} + dcrmp(v{i},vJ,dvdqd{i},dvJdqd_mat);
+            end
+            fvp{i} = m.I{i}*avp{i} + crfp(v{i})*m.I{i}*v{i};
+            dfvpdq{i} = m.I{i}*davpdq{i} + dcrfp(v{i},m.I{i}*v{i},dvdq{i},m.I{i}*dvdq{i});
+            dfvpdqd{i} = m.I{i}*davpdqd{i} + dcrfp(v{i},m.I{i}*v{i},dvdqd{i},m.I{i}*dvdqd{i});
+          end
+          
+          dC = zeros(m.NB,2*m.NB)*q(1);
+          IC = m.I;				% composite inertia calculation
+          dIC = cell(m.NB, m.NB);
+          dIC = cellfun(@(a) zeros(3), dIC,'UniformOutput',false);
+          
+          for i = m.NB:-1:1
+            C(i,1) = S{i}' * fvp{i};
+            dC(i,:) = S{i}'*[dfvpdq{i} dfvpdqd{i}];
+            if m.parent(i) ~= 0
+              fvp{m.parent(i)} = fvp{m.parent(i)} + Xup{i}'*fvp{i};
+              dfvpdq{m.parent(i)} = dfvpdq{m.parent(i)} + Xup{i}'*dfvpdq{i};
+              dfvpdq{m.parent(i)}(:,i) = dfvpdq{m.parent(i)}(:,i) + dXupdq{i}'*fvp{i};
+              dfvpdqd{m.parent(i)} = dfvpdqd{m.parent(i)} + Xup{i}'*dfvpdqd{i};
+              
+              IC{m.parent(i)} = IC{m.parent(i)} + Xup{i}'*IC{i}*Xup{i};
+              for k=1:m.NB,
+                dIC{m.parent(i),k} = dIC{m.parent(i),k} + Xup{i}'*dIC{i,k}*Xup{i};
+              end
+              dIC{m.parent(i),i} = dIC{m.parent(i),i} + ...
+                dXupdq{i}'*IC{i}*Xup{i} + Xup{i}'*IC{i}*dXupdq{i};
+            end
+          end
+          C=C+m.damping'.*qd;
+          dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
+          
+          % minor adjustment to make TaylorVar work better.
+          %H = zeros(m.NB);
+          H=zeros(m.NB)*q(1);
+          
+          %Derivatives wrt q(k)
+          dH = zeros(m.NB^2,m.NB)*q(1);
+          for k = 1:m.NB
+            for i = 1:m.NB
+              fh = IC{i} * S{i};
+              dfh = dIC{i,k} * S{i};  %dfh/dqk
+              H(i,i) = S{i}' * fh;
+              dH(i + (i-1)*m.NB,k) = S{i}' * dfh;
+              j = i;
+              while m.parent(j) > 0
+                if j==k,
+                  dfh = Xup{j}' * dfh + dXupdq{k}' * fh;
+                else
+                  dfh = Xup{j}' * dfh;
+                end
+                fh = Xup{j}' * fh;
+                
+                j = m.parent(j);
+                H(i,j) = S{j}' * fh;
+                H(j,i) = H(i,j);
+                dH(i + (j-1)*m.NB,k) = S{j}' * dfh;
+                dH(j + (i-1)*m.NB,k) = dH(i + (j-1)*m.NB,k);
+              end
             end
           end
         end
-        
         B = obj.model.B;
-        dB = zeros(m.NB*obj.num_u,2*m.NB);
-        
+        dB = zeros(obj.num_q*obj.num_u,2*obj.num_q);
         dH = dH*diag([jsign;jsign]);
         dC = diag(jsign)*dC*diag([jsign;jsign]);
       else
         if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
           [H,C] = HandCpmex(obj.mex_model_ptr,q,qd);
         else
-          [H,C] = HandCp(m,q,qd,{},obj.model.gravity);
+          [H,C] = HandCp(obj.model.featherstone,q,qd,{},obj.model.gravity);
         end
-        C=C+m.damping'.*qd;
+%         C=C+m.damping'.*qd;
         B = obj.model.B;
       end
       C = jsign.*C;
@@ -254,7 +365,46 @@ classdef PlanarRigidBodyManipulator < Manipulator
       end
     end
     
-    function [phi,n,D,mu,dn,dD] = contactConstraints(obj,q)
+    function [x,J,dJ] = forwardKin(obj,body_ind,pts)
+      if nargout > 2
+        if (obj.mex_model_ptr && isnumeric(pts))
+          [x,J,dJ] = forwardKinmex(obj.mex_model_ptr,body_ind-1,pts);
+        else
+          [x,J,dJ] = forwardKin(obj.model.body(body_ind),pts);
+        end
+      elseif nargout > 1
+        if (obj.mex_model_ptr && isnumeric(pts))
+          [x,J] = forwardKinmex(obj.mex_model_ptr,body_ind-1,pts);
+        else
+          [x,J] = forwardKin(obj.model.body(body_ind),pts);
+        end
+        
+      else
+        if (obj.mex_model_ptr && isnumeric(pts))
+          [x,J] = forwardKinmex(obj.mex_model_ptr,body_ind-1,pts);
+        else
+          [x,J] = forwardKin(obj.model.body(body_ind),pts);
+        end
+      end
+    end
+    
+    function [v,dv] = forwardKinVel(obj,body_ind,pts,qd)
+      if nargout > 1
+        if (obj.mex_model_ptr && isnumeric(qd))
+          [v,dv] = forwardKinVelmex(obj.mex_model_ptr,body_ind-1,pts,qd);
+        else
+          [v,dv] = forwardKinVel(obj.model.body(body_ind),pts,qd);
+        end
+      else
+        if (obj.mex_model_ptr && isnumeric(qd))
+          v = forwardKinVelmex(obj.mex_model_ptr,body_ind-1,pts,qd);
+        else
+          v = forwardKinVel(obj.model.body(body_ind),pts,qd);
+        end
+      end
+    end
+    
+    function [phi,n,D,mu,dn,dD,psi,dPsi,phi_f,dPhi] = contactConstraints(obj,q,qd)
       % 
       % @retval phi  phi(i,1) is the signed distance from the contact
       % point on the robot to the closes object in the world.
@@ -263,24 +413,45 @@ classdef PlanarRigidBodyManipulator < Manipulator
       % @retval D parameterization of the polyhedral approximation of the 
       %    friction cone, in joint coordinates (figure 1 from Stewart96)
       %    D{k}(i,:) is the kth direction vector for the ith contact (of nC)
-      % @retval mu mu(i,1) is the coefficient of friction for the ith contact 
+      % @retval mu mu(i,1) is the coefficient of friction for the ith contact
+      % @retval psi the planar velocity of the contacts (x1,z1,x2,z2,...)
+  
+      if (nargout > 6)
+        contact_vel = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar  
+        dv = zeros(2*obj.num_contacts,2*obj.num_q)*q(1);
+      else
+      end
+      if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
+        doKinematicsmex(obj.mex_model_ptr,q,1)
+      else
+        doKinematics(obj.model,q,nargout>4);
+      end
 
-      doKinematics(obj.model,q,nargout>4);
-        
       contact_pos = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar
-      if (nargout>1) J = zeros(2*obj.num_contacts,obj.num_q)*q(1); end
+      if (nargout>1) 
+        J = zeros(2*obj.num_contacts,obj.num_q)*q(1); 
+      end
+      
       count=0;
-      for i=1:length(obj.model.body)
-        body = obj.model.body(i);
-        nC = size(body.contact_pts,2);
+%       nBodies = length(obj.model.body);
+      nBodies = obj.model.featherstone.NB + 1;
+      for i=1:nBodies;
+%         body = obj.model.body(i);
+        contact_pts = obj.model.body(i).contact_pts;
+        nC = size(contact_pts,2);
         if nC>0
           if (nargout>4)
-            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
-          elseif (nargout>1)
-            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(body,body.contact_pts);
-          else
-            contact_pos(:,count+(1:nC)) = forwardKin(body,body.contact_pts);
+ [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(obj,i,contact_pts);
+        elseif (nargout>1)
+            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(obj,i,contact_pts);
+            else
+            [contact_pos(:,count+(1:nC))] = forwardKin(obj,i,contact_pts);
+            end
+          
+          if (nargout>6)
+            [contact_vel(:,count+(1:nC)),dv(2*count+(1:2*nC),:)] = forwardKinVel(obj,i,contact_pts,qd);
           end
+          
           count = count + nC;
         end
       end
@@ -293,20 +464,23 @@ classdef PlanarRigidBodyManipulator < Manipulator
       
       relpos = contact_pos - pos;
       s = sign(sum(relpos.*normal,1));
-      phi = (sqrt(sum(relpos.^2,1)).*s)';
+%       phi = (sqrt(sum(relpos.^2,1)).*s)'; %replaced this with normal
+%       distance
+      %% compute a tangent vector, t
+      % for each n, it looks like:
+      % if (abs(normal(2))>abs(normal(1))) t = [1,-n(1)/n(2)];  
+      % else t = [-n(2)/n(1),1]; end
+      % and the vectorized form is:
+      t=normal; % initialize size
+      ind=abs(normal(2,:))>abs(normal(1,:));
+      t(:,ind) = [ones(1,sum(ind));-normal(1,ind)./normal(2,ind)];
+      ind=~ind;
+      t(:,ind) = [-normal(2,ind)./normal(1,ind); ones(1,sum(ind))];
+      t = t./repmat(sqrt(sum(t.^2,1)),2,1); % normalize
+      
+      phi = sum(relpos.*normal)';
+      phi_f = sum(relpos.*t)';
       if (nargout>1)
-        %% compute a tangent vector, t
-        % for each n, it looks like:
-        % if (abs(normal(2))>abs(normal(1))) t = [1,-n(1)/n(2)];  
-        % else t = [-n(2)/n(1),1]; end
-        % and the vectorized form is:
-        t=normal; % initialize size
-        ind=abs(normal(2,:))>abs(normal(1,:));
-        t(:,ind) = [ones(1,sum(ind));-normal(1,ind)./normal(2,ind)];
-        ind=~ind;
-        t(:,ind) = [-normal(2,ind)./normal(1,ind); ones(1,sum(ind))];
-        t = t./repmat(sqrt(sum(t.^2,1)),2,1); % normalize
-
         % recall that dphidx = normal'; n = dphidq = dphidx * dxdq
         % for a single contact, we'd have
         % n = normal'*J;
@@ -332,8 +506,20 @@ classdef PlanarRigidBodyManipulator < Manipulator
           dD{1} = reshape(sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,t(:))*dJ,prod(size(n)),[]);
           dD{2} = -dD{1};
         end
-
+        %TODO: if the object being collided with is movable, then need it's
+        %gradient as well here
+        if (nargout>6)
+          rel_vel = contact_vel - vel;
+          % normal velocities sum(contact_vel.*t)
+          psi = [sum(rel_vel.*t);sum(rel_vel.*normal)];
+          dPsi = zeros(size(dv));
+          dPsi(1:2:end,:) = reshape(sum(reshape(repmat(t(:),1,2*obj.num_q).*dv,2,[]),1),size(t,2),[]);
+          dPsi(2:2:end,:) = reshape(sum(reshape(repmat(normal(:),1,2*obj.num_q).*dv,2,[]),1),size(t,2),[]);
+        end
       end
+      dPhi = zeros(2*length(phi), obj.num_q);
+      dPhi(1:2:end,:) = D{1};
+      dPhi(2:2:end,:) = n;
     end
 
     function [pos,vel,normal,mu] = collisionDetect(obj,contact_pos)

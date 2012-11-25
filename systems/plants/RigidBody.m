@@ -25,9 +25,12 @@ classdef RigidBody < handle
     
     % dynamic properties (e.g. state at runtime)
     cached_q=[];  % the current kinematics were computed using these q and qd values 
+    cached_qd=[]
     T = eye(4);  % transformation from this body to world coordinates
     dTdq = [];
     ddTdqdq = [];
+    Tdot = [];
+    dTdotdqqd = [];
   end
   
   methods    
