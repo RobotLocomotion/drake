@@ -115,6 +115,9 @@ classdef Visualizer < DrakeSystem
         obj.draw(t, xtraj.eval(t));
       end
       function start_playback(source, eventdata)
+        if ~ishandle(play_button) 
+          error('somebody deleted my uicontrols.  draw functions should not call clf without creating their own figure (it''s bad form)');
+        end
         if get(play_button, 'UserData')
           set(play_button, 'UserData', 0, 'String', 'Play');
           return;

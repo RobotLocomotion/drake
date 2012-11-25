@@ -390,7 +390,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
     end
     
     function [v,dv] = forwardKinVel(obj,body_ind,pts,qd,use_mex_if_possible)
-      if (nargin<4) use_mex_if_possible = true; end
+      if (nargin<5) use_mex_if_possible = true; end
       if nargout > 1
         if (use_mex_if_possible && obj.mex_model_ptr && isnumeric(qd))
           [v,dv] = forwardKinVelmex(obj.mex_model_ptr,body_ind-1,pts,qd);

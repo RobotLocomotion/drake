@@ -1,6 +1,5 @@
 function [xtraj,utraj,ltraj,v,p]=runVarTimeDirtran(xtraj_init, utraj_init, ltraj_init)
 
-% p = AcrobotPlant();
 p = PlanarRigidBodyManipulator('KneedCompassGait.urdf');
 N = 30;
 q0 = [0; 1; 0; 0;0;0;];
@@ -134,16 +133,11 @@ tic
 
 ltraj = xtraj.ltraj;
 xtraj = xtraj.xtraj;
-% if (info~=1) error('failed to find a trajectory'); end
 toc
 
-% t = xtraj.getBreaks();
-% t = linspace(t(1),t(end),100);
-% x = xtraj.eval(t);
-% plot(x(1,:),x(2,:));
-
+if (info~=1) error('failed to find a trajectory'); end
 v = p.constructVisualizer;
-% playback(v,xtraj);
+playback(v,xtraj);
 
 end
 

@@ -192,7 +192,7 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function [phi,n,D,mu] = contactConstraints(obj,q)
+    function [phi,n,D,mu] = contactConstraints(obj,q,qd)
       % 
       % @retval phi  phi(i,1) is the signed distance from the contact
       % point on the robot to the closes object in the world.

@@ -10,6 +10,7 @@ methods
   
   function draw(obj,t,x)
     xs=linspace(-1.75,1.75,50);
+    sfigure(25);
     clf;
     plot(xs,obj.hill(xs),'LineWidth',2,'Color','k');
     hold on;
