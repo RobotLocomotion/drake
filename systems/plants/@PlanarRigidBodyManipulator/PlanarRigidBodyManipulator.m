@@ -307,7 +307,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
         end
         B = obj.model.B;
         dB = zeros(obj.num_q*obj.num_u,2*obj.num_q);
-        dH = dH*diag([jsign;jsign]);
+        dH = dH*diag(jsign);
         dC = diag(jsign)*dC*diag([jsign;jsign]);
       else
         if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
@@ -315,7 +315,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
         else
           [H,C] = HandCp(obj.model.featherstone,q,qd,{},obj.model.gravity);
         end
-%         C=C+m.damping'.*qd;
+        C=C+obj.model.featherstone.damping'.*qd;
         B = obj.model.B;
       end
       C = jsign.*C;
@@ -365,22 +365,23 @@ classdef PlanarRigidBodyManipulator < Manipulator
       end
     end
     
-    function [x,J,dJ] = forwardKin(obj,body_ind,pts)
+    function [x,J,dJ] = forwardKin(obj,body_ind,pts,use_mex_if_possible)
+      if (nargin<4) use_mex_if_possible = true; end
       if nargout > 2
-        if (obj.mex_model_ptr && isnumeric(pts))
+        if (use_mex_if_possible && obj.mex_model_ptr && isnumeric(pts))
           [x,J,dJ] = forwardKinmex(obj.mex_model_ptr,body_ind-1,pts);
         else
           [x,J,dJ] = forwardKin(obj.model.body(body_ind),pts);
         end
       elseif nargout > 1
-        if (obj.mex_model_ptr && isnumeric(pts))
+        if (use_mex_if_possible && obj.mex_model_ptr && isnumeric(pts))
           [x,J] = forwardKinmex(obj.mex_model_ptr,body_ind-1,pts);
         else
           [x,J] = forwardKin(obj.model.body(body_ind),pts);
         end
         
       else
-        if (obj.mex_model_ptr && isnumeric(pts))
+        if (use_mex_if_possible && obj.mex_model_ptr && isnumeric(pts))
           [x,J] = forwardKinmex(obj.mex_model_ptr,body_ind-1,pts);
         else
           [x,J] = forwardKin(obj.model.body(body_ind),pts);
@@ -388,15 +389,16 @@ classdef PlanarRigidBodyManipulator < Manipulator
       end
     end
     
-    function [v,dv] = forwardKinVel(obj,body_ind,pts,qd)
+    function [v,dv] = forwardKinVel(obj,body_ind,pts,qd,use_mex_if_possible)
+      if (nargin<4) use_mex_if_possible = true; end
       if nargout > 1
-        if (obj.mex_model_ptr && isnumeric(qd))
+        if (use_mex_if_possible && obj.mex_model_ptr && isnumeric(qd))
           [v,dv] = forwardKinVelmex(obj.mex_model_ptr,body_ind-1,pts,qd);
         else
           [v,dv] = forwardKinVel(obj.model.body(body_ind),pts,qd);
         end
       else
-        if (obj.mex_model_ptr && isnumeric(qd))
+        if (use_mex_if_possible && obj.mex_model_ptr && isnumeric(qd))
           v = forwardKinVelmex(obj.mex_model_ptr,body_ind-1,pts,qd);
         else
           v = forwardKinVel(obj.model.body(body_ind),pts,qd);
@@ -419,12 +421,13 @@ classdef PlanarRigidBodyManipulator < Manipulator
       if (nargout > 6)
         contact_vel = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar  
         dv = zeros(2*obj.num_contacts,2*obj.num_q)*q(1);
-      else
       end
-      if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
-        doKinematicsmex(obj.mex_model_ptr,q,1)
+      if (obj.mex_model_ptr && isnumeric(q) && (nargin<3 || isnumeric(qd)))
+        doKinematicsmex(obj.mex_model_ptr,q,1);
+        use_mex = true;
       else
         doKinematics(obj.model,q,nargout>4);
+        use_mex = false;
       end
 
       contact_pos = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar
@@ -441,15 +444,15 @@ classdef PlanarRigidBodyManipulator < Manipulator
         nC = size(contact_pts,2);
         if nC>0
           if (nargout>4)
- [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(obj,i,contact_pts);
-        elseif (nargout>1)
-            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(obj,i,contact_pts);
-            else
-            [contact_pos(:,count+(1:nC))] = forwardKin(obj,i,contact_pts);
-            end
+            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(obj,i,contact_pts,use_mex);
+          elseif (nargout>1)
+            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(obj,i,contact_pts,use_mex);
+          else
+            [contact_pos(:,count+(1:nC))] = forwardKin(obj,i,contact_pts,use_mex);
+          end
           
           if (nargout>6)
-            [contact_vel(:,count+(1:nC)),dv(2*count+(1:2*nC),:)] = forwardKinVel(obj,i,contact_pts,qd);
+            [contact_vel(:,count+(1:nC)),dv(2*count+(1:2*nC),:)] = forwardKinVel(obj,i,contact_pts,qd,use_mex);
           end
           
           count = count + nC;
@@ -515,11 +518,11 @@ classdef PlanarRigidBodyManipulator < Manipulator
           dPsi = zeros(size(dv));
           dPsi(1:2:end,:) = reshape(sum(reshape(repmat(t(:),1,2*obj.num_q).*dv,2,[]),1),size(t,2),[]);
           dPsi(2:2:end,:) = reshape(sum(reshape(repmat(normal(:),1,2*obj.num_q).*dv,2,[]),1),size(t,2),[]);
+          dPhi = zeros(2*length(phi), obj.num_q);
+          dPhi(1:2:end,:) = D{1};
+          dPhi(2:2:end,:) = n;
         end
       end
-      dPhi = zeros(2*length(phi), obj.num_q);
-      dPhi(1:2:end,:) = D{1};
-      dPhi(2:2:end,:) = n;
     end
 
     function [pos,vel,normal,mu] = collisionDetect(obj,contact_pos)

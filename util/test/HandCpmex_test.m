@@ -3,7 +3,7 @@ function HandCpmex_test
 m = PlanarRigidBodyModel('../../examples/Acrobot/Acrobot.urdf');
 %m = PlanarRigidBodyModel('/Users/russt/locomotion/drc/ros_workspace/atlas_description/urdf/atlas_robot.urdf');
 
-ptr=HandCpmex(m.featherstone,m.gravity);
+ptr=HandCpmex(struct(m),m.gravity);
 
 for i=1:1000
   q = randn(m.featherstone.NB,1);

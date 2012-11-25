@@ -43,7 +43,7 @@ classdef HybridRigidBodyMode < PlanarRigidBodyManipulator
     
 %    function [psi,J] = velocityConstraints(obj,q,qd)
     function psi = velocityConstraints(obj,q,qd)
-      [phi,n,D] = contactConstraints(obj,q);
+      [phi,n,D] = contactConstraints(obj,q,qd);
       psi = D{1}(obj.contact_state==1,:)*qd;
     end
     
