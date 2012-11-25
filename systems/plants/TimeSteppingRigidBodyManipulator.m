@@ -163,7 +163,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         dM = zeros(size(M,1),size(M,2),1+2*num_q+obj.num_u);
         dw = zeros(size(w,1),1+2*num_q+obj.num_u);
         dwqdn = [zeros(num_q,1+num_q),eye(num_q),zeros(num_q,obj.num_u)] + ...
-          h*Hinv*dtau - [zeros(num_q,1),h*Hinv*matGradMult(dH,Hinv*tau),zeros(num_q,obj.num_u)];
+          h*Hinv*dtau - [zeros(num_q,1),h*Hinv*matGradMult(dH,Hinv*tau),zeros(num_q,num_q),zeros(num_q,obj.num_u)];
         dJtranspose = reshape(permute(reshape(dJ,size(J,1),size(J,2),[]),[2,1,3]),prod(size(J)),[]);
         dMqdn = [zeros(prod(size(Mqdn)),1),reshape(Hinv*reshape(dJtranspose - matGradMult(dH(:,1:num_q),Hinv*J'),num_q,[]),prod(size(Mqdn)),[]),zeros(prod(size(Mqdn)),num_q+obj.num_u)];
       end
