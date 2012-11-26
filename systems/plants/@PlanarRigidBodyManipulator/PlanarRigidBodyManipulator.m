@@ -174,12 +174,12 @@ classdef PlanarRigidBodyManipulator < Manipulator
       jsign = [obj.model.body(cellfun(@(a)~isempty(a),{obj.model.body.parent})).jsign]';
       q = jsign.*q;
       qd = jsign.*qd;
+      m = obj.model.featherstone;
         
       if (nargout>3)
         if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
           [H,C,dH,dC] = HandCpmex(obj.mex_model_ptr,q,qd);
         else
-          m = obj.model.featherstone;
           % featherstone's HandCp with analytic gradients
           a_grav = [0;obj.model.gravity];
           
@@ -272,8 +272,6 @@ classdef PlanarRigidBodyManipulator < Manipulator
                 dXupdq{i}'*IC{i}*Xup{i} + Xup{i}'*IC{i}*dXupdq{i};
             end
           end
-          C=C+m.damping'.*qd;
-          dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
           
           % minor adjustment to make TaylorVar work better.
           %H = zeros(m.NB);
@@ -305,10 +303,13 @@ classdef PlanarRigidBodyManipulator < Manipulator
             end
           end
         end
+        dH = dH*diag(jsign);
+        C=C+m.damping'.*qd;
+        dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
+        C = jsign.*C;
+        dC = diag(jsign)*dC*diag([jsign;jsign]);
         B = obj.model.B;
         dB = zeros(obj.num_q*obj.num_u,2*obj.num_q);
-        dH = dH*diag(jsign);
-        dC = diag(jsign)*dC*diag([jsign;jsign]);
       else
         if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
           [H,C] = HandCpmex(obj.mex_model_ptr,q,qd);
@@ -316,9 +317,9 @@ classdef PlanarRigidBodyManipulator < Manipulator
           [H,C] = HandCp(obj.model.featherstone,q,qd,{},obj.model.gravity);
         end
         C=C+obj.model.featherstone.damping'.*qd;
+        C = jsign.*C;
         B = obj.model.B;
       end
-      C = jsign.*C;
     end
     
     function phi = positionConstraints(obj,q)
