@@ -35,7 +35,7 @@ classdef FeedbackSystem < DrakeSystem
       obj = setNumStateConstraints(obj,sys1.getNumStateConstraints()+sys2.getNumStateConstraints());
       obj = setSampleTime(obj,[sys1.getSampleTime(),sys2.getSampleTime()]);
 
-%      obj = setInputFrame(obj,sys1.getInputFrame());
+      obj = setInputFrame(obj,sys1.getInputFrame());
       obj = setOutputFrame(obj,sys1.getOutputFrame());
       if (sys1.getNumStates==0) 
         obj = setStateFrame(obj,sys2.getStateFrame());

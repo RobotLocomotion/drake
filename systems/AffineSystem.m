@@ -216,7 +216,7 @@ classdef AffineSystem < PolynomialSystem
       
       sys = AffineSystem(Ac,Bc,xcdot0,Ad,Bd,xdn0,C,D,y0);
       
-%      sys = setInputFrame(sys,sys1.getInputFrame());
+      sys = setInputFrame(sys,sys1.getInputFrame());
       sys = setOutputFrame(sys,sys1.getOutputFrame());
       if (sys1.getNumStates==0) 
         sys = setStateFrame(sys,sys2.getStateFrame());
