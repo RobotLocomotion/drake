@@ -213,7 +213,7 @@ classdef PolynomialSystem < DrakeSystem
         error('polynomialsystems aren''t supposed to have zero crossings'); 
       end
       
-      input_frame = CoordinateFrame('FeedbackInput',sys1.getInputFrame.dim,'u'); %sys1.getInputFrame();
+      input_frame = sys1.getInputFrame();
       output_frame = sys1.getOutputFrame();
       if (sys1.getNumStates==0) 
         state_frame = sys2.getStateFrame();

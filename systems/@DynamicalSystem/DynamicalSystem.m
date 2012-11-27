@@ -168,7 +168,7 @@ classdef DynamicalSystem
       add_line(mdl,'system1/1','out/1');
       
       newsys = SimulinkModel(mdl,sys1.getNumInputs);
-%      newsys = setInputFrame(newsys,getInputFrame(sys1));
+      newsys = setInputFrame(newsys,getInputFrame(sys1));
       if (getNumStates(sys2)==0)
         newsys = setStateFrame(newsys,getStateFrame(sys1));
       elseif (getNumStates(sys1)==0)
