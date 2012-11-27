@@ -193,19 +193,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
       
       %% Bilateral Position Constraints:
-      % roughly equivalent to eq7, line 2
-      %  but instead of asking for phidothat[k+1] = 0, i'm asking for
-      %  phiPdothat[k+1] = -alpha phiPhat[k+1]  which yields (where alpha
-      %  is the "time constant" of the response).
-      %  JP*qdot[k+1] = - alpha (phiP[k] + h*JP*qdot[k+1]) or 
-      %  alpha * phiP + (1-alpha*h)*JP*qdot[k+1] = 0
+      % enforcing eq7, line 2
       if (nP > 0)
-        alpha = 10;  % 1/timeconstant of the (DT) response
-        w(nL+(1:nP)) = alpha*phiP + (1-alpha*h)*JP*wqdn;
-        M(nL+(1:nP),:) = (1-alpha*h)*JP*Mqdn;
+        w(nL+(1:nP)) = phiP + h*JP*wqdn;
+        M(nL+(1:nP),:) = h*JP*Mqdn;
         active(nL+(1:nP)) = true;
         if (nargout>1)
-          error('need to update this with new version of the constraint (using alpha)'); 
           dJP = [zeros(prod(size(JP)),1),reshape(dJP,prod(size(JP)),[]),zeros(prod(size(JP)),num_q+obj.num_u)];
           dw(nL+(1:nP),:) = [zeros(size(JP,1),1),JP,zeros(size(JP,1),num_q+obj.num_u)] + h*matGradMultMat(JP,wqdn,dJP,dwqdn);
           dM(nL+(1:nP),1:size(Mqdn,2),:) = reshape(h*matGradMultMat(JP,Mqdn,dJP,qMqdn),nP,size(Mqdn,2),[]);
