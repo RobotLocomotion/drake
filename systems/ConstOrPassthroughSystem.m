@@ -7,6 +7,12 @@ classdef ConstOrPassthroughSystem < AffineSystem
   
   methods 
     function obj = ConstOrPassthroughSystem(const_y, num_u)
+      if (isa(const_y,'Point'))
+        outframe = const_y.getFrame();
+        const_y = double(const_y);
+      else 
+        outframe=[];
+      end
       typecheck(const_y,'double');
       if (~isvector(const_y)) error('const_y must be a vector'); end
       n=length(const_y); 
@@ -15,6 +21,9 @@ classdef ConstOrPassthroughSystem < AffineSystem
       D=zeros(n,num_u);  D(~ind,~ind)=eye(sum(~ind));
       y0=zeros(n,1); y0(ind)=const_y(ind);
       obj = obj@AffineSystem([],[],[],[],[],[],[],D,y0);
+      if ~isempty(outframe)
+        obj = setOutputFrame(obj,outframe);
+      end
     end
   end
 end
