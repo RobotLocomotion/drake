@@ -1,4 +1,18 @@
-function [xtraj,utraj,ltraj,v,p]=runDirtran(xtraj_init, utraj_init, ltraj_init,alphamult,betamult)
+function runDirtran
+
+% run dirtran multiple times, reducing slack variable tolerance to zero:
+[xtraj,utraj,ltraj,v,p]=runDirtranIteration;
+[xtraj,utraj,ltraj,v,p]=runDirtranIteration(xtraj, utraj, ltraj,.1,.1);
+[xtraj,utraj,ltraj,v,p]=runDirtranIteration(xtraj, utraj, ltraj,.01,.01);
+[xtraj,utraj,ltraj,v,p]=runDirtranIteration(xtraj, utraj, ltraj,1e-3,1e-3);
+[xtraj,utraj,ltraj,v,p]=runDirtranIteration(xtraj, utraj, ltraj,0,0,1000);
+%v.playback(xtraj,struct('slider',true));
+v.playback(xtraj);
+
+end
+
+
+function [xtraj,utraj,ltraj,v,p]=runDirtranIteration(xtraj_init, utraj_init, ltraj_init,alphamult,betamult,maxIter)
 
 p = PlanarRigidBodyManipulator('KneedCompassGait.urdf');
 N = 30;
@@ -121,7 +135,11 @@ options.method='implicitdirtran';
 options.MinorFeasibilityTolerance = 1e-6;
 options.MajorFeasibilityTolerance = 1e-6;
 options.MajorOptimalityTolerance = 5e-6;
-options.MajorIterationsLimit = 100;
+if nargin > 5
+  options.MajorIterationsLimit = maxIter;
+else
+  options.MajorIterationsLimit = 100;
+end
 options.IterationsLimit = 50000;
 options.VerifyLevel=0;
 options.SuperbasicsLimit=3000;
