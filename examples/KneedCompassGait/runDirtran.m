@@ -1,4 +1,4 @@
-function [xtraj,utraj,ltraj,v,p]=runVarTimeDirtran(xtraj_init, utraj_init, ltraj_init)
+function [xtraj,utraj,ltraj,v,p]=runDirtran(xtraj_init, utraj_init, ltraj_init,alphamult,betamult)
 
 p = PlanarRigidBodyManipulator('KneedCompassGait.urdf');
 N = 30;
@@ -89,7 +89,7 @@ else
 
   traj0.x = traj0.x.setOutputFrame(p.getStateFrame);
 end
-con.fixtime = 2;
+con.fixtime = 1;
 con.u.lb = p.umin;
 con.u.ub = p.umax;
 con.x0.lb = [x0(1:5);-inf; -inf; 0; -inf(4,1)];
@@ -101,8 +101,17 @@ con.T.lb = 1;
 con.T.ub = 6;
 con.noflight = 1;
 
-con.alphamult = 1;
-con.betamult = .01;
+if nargin > 3
+  con.alphamult = alphamult;
+else
+  con.alphamult = 1;
+end
+ 
+if nargin > 4
+  con.betamult = betamult;
+else
+  con.betamult = 1;
+end
 
 options.traj0 = traj0;
 
@@ -112,7 +121,7 @@ options.method='implicitdirtran';
 options.MinorFeasibilityTolerance = 1e-6;
 options.MajorFeasibilityTolerance = 1e-6;
 options.MajorOptimalityTolerance = 5e-6;
-options.MajorIterationsLimit = 10;
+options.MajorIterationsLimit = 100;
 options.IterationsLimit = 50000;
 options.VerifyLevel=0;
 options.SuperbasicsLimit=3000;
@@ -133,11 +142,18 @@ tic
 
 ltraj = xtraj.ltraj;
 xtraj = xtraj.xtraj;
+% if (info~=1) error('failed to find a trajectory'); end
 toc
 
-if (info~=1) error('failed to find a trajectory'); end
+% t = xtraj.getBreaks();
+% t = linspace(t(1),t(end),100);
+% x = xtraj.eval(t);
+% plot(x(1,:),x(2,:));
+
 v = p.constructVisualizer;
-playback(v,xtraj);
+if (nargout<1)
+  playback(v,xtraj,struct('slider',true));
+end
 
 end
 

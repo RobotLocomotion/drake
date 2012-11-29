@@ -1,19 +1,6 @@
 function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,iname,oname] = implicitDirtranSNOPTtranscription(sys,costFun,finalCostFun,x0,utraj0,con,options)
-% Direct collocation method.  
 %  This function should not be called directly.  Use the
 %  trajectoryOptimization interface. 
-%
-%  I use the algorithm as described in Enright91 and Hargraves86
-%  Basic algorithm:  
-%    u(t) is represented as a first-order spline
-%    xc(t) is represented as a cubic spline
-%    xd(t) is represented as a zero-order spline (zoh)
-%  At every knot point, add a constraint enforcing the derivatives and
-%  updates to match the spline derivatives, etc.
-%
-%  Since I don't know many details about the model (e.g. hybrid events
-%  can be hidden), this implementation assumes things are smooth and tries
-%  to power through unknown difficulties.  
 
 if (~isfield(options,'xtape0')) options.xtape0='free'; end
 % nL = sys.num_bilateral_constraints - sys.getNumContacts;
@@ -258,10 +245,11 @@ if options.trimgrad
     
     userfun = @(w) dirtran_userfun(sys,w,costFun,finalCostFun,t,nX,nU,nL,nC,nClutch,con,options);
     
-    fprintf('Checked and removed %d out of %d total sparse gradient elements',length(grad_skip),length(jGvar));
+    fprintf('Checked and removed %d out of %d total sparse gradient elements\n',length(grad_skip),length(jGvar));
+  else
+    fprintf('Removed %d out of %d total sparse gradient elements\n',length(options.grad_skip),length(jGvar));  
   end
   userfun = @(w) dirtran_userfun(sys,w,costFun,finalCostFun,t,nX,nU,nL,nC,nClutch,con,options);
-  fprintf('Removed %d out of %d total sparse gradient elements',length(options.grad_skip),length(jGvar));
   jGvar = jGvar(options.grad_I);
   iGfun = iGfun(options.grad_I);
 else
@@ -439,14 +427,14 @@ function [f,G] = dirtran_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,nL,nC,nC
     %Unilateral position constraints
     if nL > 0
       nJointLimitConst = sys.getNumJointLimits;
-      
+      jointLimitMult = 10;
       % Handle Joint Limit constraints first
       if (nJointLimitConst > 0)
         [phi,J] = sys.jointLimits(x(1:num_q,i+1));
         for j=1:nJointLimitConst,
-          d_i(nX+1+(j-1)*2) = lambda(j,i+1) * phi(j);
-          dd_i(nX+1+(j-1)*2,1+2*nX+2*nU+nL+2*nC+nClutch+j) = phi(j);
-          dd_i(nX+1+(j-1)*2,(1:num_q)+1+nX+nU+nL+2*nC+nClutch) = lambda(j,i+1) * J(j,:);
+          d_i(nX+1+(j-1)*2) = lambda(j,i+1) * phi(j) * jointLimitMult;
+          dd_i(nX+1+(j-1)*2,1+2*nX+2*nU+nL+2*nC+nClutch+j) = phi(j) * jointLimitMult;
+          dd_i(nX+1+(j-1)*2,(1:num_q)+1+nX+nU+nL+2*nC+nClutch) = lambda(j,i+1) * J(j,:) * jointLimitMult;
           
           d_i(nX+2+(j-1)*2) = phi(j);
           dd_i(nX+2+(j-1)*2,(1:num_q)+1+nX+nU+nL+2*nC+nClutch) = J(j,:);
