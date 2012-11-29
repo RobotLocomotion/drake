@@ -71,3 +71,4 @@ doc/planning.aux
 doc/planning.tex
 examples/CompassGait/runLQR_URDF.m
 .gitignore
+fort.0
