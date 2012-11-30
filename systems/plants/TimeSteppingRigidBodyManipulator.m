@@ -424,7 +424,21 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nargout<2 && ~success)
         error('Drake:PlanarRigidBodyManipulator:ResolveConstraintsFailed','failed to resolve constraints');
       end      
-    end    
+    end
+    
+    function varargout = pdcontrol(sys,Kp,Kd,index)
+      if nargin<4, index=[]; end
+      [pdff,pdfb] = pdcontrol(sys.manip,Kp,Kd,index);
+      if nargout>1
+        varargout{1} = pdff;
+        varargout{2} = pdfb;
+      else
+        % note: design the PD controller with the (non time-stepping
+        % manipulator), but build the closed loop system with the
+        % time-stepping manipulator:
+        varargout{1} = cascade(pdff,feedback(sys,pdfb));
+      end
+    end
     
   end
   

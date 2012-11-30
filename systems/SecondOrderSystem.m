@@ -64,6 +64,76 @@ classdef SecondOrderSystem < DrakeSystem
       sys = cascade@DrakeSystem(sys1,sys2);
     end
     
+    function varargout = pdcontrol(sys,Kp,Kd,index)
+      % creates new blocks to implement a PD controller, roughly
+      % illustrated by
+      %   q_d --->[ Kp ]-->(+)----->[ sys ]----------> yout
+      %                     | -                 |
+      %                     -------[ Kp,Kd ]<---- 
+      %                       
+      % when invoked with a single output argument:
+      %   newsys = pdcontrol(sys,...)
+      % then it returns a new system which contains the new closed loop
+      % system containing the PD controller and the plant.
+      %
+      % when invoked with two output arguments:
+      %   [pdff,pdfb] = pdcontrol(sys,...)
+      % then it return the systems which define the feed-forward path and
+      % feedback-path of the PD controller (but not the closed loop
+      % system).
+      %
+      % @param Kp a num_u x num_u matrix with the position gains
+      % @param Kd a num_u x num_u matrix with the velocity gains
+      % @param index a num_u dimensional vector specifying the mapping from q to u.
+      % index(i) = j indicates that u(i) actuates q(j). @default: 1:num_u
+      %
+      % For example, the a 2D floating base (with adds 3 passive joints in 
+      % positions 1:3)model with four actuated joints might have 
+      %      Kp = diag([10,10,10,10])
+      %      Kd = diag([1, 1, 1, 1])
+      %      index = 4:7
+      %   newsys = pdcontrol(sys,Kp,Kd,index);
+      
+      % todo: consider adding an option that would give [q_d;qd_d] as in
+      % input.  would be trivial to type in, but doesn't add any richness
+      % to the control input (and increases the dimensionality)
+      
+      % todo: consider allowing the user to specify less than num_u gains
+      % (e.g., PD control just part of the system).  And pass the original
+      % input through on the other inputs.
+      
+      sizecheck(Kp,[sys.num_u,sys.num_u]);
+      sizecheck(Kd,[sys.num_u,sys.num_u]);
+      
+      if nargin<4 || isempty(index)
+        index = 1:sys.num_u;
+      end
+      sizecheck(index,sys.num_u);
+      rangecheck(index,0,sys.num_q);
+      
+      % pdfb = prop-derivative control feedback term:
+      % tau = -Kp*theta - Kd*thetadot
+      D = zeros(sys.num_u,sys.num_x);
+      D(:,index) = -Kp;
+      D(:,sys.num_q + index) = -Kd;
+      pdfb = LinearSystem([],[],[],[],[],D);
+      pdfb = setOutputFrame(pdfb,sys.getInputFrame);
+      pdfb = setInputFrame(pdfb,sys.getStateFrame);  % note: assume full-state feedback for now
+      
+      % pdff = prop-derivative control feedforward term:
+      % tau = Kp*thetadesired
+      pdff = LinearSystem([],[],[],[],[],Kp*eye(sys.num_u));
+      pdff = setOutputFrame(pdff,sys.getInputFrame);
+      pdff = setInputFrame(pdff,CoordinateFrame('q_d',13,'d',{sys.getStateFrame.coordinates{index}}));
+
+      if nargout>1
+        varargout{1} = pdff;
+        varargout{2} = pdfb;
+      else
+        varargout{1} = cascade(pdff,feedback(sys,pdfb));
+      end
+    end
+    
   end
   
   properties (SetAccess = private, GetAccess = public)
