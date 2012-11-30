@@ -235,9 +235,80 @@ classdef Manipulator < SecondOrderSystem
       
       polysys = makeTrigPolySystem@SecondOrderSystem(obj,options);
     end
-    
-  end
-  
+
+    function varargout = pdcontrol(sys,Kp,Kd,index)
+      % creates new blocks to implement a PD controller, roughly
+      % illustrated by
+      %   q_d --->[ Kp ]-->(+)----->[ sys ]----------> yout
+      %                     | -                 |
+      %                     -------[ Kp,Kd ]<---- 
+      %                       
+      % when invoked with a single output argument:
+      %   newsys = pdcontrol(sys,...)
+      % then it returns a new system which contains the new closed loop
+      % system containing the PD controller and the plant.
+      %
+      % when invoked with two output arguments:
+      %   [pdff,pdfb] = pdcontrol(sys,...)
+      % then it return the systems which define the feed-forward path and
+      % feedback-path of the PD controller (but not the closed loop
+      % system).
+      %
+      % @param Kp a num_u x num_u matrix with the position gains
+      % @param Kd a num_u x num_u matrix with the velocity gains
+      % @param index a num_u dimensional vector specifying the mapping from q to u.
+      % index(i) = j indicates that u(i) actuates q(j). @default: 1:num_u
+      %
+      % For example, the a 2D floating base (with adds 3 passive joints in 
+      % positions 1:3)model with four actuated joints in a serial chain might have 
+      %      Kp = diag([10,10,10,10])
+      %      Kd = diag([1, 1, 1, 1])
+      %      and the default index would automatically be index = 4:7
+
+      if nargin<4 || isempty(index)
+        % try to extract the index from B
+        q=msspoly('q',sys.num_q);
+        s=msspoly('s',sys.num_q);
+        c=msspoly('c',sys.num_q);
+        qt=TrigPoly(q,s,c);
+        qd=msspoly('v',sys.num_q);
+
+        try 
+          [~,~,B] = manipulatorDynamics(sys,qt,qd);
+          B = double(B.getmsspoly);
+          if ~isa(B,'double') error('B isn''t a constant'); end
+          if ~all(sum(B~=0,2)==1) || ~all(sum(B~=0,1)==1)
+            error('B isn''t simple.  Needs a single input to touch a single DOF.');
+          end
+          
+          [I,J] = find(B);
+          index(J)=I;
+          
+          % try to alert if it looks like there are any obvious sign errors
+          if all(diag(diag(Kp))==Kp)
+            d = diag(Kp);
+            if any(sign(B(I,J))~=sign(d(I)))
+              warning('Drake:Manipulator:PDControlSignWarning','You might have a sign flipped?  The sign of Kp does not match the sign of the associated B');
+            end
+          end
+          if all(diag(diag(Kd))==Kd)
+            d = diag(Kd);
+            if any(sign(B(I,J))~=sign(d(I)))
+              warning('Drake:Manipulator:PDControlSignWarning','You might have a sign flipped?  The sign of Kd does not match the sign of the associated B');
+            end
+          end
+            
+        catch  % because trigpolys aren't guaranteed to work for all manipulators
+          warning('Drake:Manipulator:PDControlDefaultIndex','Couldn''t extract default index from the B matrix.  resorting to SecondOrderSystem default behavior.'); 
+          warning(lasterr);
+          index=[];
+        end
+      end
+      
+      varargout=cell(1,nargout);
+      [varargout{:}] = pdcontrol@SecondOrderSystem(sys,Kp,Kd,index);
+    end
+  end  
   
   properties (SetAccess = protected, GetAccess = public)
     num_position_constraints = 0  % the number of position constraints of the form phi(q)=0
