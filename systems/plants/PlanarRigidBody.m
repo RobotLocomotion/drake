@@ -264,7 +264,10 @@ classdef PlanarRigidBody < RigidBody
 %              [pts,ipts,iind]=unique(pts','rows'); pts=pts';
 %              ind = iind(ind);
 
-              x=pts(1,:); x=x(ind); y=pts(2,:); y=y(ind);
+              x=pts(1,ind); y=pts(2,ind);
+              i = convhull(x,y);
+              x=x(i);y=y(i);
+
 %              clf
 %              h=patch(x,y,.7*[1 1 1]);%,'EdgeColor','none');
 %              pause;
@@ -293,7 +296,10 @@ classdef PlanarRigidBody < RigidBody
 %              [pts,ipts,iind]=unique(pts','rows'); pts=pts';
 %              ind = iind(ind);
 
-              x=pts(1,:); x=x(ind); y=pts(2,:); y=y(ind);
+              x=pts(1,ind); y=pts(2,ind);
+              i = convhull(x,y);
+              x=x(i);y=y(i);
+              
 %              clf
 %              h=patch(x,y,.7*[1 1 1]);%,'EdgeColor','none');
 %              pause;

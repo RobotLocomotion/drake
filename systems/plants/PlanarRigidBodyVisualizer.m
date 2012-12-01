@@ -52,11 +52,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
           pts = body.T*[reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n); ones(1,n)];
           xpts = reshape(pts(1,:),s); ypts = reshape(pts(2,:),s);
           
-          % get the convex hull of the geometry, dump superfluous internal
-          % details
-          k=convhull(xpts,ypts);
-          
-          patch(xpts(k),ypts(k),body.geometry{j}.c,'LineWidth',.01); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
+          patch(xpts,ypts,body.geometry{j}.c,'LineWidth',.01); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
           % patch(xpts,ypts,body.geometry{j}.c,'EdgeColor','none','FaceAlpha',1); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
 
           % for debugging:
