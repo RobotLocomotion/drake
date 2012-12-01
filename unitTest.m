@@ -15,6 +15,7 @@ function tree=unitTest(options)
 % false
 % @option gui if true, shows the gui. set to false for the text only, non-interactive version 
 % @default true
+% @option logfile file name for writing information about FAILED tests only
 % @option additional_dirs a cell matrix of strings specifying additional
 % directories to use as unit tests.
 % NOTE: you may also add additional unit test directories by using
@@ -30,6 +31,18 @@ function tree=unitTest(options)
 if (nargin<1) options=struct(); end
 if ~isfield(options,'autorun') options.autorun = false; end
 if ~isfield(options,'gui') options.gui = true; end
+if ~isfield(options,'logfile') options.logfile = ''; end
+if ~isempty(options.logfile)
+  if (options.gui)
+    warning('At the moment, writing to logfile is only implemented for gui=false.  Disabling logfile.');
+    % fixing this would simply be a matter of finding the right (best) way
+    % to pass the logfileptr variable through the tree structure to
+    % runTest()
+  end
+  options.logfileptr = fopen(options.logfile,'w');
+else
+  options.logfileptr = -1;
+end
 if ~isfield(options,'additional_dirs') options.additional_dirs = {}; 
 elseif ~iscell(options.additional_dirs) 
   options.additional_dirs = {options.additional_dirs};
@@ -56,6 +69,8 @@ if (options.gui)
 else
   root = [];
 end
+
+crawlDir('examples/Pendulum/test',root,false,options);
 
 crawlDir('systems',root,true,options);
 crawlDir('drivers',root,true,options);
@@ -88,6 +103,10 @@ if (options.gui)
   if (options.autorun)
     tree.setSelectedNode(root);
   end
+end
+
+if ~isempty(options.logfile)
+  fclose(options.logfileptr);
 end
 
 end
@@ -296,7 +315,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         if (options.gui)
           node = addTest(node,[testname,'.',m{j}]);
         else
-          runCommandLineTest(node,[testname,'.',m{j}]);
+          runCommandLineTest(node,[testname,'.',m{j}],options);
         end
       end
       
@@ -308,7 +327,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
       if (options.gui)
         node = addTest(node,testname);
       else
-        runCommandLineTest(node,testname);
+        runCommandLineTest(node,testname,options);
       end
     end
     
@@ -447,9 +466,9 @@ function tree=runNode(tree,node)
   end
 end
 
-function pass = runCommandLineTest(path,test)
+function pass = runCommandLineTest(path,test,options)
   fprintf(1,'%-40s ',test);
-  pass = runTest(path,test);
+  pass = runTest(path,test,options.logfileptr);
   if (pass)
     fprintf(1,'[PASSED]\n');
   else
@@ -457,7 +476,7 @@ function pass = runCommandLineTest(path,test)
   end
 end
 
-function pass = runTest(path,test)
+function pass = runTest(path,test,logfileptr)
   p=pwd;
   cd(path);
 %  disp(['running ',path,'/',test,'...']);
@@ -488,6 +507,17 @@ function pass = runTest(path,test)
       disp('*******************************************************');
       disp(getReport(ex,'extended'));
       disp('*******************************************************');
+      
+      if (nargin>2 && logfileptr>0)
+        fprintf(logfileptr,'*******************************************************\n');
+        fprintf(logfileptr,['* error in ',path,'/',test,'\n']);
+        fprintf(logfileptr,'*******************************************************\n');
+        fprintf(logfileptr,'\n');
+        fprintf(logfileptr,getReport(ex,'extended'));
+        fprintf(logfileptr,'\n');
+        fprintf(logfileptr,'*******************************************************\n');
+      end
+      
       lasterr(ex.message,ex.identifier);
       %    rethrow(ex);
       return;
