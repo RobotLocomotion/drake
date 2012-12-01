@@ -70,8 +70,6 @@ else
   root = [];
 end
 
-crawlDir('examples/Pendulum/test',root,false,options);
-
 crawlDir('systems',root,true,options);
 crawlDir('drivers',root,true,options);
 crawlDir('util',root,true,options);
