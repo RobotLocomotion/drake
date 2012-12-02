@@ -76,7 +76,12 @@ classdef PlanarRigidBodyVisualizer < Visualizer
           end
         end
       end
-      
+
+      if (obj.debug)
+        com = getCOM(obj.model,q);
+        plot(com(1),com(2),'b*','MarkerSize',20,'LineWidth',3);
+      end
+
       % for debugging
       %legend(h,{obj.model.body.linkname},'interpreter','none');
       % end debugging

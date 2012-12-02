@@ -142,10 +142,13 @@ classdef FeedbackSystem < DrakeSystem
     function [y1,y2] = getOutputs(obj,t,x,u)
       [x1,x2]=decodeX(obj,x);
       if (~obj.sys1.isDirectFeedthrough()) % do sys1 first
-        y1=output(obj.sys1,t,x1);  % doesn't need u
+        % note: subsystems of sys1 could still be direct feedthrough.  but
+        % their outputs will not effect the final y1.  I'll just put in
+        % something random that's the right size for u here. 
+        y1=output(obj.sys1,t,x1,u);  % output shouldn't depend on u
         y2=output(obj.sys2,t,x2,sat2(obj,y1));
       else % do sys2 first
-        y2=output(obj.sys2,t,x2);  % doesn't need u
+        y2=output(obj.sys2,t,x2,zeros(obj.sys2.num_u,1));  % output shouldn't depend on this u
         y1=output(obj.sys1,t,x1,sat1(obj,y2+u));
       end
     end

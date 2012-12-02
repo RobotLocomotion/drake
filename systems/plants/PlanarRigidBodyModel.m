@@ -26,6 +26,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       end
       
       model = model@RigidBodyModel();
+      model.D = 2;  % set to 2D
 
       switch options.view % joint_axis = view_axis => counter-clockwise
         case 'front'
