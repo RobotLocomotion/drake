@@ -12,6 +12,7 @@ classdef RigidBodyModel
     featherstone = [];
     
     material=[];
+    D = 3;
   end
 
   methods 
@@ -414,14 +415,32 @@ classdef RigidBodyModel
       drawGraph(A,node_names);
     end
     
-    function [m,c] = getInertial(model)
+    function m = getMass(model)
+      m = 0;
+      for i=1:length(model.body)
+        bm = model.body(i).getInertial();
+        m = m + bm;
+      end
+    end
+    
+    function [com,J] = getCOM(model,q)
       % return total mass and center of mass for the entire model
       m = 0;
-      c = zeros(3,1); 
+      com = zeros(model.D,1); 
+      doKinematics(model,q);
+      J = zeros(model.D,length(q));
       for i=1:length(model.body)
-        [bm,bc] = model.body.getInertial();
-        c = (m*c + bm*bc)/(m+bm);
-        m = m + bm;
+        [bm,bc] = model.body(i).getInertial();
+        if (bm>0)
+          if (nargout>1)
+            [bc,bJ] = forwardKin(model.body(i),bc);
+            J = (m*J + bm*bJ)/(m+bm);
+          else
+            bc = forwardKin(model.body(i),bc);
+          end
+          com = (m*com + bm*bc)/(m+bm);
+          m = m + bm;
+        end
       end
     end
     
