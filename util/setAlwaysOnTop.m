@@ -53,4 +53,8 @@ drawnow expose
 fJFrame = get(hFig,'JavaFrame');
 
 % Set JavaFrame Always-On-Top-Setting.
-fJFrame.fFigureClient.getWindow.setAlwaysOnTop(bool);
+try 
+  fJFrame.fFigureClient.getWindow.setAlwaysOnTop(bool);
+catch
+  fJFrame.fHG1Client.getWindow.setAlwaysOnTop(bool);
+end

@@ -34,6 +34,9 @@ function varargout = geval(fun,varargin)
 %
 % @option grad_method {'user_then_taylorvar','user','taylorvar','numerical','symbolic'}
 %         @default user_then_taylorvar
+%    grad_method can also be a cell array of the strings above, in which
+%    case geval will run both methods and compare the output.
+%      e.g. option.grad_method = {'user','taylorvar'};
 
 p=1;
 if (isnumeric(fun)) 
