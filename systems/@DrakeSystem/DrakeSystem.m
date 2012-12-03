@@ -147,15 +147,15 @@ classdef DrakeSystem < DynamicalSystem
         if any(ts(1,:)==-1)  % zap superfluous inherited
           ts=ts(:,find(ts(1,:)~=-1));
         end
-        if sum(ts(1,:)>=0)>1
+        if sum(ts(1,:)>0)>1 % then multiple discrete
+          error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have different discrete sample times');
+        end
+        if sum(ts(1,:)==0)>1 % then multiple continuous
           error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have both ''continuous time'' and ''continuous time, fixed in minor offset'' sample times');
         end
-%        if sum(ts(1,:)==0)>1 % then multiple continuous
-%          error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have both ''continuous time'' and ''continuous time, fixed in minor offset'' sample times');
-%        end
-%        if sum(ts(1,:)>0)>1 % then multiple discrete
-%          error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have different discrete sample times');
-%        end
+        if sum(ts(1,:)>=0)>1 % then both continuous and discrete
+          error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have both continuous and discrete sample times');
+        end
       end
       obj.ts = ts;
     end
