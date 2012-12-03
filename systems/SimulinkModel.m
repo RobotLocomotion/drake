@@ -11,6 +11,8 @@ classdef SimulinkModel < DynamicalSystem
       
       load_system(mdl);
       obj.mdl = mdl;
+%      feval(mdl,[],[],[],'compile');  % seemed to be working ok (except
+%      bug 1022) before having this.  so keeping it out.
       sys = feval(mdl,[],[],[],'sizes');
       obj.num_xc = sys(1);
       obj.num_xd = sys(2);
