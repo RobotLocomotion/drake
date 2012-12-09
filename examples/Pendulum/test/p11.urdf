@@ -33,12 +33,12 @@
   </joint>
   <link name="arm">
     <inertial> 
-      <origin xyz="0 0 -.5" rpy="0 0 0" />
+      <origin xyz="-.5 0 0" rpy="0 0 0" />
       <mass value="0.5" />
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/> 
     </inertial>
     <visual>
-      <origin xyz="0 0 -.375" rpy="0 0 0" />
+      <origin xyz="-.375 0 0" rpy="0 1.5708 0" />
       <geometry>
          <cylinder length=".75" radius=".01" />
       </geometry>
@@ -48,7 +48,7 @@
   <joint name="theta" type="continuous">
     <parent link="base_part2"/>
     <child link="arm" />
-    <axis xyz="0 1 0" />
+    <axis xyz="0 0 1" />
     <dynamics damping="0.1" />
   </joint>
 </robot>

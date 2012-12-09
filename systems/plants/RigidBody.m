@@ -15,7 +15,7 @@ classdef RigidBody < handle
     pitch=0;        % for featherstone 3D models
     joint_axis=[1;0;0]; 
     Xtree=eye(6);   % velocity space coordinate transform *from parent to this node*
-    X_body_to_joint=eye(6);  % velocity space coordinate transfrom from joint frame (where joint_axis = z-axis) to body frame 
+    X_joint_to_body=eye(6);  % velocity space coordinate transfrom from joint frame (where joint_axis = z-axis) to body frame 
     Ttree=eye(4);   % position space coordinate transform *from this node to parent*
     T_body_to_joint=eye(4);
     wrljoint='';  % tranformation to joint coordinates in wrl syntax

@@ -204,7 +204,7 @@ classdef PlanarRigidBody < RigidBody
             r = str2num(char(thisNode.getAttribute('radius')));
             l = str2num(char(thisNode.getAttribute('length')));
             
-            if (options.view_axis'*T3*[0;0;1;0] == 0 || ... % then it just looks like a box or
+            if (abs(options.view_axis'*T3*[0;0;1;0]) < 1e-4 || ... % then it just looks like a box or
                 (isfield(options,'collision') && options.collision)) % getting contacts, so use bb corners
               cx = r*[-1 1 1 -1 -1 1 1 -1];
               cy = r*[1 1 1 1 -1 -1 -1 -1];
@@ -214,7 +214,7 @@ classdef PlanarRigidBody < RigidBody
               i = convhull(pts(1,:),pts(2,:));
               x=pts(1,i)';y=pts(2,i)';
               
-            elseif (abs(options.view_axis'*T3*[0;0;1;0]) > (1-1e-6)) % then it just looks like a circle
+            elseif (abs(options.view_axis'*T3*[0;0;1;0]) > (1-1e-4)) % then it just looks like a circle
               theta = 0:0.1:2*pi;
               pts = r*[cos(theta); sin(theta)] + repmat(T*[0;0;0;1],1,length(theta));
               x=pts(1,:)';y=pts(2,:)';
