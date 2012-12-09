@@ -357,6 +357,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       phi = stateConstraints(obj.manip,x);
     end
     
+    function [x,success] = resolveConstraints(obj,x0,v)
+      if (nargin<3) v=[]; end
+      [x,success] = resolveConstraints(obj.manip,x0,v);
+    end
+    
     function v = constructVisualizer(obj)
       v = constructVisualizer(obj.manip);
     end
