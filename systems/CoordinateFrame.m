@@ -201,11 +201,15 @@ classdef CoordinateFrame < handle
       fr.poly = obj.poly(dims);
     end
     
-    function generateLCMType(obj)
+    function generateLCMType(obj,robot_name,signal_name)
       % writes an lcm type specification to file from the coordinate frame
       % description. not to be used frequently.
       
-      name = lower(obj.name);
+      if (nargin<3)
+        name = lower(obj.name);
+      else
+        name = [lower(robot_name),'_',lower(signal_name)];
+      end
       typename = ['lcmt_',name];
       fname = [typename,'.lcm'];
       if strcmpi(input(['About to write file ',fname,' .  Should I proceed (y/n)? '],'s'),'y')
@@ -214,7 +218,7 @@ classdef CoordinateFrame < handle
         fprintf(fptr,'// Note: this file was automatically generated using the\n// CoordinateFrame.generateLCMType() method.\n\n');
         fprintf(fptr,'struct %s\n{\n  int64_t timestamp;\n\n',typename);
         for i=1:obj.dim
-          fprintf(fptr,'  double %s;\n',stripSpecialChars(obj.coordinates{i}));
+          fprintf(fptr,'  double %s;\n',CoordinateFrame.stripSpecialChars(obj.coordinates{i}));
         end
         fprintf(fptr,'}\n\n');
         fclose(fptr);

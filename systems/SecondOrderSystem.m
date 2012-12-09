@@ -124,7 +124,7 @@ classdef SecondOrderSystem < DrakeSystem
       % tau = Kp*thetadesired
       pdff = LinearSystem([],[],[],[],[],Kp*eye(sys.num_u));
       pdff = setOutputFrame(pdff,sys.getInputFrame);
-      pdff = setInputFrame(pdff,CoordinateFrame('q_d',13,'d',{sys.getStateFrame.coordinates{index}}));
+      pdff = setInputFrame(pdff,CoordinateFrame('q_d',length(index),'d',{sys.getStateFrame.coordinates{index}}));
 
       if nargout>1
         varargout{1} = pdff;
