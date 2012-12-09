@@ -494,6 +494,8 @@ classdef RigidBodyModel
       child.jointname = name;
       child.parent = parent;
       
+      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
+
       wrl_joint_origin='';
       if any(xyz)
         wrl_joint_origin=[wrl_joint_origin,sprintf('\ttranslation %f %f %f\n',xyz(1),xyz(2),xyz(3))];
