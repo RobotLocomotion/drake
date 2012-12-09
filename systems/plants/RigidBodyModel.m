@@ -28,6 +28,9 @@ classdef RigidBodyModel
       % false means skip them.  @default true
       % @options visual boolean where true means parse graphics parameters, false
       % means skip them.  @default true
+      % @options visual_geometry boolean where true means to extract the
+      % points from the visual geometries (might be very dense for meshes).
+      % Useful for extracting the 2D geometries later.  @default false
       %
       % @retval model Structure compatible with the Featherstone Spatial Vector
       % and Dynamics library, with additional robotlib tags added.
@@ -43,6 +46,7 @@ classdef RigidBodyModel
       if (~isfield(options,'floating')) options.floating = false; end
       if (~isfield(options,'inertial')) options.inertial = true; end
       if (~isfield(options,'visual')) options.visual = true; end
+      if (~isfield(options,'visual_geometry')) options.visual_geometry = false; end
         
       %disp(['Parsing ', urdf_filename]);
       urdf = xmlread(urdf_filename);

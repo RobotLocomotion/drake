@@ -25,6 +25,10 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         end
       end
       
+      % todo: parse the model as a 3D rigid body first
+      %options.visual_geometry = true;
+      %model = model@RigidBodyModel(urdf_filename,options);
+
       model = model@RigidBodyModel();
       model.D = 2;  % set to 2D
 
@@ -57,6 +61,8 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         options.y_axis = model.y_axis;
         options.view_axis = model.view_axis;
         model = parseURDF(model,urdf_filename,options);
+        % todo: extract from the 3D model instead:
+%        model = extract2Dfrom3D(model);
       end
       
       switch options.view
@@ -80,6 +86,24 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       end
     end    
     
+%     function model = extract2Dfrom3D(model,options)
+%       nq = model.featherstone.NB;
+%       % todo: accept an option here to take an arbitrary pose (e.g. q)
+%       doKinematics(model,zeros(nq,1));  % put everything in the zero position
+%       
+%       3Dbody = model.body;  % stash the 3D bodies 
+%       for i=1:length(model.body)
+%         model.body(i)=PlanarRigidBody.extractFrom3D(model.body(i),options); % convert 3D body to 2D body
+%       end
+%       
+%       % now update the links
+%       for i=1:length(model.body)
+%         if (model.body(i).parent)
+%           ind = find(3Dbody == model.body(i).parent);
+%           model.body(i).parent = model.body(ind);
+%         end
+%       end
+%     end
     
     function doKinematics(model,q,b_compute_second_derivatives)
       if nargin<3, b_compute_second_derivatives=false; end

@@ -1,7 +1,6 @@
 classdef PlanarRigidBody < RigidBody
   
   properties
-    geometry={}  % geometry (compatible w/ patch).  see parseVisual below.
     jcode=-1;        % for featherstone planar models
     jsign=1;
   end
@@ -173,6 +172,38 @@ classdef PlanarRigidBody < RigidBody
   end
   
   methods (Static)
+    
+%     function body = extractFrom3D(3Dbody,options)
+%       % uses the pose encoded in 3Dbody.T (e.g. from calling doKinematics)
+%       % before planarizing
+%       
+%       error('not implemented correctly yet.  coming soon.');
+%       
+%       body = PlanarRigidBody();
+%       
+%       % first just copy over all of the fields
+%       fn = fieldnames(3Dbody);
+%       for i=1:length(fn)
+%         body = setfield(body,fn{i},getfield(3Dbody,fn{i}));
+%       end
+% 
+%       P = [options.x_axis',0; options.y_axis',0; zeros(1,3),1];
+%       body.T = P*3Dbody.T;
+%       body.Ttree = P*3Dbody.Ttree;
+% 
+%       P = [options.x_axis'; options.y_axis'];
+%       for i=1:length(3Dbody.geometry)
+%         x = P*3Dbody.T*[3Dbody.geometry{i}.x; 3Dbody.geometry{i}.y; 3Dbody.geometry{i}.z; ones(1,length(3Dbody.geomtry{i}.x))];
+%         body.geometry{i}.x = x(1,:);
+%         body.geometry{i}.y = y(1,:);
+%         body.geometry{i} = rmfield(body.geometry{i},'z');
+%       end
+%       
+%       X_3D_to_planar = [options.view_axis', zeros(1,3); zeros(1,3), options.x_axis'; zeros(1,3), options.y_axis'];
+% 
+%       body.I = zeros(3);
+%       body.Xtree = body.Xtree;
+%     end
     
     function [x,y] = parseGeometry(node,x0,rpy,options)
       % param node DOM node for the geometry block

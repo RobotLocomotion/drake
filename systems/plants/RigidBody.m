@@ -5,6 +5,7 @@ classdef RigidBody < handle
     linkname=''  % name of the associated link
     I=zeros(6);  % spatial mass/inertia
     wrlgeometry=''; % geometry (compatible w/ wrl).  see parseVisual below.
+    geometry={}  % geometry (compatible w/ patch).  see parseVisual below.
     dofnum=0     % the index in the state vector corresponding to this joint
     contact_pts=[];  % a 3xn matrix with [x;y;z] positions of contact points
     gravity_off=false;
@@ -140,6 +141,13 @@ classdef RigidBody < handle
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(geomnode,wrl_appearance_str)];
+        if (options.visual_geometry)
+          [xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,options);
+          body.geometry{1}.x = xpts;
+          body.geometry{1}.y = ypts;
+          body.geometry{1}.z = zpts;
+          body.geometry{1}.c = c;
+        end
       end        
       
       if isempty(wrl_transform_str)
