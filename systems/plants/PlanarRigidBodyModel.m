@@ -211,16 +211,18 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       if (nargin<11) joint_lim_max=inf; end
       if (nargin<12) options=struct(); end % no options yet
       
+      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
+      
       switch (lower(type))
         case {'revolute','continuous','planar'}
           if abs(dot(axis,model.view_axis))<(1-1e-6)
-            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded revolute joint ', child.jointname,' because it did not align with the viewing axis']);
+            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded revolute joint ', name,' because it did not align with the viewing axis']);
             model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,joint_lim_min,joint_lim_max,options);
             return;
           end
         case 'prismatic'
           if abs(dot(axis,model.view_axis))>1e-6
-            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded prismatic joint ', child.jointname,' because it did not align with the viewing axis']);
+            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded prismatic joint ', name,' because it did not align with the viewing axis']);
             model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,joint_lim_min,joint_lim_max,options);
             return;
           end
@@ -296,7 +298,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       if any(rpy)
         rpya=rpy2axis(rpy); p=rpya(4); rpyaxis=rpya(1:3);
         if abs(dot(rpyaxis,model.view_axis))<(1-1e-6)
-          warning('joint axes out of the plane are not supported.  the dependent link (and all of it''s decendants) will be zapped');
+          warning(['joint ',name,': joint axes out of the plane are not supported.  the dependent link ',child.linkname,' (and all of it''s decendants) will be zapped']);
           ind = find([model.body]==child);
           model.body(ind)=[];
           return;
