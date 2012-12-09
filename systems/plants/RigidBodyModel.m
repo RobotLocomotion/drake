@@ -287,8 +287,9 @@ classdef RigidBodyModel
         b=model.body(inds(i));
         m.parent(i) = b.parent.dofnum;
         m.pitch(i) = b.pitch;
-        m.Xtree{i} = b.X_body_to_joint*b.Xtree*inv(b.parent.X_body_to_joint);
-        m.I{i} = inv(b.X_body_to_joint)'*b.I*inv(b.X_body_to_joint);
+        m.Xtree{i} = inv(b.X_joint_to_body)*b.Xtree*b.parent.X_joint_to_body;
+        m.I{i} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
+%        disp(m.I{i})
 %        if isequal(m.I{i},zeros(6))
 %          error(['Body ',model.body.linkname,' has zero inertia.  that''s bad']);
 %        end
@@ -509,25 +510,28 @@ classdef RigidBodyModel
 
       child.Xtree = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
       child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];
-      % note that I only now finally understand that my Ttree*[x;1] is
-      % exactly the same as inv(Xtree)*[x;zeros(3,1)].  sigh.
 
-      if ~strcmp(lower(type),'fixed') && dot(axis,[0;0;1])<1-1e-6
+      % note that I only now finally understand that my Ttree*[x;1] is
+      % *ALMOST* (up to translation?? need to resolve this!) the same as inv(Xtree)*[x;zeros(3,1)].  sigh.
+%      valuecheck([eye(3),zeros(3,1)]*child.Ttree*ones(4,1),[eye(3),zeros(3)]*inv(child.Xtree)*[ones(3,1);zeros(3,1)]);
+
+      if ~strcmp(lower(type),'fixed') && dot(axis,[0;0;1])<1-1e-4
         % featherstone dynamics treats all joints as operating around the
         % z-axis.  so I have to add a transform from the origin of this
         % link to align the joint axis with the z-axis, update the spatial
         % inertia of this joint, and then rotate back to keep the child
         % frames intact.  this happens in extractFeatherstone
         axis_angle = [cross(axis,[0;0;1]); acos(dot(axis,[0;0;1]))]; % both are already normalized
-        if all(abs(axis_angle(1:3))<1e-6)
+        if all(abs(axis_angle(1:3))<1e-4)
           % then it's a scaling of the z axis.  
-          valuecheck(sin(axis_angle(4)),0,1e-6);  
+          valuecheck(sin(axis_angle(4)),0,1e-4);  
           axis_angle(1:3)=[0;1;0];  
         end
         jointrpy = quat2rpy(axis2quat(axis_angle));
-        child.X_body_to_joint=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
+        child.X_joint_to_body=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
         child.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
-        valuecheck(inv(child.X_body_to_joint)*[axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
+
+        valuecheck(inv(child.X_joint_to_body)*[axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
         valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
       end
 
