@@ -364,6 +364,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     
     function v = constructVisualizer(obj)
       v = constructVisualizer(obj.manip);
+      v = setInputFrame(v,obj.getStateFrame());
     end
 
     function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,v)
@@ -434,6 +435,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function varargout = pdcontrol(sys,Kp,Kd,index)
       if nargin<4, index=[]; end
       [pdff,pdfb] = pdcontrol(sys.manip,Kp,Kd,index);
+      pdfb = setInputFrame(pdfb,sys.getStateFrame());
+      pdfb = setOutputFrame(pdfb,sys.getInputFrame());
+      pdff = setOutputFrame(pdff,sys.getInputFrame());
       if nargout>1
         varargout{1} = pdff;
         varargout{2} = pdfb;

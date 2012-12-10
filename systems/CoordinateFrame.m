@@ -64,10 +64,10 @@ classdef CoordinateFrame < handle
     function obj=addTransform(obj,transform)
       typecheck(transform,'CoordinateTransform');
       if (getInputFrame(transform) ~= obj || getOutputFrame(transform) == obj)
-        error('transform must be from this coordinate frame to another to be added');
+        error('Drake:CoordinateFrame:BadTransform','transform must be from this coordinate frame to another to be added');
       end
       if ~isempty(findTransform(obj,getOutputFrame(transform)))
-        error('i already have a transform that gets me to that frame');
+        error('Drake:CoordinateFrame:ExistingTransform','i already have a transform that gets me to that frame');
       end
       obj.transforms{end+1}=transform;
     end
@@ -90,6 +90,37 @@ classdef CoordinateFrame < handle
       typecheck(cell_of_frames,'cell');
       loc=find(cellfun(@(a) a==obj,cell_of_frames));
       tf = ~isempty(loc);
+    end
+    
+    function fr=addProjectionTransformByCoordinateNames(fr,fr2,fr2_defaultvals)
+      % adds a transform from fr to fr2 which copies over the dimensions
+      % with matching coordinate names, and sets the remaining elements of
+      % fr2 to their default values.
+      % @param fr  the coordinate frame which gets the new transform (from
+      % this frame)
+      % @param fr2 the coordinate frame that the transform maps to.
+      % @param fr2_defaultvals a double vector or Point which specifies the
+      % constant values of the elements in fr2 which do not get mapped from
+      % fr
+      typecheck(fr2,'CoordinateFrame');
+      if (nargin<3)
+        fr2_defaultvals = Point(fr2);
+      else
+        if ~isa(fr2_defaultvals,'Point')
+          fr2_defaultvals = Point(fr2,fr2_defaultvals);
+        end
+      end
+      typecheck(fr2_defaultvals,'Point');
+      if (fr2_defaultvals.getFrame()~=fr2) 
+        error('default values must be in the fr2 frame');
+      end
+      
+      [lia,locb] = ismember(fr2.coordinates,fr.coordinates);
+      T = sparse(find(lia),locb(locb>0),1,fr2.dim,fr.dim); 
+      b = double(fr2_defaultvals); b(lia)=0;
+      tf = AffineTransform(fr,fr2,T,b);
+      
+      fr = addTransform(fr,tf);
     end
     
     function drawFrameGraph(obj)
@@ -199,6 +230,14 @@ classdef CoordinateFrame < handle
       fr.coordinates = obj.coordinates(dims);
       fr.angle_flag = obj.angle_flag(dims);
       fr.poly = obj.poly(dims);
+    end
+    
+    function scope(obj,t,val,options)
+      % publishes coordinate information to the lcm scope
+      if (nargin<4) options=struct(); end
+      for i=1:length(obj.dim)
+        scope(obj.name,obj.coordinates{i},t,val(i),options);
+      end
     end
     
     function generateLCMType(obj,robot_name,signal_name)

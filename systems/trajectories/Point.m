@@ -12,6 +12,7 @@ classdef Point
         p = zeros(frame.dim,1);
       else
         typecheck(p,'double');
+        if isscalar(p), p = repmat(p,frame.dim,1); end
         sizecheck(p,[frame.dim,1]);
       end
       obj.p = p;
