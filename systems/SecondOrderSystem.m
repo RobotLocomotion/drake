@@ -67,7 +67,7 @@ classdef SecondOrderSystem < DrakeSystem
     function varargout = pdcontrol(sys,Kp,Kd,index)
       % creates new blocks to implement a PD controller, roughly
       % illustrated by
-      %   q_d --->[ Kp ]-->(+)----->[ sys ]----------> yout
+      %   q_d --->[ Kp ]-->(+)----->[ sys ]----------> [q;qd]
       %                     | -                 |
       %                     -------[ Kp,Kd ]<---- 
       %                       
@@ -75,6 +75,8 @@ classdef SecondOrderSystem < DrakeSystem
       %   newsys = pdcontrol(sys,...)
       % then it returns a new system which contains the new closed loop
       % system containing the PD controller and the plant.
+      %
+      %  u = Kp*(q_d - q) - Kd*qd
       %
       % when invoked with two output arguments:
       %   [pdff,pdfb] = pdcontrol(sys,...)
@@ -130,6 +132,7 @@ classdef SecondOrderSystem < DrakeSystem
         varargout{1} = pdff;
         varargout{2} = pdfb;
       else
+%        sys = cascade(cascade(ScopeSystem(sys.getInputFrame),sys),ScopeSystem(sys.getInputFrame));
         varargout{1} = cascade(pdff,feedback(sys,pdfb));
       end
     end
