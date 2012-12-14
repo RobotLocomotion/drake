@@ -1,5 +1,7 @@
 function trigPolyTest
 
+checkDependency('spot_enabled');
+
 q=msspoly('q',2);
 s=msspoly('s',2);
 c=msspoly('c',2);
