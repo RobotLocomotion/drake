@@ -3,6 +3,7 @@ function HandCpmex_test
 m = PlanarRigidBodyModel('../../examples/Acrobot/Acrobot.urdf');
 %m = PlanarRigidBodyModel('/Users/russt/locomotion/drc/ros_workspace/atlas_description/urdf/atlas_robot.urdf');
 
+checkDependency('eigen3_enabled');
 ptr=HandCpmex(struct(m),m.gravity);
 
 for i=1:1000

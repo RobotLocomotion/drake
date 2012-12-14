@@ -143,6 +143,7 @@ end
 options.IterationsLimit = 50000;
 options.VerifyLevel=0;
 options.SuperbasicsLimit=3000;
+checkDependency('snopt_enabled');
 snprint('snopt.out');
 snsummary('summary.out')
 
