@@ -44,25 +44,21 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
       for i=1:length(constructors)
         f = constructors(i).getParameterTypes;
         if ~isempty(f) && strncmp('[B',char(f(1).getName),2)
-          obj.decode_constructor = constructors(i);
+          obj.lcmtype_constructor = constructors(i);
         end
       end
-      if isempty(obj.decode_constructor)
-        error('didn''t find decoder constructor');
+      if isempty(obj.lcmtype_constructor)
+        error('didn''t find a constructor for this lcmtype');
       end
       obj = setCoordinateNames(obj,names);
     end
     
     function obj = subscribe(obj,channel)
-      if ~isempty(obj.aggregator)
-        delete obj.aggregator;
-      end
-      
       lc = lcm.lcm.LCM.getSingleton(); %('udpm://239.255.76.67:7667?ttl=1');
       obj.aggregator = lcm.lcm.MessageAggregator();
       obj.aggregator.setMaxMessages(1);  % make it a last-message-only queue
   
-      lc.subscribe(options.inchannel,obj.aggregator);
+      lc.subscribe(channel,obj.aggregator);
     end
     
     function [x,t] = getNextMessage(obj,timeout)
@@ -71,7 +67,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
       end
       msg = getNextMessage(obj.aggregator,timeout);
       if (~isempty(msg))
-        msg = obj.decode_constructor.newInstance(msg.data);
+        msg = obj.lcmtype_constructor.newInstance(msg.data);
         x=zeros(obj.dim,1);
         for i=1:obj.dim
           eval(['x(',num2str(i),') = msg.',CoordinateFrame.stripSpecialChars(obj.coordinates{i}),';']);
@@ -89,8 +85,13 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
     function [x,t] = getCurrentValue(obj)
       [x,t]=getNextMessage(obj,0);
       if isempty(t)
-        x = obj.last_x;
-        t = obj.last_t;
+        if (obj.last_x)
+          x = obj.last_x;
+          t = obj.last_t;
+        else
+          x = zeros(obj.dim,1);
+          t = 0;
+        end
       end
     end
     
@@ -102,6 +103,12 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
       for i=1:obj.dim
         eval(['msg.',CoordinateFrame.stripSpecialChars(obj.coordinates{i}),' = x(',num2str(i),');']);
       end
+      lc = lcm.lcm.LCM.getSingleton();
+      lc.publish(channel,msg);
+    end
+    
+    function name = defaultChannel(obj)
+      name = obj.name;
     end
   end
   
@@ -110,6 +117,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
     aggregator=[];
     last_x;
     last_t;
+    lcmtype_constructor;
   end
   
 end
