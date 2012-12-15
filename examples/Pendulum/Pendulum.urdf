@@ -101,4 +101,12 @@
   <gazebo reference="arm_com">
     <material>Gazebo/Blue</material>
   </gazebo>
+
+  <gazebo>
+    <plugin filename="libgazebo_ros_pub_robot_state.so" name="gazebo_ros_pub_robot_controller">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>100.0</updateRate>
+      <topicName>true_robot_state</topicName>
+    </plugin>
+  </gazebo>
 </robot>
