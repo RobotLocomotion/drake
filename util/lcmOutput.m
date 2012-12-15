@@ -38,8 +38,10 @@ function setup(block)
 
 function Outputs(block)
   publisher = block.DialogPrm(3).Data;
+  t = block.CurrentTime;
+  x = block.InputPort(1).Data;
   channel = block.DialogPrm(1).Data;
-  publish(publisher,block.CurrentTime,block.InputPort(1).Data,block.DialogPrm(1).Data,channel); 
+  publish(publisher,t,x,channel); 
   
 
 function Terminate(block)

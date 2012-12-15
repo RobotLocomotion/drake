@@ -45,12 +45,14 @@ function DoPostPropSetup(block)
 
 
 function Start(block)
-  subscribe(block.DialogPrm(3).Data,block.DialogPrm(1).Data);
+  subscriber = block.DialogPrm(3).Data;
+  channel = block.DialogPrm(1).Data;
+  subscriber.subscribe(channel);
 
 
 function Outputs(block)
-  s = block.DialogPrm(3);
-  block.OutputPort(1).Data = getCurrentValue(s);
+  subscriber = block.DialogPrm(3).Data;
+  block.OutputPort(1).Data = getCurrentValue(subscriber);
   
 
 function Terminate(block)
