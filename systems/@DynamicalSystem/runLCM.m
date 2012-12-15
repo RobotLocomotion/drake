@@ -20,39 +20,31 @@ checkDependency('lcm_enabled');
 fin = obj.getInputFrame;
 fout = obj.getOutputFrame;
 if obj.getNumInputs>0
-  typecheck(fin,'LCMCoordinateFrame');
-  if (~isfield(options,'inchannel')) options.inchannel = fin.name; end
+  typecheck(fin,'LCMSubscriber');
+  if (~isfield(options,'inchannel')) options.inchannel = fin.defaultChannel(); end
 end
 if obj.getNumOutputs>0
-  typecheck(fout,'LCMCoordinateFrame');
-  if (~isfield(options,'outchannel')) options.outchannel = fout.name; end
+  typecheck(fout,'LCMPublisher');
+  if (~isfield(options,'outchannel')) options.outchannel = fout.defaultChannel(); end
 end
 
-
-
 if (obj.getNumInputs>0 && getNumStates(obj)<1) % if there are no state variables, then just trigger on input
-  lc = lcm.lcm.LCM.getSingleton(); %('udpm://239.255.76.67:7667?ttl=1');
-  aggregator = lcm.lcm.MessageAggregator();
-  aggregator.setMaxMessages(1);  % make it a last-message-only queue
-  
-  lc.subscribe(options.inchannel,aggregator);
+  fin = subscribe(fin,options.inchannel);
   
   global g_scope_enable; g_scope_enable = true;
   
   % just run as fast as possible
   t=options.tspan(1); tic;
   while (t<=options.tspan(2))
-    umsg = getNextMessage(aggregator,1000);
-    if (~isempty(umsg))
-      [u,t] = fin.decode(umsg);
-      y = obj.output(t,[],u);
-      if (getNumOutputs(obj)>0)
-        ymsg = fout.encode(t,y);
-        lc.publish(options.outchannel,ymsg);
-      end
-    else
+    [u,t] = getNextMessage(fin,1000);
+    if isempty(t)
       t=options.tspan(1)+toc;
       fprintf(1,'waiting... (t=%f)\n',t);
+    else      
+      y = obj.output(t,[],u);
+      if (getNumOutputs(obj)>0)
+        publish(fout,t,y,options.outchannel);
+      end
     end
   end
 else % otherwise set up the LCM blocks and run simulink.
@@ -67,15 +59,15 @@ else % otherwise set up the LCM blocks and run simulink.
   
   load_system('drake');
   if getNumInputs(obj)>0
-    assignin('base',[mdl,'_decoder'],@(msg) decode(fin,msg));
-    add_block('drake/lcmInput',[mdl,'/lcmInput'],'channel',['''',options.inchannel,''''],'dim',num2str(fin.dim),'decode_fcn',[mdl,'_decoder']);
+    assignin('base',[mdl,'_subscriber'],fin);
+    add_block('drake/lcmInput',[mdl,'/lcmInput'],'channel',['''',options.inchannel,''''],'dim',num2str(fin.dim),'lcm_subscriber',[mdl,'_subscriber']);
     add_line(mdl,'lcmInput/1','system/1');
   end
   % note: if obj has inputs, but no lcminput is specified, then it will just have the default input behavior (e.g. zeros)
   
   if getNumOutputs(obj)>0
-    assignin('base',[mdl,'_encoder'],@(t,x) encode(fout,t,x));
-    add_block('drake/lcmOutput',[mdl,'/lcmOutput'],'channel',['''',options.outchannel,''''],'dim',num2str(fout.dim),'encode_fcn',[mdl,'_encoder']);
+    assignin('base',[mdl,'_publisher'],fout);
+    add_block('drake/lcmOutput',[mdl,'/lcmOutput'],'channel',['''',options.outchannel,''''],'dim',num2str(fout.dim),'lcm_publisher',[mdl,'_publisher']);
     add_line(mdl,'system/1','lcmOutput/1');
   elseif (getNumOutputs(obj)>0)
     add_block('simulink3/Sinks/Terminator',[mdl,'/terminator']);

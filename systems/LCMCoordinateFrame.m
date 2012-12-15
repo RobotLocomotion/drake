@@ -1,4 +1,4 @@
-classdef LCMCoordinateFrame < CoordinateFrame & Singleton
+classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & Singleton
   
   methods
     function obj = LCMCoordinateFrame(name,lcmtype,prefix)
@@ -52,9 +52,50 @@ classdef LCMCoordinateFrame < CoordinateFrame & Singleton
       end
       obj = setCoordinateNames(obj,names);
     end
+    
+    function obj = subscribe(obj,channel)
+      if ~isempty(obj.aggregator)
+        delete obj.aggregator;
+      end
+      
+      lc = lcm.lcm.LCM.getSingleton(); %('udpm://239.255.76.67:7667?ttl=1');
+      obj.aggregator = lcm.lcm.MessageAggregator();
+      obj.aggregator.setMaxMessages(1);  % make it a last-message-only queue
   
-    function msg = encode(obj,t,x)
-      typecheck(x,'double');
+      lc.subscribe(options.inchannel,obj.aggregator);
+    end
+    
+    function [x,t] = getNextMessage(obj,timeout)
+      if isempty(obj.aggregator)
+        error('Drake:LCMCoordinateFrame:NoAggregator','You must subscribe to a channel first'); 
+      end
+      msg = getNextMessage(obj.aggregator,timeout);
+      if (~isempty(msg))
+        msg = obj.decode_constructor.newInstance(msg.data);
+        x=zeros(obj.dim,1);
+        for i=1:obj.dim
+          eval(['x(',num2str(i),') = msg.',CoordinateFrame.stripSpecialChars(obj.coordinates{i}),';']);
+        end
+        t = msg.timestamp/1000;
+        obj.last_x = x;
+        obj.last_t = t;
+        timedout=false;
+      else
+        x=[];
+        t=[];
+      end
+    end
+    
+    function [x,t] = getCurrentValue(obj)
+      [x,t]=getNextMessage(obj,0);
+      if isempty(t)
+        x = obj.last_x;
+        t = obj.last_t;
+      end
+    end
+    
+    function publish(obj,t,x,channel)
+      sizecheck(t,1);
       sizecheck(x,[obj.dim,1]);
       msg = obj.lcmtype.newInstance();
       msg.timestamp = t*1000;
@@ -62,24 +103,13 @@ classdef LCMCoordinateFrame < CoordinateFrame & Singleton
         eval(['msg.',CoordinateFrame.stripSpecialChars(obj.coordinates{i}),' = x(',num2str(i),');']);
       end
     end
-    
-    function [x,t] = decode(obj,msg)
-      msg = obj.decode_constructor.newInstance(msg.data);
-      x=zeros(obj.dim,1);
-      for i=1:obj.dim
-        eval(['x(',num2str(i),') = msg.',CoordinateFrame.stripSpecialChars(obj.coordinates{i}),';']);
-      end
-      t = msg.timestamp/1000;
-    end
-    
-%    function obj = setCoordinateNames(obj,coordinates)
-%      error('resetting names of LCM coordinate frames is not allowed.  the names must match the names in the lcm type file');
-%    end
   end
   
   properties
     lcmtype
-    decode_constructor;
+    aggregator=[];
+    last_x;
+    last_t;
   end
   
 end

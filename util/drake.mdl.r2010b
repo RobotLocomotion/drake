@@ -1,6 +1,6 @@
 Library {
   Name			  "drake"
-  Version		  7.9
+  Version		  7.6
   MdlSubVersion		  0
   SavedCharacterEncoding  "ISO-8859-1"
   LibraryType		  "BlockLibrary"
@@ -8,7 +8,6 @@ Library {
   ScopeRefreshTime	  0.035000
   OverrideScopeRefreshTime on
   DisableAllScopes	  off
-  FPTRunName		  "Run 1"
   MaxMDLFileLineLength	  120
   Created		  "Fri Aug 27 08:00:11 2010"
   Creator		  "russt"
@@ -16,9 +15,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "russt"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Sat Dec 15 17:02:48 2012"
-  RTWModifiedTimeStamp	  277491762
-  ModelVersionFormat	  "1.%<AutoIncrement:21>"
+  LastModifiedDate	  "Fri May 25 21:45:50 2012"
+  RTWModifiedTimeStamp	  259883146
+  ModelVersionFormat	  "1.%<AutoIncrement:20>"
   ConfigurationManager	  "None"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -26,7 +25,6 @@ Library {
   WideLines		  off
   ShowLineDimensions	  off
   ShowPortDataTypes	  off
-  ShowDesignRanges	  off
   ShowLoopsOnError	  on
   IgnoreBidirectionalLines off
   ShowStorageClass	  off
@@ -87,13 +85,13 @@ Library {
     Dimension		    1
     Simulink.ConfigSet {
       $ObjectID		      1
-      Version		      "1.12.0"
+      Version		      "1.10.0"
       Array {
 	Type			"Handle"
 	Dimension		8
 	Simulink.SolverCC {
 	  $ObjectID		  2
-	  Version		  "1.12.0"
+	  Version		  "1.10.0"
 	  StartTime		  "0.0"
 	  StopTime		  "10.0"
 	  AbsTol		  "auto"
@@ -111,7 +109,6 @@ Library {
 	  MaxConsecutiveMinStep	  "1"
 	  RelTol		  "1e-3"
 	  SolverMode		  "Auto"
-	  EnableConcurrentExecution off
 	  ConcurrentTasks	  off
 	  Solver		  "ode45"
 	  SolverName		  "ode45"
@@ -128,7 +125,7 @@ Library {
 	}
 	Simulink.DataIOCC {
 	  $ObjectID		  3
-	  Version		  "1.12.0"
+	  Version		  "1.10.0"
 	  Decimation		  "1"
 	  ExternalInput		  "[t, u]"
 	  FinalStateName	  "xFinal"
@@ -140,7 +137,6 @@ Library {
 	  SaveFinalState	  off
 	  SaveCompleteFinalSimState off
 	  SaveFormat		  "Array"
-	  SignalLoggingSaveFormat "ModelDataLogs"
 	  SaveOutput		  on
 	  SaveState		  off
 	  SignalLogging		  on
@@ -160,7 +156,7 @@ Library {
 	}
 	Simulink.OptimizationCC {
 	  $ObjectID		  4
-	  Version		  "1.12.0"
+	  Version		  "1.10.0"
 	  Array {
 	    Type		    "Cell"
 	    Dimension		    6
@@ -177,7 +173,6 @@ Library {
 	  ConditionallyExecuteInputs on
 	  InlineParams		  off
 	  UseIntDivNetSlope	  off
-	  UseFloatMulNetSlope	  off
 	  UseSpecifiedMinMax	  off
 	  InlineInvariantSignals  off
 	  OptimizeBlockIOStorage  on
@@ -210,11 +205,10 @@ Library {
 	  BufferReusableBoundary  on
 	  SimCompilerOptimization "Off"
 	  AccelVerboseBuild	  off
-	  ParallelExecutionInRapidAccelerator on
 	}
 	Simulink.DebuggingCC {
 	  $ObjectID		  5
-	  Version		  "1.12.0"
+	  Version		  "1.10.0"
 	  RTPrefix		  "error"
 	  ConsistencyChecking	  "none"
 	  ArrayBoundsChecking	  "none"
@@ -269,7 +263,6 @@ Library {
 	  UnconnectedOutputMsg	  "warning"
 	  UnconnectedLineMsg	  "warning"
 	  SFcnCompatibilityMsg	  "none"
-	  FrameProcessingCompatibilityMsg "warning"
 	  UniqueDataStoreMsg	  "none"
 	  BusObjectLabelMismatch  "warning"
 	  RootOutportRequireBusObject "warning"
@@ -286,7 +279,6 @@ Library {
 	  ModelReferenceExtraNoncontSigs "error"
 	  StateNameClashWarn	  "warning"
 	  SimStateInterfaceChecksumMismatchMsg "warning"
-	  SimStateOlderReleaseMsg "error"
 	  InitInArrayFormatMsg	  "warning"
 	  StrictBusMsg		  "Warning"
 	  BusNameAdapt		  "WarnAndRepair"
@@ -298,11 +290,10 @@ Library {
 	  SFInvalidInputDataAccessInChartInitDiag "warning"
 	  SFNoUnconditionalDefaultTransitionDiag "warning"
 	  SFTransitionOutsideNaturalParentDiag "warning"
-	  SFUnconditionalTransitionShadowingDiag "warning"
 	}
 	Simulink.HardwareCC {
 	  $ObjectID		  6
-	  Version		  "1.12.0"
+	  Version		  "1.10.0"
 	  ProdBitPerChar	  8
 	  ProdBitPerShort	  16
 	  ProdBitPerInt		  32
@@ -339,7 +330,7 @@ Library {
 	}
 	Simulink.ModelReferenceCC {
 	  $ObjectID		  7
-	  Version		  "1.12.0"
+	  Version		  "1.10.0"
 	  UpdateModelReferenceTargets "IfOutOfDateOrStructuralChange"
 	  CheckModelReferenceTargetMessage "error"
 	  EnableParallelModelReferenceBuilds off
@@ -354,7 +345,7 @@ Library {
 	}
 	Simulink.SFSimCC {
 	  $ObjectID		  8
-	  Version		  "1.12.0"
+	  Version		  "1.10.0"
 	  SFSimEnableDebug	  on
 	  SFSimOverflowDetection  on
 	  SFSimEcho		  on
@@ -369,7 +360,7 @@ Library {
 	Simulink.RTWCC {
 	  $BackupClass		  "Simulink.RTWCC"
 	  $ObjectID		  9
-	  Version		  "1.12.0"
+	  Version		  "1.10.0"
 	  Array {
 	    Type		    "Cell"
 	    Dimension		    6
@@ -410,9 +401,7 @@ Library {
 	  GenerateTraceReportSf	  off
 	  GenerateTraceReportEml  off
 	  GenerateCodeInfo	  off
-	  GenerateWebview	  off
-	  GenerateCodeMetricsReport off
-	  GenerateCodeReplacementReport	off
+	  GenerateSLWebview	  off
 	  RTWCompilerOptimization "Off"
 	  CheckMdlBeforeBuild	  "Off"
 	  CustomRebuildMode	  "OnUpdate"
@@ -421,7 +410,7 @@ Library {
 	    Dimension		    2
 	    Simulink.CodeAppCC {
 	      $ObjectID		      10
-	      Version		      "1.12.0"
+	      Version		      "1.10.0"
 	      Array {
 		Type			"Cell"
 		Dimension		17
@@ -482,7 +471,7 @@ Library {
 	    Simulink.GRTTargetCC {
 	      $BackupClass	      "Simulink.TargetCC"
 	      $ObjectID		      11
-	      Version		      "1.12.0"
+	      Version		      "1.10.0"
 	      Array {
 		Type			"Cell"
 		Dimension		15
@@ -506,10 +495,10 @@ Library {
 	      TargetFcnLib	      "ansi_tfl_table_tmw.mat"
 	      TargetLibSuffix	      ""
 	      TargetPreCompLibLocation ""
-	      CodeReplacementLibrary  "ANSI_C"
+	      TargetFunctionLibrary   "ANSI_C"
 	      UtilityFuncGeneration   "Auto"
 	      ERTMultiwordTypeDef     "System defined"
-	      CodeExecutionProfiling  off
+	      ERTCodeCoverageTool     "None"
 	      ERTMultiwordLength      256
 	      MultiwordLength	      2048
 	      GenerateFullHeader      on
@@ -519,7 +508,6 @@ Library {
 	      ModelReferenceCompliant on
 	      ParMdlRefBuildCompliant on
 	      CompOptLevelCompliant   on
-	      ConcurrentExecutionCompliant on
 	      IncludeMdlTerminateFcn  on
 	      GeneratePreprocessorConditionals "Disable all"
 	      CombineOutputUpdateFcns off
@@ -544,7 +532,6 @@ Library {
 	      ModelStepFunctionPrototypeControlCompliant off
 	      CPPClassGenCompliant    off
 	      AutosarCompliant	      off
-	      GRTInterface	      on
 	      UseMalloc		      off
 	      ExtMode		      off
 	      ExtModeStaticAlloc      off
@@ -556,7 +543,6 @@ Library {
 	      RTWCAPISignals	      off
 	      RTWCAPIParams	      off
 	      RTWCAPIStates	      off
-	      RTWCAPIRootIO	      off
 	      GenerateASAP2	      off
 	    }
 	    PropName		    "Components"
@@ -566,11 +552,10 @@ Library {
       }
       Name		      "Configuration"
       CurrentDlgPage	      "Solver"
-      ConfigPrmDlgPosition     [ 1480, 274, 2360, 904 ] 
+      ConfigPrmDlgPosition    " [ 1480, 274, 2360, 904 ] "
     }
     PropName		    "ConfigurationSets"
   }
-  ExplicitPartitioning	  off
   BlockDefaults {
     ForegroundColor	    "black"
     BackgroundColor	    "white"
@@ -604,12 +589,12 @@ Library {
   }
   BlockParameterDefaults {
     Block {
-      BlockType		      M-S-Function
-      FunctionName	      "matlabfile"
+      BlockType		      "M-S-Function"
+      FunctionName	      "mlfile"
       DisplayMFileStacktrace  on
     }
     Block {
-      BlockType		      S-Function
+      BlockType		      "S-Function"
       FunctionName	      "system"
       SFunctionModules	      "''"
       PortCounts	      "[]"
@@ -618,7 +603,7 @@ Library {
   }
   System {
     Name		    "drake"
-    Location		    [449, 300, 1029, 560]
+    Location		    [1081, 302, 1661, 562]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -634,7 +619,7 @@ Library {
     ReportName		    "simulink-default.rpt"
     SIDHighWatermark	    "5"
     Block {
-      BlockType		      S-Function
+      BlockType		      "S-Function"
       Name		      "DrakeSystem"
       SID		      "5"
       Ports		      [1, 1]
@@ -658,16 +643,16 @@ Library {
       MaskValueString	      "CompassGaitPlant()"
     }
     Block {
-      BlockType		      M-S-Function
+      BlockType		      "M-S-Function"
       Name		      "lcmInput"
       SID		      "1"
       Ports		      [0, 1]
       Position		      [25, 84, 110, 116]
       FunctionName	      "lcmInput"
-      Parameters	      "channel,dim,lcm_subscriber,sample_time"
-      MaskPromptString	      "Channel Name|Dimension of Signal|LCM Subscriber|Sample Time"
+      Parameters	      "channel,dim,decode_fcn,sample_time"
+      MaskPromptString	      "Channel Name|Dimension of Signal|Decoder Function|Sample Time"
       MaskStyleString	      "edit,edit,edit,edit"
-      MaskVariables	      "channel=@1;dim=@2;lcm_subscriber=@3;sample_time=@4;"
+      MaskVariables	      "channel=@1;dim=@2;decode_fcn=@3;sample_time=@4;"
       MaskTunableValueString  "off,off,off,on"
       MaskCallbackString      "|||"
       MaskEnableString	      "on,on,on,on"
@@ -679,19 +664,19 @@ Library {
       MaskIconRotate	      "none"
       MaskPortRotate	      "default"
       MaskIconUnits	      "autoscale"
-      MaskValueString	      "'channel'|1|0|.01"
+      MaskValueString	      "'channel'|1|''|.01"
     }
     Block {
-      BlockType		      M-S-Function
+      BlockType		      "M-S-Function"
       Name		      "lcmOutput"
       SID		      "2"
       Ports		      [1]
       Position		      [30, 158, 100, 192]
       FunctionName	      "lcmOutput"
-      Parameters	      "channel,dim,lcm_publisher,sample_time"
-      MaskPromptString	      "Channel Name|Dimension of Signal|LCM Publisher|Sample Time"
+      Parameters	      "channel,dim,encode_fcn,sample_time"
+      MaskPromptString	      "Channel Name|Dimension of Signal|Encoder Function|Sample Time"
       MaskStyleString	      "edit,edit,edit,edit"
-      MaskVariables	      "channel=@1;dim=@2;lcm_publisher=@3;sample_time=@4;"
+      MaskVariables	      "channel=@1;dim=@2;encode_fcn=@3;sample_time=@4;"
       MaskTunableValueString  "off,off,off,on"
       MaskCallbackString      "|||"
       MaskEnableString	      "on,on,on,on"
@@ -703,10 +688,10 @@ Library {
       MaskIconRotate	      "none"
       MaskPortRotate	      "default"
       MaskIconUnits	      "autoscale"
-      MaskValueString	      "'channel'|1|0|.01"
+      MaskValueString	      "'channel'|1|''|.01"
     }
     Block {
-      BlockType		      S-Function
+      BlockType		      "S-Function"
       Name		      "realtime"
       SID		      "4"
       Ports		      []

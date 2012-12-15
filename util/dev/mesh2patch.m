@@ -3,10 +3,12 @@ function patchinfo=mesh2patch(vertices,faces,view_axis)
 % Takes a 3D triangulated mesh, and returns a set of x,y,z points that can
 % be handed to patch for 2D visualization.  The primary operations are
 %
-%  (a) joining coplanar triangles into a single polygon (so that patch does
+%  (a) removing faces with normals orthogonal to the viewing axis
+%
+%  (b) joining coplanar triangles into a single polygon (so that patch does
 %  not draw the edge)
 % 
-%  (b) removing polygons that are completely covered (so will never be
+%  (c) removing polygons that are completely covered (so will never be
 %  seen)
 %
 % @param vertices an Nx3 double vector of 3D points
@@ -25,9 +27,27 @@ sizecheck(faces,[M,3]);
 
 sizecheck(view_axis,[3 1]);
 
+coplanar_tolerance = 1e-10; 
+
+%% remove faces that are out-of-plane
+a=vertices(faces(:,2),:)-vertices(faces(:,1),:);
+b=vertices(faces(:,3),:)-vertices(faces(:,1),:);
+normal=cross(a,b)./repmat(sum(a.*a,2).*sum(b.*b,2),1,3);
+faces(abs(normal*view_axis)<coplanar_tolerance,:)=[];
+
 %% collapse overlapping points
 [vertices,ia,ic]=unique(vertices,'rows');
 faces=ic(faces);
+
+%% remove unused vertices
+[f,ia,ic]=unique(faces(:));
+vertices=vertices(f,:); 
+N = size(vertices,1);
+h(f)=1:N;  faces=h(faces);
+M = size(faces,1);
+
+patchinfo.Vertices=vertices;
+patchinfo.Faces=faces;
 
 %% join coplanar polygons with a common edge
 edges = [[faces(:,1),faces(:,2)];[faces(:,2),faces(:,3)];[faces(:,3),faces(:,1)]];
@@ -46,7 +66,6 @@ doublesind=doublesind(2:end);  % the first edges scores diff=0, but it doesn't c
     elseif (b==L && a==1), f=f([1,end:-1:2]); a=1;b=2; end
   end
 
-coplanar_tolerance = 1e-12; 
 for i=1:length(doublesind)
   face1 = faceind(doublesind(i));
   face2 = faceind(doublesind(i)+1);

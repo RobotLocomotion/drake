@@ -32,14 +32,10 @@ function setup(block)
   block.SampleTimes = [block.DialogPrm(4).Data,0];
   
   block.SimStateCompliance = 'DefaultSimState';
-  
-  lc = lcm.lcm.LCM.getSingleton();
-  aggregator = lcm.lcm.MessageAggregator();
-  aggregator.setMaxMessages(1);
 
   block.RegBlockMethod('PostPropagationSetup',    @DoPostPropSetup);
-  block.RegBlockMethod('Start', @(block)Start(block,lc,aggregator));
-  block.RegBlockMethod('Outputs', @(block)Outputs(block,aggregator));     % Required
+  block.RegBlockMethod('Start', @Start);
+  block.RegBlockMethod('Outputs', @Outputs);     % Required
   block.RegBlockMethod('Terminate', @Terminate); % Required
 
 %end setup
@@ -48,16 +44,13 @@ function DoPostPropSetup(block)
   block.NumDworks = 0;
 
 
-function Start(block,lc,aggregator)
-  lc.subscribe(block.DialogPrm(1).Data,aggregator);
+function Start(block)
+  subscribe(block.DialogPrm(3).Data,block.DialogPrm(1).Data);
 
 
-function Outputs(block,aggregator)
-  if (aggregator.numMessagesAvailable()>0)
-    umsg = getNextMessage(aggregator);
-    decodeFcn = block.DialogPrm(3).Data;
-    block.OutputPort(1).Data = decodeFcn(umsg);
-  end
+function Outputs(block)
+  s = block.DialogPrm(3);
+  block.OutputPort(1).Data = getCurrentValue(s);
   
 
 function Terminate(block)
