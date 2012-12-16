@@ -40,9 +40,8 @@ if (obj.getNumInputs>0 && getNumStates(obj)<1) % if there are no state variables
     if isempty(t)
       t=last_t+toc;
       fprintf(1,'waiting... (t=%f)\n',t);
-    elseif t>last_t  % messages could arrive out-of-order (e.g. with the lcm tunnel)
+    else
       last_t=t; tic;
-      disp(t);
       y = obj.output(t,[],u);
       if (getNumOutputs(obj)>0)
         publish(fout,t,y,options.outchannel);
