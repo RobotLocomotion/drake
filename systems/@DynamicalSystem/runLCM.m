@@ -34,13 +34,15 @@ if (obj.getNumInputs>0 && getNumStates(obj)<1) % if there are no state variables
   global g_scope_enable; g_scope_enable = true;
   
   % just run as fast as possible
-  t=options.tspan(1); tic;
+  t=options.tspan(1); last_t=t; tic;
   while (t<=options.tspan(2))
     [u,t] = getNextMessage(fin,1000);
     if isempty(t)
-      t=options.tspan(1)+toc;
+      t=last_t+toc;
       fprintf(1,'waiting... (t=%f)\n',t);
-    else      
+    elseif t>last_t  % messages could arrive out-of-order (e.g. with the lcm tunnel)
+      last_t=t; tic;
+      disp(t);
       y = obj.output(t,[],u);
       if (getNumOutputs(obj)>0)
         publish(fout,t,y,options.outchannel);

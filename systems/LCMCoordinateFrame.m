@@ -84,7 +84,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
     
     function [x,t] = getCurrentValue(obj)
       [x,t]=getNextMessage(obj,0);
-      if isempty(t)
+      if isempty(t) || t<obj.last_t;  % messages could arrive out of order
         if (obj.last_x)
           x = obj.last_x;
           t = obj.last_t;
