@@ -6,7 +6,7 @@ LCMFILES = $(shell find . -iname "*.lcm" | tr "\n" " " | sed "s|\./||g")
 LCM_CFILES = $(LCMFILES:%.lcm=%.c) 
 CFILES = $(LCM_CFILES)
 LCM_JAVAFILES = $(LCMFILES:%.lcm=%.java)
-OTHER_JAVAFILES = util/MyLCMTypeDatabase.java
+OTHER_JAVAFILES = util/MyLCMTypeDatabase.java util/MessageMonitor.java
 JAVAFILES = $(LCM_JAVAFILES) $(OTHER_JAVAFILES)
 
 OBJFILES = $(CFILES:%.c=%.o)

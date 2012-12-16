@@ -72,3 +72,17 @@ doc/planning.tex
 examples/CompassGait/runLQR_URDF.m
 .gitignore
 fort.0
+drake.a
+include/lcmt_acrobot_u.h
+include/lcmt_acrobot_x.h
+include/lcmt_acrobot_y.h
+include/lcmt_cartpole_u.h
+include/lcmt_cartpole_x.h
+include/lcmt_glider_u.h
+include/lcmt_glider_x.h
+include/lcmt_pendulum_u.h
+include/lcmt_pendulum_x.h
+include/lcmt_pendulum_y.h
+include/lcmt_scope_data.h
+util/MessageMonitor.class
+util/MyLCMTypeDatabase$MyClassVisitor.class
