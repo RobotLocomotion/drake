@@ -52,7 +52,12 @@ function Start(block)
 
 function Outputs(block)
   subscriber = block.DialogPrm(3).Data;
-  block.OutputPort(1).Data = getCurrentValue(subscriber);
+  x = getCurrentValue(subscriber);
+  if isempty(x)
+    block.OutputPort(1).Data = zeros(block.DialogPrm(2).Data,1);
+  else
+    block.OutputPort(1).Data = getCurrentValue(subscriber);
+  end
   
 
 function Terminate(block)
