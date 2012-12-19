@@ -91,6 +91,7 @@ public class MessageMonitor implements LCMSubscriber
 	//        System.out.println(timestamp);
       }
       m_time_of_last_message = systime;
+      notify();
     } catch (IOException ex) {
       System.out.println("Exception: " + ex);
     } catch (InstantiationException ex) {
