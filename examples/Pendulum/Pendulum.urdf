@@ -11,7 +11,13 @@
     <color rgba="0 0 1 1" />
   </material>
 
-  <link name="world" />
+  <link name="world">
+    <inertial> <!-- drc-viewer needs this to have inertia to parse properly.  remove it when that bug is fixed -->
+      <origin xyz="0 0 0" />
+      <mass value="0.01" />
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+  </link>
   <link name="base_part2">
     <inertial>
       <origin xyz="0 0 .015" rpy="0 0 0"/>
