@@ -4,9 +4,16 @@ function [ltvsys,V] = tvlqr(obj,xtraj,utraj,Q,R,Qf,options)
 %  note:  Qf can be an nxn matrix, a cell array (for initializing the
 %  affine) or an PolynomialLyapunovFunction (e.g. as would happen if you hand it back
 %  Vtraj.eval(0) from a previous tvlqr trajectory).
+%
+% @option tspan @default utraj.getBreaks();
 
 if (nargin<7) options=struct(); end
-% no real options here, but options get's passed through to geval
+if isfield(options,'tspan') 
+  typecheck(options.tspan,'double');
+else  
+  options.tspan = utraj.getBreaks(); 
+end
+
 
 typecheck(xtraj,'Trajectory');
 sizecheck(xtraj,[getNumStates(obj),1]);
@@ -15,7 +22,7 @@ sizecheck(utraj,[getNumInputs(obj),1]);
 
 nX = xtraj.dim;
 nU = utraj.dim;
-tspan=utraj.getBreaks();
+tspan=options.tspan;
 
 % create new coordinate frames
 iframe = CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix);

@@ -56,7 +56,7 @@ function Outputs(block)
   if isempty(x)
     block.OutputPort(1).Data = zeros(block.DialogPrm(2).Data,1);
   else
-    block.OutputPort(1).Data = getCurrentValue(subscriber);
+    block.OutputPort(1).Data = x;
   end
   
 
