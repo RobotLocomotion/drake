@@ -154,7 +154,7 @@ classdef Manipulator < SecondOrderSystem
       end
     end
     
-    function [phi,n,D,mu] = contactConstraints(obj,q)
+    function [phi,n,D,mu] = contactConstraints(obj,q,dq)
       phi=[]; n=zeros(0,obj.num_q); D=cell(); mu=[];
     end
     

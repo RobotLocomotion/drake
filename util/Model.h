@@ -1,29 +1,30 @@
 #include <Eigen/Dense>
-#include "PlanarRigidBody.h"
+#include "RigidBody.h"
 using namespace Eigen;
 using namespace std;
 
-class Model {
+class Model 
+{
 public:
   int NB;
-  int *jcode;
+  int *pitch;
   int *parent;
-  Matrix3d *Xtree;
-  Matrix3d* I;
-  Vector3d a_grav;
+  MatrixXd* Xtree;
+  MatrixXd* I;
+  VectorXd a_grav;
   
-  Vector3d* S;
-  Matrix3d* Xup;
-  Vector3d* v;
-  Vector3d* avp;
-  Vector3d* fvp;
-  Matrix3d* IC;
+  VectorXd* S;
+  MatrixXd* Xup;
+  VectorXd* v;
+  VectorXd* avp;
+  VectorXd* fvp;
+  MatrixXd* IC;
   MatrixXd H;
   MatrixXd C;
   
   //Variables for gradient calculations
-  Matrix3d* dXupdq;
-  Matrix3d** dIC;
+  MatrixXd* dXupdq;
+  MatrixXd** dIC;
   MatrixXd dH;
   MatrixXd dC;
   
@@ -36,38 +37,54 @@ public:
   MatrixXd dvJdqd_mat;
   MatrixXd dcross;
   
-  PlanarRigidBody* bodies;
+  RigidBody* bodies;
   bool kinematicsInit;
   double *cached_q;
+  int secondDerivativesCached;
 
   Model(int n) {
     this->NB = n;
-    this->jcode = new int[n];
+    this->pitch = new int[n];
     this->parent = new int[n];
-    this->Xtree = new Matrix3d[n];
-    this->I = new Matrix3d[n];
-    this->a_grav << 0.0, 0.0, 0.0;
+    this->Xtree = new MatrixXd[n];
+    this->I = new MatrixXd[n];
+    this->a_grav = VectorXd::Zero(6);
     
-    this->S = new Vector3d[n];
-    this->Xup = new Matrix3d[n];
-    this->v = new Vector3d[n];
-    this->avp = new Vector3d[n];
-    this->fvp = new Vector3d[n];
-    this->IC = new Matrix3d[n];
+    this->S = new VectorXd[n];
+    this->Xup = new MatrixXd[n];
+    this->v = new VectorXd[n];
+    this->avp = new VectorXd[n];
+    this->fvp = new VectorXd[n];
+    this->IC = new MatrixXd[n];
+    
+        
+    for(int i=0; i < n; i++) {
+     this->Xtree[i] = MatrixXd::Zero(6,6);
+     this->I[i] = MatrixXd::Zero(6,6);
+     this->S[i] = VectorXd::Zero(6);
+     this->Xup[i] = MatrixXd::Zero(6,6);
+     this->v[i] = VectorXd::Zero(6);
+     this->avp[i] = VectorXd::Zero(6);     
+     this->fvp[i] = VectorXd::Zero(6);
+     this->IC[i] = MatrixXd::Zero(6,6);
+    } 
     
     this->H = MatrixXd::Zero(n,n);
     this->C.resize(n,1); // C gets over-written completely by the algorithm below.
     
     //Variable allocation for gradient calculations
-    this->dXupdq = new Matrix3d[n];
-    this->dIC = new Matrix3d*[n];
+    this->dXupdq = new MatrixXd[n];
+    this->dIC = new MatrixXd*[n];
     for(int i=0; i < n; i++) {
-     this->dIC[i] = new Matrix3d[n]; 
+     this->dIC[i] = new MatrixXd[n]; 
+	    for(int j=0; j < n; j++) {
+	    	this->dIC[i][j] = MatrixXd::Zero(6,6);
+		}
     }
     this->dH = MatrixXd::Zero(n*n,n);
-    this->dvJdqd_mat = MatrixXd::Zero(3,n);
-//     this->dcross.resize(3,n);
-    this->dC = MatrixXd::Zero(n,2*n);
+    this->dvJdqd_mat = MatrixXd::Zero(6,n);
+//     this->dcross.resize(6,n);
+    this->dC = MatrixXd::Zero(n,3*n);
     
     this->dvdq = new MatrixXd[n];
     this->dvdqd = new MatrixXd[n];
@@ -77,16 +94,15 @@ public:
     this->dfvpdqd = new MatrixXd[n];
     
     for(int i=0; i < n; i++) {
-     this->dvdq[i] = MatrixXd::Zero(3,n);
-     this->dvdqd[i] = MatrixXd::Zero(3,n);
-     this->davpdq[i] = MatrixXd::Zero(3,n);
-     this->davpdqd[i] = MatrixXd::Zero(3,n);
-     this->dfvpdq[i] = MatrixXd::Zero(3,n);
-     this->dfvpdqd[i] = MatrixXd::Zero(3,n);
-     
+     this->dvdq[i] = MatrixXd::Zero(6,n);
+     this->dvdqd[i] = MatrixXd::Zero(6,n);
+     this->davpdq[i] = MatrixXd::Zero(6,n);
+     this->davpdqd[i] = MatrixXd::Zero(6,n);
+     this->dfvpdq[i] = MatrixXd::Zero(6,n);
+     this->dfvpdqd[i] = MatrixXd::Zero(6,n);
     }        
     //This assumes that there is only one "world" object
-    this->bodies = new PlanarRigidBody[n+1];
+    this->bodies = new RigidBody[n+1];
     
     for(int i=0; i < n+1; i++) {
       this->bodies[i].setN(n);
@@ -94,10 +110,11 @@ public:
     
     this->kinematicsInit = false;
     this->cached_q = new double[n];
+    this->secondDerivativesCached = 0;
   }
   
   ~Model() {
-    delete[] this->jcode;
+    delete[] this->pitch;
     delete[] this->parent;
     delete[] this->Xtree;
     delete[] this->I;

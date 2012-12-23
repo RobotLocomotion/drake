@@ -24,7 +24,7 @@ for i=2:N
   model = addLink(model,1.2,1.2,.05);
 end
 
-model = compile(model,struct());
+model = compile(model);
 
 sys = PlanarRigidBodyManipulator(model);
 
@@ -38,7 +38,7 @@ function model=addLink(model,mass,len,radius)
 
   % link properties
   body.linkname=['link',num2str(ind-1)];
-  body.I = mcIp(mass,[0;-len/2],mass*len^2/12);  % solid rod w/ uniform mass
+  setInertial(body,mass,[0;-len/2],mass*len^2/12);  % solid rod w/ uniform mass
   body.geometry{1}.x = radius*[-1 1 1 -1 -1];
   body.geometry{1}.y = len*[0 0 -1 -1 0];
   h=figure(1035); set(h,'Visible','off');
@@ -53,7 +53,7 @@ function model=addLink(model,mass,len,radius)
   else
     parentlen = 0;
   end
-  model = addJoint(model,['joint',num2str(ind-1)],'revolute',model.body(ind-1),body,[0;0;-parentlen],zeros(3,1),model.view_axis,.1,-inf,inf);
+  model = addJoint(model,['joint',num2str(ind-1)],'revolute',model.body(ind-1),body,[0;0;-parentlen],zeros(3,1),model.view_axis,.1);
   
   if (ind>2)  % leave the first joint as passive
     actuator = RigidBodyActuator();

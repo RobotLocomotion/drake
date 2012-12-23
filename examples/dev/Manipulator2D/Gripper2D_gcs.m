@@ -105,15 +105,15 @@ classdef Gripper2D_gcs < Gripper2D
         nC = size(contact_pts,2);
         if nC>0
           if (nargout>4)
-            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(obj,i,contact_pts);
+            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(obj.model,i,contact_pts);
           elseif (nargout>1)
-            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(obj,i,contact_pts);
+            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(obj.model,i,contact_pts);
           else
-            [contact_pos(:,count+(1:nC))] = forwardKin(obj,i,contact_pts);
+            [contact_pos(:,count+(1:nC))] = forwardKin(obj.model,i,contact_pts);
           end
           
           if (nargout>6)
-            [contact_vel(:,count+(1:nC)),dv(2*count+(1:2*nC),:)] = forwardKinVel(obj,i,contact_pts,qd);
+            [contact_vel(:,count+(1:nC)),dv(2*count+(1:2*nC),:)] = forwardKinVel(obj.model,i,contact_pts,qd);
           end
           
           count = count + nC;

@@ -2,8 +2,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
-#include "Model.h"
-#include "PlanarRigidBody.h"
+#include "PlanarModel.h"
 #include "math.h"
 
 using namespace Eigen;
@@ -19,19 +18,19 @@ using namespace std;
 void mexFunction( int nlhs, mxArray *plhs[],
         int nrhs, const mxArray *prhs[] ) {
   if (nrhs != 4) {
-    mexErrMsgIdAndTxt("Drake:forwardKinVel:NotEnoughInputs", "Usage forwardKinVel(model_ptr,body_index,pts,qd)");
+    mexErrMsgIdAndTxt("Drake:forwardKinVelpmex:NotEnoughInputs", "Usage forwardKinVel(model_ptr,body_index,pts,qd)");
   }
   
-  Model *model = NULL;
+  PlanarModel *model = NULL;
   // first get the model_ptr back from matlab
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs", "first argument should be the model_ptr");
+    mexErrMsgIdAndTxt("Drake:forwardKinVelpmex:BadInputs", "first argument should be the model_ptr");
   memcpy(&model, mxGetData(prhs[0]), sizeof(model));
   
   int n_pts = mxGetN(prhs[2]);
   
   if (mxGetM(prhs[2]) != 2)
-    mexErrMsgIdAndTxt("Drake:forwardKinVel:BadInputs", "number of rows in pts must be 2");
+    mexErrMsgIdAndTxt("Drake:forwardKinVelpmex:BadInputs", "number of rows in pts must be 2");
   
   int body_ind = (int) mxGetScalar(prhs[1]);
   
@@ -46,7 +45,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   
   double *qd;
   if (mxGetNumberOfElements(prhs[3])!=model->NB)
-    mexErrMsgIdAndTxt("Drake:forwardKinVel:BadInputs", "qd must be size %d x 1", model->NB);
+    mexErrMsgIdAndTxt("Drake:forwardKinVelpmex:BadInputs", "qd must be size %d x 1", model->NB);
   qd = mxGetPr(prhs[3]);
   
   MatrixXd v(2,n_pts);

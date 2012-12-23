@@ -41,7 +41,7 @@ classdef RigidBodyContactVisualizer < Visualizer
         body = obj.model.body(i);
         nC = size(body.contact_pts,2);
         if nC>0
-          contact_pos = forwardKin(body,body.contact_pts);
+          contact_pos = forwardKin(obj.model,i,body.contact_pts);
           ind = nchoosek(1:nC,2);
           for k=1:size(ind,1)
             line(contact_pos(1,ind(k,:)),contact_pos(2,ind(k,:)),contact_pos(3,ind(k,:)));

@@ -1,4 +1,4 @@
-function coordinateTest(is,js)
+function coordinateTestMex(is,js)
 
 if (nargin<1) is=1:12; end
 if (nargin<2) js=1:4; end  
@@ -26,7 +26,6 @@ if (j<=2)
     m.gravity=[0;-9.81];
   end
   m = compile(m);
-  m = deleteMexPointer(m);
   r = PlanarRigidBodyManipulator(m);
 
 else
@@ -49,7 +48,6 @@ else
   end
   
   m = compile(m);
-  m = deleteMexPointer(m);
   r = RigidBodyManipulator(m);
 end
 
@@ -69,11 +67,12 @@ xf = eval(xtraj,10);
 m.doKinematics(xf(1));
 c = m.body(2).com;
 
-comf = m.forwardKin(2,c);
+comf = forwardKin(m,2,c);
+
 if (twod) 
-fprintf(1,'i:%d,j:%d,2D, c: %s, a: %s, v: %s, g: %s, s: %d, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(m.body(2).joint_axis), options.view, mat2str(m.gravity), m.body(2).jsign, num2str(xf(1)), mat2str(comf,1));
+  fprintf(1,'i:%d,j:%d,2D, c: %s, a: %s, v: %s, g: %s, s: %d, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(m.body(2).joint_axis), options.view, mat2str(m.gravity), m.body(2).jsign, num2str(xf(1)), mat2str(comf,1));
 else
-fprintf(1,'i:%d,j:%d,3D, c: %s, a: %s, g: %s, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(m.body(2).joint_axis), mat2str(m.gravity), num2str(xf(1)), mat2str(comf,1));
+  fprintf(1,'i:%d,j:%d,3D, c: %s, a: %s, g: %s, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(m.body(2).joint_axis), mat2str(m.gravity), num2str(xf(1)), mat2str(comf,1));
 end
 
 %qddot = sodynamics(r,0,q,qd,0)
@@ -87,7 +86,7 @@ end
 
 m.doKinematics(pi/4);
 if twod
-  postheta = m.forwardKin(2,[1;0]);
+  postheta = forwardKin(m,2,[1;0]);
   if valuecheck(m.body(2).joint_axis,[0;1;0])
     pthetaOK=postheta(2)<0;
   elseif valuecheck(m.body(2).joint_axis,[0;-1;0])
@@ -106,22 +105,22 @@ if twod
   end
 else
   if valuecheck(m.body(2).joint_axis,[0;1;0])
-    postheta = m.forwardKin(2,[1;0;0]);
+    postheta = forwardKin(m,2,[1;0;0]);
     pthetaOK=postheta(3)<0;
   elseif valuecheck(m.body(2).joint_axis,[0;-1;0])
-    postheta = m.forwardKin(2,[1;0;0]);
+    postheta = forwardKin(m,2,[1;0;0]);
     pthetaOK=postheta(3)>0;
   elseif valuecheck(m.body(2).joint_axis,[1;0;0])
-    postheta = m.forwardKin(2,[0;1;0]);
+    postheta = forwardKin(m,2,[0;1;0]);
     pthetaOK=postheta(3)>0;
   elseif valuecheck(m.body(2).joint_axis,[-1;0;0])
-    postheta = m.forwardKin(2,[0;1;0]);
+    postheta = forwardKin(m,2,[0;1;0]);
     pthetaOK=postheta(3)<0;
   elseif valuecheck(m.body(2).joint_axis,[0;0;1])
-    postheta = m.forwardKin(2,[1;0;0]);
+    postheta = forwardKin(m,2,[1;0;0]);
     pthetaOK = postheta(2)>0;
   elseif valuecheck(m.body(2).joint_axis,[0;0;-1])
-    postheta = m.forwardKin(2,[1;0;0]);
+    postheta = forwardKin(m,2,[1;0;0]);
     pthetaOK = postheta(2)<0;
   else
     warning('this "positive theta" check is not implemented yet');
@@ -141,3 +140,6 @@ fprintf(1,'\n');
 end
 
 end
+end
+
+

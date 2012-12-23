@@ -1,4 +1,4 @@
-function dTJ = dTjcalcp(pitch,q)
+function dTJ = dTjcalc(pitch,q)
 % time derivative of single joint kinematic transformation for planar models
 % this is the kinematic analog to jcalcp from the spatial vector library
 
