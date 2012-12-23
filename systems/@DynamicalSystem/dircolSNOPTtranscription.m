@@ -257,6 +257,9 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
     dJ(1) = dJ(1)+dJtraj(1:nT)*dtdw1;
     dJ(2:end) = dJ(2:end)+dJtraj(nT+1:end);
   end
+  if isfield(options,'plan_publisher')
+    options.plan_publisher.publish(t,x);  % todo: also publish u
+  end
   
   f = [J; d(:)];
   G = [dJ(:); dd(:)];
