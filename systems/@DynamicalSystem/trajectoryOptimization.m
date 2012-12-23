@@ -84,6 +84,8 @@ function [utraj,xtraj,info,trans_info] = trajectoryOptimization(sys,costFun,fina
 %        with T=[t0,t1,...tN],X=[x0,x1,...,xN],U=[u0,u1,...,uN], which is
 %        added to the original cost.  e.g., 
 %           J = Jtraj(T,X,U) + h(tf,x(tf)) + int_t0^tf g(t,x,u)dt
+%  @options plan_publisher handle to an object that publishes the plan (in
+%  progress with plan_publisher.publish(t,x,u);
 
 
 % More things to implement / think about:

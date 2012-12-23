@@ -71,19 +71,19 @@ for i=1:length(doublesind)
   face2 = faceind(doublesind(i)+1);
   if (face1==face2) 
     f1 = faces(face1,:); f1 = f1(f1>0);  if isempty(f1), error('oops!'); end
-    clf;
-    subplot(2,1,1);
-    patch(vertices(f1,1),vertices(f1,2),vertices(f1,3),[1 0 0]); 
+%    clf;
+%    subplot(2,1,1);
+%    patch(vertices(f1,1),vertices(f1,2),vertices(f1,3),[1 0 0]); 
 
     e=edges(edgeind(doublesind(i)),:);
     [f1,a1,b1]=reorder(f1,e);
     % zap one instance of edge:
     newface=f1([1:a1-1,b1+1:end]);
     
-    subplot(2,1,2);
-    patch(vertices(newface,1),vertices(newface,2),vertices(newface,3),.7*[1 1 1]);
-    hold on;
-    plot(vertices(e,1),vertices(e,2),'b+');
+%    subplot(2,1,2);
+%    patch(vertices(newface,1),vertices(newface,2),vertices(newface,3),.7*[1 1 1]);
+%    hold on;
+%    plot(vertices(e,1),vertices(e,2),'b+');
     
     if length(newface)>60 pause; end
     
@@ -92,10 +92,10 @@ for i=1:length(doublesind)
     f1 = faces(face1,:); f1 = f1(f1>0);  if isempty(f1), error('oops!'); end
     f2 = faces(face2,:); f2 = f2(f2>0);  if isempty(f2), error('oops!'); end
 
-    clf;
-    subplot(2,1,1);
-    patch(vertices(f1,1),vertices(f1,2),vertices(f1,3),[1 0 0]);
-    patch(vertices(f2,1),vertices(f2,2),vertices(f2,3),[0 1 0]);
+%    clf;
+%    subplot(2,1,1);
+%    patch(vertices(f1,1),vertices(f1,2),vertices(f1,3),[1 0 0]);
+%    patch(vertices(f2,1),vertices(f2,2),vertices(f2,3),[0 1 0]);
     
     % check if the two faces are coplanar
     % http://mathworld.wolfram.com/Coplanar.html
@@ -123,14 +123,14 @@ for i=1:length(doublesind)
     %% debugging
 
     %  axis equal;
-    subplot(2,1,2);
-    patch(vertices(newface,1),vertices(newface,2),vertices(newface,3),.7*[1 1 1]);
-    hold on;
-    plot(vertices(e,1),vertices(e,2),'b+');
-    %  axis equal;
-    i,newface
-    drawnow;
-    if length(newface)>60 pause; end
+%    subplot(2,1,2);
+%    patch(vertices(newface,1),vertices(newface,2),vertices(newface,3),.7*[1 1 1]);
+%    hold on;
+%    plot(vertices(e,1),vertices(e,2),'b+');
+%    %  axis equal;
+%    i,newface
+%    drawnow;
+%    if length(newface)>60 pause; end
     
     % write newface back into faces
     if (length(newface)>size(faces,2))

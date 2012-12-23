@@ -63,7 +63,7 @@ classdef PendulumPlant < SecondOrderSystem
       end
     end
     
-    function [utraj,xtraj]=swingUpTrajectory(obj)
+    function [utraj,xtraj]=swingUpTrajectory(obj,options)
       x0 = [0;0]; tf0 = 4; xf = double(obj.xG);
 
       con.u.lb = obj.umin;
@@ -79,7 +79,8 @@ classdef PendulumPlant < SecondOrderSystem
       con.T.lb = 2;
       con.T.ub = 6;
       
-      options.method='dircol';
+      if nargin<2, options=struct(); end
+      if ~isfield(options,'method') options.method='dircol'; end
       %options.grad_method='numerical';
       %options.grad_method={'user','numerical'};
       
