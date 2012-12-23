@@ -2,7 +2,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
-#include "Model.h"
+#include "PlanarModel.h"
 
 using namespace Eigen;
 using namespace std;
@@ -39,8 +39,8 @@ void dXpln(double theta, Vector2d r, int varIndex, Matrix3d* dX)
   double s = sin(theta);
   if (varIndex == 1) {
     *dX << 0, 0, 0,
-           c*r(1)+s*r(2), -s, c,
-           -s*r(1)+c*r(2), -c, -s;
+           c*r(0)+s*r(1), -s, c,
+           -s*r(0)+c*r(1), -c, -s;
   }
   else if (varIndex == 2) {
     *dX << 0, 0, 0,
@@ -53,6 +53,7 @@ void dXpln(double theta, Vector2d r, int varIndex, Matrix3d* dX)
             s, 0, 0;
   }
 }
+
 
 void jcalcp(int code, double q, Matrix3d* XJ, Vector3d* S)
 {
@@ -127,7 +128,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     mexErrMsgIdAndTxt("Drake:HandCpmex:NotEnoughInputs","Usage model_ptr = HandCpmex(model,[,grav_accn]), then [H,C] = HandCpmex(model_ptr,q,qd[,f_ext]), and finally HandCpmex(model_ptr) to free the memory.");
   }
 
-  Model *model = NULL;
+  PlanarModel *model = NULL;
   
   if (mxIsStruct(prhs[0])) { // then it's HandCp(model[,grav_accn]);
     mxArray* featherstone = mxGetField(prhs[0],0,"featherstone");
@@ -136,7 +137,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     // set up the model    
     mxArray* pNB = mxGetField(featherstone,0,"NB");
     if (!pNB) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't find field model.NB.  Are you passing in the correct structure?");
-    model = new Model((int) mxGetScalar(pNB));
+    model = new PlanarModel((int) mxGetScalar(pNB));
 
     mxArray* pparent = mxGetField(featherstone,0,"parent");
     if (!pparent) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't find field model.parent.");

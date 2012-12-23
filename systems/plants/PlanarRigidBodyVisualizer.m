@@ -49,7 +49,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
         body = obj.model.body(i);
         for j=1:length(body.geometry)
           s = size(body.geometry{j}.x); n=prod(s);
-          pts = body.T*[reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n); ones(1,n)];
+          pts = forwardKin(obj.model,i,[reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n)]);
           xpts = reshape(pts(1,:),s); ypts = reshape(pts(2,:),s);
           
           patch(xpts,ypts,body.geometry{j}.c,'LineWidth',.01); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
@@ -60,18 +60,19 @@ classdef PlanarRigidBodyVisualizer < Visualizer
           % end debugging
         end
         if (obj.debug) % draw extra debugging info
-          [m,c] = getInertial(body);
-          plot(body.T(1,3),body.T(2,3),'k+');
-          if (m~=0)
-            com = body.T*[c;1];
+          origin = forwardKin(obj.model,i,[0;0]);
+          plot(origin(1),origin(2),'k+');
+          if (body.mass~=0)
+            com = forwardKin(obj.model,i,body.com);
             plot(com(1),com(2),'ro');
-            line([body.T(1,3),com(1)],[body.T(2,3),com(2)],'Color','r');
+            line([origin(1),com(1)],[origin(2),com(2)],'Color','r');
           end
           if ~isempty(body.parent)
-            line([body.T(1,3),body.parent.T(1,3)],[body.T(2,3),body.parent.T(2,3)],'Color','k');
+            parent_origin = forwardKin(obj.model,body.parent,[0;0]);
+            line([origin(1),parent_origin(1)],[origin(2),parent_origin(2)],'Color','k');
           end
           if ~isempty(body.contact_pts)
-            pts = body.T*[body.contact_pts;ones(1,size(body.contact_pts,2))];
+            pts = forwardKin(obj.model,i,body.contact_pts);
             plot(pts(1,:),pts(2,:),'g*');
           end
         end
@@ -79,7 +80,9 @@ classdef PlanarRigidBodyVisualizer < Visualizer
 
       if (obj.debug)
         com = getCOM(obj.model,q);
-        plot(com(1),com(2),'b*','MarkerSize',20,'LineWidth',3);
+        plot(com(1),com(2),'bo','MarkerSize',15,'LineWidth',3);
+        plot(com(1),com(2),'b+','MarkerSize',15,'LineWidth',3);
+        plot([com(1) com(1)], [0 com(2)],'b--');
       end
 
       % for debugging

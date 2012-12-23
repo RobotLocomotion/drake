@@ -10,7 +10,7 @@ function megaclear()
     vrclear;
     
     evalin('base', 'h=findobj; delete(h(2:end));');  % delete dangling handles first
-    evalin('base', 'clear all classes java mex');    % now clear everything else
+    evalin('base', 'clear all classes java imports mex');    % now clear everything else
 
     dbstop(current_breakpoints);
     

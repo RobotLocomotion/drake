@@ -60,7 +60,8 @@ methods
     obj.bbox=[min(bbox(:,1:2)),max(bbox(:,3:4))];
     
     % set common bounding box
-    cmd{1}=['ls ', obj.dirname,'/*.eps | xargs -P 8 sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(obj.bbox),'/g" -i ".bk"'];
+    %cmd{1}=['ls ', obj.dirname,'/*.eps | xargs -P 8 sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(obj.bbox),'/g" -i ".bk"'];
+    cmd{1}=['ls ', obj.dirname,'/*.eps | xargs -P 8 sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(obj.bbox),'/g"'];
     
     % convert eps to pdf
     cmd{2}=['ls ', obj.dirname,'/*.eps | xargs -P 8 -n1 epstopdf'];

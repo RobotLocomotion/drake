@@ -25,11 +25,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         end
       end
       
-      % todo: parse the model as a 3D rigid body first
-      %options.visual_geometry = true;
-      %model = model@RigidBodyModel(urdf_filename,options);
-
-      model = model@RigidBodyModel();
+      model = model@RigidBodyModel(); % initialize planar mex below 
       model.D = 2;  % set to 2D
 
       switch options.view % joint_axis = view_axis => counter-clockwise
@@ -40,12 +36,14 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           model.x_axis_label='y';
           model.y_axis_label='z';
 %          model.name = [model.name,'Front'];
+          model.gravity = [0;-9.81];
         case 'right'
           model.x_axis = [1;0;0];
           model.y_axis = [0;0;1];
           model.view_axis = [0;1;0];
           model.x_axis_label='x';
           model.y_axis_label='z';
+          model.gravity = [0;-9.81];
 %          model.name = [model.name,'Right'];
         case 'top'
           model.x_axis = [1;0;0];
@@ -53,6 +51,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           model.view_axis = [0;0;1];
           model.x_axis_label='x';
           model.y_axis_label='y';
+          model.gravity = [0;0];
 %          model.name = [model.name,'Top'];
       end
         
@@ -65,25 +64,6 @@ classdef PlanarRigidBodyModel < RigidBodyModel
 %        model = extract2Dfrom3D(model);
       end
       
-      switch options.view
-        case 'front'
-          model.gravity = [0;-9.81];
-
-        case 'right'
-          model.gravity = [0;-9.81];
-          if ~isempty(model.body)
-            % 'flip' rotational kinematics (since y-axis goes into the page)
-            rotind = find([model.body.jcode]==1);
-            for i=rotind
-              model.body(i).jsign = -model.body(i).jsign;
-%              [m,c,I]=getInertial(model.body(i));
-%              c(1)=-c(1);
-%              model.body(i).I = mcIp(m,c,I);
-            end
-          end           
-        case 'top'
-          model.gravity = [0;0];
-      end
     end    
     
 %     function model = extract2Dfrom3D(model,options)
@@ -105,31 +85,35 @@ classdef PlanarRigidBodyModel < RigidBodyModel
 %       end
 %     end
     
-    function doKinematics(model,q,b_compute_second_derivatives)
+    function doKinematics(model,q,b_compute_second_derivatives,use_mex)
+      if nargin<4, use_mex=true; end
       if nargin<3, b_compute_second_derivatives=false; end
-      if isnumeric(q) && all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
-        % then my kinematics are up to date, don't recompute
-        % the "isnumeric" check is for the sake of taylorvars
-        if b_compute_second_derivatives && ~any(cellfun(@isempty,{model.body.ddTdqdq}))
-          % also make sure second derivatives are already computed, if they
-          % are requested
-          return
+      if (use_mex && model.mex_model_ptr && isnumeric(q))
+        doKinematicspmex(model.mex_model_ptr,q,b_compute_second_derivatives);
+      else
+        if isnumeric(q) && all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
+          % then my kinematics are up to date, don't recompute
+          % the "isnumeric" check is for the sake of taylorvars
+          if b_compute_second_derivatives && ~any(cellfun(@isempty,{model.body.ddTdqdq}))
+            % also make sure second derivatives are already computed, if they
+            % are requested
+            return
+          end
         end
-      end
-      nq = model.featherstone.NB;
-      for i=1:length(model.body)
-        body = model.body(i);
-        if (isempty(body.parent))
-          body.T = body.Ttree;
-          body.dTdq = zeros(3*nq,3);
-          body.ddTdqdq = zeros(3*nq*nq,3);
-        else
-          qi = body.jsign*q(body.dofnum);
+        nq = model.featherstone.NB;
+        for i=1:length(model.body)
+          body = model.body(i);
+          if (isempty(body.parent))
+            body.T = body.Ttree;
+            body.dTdq = zeros(3*nq,3);
+            body.ddTdqdq = zeros(3*nq*nq,3);
+          else
+            qi = body.jsign*q(body.dofnum);
           
-          TJ = Tjcalcp(body.jcode,qi);
-          dTJ = dTjcalcp(body.jcode,qi)*body.jsign;
+            TJ = Tjcalcp(body.jcode,qi);
+            dTJ = dTjcalcp(body.jcode,qi)*body.jsign;
 
-          body.T=body.parent.T*body.Ttree*TJ;
+            body.T=body.parent.T*body.Ttree*TJ;
 
           % todo: consider pulling this out into a
           % "doKinematicsAndVelocities" version?  but I'd have to be
@@ -158,12 +142,92 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           end
           body.cached_q = q(body.dofnum);
         end
+        end
+      end
+    end
+
+    function [x,J,dJ] = forwardKin(obj,body_ind,pts,use_mex_if_possible)
+      % @param body_ind, an integer index for the body.  if body_ind is a
+      % RigidBody object, then this method will look up the index for you.
+      % @retval x the position of pts (given in the body frame) in the global frame
+      % @retval J the Jacobian, dxdq
+      % @retval dJ the gradients of the Jacobian, dJdq
+      %
+      % Note: for efficiency, assumes that "doKinematics" has been called on the model
+      % if pts is a 2xm matrix, then x will be a 2xm matrix
+      %  and (following our gradient convention) J will be a ((2xm)x(nq))
+      %  matrix, with [J1;J2;...;Jm] where Ji = dxidq 
+      % and dJ will be a (2xm)x(nq^2) matrix
+
+      if (nargin<4) use_mex_if_possible = true; end
+      if (isa(body_ind,'RigidBody')) body_ind = find(obj.body==body_ind,1); end
+      if (use_mex_if_possible && obj.mex_model_ptr && isnumeric(pts))
+        if nargout > 2
+          [x,J,dJ] = forwardKinpmex(obj.mex_model_ptr,body_ind-1,pts);
+        elseif nargout > 1
+          [x,J] = forwardKinpmex(obj.mex_model_ptr,body_ind-1,pts);
+        else
+          x = forwardKinpmex(obj.mex_model_ptr,body_ind-1,pts);
+        end
+      else
+        body = obj.body(body_ind);
+        m = size(pts,2);
+        pts = [pts;ones(1,m)];
+        x = body.T(1:2,:)*pts;
+        if (nargout>1)
+          nq = size(body.dTdq,1)/3;
+          J = reshape(body.dTdq(1:2*nq,:)*pts,nq,[])';
+          if (nargout>2)
+            if isempty(body.ddTdqdq)
+              error('you must call doKinematics with the second derivative option enabled');
+            end
+            ind = repmat(1:2*nq,nq,1)+repmat((0:3*nq:3*nq*(nq-1))',1,2*nq);
+            dJ = reshape(body.ddTdqdq(ind,:)*pts,nq^2,[])';
+          end
+        end
       end
     end
     
+    function [v,dv] = forwardKinVel(obj,body_ind,pts,qd,use_mex_if_possible)
+      % @param body_ind, an integer index for the body.  if body_ind is a
+      % RigidBody object, then this method will look up the index for you.
+      % @retval v the velocity of pts (given in the body frame) in the global frame
+      % @retval dv the Jacobian, [dvdq; dvdqd]
+      %
+      % Note: for efficiency, assumes that "doKinematics" has been called on the model
+      % if pts is a 2xm matrix, then v will be a 2xm matrix
+      %  and (following our gradient convention) dv will be a ((2m)x(2nq))
+
+      if (nargin<5) use_mex_if_possible = true; end
+      if (isa(body_ind,'RigidBody')) body_ind = find(obj.body==body_ind,1); end
+      if (use_mex_if_possible && obj.mex_model_ptr && isnumeric(qd))
+        if nargout > 1
+          [v,dv] = forwardKinVelpmex(obj.mex_model_ptr,body_ind-1,pts,qd);
+        else
+          v = forwardKinVelpmex(obj.mex_model_ptr,body_ind-1,pts,qd);
+        end
+      else
+        body = obj.body(body_ind);
+        nq = size(body.dTdq,1)/3;
+        m = size(pts,2);
+        pts = [pts;ones(1,m)];
+        v = kron(eye(2),qd')*body.dTdq(1:2*nq,:)*pts;
+        %       v = body.Tdot(1:2,:)*pts;
+        if (nargout>1)
+          dv = [zeros(2*size(pts,2),nq) reshape(body.dTdq(1:2*nq,:)*pts,[],2*size(pts,2))'];
+          tmp = kron([1 0 0;0 1 0],qd');
+          for i=1:nq,
+            col = tmp*body.ddTdqdq((1:3*nq) + 3*nq*(i-1),:)*pts;
+            dv(:,i) = col(:);
+          end;
+          %         dv = [reshape(body.dTdotdqqd([1:2*nq],:)*pts,nq,[])' reshape(body.dTdotdqqd([(1:2*nq)+3*nq],:)*pts,nq,[])'];
+        end
+      end
+    end    
+    
     function [x,J,dJ] = kinTest(m,q)
       % test for kinematic gradients
-      doKinematics(m,q,nargout>2);
+      doKinematics(m,q,nargout>2,false);
         
       count=0;
       for i=1:length(m.body)
@@ -172,12 +236,12 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           s = size(body.geometry{j}.x); n=prod(s);
           pts = [reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n)];
           if (nargout>1)
-            [x(:,count+(1:n)),J(2*count+(1:2*n),:),dJ(2*count+(1:2*n),:)] = forwardKin(body,pts);
+            [x(:,count+(1:n)),J(2*count+(1:2*n),:),dJ(2*count+(1:2*n),:)] = forwardKin(m,i,pts);
           else
           if ~exist('x') % extra step to help taylorvar
-            x = forwardKin(body,pts);
+            x = forwardKin(m,i,pts);
           else
-            xn = forwardKin(body,pts);
+            xn = forwardKin(m,i,pts);
             x=[x,xn];
           end
           end
@@ -227,27 +291,29 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       end
     end
     
-    function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,joint_lim_min,joint_lim_max,options)
+    function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits,options)
       if (nargin<6) xy=zeros(2,1); end
       if (nargin<7) p=0; end
       if (nargin<9) damping=0; end
-      if (nargin<10) joint_lim_min=-inf; end
-      if (nargin<11) joint_lim_max=inf; end
-      if (nargin<12) options=struct(); end % no options yet
-      
-      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
+      if (nargin<10 || isempty(limits)) 
+          limits = struct(); 
+          limits.joint_limit_min = -Inf;
+          limits.joint_limit_max = Inf;
+          limits.effort_limit = Inf;
+          limits.velocity_limit = Inf;
+      end
       
       switch (lower(type))
         case {'revolute','continuous','planar'}
           if abs(dot(axis,model.view_axis))<(1-1e-6)
-            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded revolute joint ', name,' because it did not align with the viewing axis']);
-            model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,joint_lim_min,joint_lim_max,options);
+            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded revolute joint ', child.jointname,' because it did not align with the viewing axis']);
+            model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,limits,options);
             return;
           end
         case 'prismatic'
           if abs(dot(axis,model.view_axis))>1e-6
-            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded prismatic joint ', name,' because it did not align with the viewing axis']);
-            model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,joint_lim_min,joint_lim_max,options);
+            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded prismatic joint ', child.jointname,' because it did not align with the viewing axis']);
+            model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,limits,options);
             return;
           end
       end
@@ -261,6 +327,9 @@ classdef PlanarRigidBodyModel < RigidBodyModel
           child.pitch=0;
           child.joint_axis=axis;
           child.jsign = sign(dot(axis,model.view_axis));
+          if dot(model.view_axis,[0;1;0])  % flip rotational kinematics view='right' to be consistent with vehicle coordinates
+            child.jsign = -child.jsign;
+          end
           child.jcode=1;
           
         case 'prismatic'
@@ -279,7 +348,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         case 'planar'
           % create two links with sliders, then finish this function with
           % the first of these joints (which need to catch the kinematics)
-          if (joint_lim_min~=-inf || joint_lim_max~=inf)
+          if (limits.joint_limit_min~=-inf || limits.joint_limit_max~=inf)
             error('joint limits not defined for planar joints');
           end
           jsign = sign(dot(axis,model.view_axis));
@@ -322,7 +391,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       if any(rpy)
         rpya=rpy2axis(rpy); p=rpya(4); rpyaxis=rpya(1:3);
         if abs(dot(rpyaxis,model.view_axis))<(1-1e-6)
-          warning(['joint ',name,': joint axes out of the plane are not supported.  the dependent link ',child.linkname,' (and all of it''s decendants) will be zapped']);
+          warning(['joint ',child.jointname,': joint axes out of the plane are not supported.  the dependent link ',child.linkname,' (and all of it''s decendants) will be zapped']);
           ind = find([model.body]==child);
           model.body(ind)=[];
           return;
@@ -342,20 +411,21 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       child.Ttree = [rotmat(p),xy; 0,0,1];
       child.T = parent.T*child.Ttree;
       child.damping = damping;
-      child.joint_limit_min = joint_lim_min;
-      child.joint_limit_max = joint_lim_max;
+      child.joint_limit_min = limits.joint_limit_min;
+      child.joint_limit_max = limits.joint_limit_max;
+      child.effort_limit = limits.effort_limit;
+      child.velocity_limit = limits.velocity_limit;
     end
 
     
     function model=parseJoint(model,node,options)
-
-        
       ignore = char(node.getAttribute('drakeIgnore'));
       if strcmp(lower(ignore),'true')
         return;
       end
       
       name = char(node.getAttribute('name'));
+      name = regexprep(name, '\.', '_', 'preservecase');
 
       childNode = node.getElementsByTagName('child').item(0);
       if isempty(childNode) % then it's not the main joint element
@@ -402,6 +472,8 @@ classdef PlanarRigidBodyModel < RigidBodyModel
 
       joint_limit_min=-inf;
       joint_limit_max=inf;
+      effort_limit=inf;
+      velocity_limit=inf;
       limits = node.getElementsByTagName('limit').item(0);
       if ~isempty(limits)
         if limits.hasAttribute('lower')
@@ -410,12 +482,25 @@ classdef PlanarRigidBodyModel < RigidBodyModel
         if limits.hasAttribute('upper');
           joint_limit_max = str2num(char(limits.getAttribute('upper')));
         end          
+        if limits.hasAttribute('effort');
+          effort_limit = str2num(char(limits.getAttribute('effort')));
+        end          
+        if limits.hasAttribute('velocity');
+          velocity_limit = str2num(char(limits.getAttribute('velocity')));
+          warning('Drake:PlanarRigidBodyModel:UnsupportedVelocityLimits','Velocity limits are not supported yet');
+        end          
       end
+
+      limits = struct();
+      limits.joint_limit_min = joint_limit_min;
+      limits.joint_limit_max = joint_limit_max;
+      limits.effort_limit = effort_limit;
+      limits.velocity_limit = velocity_limit;
       
-      model = addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,joint_limit_min,joint_limit_max,options);
+      model = addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits,options);
     end
     
-    function model = addFloatingBase(model,options)
+    function model = addFloatingBase(model)
       rootlink = find(cellfun(@isempty,{model.body.parent}));
       if (length(rootlink)>1)
         warning('multiple root links');
@@ -429,24 +514,30 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       world.parent = [];
       model.body = [model.body,world];
       
+      limits = struct(); 
+      limits.joint_limit_min = -Inf;
+      limits.joint_limit_max = Inf;
+      limits.effort_limit = Inf;
+      limits.velocity_limit = Inf;
       for i=1:length(rootlink)
-        model = addJoint(model,model.body(i).linkname,'planar',world,model.body(i),zeros(3,1),zeros(3,1),model.view_axis,0,-inf,inf,options);
+        model = addJoint(model,model.body(i).linkname,'planar',world,model.body(i),zeros(3,1),zeros(3,1),model.view_axis,0,limits);
       end
     end
     
     function model = parseLoopJoint(model,node,options)
       loop = PlanarRigidBodyLoop();
       loop.name = char(node.getAttribute('name'));
-      
+      loop.name = regexprep(loop.name, '\.', '_', 'preservecase');
+
       link1Node = node.getElementsByTagName('link1').item(0);
       link1 = findLink(model,char(link1Node.getAttribute('link')));
       loop.body1 = link1;
-      loop.T1 = loop.parseLink(link1Node,options);
+      loop.T1 = loop.parseLink(link1Node);
       
       link2Node = node.getElementsByTagName('link2').item(0);
       link2 = findLink(model,char(link2Node.getAttribute('link')));
       loop.body2 = link2;
-      loop.T2 = loop.parseLink(link2Node,options);
+      loop.T2 = loop.parseLink(link2Node);
       
       %% find the lowest common ancestor
       loop.least_common_ancestor = leastCommonAncestor(loop.body1,loop.body2);
@@ -489,7 +580,7 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       model.loop=[model.loop,loop];
     end
     
-    function model = extractFeatherstone(model,options)
+    function model = extractFeatherstone(model)
 %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
       dof=0;inds=[];
       for i=1:length(model.body)

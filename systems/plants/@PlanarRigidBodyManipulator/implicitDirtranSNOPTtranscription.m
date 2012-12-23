@@ -344,7 +344,7 @@ function [f,G] = dirtran_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,nL,nC,nC
     
     d_i(num_q+1:nX) = H*dqdot - dt(i)*Hqddot;
     dd_i(num_q+1:num_q*2,:) = [-ddtdw1(i)*Hqddot zeros(num_q) -H zeros(num_q,nU+nL+2*nC+nClutch)...
-      matGradMult(dH,dqdot) H zeros(num_q,nU + nL+2*nC+nClutch)] - [zeros(num_q,1+nX+nU+nL+2*nC+nClutch) dt(i)*dHqddot(:,2:end)];
+      matGradMult(dH(:,1:num_q),dqdot) H zeros(num_q,nU + nL+2*nC+nClutch)] - [zeros(num_q,1+nX+nU+nL+2*nC+nClutch) dt(i)*dHqddot(:,2:end)];
     
     %trying a 1e3 scaling on dynamic constraint
 %     d_i(num_q+1:nX) = d_i(num_q+1:nX)*1e3;
@@ -472,14 +472,10 @@ function [f,G] = dirtran_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,nL,nC,nC
   %Initial position constraints
 %   doKinematicsAndVelocities(sys.model,x(1:num_q,1),x(num_q+1:2*num_q));
 
-  if (sys.mex_model_ptr)
-    doKinematicsmex(sys.mex_model_ptr,x(1:num_q,1),1)
-  else
-    doKinematics(sys.model,x(1:num_q,1),true);
-  end
+  doKinematics(sys.model,x(1:num_q,1));
 
-     %Unilateral position constraints
-    if nL > 0
+  %Unilateral position constraints
+  if nL > 0
       nJointLimitConst = sys.getNumJointLimits;
       % Handle Joint Limit constraints first
       if (nJointLimitConst > 0)
@@ -601,7 +597,7 @@ G = [dJ(:); dd(:); dd_end(:)];
   
   G = G(options.grad_I);
   
-  pause(0);
+%  pause(0);
 end
 
 function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_ind(sys,nT,nX,nU,nL,nC,nClutch,con,x,t,options)

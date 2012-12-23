@@ -3,7 +3,6 @@ classdef RigidBody < handle
   properties
     % link properties
     linkname=''  % name of the associated link
-    I=zeros(6);  % spatial mass/inertia
     wrlgeometry=''; % geometry (compatible w/ wrl).  see parseVisual below.
     geometry={}  % geometry (compatible w/ patch).  see parseVisual below.
     dofnum=0     % the index in the state vector corresponding to this joint
@@ -23,6 +22,8 @@ classdef RigidBody < handle
     damping=0;
     joint_limit_min=[];
     joint_limit_max=[];
+    effort_limit=[];
+    velocity_limit=[];
     
     % dynamic properties (e.g. state at runtime)
     cached_q=[];  % the current kinematics were computed using these q and qd values 
@@ -33,8 +34,21 @@ classdef RigidBody < handle
     Tdot = [];
     dTdotdqqd = [];
   end
+
+  properties (SetAccess=protected, GetAccess=public)    
+    % mass, com, inertia properties
+    I=zeros(6);  % spatial mass/inertia
+    mass = 0;
+    com = [];
+    inertia = [];
+  end
   
   methods    
+    
+    function varargout = forwardKin(varargin)
+      error('forwardKin(body,...) has been replaced by forwardKin(model,body_num,...), because it has a mex version.  please update your kinematics calls');
+    end
+    
     function newbody = copy(body)
       % makes a shallow copy of the body
       % note that this functionality is in matlab.mixin.Copyable in newer
@@ -50,7 +64,7 @@ classdef RigidBody < handle
     
     function body=parseInertial(body,node,options)
       mass = 0;
-      I = eye(3);
+      inertia = eye(3);
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
@@ -69,35 +83,51 @@ classdef RigidBody < handle
       end
       inode = node.getElementsByTagName('inertia').item(0);
       if ~isempty(inode)
-        if inode.hasAttribute('ixx'), I(1,1)=str2num(char(inode.getAttribute('ixx'))); end
-        if inode.hasAttribute('ixy'), I(1,2)=str2num(char(inode.getAttribute('ixy'))); I(2,1)=I(1,2); end
-        if inode.hasAttribute('ixz'), I(1,3)=str2num(char(inode.getAttribute('ixz'))); I(3,1)=I(1,3); end
-        if inode.hasAttribute('iyy'), I(2,2)=str2num(char(inode.getAttribute('iyy'))); end
-        if inode.hasAttribute('iyz'), I(2,3)=str2num(char(inode.getAttribute('iyz'))); I(3,2)=I(2,3); end
-        if inode.hasAttribute('izz'), I(3,3)=str2num(char(inode.getAttribute('izz'))); end
+        if inode.hasAttribute('ixx'), inertia(1,1)=str2num(char(inode.getAttribute('ixx'))); end
+        if inode.hasAttribute('ixy'), inertia(1,2)=str2num(char(inode.getAttribute('ixy'))); inertia(2,1)=inertia(1,2); end
+        if inode.hasAttribute('ixz'), inertia(1,3)=str2num(char(inode.getAttribute('ixz'))); inertia(3,1)=inertia(1,3); end
+        if inode.hasAttribute('iyy'), inertia(2,2)=str2num(char(inode.getAttribute('iyy'))); end
+        if inode.hasAttribute('iyz'), inertia(2,3)=str2num(char(inode.getAttribute('iyz'))); inertia(3,2)=inertia(2,3); end
+        if inode.hasAttribute('izz'), inertia(3,3)=str2num(char(inode.getAttribute('izz'))); end
       end      
 
       if any(rpy)
         error('rpy in inertia block not implemented yet (but would be easy)');
       end
-      body.I = mcI(mass,xyz,I);
+      setInertial(body,mass,xyz,inertia);
     end
-
-    function [m,c,I] = getInertial(body)
-      % extract mass, center of mass, and inertia information from the
-      % spatial I matrix
-      m = body.I(6,6);
-      mC = body.I(1:3,4:6);
+    
+    function setInertial(body,varargin)
+      % setInertial(body,mass,com,inertia) or setInertial(body,spatialI)
+      % this guards against things getting out of sync
       
       function v = skew(A)
         v = 0.5 * [ A(3,2) - A(2,3);
           A(1,3) - A(3,1);
-          A(2,1) - A(1,2) ];      
+          A(2,1) - A(1,2) ];
       end
       
-      c = skew(mC)/m;
-      I = body.I(1:3,1:3) - mC*mC'/m;
-    end
+      if nargin==2
+        sizecheck(varargin{1},[6 6]);
+        % extract mass, center of mass, and inertia information from the
+        % spatial I matrix
+        body.I = varargin{1};
+        body.mass = body.I(6,6);
+        mC = body.I(1:3,4:6);
+        body.com = skew(mC)/body.mass;
+        body.inertia = body.I(1:3,1:3) - mC*mC'/body.mass;
+      elseif nargin==4
+        sizecheck(varargin{1},1);
+        sizecheck(varargin{2},[3 1]);
+        sizecheck(varargin{3},[3 3]);
+        body.mass = varargin{1};
+        body.com = varargin{2};
+        body.inertia = varargin{3};
+        body.I = mcI(body.mass,body.com,body.inertia);
+      else
+        error('wrong number of arguments');
+      end    
+    end    
     
     function body = parseVisual(body,node,model,options)
       c = .7*[1 1 1];
@@ -133,7 +163,9 @@ classdef RigidBody < handle
         if isempty(body.linkname)
           wrl_transform_str = ['Transform {\n',wrl_transform_str];
         else
-          wrl_transform_str = [sprintf('DEF %s Transform {\n',body.linkname),wrl_transform_str];
+            % get rid of dots in link name
+            body.linkname = regexprep(body.linkname, '\.', '_', 'preservecase');
+            wrl_transform_str = [sprintf('DEF %s Transform {\n',body.linkname),wrl_transform_str];
         end
         wrl_transform_str = [wrl_transform_str,'\tchildren [\n'];
       end
@@ -176,21 +208,6 @@ classdef RigidBody < handle
         body.contact_pts=unique([body.contact_pts';xpts(:), ypts(:), zpts(:)],'rows')';
       end
     end
-    
-    function [x,J] = forwardKin(body,pts)
-      % computes the position of pts (given in the body frame) in the global frame
-      % for efficiency, assumes that "doKinematics" has been called on the model
-      % if pts is a 3xm matrix, then x will be a 3xm matrix
-      %  and (following our gradient convention) J will be a ((3xm)x(q))
-      %  matrix, with [J1;J2;...;Jm] where Ji = dxidq 
-      m = size(pts,2);
-      pts = [pts;ones(1,m)];
-      x = body.T(1:3,:)*pts;
-      if (nargout>1)
-        nq = size(body.dTdq,1)/4;
-        J = reshape(body.dTdq(1:3*nq,:)*pts,nq,[])';
-      end
-    end    
       
     function b=leastCommonAncestor(body1,body2)
       % recursively searches for the lowest body in the tree that is an
@@ -214,6 +231,9 @@ classdef RigidBody < handle
       if isempty(body.jointname)
         fprintf(fp,'Transform {\n');
       else
+          % get rid of dots in joint name
+          body.jointname = regexprep(body.jointname, '\.', '_', 'preservecase');
+
         fprintf(fp,'DEF %s Transform {\n',body.jointname); 
       end
       if (body.pitch==0) % then it's a pin joint 

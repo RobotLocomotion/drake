@@ -8,11 +8,14 @@ classdef RigidBodyModel
 
     gravity=[0;0;-9.81];
     
-    B = [];         
+    B = [];
+    u_limit = [];   % this should go away when I merge with RigidBodyManipulator (just setInputLimit directly)
     featherstone = [];
     
     material=[];
     D = 3;
+
+    mex_model_ptr = 0;
   end
 
   methods 
@@ -39,6 +42,26 @@ classdef RigidBodyModel
         if (nargin<2) options = struct(); end
         model = parseURDF(model,urdf_filename,options);
       end
+      
+    end
+    
+    function model = createMexPointer(model)
+      if (model.mex_model_ptr) deleteMexPointer(model); end
+
+      if (model.D==2)
+        model.mex_model_ptr = HandCpmex(struct(model),model.gravity);
+      else
+        model.mex_model_ptr = HandCmex(struct(model),model.gravity);
+      end
+    end
+    
+    function model = deleteMexPointer(model)
+      if (model.D==2)
+        HandCpmex(model.mex_model_ptr);
+      else
+        HandCmex(model.mex_model_ptr);
+      end
+      model.mex_model_ptr = 0;
     end
     
     function model=parseURDF(model,urdf_filename,options)
@@ -47,7 +70,7 @@ classdef RigidBodyModel
       if (~isfield(options,'inertial')) options.inertial = true; end
       if (~isfield(options,'visual')) options.visual = true; end
       if (~isfield(options,'visual_geometry')) options.visual_geometry = false; end
-        
+      
       %disp(['Parsing ', urdf_filename]);
       urdf = xmlread(urdf_filename);
       
@@ -58,7 +81,7 @@ classdef RigidBodyModel
       
       model = parseRobot(model,robot,options);
       
-      model=compile(model,options);
+      model=compile(model);
     end
     
     function model=parseRobot(model,node,options)
@@ -66,6 +89,7 @@ classdef RigidBodyModel
       
       %disp(['Parsing robot ', char(node.getAttribute('name')), ' from URDF file...']);
       model.name = char(node.getAttribute('name'));
+      model.name = regexprep(model.name, '\.', '_', 'preservecase');
 
       materials = node.getElementsByTagName('material');
       for i=0:(materials.getLength()-1)
@@ -99,7 +123,7 @@ classdef RigidBodyModel
       
       if (options.floating)
         % then add a floating joint here
-        model = addFloatingBase(model,options);
+        model = addFloatingBase(model);
       end
       
     end
@@ -131,7 +155,7 @@ classdef RigidBodyModel
       
     end
     
-    function model = compile(model,options)
+    function model = compile(model)
       % After parsing, compute some relevant data structures that will be
       % accessed in the dynamics and visualization
 
@@ -153,7 +177,7 @@ classdef RigidBodyModel
       end
             
       %% extract featherstone model structure
-      model = extractFeatherstone(model,options);
+      model = extractFeatherstone(model);
       %sanity check
       if (model.featherstone.NB + 1 ~= length(model.body))
         error('Expected there to be only one body without a parent (i.e. world)')
@@ -161,8 +185,16 @@ classdef RigidBodyModel
       
       %% extract B matrix
       B = sparse(model.featherstone.NB,0);
+      model.u_limit = repmat(inf,length(model.actuator),1);
       for i=1:length(model.actuator)
         B(model.actuator(i).joint.dofnum,i) = model.actuator(i).reduction;
+        if ~isinf(model.actuator(i).joint.effort_limit)
+          model.u_limit(i) = abs(model.actuator(i).joint.effort_limit/model.actuator(i).reduction);
+          if sum(B(model.actuator(i).joint.dofnum,:)~=0)>1
+            warning('Drake:RigidBodyModel:UnsupportedJointEffortLimit','The specified joint effort limit cannot be expressed as simple input limits; the offending limits will be ignored');
+            model.u_limit(B(model.actuator(i).joint.dofnum,:)~=0)=inf;
+          end
+        end
       end
       model.B = full(B);
       
@@ -172,6 +204,10 @@ classdef RigidBodyModel
           model.body(i).cached_q = nan;
           model.body(i).cached_qd = nan;
         end
+      end
+      
+      if (checkDependency('eigen3_enabled'))
+        model = createMexPointer(model);
       end
     end
     
@@ -194,7 +230,8 @@ classdef RigidBodyModel
     function [c,model] = parseMaterial(model,node,options)
       
       name=char(node.getAttribute('name'));
-      
+      name=regexprep(name, '\.', '_', 'preservecase');
+
       c = .7*[1 1 1];
       
       % look up material
@@ -241,42 +278,113 @@ classdef RigidBodyModel
       end
     end
 
-    function doKinematics(model,q)
-      if isnumeric(q) && all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
-        % then my kinematics are up to date, don't recompute
-        % the "isnumeric" check is for the sake of taylorvars
-        return
+    function doKinematics(model,q,b_compute_second_derivatives,use_mex)
+      if nargin<4, use_mex = true; end
+      if nargin<3, b_compute_second_derivatives=false; end
+      if (use_mex && model.mex_model_ptr && isnumeric(q))
+        doKinematicsmex(model.mex_model_ptr,q,b_compute_second_derivatives);
+      else
+        if isnumeric(q) && all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
+            % then my kinematics are up to date, don't recompute
+            % the "isnumeric" check is for the sake of taylorvars
+            if b_compute_second_derivatives && ~any(cellfun(@isempty,{model.body.ddTdqdq}))
+              % also make sure second derivatives are already computed, if they
+              % are requested
+              return
+            end
+          end
+          nq = model.featherstone.NB;
+          for i=1:length(model.body)
+            body = model.body(i);
+            if (isempty(body.parent))
+              body.T = body.Ttree;
+              body.dTdq = zeros(4*nq,4);
+              body.ddTdqdq = zeros(4*nq*nq,4);
+            else
+              qi = q(body.dofnum);
+
+              TJ = Tjcalc(body.pitch,qi);
+              dTJ = dTjcalc(body.pitch,qi);
+
+              body.T=body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+
+              % todo: consider pulling this out into a
+              % "doKinematicsAndVelocities" version?  but I'd have to be
+              % careful with caching.
+
+              % note the unusual format of dTdq (chosen for efficiently calculating jacobians from many pts)
+              % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
+              body.dTdq = body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+              this_dof_ind = body.dofnum+0:nq:4*nq;
+              body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
+
+              if (b_compute_second_derivatives)
+                % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
+                body.ddTdqdq = body.parent.ddTdqdq*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+
+                ind = 4*nq*(body.dofnum-1) + (1:4*nq);  %ddTdqdqi
+                body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
+
+                ind = reshape(reshape(body.dofnum+0:nq:4*nq*nq,4,[])',[],1); % ddTdqidq
+                body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
+
+                ind = 4*nq*(body.dofnum-1) + this_dof_ind;  % ddTdqidqi
+                body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*ddTjcalc(body.pitch,qi)*body.T_body_to_joint;  % body.jsign^2 is there, but unnecessary (since it's always 1)
+              else          
+                body.ddTdqdq = {};
+              end
+              body.cached_q = q(body.dofnum);
+            end
+          end
       end
-      nq = model.featherstone.NB;
-      for i=1:length(model.body)
-        body = model.body(i);
-        if (isempty(body.parent))
-          body.T = body.Ttree;
-          body.dTdq = zeros(4*nq,4);
+    end
+    
+    function [x,J,dJ] = forwardKin(obj,body_ind,pts,use_mex_if_possible)
+      % @param body_ind, an integer index for the body.  if body_ind is a
+      % RigidBody object, then this method will look up the index for you.
+      % @retval x the position of pts (given in the body frame) in the global frame
+      % @retval J the Jacobian, dxdq
+      % @retval dJ the gradients of the Jacobian, dJdq
+      %
+      % computes the position of pts (given in the body frame) in the global frame
+      % for efficiency, assumes that "doKinematics" has been called on the model
+      % if pts is a 3xm matrix, then x will be a 3xm matrix
+      %  and (following our gradient convention) J will be a ((3xm)x(q))
+      %  matrix, with [J1;J2;...;Jm] where Ji = dxidq 
+
+      if (nargin<4) use_mex_if_possible = true; end
+      if (isa(body_ind,'RigidBody')) body_ind = find(obj.body_ind==body,1); end
+      
+      if (use_mex_if_possible && obj.mex_model_ptr && isnumeric(pts))
+        if nargout > 2
+          [x,J,dJ] = forwardKinmex(obj.mex_model_ptr,body_ind-1,pts);
+        elseif nargout > 1
+          [x,J] = forwardKinmex(obj.mex_model_ptr,body_ind-1,pts);
         else
-          qi = q(body.dofnum);
-          
-          TJ = Tjcalc(body.pitch,qi);
-          body.T=body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-
-          % todo: consider pulling this out into a
-          % "doKinematicsAndVelocities" version?  but I'd have to be
-          % careful with caching.
-          body.dTdq = body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-
-          % note the unusual format of dTdq (chosen for efficiently calculating jacobians from many pts)
-          % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
-          this_dof_ind = body.dofnum+0:nq:4*nq;
-          body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*dTjcalc(body.pitch,qi)*body.T_body_to_joint;
-          
-          body.cached_q = q(body.dofnum);
+          x = forwardKinmex(obj.mex_model_ptr,body_ind-1,pts);
+        end
+      else
+        body = obj.body(body_ind);
+        m = size(pts,2);
+        pts = [pts;ones(1,m)];
+        x = body.T(1:3,:)*pts;
+        if (nargout>1)
+          nq = size(body.dTdq,1)/4;
+          J = reshape(body.dTdq(1:3*nq,:)*pts,nq,[])';
+          if (nargout>2)
+            if isempty(body.ddTdqdq)
+              error('you must call doKinematics with the second derivative option enabled');
+            end
+            ind = repmat(1:3*nq,nq,1)+repmat((0:4*nq:4*nq*(nq-1))',1,3*nq);
+            dJ = reshape(body.ddTdqdq(ind,:)*pts,nq^2,[])';
+          end
         end
       end
     end    
   end
   
   methods  % make these private?
-    function model = extractFeatherstone(model,options)
+    function model = extractFeatherstone(model)
 %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
       dof=0;inds=[];
       for i=1:length(model.body)
@@ -334,7 +442,7 @@ classdef RigidBodyModel
         % add inertia into parent
         if (any(any(body.I))) 
           % same as the composite inertia calculation in HandC.m
-          parent.I = parent.I + body.Xtree' * body.I * body.Xtree;
+          setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
         end
         
         % add wrl geometry into parent
@@ -428,20 +536,54 @@ classdef RigidBodyModel
       end
     end
     
-    function [com,J] = getCOM(model,q)
+    function [com,J,dJ] = getCOM(model,q)
       % return total mass and center of mass for the entire model
       m = 0;
       com = zeros(model.D,1); 
-      doKinematics(model,q);
-      J = zeros(model.D,length(q));
-      for i=1:length(model.body)
-        [bm,bc] = model.body(i).getInertial();
+      if (nargout>1)
+          J = zeros(model.D,length(q));
+      end
+      
+      use_mex = false;
+      if (model.mex_model_ptr && isnumeric(q))
+          use_mex = true;
+      end
+      planar=(model.D==2);
+          
+      doKinematics(model,q,nargout>2);
+      
+       dJ = zeros(model.D,length(q)^2);
+       for i=1:length(model.body)
+        bm = model.body(i).mass;
+        bc = model.body(i).com;
         if (bm>0)
-          if (nargout>1)
-            [bc,bJ] = forwardKin(model.body(i),bc);
-            J = (m*J + bm*bJ)/(m+bm);
+          if (nargout>2)
+              if (use_mex && planar)
+                  [bc,bJ,bdJ] = forwardKinpmex(model.mex_model_ptr,i-1,bc); % planar mex
+              elseif (use_mex)
+                  [bc,bJ,bdJ] = forwardKinmex(model.mex_model_ptr,i-1,bc);
+              else
+                  [bc,bJ,bdJ] = forwardKin(model,i,bc);
+              end
+              J = (m*J + bm*bJ)/(m+bm);
+              dJ = (m*dJ + bm*bdJ)/(m+bm);
+          elseif (nargout>1)
+              if (use_mex && planar)
+                  [bc,bJ] = forwardKinpmex(model.mex_model_ptr,i-1,bc); % planar mex
+              elseif (use_mex)
+                  [bc,bJ] = forwardKinmex(model.mex_model_ptr,i-1,bc);
+              else
+                  [bc,bJ] = forwardKin(model,i,bc);
+              end 
+              J = (m*J + bm*bJ)/(m+bm);
           else
-            bc = forwardKin(model.body(i),bc);
+              if (use_mex && planar)
+                  bc = forwardKinpmex(model.mex_model_ptr,i-1,bc); % planar mex
+              elseif (use_mex)
+                  bc = forwardKinmex(model.mex_model_ptr,i-1,bc);
+              else
+                  bc = forwardKin(model,i,bc);
+              end 
           end
           com = (m*com + bm*bc)/(m+bm);
           m = m + bm;
@@ -463,7 +605,8 @@ classdef RigidBodyModel
       body = newBody(model);
       
       body.linkname=char(node.getAttribute('name'));
-      
+      body.linkname=regexprep(body.linkname, '\.', '_', 'preservecase');
+
       if (options.inertial && node.getElementsByTagName('inertial').getLength()>0)
         body = parseInertial(body,node.getElementsByTagName('inertial').item(0),options);
       end
@@ -483,20 +626,24 @@ classdef RigidBodyModel
       model.body=[model.body,body];
     end
     
-    function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,joint_lim_min,joint_lim_max,options)
+    function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits)
       if (nargin<6) xyz=zeros(3,1); end
       if (nargin<7) rpy=zeros(3,1); end
       if (nargin<8) axis=[1;0;0]; end
       if (nargin<9) damping=0; end
-      if (nargin<10) joint_lim_min=-inf; end
-      if (nargin<11) joint_lim_max=inf; end
-      if (nargin<12) options=struct(); end % no options yet
+      if (nargin<10)
+          limits = struct(); 
+          limits.joint_limit_min = -Inf;
+          limits.joint_limit_max = Inf;
+          limits.effort_limit = Inf;
+          limits.velocity_limit = Inf;
+      end
         
       if ~isempty(child.parent)
         error('there is already a joint connecting this child to a parent');
       end
       
-      child.jointname = name;
+      child.jointname = regexprep(name, '\.', '_', 'preservecase');
       child.parent = parent;
       
       axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
@@ -556,8 +703,10 @@ classdef RigidBodyModel
           error(['joint type ',type,' not supported (yet?)']);
       end
       child.joint_axis = axis;
-      child.joint_limit_min = joint_lim_min;
-      child.joint_limit_max = joint_lim_max;
+      child.joint_limit_min = limits.joint_limit_min;
+      child.joint_limit_max = limits.joint_limit_max;
+      child.effort_limit = limits.effort_limit;
+      child.velocity_limit = limits.velocity_limit;
     end
     
     function model=parseJoint(model,node,options)
@@ -606,6 +755,8 @@ classdef RigidBodyModel
       
       joint_limit_min=-inf;
       joint_limit_max=inf;
+      effort_limit=inf;
+      velocity_limit=inf;
       limits = node.getElementsByTagName('limit').item(0);
       if ~isempty(limits)
         if limits.hasAttribute('lower')
@@ -614,12 +765,25 @@ classdef RigidBodyModel
         if limits.hasAttribute('upper');
           joint_limit_max = str2num(char(limits.getAttribute('upper')));
         end          
+        if limits.hasAttribute('effort');
+          effort_limit = str2num(char(limits.getAttribute('effort')));
+        end          
+        if limits.hasAttribute('velocity');
+          velocity_limit = str2num(char(limits.getAttribute('velocity')));
+        end          
       end
-      
-      model = model.addJoint(name,type,parent,child,xyz,rpy,axis,damping,joint_limit_min,joint_limit_max);
+
+      limits = struct();
+      limits.joint_limit_min = joint_limit_min;
+      limits.joint_limit_max = joint_limit_max;
+      limits.effort_limit = effort_limit;
+      limits.velocity_limit = velocity_limit;
+
+      name=regexprep(name, '\.', '_', 'preservecase');
+      model = model.addJoint(name,type,parent,child,xyz,rpy,axis,damping,limits);
     end
     
-    function model = addFloatingBase(model,options)
+    function model = addFloatingBase(model)
       % for now, just adds x,y,z,roll,pitch,yaw (in euler angles).
       % todo: consider using quaternions)
       
@@ -707,8 +871,10 @@ classdef RigidBodyModel
         switch (lower(char(thisNode.getNodeName())))
           case 'actuator'
             actuator.name = char(thisNode.getAttribute('name'));
+            actuator.name=regexprep(actuator.name, '\.', '_', 'preservecase');
           case 'joint'
-            actuator.joint = findJoint(model,char(thisNode.getAttribute('name')));
+            jn=regexprep(char(thisNode.getAttribute('name')), '\.', '_', 'preservecase');
+            actuator.joint = findJoint(model,jn);
           case 'mechanicalreduction'
             actuator.reduction = str2num(char(thisNode.getFirstChild().getNodeValue()));
           case {'#text','#comment'}

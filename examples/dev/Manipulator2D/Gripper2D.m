@@ -54,7 +54,7 @@ classdef Gripper2D < PlanarRigidBodyManipulator
       dPhi = [];
       dPsi = [];
       dJ = [];
-      [sphere_coords, dPts_sphere, ddPts_sphere] = obj.forwardKin(4,[0;0]);
+      [sphere_coords, dPts_sphere, ddPts_sphere] = obj.model.forwardKin(4,[0;0]);
      
       
       nBodies = obj.model.featherstone.NB + 1;
@@ -63,8 +63,8 @@ classdef Gripper2D < PlanarRigidBodyManipulator
         nC = size(contact_pts,2);
         if nC>0
           for y=1:nC,
-            [pts,dPts,ddPts] = obj.forwardKin(i,contact_pts(:,y));
-            [vp,vvp] = obj.forwardKinVel(i,contact_pts(:,y),qd);
+            [pts,dPts,ddPts] = obj.model.forwardKin(i,contact_pts(:,y));
+            [vp,vvp] = obj.model.forwardKinVel(i,contact_pts(:,y),qd);
             
             c = pts;
             n = c - sphere_coords;
@@ -82,7 +82,7 @@ classdef Gripper2D < PlanarRigidBodyManipulator
             % ball
             pt_on_sphere = rotmat(q(3))*n*r;
             %calculating this manually to get a point on the sphere
-            [vb,vvb] = obj.forwardKinVel(4,pt_on_sphere,qd);
+            [vb,vvb] = obj.model.forwardKinVel(4,pt_on_sphere,qd);
 %             vb = [qd(1);qd(2)]-qd(3)*[n(2)*r;-n(1)*r];
 %             vvb(:,obj.num_q+1:end) = vvb(:,obj.num_q+1:end) - qd(3)*r*dt;
             
@@ -102,7 +102,7 @@ classdef Gripper2D < PlanarRigidBodyManipulator
 %             sphere_surf = sphere_coords + r*n;
 %             dsphere_surf = dPts_sphere + r*dn;
 %             ddsphere_surf = ddPts_sphere + r*ddn;
-            [sphere_surf, dsphere_surf, ddsphere_surf] = obj.forwardKin(4,pt_on_sphere*0);
+            [sphere_surf, dsphere_surf, ddsphere_surf] = obj.model.forwardKin(4,pt_on_sphere*0);
             ddsphere_surf(:,3:obj.num_q:end) = dt*r*0;
             
 %             sphere_surf = sphere_coords - r*n;
@@ -151,10 +151,10 @@ classdef Gripper2D < PlanarRigidBodyManipulator
           end
         end
       end
-      [sphere_coords, dPts_sphere, ddPts_sphere] = obj.forwardKin(4,[0;0]);
+      [sphere_coords, dPts_sphere, ddPts_sphere] = obj.model.forwardKin(4,[0;0]);
       dPts_sphere(1,:) = 0*dPts_sphere(1,:);
       
-      [vb,vvb] = obj.forwardKinVel(4,[0;0],qd);
+      [vb,vvb] = obj.model.forwardKinVel(4,[0;0],qd);
       vb(1) = vb(1) - r*qd(3);
       vvb(1,obj.num_q + 3) = vvb(1,obj.num_q + 3) - r;
 

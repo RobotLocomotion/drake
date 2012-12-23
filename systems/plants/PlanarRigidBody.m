@@ -55,7 +55,7 @@ classdef PlanarRigidBody < RigidBody
     
     function body=parseInertial(body,node,options)
       mass = 0;
-      I = 0;
+      inertia = 0;
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
@@ -76,28 +76,45 @@ classdef PlanarRigidBody < RigidBody
       if ~isempty(inode)
         switch options.view
           case 'front'
-            if inode.hasAttribute('ixx'), I=str2num(char(inode.getAttribute('ixx'))); end
+            if inode.hasAttribute('ixx'), inertia=str2num(char(inode.getAttribute('ixx'))); end
           case 'right'
-            if inode.hasAttribute('iyy'), I=str2num(char(inode.getAttribute('iyy'))); end
+            if inode.hasAttribute('iyy'), inertia=str2num(char(inode.getAttribute('iyy'))); end
           case 'top'
-            if inode.hasAttribute('izz'), I=str2num(char(inode.getAttribute('izz'))); end
+            if inode.hasAttribute('izz'), inertia=str2num(char(inode.getAttribute('izz'))); end
         end
       end      
 
       if any(rpy)
         error('rpy in inertia block not implemented yet (but would be easy)');
       end
-      xy = [options.x_axis'; options.y_axis']*xyz;
-      body.I = mcIp(mass,xy,I);
+      com = [options.x_axis'; options.y_axis']*xyz;
+      setInertial(body,mass,com,inertia);
     end    
-    
-    function [m,c,I] = getInertial(body)
-      % extract mass, center of mass, and inertia information from the
-      % spatial I matrix
-      m = body.I(3,3);
-      c = [body.I(3,1);-body.I(2,1)]/m;
-      I = body.I(1,1) - m*dot(c,c);
-    end
+ 
+    function setInertial(body,varargin)  
+      % setInertial(body,mass,com,inertia) or setInertial(body,spatialI)
+      % this guards against things getting out of sync
+      
+      if nargin==2
+        % extract mass, center of mass, and inertia information from the
+        % spatial I matrix
+        sizecheck(varargin{1},[3 3]);
+        body.I = varargin{1};
+        body.mass = body.I(3,3);
+        body.com = [body.I(3,1);-body.I(2,1)]/body.mass;
+        body.inertia = body.I(1,1) - body.mass*dot(body.com,body.com);
+      elseif nargin==4
+        sizecheck(varargin{1},1);
+        sizecheck(varargin{2},[2 1]);
+        sizecheck(varargin{3},1);
+        body.mass = varargin{1};
+        body.com = varargin{2};
+        body.inertia = varargin{3};
+        body.I = mcIp(body.mass,body.com,body.inertia);
+      else
+        error('wrong number of arguments');
+      end
+    end    
     
     function body = parseCollision(body,node,options)
       xyz=zeros(3,1); rpy=zeros(3,1);
@@ -120,55 +137,6 @@ classdef PlanarRigidBody < RigidBody
       end
     end
     
-    function [x,J,dJ] = forwardKin(body,pts)
-      % @retval x the position of pts (given in the body frame) in the global frame
-      % @retval J the Jacobian, dxdq
-      % @retval dJ the gradients of the Jacobian, dJdq
-      %
-      % Note: for efficiency, assumes that "doKinematics" has been called on the model
-      % if pts is a 2xm matrix, then x will be a 2xm matrix
-      %  and (following our gradient convention) J will be a ((2xm)x(nq))
-      %  matrix, with [J1;J2;...;Jm] where Ji = dxidq 
-      % and dJ will be a (2xm)x(nq^2) matrix
-
-      m = size(pts,2);
-      pts = [pts;ones(1,m)];
-      x = body.T(1:2,:)*pts;
-      if (nargout>1)
-        nq = size(body.dTdq,1)/3;
-        J = reshape(body.dTdq(1:2*nq,:)*pts,nq,[])';
-        if (nargout>2)
-          if isempty(body.ddTdqdq)
-            error('you must call doKinematics with the second derivative option enabled'); 
-          end          
-          ind = repmat(1:2*nq,nq,1)+repmat((0:3*nq:3*nq*(nq-1))',1,2*nq);
-          dJ = reshape(body.ddTdqdq(ind,:)*pts,nq^2,[])';
-        end
-      end
-    end
-    
-    function [v,dv] = forwardKinVel(body,pts,qd)
-      % @retval v the velocity of pts (given in the body frame) in the global frame
-      % @retval dv the Jacobian, [dvdq; dvdqd]
-      %
-      % Note: for efficiency, assumes that "doKinematics" has been called on the model
-      % if pts is a 2xm matrix, then v will be a 2xm matrix
-      %  and (following our gradient convention) dv will be a ((2m)x(2nq))
-      nq = size(body.dTdq,1)/3;
-      m = size(pts,2);
-      pts = [pts;ones(1,m)];
-      v = kron(eye(2),qd')*body.dTdq(1:2*nq,:)*pts;
-%       v = body.Tdot(1:2,:)*pts;
-      if (nargout>1)
-        dv = [zeros(2*size(pts,2),nq) reshape(body.dTdq(1:2*nq,:)*pts,[],2*size(pts,2))'];
-        tmp = kron([1 0 0;0 1 0],qd');
-        for i=1:nq,
-          col = tmp*body.ddTdqdq((1:3*nq) + 3*nq*(i-1),:)*pts;
-          dv(:,i) = col(:);
-        end;
-%         dv = [reshape(body.dTdotdqqd([1:2*nq],:)*pts,nq,[])' reshape(body.dTdotdqqd([(1:2*nq)+3*nq],:)*pts,nq,[])'];
-      end
-    end
   end
   
   methods (Static)
@@ -308,10 +276,10 @@ classdef PlanarRigidBody < RigidBody
             if strcmpi(ext,'.wrl')
               txt=fileread(filename);
 
-              ind=regexp(txt,'coordIndex \[([^\]]*)\]','tokens'); ind = ind{1}{1};
+              ind=regexp(txt,'coordIndex\s+\n*\s*\[([^\]]*)\]','tokens'); ind = ind{1}{1};
               ind=strread(ind,'%d','delimiter',' ,')+1; 
               
-              pts=regexp(txt,'point \[([^\]]*)\]','tokens'); pts = pts{1}{1};
+              pts=regexp(txt,'point\s+\n*\s*\[([^\]]*)\]','tokens'); pts = pts{1}{1};
               pts=strread(pts,'%f','delimiter',' ,');
               pts=reshape(pts,3,[]);
 
