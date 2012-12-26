@@ -7,7 +7,7 @@ classdef LyapunovFunction
   end
 
   methods (Abstract=true)
-    V = eval(t,x);  
+    V = eval(obj,t,x);  
 %    plotLevelSet();
   end
   
@@ -25,8 +25,24 @@ classdef LyapunovFunction
       fr = obj.frame;
     end
     
-    function V=inFrame(obj)
-      error('not implemented yet'); % todo: implement this with function handles (need to make something like FunctionHandleLyapunovFunction)
+    function obj=setFrame(obj,fr) 
+      typecheck(fr,'CoordinateFrame');
+      valuecheck(fr.dim,obj.frame.dim);
+      obj.frame = fr;
+    end
+    
+    function V=inFrame(obj,frame)
+      if (frame==obj.getFrame)
+        V = obj;
+      else
+        % if obj.getFrame.prefix = x and frame.prefix = y, then 
+        % I have V(x) and want to return V(f(y)), where x = f(y) is the 
+        % transform *from frame to obj.getFrame*
+        tf = findTransform(frame,obj.getFrame,struct('throw_error_if_fail',true));
+        if getNumStates(tf)>0 error('not implemented yet'); end
+        Vfun = @(t,x) obj.eval(t,tf.output(t,[],x));
+        V = FunctionHandleLyapunovFunction(frame, Vfun, obj.isTI() && tf.isTI());
+      end
     end
     
     function b = isTI(obj)

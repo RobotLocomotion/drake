@@ -14,7 +14,6 @@ classdef CartPolePlant < Manipulator
     function obj = CartPolePlant
       obj = obj@Manipulator(2,1);
       obj = setInputLimits(obj,-30,30);
-%      obj = setAngleFlags(obj,0,[0;1;0;0],[0;1;0;0]);
       obj = setOutputFrame(obj,obj.getStateFrame);  % allow full-state feedback
       
       obj.xG = Point(obj.getStateFrame,[0;pi;0;0]);

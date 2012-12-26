@@ -68,7 +68,7 @@ classdef Point
         end
       end
       % otherwise, call the builting subsref
-      varargout=cell(1,nargout);
+      varargout=cell(1,max(nargout,1));  % max w/ 1 to support command line access (with no outputs, but writes to ans)
       [varargout{:}] = builtin('subsref',obj,s);
     end
     

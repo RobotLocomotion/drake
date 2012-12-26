@@ -131,7 +131,13 @@ classdef CascadeSystem < DrakeSystem
   
   methods (Access=private)
     function u2=sat2(obj,u2)
-      u2=min(max(u2,obj.sys2.umin),obj.sys2.umax);
+%      u2=min(max(u2,obj.sys2.umin),obj.sys2.umax);
+      if any(~isinf(obj.sys2.umin)) % writing it out with if's helps msspoly get through
+        u2 = max(u2,obj.sys2.umin);
+      end
+      if any(~isinf(obj.sys2.umax))
+        u2 = min(u2,obj.sys2.umax);
+      end
     end
   end
 end

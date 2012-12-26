@@ -65,6 +65,9 @@ classdef (InferiorClasses = {?ConstantTrajectory,?PPTrajectory,?FunctionHandleTr
       if (frame==obj.getFrame)
         V = obj;
       else
+        % if obj.getFrame.prefix = x and frame.prefix = y, then 
+        % I have V(x) and want to return V(f(y)), where x = f(y) is the 
+        % transform *from frame to obj.getFrame*
         tf = findTransform(frame,obj.getFrame,struct('throw_error_if_fail',true));
         if isa(tf,'AffineSystem') && getNumStates(tf)==0  % then I can keep it quadratic
           D=tf.D;c=tf.y0;

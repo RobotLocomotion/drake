@@ -1,4 +1,4 @@
-function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R)
+function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R,options)
 % Computes an LQR controller to stabilize the system around (x0,u0)
 %
 % Linearizes the system around the nominal point then calls lqr (if the
@@ -10,6 +10,9 @@ function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R)
 % @param x0 the nominal/goal state (a Point)
 % @param u0 the nominal input (a Point)
 % @param Q,R describe the LQR cost function \int dt (x'*Q*r + u'*R*u)
+% @option angle_flag boolean vector the same size as x which causes the
+% resulting controller to wrap around 2pi for the dimensions where
+% angle_flag is true.
 %
 % @retval ltisys a system which implements the control u=-K*x
 % @retval Vcandidate an msspoly representation of the cost-to-go function x'*S*x
@@ -18,6 +21,8 @@ function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R)
 if (~isTI(obj)) error('I don''t know that this system is time invariant.  Set the TI flags and rerun this method if you believe the system to be.'); end
 typecheck(x0,'Point');
 typecheck(u0,'Point');
+
+if (nargin<6) options=struct(); end
 
 x0 = double(x0.inFrame(obj.getStateFrame));
 u0 = double(u0.inFrame(obj.getInputFrame));
@@ -58,6 +63,12 @@ else
   ltisys = setInputFrame(ltisys,CoordinateFrame([obj.getStateFrame.name,' - ', mat2str(x0,3)],length(x0),obj.getStateFrame.prefix));
   obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ltisys.getInputFrame,eye(length(x0)),-x0));
   ltisys.getInputFrame.addTransform(AffineTransform(ltisys.getInputFrame,obj.getStateFrame,eye(length(x0)),+x0));
+end
+if isfield(options,'angle_flag') && any(options.angle_flag)
+  ltisys = setInputFrame(ltisys,ltisys.getInputFrame().constructFrameWithAnglesWrapped(options.angle_flag));
+  if (nargout>1)
+    warning('DynamicalSystem:TILQR:NonSmoothLyapunovFunction','Constructing a wrapped (around 2*pi) frame for the controller and Lyapunov function. This may interfere with smooth analysis using the Lyapunov function, in which case you may prefer to defer this construction til post-analysis by unsetting options.angle_flag'); 
+  end 
 end
 if (all(u0==0))
   ltisys = setOutputFrame(ltisys,obj.getInputFrame);
