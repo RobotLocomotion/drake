@@ -297,25 +297,6 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
           ' but the second trajectory has umin = ', num2str(trajAtEnd.umin)));
       end
       
-      % flags
-      if (obj.input_angle_flag ~= trajAtEnd.input_angle_flag)
-        error(strcat('Cannot append trajectories with different input_angle_flags.', ...
-          'First trajectory has input_angle_flag = ', num2str(obj.input_angle_flag), ...
-          ' but the second trajectory has input_angle_flag = ', num2str(trajAtEnd.input_angle_flag)));
-      end
-      
-      if (obj.state_angle_flag ~= trajAtEnd.state_angle_flag)
-        error(strcat('Cannot append trajectories with different state_angle_flag.', ...
-          'First trajectory has state_angle_flag = ', num2str(obj.state_angle_flag), ...
-          ' but the second trajectory has state_angle_flag = ', num2str(trajAtEnd.state_angle_flag)));
-      end
-      
-      if (obj.output_angle_flag ~= trajAtEnd.output_angle_flag)
-        error(strcat('Cannot append trajectories with different output_angle_flag.', ...
-          'First trajectory has output_angle_flag = ', num2str(obj.output_angle_flag), ...
-          ' but the second trajectory has output_angle_flag = ', num2str(trajAtEnd.output_angle_flag)));
-      end
-      
       
       newtraj = obj;
       
@@ -332,10 +313,6 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       newtraj.pp.coefs = [obj.pp.coefs; trajAtEnd.pp.coefs];
       
       newtraj = setInputLimits(newtraj, obj.umin, obj.umax);
-      
-      newtraj = setAngleFlags(newtraj, obj.input_angle_flag, obj.state_angle_flag, obj.output_angle_flag);
-      
-      
     end % append
     
     % should getParameters and setParameters include the breaks? or just

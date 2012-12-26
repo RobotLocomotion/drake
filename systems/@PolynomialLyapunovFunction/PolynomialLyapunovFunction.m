@@ -43,9 +43,19 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
       if (frame==obj.getFrame)
         V = obj;
       else
+        % if obj.getFrame.prefix = x and frame.prefix = y, then 
+        % I have V(x) and want to return V(f(y)), where x = f(y) is the 
+        % transform *from frame to obj.getFrame*
         tf = findTransform(frame,obj.getFrame,struct('throw_error_if_fail',true));
         if ~isTI(obj) || ~isTI(tf),  error('not implemented yet'); end
-        Vpoly = subss(obj.getPoly,obj.getFrame.poly,tf.output(0,[],frame.poly));
+        if getNumStates(tf)>0 error('not implemented yet'); end
+        try 
+          Vpoly = subss(obj.getPoly,obj.getFrame.poly,tf.output(0,[],frame.poly));
+        catch
+          warning('Drake:PolynomialLyapunovFunction:NonPolynomialTranform','The transform between these two frames must not be polynomial.  Kicking out to more general frame logic');
+          V = inFrame@LyapunovFunction(obj,frame);
+          return;
+        end
         V = SpotPolynomialLyapunovFunction(frame,Vpoly);
       end
     end

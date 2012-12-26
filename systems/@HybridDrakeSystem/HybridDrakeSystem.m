@@ -50,7 +50,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       end
       
       if (getNumZeroCrossings(mode_sys)>0)
-        error('i don''t handle this case yet, but it would be pretty simple.');
+        obj = setNumZeroCrossings(obj,max(getNumZeroCrossings(obj),getNumZeroCrossings(mode_sys)));
       end
       if (getNumStateConstraints(mode_sys)>0)
         obj = setNumStateConstraints(obj,max(getNumStateConstraints(obj),getNumStateConstraints(mode_sys)));
@@ -116,7 +116,7 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       obj.transition{from_mode_num}{tid} = transition;
       obj = setDirectFeedthrough(obj,obj.isDirectFeedthrough() || directFeedthrough);
       obj = setTIFlag(obj,obj.isTI() && timeInvariant);
-      obj = setNumZeroCrossings(obj,max(getNumZeroCrossings(obj),tid));
+      obj = setNumZeroCrossings(obj,max(getNumZeroCrossings(obj),tid+getNumZeroCrossings(obj.modes{from_mode_num})));
     end
     
     function guard = andGuards(obj,varargin)
@@ -242,6 +242,10 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       for i=1:n
         zcs(i) = obj.guard{m}{i}(obj,t,xm,u);
       end
+      n2=getNumZeroCrossings(obj.modes{m});
+      if (n2>0)
+        zcs(n+(1:n2))=zeroCrossings(obj.modes{m},t,xm,u);
+      end
     end
     
     function con = stateConstraints(obj,x)
@@ -267,8 +271,13 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
     
     function [xn,status] = transitionUpdate(obj,t,x,u)
       status = 0;
-      m = x(1);
-      zcs = zeroCrossings(obj,t,x,u);
+      m = x(1); nX = getNumStates(obj.modes{m});
+      if (nX>0) xm = x(1+(1:nX)); else xm=[]; end
+      n=length(obj.guard{m});
+      zcs=ones(n,1);
+      for i=1:n  % just compute the guards (zeroCrossings also computes the mode zcs)
+        zcs(i) = obj.guard{m}{i}(obj,t,xm,u);
+      end
 %      disp(obj.mode_names{m}); zcs 
       active_id = find(zcs<0);
       if (isempty(active_id)) % no transition (return the original state)
@@ -290,13 +299,17 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
       % pad if necessary:
       xn = [xn;repmat(0,getNumStates(obj)-length(xn),1)];
       if(status==0)
-      if (any(zeroCrossings(obj,t,xn,u)<0)),
-        zcs2=zeroCrossings(obj,t,xn,u);
-        active_id2 = find(zcs2<0);
-%        disp(obj);
-        warning('Drake:HybridDrakeSystem:SuccessiveZeroCrossings','Transitioned from mode %s to mode %s, and immediately triggered guard number %d\n',obj.mode_names{m},obj.mode_names{to_mode_num},active_id2);
-%        keyboard; 
-      end % useful for debugging successive zcs.
+        n=length(obj.guard{to_mode_num});
+        zcs2 = ones(n,1);
+        for i=1:n
+          zcs2(i) = obj.guard{to_mode_num}{i}(obj,t,mode_xn,u);
+        end
+        if (any(zcs2<0))
+          active_id2 = find(zcs2<0);
+          %        disp(obj);
+          warning('Drake:HybridDrakeSystem:SuccessiveZeroCrossings','Transitioned from mode %s to mode %s, and immediately triggered guard number %d\n',obj.mode_names{m},obj.mode_names{to_mode_num},active_id2);
+          %        keyboard;
+        end % useful for debugging successive zcs.
       end
     end
     

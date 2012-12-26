@@ -11,7 +11,6 @@ classdef CoordinateFrame < handle
 
     coordinates={}; % list of coordinate names
 
-    angle_flag=[];  % angle_flag(i)=true iff variable i wraps around 2pi
     poly=[];        % optional msspoly variables for this frame
     prefix;
   end
@@ -57,8 +56,6 @@ classdef CoordinateFrame < handle
         if (prefix=='t') error('oops.  destined for a collision with msspoly representing time'); end
         obj.poly = msspoly(prefix,dim);
       end
-      
-      obj.angle_flag = repmat(false,dim,1);
     end
     
     function obj=addTransform(obj,transform)
@@ -179,12 +176,12 @@ classdef CoordinateFrame < handle
           while isempty(tf) && ~isempty(options.queue)
             a = options.queue(1);
             options.queue = options.queue(2:end);
-            options.tf_from_parent = a.tf_from_parent;
 
             if ismember(a.frame,{options.dirty_list(:).frame})
               continue;
             end
             
+            options.tf_from_parent = a.tf_from_parent;
             [tf,options] = findTransform(a.frame,target,options);
           end
           
@@ -208,13 +205,7 @@ classdef CoordinateFrame < handle
         tf=obj.transforms{ind};
       end
     end
-    
-    function obj=setAngleFlags(obj,flags)
-      typecheck(flags,'logical');
-      sizecheck(flags,[obj.dim,1]);
-      obj.angle_flag = flags;
-    end
-    
+        
     function obj=setCoordinateNames(obj,cnames)
       if (iscell(cnames) && isvector(cnames) && length(cnames)==obj.dim && all(cellfun(@ischar,cnames)))
         obj.coordinates=cnames;
@@ -228,8 +219,29 @@ classdef CoordinateFrame < handle
       if (any(dims>obj.dim | dims<1)) error(['dims must be between 1 and ',obj.dim]); end
       fr = CoordinateFrame([obj.name,mat2str(dims)], length(dims), obj.prefix);
       fr.coordinates = obj.coordinates(dims);
-      fr.angle_flag = obj.angle_flag(dims);
       fr.poly = obj.poly(dims);
+    end
+    
+    function fr=constructFrameWithAnglesWrapped(obj,angle_flag,q0)
+      % produces a copy of the current frame, but with a transform placed
+      % between them that wraps the angles around 2pi.  The transform wraps all 
+      % coordinates with angle_flag = true to be inside [-pi+q0,pi+q0]
+      %
+      % @param angle_flags boolean vector of length obj.dim which is true
+      % for each coordinate that will be wrapped around 2*pi.
+      % 
+      % @param q0 double vector of with the default angle around which to
+      % perform the wrapping.  it should be the length of the number of
+      % wrapped angles (e.g., so that x(angle_flags) = q0).
+      
+      fr = CoordinateFrame([obj.name,'Wrapped'],obj.dim,obj.prefix,obj.coordinates);
+      
+      if (nargin>2)
+        obj.addTransform(AngleWrappingTransform(obj,fr,angle_flag,q0));
+      else
+        obj.addTransform(AngleWrappingTransform(obj,fr,angle_flag));
+      end
+      fr.addTransform(AffineTransform(fr,obj,eye(obj.dim),zeros(obj.dim,1)));
     end
     
     function scope(obj,t,val,options)
@@ -271,6 +283,4 @@ classdef CoordinateFrame < handle
       s=regexprep(s,'\\','');
     end
   end
-  
-  % todo: consider putting LCM encode/decode in here
 end
