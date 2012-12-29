@@ -267,7 +267,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
       plhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
       memcpy(mxGetData(plhs[0]),&model,sizeof(model));
     }
-  } else if (nrhs==2) { // then it's HandC(model_ptr);
+  } else if (nrhs==2) { // then it's HandC(model,model_ptr);
     if (!mxIsNumeric(prhs[1]) || mxGetNumberOfElements(prhs[1])!=1)
         mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","the second argument should be the model_ptr");
     memcpy(&model,mxGetData(prhs[1]),sizeof(model));
@@ -278,7 +278,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     // first get the model_ptr back from matlab
     mxArray* mex_model_ptr = mxGetProperty(prhs[0],0,"mex_model_ptr");
     if (!mex_model_ptr)  mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs","first argument should be the model class object");
-    Model *model = NULL; memcpy(&model,mxGetData(mex_model_ptr),sizeof(model));
+    memcpy(&model,mxGetData(mex_model_ptr),sizeof(model));
     
     double *q,*qd;
     if (mxGetNumberOfElements(prhs[1])!=model->NB || mxGetNumberOfElements(prhs[2])!=model->NB)

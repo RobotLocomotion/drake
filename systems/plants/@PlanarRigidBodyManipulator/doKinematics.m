@@ -1,17 +1,44 @@
-function doKinematics(model,q,b_compute_second_derivatives,use_mex)
+function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex)
+% Computes the (forward) kinematics of the manipulator.
+%
+% @retval kinsol a certificate containing the solution (or information
+% about the solution) that must be passed to model.forwardKin() in order to
+% be evaluated.  Note: the contents of kinsol may change with
+% implementation details - do not attempt to use kinsol directly (our
+% contract is simply that it can always be passed to forwardKin to retrieve
+% the answer).
+%
 
 if nargin<4, use_mex=true; end
 if nargin<3, b_compute_second_derivatives=false; end
+
+kinsol.q = q;
+
 if (use_mex && model.mex_model_ptr && isnumeric(q))
-  doKinematicspmex(model.mex_model_ptr,q,b_compute_second_derivatives);
+  doKinematicspmex(model,q,b_compute_second_derivatives);
+  kinsol.mex = true;
 else
   if isnumeric(q) && all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
     % then my kinematics are up to date, don't recompute
     % the "isnumeric" check is for the sake of taylorvars
-    if b_compute_second_derivatives && ~any(cellfun(@isempty,{model.body.ddTdqdq}))
-      % also make sure second derivatives are already computed, if they
-      % are requested
-      return
+    if b_compute_second_derivatives 
+      if ~any(cellfun(@isempty,{model.body.ddTdqdq}))
+        % also make sure second derivatives are already computed, if they
+        % are requested
+        return
+      else
+        persistent kin_inefficiency_counter;  % would be better to do this on a per model basis, but it's not worth returning the model for it.
+        if isempty(kin_inefficiency_counter)
+          warning('Drake:RigidBodyManipulator:IneffecientKinematics','FYI - you''ve computed this kinematics solution twice - first with second derivatives off, then again with second derivatives on');
+          kin_inefficiency_counter = 1;
+          %      else  % no point, since I can't read it back out.  but this will
+          %      help me remember that it is what I would do if I pushed it to being
+          %      a property of the model class
+          %        kin_inefficiency_counter = kin_inefficiency_counter+1;
+        end
+      end
+    else
+      return;
     end
   end
   nq = model.featherstone.NB;

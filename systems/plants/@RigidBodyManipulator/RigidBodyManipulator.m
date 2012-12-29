@@ -41,7 +41,7 @@ classdef RigidBodyManipulator < Manipulator
     
     function [x,J,dJ] = kinTest(m,q)
       % test for kinematic gradients
-      doKinematics(m,q,nargout>2,false);
+      kinsol=doKinematics(m,q,nargout>2,false);
       
       count=0;
       for i=1:length(m.body)
@@ -50,12 +50,12 @@ classdef RigidBodyManipulator < Manipulator
           s = size(body.geometry{j}.x); n=prod(s);
           pts = [reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n)];
           if (nargout>1)
-            [x(:,count+(1:n)),J(2*count+(1:2*n),:),dJ(2*count+(1:2*n),:)] = forwardKin(m,i,pts);
+            [x(:,count+(1:n)),J(2*count+(1:2*n),:),dJ(2*count+(1:2*n),:)] = forwardKin(m,kinsol,i,pts);
           else
             if ~exist('x') % extra step to help taylorvar
-              x = forwardKin(m,i,pts);
+              x = forwardKin(m,kinsol,i,pts);
             else
-              xn = forwardKin(m,i,pts);
+              xn = forwardKin(m,kinsol,i,pts);
               x=[x,xn];
             end
           end

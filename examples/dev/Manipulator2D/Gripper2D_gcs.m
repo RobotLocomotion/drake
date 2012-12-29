@@ -86,11 +86,8 @@ classdef Gripper2D_gcs < Gripper2D
         dv = zeros(2*nObjContacts,2*obj.num_q)*q(1);
       else
       end
-      if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
-        doKinematicsmex(obj.mex_model_ptr,q,1)
-      else
-        doKinematics(obj.model,q,true);
-      end
+      kinsol = doKinematicsmex(obj,q,1)
+
       contact_pos = zeros(2,nObjContacts)*q(1);  % *q(1) to help TaylorVar
       if (nargout>1) 
         J = zeros(2*nObjContacts,obj.num_q)*q(1); 
@@ -105,15 +102,15 @@ classdef Gripper2D_gcs < Gripper2D
         nC = size(contact_pts,2);
         if nC>0
           if (nargout>4)
-            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(obj.model,i,contact_pts);
+            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(obj,kinsol,i,contact_pts);
           elseif (nargout>1)
-            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(obj.model,i,contact_pts);
+            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(obj,kinsol,i,contact_pts);
           else
-            [contact_pos(:,count+(1:nC))] = forwardKin(obj.model,i,contact_pts);
+            [contact_pos(:,count+(1:nC))] = forwardKin(obj,kinsol,i,contact_pts);
           end
           
           if (nargout>6)
-            [contact_vel(:,count+(1:nC)),dv(2*count+(1:2*nC),:)] = forwardKinVel(obj.model,i,contact_pts,qd);
+            [contact_vel(:,count+(1:nC)),dv(2*count+(1:2*nC),:)] = forwardKinVel(obj,kinsol,i,contact_pts,qd);
           end
           
           count = count + nC;

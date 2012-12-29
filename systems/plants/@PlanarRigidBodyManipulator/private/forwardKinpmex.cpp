@@ -17,7 +17,7 @@ using namespace std;
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   if (nrhs != 3) {
-    mexErrMsgIdAndTxt("Drake:forwardKinpmex:NotEnoughInputs", "Usage doKinematicspmex(model_ptr,body_index,pts)");
+    mexErrMsgIdAndTxt("Drake:forwardKinpmex:NotEnoughInputs", "Usage forwardKinpmex(obj,body_index,pts)");
   }
 
   int n_pts = mxGetN(prhs[2]);
@@ -28,12 +28,10 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   if (dim != 2)
     mexErrMsgIdAndTxt("Drake:forwardKinpmex:BadInputs", "number of rows in pts must be 2");
   
-  PlanarModel *model = NULL;
-  
   // first get the model_ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:forwardKinpmex:BadInputs", "first argument should be the model_ptr");
-  memcpy(&model, mxGetData(prhs[0]), sizeof(model));
+  mxArray* mex_model_ptr = mxGetProperty(prhs[0],0,"mex_model_ptr");
+  if (!mex_model_ptr)  mexErrMsgIdAndTxt("Drake:doKinematicspmex:BadInputs","first argument should be the model class object");
+  PlanarModel *model = NULL; memcpy(&model,mxGetData(mex_model_ptr),sizeof(model));
 
   int body_ind = (int) mxGetScalar(prhs[1]);
   

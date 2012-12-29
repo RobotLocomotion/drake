@@ -1,4 +1,6 @@
 function [x,J,dJ] = forwardKin(obj,kinsol,body_ind,pts)
+% computes the position of pts (given in the body frame) in the global frame
+%
 % @param kinsol solution structure obtained from doKinematics
 % @param body_ind, an integer index for the body.  if body_ind is a
 % RigidBody object, then this method will look up the index for you.
@@ -6,8 +8,6 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_ind,pts)
 % @retval J the Jacobian, dxdq
 % @retval dJ the gradients of the Jacobian, dJdq
 %
-% computes the position of pts (given in the body frame) in the global frame
-% for efficiency, assumes that "doKinematics" has been called on the model
 % if pts is a 3xm matrix, then x will be a 3xm matrix
 %  and (following our gradient convention) J will be a ((3xm)x(q))
 %  matrix, with [J1;J2;...;Jm] where Ji = dxidq

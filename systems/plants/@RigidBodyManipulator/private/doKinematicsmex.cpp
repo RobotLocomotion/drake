@@ -93,7 +93,7 @@ void ddTjcalc(int pitch, double q, Matrix4d* ddTJ)
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   if (nrhs != 3) {
-    mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(q,b_compute_second_derivatives)");
+    mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(obj,q,b_compute_second_derivatives)");
   }
   
   // first get the model_ptr back from matlab

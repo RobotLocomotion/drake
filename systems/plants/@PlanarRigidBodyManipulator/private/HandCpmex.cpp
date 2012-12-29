@@ -125,13 +125,13 @@ void mexFunction( int nlhs, mxArray *plhs[],
                   int nrhs, const mxArray *prhs[] )
 {
   if (nrhs<1) {
-    mexErrMsgIdAndTxt("Drake:HandCpmex:NotEnoughInputs","Usage model_ptr = HandCpmex(model,[,grav_accn]), then [H,C] = HandCpmex(model_ptr,q,qd[,f_ext]), and finally HandCpmex(model_ptr) to free the memory.");
+    mexErrMsgIdAndTxt("Drake:HandCpmex:NotEnoughInputs","Usage model_ptr = HandCpmex(model), then [H,C] = HandCpmex(model,q,qd[,f_ext]), and finally HandCpmex(model,model_ptr) to free the memory.");
   }
 
   PlanarModel *model = NULL;
   
-  if (mxIsStruct(prhs[0])) { // then it's HandCp(model[,grav_accn]);
-    mxArray* featherstone = mxGetField(prhs[0],0,"featherstone");
+  if (nrhs==1) { // then it's HandCp(model);
+    mxArray* featherstone = mxGetProperty(prhs[0],0,"featherstone");
     if (!featherstone) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs", "can't find field model.featherstone.  Are you passing in the correct structure?");
 
     // set up the model    
@@ -168,7 +168,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
       memcpy(model->I[i].data(),mxGetPr(pIi),sizeof(double)*3*3);
     }
     
-    mxArray* pBodies = mxGetField(prhs[0],0,"body");
+    mxArray* pBodies = mxGetProperty(prhs[0],0,"body");
 
     if (!pBodies) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't find field model.body.  Are you passing in the correct structure?");
     for (int i=0; i<model->NB + 1; i++) {
@@ -197,13 +197,13 @@ void mexFunction( int nlhs, mxArray *plhs[],
       memcpy(model->bodies[i].Ttree.data(),mxGetPr(pbTtreei),sizeof(double)*3*3);      
     }
     
-    
-    if (nrhs>1) {
-      if (!mxIsDouble(prhs[1]) || (mxGetNumberOfElements(prhs[1])!=2))
-        mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","grav_accn must be a 2x1 double");
-      double* p = mxGetPr(prhs[1]);
+    mxArray* a_grav_array = mxGetProperty(prhs[0],0,"gravity");
+    if (a_grav_array && mxGetNumberOfElements(a_grav_array)==2) {
+      double* p = mxGetPr(a_grav_array);
       model->a_grav(1) = p[0];
       model->a_grav(2) = p[1];
+    } else {
+      mexErrMsgIdAndTxt("Drake:HandCmex:BadGravity","Couldn't find a 2 element gravity vector in the object.");
     }
     
     if (nlhs>0) {  // return a pointer to the model
@@ -215,19 +215,19 @@ void mexFunction( int nlhs, mxArray *plhs[],
       plhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
       memcpy(mxGetData(plhs[0]),&model,sizeof(model));
     }
-  } else if (nrhs<2) { // then it's HandCpmex(model_ptr)  : cleanup the model_ptr memory.
+  } else if (nrhs==2) { // then it's HandCpmex(model,model_ptr)  : cleanup the model_ptr memory.
     // first get the model_ptr back from matlab
-    if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-      mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","first argument should be the model_ptr");
-    memcpy(&model,mxGetData(prhs[0]),sizeof(model));
+    if (!mxIsNumeric(prhs[1]) || mxGetNumberOfElements(prhs[1])!=1)
+      mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","second argument should be the model_ptr");
+    memcpy(&model,mxGetData(prhs[1]),sizeof(model));
     
     delete model;
   } else { // then it's HandCpmex(model_ptr,q,qd)   
 
     // first get the model_ptr back from matlab
-    if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-      mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","first argument should be the model_ptr");
-    memcpy(&model,mxGetData(prhs[0]),sizeof(model));
+    mxArray* mex_model_ptr = mxGetProperty(prhs[0],0,"mex_model_ptr");
+    if (!mex_model_ptr)  mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs","first argument should be the model class object");
+    memcpy(&model,mxGetData(mex_model_ptr),sizeof(model));
     
     double *q,*qd;
     if (mxGetNumberOfElements(prhs[1])!=model->NB || mxGetNumberOfElements(prhs[2])!=model->NB)
