@@ -125,7 +125,7 @@ classdef PendulumPlant < SecondOrderSystem
 
       c = c.addTrajectory(xtraj,utraj,tv,Vswingup);
       
-      c = setInputFrame(c.getInputFrame.constructFrameWithAnglesWrapped([1;0]));
+      c = setInputFrame(c,c.getInputFrame.constructFrameWithAnglesWrapped([1;0]));
     end
     
     function c=balanceLQRTree(obj)
