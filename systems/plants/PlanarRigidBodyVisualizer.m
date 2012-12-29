@@ -8,20 +8,10 @@ classdef PlanarRigidBodyVisualizer < Visualizer
   % the plane.
   
   methods
-    function obj = PlanarRigidBodyVisualizer(frame,model,options)
-      obj=obj@Visualizer(frame);
-      
-      options=struct('twoD',true);
-      if (nargin<1)
-        [filename,pathname]=uigetfile('*.urdf');
-        obj.model = PlanarRigidBodyModel(fullfile(pathname,filename),options);
-      elseif ischar(model)
-        obj.model = PlanarRigidBodyModel(model,options);
-      elseif isa(model,'PlanarRigidBodyModel')
-        obj.model = model;
-      else
-        error('model must be a PlanarRigidBodyModel or the name of a urdf file'); 
-      end
+    function obj = PlanarRigidBodyVisualizer(manip,options)
+      typecheck(manip,'PlanarRigidBodyManipulator');
+      obj=obj@Visualizer(manip.getStateFrame);
+      obj.model = manip;
     end
     
     function draw(obj,t,x)

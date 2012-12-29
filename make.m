@@ -13,22 +13,25 @@ load drake_config;
 
 cd util;
 mex realtime.cpp
-cd ..
+cd(getDrakePath());
 
-cd systems/plants;
 if checkDependency('eigen3_enabled')
+  cd systems/plants/@RigidBodyManipulator/private;
   mex('HandCmex.cpp',['-I',conf.eigen3_incdir]);
-  mex('HandCpmex.cpp',['-I',conf.eigen3_incdir]);
   mex('doKinematicsmex.cpp',['-I',conf.eigen3_incdir]);
-  mex('doKinematicspmex.cpp',['-I',conf.eigen3_incdir]);
   mex('forwardKinmex.cpp',['-I',conf.eigen3_incdir]);
+  cd(getDrakePath());
+  
+  cd systems/plants/@PlanarRigidBodyManipulator/private;
+  mex('HandCpmex.cpp',['-I',conf.eigen3_incdir]);
+  mex('doKinematicspmex.cpp',['-I',conf.eigen3_incdir]);
   mex('forwardKinpmex.cpp',['-I',conf.eigen3_incdir]);
   mex('forwardKinVelpmex.cpp',['-I',conf.eigen3_incdir]);
+  cd(getDrakePath());
 end
-cd(getDrakePath());
 
 cd systems;
 mex DCSFunction.cpp
-cd ..
+cd(getDrakePath());
 
 disp('done.');

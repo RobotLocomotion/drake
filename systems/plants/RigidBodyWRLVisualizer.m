@@ -4,27 +4,19 @@ classdef RigidBodyWRLVisualizer < Visualizer
   % 
   
   methods
-    function obj = RigidBodyWRLVisualizer(frame,model,options)
+    function obj = RigidBodyWRLVisualizer(manip,options)
       % @option ground set options.ground = true to have ground visualized
 
       checkDependency('vrml_enabled');
+      typecheck(manip,'RigidBodyManipulator');
       
-      obj=obj@Visualizer(frame);
+      obj=obj@Visualizer(manip.getStateFrame());
+      obj.model = manip;
       
-      if (nargin<1)
-        [filename,pathname]=uigetfile('*.urdf');
-        obj.model = RigidBodyModel(fullfile(pathname,filename));
-      elseif ischar(model)
-        obj.model = RigidBodyModel(model);
-      elseif isa(model,'RigidBodyModel')  
-        obj.model = model;
-      else
-        error('model must be a RigidBodyModel or the name of a urdf file'); 
-      end
-      
-      if nargin<3
+      if nargin<2
         options = struct();
       end
+      if ~isfield(options,'ground') options.ground = manip.num_contacts>0; end
       
       wrlfile = fullfile(tempdir,[obj.model.name,'.wrl']);
       obj.model.writeWRL(wrlfile,options);
