@@ -1,314 +1,240 @@
-classdef PlanarRigidBodyManipulator < Manipulator
-  % This class wraps the planar pieces of the spatial vector library (v1) 
-  % provided by Roy Featherstone on his website: 
+classdef PlanarRigidBodyManipulator < RigidBodyManipulator
+  % This class wraps the planar pieces of the spatial vector library (v1)
+  % provided by Roy Featherstone on his website:
   %   http://users.cecs.anu.edu.au/~roy/spatial/documentation.html
-    
-  properties (SetAccess=public,GetAccess=public)  
-    model;     % PlanarRigidBodyModel object
+  
+  properties
+    x_axis_label;
+    y_axis_label;
+    x_axis;
+    y_axis;
+    view_axis;
   end
   
   methods
-    function obj = PlanarRigidBodyManipulator(model)
-      obj = obj@Manipulator(0,0);
+    function obj = PlanarRigidBodyManipulator(urdf_filename,options)
+      obj = obj@RigidBodyManipulator();
+      obj.D = 2;  % set to 2D
 
-      if (nargin<1)
-        [filename,pathname]=uigetfile('*.urdf');
-        obj.model = PlanarRigidBodyModel(fullfile(pathname,filename));
-      elseif ischar(model)
-        obj.model = PlanarRigidBodyModel(model);
-      elseif isa(model,'PlanarRigidBodyModel')
-        obj.model = model;
+      if (nargin<1) urdf_filename=''; end
+      if (nargin<2) options = struct(); end
+      if (~isfield(options,'view')) 
+        options.view = 'right';
       else
-        error('model must be a PlanarRigidBodyModel or the name of a urdf file'); 
-      end
-
-      obj = obj.setNumInputs(size(obj.model.B,2));
-      obj = obj.setNumDOF(obj.model.featherstone.NB);
-      obj = obj.setNumOutputs(2*obj.model.featherstone.NB);
-      
-      if getNumInputs(obj)>0
-        obj = setInputFrame(obj,constructInputFrame(obj.model));
+        options.view = lower(options.view);
+        if ~any(strcmp(options.view,{'front','right','top'}))
+          error('supported view options are front,back,top,bottom,right,or left');
+        end
       end
       
-      if getNumStates(obj)>0
-        stateframe = constructStateFrame(obj.model);
-        obj = setStateFrame(obj,stateframe);
-        obj = setOutputFrame(obj,stateframe);  % output = state
-      end
-        
-      obj = obj.setNumPositionConstraints(2*length(obj.model.loop));
+      % todo: clean these up.  should they be in "parseURDF?"  should
+      % parseURDF even be allowed if it's not called from the constructor (maybe it should be protected)?
       
-      obj.joint_limit_min = [obj.model.body.joint_limit_min]';
-      obj.joint_limit_max = [obj.model.body.joint_limit_max]';
-      if (any(obj.joint_limit_min~=-inf) || any(obj.joint_limit_max~=inf))
-        warning('Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
-      end
-      obj.num_contacts = size([obj.model.body.contact_pts],2);
-      if (obj.num_contacts>0)
-        warning('Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
+      switch options.view % joint_axis = view_axis => counter-clockwise
+        case 'front'
+          obj.x_axis = [0;1;0];
+          obj.y_axis = [0;0;1];
+          obj.view_axis = [1;0;0];
+          obj.x_axis_label='y';
+          obj.y_axis_label='z';
+          %          obj.name = [obj.name,'Front'];
+          obj.gravity = [0;-9.81];
+        case 'right'
+          obj.x_axis = [1;0;0];
+          obj.y_axis = [0;0;1];
+          obj.view_axis = [0;1;0];
+          obj.x_axis_label='x';
+          obj.y_axis_label='z';
+          obj.gravity = [0;-9.81];
+          %          obj.name = [obj.name,'Right'];
+        case 'top'
+          obj.x_axis = [1;0;0];
+          obj.y_axis = [0;1;0];
+          obj.view_axis = [0;0;1];
+          obj.x_axis_label='x';
+          obj.y_axis_label='y';
+          obj.gravity = [0;0];
+          %          obj.name = [obj.name,'Top'];
       end
       
-      B = obj.model.B;
-      obj = obj.setInputLimits(-obj.model.u_limit,obj.model.u_limit);
+      if ~isempty(urdf_filename)
+        options.x_axis = obj.x_axis;
+        options.y_axis = obj.y_axis;
+        options.view_axis = obj.view_axis;
+        obj = parseURDF(obj,urdf_filename,options);
+      end
     end
     
-    function [Hqddot, dHqddot, phi, psi, dPhi, dPsi, H, dH] = implicitDynamics(obj,t,x,u,lambda,cLambda)
-      % Compute the implicit dynamics for trajectory optimization.  This
-      % function is fully implemented for joint limits and contact contraints
-      % @param obj The Manipulator object
-      % @param t Time
-      % @param x State
-      % @param u Input
-      % @param lambda Non-contact constraint forces
-      % @param cLambda Contact constraint forces
-      % @return Hqddot H(q)*qddot from the dynamics equations
-      % @return dHqddot d/dq and d/qdot of H*qddot
-      % @return phi phi(q) the contact point positions
-      % @return psi psi(q) the contact point velocities
-      % @return dPhi dphi/dq
-      % @return dPsi [dpsi/dq dpsi/dqdot]
-      
-      phi = [];
-      psi = [];
-      J = [];
-      dPsi = [];
-      % Compute H*qddot, one form of the implicit dynamics
-      
-      q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
-      nContactConst = obj.num_contacts;
-%       nonContactPConst = obj.num_bilateral_constraints - nContactConst;
-      nonContactPConst = obj.getNumJointLimits;
-      nUniPConstraints = nonContactPConst;
-      dconstraint = 0;
-      constraint = 0;
-      nClutch = 0;
-      
-      [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd);
-%       doKinematicsAndVelocities(obj.model,q,qd);
-      doKinematics(obj.model,q,true);
-      
-      if (nUniPConstraints > 0)
-        [phi,J,dJ] = obj.jointLimits(q);
-%         dJdqlambda = zeros(obj.num_q^2,1);
-%         for i=1:obj.num_q^2,
-%           dJdqlambda(i,1) = dJ(:,i)'*lambda(1:nUniPConstraints);
-%         end
-        dJdqlambda = dJ'*lambda(1:nUniPConstraints);
-        dconstraint = [zeros(obj.num_q,1) reshape(dJdqlambda,obj.num_q,obj.num_q)...
-          zeros(obj.num_q) zeros(obj.num_q,obj.num_u) J' ...
-          zeros(obj.num_q,2*nContactConst + nonContactPConst - nUniPConstraints+nClutch)] + dconstraint;
-        constraint = constraint + J'*lambda(1:nUniPConstraints);
-      end
-      
-%       if (nonContactPConst - nUniPConstraints>0)
-%         error('Not yet implemented in trunk version');
-%         [phi,J,dJ] = obj.positionConstraints(q);
-%         dJdqlambda = zeros(obj.num_q^2,1);
-%         for i=1:obj.num_q^2,
-%           dJdqlambda(i,1) = dJ(:,i)'*lambda(nUniPConstraints+1:end);
-%         end
-%         dconstraint = [zeros(obj.num_q,1) reshape(dJdqlambda,obj.num_q,obj.num_q)...
-%           zeros(obj.num_q) zeros(obj.num_q,obj.num_u + nUniPConstraints) J' zeros(obj.num_q,2*nContactConst+nClutch)] + dconstraint;
-%         constraint = constraint + J'*lambda(nUniPConstraints+1:end);
-%       end
-      
-      if (nContactConst > 0)  
-        [phi_n,n,D,mu,dn,dD,psi,dPsi,phi_f,dPhi] = contactConstraints(obj,q,qd);
-%         [phi, psi, dPhi, dPsi, J, dJ]  = contactPositionsAndVelocities(obj,q,qd);
-        
-        %TODO: clean this up instead of just cramming into previous format
-        psi = psi(1,:)';
-        phi = zeros(2*length(phi_n),1);
-        phi(1:2:end) = phi_f;
-        phi(2:2:end) = phi_n;
-        J = zeros(length(phi), obj.num_q);
-        J(1:2:end,:) = D{1};
-        J(2:2:end,:) = n;
-        dJ = zeros(length(phi), obj.num_q^2);
-        dJ(2:2:end,:) = reshape(dn,length(phi_n),[]);
-        dJ(1:2:end,:) = reshape(dD{1},length(phi_n),[]);
-        dPsi = dPsi(1:2:end,:);
-        
-%         dJdqlambda = zeros(obj.num_q^2,1)*x(1);
-%         for i=1:obj.num_q^2,
-%           dJdqlambda(i,1) = dJ(:,i)'*cLambda;
-%         end
-        dJdqlambda = dJ'*cLambda;
-        dconstraint = [zeros(obj.num_q,1) reshape(dJdqlambda,obj.num_q,obj.num_q)...
-          zeros(obj.num_q, obj.num_q + obj.num_u + nonContactPConst) J' zeros(obj.num_q, nClutch)] + dconstraint;
-        constraint = constraint + J'*cLambda;
-      end
-      
-      dHqddot = [zeros(obj.num_q,1) -dC B ...
-        zeros(obj.num_q,nonContactPConst+2*nContactConst+nClutch)] + dconstraint;
-      
-%       if (~isempty(obj.model.passive_K) && ~isempty(obj.model.passive_B))
-%         % determine which passive joints are active
-%         active_ind = (q < obj.model.passive_max+1e-6).*(q > obj.model.passive_min-1e-6);
-%         dHqddot(:,2:(1+2*obj.num_q)) = dHqddot(:,2:(1+2*obj.num_q)) - ...
-%           [obj.model.passive_K*diag(active_ind) obj.model.passive_B*diag(active_ind)];
-%         
-%         passive_force = (-obj.model.passive_K*(q - obj.model.passive_nom) -...
-%           obj.model.passive_B*qd).*active_ind + obj.model.passive_offset;
-%         
-%         Hqddot = B*u - C + constraint + passive_force;
-%       else      
-        Hqddot = B*u - C + constraint;
-%         end
+    function obj = createMexPointer(obj)
+      if (obj.mex_model_ptr) deleteMexPointer(obj); end
+      obj.mex_model_ptr = HandCpmex(struct(obj),obj.gravity);
+    end
+    function obj = deleteMexPointer(obj)
+      HandCmex(obj.mex_model_ptr);
+      obj.mex_model_ptr = 0;
     end
     
-    function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd)
-      jsign = [obj.model.body(cellfun(@(a)~isempty(a),{obj.model.body.parent})).jsign]';
-      q = jsign.*q;
-      qd = jsign.*qd;
-      m = obj.model.featherstone;
-        
-      if (nargout>3)
-        if (obj.model.mex_model_ptr && isnumeric(q) && isnumeric(qd))
-          [H,C,dH,dC] = HandCpmex(obj.model.mex_model_ptr,q,qd);
-        else
-          % featherstone's HandCp with analytic gradients
-          a_grav = [0;obj.model.gravity];
-          
-          S = cell(m.NB,1);
-          Xup = cell(m.NB,1);
-          
-          v = cell(m.NB,1);
-          avp = cell(m.NB,1);
-          
-          %Derivatives
-          dXupdq = cell(m.NB,1);
-          dvdq = cell(m.NB,1);  %dvdq{i,j} is d/dq(j) v{i}
-          dvdqd = cell(m.NB,1);
-          davpdq = cell(m.NB,1);
-          davpdqd = cell(m.NB,1);
-          fvp = cell(m.NB,1);
-          dfvpdq = cell(m.NB,1);
-          dfvpdqd = cell(m.NB,1);
-          
-          
-          for i = 1:m.NB
-            dvdq{i} = zeros(3,m.NB)*q(1);
-            dvdqd{i} = zeros(3,m.NB)*q(1);
-            davpdq{i} = zeros(3,m.NB)*q(1);
-            davpdqd{i} = zeros(3,m.NB)*q(1);
-            dfvpdq{i} = zeros(3,m.NB)*q(1);
-            dfvpdqd{i} = zeros(3,m.NB)*q(1);
-            
-            [ XJ, S{i} ] = jcalcp( m.jcode(i), q(i) );
-            vJ = S{i}*qd(i);
-            dvJdqd = S{i};
-            
-            Xup{i} = XJ * m.Xtree{i};
-            dXJdq = djcalcp(m.jcode(i), q(i));
-            dXupdq{i} = dXJdq * m.Xtree{i};
-            
-            if m.parent(i) == 0
-              v{i} = vJ;
-              dvdqd{i}(:,i) = dvJdqd;
-              
-              avp{i} = Xup{i} * -a_grav;
-              davpdq{i}(:,i) = dXupdq{i} * -a_grav;
-            else
-              j = m.parent(i);
-              v{i} = Xup{i}*v{j} + vJ;
-              
-              dvdq{i} = Xup{i}*dvdq{j};
-              dvdq{i}(:,i) = dvdq{i}(:,i) + dXupdq{i}*v{j};
-              
-              dvdqd{i} = Xup{i}*dvdqd{j};
-              dvdqd{i}(:,i) = dvdqd{i}(:,i) + dvJdqd;
-              
-              avp{i} = Xup{i}*avp{j} + crmp(v{i})*vJ;
-              
-              davpdq{i} = Xup{i}*davpdq{j};
-              davpdq{i}(:,i) = davpdq{i}(:,i) + dXupdq{i}*avp{j};
-              for k=1:m.NB,
-                davpdq{i}(:,k) = davpdq{i}(:,k) + ...
-                  dcrmp(v{i},vJ,dvdq{i}(:,k),zeros(3,1));
-              end
-              
-              dvJdqd_mat = zeros(3,m.NB);
-              dvJdqd_mat(:,i) = dvJdqd;
-              davpdqd{i} = Xup{i}*davpdqd{j} + dcrmp(v{i},vJ,dvdqd{i},dvJdqd_mat);
-            end
-            fvp{i} = m.I{i}*avp{i} + crfp(v{i})*m.I{i}*v{i};
-            dfvpdq{i} = m.I{i}*davpdq{i} + dcrfp(v{i},m.I{i}*v{i},dvdq{i},m.I{i}*dvdq{i});
-            dfvpdqd{i} = m.I{i}*davpdqd{i} + dcrfp(v{i},m.I{i}*v{i},dvdqd{i},m.I{i}*dvdqd{i});
-          end
-          
-          dC = zeros(m.NB,2*m.NB)*q(1);
-          IC = m.I;				% composite inertia calculation
-          dIC = cell(m.NB, m.NB);
-          dIC = cellfun(@(a) zeros(3), dIC,'UniformOutput',false);
-          
-          for i = m.NB:-1:1
-            C(i,1) = S{i}' * fvp{i};
-            dC(i,:) = S{i}'*[dfvpdq{i} dfvpdqd{i}];
-            if m.parent(i) ~= 0
-              fvp{m.parent(i)} = fvp{m.parent(i)} + Xup{i}'*fvp{i};
-              dfvpdq{m.parent(i)} = dfvpdq{m.parent(i)} + Xup{i}'*dfvpdq{i};
-              dfvpdq{m.parent(i)}(:,i) = dfvpdq{m.parent(i)}(:,i) + dXupdq{i}'*fvp{i};
-              dfvpdqd{m.parent(i)} = dfvpdqd{m.parent(i)} + Xup{i}'*dfvpdqd{i};
-              
-              IC{m.parent(i)} = IC{m.parent(i)} + Xup{i}'*IC{i}*Xup{i};
-              for k=1:m.NB,
-                dIC{m.parent(i),k} = dIC{m.parent(i),k} + Xup{i}'*dIC{i,k}*Xup{i};
-              end
-              dIC{m.parent(i),i} = dIC{m.parent(i),i} + ...
-                dXupdq{i}'*IC{i}*Xup{i} + Xup{i}'*IC{i}*dXupdq{i};
-            
-            end
-          end
-          
-          % minor adjustment to make TaylorVar work better.
-          %H = zeros(m.NB);
-          H=zeros(m.NB)*q(1);
-          
-          %Derivatives wrt q(k)
-          dH = zeros(m.NB^2,m.NB)*q(1);
-          for k = 1:m.NB
-            for i = 1:m.NB
-              fh = IC{i} * S{i};
-              dfh = dIC{i,k} * S{i};  %dfh/dqk
-              H(i,i) = S{i}' * fh;
-              dH(i + (i-1)*m.NB,k) = S{i}' * dfh;
-              j = i;
-              while m.parent(j) > 0
-                if j==k,
-                  dfh = Xup{j}' * dfh + dXupdq{k}' * fh;
-                else
-                  dfh = Xup{j}' * dfh;
-                end
-                fh = Xup{j}' * fh;
-                
-                j = m.parent(j);
-                H(i,j) = S{j}' * fh;
-                H(j,i) = H(i,j);
-                dH(i + (j-1)*m.NB,k) = S{j}' * dfh;
-                dH(j + (i-1)*m.NB,k) = dH(i + (j-1)*m.NB,k);
-              end
-            end
-          end
-        end
-        dH = dH*diag(jsign);
-        dH = dH(:,1:m.NB)*[eye(m.NB) zeros(m.NB)];
-        C=C+m.damping'.*qd;
-        dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
-        C = jsign.*C;
-        dC = diag(jsign)*dC*diag([jsign;jsign]);
-        B = obj.model.B;
-        dB = zeros(obj.num_q*obj.num_u,2*obj.num_q);
-      else
-        if (obj.model.mex_model_ptr && isnumeric(q) && isnumeric(qd))
-          [H,C] = HandCpmex(obj.model.mex_model_ptr,q,qd);
-        else
-          [H,C] = HandCp(obj.model.featherstone,q,qd,{},obj.model.gravity);
-        end
-        C=C+obj.model.featherstone.damping'.*qd;
-        C = jsign.*C;
-        B = obj.model.B;
+    function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits,options)
+      if (nargin<6) xy=zeros(2,1); end
+      if (nargin<7) p=0; end
+      if (nargin<9) damping=0; end
+      if (nargin<10 || isempty(limits))
+        limits = struct();
+        limits.joint_limit_min = -Inf;
+        limits.joint_limit_max = Inf;
+        limits.effort_limit = Inf;
+        limits.velocity_limit = Inf;
       end
+      
+      switch (lower(type))
+        case {'revolute','continuous','planar'}
+          if abs(dot(axis,model.view_axis))<(1-1e-6)
+            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded revolute joint ', child.jointname,' because it did not align with the viewing axis']);
+            model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,limits,options);
+            return;
+          end
+        case 'prismatic'
+          if abs(dot(axis,model.view_axis))>1e-6
+            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded prismatic joint ', child.jointname,' because it did not align with the viewing axis']);
+            model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,limits,options);
+            return;
+          end
+      end
+      
+      if ~isempty(child.parent)
+        error('there is already a joint connecting this child to a parent');
+      end
+      
+      switch (lower(type))
+        case {'revolute','continuous'}
+          child.pitch=0;
+          child.joint_axis=axis;
+          child.jsign = sign(dot(axis,model.view_axis));
+          if dot(model.view_axis,[0;1;0])  % flip rotational kinematics view='right' to be consistent with vehicle coordinates
+            child.jsign = -child.jsign;
+          end
+          child.jcode=1;
+          
+        case 'prismatic'
+          child.pitch=inf;
+          child.joint_axis=axis;
+          if abs(dot(axis,model.x_axis))>(1-1e-6)
+            child.jcode=2;
+            child.jsign = sign(dot(axis,model.x_axis));
+          elseif dot(axis,model.y_axis)>(1-1e-6)
+            child.jcode=3;
+            child.jsign = sign(dot(axis,model.y_axis));
+          else
+            error('Currently only prismatic joints with their axis in the x-axis or z-axis are supported right now (twoD assumes x-z plane)');
+          end
+          
+        case 'planar'
+          % create two links with sliders, then finish this function with
+          % the first of these joints (which need to catch the kinematics)
+          if (limits.joint_limit_min~=-inf || limits.joint_limit_max~=inf)
+            error('joint limits not defined for planar joints');
+          end
+          jsign = sign(dot(axis,model.view_axis));
+          
+          body1=newBody(model);
+          body1.linkname=[name,'_',model.x_axis_label];
+          model.body = [model.body,body1];
+          model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,jsign*model.x_axis,damping);
+          
+          body2=newBody(model);
+          body2.linkname=[name,'_',model.y_axis_label];
+          model.body = [model.body,body2];
+          model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),jsign*model.y_axis,damping);
+          
+          model = addJoint(model,[name,'_p'],'revolute',body2,child,zeros(3,1),zeros(3,1),axis,damping);
+          return;
+          
+        case 'fixed'
+          child.pitch=nan;
+          
+        otherwise
+          error(['joint type ',type,' not supported in planar models']);
+      end
+      
+      child.jointname = name;
+      child.parent = parent;
+      
+      wrl_joint_origin='';
+      if any(xyz)
+        wrl_joint_origin=[wrl_joint_origin,sprintf('\ttranslation %f %f %f\n',xyz(1),xyz(2),xyz(3))];
+      end
+      if (any(rpy))
+        wrl_joint_origin=[wrl_joint_origin,sprintf('\trotation %f %f %f %f\n',rpy2axis(rpy))];
+      end
+      if ~isempty(wrl_joint_origin)
+        child.wrljoint = wrl_joint_origin;
+      end
+      
+      xy = [model.x_axis'; model.y_axis']*xyz;
+      if any(rpy)
+        rpya=rpy2axis(rpy); p=rpya(4); rpyaxis=rpya(1:3);
+        if abs(dot(rpyaxis,model.view_axis))<(1-1e-6)
+          warning(['joint ',child.jointname,': joint axes out of the plane are not supported.  the dependent link ',child.linkname,' (and all of it''s decendants) will be zapped']);
+          ind = find([model.body]==child);
+          model.body(ind)=[];
+          return;
+          % note that if they were, it would change the way that I have to
+          % parse geometries, inertias, etc, for all of the children.
+        elseif dot(rpyaxis,model.view_axis)<0
+          p=-p;
+        end
+        if strcmp(options.view,'right')  % flip axis for vehicle coordinates
+          p=-p;
+        end
+      else
+        p=0;
+      end
+      
+      child.Xtree = Xpln(p,xy);
+      child.Ttree = [rotmat(p),xy; 0,0,1];
+      child.T = parent.T*child.Ttree;
+      child.damping = damping;
+      child.joint_limit_min = limits.joint_limit_min;
+      child.joint_limit_max = limits.joint_limit_max;
+      child.effort_limit = limits.effort_limit;
+      child.velocity_limit = limits.velocity_limit;
+    end
+    
+    function model = addFloatingBase(model)
+      rootlink = find(cellfun(@isempty,{model.body.parent}));
+      if (length(rootlink)>1)
+        warning('multiple root links');
+      end
+      
+      if strcmpi('world',{model.body.linkname})
+        error('world link already exists.  cannot add floating base.');
+      end
+      world = newBody(model);
+      world.linkname = 'world';
+      world.parent = [];
+      model.body = [model.body,world];
+      
+      limits = struct(); 
+      limits.joint_limit_min = -Inf;
+      limits.joint_limit_max = Inf;
+      limits.effort_limit = Inf;
+      limits.velocity_limit = Inf;
+      for i=1:length(rootlink)
+        model = addJoint(model,model.body(i).linkname,'planar',world,model.body(i),zeros(3,1),zeros(3,1),model.view_axis,0,limits);
+      end
+    end
+    
+    function model = compile(model)
+      model = compile@RigidBodyManipulator(model);
+      model = model.setNumPositionConstraints(2*length(model.loop));
+    end
+    
+    function body = newBody(model)
+      body = PlanarRigidBody();
+    end
+    
+    function v=constructVisualizer(obj)
+      v = PlanarRigidBodyVisualizer(obj.model);
     end
     
     function phi = positionConstraints(obj,q)
@@ -318,7 +244,7 @@ classdef PlanarRigidBodyManipulator < Manipulator
     
     function phi = loopConstraints(obj,q)
       % handle kinematic loops
-      % note: each loop adds two constraints 
+      % note: each loop adds two constraints
       phi=[];
       jsign = [obj.model.body(cellfun(@(a)~isempty(a),{obj.model.body.parent})).jsign]';
       q = jsign.*q;
@@ -354,145 +280,192 @@ classdef PlanarRigidBodyManipulator < Manipulator
         end
       end
     end
-    
-    function [phi,n,D,mu,dn,dD,psi,dPsi,phi_f,dPhi] = contactConstraints(obj,q,qd)
-      % 
-      % @retval phi  phi(i,1) is the signed distance from the contact
-      % point on the robot to the closes object in the world.
-      % @retval n the surface "normal vector", but in joint coordinates  (eq 3 in Anitescu97)
-      %    n(i,:) is the normal for the ith contact
-      % @retval D parameterization of the polyhedral approximation of the 
-      %    friction cone, in joint coordinates (figure 1 from Stewart96)
-      %    D{k}(i,:) is the kth direction vector for the ith contact (of nC)
-      % @retval mu mu(i,1) is the coefficient of friction for the ith contact
-      % @retval psi the planar velocity of the contacts (x1,z1,x2,z2,...)
+  end
   
-      if (nargout > 6)
-        contact_vel = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar  
-        dv = zeros(2*obj.num_contacts,2*obj.num_q)*q(1);
-      end
-      
-      doKinematics(obj.model,q,nargout>4); % checks for mex within this function now
-
-      contact_pos = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar
-      if (nargout>1) 
-        J = zeros(2*obj.num_contacts,obj.num_q)*q(1); 
-      end
-      
-      count=0;
-%       nBodies = length(obj.model.body);
-      nBodies = obj.model.featherstone.NB + 1;
-      for i=1:nBodies;
-%         body = obj.model.body(i);
-        contact_pts = obj.model.body(i).contact_pts;
-        nC = size(contact_pts,2);
-        if nC>0
-          if (nargout>4)
-            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(obj.model,i,contact_pts);
-          elseif (nargout>1)
-            [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(obj.model,i,contact_pts);
-          else
-            [contact_pos(:,count+(1:nC))] = forwardKin(obj.model,i,contact_pts);
-          end
-          
-          if (nargout>6)
-            [contact_vel(:,count+(1:nC)),dv(2*count+(1:2*nC),:)] = forwardKinVel(obj.model,i,contact_pts,qd);
-          end
-          
-          count = count + nC;
+  methods (Access=protected)
+    
+    function model = extractFeatherstone(model)
+%      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
+      dof=0;inds=[];
+      for i=1:length(model.body)
+        if (~isempty(model.body(i).parent))
+          dof=dof+1;
+          model.body(i).dofnum=dof;
+          inds = [inds,i];
         end
       end
-
-      [pos,vel,normal,mu] = collisionDetect(obj,contact_pos);
+      m.NB=length(inds);
+      for i=1:m.NB
+        b=model.body(inds(i));
+        m.parent(i) = b.parent.dofnum;
+        m.jcode(i) = b.jcode;
+        m.Xtree{i} = b.Xtree;
+        m.I{i} = b.I;
+        m.damping(i) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
+      end
+      model.featherstone = m;
+    end    
+  
+    function model=removeFixedJoints(model)
+      fixedind = find(isnan([model.body.pitch]));
       
-      % note: without asking the collision detector for curvature of the
-      % surface, the best we can do is assume that the world is locally flat.  
-      % e.g. dnormal/dcontact_pos = 0;
-      
-      relpos = contact_pos - pos;
-      s = sign(sum(relpos.*normal,1));
-%       phi = (sqrt(sum(relpos.^2,1)).*s)'; %replaced this with normal
-%       distance
-      %% compute a tangent vector, t
-      % for each n, it looks like:
-      % if (abs(normal(2))>abs(normal(1))) t = [1,-n(1)/n(2)];  
-      % else t = [-n(2)/n(1),1]; end
-      % and the vectorized form is:
-      t=normal; % initialize size
-      ind=abs(normal(2,:))>abs(normal(1,:));
-      t(:,ind) = [ones(1,sum(ind));-normal(1,ind)./normal(2,ind)];
-      ind=~ind;
-      t(:,ind) = [-normal(2,ind)./normal(1,ind); ones(1,sum(ind))];
-      t = t./repmat(sqrt(sum(t.^2,1)),2,1); % normalize
-      
-      phi = sum(relpos.*normal)';
-      phi_f = sum(relpos.*t)';
-      if (nargout>1)
-        % recall that dphidx = normal'; n = dphidq = dphidx * dxdq
-        % for a single contact, we'd have
-        % n = normal'*J;
-        % For vectorization, I just construct
-        %  [normal(:,1)' 0 0 0 0; 0 normal(:,2)' 0 0 0; 0 0 normal(:,3') 0 0], 
-        % etc, where each 0 is a 1x3 block zero, then multiply by J
-
-        n = sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,normal(:))*J;
-        D{1} = sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,t(:))*J;
-        D{2} = -D{1};
+      for i=fixedind(end:-1:1)  % go backwards, since it is presumably more efficient to start from the bottom of the tree
+        body = model.body(i);
+        parent = body.parent;
         
-        % the above is the vectorized version of this:
-%        for i=1:obj.num_contacts
-%          thisJ = J(2*(i-1)+(1:2),:);
-%          n(i,:) = normal(:,i)'*thisJ;
-%          D{1}(i,:) = t(:,i)'*thisJ;
-%          D{2}(i,:) = -t(:,i)'*thisJ;
-%        end
-
-        if (nargout>4)
-          % dnormal/dx = 0 (see discussion above), so the gradients are simply:
-          dn = reshape(sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,normal(:))*dJ,numel(n),[]);
-          dD{1} = reshape(sparse(repmat(1:obj.num_contacts,2,1),1:2*obj.num_contacts,t(:))*dJ,numel(n),[]);
-          dD{2} = -dD{1};
-        end
-        %TODO: if the object being collided with is movable, then need it's
-        %gradient as well here
-        if (nargout>6)
-          rel_vel = contact_vel - vel;
-          % normal velocities sum(contact_vel.*t)
-          psi = [sum(rel_vel.*t);sum(rel_vel.*normal)];
-          dPsi = zeros(size(dv));
-          dPsi(1:2:end,:) = reshape(sum(reshape(repmat(t(:),1,2*obj.num_q).*dv,2,[]),1),size(t,2),[]);
-          dPsi(2:2:end,:) = reshape(sum(reshape(repmat(normal(:),1,2*obj.num_q).*dv,2,[]),1),size(t,2),[]);
-          dPhi = zeros(2*length(phi), obj.num_q);
-          dPhi(1:2:end,:) = D{1};
-          dPhi(2:2:end,:) = n;
+        % add geometry into parent
+        if (~isempty(body.geometry))
+          for j=1:length(body.geometry)
+            pts = body.Ttree * [reshape(body.geometry{j}.x,1,[]); reshape(body.geometry{j}.y,1,[]); ones(1,numel(body.geometry{j}.x))];
+            body.geometry{j}.x = reshape(pts(1,:),size(body.geometry{j}.x));
+            body.geometry{j}.y = reshape(pts(2,:),size(body.geometry{j}.y));
+            parent.geometry = {parent.geometry{:},body.geometry{j}};
+          end
         end
       end
-    end
-
-    function [pos,vel,normal,mu] = collisionDetect(obj,contact_pos)
-      % for each column of contact_pos, find the closest point in the world
-      % geometry, and it's (absolute) position and velocity, (unit) surface
-      % normal, and coefficent of friction.
       
-      % for now, just implement a ground height at y=0
-      n = size(contact_pos,2);
-      pos = [contact_pos(1,:);zeros(1,n)];
-      vel = zeros(2,n); % static world assumption (for now)
-      normal = [zeros(1,n); ones(1,n)];
-      mu = ones(1,n);
+      model = removeFixedJoints@RigidBodyManipulator(model);
     end
     
-    function v=constructVisualizer(obj)
-      v = PlanarRigidBodyVisualizer(obj.getStateFrame,obj.model);
-    end
     
-    function v=constructWRLVisualizer(obj)
-      options=struct();
-      if (obj.num_contacts)
-        options.ground=true;
+    function model=parseJoint(model,node,options)
+      ignore = char(node.getAttribute('drakeIgnore'));
+      if strcmp(lower(ignore),'true')
+        return;
       end
-      v = RigidBodyWRLVisualizer(obj.getStateFrame,obj.model,options);
+      
+      name = char(node.getAttribute('name'));
+      name = regexprep(name, '\.', '_', 'preservecase');
+
+      childNode = node.getElementsByTagName('child').item(0);
+      if isempty(childNode) % then it's not the main joint element
+        return;
+      end
+      child = findLink(model,char(childNode.getAttribute('link')));
+      
+      parentNode = node.getElementsByTagName('parent').item(0);
+      parent = findLink(model,char(parentNode.getAttribute('link')),false);
+      if (isempty(parent))
+        % could have been zapped
+        warning(['joint ',name,' parent link is missing or was deleted.  deleting the child link:', child.linkname,'(too)']);
+        ind = find([model.body]==child);
+        model.body(ind)=[];
+        return;
+      end
+      
+      type = char(node.getAttribute('type'));
+      xyz=zeros(3,1); rpy=zeros(3,1);
+      origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
+      if ~isempty(origin)
+        if origin.hasAttribute('xyz')
+          xyz = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
+        end
+        if origin.hasAttribute('rpy')
+          rpy = reshape(str2num(char(origin.getAttribute('rpy'))),3,1);
+        end
+      end
+      axis=[1;0;0];  % default according to URDF documentation
+      axisnode = node.getElementsByTagName('axis').item(0);
+      if ~isempty(axisnode)
+        if axisnode.hasAttribute('xyz')
+          axis = reshape(str2num(char(axisnode.getAttribute('xyz'))),3,1);
+          axis = axis/(norm(axis)+eps); % normalize
+        end
+      end
+      damping=0;
+      dynamics = node.getElementsByTagName('dynamics').item(0);
+      if ~isempty(dynamics)
+        if dynamics.hasAttribute('damping')
+          damping = str2num(char(dynamics.getAttribute('damping')));
+        end
+      end
+
+      joint_limit_min=-inf;
+      joint_limit_max=inf;
+      effort_limit=inf;
+      velocity_limit=inf;
+      limits = node.getElementsByTagName('limit').item(0);
+      if ~isempty(limits)
+        if limits.hasAttribute('lower')
+          joint_limit_min = str2num(char(limits.getAttribute('lower')));
+        end
+        if limits.hasAttribute('upper');
+          joint_limit_max = str2num(char(limits.getAttribute('upper')));
+        end          
+        if limits.hasAttribute('effort');
+          effort_limit = str2num(char(limits.getAttribute('effort')));
+        end          
+        if limits.hasAttribute('velocity');
+          velocity_limit = str2num(char(limits.getAttribute('velocity')));
+          warning('Drake:PlanarRigidBodyModel:UnsupportedVelocityLimits','Velocity limits are not supported yet');
+        end          
+      end
+
+      limits = struct();
+      limits.joint_limit_min = joint_limit_min;
+      limits.joint_limit_max = joint_limit_max;
+      limits.effort_limit = effort_limit;
+      limits.velocity_limit = velocity_limit;
+      
+      model = addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits,options);
     end
+    
+    function model = parseLoopJoint(model,node,options)
+      loop = PlanarRigidBodyLoop();
+      loop.name = char(node.getAttribute('name'));
+      loop.name = regexprep(loop.name, '\.', '_', 'preservecase');
+
+      link1Node = node.getElementsByTagName('link1').item(0);
+      link1 = findLink(model,char(link1Node.getAttribute('link')));
+      loop.body1 = link1;
+      loop.T1 = loop.parseLink(link1Node,options);
+      
+      link2Node = node.getElementsByTagName('link2').item(0);
+      link2 = findLink(model,char(link2Node.getAttribute('link')));
+      loop.body2 = link2;
+      loop.T2 = loop.parseLink(link2Node,options);
+      
+      %% find the lowest common ancestor
+      loop.least_common_ancestor = leastCommonAncestor(loop.body1,loop.body2);
+
+      axis=[1;0;0];  % default according to URDF documentation
+      axisnode = node.getElementsByTagName('axis').item(0);
+      if ~isempty(axisnode)
+        if axisnode.hasAttribute('xyz')
+          axis = reshape(str2num(char(axisnode.getAttribute('xyz'))),3,1);
+          axis = axis/(norm(axis)+eps); % normalize
+        end
+      end
+      
+      type = char(node.getAttribute('type'));
+      switch (lower(type))
+        case {'revolute','continuous'}
+          loop.jcode=1;          
+          if dot(axis,model.view_axis)<(1-1e-6)
+            axis
+            model.view_axis
+            error('revolute joints must align with the viewing axis');
+            % note: i don't support negative angles here yet (via jsign),
+            % but could
+          end
+
+        case 'prismatic'
+          if dot(axis,model.x_axis)>(1-1e-6)
+            loop.jcode=2;
+          elseif dot(axis,model.y_axis)>(1-1e-6)
+            loop.jcode=3;
+          else
+            error('axis must be aligned with x or z');
+            % note: i don't support negative angles here yet (via jsign),
+            % but could
+          end
+        otherwise
+          error(['joint type ',type,' not supported (yet?)']);
+      end
+      
+      model.loop=[model.loop,loop];
+    end
+    
   end
   
 end
