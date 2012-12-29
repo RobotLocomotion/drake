@@ -14,7 +14,8 @@ end
 
 function [xtraj,utraj,ltraj,v,p]=runDirtranIteration(xtraj_init, utraj_init, ltraj_init,alphamult,betamult,maxIter)
 
-p = PlanarRigidBodyManipulator('KneedCompassGait.urdf');
+options.floating = true;
+p = PlanarRigidBodyManipulator('KneedCompassGait.urdf',options);
 N = 30;
 q0 = [0; 1; 0; 0;0;0;];
 % q0 = [0;cos(pi/16);pi/16;-pi/8;0*pi/8;-pi/8];
