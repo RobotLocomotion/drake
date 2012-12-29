@@ -349,7 +349,7 @@ classdef RigidBodyManipulator < Manipulator
     function m = getMass(model)
       m = 0;
       for i=1:length(model.body)
-        bm = model.body(i).getInertial();
+        bm = model.body(i).mass;
         m = m + bm;
       end
     end
