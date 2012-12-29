@@ -532,12 +532,12 @@ classdef PlanarRigidBodyModel < RigidBodyModel
       link1Node = node.getElementsByTagName('link1').item(0);
       link1 = findLink(model,char(link1Node.getAttribute('link')));
       loop.body1 = link1;
-      loop.T1 = loop.parseLink(link1Node);
+      loop.T1 = loop.parseLink(link1Node,options);
       
       link2Node = node.getElementsByTagName('link2').item(0);
       link2 = findLink(model,char(link2Node.getAttribute('link')));
       loop.body2 = link2;
-      loop.T2 = loop.parseLink(link2Node);
+      loop.T2 = loop.parseLink(link2Node,options);
       
       %% find the lowest common ancestor
       loop.least_common_ancestor = leastCommonAncestor(loop.body1,loop.body2);

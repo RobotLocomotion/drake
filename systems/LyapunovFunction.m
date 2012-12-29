@@ -21,6 +21,10 @@ classdef LyapunovFunction
       end
     end
     
+    function y = getLevelSet(obj,t,options)
+      error('not implemented yet');
+    end
+    
     function fr=getFrame(obj)
       fr = obj.frame;
     end

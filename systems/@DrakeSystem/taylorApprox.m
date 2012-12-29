@@ -86,8 +86,12 @@ else
   order=varargin{4};
 
   sizecheck(t0,1);
-  typecheck(x0,'Point');
-  x0 = double(x0.inFrame(sys.getStateFrame));
+  if (num_x>0)
+    typecheck(x0,'Point');
+    x0 = double(x0.inFrame(sys.getStateFrame));
+  else
+    x0=[];
+  end
   if isempty(u0) % empty is ok, use default
     if (num_u), u0 = zeros(num_u,1); else, u0=[]; end
   else
