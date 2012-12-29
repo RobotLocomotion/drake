@@ -1,7 +1,7 @@
 function testLCPgradients
 
 options.floating = true;
-m = PlanarRigidBodyModel('../RimlessWheel.urdf',options);
+m = PlanarRigidBodyManipulator('../RimlessWheel.urdf',options);
 
 p = TimeSteppingRigidBodyManipulator(m,.01);
 x0 = p.manip.resolveConstraints([0;0;randn;5*rand;randn;5*rand]);

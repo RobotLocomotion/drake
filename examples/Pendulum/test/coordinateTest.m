@@ -30,7 +30,7 @@ if (j<=2)
 
 else
   twod = false;
-  r = RigidBodyModel(['p',num2str(i),'.urdf']);
+  r = RigidBodyManipulator(['p',num2str(i),'.urdf']);
   if ismember(i,[1:3,7:8])
     if mod(j,2)%even(j)
       r.gravity=[-9.81;0;0];
@@ -75,7 +75,7 @@ fprintf(1,'i:%d,j:%d,3D, c: %s, a: %s, g: %s, qf: %s, cf: %s.\n',i,j,mat2str(c),
 end
 
 %qddot = sodynamics(r,0,q,qd,0)
-if (comf'*m.gravity<.4)
+if (comf'*r.gravity<.4)
   fprintf(1,'grav check: ');
   cprintf('red','fail\n');
   error('com should be drawn towards gravity!');

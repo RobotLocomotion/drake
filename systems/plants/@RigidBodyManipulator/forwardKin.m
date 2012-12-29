@@ -32,7 +32,7 @@ if (kinsol.mex)
   end
   
 else
-  if ~all(abs(q-[model.body.cached_q]')<1e-8)
+  if ~all(abs(kinsol.q-[obj.body.cached_q]')<1e-8)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not longer valid.  Somebody has called doKinematics with a different q since the solution was computed.  If this happens a lot, I could consider returning the full T tree in kinsol, so I don''t have to rely on this caching mechanism');
   end
   body = obj.body(body_ind);

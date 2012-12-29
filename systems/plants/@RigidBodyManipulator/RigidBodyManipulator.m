@@ -245,15 +245,17 @@ classdef RigidBodyManipulator < Manipulator
       if (model.featherstone.NB + 1 ~= length(model.body))
         error('Expected there to be only one body without a parent (i.e. world)')
       end
-      
+
+      u_limit = repmat(inf,length(model.actuator),1);
+
       %% extract B matrix
       B = sparse(model.featherstone.NB,0);
       for i=1:length(model.actuator)
         B(model.actuator(i).joint.dofnum,i) = model.actuator(i).reduction;
         if ~isinf(model.actuator(i).joint.effort_limit)
-          model.u_limit(i) = abs(model.actuator(i).joint.effort_limit/model.actuator(i).reduction);
+          u_limit(i) = abs(model.actuator(i).joint.effort_limit/model.actuator(i).reduction);
           if sum(B(model.actuator(i).joint.dofnum,:)~=0)>1
-            warning('Drake:RigidBodyModel:UnsupportedJointEffortLimit','The specified joint effort limit cannot be expressed as simple input limits; the offending limits will be ignored');
+            warning('Drake:RigidBodyManipulator:UnsupportedJointEffortLimit','The specified joint effort limit cannot be expressed as simple input limits; the offending limits will be ignored');
             model.u_limit(B(model.actuator(i).joint.dofnum,:)~=0)=inf;
           end
         end
@@ -275,7 +277,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       if (length(model.loop)>0)
-        error('haven''t reimplemented position and velocity constraints yet'); 
+        warning('Drake:RigidBodyManipulator:UnsupportedLoopJoint','haven''t reimplemented position and velocity constraints yet'); 
       end
 %      obj = obj.setNumPositionConstraints(2*length(obj.model.loop)+size([obj.model.body.ground_contact],2));
 %      obj = obj.setNumVelocityConstraints(0);%size([obj.model.body.ground_contact],2));
@@ -291,9 +293,7 @@ classdef RigidBodyManipulator < Manipulator
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
       
-      u_limit = repmat(inf,length(model.actuator),1);
       model = model.setInputLimits(-u_limit,u_limit);
-
       
       %% initialize kinematics caching
       for i=1:length(model.body)
@@ -460,7 +460,7 @@ classdef RigidBodyManipulator < Manipulator
             % descendant).  abort removal.
             continue;
           else
-            warning('Drake:RigidBodyModel:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
+            warning('Drake:RigidBodyManipulator:BodyHasZeroInertia',['Link ',body.linkname,' has zero inertia (even though gravity is on and it''s not a fixed joint) and will be removed']);
           end
         end
         

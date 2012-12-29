@@ -28,7 +28,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       
       n = obj.model.featherstone.NB;
       q = x(1:n); %qd=x(n+(1:n));
-      kinsol = obj.doKinematics(q);
+      kinsol = obj.model.doKinematics(q);
       
       % for debugging:
       %co = get(gca,'ColorOrder');
@@ -39,7 +39,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
         body = obj.model.body(i);
         for j=1:length(body.geometry)
           s = size(body.geometry{j}.x); n=prod(s);
-          pts = forwardKin(obj,kinsol,i,[reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n)]);
+          pts = forwardKin(obj.model,kinsol,i,[reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n)]);
           xpts = reshape(pts(1,:),s); ypts = reshape(pts(2,:),s);
           
           patch(xpts,ypts,body.geometry{j}.c,'LineWidth',.01); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
@@ -50,19 +50,19 @@ classdef PlanarRigidBodyVisualizer < Visualizer
           % end debugging
         end
         if (obj.debug) % draw extra debugging info
-          origin = forwardKin(obj.model,i,[0;0]);
+          origin = forwardKin(obj.model,kinsol,i,[0;0]);
           plot(origin(1),origin(2),'k+');
           if (body.mass~=0)
-            com = forwardKin(obj,kinsol,i,body.com);
+            com = forwardKin(obj.model,kinsol,i,body.com);
             plot(com(1),com(2),'ro');
             line([origin(1),com(1)],[origin(2),com(2)],'Color','r');
           end
           if ~isempty(body.parent)
-            parent_origin = forwardKin(obj,kinsol,body.parent,[0;0]);
+            parent_origin = forwardKin(obj.model,kinsol,body.parent,[0;0]);
             line([origin(1),parent_origin(1)],[origin(2),parent_origin(2)],'Color','k');
           end
           if ~isempty(body.contact_pts)
-            pts = forwardKin(obj,kinsol,i,body.contact_pts);
+            pts = forwardKin(obj.model,kinsol,i,body.contact_pts);
             plot(pts(1,:),pts(2,:),'g*');
           end
         end

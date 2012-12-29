@@ -1,6 +1,7 @@
 function runPassiveLCP
 
-p = TimeSteppingRigidBodyManipulator(PlanarRigidBodyModel('FourBar.urdf'),.01);
+options.twoD = true;
+p = TimeSteppingRigidBodyManipulator('FourBar.urdf',.01,options);
 v = p.constructVisualizer();
 v.xlim = [-8 8]; v.ylim = [-4 10];
 

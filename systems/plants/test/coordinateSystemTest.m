@@ -5,11 +5,9 @@ function coordinateSystemTest
 for i=1:4
 
   options.view = 'right';
+  options.twoD = true;
   options.floating = true;
-  %m = RigidBodyModel(['brick',num2str(i),'.urdf'],options);
-  m = PlanarRigidBodyModel(['brick',num2str(i),'.urdf'],options);
-  %m.body(end).contact_pts = [];
-  r = TimeSteppingRigidBodyManipulator(m,.01);
+  r = TimeSteppingRigidBodyManipulator(['brick',num2str(i),'.urdf'],.01,options);
   
   %x0 = Point(r.getStateFrame);
   x0 = zeros(6,1);

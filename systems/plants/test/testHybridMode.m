@@ -1,7 +1,7 @@
 function testHybridMode
 
-m = PlanarRigidBodyModel('FallingBrick.urdf',struct('floating',true));
-p = HybridRigidBodyMode(m,zeros(3,1),[1;zeros(3,1)]);
+options.floating = true;
+p = HybridRigidBodyMode('FallingBrick.urdf',zeros(3,1),[1;zeros(3,1)],options);
 
 xtraj = simulate(p,[0 4]);
 v = p.constructVisualizer();

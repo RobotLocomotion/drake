@@ -9,6 +9,11 @@ classdef PendulumEnergyControl < HybridDrakeSystem
       obj = obj.addMode(PendulumEnergyShaping(plant));
 
       [lqr,V] = balanceLQR(plant);
+      
+      % enable wrapping
+      lqr = setInputFrame(lqr,lqr.getInputFrame.constructFrameWithAnglesWrapped([1;0]));
+      V = setFrame(V,lqr.getInputFrame);
+      
       obj.V = V.inFrame(plant.getStateFrame);
       obj = obj.addMode(lqr);
 

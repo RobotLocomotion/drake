@@ -10,26 +10,31 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   end
   
   methods
-    function obj=TimeSteppingRigidBodyManipulator(manipulator,timestep)
+    function obj=TimeSteppingRigidBodyManipulator(manipulator_or_urdf_filename,timestep,options)
       checkDependency('pathlcp_enabled');
+      if (nargin<3) options=struct(); end
+      if ~isfield(options,'twoD') options.twoD = false; end
       
-      switch class(manipulator)
-        case {'char','RigidBodyModel'}
+      if ischar(manipulator_or_urdf_filename)
+        if options.twoD
+          S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
+          warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
+          manip = PlanarRigidBodyManipulator(manipulator_or_urdf_filename,options);
+          warning(S);
+        else
           % then make the corresponding manipulator
           S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
           warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-          manipulator = RigidBodyManipulator(manipulator);
+          manip = RigidBodyManipulator(manipulator_or_urdf_filename,options);
           warning(S);
-        case 'PlanarRigidBodyModel'
-          S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
-          warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
-          manipulator = PlanarRigidBodyManipulator(manipulator);
-          warning(S);
+        end
+      else
+        manip = manipulator_or_urdf_filename;
       end
-      typecheck(manipulator,{'RigidBodyManipulator','PlanarRigidBodyManipulator'});
-      obj = obj@DrakeSystem(0,manipulator.getNumStates(),manipulator.getNumInputs(),manipulator.getNumOutputs(),manipulator.isDirectFeedthrough(),manipulator.isTI());
-      obj.manip = manipulator;
-      if isa(manipulator,'PlanarRigidBodyManipulator')
+      typecheck(manip,'RigidBodyManipulator');
+      obj = obj@DrakeSystem(0,manip.getNumStates(),manip.getNumInputs(),manip.getNumOutputs(),manip.isDirectFeedthrough(),manip.isTI());
+      obj.manip = manip;
+      if isa(manip,'PlanarRigidBodyManipulator')
         obj.twoD = true;
       end
       

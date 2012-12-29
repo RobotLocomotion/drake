@@ -6,10 +6,6 @@ pd = PendulumPlant;
 pd = pd.setInputLimits(-inf,inf);  % for now
 [c,V] = balanceLQR(pd);
 
-% remove wrapping frames for this test
-c = setInputFrame(c,pd.getStateFrame()); 
-V = setFrame(V,pd.getStateFrame());
-
 sys = feedback(pd,c);
 n=10;
 x0=[pi;0];

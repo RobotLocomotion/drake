@@ -4,8 +4,8 @@ function runAtlasFrontalDynamics
 
 options.view = 'front';
 options.floating = true;
-s = warning('off','Drake:PlanarRigidBodyModel:RemovedJoint');
-m = PlanarRigidBodyModel('atlas_robot.urdf',options);
+s = warning('off','Drake:PlanarRigidBodyManipulator:RemovedJoint');
+m = PlanarRigidBodyManipulator('atlas_robot.urdf',options);
 warning(s);
 r = TimeSteppingRigidBodyManipulator(m,.005);
 v = r.constructVisualizer;

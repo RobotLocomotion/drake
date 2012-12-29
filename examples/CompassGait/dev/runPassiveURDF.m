@@ -1,8 +1,8 @@
 % function runPassiveURDF
 % runs the passive dynamics with the rigid body backend (from URDF)
 
-m = PlanarRigidBodyModel('CompassGait.urdf');
-p = TimeSteppingRigidBodyManipulator(m, 0.01);
+options.twoD = true;
+p = TimeSteppingRigidBodyManipulator('CompassGait.urdf', 0.01, options);
 % p = CompassGaitPlant()
 % p.getInitialState()
 % xtraj = p.simulate([0 2], p.getInitialState);

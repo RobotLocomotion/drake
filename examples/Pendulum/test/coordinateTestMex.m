@@ -19,7 +19,7 @@ if (j<=2)
     options.view = 'top';
   end
 
-  r = PlanarRigidBodyModel(['p',num2str(i),'.urdf'],options);
+  r = PlanarRigidBodyManipulator(['p',num2str(i),'.urdf'],options);
   if mod(j,2)%even(j)
     r.gravity=[-9.81;0];
   elseif ismember(i,[11 12])
@@ -29,7 +29,7 @@ if (j<=2)
 
 else
   twod = false;
-  r = RigidBodyModel(['p',num2str(i),'.urdf']);
+  r = RigidBodyManipulator(['p',num2str(i),'.urdf']);
   if ismember(i,[1:3,7:8])
     if mod(j,2)%even(j)
       r.gravity=[-9.81;0;0];
@@ -68,7 +68,7 @@ c = r.body(2).com;
 comf = forwardKin(r,kinsol,2,c);
 
 if (twod) 
-  fprintf(1,'i:%d,j:%d,2D, c: %s, a: %s, v: %s, g: %s, s: %d, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(r.body(2).joint_axis), options.view, mat2str(m.gravity), m.body(2).jsign, num2str(xf(1)), mat2str(comf,1));
+  fprintf(1,'i:%d,j:%d,2D, c: %s, a: %s, v: %s, g: %s, s: %d, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(r.body(2).joint_axis), options.view, mat2str(r.gravity), r.body(2).jsign, num2str(xf(1)), mat2str(comf,1));
 else
   fprintf(1,'i:%d,j:%d,3D, c: %s, a: %s, g: %s, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(r.body(2).joint_axis), mat2str(r.gravity), num2str(xf(1)), mat2str(comf,1));
 end
