@@ -9,11 +9,7 @@ function [phi,n,D,mu,dn,dD] = contactConstraints(obj,q,qd)
 %    D{k}(i,:) is the kth direction vector for the ith contact (of nC)
 % @retval mu mu(i,1) is the coefficient of friction for the ith contact
 
-use_mex = false;
-if (obj.mex_model_ptr && isnumeric(q) && (nargin<3 || isnumeric(qd)))
-  use_mex = true;
-end
-doKinematics(obj,q,nargout>4,use_mex); % checks for mex within this function now
+kinsol = doKinematics(obj,q,nargout>4);
 
 contact_pos = zeros(3,obj.num_contacts)*q(1);  % q(1) to help TaylorVar
 if (nargout>1) J = zeros(3*obj.num_contacts,obj.num_q)*q(1); end
@@ -23,11 +19,11 @@ for i=1:length(obj.body)
   nC = size(obj.body(i).contact_pts,2);
   if nC>0
     if (nargout>4)
-      [contact_pos(:,count+(1:nC)),J(3*count+(1:3*nC),:),dJ(3*count+(1:3*nC),:)] = forwardKin(obj,i,obj.body(i).contact_pts,use_mex);
+      [contact_pos(:,count+(1:nC)),J(3*count+(1:3*nC),:),dJ(3*count+(1:3*nC),:)] = forwardKin(obj,kinsol,i,obj.body(i).contact_pts);
     elseif (nargout>1)
-      [contact_pos(:,count+(1:nC)),J(3*count+(1:3*nC),:)] = forwardKin(obj,i,obj.body(i).contact_pts,use_mex);
+      [contact_pos(:,count+(1:nC)),J(3*count+(1:3*nC),:)] = forwardKin(obj,kinsol,i,obj.body(i).contact_pts);
     else
-      contact_pos(:,count+(1:nC)) = forwardKin(obj,i,obj.body(i).contact_pts,use_mex);
+      contact_pos(:,count+(1:nC)) = forwardKin(obj,kinsol,i,obj.body(i).contact_pts);
     end
     count = count + nC;
     

@@ -31,7 +31,7 @@ nClutch = 0;
 
 [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd);
 %       doKinematicsAndVelocities(obj.model,q,qd);
-doKinematics(obj.model,q,true);
+%kinsol = doKinematics(obj,q,true);  
 
 if (nUniPConstraints > 0)
   [phi,J,dJ] = obj.jointLimits(q);

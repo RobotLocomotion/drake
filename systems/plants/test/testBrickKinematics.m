@@ -1,11 +1,10 @@
 function testBrickKinematics
 
 options.floating = true;
-m = RigidBodyModel('FallingBrick.urdf',options);
+m = RigidBodyManipulator('FallingBrick.urdf',options);
 
   function [x,J] = getPoints(m,q)  
-    use_mex = isnumeric(q);
-    doKinematics(m,q);
+    kinsol = doKinematics(m,q);
         
     count=0;
     for i=1:length(m.body)
@@ -16,9 +15,9 @@ m = RigidBodyModel('FallingBrick.urdf',options);
           [x(:,count+(1:n)),J(3*count+(1:3*n),:)] = forwardKin(m,i,body.contact_pts,use_mex);
         else
           if ~exist('x') % extra step to help taylorvar
-            x = forwardKin(m,i,body.contact_pts,use_mex);
+            x = forwardKin(m,kinsol,i,body.contact_pts);
           else
-            xn = forwardKin(m,i,body.contact_pts,use_mex);
+            xn = forwardKin(m,kinsol,i,body.contact_pts);
             x=[x,xn];
           end
         end

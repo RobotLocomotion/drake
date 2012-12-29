@@ -14,12 +14,8 @@ if (nargout > 6)
   contact_vel = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar
   dv = zeros(2*obj.num_contacts,2*obj.num_q)*q(1);
 end
-use_mex = false;
-if (obj.mex_model_ptr && isnumeric(q) && (nargin<3 || isnumeric(qd)))
-  use_mex = true;
-end
 
-doKinematics(obj.model,q,nargout>4,use_mex);
+kinsol = doKinematics(obj,q,nargout>4);
 
 contact_pos = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar
 if (nargout>1)
@@ -28,22 +24,22 @@ end
 
 count=0;
 %       nBodies = length(obj.model.body);
-nBodies = obj.model.featherstone.NB + 1;
+nBodies = obj.featherstone.NB + 1;
 for i=1:nBodies;
   %         body = obj.model.body(i);
-  contact_pts = obj.model.body(i).contact_pts;
+  contact_pts = obj.body(i).contact_pts;
   nC = size(contact_pts,2);
   if nC>0
     if (nargout>4)
-      [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(obj.model,i,contact_pts,use_mex);
+      [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:),dJ(2*count+(1:2*nC),:)] = forwardKin(obj,kinsol,i,contact_pts);
     elseif (nargout>1)
-      [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(obj.model,i,contact_pts,use_mex);
+      [contact_pos(:,count+(1:nC)),J(2*count+(1:2*nC),:)] = forwardKin(obj,kinsol,i,contact_pts);
     else
-      [contact_pos(:,count+(1:nC))] = forwardKin(obj.model,i,contact_pts,use_mex);
+      [contact_pos(:,count+(1:nC))] = forwardKin(obj,kinsol,i,contact_pts);
     end
     
     if (nargout>6)
-      [contact_vel(:,count+(1:nC)),dv(2*count+(1:2*nC),:)] = forwardKinVel(obj.model,i,contact_pts,qd,use_mex);
+      [contact_vel(:,count+(1:nC)),dv(2*count+(1:2*nC),:)] = forwardKinVel(obj,kinsol,i,contact_pts,qd);
     end
     
     count = count + nC;

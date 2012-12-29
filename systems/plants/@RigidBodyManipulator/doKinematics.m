@@ -15,7 +15,7 @@ if nargin<3, b_compute_second_derivatives=false; end
 kinsol.q = q;
 
 if (use_mex && model.mex_model_ptr && isnumeric(q))
-  doKinematicsmex(model.mex_model_ptr,q,b_compute_second_derivatives);
+  doKinematicsmex(model,q,b_compute_second_derivatives);
   kinsol.mex = true;
 else
   kinsol.mex = false;
@@ -27,16 +27,16 @@ else
         % also make sure second derivatives are already computed, if they
         % are requested
         return
-      end
-    else
-      persistent kin_inefficiency_counter;  % would be better to do this on a per model basis, but it's not worth returning the model for it. 
-      if isempty(kin_inefficiency_counter)
-        warning('Drake:RigidBodyManipulator:IneffecientKinematics','FYI - you''ve computed this kinematics solution twice - first with second derivatives off, then again with second derivatives on');
-        kin_inefficiency_counter = 1;
-%      else  % no point, since I can't read it back out.  but this will
-%      help me remember that it is what I would do if I pushed it to being
-%      a property of the model class
-%        kin_inefficiency_counter = kin_inefficiency_counter+1;
+      else
+        persistent kin_inefficiency_counter;  % would be better to do this on a per model basis, but it's not worth returning the model for it.
+        if isempty(kin_inefficiency_counter)
+          warning('Drake:RigidBodyManipulator:IneffecientKinematics','FYI - you''ve computed this kinematics solution twice - first with second derivatives off, then again with second derivatives on');
+          kin_inefficiency_counter = 1;
+          %      else  % no point, since I can't read it back out.  but this will
+          %      help me remember that it is what I would do if I pushed it to being
+          %      a property of the model class
+          %        kin_inefficiency_counter = kin_inefficiency_counter+1;
+        end
       end
     else
       return;

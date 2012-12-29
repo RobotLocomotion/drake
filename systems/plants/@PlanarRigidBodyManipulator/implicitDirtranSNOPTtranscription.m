@@ -472,7 +472,7 @@ function [f,G] = dirtran_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,nL,nC,nC
   %Initial position constraints
 %   doKinematicsAndVelocities(sys.model,x(1:num_q,1),x(num_q+1:2*num_q));
 
-  doKinematics(sys.model,x(1:num_q,1));
+%  kinsol = doKinematics(sys,x(1:num_q,1));
 
   %Unilateral position constraints
   if nL > 0

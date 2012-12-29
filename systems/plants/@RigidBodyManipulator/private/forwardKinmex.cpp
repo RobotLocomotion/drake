@@ -17,7 +17,7 @@ using namespace std;
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   if (nrhs != 3) {
-    mexErrMsgIdAndTxt("Drake:forwardKinmex:NotEnoughInputs", "Usage doKinematicspmex(model_ptr,body_index,pts)");
+    mexErrMsgIdAndTxt("Drake:forwardKinmex:NotEnoughInputs", "Usage forwardKinmex(obj,body_index,pts)");
   }
 
   int n_pts = mxGetN(prhs[2]);
@@ -28,13 +28,10 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   if (dim != 3)
     mexErrMsgIdAndTxt("Drake:forwardKinmex:BadInputs", "number of rows in pts must be 3");
   
-  Model *model = NULL;
-  
   // first get the model_ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:forwardKinmex:BadInputs", "first argument should be the model_ptr");
-  memcpy(&model, mxGetData(prhs[0]), sizeof(model));
-  
+  mxArray* mex_model_ptr = mxGetProperty(prhs[0],0,"mex_model_ptr");
+  if (!mex_model_ptr)  mexErrMsgIdAndTxt("Drake:doKinematicspmex:BadInputs","first argument should be the model class object");
+  Model *model = NULL; memcpy(&model,mxGetData(mex_model_ptr),sizeof(model));
   
   int body_ind = (int) mxGetScalar(prhs[1]);
     
@@ -46,9 +43,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   pts << pts_tmp, MatrixXd::Ones(1,n_pts);
 
   MatrixXd x = model->bodies[body_ind].T.topLeftCorner(dim,dim+1)*pts;
-  
-  
-  
   
   if (nlhs>0) {
     plhs[0] = mxCreateDoubleMatrix(dim,n_pts,mxREAL);

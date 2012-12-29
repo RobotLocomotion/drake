@@ -30,13 +30,13 @@ for i=1:100
 
   % test mex kinematics
   rq = rand(nq,1);
-  p_mex.model.doKinematics(rq,true);
+  kinsol = p_mex.doKinematics(rq,true);
   rb = randi(3);
   rp = rand(2,1);
-  [xm,Jm,dJm] = forwardKin(p_mex.model,rb,rp);
+  [xm,Jm,dJm] = forwardKin(p_mex,kinsolrb,rp);
   
-  p_mat.model.doKinematics(rq,true);
-  [x,J,dJ] = forwardKin(p_mat.model,rb,rp);
+  p_mat.doKinematics(rq,true);
+  [x,J,dJ] = forwardKin(p_mat,kinsol,rb,rp);
 
   valuecheck(x,xm,1e-8);
   valuecheck(J,Jm,1e-8);
@@ -74,13 +74,13 @@ for i=1:100
 
   % test mex kinematics
   rq = rand(nq,1);
-  p_mex.model.doKinematics(rq,true);
+  kinsol=p_mex.doKinematics(rq,true);
   rb = randi(3);
   rp = rand(3,1);
-  [xm,Jm,dJm] = forwardKin(p_mex.model,rb,rp);
+  [xm,Jm,dJm] = forwardKin(p_mex,kinsol,rb,rp);
   
-  p_mat.model.doKinematics(rq,true);
-  [x,J,dJ] = forwardKin(p_mat.model,rb,rp);
+  kinsol=p_mat.doKinematics(rq,true);
+  [x,J,dJ] = forwardKin(p_mat,kinsol,rb,rp);
 
   valuecheck(x,xm,1e-8);
   valuecheck(J,Jm,1e-8);

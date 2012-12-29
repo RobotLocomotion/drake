@@ -1,19 +1,10 @@
 classdef RigidBodyContactVisualizer < Visualizer
   
   methods
-    function obj = RigidBodyContactVisualizer(frame,model)
-      obj=obj@Visualizer(frame);
-      
-      if (nargin<1)
-        [filename,pathname]=uigetfile('*.urdf');
-        obj.model = RigidBodyModel(fullfile(pathname,filename),options);
-      elseif ischar(model)
-        obj.model = RigidBodyModel(model);
-      elseif isa(model,'RigidBodyModel')
-        obj.model = model;
-      else
-        error('model must be a RigidBodyModel or the name of a urdf file'); 
-      end
+    function obj = RigidBodyContactVisualizer(manip)
+      typecheck(manip,'RigidBodyManipulator');
+      obj=obj@Visualizer(manip.getStateFrame);
+      obj.model = manip;
     end
     
     function draw(obj,t,x)
@@ -30,7 +21,7 @@ classdef RigidBodyContactVisualizer < Visualizer
       
       n = obj.model.featherstone.NB;
       q = x(1:n); qd=x(n+(1:n));
-      obj.model.doKinematics(q);
+      kinsol = obj.doKinematics(q);
       
       % for debugging:
       %co = get(gca,'ColorOrder');
@@ -41,7 +32,7 @@ classdef RigidBodyContactVisualizer < Visualizer
         body = obj.model.body(i);
         nC = size(body.contact_pts,2);
         if nC>0
-          contact_pos = forwardKin(obj.model,i,body.contact_pts);
+          contact_pos = forwardKin(obj,kinsol,i,body.contact_pts);
           ind = nchoosek(1:nC,2);
           for k=1:size(ind,1)
             line(contact_pos(1,ind(k,:)),contact_pos(2,ind(k,:)),contact_pos(3,ind(k,:)));

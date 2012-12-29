@@ -142,7 +142,7 @@ if (nargout>3)
   dB = zeros(obj.num_q*obj.num_u,2*obj.num_q);
 else
   if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
-    [H,C] = HandCpmex(obj.mex_model_ptr,q,qd);
+    [H,C] = HandCpmex(obj,q,qd);
   else
     [H,C] = HandCp(obj.featherstone,q,qd,{},obj.gravity);
   end

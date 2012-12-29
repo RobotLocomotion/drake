@@ -14,7 +14,6 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
   methods
     function obj = PlanarRigidBodyManipulator(urdf_filename,options)
       obj = obj@RigidBodyManipulator();
-      obj.D = 2;  % set to 2D
 
       if (nargin<1) urdf_filename=''; end
       if (nargin<2) options = struct(); end
@@ -67,10 +66,10 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
     
     function obj = createMexPointer(obj)
       if (obj.mex_model_ptr) deleteMexPointer(obj); end
-      obj.mex_model_ptr = HandCpmex(struct(obj),obj.gravity);
+      obj.mex_model_ptr = HandCpmex(obj);
     end
     function obj = deleteMexPointer(obj)
-      HandCmex(obj.mex_model_ptr);
+      HandCpmex(obj,obj.mex_model_ptr);
       obj.mex_model_ptr = 0;
     end
     

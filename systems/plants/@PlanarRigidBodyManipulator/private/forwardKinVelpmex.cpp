@@ -18,14 +18,13 @@ using namespace std;
 void mexFunction( int nlhs, mxArray *plhs[],
         int nrhs, const mxArray *prhs[] ) {
   if (nrhs != 4) {
-    mexErrMsgIdAndTxt("Drake:forwardKinVelpmex:NotEnoughInputs", "Usage forwardKinVel(model_ptr,body_index,pts,qd)");
+    mexErrMsgIdAndTxt("Drake:forwardKinVelpmex:NotEnoughInputs", "Usage forwardKinVelpmex(obj,body_index,pts,qd)");
   }
   
-  PlanarModel *model = NULL;
   // first get the model_ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:forwardKinVelpmex:BadInputs", "first argument should be the model_ptr");
-  memcpy(&model, mxGetData(prhs[0]), sizeof(model));
+  mxArray* mex_model_ptr = mxGetProperty(prhs[0],0,"mex_model_ptr");
+  if (!mex_model_ptr)  mexErrMsgIdAndTxt("Drake:doKinematicspmex:BadInputs","first argument should be the model class object");
+  PlanarModel *model = NULL; memcpy(&model,mxGetData(mex_model_ptr),sizeof(model));
   
   int n_pts = mxGetN(prhs[2]);
   
