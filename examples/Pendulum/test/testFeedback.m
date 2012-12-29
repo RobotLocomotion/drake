@@ -42,7 +42,8 @@ try
   p = setInputLimits(p,-inf,inf);  % todo: another case where I get rid of this
   p = taylorApprox(p,0,Point(p.getStateFrame,[pi;0]),[],3);
   sys1=feedback(p,c);
-  typecheck(sys1,'PolynomialSystem');
+%  typecheck(sys1,'PolynomialSystem');  % not a polynomial system anymore
+%  due to wrapping coordinate transform
   
   p2 = SimulinkModel(p.getModel());
   p2 = setInputFrame(p2,p.getInputFrame());

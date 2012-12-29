@@ -13,8 +13,10 @@ load drake_config;
 
 cd util;
 mex realtime.cpp
+cd ..
+
+cd systems/plants;
 if checkDependency('eigen3_enabled')
-%  mex('-g','HandCpmex.cpp',['-I',conf.eigen3_incdir]);
   mex('HandCmex.cpp',['-I',conf.eigen3_incdir]);
   mex('HandCpmex.cpp',['-I',conf.eigen3_incdir]);
   mex('doKinematicsmex.cpp',['-I',conf.eigen3_incdir]);
@@ -23,7 +25,7 @@ if checkDependency('eigen3_enabled')
   mex('forwardKinpmex.cpp',['-I',conf.eigen3_incdir]);
   mex('forwardKinVelpmex.cpp',['-I',conf.eigen3_incdir]);
 end
-cd ..
+cd(getDrakePath());
 
 cd systems;
 mex DCSFunction.cpp

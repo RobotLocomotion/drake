@@ -235,7 +235,7 @@ classdef DrakeSystem < DynamicalSystem
       else
         options=optimset('Display','off','Algorithm','levenberg-marquardt');
       end
-      [x,~,exitflag] = fsolve(@(x)stateConstraints(obj,x),x0,options);      
+      [x,fval,exitflag] = fsolve(@(x)stateConstraints(obj,x),x0,options);      
       success=(exitflag==1);
       if (nargout<2 && ~success)
         error('Drake:DrakeSystem:ResolveConstraintsFailed','failed to resolve constraints');
