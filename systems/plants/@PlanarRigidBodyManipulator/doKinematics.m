@@ -18,6 +18,7 @@ if (use_mex && model.mex_model_ptr && isnumeric(q))
   doKinematicspmex(model,q,b_compute_second_derivatives);
   kinsol.mex = true;
 else
+  kinsol.mex = false;
   if isnumeric(q) && all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
     % then my kinematics are up to date, don't recompute
     % the "isnumeric" check is for the sake of taylorvars

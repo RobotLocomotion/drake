@@ -12,7 +12,7 @@ m = RigidBodyManipulator('FallingBrick.urdf',options);
       n = size(body.contact_pts,2);
       if (n>0)
         if (nargout>1)
-          [x(:,count+(1:n)),J(3*count+(1:3*n),:)] = forwardKin(m,i,body.contact_pts,use_mex);
+          [x(:,count+(1:n)),J(3*count+(1:3*n),:)] = forwardKin(m,kinsol,i,body.contact_pts);
         else
           if ~exist('x') % extra step to help taylorvar
             x = forwardKin(m,kinsol,i,body.contact_pts);

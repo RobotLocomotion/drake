@@ -1,4 +1,4 @@
-function sys = PlanarNLink(N)
+function model = PlanarNLink(N)
 % Constructs a planar rigid-body model with N links.  The first link
 % is unactuated; the remaining are all torque-actuated. 
 %
@@ -10,7 +10,7 @@ function sys = PlanarNLink(N)
 
 if (N<1) error('N must be >=1'); end
 
-model = PlanarRigidBodyModel();
+model = PlanarRigidBodyManipulator();
 
 % add the base
 body=PlanarRigidBody();
@@ -25,8 +25,6 @@ for i=2:N
 end
 
 model = compile(model);
-
-sys = PlanarRigidBodyManipulator(model);
 
 end
 

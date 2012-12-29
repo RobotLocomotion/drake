@@ -1,9 +1,7 @@
 function fallingBrickLCP
 
 options.floating = true;
-m = RigidBodyModel('FallingBrick.urdf',options);
-
-p = TimeSteppingRigidBodyManipulator(m,.01);
+p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 x0 = p.manip.resolveConstraints([0;1+rand;randn(10,1)]);
 
 if 0 %checkDependency('vrml_enabled')

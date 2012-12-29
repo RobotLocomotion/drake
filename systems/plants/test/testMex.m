@@ -2,7 +2,7 @@ function testMex
 
 p_mex = PlanarRigidBodyManipulator('../../../examples/Acrobot/Acrobot.urdf');
 p_mat = PlanarRigidBodyManipulator('../../../examples/Acrobot/Acrobot.urdf');
-p_mat.model = p_mat.model.deleteMexPointer();
+p_mat = p_mat.deleteMexPointer();
 
 nq = p_mex.getNumStates()/2;
 
@@ -33,9 +33,9 @@ for i=1:100
   kinsol = p_mex.doKinematics(rq,true);
   rb = randi(3);
   rp = rand(2,1);
-  [xm,Jm,dJm] = forwardKin(p_mex,kinsolrb,rp);
+  [xm,Jm,dJm] = forwardKin(p_mex,kinsol,rb,rp);
   
-  p_mat.doKinematics(rq,true);
+  kinsol = p_mat.doKinematics(rq,true);
   [x,J,dJ] = forwardKin(p_mat,kinsol,rb,rp);
 
   valuecheck(x,xm,1e-8);
@@ -46,7 +46,7 @@ end
 
 p_mex = RigidBodyManipulator('../../../examples/FurutaPendulum/FurutaPendulum.urdf');
 p_mat = RigidBodyManipulator('../../../examples/FurutaPendulum/FurutaPendulum.urdf');
-p_mat.model = p_mat.model.deleteMexPointer();
+p_mat = p_mat.deleteMexPointer();
 
 nq = p_mex.getNumStates()/2;
 

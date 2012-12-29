@@ -4,9 +4,9 @@ function runAtlasSagittalDynamics
 
 options.view = 'right';
 options.floating = true;
-s = warning('off','Drake:PlanarRigidBodyModel:RemovedJoint');
-%m = PlanarRigidBodyModel('atlas_robot.urdf',options);
-m = PlanarRigidBodyModel('atlas_robot_minimal_contact.urdf',options);
+s = warning('off','Drake:PlanarRigidBodyManipulator:RemovedJoint');
+%m = PlanarRigidBodyManipulator('atlas_robot.urdf',options);
+m = PlanarRigidBodyManipulator('atlas_robot_minimal_contact.urdf',options);
 warning(s);
 r = TimeSteppingRigidBodyManipulator(m,.01);
 v = r.constructVisualizer;

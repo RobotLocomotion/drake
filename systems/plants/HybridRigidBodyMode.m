@@ -6,10 +6,11 @@ classdef HybridRigidBodyMode < PlanarRigidBodyManipulator
   end
   
   methods
-    function obj = HybridRigidBodyMode(model,joint_limit_state,contact_state,in_frame,state_frame,out_frame)
+    function obj = HybridRigidBodyMode(urdf_filename,joint_limit_state,contact_state,options)
+      if (nargin<4) options=struct(); end
       S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
       warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-      obj = obj@PlanarRigidBodyManipulator(model);
+      obj = obj@PlanarRigidBodyManipulator(urdf_filename,options);
       warning(S);
       
       sizecheck(joint_limit_state,[obj.num_q,1]);
@@ -18,19 +19,21 @@ classdef HybridRigidBodyMode < PlanarRigidBodyManipulator
       sizecheck(contact_state,[obj.num_contacts,1]);
       obj.contact_state = contact_state;
 
+      % a reminder that somwhere I need to implement the sliding friction
+      if any(contact_state>1) error('not implemented yet'); end
+      
+      obj = compile(obj);
+    end
+    
+    function obj = compile(obj)
+      obj = compile@PlanarRigidBodyManipulator(obj);
+      
       if (obj.num_position_constraints || obj.num_velocity_constraints)
         error('still need to handle the case whether there are other constraints involved, too');
       end
       
-      obj = setNumPositionConstraints(obj,sum(joint_limit_state~=0)+sum(contact_state>0));
-      obj = setNumVelocityConstraints(obj,sum(contact_state==1));
-      
-      % a reminder that somwhere I need to implement the sliding friction
-      if any(contact_state>1) error('not implemented yet'); end
-      
-      if (nargin>3) obj = setInputFrame(obj,in_frame); end
-      if (nargin>4) obj = setStateFrame(obj,state_frame); end
-      if (nargin>5) obj = setOutputFrame(obj,out_frame); end
+      obj = setNumPositionConstraints(obj,sum(obj.joint_limit_state~=0)+sum(obj.contact_state>0));
+      obj = setNumVelocityConstraints(obj,sum(obj.contact_state==1));
     end
     
 %    function [phi,J,dJ] = positionConstraints(obj,q)

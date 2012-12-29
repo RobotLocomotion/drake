@@ -81,8 +81,6 @@
     </joint>
   </xacro:macro>
   
-  <link name="world">
-  </link>
   <link name="hip">
     <inertial>
       <mass value="${mh}" />
@@ -98,11 +96,6 @@
     </visual>
   </link>
   
-  <joint name="floating_base" type="planar">
-    <parent link="world" />
-    <child link="hip" />
-    <axis xyz="0 1 0" />    
-  </joint>
 
   <xacro:collisionlessleg lr="left_upper" cname="red" color="1 0 0 1" />
   <xacro:leg lr="left_lower" cname="red" color="1 0 0 1" />

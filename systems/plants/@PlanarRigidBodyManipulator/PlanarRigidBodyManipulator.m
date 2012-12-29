@@ -88,13 +88,13 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       switch (lower(type))
         case {'revolute','continuous','planar'}
           if abs(dot(axis,model.view_axis))<(1-1e-6)
-            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded revolute joint ', child.jointname,' because it did not align with the viewing axis']);
+            warning('Drake:PlanarRigidBodyManipulator:RemovedJoint',['Welded revolute joint ', child.jointname,' because it did not align with the viewing axis']);
             model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,limits,options);
             return;
           end
         case 'prismatic'
           if abs(dot(axis,model.view_axis))>1e-6
-            warning('Drake:PlanarRigidBodyModel:RemovedJoint',['Welded prismatic joint ', child.jointname,' because it did not align with the viewing axis']);
+            warning('Drake:PlanarRigidBodyManipulator:RemovedJoint',['Welded prismatic joint ', child.jointname,' because it did not align with the viewing axis']);
             model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,limits,options);
             return;
           end
@@ -224,7 +224,9 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
     end
     
     function model = compile(model)
+      S = warning('off','Drake:RigidBodyManipulator:UnsupportedLoopJoint');
       model = compile@RigidBodyManipulator(model);
+      warning(S);
       model = model.setNumPositionConstraints(2*length(model.loop));
     end
     
@@ -233,7 +235,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
     end
     
     function v=constructVisualizer(obj)
-      v = PlanarRigidBodyVisualizer(obj.model);
+      v = PlanarRigidBodyVisualizer(obj);
     end
     
     function phi = positionConstraints(obj,q)
@@ -245,17 +247,17 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       % handle kinematic loops
       % note: each loop adds two constraints
       phi=[];
-      jsign = [obj.model.body(cellfun(@(a)~isempty(a),{obj.model.body.parent})).jsign]';
+      jsign = [obj.body(cellfun(@(a)~isempty(a),{obj.body.parent})).jsign]';
       q = jsign.*q;
       
-      for i=1:length(obj.model.loop)
+      for i=1:length(obj.loop)
         % for each loop, add the constraints on T1(q) and T2(q), // todo: finish this
         % where
         % T1 is the transformation from the least common ancestor to the
         % constraint in link1 coordinates
         % T2 is the transformation from the least common ancester to the
         % constraint in link2 coordinates
-        loop=obj.model.loop(i);
+        loop=obj.loop(i);
         
         T1 = loop.T1;
         b=loop.body1;
@@ -396,7 +398,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         end          
         if limits.hasAttribute('velocity');
           velocity_limit = str2num(char(limits.getAttribute('velocity')));
-          warning('Drake:PlanarRigidBodyModel:UnsupportedVelocityLimits','Velocity limits are not supported yet');
+          warning('Drake:PlanarRigidBodyManipulator:UnsupportedVelocityLimits','Velocity limits are not supported yet');
         end          
       end
 

@@ -1,9 +1,8 @@
 function testContactGradients
 
 options.floating = true;
-m = PlanarRigidBodyModel('../RimlessWheel.urdf',options);
-
-p = TimeSteppingRigidBodyManipulator(m,.01);
+options.twoD = true;
+p = TimeSteppingRigidBodyManipulator('../RimlessWheel.urdf',.01,options);
 x0 = p.manip.resolveConstraints([0;1+rand;randn;5*rand;randn;5*rand]);
 
 options.grad_method = {'user','taylorvar'};

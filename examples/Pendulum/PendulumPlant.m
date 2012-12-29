@@ -51,8 +51,7 @@ classdef PendulumPlant < SecondOrderSystem
     function [c,V]=balanceLQR(obj)
       Q = diag([10 1]); R = 1;
       if (nargout<2)
-        options.angle_flag = [1;0];
-        c = tilqr(obj,obj.xG,obj.uG,Q,R,options);
+        c = tilqr(obj,obj.xG,obj.uG,Q,R);
       else
         if any(~isinf([obj.umin;obj.umax]))
           error('currently, you must disable input limits to estimate the ROA');
@@ -61,11 +60,6 @@ classdef PendulumPlant < SecondOrderSystem
         pp = feedback(obj.taylorApprox(0,obj.xG,obj.uG,3),c);
         options.method='levelSet';
         V=regionOfAttraction(pp,V,options);
-       
-        % construct the wrapping frame after verification (because it's not
-        % smooth, and otherwise interferes)
-        c = setInputFrame(c,c.getInputFrame.constructFrameWithAnglesWrapped([1;0]));
-        V=setFrame(V,c.getInputFrame);
       end
     end
     
@@ -130,6 +124,8 @@ classdef PendulumPlant < SecondOrderSystem
       Vswingup=sampledFiniteTimeVerification(psys,xtraj.getBreaks(),Vf,Vswingup,options);
 
       c = c.addTrajectory(xtraj,utraj,tv,Vswingup);
+      
+      c = setInputFrame(c.getInputFrame.constructFrameWithAnglesWrapped([1;0]));
     end
     
     function c=balanceLQRTree(obj)

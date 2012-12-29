@@ -1,6 +1,6 @@
 function testKinematics
 
-m = PlanarRigidBodyModel('../Acrobot.urdf');
+m = PlanarRigidBodyManipulator('../Acrobot.urdf');
 options.grad_method = {'user','taylorvar'};
 
 for i=1:100

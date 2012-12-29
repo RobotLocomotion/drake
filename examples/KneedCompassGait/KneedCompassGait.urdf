@@ -4,8 +4,6 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="KneedCompassGait" xmlns:xacro="http://ros.org/wiki/xacro">
-  <link name="world">
-  </link>
   <link name="hip">
     <inertial>
       <mass value="10"/>
@@ -20,11 +18,6 @@
       </material>
     </visual>
   </link>
-  <joint name="floating_base" type="planar">
-    <parent link="world"/>
-    <child link="hip"/>
-    <axis xyz="0 1 0"/>
-  </joint>
   <link name="left_upper_leg">
     <visual>
       <origin xyz="0 0 -0.25"/>
