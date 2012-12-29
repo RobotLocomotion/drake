@@ -4,7 +4,7 @@ m = obj.featherstone;
 
 if (nargout>3)
   if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
-    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd);
+    [H,C,dH,dC] = HandCmex(obj,q,qd);
   else
     % featherstone's HandC with analytic gradients
     a_grav = [0;0;0;obj.gravity];
@@ -138,7 +138,7 @@ if (nargout>3)
   dB = zeros(m.NB*obj.num_u,2*m.NB);
 else
   if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
-    [H,C] = HandCmex(obj.mex_model_ptr,q,qd);
+    [H,C] = HandCmex(obj,q,qd);
   else
     [H,C] = HandC(m,q,qd,{},obj.gravity);
   end

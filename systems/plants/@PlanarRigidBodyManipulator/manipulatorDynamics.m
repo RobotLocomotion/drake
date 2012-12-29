@@ -6,7 +6,7 @@ m = obj.featherstone;
 
 if (nargout>3)
   if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
-    [H,C,dH,dC] = HandCpmex(obj.mex_model_ptr,q,qd);
+    [H,C,dH,dC] = HandCpmex(obj,q,qd);
   else
     % featherstone's HandCp with analytic gradients
     a_grav = [0;obj.gravity];

@@ -29,10 +29,14 @@ else
         return
       end
     else
-      persistent alreadyWarned;
-      if isempty(alreadyWarned)
+      persistent kin_inefficiency_counter;  % would be better to do this on a per model basis, but it's not worth returning the model for it. 
+      if isempty(kin_inefficiency_counter)
         warning('Drake:RigidBodyManipulator:IneffecientKinematics','FYI - you''ve computed this kinematics solution twice - first with second derivatives off, then again with second derivatives on');
-        alreadyWarned = true;
+        kin_inefficiency_counter = 1;
+%      else  % no point, since I can't read it back out.  but this will
+%      help me remember that it is what I would do if I pushed it to being
+%      a property of the model class
+%        kin_inefficiency_counter = kin_inefficiency_counter+1;
       end
     else
       return;
