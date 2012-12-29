@@ -96,11 +96,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(q,b_compute_second_derivatives)");
   }
   
-  Model *model = NULL;
   // first get the model_ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-      mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","first argument should be the model_ptr");
-    memcpy(&model,mxGetData(prhs[0]),sizeof(model));
+  if (mxGetNumberOfElements(prhs[0])!=1)  
+    mexErrMsgIdAndTxt("Drake:doKinematicsMex:BadInputs","first argument should be the model");
+
+  mxArray* mex_model_ptr = mxGetProperty(prhs[0],0,"mex_model_ptr");
+  if (!mex_model_ptr)  mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs","first argument should be the model class object");
+  Model *model = NULL; memcpy(&model,mxGetData(mex_model_ptr),sizeof(model));
   
   double *q;
   if (mxGetNumberOfElements(prhs[1])!=model->NB)

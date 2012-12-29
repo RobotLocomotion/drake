@@ -17,7 +17,6 @@ classdef RigidBodyManipulator < Manipulator
     material=[];
 
     mex_model_ptr = 0;
-%    cached_kinematics = struct('b_second_derivatives',false,'use_mex',true,'q',[],'qd',[]);
   end
   
   methods
@@ -32,11 +31,11 @@ classdef RigidBodyManipulator < Manipulator
     
     function obj = createMexPointer(obj)
       if (obj.mex_model_ptr) deleteMexPointer(obj); end
-      obj.mex_model_ptr = HandCmex(struct(obj),obj.gravity);
+      obj.mex_model_ptr = HandCmex(obj);
     end
     
     function obj = deleteMexPointer(obj)
-      HandCpmex(obj.mex_model_ptr);
+      HandCmex(obj,obj.mex_model_ptr);
       obj.mex_model_ptr = 0;
     end
     
