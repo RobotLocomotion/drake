@@ -19,23 +19,24 @@ for i=1:4
   %[H,C,B]=r.manip.manipulatorDynamics(q,qd)
   xtraj = simulate(r,[0 3.1],x0);
   
-  xf = eval(xtraj,3);
-  if (i~=3) % should balance
-    if abs(xf(3))>pi/4
-      i
-      warning('this brick fell over, but should not have');
-    end
-  else
-    if (abs(xf(3))<pi/4)
-      i
-      warning('this brick balanced, but should fall over');
-    end
-  end
-  
   v = r.constructVisualizer;
   v.display_dt = .05;
   v.debug = true;
   v.playback(xtraj);
+
+  xf = eval(xtraj,3);
+  if (i~=3) % should balance
+    if abs(xf(3))>pi/4
+      i
+      error('this brick fell over, but should not have');
+    end
+  else
+    if (abs(xf(3))<pi/4)
+      i
+      error('this brick balanced, but should fall over');
+    end
+  end
+  
   
 %  clf;
 %  fnplt(xtraj,1)

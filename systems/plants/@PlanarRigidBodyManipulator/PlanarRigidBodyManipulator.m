@@ -109,7 +109,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           child.pitch=0;
           child.joint_axis=axis;
           child.jsign = sign(dot(axis,model.view_axis));
-          if dot(model.view_axis,[0;1;0])  % flip rotational kinematics view='right' to be consistent with vehicle coordinates
+          if dot(model.view_axis,[0;1;0])>0  % flip rotational kinematics view='right' to be consistent with vehicle coordinates
             child.jsign = -child.jsign;
           end
           child.jcode=1;
@@ -182,7 +182,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         elseif dot(rpyaxis,model.view_axis)<0
           p=-p;
         end
-        if strcmp(options.view,'right')  % flip axis for vehicle coordinates
+        if dot(model.view_axis,[0;1;0])>0  % flip axis for vehicle coordinates
           p=-p;
         end
       else
