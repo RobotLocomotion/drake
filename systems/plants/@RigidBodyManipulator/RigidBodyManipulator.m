@@ -50,6 +50,8 @@ classdef RigidBodyManipulator < Manipulator
           s = size(body.geometry{j}.x); n=prod(s);
           pts = [reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n)];
           if (nargout>1)
+            [x(:,count+(1:n)),J(2*count+(1:2*n),:)] = forwardKin(m,kinsol,i,pts);
+          elseif (nargout>2)
             [x(:,count+(1:n)),J(2*count+(1:2*n),:),dJ(2*count+(1:2*n),:)] = forwardKin(m,kinsol,i,pts);
           else
             if ~exist('x') % extra step to help taylorvar

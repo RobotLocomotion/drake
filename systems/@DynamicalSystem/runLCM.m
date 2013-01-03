@@ -20,7 +20,7 @@ checkDependency('lcm_enabled');
 fin = obj.getInputFrame;
 fout = obj.getOutputFrame;
 if obj.getNumInputs>0
-  typecheck(fin,'LCMSubscriber');
+  typecheck(fin,'LCMSubscriber');  % e.g., an LCMCoordinateFrame
   if (~isfield(options,'inchannel')) options.inchannel = fin.defaultChannel(); end
 end
 if obj.getNumOutputs>0

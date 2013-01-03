@@ -1,19 +1,17 @@
 classdef DoublePendVisualizer < Visualizer
 
   methods
-    function obj = DoublePendVisualizer(varargin)
+    function obj = DoublePendVisualizer(plant)
       % Construct visualizer, and set l1 and l2 parameters
       
-      obj = obj@Visualizer(4);
+      typecheck(plant,'DoublePendPlant');
       
-      if (length(varargin)==1 && (isa(varargin{1},'DoublePendPlant')))
-        obj.l1 = varargin{1}.l1;
-        obj.l2 = varargin{1}.l2;
-        obj.m1 = varargin{1}.m1;
-        obj.m2 = varargin{1}.m2;
-      elseif (length(varargin)>0)
-        error('don''t know how to handle this input');
-      end
+      obj = obj@Visualizer(plant.getStateFrame());
+      
+      obj.l1 = plant.l1;
+      obj.l2 = plant.l2;
+      obj.m1 = plant.m1;
+      obj.m2 = plant.m2;
     end
     
     function draw(obj,t,x)
