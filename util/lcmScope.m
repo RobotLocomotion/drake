@@ -23,8 +23,8 @@ scope_rows = 1;
 scope_cols = 1;
 
 warning('off','MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame');
-h=figure(103); clf;
-set(h,'Name',['LCM Scope: ',robotname],'NumberTitle','off','Renderer','OpenGL','DoubleBuffer','on');%'MenuBar','none','Toolbar','none', 
+h=figure(103); clf; set(h,'Color',[1 1 1]);
+set(h,'Name',['LCM Scope: ',robotname],'NumberTitle','off','Renderer','OpenGL','DoubleBuffer','on','MenuBar','none','Toolbar','none'); 
 if (exitMatlabOnClose) set(h,'CloseRequestFcn','delete(gcf); exit;'); end
 setAlwaysOnTop(h,true); 
 hold on; 
