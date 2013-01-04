@@ -237,7 +237,9 @@ classdef PlanarRigidBody < RigidBody
             filename=char(thisNode.getAttribute('filename'));
             [path,name,ext] = fileparts(filename);
             path = strrep(path,'package://','');
-            path = fullfile(options.urdfpath,path);
+            if (path(1)~=filesep)  % the it's a relative path
+              path = fullfile(options.urdfpath,path);
+            end
             filename = fullfile(path,[name,ext]);
             if strcmpi(ext,'.stl')
               wrlfile = fullfile(tempdir,[name,'.wrl']);
