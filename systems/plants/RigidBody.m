@@ -172,7 +172,7 @@ classdef RigidBody < handle
       
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
-        wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(geomnode,wrl_appearance_str)];
+        wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(geomnode,wrl_appearance_str,options)];
         if (options.visual_geometry)
           [xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,options);
           body.geometry{1}.x = xpts;
@@ -252,9 +252,11 @@ classdef RigidBody < handle
   end
   
   methods (Static)
-    function wrlstr = parseWRLGeometry(node,wrl_appearance_str)
+    function wrlstr = parseWRLGeometry(node,wrl_appearance_str,options)
       % param node DOM node for the geometry block
       % param X coordinate transform for the current body
+      if (nargin<3) options=struct(); end
+      if ~isfield(options,'urdfpath') options.urdfpath=[]; end
       
       wrlstr='';
       childNodes = node.getChildNodes();
@@ -281,6 +283,8 @@ classdef RigidBody < handle
             filename=char(thisNode.getAttribute('filename'));
             [path,name,ext] = fileparts(filename);
             path = strrep(path,'package://','');
+            path = fullfile(options.urdfpath,path);
+            filename = fullfile(path,[name,ext]);
             if strcmpi(ext,'.stl')
               wrlfile = fullfile(tempdir,[name,'.wrl']);
               stl2vrml(fullfile(path,[name,ext]),tempdir);

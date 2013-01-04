@@ -49,10 +49,10 @@ classdef RigidBodyManipulator < Manipulator
         for j=1:length(body.geometry)
           s = size(body.geometry{j}.x); n=prod(s);
           pts = [reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n)];
-          if (nargout>1)
-            [x(:,count+(1:n)),J(2*count+(1:2*n),:)] = forwardKin(m,kinsol,i,pts);
-          elseif (nargout>2)
+          if (nargout>2)
             [x(:,count+(1:n)),J(2*count+(1:2*n),:),dJ(2*count+(1:2*n),:)] = forwardKin(m,kinsol,i,pts);
+          elseif (nargout>1)
+            [x(:,count+(1:n)),J(2*count+(1:2*n),:)] = forwardKin(m,kinsol,i,pts);
           else
             if ~exist('x') % extra step to help taylorvar
               x = forwardKin(m,kinsol,i,pts);
@@ -404,9 +404,67 @@ classdef RigidBodyManipulator < Manipulator
       fr = CoordinateFrame([model.name,'Input'],size(model.B,2),'u',coordinates);
     end
     
-    function v = constructVisualizer(obj)
+    function v = constructVisualizer(obj,options)
       v = RigidBodyWRLVisualizer(obj);
     end
+    
+    
+    function varargout = pdcontrol(sys,Kp,Kd,index)
+      % creates new blocks to implement a PD controller, roughly
+      % illustrated by
+      %   q_d --->[ Kp ]-->(+)----->[ sys ]----------> yout
+      %                     | -                 |
+      %                     -------[ Kp,Kd ]<---- 
+      %                       
+      % when invoked with a single output argument:
+      %   newsys = pdcontrol(sys,...)
+      % then it returns a new system which contains the new closed loop
+      % system containing the PD controller and the plant.
+      %
+      % when invoked with two output arguments:
+      %   [pdff,pdfb] = pdcontrol(sys,...)
+      % then it return the systems which define the feed-forward path and
+      % feedback-path of the PD controller (but not the closed loop
+      % system).
+      %
+      % @param Kp a num_u x num_u matrix with the position gains
+      % @param Kd a num_u x num_u matrix with the velocity gains
+      % @param index a num_u dimensional vector specifying the mapping from q to u.
+      % index(i) = j indicates that u(i) actuates q(j). @default: 1:num_u
+      %
+      % For example, the a 2D floating base (with adds 3 passive joints in 
+      % positions 1:3)model with four actuated joints in a serial chain might have 
+      %      Kp = diag([10,10,10,10])
+      %      Kd = diag([1, 1, 1, 1])
+      %      and the default index would automatically be index = 4:7
+
+      if nargin<4 || isempty(index)  % this is too slow on the atlas model
+        B = sys.B;  % note: unlike the general Manipulator version this exploits the fact that B is a constant
+        [I,J] = find(B);
+        if length(unique(J))~=length(J)
+          error('Drake:RigidBodyManipulator:PDControlComplexB','The B matrix for this system is nontrivial, so you must manually specify the index for the PD controller');
+        end
+        index(J)=I;
+        
+        % try to alert if it looks like there are any obvious sign errors
+        if all(diag(diag(Kp))==Kp)
+          d = diag(Kp);
+          if any(sign(B(sub2ind(size(B),I,J)))~=sign(d(J)))
+            warning('Drake:RigidBodyManipulator:PDControlSignWarning','You might have a sign flipped?  The sign of Kp does not match the sign of the associated B');
+          end
+        end
+        if all(diag(diag(Kd))==Kd)
+          d = diag(Kd);
+          if any(sign(B(sub2ind(size(B),I,J)))~=sign(d(J)))
+            warning('Drake:RigidBodyManipulator:PDControlSignWarning','You might have a sign flipped?  The sign of Kd does not match the sign of the associated B');
+          end
+        end
+      end
+      
+      varargout=cell(1,nargout);
+      % note: intentionally jump straight to second order system (skipping manipulator)... even though it's bad form
+      [varargout{:}] = pdcontrol@SecondOrderSystem(sys,Kp,Kd,index);
+    end    
    
   end
   

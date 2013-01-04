@@ -21,6 +21,8 @@ if (~isfield(options,'visual')) options.visual = true; end
 if (~isfield(options,'visual_geometry')) options.visual_geometry = false; end
 
 %disp(['Parsing ', urdf_filename]);
+[options.urdfpath,name,ext] = fileparts(urdf_filename);
+
 urdf = xmlread(urdf_filename);
 
 robot = urdf.getElementsByTagName('robot').item(0);
