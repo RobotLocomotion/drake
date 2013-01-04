@@ -181,8 +181,6 @@ classdef PlanarRigidBody < RigidBody
       T3= [quat2rotmat(rpy2quat(rpy)),x0]; % intentially leave off the bottom row [0,0,0,1];
       T = [options.x_axis'; options.y_axis']*T3;
       
-
-      
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
         thisNode = childNodes.item(i-1);
@@ -239,6 +237,8 @@ classdef PlanarRigidBody < RigidBody
             filename=char(thisNode.getAttribute('filename'));
             [path,name,ext] = fileparts(filename);
             path = strrep(path,'package://','');
+            path = fullfile(options.urdfpath,path);
+            filename = fullfile(path,[name,ext]);
             if strcmpi(ext,'.stl')
               wrlfile = fullfile(tempdir,[name,'.wrl']);
               stl2vrml(fullfile(path,[name,ext]),tempdir);

@@ -87,3 +87,6 @@ include/lcmt_scope_data.h
 util/MessageMonitor.class
 util/MyLCMTypeDatabase$MyClassVisitor.class
 LCMCoder.class
+*.svn-base
+examples/Atlas/urdf/.svn
+.svn

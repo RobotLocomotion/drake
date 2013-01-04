@@ -1,9 +1,9 @@
-classdef EndPointControl < DrakeSystem
+classdef ReachingControl < DrakeSystem
 % A simple controller that takes in the DesiredHandPosition and the current
 % arm state, and outputs a joint position command 
 %
   methods
-    function obj = EndPointControl(sys,manip)
+    function obj = ReachingControl(sys,manip)
       % @param sys the PD-controlled closed-loop system
       % @param manip the manipulator, so I can call kinematics, etc. 
       
@@ -16,6 +16,8 @@ classdef EndPointControl < DrakeSystem
       obj = setOutputFrame(obj,sys.getInputFrame);
       
       obj.manip = manip;
+      obj.rhand_ind = find(~cellfun(@isempty,strfind({manip.body.linkname},'r_hand')));
+      obj.lhand_ind = find(~cellfun(@isempty,strfind({manip.body.linkname},'l_hand')));
     end
     
     function q_d0 = getInitialState(obj)
@@ -27,25 +29,21 @@ classdef EndPointControl < DrakeSystem
       q = x(1:2); qd = x(3:4);
       
       n = obj.manip.featherstone.NB;
-      dpos = [1;0];
+      dpos = [1;0;0];
       
       kinsol = doKinematics(obj.manip,q_d);  % open loop 
 %      kinsol = doKinematics(obj.manip,q);  % closed loop 
 
-      [pos,J] = forwardKin(obj.manip,kinsol,3,[0;-1]);
+      [pos,J] = forwardKin(obj.manip,kinsol,obj.rhand_ind,[0;0;0]);
 
       err = dpos - pos;
+      scope('Atlas','handpos_err',t,norm(err),struct('linespec','b','scope_id',1));
       qd_d = 4*pinv(J)*err;
-      normbound = 10; % norm bound to alleviate the effect of singularities.
+      normbound = .05; % norm bound to alleviate the effect of singularities.
       if (norm(qd_d)>normbound), qd_d = normbound*qd_d/norm(qd_d); end  
       
       dt = .01;  % should really call getSampleTime
       q_dn = q_d + dt*qd_d;
-
-      for i=1:2
-        scope('SimpleDoublePendulum',['q',num2str(i),''],t,q(i),struct('linespec','b','scope_id',i));
-        scope('SimpleDoublePendulum',['q',num2str(i),'_d'],t,q_d(i),struct('linespec','r','scope_id',i));
-      end        
     end
     
     function y = output(obj,t,q_d,x)
@@ -55,5 +53,7 @@ classdef EndPointControl < DrakeSystem
   
   properties
     manip
+    rhand_ind
+    lhand_ind
   end
 end

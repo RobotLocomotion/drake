@@ -287,13 +287,13 @@ classdef Manipulator < SecondOrderSystem
           % try to alert if it looks like there are any obvious sign errors
           if all(diag(diag(Kp))==Kp)
             d = diag(Kp);
-            if any(sign(B(I,J))~=sign(d(I)))
+            if any(sign(B(sub2ind(size(B),I,J)))~=sign(d(J)))
               warning('Drake:Manipulator:PDControlSignWarning','You might have a sign flipped?  The sign of Kp does not match the sign of the associated B');
             end
           end
           if all(diag(diag(Kd))==Kd)
             d = diag(Kd);
-            if any(sign(B(I,J))~=sign(d(I)))
+            if any(sign(B(sub2ind(size(B),I,J)))~=sign(d(J)))
               warning('Drake:Manipulator:PDControlSignWarning','You might have a sign flipped?  The sign of Kd does not match the sign of the associated B');
             end
           end
