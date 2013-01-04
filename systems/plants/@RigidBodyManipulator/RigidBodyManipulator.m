@@ -258,7 +258,7 @@ classdef RigidBodyManipulator < Manipulator
           u_limit(i) = abs(model.actuator(i).joint.effort_limit/model.actuator(i).reduction);
           if sum(B(model.actuator(i).joint.dofnum,:)~=0)>1
             warning('Drake:RigidBodyManipulator:UnsupportedJointEffortLimit','The specified joint effort limit cannot be expressed as simple input limits; the offending limits will be ignored');
-            model.u_limit(B(model.actuator(i).joint.dofnum,:)~=0)=inf;
+            u_limit(B(model.actuator(i).joint.dofnum,:)~=0)=inf;
           end
         end
       end

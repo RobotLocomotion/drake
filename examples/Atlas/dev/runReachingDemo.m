@@ -1,7 +1,9 @@
 function runReachingDemo
 
+addpath('..');
+
 options.ground = false;
-r = RigidBodyManipulator('urdf/atlas.urdf');
+r = RigidBodyManipulator('../urdf/atlas.urdf');
 for i=1:length(r.body), r.body(i).contact_pts=[]; end
 r = compile(r);
 v = r.constructVisualizer(options);
