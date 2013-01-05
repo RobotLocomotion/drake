@@ -241,7 +241,74 @@ classdef DrakeSystem < DynamicalSystem
         error('Drake:DrakeSystem:ResolveConstraintsFailed','failed to resolve constraints');
       end
     end
-  end  
+    
+    function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,v)
+      % attempts to find a fixed point (xstar,ustar) which also satisfies the constraints,
+      % using (x0,u0) as the initial guess.  
+      %
+      % @param x0 initial guess for the state
+      % @param u0 initial guess for the input
+      % @param v (optional) a visualizer that should be called while the
+      % solver is doing it's thing  
+      %
+   
+      if ~isTI(obj) error('only makes sense for time invariant systems'); end
+            
+      function [f,df] = myobj(xu)
+%        f = 0; df = 0*xu;  % feasibility problem, no objective
+         err = [xu-[x0;u0]];
+         f = err'*err;
+         df = 2*err;
+      end
+      problem.objective = @myobj;
+      problem.x0 = [x0;u0];
+      
+      function [c,ceq,GC,GCeq] = mycon(xu)
+        x = xu(1:obj.num_x);
+        u = xu(obj.num_x + (1:obj.num_u));
+
+        c=[]; GC=[];
+        ceq=[]; GCeq=[];
+        
+        if (obj.num_xc>0)
+          [xdot,df] = geval(@obj.dynamics,0,x,u);
+          ceq = [ceq; xdot];
+          GCeq = [GCeq, df(:,2:end)'];
+        end
+        
+        if (obj.num_xd>0)
+          [xdn,df] = geval(@obj.update,0,x,u);
+          ceq=[ceq;x-xdn]; GCeq=[GCeq,([eye(obj.num_x),zeros(obj.num_x,obj.num_u)]-df(:,2:end))'];
+        end
+        
+        if (obj.num_xcon>0)
+          [phi,dphi] = geval(@obj.stateConstraints,x);
+          ceq = [ceq; phi];
+          GCeq = [GCeq, [dphi,zeros(obj.num_xcon,obj.num_u)]'];
+        end
+      end
+      problem.nonlcon = @mycon;
+      problem.solver = 'fmincon';
+
+      function stop=drawme(xu,optimValues,state)
+        stop=false;
+        v.draw(0,xu(1:obj.num_x));
+      end
+      if (nargin>3 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
+        problem.options=optimset('GradObj','on','GradConstr','on','Algorithm','active-set','Display','iter','OutputFcn',@drawme,'TolX',1e-9);
+      else
+        problem.options=optimset('GradObj','on','GradConstr','on','Algorithm','active-set','Display','off');
+      end
+      [xu,~,exitflag] = fmincon(problem);
+      xstar = xu(1:obj.num_x);
+      ustar = xu(obj.num_x + (1:obj.num_u));
+      success=(exitflag>0);
+      if (~success)
+        exitflag
+        error('Drake:DrakeSystem:FixedPointSearchFailed','failed to find a fixed point');
+      end      
+    end    
+  end
   
   % access methods
   methods
