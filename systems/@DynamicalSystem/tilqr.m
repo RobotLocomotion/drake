@@ -29,7 +29,7 @@ u0 = double(u0.inFrame(obj.getInputFrame));
 
 ts = max(getInputSampleTimes(obj),getOutputSampleTimes(obj));
 
-tol = 1e-10;
+tol = 1e-6;
 if (ts(1)==0) % then it's CT
   [A,B,C,D,xdot0] = linearize(obj,0,x0,u0);
   if (any(abs(xdot0)>tol))
