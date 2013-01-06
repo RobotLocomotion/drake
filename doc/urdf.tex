@@ -1,0 +1,61 @@
+
+\chapter{Universal Robot Description Format (URDF)}
+
+This appendix documents our support for the Universal Robot Description Format (URDF).
+
+The primary documentation for the URDF specification is available on the ROS website:\\
+\centerline{ \url{http://www.ros.org/wiki/urdf/XML}}
+
+\smallskip \noindent
+Drake supports most of the tags specified in this documentation, including the transmission elements which are documented seperately here\\ \centerline{\url{http://ros.org/wiki/urdf/XML/Transmission}}  
+
+\smallskip
+However, there is currently little or no support for the \mcode{<sensor>} elements.  We have added a few additional tags
+
+\begin{itemize}
+\item \mcode{<loop_joint>}
+\begin{itemize}
+\item Adds support for simple closed-loop kinematic chains.  For an example, see \mcode{examples/SimpleFourBar/FourBar.urdf}.  
+\item Attributes
+\begin{itemize}
+\item \mcode{name} (required)
+\item \mcode{type} (required). Can be any of the same types as a \mcode{<joint>}. See the \mcode{<joint>} element documentation. 
+\end{itemize}
+\item Elements
+\begin{itemize}
+\item \mcode{<link1>} (required)
+\begin{itemize}
+\item Attributes: \mcode{link} (required). String naming the link on one side of the joint.
+\item Elements: \mcode{<origin>} (optional). Location (and orientation) of joint relative to the coordinate system on link 1. Default is \mcode{xyz=[0 0 0]}, \mcode{rpy=[0 0 0]}. 
+\end{itemize}
+\item \mcode{<link2>} (required)
+\begin{itemize}
+\item Attributes: \mcode{link} (required)
+\item Elements: \mcode{<origin>} (optional). Location (and orientation) of joint relative to the coordinate system on link 2. 
+\end{itemize}
+\item \mcode{<axis>} (optional) 
+\item Note: We do not support dynamics or torque at the \mcode{<loop_joint>} yet. (see bug 921) 
+\end{itemize}
+\end{itemize}
+
+\begin{comment}
+\bigskip
+\item \mcode{<transmission type="LinearSpring">}
+\begin{itemize}
+\item A new transmission type (in addition to "SimpleTransmission")
+\item Attributes
+\begin{itemize}
+\item \mcode{name} (required)
+\item \mcode{type} (required) 
+\end{itemize}
+\item Elements
+\begin{itemize}
+\item \mcode{<actuator>} (required). Specify the name of the actuator.
+\item \mcode{<joint>} (required). Specify the name of the associated joint.
+\item \mcode{<mechanicalReduction>} (required). Specify the overall mechanical reduction at the transmission.
+\item \mcode{<passive>} (required). Specify the passive stiffness and damping (in SI units) as well as the nominal position of the transmission. 
+\end{itemize}
+\end{itemize}
+\end{comment}
+
+\end{itemize}
