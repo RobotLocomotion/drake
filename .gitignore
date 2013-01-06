@@ -90,3 +90,4 @@ LCMCoder.class
 *.svn-base
 examples/Atlas/urdf/.svn
 .svn
+*.aux
