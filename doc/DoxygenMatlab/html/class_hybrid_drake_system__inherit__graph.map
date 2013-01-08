@@ -1,0 +1,12 @@
+<map id="G" name="G">
+<area shape="rect" id="node7" href="$class_ball_plant.html" title="BallPlant" alt="" coords="599,5,676,32"/>
+<area shape="rect" id="node9" href="$class_ball_plant2_d.html" title="BallPlant2D" alt="" coords="590,56,685,83"/>
+<area shape="rect" id="node11" href="$class_cart_pole_energy_control.html" title="CartPoleEnergyControl" alt="" coords="554,107,721,133"/>
+<area shape="rect" id="node13" href="$class_compass_gait_plant.html" title="CompassGaitPlant" alt="" coords="567,157,707,184"/>
+<area shape="rect" id="node15" href="$class_l_q_r_tree.html" title="LQRTree" alt="" coords="600,208,675,235"/>
+<area shape="rect" id="node17" href="$class_pendulum_energy_control.html" title="PendulumEnergyControl" alt="" coords="549,259,725,285"/>
+<area shape="rect" id="node19" href="$class_rimless_wheel_plant.html" title="RimlessWheelPlant" alt="" coords="567,309,708,336"/>
+<area shape="rect" id="node21" href="$class_state_machine_control.html" title="This controller is my reconstruction of Raibert&#39;s 3 part controller." alt="" coords="559,360,715,387"/>
+<area shape="rect" id="node2" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="192,183,301,209"/>
+<area shape="rect" id="node4" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="5,183,144,209"/>
+</map>

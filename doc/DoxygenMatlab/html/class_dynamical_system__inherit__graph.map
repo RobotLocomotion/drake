@@ -1,0 +1,54 @@
+<map id="G" name="G">
+<area shape="rect" id="node3" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="195,639,304,666"/>
+<area shape="rect" id="node106" href="$class_simulink_model.html" title="Implements the DynamicalSystem interface for any existing simulink model with one (vector) input and ..." alt="" coords="192,690,307,717"/>
+<area shape="rect" id="node5" href="$class_ball_flight_phase_plant.html" title="BallFlightPhasePlant" alt="" coords="403,6,554,33"/>
+<area shape="rect" id="node7" href="$class_ball_flight_phase_plant2_d.html" title="BallFlightPhasePlant2D" alt="" coords="395,57,563,83"/>
+<area shape="rect" id="node9" href="$class_cart_pole_energy_shaping.html" title="technically not the same controller as Spong96." alt="" coords="393,107,565,134"/>
+<area shape="rect" id="node11" href="$class_cascade_system.html" title="CascadeSystem" alt="" coords="415,158,542,185"/>
+<area shape="rect" id="node13" href="$class_coordinate_transform.html" title="CoordinateTransform" alt="" coords="401,209,557,235"/>
+<area shape="rect" id="node25" href="$class_end_point_control.html" title="A simple controller that takes in the DesiredHandPosition and the current arm state, and outputs a joint position command." alt="" coords="417,259,541,286"/>
+<area shape="rect" id="node27" href="$class_feedback_system.html" title="FeedbackSystem" alt="" coords="413,310,545,337"/>
+<area shape="rect" id="node29" href="$class_function_handle_system.html" title="FunctionHandleSystem" alt="" coords="393,361,564,387"/>
+<area shape="rect" id="node31" href="$class_glider_plant.html" title="Defines the dynamics for the perching glider." alt="" coords="433,411,524,438"/>
+<area shape="rect" id="node33" href="$class_hopper_plant.html" title="state variables: q(1) &#45; x position of the foot q(2) &#45; y position of the foot q(3) &#45; absolute angle of..." alt="" coords="428,462,529,489"/>
+<area shape="rect" id="node35" href="$class_hybrid_drake_system.html" title="some restrictions on the mode systems: must be CT only" alt="" coords="403,513,554,539"/>
+<area shape="rect" id="node53" href="$class_pendulum_energy_shaping.html" title="PendulumEnergyShaping" alt="" coords="387,563,570,590"/>
+<area shape="rect" id="node55" href="$class_plane_plant.html" title="Defines the dynamics for the powered plane." alt="" coords="434,614,523,641"/>
+<area shape="rect" id="node57" href="$class_polynomial_system.html" title="A dynamical system described by rational polynomial dynamics, and polynomial outputs." alt="" coords="409,665,549,691"/>
+<area shape="rect" id="node70" href="$class_rimless_wheel_stance_plant.html" title="RimlessWheelStancePlant" alt="" coords="385,715,572,742"/>
+<area shape="rect" id="node72" href="$class_second_order_system.html" title="An abstract class that wraps qddot = f(t,q,qdot,u)." alt="" coords="401,766,556,793"/>
+<area shape="rect" id="node80" href="$class_simple_c_t_example.html" title="SimpleCTExample" alt="" coords="410,817,547,843"/>
+<area shape="rect" id="node82" href="$class_simple_d_t_example.html" title="SimpleDTExample" alt="" coords="409,867,548,894"/>
+<area shape="rect" id="node84" href="$class_simple_mixed_c_t_d_t_example.html" title="SimpleMixedCTDTExample" alt="" coords="383,918,574,945"/>
+<area shape="rect" id="node86" href="$class_simple_pend.html" title="demonstration of feedback linearization (used in lecture 1 of 6.832) Double Pendulum is made &quot;feedbac..." alt="" coords="429,969,528,995"/>
+<area shape="rect" id="node88" href="$class_simple_pend_inv.html" title="demonstration of feedback linearization (used in lecture 1 of 6.832) Double Pendulum is made &quot;feedbac..." alt="" coords="421,1019,537,1046"/>
+<area shape="rect" id="node90" href="$class_sine_sys.html" title="Simple example of SOS region of attraction using Taylor approximation." alt="" coords="442,1070,515,1097"/>
+<area shape="rect" id="node92" href="$class_stochastic_drake_system.html" title="Interface a nonlinear stochastic discrete/continuous system with (band&#45;limited) white noise input..." alt="" coords="391,1121,567,1147"/>
+<area shape="rect" id="node96" href="$class_time_stepping_rigid_body_manipulator.html" title="A discrete time system which simulates (an Euler approximation of) the manipulator equations..." alt="" coords="355,1171,602,1198"/>
+<area shape="rect" id="node98" href="$class_trajectory.html" title="Trajectory" alt="" coords="437,1222,521,1249"/>
+<area shape="rect" id="node104" href="$class_visualizer.html" title="An interface class which draws (e.g., produces a plot) the output of another dynamical system..." alt="" coords="437,1273,520,1299"/>
+<area shape="rect" id="node15" href="$class_affine_transform.html" title="represents a coordinate transform of the form x_to = T*x_from + b" alt="" coords="901,335,1024,362"/>
+<area shape="rect" id="node17" href="$class_angle_wrapping_transform.html" title="wraps all coordinates with angle_flag = true to be inside [&#45;pi+q0,pi+q0]" alt="" coords="661,57,843,83"/>
+<area shape="rect" id="node19" href="$class_hybrid_state_transform.html" title="HybridStateTransform" alt="" coords="671,107,833,134"/>
+<area shape="rect" id="node21" href="$class_poly_to_trig_transform.html" title="For trig&#45;poly dynamical systems (e.g., xdot = [x(2); sin(x(1))]), we often analyze the polynomial sys..." alt="" coords="678,158,826,185"/>
+<area shape="rect" id="node23" href="$class_trig_to_poly_transform.html" title="For trig&#45;poly dynamical systems (e.g., xdot = [x(2); sin(x(1))]), we often analyze the polynomial sys..." alt="" coords="678,209,826,235"/>
+<area shape="rect" id="node37" href="$class_ball_plant.html" title="BallPlant" alt="" coords="713,259,791,286"/>
+<area shape="rect" id="node39" href="$class_ball_plant2_d.html" title="BallPlant2D" alt="" coords="705,310,799,337"/>
+<area shape="rect" id="node41" href="$class_cart_pole_energy_control.html" title="CartPoleEnergyControl" alt="" coords="669,361,835,387"/>
+<area shape="rect" id="node43" href="$class_compass_gait_plant.html" title="CompassGaitPlant" alt="" coords="682,411,822,438"/>
+<area shape="rect" id="node45" href="$class_l_q_r_tree.html" title="LQRTree" alt="" coords="715,462,789,489"/>
+<area shape="rect" id="node47" href="$class_pendulum_energy_control.html" title="PendulumEnergyControl" alt="" coords="664,513,840,539"/>
+<area shape="rect" id="node49" href="$class_rimless_wheel_plant.html" title="RimlessWheelPlant" alt="" coords="681,563,823,590"/>
+<area shape="rect" id="node51" href="$class_state_machine_control.html" title="This controller is my reconstruction of Raibert&#39;s 3 part controller." alt="" coords="674,614,830,641"/>
+<area shape="rect" id="node59" href="$class_affine_system.html" title="Implements xcdot = Ac*x + Bc*u + xcdot0 xdn = Ad*x + Bd*u + xdn0 y = C*x + D*u + y0." alt="" coords="699,665,805,691"/>
+<area shape="rect" id="node62" href="$class_polynomial_trajectory_system.html" title="dynamics, update, output are polynomial in x and u, but not necessarily polynomial in t..." alt="" coords="651,715,853,742"/>
+<area shape="rect" id="node64" href="$class_spot_polynomial_system.html" title="SpotPolynomialSystem" alt="" coords="667,766,837,793"/>
+<area shape="rect" id="node66" href="$class_van_der_pol.html" title="VanDerPol" alt="" coords="708,817,796,843"/>
+<area shape="rect" id="node68" href="$class_x_cubed.html" title="Simple SOS region of attraction example." alt="" coords="715,867,789,894"/>
+<area shape="rect" id="node74" href="$class_manipulator.html" title="An abstract class that wraps H(q)qddot + C(q,qdot,f_ext) = B(q)u." alt="" coords="703,918,801,945"/>
+<area shape="rect" id="node76" href="$class_pendulum_plant.html" title="Defines the dynamics for the Pendulum." alt="" coords="693,969,811,995"/>
+<area shape="rect" id="node78" href="$class_planar_quad_plant.html" title="state: q(1) &#45; x position q(2) &#45; z position q(3) &#45; pitch (theta) input: u(1) &#45; prop 1 thrust u(2) &#45; pr..." alt="" coords="688,1019,816,1046"/>
+<area shape="rect" id="node94" href="$class_linear_gaussian_example.html" title="LinearGaussianExample" alt="" coords="665,1121,839,1147"/>
+<area shape="rect" id="node100" href="$class_constant_trajectory.html" title="Trivial instance of a trajectory as a constant." alt="" coords="681,1197,823,1223"/>
+<area shape="rect" id="node102" href="$class_d_t_trajectory.html" title="DTTrajectory" alt="" coords="701,1247,803,1274"/>
+</map>

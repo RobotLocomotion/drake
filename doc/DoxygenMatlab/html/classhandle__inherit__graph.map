@@ -1,0 +1,14 @@
+<map id="G" name="G">
+<area shape="rect" id="node3" href="$class_coordinate_frame.html" title="Every input, state, and output in a DynamicalSystem has a coordinate frame attached to it..." alt="" coords="120,107,253,133"/>
+<area shape="rect" id="node15" href="$class_l_c_m_publisher.html" title="defines an interface for an object that can publish a double on an LCM channel." alt="" coords="133,56,240,83"/>
+<area shape="rect" id="node19" href="$class_l_c_m_subscriber.html" title="defines an interface for LCM objects that get wrapped up in matlab vectors" alt="" coords="128,5,245,32"/>
+<area shape="rect" id="node25" href="$class_rigid_body.html" title="RigidBody" alt="" coords="145,208,229,235"/>
+<area shape="rect" id="node29" href="$class_singleton.html" title="Implements a singleton design pattern." alt="" coords="145,157,228,184"/>
+<area shape="rect" id="node5" href="$class_l_c_m_coordinate_frame.html" title="LCMCoordinateFrame" alt="" coords="327,107,487,133"/>
+<area shape="rect" id="node11" href="$class_l_c_m_coordinate_frame_w_coder.html" title="LCMCoordinateFrameWCoder" alt="" coords="302,56,511,83"/>
+<area shape="rect" id="node13" href="$class_singleton_coordinate_frame.html" title="SingletonCoordinateFrame" alt="" coords="310,157,503,184"/>
+<area shape="rect" id="node7" href="$class_pendulum_input.html" title="PendulumInput" alt="" coords="562,81,681,108"/>
+<area shape="rect" id="node9" href="$class_pendulum_state.html" title="PendulumState" alt="" coords="561,132,682,159"/>
+<area shape="rect" id="node21" href="$classdrake_1_1util_1_1_message_monitor.html" title="Monitors a particular lcm message type (specified in the constructor) and maintains the most up&#45;to&#45;da..." alt="" coords="343,5,470,32"/>
+<area shape="rect" id="node27" href="$class_planar_rigid_body.html" title="PlanarRigidBody" alt="" coords="345,208,469,235"/>
+</map>

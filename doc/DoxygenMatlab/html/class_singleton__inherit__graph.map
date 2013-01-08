@@ -1,0 +1,7 @@
+<map id="G" name="G">
+<area shape="rect" id="node5" href="$class_l_c_m_coordinate_frame.html" title="LCMCoordinateFrame" alt="" coords="56,155,216,181"/>
+<area shape="rect" id="node11" href="$class_singleton_coordinate_frame.html" title="SingletonCoordinateFrame" alt="" coords="241,155,433,181"/>
+<area shape="rect" id="node2" href="$classhandle.html" title="handle" alt="" coords="203,5,268,32"/>
+<area shape="rect" id="node7" href="$class_pendulum_input.html" title="PendulumInput" alt="" coords="5,229,123,256"/>
+<area shape="rect" id="node9" href="$class_pendulum_state.html" title="PendulumState" alt="" coords="147,229,268,256"/>
+</map>
