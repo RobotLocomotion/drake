@@ -13,6 +13,17 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
   
   methods
     function obj = PlanarRigidBodyManipulator(urdf_filename,options)
+      % Constructs a PlanarRigidBodyManipulator
+      % 
+      % @param urdf_filename string path+filename for a .urdf file to parse
+      % @option view is a string which must be one of 'right','front', or
+      % 'top'.  
+      %
+      % see also the options described in RigidBodyManipulator/parseURDF 
+      %  (the options for this function call are passed through to
+      %  parseURDF)
+      
+      
       obj = obj@RigidBodyManipulator();
 
       if (nargin<1) urdf_filename=''; end

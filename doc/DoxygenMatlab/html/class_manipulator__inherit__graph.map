@@ -1,0 +1,12 @@
+<map id="G" name="G">
+<area shape="rect" id="node9" href="$class_acrobot_plant.html" title="AcrobotPlant" alt="" coords="740,5,844,32"/>
+<area shape="rect" id="node11" href="$class_cart_pole_plant.html" title="CartPolePlant" alt="" coords="738,56,846,83"/>
+<area shape="rect" id="node13" href="$class_compass_gait_stance_plant.html" title="CompassGaitStancePlant" alt="" coords="699,107,885,133"/>
+<area shape="rect" id="node15" href="$class_double_pend_plant.html" title="DoublePendPlant" alt="" coords="727,157,857,184"/>
+<area shape="rect" id="node17" href="$class_rigid_body_manipulator.html" title="This class wraps the spatial vector library (v1) provided by Roy Featherstone on his website: http://..." alt="" coords="713,208,871,235"/>
+<area shape="rect" id="node2" href="$class_second_order_system.html" title="An abstract class that wraps qddot = f(t,q,qdot,u)." alt="" coords="349,107,504,133"/>
+<area shape="rect" id="node4" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="192,107,301,133"/>
+<area shape="rect" id="node6" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="5,107,144,133"/>
+<area shape="rect" id="node19" href="$class_planar_rigid_body_manipulator.html" title="This class wraps the planar pieces of the spatial vector library (v1) provided by Roy Featherstone on..." alt="" coords="934,208,1133,235"/>
+<area shape="rect" id="node21" href="$class_hybrid_rigid_body_mode.html" title="HybridRigidBodyMode" alt="" coords="1181,208,1341,235"/>
+</map>

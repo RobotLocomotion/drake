@@ -1,0 +1,9 @@
+<map id="G" name="G">
+<area shape="rect" id="node7" href="$class_affine_transform.html" title="represents a coordinate transform of the form x_to = T*x_from + b" alt="" coords="584,5,707,32"/>
+<area shape="rect" id="node9" href="$class_angle_wrapping_transform.html" title="wraps all coordinates with angle_flag = true to be inside [&#45;pi+q0,pi+q0]" alt="" coords="555,56,736,83"/>
+<area shape="rect" id="node11" href="$class_hybrid_state_transform.html" title="HybridStateTransform" alt="" coords="564,107,727,133"/>
+<area shape="rect" id="node13" href="$class_poly_to_trig_transform.html" title="For trig&#45;poly dynamical systems (e.g., xdot = [x(2); sin(x(1))]), we often analyze the polynomial sys..." alt="" coords="571,157,719,184"/>
+<area shape="rect" id="node15" href="$class_trig_to_poly_transform.html" title="For trig&#45;poly dynamical systems (e.g., xdot = [x(2); sin(x(1))]), we often analyze the polynomial sys..." alt="" coords="571,208,719,235"/>
+<area shape="rect" id="node2" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="192,107,301,133"/>
+<area shape="rect" id="node4" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="5,107,144,133"/>
+</map>
