@@ -132,6 +132,7 @@ classdef PendulumPlant < SecondOrderSystem
       Q = diag([10 1]); R = 1;
 
       options.num_branches=5;
+%      options.stabilize=true;
 %      options.verify=false;
       options.xs = [0;0];
       options.Tslb = 2;

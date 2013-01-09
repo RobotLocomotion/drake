@@ -49,6 +49,10 @@ classdef Trajectory < DrakeSystem
       ydot = eval(fnder(obj),t);
     end
     
+    function yddot = dderiv(obj,t)
+      yddot = eval(fnder(fnder(obj)),t);
+    end
+    
     function mobj = inFrame(obj,frame)
       if (obj.getOutputFrame==frame)
         mobj=obj;
@@ -210,58 +214,79 @@ classdef Trajectory < DrakeSystem
         h=plot(ts,squeeze(pts(plotdims,:)),'b.-','LineWidth',1,'MarkerSize',5);
       else
         if (nargin<2 || isempty(plotdims)) plotdims=[1,2]; end
-        h=plot(pts(plotdims(1),1:m:end),pts(plotdims(2),1:m:end),'b.',pts(plotdims(1),:),pts(plotdims(2),:),'b-','LineWidth',1,'MarkerSize',5);
+        h=plot(pts(plotdims(1),:),pts(plotdims(2),:),'b-',pts(plotdims(1),[1:m:end,end]),pts(plotdims(2),[1:m:end,end]),'b.','LineWidth',1);% ,'MarkerSize',5);
       end
     end
     
-    function [dmin,tmin,xwrapped] = distance(obj,x)
+    function [xnear,tnear,dxnear,dtnear] = closestPoint(obj,x,knot_ind)
+      % returns the closest point on the trajectory to the sample point x
+      %
+      % @param x the sample point
+      % @param knot_ind (optional) when available, this indicates the index
+      % of the closest knot point.  
+      % 
+      % @retval xnear the closest point on the trajectory
+      % @retval tnear the time on the trajectory associated with xnear
       
-      t= obj.getBreaks();
-      y = obj.eval(t);
-      
-      ywrap = y;
-      if (~isempty(obj.bWrap))
-        for i=find(obj.bWrap)  % implement wrapping
-          p = obj.xWrap(i,2)-obj.xWrap(i,1);
-          ywrap(i,:) = mod(y(i,:)-x(i)+p/2,p)+x(i)-p/2;
-        end
+      t=obj.getBreaks();
+      if (nargin<3)
+        xt = obj.eval(t);
+        xbar = x(:,ones(1,length(t))) - xt;
+        d = sum(xbar.^2,1);
+        [dmin,knot_ind] = min(d);
+      else
+        xt = obj.eval(t(knot_ind));
+        xbar = x-xt;
+        dmin = sum(xbar.^2,1);
       end
-      xbar = repmat(x,1,size(y,2)) - ywrap;
-        
-      d = sum(xbar.^2,1);
-      [dmin,imin] = min(d);
-
-      xwrapped = x+y(:,imin)-ywrap(:,imin);
-%      tspan = [t(max(1,imin-1)), t(min(length(t),imin+1))];
-      tspan = [t(1),t(end)];
+      
+      % for gradient debugging
+%      xnear = obj.eval(t(knot_ind));
+%      tnear = t(knot_ind);
+%      dxnear = zeros(obj.num_y);
+%      dtnear = zeros(1,obj.num_y);
+%      return;
+      % end debugging;
+      
+      
+      tspan = [t(max(knot_ind-1,1)),t(min(knot_ind+1,length(t)))];
       options = optimset('fminbnd');
-      options.TolX = 1e-10;
-      [tmin,dmin]=fminbnd(@(t) sum((xwrapped-obj.eval(t)).^2,1),tspan(1),tspan(end),options);
-      dmin = sqrt(dmin);
-    end
+      options.TolX = 1e-15;
+      [tnear,dmin,exitflag]=fminbnd(@(t) sum((x-obj.eval(t)).^2,1),tspan(1),tspan(end),options);
+      
+      if (exitflag<1) 
+        warning('fminbnd exited with exitflag %d',exitflag);
+      end
+      xnear = obj.eval(tnear);
+      
+      if (nargout>2)
+        xdmin = obj.deriv(tnear);
         
-    function [v,dvdx] = vectorTo(obj,x)
-      [d,tmin,xwrapped] = distance(obj,x);
-      xmin = obj.eval(tmin);
-      v=xmin-xwrapped;
-
-      if (nargout>1)
-        t = obj.getBreaks();
-        dtraj = fnder(obj);
-        xdmin = dtraj.eval(tmin);
- 
-        if (min(abs(tmin-t([1,end])))<=1e-6) % then I'm at one of the rails (value should be larger than options.tolX above)
-          dtmindx = zeros(1,obj.dim);
+        if (min(abs(tnear-t([1,end])))<=1e-14) % then I'm at one of the rails (value should be larger than options.TolX above)
+          dtnear = zeros(1,obj.num_y);
         else
-          ddtraj = fnder(dtraj);
-          xddmin = ddtraj.eval(tmin);
-          dtmindx = xdmin'/(xdmin'*xdmin + v'*xddmin);
+          xddmin = obj.dderiv(tnear);
+          dtnear = xdmin'/(xdmin'*xdmin + (xnear-x)'*xddmin);
         end
-        
-        dvdx = xdmin*dtmindx - eye(obj.dim);
+        dxnear = xdmin*dtnear;
       end
     end
-
+    
+    function d = distance(obj,x)
+      xnear = closestPoint(obj,x);
+      d = norm(xnear-x);
+    end
+    
+    function [d,dd] = distanceSq(obj,x)
+      if (nargout>1)
+        [xnear,~,dxnear,~] = closestPoint(obj,x);
+        d = (xnear-x)'*(xnear-x);
+        dd = 2*(xnear-x)'*(dxnear - eye(obj.num_y));
+      else
+        xnear = closestPoint(obj,x);
+        d = (xnear-x)'*(xnear-x);
+      end
+    end
     
     function alpha = getParameters(obj)
       error('parameters are not implemented for this type of trajectory'); 
