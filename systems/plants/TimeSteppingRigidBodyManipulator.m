@@ -38,6 +38,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         obj.twoD = true;
       end
       
+      obj = obj.setInputLimits(obj.manip.umin,obj.manip.umax);
+      
       typecheck(timestep,'double');
       sizecheck(timestep,1);
       obj.timestep = timestep;
