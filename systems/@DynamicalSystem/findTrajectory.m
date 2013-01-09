@@ -1,10 +1,15 @@
-function [utraj,xtraj] = trajectorySearch(sys,x0,xf,sampleFun,con,options)
+function [utraj,xtraj] = findTrajectory(sys,x0,xf,sampleFun,con,options)
 
 % Tries to find a feasible solution of the system starting from the 
 % initial conditions x0 to and ending in xf.
 %
 % @param sampleFun 
 % @param con see the help for trajectoryOptimization
+%
+% todo: this will be an interface to many potential methods, like
+% trajectoryOptimization, and regionOfAttraction.  But for now it's a
+% single, simple forward RRT-like algorithm (using trajectory optimization).
+
 
 forwardTree = TrajectoryLibrary(sys.getStateFrame);
 

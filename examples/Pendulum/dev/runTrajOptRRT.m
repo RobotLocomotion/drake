@@ -4,7 +4,7 @@ function runTrajOptRRT
 %p = PendulumPlant();
 
 p = PlanarRigidBodyManipulator('../Pendulum.urdf');
-trajectorySearch(p,[0;0],[pi;0],@randSample,struct());
+findTrajectory(p,[0;0],[pi;0],@randSample,struct());
 
 
 end
