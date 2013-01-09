@@ -9,7 +9,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
   % subsequent coordinate renamings for the multi-frame or the sub-frames.
   
   properties
-    frame=[];     % a list of CoordinateFrame objects
+    frame={};     % a list of CoordinateFrame objects
     frame_id=[];  % for each coordinate, an integer index into the frame 
                   % (from the list above) associated with that coordinate
     coord_ids={}; % for each frame, a list of associate coordinates              
@@ -17,24 +17,26 @@ classdef MultiCoordinateFrame < CoordinateFrame
 
   methods
     function obj = MultiCoordinateFrame(coordinate_frames)
-      typecheck(coordinate_frames,'CoordinateFrame');
-      name = {coordinate_frames.name};
-      for i=1:length(name)-1
-        name{i} = [name{i},'+'];
+      typecheck(coordinate_frames,'cell');
+      name=[];
+      dim=0;
+      prefix=[];
+      coordinates={};
+      for i=1:length(coordinate_frames)
+        typecheck(coordinate_frames{i},'CoordinateFrame');
+        name = [name,'+',coordinate_frames{i}.name];
+        dim = dim+coordinate_frames{i}.dim;
+        prefix = vertcat(prefix,coordinate_frames{i}.prefix);
+        coordinates = vertcat(coordinates,coordinate_frames{i}.coordinates);
       end
-      name=[name{:}];
-      
-      dim = sum([coordinate_frames.dim]);
-      prefix = vertcat(coordinate_frames.prefix);
-      
-      coordinates=vertcat(coordinate_frames.coordinates);
+      name=name(2:end);
       
       obj = obj@CoordinateFrame(name,dim,prefix,coordinates);
       obj.frame = coordinate_frames;
       obj.frame_id = [];
       for i=1:length(coordinate_frames)
-        obj.coord_ids{i} = (1:coordinate_frames(i).dim) + length(obj.frame_id);
-        obj.frame_id = vertcat(obj.frame_id,repmat(i,coordinate_frames(i).dim,1));
+        obj.coord_ids{i} = (1:coordinate_frames{i}.dim) + length(obj.frame_id);
+        obj.frame_id = vertcat(obj.frame_id,repmat(i,coordinate_frames{i}.dim,1));
       end
     end
     
@@ -47,13 +49,13 @@ classdef MultiCoordinateFrame < CoordinateFrame
       tf=[];
       fid=-1;
       for i=1:length(obj.frame)
-        if (obj.frame(i)==target)
+        if (obj.frame{i}==target)
           if (fid>0)
             error('Found transforms to this target from multiple children.  That''s not allowed');
           end
           fid = i;
         else
-          thistf = findTransform(obj.frame(i),target,childoptions);
+          thistf = findTransform(obj.frame{i},target,childoptions);
           if ~isempty(thistf)
             if fid<0
               tf = thistf;
@@ -80,13 +82,13 @@ classdef MultiCoordinateFrame < CoordinateFrame
       tf=[];
       fid=-1;
       for i=1:length(obj.frame)
-        if (obj.frame(i)==origin)
+        if (obj.frame{i}==origin)
           if (fid>0)
             error('Found transforms from this origin to multiple children.  That''s not allowed');
           end
           fid = i;
         else
-          thistf = findTransform(origin,obj.frame(i),childoptions);
+          thistf = findTransform(origin,obj.frame{i},childoptions);
           if ~isempty(thistf)
             if fid<0
               tf = thistf;
@@ -108,9 +110,9 @@ classdef MultiCoordinateFrame < CoordinateFrame
       if ~isnumeric(frame_ids) || ~isvector(frame_ids) error('frame_ids must be a numeric vector'); end
       if (any(frame_ids>length(obj.frame) | frame_ids<1)) error(['frame_ids must be between 1 and ',length(obj.frame)]); end
       if (length(frame_ids)==1)
-        fr = obj.frame(frame_ids);
+        fr = obj.frame{frame_ids};
       else
-        fr = MultiCoordinateFrame(obj.frame(frame_ids));
+        fr = MultiCoordinateFrame({obj.frame{frame_ids}});
       end
     end
     
