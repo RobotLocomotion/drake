@@ -5,6 +5,8 @@ function runLCM(obj,x0,options)
 %  conditions.
 %
 %  @option tspan a 1x2 vector defining the start and end time of the simulation.  default [0,inf]
+%  @option inchannel
+%  @option outchannel
 
 
 if (nargin<2) x0=[]; end
