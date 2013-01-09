@@ -135,7 +135,11 @@ for v=1:length(varargin)
             hold off;
           end
         end
-        error('gradients do not match to tolerance');
+        if (options.tol>0)
+          error('gradients do not match to tolerance');
+        else
+          pause;
+        end
       end
     end
     clear y;

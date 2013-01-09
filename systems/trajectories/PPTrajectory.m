@@ -19,6 +19,8 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       dtraj = PPTrajectory(fnder(obj.pp));
     end
     
+    % todo: implement deriv and dderiv here
+    
     function mobj = inFrame(obj,frame)
       if (obj.getOutputFrame == frame)
         mobj = obj;

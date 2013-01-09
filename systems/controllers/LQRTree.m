@@ -191,7 +191,7 @@ classdef LQRTree < HybridDrakeSystem
        end
     end
     
-    function [g,dg,m,tmin]=finalTreeConstraint(obj,x)
+    function [g,dg,m,tmin]=onTreeConstraint(obj,x)
       
       % note: the input x is in the plant state frame (everything else inside this
       % class is stored in the input frame of the controller)
@@ -300,7 +300,7 @@ classdef LQRTree < HybridDrakeSystem
       if (~isfield(options,'num_samples_before_done')) options.num_samples_before_done = 100; end
       if (~isfield(options,'num_branches')) options.num_branches = inf; end
       if (~isfield(options,'verify')) options.verify = true; end        
-      if (~isfield(options,'stabilize_goal')) options.stabilize_goal = true; end        
+      if (~isfield(options,'stabilize')) options.stabilize = true; end        
       if (~isfield(options,'plotdims')) options.plotdims = [1 2]; end
       if (~isfield(options,'xs')) options.xs=[]; end
       if (isfield(options,'con')) con=options.con; end
@@ -308,6 +308,7 @@ classdef LQRTree < HybridDrakeSystem
       options.method='dircol';
 %      options.warning=false;
       options.plot_rho=false;
+      options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u,options.plotdims);  % for debugging
 
       if ~isTI(p) error('time-varying plants not supported (yet - wouldn''t be too hard)'); end
       p_nolim=setInputLimits(p,repmat(-inf,nU,1),repmat(inf,nU,1));
@@ -315,13 +316,19 @@ classdef LQRTree < HybridDrakeSystem
       figure(1); clf; hold on;
       
       % compute stabilizing controller and estimate ROA
-      if (options.stabilize_goal)
+      if (options.stabilize)
         disp('building and verifying time-invariant controller...')
-        [ti,Vf] = tilqr(p,xG,uG,Q,R);
+        if (options.verify)
+          [ti,Vf] = tilqr(p,xG,uG,Q,R);
+        else
+          ti = tilqr(p,xG,uG,Q,R);
+          Vf = QuadraticLyapunovFunction(p.getStateFrame,Q);
+        end
       else
         ti = ConstOrPassthroughSystem(uG,nX);
         ti = setInputFrame(ti,p.getOutputFrame);
         ti = setOutputFrame(ti,p.getInputFrame);
+        Vf = QuadraticLyapunovFunction(p.getStateFrame,Q*inf);
       end
       if (isfield(options,'Vf'))
         Vf = options.Vf;
@@ -392,7 +399,7 @@ classdef LQRTree < HybridDrakeSystem
 %        con.xf.ub=xG;
 %        con.uf.lb=uG;
 %        con.uf.ub=uG;
-        con.xf.ceq=@c.finalTreeConstraint;
+        con.xf.ceq=@c.onTreeConstraint;
         [utraj,xtraj,info] = trajectoryOptimization(p,@(t,x,u)trajCost(t,x,u,.01),@trajFinalCost,xs,utraj0,con,options);
         if (info~=1) % failed to find a trajectory
           if (all(info~=[3,13,32]))
@@ -408,7 +415,7 @@ classdef LQRTree < HybridDrakeSystem
         fnplt(xtraj,options.plotdims); drawnow;
                 
         tspan = xtraj.tspan;
-        [~,~,parent_mode_num,parent_T] = finalTreeConstraint(c,xtraj.eval(tspan(end)));
+        [~,~,parent_mode_num,parent_T] = onTreeConstraint(c,xtraj.eval(tspan(end)));
         xtraj = xtraj.shiftTime(parent_T-tspan(end));
         utraj = utraj.shiftTime(parent_T-tspan(end));
         if (parent_mode_num==c.tilqr_mode_num)
@@ -418,9 +425,16 @@ classdef LQRTree < HybridDrakeSystem
         end
         
         fprintf(1,'stabilizing and verifying branch %d...',num_branches+1);
-        % stabilize trajectory and estimate funnel
-        [tv,Vtraj] = tvlqr(p_nolim,xtraj,utraj,Q,R,Vparent);
 
+        if (options.stabilize)
+          % stabilize trajectory and estimate funnel
+          [tv,Vtraj] = tvlqr(p_nolim,xtraj,utraj,Q,R,Vparent);
+        else
+          tv = ConstOrPassthroughSystem(uG,nX);
+          tv = setInputFrame(tv,p.getOutputFrame);
+          tv = setOutputFrame(tv,p.getInputFrame);
+          Vtraj = QuadraticLyapunovFunction(p.getStateFrame,Q*inf);
+        end
         if (options.verify)
           psys = taylorApprox(feedback(p_nolim,tv),xtraj,[],3);
           try 
@@ -445,9 +459,6 @@ classdef LQRTree < HybridDrakeSystem
         
         num_branches=num_branches+1;
         if (num_branches>=options.num_branches) break; end
-        if isempty(options.xs)
-          options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u,options.plotdims);  % for debugging
-        end
         if (num_branches==3)
           options=rmfield(options,'trajectory_cost_fun'); % stop plotting everything
         end
@@ -477,6 +488,7 @@ end
 
 function [J,dJ]=plotDircolTraj(t,x,u,plotdims)
   h=plot(x(plotdims(1),:),x(plotdims(2),:),'.-');
+  axis(2*[-pi pi -pi pi]);  % pendulum specific
   drawnow;
   delete(h);
   J=0;
