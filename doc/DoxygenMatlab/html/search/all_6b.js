@@ -12,5 +12,8 @@ var searchData=
   ['keywordfind',['keywordfind',['../unit_test_8m.html#a5d37882c46ba0aa5cd37388862c058b2',1,'unitTest.m']]],
   ['kinematicsinit',['kinematicsInit',['../class_planar_model.html#a0e562f432a9b711066c14e69d5bfb5dc',1,'PlanarModel::kinematicsInit()'],['../class_model.html#a0e562f432a9b711066c14e69d5bfb5dc',1,'Model::kinematicsInit()']]],
   ['kintest',['kinTest',['../class_rigid_body_manipulator.html#aa78ac6463385f151d5e248071590018d',1,'RigidBodyManipulator']]],
+  ['knot_5find',['knot_ind',['../class_trajectory_library.html#a68cbdc413063bb9bb57a19af0b3736e6',1,'TrajectoryLibrary']]],
+  ['knot_5fparents',['knot_parents',['../class_trajectory_library.html#a2f631e3ff8daa487fbce00707fc18de2',1,'TrajectoryLibrary']]],
+  ['knots',['knots',['../class_trajectory_library.html#a1052722cbe6b6186d3b791ecbc2e0da5',1,'TrajectoryLibrary']]],
   ['ksoln',['Ksoln',['../class_drake_system.html#a5a1d47180a7269a796415f9a7d8b1968',1,'DrakeSystem::Ksoln(t, plant, Straj, Rtraj, xtraj, utraj, transSurfi)'],['../class_drake_system.html#a8c6ccd7e195a87bea41f07aca6e47ac4',1,'DrakeSystem::Ksoln(S, Ri, B)']]]
 ];

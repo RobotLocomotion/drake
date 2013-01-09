@@ -50,7 +50,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
       if isempty(obj.lcmtype_constructor)
         error('didn''t find a constructor for this lcmtype');
       end
-      obj = setCoordinateNames(obj,names);
+      setCoordinateNames(obj,names);
     end
     
     function obj = subscribe(obj,channel)

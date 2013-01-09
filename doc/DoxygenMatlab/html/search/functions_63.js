@@ -20,6 +20,7 @@ var searchData=
   ['cleanup',['cleanup',['../unit_test_8m.html#a2dcfce32e65c97d14b3a4caf947e6e57',1,'unitTest.m']]],
   ['cleanup_5fsubs',['cleanup_subs',['../class_taylor_var.html#a949c53cf758cf028d5ccbe0a4184bc8f',1,'TaylorVar']]],
   ['close',['close',['../class_s_w_f_writer.html#aed0afc6e96e2208bd1e6e56ae238716e',1,'SWFWriter']]],
+  ['closestpoint',['closestPoint',['../class_trajectory.html#a35ab931eea03e41c114540958729f7a1',1,'Trajectory::closestPoint()'],['../class_trajectory_library.html#aef54df60d6ed14ab0a740c9dd458e106',1,'TrajectoryLibrary::closestPoint()']]],
   ['collisiondetect',['collisionDetect',['../class_planar_rigid_body_manipulator.html#a4d645060cf8ca7e4fd2ae6f76bbf6ba2',1,'PlanarRigidBodyManipulator::collisionDetect()'],['../class_rigid_body_manipulator.html#a4d645060cf8ca7e4fd2ae6f76bbf6ba2',1,'RigidBodyManipulator::collisionDetect()']]],
   ['collisiondynamics',['collisionDynamics',['../class_ball_plant.html#ad6b6eeb7c151643d8a179b3d9a6f432f',1,'BallPlant::collisionDynamics()'],['../class_ball_plant2_d.html#ad6b6eeb7c151643d8a179b3d9a6f432f',1,'BallPlant2D::collisionDynamics()'],['../class_compass_gait_plant.html#a213cb99dee72f7966ac073f80f3bc851',1,'CompassGaitPlant::collisionDynamics()']]],
   ['colorspec_5flongname_5fto_5frgbvalue',['ColorSpec_LongName_to_RGBvalue',['../arrow3_d_8m.html#a7142c4cf0790adf959daba27f35fe6ba',1,'arrow3D.m']]],

@@ -5,7 +5,6 @@ var searchData=
   ['addxyaxis_2em',['addXYAxis.m',['../add_x_y_axis_8m.html',1,'']]],
   ['affinesystem_2em',['AffineSystem.m',['../_affine_system_8m.html',1,'']]],
   ['affinetransform_2em',['AffineTransform.m',['../_affine_transform_8m.html',1,'']]],
-  ['analysis_2a_2em',['analysis*.m',['../analysis_5_8m.html',1,'']]],
   ['anglewrappingtransform_2em',['AngleWrappingTransform.m',['../_angle_wrapping_transform_8m.html',1,'']]],
   ['arraylist2mat_2em',['arraylist2mat.m',['../arraylist2mat_8m.html',1,'']]],
   ['arrow3d_2em',['arrow3D.m',['../arrow3_d_8m.html',1,'']]],

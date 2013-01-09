@@ -114,8 +114,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a25fff0ed4f2ac602355de17bd5d5cec2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_l_q_r_tree.html#a25fff0ed4f2ac602355de17bd5d5cec2">transitionIntoAnyFunnel</a> (obj, <a class="el" href="class_l_q_r_tree.html#a5f83f3e3a75dc0f5190691eac23d5bac">m</a>, t, ignoredArg, x)</td></tr>
 <tr class="memitem:aca40d82027f418dda702c0c8ec3de654"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_l_q_r_tree.html#aca40d82027f418dda702c0c8ec3de654">checkFunnels</a> (obj, x)</td></tr>
 <tr class="memdesc:aca40d82027f418dda702c0c8ec3de654"><td class="mdescLeft">&#160;</td><td class="mdescRight">find lowest V for this x, by searching over ti and tv funnels.  <a href="#aca40d82027f418dda702c0c8ec3de654"></a><br/></td></tr>
-<tr class="memitem:a163a824629196ebbd49841a153ea5ef2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_l_q_r_tree.html#a163a824629196ebbd49841a153ea5ef2">finalTreeConstraint</a> (obj, x)</td></tr>
-<tr class="memdesc:a163a824629196ebbd49841a153ea5ef2"><td class="mdescLeft">&#160;</td><td class="mdescRight">note: the input x is in the plant state frame (everything else inside this class is stored in the input frame of the controller)  <a href="#a163a824629196ebbd49841a153ea5ef2"></a><br/></td></tr>
+<tr class="memitem:a7e19d06d5c6963ea92cbefcc141b14aa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_l_q_r_tree.html#a7e19d06d5c6963ea92cbefcc141b14aa">onTreeConstraint</a> (obj, x)</td></tr>
+<tr class="memdesc:a7e19d06d5c6963ea92cbefcc141b14aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">note: the input x is in the plant state frame (everything else inside this class is stored in the input frame of the controller)  <a href="#a7e19d06d5c6963ea92cbefcc141b14aa"></a><br/></td></tr>
 <tr class="inherit_header pub_methods_class_hybrid_drake_system"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_hybrid_drake_system')"><img src="closed.png" alt="-"/>&nbsp;Public Member Functions inherited from <a class="el" href="class_hybrid_drake_system.html">HybridDrakeSystem</a></td></tr>
 <tr class="memitem:a9c011eea0371f812b7f4673457fcfa8c inherit pub_methods_class_hybrid_drake_system"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_hybrid_drake_system.html#a9c011eea0371f812b7f4673457fcfa8c">HybridDrakeSystem</a> (<a class="el" href="class_drake_system.html#ada3e494b5d79c3e7351f697de2a44a0d">num_u</a>, <a class="el" href="class_drake_system.html#a02e68a89936da8d4bc5000cfe66562df">num_y</a>)</td></tr>
 <tr class="memitem:a1d7d39c463e19fc1be987dc16dccb2c8 inherit pub_methods_class_hybrid_drake_system"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_hybrid_drake_system.html#a1d7d39c463e19fc1be987dc16dccb2c8">addMode</a> (obj, mode_sys, name)</td></tr>
@@ -270,6 +270,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a75d3b101d6fef5e2d40ea4e497300473 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a75d3b101d6fef5e2d40ea4e497300473">userfun_grad_ind</a> (nT, nX, nU, con, x, options)</td></tr>
 <tr class="memdesc:a75d3b101d6fef5e2d40ea4e497300473 inherit pub_methods_class_dynamical_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">dJ:  <a href="#a75d3b101d6fef5e2d40ea4e497300473"></a><br/></td></tr>
 <tr class="memitem:a6e42131073a8f66a0784729cbdc2510e inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a6e42131073a8f66a0784729cbdc2510e">dircol_wrapup</a> (sys, w, t, nX, nU)</td></tr>
+<tr class="memitem:ac520011906424d9823b98e9089106db3 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#ac520011906424d9823b98e9089106db3">findTrajectory</a> (sys, x0, xf, sampleFun, con, options)</td></tr>
+<tr class="memdesc:ac520011906424d9823b98e9089106db3 inherit pub_methods_class_dynamical_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tries to find a feasible solution of the system starting from the initial conditions x0 to and ending in xf.  <a href="#ac520011906424d9823b98e9089106db3"></a><br/></td></tr>
 <tr class="memitem:a3dfe41e5dc6eb8e956a9fff882bbd084 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a3dfe41e5dc6eb8e956a9fff882bbd084">runLCM</a> (obj, x0, options)</td></tr>
 <tr class="memdesc:a3dfe41e5dc6eb8e956a9fff882bbd084 inherit pub_methods_class_dynamical_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs the system as an lcm node.  <a href="#a3dfe41e5dc6eb8e956a9fff882bbd084"></a><br/></td></tr>
 <tr class="memitem:a48d6cf68bc469a0217fcbb32e715414e inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a48d6cf68bc469a0217fcbb32e715414e">simulate</a> (obj, tspan, x0, options)</td></tr>
@@ -569,43 +571,6 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a class="anchor" id="a163a824629196ebbd49841a153ea5ef2"></a>
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a> finalTreeConstraint </td>
-          <td>(</td>
-          <td class="paramtype">obj&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">x&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>note: the input x is in the plant state frame (everything else inside this class is stored in the input frame of the controller) </p>
-<dl class="retval"><dt>Return values:</dt><dd>
-  <table class="retval">
-    <tr><td class="paramname">g</td><td></td></tr>
-    <tr><td class="paramname">dg</td><td></td></tr>
-    <tr><td class="paramname">m</td><td></td></tr>
-    <tr><td class="paramname">tmin</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <a class="anchor" id="a3503513046462b45c7427ffb2bed8e06"></a>
 <div class="memitem">
 <div class="memproto">
@@ -682,6 +647,43 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a class="anchor" id="a7e19d06d5c6963ea92cbefcc141b14aa"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a> onTreeConstraint </td>
+          <td>(</td>
+          <td class="paramtype">obj&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">x&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>note: the input x is in the plant state frame (everything else inside this class is stored in the input frame of the controller) </p>
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">g</td><td></td></tr>
+    <tr><td class="paramname">dg</td><td></td></tr>
+    <tr><td class="paramname">m</td><td></td></tr>
+    <tr><td class="paramname">tmin</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a class="anchor" id="ab442792d612a6caf4c397d794f9fd067"></a>
 <div class="memitem">
 <div class="memproto">
@@ -732,6 +734,8 @@ Public Attributes</h2></td></tr>
   </table>
   </dd>
 </dl>
+
+<p>Reimplemented from <a class="el" href="class_dynamical_system.html#afd826a9765881ce1d555ba2ca6df3c47">DynamicalSystem</a>.</p>
 
 </div>
 </div>
@@ -838,6 +842,8 @@ Public Attributes</h2></td></tr>
   </dd>
 </dl>
 
+<p>Reimplemented from <a class="el" href="class_dynamical_system.html#aceecdac4961e6854f2612a8736e61435">DynamicalSystem</a>.</p>
+
 </div>
 </div>
 <a class="anchor" id="ad23203a17a5eecc6487a15cc59758acf"></a>
@@ -878,6 +884,8 @@ Public Attributes</h2></td></tr>
   </table>
   </dd>
 </dl>
+
+<p>Reimplemented from <a class="el" href="class_dynamical_system.html#abe22e61139e3a5df9605451c73d17309">DynamicalSystem</a>.</p>
 
 </div>
 </div>
@@ -1122,7 +1130,7 @@ Public Attributes</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jan 8 2013 12:20:12 for drake by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Jan 9 2013 06:03:03 for drake by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1.1
 </small></address>

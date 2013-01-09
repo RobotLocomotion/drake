@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['s',['S',['../class_planar_model.html#a7bf8ca8cb8536eea4867554757df0a3f',1,'PlanarModel::S()'],['../class_model.html#a3b609b0cf3eca50effe1a0c8fb0e71af',1,'Model::S()'],['../class_quadratic_lyapunov_function.html#aa088b6d11a7e5aea358d178f38ea9ff1',1,'QuadraticLyapunovFunction::S()'],['../class_trig_poly.html#a39ee6080f17b7493d7f1dd8152cfe5e6',1,'TrigPoly::s()']]],
-  ['s1',['S1',['../class_l_q_r_tree.html#a0c2298624443bd7852799ef99a8b0612',1,'LQRTree::S1()'],['../class_quadratic_lyapunov_function.html#a0190fa086f68b213318dfa04e48d7c09',1,'QuadraticLyapunovFunction::s1()']]],
+  ['s',['s',['../class_trig_poly.html#a39ee6080f17b7493d7f1dd8152cfe5e6',1,'TrigPoly::s()'],['../class_planar_model.html#a7bf8ca8cb8536eea4867554757df0a3f',1,'PlanarModel::S()'],['../class_model.html#a3b609b0cf3eca50effe1a0c8fb0e71af',1,'Model::S()'],['../class_quadratic_lyapunov_function.html#aa088b6d11a7e5aea358d178f38ea9ff1',1,'QuadraticLyapunovFunction::S()']]],
+  ['s1',['s1',['../class_quadratic_lyapunov_function.html#a0190fa086f68b213318dfa04e48d7c09',1,'QuadraticLyapunovFunction::s1()'],['../class_l_q_r_tree.html#a0c2298624443bd7852799ef99a8b0612',1,'LQRTree::S1()']]],
   ['s2',['s2',['../class_l_q_r_tree.html#a1590c6c38c497e1a0e75e24e5d7b80b4',1,'LQRTree::s2()'],['../class_quadratic_lyapunov_function.html#a1590c6c38c497e1a0e75e24e5d7b80b4',1,'QuadraticLyapunovFunction::s2()']]],
   ['s3',['s3',['../class_l_q_r_tree.html#aaf0ee8d4349a77191ac0f254c0237c4e',1,'LQRTree']]],
   ['s_5fe',['S_e',['../class_glider_plant.html#a18dd2955b484b216e8b03a2f1065e6dd',1,'GliderPlant']]],
@@ -160,8 +160,6 @@ var searchData=
   ['statevectortostructure',['stateVectorToStructure',['../class_dynamical_system.html#a0a52822aff7b5ec1cd042d719bc131d5',1,'DynamicalSystem']]],
   ['staticmethods',['staticMethods',['../static_methods_8m.html#a64c14207e8f8250f22d92832dca3ab24',1,'staticMethods.m']]],
   ['staticmethods_2em',['staticMethods.m',['../static_methods_8m.html',1,'']]],
-  ['stereographic_5ffig001',['stereographic_fig001',['../stereographic__fig001_8m.html#aa607d014b72cef1e1a134f1169eb9a6c',1,'stereographic_fig001.m']]],
-  ['stereographic_5ffig001_2em',['stereographic_fig001.m',['../stereographic__fig001_8m.html',1,'']]],
   ['stochasticdrakesystem',['StochasticDrakeSystem',['../class_stochastic_drake_system.html',1,'StochasticDrakeSystem'],['../class_stochastic_drake_system.html#a4304509270b0acee9d455fa2b965b652',1,'StochasticDrakeSystem::StochasticDrakeSystem()']]],
   ['stochasticdrakesystem_2em',['StochasticDrakeSystem.m',['../_stochastic_drake_system_8m.html',1,'']]],
   ['stochasticdynamics',['stochasticDynamics',['../class_linear_gaussian_example.html#a66f9911ee876cecc138685ea7c797aa9',1,'LinearGaussianExample::stochasticDynamics()'],['../class_stochastic_drake_system.html#a66f9911ee876cecc138685ea7c797aa9',1,'StochasticDrakeSystem::stochasticDynamics()']]],

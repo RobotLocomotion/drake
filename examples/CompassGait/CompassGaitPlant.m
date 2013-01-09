@@ -52,7 +52,7 @@ classdef CompassGaitPlant < HybridDrakeSystem
       xp = [xm([2,1]); ...     % switch stance and swing legs
         Qp\Qm*xm(3:4)];   % inelastic impulse
       
-      if (nargout>2)
+      if (nargout>3)
         Qpi = inv(Qp);
         dalpha = [1 -1];  % d/dq
         dQpdalpha = [m*b*l*sin(alpha), m*l*b*sin(alpha); 0, m*b*l*sin(alpha) ];

@@ -387,7 +387,6 @@ classdef RigidBodyManipulator < Manipulator
       
     end
 
-        
     function fr = constructStateFrame(model)
       joints = {model.body(~cellfun(@isempty,{model.body.parent})).jointname}';
       coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
@@ -402,6 +401,24 @@ classdef RigidBodyManipulator < Manipulator
       end
        
       fr = CoordinateFrame([model.name,'Input'],size(model.B,2),'u',coordinates);
+    end
+    
+    function fr = constructCOMFrame(model)
+      fr = CoordinateFrame([model.name,'COM'],3,'m',{'com_x','com_y','com_z'});
+      
+      return; 
+      
+      % in order to re-enable this, I have to figure out how we should be
+      % distinguishing between reference and actual frames.  e.g., if i
+      % make this, then i create a controller that takes a desired COM +
+      % the actual state x as input, then things will be confusing when I
+      % feedbackControl combine them.
+      
+      % construct a transform from the state vector to the COM
+      tf = FunctionHandleCoordinateTransform(0,0,model.getStateFrame(),fr,true,true,[],[], ...
+        @(obj,~,~,x) getCOM(model,x(1:model.featherstone.NB))); 
+      
+      model.getStateFrame().addTransform(tf);
     end
     
     function v = constructVisualizer(obj,options)

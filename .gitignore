@@ -1,7 +1,6 @@
 *.autosave
 *.mex*
 *.o*
-robotlib_config.mat
 util/drake_config.mat
 examples/pr2/base.wrl
 examples/pr2/base.wrl.bak
@@ -70,7 +69,6 @@ doc/modeling.tex
 doc/planning.aux
 doc/planning.tex
 examples/CompassGait/runLQR_URDF.m
-.gitignore
 fort.0
 drake.a
 include/lcmt_acrobot_u.h
@@ -88,6 +86,8 @@ util/MessageMonitor.class
 util/MyLCMTypeDatabase$MyClassVisitor.class
 LCMCoder.class
 *.svn-base
-examples/Atlas/urdf/.svn
 .svn
 *.aux
+.drake_unit_test_mutex.mat
+.unitTestData.mat
+debug.txt

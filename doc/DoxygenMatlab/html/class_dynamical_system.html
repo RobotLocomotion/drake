@@ -177,6 +177,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a75d3b101d6fef5e2d40ea4e497300473"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a75d3b101d6fef5e2d40ea4e497300473">userfun_grad_ind</a> (nT, nX, nU, con, x, options)</td></tr>
 <tr class="memdesc:a75d3b101d6fef5e2d40ea4e497300473"><td class="mdescLeft">&#160;</td><td class="mdescRight">dJ:  <a href="#a75d3b101d6fef5e2d40ea4e497300473"></a><br/></td></tr>
 <tr class="memitem:a6e42131073a8f66a0784729cbdc2510e"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a6e42131073a8f66a0784729cbdc2510e">dircol_wrapup</a> (sys, w, t, nX, nU)</td></tr>
+<tr class="memitem:ac520011906424d9823b98e9089106db3"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#ac520011906424d9823b98e9089106db3">findTrajectory</a> (sys, x0, xf, sampleFun, con, options)</td></tr>
+<tr class="memdesc:ac520011906424d9823b98e9089106db3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tries to find a feasible solution of the system starting from the initial conditions x0 to and ending in xf.  <a href="#ac520011906424d9823b98e9089106db3"></a><br/></td></tr>
+<tr class="memitem:aceecdac4961e6854f2612a8736e61435"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#aceecdac4961e6854f2612a8736e61435">trajCost</a> (t, x, u, R)</td></tr>
+<tr class="memitem:abe22e61139e3a5df9605451c73d17309"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#abe22e61139e3a5df9605451c73d17309">trajFinalCost</a> (t, x)</td></tr>
+<tr class="memitem:afd826a9765881ce1d555ba2ca6df3c47"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#afd826a9765881ce1d555ba2ca6df3c47">plotDircolTraj</a> (t, x, u, plotdims)</td></tr>
 <tr class="memitem:a3dfe41e5dc6eb8e956a9fff882bbd084"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a3dfe41e5dc6eb8e956a9fff882bbd084">runLCM</a> (obj, x0, options)</td></tr>
 <tr class="memdesc:a3dfe41e5dc6eb8e956a9fff882bbd084"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs the system as an lcm node.  <a href="#a3dfe41e5dc6eb8e956a9fff882bbd084"></a><br/></td></tr>
 <tr class="memitem:a48d6cf68bc469a0217fcbb32e715414e"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a48d6cf68bc469a0217fcbb32e715414e">simulate</a> (obj, tspan, x0, options)</td></tr>
@@ -706,6 +711,73 @@ Private Attributes</h2></td></tr>
 </dl>
 
 <p>Reimplemented in <a class="el" href="class_drake_system.html#a634472e9a8141c1e02be1bed24038a85">DrakeSystem</a>, <a class="el" href="class_hybrid_drake_system.html#a634472e9a8141c1e02be1bed24038a85">HybridDrakeSystem</a>, <a class="el" href="class_manipulator.html#a634472e9a8141c1e02be1bed24038a85">Manipulator</a>, <a class="el" href="class_polynomial_system.html#a634472e9a8141c1e02be1bed24038a85">PolynomialSystem</a>, <a class="el" href="class_affine_system.html#a634472e9a8141c1e02be1bed24038a85">AffineSystem</a>, <a class="el" href="class_stochastic_drake_system.html#a634472e9a8141c1e02be1bed24038a85">StochasticDrakeSystem</a>, <a class="el" href="class_second_order_system.html#a634472e9a8141c1e02be1bed24038a85">SecondOrderSystem</a>, and <a class="el" href="class_linear_system.html#a634472e9a8141c1e02be1bed24038a85">LinearSystem</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="ac520011906424d9823b98e9089106db3"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function findTrajectory </td>
+          <td>(</td>
+          <td class="paramtype">sys&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">x0&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">xf&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">sampleFun&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">con&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">options&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Tries to find a feasible solution of the system starting from the initial conditions x0 to and ending in xf. </p>
+<dl class="params"><dt>Parameters:</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">sampleFun</td><td></td></tr>
+    <tr><td class="paramname">con</td><td>see the help for trajectoryOptimization</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>todo: this will be an interface to many potential methods, like trajectoryOptimization, and regionOfAttraction. But for now it's a single, simple forward RRT-like algorithm (using trajectory optimization). </p>
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">utraj</td><td></td></tr>
+    <tr><td class="paramname">xtraj</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1444,6 +1516,53 @@ Private Attributes</h2></td></tr>
 </dl>
 
 <p>Reimplemented in <a class="el" href="class_time_stepping_rigid_body_manipulator.html#a08bd8cfbf5b377e1832b942859f6875f">TimeSteppingRigidBodyManipulator</a>, <a class="el" href="class_hybrid_drake_system.html#a08bd8cfbf5b377e1832b942859f6875f">HybridDrakeSystem</a>, <a class="el" href="class_affine_system.html#a08bd8cfbf5b377e1832b942859f6875f">AffineSystem</a>, <a class="el" href="class_hopper_plant.html#a08bd8cfbf5b377e1832b942859f6875f">HopperPlant</a>, <a class="el" href="class_glider_plant.html#a08bd8cfbf5b377e1832b942859f6875f">GliderPlant</a>, <a class="el" href="class_polynomial_trajectory_system.html#a08bd8cfbf5b377e1832b942859f6875f">PolynomialTrajectorySystem</a>, <a class="el" href="class_simulink_model.html#a08bd8cfbf5b377e1832b942859f6875f">SimulinkModel</a>, <a class="el" href="class_cascade_system.html#a08bd8cfbf5b377e1832b942859f6875f">CascadeSystem</a>, <a class="el" href="class_spot_polynomial_system.html#a08bd8cfbf5b377e1832b942859f6875f">SpotPolynomialSystem</a>, <a class="el" href="class_drake_system.html#a08bd8cfbf5b377e1832b942859f6875f">DrakeSystem</a>, <a class="el" href="class_feedback_system.html#a08bd8cfbf5b377e1832b942859f6875f">FeedbackSystem</a>, <a class="el" href="class_stochastic_drake_system.html#a08bd8cfbf5b377e1832b942859f6875f">StochasticDrakeSystem</a>, <a class="el" href="class_second_order_system.html#a08bd8cfbf5b377e1832b942859f6875f">SecondOrderSystem</a>, <a class="el" href="class_trajectory.html#a08bd8cfbf5b377e1832b942859f6875f">Trajectory</a>, <a class="el" href="class_plane_plant.html#a08bd8cfbf5b377e1832b942859f6875f">PlanePlant</a>, <a class="el" href="class_visualizer.html#a08bd8cfbf5b377e1832b942859f6875f">Visualizer</a>, <a class="el" href="class_function_handle_system.html#a08bd8cfbf5b377e1832b942859f6875f">FunctionHandleSystem</a>, <a class="el" href="class_sine_sys.html#a08bd8cfbf5b377e1832b942859f6875f">SineSys</a>, <a class="el" href="class_rimless_wheel_stance_plant.html#a08bd8cfbf5b377e1832b942859f6875f">RimlessWheelStancePlant</a>, <a class="el" href="class_x_cubed.html#a08bd8cfbf5b377e1832b942859f6875f">XCubed</a>, <a class="el" href="class_simple_mixed_c_t_d_t_example.html#a08bd8cfbf5b377e1832b942859f6875f">SimpleMixedCTDTExample</a>, <a class="el" href="class_scope_system.html#a08bd8cfbf5b377e1832b942859f6875f">ScopeSystem</a>, <a class="el" href="class_ball_flight_phase_plant.html#a08bd8cfbf5b377e1832b942859f6875f">BallFlightPhasePlant</a>, <a class="el" href="class_ball_flight_phase_plant2_d.html#a08bd8cfbf5b377e1832b942859f6875f">BallFlightPhasePlant2D</a>, <a class="el" href="class_simple_c_t_example.html#a08bd8cfbf5b377e1832b942859f6875f">SimpleCTExample</a>, <a class="el" href="class_simple_d_t_example.html#a08bd8cfbf5b377e1832b942859f6875f">SimpleDTExample</a>, and <a class="el" href="class_van_der_pol.html#a08bd8cfbf5b377e1832b942859f6875f">VanDerPol</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="afd826a9765881ce1d555ba2ca6df3c47"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function plotDircolTraj </td>
+          <td>(</td>
+          <td class="paramtype">t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">x&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">u&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">plotdims&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">J</td><td></td></tr>
+    <tr><td class="paramname">dJ</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented in <a class="el" href="class_l_q_r_tree.html#ab442792d612a6caf4c397d794f9fd067">LQRTree</a>.</p>
 
 </div>
 </div>
@@ -2201,6 +2320,53 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a class="anchor" id="aceecdac4961e6854f2612a8736e61435"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function trajCost </td>
+          <td>(</td>
+          <td class="paramtype">t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">x&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">u&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">R&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">g</td><td></td></tr>
+    <tr><td class="paramname">dg</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented in <a class="el" href="class_l_q_r_tree.html#ac73fce689a20a6b261708f327ea51587">LQRTree</a>.</p>
+
+</div>
+</div>
 <a class="anchor" id="aaa02663ab1de4d24d5e81c230608ed28"></a>
 <div class="memitem">
 <div class="memproto">
@@ -2337,6 +2503,41 @@ Private Attributes</h2></td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a class="anchor" id="abe22e61139e3a5df9605451c73d17309"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function trajFinalCost </td>
+          <td>(</td>
+          <td class="paramtype">t&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">x&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">h</td><td></td></tr>
+    <tr><td class="paramname">dh</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented in <a class="el" href="class_l_q_r_tree.html#ad23203a17a5eecc6487a15cc59758acf">LQRTree</a>.</p>
 
 </div>
 </div>
@@ -2647,7 +2848,7 @@ Private Attributes</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Tue Jan 8 2013 12:20:11 for drake by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Jan 9 2013 06:03:03 for drake by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1.1
 </small></address>

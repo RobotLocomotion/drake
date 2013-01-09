@@ -1,8 +1,9 @@
 <map id="G" name="G">
-<area shape="rect" id="node5" href="$class_l_c_m_coordinate_frame.html" title="LCMCoordinateFrame" alt="" coords="56,155,216,181"/>
-<area shape="rect" id="node11" href="$class_l_c_m_coordinate_frame_w_coder.html" title="LCMCoordinateFrameWCoder" alt="" coords="241,155,449,181"/>
-<area shape="rect" id="node13" href="$class_singleton_coordinate_frame.html" title="SingletonCoordinateFrame" alt="" coords="474,155,667,181"/>
-<area shape="rect" id="node2" href="$classhandle.html" title="handle" alt="" coords="313,5,377,32"/>
-<area shape="rect" id="node7" href="$class_pendulum_input.html" title="PendulumInput" alt="" coords="5,229,123,256"/>
-<area shape="rect" id="node9" href="$class_pendulum_state.html" title="PendulumState" alt="" coords="147,229,268,256"/>
+<area shape="rect" id="node5" href="$class_l_c_m_coordinate_frame.html" title="LCMCoordinateFrame" alt="" coords="327,31,487,57"/>
+<area shape="rect" id="node11" href="$class_l_c_m_coordinate_frame_w_coder.html" title="LCMCoordinateFrameWCoder" alt="" coords="302,81,511,108"/>
+<area shape="rect" id="node13" href="$class_multi_coordinate_frame.html" title="Makes a mux&#39;d coordinate frame out of a list of other frames." alt="" coords="325,132,488,159"/>
+<area shape="rect" id="node15" href="$class_singleton_coordinate_frame.html" title="SingletonCoordinateFrame" alt="" coords="310,183,503,209"/>
+<area shape="rect" id="node2" href="$classhandle.html" title="handle" alt="" coords="6,107,71,133"/>
+<area shape="rect" id="node7" href="$class_pendulum_input.html" title="PendulumInput" alt="" coords="562,5,681,32"/>
+<area shape="rect" id="node9" href="$class_pendulum_state.html" title="PendulumState" alt="" coords="561,56,682,83"/>
 </map>
