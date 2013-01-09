@@ -1,4 +1,4 @@
-classdef ReachingControl < DrakeSystem
+classdef ReachingControl < MIMODrakeSystem
 % A simple controller that takes in the DesiredHandPosition and the current
 % arm state, and outputs a joint position command 
 %
@@ -9,10 +9,12 @@ classdef ReachingControl < DrakeSystem
       
       typecheck(sys,'DrakeSystem');
       typecheck(manip,'RigidBodyManipulator');
+
+      input_frame = MultiCoordinateFrame([manip.constructCOMFrame,manip.getStateFrame]);
       
-      obj = obj@DrakeSystem(0,sys.getNumInputs,sys.getNumStates,sys.getNumInputs,false,true);
+      obj = obj@MIMODrakeSystem(0,manip.featherstone.NB,input_frame,sys.getInputFrame(),false,true);
       obj = setSampleTime(obj,[.01;0]); % update at 100 Hz
-      obj = setInputFrame(obj,sys.getStateFrame);
+      obj = setInputFrame(obj,input_frame);
       obj = setOutputFrame(obj,sys.getInputFrame);
       
       obj.manip = manip;
@@ -24,7 +26,7 @@ classdef ReachingControl < DrakeSystem
       q_d0 = 0*randn(2,1);
     end
         
-    function q_dn = update(obj,t,q_d,x)
+    function q_dn = mimoUpdate(obj,t,q_d,com_d,x)
       % Controller implementation.  
       q = x(1:2); qd = x(3:4);
       
@@ -46,7 +48,7 @@ classdef ReachingControl < DrakeSystem
       q_dn = q_d + dt*qd_d;
     end
     
-    function y = output(obj,t,q_d,x)
+    function y = mimoOutput(obj,t,q_d,com_d,x)
       y = q_d;
     end
   end

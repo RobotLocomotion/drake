@@ -62,6 +62,7 @@ addpath([conf.root,'/systems/plants']);
 addpath([conf.root,'/systems/controllers']);
 addpath([conf.root,'/systems/estimators']);
 addpath([conf.root,'/systems/trajectories']);
+addpath([conf.root,'/systems/frames']);
 addpath([conf.root,'/util']);
 addpath([conf.root,'/util/obstacles']);
 addpath([conf.root,'/thirdParty']);

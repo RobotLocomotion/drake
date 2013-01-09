@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['t',['t',['../classdrake_1_1util_1_1_coordinate_frame_data.html#a87accd1af8e0aff4b818d891374f7cec',1,'drake.util.CoordinateFrameData.t()'],['../class_planar_rigid_body.html#a05bbeb575d1b33cdd62956b09f899a09',1,'PlanarRigidBody::T()'],['../class_rigid_body.html#aaa57a58000a8760bc9f062675f1642b7',1,'RigidBody::T()'],['../class_rigid_body.html#ac07d6486ff28fdc5cdc41fc9d05f00ad',1,'RigidBody::T()']]],
+  ['t',['T',['../class_planar_rigid_body.html#a05bbeb575d1b33cdd62956b09f899a09',1,'PlanarRigidBody::T()'],['../class_rigid_body.html#aaa57a58000a8760bc9f062675f1642b7',1,'RigidBody::T()'],['../class_rigid_body.html#ac07d6486ff28fdc5cdc41fc9d05f00ad',1,'RigidBody::T()'],['../classdrake_1_1util_1_1_coordinate_frame_data.html#a87accd1af8e0aff4b818d891374f7cec',1,'drake.util.CoordinateFrameData.t()']]],
   ['t0',['t0',['../class_l_q_r_tree.html#a03f06107cb7294ff3d4f64f767634064',1,'LQRTree']]],
   ['t1',['T1',['../class_rigid_body_loop.html#abeed7a1fd69aebed060ad0a2a9c70a9e',1,'RigidBodyLoop']]],
   ['t2',['T2',['../class_rigid_body_loop.html#a9eab4965473d36822f15e2a538e9fe93',1,'RigidBodyLoop']]],
@@ -19,7 +19,7 @@ var searchData=
   ['tippoly',['tipPoly',['../draw_dot_8m.html#a377efaf1681884abc5668bfc15e88513',1,'drawDot.m']]],
   ['tippolyx',['tipPolyX',['../draw_dot_8m.html#a0ecadf30c62308edac80ce3a6408aba1',1,'drawDot.m']]],
   ['tippolyy',['tipPolyY',['../draw_dot_8m.html#a0da468223df85bf88e86610f9d1afdca',1,'drawDot.m']]],
-  ['traj',['traj',['../class_hybrid_trajectory.html#accc91984e4fa3d149b62e45e87c64b5e',1,'HybridTrajectory']]],
+  ['traj',['traj',['../class_hybrid_trajectory.html#accc91984e4fa3d149b62e45e87c64b5e',1,'HybridTrajectory::traj()'],['../class_trajectory_library.html#accc91984e4fa3d149b62e45e87c64b5e',1,'TrajectoryLibrary::traj()']]],
   ['trajs',['trajs',['../class_mixed_trajectory.html#a25c2683e4860f6800710176205bda8b6',1,'MixedTrajectory']]],
   ['transforms',['transforms',['../class_coordinate_frame.html#a245ee7a980aa790426d11a26c1159730',1,'CoordinateFrame']]],
   ['transition',['transition',['../class_hybrid_drake_system.html#ac363c0c5cc9c182bd3b2c7560425f93e',1,'HybridDrakeSystem']]],

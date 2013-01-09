@@ -288,7 +288,7 @@ stereographic projection).  Methods which implement these conversions are
 provided whenever possible.  
 
 \todo{xcubed example again, but this time deriving from
-polynomialsystem}.
+polynomialsystem}
 
 \todo{describe user gradients}
 %\subsubsection{Providing User Gradients}

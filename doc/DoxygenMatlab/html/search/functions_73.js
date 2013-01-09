@@ -93,7 +93,6 @@ var searchData=
   ['statestructuretovector',['stateStructureToVector',['../class_dynamical_system.html#a39174862998e397d111f52641bbe408b',1,'DynamicalSystem']]],
   ['statevectortostructure',['stateVectorToStructure',['../class_dynamical_system.html#a0a52822aff7b5ec1cd042d719bc131d5',1,'DynamicalSystem']]],
   ['staticmethods',['staticMethods',['../static_methods_8m.html#a64c14207e8f8250f22d92832dca3ab24',1,'staticMethods.m']]],
-  ['stereographic_5ffig001',['stereographic_fig001',['../stereographic__fig001_8m.html#aa607d014b72cef1e1a134f1169eb9a6c',1,'stereographic_fig001.m']]],
   ['stochasticdrakesystem',['StochasticDrakeSystem',['../class_stochastic_drake_system.html#a4304509270b0acee9d455fa2b965b652',1,'StochasticDrakeSystem']]],
   ['stochasticdynamics',['stochasticDynamics',['../class_linear_gaussian_example.html#a66f9911ee876cecc138685ea7c797aa9',1,'LinearGaussianExample::stochasticDynamics()'],['../class_stochastic_drake_system.html#a66f9911ee876cecc138685ea7c797aa9',1,'StochasticDrakeSystem::stochasticDynamics()']]],
   ['stochasticoutput',['stochasticOutput',['../class_linear_gaussian_example.html#a1683be194f3721a4d6725b06c0e49312',1,'LinearGaussianExample::stochasticOutput()'],['../class_stochastic_drake_system.html#a1683be194f3721a4d6725b06c0e49312',1,'StochasticDrakeSystem::stochasticOutput()']]],

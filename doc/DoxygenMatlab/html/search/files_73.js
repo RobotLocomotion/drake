@@ -26,7 +26,6 @@ var searchData=
   ['spotpolynomialsystem_2em',['SpotPolynomialSystem.m',['../_spot_polynomial_system_8m.html',1,'']]],
   ['statemachinecontrol_2em',['StateMachineControl.m',['../_state_machine_control_8m.html',1,'']]],
   ['staticmethods_2em',['staticMethods.m',['../static_methods_8m.html',1,'']]],
-  ['stereographic_5ffig001_2em',['stereographic_fig001.m',['../stereographic__fig001_8m.html',1,'']]],
   ['stochasticdrakesystem_2em',['StochasticDrakeSystem.m',['../_stochastic_drake_system_8m.html',1,'']]],
   ['swfwriter_2em',['SWFWriter.m',['../_s_w_f_writer_8m.html',1,'']]]
 ];

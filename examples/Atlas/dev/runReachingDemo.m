@@ -13,6 +13,7 @@ v.display_dt = .05;
 sys = pdcontrol(r,Kp,Kd);
 
 c = ReachingControl(sys,r);
-sys = feedback(sys,c);
+sys = feedbackControl(sys,c);
 
+keyboard;
 simulate(cascade(sys,v),[0 10]);

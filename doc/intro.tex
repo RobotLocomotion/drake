@@ -19,7 +19,7 @@ scenes to make sure that, for instance, feedback or cascade combinations of poly
 
 \subsection{Relative to \simulink and SimMechanics}
 
-Roughly speaking, \matlab's \simunlink provides a very nice interface for describing dynamical systems (as S-Functions), a graphical interface for combining these systems in very nontrivial ways, and a number of powerful solvers for simulating the resulting systems.  For simulation analysis, it provides everything we need.   However the S-Function abstraction which makes \simulink powerful also hides some of the detailed structure available in the equations governing a dynamical system; for the purposes of control design and analysis I would like to be able to declare that a particular system is governed by analytic equations, or polynomial equations, or even linear equations, and for many of the tools it is important to be able to manipulate these equations symbolically.   
+Roughly speaking, \matlab's \simulink provides a very nice interface for describing dynamical systems (as S-Functions), a graphical interface for combining these systems in very nontrivial ways, and a number of powerful solvers for simulating the resulting systems.  For simulation analysis, it provides everything we need.   However the S-Function abstraction which makes \simulink powerful also hides some of the detailed structure available in the equations governing a dynamical system; for the purposes of control design and analysis I would like to be able to declare that a particular system is governed by analytic equations, or polynomial equations, or even linear equations, and for many of the tools it is important to be able to manipulate these equations symbolically.   
 
 You can think of \drake as a layer built on top of the \simulink engine which allows you to defined structured dynamical systems.  Every dynamical system in \drake can be simulated using the \simulink engine, but \drake also provides a number of tools for analysis and controller design which take advantage of the system structure.  While it is possible to use the \simulink GUI with \drake, the standard workflow makes use of command-line methods which provide a restricted set of tools for combining systems in ways that, whenever possible, preserve the structure in the equations.  
 
@@ -30,4 +30,23 @@ Like SimMechanics, \drake provides a number of tools for working specifically wi
 \subsection{As a component in R.O.S.}
 
 \subsection{For controlling real hardware}
+
+\section{Getting Started}
+
+For now, please see the online installation and quickstart guide here:
+
+\centerline{\url{http://drake.mit.edu/quickstart}}
+
+\section{Finding More Information}
+
+For more information, consider using the automatically generated documention available in:
+
+\centerline{\url{DRAKEROOT/doc/DoxygenMatlab/html/index.html}}
+
+\smallskip\noindent
+This help information is automatically generated from the matlab code.  Most of it is also available use the help command from the matlab prompt.
+
+There is additional information, including a discussion forum, on the public website:
+
+\centerline{\url{http://drake.mit.edu}}
 

@@ -27,6 +27,7 @@ var searchData=
   ['mpylit_2em',['mpyLit.m',['../mpy_lit_8m.html',1,'']]],
   ['mpylt_2em',['mpyLt.m',['../mpy_lt_8m.html',1,'']]],
   ['msspoly2sdpvar_2em',['msspoly2sdpvar.m',['../msspoly2sdpvar_8m.html',1,'']]],
+  ['multicoordinateframe_2em',['MultiCoordinateFrame.m',['../_multi_coordinate_frame_8m.html',1,'']]],
   ['my_5fsetdiff_2em',['my_setdiff.m',['../my__setdiff_8m.html',1,'']]],
   ['mylcmtypedatabase_2ejava',['MyLCMTypeDatabase.java',['../_my_l_c_m_type_database_8java.html',1,'']]],
   ['mysedumi_2em',['mysedumi.m',['../mysedumi_8m.html',1,'']]]

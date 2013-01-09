@@ -12,11 +12,28 @@ classdef CoordinateFrame < handle
     coordinates={}; % list of coordinate names
 
     poly=[];        % optional msspoly variables for this frame
-    prefix;
+    prefix;         % a vector character prefix used for the msspoly variables, or a vector of size dim listing prefixes for each variable
   end
   
   methods
     function obj=CoordinateFrame(name,dim,prefix,coordinates)
+      % Constructs a new coordinate frame.
+      %
+      % @param name is a string name associated with this coordinate frame
+      %
+      % @param dim is the scalar number of elements in this frame
+      %
+      % @param prefix is a single character for a mss_poly variable
+      % associated with this frame.  you may also specify a vector of size 
+      % dim of characters specifying the prefix for each variable.
+      % @default first character of name
+      %
+      % @param coordinates is a cell array (with dim elements) of strings
+      % of giving the names of the coordinates. @default x1,x2,x3 etc,
+      % where x is the prefix
+      %
+      % @retval obj the newly constructed CoordinateFrame
+      
       typecheck(name,'char');
       obj.name = name;
       
@@ -33,13 +50,19 @@ classdef CoordinateFrame < handle
         end
       else
         typecheck(prefix,'char');
-        sizecheck(prefix,[1 1]);
+        if ~isscalar(prefix)
+          sizecheck(prefix,dim);
+          prefix = prefix(:);
+        end
+      end
+      if isscalar(prefix)
+        prefix = repmat(prefix,dim,1);
       end
       obj.prefix = prefix;
       
       ind=1;
       function str=coordinateName(~);
-        str=[prefix,num2str(ind)];
+        str=[prefix(ind),num2str(sum(prefix(1:ind)==prefix(ind)))];
         ind=ind+1;
       end
       if (nargin<4 || isempty(coordinates))
@@ -50,15 +73,26 @@ classdef CoordinateFrame < handle
         for i=1:dim
           typecheck(coordinates{i},'char');
         end
-        obj.coordinates = coordinates;
+        obj.coordinates = {coordinates{:}}';
       end
       if checkDependency('spot_enabled') && dim>0
         if (prefix=='t') error('oops.  destined for a collision with msspoly representing time'); end
-        obj.poly = msspoly(prefix,dim);
+        obj.poly=msspoly('_',dim); % to be replaced below... just initializing 
+        for u=unique(prefix')
+          obj.poly(prefix==u)=msspoly(u,sum(prefix==u));
+        end
       end
     end
     
-    function obj=addTransform(obj,transform)
+    function addTransform(obj,transform)
+      % Attaches a new coordinate transform from the current frame to a
+      % different frame. An error is throw if there already exists any
+      % transform (or combination of transforms) that can already transform
+      % the current frame to the output frame.
+      % 
+      % @param transform a CoordinateTransform object with the input frame
+      % matching this current frame.
+      
       typecheck(transform,'CoordinateTransform');
       if (getInputFrame(transform) ~= obj || getOutputFrame(transform) == obj)
         error('Drake:CoordinateFrame:BadTransform','transform must be from this coordinate frame to another to be added');
@@ -69,9 +103,12 @@ classdef CoordinateFrame < handle
       obj.transforms{end+1}=transform;
     end
     
-    function obj=updateTransform(obj,newtransform)
+    function updateTransform(obj,newtransform)
       % find a current transform with the same target frame and replace it
-      % with the new transform
+      % with the new transform.  this only searches simple transforms (from
+      % the current frame to the output frame), not multi-hop transforms
+      % through multiple frames.
+      
       typecheck(newtransform,'CoordinateTransform');
       ind=find(cellfun(@(a)getOutputFrame(a)==newtransform.getOutputFrame,obj.transforms));
       if (isempty(ind))
@@ -83,13 +120,7 @@ classdef CoordinateFrame < handle
       end
     end
     
-    function [tf,loc]=ismember(obj,cell_of_frames)
-      typecheck(cell_of_frames,'cell');
-      loc=find(cellfun(@(a) a==obj,cell_of_frames));
-      tf = ~isempty(loc);
-    end
-    
-    function fr=addProjectionTransformByCoordinateNames(fr,fr2,fr2_defaultvals)
+    function addProjectionTransformByCoordinateNames(fr,fr2,fr2_defaultvals)
       % adds a transform from fr to fr2 which copies over the dimensions
       % with matching coordinate names, and sets the remaining elements of
       % fr2 to their default values.
@@ -99,6 +130,7 @@ classdef CoordinateFrame < handle
       % @param fr2_defaultvals a double vector or Point which specifies the
       % constant values of the elements in fr2 which do not get mapped from
       % fr
+
       typecheck(fr2,'CoordinateFrame');
       if (nargin<3)
         fr2_defaultvals = Point(fr2);
@@ -117,32 +149,16 @@ classdef CoordinateFrame < handle
       b = double(fr2_defaultvals); b(lia)=0;
       tf = AffineTransform(fr,fr2,T,b);
       
-      fr = addTransform(fr,tf);
+      addTransform(fr,tf);
     end
     
     function drawFrameGraph(obj)
-      % depends on having graphviz2mat installed (from matlabcentral)
-      % todo: make that a dependency in configure?
+      % Calls graphviz to visualize this frame plus all other frames that
+      % are reachable by some (potentially multi-hop) transform.
+      %
+      % Note: requires that graphviz dot is installed on the system 
 
-      A = 0;
-      fr = {obj};
-      [A,fr]=recurseTFs(obj,A,fr);
-      
-      function [A,fr]=recurseTFs(obj,A,fr)
-        [~,ind]=ismember(obj,fr);
-        children = cellfun(@getOutputFrame,obj.transforms,'UniformOutput',false);
-        for i=1:length(children)
-          [b,cind]=ismember(children{i},fr);
-          if b
-            A(ind,cind)=1;
-            continue;
-          else
-            fr=vertcat(fr,children(i));
-            A(ind,end+1)=1;
-            [A,fr]=recurseTFs(children{i},A,fr);
-          end
-        end
-      end
+      [A,fr] = extractFrameGraph(obj);
       
       if (size(A,1)<length(A)) A(length(A),end)=0; end
       if (size(A,2)<length(A)) A(end,length(A))=0; end
@@ -151,6 +167,24 @@ classdef CoordinateFrame < handle
 
     
     function [tf,options]=findTransform(obj,target,options)
+      % Performs a simple breadth-first search of all available multi-hop
+      % transforms for a transformation from the current frame to the
+      % target frame
+      %
+      % @param target a CoordinateFrame that will be the output of the
+      % (possibly compound) CoordinateTransform
+      %
+      % @option throw_error_if_fail @default false
+      % @option depth positive scalar search depth. @default inf
+      %
+      % @retval tf the resulting (possibly compound) transform, or the
+      % empty matrix if no transform was found.
+      %
+      % @retval the options structure sprinkled with extra information.
+      % this output enables recursive calls to the function, and is
+      % intended only for internal use.
+      %
+      
       if (nargin<3) options=struct(); end
       if ~isfield(options,'throw_error_if_fail') options.throw_error_if_fail = false; end
       
@@ -206,7 +240,13 @@ classdef CoordinateFrame < handle
       end
     end
         
-    function obj=setCoordinateNames(obj,cnames)
+    function setCoordinateNames(obj,cnames)
+      % Updates the coordinate names
+      % 
+      % @param cnames must be a cell array vector of length dim populated
+      % with strings
+      %
+      
       if (iscell(cnames) && isvector(cnames) && length(cnames)==obj.dim && all(cellfun(@ischar,cnames)))
         obj.coordinates=cnames;
       else
@@ -215,6 +255,14 @@ classdef CoordinateFrame < handle
     end
     
     function fr=subFrame(obj,dims)
+      % Extracts a new frame with a subset of the original variables, so that
+      % fr.coordinates = obj.coordinates(dims)
+      %
+      % @param dims a numeric vector of index values such that fr.coordinates = obj.coordinates(dims)
+      %
+      % @retval the newly constructed frame
+      %
+      
       if ~isnumeric(dims) || ~isvector(dims) error('dims must be a numeric vector'); end
       if (any(dims>obj.dim | dims<1)) error(['dims must be between 1 and ',obj.dim]); end
       fr = CoordinateFrame([obj.name,mat2str(dims)], length(dims), obj.prefix);
@@ -276,8 +324,42 @@ classdef CoordinateFrame < handle
         disp('file written successfully.  done.');
       end
     end
+    
+  end
+  
+  methods (Access=private)
+    function [tf,loc]=ismember(obj,cell_of_frames)
+      % helper method for searching transforms
+      typecheck(cell_of_frames,'cell');
+      loc=find(cellfun(@(a) a==obj,cell_of_frames));
+      tf = ~isempty(loc);
+    end
   end
 
+  methods (Access=protected)
+    function [A,fr] = extractFrameGraph(obj)
+      A = 0;
+      fr = {obj};
+      [A,fr]=recurseTFs(obj,A,fr);
+      
+      function [A,fr]=recurseTFs(obj,A,fr)
+        [~,ind]=ismember(obj,fr);
+        children = cellfun(@getOutputFrame,obj.transforms,'UniformOutput',false);
+        for i=1:length(children)
+          [b,cind]=ismember(children{i},fr);
+          if b
+            A(ind,cind)=1;
+            continue;
+          else
+            fr=vertcat(fr,children(i));
+            A(ind,end+1)=1;
+            [A,fr]=recurseTFs(children{i},A,fr);
+          end
+        end
+      end      
+    end
+  end
+  
   methods (Static=true,Hidden=true)
     function s=stripSpecialChars(s)
       s=regexprep(s,'\\','');
