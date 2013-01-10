@@ -39,6 +39,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
 %      check anything other than the classname here, since I can't return a
 %      different class type from this constructor.
       obj.lcmtype = lcmtype;
+      obj.channel = name;
       
       constructors = lcmtype.getConstructors();
       for i=1:length(constructors)
@@ -104,9 +105,26 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
       lc.publish(channel,msg);
     end
     
-    function name = defaultChannel(obj)
-      name = obj.name;
+    function setDefaultChannel(obj,channel)
+      typecheck(channel,'char');
+      obj.channel = channel;
     end
+    
+    function channel = defaultChannel(obj)
+      channel = obj.channel;
+    end
+    
+    function setupLCMInputs(obj,mdl,subsys,subsys_portnum)
+      typecheck(mdl,'char');
+      typecheck(subsys,'char');
+      uid = datestr(now,'MMSSFFF');
+      if (nargin<4) subsys_portnum=1; end
+      typecheck(subsys_portnum,'double'); 
+      assignin('base',[mdl,'_subscriber',uid],obj);
+      add_block('drake/lcmInput',[mdl,'/in',uid],'channel',['''',obj.channel,''''],'dim',num2str(obj.dim),'lcm_subscriber',[mdl,'_subscriber',uid]);
+      add_line(mdl,['in',uid,'/1'],[subsys,'/',num2str(subsys_portnum)]);
+    end
+    
   end
   
   properties
@@ -115,6 +133,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
     last_x;
     last_t;
     lcmtype_constructor;
+    channel;
   end
   
 end

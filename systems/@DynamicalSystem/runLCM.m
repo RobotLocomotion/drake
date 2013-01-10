@@ -5,8 +5,6 @@ function runLCM(obj,x0,options)
 %  conditions.
 %
 %  @option tspan a 1x2 vector defining the start and end time of the simulation.  default [0,inf]
-%  @option inchannel
-%  @option outchannel
 
 
 if (nargin<2) x0=[]; end
@@ -21,17 +19,17 @@ else options.tspan = [0,inf]; end
 checkDependency('lcm_enabled');
 fin = obj.getInputFrame;
 fout = obj.getOutputFrame;
-if obj.getNumInputs>0
-  typecheck(fin,'LCMSubscriber');  % e.g., an LCMCoordinateFrame
-  if (~isfield(options,'inchannel')) options.inchannel = fin.defaultChannel(); end
-end
-if obj.getNumOutputs>0
-  typecheck(fout,'LCMPublisher');
+if obj.getNumOutputs>0 && typecheck(fout,'LCMPublisher');
   if (~isfield(options,'outchannel')) options.outchannel = fout.defaultChannel(); end
 end
 
-if (obj.getNumInputs>0 && getNumStates(obj)<1) % if there are no state variables, then just trigger on input
+if (obj.getNumInputs>0 && getNumStates(obj)<1 && isa(fin,'LCMSubscriber')) 
+  % if there are no state variables, and the input frame is a simple
+  % (one channel) lcm input, then just trigger on that input
+  
+  if (~isfield(options,'inchannel')) options.inchannel = fin.defaultChannel(); end
   fin = subscribe(fin,options.inchannel);
+  b_lcm_output = isa(fout,'LCMPublisher');
   
   global g_scope_enable; g_scope_enable = true;
   
@@ -45,7 +43,7 @@ if (obj.getNumInputs>0 && getNumStates(obj)<1) % if there are no state variables
     else
       last_t=t; tic;
       y = obj.output(t,[],u);
-      if (getNumOutputs(obj)>0)
+      if (getNumOutputs(obj)>0 && b_lcm_output)
         publish(fout,t,y,options.outchannel);
       end
     end
@@ -62,13 +60,11 @@ else % otherwise set up the LCM blocks and run simulink.
   
   load_system('drake');
   if getNumInputs(obj)>0
-    assignin('base',[mdl,'_subscriber'],fin);
-    add_block('drake/lcmInput',[mdl,'/lcmInput'],'channel',['''',options.inchannel,''''],'dim',num2str(fin.dim),'lcm_subscriber',[mdl,'_subscriber']);
-    add_line(mdl,'lcmInput/1','system/1');
+    setupLCMInputs(fin,mdl,'system',1);
   end
   % note: if obj has inputs, but no lcminput is specified, then it will just have the default input behavior (e.g. zeros)
   
-  if getNumOutputs(obj)>0
+  if getNumOutputs(obj)>0 && typecheck(fout,'LCMPublisher')
     assignin('base',[mdl,'_publisher'],fout);
     add_block('drake/lcmOutput',[mdl,'/lcmOutput'],'channel',['''',options.outchannel,''''],'dim',num2str(fout.dim),'lcm_publisher',[mdl,'_publisher']);
     add_line(mdl,'system/1','lcmOutput/1');
@@ -94,7 +90,7 @@ else % otherwise set up the LCM blocks and run simulink.
       warning('Your model appears to have an initial conditions block in it (e.g., from SimMechanics).  That block will overwrite any initial conditions that you pass in to simulate.');
     end
   end  
-  
+    
   sim(mdl,pstruct);
 end
 

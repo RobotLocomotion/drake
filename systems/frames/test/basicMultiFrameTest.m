@@ -3,7 +3,7 @@ function basicMultiFrameTest
 f1 = CoordinateFrame('test1',3,'a');
 f2 = CoordinateFrame('test2',2,'b');
 
-mf = MultiCoordinateFrame([f1,f2]);
+mf = MultiCoordinateFrame({f1,f2});
 
 p = Point(mf,(1:5)');
 valuecheck(p.a1,1);
