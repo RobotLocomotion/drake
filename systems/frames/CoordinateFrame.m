@@ -325,6 +325,16 @@ classdef CoordinateFrame < handle
       end
     end
     
+    function setupLCMInputs(obj,mdl,subsys,subsys_portnum)
+      typecheck(mdl,'char');
+      typecheck(subsys,'char');
+      uid = datestr(now,'MMSSFFF');
+      if (nargin<4) subsys_portnum=1; end
+      typecheck(subsys_portnum,'double'); 
+      add_block('simulink3/Sources/In1',[mdl,'/in',uid]);
+      add_line(mdl,['in',uid,'/1'],[subsys,'/',num2str(subsys_portnum)]);
+    end
+    
   end
   
   methods (Access=private)

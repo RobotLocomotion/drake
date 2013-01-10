@@ -131,13 +131,27 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
     end
     
+    function setupLCMInputs(obj,mdl,subsys,subsys_portnum)
+      typecheck(mdl,'char');
+      typecheck(subsys,'char');
+      uid = datestr(now,'MMSSFFF');
+      if (nargin<4) subsys_portnum=1; end
+      typecheck(subsys_portnum,'double'); 
+      valuecheck(obj.frame_id,sort(obj.frame_id));  % assume that the simple ordering is ok
+      add_block('simulink3/Signals & Systems/Mux',[mdl,'/mux',uid],'Inputs',num2str(length(obj.frame)));
+      for i=1:length(obj.frame)
+        setupLCMInputs(obj.frame{i},mdl,['mux',uid],i);
+      end
+      add_line(mdl,['mux',uid,'/1'],[subsys,'/',num2str(subsys_portnum)]);
+    end
+    
   end
   
   methods (Access=protected)
     function [A,fr] = extractFrameGraph(obj)
       [A,fr] = extractFrameGraph@CoordinateFrame(obj);
       for i=1:length(obj.frame)
-        [B,frb] = extractFrameGraph(obj.frame(i));
+        [B,frb] = extractFrameGraph(obj.frame{i});
         A = blkdiag(A,B);
         fr = vertcat(fr,frb);
       end

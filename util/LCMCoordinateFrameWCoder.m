@@ -11,6 +11,7 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
       
       obj = obj@CoordinateFrame(name,dim,prefix);
       obj.lcmcoder = lcmcoder;
+      obj.channel = name;
 
       msg = obj.lcmcoder.encode(0,zeros(obj.dim,1));
       obj.monitor = drake.util.MessageMonitor(msg,obj.lcmcoder.timestampName());
@@ -46,15 +47,32 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
       msg = obj.lcmcoder.encode(t,x);
       lc.publish(channel,msg);
     end
-    
-    function str = defaultChannel(obj)
-      str = obj.name;
+
+    function setDefaultChannel(obj,channel)
+      typecheck(channel,'char');
+      obj.channel = channel;
     end
-  
+
+    function channel = defaultChannel(obj)
+      channel = obj.channel;
+    end
+
+    function setupLCMInputs(obj,mdl,subsys,subsys_portnum)
+      typecheck(mdl,'char');
+      typecheck(subsys,'char');
+      uid = datestr(now,'MMSSFFF');
+      if (nargin<4) subsys_portnum=1; end
+      typecheck(subsys_portnum,'double'); 
+      assignin('base',[mdl,'_subscriber',uid],obj);
+      add_block('drake/lcmInput',[mdl,'/in',uid],'channel',['''',obj.channel,''''],'dim',num2str(obj.dim),'lcm_subscriber',[mdl,'_subscriber',uid]);
+      add_line(mdl,['in',uid,'/1'],[subsys,'/',num2str(subsys_portnum)]);
+    end
+    
   end
   
   properties
     lcmcoder;
     monitor;
+    channel;
   end
 end
