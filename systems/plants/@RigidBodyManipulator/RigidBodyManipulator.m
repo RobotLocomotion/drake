@@ -279,10 +279,8 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       if (length(model.loop)>0)
-        warning('Drake:RigidBodyManipulator:UnsupportedLoopJoint','haven''t reimplemented position and velocity constraints yet'); 
+        model = model.setNumPositionConstraints(3*length(model.loop));  % should be 5? for continous joints once they enforce the joint axis constraint.
       end
-%      obj = obj.setNumPositionConstraints(2*length(obj.model.loop)+size([obj.model.body.ground_contact],2));
-%      obj = obj.setNumVelocityConstraints(0);%size([obj.model.body.ground_contact],2));
 
       model.joint_limit_min = [model.body.joint_limit_min]';
       model.joint_limit_max = [model.body.joint_limit_max]';
@@ -482,6 +480,30 @@ classdef RigidBodyManipulator < Manipulator
       % note: intentionally jump straight to second order system (skipping manipulator)... even though it's bad form
       [varargout{:}] = pdcontrol@SecondOrderSystem(sys,Kp,Kd,index);
     end    
+    
+    function [phi,dphi,ddphi] = positionConstraints(obj,q)
+      % so far, only loop constraints are implemented
+      [phi,dphi,ddphi]=loopConstraints(obj,q);
+    end
+    
+    function [phi,dphi,ddphi] = loopConstraints(obj,q)
+      % handle kinematic loops
+      phi=[];dphi=[];ddphi=[];
+
+      kinsol = doKinematics(obj,q,true);
+      
+      for i=1:length(obj.loop)
+        % for each loop, add the constraints that the pt1 on body1 is in
+        % the same location as pt2 on body2
+        
+        [pt1,J1,dJ1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
+        [pt2,J2,dJ2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
+        
+        phi = [phi; pt1-pt2];
+        dphi = [dphi; J1-J2];
+        ddphi = [ddphi; dJ1-dJ2];
+      end
+    end    
    
   end
   
@@ -671,9 +693,39 @@ classdef RigidBodyManipulator < Manipulator
     
     
     function model = parseLoopJoint(model,node,options)
-      error('not implemented yet for 3D');
-    end
-    
+      loop = RigidBodyLoop();
+      loop.name = char(node.getAttribute('name'));
+      loop.name = regexprep(loop.name, '\.', '_', 'preservecase');
+
+      link1Node = node.getElementsByTagName('link1').item(0);
+      link1 = findLink(model,char(link1Node.getAttribute('link')));
+      loop.body1 = link1;
+      loop.pt1 = loop.parseLink(link1Node,options);
+      
+      link2Node = node.getElementsByTagName('link2').item(0);
+      link2 = findLink(model,char(link2Node.getAttribute('link')));
+      loop.body2 = link2;
+      loop.pt2 = loop.parseLink(link2Node,options);
+      
+      axis=[1;0;0];  % default according to URDF documentation
+      axisnode = node.getElementsByTagName('axis').item(0);
+      if ~isempty(axisnode)
+        if axisnode.hasAttribute('xyz')
+          axis = reshape(str2num(char(axisnode.getAttribute('xyz'))),3,1);
+          axis = axis/(norm(axis)+eps); % normalize
+        end
+      end
+      
+      type = char(node.getAttribute('type'));
+      switch (lower(type))
+        case {'continuous'}
+          warning('3D loop joints do not properly enforce the joint axis constraint.  (they perform more like a ball joint).  See bug 1389');
+        otherwise
+          error(['joint type ',type,' not supported (yet?)']);
+      end
+      
+      model.loop=[model.loop,loop];
+    end    
     
   end
   

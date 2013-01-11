@@ -249,49 +249,6 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       v = PlanarRigidBodyVisualizer(obj);
     end
     
-    function phi = positionConstraints(obj,q)
-      % so far, only loop constraints are implemented
-      phi=loopConstraints(obj,q);
-    end
-    
-    function phi = loopConstraints(obj,q)
-      % handle kinematic loops
-      % note: each loop adds two constraints
-      phi=[];
-      jsign = [obj.body(cellfun(@(a)~isempty(a),{obj.body.parent})).jsign]';
-      q = jsign.*q;
-      
-      for i=1:length(obj.loop)
-        % for each loop, add the constraints on T1(q) and T2(q), // todo: finish this
-        % where
-        % T1 is the transformation from the least common ancestor to the
-        % constraint in link1 coordinates
-        % T2 is the transformation from the least common ancester to the
-        % constraint in link2 coordinates
-        loop=obj.loop(i);
-        
-        T1 = loop.T1;
-        b=loop.body1;
-        while (b~=loop.least_common_ancestor)
-          TJ = Tjcalcp(b.jcode,q(b.dofnum));
-          T1 = b.Ttree*TJ*T1;
-          b = b.parent;
-        end
-        T2 = loop.T2;
-        b=loop.body2;
-        while (b~=loop.least_common_ancestor)
-          TJ = Tjcalcp(b.jcode,q(b.dofnum));
-          T2 = b.Ttree*TJ*T2;
-          b = b.parent;
-        end
-        
-        if (loop.jcode==1)  % pin joint adds constraint that the transformations must match in position at the origin
-          phi = [phi; [1,0,0; 0,1,0]*(T1*[0;0;1] - T2*[0;0;1])];
-        else
-          error('not implemented yet');
-        end
-      end
-    end
   end
   
   methods (Access=protected)
@@ -430,16 +387,13 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       link1Node = node.getElementsByTagName('link1').item(0);
       link1 = findLink(model,char(link1Node.getAttribute('link')));
       loop.body1 = link1;
-      loop.T1 = loop.parseLink(link1Node,options);
+      loop.pt1 = loop.parseLink(link1Node,options);
       
       link2Node = node.getElementsByTagName('link2').item(0);
       link2 = findLink(model,char(link2Node.getAttribute('link')));
       loop.body2 = link2;
-      loop.T2 = loop.parseLink(link2Node,options);
+      loop.pt2 = loop.parseLink(link2Node,options);
       
-      %% find the lowest common ancestor
-      loop.least_common_ancestor = leastCommonAncestor(loop.body1,loop.body2);
-
       axis=[1;0;0];  % default according to URDF documentation
       axisnode = node.getElementsByTagName('axis').item(0);
       if ~isempty(axisnode)
@@ -451,26 +405,18 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       
       type = char(node.getAttribute('type'));
       switch (lower(type))
-        case {'revolute','continuous'}
+        case 'continuous'
           loop.jcode=1;          
-          if dot(axis,model.view_axis)<(1-1e-6)
+          if abs(dot(axis,model.view_axis))<(1-1e-6)
             axis
             model.view_axis
-            error('revolute joints must align with the viewing axis');
-            % note: i don't support negative angles here yet (via jsign),
-            % but could
+            error('i do not yet support continuous joints that do not align with the viewing axis');
+            % note: i could potentially support this (and the fixed joint 
+            % type) by creating a fixed joint here, then finding the least 
+            % common ancestor (or actually any non-fixed ancestor) and 
+            % turning that joint into a loop joint. 
           end
 
-        case 'prismatic'
-          if dot(axis,model.x_axis)>(1-1e-6)
-            loop.jcode=2;
-          elseif dot(axis,model.y_axis)>(1-1e-6)
-            loop.jcode=3;
-          else
-            error('axis must be aligned with x or z');
-            % note: i don't support negative angles here yet (via jsign),
-            % but could
-          end
         otherwise
           error(['joint type ',type,' not supported (yet?)']);
       end

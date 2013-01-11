@@ -3,16 +3,15 @@ classdef RigidBodyLoop
   properties
     name
     body1
-    T1
+    pt1
     body2
-    T2
-    least_common_ancestor
+    pt2
   end
 
   methods (Static)
     
     
-    function T = parseLink(node,options)
+    function pt = parseLink(node,options)
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0); 
       if ~isempty(origin)
@@ -24,8 +23,7 @@ classdef RigidBodyLoop
         end
       end
 
-      error('still need to update this for the 3D case');
-      T = [rotmat(theta),xyz;0,0,1];
+      pt = xyz;
     end
     
   end
