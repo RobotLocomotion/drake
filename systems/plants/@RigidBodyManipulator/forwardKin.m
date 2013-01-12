@@ -13,7 +13,7 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_ind,pts)
 %  matrix, with [J1;J2;...;Jm] where Ji = dxidq
 
 typecheck(kinsol,'struct');  % this should catch people who haven't switched to the new interface yet.
-if (isa(body_ind,'RigidBody')) body_ind = find(obj.body_ind==body,1); end
+if (isa(body_ind,'RigidBody')) body_ind = find(obj.body==body_ind,1); end
 
 if (kinsol.mex)
   if ~obj.mex_model_ptr
