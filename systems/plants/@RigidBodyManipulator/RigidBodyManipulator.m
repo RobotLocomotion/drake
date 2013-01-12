@@ -585,7 +585,7 @@ classdef RigidBodyManipulator < Manipulator
         end
         
         % todo: handle loops
-        if (~isempty(model.loop) && any(model.loop.body1 == body || model.loop.body2 == body))
+        if (~isempty(model.loop) && any([model.loop.body1] == body) || any([model.loop.body2] == body))
           error('loop_joints connected to fixed links not implemented yet');
         end
           
