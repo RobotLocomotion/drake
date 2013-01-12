@@ -16,9 +16,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "russt"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Sat Dec 15 17:02:48 2012"
-  RTWModifiedTimeStamp	  277491762
-  ModelVersionFormat	  "1.%<AutoIncrement:21>"
+  LastModifiedDate	  "Fri Jan 11 22:36:31 2013"
+  RTWModifiedTimeStamp	  279844585
+  ModelVersionFormat	  "1.%<AutoIncrement:22>"
   ConfigurationManager	  "None"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -618,7 +618,7 @@ Library {
   }
   System {
     Name		    "drake"
-    Location		    [449, 300, 1029, 560]
+    Location		    [449, 322, 1029, 582]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -632,7 +632,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    "5"
+    SIDHighWatermark	    "6"
     Block {
       BlockType		      S-Function
       Name		      "DrakeSystem"
@@ -704,6 +704,30 @@ Library {
       MaskPortRotate	      "default"
       MaskIconUnits	      "autoscale"
       MaskValueString	      "'channel'|1|0|.01"
+    }
+    Block {
+      BlockType		      M-S-Function
+      Name		      "lcmTimeKeeper"
+      SID		      "6"
+      Ports		      []
+      Position		      [150, 129, 268, 161]
+      FunctionName	      "lcmTimeKeeper"
+      Parameters	      "channel,drake.util.MessageMonitor(lcmtype,timestamp_field),timestamp_scale,sample_time"
+      MaskPromptString	      "Channel Name|LCM Message Instance |Timestamp Field|Timestamp Scale|Sample Time"
+      MaskStyleString	      "edit,edit,edit,edit,edit"
+      MaskVariables	      "channel=@1;lcmtype=@2;timestamp_field=@3;timestamp_scale=@4;sample_time=@5;"
+      MaskTunableValueString  "off,off,off,off,on"
+      MaskCallbackString      "||||"
+      MaskEnableString	      "on,on,on,on,on"
+      MaskVisibilityString    "on,on,on,on,on"
+      MaskToolTipString	      "on,on,on,on,on"
+      MaskDisplay	      "fprintf(channel)"
+      MaskIconFrame	      on
+      MaskIconOpaque	      on
+      MaskIconRotate	      "none"
+      MaskPortRotate	      "default"
+      MaskIconUnits	      "autoscale"
+      MaskValueString	      "'EST_ROBOT_STATE'|drc.robot_state_t|'utime'|1000000|-1"
     }
     Block {
       BlockType		      S-Function

@@ -34,7 +34,7 @@ public class MessageMonitor implements LCMSubscriber
   
   public MessageMonitor(Class<?> lcmtype_class, String timestamp_field)
   {
-    m_last_timestamp = 0;
+    m_last_timestamp = -m_reset_time;
     m_time_of_last_message = System.currentTimeMillis();
     
     boolean hasTimestamp = true;
@@ -88,10 +88,10 @@ public class MessageMonitor implements LCMSubscriber
         m_data = data.clone();
         m_has_new_message = true;
         m_last_timestamp = timestamp;
-	//        System.out.println(timestamp);
+//        System.out.println(timestamp);
       }
       m_time_of_last_message = systime;
-      notify();
+      notifyAll();
     } catch (IOException ex) {
       System.out.println("Exception: " + ex);
     } catch (InstantiationException ex) {
@@ -136,6 +136,25 @@ public class MessageMonitor implements LCMSubscriber
   public synchronized long getLastTimestamp()
   {
     return m_last_timestamp;
+  }
+  
+  public synchronized void waitUntilTimestamp(long timestamp)
+  {
+    try { 
+      while (m_last_timestamp<timestamp)
+        wait();
+    } catch (InterruptedException ex) {}
+  }
+  
+  public synchronized boolean waitUntilTimestamp(long timestamp, long timeout_ms)
+  {
+    if (m_last_timestamp>=timestamp)
+      return true;
+    try {
+      wait(timeout_ms);
+    } catch (InterruptedException ex) {}
+    //    System.out.println(m_last_timestamp-timestamp);
+    return (m_last_timestamp>=timestamp);
   }
   
   public synchronized byte[] getMessage()
