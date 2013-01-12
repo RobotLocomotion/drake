@@ -167,7 +167,7 @@ classdef RigidBodyManipulator < Manipulator
       model.body = [model.body,world];
       
       for i=1:length(rootlink)
-        child = model.body(i);
+        child = model.body(rootlink(i));
 
         body1=newBody(model);
         name = [child.linkname,'_x'];
