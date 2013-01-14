@@ -11,6 +11,7 @@ function model = PlanarNLink(N)
 if (N<1) error('N must be >=1'); end
 
 model = PlanarRigidBodyManipulator();
+model.name = ['Planar',num2str(N),'Link'];
 
 % add the base
 body=PlanarRigidBody();

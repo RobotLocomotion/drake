@@ -17,5 +17,5 @@ c = EndPointControl(sys,r);
 %xtraj = simulate(feedback(sys,c),[0 tf]);
 %v.playback(xtraj);
 
-simulate(cascade(feedback(sys,c),v),[0 15])
+simulate(cascade(feedback(sys,c),v),[0 5])
 

@@ -48,7 +48,7 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function obj = createMexPointer(obj)
-      if (obj.mex_model_ptr) deleteMexPointer(obj); end
+      if (obj.mex_model_ptr) obj=deleteMexPointer(obj); end
       obj.mex_model_ptr = HandCmex(obj);
     end
     

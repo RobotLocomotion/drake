@@ -35,8 +35,14 @@ classdef MultiCoordinateFrame < CoordinateFrame
       obj.frame = coordinate_frames;
       obj.frame_id = [];
       for i=1:length(coordinate_frames)
-        obj.coord_ids{i} = (1:coordinate_frames{i}.dim) + length(obj.frame_id);
-        obj.frame_id = vertcat(obj.frame_id,repmat(i,coordinate_frames{i}.dim,1));
+        d = coordinate_frames{i}.dim;
+        obj.coord_ids{i} = (1:d) + length(obj.frame_id);
+        obj.frame_id = vertcat(obj.frame_id,repmat(i,d,1));
+
+        % add a transform from this multiframe to the child frame
+        T = sparse(1:d,obj.coord_ids{i},1,d,dim);
+        tf = AffineTransform(obj,coordinate_frames{i},T,zeros(d,1));
+        addTransform(obj,tf);
       end
     end
     

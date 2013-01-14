@@ -71,12 +71,14 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         options.x_axis = obj.x_axis;
         options.y_axis = obj.y_axis;
         options.view_axis = obj.view_axis;
+        if ~isfield(options,'namesuffix') options.namesuffix=''; end
+        options.namesuffix = [upper([obj.x_axis_label,obj.y_axis_label]),options.namesuffix];
         obj = parseURDF(obj,urdf_filename,options);
       end
     end
     
     function obj = createMexPointer(obj)
-      if (obj.mex_model_ptr) deleteMexPointer(obj); end
+      if (obj.mex_model_ptr) obj=deleteMexPointer(obj); end
       obj.mex_model_ptr = HandCpmex(obj);
     end
     function obj = deleteMexPointer(obj)

@@ -43,81 +43,81 @@ public:
   int secondDerivativesCached;
 
   Model(int n) {
-    this->NB = n;
-    this->pitch = new int[n];
-    this->parent = new int[n];
-    this->Xtree = new MatrixXd[n];
-    this->I = new MatrixXd[n];
-    this->a_grav = VectorXd::Zero(6);
+    NB = n;
+    pitch = new int[n];
+    parent = new int[n];
+    Xtree = new MatrixXd[n];
+    I = new MatrixXd[n];
+    a_grav = VectorXd::Zero(6);
     
-    this->S = new VectorXd[n];
-    this->Xup = new MatrixXd[n];
-    this->v = new VectorXd[n];
-    this->avp = new VectorXd[n];
-    this->fvp = new VectorXd[n];
-    this->IC = new MatrixXd[n];
+    S = new VectorXd[n];
+    Xup = new MatrixXd[n];
+    v = new VectorXd[n];
+    avp = new VectorXd[n];
+    fvp = new VectorXd[n];
+    IC = new MatrixXd[n];
     
         
     for(int i=0; i < n; i++) {
-     this->Xtree[i] = MatrixXd::Zero(6,6);
-     this->I[i] = MatrixXd::Zero(6,6);
-     this->S[i] = VectorXd::Zero(6);
-     this->Xup[i] = MatrixXd::Zero(6,6);
-     this->v[i] = VectorXd::Zero(6);
-     this->avp[i] = VectorXd::Zero(6);     
-     this->fvp[i] = VectorXd::Zero(6);
-     this->IC[i] = MatrixXd::Zero(6,6);
-    } 
+      Xtree[i] = MatrixXd::Zero(6,6);
+      I[i] = MatrixXd::Zero(6,6);
+      S[i] = VectorXd::Zero(6);
+      Xup[i] = MatrixXd::Zero(6,6);
+      v[i] = VectorXd::Zero(6);
+      avp[i] = VectorXd::Zero(6);
+      fvp[i] = VectorXd::Zero(6);
+      IC[i] = MatrixXd::Zero(6,6);
+    }
     
-    this->H = MatrixXd::Zero(n,n);
-    this->C.resize(n,1); // C gets over-written completely by the algorithm below.
+    H = MatrixXd::Zero(n,n);
+    C.resize(n,1); // C gets over-written completely by the algorithm below.
     
     //Variable allocation for gradient calculations
-    this->dXupdq = new MatrixXd[n];
-    this->dIC = new MatrixXd*[n];
+    dXupdq = new MatrixXd[n];
+    dIC = new MatrixXd*[n];
     for(int i=0; i < n; i++) {
-     this->dIC[i] = new MatrixXd[n]; 
+      dIC[i] = new MatrixXd[n];
 	    for(int j=0; j < n; j++) {
-	    	this->dIC[i][j] = MatrixXd::Zero(6,6);
-		}
+        dIC[i][j] = MatrixXd::Zero(6,6);
+      }
     }
-    this->dH = MatrixXd::Zero(n*n,n);
-    this->dvJdqd_mat = MatrixXd::Zero(6,n);
-//     this->dcross.resize(6,n);
-    this->dC = MatrixXd::Zero(n,3*n);
+    dH = MatrixXd::Zero(n*n,n);
+    dvJdqd_mat = MatrixXd::Zero(6,n);
+//     dcross.resize(6,n);
+    dC = MatrixXd::Zero(n,3*n);
     
-    this->dvdq = new MatrixXd[n];
-    this->dvdqd = new MatrixXd[n];
-    this->davpdq = new MatrixXd[n];
-    this->davpdqd = new MatrixXd[n];
-    this->dfvpdq = new MatrixXd[n];
-    this->dfvpdqd = new MatrixXd[n];
+    dvdq = new MatrixXd[n];
+    dvdqd = new MatrixXd[n];
+    davpdq = new MatrixXd[n];
+    davpdqd = new MatrixXd[n];
+    dfvpdq = new MatrixXd[n];
+    dfvpdqd = new MatrixXd[n];
     
     for(int i=0; i < n; i++) {
-     this->dvdq[i] = MatrixXd::Zero(6,n);
-     this->dvdqd[i] = MatrixXd::Zero(6,n);
-     this->davpdq[i] = MatrixXd::Zero(6,n);
-     this->davpdqd[i] = MatrixXd::Zero(6,n);
-     this->dfvpdq[i] = MatrixXd::Zero(6,n);
-     this->dfvpdqd[i] = MatrixXd::Zero(6,n);
-    }        
+      dvdq[i] = MatrixXd::Zero(6,n);
+      dvdqd[i] = MatrixXd::Zero(6,n);
+      davpdq[i] = MatrixXd::Zero(6,n);
+      davpdqd[i] = MatrixXd::Zero(6,n);
+      dfvpdq[i] = MatrixXd::Zero(6,n);
+      dfvpdqd[i] = MatrixXd::Zero(6,n);
+    }
     //This assumes that there is only one "world" object
-    this->bodies = new RigidBody[n+1];
+    bodies = new RigidBody[n+1];
     
     for(int i=0; i < n+1; i++) {
-      this->bodies[i].setN(n);
+      bodies[i].setN(n);
     }
     
-    this->kinematicsInit = false;
-    this->cached_q = new double[n];
-    this->secondDerivativesCached = 0;
+    kinematicsInit = false;
+    cached_q = new double[n];
+    secondDerivativesCached = 0;
   }
   
   ~Model() {
-    delete[] this->pitch;
-    delete[] this->parent;
-    delete[] this->Xtree;
-    delete[] this->I;
+    delete[] pitch;
+    delete[] parent;
+    delete[] Xtree;
+    delete[] I;
     
     delete[] S;
     delete[] Xup;
@@ -127,6 +127,9 @@ public:
     delete[] IC;
     
     delete[] dXupdq;
+    for (int i=0; i<NB; i++) {
+      delete[] dIC[i];
+    }
     delete[] dIC;
     delete[] dvdq;
     delete[] dvdqd;
@@ -134,5 +137,8 @@ public:
     delete[] davpdqd;
     delete[] dfvpdq;
     delete[] dfvpdqd;
+    
+    delete[] bodies;
+    delete[] cached_q;
   }
 };
