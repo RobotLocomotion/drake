@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['v',['v',['../class_planar_model.html#a4b270833469cbccb9fd6f03f96157c3a',1,'PlanarModel::v()'],['../class_model.html#afee1dae1fdc249638e35f07ed5f498da',1,'Model::v()'],['../class_cart_pole_energy_control.html#a97e00be744fdb766a3434ada3bcc4282',1,'CartPoleEnergyControl::V()'],['../class_pendulum_energy_control.html#a97e00be744fdb766a3434ada3bcc4282',1,'PendulumEnergyControl::V()']]],
+  ['v',['V',['../class_cart_pole_energy_control.html#a97e00be744fdb766a3434ada3bcc4282',1,'CartPoleEnergyControl::V()'],['../class_pendulum_energy_control.html#a97e00be744fdb766a3434ada3bcc4282',1,'PendulumEnergyControl::V()'],['../class_planar_model.html#a4b270833469cbccb9fd6f03f96157c3a',1,'PlanarModel::v()'],['../class_model.html#afee1dae1fdc249638e35f07ed5f498da',1,'Model::v()']]],
   ['val',['val',['../classdrake_1_1util_1_1_coordinate_frame_data.html#a4ac479574a8c9fc104dfa87a848ec64c',1,'drake::util::CoordinateFrameData']]],
   ['valuecheck',['valuecheck',['../valuecheck_8m.html#a9c7c7166eaa22a1dfbe40311f150878d',1,'valuecheck.m']]],
   ['valuecheck_2em',['valuecheck.m',['../valuecheck_8m.html',1,'']]],

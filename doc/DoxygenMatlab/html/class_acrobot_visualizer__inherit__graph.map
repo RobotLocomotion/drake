@@ -1,5 +1,6 @@
 <map id="G" name="G">
-<area shape="rect" id="node2" href="$class_visualizer.html" title="An interface class which draws (e.g., produces a plot) the output of another dynamical system..." alt="" coords="33,155,116,181"/>
-<area shape="rect" id="node4" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="20,80,129,107"/>
-<area shape="rect" id="node6" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="5,5,144,32"/>
+<area shape="rect" id="node2" href="$class_visualizer.html" title="An interface class which draws (e.g., produces a plot) the output of another dynamical system..." alt="" coords="33,229,116,256"/>
+<area shape="rect" id="node4" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="20,155,129,181"/>
+<area shape="rect" id="node6" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="5,80,144,107"/>
+<area shape="rect" id="node8" href="$classhandle.html" title="handle" alt="" coords="42,5,107,32"/>
 </map>

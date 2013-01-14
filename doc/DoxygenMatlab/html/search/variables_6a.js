@@ -10,5 +10,5 @@ var searchData=
   ['joint_5flimit_5fmin',['joint_limit_min',['../class_manipulator.html#abfff645a8ab05cab4e081e298113ba86',1,'Manipulator::joint_limit_min()'],['../class_rigid_body.html#abfff645a8ab05cab4e081e298113ba86',1,'RigidBody::joint_limit_min()']]],
   ['joint_5flimit_5fstate',['joint_limit_state',['../class_hybrid_rigid_body_mode.html#a00767a215467691fd0b247aad58b8e60',1,'HybridRigidBodyMode']]],
   ['jointname',['jointname',['../class_rigid_body.html#ae572ff8498375cba6a7fe25703daadd1',1,'RigidBody']]],
-  ['jsign',['jsign',['../class_planar_rigid_body.html#a687e9a988c602982f10f52eb7d02e2f8',1,'PlanarRigidBody::jsign()'],['../class_planar_rigid_body.html#a535018f7720a1076eac6f52c46929a7f',1,'PlanarRigidBody::jsign()']]]
+  ['jsign',['jsign',['../class_planar_rigid_body.html#a687e9a988c602982f10f52eb7d02e2f8',1,'PlanarRigidBody::jsign()'],['../class_contact_force_torque_sensor.html#a535018f7720a1076eac6f52c46929a7f',1,'ContactForceTorqueSensor::jsign()'],['../class_planar_rigid_body.html#a535018f7720a1076eac6f52c46929a7f',1,'PlanarRigidBody::jsign()']]]
 ];

@@ -119,6 +119,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a26957bf189d1e4f88f543c35f9dc6f48"><td class="memItemLeft" align="right" valign="top">synchronized byte[]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdrake_1_1util_1_1_message_monitor.html#a26957bf189d1e4f88f543c35f9dc6f48">getNextMessage</a> (long timeout_ms)</td></tr>
 <tr class="memitem:a2593d8437f8fb3566fa36a451d0e0622"><td class="memItemLeft" align="right" valign="top">synchronized byte[]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdrake_1_1util_1_1_message_monitor.html#a2593d8437f8fb3566fa36a451d0e0622">getNextMessage</a> ()</td></tr>
 <tr class="memitem:ad3ffd3ffd960a55dd80d8668423c3b0e"><td class="memItemLeft" align="right" valign="top">synchronized long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdrake_1_1util_1_1_message_monitor.html#ad3ffd3ffd960a55dd80d8668423c3b0e">getLastTimestamp</a> ()</td></tr>
+<tr class="memitem:aaebe919ec5f19d330a48890b33221518"><td class="memItemLeft" align="right" valign="top">synchronized void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdrake_1_1util_1_1_message_monitor.html#aaebe919ec5f19d330a48890b33221518">waitUntilTimestamp</a> (long timestamp)</td></tr>
+<tr class="memitem:ab486e1963fa35f7dfbd69c8fdaf92656"><td class="memItemLeft" align="right" valign="top">synchronized boolean&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdrake_1_1util_1_1_message_monitor.html#ab486e1963fa35f7dfbd69c8fdaf92656">waitUntilTimestamp</a> (long timestamp, long timeout_ms)</td></tr>
 <tr class="memitem:ac851c35e34fb3c78b5b98f0cf94f7f1a"><td class="memItemLeft" align="right" valign="top">synchronized byte[]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdrake_1_1util_1_1_message_monitor.html#ac851c35e34fb3c78b5b98f0cf94f7f1a">getMessage</a> ()</td></tr>
 <tr class="inherit_header pub_methods_class_l_c_m_subscriber"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_l_c_m_subscriber')"><img src="closed.png" alt="-"/>&nbsp;Public Member Functions inherited from <a class="el" href="class_l_c_m_subscriber.html">LCMSubscriber</a></td></tr>
 <tr class="memitem:aa6e3a7f60cd5ffe57ac0b24e6a4897fc inherit pub_methods_class_l_c_m_subscriber"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_l_c_m_subscriber.html#aa6e3a7f60cd5ffe57ac0b24e6a4897fc">subscribe</a> (obj, channel)</td></tr>
@@ -403,13 +405,71 @@ Here is the call graph for this function:</div>
 
 </div>
 </div>
+<a class="anchor" id="aaebe919ec5f19d330a48890b33221518"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">synchronized void waitUntilTimestamp </td>
+          <td>(</td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>timestamp</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a class="anchor" id="ab486e1963fa35f7dfbd69c8fdaf92656"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">synchronized boolean waitUntilTimestamp </td>
+          <td>(</td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>timestamp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">long&#160;</td>
+          <td class="paramname"><em>timeout_ms</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
 <li>util/<a class="el" href="_message_monitor_8java.html">MessageMonitor.java</a></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 9 2013 06:03:04 for drake by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Jan 13 2013 23:48:44 for drake by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1.1
 </small></address>

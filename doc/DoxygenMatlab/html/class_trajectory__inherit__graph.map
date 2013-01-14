@@ -1,11 +1,12 @@
 <map id="G" name="G">
-<area shape="rect" id="node7" href="$class_constant_trajectory.html" title="Trivial instance of a trajectory as a constant." alt="" coords="503,5,646,32"/>
-<area shape="rect" id="node9" href="$class_d_t_trajectory.html" title="DTTrajectory" alt="" coords="524,56,625,83"/>
-<area shape="rect" id="node11" href="$class_function_handle_trajectory.html" title="Constructs a proper trajectory object from a function handle." alt="" coords="483,107,666,133"/>
-<area shape="rect" id="node13" href="$class_hybrid_trajectory.html" title="Container class for a set of continuous trajectories punctuated by collision events." alt="" coords="512,157,637,184"/>
-<area shape="rect" id="node15" href="$class_mixed_trajectory.html" title="Creates a trajectory that concatenates dynamics." alt="" coords="514,208,635,235"/>
-<area shape="rect" id="node17" href="$class_o_d_e_sol_trajectory.html" title="ODESolTrajectory" alt="" coords="509,259,641,285"/>
-<area shape="rect" id="node19" href="$class_p_p_trajectory.html" title="PPTrajectory" alt="" coords="525,309,625,336"/>
-<area shape="rect" id="node2" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="192,157,301,184"/>
-<area shape="rect" id="node4" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="5,157,144,184"/>
+<area shape="rect" id="node9" href="$class_constant_trajectory.html" title="Trivial instance of a trajectory as a constant." alt="" coords="618,5,761,32"/>
+<area shape="rect" id="node11" href="$class_d_t_trajectory.html" title="DTTrajectory" alt="" coords="639,56,740,83"/>
+<area shape="rect" id="node13" href="$class_function_handle_trajectory.html" title="Constructs a proper trajectory object from a function handle." alt="" coords="598,107,781,133"/>
+<area shape="rect" id="node15" href="$class_hybrid_trajectory.html" title="Container class for a set of continuous trajectories punctuated by collision events." alt="" coords="627,157,752,184"/>
+<area shape="rect" id="node17" href="$class_mixed_trajectory.html" title="Creates a trajectory that concatenates dynamics." alt="" coords="629,208,750,235"/>
+<area shape="rect" id="node19" href="$class_o_d_e_sol_trajectory.html" title="ODESolTrajectory" alt="" coords="623,259,755,285"/>
+<area shape="rect" id="node21" href="$class_p_p_trajectory.html" title="PPTrajectory" alt="" coords="639,309,739,336"/>
+<area shape="rect" id="node2" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="307,157,416,184"/>
+<area shape="rect" id="node4" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="120,157,259,184"/>
+<area shape="rect" id="node6" href="$classhandle.html" title="handle" alt="" coords="6,157,71,184"/>
 </map>

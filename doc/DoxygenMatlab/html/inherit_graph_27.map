@@ -1,4 +1,3 @@
 <map id="G" name="G">
-<area shape="rect" id="node1" href="$class_trajectory_library.html" title="a collection of trajectory objects (all in the same frame) that can answer basic group queries..." alt="" coords="6,5,133,32"/>
-<area shape="rect" id="node3" href="$class_trajectory_tree.html" title="a trajectory library with a hieararchy" alt="" coords="182,5,293,32"/>
+<area shape="rect" id="node1" href="$class_trig_poly.html" title="support class for parsing functions into their polynomial and trigonemetric components." alt="" coords="6,5,77,32"/>
 </map>

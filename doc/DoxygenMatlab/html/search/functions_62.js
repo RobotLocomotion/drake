@@ -15,6 +15,7 @@ var searchData=
   ['bilinear',['bilinear',['../class_polynomial_system.html#ac703386aae452e8823d4e316ab695052',1,'PolynomialSystem']]],
   ['blah',['blah',['../run_funnel_with_obstacles_8m.html#aecdf88ca8dab42126820851e2588e283',1,'runFunnelWithObstacles.m']]],
   ['bodyattitudecontrol',['bodyAttitudeControl',['../class_state_machine_control.html#a7500a16b69264ca04e4a195a5aeba0a9',1,'StateMachineControl']]],
+  ['bodykin',['bodyKin',['../class_rigid_body_manipulator.html#a1dd49a07222145728bec18c71a4d9709',1,'RigidBodyManipulator']]],
   ['bsxfun',['bsxfun',['../class_taylor_var.html#ac58c4242c6ad78a34970835ea52e0c87',1,'TaylorVar']]],
   ['build_5fpoly',['build_poly',['../class_drake_system.html#adedba023f5a0dfd955ddfbb32e9d4990',1,'DrakeSystem']]],
   ['buildlqrtree',['buildLQRTree',['../class_l_q_r_tree.html#a2c99aab5547fd796b15bae2a2bd5b9a7',1,'LQRTree']]]

@@ -137,89 +137,94 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00042"></a><span class="lineno"><a class="code" href="class_planar_model.html#a7192cea3c761d296f54239e85a9a0e35">   42</a></span>&#160;  <span class="keywordtype">double</span> *<a class="code" href="class_planar_model.html#a7192cea3c761d296f54239e85a9a0e35">cached_q</a>;</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;</div>
 <div class="line"><a name="l00044"></a><span class="lineno"><a class="code" href="class_planar_model.html#aba3e9157c3a660ca7a1f2d2e5e135cd3">   44</a></span>&#160;  <a class="code" href="class_planar_model.html#aba3e9157c3a660ca7a1f2d2e5e135cd3">PlanarModel</a>(<span class="keywordtype">int</span> n) {</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    this-&gt;NB = n;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    this-&gt;jcode = <span class="keyword">new</span> <span class="keywordtype">int</span>[n];</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    this-&gt;parent = <span class="keyword">new</span> <span class="keywordtype">int</span>[n];</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    this-&gt;Xtree = <span class="keyword">new</span> Matrix3d[n];</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    this-&gt;I = <span class="keyword">new</span> Matrix3d[n];</div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    this-&gt;a_grav &lt;&lt; 0.0, 0.0, 0.0;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    NB = n;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    jcode = <span class="keyword">new</span> <span class="keywordtype">int</span>[n];</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    parent = <span class="keyword">new</span> <span class="keywordtype">int</span>[n];</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    Xtree = <span class="keyword">new</span> Matrix3d[n];</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    I = <span class="keyword">new</span> Matrix3d[n];</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    a_grav &lt;&lt; 0.0, 0.0, 0.0;</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    this-&gt;S = <span class="keyword">new</span> Vector3d[n];</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    this-&gt;Xup = <span class="keyword">new</span> Matrix3d[n];</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    this-&gt;v = <span class="keyword">new</span> Vector3d[n];</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    this-&gt;avp = <span class="keyword">new</span> Vector3d[n];</div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    this-&gt;fvp = <span class="keyword">new</span> Vector3d[n];</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    this-&gt;IC = <span class="keyword">new</span> Matrix3d[n];</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    S = <span class="keyword">new</span> Vector3d[n];</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    Xup = <span class="keyword">new</span> Matrix3d[n];</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    v = <span class="keyword">new</span> Vector3d[n];</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    avp = <span class="keyword">new</span> Vector3d[n];</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    fvp = <span class="keyword">new</span> Vector3d[n];</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    IC = <span class="keyword">new</span> Matrix3d[n];</div>
 <div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    </div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    this-&gt;H = MatrixXd::Zero(n,n);</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    this-&gt;C.resize(n,1); <span class="comment">// C gets over-written completely by the algorithm below.</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    H = MatrixXd::Zero(n,n);</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    C.resize(n,1); <span class="comment">// C gets over-written completely by the algorithm below.</span></div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    </div>
 <div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <span class="comment">//Variable allocation for gradient calculations</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    this-&gt;dXupdq = <span class="keyword">new</span> Matrix3d[n];</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    this-&gt;dIC = <span class="keyword">new</span> Matrix3d*[n];</div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    dXupdq = <span class="keyword">new</span> Matrix3d[n];</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    dIC = <span class="keyword">new</span> Matrix3d*[n];</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i=0; i &lt; n; i++) {</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;     this-&gt;dIC[i] = <span class="keyword">new</span> Matrix3d[n]; </div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;      dIC[i] = <span class="keyword">new</span> Matrix3d[n]; </div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    }</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    this-&gt;dH = MatrixXd::Zero(n*n,n);</div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    this-&gt;dvJdqd_mat = MatrixXd::Zero(3,n);</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">//     this-&gt;dcross.resize(3,n);</span></div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    this-&gt;dC = MatrixXd::Zero(n,2*n);</div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    dH = MatrixXd::Zero(n*n,n);</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;    dvJdqd_mat = MatrixXd::Zero(3,n);</div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="comment">//     dcross.resize(3,n);</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    dC = MatrixXd::Zero(n,2*n);</div>
 <div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    </div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    this-&gt;dvdq = <span class="keyword">new</span> MatrixXd[n];</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    this-&gt;dvdqd = <span class="keyword">new</span> MatrixXd[n];</div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    this-&gt;davpdq = <span class="keyword">new</span> MatrixXd[n];</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    this-&gt;davpdqd = <span class="keyword">new</span> MatrixXd[n];</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    this-&gt;dfvpdq = <span class="keyword">new</span> MatrixXd[n];</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    this-&gt;dfvpdqd = <span class="keyword">new</span> MatrixXd[n];</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    dvdq = <span class="keyword">new</span> MatrixXd[n];</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    dvdqd = <span class="keyword">new</span> MatrixXd[n];</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;    davpdq = <span class="keyword">new</span> MatrixXd[n];</div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    davpdqd = <span class="keyword">new</span> MatrixXd[n];</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    dfvpdq = <span class="keyword">new</span> MatrixXd[n];</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    dfvpdqd = <span class="keyword">new</span> MatrixXd[n];</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    </div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i=0; i &lt; n; i++) {</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;     this-&gt;dvdq[i] = MatrixXd::Zero(3,n);</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;     this-&gt;dvdqd[i] = MatrixXd::Zero(3,n);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;     this-&gt;davpdq[i] = MatrixXd::Zero(3,n);</div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;     this-&gt;davpdqd[i] = MatrixXd::Zero(3,n);</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;     this-&gt;dfvpdq[i] = MatrixXd::Zero(3,n);</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;     this-&gt;dfvpdqd[i] = MatrixXd::Zero(3,n);</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;     </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    }        </div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    <span class="comment">//This assumes that there is only one &quot;world&quot; object</span></div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    this-&gt;bodies = <span class="keyword">new</span> <a class="code" href="class_planar_rigid_body.html">PlanarRigidBody</a>[n+1];</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    </div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i=0; i &lt; n+1; i++) {</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;      this-&gt;bodies[i].<a class="code" href="class_planar_rigid_body.html#ab786b9e8435c156af804597e06c7fc90">setN</a>(n);</div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    }</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    </div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    this-&gt;kinematicsInit = <span class="keyword">false</span>;</div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    this-&gt;secondDerivativesCached = 0;</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    this-&gt;cached_q = <span class="keyword">new</span> <span class="keywordtype">double</span>[n];</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;  }</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;  </div>
-<div class="line"><a name="l00101"></a><span class="lineno"><a class="code" href="class_planar_model.html#ad9d05a615590f793eb84304dc0239a66">  101</a></span>&#160;  <a class="code" href="class_planar_model.html#ad9d05a615590f793eb84304dc0239a66">~PlanarModel</a>() {</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keyword">delete</span>[] this-&gt;jcode;</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keyword">delete</span>[] this-&gt;parent;</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keyword">delete</span>[] this-&gt;Xtree;</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keyword">delete</span>[] this-&gt;I;</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    </div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keyword">delete</span>[] S;</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keyword">delete</span>[] Xup;</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keyword">delete</span>[] v;</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keyword">delete</span>[] avp;</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="keyword">delete</span>[] fvp;</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    <span class="keyword">delete</span>[] IC;</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    </div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keyword">delete</span>[] dXupdq;</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    <span class="keyword">delete</span>[] dIC;</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    <span class="keyword">delete</span>[] dvdq;</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keyword">delete</span>[] dvdqd;</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keyword">delete</span>[] davpdq;</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keyword">delete</span>[] davpdqd;</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keyword">delete</span>[] dfvpdq;</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keyword">delete</span>[] dfvpdqd;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;  }</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;};</div>
+<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;     dvdq[i] = MatrixXd::Zero(3,n);</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;     dvdqd[i] = MatrixXd::Zero(3,n);</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;     davpdq[i] = MatrixXd::Zero(3,n);</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;     davpdqd[i] = MatrixXd::Zero(3,n);</div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;     dfvpdq[i] = MatrixXd::Zero(3,n);</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;     dfvpdqd[i] = MatrixXd::Zero(3,n);</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    }        </div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <span class="comment">//This assumes that there is only one &quot;world&quot; object</span></div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;    bodies = <span class="keyword">new</span> <a class="code" href="class_planar_rigid_body.html">PlanarRigidBody</a>[n+1];</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <span class="keywordflow">for</span>(<span class="keywordtype">int</span> i=0; i &lt; n+1; i++) {</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;      bodies[i].<a class="code" href="class_planar_rigid_body.html#ab786b9e8435c156af804597e06c7fc90">setN</a>(n);</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    }</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    kinematicsInit = <span class="keyword">false</span>;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;    secondDerivativesCached = 0;</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;    cached_q = <span class="keyword">new</span> <span class="keywordtype">double</span>[n];</div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;  }</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;  </div>
+<div class="line"><a name="l00100"></a><span class="lineno"><a class="code" href="class_planar_model.html#ad9d05a615590f793eb84304dc0239a66">  100</a></span>&#160;  <a class="code" href="class_planar_model.html#ad9d05a615590f793eb84304dc0239a66">~PlanarModel</a>() {</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;    <span class="keyword">delete</span>[] jcode;</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;    <span class="keyword">delete</span>[] parent;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;    <span class="keyword">delete</span>[] Xtree;</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;    <span class="keyword">delete</span>[] I;</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keyword">delete</span>[] S;</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;    <span class="keyword">delete</span>[] Xup;</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;    <span class="keyword">delete</span>[] v;</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;    <span class="keyword">delete</span>[] avp;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;    <span class="keyword">delete</span>[] fvp;</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;    <span class="keyword">delete</span>[] IC;</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    </div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    <span class="keyword">delete</span>[] dXupdq;</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i=0; i&lt;NB; i++) {</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;      <span class="keyword">delete</span>[] dIC[i]; </div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;    }</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;    <span class="keyword">delete</span>[] dIC;</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;    <span class="keyword">delete</span>[] dvdq;</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;    <span class="keyword">delete</span>[] dvdqd;</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;    <span class="keyword">delete</span>[] davpdq;</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keyword">delete</span>[] davpdqd;</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keyword">delete</span>[] dfvpdq;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;    <span class="keyword">delete</span>[] dfvpdqd;</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;    </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;    <span class="keyword">delete</span>[] bodies;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;    <span class="keyword">delete</span>[] cached_q;</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;  }</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;};</div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 9 2013 06:03:01 for drake by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Jan 13 2013 23:48:41 for drake by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1.1
 </small></address>

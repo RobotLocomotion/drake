@@ -113,15 +113,15 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="line"><a name="l00018"></a><span class="lineno"><a class="code" href="class_planar_rigid_body.html#a4dafd66c26e6b8acf64d2feba6141bcc">   18</a></span>&#160;  <span class="keywordtype">int</span> <a class="code" href="class_planar_rigid_body.html#a4dafd66c26e6b8acf64d2feba6141bcc">parent</a>;</div>
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160;</div>
 <div class="line"><a name="l00020"></a><span class="lineno"><a class="code" href="class_planar_rigid_body.html#ac4b4beb8f58f233c73fb6b9316722108">   20</a></span>&#160;  <a class="code" href="class_planar_rigid_body.html#ac4b4beb8f58f233c73fb6b9316722108">PlanarRigidBody</a>() {</div>
-<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    this-&gt;nq = 0;</div>
+<div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;    nq = 0;</div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;  }</div>
 <div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;  </div>
 <div class="line"><a name="l00024"></a><span class="lineno"><a class="code" href="class_planar_rigid_body.html#ab786b9e8435c156af804597e06c7fc90">   24</a></span>&#160;  <span class="keywordtype">void</span> <a class="code" href="class_planar_rigid_body.html#ab786b9e8435c156af804597e06c7fc90">setN</a>(<span class="keywordtype">int</span> n) {    </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    this-&gt;nq = n;</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    this-&gt;T = Matrix3d::Zero();</div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    this-&gt;dTdq = MatrixXd::Zero(3*n,3);</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    this-&gt;ddTdqdq = MatrixXd::Zero(3*n*n,3);</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    this-&gt;Ttree = Matrix3d::Zero();</div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;    nq = n;</div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;    T = Matrix3d::Zero();</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;    dTdq = MatrixXd::Zero(3*n,3);</div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;    ddTdqdq = MatrixXd::Zero(3*n*n,3);</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;    Ttree = Matrix3d::Zero();</div>
 <div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;  }</div>
 <div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;  </div>
 <div class="line"><a name="l00032"></a><span class="lineno"><a class="code" href="class_planar_rigid_body.html#a4335685fac461d7bd107cd4d717c26d3">   32</a></span>&#160;  <a class="code" href="class_planar_rigid_body.html#a4335685fac461d7bd107cd4d717c26d3">~PlanarRigidBody</a>() {</div>
@@ -132,7 +132,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 9 2013 06:03:01 for drake by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Jan 13 2013 23:48:41 for drake by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1.1
 </small></address>

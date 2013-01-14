@@ -1,3 +1,4 @@
 <map id="G" name="G">
-<area shape="rect" id="node1" href="$class_rigid_body_actuator.html" title="RigidBodyActuator" alt="" coords="5,5,144,32"/>
+<area shape="rect" id="node1" href="$class_rigid_body_loop.html" title="RigidBodyLoop" alt="" coords="5,5,120,32"/>
+<area shape="rect" id="node3" href="$class_planar_rigid_body_loop.html" title="PlanarRigidBodyLoop" alt="" coords="168,5,323,32"/>
 </map>

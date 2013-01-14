@@ -88,7 +88,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
-<a href="#pub-attribs">Public Attributes</a>  </div>
+<a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a>  </div>
   <div class="headertitle">
 <div class="title">MultiCoordinateFrame Class Reference</div>  </div>
 </div><!--header-->
@@ -109,7 +110,15 @@ Inheritance diagram for MultiCoordinateFrame:</div>
 <tr class="heading"><td colspan="2"><h2><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a62eab0ce85d5968de718f08ccad0ce2c"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_multi_coordinate_frame.html#a62eab0ce85d5968de718f08ccad0ce2c">MultiCoordinateFrame</a> (coordinate_frames)</td></tr>
-<tr class="memdesc:a62eab0ce85d5968de718f08ccad0ce2c"><td class="mdescLeft">&#160;</td><td class="mdescRight">(from the list above) associated with that coordinate  <a href="#a62eab0ce85d5968de718f08ccad0ce2c"></a><br/></td></tr>
+<tr class="memitem:a6c482217b23085e91ca4e61881ed13ce"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_multi_coordinate_frame.html#a6c482217b23085e91ca4e61881ed13ce">findChildTransform</a> (obj, target, options)</td></tr>
+<tr class="memdesc:a6c482217b23085e91ca4e61881ed13ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">note: if target is one of the children, then this will return an empty tf but an fid&gt;0  <a href="#a6c482217b23085e91ca4e61881ed13ce"></a><br/></td></tr>
+<tr class="memitem:af90bf3fe37741dbeca10a04a3520b30a"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_multi_coordinate_frame.html#af90bf3fe37741dbeca10a04a3520b30a">findChildReverseTransform</a> (obj, origin, options)</td></tr>
+<tr class="memdesc:af90bf3fe37741dbeca10a04a3520b30a"><td class="mdescLeft">&#160;</td><td class="mdescRight">finds a transform from origin to one of my children note: if origin is one of the children, then this will return an empty tf but an fid&gt;0  <a href="#af90bf3fe37741dbeca10a04a3520b30a"></a><br/></td></tr>
+<tr class="memitem:ac45d1be1f6db95bf9bbea857d413a436"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_multi_coordinate_frame.html#ac45d1be1f6db95bf9bbea857d413a436">subFrameByFrameID</a> (obj, frame_ids)</td></tr>
+<tr class="memdesc:ac45d1be1f6db95bf9bbea857d413a436"><td class="mdescLeft">&#160;</td><td class="mdescRight">comparable to subFrame, but at the frame ID  <a href="#ac45d1be1f6db95bf9bbea857d413a436"></a><br/></td></tr>
+<tr class="memitem:ad1549d7a871a26a9b132d25c57f8d169"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_multi_coordinate_frame.html#ad1549d7a871a26a9b132d25c57f8d169">splitCoordinates</a> (obj, vector_vals)</td></tr>
+<tr class="memitem:a0bac9dc47a68966214d091f743edb49c"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_multi_coordinate_frame.html#a0bac9dc47a68966214d091f743edb49c">mergeCoordinates</a> (obj, cell_vals)</td></tr>
+<tr class="memitem:af003220f40fc5a82ad89f01aaf976779"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_multi_coordinate_frame.html#af003220f40fc5a82ad89f01aaf976779">setupLCMInputs</a> (obj, mdl, subsys, subsys_portnum)</td></tr>
 <tr class="inherit_header pub_methods_class_coordinate_frame"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_coordinate_frame')"><img src="closed.png" alt="-"/>&nbsp;Public Member Functions inherited from <a class="el" href="class_coordinate_frame.html">CoordinateFrame</a></td></tr>
 <tr class="memitem:a6549c97bce2d267f5b81d869456bdcf2 inherit pub_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#a6549c97bce2d267f5b81d869456bdcf2">CoordinateFrame</a> (<a class="el" href="class_coordinate_frame.html#a73d044705182dce0379a1c211dca6ec6">name</a>, <a class="el" href="class_coordinate_frame.html#a03887676560c669a8989647095353f32">dim</a>, <a class="el" href="class_coordinate_frame.html#a88e9268257fbedaae9be2c6a38ad9163">prefix</a>, <a class="el" href="class_coordinate_frame.html#aed9f14425128f3557407154d9aab9dc0">coordinates</a>)</td></tr>
 <tr class="memdesc:a6549c97bce2d267f5b81d869456bdcf2 inherit pub_methods_class_coordinate_frame"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a new coordinate frame.  <a href="#a6549c97bce2d267f5b81d869456bdcf2"></a><br/></td></tr>
@@ -122,7 +131,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ac1fdffc87e6af06f0fda9dda56a4d6d1 inherit pub_methods_class_coordinate_frame"><td class="mdescLeft">&#160;</td><td class="mdescRight">adds a transform from fr to fr2 which copies over the dimensions with matching coordinate names, and sets the remaining elements of fr2 to their default values.  <a href="#ac1fdffc87e6af06f0fda9dda56a4d6d1"></a><br/></td></tr>
 <tr class="memitem:ab9a6097d088a13863385ed841881c6dd inherit pub_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#ab9a6097d088a13863385ed841881c6dd">drawFrameGraph</a> (obj)</td></tr>
 <tr class="memdesc:ab9a6097d088a13863385ed841881c6dd inherit pub_methods_class_coordinate_frame"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calls graphviz to visualize this frame plus all other frames that are reachable by some (potentially multi-hop) transform.  <a href="#ab9a6097d088a13863385ed841881c6dd"></a><br/></td></tr>
-<tr class="memitem:acc5bc0cbdc600aa9590f36e2150508f6 inherit pub_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#acc5bc0cbdc600aa9590f36e2150508f6">recurseTFs</a> (obj, A, fr)</td></tr>
 <tr class="memitem:a9bd7dd7eff247c78acb66b16a1795c69 inherit pub_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#a9bd7dd7eff247c78acb66b16a1795c69">findTransform</a> (obj, target, options)</td></tr>
 <tr class="memdesc:a9bd7dd7eff247c78acb66b16a1795c69 inherit pub_methods_class_coordinate_frame"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs a simple breadth-first search of all available multi-hop transforms for a transformation from the current frame to the target frame.  <a href="#a9bd7dd7eff247c78acb66b16a1795c69"></a><br/></td></tr>
 <tr class="memitem:a1f41ebfbb4722c8ee68a530df7eb5ccd inherit pub_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#a1f41ebfbb4722c8ee68a530df7eb5ccd">setCoordinateNames</a> (obj, cnames)</td></tr>
@@ -142,6 +150,14 @@ Public Attributes</h2></td></tr>
 <tr class="memdesc:aa8afcf4ef62b4fe93c9dd2276c6c2534"><td class="mdescLeft">&#160;</td><td class="mdescRight">a list of <a class="el" href="class_coordinate_frame.html" title="Every input, state, and output in a DynamicalSystem has a coordinate frame attached to it...">CoordinateFrame</a> objects  <a href="#aa8afcf4ef62b4fe93c9dd2276c6c2534"></a><br/></td></tr>
 <tr class="memitem:a6786d7917e6677bbaa9ac3a1e779c85e"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_multi_coordinate_frame.html#a6786d7917e6677bbaa9ac3a1e779c85e">frame_id</a></td></tr>
 <tr class="memdesc:a6786d7917e6677bbaa9ac3a1e779c85e"><td class="mdescLeft">&#160;</td><td class="mdescRight">for each coordinate, an integer index into the frame  <a href="#a6786d7917e6677bbaa9ac3a1e779c85e"></a><br/></td></tr>
+<tr class="memitem:aba8d53a83490536e0db7d5fb16a8eda0"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_multi_coordinate_frame.html#aba8d53a83490536e0db7d5fb16a8eda0">coord_ids</a></td></tr>
+<tr class="memdesc:aba8d53a83490536e0db7d5fb16a8eda0"><td class="mdescLeft">&#160;</td><td class="mdescRight">(from the list above) associated with that coordinate  <a href="#aba8d53a83490536e0db7d5fb16a8eda0"></a><br/></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2><a name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:aff082661bae0d33e08b9687da99208f3"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_multi_coordinate_frame.html#aff082661bae0d33e08b9687da99208f3">extractFrameGraph</a> (obj)</td></tr>
+<tr class="inherit_header pro_methods_class_coordinate_frame"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_class_coordinate_frame')"><img src="closed.png" alt="-"/>&nbsp;Protected Member Functions inherited from <a class="el" href="class_coordinate_frame.html">CoordinateFrame</a></td></tr>
+<tr class="memitem:acc5bc0cbdc600aa9590f36e2150508f6 inherit pro_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#acc5bc0cbdc600aa9590f36e2150508f6">recurseTFs</a> (obj, A, fr)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2><a name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -150,7 +166,8 @@ Additional Inherited Members</h2></td></tr>
 </table>
 <hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
 <div class="textblock"><p>Makes a mux'd coordinate frame out of a list of other frames. </p>
-<p>This is the means by which drake supports (the simplest form of) multi-input and multi-output systems. </p>
+<p>This is the means by which drake supports (the simplest form of) multi-input and multi-output systems.</p>
+<p>Note that, although the coordinate names (and polynomial variables) are initialized to match the name of the sub coordinate frames, there is no contract guaranteeing that they will continue to match after subsequent coordinate renamings for the multi-frame or the sub-frames. </p>
 </div><hr/><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" id="a62eab0ce85d5968de718f08ccad0ce2c"></a>
 <div class="memitem">
@@ -165,8 +182,6 @@ Additional Inherited Members</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>(from the list above) associated with that coordinate </p>
 <dl class="retval"><dt>Return values:</dt><dd>
   <table class="retval">
     <tr><td class="paramname">obj</td><td></td></tr>
@@ -176,7 +191,277 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
+<hr/><h2>Member Function Documentation</h2>
+<a class="anchor" id="aff082661bae0d33e08b9687da99208f3"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">function extractFrameGraph </td>
+          <td>(</td>
+          <td class="paramtype">obj&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">A</td><td></td></tr>
+    <tr><td class="paramname">fr</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented from <a class="el" href="class_coordinate_frame.html#aff082661bae0d33e08b9687da99208f3">CoordinateFrame</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="af90bf3fe37741dbeca10a04a3520b30a"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function findChildReverseTransform </td>
+          <td>(</td>
+          <td class="paramtype">obj&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">origin&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">options&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>finds a transform from origin to one of my children note: if origin is one of the children, then this will return an empty tf but an fid&gt;0 </p>
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">tf</td><td></td></tr>
+    <tr><td class="paramname">fid</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="a6c482217b23085e91ca4e61881ed13ce"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function findChildTransform </td>
+          <td>(</td>
+          <td class="paramtype">obj&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">target&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">options&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>note: if target is one of the children, then this will return an empty tf but an fid&gt;0 </p>
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">tf</td><td></td></tr>
+    <tr><td class="paramname">fid</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="a0bac9dc47a68966214d091f743edb49c"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function mergeCoordinates </td>
+          <td>(</td>
+          <td class="paramtype">obj&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">cell_vals&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">vector_vals</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="af003220f40fc5a82ad89f01aaf976779"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function setupLCMInputs </td>
+          <td>(</td>
+          <td class="paramtype">obj&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">mdl&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">subsys&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">subsys_portnum&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="class_coordinate_frame.html#af003220f40fc5a82ad89f01aaf976779">CoordinateFrame</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="ad1549d7a871a26a9b132d25c57f8d169"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function splitCoordinates </td>
+          <td>(</td>
+          <td class="paramtype">obj&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">vector_vals&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">cell_vals</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a class="anchor" id="ac45d1be1f6db95bf9bbea857d413a436"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function subFrameByFrameID </td>
+          <td>(</td>
+          <td class="paramtype">obj&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">frame_ids&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>comparable to subFrame, but at the frame ID </p>
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">fr</td><td></td></tr>
+    <tr><td class="paramname">indices</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <hr/><h2>Member Data Documentation</h2>
+<a class="anchor" id="aba8d53a83490536e0db7d5fb16a8eda0"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Property coord_ids</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>(from the list above) associated with that coordinate </p>
+<p>for each frame, a list of associate coordinates </p>
+
+</div>
+</div>
 <a class="anchor" id="aa8afcf4ef62b4fe93c9dd2276c6c2534"></a>
 <div class="memitem">
 <div class="memproto">
@@ -211,7 +496,7 @@ Additional Inherited Members</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 9 2013 06:03:03 for drake by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Jan 13 2013 23:48:43 for drake by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1.1
 </small></address>
