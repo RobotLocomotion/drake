@@ -1,4 +1,4 @@
-classdef DynamicalSystem
+classdef DynamicalSystem < handle
 % An interface class for a state-space dynamical system 
 %  with a single (vector) input u, a single (vector) output y, and a single (vector) state x composed of a combination of continuous time and discrete time variables
                                                    
