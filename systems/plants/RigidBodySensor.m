@@ -13,5 +13,12 @@ classdef RigidBodySensor
     fr = getFrame(obj);
   end
   
+  methods 
+    function obj = compile(obj);
+      % intentionally do nothing here, but can be overloaded if this
+      % functionality is needed
+    end
+  end
+  
 end
     

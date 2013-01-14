@@ -251,6 +251,22 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
     
   end
   
+  methods (Static)
+    function t=surfaceTangents(normal)
+      %% compute a tangent vector, t
+      % for each n, it looks like:
+      % if (abs(normal(2))>abs(normal(1))) t = [1,-n(1)/n(2)];
+      % else t = [-n(2)/n(1),1]; end
+      % and the vectorized form is:
+      t=normal; % initialize size
+      ind=abs(normal(2,:))>abs(normal(1,:));
+      t(:,ind) = [ones(1,sum(ind));-normal(1,ind)./normal(2,ind)];
+      ind=~ind;
+      t(:,ind) = [-normal(2,ind)./normal(1,ind); ones(1,sum(ind))];
+      t = t./repmat(sqrt(sum(t.^2,1)),2,1); % normalize
+    end
+  end
+  
   methods (Access=protected)
     
     function model = extractFeatherstone(model)

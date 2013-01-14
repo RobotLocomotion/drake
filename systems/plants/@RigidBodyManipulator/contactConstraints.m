@@ -45,22 +45,6 @@ relpos = contact_pos - pos;
 s = sign(sum(relpos.*normal,1));
 phi = (sqrt(sum(relpos.^2,1)).*s)';
 if (nargout>1)
-  
-  %% compute tangent vectors, according to the description in the last paragraph of Stewart96, p.2678
-  t1=normal; % initialize size
-  % handle the normal = [0;0;1] case
-  ind=(1-normal(3,:))<eps;  % since it's a unit normal, i can just check the z component
-  t1(:,ind) = repmat([1;0;0],1,sum(ind));
-  ind=~ind;
-  % now the general case
-  t1(:,ind) = cross(normal(:,ind),repmat([0;0;1],1,sum(ind)));
-  t1 = t1./repmat(sqrt(sum(t1.^2,1)),3,1); % normalize
-  
-  t2 = cross(t1,normal);
-  
-  m = 4;  % must be an even number
-  theta = (0:7)*2*pi/m;
-  
   % recall that dphidx = normal'; n = dphidq = dphidx * dxdq
   % for a single contact, we'd have
   % n = normal'*J;
@@ -68,18 +52,14 @@ if (nargout>1)
   %  [normal(:,1)' 0 0 0 0; 0 normal(:,2)' 0 0 0; 0 0 normal(:,3') 0 0],
   % etc, where each 0 is a 1x3 block zero, then multiply by J
   
+  d = obj.surfaceTangents(normal);
+  m=length(d);
+  
   n = sparse(repmat(1:obj.num_contacts,3,1),1:3*obj.num_contacts,normal(:))*J;
-  for k=1:m/2
-    t=cos(theta(k))*t1 + sin(theta(k))*t2;
-    D{k} = sparse(repmat(1:obj.num_contacts,3,1),1:3*obj.num_contacts,t(:))*J;
+  for k=1:m
+    D{k} = sparse(repmat(1:obj.num_contacts,3,1),1:3*obj.num_contacts,d{k}(:))*J;
     if (nargout>4)
       dD{k} = reshape(sparse(repmat(1:obj.num_contacts,3,1),1:3*obj.num_contacts,t(:))*dJ,numel(n),[]);
-    end
-  end
-  for k=(m/2+1):m
-    D{k} = -D{k-m/2};
-    if (nargout>4)
-      dD{k} = -dD{k-m/2};
     end
   end
   
