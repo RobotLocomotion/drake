@@ -30,7 +30,10 @@ classdef MIMODrakeSystem < DrakeSystem
     function zcs = mimoZeroCrossings(obj,t,x,varargin)
       error('Drake:MIMODrakeSystem:AbstractMethod','MIMO systems with zero crossings must implement the zeroCrossings method'); 
     end
-    
+  end
+  
+  methods (Sealed=true) % don't allow people to overload these... they should overload the mimo versions (above) instead.
+
     % todo: pass gradients through, etc.
     function xcdot = dynamics(obj,t,x,u)
       if isa(obj.getInputFrame(),'MultiCoordinateFrame')
