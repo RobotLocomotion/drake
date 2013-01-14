@@ -28,7 +28,7 @@ var searchData=
   ['addrivecurrenth',['ADDriveCurrentH',['../struct_f_t___p_r_o_g_r_a_m___d_a_t_a.html#ab266392d36e026209a8e2e9c0b57ff87',1,'FT_PROGRAM_DATA']]],
   ['addtest',['addTest',['../unit_test_8m.html#a1c6c0f999dd4b2252bba20b9a560ed0f',1,'unitTest.m']]],
   ['addtodo',['addTodo',['../classv_cal_writer.html#ad60423643faa3518b3e6a2cad4bbd6f6',1,'vCalWriter']]],
-  ['addtrajectory',['addTrajectory',['../class_l_q_r_tree.html#a38948ad0b4d75cc776b94e760c65a648',1,'LQRTree::addTrajectory()'],['../class_trajectory_library.html#ac3db0dd813432046b6fd7933085d7498',1,'TrajectoryLibrary::addTrajectory()'],['../class_trajectory_tree.html#a326e70952603cac8ea2a1b5799034255',1,'TrajectoryTree::addTrajectory()']]],
+  ['addtrajectory',['addTrajectory',['../class_l_q_r_tree.html#a38948ad0b4d75cc776b94e760c65a648',1,'LQRTree']]],
   ['addtransform',['addTransform',['../class_coordinate_frame.html#a02caeaa3588991675b13e3b243bb531a',1,'CoordinateFrame']]],
   ['addtransition',['addTransition',['../class_hybrid_drake_system.html#aa8faf11dab2b2fab3f3f0163bb4b6aea',1,'HybridDrakeSystem']]],
   ['addxyaxis',['addXYAxis',['../add_x_y_axis_8m.html#a90df6b1e48da092c70920a011a3ea887',1,'addXYAxis.m']]],

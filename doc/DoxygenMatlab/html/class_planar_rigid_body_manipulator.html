@@ -88,6 +88,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a>  </div>
   <div class="headertitle">
@@ -102,7 +103,7 @@ Inheritance diagram for PlanarRigidBodyManipulator:</div>
 <div class="dyncontent">
 <div class="center"><img src="class_planar_rigid_body_manipulator__inherit__graph.png" border="0" usemap="#_planar_rigid_body_manipulator_inherit__map" alt="Inheritance graph"/></div>
 <map name="_planar_rigid_body_manipulator_inherit__map" id="_planar_rigid_body_manipulator_inherit__map">
-<area shape="rect" id="node13" href="class_hybrid_rigid_body_mode.html" title="HybridRigidBodyMode" alt="" coords="24,453,184,480"/><area shape="rect" id="node2" href="class_rigid_body_manipulator.html" title="This class wraps the spatial vector library (v1) provided by Roy Featherstone on his website: http://..." alt="" coords="25,304,183,331"/><area shape="rect" id="node4" href="class_manipulator.html" title="An abstract class that wraps H(q)qddot + C(q,qdot,f_ext) = B(q)u." alt="" coords="55,229,152,256"/><area shape="rect" id="node6" href="class_second_order_system.html" title="An abstract class that wraps qddot = f(t,q,qdot,u)." alt="" coords="27,155,181,181"/><area shape="rect" id="node8" href="class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="49,80,159,107"/><area shape="rect" id="node10" href="class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="35,5,173,32"/></map>
+<area shape="rect" id="node15" href="class_hybrid_rigid_body_mode.html" title="HybridRigidBodyMode" alt="" coords="24,528,184,555"/><area shape="rect" id="node2" href="class_rigid_body_manipulator.html" title="This class wraps the spatial vector library (v1) provided by Roy Featherstone on his website: http://..." alt="" coords="25,379,183,405"/><area shape="rect" id="node4" href="class_manipulator.html" title="An abstract class that wraps H(q)qddot + C(q,qdot,f_ext) = B(q)u." alt="" coords="55,304,152,331"/><area shape="rect" id="node6" href="class_second_order_system.html" title="An abstract class that wraps qddot = f(t,q,qdot,u)." alt="" coords="27,229,181,256"/><area shape="rect" id="node8" href="class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="49,155,159,181"/><area shape="rect" id="node10" href="class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="35,80,173,107"/><area shape="rect" id="node12" href="classhandle.html" title="handle" alt="" coords="71,5,136,32"/></map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 
 <p><a href="class_planar_rigid_body_manipulator-members.html">List of all members.</a></p>
@@ -118,13 +119,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a991de062ecb2ebfe7868a8ac326aaaa5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#a991de062ecb2ebfe7868a8ac326aaaa5">compile</a> (model)</td></tr>
 <tr class="memitem:a6c65e44038266c5c48603886db3c3bec"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#a6c65e44038266c5c48603886db3c3bec">newBody</a> (model)</td></tr>
 <tr class="memitem:a5533fcc529a6eb98bd7a7785beecb8fd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#a5533fcc529a6eb98bd7a7785beecb8fd">constructVisualizer</a> (obj)</td></tr>
-<tr class="memitem:afc161d9f13c9afc6c41a262926eb8a93"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#afc161d9f13c9afc6c41a262926eb8a93">positionConstraints</a> (obj, q)</td></tr>
-<tr class="memdesc:afc161d9f13c9afc6c41a262926eb8a93"><td class="mdescLeft">&#160;</td><td class="mdescRight">so far, only loop constraints are implemented  <a href="#afc161d9f13c9afc6c41a262926eb8a93"></a><br/></td></tr>
-<tr class="memitem:a451b5b332732767f43e521a44bb8fa65"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#a451b5b332732767f43e521a44bb8fa65">loopConstraints</a> (obj, q)</td></tr>
-<tr class="memdesc:a451b5b332732767f43e521a44bb8fa65"><td class="mdescLeft">&#160;</td><td class="mdescRight">handle kinematic loops note: each loop adds two constraints  <a href="#a451b5b332732767f43e521a44bb8fa65"></a><br/></td></tr>
 <tr class="memitem:a4d645060cf8ca7e4fd2ae6f76bbf6ba2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#a4d645060cf8ca7e4fd2ae6f76bbf6ba2">collisionDetect</a> (obj, contact_pos)</td></tr>
 <tr class="memdesc:a4d645060cf8ca7e4fd2ae6f76bbf6ba2"><td class="mdescLeft">&#160;</td><td class="mdescRight">for each column of contact_pos, find the closest point in the world geometry, and it's (absolute) position and velocity, (unit) surface normal, and coefficent of friction.  <a href="#a4d645060cf8ca7e4fd2ae6f76bbf6ba2"></a><br/></td></tr>
 <tr class="memitem:af70f5dc7ea560cb932f27ed4ac41b6e9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#af70f5dc7ea560cb932f27ed4ac41b6e9">contactConstraints</a> (obj, q, qd)</td></tr>
+<tr class="memitem:abecbeedab26a4666ed92cd194762c81f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#abecbeedab26a4666ed92cd194762c81f">contactPositions</a> (obj, q)</td></tr>
 <tr class="memitem:a0669b67f93437fc501c8b45010e641cb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#a0669b67f93437fc501c8b45010e641cb">doKinematics</a> (model, q, b_compute_second_derivatives, use_mex)</td></tr>
 <tr class="memdesc:a0669b67f93437fc501c8b45010e641cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the (forward) kinematics of the manipulator.  <a href="#a0669b67f93437fc501c8b45010e641cb"></a><br/></td></tr>
 <tr class="memitem:ae13c791587d550dccf6833dc1111f81e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#ae13c791587d550dccf6833dc1111f81e">forwardKin</a> (obj, kinsol, body_ind, pts)</td></tr>
@@ -141,6 +139,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a603dc7a692d2dfdbd5d394a288e2e784"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the implicit dynamics for trajectory optimization.  <a href="#a603dc7a692d2dfdbd5d394a288e2e784"></a><br/></td></tr>
 <tr class="inherit_header pub_methods_class_rigid_body_manipulator"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_rigid_body_manipulator')"><img src="closed.png" alt="-"/>&nbsp;Public Member Functions inherited from <a class="el" href="class_rigid_body_manipulator.html">RigidBodyManipulator</a></td></tr>
 <tr class="memitem:ac43f9c09946a7dc7d4c6aa7c35ed1b55 inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#ac43f9c09946a7dc7d4c6aa7c35ed1b55">RigidBodyManipulator</a> (urdf_filename, options)</td></tr>
+<tr class="memitem:a08bd8cfbf5b377e1832b942859f6875f inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a08bd8cfbf5b377e1832b942859f6875f">output</a> (obj, t, x, u)</td></tr>
 <tr class="memitem:aa78ac6463385f151d5e248071590018d inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#aa78ac6463385f151d5e248071590018d">kinTest</a> (m, q)</td></tr>
 <tr class="memdesc:aa78ac6463385f151d5e248071590018d inherit pub_methods_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">test for kinematic gradients  <a href="#aa78ac6463385f151d5e248071590018d"></a><br/></td></tr>
 <tr class="memitem:a6d302b74c6ad00d9fd69ae1399cda4e4 inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a6d302b74c6ad00d9fd69ae1399cda4e4">addJoint</a> (model, <a class="el" href="class_rigid_body_manipulator.html#a73d044705182dce0379a1c211dca6ec6">name</a>, type, parent, child, xyz, rpy, axis, damping, limits)</td></tr>
@@ -153,9 +152,16 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a185fc924d7eaa0caebc56ad903cd6d9a inherit pub_methods_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">Makes a deep copy of the manipulator Since <a class="el" href="class_rigid_body.html">RigidBody</a>'s are handles, they must be copied more carefully.  <a href="#a185fc924d7eaa0caebc56ad903cd6d9a"></a><br/></td></tr>
 <tr class="memitem:a802c1b5b29be407ea3107ab2e292f982 inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a802c1b5b29be407ea3107ab2e292f982">constructStateFrame</a> (model)</td></tr>
 <tr class="memitem:af7ce2dad6dffca76037ac65db1c91a83 inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#af7ce2dad6dffca76037ac65db1c91a83">constructInputFrame</a> (model)</td></tr>
+<tr class="memitem:a7859ba846527356f5b21036fc4b0d981 inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a7859ba846527356f5b21036fc4b0d981">constructCOMFrame</a> (model)</td></tr>
 <tr class="memitem:aa1c3855b46da812906adbde88f0191a9 inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#aa1c3855b46da812906adbde88f0191a9">constructVisualizer</a> (obj, options)</td></tr>
 <tr class="memitem:ab9a99ba2ef960cb8027c2d9fcb4165d6 inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#ab9a99ba2ef960cb8027c2d9fcb4165d6">pdcontrol</a> (sys, Kp, Kd, index)</td></tr>
 <tr class="memdesc:ab9a99ba2ef960cb8027c2d9fcb4165d6 inherit pub_methods_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">creates new blocks to implement a PD controller, roughly illustrated by q_d &mdash;&gt;[ Kp ]&ndash;&gt;(+)&mdash;&ndash;&gt;[ sys ]&mdash;&mdash;&mdash;-&gt; yout | - | &mdash;&mdash;-[ Kp,Kd ]&lt;&mdash;-  <a href="#ab9a99ba2ef960cb8027c2d9fcb4165d6"></a><br/></td></tr>
+<tr class="memitem:afc161d9f13c9afc6c41a262926eb8a93 inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#afc161d9f13c9afc6c41a262926eb8a93">positionConstraints</a> (obj, q)</td></tr>
+<tr class="memdesc:afc161d9f13c9afc6c41a262926eb8a93 inherit pub_methods_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">so far, only loop constraints are implemented  <a href="#afc161d9f13c9afc6c41a262926eb8a93"></a><br/></td></tr>
+<tr class="memitem:a451b5b332732767f43e521a44bb8fa65 inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a451b5b332732767f43e521a44bb8fa65">loopConstraints</a> (obj, q)</td></tr>
+<tr class="memdesc:a451b5b332732767f43e521a44bb8fa65 inherit pub_methods_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">handle kinematic loops  <a href="#a451b5b332732767f43e521a44bb8fa65"></a><br/></td></tr>
+<tr class="memitem:a1dd49a07222145728bec18c71a4d9709 inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a1dd49a07222145728bec18c71a4d9709">bodyKin</a> (obj, kinsol, body_ind, pts)</td></tr>
+<tr class="memdesc:a1dd49a07222145728bec18c71a4d9709 inherit pub_methods_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">computes the position of pts (given in the global frame) in the body frame  <a href="#a1dd49a07222145728bec18c71a4d9709"></a><br/></td></tr>
 <tr class="memitem:adbc95327657669f7523e27477d92364d inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#adbc95327657669f7523e27477d92364d">getCOM</a> (model, q)</td></tr>
 <tr class="memdesc:adbc95327657669f7523e27477d92364d inherit pub_methods_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">return total mass and center of mass for the entire model  <a href="#adbc95327657669f7523e27477d92364d"></a><br/></td></tr>
 <tr class="memitem:a1720c357dcedf140373d2d1da2c5643e inherit pub_methods_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a1720c357dcedf140373d2d1da2c5643e">parseMaterial</a> (model, node, options)</td></tr>
@@ -207,8 +213,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ae69626ebf11b71bacc0241474b39d036 inherit pub_methods_class_second_order_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">Guards the num_q variable to make sure it stays consistent with num_x.  <a href="#ae69626ebf11b71bacc0241474b39d036"></a><br/></td></tr>
 <tr class="memitem:a2d572384a48ac500606b7de1f74556bd inherit pub_methods_class_second_order_system"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_second_order_system.html#a2d572384a48ac500606b7de1f74556bd">setNumContStates</a> (obj, <a class="el" href="class_drake_system.html#ac4df246f6ca8715164d0978e6f06b130">num_xc</a>)</td></tr>
 <tr class="memdesc:a2d572384a48ac500606b7de1f74556bd inherit pub_methods_class_second_order_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">Guards the num_xc variable to make sure it stays consistent with num_q.  <a href="#a2d572384a48ac500606b7de1f74556bd"></a><br/></td></tr>
-<tr class="memitem:a08bd8cfbf5b377e1832b942859f6875f inherit pub_methods_class_second_order_system"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_second_order_system.html#a08bd8cfbf5b377e1832b942859f6875f">output</a> (obj, t, x, u)</td></tr>
-<tr class="memdesc:a08bd8cfbf5b377e1832b942859f6875f inherit pub_methods_class_second_order_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">default output is the full state  <a href="#a08bd8cfbf5b377e1832b942859f6875f"></a><br/></td></tr>
 <tr class="inherit_header pub_methods_class_drake_system"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_drake_system')"><img src="closed.png" alt="-"/>&nbsp;Public Member Functions inherited from <a class="el" href="class_drake_system.html">DrakeSystem</a></td></tr>
 <tr class="memitem:adb724f06d53198dadd0d340a4de7a220 inherit pub_methods_class_drake_system"><td class="memItemLeft" align="right" valign="top"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_drake_system.html#adb724f06d53198dadd0d340a4de7a220">DrakeSystem</a> (<a class="el" href="class_drake_system.html#ac4df246f6ca8715164d0978e6f06b130">num_xc</a>, <a class="el" href="class_drake_system.html#a30e24079f2f127fab8d85c23ba68d12b">num_xd</a>, <a class="el" href="class_drake_system.html#ada3e494b5d79c3e7351f697de2a44a0d">num_u</a>, <a class="el" href="class_drake_system.html#a02e68a89936da8d4bc5000cfe66562df">num_y</a>, <a class="el" href="class_drake_system.html#a643865f51dbf1f986e8884fc2a9f3049">direct_feedthrough_flag</a>, <a class="el" href="class_dynamical_system.html#aa0be3fbbc22f2d75dbbea897a94bb090">time_invariant_flag</a>)</td></tr>
 <tr class="memdesc:adb724f06d53198dadd0d340a4de7a220 inherit pub_methods_class_drake_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">Construct a <a class="el" href="class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab...">DrakeSystem</a>.  <a href="#adb724f06d53198dadd0d340a4de7a220"></a><br/></td></tr>
@@ -291,6 +295,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:abfa36959c9347d35bcdcd730e7a356e5 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#abfa36959c9347d35bcdcd730e7a356e5">inStateFrame</a> (sys, frame)</td></tr>
 <tr class="memitem:a5fb8b74f9a0eb235e07cfd870cfd6860 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a5fb8b74f9a0eb235e07cfd870cfd6860">inOutputFrame</a> (sys, frame)</td></tr>
 <tr class="memitem:aac96f61753b24b71c848dc313ab654ed inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#aac96f61753b24b71c848dc313ab654ed">stateIndicesForCombination</a> (sys1, sys2)</td></tr>
+<tr class="memitem:ad4cfdd12805d52331faf15dff7d0ebf9 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#ad4cfdd12805d52331faf15dff7d0ebf9">feedbackControl</a> (plant, control)</td></tr>
+<tr class="memdesc:ad4cfdd12805d52331faf15dff7d0ebf9 inherit pub_methods_class_dynamical_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a slightly more specific form of feedback combination useful for building control hierarchies.  <a href="#ad4cfdd12805d52331faf15dff7d0ebf9"></a><br/></td></tr>
 <tr class="memitem:a7fa48b343c2a2a1a5ec8b8d0c24533bb inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a7fa48b343c2a2a1a5ec8b8d0c24533bb">sampledData</a> (sys, tsin, tsout)</td></tr>
 <tr class="memdesc:a7fa48b343c2a2a1a5ec8b8d0c24533bb inherit pub_methods_class_dynamical_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new system which is a sampled data (e.g.  <a href="#a7fa48b343c2a2a1a5ec8b8d0c24533bb"></a><br/></td></tr>
 <tr class="memitem:a6bdb86f36e0fd75e3f0ccf8dccd481bb inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a6bdb86f36e0fd75e3f0ccf8dccd481bb">getNumStates</a> (obj)</td></tr>
@@ -329,11 +335,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a75d3b101d6fef5e2d40ea4e497300473 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a75d3b101d6fef5e2d40ea4e497300473">userfun_grad_ind</a> (nT, nX, nU, con, x, options)</td></tr>
 <tr class="memdesc:a75d3b101d6fef5e2d40ea4e497300473 inherit pub_methods_class_dynamical_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">dJ:  <a href="#a75d3b101d6fef5e2d40ea4e497300473"></a><br/></td></tr>
 <tr class="memitem:a6e42131073a8f66a0784729cbdc2510e inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a6e42131073a8f66a0784729cbdc2510e">dircol_wrapup</a> (sys, w, t, nX, nU)</td></tr>
-<tr class="memitem:ac520011906424d9823b98e9089106db3 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#ac520011906424d9823b98e9089106db3">findTrajectory</a> (sys, x0, xf, sampleFun, con, options)</td></tr>
-<tr class="memdesc:ac520011906424d9823b98e9089106db3 inherit pub_methods_class_dynamical_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tries to find a feasible solution of the system starting from the initial conditions x0 to and ending in xf.  <a href="#ac520011906424d9823b98e9089106db3"></a><br/></td></tr>
-<tr class="memitem:aceecdac4961e6854f2612a8736e61435 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#aceecdac4961e6854f2612a8736e61435">trajCost</a> (t, x, u, R)</td></tr>
-<tr class="memitem:abe22e61139e3a5df9605451c73d17309 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#abe22e61139e3a5df9605451c73d17309">trajFinalCost</a> (t, x)</td></tr>
-<tr class="memitem:afd826a9765881ce1d555ba2ca6df3c47 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#afd826a9765881ce1d555ba2ca6df3c47">plotDircolTraj</a> (t, x, u, plotdims)</td></tr>
 <tr class="memitem:a3dfe41e5dc6eb8e956a9fff882bbd084 inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a3dfe41e5dc6eb8e956a9fff882bbd084">runLCM</a> (obj, x0, options)</td></tr>
 <tr class="memdesc:a3dfe41e5dc6eb8e956a9fff882bbd084 inherit pub_methods_class_dynamical_system"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs the system as an lcm node.  <a href="#a3dfe41e5dc6eb8e956a9fff882bbd084"></a><br/></td></tr>
 <tr class="memitem:a48d6cf68bc469a0217fcbb32e715414e inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a48d6cf68bc469a0217fcbb32e715414e">simulate</a> (obj, tspan, x0, options)</td></tr>
@@ -352,6 +353,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae94cb9f323bb0e474c2d26e36ec6998d inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#ae94cb9f323bb0e474c2d26e36ec6998d">Sdynamics</a> (t, S, plant, Qtraj, xtraj)</td></tr>
 <tr class="memitem:a312d0d6fa1ae42f66f01b60a8b97d02b inherit pub_methods_class_dynamical_system"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_dynamical_system.html#a312d0d6fa1ae42f66f01b60a8b97d02b">affineSdynamics</a> (t, S, plant, Qtraj, xtraj, xdottraj)</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2><a name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:a767c4f250c90adf1fbf8c7e8ff08b00f"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#a767c4f250c90adf1fbf8c7e8ff08b00f">surfaceTangents</a> (normal)</td></tr>
+<tr class="memdesc:a767c4f250c90adf1fbf8c7e8ff08b00f"><td class="mdescLeft">&#160;</td><td class="mdescRight">% compute a tangent vector, t for each n, it looks like: if (abs(normal(2))&gt;abs(normal(1))) t = [1,-n(1)/n(2)]; else t = [-n(2)/n(1),1]; end and the vectorized form is:  <a href="#a767c4f250c90adf1fbf8c7e8ff08b00f"></a><br/></td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2><a name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:ac095db3dfa8595855b6005662cb680d0"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_planar_rigid_body_manipulator.html#ac095db3dfa8595855b6005662cb680d0">x_axis_label</a></td></tr>
@@ -363,12 +369,15 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:a73d044705182dce0379a1c211dca6ec6 inherit pub_attribs_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a73d044705182dce0379a1c211dca6ec6">name</a></td></tr>
 <tr class="memdesc:a73d044705182dce0379a1c211dca6ec6 inherit pub_attribs_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">name of the rigid body system  <a href="#a73d044705182dce0379a1c211dca6ec6"></a><br/></td></tr>
 <tr class="memitem:a4f3f0a5fdc4a84aeb1bd4aad59ceb21f inherit pub_attribs_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a4f3f0a5fdc4a84aeb1bd4aad59ceb21f">body</a></td></tr>
-<tr class="memdesc:a4f3f0a5fdc4a84aeb1bd4aad59ceb21f inherit pub_attribs_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">cell array of <a class="el" href="class_rigid_body.html">RigidBody</a> objects  <a href="#a4f3f0a5fdc4a84aeb1bd4aad59ceb21f"></a><br/></td></tr>
+<tr class="memdesc:a4f3f0a5fdc4a84aeb1bd4aad59ceb21f inherit pub_attribs_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">array of <a class="el" href="class_rigid_body.html">RigidBody</a> objects  <a href="#a4f3f0a5fdc4a84aeb1bd4aad59ceb21f"></a><br/></td></tr>
 <tr class="memitem:a78fa8382d3720ee17f65222c37ba33b7 inherit pub_attribs_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a78fa8382d3720ee17f65222c37ba33b7">actuator</a></td></tr>
-<tr class="memdesc:a78fa8382d3720ee17f65222c37ba33b7 inherit pub_attribs_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">cell array of <a class="el" href="class_rigid_body_actuator.html">RigidBodyActuator</a> objects  <a href="#a78fa8382d3720ee17f65222c37ba33b7"></a><br/></td></tr>
+<tr class="memdesc:a78fa8382d3720ee17f65222c37ba33b7 inherit pub_attribs_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">array of <a class="el" href="class_rigid_body_actuator.html" title="trivial definition of the actuators allows us to define the mapping from input to joint torques...">RigidBodyActuator</a> objects  <a href="#a78fa8382d3720ee17f65222c37ba33b7"></a><br/></td></tr>
 <tr class="memitem:a3b17a3b2b46937ef539d589bd90cbd8a inherit pub_attribs_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a3b17a3b2b46937ef539d589bd90cbd8a">loop</a></td></tr>
-<tr class="memdesc:a3b17a3b2b46937ef539d589bd90cbd8a inherit pub_attribs_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">cell array <a class="el" href="class_rigid_body_loop.html">RigidBodyLoop</a> objects  <a href="#a3b17a3b2b46937ef539d589bd90cbd8a"></a><br/></td></tr>
+<tr class="memdesc:a3b17a3b2b46937ef539d589bd90cbd8a inherit pub_attribs_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">array of <a class="el" href="class_rigid_body_loop.html">RigidBodyLoop</a> objects  <a href="#a3b17a3b2b46937ef539d589bd90cbd8a"></a><br/></td></tr>
+<tr class="memitem:a50ca9b935009c3766dc577422372604c inherit pub_attribs_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a50ca9b935009c3766dc577422372604c">sensor</a></td></tr>
+<tr class="memdesc:a50ca9b935009c3766dc577422372604c inherit pub_attribs_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">cell array of <a class="el" href="class_rigid_body_sensor.html" title="this is an interface class for sensors that are composed to form the output output of a RigidBodyMani...">RigidBodySensor</a> objects  <a href="#a50ca9b935009c3766dc577422372604c"></a><br/></td></tr>
 <tr class="memitem:a211d6c34a22a4179cf565070d6976b59 inherit pub_attribs_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a211d6c34a22a4179cf565070d6976b59">gravity</a></td></tr>
+<tr class="memdesc:a211d6c34a22a4179cf565070d6976b59 inherit pub_attribs_class_rigid_body_manipulator"><td class="mdescLeft">&#160;</td><td class="mdescRight">note: need {} for arrays that will have multiple types (e.g.  <a href="#a211d6c34a22a4179cf565070d6976b59"></a><br/></td></tr>
 <tr class="memitem:a26ec94afdf8bd614fc8b6a04b281429d inherit pub_attribs_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#a26ec94afdf8bd614fc8b6a04b281429d">B</a></td></tr>
 <tr class="memitem:abcdcb855d733649306d06c6a056c0f2c inherit pub_attribs_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#abcdcb855d733649306d06c6a056c0f2c">featherstone</a></td></tr>
 <tr class="memitem:aa1d69050c717cb82a726ec276ca97fbf inherit pub_attribs_class_rigid_body_manipulator"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_rigid_body_manipulator.html#aa1d69050c717cb82a726ec276ca97fbf">material</a></td></tr>
@@ -678,6 +687,42 @@ see also the options described in RigidBodyManipulator/parseURDF (the options fo
 </dl>
 
 <p>Reimplemented from <a class="el" href="class_rigid_body_manipulator.html#af70f5dc7ea560cb932f27ed4ac41b6e9">RigidBodyManipulator</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="abecbeedab26a4666ed92cd194762c81f"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a> contactPositions </td>
+          <td>(</td>
+          <td class="paramtype">obj&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">q&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">p(,:,i)=[px;pz]</td><td>is the position of the ith contact point </td></tr>
+    <tr><td class="paramname">J</td><td>is dpdq </td></tr>
+    <tr><td class="paramname">dJ</td><td>is ddpdqdq </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented from <a class="el" href="class_rigid_body_manipulator.html#abecbeedab26a4666ed92cd194762c81f">RigidBodyManipulator</a>.</p>
 
 </div>
 </div>
@@ -1291,40 +1336,6 @@ dPsi [dpsi/dq dpsi/dqdot] </dd></dl>
 
 </div>
 </div>
-<a class="anchor" id="a451b5b332732767f43e521a44bb8fa65"></a>
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a> loopConstraints </td>
-          <td>(</td>
-          <td class="paramtype">obj&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">q&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>handle kinematic loops note: each loop adds two constraints </p>
-<dl class="retval"><dt>Return values:</dt><dd>
-  <table class="retval">
-    <tr><td class="paramname">phi</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <a class="anchor" id="a6c65e44038266c5c48603886db3c3bec"></a>
 <div class="memitem">
 <div class="memproto">
@@ -1445,44 +1456,6 @@ dPsi [dpsi/dq dpsi/dqdot] </dd></dl>
 
 </div>
 </div>
-<a class="anchor" id="afc161d9f13c9afc6c41a262926eb8a93"></a>
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a> positionConstraints </td>
-          <td>(</td>
-          <td class="paramtype">obj&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">q&#160;</td>
-          <td class="paramname">&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>so far, only loop constraints are implemented </p>
-<dl class="retval"><dt>Return values:</dt><dd>
-  <table class="retval">
-    <tr><td class="paramname">phi</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-
-<p>Reimplemented from <a class="el" href="class_manipulator.html#afc161d9f13c9afc6c41a262926eb8a93">Manipulator</a>.</p>
-
-<p>Reimplemented in <a class="el" href="class_hybrid_rigid_body_mode.html#afc161d9f13c9afc6c41a262926eb8a93">HybridRigidBodyMode</a>.</p>
-
-</div>
-</div>
 <a class="anchor" id="ad64f57e315f28f2bb34b647f30a9fe9c"></a>
 <div class="memitem">
 <div class="memproto">
@@ -1512,6 +1485,40 @@ dPsi [dpsi/dq dpsi/dqdot] </dd></dl>
 </dl>
 
 <p>Reimplemented from <a class="el" href="class_rigid_body_manipulator.html#ad64f57e315f28f2bb34b647f30a9fe9c">RigidBodyManipulator</a>.</p>
+
+</div>
+</div>
+<a class="anchor" id="a767c4f250c90adf1fbf8c7e8ff08b00f"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static <a class="el" href="class_drake_system.html#ac2ffb26d6f42d3bbcd7847b0873403f4">function</a> surfaceTangents </td>
+          <td>(</td>
+          <td class="paramtype">normal&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>% compute a tangent vector, t for each n, it looks like: if (abs(normal(2))&gt;abs(normal(1))) t = [1,-n(1)/n(2)]; else t = [-n(2)/n(1),1]; end and the vectorized form is: </p>
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">t</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented from <a class="el" href="class_rigid_body_manipulator.html#a767c4f250c90adf1fbf8c7e8ff08b00f">RigidBodyManipulator</a>.</p>
 
 </div>
 </div>
@@ -1678,7 +1685,7 @@ dPsi [dpsi/dq dpsi/dqdot] </dd></dl>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 9 2013 06:03:03 for drake by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Jan 13 2013 23:48:43 for drake by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1.1
 </small></address>

@@ -1,14 +1,15 @@
 <map id="G" name="G">
-<area shape="rect" id="node7" href="$class_manipulator.html" title="An abstract class that wraps H(q)qddot + C(q,qdot,f_ext) = B(q)u." alt="" coords="567,107,665,133"/>
-<area shape="rect" id="node23" href="$class_pendulum_plant.html" title="Defines the dynamics for the Pendulum." alt="" coords="557,157,675,184"/>
-<area shape="rect" id="node25" href="$class_planar_quad_plant.html" title="state: q(1) &#45; x position q(2) &#45; z position q(3) &#45; pitch (theta) input: u(1) &#45; prop 1 thrust u(2) &#45; pr..." alt="" coords="552,208,680,235"/>
-<area shape="rect" id="node2" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="192,157,301,184"/>
-<area shape="rect" id="node4" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="5,157,144,184"/>
-<area shape="rect" id="node9" href="$class_acrobot_plant.html" title="AcrobotPlant" alt="" coords="769,5,873,32"/>
-<area shape="rect" id="node11" href="$class_cart_pole_plant.html" title="CartPolePlant" alt="" coords="767,56,875,83"/>
-<area shape="rect" id="node13" href="$class_compass_gait_stance_plant.html" title="CompassGaitStancePlant" alt="" coords="729,107,914,133"/>
-<area shape="rect" id="node15" href="$class_double_pend_plant.html" title="DoublePendPlant" alt="" coords="756,157,887,184"/>
-<area shape="rect" id="node17" href="$class_rigid_body_manipulator.html" title="This class wraps the spatial vector library (v1) provided by Roy Featherstone on his website: http://..." alt="" coords="742,208,901,235"/>
-<area shape="rect" id="node19" href="$class_planar_rigid_body_manipulator.html" title="This class wraps the planar pieces of the spatial vector library (v1) provided by Roy Featherstone on..." alt="" coords="963,208,1162,235"/>
-<area shape="rect" id="node21" href="$class_hybrid_rigid_body_mode.html" title="HybridRigidBodyMode" alt="" coords="1211,208,1371,235"/>
+<area shape="rect" id="node9" href="$class_manipulator.html" title="An abstract class that wraps H(q)qddot + C(q,qdot,f_ext) = B(q)u." alt="" coords="682,107,779,133"/>
+<area shape="rect" id="node25" href="$class_pendulum_plant.html" title="Defines the dynamics for the Pendulum." alt="" coords="671,157,790,184"/>
+<area shape="rect" id="node27" href="$class_planar_quad_plant.html" title="state: q(1) &#45; x position q(2) &#45; z position q(3) &#45; pitch (theta) input: u(1) &#45; prop 1 thrust u(2) &#45; pr..." alt="" coords="667,208,795,235"/>
+<area shape="rect" id="node2" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="307,157,416,184"/>
+<area shape="rect" id="node4" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="120,157,259,184"/>
+<area shape="rect" id="node6" href="$classhandle.html" title="handle" alt="" coords="6,157,71,184"/>
+<area shape="rect" id="node11" href="$class_acrobot_plant.html" title="AcrobotPlant" alt="" coords="884,5,988,32"/>
+<area shape="rect" id="node13" href="$class_cart_pole_plant.html" title="CartPolePlant" alt="" coords="882,56,990,83"/>
+<area shape="rect" id="node15" href="$class_compass_gait_stance_plant.html" title="CompassGaitStancePlant" alt="" coords="843,107,1029,133"/>
+<area shape="rect" id="node17" href="$class_double_pend_plant.html" title="DoublePendPlant" alt="" coords="871,157,1001,184"/>
+<area shape="rect" id="node19" href="$class_rigid_body_manipulator.html" title="This class wraps the spatial vector library (v1) provided by Roy Featherstone on his website: http://..." alt="" coords="857,208,1015,235"/>
+<area shape="rect" id="node21" href="$class_planar_rigid_body_manipulator.html" title="This class wraps the planar pieces of the spatial vector library (v1) provided by Roy Featherstone on..." alt="" coords="1078,208,1277,235"/>
+<area shape="rect" id="node23" href="$class_hybrid_rigid_body_mode.html" title="HybridRigidBodyMode" alt="" coords="1325,208,1485,235"/>
 </map>

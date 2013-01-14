@@ -135,11 +135,11 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 , <a class="el" href="class_quadratic_lyapunov_function.html#aa088b6d11a7e5aea358d178f38ea9ff1">QuadraticLyapunovFunction</a>
 , <a class="el" href="class_model.html#a3b609b0cf3eca50effe1a0c8fb0e71af">Model</a>
 </li>
-<li>s1
-: <a class="el" href="class_quadratic_lyapunov_function.html#a0190fa086f68b213318dfa04e48d7c09">QuadraticLyapunovFunction</a>
-</li>
 <li>S1
 : <a class="el" href="class_l_q_r_tree.html#a0c2298624443bd7852799ef99a8b0612">LQRTree</a>
+</li>
+<li>s1
+: <a class="el" href="class_quadratic_lyapunov_function.html#a0190fa086f68b213318dfa04e48d7c09">QuadraticLyapunovFunction</a>
 </li>
 <li>s2
 : <a class="el" href="class_quadratic_lyapunov_function.html#a1590c6c38c497e1a0e75e24e5d7b80b4">QuadraticLyapunovFunction</a>
@@ -208,6 +208,12 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <li>SelfPowered
 : <a class="el" href="struct_f_t___p_r_o_g_r_a_m___d_a_t_a.html#a7761555b3e39f95eea0e9931c8b508e9">PFT_PROGRAM_DATA</a>
 </li>
+<li>sensor
+: <a class="el" href="class_rigid_body_manipulator.html#a50ca9b935009c3766dc577422372604c">RigidBodyManipulator</a>
+</li>
+<li>sensorKin()
+: <a class="el" href="class_contact_force_torque_sensor.html#a662e0f83801183b31fc23f580bf7b6f9">ContactForceTorqueSensor</a>
+</li>
 <li>SerialNumber
 : <a class="el" href="struct_f_t___p_r_o_g_r_a_m___d_a_t_a.html#a1d5860c5fb91738cb7730c746711483f">PFT_PROGRAM_DATA</a>
 , <a class="el" href="struct_f_t___d_e_v_i_c_e___l_i_s_t___i_n_f_o___n_o_d_e.html#acbaf4db9885a0ba01f121e5c6597a1b3">FT_DEVICE_LIST_INFO_NODE</a>
@@ -232,6 +238,10 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </li>
 <li>setCoordinateNames()
 : <a class="el" href="class_coordinate_frame.html#a1f41ebfbb4722c8ee68a530df7eb5ccd">CoordinateFrame</a>
+</li>
+<li>setDefaultChannel()
+: <a class="el" href="class_l_c_m_coordinate_frame.html#a9551d7ee237aad8efb7e9cad04a4e3d9">LCMCoordinateFrame</a>
+, <a class="el" href="class_l_c_m_coordinate_frame_w_coder.html#a9551d7ee237aad8efb7e9cad04a4e3d9">LCMCoordinateFrameWCoder</a>
 </li>
 <li>setDirectFeedthrough()
 : <a class="el" href="class_drake_system.html#a36247b8da09a181991b2e413db3e844e">DrakeSystem</a>
@@ -346,6 +356,12 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <li>setTIFlag()
 : <a class="el" href="class_dynamical_system.html#adf0e34ccf62e88d459ebf530a087af98">DynamicalSystem</a>
 </li>
+<li>setupLCMInputs()
+: <a class="el" href="class_coordinate_frame.html#af003220f40fc5a82ad89f01aaf976779">CoordinateFrame</a>
+, <a class="el" href="class_l_c_m_coordinate_frame.html#af003220f40fc5a82ad89f01aaf976779">LCMCoordinateFrame</a>
+, <a class="el" href="class_multi_coordinate_frame.html#af003220f40fc5a82ad89f01aaf976779">MultiCoordinateFrame</a>
+, <a class="el" href="class_l_c_m_coordinate_frame_w_coder.html#af003220f40fc5a82ad89f01aaf976779">LCMCoordinateFrameWCoder</a>
+</li>
 <li>setupTrajectoryPair()
 : <a class="el" href="class_trajectory.html#ae484466fed90267e281ed5502e1bdad3">Trajectory</a>
 </li>
@@ -415,8 +431,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 : <a class="el" href="class_singleton_coordinate_frame.html#a48722021b4729db318085c88cb56beb7">SingletonCoordinateFrame</a>
 </li>
 <li>size()
-: <a class="el" href="class_point.html#a57f0b58d4c3d6a20863737c87d9ee062">Point</a>
-, <a class="el" href="class_polynomial_trajectory.html#a878e0190d948cab70ade790d92d0a0a0">PolynomialTrajectory</a>
+: <a class="el" href="class_polynomial_trajectory.html#a878e0190d948cab70ade790d92d0a0a0">PolynomialTrajectory</a>
+, <a class="el" href="class_point.html#a57f0b58d4c3d6a20863737c87d9ee062">Point</a>
 , <a class="el" href="class_trajectory.html#a878e0190d948cab70ade790d92d0a0a0">Trajectory</a>
 , <a class="el" href="class_taylor_var.html#a878e0190d948cab70ade790d92d0a0a0">TaylorVar</a>
 , <a class="el" href="class_trig_poly.html#a5beb511897c70f39420dce1ea084cf0e">TrigPoly</a>
@@ -425,16 +441,22 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 : <a class="el" href="class_rigid_body.html#a642402e13f5f2b17e559f4417bccb6ad">RigidBody</a>
 </li>
 <li>sodynamics()
-: <a class="el" href="class_pendulum_plant.html#aa1c2aeb42c115a82885de429e49f679e">PendulumPlant</a>
+: <a class="el" href="class_second_order_system.html#af9fe9ea1623387f3e1ad320da0b3dec3">SecondOrderSystem</a>
+, <a class="el" href="class_pendulum_plant.html#aa1c2aeb42c115a82885de429e49f679e">PendulumPlant</a>
 , <a class="el" href="class_planar_quad_plant.html#aa1c2aeb42c115a82885de429e49f679e">PlanarQuadPlant</a>
 , <a class="el" href="class_manipulator.html#aa1c2aeb42c115a82885de429e49f679e">Manipulator</a>
-, <a class="el" href="class_second_order_system.html#af9fe9ea1623387f3e1ad320da0b3dec3">SecondOrderSystem</a>
 </li>
 <li>sol
 : <a class="el" href="class_o_d_e_sol_trajectory.html#a4927286a34ec2eebd65b47f49c081f3e">ODESolTrajectory</a>
 </li>
+<li>solveLCP()
+: <a class="el" href="class_time_stepping_rigid_body_manipulator.html#a8a0e74415ec6ae6581d7f69fa5db4863">TimeSteppingRigidBodyManipulator</a>
+</li>
 <li>sparse()
 : <a class="el" href="class_trig_poly.html#aec13b8568aa1a4ec291623a8ca0ef700">TrigPoly</a>
+</li>
+<li>splitCoordinates()
+: <a class="el" href="class_multi_coordinate_frame.html#ad1549d7a871a26a9b132d25c57f8d169">MultiCoordinateFrame</a>
 </li>
 <li>SpotPolynomialLyapunovFunction()
 : <a class="el" href="class_spot_polynomial_lyapunov_function.html#ac3280b1f13371ff2fe4c34fa9d1cc457">SpotPolynomialLyapunovFunction</a>
@@ -455,12 +477,12 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 : <a class="el" href="class_dynamical_system.html#a506515174fd79fb265a360d9eb29a23c">DynamicalSystem</a>
 </li>
 <li>stateConstraints()
-: <a class="el" href="class_feedback_system.html#a5cb5d822e1e98a23334bd5755bd2cf70">FeedbackSystem</a>
-, <a class="el" href="class_manipulator.html#a5cb5d822e1e98a23334bd5755bd2cf70">Manipulator</a>
+: <a class="el" href="class_manipulator.html#a5cb5d822e1e98a23334bd5755bd2cf70">Manipulator</a>
+, <a class="el" href="class_cascade_system.html#a5cb5d822e1e98a23334bd5755bd2cf70">CascadeSystem</a>
 , <a class="el" href="class_time_stepping_rigid_body_manipulator.html#a5cb5d822e1e98a23334bd5755bd2cf70">TimeSteppingRigidBodyManipulator</a>
 , <a class="el" href="class_hybrid_drake_system.html#a5cb5d822e1e98a23334bd5755bd2cf70">HybridDrakeSystem</a>
 , <a class="el" href="class_drake_system.html#a5cb5d822e1e98a23334bd5755bd2cf70">DrakeSystem</a>
-, <a class="el" href="class_cascade_system.html#a5cb5d822e1e98a23334bd5755bd2cf70">CascadeSystem</a>
+, <a class="el" href="class_feedback_system.html#a5cb5d822e1e98a23334bd5755bd2cf70">FeedbackSystem</a>
 </li>
 <li>stateIndicesForCombination()
 : <a class="el" href="class_dynamical_system.html#aac96f61753b24b71c848dc313ab654ed">DynamicalSystem</a>
@@ -482,8 +504,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 , <a class="el" href="class_linear_gaussian_example.html#a66f9911ee876cecc138685ea7c797aa9">LinearGaussianExample</a>
 </li>
 <li>stochasticOutput()
-: <a class="el" href="class_linear_gaussian_example.html#a1683be194f3721a4d6725b06c0e49312">LinearGaussianExample</a>
-, <a class="el" href="class_stochastic_drake_system.html#a1683be194f3721a4d6725b06c0e49312">StochasticDrakeSystem</a>
+: <a class="el" href="class_stochastic_drake_system.html#a1683be194f3721a4d6725b06c0e49312">StochasticDrakeSystem</a>
+, <a class="el" href="class_linear_gaussian_example.html#a1683be194f3721a4d6725b06c0e49312">LinearGaussianExample</a>
 </li>
 <li>stochasticUpdate()
 : <a class="el" href="class_stochastic_drake_system.html#ac09d013e706f155af09f2ec39c042c57">StochasticDrakeSystem</a>
@@ -500,44 +522,51 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <li>subFrame()
 : <a class="el" href="class_coordinate_frame.html#a2d4ba0ac2ec7c0f98c861ce440d9b086">CoordinateFrame</a>
 </li>
+<li>subFrameByFrameID()
+: <a class="el" href="class_multi_coordinate_frame.html#ac45d1be1f6db95bf9bbea857d413a436">MultiCoordinateFrame</a>
+</li>
 <li>subsasgn()
-: <a class="el" href="class_point.html#aadcfa306adb4d54318050ebf334a1f79">Point</a>
-, <a class="el" href="class_trig_poly.html#a9b564e14418101bec44d848a96509d2d">TrigPoly</a>
+: <a class="el" href="class_trig_poly.html#a9b564e14418101bec44d848a96509d2d">TrigPoly</a>
 , <a class="el" href="class_taylor_var.html#a9b564e14418101bec44d848a96509d2d">TaylorVar</a>
 , <a class="el" href="class_trajectory.html#a9b564e14418101bec44d848a96509d2d">Trajectory</a>
+, <a class="el" href="class_point.html#aadcfa306adb4d54318050ebf334a1f79">Point</a>
 </li>
 <li>subscribe()
-: <a class="el" href="class_l_c_m_coordinate_frame.html#a321097e5ad75f84864e7e463c7e82d96">LCMCoordinateFrame</a>
-, <a class="el" href="class_l_c_m_coordinate_frame_w_coder.html#a321097e5ad75f84864e7e463c7e82d96">LCMCoordinateFrameWCoder</a>
+: <a class="el" href="class_l_c_m_coordinate_frame_w_coder.html#a321097e5ad75f84864e7e463c7e82d96">LCMCoordinateFrameWCoder</a>
 , <a class="el" href="class_l_c_m_subscriber.html#aa6e3a7f60cd5ffe57ac0b24e6a4897fc">LCMSubscriber</a>
+, <a class="el" href="class_l_c_m_coordinate_frame.html#a321097e5ad75f84864e7e463c7e82d96">LCMCoordinateFrame</a>
 </li>
 <li>subsindex()
 : <a class="el" href="class_taylor_var.html#acd40e2da957d8eb29f96169c901600f5">TaylorVar</a>
 </li>
 <li>subsref()
-: <a class="el" href="class_trig_poly.html#a57f5355afd32f5d6f1fa10fc0b5b88fc">TrigPoly</a>
-, <a class="el" href="class_taylor_var.html#afa6df9dc57d3e0c63d9763d053460f9f">TaylorVar</a>
-, <a class="el" href="class_trajectory.html#a57f5355afd32f5d6f1fa10fc0b5b88fc">Trajectory</a>
+: <a class="el" href="class_trajectory.html#a57f5355afd32f5d6f1fa10fc0b5b88fc">Trajectory</a>
+, <a class="el" href="class_trig_poly.html#a57f5355afd32f5d6f1fa10fc0b5b88fc">TrigPoly</a>
 , <a class="el" href="class_point.html#afa6df9dc57d3e0c63d9763d053460f9f">Point</a>
+, <a class="el" href="class_taylor_var.html#afa6df9dc57d3e0c63d9763d053460f9f">TaylorVar</a>
 </li>
 <li>subTrajectory()
-: <a class="el" href="class_trajectory.html#a4bc68b07a2784871de2a7b54e7099bb0">Trajectory</a>
-, <a class="el" href="class_mixed_trajectory.html#a4bc68b07a2784871de2a7b54e7099bb0">MixedTrajectory</a>
+: <a class="el" href="class_mixed_trajectory.html#a4bc68b07a2784871de2a7b54e7099bb0">MixedTrajectory</a>
+, <a class="el" href="class_trajectory.html#a4bc68b07a2784871de2a7b54e7099bb0">Trajectory</a>
 </li>
 <li>sum()
-: <a class="el" href="class_trig_poly.html#a59298c4100f2e9faaccd3e2978c29b1b">TrigPoly</a>
-, <a class="el" href="class_taylor_var.html#a15e60946c93e294d7450c5c0cdef08e1">TaylorVar</a>
+: <a class="el" href="class_taylor_var.html#a15e60946c93e294d7450c5c0cdef08e1">TaylorVar</a>
+, <a class="el" href="class_trig_poly.html#a59298c4100f2e9faaccd3e2978c29b1b">TrigPoly</a>
 </li>
 <li>superiorfloat()
 : <a class="el" href="class_taylor_var.html#a19a2b0756107656d89803f8171f4e8b9">TaylorVar</a>
+</li>
+<li>surfaceTangents()
+: <a class="el" href="class_planar_rigid_body_manipulator.html#a767c4f250c90adf1fbf8c7e8ff08b00f">PlanarRigidBodyManipulator</a>
+, <a class="el" href="class_rigid_body_manipulator.html#a767c4f250c90adf1fbf8c7e8ff08b00f">RigidBodyManipulator</a>
 </li>
 <li>SWFWriter()
 : <a class="el" href="class_s_w_f_writer.html#ad89c86ccf21d06b793eaefd2408b8ee0">SWFWriter</a>
 </li>
 <li>swingUpTrajectory()
-: <a class="el" href="class_pendulum_plant.html#ae15741f600b8b5a855e690109ffc9b06">PendulumPlant</a>
+: <a class="el" href="class_acrobot_plant.html#ad39651e2a4f7362227430fcfbcc77a5a">AcrobotPlant</a>
 , <a class="el" href="class_cart_pole_plant.html#ad39651e2a4f7362227430fcfbcc77a5a">CartPolePlant</a>
-, <a class="el" href="class_acrobot_plant.html#ad39651e2a4f7362227430fcfbcc77a5a">AcrobotPlant</a>
+, <a class="el" href="class_pendulum_plant.html#ae15741f600b8b5a855e690109ffc9b06">PendulumPlant</a>
 </li>
 <li>sys1
 : <a class="el" href="class_feedback_system.html#a08c791c539d07a7d5ed440f521305450">FeedbackSystem</a>
@@ -548,18 +577,18 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 , <a class="el" href="class_cascade_system.html#aacac215c26b7e341f1ceffd7a10ef3ba">CascadeSystem</a>
 </li>
 <li>sys2
-: <a class="el" href="class_feedback_system.html#a935b59ed59308b62b563b35ff11ab21b">FeedbackSystem</a>
-, <a class="el" href="class_cascade_system.html#a935b59ed59308b62b563b35ff11ab21b">CascadeSystem</a>
+: <a class="el" href="class_cascade_system.html#a935b59ed59308b62b563b35ff11ab21b">CascadeSystem</a>
+, <a class="el" href="class_feedback_system.html#a935b59ed59308b62b563b35ff11ab21b">FeedbackSystem</a>
 </li>
 <li>sys2ind
-: <a class="el" href="class_cascade_system.html#adc801e6d0be6c24e45d0ddd8f92f9fee">CascadeSystem</a>
-, <a class="el" href="class_feedback_system.html#adc801e6d0be6c24e45d0ddd8f92f9fee">FeedbackSystem</a>
+: <a class="el" href="class_feedback_system.html#adc801e6d0be6c24e45d0ddd8f92f9fee">FeedbackSystem</a>
+, <a class="el" href="class_cascade_system.html#adc801e6d0be6c24e45d0ddd8f92f9fee">CascadeSystem</a>
 </li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 9 2013 06:03:04 for drake by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Jan 13 2013 23:48:44 for drake by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1.1
 </small></address>

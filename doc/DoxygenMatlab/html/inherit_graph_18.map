@@ -1,4 +1,3 @@
 <map id="G" name="G">
-<area shape="rect" id="node1" href="$class_obstacle.html" title="Class that describes an obstacle supports drawing getting constraints." alt="" coords="6,5,85,32"/>
-<area shape="rect" id="node3" href="$class_polygonal_obstacle2_d.html" title="PolygonalObstacle2D" alt="" coords="133,5,291,32"/>
+<area shape="rect" id="node1" href="$class_obstacle_field.html" title="Holds many Obstacles, and can operate on them." alt="" coords="5,5,112,32"/>
 </map>

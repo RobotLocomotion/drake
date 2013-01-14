@@ -117,7 +117,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ac1fdffc87e6af06f0fda9dda56a4d6d1 inherit pub_methods_class_coordinate_frame"><td class="mdescLeft">&#160;</td><td class="mdescRight">adds a transform from fr to fr2 which copies over the dimensions with matching coordinate names, and sets the remaining elements of fr2 to their default values.  <a href="#ac1fdffc87e6af06f0fda9dda56a4d6d1"></a><br/></td></tr>
 <tr class="memitem:ab9a6097d088a13863385ed841881c6dd inherit pub_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#ab9a6097d088a13863385ed841881c6dd">drawFrameGraph</a> (obj)</td></tr>
 <tr class="memdesc:ab9a6097d088a13863385ed841881c6dd inherit pub_methods_class_coordinate_frame"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calls graphviz to visualize this frame plus all other frames that are reachable by some (potentially multi-hop) transform.  <a href="#ab9a6097d088a13863385ed841881c6dd"></a><br/></td></tr>
-<tr class="memitem:acc5bc0cbdc600aa9590f36e2150508f6 inherit pub_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#acc5bc0cbdc600aa9590f36e2150508f6">recurseTFs</a> (obj, A, fr)</td></tr>
 <tr class="memitem:a9bd7dd7eff247c78acb66b16a1795c69 inherit pub_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#a9bd7dd7eff247c78acb66b16a1795c69">findTransform</a> (obj, target, options)</td></tr>
 <tr class="memdesc:a9bd7dd7eff247c78acb66b16a1795c69 inherit pub_methods_class_coordinate_frame"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs a simple breadth-first search of all available multi-hop transforms for a transformation from the current frame to the target frame.  <a href="#a9bd7dd7eff247c78acb66b16a1795c69"></a><br/></td></tr>
 <tr class="memitem:a1f41ebfbb4722c8ee68a530df7eb5ccd inherit pub_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#a1f41ebfbb4722c8ee68a530df7eb5ccd">setCoordinateNames</a> (obj, cnames)</td></tr>
@@ -130,6 +129,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a47e741c71feea2107b1ee6a3571bc0e0 inherit pub_methods_class_coordinate_frame"><td class="mdescLeft">&#160;</td><td class="mdescRight">publishes coordinate information to the lcm scope  <a href="#a47e741c71feea2107b1ee6a3571bc0e0"></a><br/></td></tr>
 <tr class="memitem:a5478c1e3c2cfcea56b4ef8158b1bdc41 inherit pub_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#a5478c1e3c2cfcea56b4ef8158b1bdc41">generateLCMType</a> (obj, robot_name, signal_name)</td></tr>
 <tr class="memdesc:a5478c1e3c2cfcea56b4ef8158b1bdc41 inherit pub_methods_class_coordinate_frame"><td class="mdescLeft">&#160;</td><td class="mdescRight">writes an lcm type specification to file from the coordinate frame description.  <a href="#a5478c1e3c2cfcea56b4ef8158b1bdc41"></a><br/></td></tr>
+<tr class="memitem:af003220f40fc5a82ad89f01aaf976779 inherit pub_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#af003220f40fc5a82ad89f01aaf976779">setupLCMInputs</a> (obj, mdl, subsys, subsys_portnum)</td></tr>
 <tr class="inherit_header pub_methods_class_singleton"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_class_singleton')"><img src="closed.png" alt="-"/>&nbsp;Public Member Functions inherited from <a class="el" href="class_singleton.html">Singleton</a></td></tr>
 <tr class="memitem:a5f5094334f3e4cd72df0d747059b99ba inherit pub_methods_class_singleton"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_singleton.html#a5f5094334f3e4cd72df0d747059b99ba">Singleton</a> (uid)</td></tr>
 </table><table class="memberdecls">
@@ -137,6 +137,9 @@ Public Member Functions</h2></td></tr>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pub_static_methods_class_coordinate_frame"><td colspan="2" onclick="javascript:toggleInherit('pub_static_methods_class_coordinate_frame')"><img src="closed.png" alt="-"/>&nbsp;Static Public Member Functions inherited from <a class="el" href="class_coordinate_frame.html">CoordinateFrame</a></td></tr>
 <tr class="memitem:ae16e67c168578bba417d17b3dad986bb inherit pub_static_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">static function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#ae16e67c168578bba417d17b3dad986bb">stripSpecialChars</a> (s)</td></tr>
+<tr class="inherit_header pro_methods_class_coordinate_frame"><td colspan="2" onclick="javascript:toggleInherit('pro_methods_class_coordinate_frame')"><img src="closed.png" alt="-"/>&nbsp;Protected Member Functions inherited from <a class="el" href="class_coordinate_frame.html">CoordinateFrame</a></td></tr>
+<tr class="memitem:aff082661bae0d33e08b9687da99208f3 inherit pro_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#aff082661bae0d33e08b9687da99208f3">extractFrameGraph</a> (obj)</td></tr>
+<tr class="memitem:acc5bc0cbdc600aa9590f36e2150508f6 inherit pro_methods_class_coordinate_frame"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#acc5bc0cbdc600aa9590f36e2150508f6">recurseTFs</a> (obj, A, fr)</td></tr>
 </table>
 <hr/><h2>Constructor &amp; Destructor Documentation</h2>
 <a class="anchor" id="a48722021b4729db318085c88cb56beb7"></a>
@@ -189,7 +192,7 @@ Additional Inherited Members</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 9 2013 06:03:03 for drake by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Jan 13 2013 23:48:44 for drake by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1.1
 </small></address>

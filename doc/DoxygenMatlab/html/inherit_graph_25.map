@@ -1,4 +1,5 @@
 <map id="G" name="G">
-<area shape="rect" id="node1" href="$class_rigid_body_loop.html" title="RigidBodyLoop" alt="" coords="5,5,120,32"/>
-<area shape="rect" id="node3" href="$class_planar_rigid_body_loop.html" title="PlanarRigidBodyLoop" alt="" coords="168,5,323,32"/>
+<area shape="rect" id="node1" href="$class_rigid_body_sensor.html" title="this is an interface class for sensors that are composed to form the output output of a RigidBodyMani..." alt="" coords="6,31,135,57"/>
+<area shape="rect" id="node3" href="$class_contact_force_torque_sensor.html" title="ContactForceTorqueSensor" alt="" coords="184,5,379,32"/>
+<area shape="rect" id="node5" href="$class_full_state_feedback_sensor.html" title="FullStateFeedbackSensor" alt="" coords="189,56,373,83"/>
 </map>

@@ -89,6 +89,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a>  </div>
   <div class="headertitle">
@@ -121,7 +122,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ac1fdffc87e6af06f0fda9dda56a4d6d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">adds a transform from fr to fr2 which copies over the dimensions with matching coordinate names, and sets the remaining elements of fr2 to their default values.  <a href="#ac1fdffc87e6af06f0fda9dda56a4d6d1"></a><br/></td></tr>
 <tr class="memitem:ab9a6097d088a13863385ed841881c6dd"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#ab9a6097d088a13863385ed841881c6dd">drawFrameGraph</a> (obj)</td></tr>
 <tr class="memdesc:ab9a6097d088a13863385ed841881c6dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calls graphviz to visualize this frame plus all other frames that are reachable by some (potentially multi-hop) transform.  <a href="#ab9a6097d088a13863385ed841881c6dd"></a><br/></td></tr>
-<tr class="memitem:acc5bc0cbdc600aa9590f36e2150508f6"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#acc5bc0cbdc600aa9590f36e2150508f6">recurseTFs</a> (obj, A, fr)</td></tr>
 <tr class="memitem:a9bd7dd7eff247c78acb66b16a1795c69"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#a9bd7dd7eff247c78acb66b16a1795c69">findTransform</a> (obj, target, options)</td></tr>
 <tr class="memdesc:a9bd7dd7eff247c78acb66b16a1795c69"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs a simple breadth-first search of all available multi-hop transforms for a transformation from the current frame to the target frame.  <a href="#a9bd7dd7eff247c78acb66b16a1795c69"></a><br/></td></tr>
 <tr class="memitem:a1f41ebfbb4722c8ee68a530df7eb5ccd"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#a1f41ebfbb4722c8ee68a530df7eb5ccd">setCoordinateNames</a> (obj, cnames)</td></tr>
@@ -134,10 +134,16 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a47e741c71feea2107b1ee6a3571bc0e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">publishes coordinate information to the lcm scope  <a href="#a47e741c71feea2107b1ee6a3571bc0e0"></a><br/></td></tr>
 <tr class="memitem:a5478c1e3c2cfcea56b4ef8158b1bdc41"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#a5478c1e3c2cfcea56b4ef8158b1bdc41">generateLCMType</a> (obj, robot_name, signal_name)</td></tr>
 <tr class="memdesc:a5478c1e3c2cfcea56b4ef8158b1bdc41"><td class="mdescLeft">&#160;</td><td class="mdescRight">writes an lcm type specification to file from the coordinate frame description.  <a href="#a5478c1e3c2cfcea56b4ef8158b1bdc41"></a><br/></td></tr>
+<tr class="memitem:af003220f40fc5a82ad89f01aaf976779"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#af003220f40fc5a82ad89f01aaf976779">setupLCMInputs</a> (obj, mdl, subsys, subsys_portnum)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2><a name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
 <tr class="memitem:ae16e67c168578bba417d17b3dad986bb"><td class="memItemLeft" align="right" valign="top">static function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#ae16e67c168578bba417d17b3dad986bb">stripSpecialChars</a> (s)</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2><a name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:aff082661bae0d33e08b9687da99208f3"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#aff082661bae0d33e08b9687da99208f3">extractFrameGraph</a> (obj)</td></tr>
+<tr class="memitem:acc5bc0cbdc600aa9590f36e2150508f6"><td class="memItemLeft" align="right" valign="top">function&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#acc5bc0cbdc600aa9590f36e2150508f6">recurseTFs</a> (obj, A, fr)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2><a name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
@@ -157,7 +163,7 @@ Private Attributes</h2></td></tr>
 <tr class="memitem:a91b8066fb198b6f98b3e7209c987ecf7"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#a91b8066fb198b6f98b3e7209c987ecf7">poly</a></td></tr>
 <tr class="memdesc:a91b8066fb198b6f98b3e7209c987ecf7"><td class="mdescLeft">&#160;</td><td class="mdescRight">optional msspoly variables for this frame  <a href="#a91b8066fb198b6f98b3e7209c987ecf7"></a><br/></td></tr>
 <tr class="memitem:a88e9268257fbedaae9be2c6a38ad9163"><td class="memItemLeft" align="right" valign="top">Property&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="class_coordinate_frame.html#a88e9268257fbedaae9be2c6a38ad9163">prefix</a></td></tr>
-<tr class="memdesc:a88e9268257fbedaae9be2c6a38ad9163"><td class="mdescLeft">&#160;</td><td class="mdescRight">single character prefix used for the msspoly variables  <a href="#a88e9268257fbedaae9be2c6a38ad9163"></a><br/></td></tr>
+<tr class="memdesc:a88e9268257fbedaae9be2c6a38ad9163"><td class="mdescLeft">&#160;</td><td class="mdescRight">a vector character prefix used for the msspoly variables, or a vector of size dim listing prefixes for each variable  <a href="#a88e9268257fbedaae9be2c6a38ad9163"></a><br/></td></tr>
 </table>
 <hr/><a name="details" id="details"></a><h2>Detailed Description</h2>
 <div class="textblock"><p>Every input, state, and output in a <a class="el" href="class_dynamical_system.html" title="An interface class for a state-space dynamical system with a single (vector) input u...">DynamicalSystem</a> has a coordinate frame attached to it. </p>
@@ -204,7 +210,7 @@ Private Attributes</h2></td></tr>
   <table class="params">
     <tr><td class="paramname">name</td><td>is a string name associated with this coordinate frame</td></tr>
     <tr><td class="paramname">dim</td><td>is the scalar number of elements in this frame</td></tr>
-    <tr><td class="paramname">prefix</td><td>is a single character for a mss_poly variable associated with this frame. <br/>
+    <tr><td class="paramname">prefix</td><td>is a single character for a mss_poly variable associated with this frame. you may also specify a vector of size dim of characters specifying the prefix for each variable. <br/>
  <em>Default:</em> first character of name</td></tr>
     <tr><td class="paramname">coordinates</td><td>is a cell array (with dim elements) of strings of giving the names of the coordinates. <br/>
  <em>Default:</em> x1,x2,x3 etc, where x is the prefix</td></tr>
@@ -387,6 +393,39 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a class="anchor" id="aff082661bae0d33e08b9687da99208f3"></a>
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">function extractFrameGraph </td>
+          <td>(</td>
+          <td class="paramtype">obj&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<dl class="retval"><dt>Return values:</dt><dd>
+  <table class="retval">
+    <tr><td class="paramname">A</td><td></td></tr>
+    <tr><td class="paramname">fr</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Reimplemented in <a class="el" href="class_multi_coordinate_frame.html#aff082661bae0d33e08b9687da99208f3">MultiCoordinateFrame</a>.</p>
+
+</div>
+</div>
 <a class="anchor" id="a9bd7dd7eff247c78acb66b16a1795c69"></a>
 <div class="memitem">
 <div class="memproto">
@@ -527,6 +566,9 @@ Private Attributes</h2></td></tr>
 <a class="anchor" id="acc5bc0cbdc600aa9590f36e2150508f6"></a>
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">function recurseTFs </td>
@@ -552,6 +594,11 @@ Private Attributes</h2></td></tr>
           <td></td><td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 <dl class="retval"><dt>Return values:</dt><dd>
   <table class="retval">
@@ -634,6 +681,46 @@ Private Attributes</h2></td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a class="anchor" id="af003220f40fc5a82ad89f01aaf976779"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">function setupLCMInputs </td>
+          <td>(</td>
+          <td class="paramtype">obj&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">mdl&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">subsys&#160;</td>
+          <td class="paramname">, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">subsys_portnum&#160;</td>
+          <td class="paramname">&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="class_multi_coordinate_frame.html#af003220f40fc5a82ad89f01aaf976779">MultiCoordinateFrame</a>, <a class="el" href="class_l_c_m_coordinate_frame.html#af003220f40fc5a82ad89f01aaf976779">LCMCoordinateFrame</a>, and <a class="el" href="class_l_c_m_coordinate_frame_w_coder.html#af003220f40fc5a82ad89f01aaf976779">LCMCoordinateFrameWCoder</a>.</p>
 
 </div>
 </div>
@@ -843,7 +930,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>single character prefix used for the msspoly variables </p>
+<p>a vector character prefix used for the msspoly variables, or a vector of size dim listing prefixes for each variable </p>
 
 </div>
 </div>
@@ -875,7 +962,7 @@ Private Attributes</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Jan 9 2013 06:03:02 for drake by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sun Jan 13 2013 23:48:43 for drake by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.1.1
 </small></address>

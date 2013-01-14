@@ -70,6 +70,6 @@ var searchData=
   ['runswingup',['runSwingUp',['../_acrobot_2run_swing_up_8m.html#a157b8205c84d53edecdd073cfb896ddb',1,'runSwingUp():&#160;runSwingUp.m'],['../_cart_pole_2run_swing_up_8m.html#a157b8205c84d53edecdd073cfb896ddb',1,'runSwingUp():&#160;runSwingUp.m'],['../_pendulum_2run_swing_up_8m.html#a157b8205c84d53edecdd073cfb896ddb',1,'runSwingUp():&#160;runSwingUp.m']]],
   ['runtaylor',['runTaylor',['../class_sine_sys.html#a8667c25988890b7aa949b671feb0ca49',1,'SineSys']]],
   ['runtest',['runTest',['../unit_test_8m.html#a1891ba1cdc979c275f6896db26eaea56',1,'unitTest.m']]],
-  ['runtrajectoryswingupandbalance',['runTrajectorySwingUpAndBalance',['../run_l_q_r_tree_8m.html#afc251804fefb3ebbf7b9241b601071d2',1,'runTrajectorySwingUpAndBalance():&#160;runLQRTree.m'],['../run_trajectory_swing_up_and_balance_8m.html#afc251804fefb3ebbf7b9241b601071d2',1,'runTrajectorySwingUpAndBalance():&#160;runTrajectorySwingUpAndBalance.m']]],
+  ['runtrajectoryswingupandbalance',['runTrajectorySwingUpAndBalance',['../run_trajectory_swing_up_and_balance_8m.html#afc251804fefb3ebbf7b9241b601071d2',1,'runTrajectorySwingUpAndBalance.m']]],
   ['runtrigpolyvectorfields',['runTrigPolyVectorFields',['../class_sine_sys.html#add51f1ed7428a7e72a04ec05ee353eb8',1,'SineSys']]]
 ];

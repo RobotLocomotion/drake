@@ -1,7 +1,7 @@
 var searchData=
 [
   ['s',['s',['../class_trig_poly.html#a39ee6080f17b7493d7f1dd8152cfe5e6',1,'TrigPoly::s()'],['../class_planar_model.html#a7bf8ca8cb8536eea4867554757df0a3f',1,'PlanarModel::S()'],['../class_model.html#a3b609b0cf3eca50effe1a0c8fb0e71af',1,'Model::S()'],['../class_quadratic_lyapunov_function.html#aa088b6d11a7e5aea358d178f38ea9ff1',1,'QuadraticLyapunovFunction::S()']]],
-  ['s1',['s1',['../class_quadratic_lyapunov_function.html#a0190fa086f68b213318dfa04e48d7c09',1,'QuadraticLyapunovFunction::s1()'],['../class_l_q_r_tree.html#a0c2298624443bd7852799ef99a8b0612',1,'LQRTree::S1()']]],
+  ['s1',['S1',['../class_l_q_r_tree.html#a0c2298624443bd7852799ef99a8b0612',1,'LQRTree::S1()'],['../class_quadratic_lyapunov_function.html#a0190fa086f68b213318dfa04e48d7c09',1,'QuadraticLyapunovFunction::s1()']]],
   ['s2',['s2',['../class_l_q_r_tree.html#a1590c6c38c497e1a0e75e24e5d7b80b4',1,'LQRTree::s2()'],['../class_quadratic_lyapunov_function.html#a1590c6c38c497e1a0e75e24e5d7b80b4',1,'QuadraticLyapunovFunction::s2()']]],
   ['s3',['s3',['../class_l_q_r_tree.html#aaf0ee8d4349a77191ac0f254c0237c4e',1,'LQRTree']]],
   ['s_5fe',['S_e',['../class_glider_plant.html#a18dd2955b484b216e8b03a2f1065e6dd',1,'GliderPlant']]],
@@ -18,6 +18,7 @@ var searchData=
   ['s_5fw',['S_w',['../class_glider_plant.html#a391098db889b179a0b00495fd716709c',1,'GliderPlant']]],
   ['secondderivativescached',['secondDerivativesCached',['../class_planar_model.html#a2cdd2a2f413be0c4eb7d3c6e56f48306',1,'PlanarModel::secondDerivativesCached()'],['../class_model.html#a2cdd2a2f413be0c4eb7d3c6e56f48306',1,'Model::secondDerivativesCached()']]],
   ['selfpowered',['SelfPowered',['../struct_f_t___p_r_o_g_r_a_m___d_a_t_a.html#a7761555b3e39f95eea0e9931c8b508e9',1,'FT_PROGRAM_DATA']]],
+  ['sensor',['sensor',['../class_rigid_body_manipulator.html#a50ca9b935009c3766dc577422372604c',1,'RigidBodyManipulator']]],
   ['serialnumber',['SerialNumber',['../struct_f_t___p_r_o_g_r_a_m___d_a_t_a.html#a1d5860c5fb91738cb7730c746711483f',1,'FT_PROGRAM_DATA::SerialNumber()'],['../struct_f_t___d_e_v_i_c_e___l_i_s_t___i_n_f_o___n_o_d_e.html#acbaf4db9885a0ba01f121e5c6597a1b3',1,'FT_DEVICE_LIST_INFO_NODE::SerialNumber()']]],
   ['sernumenable',['SerNumEnable',['../struct_f_t___p_r_o_g_r_a_m___d_a_t_a.html#acc7f9a2f9655ac24338ad35ee4d4078c',1,'FT_PROGRAM_DATA']]],
   ['sernumenable5',['SerNumEnable5',['../struct_f_t___p_r_o_g_r_a_m___d_a_t_a.html#a95624c1f50f4114d9febc378b2dcedfc',1,'FT_PROGRAM_DATA']]],

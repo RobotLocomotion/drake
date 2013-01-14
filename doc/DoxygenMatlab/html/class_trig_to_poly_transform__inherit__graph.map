@@ -1,5 +1,6 @@
 <map id="G" name="G">
-<area shape="rect" id="node2" href="$class_coordinate_transform.html" title="CoordinateTransform" alt="" coords="5,155,160,181"/>
-<area shape="rect" id="node4" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="28,80,137,107"/>
-<area shape="rect" id="node6" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="13,5,152,32"/>
+<area shape="rect" id="node2" href="$class_coordinate_transform.html" title="CoordinateTransform" alt="" coords="5,229,160,256"/>
+<area shape="rect" id="node4" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="28,155,137,181"/>
+<area shape="rect" id="node6" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="13,80,152,107"/>
+<area shape="rect" id="node8" href="$classhandle.html" title="handle" alt="" coords="50,5,115,32"/>
 </map>

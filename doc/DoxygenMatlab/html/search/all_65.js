@@ -45,6 +45,7 @@ var searchData=
   ['export2pdf_2em',['export2pdf.m',['../export2pdf_8m.html',1,'']]],
   ['extensions',['extensions',['../configure_8m.html#a7f9d5a27b305118ad706a607794b5108',1,'configure.m']]],
   ['extractfeatherstone',['extractFeatherstone',['../class_planar_rigid_body_manipulator.html#aecfbc88df1afca89b138d3c85304c944',1,'PlanarRigidBodyManipulator::extractFeatherstone()'],['../class_rigid_body_manipulator.html#aecfbc88df1afca89b138d3c85304c944',1,'RigidBodyManipulator::extractFeatherstone()']]],
+  ['extractframegraph',['extractFrameGraph',['../class_coordinate_frame.html#aff082661bae0d33e08b9687da99208f3',1,'CoordinateFrame::extractFrameGraph()'],['../class_multi_coordinate_frame.html#aff082661bae0d33e08b9687da99208f3',1,'MultiCoordinateFrame::extractFrameGraph()']]],
   ['extractlinearsystem',['extractLinearSystem',['../class_affine_system.html#a37d72fbbb1b4a56b8b9e45ded56de0fc',1,'AffineSystem']]],
   ['extractquadraticlyapunovfunction',['extractQuadraticLyapunovFunction',['../class_polynomial_lyapunov_function.html#a3410c96bdecc5c12d21308ea91e4e356',1,'PolynomialLyapunovFunction::extractQuadraticLyapunovFunction()'],['../class_quadratic_lyapunov_function.html#a3410c96bdecc5c12d21308ea91e4e356',1,'QuadraticLyapunovFunction::extractQuadraticLyapunovFunction()']]]
 ];
