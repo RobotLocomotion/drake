@@ -89,7 +89,7 @@ for v=1:length(varargin)
     for b=1:19, fprintf(1,'\b'); end
     fprintf(1,'grad %5d of %5d',i,length(x));
     samples = linspace(-options.scale{v}(i),options.scale{v}(i),options.num_samples);
-    ind=floor((options.num_samples-eps)/2);
+    ind=ceil((options.num_samples-eps)/2);
     for s=1:options.num_samples
       y(:,s) = FUN(varargin{1:v-1},varargin{v}+[zeros(i-1,1);samples(s);zeros(length(x)-i,1)],varargin{v+1:end});
     end
