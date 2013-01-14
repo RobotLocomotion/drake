@@ -19,6 +19,7 @@ if (~isfield(options,'floating')) options.floating = false; end
 if (~isfield(options,'inertial')) options.inertial = true; end
 if (~isfield(options,'visual')) options.visual = true; end
 if (~isfield(options,'visual_geometry')) options.visual_geometry = false; end
+if (~isfield(options,'namesuffix')) options.namesuffix = ''; end
 
 %disp(['Parsing ', urdf_filename]);
 [options.urdfpath,name,ext] = fileparts(urdf_filename);
@@ -43,6 +44,7 @@ function model=parseRobot(model,node,options)
 %disp(['Parsing robot ', char(node.getAttribute('name')), ' from URDF file...']);
 model.name = char(node.getAttribute('name'));
 model.name = regexprep(model.name, '\.', '_', 'preservecase');
+model.name = [model.name,options.namesuffix];
 
 materials = node.getElementsByTagName('material');
 for i=0:(materials.getLength()-1)

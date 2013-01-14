@@ -18,15 +18,15 @@ public:
   int parent;
 
   PlanarRigidBody() {
-    this->nq = 0;
+    nq = 0;
   }
   
   void setN(int n) {    
-    this->nq = n;
-    this->T = Matrix3d::Zero();
-    this->dTdq = MatrixXd::Zero(3*n,3);
-    this->ddTdqdq = MatrixXd::Zero(3*n*n,3);
-    this->Ttree = Matrix3d::Zero();
+    nq = n;
+    T = Matrix3d::Zero();
+    dTdq = MatrixXd::Zero(3*n,3);
+    ddTdqdq = MatrixXd::Zero(3*n*n,3);
+    Ttree = Matrix3d::Zero();
   }
   
   ~PlanarRigidBody() {

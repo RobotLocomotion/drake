@@ -42,67 +42,66 @@ public:
   double *cached_q;
 
   PlanarModel(int n) {
-    this->NB = n;
-    this->jcode = new int[n];
-    this->parent = new int[n];
-    this->Xtree = new Matrix3d[n];
-    this->I = new Matrix3d[n];
-    this->a_grav << 0.0, 0.0, 0.0;
+    NB = n;
+    jcode = new int[n];
+    parent = new int[n];
+    Xtree = new Matrix3d[n];
+    I = new Matrix3d[n];
+    a_grav << 0.0, 0.0, 0.0;
     
-    this->S = new Vector3d[n];
-    this->Xup = new Matrix3d[n];
-    this->v = new Vector3d[n];
-    this->avp = new Vector3d[n];
-    this->fvp = new Vector3d[n];
-    this->IC = new Matrix3d[n];
+    S = new Vector3d[n];
+    Xup = new Matrix3d[n];
+    v = new Vector3d[n];
+    avp = new Vector3d[n];
+    fvp = new Vector3d[n];
+    IC = new Matrix3d[n];
     
-    this->H = MatrixXd::Zero(n,n);
-    this->C.resize(n,1); // C gets over-written completely by the algorithm below.
+    H = MatrixXd::Zero(n,n);
+    C.resize(n,1); // C gets over-written completely by the algorithm below.
     
     //Variable allocation for gradient calculations
-    this->dXupdq = new Matrix3d[n];
-    this->dIC = new Matrix3d*[n];
+    dXupdq = new Matrix3d[n];
+    dIC = new Matrix3d*[n];
     for(int i=0; i < n; i++) {
-     this->dIC[i] = new Matrix3d[n]; 
+      dIC[i] = new Matrix3d[n]; 
     }
-    this->dH = MatrixXd::Zero(n*n,n);
-    this->dvJdqd_mat = MatrixXd::Zero(3,n);
-//     this->dcross.resize(3,n);
-    this->dC = MatrixXd::Zero(n,2*n);
+    dH = MatrixXd::Zero(n*n,n);
+    dvJdqd_mat = MatrixXd::Zero(3,n);
+//     dcross.resize(3,n);
+    dC = MatrixXd::Zero(n,2*n);
     
-    this->dvdq = new MatrixXd[n];
-    this->dvdqd = new MatrixXd[n];
-    this->davpdq = new MatrixXd[n];
-    this->davpdqd = new MatrixXd[n];
-    this->dfvpdq = new MatrixXd[n];
-    this->dfvpdqd = new MatrixXd[n];
+    dvdq = new MatrixXd[n];
+    dvdqd = new MatrixXd[n];
+    davpdq = new MatrixXd[n];
+    davpdqd = new MatrixXd[n];
+    dfvpdq = new MatrixXd[n];
+    dfvpdqd = new MatrixXd[n];
     
     for(int i=0; i < n; i++) {
-     this->dvdq[i] = MatrixXd::Zero(3,n);
-     this->dvdqd[i] = MatrixXd::Zero(3,n);
-     this->davpdq[i] = MatrixXd::Zero(3,n);
-     this->davpdqd[i] = MatrixXd::Zero(3,n);
-     this->dfvpdq[i] = MatrixXd::Zero(3,n);
-     this->dfvpdqd[i] = MatrixXd::Zero(3,n);
-     
+     dvdq[i] = MatrixXd::Zero(3,n);
+     dvdqd[i] = MatrixXd::Zero(3,n);
+     davpdq[i] = MatrixXd::Zero(3,n);
+     davpdqd[i] = MatrixXd::Zero(3,n);
+     dfvpdq[i] = MatrixXd::Zero(3,n);
+     dfvpdqd[i] = MatrixXd::Zero(3,n);
     }        
     //This assumes that there is only one "world" object
-    this->bodies = new PlanarRigidBody[n+1];
+    bodies = new PlanarRigidBody[n+1];
     
     for(int i=0; i < n+1; i++) {
-      this->bodies[i].setN(n);
+      bodies[i].setN(n);
     }
     
-    this->kinematicsInit = false;
-    this->secondDerivativesCached = 0;
-    this->cached_q = new double[n];
+    kinematicsInit = false;
+    secondDerivativesCached = 0;
+    cached_q = new double[n];
   }
   
   ~PlanarModel() {
-    delete[] this->jcode;
-    delete[] this->parent;
-    delete[] this->Xtree;
-    delete[] this->I;
+    delete[] jcode;
+    delete[] parent;
+    delete[] Xtree;
+    delete[] I;
     
     delete[] S;
     delete[] Xup;
@@ -112,6 +111,9 @@ public:
     delete[] IC;
     
     delete[] dXupdq;
+    for (int i=0; i<NB; i++) {
+      delete[] dIC[i]; 
+    }
     delete[] dIC;
     delete[] dvdq;
     delete[] dvdqd;
@@ -119,5 +121,8 @@ public:
     delete[] davpdqd;
     delete[] dfvpdq;
     delete[] dfvpdqd;
+    
+    delete[] bodies;
+    delete[] cached_q;
   }
 };

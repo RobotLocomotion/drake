@@ -2,7 +2,7 @@ classdef ContactForceTorqueSensor < RigidBodySensor
   
   properties
     frame;
-    tsmanip
+    tsmanip;
     body
     normal_ind=[];
     tangent_ind=[];
@@ -49,32 +49,32 @@ classdef ContactForceTorqueSensor < RigidBodySensor
       obj.body = body;
       obj.T = T;
       obj.xyz = xyz;
-      
     end
     
     function obj = compile(obj)
-      m = obj.tsmanip.manip;
-      nL = sum([m.joint_limit_min~=-inf;m.joint_limit_max~=inf]); % number of joint limits
-      nC = m.num_contacts;
-      nP = 2*m.num_position_constraints;  % number of position constraints
-      nV = m.num_velocity_constraints;  
+      manip = obj.tsmanip.manip;
+      
+      nL = sum([manip.joint_limit_min~=-inf;manip.joint_limit_max~=inf]); % number of joint limits
+      nC = manip.num_contacts;
+      nP = 2*manip.num_position_constraints;  % number of position constraints
+      nV = manip.num_velocity_constraints;  
 
-      body_ind = find(m.body==obj.body,1);
+      body_ind = find(manip.body==obj.body,1);
       num_body_contacts = size(obj.body.contact_pts,2);
-      contact_ind_offset = size([m.body(1:body_ind-1).contact_pts],2);
+      contact_ind_offset = size([manip.body(1:body_ind-1).contact_pts],2);
       
       % z(nL+nP+(1:nC)) = cN
       obj.normal_ind = nL+nP+contact_ind_offset+(1:num_body_contacts);
       
-      mC = 2*length(m.surfaceTangents(m.gravity)); % get number of tangent vectors
+      mC = 2*length(manip.surfaceTangents(manip.gravity)); % get number of tangent vectors
 
       % z(nL+nP+nC+(1:mC*nC)) = [beta_1;...;beta_mC]
       for i=1:mC
         obj.tangent_ind{i} = nL+nP+(mC*nC)+contact_ind_offset+(1:num_body_contacts);
       end
       
-      if isa(m,'PlanarRigidBodyManipulator')
-        obj.jsign=sign(dot(m.view_axis,[0;-1;0]));
+      if isa(manip,'PlanarRigidBodyManipulator')
+        obj.jsign=sign(dot(manip.view_axis,[0;-1;0]));
       end
     end
     
