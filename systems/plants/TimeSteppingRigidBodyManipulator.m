@@ -19,6 +19,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         if options.twoD
           S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
           warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
+          warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
           manip = PlanarRigidBodyManipulator(manipulator_or_urdf_filename,options);
           warning(S);
         else
@@ -48,6 +49,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             
       obj = setInputFrame(obj,getInputFrame(obj.manip));
       obj = setStateFrame(obj,getStateFrame(obj.manip));
+      obj = setOutputFrame(obj,getOutputFrame(obj.manip));
+    end
+    
+    function obj = compile(obj)
+      obj.manip = obj.manip.compile();
+      obj = obj.setInputLimits(obj.manip.umin,obj.manip.umax);
+      obj = setInputFrame(obj,getInputFrame(obj.manip));
+      obj = setStateFrame(obj,getStateFrame(obj.manip));
+      obj = setNumOutputs(obj,getNumOutputs(obj.manip));
       obj = setOutputFrame(obj,getOutputFrame(obj.manip));
     end
     
