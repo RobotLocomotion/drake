@@ -19,6 +19,15 @@ classdef SecondOrderSystem < DrakeSystem
     qdd = sodynamics(obj,t,q,qd,u)  % implements qdd = f(t,q,qd,u)
   end
 
+  methods % (Sealed=true) % todo: set this, and pass gradients through the proper way
+    function xdot = dynamics(obj,t,x,u)
+    % Provides the dynamics interface for sodynamics
+      q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
+      qdd = obj.sodynamics(t,q,qd,u);
+      xdot = [qd;qdd];
+    end
+  end
+  
   methods
     function obj = setNumDOF(obj,num_q)
     % Guards the num_q variable to make sure it stays consistent 
@@ -35,12 +44,6 @@ classdef SecondOrderSystem < DrakeSystem
       obj = setNumOutputs(obj,num_xc); 
     end
     
-    function xdot = dynamics(obj,t,x,u)
-    % Provides the dynamics interface for sodynamics
-      q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
-      qdd = obj.sodynamics(t,q,qd,u);
-      xdot = [qd;qdd];
-    end
     
     function y = output(obj,t,x,u)
       % default output is the full state
