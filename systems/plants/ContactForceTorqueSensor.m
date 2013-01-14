@@ -49,6 +49,8 @@ classdef ContactForceTorqueSensor < RigidBodySensor
       obj.body = body;
       obj.T = T;
       obj.xyz = xyz;
+      tsmanip.setDirectFeedthrough(true);
+      tsmanip.manip.setDirectFeedthrough(true);
     end
     
     function obj = compile(obj)
