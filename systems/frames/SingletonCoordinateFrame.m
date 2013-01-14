@@ -11,7 +11,7 @@ classdef SingletonCoordinateFrame < CoordinateFrame & Singleton
       if (obj.dim~=dim)
         error(['Singleton coordinate frame ', name, ' already exists, but with a different dimension']);
       end
-      if (~isempty(prefix) && obj.prefix~=prefix)
+      if (~isempty(prefix) && any(obj.prefix~=prefix))
         error(['Singleton coordinate frame ', name,' already exists, but a different prefix']);
       end
     end

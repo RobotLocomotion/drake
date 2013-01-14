@@ -5,9 +5,13 @@ classdef RigidBodyManipulator < Manipulator
     
   properties
     name=[];        % name of the rigid body system
-    body=[];        % cell array of RigidBody objects
-    actuator = [];  % cell array of RigidBodyActuator objects
-    loop=[];        % cell array RigidBodyLoop objects
+    body=[];        % array of RigidBody objects
+    actuator = [];  % array of RigidBodyActuator objects
+    loop=[];        % array of RigidBodyLoop objects
+    sensor={};      % cell array of RigidBodySensor objects
+      % note: need {} for arrays that will have multiple types (e.g.
+      % a variety of derived classes), but can get away with [] for arrays
+      % with elements that are all exactly the same type
 
     gravity=[0;0;-9.81];
     
@@ -26,6 +30,20 @@ classdef RigidBodyManipulator < Manipulator
       if (nargin>0 && ~isempty(urdf_filename))
         if (nargin<2) options = struct(); end
         obj = parseURDF(obj,urdf_filename,options);
+      end
+    end
+    
+    function y = output(obj,t,x,u)
+      if isempty(obj.sensor)
+        y = x;
+      else
+        if ~isDirectFeedthrough(obj)
+          u=[];
+        end
+        y = [];
+        for i=1:length(obj.sensor)
+          y = [y; obj.sensor{i}.output(t,x,u)];
+        end
       end
     end
     
@@ -275,6 +293,20 @@ classdef RigidBodyManipulator < Manipulator
       if getNumStates(model)>0
         stateframe = constructStateFrame(model);
         model = setStateFrame(model,stateframe);
+      end
+      
+      if length(model.sensor)>0
+        for i=1:length(model.sensor)
+          outframe{i} = model.sensor{i}.getFrame();
+        end
+        if (length(outframe)>1)
+          fr = MultiCoordinateFrame(outframe);
+        else
+          fr = outframe{1};
+        end
+        model = setNumOutputs(model,fr.dim);
+        model = setOutputFrame(model,fr);
+      else
         model = setOutputFrame(model,stateframe);  % output = state
       end
       
@@ -388,7 +420,7 @@ classdef RigidBodyManipulator < Manipulator
     function fr = constructStateFrame(model)
       joints = {model.body(~cellfun(@isempty,{model.body.parent})).jointname}';
       coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
-      fr = CoordinateFrame([model.name,'State'],2*model.featherstone.NB,'x',coordinates);
+      fr = SingletonCoordinateFrame([model.name,'State'],2*model.featherstone.NB,'x',coordinates);
     end
     
     function fr = constructInputFrame(model)
@@ -398,11 +430,11 @@ classdef RigidBodyManipulator < Manipulator
         coordinates={};
       end
        
-      fr = CoordinateFrame([model.name,'Input'],size(model.B,2),'u',coordinates);
+      fr = SingletonCoordinateFrame([model.name,'Input'],size(model.B,2),'u',coordinates);
     end
     
     function fr = constructCOMFrame(model)
-      fr = CoordinateFrame([model.name,'COM'],3,'m',{'com_x','com_y','com_z'});
+      fr = SingletonCoordinateFrame([model.name,'COM'],3,'m',{'com_x','com_y','com_z'});
       
       return; 
       
