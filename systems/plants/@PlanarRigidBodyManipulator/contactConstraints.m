@@ -57,7 +57,7 @@ s = sign(sum(relpos.*normal,1));
 %       phi = (sqrt(sum(relpos.^2,1)).*s)'; %replaced this with normal
 %       distance
 
-t = obj.surfaceTangents(normal);
+t = obj.surfaceTangents(normal); t=t{1};
 
 phi = sum(relpos.*normal)';
 phi_f = sum(relpos.*t)';

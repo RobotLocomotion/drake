@@ -554,8 +554,8 @@ classdef RigidBodyManipulator < Manipulator
       
       t2 = cross(t1,normal);
       
-      m = 4;  % must be an even number
-      theta = (0:(m-1))*2*pi/m;
+      m = 2;  % half of the the number of direct vectors
+      theta = (0:(m-1))*pi/m;
       
       for k=1:m
         d{k}=cos(theta(k))*t1 + sin(theta(k))*t2;
