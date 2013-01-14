@@ -62,6 +62,12 @@ if (nargout>1)
       dD{k} = reshape(sparse(repmat(1:obj.num_contacts,3,1),1:3*obj.num_contacts,t(:))*dJ,numel(n),[]);
     end
   end
+  for k=(m+1):2*m
+    D{k} = -D{k-m};
+    if (nargout>4)
+      dD{k} = -dD{k-m};
+    end
+  end
   
   % the above is the vectorized version of this:
   %        for i=1:obj.num_contacts

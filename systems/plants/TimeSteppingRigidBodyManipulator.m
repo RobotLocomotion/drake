@@ -196,8 +196,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       active = repmat(true,nL+nP+(mC+2)*nC,1);
       active_tol = .01;
       
-      % note: I'm inverting H twice here.  Should i do it only once, in a
-      % previous step?
       Hinv = inv(H);
       wqdn = qd + h*Hinv*tau;
       Mqdn = Hinv*J';
