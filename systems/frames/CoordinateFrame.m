@@ -375,6 +375,54 @@ classdef CoordinateFrame < handle
       add_line(mdl,[subsys,'/',num2str(subsys_portnum)],['terminator',uid,'/1']);
     end
     
+    function connection = autoConnect(fr1,fr2,connection)
+      % populates the connection structure as used in mimoCascade and
+      % mimoFeedback
+      % if connection is passed in, then it simply attempts to validate the
+      % connection.
+      
+      if nargin>2 && ~isempty(connection)
+        typecheck(connection,'struct');
+        if ~isempty(setxor(fieldnames(connection),{'from_output','to_input'}))
+          error('connection must be a struct with fields "from_output" and "to_input"');
+        end
+        % convert any frames to indices
+        for i=1:length(connection)
+          if isa(connection(i).from_output,'CoordinateFrame')
+            connection(i).from_output = getFrameNum(fr1,connection(i).from_output);
+          end
+          if isa(connection(i).to_input,'CoordinateFrame')
+            connection(i).to_input = getFrameNum(fr2,connection(i).to_input);
+          end
+          typecheck(connection(i).from_output,'numeric');
+          typecheck(connection(i).to_input,'numeric');
+        end
+        rangecheck([connection.from_output],1,getNumFrames(fr1));
+        rangecheck([connection.to_input],1,getNumFrames(fr2));
+      else
+        connection=[];
+        for i=1:getNumFrames(fr1)
+          for j=1:getNumFrames(fr2)
+            if getFrameByNum(fr1,i)==getFrameByNum(fr2,j)
+              tf=true;  % not actually used here, just make it non-empty
+            else
+              tf=findTransform(getFrameByNum(fr1,i),getFrameByNum(fr2,j));
+            end
+            if ~isempty(tf)
+              if ~isempty(connection)&&any([connection.to_input]==j)
+                error('Automatic connection failed.  The possible mappings from the output of sys1 to the input of sys2 are not unique');
+              end
+              connection(end+1).from_output=i;
+              connection(end).to_input=j;
+            end
+          end
+        end
+        if isempty(connection)
+          error('Autonmatic connection failed.  Could not find any possible connections between sys1 and sys2');
+        end
+      end      
+    end
+    
   end
   
   methods (Access=private)

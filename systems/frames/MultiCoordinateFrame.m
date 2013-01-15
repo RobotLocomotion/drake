@@ -23,6 +23,10 @@ classdef MultiCoordinateFrame < CoordinateFrame
       prefix=[];
       coordinates={};
       
+      if (length(coordinate_frames)==1)
+        error('you''ve only passed in a single frame.  you should be calling MultiCoordinateFrame.constructFrame instead, to get the correct behavior');
+      end
+      
       % if coordinate_frame contains multi-frames, then extract them here
       % (don't allow recursive multi-frames)
       cf = coordinate_frames;
@@ -34,7 +38,6 @@ classdef MultiCoordinateFrame < CoordinateFrame
           coordinate_frames=vertcat(coordinate_frames,{cf{i}});
         end
       end
-      
       
       for i=1:length(coordinate_frames)
         typecheck(coordinate_frames{i},'CoordinateFrame');
@@ -230,6 +233,19 @@ classdef MultiCoordinateFrame < CoordinateFrame
         [B,frb] = extractFrameGraph(obj.frame{i});
         A = blkdiag(A,B);
         fr = vertcat(fr,frb);
+      end
+    end
+  end
+  
+  methods (Static=true)
+    function obj = constructFrame(frames)
+      % if frames has only a single element, then return it, otherwise
+      % construct the construct the mimo frame
+      typecheck(frames,'cell');
+      if (length(frames)==1)
+        obj = frames{1};
+      else
+        obj = MultiCoordinateFrame(frames);
       end
     end
   end

@@ -20,3 +20,5 @@ output_select(2).system=2;
 output_select(2).output=2;
 open_system(getModel(mimoCascade(sys2,sys1,[],[],output_select)));
 
+
+open_system(getModel(mimoFeedback(sys1,sys2)));
