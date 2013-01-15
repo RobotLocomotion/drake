@@ -1,14 +1,13 @@
-function newsys = mimoCascade(sys1,sys2,connection,input_select,output_select)
-% Cascades two systems which can have multiple input/output
-% frames
+function newsys = mimoFeedback(sys1,sys2,sys1_to_sys2_connection,sys2_to_sys1_connection,input_select,output_select)
+% Feedback combination of two (possibly multi-input, multi-output systems)
 %
-% @param connection an optional struct with fields "from_output" and 
-% "to_input" specifying the connections FROM sys1 TO sys2.  This matrix 
-% can have integer values (indicating the input/output number) or 
-% CoordinateFrame values.  @default attempts to automatically connect all
-% signals that have an available transform.  If this connection structure
-% is not unique, then an error is thrown (informing you that you must 
-% specify things manually).
+% @param sys1_to_sys2_connection an optional struct with fields 
+% "from_output" and "to_input" specifying the connections FROM sys1 TO 
+% sys2.  This matrix can have integer values (indicating the input/output 
+% number) or CoordinateFrame values.  @default attempts to automatically 
+% connect all signals that have an available transform.  If this connection 
+% structure is not unique, then an error is thrown (informing you that you
+% must specify things manually).
 %   Example:
 %      connection(1).from_output = 1;
 %      connection(1).to_input = 2;
@@ -21,13 +20,16 @@ function newsys = mimoCascade(sys1,sys2,connection,input_select,output_select)
 %    connect the state output (which must be a subset of the robot
 %    outputframe for this example to work) to the second input of the sys2.
 %
+% @param sys2_to_sys1_connection work just like sys1_to_sys2_connection,
+% but for the other half of the connections.
+%
 % @param input_select an optional structure with fields "system" and "input"
 % indicating the inputs that should be collected as inputs to the new
 % system.  The values of the system field must be either 1 or 2.  The 
 % values of the "input" field can either be the input number or an input 
 % frame (which must match one of the frames exactly, not through a 
-% coordinate transformation).  @default all of the inputs from sys1 
-% followed by any unused inputs from sys2.
+% coordinate transformation).  @default all of the unused inputs from sys1 
+% followed by all unused inputs from sys2.
 %   Example:
 %      input_select(1).system = 1;
 %      input_select(1).input = 2;
@@ -37,10 +39,10 @@ function newsys = mimoCascade(sys1,sys2,connection,input_select,output_select)
 % @param output_select an optional structure with fields "system" and 
 % "output" representing the outputs from sys1 and sys2 (analogous to
 % input_select).  @default all of the unused outputs from sys1
-% followed by all of the outputs from sys2.
+% followed by all of unused outputs from sys2.
 %
 % Notes:
-%  - The inputs to sys2 may not be used by more than one input (from
+%  - The inputs to a system may not be used by more than one input (from
 %    sys1, or from the outside world).  Unused inputs will be left
 %    unconnected (effectively setting them to zero).
 %  - All proposed connections are still checked to make sure they
@@ -52,8 +54,10 @@ typecheck(sys2,'DynamicalSystem');
 sizecheck(sys2,1);
 sys{1}=sys1; sys{2}=sys2;
 
-if (nargin<3) connection=[]; end
-connection = autoConnect(sys1.getOutputFrame,sys2.getInputFrame,connection);
+if (nargin<3) sys1_to_sys2_connection=[]; end
+sys1_to_sys2_connection = autoConnect(sys1.getOutputFrame,sys2.getInputFrame,sys1_to_sys2_connection);
+if (nargin<4) sys2_to_sys1_connection=[]; end
+sys2_to_sys1_connection = autoConnect(sys2.getOutputFrame,sys1.getInputFrame,sys2_to_sys1_connection);
 
 if (nargin>3 && ~isempty(input_select))
   typecheck(input_select,'struct');
@@ -70,8 +74,9 @@ if (nargin>3 && ~isempty(input_select))
     rangecheck(input_select(i).input,1,getNumFrames(sys{input_select(i).system}.getInputFrame));
   end
 else
-  sys1inputs = 1:getNumFrames(sys1.getInputFrame);
-  sys2inputs = setdiff(1:getNumFrames(sys2.getInputFrame),[connection.to_input]);
+  sys1inputs = setdiff(1:getNumFrames(sys1.getInputFrame),[sys2_to_sys1_connection.to_input]);
+  sys2inputs = setdiff(1:getNumFrames(sys2.getInputFrame),[sys1_to_sys2_connection.to_input]);
+  input_select=[];
   for i=1:length(sys1inputs)
     input_select(i).system=1;
     input_select(i).input=sys1inputs(i);
@@ -97,8 +102,8 @@ if (nargin>4 && ~isempty(output_select))
     rangecheck(output_select(i).output,1,getNumFrames(sys{output_select(i).system}.getOutputFrame));
   end
 else
-  sys1outputs = setdiff(1:getNumFrames(sys1.getOutputFrame),[connection.from_output]);
-  sys2outputs = 1:getNumFrames(sys2.getOutputFrame);
+  sys1outputs = setdiff(1:getNumFrames(sys1.getOutputFrame),[sys1_to_sys2_connection.from_output]);
+  sys2outputs = setdiff(1:getNumFrames(sys2.getOutputFrame),[sys2_to_sys1_connection.from_output]);
   output_select=[];
   for i=1:length(sys1outputs)
     output_select(i).system=1;
@@ -111,73 +116,75 @@ else
 end
 
 % check that no input is used more than once
-in1=[input_select([input_select.system]==1).input];
+in1=[sys2_to_sys1_connection.to_input];
+if ~isempty(input_select)
+  in1 = [in1,[input_select([input_select.system]==1).input]];
+end
 if length(unique(in1))<length(in1)
   in1
   error('you cannot use an input to sys1 more than once');
 end
-in2=[[connection.to_input];[input_select([input_select.system]==2).input]];
+in2=[sys1_to_sys2_connection.to_input];
+if ~isempty(input_select)
+  in2 = [in2,[input_select([input_select.system]==2).input]];
+end
 if length(unique(in2))<length(in2)
   in2
   error('you cannot use an input to sys2 more than once');
 end
 
 % now start constructing the simulink model
-mdl = ['Cascade_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
+mdl = ['Feedback_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
 new_system(mdl,'Model');
 set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
 
 load_system('simulink3');
 
-% construct subsystem (including demux if necessary) and output
+% construct subsystem (including mux/demux if necessary) and output
 % number for sys1
 add_block('simulink3/Subsystems/Subsystem',[mdl,'/system1']);
 Simulink.SubSystem.deleteContents([mdl,'/system1']);
 Simulink.BlockDiagram.copyContentsToSubSystem(sys1.getModel(),[mdl,'/system1']);
-sys1out = setupMultiOutput(sys1.getOutputFrame,mdl,'system1');
+in{1} = setupMultiInput(sys1.getInputFrame,mdl,'system1');
+out{1} = setupMultiOutput(sys1.getOutputFrame,mdl,'system1');
 
-% construct subsystem (including mux if necessary) and input number
+% construct subsystem (including mux/demux if necessary) and input number
 % for sys2
 add_block('simulink3/Subsystems/Subsystem',[mdl,'/system2']);
 Simulink.SubSystem.deleteContents([mdl,'/system2']);
 Simulink.BlockDiagram.copyContentsToSubSystem(sys2.getModel(),[mdl,'/system2']);
-sys2in = setupMultiInput(sys2.getInputFrame,mdl,'system2');
+in{2} = setupMultiInput(sys2.getInputFrame,mdl,'system2');
+out{2} = setupMultiOutput(sys2.getOutputFrame,mdl,'system2');
 
 % make internal connections (adding transforms if necessary)
+connection = [arrayfun(@(a)setfield(a,'from_system',1),arrayfun(@(a)setfield(a,'to_system',2),sys1_to_sys2_connection)), ...
+  arrayfun(@(a)setfield(a,'from_system',2),arrayfun(@(a)setfield(a,'to_system',1),sys2_to_sys1_connection))];
 for i=1:length(connection)
-  fr1 = getFrameByNum(sys1.getOutputFrame,connection(i).from_output);
-  fr2 = getFrameByNum(sys2.getInputFrame,connection(i).to_input);
+  fr1 = getFrameByNum(sys{connection(i).from_system}.getOutputFrame,connection(i).from_output);
+  fr2 = getFrameByNum(sys{connection(i).to_system}.getInputFrame,connection(i).to_input);
   if (fr1==fr2)
-    add_line(mdl,[sys1out,'/',num2str(connection(i).from_output)],[sys2in,'/',num2str(connection(i).to_input)]);
+    add_line(mdl,[out{connection(i).from_system},'/',num2str(connection(i).from_output)],[in{connection(i).to_system},'/',num2str(connection(i).to_input)]);
   else
     tf = findTransform(fr1,fr2,struct('throw_error_if_fail',true));
     add_block('simulink3/Subsystems/Subsystem',[mdl,'/tf',num2str(i)]);
     Simulink.SubSystem.deleteContents([mdl,'/tf',num2str(i)]);
     Simulink.BlockDiagram.copyContentsToSubSystem(tf.getModel(),[mdl,'/tf',num2str(i)]);
     
-    add_line(mdl,[sys1out,'/',num2str(connection(i).from_output)],['tf',num2str(i),'/1']);
-    add_line(mdl,['tf',num2str(i),'/1'],[sys2in,'/',num2str(connection(i).to_input)]);
+    add_line(mdl,[out{connection(i).from_system},'/',num2str(connection(i).from_output)],['tf',num2str(i),'/1']);
+    add_line(mdl,['tf',num2str(i),'/1'],[in{connection(i).to_system},'/',num2str(connection(i).to_input)]);
   end
 end
 
 % add input
 if length(input_select)>0
   add_block('simulink3/Sources/In1',[mdl,'/in']);
-  if ~any([input_select.system]==2) && isequal([input_select.input],1:getNumFrames(sys1.getInputFrame))
-    % don't add the a mux+demux unnecessarily
-    add_line(mdl,'in/1','system1/1');
-    newInputFrame=sys1.getInputFrame();
-  else
-    for i=1:length(input_select)
-      fr{i}=getFrameByNum(sys{input_select(i).system}.getInputFrame,input_select(i).input);
-    end
-    newInputFrame=MultiCoordinateFrame(fr);
-    newsysin = setupMultiOutput(newInputFrame,mdl,'in');
-    sys1in = setupMultiInput(sys1.getInputFrame,mdl,'system1');
-    sysin={sys1in,sys2in};
-    for i=1:length(input_select)
-      add_line(mdl,[newsysin,'/',num2str(i)],[sysin{input_select(i).system},'/',num2str(input_select(i).input)]);
-    end
+  for i=1:length(input_select)
+    fr{i}=getFrameByNum(sys{input_select(i).system}.getInputFrame,input_select(i).input);
+  end
+  newInputFrame=MultiCoordinateFrame.constructFrame(fr);
+  newsysin = setupMultiOutput(newInputFrame,mdl,'in');
+  for i=1:length(input_select)
+    add_line(mdl,[newsysin,'/',num2str(i)],[in{input_select(i).system},'/',num2str(input_select(i).input)]);
   end
 else
   newInputFrame=[];
@@ -186,31 +193,24 @@ end
 % add output
 if length(output_select)>0
   add_block('simulink3/Sinks/Out1',[mdl,'/out']);
-  if ~any([output_select.system]==1) && isequal([output_select.output],1:getNumFrames(sys2.getOutputFrame))
-    add_line(mdl,'system2/1','out/1');
-    newOutputFrame=sys2.getOutputFrame();
-  else
-    for i=1:length(output_select)
-      fr{i}=getFrameByNum(sys{output_select(i).system}.getOutputFrame,output_select(i).output);
-    end
-    newOutputFrame=MultiCoordinateFrame(fr);
-    newsysout = setupMultiInput(newOutputFrame,mdl,'out');
-    sys2out = setupMultiOutput(sys2.getOutputFrame,mdl,'system2');
-    sysout={sys1out,sys2out};
-    for i=1:length(output_select)
-      add_line(mdl,[sysout{output_select(i).system},'/',num2str(output_select(i).output)],[newsysout,'/',num2str(i)]);
-    end
+  for i=1:length(output_select)
+    fr{i}=getFrameByNum(sys{output_select(i).system}.getOutputFrame,output_select(i).output);
+  end
+  newOutputFrame=MultiCoordinateFrame.constructFrame(fr);
+  newsysout = setupMultiInput(newOutputFrame,mdl,'out');
+  for i=1:length(output_select)
+    add_line(mdl,[out{output_select(i).system},'/',num2str(output_select(i).output)],[newsysout,'/',num2str(i)]);
   end
 else
   newOutputFrame=[];
 end
 
 % add terminators to all non-used outputs
-for i=setdiff(1:getNumFrames(sys1.getOutputFrame),[[connection.from_output];[output_select([output_select.system]==1).output]]);
+for i=setdiff(1:getNumFrames(sys1.getOutputFrame),[[sys1_to_sys2_connection.from_output],[output_select([output_select.system]==1).output]]);
   add_block('simulink3/Sinks/Terminator',[mdl,'/sys1term',num2str(i)]);
   add_line(mdl,[sys1out,'/',num2str(i)],['sys1term',num2str(i),'/1']);
 end
-for i=setdiff(1:getNumFrames(sys2.getOutputFrame),[output_select([output_select.system]==2).output]);
+for i=setdiff(1:getNumFrames(sys2.getOutputFrame),[[sys2_to_sys1_connection.from_output],[output_select([output_select.system]==2).output]]);
   add_block('simulink3/Sinks/Terminator',[mdl,'/sys2term',num2str(i)]);
   add_line(mdl,[sys2out,'/',num2str(i)],['sys2term',num2str(i),'/1']);
 end
