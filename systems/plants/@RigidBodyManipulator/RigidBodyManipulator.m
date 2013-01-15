@@ -541,6 +541,19 @@ classdef RigidBodyManipulator < Manipulator
   end
   
   methods (Static)
+    function xfb = floatingBaseFromQuat(xyz,quat)
+      % converts from xyz,quaternion to floating base coordinates
+      % quat is [w;x;y;z]
+      
+      xfb = xyz;
+      [xfb(4),xfb(5),xfb(6)] = quat2angle(quat','XYZ');
+    end
+
+    function [xyz,quat] = floatingBaseToQuat(xfb)
+      xyz = xfb(1:3);
+      quat = angle2quat(xfb(4),xfb(5),xfb(6),'XYZ')';
+    end
+    
     function d=surfaceTangents(normal)
       %% compute tangent vectors, according to the description in the last paragraph of Stewart96, p.2678
       t1=normal; % initialize size
