@@ -84,6 +84,13 @@ classdef CoordinateFrame < handle
       end
     end
     
+    function disp(obj)
+      fprintf(1,'Coordinate Frame: %s (%d elements)\n',obj.name,obj.dim);
+      for i=1:obj.dim
+        fprintf(1,'  %s\n',obj.coordinates{i});
+      end
+    end
+        
     function addTransform(obj,transform)
       % Attaches a new coordinate transform from the current frame to a
       % different frame. An error is throw if there already exists any
@@ -323,6 +330,29 @@ classdef CoordinateFrame < handle
         fclose(fptr);
         disp('file written successfully.  done.');
       end
+    end
+  end
+  
+  methods  % some functions which help operations MultiCoordinateFrames
+    function n = getNumFrames(obj)
+      n = 1;
+    end
+
+    function fr = getFrameByNum(obj,n)
+      if (n==1) fr = obj; else error('bad frame num'); end
+    end
+    
+    function id = getFrameNum(obj,fr)
+      if (fr==obj) id=1; 
+      else error('can''t find frame %s',fr.name); end
+    end
+
+    function insys=setupMultiInput(obj,mdl,subsys)
+      insys=subsys;
+    end
+    
+    function outsys=setupMultiOutput(obj,mdl,subsys)
+      outsys=subsys;
     end
     
     function setupLCMInputs(obj,mdl,subsys,subsys_portnum)
