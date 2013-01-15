@@ -77,12 +77,7 @@ else % otherwise set up the LCM blocks and run simulink.
   % note: if obj has inputs, but no lcminput is specified, then it will just have the default input behavior (e.g. zeros)
   
   if getNumOutputs(obj)>0 && typecheck(fout,'LCMPublisher')
-    assignin('base',[mdl,'_publisher'],fout);
-    add_block('drake/lcmOutput',[mdl,'/lcmOutput'],'channel',['''',options.outchannel,''''],'dim',num2str(fout.dim),'lcm_publisher',[mdl,'_publisher']);
-    add_line(mdl,'system/1','lcmOutput/1');
-  elseif (getNumOutputs(obj)>0)
-    add_block('simulink3/Sinks/Terminator',[mdl,'/terminator']);
-    add_line(mdl,'system/1','terminator/1');
+    setupLCMOutputs(fout,mdl,'system',1);
   end
 
   % add realtime block

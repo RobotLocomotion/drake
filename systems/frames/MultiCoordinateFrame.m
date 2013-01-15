@@ -151,6 +151,20 @@ classdef MultiCoordinateFrame < CoordinateFrame
       add_line(mdl,['mux',uid,'/1'],[subsys,'/',num2str(subsys_portnum)]);
     end
     
+    function setupLCMOutputs(obj,mdl,subsys,subsys_portnum)
+      typecheck(mdl,'char');
+      typecheck(subsys,'char');
+      uid = datestr(now,'MMSSFFF');
+      if (nargin<4) subsys_portnum=1; end
+      typecheck(subsys_portnum,'double'); 
+      valuecheck(obj.frame_id,sort(obj.frame_id));  % assume that the simple ordering is ok
+      add_block('simulink3/Signals & Systems/Demux',[mdl,'/demux',uid],'Outputs',num2str(length(obj.frame)));
+      for i=1:length(obj.frame)
+        setupLCMOutputs(obj.frame{i},mdl,['demux',uid],i);
+      end
+      add_line(mdl,[subsys,'/',num2str(subsys_portnum)],['demux',uid,'/1']);
+    end    
+    
   end
   
   methods (Access=protected)
