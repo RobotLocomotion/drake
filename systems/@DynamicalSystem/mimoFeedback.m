@@ -65,8 +65,8 @@ if (nargin>3 && ~isempty(input_select))
     error('input_select must be a struct with fields "system" and "input"');
   end
   for i=1:length(input_select)
-    typecheck(output_select(i).system,'numeric');
-    rangecheck(output_select(i).system,1,2);
+    typecheck(input_select(i).system,'numeric');
+    rangecheck(input_select(i).system,1,2);
     if isa(input_select(i).input,'CoordinateFrame')
       input_select(i).input = getFrameNum(sys{input_select(i).system}.getInputFrame,input_select(i).input);
     end
@@ -179,9 +179,9 @@ end
 if length(input_select)>0
   add_block('simulink3/Sources/In1',[mdl,'/in']);
   for i=1:length(input_select)
-    fr{i}=getFrameByNum(sys{input_select(i).system}.getInputFrame,input_select(i).input);
+    infr{i}=getFrameByNum(sys{input_select(i).system}.getInputFrame,input_select(i).input);
   end
-  newInputFrame=MultiCoordinateFrame.constructFrame(fr);
+  newInputFrame=MultiCoordinateFrame.constructFrame(infr);
   newsysin = setupMultiOutput(newInputFrame,mdl,'in');
   for i=1:length(input_select)
     add_line(mdl,[newsysin,'/',num2str(i)],[in{input_select(i).system},'/',num2str(input_select(i).input)]);
@@ -194,9 +194,9 @@ end
 if length(output_select)>0
   add_block('simulink3/Sinks/Out1',[mdl,'/out']);
   for i=1:length(output_select)
-    fr{i}=getFrameByNum(sys{output_select(i).system}.getOutputFrame,output_select(i).output);
+    outfr{i}=getFrameByNum(sys{output_select(i).system}.getOutputFrame,output_select(i).output);
   end
-  newOutputFrame=MultiCoordinateFrame.constructFrame(fr);
+  newOutputFrame=MultiCoordinateFrame.constructFrame(outfr);
   newsysout = setupMultiInput(newOutputFrame,mdl,'out');
   for i=1:length(output_select)
     add_line(mdl,[out{output_select(i).system},'/',num2str(output_select(i).output)],[newsysout,'/',num2str(i)]);

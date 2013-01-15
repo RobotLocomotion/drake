@@ -61,8 +61,8 @@ if (nargin>3 && ~isempty(input_select))
     error('input_select must be a struct with fields "system" and "input"');
   end
   for i=1:length(input_select)
-    typecheck(output_select(i).system,'numeric');
-    rangecheck(output_select(i).system,1,2);
+    typecheck(input_select(i).system,'numeric');
+    rangecheck(input_select(i).system,1,2);
     if isa(input_select(i).input,'CoordinateFrame')
       input_select(i).input = getFrameNum(sys{input_select(i).system}.getInputFrame,input_select(i).input);
     end
@@ -169,9 +169,9 @@ if length(input_select)>0
     newInputFrame=sys1.getInputFrame();
   else
     for i=1:length(input_select)
-      fr{i}=getFrameByNum(sys{input_select(i).system}.getInputFrame,input_select(i).input);
+      infr{i}=getFrameByNum(sys{input_select(i).system}.getInputFrame,input_select(i).input);
     end
-    newInputFrame=MultiCoordinateFrame(fr);
+    newInputFrame=MultiCoordinateFrame(infr);
     newsysin = setupMultiOutput(newInputFrame,mdl,'in');
     sys1in = setupMultiInput(sys1.getInputFrame,mdl,'system1');
     sysin={sys1in,sys2in};
@@ -191,9 +191,9 @@ if length(output_select)>0
     newOutputFrame=sys2.getOutputFrame();
   else
     for i=1:length(output_select)
-      fr{i}=getFrameByNum(sys{output_select(i).system}.getOutputFrame,output_select(i).output);
+      outfr{i}=getFrameByNum(sys{output_select(i).system}.getOutputFrame,output_select(i).output);
     end
-    newOutputFrame=MultiCoordinateFrame(fr);
+    newOutputFrame=MultiCoordinateFrame(outfr);
     newsysout = setupMultiInput(newOutputFrame,mdl,'out');
     sys2out = setupMultiOutput(sys2.getOutputFrame,mdl,'system2');
     sysout={sys1out,sys2out};
