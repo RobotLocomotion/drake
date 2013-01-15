@@ -22,6 +22,20 @@ classdef MultiCoordinateFrame < CoordinateFrame
       dim=0;
       prefix=[];
       coordinates={};
+      
+      % if coordinate_frame contains multi-frames, then extract them here
+      % (don't allow recursive multi-frames)
+      cf = coordinate_frames;
+      coordinate_frames={};
+      for i=1:length(cf)
+        if isa(cf{i},'MultiCoordinateFrame')
+          coordinate_frames=vertcat(coordinate_frames,cf{i}.frame);
+        else
+          coordinate_frames=vertcat(coordinate_frames,{cf{i}});
+        end
+      end
+      
+      
       for i=1:length(coordinate_frames)
         typecheck(coordinate_frames{i},'CoordinateFrame');
         name = [name,'+',coordinate_frames{i}.name];
@@ -43,6 +57,20 @@ classdef MultiCoordinateFrame < CoordinateFrame
         T = sparse(1:d,obj.coord_ids{i},1,d,dim);
         tf = AffineTransform(obj,coordinate_frames{i},T,zeros(d,1));
         addTransform(obj,tf);
+      end
+    end
+    
+    function disp(obj)
+      fprintf(1,'Multi-Coordinate Frame: %s (%d elements)\n',obj.name,obj.dim);
+      for i=1:length(obj.frame)
+        disp(obj.frame{i});
+      end
+    end
+    
+    function display(obj)
+      fprintf(1,'Multi-Coordinate Frame: %s (%d elements)\n',obj.name,obj.dim);
+      for i=1:length(obj.frame)
+        fprintf(1,'  %s (%d elements)\n',obj.frame{i}.name, obj.frame{i}.dim);
       end
     end
     
@@ -137,6 +165,34 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
     end
     
+    function n = getNumFrames(obj)
+      n = length(obj.frame);
+    end
+
+    function fr = getFrameByNum(obj,n)
+      rangecheck(n,1,length(obj.frame));
+      fr = obj.frame{n};
+    end
+    
+    function id = getFrameNum(obj,frame)
+      id = find(cellfun(@(a)isequal(a,frame),obj.frame));
+      if length(id)>1
+        error('frame matched multiple children.  child frames must be unique, otherwise the behavior could get confusing fast');
+      end
+    end
+        
+    function insys=setupMultiInput(obj,mdl,subsys)
+      insys = [subsys,'mux'];
+      add_block('simulink3/Signals & Systems/Mux',[mdl,'/',insys],'Inputs',mat2str(cellfun(@(a) a.dim,obj.frame)));
+      add_line(mdl,[insys,'/1'],[subsys,'/1']);
+    end
+    
+    function outsys=setupMultiOutput(obj,mdl,subsys)
+      outsys = [subsys,'demux'];
+      add_block('simulink3/Signals & Systems/Demux',[mdl,'/',outsys],'Outputs',mat2str(cellfun(@(a) a.dim,obj.frame)));
+      add_line(mdl,[subsys,'/1'],[outsys,'/1']);
+    end
+    
     function setupLCMInputs(obj,mdl,subsys,subsys_portnum)
       typecheck(mdl,'char');
       typecheck(subsys,'char');
@@ -158,7 +214,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
       if (nargin<4) subsys_portnum=1; end
       typecheck(subsys_portnum,'double'); 
       valuecheck(obj.frame_id,sort(obj.frame_id));  % assume that the simple ordering is ok
-      add_block('simulink3/Signals & Systems/Demux',[mdl,'/demux',uid],'Outputs',num2str(length(obj.frame)));
+      add_block('simulink3/Signals & Systems/Demux',[mdl,'/demux',uid],'Outputs',mat2str([obj.frame{:}.dim]));
       for i=1:length(obj.frame)
         setupLCMOutputs(obj.frame{i},mdl,['demux',uid],i);
       end

@@ -10,7 +10,7 @@ classdef ReachingControl < MIMODrakeSystem
       typecheck(sys,'DrakeSystem');
       typecheck(manip,'RigidBodyManipulator');
 
-      input_frame = MultiCoordinateFrame([manip.constructCOMFrame,manip.getStateFrame]);
+      input_frame = MultiCoordinateFrame({manip.constructCOMFrame,manip.getStateFrame});
       
       obj = obj@MIMODrakeSystem(0,manip.featherstone.NB,input_frame,sys.getInputFrame(),false,true);
       obj = setSampleTime(obj,[.01;0]); % update at 100 Hz
