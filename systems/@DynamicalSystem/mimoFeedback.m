@@ -206,11 +206,19 @@ else
 end
 
 % add terminators to all non-used outputs
-for i=setdiff(1:getNumFrames(sys1.getOutputFrame),[[sys1_to_sys2_connection.from_output],[output_select([output_select.system]==1).output]]);
+used_outputs = sys1_to_sys2_connection.from_output;
+if ~isempty(output_select)
+  used_outputs = [used_outputs, [output_select([output_select.system]==1).output]];
+end
+for i=setdiff(1:getNumFrames(sys1.getOutputFrame),used_outputs);
   add_block('simulink3/Sinks/Terminator',[mdl,'/sys1term',num2str(i)]);
   add_line(mdl,[sys1out,'/',num2str(i)],['sys1term',num2str(i),'/1']);
 end
-for i=setdiff(1:getNumFrames(sys2.getOutputFrame),[[sys2_to_sys1_connection.from_output],[output_select([output_select.system]==2).output]]);
+used_outputs = sys2_to_sys1_connection.from_output;
+if ~isempty(output_select)
+  used_outputs = [used_outputs, [output_select([output_select.system]==2).output]];
+end
+for i=setdiff(1:getNumFrames(sys2.getOutputFrame),used_outputs)
   add_block('simulink3/Sinks/Terminator',[mdl,'/sys2term',num2str(i)]);
   add_line(mdl,[sys2out,'/',num2str(i)],['sys2term',num2str(i),'/1']);
 end
