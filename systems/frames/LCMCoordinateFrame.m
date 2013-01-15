@@ -125,6 +125,16 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
       add_line(mdl,['in',uid,'/1'],[subsys,'/',num2str(subsys_portnum)]);
     end
     
+    function setupLCMOutputs(obj,mdl,subsys,subsys_portnum)
+      typecheck(mdl,'char');
+      typecheck(subsys,'char');
+      uid = datestr(now,'MMSSFFF');
+      if (nargin<4) subsys_portnum=1; end
+      typecheck(subsys_portnum,'double'); 
+      assignin('base',[mdl,'_publisher',uid],obj);
+      add_block('drake/lcmOutput',[mdl,'/out',uid],'channel',['''',obj.channel,''''],'dim',num2str(obj.dim),'lcm_publisher',[mdl,'_publisher',uid]);
+      add_line(mdl,[subsys,'/',num2str(subsys_portnum)],['out',uid,'/1']);
+    end
   end
   
   properties
