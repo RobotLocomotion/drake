@@ -116,7 +116,7 @@ if length(unique(in1))<length(in1)
   in1
   error('you cannot use an input to sys1 more than once');
 end
-in2=[[connection.to_input];[input_select([input_select.system]==2).input]];
+in2=[[connection.to_input],[input_select([input_select.system]==2).input]];
 if length(unique(in2))<length(in2)
   in2
   error('you cannot use an input to sys2 more than once');
@@ -171,7 +171,7 @@ if length(input_select)>0
     for i=1:length(input_select)
       infr{i}=getFrameByNum(sys{input_select(i).system}.getInputFrame,input_select(i).input);
     end
-    newInputFrame=MultiCoordinateFrame(infr);
+    newInputFrame=MultiCoordinateFrame.constructFrame(infr);
     newsysin = setupMultiOutput(newInputFrame,mdl,'in');
     sys1in = setupMultiInput(sys1.getInputFrame,mdl,'system1');
     sysin={sys1in,sys2in};
@@ -193,7 +193,7 @@ if length(output_select)>0
     for i=1:length(output_select)
       outfr{i}=getFrameByNum(sys{output_select(i).system}.getOutputFrame,output_select(i).output);
     end
-    newOutputFrame=MultiCoordinateFrame(outfr);
+    newOutputFrame=MultiCoordinateFrame.constructFrame(outfr);
     newsysout = setupMultiInput(newOutputFrame,mdl,'out');
     sys2out = setupMultiOutput(sys2.getOutputFrame,mdl,'system2');
     sysout={sys1out,sys2out};
