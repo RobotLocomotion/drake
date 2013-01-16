@@ -1,8 +1,10 @@
 function viewAtlasRPY(rpy);
 
+if (nargin<1) rpy = [pi/4;0;pi/4]; end
+
 % just runs it as a passive system for now
 options.floating = true;
-r = TimeSteppingRigidBodyManipulator('urdf/atlas_minimal_contact.urdf',.001,options);
+r = TimeSteppingRigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',.001,options);
 v = r.constructVisualizer;
 
 x0 = double(Point(r.getStateFrame));
