@@ -212,7 +212,7 @@ if ~isempty(output_select)
 end
 for i=setdiff(1:getNumFrames(sys1.getOutputFrame),used_outputs);
   add_block('simulink3/Sinks/Terminator',[mdl,'/sys1term',num2str(i)]);
-  add_line(mdl,[sys1out,'/',num2str(i)],['sys1term',num2str(i),'/1']);
+  add_line(mdl,[out{1},'/',num2str(i)],['sys1term',num2str(i),'/1']);
 end
 used_outputs = sys2_to_sys1_connection.from_output;
 if ~isempty(output_select)
@@ -220,7 +220,7 @@ if ~isempty(output_select)
 end
 for i=setdiff(1:getNumFrames(sys2.getOutputFrame),used_outputs)
   add_block('simulink3/Sinks/Terminator',[mdl,'/sys2term',num2str(i)]);
-  add_line(mdl,[sys2out,'/',num2str(i)],['sys2term',num2str(i),'/1']);
+  add_line(mdl,[out{2},'/',num2str(i)],['sys2term',num2str(i),'/1']);
 end
 
 % finally construct the new dynamical system

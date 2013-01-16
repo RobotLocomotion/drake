@@ -12,13 +12,15 @@ sys2 = LinearSystem([],[],[],[],[],[eye(5)]);
 sys2 = setInputFrame(sys2,MultiCoordinateFrame({fr3,fr2,fr1}));
 sys2 = setOutputFrame(sys2,MultiCoordinateFrame({fr3,fr1,fr2}));
 
-open_system(getModel(mimoCascade(sys1,sys2)));
+sys=mimoCascade(sys1,sys2);
+%open_system(getModel(sys));
 
 output_select(1).system=2;
 output_select(1).output=1;
 output_select(2).system=2;
 output_select(2).output=2;
-open_system(getModel(mimoCascade(sys2,sys1,[],[],output_select)));
+sys=mimoCascade(sys2,sys1,[],[],output_select);
+%open_system(getModel(sys));
 
-
-open_system(getModel(mimoFeedback(sys1,sys2)));
+sys=mimoFeedback(sys1,sys2);
+%open_system(getModel(sys));
