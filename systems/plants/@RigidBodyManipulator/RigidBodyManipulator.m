@@ -47,16 +47,6 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
     
-    function obj = createMexPointer(obj)
-      if (obj.mex_model_ptr) obj=deleteMexPointer(obj); end
-      obj.mex_model_ptr = HandCmex(obj);
-    end
-    
-    function obj = deleteMexPointer(obj)
-      HandCmex(obj,obj.mex_model_ptr);
-      obj.mex_model_ptr = 0;
-    end
-    
     function [x,J,dJ] = kinTest(m,q)
       % test for kinematic gradients
       kinsol=doKinematics(m,q,nargout>2,false);
@@ -578,7 +568,10 @@ classdef RigidBodyManipulator < Manipulator
   
   methods (Access=protected)
     
-
+    function obj = createMexPointer(obj)
+      obj.mex_model_ptr = SharedDataHandle(constructModelmex(obj),@deleteModelmex);
+    end
+    
     function model = extractFeatherstone(model)
 %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
       dof=0;inds=[];

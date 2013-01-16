@@ -76,16 +76,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         obj = parseURDF(obj,urdf_filename,options);
       end
     end
-    
-    function obj = createMexPointer(obj)
-      if (obj.mex_model_ptr) obj=deleteMexPointer(obj); end
-      obj.mex_model_ptr = HandCpmex(obj);
-    end
-    function obj = deleteMexPointer(obj)
-      HandCpmex(obj,obj.mex_model_ptr);
-      obj.mex_model_ptr = 0;
-    end
-    
+        
     function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits,options)
       if (nargin<6) xy=zeros(2,1); end
       if (nargin<7) p=0; end
@@ -270,6 +261,10 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
   end
   
   methods (Access=protected)
+    
+    function obj = createMexPointer(obj)
+      obj.mex_model_ptr = SharedDataHandle(constructModelpmex(obj),@deleteModelpmex);
+    end
     
     function model = extractFeatherstone(model)
 %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});

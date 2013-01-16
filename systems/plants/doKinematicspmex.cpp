@@ -73,16 +73,15 @@ void ddTjcalcp(int code, double q, Matrix3d* dTJ)
 void mexFunction( int nlhs, mxArray *plhs[],
         int nrhs, const mxArray *prhs[] ) {
   if (nrhs != 3) {
-    mexErrMsgIdAndTxt("Drake:doKinematicspmex:NotEnoughInputs", "Usage doKinematicspmex(obj,q,b_compute_second_derivatives)");
+    mexErrMsgIdAndTxt("Drake:doKinematicspmex:NotEnoughInputs", "Usage doKinematicspmex(model_ptr,q,b_compute_second_derivatives)");
   }
 
+  PlanarModel *model = NULL;
+  
   // first get the model_ptr back from matlab
-  if (mxGetNumberOfElements(prhs[0])!=1)  
-    mexErrMsgIdAndTxt("Drake:doKinematicsMex:BadInputs","first argument should be the model");
-
-  mxArray* mex_model_ptr = mxGetProperty(prhs[0],0,"mex_model_ptr");
-  if (!mex_model_ptr)  mexErrMsgIdAndTxt("Drake:doKinematicspmex:BadInputs","first argument should be the model class object");
-  PlanarModel *model = NULL; memcpy(&model,mxGetData(mex_model_ptr),sizeof(model));
+  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
+    mexErrMsgIdAndTxt("Drake:doKinematicspmex:BadInputs","the first argument should be the model_ptr");
+  memcpy(&model,mxGetData(prhs[0]),sizeof(model));
 
   double *q;
   if (mxGetNumberOfElements(prhs[1])!=model->NB)
