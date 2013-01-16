@@ -1,12 +1,15 @@
-function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd)
+function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd,use_mex)
+
+if (nargin<4) use_mex=true; end
+
 jsign = [obj.body(cellfun(@(a)~isempty(a),{obj.body.parent})).jsign]';
 q = jsign.*q;
 qd = jsign.*qd;
 m = obj.featherstone;
 
 if (nargout>3)
-  if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
-    [H,C,dH,dC] = HandCpmex(obj,q,qd);
+  if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
+    [H,C,dH,dC] = HandCpmex(obj.mex_model_ptr.getData,q,qd);
   else
     % featherstone's HandCp with analytic gradients
     a_grav = [0;obj.gravity];
@@ -141,8 +144,8 @@ if (nargout>3)
   B = obj.B;
   dB = zeros(obj.num_q*obj.num_u,2*obj.num_q);
 else
-  if (obj.mex_model_ptr && isnumeric(q) && isnumeric(qd))
-    [H,C] = HandCpmex(obj,q,qd);
+  if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
+    [H,C] = HandCpmex(obj.mex_model_ptr.getData,q,qd);
   else
     [H,C] = HandCp(obj.featherstone,q,qd,{},obj.gravity);
   end

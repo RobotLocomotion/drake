@@ -14,8 +14,8 @@ if nargin<3, b_compute_second_derivatives=false; end
 
 kinsol.q = q;
 
-if (use_mex && model.mex_model_ptr && isnumeric(q))
-  doKinematicsmex(model,q,b_compute_second_derivatives);
+if (use_mex && model.mex_model_ptr~=0 && isnumeric(q))
+  doKinematicsmex(model.mex_model_ptr.getData,q,b_compute_second_derivatives);
   kinsol.mex = true;
 else
   kinsol.mex = false;

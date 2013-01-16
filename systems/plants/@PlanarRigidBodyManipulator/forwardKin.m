@@ -17,7 +17,7 @@ typecheck(kinsol,'struct');  % this should catch people who haven't switched to 
 if (isa(body_ind,'PlanarRigidBody')) body_ind = find(obj.body==body_ind,1); end
 
 if (kinsol.mex)
-  if ~obj.mex_model_ptr
+  if (obj.mex_model_ptr==0)
     error('Drake:PlanarRigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
   if  ~isnumeric(pts)
@@ -25,11 +25,11 @@ if (kinsol.mex)
   end
   
   if nargout > 2
-    [x,J,dJ] = forwardKinpmex(obj,body_ind-1,pts);
+    [x,J,dJ] = forwardKinpmex(obj.mex_model_ptr.getData,body_ind-1,pts);
   elseif nargout > 1
-    [x,J] = forwardKinpmex(obj,body_ind-1,pts);
+    [x,J] = forwardKinpmex(obj.mex_model_ptr.getData,body_ind-1,pts);
   else
-    x = forwardKinpmex(obj,body_ind-1,pts);
+    x = forwardKinpmex(obj.mex_model_ptr.getData,body_ind-1,pts);
   end
 else
   if ~all(abs(kinsol.q-[obj.body.cached_q]')<1e-8)
