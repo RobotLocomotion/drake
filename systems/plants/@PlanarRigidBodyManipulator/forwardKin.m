@@ -13,7 +13,7 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_ind,pts)
 %  matrix, with [J1;J2;...;Jm] where Ji = dxidq
 % and dJ will be a (2xm)x(nq^2) matrix
 
-typecheck(kinsol,'struct');  % this should catch people who haven't switched to the new interface yet.
+checkDirty(obj);
 if (isa(body_ind,'PlanarRigidBody')) body_ind = find(obj.body==body_ind,1); end
 
 if (kinsol.mex)

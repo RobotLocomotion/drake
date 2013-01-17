@@ -11,9 +11,6 @@ r = TimeSteppingRigidBodyManipulator(m,.005);
 v = r.constructVisualizer;
 v.display_dt = .05;
 
-x0 = Point(r.getStateFrame);
-x0 = resolveConstraints(r.manip,double(x0));
-
 % Run simulation, then play it back at realtime speed
-xtraj = simulate(r,[0 3],x0);
+xtraj = simulate(r,[0 3]);
 v.playback(xtraj);

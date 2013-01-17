@@ -1,6 +1,6 @@
 classdef PlanarRigidBodyLoop < RigidBodyLoop
   
-  properties 
+  properties
     jcode
   end
   

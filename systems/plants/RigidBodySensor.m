@@ -9,16 +9,18 @@ classdef RigidBodySensor
 % revisit this decision at a later time.
   
   methods (Abstract=true)
-    y = output(obj,t,x,u);
-    fr = getFrame(obj);
+    y = output(obj,manip,t,x,u);
+    fr = getFrame(obj,manip);
+    tf = isDirectFeedthrough(obj);
   end
   
   methods 
-    function obj = compile(obj);
+    function obj = compile(obj,manip);
       % intentionally do nothing here, but can be overloaded if this
       % functionality is needed
     end
   end
   
+    
 end
     

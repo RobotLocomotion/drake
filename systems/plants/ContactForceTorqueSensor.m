@@ -1,8 +1,7 @@
-classdef ContactForceTorqueSensor < RigidBodySensor
+classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor
   
   properties
     frame;
-    tsmanip;
     body
     normal_ind=[];
     tangent_ind=[];
@@ -13,30 +12,49 @@ classdef ContactForceTorqueSensor < RigidBodySensor
   
   methods
     function obj = ContactForceTorqueSensor(tsmanip,body,xyz,rpy)
-      typecheck(tsmanip,'TimeSteppingRigidBodyManipulator');
-      typecheck(body,'RigidBody');
+      typecheck(body,{'RigidBody','char','numeric'});
+      obj.body = body;
       
-      if isempty(body.contact_pts)
-        error('Drake:ContactForceTorqueSensor:NoContactPts','There are no contact points associated with body %s',body.name);
-      end
-
-      if isa(tsmanip.manip,'PlanarRigidBodyManipulator')
+      if tsmanip.twoD
         if (nargin<3) xyz=zeros(2,1);
         else sizecheck(xyz,[2,1]); end
         if (nargin<4) rpy=0;
         else sizecheck(rpy,1); end
         T = inv([rotmat(rpy),xyz; 0,0,1]);
-        
-        coords{1}=['force_',tsmanip.manip.x_axis_label];
-        coords{2}=['force_',tsmanip.manip.y_axis_label];
-        coords{3}='torque';
       else
         if (nargin<3) xyz=zeros(3,1);
         else sizecheck(xyz,[3,1]); end
         if (nargin<4) rpy=zeros(3,1);
         else sizecheck(rpy,[3,1]); end
         T = inv([rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]);
+      end      
+      
+      obj.T = T;
+      obj.xyz = xyz;
+    end
+    
+    function tf = isDirectFeedthrough(obj)
+      tf = true;
+    end
+    
+    function obj = compile(obj,tsmanip,manip)
+      if isa(obj.body,'char')
+        obj.body = findLink(tsmanip,obj.body,true);
+      elseif isa(body,'numeric')
+        obj.body = p.manip.body(body);
+      end
 
+      typecheck(obj.body,'RigidBody');
+      
+      if isempty(obj.body.contact_pts)
+        error('Drake:ContactForceTorqueSensor:NoContactPts','There are no contact points associated with body %s',body.name);
+      end
+
+      if tsmanip.twoD
+        coords{1}=['force_',manip.x_axis_label];
+        coords{2}=['force_',manip.y_axis_label];
+        coords{3}='torque';
+      else
         coords{1}='force_x';
         coords{2}='force_y';
         coords{3}='force_z';
@@ -44,18 +62,8 @@ classdef ContactForceTorqueSensor < RigidBodySensor
         coords{5}='torque_y';
         coords{6}='torque_z';
       end
-      obj.frame = CoordinateFrame([body.linkname,'ForceTorqueSensor'],length(coords),'f',coords);
-      obj.tsmanip = tsmanip;
-      obj.body = body;
-      obj.T = T;
-      obj.xyz = xyz;
-      tsmanip.setDirectFeedthrough(true);
-      tsmanip.manip.setDirectFeedthrough(true);
-    end
-    
-    function obj = compile(obj)
-      manip = obj.tsmanip.manip;
-      
+      obj.frame = CoordinateFrame([obj.body.linkname,'ForceTorqueSensor'],length(coords),'f',coords);
+
       nL = sum([manip.joint_limit_min~=-inf;manip.joint_limit_max~=inf]); % number of joint limits
       nC = manip.num_contacts;
       nP = 2*manip.num_position_constraints;  % number of position constraints
@@ -80,26 +88,25 @@ classdef ContactForceTorqueSensor < RigidBodySensor
       end
     end
     
-    function y = output(obj,t,x,u)
-      m = obj.tsmanip.manip;
-      z = obj.tsmanip.solveLCP(t,x,u)/obj.tsmanip.timestep;
+    function y = output(obj,tsmanip,manip,t,x,u)
+      z = tsmanip.solveLCP(t,x,u)/tsmanip.timestep;
       
       % todo: could do this more efficiently by only computing everything
       % below for indices where the normal forces are non-zero
 
       % todo: enable mex here (by implementing the mex version of bodyKin)
       use_mex = false;
-      kinsol = doKinematics(m,x(1:m.num_q),false,use_mex);
-      contact_pos = forwardKin(m,kinsol,obj.body,obj.body.contact_pts);
+      kinsol = doKinematics(manip,x(1:manip.getNumDOF),false,use_mex);
+      contact_pos = forwardKin(manip,kinsol,obj.body,obj.body.contact_pts);
       
       [d,N] = size(contact_pos);
-      [pos,~,normal] = collisionDetect(m,contact_pos);
+      [pos,~,normal] = collisionDetect(manip,contact_pos);
 
       % flip to body coordinates
-      pos = sensorKin(obj,kinsol,pos);
-      sensor_pos = forwardKin(m,kinsol,obj.body,obj.xyz);
-      normal = sensorKin(obj,kinsol,repmat(sensor_pos,1,N)+normal);
-      tangent = m.surfaceTangents(normal);
+      pos = sensorKin(obj,manip,kinsol,pos);
+      sensor_pos = forwardKin(manip,kinsol,obj.body,obj.xyz);
+      normal = sensorKin(obj,manip,kinsol,repmat(sensor_pos,1,N)+normal);
+      tangent = manip.surfaceTangents(normal);
 
       % compute all individual contact forces in sensor coordinates
       force = repmat(z(obj.normal_ind)',d,1).*normal;
@@ -118,17 +125,17 @@ classdef ContactForceTorqueSensor < RigidBodySensor
       end
     end
     
-    function fr = getFrame(obj)
+    function fr = getFrame(obj,manip)
       fr = obj.frame;
     end
     
   end
     
   methods (Access=private)
-    function pts = sensorKin(obj,kinsol,pts)
+    function pts = sensorKin(obj,manip,kinsol,pts)
       % convert from global frame to sensor frame
       N = size(pts,2);
-      pts = obj.T*[bodyKin(obj.tsmanip.manip,kinsol,obj.body,pts);ones(1,N)];
+      pts = obj.T*[bodyKin(manip,kinsol,obj.body,pts);ones(1,N)];
       pts(end,:)=[];
     end
   end

@@ -26,7 +26,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       sfigure(hFig);
       clf; hold on;
       
-      n = obj.model.featherstone.NB;
+      n = obj.model.num_q;
       q = x(1:n); %qd=x(n+(1:n));
       kinsol = obj.model.doKinematics(q);
       
@@ -104,8 +104,11 @@ classdef PlanarRigidBodyVisualizer < Visualizer
     end
   end
 
-  properties
+  properties (Access=protected)
     model;
+  end
+  
+  properties
     xlim=[]
     ylim=[];
     debug = false;  % if true, draws extras, like the coordinate frames and COMs for each link

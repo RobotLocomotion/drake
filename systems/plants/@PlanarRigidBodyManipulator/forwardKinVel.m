@@ -8,7 +8,7 @@ function [v,dv] = forwardKinVel(obj,kinsol,body_ind,pts,qd)
 % if pts is a 2xm matrix, then v will be a 2xm matrix
 %  and (following our gradient convention) dv will be a ((2m)x(2nq))
 
-typecheck(kinsol,'struct');  % this should catch people who haven't switched to the new interface yet.
+checkDirty(obj);
 if (isa(body_ind,'PlanarRigidBody')) body_ind = find(obj.body==body_ind,1); end
 
 if (kinsol.mex)

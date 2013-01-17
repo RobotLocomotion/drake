@@ -66,7 +66,7 @@ classdef RigidBodyWRLVisualizer < Visualizer
     end
   end
 
-  properties
+  properties (Access=protected)
     model;
     wrl;
   end

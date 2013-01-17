@@ -26,7 +26,7 @@ classdef EndPointControl < DrakeSystem
       % Controller implementation.  
       q = x(1:2); qd = x(3:4);
       
-      n = obj.manip.featherstone.NB;
+      n = obj.manip.num_q;
       dpos = [1;0];
       
       kinsol = doKinematics(obj.manip,q_d);  % open loop 

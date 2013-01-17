@@ -3,7 +3,7 @@ classdef RigidBodyManipulator < Manipulator
   % provided by Roy Featherstone on his website: 
   %   http://users.cecs.anu.edu.au/~roy/spatial/documentation.html
     
-  properties
+  properties (SetAccess=protected)
     name=[];        % name of the rigid body system
     body=[];        % array of RigidBody objects
     actuator = [];  % array of RigidBodyActuator objects
@@ -12,15 +12,15 @@ classdef RigidBodyManipulator < Manipulator
       % note: need {} for arrays that will have multiple types (e.g.
       % a variety of derived classes), but can get away with [] for arrays
       % with elements that are all exactly the same type
-
     gravity=[0;0;-9.81];
-    
+  end
+  
+  properties (Access=protected)
     B = [];
     featherstone = [];
-    
     material=[];
-
     mex_model_ptr = 0;
+    dirty = true;
   end
   
   methods
@@ -33,7 +33,15 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
     
+    function checkDirty(obj)
+      if (obj.dirty)
+        error('You''ve changed something about this model and need to manually compile it.  Use obj=compile(obj).');
+      end
+    end
+    
     function y = output(obj,t,x,u)
+      checkDirty(obj);
+      
       if isempty(obj.sensor)
         y = x;
       else
@@ -42,9 +50,25 @@ classdef RigidBodyManipulator < Manipulator
         end
         y = [];
         for i=1:length(obj.sensor)
-          y = [y; obj.sensor{i}.output(t,x,u)];
+          y = [y; obj.sensor{i}.output(obj,t,x,u)];
         end
       end
+    end
+    
+    function B = getB(obj)
+      checkDirty(obj);
+      B = obj.B;
+    end
+    
+    function obj = setGravity(obj,grav)
+      sizecheck(grav,size(obj.gravity));
+      obj.gravity = grav;
+      obj.dirty = true;
+    end
+
+    function obj = setName(obj,name)
+      typecheck(name,'char');
+      obj.name = name;
     end
     
     function [x,J,dJ] = kinTest(m,q)
@@ -155,6 +179,8 @@ classdef RigidBodyManipulator < Manipulator
       child.joint_limit_max = limits.joint_limit_max;
       child.effort_limit = limits.effort_limit;
       child.velocity_limit = limits.velocity_limit;
+      
+      model.dirty = true;
     end
     
     function model = addFloatingBase(model)
@@ -223,10 +249,14 @@ classdef RigidBodyManipulator < Manipulator
         model.body = [model.body,body5];
         model = addJoint(model,name,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
         model = addJoint(model,[child.linkname,'_yaw'],'revolute',body5,child,zeros(3,1),zeros(3,1),[0;0;1],0);
-
       end
     end
         
+    function model = addSensor(model,sensor)
+      typecheck(sensor,'RigidBodySensor');
+      model.sensor{end+1}=sensor;
+      model.dirty = true;
+    end
     
     function model = compile(model)
       % After parsing, compute some relevant data structures that will be
@@ -286,19 +316,19 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       if length(model.sensor)>0
+        feedthrough = false;
         for i=1:length(model.sensor)
-          model.sensor{i} = model.sensor{i}.compile();
-          outframe{i} = model.sensor{i}.getFrame();
+          model.sensor{i} = model.sensor{i}.compile(model);
+          outframe{i} = model.sensor{i}.getFrame(model);
+          feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
         end
-        if (length(outframe)>1)
-          fr = MultiCoordinateFrame(outframe);
-        else
-          fr = outframe{1};
-        end
+        fr = MultiCoordinateFrame.constructFrame(outframe);
         model = setNumOutputs(model,fr.dim);
         model = setOutputFrame(model,fr);
+        model = setDirectFeedthrough(model,feedthrough);
       else
         model = setOutputFrame(model,stateframe);  % output = state
+        model = setDirectFeedthrough(model,false);
       end
       
       if (length(model.loop)>0)
@@ -329,6 +359,8 @@ classdef RigidBodyManipulator < Manipulator
       if (checkDependency('eigen3_enabled'))
         model = createMexPointer(model);
       end
+      
+      model.dirty = false;
     end
     
     function body = findLink(model,linkname,throw_error)
@@ -408,22 +440,6 @@ classdef RigidBodyManipulator < Manipulator
       
     end
 
-    function fr = constructStateFrame(model)
-      joints = {model.body(~cellfun(@isempty,{model.body.parent})).jointname}';
-      coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
-      fr = SingletonCoordinateFrame([model.name,'State'],2*model.featherstone.NB,'x',coordinates);
-    end
-    
-    function fr = constructInputFrame(model)
-      if size(model.B,2)>0
-        coordinates = {model.actuator.name}';
-      else
-        coordinates={};
-      end
-       
-      fr = SingletonCoordinateFrame([model.name,'Input'],size(model.B,2),'u',coordinates);
-    end
-    
     function fr = constructCOMFrame(model)
       fr = SingletonCoordinateFrame([model.name,'COM'],3,'m',{'com_x','com_y','com_z'});
       
@@ -436,6 +452,7 @@ classdef RigidBodyManipulator < Manipulator
       % feedbackControl combine them.
       
       % construct a transform from the state vector to the COM
+      checkDirty(model);
       tf = FunctionHandleCoordinateTransform(0,0,model.getStateFrame(),fr,true,true,[],[], ...
         @(obj,~,~,x) getCOM(model,x(1:model.featherstone.NB))); 
       
@@ -443,6 +460,7 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function v = constructVisualizer(obj,options)
+      checkDirty(obj);
       v = RigidBodyWRLVisualizer(obj);
     end
     
@@ -476,6 +494,8 @@ classdef RigidBodyManipulator < Manipulator
       %      Kd = diag([1, 1, 1, 1])
       %      and the default index would automatically be index = 4:7
 
+      checkDirty(sys);
+      
       if nargin<4 || isempty(index)  % this is too slow on the atlas model
         B = sys.B;  % note: unlike the general Manipulator version this exploits the fact that B is a constant
         [I,J] = find(B);
@@ -505,29 +525,12 @@ classdef RigidBodyManipulator < Manipulator
     end    
     
     function [phi,dphi,ddphi] = positionConstraints(obj,q)
+      checkDirty(obj);
       % so far, only loop constraints are implemented
       [phi,dphi,ddphi]=loopConstraints(obj,q);
     end
     
-    function [phi,dphi,ddphi] = loopConstraints(obj,q)
-      % handle kinematic loops
-      phi=[];dphi=[];ddphi=[];
 
-      kinsol = doKinematics(obj,q,true);
-      
-      for i=1:length(obj.loop)
-        % for each loop, add the constraints that the pt1 on body1 is in
-        % the same location as pt2 on body2
-        
-        [pt1,J1,dJ1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-        [pt2,J2,dJ2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-        
-        phi = [phi; pt1-pt2];
-        dphi = [dphi; J1-J2];
-        ddphi = [ddphi; dJ1-dJ2];
-      end
-    end    
-    
   end
   
   methods (Static)
@@ -569,7 +572,23 @@ classdef RigidBodyManipulator < Manipulator
   methods (Access=protected)
     
     function obj = createMexPointer(obj)
-      obj.mex_model_ptr = SharedDataHandle(constructModelmex(obj),@deleteModelmex);
+      obj.mex_model_ptr = SharedDataHandle(constructModelmex(obj.featherstone,obj.body,obj.gravity),@deleteModelmex);
+    end
+    
+    function fr = constructStateFrame(model)
+      joints = {model.body(~cellfun(@isempty,{model.body.parent})).jointname}';
+      coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
+      fr = SingletonCoordinateFrame([model.name,'State'],2*model.num_q,'x',coordinates);
+    end
+    
+    function fr = constructInputFrame(model)
+      if size(model.B,2)>0
+        coordinates = {model.actuator.name}';
+      else
+        coordinates={};
+      end
+       
+      fr = SingletonCoordinateFrame([model.name,'Input'],size(model.B,2),'u',coordinates);
     end
     
     function model = extractFeatherstone(model)
@@ -678,6 +697,25 @@ classdef RigidBodyManipulator < Manipulator
         delete(body);
       end
     end
+    
+    function [phi,dphi,ddphi] = loopConstraints(obj,q)
+      % handle kinematic loops
+      phi=[];dphi=[];ddphi=[];
+
+      kinsol = doKinematics(obj,q,true);
+      
+      for i=1:length(obj.loop)
+        % for each loop, add the constraints that the pt1 on body1 is in
+        % the same location as pt2 on body2
+        
+        [pt1,J1,dJ1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
+        [pt2,J2,dJ2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
+        
+        phi = [phi; pt1-pt2];
+        dphi = [dphi; J1-J2];
+        ddphi = [ddphi; dJ1-dJ2];
+      end
+    end      
     
     function model=parseJoint(model,node,options)
       

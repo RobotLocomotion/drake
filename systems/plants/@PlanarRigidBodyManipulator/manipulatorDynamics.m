@@ -1,5 +1,6 @@
 function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd,use_mex)
 
+checkDirty(obj);
 if (nargin<4) use_mex=true; end
 
 jsign = [obj.body(cellfun(@(a)~isempty(a),{obj.body.parent})).jsign]';

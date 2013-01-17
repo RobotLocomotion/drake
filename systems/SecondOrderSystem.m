@@ -35,6 +35,10 @@ classdef SecondOrderSystem < DrakeSystem
       obj = setNumContStates(obj,num_q*2);
     end
 
+    function num_q = getNumDOF(obj)
+      num_q = obj.num_q;
+    end
+    
     function obj = setNumContStates(obj,num_xc)
     % Guards the num_xc variable to make sure it stays consistent
     % with num_q

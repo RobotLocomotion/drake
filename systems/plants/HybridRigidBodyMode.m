@@ -1,6 +1,6 @@
 classdef HybridRigidBodyMode < PlanarRigidBodyManipulator
 
-  properties
+  properties (SetAccess=protected)
     joint_limit_state
     contact_state
   end

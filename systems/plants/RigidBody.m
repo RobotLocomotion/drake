@@ -1,6 +1,6 @@
 classdef RigidBody < handle
   
-  properties
+  properties 
     % link properties
     linkname=''  % name of the associated link
     wrlgeometry=''; % geometry (compatible w/ wrl).  see parseVisual below.

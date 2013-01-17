@@ -3,7 +3,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
   % provided by Roy Featherstone on his website:
   %   http://users.cecs.anu.edu.au/~roy/spatial/documentation.html
   
-  properties
+  properties (SetAccess=protected)
     x_axis_label;
     y_axis_label;
     x_axis;
@@ -201,6 +201,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       child.joint_limit_max = limits.joint_limit_max;
       child.effort_limit = limits.effort_limit;
       child.velocity_limit = limits.velocity_limit;
+      model.dirty = true;
     end
     
     function model = addFloatingBase(model)
@@ -239,6 +240,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
     end
     
     function v=constructVisualizer(obj)
+      checkDirty(obj);
       v = PlanarRigidBodyVisualizer(obj);
     end
     
@@ -258,12 +260,13 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       t(:,ind) = [-normal(2,ind)./normal(1,ind); ones(1,sum(ind))];
       t = {t./repmat(sqrt(sum(t.^2,1)),2,1)}; % normalize
     end
+    
   end
   
   methods (Access=protected)
     
     function obj = createMexPointer(obj)
-      obj.mex_model_ptr = SharedDataHandle(constructModelpmex(obj),@deleteModelpmex);
+      obj.mex_model_ptr = SharedDataHandle(constructModelpmex(obj.featherstone,obj.body,obj.gravity),@deleteModelpmex);
     end
     
     function model = extractFeatherstone(model)

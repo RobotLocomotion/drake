@@ -21,34 +21,32 @@ if (j<=2)
 
   r = PlanarRigidBodyManipulator(['p',num2str(i),'.urdf'],options);
   if mod(j,2)%even(j)
-    r.gravity=[-9.81;0];
+    r = setGravity(r,[-9.81;0]);
   elseif ismember(i,[11 12])
-    r.gravity=[0;-9.81];
+    r = setGravity(r,[0;-9.81]);
   end
   r = compile(r);
-  r = deleteMexPointer(r);
 
 else
   twod = false;
   r = RigidBodyManipulator(['p',num2str(i),'.urdf']);
   if ismember(i,[1:3,7:8])
     if mod(j,2)%even(j)
-      r.gravity=[-9.81;0;0];
+      r = setGravity(r,[-9.81;0;0]);
     end
   elseif ismember(i,[4:6,9:10])
     if mod(j,2)%even(j)
-      r.gravity=[0;-9.81;0];
+      r = setGravity(r,[0;-9.81;0]);
     end
   elseif ismember(i,[11 12])
     if mod(j,2)%even(j)
-      r.gravity=[0;-9.81;0];
+      r = setGravity(r,[0;-9.81;0]);
     else
-      r.gravity=[-9.81;0;0];
+      r = setGravity(r,[-9.81;0;0]);
     end
   end
   
   r = compile(r);
-  r = deleteMexPointer(r);
 end
 
 xtraj = r.simulate([0 10],randn(2,1));

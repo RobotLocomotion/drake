@@ -2,7 +2,7 @@ function [Kp,Kd] = getPDGains(manip)
 
 %NOTEST
 
-B = manip.B;
+B = manip.getB();
 idx = B'*(1:manip.getNumStates()/2)';
 
 fr=CoordinateFrame('q_d',length(idx),'d',{manip.getStateFrame.coordinates{idx}});
