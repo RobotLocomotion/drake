@@ -16,7 +16,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
   PlanarModel *model = NULL;
   
-  mxArray* featherstone = mxGetProperty(prhs[0],0,"featherstone");
+  const mxArray* featherstone = prhs[0]; //mxGetProperty(prhs[0],0,"featherstone");
   if (!featherstone) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs", "can't find field model.featherstone.  Are you passing in the correct structure?");
   
   // set up the model
@@ -53,7 +53,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     memcpy(model->I[i].data(),mxGetPr(pIi),sizeof(double)*3*3);
   }
   
-  mxArray* pBodies = mxGetProperty(prhs[0],0,"body");
+  const mxArray* pBodies = prhs[1]; //mxGetProperty(prhs[0],0,"body");
   
   if (!pBodies) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't find field model.body.  Are you passing in the correct structure?");
   for (int i=0; i<model->NB + 1; i++) {
@@ -82,7 +82,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     memcpy(model->bodies[i].Ttree.data(),mxGetPr(pbTtreei),sizeof(double)*3*3);
   }
   
-  mxArray* a_grav_array = mxGetProperty(prhs[0],0,"gravity");
+  const mxArray* a_grav_array = prhs[2]; //mxGetProperty(prhs[0],0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==2) {
     double* p = mxGetPr(a_grav_array);
     model->a_grav(1) = p[0];

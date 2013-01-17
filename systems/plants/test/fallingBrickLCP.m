@@ -2,7 +2,7 @@ function fallingBrickLCP
 
 options.floating = true;
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
-x0 = p.manip.resolveConstraints([0;1+rand;randn(10,1)]);
+x0 = p.resolveConstraints([0;1+rand;randn(10,1)]);
 
 if 0 %checkDependency('vrml_enabled')
   v = p.constructVisualizer();
@@ -19,7 +19,7 @@ end
 
 for t=xtraj.getBreaks()
   x=xtraj.eval(t);
-  phi = p.manip.contactConstraints(x(1:6));
+  phi = p.contactConstraints(x(1:6));
   if any(phi<-0.05)
     phi
     error('penetration');

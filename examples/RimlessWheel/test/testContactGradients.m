@@ -3,14 +3,14 @@ function testContactGradients
 options.floating = true;
 options.twoD = true;
 p = TimeSteppingRigidBodyManipulator('../RimlessWheel.urdf',.01,options);
-x0 = p.manip.resolveConstraints([0;1+rand;randn;5*rand;randn;5*rand]);
+x0 = p.resolveConstraints([0;1+rand;randn;5*rand;randn;5*rand]);
 
 options.grad_method = {'user','taylorvar'};
-[n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p.manip,x0(1:p.manip.num_q),options);
+[n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p,x0(1:p.getNumDOF()),options);
 
 for i=1:100
-  q = randn(p.manip.num_q,1); 
-  [n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p.manip,q,options);
+  q = randn(p.getNumDOF,1); 
+  [n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p,q,options);
 end
 
 

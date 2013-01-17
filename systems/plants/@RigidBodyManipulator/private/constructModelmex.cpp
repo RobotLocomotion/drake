@@ -11,13 +11,13 @@ using namespace std;
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
-  if (nrhs<1) {
-    mexErrMsgIdAndTxt("Drake:constructModelmex:NotEnoughInputs","Usage model_ptr = constructModelmex(RigidBodyManipulator)");
+  if (nrhs<3) {
+    mexErrMsgIdAndTxt("Drake:constructModelmex:NotEnoughInputs","Usage model_ptr = constructModelmex(featherstone,bodies,gravity)");
   }
 
   Model *model=NULL;
 
-  mxArray* featherstone = mxGetProperty(prhs[0],0,"featherstone");
+  const mxArray* featherstone = prhs[0]; //mxGetProperty(prhs[0],0,"featherstone");
   if (!featherstone) mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs", "can't find field model.featherstone.  Are you passing in the correct structure?");
   
   // set up the model
@@ -56,7 +56,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     memcpy(model->I[i].data(),mxGetPr(pIi),sizeof(double)*6*6);
   }
   
-  mxArray* pBodies = mxGetProperty(prhs[0],0,"body");
+  const mxArray* pBodies = prhs[1]; //mxGetProperty(prhs[0],0,"body");
   if (!pBodies) mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","can't find field model.body.  Are you passing in the correct structure?");
   
   for (int i=0; i<model->NB + 1; i++) {
@@ -90,7 +90,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     
   }
   
-  mxArray* a_grav_array = mxGetProperty(prhs[0],0,"gravity");
+  const mxArray* a_grav_array = prhs[2]; //mxGetProperty(prhs[0],0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {
     double* p = mxGetPr(a_grav_array);
     model->a_grav[3] = p[0];

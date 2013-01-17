@@ -12,7 +12,7 @@ function x = bodyKin(obj,kinsol,body_ind,pts)
 %  and (following our gradient convention) J will be a ((3xm)x(q))
 %  matrix, with [J1;J2;...;Jm] where Ji = dxidq
 
-typecheck(kinsol,'struct');  % this should catch people who haven't switched to the new interface yet.
+checkDirty(obj);
 
 if (kinsol.mex)
   if (isa(body_ind,'RigidBody')) body_ind = find(obj.body==body_ind,1); end

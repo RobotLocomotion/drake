@@ -9,6 +9,7 @@ function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex)
 % the answer).
 %
 
+checkDirty(model);
 if nargin<4, use_mex=true; end
 if nargin<3, b_compute_second_derivatives=false; end
 

@@ -33,7 +33,10 @@ end
 
 model = parseRobot(model,robot,options);
 
-model=compile(model);
+model.dirty = true;
+
+model = compile(model);  % ideally this would happen on entry into any function...
+
 end
 
 

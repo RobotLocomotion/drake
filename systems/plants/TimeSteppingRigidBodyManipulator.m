@@ -3,8 +3,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   % manipulator equations, with contact / limits resolved using the linear
   % complementarity problem formulation of contact in Stewart96.
   
-  properties
+  properties (Access=protected)
     manip  % the CT manipulator
+    sensor % additional TimeSteppingRigidBodySensors (beyond the sensors attached to manip)
+    dirty=true;
+  end
+
+  properties (SetAccess=protected)
     timestep
     twoD=false
   end
@@ -52,17 +57,62 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       obj = setOutputFrame(obj,getOutputFrame(obj.manip));
     end
     
-    function obj = compile(obj)
-      obj.manip = obj.manip.compile();
-      obj = obj.setInputLimits(obj.manip.umin,obj.manip.umax);
-      obj = setInputFrame(obj,getInputFrame(obj.manip));
-      obj = setStateFrame(obj,getStateFrame(obj.manip));
-      obj = setNumOutputs(obj,getNumOutputs(obj.manip));
-      obj = setOutputFrame(obj,getOutputFrame(obj.manip));
+    function checkDirty(obj)
+      if (obj.dirty)
+        error('You''ve changed something about this model and need to manually compile it.  Use obj=compile(obj).');
+      end
+    end
+    
+    function y = output(obj,t,x,u)
+      checkDirty(obj);
+      
+      if ~isDirectFeedthrough(obj)
+        u=[];
+      end
+      
+      y = obj.manip.output(t,x,u);
+      for i=1:length(obj.sensor)
+        y = [y; obj.sensor{i}.output(obj,obj.manip,t,x,u)];
+      end
+    end
+        
+    function model = compile(model)
+      model.manip = model.manip.compile();
+      
+      model = model.setInputLimits(model.manip.umin,model.manip.umax);
+      model = setInputFrame(model,getInputFrame(model.manip));
+      model = setStateFrame(model,getStateFrame(model.manip));
+
+      if length(model.sensor)>0
+        feedthrough = model.manip.isDirectFeedthrough;
+        outframe{1} = getOutputFrame(model.manip);
+        for i=1:length(model.sensor)
+          model.sensor{i} = model.sensor{i}.compile(model,model.manip);
+          outframe{i+1} = model.sensor{i}.getFrame(model);
+          feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
+        end
+        fr = MultiCoordinateFrame.constructFrame(outframe);
+        model = setNumOutputs(model,fr.dim);
+        model = setOutputFrame(model,fr);
+        model = setDirectFeedthrough(model,feedthrough);
+      else
+        model = setNumOutputs(model,getNumOutputs(model.manip));
+        model = setOutputFrame(model,getOutputFrame(model.manip));
+        model = setDirectFeedthroguh(model.manip,isDirectFeedthrough);
+      end
+      model.dirty = false;
     end
     
     function x0 = getInitialState(obj)
       x0 = obj.manip.getInitialState();
+    end
+    
+    function B = getB(obj)
+      B = obj.manip.getB();
+    end
+    
+    function num_q = getNumDOF(obj)
+      num_q = obj.manip.num_q;
     end
     
     function [xdn,df] = update(obj,t,x,u)
@@ -379,27 +429,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       
     end
 
-    function y = output(obj,t,x,u)
-      if isDirectFeedthrough(obj)
-        y = output(obj.manip,t,x,u);
+    function obj = addSensor(obj,sensor)
+      if isa(sensor,'RigidBodySensor')
+        obj.manip = obj.manip.addSensor(sensor);
       else
-        y = output(obj.manip,t,x);
+        typecheck(sensor,'TimeSteppingRigidBodySensor');
+        obj.sensor{end+1} = sensor;
       end
     end
-
-    function phi = stateConstraints(obj,x)
-      phi = stateConstraints(obj.manip,x);
-    end
     
-    function [x,success] = resolveConstraints(obj,x0,v)
-      if (nargin<3) v=[]; end
-      [x,success] = resolveConstraints(obj.manip,x0,v);
-    end
-    
-    function v = constructVisualizer(obj)
-      v = constructVisualizer(obj.manip);
-      v = setInputFrame(v,obj.getStateFrame());
-    end
 
     function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,v)
       % attempts to find a fixed point (xstar,ustar) which also satisfies the constraints,
@@ -481,6 +519,62 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         % time-stepping manipulator:
         varargout{1} = cascade(pdff,feedback(sys,pdfb));
       end
+    end
+    
+  end
+  
+  methods  % pass through methods (to the manipulator)
+    function varargout = doKinematics(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}]=doKinematics(obj.manip,varargin{:});
+    end
+    
+    function varargout = forwardKin(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}]=forwardKin(obj.manip,varargin{:});
+    end
+    
+    function varargout = bodyKin(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}]=bodyKin(obj.manip,varargin{:});
+    end
+    
+    function varargout = collisionDetect(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}]=collisionDetect(obj.manip,varargin{:});
+    end
+    
+    function varargout = stateConstraints(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = stateConstraints(obj.manip,varargin{:});
+    end
+    
+    function varargout = contactConstraints(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = contactConstraints(obj.manip,varargin{:});
+    end
+    
+    function varargout = resolveConstraints(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = resolveConstraints(obj.manip,varargin{:});
+    end
+    
+    function varargout = getMass(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = getMass(obj.manip,varargin{:});
+    end
+    
+    function grav = getGravity(obj)
+      grav = obj.manip.gravity;
+    end
+    
+    function body = findLink(model,varargin)
+      body = model.manip.findLink(varargin{:});
+    end
+    
+    function v = constructVisualizer(obj)
+      v = constructVisualizer(obj.manip);
+      v = setInputFrame(v,obj.getStateFrame());
     end
     
   end

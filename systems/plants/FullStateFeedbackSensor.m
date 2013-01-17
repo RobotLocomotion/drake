@@ -1,19 +1,14 @@
 classdef FullStateFeedbackSensor < RigidBodySensor
   
-  properties
-    frame
-  end
-  
   methods
-    function obj = FullStateFeedbackSensor(manip)
-      typecheck(manip,'RigidBodyManipulator');
-      obj.frame = manip.getStateFrame();
-    end
-    function y = output(obj,t,x,u)
+    function y = output(obj,manip,t,x,u)
       y=x;
     end
-    function fr = getFrame(obj)
-      fr = obj.frame;
+    function fr = getFrame(obj,manip)
+      fr = manip.getStateFrame;
+    end
+    function tf = isDirectFeedthrough(obj)
+      tf=false;
     end
   end
 end

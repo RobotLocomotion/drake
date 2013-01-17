@@ -1,6 +1,6 @@
 classdef PlanarRigidBody < RigidBody
   
-  properties
+  properties 
     jcode=-1;        % for featherstone planar models
     jsign=1;
   end
