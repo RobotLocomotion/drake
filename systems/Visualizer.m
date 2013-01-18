@@ -183,10 +183,12 @@ classdef Visualizer < DrakeSystem
       % coordinates.
       
       fr = obj.getInputFrame();
+      obj.draw(0,zeros(fr.dim,1));
       
       f = sfigure(99); clf;
       set(f, 'Position', [560 400 560 20 + 30*ceil(fr.dim/2)]);
 
+      
       y=30*ceil(fr.dim/2)-10;
       for i=1:fr.dim
         label{i} = uicontrol('Style','text','String',fr.coordinates{i}, ...
@@ -201,7 +203,7 @@ classdef Visualizer < DrakeSystem
       end
       
       function update_display(source, eventdata)
-        t = 0;
+        t = 0; x = zeros(fr.dim,1);
         for i=1:fr.dim
           x(i) = get(slider{i}, 'Value');
         end

@@ -356,9 +356,7 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
       
-      if (checkDependency('eigen3_enabled'))
-        model = createMexPointer(model);
-      end
+      model = createMexPointer(model);
       
       model.dirty = false;
     end
@@ -572,7 +570,9 @@ classdef RigidBodyManipulator < Manipulator
   methods (Access=protected)
     
     function obj = createMexPointer(obj)
-      obj.mex_model_ptr = SharedDataHandle(constructModelmex(obj.featherstone,obj.body,obj.gravity),@deleteModelmex);
+      if (exist('constructModelmex')==3)
+        obj.mex_model_ptr = SharedDataHandle(constructModelmex(obj.featherstone,obj.body,obj.gravity),@deleteModelmex);
+      end
     end
     
     function fr = constructStateFrame(model)

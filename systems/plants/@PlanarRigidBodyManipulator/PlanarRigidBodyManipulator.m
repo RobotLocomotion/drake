@@ -266,7 +266,9 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
   methods (Access=protected)
     
     function obj = createMexPointer(obj)
-      obj.mex_model_ptr = SharedDataHandle(constructModelpmex(obj.featherstone,obj.body,obj.gravity),@deleteModelpmex);
+      if (exist('constructModelpmex')==3)
+        obj.mex_model_ptr = SharedDataHandle(constructModelpmex(obj.featherstone,obj.body,obj.gravity),@deleteModelpmex);
+      end
     end
     
     function model = extractFeatherstone(model)
