@@ -178,6 +178,37 @@ classdef Visualizer < DrakeSystem
       end
     end
     
+    function inspector(obj)
+      % set up a little gui with sliders to manually adjust each of the
+      % coordinates.
+      
+      fr = obj.getInputFrame();
+      
+      f = sfigure(99); clf;
+      set(f, 'Position', [560 400 560 20 + 30*ceil(fr.dim/2)]);
+
+      y=30*ceil(fr.dim/2)-10;
+      for i=1:fr.dim
+        label{i} = uicontrol('Style','text','String',fr.coordinates{i}, ...
+          'Position',[10+280*(i>fr.dim/2), y+30*ceil(fr.dim/2)*(i>fr.dim/2), 90, 20],'BackgroundColor',[.8 .8 .8]);
+        slider{i} = uicontrol('Style', 'slider', 'Min', -5, 'Max', 5, ...
+          'Value', 0, 'Position', [100+280*(i>fr.dim/2), y+30*ceil(fr.dim/2)*(i>fr.dim/2), 170, 20],...
+          'Callback',{@update_display});
+
+        % use a little undocumented matlab to get continuous slider feedback:
+        slider_listener{i} = handle.listener(slider{i},'ActionEvent',@update_display);
+        y = y - 30;
+      end
+      
+      function update_display(source, eventdata)
+        t = 0;
+        for i=1:fr.dim
+          x(i) = get(slider{i}, 'Value');
+        end
+        obj.draw(t,x); drawnow;
+      end      
+    end
+    
     function playbackAVI(obj,xtraj,filename)
       % Plays back a trajectory and creates an avi file.
       %   The filename argument is optional; if not specified, a gui will prompt
