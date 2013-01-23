@@ -99,11 +99,13 @@ classdef Trajectory < DrakeSystem
       c=a;
       for i=1:length(varargin)
         [c,b,breaks]=setupTrajectoryPair(c,varargin{i});
-        if (length(c.dim)~=length(b.dim) || any(c.dim(2:end)~=b.dim(2:end)))
+        sc = size(c); sb = size(b);
+        if (length(sc)~=length(sb) || any(sc(2:end)~=sb(2:end)))
           error('dimensions 2:end must match');
         end
+        fr = getOutputFrame(c);
         c = FunctionHandleTrajectory(@(t) vertcat(c.eval(t),b.eval(t)),[c.dim(1)+b.dim(1),c.dim(2:end)],breaks);
-        c = setOutputFrame(MultiCoordinateFrame({getOutputFrame(c),getOutputFrame(b)}));
+        c = setOutputFrame(c,MultiCoordinateFrame({fr,getOutputFrame(b)}));
       end
     end
     
