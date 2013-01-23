@@ -103,6 +103,7 @@ classdef Trajectory < DrakeSystem
           error('dimensions 2:end must match');
         end
         c = FunctionHandleTrajectory(@(t) vertcat(c.eval(t),b.eval(t)),[c.dim(1)+b.dim(1),c.dim(2:end)],breaks);
+        c = setOutputFrame(MultiCoordinateFrame({getOutputFrame(c),getOutputFrame(b)}));
       end
     end
     
@@ -115,6 +116,7 @@ classdef Trajectory < DrakeSystem
           error('dimensions 1 and 3:end must match');
         end
         c = FunctionHandleTrajectory(@(t) horzcat(c.eval(t),b.eval(t)),[cdim(1),cdim(2)+bdim(2),cdim(3:end)],breaks);
+        c = setOutputFrame(MultiCoordinateFrame({getOutputFrame(c),getOutputFrame(b)}));
       end
     end
     

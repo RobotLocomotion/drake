@@ -179,6 +179,57 @@ classdef DynamicalSystem
       newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);
     end
     
+    function newsys = parallel(sys1,sys2)
+      % Creates a new system that takes the inputs to both sys1 and sys2
+      % as a single input (which is "demux"ed and passed independently to
+      % the two systems), and outputs the "mux"ed output of the two
+      % systems.
+      
+      mdl = ['Parallel_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
+      new_system(mdl,'Model');
+      set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
+      
+      load_system('simulink3');
+      
+      add_block('simulink3/Subsystems/Subsystem',[mdl,'/system1']);
+      Simulink.SubSystem.deleteContents([mdl,'/system1']);
+      Simulink.BlockDiagram.copyContentsToSubSystem(sys1.getModel(),[mdl,'/system1']);
+      add_block('simulink3/Subsystems/Subsystem',[mdl,'/system2']);
+      Simulink.SubSystem.deleteContents([mdl,'/system2']);
+      Simulink.BlockDiagram.copyContentsToSubSystem(sys2.getModel(),[mdl,'/system2']);
+      
+      if (getNumInputs(sys1)>0 || getNumInputs(sys2)>0)
+        inframe = MultiCoordinateFrame.constructFrame({sys1.getInputFrame,sys2.getInputFrame});
+        add_block('simulink3/Sources/In1',[mdl,'/in']);
+        in=setupMultiOutput(inframe,mdl,'in');
+        add_line(mdl,[in,'/1'],'system1/1');
+        add_line(mdl,[in,'/2'],'system2/1');
+      end
+        
+      if (getNumOutputs(sys1)>0 || getNumOutputs(sys2)>0)
+        outframe = MultiCoordinateFrame.constructFrame({sys1.getOutputFrame,sys2.getOutputFrame});
+        add_block('simulink3/Sinks/Out1',[mdl,'/out']);
+        out=setupMultiInput(outframe,mdl,'out');
+        add_line(mdl,'system1/1',[out,'/1']);
+        add_line(mdl,'system2/1',[out,'/2']);
+      end      
+
+      newsys = SimulinkModel(mdl,getNumInputs(sys1)+getNumInputs(sys2));
+      if (getNumInputs(newsys)>0)
+        newsys = setInputFrame(newsys,inframe);
+      end
+      if (getNumStates(sys2)==0)
+        newsys = setStateFrame(newsys,getStateFrame(sys1));
+      elseif (getNumStates(sys1)==0)
+        newsys = setStateFrame(newsys,getStateFrame(sys2));
+      end
+      if (getNumOutputs(newsys)>0)
+        newsys = setOutputFrame(newsys,outframe);
+      end
+      newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
+      newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);
+    end
+    
     function newsys = sampledData(sys,tsin,tsout)
       % Creates a new system which is a sampled data (e.g. discretized in time) version of the original system.  
       % This is accomplished by adding rate transition blocks to the inputs and outputs.

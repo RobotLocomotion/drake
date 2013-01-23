@@ -99,8 +99,6 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       end
       
       title(['t = ', num2str(t,'%.2f') ' sec']);
-      drawnow;
-
     end
   end
 

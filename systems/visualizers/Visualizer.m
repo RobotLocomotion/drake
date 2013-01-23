@@ -113,6 +113,7 @@ classdef Visualizer < DrakeSystem
         t = get(time_slider, 'Value');
         set(time_display, 'String', sprintf(time_format, t));
         obj.draw(t, xtraj.eval(t));
+        drawnow;
       end
       function start_playback(source, eventdata)
         if ~ishandle(play_button) 
@@ -138,7 +139,6 @@ classdef Visualizer < DrakeSystem
             x = xtraj.eval(t);
             set(time_slider, 'Value', t)
             update_time_display(time_slider, [])
-            drawnow;
             if ~get(play_button, 'UserData')
               break;
             end
@@ -162,7 +162,6 @@ classdef Visualizer < DrakeSystem
           x = xtraj.eval(t);
           set(time_slider, 'Value', t)
           update_time_display(time_slider, [])
-          drawnow;
           if ~get(play_button, 'UserData')
             stop(timerobj);
             return;
