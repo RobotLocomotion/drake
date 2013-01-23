@@ -1,11 +1,31 @@
 function [ltvsys,V] = tvlqr(obj,xtraj,utraj,Q,R,Qf,options)
 
 % implements the time-varying linear (or affine) quadratic regulator
-%  note:  Qf can be an nxn matrix, a cell array (for initializing the
-%  affine) or an PolynomialLyapunovFunction (e.g. as would happen if you hand it back
-%  Vtraj.eval(0) from a previous tvlqr trajectory).
+%
+% in the following xbar = x-x0, ubar = u-u0
+% @param Q can be a double matrix, a trajectory, or a 3x1 cell matrix
+%   specifying the cost terms xbar'Q{1}xbar + xbar'Q{2} + Q{3}
+% @param R can be a double matrix, a trajectory, or a 3x1 cell matrix
+%   specifying the cost terms ubar'R{1}ubar + ubar'R{2} + R{3}
+% @param Qf can be a double matrix, a 3x1 cell matrix, or a 
+%   PolynomialLyapunovFunction (e.g. as would happen if you hand it back
+%    Vtraj.eval(0) from a previous tvlqr trajectory).
 %
 % @option tspan @default utraj.getBreaks();
+% @option N can be a double matrix or a trajectory, specifying additional
+%    cost terms 2xbar'Nubar.  @default 0
+%
+% and purely for convenience:
+% @option xdtraj adds terms so that the cost is 
+%     (xbar - xbar_d)'*Q{1}*(xbar - xbar_d) + (xbar - xbar_d)'*Q{2}. @default 0
+% @option udtraj adds terms so that the cost is 
+%      (ubar - ubar_d)'*R{1}*(ubar - ubar_d) + (ubar - ubar_d)'*R{2}. @default 0
+%
+% in the following ybar = y-y0, where y0(t) = output(obj,t,x0(t),u0(t))
+% @option Qy adds terms of the form ybar'*Qy{1}*ybar + ybar'*Qy{2} + Qy{3}. @default all zeros
+% @option Ny adds terms of the form 2*ybar'*Ny*ubar.  @default 0.
+% @option ydtraj adds terms of the form (ybar - ybar_d)'*Qy{1}*(ybar - ybar_d) + (ybar - ybar+d)'*Qy{2}. @default 0
+%
 
 if (nargin<7) options=struct(); end
 if isfield(options,'tspan') 
@@ -13,7 +33,9 @@ if isfield(options,'tspan')
 else  
   options.tspan = utraj.getBreaks(); 
 end
+if ~isfield(options,'N') options.N=zeros(nX,nU); end
 
+if (~isCT(obj)) error('only handle CT case so far'); end
 
 typecheck(xtraj,'Trajectory');
 sizecheck(xtraj,[getNumStates(obj),1]);
@@ -24,6 +46,7 @@ nX = xtraj.dim;
 nU = utraj.dim;
 tspan=options.tspan;
 
+
 % create new coordinate frames
 iframe = CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix);
 obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,iframe,eye(nX),-xtraj));
@@ -33,27 +56,61 @@ oframe = CoordinateFrame([obj.getInputFrame.name,' + u0(t)'],nU,obj.getInputFram
 oframe.addTransform(AffineTransform(oframe,obj.getInputFrame,eye(nU),utraj));
 obj.getInputFrame.addTransform(AffineTransform(obj.getInputFrame,oframe,eye(nU),-utraj));
 
+%  min_u(t) \int_0^T  x'Q{1}x + x'Q{2} + Q{3} + u'R{1}u + u'R{2} + R{3} + 2x'Nu
+%    subject to xdot = Ax + Bu + c
 
-if (isa(Q,'double'))
-  Q = ConstantTrajectory(Q);
-end
-if (isa(R,'double'))
-  Ri = ConstantTrajectory(inv(R));
-elseif isa(R,'Trajectory')
-  Ri = inv(R);
+if isa(Q,'double')
+  sizecheck(Q,[nX,nX]);
+  Q = {ConstantTrajectory(Q),ConstantTrajectory(zeros(nX,1)),ConstantTrajectory(0)};
+elseif isa(Q,'Trajectory')
+  Q = {Q,ConstantTrajectory(zeros(nX,1)),ConstantTrajectory(0)};  
+elseif isa(Q,'cell')
+  sizecheck(Q,3);
+  
+  if isa(Q{1},'double') Q{1} = ConstantTrajectory(Q{1}); 
+  else typecheck(Q{1},'Trajectory'); end
+  sizecheck(Q{1},[nX,nX]);
+
+  if isa(Q{2},'double') Q{2} = ConstantTrajectory(Q{2});
+  else typecheck(Q{2},'Trajectory'); end
+  sizecheck(Q{2},[nX,1]);
+  
+  if isa(Q{3},'double') Q{3} = ConstantTrajectory(Q{3});
+  else typecheck(Q{3},'Trajectory'); end
+  sizecheck(Q{3},1);
 else
-  error('R must be a double or a trajectory object');
+  error('Q must be a double, a trajectory, or a 3x1 cell array of doubles and trajectories');
 end
-sizecheck(Ri,[nU,nU]);
 
-typecheck(Q,'Trajectory');  
-sizecheck(Q,[nX,nX]);
+if (isa(R,'double'))
+  sizecheck(R,[nU,nU]);
+  R = {ConstantTrajectory(R),ConstantTrajectory(zeros(nX,1)),ConstantTrajectory(0)};
+elseif isa(R,'Trajectory')
+  sizecheck(R,[nU,nU]);
+  R = {R,ConstantTrajectory(zeros(nU,1)),ConstantTrajectory(0)};  
+elseif isa(R,'cell')
+  sizecheck(R,3);
+  
+  if isa(R{1},'double') R{1} = ConstantTrajectory(R{1}); 
+  else typecheck(R{1},'Trajectory'); end
+  sizecheck(Q{1},[nU,nU]);
 
-if iscell(Qf)
-  % intentionally left blank
-elseif isa(Qf,'double')
+  if isa(R{2},'double') R{2} = ConstantTrajectory(R{2});
+  else typecheck(R{2},'Trajectory'); end
+  sizecheck(R{2},[nU,1]);
+  
+  if isa(R{3},'double') R{3} = ConstantTrajectory(R{3});
+  else typecheck(R{3},'Trajectory'); end
+  sizecheck(R{3},1);  
+else
+  error('R must be a double, a trajectory, or a 3x1 cell array of doubles and trajectories');
+end
+
+if isa(Qf,'double')
   sizecheck(Qf,[nX,nX]);
   Qf = {Qf,zeros(nX,1),0};
+elseif iscell(Qf)
+  % intentionally left blank
 elseif isa(Qf,'PolynomialLyapunovFunction')
   Vf = extractQuadraticLyapunovFunction(Qf);
   Vf = Vf.inFrame(obj.getStateFrame);
@@ -79,18 +136,100 @@ typecheck(Qf{2},'double');
 sizecheck(Qf{2},[nX,1]);
 typecheck(Qf{3},'double');
 sizecheck(Qf{3},1);
+
+
+N=options.N;
+if isa(N,'double')
+  sizecheck(N,[nX,nU]);
+  N = ConstantTrajectory(N);
+elseif isa(N,'Trajectory')
+  sizecheck(N,[nX,nU]);
+else
+  error('N must be a double or a trajectory');
+end
+
+% xdtraj adds terms so that the cost is (xbar - xbar_d)'*Q{1}*(xbar - xbar_d) + (xbar - xbar_d)'*Q{2}. @default 0
+if isfield(options,'xdtraj')
+  typecheck(xdtraj,'Trajectory');
+  options.xdtraj = options.xdtraj.inFrame(iframe);
   
-if (~isCT(obj)) error('only handle CT case so far'); end
+  Q{2} = Q{2} - 2*Q{1}*options.xdtraj;
+  Q{3} = Q{3} + options.xdtraj'*Q{1}*options.xdtraj - options.xdtraj'*Q{2};
+end
+
+% udtraj adds terms so that the cost is (ubar - ubar_d)'*R{1}*(ubar - ubar_d) + (ubar - ubar_d)'*R{2}. @default 0
+if isfield(options,'udtraj')
+  typecheck(udtraj,'Trajectory');
+  options.udtraj = options.udtraj.inFrame(oframe);
+  
+  R{2} = R{2} - 2*R{2}*options.udtraj;
+  R{3} = R{3} + options.udtraj'*R{1}*option.udtraj - options.udtraj'*R{2};
+end
+
+nY = getNumOutputs(obj);
+
+% Qy adds terms of the form ybar'*Qy{1}*ybar + ybar'*Qy{2} + Qy{3}.  @default 0
+if isfield(options,'Qy')
+  Qy = options.Qy;
+  if isa(Qy,'double')
+    sizecheck(Qy,[nY,nY]);
+    Qy = {ConstantTrajectory(Qy),ConstantTrajectory(zeros(nY,1)),ConstantTrajectory(0)};
+  elseif isa(Qy,'Trajectory')
+    Qy = {Qy,ConstantTrajectory(zeros(nY,1)),ConstantTrajectory(0)};
+  elseif isa(Qy,'cell')
+    sizecheck(Qy,3);
+  
+    if isa(Qy{1},'double') Qy{1} = ConstantTrajectory(Qy{1});
+    else typecheck(Qy{1},'Trajectory'); end
+    sizecheck(Qy{1},[nY,nY]);
+    
+    if isa(Qy{2},'double') Qy{2} = ConstantTrajectory(Qy{2});
+    else typecheck(Qy{2},'Trajectory'); end
+    sizecheck(Qy{2},[nY,1]);
+    
+    if isa(Qy{3},'double') Qy{3} = ConstantTrajectory(Qy{3});
+    else typecheck(Qy{3},'Trajectory'); end
+    sizecheck(Qy{3},1);
+  else
+    error('Qy must be a double, a trajectory, or a 3x1 cell array of doubles and trajectories');
+  end
+else
+  Qy=[];
+end
+
+if isfield(options,'Ny') 
+  Ny = options.Ny; 
+  if isa(Ny,'double')
+    sizecheck(Ny,[nY,nU]);
+    Ny = ConstantTrajectory(Ny);
+  elseif isa(Ny,'Trajectory')
+    sizecheck(Ny,[nY,nU]);
+  else
+    error('Ny must be a double or a trajectory.');
+  end
+else
+  Ny = [];
+end
+
+% ydtraj adds terms of the form (ybar - ybar_d)'*Qy*(ybar - ybar_d) + (ybar - ybar_d)'*Qy. @default 0
+if isfield(options,'ydtraj') && ~isempty(Qy)
+  typecheck(ydtraj,'Trajectory');
+  options.ydtraj = options.ydtraj.inFrame(getOutputFrame(obj));
+  
+  % have to the the actual update in the dynamics fun, since y0 is not
+  % defined yet
+end
+
 
 xdottraj = fnder(xtraj);
 
-Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,Ri,xtraj,utraj,xdottraj,options),tspan(end:-1:1),{Qf{1}^(1/2),Qf{2},Qf{3}});
+Ssqrt = cellODE(@ode45,@(t,S)affineSdynamics(t,S,obj,Q,R,N,Qy,Ny,xtraj,utraj,xdottraj,options),tspan(end:-1:1),{Qf{1}^(1/2),Qf{2},Qf{3}});
 Ssqrt = flipToPP(Ssqrt);
 S = recompS(Ssqrt);
 B = getBTrajectory(obj,Ssqrt{1}.getBreaks(),xtraj,utraj,options);
 
 % note that this returns what we would normally call -K.  here u(t) = u_0(t) + K(t) (x(t) - x_0(t)) 
-K = affineKsoln(S,Ri,B);
+K = affineKsoln(S,R,B);
 
 if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
   warning('designing full-state feedback controller but plant has different output frame than state frame'); 
@@ -133,20 +272,57 @@ function K = Ksoln(S,Ri,B)
   K = -Ri*B'*S;
 end
 
-function Sdot = affineSdynamics(t,S,plant,Qtraj,Ritraj,xtraj,utraj,xdottraj,options)
+function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,Qytraj,Nytraj,xtraj,utraj,xdottraj,options)
   x0 = xtraj.eval(t); u0 = utraj.eval(t); xdot0 = xdottraj.eval(t);
-  Q=Qtraj.eval(t);  Ri=Ritraj.eval(t);
+  Q{1}=Qtraj{1}.eval(t); Q{2}=Qtraj{2}.eval(t); Q{3}=Qtraj{3}.eval(t); 
+  R{1}=Rtraj{1}.eval(t); R{2}=Rtraj{2}.eval(t); R{3}=Rtraj{3}.eval(t);
+  Ri = inv(R{1});
+  N = Ntraj.eval(t);
+  
   nX = length(x0); nU = length(u0);
   [xdot,df] = geval(@plant.dynamics,t,x0,u0,options);
   A = df(:,1+(1:nX));
   B = df(:,nX+1+(1:nU));
   c = xdot - xdot0;
-%  Sdot{1} = -(Q - S{1}*B*Ri*B'*S{1} + S{1}*A + A'*S{1});
+  
+  if ~isempty(Qytraj) || ~isempty(Nytraj)
+    [y0,dy] = geval(@plant.output,t,x0,u0,options);
+    C = dy(:,1+(1:nX));
+    D = dy(:,nX+1+(1:nU));
+  end
+  
+  if ~isempty(Qytraj)
+    Qy{1} = Qytraj{1}.eval(t); Qy{2} = Qytraj{2}.eval(t); Qy{3} = Qytraj{3}.eval(t);
+
+    if isfield(options,'ydtraj')
+      ybar_d = options.ydtraj.eval(t) - y0;
+      Qy{2} = Qy{2} - 2*Qy{2}*ybar_d;
+      Qy{3} = Qy{3} + ybar_d'*Qy{1}*ybar_d - ybar_d'*Qy{2};
+    end
+
+    % add the y terms into Q, R, and N
+    Q{1} = Q{1} + C'*Qy{1}*C;
+    Q{2} = Q{2} + C'*Qy{2};
+    Q{3} = Q{3} + Qy{3};
+    R{1} = R{1} + D'*Qy{1}*D;
+    R{2} = R{2} + D'*Qy{2};
+    N = N + C'*Qy{1}*D;
+  end
+  
+  if ~isempty(Nytraj)   
+    Ny = Nytraj.eval(t);
+    N = N + C'*Ny;
+    R{1} = R{1} + 2*D'*Ny;
+  end
+  
+%  Sdot{1} = -(Q - (N'+S{1}*B)*Ri*(B'*S{1}+N) + S{1}*A + A'*S{1});
 %  if (min(eig(S{1}))<0) warning('S is not positive definite'); end
-  Sdot{1} = -.5*Q*inv(S{1}')-(A' - .5*S{1}*S{1}'*B*Ri*B')*S{1};  % sqrt method
+  ss = inv(S{1}');
+  Sdot{1} = -.5*Q*ss - A'*S{1} + .5*(N'+S{1}*S{1}'*B)*Ri*(B'*S{1}+N*ss);  % sqrt method
   Sorig = S{1}*S{1}';
-  Sdot{2} = -((A'-Sorig*B*Ri*B')*S{2} + 2*Sorig*c);
-  Sdot{3} = -(-S{2}'*B*Ri*B'*S{2}/4 + S{2}'*c);  
+  Sdot{2} = -((A'-(N'+Sorig*B)*Ri*B')*S{2} + 2*Sorig*c + Q{2} - (N'+Sorig*B)*Ri*R{2});
+  rs = (R{2}+B'*S{2})/2;
+  Sdot{3} = -(Q{3}+R{3} - rs'*Ri*rs + S{2}'*c);  
 end
     
 function S = recompS(Ssqrt)
@@ -155,8 +331,9 @@ function S = recompS(Ssqrt)
   S{3} = Ssqrt{3};
 end
 
-function K = affineKsoln(S,Ri,B)
-  K{1} = -Ri*B'*S{1};
-  K{2} = -.5*Ri*B'*S{2};
+function K = affineKsoln(S,R,B,N)
+  Ri = inv(R{1});
+  K{1} = -Ri*(B'*S{1}+N');
+  K{2} = -.5*Ri*(B'*S{2} + R{2});
 end
 
