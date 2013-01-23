@@ -418,9 +418,9 @@ function [f,G] = dirtran_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,nL,nC,nC
         dd_i(nX+2*nL+4+(j-1)*5,1+2*nX+2*nU+2*nL+2*nC+nClutch+2*j-1) = -2*cLambda(2*j-1,i+1);
         
         %one more inequality, psi*lambdax <= 0
-        d_i(nX+2*nL+5+(j-1)*5) = -cLambda(2*j,i+1) * psi(j); 
-        dd_i(nX+2*nL+5+(j-1)*5,1+2*nX+2*nU+2*nL+2*nC+nClutch+2*j) = -psi(j);
-        dd_i(nX+2*nL+5+(j-1)*5,1+nX+nU+nL+2*nC+nClutch+(1:nX)) = -cLambda(2*j,i+1) * dPsi(j,:);
+        d_i(nX+2*nL+5+(j-1)*5) = -cLambda(2*j-1,i+1) * psi(j);
+        dd_i(nX+2*nL+5+(j-1)*5,1+2*nX+2*nU+2*nL+2*nC+nClutch+2*j-1) = -psi(j);
+        dd_i(nX+2*nL+5+(j-1)*5,1+nX+nU+nL+2*nC+nClutch+(1:nX)) = -cLambda(2*j-1,i+1) * dPsi(j,:);
       end
     end
     
