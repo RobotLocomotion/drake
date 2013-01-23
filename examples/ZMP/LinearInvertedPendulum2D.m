@@ -59,8 +59,9 @@ classdef LinearInvertedPendulum2D < LinearSystem
     function runPassive
       r = LinearInvertedPendulum2D(1.055);
       v = r.constructVisualizer();
+      dZMP = setOutputFrame(ConstantTrajectory([0]),desiredZMP1D); 
       ytraj = r.simulate([0 3],[0;.1]);
-      v.playback(ytraj);
+      v.playback([ytraj;dZMP]);
     end
     
     function runLQR

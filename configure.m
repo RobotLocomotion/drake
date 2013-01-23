@@ -69,7 +69,6 @@ addpath([conf.root,'/util/obstacles']);
 addpath([conf.root,'/thirdParty']);
 addpath([conf.root,'/thirdParty/path']);
 addpath([conf.root,'/thirdParty/spatial']);
-addpath([conf.root,'/thirdParty/graphviz2mat']);
 addpath([conf.root,'/thirdParty/cprintf']);
 
 % todo: setup java classpath (not hard to do it once... but how can I set
