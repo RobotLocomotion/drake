@@ -75,7 +75,16 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
         
     function model = compile(model)
+      if model.twoD
+        S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
+        warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
+        warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+      else
+        S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+        warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+      end        
       model.manip = model.manip.compile();
+      warning(S);
       
       model = model.setInputLimits(model.manip.umin,model.manip.umax);
       model = setInputFrame(model,getInputFrame(model.manip));
@@ -551,6 +560,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = contactConstraints(obj.manip,varargin{:});
     end
     
+    function varargout = contactPositions(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = contactPositions(obj.manip,varargin{:});
+    end
+    
     function varargout = resolveConstraints(obj,varargin)
       varargout=cell(1,nargout);
       [varargout{:}] = resolveConstraints(obj.manip,varargin{:});
@@ -559,6 +573,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function varargout = getMass(obj,varargin)
       varargout=cell(1,nargout);
       [varargout{:}] = getMass(obj.manip,varargin{:});
+    end
+    
+    function varargout = getCOM(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = getCOM(obj.manip,varargin{:});
     end
     
     function grav = getGravity(obj)
@@ -574,6 +593,31 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       v = setInputFrame(v,obj.getStateFrame());
     end
     
+    function num_c = getNumContacts(obj)
+      num_c = obj.manip.num_contacts;
+    end
+
+    function c = getBodyContacts(obj,body_idx)
+      c = obj.manip.body(body_idx).contact_pts;
+    end
+    
+    function link_names = getLinkNames(obj)
+      link_names =  {obj.manip.body.linkname}';
+    end
+
+    function joint_names = getJointNames(obj)
+      joint_names =  {obj.manip.body.jointname}';
+    end
+
+    function num_bodies = getNumBodies(obj)
+      num_bodies = length(obj.manip.body);
+    end
+
+    function [jl_min, jl_max] = getJointLimits(obj)
+      jl_min = obj.manip.joint_limit_min;
+      jl_max = obj.manip.joint_limit_max;
+    end
+  
   end
   
   
