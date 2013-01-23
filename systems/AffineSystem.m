@@ -193,7 +193,9 @@ classdef AffineSystem < PolynomialSystem
       
       [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2);
 
-      Ac=[]; Ad=[]; C=[];
+      if isempty(sys1ind) && isempty(sys2ind)
+        Ac=[]; Ad=[]; C=[];
+      end
       if ~isempty(sys1ind)
         Ac(:,sys1ind) = [sys1.Ac + sys1.Bc*sys2.D*sys1.C; sys2.Bc*sys1.C];
         Ad(:,sys1ind) = [sys1.Ad + sys1.Bd*sys2.D*sys1.C; sys2.Bd*sys1.C];
