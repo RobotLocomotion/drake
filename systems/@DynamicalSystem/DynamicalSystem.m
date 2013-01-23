@@ -202,16 +202,34 @@ classdef DynamicalSystem
         inframe = MultiCoordinateFrame.constructFrame({sys1.getInputFrame,sys2.getInputFrame});
         add_block('simulink3/Sources/In1',[mdl,'/in']);
         in=setupMultiOutput(inframe,mdl,'in');
-        add_line(mdl,[in,'/1'],'system1/1');
-        add_line(mdl,[in,'/2'],'system2/1');
+        sys1in=setupMultiInput(getInputFrame(sys1),mdl,'system1');
+        j=1;
+        for i=1:getNumFrames(getInputFrame(sys1))
+          add_line(mdl,[in,'/',num2str(j)],[sys1in,'/',num2str(i)]);
+          j=j+1;
+        end          
+        sys2in=setupMultiInput(getInputFrame(sys2),mdl,'system2');
+        for i=1:getNumFrames(getInputFrame(sys2))
+          add_line(mdl,[in,'/',num2str(j)],[sys2in,'/',num2str(i)]);
+          j=j+1;
+        end          
       end
         
       if (getNumOutputs(sys1)>0 || getNumOutputs(sys2)>0)
         outframe = MultiCoordinateFrame.constructFrame({sys1.getOutputFrame,sys2.getOutputFrame});
         add_block('simulink3/Sinks/Out1',[mdl,'/out']);
         out=setupMultiInput(outframe,mdl,'out');
-        add_line(mdl,'system1/1',[out,'/1']);
-        add_line(mdl,'system2/1',[out,'/2']);
+        sys1out=setupMultiOutput(getOutputFrame(sys1),mdl,'system1');
+        j=1;
+        for i=1:getNumFrames(getOutputFrame(sys1))
+          add_line(mdl,[sys1out,'/',num2str(i)],[out,'/',num2str(j)]);
+          j=j+1;
+        end          
+        sys2out=setupMultiOutput(getOutputFrame(sys2),mdl,'system2');
+        for i=1:getNumFrames(getOutputFrame(sys2))
+          add_line(mdl,[sys2out,'/',num2str(i)],[out,'/',num2str(j)]);
+          j=j+1;
+        end          
       end      
 
       newsys = SimulinkModel(mdl,getNumInputs(sys1)+getNumInputs(sys2));

@@ -38,16 +38,18 @@ classdef LinearInvertedPendulum2D < LinearSystem
     end
     
     function v = constructVisualizer(obj)
-      v = MultiVisualizer({CartTable2DVisualizer,ZMP2DVisualizer});
+      v = MultiVisualizer({CartTable2DVisualizer,ZMP2DVisualizer,desiredZMP2DVisualizer});
     end
     
     function varargout = lqr(obj)
       % objective min_u \int dt [ x_zmp(t)^2 ] 
-      Q = obj.Czmp'*obj.Czmp; R = obj.Dzmp'*obj.Dzmp;  options.N = obj.Czmp'*obj.Dzmp;
       varargout = cell(1,nargout);
-      [varargout{:}] = tilqr(obj,Point(obj.getStateFrame),Point(obj.getInputFrame),Q,R,options);
+      [varargout{:}] = tilqry(obj,Point(obj.getStateFrame),Point(obj.getInputFrame),diag([0 0 1]),0);
     end
     
+    function c = ZMPtracker(dZMP)
+      valuecheck(getOutputFrame(dZMP),desiredZMP1D);
+    end
   end
   
   methods (Static)
@@ -60,6 +62,7 @@ classdef LinearInvertedPendulum2D < LinearSystem
     
     function runLQR
       r = LinearInvertedPendulum2D(1.055);
+      dZMP = setOutputFrame(ConstantTrajectory([0]),desiredZMP1D); 
       c = lqr(r);
       output_select(1).system = 1;
       output_select(1).output = 1;
@@ -71,8 +74,17 @@ classdef LinearInvertedPendulum2D < LinearSystem
 
       for i=1:5;
         ytraj = sys.simulate([0 5],randn(2,1));
-        v.playback(ytraj);
+        v.playback([ytraj;dZMP]);
       end
+    end
+    
+    function ZMPtrackingDemo()
+      r = LinearInvertedPendulum2D(1.055);
+      dZMP = setOutputFrame(FunctionHandleTrajectory(@(t) .08*sin(.125*t*(2*pi)),1,linspace(0,8,100)),desiredZMP1D);
+      v = r.constructVisualizer();
+      
+      ytraj = r.simulate(dZMP.tspan,zeros(2,1));%randn(2,1));
+      v.playback([ytraj;dZMP]);
     end
   end
   

@@ -210,7 +210,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       coefs = reshape(coefs,[d,l,k]);
       for i=1:length(varargin)
         if ~isa(varargin{i},'PPTrajectory')
-          c = vertcat@Trajectory(a,varagin{:});
+          c = vertcat@Trajectory(a,varargin{:});
           return;
         end
         [breaks2,coefs2,l2,k2,d2]=unmkpp(varargin{i}.pp);
