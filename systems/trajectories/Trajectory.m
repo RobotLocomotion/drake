@@ -95,6 +95,11 @@ classdef Trajectory < DrakeSystem
       b = FunctionHandleTrajectory(@(t) ctranspose(a.eval(t)),s([end,1:end-1]),a.getBreaks);
     end
     
+    function b = inv(a)
+      s = size(a);
+      b = FunctionHandleTrajectory(@(t) inv(a.eval(t)),s([end,1:end-1]),a.getBreaks);
+    end
+    
     function c = vertcat(a,varargin)
       c=a;
       for i=1:length(varargin)
@@ -153,6 +158,14 @@ classdef Trajectory < DrakeSystem
       
       [a,b,breaks]=setupTrajectoryPair(a,b);
       c = FunctionHandleTrajectory(@(t) a.eval(t)+b.eval(t),max(size(a),size(b)),breaks);
+    end
+    
+    function c = minus(a,b)
+      if (ndims(a) ~= ndims(b)) error('dimension mismatch'); end
+      if (~isscalar(a) && ~isscalar(b) && any(size(a)~=size(b))) error('dimension mismatch'); end
+      
+      [a,b,breaks]=setupTrajectoryPair(a,b);
+      c = FunctionHandleTrajectory(@(t) a.eval(t)-b.eval(t),max(size(a),size(b)),breaks);
     end
     
     function a = subsasgn(a,s,b)
