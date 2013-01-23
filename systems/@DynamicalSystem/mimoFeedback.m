@@ -28,8 +28,8 @@ function newsys = mimoFeedback(sys1,sys2,sys1_to_sys2_connection,sys2_to_sys1_co
 % system.  The values of the system field must be either 1 or 2.  The 
 % values of the "input" field can either be the input number or an input 
 % frame (which must match one of the frames exactly, not through a 
-% coordinate transformation).  @default all of the unused inputs from sys1 
-% followed by all unused inputs from sys2.
+% coordinate transformation).  @default all of the unused non-empty inputs from sys1 
+% followed by all unused non-empty inputs from sys2.
 %   Example:
 %      input_select(1).system = 1;
 %      input_select(1).input = 2;
@@ -49,9 +49,9 @@ function newsys = mimoFeedback(sys1,sys2,sys1_to_sys2_connection,sys2_to_sys1_co
 %    are valid using CoordinateFrames.
 
 typecheck(sys1,'DynamicalSystem');
-sizecheck(sys1,1);
+%sizecheck(sys1,1);
 typecheck(sys2,'DynamicalSystem');
-sizecheck(sys2,1);
+%sizecheck(sys2,1);
 sys{1}=sys1; sys{2}=sys2;
 
 if (nargin<3) sys1_to_sys2_connection=[]; end
@@ -75,7 +75,10 @@ if (nargin>3 && ~isempty(input_select))
   end
 else
   sys1inputs = setdiff(1:getNumFrames(sys1.getInputFrame),[sys2_to_sys1_connection.to_input]);
+  nonemptyframe = @(b) (b.dim>0);
+  sys1inputs = sys1inputs(arrayfun(@(a) nonemptyframe(getFrameByNum(sys1.getInputFrame,a)), sys1inputs));
   sys2inputs = setdiff(1:getNumFrames(sys2.getInputFrame),[sys1_to_sys2_connection.to_input]);
+  sys2inputs = sys2inputs(arrayfun(@(a) nonemptyframe(getFrameByNum(sys2.getInputFrame,a)), sys2inputs));
   input_select=[];
   for i=1:length(sys1inputs)
     input_select(i).system=1;
