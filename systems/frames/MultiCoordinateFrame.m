@@ -285,7 +285,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
 %       i=1;
 %       while (i<=length(frames))  % zap empty frames
 %         if (frames{i}.dim<1)
-%           frames{i}={};
+%           frames=frames([1:i-1,i+1:end]);
 %         else
 %           i=i+1;
 %         end
