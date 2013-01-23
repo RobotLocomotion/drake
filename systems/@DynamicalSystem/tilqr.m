@@ -9,10 +9,12 @@ function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R,options)
 %
 % @param x0 the nominal/goal state (a Point)
 % @param u0 the nominal input (a Point)
-% @param Q,R describe the LQR cost function \int dt (x'*Q*r + u'*R*u)
+% @param Q,R describe the LQR cost function \int dt (x'*Q*x + u'*R*u)
 % @option angle_flag boolean vector the same size as x which causes the
 % resulting controller to wrap around 2pi for the dimensions where
-% angle_flag is true.
+% angle_flag is true. @default false
+% @option N adds the off-diagonal terms to the cost function, which is now
+%   \int dt (x'*Q*x + u'*R*u + 2*x'*N*u). @default N=0
 %
 % @retval ltisys a system which implements the control u=-K*x
 % @retval Vcandidate an msspoly representation of the cost-to-go function x'*S*x
@@ -23,6 +25,9 @@ typecheck(x0,'Point');
 typecheck(u0,'Point');
 
 if (nargin<6) options=struct(); end
+if ~isfield(options,'angle_flag') options.angle_flag = false; end
+if ~isfield(options,'N') options.N = 0*x0*u0'; end
+
 
 x0 = double(x0.inFrame(obj.getStateFrame));
 u0 = double(u0.inFrame(obj.getInputFrame));
@@ -45,11 +50,6 @@ else
   end
   [K,S] = dlqr(A,B,Q,R);
 end
-if (any(any(abs(C-eye(getNumStates(obj)))>tol)) || any(abs(D(:))>tol))
-  C
-  D
-  warning('i''ve assumed C=I,D=0 so far.');
-end
 
 if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
   warning('designing full-state feedback controller but plant has different output frame than state frame'); 
@@ -64,7 +64,7 @@ else
   obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ltisys.getInputFrame,eye(length(x0)),-x0));
   ltisys.getInputFrame.addTransform(AffineTransform(ltisys.getInputFrame,obj.getStateFrame,eye(length(x0)),+x0));
 end
-if isfield(options,'angle_flag') && any(options.angle_flag)
+if any(options.angle_flag)
   ltisys = setInputFrame(ltisys,ltisys.getInputFrame().constructFrameWithAnglesWrapped(options.angle_flag));
   if (nargout>1)
     warning('DynamicalSystem:TILQR:NonSmoothLyapunovFunction','Constructing a wrapped (around 2*pi) frame for the controller and Lyapunov function. This may interfere with smooth analysis using the Lyapunov function, in which case you may prefer to defer this construction til post-analysis by unsetting options.angle_flag'); 

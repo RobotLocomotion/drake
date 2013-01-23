@@ -77,6 +77,46 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
     end
     
+    function tf = findTransform(obj,target,options)
+      % There are two ways to get a transform from this multiframe to
+      % another frame.  One is if a transform exists directly from the
+      % multi-frame.  The other is if the required transforms exist for ALL
+      % of the child frames.
+
+      if (nargin<3) options=struct(); end
+      if ~isfield(options,'throw_error_if_fail') options.throw_error_if_fail = false; end
+
+      opt2 = options;
+      opt2.throw_error_if_fail=false;
+      tf = findTransform@CoordinateFrame(obj,target,opt2);
+      if isempty(tf) && isa(target,'MultiCoordinateFrame')
+        % this could only happen if the target is also a multiframe
+        
+        % handle the simple case first, where the number of subframes is 
+        % the same and obj frame i has a transform to target frame i.
+        tf=[];
+        if getNumFrames(obj)==getNumFrames(target)
+          for i=1:length(obj.frame)
+            tfi = findTransform(obj.frame{i},getFrameByNum(target,i),opt2);
+            if isempty(tfi)
+              tf=[];
+              fr2=getFrameByNum(target,i);
+              warning(['Could not find any transform between ',obj.frame{i}.name,' and ', fr2.name]);
+              break;
+            elseif isempty(tf)
+              tf = tfi;
+            else
+              tf = parallel(tf,tfi);
+            end
+          end
+        end
+      end
+      
+      if isempty(tf) && options.throw_error_if_fail
+        error(['Could not find any transform between ',obj.name,' and ', target.name]);
+      end
+    end
+    
     function [tf,fid] = findChildTransform(obj,target,options)
       % note: if target is one of the children, then this will return an
       % empty tf but an fid>0
@@ -242,6 +282,15 @@ classdef MultiCoordinateFrame < CoordinateFrame
       % if frames has only a single element, then return it, otherwise
       % construct the construct the mimo frame
       typecheck(frames,'cell');
+%       i=1;
+%       while (i<=length(frames))  % zap empty frames
+%         if (frames{i}.dim<1)
+%           frames{i}={};
+%         else
+%           i=i+1;
+%         end
+%       end
+      
       if (length(frames)==1)
         obj = frames{1};
       else

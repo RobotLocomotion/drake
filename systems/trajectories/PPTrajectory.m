@@ -205,24 +205,29 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
     end
         
     function c = vertcat(a,varargin)
-      typecheck(a,'PPTrajectory');  % todo: handle vertcat with non-PP trajectories
+      typecheck(a,'PPTrajectory'); 
       [breaks,coefs,l,k,d] = unmkpp(a.pp);
       coefs = reshape(coefs,[d,l,k]);
       for i=1:length(varargin)
-        typecheck(varargin{i},'PPTrajectory');
-        [b,c,l2,k2,d2]=unmkpp(varargin{i}.pp);
+        if ~isa(varargin{i},'PPTrajectory')
+          c = vertcat@Trajectory(a,varagin{:});
+          return;
+        end
+        [breaks2,coefs2,l2,k2,d2]=unmkpp(varargin{i}.pp);
         if ~isequal(d(2:end),d2(2:end))
           error('incompatible dimensions');
         end
-        if ~isequal(breaks,b)
+        if ~isequal(breaks,breaks2)
           warning('Drake:PPTrajectory:DifferentBreaks','vertcat for pptrajectories with different breaks not support (yet).  kicking out to function handle version');
           c = vertcat@Trajectory(a,varagin{:});
           return;
         end
         d = [d(1)+d2(1),d(2:end)];
-        coefs = [coefs; reshape(coefs,[d2,l2,k2])];
+        coefs = [coefs; reshape(coefs2,[d2,l2,k2])];
       end
       c = PPTrajectory(mkpp(breaks,coefs,d));
+      fr = cellfun(@(a) getOutputFrame(a),varargin,'UniformOutput',false);
+      c = setOutputFrame(c,MultiCoordinateFrame({getOutputFrame(a),fr{:}}));
     end
     
     function newtraj = append(obj, trajAtEnd)

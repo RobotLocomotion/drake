@@ -121,9 +121,13 @@ if (nargout>0)
   if (nargout>1) 
     xout=simout.get('xout');
     l = {xout.signals(:).label};
-    xd = xout.signals(find(strcmp(l,'DSTATE'))).values';
-    xc = xout.signals(find(strcmp(l,'CSTATE'))).values';
-    x = [xd;xc];
+    x = [];
+    if (obj.getNumDiscStates>0)
+      x = [x;xout.signals(find(strcmp(l,'DSTATE'))).values'];
+    end
+    if (obj.getNumContStates>0)
+      x = [x;xout.signals(find(strcmp(l,'CSTATE'))).values'];
+    end
   end
   y = simout.get('yout').signals.values';
 

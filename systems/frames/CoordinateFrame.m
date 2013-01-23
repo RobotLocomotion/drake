@@ -192,6 +192,11 @@ classdef CoordinateFrame < handle
       % intended only for internal use.
       %
       
+      if (obj==target)
+        tf = ConstOrPassThroughSystem(repmat(nan,obj.dim,1),obj.dim);
+        return;
+      end
+      
       if (nargin<3) options=struct(); end
       if ~isfield(options,'throw_error_if_fail') options.throw_error_if_fail = false; end
       
