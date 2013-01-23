@@ -193,7 +193,7 @@ classdef CoordinateFrame < handle
       %
       
       if (obj==target)
-        tf = ConstOrPassThroughSystem(repmat(nan,obj.dim,1),obj.dim);
+        tf = ConstOrPassthroughSystem(repmat(nan,obj.dim,1),obj.dim);
         return;
       end
       

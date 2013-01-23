@@ -25,33 +25,20 @@ classdef LinearInvertedPendulum2D < LinearSystem
       obj = obj@LinearSystem([0 1; 0 0],[0; 1],[],[],[eye(2);Czmp],[0;0;Dzmp]);
       obj.Czmp = Czmp;
       obj.Dzmp = Dzmp;
-      obj = setInputFrame(obj,CoordinateFrame('2DLIMPinput',1,'u',{'xddot_com'}));
-      obj = setStateFrame(obj,CoordinateFrame('2DLIMPstate',2,'x',{'x_com','xdot_com'}));
-      obj = setOutputFrame(obj,MultiCoordinateFrame({getStateFrame(obj),CoordinateFrame('2DLIMPoutput',1,'y',{'x_zmp'})}));
+      
+      obj = setInputFrame(obj,CartTable2DInput);
+      sframe = CoordinateFrame('LIMP2DState',2,'x',{'x_com','xdot_com'})
+      addTransform(sframe,AffineTransform(sframe,CartTable2DState,sparse([4 8],[1 2],[1 1],8,2),zeros(8,1)));
+      addTransform(CartTable2DState,AffineTransform(CartTable2DState,sframe,sparse([1 2],[4 8],[1 1],2,8),zeros(2,1)));
+      obj = setStateFrame(obj,sframe);
+      
+      zmpframe = CoordinateFrame('ZMP1D',1,'z',{'x_zmp'});
+      addTransform(zmpframe,AffineTransform(zmpframe,ZMP2D,sparse(1,1,1,2,1),zeros(2,1)));
+      obj = setOutputFrame(obj,MultiCoordinateFrame({sframe,zmpframe}));
     end
     
     function v = constructVisualizer(obj)
-      r = PlanarRigidBodyManipulator('CartTable.urdf',struct('floating',true,'view','right'));
-      v{1} = r.constructVisualizer();
-      try 
-        addTransform(obj.getStateFrame,AffineTransform(obj.getStateFrame,v{1}.getInputFrame,sparse([4 8],[1 2],[1 1],8,2),zeros(8,1)));
-      catch ex
-        % it's possible that I already constructed the transform. that's ok.
-        if ~strcmp(ex.identifier,'Drake:CoordinateFrame:ExistingTransform')
-          rethrow(ex);
-        end
-      end
-      zmp_point_fr = SingletonCoordinateFrame('ZMP2D',2,'z',{'x_zmp','z_zmp'});
-      try 
-        addTransform(getFrameByNum(obj.getOutputFrame,2),AffineTransform(getFrameByNum(obj.getOutputFrame,2),zmp_point_fr,sparse(1,1,1,2,1),zeros(2,1)));
-      catch ex
-        % it's possible that I already constructed the transform. that's ok.
-        if ~strcmp(ex.identifier,'Drake:CoordinateFrame:ExistingTransform')
-          rethrow(ex);
-        end
-      end
-      v{2} = Point2DVisualizer(zmp_point_fr,'r*','MarkerSize',20,'LineWidth',3);
-      v = MultiVisualizer(v);
+      v = MultiVisualizer({CartTable2DVisualizer,ZMP2DVisualizer});
     end
     
     function varargout = lqr(obj)

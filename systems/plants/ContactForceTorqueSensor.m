@@ -1,4 +1,4 @@
-classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor
+classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
   
   properties
     frame;
@@ -8,12 +8,12 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor
     jsign=1;
     T % change from body coordinates to coordinates of the sensor
     xyz;
+    manip;  % warning: could get stale, but keeping it around for the draw method
   end
   
   methods
     function obj = ContactForceTorqueSensor(tsmanip,body,xyz,rpy)
       typecheck(body,{'RigidBody','char','numeric'});
-      obj.body = body;
       
       if tsmanip.twoD
         if (nargin<3) xyz=zeros(2,1);
@@ -21,14 +21,18 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor
         if (nargin<4) rpy=0;
         else sizecheck(rpy,1); end
         T = inv([rotmat(rpy),xyz; 0,0,1]);
+        fr = CoordinateFrame('DefaultForceTorqueFrame',getNumStates(tsmanip)+3,'f');
       else
         if (nargin<3) xyz=zeros(3,1);
         else sizecheck(xyz,[3,1]); end
         if (nargin<4) rpy=zeros(3,1);
         else sizecheck(rpy,[3,1]); end
         T = inv([rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]);
+        fr = CoordinateFrame('DefaultForceTorqueFrame',getNumStates(tsmanip)+6,'f');
       end      
-      
+
+      obj = obj@Visualizer(fr);
+      obj.body = body;
       obj.T = T;
       obj.xyz = xyz;
     end
@@ -62,8 +66,11 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor
         coords{5}='torque_y';
         coords{6}='torque_z';
       end
-      obj.frame = CoordinateFrame([obj.body.linkname,'ForceTorqueSensor'],length(coords),'f',coords);
-
+      if isempty(obj.frame) || obj.frame.dim ~= length(coords)
+        obj.frame = CoordinateFrame([obj.body.linkname,'ForceTorqueSensor'],length(coords),'f',coords);
+      end
+      obj = setInputFrame(obj,MultiCoordinateFrame({getStateFrame(tsmanip),obj.frame}));
+      
       nL = sum([manip.joint_limit_min~=-inf;manip.joint_limit_max~=inf]); % number of joint limits
       nC = manip.num_contacts;
       nP = 2*manip.num_position_constraints;  % number of position constraints
@@ -86,6 +93,26 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor
       if isa(manip,'PlanarRigidBodyManipulator')
         obj.jsign=sign(dot(manip.view_axis,[0;-1;0]));
       end
+      obj.manip = manip;
+    end
+    
+    function draw(obj,t,xft)
+      if length(obj.xyz)~=2
+        error('only implemented for the planar case so far');
+      end
+      
+      xft = splitCoordinates(getInputFrame(obj),xft);
+      x = xft{1}; ft = xft{2};
+      
+      body_pts = obj.T\[obj.xyz, obj.xyz+.001*ft(1:2); 1 1];  % convert force from sensor coords to body coords
+      body_pts = body_pts(1:2,:);
+      
+      % todo: enable mex here (by implementing the mex version of bodyKin)
+      kinsol = doKinematics(obj.manip,x(1:obj.manip.getNumDOF),false);
+      world_pts = forwardKin(obj.manip,kinsol,obj.body,body_pts);
+      
+      figure(1); clf; xlim([-2 2]); ylim([-1 3]); axis equal;
+      axisAnnotation('arrow',world_pts(1,:),world_pts(2,:),'Color','r','LineWidth',2);
     end
     
     function y = output(obj,tsmanip,manip,t,x,u)

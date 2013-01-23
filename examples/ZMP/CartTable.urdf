@@ -61,6 +61,13 @@
     <axis xyz="1 0 0" />
     <origin xyz="0 0 1.055" />
   </joint>
+  <transmission type="SimpleTransmission" name="cart_x_trans">
+    <actuator name="cart_xddot" />
+    <joint name="cart_x" />
+    <mechanicalReduction>.02</mechanicalReduction>
+  </transmission>
+
+
   <link name="cart">
     <inertial>
       <origin xyz="0 0 0" />
@@ -82,5 +89,10 @@
     <axis xyz="0 1 0" />
     <origin xyz="0 0 0" />
   </joint>
+  <transmission type="SimpleTransmission" name="cart_y_trans">
+    <actuator name="cart_yddot" />
+    <joint name="cart_y" />
+    <mechanicalReduction>.02</mechanicalReduction>
+  </transmission>
 
 </robot>
