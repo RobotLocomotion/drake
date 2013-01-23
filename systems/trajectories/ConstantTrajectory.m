@@ -41,22 +41,39 @@ classdef ConstantTrajectory < Trajectory
     end
     
     function c = mtimes(a,b)
-      if isa(a,'ConstantTrajectory') a=a.pt; end
-      if isa(b,'ConstantTrajectory') b=b.pt; end
+      if isa(a,'ConstantTrajectory') a=a.pt; 
+      elseif ~isa(a,'numeric') c = mtimes@Trajectory(a,b); return; end
+      if isa(b,'ConstantTrajectory') b=b.pt; 
+      elseif ~isa(b,'numeric') c = mtimes@Trajectory(a,b); return; end
       c=ConstantTrajectory(a*b);
     end    
     
     function c = plus(a,b)
-      if isa(a,'ConstantTrajectory') a=a.pt; end
-      if isa(b,'ConstantTrajectory') b=b.pt; end
+      if isa(a,'ConstantTrajectory') a=a.pt; 
+      elseif ~isa(a,'numeric') c = plus@Trajectory(a,b); return; end
+      if isa(b,'ConstantTrajectory') b=b.pt; 
+      elseif ~isa(b,'numeric') c = plus@Trajectory(a,b); return; end
       c=ConstantTrajectory(a+b);
     end
     
+    function c = inv(a)
+      c = ConstantTrajectory(inv(a.pt));
+    end
+    
     function a = vertcat(varargin)
-      for i=1:length(varargin)
-        if isa(varargin{i},'ConstantTrajectory') varargin{i}=varargin{i}.pt; end
+      pt = cell(1,nargin);
+      for i=1:nargin
+        if isa(varargin{i},'ConstantTrajectory') 
+          pt{i}=varargin{i}.pt; 
+        elseif isa(varargin{i},'numeric')
+          pt{i}=varargin{i};
+        else
+          % abort... not handled here
+          a = vertcat@Trajectory(varargin{:});
+          return
+        end
       end
-      a = ConstantTrajectory(vertcat(varargin{:}));
+      a = ConstantTrajectory(vertcat(pt{:}));
     end
   end
 end

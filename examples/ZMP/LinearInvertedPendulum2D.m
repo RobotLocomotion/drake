@@ -8,23 +8,15 @@ classdef LinearInvertedPendulum2D < LinearSystem
   % - The state is [x,xdot]^T.  
   % - The output is the horizontal position of the ZMP.  
   
-  properties
-    Czmp
-    Dzmp
-  end
-  
   methods 
     function obj = LinearInvertedPendulum2D(h,g)
       % @param h the (constant) height of the center of mass
       % @param g the scalar gravity @default 9.81
-
       typecheck(h,'numeric');
       rangecheck(h,0,inf);
       if (nargin<2) g=9.81; end
       Czmp = [1 0]; Dzmp = -h/g;
       obj = obj@LinearSystem([0 1; 0 0],[0; 1],[],[],[eye(2);Czmp],[0;0;Dzmp]);
-      obj.Czmp = Czmp;
-      obj.Dzmp = Dzmp;
       
       obj = setInputFrame(obj,CartTable2DInput);
       sframe = CoordinateFrame('LIMP2DState',2,'x',{'x_com','xdot_com'})
@@ -44,11 +36,22 @@ classdef LinearInvertedPendulum2D < LinearSystem
     function varargout = lqr(obj)
       % objective min_u \int dt [ x_zmp(t)^2 ] 
       varargout = cell(1,nargout);
-      [varargout{:}] = tilqry(obj,Point(obj.getStateFrame),Point(obj.getInputFrame),diag([0 0 1]),0);
+      options.Qy = diag([0 0 1]);
+      [varargout{:}] = tilqr(obj,Point(obj.getStateFrame),Point(obj.getInputFrame),zeros(2),0,options);
     end
     
-    function c = ZMPtracker(dZMP)
-      valuecheck(getOutputFrame(dZMP),desiredZMP1D);
+    function c = ZMPtracker(obj,dZMP)
+      typecheck(dZMP,'Trajectory');
+      dZMP = dZMP.inFrame(desiredZMP1D);
+      dZMP = setOutputFrame(dZMP,getFrameByNum(getOutputFrame(obj),2)); % override it before sending in to tvlqr
+      
+      [c,V] = lqr(obj);
+      options.tspan = linspace(dZMP.tspan(1),dZMP.tspan(2),10);
+      options.sqrtmethod = false;
+      x0traj = setOutputFrame(ConstantTrajectory([0;0]),obj.getStateFrame);
+      options.Qy = diag([0,0,1]);
+      options.ydtraj = [x0traj;dZMP];
+      c = tvlqr(obj,x0traj,ConstantTrajectory(0),zeros(2),0,V,options);
     end
   end
   
@@ -81,9 +84,16 @@ classdef LinearInvertedPendulum2D < LinearSystem
     function ZMPtrackingDemo()
       r = LinearInvertedPendulum2D(1.055);
       dZMP = setOutputFrame(FunctionHandleTrajectory(@(t) .08*sin(.125*t*(2*pi)),1,linspace(0,8,100)),desiredZMP1D);
+      c = ZMPtracker(r,dZMP);
+      output_select(1).system = 1;
+      output_select(1).output = 1;
+      output_select(2).system = 1;
+      output_select(2).output = 2;
+      sys = mimoFeedback(r,c,[],[],[],output_select);
+
       v = r.constructVisualizer();
       
-      ytraj = r.simulate(dZMP.tspan,zeros(2,1));%randn(2,1));
+      ytraj = sys.simulate(dZMP.tspan,randn(2,1));
       v.playback([ytraj;dZMP]);
     end
   end
