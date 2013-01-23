@@ -4,7 +4,7 @@ function testHybridMode
 options.floating = true;
 options.view = 'right';
 s = warning('off','Drake:PlanarRigidBodyManipulator:RemovedJoint');
-m = PlanarRigidBodyManipulator('../atlas_robot_minimal_contact.urdf',options);
+m = PlanarRigidBodyManipulator('../urdf/atlas_robot_minimal_contact.urdf',options);
 warning(s);
 p = HybridRigidBodyMode(m,zeros(m.featherstone.NB,1),[1;zeros(3,1)]);
 
