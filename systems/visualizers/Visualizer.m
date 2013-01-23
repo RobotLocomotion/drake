@@ -255,7 +255,7 @@ classdef Visualizer < DrakeSystem
         end
         if (isempty(width))
           fr=getframe(f);
-          [width,height,~]=size(fr.cdata);
+          [height,width,~]=size(fr.cdata);
         else
           fr=getframe(f,[0 0 width height]);  % explicitly ask for the same size, otherwise videowriter will complain
         end
