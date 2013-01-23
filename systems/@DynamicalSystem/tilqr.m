@@ -13,8 +13,10 @@ function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R,options)
 % @option angle_flag boolean vector the same size as x which causes the
 % resulting controller to wrap around 2pi for the dimensions where
 % angle_flag is true. @default false
-% @option N adds the off-diagonal terms to the cost function, which is now
-%   \int dt (x'*Q*x + u'*R*u + 2*x'*N*u). @default N=0
+% @option N adds the off-diagonal terms to the cost function
+%   + \int dt (2*x'*N*u). @default N=0
+% @option Qy adds terms to the cost function specified via the output
+%   + \int dt ( y'*Qy*y ). @default Qy=0
 %
 % @retval ltisys a system which implements the control u=-K*x
 % @retval Vcandidate an msspoly representation of the cost-to-go function x'*S*x
@@ -23,14 +25,12 @@ function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R,options)
 if (~isTI(obj)) error('I don''t know that this system is time invariant.  Set the TI flags and rerun this method if you believe the system to be.'); end
 typecheck(x0,'Point');
 typecheck(u0,'Point');
+x0 = double(x0.inFrame(obj.getStateFrame));
+u0 = double(u0.inFrame(obj.getInputFrame));
 
 if (nargin<6) options=struct(); end
 if ~isfield(options,'angle_flag') options.angle_flag = false; end
 if ~isfield(options,'N') options.N = 0*x0*u0'; end
-
-
-x0 = double(x0.inFrame(obj.getStateFrame));
-u0 = double(u0.inFrame(obj.getInputFrame));
 
 ts = max(getInputSampleTimes(obj),getOutputSampleTimes(obj));
 
@@ -41,15 +41,26 @@ if (ts(1)==0) % then it's CT
     xdot0
     error('(x0,u0) is not a fixed point');
   end
-  [K,S] = lqr(full(A),full(B),Q,R);
 else
   [A,B,C,D,xn0] = dlinearize(obj,ts(1),0,x0,u0);
   if (any(abs(xn0-x0)>tol))
     xn0
     error('(x0,u0) is not a fixed point');
   end
-  [K,S] = dlqr(A,B,Q,R);
 end
+
+if isfield(options,'Qy') 
+  % see 'doc lqry'
+  Q = Q + C'*options.Qy*C;
+  R = R + D'*options.Qy*D;
+  options.N = options.N + C'*options.Qy*D;
+end
+
+if (ts(1)==0) % then it's CT
+  [K,S] = lqr(full(A),full(B),Q,R,options.N);
+else
+  [K,S] = dlqr(A,B,Q,R,options.N);
+end  
 
 if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
   warning('designing full-state feedback controller but plant has different output frame than state frame'); 
