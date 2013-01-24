@@ -7,12 +7,11 @@ classdef SimpleEEGoalGenerator < DrakeSystem
       typecheck(robot_name,'char');
       typecheck(body_id,'char');
 
-      coder = EndEffectorGoalCoder(robot_name,body_id);
-      eeframe = LCMCoordinateFrameWCoder(strcat(body_id,'_end_effector_goal'),4,'x',JLCMCoder(coder));
+      eeframe = CoordinateFrame(strcat(body_id,'_end_effector_goal'),4,'x');
       
       if nargin > 3
         typecheck(channel_name,'char');
-        eeframe.setDefaultChannel(channel_name);
+%        eeframe.setDefaultChannel(channel_name);
       end
             
       obj = obj@DrakeSystem(0,eeframe.dim,r.getNumStates,eeframe.dim,false,true);

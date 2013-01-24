@@ -17,19 +17,25 @@ classdef SimpleCOMGoalGenerator < DrakeSystem
     end
     
     function com_des = getInitialState(obj)
-      com_des = zeros(3,1);
+      x = obj.manip.getInitialState();
+      q = x(1:obj.manip.getNumDOF());
+      gc = obj.manip.contactPositions(q);
+      cm = obj.manip.getCOM(q);
+      
+      % compute desired COM projection
+      % assumes minimal contact model for now
+      k = convhull(gc(1:2,:)');
+      com_des = [mean(gc(1:2,k),2);cm(3)];
     end
         
     function com_des = update(obj,t,com_des,x)
-      nq = obj.manip.getNumStates()/2;
-      q = x(1:nq);
-      
+      q = x(1:obj.manip.getNumDOF());
       gc = obj.manip.contactPositions(q);
       
       % compute desired COM projection
       % assumes minimal contact model for now
       k = convhull(gc(1:2,:)');
-      com_des = [mean(gc(1:2,k),2);0.95];
+      com_des(1:2) = mean(gc(1:2,k),2);
     end
     
     function y = output(obj,t,com_des,x)

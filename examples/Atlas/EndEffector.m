@@ -15,9 +15,7 @@ classdef EndEffector
       obj.body_index = find(~cellfun(@isempty,strfind(r.getLinkNames(),body_id)));
       obj.xyz_offset = xyz_offset;
 
-
-      coder = EndEffectorGoalCoder(robot_name,body_id);
-      obj.frame = LCMCoordinateFrameWCoder(strcat(body_id,'_end_effector_goal'),4,'x',JLCMCoder(coder));
+      obj.frame = CoordinateFrame(strcat(body_id,'_end_effector_goal'),4,'x');
       ee_names = cell(4,1);
       ee_names{1} = strcat(body_id,'_active');
       ee_names{2} = strcat(body_id,'_x');
@@ -27,7 +25,7 @@ classdef EndEffector
 
       if nargin > 4
         typecheck(channel_name,'char');
-        obj.frame.setDefaultChannel(channel_name);
+%        obj.frame.setDefaultChannel(channel_name);
       end
       
       obj.P_mask = eye(r.getNumStates()/2);

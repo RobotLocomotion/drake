@@ -19,7 +19,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
       output_frame = AtlasPositionRef(r);
 
       obj = obj@MIMODrakeSystem(0,sys.getInputFrame.dim,input_frame,output_frame,false,true);
-      obj = setSampleTime(obj,[.01;0]); % update at 50 Hz
+      obj = setSampleTime(obj,[.005;0]); % sets controller update rate
       obj = setInputFrame(obj,input_frame);
       obj = setOutputFrame(obj,output_frame);
       obj.manip = r;
@@ -32,7 +32,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
         typecheck(k_nom,'double');
         obj.k_nom = k_nom;
       end
-      
+
       x0 = r.getInitialState();
       B = r.getB();
       obj = setInitialState(obj,B' * x0(1:r.getNumStates()/2));
@@ -102,13 +102,15 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
       Nc = eye(nq-6) - pinv(Jc)*Jc;
       
       % COM projection matrix
-      P = diag([1 1 0]); %eye(3);
+      P = eye(3);% diag([1 1 0]);
       
       % compute COM error 
       err_com = com_goal - P*cm;
       J_com = P*Jcm*Pq_qa;
       dq_com = obj.k_com * pinv(J_com) * err_com;
-
+      if (norm(dq_com)>0.5)
+        dq_com = 0.5*dq_com/norm(dq_com);
+      end  
       % COM nullspace projection matrix
       Ncom = eye(nq-6) - pinv(J_com)*J_com;
  
@@ -124,6 +126,14 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
       end
       for i=[5 6 8 7 5]
         scope('Atlas','rightfoot',gc(1,i),gc(2,i),struct('linespec','b*-','scope_id',2,'resetOnXval',false,'num_points',5));
+      end
+      % highlight points that are above/below the ground
+      for i=1:8
+        if gc(3,i) > 0.002
+          scope('Atlas','raised_contacts',gc(1,i),gc(2,i),struct('linespec','g*','scope_id',2,'resetOnXval',false,'num_points',5));
+        elseif gc(3,i) < -0.002
+          scope('Atlas','sunken_contacts',gc(1,i),gc(2,i),struct('linespec','r*','scope_id',2,'resetOnXval',false,'num_points',5));
+        end
       end
       
       % compute end effector deltas
@@ -189,8 +199,8 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
   
   properties
     manip
-    k_nom = 0.2
-    k_com = 0.5
+    k_nom = 0.0
+    k_com = 2.0
     end_effectors = []
     q_d0 % initial state
     q_d_max
