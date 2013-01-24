@@ -42,6 +42,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
     end
     
     function obj = compile(obj,tsmanip,manip)
+      if (tsmanip.position_control) error('need to update this method for this case'); end
       if isa(obj.body,'char')
         obj.body = findLink(tsmanip,obj.body,true);
       elseif isa(body,'numeric')
