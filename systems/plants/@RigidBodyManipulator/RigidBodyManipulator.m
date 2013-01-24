@@ -462,6 +462,10 @@ classdef RigidBodyManipulator < Manipulator
       v = RigidBodyWRLVisualizer(obj);
     end
     
+    function index = getActuatedJoints(model)
+      joint = [model.actuator.joint];
+      index = [joint.dofnum];
+    end        
     
     function varargout = pdcontrol(sys,Kp,Kd,index)
       % creates new blocks to implement a PD controller, roughly

@@ -102,7 +102,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
       Nc = eye(nq-6) - pinv(Jc)*Jc;
       
       % COM projection matrix
-      P = diag([1 1 0]);
+      P = eye(3); %diag([1 1 0]);
       
       % compute COM error 
       err_com = com_goal - P*cm;

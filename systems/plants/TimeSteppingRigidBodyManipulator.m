@@ -12,6 +12,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   properties (SetAccess=protected)
     timestep
     twoD=false
+    position_control=false;
   end
   
   methods
@@ -73,7 +74,16 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         y = [y; obj.sensor{i}.output(obj,obj.manip,t,x,u)];
       end
     end
-        
+
+    function model = enableIdealizedPositionControl(model, flag)
+      index = getActuatedJoints(model.manip);
+      if length(unique(index))~=length(index)
+        error('idealized position control currently assumes one actuator per joint'); 
+      end
+      model.position_control = logical(flag);
+      model.dirty = true;
+    end
+    
     function model = compile(model)
       if model.twoD
         S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
@@ -86,8 +96,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       model.manip = model.manip.compile();
       warning(S);
       
-      model = model.setInputLimits(model.manip.umin,model.manip.umax);
-      model = setInputFrame(model,getInputFrame(model.manip));
+      if (model.position_control)
+        index = getActuatedJoints(model.manip);
+        pdff = pdcontrol(model,eye(model.num_u),eye(model.num_u));
+        model = setInputLimits(model,model.manip.joint_limit_min(index),model.manip.joint_limit_max(index));
+        model = setInputFrame(model,getInputFrame(pdff));
+      else
+        model = setInputLimits(model,model.manip.umin,model.manip.umax);
+        model = setInputFrame(model,getInputFrame(model.manip));
+      end
       model = setStateFrame(model,getStateFrame(model.manip));
 
       if length(model.sensor)>0
@@ -156,10 +173,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
       if (nargout<4)
         [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
-        if (obj.num_u>0) tau = B*u - C; else tau = -C; end
+        if (obj.num_u>0 && ~obj.position_control) tau = B*u - C; else tau = -C; end
       else
         [H,C,B,dH,dC,dB] = manipulatorDynamics(obj.manip,q,qd);
-        if (obj.num_u>0) 
+        if (obj.num_u>0 && ~obj.position_control) 
           tau = B*u - C;  
           dtau = [zeros(num_q,1), matGradMult(dB,u) - dC, B];
         else
@@ -168,7 +185,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         end
       end
       
-      nL = sum([obj.manip.joint_limit_min~=-inf;obj.manip.joint_limit_max~=inf]); % number of joint limits
+      if (obj.position_control)
+        pos_control_index = getActuatedJoints(obj.manip);
+        nL = 2*length(pos_control_index);
+      else
+        nL = sum([obj.manip.joint_limit_min~=-inf;obj.manip.joint_limit_max~=inf]); % number of joint limits
+      end
       nC = obj.manip.num_contacts;
       nP = 2*obj.manip.num_position_constraints;  % number of position constraints
       nV = obj.manip.num_velocity_constraints;  
@@ -219,11 +241,18 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
       
       if (nL > 0)
-        if (nargout<4)
-          [phiL,JL] = obj.manip.jointLimits(q);
+        if (obj.position_control)
+          phiL = q(pos_control_index) - u; 
+          JL = sparse(1:obj.manip.num_u,pos_control_index,1,obj.manip.num_u,obj.manip.num_q);
+          phiL = [phiL;-phiL]; JL = [JL;-JL];
+          % dJ = 0 by default, which is correct here
         else
-          [phiL,JL,dJL] = obj.manip.jointLimits(q);
-          dJ(1:nL,:) = dJL;
+          if (nargout<4)
+            [phiL,JL] = obj.manip.jointLimits(q);
+          else
+            [phiL,JL,dJL] = obj.manip.jointLimits(q);
+            dJ(1:nL,:) = dJL;
+          end
         end
         J(1:nL,:) = JL;
       end
