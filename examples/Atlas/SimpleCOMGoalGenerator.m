@@ -29,7 +29,7 @@ classdef SimpleCOMGoalGenerator < DrakeSystem
       % compute desired COM projection
       % assumes minimal contact model for now
       k = convhull(gc(1:2,:)');
-      com_des = [mean(gc(1:2,k),2);0];
+      com_des = [mean(gc(1:2,k),2);0.95];
     end
     
     function y = output(obj,t,com_des,x)

@@ -11,8 +11,14 @@ r = r.setInitialState(xstar);
 v = r.constructVisualizer();
 v.display_dt = .05;
 
-[Kp,Kd] = getPDGains(r);
-sys = pdcontrol(r,Kp,Kd);
+if (0)
+  [Kp,Kd] = getPDGains(r);
+  sys = pdcontrol(r,Kp,Kd);
+else
+  r = enableIdealizedPositionControl(r,true);
+  r = compile(r);
+  sys = r;
+end
 
 c = StandingEndEffectorControl(sys,r);
 
@@ -46,30 +52,42 @@ lfoot_body = r.findLink('l_foot');
 
 rfoot0 = forwardKin(r,kinsol,rfoot_body,[0;0;0]);
 lfoot0 = forwardKin(r,kinsol,lfoot_body,[0;0;0]);
-midfoot = mean([rfoot0,lfoot0],2);
+
+gc = r.contactPositions(x0(1:getNumDOF(r)));
+
+% compute desired COM projection
+% assumes minimal contact model for now
+k = convhull(gc(1:2,1:4)');
+lfootcen = [mean(gc(1:2,k),2);0];
+k = convhull(gc(1:2,5:8)');
+rfootcen = [mean(gc(1:2,4+k),2);0];
+%rfootcen = rfoot0;
+%lfootcen = lfoot0;
+
+midfoot = mean([rfootcen,lfootcen],2);
 com0 = getCOM(r,x0(1:getNumDOF(r)));
 
-com = [midfoot,rfoot0,rfoot0,rfoot0,rfoot0,lfoot0,lfoot0,lfoot0,lfoot0,midfoot];
+com = [midfoot,midfoot,rfootcen,rfootcen,rfootcen,rfootcen,rfootcen,lfootcen,lfootcen,lfootcen,lfootcen,lfootcen,midfoot];
 com(3,:) = com0(3);
-tstep = 2*((1:size(com,2))-1);
+tstep = 5*((1:size(com,2))-1);
 rfootsupport = 1+0*tstep;
 rfootpos = repmat([0;rfoot0],1,length(tstep));
 lfootsupport = 1+0*tstep;
 lfootpos = repmat([0;lfoot0],1,length(tstep));
 
-lfootpos(1,3:4) = 1;
-lfootsupport(3:4) = 0;
-lfootpos(4,3) = .15;
+lfootpos(1,4:6) = 1;
+lfootsupport(4:6) = 0;
+lfootpos(4,5) = .15;
 
-rfootsupport(7:8) = 0;
+rfootsupport(9:11) = 0;
 
-comgoal = setOutputFrame(PPTrajectory(zoh(tstep,com)),AtlasCOM(r));
+comgoal = setOutputFrame(PPTrajectory(foh(tstep,com)),AtlasCOM(r));
 sys = mimoCascade(comgoal,sys);
 
-rfootpos = setOutputFrame(PPTrajectory(zoh(tstep,rfootpos)),right_ee.frame);
+rfootpos = setOutputFrame(PPTrajectory(foh(tstep,rfootpos)),right_ee.frame);
 sys = mimoCascade(rfootpos,sys);
 
-lfootpos = setOutputFrame(PPTrajectory(zoh(tstep,lfootpos)),left_ee.frame);
+lfootpos = setOutputFrame(PPTrajectory(foh(tstep,lfootpos)),left_ee.frame);
 sys = mimoCascade(lfootpos,sys);
 
 supp = repmat(0*tstep,length(r.getLinkNames),1);
@@ -79,7 +97,7 @@ supp = setOutputFrame(PPTrajectory(zoh(tstep,supp)),AtlasBody(r));
 sys = mimoCascade(supp,sys);
 
 
-T = 20.0; % sec
+T = 20%tstep(end); % sec
 if (0)
   traj = simulate(sys,[0 T]); 
   playback(v,traj,struct('slider',true));

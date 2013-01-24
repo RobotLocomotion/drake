@@ -90,7 +90,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
         end
       end
  
-      [~,Jc] = obj.manip.contactPositions(q);
+      [gc,Jc] = obj.manip.contactPositions(q);
       [cm,Jcm] = obj.manip.getCOM(q);
       
       Jp = Jc(:,1:6);
@@ -102,7 +102,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
       Nc = eye(nq-6) - pinv(Jc)*Jc;
       
       % COM projection matrix
-      P = eye(3); %diag([1 1 0]);
+      P = diag([1 1 0]); %eye(3);
       
       % compute COM error 
       err_com = com_goal - P*cm;
@@ -116,6 +116,16 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
       colors = 'rgbyk';
       scope('Atlas','com_err',t,norm(err_com),struct('linespec',colors(1),'scope_id',1));
 
+      % debugging by Russ
+      scope('Atlas','com',cm(1),cm(2),struct('linespec','r','scope_id',2,'resetOnXval',false));
+      scope('Atlas','com_goal',com_goal(1),com_goal(2),struct('linespec','go','scope_id',2,'resetOnXval',false,'num_points',1));
+      for i=[1 2 4 3 1]
+        scope('Atlas','leftfoot',gc(1,i),gc(2,i),struct('linespec','b*-','scope_id',2,'resetOnXval',false,'num_points',5));
+      end
+      for i=[5 6 8 7 5]
+        scope('Atlas','rightfoot',gc(1,i),gc(2,i),struct('linespec','b*-','scope_id',2,'resetOnXval',false,'num_points',5));
+      end
+      
       % compute end effector deltas
       dq_ee = zeros(nq-6,1);
       N_ee{1} = eye(nq-6);
@@ -179,7 +189,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
   
   properties
     manip
-    k_nom = 0.25
+    k_nom = 0.2
     k_com = 0.5
     end_effectors = []
     q_d0 % initial state

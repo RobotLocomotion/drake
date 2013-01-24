@@ -15,16 +15,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
         options.floating = true;
       end
       
+      addpath(fullfile(pwd,'frames'));
+  
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       
-      addpath(fullfile(pwd,'frames'));
-      state_frame = AtlasState(obj);
-      obj = obj.setStateFrame(state_frame);
-      obj = obj.setOutputFrame(state_frame);
-    
-      input_frame = AtlasInput(obj);
-      obj = obj.setInputFrame(input_frame);
- 
       if options.floating
         % could also do fixed point search here
         obj = obj.setInitialState(obj.manip.resolveConstraints(zeros(obj.getNumStates(),1)));
@@ -34,6 +28,17 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
         obj.manip = compile(obj.manip);
         obj = obj.setInitialState(zeros(obj.getNumStates(),1));
       end
+    end
+    
+    function obj = compile(obj)
+      obj = compile@TimeSteppingRigidBodyManipulator(obj);
+
+      state_frame = AtlasState(obj);
+      obj = obj.setStateFrame(state_frame);
+      obj = obj.setOutputFrame(state_frame);
+    
+      input_frame = AtlasInput(obj);
+      obj = obj.setInputFrame(input_frame);
     end
 
     function obj = setInitialState(obj,x0)
