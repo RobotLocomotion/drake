@@ -118,7 +118,7 @@ classdef RigidBodyManipulator < Manipulator
       child.jointname = regexprep(name, '\.', '_', 'preservecase');
       child.parent = parent;
       
-      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
+%      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
 
       wrl_joint_origin='';
       if any(xyz)

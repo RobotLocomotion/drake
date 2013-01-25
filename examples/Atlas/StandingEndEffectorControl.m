@@ -240,9 +240,9 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
 %       care = false(1,length(obj.manip.body));
       q = q0;
       
-      for t=breaks
-        for 
-      end
+%      for t=breaks
+%        for 
+%      end
       
       error('need to return q_d here');
     end

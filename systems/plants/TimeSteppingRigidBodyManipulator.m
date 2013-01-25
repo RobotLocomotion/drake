@@ -574,6 +574,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}]=bodyKin(obj.manip,varargin{:});
     end
     
+    function varargout = inverseKin(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}]=inverseKin(obj.manip,varargin{:});
+    end
+    
     function varargout = collisionDetect(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}]=collisionDetect(obj.manip,varargin{:});
@@ -647,6 +652,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       jl_max = obj.manip.joint_limit_max;
     end
   
+    function index = getActuatedJoints(obj)
+      index = obj.manip.getActuatedJoints();
+    end
   end
   
   
