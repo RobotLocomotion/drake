@@ -53,6 +53,19 @@ classdef LinearInvertedPendulum2D < LinearSystem
       options.ydtraj = [x0traj;dZMP];
       c = tvlqr(obj,x0traj,ConstantTrajectory(0),zeros(2),0,V,options);
     end
+    
+    function comtraj = ZMPplanner(obj,com0,comdot0,dZMP)
+      % got a com plan from the ZMP tracking controller
+      c = ZMPtracker(obj,dZMP);
+      
+      doubleIntegrator = LinearSystem([0 1;0 0],[0;1],[],[],eye(2),[0;0]);
+      doubleIntegrator = setInputFrame(doubleIntegrator,getOutputFrame(c));
+      doubleIntegrator = setOutputFrame(doubleIntegrator,getInputFrame(c));
+      sys = feedback(doubleIntegrator,c);
+      
+      comtraj = simulate(sys,dZMP.tspan,[com0;comdot0]);
+      comtraj = comtraj(1);  % only return position (not velocity)
+    end
   end
   
   methods (Static)

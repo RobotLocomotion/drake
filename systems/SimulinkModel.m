@@ -88,6 +88,7 @@ classdef SimulinkModel < DynamicalSystem
     function [y,dy] = output(obj,t,x,u)
       x = stateVectorToStructure(obj,x);
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
+        set_param(obj.mdl,'StopTime',num2str(inf));
         feval(obj.mdl,[],[],[],'compile');
       end
 %      tu=mat2str([t reshape(u,1,numel(u))]);

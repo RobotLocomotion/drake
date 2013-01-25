@@ -5,11 +5,12 @@ options.dt = 0.001;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 
 % set initial state to fixed point
-load('data/atlas_fp.mat');
+load('data/atlas_fp2.mat');
 r = r.setInitialState(xstar);
 
 v = r.constructVisualizer();
 v.display_dt = .05;
+v.draw(0,xstar);
 
 if (0)
   [Kp,Kd] = getPDGains(r);
@@ -69,9 +70,9 @@ rfootcen = [mean(gc(1:2,4+k),2);0];
 midfoot = mean([rfootcen,lfootcen],2);
 com0 = getCOM(r,x0(1:getNumDOF(r)));
 
-com = [midfoot,midfoot,rfootcen,rfootcen,rfootcen,rfootcen,rfootcen,lfootcen,lfootcen,lfootcen,lfootcen,lfootcen,midfoot];
+com = [midfoot,midfoot,rfootcen,rfootcen,rfootcen,rfootcen,rfootcen,midfoot,lfootcen,lfootcen,lfootcen,lfootcen,lfootcen,midfoot];
 com(3,:) = com0(3);
-tstep = 2*((1:size(com,2))-1);
+tstep = .5*((1:size(com,2))-1);
 rfootsupport = 1+0*tstep;
 rfootpos = repmat([0;rfoot0;0;0;0],1,length(tstep));
 lfootsupport = 1+0*tstep;
@@ -81,12 +82,21 @@ lfootpos(1,4:6) = 1;
 lfootsupport(4:6) = 0;
 lfootpos(4,5) = .15;
 
-rfootsupport(9:11) = 0;
-rfootpos(1,9:11) = 1;
-rfootpos(4,10) = .15;
+rfootsupport(10:12) = 0;
+rfootpos(1,10:12) = 1;
+rfootpos(4,11) = .15;
 
+comgoal = PPTrajectory(foh(tstep,com));
 
-comgoal = setOutputFrame(PPTrajectory(foh(tstep,com)),AtlasCOM(r));
+if (1) % use zmp
+  addpath(fullfile(getDrakePath,'examples','ZMP'));
+  limp = LinearInvertedPendulum2D(com(3,1));
+  zmp = setOutputFrame(comgoal(2),desiredZMP1D);
+  zmpcom = ZMPplanner(limp,com(2,1),0,zmp);
+  figure(2); clf; fnplt(zmpcom);
+  comgoal(2) = zmpcom;
+end
+comgoal = setOutputFrame(comgoal,AtlasCOM(r));
 sys = mimoCascade(comgoal,sys);
 
 rfootpostraj = setOutputFrame(PPTrajectory(foh(tstep,rfootpos(1:4,:))),right_ee.frame);
@@ -105,7 +115,7 @@ sys = mimoCascade(supp,sys);
 if (1) %%  short-cut COM control, and just call IK
   rfootpos = PPTrajectory(foh(tstep,rfootpos(2:end,:)));
   lfootpos = PPTrajectory(foh(tstep,lfootpos(2:end,:)));
-  ts = 0:0.2:tstep(end);
+  ts = linspace(0,tstep(end),100);
   ind = getActuatedJoints(r);
   cost = Point(r.getStateFrame,1);
   cost.pelvis_x = 0;
@@ -136,12 +146,12 @@ if (1) %%  short-cut COM control, and just call IK
   else
     load stepping.mat
   end
-  q_dtraj = setOutputFrame(PPTrajectory(spline(2*ts,q_d)),getInputFrame(poscontrolsys));
+  q_dtraj = setOutputFrame(PPTrajectory(spline(ts,q_d)),getInputFrame(poscontrolsys));
   
   sys = cascade(q_dtraj,poscontrolsys);
 end
 
-T = 2*tstep(end); % sec
+T = tstep(end); % sec
 if (1)
   traj = simulate(sys,[0 T]); 
   playback(v,traj,struct('slider',true));
