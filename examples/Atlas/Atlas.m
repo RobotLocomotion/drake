@@ -15,7 +15,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
         options.floating = true;
       end
       
-      addpath(fullfile(pwd,'frames'));
+      addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
   
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       
