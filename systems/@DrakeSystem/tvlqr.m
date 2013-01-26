@@ -249,9 +249,9 @@ B = getBTrajectory(obj,S{1}.getBreaks(),xtraj,utraj,options);
 % note that this returns what we would normally call -K.  here u(t) = u_0(t) + K(t) (x(t) - x_0(t)) 
 K = affineKsoln(S,R,B,N);
 
-if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
-  warning('designing full-state feedback controller but plant has different output frame than state frame'); 
-end
+%if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
+%  warning('Drake:DrakeSystem:FullStateFeedback','designing full-state feedback controller but plant has different output frame than state frame'); 
+%end
   
 ltvsys = AffineSystem([],[],[],[],[],[],[],K{1},K{2});
 ltvsys = setInputFrame(ltvsys,iframe);
