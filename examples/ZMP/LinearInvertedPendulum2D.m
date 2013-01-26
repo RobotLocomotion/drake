@@ -19,7 +19,7 @@ classdef LinearInvertedPendulum2D < LinearSystem
       obj = obj@LinearSystem([0 1; 0 0],[0; 1],[],[],[eye(2);Czmp],[0;0;Dzmp]);
       
       obj = setInputFrame(obj,CartTable2DInput);
-      sframe = CoordinateFrame('LIMP2DState',2,'x',{'x_com','xdot_com'})
+      sframe = CoordinateFrame('LIMP2DState',2,'x',{'x_com','xdot_com'});
       addTransform(sframe,AffineTransform(sframe,CartTable2DState,sparse([4 8],[1 2],[1 1],8,2),zeros(8,1)));
       addTransform(CartTable2DState,AffineTransform(CartTable2DState,sframe,sparse([1 2],[4 8],[1 1],2,8),zeros(2,1)));
       obj = setStateFrame(obj,sframe);

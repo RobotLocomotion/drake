@@ -53,8 +53,60 @@ classdef RigidBodyWRLVisualizer < Visualizer
       vrdrawnow;
     end
     
-    function playbackAVI(varargin)
-      error('AVI playback not implemented yet for VRML visualizers.  But should be possible');
+    function playbackAVI(obj,xtraj,filename)
+      % Plays back a trajectory and creates an avi file.
+      %   The filename argument is optional; if not specified, a gui will prompt
+      %   for one.
+      %
+      %  @param xtraj trajectory to visulalize
+      %  @param filename file to produce (optional, if not given a GUI will
+      %    pop up and ask for it)
+      
+      typecheck(xtraj,'Trajectory');
+      if (xtraj.getOutputFrame()~=obj.getInputFrame)
+        xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
+      end
+      
+      if (nargin<3)
+        [filename,pathname] = uiputfile('*.avi','Save playback to AVI');
+        filename = [pathname,'/',filename];
+      end
+      
+      ts = getSampleTime(xtraj);
+      fig = get(obj.wrl,'Figures');
+      mov = VideoWriter(filename,'Motion JPEG AVI');
+
+      if (ts(1)>0)
+        tspan = getBreaks(xtraj);
+        if (obj.display_dt~=0)
+          interval = floor(obj.display_dt/ts(1));
+          tspan = tspan(1:interval:end);
+        else
+          interval = 1;
+        end
+        mov.FrameRate = obj.playback_speed/(ts(1)*interval);
+      else
+        if (obj.display_dt==0)
+          if (ishandle(obj)) error('i assumed it wasn''t a handle'); end
+          obj.display_dt = 1/30;  % just for the remainder of this file.
+        end
+        
+        breaks = getBreaks(xtraj);
+        tspan = breaks(1):obj.display_dt:breaks(end);
+        if (breaks(end)-tspan(end)>eps) tspan=[tspan,breaks(end)]; end
+      
+        mov.FrameRate = obj.playback_speed/obj.display_dt;
+      end
+      open(mov);
+      
+      width=[]; height=[];
+      for i=1:length(tspan)
+        obj.draw(tspan(i),eval(xtraj,tspan(i)));
+        fr = capture(fig);
+        writeVideo(mov,fr);
+      end
+      
+      close(mov);
     end
     
     function playbackSWF(varargin)

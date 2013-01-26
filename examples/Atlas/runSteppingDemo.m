@@ -80,11 +80,11 @@ lfootpos = repmat([0;lfoot0;0;0;0],1,length(tstep));
 
 lfootpos(1,4:6) = 1;
 lfootsupport(4:6) = 0;
-lfootpos(4,5) = .15;
+lfootpos(4,5) = .2;
 
 rfootsupport(10:12) = 0;
 rfootpos(1,10:12) = 1;
-rfootpos(4,11) = .15;
+rfootpos(4,11) = .2;
 
 comgoal = PPTrajectory(foh(tstep,com));
 
@@ -131,20 +131,15 @@ if (1) %%  short-cut COM control, and just call IK
   options.Q = diag(cost(1:r.getNumDOF));
   options.q_nom = q0;
   
-  if (1)
-    for i=1:length(ts)
-      t = ts(i);
-      if (i>1)
-        q(:,i) = inverseKin(r,q(:,i-1),0,comgoal.eval(t),rfoot_body,rfootpos.eval(t),lfoot_body,lfootpos.eval(t),options);
-      else
-        q = q0;
-      end
-      q_d(:,i) = q(ind,i);
-      v.draw(t,q(:,i));
+  for i=1:length(ts)
+    t = ts(i);
+    if (i>1)
+      q(:,i) = inverseKin(r,q(:,i-1),0,comgoal.eval(t),rfoot_body,rfootpos.eval(t),lfoot_body,lfootpos.eval(t),options);
+    else
+      q = q0;
     end
-    save stepping.mat ts q_d;
-  else
-    load stepping.mat
+    q_d(:,i) = q(ind,i);
+    v.draw(t,q(:,i));
   end
   q_dtraj = setOutputFrame(PPTrajectory(spline(ts,q_d)),getInputFrame(poscontrolsys));
   
@@ -154,6 +149,7 @@ end
 T = tstep(end); % sec
 if (1)
   traj = simulate(sys,[0 T]); 
+  save stepping.mat v traj;
   playback(v,traj,struct('slider',true));
 else
   warning('off','Drake:DrakeSystem:UnsupportedSampleTime'); 
