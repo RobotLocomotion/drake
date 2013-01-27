@@ -57,7 +57,7 @@ sys = mimoFeedback(sys,c,sys_to_c,c_to_sys,ins,outs);
 clear ins;
 
 % effector goal generators
-head_gen = SimpleEEGoalGenerator(r,'atlas','GAZE_GOAL');
+head_gen = SimpleEEGoalGenerator(r,'atlas','head','GAZE_GOAL');
 head_gen = head_gen.setGoal([0.2; 0.25; 0.5]);
 head_gen = head_gen.setOutputFrame(sys.getInputFrame.frame{1});
 sys_to_hg(1).from_output = 1;
@@ -73,7 +73,7 @@ ins(3).input = 4;
 sys = mimoFeedback(sys,head_gen,sys_to_hg,hg_to_sys,ins,outs);
 clear ins;
 
-lhand_gen = SimpleEEGoalGenerator(r,'atlas','L_HAND_GOAL');
+lhand_gen = SimpleEEGoalGenerator(r,'atlas','l_hand','L_HAND_GOAL');
 lhand_gen = lhand_gen.setGoal([0.2; 0.35; 0.45]);
 lhand_gen = lhand_gen.setOutputFrame(sys.getInputFrame.frame{1});
 sys_to_lhg(1).from_output = 1;
@@ -87,7 +87,7 @@ ins(2).input = 3;
 sys = mimoFeedback(sys,lhand_gen,sys_to_lhg,lhg_to_sys,ins,outs);
 clear ins;
 
-rhand_gen = SimpleEEGoalGenerator(r,'atlas','R_HAND_GOAL');
+rhand_gen = SimpleEEGoalGenerator(r,'atlas','r_hand','R_HAND_GOAL');
 rhand_gen = rhand_gen.setGoal([0.2; -0.3; 0.0]);
 rhand_gen = rhand_gen.setOutputFrame(sys.getInputFrame.frame{1});
 sys_to_rhg(1).from_output = 1;
