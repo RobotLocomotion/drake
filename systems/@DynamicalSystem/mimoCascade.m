@@ -215,13 +215,17 @@ else
 end
 
 % add terminators to all non-used outputs
-for i=setdiff(1:getNumFrames(sys1.getOutputFrame),[[connection.from_output];[output_select([output_select.system]==1).output]]);
-  add_block('simulink3/Sinks/Terminator',[mdl,'/sys1term',num2str(i)]);
-  add_line(mdl,[sys1out,'/',num2str(i)],['sys1term',num2str(i),'/1']);
+if (getNumOutputs(sys1)>0)
+  for i=setdiff(1:getNumFrames(sys1.getOutputFrame),[[connection.from_output];[output_select([output_select.system]==1).output]]);
+    add_block('simulink3/Sinks/Terminator',[mdl,'/sys1term',num2str(i)]);
+    add_line(mdl,[sys1out,'/',num2str(i)],['sys1term',num2str(i),'/1']);
+  end
 end
-for i=setdiff(1:getNumFrames(sys2.getOutputFrame),[output_select([output_select.system]==2).output]);
-  add_block('simulink3/Sinks/Terminator',[mdl,'/sys2term',num2str(i)]);
-  add_line(mdl,[sys2out,'/',num2str(i)],['sys2term',num2str(i),'/1']);
+if (getNumOutputs(sys2)>0)
+  for i=setdiff(1:getNumFrames(sys2.getOutputFrame),[output_select([output_select.system]==2).output]);
+    add_block('simulink3/Sinks/Terminator',[mdl,'/sys2term',num2str(i)]);
+    add_line(mdl,[sys2out,'/',num2str(i)],['sys2term',num2str(i),'/1']);
+  end
 end
 
 % finally construct the new dynamical system

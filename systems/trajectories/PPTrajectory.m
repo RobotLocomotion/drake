@@ -248,6 +248,14 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         if ~isequal(d(2:end),d2(2:end))
           error('incompatible dimensions');
         end
+        if isempty(coefs2)
+          continue;
+        elseif isempty(coefs)
+          breaks = breaks;
+          coefs = coefs2;
+          d=d2;k=k2;l=l2;
+          continue;
+        end
         if isempty(breaks)&&isempty(breaks2)
           % all constanttrajectories so far
           coefs = vertcat(coefs,coefs2);
