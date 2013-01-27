@@ -11,6 +11,9 @@ classdef SimulinkModel < DynamicalSystem
       
       load_system(mdl);
       obj.mdl = mdl;
+
+      set_param(mdl,'InheritedTsInSrcMsg','none');
+      
 %      feval(mdl,[],[],[],'compile');  % seemed to be working ok (except
 %      bug 1022) before having this.  so keeping it out.
       sys = feval(mdl,[],[],[],'sizes');
