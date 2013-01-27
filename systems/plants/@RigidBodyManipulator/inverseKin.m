@@ -49,36 +49,24 @@ for i=1:2:length(varargin)
   if (isa(varargin{i},'RigidBody')) varargin{i} = find(obj.body==varargin{i},1); end
 end
 
-% mex is not implemented for orientations yet
-use_mex = true;
-for i=2:2:length(varargin)  
-  if length(varargin{i})==6
-    use_mex = false;
-  end
-end
-
 function [f,G] = ik(q)
   f = zeros(nF,1); G = zeros(nF,obj.num_q);
   f(1) = (q-q_nom)'*Q*(q-q_nom);
   G(1,:) = 2*(q-q_nom)'*Q;
-  kinsol = doKinematics(obj,q,false,use_mex);
+  kinsol = doKinematics(obj,q,false);
   i=1;j=2;
   while i<length(varargin)
     if (varargin{i}==0)
+      do_rot = 0;
       [x,J] = getCOM(obj,q);
     else
-      [x,J] = forwardKin(obj,kinsol,varargin{i},[0;0;0]);
+      do_rot = length(varargin{i+1})==6;
+      [x,J] = forwardKin(obj,kinsol,varargin{i},[0;0;0],do_rot);
     end
-    f([j:j+2]) = x - varargin{i+1}(1:3);
-    G([j:j+2],:) = J;
-    j=j+3;
-    
-    if length(varargin{i+1})==6
-      [x,J] = forwardKinRot(obj,kinsol,varargin{i});
-      f([j:j+2]) = x - varargin{i+1}(4:6);
-      G([j:j+2],:) = J;
-      j=j+3;
-    end
+    n = 3+3*do_rot;
+    f([j:j+n-1]) = x - varargin{i+1}(1:n);
+    G([j:j+n-1],:) = J;
+    j=j+n;
     i=i+2; 
   end
 %  if isfield(options,'visualizer') options.visualizer.draw(0,[q;0*q]); drawnow; end

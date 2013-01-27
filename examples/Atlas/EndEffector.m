@@ -62,7 +62,7 @@ classdef EndEffector
     body_index
     xyz_offset
     P_mask % used to select controllable subsets of joints
-    gain = 2.0;
+    gain = 0.75;
     normbound = 1.0;
   end
 end
