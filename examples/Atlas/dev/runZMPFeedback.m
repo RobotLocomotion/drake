@@ -31,11 +31,12 @@ sys = feedback(sys,c);
 warning(S);
 
 tspan = c.getTspan; % sec
-if (0)
-  traj = simulate(sys,tspan); 
-  playback(v,traj,struct('slider',true));
-else
-  warning('off','Drake:DrakeSystem:UnsupportedSampleTime'); 
-  sys = cascade(sys,v);
-  simulate(sys,tspan);
-end
+
+S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
+output_select(1).system=1;
+output_select(1).output=1;
+sys = mimoCascade(sys,v,[],[],output_select);
+warning(S);
+traj = simulate(sys,tspan);
+save openloop_stepping.mat v traj;
+playback(v,traj,struct('slider',true));

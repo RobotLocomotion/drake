@@ -147,14 +147,13 @@ if (1) %%  short-cut COM control, and just call IK
 end
 
 T = tstep(end); % sec
-if (1)
-  traj = simulate(sys,[0 T]); 
-  save stepping.mat v traj;
-  playback(v,traj,struct('slider',true));
-else
-  warning('off','Drake:DrakeSystem:UnsupportedSampleTime'); 
-  sys = cascade(sys,v);
-  simulate(sys,[0 T]);
-end
+S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
+output_select(1).system=1;
+output_select(1).output=1;
+sys = mimoCascade(sys,v,[],[],output_select);
+warning(S);
+traj = simulate(sys,[0 T]);
+save stepping.mat v traj;
+playback(v,traj,struct('slider',true));
 
 end
