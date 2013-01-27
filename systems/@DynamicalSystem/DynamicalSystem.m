@@ -322,12 +322,12 @@ classdef DynamicalSystem
     end
     
     function tf = isDT(obj)
-      % Returns true if the system has only one sample time [a b], with b>0
+      % Returns true if the system has only one sample time [a b], with a>0
       ts = getSampleTime(obj);
       tf = (size(ts,2)==1 && ts(1)>0); % only one sample time and not continuous
     end
     function tf = isCT(obj)
-      % Returns true if the system has only one sample time [a b], with b==0
+      % Returns true if the system has only one sample time [a b], with a==0
       ts = getSampleTime(obj);
       tf = (size(ts,2)==1 && ts(1)==0); % only one sample time and continuous
     end

@@ -101,8 +101,11 @@ if (nargout>0)
   %pstruct.SaveOnModelUpdate = 'false';
   %pstruct.AutoSaveOptions.SaveModelOnUpdate = 'false';
   %pstruct.AutoSaveOptions.SaveBackupOnVersionUpgrade = 'false';
-
-  if (~isDT(obj))
+  
+  ts = getSampleTime(obj);
+  isdiscrete = all(ts(:,1)>0);  % isDT asks for more:  must have only a single sample time
+  
+  if (~isdiscrete)
     pstruct.Refine = '3';  % shouldn't do anything for DT systems
   end
   
@@ -131,7 +134,7 @@ if (nargout>0)
   end
   y = simout.get('yout').signals.values';
 
-  if (isDT(obj))
+  if (isdiscrete)
     ytraj = DTTrajectory(t',y);
     ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
     if (nargout>1)
