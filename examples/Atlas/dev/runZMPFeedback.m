@@ -1,11 +1,13 @@
 function runZMPFeedback
 
+addpath('..');
+
 options.floating = true;
 options.dt = 0.001;
-r = Atlas('urdf/atlas_minimal_contact.urdf',options);
+r = Atlas('../urdf/atlas_minimal_contact.urdf',options);
 
 % set initial state to fixed point
-load('data/atlas_fp2.mat');
+load('../data/atlas_fp2.mat');
 r = r.setInitialState(xstar);
 
 v = r.constructVisualizer();
@@ -24,7 +26,9 @@ end
 c = ZMPTrackingControl(r,xstar);
 c = setOutputFrame(c,getInputFrame(sys));
 c = setInputFrame(c,getStateFrame(sys));
+S = warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
 sys = feedback(sys,c);
+warning(S);
 
 tspan = c.getTspan; % sec
 if (0)

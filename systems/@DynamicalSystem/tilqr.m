@@ -62,11 +62,6 @@ else
   [K,S] = dlqr(A,B,Q,R,options.N);
 end  
 
-if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
-  warning('designing full-state feedback controller but plant has different output frame than state frame'); 
-end
-
-  
 ltisys = LinearSystem([],[],[],[],[],-K);
 if (all(x0==0))
   ltisys = setInputFrame(ltisys,obj.getStateFrame);

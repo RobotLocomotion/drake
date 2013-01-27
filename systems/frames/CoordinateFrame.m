@@ -108,6 +108,7 @@ classdef CoordinateFrame < handle
         error('Drake:CoordinateFrame:ExistingTransform','i already have a transform that gets me to that frame');
       end
       obj.transforms{end+1}=transform;
+%      drawFrameGraph(obj); keyboard;
     end
     
     function updateTransform(obj,newtransform)
@@ -430,7 +431,7 @@ classdef CoordinateFrame < handle
     
   end
   
-  methods (Access=private)
+  methods (Access=protected)
     function [tf,loc]=ismember(obj,cell_of_frames)
       % helper method for searching transforms
       typecheck(cell_of_frames,'cell');

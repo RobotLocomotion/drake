@@ -124,7 +124,7 @@ classdef AffineSystem < PolynomialSystem
         if ~isempty(obj.xcdot0) xcdot=xcdot+obj.xcdot0.eval(t); end
       end
     end
-    
+
     function [xdn,df] = update(obj,t,x,u)
       if (isTI(obj))
         xdn=obj.Ad*x;
@@ -151,14 +151,14 @@ classdef AffineSystem < PolynomialSystem
         end
       else
         y=zeros(obj.num_y,1);
-        if (obj.num_x) y=y+obj.C.eval(t)*x; end
-        if (obj.num_u) y=y+obj.D.eval(t)*u; end
-        if ~isempty(obj.y0) y=y+obj.y0.eval(t); end
+        if (obj.num_x) y=y+eval(obj.C,t)*x; end
+        if (obj.num_u) y=y+eval(obj.D,t)*u; end
+        if ~isempty(obj.y0) y=y+eval(obj.y0,t); end
         if (nargout>1)
           dy = zeros(obj.num_y,1+obj.num_x+obj.num_u);
-          if (obj.num_x) dy(:,1:1+obj.num_x)=dy(:,1:1+obj.num_x) + [obj.C.deriv(t)*x, obj.C.eval(t)]; end
-          if (obj.num_u) dy(:,[1,2+obj.num_x:end])=dy(:,[1,2+obj.num_x:end])+[obj.D.deriv(t)*u,obj.D.eval(t)]; end
-          if ~isempty(obj.y0) dy(:,1)=dy(:,1)+obj.y0.deriv(t); end
+          if (obj.num_x) dy(:,1:1+obj.num_x)=dy(:,1:1+obj.num_x) + [deriv(obj.C,t)*x, eval(obj.C,t)]; end
+          if (obj.num_u) dy(:,[1,2+obj.num_x:end])=dy(:,[1,2+obj.num_x:end])+[deriv(obj.D,t)*u,eval(obj.D,t)]; end
+          if ~isempty(obj.y0) dy(:,1)=dy(:,1)+deriv(obj.y0,t); end
         end
       end
     end
@@ -246,7 +246,7 @@ classdef AffineSystem < PolynomialSystem
       
       sys2 = sys2.inInputFrame(sys1.getOutputFrame);
 
-      if ~isa(sys2,'PolynomialSystem') || any(~isinf([sys2.umin;sys2.umax]))
+      if ~isa(sys2,'AffineSystem') || any(~isinf([sys2.umin;sys2.umax]))
         sys = cascade@DrakeSystem(sys1,sys2);
         return;
       end
@@ -293,8 +293,64 @@ classdef AffineSystem < PolynomialSystem
         sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to drakesystem?
       catch ex
         if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
-          warning('Drake:PolynomialSystem:UnsupportedSampleTime','Aborting polynomial cascade because of incompatible sample times'); 
+          warning('Drake:AffineSystem:UnsupportedSampleTime','Aborting polynomial cascade because of incompatible sample times'); 
           sys = cascade@DrakeSystem(sys1,sys2);
+        else
+          rethrow(ex)
+        end
+      end
+    end
+    
+    function sys = parallel(sys1,sys2)
+      % try to keep cascade between polynomial systems polynomial.  else,
+      % kick out to DrakeSystem
+      %
+      
+      if ~isa(sys2,'AffineSystem')
+        sys = parallel@DrakeSystem(sys1,sys2);
+        return;
+      end
+        
+      % x1dot = A1x1 + B1u + xcdot01
+      % x2dot = A2x2 + B2(C1x1+D1u+y01) + xcdot02
+      % y = C2x2 + D2(C1x1+D1u + y01) + y02
+      
+      [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2);
+
+      if isempty([sys1ind;sys2ind])
+        Ac=[]; Ad=[]; Bc=[]; Bd=[]; C=[];
+      end
+      if ~isempty(sys1ind)
+        Ac(:,sys1ind) = [sys1.Ac; zeros(getNumContStates(sys2),getNumStates(sys1))];
+        Ad(:,sys1ind) = [sys1.Ad; zeros(getNumDiscStates(sys2),getNumStates(sys1))];
+        C(:,sys1ind) = [sys1.C;zeros(getNumOutputs(sys2),getNumStates(sys1))];
+      end
+      if ~isempty(sys2ind)
+        Ac(:,sys2ind) = [zeros(getNumContStates(sys1),getNumStates(sys2)); sys2.Ac];
+        Ad(:,sys2ind) = [zeros(getNumDiscStates(sys1),getNumStates(sys2)); sys2.Ad];
+        C(:,sys2ind) = [zeros(getNumOutputs(sys1),getNumStates(sys2)); sys2.C];
+      end
+ 
+      Bc = blkdiag(sys1.Bc,sys2.Bc);
+      xcdot0 = [sys1.xcdot0; sys2.xcdot0];
+      
+      Bd = blkdiag(sys1.Bd,sys2.Bd);
+      xdn0 = [sys1.xdn0; sys2.xdn0];
+
+      D = blkdiag(sys1.D,sys2.D);
+      y0 = [sys1.y0; sys2.y0];
+      
+      sys = AffineSystem(Ac,Bc,xcdot0,Ad,Bd,xdn0,C,D,y0);
+
+      sys = setInputFrame(sys,MultiCoordinateFrame.constructFrame({sys1.getInputFrame(),sys2.getInputFrame()}));
+      sys = setOutputFrame(sys,MultiCoordinateFrame.constructFrame({sys1.getOutputFrame(),sys2.getOutputFrame()}));
+      
+      try 
+        sys = setSampleTime(sys,[sys1.getSampleTime(),sys2.getSampleTime()]);  % todo: if this errors, then kick out to drakesystem?
+      catch ex
+        if (strcmp(ex.identifier, 'Drake:DrakeSystem:UnsupportedSampleTime'))
+          warning('Drake:AffineSystem:UnsupportedSampleTime','Aborting polynomial cascade because of incompatible sample times'); 
+          sys = parallel@DrakeSystem(sys1,sys2);
         else
           rethrow(ex)
         end

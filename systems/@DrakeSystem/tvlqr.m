@@ -248,10 +248,6 @@ B = getBTrajectory(obj,S{1}.getBreaks(),xtraj,utraj,options);
 
 % note that this returns what we would normally call -K.  here u(t) = u_0(t) + K(t) (x(t) - x_0(t)) 
 K = affineKsoln(S,R,B,N);
-
-%if (obj.getStateFrame ~= obj.getOutputFrame)  % todo: remove this or put it in a better place when I start doing more observer-based designs
-%  warning('Drake:DrakeSystem:FullStateFeedback','designing full-state feedback controller but plant has different output frame than state frame'); 
-%end
   
 ltvsys = AffineSystem([],[],[],[],[],[],[],K{1},K{2});
 ltvsys = setInputFrame(ltvsys,iframe);
@@ -328,7 +324,9 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj
     Sdot{1} = -(Q{1} - (N+S{1}*B)*Ri*(B'*S{1}+N') + S{1}*A + A'*S{1});
     Sorig = S{1};
   end
-  if (min(eig(Sorig))<0) warning('S is not positive definite'); end
+  if (min(eig(Sorig))<0) 
+    warning('Drake:TVLQR:NegativeS','S is not positive definite'); 
+  end
     
   Sdot{2} = -((A'-(N+Sorig*B)*Ri*B')*S{2} + 2*Sorig*c + Q{2} - (N+Sorig*B)*Ri*R{2});
   rs = (R{2}+B'*S{2})/2;

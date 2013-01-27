@@ -23,6 +23,8 @@ classdef RigidBodyWRLVisualizer < Visualizer
       obj.wrl = vrworld(wrlfile);
       if ~strcmpi(get(obj.wrl,'Open'),'on')
         open(obj.wrl);
+      else
+        reload(obj.wrl);
       end
       if get(obj.wrl,'Clients')<1
         view(obj.wrl);

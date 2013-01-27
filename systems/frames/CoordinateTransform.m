@@ -8,5 +8,9 @@ classdef CoordinateTransform < DrakeSystem
       obj=setInputFrame(obj,from);
       obj=setOutputFrame(obj,to);
     end
+    
+    function ytraj = trajectoryOutput(obj,xtraj,utraj)
+      error('if it makes sense for your transform system, implement this to allow trajectories to push through (even if your system is time-varying)');
+    end
   end
 end

@@ -18,10 +18,13 @@ classdef LinearInvertedPendulum2D < LinearSystem
       Czmp = [1 0]; Dzmp = -h/g;
       obj = obj@LinearSystem([0 1; 0 0],[0; 1],[],[],[eye(2);Czmp],[0;0;Dzmp]);
       
+      cartstateframe = CartTable2DState;
       obj = setInputFrame(obj,CartTable2DInput);
-      sframe = CoordinateFrame('LIMP2DState',2,'x',{'x_com','xdot_com'});
-      addTransform(sframe,AffineTransform(sframe,CartTable2DState,sparse([4 8],[1 2],[1 1],8,2),zeros(8,1)));
-      addTransform(CartTable2DState,AffineTransform(CartTable2DState,sframe,sparse([1 2],[4 8],[1 1],2,8),zeros(2,1)));
+      sframe = SingletonCoordinateFrame('LIMP2DState',2,'x',{'x_com','xdot_com'});
+      if isempty(findTransform(sframe,cartstateframe))
+        addTransform(sframe,AffineTransform(sframe,cartstateframe,sparse([4 8],[1 2],[1 1],8,2),zeros(8,1)));
+        addTransform(cartstateframe,AffineTransform(cartstateframe,sframe,sparse([1 2],[4 8],[1 1],2,8),zeros(2,1)));
+      end
       obj = setStateFrame(obj,sframe);
       
       zmpframe = CoordinateFrame('ZMP1D',1,'z',{'x_zmp'});
@@ -51,7 +54,9 @@ classdef LinearInvertedPendulum2D < LinearSystem
       x0traj = setOutputFrame(ConstantTrajectory([0;0]),obj.getStateFrame);
       options.Qy = diag([0,0,1]);
       options.ydtraj = [x0traj;dZMP];
+      S = warning('off','Drake:TVLQR:NegativeS');  % i expect to have some zero eigenvalues, which numerically fluctuate below 0
       c = tvlqr(obj,x0traj,ConstantTrajectory(0),zeros(2),0,V,options);
+      warning(S);
     end
     
     function comtraj = ZMPplanner(obj,com0,comdot0,dZMP)
@@ -97,7 +102,8 @@ classdef LinearInvertedPendulum2D < LinearSystem
     
     function ZMPtrackingDemo()
       r = LinearInvertedPendulum2D(1.055);
-      dZMP = setOutputFrame(FunctionHandleTrajectory(@(t) .08*sin(.125*t*(2*pi)),1,linspace(0,8,100)),desiredZMP1D);
+      ts = linspace(0,8,100); 
+      dZMP = setOutputFrame(PPTrajectory(spline(ts,.08*sin(1.5*ts*(2*pi)))),desiredZMP1D);
       c = ZMPtracker(r,dZMP);
       output_select(1).system = 1;
       output_select(1).output = 1;

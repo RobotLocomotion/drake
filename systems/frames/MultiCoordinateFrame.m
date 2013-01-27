@@ -270,9 +270,11 @@ classdef MultiCoordinateFrame < CoordinateFrame
     function [A,fr] = extractFrameGraph(obj)
       [A,fr] = extractFrameGraph@CoordinateFrame(obj);
       for i=1:length(obj.frame)
-        [B,frb] = extractFrameGraph(obj.frame{i});
-        A = blkdiag(A,B);
-        fr = vertcat(fr,frb);
+        if ~ismember(obj.frame{i},fr)
+          [B,frb] = extractFrameGraph(obj.frame{i});
+          A = blkdiag(A,B);
+          fr = vertcat(fr,frb);
+        end
       end
     end
   end
