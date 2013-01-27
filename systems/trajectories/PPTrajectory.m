@@ -7,7 +7,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   methods
     function obj = PPTrajectory(ppform)
       obj = obj@Trajectory(ppform.dim);
-      obj.pp = ppform;
+      obj.pp = PPTrajectory.minimalOrder(ppform);
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
     end
     function y = eval(obj,t)
@@ -95,7 +95,6 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         c=PPTrajectory(mkpp(breaks,coefs,[d(1) size(b,2)]));
         return;
       end
-
       
       if ~isa(a,'PPTrajectory') || ~isa(b,'PPTrajectory')
         % kick out to general case if they're not both pp trajectories
@@ -121,6 +120,23 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       end
       
       c = PPTrajectory(mkpp(abreaks,coefs,ad));
+    end
+    
+    function a = inv(a)
+      if a.pp.order==1
+        [breaks,coefs,l,k,d] = unmkpp(a.pp);
+        coefs = reshape(coefs,[d,l]);  % k should be 1
+        for i=1:l
+          coefs(:,:,i) = inv(coefs(:,:,i));
+        end
+        a.pp = mkpp(breaks,coefs,d);
+      else
+        a = inv@Trajectory(a);
+      end
+    end
+    
+    function c = minus(a,b)
+      c = plus(a,uminus(b));
     end
     
     function c = mtimes(a,b)
@@ -205,29 +221,77 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
     end
         
     function c = vertcat(a,varargin)
-      typecheck(a,'PPTrajectory'); 
-      [breaks,coefs,l,k,d] = unmkpp(a.pp);
-      coefs = reshape(coefs,[d,l,k]);
+      if isa(a,'ConstantTrajectory')
+        breaks=[];
+        coefs = a.pt;
+        l=1; k=1; d=size(coefs);
+      elseif isa(a,'PPTrajectory')
+        [breaks,coefs,l,k,d] = unmkpp(a.pp);
+        d = size(a);  % handles case where d is a scalar, instead of [d,1]
+        coefs = reshape(coefs,[d,l,k]);
+      else
+        c = vertcat@Trajectory(a,varargin{:});
+        return;
+      end
       for i=1:length(varargin)
-        if ~isa(varargin{i},'PPTrajectory')
+        if isa(varargin{i},'ConstantTrajectory')
+          breaks2=[];
+          coefs2 = varargin{i}.pt;
+          l2=1; k2=1; d2=size(coefs2);
+        elseif isa(varargin{i},'PPTrajectory')
+          [breaks2,coefs2,l2,k2,d2]=unmkpp(varargin{i}.pp);
+          d2 = size(varargin{i}); % handles case where d2 is a scalar, instead of [d,1]
+        else
           c = vertcat@Trajectory(a,varargin{:});
           return;
         end
-        [breaks2,coefs2,l2,k2,d2]=unmkpp(varargin{i}.pp);
         if ~isequal(d(2:end),d2(2:end))
           error('incompatible dimensions');
         end
-        if ~isequal(breaks,breaks2)
-          warning('Drake:PPTrajectory:DifferentBreaks','vertcat for pptrajectories with different breaks not support (yet).  kicking out to function handle version');
-          c = vertcat@Trajectory(a,varagin{:});
+        if isempty(breaks)&&isempty(breaks2)
+          % all constanttrajectories so far
+          coefs = vertcat(coefs,coefs2);
+          d=size(coefs);
+          continue;
+        elseif isempty(breaks)
+          [breaks,coefs,l,k,d] = unmkpp(zoh(breaks2,repmat(coefs,[d*0+1,length(breaks2)])));
+        elseif isempty(breaks2)
+          [breaks2,coefs2,l2,k2,d2] = unmkpp(zoh(breaks,repmat(coefs2,[d2*0+1,length(breaks)])));
+        elseif ~isequal(breaks,breaks2)
+          warning('Drake:PPTrajectory:DifferentBreaks','vertcat for pptrajectories with different breaks is not supported (yet).  kicking out to function handle version');
+          c = vertcat@Trajectory(a,varargin{:});
           return;
         end
+        if (k<k2)
+          coefs=reshape(coefs,prod(d)*l,k);
+          coefs = [zeros(prod(d)*l,k2-k),coefs];  % pad with zeros
+          k=k2;
+          coefs=reshape(coefs,[d,l,k]);
+        elseif (k2<k)
+          coefs2 = [zeros(prod(d2)*l2,k-k2),coefs2];  % pad with zeros
+          k2=k;
+        end
+        coefs2=reshape(coefs2,[d2,l2,k2]);
         d = [d(1)+d2(1),d(2:end)];
-        coefs = [coefs; reshape(coefs2,[d2,l2,k2])];
+        coefs = [coefs;coefs2];
       end
       c = PPTrajectory(mkpp(breaks,coefs,d));
       fr = cellfun(@(a) getOutputFrame(a),varargin,'UniformOutput',false);
       c = setOutputFrame(c,MultiCoordinateFrame({getOutputFrame(a),fr{:}}));
+    end
+    
+    function varargout = subsref(a,s)
+      if (length(s)==1 && strcmp(s(1).type,'()'))
+        [breaks,coefs,l,k,d] = unmkpp(a.pp);
+        coefs = reshape(coefs,[d,l,k]);
+        s.subs = {s.subs{:},':',':'};
+        coefs = subsref(coefs,s);
+        d=size(coefs); d=d(1:end-2);
+        varargout{1} = PPTrajectory(mkpp(breaks,coefs,d));
+      elseif nargout>0  % use builtin
+        varargout=cell(1,nargout);
+        [varargout{:}] = builtin('subsref',a,s);
+      end
     end
     
     function newtraj = append(obj, trajAtEnd)
@@ -324,5 +388,15 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
     
     % should getParameters and setParameters include the breaks? or just
     % the actual coefficients?  
+  end
+  
+  methods (Static=true)
+    function ppform = minimalOrder(ppform)
+      if ppform.order>1 && all(ppform.coefs(:,1)==0)
+        ppform.coefs = ppform.coefs(:,2:end);
+        ppform.order = ppform.order-1;
+        ppform = PPTrajectory.minimalOrder(ppform); % recurse
+      end
+    end
   end
 end

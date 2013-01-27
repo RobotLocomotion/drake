@@ -6,7 +6,8 @@ function megaclear()
     current_breakpoints = dbstatus('-completenames');
 
     force_close_system();
-    vrclose all;
+    
+%    while ~isempty(vrgcf), close(vrgcf); end
     vrclear;
     
     evalin('base', 'h=findobj; delete(h(2:end));');  % delete dangling handles first

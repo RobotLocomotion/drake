@@ -59,7 +59,24 @@ classdef Trajectory < DrakeSystem
       else
         tf = findTransform(obj.getOutputFrame,frame);
         if isempty(tf) error('couldn''t find a coordinate transform from the trajectory frame %s to the requested frame %s',obj.getOutputFrame.name,frame.name); end
-        mobj = FunctionHandleTrajectory(@(t) tf.output(t,[],obj.eval(t)), frame.dim, obj.getBreaks);
+        valuecheck(getNumStates(tf),0);
+        if isTI(tf)
+          try 
+            mobj = tf.output(0,[],obj);  % try trajectory arithmetic to get through it
+          catch
+            mobj = FunctionHandleTrajectory(@(t) tf.output(0,[],obj.eval(t)), frame.dim, obj.getBreaks);
+          end
+        else
+          try 
+            mobj = tf.trajectoryOutput([],obj)
+          catch ex
+            if strcmp(ex.identifier,'DrakeSystem:CoordinateTransform:trajectoryOutputNotImplemented')
+              mobj = FunctionHandleTrajectory(@(t) tf.output(t,[],obj.eval(t)), frame.dim, obj.getBreaks);
+            else
+              rethrow(ex);
+            end
+          end
+        end
         mobj = setOutputFrame(mobj,frame);
         mobj = setSampleTime(mobj,obj.getSampleTime);
       end

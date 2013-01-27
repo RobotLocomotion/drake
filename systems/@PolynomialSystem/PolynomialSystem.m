@@ -25,16 +25,25 @@ classdef PolynomialSystem < DrakeSystem
           xcdot = lhs \ xcdot;
         end
       else
-        if ~isTI(obj) error('not implemented yet'); end  % todo: geval equivalent for t, but poly computations for x,u?
-        
-        p_x=obj.getStateFrame.poly;
-        if (obj.num_u>0) p_u=obj.getInputFrame.poly; else p_u=[]; end
-        
         if ~obj.rational_flag
-          f = getPolyDynamics(obj,0);
-          xcdot = double(subs(f,[p_x;p_u],[x;u]));
-          dxcdot = double([0*xcdot,subs(diff(f,[p_x;p_u]),[p_x;p_u],[x;u])]);
+          try
+            [xcdot,dxcdot] = dynamicsRHS(obj,t,x,u);
+          catch
+            if ~isTI(obj) error('not implemented yet'); end  % todo: geval equivalent for t, but poly computations for x,u?
+            
+            p_x=obj.getStateFrame.poly;
+            if (obj.num_u>0) p_u=obj.getInputFrame.poly; else p_u=[]; end
+            
+            f = getPolyDynamics(obj,0);
+            xcdot = double(subs(f,[p_x;p_u],[x;u]));
+            dxcdot = double([0*xcdot,subs(diff(f,[p_x;p_u]),[p_x;p_u],[x;u])]);
+          end
         else
+          if ~isTI(obj) error('not implemented yet'); end  % todo: geval equivalent for t, but poly computations for x,u?
+
+          p_x=obj.getStateFrame.poly;
+          if (obj.num_u>0) p_u=obj.getInputFrame.poly; else p_u=[]; end
+          
           [f,e] = getPolyDynamics(obj,0);
           xcdot = double(subs(e,p_x,x))\double(subs(f,[p_x;p_u],[x;u]));
           df = double([0*xcdot,subs(diff(f,[p_x;p_u]),[p_x;p_u],[x;u])]);

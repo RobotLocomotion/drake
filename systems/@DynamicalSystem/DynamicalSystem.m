@@ -135,6 +135,7 @@ classdef DynamicalSystem
       newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
       newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);
     end
+    
     function newsys = feedback(sys1,sys2)
       % Creates a new systems with sys1 and sys2 in a feedback interconnect 
       % (with sys1 on the forward path, and sys2 on the return path). 
