@@ -32,6 +32,20 @@ classdef ConstantTrajectory < Trajectory
       t = 0;
     end
     
+    function a = subsasgn(a,s,b)
+      if isa(a,'ConstantTrajectory')
+        if isnumeric(b)
+          subsasgn(a.pt,s,b);
+        elseif isa(b,'ConstantTrajectory')
+          subsasgn(a.pt,s,b.pt);
+        else
+          a = subsasgn@Trajectory(a,s,b);
+        end
+      else % b must be a ConstantTrajectory
+        subsasgn(a,s,b.pt);
+      end
+    end
+    
     function obj = uminus(obj)
       obj.pt = -obj.pt;
     end
