@@ -221,6 +221,9 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
     end
         
     function c = vertcat(a,varargin)
+      if isnumeric(a)
+        a = ConstantTrajectory(a);
+      end
       if isa(a,'ConstantTrajectory')
         breaks=[];
         coefs = a.pt;
@@ -234,6 +237,9 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         return;
       end
       for i=1:length(varargin)
+        if isnumeric(varargin{i}) 
+          varargin{i}=ConstantTrajectory(varargin{i}); 
+        end
         if isa(varargin{i},'ConstantTrajectory')
           breaks2=[];
           coefs2 = varargin{i}.pt;
@@ -285,7 +291,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       end
       c = PPTrajectory(mkpp(breaks,coefs,d));
       fr = cellfun(@(a) getOutputFrame(a),varargin,'UniformOutput',false);
-      c = setOutputFrame(c,MultiCoordinateFrame({getOutputFrame(a),fr{:}}));
+      c = setOutputFrame(c,MultiCoordinateFrame.constructFrame({getOutputFrame(a),fr{:}}));
     end
     
     function varargout = subsref(a,s)
@@ -299,6 +305,55 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       elseif nargout>0  % use builtin
         varargout=cell(1,nargout);
         [varargout{:}] = builtin('subsref',a,s);
+      end
+    end
+    
+    function a = subsasgn(a,s,b)
+      if (length(s)==1 && strcmp(s(1).type,'()'))
+        if isempty(a) % handle the special case
+          [breaks,coefs,l,k,d] = unmkpp(b.pp);
+          e=[];
+          coefs = reshape(coefs,[d,l,k]);
+          s.subs = {s.subs{:},':',':'};
+          subsasgn(e,s,coefs);
+          d=size(coefs); d=d(1:end-2);
+          a = PPTrajectory(mkpp(breaks,e,d));
+          return;
+        end
+        if isnumeric(a) % then b must be a PPTrajectory
+          breaks = b.getBreaks();
+          a = PPTrajectory(zoh(breaks,repmat(a,[1+0*size(a),length(breaks)])));
+        elseif isa(a,'ConstantTrajectory')
+          breaks = b.getBreaks();
+          a = PPTrajectory(zoh(breaks,repmat(a.pt,[1+0*size(a),length(breaks)])));
+        end
+        typecheck(a,'PPTrajectory');  % i believe this is the only way this method would get called
+        [breaks,coefs,l,k,d] = unmkpp(a.pp);
+        if isnumeric(b) 
+          b = PPTrajectory(zoh(breaks,repmat(b,[1+d*0,length(breaks)])));
+        elseif isa(b,'ConstantTrajectory')
+          b = PPTrajectory(zoh(breaks,repmat(b.pt,[1+d*0,length(breaks)])));
+        end
+        typecheck(b,'PPTrajectory');
+        [breaks2,coefs2,l2,k2,d2] = unmkpp(b.pp);
+        if ~isequal(breaks,breaks2)
+          a = subsasgn@Trajectory(a,s,b);
+        end
+        if (k<k2)
+          coefs =  [zeros(prod(d)*l,k2-k),coefs];
+          k=k2;
+        elseif (k2<k)
+          coefs2 = [zeros(prod(d2)*l2,k-k2),coefs2];  % pad with zeros
+          k2=k;
+        end
+        coefs = reshape(coefs,[d,l,k]);
+        coefs2 = reshape(coefs2,[d2,l2,k2]);
+        s.subs = {s.subs{:},':',':'};
+        coefs = subsasgn(coefs,s,coefs2);
+        d = size(coefs); d=d(1:end-2);
+        a = PPTrajectory(mkpp(breaks,coefs,d));
+      else
+        a = subsasgn@Trajectory(a,s,b);
       end
     end
     

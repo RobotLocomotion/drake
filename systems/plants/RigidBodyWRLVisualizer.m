@@ -104,7 +104,7 @@ classdef RigidBodyWRLVisualizer < Visualizer
       width=[]; height=[];
       for i=1:length(tspan)
         obj.draw(tspan(i),eval(xtraj,tspan(i)));
-        fr = capture(fig);
+        fr = capture(fig); pause(0.1);
         writeVideo(mov,fr);
       end
       

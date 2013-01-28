@@ -60,6 +60,10 @@ classdef RigidBodyManipulator < Manipulator
       B = obj.B;
     end
     
+    function n = getNumDOF(obj)
+      n = obj.num_q;
+    end
+    
     function obj = setGravity(obj,grav)
       sizecheck(grav,size(obj.gravity));
       obj.gravity = grav;

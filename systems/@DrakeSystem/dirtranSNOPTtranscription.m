@@ -96,7 +96,6 @@ if (options.bGradTest)
 end
   
 %% Run SNOPT
-snset('superbasics=100');  % to do: make this an option?
 [w,F,info] = snopt(w0,xlow,xhigh,Flow,Fhigh,'snopt_userfun',0,1,[],[],[],iGfun,jGvar);
 
 if (info~=1 && options.bWarning) 

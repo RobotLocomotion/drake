@@ -28,6 +28,12 @@ for t=.25:.25:2.75
   valuecheck(a.eval(t),e.eval(t));
 end
 
+c(1,2) = ConstantTrajectory(2);
+for t=.25:.25:2.75
+  tmp = c.eval(t);
+  valuecheck(tmp(1,2),2);
+end
+
 c = ConstantTrajectory(randn(1,3));
 d = [c;a];
 
