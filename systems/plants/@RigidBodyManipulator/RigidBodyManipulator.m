@@ -404,6 +404,9 @@ classdef RigidBodyManipulator < Manipulator
     
         
     function m = getMass(model)
+      % todo: write total_mass to class and simply return it instead of
+      % looping every time (since the result is a constant between
+      % compiles)
       m = 0;
       for i=1:length(model.body)
         bm = model.body(i).mass;

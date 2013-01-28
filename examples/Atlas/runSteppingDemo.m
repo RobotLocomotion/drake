@@ -68,7 +68,7 @@ rfootcen = [mean(gc(1:2,4+k),2);0];
 %lfootcen = lfoot0;
 
 midfoot = mean([rfootcen,lfootcen],2);
-com0 = getCOM(r,x0(1:getNumDOF(r)));
+com0 = getCOM(r,kinsol);
 
 com = [midfoot,midfoot,rfootcen,rfootcen,rfootcen,rfootcen,rfootcen,midfoot,lfootcen,lfootcen,lfootcen,lfootcen,lfootcen,midfoot];
 com(3,:) = com0(3);

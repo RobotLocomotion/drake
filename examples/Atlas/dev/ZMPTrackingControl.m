@@ -32,7 +32,7 @@ classdef ZMPTrackingControl < DrakeSystem
       rfootcen = [mean(gc(1:2,4+k),2);0];
 
       midfoot = mean([rfootcen,lfootcen],2);
-      com0 = getCOM(r,q0);
+      com0 = getCOM(r,kinsol);
 
       % create trajectory
       com = [com0,midfoot,rfootcen,rfootcen,rfootcen,rfootcen,rfootcen,midfoot,lfootcen,lfootcen,lfootcen,lfootcen,lfootcen,midfoot];

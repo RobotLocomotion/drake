@@ -81,5 +81,15 @@ for i=1:100
   valuecheck(x,xm,1e-8);
   valuecheck(J,Jm,1e-8);
   valuecheck(dJ,dJm,1e-8);
+
+  % test mex COM
+  kinsol = p.doKinematics(rq,true,false);
+  [com,Jcom,dJcom]=getCOM(p,kinsol);
+  kinsol = p.doKinematics(rq,true,true);
+  [commex,Jcommex,dJcommex]=getCOM(p,kinsol);
+  
+  valuecheck(com,commex,1e-8);
+  valuecheck(Jcom,Jcommex,1e-8);
+  valuecheck(dJcom,dJcommex,1e-8);
 end
 
