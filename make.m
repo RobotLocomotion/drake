@@ -4,6 +4,9 @@ function make(varargin)
 
 disp('zapping old mex files...');
 
+flags = {};
+%flags = {'-g'};
+
 cd util;
 delete(['*.',mexext]);
 cd(getDrakePath());
@@ -36,23 +39,24 @@ try
   cd(getDrakePath());
 
   if checkDependency('eigen3_enabled')
+    eigenflags = {flags{:},['-I',conf.eigen3_incdir]};
     cd systems/plants/;
-    mex('deleteModelmex.cpp',['-I',conf.eigen3_incdir]);
-    mex('HandCmex.cpp',['-I',conf.eigen3_incdir]);
-    mex('doKinematicsmex.cpp',['-I',conf.eigen3_incdir]);
-    mex('forwardKinmex.cpp',['-I',conf.eigen3_incdir]);
+    mex('deleteModelmex.cpp',eigenflags{:});
+    mex('HandCmex.cpp',eigenflags{:});
+    mex('doKinematicsmex.cpp',eigenflags{:});
+    mex('forwardKinmex.cpp',eigenflags{:});
     
-    mex('deleteModelpmex.cpp',['-I',conf.eigen3_incdir]);
-    mex('HandCpmex.cpp',['-I',conf.eigen3_incdir]);
-    mex('doKinematicspmex.cpp',['-I',conf.eigen3_incdir]);
-    mex('forwardKinpmex.cpp',['-I',conf.eigen3_incdir]);
-    mex('forwardKinVelpmex.cpp',['-I',conf.eigen3_incdir]);
+    mex('deleteModelpmex.cpp',eigenflags{:});
+    mex('HandCpmex.cpp',eigenflags{:});
+    mex('doKinematicspmex.cpp',eigenflags{:});
+    mex('forwardKinpmex.cpp',eigenflags{:});
+    mex('forwardKinVelpmex.cpp',eigenflags{:});
 
     cd @RigidBodyManipulator/private;
-    mex('constructModelmex.cpp',['-I',conf.eigen3_incdir]);
+    mex('constructModelmex.cpp',eigenflags{:});
     
     cd ../../@PlanarRigidBodyManipulator/private;
-    mex('constructModelpmex.cpp',['-I',conf.eigen3_incdir]);
+    mex('constructModelpmex.cpp',eigenflags{:});
     
     cd(getDrakePath());
   end
@@ -60,8 +64,9 @@ try
   cd systems;
   mex DCSFunction.cpp
   cd(getDrakePath());
-catch 
+catch ex
   cd(getDrakePath());
+  rethrow(ex);
 end
 
 end

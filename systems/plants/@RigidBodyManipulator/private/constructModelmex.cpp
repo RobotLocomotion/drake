@@ -60,6 +60,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   if (!pBodies) mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","can't find field model.body.  Are you passing in the correct structure?");
   
   for (int i=0; i<model->NB + 1; i++) {
+    mxArray* pmass = mxGetProperty(pBodies,i,"mass");
+    model->bodies[i].mass = (double) mxGetScalar(pmass);
+
+    mxArray* pcom = mxGetProperty(pBodies,i,"com");
+    if (!mxIsEmpty(pcom)) memcpy(model->bodies[i].com.data(),mxGetPr(pcom),sizeof(double)*3);
+
     mxArray* pbpitch = mxGetProperty(pBodies,i,"pitch");
     model->bodies[i].pitch = (int) mxGetScalar(pbpitch);
     

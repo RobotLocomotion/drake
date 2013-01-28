@@ -10,6 +10,9 @@ public:
   MatrixXd ddTdqdq;
   Matrix4d T;
   Matrix4d T_body_to_joint;
+
+  double mass;
+  Vector4d com;  // this actually stores [com;1] (because that's what's needed in the kinematics functions)
   
   //Need to initialize these
   Matrix4d Ttree;
@@ -19,6 +22,8 @@ public:
 
   RigidBody() {
     this->nq = 0;
+    this->mass = 0.0;
+    this->com << Vector3d::Zero(), 1;
   }
   
   void setN(int n) {    
@@ -27,7 +32,7 @@ public:
     this->dTdq = MatrixXd::Zero(4*n,4);
     this->ddTdqdq = MatrixXd::Zero(4*n*n,4);
     this->Ttree = Matrix4d::Zero();
-	this->T_body_to_joint = Matrix4d::Identity();
+    this->T_body_to_joint = Matrix4d::Identity();
   }
   
   ~RigidBody() {

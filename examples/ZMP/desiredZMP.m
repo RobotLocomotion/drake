@@ -1,4 +1,4 @@
-function fr = desiredZMP2D
+function fr = desiredZMP
 
-fr = SingletonCoordinateFrame('desiredZMP',2,'z',{'x_zmp','z_zmp'});
+fr = SingletonCoordinateFrame('desiredZMP',2,'z',{'x_zmp','y_zmp'});
 

@@ -29,7 +29,7 @@ for i=1:100
   Rz = [cos(rpy(3)) -sin(rpy(3)) 0; sin(rpy(3)) cos(rpy(3)) 0; 0 0 1];
 
   R = Rz*Ry*Rx;
-  valuecheck(R,p.body(body_ind).T(1:3,1:3));
+  valuecheck(R,p.body(body_ind).T(1:3,1:3),1e-6);
 end
 
   function [rpy,J] = myfun(q)

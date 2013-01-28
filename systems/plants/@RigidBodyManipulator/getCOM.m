@@ -1,32 +1,54 @@
-function [com,J,dJ] = getCOM(model,q)
+function [com,J,dJ] = getCOM(model,kinsol)
 
-% return total mass and center of mass for the entire model
-m = 0;
-d = length(model.gravity);  % so it works for both 2D and 3D
-com = zeros(d,1);
-if (nargout>1)
-  J = zeros(d,length(q));
+if ~isstruct(kinsol)  
+  % treat input as getCOM(model,q)
+  kinsol = doKinematics(model,kinsol,nargin<2);
 end
 
-kinsol = doKinematics(model,q,nargout>2);
+if (kinsol.mex)
+%   if (include_rotations)
+%     error('Drake:RigidBodyManipulator:InvalidKinematics','Rotations are not mexed yet. Call non-mexed kinematics.');
+%   end
+  if (model.mex_model_ptr==0)
+    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
+  end
+  
+  if nargout > 2
+    [com,J,dJ] = forwardKinmex(model.mex_model_ptr.getData,-1);
+  elseif nargout > 1
+    [com,J] = forwardKinmex(model.mex_model_ptr.getData,-1);
+  else
+    com = forwardKinmex(model.mex_model_ptr.getData,-1);
+  end
+else
+  nq=getNumDOF(model);
 
-dJ = zeros(d,length(q)^2);
-for i=1:length(model.body)
-  bm = model.body(i).mass;
-  bc = model.body(i).com;
-  if (bm>0)
-    if (nargout>2)
-      [bc,bJ,bdJ] = forwardKin(model,kinsol,i,bc);
-      J = (m*J + bm*bJ)/(m+bm);
-      dJ = (m*dJ + bm*bdJ)/(m+bm);
-    elseif (nargout>1)
-      [bc,bJ] = forwardKin(model,kinsol,i,bc);
-      J = (m*J + bm*bJ)/(m+bm);
-    else
-      bc = forwardKin(model,kinsol,i,bc);
+  % return center of mass for the entire model
+  m=0;
+  d = 3;
+  com = zeros(d,1);
+  if (nargout>1)
+    J = zeros(d,nq);
+  end
+  
+  dJ = zeros(d,nq^2);
+  for i=1:length(model.body)
+    bm = model.body(i).mass;
+    if (bm>0)
+      bc = model.body(i).com;
+      if (nargout>2)
+        [bc,bJ,bdJ] = forwardKin(model,kinsol,i,bc);
+        J = (m*J + bm*bJ)/(m+bm);
+        dJ = (m*dJ + bm*bdJ)/(m+bm);
+      elseif (nargout>1)
+        [bc,bJ] = forwardKin(model,kinsol,i,bc);
+        J = (m*J + bm*bJ)/(m+bm);
+      else
+        bc = forwardKin(model,kinsol,i,bc);
+      end
+      com = (m*com + bm*bc)/(m+bm);
+      m = m + bm;
     end
-    com = (m*com + bm*bc)/(m+bm);
-    m = m + bm;
   end
 end
 

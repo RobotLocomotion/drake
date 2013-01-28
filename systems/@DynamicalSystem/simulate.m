@@ -103,7 +103,7 @@ if (nargout>0)
   %pstruct.AutoSaveOptions.SaveBackupOnVersionUpgrade = 'false';
   
   ts = getSampleTime(obj);
-  isdiscrete = all(ts(:,1)>0);  % isDT asks for more:  must have only a single sample time
+  isdiscrete = all(ts(1,:)>0);  % isDT asks for more:  must have only a single sample time
   
   if (~isdiscrete)
     pstruct.Refine = '3';  % shouldn't do anything for DT systems

@@ -58,7 +58,7 @@ function [f,G] = ik(q)
   while i<length(varargin)
     if (varargin{i}==0)
       do_rot = 0;
-      [x,J] = getCOM(obj,q);
+      [x,J] = getCOM(obj,kinsol);
     else
       do_rot = length(varargin{i+1})==6;
       [x,J] = forwardKin(obj,kinsol,varargin{i},[0;0;0],do_rot);
