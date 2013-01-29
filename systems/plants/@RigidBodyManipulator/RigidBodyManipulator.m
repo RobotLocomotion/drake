@@ -204,56 +204,54 @@ classdef RigidBodyManipulator < Manipulator
       world.parent = [];
       model.body = [model.body,world];
       
-      for i=1:length(rootlink)
-        child = model.body(rootlink(i));
-
-        body1=newBody(model);
-        name = [child.linkname,'_x'];
-        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
-          error('floating name already exists.  cannot add floating base.');
-        end
-        body1.linkname = name;
-        model.body = [model.body,body1];
-        model = addJoint(model,name,'prismatic',world,body1,zeros(3,1),zeros(3,1),[1;0;0],0);
-
-        body2=newBody(model);
-        name = [child.linkname,'_y'];
-        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
-          error('floating name already exists.  cannot add floating base.');
-        end
-        body2.linkname = name;
-        model.body = [model.body,body2];
-        model = addJoint(model,name,'prismatic',body1,body2,zeros(3,1),zeros(3,1),[0;1;0],0);
-        
-        body3=newBody(model);
-        name = [child.linkname,'_z'];
-        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
-          error('floating name already exists.  cannot add floating base.');
-        end
-        body3.linkname = name;
-        body3.jointname = name;
-        model.body = [model.body,body3];
-        model = addJoint(model,name,'prismatic',body2,body3,zeros(3,1),zeros(3,1),[0;0;1],0);
-        
-        body4=newBody(model);
-        name = [child.linkname,'_roll'];
-        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
-          error('floating name already exists.  cannot add floating base.');
-        end
-        body4.linkname = name;
-        model.body = [model.body,body4];
-        model = addJoint(model,name,'revolute',body3,body4,zeros(3,1),zeros(3,1),[1;0;0],0);
-        
-        body5=newBody(model);
-        name = [child.linkname,'_pitch'];
-        if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
-          error('floating name already exists.  cannot add floating base.');
-        end
-        body5.linkname = name;
-        model.body = [model.body,body5];
-        model = addJoint(model,name,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
-        model = addJoint(model,[child.linkname,'_yaw'],'revolute',body5,child,zeros(3,1),zeros(3,1),[0;0;1],0);
+      child = model.body(rootlink);
+      
+      body1=newBody(model);
+      name = [child.linkname,'_x'];
+      if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+        error('floating name already exists.  cannot add floating base.');
       end
+      body1.linkname = name;
+      model.body = [model.body,body1];
+      model = addJoint(model,name,'prismatic',world,body1,zeros(3,1),zeros(3,1),[1;0;0],0);
+      
+      body2=newBody(model);
+      name = [child.linkname,'_y'];
+      if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+        error('floating name already exists.  cannot add floating base.');
+      end
+      body2.linkname = name;
+      model.body = [model.body,body2];
+      model = addJoint(model,name,'prismatic',body1,body2,zeros(3,1),zeros(3,1),[0;1;0],0);
+      
+      body3=newBody(model);
+      name = [child.linkname,'_z'];
+      if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+        error('floating name already exists.  cannot add floating base.');
+      end
+      body3.linkname = name;
+      body3.jointname = name;
+      model.body = [model.body,body3];
+      model = addJoint(model,name,'prismatic',body2,body3,zeros(3,1),zeros(3,1),[0;0;1],0);
+      
+      body4=newBody(model);
+      name = [child.linkname,'_roll'];
+      if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+        error('floating name already exists.  cannot add floating base.');
+      end
+      body4.linkname = name;
+      model.body = [model.body,body4];
+      model = addJoint(model,name,'revolute',body3,body4,zeros(3,1),zeros(3,1),[1;0;0],0);
+      
+      body5=newBody(model);
+      name = [child.linkname,'_pitch'];
+      if strcmpi(name,horzcat({model.body.linkname},{model.body.jointname}))
+        error('floating name already exists.  cannot add floating base.');
+      end
+      body5.linkname = name;
+      model.body = [model.body,body5];
+      model = addJoint(model,name,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
+      model = addJoint(model,[child.linkname,'_yaw'],'revolute',body5,child,zeros(3,1),zeros(3,1),[0;0;1],0);
     end
         
     function model = addSensor(model,sensor)
