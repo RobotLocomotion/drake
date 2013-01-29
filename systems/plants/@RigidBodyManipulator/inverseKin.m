@@ -40,16 +40,32 @@ end
 
 if isfield(options,'q_nom') q_nom = options.q_nom; else q_nom = q0; end
 if isfield(options,'Q') Q = options.Q; else Q = eye(obj.num_q); end
-
-N = length(varargin);
-nF = 3*N+1;
+if ~isfield(options,'use_mex') options.use_mex = false; end
 
 % support input as bodies instead of body inds
 for i=1:2:length(varargin)
   if (isa(varargin{i},'RigidBody')) varargin{i} = find(obj.body==varargin{i},1); end
 end
 
-function [f,G] = ik(q)
+if options.use_mex
+  error('not implemented yet');
+  [q,info] = inverseKinmex(obj.mex_model_ptr.getData,q0,q_nom,Q,varargin{:});
+else
+  N = length(varargin);
+  nF = 3*N+1;
+  
+  global SNOPT_USERFUN;
+  SNOPT_USERFUN = @ik;
+  
+  [q,F,info] = snopt(q0,obj.joint_limit_min,obj.joint_limit_max,zeros(nF,1),[inf;zeros(nF-1,1)],'snoptUserfun');%,0,1,[],[],[],iGfun,jGvar);
+  
+  if (info~=1)
+    [str,cat] = snoptInfo(info);
+    warning('SNOPT:InfoNotOne',['SNOPT exited w/ info = ',num2str(info),'.\n',cat,': ',str,'\n  Check p19 of Gill06 for more information.']);
+  end
+end
+
+  function [f,G] = ik(q)
   f = zeros(nF,1); G = zeros(nF,obj.num_q);
   f(1) = (q-q_nom)'*Q*(q-q_nom);
   G(1,:) = 2*(q-q_nom)'*Q;
@@ -67,19 +83,9 @@ function [f,G] = ik(q)
     f([j:j+n-1]) = x - varargin{i+1}(1:n);
     G([j:j+n-1],:) = J;
     j=j+n;
-    i=i+2; 
+    i=i+2;
   end
-%  if isfield(options,'visualizer') options.visualizer.draw(0,[q;0*q]); drawnow; end
-end
-
-global SNOPT_USERFUN;
-SNOPT_USERFUN = @ik;
-
-[q,F,info] = snopt(q0,obj.joint_limit_min,obj.joint_limit_max,zeros(nF,1),[inf;zeros(nF-1,1)],'snoptUserfun');%,0,1,[],[],[],iGfun,jGvar);
-
-if (info~=1) 
-  [str,cat] = snoptInfo(info);
-  warning('SNOPT:InfoNotOne',['SNOPT exited w/ info = ',num2str(info),'.\n',cat,': ',str,'\n  Check p19 of Gill06 for more information.']);  
-end
+  %  if isfield(options,'visualizer') options.visualizer.draw(0,[q;0*q]); drawnow; end
+  end
 
 end

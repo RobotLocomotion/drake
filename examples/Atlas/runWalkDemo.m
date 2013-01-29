@@ -93,7 +93,7 @@ for i=1:length(ts)
 end
 q_dtraj = setOutputFrame(PPTrajectory(spline(ts,q_d)),getInputFrame(sys));
 
-if (1)
+if (0)
   %% to view the motion plan:
   xtraj = setOutputFrame(PPTrajectory(spline(ts,[q;0*q])),getOutputFrame(sys));
   playback(v,xtraj,struct('slider',true));
