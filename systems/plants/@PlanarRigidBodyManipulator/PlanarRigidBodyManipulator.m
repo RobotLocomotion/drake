@@ -223,9 +223,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       limits.joint_limit_max = Inf;
       limits.effort_limit = Inf;
       limits.velocity_limit = Inf;
-      for i=1:length(rootlink)
-        model = addJoint(model,model.body(i).linkname,'planar',world,model.body(i),zeros(3,1),zeros(3,1),model.view_axis,0,limits);
-      end
+      model = addJoint(model,model.body(rootlink).linkname,'planar',world,model.body(rootlink),zeros(3,1),zeros(3,1),model.view_axis,0,limits);
     end
     
     function model = compile(model)
