@@ -13,7 +13,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
   
   methods
     function obj = ContactForceTorqueSensor(tsmanip,body,xyz,rpy)
-      typecheck(body,{'RigidBody','char','numeric'});
+      typecheck(body,'RigidBody');
       
       if tsmanip.twoD
         if (nargin<3) xyz=zeros(2,1);
@@ -43,14 +43,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
     
     function obj = compile(obj,tsmanip,manip)
       if (tsmanip.position_control) error('need to update this method for this case'); end
-      if isa(obj.body,'char')
-        obj.body = findLink(tsmanip,obj.body,true);
-      elseif isa(body,'numeric')
-        obj.body = p.manip.body(body);
-      end
 
-      typecheck(obj.body,'RigidBody');
-      
       if isempty(obj.body.contact_pts)
         error('Drake:ContactForceTorqueSensor:NoContactPts','There are no contact points associated with body %s',body.name);
       end

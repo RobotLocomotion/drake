@@ -57,9 +57,12 @@ classdef MultiCoordinateFrame < CoordinateFrame
         obj.frame_id = vertcat(obj.frame_id,repmat(i,d,1));
 
         % add a transform from this multiframe to the child frame
-        T = sparse(1:d,obj.coord_ids{i},1,d,dim);
-        tf = AffineTransform(obj,coordinate_frames{i},T,zeros(d,1));
-        addTransform(obj,tf);
+        % iff the subframes are unique
+        if ~any(cellfun(@(a) a==coordinate_frames{i},coordinate_frames([1:i-1,i+1:end])))
+          T = sparse(1:d,obj.coord_ids{i},1,d,dim);
+          tf = AffineTransform(obj,coordinate_frames{i},T,zeros(d,1));
+          addTransform(obj,tf);
+        end
       end
     end
     
@@ -280,18 +283,21 @@ classdef MultiCoordinateFrame < CoordinateFrame
   end
   
   methods (Static=true)
-    function obj = constructFrame(frames)
+    function obj = constructFrame(frames,zap_empty_frames)
       % if frames has only a single element, then return it, otherwise
       % construct the construct the mimo frame
       typecheck(frames,'cell');
-%       i=1;
-%       while (i<=length(frames))  % zap empty frames
-%         if (frames{i}.dim<1)
-%           frames=frames([1:i-1,i+1:end]);
-%         else
-%           i=i+1;
-%         end
-%       end
+      
+      if (nargin>1 && zap_empty_frames)
+        i=1;
+        while (i<=length(frames))  % zap empty frames
+          if (frames{i}.dim<1)
+            frames=frames([1:i-1,i+1:end]);
+          else
+            i=i+1;
+          end
+        end
+      end
       
       if (length(frames)==1)
         obj = frames{1};

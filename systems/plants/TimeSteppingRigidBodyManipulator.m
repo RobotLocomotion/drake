@@ -21,7 +21,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nargin<3) options=struct(); end
       if ~isfield(options,'twoD') options.twoD = false; end
       
-      if ischar(manipulator_or_urdf_filename)
+      if isempty(manipulator_or_urdf_filename) || ischar(manipulator_or_urdf_filename)
         if options.twoD
           S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
           warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
@@ -44,8 +44,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if isa(manip,'PlanarRigidBodyManipulator')
         obj.twoD = true;
       end
-      
-      obj = obj.setInputLimits(obj.manip.umin,obj.manip.umax);
       
       typecheck(timestep,'double');
       sizecheck(timestep,1);
@@ -95,6 +93,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end        
       model.manip = model.manip.compile();
       warning(S);
+      
+      model = setNumDiscStates(model,model.manip.getNumContStates());
+      model = setNumInputs(model,model.manip.getNumInputs());
       
       if (model.position_control)
         index = getActuatedJoints(model.manip);
@@ -559,6 +560,20 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   end
   
   methods  % pass through methods (to the manipulator)
+    function obj=addRobotFromURDF(obj,varargin)
+      if obj.twoD
+        S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
+        warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
+        warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+      else
+        S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+        warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+      end
+      obj.manip=addRobotFromURDF(obj.manip,varargin{:});
+      obj=compile(obj);  % note: compiles the manip twice, but it's ok.
+      warning(S);
+    end
+
     function varargout = doKinematics(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}]=doKinematics(obj.manip,varargin{:});

@@ -18,7 +18,7 @@ classdef RigidBodyWRLVisualizer < Visualizer
       end
       if ~isfield(options,'ground') options.ground = manip.num_contacts>0; end
       
-      wrlfile = fullfile(tempdir,[obj.model.name,'.wrl']);
+      wrlfile = fullfile(tempdir,[obj.model.name{1},'.wrl']);
       obj.model.writeWRL(wrlfile,options);
       obj.wrl = vrworld(wrlfile);
       if ~strcmpi(get(obj.wrl,'Open'),'on')

@@ -1,15 +1,17 @@
-function [c,model] = parseMaterial(model,node,options)
+function [c,options] = parseMaterial(node,options)
 
 name=char(node.getAttribute('name'));
 name=regexprep(name, '\.', '_', 'preservecase');
 
 c = .7*[1 1 1];
 
+if ~isfield(options,'material') options.material=[]; end
+
 % look up material
-if length(model.material)>0
-  ind = strmatch(lower(name),lower({model.material.name}),'exact');
+if length(options.material)>0
+  ind = strmatch(lower(name),lower({options.material.name}),'exact');
   if (~isempty(ind))
-    c=model.material(ind).c;
+    c=options.material(ind).c;
   end
 end
 
@@ -20,7 +22,7 @@ if ~isempty(colornode) && colornode.hasAttribute('rgba')
 end
 
 if ~isempty(name)
-  model.material = [model.material,struct('name',name,'c',c)];
+  options.material = [options.material,struct('name',name,'c',c)];
 end
 end
 
