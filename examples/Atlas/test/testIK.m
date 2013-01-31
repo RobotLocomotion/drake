@@ -41,3 +41,6 @@ tic
 q = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;-.1;.2;0;0;0],options);
 toc
 v.draw(1,[q;0*q]); drawnow;
+
+q = inverseKin(r,q0,0,[0;0;nan],r_foot,[0;-.1;.2;0;0;0],options);
+v.draw(1,[q;0*q]); drawnow;

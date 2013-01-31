@@ -16,6 +16,8 @@ function q = inverseKin(obj,q0,varargin)
 % @param pos1...posN the desired position of the [0;0;0] point in the corresponding body
 %   is pos is 6 elements, then it also constrains the orientation 
 %   (note: it does not make sense to specify an orientation for the COM).
+%   (note 2: elements of pos that are set to NAN are treated as "don't
+%   care"
 % @option q_nom  replaces the cost function with (q-q_nom)'*(q-q_nom).
 % @default q_nom = q0
 % @option Q  puts a weight on the cost function qtilde'*Q*qtilde
@@ -52,8 +54,10 @@ if options.use_mex
   [q,info] = inverseKinmex(obj.mex_model_ptr.getData,q0,q_nom,Q,varargin{:});
 else
   N = length(varargin);
-  nF = 3*N+1;
-  
+  nF = 1;
+  for i=2:2:N
+    nF = nF + sum(~isnan(varargin{i}));
+  end
   global SNOPT_USERFUN;
   SNOPT_USERFUN = @ik;
   
@@ -79,9 +83,10 @@ end
       do_rot = length(varargin{i+1})==6;
       [x,J] = forwardKin(obj,kinsol,varargin{i},[0;0;0],do_rot);
     end
-    n = 3+3*do_rot;
-    f([j:j+n-1]) = x - varargin{i+1}(1:n);
-    G([j:j+n-1],:) = J;
+    ind = ~isnan(varargin{i+1});
+    n = sum(ind);
+    f([j:j+n-1]) = x(ind) - varargin{i+1}(ind);
+    G([j:j+n-1],:) = J(ind,:);
     j=j+n;
     i=i+2;
   end
