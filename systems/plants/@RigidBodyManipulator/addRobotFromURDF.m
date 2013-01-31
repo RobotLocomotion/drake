@@ -30,6 +30,10 @@ urdf = xmlread(urdf_filename);
 
 robot = urdf.getElementsByTagName('robot').item(0);
 if isempty(robot)
+  robot = urdf.getElementsByTagName('model').item(0);
+end
+
+if isempty(robot)
   error('there are no robots in this urdf file');
 end
 
