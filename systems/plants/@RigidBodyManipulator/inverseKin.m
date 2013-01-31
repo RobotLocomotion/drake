@@ -47,6 +47,10 @@ if ~isfield(options,'use_mex') options.use_mex = false; end
 % support input as bodies instead of body inds
 for i=1:2:length(varargin)
   if (isa(varargin{i},'RigidBody')) varargin{i} = find(obj.body==varargin{i},1); end
+  if ~(sizecheck(varargin{i+1},[3,1]) || sizecheck(varargin{i+1},[6,1])) || ...
+    ((varargin{i}==0) && ~sizecheck(varargin{i+1},[3,1]))
+    error('bad pos input');
+  end
 end
 
 if options.use_mex
