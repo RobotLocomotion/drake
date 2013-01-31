@@ -9,7 +9,12 @@ classdef ConstantTrajectory < Trajectory
     function obj = ConstantTrajectory(pt)
     % Construct ConstantTrajectory from a pt
       obj = obj@Trajectory(size(pt));
-      obj.pt=pt;
+      if isa(pt,'Point')
+        obj.pt = double(pt);
+        obj = setOutputFrame(obj,getFrame(pt));
+      else
+        obj.pt=pt;
+      end
       obj.tspan = [-inf,inf];
     end
     
