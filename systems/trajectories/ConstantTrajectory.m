@@ -38,16 +38,22 @@ classdef ConstantTrajectory < Trajectory
     end
     
     function a = subsasgn(a,s,b)
+      if isa(b,'PPTrajectory')
+        breaks = getBreaks(b);
+        a = PPTrajectory(zoh(breaks,repmat(a.pt,1,length(breaks))));
+        a = subsasgn(a,s,b);
+        return;
+      end
       if isa(a,'ConstantTrajectory')
         if isnumeric(b)
-          subsasgn(a.pt,s,b);
+          a = subsasgn(a.pt,s,b);
         elseif isa(b,'ConstantTrajectory')
-          subsasgn(a.pt,s,b.pt);
+          a = subsasgn(a.pt,s,b.pt);
         else
           a = subsasgn@Trajectory(a,s,b);
         end
       else % b must be a ConstantTrajectory
-        subsasgn(a,s,b.pt);
+        a = subsasgn(a,s,b.pt);
       end
     end
     
