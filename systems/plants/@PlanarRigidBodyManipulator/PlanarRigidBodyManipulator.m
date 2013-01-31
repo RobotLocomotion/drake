@@ -36,10 +36,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           error('supported view options are front,back,top,bottom,right,or left');
         end
       end
-      
-      % todo: clean these up.  should they be in "parseURDF?"  should
-      % parseURDF even be allowed if it's not called from the constructor (maybe it should be protected)?
-      
+            
       switch options.view % joint_axis = view_axis => counter-clockwise
         case 'front'
           obj.x_axis = [0;1;0];
@@ -68,18 +65,15 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       end
       
       if ~isempty(urdf_filename)
-        options.x_axis = obj.x_axis;
-        options.y_axis = obj.y_axis;
-        options.view_axis = obj.view_axis;
         if ~isfield(options,'namesuffix') options.namesuffix=''; end
         options.namesuffix = [upper([obj.x_axis_label,obj.y_axis_label]),options.namesuffix];
-        obj = parseURDF(obj,urdf_filename,options);
+        obj = addRobotFromURDF(obj,urdf_filename,zeros(2,1),0,options);
       end
     end
         
     function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits,options)
-      if (nargin<6) xy=zeros(2,1); end
-      if (nargin<7) p=0; end
+      if (nargin<6) xyz=zeros(3,1); end
+      if (nargin<7) rpy=zeros(3,1); end
       if (nargin<9) damping=0; end
       if (nargin<10 || isempty(limits))
         limits = struct();
@@ -87,6 +81,14 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         limits.joint_limit_max = Inf;
         limits.effort_limit = Inf;
         limits.velocity_limit = Inf;
+      end
+      
+      % support xyz in view coordinates
+      if length(xyz)==2
+        xyz = xyz(1)*model.x_axis + xyz(2)*model.y_axis;
+      end
+      if length(rpy)==1
+        rpy = rpy(1)*model.view_axis; % seems to simple, but i think it's right
       end
       
       switch (lower(type))
@@ -141,11 +143,13 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           
           body1=newBody(model);
           body1.linkname=[name,'_',model.x_axis_label];
+          body1.robotnum = child.robotnum;
           model.body = [model.body,body1];
           model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,jsign*model.x_axis,damping);
           
           body2=newBody(model);
           body2.linkname=[name,'_',model.y_axis_label];
+          body2.robotnum = child.robotnum;
           model.body = [model.body,body2];
           model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),jsign*model.y_axis,damping);
           
@@ -204,26 +208,8 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       model.dirty = true;
     end
     
-    function model = addFloatingBase(model)
-      rootlink = find(cellfun(@isempty,{model.body.parent}));
-      if (length(rootlink)>1)
-        warning('multiple root links');
-      end
-      
-      if strcmpi('world',{model.body.linkname})
-        error('world link already exists.  cannot add floating base.');
-      end
-      world = newBody(model);
-      world.linkname = 'world';
-      world.parent = [];
-      model.body = [model.body,world];
-      
-      limits = struct(); 
-      limits.joint_limit_min = -Inf;
-      limits.joint_limit_max = Inf;
-      limits.effort_limit = Inf;
-      limits.velocity_limit = Inf;
-      model = addJoint(model,model.body(rootlink).linkname,'planar',world,model.body(rootlink),zeros(3,1),zeros(3,1),model.view_axis,0,limits);
+    function model = addFloatingBase(model,parent,rootlink,xyz,rpy)
+      model = addJoint(model,rootlink.linkname,'planar',parent,rootlink,xyz,rpy,model.view_axis);
     end
     
     function model = compile(model)
@@ -313,7 +299,14 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
     end
     
     
-    function model=parseJoint(model,node,options)
+    function model=parseLink(model,robotnum,node,options)
+      options.x_axis = model.x_axis;
+      options.y_axis = model.y_axis;
+      options.view_axis = model.view_axis;
+      model = parseLink@RigidBodyManipulator(model,robotnum,node,options);
+    end
+    
+    function model=parseJoint(model,robotnum,node,options)
       ignore = char(node.getAttribute('drakeIgnore'));
       if strcmp(lower(ignore),'true')
         return;
@@ -326,10 +319,10 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       if isempty(childNode) % then it's not the main joint element
         return;
       end
-      child = findLink(model,char(childNode.getAttribute('link')));
+      child = findLink(model,char(childNode.getAttribute('link')),robotnum);
       
       parentNode = node.getElementsByTagName('parent').item(0);
-      parent = findLink(model,char(parentNode.getAttribute('link')),false);
+      parent = findLink(model,char(parentNode.getAttribute('link')),robotnum,false);
       if (isempty(parent))
         % could have been zapped
         warning(['joint ',name,' parent link is missing or was deleted.  deleting the child link:', child.linkname,'(too)']);
@@ -395,18 +388,22 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       model = addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits,options);
     end
     
-    function model = parseLoopJoint(model,node,options)
+    function model = parseLoopJoint(model,robotnum,node,options)
       loop = PlanarRigidBodyLoop();
       loop.name = char(node.getAttribute('name'));
       loop.name = regexprep(loop.name, '\.', '_', 'preservecase');
 
+      options.x_axis = model.x_axis;
+      options.y_axis = model.y_axis;
+      options.view_axis = model.view_axis;
+
       link1Node = node.getElementsByTagName('link1').item(0);
-      link1 = findLink(model,char(link1Node.getAttribute('link')));
+      link1 = findLink(model,char(link1Node.getAttribute('link')),robotnum);
       loop.body1 = link1;
       loop.pt1 = loop.parseLink(link1Node,options);
       
       link2Node = node.getElementsByTagName('link2').item(0);
-      link2 = findLink(model,char(link2Node.getAttribute('link')));
+      link2 = findLink(model,char(link2Node.getAttribute('link')),robotnum);
       loop.body2 = link2;
       loop.pt2 = loop.parseLink(link2Node,options);
       

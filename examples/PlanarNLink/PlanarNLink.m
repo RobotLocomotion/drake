@@ -12,11 +12,12 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       if (N<1) error('N must be >=1'); end
 
       model = model@PlanarRigidBodyManipulator();
-      model = setName(model,['Planar',num2str(N),'Link']);
+      model.name{1} = ['Planar',num2str(N),'Link'];
 
       % add the base
       body=PlanarRigidBody();
       body.linkname='base';
+      body.robotnum=1;
       body.Ttree=[-1,0,0; 0,1,0; 0,0,1];
       model.body=body;
       
@@ -39,6 +40,7 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       
       % link properties
       body.linkname=['link',num2str(ind-1)];
+      body.robotnum=1;
       setInertial(body,mass,[0;-len/2],mass*len^2/12);  % solid rod w/ uniform mass
       body.geometry{1}.x = radius*[-1 1 1 -1 -1];
       body.geometry{1}.y = len*[0 0 -1 -1 0];

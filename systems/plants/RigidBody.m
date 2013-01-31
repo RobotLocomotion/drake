@@ -1,6 +1,8 @@
 classdef RigidBody < handle
   
   properties 
+    robotnum = 0;  % this body is associated with a particular robot/object number, named in model.name{objnum} 
+    
     % link properties
     linkname=''  % name of the associated link
     wrlgeometry=''; % geometry (compatible w/ wrl).  see parseVisual below.
@@ -155,7 +157,7 @@ classdef RigidBody < handle
         
       matnode = node.getElementsByTagName('material').item(0);
       if ~isempty(matnode)
-        c = parseMaterial(model,matnode,options);
+        c = RigidBodyManipulator.parseMaterial(matnode,options);
       end
       wrl_appearance_str = sprintf('appearance Appearance { material Material { diffuseColor %f %f %f } }\n',c(1),c(2),c(3));
       

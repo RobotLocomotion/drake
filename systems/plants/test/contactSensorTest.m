@@ -5,7 +5,8 @@ options.twoD = true;
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 
 p = addSensor(p,FullStateFeedbackSensor());
-p = addSensor(p,ContactForceTorqueSensor(p,'brick',zeros(2,1),0));
+body = findLink(p,'brick');
+p = addSensor(p,ContactForceTorqueSensor(p,body,zeros(2,1),0));
 p = compile(p);
 
 ytraj = simulate(p,[0 5]);
@@ -26,7 +27,8 @@ options.twoD = false;
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 
 p = addSensor(p,FullStateFeedbackSensor);
-p = addSensor(p,ContactForceTorqueSensor(p,'brick',zeros(3,1),zeros(3,1)));
+body = findLink(p,'brick');
+p = addSensor(p,ContactForceTorqueSensor(p,body,zeros(3,1),zeros(3,1)));
 p = compile(p);
 
 ytraj = simulate(p,[0 5]);

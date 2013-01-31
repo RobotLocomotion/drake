@@ -56,17 +56,13 @@ else
   
   m = size(pts,2);
   pts = [pts;ones(1,m)];
-  R = body.T(1:3,1:3);
 
   if (include_rotations)
+    R = body.T(1:3,1:3);
     x = zeros(6,m);
     x(1:3,:) = body.T(1:3,:)*pts;
 
-    % NOTE: assumes we're using an X-Y-Z convention to construct R
-    roll = atan2(R(3,2),R(3,3));
-    pitch = atan2(-R(3,1),sqrt(R(3,2)^2 + R(3,3)^2));
-    yaw = atan2(R(2,1),R(1,1));
-    x(4:6,:) = repmat([roll; pitch; yaw],1,m);
+    x(4:6,:) = repmat(rotmat2rpy(R),1,m);
   else
     x = body.T(1:3,:)*pts;
   end

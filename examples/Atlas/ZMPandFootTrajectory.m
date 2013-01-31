@@ -10,6 +10,8 @@ function [zmptraj,lfoottraj,rfoottraj] = ZMPandFootTrajectory(r,q0,num_steps,ste
 % @param step_time is the total time taken to move from zmp at center, to
 % the center of the foot, to back at center (but again for just one foot)
 
+% NOTEST
+
 typecheck(r,{'RigidBodyManipulator','TimeSteppingRigidBodyManipulator'});
 typecheck(q0,'numeric');
 sizecheck(q0,[r.getNumDOF,1]);
@@ -19,8 +21,8 @@ sizecheck(step_length,1);
 sizecheck(step_time,1);
 
 kinsol = doKinematics(r,q0);
-rfoot_body = r.findLink('r_foot');
-lfoot_body = r.findLink('l_foot');
+rfoot_body = findLink(r,'r_foot');
+lfoot_body = findLink(r,'l_foot');
 
 com0 = getCOM(r,q0);
 rfoot0 = forwardKin(r,kinsol,rfoot_body,[0;0;0],true);

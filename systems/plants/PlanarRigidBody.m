@@ -33,7 +33,7 @@ classdef PlanarRigidBody < RigidBody
         
       matnode = node.getElementsByTagName('material').item(0);
       if ~isempty(matnode)
-        c = parseMaterial(model,matnode,options);
+        c = RigidBodyManipulator.parseMaterial(matnode,options);
       end
       
       geomnode = node.getElementsByTagName('geometry').item(0);
@@ -74,13 +74,14 @@ classdef PlanarRigidBody < RigidBody
       end
       inode = node.getElementsByTagName('inertia').item(0);
       if ~isempty(inode)
-        switch options.view
-          case 'front'
-            if inode.hasAttribute('ixx'), inertia=str2num(char(inode.getAttribute('ixx'))); end
-          case 'right'
-            if inode.hasAttribute('iyy'), inertia=str2num(char(inode.getAttribute('iyy'))); end
-          case 'top'
-            if inode.hasAttribute('izz'), inertia=str2num(char(inode.getAttribute('izz'))); end
+        if isequal(options.view_axis,[1;0;0])
+          if inode.hasAttribute('ixx'), inertia=str2num(char(inode.getAttribute('ixx'))); end
+        elseif isequal(options.view_axis,[0;1;0])
+          if inode.hasAttribute('iyy'), inertia=str2num(char(inode.getAttribute('iyy'))); end
+        elseif isequal(options.view_axis,[0;0;1])
+          if inode.hasAttribute('izz'), inertia=str2num(char(inode.getAttribute('izz'))); end
+        else
+          error('view not supported');
         end
       end      
 
