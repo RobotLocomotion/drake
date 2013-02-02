@@ -132,7 +132,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
       if (nargin<4) subsys_portnum=1; end
       typecheck(subsys_portnum,'double'); 
       assignin('base',[mdl,'_publisher',uid],obj);
-      add_block('drake/lcmOutput',[mdl,'/out',uid],'channel',['''',obj.channel,''''],'dim',num2str(obj.dim),'lcm_publisher',[mdl,'_publisher',uid]);
+      add_block('drake/lcmOutput',[mdl,'/out',uid],'channel',['''',obj.channel,''''],'dim',num2str(obj.dim),'lcm_publisher',[mdl,'_publisher',uid]);%,'sample_time',num2str(.02));
       add_line(mdl,[subsys,'/',num2str(subsys_portnum)],['out',uid,'/1']);
     end
   end

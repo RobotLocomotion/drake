@@ -55,6 +55,18 @@ for i=1:length(ind);  % check current paths
   end
 end 
 
+% turn off autosave for simulink models (seems evil, but generating
+% boatloads of autosaves is clearly worse)
+if (com.mathworks.services.Prefs.getBooleanPref('SaveOnModelUpdate'))
+  a = input('You currently have autosave enabled for simulink blocks.\nThis is fine, but will generate a lot of *.mdl.autosave files\nin your directory.  If you aren''t a regular Simulink user,\nthen I can disable that feature now.\n  Disable Simulink Autosave (y/n)? ', 's');
+  if (lower(a(1))=='y')
+    com.mathworks.services.Prefs.setBooleanPref('SaveOnModelUpdate',false);
+  end
+end
+% todo: try setting this before simulating, then resetting it after the
+% simulate?
+
+
 
 % add package directories to the matlab path 
 addpath([conf.root,'/systems']);
