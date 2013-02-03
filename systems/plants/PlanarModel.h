@@ -7,6 +7,7 @@ class PlanarModel {
 public:
   int NB;
   int *jcode;
+  int *jsign;
   int *parent;
   Matrix3d *Xtree;
   Matrix3d* I;
@@ -44,6 +45,7 @@ public:
   PlanarModel(int n) {
     NB = n;
     jcode = new int[n];
+    jsign = new int[n];
     parent = new int[n];
     Xtree = new Matrix3d[n];
     I = new Matrix3d[n];
@@ -99,6 +101,7 @@ public:
   
   ~PlanarModel() {
     delete[] jcode;
+    delete[] jsign;
     delete[] parent;
     delete[] Xtree;
     delete[] I;

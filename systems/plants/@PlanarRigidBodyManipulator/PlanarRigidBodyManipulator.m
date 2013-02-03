@@ -270,6 +270,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         b=model.body(inds(i));
         m.parent(i) = b.parent.dofnum;
         m.jcode(i) = b.jcode;
+        m.jsign(i) = b.jsign;
         m.Xtree{i} = b.Xtree;
         m.I{i} = b.I;
         m.damping(i) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.

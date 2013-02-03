@@ -1,4 +1,4 @@
-function  [H,C] = HandCp( model, q, qd, f_ext, grav_accn )
+function  [H,C] = HandCp( model, q, qd, f_ext, grav_accn, jsign )
 
 % HandCp  Coefficients of equation of motion (planar vectors).
 % [H,C]=HandCp(model,q,qd,f_ext,grav_accn) calculates the coefficients of
@@ -27,7 +27,7 @@ end
 external_force = ( nargin > 3 && length(f_ext) > 0 );
 
 for i = 1:model.NB
-  [ XJ, S{i} ] = jcalcp( model.jcode(i), q(i) );
+  [ XJ, S{i} ] = jcalcp( model.jcode(i), q(i), model.jsign(i) );
   vJ = S{i}*qd(i);
   Xup{i} = XJ * model.Xtree{i};
   if model.parent(i) == 0
