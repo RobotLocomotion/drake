@@ -40,11 +40,11 @@ if (kinsol.mex)
   end
   
   if nargout > 2
-    [x,J,dJ] = forwardKinmex(obj.mex_model_ptr.getData,body_ind-1,pts,include_rotations);
+    [x,J,dJ] = forwardKinmex(obj.mex_model_ptr.getData,kinsol.q,body_ind-1,pts,include_rotations);
   elseif nargout > 1
-    [x,J] = forwardKinmex(obj.mex_model_ptr.getData,body_ind-1,pts,include_rotations);
+    [x,J] = forwardKinmex(obj.mex_model_ptr.getData,kinsol,q,body_ind-1,pts,include_rotations);
   else
-    x = forwardKinmex(obj.mex_model_ptr.getData,body_ind-1,pts,include_rotations);
+    x = forwardKinmex(obj.mex_model_ptr.getData,kinsol.q,body_ind-1,pts,include_rotations);
   end
   
 else

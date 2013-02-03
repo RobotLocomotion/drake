@@ -25,11 +25,11 @@ if (kinsol.mex)
   end
   
   if nargout > 2
-    [x,J,dJ] = forwardKinpmex(obj.mex_model_ptr.getData,body_ind-1,pts);
+    [x,J,dJ] = forwardKinpmex(obj.mex_model_ptr.getData,kinsol.q,body_ind-1,pts);
   elseif nargout > 1
-    [x,J] = forwardKinpmex(obj.mex_model_ptr.getData,body_ind-1,pts);
+    [x,J] = forwardKinpmex(obj.mex_model_ptr.getData,kinsol.q,body_ind-1,pts);
   else
-    x = forwardKinpmex(obj.mex_model_ptr.getData,body_ind-1,pts);
+    x = forwardKinpmex(obj.mex_model_ptr.getData,kinsol.q,body_ind-1,pts);
   end
 else
   if ~all(abs(kinsol.q-[obj.body.cached_q]')<1e-8)
