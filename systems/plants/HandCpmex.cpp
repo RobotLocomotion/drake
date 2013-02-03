@@ -55,8 +55,10 @@ void dXpln(double theta, Vector2d r, int varIndex, Matrix3d* dX)
 }
 
 
-void jcalcp(int code, double q, Matrix3d* XJ, Vector3d* S)
+void jcalcp(int code, double q, int jsign, Matrix3d* XJ, Vector3d* S)
 {
+  q = jsign*q;
+  
   if (code == 1) {				  // revolute joint
     Xpln( q, Vector2d(0.0,0.0) , XJ);
     *S << 1.0,0.0,0.0;
@@ -69,6 +71,8 @@ void jcalcp(int code, double q, Matrix3d* XJ, Vector3d* S)
   } else {
     mexErrMsgIdAndTxt("Drake:HandCpmex:BadJointCode","unrecognised joint code");
   }
+  
+  *S = jsign*(*S);
 }
 
 /* 
@@ -77,8 +81,10 @@ void jcalcp(int code, double q, Matrix3d* XJ, Vector3d* S)
  *  matrix for revolute (code==1), x-axis prismatic (code==2) and y-axis
  *  prismatic (code==3) joints.
  */
-void djcalcp(int code, double q, Matrix3d* dXJ) 
+void djcalcp(int code, double q, int jsign, Matrix3d* dXJ) 
 {
+  q = jsign*q;
+  
   if (code == 1) {				  // revolute joint
     dXpln( q, Vector2d(0.0, 0.0), 1, dXJ);
   } else if (code == 2) {		// x-axis prismatic joint
@@ -88,6 +94,8 @@ void djcalcp(int code, double q, Matrix3d* dXJ)
   } else {
     mexErrMsgIdAndTxt("Drake:HandCpmex:BadJointCode", "unrecognised joint code");
   }
+  
+  *dXJ = (*dXJ)*jsign;
 }
 
 Matrix3d crmp( Vector3d v )
@@ -149,7 +157,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   int i,j,k;
   
   for (i=0; i<model->NB; i++) {
-    jcalcp(model->jcode[i],q[i],&XJ,&(model->S[i]));
+    jcalcp(model->jcode[i],q[i],model->jsign[i],&XJ,&(model->S[i]));
     vJ = model->S[i] * qd[i];
     model->Xup[i] = XJ * model->Xtree[i];
     if (model->parent[i] < 0) {
@@ -165,7 +173,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     
     //Calculate gradient information if it is requested
     if (nlhs > 2) {
-      djcalcp(model->jcode[i], q[i], &dXJdq);
+      djcalcp(model->jcode[i], q[i], model->jsign[i], &dXJdq);
       model->dXupdq[i] = dXJdq*model->Xtree[i];
       
       for (j=0; j<model->NB; j++) {

@@ -31,6 +31,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
   mxArray* pjcode = mxGetField(featherstone,0,"jcode");
   if (!pjcode) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't find field model.jcode.");
   double* ppjcode = mxGetPr(pjcode);
+
+  mxArray* pjsign = mxGetField(featherstone,0,"jsign");
+  if (!pjsign) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't find field model.jsign.");
+  double* ppjsign = mxGetPr(pjsign);
   
   mxArray* pXtree = mxGetField(featherstone,0,"Xtree");
   if (!pXtree) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't find field model.Xtree.");
@@ -41,6 +45,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
   for (int i=0; i<model->NB; i++) {
     model->parent[i] = ((int) ppparent[i]) - 1;  // since it will be used as a C index
     model->jcode[i] = (int) ppjcode[i];
+    model->jsign[i] = (int) ppjsign[i];
     
     mxArray* pXtreei = mxGetCell(pXtree,i);
     if (!pXtreei) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't access model.Xtree{%d}",i);

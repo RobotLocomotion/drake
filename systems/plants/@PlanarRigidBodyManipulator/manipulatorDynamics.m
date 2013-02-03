@@ -3,9 +3,6 @@ function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd,use_mex)
 checkDirty(obj);
 if (nargin<4) use_mex=true; end
 
-jsign = [obj.body(cellfun(@(a)~isempty(a),{obj.body.parent})).jsign]';
-q = jsign.*q;
-qd = jsign.*qd;
 m = obj.featherstone;
 
 if (nargout>3)
@@ -31,7 +28,6 @@ if (nargout>3)
     dfvpdq = cell(m.NB,1);
     dfvpdqd = cell(m.NB,1);
     
-    
     for i = 1:m.NB
       dvdq{i} = zeros(3,m.NB)*q(1);
       dvdqd{i} = zeros(3,m.NB)*q(1);
@@ -40,12 +36,12 @@ if (nargout>3)
       dfvpdq{i} = zeros(3,m.NB)*q(1);
       dfvpdqd{i} = zeros(3,m.NB)*q(1);
       
-      [ XJ, S{i} ] = jcalcp( m.jcode(i), q(i) );
+      [ XJ, S{i} ] = jcalcp( m.jcode(i), q(i), m.jsign(i) );
       vJ = S{i}*qd(i);
       dvJdqd = S{i};
       
       Xup{i} = XJ * m.Xtree{i};
-      dXJdq = djcalcp(m.jcode(i), q(i));
+      dXJdq = djcalcp(m.jcode(i), q(i), m.jsign(i));
       dXupdq{i} = dXJdq * m.Xtree{i};
       
       if m.parent(i) == 0
@@ -136,12 +132,9 @@ if (nargout>3)
       end
     end
   end
-  dH = dH*diag(jsign);
   dH = dH(:,1:m.NB)*[eye(m.NB) zeros(m.NB)];
   C=C+m.damping'.*qd;
   dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
-  C = jsign.*C;
-  dC = diag(jsign)*dC*diag([jsign;jsign]);
   B = obj.B;
   dB = zeros(obj.num_q*obj.num_u,2*obj.num_q);
 else
@@ -151,7 +144,6 @@ else
     [H,C] = HandCp(obj.featherstone,q,qd,{},obj.gravity);
   end
   C=C+obj.featherstone.damping'.*qd;
-  C = jsign.*C;
   B = obj.B;
 end
 
