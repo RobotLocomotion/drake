@@ -1,0 +1,10 @@
+
+// a basic vector of doubles which can represent any signal passed 
+// around in drake
+
+struct lcmt_drake_signal
+{
+	int64_t timestamp;
+  int32_t dim;
+	double val[dim];     
+}

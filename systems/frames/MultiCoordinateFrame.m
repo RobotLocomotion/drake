@@ -241,7 +241,8 @@ classdef MultiCoordinateFrame < CoordinateFrame
     function insys=setupMultiInput(obj,mdl,subsys)
       if ~valuecheck(obj.frame_id,sort(obj.frame_id))  % assume that the simple ordering is ok
         insys = [subsys,'inselector'];
-        add_block('simulink3/Signals & Systems/Selector',[mdl,'/',insys],'InputPortWidth',num2str(obj.dim),'Indices',mat2str([obj.coord_ids{:}]));
+        tmp = [obj.coord_ids{:}]; [~,ind] = sort(tmp);
+        add_block('simulink3/Signals & Systems/Selector',[mdl,'/',insys],'InputPortWidth',num2str(obj.dim),'Indices',mat2str(ind));
         add_line(mdl,[insys,'/1'],[subsys,'/1']);
         subsys = insys;
       end
@@ -270,7 +271,8 @@ classdef MultiCoordinateFrame < CoordinateFrame
       typecheck(subsys_portnum,'double'); 
       if ~valuecheck(obj.frame_id,sort(obj.frame_id))
         insys = [subsys,'inselector'];
-        add_block('simulink3/Signals & Systems/Selector',[mdl,'/',insys],'InputPortWidth',num2str(obj.dim),'Indices',mat2str([obj.coord_ids{:}]));
+        tmp = [obj.coord_ids{:}]; [~,ind] = sort(tmp);
+        add_block('simulink3/Signals & Systems/Selector',[mdl,'/',insys],'InputPortWidth',num2str(obj.dim),'Indices',mat2str(ind));
         add_line(mdl,[insys,'/1'],[subsys,'/',num2str(subsys_portnum)]);
         subsys = insys; subsys_portnum=1;
       end      
