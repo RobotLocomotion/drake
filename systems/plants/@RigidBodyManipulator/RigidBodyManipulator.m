@@ -573,7 +573,9 @@ classdef RigidBodyManipulator < Manipulator
         coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
         fr{i} = SingletonCoordinateFrame([model.name{i},'State'],length(coordinates),'x',coordinates);
       end
-      fr = MultiCoordinateFrame.constructFrame(fr,true);
+      frame_dims=[model.body(arrayfun(@(a) ~isempty(a.parent),model.body)).robotnum];
+      frame_dims=[frame_dims,frame_dims];
+      fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
     
     function fr = constructInputFrame(model)
@@ -582,8 +584,9 @@ classdef RigidBodyManipulator < Manipulator
         coordinates = {model.actuator(robot_inputs).name}';
         fr{i}=SingletonCoordinateFrame([model.name{i},'Input'],sum(robot_inputs),'u',coordinates);
       end
-      
-      fr = MultiCoordinateFrame.constructFrame(fr,true);
+      actjoints = [model.actuator.joint];
+      frame_dims = [actjoints.robotnum];
+      fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
     
     function model = extractFeatherstone(model)

@@ -16,7 +16,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
   end
 
   methods
-    function obj = MultiCoordinateFrame(coordinate_frames)
+    function obj = MultiCoordinateFrame(coordinate_frames,frame_id)
       typecheck(coordinate_frames,'cell');
       name=[];
       dim=0;
@@ -48,13 +48,24 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
       name=name(2:end);
       
+      if (nargin<2) frame_id = []; end
+      if ~isempty(frame_id)
+        sizecheck(frame_id,dim);
+        rangecheck(frame_id,1,length(coordinate_frames));
+      end
+      
       obj = obj@CoordinateFrame(name,dim,prefix,coordinates);
       obj.frame = coordinate_frames;
-      obj.frame_id = [];
+      obj.frame_id = frame_id;
       for i=1:length(coordinate_frames)
         d = coordinate_frames{i}.dim;
-        obj.coord_ids{i} = (1:d) + length(obj.frame_id);
-        obj.frame_id = vertcat(obj.frame_id,repmat(i,d,1));
+        if isempty(frame_id)
+          obj.coord_ids{i} = (1:d) + length(obj.frame_id);
+          obj.frame_id = vertcat(obj.frame_id,repmat(i,d,1));
+        else
+          obj.coord_ids{i} = find(frame_id==i);
+          sizecheck(obj.coord_ids{i},coordinate_frames{i}.dim);
+        end
 
         % add a transform from this multiframe to the child frame
         % iff the subframes are unique
@@ -184,7 +195,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end       
     end
     
-    function [fr,indices] = subFrameByFrameID(obj,frame_ids)
+    function fr = subFrameByFrameID(obj,frame_ids)
       % comparable to subFrame, but at the frame ID 
       
       if ~isnumeric(frame_ids) || ~isvector(frame_ids) error('frame_ids must be a numeric vector'); end
@@ -228,12 +239,24 @@ classdef MultiCoordinateFrame < CoordinateFrame
     end
         
     function insys=setupMultiInput(obj,mdl,subsys)
+      if ~valuecheck(obj.frame_id,sort(obj.frame_id))  % assume that the simple ordering is ok
+        insys = [subsys,'inselector'];
+        add_block('simulink3/Signals & Systems/Selector',[mdl,'/',insys],'InputPortWidth',num2str(obj.dim),'Indices',mat2str([obj.coord_ids{:}]));
+        add_line(mdl,[insys,'/1'],[subsys,'/1']);
+        subsys = insys;
+      end
       insys = [subsys,'mux'];
       add_block('simulink3/Signals & Systems/Mux',[mdl,'/',insys],'Inputs',mat2str(cellfun(@(a) a.dim,obj.frame)));
       add_line(mdl,[insys,'/1'],[subsys,'/1']);
     end
     
     function outsys=setupMultiOutput(obj,mdl,subsys)
+      if ~valuecheck(obj.frame_id,sort(obj.frame_id))
+        outsys = [subsys,'outselector'];
+        add_block('simulink3/Signals & Systems/Selector',[mdl,'/',outsys],'InputPortWidth',num2str(obj.dim),'Indices',mat2str([obj.coord_ids{:}]));
+        add_line(mdl,[subsys,'/1'],[outsys,'/1']);
+        subsys = outsys;
+      end      
       outsys = [subsys,'demux'];
       add_block('simulink3/Signals & Systems/Demux',[mdl,'/',outsys],'Outputs',mat2str(cellfun(@(a) a.dim,obj.frame)));
       add_line(mdl,[subsys,'/1'],[outsys,'/1']);
@@ -245,7 +268,12 @@ classdef MultiCoordinateFrame < CoordinateFrame
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end
       typecheck(subsys_portnum,'double'); 
-      valuecheck(obj.frame_id,sort(obj.frame_id));  % assume that the simple ordering is ok
+      if ~valuecheck(obj.frame_id,sort(obj.frame_id))
+        insys = [subsys,'inselector'];
+        add_block('simulink3/Signals & Systems/Selector',[mdl,'/',insys],'InputPortWidth',num2str(obj.dim),'Indices',mat2str([obj.coord_ids{:}]));
+        add_line(mdl,[insys,'/1'],[subsys,'/',num2str(subsys_portnum)]);
+        subsys = insys; subsys_portnum=1;
+      end      
       add_block('simulink3/Signals & Systems/Mux',[mdl,'/mux',uid],'Inputs',num2str(length(obj.frame)));
       for i=1:length(obj.frame)
         setupLCMInputs(obj.frame{i},mdl,['mux',uid],i);
@@ -259,7 +287,12 @@ classdef MultiCoordinateFrame < CoordinateFrame
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end
       typecheck(subsys_portnum,'double'); 
-      valuecheck(obj.frame_id,sort(obj.frame_id));  % assume that the simple ordering is ok
+      if ~valuecheck(obj.frame_id,sort(obj.frame_id)) 
+        outsys = [subsys,'outselector'];
+        add_block('simulink3/Signals & Systems/Selector',[mdl,'/',outsys],'InputPortWidth',num2str(obj.dim),'Indices',mat2str([obj.coord_ids{:}]));
+        add_line(mdl,[subsys,'/',subsys_portnum],[outsys,'/1']);
+        subsys = outsys; subsys_portnum=1;
+      end      
       add_block('simulink3/Signals & Systems/Demux',[mdl,'/demux',uid],'Outputs',mat2str([obj.frame{:}.dim]));
       for i=1:length(obj.frame)
         setupLCMOutputs(obj.frame{i},mdl,['demux',uid],i);
@@ -283,26 +316,32 @@ classdef MultiCoordinateFrame < CoordinateFrame
   end
   
   methods (Static=true)
-    function obj = constructFrame(frames,zap_empty_frames)
+    function obj = constructFrame(frames,frame_ids,zap_empty_frames)
       % if frames has only a single element, then return it, otherwise
       % construct the construct the mimo frame
       typecheck(frames,'cell');
+      
+      if (nargin<2) frame_ids =[]; end
       
       if (nargin>1 && zap_empty_frames)
         i=1;
         while (i<=length(frames))  % zap empty frames
           if (frames{i}.dim<1)
+            if any(frame_ids==i) error('bad frame_ids'); end
             frames=frames([1:i-1,i+1:end]);
+            frame_ids(frame_ids>i)=frame_ids(frame_ids>i)-1;  % note: written to be ok if frame_ids is empty
           else
             i=i+1;
           end
         end
       end
       
-      if (length(frames)==1)
+      if length(frames)<1
+        obj = CoordinateFrame('EmptyFrame',0);
+      elseif (length(frames)==1)
         obj = frames{1};
       else
-        obj = MultiCoordinateFrame(frames);
+        obj = MultiCoordinateFrame(frames,frame_ids);
       end
     end
   end
