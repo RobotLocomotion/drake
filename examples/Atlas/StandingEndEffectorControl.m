@@ -196,57 +196,6 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
       obj.q_d0 = q_d0;
     end
     
-    function q_d_traj = convertTrajectory(obj,varargin)
-      % q_d_traj = convertTrajectory(obj,ee_goal{1},...,ee_goal{N},supports,com_goal,q_nom,x0[,v])
-      if length(varargin) < length(obj.end_effectors)+4
-        error('not enough inputs');
-      end
-      
-      breaks = [];
-      for i=1:length(varargin)-1
-        typecheck(varargin{i},'Trajectory');
-        varargin{i} = varargin{i}.inFrame(getFrameByNum(getInputFrame(obj),i));
-        breaks = [breaks, getBreaks(varargin{i})];
-      end
-      breaks = unique(breaks);
-      
-      num_ee = length(obj.end_effectors);
-      for i=1:num_ee
-        ee_goals{i} = varargin{i};
-      end
-      supports = varargin{num_ee+1};
-      com_goal = varargin{num_ee+2};
-      q_nom = varargin{num_ee+3};
-      x0 = varargin{num_ee+4};
-      q0 = x0(1:obj.manip.num_q);
-      if length(varargin)>num_ee+4
-        v = varargin{num_ee+5};
-      else
-        v = [];
-      end
-      
-      % keep a persistent notion of:
-      %  q = state of the robot;
-      %  com - global (desired) location of the COM.
-      %  pos{i} - global (desired) location of body i  
-      %  orient{i} - global (desired) orientation of body i (COMING SOON)
-      %  care(i) - true/false, whether pos is relevant for body i
-      
-%       kinsol = doKinematics(obj.manip,q0,false);
-%       com = getCOM(obj.manip,q0);
-%       for i=1:length(obj.manip.body)
-%         pos{i} = forwardKin(obj.manip,kinsol,[0;0;0]);
-%       end
-%       care = false(1,length(obj.manip.body));
-      q = q0;
-      
-%      for t=breaks
-%        for 
-%      end
-      
-      error('need to return q_d here');
-    end
-    
   end
   
   properties
