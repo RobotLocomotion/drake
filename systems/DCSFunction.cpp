@@ -169,7 +169,7 @@ static void mdlInitializeConditions(SimStruct *S)
 {
   mxArray *psys = const_cast<mxArray*>(ssGetSFcnParam(S, 0));
   mxArray* plhs[1];
-  if (mexCallMATLAB(1,plhs,1,&psys,"getInitialState")) return;
+  if (mexCallMATLABsafe(S,1,plhs,1,&psys,"getInitialState")) return;
 
   real_T* xc0 = ssGetContStates(S);
   real_T* xd0 = ssGetDiscStates(S);
