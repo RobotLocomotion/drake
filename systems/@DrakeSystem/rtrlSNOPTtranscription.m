@@ -5,7 +5,7 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
 nU=sys.getNumInputs();
 nXc=sys.getNumContStates();
 t=uTraj0.getBreaks();
-tspan=t(end);
+tspan=t(end)-t(1);
 u=uTraj0.eval(t);
 nT = length(t);
 t0=t(1);

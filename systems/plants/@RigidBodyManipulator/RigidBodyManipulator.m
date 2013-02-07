@@ -306,6 +306,8 @@ classdef RigidBodyManipulator < Manipulator
       
       if (length(model.loop)>0)
         model = model.setNumPositionConstraints(3*length(model.loop));  % should be 5? for continous joints once they enforce the joint axis constraint.
+      else 
+        model = model.setNumPositionConstraints(0);
       end
 
       model.joint_limit_min = [model.body.joint_limit_min]';
