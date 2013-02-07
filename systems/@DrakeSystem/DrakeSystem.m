@@ -83,9 +83,6 @@ classdef DrakeSystem < DynamicalSystem
       error('Drake:DrakeSystem:AbstractMethod','systems with zero crossings must implement the zeroCrossings method'); 
     end
     
-    function con = stateConstraints(obj,x)
-      error('Drake:DrakeSystem:AbstractMethod','systems with state constraints must implement the constraints method');
-    end
   end
   
   % access methods

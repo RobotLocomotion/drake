@@ -372,6 +372,14 @@ classdef DynamicalSystem
       obj.output_frame=f;
     end
     
+    % Returns the scalar number of state constraints (of the form phi(x)=0)
+    function n = getNumStateConstraints(obj);
+      n = 0;  % default behavior is n=0
+    end
+    
+    function con = stateConstraints(obj,x)
+      error('Drake:DynamicalSystem:AbstractMethod','systems with state constraints must implement the constraints method');
+    end
     
     function xs = stateVectorToStructure(obj,xv,mdl)
       % Converts the vector state xv to the structure xs for simulink state

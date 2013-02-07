@@ -56,11 +56,46 @@ if isfield(options,'Qy')
   options.N = options.N + C'*options.Qy*D;
 end
 
+if getNumStateConstraints(obj)>0  
+  % if there are state constraints, the system will be uncontrollable
+  % in the full coordinates, so project down to the unconstrained
+  % coordinates:
+  %
+  % xdot = Ax + Bu, Fx = 0
+  %
+  % P := null(F)   (so FP = 0)
+  % z := Px   , P'P = I,  x = P'z 
+  % x'Qx = z P Q P' z , x'Nu = z'PNu
+  % zdot = Pxdot = PAx + PBu = PAP'z + PB u
+  % 
+  % u = -Kz = -KPx, J = z'Sz = x'P'SPx
+  % 
+  % it also works (the same!) for discrete time
+  % xn = Ax + Bu
+  % zn = Pxn = PAx + PB u = PAP'z + PB u
+  
+  [phi,F] = geval(@obj.stateConstraints,x0);
+  if ~valuecheck(phi,0)
+    error('Drake:TILQR:UnsatisfiedStateContraint','The system has state constraints which are not satisfied at x0');
+  end
+  P = null(F);
+  A = P*A*P';
+  B = P*B;
+  Q = P*Q*P';
+  options.N = P*options.N;
+end
+  
 if (ts(1)==0) % then it's CT
   [K,S] = lqr(full(A),full(B),Q,R,options.N);
 else
   [K,S] = dlqr(A,B,Q,R,options.N);
 end  
+
+if getNumStateConstraints(obj)>0
+  % project the result back to the full state
+  K = K*P;
+  S = P'*S*P;
+end
 
 ltisys = LinearSystem([],[],[],[],[],-K);
 if (all(x0==0))
