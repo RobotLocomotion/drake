@@ -19,11 +19,20 @@ classdef SecondOrderSystem < DrakeSystem
     qdd = sodynamics(obj,t,q,qd,u)  % implements qdd = f(t,q,qd,u)
   end
 
-  methods % (Sealed=true) % todo: set this, and pass gradients through the proper way
-    function xdot = dynamics(obj,t,x,u)
+  methods % (Sealed=true) % todo: re-enable this (requires updating generated gradients in acrobot, cartpole, etc classes.)
+    function [xdot,varargout] = dynamics(obj,t,x,u)
     % Provides the dynamics interface for sodynamics
       q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
-      qdd = obj.sodynamics(t,q,qd,u);
+      if (nargout>1)
+        varargout = cell(1,nargout-1);
+        [qdd,varargout{:}] = obj.sodynamics(t,q,qd,u);
+        varargout{1} = [zeros(obj.num_q,1+obj.num_q), eye(obj.num_q), zeros(obj.num_q,obj.num_u); varargout{1}];
+        for i=2:(nargout-1)
+          varargout{i} = [zeros(obj.num_q,1+obj.num_q+obj.num_u);varargout{i}];
+        end
+      else
+        qdd = obj.sodynamics(t,q,qd,u);
+      end
       xdot = [qd;qdd];
     end
   end

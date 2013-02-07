@@ -13,22 +13,45 @@ classdef Manipulator < SecondOrderSystem
     [H,C,B] = manipulatorDynamics(obj,q,qd);
   end
 
-  methods
-    function qdd = sodynamics(obj,t,q,qd,u)
+  methods (Sealed = true)
+    function [qdd,dqdd] = sodynamics(obj,t,q,qd,u)
     % Provides the SecondOrderDynamics interface to the manipulatorDynamics.
 
-      [H,C,B] = manipulatorDynamics(obj,q,qd);
-      Hinv = inv(H);
+      if (nargout>1)
+        if (obj.num_xcon>0)
+          % by naming this 'MATLAB:TooManyOutputs', geval will catch the
+          % error and use TaylorVarInstead
+          error('MATLAB:TooManyOutputs','User gradients for constrained dynamics not implemented yet.');
+        end
+        
+        % Note: the next line assumes that user gradients are implemented.
+        % If it fails, then it will raise the same exception that I would
+        % want to raise for this method, stating that not all outputs were
+        % assigned.  (since I can't write dxdot anymore)
+        [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,qd);
+        Hinv = inv(H);
+        
+        qdd = Hinv*(B*u - C);
+        dqdd = [zeros(obj.num_q,1),...
+          -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) - Hinv*dC(:,1:obj.num_q),...
+          -Hinv*dC(:,1+obj.num_q:end), Hinv*B];        
+      else
+        [H,C,B] = manipulatorDynamics(obj,q,qd);
+        Hinv = inv(H);
+        if (obj.num_u>0) tau=B*u - C; else tau=-C; end
+        tau = tau + computeConstraintForce(obj,q,qd,H,tau,Hinv);
       
-      if (obj.num_u>0) tau=B*u - C; else tau=-C; end
-      tau = tau + computeConstraintForce(obj,q,qd,H,tau,Hinv);
+        qdd = Hinv*tau;
+        % note that I used to do this (instead of calling inv(H)):
+        %   qdd = H\tau
+        % but I already have and use Hinv, so use it again here
+      end      
       
-      qdd = Hinv*tau;
-      % note that I used to do this (instead of calling inv(H)):
-      %   qdd = H\tau
-      % but I already have and use Hinv, so use it again here
     end
     
+  end
+  
+  methods
     function constraint_force = computeConstraintForce(obj,q,qd,H,tau,Hinv)
       alpha = 10;  % 1/time constant of position constraint satisfaction (see my latex rigid body notes)
       beta = 0;    % 1/time constant of velocity constraint satisfaction
@@ -50,7 +73,7 @@ classdef Manipulator < SecondOrderSystem
         [phi,J,dJ] = geval(@obj.positionConstraints,q);
         Jdotqd = dJ*reshape(qd*qd',obj.num_q^2,1);
 
-        constraint_force = -J'*(inv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + alpha*J*qd));
+        constraint_force = -J'*((J*Hinv*J')\(J*Hinv*tau + Jdotqd + alpha*J*qd));
       elseif (obj.num_velocity_constraints>0)
         [psi,J] = geval(@obj.velocityConstraints,q,qd);
         dpsidq = J(:,1:obj.num_q);
@@ -62,36 +85,6 @@ classdef Manipulator < SecondOrderSystem
       end
     end
           
-    function [xdot, dxdot] = dynamics(obj,t,x,u)
-      % Provides the dynamics interface for sodynamics.  This function
-      % does not handle contact or joint limits!
-      q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
-      
-      if nargout > 1
-        if (obj.num_xcon>0)
-          error('Not yet supported.');
-        end
-        
-        % Note: the next line assumes that user gradients are implemented.
-        % If it fails, then it will raise the same exception that I would
-        % want to raise for this method, stating that not all outputs were
-        % assigned.  (since I can't write dxdot anymore)
-        [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,qd);
-        Hinv = inv(H);
-        
-        qdd = Hinv*(B*u - C);
-        xdot = [qd;qdd];
-        dxdot = [zeros(obj.num_q,1+obj.num_q), eye(obj.num_q),...
-          zeros(obj.num_q,obj.num_u);...
-          zeros(obj.num_q,1),...
-          -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) - Hinv*dC(:,1:obj.num_q),...
-          -Hinv*dC(:,1+obj.num_q:end), Hinv*B];
-      else
-        qdd = obj.sodynamics(t,q,qd,u);
-        xdot = [qd;qdd];
-      end
-    end    
-    
     function obj = setNumPositionConstraints(obj,num)
     % Set the number of bilateral constraints
       if (~isscalar(num) || num <0)
@@ -195,7 +188,7 @@ classdef Manipulator < SecondOrderSystem
       [x,~,exitflag] = fmincon(problem);
       success=(exitflag==1);
       if (nargout<2 && ~success)
-        error('Drake:PlanarRigidBodyManipulator:ResolveConstraintsFailed','failed to resolve constraints');
+        error('Drake:Manipulator:ResolveConstraintsFailed','failed to resolve constraints');
       end
     end
     
