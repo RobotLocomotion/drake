@@ -153,7 +153,12 @@ else
   disp(' SPOT not found.');
 end
 if ~conf.spot_enabled
-  disp('  SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/spot/branches/dev/ ');
+  disp(' SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/spot/branches/dev/ ');
+end
+
+conf.cplex_enabled = logical(exist('cplexlp'));
+if (~conf.cplex_enabled)
+  disp(' CPLEX not found.  CPLEX support will be disabled.  To re-enabled, install CPLEX and add the matlab subdirectory to your matlab path, then rerun configure');
 end
 
 conf.yalmip_enabled = logical(exist('sdpvar'));
