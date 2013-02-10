@@ -23,10 +23,13 @@ function [ltisys,Vcandidate] = tilqr(obj,x0,u0,Q,R,options)
 
 % ts is a simulink sample time
 if (~isTI(obj)) error('I don''t know that this system is time invariant.  Set the TI flags and rerun this method if you believe the system to be.'); end
-typecheck(x0,'Point');
-typecheck(u0,'Point');
-x0 = double(x0.inFrame(obj.getStateFrame));
-u0 = double(u0.inFrame(obj.getInputFrame));
+
+if isa(x0,'Point')
+  x0 = double(x0.inFrame(obj.getStateFrame));
+end
+if isa(u0,'Point')
+  u0 = double(u0.inFrame(obj.getInputFrame));
+end
 
 if (nargin<6) options=struct(); end
 if ~isfield(options,'angle_flag') options.angle_flag = false; end
@@ -64,25 +67,26 @@ if getNumStateConstraints(obj)>0
   % xdot = Ax + Bu, Fx = 0
   %
   % P := null(F)   (so FP = 0)
-  % z := Px   , P'P = I,  x = P'z 
-  % x'Qx = z P Q P' z , x'Nu = z'PNu
-  % zdot = Pxdot = PAx + PBu = PAP'z + PB u
+  % F is d-by-n,  P is n-by-(n-d)
+  % z := P'x , P'P = I,  x = Pz 
+  % x'Qx = z P' Q P z , x'Nu = z'P'Nu
+  % zdot = P'xdot = P'Ax + P'Bu = P'APz + P'B u
   % 
-  % u = -Kz = -KPx, J = z'Sz = x'P'SPx
+  % u = -Kz = -KP'x, J = z'Sz = x'PSP'x
   % 
   % it also works (the same!) for discrete time
   % xn = Ax + Bu
-  % zn = Pxn = PAx + PB u = PAP'z + PB u
+  % zn = P'xn = P'Ax + P'B u = P'APz + P'B u
   
   [phi,F] = geval(@obj.stateConstraints,x0);
   if ~valuecheck(phi,0)
     error('Drake:TILQR:UnsatisfiedStateContraint','The system has state constraints which are not satisfied at x0');
   end
-  P = null(F);
-  A = P*A*P';
-  B = P*B;
-  Q = P*Q*P';
-  options.N = P*options.N;
+  P = null(full(F));
+  A = P'*A*P;
+  B = P'*B;
+  Q = P'*Q*P;
+  options.N = P'*options.N;
 end
   
 if (ts(1)==0) % then it's CT
@@ -93,8 +97,8 @@ end
 
 if getNumStateConstraints(obj)>0
   % project the result back to the full state
-  K = K*P;
-  S = P'*S*P;
+  K = K*P';
+  S = P*S*P';
 end
 
 ltisys = LinearSystem([],[],[],[],[],-K);
