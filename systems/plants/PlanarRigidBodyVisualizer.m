@@ -16,16 +16,6 @@ classdef PlanarRigidBodyVisualizer < Visualizer
     
     function draw(obj,t,x)
 
-      persistent hFig;
-      
-      if (isempty(hFig))
-        hFig = sfigure(32);
-        set(hFig,'DoubleBuffer','on');
-      end
-
-      sfigure(hFig);
-      clf; hold on;
-      
       n = obj.model.num_q;
       q = x(1:n); %qd=x(n+(1:n));
       kinsol = obj.model.doKinematics(q);
@@ -42,7 +32,8 @@ classdef PlanarRigidBodyVisualizer < Visualizer
           pts = forwardKin(obj.model,kinsol,i,[reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n)]);
           xpts = reshape(pts(1,:),s); ypts = reshape(pts(2,:),s);
           
-          patch(xpts,ypts,body.geometry{j}.c,'LineWidth',.01); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
+          c = (1-obj.fade_percent)*body.geometry{j}.c + obj.fade_percent*obj.fade_color;
+          patch(xpts,ypts,c,'LineWidth',.01,'EdgeColor',obj.fade_percent*obj.fade_color); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
           % patch(xpts,ypts,body.geometry{j}.c,'EdgeColor','none','FaceAlpha',1); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
 
           % for debugging:
@@ -110,5 +101,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
     xlim=[]
     ylim=[];
     debug = false;  % if true, draws extras, like the coordinate frames and COMs for each link
+    fade_percent = 0;     % 0 to 1 
+    fade_color = [1 1 1];
   end
 end
