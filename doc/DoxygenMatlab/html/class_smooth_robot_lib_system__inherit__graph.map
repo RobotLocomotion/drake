@@ -1,7 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$class_cart_pole_energy_shaping.html" title="technically not the same controller as Spong96." alt="" coords="5,80,176,107"/>
-<area shape="rect" id="node5" href="$class_glider_plant.html" title="Defines the dynamics for the perching glider." alt="" coords="201,80,292,107"/>
-<area shape="rect" id="node7" href="$class_rimless_wheel_stance_plant.html" title="RimlessWheelStancePlant" alt="" coords="316,80,503,107"/>
-<area shape="rect" id="node9" href="$class_simple_pend.html" title="demonstration of feedback linearization (used in lecture 1 of 6.832) Double Pendulum is made &quot;feedbac..." alt="" coords="527,80,625,107"/>
-<area shape="rect" id="node11" href="$class_simple_pend_inv.html" title="demonstration of feedback linearization (used in lecture 1 of 6.832) Double Pendulum is made &quot;feedbac..." alt="" coords="650,80,765,107"/>
-</map>

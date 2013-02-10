@@ -1,6 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$class_function_handle_lyapunov_function.html" title="FunctionHandleLyapunovFunction" alt="" coords="5,80,240,107"/>
-<area shape="rect" id="node5" href="$class_polynomial_lyapunov_function.html" title="PolynomialLyapunovFunction" alt="" coords="264,80,469,107"/>
-<area shape="rect" id="node7" href="$class_quadratic_lyapunov_function.html" title="x&#39;*S*x + x&#39;*s1 + s2 S,s1,s2 can be doubles or trajectories (yielding a time&#45;varying quadratic)..." alt="" coords="146,155,344,181"/>
-<area shape="rect" id="node9" href="$class_spot_polynomial_lyapunov_function.html" title="SpotPolynomialLyapunovFunction" alt="" coords="369,155,604,181"/>
-</map>

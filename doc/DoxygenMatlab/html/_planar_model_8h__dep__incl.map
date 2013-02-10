@@ -1,6 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$do_kinematicspmex_8cpp.html" title="systems/plants/@PlanarRigid\lBodyManipulator/private\l/doKinematicspmex.cpp" alt="" coords="5,109,211,165"/>
-<area shape="rect" id="node5" href="$forward_kinpmex_8cpp.html" title="systems/plants/@PlanarRigid\lBodyManipulator/private\l/forwardKinpmex.cpp" alt="" coords="235,109,441,165"/>
-<area shape="rect" id="node7" href="$forward_kin_velpmex_8cpp.html" title="systems/plants/@PlanarRigid\lBodyManipulator/private\l/forwardKinVelpmex.cpp" alt="" coords="466,109,672,165"/>
-<area shape="rect" id="node9" href="$_hand_cpmex_8cpp.html" title="systems/plants/@PlanarRigid\lBodyManipulator/private\l/HandCpmex.cpp" alt="" coords="697,109,903,165"/>
-</map>

@@ -1,9 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node2" href="$class_planar_rigid_body_manipulator.html" title="This class wraps the planar pieces of the spatial vector library (v1) provided by Roy Featherstone on..." alt="" coords="5,453,203,480"/>
-<area shape="rect" id="node4" href="$class_rigid_body_manipulator.html" title="This class wraps the spatial vector library (v1) provided by Roy Featherstone on his website: http://..." alt="" coords="25,379,183,405"/>
-<area shape="rect" id="node6" href="$class_manipulator.html" title="An abstract class that wraps H(q)qddot + C(q,qdot,f_ext) = B(q)u." alt="" coords="55,304,152,331"/>
-<area shape="rect" id="node8" href="$class_second_order_system.html" title="An abstract class that wraps qddot = f(t,q,qdot,u)." alt="" coords="27,229,181,256"/>
-<area shape="rect" id="node10" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="49,155,159,181"/>
-<area shape="rect" id="node12" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="35,80,173,107"/>
-<area shape="rect" id="node14" href="$classhandle.html" title="handle" alt="" coords="71,5,136,32"/>
-</map>
