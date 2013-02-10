@@ -6,6 +6,11 @@ function tf = valuecheck(val,desired_val,tol)
 if (nargin<3) tol=1e-8; end
 
 tf = true;
+
+if isscalar(desired_val)
+  desired_val = repmat(desired_val,size(val));
+end
+
 if ((length(size(val))~=length(size(desired_val))) || any(size(val)~=size(desired_val)))
   if (nargout>0)
     tf = false;
