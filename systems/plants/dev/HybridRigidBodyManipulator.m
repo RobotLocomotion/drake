@@ -1,4 +1,10 @@
 classdef HybridRigidBodyManipulator < HybridDrakeSystem
+%
+% note: this model currently assumes frictionless impacts 
+% see Posa13 for more details / options.
+% (todo:  add warning on this?)
+
+
 
   methods
     function obj = HybridRigidBodyManipulator(model)

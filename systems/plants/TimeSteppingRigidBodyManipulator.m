@@ -493,8 +493,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       %  \end{eqnarray*}
       % 
       
-   
-      
       if ~isTI(obj) error('only makes sense for time invariant systems'); end
             
       problem.objective = @(xu) 0;  % feasibility problem.   empty objective
@@ -536,7 +534,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       ustar = xu(obj.num_x + (1:obj.num_u));
       success=(exitflag==1);
       if (nargout<2 && ~success)
-        error('Drake:PlanarRigidBodyManipulator:ResolveConstraintsFailed','failed to resolve constraints');
+        error('Drake:PlanarRigidBodyManipulator:FindFixedPointFailed','failed to resolve constraints');
       end      
     end
     
@@ -560,6 +558,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   end
   
   methods  % pass through methods (to the manipulator)
+    function obj = setStateFrame(obj,fr)
+      obj = setStateFrame@DrakeSystem(obj,fr);
+      if ~isempty(obj.manip)  % this gets called in the constructor, before manip is ste
+        obj.manip = setStateFrame(obj.manip,fr);
+      end
+    end
+    
     function obj=addRobotFromURDF(obj,varargin)
       if obj.twoD
         S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
@@ -617,6 +622,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function varargout = resolveConstraints(obj,varargin)
       varargout=cell(1,nargout);
       [varargout{:}] = resolveConstraints(obj.manip,varargin{:});
+      varargout{1} = Point(obj.getStateFrame,double(varargout{1}));
     end
     
     function varargout = getMass(obj,varargin)

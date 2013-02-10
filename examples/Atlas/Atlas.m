@@ -19,9 +19,16 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
   
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       
+      state_frame = AtlasState(obj);
+      obj = obj.setStateFrame(state_frame);
+      obj = obj.setOutputFrame(state_frame);
+    
+      input_frame = AtlasInput(obj);
+      obj = obj.setInputFrame(input_frame);
+
       if options.floating
         % could also do fixed point search here
-        obj = obj.setInitialState(obj.manip.resolveConstraints(zeros(obj.getNumStates(),1)));
+        obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1)));
       else
         % TEMP HACK to get by resolveConstraints
         for i=1:length(obj.manip.body), obj.manip.body(i).contact_pts=[]; end
@@ -43,7 +50,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
 
     function obj = setInitialState(obj,x0)
       if isa(x0,'Point')
-        obj.x0 = double(x0.inFrame(obj.getStateFrame));
+        obj.x0 = double(x0); %.inFrame(obj.getStateFrame));
       else
         typecheck(x0,'double');
         sizecheck(x0,obj.getNumStates());

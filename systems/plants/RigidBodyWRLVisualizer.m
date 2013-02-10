@@ -37,6 +37,10 @@ classdef RigidBodyWRLVisualizer < Visualizer
       delete(obj.wrl);
     end
     
+    function drawWrapper(obj,t,x)
+      draw(obj,t,x);
+    end
+    
     function draw(obj,t,x)
       for i=1:length(obj.model.body)
         b = obj.model.body(i);

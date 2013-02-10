@@ -38,9 +38,6 @@ classdef DrakeSystem < DynamicalSystem
   methods
     function x0 = getInitialState(obj)
       x0 = zeros(obj.num_xd+obj.num_xc,1);
-      if (obj.num_xcon < 1)
-        return;
-      end
       attempts=0;
       success=false;
       tries = 0;
