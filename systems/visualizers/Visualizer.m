@@ -28,8 +28,7 @@ classdef Visualizer < DrakeSystem
     end
     
     function y = output(obj,t,x,u)
-      draw(obj,t,u);
-      drawnow;
+      drawWrapper(obj,t,u);
       y=[];
     end
     
@@ -41,12 +40,22 @@ classdef Visualizer < DrakeSystem
       end
     end
     
+    function drawWrapper(obj,t,y);
+      sfigure(obj.fignum);
+      clf; hold on;
+      draw(obj,t,y);
+      if (obj.display_time)
+        title(['t = ', num2str(t,'%.2f') ' sec']);
+      end
+      drawnow;
+    end
+    
     function status = ode_draw(obj,t,x,flag)
       status=0;
       if (strcmp(flag,'done'))
         return;
       end
-      draw(obj,t,x,[]);
+      drawWrapper(obj,t,x);
     end
    
     function playback(obj,xtraj,options)
@@ -112,8 +121,7 @@ classdef Visualizer < DrakeSystem
       function update_time_display(source, eventdata)
         t = get(time_slider, 'Value');
         set(time_display, 'String', sprintf(time_format, t));
-        obj.draw(t, xtraj.eval(t));
-        drawnow;
+        obj.drawWrapper(t, xtraj.eval(t));
       end
       function start_playback(source, eventdata)
         if ~ishandle(play_button) 
@@ -182,7 +190,7 @@ classdef Visualizer < DrakeSystem
       % coordinates.
       
       fr = obj.getInputFrame();
-      obj.draw(0,zeros(fr.dim,1));
+      obj.drawWrapper(0,zeros(fr.dim,1));
       
       f = sfigure(99); clf;
       set(f, 'Position', [560 400 560 20 + 30*ceil(fr.dim/2)]);
@@ -206,7 +214,7 @@ classdef Visualizer < DrakeSystem
         for i=1:fr.dim
           x(i) = get(slider{i}, 'Value');
         end
-        obj.draw(t,x); drawnow;
+        obj.drawWrapper(t,x);
       end      
     end
     
@@ -244,10 +252,7 @@ classdef Visualizer < DrakeSystem
       
       width=[]; height=[];
       for i=1:length(tspan)
-        obj.draw(tspan(i),eval(xtraj,tspan(i)));
-        if (obj.display_time)
-          title(['t = ', num2str(tspan(i),'%.2f') ' sec']);
-        end
+        obj.drawWrapper(tspan(i),eval(xtraj,tspan(i)));
         if (obj.draw_axes)
           f=gcf;
         else
@@ -327,10 +332,7 @@ classdef Visualizer < DrakeSystem
       if (breaks(end)-tspan(end)>eps) tspan=[tspan,breaks(end)]; end
             
       for i=1:length(tspan)
-        obj.draw(tspan(i),eval(xtraj,tspan(i)));
-        if (obj.display_time)
-          title(['t = ', num2str(tspan(i),'%.2f') ' sec']);
-        end
+        obj.drawWrapper(tspan(i),eval(xtraj,tspan(i)));
         if (~obj.draw_axes) axis off; end
         swf.addFrame();
       end
@@ -348,6 +350,7 @@ classdef Visualizer < DrakeSystem
     draw_axes=false;  % when making movies true=gcf,false=gca
     display_time=true; % when true, time is written to figure title
     axis;  % set this to non-empty for a fixed view (must be implemented by the draw method)
+    fignum = 25;
   end
   
 end
