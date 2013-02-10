@@ -36,7 +36,7 @@ if(isfield(options,'FixedStep'))%if using fixed-step solver and want to generate
 end
 if (nargin>2) % handle initial conditions
   if (isa(x0,'Point'))
-    x0 = double(x0);
+    x0 = double(x0.inFrame(obj.getStateFrame));
   else
     typecheck(x0,'double');
     sizecheck(x0,[obj.getStateFrame.dim,1]);

@@ -159,6 +159,10 @@ classdef Manipulator < SecondOrderSystem
       % @param v (optional) a visualizer that should be called while the
       % solver is doing it's thing
 
+      if isa(x0,'Point')
+        x0 = double(x0.inFrame(obj.getStateFrame));
+      end
+      
       if (all(obj.joint_limit_min==-inf) && all(obj.joint_limit_max==inf) && obj.num_contacts==0)
         if (nargin<3) v=[]; end
         [x,success] = resolveConstraints@SecondOrderSystem(obj,x0,v);
@@ -190,6 +194,7 @@ classdef Manipulator < SecondOrderSystem
       if (nargout<2 && ~success)
         error('Drake:Manipulator:ResolveConstraintsFailed','failed to resolve constraints');
       end
+      x = Point(obj.getStateFrame,x);
     end
     
     function sys = feedback(sys1,sys2)

@@ -10,12 +10,12 @@ v = r.constructVisualizer;
 v.display_dt = 0.01;
 
 x0 = Point(r.getStateFrame);
-x0 = resolveConstraints(r,double(x0));
+x0 = resolveConstraints(r,x0);
 
 if (1)
   % Run simulation, then play it back at realtime speed
   tic;
-  xtraj = simulate(r,[0 2],double(x0));
+  xtraj = simulate(r,[0 2],x0);
   toc;
   playback(v,xtraj,struct('slider',true));
 else    
