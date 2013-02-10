@@ -1,8 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node2" href="$class_l_c_m_coordinate_frame.html" title="LCMCoordinateFrame" alt="" coords="209,155,369,181"/>
-<area shape="rect" id="node4" href="$class_coordinate_frame.html" title="Every input, state, and output in a DynamicalSystem has a coordinate frame attached to it..." alt="" coords="5,80,139,107"/>
-<area shape="rect" id="node6" href="$classhandle.html" title="handle" alt="" coords="257,5,321,32"/>
-<area shape="rect" id="node8" href="$class_l_c_m_subscriber.html" title="defines an interface for LCM objects that get wrapped up in matlab vectors" alt="" coords="163,80,280,107"/>
-<area shape="rect" id="node11" href="$class_l_c_m_publisher.html" title="defines an interface for an object that can publish a double on an LCM channel." alt="" coords="304,80,411,107"/>
-<area shape="rect" id="node14" href="$class_singleton.html" title="Implements a singleton design pattern." alt="" coords="435,80,517,107"/>
-</map>

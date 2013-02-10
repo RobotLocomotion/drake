@@ -1,8 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node2" href="$class_coordinate_transform.html" title="CoordinateTransform" alt="" coords="5,304,160,331"/>
-<area shape="rect" id="node4" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="93,155,203,181"/>
-<area shape="rect" id="node12" href="$class_polynomial_system.html" title="A dynamical system described by rational polynomial dynamics, and polynomial outputs." alt="" coords="157,229,296,256"/>
-<area shape="rect" id="node6" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="79,80,217,107"/>
-<area shape="rect" id="node8" href="$classhandle.html" title="handle" alt="" coords="115,5,180,32"/>
-<area shape="rect" id="node10" href="$class_affine_system.html" title="Implements xcdot = Ac*x + Bc*u + xcdot0 xdn = Ad*x + Bd*u + xdn0 y = C*x + D*u + y0." alt="" coords="185,304,292,331"/>
-</map>

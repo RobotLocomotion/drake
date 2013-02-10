@@ -1,8 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$_r_l_c_s_function_8cpp.html#a390c4f32b4f576175c74d587d7107e30" title="mdlDerivatives" alt="" coords="239,5,356,32"/>
-<area shape="rect" id="node5" href="$_r_l_c_s_function_8cpp.html#a2d673fc64bb19bb80be024c2e1e6d5b5" title="mdlInitializeConditions" alt="" coords="215,56,379,83"/>
-<area shape="rect" id="node7" href="$_r_l_c_s_function_8cpp.html#a4308a5a20d9c7060391059b1dfce872e" title="mdlInitializeSampleTimes" alt="" coords="205,107,389,133"/>
-<area shape="rect" id="node9" href="$_r_l_c_s_function_8cpp.html#ab500fc17ae5e95797926ac770d903b84" title="mdlInitializeSizes" alt="" coords="232,157,363,184"/>
-<area shape="rect" id="node11" href="$_r_l_c_s_function_8cpp.html#ab6c8c16502dd4374f9f36cfd58cbbd15" title="mdlOutputs" alt="" coords="249,208,346,235"/>
-<area shape="rect" id="node13" href="$_r_l_c_s_function_8cpp.html#a90b55be5367122a2cb94e9ac87253228" title="mdlUpdate" alt="" coords="251,259,344,285"/>
-</map>

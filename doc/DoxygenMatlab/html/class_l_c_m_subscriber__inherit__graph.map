@@ -1,8 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node5" href="$classdrake_1_1util_1_1_message_monitor.html" title="Monitors a particular lcm message type (specified in the constructor) and maintains the most up&#45;to&#45;da..." alt="" coords="5,155,131,181"/>
-<area shape="rect" id="node7" href="$class_l_c_m_coordinate_frame.html" title="LCMCoordinateFrame" alt="" coords="156,155,316,181"/>
-<area shape="rect" id="node13" href="$class_l_c_m_coordinate_frame_w_coder.html" title="LCMCoordinateFrameWCoder" alt="" coords="341,155,549,181"/>
-<area shape="rect" id="node2" href="$classhandle.html" title="handle" alt="" coords="203,5,268,32"/>
-<area shape="rect" id="node9" href="$class_pendulum_input.html" title="PendulumInput" alt="" coords="105,229,223,256"/>
-<area shape="rect" id="node11" href="$class_pendulum_state.html" title="PendulumState" alt="" coords="247,229,368,256"/>
-</map>

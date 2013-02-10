@@ -1,7 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node2" href="$class_time_invariant_linear_system.html" title="TimeInvariantLinearSystem" alt="" coords="19,304,215,331"/>
-<area shape="rect" id="node4" href="$class_affine_system.html" title="Implements xcdot = Ac*x + Bc*u + xcdot0 xdn = Ad*x + Bd*u + xdn0 y = C*x + D*u + y0." alt="" coords="64,229,171,256"/>
-<area shape="rect" id="node6" href="$class_polynomial_system.html" title="A dynamical system described by rational polynomial dynamics, and polynomial outputs." alt="" coords="47,155,187,181"/>
-<area shape="rect" id="node8" href="$class_robot_lib_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="54,80,180,107"/>
-<area shape="rect" id="node10" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="48,5,187,32"/>
-</map>

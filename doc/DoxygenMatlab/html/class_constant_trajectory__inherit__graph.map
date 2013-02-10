@@ -1,6 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node2" href="$class_trajectory.html" title="Trajectory" alt="" coords="34,229,117,256"/>
-<area shape="rect" id="node4" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="21,155,131,181"/>
-<area shape="rect" id="node6" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="7,80,145,107"/>
-<area shape="rect" id="node8" href="$classhandle.html" title="handle" alt="" coords="43,5,108,32"/>
-</map>

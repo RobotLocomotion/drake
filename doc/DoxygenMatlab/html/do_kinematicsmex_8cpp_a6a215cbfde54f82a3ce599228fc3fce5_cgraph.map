@@ -1,6 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node3" href="$do_kinematicsmex_8cpp.html#ac8e43c17fd0b5a44bf58bbd7f4af3cb0" title="Tjcalc" alt="" coords="166,5,223,32"/>
-<area shape="rect" id="node7" href="$do_kinematicsmex_8cpp.html#a3694ce8fc4cb7d7e0745880fb465ee53" title="dTjcalc" alt="" coords="162,56,227,83"/>
-<area shape="rect" id="node9" href="$do_kinematicsmex_8cpp.html#a603624ab8544f743bda1f178144dd78e" title="ddTjcalc" alt="" coords="158,107,231,133"/>
-<area shape="rect" id="node5" href="$do_kinematicsmex_8cpp.html#a9463194fb027a828acc35d6faa41c3ec" title="rotz" alt="" coords="281,5,327,32"/>
-</map>

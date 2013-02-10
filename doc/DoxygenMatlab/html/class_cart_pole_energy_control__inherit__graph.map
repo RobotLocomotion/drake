@@ -1,6 +1,0 @@
-<map id="G" name="G">
-<area shape="rect" id="node2" href="$class_hybrid_drake_system.html" title="some restrictions on the mode systems: must be CT only" alt="" coords="13,229,163,256"/>
-<area shape="rect" id="node4" href="$class_drake_system.html" title="A DynamicalSystem with the functionality (dynamics, update, outputs, etc) implemented in matlab..." alt="" coords="33,155,143,181"/>
-<area shape="rect" id="node6" href="$class_dynamical_system.html" title="An interface class for a state&#45;space dynamical system with a single (vector) input u..." alt="" coords="19,80,157,107"/>
-<area shape="rect" id="node8" href="$classhandle.html" title="handle" alt="" coords="55,5,120,32"/>
-</map>
