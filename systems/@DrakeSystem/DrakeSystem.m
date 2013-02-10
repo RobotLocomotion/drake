@@ -38,6 +38,9 @@ classdef DrakeSystem < DynamicalSystem
   methods
     function x0 = getInitialState(obj)
       x0 = zeros(obj.num_xd+obj.num_xc,1);
+      if (obj.num_xcon < 1)
+        return;
+      end
       attempts=0;
       success=false;
       tries = 0;
@@ -65,6 +68,7 @@ classdef DrakeSystem < DynamicalSystem
           end
         end
       end
+      x0 = double(x0);
     end
     
     function xcdot = dynamics(obj,t,x,u)
@@ -216,8 +220,12 @@ classdef DrakeSystem < DynamicalSystem
       % @param v (optional) a visualizer that should be called while the
       % solver is doing it's thing
 
+      if isa(x0,'Point')
+        x0 = double(x0.inFrame(obj.getStateFrame));
+      end
+      
       if (obj.num_xcon < 1)
-        x=x0;
+        x=Point(obj.getStateFrame,x0);
         success=true;
         return;
       end
@@ -237,6 +245,7 @@ classdef DrakeSystem < DynamicalSystem
       if (nargout<2 && ~success)
         error('Drake:DrakeSystem:ResolveConstraintsFailed','failed to resolve constraints');
       end
+      x = Point(obj.getStateFrame,x);
     end
     
     function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,v)
@@ -248,11 +257,18 @@ classdef DrakeSystem < DynamicalSystem
       % @param v (optional) a visualizer that should be called while the
       % solver is doing it's thing  
       %
+      
+      if isa(x0,'Point')
+        x0 = double(x0.inFrame(obj.getStateFrame));
+      end
+      if isa(u0,'Point')
+        u0 = double(u0.inFrame(obj.getInputFrame));
+      end
    
       if ~isTI(obj) error('only makes sense for time invariant systems'); end
             
       function [f,df] = myobj(xu)
-%        f = 0; df = 0*xu;  % feasibility problem, no objective
+        f = 0; df = 0*xu; return;  % feasibility problem, no objective
          err = [xu-[x0;u0]];
          f = err'*err;
          df = 2*err;
@@ -297,13 +313,13 @@ classdef DrakeSystem < DynamicalSystem
         problem.options=optimset('GradObj','on','GradConstr','on','Algorithm','active-set','Display','off');
       end
       [xu,~,exitflag] = fmincon(problem);
-      xstar = xu(1:obj.num_x);
-      ustar = xu(obj.num_x + (1:obj.num_u));
+      xstar = Point(obj.getStateFrame,xu(1:obj.num_x));
+      ustar = Point(obj.getInputFrame,xu(obj.num_x + (1:obj.num_u)));
       success=(exitflag>0);
       if (~success)
         exitflag
         error('Drake:DrakeSystem:FixedPointSearchFailed','failed to find a fixed point');
-      end      
+      end
     end    
   end
   

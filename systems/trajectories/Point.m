@@ -53,8 +53,7 @@ classdef Point
         end
       end
       % otherwise, call the builting subsasgn
-      varargout=cell(1,nargout);
-      [varargout{:}] = builtin('subsasgn',obj,s,val);
+      obj.p = builtin('subsasgn',obj.p,s,val);
     end
     
     function varargout = subsref(obj,s)
@@ -66,6 +65,9 @@ classdef Point
           varargout = {obj.p(ind)};
           return;
         end
+      elseif length(s)<2 && strcmp(s(1).type,'()')
+        varargout{1} = builtin('subsref',obj.p,s);  % result is a double, not a Point (since it might not be the right size, etc)
+        return;
       end
       % otherwise, call the builting subsref
       varargout=cell(1,max(nargout,1));  % max w/ 1 to support command line access (with no outputs, but writes to ans)

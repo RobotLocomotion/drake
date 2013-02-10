@@ -4,7 +4,7 @@ options.floating = true;
 m = PlanarRigidBodyManipulator('../RimlessWheel.urdf',options);
 
 p = TimeSteppingRigidBodyManipulator(m,.01);
-x0 = p.resolveConstraints([0;0;randn;5*rand;randn;5*rand]);
+x0 = double(p.resolveConstraints([0;0;randn;5*rand;randn;5*rand]));
 v = p.constructVisualizer();
 v.draw(0,x0);
 

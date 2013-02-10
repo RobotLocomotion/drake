@@ -42,9 +42,13 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
     end
 
     function obj = setInitialState(obj,x0)
-      typecheck(x0,'double');
-      sizecheck(x0,obj.getNumStates());
-      obj.x0 = x0;
+      if isa(x0,'Point')
+        obj.x0 = double(x0.inFrame(obj.getStateFrame));
+      else
+        typecheck(x0,'double');
+        sizecheck(x0,obj.getNumStates());
+        obj.x0 = x0;
+      end
     end
     
     function x0 = getInitialState(obj)
@@ -57,7 +61,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
       end
       
       x0 = Point(obj.getStateFrame());
-      x0 = resolveConstraints(obj,double(x0));
+      x0 = resolveConstraints(obj,x0);
       u0 = zeros(obj.getNumInputs(),1);
 
       nq = obj.getNumDOF();
