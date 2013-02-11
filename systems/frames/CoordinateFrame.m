@@ -91,6 +91,12 @@ classdef CoordinateFrame < handle
       end
     end
         
+    function s = getSym(obj)
+      for i=1:length(obj.dim)
+        s(1) = sym(obj.coordinates{i},'real');
+      end
+    end
+    
     function addTransform(obj,transform)
       % Attaches a new coordinate transform from the current frame to a
       % different frame. An error is throw if there already exists any

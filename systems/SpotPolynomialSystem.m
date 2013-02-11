@@ -72,6 +72,14 @@ classdef SpotPolynomialSystem < PolynomialSystem
       end
     end    
     
+    function [phi,dphi] = stateConstraints(obj,x)
+      p_x=obj.getStateFrame.poly;
+      phi = double(subs(obj.p_state_constraints,p_x,x));
+      if (nargout>1)
+        dphi = double(subs(diff(obj.p_state_constraints,p_x),p_x,x));
+      end
+    end
+    
     function obj = setInputFrame(obj,frame)
       if frame.dim>0
         if obj.getNumStates()>0 && any(match(obj.getStateFrame.poly,frame.poly)~=0)
