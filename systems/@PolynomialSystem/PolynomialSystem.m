@@ -50,8 +50,10 @@ classdef PolynomialSystem < DrakeSystem
           
           % e(x)xdot = f(x) => dexdotdx + e(x)*dxdotdx = dfdx
           %  where the columns of dexdotdx are dedxi*xdot
-          nX = obj.num_xc; cellxcdot=cell(1,nX); [cellxcdot{:}]=deal(xcdot);
-          dexdotdx = reshape(double(subs(diff(e(:),p_x),p_x,x)),nX,[])*blkdiag(cellxcdot{:});
+          nX = obj.num_xc;
+%          cellxcdot=cell(1,nX); [cellxcdot{:}]=deal(xcdot);
+%          dexdotdx = reshape(double(subs(diff(e(:),p_x),p_x,x)),nX,[])*blkdiag(cellxcdot{:});
+          dexdotdx = double(subs(diff(e*xcdot,p_x),p_x,x));
           dxcdot = double(subs(e,p_x,x))\(df - [zeros(nX,1),dexdotdx,zeros(nX,obj.num_u)]);
         end
       end

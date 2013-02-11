@@ -128,6 +128,12 @@ classdef DrakeSystem < DynamicalSystem
         error('Drake:DrakeSystem:NotImplemented','systems with both discrete and continuous states must implement the getSampleTime method or call setSampleTime to specify the desired behavior');
       end
     end
+    function ts = getInputSampleTimes(obj)
+      ts = getSampleTime(obj);
+    end
+    function ts = getOutputSampleTimes(obj)
+      ts = getSampleTime(obj);
+    end
     function obj = setSampleTime(obj,ts)
       % robust method for setting default sample time
       % 

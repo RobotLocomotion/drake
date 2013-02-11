@@ -86,12 +86,15 @@ all_methods=getmsspoly(all_methods);
 % I have e(x)xdot=f(x), and want E(y)ydot=F(y), where y=g(x).
 % We'll exploit that dim(y)>=dim(x)
 % I get the implicit dynamics from
-% ydot=G(x)*inv(e(x))*f(x), where G(x)=dg/dx
-%  => e(x)*inv[G(x)^T*G(x)] G(x)^T ydot = f(x)
-% ...  for my g(x), inv[G(x)^T*G(x)]=I.
+%   ydot = G(x)*xdot, where G(x) = dg/dx
+%     (note that G(x) here is orthonormal, i.e. G(x)'*G(x) = I)
+%   G(x)'*ydot = xdot
+%   =>  e(x)*G(x)'*ydot = f(x)
+% the trigpoly class gives me these in terms of y
+%   =>  e(y)*G(y)'*ydot = f(y)
 % the additional equations come from the unit circle constraints, which add
-%  phi(y)=0 := s^2+c^2=1 => 2*s*sdot+2*c*cdot=0 := Phi*y=0 with Phi(i,:) = [0...0 2*s 2*c 0 ... 0]
-% but for stability, I impose phidot(y) = -alpha*phi(y)
+%  phi(y)=0 := s^2+c^2-1 => 2*s*sdot+2*c*cdot=0 := Phi(y)*ydot=0 with Phi(i,:) = [0...0 2*s 2*c 0 ... 0]
+% but for stability, I impose Phi(y)*ydot = -alpha*phi(y)
 
 xnew=[];
 G=msspoly(zeros(sys.num_x)); Phi=msspoly([]); phidot=msspoly([]);
@@ -112,8 +115,8 @@ for i=1:sys.num_x
       G(yind,i)=c(i);
       G(yind+1,i)=-s(i);
       cind=size(unit_circle_constraints,1)+1;
-      Phi(cind,i)=2*s(i);
-      Phi(cind,i+1)=2*c(i);
+      Phi(cind,yind)=2*s(i);
+      Phi(cind,yind+1)=2*c(i);
       phidot(cind,1) = -(1/options.constraint_tau)*(s(i)^2 + c(i)^2 - 1);
     end
     unit_circle_constraints=[unit_circle_constraints;s(i)^2+c(i)^2-1];

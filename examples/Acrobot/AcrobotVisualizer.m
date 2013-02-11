@@ -15,12 +15,10 @@ classdef AcrobotVisualizer < Visualizer
     
     function draw(obj,t,x)
       % draw the acrobot
-      persistent hFig L1r L1a L2r L2a;
+      persistent L1r L1a L2r L2a;
       l1=obj.l1; l2=obj.l2;
   
-      if (isempty(hFig))
-        hFig = sfigure(32);
-        set(hFig,'DoubleBuffer','on');
+      if (isempty(L1r))
         av = pi/2*[1:.05:3];
         r = .04*min([l1 l2]);
         L1x = [r*cos(av) l1+r*cos(av+pi)];
@@ -33,9 +31,6 @@ classdef AcrobotVisualizer < Visualizer
         L2a = atan2(L2y,L2x);
       end
   
-      sfigure(hFig);
-      clf;
-      
       patch(L1r.*sin(L1a+x(1)),-L1r.*cos(L1a+x(1)),0*L1a,'r');
       hold on
       patch(l1*sin(x(1))+L2r.*sin(L2a+x(1)+x(2)),-l1*cos(x(1))-L2r.*cos(L2a+x(1)+x(2)),1+0*L2a,'b');
