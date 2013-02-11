@@ -16,10 +16,10 @@ sys = feedback(r,c);
 
 x0 = resolveConstraints(r,double(x0)+.2*randn(6,1));
 xtraj = simulate(sys,[0 10],x0);
-xtrajpassive = simulate(r,[0 10],x0);
+xtrajopenloop = simulate(cascade(ConstantTrajectory(u0),r),[0 10],x0);
 
-vpassive = v;
-vpassive.fade_percent = .5;
-mv = MultiVisualizer({vpassive,v});
+vopenloop = v;
+vopenloop.fade_percent = .5;
+mv = MultiVisualizer({vopenloop,v});
 
-mv.playback(vertcat(xtrajpassive,xtraj));
+mv.playback(vertcat(xtrajopenloop,xtraj));
