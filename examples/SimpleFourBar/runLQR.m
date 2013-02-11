@@ -3,7 +3,8 @@ function runLQR
 r = PlanarRigidBodyManipulator('FourBar2.urdf');
 v = r.constructVisualizer();
 
-x0 = [2.861691;.811224;-3.528619;0;0;0]; u0 = 0;
+%x0 = [2.861691;.811224;-3.528619;0;0;0]; u0 = 0;
+x0 = [0.4485; -2.2775; -1.6694; 0; 0; 0]; u0 = -6.5407;
 [x0,u0] = findFixedPoint(r,x0,u0);
 v.draw(0,x0);
 

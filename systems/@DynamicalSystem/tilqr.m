@@ -79,7 +79,8 @@ if getNumStateConstraints(obj)>0
   % zn = P'xn = P'Ax + P'B u = P'APz + P'B u
   
   [phi,F] = geval(@obj.stateConstraints,x0);
-  if ~valuecheck(phi,0)
+  if ~valuecheck(phi,0,1e-6)
+    phi
     error('Drake:TILQR:UnsatisfiedStateContraint','The system has state constraints which are not satisfied at x0');
   end
   P = null(full(F));
