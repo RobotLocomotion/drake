@@ -24,5 +24,7 @@ end
 if ~isempty(name)
   options.material = [options.material,struct('name',name,'c',c)];
 end
+
+% NOTEST
 end
 

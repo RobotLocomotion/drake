@@ -303,12 +303,13 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
     
     isClass = checkFile(files(i).name,'classdef');
     if (isClass)
-      if (checkClass(files(i).name,'NOTEST'))
+      if (checkFile(files(i).name,'NOTEST'))
         continue; 
       end
-      m = staticMethods(testname);
+      [m,dc] = staticMethods(testname);
       for j=1:length(m)
-        if (checkMethod(files(i).name,m{j},'NOTEST'))
+        fname = which(['@',fullfile(dc{j},m{j})]);
+        if (checkMethod(fname,m{j},'NOTEST'))
           continue;
         end
         
@@ -562,42 +563,6 @@ while true  % check the file for the strings
       fclose(fid);
       bfound = true;
       return;
-    end
-  end
-end
-fclose(fid);
-
-end
-
-function bfound = checkClass(filename,strings)
-
-if ~iscell(strings), strings = {strings}; end
-strings = lower(strings);
-
-bfound = false;
-bInMethod = false;
-endcount = 0;
-fid=fopen(filename);
-if (fid<0) return; end  % couldn't open the file.  skip it.
-while true  % check the file for the strings
-  tline = fgetl(fid);
-  if (~ischar(tline))
-    break;
-  end
-  tline = lower(tline);
-  commentind = strfind(tline,'%');
-  if (~isempty(commentind)) tline = tline(1:commentind(1)-1); end
-  if (~bInMethod && ~isempty(strfind(tline,'function')))
-    bInMethod = true;
-    endcount=0;
-  end
-  if (bInMethod)
-    strings={'for','while','switch','try','if'};
-    endcount = endcount + length(keywordfind(tline,strings));
-    endcount = endcount - length(keywordfind(tline,'end'));
-%    disp([num2str(endcount,'%2d'),': ',tline]);
-    if endcount<0
-      bInMethod=false;
     end
   end
 end

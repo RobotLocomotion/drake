@@ -243,6 +243,8 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       ind=~ind;
       t(:,ind) = [-normal(2,ind)./normal(1,ind); ones(1,sum(ind))];
       t = {t./repmat(sqrt(sum(t.^2,1)),2,1)}; % normalize
+      
+      % NOTEST
     end
     
   end
