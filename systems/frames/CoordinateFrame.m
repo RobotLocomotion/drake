@@ -75,7 +75,7 @@ classdef CoordinateFrame < handle
         end
         obj.coordinates = {coordinates{:}}';
       end
-      if checkDependency('spot_enabled') && dim>0
+      if dim>0
         if (prefix=='t') error('oops.  destined for a collision with msspoly representing time'); end
         obj.poly=msspoly('_',dim); % to be replaced below... just initializing 
         for u=unique(prefix')

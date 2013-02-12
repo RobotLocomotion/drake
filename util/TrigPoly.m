@@ -1,4 +1,4 @@
-classdef TrigPoly 
+classdef (InferiorClasses = {?msspoly}) TrigPoly 
 % support class for parsing functions into their polynomial and
 % trigonemetric components.  mostly passes all functionality through to
 % msspoly, but adds handling of sin() and cos().

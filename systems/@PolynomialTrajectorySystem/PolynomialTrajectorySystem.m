@@ -18,8 +18,6 @@ classdef PolynomialTrajectorySystem < PolynomialSystem
     function obj = PolynomialTrajectorySystem(input_frame,state_frame,output_frame,p_dynamics_traj,p_update_traj,p_output_traj,direct_feedthrough_flag)
       obj = obj@PolynomialSystem(size(p_dynamics_traj,1),size(p_update_traj,1),input_frame.dim,size(p_output_traj,1),direct_feedthrough_flag,false,false);
 
-      checkDependency('spot_enabled');
-
       if (state_frame.dim~=obj.getNumStates())
         error('state dimension mismatch');
       end

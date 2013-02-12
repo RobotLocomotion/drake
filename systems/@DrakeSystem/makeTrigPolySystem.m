@@ -32,8 +32,6 @@ if (isempty(options.rational_dynamics_numerator) + isempty(options.rational_dyna
   error('must specify both numerator and denominator if specifying rational dynamics'); 
 end
 
-checkDependency('spot_enabled');
-
 t=msspoly('t',1);
 q=msspoly('q',sys.num_x);
 s=msspoly('s',sys.num_x);

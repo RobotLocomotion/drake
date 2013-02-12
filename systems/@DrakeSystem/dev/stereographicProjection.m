@@ -4,8 +4,6 @@ function polysys = stereographicProjection(sys,x0,options)
 % stereographic projection 
 % See robotlib/doc/stereographic.pdf
 
-checkDependency('spot_enabled');
-
 if (nargin<2)
   x0 = zeros(sys.num_x,0);
 end
