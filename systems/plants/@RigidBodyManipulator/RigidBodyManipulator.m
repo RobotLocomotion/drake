@@ -530,11 +530,13 @@ classdef RigidBodyManipulator < Manipulator
       
       xfb = xyz;
       [xfb(4),xfb(5),xfb(6)] = quat2angle(quat','XYZ');
+      % NOTEST
     end
 
     function [xyz,quat] = floatingBaseToQuat(xfb)
       xyz = xfb(1:3);
       quat = angle2quat(xfb(4),xfb(5),xfb(6),'XYZ')';
+      % NOTEST
     end
     
     function d=surfaceTangents(normal)
@@ -556,6 +558,7 @@ classdef RigidBodyManipulator < Manipulator
       for k=1:m
         d{k}=cos(theta(k))*t1 + sin(theta(k))*t2;
       end      
+      % NOTEST
     end
     
     [c,options] = parseMaterial(node,options);

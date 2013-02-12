@@ -1,4 +1,4 @@
-function m=staticMethods(classname)
+function [method,definingclass]=staticMethods(classname)
 % return all of the public static methods from a class 
 % (skipping abstract and hidden methods)
 
@@ -18,4 +18,5 @@ catch ex
 end
 m=c.Methods;
 b=cellfun(@(a) a.Static && ~a.Hidden && ~a.Abstract && strcmp(a.Access,'public'),m);
-m=cellfun(@(a) a.Name,m(b),'UniformOutput',false);
+method=cellfun(@(a) a.Name,m(b),'UniformOutput',false);
+definingclass=cellfun(@(a) a.DefiningClass.Name,m(b),'UniformOutput',false);
