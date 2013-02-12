@@ -20,7 +20,6 @@ classdef PolynomialTrajectory
   
   methods 
     function obj = PolynomialTrajectory(handle,breaks)
-      checkDependency('spot_enabled');
       if (nargin>0)
         if (~isa(handle,'function_handle')) error('handle should be a function handle'); end
         obj.handle=handle;

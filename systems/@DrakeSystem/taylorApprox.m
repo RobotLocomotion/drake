@@ -8,8 +8,6 @@ function polysys=taylorApprox(sys,varargin)
 % if u0 or u0traj is [], then the default input (all zeros in the
 % input frame) is used
 
-checkDependency('spot_enabled');
-
 num_x=sys.getNumStates();
 num_xc=sys.getNumContStates();
 num_xd=sys.getNumDiscStates();

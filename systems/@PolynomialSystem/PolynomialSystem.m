@@ -10,7 +10,6 @@ classdef PolynomialSystem < DrakeSystem
   methods
     function obj = PolynomialSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag,rational_flag)
       % initialize PolynomialSystem
-      checkDependency('spot_enabled');
       obj = obj@DrakeSystem(num_xc,num_xd,num_u,num_y,direct_feedthrough_flag,time_invariant_flag);
       obj.rational_flag = rational_flag;
     end

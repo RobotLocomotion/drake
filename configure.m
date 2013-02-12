@@ -66,6 +66,28 @@ end
 % todo: try setting this before simulating, then resetting it after the
 % simulate?
 
+%conf.spot_enabled = logical(exist('msspoly'));
+%if conf.spot_enabled
+%  if ~ismethod('msspoly','clean')
+%    disp('  Found an installation of SPOT, but it doesn''t appear to be the right version.');
+%    conf.spot_enabled = false;
+%  end
+%else
+%  disp(' SPOT not found.');
+%end
+%if ~conf.spot_enabled
+%  disp(' SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/spot/branches/dev/ ');
+%end
+if ~isempty(which('msspoly')) && ~strcmp(which('msspoly'),fullfile(conf.root,'externals','spotless','@msspoly','msspoly.m'))
+  error('  i found an old version of spot in your matlab path.  spotless will be installed in the externals directory.  please remove the old spot from your path and rerun configure');
+  % todo: support people who have spotless installed in their own
+  % directory.  for now, i'll trust that people who do can comment out this
+  % section of the install script, and will put in this error to help out
+  % the people who might not know how.
+end
+cd externals/spotless;
+spot_install;
+cd ../..;
 
 
 % add package directories to the matlab path 
@@ -141,19 +163,6 @@ end
 
 if (~conf.sedumi_enabled)
   disp(' SeDuMi not found.  SeDuMi support will be disabled.  To re-enable, add SeDuMi to your matlab path and rerun configure.  SeDuMi can be downloaded for free from http://sedumi.ie.lehigh.edu/ ');
-end
-
-conf.spot_enabled = logical(exist('msspoly'));
-if conf.spot_enabled
-  if ~ismethod('msspoly','clean')
-    disp('  Found an installation of SPOT, but it doesn''t appear to be the right version.');
-    conf.spot_enabled = false;
-  end
-else
-  disp(' SPOT not found.');
-end
-if ~conf.spot_enabled
-  disp(' SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/spot/branches/dev/ ');
 end
 
 conf.cplex_enabled = logical(exist('cplexlp'));
