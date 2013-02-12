@@ -491,7 +491,7 @@ function pass = runTest(path,test,logfileptr)
   close all;
   clearvars -global -except runNode_mutex;
 
-  s=dbstatus;
+  s=dbstatus; oldpath=path;
   % useful for debugging: if 'dbstop if error' is on, then don't use try catch. 
   if any(strcmp('error',{s.cond})) ||any(strcmp('warning',{s.cond}))
     feval_in_contained_workspace(test);
@@ -521,9 +521,11 @@ function pass = runTest(path,test,logfileptr)
       
       lasterr(ex.message,ex.identifier);
       %    rethrow(ex);
+      path(oldpath);
       return;
     end
   end
+  path(oldpath);
   
   a=warning;
   if (~strcmp(a(1).state,'on'))

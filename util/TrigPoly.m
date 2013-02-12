@@ -84,20 +84,20 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
         zeroind = find(p==0);
         oneind = find(p==1);  % must be a scalar coefficient (since deg==1)
         onecoef=double(R(oneind)); 
-        if (onecoef==1)
+        if (abs(onecoef)==1)
           if (isempty(zeroind)) % just sin(q(ind))
-            a.p(i)=a.s(ind); 
+            a.p(i)=sign(onecoef)*a.s(ind);   % sin(-q) = -sin(q)
           else 
             a.p(i)=R(zeroind);
-            a(i)=a.s(ind)*cos(a(i))+a.c(ind)*sin(a(i));
+            a(i)=sign(onecoef)*a.s(ind)*cos(a(i))+a.c(ind)*sin(a(i));
           end
-        elseif (onecoef-floor(onecoef))==0  % sin(c*q(ind)+..)   do sin(q(ind) + (c-1)*q(ind)+...)
+        elseif (onecoef-floor(onecoef))==0  % sin(c*q(ind)+..)   do sin(sign(c)*q(ind) + (c-sign(c))*q(ind)+...)
           if (isempty(zeroind))
             a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind);
           else
             a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
           end          
-          a(i)=a.s(ind)*cos(a(i)) + a.c(ind)*sin(a(i));
+          a(i)=sign(onecoef)*a.s(ind)*cos(a(i)) + a.c(ind)*sin(a(i));
         end
       end      
     end
@@ -117,12 +117,12 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
         zeroind = find(p==0);
         oneind = find(p==1);  % must be a scalar coefficient (since deg==1)
         onecoef=double(R(oneind)); 
-        if (onecoef==1)
+        if (abs(onecoef)==1)
           if (isempty(zeroind)) % just sin(q(ind))
             a.p(i)=a.c(ind); 
           else 
             a.p(i)=R(zeroind);
-            a(i)=a.c(ind)*cos(a(i)) - a.s(ind)*sin(a(i));
+            a(i)=a.c(ind)*cos(a(i)) - sign(onecoef)*a.s(ind)*sin(a(i));
           end
         elseif (onecoef-floor(onecoef))==0  % sin(c*q(ind)+..)   do sin(q(ind) + (c-1)*q(ind)+...) 
           if (isempty(zeroind))
@@ -130,7 +130,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
           else
             a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
           end
-          a(i)=a.c(ind)*cos(a(i)) - a.s(ind)*sin(a(i));
+          a(i)=a.c(ind)*cos(a(i)) - sign(onecoef)*a.s(ind)*sin(a(i));
         end
       end      
     end

@@ -2,11 +2,11 @@ function trigPolyTest
 
 options.replace_output_w_new_state = true;
 
-p1 = PlanarRigidBodyManipulator('../Acrobot.urdf');
+p1 = PlanarRigidBodyManipulator('../Pendulum.urdf');
 tp1 = makeTrigPolySystem(p1,options);
 
 oldpath=addpath('..');
-p2 = AcrobotPlant();
+p2 = PendulumPlant();
 path(oldpath);
 
 tp2 = makeTrigPolySystem(p2,options);
@@ -14,7 +14,7 @@ tp2 = makeTrigPolySystem(p2,options);
 % test numerically, because f and e are different (one has the inertial
 % matrix in f, the other has it in e)
 for i=1:25
-  x = Point(p1.getStateFrame,randn(4,1));
+  x = Point(p1.getStateFrame,randn(2,1));
   xp = x.inFrame(tp1.getStateFrame);
   x = double(x); xp=double(xp);
   u = randn;
