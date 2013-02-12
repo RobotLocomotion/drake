@@ -25,7 +25,13 @@ for i=1:n
   figure(1); fnplt(xtraj,[3 6]);
   figure(25);
   v.playback(xtraj);
-  if (norm(xtraj.eval(4)-x0)>1e-2)
-    error('initial condition from verified ROA didn''t get to the top (in 4 seconds)');
+  
+  ts = xtraj.getBreaks();Vs=zeros(1,length(ts));
+  for i=1:length(ts)
+    Vs(i) = V.eval(ts(i),xtraj.eval(ts(i)));
+  end
+  if any(diff(Vs)>1e-4)
+    diff(Vs)
+    error('V(t,x) increased at some point in the trajectory from an initial condition in the verified ROA.');
   end
 end
