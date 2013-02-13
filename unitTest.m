@@ -477,9 +477,9 @@ function pass = runCommandLineTest(path,test,options)
   end
 end
 
-function pass = runTest(path,test,logfileptr)
+function pass = runTest(runpath,test,logfileptr)
   p=pwd;
-  cd(path);
+  cd(runpath);
 %  disp(['running ',path,'/',test,'...']);
 
   if (exist('rng'))
@@ -491,7 +491,7 @@ function pass = runTest(path,test,logfileptr)
   close all;
   clearvars -global -except runNode_mutex;
 
-  s=dbstatus; oldpath=path;
+  s=dbstatus; oldpath=path();
   % useful for debugging: if 'dbstop if error' is on, then don't use try catch. 
   if any(strcmp('error',{s.cond})) ||any(strcmp('warning',{s.cond}))
     feval_in_contained_workspace(test);
@@ -504,14 +504,14 @@ function pass = runTest(path,test,logfileptr)
       disp(' ');
       disp(' ');
       disp('*******************************************************');
-      disp(['* error in ',path,'/',test]);
+      disp(['* error in ',runpath,'/',test]);
       disp('*******************************************************');
       disp(getReport(ex,'extended'));
       disp('*******************************************************');
       
       if (nargin>2 && logfileptr>0)
         fprintf(logfileptr,'*******************************************************\n');
-        fprintf(logfileptr,['* error in ',path,'/',test,'\n']);
+        fprintf(logfileptr,['* error in ',runpath,'/',test,'\n']);
         fprintf(logfileptr,'*******************************************************\n');
         fprintf(logfileptr,'\n');
         fprintf(logfileptr,getReport(ex,'extended'));

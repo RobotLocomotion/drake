@@ -29,15 +29,11 @@ hold on;
 view(0,90);
 
 if isTI(obj) 
-  
-  V = obj.getPoly(0);
-  p_x = obj.getFrame.poly;
-
   % TODO: Here we split between projection and slice.
   if strcmp(options.inclusion,'slice')
-    x=getLevelSet(p_x,V,options);
+    x=getLevelSet(obj,0,options);
   elseif strcmp(options.inclusion,'projection')
-    x=getProjection(p_x,V,options.x0,options.plotdims,options);
+    x=getProjection(obj,0,options.x0,options.plotdims,options);
   else
     error(['Unknown inclusion method: ' options.inclusion]);
   end
@@ -51,16 +47,15 @@ else
   x0 = options.x0;
   
   h=[];
-  px = obj.getFrame.poly;
   for i=length(ts)-1:-1:1
     if strcmp(options.inclusion,'slice')
       options.x0 = x0.eval(ts(i));
-      xfun0 = getLevelSet(px,obj.getPoly(ts(i)),options);
+      xfun0 = getLevelSet(obj,ts(i),options);
       options.x0 = x0.eval(ts(i+1)-eps);
-      xfun1 = getLevelSet(px,obj.getPoly(ts(i+1)-eps),options);
+      xfun1 = getLevelSet(obj,ts(i+1)-eps,options);
     elseif strcmp(options.inclusion,'projection')
-      xfun0 = getProjection(px,obj.getPoly(ts(i)),x0.eval(ts(i)),options.plotdims,options);
-      xfun1 = getProjection(px,obj.getPoly(ts(i+1)-eps),x0.eval(ts(i+1)-eps),options.plotdims,options);
+      xfun0 = getProjection(obj,ts(i),x0.eval(ts(i)),options.plotdims,options);
+      xfun1 = getProjection(obj,ts(i+1)-eps,x0.eval(ts(i+1)-eps),options.plotdims,options);
     else
       error(['Unknown inclusion method: ' options.inclusion]);
     end

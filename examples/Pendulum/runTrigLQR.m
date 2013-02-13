@@ -31,3 +31,11 @@ valuecheck(Kp(2),0);
 
 
 %S=V.S; Sp=Vp.S;
+
+% plot the one-level sets
+if (0)
+  figure(1); clf; hold on;
+  options.x0 = double(p.xG);
+  plotFunnel(V.inFrame(p.getStateFrame),options);
+  plotFunnel(Vp.inFrame(p.getStateFrame),options);  % need a much faster way to publish this
+end
