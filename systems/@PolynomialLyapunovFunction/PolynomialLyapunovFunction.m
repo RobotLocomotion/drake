@@ -39,6 +39,12 @@ classdef PolynomialLyapunovFunction < LyapunovFunction
       v = getLevelSetVolume(obj.getFrame.poly,obj.getPoly(t));
     end
     
+    function y = getProjection(obj,t,x0,plotdims,options)
+      if (nargin<3) options=struct(); end
+      if isTI(obj) t=0; elseif nargin<2 || isempty(t), error('you must specify a time'); end
+      y = getProjection(obj.getFrame.poly,obj.getPoly(t),x0,plotdims,options);
+    end
+
     function V = inFrame(obj,frame)
       if (frame==obj.getFrame)
         V = obj;
