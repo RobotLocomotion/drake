@@ -60,7 +60,7 @@ if (nargout>1)
     D{k} = sparse(repmat(1:obj.num_contacts,3,1),1:3*obj.num_contacts,d{k}(:))*J;
     if (nargout>4)
       % note: this temporarily assumes that the normal does not change with contact_pos
-      dD{k} = reshape(sparse(repmat(1:obj.num_contacts,3,1),1:3*obj.num_contacts,t(:))*dJ,numel(n),[]);
+      dD{k} = reshape(sparse(repmat(1:obj.num_contacts,3,1),1:3*obj.num_contacts,d{k}(:))*dJ,numel(n),[]);
     end
   end
   for k=(m+1):2*m
