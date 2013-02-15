@@ -35,6 +35,10 @@ classdef Point
       n=1;
     end
     
+    function v = end(obj,k,n)
+      v = feval('end',obj.p,k,n);
+    end
+    
     function display(obj)
       for i=1:length(obj.p)
         fprintf(1,'%20s = %f\n',obj.frame.coordinates{i},obj.p(i));
