@@ -75,12 +75,14 @@ else
   sys1inputs = sys1inputs(arrayfun(@(a) nonemptyframe(getFrameByNum(sys1.getInputFrame,a)), sys1inputs));
   sys2inputs = setdiff(1:getNumFrames(sys2.getInputFrame),[connection.to_input]);
   sys2inputs = sys2inputs(arrayfun(@(a) nonemptyframe(getFrameByNum(sys2.getInputFrame,a)), sys2inputs));
-  input_select=[];
+  input_select=struct('system',{},'input',{});
   for i=1:length(sys1inputs)
+    if sys1.getInputFrame.getFrameByNum(i).dim<1, continue; end
     input_select(i).system=1;
     input_select(i).input=sys1inputs(i);
   end
   for i=1:length(sys2inputs)
+    if sys2.getInputFrame.getFrameByNum(i).dim<1, continue; end
     input_select(end+1).system=2;
     input_select(end).input=sys2inputs(i);
   end
@@ -103,12 +105,14 @@ if (nargin>4 && ~isempty(output_select))
 else
   sys1outputs = setdiff(1:getNumFrames(sys1.getOutputFrame),[connection.from_output]);
   sys2outputs = 1:getNumFrames(sys2.getOutputFrame);
-  output_select=[];
+  output_select=struct('system',{},'output',{});
   for i=1:length(sys1outputs)
+    if sys1.getOutputFrame.getFrameByNum(i).dim<1, continue; end
     output_select(i).system=1;
     output_select(i).output=sys1outputs(i);
   end
   for i=1:length(sys2outputs)
+    if sys2.getOutputFrame.getFrameByNum(i).dim<1, continue; end
     output_select(end+1).system=2;
     output_select(end).output=sys2outputs(i);
   end
