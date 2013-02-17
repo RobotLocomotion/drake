@@ -38,24 +38,32 @@ However, there is currently little or no support for the \mcode{<sensor>} elemen
 \end{itemize}
 \end{itemize}
 
-\begin{comment}
-\bigskip
-\item \mcode{<transmission type="LinearSpring">}
+\item \mcode{<force_element>}
 \begin{itemize}
-\item A new transmission type (in addition to "SimpleTransmission")
+\item Adds dynamic, force-producing elements like springs and
+  aerodynamics
 \item Attributes
 \begin{itemize}
-\item \mcode{name} (required)
-\item \mcode{type} (required) 
+\item \mcode{name} (required).
+\item \mcode{type} (required).  Currently must be
+  \mcode{LinearSpringDamper}.  More types will be added soon.
 \end{itemize}
-\item Elements
+\item Elements for type \mcode{LinearSpringDamper}
 \begin{itemize}
-\item \mcode{<actuator>} (required). Specify the name of the actuator.
-\item \mcode{<joint>} (required). Specify the name of the associated joint.
-\item \mcode{<mechanicalReduction>} (required). Specify the overall mechanical reduction at the transmission.
-\item \mcode{<passive>} (required). Specify the passive stiffness and damping (in SI units) as well as the nominal position of the transmission. 
+\item \mcode{<link1>} (required)  
+\begin{itemize}
+\item Attributes: \mcode{link} (required). String naming the link on
+  one side of the joint; \mcode{<xyz>} (optional). Location of joint relative to the coordinate system on link 1. Default is \mcode{xyz=[0 0 0]}.
+\end{itemize}
+\item \mcode{<link2>} (required)
+\begin{itemize}
+\item Attributes: \mcode{link} (required). String naming the link on
+  one side of the joint; \mcode{<xyz>} (optional). Location of joint relative to the coordinate system on link 1. Default is \mcode{xyz=[0 0 0]}.
+\end{itemize}
+\item \mcode{<rest_length>} (default 0)
+\item \mcode{<stiffness>} in Newtons per meter (default 0)
+\item \mcode{<damping>} in Newton seconds per meter.  positive values resist motion.  (default 0)
 \end{itemize}
 \end{itemize}
-\end{comment}
 
 \end{itemize}

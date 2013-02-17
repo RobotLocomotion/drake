@@ -78,6 +78,11 @@ for i=0:(loopjoints.getLength()-1)
   model = parseLoopJoint(model,robotnum,loopjoints.item(i),options);
 end
 
+forces = node.getElementsByTagName('force_element');
+for i=0:(forces.getLength()-1)
+  model = parseForceElement(model,robotnum,forces.item(i),options);
+end
+
 transmissions = node.getElementsByTagName('transmission');
 for i=0:(transmissions.getLength()-1)
   model = parseTransmission(model,robotnum,transmissions.item(i),options);

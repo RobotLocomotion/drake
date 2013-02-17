@@ -5,6 +5,10 @@ if (nargin<4) use_mex=true; end
 
 m = obj.featherstone;
 
+if length(obj.force)>0
+  error('not implemented for planar models yet');
+end
+
 if (nargout>3)
   if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
     [H,C,dH,dC] = HandCpmex(obj.mex_model_ptr.getData,q,qd);

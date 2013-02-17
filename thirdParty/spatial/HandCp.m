@@ -16,7 +16,8 @@ function  [H,C] = HandCp( model, q, qd, f_ext, grav_accn, jsign )
 % gravity in the x-y plane.  The arguments f_ext and grav_accn are
 % optional, and default to zero (i.e., {} and [0 0], respectively) if
 % omitted.
-
+%
+% UPDATED by russt:  f_ext is an empty or (sparse) 6 x model.NB matrix
 
 if nargin < 5
   a_grav = [0;0;0];
@@ -38,8 +39,8 @@ for i = 1:model.NB
     avp{i} = Xup{i}*avp{model.parent(i)} + crmp(v{i})*vJ;
   end
   fvp{i} = model.I{i}*avp{i} + crfp(v{i})*model.I{i}*v{i};
-  if external_force && length(f_ext{i}) > 0
-    fvp{i} = fvp{i} - f_ext{i};
+  if external_force
+    fvp{i} = fvp{i} - f_ext(:,i);
   end
 end
 
