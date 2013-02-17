@@ -15,6 +15,8 @@ function  [H,C] = HandC( model, q, qd, f_ext, grav_accn )
 % linear acceleration due to gravity.  The arguments f_ext and grav_accn
 % are optional, and default to the values {} and [0,0,-9.81], respectively,
 % if omitted.
+%
+% UPDATED by russt:  f_ext is an empty or (sparse) 6 x model.NB matrix
 
 
 if nargin < 5
@@ -37,8 +39,8 @@ for i = 1:model.NB
     avp{i} = Xup{i}*avp{model.parent(i)} + crm(v{i})*vJ;
   end
   fvp{i} = model.I{i}*avp{i} + crf(v{i})*model.I{i}*v{i};
-  if external_force && length(f_ext{i}) > 0
-    fvp{i} = fvp{i} - f_ext{i};
+  if external_force
+    fvp{i} = fvp{i} - f_ext(:,i);
   end
 end
 

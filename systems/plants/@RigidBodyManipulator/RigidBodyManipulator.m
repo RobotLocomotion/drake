@@ -9,6 +9,7 @@ classdef RigidBodyManipulator < Manipulator
     actuator = [];  % array of RigidBodyActuator objects
     loop=[];        % array of RigidBodyLoop objects
     sensor={};      % cell array of RigidBodySensor objects
+    force={};       % cell array of RigidBodyForceElement objects 
       % note: need {} for arrays that will have multiple types (e.g.
       % a variety of derived classes), but can get away with [] for arrays
       % with elements that are all exactly the same type
@@ -678,6 +679,19 @@ classdef RigidBodyManipulator < Manipulator
             model.loop(j).body2 = parent;
           end
         end
+        
+        for j=1:length(model.force)
+          if isa(model.force{j},'RigidBodySpringDamper')
+            if (model.force{j}.body1 == body)
+              model.force{j}.pos1 = body.Ttree(1:end-1,:)*[model.force{j}.pos1;1];
+              model.force{j}.body1 = parent;
+            end
+            if (model.force{j}.body2 == body)
+              model.force{j}.pos2 = body.Ttree(1:end-1,:)*[model.force{j}.pos2;1];
+              model.force{j}.body2 = parent;
+            end
+          end
+        end
           
         % error on actuators
         if (~isempty(model.actuator) && any([model.actuator.joint] == body))
@@ -866,7 +880,47 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       model.loop=[model.loop,loop];
-    end    
+    end
+    
+    function model = parseForceElement(model,robotnum,node,options)
+      name = char(node.getAttribute('name'));
+      name = regexprep(name, '\.', '_', 'preservecase');
+      
+      type = char(node.getAttribute('type'));
+      switch (lower(type))
+        case 'linearspringdamper'
+          fe = RigidBodySpringDamper();
+          fe.name = name;
+          linkNode = node.getElementsByTagName('link1').item(0);
+          fe.body1 = findLink(model,char(linkNode.getAttribute('link')),robotnum);
+          if linkNode.hasAttribute('xyz')
+            fe.pos1 = reshape(str2num(char(linkNode.getAttribute('xyz'))),3,1);
+          end
+          linkNode = node.getElementsByTagName('link2').item(0);
+          fe.body2 = findLink(model,char(linkNode.getAttribute('link')),robotnum);
+          if linkNode.hasAttribute('xyz')
+            fe.pos2 = reshape(str2num(char(linkNode.getAttribute('xyz'))),3,1);
+          end
+          
+          elnode = node.getElementsByTagName('rest_length').item(0);
+          if ~isempty(elnode) && elnode.hasAttribute('value')
+            fe.rest_length = str2num(char(elnode.getAttribute('value')));
+          end
+          elnode = node.getElementsByTagName('stiffness').item(0);
+          if ~isempty(elnode) && elnode.hasAttribute('value')
+            fe.k = str2num(char(elnode.getAttribute('value')));
+          end
+          elnode = node.getElementsByTagName('damping').item(0);
+          if ~isempty(elnode) && elnode.hasAttribute('value')
+            fe.b = str2num(char(elnode.getAttribute('value')));
+          end
+          
+          model.force{end+1} = fe;
+
+        otherwise
+          error(['force element type ',type,' not supported (yet?)']);
+      end
+    end
     
   end
   

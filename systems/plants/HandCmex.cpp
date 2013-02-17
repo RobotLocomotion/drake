@@ -177,12 +177,16 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   memcpy(&model,mxGetData(prhs[0]),sizeof(model));
   
   double *q,*qd;
+  MatrixXd f_ext;
   if (mxGetNumberOfElements(prhs[1])!=model->NB || mxGetNumberOfElements(prhs[2])!=model->NB)
     mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","q and qd must be size %d x 1",model->NB);
   q = mxGetPr(prhs[1]);
   qd = mxGetPr(prhs[2]);
   if (nrhs>3) {
-    mexErrMsgIdAndTxt("Drake:HandCmex:ExternalForceNotImplementedYet","sorry, f_ext is not implemented yet (but it would be trivial)");
+    if (!mxIsEmpty(prhs[3])) {
+      f_ext.resize(6,model->NB);
+      memcpy(f_ext.data(), mxGetPr(prhs[3]), sizeof(double)*6*model->NB);
+    }
   }
   
   VectorXd vJ(6), fh(6), dfh(6), dvJdqd(6);
@@ -202,6 +206,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
       model->avp[i] = model->Xup[i]*model->avp[model->parent[i]] + crm(model->v[i])*vJ;
     }
     model->fvp[i] = model->I[i]*model->avp[i] + crf(model->v[i])*model->I[i]*model->v[i];
+    if (f_ext.cols()>0)
+      model->fvp[i] = model->fvp[i] - f_ext.col(i);
     model->IC[i] = model->I[i];
     
     //Calculate gradient information if it is requested
