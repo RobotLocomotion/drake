@@ -474,7 +474,40 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           end
           
           model.force{end+1} = fe;
+          
+        case 'wing'
+          elNode = node.getElementsByTagName('parent').item(0);
+          parent = findLink(model,char(elNode.getAttribute('link')),robotnum);
+          
+          xyz=zeros(3,1); rpy=zeros(3,1);
+          elnode = node.getElementsByTagName('origin').item(0);
+          if ~isempty(elnode)
+            if elnode.hasAttribute('xyz')
+              xyz = str2num(char(elnode.getAttribute('xyz')));
+            end
+            if elnode.hasAttribute('rpy')
+              rpy = str2num(char(elnode.getAttribute('rpy')));
+            end
+          end
+          
+          elNode = node.getElementsByTagName('profile').item(0);
+          profile = char(elNode.getAttribute('value'));
 
+          elnode = node.getElementsByTagName('chord').item(0);
+          chord = str2num(char(elnode.getAttribute('value')));
+          
+          elnode = node.getElementsByTagName('span').item(0);
+          span = str2num(char(elnode.getAttribute('value')));
+          
+          elnode = node.getElementsByTagName('stall_angle').item(0);
+          stall_angle = str2num(char(elnode.getAttribute('value')));
+
+          elnode = node.getElementsByTagName('nominal_speed').item(0);
+          nominal_speed = str2num(char(elnode.getAttribute('value')));
+          
+          fe = PlanarRigidBodyWing();
+          fe.name = name;
+          model.force{end+1} = fe;
         otherwise
           error(['force element type ',type,' not supported (yet?)']);
       end
