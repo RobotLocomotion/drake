@@ -31,12 +31,16 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
       
       force = obj.k*(length-obj.rest_length) + obj.b*vel;
       
-      % convert points to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
-      % todo: this could happen only once, at compile time.
-      x1 = obj.body1.T_body_to_joint(1:3,:)*[x1;1];
-      x2 = obj.body2.T_body_to_joint(1:3,:)*[x2;1];
+      if size(x1,1)==3  % then it's in 3D
+        % convert points to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
+        % todo: this could happen only once, at compile time.
+        x1 = obj.body1.T_body_to_joint(1:end-1,:)*[x1;1];
+        x2 = obj.body2.T_body_to_joint(1:end-1,:)*[x2;1];
+        f_ext = sparse(6,getNumDOF(manip));
+      else % then 2D
+        f_ext = sparse(3,getNumDOF(manip));
+      end
       
-      f_ext = sparse(6,getNumDOF(manip));
       if (obj.body1.dofnum>0)
         f_ext(:,obj.body1.dofnum)=RigidBodyForceElement.cartesianForceToSpatialForce(x1,force*(x2-x1)/length);
       end

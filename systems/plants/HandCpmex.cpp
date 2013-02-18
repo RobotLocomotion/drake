@@ -144,12 +144,16 @@ void mexFunction( int nlhs, mxArray *plhs[],
   memcpy(&model,mxGetData(prhs[0]),sizeof(model));
     
   double *q,*qd;
+  MatrixXd f_ext;
   if (mxGetNumberOfElements(prhs[1])!=model->NB || mxGetNumberOfElements(prhs[2])!=model->NB)
     mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","q and qd must be size %d x 1",model->NB);
   q = mxGetPr(prhs[1]);
   qd = mxGetPr(prhs[2]);
   if (nrhs>3) {
-    mexErrMsgIdAndTxt("Drake:HandCpmex:ExternalForceNotImplementedYet","sorry, f_ext is not implemented yet (but it would be trivial)");
+    if (!mxIsEmpty(prhs[3])) {
+      f_ext.resize(3,model->NB);
+      memcpy(f_ext.data(), mxGetPr(prhs[3]), sizeof(double)*3*model->NB);
+    }
   }
   
   Vector3d vJ, fh, dfh, dvJdqd;
@@ -168,6 +172,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
       model->avp[i] = model->Xup[i]*model->avp[model->parent[i]] + crmp(model->v[i])*vJ;
     }
     model->fvp[i] = model->I[i]*model->avp[i] + crfp(model->v[i])*model->I[i]*model->v[i];
+    if (f_ext.cols()>0)
+      model->fvp[i] = model->fvp[i] - f_ext.col(i);
     
     model->IC[i] = model->I[i];
     

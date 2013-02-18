@@ -6,13 +6,29 @@ if (nargin<4) use_mex=true; end
 m = obj.featherstone;
 
 if length(obj.force)>0
-  error('not implemented for planar models yet');
+  f_ext = sparse(3,m.NB);
+  for i=1:length(obj.force)
+    f_ext = f_ext+computeSpatialForce(obj.force{i},obj,q,qd);
+  end
+else
+  f_ext=[];
 end
 
-if (nargout>3)
-  if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
+if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
+  f_ext = full(f_ext);
+  if (nargout>3)
+    if ~isempty(f_ext), error('not implemented yet'); end
     [H,C,dH,dC] = HandCpmex(obj.mex_model_ptr.getData,q,qd);
+    dH = dH(:,1:m.NB)*[eye(m.NB) zeros(m.NB)];
+    dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
+    dB = zeros(obj.num_q*obj.num_u,2*obj.num_q);
   else
+    [H,C] = HandCpmex(obj.mex_model_ptr.getData,q,qd,f_ext);
+  end
+else
+  if (nargout>3)
+    if ~isempty(f_ext), error('not implemented yet'); end
+
     % featherstone's HandCp with analytic gradients
     a_grav = [0;obj.gravity];
     
@@ -135,20 +151,15 @@ if (nargout>3)
         end
       end
     end
-  end
-  dH = dH(:,1:m.NB)*[eye(m.NB) zeros(m.NB)];
-  C=C+m.damping'.*qd;
-  dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
-  B = obj.B;
-  dB = zeros(obj.num_q*obj.num_u,2*obj.num_q);
-else
-  if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
-    [H,C] = HandCpmex(obj.mex_model_ptr.getData,q,qd);
+    dH = dH(:,1:m.NB)*[eye(m.NB) zeros(m.NB)];
+    dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
+    dB = zeros(obj.num_q*obj.num_u,2*obj.num_q);
   else
-    [H,C] = HandCp(obj.featherstone,q,qd,{},obj.gravity);
+    [H,C] = HandCp(obj.featherstone,q,qd,f_ext,obj.gravity);
   end
-  C=C+obj.featherstone.damping'.*qd;
-  B = obj.B;
 end
+
+C=C+m.damping'.*qd;
+B = obj.B;
 
 end
