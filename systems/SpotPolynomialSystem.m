@@ -13,6 +13,8 @@ classdef SpotPolynomialSystem < PolynomialSystem
     function obj = SpotPolynomialSystem(input_frame,state_frame,output_frame,p_dynamics_rhs,p_dynamics_lhs,p_update,p_output,p_state_constraints)
       obj = obj@PolynomialSystem(size(p_dynamics_rhs,1),size(p_update,1),input_frame.dim,size(p_output,1),false,true,false);
 
+      if isempty(state_frame) state_frame = CoordinateFrame('state',0); end
+
       if (state_frame.dim~=obj.getNumStates())
         error('state dimension mismatch');
       end
