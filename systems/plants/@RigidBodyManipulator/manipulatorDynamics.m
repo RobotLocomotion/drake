@@ -19,7 +19,7 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
   if (nargout>3)
     if ~isempty(f_ext) error('not implemented yet'); end
-    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr.getData,q,qd);
+    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr.getData,q,qd,f_ext);
     dH = dH(:,1:m.NB)*[eye(m.NB) zeros(m.NB)];
     dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
     dB = zeros(m.NB*obj.num_u,2*m.NB);
@@ -28,8 +28,6 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   end
 else  
   if (nargout>3)
-    if ~isempty(f_ext) error('not implemented yet'); end
-
     % featherstone's HandC with analytic gradients
     a_grav = [0;0;0;obj.gravity];
     
@@ -99,6 +97,12 @@ else
       fvp{i} = m.I{i}*avp{i} + crf(v{i})*m.I{i}*v{i};
       dfvpdq{i} = m.I{i}*davpdq{i} + dcrf(v{i},m.I{i}*v{i},dvdq{i},m.I{i}*dvdq{i});
       dfvpdqd{i} = m.I{i}*davpdqd{i} + dcrf(v{i},m.I{i}*v{i},dvdqd{i},m.I{i}*dvdqd{i});
+      
+      if ~isempty(f_ext)
+        fvp{i} = fvp{i} - f_ext(:,i);
+        error('need to implement f_ext gradients here');
+      end
+      
     end
     
     dC = zeros(m.NB,2*m.NB)*q(1);

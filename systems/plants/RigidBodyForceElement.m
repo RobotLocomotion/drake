@@ -10,8 +10,12 @@ classdef RigidBodyForceElement
   end
   
   methods (Static=true)
-    function f = cartesianForceToSpatialForce(point,force)
-      f = [ cross(point,force,1); force ];
+    function f = cartesianForceToSpatialForce(point,force)  % from Fpt in featherstone v2
+      if length(force)==3
+        f = [ cross(point,force,1); force ];
+      else
+        f = [ point(1,:).*force(2,:) - point(2,:).*force(1,:); force ];
+      end
     end
   end
   

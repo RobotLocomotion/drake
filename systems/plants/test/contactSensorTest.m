@@ -18,8 +18,8 @@ valuecheck(yf.force_x,0);
 valuecheck(yf.force_z,getMass(p)*norm(getGravity(p)));
 valuecheck(yf.torque,0);
 
-v = p.constructVisualizer();
-v.playback(ytraj);
+%v = p.constructVisualizer();
+%v.playback(ytraj);
 
 
 
@@ -43,5 +43,5 @@ valuecheck(yf.torque_x,0);
 valuecheck(yf.torque_y,0);
 valuecheck(yf.torque_z,0);
 
-v = p.constructVisualizer();
-v.playback(ytraj);
+%v = p.constructVisualizer();
+%v.playback(ytraj);
