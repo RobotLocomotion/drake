@@ -62,7 +62,32 @@ However, there is currently little or no support for the \mcode{<sensor>} elemen
 \end{itemize}
 \item \mcode{<rest_length>} (default 0)
 \item \mcode{<stiffness>} in Newtons per meter (default 0)
-\item \mcode{<damping>} in Newton seconds per meter.  positive values resist motion.  (default 0)
+\item \mcode{<damping>} in Newton seconds per meter.  positive values
+  resist motion.  (default 0)
+\end{itemize}
+\item Elements for type \mcode{Wing}
+\begin{itemize}
+\item \mcode{<parent>} (required). 
+\begin{itemize} 
+\item Attributes: \mcode{<link>} (required).  String naming
+  the link on which this wing is attached.
+\end{itemize}
+\item \mcode{<origin>} with attributes \mcode{xyz} and \mcode{rpy}.
+  This defines the position of the aerodynamic center, and the
+  orientation of the wing relative to the parent link.
+\item \mcode{<profile>} (required) with attribute \mcode{value} which is one of
+  the following strings:  
+\item \mcode{<chord>} (required) with attribute \mcode{value} which is the chord
+  length in meters.  
+\item \mcode{<span>} (required) with attribute \mcode{value} which is the span of
+  the wing in meters.  
+\item \mcode{<stall_angle>} (required) with attribute \mcode{value} which is the
+  angle in degrees upon which the lift and drag performance returns to
+  that of a flat plate.  (this value is ignored if the profile is set
+  to a flat plate).  
+\item \mcode{<nominal_speed>} (required) with attribute \mcode{value} which is an
+  approximate nominal speed in meters per second used to calculate the
+  Reynolds number around which we design the aerodynamic coefficients.
 \end{itemize}
 \end{itemize}
 
