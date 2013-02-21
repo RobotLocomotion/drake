@@ -71,7 +71,8 @@ else
   global SNOPT_USERFUN;
   SNOPT_USERFUN = @ik;
   
-  [q,F,info] = snopt(q0,obj.joint_limit_min,obj.joint_limit_max,zeros(nF,1),[inf;zeros(nF-1,1)],'snoptUserfun');%,0,1,[],[],[],iGfun,jGvar);
+  [iGfun,jGvar] = ind2sub([nF,obj.num_q],1:(nF*obj.num_q));
+  [q,F,info] = snopt(q0,obj.joint_limit_min,obj.joint_limit_max,zeros(nF,1),[inf;zeros(nF-1,1)],'snoptUserfun',[],[],[],iGfun',jGvar');
   
   if (info~=1)
     [str,cat] = snoptInfo(info);
@@ -101,6 +102,7 @@ end
     j=j+n;
     i=i+2;
   end
+  G=G(:);
   %  if isfield(options,'visualizer') options.visualizer.draw(0,[q;0*q]); drawnow; end
   end
 
