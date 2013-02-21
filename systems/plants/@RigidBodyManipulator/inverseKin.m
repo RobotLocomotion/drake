@@ -62,6 +62,12 @@ else
   for i=2:2:N
     nF = nF + sum(~isnan(varargin{i}));
   end
+  
+%[fmex,Gmex] = inverseKinmex(obj.mex_model_ptr.getData,q0,q_nom,Q,varargin{:});
+%[f,G] = ik(zeros(obj.num_q,1));
+%valuecheck(fmex,f);
+%valuecheck(Gmex,G);
+  
   global SNOPT_USERFUN;
   SNOPT_USERFUN = @ik;
   
@@ -77,6 +83,7 @@ end
   f = zeros(nF,1); G = zeros(nF,obj.num_q);
   f(1) = (q-q_nom)'*Q*(q-q_nom);
   G(1,:) = 2*(q-q_nom)'*Q;
+  if (nF<2) return; end
   kinsol = doKinematics(obj,q,false);
   i=1;j=2;
   while i<length(varargin)

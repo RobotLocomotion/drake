@@ -27,7 +27,6 @@ q0 = xstar(1:r.getNumDOF);
 q = inverseKin(r,q0,options);
 v.draw(0,[q;0*q]); drawnow;
 
-
 q = inverseKin(r,q0,0,[0;0;2],options);
 v.draw(1,[q;0*q]); drawnow;
 
