@@ -7,9 +7,7 @@
 #include <iostream>
 
 #include <f2c.h>
-#include "snfilewrapper.hh"
 #include "snopt.hh"
-#include "snoptProblem.hh"
 #undef max
 #undef min
 
@@ -91,7 +89,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:inverseKinmex:BadInputs","the first argument should be the model_ptr");
   memcpy(&model,mxGetData(prhs[0]),sizeof(model));
   
-  int nq = mxGetM(prhs[1]);
+  integer nq = mxGetM(prhs[1]);
 
   plhs[0] = mxCreateDoubleMatrix(nq,1,mxREAL);
   memcpy(mxGetPr(plhs[0]),mxGetPr(prhs[1]),sizeof(double)*nq);
@@ -102,7 +100,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   Q.resize(nq,nq);
   memcpy(Q.data(),mxGetPr(prhs[3]),sizeof(double)*nq*nq);
 
-  int nF = 1, i,j,k;
+  integer nF = 1;
+  int i,j,k;
   narg = (nrhs-4)/2;
   body_ind = new int[narg];
   pts = new VectorXd[narg];
@@ -118,33 +117,21 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   q.resize(nq);  
   
 //  [q,F,info] = snopt(q0,obj.joint_limit_min,obj.joint_limit_max,zeros(nF,1),[inf;zeros(nF-1,1)],'snoptUserfun',[],[],[],iGfun',jGvar');
-  
-  snoptProblem snoptIKprob;
-  
-  snoptIKprob.setPrintFile("ik.out");
-  snoptIKprob.setProblemSize(nq,nF);
-  snoptIKprob.setObjective(0,0.0);
-  snoptIKprob.setA(0,NULL,NULL,NULL);
 
-  integer lenG   = nq*nF;
-  integer *iGfun = new integer[lenG];
-  integer *jGvar = new integer[lenG];
-  k=0;
-  for (i=0;i<nF;i++) {
-    for (j=0;j<nq;j++) {
-      iGfun[k]=i;
-      jGvar[k++]=j;
-    }
-  }
-  snoptIKprob.setG(lenG,iGfun,jGvar);
-  
+  integer    minrw, miniw, mincw;
+  integer    lenrw = 20000, leniw = 10000, lencw = 500;
+  doublereal rw[20000];
+  integer    iw[10000];
+  char       cw[8*500];
+
+  integer    Cold = 0, Basis = 1, Warm = 2;
+
   doublereal *x      = mxGetPr(plhs[0]);
   doublereal *xlow   = model->joint_limit_min;
   doublereal *xupp   = model->joint_limit_max;
   doublereal *xmul   = new doublereal[nq];
   integer    *xstate = new    integer[nq];
   memset(xstate,0,sizeof(int)*nq);
-  snoptIKprob.setX( x, xlow, xupp, xmul, xstate );
 
   doublereal *F      = new doublereal[nF];
   doublereal *Flow   = new doublereal[nF];
@@ -155,34 +142,60 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   doublereal *Fmul   = new doublereal[nF];
   integer    *Fstate = new integer[nF];
   memset(Fstate,0,sizeof(int)*nF);
-  snoptIKprob.setF( F, Flow, Fupp, Fmul, Fstate );
 
-  char names[8];
-  snoptIKprob.setXNames(names, 1);
-  snoptIKprob.setFNames(names, 1);
-  snoptIKprob.setNeA(0);
-  snoptIKprob.setNeG(lenG);
-  snoptIKprob.setIntParameter( "Derivative option", 3 );
-  
-  snoptIKprob.setProbName("ik");
-  snoptIKprob.setUserFun( snoptIKfun );
+  doublereal ObjAdd=0;
 
-  snoptIKprob.solve(0);
-  
-/*
-  if (nlhs>0) {
-    VectorXd qzero = VectorXd::Zero(nq);
-    plhs[0] = mxCreateDoubleMatrix(nF,1,mxREAL);
-    plhs[1] = mxCreateDoubleMatrix(nq*nF,1,mxREAL);
-    snoptusrfun( NULL, NULL, qzero.data(),
-        NULL, NULL,  mxGetPr(plhs[0]),
-        NULL, NULL,  mxGetPr(plhs[1]),
-        NULL, NULL, NULL, NULL, NULL, NULL);
+  integer    INFO, ObjRow=1;
+
+  integer    lenA = 0;
+  integer lenG   = nq*nF;
+  integer *iGfun = new integer[lenG];
+  integer *jGvar = new integer[lenG];
+  k=0;
+  for (i=1;i<=nF;i++) {
+    for (j=1;j<=nq;j++) {
+      iGfun[k]=i;
+      jGvar[k++]=j;
+    }
   }
-*/  
+
+  integer    nxname = 1, nFname = 1, npname;
+  char       xnames[1*8], Fnames[1*8];
+  char       Prob[200];
+
+  integer    iSpecs = -1,  spec_len;
+  integer    iSumm  = -1;
+  integer    iPrint = -1,  prnt_len;
+
+  integer    nS, nInf;
+  doublereal sInf;
+  integer    DerOpt=3, strOpt_len;
+  char       strOpt[200];
+
+  sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
+
+  sprintf(strOpt,"%s","Derivative option");
+  strOpt_len = strlen(strOpt);
+  snseti_(strOpt,&DerOpt,&iPrint,&iSumm,&INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+
+  sprintf(Prob,"ik");
+
+  snopta_
+    ( &Cold, &nF, &nq, &nxname, &nFname,
+      &ObjAdd, &ObjRow, Prob, snoptIKfun,
+      NULL, NULL, &lenA, &lenA, NULL,
+      iGfun, jGvar, &lenG, &lenG,
+      xlow, xupp, xnames, Flow, Fupp, Fnames,
+      x, xstate, xmul, F, Fstate, Fmul,
+      &INFO, &mincw, &miniw, &minrw,
+      &nS, &nInf, &sInf,
+      cw, &lencw, iw, &leniw, rw, &lenrw,
+      cw, &lencw, iw, &leniw, rw, &lenrw,
+      npname, 8*nxname, 8*nFname,
+      8*500, 8*500);
   
   if (nlhs>1) {
-    plhs[1] = mxCreateDoubleScalar((double) 1);
+    plhs[1] = mxCreateDoubleScalar((double) INFO);
   }  
   
   delete[] xmul; delete[] xstate;
