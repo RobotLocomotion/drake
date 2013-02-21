@@ -61,7 +61,23 @@ else
   for i=2:2:N
     nF = nF + sum(~isnan(varargin{i}));
   end
-  
+
+% k=1;  
+% for i=1:nF
+%   for j=1:obj.num_q
+%     iGfun(k)=i;
+%     jGvar(k)=j;
+%     k=k+1;
+%   end
+% end
+% [q,fmex,Gmex]=inverseKinmex(obj.mex_model_ptr.getData,q0,q_nom,Q,varargin{:});
+% Gmex = full(sparse(iGfun,jGvar,Gmex));
+% [f,G] = ik(q0);
+% G = reshape(G,nF,obj.num_q);
+% valuecheck(fmex,f);
+% valuecheck(Gmex,G);
+% return;
+
   global SNOPT_USERFUN;
   SNOPT_USERFUN = @ik;
   

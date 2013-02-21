@@ -28,7 +28,6 @@ MatrixXd Q;
 int narg;
 int* body_ind;
 VectorXd* pts;
-VectorXd q;
 
 MatrixXd zero;
 VectorXd xpt;
@@ -40,13 +39,13 @@ int snoptIKfun( integer    *Status, integer *n,    doublereal x[],
         integer    iu[],    integer *leniu,
         doublereal ru[],    integer *lenru )
 {
-  memcpy(q.data(),x,sizeof(double)*q.rows());
+  Map<VectorXd> q(x,(*n));
   F[0] = ((q-q_nom).transpose()*Q*(q-q_nom)).coeff(0);
   MatrixXd tmp = 2*(q-q_nom).transpose()*Q;
   VectorXd xpt;
   MatrixXd J;
-  memcpy(G,tmp.data(),sizeof(double)*q.rows());
-
+  memcpy(G,tmp.data(),sizeof(double)*(*n));
+  
   if (narg<1) return 0;        
   
   model->doKinematics(x,0);
@@ -63,11 +62,12 @@ int snoptIKfun( integer    *Status, integer *n,    doublereal x[],
       xpt = model->forwardKin(body_ind[i],zero,do_rot);
       J = model->forwardJac(body_ind[i],zero,do_rot);
     }
-
+    J.transposeInPlace();
+    
     for (k=0;k<xpt.rows();k++) {
       if (!isnan(pts[i](k))) {
-        F[j] = xpt.coeff(k) - pts[i].coeff(k);
-        memcpy(&G[j*q.rows()],J.row(k).data(),sizeof(double)*q.rows());
+        F[j] = xpt(k) - pts[i](k);
+        memcpy(&G[j*(*n)],(J.col(k)).data(),sizeof(double)*(*n));
         j++;
       }
     }
@@ -100,6 +100,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   Q.resize(nq,nq);
   memcpy(Q.data(),mxGetPr(prhs[3]),sizeof(double)*nq*nq);
 
+  zero = MatrixXd::Zero(4,1); zero(3)=1;
+
   integer nF = 1;
   int i,j,k;
   narg = (nrhs-4)/2;
@@ -113,8 +115,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       if (!isnan(pts[i](j))) nF++; 
   }
 
-  zero = MatrixXd::Zero(4,1); zero(3)=1;
-  q.resize(nq);  
   
 //  [q,F,info] = snopt(q0,obj.joint_limit_min,obj.joint_limit_max,zeros(nF,1),[inf;zeros(nF-1,1)],'snoptUserfun',[],[],[],iGfun',jGvar');
 
@@ -169,13 +169,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   integer    nS, nInf;
   doublereal sInf;
-  integer    DerOpt=3, strOpt_len;
-  char       strOpt[200];
 
   sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
 
-  sprintf(strOpt,"%s","Derivative option");
-  strOpt_len = strlen(strOpt);
+  char strOpt[200] = "Derivative option";
+  integer DerOpt=3, strOpt_len=strlen(strOpt);
   snseti_(strOpt,&DerOpt,&iPrint,&iSumm,&INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
 
   sprintf(Prob,"ik");
@@ -193,11 +191,21 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       cw, &lencw, iw, &leniw, rw, &lenrw,
       npname, 8*nxname, 8*nFname,
       8*500, 8*500);
-  
+
   if (nlhs>1) {
     plhs[1] = mxCreateDoubleScalar((double) INFO);
   }  
   
+// for debugging:
+/*  
+  plhs[1] = mxCreateDoubleMatrix(nF,1,mxREAL);
+  plhs[2] = mxCreateDoubleMatrix(lenG,1,mxREAL);
+  snoptIKfun( NULL, &nq, x,
+          NULL, &nF,  mxGetPr(plhs[1]),
+          NULL, &lenG,  mxGetPr(plhs[2]),
+          NULL, NULL, NULL, NULL, NULL, NULL);
+*/  
+
   delete[] xmul; delete[] xstate;
   delete[] F; delete[] Flow; delete[] Fupp; delete[] Fmul; delete[] Fstate;
   delete[] iGfun;  delete[] jGvar;
