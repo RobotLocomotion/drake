@@ -19,27 +19,43 @@ options = struct();
 cost = double(cost);
 options.Q = diag(cost(1:r.getNumDOF));
 
+mexoptions = options;
+mexoptions.use_mex = true;
+options.use_mex = false;
+
 % set initial state to fixed point
 load('../data/atlas_fp.mat');
 
 q0 = xstar(1:r.getNumDOF);
 
 q = inverseKin(r,q0,options);
+qmex = inverseKin(r,q0,mexoptions);
+valuecheck(qmex,q,1e-5);
 v.draw(0,[q;0*q]); drawnow;
 
 q = inverseKin(r,q0,0,[0;0;2],options);
+qmex = inverseKin(r,q0,0,[0;0;2],mexoptions);
+valuecheck(qmex,q,1e-5);
 v.draw(1,[q;0*q]); drawnow;
 
 r_foot = r.findLink('r_foot');
-tic
 q = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;-.1;.2],options);
+tic
+qmex = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;-.1;.2],mexoptions);
 toc
+valuecheck(qmex,q,1e-5);
 v.draw(1,[q;0*q]); drawnow;
 
-tic
 q = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;-.1;.2;0;0;0],options);
+tic
+qmex = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;-.1;.2;0;0;0],mexoptions);
 toc
+valuecheck(qmex,q,1e-5);
 v.draw(1,[q;0*q]); drawnow;
 
 q = inverseKin(r,q0,0,[0;0;nan],r_foot,[0;-.1;.2;0;0;0],options);
+tic
+qmex = inverseKin(r,q0,0,[0;0;nan],r_foot,[0;-.1;.2;0;0;0],mexoptions);
+toc
+valuecheck(qmex,q,1e-5);
 v.draw(1,[q;0*q]); drawnow;
