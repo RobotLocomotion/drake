@@ -80,6 +80,8 @@ Model::Model(int n) {
   NB = n;
   pitch = new int[n];
   parent = new int[n];
+  joint_limit_min = new double[n];
+  joint_limit_max = new double[n];
   Xtree = new MatrixXd[n];
   I = new MatrixXd[n];
   a_grav = VectorXd::Zero(6);
@@ -316,6 +318,7 @@ MatrixXd Model::getCOMJacDot(void)
 
 MatrixXd Model::forwardKin(const int body_ind, const MatrixXd pts, const bool include_rotations)
 {
+  // WARNING:  pts should have a trailing 1 attached to it (4xn_pts)
   int dim=3, n_pts = pts.cols();
   MatrixXd T = bodies[body_ind].T.topLeftCorner(dim,dim+1);
   if (include_rotations) {
@@ -394,42 +397,3 @@ MatrixXd Model::forwardJacDot(const int body_ind, const MatrixXd pts, const bool
   return dJ;
 }
 
-void Model::snoptIKfun( VectorXd q, VectorXd q0, VectorXd q_nom, MatrixXd Q, int narg, int* body_ind, VectorXd* pts, VectorXd* f, MatrixXd* G)
-{
-  f->row(0) = (q-q_nom).transpose()*Q*(q-q_nom);
-  G->row(0) = 2*(q-q_nom).transpose()*Q;
-  if (f->rows()<2) return;        
-  
-  doKinematics(q.data(),0);
-  MatrixXd zero = MatrixXd::Zero(3,1);
-  VectorXd x;
-  MatrixXd J;
-  
-  int i=0,j=1,k;
-  bool do_rot;
-  while (i<narg) {
-    if (body_ind[i]==-1){
-      do_rot = false;
-      x = getCOM();
-      J = getCOMJac();
-    } else {
-      do_rot = (pts[i].rows()==6);
-      x = forwardKin(body_ind[i],zero,do_rot);
-      J = forwardJac(body_ind[i],zero,do_rot);
-    }
-
-    for (k=0;k<x.rows();k++) {
-      if (!isnan(pts[i](k))) {
-        f->row(j) = x.row(k) - pts[i].row(k);
-        G->row(j) = J.row(k);
-        j++;
-      }
-    }
-/*            
-    f->segment(j,x.rows()) = x - pts[i];
-    G->block(j,0,x.rows(),J.cols())= J;
-    j+=x.rows();
- */
-    i++;
-  }
-}

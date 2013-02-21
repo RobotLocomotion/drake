@@ -4,7 +4,7 @@ function make(varargin)
 
 disp('zapping old mex files...');
 
-flags = {};
+flags = {'-O'};
 %flags = {'-g'};
 
 cd util;
@@ -39,22 +39,27 @@ try
   cd(getDrakePath());
 
   if checkDependency('eigen3_enabled')
-    eigenflags = {flags{:},['-I',conf.eigen3_incdir]};
+    eigenflags = {['-I',conf.eigen3_incdir]};
     cd systems/plants/;
 
-    mex('-c','Model.cpp',eigenflags{:});
-    modelflags = {['Model.',objext],eigenflags{:}};
-    mex('deleteModelmex.cpp',modelflags{:});
-    mex('HandCmex.cpp',modelflags{:});
-    mex('doKinematicsmex.cpp',modelflags{:});
-    mex('forwardKinmex.cpp',modelflags{:});
-    mex('inverseKinmex.cpp',modelflags{:});
+    mex('-c','Model.cpp',flags{:},eigenflags{:});
+    modelflags = {['Model.',objext]};
+    mex('deleteModelmex.cpp',modelflags{:},flags{:},eigenflags{:});
+    mex('HandCmex.cpp',modelflags{:},flags{:},eigenflags{:});
+    mex('doKinematicsmex.cpp',modelflags{:},flags{:},eigenflags{:});
+    mex('forwardKinmex.cpp',modelflags{:},flags{:},eigenflags{:});
     
-    mex('deleteModelpmex.cpp',eigenflags{:});
-    mex('HandCpmex.cpp',eigenflags{:});
-    mex('doKinematicspmex.cpp',eigenflags{:});
-    mex('forwardKinpmex.cpp',eigenflags{:});
-    mex('forwardKinVelpmex.cpp',eigenflags{:});
+    snoptflags = {'-lf2c','-lsnopt','-lsnopt_cpp','-lsnprint','-L/opt/local/lib/gcc48','-lgfortran','/Users/russt/mylocal/snopt7/cppsrc/snfilewrapper.o','/Users/russt/mylocal/snopt7/cppsrc/snoptProblem.o',['-I','/Users/russt/mylocal/snopt7/cppsrc'],'-I/opt/local/include','-L/opt/local/lib'};
+    mex('inverseKinmex.cpp',modelflags{:},flags{:},eigenflags{:},snoptflags{:});
+    % note: to make this run on my mac, i had to mv the libgfortran.3.dyld
+    % in the /Applications/MATLAB_R2012a.app/sys/os/maci64 directory and
+    % replace it with a symlink to the gcc48 version of the library.
+    
+    mex('deleteModelpmex.cpp',flags{:},eigenflags{:});
+    mex('HandCpmex.cpp',flags{:},eigenflags{:});
+    mex('doKinematicspmex.cpp',flags{:},eigenflags{:});
+    mex('forwardKinpmex.cpp',flags{:},eigenflags{:});
+    mex('forwardKinVelpmex.cpp',flags{:},eigenflags{:});
 
     cd @RigidBodyManipulator/private;
     modelflags = {fullfile('..','..',['Model.',objext]),eigenflags{:}};
