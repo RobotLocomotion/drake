@@ -42,7 +42,7 @@ end
 
 if isfield(options,'q_nom') q_nom = options.q_nom; else q_nom = q0; end
 if isfield(options,'Q') Q = options.Q; else Q = eye(obj.num_q); end
-if ~isfield(options,'use_mex') options.use_mex = true; end
+if ~isfield(options,'use_mex') options.use_mex = exist('inverseKinmex')==3; end
 
 % support input as bodies instead of body inds
 for i=1:2:length(varargin)
@@ -67,13 +67,13 @@ else
   
   [iGfun,jGvar] = ind2sub([nF,obj.num_q],1:(nF*obj.num_q));
   [q,F,info] = snopt(q0,obj.joint_limit_min,obj.joint_limit_max,zeros(nF,1),[inf;zeros(nF-1,1)],'snoptUserfun',[],[],[],iGfun',jGvar');
-  
-  if (info~=1)
-    [str,cat] = snoptInfo(info);
-    warning('SNOPT:InfoNotOne',['SNOPT exited w/ info = ',num2str(info),'.\n',cat,': ',str,'\n  Check p19 of Gill06 for more information.']);
-  end
 end
 
+if (info~=1)
+  [str,cat] = snoptInfo(info);
+  warning('SNOPT:InfoNotOne',['SNOPT exited w/ info = ',num2str(info),'.\n',cat,': ',str,'\n  Check p19 of Gill06 for more information.']);
+end
+  
   function [f,G] = ik(q)
   f = zeros(nF,1); G = zeros(nF,obj.num_q);
   f(1) = (q-q_nom)'*Q*(q-q_nom);
