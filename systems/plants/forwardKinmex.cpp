@@ -35,7 +35,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     }
   }
   
-  int body_ind = (int) mxGetScalar(prhs[2]);  // note: this is body_ind-1 from matlab (so 0 to NB)
+  int body_ind = ((int) mxGetScalar(prhs[2])) - 1;  // note: this is body_ind-1 (so 0 to NB)
   if (body_ind==-1) {  // compute center of mass
     if (nlhs>0) {
       Vector3d x = model->getCOM();

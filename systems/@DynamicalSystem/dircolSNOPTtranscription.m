@@ -220,7 +220,7 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   dxdot(:,1,1) = dxdot(:,1,1)*dtdw1(1); % d/d[tscale; x(:,1); u(:,1)]
   for i=1:(nT-1)  % compute dynamics and cost
     [g(i),dg(1,:,i)] = geval(costFun,t(i),x(:,i),u(:,i),options);  dg(1,1,i)=dg(1,1,i)*dtdw1(i);  % d/d[tscale; x(:,i); u(:,i)]
-    dg(1,:,i) = [g(i)*ddtdw1(i),zeros(1,nX+nU)]+dt(i)*dg(1,:,i);  g(i) = g(i)*dt(i);  
+    g(i) = g(i)*dt(i);  dg(1,:,i) = [g(i)*ddtdw1(i),zeros(1,nX+nU)]+dt(i)*dg(1,:,i);    
     [xdot(:,i+1),dxdot(:,:,i+1)] = geval(@sys.dynamics,t(i+1),x(:,i+1),u(:,i+1),options);
     dxdot(:,1,1)=dxdot(:,1,1)*dtdw1(i+1); % d/d[tscale; x(:,i+1); u(:,i+1)]
     xcol = .5*(x(:,i)+x(:,i+1)) + dt(i)/8*(xdot(:,i)-xdot(:,i+1));

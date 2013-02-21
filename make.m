@@ -41,10 +41,14 @@ try
   if checkDependency('eigen3_enabled')
     eigenflags = {flags{:},['-I',conf.eigen3_incdir]};
     cd systems/plants/;
-    mex('deleteModelmex.cpp',eigenflags{:});
-    mex('HandCmex.cpp',eigenflags{:});
-    mex('doKinematicsmex.cpp',eigenflags{:});
-    mex('forwardKinmex.cpp',eigenflags{:});
+
+    mex('-c','Model.cpp',eigenflags{:});
+    modelflags = {['Model.',objext],eigenflags{:}};
+    mex('deleteModelmex.cpp',modelflags{:});
+    mex('HandCmex.cpp',modelflags{:});
+    mex('doKinematicsmex.cpp',modelflags{:});
+    mex('forwardKinmex.cpp',modelflags{:});
+    mex('inverseKinmex.cpp',modelflags{:});
     
     mex('deleteModelpmex.cpp',eigenflags{:});
     mex('HandCpmex.cpp',eigenflags{:});
@@ -53,7 +57,8 @@ try
     mex('forwardKinVelpmex.cpp',eigenflags{:});
 
     cd @RigidBodyManipulator/private;
-    mex('constructModelmex.cpp',eigenflags{:});
+    modelflags = {fullfile('..','..',['Model.',objext]),eigenflags{:}};
+    mex('constructModelmex.cpp',modelflags{:});
     
     cd ../../@PlanarRigidBodyManipulator/private;
     mex('constructModelpmex.cpp',eigenflags{:});
