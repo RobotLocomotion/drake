@@ -42,7 +42,7 @@ end
 
 if isfield(options,'q_nom') q_nom = options.q_nom; else q_nom = q0; end
 if isfield(options,'Q') Q = options.Q; else Q = eye(obj.num_q); end
-if ~isfield(options,'use_mex') options.use_mex = false; end
+if ~isfield(options,'use_mex') options.use_mex = true; end
 
 % support input as bodies instead of body inds
 for i=1:2:length(varargin)
@@ -54,7 +54,6 @@ for i=1:2:length(varargin)
 end
 
 if options.use_mex
-  error('not implemented yet');
   [q,info] = inverseKinmex(obj.mex_model_ptr.getData,q0,q_nom,Q,varargin{:});
 else
   N = length(varargin);
@@ -62,11 +61,6 @@ else
   for i=2:2:N
     nF = nF + sum(~isnan(varargin{i}));
   end
-  
-%[fmex,Gmex] = inverseKinmex(obj.mex_model_ptr.getData,q0,q_nom,Q,varargin{:});
-%[f,G] = ik(zeros(obj.num_q,1));
-%valuecheck(fmex,f);
-%valuecheck(Gmex,G);
   
   global SNOPT_USERFUN;
   SNOPT_USERFUN = @ik;

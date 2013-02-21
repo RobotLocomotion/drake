@@ -1,7 +1,7 @@
 #include <Eigen/Dense>
 #include "RigidBody.h"
 using namespace Eigen;
-using namespace std;
+//using namespace std;
 
 class Model 
 {
@@ -9,6 +9,9 @@ public:
   int NB;
   int *pitch;
   int *parent;
+  double* joint_limit_min;
+  double* joint_limit_max;
+  
   MatrixXd* Xtree;
   MatrixXd* I;
   VectorXd a_grav;
