@@ -48,9 +48,12 @@ try
     mex('HandCmex.cpp',modelflags{:},flags{:},eigenflags{:});
     mex('doKinematicsmex.cpp',modelflags{:},flags{:},eigenflags{:});
     mex('forwardKinmex.cpp',modelflags{:},flags{:},eigenflags{:});
-    
-    snoptflags = {'-lf2c','-lsnopt','-lsnprint','-L/opt/local/lib/gcc48','-lgfortran','-I/Users/russt/mylocal/snopt7/cppsrc','-I/opt/local/include','-L/opt/local/lib'};
-    mex('inverseKinmex.cpp',modelflags{:},flags{:},eigenflags{:},snoptflags{:});
+
+%    SuperUsers: fix the snoptflags for your platform and uncomment.
+%    will try to make compilation robust soon.
+%    
+%    snoptflags = {'-lf2c','-lsnopt','-lsnprint','-L/opt/local/lib/gcc48','-lgfortran','-I/Users/russt/mylocal/snopt7/cppsrc','-I/opt/local/include','-L/opt/local/lib'};
+%    mex('inverseKinmex.cpp',modelflags{:},flags{:},eigenflags{:},snoptflags{:});
     % note: to make this run on my mac, i had to mv the libgfortran.3.dyld
     % in the /Applications/MATLAB_R2012a.app/sys/os/maci64 directory and
     % replace it with a symlink to the gcc48 version of the library.

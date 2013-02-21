@@ -20,7 +20,11 @@ cost = double(cost);
 options.Q = diag(cost(1:r.getNumDOF));
 
 mexoptions = options;
-mexoptions.use_mex = true;
+if (exist('inverseKinmex')==3)
+  mexoptions.use_mex = true;
+else
+  warning('mex inverseKinematics is disabled... so I can''t test that'); 
+end
 options.use_mex = false;
 
 % set initial state to fixed point
