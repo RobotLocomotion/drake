@@ -22,6 +22,7 @@ if (~isfield(options,'inertial')) options.inertial = true; end
 if (~isfield(options,'visual')) options.visual = true; end
 if (~isfield(options,'visual_geometry')) options.visual_geometry = false; end
 if (~isfield(options,'namesuffix')) options.namesuffix = ''; end
+if (~isfield(options,'package')) options.package = ''; end
 
 %disp(['Parsing ', urdf_filename]);
 [options.urdfpath,name,ext] = fileparts(urdf_filename);
