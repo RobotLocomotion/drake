@@ -214,14 +214,16 @@ classdef RigidBody < handle
       end
       if (node.hasAttribute('group'))
         name=char(node.getAttribute('group'));
-        ind = find(strcmp(body.collision_group_name,name));
-        if isempty(ind)
-          body.collision_group_name=horzcat(body.collision_group_name,name);
-          ind=length(body.collision_group_name);
-          body.collision_group{ind}=npts+1:size(body.contact_pts,2);
-        else
-          body.collision_group{ind}=[body.collision_group{ind},npts+1:size(body.contact_pts,2)];
-        end
+      else
+        name='default';
+      end
+      ind = find(strcmp(body.collision_group_name,name));
+      if isempty(ind)
+        body.collision_group_name=horzcat(body.collision_group_name,name);
+        ind=length(body.collision_group_name);
+        body.collision_group{ind}=npts+1:size(body.contact_pts,2);
+      else
+        body.collision_group{ind}=[body.collision_group{ind},npts+1:size(body.contact_pts,2)];
       end
     end
       
