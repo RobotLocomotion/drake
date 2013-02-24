@@ -155,9 +155,8 @@ classdef RigidBodyManipulator < Manipulator
         child.X_joint_to_body=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
         child.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
 
-	% these fail for atlas (so are commented out):
-%        valuecheck(inv(child.X_joint_to_body)*[axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
-%        valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
+        valuecheck(inv(child.X_joint_to_body)*[axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
+        valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
       end
 
       switch lower(type)
@@ -544,8 +543,13 @@ classdef RigidBodyManipulator < Manipulator
 
       if isfield(options,'active_collision_groups') 
         nz=0; npts=0; active_contacts=[];
-        for i=1:length(obj.body)
-          b=obj.body(i);
+        if isfield(options,'active_collision_bodies')
+          bodies=obj.body(active_collision_bodies);
+        else
+          bodies=obj.body;
+        end
+        for i=1:length(bodies)
+          b=bodies(i);
           for j=1:length(b.collision_group_name)
             if any(strcmpi(b.collision_group_name{j},options.active_collision_groups))
               nz=nz+length(b.collision_group{j})*3;
