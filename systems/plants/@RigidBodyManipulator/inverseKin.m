@@ -16,8 +16,10 @@ function q = inverseKin(obj,q0,varargin)
 % @param pos1...posN the desired position of the [0;0;0] point in the corresponding body
 %   is pos is 6 elements, then it also constrains the orientation 
 %   (note: it does not make sense to specify an orientation for the COM).
-%   (note 2: elements of pos that are set to NAN are treated as "don't
-%   care"
+%   (note 2: if you specify pos with two columns then it is interpreted as
+%   [lower bound, upper bound])
+%   (note 3: if you specify pos with a signle column, then elements are set
+%   to NAN are treated as "don't care")
 % @option q_nom  replaces the cost function with (q-q_nom)'*(q-q_nom).
 % @default q_nom = q0
 % @option Q  puts a weight on the cost function qtilde'*Q*qtilde
@@ -44,23 +46,39 @@ if isfield(options,'q_nom') q_nom = options.q_nom; else q_nom = q0; end
 if isfield(options,'Q') Q = options.Q; else Q = eye(obj.num_q); end
 if ~isfield(options,'use_mex') options.use_mex = exist('inverseKinmex')==3; end
 
-% support input as bodies instead of body inds
+np = length(varargin)/2;
+if (np-floor(np)~=0) error('bad input.  must be body,pos,body,pos,...'); end
+body_ind=zeros(1,np);
+do_rot=logical(zeros(1,np));
+Fmin=0; 
+Fmax=inf;
 for i=1:2:length(varargin)
+  % support input as bodies instead of body inds
   if (isa(varargin{i},'RigidBody')) varargin{i} = find(obj.body==varargin{i},1); end
-  if ~(sizecheck(varargin{i+1},[3,1]) || sizecheck(varargin{i+1},[6,1])) || ...
-    ((varargin{i}==0) && ~sizecheck(varargin{i+1},[3,1]))
-    error('bad pos input');
+  [rows,cols] = size(varargin{i+1});
+  if (rows ~= 3 && rows ~= 6) error('pos must have 3 or 6 rows'); end
+  if (varargin{i}==0 && rows ~= 3) error('com pos must have only 3 rows (there is no orientation)'); end
+  if (cols==1)
+    nind = isnan(varargin{i+1});
+    varargin{i+1} = repmat(varargin{i+1},1,2);
+    varargin{i+1}(nind,1) = -inf;
+    varargin{i+1}(nind,2) = inf;
+  elseif cols==2
+    if any(isnan(varargin{i+1}(:))), error('nan not allowed when pos is two columns'); end
+  else
+    error('pos must be one or two cols');
   end
+  body_ind((i+1)/2)=varargin{i};
+  do_rot((i+1)/2)=(rows==6);
+  Fmin=[Fmin;varargin{i+1}(:,1)];
+  Fmax=[Fmax;varargin{i+1}(:,2)];
 end
 
-if options.use_mex
+if 0 %options.use_mex
   [q,info] = inverseKinmex(obj.mex_model_ptr.getData,q0,q_nom,Q,varargin{:});
 else
   N = length(varargin);
-  nF = 1;
-  for i=2:2:N
-    nF = nF + sum(~isnan(varargin{i}));
-  end
+  nF = length(Fmin);
 
 % k=1;  
 % for i=1:nF
@@ -82,7 +100,7 @@ else
   SNOPT_USERFUN = @ik;
   
   [iGfun,jGvar] = ind2sub([nF,obj.num_q],1:(nF*obj.num_q));
-  [q,F,info] = snopt(q0,obj.joint_limit_min,obj.joint_limit_max,zeros(nF,1),[inf;zeros(nF-1,1)],'snoptUserfun',[],[],[],iGfun',jGvar');
+  [q,F,info] = snopt(q0,obj.joint_limit_min,obj.joint_limit_max,Fmin,Fmax,'snoptUserfun',[],[],[],iGfun',jGvar');
 end
 
 if (info~=1)
@@ -91,29 +109,24 @@ if (info~=1)
 end
   
   function [f,G] = ik(q)
-  f = zeros(nF,1); G = zeros(nF,obj.num_q);
-  f(1) = (q-q_nom)'*Q*(q-q_nom);
-  G(1,:) = 2*(q-q_nom)'*Q;
-  if (nF<2) return; end
-  kinsol = doKinematics(obj,q,false);
-  i=1;j=2;
-  while i<length(varargin)
-    if (varargin{i}==0)
-      do_rot = 0;
-      [x,J] = getCOM(obj,kinsol);
-    else
-      do_rot = length(varargin{i+1})==6;
-      [x,J] = forwardKin(obj,kinsol,varargin{i},[0;0;0],do_rot);
+    f = zeros(nF,1); G = zeros(nF,obj.num_q);
+    f(1) = (q-q_nom)'*Q*(q-q_nom);
+    G(1,:) = 2*(q-q_nom)'*Q;
+    if (nF<2) return; end
+    kinsol = doKinematics(obj,q,false);
+    j=2;
+    for i=1:length(body_ind)
+      if (body_ind(i)==0)
+        [x,J] = getCOM(obj,kinsol);
+      else
+        [x,J] = forwardKin(obj,kinsol,body_ind(i),[0;0;0],do_rot(i));
+      end
+      n=length(x);
+      f([j:j+n-1])=x;
+      G([j:j+n-1],:)=J;
+      j=j+n;
     end
-    ind = ~isnan(varargin{i+1});
-    n = sum(ind);
-    f([j:j+n-1]) = x(ind) - varargin{i+1}(ind);
-    G([j:j+n-1],:) = J(ind,:);
-    j=j+n;
-    i=i+2;
-  end
-  G=G(:);
-  %  if isfield(options,'visualizer') options.visualizer.draw(0,[q;0*q]); drawnow; end
+    G=G(:);
   end
 
 end
