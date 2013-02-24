@@ -134,7 +134,7 @@ if (1) %%  short-cut COM control, and just call IK
   for i=1:length(ts)
     t = ts(i);
     if (i>1)
-      q(:,i) = inverseKin(r,q(:,i-1),0,comgoal.eval(t),rfoot_body,rfootpos.eval(t),lfoot_body,lfootpos.eval(t),options);
+      q(:,i) = inverseKin(r,q(:,i-1),0,comgoal.eval(t),rfoot_body,[0;0;0],rfootpos.eval(t),lfoot_body,[0;0;0],lfootpos.eval(t),options);
     else
       q = q0;
     end

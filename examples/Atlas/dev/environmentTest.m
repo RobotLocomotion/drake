@@ -41,5 +41,5 @@ lfoot0 = forwardKin(r,kinsol,lfoot,[0;0;0],true);
 %com = mean([rfoot0(1:3),lfoot0(1:3)],2); com(3)=1;
 com(1:3,1) = nan;
 
-q = inverseKin(r,q0,0,com,rhand,x(:,1),lhand,x(:,2),rfoot,rfoot0,lfoot,lfoot0);
+q = inverseKin(r,q0,0,com,rhand,[0;0;0],x(:,1),lhand,[0;0;0],x(:,2),rfoot,[0;0;0],rfoot0,lfoot,[0;0;0],lfoot0);
 v.draw(0,[q;0*q]);
