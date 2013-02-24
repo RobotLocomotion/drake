@@ -129,12 +129,23 @@ classdef PlanarRigidBody < RigidBody
         end
       end
       
-      % note: could support multiple geometry elements
+      npts = size(body.contact_pts,2);
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         options.collision = true; 
         [xpts,ypts] = PlanarRigidBody.parseGeometry(geomnode,xyz,rpy,options);
         body.contact_pts=unique([body.contact_pts';xpts(:), ypts(:)],'rows')';
+      end
+      if (node.hasAttribute('group'))
+        name=char(node.getAttribute('group'));
+        ind = find(strcmp(body.collision_group_name,name));
+        if isempty(ind)
+          body.collision_group_name=horzcat(body.collision_group_name,name);
+          ind=length(body.collision_group_name);
+          body.collision_group{ind}=npts+1:size(body.contact_pts,2);
+        else
+          body.collision_group{ind}=[body.collision_group{ind},npts+1:size(body.contact_pts,2)];
+        end
       end
     end
     
