@@ -14,7 +14,7 @@ function q = inverseKin(obj,q0,varargin)
 % @param body1...bodyN the index to the body that should be constrained.
 %   *You may use zero to indicate the center of mass*.
 % @param bodypos1...bodyposN  bodyposi is a 3xmi list of points on 
-%   bodyi that will be constrained by the solver (in body coordinates)
+%   bodyi, or a scalar index of a collision_group, that will be constrained by the solver (in body coordinates)
 %   *If you specified the center of mass for bodyi, then you should skip 
 %   the bodyposi and go straight to worldposi*
 % @param worldpos1...worldposN worldposi is a 3xmi or 6xmi list of
@@ -62,6 +62,12 @@ while i<=length(varargin)
   else
     bodyposi = varargin{i+1};
     worldposi = varargin{i+2};
+    if (numel(bodyposi)==1) % then treat it as a collision_group
+      b = obj.body(body_ind(n));
+      rangecheck(bodyposi,1,length(b.collision_group));
+      bodyposi = b.contact_pts(:,b.collision_group{i});
+      worldposi = repmat(worldposi,1,length(b.collision_group{i}));
+    end
     i=i+3;
     [rows,mi] = size(bodyposi);
     if (rows ~=3) error('bodypos must be 3xmi'); end
@@ -70,7 +76,7 @@ while i<=length(varargin)
     if ~isfield(worldposi,'min') || ~isfield(worldposi,'max')
       error('if worldpos is a struct, it must have fields .min and .max');
     end
-    minpos=worldposi.min;  maxpos=worldposi.max;
+    minpos=[worldposi.min];  maxpos=[worldposi.max];
   else
     minpos=worldposi; maxpos=worldposi;
   end

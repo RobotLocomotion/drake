@@ -63,3 +63,11 @@ qmex = inverseKin(r,q0,0,[0;0;nan],r_foot,[0;0;0],[0;-.1;.2;0;0;0],mexoptions);
 toc
 valuecheck(qmex,q,1e-5);
 v.draw(1,[q;0*q]); drawnow;
+
+% todo: uncomment this when my atlas model has collision groups defined
+% q = inverseKin(r,q0,0,[0;0;nan],r_foot,1,[0;-.1;0;0;0;0],options);
+% tic
+% qmex = inverseKin(r,q0,0,[0;0;nan],r_foot,1,[0;-.1;0;0;0;0],mexoptions);
+% toc
+% valuecheck(qmex,q,1e-5);
+% v.draw(1,[q;0*q]); drawnow;
