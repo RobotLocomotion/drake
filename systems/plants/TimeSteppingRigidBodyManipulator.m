@@ -475,69 +475,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
     
 
-    function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,v)
-      % attempts to find a fixed point (xstar,ustar) which also satisfies the constraints,
-      % using (x0,u0) as the initial guess.
-      %
-      % @param x0 initial guess for the state
-      % @param u0 initial guess for the input
-      % @param v (optional) a visualizer that should be called while the
-      % solver is doing it's thing  
-      %
-      % The algorithm works by solving the problem:
-      %  \begin{eqnarray*}
-      %  \min_{x,u,z}  & & z'(Mz + w) \\
-      %  \text{subject to} & & x = f(x,u,z) \\ 
-      %  & & z >=0 \\
-      %  & & Mz+w >=0
-      %  \end{eqnarray*}
-      % 
-      
-      if ~isTI(obj) error('only makes sense for time invariant systems'); end
-            
-      problem.objective = @(xu) 0;  % feasibility problem.   empty objective
-      problem.x0 = [x0;u0];
-      
-      function [c,ceq,GC,GCeq] = mycon(xu)
-        num_q = obj.manip.num_q;
-        x = xu(1:obj.num_x);
-        q = x(1:num_q); qd = x(num_q + (1:num_q));
-        u = xu(obj.num_x + (1:obj.num_u));
-
-        [phiL,JL] = jointLimits(obj.manip,q);
-        [phiC,JC] = contactConstraints(obj.manip,q);
-        c = -[phiL;phiC]; 
-        GC = -[[JL,zeros(length(phiL),num_q+obj.num_u)]',[JC,zeros(length(phiC),num_q+obj.num_u)]'];
-        
-        if (obj.num_xcon) error('need to implement gradients for state constraints'); end
-
-        ceq=[]; GCeq=[];
-        if (num_q>0)
-          [xdn,df] = update(obj,0,x,u);
-          ceq=[ceq;x-xdn]; GCeq=[GCeq,([eye(obj.num_x),zeros(obj.num_x,obj.num_u)]-df(:,2:end))'];
-        end
-      end
-      problem.nonlcon = @mycon;
-      problem.solver = 'fmincon';
-
-      function stop=drawme(xu,optimValues,state)
-        stop=false;
-        v.draw(0,xu(1:obj.num_x));
-      end
-      if (nargin>2 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
-        problem.options=optimset('GradConstr','on','Algorithm','active-set','Display','iter','OutputFcn',@drawme,'TolX',1e-9);
-      else
-        problem.options=optimset('GradConstr','on','Algorithm','active-set','Display','off');
-      end
-      [xu,~,exitflag] = fmincon(problem);
-      xstar = xu(1:obj.num_x);
-      ustar = xu(obj.num_x + (1:obj.num_u));
-      success=(exitflag==1);
-      if (nargout<2 && ~success)
-        error('Drake:PlanarRigidBodyManipulator:FindFixedPointFailed','failed to resolve constraints');
-      end      
-    end
-    
     function varargout = pdcontrol(sys,Kp,Kd,index)
       if nargin<4, index=[]; end
       [pdff,pdfb] = pdcontrol(sys.manip,Kp,Kd,index);
@@ -597,6 +534,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function varargout = inverseKin(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}]=inverseKin(obj.manip,varargin{:});
+    end
+    
+    function varargout = findFixedPoint(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}]=findFixedPoint(obj.manip,varargin{:});
     end
     
     function varargout = collisionDetect(obj,varargin)

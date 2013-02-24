@@ -521,7 +521,115 @@ classdef RigidBodyManipulator < Manipulator
       [phi,dphi,ddphi]=loopConstraints(obj,q);
     end
     
+    function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,options)
+      if (nargin<2 || isempty(x0)) 
+        x0 = Point(obj.getStateFrame()); 
+      elseif ~isa(x0,'Point')
+        x0 = Point(obj.getStateFrame(),x0);
+      end
+      x0 = x0.inFrame(obj.getStateFrame);
+      x0 = resolveConstraints(obj,x0);
+      
+      if (nargin<3 || isempty(u0))
+        u0 = zeros(obj.getNumInputs(),1);
+      elseif isa(u0,'Point')
+        u0 = double(u0.inFrame(obj.getInputFrame));
+      end
+      if (nargin<4) options=struct(); end
+      
+      if ~isfield(options,'visualize'), options.visualize=false; end
+      
+      nq = obj.getNumDOF();
+      nu = obj.getNumInputs();
 
+      if isfield(options,'active_collision_groups') 
+        nz=0; npts=0; active_contacts=[];
+        for i=1:length(obj.body)
+          b=obj.body(i);
+          for j=1:length(b.collision_group_name)
+            if any(strcmpi(b.collision_group_name{j},options.active_collision_groups))
+              nz=nz+length(b.collision_group{j})*3;
+              active_contacts=[active_contacts,npts+b.collision_group{j}];
+            end
+          end
+          npts=npts+size(b.contact_pts,2);
+        end
+      else
+        active_contacts = 1:obj.numContacts();
+        nz = obj.numContacts()*3;
+      end      
+
+      z0 = zeros(nz,1);
+      q0 = x0(1:nq);
+    
+      problem.x0 = [q0;u0;z0];
+      problem.objective = @(quz) 0; % feasibility problem
+      problem.nonlcon = @(quz) mycon(quz);
+      problem.solver = 'fmincon';
+
+      if options.visualize
+        v = obj.constructVisualizer;
+        %problem.options=optimset('DerivativeCheck','on','GradConstr','on','Algorithm','interior-point','Display','iter','OutputFcn',@drawme,'TolX',1e-14,'MaxFunEvals',5000);
+        problem.options=optimset('GradConstr','on','Algorithm','interior-point','Display','iter','OutputFcn',@drawme,'TolX',1e-14,'MaxFunEvals',5000);
+      else
+        problem.options=optimset('GradConstr','on','Algorithm','interior-point','TolX',1e-14,'MaxFunEvals',5000);
+      end
+      
+      lb_z = -1e6*ones(nz,1);
+      lb_z(3:3:end) = 0; % normal forces must be >=0
+      ub_z = 1e6*ones(nz,1);
+    
+      [jl_min,jl_max] = obj.getJointLimits();
+      % force search to be close to starting position
+      problem.lb = [max(q0-0.05,jl_min+0.01); obj.umin; lb_z];
+      problem.ub = [min(q0+0.05,jl_max-0.01); obj.umax; ub_z];
+      %problem.lb(2) = 0.0; % body z
+
+      [quz_sol,~,exitflag] = fmincon(problem);
+      success=(exitflag==1);
+      xstar = [quz_sol(1:nq); zeros(nq,1)];
+      ustar = quz_sol(nq+(1:nu));
+      zstar = quz_sol(nq+nu+(1:nz));
+      if (~success)
+        error('failed to find fixed point');
+      end
+
+      function stop=drawme(quz,optimValues,state)
+        stop=false;
+        v.draw(0,[quz(1:nq); zeros(nq,1)]);
+      end
+
+      function [c,ceq,GC,GCeq] = mycon(quz)
+        q=quz(1:nq);
+        u=quz(nq+(1:nu));
+        z=quz(nq+nu+(1:nz));
+
+        [~,C,B,~,dC,~] = obj.manipulatorDynamics(q,zeros(nq,1));
+        [phiC,JC] = obj.contactConstraints(q);
+        [~,J,dJ] = obj.contactPositions(q);
+        
+        % note: it would be more elegant to handle collision groups in
+        % contactConstraints and contactPositions
+        phiC=phiC(active_contacts);
+        JC = JC(active_contacts,:);
+        ind = [active_contacts*3 - 2; active_contacts*3 - 1; active_contacts*3];
+        ind = ind(:);
+        J = J(ind,:);
+        dJ = dJ(ind,:);
+        
+        % ignore friction constraints for now
+        c = 0;
+        GC = zeros(nq+nu+nz,1); 
+        
+        dJz = zeros(nq,nq);
+        for i=1:nq
+            dJz(:,i) = dJ(:,(i-1)*nq+1:i*nq)'*z;
+        end
+        
+        ceq = [C-B*u-J'*z; phiC];
+        GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[JC'; zeros(nu+nz,length(phiC))]]; 
+      end      
+    end
   end
   
   methods (Static)
