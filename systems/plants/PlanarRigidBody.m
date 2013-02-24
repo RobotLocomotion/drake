@@ -248,7 +248,7 @@ classdef PlanarRigidBody < RigidBody
           case 'mesh'
             filename=char(thisNode.getAttribute('filename'));
             [path,name,ext] = fileparts(filename);
-            path = strrep(path,'package:/',options.package);
+            path = strrep(path,'package://',options.package);
             if (path(1)~=filesep)  % the it's a relative path
               path = fullfile(options.urdfpath,path);
             end
