@@ -306,6 +306,11 @@ classdef Manipulator < SecondOrderSystem
       varargout=cell(1,nargout);
       [varargout{:}] = pdcontrol@SecondOrderSystem(sys,Kp,Kd,index);
     end
+    
+    function [jl_min, jl_max] = getJointLimits(obj)
+      jl_min = obj.joint_limit_min;
+      jl_max = obj.joint_limit_max;
+    end
   end  
   
   properties (SetAccess = protected, GetAccess = public)
