@@ -108,7 +108,7 @@ classdef ZMPTrackingControl < DrakeSystem
 
       com_d = obj.comgoal.eval(t);
       com_d(2) = comstate(1);
-      q_ik = inverseKin(obj.robot,q,0,com_d,obj.rfoot_body,obj.rfootpos.eval(t),obj.lfoot_body,obj.lfootpos.eval(t),obj.ikoptions);
+      q_ik = inverseKin(obj.robot,q,0,com_d,obj.rfoot_body,[0;0;0],obj.rfootpos.eval(t),obj.lfoot_body,[0;0;0],obj.lfootpos.eval(t),obj.ikoptions);
       next_state = [comstate + ts(1)*comstatedot; q_ik];
     end
     
