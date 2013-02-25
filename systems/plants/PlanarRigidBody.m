@@ -249,12 +249,8 @@ classdef PlanarRigidBody < RigidBody
 
           case 'mesh'
             filename=char(thisNode.getAttribute('filename'));
+            filename=RigidBody.parseMeshFilename(filename,options);
             [path,name,ext] = fileparts(filename);
-            path = strrep(path,'package://',options.package);
-            if (path(1)~=filesep)  % the it's a relative path
-              path = fullfile(options.urdfpath,path);
-            end
-            filename = fullfile(path,[name,ext]);
             if strcmpi(ext,'.stl')
               wrlfile = fullfile(tempdir,[name,'.wrl']);
               stl2vrml(fullfile(path,[name,ext]),tempdir);
