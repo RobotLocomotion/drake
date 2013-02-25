@@ -54,6 +54,19 @@ classdef RigidBody < handle
       error('forwardKin(body,...) has been replaced by forwardKin(model,body_num,...), because it has a mex version.  please update your kinematics calls');
     end
     
+    function pts = getContactPoints(body,collision_group)
+      % @param collision_group (optional) return only the points in that
+      % group.  can be an integer index or a string.
+      if (nargin<2) 
+        pts = body.contact_pts;
+      else
+        if isa(collision_group,'char')
+          collision_group = find(strcmpi(collision_group,body.collision_group_name));
+        end
+        pts = body.contact_pts(:,body.collision_group{collision_group});
+      end
+    end
+    
     function newbody = copy(body)
       % makes a shallow copy of the body
       % note that this functionality is in matlab.mixin.Copyable in newer
