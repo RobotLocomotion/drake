@@ -62,15 +62,11 @@ while i<=length(varargin)
   else
     bodyposi = varargin{i+1};
     worldposi = varargin{i+2};
-    if ischar(bodyposi) % then it's the name of a collision group
-      bodyposi = find(strcmpi(bodyposi,obj.body(body_ind(n)).collision_group_name));
-      if isempty(bodyposi) error('couldn''t find collision group %s on link %s',varargin{i+1},obj.body(body_ind(n)).linkname); end
-    end
-    if (numel(bodyposi)==1) % then treat it as a collision_group
+    if ischar(bodyposi) || numel(bodyposi)==1 % then it's the name of a collision group
       b = obj.body(body_ind(n));
-      rangecheck(bodyposi,1,length(b.collision_group));
-      worldposi = repmat(worldposi,1,length(b.collision_group{bodyposi}(1)));
-      bodyposi = b.contact_pts(:,b.collision_group{bodyposi}(1));
+      bodyposi = mean(getContactPoints(b,bodyposi),2);
+%      bodyposi = getContactPoints(b,bodyposi);
+%      worldposi = repmat(worldposi,1,size(bodyposi,2));
     end
     i=i+3;
     [rows,mi] = size(bodyposi);
@@ -145,7 +141,7 @@ end
       if (body_ind(i)==0)
         [x,J] = getCOM(obj,kinsol);
       else
-        [x,J] = forwardKin(obj,kinsol,body_ind(i),[0;0;0],do_rot(i));
+        [x,J] = forwardKin(obj,kinsol,body_ind(i),body_pos{i},do_rot(i));
       end
       n=numel(x);
       f([j:j+n-1])=x(:);
