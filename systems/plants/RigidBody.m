@@ -270,6 +270,20 @@ classdef RigidBody < handle
   end
   
   methods (Static)
+    function filename=parseMeshFilename(filename,options)
+      if ~isempty(strfind(filename,'package://'))
+        filename=strrep(filename,'package://','');
+        [package,filename]=strtok(filename,filesep);
+        filename=[rospack(package),filename];
+      else
+        [path,name,ext] = fileparts(filename);
+        if (path(1)~=filesep)  % the it's a relative path
+          path = fullfile(options.urdfpath,path);
+        end
+        filename = fullfile(path,[name,ext]);
+      end
+    end
+    
     function wrlstr = parseWRLGeometry(node,wrl_appearance_str,options)
       % param node DOM node for the geometry block
       % param X coordinate transform for the current body
@@ -299,12 +313,8 @@ classdef RigidBody < handle
 
           case 'mesh'
             filename=char(thisNode.getAttribute('filename'));
+            filename=RigidBody.parseMeshFilename(filename,options);
             [path,name,ext] = fileparts(filename);
-            path = strrep(path,'package://',options.package);
-            if (path(1)~=filesep)  % the it's a relative path
-              path = fullfile(options.urdfpath,path);
-            end
-            filename = fullfile(path,[name,ext]);
             if strcmpi(ext,'.stl')
               wrlfile = fullfile(tempdir,[name,'.wrl']);
               stl2vrml(fullfile(path,[name,ext]),tempdir);
@@ -374,12 +384,8 @@ classdef RigidBody < handle
 
           case 'mesh'
             filename=char(thisNode.getAttribute('filename'));
+            filename=RigidBody.parseMeshFilename(filename,options);
             [path,name,ext] = fileparts(filename);
-            path = strrep(path,'package://',options.package);
-            if (path(1)~=filesep)  % the it's a relative path
-              path = fullfile(options.urdfpath,path);
-            end
-            filename = fullfile(path,[name,ext]);
             if strcmpi(ext,'.stl')
               wrlfile = fullfile(tempdir,[name,'.wrl']);
               stl2vrml(fullfile(path,[name,ext]),tempdir);
