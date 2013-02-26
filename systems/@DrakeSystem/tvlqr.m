@@ -154,7 +154,7 @@ end
 
 % xdtraj adds terms so that the cost is (xbar - xbar_d)'*Q{1}*(xbar - xbar_d) + (xbar - xbar_d)'*Q{2}. @default 0
 if isfield(options,'xdtraj')
-  typecheck(xdtraj,'Trajectory');
+  typecheck(options.xdtraj,'Trajectory');
   options.xdtraj = options.xdtraj.inFrame(iframe);
   
   Q{2} = Q{2} - 2*Q{1}*options.xdtraj;
