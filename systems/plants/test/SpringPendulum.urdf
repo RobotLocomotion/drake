@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+
+<robot name="SpringPendulum">
+  <material name="green">
+    <color rgba=".3 .6 .4 1" />
+  </material>
+  <material name="red">
+    <color rgba=".9 .1 0 1" />
+  </material>
+  <material name="blue">
+    <color rgba="0 0 1 1" />
+  </material>
+  <link name="world"/>
+  <link name="arm">
+    <inertial>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <geometry>
+       	<cylinder length="1" radius="0.05" />
+      </geometry>
+      <material name="red" />
+    </visual>
+  </link>
+  <joint name="theta" type="continuous">
+    <parent link="world" />
+    <child link="arm" />
+    <origin xyz="0 0 0"/>
+    <axis xyz="0 1 0" />
+    <dynamics damping="0" />
+  </joint>
+  <link name="ball">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <mass value="0.5"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0"/>
+      <geometry>
+        <sphere radius=".1"/>
+      </geometry>
+      <material name="blue" />
+    </visual>
+  </link>
+  <joint name="ball_weld" type="fixed">
+    <parent link="arm" />
+    <child link="ball" />
+    <origin xyz="0 0 -1" />
+  </joint>
+  <force_element name="spring" type="LinearSpringDamper">
+    <link1 link="world" xyz="1 0 0"/>
+    <link2 link="ball" xyz="0 0 0"/>
+    <stiffness value="10" />
+    <damping value="1" />
+  </force_element>
+</robot>

@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+
+<robot name="DoublePendWBicepSpring">
+  <material name="green">
+    <color rgba=".3 .6 .4 1" />
+  </material>
+  <material name="red">
+    <color rgba=".9 .1 0 1" />
+  </material>
+  <material name="blue">
+    <color rgba="0 0 1 1" />
+  </material>
+  <link name="world"/>
+  <link name="upper_arm">
+    <inertial>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <geometry>
+   	<cylinder length="1" radius="0.075" />
+      </geometry>
+      <material name="blue" />
+    </visual>
+  </link>
+  <joint name="shoulder" type="continuous">
+    <parent link="world" />
+    <child link="upper_arm" />
+    <origin xyz="0 0 0"/>
+    <axis xyz="0 1 0" />
+    <dynamics damping=".1" />
+  </joint>
+  <link name="lower_arm">
+    <inertial>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <geometry>
+        <cylinder length="1" radius="0.05" />
+      </geometry>
+      <material name="blue" />
+    </visual>
+  </link>
+  <joint name="elbow" type="continuous">
+    <parent link="upper_arm" />
+    <child link="lower_arm" />
+    <origin xyz="0 0 -1" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0" />
+  </joint>
+
+  <force_element name="bicept" type="LinearSpringDamper">
+    <link1 link="upper_arm" xyz="0 0 -.5"/>
+    <link2 link="lower_arm" xyz="0 0 -.5"/>
+    <stiffness value="15" />
+    <damping value="5" />
+    <rest_length value="0" />
+  </force_element>
+</robot>

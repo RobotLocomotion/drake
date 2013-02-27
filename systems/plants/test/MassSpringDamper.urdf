@@ -2,7 +2,7 @@
 
 <robot name="MassSpringDamper">
   <material name="green">
- 	  <color rgba=".3 .6 .4 1" />
+    <color rgba=".3 .6 .4 1" />
   </material>
   <material name="red">
     <color rgba=".9 .1 0 1" />
@@ -10,9 +10,7 @@
   <material name="blue">
     <color rgba="0 0 1 1" />
   </material>
-
   <link name="world"/>
-
   <link name="mass">
     <inertial> 
       <origin xyz="0 0 0" rpy="0 0 0" />
@@ -32,12 +30,10 @@
     <child link="mass" />
     <axis xyz="1 0 0" />
   </joint>
-
   <force_element name="spring" type="LinearSpringDamper">
     <link1 link="world" xyz="0 0 0" />
     <link2 link="mass" xyz="0 0 0" />
     <stiffness value="10" />
     <damping value="1" />
   </force_element>
-
 </robot>
