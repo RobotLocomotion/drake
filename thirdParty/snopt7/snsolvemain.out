@@ -1,0 +1,142 @@
+1
+ 
+
+ SPECS file
+ ----------
+
+      Begin snsolvemain
+         Derivative option                1
+         Major iterations               200
+         Major Print level           000001
+      *                             (JFLXBT)
+         Minor print level                1
+         Solution                        No
+      End snsolvemain
+1
+ 
+ SNSPEC EXIT 100 -- finished successfully
+ SNSPEC INFO 101 -- SPECS file read
+      Major Iteration limit             250
+      Maximize
+1
+ 
+ Parameters
+ ==========
+
+ Files
+ -----
+ Solution file..........         0       Old basis file ........         0       Standard input.........         5
+ Insert file............         0       New basis file ........         0       (Printer)..............         9
+ Punch file.............         0       Backup basis file......         0       (Specs file)...........         4
+ Load file..............         0       Dump file..............         0       Standard output........         6
+
+ Frequencies
+ -----------
+ Print frequency........       100       Check frequency........        60       Save new basis map.....       100
+ Summary frequency......       100       Factorization frequency        50       Expand frequency.......     10000
+
+ QP subproblems
+ --------------
+ QPsolver Cholesky......
+ Scale tolerance........     0.900       Minor feasibility tol..  1.00E-06       Iteration limit........     10000
+ Scale option...........         0       Minor optimality  tol..  1.00E-06       Minor print level......         1
+ Crash tolerance........     0.100       Pivot tolerance........  3.25E-11       Partial price..........         1
+ Crash option...........         3       Elastic weight.........  1.00E+04       Prtl price section ( A)         9
+                                         New superbasics........        99       Prtl price section (-I)        19
+
+ The SQP Method
+ --------------
+ Maximize...............                 Cold start.............                 Proximal Point method..         1
+ Nonlinear objectiv vars         9       Objective Row..........         1       Function precision.....  3.00E-13
+ Unbounded step size....  1.00E+20       Superbasics limit......         9       Difference interval....  5.48E-07
+ Unbounded objective....  1.00E+15       Reduced Hessian dim....         9       Central difference int.  6.70E-05
+ Major step limit.......  2.00E+00       Derivative linesearch..                 Derivative option......         1
+ Major iterations limit.       250       Linesearch tolerance...   0.90000       Verify level...........         0
+ Minor iterations limit.       500       Penalty parameter......  0.00E+00       Major Print Level......         1
+                                         Major optimality tol...  2.00E-06
+
+ Hessian Approximation
+ ---------------------
+ Full-Memory Hessian....                 Hessian updates........  99999999       Hessian frequency......  99999999
+                                                                                 Hessian flush..........  99999999
+
+ Nonlinear constraints
+ ---------------------
+ Nonlinear constraints..        14       Major feasibility tol..  1.00E-06       Violation limit........  1.00E+06
+ Nonlinear Jacobian vars         9
+
+ Miscellaneous
+ -------------
+ LU factor tolerance....      3.99       LU singularity tol.....  3.25E-11       Timing level...........        -1
+ LU update tolerance....      3.99       LU swap tolerance......  1.22E-04       Debug level............         0
+ LU partial  pivoting...                 eps (machine precision)  2.22E-16       System information.....        No
+                                                                                 Sticky parameters......       Yes
+1
+ 
+
+ 
+
+ Matrix statistics
+ -----------------
+               Total      Normal        Free       Fixed     Bounded
+ Rows             19          18           1           0           0
+ Columns           9           6           2           0           1
+
+ No. of matrix elements                   52     Density      30.409
+ Biggest  constant element        1.0000E+00  (excluding fixed columns,
+ Smallest constant element        1.0000E+00   free rows, and RHS)
+
+ No. of objective coefficients             0
+
+ Nonlinear constraints      14     Linear constraints       5
+ Nonlinear variables         9     Linear variables         0
+ Jacobian  variables         9     Objective variables      9
+ Total constraints          19     Total variables          9
+1
+ 
+
+ 
+ The user has defined      53   out of      53   first  derivatives
+
+ Cheap test of user-supplied problem derivatives...
+
+ The constraint gradients seem to be OK.
+
+ -->  The largest discrepancy was    1.63E-07  in constraint    12
+ 
+
+ The objective  gradients seem to be OK.
+
+ Gradient projected in one direction   4.49241434546E-02
+ Difference approximation              4.49241846361E-02
+1
+ 
+ 
+
+   Itns Major Minors    Step   nCon Feasible  Optimal  MeritFunction     L+U BSwap     nS  condHz Penalty
+     12     0     12              1 (0.0E+00) 1.8E-01  3.1349175E-01      39            4 2.4E+00         _  r
+     17     1      5 8.9E-01      2  3.0E-01  4.0E-02  1.6320829E+00      47            2 4.8E+00         _n rl
+     19     2      2 2.8E-01      4  2.3E-01  2.8E-02  1.3671708E+00      47            3 7.9E+00 6.6E-01 _s
+     20     3      1 1.0E+00      5  2.3E-02  4.9E-02  1.3462212E+00      47            3 1.3E+01 7.8E-01 _
+     21     4      1 1.0E+00      6  1.3E-03  9.9E-03  1.3496008E+00      47            3 2.0E+01 7.8E-01 _
+     22     5      1 1.0E+00      7  4.7E-04  4.2E-03  1.3498986E+00      41     3      3 1.9E+00 7.8E-01 _
+     23     6      1 1.0E+00      8  3.1E-05  4.1E-04  1.3499559E+00      41            3 1.5E+00 7.8E-01 _
+     24     7      1 1.0E+00      9 (9.1E-07) 1.3E-03  1.3499595E+00      41            3 1.6E+00 7.8E-01 _
+     25     8      1 1.0E+00     10  5.0E-06  4.2E-05  1.3499629E+00      41            3 1.6E+00 7.8E-01 _
+     26     9      1 1.0E+00     11 (5.9E-09) 3.9E-06  1.3499629E+00      41            3 1.7E+00 7.8E-01 _
+     27    10      1 1.0E+00     12 (2.3E-11)(6.3E-08) 1.3499629E+00      41            3 1.6E+00 7.8E-01 _
+1
+ 
+ SNOPTA EXIT   0 -- finished successfully
+ SNOPTA INFO   1 -- optimality conditions satisfied
+
+ Problem name
+ No. of iterations                  27   Objective value      1.3499628859E+00
+ No. of major iterations            10   Linear objective     0.0000000000E+00
+ Penalty parameter           7.774E-01   Nonlinear objective  1.3499628859E+00
+ No. of calls to funobj             13   No. of calls to funcon             13
+ No. of superbasics                  3   No. of basic nonlinears             5
+ No. of degenerate steps             0   Percentage                       0.00
+ Max x                       3 1.0E+00   Max pi                     19 1.0E+00
+ Max Primal infeas           0 0.0E+00   Max Dual infeas             5 1.4E-07
+ Nonlinear constraint violn    5.4E-11

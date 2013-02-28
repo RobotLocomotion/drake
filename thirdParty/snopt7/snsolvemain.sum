@@ -1,0 +1,49 @@
+ 
+
+ Begin snsolvemain
+ 
+ SNSPEC EXIT 100 -- finished successfully
+ SNSPEC INFO 101 -- SPECS file read
+ 
+ 
+
+ Nonlinear constraints      14     Linear constraints       5
+ Nonlinear variables         9     Linear variables         0
+ Jacobian  variables         9     Objective variables      9
+ Total constraints          19     Total variables          9
+ 
+
+ 
+ The user has defined      53   out of      53   first  derivatives
+ 
+
+ Major Minors     Step   nCon Feasible  Optimal  MeritFunction    nS Penalty
+     0     12               1 (0.0E+00) 1.8E-01  3.1349175E-01     4           r
+     1      5  8.9E-01      2  3.0E-01  4.0E-02  1.6320829E+00     2         n rl
+     2      2  2.8E-01      4  2.3E-01  2.8E-02  1.3671708E+00     3 6.6E-01 s
+     3      1  1.0E+00      5  2.3E-02  4.9E-02  1.3462212E+00     3 7.8E-01
+     4      1  1.0E+00      6  1.3E-03  9.9E-03  1.3496008E+00     3 7.8E-01
+     5      1  1.0E+00      7  4.7E-04  4.2E-03  1.3498986E+00     3 7.8E-01
+     6      1  1.0E+00      8  3.1E-05  4.1E-04  1.3499559E+00     3 7.8E-01
+     7      1  1.0E+00      9 (9.1E-07) 1.3E-03  1.3499595E+00     3 7.8E-01
+     8      1  1.0E+00     10  5.0E-06  4.2E-05  1.3499629E+00     3 7.8E-01
+     9      1  1.0E+00     11 (5.9E-09) 3.9E-06  1.3499629E+00     3 7.8E-01
+
+ Major Minors     Step   nCon Feasible  Optimal  MeritFunction    nS Penalty
+    10      1  1.0E+00     12 (2.3E-11)(6.3E-08) 1.3499629E+00     3 7.8E-01
+ 
+ SNOPTA EXIT   0 -- finished successfully
+ SNOPTA INFO   1 -- optimality conditions satisfied
+
+ Problem name
+ No. of iterations                  27   Objective value      1.3499628859E+00
+ No. of major iterations            10   Linear objective     0.0000000000E+00
+ Penalty parameter           7.774E-01   Nonlinear objective  1.3499628859E+00
+ No. of calls to funobj             13   No. of calls to funcon             13
+ No. of superbasics                  3   No. of basic nonlinears             5
+ No. of degenerate steps             0   Percentage                       0.00
+ Max x                       3 1.0E+00   Max pi                     19 1.0E+00
+ Max Primal infeas           0 0.0E+00   Max Dual infeas             5 1.4E-07
+ Nonlinear constraint violn    5.4E-11
+
+ Solution not printed

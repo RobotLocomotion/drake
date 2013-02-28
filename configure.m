@@ -136,7 +136,13 @@ end
 
 conf.snopt_enabled = logical(exist('snopt'));
 if (~conf.snopt_enabled) 
-  disp(' SNOPT not found.  SNOPT support will be disabled.  To re-enable, add the SNOPT matlab folder to your path and rerun configure.  SNOPT can be obtained from https://tig.csail.mit.edu/software/ .');
+  % check to see if there is a snopt folder in externals, and if so, add it
+  if (exist('thirdParty/snopt7','dir'))
+    addpath([conf.root,'/thirdParty/snopt7']);
+    conf.snopt_enabled = logical(exist('snopt'));
+  end
+  else
+    disp(' SNOPT not found.  SNOPT support will be disabled.  To re-enable, add the SNOPT matlab folder to your path and rerun configure.  SNOPT can be obtained from https://tig.csail.mit.edu/software/ .');
 end
 
 conf.vrml_enabled = logical(vrinstall('-check'));
@@ -167,7 +173,7 @@ end
 
 conf.cplex_enabled = logical(exist('cplexlp'));
 if (~conf.cplex_enabled)
-  disp(' CPLEX not found.  CPLEX support will be disabled.  To re-enabled, install CPLEX and add the matlab subdirectory to your matlab path, then rerun configure');
+  disp(' CPLEX not found.  CPLEX support will be disabled.  To re-enable, install CPLEX and add the matlab subdirectory to your matlab path, then rerun configure');
 end
 
 conf.yalmip_enabled = logical(exist('sdpvar'));

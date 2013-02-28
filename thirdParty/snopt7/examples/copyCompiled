@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# Mike Gertz - Jul 8, 1997
+# 
+# Usage: compileMex PROBLEM[.SIF] ...
+#
+# Attempts to compile and run prdmin on the problem named PROBLEM,
+# which is assumed to be in "CUTE"-style SIF format. 
+#
+# This is the matlab version, so there is no point in specifying more
+# than one problem on the command line. The matlab version can only compile
+# the appropriate "mex" files. The solver must be run from within matlab. 
+# It is possible, but more advanced, to run matlab in the background, but it
+# is still preferable to run a matlab script in order to batch process a
+# number of problems.
+#
+# See runon.m and matlabbg.
+#
+#set -e
+
+if [ -z "$CUTEDIR" ]; then
+    CUTEDIR=$HOME/iotr-cute
+    export CUTEDIR
+fi
+
+PRECOMPILEDDIR=$CUTEDIR/precompiledSIF
+MEXSUFFIX=mexglx
+
+for PROBLEM in $*; do
+    CODEDIR=$PRECOMPILEDDIR/$PROBLEM
+    if [ ! -d $CODEDIR ]
+    then
+	echo "Couldn't find compiled code for $PROBLEM"
+	exit 1
+    fi
+
+    gunzip -c $CODEDIR/ctools.$MEXSUFFIX.gz > ctools.$MEXSUFFIX
+    gunzip -c $CODEDIR/OUTSDIF.d.gz > OUTSDIF.d
+done
