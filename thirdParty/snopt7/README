@@ -1,0 +1,24 @@
+
+Using the SNOPT mex Files in $SNOPT/matlab
+==========================================
+
+ Run Matlab in the directory $SNOPT/matlab.
+
+ Typing
+  >> more on
+  >> help Contents
+from Matlab provides an overview of the package.
+
+ At the Matlab prompt, type
+  >> runAllExamples
+This script sets the matlab path appropriately.
+
+ The subdirectory ./examples contains various sample problems
+that demonstrate how to use the snOpt Matlab interfaces.  Read
+the in-line help information for each m-file for more
+information.  To run the individual m-files type
+
+  >> setpath  % if you haven't already called runAllExamples
+  >> addpath examples
+  >> addpath examples/snmain
+  >> snoptmain

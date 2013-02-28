@@ -40,8 +40,15 @@ echo "Getting rid of NORELEASE files..."
 for file in `find . -type f` 
 do grep -q NORELEASE $file && rm $file
 done
-
 echo "Done."
+
+## Remove SNOPT7 we provide
+echo "Removing the SNOPT7 we provide for internal users..."
+rm -rf thirdParty/snopt7
+echo "Done."
+
+
+echo "All done."
 echo "Release stripping is complete."
 
 echo "Making a .tar.gz now..."
@@ -55,4 +62,6 @@ zip -r drake.zip drake
 echo "Done."
 echo "The zipfile is now at drake.zip."
 
-echo "All packaging is complete. Enjoy!"
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
+echo "           All packaging is complete. Enjoy!"
+echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
