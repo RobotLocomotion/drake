@@ -53,7 +53,7 @@ if (obj.getNumInputs>0 && getNumStates(obj)<1 && isa(fin,'LCMSubscriber'))
 else % otherwise set up the LCM blocks and run simulink.
   if ~isfield(options,'timekeeper') 
     options.timekeeper = 'drake/realtime'; 
-  elseif ~isempty(options,'timekeeper')
+  elseif ~isempty(options.timekeeper)
     typecheck(options.timekeeper,'char');
     
     % try to load the system in case it's necessary
