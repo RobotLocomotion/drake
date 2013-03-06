@@ -57,11 +57,11 @@ if options.ground && ~isempty(model.terrain_height)
   fprintf(fp,'   color Color { color [');
   for i=1:m
     for j=1:n
-%      if rem(i+j,2)==0
+      if rem(i+j,2)==0
         fprintf(fp,' %.1f %.1f %.1f,', color1);
-%      else
-%        fprintf(fp,' %.1f %.1f %.1f,', color2);
-%      end
+      else
+        fprintf(fp,' %.1f %.1f %.1f,', color2);
+      end
     end
   end
   fprintf(fp,'] }\n'); % end Color
