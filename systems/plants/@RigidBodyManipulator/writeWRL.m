@@ -24,35 +24,59 @@ fprintf(fp,'## This file was automatically generated using Drake ##\n');
 fprintf(fp,'##   EDITING THIS FILE BY HAND IS NOT RECOMMENDED    ##\n');
 fprintf(fp,'## ------------------------------------------------- ##\n\n');
 
-% write default background color  % todo: get this from urdf?
-fprintf(fp,'Background {\n\tskyColor 1 1 1\n}\n\n');
 
-if (options.ground)
-  m=20; n=20;
-  color1 = [204 102 0]/256;  % csail orange
+if options.ground && ~isempty(model.terrain_height)
+  fprintf(fp,'Background {\n\tskyColor 0.8818    0.9512    0.9941\n}\n\n');
+
+  T = model.T_terrain_to_world;
+  xyz = homogTransMult(T,[0;0;0]);
+  axisangle = rotmat2axis(T(1:3,1:3));
+  xspacing = 1/(T(4,:)*[1;0;0;1]); 
+  yspacing = 1/(T(4,:)*[0;1;0;1]);
+  [m,n]=size(model.terrain_height);
+  [X,Y]=meshgrid(0:(m-1),0:(n-1));
+  pts = homogTransMult(T,[X(:),Y(:),model.terrain_height(:)]');
+  
+  %  color1 = [204 102 0]/256;  % csail orange
   color1 = hex2dec({'ee','cb','ad'})/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
   color2 = hex2dec({'cd','af','95'})/256;
-  fprintf(fp,'Transform {\n  translation %f %f 0\n  rotation 1 0 0 1.5708\n  children [\n',-m/2,n/2);
+  fprintf(fp,'Transform {\n  translation %f %f %f\n  rotation %f %f %f %f\n  children [\n',xyz(1),xyz(2),xyz(3),axisangle(1),axisangle(2),axisangle(3),axisangle(4));
+  fprintf(fp,'Transform {\n  rotation  1 0 0 1.5708\n  children [\n');
   fprintf(fp,'Shape { geometry ElevationGrid {\n');
   %        fprintf(fp,'  solid "false"\n');
+  fprintf(fp,'  xSpacing %f\n',xspacing);
+  fprintf(fp,'  zSpacing %f\n',yspacing);
   fprintf(fp,'  xDimension %d\n',m);
   fprintf(fp,'  zDimension %d\n',n);
   fprintf(fp,'  height [');
-  fprintf(fp,' %d', zeros(m,n));
+  fprintf(fp,' %d', pts(3,:));
   fprintf(fp,' ]\n');
-  fprintf(fp,'  colorPerVertex FALSE\n');
+  fprintf(fp,'  colorPerVertex TRUE\n');  
+  % note: colorPerVertex FALSE seems to be unsupported (loads but renders incorrectly) in the default simulink 3D animation vrml viewer
   fprintf(fp,'   color Color { color [');
-  for i=1:(m-1)
-    for j=1:(n-1)
-      if rem(i+j,2)==0
+  for i=1:m
+    for j=1:n
+%      if rem(i+j,2)==0
         fprintf(fp,' %.1f %.1f %.1f,', color1);
-      else
-        fprintf(fp,' %.1f %.1f %.1f,', color2);
-      end
+%      else
+%        fprintf(fp,' %.1f %.1f %.1f,', color2);
+%      end
     end
   end
-  fprintf(fp,'] }\n');
-  fprintf(fp,'}\n}\n]\n}\n\n');
+  fprintf(fp,'] }\n'); % end Color
+%  [nx,ny,nz] = surfnorm(model.terrain_height);
+%  fprintf(fp,'  normalPerVertex TRUE\n');
+%  fprintf(fp,'  normal Normal { vector [');
+%  fprintf(fp,' %.2f %.2f %.2f,', [nx(:),-nz(:),ny(:)]');  % rotx(pi/2)*normal
+%  fprintf(fp,'] }\n'); % end normal
+  fprintf(fp,'}\n}\n'); % end Shape
+  fprintf(fp,']\n}\n'); % end Transform
+  fprintf(fp,']\n}\n'); % end Transform
+  fprintf(fp,'\n\n');
+  
+else
+  fprintf(fp,'Background {\n\tskyColor 1 1 1\n}\n\n');
+
 end
 
 % write default viewpoints
