@@ -21,6 +21,10 @@ classdef RigidBodyManipulator < Manipulator
     featherstone = [];
     mex_model_ptr = 0;
     dirty = true;
+    
+    terrain_height=zeros(20);  % height(i,j) = height at (xspacing * (i-1),-yspacing * (j-1))
+    T_terrain_to_world = [1,0,0,-10;0,1,0,10;0,0,1,0;0,0,0,1];  % translation from terrain coordinates to world coordinates
+    T_world_to_terrain;
   end
   
   methods
@@ -33,6 +37,7 @@ classdef RigidBodyManipulator < Manipulator
         if (nargin<2) options = struct(); end
         obj = addRobotFromURDF(obj,urdf_filename,zeros(3,1),zeros(3,1),options);
       end
+      obj = setTerrain(obj,zeros(20));  % default terrain is all zeros
     end
     
     function checkDirty(obj)
@@ -55,6 +60,19 @@ classdef RigidBodyManipulator < Manipulator
           y = [y; obj.sensor{i}.output(obj,t,x,u)];
         end
       end
+    end
+    
+    function obj = setTerrain(obj,terrain_height,terrain_to_world_transform)
+      if (nargin<3 || isempty(terrain_to_world_transform))
+        [m,n]=size(terrain_height);
+        terrain_to_world_transform = [1,0,0,-(m-1)/2;0,1,0,(n-1)/2;0,0,1,0;0,0,0,1]; 
+      else
+        sizecheck(terrain_to_world_transform,[4 4]);
+      end
+      
+      obj.terrain_height = terrain_height;
+      obj.T_terrain_to_world = terrain_to_world_transform;
+      obj.T_world_to_terrain = inv(terrain_to_world_transform);
     end
     
     function B = getB(obj)

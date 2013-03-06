@@ -21,6 +21,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if (nargin<3) options=struct(); end
       if ~isfield(options,'twoD') options.twoD = false; end
       
+      typecheck(timestep,'double');
+      sizecheck(timestep,1);
+      
       if isempty(manipulator_or_urdf_filename) || ischar(manipulator_or_urdf_filename)
         if options.twoD
           S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
@@ -45,8 +48,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         obj.twoD = true;
       end
       
-      typecheck(timestep,'double');
-      sizecheck(timestep,1);
       obj.timestep = timestep;
       
       obj = setSampleTime(obj,[timestep;0]);
@@ -500,6 +501,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if ~isempty(obj.manip)  % this gets called in the constructor, before manip is ste
         obj.manip = setStateFrame(obj.manip,fr);
       end
+    end
+    
+    function obj = setTerrain(obj,varargin)
+      obj.manip = setTerrain(obj.manip,varargin{:});
     end
     
     function obj=addRobotFromURDF(obj,varargin)
