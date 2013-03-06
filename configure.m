@@ -1,4 +1,4 @@
-function configure
+function configure(options)
 % Checks dependencies and sets up matlab path.
 % Searches the machine for necessary support programs, and generates
 % config.mat.  If required tools aren't found, it tries to be helpful in
@@ -214,11 +214,19 @@ disp('  editDrakeConfig(param,value);');
 
 % if changes have been made to the matlab path, prompt user with option to 
 % save the path for future matlab sessions.
+
 if (~strcmp(original_path,path))
-  a = input('This configure script added some necessary paths to your matlab path.\nWould you like to save your current path for future matlab sessions\nnow (y/n)? ', 's');
-  if (lower(a(1))=='y')
-    if (~savepath) disp('MATLAB path successfully saved.'); end
-  end
+          if (~savepath) disp('MATLAB path successfully saved.'); end
+else
+    if(exist('options.autoconfig'))
+        disp('I am running in autoconfig mode, so I will go ahead and save your path...');
+        if (~savepath) disp('MATLAB path successfully saved.');end
+    else
+        a = input('This configure script added some necessary paths to your matlab path.\nWould you like to save your current path for future matlab sessions\nnow (y/n)? ', 's');
+        if (lower(a(1))=='y')
+            if (~savepath) disp('MATLAB path successfully saved.'); end
+        end
+    end
 end
 
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
