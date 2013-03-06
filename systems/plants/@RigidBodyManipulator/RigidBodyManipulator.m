@@ -62,11 +62,35 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
     
-    function obj = setTerrain(obj,terrain_height,terrain_to_world_transform)
+    function obj = setTerrain(obj,terrain_imagefile_or_heightmatrix,terrain_to_world_transform,varargin)
+      % usage:
+      %   setTerrain(obj,terrain,T)
+      %  or
+      %   setTerrain(obj,terrain,pos,size)
+      
+      if ischar(terrain_imagefile_or_heightmatrix)
+        a=imread(terrain_imagefile_or_heightmatrix);
+        terrain_height=double(rgb2gray(a))/255;
+      else
+        terrain_height = terrain_imagefile_or_heightmatrix;
+      end
+      
+      [m,n]=size(terrain_height);
       if (nargin<3 || isempty(terrain_to_world_transform))
-        [m,n]=size(terrain_height);
         terrain_to_world_transform = [1,0,0,-(m-1)/2;0,1,0,(n-1)/2;0,0,1,0;0,0,0,1]; 
       else
+        if sizecheck(terrain_to_world_transform,3)
+          % then it's setTerrain(obj,terrain,pos,size)
+          terrain_pos = terrain_to_world_transform(:);
+          if (nargin>3)
+            terrain_size=varargin{1}(:);
+            sizecheck(terrain_size,[3 1]);
+          else
+            terrain_size=[m-1;n-1;max(max(abs(terrain_height)))];
+          end
+          terrain_to_world_transform = [diag(terrain_size./[m-1;n-1;max(max(abs(terrain_height)))]), terrain_pos; 0 0 0 1]; 
+        end
+
         sizecheck(terrain_to_world_transform,[4 4]);
       end
       

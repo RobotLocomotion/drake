@@ -31,8 +31,8 @@ if options.ground && ~isempty(model.terrain_height)
   T = model.T_terrain_to_world;
   xyz = homogTransMult(T,[0;0;0]);
   axisangle = rotmat2axis(T(1:3,1:3));
-  xspacing = 1/(T(4,:)*[1;0;0;1]); 
-  yspacing = 1/(T(4,:)*[0;1;0;1]);
+  xspacing = norm(homogTransMult(T,[1;0;0])-homogTransMult(T,[0;0;0]));
+  yspacing = norm(homogTransMult(T,[0;1;0])-homogTransMult(T,[0;0;0]));
   [m,n]=size(model.terrain_height);
   [X,Y]=meshgrid(0:(m-1),0:(n-1));
   pts = homogTransMult(T,[X(:),Y(:),model.terrain_height(:)]');
@@ -51,6 +51,7 @@ if options.ground && ~isempty(model.terrain_height)
   fprintf(fp,'  height [');
   fprintf(fp,' %d', pts(3,:));
   fprintf(fp,' ]\n');
+  fprintf(fp,'  solid TRUE\n');
   fprintf(fp,'  colorPerVertex TRUE\n');  
   % note: colorPerVertex FALSE seems to be unsupported (loads but renders incorrectly) in the default simulink 3D animation vrml viewer
   fprintf(fp,'   color Color { color [');
