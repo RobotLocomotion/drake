@@ -201,7 +201,7 @@ end
 conf.eigen3_enabled = isfield(conf,'eigen3_incdir') && ~isempty(conf.eigen3_incdir);
 if ~conf.eigen3_enabled
   %disp(' Eigen3 support is disabled; mex files that use eigen3 will be disabled.  To re-enable, set the path to eigen3 using editDrakeConfig(''eigen3_incdir'',path_to_eigen) and rerun configure');
-   conf.eigen3_incdir = [conf.root,'/thirdParty/eigen3'];
+   conf.eigen3_incdir = [conf.root,'/thirdParty/eigen3/'];
    conf.eigen3_enabled = isfield(conf,'eigen3_incdir') && ~isempty(conf.eigen3_incdir);
 end
 
