@@ -35,19 +35,19 @@ load drake_config;
 
 try 
   cd util;
-  mex realtime.cpp
+  mexPrint('realtime.cpp');
   cd(getDrakePath());
 
   if checkDependency('eigen3_enabled')
     eigenflags = {['-I',conf.eigen3_incdir]};
     cd systems/plants/;
 
-    mex('-c','Model.cpp',flags{:},eigenflags{:});
+    mexPrint('-c','Model.cpp',flags{:},eigenflags{:});
     modelflags = {['Model.',objext]};
-    mex('deleteModelmex.cpp',modelflags{:},flags{:},eigenflags{:});
-    mex('HandCmex.cpp',modelflags{:},flags{:},eigenflags{:});
-    mex('doKinematicsmex.cpp',modelflags{:},flags{:},eigenflags{:});
-    mex('forwardKinmex.cpp',modelflags{:},flags{:},eigenflags{:});
+    mexPrint('deleteModelmex.cpp',modelflags{:},flags{:},eigenflags{:});
+    mexPrint('HandCmex.cpp',modelflags{:},flags{:},eigenflags{:});
+    mexPrint('doKinematicsmex.cpp',modelflags{:},flags{:},eigenflags{:});
+    mexPrint('forwardKinmex.cpp',modelflags{:},flags{:},eigenflags{:});
 
 %    SuperUsers: fix the snoptflags for your platform and uncomment.
 %    will try to make compilation robust soon.
@@ -58,24 +58,24 @@ try
     % in the /Applications/MATLAB_R2012a.app/sys/os/maci64 directory and
     % replace it with a symlink to the gcc48 version of the library.
     
-    mex('deleteModelpmex.cpp',flags{:},eigenflags{:});
-    mex('HandCpmex.cpp',flags{:},eigenflags{:});
-    mex('doKinematicspmex.cpp',flags{:},eigenflags{:});
-    mex('forwardKinpmex.cpp',flags{:},eigenflags{:});
-    mex('forwardKinVelpmex.cpp',flags{:},eigenflags{:});
+    mexPrint('deleteModelpmex.cpp',flags{:},eigenflags{:});
+    mexPrint('HandCpmex.cpp',flags{:},eigenflags{:});
+    mexPrint('doKinematicspmex.cpp',flags{:},eigenflags{:});
+    mexPrint('forwardKinpmex.cpp',flags{:},eigenflags{:});
+    mexPrint('forwardKinVelpmex.cpp',flags{:},eigenflags{:});
 
     cd @RigidBodyManipulator/private;
     modelflags = {fullfile('..','..',['Model.',objext]),eigenflags{:}};
-    mex('constructModelmex.cpp',modelflags{:});
+    mexPrint('constructModelmex.cpp',modelflags{:});
     
     cd ../../@PlanarRigidBodyManipulator/private;
-    mex('constructModelpmex.cpp',eigenflags{:});
+    mexPrint('constructModelpmex.cpp',eigenflags{:});
     
     cd(getDrakePath());
   end
 
   cd systems;
-  mex DCSFunction.cpp
+  mexPrint DCSFunction.cpp
   cd(getDrakePath());
 catch ex
   cd(getDrakePath());
@@ -85,3 +85,11 @@ end
 end
 
 disp('done.');
+
+
+end
+
+function mexPrint(varargin)
+  disp(['mex ',sprintf('%s ',varargin{:})]);
+  mex(varargin{:});
+end

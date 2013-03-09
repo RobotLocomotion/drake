@@ -490,6 +490,7 @@ function pass = runTest(runpath,test,logfileptr)
   force_close_system();
   close all;
   clearvars -global -except runNode_mutex;
+  clear Singleton;
 
   s=dbstatus; oldpath=path();
   % useful for debugging: if 'dbstop if error' is on, then don't use try catch. 
