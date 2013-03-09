@@ -1,18 +1,31 @@
 function runWalkDemo(num_steps,step_length,step_time)
 
-if (nargin<1) num_steps = 4; end
-if (nargin<2) step_length = 0; end
-if (nargin<3) step_time = 3; end
+if (nargin<1) num_steps = 8; end
+if (nargin<2) step_length = 0.4; end
+if (nargin<3) step_time = 1; end
 
 sizecheck(num_steps,1);
 rangecheck(num_steps,0,inf);
 sizecheck(step_length,1);
 sizecheck(step_time,1);
 
-
 options.floating = true;
 options.dt = 0.001;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
+
+if (0)  % add some stairs
+  terrain = zeros(500,200);
+  terrain(106:110,:)=1;
+  terrain(111:115,:)=2;
+  terrain(116:120,:)=3;
+  terrain(121:125,:)=4;
+  terrain(126:140,:)=5;
+  terrain(141:145,:)=4;
+  terrain(146:150,:)=3;
+  terrain(151:155,:)=2;
+  terrain(156:160,:)=1;
+  r = setTerrain(r,terrain,[eye(3),[-100;100;0];0 0 0 10]);
+end
 
 % set initial state to fixed point
 load('data/atlas_fp3.mat');
