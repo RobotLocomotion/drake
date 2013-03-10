@@ -5,6 +5,10 @@ classdef JLCMCoder < LCMCoder
       obj.jcoder=jcoder;
     end
     
+    function d = dim(obj)
+      d = obj.jcoder.dim();
+    end
+    
     function str = timestampName(obj)
       str = obj.jcoder.timestampName();
     end
