@@ -1,3 +1,4 @@
+% NOTEST
 function terrainInterpTest
 
 [X,Y] = meshgrid(linspace(-9,9,31),linspace(-9,9,31));

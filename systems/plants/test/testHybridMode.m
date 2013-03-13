@@ -1,3 +1,4 @@
+% NOTEST
 function testHybridMode
 
 options.floating = true;

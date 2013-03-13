@@ -1,3 +1,4 @@
+% NOTEST
 function runAtlasDynamics
 % just runs it as a passive system 
 
