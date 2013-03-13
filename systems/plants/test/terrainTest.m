@@ -1,3 +1,4 @@
+% NOTEST
 function terrainTest
 
 r = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,struct('floating',true));

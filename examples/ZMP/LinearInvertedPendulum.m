@@ -1,3 +1,4 @@
+% NOTEST
 classdef LinearInvertedPendulum < LinearSystem
   % This is the three-dimensional model of the ZMP dynamics of the linear
   % inverted pendulum as described in Kajita03.

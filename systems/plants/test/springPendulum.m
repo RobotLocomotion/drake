@@ -1,3 +1,4 @@
+% NOTEST
 function springPendulum
 
 r = RigidBodyManipulator('SpringPendulum.urdf');

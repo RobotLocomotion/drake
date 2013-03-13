@@ -1,3 +1,4 @@
+% NOTEST
 function runReachingDemo
 
 options.floating = true;
