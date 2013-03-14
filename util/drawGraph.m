@@ -48,6 +48,6 @@ fclose(fptr);
 
 %drawDot(dotfile,gca,varargin{:});
 system(['dot -Tpng -O ',dotfile]);
-imshow([dotfile,'.png']);
+image([dotfile,'.png']);
 
 
