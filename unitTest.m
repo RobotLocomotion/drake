@@ -30,6 +30,7 @@ function tree=unitTest(options)
 
 if (nargin<1) options=struct(); end
 if ~isfield(options,'autorun') options.autorun = false; end
+if ~isfield(options,'ignore_vrml') options.ignore_vrml = false; end
 if ~isfield(options,'gui') options.gui = true; end
 if ~isfield(options,'logfile') options.logfile = ''; end
 if ~isempty(options.logfile)
@@ -468,80 +469,84 @@ function tree=runNode(tree,node)
 end
 
 function pass = runCommandLineTest(path,test,options)
-  fprintf(1,'%-40s ',test);
-  pass = runTest(path,test,options.logfileptr);
-  if (pass)
+fprintf(1,'%-40s ',test);
+pass = runTest(path,test,options.logfileptr);
+if (pass)
     fprintf(1,'[PASSED]\n');
-  else
+else
     fprintf(1,'\n[FAILED]\n');  % \n because runTest will print things
-  end
+end
 end
 
 function pass = runTest(runpath,test,logfileptr)
-  p=pwd;
-  cd(runpath);
+p=pwd;
+cd(runpath);
 %  disp(['running ',path,'/',test,'...']);
 
-  if (exist('rng'))
+if (exist('rng'))
     rng('shuffle'); % init rng to current date
-  else  % for older versions of matlab
+else  % for older versions of matlab
     rand('seed',sum(100*clock));
-  end
-  force_close_system();
-  close all;
-  clearvars -global -except runNode_mutex;
-  clear Singleton;
+end
+force_close_system();
+close all;
+clearvars -global -except runNode_mutex;
+clear Singleton;
 
-  s=dbstatus; oldpath=path();
-  % useful for debugging: if 'dbstop if error' is on, then don't use try catch. 
-  if any(strcmp('error',{s.cond})) ||any(strcmp('warning',{s.cond}))
+s=dbstatus; oldpath=path();
+% useful for debugging: if 'dbstop if error' is on, then don't use try catch.
+if any(strcmp('error',{s.cond})) ||any(strcmp('warning',{s.cond}))
     feval_in_contained_workspace(test);
-  else
+else
     try
-      feval_in_contained_workspace(test);
+        feval_in_contained_workspace(test);
     catch ex
-      pass = false;
-      cd(p);
-      disp(' ');
-      disp(' ');
-      disp('*******************************************************');
-      disp(['* error in ',runpath,'/',test]);
-      disp('*******************************************************');
-      disp(getReport(ex,'extended'));
-      disp('*******************************************************');
-      
-      if (nargin>2 && logfileptr>0)
-        fprintf(logfileptr,'*******************************************************\n');
-        fprintf(logfileptr,['* error in ',runpath,'/',test,'\n']);
-        fprintf(logfileptr,'*******************************************************\n');
-        fprintf(logfileptr,'\n');
-        fprintf(logfileptr,getReport(ex,'extended'));
-        fprintf(logfileptr,'\n');
-        fprintf(logfileptr,'*******************************************************\n');
-      end
-      
-      lasterr(ex.message,ex.identifier);
-      %    rethrow(ex);
-      path(oldpath);
-      return;
+        if ((strcmp(ex.identifier,'Drake:MissingDependency:vrml_enabled')) && options.ignore_vrml)
+            % we're running headless and don't care about 3D stuff
+        else
+            
+            pass = false;
+            cd(p);
+            disp(' ');
+            disp(' ');
+            disp('*******************************************************');
+            disp(['* error in ',runpath,'/',test]);
+            disp('*******************************************************');
+            disp(getReport(ex,'extended'));
+            disp('*******************************************************');
+            
+            if (nargin>2 && logfileptr>0)
+                fprintf(logfileptr,'*******************************************************\n');
+                fprintf(logfileptr,['* error in ',runpath,'/',test,'\n']);
+                fprintf(logfileptr,'*******************************************************\n');
+                fprintf(logfileptr,'\n');
+                fprintf(logfileptr,getReport(ex,'extended'));
+                fprintf(logfileptr,'\n');
+                fprintf(logfileptr,'*******************************************************\n');
+            end
+        end
+        lasterr(ex.message,ex.identifier);
+        %    rethrow(ex);
+        path(oldpath);
+        return;
     end
-  end
-  path(oldpath);
-  
-  a=warning;
-  if (~strcmp(a(1).state,'on'))
+end
+path(oldpath);
+
+a=warning;
+if (~strcmp(a(1).state,'on'))
     error('somebody turned off warnings on me!');  % see bug
-  end
-  
-  force_close_system();
-  close all;
-  clearvars -global -except runNode_mutex;
-  
-  t = timerfind;
-  if (~isempty(t)) stop(t); end
-  
-  pass = true;
-  cd(p);
+end
+
+force_close_system();
+close all;
+clearvars -global -except runNode_mutex;
+
+t = timerfind;
+if (~isempty(t)) stop(t); end
+
+pass = true;
+cd(p);
 end
 
 function feval_in_contained_workspace(f) % helps with scripts

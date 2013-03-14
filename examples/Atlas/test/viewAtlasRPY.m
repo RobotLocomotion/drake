@@ -1,4 +1,3 @@
-% NOTEST
 function viewAtlasRPY(rpy);
 
 if (nargin<1) rpy = [pi/4;0;pi/4]; end

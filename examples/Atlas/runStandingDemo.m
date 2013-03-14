@@ -1,4 +1,3 @@
-% NOTEST
 function runStandingDemo
 
 options.floating = true;
