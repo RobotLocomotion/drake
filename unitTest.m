@@ -501,8 +501,9 @@ else
     try
         feval_in_contained_workspace(test);
     catch ex
-        if ((strcmp(ex.identifier,'Drake:MissingDependency:vrml_enabled')) && options.ignore_vrml)
+        if ((strcmp(ex.identifier,'Drake:MissingDependency:vrml_enabled')))
             % we're running headless and don't care about 3D stuff
+            pass=true;
         else
             
             pass = false;
