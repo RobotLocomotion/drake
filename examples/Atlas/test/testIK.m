@@ -1,4 +1,3 @@
-% NOTEST
 function testIK
 
 addpath('..');

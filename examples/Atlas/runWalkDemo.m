@@ -1,4 +1,3 @@
-% NOTEST 
 function runWalkDemo(num_steps,step_length,step_time)
 
 if (nargin<1) num_steps = 8; end
