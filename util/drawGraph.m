@@ -52,7 +52,7 @@ fclose(fptr);
 system(['dot -Tpng -O ',dotfile]);
 disp = getenv('DISPLAY');
 if (strcmp(disp, ''))
-    warn('You do not appear to have a valid DISPLAY, so I am not going to attempt to show the image.')
+    warning('You do not appear to have a valid DISPLAY, so I am not going to attempt to show the image.')
 else
     image([dotfile,'.png']);
 end
