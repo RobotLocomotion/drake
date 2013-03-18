@@ -28,7 +28,7 @@ if (0)  % add some stairs
 end
 
 % set initial state to fixed point
-load('data/atlas_fp3.mat');
+load('data/atlas_fp.mat');
 r = r.setInitialState(xstar);
 
 v = r.constructVisualizer();
@@ -97,7 +97,7 @@ disp('computing ik...')
 for i=1:length(ts)
   t = ts(i);
   if (i>1)
-    q(:,i) = inverseKin(r,q(:,i-1),0,comtraj.eval(t),rfoot_body,[0;0;0],rfoottraj.eval(t),lfoot_body,[0;0;0],lfoottraj.eval(t),options);
+    q(:,i) = inverseKin(r,q(:,i-1),0,comtraj.eval(t),rfoot_body,rfoottraj.eval(t),lfoot_body,lfoottraj.eval(t),options);
   else
     q = q0;
   end

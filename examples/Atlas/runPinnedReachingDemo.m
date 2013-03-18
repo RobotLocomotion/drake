@@ -104,14 +104,13 @@ qgen = ConstOrPassthroughSystem(x0(1:r.getNumStates()/2));
 qgen = qgen.setOutputFrame(sys.getInputFrame());
 sys = cascade(qgen,sys);
 
-T = 10.0; % sec
-if (0)
-  traj = simulate(sys,[0 T]); 
-  playback(v,traj,struct('slider',true));
-else
-  warning('off','Drake:DrakeSystem:UnsupportedSampleTime'); 
-  sys = cascade(sys,v);
-  simulate(sys,[0 T]);
-end
+T = 5.0; % sec
+S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
+output_select(1).system=1;
+output_select(1).output=1;
+sys = mimoCascade(sys,v,[],[],output_select);
+warning(S);
+traj = simulate(sys,[0 T]);
+playback(v,traj,struct('slider',true));
 
 end

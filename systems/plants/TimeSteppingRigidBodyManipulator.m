@@ -556,6 +556,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = stateConstraints(obj.manip,varargin{:});
     end
     
+    function varargout = manipulatorDynamics(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = manipulatorDynamics(obj.manip,varargin{:});
+    end
+    
     function varargout = contactConstraints(obj,varargin)
       varargout=cell(1,nargout);
       [varargout{:}] = contactConstraints(obj.manip,varargin{:});

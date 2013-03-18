@@ -679,7 +679,7 @@ Library {
       MaskIconRotate	      "none"
       MaskPortRotate	      "default"
       MaskIconUnits	      "autoscale"
-      MaskValueString	      "'channel'|1|0|.01"
+      MaskValueString	      "'channel'|1|0|.005"
     }
     Block {
       BlockType		      M-S-Function
@@ -703,7 +703,7 @@ Library {
       MaskIconRotate	      "none"
       MaskPortRotate	      "default"
       MaskIconUnits	      "autoscale"
-      MaskValueString	      "'channel'|1|0|.01"
+      MaskValueString	      "'channel'|1|0|.005"
     }
     Block {
       BlockType		      M-S-Function

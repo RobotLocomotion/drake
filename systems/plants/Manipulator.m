@@ -174,7 +174,7 @@ classdef Manipulator < SecondOrderSystem
       
       function [c,ceq] = mycon(x)
         q = x(1:obj.num_q); qd = x(obj.num_q + (1:obj.num_q));
-        c = -[jointLimits(obj,q); contactConstraints(obj,q,qd)];
+        c = -[jointLimits(obj,q); contactConstraints(obj,q)];
         ceq = stateConstraints(obj,x);
       end
       problem.nonlcon = @mycon;

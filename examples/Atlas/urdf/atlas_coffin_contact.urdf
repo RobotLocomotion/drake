@@ -43,25 +43,49 @@
       </geometry>
     </visual>
     <collision group="heel">
-      <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
+      <origin rpy="0 0 0" xyz="-0.082 0.038 -0.081"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
     </collision>
     <collision group="heel">
-      <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
+      <origin rpy="0 0 0" xyz="-0.082 -0.037 -0.081"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.049 0.063 -0.081"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.049 -0.062 -0.081"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.08 0.063 -0.081"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.08 -0.062 -0.081"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
     </collision>
     <collision group="toe">
-      <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
+      <origin rpy="0 0 0" xyz="0.179 0.026 -0.081"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
     </collision>
     <collision group="toe">
-      <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
+      <origin rpy="0 0 0" xyz="0.179 -0.025 -0.081"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
@@ -79,12 +103,6 @@
         <mesh filename="meshes/l_hand.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
-<!--    <collision>-->
-<!--      <origin rpy="0 0 0" xyz="0.0 0.115 0.0"/>-->
-<!--      <geometry>-->
-<!--        <sphere radius="0"/>-->
-<!--      </geometry>-->
-<!--    </collision>-->
   </link>
   <link name="l_larm">
     <inertial>
@@ -124,18 +142,6 @@
         <mesh filename="meshes/l_lleg.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
-<!--    <collision>-->
-<!--      <origin rpy="0 0 0" xyz="0.049 -0.063 -0.05"/>-->
-<!--      <geometry>-->
-<!--        <sphere radius="0"/>-->
-<!--      </geometry>-->
-<!--    </collision>-->
-<!--    <collision>-->
-<!--      <origin rpy="0 0 0" xyz="0.049 0.063 -0.05"/>-->
-<!--      <geometry>-->
-<!--        <sphere radius="0"/>-->
-<!--      </geometry>-->
-<!--    </collision>-->
   </link>
   <link name="l_scap">
     <inertial>
@@ -280,25 +286,49 @@
       </geometry>
     </visual>
     <collision group="heel">
-      <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
+      <origin rpy="0 0 0" xyz="-0.082 0.038 -0.081"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
     </collision>
     <collision group="heel">
-      <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
+      <origin rpy="0 0 0" xyz="-0.082 -0.037 -0.081"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.049 0.063 -0.081"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.049 -0.062 -0.081"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.08 0.063 -0.081"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.08 -0.062 -0.081"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
     </collision>
     <collision group="toe">
-      <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
+      <origin rpy="0 0 0" xyz="0.179 0.026 -0.081"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
     </collision>
     <collision group="toe">
-      <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
+      <origin rpy="0 0 0" xyz="0.179 -0.025 -0.081"/>
       <geometry>
         <sphere radius="0"/>
       </geometry>
@@ -316,12 +346,6 @@
         <mesh filename="meshes/r_hand.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
-<!--    <collision>-->
-<!--      <origin rpy="0 0 0" xyz="0.0 -0.115 0.0"/>-->
-<!--      <geometry>-->
-<!--        <sphere radius="0"/>-->
-<!--      </geometry>-->
-<!--    </collision>-->
   </link>
   <link name="r_larm">
     <inertial>
@@ -361,18 +385,6 @@
         <mesh filename="meshes/r_lleg.wrl" scale="1 1 1"/>
       </geometry>
     </visual>
-<!--    <collision>-->
-<!--      <origin rpy="0 0 0" xyz="0.049 0.063 -0.05"/>-->
-<!--      <geometry>-->
-<!--        <sphere radius="0"/>-->
-<!--      </geometry>-->
-<!--    </collision>-->
-<!--    <collision>-->
-<!--      <origin rpy="0 0 0" xyz="0.049 -0.063 -0.05"/>-->
-<!--      <geometry>-->
-<!--        <sphere radius="0"/>-->
-<!--      </geometry>-->
-<!--    </collision>-->
   </link>
   <link name="r_scap">
     <inertial>
@@ -706,44 +718,44 @@
     <limit effort="260" lower="-1.14" upper="0.32" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-11.14" soft_upper_limit="10.32"/>
   </joint>
-<!--  <link name="l_hand_point_mass">-->
-<!--    <origin rpy="0 0 0" xyz="0 0 0"/>-->
-<!--    <inertial>-->
-<!--      <mass value="2.9"/>-->
-<!--      <origin xyz="0 0 0"/>-->
-<!--      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>-->
-<!--    </inertial>-->
-<!--    <visual>-->
-<!--      <origin rpy="0 0 0" xyz="0 0 0"/>-->
-<!--      <geometry>-->
-<!--        <sphere radius="0.03"/>-->
-<!--      </geometry>-->
-<!--    </visual>-->
-<!--  </link>-->
-<!--  <link name="r_hand_point_mass">-->
-<!--    <origin rpy="0 0 0" xyz="0 0 0"/>-->
-<!--    <inertial>-->
-<!--      <mass value="2.9"/>-->
-<!--      <origin xyz="0 0 0"/>-->
-<!--      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>-->
-<!--    </inertial>-->
-<!--    <visual>-->
-<!--      <origin rpy="0 0 0" xyz="0 0 0"/>-->
-<!--      <geometry>-->
-<!--        <sphere radius="0.03"/>-->
-<!--      </geometry>-->
-<!--    </visual>-->
-<!--  </link>-->
-<!--  <joint name="l_hand_joint" type="fixed">-->
-<!--    <parent link="l_hand"/>-->
-<!--    <child link="l_hand_point_mass"/>-->
-<!--    <origin rpy="0 0 0" xyz="0.0 0.15 0.0"/>-->
-<!--  </joint>-->
-<!--  <joint name="r_hand_joint" type="fixed">-->
-<!--    <parent link="r_hand"/>-->
-<!--    <child link="r_hand_point_mass"/>-->
-<!--    <origin rpy="0 0 0" xyz="0.0 -0.15 0.0"/>-->
-<!--  </joint>-->
+  <link name="l_hand_point_mass">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <inertial>
+      <mass value="2.9"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="0.03"/>
+      </geometry>
+    </visual>
+  </link>
+  <link name="r_hand_point_mass">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <inertial>
+      <mass value="2.9"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <sphere radius="0.03"/>
+      </geometry>
+    </visual>
+  </link>
+  <joint name="l_hand_joint" type="fixed">
+    <parent link="l_hand"/>
+    <child link="l_hand_point_mass"/>
+    <origin rpy="0 0 0" xyz="0.0 0.15 0.0"/>
+  </joint>
+  <joint name="r_hand_joint" type="fixed">
+    <parent link="r_hand"/>
+    <child link="r_hand_point_mass"/>
+    <origin rpy="0 0 0" xyz="0.0 -0.15 0.0"/>
+  </joint>
   <transmission name="back_lbz_trans" type="pr2_mechanism_model/SimpleTransmission">
     <joint name="back_lbz"/>
     <actuator name="back_lbz_motor"/>

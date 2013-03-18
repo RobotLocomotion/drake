@@ -36,7 +36,12 @@ classdef AffineSystem < PolynomialSystem
         obj.Bc = Bc;
       end
       if (isempty(xcdot0)) 
-        obj.xcdot0 = sparse(num_xc,1);
+          if ~tiflag
+              obj.xcdot0 = ConstantTrajectory(sparse(num_xc,1));
+          else
+            obj.xcdot0 = sparse(num_xc,1);
+          end
+        
       else
         sizecheck(xcdot0,[num_xc,1]); 
         if ~tiflag
@@ -99,7 +104,11 @@ classdef AffineSystem < PolynomialSystem
         end
       end
       if (isempty(y0)) 
-        obj.y0 = sparse(num_y,1);
+        if ~tiflag
+            obj.y0 = ConstantTrajectory(sparse(num_y,1));
+        else
+            obj.y0 = sparse(num_y,1);
+        end
       else
         sizecheck(y0,[num_y,1]); 
         if ~tiflag
@@ -122,6 +131,12 @@ classdef AffineSystem < PolynomialSystem
         xcdot=obj.Ac.eval(t)*x;
         if (obj.num_u) xcdot=xcdot+obj.Bc.eval(t)*u; end
         if ~isempty(obj.xcdot0) xcdot=xcdot+obj.xcdot0.eval(t); end
+        if (nargout>1)
+            df = [deriv(obj.Ac,t)*x+deriv(obj.Bc,t)*u obj.Ac.eval(t) obj.Bc.eval(t)];
+            if ~isempty(obj.xcdot0)
+                df(:,1) = df(:,1)+deriv(obj.xcdot0,t);
+            end
+        end
       end
     end
 

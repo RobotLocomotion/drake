@@ -15,12 +15,15 @@ classdef EndEffector
       obj.body_index = find(~cellfun(@isempty,strfind(r.getLinkNames(),body_id)));
       obj.xyz_offset = xyz_offset;
 
-      obj.frame = CoordinateFrame(strcat(body_id,'_end_effector_goal'),4,'x');
+      obj.frame = CoordinateFrame(strcat(body_id,'_end_effector_goal'),7,'x');
       ee_names = cell(4,1);
       ee_names{1} = strcat(body_id,'_active');
       ee_names{2} = strcat(body_id,'_x');
       ee_names{3} = strcat(body_id,'_y');
       ee_names{4} = strcat(body_id,'_z');
+      ee_names{5} = strcat(body_id,'_roll');
+      ee_names{6} = strcat(body_id,'_pitch');
+      ee_names{7} = strcat(body_id,'_yaw');
       obj.frame.setCoordinateNames(ee_names);
 
       if nargin > 4

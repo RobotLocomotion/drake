@@ -107,6 +107,9 @@ else
       J = reshape(body.dTdq(1:3*nq,:)*pts,nq,[])';
     end
     if (nargout>2)
+      if (include_rotations)
+        warning('Second derivatives of rotations are not implemented yet.');
+      end
       if isempty(body.ddTdqdq)
         error('you must call doKinematics with the second derivative option enabled');
       end
