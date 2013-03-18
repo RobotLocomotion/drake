@@ -19,5 +19,5 @@ v = r.constructVisualizer;
 v.display_dt = 0.02;
 
 % Run simulation, then play it back at realtime speed
-xtraj = simulate(r,[0 3]);
+[ytraj,xtraj] = simulate(r,[0 3]);
 v.playback(xtraj);

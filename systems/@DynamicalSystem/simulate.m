@@ -138,7 +138,7 @@ if (nargout>0)
     ytraj = DTTrajectory(t',y);
     ytraj = setOutputFrame(ytraj,obj.getOutputFrame);
     if (nargout>1)
-      xtraj = DTTrajectory(t',xd);
+      xtraj = DTTrajectory(t',x);
       xtraj = setOutputFrame(xtraj,obj.getStateFrame);
     end
   else
