@@ -7,7 +7,7 @@ options.dt = 0.001;
 r = Atlas('../urdf/atlas_minimal_contact.urdf',options);
 
 % set initial state to fixed point
-load('../data/atlas_fp2.mat');
+load('../data/atlas_fp.mat');
 r = r.setInitialState(xstar);
 
 v = r.constructVisualizer();

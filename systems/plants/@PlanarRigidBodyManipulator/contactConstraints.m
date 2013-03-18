@@ -1,4 +1,4 @@
-function [phi,n,D,mu,dn,dD,psi,dPsi,phi_f,dPhi] = contactConstraints(obj,q,qd)
+function [phi,n,D,mu,dn,dD,psi,dPsi,phi_f,dPhi] = contactConstraints(obj,kinsol,qd)
 %
 % @retval phi  phi(i,1) is the signed distance from the contact
 % point on the robot to the closes object in the world.
@@ -10,16 +10,20 @@ function [phi,n,D,mu,dn,dD,psi,dPsi,phi_f,dPhi] = contactConstraints(obj,q,qd)
 % @retval mu mu(i,1) is the coefficient of friction for the ith contact
 % @retval psi the planar velocity of the contacts (x1,z1,x2,z2,...)
 
-if (nargout > 6)
-  contact_vel = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar
-  dv = zeros(2*obj.num_contacts,2*obj.num_q)*q(1);
+
+if ~isstruct(kinsol)  
+  % treat input as contactConstraints(obj,q)
+  kinsol = doKinematics(obj,kinsol,nargout>4);
 end
 
-kinsol = doKinematics(obj,q,nargout>4);
+if (nargout > 6)
+  contact_vel = zeros(2,obj.num_contacts); 
+  dv = zeros(2*obj.num_contacts,2*obj.num_q);
+end
 
-contact_pos = zeros(2,obj.num_contacts)*q(1);  % *q(1) to help TaylorVar
+contact_pos = zeros(2,obj.num_contacts);
 if (nargout>1)
-  J = zeros(2*obj.num_contacts,obj.num_q)*q(1);
+  J = zeros(2*obj.num_contacts,obj.num_q);
 end
 
 count=0;

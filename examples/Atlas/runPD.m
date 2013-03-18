@@ -5,8 +5,11 @@ options.dt = 0.001;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 
 % set initial state to fixed point
-load('data/atlas_fp.mat');
-%load('data/atlas_pinned_config.mat');
+if options.floating
+  load('data/atlas_fp.mat');
+else
+  load('data/atlas_pinned_config.mat');
+end
 r = r.setInitialState(xstar);
 
 v = r.constructVisualizer;
@@ -15,9 +18,8 @@ v.display_dt = 0.05;
 [kp,kd] = getPDGains(r); 
 sys = pdcontrol(r,kp,kd);
 
-
-B = r.getB();
-theta_des = B' * xstar(1:r.getNumStates()/2);
+act_idx = r.getActuatedJoints();
+theta_des = xstar(act_idx);
 c = ConstOrPassthroughSystem(theta_des); % command a constant desired theta
 c = c.setOutputFrame(sys.getInputFrame);
 sys = cascade(c,sys); 

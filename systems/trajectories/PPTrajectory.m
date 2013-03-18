@@ -15,8 +15,11 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       y = ppvalSafe(obj.pp,t);  % still benefits from being safe (e.g. for supporting TaylorVar)
     end
 
-    function dtraj = fnder(obj)
-      dtraj = PPTrajectory(fnder(obj.pp));
+    function dtraj = fnder(obj,order)
+      if nargin<2
+        order = 1;
+      end
+      dtraj = PPTrajectory(fnder(obj.pp,order));
     end
     
     % todo: implement deriv and dderiv here

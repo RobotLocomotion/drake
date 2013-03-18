@@ -19,7 +19,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
       output_frame = AtlasPositionRef(r);
 
       obj = obj@MIMODrakeSystem(0,sys.getInputFrame.dim,input_frame,output_frame,false,true);
-      obj = setSampleTime(obj,[.005;0]); % sets controller update rate
+      obj = setSampleTime(obj,[.01;0]); % sets controller update rate
       obj = setInputFrame(obj,input_frame);
       obj = setOutputFrame(obj,output_frame);
       obj.manip = r;
@@ -90,7 +90,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
         end
       end
  
-      [gc,Jc] = obj.manip.contactPositions(q);
+      gc = obj.manip.contactPositions(q);
       [cm,Jcm] = obj.manip.getCOM(q);
       
       Jp = Jc(:,1:6);
@@ -105,12 +105,13 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
       P = eye(3);% diag([1 1 0]);
       
       % compute COM error 
-      err_com = com_goal - P*cm;
+      err_com = P*(com_goal - cm);
       J_com = P*Jcm*Pq_qa;
       dq_com = obj.k_com * pinv(J_com) * err_com;
-      if (norm(dq_com)>0.5)
-        dq_com = 0.5*dq_com/norm(dq_com);
-      end  
+%       norm(dq_com)
+%       if (norm(dq_com)>0.5)
+%         dq_com = 0.5*dq_com/norm(dq_com);
+%       end  
       % COM nullspace projection matrix
       Ncom = eye(nq-6) - pinv(J_com)*J_com;
  
@@ -200,8 +201,8 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
   
   properties
     manip
-    k_nom = 0.0
-    k_com = 2.0
+    k_nom = 0.15
+    k_com = 0.5
     end_effectors = []
     q_d0 % initial state
     q_d_max

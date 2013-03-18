@@ -11,8 +11,14 @@ r = r.setInitialState(xstar);
 v = r.constructVisualizer();
 v.display_dt = .05;
 
-[Kp,Kd] = getPDGains(r);
-sys = pdcontrol(r,Kp,Kd);
+if (1)
+  [Kp,Kd] = getPDGains(r);
+  sys = pdcontrol(r,Kp,Kd);
+else
+  r = enableIdealizedPositionControl(r,true);
+  r = compile(r);
+  sys = r;
+end
 
 c = StandingEndEffectorControl(sys,r);
 
@@ -69,14 +75,14 @@ qgen = ConstOrPassthroughSystem(x0(7:r.getNumStates()/2));
 qgen = qgen.setOutputFrame(sys.getInputFrame());
 sys = cascade(qgen,sys);
 
-T = 20.0; % sec
-if (0)
-  traj = simulate(sys,[0 T]); 
-  playback(v,traj,struct('slider',true));
-else
-  warning('off','Drake:DrakeSystem:UnsupportedSampleTime'); 
-  sys = cascade(sys,v);
-  simulate(sys,[0 T]);
-end
+T = 10; % sec
+S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
+output_select(1).system=1;
+output_select(1).output=1;
+sys = mimoCascade(sys,v,[],[],output_select);
+warning(S);
+traj = simulate(sys,[0 T]);
+playback(v,traj,struct('slider',true));
+
 
 end

@@ -198,59 +198,65 @@ void Model::doKinematics(double* q, int b_compute_second_derivatives)
       return;
     }
   }
+
+  Matrix4d TJ, dTJ, ddTJ, Tbinv, Tb;
+  Matrix4d Tmult, TdTmult;
+  MatrixXd dTmult, dTdTmult;
+  MatrixXd ddTmult, TddTmult;
+
   for (i = 0; i < NB + 1; i++) {
     int parent = bodies[i].parent;
     if (parent < 0) {
       bodies[i].T = bodies[i].Ttree;
       //dTdq, ddTdqdq initialized as all zeros
-      
     }
     else {
       double qi = q[bodies[i].dofnum];
-      Matrix4d TJ, dTJ, ddTJ;
       Tjcalc(bodies[i].pitch,qi,&TJ);
       dTjcalc(bodies[i].pitch,qi,&dTJ);
       
-      Matrix4d Tbinv, Tb;
       Tb = bodies[i].T_body_to_joint;
       Tbinv = Tb.inverse();
+
+      Tmult = bodies[i].Ttree * Tbinv * TJ * Tb;
       
-      bodies[i].T = bodies[parent].T * bodies[i].Ttree * Tbinv * TJ * Tb;
+      bodies[i].T = bodies[parent].T * Tmult;
       
       /*
        * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
        * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
        */
       
-      bodies[i].dTdq = bodies[parent].dTdq * bodies[i].Ttree * Tbinv * TJ * Tb;
+      bodies[i].dTdq = bodies[parent].dTdq * Tmult;
       
-      MatrixXd tmp = bodies[parent].T * bodies[i].Ttree * Tbinv * dTJ * Tb;
-      bodies[i].dTdq.row(bodies[i].dofnum) += tmp.row(0);
-      bodies[i].dTdq.row(bodies[i].dofnum + NB) += tmp.row(1);
-      bodies[i].dTdq.row(bodies[i].dofnum + 2*NB) += tmp.row(2);
-      bodies[i].dTdq.row(bodies[i].dofnum + 3*NB) += tmp.row(3);
+      dTmult = bodies[i].Ttree * Tbinv * dTJ * Tb;
+      TdTmult = bodies[parent].T * dTmult;
+      bodies[i].dTdq.row(bodies[i].dofnum) += TdTmult.row(0);
+      bodies[i].dTdq.row(bodies[i].dofnum + NB) += TdTmult.row(1);
+      bodies[i].dTdq.row(bodies[i].dofnum + 2*NB) += TdTmult.row(2);
+      bodies[i].dTdq.row(bodies[i].dofnum + 3*NB) += TdTmult.row(3);
       
       if (b_compute_second_derivatives) {
         //ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
-        bodies[i].ddTdqdq = bodies[parent].ddTdqdq * bodies[i].Ttree * Tbinv * TJ * Tb;
-        tmp = bodies[parent].dTdq * bodies[i].Ttree * Tbinv * dTJ * Tb;
+        bodies[i].ddTdqdq = bodies[parent].ddTdqdq * Tmult;
+        dTdTmult = bodies[parent].dTdq * dTmult;
         for (j = 0; j < 4*NB; j++) {
-          bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + j) += tmp.row(j);
+          bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + j) += dTdTmult.row(j);
         }
         
         for (j = 0; j < 4; j++) {
           for (k = 0; k < NB; k++) {
-            bodies[i].ddTdqdq.row(bodies[i].dofnum + (4*k+j)*NB) += tmp.row(j*NB+k);
+            bodies[i].ddTdqdq.row(bodies[i].dofnum + (4*k+j)*NB) += dTdTmult.row(j*NB+k);
           }
         }
         
         ddTjcalc(bodies[i].pitch,qi,&ddTJ);
-        tmp = bodies[parent].T*bodies[i].Ttree * Tbinv * ddTJ * Tb;
+        TddTmult = bodies[parent].T*bodies[i].Ttree * Tbinv * ddTJ * Tb;
         
-        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum) += tmp.row(0);
-        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum + NB) += tmp.row(1);
-        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum + 2*NB) += tmp.row(2);
-        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum + 3*NB) += tmp.row(3);
+        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum) += TddTmult.row(0);
+        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum + NB) += TddTmult.row(1);
+        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum + 2*NB) += TddTmult.row(2);
+        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum + 3*NB) += TddTmult.row(3);
       }
     }
   }

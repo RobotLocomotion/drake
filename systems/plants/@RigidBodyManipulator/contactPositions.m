@@ -1,12 +1,15 @@
-function [p,J,dJ] = contactPositions(obj,q)
+function [p,J,dJ] = contactPositions(obj,kinsol)
 % @retval p(:,i)=[px;py;pz] is the position of the ith contact point 
 % @retval J is dpdq
 % @retval dJ is ddpdqdq
       
-kinsol = doKinematics(obj,q,nargout>2);
+if ~isstruct(kinsol)  
+  % treat input as contactPositions(obj,q)
+  kinsol = doKinematics(obj,kinsol,nargout>2);
+end
 
-contact_pos = zeros(3,obj.num_contacts)*q(1);  % q(1) to help TaylorVar
-if (nargout>1) J = zeros(3*obj.num_contacts,obj.num_q)*q(1); end
+contact_pos = zeros(3,obj.num_contacts); 
+if (nargout>1) J = zeros(3*obj.num_contacts,obj.num_q); end
 count=0;
 for i=1:length(obj.body)
   nC = size(obj.body(i).contact_pts,2);

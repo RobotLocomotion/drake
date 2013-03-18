@@ -12,11 +12,25 @@ classdef LinearInvertedPendulum < LinearSystem
     function obj = LinearInvertedPendulum(h,g)
       % @param h the (constant) height of the center of mass
       % @param g the scalar gravity @default 9.81
-      typecheck(h,'numeric');
-      rangecheck(h,0,inf);
       if (nargin<2) g=9.81; end
-      Czmp = [eye(2),zeros(2)]; Dzmp = -h/g*eye(2);
-      obj = obj@LinearSystem([zeros(2),eye(2);zeros(2,4)],[zeros(2);eye(2)],[],[],[eye(4);Czmp],[zeros(4,2);Dzmp]);
+      if(isa(h,'numeric'))
+        rangecheck(h,0,inf);
+        Czmp = [eye(2),zeros(2)];
+        Dzmp = -h/g*eye(2);
+        D = [zeros(4,2);Dzmp];
+      elseif(isa(h,'PPTrajectory'))
+        Czmp = [eye(2),zeros(2)];
+        h_breaks = h.getBreaks;
+        ddh = fnder(h,2);
+        Dzmp_val = -h.eval(h_breaks)./(g+ddh.eval(h_breaks));
+        D_val = zeros(6,2,length(h_breaks));
+        D_val(5,1,:) = Dzmp_val; D_val(6,2,:) = Dzmp_val;
+        D = PPTrajectory(spline(h_breaks,D_val));
+      else
+        error('LinearInvertedPendulum: unknown type for argument h.')
+      end
+             
+      obj = obj@LinearSystem([zeros(2),eye(2);zeros(2,4)],[zeros(2);eye(2)],[],[],[eye(4);Czmp],D);
       
       cartstateframe = CartTableState;
       obj = setInputFrame(obj,CartTableInput);
@@ -43,26 +57,62 @@ classdef LinearInvertedPendulum < LinearSystem
       [varargout{:}] = tilqr(obj,Point(obj.getStateFrame,[com0;0*com0]),Point(obj.getInputFrame),zeros(4),zeros(2),options);
     end
     
-    function c = ZMPtracker(obj,dZMP)
+    function [c,Vt] = ZMPtracker(obj,dZMP,options)
+      if nargin<3 options = struct(); end
+      
       typecheck(dZMP,'Trajectory');
       dZMP = dZMP.inFrame(desiredZMP);
       dZMP = setOutputFrame(dZMP,getFrameByNum(getOutputFrame(obj),2)); % override it before sending in to tvlqr
       
-      [c,V] = lqr(obj,dZMP.eval(dZMP.tspan(end)));
+      if(isTI(obj))
+        [~,V] = lqr(obj,dZMP.eval(dZMP.tspan(end)));
+      else
+        t_end = obj.D.tspan(end);
+        ti_obj = LinearSystem(obj.Ac.eval(t_end),obj.Bc.eval(t_end),[],[],obj.C.eval(t_end),obj.D.eval(t_end));
+        ti_obj = setStateFrame(ti_obj,obj.getStateFrame());
+        ti_obj = setInputFrame(ti_obj,obj.getInputFrame());
+        ti_obj = setOutputFrame(ti_obj,obj.getOutputFrame());
+        if(~isfield(options,'dCOM'))
+          Q = zeros(4);
+        else
+%          options.yd = [options.dCOM.eval(options.dCOM.tspan(end));dZMP.eval(dZMP.tspan(end))];
+          options.yd = [zeros(4,1);dZMP.eval(dZMP.tspan(end))];
+          options.xd = options.dCOM.eval(options.dCOM.tspan(end));
+  			  Q = 0*eye(4);
+        end
+  		  options.Qy = diag([0 0 0 0 1 1]);
+        [~,V] = tilqr(ti_obj,Point(ti_obj.getStateFrame,[dZMP.eval(dZMP.tspan(end));0*dZMP.eval(dZMP.tspan(end))]),Point(ti_obj.getInputFrame),Q,zeros(2),options);
+      end
+      
       options.tspan = linspace(dZMP.tspan(1),dZMP.tspan(2),10);
       options.sqrtmethod = false;
+      if(isfield(options,'dCOM'))
+        options.dCOM = setOutputFrame(options.dCOM,obj.getStateFrame);
+%        options.dCOM = options.dCOM.inFrame(obj.getStateFrame);
+%        x0traj = setOutputFrame(ConstantTrajectory([0;0;0;0]),obj.getStateFrame);
+        options.xdtraj = options.dCOM;
+        Q = eye(4);
+      else
+        Q = zeros(4);
+      end
       x0traj = setOutputFrame(ConstantTrajectory([0;0;0;0]),obj.getStateFrame);
       options.Qy = diag([0 0 0 0 1 1]);
       options.ydtraj = [x0traj;dZMP];
       S = warning('off','Drake:TVLQR:NegativeS');  % i expect to have some zero eigenvalues, which numerically fluctuate below 0
-      c = tvlqr(obj,x0traj,ConstantTrajectory([0;0]),zeros(4),zeros(2),V,options);
+      [c,Vt] = tvlqr(obj,x0traj,ConstantTrajectory([0;0]),Q,zeros(2),V,options);
       warning(S);
     end
     
-    function comtraj = ZMPplanner(obj,com0,comdot0,dZMP)
+    function comtraj = ZMPplanner(obj,com0,comdot0,dZMP,options)
       % got a com plan from the ZMP tracking controller
-      c = ZMPtracker(obj,dZMP);
-      
+      if(nargin<5) options = struct(); end
+      c = ZMPtracker(obj,dZMP,options);
+      % change function handle trajectory to pptrajectory for speed
+      if(isa(c,'FunctionHandleTrajectory'))
+        warning('Changing xddot to a PPTrajectory');
+		c = flipToPP(c);
+      end
+          
       doubleIntegrator = LinearSystem([zeros(2),eye(2);zeros(2,4)],[zeros(2);eye(2)],[],[],eye(4),zeros(4,2));
       doubleIntegrator = setInputFrame(doubleIntegrator,getOutputFrame(c));
       doubleIntegrator = setOutputFrame(doubleIntegrator,getInputFrame(c));
