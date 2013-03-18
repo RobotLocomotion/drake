@@ -601,8 +601,8 @@ classdef RigidBodyManipulator < Manipulator
           npts=npts+size(b.contact_pts,2);
         end
       else
-        active_contacts = 1:obj.numContacts();
-        nz = obj.numContacts()*3;
+        active_contacts = 1:getNumContacts(obj);
+        nz = getNumContacts(obj)*3;
       end      
 
       z0 = zeros(nz,1);
@@ -674,6 +674,12 @@ classdef RigidBodyManipulator < Manipulator
         
         ceq = [C-B*u-J'*z; phiC];
         GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[JC'; zeros(nu+nz,length(phiC))]]; 
+        
+        if (obj.num_xcon>0)
+          [phi,dphi] = geval(@obj.stateConstraints,[q;0*q]);
+          ceq = [ceq; phi];
+          GCeq = [GCeq, [dphi(:,1:nq),zeros(obj.num_xcon,nu+nz)]'];
+        end
       end      
     end
   end

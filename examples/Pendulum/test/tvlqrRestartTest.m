@@ -22,8 +22,8 @@ xtraj2 = PPTrajectory(mkpp(breaks(isplit+1:end),coefs(:,isplit+1:end,:),d));
 [c2,V2] = tvlqr(p,xtraj2,utraj2,Q,R,Q);
 [c1,V1] = tvlqr(p,xtraj1,utraj1,Q,R,V2);
 
-if (any(abs(gets(V.getPoly(0)) - gets(V1.getPoly(0)))>1e-4))
-  error('doesn''t match');
+if ~isequal(V.getPoly(0),V1.getPoly(0),1e-3)
+  error('lyapunov candidates don''t match');
 end
 
 path(oldpath);

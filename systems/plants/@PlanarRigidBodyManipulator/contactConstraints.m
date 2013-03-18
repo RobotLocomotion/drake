@@ -17,13 +17,13 @@ if ~isstruct(kinsol)
 end
 
 if (nargout > 6)
-  contact_vel = zeros(2,obj.num_contacts); 
-  dv = zeros(2*obj.num_contacts,2*obj.num_q);
+  contact_vel = zeros(2,obj.num_contacts)*kinsol.q(1); 
+  dv = zeros(2*obj.num_contacts,2*obj.num_q)*kinsol.q(1);
 end
 
-contact_pos = zeros(2,obj.num_contacts);
+contact_pos = zeros(2,obj.num_contacts)*kinsol.q(1);
 if (nargout>1)
-  J = zeros(2*obj.num_contacts,obj.num_q);
+  J = zeros(2*obj.num_contacts,obj.num_q)*kinsol.q(1);
 end
 
 count=0;
