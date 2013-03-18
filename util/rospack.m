@@ -17,6 +17,13 @@ end
 
 ind = find(strcmpi(package,packages),1);
 if isempty(ind)
+  % check local directory for a folder with the package name
+  if isdir(package)
+    path = package;
+    return;
+  end
+
+  % otherwise, I give up:
   error('couldn''t find ROS package %s.\n ROS_ROOT=%s\n ROS_PACKAGE_PATH=%s\n',package,getenv('ROS_ROOT'),getenv('ROS_PACKAGE_PATH'));
 end
   
