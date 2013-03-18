@@ -163,10 +163,10 @@ classdef Trajectory < DrakeSystem
     
     function c = mtimes(a,b)
       if (ndims(a)>2 || ndims(b)>2) error('only defined for two-d matrices'); end
-      if (size(a,2) ~= size(b,1)) error('dimension mismatch'); end
+      if (~isscalar(a) && ~isscalar(b) && size(a,2) ~= size(b,1)) error('dimension mismatch'); end
 
       [a,b,breaks]=setupTrajectoryPair(a,b);
-      c = FunctionHandleTrajectory(@(t) a.eval(t)*b.eval(t),[size(a,1),size(b,2)],breaks);
+      c = FunctionHandleTrajectory(@(t) a.eval(t)*b.eval(t),size(zeros(size(a))*zeros(size(b))),breaks);
     end
     
     function c = plus(a,b)
