@@ -1,0 +1,13 @@
+This directory contains files associated with the Gurobi MATLAB interface.
+
+To install the MATLAB interface, change to this directory within MATLAB
+and issue the following command at the MATLAB prompt:
+
+>> gurobi_setup
+
+Please see the Quick Start Guide for more information about installation.
+The MATLAB interface is also described in the Reference Manual, and
+documentation can be accessed within MATLAB by typing:
+
+>> help gurobi
+
