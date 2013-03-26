@@ -899,7 +899,7 @@ classdef RigidBodyManipulator < Manipulator
         body = parseVisual(body,node.getElementsByTagName('visual').item(0),model,options);
       end
       
-      if node.getElementsByTagName('collision').getLength()>0
+      if options.collision && node.getElementsByTagName('collision').getLength()>0
         collisionItem = 0;
         while(~isempty(node.getElementsByTagName('collision').item(collisionItem)))
           body = parseCollision(body,node.getElementsByTagName('collision').item(collisionItem),options);
