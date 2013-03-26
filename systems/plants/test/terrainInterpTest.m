@@ -3,7 +3,7 @@ function terrainInterpTest
 [X,Y] = meshgrid(linspace(-9,9,31),linspace(-9,9,31));
 r = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,struct('floating',true));
 
-r = setTerrain(r,.2*[0 0; 0 1],[1 0 0 -.5; 0 1 0 .5; 0 0 1 0; 0 0 0 .05]);
+r = setTerrain(r,RigidBodyHeightMapTerrain(.2*[0 0; 0 1],[1 0 0 -.5; 0 1 0 .5; 0 0 1 0; 0 0 0 .05]));
 v = r.constructVisualizer();
 x0 = .1*randn(12,1)+[5;-5;4;zeros(9,1)];
 v.draw(0,x0);
