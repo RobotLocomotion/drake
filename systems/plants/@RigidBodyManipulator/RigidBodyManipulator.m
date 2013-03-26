@@ -230,36 +230,36 @@ classdef RigidBodyManipulator < Manipulator
       % todo: consider using quaternions)
       
       body1 = newBody(model);
-      body1.linkname = [rootlink.linkname,'_x'];
+      body1.linkname = ['base_x'];
       body1.robotnum=rootlink.robotnum;
       model.body = [model.body,body1];
       model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,[1;0;0],0);
 
       body2=newBody(model);
-      body2.linkname = [rootlink.linkname,'_y'];
+      body2.linkname = ['base_y'];
       body2.robotnum=rootlink.robotnum;
       model.body = [model.body,body2];
       model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),[0;1;0],0);
       
       body3=newBody(model);
-      body3.linkname = [rootlink.linkname,'_z'];
+      body3.linkname = ['base_z'];
       body3.robotnum=rootlink.robotnum;
       model.body = [model.body,body3];
       model = addJoint(model,body3.linkname,'prismatic',body2,body3,zeros(3,1),zeros(3,1),[0;0;1],0);
       
       body4=newBody(model);
-      body4.linkname = [rootlink.linkname,'_roll'];
+      body4.linkname = ['base_roll'];
       body4.robotnum=rootlink.robotnum;
       model.body = [model.body,body4];
       model = addJoint(model,body4.linkname,'revolute',body3,body4,zeros(3,1),zeros(3,1),[1;0;0],0);
       
       body5=newBody(model);
-      body5.linkname = [rootlink.linkname,'_pitch'];
+      body5.linkname = ['base_pitch'];
       body5.robotnum=rootlink.robotnum;
       model.body = [model.body,body5];
       model = addJoint(model,body5.linkname,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
       
-      model = addJoint(model,[rootlink.linkname,'_yaw'],'revolute',body5,rootlink,zeros(3,1),zeros(3,1),[0;0;1],0);
+      model = addJoint(model,['base_yaw'],'revolute',body5,rootlink,zeros(3,1),zeros(3,1),[0;0;1],0);
     end
         
     function model = addSensor(model,sensor)

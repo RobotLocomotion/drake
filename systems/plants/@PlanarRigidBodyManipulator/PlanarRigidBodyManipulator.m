@@ -209,7 +209,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
     end
     
     function model = addFloatingBase(model,parent,rootlink,xyz,rpy)
-      model = addJoint(model,rootlink.linkname,'planar',parent,rootlink,xyz,rpy,model.view_axis);
+      model = addJoint(model,'base','planar',parent,rootlink,xyz,rpy,model.view_axis);
     end
     
     function model = compile(model)

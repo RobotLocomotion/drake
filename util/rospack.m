@@ -47,7 +47,7 @@ packages={};
 path = getenv(varname);
 while ~isempty(path)
   [token,path]=strtok(path,pathsep);
-  [info,p] = system(['find ',token,' -iname manifest.xml']);
+  [info,p] = system(['find -L ',token,' -iname manifest.xml']);
   if info==0 
     while ~isempty(p)
       [pt,p]=strtok(p);
