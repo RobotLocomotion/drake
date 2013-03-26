@@ -20,6 +20,7 @@ if (nargin<5) options = struct(); end
 if (~isfield(options,'floating')) options.floating = false; end
 if (~isfield(options,'inertial')) options.inertial = true; end
 if (~isfield(options,'visual')) options.visual = true; end
+if (~isfield(options,'collision')) options.collision = true; end
 if (~isfield(options,'visual_geometry')) options.visual_geometry = false; end
 if (~isfield(options,'namesuffix')) options.namesuffix = ''; end
 
