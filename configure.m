@@ -78,7 +78,7 @@ end
 %if ~conf.spot_enabled
 %  disp(' SPOT support will be disabled.  To re-enable, add SPOT to your matlab path and rerun configure.  SPOT can be found at svn co https://svn.csail.mit.edu/spot/branches/dev/ ');
 %end
-if exist('msspoly') && ~exist('spotsosprg')
+if 0 %exist('msspoly') && ~exist('spotsosprg')
   error('  i found an old version of spot in your matlab path.  spotless will be installed in the externals directory.  please remove the old spot from your path and rerun configure');
   % todo: support people who have spotless installed in their own
   % directory.  for now, i'll trust that people who do can comment out this
