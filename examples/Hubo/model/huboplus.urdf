@@ -55,7 +55,7 @@
     </collision> -->
   </link>
   <link name="Body_HNR">
-</link>
+  </link>
   <link name="Body_HNP">
     <inertial>
       <mass value="0.374251"/>
@@ -1050,6 +1050,30 @@
         <color rgba="0.800000 0.800000 0.500000 1"/>
       </material>
     </visual>
+    <collision>
+      <origin xyz="0.065 0.065 -0.105"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.065 -0.055 -0.105"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.148 0.065 -0.105"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.148 -0.055 -0.105"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
     <!-- <collision>
       <geometry>
         <mesh filename="wrl/Body_LAR_col.wrl"/>
@@ -1170,6 +1194,30 @@
         <color rgba="0.800000 0.800000 0.500000 1"/>
       </material>
     </visual>
+    <collision>
+      <origin xyz="0.065 -0.065 -0.105"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="0.065 0.055 -0.105"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.148 -0.065 -0.105"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <collision>
+      <origin xyz="-0.148 0.055 -0.105"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
     <!-- <collision>
       <geometry>
         <mesh filename="wrl/Body_RAR_col.wrl"/>
@@ -1184,7 +1232,7 @@
     <parent link="Body_Torso"/>
     <child link="Body_HNR"/>
     <axis xyz="1 0 0"/>
-    <limit effort="10.0" lower="-0.523599" upper="0.523599" velocity="1.0"/>
+    <limit effort="1000.0" lower="-0.523599" upper="0.523599" velocity="1.0"/>
   </joint>
   <transmission name="HNR_trans" type="SimpleTransmission">
     <actuator name = "HNR_position"/>
@@ -1198,7 +1246,7 @@
     <parent link="Body_HNR"/>
     <child link="Body_HNP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-0.523599" upper="0.523599" velocity="1.0"/>
+    <limit effort="1000.0" lower="-0.523599" upper="0.523599" velocity="1.0"/>
   </joint>
   <transmission name="HNP_trans" type="SimpleTransmission">
     <actuator name = "HNP_position"/>
@@ -1212,7 +1260,7 @@
     <parent link="Body_Torso"/>
     <child link="Body_LSP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
   </joint>
   <transmission name="LeftShoulderPitch_trans" type="SimpleTransmission">
     <actuator name = "LeftShoulderPitch_position"/>
@@ -1226,7 +1274,7 @@
     <parent link="Body_LSP"/>
     <child link="Body_LSR"/>
     <axis xyz="1 0 0"/>
-    <limit effort="10.0" lower="-1.5708" upper="1.5708" velocity="1.0"/>
+    <limit effort="1000.0" lower="-1.5708" upper="1.5708" velocity="1.0"/>
   </joint>
   <transmission name="LeftShoulderRoll_trans" type="SimpleTransmission">
     <actuator name = "LeftShoulderRoll_position"/>
@@ -1240,7 +1288,7 @@
     <parent link="Body_LSR"/>
     <child link="Body_LSY"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
   </joint>
   <transmission name="LeftShoulderYaw_trans" type="SimpleTransmission">
     <actuator name = "LeftShoulderYaw_position"/>
@@ -1254,7 +1302,7 @@
     <parent link="Body_LSY"/>
     <child link="Body_LEP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-2.49582" upper="0.0698132" velocity="1.0"/>
+    <limit effort="1000.0" lower="-2.49582" upper="0.0698132" velocity="1.0"/>
   </joint>
   <transmission name="LeftElbowPitch_trans" type="SimpleTransmission">
     <actuator name = "LeftElbowPitch_position"/>
@@ -1268,7 +1316,7 @@
     <parent link="Body_LEP"/>
     <child link="Body_LWY"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
   </joint>
   <transmission name="LeftWristYaw_trans" type="SimpleTransmission">
     <actuator name = "LeftWristYaw_position"/>
@@ -1282,7 +1330,7 @@
     <parent link="Body_LWY"/>
     <child link="Body_LWP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-1.64061" upper="1.01229" velocity="1.0"/>
+    <limit effort="1000.0" lower="-1.64061" upper="1.01229" velocity="1.0"/>
   </joint>
   <transmission name="LeftWristPitch_trans" type="SimpleTransmission">
     <actuator name = "LeftWristPitch_position"/>
@@ -1296,105 +1344,105 @@
     <parent link="Body_LWP"/>
     <child link="leftThumbProximal"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle29" type="revolute">
     <origin rpy="0 -0 0" xyz="0.032 0 0"/>
     <parent link="leftThumbProximal"/>
     <child link="leftThumbMedial"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle310" type="revolute">
     <origin rpy="0 -0 0" xyz="0.022 0 0"/>
     <parent link="leftThumbMedial"/>
     <child link="leftThumbDistal"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="leftPinkyKnuckle1" type="revolute">
     <origin rpy="1.5708 0.785398 1.5708" xyz="-0.0281041 0.0298617 -0.088883"/>
     <parent link="Body_LWP"/>
     <child link="leftPinkyProximal"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle212" type="revolute">
     <origin rpy="0 -0 0" xyz="0.032 0 0"/>
     <parent link="leftPinkyProximal"/>
     <child link="leftPinkyMedial"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle313" type="revolute">
     <origin rpy="0 -0 0" xyz="0.022 0 0"/>
     <parent link="leftPinkyMedial"/>
     <child link="leftPinkyDistal"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="leftRingKnuckle1" type="revolute">
     <origin rpy="1.5708 0.785398 1.5708" xyz="-0.00910415 0.0298617 -0.088883"/>
     <parent link="Body_LWP"/>
     <child link="leftRingProximal"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle215" type="revolute">
     <origin rpy="0 -0 0" xyz="0.032 0 0"/>
     <parent link="leftRingProximal"/>
     <child link="leftRingMedial"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle316" type="revolute">
     <origin rpy="0 -0 0" xyz="0.022 0 0"/>
     <parent link="leftRingMedial"/>
     <child link="leftRingDistal"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="leftMiddleKnuckle1" type="revolute">
     <origin rpy="1.5708 0.785398 1.5708" xyz="0.00993585 0.0298617 -0.088883"/>
     <parent link="Body_LWP"/>
     <child link="leftMiddleProximal"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle218" type="revolute">
     <origin rpy="0 -0 0" xyz="0.032 0 0"/>
     <parent link="leftMiddleProximal"/>
     <child link="leftMiddleMedial"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle319" type="revolute">
     <origin rpy="0 -0 0" xyz="0.022 0 0"/>
     <parent link="leftMiddleMedial"/>
     <child link="leftMiddleDistal"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="leftIndexKnuckle1" type="revolute">
     <origin rpy="1.5708 0.785398 1.5708" xyz="0.0289159 0.0298617 -0.088883"/>
     <parent link="Body_LWP"/>
     <child link="leftIndexProximal"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle221" type="revolute">
     <origin rpy="0 -0 0" xyz="0.032 0 0"/>
     <parent link="leftIndexProximal"/>
     <child link="leftIndexMedial"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle322" type="revolute">
     <origin rpy="0 -0 0" xyz="0.022 0 0"/>
     <parent link="leftIndexMedial"/>
     <child link="leftIndexDistal"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
 
   <!-- RightShoulderPitch -->
@@ -1403,7 +1451,7 @@
     <parent link="Body_Torso"/>
     <child link="Body_RSP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
   </joint>
   <transmission name="RightShoulderPitch_trans" type="SimpleTransmission">
     <actuator name = "RightShoulderPitch_position"/>
@@ -1417,7 +1465,7 @@
     <parent link="Body_RSP"/>
     <child link="Body_RSR"/>
     <axis xyz="1 0 0"/>
-    <limit effort="10.0" lower="-1.5708" upper="1.5708" velocity="1.0"/>
+    <limit effort="1000.0" lower="-1.5708" upper="1.5708" velocity="1.0"/>
   </joint>
   <transmission name="RightShoulderRoll_trans" type="SimpleTransmission">
     <actuator name = "RightShoulderRoll_position"/>
@@ -1431,7 +1479,7 @@
     <parent link="Body_RSR"/>
     <child link="Body_RSY"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
   </joint>
   <transmission name="RightShoulderYaw_trans" type="SimpleTransmission">
     <actuator name = "RightShoulderYaw_position"/>
@@ -1445,7 +1493,7 @@
     <parent link="Body_RSY"/>
     <child link="Body_REP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-2.49582" upper="0.0698132" velocity="1.0"/>
+    <limit effort="1000.0" lower="-2.49582" upper="0.0698132" velocity="1.0"/>
   </joint>
   <transmission name="RightElbowPitch_trans" type="SimpleTransmission">
     <actuator name = "RightElbowPitch_position"/>
@@ -1459,7 +1507,7 @@
     <parent link="Body_REP"/>
     <child link="Body_RWY"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
   </joint>
   <transmission name="RightWristYaw_trans" type="SimpleTransmission">
     <actuator name = "RightWristYaw_position"/>
@@ -1473,7 +1521,7 @@
     <parent link="Body_RWY"/>
     <child link="Body_RWP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-1.64061" upper="1.01229" velocity="1.0"/>
+    <limit effort="1000.0" lower="-1.64061" upper="1.01229" velocity="1.0"/>
   </joint>
   <transmission name="RightWristPitch_trans" type="SimpleTransmission">
     <actuator name = "RightWristPitch_position"/>
@@ -1487,105 +1535,105 @@
     <parent link="Body_RWP"/>
     <child link="rightThumbProximal"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle230" type="revolute">
     <origin rpy="0 -0 0" xyz="0.032 0 0"/>
     <parent link="rightThumbProximal"/>
     <child link="rightThumbMedial"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle331" type="revolute">
     <origin rpy="0 -0 0" xyz="0.022 0 0"/>
     <parent link="rightThumbMedial"/>
     <child link="rightThumbDistal"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="rightPinkyKnuckle1" type="revolute">
     <origin rpy="1.5708 0.785398 -1.5708" xyz="-0.0281041 -0.0298617 -0.088883"/>
     <parent link="Body_RWP"/>
     <child link="rightPinkyProximal"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle233" type="revolute">
     <origin rpy="0 -0 0" xyz="0.032 0 0"/>
     <parent link="rightPinkyProximal"/>
     <child link="rightPinkyMedial"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle334" type="revolute">
     <origin rpy="0 -0 0" xyz="0.022 0 0"/>
     <parent link="rightPinkyMedial"/>
     <child link="rightPinkyDistal"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="rightRingKnuckle1" type="revolute">
     <origin rpy="1.5708 0.785398 -1.5708" xyz="-0.00910415 -0.0298617 -0.088883"/>
     <parent link="Body_RWP"/>
     <child link="rightRingProximal"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle236" type="revolute">
     <origin rpy="0 -0 0" xyz="0.032 0 0"/>
     <parent link="rightRingProximal"/>
     <child link="rightRingMedial"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle337" type="revolute">
     <origin rpy="0 -0 0" xyz="0.022 0 0"/>
     <parent link="rightRingMedial"/>
     <child link="rightRingDistal"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="rightMiddleKnuckle1" type="revolute">
     <origin rpy="1.5708 0.785398 -1.5708" xyz="0.00993585 -0.0298617 -0.088883"/>
     <parent link="Body_RWP"/>
     <child link="rightMiddleProximal"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle239" type="revolute">
     <origin rpy="0 -0 0" xyz="0.032 0 0"/>
     <parent link="rightMiddleProximal"/>
     <child link="rightMiddleMedial"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle340" type="revolute">
     <origin rpy="0 -0 0" xyz="0.022 0 0"/>
     <parent link="rightMiddleMedial"/>
     <child link="rightMiddleDistal"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="rightIndexKnuckle1" type="revolute">
     <origin rpy="1.5708 0.785398 -1.5708" xyz="0.0289159 -0.0298617 -0.088883"/>
     <parent link="Body_RWP"/>
     <child link="rightIndexProximal"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle2" type="revolute">
     <origin rpy="0 -0 0" xyz="0.032 0 0"/>
     <parent link="rightIndexProximal"/>
     <child link="rightIndexMedial"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
   <joint name="Knuckle3" type="revolute">
     <origin rpy="0 -0 0" xyz="0.022 0 0"/>
     <parent link="rightIndexMedial"/>
     <child link="rightIndexDistal"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="10.0" lower="-3.14" upper="3.14" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14" upper="3.14" velocity="1.0"/>
   </joint>
 
   <!-- HipYaw-->
@@ -1594,7 +1642,7 @@
     <parent link="Body_Torso"/>
     <child link="Body_Hip"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
+    <limit effort="1000.0" lower="-3.14158" upper="3.14158" velocity="1.0"/>
   </joint>
     <transmission name="HipYaw_trans" type="SimpleTransmission">
     <actuator name = "HipYaw_position"/>
@@ -1607,7 +1655,7 @@
     <parent link="Body_Hip"/>
     <child link="Body_LHY"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-1.5708" upper="1.5708" velocity="1.0"/>
+    <limit effort="1000.0" lower="-1.5708" upper="1.5708" velocity="1.0"/>
   </joint>
   <transmission name="LeftHipYaw_trans" type="SimpleTransmission">
     <actuator name = "LeftHipYaw_position"/>
@@ -1621,7 +1669,7 @@
     <parent link="Body_LHY"/>
     <child link="Body_LHR"/>
     <axis xyz="1 0 0"/>
-    <limit effort="10.0" lower="-0.488692" upper="0.488692" velocity="1.0"/>
+    <limit effort="1000.0" lower="-0.488692" upper="0.488692" velocity="1.0"/>
   </joint>
   <transmission name="LeftHipRoll_trans" type="SimpleTransmission">
     <actuator name = "LeftHipRoll_position"/>
@@ -1635,7 +1683,7 @@
     <parent link="Body_LHR"/>
     <child link="Body_LHP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-1.48353" upper="1.6057" velocity="1.0"/>
+    <limit effort="1000.0" lower="-1.48353" upper="1.6057" velocity="1.0"/>
   </joint>
   <transmission name="LeftHipPitch_trans" type="SimpleTransmission">
     <actuator name = "LeftHipPitch_position"/>
@@ -1649,7 +1697,7 @@
     <parent link="Body_LHP"/>
     <child link="Body_LKP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-0.0698132" upper="2.60054" velocity="1.0"/>
+    <limit effort="1000.0" lower="-0.0698132" upper="2.60054" velocity="1.0"/>
   </joint>
   <transmission name="LeftKneePitch_trans" type="SimpleTransmission">
     <actuator name = "LeftKneePitch_position"/>
@@ -1663,7 +1711,7 @@
     <parent link="Body_LKP"/>
     <child link="Body_LAP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-1.29154" upper="1.69297" velocity="1.0"/>
+    <limit effort="1000.0" lower="-1.29154" upper="1.69297" velocity="1.0"/>
   </joint>
   <transmission name="LeftAnklePitch_trans" type="SimpleTransmission">
     <actuator name = "LeftAnklePitch_position"/>
@@ -1677,7 +1725,7 @@
     <parent link="Body_LAP"/>
     <child link="Body_LAR"/>
     <axis xyz="1 0 0"/>
-    <limit effort="10.0" lower="-0.191986" upper="0.191986" velocity="1.0"/>
+    <limit effort="1000.0" lower="-0.191986" upper="0.191986" velocity="1.0"/>
   </joint>
   <transmission name="LeftAnkleRoll_trans" type="SimpleTransmission">
     <actuator name = "LeftAnkleRoll_position"/>
@@ -1691,7 +1739,7 @@
     <parent link="Body_Hip"/>
     <child link="Body_RHY"/>
     <axis xyz="0 0 1"/>
-    <limit effort="10.0" lower="-1.5708" upper="1.5708" velocity="1.0"/>
+    <limit effort="1000.0" lower="-1.5708" upper="1.5708" velocity="1.0"/>
   </joint>
   <transmission name="RightHipYaw_trans" type="SimpleTransmission">
     <actuator name = "RightHipYaw_position"/>
@@ -1705,7 +1753,7 @@
     <parent link="Body_RHY"/>
     <child link="Body_RHR"/>
     <axis xyz="1 0 0"/>
-    <limit effort="10.0" lower="-0.488692" upper="0.488692" velocity="1.0"/>
+    <limit effort="1000.0" lower="-0.488692" upper="0.488692" velocity="1.0"/>
   </joint>
   <transmission name="RightHipRoll_trans" type="SimpleTransmission">
     <actuator name = "RightHipRoll_position"/>
@@ -1719,7 +1767,7 @@
     <parent link="Body_RHR"/>
     <child link="Body_RHP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-1.48353" upper="1.6057" velocity="1.0"/>
+    <limit effort="1000.0" lower="-1.48353" upper="1.6057" velocity="1.0"/>
   </joint>
   <transmission name="RightHipPitch_trans" type="SimpleTransmission">
     <actuator name = "RightHipPitch_position"/>
@@ -1733,7 +1781,7 @@
     <parent link="Body_RHP"/>
     <child link="Body_RKP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-0.0698132" upper="2.60054" velocity="1.0"/>
+    <limit effort="1000.0" lower="-0.0698132" upper="2.60054" velocity="1.0"/>
   </joint>
   <transmission name="RightKneePitch_trans" type="SimpleTransmission">
     <actuator name = "RightKneePitch_position"/>
@@ -1747,7 +1795,7 @@
     <parent link="Body_RKP"/>
     <child link="Body_RAP"/>
     <axis xyz="0 1 0"/>
-    <limit effort="10.0" lower="-1.29154" upper="1.69297" velocity="1.0"/>
+    <limit effort="1000.0" lower="-1.29154" upper="1.69297" velocity="1.0"/>
   </joint>
   <transmission name="RightAnklePitch_trans" type="SimpleTransmission">
     <actuator name = "RightAnklePitch_position"/>
@@ -1762,7 +1810,7 @@
     <parent link="Body_RAP"/>
     <child link="Body_RAR"/>
     <axis xyz="1 0 0"/>
-    <limit effort="10.0" lower="-0.191986" upper="0.191986" velocity="1.0"/>
+    <limit effort="1000.0" lower="-0.191986" upper="0.191986" velocity="1.0"/>
   </joint>
   <transmission name="RightAnkleRoll_trans" type="SimpleTransmission">
     <actuator name = "RightAnkleRoll_position"/>

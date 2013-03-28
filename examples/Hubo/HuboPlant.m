@@ -1,7 +1,7 @@
 function [plant,v,r] = HuboPlant
 
 options.floating = true;
-r = TimeSteppingRigidBodyManipulator('../model/huboplus.urdf',.0005,options);
+r = TimeSteppingRigidBodyManipulator('model/huboplus.urdf',.0005,options);
 r = setStateFrame(r,HuboState());
 r = setOutputFrame(r,HuboState());
 
