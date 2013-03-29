@@ -541,6 +541,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}]=inverseKin(obj.manip,varargin{:});
     end
     
+    function varargout = inverseKinSequence(obj,varargin)
+        varargout = cell(1,nargout);
+        [varargout{:}] = inverseKinSequence(obj.manip,varargin{:});
+    end
+    
     function varargout = findFixedPoint(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}]=findFixedPoint(obj.manip,varargin{:});
@@ -589,6 +594,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     
     function grav = getGravity(obj)
       grav = obj.manip.gravity;
+    end
+    
+    function body_ind = findLinkInd(model,varargin)
+        body_ind = model.manip.findLinkInd(varargin{:});
     end
     
     function body = findLink(model,varargin)

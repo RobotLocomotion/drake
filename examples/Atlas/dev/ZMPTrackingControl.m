@@ -41,12 +41,12 @@ classdef ZMPTrackingControl < DrakeSystem
 
       ts = linspace(0,tstep(end),100);
       cost = Point(r.getStateFrame,1);
-      cost.pelvis_x = 0;
-      cost.pelvis_y = 0;
-      cost.pelvis_z = 0;
-      cost.pelvis_roll = 1000;
-      cost.pelvis_pitch = 1000;
-      cost.pelvis_yaw = 0;
+      cost.base_x = 0;
+      cost.base_y = 0;
+      cost.base_z = 0;
+      cost.base_roll = 1000;
+      cost.base_pitch = 1000;
+      cost.base_yaw = 0;
       cost.back_mby = 100;
       cost.back_ubx = 100;
       cost = double(cost);

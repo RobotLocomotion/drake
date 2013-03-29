@@ -1,4 +1,4 @@
-function q = inverseKin(obj,q0,varargin)
+function [q,info] = inverseKin(obj,q0,varargin)
 %
 % inverseKin(obj,q0,body1,bodypos1,worldpos1,body2,bodypos2,worldpos2...,options)
 %
