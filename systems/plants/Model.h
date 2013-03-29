@@ -40,6 +40,23 @@ public:
   MatrixXd dvJdqd_mat;
   MatrixXd dcross;
   
+  // preallocate matrices used in doKinematics
+  Matrix4d TJ;
+  Matrix4d dTJ;
+  Matrix4d ddTJ;
+  Matrix4d Tbinv;
+  Matrix4d Tb;
+  Matrix4d Tmult;
+  Matrix4d TdTmult;
+  
+  // preallocate for COM functions
+  Vector3d com;
+  Vector3d bc;
+  MatrixXd Jcom;
+  MatrixXd bJ;
+  MatrixXd dJcom;
+  MatrixXd bdJ;
+  
   RigidBody* bodies;
   bool kinematicsInit;
   double *cached_q;
