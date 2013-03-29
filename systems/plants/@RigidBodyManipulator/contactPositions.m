@@ -17,7 +17,7 @@ contact_pos = zeros(d,size([obj.body(body_idx).contact_pts],2));
 if (nargout>1) 
   J = zeros(size([obj.body(body_idx).contact_pts],2)*d,obj.num_q); 
 end
-if (nargout>4)
+if (nargout>2)
   dJ = sparse(size([obj.body(body_idx).contact_pts],2)*d,obj.num_q^2);
 end
 

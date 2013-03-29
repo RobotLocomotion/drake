@@ -19,8 +19,8 @@ classdef JLCMCoder < LCMCoder
       t = fd.t;
     end
     
-    function msg = encode(obj,t,x)
-      msg = obj.jcoder.encode(drake.util.CoordinateFrameData(t,x));
+    function msg = encode(obj,t,x,varargin)
+      msg = obj.jcoder.encode(drake.util.CoordinateFrameData(t,x),varargin{:});
     end
     
   end

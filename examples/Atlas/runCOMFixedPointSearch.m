@@ -16,22 +16,30 @@ end
 
 dt = 0.001;
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
+%% begin hack: remove extra contact points:
+r.findLink('r_hand').contact_pts = [];
+r.findLink('r_lleg').contact_pts = [];
+r.findLink('l_hand').contact_pts = [];
+r.findLink('l_lleg').contact_pts = [];
+r = compile(r);
+%% end hack
+
 v = r.constructVisualizer;
 v.display_dt = dt*25;
 
 x0 = Point(r.getStateFrame);
 
 if (planar)
-    x0.pelvis_z = 0.920000;
-    x0.pelvis_p = -0.100000;
+    x0.base_z = 0.920000;
+    x0.base_p = -0.100000;
     x0.back_mby = 0.050000;
     x0.l_leg_kny = 0.300000;
     x0.l_leg_uay = -0.200000;
     x0.r_leg_kny = 0.300000;
     x0.r_leg_uay = -0.200000;
 else
-    x0.pelvis_z = 0.920000;
-    x0.pelvis_pitch = -0.040000;
+    x0.base_z = 0.920000;
+    x0.base_pitch = -0.040000;
     x0.back_mby = 0.075000;
     x0.l_arm_elx = 1.200000;
     x0.l_arm_ely = 1.870000;

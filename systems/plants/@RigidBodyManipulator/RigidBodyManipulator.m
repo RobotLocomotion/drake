@@ -343,6 +343,24 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = false;
     end
     
+    function body_ind = findLinkInd(model,linkname,robot,throw_error)
+      % @param robot can be the robot number or the name of a robot
+      % robot=0 means look at all robots
+      if nargin<3 || isempty(robot), robot=0; end
+      if ischar(robot) robot = strmatch(tolower(robot),lower({model.name})); end
+      ind = strmatch(lower(linkname),lower({model.body.linkname}),'exact');
+      if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
+      if (length(ind)~=1)
+        if (nargin<3 || throw_error)
+          error(['couldn''t find unique link ' ,linkname]);
+        else 
+          body_ind=[];
+        end
+      else
+        body_ind = ind;
+      end
+    end
+
     function body = findLink(model,linkname,robot,throw_error)
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots

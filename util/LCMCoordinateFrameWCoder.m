@@ -42,9 +42,9 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
       end
     end
     
-    function publish(obj,t,x,channel)
+    function publish(obj,t,x,channel,varargin)
       lc = lcm.lcm.LCM.getSingleton();
-      msg = obj.lcmcoder.encode(t,x);
+      msg = obj.lcmcoder.encode(t,x,varargin{:});
       lc.publish(channel,msg);
     end
 

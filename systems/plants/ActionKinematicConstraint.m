@@ -7,16 +7,21 @@ classdef ActionKinematicConstraint
     pos_min   % trajectory
     pos_max   % trajectory
     tspan     % 1x2 double
+    robot
   end
   
   methods
-    function obj = ActionKinematicConstraint(body_ind,body_pos,worldpos,tspan,name)
+    function obj = ActionKinematicConstraint(robot,body_ind,body_pts,worldpos,tspan,name)
+      obj.robot = robot;
       sizecheck(body_ind,1);
+      if(isa(body_ind,'RigidBody'))
+          body_ind = robot.findLinkInd(body_ind.linkname);
+      end
       obj.body_ind = body_ind;
-      sizecheck(body_pos,[3 nan]);
-      obj.body_pos = body_pos;
+      sizecheck(body_pts,[3 nan]);
+      obj.body_pts = body_pts;
       
-      mi = size(body_pos,2);
+      mi = size(body_pts,2);
       if isstruct(worldpos)
         if ~isfield(worldpos,'min') || ~isfield(worldpos,'max')
           error('if worldpos is a struct, it must have fields .min and .max');
@@ -25,13 +30,21 @@ classdef ActionKinematicConstraint
       else
         minpos=worldpos; maxpos=worldpos;
       end
-      [rows,cols]=size(minpos);
+      if(isa(worldpos,'Trajectory'))
+          worldpos_size = size(minpos);
+          rows = worldpos_size(1);
+          cols = worldpos_size(2);
+      else
+          [rows,cols]=size(minpos);
+      end
       if (rows ~= 3 && rows ~= 6) error('worldpos must have 3 or 6 rows'); end
       if (body_ind==0 && rows ~= 3) error('com pos must have only 3 rows (there is no orientation)'); end
       if (cols~=mi) error('worldpos must have the same number of elements as bodypos'); end
       sizecheck(maxpos,[rows,mi]);
-      minpos(isnan(minpos))=-inf;
-      maxpos(isnan(maxpos))=inf;
+      if(~isa(worldpos,'Trajectory'))
+          minpos(isnan(minpos))=-inf;
+          maxpos(isnan(maxpos))=inf;
+      end
       if isa(minpos,'Trajectory')
         obj.pos_min = minpos;
       else
@@ -65,13 +78,20 @@ classdef ActionKinematicConstraint
         end
       end
     end
+
   end
   
   methods (Static=true)
-    function obj = onGroundConstraint(body_ind,body_pos,tspan,name)
-      pos.min = [nan;nan;0];
-      pos.max = [nan;nan;0];
-      obj = ActionKinematicConstraint(body_ind,body_pos,pos,tspan,name);
+    function obj = onGroundConstraint(robot,body_ind,body_pts,tspan,name)
+      pos.min = repmat([nan;nan;0],1,size(body_pts,2));
+      pos.max = repmat([nan;nan;0],1,size(body_pts,2));
+      obj = ActionKinematicConstraint(robot,body_ind,body_pts,pos,tspan,name);
+    end
+    
+    function obj = groundConstraint(robot,body_ind,body_pts,tspan,name)
+        pos.min = repmat([nan;nan;0],1,size(body_pts,2));
+        pos.max = repmat([nan;nan;nan],1,size(body_pts,2));
+        obj = ActionKinematicConstraint(robot,body_ind,body_pts,pos,tspan,name);
     end
   end
 end
