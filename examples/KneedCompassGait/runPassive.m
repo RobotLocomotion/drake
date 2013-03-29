@@ -11,7 +11,7 @@ v.axis = [-1.7 1.7 -0.1 1.1];
 v.display_dt = .05;
 
 x0 = Point(r.getStateFrame());
-x0.hip_z = 1.1;
+x0.base_z = 1.1;
 x0.hip_pin = 0.2;
 
 % Run simulation, then play it back at realtime speed
