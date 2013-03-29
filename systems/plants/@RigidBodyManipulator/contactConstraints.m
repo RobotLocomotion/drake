@@ -22,7 +22,9 @@ contact_pos = zeros(3,size([obj.body(body_idx).contact_pts],2));
 if (nargout>1) 
   J = zeros(size([obj.body(body_idx).contact_pts],2)*3,obj.num_q); 
 end
-
+if (nargout>4)
+  dJ = zeros(size([obj.body(body_idx).contact_pts],2)*3,obj.num_q^2);
+end
 count=0;
 %      figure(1); clf;  % for debugging
 for i=1:length(body_idx)
@@ -66,6 +68,8 @@ if (nargout>1)
   m=length(d);
   
   n = sparse(repmat(1:size([obj.body(body_idx).contact_pts],2),3,1),1:3*size([obj.body(body_idx).contact_pts],2),normal(:))*J;
+  D = cell(1,m);
+  dD = cell(1,m);
   for k=1:m
     D{k} = sparse(repmat(1:size([obj.body(body_idx).contact_pts],2),3,1),1:3*size([obj.body(body_idx).contact_pts],2),d{k}(:))*J;
     if (nargout>4)

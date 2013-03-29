@@ -106,8 +106,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
       return;
     }
   }
+  
+  Matrix3d TJ, dTJ, ddTJ, tmp;
+  MatrixXd tmp2, tmp3;
+  
   for (i = 0; i < model->NB + 1; i++) {
-//     for (i = 0; i < 5; i++) {
     int parent = model->bodies[i].parent;
     if (parent < 0) {
       model->bodies[i].T = model->bodies[i].Ttree;
@@ -115,7 +118,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
       
     } else {
       double qi = model->bodies[i].jsign*q[model->bodies[i].dofnum];
-      Matrix3d TJ, dTJ, ddTJ;
+      
       Tjcalcp(model->bodies[i].jcode,qi,&TJ);
       dTjcalcp(model->bodies[i].jcode,qi,&dTJ);
       dTJ = model->bodies[i].jsign*dTJ;
@@ -127,30 +130,30 @@ void mexFunction( int nlhs, mxArray *plhs[],
        */
       
       model->bodies[i].dTdq = model->bodies[parent].dTdq*model->bodies[i].Ttree*TJ;
-      MatrixXd tmp = model->bodies[parent].T*model->bodies[i].Ttree*dTJ;
+      tmp = model->bodies[parent].T*model->bodies[i].Ttree*dTJ;
       model->bodies[i].dTdq.row(model->bodies[i].dofnum) += tmp.row(0);
       model->bodies[i].dTdq.row(model->bodies[i].dofnum + model->NB) += tmp.row(1);
       model->bodies[i].dTdq.row(model->bodies[i].dofnum + 2*model->NB) += tmp.row(2);
       if (b_compute_second_derivatives) {
         //ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
         model->bodies[i].ddTdqdq = model->bodies[parent].ddTdqdq*model->bodies[i].Ttree*TJ;
-        tmp = model->bodies[parent].dTdq*model->bodies[i].Ttree*dTJ;
+        tmp2 = model->bodies[parent].dTdq*model->bodies[i].Ttree*dTJ;
         for (j = 0; j < 3*model->NB; j++) {
-          model->bodies[i].ddTdqdq.row(3*model->NB*(model->bodies[i].dofnum) + j) += tmp.row(j);
+          model->bodies[i].ddTdqdq.row(3*model->NB*(model->bodies[i].dofnum) + j) += tmp2.row(j);
         }
         
         for (j = 0; j < 3; j++) {
           for (k = 0; k < model->NB; k++) {
-            model->bodies[i].ddTdqdq.row(model->bodies[i].dofnum + (3*k+j)*model->NB) += tmp.row(j*model->NB+k);
+            model->bodies[i].ddTdqdq.row(model->bodies[i].dofnum + (3*k+j)*model->NB) += tmp2.row(j*model->NB+k);
           }
         }
         
         ddTjcalcp(model->bodies[i].jcode,qi,&ddTJ);
-        tmp = model->bodies[parent].T*model->bodies[i].Ttree*ddTJ;      
+        tmp3 = model->bodies[parent].T*model->bodies[i].Ttree*ddTJ;      
         
-        model->bodies[i].ddTdqdq.row(3*model->NB*(model->bodies[i].dofnum) + model->bodies[i].dofnum) += tmp.row(0);
-        model->bodies[i].ddTdqdq.row(3*model->NB*(model->bodies[i].dofnum) + model->bodies[i].dofnum + model->NB) += tmp.row(1);
-        model->bodies[i].ddTdqdq.row(3*model->NB*(model->bodies[i].dofnum) + model->bodies[i].dofnum + 2*model->NB) += tmp.row(2);
+        model->bodies[i].ddTdqdq.row(3*model->NB*(model->bodies[i].dofnum) + model->bodies[i].dofnum) += tmp3.row(0);
+        model->bodies[i].ddTdqdq.row(3*model->NB*(model->bodies[i].dofnum) + model->bodies[i].dofnum + model->NB) += tmp3.row(1);
+        model->bodies[i].ddTdqdq.row(3*model->NB*(model->bodies[i].dofnum) + model->bodies[i].dofnum + 2*model->NB) += tmp3.row(2);
       }
     }
   }

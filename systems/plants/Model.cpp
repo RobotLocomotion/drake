@@ -144,6 +144,23 @@ Model::Model(int n) {
     bodies[i].setN(n);
   }
   
+  // preallocate matrices used in doKinematics
+  TJ = Matrix4d::Zero();
+  dTJ = Matrix4d::Zero();
+  ddTJ = Matrix4d::Zero();
+  Tbinv = Matrix4d::Zero();
+  Tb = Matrix4d::Zero();
+  Tmult = Matrix4d::Zero();
+  TdTmult = Matrix4d::Zero();
+    
+  // preallocate for COM functions
+  com = Vector3d::Zero();
+  bc = Vector3d::Zero();
+  Jcom = MatrixXd::Zero(3,NB);
+  bJ = MatrixXd::Zero(3,NB);
+  dJcom = MatrixXd::Zero(3,NB*NB);
+  bdJ = MatrixXd::Zero(3,NB*NB);
+  
   kinematicsInit = false;
   cached_q = new double[n];
   secondDerivativesCached = 0;
@@ -199,11 +216,8 @@ void Model::doKinematics(double* q, int b_compute_second_derivatives)
     }
   }
 
-  Matrix4d TJ, dTJ, ddTJ, Tbinv, Tb;
-  Matrix4d Tmult, TdTmult;
   MatrixXd dTmult, dTdTmult;
   MatrixXd ddTmult, TddTmult;
-
   for (i = 0; i < NB + 1; i++) {
     int parent = bodies[i].parent;
     if (parent < 0) {
@@ -272,8 +286,7 @@ Vector3d Model::getCOM(void)
 {
   double m = 0.0;
   double bm;
-  Vector3d com = Vector3d::Zero();
-  Vector3d bc;
+  com = Vector3d::Zero();
   
   for (int i=0; i<=NB; i++) {
     bm = bodies[i].mass;
@@ -290,36 +303,34 @@ MatrixXd Model::getCOMJac(void)
 {
   double m = 0.0;
   double bm;
-  MatrixXd J = MatrixXd::Zero(3,NB);
-  MatrixXd bJ;
+  Jcom = 0*Jcom;
   
   for (int i=0; i<=NB; i++) {
     bm = bodies[i].mass;
     if (bm>0) {
       bJ = forwardJac(i,bodies[i].com,false);
-      J = (m*J + bm*bJ)/(m+bm);
+      Jcom = (m*Jcom + bm*bJ)/(m+bm);
       m = m+bm;
     }
   }
-  return J;
+  return Jcom;
 }
 
 MatrixXd Model::getCOMJacDot(void)
 {
   double m = 0.0;
   double bm;
-  MatrixXd dJ = MatrixXd::Zero(3,NB*NB);
-  MatrixXd bdJ;
+  dJcom = 0*dJcom;
   
   for (int i=0; i<=NB; i++) {
     bm = bodies[i].mass;
     if (bm>0) {
       bdJ = forwardJacDot(i,bodies[i].com,false);
-      dJ = (m*dJ + bm*bdJ)/(m+bm);
+      dJcom = (m*dJcom + bm*bdJ)/(m+bm);
       m = m+bm;
     }
   }
-  return dJ;
+  return dJcom;
 }
 
 MatrixXd Model::forwardKin(const int body_ind, const MatrixXd pts, const bool include_rotations)
@@ -391,8 +402,9 @@ MatrixXd Model::forwardJacDot(const int body_ind, const MatrixXd pts, const bool
   
   int i,j;
   MatrixXd dJ_reshaped = MatrixXd(NB, dim*n_pts*NB);
+  MatrixXd tmp = MatrixXd(dim*NB,n_pts);
   for (i = 0; i < NB; i++) {
-    MatrixXd tmp = bodies[body_ind].ddTdqdq.block(i*NB*(dim+1),0,dim*NB,dim+1)*pts;  //dim*NB x n_pts
+    tmp = bodies[body_ind].ddTdqdq.block(i*NB*(dim+1),0,dim*NB,dim+1)*pts;  //dim*NB x n_pts
     for (j = 0; j < n_pts; j++) {
       dJ_reshaped.block(i,j*dim*NB,1,dim*NB) = tmp.col(j).transpose();
     }
