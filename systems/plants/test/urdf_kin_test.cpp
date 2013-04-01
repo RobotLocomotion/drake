@@ -1,6 +1,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <cstdlib>
 #include "../urdf.h"
 
 using namespace std;
@@ -32,10 +33,13 @@ int main(int argc, char* argv[])
   
   // run kinematics with second derivatives 100 times
   double q[34];
-  for (int i=0; i<34; i++) q[i]=1.0; 
+  int i;
   
-  model->doKinematics(q,true);
-
+  for (int n=0; n<100; n++) {
+    for (i=0; i<34; i++) q[i]=(double)rand();
+    model->doKinematics(q,true);
+  }
+  
   Vector4d zero;
   zero << 0,0,0,1; 
   
