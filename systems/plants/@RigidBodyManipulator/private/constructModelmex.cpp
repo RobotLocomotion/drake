@@ -66,9 +66,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mxArray* pcom = mxGetProperty(pBodies,i,"com");
     if (!mxIsEmpty(pcom)) memcpy(model->bodies[i].com.data(),mxGetPr(pcom),sizeof(double)*3);
 
-    mxArray* pbpitch = mxGetProperty(pBodies,i,"pitch");
-    model->bodies[i].pitch = (int) mxGetScalar(pbpitch);
-    
     mxArray* pbdofnum = mxGetProperty(pBodies,i,"dofnum");
     model->bodies[i].dofnum = (int) mxGetScalar(pbdofnum) - 1;  //zero-indexed
     
@@ -85,11 +82,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     
     mxArray* pbT_body_to_jointi = mxGetProperty(pBodies,i,"T_body_to_joint");
     memcpy(model->bodies[i].T_body_to_joint.data(),mxGetPr(pbT_body_to_jointi),sizeof(double)*4*4);
-    
-//      mxArray* pbTi = mxGetProperty(pBodies,i,"T");
-//      // todo: check that the size is 4x4
-//      memcpy(model->bodies[i].T.data(),mxGetPr(pbTi),sizeof(double)*4*4);
-    
   }
   
   const mxArray* a_grav_array = prhs[2]; //mxGetProperty(prhs[0],0,"gravity");

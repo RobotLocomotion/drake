@@ -284,29 +284,33 @@ RigidBodyManipulator* parseURDFModel(const std::string &xml_string)
     // set up floating base
     {
       model->bodies[0].linkname = "world";
-      model->bodies[1].linkname = model->bodies[1].jointname = "base_x";
       model->parent[0] = -1;
       model->pitch[0] = INF;
+      model->bodies[1].linkname = model->bodies[1].jointname = "base_x";
+      model->bodies[1].T_body_to_joint << 0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
       
-      model->bodies[2].linkname = model->bodies[2].jointname = "base_y";
       model->parent[1] = 0;
       model->pitch[1] = INF;
+      model->bodies[2].linkname = model->bodies[2].jointname = "base_y";
+      model->bodies[2].T_body_to_joint << 1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
             
-      model->bodies[3].linkname = model->bodies[3].jointname = "base_z";
       model->parent[2] = 1;
       model->pitch[2] = INF;
+      model->bodies[3].linkname = model->bodies[3].jointname = "base_z";
       
-      model->bodies[4].linkname = model->bodies[4].jointname = "base_roll";
       model->parent[3] = 2;
       model->pitch[3] = 0;
+      model->bodies[4].linkname = model->bodies[4].jointname = "base_roll";
+      model->bodies[4].T_body_to_joint << 0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
       
-      model->bodies[5].linkname = model->bodies[5].jointname = "base_pitch";      
       model->parent[4] = 3;
       model->pitch[4] = 0;
+      model->bodies[5].linkname = model->bodies[5].jointname = "base_pitch";      
+      model->bodies[5].T_body_to_joint << 1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
 
-      model->bodies[6].jointname = "base_yaw";
       model->parent[5] = 4;
       model->pitch[5] = 0;
+      model->bodies[6].jointname = "base_yaw";
     }
     
     int index=0;
@@ -346,16 +350,36 @@ RigidBodyManipulator* parseURDFModel(const std::string &xml_string)
       }
       
       // setup kinematic tree
-      double x=j->second->parent_to_joint_origin_transform.position.x,
-              y=j->second->parent_to_joint_origin_transform.position.y,
-              z=j->second->parent_to_joint_origin_transform.position.z;
-      double qx,qy,qz,qw;
-      j->second->parent_to_joint_origin_transform.rotation.getQuaternion(qx,qy,qz,qw);
-      model->bodies[index+1].Ttree << 
-              qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, x, 
-              2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, y, 
-              2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, z, 
-              0, 0, 0, 1;
+      {
+        double x=j->second->parent_to_joint_origin_transform.position.x,
+                y=j->second->parent_to_joint_origin_transform.position.y,
+                z=j->second->parent_to_joint_origin_transform.position.z;
+        double qx,qy,qz,qw;
+        j->second->parent_to_joint_origin_transform.rotation.getQuaternion(qx,qy,qz,qw);
+        model->bodies[index+1].Ttree <<
+                qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, x,
+                2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, y,
+                2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, z,
+                0, 0, 0, 1;
+        
+        Vector3d zvec; zvec << 0,0,1;
+        Vector3d joint_axis; joint_axis << j->second->axis.x, j->second->axis.y, j->second->axis.z;
+        Vector3d axis = joint_axis.cross(zvec); 
+        double angle = acos(joint_axis.dot(zvec));
+        if (axis.squaredNorm()<.0001) //  then it's a scaling of the z axis.
+          axis << 0,1,0;
+        axis.normalize();
+        qw=cos(angle/2.0);
+        qx=axis(0)*sin(angle/2.0);
+        qy=axis(1)*sin(angle/2.0);
+        qz=axis(2)*sin(angle/2.0);
+        
+        model->bodies[index+1].T_body_to_joint <<
+                qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, 0,
+                2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, 0,
+                2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, 0,
+                0, 0, 0, 1;
+      }
     }    
   }
   
