@@ -1,4 +1,4 @@
-//#include <iostream>
+#include <iostream>
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
 
@@ -17,16 +17,16 @@ Matrix3d rotz(double theta) {
 void Tjcalc(int pitch, double q, Matrix4d* TJ)
 {
 	*TJ = Matrix4d::Identity();
+  std::cout << "pitch = " << pitch << ", equals inf = " << (pitch==INF) << std::endl;
+          
 	if (pitch==0) { // revolute joint
-  		(*TJ).topLeftCorner(3,3) = rotz(q);
-  	}
-	else if (pitch == INF) { // prismatic joint
-  		(*TJ)(2,3) = q;
-	}
-	else { // helical joint
-  		(*TJ).topLeftCorner(3,3) = rotz(q);
-  		(*TJ)(2,3) = q*pitch;
-  	}
+    (*TJ).topLeftCorner(3,3) = rotz(q);
+  } else if (pitch == INF) { // prismatic joint
+    (*TJ)(2,3) = q;
+	}	else { // helical joint
+    (*TJ).topLeftCorner(3,3) = rotz(q);
+    (*TJ)(2,3) = q*pitch;
+  }
 }
 
 void dTjcalc(int pitch, double q, Matrix4d* dTJ)
@@ -38,14 +38,12 @@ void dTjcalc(int pitch, double q, Matrix4d* dTJ)
   				 c,-s, 0, 0,
   				 0, 0, 0, 0,
   				 0, 0, 0, 0;
-  	}
-	else if (pitch == INF) { // prismatic joint
+  	} else if (pitch == INF) { // prismatic joint
   		*dTJ <<  0, 0, 0, 0,
   				 0, 0, 0, 0,
   				 0, 0, 0, 1,
   				 0, 0, 0, 0;
-	}
-	else { // helical joint
+    } else { // helical joint
   		*dTJ << -s,-c, 0, 0,
   				 c,-s, 0, 0,
   				 0, 0, 0, pitch,
@@ -63,16 +61,14 @@ void ddTjcalc(int pitch, double q, Matrix4d* ddTJ)
   				 -s,-c, 0, 0,
   				  0, 0, 0, 0,
   				  0, 0, 0, 0;
-  	}
-	else if (pitch == INF) { // prismatic joint
-  		*ddTJ = Matrix4d::Zero();
-	}
-	else { // helical joint
-  		*ddTJ << -c, s, 0, 0,
-  				 -s,-c, 0, 0,
-  				  0, 0, 0, 0,
-  				  0, 0, 0, 0;
-	}
+  	} else if (pitch == INF) { // prismatic joint
+      *ddTJ = Matrix4d::Zero();
+    } else { // helical joint
+      *ddTJ << -c, s, 0, 0,
+              -s,-c, 0, 0,
+              0, 0, 0, 0,
+              0, 0, 0, 0;
+    }
 }
 
 RigidBodyManipulator::RigidBodyManipulator(int n) {
@@ -226,8 +222,8 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
     }
     else {
       double qi = q[bodies[i].dofnum];
-      Tjcalc(bodies[i].pitch,qi,&TJ);
-      dTjcalc(bodies[i].pitch,qi,&dTJ);
+      Tjcalc(pitch[i-1],qi,&TJ);
+      dTjcalc(pitch[i-1],qi,&dTJ);
       
       Tb = bodies[i].T_body_to_joint;
       Tbinv = Tb.inverse();
@@ -264,7 +260,7 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
           }
         }
         
-        ddTjcalc(bodies[i].pitch,qi,&ddTJ);
+        ddTjcalc(pitch[i-1],qi,&ddTJ);
         TddTmult = bodies[parent].T*bodies[i].Ttree * Tbinv * ddTJ * Tb;
         
         bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum) += TddTmult.row(0);

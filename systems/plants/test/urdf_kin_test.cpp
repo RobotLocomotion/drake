@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
   
   // run kinematics with second derivatives 100 times
   double q[34];
-  memset(q,0,sizeof(double)*34);
+  for (int i=0; i<34; i++) q[i]=1.0; 
   
   model->doKinematics(q,true);
 

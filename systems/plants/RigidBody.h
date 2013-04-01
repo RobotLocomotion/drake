@@ -17,7 +17,6 @@ public:
   
   //Need to initialize these
   Matrix4d Ttree;
-  int pitch;
   int dofnum;
 
   RigidBody() {
