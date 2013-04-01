@@ -2,7 +2,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
-#include "Model.h"
+#include "RigidBodyManipulator.h"
 
 #define INF -2147483648
 
@@ -169,7 +169,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:HandCmex:NotEnoughInputs","Usage [H,C] = HandCmex(model_ptr,q,qd[,f_ext]).");
   }
 
-  Model *model=NULL;
+  RigidBodyManipulator *model=NULL;
 
   // first get the model_ptr back from matlab
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)

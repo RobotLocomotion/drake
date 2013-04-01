@@ -3,7 +3,7 @@
 using namespace Eigen;
 //using namespace std;
 
-class Model 
+class RigidBodyManipulator 
 {
 public:
   int NB;
@@ -63,8 +63,8 @@ public:
   int secondDerivativesCached;
   
 
-  Model(int n);
-  ~Model(void);
+  RigidBodyManipulator(int n);
+  ~RigidBodyManipulator(void);
   
   void doKinematics(double* q, int b_compute_second_derivatives);
 

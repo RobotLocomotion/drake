@@ -43,8 +43,8 @@ else
       eigenflags = {['-I',conf.eigen3_incdir]};
       cd systems/plants/;
       
-      makeRule(['Model.',objext],'Model.cpp',['mex -c Model.cpp ',sprintf('%s ',flags{:},eigenflags{:})]);
-      modelflags = {['Model.',objext]};
+      makeRule(['RigidBodyManipulator.',objext],'RigidBodyManipulator.cpp',['mex -c RigidBodyManipulator.cpp ',sprintf('%s ',flags{:},eigenflags{:})]);
+      modelflags = {['RigidBodyManipulator.',objext]};
       mexMakeRule('deleteModelmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
       mexMakeRule('HandCmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
       mexMakeRule('doKinematicsmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
@@ -59,13 +59,13 @@ else
       % in the /Applications/MATLAB_R2012a.app/sys/os/maci64 directory and
       % replace it with a symlink to the gcc48 version of the library.
       
-      mexMakeRule('deleteModelpmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
-      mexMakeRule('HandCpmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
-      mexMakeRule('doKinematicspmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
-      mexMakeRule('forwardKinpmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
-      mexMakeRule('forwardKinVelpmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
+      mexMakeRule('deleteModelpmex.cpp',horzcat(flags,eigenflags),modelflags);
+      mexMakeRule('HandCpmex.cpp',horzcat(flags,eigenflags),modelflags);
+      mexMakeRule('doKinematicspmex.cpp',horzcat(flags,eigenflags),modelflags);
+      mexMakeRule('forwardKinpmex.cpp',horzcat(flags,eigenflags),modelflags);
+      mexMakeRule('forwardKinVelpmex.cpp',horzcat(flags,eigenflags),modelflags);
       
-      modelflags = {fullfile('..','..',['Model.',objext]),eigenflags{:}};
+      modelflags = {fullfile('..','..',['RigidBodyManipulator.',objext]),eigenflags{:}};
       cd @RigidBodyManipulator/private;
       mexMakeRule('constructModelmex.cpp',horzcat(modelflags,flags),modelflags);
       
