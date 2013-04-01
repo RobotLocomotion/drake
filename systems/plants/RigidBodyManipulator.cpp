@@ -219,7 +219,7 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
   MatrixXd dTmult, dTdTmult;
   MatrixXd ddTmult, TddTmult;
   for (i = 1; i < NB + 1; i++) {
-    int parent = this->parent[i-1];
+    int parent = this->parent[i-1]+1;
     if (parent < 0) {
       bodies[i].T = bodies[i].Ttree;
       //dTdq, ddTdqdq initialized as all zeros
