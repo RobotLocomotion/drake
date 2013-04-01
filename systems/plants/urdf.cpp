@@ -322,9 +322,11 @@ RigidBodyManipulator* parseURDFModel(const std::string &xml_string)
 //          printf("%s parent %d\n",j->second->child_link_name.c_str(),j2->second);
         } else {
           model->parent[index] = 5;  // no parent: attach it to the floating base
+          model->bodies[6].linkname = j->second->parent_link_name;
         }
       } else {
         model->parent[index] = 5;  // no parent: attach it to the floating base
+        model->bodies[6].linkname = j->second->parent_link_name;
       }
       
       // set pitch
