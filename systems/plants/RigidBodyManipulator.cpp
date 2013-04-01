@@ -1,4 +1,4 @@
-#include <iostream>
+//#include <iostream>
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
 
@@ -17,9 +17,8 @@ Matrix3d rotz(double theta) {
 void Tjcalc(int pitch, double q, Matrix4d* TJ)
 {
 	*TJ = Matrix4d::Identity();
-  std::cout << "pitch = " << pitch << ", equals inf = " << (pitch==INF) << std::endl;
-          
-	if (pitch==0) { // revolute joint
+
+  if (pitch==0) { // revolute joint
     (*TJ).topLeftCorner(3,3) = rotz(q);
   } else if (pitch == INF) { // prismatic joint
     (*TJ)(2,3) = q;
