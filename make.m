@@ -2,8 +2,6 @@ function make(varargin)
 
 % Builds all mex files in the directory 
 
-disp('zapping old mex files...');
-
 flags = {'-O'};
 %flags = {'-g'};
 
@@ -15,6 +13,7 @@ if (nargin>0 && strcmpi(varargin{1},'clean'))
   cd(getDrakePath());
 
   cd systems/plants;
+  delete(['*.',objext]);
   delete(['*.',mexext]);
 
   cd @RigidBodyManipulator/private;
@@ -44,7 +43,7 @@ else
       eigenflags = {['-I',conf.eigen3_incdir]};
       cd systems/plants/;
       
-      makeRule(['Model.',objext],'Model.cpp',@()mex('-c','Model.cpp',flags{:},eigenflags{:}));
+      makeRule(['Model.',objext],'Model.cpp',['mex -c Model.cpp ',sprintf('%s ',flags{:},eigenflags{:})]);
       modelflags = {['Model.',objext]};
       mexMakeRule('deleteModelmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
       mexMakeRule('HandCmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
