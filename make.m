@@ -2,8 +2,8 @@ function make(varargin)
 
 % Builds all mex files in the directory 
 
-flags = {'-O'};
-%flags = {'-g'};
+%flags = {'-O'};
+flags = {'-g'};
 
 if (nargin>0 && strcmpi(varargin{1},'clean'))
   disp('deleting mex files...');
@@ -43,7 +43,7 @@ else
       eigenflags = {['-I',conf.eigen3_incdir]};
       cd systems/plants/;
       
-      makeRule(['RigidBodyManipulator.',objext],'RigidBodyManipulator.cpp',['mex -c RigidBodyManipulator.cpp ',sprintf('%s ',flags{:},eigenflags{:})]);
+      makeRule(['RigidBodyManipulator.',objext],{'RigidBodyManipulator.cpp','RigidBodyManipulator.h','RigidBody.h'},['mex -c RigidBodyManipulator.cpp ',sprintf('%s ',flags{:},eigenflags{:})]);
       modelflags = {['RigidBodyManipulator.',objext]};
       mexMakeRule('deleteModelmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
       mexMakeRule('HandCmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);

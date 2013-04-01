@@ -79,17 +79,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
       model->joint_limit_max[model->bodies[i].dofnum] = mxGetScalar(pjointlim);
     }    
     
-    //Todo--do something safer here!
-    //Want to undo the -1 above wrt parents.  This assumes the bodies are ordered identically, which they should be...
-    //but parent_ind should probably just be a field in body
-    if (i==0) {
-      model->bodies[i].parent = -1;
-    } else {
-      model->bodies[i].parent = model->parent[i-1] + 1;
-    }
-//       mxArray* pbparent = mxGetProperty(pBodies, i, "parent");
-//       model->bodies[i].parent = (int) mxGetScalar(pbparent) - 1;  //zero-indexed
-    
     mxArray* pbTtreei = mxGetProperty(pBodies,i,"Ttree");
     // todo: check that the size is 4x4
     memcpy(model->bodies[i].Ttree.data(),mxGetPr(pbTtreei),sizeof(double)*4*4);

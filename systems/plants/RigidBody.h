@@ -5,7 +5,8 @@ using namespace Eigen;
 
 class RigidBody {
 public:
-  int nq;
+  std::string linkname;
+  std::string jointname;
   MatrixXd dTdq;
   MatrixXd ddTdqdq;
   Matrix4d T;
@@ -18,21 +19,18 @@ public:
   Matrix4d Ttree;
   int pitch;
   int dofnum;
-  int parent;
 
   RigidBody() {
-    this->nq = 0;
-    this->mass = 0.0;
-    this->com << Vector3d::Zero(), 1;
+    mass = 0.0;
+    com << Vector3d::Zero(), 1;
   }
   
   void setN(int n) {    
-    this->nq = n;
-    this->T = Matrix4d::Identity();
-    this->dTdq = MatrixXd::Zero(4*n,4);
-    this->ddTdqdq = MatrixXd::Zero(4*n*n,4);
-    this->Ttree = Matrix4d::Zero();
-    this->T_body_to_joint = Matrix4d::Identity();
+    T = Matrix4d::Identity();
+    dTdq = MatrixXd::Zero(4*n,4);
+    ddTdqdq = MatrixXd::Zero(4*n*n,4);
+    Ttree = Matrix4d::Identity();
+    T_body_to_joint = Matrix4d::Identity();
   }
   
   ~RigidBody() {

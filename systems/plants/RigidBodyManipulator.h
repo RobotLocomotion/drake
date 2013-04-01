@@ -1,7 +1,8 @@
 #include <Eigen/Dense>
 #include "RigidBody.h"
+
+#define INF -2147483648
 using namespace Eigen;
-//using namespace std;
 
 class RigidBodyManipulator 
 {
@@ -61,7 +62,6 @@ public:
   bool kinematicsInit;
   double *cached_q;
   int secondDerivativesCached;
-  
 
   RigidBodyManipulator(int n);
   ~RigidBodyManipulator(void);
