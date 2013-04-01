@@ -2,7 +2,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
-#include "../../Model.h"
+#include "../../RigidBodyManipulator.h"
 
 #define INF -2147483648
 
@@ -15,7 +15,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:constructModelmex:NotEnoughInputs","Usage model_ptr = constructModelmex(featherstone,bodies,gravity)");
   }
 
-  Model *model=NULL;
+  RigidBodyManipulator *model=NULL;
 
   const mxArray* featherstone = prhs[0]; //mxGetProperty(prhs[0],0,"featherstone");
   if (!featherstone) mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs", "can't find field model.featherstone.  Are you passing in the correct structure?");
@@ -23,7 +23,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   // set up the model
   mxArray* pNB = mxGetField(featherstone,0,"NB");
   if (!pNB) mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","can't find field model.featherstone.NB.  Are you passing in the correct structure?");
-  model = new Model((int) mxGetScalar(pNB));
+  model = new RigidBodyManipulator((int) mxGetScalar(pNB));
   
   mxArray* pparent = mxGetField(featherstone,0,"parent");
   if (!pparent) mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","can't find field model.featherstone.parent.");

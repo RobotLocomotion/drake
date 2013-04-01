@@ -1,5 +1,5 @@
 #include "mex.h"
-#include "Model.h"
+#include "RigidBodyManipulator.h"
 
 
 using namespace Eigen;
@@ -18,7 +18,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(model_ptr,q,b_compute_second_derivatives)");
   }
   
-  Model *model=NULL;
+  RigidBodyManipulator *model=NULL;
 
   // first get the model_ptr back from matlab
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)

@@ -2,7 +2,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
-#include "Model.h"
+#include "RigidBodyManipulator.h"
 
 #define INF -2147483648
 
@@ -15,7 +15,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:deleteModelmex:NotEnoughInputs","Usage deleteModelMex(model_ptr)");
   }
 
-  Model *model=NULL;
+  RigidBodyManipulator *model=NULL;
 
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
     mexErrMsgIdAndTxt("Drake:deleteModelmex:BadInputs","the first argument should be the model_ptr");

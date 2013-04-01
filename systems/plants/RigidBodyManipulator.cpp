@@ -1,6 +1,6 @@
 //#include <iostream>
 #include "mex.h"
-#include "Model.h"
+#include "RigidBodyManipulator.h"
 
 #define INF -2147483648
 
@@ -76,7 +76,7 @@ void ddTjcalc(int pitch, double q, Matrix4d* ddTJ)
 	}
 }
 
-Model::Model(int n) {
+RigidBodyManipulator::RigidBodyManipulator(int n) {
   NB = n;
   pitch = new int[n];
   parent = new int[n];
@@ -166,7 +166,7 @@ Model::Model(int n) {
   secondDerivativesCached = 0;
 }
 
-Model::~Model() {
+RigidBodyManipulator::~RigidBodyManipulator() {
   delete[] pitch;
   delete[] parent;
   delete[] Xtree;
@@ -196,7 +196,7 @@ Model::~Model() {
 }
 
 
-void Model::doKinematics(double* q, int b_compute_second_derivatives)
+void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivatives)
 {
   int i,j,k;
   //Check against cached values for bodies[1];
@@ -282,7 +282,7 @@ void Model::doKinematics(double* q, int b_compute_second_derivatives)
   secondDerivativesCached = b_compute_second_derivatives;
 }
 
-Vector3d Model::getCOM(void)
+Vector3d RigidBodyManipulator::getCOM(void)
 {
   double m = 0.0;
   double bm;
@@ -299,7 +299,7 @@ Vector3d Model::getCOM(void)
   return com;
 }
 
-MatrixXd Model::getCOMJac(void)
+MatrixXd RigidBodyManipulator::getCOMJac(void)
 {
   double m = 0.0;
   double bm;
@@ -316,7 +316,7 @@ MatrixXd Model::getCOMJac(void)
   return Jcom;
 }
 
-MatrixXd Model::getCOMJacDot(void)
+MatrixXd RigidBodyManipulator::getCOMJacDot(void)
 {
   double m = 0.0;
   double bm;
@@ -333,7 +333,7 @@ MatrixXd Model::getCOMJacDot(void)
   return dJcom;
 }
 
-MatrixXd Model::forwardKin(const int body_ind, const MatrixXd pts, const bool include_rotations)
+MatrixXd RigidBodyManipulator::forwardKin(const int body_ind, const MatrixXd pts, const bool include_rotations)
 {
   // WARNING:  pts should have a trailing 1 attached to it (4xn_pts)
   int dim=3, n_pts = pts.cols();
@@ -352,7 +352,7 @@ MatrixXd Model::forwardKin(const int body_ind, const MatrixXd pts, const bool in
   }
 }
 
-MatrixXd Model::forwardJac(const int body_ind, const MatrixXd pts, const bool include_rotations)
+MatrixXd RigidBodyManipulator::forwardJac(const int body_ind, const MatrixXd pts, const bool include_rotations)
 {
   int dim = 3, n_pts = pts.cols();
   MatrixXd tmp = bodies[body_ind].dTdq.topLeftCorner(dim*NB,dim+1)*pts;
@@ -394,7 +394,7 @@ MatrixXd Model::forwardJac(const int body_ind, const MatrixXd pts, const bool in
   }
 }
 
-MatrixXd Model::forwardJacDot(const int body_ind, const MatrixXd pts, const bool include_rotations)
+MatrixXd RigidBodyManipulator::forwardJacDot(const int body_ind, const MatrixXd pts, const bool include_rotations)
 {
   int dim=3, n_pts=pts.cols();
   if (include_rotations)

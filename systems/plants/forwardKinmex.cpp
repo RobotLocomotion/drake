@@ -2,7 +2,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
-#include "Model.h"
+#include "RigidBodyManipulator.h"
 #include "math.h"
 
 using namespace Eigen;
@@ -21,7 +21,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:forwardKinmex:NotEnoughInputs","Usage forwardKinmex(model_ptr,q_cache,0) for center of mass, or forwardKinmex(model_pts,q_cache,body_ind,pts,include_rotations)");
   }
 
-  Model *model=NULL;
+  RigidBodyManipulator *model=NULL;
 
   // first get the model_ptr back from matlab
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
