@@ -1,10 +1,8 @@
 #include "mex.h"
-#include <Eigen/Dense>
 #include <vector>
 #include <iostream>
 #include "../../PlanarModel.h"
 
-using namespace Eigen;
 using namespace std;
 
 void mexFunction( int nlhs, mxArray *plhs[],
