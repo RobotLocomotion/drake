@@ -39,9 +39,10 @@ int main(int argc, char* argv[])
   Vector4d zero;
   zero << 0,0,0,1; 
   
-  for (int i=0; i<34; i++) 
-    cout << "forward kin: " << model->bodies[i+1].linkname << " is at " << model->forwardKin(i+1,zero,true).transpose() << endl;
- 
+  for (int i=0; i<=model->NB; i++) {
+    cout << "forward kin: " << model->bodies[i].linkname << " is at " << model->forwardKin(i,zero,true).transpose() << endl;
+  } 
+  
   delete model;
   return 0;
 }

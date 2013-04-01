@@ -201,15 +201,20 @@ boost::shared_ptr<ModelInterface> parseURDF(const std::string &xml_string)
 
 void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, std::map<std::string, int> & jointname_to_jointnum)
 {
+  std::map<std::string, int>::iterator ans = jointname_to_jointnum.find(j->name);
+  if (ans != jointname_to_jointnum.end()) // then i've already got a joint num
+    return;
+
+//  printf("setting joint num for %s\n", j->name.c_str());
+  
   // recursively set parent num, then set j
   if (!j->parent_link_name.empty()) {
     std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator plink = urdf_model->links_.find(j->parent_link_name);
     if (plink != urdf_model->links_.end()) {
       if (plink->second->parent_joint.get()) {
-        // j has a parent, see if it's already in the list
-        std::map<std::string, int>::iterator j2 = jointname_to_jointnum.find(plink->second->parent_joint->name);
-        if (j2 != jointname_to_jointnum.end())
-          setJointNum(urdf_model,plink->second->parent_joint,jointname_to_jointnum);
+        // j has a parent
+//        printf("  ");
+        setJointNum(urdf_model,plink->second->parent_joint,jointname_to_jointnum);
       }
     }
   }
