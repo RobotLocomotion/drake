@@ -1,8 +1,7 @@
 //#include <iostream>
-#include "mex.h"
+//#include "mex.h"
 #include "RigidBodyManipulator.h"
 
-#define INF -2147483648
 
 Matrix3d rotz(double theta) {
 	// returns 3D rotation matrix (about the z axis)
@@ -142,6 +141,7 @@ RigidBodyManipulator::RigidBodyManipulator(int n) {
   
   for(int i=0; i < n+1; i++) {
     bodies[i].setN(n);
+    bodies[i].dofnum = i-1;  // setup default dofnums
   }
   
   // preallocate matrices used in doKinematics
@@ -218,8 +218,8 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
 
   MatrixXd dTmult, dTdTmult;
   MatrixXd ddTmult, TddTmult;
-  for (i = 0; i < NB + 1; i++) {
-    int parent = bodies[i].parent;
+  for (i = 1; i < NB + 1; i++) {
+    int parent = this->parent[i-1];
     if (parent < 0) {
       bodies[i].T = bodies[i].Ttree;
       //dTdq, ddTdqdq initialized as all zeros
@@ -397,8 +397,9 @@ MatrixXd RigidBodyManipulator::forwardJac(const int body_ind, const MatrixXd pts
 MatrixXd RigidBodyManipulator::forwardJacDot(const int body_ind, const MatrixXd pts, const bool include_rotations)
 {
   int dim=3, n_pts=pts.cols();
-  if (include_rotations)
-    mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Second derivatives of rotations are not implemented yet");
+//  if (include_rotations)
+//    mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Second derivatives of rotations are not implemented yet");
+    
   
   int i,j;
   MatrixXd dJ_reshaped = MatrixXd(NB, dim*n_pts*NB);
