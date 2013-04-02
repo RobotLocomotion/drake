@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stdarg.h>
 
 #include "urdf_interface/model.h"
 #include "urdf.h"

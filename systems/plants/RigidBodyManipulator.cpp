@@ -211,7 +211,7 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
     }
   }
 
-  MatrixXd dTmult, dTdTmult;
+  MatrixXd dTmult, dTdTmult = MatrixXd::Zero(4*NB,4);
   MatrixXd ddTmult, TddTmult;
   for (i = 1; i < NB + 1; i++) {
     int parent = this->parent[i-1]+1;
@@ -236,7 +236,7 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
        * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
        */
       
-      bodies[i].dTdq = bodies[parent].dTdq * Tmult;
+      bodies[i].dTdq = bodies[parent].dTdq * Tmult;  // note: could only compute non-zero entries here
       
       dTmult = bodies[i].Ttree * Tbinv * dTJ * Tb;
       TdTmult = bodies[parent].T * dTmult;
@@ -247,16 +247,20 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
       
       if (b_compute_second_derivatives) {
         //ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
-        bodies[i].ddTdqdq = bodies[parent].ddTdqdq * Tmult;
+	//bodies[i].ddTdqdq = bodies[parent].ddTdqdq * Tmult // pushed this into the loop below to exploit the sparsity
+	for (k=0; k<=bodies[i].dofnum; k++)  // i think it should be ok with bodies[parent].dofnum
+	  for (j=0; j<4; j++) 
+	    //	    bodies[i].ddTdqdq.block((4*k+j)*NB,0,1+bodies[parent].dofnum,4) = bodies[parent].ddTdqdq.block((4*k+j)*NB,0,1+bodies[parent].dofnum,4) * Tmult;  // only compute non-zero entries
+	    bodies[i].ddTdqdq.block((4*k+j)*NB,0,1+bodies[i].dofnum,4) = bodies[parent].ddTdqdq.block((4*k+j)*NB,0,1+bodies[i].dofnum,4) * Tmult;  // only compute non-zero entries
+
         dTdTmult = bodies[parent].dTdq * dTmult;
-        for (j = 0; j < 4*NB; j++) {
-          bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + j) += dTdTmult.row(j);
-        }
-        
         for (j = 0; j < 4; j++) {
-          for (k = 0; k < NB; k++) {
+          for (k = 0; k < NB; k++) { 
             bodies[i].ddTdqdq.row(bodies[i].dofnum + (4*k+j)*NB) += dTdTmult.row(j*NB+k);
           }
+        }
+        for (j = 0; j < 4*NB; j++) {
+          bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + j) += dTdTmult.row(j);
         }
         
         ddTjcalc(pitch[i-1],qi,&ddTJ);

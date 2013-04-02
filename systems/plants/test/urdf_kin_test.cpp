@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
   double q[34];
   int i;
   
-  for (int n=0; n<100; n++) {
+  for (int n=0; n<20; n++) {
     for (i=0; i<34; i++) q[i]=(double)rand();
     model->doKinematics(q,true);
   }
