@@ -536,6 +536,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}]=bodyKin(obj.manip,varargin{:});
     end
     
+    function varargout = approximateIK(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}]=approximateIK(obj.manip,varargin{:});
+    end
+    
     function varargout = inverseKin(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}]=inverseKin(obj.manip,varargin{:});
