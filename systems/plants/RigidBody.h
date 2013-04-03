@@ -52,13 +52,18 @@ public:
   {
     if (dofnum>=0) {
       int i;
-      ancestor_dofs = model->bodies[model->parent[dofnum]].ancestor_dofs;
+      if (model->parent[dofnum]>=0) {
+        ancestor_dofs = model->bodies[model->parent[dofnum]].ancestor_dofs;
+        ddTdqdq_nonzero_rows = model->bodies[model->parent[dofnum]].ddTdqdq_nonzero_rows;
+      }
+      
       ancestor_dofs.insert(dofnum);
-      ddTdqdq_nonzero_rows = model->bodies[model->parent[dofnum]].ddTdqdq_nonzero_rows;
       for (i=0; i<4*model->NB; i++) {
 	ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum);
 	ddTdqdq_nonzero_rows.insert(4*model->NB*dofnum + i);
       }
+
+      // compute matrix blocks
       IndexRange ind;  ind.start=-1; ind.length=0;
       for (i=0; i<4*model->NB*4*model->NB; i++) {
 	if (ddTdqdq_nonzero_rows.find(i)!=ddTdqdq_nonzero_rows.end()) {
