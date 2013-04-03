@@ -124,7 +124,12 @@ end
 
 conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
 if (~conf.lcm_enabled)
-  disp(' LCM not found.  LCM support will be disabled.  To re-enable, add lcm-###.jar to your matlab classpath (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.5.1.jar'') into your startup.m .');
+  disp(' ');
+  disp(' LCM not found.  LCM support will be disabled.');
+  disp(' To re-enable, add lcm-###.jar to your matlab classpath'); 
+  disp('(e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.9.2.jar'') into your startup.m .');
+  disp(' ');
+  
 elseif (~exist('drake.util.lcmt_scope_data'))
   % todo: if drake java should ever exist outside of lcm, then I can
   % change this, but i'll need to check for a class that is not
@@ -141,8 +146,12 @@ if (~conf.snopt_enabled)
     addpath([conf.root,'/thirdParty/snopt7']);
     conf.snopt_enabled = logical(exist('snopt'));
   end
-  else
-    disp(' SNOPT not found.  SNOPT support will be disabled.  To re-enable, add the SNOPT matlab folder to your path and rerun configure.  SNOPT can be obtained from https://tig.csail.mit.edu/software/ .');
+else
+    disp(' ');
+    disp(' SNOPT not found.  SNOPT support will be disabled.');
+    disp('To re-enable, add the SNOPT matlab folder to your path and rerun configure.');
+    disp('SNOPT can be obtained from <a href="https://tig.csail.mit.edu/software/">https://tig.csail.mit.edu/software/</a> .');
+    disp(' ');
 end
 
 if(exist('vrinstall'))
@@ -172,7 +181,22 @@ if (conf.sedumi_enabled)
 end
 
 if (~conf.sedumi_enabled)
-  disp(' SeDuMi not found.  SeDuMi support will be disabled.  To re-enable, add SeDuMi to your matlab path and rerun configure.  SeDuMi can be downloaded for free from http://sedumi.ie.lehigh.edu/ ');
+  disp(' ');
+  disp(' SeDuMi not found.  SeDuMi support will be disabled.');
+  disp(' To re-enable, add SeDuMi to your matlab path and rerun configure.');
+  disp(' SeDuMi can be downloaded for free from <a href="http://sedumi.ie.lehigh.edu/">http://sedumi.ie.lehigh.edu/</a> ');
+  disp(' ');
+end
+
+conf.gurobi_enabled = logical(exist('gurobi') && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME')));
+if (~conf.gurobi_enabled)
+  disp(' ');
+  disp(' GUROBI not found. GUROBI support will be disabled.'); 
+  disp('    To enable, install GUROBI and a free academic license from');
+  disp('    <a href="http://www.gurobi.com/download/licenses/free-academic">http://www.gurobi.com/download/licenses/free-academic</a> .');
+  disp(' Then, you will need to set several environment variables.');
+  disp(' Please see <a href="http://drake.mit.edu/quickstart">http://drake.mit.edu/quickstart</a> for more info.');
+  disp(' ');
 end
 
 conf.cplex_enabled = logical(exist('cplexlp'));
