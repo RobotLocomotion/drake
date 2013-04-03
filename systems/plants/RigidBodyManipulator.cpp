@@ -1,4 +1,5 @@
-//#include <iostream>
+#include <iostream>
+
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
 
@@ -156,6 +157,7 @@ RigidBodyManipulator::RigidBodyManipulator(int n) {
   dJcom = MatrixXd::Zero(3,NB*NB);
   bdJ = MatrixXd::Zero(3,NB*NB);
   
+  initialized = false;
   kinematicsInit = false;
   cached_q = new double[n];
   secondDerivativesCached = 0;
@@ -190,6 +192,13 @@ RigidBodyManipulator::~RigidBodyManipulator() {
   delete[] cached_q;
 }
 
+void RigidBodyManipulator::compile(void) 
+{
+  // precompute sparsity pattern for each rigid body
+  for (int i=0; i<NB+1; i++) 
+    bodies[i].computeAncestorDOFs(this);
+  initialized=true;
+}
 
 void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivatives)
 {
@@ -210,6 +219,8 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
       return;
     }
   }
+
+  if (!initialized) compile();
 
   MatrixXd dTmult, dTdTmult = MatrixXd::Zero(4*NB,4);
   MatrixXd ddTmult, TddTmult;
@@ -247,20 +258,24 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
       
       if (b_compute_second_derivatives) {
         //ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
-	//bodies[i].ddTdqdq = bodies[parent].ddTdqdq * Tmult // pushed this into the loop below to exploit the sparsity
-	for (k=0; k<=bodies[i].dofnum; k++)  // i think it should be ok with bodies[parent].dofnum
-	  for (j=0; j<4; j++) 
-	    //	    bodies[i].ddTdqdq.block((4*k+j)*NB,0,1+bodies[parent].dofnum,4) = bodies[parent].ddTdqdq.block((4*k+j)*NB,0,1+bodies[parent].dofnum,4) * Tmult;  // only compute non-zero entries
-	    bodies[i].ddTdqdq.block((4*k+j)*NB,0,1+bodies[i].dofnum,4) = bodies[parent].ddTdqdq.block((4*k+j)*NB,0,1+bodies[i].dofnum,4) * Tmult;  // only compute non-zero entries
+	//	bodies[i].ddTdqdq = bodies[parent].ddTdqdq * Tmult; // pushed this into the loop below to exploit the sparsity
+	for (std::set<IndexRange>::iterator iter = bodies[parent].ddTdqdq_nonzero_rows_grouped.begin(); iter != bodies[parent].ddTdqdq_nonzero_rows_grouped.end(); iter++) {
+	  bodies[i].ddTdqdq.block(iter->start,0,iter->length,4) = bodies[parent].ddTdqdq.block(iter->start,0,iter->length,4) * Tmult;
+	}
 
         dTdTmult = bodies[parent].dTdq * dTmult;
+        for (j = 0; j < 4*NB; j++) {
+	  bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + j) = dTdTmult.row(j);
+        }
+
         for (j = 0; j < 4; j++) {
           for (k = 0; k < NB; k++) { 
-            bodies[i].ddTdqdq.row(bodies[i].dofnum + (4*k+j)*NB) += dTdTmult.row(j*NB+k);
+	    if (k == bodies[i].dofnum) {
+	      bodies[i].ddTdqdq.row(bodies[i].dofnum + (4*k+j)*NB) += dTdTmult.row(j*NB+k);
+	    } else {
+	      bodies[i].ddTdqdq.row(bodies[i].dofnum + (4*k+j)*NB) = dTdTmult.row(j*NB+k);
+	    }
           }
-        }
-        for (j = 0; j < 4*NB; j++) {
-          bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + j) += dTdTmult.row(j);
         }
         
         ddTjcalc(pitch[i-1],qi,&ddTJ);

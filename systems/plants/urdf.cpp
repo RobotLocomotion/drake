@@ -383,6 +383,7 @@ RigidBodyManipulator* parseURDFModel(const std::string &xml_string)
       }
     }    
   }
-  
+
+  model->compile();
   return model;
 }
