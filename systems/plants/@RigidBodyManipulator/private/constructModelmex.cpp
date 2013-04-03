@@ -93,6 +93,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   } else {
     mexErrMsgIdAndTxt("Drake:HandCmex:BadGravity","Couldn't find a 3 element gravity vector in the object.");
   }
+
+  model->compile();
   
   if (nlhs>0) {  // return a pointer to the model
     mxClassID cid;

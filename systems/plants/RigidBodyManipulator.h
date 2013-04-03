@@ -1,8 +1,10 @@
+
 #include <Eigen/Dense>
-#include "RigidBody.h"
 
 #define INF -2147483648
 using namespace Eigen;
+
+class RigidBody;
 
 class RigidBodyManipulator 
 {
@@ -59,6 +61,7 @@ public:
   MatrixXd bdJ;
   
   RigidBody* bodies;
+  bool initialized;
   bool kinematicsInit;
   double *cached_q;
   int secondDerivativesCached;
@@ -66,6 +69,7 @@ public:
   RigidBodyManipulator(int n);
   ~RigidBodyManipulator(void);
   
+  void compile(void);  // call me after the model is loaded
   void doKinematics(double* q, int b_compute_second_derivatives);
 
   Vector3d getCOM(void);
@@ -79,3 +83,5 @@ public:
   void snoptIKfun( VectorXd q, VectorXd q0, VectorXd q_nom, MatrixXd Q, int narg, int* body_ind, VectorXd* pts, VectorXd* f, MatrixXd* G);
 
 };
+
+#include "RigidBody.h"
