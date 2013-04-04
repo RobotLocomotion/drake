@@ -23,3 +23,6 @@ vopenloop.fade_percent = .5;
 mv = MultiVisualizer({vopenloop,v});
 
 mv.playback(vertcat(xtrajopenloop,xtraj));
+
+
+% NORELEASE 
