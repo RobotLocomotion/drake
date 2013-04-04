@@ -12,3 +12,5 @@ valuecheck(xf(2),pi,.2);  % strong enough spring that we expect it to stay in th
 % note: this currently fails.  and i suspect it's a real bug.  - Russ
 
 end
+
+% NORELEASE
