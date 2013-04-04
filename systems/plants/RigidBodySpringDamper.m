@@ -50,3 +50,5 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
     end
   end
 end
+
+% NORELEASE
