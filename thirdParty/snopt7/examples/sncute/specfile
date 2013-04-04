@@ -1,5 +1,0 @@
-Begin SNOPT options
-    Iterations limit             499
-    Minor feasibility tolerance  1.02e-7
-    Solution                    Yes
-End SNOPT options
