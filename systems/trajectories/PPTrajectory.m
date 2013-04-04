@@ -19,7 +19,24 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       if nargin<2
         order = 1;
       end
-      dtraj = PPTrajectory(fnder(obj.pp,order));
+% this requires the curve-fitting toolbox, so i'm implementing it myself below
+%      dtraj = PPTrajectory(fnder(obj.pp,order));  
+
+      % first handle order=1
+      [b,c,l,k,d] = unmkpp(obj.pp);
+      if (order>k-1)  % handle the case of too-high order
+        dtraj = PPTrajectory(mkpp(b,0*c(:,1),d));
+        return;
+      end
+      
+      for i=1:k-1
+        cnew(:,i) = (k-i)*c(:,i);
+      end
+      dtraj = PPTrajectory(mkpp(b,cnew,d));
+      
+      if (order>1)
+        dtraj = fnder(dtraj,order-1);
+      end
     end
     
     % todo: implement deriv and dderiv here
@@ -68,6 +85,18 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       traj = PPTrajectory(mkpp(breaks,coefs,d));
     end
     
+    function obj = refine(obj,newbreaks)  
+      % implements functionality provided by pprfn in the curve-fitting
+      % toolbox
+      
+%        addbreaks = setdiff(newbreaks,obj.pp.breaks);
+      
+%      warning('this is a short-term hack to get around the Curve-fitting toolbox dep');
+%      obj.pp = spline(newbreaks,eval(obj,newbreaks));
+
+      obj.pp = pprfn(obj.pp,newbreaks);
+    end
+    
     function c = plus(a,b)
       if ~isequal(size(a),size(b))
         error('must be the same size');  % should support scalars, too (but don't yet)
@@ -110,8 +139,8 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       
       if ~isequal(abreaks,bbreaks)
         breaks = unique([abreaks,bbreaks]);
-        a.pp = pprfn(a.pp,setdiff(breaks,abreaks));
-        b.pp = pprfn(b.pp,setdiff(breaks,bbreaks));
+        a = refine(a,breaks);
+        b = refine(b,breaks);
         
         [abreaks,acoefs,al,ak,ad] = unmkpp(a.pp);
         [bbreaks,bcoefs,bl,bk,bd] = unmkpp(b.pp);
@@ -186,8 +215,8 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       
       if ~isequal(abreaks,bbreaks)
         breaks = unique([abreaks,bbreaks]);
-        a.pp = pprfn(a.pp,setdiff(breaks,abreaks));
-        b.pp = pprfn(b.pp,setdiff(breaks,bbreaks));
+        a = refine(a,breaks);
+        b = refine(b,breaks);
         
         [abreaks,acoefs,al,ak,ad] = unmkpp(a.pp);
         [bbreaks,bcoefs,bl,bk,bd] = unmkpp(b.pp);
