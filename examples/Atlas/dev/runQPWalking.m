@@ -9,6 +9,8 @@ options.dt = 0.003;
 addpath(fullfile(getDrakePath,'examples','Atlas'));
 addpath(fullfile(getDrakePath,'examples','ZMP'));
 r = Atlas('../urdf/atlas_minimal_contact.urdf',options);
+r = removeCollisionGroupsExcept(r,{'heel','toe'});
+r = compile(r);
 v = r.constructVisualizer;
 v.display_dt = 0.05;
 

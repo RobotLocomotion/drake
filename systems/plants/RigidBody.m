@@ -67,6 +67,53 @@ classdef RigidBody < handle
       end
     end
     
+    function body = removeCollisionGroups(body,contact_groups)
+      if isempty(body.contact_pts), return; end % nothing to do for this body
+      if ~iscell(contact_groups) contact_groups={contact_groups}; end
+      for i=1:length(contact_groups)
+        group_elements = strcmpi(contact_groups{i},body.collision_group_name);
+        if ~isempty(group_elements)
+          pt_inds = [body.collision_group{group_elements}];
+          if ~isempty(pt_inds)
+            [keep_pts,ipts] = setdiff(1:size(body.contact_pts,2),pt_inds);
+            ripts = repmat(nan,1,size(body.contact_pts));  % reverse index
+            ripts(ipts) = 1:length(ipts);
+            for j=1:length(body.collision_group)
+              body.collision_group{j}=ripts(body.collision_group{j});
+            end
+            body.contact_pts(:,pt_inds) = [];
+          end
+          body.collision_group(group_elements) = [];
+          body.collision_group_name(group_elements) = [];
+        end
+      end
+    end
+    
+    function body = removeCollisionGroupsExcept(body,contact_groups)
+      if isempty(body.contact_pts), return; end % nothing to do for this body
+      if ~iscell(contact_groups) contact_groups={contact_groups}; end
+      i=1;
+      while i<=length(body.collision_group)
+        if ~ismember(body.collision_group_name{i},contact_groups)
+          pt_inds = [body.collision_group{i}];
+          if ~isempty(pt_inds)
+            [keep_pts,ipts] = setdiff(1:size(body.contact_pts,2),pt_inds);
+            ripts = repmat(nan,1,size(body.contact_pts));  % reverse index
+            ripts(ipts) = 1:length(ipts);
+            for j=1:length(body.collision_group)
+              body.collision_group{j}=ripts(body.collision_group{j});
+            end
+            body.contact_pts(:,pt_inds) = [];
+          end
+          body.collision_group(i) = [];
+          body.collision_group_name(i) = [];
+        else
+          i=i+1;
+        end
+      end
+    end
+
+    
     function newbody = copy(body)
       % makes a shallow copy of the body
       % note that this functionality is in matlab.mixin.Copyable in newer

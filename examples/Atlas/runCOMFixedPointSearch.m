@@ -16,13 +16,8 @@ end
 
 dt = 0.001;
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
-%% begin hack: remove extra contact points:
-r.findLink('r_hand').contact_pts = [];
-r.findLink('r_lleg').contact_pts = [];
-r.findLink('l_hand').contact_pts = [];
-r.findLink('l_lleg').contact_pts = [];
+r = removeCollisionGroupsExcept(r,{'heel','toe'});
 r = compile(r);
-%% end hack
 
 v = r.constructVisualizer;
 v.display_dt = dt*25;
