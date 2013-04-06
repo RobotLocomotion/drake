@@ -393,6 +393,28 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
     
+    function groups = getContactGroups(model)
+      groups = {};
+      for i=1:length(model.body)
+        groups = horzcat(groups,model.body(i).collision_group_name);
+      end
+      groups = unique(groups);
+    end
+    
+    function model = removeCollisionGroups(model,contact_groups)
+      for i=1:length(model.body)
+        removeCollisionGroups(model.body(i),contact_groups);
+      end
+      model.dirty = true;
+    end
+    
+    function model = removeCollisionGroupsExcept(model,contact_groups)
+      for i=1:length(model.body)
+        removeCollisionGroupsExcept(model.body(i),contact_groups);
+      end
+      model.dirty = true;
+    end
+    
     function drawKinematicTree(model)
       % depends on having graphviz2mat installed (from matlabcentral)
       % todo: make that a dependency in configure?
