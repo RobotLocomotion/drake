@@ -362,7 +362,6 @@ MatrixXd RigidBodyManipulator::getCOMJacDot(void)
     bm = bodies[i].mass;
     if (bm>0) {
       bJ = forwardJacDot(i,bodies[i].com);
-      std::cout << bJ << std::endl; 
       Jcomdot = (m*Jcomdot + bm*bJ)/(m+bm);
       m = m+bm;
     }
