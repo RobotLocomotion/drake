@@ -17,21 +17,22 @@ class RigidBody {
 public:
   std::string linkname;
   std::string jointname;
-  MatrixXd dTdq;
-  MatrixXd ddTdqdq;
+  int dofnum;
+  Matrix4d Ttree;
+  Matrix4d T_body_to_joint;
   std::set<int> ancestor_dofs;
   std::set<int> ddTdqdq_nonzero_rows;
   std::set<IndexRange> ddTdqdq_nonzero_rows_grouped;
+
   Matrix4d T;
-  Matrix4d T_body_to_joint;
+  MatrixXd dTdq;
+  MatrixXd dTdqdot;
+  Matrix4d Tdot;
+  MatrixXd ddTdqdq;
 
   double mass;
   Vector4d com;  // this actually stores [com;1] (because that's what's needed in the kinematics functions)
   
-  //Need to initialize these
-  Matrix4d Ttree;
-  int dofnum;
-
   RigidBody() {
     mass = 0.0;
     com << Vector3d::Zero(), 1;
@@ -42,8 +43,10 @@ public:
 
   void setN(int n) {    
     T = Matrix4d::Identity();
-    dTdq = MatrixXd::Zero(4*n,4);
-    ddTdqdq = MatrixXd::Zero(4*n*n,4);
+    dTdq = MatrixXd::Zero(3*n,4);
+    dTdqdot = MatrixXd::Zero(3*n,4);
+    Tdot = Matrix4d::Zero();
+    ddTdqdq = MatrixXd::Zero(3*n*n,4);
     Ttree = Matrix4d::Identity();
     T_body_to_joint = Matrix4d::Identity();
   }
@@ -58,27 +61,27 @@ public:
       }
       
       ancestor_dofs.insert(dofnum);
-      for (i=0; i<4*model->NB; i++) {
-	ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum);
-	ddTdqdq_nonzero_rows.insert(4*model->NB*dofnum + i);
+      for (i=0; i<3*model->NB; i++) {
+        ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum);
+        ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i);
       }
 
       // compute matrix blocks
       IndexRange ind;  ind.start=-1; ind.length=0;
-      for (i=0; i<4*model->NB*4*model->NB; i++) {
-	if (ddTdqdq_nonzero_rows.find(i)!=ddTdqdq_nonzero_rows.end()) {
-	  if (ind.start<0) ind.start=i;
-	} else {
-	  if (ind.start>=0) {
-	    ind.length = i-ind.start;
-	    ddTdqdq_nonzero_rows_grouped.insert(ind);
-	    ind.start = -1;
-	  }
-	}
+      for (i=0; i<3*model->NB*model->NB; i++) {
+        if (ddTdqdq_nonzero_rows.find(i)!=ddTdqdq_nonzero_rows.end()) {
+          if (ind.start<0) ind.start=i;
+        } else {
+          if (ind.start>=0) {
+            ind.length = i-ind.start;
+            ddTdqdq_nonzero_rows_grouped.insert(ind);
+            ind.start = -1;
+          }
+        }
       }
       if (ind.start>=0) {
-	ind.length = i-ind.start;
-	ddTdqdq_nonzero_rows_grouped.insert(ind);
+        ind.length = i-ind.start;
+        ddTdqdq_nonzero_rows_grouped.insert(ind);
       }
     }
   }

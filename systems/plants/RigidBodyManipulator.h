@@ -50,12 +50,15 @@ public:
   Matrix4d Tbinv;
   Matrix4d Tb;
   Matrix4d Tmult;
+  Matrix4d dTmult;
+  Matrix4d dTdotmult;
   Matrix4d TdTmult;
   
   // preallocate for COM functions
   Vector3d com;
   Vector3d bc;
   MatrixXd Jcom;
+  MatrixXd Jcomdot;
   MatrixXd bJ;
   MatrixXd dJcom;
   MatrixXd bdJ;
@@ -63,22 +66,24 @@ public:
   RigidBody* bodies;
   bool initialized;
   bool kinematicsInit;
-  double *cached_q;
+  double *cached_q, *cached_qd;
   int secondDerivativesCached;
 
   RigidBodyManipulator(int n);
   ~RigidBodyManipulator(void);
   
   void compile(void);  // call me after the model is loaded
-  void doKinematics(double* q, int b_compute_second_derivatives);
+  void doKinematics(double* q, int b_compute_second_derivatives, double* qd);
 
   Vector3d getCOM(void);
   MatrixXd getCOMJac(void);
   MatrixXd getCOMJacDot(void);
+  MatrixXd getCOMdJac(void);
   
   MatrixXd forwardKin(const int body_ind, const MatrixXd pts, const bool include_rotations);
   MatrixXd forwardJac(const int body_ind, const MatrixXd pts, const bool include_rotations);
-  MatrixXd forwardJacDot(const int body_ind, const MatrixXd pts, const bool include_rotations);
+  MatrixXd forwardJacDot(const int body_ind, const MatrixXd pts);
+  MatrixXd forwarddJac(const int body_ind, const MatrixXd pts);
 
   void snoptIKfun( VectorXd q, VectorXd q0, VectorXd q_nom, MatrixXd Q, int narg, int* body_ind, VectorXd* pts, VectorXd* f, MatrixXd* G);
 

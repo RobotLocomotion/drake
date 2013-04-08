@@ -1,5 +1,7 @@
 function [com,J,dJ] = getCOM(model,kinsol)
 
+% note: for Jdot, call forwardJacDot with body_ind = 0
+
 if ~isstruct(kinsol)  
   % treat input as getCOM(model,q)
   kinsol = doKinematics(model,kinsol,nargin<2);

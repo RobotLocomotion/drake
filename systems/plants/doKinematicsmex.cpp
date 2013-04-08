@@ -14,8 +14,8 @@ using namespace std;
 
  
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
-  if (nrhs != 3) {
-    mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(model_ptr,q,b_compute_second_derivatives)");
+  if (nrhs != 4) {
+    mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(model_ptr,q,b_compute_second_derivatives,qd)");
   }
   
   RigidBodyManipulator *model=NULL;
@@ -25,12 +25,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:doKinematics:BadInputs","the first argument should be the model_ptr");
   memcpy(&model,mxGetData(prhs[0]),sizeof(model));
   
-  double *q;
+  double *q, *qd=NULL;
   if (mxGetNumberOfElements(prhs[1])!=model->NB)
     mexErrMsgIdAndTxt("Drake:doKinematicsmex:BadInputs", "q must be size %d x 1", model->NB);
   q = mxGetPr(prhs[1]);
   int b_compute_second_derivatives = (int) mxGetScalar(prhs[2]);
-  
-  model->doKinematics(q,b_compute_second_derivatives);
-    
+  if (mxGetNumberOfElements(prhs[3])>0) 
+    qd = mxGetPr(prhs[3]);
+     
+  model->doKinematics(q,b_compute_second_derivatives,qd);
 }

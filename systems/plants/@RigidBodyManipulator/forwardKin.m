@@ -27,9 +27,6 @@ if nargin<5
 end
 
 if (kinsol.mex)
-%   if (include_rotations)
-%     error('Drake:RigidBodyManipulator:InvalidKinematics','Rotations are not mexed yet. Call non-mexed kinematics.');
-%   end
   if (isa(body_ind,'RigidBody')) body_ind = find(obj.body==body_ind,1); end
 
   if (obj.mex_model_ptr==0)
@@ -56,7 +53,7 @@ else
   
   m = size(pts,2);
   pts = [pts;ones(1,m)];
-
+  
   if (include_rotations)
     R = body.T(1:3,1:3);
     x = zeros(6,m);
@@ -68,9 +65,9 @@ else
   end
   
   if (nargout>1)
-    nq = size(body.dTdq,1)/4;
+    nq = obj.num_q;
     if (include_rotations)
-      Jx = reshape(body.dTdq(1:3*nq,:)*pts,nq,[])';
+      Jx = reshape(body.dTdq*pts,nq,[])';
 
       Jr = zeros(3,nq);
       % note the unusual format of dTdq 
@@ -104,7 +101,7 @@ else
         J((j-1)*6+(1:3),:) = Jx((j-1)*3+(1:3),:);
       end
     else
-      J = reshape(body.dTdq(1:3*nq,:)*pts,nq,[])';
+      J = reshape(body.dTdq*pts,nq,[])';
     end
     if (nargout>2)
       if (include_rotations)
@@ -113,7 +110,7 @@ else
       if isempty(body.ddTdqdq)
         error('you must call doKinematics with the second derivative option enabled');
       end
-      ind = repmat(1:3*nq,nq,1)+repmat((0:4*nq:4*nq*(nq-1))',1,3*nq);
+      ind = repmat(1:3*nq,nq,1)+repmat((0:3*nq:3*nq*(nq-1))',1,3*nq);
       dJ = reshape(body.ddTdqdq(ind,:)*pts,nq^2,[])';
     end
   end
