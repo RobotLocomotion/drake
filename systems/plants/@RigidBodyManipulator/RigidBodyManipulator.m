@@ -336,6 +336,11 @@ classdef RigidBodyManipulator < Manipulator
           model.body(i).cached_q = nan;
           model.body(i).cached_qd = nan;
         end
+        % check basic assumption from kinematics:
+        valuecheck(model.body(i).Ttree(end,1:end-1),0);
+        valuecheck(model.body(i).Ttree(end,end),1);
+        valuecheck(model.body(i).T_body_to_joint(end,1:end-1),0);
+        valuecheck(model.body(i).T_body_to_joint(end,end),1);
       end
       
       model = createMexPointer(model);

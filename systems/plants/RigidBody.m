@@ -37,7 +37,7 @@ classdef RigidBody < handle
     dTdq = [];
     ddTdqdq = [];
     Tdot = [];
-    dTdotdqqd = [];
+    dTdqdot = [];
   end
 
   properties (SetAccess=protected, GetAccess=public)    

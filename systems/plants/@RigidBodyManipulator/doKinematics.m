@@ -1,4 +1,4 @@
-function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex)
+function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
 % Computes the (forward) kinematics of the manipulator.
 %
 % @retval kinsol a certificate containing the solution (or information
@@ -10,13 +10,15 @@ function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex)
 %
 
 checkDirty(model);
+if nargin<5, qd=[]; end
 if nargin<4, use_mex = true; end
 if nargin<3, b_compute_second_derivatives=false; end
 
 kinsol.q = q;
+kinsol.qd = qd;
 
 if (use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-  doKinematicsmex(model.mex_model_ptr.getData,q,b_compute_second_derivatives);
+  doKinematicsmex(model.mex_model_ptr.getData,q,b_compute_second_derivatives,qd);
   kinsol.mex = true;
 else
   kinsol.mex = false;
@@ -48,8 +50,10 @@ else
     body = model.body(i);
     if (isempty(body.parent))
       body.T = body.Ttree;
-      body.dTdq = zeros(4*nq,4);
-      body.ddTdqdq = zeros(4*nq*nq,4);
+      body.dTdq = zeros(3*nq,4);
+      body.Tdot = zeros(4);
+      body.dTdqdot = zeros(3*nq,4);
+      body.ddTdqdq = zeros(3*nq*nq,4);
     else
       qi = q(body.dofnum);
       
@@ -62,27 +66,41 @@ else
       
       dTJ = dTjcalc(body.pitch,qi);
       % note the unusual format of dTdq (chosen for efficiently calculating jacobians from many pts)
-      % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
+      % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,:),dq1 ...]
       body.dTdq = body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-      this_dof_ind = body.dofnum+0:nq:4*nq;
-      body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
+      this_dof_ind = body.dofnum+0:nq:3*nq;
+      body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
       
       if (b_compute_second_derivatives)
         % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
         body.ddTdqdq = body.parent.ddTdqdq*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
         
-        ind = 4*nq*(body.dofnum-1) + (1:4*nq);  %ddTdqdqi
+        ind = 3*nq*(body.dofnum-1) + (1:3*nq);  %ddTdqdqi
         body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
         
-        ind = reshape(reshape(body.dofnum+0:nq:4*nq*nq,4,[])',[],1); % ddTdqidq
+        ind = reshape(reshape(body.dofnum+0:nq:3*nq*nq,3,[])',[],1); % ddTdqidq
         body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
         
-        ind = 4*nq*(body.dofnum-1) + this_dof_ind;  % ddTdqidqi
-        body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*ddTjcalc(body.pitch,qi)*body.T_body_to_joint;  % body.jsign^2 is there, but unnecessary (since it's always 1)
+        ind = 3*nq*(body.dofnum-1) + this_dof_ind;  % ddTdqidqi
+        body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTjcalc(body.pitch,qi)*body.T_body_to_joint;  % body.jsign^2 is there, but unnecessary (since it's always 1)
       else
-        body.ddTdqdq = {};
+        body.ddTdqdq = [];
       end
-      body.cached_q = q(body.dofnum);
+      
+      if isempty(qd)
+        body.Tdot = [];
+        body.dTdqdot = [];
+      else
+        qdi = qd(body.dofnum);
+        TJdot = dTJ*qdi;
+        dTJdot = ddTjcalc(body.pitch,qi)*qdi;
+        body.Tdot = body.parent.Tdot*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
+        body.dTdqdot = body.parent.dTdqdot*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
+        body.dTdqdot(this_dof_ind,:) = body.dTdqdot(this_dof_ind,:) + body.parent.Tdot(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot*body.T_body_to_joint;
+        body.cached_qd = qdi;
+      end
+      
+      body.cached_q = qi;
     end
   end
 end

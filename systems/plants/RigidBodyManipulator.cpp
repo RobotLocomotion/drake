@@ -153,6 +153,7 @@ RigidBodyManipulator::RigidBodyManipulator(int n) {
   com = Vector3d::Zero();
   bc = Vector3d::Zero();
   Jcom = MatrixXd::Zero(3,NB);
+  Jcomdot = MatrixXd::Zero(3,NB);
   bJ = MatrixXd::Zero(3,NB);
   dJcom = MatrixXd::Zero(3,NB*NB);
   bdJ = MatrixXd::Zero(3,NB*NB);
@@ -160,6 +161,7 @@ RigidBodyManipulator::RigidBodyManipulator(int n) {
   initialized = false;
   kinematicsInit = false;
   cached_q = new double[n];
+  cached_qd = new double[n];
   secondDerivativesCached = 0;
 }
 
@@ -190,6 +192,7 @@ RigidBodyManipulator::~RigidBodyManipulator() {
   
   delete[] bodies;
   delete[] cached_q;
+  delete[] cached_qd;
 }
 
 void RigidBodyManipulator::compile(void) 
@@ -200,7 +203,7 @@ void RigidBodyManipulator::compile(void)
   initialized=true;
 }
 
-void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivatives)
+void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivatives, double* qd)
 {
   int i,j,k;
   //Check against cached values for bodies[1];
@@ -222,8 +225,9 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
 
   if (!initialized) compile();
 
-  MatrixXd dTmult, dTdTmult = MatrixXd::Zero(4*NB,4);
-  MatrixXd ddTmult, TddTmult;
+  Matrix4d TJdot, dTJdot, dTdotmult;
+  MatrixXd dTdTmult, ddTmult, TddTmult;
+  
   for (i = 1; i < NB + 1; i++) {
     int parent = this->parent[i-1]+1;
     if (parent < 0) {
@@ -254,37 +258,54 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
       bodies[i].dTdq.row(bodies[i].dofnum) += TdTmult.row(0);
       bodies[i].dTdq.row(bodies[i].dofnum + NB) += TdTmult.row(1);
       bodies[i].dTdq.row(bodies[i].dofnum + 2*NB) += TdTmult.row(2);
-      bodies[i].dTdq.row(bodies[i].dofnum + 3*NB) += TdTmult.row(3);
       
       if (b_compute_second_derivatives) {
         //ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
-	//	bodies[i].ddTdqdq = bodies[parent].ddTdqdq * Tmult; // pushed this into the loop below to exploit the sparsity
-	for (std::set<IndexRange>::iterator iter = bodies[parent].ddTdqdq_nonzero_rows_grouped.begin(); iter != bodies[parent].ddTdqdq_nonzero_rows_grouped.end(); iter++) {
-	  bodies[i].ddTdqdq.block(iter->start,0,iter->length,4) = bodies[parent].ddTdqdq.block(iter->start,0,iter->length,4) * Tmult;
-	}
-
-        dTdTmult = bodies[parent].dTdq * dTmult;
-        for (j = 0; j < 4*NB; j++) {
-	  bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + j) = dTdTmult.row(j);
+        //	bodies[i].ddTdqdq = bodies[parent].ddTdqdq * Tmult; // pushed this into the loop below to exploit the sparsity
+        for (std::set<IndexRange>::iterator iter = bodies[parent].ddTdqdq_nonzero_rows_grouped.begin(); iter != bodies[parent].ddTdqdq_nonzero_rows_grouped.end(); iter++) {
+          bodies[i].ddTdqdq.block(iter->start,0,iter->length,4) = bodies[parent].ddTdqdq.block(iter->start,0,iter->length,4) * Tmult;
         }
 
-        for (j = 0; j < 4; j++) {
+        dTdTmult = bodies[parent].dTdq * dTmult;
+        for (j = 0; j < 3*NB; j++) {
+          bodies[i].ddTdqdq.row(3*NB*(bodies[i].dofnum) + j) = dTdTmult.row(j);
+        }
+
+        for (j = 0; j < 3; j++) {
           for (k = 0; k < NB; k++) { 
-	    if (k == bodies[i].dofnum) {
-	      bodies[i].ddTdqdq.row(bodies[i].dofnum + (4*k+j)*NB) += dTdTmult.row(j*NB+k);
-	    } else {
-	      bodies[i].ddTdqdq.row(bodies[i].dofnum + (4*k+j)*NB) = dTdTmult.row(j*NB+k);
-	    }
+            if (k == bodies[i].dofnum) {
+              bodies[i].ddTdqdq.row(bodies[i].dofnum + (3*k+j)*NB) += dTdTmult.row(j*NB+k);
+            } else {
+              bodies[i].ddTdqdq.row(bodies[i].dofnum + (3*k+j)*NB) = dTdTmult.row(j*NB+k);
+            }
           }
         }
         
         ddTjcalc(pitch[i-1],qi,&ddTJ);
         TddTmult = bodies[parent].T*bodies[i].Ttree * Tbinv * ddTJ * Tb;
         
-        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum) += TddTmult.row(0);
-        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum + NB) += TddTmult.row(1);
-        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum + 2*NB) += TddTmult.row(2);
-        bodies[i].ddTdqdq.row(4*NB*(bodies[i].dofnum) + bodies[i].dofnum + 3*NB) += TddTmult.row(3);
+        bodies[i].ddTdqdq.row(3*NB*(bodies[i].dofnum) + bodies[i].dofnum) += TddTmult.row(0);
+        bodies[i].ddTdqdq.row(3*NB*(bodies[i].dofnum) + bodies[i].dofnum + NB) += TddTmult.row(1);
+        bodies[i].ddTdqdq.row(3*NB*(bodies[i].dofnum) + bodies[i].dofnum + 2*NB) += TddTmult.row(2);
+      }
+      
+      if (qd) {
+        double qdi = qd[bodies[i].dofnum];
+        TJdot = dTJ*qdi;
+        ddTjcalc(pitch[i-1],qi,&ddTJ);
+        dTJdot = ddTJ*qdi;
+
+//        body.Tdot = body.parent.Tdot*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
+        dTdotmult = bodies[i].Ttree * Tbinv * TJdot * Tb;
+        bodies[i].Tdot = bodies[parent].Tdot*Tmult + bodies[parent].T * dTdotmult;
+//        body.dTdqdot = body.parent.dTdqdot*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
+        bodies[i].dTdqdot = bodies[parent].dTdqdot* Tmult + bodies[parent].dTdq * dTdotmult;  
+
+//        body.dTdqdot(this_dof_ind,:) = body.dTdqdot(this_dof_ind,:) + body.parent.Tdot(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot*body.T_body_to_joint;
+        dTdotmult = bodies[parent].Tdot*dTmult + bodies[parent].T*bodies[i].Ttree*Tbinv*dTJdot*Tb;
+        bodies[i].dTdqdot.row(bodies[i].dofnum) += dTdotmult.row(0);
+        bodies[i].dTdqdot.row(bodies[i].dofnum + NB) += dTdotmult.row(1);
+        bodies[i].dTdqdot.row(bodies[i].dofnum + 2*NB) += dTdotmult.row(2);
       }
     }
   }
@@ -292,6 +313,7 @@ void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivati
   kinematicsInit = true;
   for (i = 0; i < NB; i++) {
     cached_q[i] = q[i];
+    if (qd) cached_qd[i] = qd[i];
   }
   secondDerivativesCached = b_compute_second_derivatives;
 }
@@ -334,18 +356,38 @@ MatrixXd RigidBodyManipulator::getCOMJacDot(void)
 {
   double m = 0.0;
   double bm;
+  Jcomdot = 0*Jcomdot;
+  
+  for (int i=0; i<=NB; i++) {
+    bm = bodies[i].mass;
+    if (bm>0) {
+      bJ = forwardJacDot(i,bodies[i].com);
+      std::cout << bJ << std::endl; 
+      Jcomdot = (m*Jcomdot + bm*bJ)/(m+bm);
+      m = m+bm;
+    }
+  }
+  return Jcomdot;
+}
+
+MatrixXd RigidBodyManipulator::getCOMdJac(void)
+{
+  double m = 0.0;
+  double bm;
   dJcom = 0*dJcom;
   
   for (int i=0; i<=NB; i++) {
     bm = bodies[i].mass;
     if (bm>0) {
-      bdJ = forwardJacDot(i,bodies[i].com,false);
+      bdJ = forwarddJac(i,bodies[i].com);
       dJcom = (m*dJcom + bm*bdJ)/(m+bm);
       m = m+bm;
     }
   }
   return dJcom;
 }
+
+
 
 MatrixXd RigidBodyManipulator::forwardKin(const int body_ind, const MatrixXd pts, const bool include_rotations)
 {
@@ -408,18 +450,25 @@ MatrixXd RigidBodyManipulator::forwardJac(const int body_ind, const MatrixXd pts
   }
 }
 
-MatrixXd RigidBodyManipulator::forwardJacDot(const int body_ind, const MatrixXd pts, const bool include_rotations)
+MatrixXd RigidBodyManipulator::forwardJacDot(const int body_ind, const MatrixXd pts)
+{
+  int dim = 3, n_pts = pts.cols();
+  MatrixXd tmp = bodies[body_ind].dTdqdot*pts;
+  MatrixXd Jdott = Map<MatrixXd>(tmp.data(),NB,dim*n_pts);
+  MatrixXd Jdot = Jdott.transpose();
+  
+  return Jdot;
+}
+
+MatrixXd RigidBodyManipulator::forwarddJac(const int body_ind, const MatrixXd pts)
 {
   int dim=3, n_pts=pts.cols();
-//  if (include_rotations)
-//    mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Second derivatives of rotations are not implemented yet");
-    
   
   int i,j;
   MatrixXd dJ_reshaped = MatrixXd(NB, dim*n_pts*NB);
   MatrixXd tmp = MatrixXd(dim*NB,n_pts);
   for (i = 0; i < NB; i++) {
-    tmp = bodies[body_ind].ddTdqdq.block(i*NB*(dim+1),0,dim*NB,dim+1)*pts;  //dim*NB x n_pts
+    tmp = bodies[body_ind].ddTdqdq.block(i*NB*dim,0,dim*NB,dim+1)*pts;  //dim*NB x n_pts
     for (j = 0; j < n_pts; j++) {
       dJ_reshaped.block(i,j*dim*NB,1,dim*NB) = tmp.col(j).transpose();
     }
