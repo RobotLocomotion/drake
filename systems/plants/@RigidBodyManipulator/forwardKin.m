@@ -1,29 +1,35 @@
-function [x,J,dJ] = forwardKin(obj,kinsol,body_ind,pts,include_rotations)
+function [x,J,dJ] = forwardKin(obj,kinsol,body_ind,pts,rotation_type)
 % computes the position of pts (given in the body frame) in the global frame
 %
 % @param kinsol solution structure obtained from doKinematics
 % @param body_ind, an integer index for the body.  if body_ind is a
 % RigidBody object, then this method will look up the index for you.
-% @param include_rotations boolean flag indicated whether rotations and
+% @param rotation_type boolean flag indicated whether rotations and
 % derivatives should be computed
 % @retval x the position of pts (given in the body frame) in the global
-% frame. If include_rotations, x is 6-by-num_pts where the final 3
+% frame. If rotation_type, x is 6-by-num_pts where the final 3
 % components are the roll/pitch/yaw of the body frame (same for all points 
 % on the body) 
 % @retval J the Jacobian, dxdq
 % @retval dJ the gradients of the Jacobian, dJdq---not implemented yet for
 % rotations
 %
-% if ~include_rotations:
+% rotation_type  -- 0, no rotation included
+%                -- 1, output Euler angle
+%                -- 2, output quaternion
+% if rotation_type = 0:
 % if pts is a 3xm matrix, then x will be a 3xm matrix
 %  and (following our gradient convention) J will be a ((3xm)x(q))
 %  matrix, with [J1;J2;...;Jm] where Ji = dxidq
-% otherwise:
+% if rotation_type = 1:
 % x will be a 6xm matrix and (following our gradient convention) J will be 
 % a ((6xm)x(q)) matrix, with [J1;J2;...;Jm] where Ji = dxidq
+% if rotation_type = 2:
+% x will be a 7xm matrix and (following out gradient convention) J will be
+% a ((7xm)*(q)) matrix with [J1;J2;....;Jm] where Ji = dxidq
 
 if nargin<5
-  include_rotations = false;
+  rotation_type = 0;
 end
 
 if (kinsol.mex)
@@ -37,11 +43,11 @@ if (kinsol.mex)
   end
   
   if nargout > 2
-    [x,J,dJ] = forwardKinmex(obj.mex_model_ptr.getData,kinsol.q,body_ind,pts,include_rotations);
+    [x,J,dJ] = forwardKinmex(obj.mex_model_ptr.getData,kinsol.q,body_ind,pts,rotation_type);
   elseif nargout > 1
-    [x,J] = forwardKinmex(obj.mex_model_ptr.getData,kinsol.q,body_ind,pts,include_rotations);
+    [x,J] = forwardKinmex(obj.mex_model_ptr.getData,kinsol.q,body_ind,pts,rotation_type);
   else
-    x = forwardKinmex(obj.mex_model_ptr.getData,kinsol.q,body_ind,pts,include_rotations);
+    x = forwardKinmex(obj.mex_model_ptr.getData,kinsol.q,body_ind,pts,rotation_type);
   end
   
 else
@@ -54,19 +60,24 @@ else
   m = size(pts,2);
   pts = [pts;ones(1,m)];
   
-  if (include_rotations)
+  if (rotation_type == 1)
     R = body.T(1:3,1:3);
     x = zeros(6,m);
     x(1:3,:) = body.T(1:3,:)*pts;
 
     x(4:6,:) = repmat(rotmat2rpy(R),1,m);
-  else
+  elseif(rotation_type == 0)
     x = body.T(1:3,:)*pts;
+  elseif(rotation_type == 2)
+      R = body.T(1:3,1:3);
+      x = zeros(7,m);
+      x(1:3,:) = body.T(1:3,:)*pts;
+      x(4:7,:) = bsxfun(@times,rotmat2quat(R),ones(1,m));
   end
   
   if (nargout>1)
     nq = obj.num_q;
-    if (include_rotations)
+    if (rotation_type == 1)
       Jx = reshape(body.dTdq*pts,nq,[])';
 
       Jr = zeros(3,nq);
@@ -94,17 +105,54 @@ else
       sqterm = R(1,1)^2 + R(2,1)^2;
       Jr(3,:) = (R(1,1)*dR21_dq - R(2,1)*dR11_dq)/sqterm;
 
-      Mr = repmat([zeros(3); eye(3)],m,1);
-      J = Mr*Jr;
-      for j=1:m
-        % there must be a better way to write this --sk
-        J((j-1)*6+(1:3),:) = Jx((j-1)*3+(1:3),:);
-      end
-    else
+%       Mr = repmat([zeros(3); eye(3)],m,1);
+%       J = Mr*Jr;
+%       for j=1:m
+%         % there must be a better way to write this --sk
+%         J((j-1)*6+(1:3),:) = Jx((j-1)*3+(1:3),:);
+%       end
+      Jtmp = [Jx;Jr];
+      Jrow_ind = reshape([reshape(1:3*m,3,m);bsxfun(@times,3*m+(1:3)',ones(1,m))],[],1);
+      J = Jtmp(Jrow_ind,:);
+    elseif(rotation_type == 0)
       J = reshape(body.dTdq*pts,nq,[])';
+    elseif(rotation_type == 2)
+        Jx = reshape(body.dTdq(1:3*nq,:)*pts,nq,[])';
+        
+        idx = sub2ind(size(body.dTdq),(1-1)*nq+(1:nq),ones(1,nq));
+        dR11_dq = body.dTdq(idx);
+        idx = sub2ind(size(body.dTdq),(1-1)*nq+(1:nq),2*ones(1,nq));
+        dR12_dq = body.dTdq(idx);
+        idx = sub2ind(size(body.dTdq),(1-1)*nq+(1:nq),3*ones(1,nq));
+        dR13_dq = body.dTdq(idx);
+        idx = sub2ind(size(body.dTdq),(2-1)*nq+(1:nq),ones(1,nq));
+        dR21_dq = body.dTdq(idx);
+        idx = sub2ind(size(body.dTdq),(2-1)*nq+(1:nq),2*ones(1,nq));
+        dR22_dq = body.dTdq(idx);
+        idx = sub2ind(size(body.dTdq),(2-1)*nq+(1:nq),3*ones(1,nq));
+        dR23_dq = body.dTdq(idx);
+        idx = sub2ind(size(body.dTdq),(3-1)*nq+(1:nq),ones(1,nq));
+        dR31_dq = body.dTdq(idx);
+        idx = sub2ind(size(body.dTdq),(3-1)*nq+(1:nq),2*ones(1,nq));
+        dR32_dq = body.dTdq(idx);
+        idx = sub2ind(size(body.dTdq),(3-1)*nq+(1:nq),3*ones(1,nq));
+        dR33_dq = body.dTdq(idx);
+        
+        dqwdq = (dR11_dq+dR22_dq+dR33_dq)/(4*sqrt(1+R(1,1)+R(2,2)+R(3,3)));
+        qw = x(4,1); 
+        wsquare4 = 4*qw^2;
+        dqxdq = ((dR32_dq-dR23_dq)*qw-(R(3,2)-R(2,3))*dqwdq)/wsquare4;
+        dqydq = ((dR13_dq-dR31_dq)*qw-(R(1,3)-R(3,1))*dqwdq)/wsquare4;
+        dqzdq = ((dR21_dq-dR12_dq)*qw-(R(2,1)-R(1,2))*dqwdq)/wsquare4;
+        Jq = [dqwdq;dqxdq;dqydq;dqzdq];
+        
+        Jtmp = [Jx;Jq];
+        Jrow_ind = reshape([reshape(1:3*m,3,m);bsxfun(@times,3*m+(1:4)',ones(1,m))],[],1);
+        J = Jtmp(Jrow_ind,:);
+        
     end
     if (nargout>2)
-      if (include_rotations)
+      if (rotation_type>0)
         warning('Second derivatives of rotations are not implemented yet.');
       end
       if isempty(body.ddTdqdq)

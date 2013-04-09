@@ -80,8 +80,9 @@ public:
   MatrixXd getCOMJacDot(void);
   MatrixXd getCOMdJac(void);
   
-  MatrixXd forwardKin(const int body_ind, const MatrixXd pts, const bool include_rotations);
-  MatrixXd forwardJac(const int body_ind, const MatrixXd pts, const bool include_rotations);
+
+  MatrixXd forwardKin(const int body_ind, const MatrixXd pts, const int rotation_type);
+  MatrixXd forwardJac(const int body_ind, const MatrixXd pts, const int rotation_type);
   MatrixXd forwardJacDot(const int body_ind, const MatrixXd pts);
   MatrixXd forwarddJac(const int body_ind, const MatrixXd pts);
 
