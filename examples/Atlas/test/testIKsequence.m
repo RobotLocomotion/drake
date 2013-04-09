@@ -22,12 +22,12 @@ nq = p.getNumDOF();
 q0 = xstar(1:nq);
 qdot0 = zeros(nq,1);
 kinsol0 = doKinematics(p,q0);
-r_foot_contact_pos = forwardKin(p,kinsol0,r_foot,r_foot_contact_pts,0);
+r_foot_contact_pos = forwardKin(p,kinsol0,r_foot,r_foot_contact_pts,2);
 r_foot_contact_pos(3,:) = 0;
-l_foot_contact_pos = forwardKin(p,kinsol0,l_foot,l_foot_contact_pts,0);
+l_foot_contact_pos = forwardKin(p,kinsol0,l_foot,l_foot_contact_pts,2);
 l_foot_contact_pos(3,:) = 0;
 r_hand_contact_pos = forwardKin(p,kinsol0,r_hand,r_hand_contact_pts,0);
-l_hand_contact_pos = forwardKin(p,kinsol0,l_hand,l_hand_contact_pts,true);
+l_hand_contact_pos = forwardKin(p,kinsol0,l_hand,l_hand_contact_pts,1);
 com_pos0 = getCOM(p,kinsol0);
 com_pos.min = [-inf;-inf;com_pos0(3)];
 com_pos.max = [inf;inf;inf];
@@ -44,9 +44,9 @@ kc5 = ActionKinematicConstraint(p,l_hand,l_hand_contact_pts,l_hand_contact_pos+[
 ks = ks.addKinematicConstraint(kc5);
 kc6 = ActionKinematicConstraint(p,0,[0;0;0],com_pos,tspan,'com');
 ks = ks.addKinematicConstraint(kc6);
-r_toe = r_foot.getContactPoints('toe');
-kc7 = ActionKinematicConstraint.groundConstraint(p,r_foot,r_toe,tspan,'toe_above_ground');
-ks = ks.addKinematicConstraint(kc7);
+% r_toe = r_foot.getContactPoints('toe');
+% kc7 = ActionKinematicConstraint.groundConstraint(p,r_foot,r_toe,tspan,'toe_above_ground');
+% ks = ks.addKinematicConstraint(kc7);
 cost = Point(p.getStateFrame,1);
 cost.base_x = 100;
 cost.base_y = 100;
@@ -62,7 +62,7 @@ options.MajorIterationsLimit = 300;
 % options.Q = Q;
 % options.Qv = 1*eye(nq);
 options.Qa = 5*Q;
-% options.quasiStaticFlag = true;
+options.quasiStaticFlag = true;
 % options.optimizeSparsity = true;
 if(nargin>0)
     options.qtraj0 = qtraj0;
@@ -77,6 +77,6 @@ qtraj = PPTrajectory(pchipDeriv(t_breaks,q,qdot));
 xtraj = PPTrajectory(foh(t_breaks,[q;qdot]));
 xtraj = xtraj.setOutputFrame(p.getStateFrame());
 v = p.constructVisualizer();
-v.playback(xtraj,struct('slider',true))
+v.playback(xtraj,struct('slider',true));
 
 end

@@ -50,7 +50,7 @@ dt_ratio = dt(1:end-1)./(dt(2:end));
 body_ind = cell(1,nSample);
 body_pos = cell(1,nSample);
 world_pos = cell(1,nSample);
-do_rot = cell(1,nSample);
+rotation_type = cell(1,nSample);
 
 % Currently I ONLY handle the support polygon defined by the ground contact
 support_polygon_flags = cell(1,nSample);
@@ -60,7 +60,14 @@ num_sample_support_vertices = zeros(1,nSample);
 iGfun = ones(nq*(nSample+1),1);
 jGvar = (1:nq*(nSample+1))';
 nF = 1;
-cum_num_weights = 0;
+cum_quat_des = 0;
+whigh = [repmat(obj.joint_limit_max,nSample,1);options.qdotf.ub];
+wlow = [repmat(obj.joint_limit_min,nSample,1);options.qdotf.lb];
+if(~isfield(options,'qtraj0'))
+    w0 = [repmat(q0,nSample,1);zeros(nq,1)];
+else
+    w0 = [reshape(options.qtraj0.eval(t_breaks(2:end)),[],1);options.qtraj0.deriv(t_breaks(end))];
+end
 for i = 1:nSample
     ikargs = action_sequence.getIKArguments(t_breaks(i+1));
     j = 1;
@@ -98,34 +105,52 @@ for i = 1:nSample
             minpos = world_pos{i}{n};
         end
         [rows,cols] = size(minpos);
-        if(rows~=3 && rows~=6) error('world pos must have 3 or 6 rows');end
+        if(rows~=3 && rows~=6 && rows ~=7) error('world pos must have 3, 6 or 7 rows');end
         if(body_ind{i}(n) ==0 &&rows~=3) error('com pos must have only 3 rows');end
         if(cols~=mi) error('worldpos must have the same number of elements as bodypos');end
         sizecheck(maxpos,[rows,mi]);
         
         minpos(isnan(minpos)) = -inf;
         maxpos(isnan(maxpos)) = inf;
-        do_rot{i}(n) = (rows == 6);
-        [col_G,row_G] = meshgrid(1:nq,1:rows*cols);
-        iGfun = [iGfun;nF+row_G(:)];
-        jGvar = [jGvar;nq*(i-1)+col_G(:)];
-        nF = nF+rows*cols;
+        rotation_type{i}(n) = 0*(rows == 3)+(rows == 6)+2*(rows == 7);
+        
         support_polygon_flags{i}{n} = maxpos(3,:)<contact_tol;
         num_sequence_support_vertices{i}(n) = sum(support_polygon_flags{i}{n});
-        Fmin = [Fmin;minpos(:)];
-        Fmax = [Fmax;maxpos(:)];
-        n = n+1;
-        
+        if(rotation_type{i}(n) == 0 || rotation_type{i}(n) == 1)
+            Fmin = [Fmin;minpos(:)];
+            Fmax = [Fmax;maxpos(:)];
+            [col_G,row_G] = meshgrid(1:nq,1:rows*cols);
+            iGfun = [iGfun;nF+row_G(:)];
+            jGvar = [jGvar;nq*(i-1)+col_G(:)];
+            nF = nF+rows*cols;
+            n = n+1;
+        elseif(rotation_type{i}(n) == 2)
+            Fmin = [Fmin;reshape(minpos(1:3,:),[],1);ones(2,1)];
+            Fmax = [Fmax;reshape(maxpos(1:3,:),[],1);ones(2,1)];
+            iGfun = [iGfun;nF+repmat((1:3*cols)',nq,1);nF+3*cols+ones(nq+4,1);...
+                nF+3*cols+1+ones(4,1)];
+            jGvar = [jGvar;nq*(i-1)+reshape(bsxfun(@times,1:nq,ones(3*cols,1)),[],1);...
+                nq*(i-1)+(1:nq)';...
+                nq*(nSample+1)+cum_quat_des+(1:4)';...
+                nq*(nSample+1)+cum_quat_des+(1:4)'];
+            quat_max = min([maxpos(4:7,:) (1+eps)*ones(4,1)],[],2);
+            quat_min = max([minpos(4:7,:) -(1+eps)*ones(4,1)],[],2);
+            whigh = [whigh;quat_max];
+            wlow = [wlow;quat_min];
+            quat_des0 = (quat_max+quat_min)/2;
+            quat_des0_norm = sqrt(sum(quat_des0.*quat_des0,1));
+            if(quat_des0_norm ~=0)
+                quat_des0 = quat_des0./quat_des0_norm;
+            else
+                quat_des0 = 1/2*ones(4,1);
+            end
+            w0 = [w0;quat_des0];
+            nF = nF+3*cols+2;
+            cum_quat_des = cum_quat_des+4;
+            n = n+1;
+        end
     end
-    if(options.quasiStaticFlag)
-        num_sample_support_vertices(i) = sum(num_sequence_support_vertices{i});
-        iGfun = [iGfun;nF+repmat((1:2)',nq+num_sample_support_vertices(i),1)];
-        jGvar = [jGvar;reshape(bsxfun(@times,[nq*(i-1)+(1:nq) nq*(nSample+1)+cum_num_weights+(1:num_sample_support_vertices(i))],[1;1]),[],1)];
-        Fmin = [Fmin;0;0];
-        Fmax = [Fmax;0;0];
-        cum_num_weights = cum_num_weights+num_sample_support_vertices(i);
-        nF = nF+2;
-    end
+    
 end
 total_sequence_support_vertices = sum(cat(2,num_sequence_support_vertices{:}));
 % Suppose the joint angles are interpolated using cubic splines, then the
@@ -166,25 +191,24 @@ accel_mat_qdotf = accel_mat2(:,end-nq+1:end);
 A = [];
 iAfun = [];
 jAvar = [];
-whigh = [repmat(obj.joint_limit_max,nSample,1);options.qdotf.ub];
-wlow = [repmat(obj.joint_limit_min,nSample,1);options.qdotf.lb];
-if(~isfield(options,'qtraj0'))
-    w0 = [repmat(q0,nSample,1);zeros(nq,1)];
-else
-    w0 = [reshape(options.qtraj0.eval(t_breaks(2:end)),[],1);options.qtraj0.deriv(t_breaks(end))];
-end
+
+
 if(options.quasiStaticFlag)
-    Fmax = [Fmax;ones(nSample,1)];
-    Fmin = [Fmin;ones(nSample,1)];
     whigh = [whigh;ones(total_sequence_support_vertices,1)];
     wlow = [wlow;zeros(total_sequence_support_vertices,1)];
     cum_num_weights = 0;
     for i = 1:nSample
-        iAfun = [iAfun;(nF+i)*ones(num_sample_support_vertices(i),1)];
-        jAvar = [jAvar;nq*(nSample+1)+cum_num_weights+(1:num_sample_support_vertices(i))'];
+        num_sample_support_vertices(i) = sum(num_sequence_support_vertices{i});
+        iGfun = [iGfun;nF+repmat((1:2)',nq+num_sample_support_vertices(i),1)];
+        jGvar = [jGvar;reshape(bsxfun(@times,[nq*(i-1)+(1:nq) nq*(nSample+1)+cum_quat_des+cum_num_weights+(1:num_sample_support_vertices(i))],[1;1]),[],1)];
+        iAfun = [iAfun;nF+3*ones(num_sample_support_vertices(i),1)];
+        jAvar = [jAvar;nq*(nSample+1)+cum_quat_des+cum_num_weights+(1:num_sample_support_vertices(i))'];
         A = [A;ones(num_sample_support_vertices(i),1)];
         w0 = [w0;1/num_sample_support_vertices(i)*ones(num_sample_support_vertices(i),1)];
+        Fmin = [Fmin;0;0;1];
+        Fmax = [Fmax;0;0;1];
         cum_num_weights = cum_num_weights+num_sample_support_vertices(i);
+        nF = nF+3;
     end
 end
 nF = length(Fmin);
@@ -200,14 +224,28 @@ if(options.optimizeSparsity)
     w_tmp = rand(length(w0),nTrials);
     G_tmp = zeros(length(iGfun),nTrials);
     for i = 1:nTrials
-        [~,G_tmp(:,i)] = ik_tmp(w_tmp(:,i),obj,nq,nSample+1,nF,nG,options.Qa,options.Qv,options.Q,body_ind,body_pos,do_rot,q0,qdot0,options.q_nom,velocity_mat,accel_mat,accel_mat_qdot0,accel_mat_qdotf,num_sequence_support_vertices,num_sample_support_vertices,total_sequence_support_vertices,support_polygon_flags,options.quasiStaticFlag,true(length(iGfun),1));
+        [~,G_tmp(:,i)] = ik_tmp(w_tmp(:,i),obj,nq,nSample+1,nF,nG,...
+            options.Qa,options.Qv,options.Q,body_ind,body_pos,...
+            rotation_type,q0,qdot0,options.q_nom,velocity_mat,accel_mat,...
+            accel_mat_qdot0,accel_mat_qdotf,num_sequence_support_vertices,...
+            num_sample_support_vertices,total_sequence_support_vertices,...
+            cum_quat_des,support_polygon_flags,options.quasiStaticFlag,true(length(iGfun),1));
     end
     nonzero_ind = any(G_tmp~=0,2);
     iGfun = iGfun(nonzero_ind);
     jGvar = jGvar(nonzero_ind);
-    ik = @(w) ik_tmp(w,obj,nq,nSample+1,nF,nG,options.Qa,options.Qv,options.Q,body_ind,body_pos,do_rot,q0,qdot0,options.q_nom,velocity_mat,accel_mat,accel_mat_qdot0,accel_mat_qdotf,num_sequence_support_vertices,num_sample_support_vertices,total_sequence_support_vertices,support_polygon_flags,options.quasiStaticFlag,nonzero_ind);
+    ik = @(w) ik_tmp(w,obj,nq,nSample+1,nF,nG,options.Qa,options.Qv,...
+        options.Q,body_ind,body_pos,rotation_type,q0,qdot0,options.q_nom,...
+        velocity_mat,accel_mat,accel_mat_qdot0,accel_mat_qdotf,...
+        num_sequence_support_vertices,num_sample_support_vertices,...
+        total_sequence_support_vertices,cum_quat_des,support_polygon_flags,...
+        options.quasiStaticFlag,nonzero_ind);
 else
-    ik = @(w) ik_tmp(w,obj,nq,nSample+1,nF,nG,options.Qa,options.Qv,options.Q,body_ind,body_pos,do_rot,q0,qdot0,options.q_nom,velocity_mat,accel_mat,accel_mat_qdot0,accel_mat_qdotf,num_sequence_support_vertices,num_sample_support_vertices,total_sequence_support_vertices,support_polygon_flags,options.quasiStaticFlag,true(length(iGfun),1));
+    ik = @(w) ik_tmp(w,obj,nq,nSample+1,nF,nG,options.Qa,options.Qv,options.Q,...
+        body_ind,body_pos,rotation_type,q0,qdot0,options.q_nom,velocity_mat,...
+        accel_mat,accel_mat_qdot0,accel_mat_qdotf,num_sequence_support_vertices,...
+        num_sample_support_vertices,total_sequence_support_vertices,cum_quat_des,...
+        support_polygon_flags,options.quasiStaticFlag,true(length(iGfun),1));
 end
 global SNOPT_USERFUN;
 SNOPT_USERFUN = ik;
@@ -216,7 +254,10 @@ SNOPT_USERFUN = ik;
 % tic
 [w,F,info] = snopt(w0,wlow,whigh,Fmin,Fmax,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
 % toc
-
+if (info~=1)
+  [str,cat_] = snoptInfo(info);
+  warning('SNOPT:InfoNotOne',['SNOPT exited w/ info = ',num2str(info),'.\n',cat_,': ',str,'\n  Check p19 of Gill06 for more information.']);
+end
 q = w(1:(nq*nSample));
 qdotf = w(nq*nSample+(1:nq));
 qdot = [qdot0 reshape(velocity_mat*[q0;q(:)],nq,nSample-1) qdotf];
@@ -226,7 +267,10 @@ q = [q0 reshape(q,nq,nSample)];
 % keyboard;
 end
 
-function [f,G] = ik_tmp(w,obj,nq,nT,nF,nG,Qa,Qv,Q,body_ind,body_pos,do_rot,q0,qdot0,q_nom,velocity_mat,accel_mat,accel_mat_qd0,accel_mat_qdf,num_sequence_support_vertices,num_sample_support_vertices,nWeights,support_vert_flags,quasiStaticFlag,nonzero_ind_G)
+function [f,G] = ik_tmp(w,obj,nq,nT,nF,nG,Qa,Qv,Q,body_ind,body_pos,...
+    rotation_type,q0,qdot0,q_nom,velocity_mat,accel_mat,accel_mat_qd0,...
+    accel_mat_qdf,num_sequence_support_vertices,num_sample_support_vertices,...
+    nWeights,num_quat_des,support_vert_flags,quasiStaticFlag,nonzero_ind_G)
 % profile on
 % [qdot(1);...;qdot(nT-1)] = velocity_mat*[q(0);q(1);...;q(nT)];
 % [qddot(0);...;qdot(nT)] =
@@ -235,8 +279,9 @@ f = zeros(nF,1);
 G = zeros(nG,1);
 q = reshape(w(1:nq*(nT-1)),nq,nT-1);
 qdotf = w(nq*(nT-1)+(1:nq));
+quat_des_all = w(nq*nT+(1:num_quat_des));
 if(quasiStaticFlag)
-    weights = mat2cell(w(nq*nT+(1:nWeights)),num_sample_support_vertices,1);
+    weights = mat2cell(w(nq*nT+num_quat_des+(1:nWeights)),num_sample_support_vertices,1);
 end
 qdot = [reshape(velocity_mat*[q0;q(:)],nq,nT-2) qdotf]; %[qdot(1) qdot(2) ... qdot(nT)]
 qddot = reshape(accel_mat*[q0;q(:)]+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf,nq,nT); % [qddot(0) qddot(1) ... qddot(nT)]
@@ -253,46 +298,75 @@ G(nq*(nT-1)+(1:nq)) = reshape(reshape(Qa*qddot,1,[])*accel_mat_qdf,[],1)...
 if(nF<2) return; end
 nf = 1;
 ng = nq*nT;
+cum_quat_des = 0;
+if(quasiStaticFlag)
+    com = cell(1,nT-1);
+    dcom = cell(1,nT-1);
+    support_vert_pos = cell(1,nT-1);
+    dsupport_vert_pos = cell(1,nT-1);
+end
 for i = 1:nT-1
     kinsol = doKinematics(obj,q(:,i));
     if(quasiStaticFlag)
-        support_vert_pos = zeros(2,num_sample_support_vertices(i));
-        dsupport_vert_pos = zeros(2*num_sample_support_vertices(i),nq);
+        support_vert_pos{i} = zeros(2,num_sample_support_vertices(i));
+        dsupport_vert_pos{i} = zeros(2*num_sample_support_vertices(i),nq);
         total_body_support_vert = 0;
-        [com,dcom] = getCOM(obj,kinsol);
+        [com{i},dcom{i}] = getCOM(obj,kinsol);
     end
     for j = 1:length(body_ind{i})
         
         if(body_ind{i}(j) == 0)
             if(quasiStaticFlag)
-                x = com;
-                J = dcom;
+                x = com{i};
+                J = dcom{i};
             else
                 [x,J] = getCOM(obj,kinsol);
             end
         else
-           [x,J] = forwardKin(obj,kinsol,body_ind{i}(j),body_pos{i}{j},do_rot{i}(j)); 
+           [x,J] = forwardKin(obj,kinsol,body_ind{i}(j),body_pos{i}{j},rotation_type{i}(j)); 
            if(quasiStaticFlag)
-               support_vert_pos(:,total_body_support_vert+(1:num_sequence_support_vertices{i}(j)))...
+               support_vert_pos{i}(:,total_body_support_vert+(1:num_sequence_support_vertices{i}(j)))...
                    = x(1:2,support_vert_flags{i}{j});
                Jtmp = reshape(J,size(x,1),size(x,2),nq);
-               dsupport_vert_pos(total_body_support_vert*2+(1:2*num_sequence_support_vertices{i}(j)),:)...
+               dsupport_vert_pos{i}(total_body_support_vert*2+(1:2*num_sequence_support_vertices{i}(j)),:)...
                    = reshape(Jtmp(1:2,support_vert_flags{i}{j},:),[],nq);
                total_body_support_vert = total_body_support_vert+num_sequence_support_vertices{i}(j);
            end
         end
-        n = numel(x);
-        f(nf+(1:n)) = x(:);
-        G(ng+(1:n*nq)) = J(:);
-        nf = nf+n;
-        ng = ng+n*nq;
+        [rows,cols] = size(x);
+        n = rows*cols;
+        if(rotation_type{i}(j) ==0|| rotation_type{i}(j) == 1)
+            f(nf+(1:n)) = x(:);
+            G(ng+(1:numel(J))) = J(:);
+            nf = nf+n;
+            ng = ng+numel(J);
+        elseif(rotation_type{i}(j) == 2)
+            f(nf+(1:3*cols)) = reshape(x(1:3,:),[],1);
+            quat = x(4:7,1);
+            quat_des = quat_des_all(cum_quat_des+(1:4));
+            f(nf+3*cols+1) = sum(quat.*quat_des,1)^2;
+            f(nf+3*cols+1+1) = sum(quat_des.*quat_des,1);
+            J_rows = bsxfun(@plus,(1:7)',(0:(cols-1))*7);
+            pos_rows = reshape(J_rows(1:3,:),[],1);
+            dquatdq = J(4:7,:);
+            G(ng+(1:3*cols*nq)) = reshape(J(pos_rows,:),[],1);
+            G(ng+3*cols*nq+(1:(nq+4))) = (quat'*quat_des)*[2*quat_des'*dquatdq 2*quat'];
+            G(ng+3*cols*nq+(nq+4)+(1:4)) = 2*quat_des;
+            nf = nf+3*cols+2;
+            ng = ng+3*cols*nq+(nq+4)+4;
+            cum_quat_des = cum_quat_des+4;
+        end
+        
     end
-    if(quasiStaticFlag)
-        f(nf+(1:2)) = support_vert_pos*weights{i}-com(1:2);
-        G(ng+(1:2*(nq+num_sample_support_vertices(i)))) = [reshape([weights{i}'*dsupport_vert_pos(1:2:end,:)-dcom(1,:);...
-            weights{i}'*dsupport_vert_pos(2:2:end,:)-dcom(2,:)],[],1);...
-            reshape(support_vert_pos,[],1)];
-        nf = nf+2;
+end
+if(quasiStaticFlag)
+    for i = 1:nT-1
+        f(nf+(1:2)) = support_vert_pos{i}*weights{i}-com{i}(1:2);
+        f(nf+3) = 0;
+        G(ng+(1:2*(nq+num_sample_support_vertices(i)))) = [reshape([weights{i}'*dsupport_vert_pos{i}(1:2:end,:)-dcom{i}(1,:);...
+            weights{i}'*dsupport_vert_pos{i}(2:2:end,:)-dcom{i}(2,:)],[],1);...
+            reshape(support_vert_pos{i},[],1)];
+        nf = nf+3;
         ng = ng+2*(nq+num_sample_support_vertices(i));
     end
 end

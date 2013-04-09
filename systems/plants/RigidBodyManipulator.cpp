@@ -386,14 +386,17 @@ MatrixXd RigidBodyManipulator::getCOMdJac(void)
   return dJcom;
 }
 
-
-
-MatrixXd RigidBodyManipulator::forwardKin(const int body_ind, const MatrixXd pts, const bool include_rotations)
+/*
+ * rotation_type  0, no rotation
+ * 		  1, output Euler angles
+ * 		  2, output quaternion [w,x,y,z], with w>=0
+ */
+MatrixXd RigidBodyManipulator::forwardKin(const int body_ind, const MatrixXd pts, const int rotation_type)
 {
   // WARNING:  pts should have a trailing 1 attached to it (4xn_pts)
   int dim=3, n_pts = pts.cols();
   MatrixXd T = bodies[body_ind].T.topLeftCorner(dim,dim+1);
-  if (include_rotations) {
+  if (rotation_type == 1) {
     Vector3d rpy;
     rpy << atan2(T(2,1),T(2,2)), atan2(-T(2,0),sqrt(T(2,1)*T(2,1) + T(2,2)*T(2,2))), atan2(T(1,0),T(0,0));
     // NOTE: we're assuming an X-Y-Z convention was used to construct T
@@ -402,19 +405,32 @@ MatrixXd RigidBodyManipulator::forwardKin(const int body_ind, const MatrixXd pts
     X.block(0,0,3,n_pts) = T*pts;
     X.block(3,0,3,n_pts) = rpy.replicate(1,n_pts);
     return X;
-  } else {
+  } else if(rotation_type == 0) {
     return T*pts;
+  }
+  else if(rotation_type == 2)
+  {
+	Vector4d quat;
+	double qw = sqrt(1+T(0,0)+T(1,1)+T(2,2))/2;
+	double qx = (T(2,1)-T(1,2))/(4*qw);
+	double qy = (T(0,2)-T(2,0))/(4*qw);
+	double qz = (T(1,0)-T(0,1))/(4*qw);
+	quat << qw, qx, qy, qz;
+	MatrixXd X = MatrixXd::Zero(7,n_pts);
+	X.block(0,0,3,n_pts) = T*pts;
+	X.block(3,0,4,n_pts) = quat.replicate(1,n_pts);
+	return X;
   }
 }
 
-MatrixXd RigidBodyManipulator::forwardJac(const int body_ind, const MatrixXd pts, const bool include_rotations)
+MatrixXd RigidBodyManipulator::forwardJac(const int body_ind, const MatrixXd pts, const int rotation_type)
 {
   int dim = 3, n_pts = pts.cols();
   MatrixXd tmp = bodies[body_ind].dTdq.topLeftCorner(dim*NB,dim+1)*pts;
   MatrixXd Jt = Map<MatrixXd>(tmp.data(),NB,dim*n_pts);
   MatrixXd J = Jt.transpose();
   
-  if (include_rotations) {
+  if (rotation_type == 1) {
     MatrixXd R = bodies[body_ind].T.topLeftCorner(dim,dim);
     /*
      * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
@@ -444,10 +460,49 @@ MatrixXd RigidBodyManipulator::forwardJac(const int body_ind, const MatrixXd pts
       Jfull.block(i*6+3,0,3,NB) = Jr;
     }
     return Jfull;
-  } else {
+  } else if(rotation_type == 0){
     return J;
   }
+  else if(rotation_type == 2)
+  {
+    MatrixXd R = bodies[body_ind].T.topLeftCorner(dim,dim);
+    /*
+     * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
+     * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
+     */
+    
+    VectorXd dR21_dq(NB),dR22_dq(NB),dR20_dq(NB),dR00_dq(NB),dR10_dq(NB),dR01_dq(NB),dR02_dq(NB),dR11_dq(NB),dR12_dq(NB);
+    for (int i=0; i<NB; i++) {
+      dR21_dq(i) = bodies[body_ind].dTdq(2*NB+i,1);
+      dR22_dq(i) = bodies[body_ind].dTdq(2*NB+i,2);
+      dR20_dq(i) = bodies[body_ind].dTdq(2*NB+i,0);
+      dR00_dq(i) = bodies[body_ind].dTdq(i,0);
+      dR10_dq(i) = bodies[body_ind].dTdq(NB+i,0);
+      dR01_dq(i) = bodies[body_ind].dTdq(i,1);
+      dR02_dq(i) = bodies[body_ind].dTdq(i,2);
+      dR11_dq(i) = bodies[body_ind].dTdq(NB+i,1);
+      dR12_dq(i) = bodies[body_ind].dTdq(NB+i,2);
+    }
+
+    double qw = sqrt(1+R(0,0)+R(1,1)+R(2,2))/2;
+    MatrixXd Jq = MatrixXd::Zero(4,NB);
+    VectorXd dqwdq = (dR00_dq+dR11_dq+dR22_dq)/(4*sqrt(1+R(0,0)+R(1,1)+R(2,2)));
+    double wsquare4 = 4*qw*qw;
+    Jq.block(0,0,1,NB) = dqwdq.transpose();
+    Jq.block(1,0,1,NB) = (((dR21_dq-dR12_dq)*qw-(R(2,1)-R(1,2))*dqwdq).transpose())/wsquare4;
+    Jq.block(2,0,1,NB) = (((dR02_dq-dR20_dq)*qw-(R(0,2)-R(2,0))*dqwdq).transpose())/wsquare4;
+    Jq.block(3,0,1,NB) = (((dR10_dq-dR01_dq)*qw-(R(1,0)-R(0,1))*dqwdq).transpose())/wsquare4;
+    
+    MatrixXd Jfull = MatrixXd::Zero(7*n_pts,NB);
+    for (int i=0;i<n_pts;i++)
+    {
+	    Jfull.block(i*7,0,3,NB) = J.block(i*3,0,3,NB);
+	    Jfull.block(i*7+3,0,4,NB) = Jq;
+    }
+    return Jfull;
+  }
 }
+
 
 MatrixXd RigidBodyManipulator::forwardJacDot(const int body_ind, const MatrixXd pts)
 {
