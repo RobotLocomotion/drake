@@ -39,12 +39,12 @@ if ~isfield(options,'sqrtmethod') options.sqrtmethod = true; end
 if (~isCT(obj)) error('only handle CT case so far'); end
 
 typecheck(xtraj,'Trajectory');
-sizecheck(xtraj,[getNumStates(obj),1]);
+xtraj = inOutputFrame(xtraj,getStateFrame(obj));
 typecheck(utraj,'Trajectory');
-sizecheck(utraj,[getNumInputs(obj),1]);
+utraj = inOutputFrame(utraj,getInputFrame(obj));
 
-nX = prod(xtraj.dim);
-nU = prod(utraj.dim);
+nX = obj.getNumStates();
+nU = obj.getNumInputs();
 tspan=options.tspan;
 
 if ~isfield(options,'N') options.N=zeros(nX,nU); end
@@ -304,6 +304,8 @@ function K = Ksoln(S,Ri,B)
 end
 
 function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj,options)
+  % see doc/derivations/tvlqr_latexit.pdf 
+
   x0 = xtraj.eval(t); u0 = utraj.eval(t); xdot0 = xdottraj.eval(t);
   Q{1}=Qtraj{1}.eval(t); Q{2}=Qtraj{2}.eval(t); Q{3}=Qtraj{3}.eval(t); 
   R{1}=Rtraj{1}.eval(t); R{2}=Rtraj{2}.eval(t); R{3}=Rtraj{3}.eval(t);
@@ -328,8 +330,8 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj
     warning('Drake:TVLQR:NegativeS','S is not positive definite'); 
   end
     
-  Sdot{2} = -((A'-(N+Sorig*B)*Ri*B')*S{2} + 2*Sorig*c + Q{2} - (N+Sorig*B)*Ri*R{2});
   rs = (R{2}+B'*S{2})/2;
+  Sdot{2} = -(Q{2} - 2*(N+Sorig*B)*Ri*rs + A'*S{2} + 2*Sorig*c);
   Sdot{3} = -(Q{3}+R{3} - rs'*Ri*rs + S{2}'*c);  
 end
     
