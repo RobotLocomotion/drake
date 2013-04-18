@@ -105,6 +105,11 @@ while i<=length(varargin)
   minpos(isnan(minpos))=-inf;
   maxpos(isnan(maxpos))=inf;
   
+  if(all(all(isinf(minpos)))&&all(all(isinf(maxpos))))
+      body_ind = body_ind(1:end-1);
+      continue;
+  end
+
   body_pos{n} = bodyposi;
   rotation_type(n)= (rows==6)+2*(rows ==7);
   if(rows == 3 ||rows == 6)
@@ -167,7 +172,7 @@ else
 % valuecheck(Gmex,G);
 % return;
 snsetr('Major optimality tolerance',5e-3);
-snseti('Major Iterations Limit',300);
+snseti('Major Iterations Limit',100);
   global SNOPT_USERFUN;
   SNOPT_USERFUN = @(w) ik(w,obj,nq,nF,nG,q_nom,Q,body_ind,body_pos,rotation_type);
   
