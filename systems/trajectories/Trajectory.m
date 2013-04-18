@@ -236,7 +236,7 @@ classdef Trajectory < DrakeSystem
     end
     
     function h=fnplt(obj,plotdims)
-      if (nargin>1 && ~isempty(plotdims) && any(plotdims>obj.dim | plotdims<1)) error('plotdims out of range'); end
+      if (nargin>1 && ~isempty(plotdims) && any(plotdims>prod(obj.dim) | plotdims<1)) error('plotdims out of range'); end
       breaks=obj.getBreaks();
       m=5; t=linspace(0,1,m)'; n=length(breaks)-1;
       ts = repmat(1-t,1,n).*repmat(breaks(1:end-1),m,1) + repmat(t,1,n).*repmat(breaks(2:end),m,1);
@@ -244,11 +244,17 @@ classdef Trajectory < DrakeSystem
       pts = obj.eval(ts);
       if (prod(obj.dim)==1)
         h=plot(ts,squeeze(pts),'b.-','LineWidth',1,'MarkerSize',5);
+        xlabel('t');
+        ylabel(obj.getOutputFrame.coordinates{1});
       elseif (nargin>1 && ~isempty(plotdims) && length(plotdims)==1)
         h=plot(ts,squeeze(pts(plotdims,:)),'b.-','LineWidth',1,'MarkerSize',5);
+        xlabel('t');
+        ylabel(obj.getOutputFrame.coordinates{plotdims});
       else
         if (nargin<2 || isempty(plotdims)) plotdims=[1,2]; end
         h=plot(pts(plotdims(1),:),pts(plotdims(2),:),'b-',pts(plotdims(1),[1:m:end,end]),pts(plotdims(2),[1:m:end,end]),'b.','LineWidth',1);% ,'MarkerSize',5);
+        xlabel(obj.getOutputFrame.coordinates{plotdims(1)});
+        ylabel(obj.getOutputFrame.coordinates{plotdims(2)});
       end
     end
     

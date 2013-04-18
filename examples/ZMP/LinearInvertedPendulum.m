@@ -67,6 +67,10 @@ classdef LinearInvertedPendulum < LinearSystem
       if(isTI(obj))
         [~,V] = lqr(obj,dZMP.eval(dZMP.tspan(end)));
       else
+        % note: i've merged this in from hongkai (it's a time crunch!), but i don't agree with
+        % it. it's bad form to assume that the tv system is somehow stationary after D.tspan(end).  
+        % - Russ
+        valuecheck(dZMP.tspan(end),obj.D.tspan(end)); % assume this
         t_end = obj.D.tspan(end);
         ti_obj = LinearSystem(obj.Ac.eval(t_end),obj.Bc.eval(t_end),[],[],obj.C.eval(t_end),obj.D.eval(t_end));
         ti_obj = setStateFrame(ti_obj,obj.getStateFrame());
@@ -87,19 +91,22 @@ classdef LinearInvertedPendulum < LinearSystem
       options.tspan = linspace(dZMP.tspan(1),dZMP.tspan(2),10);
       options.sqrtmethod = false;
       if(isfield(options,'dCOM'))
-        options.dCOM = setOutputFrame(options.dCOM,obj.getStateFrame);
-%        options.dCOM = options.dCOM.inFrame(obj.getStateFrame);
-%        x0traj = setOutputFrame(ConstantTrajectory([0;0;0;0]),obj.getStateFrame);
+%        options.dCOM = setOutputFrame(options.dCOM,obj.getStateFrame);
+        options.dCOM = options.dCOM.inFrame(obj.getStateFrame);
         options.xdtraj = options.dCOM;
         Q = eye(4);
       else
         Q = zeros(4);
       end
+      % note: the system is actually linear, so x0traj and u0traj should
+      % have no effect on the numerical results (they just set up the
+      % frames)
       x0traj = setOutputFrame(ConstantTrajectory([0;0;0;0]),obj.getStateFrame);
+      u0traj = setOutputFrame(ConstantTrajectory([0;0]),obj.getInputFrame);
       options.Qy = diag([0 0 0 0 1 1]);
       options.ydtraj = [x0traj;dZMP];
       S = warning('off','Drake:TVLQR:NegativeS');  % i expect to have some zero eigenvalues, which numerically fluctuate below 0
-      [c,Vt] = tvlqr(obj,x0traj,ConstantTrajectory([0;0]),Q,zeros(2),V,options);
+      [c,Vt] = tvlqr(obj,x0traj,u0traj,Q,zeros(2),V,options);
       warning(S);
     end
     
@@ -107,18 +114,15 @@ classdef LinearInvertedPendulum < LinearSystem
       % got a com plan from the ZMP tracking controller
       if(nargin<5) options = struct(); end
       c = ZMPtracker(obj,dZMP,options);
-      % change function handle trajectory to pptrajectory for speed
-      if(isa(c,'FunctionHandleTrajectory'))
-        warning('Changing xddot to a PPTrajectory');
-		c = flipToPP(c);
-      end
           
       doubleIntegrator = LinearSystem([zeros(2),eye(2);zeros(2,4)],[zeros(2);eye(2)],[],[],eye(4),zeros(4,2));
-      doubleIntegrator = setInputFrame(doubleIntegrator,getOutputFrame(c));
-      doubleIntegrator = setOutputFrame(doubleIntegrator,getInputFrame(c));
+      doubleIntegrator = setInputFrame(doubleIntegrator,getInputFrame(obj));
+      doubleIntegrator = setStateFrame(doubleIntegrator,getStateFrame(obj));
+      doubleIntegrator = setOutputFrame(doubleIntegrator,getStateFrame(obj));  % looks like a typo, but this is intentional: output is only the LIMP state
       sys = feedback(doubleIntegrator,c);
       
       comtraj = simulate(sys,dZMP.tspan,[com0;comdot0]);
+      comtraj = inOutputFrame(comtraj,sys.getOutputFrame);
       comtraj = comtraj(1:2);  % only return position (not velocity)
     end
   end

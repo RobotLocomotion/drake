@@ -301,8 +301,10 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
           continue;
         elseif isempty(breaks)
           [breaks,coefs,l,k,d] = unmkpp(zoh(breaks2,repmat(coefs,[d*0+1,length(breaks2)])));
+          coefs = reshape(coefs,[d,l,k]);
         elseif isempty(breaks2)
           [breaks2,coefs2,l2,k2,d2] = unmkpp(zoh(breaks,repmat(coefs2,[d2*0+1,length(breaks)])));
+          coefs2 = reshape(coefs2,[d2,l2,k2]);
         elseif ~isequal(breaks,breaks2)
           warning('Drake:PPTrajectory:DifferentBreaks','vertcat for pptrajectories with different breaks is not supported (yet).  kicking out to function handle version');
           c = vertcat@Trajectory(a,varargin{:});
@@ -332,7 +334,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         coefs = reshape(coefs,[d,l,k]);
         s.subs = {s.subs{:},':',':'};
         coefs = subsref(coefs,s);
-        d=size(coefs); d=d(1:end-2);
+        d=size(subsref(a.eval(a.tspan(1)),s));
         varargout{1} = PPTrajectory(mkpp(breaks,coefs,d));
       elseif nargout>0  % use builtin
         varargout=cell(1,nargout);
