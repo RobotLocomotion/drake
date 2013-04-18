@@ -112,6 +112,9 @@ for i = 1:nSample
         
         minpos(isnan(minpos)) = -inf;
         maxpos(isnan(maxpos)) = inf;
+        if(all(all(isinf(minpos)))&&all(all(isinf(maxpos))))
+            continue;
+        end
         rotation_type{i}(n) = 0*(rows == 3)+(rows == 6)+2*(rows == 7);
         
         support_polygon_flags{i}{n} = maxpos(3,:)<contact_tol;
