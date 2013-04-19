@@ -460,9 +460,12 @@ classdef TaylorVar
       % find the index of the first TaylorVar
       for i=1:length(varargin), if (isa(varargin{i},'TaylorVar')), obj=varargin{i}; break; end; end
       nX=obj.nX; order=length(obj.df);
+
+      % NOTE: use df' instead of df internally here (for efficiency), then
+      % convert it back at the end
       
       f=[];
-      for o=1:order, df{o}=sparse(0,0); end
+      for o=1:order, df{o}=sparse(nX^o,0); end
       
       for i=1:length(varargin)
         if (isa(varargin{i},'TaylorVar'))
@@ -478,8 +481,8 @@ classdef TaylorVar
           if (varargin{i}.nX ~=nX) error('dimension mismatch'); end
           if (length(varargin{i}.df) ~= order) error('order mismatch'); end
           for o=1:order
-            df{o}(oldinds,:)=df{o};
-            df{o}(inds,:)=varargin{i}.df{o};
+            df{o}(:,oldinds)=df{o};
+            df{o}(:,inds)=varargin{i}.df{o}';
           end
         else  % vertcat in a const
           % figure out indices where the new data will be inserted:
@@ -493,11 +496,12 @@ classdef TaylorVar
           f=[f,varargin{i}];
           n=prod(size(varargin{i}));
           for o=1:order
-            df{o}(oldinds,:)=df{o};
-            df{o}(inds,:)=sparse(n,nX^o);
+            df{o}(:,oldinds)=df{o};
+            df{o}(:,inds)=sparse(nX^o,n);
           end
         end
       end
+      for o=1:order, df{o}=df{o}'; end
       tv=TaylorVar(f,df);
     end
     function tv = vertcat(varargin)
@@ -506,7 +510,7 @@ classdef TaylorVar
       nX=varargin{tvi}.nX; order=length(varargin{tvi}.df);
       
       f=[];
-      for o=1:order, df{o}=sparse(0,0); end
+      for o=1:order, df{o}=sparse(nX^o,0); end
       
       for i=1:length(varargin)
         if (isa(varargin{i},'TaylorVar'))
@@ -522,8 +526,8 @@ classdef TaylorVar
           if (varargin{i}.nX ~=nX) error('dimension mismatch'); end
           if (length(varargin{i}.df) ~= order) error('order mismatch'); end
           for o=1:order
-            df{o}(oldinds,:)=df{o};
-            df{o}(inds,:)=varargin{i}.df{o};
+            df{o}(:,oldinds)=df{o};
+            df{o}(:,inds)=varargin{i}.df{o}';
           end
         else  % vertcat in a const
           % figure out indices where the new data will be inserted:
@@ -537,11 +541,12 @@ classdef TaylorVar
           f=[f;varargin{i}];
           n=prod(size(varargin{i}));
           for o=1:order
-            df{o}(oldinds,:)=df{o};
-            df{o}(inds,:)=sparse(n,nX^o);
+            df{o}(:,oldinds)=df{o};
+            df{o}(:,inds)=sparse(nX^o,n);
           end
         end
       end
+      for o=1:order, df{o}=df{o}'; end
       tv=TaylorVar(f,df);
     end
     
@@ -615,8 +620,7 @@ classdef TaylorVar
       tv=elementwise(obj,@sec,@(x)sec(x).*tan(x));
     end
     function tv = tan(obj)
-      tv=elementwise(obj,@tan,@(x)sec(x).^2);n
-      
+      tv=elementwise(obj,@tan,@(x)sec(x).^2);
     end
     function tv = asin(obj)
       tv=elementwise(obj,@asin,@(x) ones(size(x))./sqrt(1-x.^2));
