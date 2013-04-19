@@ -10,12 +10,8 @@ classdef RigidBodyForceElement
   end
   
   methods (Static=true)
-    function f = cartesianForceToSpatialForce(point,force)  % from Fpt in featherstone v2
-      if length(force)==3
-        f = [ cross(point,force,1); force ];
-      else
-        f = [ point(1,:).*force(2,:) - point(2,:).*force(1,:); force ];
-      end
+    function f = cartesianForceToSpatialForce(varargin);
+      error('this method is deprecated.  use RigidBodyManipulator.cartesianForceToSpatialForce instead');
     end
   end
   

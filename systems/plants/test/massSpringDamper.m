@@ -10,7 +10,7 @@ xtraj = simulate(r,[0 5],x0);
 r = PlanarRigidBodyManipulator('MassSpringDamper.urdf');
 x0 = [5;0];%randn(2,1);
 xtraj = simulate(r,[0 5],x0);
-%fnplt(xtraj,1);
+fnplt(xtraj,1);
 
 r = RigidBodyManipulator('MassSpringDamper.urdf');
 x0 = [10;0];
