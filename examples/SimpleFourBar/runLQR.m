@@ -16,7 +16,7 @@ sys = feedback(r,c);
 
 x0 = resolveConstraints(r,double(x0)+.2*randn(6,1));
 xtraj = simulate(sys,[0 10],x0);
-xtrajopenloop = simulate(cascade(ConstantTrajectory(u0),r),[0 10],x0);
+xtrajopenloop = simulate(cascade(setOutputFrame(ConstantTrajectory(u0),getInputFrame(r)),r),[0 10],x0);
 
 vopenloop = v;
 vopenloop.fade_percent = .5;

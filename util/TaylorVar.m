@@ -325,6 +325,9 @@ classdef TaylorVar
         tv=TaylorVar(f,{df});
       end
     end
+    function tv=pinv(a)
+      tv=inv(a);  % try just using inv until i implement something better
+    end
     
     function tv=mldivide(a,b)
       tv=inv(a)*b;
