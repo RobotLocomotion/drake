@@ -9,13 +9,17 @@ classdef TaylorVar
 %
 % the internal representation is 
 % m=prod(size(f)), n=prod(size(x));
-% df{o} is a m x n^o sparse matrix , where e.g. 
+% df{o} is a n^o x m sparse matrix, where e.g. 
 %        d^2 f(i,j)/dx_k dx_l =
-%             df{o}(sub2ind(obj.dim,i,j),sub2ind([n n],k,l))
+%             df{o}(sub2ind([n n],k,l),sub2ind(obj.dim,i,j))
+% note that this is the transpose of the output representation, used
+% internally because block column operations are much faster than block row
+% operations in matlab (especially for sparse matrices)
+% http://www.mathworks.com/matlabcentral/newsreader/view_thread/282874
 
   properties
     f   % value at the nominal point
-    df  % size(df{i}) is [size(f),repmat(size(x),1,i)]
+    df  % size(df{i}) is [repmat(size(x),1,i),size(f)]
     dim % size(f) - since I store things locally as a column vector
     nX   % size(x,1)
   end
@@ -25,14 +29,14 @@ classdef TaylorVar
       obj.f = f(:);
       obj.dim = size(f);
       obj.df = df;
-      obj.nX = size(df{1},2);
+      obj.nX = size(df{1},1);
     end
     
     function varargout=eval(obj)
       varargout{1}=reshape(obj.f,obj.dim);
       
       for i=2:min(nargout,length(obj.df)+1)
-        varargout{i}=obj.df{i-1};
+        varargout{i}=obj.df{i-1}';
       end
      
       % note: would love to reshape the df's into ND arrays, but matlab
@@ -64,7 +68,7 @@ classdef TaylorVar
       for o=1:length(obj.df)
         % x needs to be nX^o-by-1 
         x=reshape(x(:)*p_xbar',nX^o,1)/o;
-        p=p+reshape(obj.df{o}*x,obj.dim(1),obj.dim(2));
+        p=p+reshape(obj.df{o}'*x,obj.dim(1),obj.dim(2));
       end
     end
     
@@ -123,7 +127,7 @@ classdef TaylorVar
       obj.f=reshape(obj.f(new_f_ind),[],1);
       obj.dim=size(new_f_ind);
       for o=1:length(obj.df)
-        obj.df{o}=obj.df{o}(new_f_ind,:);
+        obj.df{o}=obj.df{o}(:,new_f_ind);
       end
     end
     function obj=reshape(obj,varargin)
@@ -231,7 +235,7 @@ classdef TaylorVar
         b=b(:);
         a.f=a.f.*b;
         for o=1:length(a.df)
-          a.df{o}=a.df{o}.*repmat(b,1,a.nX^o);
+          a.df{o}=a.df{o}.*repmat(b',a.nX^o,1);
         end
       end
     end
@@ -243,10 +247,14 @@ classdef TaylorVar
           for o=1:length(b.df), b.df{o}=a*b.df{o}; end
         elseif (l==1 && n==1) %other scalar case
           f = a*b.f;
-          for o=1:length(b.df), b.df{o}=repmat(a(:),1,b.nX^o).*repmat(b.df{o},numel(a),1); end
+          for o=1:length(b.df), b.df{o}=repmat(a(:)',b.nX^o,1).*repmat(b.df{o},1,numel(a)); end
         else
           f = a*reshape(b.f,b.dim); 
           for o=1:length(b.df)
+    
+%%%% GOT HERE :  working on switching df to df' %%%%    
+    
+    
             b.df{o} = reshape(a*reshape(b.df{o},k,n*b.nX^o),m*n,b.nX^o);
           end
         end
@@ -462,7 +470,7 @@ classdef TaylorVar
       nX=obj.nX; order=length(obj.df);
       
       f=[];
-      for o=1:order, df{o}=sparse(0,0); end
+      for o=1:order, df{o}=sparse(0,nX^o); end
       
       for i=1:length(varargin)
         if (isa(varargin{i},'TaylorVar'))
