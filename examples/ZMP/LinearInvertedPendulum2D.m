@@ -51,11 +51,12 @@ classdef LinearInvertedPendulum2D < LinearSystem
       [c,V] = lqr(obj);
       options.tspan = linspace(dZMP.tspan(1),dZMP.tspan(2),10);
       options.sqrtmethod = false;
-      x0traj = setOutputFrame(ConstantTrajectory([0;0]),obj.getStateFrame);
+      x0traj = setOutputFrame(ConstantTrajectory([0;0]),getStateFrame(obj));
+      u0traj = setOutputFrame(ConstantTrajectory(0),getInputFrame(obj));
       options.Qy = diag([0,0,1]);
       options.ydtraj = [x0traj;dZMP];
       S = warning('off','Drake:TVLQR:NegativeS');  % i expect to have some zero eigenvalues, which numerically fluctuate below 0
-      c = tvlqr(obj,x0traj,ConstantTrajectory(0),zeros(2),0,V,options);
+      c = tvlqr(obj,x0traj,u0traj,zeros(2),0,V,options);
       warning(S);
     end
     

@@ -311,13 +311,15 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
           return;
         end
         if (k<k2)
-          coefs=reshape(coefs,prod(d)*l,k);
+          coefs = reshape(coefs,prod(d)*l,k);
           coefs = [zeros(prod(d)*l,k2-k),coefs];  % pad with zeros
           k=k2;
-          coefs=reshape(coefs,[d,l,k]);
+          coefs = reshape(coefs,[d,l,k]);
         elseif (k2<k)
+          coefs2 = reshape(coefs2,prod(d2)*l2,k2);
           coefs2 = [zeros(prod(d2)*l2,k-k2),coefs2];  % pad with zeros
           k2=k;
+          coefs2 = reshape(coefs2,[d2,l2,k2]);
         end
         coefs2=reshape(coefs2,[d2,l2,k2]);
         d = [d(1)+d2(1),d(2:end)];
