@@ -644,9 +644,9 @@ classdef RigidBodyManipulator < Manipulator
       if options.visualize
         v = obj.constructVisualizer;
         %problem.options=optimset('DerivativeCheck','on','GradConstr','on','Algorithm','interior-point','Display','iter','OutputFcn',@drawme,'TolX',1e-14,'MaxFunEvals',5000);
-        problem.options=optimset('GradConstr','on','Algorithm','interior-point','Display','iter','OutputFcn',@drawme,'TolX',1e-14,'MaxFunEvals',5000);
+        problem.options=optimset('GradConstr','on','Algorithm','interior-point','Display','iter','OutputFcn',@drawme,'TolX',1e-14,'TolCon',1e-8,'MaxFunEvals',5000);
       else
-        problem.options=optimset('GradConstr','on','Algorithm','interior-point','TolX',1e-14,'MaxFunEvals',5000);
+        problem.options=optimset('GradConstr','on','Algorithm','interior-point','TolX',1e-14,'TolCon',1e-8,'MaxFunEvals',5000);
       end
       
       lb_z = -1e6*ones(nz,1);
@@ -655,9 +655,8 @@ classdef RigidBodyManipulator < Manipulator
     
       [jl_min,jl_max] = obj.getJointLimits();
       % force search to be close to starting position
-      problem.lb = [max(q0-0.05,jl_min+0.01); obj.umin; lb_z];
-      problem.ub = [min(q0+0.05,jl_max-0.01); obj.umax; ub_z];
-      %problem.lb(2) = 0.0; % body z
+      problem.lb = [jl_min; obj.umin; lb_z];
+      problem.ub = [jl_max; obj.umax; ub_z];
 
       [quz_sol,~,exitflag] = fmincon(problem);
       success=(exitflag==1);
