@@ -3,6 +3,8 @@ function testZMPplan_coordinates
 % zmp plan should be coordinate independent (shifting the origin should
 % just shift the resulting plan)
 
+oldpath = addpath(fullfile(pwd,'..'));
+
 x0 = 0; y0 = 0;
 [zmptraj,comtraj] = plan(x0,y0);
 
@@ -20,10 +22,14 @@ for i=1:2;
   h = fnplt(comtraj_offset-[x0;y0],i); set(h,'Color','r');
 end
 
+path(oldpath);
+
 for ts = getBreaks(comtraj);
   valuecheck(eval(zmptraj,ts),eval(zmptraj_offset,ts)-[x0;y0]);
   valuecheck(eval(comtraj,ts),eval(comtraj_offset,ts)-[x0;y0],tol);
 end
+
+
 
 return;
 
