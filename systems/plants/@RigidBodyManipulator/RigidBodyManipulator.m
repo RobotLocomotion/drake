@@ -79,6 +79,24 @@ classdef RigidBodyManipulator < Manipulator
       obj.dirty = true;
     end
 
+    function f = cartesianForceToSpatialForce(obj,kinsol,body,point,force)  
+      % @param body is a rigid body element
+      % @param point is a point on the rigid body (in body coords)
+      % @param force is a cartesion force (in world coords)
+      
+      % convert force to body coordinates
+      ftmp=bodyKin(obj,kinsol,body,[force,zeros(3,1)]);
+      
+      % convert to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
+      point = body.T_body_to_joint(1:end-1,:)*[point;1];
+      ftmp = body.T_body_to_joint(1:end-1,:)*[ftmp; 1,1];
+
+      force = ftmp(:,1)-ftmp(:,2);  
+      
+      % compute spatial force (from Fpt in featherstone v2)
+      f = [ cross(point,force,1); force ];
+    end
+    
     function [x,J,dJ] = kinTest(m,q)
       % test for kinematic gradients
       kinsol=doKinematics(m,q,nargout>2,false);

@@ -71,6 +71,19 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       end
     end
         
+    function f = cartesianForceToSpatialForce(obj,kinsol,body,point,force)  
+      % @param body is a rigid body element
+      % @param point is a point on the rigid body (in body coords)
+      % @param force is a cartesion force (in world coords)
+      
+      % convert force to body coordinates
+      ftmp=bodyKin(obj,kinsol,body,[force,zeros(2,1)]);
+      force = ftmp(:,1)-ftmp(:,2);  
+      
+      % compute spatial force (from Fpt in featherstone v2)
+      f = [ point(1,:).*force(2,:) - point(2,:).*force(1,:); force ];
+    end
+    
     function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits,options)
       if (nargin<6) xyz=zeros(3,1); end
       if (nargin<7) rpy=zeros(3,1); end
