@@ -3,6 +3,7 @@ function environmentTest
 % loads some drc objects, just for fun
 
 r = TimeSteppingRigidBodyManipulator('',.001);
+%r = RigidBodyManipulator();
 r = addRobotFromURDF(r,'../urdf/atlas_minimal_contact.urdf',[0;0;0],[],struct('floating',true));
 %r = addRobotFromURDF(r,'/Users/russt/drc/software/models/mit_gazebo_models/modified_golf_cart/model3.sdf');
 r = addRobotFromURDF(r,'steering.urdf',[.6;0;0]);
@@ -27,7 +28,7 @@ cost.back_ubx = 100;
 cost = double(cost);
 options = struct();
 options.Q = diag(cost(1:r.getNumDOF));
-load('../data/atlas_fp3.mat');
+load('../data/atlas_fp.mat');
 q0 = [xstar(1:34);0];
 options.q_nom = q0;
 

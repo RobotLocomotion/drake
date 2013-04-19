@@ -498,9 +498,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   methods  % pass through methods (to the manipulator)
     function obj = setStateFrame(obj,fr)
       obj = setStateFrame@DrakeSystem(obj,fr);
-      if ~isempty(obj.manip)  % this gets called in the constructor, before manip is ste
-        obj.manip = setStateFrame(obj.manip,fr);
-      end
     end
     
     function obj = setTerrain(obj,varargin)
