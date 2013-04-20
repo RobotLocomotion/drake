@@ -4,7 +4,7 @@ function [pos,vel,normal,mu] = collisionDetect(obj,contact_pos)
 % normal, and coefficent of friction.
 
 % Note: only implements collisions with the obj.terrain so far
-[z,normal] = getHeight(obj.terrain,contact_pos);
+[z,normal] = getHeight(obj.terrain,contact_pos(1:2,:));
 pos = [contact_pos(1:2,:);z];
 
 n = size(contact_pos,2);
