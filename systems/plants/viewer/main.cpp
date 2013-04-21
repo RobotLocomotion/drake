@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
   drake_urdf_add_renderer_to_viewer(viewer, lcm, 1);
           
   // load the renderer params from the config file.
-  char *fname = ".viewer-prefs"; //g_build_filename(g_get_user_config_dir(), vis_config_file.c_str() , NULL);
+  const char *fname = ".viewer-prefs"; //g_build_filename(g_get_user_config_dir(), vis_config_file.c_str() , NULL);
   bot_viewer_load_preferences(viewer, fname);
 
   gtk_main();
