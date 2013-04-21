@@ -46,7 +46,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
     // note: i see no harm in adding the floating base here (even if the drake version does not have one)
     // because the base will be set to 0 and it adds minimal expense to the kinematic calculations
   {
-    this->bodies[0].linkname = "world";
+    this->bodies[0].linkname = "_world";
     this->parent[0] = -1;
     this->pitch[0] = INF;
     this->bodies[1].linkname = this->bodies[1].jointname = "base_x";
@@ -81,9 +81,10 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
     std::map<std::string, int>::iterator jn=joint_map.find(j->first);
     if (jn == joint_map.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->first.c_str());
     index = jn->second;
+    this->bodies[index+1].jointname = j->second->name;
+    this->bodies[index+1].linkname = j->second->child_link_name;
     
     // set parent
-    this->bodies[index+1].linkname = j->second->child_link_name;
     if (!j->second->parent_link_name.empty()) {
       std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator plink = urdf_model->links_.find(j->second->parent_link_name);
       if (plink != urdf_model->links_.end() && plink->second->parent_joint.get()) {
@@ -102,12 +103,11 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
     
     // set pitch
     switch (j->second->type) {
-      case urdf::Joint::REVOLUTE:
-      case urdf::Joint::FIXED:  // treat fixed joints as revolute (that are always at zero)
-        this->pitch[index] = 0.0;
-        break;
       case urdf::Joint::PRISMATIC:
         this->pitch[index] = INF;
+        break;
+      default:  // continuous, rotary, fixed, ... 
+        this->pitch[index] = 0.0;
         break;
     }
     

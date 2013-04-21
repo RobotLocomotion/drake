@@ -53,12 +53,13 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
       if (l->second->parent_joint) {
         std::map<std::string, int>::iterator j2 = self->model->joint_map.find(l->second->parent_joint->name);
         if (j2 == self->model->joint_map.end()) continue;  // this shouldn't happen, but just in case...
-        body_ind = j2->second;
+        body_ind = j2->second+1;
       } else {
-        body_ind = 5;  // then it's attached directly to the floating base
+        body_ind = 6;  // then it's attached directly to the floating base
       }
       
       MatrixXd pose = self->model->forwardKin(body_ind,zero,2);
+//      cout << l->second->name << " is at " << pose.transpose() << endl;
       
       double* posedata = pose.data();
       bot_quat_to_angle_axis(&posedata[3], &theta, axis);
@@ -151,6 +152,7 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
       cerr << "viewer command " << msg->command_type << " not implemented yet" << endl;
       break;
   }
+  bot_viewer_request_redraw(self->viewer);
 }
 
 static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * channel, 
@@ -167,11 +169,24 @@ static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * chan
     map<string, int>::iterator iter = self->model->joint_map.find(msg->joint_name[i]);
     if (iter==self->model->joint_map.end())
       cerr << "couldn't find joint named " << msg->joint_name[i] << endl;
-    else
+    else {
       q(iter->second) = (double) msg->joint_position[i];
+//      cout << self->model->bodies[iter->second+1].jointname << " = " << q(iter->second) << ", " << iter->second << "=" << self->model->bodies[iter->second+1].dofnum << endl;
+    }
   }
   
   self->model->doKinematics(q.data());
+  
+/*
+  // some debugging info
+  cout << "q = " << q.transpose() << endl;
+  const Vector4d zero(0,0,0,1);
+  for (int i=0; i<=self->model->NB; i++) {
+    cout << "forward kin: " << self->model->bodies[i].linkname << " is at " << self->model->forwardKin(i,zero,2).transpose() << ", joint:" << self->model->bodies[i].jointname << endl;
+  } 
+*/
+  
+  bot_viewer_request_redraw(self->viewer);
 }
 
 
@@ -197,13 +212,6 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
   
   lcmt_viewer_command_subscribe(lcm,"DRAKE_VIEWER_COMMAND",&handle_lcm_viewer_command,self);
   lcmt_robot_state_subscribe(lcm,"DRAKE_VIEWER_STATE",&handle_lcm_robot_state,self);
-  
-  //  for now, just load a hard-coded urdf:
-//  self->model = loadURDFfromFile("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
-//  self->model = loadURDFfromFile("../test/FallingBrick.urdf");
-//  self->model = loadURDFfromFile("../../../examples/Acrobot/Acrobot.urdf");
-//  MatrixXd q0 = MatrixXd::Zero(self->model->NB,1);
-//  self->model->doKinematics(q0.data());
   
   bot_viewer_add_renderer(viewer, renderer, priority);
 }

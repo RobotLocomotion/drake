@@ -30,6 +30,10 @@ classdef LibBotVisualizer < Visualizer
       obj.state_msg.joint_velocity = single(zeros(2,1));
     end
     
+    function drawWrapper(obj,t,y)
+      draw(obj,t,y);
+    end
+    
     function draw(obj,t,y)
       obj.state_msg.timestamp = int64(t*1000000);
       obj.state_msg.joint_position = single(y(1:obj.state_msg.num_joints));
