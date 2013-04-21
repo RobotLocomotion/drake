@@ -2,8 +2,7 @@
 #define __drake_urdf_renderer_h__
 
 #include <lcm/lcm.h>
-
-#include "../RigidBodyManipulator.h"
+#include <bot_vis/bot_vis.h>
 
 #ifdef __cplusplus
 extern "C" {

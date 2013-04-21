@@ -98,3 +98,5 @@ externals/spotless
 .viewer-prefs
 systems/plants/test/urdf_kin_test
 systems/plants/test/urdf_kin_test.dSYM/Contents/Resources/DWARF/urdf_kin_test
+systems/plants/test/.#Makefile
+systems/plants/viewer/drake_viewer
