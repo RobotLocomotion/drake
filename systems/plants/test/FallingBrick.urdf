@@ -1,5 +1,5 @@
-<?xml version="1.0" ?>
-<robot name="FallingBrick" xmlns:xacro="http://ros.org/wiki/xacro">
+<?xml version="1.0"?>
+<robot name="FallingBrick">
   <link name="brick">
     <inertial>
       <mass value="1"/>
@@ -9,9 +9,6 @@
       <geometry>
         <box size="2 .5 1" />
       </geometry>
-      <material>
-       	<color rgba="0 1 0 1" />
-      </material>
     </visual>
     <collision>
       <geometry>
