@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <fstream>
 
 #include "urdf_interface/model.h"
 #include "urdf.h"
@@ -386,4 +387,28 @@ RigidBodyManipulator* parseURDFModel(const std::string &xml_string)
 
   model->compile();
   return model;
+}
+
+RigidBodyManipulator* loadURDF(const std::string &urdf_filename)
+{
+  std::string xml_string;
+  std::fstream xml_file(urdf_filename.c_str(), std::fstream::in);
+  if (xml_file.is_open())
+  {
+    while ( xml_file.good() )
+    {
+      std::string line;
+      std::getline( xml_file, line);
+      xml_string += (line + "\n");
+    }
+    xml_file.close();
+  }
+  else
+  {
+    std::cerr << "Could not open file ["<<urdf_filename.c_str()<<"] for parsing."<< std::endl;
+    return NULL;
+  }
+  
+  // parse URDF to get model
+  return parseURDFModel(xml_string);
 }

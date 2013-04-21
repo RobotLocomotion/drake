@@ -203,11 +203,11 @@ void RigidBodyManipulator::compile(void)
   initialized=true;
 }
 
-void RigidBodyManipulator::doKinematics(double* q, int b_compute_second_derivatives, double* qd)
+void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivatives, double* qd)
 {
   int i,j,k;
+
   //Check against cached values for bodies[1];
-  
   if (kinematicsInit) {
     bool skip = true;
     if (b_compute_second_derivatives && !secondDerivativesCached)
@@ -396,7 +396,9 @@ MatrixXd RigidBodyManipulator::forwardKin(const int body_ind, const MatrixXd pts
   // WARNING:  pts should have a trailing 1 attached to it (4xn_pts)
   int dim=3, n_pts = pts.cols();
   MatrixXd T = bodies[body_ind].T.topLeftCorner(dim,dim+1);
-  if (rotation_type == 1) {
+  if (rotation_type == 0) {
+    return T*pts;
+  } else if (rotation_type == 1) {
     Vector3d rpy;
     rpy << atan2(T(2,1),T(2,2)), atan2(-T(2,0),sqrt(T(2,1)*T(2,1) + T(2,2)*T(2,2))), atan2(T(1,0),T(0,0));
     // NOTE: we're assuming an X-Y-Z convention was used to construct T
@@ -405,21 +407,17 @@ MatrixXd RigidBodyManipulator::forwardKin(const int body_ind, const MatrixXd pts
     X.block(0,0,3,n_pts) = T*pts;
     X.block(3,0,3,n_pts) = rpy.replicate(1,n_pts);
     return X;
-  } else if(rotation_type == 0) {
-    return T*pts;
-  }
-  else if(rotation_type == 2)
-  {
-	Vector4d quat;
-	double qw = sqrt(1+T(0,0)+T(1,1)+T(2,2))/2;
-	double qx = (T(2,1)-T(1,2))/(4*qw);
-	double qy = (T(0,2)-T(2,0))/(4*qw);
-	double qz = (T(1,0)-T(0,1))/(4*qw);
-	quat << qw, qx, qy, qz;
-	MatrixXd X = MatrixXd::Zero(7,n_pts);
-	X.block(0,0,3,n_pts) = T*pts;
-	X.block(3,0,4,n_pts) = quat.replicate(1,n_pts);
-	return X;
+  } else if(rotation_type == 2) {
+    Vector4d quat;
+    double qw = sqrt(1+T(0,0)+T(1,1)+T(2,2))/2;
+    double qx = (T(2,1)-T(1,2))/(4*qw);
+    double qy = (T(0,2)-T(2,0))/(4*qw);
+    double qz = (T(1,0)-T(0,1))/(4*qw);
+    quat << qw, qx, qy, qz;
+    MatrixXd X = MatrixXd::Zero(7,n_pts);
+    X.block(0,0,3,n_pts) = T*pts;
+    X.block(3,0,4,n_pts) = quat.replicate(1,n_pts);
+    return X;
   }
 }
 

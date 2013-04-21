@@ -3,7 +3,6 @@
 #include <bot_core/bot_core.h>
 #include <bot_vis/bot_vis.h>
 
-#include <fstream>
 #include "../urdf.h"
 
 // todo: include lcm types
@@ -53,29 +52,10 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
     renderer->user = self;
 
     //  todo:  subscribe to urdf listener
-    { //  for now, just load a hard-coded urdf:
-      std::string filename("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
-      std::string xml_string;
-      std::fstream xml_file(filename.c_str(), std::fstream::in);
-      if (xml_file.is_open())
-      {
-        while ( xml_file.good() )
-        {
-          std::string line;
-          std::getline( xml_file, line);
-          xml_string += (line + "\n");
-        }
-        xml_file.close();
-      }
-      else
-      {
-        std::cerr << "Could not open file ["<<filename.c_str()<<"] for parsing."<< std::endl;
-        return;
-      }
-      
-      // parse URDF to get model
-      self->model = parseURDFModel(xml_string);
-    }
+
+    //  for now, just load a hard-coded urdf:
+    std::string filename("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
+    self->model = loadURDF(filename);
     
     bot_viewer_add_renderer(viewer, renderer, priority);
 }

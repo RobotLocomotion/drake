@@ -75,7 +75,7 @@ public:
   ~RigidBodyManipulator(void);
   
   void compile(void);  // call me after the model is loaded
-  void doKinematics(double* q, int b_compute_second_derivatives, double* qd);
+  void doKinematics(double* q, bool b_compute_second_derivatives, double* qd=NULL);
 
   Vector3d getCOM(void);
   MatrixXd getCOMJac(void);
