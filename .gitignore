@@ -96,6 +96,5 @@ walking.mat
 doc/DoxygenMatlab/html
 externals/spotless
 .viewer-prefs
-viewer
 systems/plants/test/urdf_kin_test
 systems/plants/test/urdf_kin_test.dSYM/Contents/Resources/DWARF/urdf_kin_test

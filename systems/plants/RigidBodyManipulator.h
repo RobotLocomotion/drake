@@ -1,3 +1,5 @@
+#ifndef __RigidBodyManipulator_H__
+#define __RigidBodyManipulator_H__
 
 #include <Eigen/Dense>
 
@@ -91,3 +93,5 @@ public:
 };
 
 #include "RigidBody.h"
+
+#endif
