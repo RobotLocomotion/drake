@@ -100,3 +100,5 @@ systems/plants/test/urdf_kin_test
 systems/plants/test/urdf_kin_test.dSYM/Contents/Resources/DWARF/urdf_kin_test
 systems/plants/test/.#Makefile
 systems/plants/viewer/drake_viewer
+systems/plants/viewer/drake_viewer.dSYM/Contents/Info.plist
+systems/plants/viewer/drake_viewer.dSYM/Contents/Resources/DWARF/drake_viewer
