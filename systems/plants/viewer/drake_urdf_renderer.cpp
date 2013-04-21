@@ -32,7 +32,15 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 {
   RendererData *self = (RendererData*) renderer->user;
   const Vector4d zero(0,0,0,1);
-  double theta, axis[3];
+  double theta, axis[3], quat[4];
+  
+/*  
+  glEnable(GL_LIGHTING);
+  glEnable(GL_COLOR_MATERIAL);
+  glEnable(GL_BLEND);
+  glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+  glEnable (GL_RESCALE_NORMAL);
+*/
   
   // iterate over each link and draw
   for (std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator l=self->model->urdf_model->links_.begin(); l!=self->model->urdf_model->links_.end(); l++) {
@@ -60,6 +68,29 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
       vector<boost::shared_ptr<urdf::Visual> > visuals = (*v_grp_it->second);
       for (size_t iv = 0;iv < visuals.size();iv++)
       {
+
+        glPushMatrix();
+        
+        // handle visual material 
+        glColor4f(visuals[iv]->material->color.r,
+                visuals[iv]->material->color.g,
+                visuals[iv]->material->color.b,
+                visuals[iv]->material->color.a);
+
+        // todo: handle textures here?
+        
+        // handle visual origin
+        glTranslatef(visuals[iv]->origin.position.x, 
+                visuals[iv]->origin.position.y,
+                visuals[iv]->origin.position.z);
+
+        quat[0] = visuals[iv]->origin.rotation.w;
+        quat[1] = visuals[iv]->origin.rotation.x;
+        quat[2] = visuals[iv]->origin.rotation.y;
+        quat[3] = visuals[iv]->origin.rotation.z;
+        bot_quat_to_angle_axis(quat, &theta, axis);
+        glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
+        
         int type = visuals[iv]->geometry->type;
         if (type == urdf::Geometry::SPHERE) {
           boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(visuals[iv]->geometry));
@@ -67,13 +98,14 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
           glutSolidSphere(radius,36,36);
         } else if (type == urdf::Geometry::BOX) {
           boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(visuals[iv]->geometry));
-          glPushMatrix();
           glScalef(box->dim.x,box->dim.y,box->dim.z);
           glutSolidCube(1.0);
-          glPopMatrix();
         } else if  (type == urdf::Geometry::CYLINDER) {
           boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(visuals[iv]->geometry));
-          // todo: transform to center of cylinder
+          
+          // transform to center of cylinder
+          glTranslatef(0.0,0.0,-cyl->length/2.0);
+          
           GLUquadricObj* quadric = gluNewQuadric();
           gluQuadricDrawStyle(quadric, GLU_FILL);
           gluQuadricNormals(quadric, GLU_SMOOTH);
@@ -89,6 +121,7 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
           // not implemented yet.
           //glCallList (wavefrontmodel.displaylist);
         } 
+        glPopMatrix();
       }
       
       glPopMatrix();
@@ -122,6 +155,8 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
 //  self->model = loadURDFfromFile("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
 //  self->model = loadURDFfromFile("../test/FallingBrick.urdf");
   self->model = loadURDFfromFile("../../../examples/Acrobot/Acrobot.urdf");
+  MatrixXd q0 = MatrixXd::Zero(self->model->NB,1);
+  self->model->doKinematics(q0.data());
   
   bot_viewer_add_renderer(viewer, renderer, priority);
 }
