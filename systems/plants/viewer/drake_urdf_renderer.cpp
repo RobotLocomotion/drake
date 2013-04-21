@@ -38,10 +38,17 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
   for (std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator l=self->model->urdf_model->links_.begin(); l!=self->model->urdf_model->links_.end(); l++) {
     if (l->second->visual) { // then at least one default visual tag exists
       
-      std::map<std::string, int>::iterator j2 = self->model->joint_map.find(l->second->parent_joint->name);
-      if (j2 == self->model->joint_map.end()) continue;  // this shouldn't happen, but just in case...
+      int body_ind;
+      if (l->second->parent_joint) {
+        std::map<std::string, int>::iterator j2 = self->model->joint_map.find(l->second->parent_joint->name);
+        if (j2 == self->model->joint_map.end()) continue;  // this shouldn't happen, but just in case...
+        body_ind = j2->second;
+      } else {
+        body_ind = 5;  // then it's attached directly to the floating base
+      }
       
-      MatrixXd pose = self->model->forwardKin(j2->second,zero,2);
+      MatrixXd pose = self->model->forwardKin(body_ind,zero,2);
+      
       double* posedata = pose.data();
       bot_quat_to_angle_axis(&posedata[3], &theta, axis);
 
@@ -113,7 +120,8 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
   
   //  for now, just load a hard-coded urdf:
 //  self->model = loadURDFfromFile("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
-  self->model = loadURDFfromFile("../test/FallingBrick.urdf");
+//  self->model = loadURDFfromFile("../test/FallingBrick.urdf");
+  self->model = loadURDFfromFile("../../../examples/Acrobot/Acrobot.urdf");
   
   bot_viewer_add_renderer(viewer, renderer, priority);
 }

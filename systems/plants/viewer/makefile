@@ -1,6 +1,6 @@
 
 CC = g++
-CFLAGS = $(shell pkg-config --cflags bot2-vis bot2-lcmgl-renderer) -O3
+CFLAGS = $(shell pkg-config --cflags bot2-vis bot2-lcmgl-renderer) -O3 -g
 LDFLAGS = $(shell pkg-config --libs bot2-vis bot2-lcmgl-renderer) -ltinyxml
 # note: for DRC folks, these will work if PKG_CONFIG_PATH points to 
 #    drc/software/build/lib/pkgconfig

@@ -55,7 +55,7 @@
     <dynamics damping="0.1" />
   </joint>
 
-  <joint name="elbow" type="revolute">
+  <joint name="elbow" type="continuous">
     <parent link="upper_link" />
     <child link="lower_link" />
     <origin xyz="0 .1 -1" />
