@@ -1,15 +1,15 @@
 
 #include <iostream>
 #include <cstdlib>
-#include "../urdf.h"
+#include <urdf.h>
 
 using namespace std;
 
 int main(int argc, char* argv[])
 {
   // todo: pull urdf filename off the command line
-  std::string filename("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
-  RigidBodyManipulator* model = loadURDF(filename);
+//  URDFRigidBodyManipulator* model = loadURDFfromFile("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  URDFRigidBodyManipulator* model = loadURDFfromFile("/Users/russt/drc/software/models/mit_gazebo_models/mit_robot/model.urdf");
   
   // run kinematics with second derivatives 100 times
   double q[34];

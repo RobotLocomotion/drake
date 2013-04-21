@@ -13,7 +13,7 @@ typedef struct _RendererData {
     BotRenderer renderer;
     BotViewer   *viewer;
     lcm_t       *lcm;
-    RigidBodyManipulator  *model;
+    URDFRigidBodyManipulator  *model;
 } RendererData;
 
 static void my_free( BotRenderer *renderer )
@@ -55,7 +55,7 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
 
     //  for now, just load a hard-coded urdf:
     std::string filename("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
-    self->model = loadURDF(filename);
+    self->model = loadURDFfromFile(filename);
     
     bot_viewer_add_renderer(viewer, renderer, priority);
 }

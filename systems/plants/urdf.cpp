@@ -3,8 +3,19 @@
 #include <stdarg.h>
 #include <fstream>
 
-#include "urdf_interface/model.h"
 #include "urdf.h"
+
+#define BOT_VIS_SUPPORT  // adds a bunch of dependencies, which are not necessary for all functionality
+
+#ifdef BOT_VIS_SUPPORT
+#include <bot_core/bot_core.h>
+#include <bot_vis/bot_vis.h>
+#endif
+
+#include <boost/shared_ptr.hpp>
+#include <boost/filesystem.hpp>
+
+using namespace std;
 
 // Defines a method to load a model directly from a URDF file
 
@@ -25,6 +36,158 @@ void mexErrMsgIdandTxt(const char *errorid, const char *errormsg, ...)
   va_end(vl);  
   printf("\n");
   exit(1);
+}
+
+URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::ModelInterface> _urdf_model, std::map<std::string, int> jointname_to_jointnum, const std::string & root_dir) 
+: 
+  RigidBodyManipulator((int)jointname_to_jointnum.size()),
+  joint_map(jointname_to_jointnum),
+          urdf_model(_urdf_model)
+{
+    // set up floating base
+    // note: i see no harm in adding the floating base here (even if the drake version does not have one)
+    // because the base will be set to 0 and it adds minimal expense to the kinematic calculations
+  {
+    this->bodies[0].linkname = "world";
+    this->parent[0] = -1;
+    this->pitch[0] = INF;
+    this->bodies[1].linkname = this->bodies[1].jointname = "base_x";
+    this->bodies[1].T_body_to_joint << 0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
+    
+    this->parent[1] = 0;
+    this->pitch[1] = INF;
+    this->bodies[2].linkname = this->bodies[2].jointname = "base_y";
+    this->bodies[2].T_body_to_joint << 1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
+    
+    this->parent[2] = 1;
+    this->pitch[2] = INF;
+    this->bodies[3].linkname = this->bodies[3].jointname = "base_z";
+    
+    this->parent[3] = 2;
+    this->pitch[3] = 0;
+    this->bodies[4].linkname = this->bodies[4].jointname = "base_roll";
+    this->bodies[4].T_body_to_joint << 0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
+    
+    this->parent[4] = 3;
+    this->pitch[4] = 0;
+    this->bodies[5].linkname = this->bodies[5].jointname = "base_pitch";
+    this->bodies[5].T_body_to_joint << 1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
+    
+    this->parent[5] = 4;
+    this->pitch[5] = 0;
+    this->bodies[6].jointname = "base_yaw";
+  }
+  
+  int index=0;
+  for (std::map<std::string, boost::shared_ptr<urdf::Joint> >::iterator j=urdf_model->joints_.begin(); j!=urdf_model->joints_.end(); j++) {
+    std::map<std::string, int>::iterator jn=joint_map.find(j->first);
+    if (jn == joint_map.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->first.c_str());
+    index = jn->second;
+    
+    // set parent
+    this->bodies[index+1].linkname = j->second->child_link_name;
+    if (!j->second->parent_link_name.empty()) {
+      std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator plink = urdf_model->links_.find(j->second->parent_link_name);
+      if (plink != urdf_model->links_.end() && plink->second->parent_joint.get()) {
+        // j has a parent, find its index
+        std::map<std::string, int>::iterator j2 = joint_map.find(plink->second->parent_joint->name);
+        if (j2 == joint_map.end()) ROS_ERROR("can't find index of parent %s of link %s.", plink->second->parent_joint->name.c_str(), plink->second->name.c_str());
+        this->parent[index] = j2->second;
+//          printf("%s parent %d\n",j->second->child_link_name.c_str(),j2->second);
+      } else {
+        this->parent[index] = 5;  // no parent: attach it to the floating base
+        this->bodies[6].linkname = j->second->parent_link_name;
+      }
+    } else {
+      this->parent[index] = 5;  // no parent: attach it to the floating base
+      this->bodies[6].linkname = j->second->parent_link_name;
+    }
+    
+    // set pitch
+    switch (j->second->type) {
+      case urdf::Joint::REVOLUTE:
+      case urdf::Joint::FIXED:  // treat fixed joints as revolute (that are always at zero)
+        this->pitch[index] = 0.0;
+        break;
+      case urdf::Joint::PRISMATIC:
+        this->pitch[index] = INF;
+        break;
+    }
+    
+    // setup kinematic tree
+    {
+      double x=j->second->parent_to_joint_origin_transform.position.x,
+              y=j->second->parent_to_joint_origin_transform.position.y,
+              z=j->second->parent_to_joint_origin_transform.position.z;
+      double qx,qy,qz,qw;
+      j->second->parent_to_joint_origin_transform.rotation.getQuaternion(qx,qy,qz,qw);
+      this->bodies[index+1].Ttree <<
+              qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, x,
+              2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, y,
+              2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, z,
+              0, 0, 0, 1;
+      
+      Vector3d zvec; zvec << 0,0,1;
+      Vector3d joint_axis; joint_axis << j->second->axis.x, j->second->axis.y, j->second->axis.z;
+      Vector3d axis = joint_axis.cross(zvec);
+      double angle = acos(joint_axis.dot(zvec));
+      if (axis.squaredNorm()<.0001) //  then it's a scaling of the z axis.
+        axis << 0,1,0;
+      axis.normalize();
+      qw=cos(angle/2.0);
+      qx=axis(0)*sin(angle/2.0);
+      qy=axis(1)*sin(angle/2.0);
+      qz=axis(2)*sin(angle/2.0);
+      
+      this->bodies[index+1].T_body_to_joint <<
+              qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, 0,
+              2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, 0,
+              2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, 0,
+              0, 0, 0, 1;
+    }
+  }
+
+#ifdef BOT_VIS_SUPPORT
+  // load mesh geometry
+  for (std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator l=urdf_model->links_.begin(); l!=urdf_model->links_.end(); l++) {
+    if (l->second->visual) { // then at least one default visual tag exists
+      map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
+      for (size_t iv = 0;iv < v_grp_it->second->size();iv++)
+      {
+        vector<boost::shared_ptr<urdf::Visual> > visuals = (*v_grp_it->second);
+        if (visuals[iv]->geometry->type == urdf::Geometry::MESH) {
+          boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(visuals[iv]->geometry));
+          
+          bool has_package = boost::find_first(mesh->filename,"package://");
+          std::string fname = root_dir + "/" + mesh->filename;
+          if (has_package) boost::replace_first(fname,"package:/","..");
+          boost::filesystem::path mypath(fname);
+          
+          if (!boost::filesystem::exists(fname)) {
+            cerr << "cannot find mesh file: " << fname;
+            if (has_package)
+              cerr << " (note: original mesh string had a package:// in it)";
+            cerr << endl;
+            continue;
+          }
+          
+          std::string ext = mypath.extension().native();
+          boost::to_lower(ext);
+          
+          if (ext.compare(".dae")==0) {
+            BotWavefrontModel* wavefront_model = bot_wavefront_model_create(fname.c_str());
+            if (!wavefront_model) {
+              cerr << "Error loading mesh: " << fname << endl;
+            }
+          } else
+            cout << "Warning: Mesh " << fname << " ignored because it does not have extension .dae" << endl;
+        }
+      }
+    }
+  }  
+#endif
+
+  compile();  
 }
 
 
@@ -223,7 +386,9 @@ void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shar
   
   switch (j->type) {
     case urdf::Joint::REVOLUTE:
+    case urdf::Joint::CONTINUOUS:
     case urdf::Joint::PRISMATIC:
+    case urdf::Joint::FIXED:
       jointname_to_jointnum.insert(std::make_pair(j->name,(int)jointname_to_jointnum.size()));
       break;
     case urdf::Joint::FLOATING:
@@ -245,14 +410,14 @@ void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shar
     case urdf::Joint::PLANAR:
       ROS_ERROR("PLANAR joints not supported yet.");
       break;
-    case urdf::Joint::FIXED:
     default:
+      ROS_ERROR("unsupported joint type %d for joint %s.", j->type, j->name.c_str());
       break;
       break;
   }
 }
 
-RigidBodyManipulator* parseURDFModel(const std::string &xml_string)
+URDFRigidBodyManipulator* loadURDFfromXML(const std::string &xml_string, const std::string &root_dir)
 {
   // call ROS urdf parsing
   boost::shared_ptr<urdf::ModelInterface> urdf_model = urdf::parseURDF(xml_string);
@@ -281,115 +446,13 @@ RigidBodyManipulator* parseURDFModel(const std::string &xml_string)
   }
   
   // now populate my model class
-  RigidBodyManipulator* model = new RigidBodyManipulator((int)jointname_to_jointnum.size());
-  {
-    // set up floating base
-    {
-      model->bodies[0].linkname = "world";
-      model->parent[0] = -1;
-      model->pitch[0] = INF;
-      model->bodies[1].linkname = model->bodies[1].jointname = "base_x";
-      model->bodies[1].T_body_to_joint << 0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
-      
-      model->parent[1] = 0;
-      model->pitch[1] = INF;
-      model->bodies[2].linkname = model->bodies[2].jointname = "base_y";
-      model->bodies[2].T_body_to_joint << 1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
-            
-      model->parent[2] = 1;
-      model->pitch[2] = INF;
-      model->bodies[3].linkname = model->bodies[3].jointname = "base_z";
-      
-      model->parent[3] = 2;
-      model->pitch[3] = 0;
-      model->bodies[4].linkname = model->bodies[4].jointname = "base_roll";
-      model->bodies[4].T_body_to_joint << 0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
-      
-      model->parent[4] = 3;
-      model->pitch[4] = 0;
-      model->bodies[5].linkname = model->bodies[5].jointname = "base_pitch";      
-      model->bodies[5].T_body_to_joint << 1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
+  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator(urdf_model,jointname_to_jointnum,root_dir);
+  
 
-      model->parent[5] = 4;
-      model->pitch[5] = 0;
-      model->bodies[6].jointname = "base_yaw";
-    }
-    
-    int index=0;
-    for (std::map<std::string, boost::shared_ptr<urdf::Joint> >::iterator j=urdf_model->joints_.begin(); j!=urdf_model->joints_.end(); j++) {
-      std::map<std::string, int>::iterator jn=jointname_to_jointnum.find(j->first);
-      if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint.  this shouldn't happen"); 
-      index = jn->second;
-      
-      // set parent
-      model->bodies[index+1].linkname = j->second->child_link_name;
-      if (!j->second->parent_link_name.empty()) {
-        std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator plink = urdf_model->links_.find(j->second->parent_link_name);
-        if (plink != urdf_model->links_.end() && plink->second->parent_joint.get()) {
-          // j has a parent, find its index
-          std::map<std::string, int>::iterator j2 = jointname_to_jointnum.find(plink->second->parent_joint->name);
-          if (j2 == jointname_to_jointnum.end()) ROS_ERROR("can't find index of parent. shouldn't get here");
-          model->parent[index] = j2->second;
-//          printf("%s parent %d\n",j->second->child_link_name.c_str(),j2->second);
-        } else {
-          model->parent[index] = 5;  // no parent: attach it to the floating base
-          model->bodies[6].linkname = j->second->parent_link_name;
-        }
-      } else {
-        model->parent[index] = 5;  // no parent: attach it to the floating base
-        model->bodies[6].linkname = j->second->parent_link_name;
-      }
-      
-      // set pitch
-      switch (j->second->type) {
-        case urdf::Joint::REVOLUTE:
-        case urdf::Joint::FIXED:  // treat fixed joints as revolute (that are always at zero)
-          model->pitch[index] = 0.0;
-          break;
-        case urdf::Joint::PRISMATIC:
-          model->pitch[index] = INF;  
-          break;
-      }
-      
-      // setup kinematic tree
-      {
-        double x=j->second->parent_to_joint_origin_transform.position.x,
-                y=j->second->parent_to_joint_origin_transform.position.y,
-                z=j->second->parent_to_joint_origin_transform.position.z;
-        double qx,qy,qz,qw;
-        j->second->parent_to_joint_origin_transform.rotation.getQuaternion(qx,qy,qz,qw);
-        model->bodies[index+1].Ttree <<
-                qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, x,
-                2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, y,
-                2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, z,
-                0, 0, 0, 1;
-        
-        Vector3d zvec; zvec << 0,0,1;
-        Vector3d joint_axis; joint_axis << j->second->axis.x, j->second->axis.y, j->second->axis.z;
-        Vector3d axis = joint_axis.cross(zvec); 
-        double angle = acos(joint_axis.dot(zvec));
-        if (axis.squaredNorm()<.0001) //  then it's a scaling of the z axis.
-          axis << 0,1,0;
-        axis.normalize();
-        qw=cos(angle/2.0);
-        qx=axis(0)*sin(angle/2.0);
-        qy=axis(1)*sin(angle/2.0);
-        qz=axis(2)*sin(angle/2.0);
-        
-        model->bodies[index+1].T_body_to_joint <<
-                qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, 0,
-                2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, 0,
-                2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, 0,
-                0, 0, 0, 1;
-      }
-    }    
-  }
-
-  model->compile();
   return model;
 }
 
-RigidBodyManipulator* loadURDF(const std::string &urdf_filename)
+URDFRigidBodyManipulator* loadURDFfromFile(const std::string &urdf_filename)
 {
   std::string xml_string;
   std::fstream xml_file(urdf_filename.c_str(), std::fstream::in);
@@ -409,6 +472,9 @@ RigidBodyManipulator* loadURDF(const std::string &urdf_filename)
     return NULL;
   }
   
+  boost::filesystem::path mypath(urdf_filename);
+  std::string pathname(mypath.parent_path().native());
+  
   // parse URDF to get model
-  return parseURDFModel(xml_string);
+  return loadURDFfromXML(xml_string,pathname);
 }
