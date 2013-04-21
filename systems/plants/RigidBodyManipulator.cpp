@@ -245,7 +245,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       Tmult = bodies[i].Ttree * Tbinv * TJ * Tb;
       
       bodies[i].T = bodies[parent].T * Tmult;
-      
+
       /*
        * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
        * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
