@@ -7,7 +7,8 @@
 
 #include <urdf.h>
 
-// todo: include lcm types
+#include <lcmt_viewer_command.h>
+#include <lcmt_robot_state.h>
 
 #include "drake_urdf_renderer.h"
 
@@ -31,6 +32,8 @@ static void my_free( BotRenderer *renderer )
 static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 {
   RendererData *self = (RendererData*) renderer->user;
+  if (!self->model) return;  
+  
   const Vector4d zero(0,0,0,1);
   double theta, axis[3], quat[4];
   
@@ -68,7 +71,6 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
       vector<boost::shared_ptr<urdf::Visual> > visuals = (*v_grp_it->second);
       for (size_t iv = 0;iv < visuals.size();iv++)
       {
-
         glPushMatrix();
         
         // handle visual material 
@@ -130,6 +132,34 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 }
 
 
+static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * channel, 
+        const lcmt_viewer_command * msg, void * user)
+{
+  RendererData *self = (RendererData*) user;
+  
+  switch(msg->command_type) {
+    case 1: //msg->LOAD_URDF:
+      {
+        if (self->model) delete self->model;
+        self->model = loadURDFfromFile(msg->command_data);
+        MatrixXd q0 = MatrixXd::Zero(self->model->NB,1);
+        self->model->doKinematics(q0.data());
+      }
+      break;
+
+    default:
+      cerr << "viewer command " << msg->command_type << " not implemented yet" << endl;
+      break;
+  }
+}
+
+static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * channel, 
+        const lcmt_robot_state * msg, void * user)
+{
+  RendererData *self = (RendererData*) user;
+}
+
+
 void 
 drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
 {
@@ -141,6 +171,7 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
     
   self->lcm = lcm;
   self->viewer = viewer;
+  self->model = NULL;
   
   renderer->draw = my_draw;
   renderer->destroy = my_free;
@@ -149,14 +180,15 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
   renderer->enabled = 1;
   renderer->user = self;
   
-  //  todo:  subscribe to urdf listener
+  lcmt_viewer_command_subscribe(lcm,"DRAKE_VIEWER_COMMAND",&handle_lcm_viewer_command,self);
+  lcmt_robot_state_subscribe(lcm,"DRAKE_VIEWER_STATE",&handle_lcm_robot_state,self);
   
   //  for now, just load a hard-coded urdf:
 //  self->model = loadURDFfromFile("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
 //  self->model = loadURDFfromFile("../test/FallingBrick.urdf");
-  self->model = loadURDFfromFile("../../../examples/Acrobot/Acrobot.urdf");
-  MatrixXd q0 = MatrixXd::Zero(self->model->NB,1);
-  self->model->doKinematics(q0.data());
+//  self->model = loadURDFfromFile("../../../examples/Acrobot/Acrobot.urdf");
+//  MatrixXd q0 = MatrixXd::Zero(self->model->NB,1);
+//  self->model->doKinematics(q0.data());
   
   bot_viewer_add_renderer(viewer, renderer, priority);
 }

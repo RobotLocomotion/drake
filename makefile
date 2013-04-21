@@ -4,6 +4,8 @@
 LCMFILES = $(shell find . -iname "*.lcm" | tr "\n" " " | sed "s|\./||g")
 
 LCM_CFILES = $(LCMFILES:%.lcm=%.c) 
+LCM_CFLAGS = $(shell pkg-config --cflags lcm)
+LCM_LDFLAGS = $(shell pkg-config --libs lcm)
 CFILES = $(LCM_CFILES)
 LCM_JAVAFILES = $(LCMFILES:%.lcm=%.java)
 OTHER_JAVAFILES = util/MyLCMTypeDatabase.java util/MessageMonitor.java util/CoordinateFrameData.java util/LCMCoder.java
@@ -28,15 +30,18 @@ drake.a : $(OBJFILES)
 .INTERMEDIATE : $(OBJFILES) $(CLASSFILES)
 .PRECIOUS : $(LCMFILES) $(OTHER_JAVAFILES)
 
+util/LCMCoder.class : util/LCMCoder.java util/CoordinateFrameData.class
+	javac $< -cp $(CLASSPATH):$(shell pwd)/../
+
 %.class : %.java
 	javac $<
 
 %.o : %.c
-	gcc -c -I include/ $< -o $@
+	gcc -c -I include/ $< -o $@ $(LCM_CFLAGS)
 
 %.c : %.lcm
 	@if grep -i package $< ; then echo "\n *** ERROR: $< has a package specified.  Don't do that. *** \n"; exit 1; fi
-	lcm-gen -c --c-cpath="$(shell echo $< | sed "s|/[A-Za-z0-9_]*\.lcm|/|")" --c-hpath="include/" $<
+	lcm-gen -c --c-cpath="$(shell echo $< | sed "s|/[A-Za-z0-9_]*\.lcm|/|")" --c-hpath="include/" $< 
 
 %.java : %.lcm
 	@if grep -i package $< ; then echo "\n *** ERROR: $< has a package specified.  Don't do that. *** \n"; exit 1; fi
