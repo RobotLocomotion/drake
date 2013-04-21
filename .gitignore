@@ -102,3 +102,9 @@ systems/plants/test/.#Makefile
 systems/plants/viewer/drake_viewer
 systems/plants/viewer/drake_viewer.dSYM/Contents/Info.plist
 systems/plants/viewer/drake_viewer.dSYM/Contents/Resources/DWARF/drake_viewer
+include/lcmt_drake_signal.h
+include/lcmt_huboplus_input.h
+include/lcmt_huboplus_sensors.h
+include/lcmt_huboplus_state.h
+include/lcmt_robot_state.h
+include/lcmt_viewer_command.h
