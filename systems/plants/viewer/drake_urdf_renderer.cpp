@@ -157,6 +157,21 @@ static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * chan
         const lcmt_robot_state * msg, void * user)
 {
   RendererData *self = (RendererData*) user;
+  
+  if (!self->model) return;
+  
+  MatrixXd q = MatrixXd::Zero(self->model->NB,1);
+  
+  for (int i=0; i<msg->num_joints; i++)
+  {
+    map<string, int>::iterator iter = self->model->joint_map.find(msg->joint_name[i]);
+    if (iter==self->model->joint_map.end())
+      cerr << "couldn't find joint named " << msg->joint_name[i] << endl;
+    else
+      q(iter->second) = (double) msg->joint_position[i];
+  }
+  
+  self->model->doKinematics(q.data());
 }
 
 

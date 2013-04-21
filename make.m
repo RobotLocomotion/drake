@@ -77,6 +77,13 @@ else
     cd systems;
     mexMakeRule('DCSFunction.cpp');
     cd(getDrakePath());
+    
+    if (ispc)
+      cd(fullfile('thirdParty','GetFullPath'));
+      mexMakeRule('GetFullPath.c');
+      cd(getDrakePath());
+    end
+    
   catch ex
     cd(getDrakePath());
     rethrow(ex);

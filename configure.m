@@ -104,6 +104,7 @@ addpath([conf.root,'/thirdParty']);
 addpath([conf.root,'/thirdParty/path']);
 addpath([conf.root,'/thirdParty/spatial']);
 addpath([conf.root,'/thirdParty/cprintf']);
+addpath([conf.root,'/thirdParty/GetFullPath']);
 
 % todo: setup java classpath (not hard to do it once... but how can I set
 % it up for future sessions as well?  maybe write to startup.m, or prompt
