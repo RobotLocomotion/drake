@@ -5,8 +5,6 @@
 
 #include "urdf.h"
 
-#define BOT_VIS_SUPPORT  // adds a bunch of dependencies, which are not necessary for all functionality
-
 #ifdef BOT_VIS_SUPPORT
 #include <bot_core/bot_core.h>
 #include <bot_vis/bot_vis.h>
@@ -75,7 +73,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
     
     this->parent[5] = 4;
     this->pitch[5] = 0;
-    this->bodies[6].jointname = "base_yaw";
+    this->bodies[6].linkname = this->bodies[6].jointname = "base_yaw";
   }
   
   int index=0;
@@ -100,7 +98,6 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
       }
     } else {
       this->parent[index] = 5;  // no parent: attach it to the floating base
-      this->bodies[6].linkname = j->second->parent_link_name;
     }
     
     // set pitch
@@ -166,7 +163,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
           if (!boost::filesystem::exists(fname)) {
             cerr << "cannot find mesh file: " << fname;
             if (has_package)
-              cerr << " (note: original mesh string had a package:// in it)";
+              cerr << " (note: original mesh string had a package:// in it, and I haven't really implemented rospack yet)";
             cerr << endl;
             continue;
           }

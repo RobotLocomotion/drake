@@ -7,10 +7,10 @@ LDFLAGS = $(shell pkg-config --libs bot2-vis bot2-lcmgl-renderer) -ltinyxml
 eigenflags = -I../../../thirdParty/eigen3
 
 drake_viewer : main.cpp drake_urdf_renderer.o drake_urdf_renderer.h ../urdf.o ../RigidBodyManipulator.o ../link.o ../joint.o
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lboost_filesystem-mt -lboost_system-mt 
 
 %.o : %.cpp %.h
-	$(CC) -c $(CFLAGS) $(eigenflags) -I. $<
+	$(CC) -c $(CFLAGS) $(eigenflags) -I.. $<
 
 ../%.o : 
 	$(MAKE) -C .. $(@:../%.o=%.o)

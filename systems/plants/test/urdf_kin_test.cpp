@@ -8,8 +8,8 @@ using namespace std;
 int main(int argc, char* argv[])
 {
   // todo: pull urdf filename off the command line
-//  URDFRigidBodyManipulator* model = loadURDFfromFile("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
-  URDFRigidBodyManipulator* model = loadURDFfromFile("/Users/russt/drc/software/models/mit_gazebo_models/mit_robot/model.urdf");
+  URDFRigidBodyManipulator* model = loadURDFfromFile("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
+//  URDFRigidBodyManipulator* model = loadURDFfromFile("/Users/russt/drc/software/models/mit_gazebo_models/mit_robot/model.urdf");
   
   // run kinematics with second derivatives 100 times
   double q[34];
@@ -21,8 +21,7 @@ int main(int argc, char* argv[])
     model->doKinematics(q,true);
   }
   
-  Vector4d zero;
-  zero << 0,0,0,1; 
+  const Vector4d zero(0,0,0,1);
   
   for (i=0; i<=model->NB; i++) {
     cout << "forward kin: " << model->bodies[i].linkname << " is at " << model->forwardKin(i,zero,1).transpose() << endl;
