@@ -37,6 +37,10 @@ int main(int argc, char *argv[])
   pwidget = gtk_widget_get_parent(pwidget);  // controls_align1
   pwidget = gtk_widget_get_parent(pwidget);  // hpaned_main
   gtk_paned_set_position(GTK_PANED(pwidget), 0);
+  
+  // set initial view
+  const double eye[3] = {0.0,-4.0,2.0}, lookat[3] = {0.0,0.0,0.0}, up[3] = {0.0,0.0,1.0};
+  viewer->view_handler->set_look_at(viewer->view_handler, eye, lookat, up); 
 
   // core renderers
   bot_viewer_add_stock_renderer(viewer, BOT_VIEWER_STOCK_RENDERER_GRID, 1);
