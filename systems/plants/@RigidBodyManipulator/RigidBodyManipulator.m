@@ -374,7 +374,7 @@ classdef RigidBodyManipulator < Manipulator
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
       if nargin<3 || isempty(robot), robot=0; end
-      if ischar(robot) robot = strmatch(tolower(robot),lower({model.name})); end
+      if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
       ind = strmatch(lower(linkname),lower({model.body.linkname}),'exact');
       if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
       if (length(ind)~=1)
@@ -392,7 +392,7 @@ classdef RigidBodyManipulator < Manipulator
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
       if nargin<3 || isempty(robot), robot=0; end
-      if ischar(robot) robot = strmatch(tolower(robot),lower({model.name})); end
+      if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
       ind = strmatch(lower(linkname),lower({model.body.linkname}),'exact');
       if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
       if (length(ind)~=1)
@@ -410,7 +410,7 @@ classdef RigidBodyManipulator < Manipulator
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
       if nargin<3 || isempty(robot), robot=0; end
-      if ischar(robot) robot = strmatch(tolower(robot),lower({model.name})); end
+      if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
       ind = strmatch(lower(jointname),lower({model.body.jointname}),'exact');
       if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
       if (length(ind)~=1)
