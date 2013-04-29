@@ -29,6 +29,14 @@ int main(int argc, char *argv[])
 
   //die cleanly for control-c etc :-)
   bot_gtk_quit_on_interrupt();
+  
+  // hide left control box (unfortunately, assumes exact gui structure used in viewer.c)
+  GtkWidget* pwidget = viewer->controls_box_left;
+  pwidget = gtk_widget_get_parent(pwidget);  // controls_view1
+  pwidget = gtk_widget_get_parent(pwidget);  // controls_scroll1
+  pwidget = gtk_widget_get_parent(pwidget);  // controls_align1
+  pwidget = gtk_widget_get_parent(pwidget);  // hpaned_main
+  gtk_paned_set_position(GTK_PANED(pwidget), 0);
 
   // core renderers
   bot_viewer_add_stock_renderer(viewer, BOT_VIEWER_STOCK_RENDERER_GRID, 1);
