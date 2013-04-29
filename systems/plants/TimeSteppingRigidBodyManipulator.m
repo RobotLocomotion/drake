@@ -504,6 +504,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       obj.manip = setTerrain(obj.manip,varargin{:});
     end
     
+    function varargout = getTerrainHeight(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = getTerrainHeight(obj.manip,varargin{:});
+    end
+    
     function obj=addRobotFromURDF(obj,varargin)
       if obj.twoD
         S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
