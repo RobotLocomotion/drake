@@ -63,7 +63,11 @@ classdef RigidBodyManipulator < Manipulator
       typecheck(terrain,'RigidBodyTerrain');
       obj.terrain = terrain;
     end
-    
+
+    function [z,normal] = getTerrainHeight(obj,contact_pos)
+      [z,normal] = getHeight(obj.terrain,contact_pos(1:2,:));
+    end
+  
     function B = getB(obj)
       checkDirty(obj);
       B = obj.B;
@@ -731,7 +735,7 @@ classdef RigidBodyManipulator < Manipulator
       %% compute tangent vectors, according to the description in the last paragraph of Stewart96, p.2678
       t1=normal; % initialize size
       % handle the normal = [0;0;1] case
-      ind=(1-normal(3,:))<eps;  % since it's a unit normal, i can just check the z component
+      ind=(1-normal(3,:))<10e-8;  % since it's a unit normal, i can just check the z component
       t1(:,ind) = repmat([1;0;0],1,sum(ind));
       ind=~ind;
       % now the general case

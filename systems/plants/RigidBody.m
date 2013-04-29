@@ -157,7 +157,7 @@ classdef RigidBody < handle
       end      
 
       if any(rpy)
-        error('rpy in inertia block not implemented yet (but would be easy)');
+        error([body.linkname,': rpy in inertia block not implemented yet (but would be easy)']);
       end
       setInertial(body,mass,xyz,inertia);
     end
