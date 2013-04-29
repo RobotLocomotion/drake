@@ -69,42 +69,48 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
       glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]); 
       
       map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
-      vector<boost::shared_ptr<urdf::Visual> > visuals = (*v_grp_it->second);
-      for (size_t iv = 0;iv < visuals.size();iv++)
+      if (v_grp_it == l->second->visual_groups.end()) continue;
+
+      vector<boost::shared_ptr<urdf::Visual> > *visuals = v_grp_it->second.get();
+      for (vector<boost::shared_ptr<urdf::Visual> >::iterator viter = visuals->begin(); viter!=visuals->end(); viter++) 
       {
+        urdf::Visual * vptr = viter->get();
+        if (!vptr) continue;
+        
         glPushMatrix();
         
         // handle visual material 
-        glColor4f(visuals[iv]->material->color.r,
-                visuals[iv]->material->color.g,
-                visuals[iv]->material->color.b,
-                visuals[iv]->material->color.a);
+        if (vptr->material)
+          glColor4f(vptr->material->color.r,
+                  vptr->material->color.g,
+                  vptr->material->color.b,
+                  vptr->material->color.a);
 
         // todo: handle textures here?
         
         // handle visual origin
-        glTranslatef(visuals[iv]->origin.position.x, 
-                visuals[iv]->origin.position.y,
-                visuals[iv]->origin.position.z);
+        glTranslatef(vptr->origin.position.x, 
+                vptr->origin.position.y,
+                vptr->origin.position.z);
 
-        quat[0] = visuals[iv]->origin.rotation.w;
-        quat[1] = visuals[iv]->origin.rotation.x;
-        quat[2] = visuals[iv]->origin.rotation.y;
-        quat[3] = visuals[iv]->origin.rotation.z;
+        quat[0] = vptr->origin.rotation.w;
+        quat[1] = vptr->origin.rotation.x;
+        quat[2] = vptr->origin.rotation.y;
+        quat[3] = vptr->origin.rotation.z;
         bot_quat_to_angle_axis(quat, &theta, axis);
         glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
         
-        int type = visuals[iv]->geometry->type;
+        int type = vptr->geometry->type;
         if (type == urdf::Geometry::SPHERE) {
-          boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(visuals[iv]->geometry));
+          boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(vptr->geometry));
           double radius = sphere->radius;
           glutSolidSphere(radius,36,36);
         } else if (type == urdf::Geometry::BOX) {
-          boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(visuals[iv]->geometry));
+          boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(vptr->geometry));
           glScalef(box->dim.x,box->dim.y,box->dim.z);
           glutSolidCube(1.0);
         } else if  (type == urdf::Geometry::CYLINDER) {
-          boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(visuals[iv]->geometry));
+          boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(vptr->geometry));
           
           // transform to center of cylinder
           glTranslatef(0.0,0.0,-cyl->length/2.0);
