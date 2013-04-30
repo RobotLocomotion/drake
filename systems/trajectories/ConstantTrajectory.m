@@ -29,7 +29,14 @@ classdef ConstantTrajectory < Trajectory
     
     function y = eval(obj,t)
     % Return the fixed point for all t.
-      y = obj.pt;
+      d = size(obj.pt);
+      dd = 0*d+1;  % 1 for all values
+      if (d(end)==1), 
+        dd(end) = length(t);
+      else
+        dd(end+1) = length(t);
+      end
+      y = repmat(obj.pt,dd);
     end
     
     function t = getBreaks(obj)
