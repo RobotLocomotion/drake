@@ -152,14 +152,22 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       q=x(1:num_q); qd=x((num_q+1):end);
       h = obj.timestep;
 
-      qdn = Mqdn*z + wqdn;
+      if isempty(z)
+        qdn = wqdn;
+      else
+        qdn = Mqdn*z + wqdn;
+      end
       qn = q + h*qdn;
       xdn = [qn;qdn];
       
       if (nargout>1)  % compute gradients
         warning('timestepping gradients don''t work for all cases.. see bug 1155');
         
-        dqdn = matGradMult(dMqdn,z) + Mqdn*dz + dwqdn;
+        if isempty(z)
+          dqdn = dwqdn;
+        else
+          dqdn = matGradMult(dMqdn,z) + Mqdn*dz + dwqdn;
+        end
         df = [ [zeros(num_q,1), eye(num_q), zeros(num_q,num_q+obj.num_u)]+h*dqdn; dqdn ]; 
       end
     end
@@ -198,9 +206,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       nV = obj.manip.num_velocity_constraints;  
       
       if (nC+nL+nP+nV==0)
-        qd_out = qd + h*(H\tau);
-        q_out = q + h*qd_out;
-        xdn = [q_out; qd_out];
+        z = [];
+        Mqdn = [];
+        wqdn = qd + h*(H\tau);
         if (nargout>3) error('need to implement this case'); end
         return;
       end      
