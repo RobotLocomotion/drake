@@ -1,4 +1,4 @@
-classdef DTTrajectory < Trajectory
+classdef (InferiorClasses = {?ConstantTrajectory,?FunctionHandleTrajectory,?PPTrajectory}) DTTrajectory < Trajectory
   
   properties
     tt
@@ -47,5 +47,46 @@ classdef DTTrajectory < Trajectory
         end
       end
     end
+    
+    function obj = vertcat(varargin)
+      % find the first DTTrajectory
+      ind = find(cellfun(@(a)isa(a,'DTTrajectory'),varargin),1);
+      tt = varargin{ind}.tt;
+      xx=[];
+      
+      fr = {};
+      for i=1:length(varargin)
+        if (isa(varargin{i},'DTTrajectory'))
+          valuecheck(tt,varargin{i}.tt);  % error if they are not at the same sample times (up to numerical errors)
+          xx = vertcat(xx,varargin{i}.xx);
+        else
+          xx = vertcat(xx,eval(varargin{i},tt));
+        end
+        fr = {fr{:},getOutputFrame(varargin{i})};
+      end
+      obj = DTTrajectory(tt,xx);
+      obj = setOutputFrame(obj,MultiCoordinateFrame(fr));
+    end
+    
+    function obj = horzcat(varargin)
+      % find the first DTTrajectory
+      ind = find(cellfun(@(a)isa(a,'DTTrajectory'),varargin),1);
+      tt = varargin{ind}.tt;
+      xx=[];
+      
+      fr ={};
+      for i=1:length(varargin)
+        if (isa(varargin{i},'DTTrajectory'))
+          valuecheck(tt,varargin{i}.tt);  % error if they are not at the same sample times (up to numerical errors)
+          xx = horzcat(xx,varargin{i}.xx);
+        else
+          xx = horzcat(xx,eval(varargin{i},tt));
+        end
+        fr = {fr{:},getOutputFrame(varargin{i})};
+      end
+      obj = DTTrajectory(tt,xx);
+      obj = setOutputFrame(obj,MultiCoordinateFrame(fr));
+    end
+
   end
 end
