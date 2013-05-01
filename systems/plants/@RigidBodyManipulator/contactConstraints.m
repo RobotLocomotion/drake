@@ -67,14 +67,15 @@ if (nargout>1)
   d = obj.surfaceTangents(normal);
   m=length(d);
   
-  n = sparse(repmat(1:size([obj.body(body_idx).contact_pts],2),3,1),1:3*size([obj.body(body_idx).contact_pts],2),normal(:))*J;
+  indmat = repmat(1:size([obj.body(body_idx).contact_pts],2),3,1);
+  n = sparse(indmat,1:3*size([obj.body(body_idx).contact_pts],2),normal(:))*J;
   D = cell(1,m);
   dD = cell(1,m);
   for k=1:m
-    D{k} = sparse(repmat(1:size([obj.body(body_idx).contact_pts],2),3,1),1:3*size([obj.body(body_idx).contact_pts],2),d{k}(:))*J;
+    D{k} = sparse(indmat,1:3*size([obj.body(body_idx).contact_pts],2),d{k}(:))*J;
     if (nargout>4)
       % note: this temporarily assumes that the normal does not change with contact_pos
-      dD{k} = reshape(sparse(repmat(1:size([obj.body(body_idx).contact_pts],2),3,1),1:3*size([obj.body(body_idx).contact_pts],2),d{k}(:))*dJ,numel(n),[]);
+      dD{k} = reshape(sparse(indmat,1:3*size([obj.body(body_idx).contact_pts],2),d{k}(:))*dJ,numel(n),[]);
     end
   end
   for k=(m+1):2*m
@@ -93,7 +94,7 @@ if (nargout>1)
   %          end
   %        end
   if (nargout>4)
-    dn = reshape(sparse(repmat(1:size([obj.body(body_idx).contact_pts],2),3,1),1:3*size([obj.body(body_idx).contact_pts],2),normal(:))*dJ,numel(n),[]);
+    dn = reshape(sparse(indmat,1:3*size([obj.body(body_idx).contact_pts],2),normal(:))*dJ,numel(n),[]);
   end
   
 end
