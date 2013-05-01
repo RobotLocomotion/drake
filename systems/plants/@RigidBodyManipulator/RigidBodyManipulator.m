@@ -736,11 +736,14 @@ classdef RigidBodyManipulator < Manipulator
       t1=normal; % initialize size
       % handle the normal = [0;0;1] case
       ind=(1-normal(3,:))<10e-8;  % since it's a unit normal, i can just check the z component
-      t1(:,ind) = repmat([1;0;0],1,sum(ind));
+  
+      t1(:,ind) = [ones(1,sum(ind)); zeros(2,sum(ind))];
       ind=~ind;
+      
       % now the general case
-      t1(:,ind) = cross(normal(:,ind),repmat([0;0;1],1,sum(ind)));
-      t1 = t1./repmat(sqrt(sum(t1.^2,1)),3,1); % normalize
+      t1(:,ind) = cross(normal(:,ind),[zeros(2,sum(ind)); ones(1,sum(ind))]);
+      
+      t1 = bsxfun(@rdivide,t1,sqrt(sum(t1.^2,1))); % normalize
       
       t2 = cross(t1,normal);
       
