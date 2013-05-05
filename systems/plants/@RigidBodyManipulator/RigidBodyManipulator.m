@@ -101,33 +101,6 @@ classdef RigidBodyManipulator < Manipulator
       f = [ cross(point,force,1); force ];
     end
     
-    function [x,J,dJ] = kinTest(m,q)
-      % test for kinematic gradients
-      kinsol=doKinematics(m,q,nargout>2,false);
-      
-      count=0;
-      for i=1:length(m.body)
-        body = m.body(i);
-        for j=1:length(body.geometry)
-          s = size(body.geometry{j}.x); n=prod(s);
-          pts = [reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n)];
-          if (nargout>2)
-            [x(:,count+(1:n)),J(2*count+(1:2*n),:),dJ(2*count+(1:2*n),:)] = forwardKin(m,kinsol,i,pts);
-          elseif (nargout>1)
-            [x(:,count+(1:n)),J(2*count+(1:2*n),:)] = forwardKin(m,kinsol,i,pts);
-          else
-            if ~exist('x') % extra step to help taylorvar
-              x = forwardKin(m,kinsol,i,pts);
-            else
-              xn = forwardKin(m,kinsol,i,pts);
-              x=[x,xn];
-            end
-          end
-          count = count + n;
-        end
-      end
-    end
-    
     function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits)
       if (nargin<6) xyz=zeros(3,1); end
       if (nargin<7) rpy=zeros(3,1); end
@@ -168,7 +141,7 @@ classdef RigidBodyManipulator < Manipulator
       % *ALMOST* (up to translation?? need to resolve this!) the same as inv(Xtree)*[x;zeros(3,1)].  sigh.
 %      valuecheck([eye(3),zeros(3,1)]*child.Ttree*ones(4,1),[eye(3),zeros(3)]*inv(child.Xtree)*[ones(3,1);zeros(3,1)]);
 
-      if ~any(strcmp(lower(type),{'fixed','floating'})) && dot(axis,[0;0;1])<1-1e-4
+      if ~any(strcmp(lower(type),{'fixed','floating_rpy','floating_quat'})) && dot(axis,[0;0;1])<1-1e-4
         % featherstone dynamics treats all joints as operating around the
         % z-axis.  so I have to add a transform from the origin of this
         % link to align the joint axis with the z-axis, update the spatial
@@ -692,21 +665,6 @@ classdef RigidBodyManipulator < Manipulator
   end
   
   methods (Static)
-    function xfb = floatingBaseFromQuat(xyz,quat)
-      % converts from xyz,quaternion to floating base coordinates
-      % quat is [w;x;y;z]
-      
-      xfb = xyz;
-      [xfb(4),xfb(5),xfb(6)] = quat2angle(quat','XYZ');
-      % NOTEST
-    end
-
-    function [xyz,quat] = floatingBaseToQuat(xfb)
-      xyz = xfb(1:3);
-      quat = angle2quat(xfb(4),xfb(5),xfb(6),'XYZ')';
-      % NOTEST
-    end
-    
     function d=surfaceTangents(normal)
       %% compute tangent vectors, according to the description in the last paragraph of Stewart96, p.2678
       t1=normal; % initialize size

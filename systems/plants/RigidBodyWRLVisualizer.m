@@ -63,6 +63,15 @@ classdef RigidBodyWRLVisualizer < Visualizer
       end
       set(obj.wrl,'Time',t);
       vrdrawnow;
+      
+      if (false)  % useful for graphically debugging kinematics
+        figure(143); title('WRL kinematics debugger');
+        kinsol = doKinematics(obj.model,x(1:obj.model.getNumDOF),false,false);
+        pts = contactPositions(obj.model,kinsol);
+        plot3(pts(1,:),pts(2,:),pts(3,:),'b*');
+        xlabel('x'); ylabel('y'); zlabel('z');
+        axis equal; xlim([-2.5,2.5]); ylim([-2.5,2.5]); zlim([-2.5;2.5]); view(0,20);
+      end
     end
     
     function playbackAVI(obj,xtraj,filename)

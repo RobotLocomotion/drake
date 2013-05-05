@@ -13,7 +13,7 @@ if nargin<3
 end
 
 d=length(obj.gravity);  % 2 for planar, 3 for 3D
-contact_pos = zeros(d,size([obj.body(body_idx).contact_pts],2));  
+contact_pos = zeros(d,size([obj.body(body_idx).contact_pts],2))*kinsol.q(1);  
 if (nargout>1) 
   J = zeros(size([obj.body(body_idx).contact_pts],2)*d,obj.num_q); 
 end

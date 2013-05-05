@@ -3,34 +3,19 @@ function testBrickKinematics
 options.floating = true;
 m = RigidBodyManipulator('FallingBrick.urdf',options);
 
-  function [x,J] = getPoints(m,q)  
-    kinsol = doKinematics(m,q);
-        
-    count=0;
-    for i=1:length(m.body)
-      body = m.body(i);
-      n = size(body.contact_pts,2);
-      if (n>0)
-        if (nargout>1)
-          [x(:,count+(1:n)),J(3*count+(1:3*n),:)] = forwardKin(m,kinsol,i,body.contact_pts);
-        else
-          if ~exist('x') % extra step to help taylorvar
-            x = forwardKin(m,kinsol,i,body.contact_pts);
-          else
-            xn = forwardKin(m,kinsol,i,body.contact_pts);
-            x=[x,xn];
-          end
-        end
-        count = count + n;
-      end
-    end
-  end
-
-options.grad_method = {'user','taylorvar'};
-
+nq=getNumDOF(m);
 for i=1:100
-  q = randn(6,1); 
-  [x,J] = geval(1,@getPoints,m,q,options);
+  q = randn(nq,1); qd = randn(nq,1);
+  options.grad_method = {'user','taylorvar'};
+%  [x,J] = geval(1,@contactPositions,m,q,options);
+
+  options.grad_method = 'taylorvar';
+  [x,J,dJ] = geval(1,@contactPositions,m,q,options);
+  kinsol = doKinematics(m,q,false,false,qd);
+  [~,~,Jdot] = contactPositionsJdot(m,kinsol);
+  valuecheck(Jdot,matGradMult(reshape(dJ,3*getNumContacts(m)*nq,nq),qd));
 end
+
+
 
 end
