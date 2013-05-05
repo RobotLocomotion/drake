@@ -43,6 +43,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       plhs[0] = mxCreateDoubleMatrix(3,model->num_dof,mxREAL);
       Map<MatrixXd> Jdot(mxGetPr(plhs[0]),3,model->num_dof);
       model->getCOMJacDot(Jdot);
+      return;
     }
     
     if (nlhs>0) {

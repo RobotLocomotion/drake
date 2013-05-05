@@ -311,6 +311,8 @@ classdef RigidBodyManipulator < Manipulator
             
       %% extract featherstone model structure
       [model,num_dof] = extractFeatherstone(model);
+      
+      if (num_dof<1) error('This model has no DOF!'); end
 
       u_limit = repmat(inf,length(model.actuator),1);
 
