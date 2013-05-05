@@ -17,9 +17,11 @@ class RigidBody {
 public:
   std::string linkname;
   std::string jointname;
-  int parent;
-  int dofnum;
+// note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the rigidbodymanipulator level to represent the featherstone structure.  this version is for the kinematics.  
+  int parent;   
+  int dofnum;   
   int floating;
+  int pitch;
   Matrix4d Ttree;
   Matrix4d T_body_to_joint;
   std::set<int> ancestor_dofs;

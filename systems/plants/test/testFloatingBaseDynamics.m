@@ -3,6 +3,7 @@ function testFloatingBaseDynamics
 urdf = 'FallingBrick.urdf';
 urdf = '../../../examples/FurutaPendulum/FurutaPendulum.urdf';
 
+urdf=urdf{1};  
 options.floating = 'rpy';
 m_rpy = TimeSteppingRigidBodyManipulator(urdf,.01,options);
 options.floating = 'YPR';
@@ -22,6 +23,7 @@ for i=1:25
   
   kinsol = doKinematics(m_rpy,q,false,false,qd);
   [pt,J,Jdot] = contactPositionsJdot(m_rpy,kinsol);
+  
   kinsol2 = doKinematics(m_ypr_rel,q(ind),false,false,qd(ind));
   [pt2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2);
   
@@ -31,7 +33,7 @@ for i=1:25
   
   kinsol = doKinematics(m_rpy,q,false,true,qd);
   [pt2,J2,Jdot2] = contactPositionsJdot(m_rpy,kinsol);
-  
+
   valuecheck(pt,pt2);
   valuecheck(J,J2);
   valuecheck(Jdot,Jdot2);
@@ -68,6 +70,6 @@ for i=1:25
   valuecheck(xdn,xdn2([ind;nq+ind]),1e-6);
 end
 
-
+end
 
 end

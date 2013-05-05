@@ -29,13 +29,13 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   memcpy(&model,mxGetData(prhs[0]),sizeof(model));
 
   double* q = mxGetPr(prhs[1]);
-  for (int i = 0; i < model->NB; i++) {
+  for (int i = 0; i < model->num_dof; i++) {
     if (q[i] - model->cached_q[i] > 1e-8 || q[i] - model->cached_q[i] < -1e-8) {
       mexErrMsgIdAndTxt("Drake:forwardKinmex:InvalidKinematics","This kinsol is not longer valid.  Somebody has called doKinematics with a different q since the solution was computed.");
     }
   }
   
-  int body_ind = ((int) mxGetScalar(prhs[2])) - 1;  // note: this is body_ind-1 (so 0 to NB)
+  int body_ind = ((int) mxGetScalar(prhs[2])) - 1;  // note: this is body_ind-1 (so 0 to num_bodies)
   bool b_jacdot = nrhs>5 && (bool) mxGetScalar(prhs[5]);
 
   if (body_ind==-1) {  // compute center of mass
@@ -64,7 +64,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     }
     
     return;
-  } else if (body_ind<0 || body_ind>model->NB) {
+  } else if (body_ind<0 || body_ind>model->num_bodies) {
       mexErrMsgIdAndTxt("Drake:forwardKinmex:BadInputs","body_ind must be -1 (for com) or between 0 and NB");
   }
 
