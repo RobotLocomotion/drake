@@ -46,7 +46,10 @@ classdef RigidBodyWRLVisualizer < Visualizer
         b = obj.model.body(i);
         if ~isempty(b.parent)
           node=getfield(obj.wrl,b.jointname);
-          if (b.pitch==0)
+          if (b.floatingbase)
+            node.rotation = rpy2axis(x(b.dofnum(4:6)))';
+            node.translation = x(b.dofnum(1:3))';
+          elseif (b.pitch==0)
             node.rotation=[b.joint_axis' x(i-1)];
           elseif isinf(b.pitch)
             node.translation=x(i-1)*b.joint_axis';

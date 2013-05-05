@@ -397,9 +397,9 @@ void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shar
       jointname_to_jointnum.insert(std::make_pair(j->name+"_x",(int)jointname_to_jointnum.size()));
       jointname_to_jointnum.insert(std::make_pair(j->name+"_y",(int)jointname_to_jointnum.size()));
       jointname_to_jointnum.insert(std::make_pair(j->name+"_z",(int)jointname_to_jointnum.size()));
-      jointname_to_jointnum.insert(std::make_pair(j->name+"_yaw",(int)jointname_to_jointnum.size()));
-      jointname_to_jointnum.insert(std::make_pair(j->name+"_pitch",(int)jointname_to_jointnum.size()));
       jointname_to_jointnum.insert(std::make_pair(j->name+"_roll",(int)jointname_to_jointnum.size()));
+      jointname_to_jointnum.insert(std::make_pair(j->name+"_pitch",(int)jointname_to_jointnum.size()));
+      jointname_to_jointnum.insert(std::make_pair(j->name+"_yaw",(int)jointname_to_jointnum.size()));
 
       // idea: could also insert the original joint name
       jointname_to_jointnum.insert(std::make_pair(j->name,-1));
@@ -431,9 +431,9 @@ URDFRigidBodyManipulator* loadURDFfromXML(const std::string &xml_string, const s
     jointname_to_jointnum.insert(std::make_pair("base_x",jointnum++));
     jointname_to_jointnum.insert(std::make_pair("base_y",jointnum++));
     jointname_to_jointnum.insert(std::make_pair("base_z",jointnum++));
-    jointname_to_jointnum.insert(std::make_pair("base_yaw",jointnum++));
-    jointname_to_jointnum.insert(std::make_pair("base_pitch",jointnum++));
     jointname_to_jointnum.insert(std::make_pair("base_roll",jointnum++));
+    jointname_to_jointnum.insert(std::make_pair("base_pitch",jointnum++));
+    jointname_to_jointnum.insert(std::make_pair("base_yaw",jointnum++));
     
     for (std::map<std::string, boost::shared_ptr<urdf::Joint> >::iterator j=urdf_model->joints_.begin(); j!=urdf_model->joints_.end(); j++)
       setJointNum(urdf_model,j->second,jointname_to_jointnum);

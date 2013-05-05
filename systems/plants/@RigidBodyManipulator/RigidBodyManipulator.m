@@ -162,13 +162,13 @@ classdef RigidBodyManipulator < Manipulator
       end      
 
       child.Xtree = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
-      child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];
+      child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];  % equivalent to rpy2rotmat
 
       % note that I only now finally understand that my Ttree*[x;1] is
       % *ALMOST* (up to translation?? need to resolve this!) the same as inv(Xtree)*[x;zeros(3,1)].  sigh.
 %      valuecheck([eye(3),zeros(3,1)]*child.Ttree*ones(4,1),[eye(3),zeros(3)]*inv(child.Xtree)*[ones(3,1);zeros(3,1)]);
 
-      if ~strcmp(lower(type),'fixed') && dot(axis,[0;0;1])<1-1e-4
+      if ~any(strcmp(lower(type),{'fixed','floating'})) && dot(axis,[0;0;1])<1-1e-4
         % featherstone dynamics treats all joints as operating around the
         % z-axis.  so I have to add a transform from the origin of this
         % link to align the joint axis with the z-axis, update the spatial
@@ -200,6 +200,10 @@ classdef RigidBodyManipulator < Manipulator
         case 'fixed'
           child.pitch = nan;
           
+        case 'floating'
+          child.pitch = 0;
+          child.floatingbase = true;
+          
         otherwise
           error(['joint type ',type,' not supported (yet?)']);
       end
@@ -213,40 +217,7 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function model = addFloatingBase(model,parent,rootlink,xyz,rpy)
-      % for now, just adds x,y,z,roll,pitch,yaw (in euler angles).
-      % todo: consider using quaternions)
-      
-      body1 = newBody(model);
-      body1.linkname = ['base_x'];
-      body1.robotnum=rootlink.robotnum;
-      model.body = [model.body,body1];
-      model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,[1;0;0],0);
-
-      body2=newBody(model);
-      body2.linkname = ['base_y'];
-      body2.robotnum=rootlink.robotnum;
-      model.body = [model.body,body2];
-      model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),[0;1;0],0);
-      
-      body3=newBody(model);
-      body3.linkname = ['base_z'];
-      body3.robotnum=rootlink.robotnum;
-      model.body = [model.body,body3];
-      model = addJoint(model,body3.linkname,'prismatic',body2,body3,zeros(3,1),zeros(3,1),[0;0;1],0);
-      
-      body4=newBody(model);
-      body4.linkname = ['base_roll'];
-      body4.robotnum=rootlink.robotnum;
-      model.body = [model.body,body4];
-      model = addJoint(model,body4.linkname,'revolute',body3,body4,zeros(3,1),zeros(3,1),[1;0;0],0);
-      
-      body5=newBody(model);
-      body5.linkname = ['base_pitch'];
-      body5.robotnum=rootlink.robotnum;
-      model.body = [model.body,body5];
-      model = addJoint(model,body5.linkname,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
-      
-      model = addJoint(model,['base_yaw'],'revolute',body5,rootlink,zeros(3,1),zeros(3,1),[0;0;1],0);
+      model = addJoint(model,['floating_base'],'floating',parent,rootlink,zeros(3,1),zeros(3,1));
     end
         
     function model = addSensor(model,sensor)
@@ -281,10 +252,6 @@ classdef RigidBodyManipulator < Manipulator
             
       %% extract featherstone model structure
       model = extractFeatherstone(model);
-      %sanity check
-      if (model.featherstone.NB + 1 ~= length(model.body))
-        error('Expected there to be only one body without a parent (i.e. world)')
-      end
 
       u_limit = repmat(inf,length(model.actuator),1);
 
@@ -365,7 +332,7 @@ classdef RigidBodyManipulator < Manipulator
         valuecheck(model.body(i).T_body_to_joint(end,end),1);
       end
       
-      model = createMexPointer(model);
+%      model = createMexPointer(model);
       
       model.dirty = false;
     end
@@ -769,7 +736,17 @@ classdef RigidBodyManipulator < Manipulator
     
     function fr = constructStateFrame(model)
       for i=1:length(model.name)
-        joints = {model.body(arrayfun(@(a) ~isempty(a.parent)&&a.robotnum==i,model.body)).jointname}';
+        joints={};
+        for j=1:length(model.body)
+          b = model.body(j);
+          if ~isempty(b.parent) && b.robotnum==i
+            if (b.floatingbase)
+              joints = {joints{:};'base_x';'base_y';'base_z';'base_roll';'base_pitch';'base_yaw'};
+            else
+              joints = {joints{:};b.jointname};
+            end
+          end
+        end
         coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
         fr{i} = SingletonCoordinateFrame([model.name{i},'State'],length(coordinates),'x',coordinates);
       end
@@ -794,12 +771,18 @@ classdef RigidBodyManipulator < Manipulator
       dof=0;inds=[];
       for i=1:length(model.body)
         if (~isempty(model.body(i).parent))
-          dof=dof+1;
-          model.body(i).dofnum=dof;
-          inds = [inds,i];
+          if (model.body(i).floatingbase)
+            model.body(i).dofnum=dof+(1:6)';
+            dof=dof+6;
+            inds = [inds,repmat(i,1,6)];
+          else
+            dof=dof+1;
+            model.body(i).dofnum=dof;
+            inds = [inds,i];
+          end
         end
       end
-      m.NB=length(inds);
+      m.NB=dof;
       for i=1:m.NB
         b=model.body(inds(i));
         m.parent(i) = b.parent.dofnum;

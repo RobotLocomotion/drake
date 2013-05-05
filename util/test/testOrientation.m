@@ -6,6 +6,8 @@ for i = 1:1000
     mat = rpy2rotmat(rpy);
     mat1 = rpy2rotmat(rpy1);
     valuecheck(mat,mat1,1e-6);
+    mat2 = rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1));  % used in RigidBodyManipulator/addJoint
+    valuecheck(mat,mat2,1e-6);
 end
 disp('rpy to rotmat and rotmat to rpy is consistent');
 % test quat to rotmat
