@@ -3,17 +3,14 @@ function [contact_pos,J,Jdot] = contactPositionsJdot(obj,kinsol,body_idx)
 % @retval J is dpdq
 % @retval Jdot is d(dpdq)dt
       
-if ~isstruct(kinsol)  
-  % treat input as contactPositions(obj,q)
-  kinsol = doKinematics(obj,kinsol,nargout>2);
-end
+typecheck(kinsol,'struct');
 
 if nargin<3
   body_idx = 1:length(obj.body);
 end
 
 d=length(obj.gravity);  % 2 for planar, 3 for 3D
-contact_pos = zeros(d,size([obj.body(body_idx).contact_pts],2));  
+contact_pos = zeros(d,size([obj.body(body_idx).contact_pts],2))*kinsol.q(1);  
 if (nargout>1) 
   J = zeros(size([obj.body(body_idx).contact_pts],2)*d,obj.num_q); 
 end

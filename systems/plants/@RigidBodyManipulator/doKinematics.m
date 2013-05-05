@@ -22,9 +22,10 @@ if (use_mex && model.mex_model_ptr~=0 && isnumeric(q))
   kinsol.mex = true;
 else
   kinsol.mex = false;
-  if isnumeric(q) && all(abs(q-[model.body.cached_q]')<1e-8)  % todo: make this tolerance a parameter
+  if isnumeric(q) && all(abs(q-[model.body.cached_q]')<1e-8) && (isempty(qd) || all(abs(qd-[model.body.cached_qd]')<1e-8))  % todo: make this tolerance a parameter
     % then my kinematics are up to date, don't recompute
     % the "isnumeric" check is for the sake of taylorvars
+    
     if b_compute_second_derivatives 
       if ~any(cellfun(@isempty,{model.body.ddTdqdq}))
         % also make sure second derivatives are already computed, if they
@@ -56,45 +57,66 @@ else
       body.ddTdqdq = zeros(3*nq*nq,4);
     elseif body.floatingbase==1
       qi = q(body.dofnum); % qi is 6x1
-      TJ = [rpy2rotmat(qi(4:6)),qi(1:3);zeros(1,3),1];
+      [rx,drx,ddrx] = rotx(qi(4)); [ry,dry,ddry] = roty(qi(5)); [rz,drz,ddrz] = rotz(qi(6));
+      TJ = [rz*ry*rx,qi(1:3);zeros(1,3),1];
       body.T=body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
       
       body.dTdq = [];
-      warning('first derivatives of rpy floating base not implemented yet'); 
-      continue; % need to finish below
-      
+
       % see notes below
       body.dTdq = body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
       
       dTJ{1} = sparse(1,4,1,4,4);
       dTJ{2} = sparse(2,4,1,4,4);
       dTJ{3} = sparse(3,4,1,4,4);
-      dTJ{4} = [rotz(qi(6))*roty(qi(5))*drotx(qi(4)),zeros(3,1); zeros(1,4)];
-      dTJ{5} = [rotz(qi(6))*droty(qi(5))*rotx(qi(4)),zeros(3,1); zeros(1,4)];
-      dTJ{6} = [drotz(qi(6))*roty(qi(5))*rotx(qi(4)),zeros(3,1); zeros(1,4)];
-
-      for i=1:6
-        this_dof_ind = body.dofnum(i)+0:nq:3*nq;
-        body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{i}*body.T_body_to_joint;
+      dTJ{4} = [rz*ry*drx,zeros(3,1); zeros(1,4)];
+      dTJ{5} = [rz*dry*rx,zeros(3,1); zeros(1,4)];
+      dTJ{6} = [drz*ry*rx,zeros(3,1); zeros(1,4)];
+      
+      for j=1:6
+        this_dof_ind = body.dofnum(j)+0:nq:3*nq;
+        body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
       end
       
       if (b_compute_second_derivatives)
-        error('not implemented yet');
+        error('floating base second derivatives not implemented yet');
       end
       
       if isempty(qd)
         body.Tdot = [];
         body.dTdqdot = [];
       else
-        error('not implemented yet');
+        qdi = qd(body.dofnum);
+        TJdot = zeros(4);
+        dTJdot{1} = zeros(4);
+        dTJdot{2} = zeros(4);
+        dTJdot{3} = zeros(4);
+        dTJdot{4} = [(drz*qdi(6))*ry*drx + rz*(dry*qdi(5))*drx + rz*ry*(ddrx*qdi(4)),zeros(3,1); zeros(1,4)];
+        dTJdot{5} = [(drz*qdi(6))*dry*rx + rz*(ddry*qdi(5))*rx + rz*dry*(drx*qdi(4)),zeros(3,1); zeros(1,4)];
+        dTJdot{6} = [(ddrz*qdi(6))*ry*rx + drz*(dry*qdi(5))*rx + drz*ry*(drx*qdi(4)),zeros(3,1); zeros(1,4)];
+        for j=1:6
+          TJdot = TJdot+dTJ{j}*qdi(j);
+        end
+
+        body.Tdot = body.parent.Tdot*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
+        body.dTdqdot = body.parent.dTdqdot*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
+        for j=1:6
+          this_dof_ind = body.dofnum(j)+0:nq:3*nq;
+          body.dTdqdot(this_dof_ind,:) = body.dTdqdot(this_dof_ind,:) + body.parent.Tdot(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot{j}*body.T_body_to_joint;
+        end
+        body.cached_qd = qdi';
       end
+      
+      body.cached_q = qi';
     elseif body.floatingbase==2
       qi = q(body.dofnum);  % qi is 7x1
-      TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(3,1),1];
+      TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(1,3),1];
       body.T=body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
 
       body.dTdq = [];
       warning('first derivatives of quaternion floating base not implemented yet'); 
+
+      body.cached_q = qi;
     else
       qi = q(body.dofnum);
       
@@ -138,7 +160,7 @@ else
         body.cached_qd = qdi;
       end
       
-      body.cached_q = qi;
+      body.cached_q = qi';
     end
   end
 end
