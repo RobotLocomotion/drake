@@ -19,13 +19,6 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
   
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
       
-      state_frame = AtlasState(obj);
-      obj = obj.setStateFrame(state_frame);
-      obj = obj.setOutputFrame(state_frame);
-    
-      input_frame = AtlasInput(obj);
-      obj = obj.setInputFrame(input_frame);
-
       if options.floating
         % could also do fixed point search here
         obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1)));

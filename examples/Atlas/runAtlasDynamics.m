@@ -2,7 +2,7 @@ function runAtlasDynamics
 % just runs it as a passive system 
 
 % just runs it as a passive system for now
-options.floating = true;
+options.floating = 'RPY';
 options.dt = 0.001;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 
