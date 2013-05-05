@@ -15,6 +15,7 @@ classdef RigidBody < handle
     jointname=''
     parent
     pitch=0;        % for featherstone 3D models
+    floatingbase=false;
     joint_axis=[1;0;0]; 
     Xtree=eye(6);   % velocity space coordinate transform *from parent to this node*
     X_joint_to_body=eye(6);  % velocity space coordinate transfrom from joint frame (where joint_axis = z-axis) to body frame 
@@ -314,7 +315,10 @@ classdef RigidBody < handle
 
         fprintf(fp,'DEF %s Transform {\n',body.jointname); 
       end
-      if (body.pitch==0) % then it's a pin joint 
+      if (body.floatingbase)
+        fprintf(fp,'translation 0 0 0\n');
+        fprintf(fp,'rotation 0 1 0 0\n'); 
+      elseif (body.pitch==0) % then it's a pin joint
         fprintf(fp,'rotation 0 1 0 0\n'); 
       elseif isinf(body.pitch) % then it's a slider
         fprintf(fp,'translation 0 0 0\n');

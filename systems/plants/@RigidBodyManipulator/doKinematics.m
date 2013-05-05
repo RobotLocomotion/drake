@@ -54,19 +54,46 @@ else
       body.Tdot = zeros(4);
       body.dTdqdot = zeros(3*nq,4);
       body.ddTdqdq = zeros(3*nq*nq,4);
+    elseif body.floatingbase
+      qi = q(body.dofnum); % qi is 6x1
+      TJ = [rpy2rotmat(qi(4:6)),qi(1:3);zeros(1,3),1];
+      body.T=body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+      
+      % see notes below
+      body.dTdq = body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+      
+      dTJ{1} = sparse(1,4,1,4,4);
+      dTJ{2} = sparse(2,4,1,4,4);
+      dTJ{3} = sparse(3,4,1,4,4);
+      dTJ{4} = [rotz(qi(6))*roty(qi(5))*drotx(qi(4)),zeros(3,1); zeros(1,4)];
+      dTJ{5} = [rotz(qi(6))*droty(qi(5))*rotx(qi(4)),zeros(3,1); zeros(1,4)];
+      dTJ{6} = [drotz(qi(6))*roty(qi(5))*rotx(qi(4)),zeros(3,1); zeros(1,4)];
+
+      for i=1:6
+        this_dof_ind = body.dofnum(i)+0:nq:3*nq;
+        body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{i}*body.T_body_to_joint;
+      end
+      
+      if (b_compute_second_derivatives)
+        error('not implemented yet');
+      end
+      
+      if isempty(qd)
+        body.Tdot = [];
+        body.dTdqdot = [];
+      else
+        error('not implemented yet');
+      end
+      
     else
       qi = q(body.dofnum);
       
       TJ = Tjcalc(body.pitch,qi);
       body.T=body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
       
-      % todo: consider pulling this out into a
-      % "doKinematicsAndVelocities" version?  but I'd have to be
-      % careful with caching.
-      
-      dTJ = dTjcalc(body.pitch,qi);
       % note the unusual format of dTdq (chosen for efficiently calculating jacobians from many pts)
       % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,:),dq1 ...]
+      dTJ = dTjcalc(body.pitch,qi);
       body.dTdq = body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
       this_dof_ind = body.dofnum+0:nq:3*nq;
       body.dTdq(this_dof_ind,:) = body.dTdq(this_dof_ind,:) + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
@@ -81,8 +108,9 @@ else
         ind = reshape(reshape(body.dofnum+0:nq:3*nq*nq,3,[])',[],1); % ddTdqidq
         body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
         
+        ddTJ = ddTjcalc(body.pitch,qi);
         ind = 3*nq*(body.dofnum-1) + this_dof_ind;  % ddTdqidqi
-        body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTjcalc(body.pitch,qi)*body.T_body_to_joint;  % body.jsign^2 is there, but unnecessary (since it's always 1)
+        body.ddTdqdq(ind,:) = body.ddTdqdq(ind,:) + body.parent.T(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ*body.T_body_to_joint;  % body.jsign^2 is there, but unnecessary (since it's always 1)
       else
         body.ddTdqdq = [];
       end
