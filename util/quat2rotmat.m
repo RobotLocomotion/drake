@@ -1,5 +1,6 @@
 function M = quat2rotmat(q)
 
+q=q/norm(q);
 w=q(1); x=q(2); y=q(3); z=q(4);
 
 M = [ w*w + x*x - y*y - z*z, 2*x*y - 2*w*z, 2*x*z + 2*w*y; ...

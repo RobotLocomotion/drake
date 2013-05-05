@@ -100,7 +100,7 @@ ind = ind([model.body(ind).robotnum]==robotnum);
 rootlink = model.body(ind);
 
 if (options.floating)
-  model = addFloatingBase(model,model.body(1),rootlink,xyz,rpy);
+  model = addFloatingBase(model,model.body(1),rootlink,xyz,rpy,options.floating==2);
 else
   model = addJoint(model,'','fixed',model.body(1),rootlink,xyz,rpy);
 end

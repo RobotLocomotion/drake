@@ -200,9 +200,13 @@ classdef RigidBodyManipulator < Manipulator
         case 'fixed'
           child.pitch = nan;
           
-        case 'floating'
+        case 'floating_rpy'
           child.pitch = 0;
-          child.floatingbase = true;
+          child.floatingbase = 1;
+
+        case 'floating_quat'
+          child.pitch = 0;
+          child.floatingbase = 2;
           
         otherwise
           error(['joint type ',type,' not supported (yet?)']);
@@ -216,8 +220,13 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
     
-    function model = addFloatingBase(model,parent,rootlink,xyz,rpy)
-      model = addJoint(model,['floating_base'],'floating',parent,rootlink,zeros(3,1),zeros(3,1));
+    function model = addFloatingBase(model,parent,rootlink,xyz,rpy,b_use_quaternions)
+      if (nargin>5 && b_use_quaternions)
+        type = 'floating_quat';
+      else
+        type = 'floating_rpy';
+      end
+      model = addJoint(model,['floating_base'],type,parent,rootlink,zeros(3,1),zeros(3,1));
     end
         
     function model = addSensor(model,sensor)
@@ -740,8 +749,10 @@ classdef RigidBodyManipulator < Manipulator
         for j=1:length(model.body)
           b = model.body(j);
           if ~isempty(b.parent) && b.robotnum==i
-            if (b.floatingbase)
+            if (b.floatingbase==1)
               joints = {joints{:};'base_x';'base_y';'base_z';'base_roll';'base_pitch';'base_yaw'};
+            elseif (b.floatingbase==2)
+              joints = {joints{:};'base_x';'base_y';'base_z';'base_qw';'base_qx';'base_qy';'base_qz'};
             else
               joints = {joints{:};b.jointname};
             end
@@ -771,10 +782,14 @@ classdef RigidBodyManipulator < Manipulator
       dof=0;inds=[];
       for i=1:length(model.body)
         if (~isempty(model.body(i).parent))
-          if (model.body(i).floatingbase)
+          if (model.body(i).floatingbase==1)
             model.body(i).dofnum=dof+(1:6)';
             dof=dof+6;
             inds = [inds,repmat(i,1,6)];
+          elseif (model.body(i).floatingbase==2)
+            model.body(i).dofnum=dof+(1:7)';
+            dof=dof+7;
+            inds = [inds,repmat(i,1,7)];
           else
             dof=dof+1;
             model.body(i).dofnum=dof;

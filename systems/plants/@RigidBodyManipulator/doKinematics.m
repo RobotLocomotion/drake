@@ -54,10 +54,14 @@ else
       body.Tdot = zeros(4);
       body.dTdqdot = zeros(3*nq,4);
       body.ddTdqdq = zeros(3*nq*nq,4);
-    elseif body.floatingbase
+    elseif body.floatingbase==1
       qi = q(body.dofnum); % qi is 6x1
       TJ = [rpy2rotmat(qi(4:6)),qi(1:3);zeros(1,3),1];
       body.T=body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+      
+      body.dTdq = [];
+      warning('first derivatives of rpy floating base not implemented yet'); 
+      continue; % need to finish below
       
       % see notes below
       body.dTdq = body.parent.dTdq*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
@@ -84,7 +88,13 @@ else
       else
         error('not implemented yet');
       end
-      
+    elseif body.floatingbase==2
+      qi = q(body.dofnum);  % qi is 7x1
+      TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(3,1),1];
+      body.T=body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+
+      body.dTdq = [];
+      warning('first derivatives of quaternion floating base not implemented yet'); 
     else
       qi = q(body.dofnum);
       

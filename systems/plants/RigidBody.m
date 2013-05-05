@@ -15,7 +15,7 @@ classdef RigidBody < handle
     jointname=''
     parent
     pitch=0;        % for featherstone 3D models
-    floatingbase=false;
+    floatingbase=0; % 0 = not floating base, 1 = rpy floating base, 2 = quaternion floating base
     joint_axis=[1;0;0]; 
     Xtree=eye(6);   % velocity space coordinate transform *from parent to this node*
     X_joint_to_body=eye(6);  % velocity space coordinate transfrom from joint frame (where joint_axis = z-axis) to body frame 
