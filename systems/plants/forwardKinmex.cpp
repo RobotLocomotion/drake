@@ -38,31 +38,28 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   int body_ind = ((int) mxGetScalar(prhs[2])) - 1;  // note: this is body_ind-1 (so 0 to NB)
   bool b_jacdot = nrhs>5 && (bool) mxGetScalar(prhs[5]);
 
-  // todo: replace memcopies below with maps
-  
   if (body_ind==-1) {  // compute center of mass
     if (b_jacdot) {
-      MatrixXd Jdot = model->getCOMJacDot();
-      plhs[0] = mxCreateDoubleMatrix(3,model->NB,mxREAL);
-      memcpy(mxGetPr(plhs[0]), Jdot.data(), sizeof(double)*3*model->NB);    
-      return;
+      plhs[0] = mxCreateDoubleMatrix(3,model->num_dof,mxREAL);
+      Map<MatrixXd> Jdot(mxGetPr(plhs[0]),3,model->num_dof);
+      model->getCOMJacDot(Jdot);
     }
     
     if (nlhs>0) {
-      Vector3d x = model->getCOM();
       plhs[0] = mxCreateDoubleMatrix(3,1,mxREAL);
-      memcpy(mxGetPr(plhs[0]), x.data(), sizeof(double)*3);
+      Map<Vector3d> x(mxGetPr(plhs[0]));
+      model->getCOM(x);
     }
     if (nlhs>1) {
-      MatrixXd J = model->getCOMJac();
-      plhs[1] = mxCreateDoubleMatrix(3,model->NB,mxREAL);
-      memcpy(mxGetPr(plhs[1]), J.data(), sizeof(double)*3*model->NB);    
+      plhs[1] = mxCreateDoubleMatrix(3,model->num_dof,mxREAL);
+      Map<MatrixXd> J(mxGetPr(plhs[1]),3,model->num_dof);
+      model->getCOMJac(J);
     }
   
     if (nlhs>2) {
-      MatrixXd dJ = model->getCOMdJac();
-      plhs[2] = mxCreateDoubleMatrix(3,model->NB*model->NB,mxREAL);
-      memcpy(mxGetPr(plhs[2]), dJ.data(), sizeof(double)*3*model->NB*model->NB);
+      plhs[2] = mxCreateDoubleMatrix(3,model->num_dof*model->num_dof,mxREAL);
+      Map<MatrixXd> dJ(mxGetPr(plhs[2]),3,model->num_dof*model->num_dof);
+      model->getCOMdJac(dJ);
     }
     
     return;
@@ -75,44 +72,44 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   }
 
   int n_pts = mxGetN(prhs[3]);
-  int dim = mxGetM(prhs[3]);
+  int dim = mxGetM(prhs[3]), dim_with_rot=dim;
   
 //  if (dim != 2 && dim != 3)
 //    mexErrMsgIdAndTxt("Drake:forwardKinmex:BadInputs", "number of rows in pts must be 2 or 3");
   if (dim != 3)
     mexErrMsgIdAndTxt("Drake:forwardKinmex:BadInputs", "number of rows in pts must be 3");
   
-  MatrixXd pts_tmp = MatrixXd::Zero(dim,n_pts);  
-  memcpy(pts_tmp.data(), mxGetPr(prhs[3]), sizeof(double)*dim*n_pts);
-  
-  double rotation_type_tmp= mxGetScalar(prhs[4]);
-  int rotation_type = int(rotation_type_tmp);
+  int rotation_type = (int)mxGetScalar(prhs[4]);
+  if (rotation_type==1) dim_with_rot += 3;
+  else if (rotation_type==2) dim_with_rot += 4;
+
+  Map<MatrixXd> pts_tmp(mxGetPr(prhs[3]),dim,n_pts);
   MatrixXd pts(dim+1,n_pts);
   pts << pts_tmp, MatrixXd::Ones(1,n_pts);
 
   if (b_jacdot) {
     if (rotation_type>0) mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Jacobian dot of rotations are not implemented yet");
-    MatrixXd Jdot = model->forwardJacDot(body_ind,pts);
-    plhs[0] = mxCreateDoubleMatrix(Jdot.rows(),model->NB,mxREAL);
-    memcpy(mxGetPr(plhs[0]), Jdot.data(), sizeof(double)*Jdot.rows()*model->NB);
+    plhs[0] = mxCreateDoubleMatrix(dim*n_pts,model->num_dof,mxREAL);  
+    Map<MatrixXd> Jdot(mxGetPr(plhs[0]),dim*n_pts,model->num_dof);
+    model->forwardJacDot(body_ind,pts,Jdot);
     return;
   } else {
     if (nlhs>0) {
-      MatrixXd x = model->forwardKin(body_ind,pts,rotation_type);
-      plhs[0] = mxCreateDoubleMatrix(x.rows(),n_pts,mxREAL);
-      memcpy(mxGetPr(plhs[0]), x.data(), sizeof(double)*x.rows()*n_pts);
+      plhs[0] = mxCreateDoubleMatrix(dim_with_rot,n_pts,mxREAL);
+      Map<MatrixXd> x(mxGetPr(plhs[0]),dim_with_rot,n_pts);
+      model->forwardKin(body_ind,pts,rotation_type,x);
     }
     if (nlhs>1) {
-      MatrixXd J = model->forwardJac(body_ind,pts,rotation_type);
-      plhs[1] = mxCreateDoubleMatrix(J.rows(),model->NB,mxREAL);
-      memcpy(mxGetPr(plhs[1]), J.data(), sizeof(double)*J.rows()*model->NB);
+      plhs[1] = mxCreateDoubleMatrix(dim_with_rot*n_pts,model->num_dof,mxREAL);
+      Map<MatrixXd> J(mxGetPr(plhs[1]),dim_with_rot*n_pts,model->num_dof);
+      model->forwardJac(body_ind,pts,rotation_type,J);
     }
     
     if (nlhs>2) {
       if (rotation_type>0) mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Second derivatives of rotations are not implemented yet");
-      MatrixXd dJ = model->forwarddJac(body_ind,pts);
-      plhs[2] = mxCreateDoubleMatrix(dJ.rows(),model->NB*model->NB,mxREAL);
-      memcpy(mxGetPr(plhs[2]), dJ.data(), sizeof(double)*dJ.rows()*model->NB*model->NB);
+      plhs[2] = mxCreateDoubleMatrix(dim*n_pts,model->num_dof*model->num_dof,mxREAL);
+      Map<MatrixXd> dJ(mxGetPr(plhs[2]),dim*n_pts,model->num_dof*model->num_dof);
+      model->forwarddJac(body_ind,pts,dJ);
     }
   }
 }

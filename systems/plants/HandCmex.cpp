@@ -189,6 +189,27 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     }
   }
   
+  Map<MatrixXd> *dH, *dC;
+  
+  plhs[0] = mxCreateDoubleMatrix(model->num_dof,model->num_dof,mxREAL);
+  Map<MatrixXd> H(mxGetPr(plhs[0]),model->num_dof,model->num_dof);
+  H = MatrixXd::Zero(model->num_dof,model->num_dof);
+
+  plhs[1] = mxCreateDoubleMatrix(model->num_dof,1,mxREAL);
+  Map<MatrixXd> C(mxGetPr(plhs[1]),model->num_dof,1);
+  // C gets overwritten completely in the algorithm below
+
+  if (nlhs>2) {
+    plhs[2] = mxCreateDoubleMatrix(model->num_dof*model->num_dof,model->num_dof,mxREAL);
+    dH = new Map<MatrixXd>(mxGetPr(plhs[2]),model->num_dof*model->num_dof,model->num_dof);
+    *dH = MatrixXd::Zero(model->num_dof*model->num_dof,model->num_dof);
+  }
+  if (nlhs>3) {
+    plhs[3] = mxCreateDoubleMatrix(model->num_dof,2*model->num_dof,mxREAL);
+    dC = new Map<MatrixXd>(mxGetPr(plhs[3]),model->num_dof,2*model->num_dof);
+    *dC = MatrixXd::Zero(model->num_dof,2*model->num_dof);
+  }  
+  
   VectorXd vJ(6), fh(6), dfh(6), dvJdqd(6);
   MatrixXd XJ(6,6), dXJdq(6,6);
   int i,j,k;
@@ -255,11 +276,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   }
   
   for (i=(model->NB-1); i>=0; i--) {
-    model->C(i) = (model->S[i]).transpose() * model->fvp[i];
+    C(i) = (model->S[i]).transpose() * model->fvp[i];
     
     if (nlhs > 3) {
-      model->dC.block(i,0,1,model->NB) = model->S[i].transpose()*model->dfvpdq[i];
-      model->dC.block(i,model->NB,1,model->NB) = model->S[i].transpose()*model->dfvpdqd[i];
+      (*dC).block(i,0,1,model->NB) = model->S[i].transpose()*model->dfvpdq[i];
+      (*dC).block(i,model->NB,1,model->NB) = model->S[i].transpose()*model->dfvpdqd[i];
     }
     
     if (model->parent[i] >= 0) {
@@ -283,13 +304,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   
   for (i=0; i<model->NB; i++) {
     fh = model->IC[i] * model->S[i];
-    model->H(i,i) = (model->S[i]).transpose() * fh;
+    H(i,i) = (model->S[i]).transpose() * fh;
     j=i;
     while (model->parent[j] >= 0) {
       fh = (model->Xup[j]).transpose() * fh;
       j = model->parent[j];
-      model->H(i,j) = (model->S[j]).transpose() * fh;
-      model->H(j,i) = model->H(i,j);
+      H(i,j) = (model->S[j]).transpose() * fh;
+      H(j,i) = H(i,j);
     }
   }
   
@@ -298,7 +319,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
       for (i=0; i < model->NB; i++) {
         fh = model->IC[i] * model->S[i];
         dfh = model->dIC[i][k] * model->S[i];  //dfh/dqk
-        model->dH(i + i*model->NB,k) = model->S[i].transpose() * dfh;
+        (*dH)(i + i*model->NB,k) = model->S[i].transpose() * dfh;
         j = i;
         while (model->parent[j] >= 0) {
           if (j==k) {
@@ -309,27 +330,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
           fh = (model->Xup[j]).transpose() * fh;
           
           j = model->parent[j];
-          model->dH(i + j*model->NB,k) = model->S[j].transpose() * dfh;
-          model->dH(j + i*model->NB,k) = model->dH(i + j*model->NB,k);
+          (*dH)(i + j*model->NB,k) = model->S[j].transpose() * dfh;
+          (*dH)(j + i*model->NB,k) = (*dH)(i + j*model->NB,k);
         }
       }
     }
   }
   
-  if (nlhs>0) {
-    plhs[0] = mxCreateDoubleMatrix(model->num_dof,model->num_dof,mxREAL);
-    memcpy(mxGetPr(plhs[0]),model->H.data(),sizeof(double)*model->num_dof*model->num_dof);
-  }
-  if (nlhs>1) {
-    plhs[1] = mxCreateDoubleMatrix(model->num_dof,1,mxREAL);
-    memcpy(mxGetPr(plhs[1]),model->C.data(),sizeof(double)*model->num_dof);
-  }
-  if (nlhs>2) {
-    plhs[2] = mxCreateDoubleMatrix(model->num_dof*model->num_dof,model->num_dof,mxREAL);
-    memcpy(mxGetPr(plhs[2]),model->dH.data(),sizeof(double)*model->num_dof*model->num_dof*model->num_dof);
-  }
-  if (nlhs>3) {
-    plhs[3] = mxCreateDoubleMatrix(model->num_dof,model->num_dof,mxREAL);
-    memcpy(mxGetPr(plhs[3]),model->dC.data(),sizeof(double)*model->num_dof*model->num_dof);
-  }
+  // destroy dynamically allocated Map<MatrixXd> (but not the underlying data!)
+  if (nlhs>2) delete dH;
+  if (nlhs>3) delete dC;
 }

@@ -30,14 +30,10 @@ public:
   VectorXd* avp;
   VectorXd* fvp;
   MatrixXd* IC;
-  MatrixXd H;
-  MatrixXd C;
   
   //Variables for gradient calculations
   MatrixXd* dXupdq;
   MatrixXd** dIC;
-  MatrixXd dH;
-  MatrixXd dC;
   
   MatrixXd* dvdq;
   MatrixXd* dvdqd;
@@ -47,27 +43,11 @@ public:
   MatrixXd* dfvpdqd;
   MatrixXd dvJdqd_mat;
   MatrixXd dcross;
-  
-  // preallocate matrices used in doKinematics
-  Matrix4d TJ;
-  Matrix4d dTJ;
-  Matrix4d ddTJ;
-  Matrix4d Tbinv;
-  Matrix4d Tb;
-  Matrix4d Tmult;
-  Matrix4d dTmult;
-  Matrix4d dTdotmult;
-  Matrix4d TdTmult;
-  
   // preallocate for COM functions
-  Vector3d com;
   Vector3d bc;
-  MatrixXd Jcom;
-  MatrixXd Jcomdot;
   MatrixXd bJ;
-  MatrixXd dJcom;
   MatrixXd bdJ;
-  
+      
   RigidBody* bodies;
   bool initialized;
   bool kinematicsInit;
@@ -80,16 +60,29 @@ public:
   void compile(void);  // call me after the model is loaded
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
 
-  Vector3d getCOM(void);
-  MatrixXd getCOMJac(void);
-  MatrixXd getCOMJacDot(void);
-  MatrixXd getCOMdJac(void);
-  
+  template <typename Derived>
+  void getCOM(MatrixBase<Derived> &com);
 
-  MatrixXd forwardKin(const int body_ind, const MatrixXd pts, const int rotation_type);
-  MatrixXd forwardJac(const int body_ind, const MatrixXd pts, const int rotation_type);
-  MatrixXd forwardJacDot(const int body_ind, const MatrixXd pts);
-  MatrixXd forwarddJac(const int body_ind, const MatrixXd pts);
+  template <typename Derived>
+  void getCOMJac(MatrixBase<Derived> &J);
+
+  template <typename Derived>
+  void getCOMJacDot(MatrixBase<Derived>& Jdot);
+
+  template <typename Derived>
+  void getCOMdJac(MatrixBase<Derived> &dJ);
+
+  template <typename DerivedA, typename DerivedB>
+  void forwardKin(const int body_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x);
+
+  template <typename DerivedA, typename DerivedB>
+  void forwardJacDot(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &Jdot);
+
+  template <typename DerivedA, typename DerivedB>
+  void forwardJac(const int body_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &J);
+
+  template <typename DerivedA, typename DerivedB>
+  void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
 
   void snoptIKfun( VectorXd q, VectorXd q0, VectorXd q_nom, MatrixXd Q, int narg, int* body_ind, VectorXd* pts, VectorXd* f, MatrixXd* G);
 
