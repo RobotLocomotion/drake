@@ -1,7 +1,8 @@
 function testFloatingBaseDynamics
 
-urdf = 'FallingBrick.urdf';
-urdf = '../../../examples/FurutaPendulum/FurutaPendulum.urdf';
+for urdf = {'FallingBrick.urdf',...
+    '../../../examples/FurutaPendulum/FurutaPendulum.urdf', ...
+    '../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'};
 
 urdf=urdf{1};  
 options.floating = 'rpy';
