@@ -75,7 +75,7 @@ qgen = ConstOrPassthroughSystem(x0(7:r.getNumStates()/2));
 qgen = qgen.setOutputFrame(sys.getInputFrame());
 sys = cascade(qgen,sys);
 
-T = 10; % sec
+T = 1; % sec
 S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
 output_select(1).system=1;
 output_select(1).output=1;
