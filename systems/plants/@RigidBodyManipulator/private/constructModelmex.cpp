@@ -64,8 +64,17 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     // todo: check that the size is 6x6
     memcpy(model->I[i].data(),mxGetPr(pIi),sizeof(double)*6*6);
   }
-  
+
+  char buf[100];
   for (int i=0; i<model->num_bodies; i++) {
+    mxArray* plinkname = mxGetProperty(pBodies,i,"linkname");
+    mxGetString(plinkname,buf,100);
+    model->bodies[i].linkname.assign(buf,strlen(buf));
+
+    mxArray* pjointname = mxGetProperty(pBodies,i,"jointname");
+    mxGetString(pjointname,buf,100);
+    model->bodies[i].jointname.assign(buf,strlen(buf));
+
     mxArray* pmass = mxGetProperty(pBodies,i,"mass");
     model->bodies[i].mass = (double) mxGetScalar(pmass);
 
@@ -77,6 +86,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     
     mxArray* pfloating = mxGetProperty(pBodies,i,"floating");
     model->bodies[i].floating = (int) mxGetScalar(pfloating);
+
+    mxArray* pbpitch = mxGetProperty(pBodies,i,"pitch");
+    model->bodies[i].pitch = (int) mxGetScalar(pbpitch);
 
     {  // lookup parent index
       mxArray *in_args[2] = { mxGetProperty(pBodies,i,"parent"), const_cast<mxArray*>(pBodies) };

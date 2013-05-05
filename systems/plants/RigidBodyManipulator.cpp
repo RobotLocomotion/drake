@@ -323,8 +323,8 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       std::cerr << "mex kinematics for quaternion floating bases are not implemented yet" << std::endl;
     } else {
       double qi = q[bodies[i].dofnum];
-      Tjcalc(pitch[i-1],qi,&TJ);
-      dTjcalc(pitch[i-1],qi,&dTJ);
+      Tjcalc(bodies[i].pitch,qi,&TJ);
+      dTjcalc(bodies[i].pitch,qi,&dTJ);
       
       Tb = bodies[i].T_body_to_joint;
       Tbinv = Tb.inverse();
@@ -624,5 +624,4 @@ template void RigidBodyManipulator::forwardKin(const int, const MatrixBase< Matr
 template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< MatrixXd > &, MatrixBase< Map<MatrixXd> >&);
 template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< MatrixXd > &, MatrixBase< Map<MatrixXd> >&);
-
 
