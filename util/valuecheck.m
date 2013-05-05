@@ -26,6 +26,7 @@ if (any(abs(val(:)-desired_val(:))>tol))
     tf = false;
 %    warning(['Values don''t match.  Expected ', mat2str(desired_val), ' but got ', mat2str(val)]);
   else
+    desired_val-val
     error(['Values don''t match.  Expected ', mat2str(desired_val), ' but got ', mat2str(val)]);
   end
 end
