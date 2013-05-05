@@ -14,7 +14,6 @@ if nargin<5, qd=[]; end
 if nargin<4, use_mex = true; end
 if nargin<3, b_compute_second_derivatives=false; end
 
-use_mex = false;  % doesn't work with floating bases right now...
 kinsol.q = q;
 kinsol.qd = qd;
 

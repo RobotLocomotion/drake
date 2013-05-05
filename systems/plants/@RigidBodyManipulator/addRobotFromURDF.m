@@ -17,7 +17,14 @@ if (nargin<3 || isempty(xyz)) xyz = zeros(3,1); end
 if (nargin<4 || isempty(rpy)) rpy = zeros(3,1); end
 
 if (nargin<5) options = struct(); end
-if (~isfield(options,'floating')) options.floating = 0; end
+if (~isfield(options,'floating')) options.floating = ''; end  % no floating base
+if isnumeric(options.floating) || islogical(options.floating) 
+  if (options.floating)
+    options.floating = 'rpy';
+  else
+    options.floating = '';
+  end
+end
 if (~isfield(options,'inertial')) options.inertial = true; end
 if (~isfield(options,'visual')) options.visual = true; end
 if (~isfield(options,'collision')) options.collision = true; end
@@ -99,7 +106,7 @@ ind = find(cellfun(@isempty,{model.body.parent}));
 ind = ind([model.body(ind).robotnum]==robotnum);
 rootlink = model.body(ind);
 
-if (options.floating)
+if ~isempty(options.floating)
   model = addFloatingBase(model,model.body(1),rootlink,xyz,rpy,options.floating);
 else
   model = addJoint(model,'','fixed',model.body(1),rootlink,xyz,rpy);

@@ -26,8 +26,13 @@ if (any(abs(val(:)-desired_val(:))>tol))
     tf = false;
 %    warning(['Values don''t match.  Expected ', mat2str(desired_val), ' but got ', mat2str(val)]);
   else
-    desired_val-val
-    error(['Values don''t match.  Expected ', mat2str(desired_val), ' but got ', mat2str(val)]);
+    err = desired_val-val;
+    err(abs(err)<tol)=0;
+    err
+    % clean before printing
+    desired_val(abs(desired_val)<tol/2)=0;
+    val(abs(val)<tol/2)=0;
+    error('Values don''t match.  Expected \n%s\n but got \n%s', mat2str(desired_val), mat2str(val));
   end
 end
 
