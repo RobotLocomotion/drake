@@ -60,12 +60,12 @@ for i=1:100
   [Hm,Cm,Bm,dHm,dCm,dBm] = p.manipulatorDynamics(q,qd,true);
   [H,C,B,dH,dC,dB] = p.manipulatorDynamics(q,qd,false);
 
-  valuecheck(H,Hm,1e-8);
   valuecheck(C,Cm,1e-8);
+  valuecheck(H,Hm,1e-8);
   valuecheck(B,Bm,1e-8);
   
-  valuecheck(dH,dHm,1e-8);
   valuecheck(dC,dCm,1e-8);
+  valuecheck(dH,dHm,1e-8);
   valuecheck(dB,dBm,1e-8);
 
   % test mex kinematics

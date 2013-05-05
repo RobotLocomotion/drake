@@ -234,7 +234,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     
     //Calculate gradient information if it is requested
     if (nlhs > 2) {
-      djcalc(model->pitch[i], q[i], &dXJdq);
+      djcalc(model->pitch[i], q[n], &dXJdq);
       model->dXupdq[i] = dXJdq * model->Xtree[i];
       
       for (j=0; j<model->NB; j++) {
@@ -293,12 +293,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
         for (k=0; k < model->NB; k++) {
           model->dIC[model->parent[i]][k] += model->Xup[i].transpose()*model->dIC[i][k]*model->Xup[i];
         }
-        model->dIC[model->parent[i]][i] += model->dXupdq[i].transpose()*model->IC[i]*model->Xup[i] + model->Xup[i].transpose()*model->IC[i]*model->dXupdq[i];
+        model->dIC[model->parent[i]][n] += model->dXupdq[i].transpose()*model->IC[i]*model->Xup[i] + model->Xup[i].transpose()*model->IC[i]*model->dXupdq[i];
       }
       
       if (nlhs > 3) {
         model->dfvpdq[model->parent[i]] += model->Xup[i].transpose()*model->dfvpdq[i];
-        model->dfvpdq[model->parent[i]].col(i) += model->dXupdq[i].transpose()*model->fvp[i];
+        model->dfvpdq[model->parent[i]].col(n) += model->dXupdq[i].transpose()*model->fvp[i];
         model->dfvpdqd[model->parent[i]] += model->Xup[i].transpose()*model->dfvpdqd[i];
       }
     }
@@ -322,13 +322,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   if (nlhs > 2) {
     for (k=0; k < model->NB; k++) {
       for (i=0; i < model->NB; i++) {
+        n = model->dofnum[i];
         fh = model->IC[i] * model->S[i];
         dfh = model->dIC[i][k] * model->S[i];  //dfh/dqk
         (*dH)(n + n*model->NB,k) = model->S[i].transpose() * dfh;
-        j = i;
+        j = i; np=n;
         while (model->parent[j] >= 0) {
-          if (j==k) {
-            dfh = model->Xup[j].transpose() * dfh + model->dXupdq[k].transpose() * fh;
+          if (np==k) {
+            dfh = model->Xup[j].transpose() * dfh + model->dXupdq[j].transpose() * fh;
           } else {
             dfh = model->Xup[j].transpose() * dfh;
           }

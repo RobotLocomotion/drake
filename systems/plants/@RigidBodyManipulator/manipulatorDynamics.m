@@ -3,7 +3,6 @@ function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd,use_mex)
 checkDirty(obj);
 
 if (nargin<4) use_mex = true; end
-use_mex = false;  % hard coded just for debugging...
 
 m = obj.featherstone;
 
@@ -21,7 +20,7 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   if (nargout>3)
     if ~isempty(f_ext) error('not implemented yet'); end
     [H,C,dH,dC] = HandCmex(obj.mex_model_ptr.getData,q,qd,f_ext);
-    dH = [dH, zeros(m.NB)];
+    dH = [dH, zeros(m.NB*m.NB,m.NB)];
     dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
     dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
