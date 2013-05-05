@@ -1,20 +1,22 @@
 function testFloatingBaseDynamics
 
+urdf = 'FallingBrick.urdf';
+urdf = '../../../examples/FurutaPendulum/FurutaPendulum.urdf';
 
 options.floating = 'rpy';
-m_rpy = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
+m_rpy = TimeSteppingRigidBodyManipulator(urdf,.01,options);
 options.floating = 'YPR';
 options.namesuffix = 'ypr_rel'; % floating base uses YPR (with relative/intrinsic angles)
-m_ypr_rel = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
+m_ypr_rel = TimeSteppingRigidBodyManipulator(urdf,.01,options);
 
 % the kinematics and dynamics should actually match, when the order of the indices is
 % flopped
 
-ind = [1;2;3;6;5;4];
-
 nq=getNumDOF(m_rpy);
+ind = [1;2;3;6;5;4;(7:nq)'];
+
 for i=1:25
-  q = randn(nq,1); qd = randn(nq,1);
+  q = randn(nq,1); qd = randn(nq,1); u = randn(getNumInputs(m_rpy),1);
 
   % check kinematics:
   
@@ -60,10 +62,10 @@ for i=1:25
   valuecheck(C,C2(ind));
   valuecheck(B,B2(ind,:));
   
-  xdn = update(m_rpy,0,[q;qd],[]);
-  xdn2 = update(m_ypr_rel,0,[q(ind);qd(ind)],[]);
+  xdn = update(m_rpy,0,[q;qd],u);
+  xdn2 = update(m_ypr_rel,0,[q(ind);qd(ind)],u);
   
-  valuecheck(xdn,xdn2([ind;nq+ind]));
+  valuecheck(xdn,xdn2([ind;nq+ind]),1e-6);
 end
 
 

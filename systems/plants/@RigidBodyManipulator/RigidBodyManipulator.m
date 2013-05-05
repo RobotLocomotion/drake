@@ -176,10 +176,18 @@ classdef RigidBodyManipulator < Manipulator
         case 'floating_rpy'
           child.pitch = 0;
           child.floating = 1;
-
+          limits.joint_limit_min = repmat(limits.joint_limit_min,1,6);
+          limits.joint_limit_max = repmat(limits.joint_limit_max,1,6);
+          limits.effort_limit = repmat(limits.effort_limit,1,6);
+          limits.velocity_limit = repmat(limits.velocity_limit,1,6);
+          
         case 'floating_quat'
           child.pitch = 0;
           child.floating = 2;
+          limits.joint_limit_min = repmat(limits.joint_limit_min,1,7);
+          limits.joint_limit_max = repmat(limits.joint_limit_max,1,7);
+          limits.effort_limit = repmat(limits.effort_limit,1,7);
+          limits.velocity_limit = repmat(limits.velocity_limit,1,7);
           
         otherwise
           error(['joint type ',type,' not supported (yet?)']);
@@ -383,8 +391,16 @@ classdef RigidBodyManipulator < Manipulator
       %% initialize kinematics caching
       for i=1:length(model.body)
         if ~isempty(model.body(i).parent)
-          model.body(i).cached_q = nan;
-          model.body(i).cached_qd = nan;
+          if (model.body(i).floating==1)
+            model.body(i).cached_q = nan(1,6);
+            model.body(i).cached_qd = nan(1,6);
+          elseif (model.body(i).floating==2)
+            model.body(i).cached_q = nan(1,7);
+            model.body(i).cached_qd = nan(1,7);
+          else
+            model.body(i).cached_q = nan;
+            model.body(i).cached_qd = nan;
+          end
         end
         % check basic assumption from kinematics:
         valuecheck(model.body(i).Ttree(end,1:end-1),0);
@@ -394,8 +410,12 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       model = createMexPointer(model);
-      
       model.dirty = false;
+      
+      H = manipulatorDynamics(model,zeros(model.num_q,1),zeros(model.num_q,1));
+      if cond(H)>1e3
+        warning('H appears to be singular.  Are you sure you have a well-defined model?');
+      end
     end
     
     function body_ind = findLinkInd(model,linkname,robot,throw_error)
@@ -836,7 +856,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       m.NB= dof;  
       n=1;
-      for i=1:length(inds) % number of links without parents
+      for i=1:length(inds) % number of links with parents
         b=model.body(inds(i));
         if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
           % todo:  remove this and handle the floating joint directly in
@@ -859,7 +879,7 @@ classdef RigidBodyManipulator < Manipulator
         elseif (b.floating==2)
           error('dynamics for quaternion floating base not implemented yet');
         else
-          m.parent(n) = b.parent.dofnum;
+          m.parent(n) = max(b.parent.dofnum);
           m.dofnum(n) = b.dofnum;  % note: only need this for my floating hack above (remove it when gone)
           m.pitch(n) = b.pitch;
           m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*b.parent.X_joint_to_body;

@@ -506,6 +506,19 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   methods  % pass through methods (to the manipulator)
     function obj = setStateFrame(obj,fr)
       obj = setStateFrame@DrakeSystem(obj,fr);
+      
+      % make sure there is a transform defined to and from the
+      % manipulator state frame.  (the trivial transform is the correct
+      % one)
+      if ~isempty(obj.manip) % this also gets called on the initial constructor
+        mfr = getStateFrame(obj.manip);
+        if isempty(findTransform(fr,mfr))
+          addTransform(fr,AffineTransform(fr,mfr,eye(obj.num_x),zeros(obj.num_x,1)));
+        end
+        if isempty(findTransform(mfr,fr))
+          addTransform(mfr,AffineTransform(mfr,fr,eye(obj.num_x),zeros(obj.num_x,1)));
+        end
+      end
     end
     
     function obj = setTerrain(obj,varargin)

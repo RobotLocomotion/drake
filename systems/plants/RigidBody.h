@@ -57,17 +57,37 @@ public:
   void computeAncestorDOFs(RigidBodyManipulator* model)
   {
     if (dofnum>=0) {
-      int i;
+      int i,j;
       if (model->parent[dofnum]>=0) {
-        ancestor_dofs = model->bodies[model->parent[dofnum]].ancestor_dofs;
-        ddTdqdq_nonzero_rows = model->bodies[model->parent[dofnum]].ddTdqdq_nonzero_rows;
+        ancestor_dofs = model->bodies[parent].ancestor_dofs;
+        ddTdqdq_nonzero_rows = model->bodies[parent].ddTdqdq_nonzero_rows;
       }
       
-      ancestor_dofs.insert(dofnum);
-      for (i=0; i<3*model->NB; i++) {
-        ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum);
-        ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i);
+      if (floating==1) {
+	for (j=0; j<6; j++) {
+	  ancestor_dofs.insert(dofnum+j);
+	  for (i=0; i<3*model->NB; i++) {
+	    ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
+	    ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
+	  }
+	}
+      } else if (floating==2) {
+	for (j=0; j<7; j++) {
+	  ancestor_dofs.insert(dofnum+j);
+	  for (i=0; i<3*model->NB; i++) {
+	    ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
+	    ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
+	  }
+	}
       }
+      else {
+	ancestor_dofs.insert(dofnum);
+	for (i=0; i<3*model->NB; i++) {
+	  ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum);
+	  ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i);
+	}
+      }
+
 
       // compute matrix blocks
       IndexRange ind;  ind.start=-1; ind.length=0;

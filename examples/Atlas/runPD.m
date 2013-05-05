@@ -1,6 +1,6 @@
 function runPD()
 
-options.floating = true;
+options.floating = 'RPY';
 options.dt = 0.001;
 r = Atlas('urdf/atlas_minimal_contact.urdf',options);
 
