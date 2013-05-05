@@ -53,9 +53,9 @@ classdef RigidBodyWRLVisualizer < Visualizer
             node.rotation = quat2axis(x(b.dofnum(4:7)))';
             node.translation = x(b.dofnum(1:3))';
           elseif (b.pitch==0)
-            node.rotation=[b.joint_axis' x(i-1)];
+            node.rotation=[b.joint_axis' x(b.dofnum)];
           elseif isinf(b.pitch)
-            node.translation=x(i-1)*b.joint_axis';
+            node.translation=x(b.dofnum)*b.joint_axis';
           else
             error('helical joints not implemented yet (but would be simple)');
           end
