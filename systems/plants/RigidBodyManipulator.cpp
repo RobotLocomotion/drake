@@ -368,7 +368,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
           }
         }
         
-        ddTjcalc(pitch[i-1],qi,&ddTJ);
+        ddTjcalc(bodies[i].pitch,qi,&ddTJ);
         TddTmult = bodies[parent].T*bodies[i].Ttree * Tbinv * ddTJ * Tb;
         
         bodies[i].ddTdqdq.row(3*num_dof*(bodies[i].dofnum) + bodies[i].dofnum) += TddTmult.row(0);
@@ -379,7 +379,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       if (qd) {
         double qdi = qd[bodies[i].dofnum];
         TJdot = dTJ*qdi;
-        ddTjcalc(pitch[i-1],qi,&ddTJ);
+        ddTjcalc(bodies[i].pitch,qi,&ddTJ);
         dTJdot = ddTJ*qdi;
 
 //        body.Tdot = body.parent.Tdot*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
