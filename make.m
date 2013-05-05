@@ -2,8 +2,8 @@ function make(varargin)
 
 % Builds all mex files in the directory 
 
-flags = {'-O'};
-%flags = {'-g'};
+%flags = {'-O'};
+flags = {'-g'};
 
 if (nargin>0 && strcmpi(varargin{1},'clean'))
   disp('deleting mex files...');

@@ -178,8 +178,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   
   double *q,*qd;
   MatrixXd f_ext;
-  if (mxGetNumberOfElements(prhs[1])!=model->NB || mxGetNumberOfElements(prhs[2])!=model->NB)
-    mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","q and qd must be size %d x 1",model->NB);
+  if (mxGetNumberOfElements(prhs[1])!=model->num_dof || mxGetNumberOfElements(prhs[2])!=model->num_dof)
+    mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","q and qd must be size %d x 1",model->num_dof);
   q = mxGetPr(prhs[1]);
   qd = mxGetPr(prhs[2]);
   if (nrhs>3) {
@@ -317,19 +317,19 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   }
   
   if (nlhs>0) {
-    plhs[0] = mxCreateDoubleMatrix(model->NB,model->NB,mxREAL);
-    memcpy(mxGetPr(plhs[0]),model->H.data(),sizeof(double)*model->NB*model->NB);
+    plhs[0] = mxCreateDoubleMatrix(model->num_dof,model->num_dof,mxREAL);
+    memcpy(mxGetPr(plhs[0]),model->H.data(),sizeof(double)*model->num_dof*model->num_dof);
   }
   if (nlhs>1) {
-    plhs[1] = mxCreateDoubleMatrix(model->NB,1,mxREAL);
-    memcpy(mxGetPr(plhs[1]),model->C.data(),sizeof(double)*model->NB);
+    plhs[1] = mxCreateDoubleMatrix(model->num_dof,1,mxREAL);
+    memcpy(mxGetPr(plhs[1]),model->C.data(),sizeof(double)*model->num_dof);
   }
   if (nlhs>2) {
-    plhs[2] = mxCreateDoubleMatrix(model->NB*model->NB,model->NB,mxREAL);
-    memcpy(mxGetPr(plhs[2]),model->dH.data(),sizeof(double)*model->NB*model->NB*model->NB);
+    plhs[2] = mxCreateDoubleMatrix(model->num_dof*model->num_dof,model->num_dof,mxREAL);
+    memcpy(mxGetPr(plhs[2]),model->dH.data(),sizeof(double)*model->num_dof*model->num_dof*model->num_dof);
   }
   if (nlhs>3) {
-    plhs[3] = mxCreateDoubleMatrix(model->NB,2*model->NB,mxREAL);
-    memcpy(mxGetPr(plhs[3]),model->dC.data(),sizeof(double)*2*model->NB*model->NB);
+    plhs[3] = mxCreateDoubleMatrix(model->num_dof,model->num_dof,mxREAL);
+    memcpy(mxGetPr(plhs[3]),model->dC.data(),sizeof(double)*model->num_dof*model->num_dof);
   }
 }
