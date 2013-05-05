@@ -16,10 +16,8 @@ function  [H,C] = HandC( model, q, qd, f_ext, grav_accn )
 % are optional, and default to the values {} and [0,0,-9.81], respectively,
 % if omitted.
 %
-% NOTE: Heavily modified by russt
-%   - f_ext is an empty or (sparse) 6 x model.NB matrix
-%   - adds support for floating joints
-%   - adds support for TaylorVars
+% UPDATED by russt:  f_ext is an empty or (sparse) 6 x model.NB matrix
+
 
 if nargin < 5
   a_grav = [0;0;0;0;0;-9.81];
@@ -29,33 +27,10 @@ end
 
 external_force = ( nargin > 3 && length(f_ext) > 0 );
 
-n=0;
 for i = 1:model.NB
-  if model.floatingbase(i)==1
-    XJ = Xtrans(q(n+(1:3)));
-    vJ = [zeros(3,1);qd(n+(1:3))];  % spatial vel is [omega;v]
-    S{n+1} = [0;0;0;1;0;0];
-    S{n+2} = [0;0;0;0;1;0];
-    S{n+3} = [0;0;0;0;0;1];
-    
-    XJ = Xrotz(q(n+6))*XJ;
-    S{n+4} = [0;0;1;0;0;0];
-    vJ = Xrot(q(n+6))*vJ + S{n+4}*qd(n+4);
-    
-    XJ = Xroty(q(n+5))*XJ; 
-    S{n+5} = [0;1;0;0;0;0];
-    S{n+6} = [1;0;0;0;0;0];
-    vJ = Xrotz(q(n+6))*vJ + [0;0;1;0;0;0]*qd(n+;
-    Xrotx(q(n+4))*Xroty(q(n+5))*Xrotz(q(n+6))
-    n=n+6;
-  elseif model.floatingbase(i)==2
-    n=n+7;
-    error('dynamics for quaternion floating bases are not implemented yet')
-  else % it's just a normal joint
-    n=n+1;
-    [ XJ, S{n} ] = jcalc( model.pitch(i), q(n) );
-    vJ = S{n}*qd(n);
-  end
+  n = model.dofnum(i);
+  [ XJ, S{i} ] = jcalc( model.pitch(i), q(n) );
+  vJ = S{i}*qd(n);
   Xup{i} = XJ * model.Xtree{i};
   if model.parent(i) == 0
     v{i} = vJ;
@@ -72,19 +47,11 @@ end
 
 IC = model.I;				% composite inertia calculation
 
-C = zeros(n,1)*q(1);
+C = zeros(model.NB,1)*q(1);
 
 for i = model.NB:-1:1
-  if model.floatingbase(i)==1
-    error('todo: fill out C');
-    n=n-6;
-  elseif model.floatingbase(i)==2
-    error('todo: fill out C');
-    n=n-6;
-  else
-    C(n,1) = S{i}' * fvp{i};
-    n=n-1;
-  end
+  n = model.dofnum(i);
+  C(n,1) = S{i}' * fvp{i};
   if model.parent(i) ~= 0
     fvp{model.parent(i)} = fvp{model.parent(i)} + Xup{i}'*fvp{i};
     IC{model.parent(i)} = IC{model.parent(i)} + Xup{i}'*IC{i}*Xup{i};
@@ -96,13 +63,15 @@ end
 H=zeros(model.NB)*q(1);
 
 for i = 1:model.NB
+  n = model.dofnum(i);
   fh = IC{i} * S{i};
-  H(i,i) = S{i}' * fh;
+  H(n,n) = S{i}' * fh;
   j = i;
   while model.parent(j) > 0
     fh = Xup{j}' * fh;
     j = model.parent(j);
-    H(i,j) = S{j}' * fh;
-    H(j,i) = H(i,j);
+    m = model.dofnum(j);
+    H(n,m) = S{j}' * fh;
+    H(m,n) = H(n,m);
   end
 end

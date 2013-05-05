@@ -221,7 +221,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       model.dirty = true;
     end
     
-    function model = addFloatingBase(model,parent,rootlink,xyz,rpy)
+    function model = addFloatingBase(model,parent,rootlink,xyz,rpy,type)
       model = addJoint(model,'base','planar',parent,rootlink,xyz,rpy,model.view_axis);
     end
     
@@ -270,7 +270,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       end
     end
     
-    function model = extractFeatherstone(model)
+    function [model,dof] = extractFeatherstone(model)
 %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
       dof=0;inds=[];
       for i=1:length(model.body)
