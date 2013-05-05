@@ -4,7 +4,7 @@ options.floating = true;
 m = RigidBodyManipulator('FallingBrick.urdf',options);
 
 nq=getNumDOF(m);
-for i=1:100
+for i=1:25
   q = randn(nq,1); qd = randn(nq,1);
   options.grad_method = {'user','taylorvar'};
 %  [x,J] = geval(1,@contactPositions,m,q,options);

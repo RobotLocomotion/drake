@@ -193,13 +193,87 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
     
-    function model = addFloatingBase(model,parent,rootlink,xyz,rpy,b_use_quaternions)
-      if (nargin>5 && b_use_quaternions)
-        type = 'floating_quat';
+    function model = addFloatingBase(model,parent,rootlink,xyz,rpy,joint_type)
+      if (nargin<6) joint_type = 0; end
+
+      if (joint_type == -1)  % back door to the old method (with rpy in instrinsic coordinates), here only for unit testing
+      
+        body1 = newBody(model);
+        body1.linkname = ['base_x'];
+        body1.robotnum=rootlink.robotnum;
+        model.body = [model.body,body1];
+        model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,[1;0;0],0);
+        
+        body2=newBody(model);
+        body2.linkname = ['base_y'];
+        body2.robotnum=rootlink.robotnum;
+        model.body = [model.body,body2];
+        model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),[0;1;0],0);
+        
+        body3=newBody(model);
+        body3.linkname = ['base_z'];
+        body3.robotnum=rootlink.robotnum;
+        model.body = [model.body,body3];
+        model = addJoint(model,body3.linkname,'prismatic',body2,body3,zeros(3,1),zeros(3,1),[0;0;1],0);
+        
+        body4=newBody(model);
+        body4.linkname = ['base_relative_roll'];
+        body4.robotnum=rootlink.robotnum;
+        model.body = [model.body,body4];
+        model = addJoint(model,body4.linkname,'revolute',body3,body4,zeros(3,1),zeros(3,1),[1;0;0],0);
+        
+        body5=newBody(model);
+        body5.linkname = ['base_relative_pitch'];
+        body5.robotnum=rootlink.robotnum;
+        model.body = [model.body,body5];
+        model = addJoint(model,body5.linkname,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
+        
+        model = addJoint(model,['base_relative_yaw'],'revolute',body5,rootlink,zeros(3,1),zeros(3,1),[0;0;1],0);
+        
+      elseif (joint_type == -2) % another back door, for intrinsic ypr
+        
+        body1 = newBody(model);
+        body1.linkname = ['base_x'];
+        body1.robotnum=rootlink.robotnum;
+        model.body = [model.body,body1];
+        model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,[1;0;0],0);
+        
+        body2=newBody(model);
+        body2.linkname = ['base_y'];
+        body2.robotnum=rootlink.robotnum;
+        model.body = [model.body,body2];
+        model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),[0;1;0],0);
+        
+        body3=newBody(model);
+        body3.linkname = ['base_z'];
+        body3.robotnum=rootlink.robotnum;
+        model.body = [model.body,body3];
+        model = addJoint(model,body3.linkname,'prismatic',body2,body3,zeros(3,1),zeros(3,1),[0;0;1],0);
+        
+        body4=newBody(model);
+        body4.linkname = ['base_relative_yaw'];
+        body4.robotnum=rootlink.robotnum;
+        model.body = [model.body,body4];
+        model = addJoint(model,body4.linkname,'revolute',body3,body4,zeros(3,1),zeros(3,1),[0;0;1],0);
+        
+        body5=newBody(model);
+        body5.linkname = ['base_relative_pitch'];
+        body5.robotnum=rootlink.robotnum;
+        model.body = [model.body,body5];
+        model = addJoint(model,body5.linkname,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
+        
+        model = addJoint(model,['base_relative_roll'],'revolute',body5,rootlink,zeros(3,1),zeros(3,1),[1;0;0],0);
+                
       else
-        type = 'floating_rpy';
+        if (joint_type==1)
+          type = 'floating_rpy';
+        elseif (joint_type==2)
+          type = 'floating_quat';
+        else
+          error('unknown floating base type');
+        end
+        model = addJoint(model,['floating_base'],type,parent,rootlink,zeros(3,1),zeros(3,1));
       end
-      model = addJoint(model,['floating_base'],type,parent,rootlink,zeros(3,1),zeros(3,1));
     end
         
     function model = addSensor(model,sensor)
@@ -233,12 +307,12 @@ classdef RigidBodyManipulator < Manipulator
       end
             
       %% extract featherstone model structure
-      model = extractFeatherstone(model);
+      [model,num_dof] = extractFeatherstone(model);
 
       u_limit = repmat(inf,length(model.actuator),1);
 
       %% extract B matrix
-      B = sparse(model.featherstone.NB,0);
+      B = sparse(num_dof,0);
       for i=1:length(model.actuator)
         B(model.actuator(i).joint.dofnum,i) = model.actuator(i).reduction;
         if ~isinf(model.actuator(i).joint.effort_limit)
@@ -252,8 +326,8 @@ classdef RigidBodyManipulator < Manipulator
       model.B = full(B);
 
       model = model.setNumInputs(size(model.B,2));
-      model = model.setNumDOF(model.featherstone.NB);
-      model = model.setNumOutputs(2*model.featherstone.NB);
+      model = model.setNumDOF(num_dof);
+      model = model.setNumOutputs(2*num_dof);
 
       if getNumInputs(model)>0
         model = setInputFrame(model,constructInputFrame(model));
@@ -708,11 +782,11 @@ classdef RigidBodyManipulator < Manipulator
           b = model.body(j);
           if ~isempty(b.parent) && b.robotnum==i
             if (b.floatingbase==1)
-              joints = {joints{:};'base_x';'base_y';'base_z';'base_roll';'base_pitch';'base_yaw'};
+              joints = vertcat(joints,{'base_x';'base_y';'base_z';'base_roll';'base_pitch';'base_yaw'});
             elseif (b.floatingbase==2)
-              joints = {joints{:};'base_x';'base_y';'base_z';'base_qw';'base_qx';'base_qy';'base_qz'};
+              joints = vertcat(joints,{'base_x';'base_y';'base_z';'base_qw';'base_qx';'base_qy';'base_qz'});
             else
-              joints = {joints{:};b.jointname};
+              joints = vertcat(joints,{b.jointname});
             end
           end
         end
@@ -735,7 +809,7 @@ classdef RigidBodyManipulator < Manipulator
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
     
-    function model = extractFeatherstone(model)
+    function [model,dof] = extractFeatherstone(model)
 %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
       dof=0;inds=[];
       for i=1:length(model.body)
@@ -743,11 +817,11 @@ classdef RigidBodyManipulator < Manipulator
           if (model.body(i).floatingbase==1)
             model.body(i).dofnum=dof+(1:6)';
             dof=dof+6;
-            inds = [inds,repmat(i,1,6)];
+            inds = [inds,i];
           elseif (model.body(i).floatingbase==2)
             model.body(i).dofnum=dof+(1:7)';
             dof=dof+7;
-            inds = [inds,repmat(i,1,7)];
+            inds = [inds,i];
           else
             dof=dof+1;
             model.body(i).dofnum=dof;
@@ -755,10 +829,11 @@ classdef RigidBodyManipulator < Manipulator
           end
         end
       end
-      m.NB=dof;
+      m.NB= length(inds);  % number of links with parents
       for i=1:m.NB
         b=model.body(inds(i));
         m.parent(i) = b.parent.dofnum;
+        m.floatingbase(i) = b.floatingbase;
         m.pitch(i) = b.pitch;
         m.Xtree{i} = inv(b.X_joint_to_body)*b.Xtree*b.parent.X_joint_to_body;
         m.I{i} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
