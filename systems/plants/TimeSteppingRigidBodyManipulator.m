@@ -683,6 +683,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       jl_min = obj.manip.joint_limit_min;
       jl_max = obj.manip.joint_limit_max;
     end
+    
+    function varargout = jointLimits(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = jointLimits(obj.manip,varargin{:});
+    end
   
     function index = getActuatedJoints(obj)
       index = obj.manip.getActuatedJoints();
