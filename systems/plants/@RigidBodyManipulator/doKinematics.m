@@ -55,7 +55,7 @@ else
       body.Tdot = zeros(4);
       body.dTdqdot = zeros(3*nq,4);
       body.ddTdqdq = zeros(3*nq*nq,4);
-    elseif body.floatingbase==1
+    elseif body.floating==1
       qi = q(body.dofnum); % qi is 6x1
       [rx,drx,ddrx] = rotx(qi(4)); [ry,dry,ddry] = roty(qi(5)); [rz,drz,ddrz] = rotz(qi(6));
       TJ = [rz*ry*rx,qi(1:3);zeros(1,3),1];
@@ -108,7 +108,7 @@ else
       end
       
       body.cached_q = qi';
-    elseif body.floatingbase==2
+    elseif body.floating==2
       qi = q(body.dofnum);  % qi is 7x1
       TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(1,3),1];
       body.T=body.parent.T*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;

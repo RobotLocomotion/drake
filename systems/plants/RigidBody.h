@@ -17,8 +17,9 @@ class RigidBody {
 public:
   std::string linkname;
   std::string jointname;
+  int parent;
   int dofnum;
-  int floatingbase;
+  int floating;
   Matrix4d Ttree;
   Matrix4d T_body_to_joint;
   std::set<int> ancestor_dofs;
@@ -36,7 +37,7 @@ public:
   
   RigidBody() {
     mass = 0.0;
-    floatingbase = 0;
+    floating = 0;
     com << Vector3d::Zero(), 1;
   }
   

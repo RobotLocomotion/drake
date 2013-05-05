@@ -11,9 +11,12 @@ class RigidBody;
 class RigidBodyManipulator 
 {
 public:
-  int NB;
+  int num_dof; 
+  int NB;  // featherstone bodies
+  int num_bodies;  // rigid body objects
   int *pitch;
   int *parent;
+  int *dofnum;
   double* joint_limit_min;
   double* joint_limit_max;
   
@@ -71,7 +74,7 @@ public:
   double *cached_q, *cached_qd;
   int secondDerivativesCached;
 
-  RigidBodyManipulator(int n);
+  RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1);
   ~RigidBodyManipulator(void);
   
   void compile(void);  // call me after the model is loaded

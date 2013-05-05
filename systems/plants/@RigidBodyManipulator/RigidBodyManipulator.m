@@ -175,11 +175,11 @@ classdef RigidBodyManipulator < Manipulator
           
         case 'floating_rpy'
           child.pitch = 0;
-          child.floatingbase = 1;
+          child.floating = 1;
 
         case 'floating_quat'
           child.pitch = 0;
-          child.floatingbase = 2;
+          child.floating = 2;
           
         otherwise
           error(['joint type ',type,' not supported (yet?)']);
@@ -784,9 +784,9 @@ classdef RigidBodyManipulator < Manipulator
         for j=1:length(model.body)
           b = model.body(j);
           if ~isempty(b.parent) && b.robotnum==i
-            if (b.floatingbase==1)
+            if (b.floating==1)
               joints = vertcat(joints,{'base_x';'base_y';'base_z';'base_roll';'base_pitch';'base_yaw'});
-            elseif (b.floatingbase==2)
+            elseif (b.floating==2)
               joints = vertcat(joints,{'base_x';'base_y';'base_z';'base_qw';'base_qx';'base_qy';'base_qz'});
             else
               joints = vertcat(joints,{b.jointname});
@@ -817,11 +817,11 @@ classdef RigidBodyManipulator < Manipulator
       dof=0;inds=[];
       for i=1:length(model.body)
         if (~isempty(model.body(i).parent))
-          if (model.body(i).floatingbase==1)
+          if (model.body(i).floating==1)
             model.body(i).dofnum=dof+(1:6)';
             dof=dof+6;
             inds = [inds,i];
-          elseif (model.body(i).floatingbase==2)
+          elseif (model.body(i).floating==2)
             model.body(i).dofnum=dof+(1:7)';
             dof=dof+7;
             inds = [inds,i];
@@ -836,7 +836,7 @@ classdef RigidBodyManipulator < Manipulator
       n=1;
       for i=1:length(inds) % number of links without parents
         b=model.body(inds(i));
-        if (b.floatingbase==1)   % implement relative ypr, but with dofnums as rpy
+        if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
           % todo:  remove this and handle the floating joint directly in
           % HandC.  this is really just a short term hack.
           m.dofnum(n+(0:5)) = b.dofnum([1;2;3;6;5;4]);
@@ -854,11 +854,11 @@ classdef RigidBodyManipulator < Manipulator
           for j=0:4, m.I{n+j} = zeros(6); end
           m.I{n+5} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
           n=n+6;
-        elseif (b.floatingbase==2)
+        elseif (b.floating==2)
           error('dynamics for quaternion floating base not implemented yet');
         else
           m.parent(n) = b.parent.dofnum;
-          m.dofnum(n) = b.dofnum;
+          m.dofnum(n) = b.dofnum;  % note: only need this for my floating hack above (remove it when gone)
           m.pitch(n) = b.pitch;
           m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*b.parent.X_joint_to_body;
           m.I{n} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
