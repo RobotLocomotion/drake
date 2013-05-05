@@ -8,7 +8,7 @@ LCM_CFLAGS = $(shell pkg-config --cflags lcm)
 LCM_LDFLAGS = $(shell pkg-config --libs lcm)
 CFILES = $(LCM_CFILES)
 LCM_JAVAFILES = $(LCMFILES:%.lcm=%.java)
-OTHER_JAVAFILES = util/MyLCMTypeDatabase.java util/MessageMonitor.java util/CoordinateFrameData.java util/LCMCoder.java
+OTHER_JAVAFILES = util/MyLCMTypeDatabase.java util/MessageMonitor.java util/CoordinateFrameData.java util/LCMCoder.java util/Transform.java
 JAVAFILES = $(LCM_JAVAFILES) $(OTHER_JAVAFILES)
 
 OBJFILES = $(CFILES:%.c=%.o)
