@@ -70,8 +70,8 @@ for i = 1:model.NB
   while model.parent(j) > 0
     fh = Xup{j}' * fh;
     j = model.parent(j);
-    m = model.dofnum(j);
-    H(n,m) = S{j}' * fh;
-    H(m,n) = H(n,m);
+    np = model.dofnum(j);
+    H(n,np) = S{j}' * fh;
+    H(np,n) = H(n,np);
   end
 end

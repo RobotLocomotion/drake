@@ -3,6 +3,7 @@ function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd,use_mex)
 checkDirty(obj);
 
 if (nargin<4) use_mex = true; end
+use_mex = false;  % hard coded just for debugging...
 
 m = obj.featherstone;
 
@@ -20,7 +21,7 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   if (nargout>3)
     if ~isempty(f_ext) error('not implemented yet'); end
     [H,C,dH,dC] = HandCmex(obj.mex_model_ptr.getData,q,qd,f_ext);
-    dH = dH(:,1:m.NB)*[eye(m.NB) zeros(m.NB)];
+    dH = [dH, zeros(m.NB)];
     dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
     dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
@@ -49,6 +50,8 @@ else
     
     
     for i = 1:m.NB
+      n = m.dofnum(i);
+      
       dvdq{i} = zeros(6,m.NB)*q(1);
       dvdqd{i} = zeros(6,m.NB)*q(1);
       davpdq{i} = zeros(6,m.NB)*q(1);
@@ -56,10 +59,10 @@ else
       dfvpdq{i} = zeros(6,m.NB)*q(1);
       dfvpdqd{i} = zeros(6,m.NB)*q(1);
       
-      [ XJ, S{i} ] = jcalc( m.pitch(i), q(i) );
-      dXJdq = djcalc(m.pitch(i), q(i));
+      [ XJ, S{i} ] = jcalc( m.pitch(i), q(n) );
+      dXJdq = djcalc(m.pitch(i), q(n));
       
-      vJ = S{i}*qd(i);
+      vJ = S{i}*qd(n);
       dvJdqd = S{i};
       
       Xup{i} = XJ * m.Xtree{i};
@@ -67,31 +70,32 @@ else
       
       if m.parent(i) == 0
         v{i} = vJ;
-        dvdqd{i}(:,i) = dvJdqd;
+        dvdqd{i}(:,n) = dvJdqd;
         
         avp{i} = Xup{i} * -a_grav;
-        davpdq{i}(:,i) = dXupdq{i} * -a_grav;
+        davpdq{i}(:,n) = dXupdq{i} * -a_grav;
       else
         j = m.parent(i);
+
         v{i} = Xup{i}*v{j} + vJ;
         
         dvdq{i} = Xup{i}*dvdq{j};
-        dvdq{i}(:,i) = dvdq{i}(:,i) + dXupdq{i}*v{j};
+        dvdq{i}(:,n) = dvdq{i}(:,n) + dXupdq{i}*v{j};
         
         dvdqd{i} = Xup{i}*dvdqd{j};
-        dvdqd{i}(:,i) = dvdqd{i}(:,i) + dvJdqd;
+        dvdqd{i}(:,n) = dvdqd{i}(:,n) + dvJdqd;
         
         avp{i} = Xup{i}*avp{j} + crm(v{i})*vJ;
         
         davpdq{i} = Xup{i}*davpdq{j};
-        davpdq{i}(:,i) = davpdq{i}(:,i) + dXupdq{i}*avp{j};
+        davpdq{i}(:,n) = davpdq{i}(:,n) + dXupdq{i}*avp{j};
         for k=1:m.NB,
           davpdq{i}(:,k) = davpdq{i}(:,k) + ...
             dcrm(v{i},vJ,dvdq{i}(:,k),zeros(6,1));
         end
         
         dvJdqd_mat = zeros(6,m.NB);
-        dvJdqd_mat(:,i) = dvJdqd;
+        dvJdqd_mat(:,n) = dvJdqd;
         davpdqd{i} = Xup{i}*davpdqd{j} + dcrm(v{i},vJ,dvdqd{i},dvJdqd_mat);
       end
       fvp{i} = m.I{i}*avp{i} + crf(v{i})*m.I{i}*v{i};
@@ -111,12 +115,13 @@ else
     dIC = cellfun(@(a) zeros(6), dIC,'UniformOutput',false);
     
     for i = m.NB:-1:1
-      C(i,1) = S{i}' * fvp{i};
-      dC(i,:) = S{i}'*[dfvpdq{i} dfvpdqd{i}];
+      n = m.dofnum(i);
+      C(n,1) = S{i}' * fvp{i};
+      dC(n,:) = S{i}'*[dfvpdq{i} dfvpdqd{i}];
       if m.parent(i) ~= 0
         fvp{m.parent(i)} = fvp{m.parent(i)} + Xup{i}'*fvp{i};
         dfvpdq{m.parent(i)} = dfvpdq{m.parent(i)} + Xup{i}'*dfvpdq{i};
-        dfvpdq{m.parent(i)}(:,i) = dfvpdq{m.parent(i)}(:,i) + dXupdq{i}'*fvp{i};
+        dfvpdq{m.parent(i)}(:,n) = dfvpdq{m.parent(i)}(:,n) + dXupdq{i}'*fvp{i};
         dfvpdqd{m.parent(i)} = dfvpdqd{m.parent(i)} + Xup{i}'*dfvpdqd{i};
         
         IC{m.parent(i)} = IC{m.parent(i)} + Xup{i}'*IC{i}*Xup{i};
@@ -136,10 +141,11 @@ else
     dH = zeros(m.NB^2,2*m.NB)*q(1);
     for k = 1:m.NB
       for i = 1:m.NB
+        n = m.dofnum(i);
         fh = IC{i} * S{i};
         dfh = dIC{i,k} * S{i};  %dfh/dqk
-        H(i,i) = S{i}' * fh;
-        dH(i + (i-1)*m.NB,k) = S{i}' * dfh;
+        H(n,n) = S{i}' * fh;
+        dH(n + (n-1)*m.NB,k) = S{i}' * dfh;
         j = i;
         while m.parent(j) > 0
           if j==k,
@@ -150,10 +156,12 @@ else
           fh = Xup{j}' * fh;
           
           j = m.parent(j);
-          H(i,j) = S{j}' * fh;
-          H(j,i) = H(i,j);
-          dH(i + (j-1)*m.NB,k) = S{j}' * dfh;
-          dH(j + (i-1)*m.NB,k) = dH(i + (j-1)*m.NB,k);
+          np = m.dofnum(j);
+          
+          H(n,np) = S{j}' * fh;
+          H(np,n) = H(n,np);
+          dH(n + (np-1)*m.NB,k) = S{j}' * dfh;
+          dH(np + (n-1)*m.NB,k) = dH(n + (np-1)*m.NB,k);
         end
       end
     end

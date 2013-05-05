@@ -31,10 +31,17 @@ classdef Manipulator < SecondOrderSystem
         [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,qd);
         Hinv = inv(H);
         
-        qdd = Hinv*(B*u - C);
-        dqdd = [zeros(obj.num_q,1),...
-          -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) - Hinv*dC(:,1:obj.num_q),...
-          -Hinv*dC(:,1+obj.num_q:end), Hinv*B];        
+        if (obj.num_u>0) 
+          qdd = Hinv*(B*u-C); 
+          dqdd = [zeros(obj.num_q,1),...
+            -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) - Hinv*dC(:,1:obj.num_q),...
+            -Hinv*dC(:,1+obj.num_q:end), Hinv*B];
+        else
+          qdd = Hinv*(-C);
+          dqdd = [zeros(obj.num_q,1),...
+            -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) - Hinv*dC(:,1:obj.num_q),...
+            -Hinv*dC(:,1+obj.num_q:end)];
+        end
       else
         [H,C,B] = manipulatorDynamics(obj,q,qd);
         Hinv = inv(H);

@@ -212,11 +212,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   
   VectorXd vJ(6), fh(6), dfh(6), dvJdqd(6);
   MatrixXd XJ(6,6), dXJdq(6,6);
-  int i,j,k;
+  int i,j,k,n,np;
   
   for (i=0; i<model->NB; i++) {
-    jcalc(model->pitch[i],q[i],&XJ,&(model->S[i]));
-    vJ = model->S[i] * qd[i];
+    n = model->dofnum[i];
+    jcalc(model->pitch[i],q[n],&XJ,&(model->S[i]));
+    vJ = model->S[i] * qd[n];
     model->Xup[i] = XJ * model->Xtree[i];
     
     if (model->parent[i] < 0) {
@@ -244,25 +245,25 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     if (nlhs > 3) {
       dvJdqd = model->S[i];
       if (model->parent[i] < 0) {
-        model->dvdqd[i].col(i) = dvJdqd;
-        model->davpdq[i].col(i) = model->dXupdq[i] * -model->a_grav;
+        model->dvdqd[i].col(n) = dvJdqd;
+        model->davpdq[i].col(n) = model->dXupdq[i] * -model->a_grav;
         
       } else {
         j = model->parent[i];
         model->dvdq[i] = model->Xup[i]*model->dvdq[j];
-        model->dvdq[i].col(i) += model->dXupdq[i]*model->v[j];
+        model->dvdq[i].col(n) += model->dXupdq[i]*model->v[j];
         model->dvdqd[i] = model->Xup[i]*model->dvdqd[j];
-        model->dvdqd[i].col(i) += dvJdqd;
+        model->dvdqd[i].col(n) += dvJdqd;
         
         model->davpdq[i] = model->Xup[i]*model->davpdq[j];
-        model->davpdq[i].col(i) += model->dXupdq[i]*model->avp[j];
+        model->davpdq[i].col(n) += model->dXupdq[i]*model->avp[j];
         for (k=0; k < model->NB; k++) {
           dcrm(model->v[i],vJ,model->dvdq[i].col(k),VectorXd::Zero(6),&(model->dcross));
           model->davpdq[i].col(k) += model->dcross;
         }
         
         model->dvJdqd_mat = MatrixXd::Zero(6,model->NB);
-        model->dvJdqd_mat.col(i) = dvJdqd;
+        model->dvJdqd_mat.col(n) = dvJdqd;
         dcrm(model->v[i],vJ,model->dvdqd[i],model->dvJdqd_mat,&(model->dcross));
         model->davpdqd[i] = model->Xup[i]*model->davpdqd[j] + model->dcross;
       }
@@ -276,11 +277,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   }
   
   for (i=(model->NB-1); i>=0; i--) {
-    C(i) = (model->S[i]).transpose() * model->fvp[i];
+    n = model->dofnum[i];
+    C(n) = (model->S[i]).transpose() * model->fvp[i];
     
     if (nlhs > 3) {
-      (*dC).block(i,0,1,model->NB) = model->S[i].transpose()*model->dfvpdq[i];
-      (*dC).block(i,model->NB,1,model->NB) = model->S[i].transpose()*model->dfvpdqd[i];
+      (*dC).block(n,0,1,model->NB) = model->S[i].transpose()*model->dfvpdq[i];
+      (*dC).block(n,model->NB,1,model->NB) = model->S[i].transpose()*model->dfvpdqd[i];
     }
     
     if (model->parent[i] >= 0) {
@@ -303,14 +305,17 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   }
   
   for (i=0; i<model->NB; i++) {
+    n = model->dofnum[i];
     fh = model->IC[i] * model->S[i];
-    H(i,i) = (model->S[i]).transpose() * fh;
+    H(n,n) = (model->S[i]).transpose() * fh;
     j=i;
     while (model->parent[j] >= 0) {
       fh = (model->Xup[j]).transpose() * fh;
       j = model->parent[j];
-      H(i,j) = (model->S[j]).transpose() * fh;
-      H(j,i) = H(i,j);
+      np = model->dofnum[j];
+      
+      H(n,np) = (model->S[j]).transpose() * fh;
+      H(np,n) = H(n,np);
     }
   }
   
@@ -319,7 +324,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
       for (i=0; i < model->NB; i++) {
         fh = model->IC[i] * model->S[i];
         dfh = model->dIC[i][k] * model->S[i];  //dfh/dqk
-        (*dH)(i + i*model->NB,k) = model->S[i].transpose() * dfh;
+        (*dH)(n + n*model->NB,k) = model->S[i].transpose() * dfh;
         j = i;
         while (model->parent[j] >= 0) {
           if (j==k) {
@@ -330,8 +335,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
           fh = (model->Xup[j]).transpose() * fh;
           
           j = model->parent[j];
-          (*dH)(i + j*model->NB,k) = model->S[j].transpose() * dfh;
-          (*dH)(j + i*model->NB,k) = (*dH)(i + j*model->NB,k);
+          np = model->dofnum[j];
+          (*dH)(n + np*model->NB,k) = model->S[j].transpose() * dfh;
+          (*dH)(np + n*model->NB,k) = (*dH)(n + np*model->NB,k);
         }
       }
     }

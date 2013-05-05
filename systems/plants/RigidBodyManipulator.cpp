@@ -262,7 +262,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       Tb = bodies[i].T_body_to_joint;
       Tbinv = Tb.inverse();
 
-      TJ = Matrix4d::Identity();  TJ.block<3,3>(0,0) = rz*ry*rx;  TJ(1,4)=qi[0]; TJ(2,4)=qi[1]; TJ(3,4)=qi[2];
+      TJ = Matrix4d::Identity();  TJ.block<3,3>(0,0) = rz*ry*rx;  TJ(0,3)=qi[0]; TJ(1,3)=qi[1]; TJ(2,3)=qi[2];
 
       Tmult = bodies[i].Ttree * Tbinv * TJ * Tb;
       bodies[i].T = bodies[parent].T * Tmult;
@@ -279,32 +279,32 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       fb_dTJ[4] = Matrix4d::Zero(); fb_dTJ[4].block<3,3>(0,0) = rz*dry*rx;
       fb_dTJ[5] = Matrix4d::Zero(); fb_dTJ[5].block<3,3>(0,0) = drz*ry*rx;
 
-      for (int j=0; j<5; j++) {
-	fb_dTmult[j] = bodies[i].Ttree * Tbinv * fb_dTJ[j] * Tb;
-	TdTmult = bodies[parent].T * fb_dTmult[j];
+      for (int j=0; j<6; j++) {
+        fb_dTmult[j] = bodies[i].Ttree * Tbinv * fb_dTJ[j] * Tb;
+        TdTmult = bodies[parent].T * fb_dTmult[j];
         bodies[i].dTdq.row(bodies[i].dofnum + j) += TdTmult.row(0);
-	bodies[i].dTdq.row(bodies[i].dofnum + j + num_dof) += TdTmult.row(1);
-	bodies[i].dTdq.row(bodies[i].dofnum + j + 2*num_dof) += TdTmult.row(2);
+        bodies[i].dTdq.row(bodies[i].dofnum + j + num_dof) += TdTmult.row(1);
+        bodies[i].dTdq.row(bodies[i].dofnum + j + 2*num_dof) += TdTmult.row(2);
       }
 
       if (b_compute_second_derivatives) {
-	std::cerr << "mex kinematics for floating base second derivatives are not implemented yet" << std::endl;
+        std::cerr << "mex kinematics for floating base second derivatives are not implemented yet" << std::endl;
       }
       if (qd) {
         double qdi[6];
 
-	TJdot = Matrix4d::Zero();
-	for (int j=0; j<6; j++) {
-	  qdi[j] = qd[bodies[i].dofnum+j];
-	  TJdot += fb_dTJ[j]*qdi[j];
-	}
+        TJdot = Matrix4d::Zero();
+        for (int j=0; j<6; j++) {
+          qdi[j] = qd[bodies[i].dofnum+j];
+          TJdot += fb_dTJ[j]*qdi[j];
+        }
 
         fb_dTJdot[0] = Matrix4d::Zero();
-	fb_dTJdot[1] = Matrix4d::Zero();
-	fb_dTJdot[2] = Matrix4d::Zero();
-	fb_dTJdot[3] = Matrix4d::Zero();  fb_dTJdot[3].block<3,3>(0,0) = (drz*qdi[5])*ry*drx + rz*(dry*qdi[4])*drx + rz*ry*(ddrx*qdi[3]);
-	fb_dTJdot[4] = Matrix4d::Zero();  fb_dTJdot[4].block<3,3>(0,0) = (drz*qdi[5])*dry*rx + rz*(ddry*qdi[4])*rx + rz*dry*(drx*qdi[3]);
- 	fb_dTJdot[5] = Matrix4d::Zero();  fb_dTJdot[5].block<3,3>(0,0) = (ddrz*qdi[5])*ry*rx + drz*(dry*qdi[4])*rx + drz*ry*(drx*qdi[3]);
+        fb_dTJdot[1] = Matrix4d::Zero();
+        fb_dTJdot[2] = Matrix4d::Zero();
+        fb_dTJdot[3] = Matrix4d::Zero();  fb_dTJdot[3].block<3,3>(0,0) = (drz*qdi[5])*ry*drx + rz*(dry*qdi[4])*drx + rz*ry*(ddrx*qdi[3]);
+        fb_dTJdot[4] = Matrix4d::Zero();  fb_dTJdot[4].block<3,3>(0,0) = (drz*qdi[5])*dry*rx + rz*(ddry*qdi[4])*rx + rz*dry*(drx*qdi[3]);
+        fb_dTJdot[5] = Matrix4d::Zero();  fb_dTJdot[5].block<3,3>(0,0) = (ddrz*qdi[5])*ry*rx + drz*(dry*qdi[4])*rx + drz*ry*(drx*qdi[3]);
 
         dTdotmult = bodies[i].Ttree * Tbinv * TJdot * Tb;
         bodies[i].Tdot = bodies[parent].Tdot*Tmult + bodies[parent].T * dTdotmult;
@@ -312,11 +312,11 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
         bodies[i].dTdqdot = bodies[parent].dTdqdot* Tmult + bodies[parent].dTdq * dTdotmult;  
 
         for (int j=0; j<6; j++) {
-	  dTdotmult = bodies[parent].Tdot*fb_dTmult[j] + bodies[parent].T*bodies[i].Ttree*Tbinv*fb_dTJdot[j]*Tb;
-	  bodies[i].dTdqdot.row(bodies[i].dofnum + j) += dTdotmult.row(0);
-	  bodies[i].dTdqdot.row(bodies[i].dofnum + j + num_dof) += dTdotmult.row(1);
-	  bodies[i].dTdqdot.row(bodies[i].dofnum + j + 2*num_dof) += dTdotmult.row(2);
-	}
+          dTdotmult = bodies[parent].Tdot*fb_dTmult[j] + bodies[parent].T*bodies[i].Ttree*Tbinv*fb_dTJdot[j]*Tb;
+          bodies[i].dTdqdot.row(bodies[i].dofnum + j) += dTdotmult.row(0);
+          bodies[i].dTdqdot.row(bodies[i].dofnum + j + num_dof) += dTdotmult.row(1);
+          bodies[i].dTdqdot.row(bodies[i].dofnum + j + 2*num_dof) += dTdotmult.row(2);
+        }
       }
       
     } else if (bodies[i].floating == 2) {
@@ -512,9 +512,9 @@ template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJac(const int body_ind, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
 {
   int dim = 3, n_pts = pts.cols();
-  MatrixXd tmp = bodies[body_ind].dTdq.topLeftCorner(dim*NB,dim+1)*pts;
+  MatrixXd tmp = bodies[body_ind].dTdq.topLeftCorner(dim*num_dof,dim+1)*pts;
   MatrixXd Jt = Map<MatrixXd>(tmp.data(),num_dof,dim*n_pts);
-  J = Jt.transpose();
+  J.topLeftCorner(dim*n_pts,num_dof) = Jt.transpose();
   
   if (rotation_type == 1) {
     MatrixXd R = bodies[body_ind].T.topLeftCorner(dim,dim);

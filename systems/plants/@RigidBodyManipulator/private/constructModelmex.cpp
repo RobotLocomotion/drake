@@ -78,8 +78,17 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mxArray* pfloating = mxGetProperty(pBodies,i,"floating");
     model->bodies[i].floating = (int) mxGetScalar(pfloating);
 
-    model->bodies[i].parent = (int) mxGetScalar(mxGetProperty(pBodies,i,"parent")) - 1; // zero-indexed
-
+    {  // lookup parent index
+      mxArray *in_args[2] = { mxGetProperty(pBodies,i,"parent"), const_cast<mxArray*>(pBodies) };
+      if (mxIsEmpty(in_args[0])) {
+        model->bodies[i].parent = -1; 
+      } else {
+        mxArray *out_args[2];
+        mexCallMATLAB(2,out_args,2,in_args,"ismember");
+        model->bodies[i].parent = (int) mxGetScalar(out_args[1]) - 1; // zero-indexed
+      }
+    }
+    
     if (model->bodies[i].dofnum>=0) {
       mxArray* pjointlim = mxGetProperty(pBodies,i,"joint_limit_min");
       model->joint_limit_min[model->bodies[i].dofnum] = mxGetScalar(pjointlim);
