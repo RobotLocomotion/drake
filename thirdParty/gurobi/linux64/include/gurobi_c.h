@@ -25,7 +25,7 @@ typedef struct _GRBenv GRBenv;
 
 #define GRB_VERSION_MAJOR     5
 #define GRB_VERSION_MINOR     1
-#define GRB_VERSION_TECHNICAL 0
+#define GRB_VERSION_TECHNICAL 1
 
 /* Error codes */
 
@@ -85,7 +85,7 @@ typedef struct _GRBenv GRBenv;
 #define GRB_MAX_NAMELEN    255
 #define GRB_MAX_STRLEN     512
 #define GRB_MAX_CONCURRENT 16
-/* Copyright 2011, Gurobi Optimization, Inc. */
+/* Copyright 2013, Gurobi Optimization, Inc. */
 
 /* Query interface */
 
@@ -475,7 +475,7 @@ GRBmodel * __stdcall
   GRBfeasibility(GRBmodel *model);
 GRBmodel * __stdcall
   GRBlinearizemodel(GRBmodel *model);
-/* Copyright 2011, Gurobi Optimization, Inc. */
+/* Copyright 2013, Gurobi Optimization, Inc. */
 
 int __stdcall
   GRBreadmodel(GRBenv *env, const char *filename, GRBmodel **modelP);
@@ -611,7 +611,7 @@ GRBgetBasisHead(GRBmodel *lp, int *bhead);
 #define GRB_NONBASIC_UPPER -2
 #define GRB_SUPERBASIC     -3
 
-/* Copyright 2011, Gurobi Optimization, Inc. */
+/* Copyright 2013, Gurobi Optimization, Inc. */
 
 /* Undocumented routines */
 
@@ -619,7 +619,7 @@ int __stdcall
 GRBstrongbranch(GRBmodel *model, int num, int *cand,
                 double *downobjbd, double *upobjbd, int *statusP);
 
-/* Copyright 2011, Gurobi Optimization, Inc. */
+/* Copyright 2013, Gurobi Optimization, Inc. */
 
 /**************/
 /* Parameters */
