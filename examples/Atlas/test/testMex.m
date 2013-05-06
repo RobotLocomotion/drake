@@ -64,8 +64,8 @@ for i=1:100
   valuecheck(C,Cm,1e-8);
   valuecheck(B,Bm,1e-8);
   
-  valuecheck(dH,dHm,1e-8);
   valuecheck(dC,dCm,1e-8);
+  valuecheck(dH,dHm,1e-8);
   valuecheck(dB,dBm,1e-8);
 
   % test mex kinematics

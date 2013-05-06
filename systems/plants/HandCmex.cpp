@@ -246,8 +246,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
       dvJdqd = model->S[i];
       if (model->parent[i] < 0) {
         model->dvdqd[i].col(n) = dvJdqd;
-        model->davpdq[i].col(n) = model->dXupdq[i] * -model->a_grav;
-        
+        model->davpdq[i].col(n) = model->dXupdq[i] * (-model->a_grav);
       } else {
         j = model->parent[i];
         model->dvdq[i] = model->Xup[i]*model->dvdq[j];
@@ -286,8 +285,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     }
     
     if (model->parent[i] >= 0) {
-      model->fvp[model->parent[i]] = model->fvp[model->parent[i]] + (model->Xup[i]).transpose()*model->fvp[i];
-      model->IC[model->parent[i]] = model->IC[model->parent[i]] + (model->Xup[i]).transpose()*model->IC[i]*model->Xup[i];
+      model->fvp[model->parent[i]] += (model->Xup[i]).transpose()*model->fvp[i];
+      model->IC[model->parent[i]] += (model->Xup[i]).transpose()*model->IC[i]*model->Xup[i];
       
       if (nlhs > 2) {
         for (k=0; k < model->NB; k++) {
@@ -320,20 +319,19 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   }
   
   if (nlhs > 2) {
-    for (k=0; k < model->NB; k++) {
-      for (i=0; i < model->NB; i++) {
-        n = model->dofnum[i];
+    for (i=0; i < model->NB; i++) {
+      n = model->dofnum[i];
+      for (k=0; k < model->NB; k++) {
         fh = model->IC[i] * model->S[i];
         dfh = model->dIC[i][k] * model->S[i];  //dfh/dqk
         (*dH)(n + n*model->NB,k) = model->S[i].transpose() * dfh;
         j = i; np=n;
         while (model->parent[j] >= 0) {
+          dfh = model->Xup[j].transpose() * dfh;
           if (np==k) {
-            dfh = model->Xup[j].transpose() * dfh + model->dXupdq[j].transpose() * fh;
-          } else {
-            dfh = model->Xup[j].transpose() * dfh;
+            dfh += model->dXupdq[j].transpose() * fh;
           }
-          fh = (model->Xup[j]).transpose() * fh;
+          fh = model->Xup[j].transpose() * fh;
           
           j = model->parent[j];
           np = model->dofnum[j];

@@ -15,11 +15,11 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
 
       msg = obj.lcmcoder.encode(0,zeros(obj.dim,1));
       obj.monitor = drake.util.MessageMonitor(msg,obj.lcmcoder.timestampName());
+      obj.lc = lcm.lcm.LCM.getSingleton();
     end
   
     function obj = subscribe(obj,channel)
-      lc = lcm.lcm.LCM.getSingleton(); %('udpm://239.255.76.67:7667?ttl=1');
-      lc.subscribe(channel,obj.monitor);
+      obj.lc.subscribe(channel,obj.monitor);
     end
     
     function [x,t] = getNextMessage(obj,timeout)   % x=t=[] if timeout
@@ -43,9 +43,8 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
     end
     
     function publish(obj,t,x,channel,varargin)
-      lc = lcm.lcm.LCM.getSingleton();
       msg = obj.lcmcoder.encode(t,x,varargin{:});
-      lc.publish(channel,msg);
+      obj.lc.publish(channel,msg);
     end
 
     function setDefaultChannel(obj,channel)
@@ -81,6 +80,7 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
   end
   
   properties
+    lc;
     lcmcoder;
     monitor;
     channel;
