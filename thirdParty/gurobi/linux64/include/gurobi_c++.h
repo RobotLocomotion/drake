@@ -109,7 +109,8 @@ enum GRB_IntParam {
   GRB_IntParam_MIQCPMethod,
   GRB_IntParam_QCPDual,
   GRB_IntParam_LogToConsole,
-  GRB_IntParam_PreSparsify
+  GRB_IntParam_PreSparsify,
+  GRB_IntParam_Seed
 };
 
 enum GRB_StringParam {

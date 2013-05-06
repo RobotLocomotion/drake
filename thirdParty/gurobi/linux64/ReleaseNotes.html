@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<title>Gurobi Optimization</title>
+	<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+	<style type="text/css">
+	body {
+		background-color: #E7E9EB;
+		padding: 20px 40px;
+		font-family: Helvetica, Arial, sans-serif;
+		font-size:11pt;
+		line-height:20px;
+		margin:0px;
+	}
+	img {
+		border: none;
+	}
+	h2 {
+		margin: 36px 0 8px;
+	}
+	.menu {
+		padding-bottom: 40px;
+	}
+	.menu td {
+		padding-right: 30px;
+		font-size: 14pt;
+		font-weight: bold;
+	}
+	.menu a {
+		text-decoration: none;
+		color: #292929;
+	}
+	.menu a:hover {
+		color: #909090;
+	}
+	.platforms {
+		border-collapse: collapse;
+	}
+	.platforms td, .platforms th {
+		font-size: 10pt;
+		border: solid 1px black;
+		padding: 4px 8px;
+		text-align: left;
+	}
+	</style>
+</head>
+<body>
+<table class='menu'>
+	<tr>
+		<td><a href="http://www.gurobi.com"><img style='width:211px' src="docs/logo.png" alt="Gurobi Optimization" title="Gurobi Optimization" /></a></td>
+		<td><a href="http://www.gurobi.com">gurobi.com</a></td>
+		<td><a href="docs/refman/refman.html">Reference Manual</a></td>
+		<td><a href="mailto:support@gurobi.com">Customer Support</a></td>
+	</tr>
+</table>
+<h1>
+	WELCOME
+</h1>
+<p>
+	You have successfully installed version 5.1 of the Gurobi Optimizer.
+</p>
+<p>
+	You'll find instructions for setting up your Gurobi license in this document, as well as a list of supported platforms, and Release Notes and guidelines for converting existing Gurobi code to run with this new version. Once you have finished browsing this document, you should refer to the <a href="docs/quickstart/quickstart.html">Quick Start Guide</a>, the <a href="docs/examples/examples.html">Example Tour</a>, or the <a href="docs/refman/refman.html">Reference Manual</a> to get started using the Gurobi Optimizer.
+</p>
+<h2>
+	Obtaining Your License
+</h2>
+<p>
+	Gurobi Optimizer 5.1 uses the same licenses as version 5.0, so if you already have a Gurobi 5 license, there's no need to obtain a new one.  You may need to copy your existing license to a new location, though.  Consult the <a href="docs/quickstart/quickstart.html">Quick Start Guide</a> for information on where to store your license file.
+</p>
+<p>
+If you don't already have a Gurobi 5 license, you will need to visit the <a href="http://gurobi.com/download/licenses" target="_blank"> Licenses</a> page on the Gurobi website. If you are a commercial user under maintenance, you should see your Gurobi 5 license under <a href="http://gurobi.com/download/licenses/current">Current</a>.  If you would like to request a free trial or free academic license, you should request a new license from the <a href="http://gurobi.com/download/licenses/free-trial">Free Trial</a> or <a href="http://gurobi.com/download/licenses/free-academic">Free Academic</a> menu items. Once you have a license on the Gurobi web site, you will need to follow the instructions for obtaining and installing a license in the <a href="docs/quickstart/quickstart.html">Quick Start Guide</a>.
+</p>
+<h2>
+	Supported Platforms for Version 5.1
+</h2>
+<p>
+	The following table lists the supported platforms for version 5.1:
+</p>
+<table class='platforms'>
+	<tr>
+		<th>Platform</th>
+		<th>Operating System</th>
+		<th>Compiler</th>
+		<th>Notes</th>
+	</tr>
+	<tr>
+		<td rowspan="3">Windows&reg; 32-bit (win32)</td>
+		<td>Windows XP&reg;, Windows Vista&reg;, Windows 7, Windows 8, Windows Server 2008 R2&reg;, Windows Server 2012</td>
+		<td>Visual Studio&reg; 2008</td>
+		<td>Use gurobi_c++md2008.lib (e.g.) for C++</td>
+	</tr>
+	<tr>
+		<td>Windows XP, Windows Vista, Windows 7, Windows 8, Windows Server 2008 R2, Windows Server 2012</td>
+		<td>Visual Studio 2010</td>
+		<td>Use gurobi_c++md2010.lib (e.g.) for C++</td>
+	</tr>
+	<tr>
+		<td>Windows 7, Windows 8, Windows Server 2008 R2, Windows Server 2012</td>
+		<td>Visual Studio 2012</td>
+		<td>Use gurobi_c++md2012.lib (e.g.) for C++</td>
+	</tr>
+	<tr>
+		<td rowspan="3">Windows 64-bit (win64)</td>
+		<td>Windows XP, Windows Vista, Windows 7, Windows 8, Windows Server 2008 R2, Windows Server 2012</td>
+		<td>Visual Studio 2008</td>
+		<td>Use gurobi_c++md2008.lib (e.g.) for C++</td>
+	</tr>
+	<tr>
+		<td>Windows XP, Windows Vista, Windows 7, Windows 8, Windows Server 2008 R2, Windows Server 2012</td>
+		<td>Visual Studio 2010</td>
+		<td>Use gurobi_c++md2010.lib (e.g.) for C++</td>
+	</tr>
+	<tr>
+		<td>Windows 7, Windows 8, Windows Server 2008 R2, Windows Server 2012</td>
+		<td>Visual Studio 2012</td>
+		<td>Use gurobi_c++md2012.lib (e.g.) for C++</td>
+	</tr>
+	<tr>
+		<td rowspan="3">Linux&reg; 64-bit (linux64)</td>
+		<td>Red Hat&reg; Enterprise Linux 5.3-5.8, 6.0-6.3</td>
+		<td>GCC 4.1/4.4</td>
+		<td>Use libgurobi_g++4.1.a for C++ in RHEL 5</td>
+	</tr>
+	<tr>
+		<td>SUSE&reg; Enterprise Linux 11, 12</td>
+		<td>GCC 4.3/4.4</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>Ubuntu&reg; 8.04, 10.04, 11.10, 12.04, 12.10</td>
+		<td>GCC 4.2/4.3/4.4/4.6</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>Mac OS 64-bit (mac64)</td>
+		<td>Mac OS X 10.7 (Lion), 10.8 (Mountain Lion)</td>
+		<td>Xcode 4</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>AIX&reg; 64-bit (power64)</td>
+		<td>AIX 6.1, 7.1</td>
+		<td>XL C/C++ 9</td>
+		<td>Due to limited Python support on AIX, this port does not include the Interactive Shell or the Python libraries.</td>
+	</tr>
+</table>
+<p>
+	Our MATLAB&reg; wrapper supports version 2008b through 2012b. Our R wrapper supports version 2.15.1 through 2.15.2.
+</p>
+<h2>
+	Important Notes About Supported Platforms
+</h2>
+<p>
+	As noted in the release notes for Gurobi 5.0, we no longer support 32-bit Linux machines starting with this release.
+</p>
+<h2>
+	Release Notes for Version 5.1
+</h2>
+<p>
+	In additional to performance enhancements, Gurobi 5.1 adds support for Visual Studio 2012 and a few new parameters:
+</p>
+<ul>
+	<li><b>Support for Visual Studio 2012:</b> C++ users will find appropriate libraries in the <i>lib</i> directory of your installation. </li>
+	<li><b>New parameters:</b>
+	<ul>
+		<li><b>ImproveStartNodes:</b> A new option for transitioning from tree exploration to solution improvement in MIP.</li>
+		<li><b>InputFile:</b> Allows you to read MIP start files, MIP order files, and simplex basis files from the Gurobi command line interface.</li>
+		<li><b>Seed:</b> Modifies the random number seed.  This acts as a minor perturbation to the solver, which typically leads to a different solution path.  This can be useful for experimentation (e.g., for testing the robustness of a particular set of parameter changes).</li>
+	</ul>
+	</li>
+</ul>
+<h2>
+	Code Conversion from Version 5.0
+</h2>
+Programs that were originally written for version 5.0 of the Gurobi Optimizer require no code changes to use version 5.1.
+<h2>
+	License Agreement
+</h2>
+<p>
+	Note that this software is covered by the <a href="EULA.pdf">Gurobi End User License Agreement</a>. By completing the Gurobi installation process and using the software, you are accepting the terms of this agreement.
+</p>
+<p>
+	Thank you using Gurobi products!
+</p>
+<hr />
+<p>
+	&copy; 2013 Gurobi Optimization. All Rights Reserved.
+</p>
+</body>
+</html>

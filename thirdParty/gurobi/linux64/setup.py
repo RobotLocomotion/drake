@@ -41,7 +41,7 @@ else:
   raise RuntimeError, "Unsupported operating system"
 
 setup(name="gurobipy",
-      version="5.1.0",
+      version="5.1.1",
       description="""
     The Gurobi optimization engines represent the next generation in
     high-performance optimization software.

@@ -156,7 +156,7 @@
 %
 %  The params struct contains Gurobi parameters. A full list may be
 %  found on the Parameter page of the reference manual:
-%     http://gurobi.com/documentation/5.0/reference-manual/
+%     http://gurobi.com/documentation/5.1/reference-manual/
 %  For example:
 %   params.outputflag = 0;          % Silence gurobi
 %   params.resultfile = 'test.mps'; % Write out problem to MPS file
@@ -175,7 +175,7 @@
 %                   codes are possible (for example, if the model has no
 %                   feasible solution). See the Optimization Status
 %                   Codes page at
-%                   http://gurobi.com/documentation/5.0/reference-manual/
+%                   http://gurobi.com/documentation/5.1/reference-manual/
 %                   for a complete list.
 %
 %  The result struct may contain the following fields:
