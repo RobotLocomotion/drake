@@ -8,11 +8,11 @@ oldpath = addpath(fullfile(pwd,'..'));
 x0 = 0; y0 = 0;
 [zmptraj,comtraj] = plan(x0,y0);
 
-%x0 = 10000;%*randn(); 
-%y0 = 10000;%*randn();
-x0 = 10; 
-y0 = 10;
-tol = 1e-2;  % note: low tolerance seems potentially reasonable since we're integrating the result of multiplying big numbers
+x0 = 1000;%*randn(); 
+y0 = 1000;%*randn();
+%x0 = 10; 
+%y0 = 10;
+tol = 1e-3;  % note: low tolerance seems potentially reasonable since we're integrating the result of multiplying big numbers
 [zmptraj_offset,comtraj_offset] = plan(x0,y0);
 
 figure(1); clf; 

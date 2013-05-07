@@ -64,8 +64,9 @@ classdef LinearInvertedPendulum < LinearSystem
       dZMP = dZMP.inFrame(desiredZMP);
       dZMP = setOutputFrame(dZMP,getFrameByNum(getOutputFrame(obj),2)); % override it before sending in to tvlqr
       
+      zmp_tf = dZMP.eval(dZMP.tspan(end));
       if(isTI(obj))
-        [~,V] = lqr(obj,dZMP.eval(dZMP.tspan(end)));
+        [~,V] = lqr(obj,zmp_tf);
       else
         % note: i've merged this in from hongkai (it's a time crunch!), but i don't agree with
         % it. it's bad form to assume that the tv system is somehow stationary after D.tspan(end).  
@@ -76,16 +77,9 @@ classdef LinearInvertedPendulum < LinearSystem
         ti_obj = setStateFrame(ti_obj,obj.getStateFrame());
         ti_obj = setInputFrame(ti_obj,obj.getInputFrame());
         ti_obj = setOutputFrame(ti_obj,obj.getOutputFrame());
-        if(~isfield(options,'dCOM'))
-          Q = zeros(4);
-        else
-%          options.yd = [options.dCOM.eval(options.dCOM.tspan(end));dZMP.eval(dZMP.tspan(end))];
-          options.yd = [zeros(4,1);dZMP.eval(dZMP.tspan(end))];
-          options.xd = options.dCOM.eval(options.dCOM.tspan(end));
-  			  Q = 0*eye(4);
-        end
+        Q = zeros(4);
   		  options.Qy = diag([0 0 0 0 1 1]);
-        [~,V] = tilqr(ti_obj,Point(ti_obj.getStateFrame,[dZMP.eval(dZMP.tspan(end));0*dZMP.eval(dZMP.tspan(end))]),Point(ti_obj.getInputFrame),Q,zeros(2),options);
+        [~,V] = tilqr(ti_obj,Point(ti_obj.getStateFrame,[zmp_tf;0*zmp_tf]),Point(ti_obj.getInputFrame),Q,zeros(2),options);
       end
       
       options.tspan = linspace(dZMP.tspan(1),dZMP.tspan(2),10);
@@ -101,7 +95,7 @@ classdef LinearInvertedPendulum < LinearSystem
       % note: the system is actually linear, so x0traj and u0traj should
       % have no effect on the numerical results (they just set up the
       % frames)
-      x0traj = setOutputFrame(ConstantTrajectory([0;0;0;0]),obj.getStateFrame);
+      x0traj = setOutputFrame(ConstantTrajectory([zmp_tf;0;0]),obj.getStateFrame);
       u0traj = setOutputFrame(ConstantTrajectory([0;0]),obj.getInputFrame);
       options.Qy = diag([0 0 0 0 1 1]);
       options.ydtraj = [x0traj;dZMP];
