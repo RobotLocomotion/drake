@@ -83,6 +83,10 @@ classdef RigidBodyManipulator < Manipulator
       obj.dirty = true;
     end
 
+    function ptr = getMexModelPtr(obj)
+      ptr = obj.mex_model_ptr;
+    end
+    
     function f = cartesianForceToSpatialForce(obj,kinsol,body,point,force)  
       % @param body is a rigid body element
       % @param point is a point on the rigid body (in body coords)

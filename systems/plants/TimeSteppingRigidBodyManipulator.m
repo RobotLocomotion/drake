@@ -692,6 +692,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function index = getActuatedJoints(obj)
       index = obj.manip.getActuatedJoints();
     end
+    
+    function ptr = getMexModelPtr(obj)
+      ptr = getMexModelPtr(obj.manip);
+    end
   end
   
   

@@ -3,6 +3,149 @@
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
 
+void Xrotz(double theta, MatrixXd* X) {
+	double c = cos(theta);
+	double s = sin(theta);
+
+	(*X).resize(6,6);
+	*X <<  c, s, 0, 0, 0, 0,
+		  -s, c, 0, 0, 0, 0,
+		   0, 0, 1, 0, 0, 0,
+		   0, 0, 0, c, s, 0,
+		   0, 0, 0,-s, c, 0,
+		   0, 0, 0, 0, 0, 1;
+}
+
+void dXrotz(double theta, MatrixXd* dX) {
+	double dc = -sin(theta); 
+	double ds = cos(theta); 
+
+	(*dX).resize(6,6);
+	*dX << dc, ds, 0, 0, 0, 0,
+      	  -ds, dc, 0, 0, 0, 0,
+       		0, 0, 0, 0, 0, 0,
+       		0, 0, 0, dc, ds, 0,
+       		0, 0, 0,-ds, dc, 0,
+       		0, 0, 0, 0, 0, 0;
+}
+
+void Xtrans(Vector3d r, MatrixXd* X) {
+	(*X).resize(6,6);
+	*X <<  	1, 0, 0, 0, 0, 0,
+		   	0, 1, 0, 0, 0, 0,
+		   	0, 0, 1, 0, 0, 0,
+           	0, r[2],-r[1], 1, 0, 0,
+		   -r[2], 0, r[0], 0, 1, 0,
+          	r[1],-r[0], 0, 0, 0, 1;
+}
+
+void dXtrans(MatrixXd* dX) {
+ 	(*dX).resize(36,3);
+	(*dX)(4,2) = -1; 
+	(*dX)(5,1) = 1; 
+	(*dX)(9,2) = 1; 
+	(*dX)(11,0) = -1; 
+	(*dX)(15,1) = -1; 
+	(*dX)(16,0) = 1;
+}
+
+void dXtransPitch(MatrixXd* dX) {
+	(*dX).resize(6,6);
+	*dX << 0, 0, 0, 0, 0, 0,
+           0, 0, 0, 0, 0, 0,
+           0, 0, 0, 0, 0, 0,
+   		   0, 1, 0, 0, 0, 0,
+       	  -1, 0, 0, 0, 0, 0,
+           0, 0, 0, 0, 0, 0;
+}
+
+
+void jcalc(int pitch, double q, MatrixXd* Xj, VectorXd* S) {
+	(*Xj).resize(6,6);
+	(*S).resize(6);
+
+	if (pitch == 0) { // revolute joint
+	  	Xrotz(q,Xj);
+	    *S << 0,0,1,0,0,0;
+	}	
+	else if (pitch == INF) { // prismatic joint
+  		Xtrans(Vector3d(0.0,0.0,q),Xj);
+  		*S << 0,0,0,0,0,1;
+	}
+	else { // helical joint
+		MatrixXd A(6,6);
+		MatrixXd B(6,6);  		
+		Xrotz(q,&A);
+	    Xtrans(Vector3d(0.0,0.0,q*pitch),&B);
+		*Xj = A*B;		
+  		*S << 0,0,1,0,0,pitch;
+	}
+}
+
+void djcalc(int pitch, double q, MatrixXd* dXj) {
+	(*dXj).resize(6,6);
+
+	if (pitch == 0) { // revolute joint
+  		dXrotz(q,dXj);
+	}
+	else if (pitch == INF) { // prismatic joint
+  		dXtransPitch(dXj); 
+    }
+	else { // helical joint
+	    MatrixXd X(6,6),Xj(6,6),dXrz(6,6),dXjp(6,6);
+	    Xrotz(q,&Xj);
+	    dXrotz(q,&dXrz);
+	    Xtrans(Vector3d(0.0,0.0,q*pitch),&X);
+	    dXtransPitch(&dXjp);
+		*dXj = Xj * dXjp * pitch + dXrz * X;
+	}
+}
+
+MatrixXd crm(VectorXd v)
+{
+  	MatrixXd vcross(6,6);
+  	vcross << 0, -v[2], v[1], 0, 0, 0,
+	    	v[2], 0,-v[0], 0, 0, 0,
+	   	   -v[1], v[0], 0, 0, 0, 0,
+	    	0, -v[5], v[4], 0, -v[2], v[1],
+	    	v[5], 0,-v[3], v[2], 0, -v[0],
+	   	   -v[4], v[3], 0,-v[1], v[0], 0;
+  	return vcross;
+}
+
+MatrixXd crf(VectorXd v)
+{
+ 	MatrixXd vcross(6,6);
+ 	vcross << 0,-v[2], v[1], 0,-v[5], v[4],
+	    	v[2], 0,-v[0], v[5], 0,-v[3],
+	   	   -v[1], v[0], 0,-v[4], v[3], 0,
+	    	0, 0, 0, 0,-v[2], v[1],
+	    	0, 0, 0, v[2], 0,-v[0],
+	    	0, 0, 0,-v[1], v[0], 0;
+ 	return vcross;
+}
+
+void dcrm(VectorXd v, VectorXd x, MatrixXd dv, MatrixXd dx, MatrixXd* dvcross) {
+ 	(*dvcross).resize(6,dv.cols());
+ 	(*dvcross).row(0) = -dv.row(2)*x[1] + dv.row(1)*x[2] - v[2]*dx.row(1) + v[1]*dx.row(2); 
+	(*dvcross).row(1) =  dv.row(2)*x[0] - dv.row(0)*x[2] + v[2]*dx.row(0) - v[0]*dx.row(2);
+  	(*dvcross).row(2) = -dv.row(1)*x[0] + dv.row(0)*x[1] - v[1]*dx.row(0) + v[0]*dx.row(1);
+  	(*dvcross).row(3) = -dv.row(5)*x[1] + dv.row(4)*x[2] - dv.row(2)*x[4] + dv.row(1)*x[5] - v[5]*dx.row(1) + v[4]*dx.row(2) - v[2]*dx.row(4) + v[1]*dx.row(5);
+  	(*dvcross).row(4) =  dv.row(5)*x[0] - dv.row(3)*x[2] + dv.row(2)*x[3] - dv.row(0)*x[5] + v[5]*dx.row(0) - v[3]*dx.row(2) + v[2]*dx.row(3) - v[0]*dx.row(5);
+  	(*dvcross).row(5) = -dv.row(4)*x[0] + dv.row(3)*x[1] - dv.row(1)*x[3] + dv.row(0)*x[4] - v[4]*dx.row(0) + v[3]*dx.row(1) - v[1]*dx.row(3) + v[0]*dx.row(4);
+}
+
+void dcrf(VectorXd v, VectorXd x, MatrixXd dv, MatrixXd dx, MatrixXd* dvcross) {
+ 	(*dvcross).resize(6,dv.cols());
+ 	(*dvcross).row(0) =  dv.row(2)*x[1] - dv.row(1)*x[2] + dv.row(5)*x[4] - dv.row(4)*x[5] + v[2]*dx.row(1) - v[1]*dx.row(2) + v[5]*dx.row(4) - v[4]*dx.row(5);
+  	(*dvcross).row(1) = -dv.row(2)*x[0] + dv.row(0)*x[2] - dv.row(5)*x[3] + dv.row(3)*x[5] - v[2]*dx.row(0) + v[0]*dx.row(2) - v[5]*dx.row(3) + v[3]*dx.row(5);
+ 	(*dvcross).row(2) =  dv.row(1)*x[0] - dv.row(0)*x[1] + dv.row(4)*x[3] - dv.row(3)*x[4] + v[1]*dx.row(0) - v[0]*dx.row(1) + v[4]*dx.row(3) - v[3]*dx.row(4);
+  	(*dvcross).row(3) =  dv.row(2)*x[4] - dv.row(1)*x[5] + v[2]*dx.row(4) - v[1]*dx.row(5);
+  	(*dvcross).row(4) = -dv.row(2)*x[3] + dv.row(0)*x[5] - v[2]*dx.row(3) + v[0]*dx.row(5);
+  	(*dvcross).row(5) =  dv.row(1)*x[3] - dv.row(0)*x[4] + v[1]*dx.row(3) - v[0]*dx.row(4);
+	*dvcross = -(*dvcross);
+}
+
 Matrix3d rotz(double theta) {
 	// returns 3D rotation matrix (about the z axis)
 	Matrix3d M;
@@ -613,6 +756,146 @@ void RigidBodyManipulator::forwarddJac(const int body_ind, const MatrixBase<Deri
   dJ = dJ_t.transpose();
 }
 
+template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
+void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC)
+{
+  H = MatrixXd::Zero(num_dof,num_dof);
+  if (dH) *dH = MatrixXd::Zero(num_dof*num_dof,num_dof);
+  // C gets overwritten completely in the algorithm below
+
+  VectorXd vJ(6), fh(6), dfh(6), dvJdqd(6);
+  MatrixXd XJ(6,6), dXJdq(6,6);
+  int i,j,k,n,np;
+  
+  for (i=0; i<NB; i++) {
+    n = dofnum[i];
+    jcalc(pitch[i],q[n],&XJ,&(S[i]));
+    vJ = S[i] * qd[n];
+    Xup[i] = XJ * Xtree[i];
+    
+    if (parent[i] < 0) {
+      v[i] = vJ;
+      avp[i] = Xup[i] * (-a_grav);
+    } else {
+      v[i] = Xup[i]*v[parent[i]] + vJ;
+      avp[i] = Xup[i]*avp[parent[i]] + crm(v[i])*vJ;
+    }
+    fvp[i] = I[i]*avp[i] + crf(v[i])*I[i]*v[i];
+    if (f_ext)
+      fvp[i] = fvp[i] - f_ext->col(i);
+    IC[i] = I[i];
+    
+    //Calculate gradient information if it is requested
+    if (dH || dC) {
+      djcalc(pitch[i], q[n], &dXJdq);
+      dXupdq[i] = dXJdq * Xtree[i];
+      
+      for (j=0; j<NB; j++) {
+        dIC[i][j] = MatrixXd::Zero(6,6);
+      }
+    }
+    
+    if (dC) {
+      dvJdqd = S[i];
+      if (parent[i] < 0) {
+        dvdqd[i].col(n) = dvJdqd;
+        davpdq[i].col(n) = dXupdq[i] * (-a_grav);
+      } else {
+        j = parent[i];
+        dvdq[i] = Xup[i]*dvdq[j];
+        dvdq[i].col(n) += dXupdq[i]*v[j];
+        dvdqd[i] = Xup[i]*dvdqd[j];
+        dvdqd[i].col(n) += dvJdqd;
+        
+        davpdq[i] = Xup[i]*davpdq[j];
+        davpdq[i].col(n) += dXupdq[i]*avp[j];
+        for (k=0; k < NB; k++) {
+          dcrm(v[i],vJ,dvdq[i].col(k),VectorXd::Zero(6),&(dcross));
+          davpdq[i].col(k) += dcross;
+        }
+        
+        dvJdqd_mat = MatrixXd::Zero(6,NB);
+        dvJdqd_mat.col(n) = dvJdqd;
+        dcrm(v[i],vJ,dvdqd[i],dvJdqd_mat,&(dcross));
+        davpdqd[i] = Xup[i]*davpdqd[j] + dcross;
+      }
+      
+      dcrf(v[i],I[i]*v[i],dvdq[i],I[i]*dvdq[i],&(dcross));
+      dfvpdq[i] = I[i]*davpdq[i] + dcross;
+      dcrf(v[i],I[i]*v[i],dvdqd[i],I[i]*dvdqd[i],&(dcross));
+      dfvpdqd[i] = I[i]*davpdqd[i] + dcross;
+      
+    }
+  }
+  
+  for (i=(NB-1); i>=0; i--) {
+    n = dofnum[i];
+    C(n) = (S[i]).transpose() * fvp[i];
+    
+    if (dC) {
+      (*dC).block(n,0,1,NB) = S[i].transpose()*dfvpdq[i];
+      (*dC).block(n,NB,1,NB) = S[i].transpose()*dfvpdqd[i];
+    }
+    
+    if (parent[i] >= 0) {
+      fvp[parent[i]] += (Xup[i]).transpose()*fvp[i];
+      IC[parent[i]] += (Xup[i]).transpose()*IC[i]*Xup[i];
+      
+      if (dH) {
+        for (k=0; k < NB; k++) {
+          dIC[parent[i]][k] += Xup[i].transpose()*dIC[i][k]*Xup[i];
+        }
+        dIC[parent[i]][n] += dXupdq[i].transpose()*IC[i]*Xup[i] + Xup[i].transpose()*IC[i]*dXupdq[i];
+      }
+      
+      if (dC) {
+        dfvpdq[parent[i]] += Xup[i].transpose()*dfvpdq[i];
+        dfvpdq[parent[i]].col(n) += dXupdq[i].transpose()*fvp[i];
+        dfvpdqd[parent[i]] += Xup[i].transpose()*dfvpdqd[i];
+      }
+    }
+  }
+  
+  for (i=0; i<NB; i++) {
+    n = dofnum[i];
+    fh = IC[i] * S[i];
+    H(n,n) = (S[i]).transpose() * fh;
+    j=i;
+    while (parent[j] >= 0) {
+      fh = (Xup[j]).transpose() * fh;
+      j = parent[j];
+      np = dofnum[j];
+      
+      H(n,np) = (S[j]).transpose() * fh;
+      H(np,n) = H(n,np);
+    }
+  }
+  
+  if (dH) {
+    for (i=0; i < NB; i++) {
+      n = dofnum[i];
+      for (k=0; k < NB; k++) {
+        fh = IC[i] * S[i];
+        dfh = dIC[i][k] * S[i];  //dfh/dqk
+        (*dH)(n + n*NB,k) = S[i].transpose() * dfh;
+        j = i; np=n;
+        while (parent[j] >= 0) {
+          dfh = Xup[j].transpose() * dfh;
+          if (np==k) {
+            dfh += dXupdq[j].transpose() * fh;
+          }
+          fh = Xup[j].transpose() * fh;
+          
+          j = parent[j];
+          np = dofnum[j];
+          (*dH)(n + np*NB,k) = S[j].transpose() * dfh;
+          (*dH)(np + n*NB,k) = (*dH)(n + np*NB,k);
+        }
+      }
+    }
+  }
+}
+
 
 // explicit instantiations (required for linking):
 template void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &);
@@ -625,3 +908,4 @@ template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Matr
 template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< MatrixXd > &, MatrixBase< Map<MatrixXd> >&);
 template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< MatrixXd > &, MatrixBase< Map<MatrixXd> >&);
 
+template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);

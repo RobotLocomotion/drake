@@ -86,6 +86,9 @@ public:
 
   void snoptIKfun( VectorXd q, VectorXd q0, VectorXd q_nom, MatrixXd Q, int narg, int* body_ind, VectorXd* pts, VectorXd* f, MatrixXd* G);
 
+  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
+  void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC);
+
 };
 
 #include "RigidBody.h"
