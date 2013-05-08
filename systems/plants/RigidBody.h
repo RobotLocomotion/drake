@@ -22,8 +22,10 @@ public:
   int dofnum;   
   int floating;
   int pitch;
+  MatrixXd contact_pts;
   Matrix4d Ttree;
   Matrix4d T_body_to_joint;
+  
   std::set<int> ancestor_dofs;
   std::set<int> ddTdqdq_nonzero_rows;
   std::set<IndexRange> ddTdqdq_nonzero_rows_grouped;
