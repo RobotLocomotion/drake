@@ -21,6 +21,33 @@ if ((length(size(val))~=length(size(desired_val))) || any(size(val)~=size(desire
   end
 end
 
+if (~isequal(isnan(val(:)),isnan(desired_val(:))))
+  if (nargout>0)
+    tf = false;
+  else
+    s = 'NANs don''t match. ';
+    if any(isnan(val(:)))
+      val
+      [a,b] = ind2sub(find(isnan(val(:))),size(val));
+      s = [s,sprintf('Found NANs at \n'),sprintf('(%d,%d) ',[a;b]),sprintf('\n')];
+    else
+      s = [s,'val has no NANs'];
+    end
+    if any(isnan(desired_val(:)))
+      desired_val
+      [a,b] = ind2sub(find(isnan(desired_val(:))),size(desired_val));
+      s = [s,sprintf('but desired_val has them at \n'), sprintf('(%d,%d)',[a;b]),sprintf('\n')];
+    else
+      s = [s,'but desired_val has no NANs'];
+    end
+    err = desired_val-val;
+    err(abs(err)<tol)=0;
+    err
+
+    error(s);
+  end
+end
+
 if (any(abs(val(:)-desired_val(:))>tol))
   if (nargout>0)
     tf = false;

@@ -771,16 +771,15 @@ classdef RigidBodyManipulator < Manipulator
     function d=surfaceTangents(normal)
       %% compute tangent vectors, according to the description in the last paragraph of Stewart96, p.2678
       t1=normal; % initialize size
+      
       % handle the normal = [0;0;1] case
       ind=(1-normal(3,:))<10e-8;  % since it's a unit normal, i can just check the z component
-  
       t1(:,ind) = [ones(1,sum(ind)); zeros(2,sum(ind))];
       ind=~ind;
       
       % now the general case
-      t1(:,ind) = cross(normal(:,ind),[zeros(2,sum(ind)); ones(1,sum(ind))]);
-      
-      t1 = bsxfun(@rdivide,t1,sqrt(sum(t1.^2,1))); % normalize
+      t1(:,ind) = [normal(2,ind);-normal(1,ind);zeros(1,sum(ind))]; % cross(normal,[0;0;1]) normalized
+      t1(:,ind) = bsxfun(@rdivide,t1(:,ind),sqrt(sum(t1(1:2,ind).^2,1))); % normalize
       
       t2 = cross(t1,normal);
       

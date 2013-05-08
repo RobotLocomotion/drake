@@ -3,6 +3,12 @@
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
 
+template<typename Derived>
+bool isnotnan(const MatrixBase<Derived>& x)
+{
+  return (x.array() == x.array()).all();
+}
+
 void Xrotz(double theta, MatrixXd* X) {
 	double c = cos(theta);
 	double s = sin(theta);
@@ -248,6 +254,7 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
   pitch = new int[NB];
   parent = new int[NB];
   dofnum = new int[NB];
+  damping = new double[NB];
   joint_limit_min = new double[NB];
   joint_limit_max = new double[NB];
   Xtree = new MatrixXd[NB];
@@ -355,9 +362,14 @@ RigidBodyManipulator::~RigidBodyManipulator() {
 
 void RigidBodyManipulator::compile(void) 
 {
-  // precompute sparsity pattern for each rigid body
-  for (int i=0; i<num_bodies; i++) 
+  num_contact_pts = 0;
+  for (int i=0; i<num_bodies; i++) {
+    num_contact_pts += bodies[i].contact_pts.cols();
+            
+    // precompute sparsity pattern for each rigid body
     bodies[i].computeAncestorDOFs(this);
+  }  
+  
   initialized=true;
 }
 
@@ -570,7 +582,7 @@ void RigidBodyManipulator::getCOMJac(MatrixBase<Derived> &Jcom)
 {
   double m = 0.0;
   double bm;
-  Jcom = 0*Jcom;
+  Jcom = MatrixXd::Zero(3,num_dof);
   
   for (int i=0; i<num_bodies; i++) {
     bm = bodies[i].mass;
@@ -587,7 +599,7 @@ void RigidBodyManipulator::getCOMJacDot(MatrixBase<Derived> &Jcomdot)
 {
   double m = 0.0;
   double bm;
-  Jcomdot = 0*Jcomdot;
+  Jcomdot = MatrixXd::Zero(3,num_dof);
   
   for (int i=0; i<num_bodies; i++) {
     bm = bodies[i].mass;
@@ -604,7 +616,7 @@ void RigidBodyManipulator::getCOMdJac(MatrixBase<Derived> &dJcom)
 {
   double m = 0.0;
   double bm;
-  dJcom = 0*dJcom;
+  dJcom = MatrixXd::Zero(3,num_dof*num_dof);
   
   for (int i=0; i<num_bodies; i++) {
     bm = bodies[i].mass;
@@ -616,6 +628,84 @@ void RigidBodyManipulator::getCOMdJac(MatrixBase<Derived> &dJcom)
   }
 }
 
+int RigidBodyManipulator::getNumContacts(const std::set<int> &body_idx)
+{
+  int n=0,nb=body_idx.size(),bi;
+  if (nb==0) nb=num_bodies; 
+  std::set<int>::iterator iter = body_idx.begin();
+  MatrixXd p;
+  for (int i=0; i<nb; i++) {
+    if (body_idx.size()==0) bi=i;
+    else bi=*iter++;
+    n += bodies[bi].contact_pts.cols();
+  }
+  return n;
+}
+
+
+template <typename Derived>
+void RigidBodyManipulator::getContactPositions(MatrixBase<Derived> &pos, const std::set<int> &body_idx)
+{
+  int n=0,nc,nb=body_idx.size(),bi;
+  if (nb==0) nb=num_bodies; 
+  std::set<int>::iterator iter = body_idx.begin();
+  MatrixXd p;
+  for (int i=0; i<nb; i++) {
+    if (body_idx.size()==0) bi=i;
+    else bi=*iter++;
+    nc = bodies[bi].contact_pts.cols();
+    if (nc>0) {
+      // note: it's possible to pass pos.block in directly but requires such an ugly hack that I think it's not worth it:
+      // http://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
+      p.resize(3,nc);
+      forwardKin(bi,bodies[bi].contact_pts,0,p);
+      pos.block(0,n,3,nc) = p;
+      n += nc;
+    }
+  }
+}
+
+template <typename Derived>
+void RigidBodyManipulator::getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx)
+{
+  int n=0,nc,nb=body_idx.size(),bi;
+  if (nb==0) nb=num_bodies; 
+  std::set<int>::iterator iter = body_idx.begin();
+  MatrixXd p;
+  for (int i=0; i<nb; i++) {
+    if (body_idx.size()==0) bi=i;
+    else bi=*iter++;
+    nc = bodies[bi].contact_pts.cols();
+    if (nc>0) {
+      p.resize(3*nc,num_dof);
+      forwardJac(bi,bodies[bi].contact_pts,0,p);
+      J.block(3*n,0,3*nc,num_dof) = p;
+      n += nc;
+    }
+  }
+}
+
+template <typename Derived>
+void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx)
+{
+  int n=0,nc,nb=body_idx.size(),bi;
+  if (nb==0) nb=num_bodies; 
+  std::set<int>::iterator iter = body_idx.begin();
+  MatrixXd p;
+  for (int i=0; i<nb; i++) {
+    if (body_idx.size()==0) bi=i;
+    else bi=*iter++;
+    nc = bodies[bi].contact_pts.cols();
+    if (nc>0) {
+      p.resize(3*nc,num_dof);
+      forwardJacDot(bi,bodies[bi].contact_pts,p);
+      Jdot.block(3*n,0,3*nc,num_dof) = p;
+      n += nc;
+    }
+  }
+}
+
+
 /*
  * rotation_type  0, no rotation
  * 		  1, output Euler angles
@@ -625,7 +715,6 @@ void RigidBodyManipulator::getCOMdJac(MatrixBase<Derived> &dJcom)
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardKin(const int body_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x)
 {
-  // WARNING:  pts should have a trailing 1 attached to it (4xn_pts)
   int dim=3, n_pts = pts.cols();
   MatrixXd T = bodies[body_ind].T.topLeftCorner(dim,dim+1);
   if (rotation_type == 0) {
@@ -830,11 +919,12 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
   
   for (i=(NB-1); i>=0; i--) {
     n = dofnum[i];
-    C(n) = (S[i]).transpose() * fvp[i];
+    C(n) = (S[i]).transpose() * fvp[i] + damping[i]*qd[n];
     
     if (dC) {
       (*dC).block(n,0,1,NB) = S[i].transpose()*dfvpdq[i];
       (*dC).block(n,NB,1,NB) = S[i].transpose()*dfvpdqd[i];
+      (*dC)(n,NB+n) += damping[i];
     }
     
     if (parent[i] >= 0) {
@@ -902,10 +992,28 @@ template void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &);
 template void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::getCOMdJac(MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::getCOMJacDot(MatrixBase< Map<MatrixXd> > &);
+template void RigidBodyManipulator::getCOM(MatrixBase< Vector3d > &);
+template void RigidBodyManipulator::getCOMJac(MatrixBase< MatrixXd > &);
+template void RigidBodyManipulator::getCOMdJac(MatrixBase< MatrixXd > &);
+template void RigidBodyManipulator::getCOMJacDot(MatrixBase< MatrixXd > &);
+
+template void RigidBodyManipulator::getContactPositions(MatrixBase <MatrixXd > &, const std::set<int> &);
+template void RigidBodyManipulator::getContactPositionsJac(MatrixBase <MatrixXd > &,const std::set<int> &);
+template void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase <MatrixXd > &,const std::set<int> &);
 
 template void RigidBodyManipulator::forwardKin(const int, const MatrixBase< MatrixXd >&, const int, MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< MatrixXd > &, MatrixBase< Map<MatrixXd> >&);
 template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< MatrixXd > &, MatrixBase< Map<MatrixXd> >&);
+template void RigidBodyManipulator::forwardKin(const int, const MatrixBase< MatrixXd >&, const int, MatrixBase< MatrixXd > &);
+template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< MatrixXd > &);
+template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd >&);
+template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd >&);
+template void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d > const&, const int, MatrixBase< Vector3d > &);
+//template void RigidBodyManipulator::forwardKin(const int, const MatrixBase< Vector4d >&, const int, MatrixBase< Vector3d > &);
+//template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vector4d > &, const int, MatrixBase< MatrixXd > &);
+//template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
+//template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
 
-template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
+template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
+template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);

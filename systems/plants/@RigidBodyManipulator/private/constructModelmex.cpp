@@ -25,22 +25,29 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   int num_bodies = mxGetNumberOfElements(prhs[1]);
   
   // set up the model
-  mxArray* pNB = mxGetField(featherstone,0,"NB");
-  if (!pNB) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.NB.  Are you passing in the correct structure?");
-  model = new RigidBodyManipulator((int) mxGetScalar(pNB), (int) mxGetScalar(pNB), num_bodies);
+  mxArray *pm;
+  int dim=3;
   
-  mxArray* pparent = mxGetField(featherstone,0,"parent");
-  if (!pparent) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.parent.");
-  double* ppparent = mxGetPr(pparent);
+  pm = mxGetField(featherstone,0,"NB");
+  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.NB.  Are you passing in the correct structure?");
+  model = new RigidBodyManipulator((int) mxGetScalar(pm), (int) mxGetScalar(pm), num_bodies);
   
-  mxArray* ppitch = mxGetField(featherstone,0,"pitch");
-  if (!ppitch) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.pitch.");
-  double* pppitch = mxGetPr(ppitch);
+  pm = mxGetField(featherstone,0,"parent");
+  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.parent.");
+  double* parent = mxGetPr(pm);
   
-  mxArray* pdofnum = mxGetField(featherstone,0,"dofnum");
-  if (!pdofnum) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.dofnum.");
-  double* ppdofnum = mxGetPr(pdofnum);
+  pm = mxGetField(featherstone,0,"pitch");
+  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.pitch.");
+  double* pitch = mxGetPr(pm);
+  
+  pm = mxGetField(featherstone,0,"dofnum");
+  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.dofnum.");
+  double* dofnum = mxGetPr(pm);
 
+  pm = mxGetField(featherstone,0,"damping");
+  if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.damping.");
+  memcpy(model->damping,mxGetPr(pm),sizeof(double)*model->NB);
+  
   mxArray* pXtree = mxGetField(featherstone,0,"Xtree");
   if (!pXtree) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.Xtree.");
   
@@ -48,9 +55,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   if (!pI) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.I.");
   
   for (int i=0; i<model->NB; i++) {
-    model->parent[i] = ((int) ppparent[i]) - 1;  // since it will be used as a C index
-    model->pitch[i] = (int) pppitch[i];
-    model->dofnum[i] = (int) ppdofnum[i] - 1; // zero-indexed
+    model->parent[i] = ((int) parent[i]) - 1;  // since it will be used as a C index
+    model->pitch[i] = (int) pitch[i];
+    model->dofnum[i] = (int) dofnum[i] - 1; // zero-indexed
 
     mxArray* pXtreei = mxGetCell(pXtree,i);
     if (!pXtreei) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't access model.featherstone.Xtree{%d}",i);
@@ -67,29 +74,36 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
   char buf[100];
   for (int i=0; i<model->num_bodies; i++) {
-    mxArray* plinkname = mxGetProperty(pBodies,i,"linkname");
-    mxGetString(plinkname,buf,100);
+    pm = mxGetProperty(pBodies,i,"linkname");
+    mxGetString(pm,buf,100);
     model->bodies[i].linkname.assign(buf,strlen(buf));
 
-    mxArray* pjointname = mxGetProperty(pBodies,i,"jointname");
-    mxGetString(pjointname,buf,100);
+    pm = mxGetProperty(pBodies,i,"jointname");
+    mxGetString(pm,buf,100);
     model->bodies[i].jointname.assign(buf,strlen(buf));
 
-    mxArray* pmass = mxGetProperty(pBodies,i,"mass");
-    model->bodies[i].mass = (double) mxGetScalar(pmass);
+    pm = mxGetProperty(pBodies,i,"mass");
+    model->bodies[i].mass = (double) mxGetScalar(pm);
 
-    mxArray* pcom = mxGetProperty(pBodies,i,"com");
-    if (!mxIsEmpty(pcom)) memcpy(model->bodies[i].com.data(),mxGetPr(pcom),sizeof(double)*3);
-
-    mxArray* pbdofnum = mxGetProperty(pBodies,i,"dofnum");
-    model->bodies[i].dofnum = (int) mxGetScalar(pbdofnum) - 1;  //zero-indexed
+    pm = mxGetProperty(pBodies,i,"contact_pts");
+    if (!mxIsEmpty(pm)) {
+      Map<MatrixXd> pts_tmp(mxGetPr(pm),mxGetM(pm),mxGetN(pm));
+      model->bodies[i].contact_pts.resize(4,mxGetN(pm));
+      model->bodies[i].contact_pts << pts_tmp, MatrixXd::Ones(1,mxGetN(pm));
+    }
     
-    mxArray* pfloating = mxGetProperty(pBodies,i,"floating");
-    model->bodies[i].floating = (int) mxGetScalar(pfloating);
+    pm = mxGetProperty(pBodies,i,"com");
+    if (!mxIsEmpty(pm)) memcpy(model->bodies[i].com.data(),mxGetPr(pm),sizeof(double)*3);
 
-    mxArray* pbpitch = mxGetProperty(pBodies,i,"pitch");
-    model->bodies[i].pitch = (int) mxGetScalar(pbpitch);
+    pm = mxGetProperty(pBodies,i,"dofnum");
+    model->bodies[i].dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
+    
+    pm = mxGetProperty(pBodies,i,"floating");
+    model->bodies[i].floating = (int) mxGetScalar(pm);
 
+    pm = mxGetProperty(pBodies,i,"pitch");
+    model->bodies[i].pitch = (int) mxGetScalar(pm);
+    
     {  // lookup parent index
       mxArray *in_args[2] = { mxGetProperty(pBodies,i,"parent"), const_cast<mxArray*>(pBodies) };
       if (mxIsEmpty(in_args[0])) {
@@ -102,18 +116,18 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     }
     
     if (model->bodies[i].dofnum>=0) {
-      mxArray* pjointlim = mxGetProperty(pBodies,i,"joint_limit_min");
-      model->joint_limit_min[model->bodies[i].dofnum] = mxGetScalar(pjointlim);
-      pjointlim = mxGetProperty(pBodies,i,"joint_limit_max");
-      model->joint_limit_max[model->bodies[i].dofnum] = mxGetScalar(pjointlim);
+      pm = mxGetProperty(pBodies,i,"joint_limit_min");
+      model->joint_limit_min[model->bodies[i].dofnum] = mxGetScalar(pm);
+      pm = mxGetProperty(pBodies,i,"joint_limit_max");
+      model->joint_limit_max[model->bodies[i].dofnum] = mxGetScalar(pm);
     }    
     
-    mxArray* pbTtreei = mxGetProperty(pBodies,i,"Ttree");
+    pm = mxGetProperty(pBodies,i,"Ttree");
     // todo: check that the size is 4x4
-    memcpy(model->bodies[i].Ttree.data(),mxGetPr(pbTtreei),sizeof(double)*4*4);
+    memcpy(model->bodies[i].Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
     
-    mxArray* pbT_body_to_jointi = mxGetProperty(pBodies,i,"T_body_to_joint");
-    memcpy(model->bodies[i].T_body_to_joint.data(),mxGetPr(pbT_body_to_jointi),sizeof(double)*4*4);
+    pm = mxGetProperty(pBodies,i,"T_body_to_joint");
+    memcpy(model->bodies[i].T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
   }
   
   const mxArray* a_grav_array = prhs[2]; //mxGetProperty(prhs[0],0,"gravity");

@@ -21,7 +21,6 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
     if ~isempty(f_ext) error('not implemented yet'); end
     [H,C,dH,dC] = HandCmex(obj.mex_model_ptr.getData,q,qd,f_ext);
     dH = [dH, zeros(m.NB*m.NB,m.NB)];
-    dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
     dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
     [H,C] = HandCmex(obj.mex_model_ptr.getData,q,qd,f_ext);
@@ -172,9 +171,9 @@ else
     [H,C] = HandC(m,q,qd,f_ext,obj.gravity);
   end
   
+  C=C+m.damping'.*qd;
 end
 
-C=C+m.damping'.*qd;
 B = obj.B;
 
 end

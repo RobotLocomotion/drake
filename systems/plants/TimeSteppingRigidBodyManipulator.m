@@ -133,14 +133,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       x0 = obj.manip.getInitialState();
     end
     
-    function B = getB(obj)
-      B = obj.manip.getB();
-    end
-    
-    function num_q = getNumDOF(obj)
-      num_q = obj.manip.num_q;
-    end
-    
     function [xdn,df] = update(obj,t,x,u)
       if (nargout>1)
         [z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
@@ -504,6 +496,14 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   end
   
   methods  % pass through methods (to the manipulator)
+    function B = getB(obj)
+      B = obj.manip.getB();
+    end
+    
+    function num_q = getNumDOF(obj)
+      num_q = obj.manip.num_q;
+    end
+    
     function obj = setStateFrame(obj,fr)
       obj = setStateFrame@DrakeSystem(obj,fr);
       
@@ -696,6 +696,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function ptr = getMexModelPtr(obj)
       ptr = getMexModelPtr(obj.manip);
     end
+    
   end
   
   

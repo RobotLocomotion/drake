@@ -2,11 +2,14 @@
 #define __RigidBodyManipulator_H__
 
 #include <Eigen/Dense>
+#include <set>
 
 #define INF -2147483648
 using namespace Eigen;
 
 class RigidBody;
+
+const std::set<int> emptyIntSet;
 
 class RigidBodyManipulator 
 {
@@ -14,9 +17,11 @@ public:
   int num_dof; 
   int NB;  // featherstone bodies
   int num_bodies;  // rigid body objects
+  int num_contact_pts;
   int *pitch;
   int *parent;
   int *dofnum;
+  double* damping;
   double* joint_limit_min;
   double* joint_limit_max;
   
@@ -67,11 +72,23 @@ public:
   void getCOMJac(MatrixBase<Derived> &J);
 
   template <typename Derived>
-  void getCOMJacDot(MatrixBase<Derived>& Jdot);
+  void getCOMJacDot(MatrixBase<Derived> &Jdot);
 
   template <typename Derived>
   void getCOMdJac(MatrixBase<Derived> &dJ);
 
+  
+  int getNumContacts(const std::set<int> &body_idx = emptyIntSet);
+
+  template <typename Derived>
+  void getContactPositions(MatrixBase<Derived> &pos, const std::set<int> &body_idx = emptyIntSet);
+  
+  template <typename Derived>
+  void getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx = emptyIntSet);
+  
+  template <typename Derived>
+  void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx = emptyIntSet);
+  
   template <typename DerivedA, typename DerivedB>
   void forwardKin(const int body_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x);
 
@@ -84,10 +101,11 @@ public:
   template <typename DerivedA, typename DerivedB>
   void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
 
+  
   void snoptIKfun( VectorXd q, VectorXd q0, VectorXd q_nom, MatrixXd Q, int narg, int* body_ind, VectorXd* pts, VectorXd* f, MatrixXd* G);
 
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
-  void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC);
+  void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL);
 
 };
 

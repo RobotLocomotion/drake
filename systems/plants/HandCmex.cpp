@@ -49,7 +49,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   Map<MatrixXd> H(mxGetPr(plhs[0]),model->num_dof,model->num_dof);
 
   plhs[1] = mxCreateDoubleMatrix(model->num_dof,1,mxREAL);
-  Map<MatrixXd> C(mxGetPr(plhs[1]),model->num_dof,1);
+  Map<VectorXd> C(mxGetPr(plhs[1]),model->num_dof);
 
   if (nlhs>2) {
     plhs[2] = mxCreateDoubleMatrix(model->num_dof*model->num_dof,model->num_dof,mxREAL);
