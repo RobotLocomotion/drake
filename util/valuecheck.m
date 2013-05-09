@@ -42,7 +42,7 @@ if (~isequal(isnan(val(:)),isnan(desired_val(:))))
     end
     err = desired_val-val;
     err(abs(err)<tol)=0;
-    err
+    err=sparse(err)
 
     error(s);
   end
@@ -55,7 +55,7 @@ if (any(abs(val(:)-desired_val(:))>tol))
   else
     err = desired_val-val;
     err(abs(err)<tol)=0;
-    err
+    err=sparse(err)
     % clean before printing
     desired_val(abs(desired_val)<tol/2)=0;
     val(abs(val)<tol/2)=0;
