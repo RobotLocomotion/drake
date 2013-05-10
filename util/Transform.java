@@ -50,4 +50,40 @@ public class Transform
     
     return rpy;
   }
+  
+  public static double[] rpydot2angularvel(double[] rpy, double[] rpydot) 
+  {
+    if (rpy.length != 3) { 
+      throw new IllegalArgumentException("rpy must have 3 elements");
+    }
+    if (rpydot.length != 3) { 
+      throw new IllegalArgumentException("rpydot must have 3 elements");
+    }
+    
+    double[] omega = new double[3];
+    
+    omega[0] = cos(rpy[1])*cos(rpy[2])*rpydot[0] - sin(rpy[2])*rpydot[1];
+    omega[1] = cos(rpy[1])*sin(rpy[2])*rpydot[0] + cos(rpy[2])*rpydot[1];
+    omega[2] = -sin(rpy[1])*rpydot[0] + rpydot[2];
+    
+    return omega;
+  }
+  
+  public static double[] angularvel2rpydot(double[] rpy, double[] omega) 
+  {
+    if (rpy.length != 3) { 
+      throw new IllegalArgumentException("rpy must have 3 elements");
+    }
+    if (omega.length != 3) { 
+      throw new IllegalArgumentException("rpydot must have 3 elements");
+    }
+   
+    double[] rpydot = new double[3];
+    
+    rpydot[0] = cos(rpy[2])/cos(rpy[1])*omega[0] + sin(rpy[2])/cos(rpy[1])*omega[1];
+    rpydot[1] = -sin(rpy[2])*omega[0] + cos(rpy[2])*omega[1];
+    rpydot[2] = cos(rpy[2])*tan(rpy[1])*omega[0] + tan(rpy[1])*sin(rpy[2])*omega[1] + omega[2];
+    
+    return rpydot;
+  }  
 }
