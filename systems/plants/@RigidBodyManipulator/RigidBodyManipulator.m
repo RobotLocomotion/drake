@@ -1044,7 +1044,11 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       if (options.visual && node.getElementsByTagName('visual').getLength()>0)
-        body = parseVisual(body,node.getElementsByTagName('visual').item(0),model,options);
+        visualItem = 0;
+        while(~isempty(node.getElementsByTagName('visual').item(visualItem)))
+          body = parseVisual(body,node.getElementsByTagName('visual').item(visualItem),model,options);
+          visualItem = visualItem+1;
+        end
       end
       
       if options.collision && node.getElementsByTagName('collision').getLength()>0

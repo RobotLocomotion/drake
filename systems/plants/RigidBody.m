@@ -249,9 +249,9 @@ classdef RigidBody < handle
       end        
       
       if isempty(wrl_transform_str)
-        body.wrlgeometry = wrl_shape_str;
+        body.wrlgeometry = [body.wrlgeometry,wrl_shape_str];
       else
-        body.wrlgeometry = [wrl_transform_str,wrl_shape_str,'\t]\n}'];
+        body.wrlgeometry = [body.wrlgeometry,wrl_transform_str,wrl_shape_str,'\t]\n}'];
       end
     end
     
