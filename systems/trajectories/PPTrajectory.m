@@ -413,7 +413,6 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       secondStart = trajAtEnd.pp.breaks(1);
       
       if (firstEnd ~= secondStart)
-        keyboard
         error(strcat('Cannot append trajectories that do not start/end at the same time.', ...
           'First trajectory ends at t = ',num2str(firstEnd), ...
           ' but the second trajectory starts at t = ', num2str(secondStart)));
