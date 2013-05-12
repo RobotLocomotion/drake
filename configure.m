@@ -230,6 +230,27 @@ if ~conf.eigen3_enabled
    conf.eigen3_enabled = isfield(conf,'eigen3_incdir') && ~isempty(conf.eigen3_incdir);
 end
 
+if ~isfield(conf,'bullet_incdir') || isempty(conf.bullet_incdir)
+  [status,result] = system('pkg-config --cflags-only-I bullet');
+  if (status==0)
+    conf.bullet_incdir=deblank(result(strfind(result,'-I')+2:end));
+  else
+    conf.bullet_incdir='';
+  end
+end
+if ~isfield(conf,'bullet_libdir') || isempty(conf.bullet_libdir)
+  [status,result] = system('pkg-config --libs-only-L bullet');
+  if (status==0)
+    conf.bullet_libdir=deblank(result(strfind(result,'-L')+2:end));
+  else
+    conf.bullet_libdir='';
+  end
+end
+conf.bullet_enabled = ~isempty(conf.bullet_incdir) && ~isempty(conf.bullet_libdir);
+if ~conf.bullet_enabled
+  disp(' Bullet support is disabled;  collision detection using the Bullet libraries will be disabled.  To re-enabled, set the path to the bullet include and lib directories using editDrakeConfig(''bullet_incdir'',pathname) and editDrakeConfig(''bullet_libdir'',pathname), then rerun configure');
+end
+
 if ~isfield(conf,'conf.additional_unit_test_dirs')
   conf.additional_unit_test_dirs={};
 end

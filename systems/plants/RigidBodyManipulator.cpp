@@ -322,6 +322,7 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
   bc = Vector3d::Zero();
   bJ = MatrixXd::Zero(3,num_dof);
   bdJ = MatrixXd::Zero(3,num_dof*num_dof);
+  dTdTmult = MatrixXd::Zero(3*num_dof,4);
 
   initialized = false;
   kinematicsInit = false;
@@ -395,9 +396,8 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
   if (!initialized) compile();
 
-  Matrix4d TJ, dTJ, ddTJ, Tbinv, Tb, Tmult, dTmult, dTdotmult, TdTmult, TJdot, dTJdot;
+  Matrix4d TJ, dTJ, ddTJ, Tbinv, Tb, Tmult, dTmult, dTdotmult, TdTmult, TJdot, dTJdot, TddTmult;
   Matrix4d fb_dTJ[6], fb_dTJdot[6], fb_dTmult[6];  // will be 7 when quats implemented...
-  MatrixXd dTdTmult, ddTmult, TddTmult;
 
   Matrix3d rx,drx,ddrx,ry,dry,ddry,rz,drz,ddrz;
   
@@ -633,7 +633,6 @@ int RigidBodyManipulator::getNumContacts(const std::set<int> &body_idx)
   int n=0,nb=body_idx.size(),bi;
   if (nb==0) nb=num_bodies; 
   std::set<int>::iterator iter = body_idx.begin();
-  MatrixXd p;
   for (int i=0; i<nb; i++) {
     if (body_idx.size()==0) bi=i;
     else bi=*iter++;
@@ -798,7 +797,7 @@ void RigidBodyManipulator::forwardJac(const int body_ind, const MatrixBase<Deriv
       dR12_dq(i) = bodies[body_ind].dTdq(num_dof+i,2);
     }
 
-    double qw = sqrt(1+R(0,0)+R(1,1)+R(2,2))/2;
+    double qw = sqrt(1.0+R(0,0)+R(1,1)+R(2,2))/2.0;
     MatrixXd Jq = MatrixXd::Zero(4,num_dof);
     VectorXd dqwdq = (dR00_dq+dR11_dq+dR22_dq)/(4*sqrt(1+R(0,0)+R(1,1)+R(2,2)));
     double wsquare4 = 4*qw*qw;

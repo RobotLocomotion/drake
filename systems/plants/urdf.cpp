@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <fstream>
+#include <map>
 
 #include "urdf.h"
+
 
 #ifdef BOT_VIS_SUPPORT
 #include <bot_core/bot_core.h>
@@ -36,7 +38,7 @@ void mexErrMsgIdandTxt(const char *errorid, const char *errormsg, ...)
   exit(1);
 }
 
-URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::ModelInterface> _urdf_model, std::map<std::string, int> jointname_to_jointnum, const std::string & root_dir) 
+URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, const string & root_dir, const string& floating_base_type)
 : 
   RigidBodyManipulator((int)jointname_to_jointnum.size()),
   joint_map(jointname_to_jointnum),
@@ -77,8 +79,8 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
   }
   
   int index=0;
-  for (std::map<std::string, boost::shared_ptr<urdf::Joint> >::iterator j=urdf_model->joints_.begin(); j!=urdf_model->joints_.end(); j++) {
-    std::map<std::string, int>::iterator jn=joint_map.find(j->first);
+  for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=urdf_model->joints_.begin(); j!=urdf_model->joints_.end(); j++) {
+    map<string, int>::iterator jn=joint_map.find(j->first);
     if (jn == joint_map.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->first.c_str());
     index = jn->second;
     this->bodies[index+1].jointname = j->second->name;

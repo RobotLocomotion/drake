@@ -37,6 +37,7 @@ public:
   MatrixXd* IC;
   
   //Variables for gradient calculations
+  MatrixXd dTdTmult;
   MatrixXd* dXupdq;
   MatrixXd** dIC;
   
@@ -48,6 +49,7 @@ public:
   MatrixXd* dfvpdqd;
   MatrixXd dvJdqd_mat;
   MatrixXd dcross;
+
   // preallocate for COM functions
   Vector3d bc;
   MatrixXd bJ;

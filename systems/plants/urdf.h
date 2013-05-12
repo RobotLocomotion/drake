@@ -6,13 +6,14 @@
 
 #include "RigidBodyManipulator.h"
 #include "urdf_interface/model.h"
+#include <string>
 
 void ROS_ERROR(const char* format, ...);
 
 class URDFRigidBodyManipulator : public RigidBodyManipulator
 {
 public:
-  URDFRigidBodyManipulator(boost::shared_ptr<urdf::ModelInterface> _urdf_model, std::map<std::string, int> jointname_to_jointnum, const std::string &root_dir = ".");
+  URDFRigidBodyManipulator(boost::shared_ptr<urdf::ModelInterface> _urdf_model, std::map<std::string, int> jointname_to_jointnum, const std::string &root_dir = ".", const std::string &floating_base_type = "rpy");
   
   void drawBody(void) {};
   
