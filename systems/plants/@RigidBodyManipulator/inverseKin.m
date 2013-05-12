@@ -30,7 +30,10 @@ function [q,info] = inverseKin(obj,q0,varargin)
 % @option q_nom  replaces the cost function with (q-q_nom)'*(q-q_nom).
 %     @default q_nom = q0
 % @option Q  puts a weight on the cost function qtilde'*Q*qtilde
-%   
+% @options quastiStaticFlag adds the constraint that the CoM is within the
+% support polygon
+% @option shrinkFactor is the factor to shrink the size of the support
+% polygon to get an conservative inner approximation
 
 % If we use quaternion representation, we would require add a slack
 % variable to represent the desired quaternion, which is in the [quat.min
@@ -54,7 +57,26 @@ end
 if isfield(options,'q_nom') q_nom = options.q_nom; else q_nom = q0; end
 if isfield(options,'Q') Q = options.Q; else Q = eye(obj.num_q); end
 if ~isfield(options,'use_mex') options.use_mex = exist('inverseKinmex')==3; end
+if(~isfield(options,'jointLimitMin')) options.jointLimitMin = obj.joint_limit_min; end
+if(~isfield(options,'jointLimitMax')) options.jointLimitMax = obj.joint_limit_max; end
 
+joint_limit_min = options.jointLimitMin; 
+joint_limit_max = options.jointLimitMax; 
+
+%options.use_mex = false;
+if(options.use_mex)
+	mex_varargin = {};
+end
+if(isfield(options,'quasiStaticFlag'))
+    quasiStaticFlag = options.quasiStaticFlag;
+else
+    quasiStaticFlag = false;
+end
+if(isfield(options,'shrinkFactor'))
+    shrinkFactor = options.shrinkFactor;
+else
+    shrinkFactor = 0.95;
+end
 nq = obj.num_q;
 Fmin=0; 
 Fmax=inf;
@@ -63,17 +85,26 @@ cum_quat_des = 0;
 nF = 1;
 iGfun = ones(nq,1);
 jGvar = (1:nq)';
+iAfun = [];
+jAvar = [];
+A = [];
 wmax = obj.joint_limit_max;
 wmin = obj.joint_limit_min;
 w0 = q0;
+total_num_support_vert = 0;
+support_polygon_flag = {};
+body_num_support_vert = [];
 while i<=length(varargin)
   % support input as bodies instead of body inds
   if (isa(varargin{i},'RigidBody')) varargin{i} = find(obj.body==varargin{i},1); end
-  body_ind(n)=varargin{i}; 
+  body_ind(n)=varargin{i};
   if (body_ind(n)==0)
     bodyposi = [0;0;0];
     worldposi = varargin{i+1};
-    i=i+2;
+    support_polygon_flag{n} = false;
+    body_num_support_vert(n) = 0;
+    contact_state{n} = ActionKinematicConstraint.NOT_IN_CONTACT;
+    i=i+5;
     mi=1;
   else
     bodyposi = varargin{i+1};
@@ -84,7 +115,16 @@ while i<=length(varargin)
 %      bodyposi = getContactPoints(b,bodyposi);
 %      worldposi = repmat(worldposi,1,size(bodyposi,2));
     end
-    i=i+3;
+    if(isempty(varargin{i+3}))
+        contact_state{n} = ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,size(bodyposi,2));
+    end
+    if(quasiStaticFlag)
+      support_polygon_flag{n} = any(cell2mat(varargin{i+3}') == ActionKinematicConstraint.STATIC_PLANAR_CONTACT,1)|...
+        any(cell2mat(varargin{i+3}') == ActionKinematicConstraint.STATIC_GRIP_CONTACT,1);
+      body_num_support_vert(n) = sum(support_polygon_flag{n});
+      total_num_support_vert  = total_num_support_vert+body_num_support_vert(n);
+    end
+    i=i+6;
     [rows,mi] = size(bodyposi);
     if (rows ~=3) error('bodypos must be 3xmi'); end
   end
@@ -109,16 +149,15 @@ while i<=length(varargin)
       body_ind = body_ind(1:end-1);
       continue;
   end
-
   body_pos{n} = bodyposi;
   rotation_type(n)= (rows==6)+2*(rows ==7);
-  if(rows == 3 ||rows == 6)
+  if(rotation_type(n) == 0 ||rotation_type(n) == 1)
     Fmin=[Fmin;minpos(:)];
     Fmax=[Fmax;maxpos(:)];
     iGfun = [iGfun;nF+repmat((1:rows*cols)',nq,1)];
     jGvar = [jGvar;reshape(bsxfun(@times,ones(rows*cols,1),(1:nq)),[],1)];
     nF = nF+rows*cols;
-  elseif(rows == 7)
+  elseif(rotation_type(n) == 2)
       % The constraints are that the position matchs, and
       % (quat_des'*quat)^2 = 1. And quat_des'*quat_des = 1
       Fmin = [Fmin;reshape(minpos(1:3,:),[],1);ones(2,1)];
@@ -146,15 +185,53 @@ while i<=length(varargin)
       nF = nF+3*cols+2;
       cum_quat_des = cum_quat_des+4;
   end
+  if(options.use_mex)
+	  mex_varargin = [mex_varargin,{[bodyposi;ones(1,size(bodyposi,2))]}];
+  end
   n=n+1;
 end
 
-if 0 %options.use_mex
-  [q,info] = inverseKinmex(obj.mex_model_ptr.getData,q0,q_nom,Q,varargin{:});
-else
+if(quasiStaticFlag)
+    if(total_num_support_vert == 0)
+        error('inverseKin:NoContacts','No contact points')
+    end
+    wmax = [wmax;ones(total_num_support_vert,1)];
+    wmin = [wmin;zeros(total_num_support_vert,1)];
+    iGfun = [iGfun;nF+reshape(bsxfun(@times,[1;2],ones(1,nq+total_num_support_vert)),[],1)];
+    jGvar = [jGvar;reshape(bsxfun(@times,[1;1],[1:nq nq+cum_quat_des+(1:total_num_support_vert)]),[],1)];
+    iAfun = [iAfun;nF+3*ones(total_num_support_vert,1)];
+    jAvar = [jAvar;nq+cum_quat_des+(1:total_num_support_vert)'];
+    A = [A; ones(total_num_support_vert,1)];
+    w0 = [w0;1/total_num_support_vert*ones(total_num_support_vert,1)];
+    Fmin = [Fmin;0;0;1];
+    Fmax = [Fmax;0;0;1];
+    nF = nF+3;
+end
+
   N = length(varargin);
   nF = length(Fmin);
   nG = length(iGfun);
+if options.use_mex
+  Fmin_nan = isnan(Fmin);
+  Fmin(Fmin_nan) = -1e20*ones(sum(Fmin_nan),1);
+  Fmin_inf = isinf(Fmin);
+  Fmin(Fmin_inf) = -1e20*ones(sum(Fmin_inf),1);
+  Fmax_nan = isnan(Fmax);
+  Fmax(Fmax_nan) = 1e20*ones(sum(Fmax_nan),1);
+  Fmax_inf = isinf(Fmax);
+  Fmax(Fmax_inf) = 1e20*ones(sum(Fmax_inf),1);
+  wmin_nan = isnan(wmin);
+  wmin(wmin_nan) = -1e20*ones(sum(wmin_nan),1);
+  wmin_inf = isinf(wmin);
+  wmin(wmin_inf) = -1e20*ones(sum(wmin_inf),1);
+  wmax_nan = isnan(wmax);
+  wmax(wmax_nan) = 1e20*ones(sum(wmax_nan),1);
+  wmax_inf = isinf(wmax);
+  wmax(wmax_inf) = 1e20*ones(sum(wmax_inf),1);
+  [w_sol,info] = inverseKinmex(obj.mex_model_ptr.getData,w0,q_nom,Q,Fmax,Fmin,wmax,wmin,iGfun,jGvar,body_ind,rotation_type,mex_varargin{:});
+%   [w_sol,f,G] = inverseKinmex(obj.mex_model_ptr.getData,w0,q_nom,Q,Fmax,Fmin,wmax,wmin,iGfun,jGvar,body_ind,rotation_type,mex_varargin{:});
+% keyboard
+else
 
 % k=1;  
 % for i=1:nF
@@ -172,12 +249,13 @@ else
 % valuecheck(Gmex,G);
 % return;
 snsetr('Major optimality tolerance',5e-3);
-snseti('Major Iterations Limit',100);
+snseti('Major Iterations Limit',300);
   global SNOPT_USERFUN;
-  SNOPT_USERFUN = @(w) ik(w,obj,nq,nF,nG,q_nom,Q,body_ind,body_pos,rotation_type);
+  SNOPT_USERFUN = @(w) ik(w,obj,nq,nF,nG,q_nom,Q,body_ind,body_pos,rotation_type,...
+      cum_quat_des,quasiStaticFlag,total_num_support_vert,body_num_support_vert,support_polygon_flag,shrinkFactor);
   
 %   [iGfun,jGvar] = ind2sub([nF,obj.num_q],1:(nF*obj.num_q));
-  [w_sol,F,info] = snopt(w0,wmin,wmax,Fmin,Fmax,'snoptUserfun',[],[],[],iGfun,jGvar);
+  [w_sol,F,info] = snopt(w0,wmin,wmax,Fmin,Fmax,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
 end
 q = w_sol(1:nq);
 if (info~=1)
@@ -189,10 +267,16 @@ end
 % keyboard
 end
 
-function [f,G] = ik(w,obj,nq,nF,nG,q_nom,Q,body_ind,body_pos,rotation_type)
+function [f,G] = ik(w,obj,nq,nF,nG,q_nom,Q,body_ind,body_pos,rotation_type,cum_quat_des,...
+    quasiStaticFlag,total_num_support_vert,body_num_support_vert,support_polygon_flag,shrinkFactor)
+support_vert_pos = zeros(2,total_num_support_vert);
+dsupport_vert_pos = zeros(2*total_num_support_vert,nq);
 f = zeros(nF,1); G = zeros(nG,1);
 q = w(1:nq);
-quat_des_all = w(nq+1:end);
+quat_des_all = w(nq+(1:cum_quat_des));
+if(quasiStaticFlag)
+    support_vert_weight = w(nq+cum_quat_des+(1:total_num_support_vert));
+end
 cum_quat_des = 0;
 f(1) = (q-q_nom)'*Q*(q-q_nom);
 G(1:nq) = (2*(q-q_nom)'*Q)';
@@ -200,11 +284,29 @@ ng = nq;
 if (nF<2) return; end
 kinsol = doKinematics(obj,q,false);
 nf = 1;
+support_vert_count = 0;
 for i=1:length(body_ind)
+  if(quasiStaticFlag)
+    [com,dcom] = getCOM(obj,kinsol);
+  end
   if (body_ind(i)==0)
-    [x,J] = getCOM(obj,kinsol);
+      if(quasiStaticFlag)
+          x = com;
+          J = dcom;
+      else
+        [x,J] = getCOM(obj,kinsol);
+      end
   else
     [x,J] = forwardKin(obj,kinsol,body_ind(i),body_pos{i},rotation_type(i));
+    [rows,cols] = size(x);
+    if(quasiStaticFlag)
+      support_vert_pos(:,support_vert_count+(1:body_num_support_vert(i))) = x(1:2,support_polygon_flag{i});
+      J_support_polygon_row = reshape(1:rows*cols,rows,cols);
+      J_support_polygon_row = reshape(J_support_polygon_row(1:2,support_polygon_flag{i}),[],1);
+      dsupport_vert_pos(2*support_vert_count+(1:2*body_num_support_vert(i)),:) = ...
+        J(J_support_polygon_row,:);
+      support_vert_count = support_vert_count+body_num_support_vert(i);
+    end
   end
   [rows,cols] = size(x);
   n = rows*cols;
@@ -229,5 +331,16 @@ for i=1:length(body_ind)
       ng = ng+3*cols*nq+(nq+4)+4;
       cum_quat_des = cum_quat_des+4;
   end
+end
+if(quasiStaticFlag)
+    support_vert_center = mean(support_vert_pos,2);
+    dsupport_vert_center = [mean(dsupport_vert_pos(1:2:end,:),1);mean(dsupport_vert_pos(2:2:end,:),1)];
+    support_vert_pos = shrinkFactor*support_vert_pos+(1-shrinkFactor)*bsxfun(@times,support_vert_center,ones(1,total_num_support_vert));
+    dsupport_vert_pos = shrinkFactor*dsupport_vert_pos+(1-shrinkFactor)*repmat(dsupport_vert_center,total_num_support_vert,1);
+    f(nf+(1:3)) = [com(1:2)-support_vert_pos*support_vert_weight;0];
+    G(ng+(1:2*(nq+total_num_support_vert))) = reshape([dcom(1:2,:)-[support_vert_weight'*dsupport_vert_pos(1:2:end,:);...
+        support_vert_weight'*dsupport_vert_pos(2:2:end,:)] -support_vert_pos],[],1);
+    nf = nf+3;
+    ng = ng+2*(nq+total_num_support_vert);
 end
 end
