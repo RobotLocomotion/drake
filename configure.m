@@ -281,6 +281,12 @@ end
 
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
 
+% write out the matlab root path to the filesystem, so that the makefiles
+% can find it
+ptr = fopen('.matlabroot','w');
+fprintf(ptr,'%s',matlabroot);
+fclose(ptr);
+
 end
 
 function conf = setconf(conf,field,longname,candidates)

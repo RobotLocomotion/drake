@@ -6,11 +6,13 @@ LDFLAGS = $(shell pkg-config --libs bot2-vis bot2-lcmgl-renderer) -ltinyxml ../.
 #    drc/software/build/lib/pkgconfig
 eigenflags = -I../../../thirdParty/eigen3
 
-drake_viewer : main.cpp drake_urdf_renderer.o drake_urdf_renderer.h ../urdf.o ../RigidBodyManipulator.o ../link.o ../joint.o
+all: drake_viewer
+
+drake_viewer : main.cpp drake_urdf_renderer.o drake_urdf_renderer.h ../urdf.o ../RigidBodyManipulator.o ../urdf_interface/link.o ../urdf_interface/joint.o
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lboost_filesystem-mt -lboost_system-mt 
 
 %.o : %.cpp %.h
 	$(CC) -c $(CFLAGS) $(eigenflags) -I.. $<
 
-../%.o : 
-	$(MAKE) -C .. $(@:../%.o=%.o)
+clean: 
+	-rm -f *.o drake_viewer
