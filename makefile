@@ -46,7 +46,6 @@ util/LCMCoder.class : util/LCMCoder.java util/CoordinateFrameData.class
 %.class : %.java
 	javac $<
 
-
 %.o : %.c
 	gcc -c -I include/ $< -o $@ $(LCM_CFLAGS) $(EIGEN_CFLAGS)
 
