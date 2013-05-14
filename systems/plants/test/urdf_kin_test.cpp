@@ -22,9 +22,11 @@ int main(int argc, char* argv[])
   }
   
   const Vector4d zero(0,0,0,1);
+  Vector3d pt;
   
   for (i=0; i<=model->NB; i++) {
-    cout << "forward kin: " << model->bodies[i].linkname << " is at " << model->forwardKin(i,zero,1).transpose() << endl;
+    model->forwardKin(i,zero,1,pt);
+    cout << "forward kin: " << model->bodies[i].linkname << " is at " << pt << endl;
   } 
   
   delete model;

@@ -1,6 +1,6 @@
 
 urdf_interface
 #viewer
-#test
+test
 @RigidBodyManipulator/private
 @PlanarRigidBodyManipulator/private
