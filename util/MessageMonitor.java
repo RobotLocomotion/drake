@@ -36,6 +36,7 @@ public class MessageMonitor implements LCMSubscriber
   {
     m_last_timestamp = -m_reset_time;
     m_time_of_last_message = System.currentTimeMillis();
+    m_data = null;
     
     boolean hasTimestamp = true;
     try {

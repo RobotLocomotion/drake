@@ -32,6 +32,16 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
       end
     end
     
+    function [x,t] = getMessage(obj)
+      data = obj.monitor.getMessage();
+      if isempty(data)
+        x=[];
+        t=[];
+      else
+        [x,t] = obj.lcmcoder.decode(data);
+      end
+    end
+    
     function [x,t] = getCurrentValue(obj)
       data = obj.monitor.getMessage();
       if isempty(data)
