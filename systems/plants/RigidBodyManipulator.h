@@ -14,53 +14,6 @@ const std::set<int> emptyIntSet;
 class RigidBodyManipulator 
 {
 public:
-  int num_dof; 
-  int NB;  // featherstone bodies
-  int num_bodies;  // rigid body objects
-  int num_contact_pts;
-  int *pitch;
-  int *parent;
-  int *dofnum;
-  double* damping;
-  double* joint_limit_min;
-  double* joint_limit_max;
-  
-  MatrixXd* Xtree;
-  MatrixXd* I;
-  VectorXd a_grav;
-  
-  VectorXd* S;
-  MatrixXd* Xup;
-  VectorXd* v;
-  VectorXd* avp;
-  VectorXd* fvp;
-  MatrixXd* IC;
-  
-  //Variables for gradient calculations
-  MatrixXd dTdTmult;
-  MatrixXd* dXupdq;
-  MatrixXd** dIC;
-  
-  MatrixXd* dvdq;
-  MatrixXd* dvdqd;
-  MatrixXd* davpdq;
-  MatrixXd* davpdqd;
-  MatrixXd* dfvpdq;
-  MatrixXd* dfvpdqd;
-  MatrixXd dvJdqd_mat;
-  MatrixXd dcross;
-
-  // preallocate for COM functions
-  Vector3d bc;
-  MatrixXd bJ;
-  MatrixXd bdJ;
-      
-  RigidBody* bodies;
-  bool initialized;
-  bool kinematicsInit;
-  double *cached_q, *cached_qd;
-  int secondDerivativesCached;
-
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1);
   ~RigidBodyManipulator(void);
   
@@ -79,7 +32,6 @@ public:
   template <typename Derived>
   void getCOMdJac(MatrixBase<Derived> &dJ);
 
-  
   int getNumContacts(const std::set<int> &body_idx = emptyIntSet);
 
   template <typename Derived>
@@ -109,6 +61,60 @@ public:
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL);
 
+public:
+  int num_dof;
+  double* joint_limit_min;
+  double* joint_limit_max;
+
+  // Rigid body objects
+  int num_bodies;  // rigid body objects
+  RigidBody* bodies;
+
+  // featherstone data structure
+  int NB;  // featherstone bodies
+  int *pitch;
+  int *parent;
+  int *dofnum;
+  double* damping;
+  MatrixXd* Xtree;
+  MatrixXd* I;
+  VectorXd a_grav;
+
+  double *cached_q, *cached_qd;  // these should be private
+
+
+private:
+  // variables for featherstone dynamics
+  VectorXd* S;
+  MatrixXd* Xup;
+  VectorXd* v;
+  VectorXd* avp;
+  VectorXd* fvp;
+  MatrixXd* IC;
+
+  //Variables for gradient calculations
+  MatrixXd dTdTmult;
+  MatrixXd* dXupdq;
+  MatrixXd** dIC;
+
+  MatrixXd* dvdq;
+  MatrixXd* dvdqd;
+  MatrixXd* davpdq;
+  MatrixXd* davpdqd;
+  MatrixXd* dfvpdq;
+  MatrixXd* dfvpdqd;
+  MatrixXd dvJdqd_mat;
+  MatrixXd dcross;
+
+  // preallocate for COM functions
+  Vector3d bc;
+  MatrixXd bJ;
+  MatrixXd bdJ;
+
+  int num_contact_pts;
+  bool initialized;
+  bool kinematicsInit;
+  int secondDerivativesCached;
 };
 
 #include "RigidBody.h"

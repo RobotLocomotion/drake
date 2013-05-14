@@ -2,24 +2,34 @@
 # Note: make will automatically delete intermediate files (google "make chains of implicit rules")
 
 LCMFILES = $(shell find . -iname "*.lcm" | tr "\n" " " | sed "s|\./||g")
+SUBDIRS:=$(shell grep -v "^\#" tobuild.txt)
 
 LCM_CFILES = $(LCMFILES:%.lcm=%.c) 
 LCM_CFLAGS = $(shell pkg-config --cflags lcm)
 LCM_LDFLAGS = $(shell pkg-config --libs lcm)
-CFILES = $(LCM_CFILES)
+EIGEN_CFLAGS = $(shell pkg-config --cflags eigen3)
+
+#CFILES = $(LCM_CFILES)
 LCM_JAVAFILES = $(LCMFILES:%.lcm=%.java)
 OTHER_JAVAFILES = util/MyLCMTypeDatabase.java util/MessageMonitor.java util/CoordinateFrameData.java util/LCMCoder.java util/Transform.java
 JAVAFILES = $(LCM_JAVAFILES) $(OTHER_JAVAFILES)
 
-OBJFILES = $(CFILES:%.c=%.o)
+OBJFILES = $(LCM_CFILES:%.c=%.o) 
+MEXFILES = $(MEX_CFILES:%.c=%.mexmaci64)
 CLASSFILES = $(JAVAFILES:%.java=%.class) 
 EXTRACLASSFILES = util/MyLCMTypeDatabase*MyClassVisitor.class
 
-all: java c
+all: java c 
+	@for subdir in $(SUBDIRS); do \
+		echo "\n-------------------------------------------"; \
+		echo "-- $$subdir"; \
+		echo "-------------------------------------------"; \
+		$(MAKE) -C $$subdir all || exit 2; \
+	done
 
 java : drake.jar
 
-c : drake.a
+c : drake.a 
 
 drake.jar : $(CLASSFILES)
 	cd ..; jar -cf drake/drake.jar $(CLASSFILES:%=drake/%) $(EXTRACLASSFILES:%=drake/%)
@@ -36,8 +46,9 @@ util/LCMCoder.class : util/LCMCoder.java util/CoordinateFrameData.class
 %.class : %.java
 	javac $<
 
+
 %.o : %.c
-	gcc -c -I include/ $< -o $@ $(LCM_CFLAGS)
+	gcc -c -I include/ $< -o $@ $(LCM_CFLAGS) $(EIGEN_CFLAGS)
 
 %.c : %.lcm
 	@if grep -i package $< ; then echo "\n *** ERROR: $< has a package specified.  Don't do that. *** \n"; exit 1; fi
@@ -49,4 +60,10 @@ util/LCMCoder.class : util/LCMCoder.java util/CoordinateFrameData.class
 
 clean : 
 	-rm -f drake.jar drake.a $(LIBS) $(LCM_HFILES) $(LCM_CFILES) $(OBJFILES) $(LCM_JAVAFILES) $(CLASSFILES) $(EXTRACLASSFILES)
+	@for subdir in $(SUBDIRS); do \
+		echo "\n-------------------------------------------"; \
+		echo "-- $$subdir"; \
+		echo "-------------------------------------------"; \
+		$(MAKE) -C $$subdir clean; \
+	done
 
