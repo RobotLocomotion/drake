@@ -104,11 +104,7 @@ classdef LinearInvertedPendulum < LinearSystem
       warning(S);
     end
     
-    function comtraj = ZMPplanner(obj,com0,comdot0,dZMP,options)
-      % got a com plan from the ZMP tracking controller
-      if(nargin<5) options = struct(); end
-      c = ZMPtracker(obj,dZMP,options);
-          
+    function comtraj = ZMPPlanFromTracker(obj,com0,comdot0,dZMP,c)
       doubleIntegrator = LinearSystem([zeros(2),eye(2);zeros(2,4)],[zeros(2);eye(2)],[],[],eye(4),zeros(4,2));
       doubleIntegrator = setInputFrame(doubleIntegrator,getInputFrame(obj));
       doubleIntegrator = setStateFrame(doubleIntegrator,getStateFrame(obj));
@@ -118,6 +114,13 @@ classdef LinearInvertedPendulum < LinearSystem
       comtraj = simulate(sys,dZMP.tspan,[com0;comdot0]);
       comtraj = inOutputFrame(comtraj,sys.getOutputFrame);
       comtraj = comtraj(1:2);  % only return position (not velocity)
+    end
+    
+    function comtraj = ZMPplanner(obj,com0,comdot0,dZMP,options)
+      % got a com plan from the ZMP tracking controller
+      if(nargin<5) options = struct(); end
+      c = ZMPtracker(obj,dZMP,options);
+      comtraj = ZMPPlanFromTracker(obj,com0,comdot0,dZMP,c);
     end
   end
   
