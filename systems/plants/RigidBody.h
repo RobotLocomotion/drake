@@ -118,6 +118,12 @@ public:
 #ifdef BULLET_COLLISION
   class CollisionObject {
   public:
+  	~CollisionObject(void) {
+/*
+	  	delete bt_obj;
+	  	delete bt_shape;
+	  	*/
+  	}
 	  btCollisionObject* bt_obj;
 	  btCollisionShape* bt_shape;
 	  Matrix4d T;
