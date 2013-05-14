@@ -245,6 +245,14 @@ void rotz(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
 }
 
 RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects) 
+#ifdef BULLET_COLLISION
+  :  bt_collision_configuration(),
+     bt_collision_dispatcher( &bt_collision_configuration ),
+     bt_collision_broadphase(),
+     bt_collision_world( &bt_collision_dispatcher,
+                       &bt_collision_broadphase,
+                       &bt_collision_configuration )
+#endif
 {
   num_dof = ndof;
   if (num_featherstone_bodies<0)
@@ -359,6 +367,19 @@ RigidBodyManipulator::~RigidBodyManipulator() {
   delete[] bodies;
   delete[] cached_q;
   delete[] cached_qd;
+
+
+#ifdef BULLET_COLLISION
+  for (int i=0; i<num_bodies; i++) {
+	  for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[i].collision_objects.begin(); iter!=bodies[i].collision_objects.end(); iter++) {
+	  	bt_collision_world.removeCollisionObject(iter->bt_obj);
+//	  	delete iter->bt_obj;
+//	  	delete iter->bt_shape;
+	  }
+	  bodies[i].collision_objects.clear();
+  }
+#endif
+
 }
 
 void RigidBodyManipulator::compile(void) 
@@ -550,8 +571,30 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
         bodies[i].dTdqdot.row(bodies[i].dofnum + 2*num_dof) += dTdotmult.row(2);
       }
     }
+
+#ifdef BULLET_COLLISION
+    if (bodies[i].parent>=0) {
+    	btMatrix3x3 rot;
+    	btVector3 pos;
+    	btTransform btT;
+    	Matrix4d T;
+    	for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[i].collision_objects.begin(); iter!=bodies[i].collision_objects.end(); iter++) {
+    		T = bodies[i].T*(iter->T);
+        	rot.setValue( T(1,1), T(2,1), T(3,1),
+        			T(1,2), T(2,2), T(3,2),
+        			T(1,3), T(2,3), T(3,3) );
+        	pos.setValue( T(1,4), T(2,4), T(3,4) );
+        	btT.setBasis(rot);
+        	btT.setOrigin(pos);
+
+        	iter->bt_obj->setWorldTransform(btT);
+        	bt_collision_world.updateSingleAabb(iter->bt_obj);
+    	}
+    }
+#endif
+
   }
-  
+
   kinematicsInit = true;
   for (i = 0; i < num_dof; i++) {
     cached_q[i] = q[i];

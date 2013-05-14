@@ -1,4 +1,7 @@
 
+CC = gcc
+CXX = g++
+
 SUBDIRS = plants
 
 MATLABROOT = $(strip $(shell cat ../.matlabroot))
@@ -16,6 +19,18 @@ all : $(MEXFILES)
 		echo "-- $$subdir"; \
 		echo "-------------------------------------------"; \
 		$(MAKE) -C $$subdir all || exit 2; \
+	done
+
+debug: CXX += -g
+debug: CC += -g
+debug: MEX += -g
+
+debug: $(MEXFILES) 
+	@for subdir in $(SUBDIRS); do \
+		echo "\n-------------------------------------------"; \
+		echo "-- $$subdir"; \
+		echo "-------------------------------------------"; \
+		$(MAKE) -C $$subdir debug || exit 2; \
 	done
 
 $(MEXFILES): %.$(MEXEXT) : %.cpp

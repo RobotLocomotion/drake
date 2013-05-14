@@ -941,6 +941,11 @@ classdef RigidBodyManipulator < Manipulator
         if (~isempty(body.contact_pts))
           npts = size(parent.contact_pts,2);
           parent.contact_pts = [parent.contact_pts, body.Ttree(1:end-1,:)*[body.contact_pts;ones(1,size(body.contact_pts,2))]];
+          % todo: finish this!
+          for j=1:length(body.contact_shapes)
+            body.contact_shapes(j).T = body.Ttree*body.contact_shapes(j).T;
+          end
+          parent.contact_shapes = horzcat(parent.contact_shapes,body.contact_shapes);
           if ~isempty(body.collision_group_name)
             ngroups=length(parent.collision_group_name);
             [parent.collision_group_name,ia,ic]=unique(horzcat(parent.collision_group_name,body.collision_group_name),'stable');

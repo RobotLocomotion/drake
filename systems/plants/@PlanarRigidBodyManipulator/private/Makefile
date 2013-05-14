@@ -7,12 +7,14 @@ MEX_CPP_FILES = constructModelpmex.cpp
 MEXFILES = $(MEX_CPP_FILES:%.cpp=%.$(MEXEXT))
 
 EIGEN_CFLAGS = $(shell pkg-config --cflags eigen3)
-CFLAGS = 
 
 all : $(MEXFILES)
 
-$(MEXFILES): %.$(MEXEXT) : %.cpp ../../RigidBodyManipulator.o 
-	$(MEX) -O $^ $(EIGEN_CFLAGS) $(CFLAGS)
+debug: MEX += -g
+debug: $(MEXFILES)
+
+$(MEXFILES): %.$(MEXEXT) : %.cpp 
+	$(MEX) -O $^ $(EIGEN_CFLAGS) 
 
 clean:
 	-rm -f *.$(MEXEXT)

@@ -2,6 +2,7 @@
 #define _RIGIDBODY
 
 #include <set>
+#include <vector>
 
 class IndexRange {
  public:
@@ -15,30 +16,6 @@ class IndexRange {
 
 class RigidBody {
 public:
-  std::string linkname;
-  std::string jointname;
-// note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the rigidbodymanipulator level to represent the featherstone structure.  this version is for the kinematics.  
-  int parent;   
-  int dofnum;   
-  int floating;
-  int pitch;
-  MatrixXd contact_pts;
-  Matrix4d Ttree;
-  Matrix4d T_body_to_joint;
-  
-  std::set<int> ancestor_dofs;
-  std::set<int> ddTdqdq_nonzero_rows;
-  std::set<IndexRange> ddTdqdq_nonzero_rows_grouped;
-
-  Matrix4d T;
-  MatrixXd dTdq;
-  MatrixXd dTdqdot;
-  Matrix4d Tdot;
-  MatrixXd ddTdqdq;
-
-  double mass;
-  Vector4d com;  // this actually stores [com;1] (because that's what's needed in the kinematics functions)
-  
   RigidBody() {
     mass = 0.0;
     floating = 0;
@@ -68,28 +45,28 @@ public:
       }
       
       if (floating==1) {
-	for (j=0; j<6; j++) {
-	  ancestor_dofs.insert(dofnum+j);
-	  for (i=0; i<3*model->NB; i++) {
-	    ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
-	    ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
-	  }
-	}
+      	for (j=0; j<6; j++) {
+      		ancestor_dofs.insert(dofnum+j);
+      		for (i=0; i<3*model->NB; i++) {
+      			ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
+      			ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
+      		}
+      	}
       } else if (floating==2) {
-	for (j=0; j<7; j++) {
-	  ancestor_dofs.insert(dofnum+j);
-	  for (i=0; i<3*model->NB; i++) {
-	    ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
-	    ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
-	  }
-	}
+      	for (j=0; j<7; j++) {
+      		ancestor_dofs.insert(dofnum+j);
+      		for (i=0; i<3*model->NB; i++) {
+      			ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum + j);
+      			ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i + j);
+      		}
+      	}
       }
       else {
-	ancestor_dofs.insert(dofnum);
-	for (i=0; i<3*model->NB; i++) {
-	  ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum);
-	  ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i);
-	}
+      	ancestor_dofs.insert(dofnum);
+      	for (i=0; i<3*model->NB; i++) {
+      		ddTdqdq_nonzero_rows.insert(i*model->NB + dofnum);
+      		ddTdqdq_nonzero_rows.insert(3*model->NB*dofnum + i);
+      	}
       }
 
 
@@ -113,5 +90,40 @@ public:
     }
   }
   
+public:
+  std::string linkname;
+  std::string jointname;
+// note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the rigidbodymanipulator level to represent the featherstone structure.  this version is for the kinematics.
+  int parent;
+  int dofnum;
+  int floating;
+  int pitch;
+  MatrixXd contact_pts;
+  Matrix4d Ttree;
+  Matrix4d T_body_to_joint;
+
+  std::set<int> ancestor_dofs;
+  std::set<int> ddTdqdq_nonzero_rows;
+  std::set<IndexRange> ddTdqdq_nonzero_rows_grouped;
+
+  Matrix4d T;
+  MatrixXd dTdq;
+  MatrixXd dTdqdot;
+  Matrix4d Tdot;
+  MatrixXd ddTdqdq;
+
+  double mass;
+  Vector4d com;  // this actually stores [com;1] (because that's what's needed in the kinematics functions)
+
+#ifdef BULLET_COLLISION
+  class CollisionObject {
+  public:
+	  btCollisionObject* bt_obj;
+	  btCollisionShape* bt_shape;
+	  Matrix4d T;
+  };
+
+  std::vector< CollisionObject > collision_objects;  // note: should be an unordered_set (but linker didn't find on my first try)
+#endif
 };
 #endif

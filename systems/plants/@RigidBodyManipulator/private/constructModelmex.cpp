@@ -128,6 +128,65 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
     memcpy(model->bodies[i].T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
+
+#ifdef BULLET_COLLISION
+    pm = mxGetProperty(pBodies,i,"contact_shapes");
+    for (int j=0; j<mxGetNumberOfElements(pm); j++) {
+    	// construct bullet collision object and transform
+    	RigidBody::CollisionObject co;
+    	double* params = mxGetPr(mxGetField(pm,j,"params"));
+    	int type = (int)mxGetScalar(mxGetField(pm,j,"type"));
+    	switch (type) {
+    	case 1: // BOX
+    		co.bt_shape = new btBoxShape( btVector3(params[0]/2,params[1]/2,params[2]/2) );
+    		break;
+    	case 2: // SPHERE
+    		co.bt_shape = new btSphereShape(params[0]) ;
+    		break;
+    	case 3: // CYLINDER
+    		co.bt_shape = new btCylinderShapeZ( btVector3(params[0],params[0],params[1]/2) );
+    		break;
+    	case 4: // MESH
+    		co.bt_shape = new btConvexHullShape( (btScalar*) params, (int) mxGetNumberOfElements(mxGetField(pm,j,"params")) ,(int) 3*sizeof(double) );
+    		break;
+    	default:
+    		mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs", "Body %d collision shape %d has an unknown type %d", i+1,j+1,type);
+    		break;
+    	}
+    	co.bt_obj = new btCollisionObject();
+    	co.bt_obj->setCollisionShape(co.bt_shape);
+    	memcpy(co.T.data(), mxGetPr(mxGetField(pm,j,"T")), sizeof(double)*4*4);
+
+    	// add to the manipulator's collision world
+    	model->bt_collision_world.addCollisionObject(co.bt_obj);
+
+    	if (model->bodies[i].parent>=0) {
+    		co.bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+    		co.bt_obj->activate();
+    	} else {
+      	btMatrix3x3 rot;
+      	btVector3 pos;
+      	btTransform btT;
+      	Matrix4d T;
+      	for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[i].collision_objects.begin(); iter!=bodies[i].collision_objects.end(); iter++) {
+      		T = bodies[i].T*(iter->T);
+      		rot.setValue( T(1,1), T(2,1), T(3,1),
+      				T(1,2), T(2,2), T(3,2),
+      				T(1,3), T(2,3), T(3,3) );
+          pos.setValue( T(1,4), T(2,4), T(3,4) );
+          btT.setBasis(rot);
+          btT.setOrigin(pos);
+
+          iter->bt_obj->setWorldTransform(btT);
+          bt_collision_world.updateSingleAabb(iter->bt_obj);
+      	}
+    		co.bt_obj->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+    	}
+
+    	// add to the body
+    	model->bodies[i].collision_objects.push_back(co);
+    }
+#endif
   }
   
   const mxArray* a_grav_array = prhs[2]; //mxGetProperty(prhs[0],0,"gravity");

@@ -1,9 +1,11 @@
 
+CC = gcc
+CXX = g++
+
 EIGEN_CFLAGS = $(shell pkg-config --cflags eigen3)
 BOTVIS_CFLAGS = $(shell pkg-config --cflags bot2-vis)
-
-CFLAGS = 
-CFLAGS = -g   # uncomment this to debug.  todo: figure out the best way to pass this up the directory chain?
+BULLET_CFLAGS = $(shell pkg-config --cflags bullet)
+BULLET_LIBS = $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
 
 SUBDIRS:=$(shell grep -v "^\#" tobuild.txt)
 
@@ -30,14 +32,26 @@ all : $(MEXFILES) #urdf.o
 		$(MAKE) -C $$subdir all || exit 2; \
 	done
 
+debug: CXX += -g
+debug: CC += -g
+debug: MEX += -g
+
+debug: $(MEXFILES) 
+	@for subdir in $(SUBDIRS); do \
+		echo "\n-------------------------------------------"; \
+		echo "-- $$subdir"; \
+		echo "-------------------------------------------"; \
+		$(MAKE) -C $$subdir debug || exit 2; \
+	done
+
 RigidBodyManipulator.o : RigidBodyManipulator.cpp RigidBodyManipulator.h RigidBody.h
-	g++ -O3 $< -c $(EIGEN_CFLAGS) $(CFLAGS)
+	$(CXX) -O3 $< -c $(EIGEN_CFLAGS) $(BULLET_CFLAGS) 
 
 %.$(MEXEXT) : %.cpp RigidBodyManipulator.o
-	$(MEX) -O $^ $(EIGEN_CFLAGS) $(CFLAGS)
+	$(MEX) -O $^ $(EIGEN_CFLAGS) $(BULLET_CFLAGS) $(BULLET_LIBS)
 
 urdf.o : urdf.cpp RigidBodyManipulator.o
-	g++ -O3 $< -c $(EIGEN_CFLAGS) $(BOTVIS_CFLAGS) $(CFLAGS)
+	$(CXX) -O3 $< -c $(EIGEN_CFLAGS) $(BOTVIS_CFLAGS) 
 
 
 clean: 

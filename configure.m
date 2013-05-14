@@ -93,6 +93,7 @@ cd(conf.root);
 % add package directories to the matlab path 
 addpath([conf.root,'/systems']);
 addpath([conf.root,'/systems/plants']);
+addpath([conf.root,'/systems/plants/affordance']);
 addpath([conf.root,'/systems/controllers']);
 addpath([conf.root,'/systems/estimators']);
 addpath([conf.root,'/systems/trajectories']);
