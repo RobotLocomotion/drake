@@ -1,8 +1,15 @@
 #ifndef __RigidBodyManipulator_H__
 #define __RigidBodyManipulator_H__
 
+#define BULLET_COLLISION  // adds a bunch of dependencies, which are not necessary for all functionality
+
 #include <Eigen/Dense>
 #include <set>
+
+#ifdef BULLET_COLLISION
+#include <btBulletCollisionCommon.h>
+#endif
+
 
 #define INF -2147483648
 using namespace Eigen;
@@ -82,7 +89,6 @@ public:
 
   double *cached_q, *cached_qd;  // these should be private
 
-
 private:
   // variables for featherstone dynamics
   VectorXd* S;
@@ -115,6 +121,15 @@ private:
   bool initialized;
   bool kinematicsInit;
   int secondDerivativesCached;
+
+#ifdef BULLET_COLLISION
+  btDefaultCollisionConfiguration bt_collision_configuration;
+  btCollisionDispatcher bt_collision_dispatcher;
+  btDbvtBroadphase bt_collision_broadphase;
+
+public:
+  btCollisionWorld bt_collision_world;
+#endif
 };
 
 #include "RigidBody.h"

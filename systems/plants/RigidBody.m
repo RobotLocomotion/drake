@@ -8,8 +8,10 @@ classdef RigidBody < handle
     wrlgeometry=''; % geometry (compatible w/ wrl).  see parseVisual below.
     geometry={}  % geometry (compatible w/ patch).  see parseVisual below.
     dofnum=0     % the index in the state vector corresponding to this joint
-    contact_pts=[];  % a 3xn matrix with [x;y;z] positions of contact points
     gravity_off=false;
+
+    contact_pts=[];  % a 3xn matrix with [x;y;z] positions of contact points
+    contact_shapes=[]; %struct('type',[],'T',[],'params',[]);  with params as used by URDF (not necessarily by Bullet)
     
     % joint properties
     jointname=''
@@ -30,7 +32,7 @@ classdef RigidBody < handle
     
     collision_group_name={};  % string names of the groups
     collision_group={};       % collision_group{i} is a list of indices into contact_pts which belong to collision_group_name{i}
-    
+
     % dynamic properties (e.g. state at runtime)
     cached_q=[];  % the current kinematics were computed using these q and qd values 
     cached_qd=[]
@@ -39,6 +41,13 @@ classdef RigidBody < handle
     ddTdqdq = [];
     Tdot = [];
     dTdqdot = [];
+  end
+  
+  properties (Constant)
+    BOX=1;
+    SPHERE=2;
+    CYLINDER=3;
+    MESH=4;
   end
 
   properties (SetAccess=protected, GetAccess=public)    
@@ -270,8 +279,9 @@ classdef RigidBody < handle
       npts=size(body.contact_pts,2);
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
-        [xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,options);
+        [xpts,ypts,zpts,shape] = RigidBody.parseGeometry(geomnode,xyz,rpy,options);
         body.contact_pts=unique([body.contact_pts';xpts(:), ypts(:), zpts(:)],'rows')';
+        body.contact_shapes = horzcat(body.contact_shapes,shape);
       end
       if (node.hasAttribute('group'))
         name=char(node.getAttribute('group'));
@@ -402,12 +412,12 @@ classdef RigidBody < handle
       
     end
 
-    function [x,y,z] = parseGeometry(node,x0,rpy,options)
+    function [x,y,z,shape] = parseGeometry(node,x0,rpy,options)
       % param node DOM node for the geometry block
       % param X coordinate transform for the current body
       % option twoD true implies that I can safely ignore y.
       x=[];y=[];z=[];
-      T= [quat2rotmat(rpy2quat(rpy)),x0]; % intentially leave off the bottom row [0,0,0,1];
+      T= [quat2rotmat(rpy2quat(rpy)),x0; 0 0 0 1];
       
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
@@ -416,17 +426,19 @@ classdef RigidBody < handle
         switch (lower(char(thisNode.getNodeName())))
           case 'box'
             s = str2num(char(thisNode.getAttribute('size')));
+            shape = struct('type',RigidBody.BOX,'T',T,'params',s);  % s/2
             
             cx = s(1)/2*[-1 1 1 -1 -1 1 1 -1];
             cy = s(2)/2*[1 1 1 1 -1 -1 -1 -1];
             cz = s(3)/2*[1 1 -1 -1 -1 -1 1 1];
             
-            pts = T*[cx;cy;cz;ones(1,8)];
+            pts = T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
             x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
             
           case 'cylinder'
             r = str2num(char(thisNode.getAttribute('radius')));
             l = str2num(char(thisNode.getAttribute('length')));
+            shape = struct('type',RigidBody.CYLINDER,'T',T,'params',[r,l]);  % l/2
             
             % treat it as a box, for collisions
             warning('for efficiency, cylinder geometry will be treated like a box for 3D collisions'); 
@@ -434,16 +446,17 @@ classdef RigidBody < handle
             cy = r*[1 1 1 1 -1 -1 -1 -1];
             cz = l/2*[1 1 -1 -1 -1 -1 1 1];
               
-            pts = T*[cx;cy;cz;ones(1,8)];
+            pts = T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
             x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
               
           case 'sphere'
             r = str2num(char(thisNode.getAttribute('radius')));
+            shape = struct('type',RigidBody.SPHERE,'T',T,'params',r);
             if (r~=0)
               warning('for efficiency, 3D sphere geometry will be treated like a point (at the center of the sphere)');
             end
             cx=0; cy=0; cz=0;
-            pts = T*[0;0;0;1];
+            pts = T(1:end-1,:)*[0;0;0;1];
             x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
 
           case 'mesh'
@@ -461,8 +474,10 @@ classdef RigidBody < handle
               pts=regexp(txt,'point \[([^\]]*)\]','tokens'); pts = pts{1}{1};
               pts=strread(pts,'%f','delimiter',' ,');
               pts=reshape(pts,3,[]);
+              pts=T(1:end-1,:)*[pts;ones(1,size(pts,2))];
               x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
             end
+            shape = struct('type',RigidBody.MESH,'T',T,'params',pts);
 
            otherwise
             % intentionally blank

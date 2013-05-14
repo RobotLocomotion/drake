@@ -6,9 +6,10 @@ MEXEXT = $(shell $(MATLABROOT)/bin/mexext)
 MEX_CPP_FILES = realtime.cpp
 MEXFILES = $(MEX_CPP_FILES:%.cpp=%.$(MEXEXT))
 
-CFLAGS = 
-
 all : $(MEXFILES)
+
+debug: MEX += -g
+debug: all 
 
 $(MEXFILES): %.$(MEXEXT) : %.cpp
 	$(MEX) -O $^ $(CFLAGS)

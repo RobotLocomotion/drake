@@ -1,6 +1,9 @@
 
 # Note: make will automatically delete intermediate files (google "make chains of implicit rules")
 
+CC = gcc
+CXX = g++
+
 LCMFILES = $(shell find . -iname "*.lcm" | tr "\n" " " | sed "s|\./||g")
 SUBDIRS:=$(shell grep -v "^\#" tobuild.txt)
 
@@ -27,6 +30,16 @@ all: java c
 		$(MAKE) -C $$subdir all || exit 2; \
 	done
 
+debug: CXX += -g
+debug: CC += -g
+debug: java c 
+	@for subdir in $(SUBDIRS); do \
+		echo "\n-------------------------------------------"; \
+		echo "-- $$subdir"; \
+		echo "-------------------------------------------"; \
+		$(MAKE) -C $$subdir debug || exit 2; \
+	done
+
 java : drake.jar
 
 c : drake.a 
@@ -47,7 +60,7 @@ util/LCMCoder.class : util/LCMCoder.java util/CoordinateFrameData.class
 	javac $<
 
 %.o : %.c
-	gcc -c -I include/ $< -o $@ $(LCM_CFLAGS) $(EIGEN_CFLAGS)
+	$(CC) -c -I include/ $< -o $@ $(LCM_CFLAGS) $(EIGEN_CFLAGS)
 
 %.c : %.lcm
 	@if grep -i package $< ; then echo "\n *** ERROR: $< has a package specified.  Don't do that. *** \n"; exit 1; fi
