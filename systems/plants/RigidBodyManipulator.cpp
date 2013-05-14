@@ -340,6 +340,17 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
 }
 
 RigidBodyManipulator::~RigidBodyManipulator() {
+
+#ifdef BULLET_COLLISION
+	/*
+  for (int i=0; i<num_bodies; i++) {
+	  for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[i].collision_objects.begin(); iter!=bodies[i].collision_objects.end(); iter++) {
+	  	bt_collision_world.removeCollisionObject(iter->bt_obj);
+	  }
+  }*/
+#endif
+
+
   delete[] pitch;
   delete[] parent;
   delete[] Xtree;
@@ -368,18 +379,6 @@ RigidBodyManipulator::~RigidBodyManipulator() {
   delete[] cached_q;
   delete[] cached_qd;
 
-
-#ifdef BULLET_COLLISION
-  for (int i=0; i<num_bodies; i++) {
-	  for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[i].collision_objects.begin(); iter!=bodies[i].collision_objects.end(); iter++) {
-	  	bt_collision_world.removeCollisionObject(iter->bt_obj);
-//	  	delete iter->bt_obj;
-//	  	delete iter->bt_shape;
-	  }
-	  bodies[i].collision_objects.clear();
-  }
-#endif
-
 }
 
 void RigidBodyManipulator::compile(void) 
@@ -394,6 +393,29 @@ void RigidBodyManipulator::compile(void)
   
   initialized=true;
 }
+
+#ifdef BULLET_COLLISION
+void RigidBodyManipulator::updateCollisionObjects(int body_ind)
+{
+	btMatrix3x3 rot;
+	btVector3 pos;
+	btTransform btT;
+	Matrix4d T;
+	for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[body_ind].collision_objects.begin(); iter!=bodies[body_ind].collision_objects.end(); iter++) {
+		T = bodies[body_ind].T*(iter->T);
+    	rot.setValue( T(1,1), T(2,1), T(3,1),
+    			T(1,2), T(2,2), T(3,2),
+    			T(1,3), T(2,3), T(3,3) );
+    	pos.setValue( T(1,4), T(2,4), T(3,4) );
+    	btT.setBasis(rot);
+    	btT.setOrigin(pos);
+
+    	iter->bt_obj->setWorldTransform(btT);
+    	bt_collision_world.updateSingleAabb(iter->bt_obj);
+	}
+
+}
+#endif
 
 void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivatives, double* qd)
 {
@@ -574,22 +596,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 
 #ifdef BULLET_COLLISION
     if (bodies[i].parent>=0) {
-    	btMatrix3x3 rot;
-    	btVector3 pos;
-    	btTransform btT;
-    	Matrix4d T;
-    	for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[i].collision_objects.begin(); iter!=bodies[i].collision_objects.end(); iter++) {
-    		T = bodies[i].T*(iter->T);
-        	rot.setValue( T(1,1), T(2,1), T(3,1),
-        			T(1,2), T(2,2), T(3,2),
-        			T(1,3), T(2,3), T(3,3) );
-        	pos.setValue( T(1,4), T(2,4), T(3,4) );
-        	btT.setBasis(rot);
-        	btT.setOrigin(pos);
-
-        	iter->bt_obj->setWorldTransform(btT);
-        	bt_collision_world.updateSingleAabb(iter->bt_obj);
-    	}
+    	updateCollisionObjects(i);
     }
 #endif
 

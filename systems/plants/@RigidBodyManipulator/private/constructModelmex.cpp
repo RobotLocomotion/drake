@@ -164,28 +164,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     		co.bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
     		co.bt_obj->activate();
     	} else {
-      	btMatrix3x3 rot;
-      	btVector3 pos;
-      	btTransform btT;
-      	Matrix4d T;
-      	for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[i].collision_objects.begin(); iter!=bodies[i].collision_objects.end(); iter++) {
-      		T = bodies[i].T*(iter->T);
-      		rot.setValue( T(1,1), T(2,1), T(3,1),
-      				T(1,2), T(2,2), T(3,2),
-      				T(1,3), T(2,3), T(3,3) );
-          pos.setValue( T(1,4), T(2,4), T(3,4) );
-          btT.setBasis(rot);
-          btT.setOrigin(pos);
-
-          iter->bt_obj->setWorldTransform(btT);
-          bt_collision_world.updateSingleAabb(iter->bt_obj);
-      	}
     		co.bt_obj->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
     	}
 
     	// add to the body
     	model->bodies[i].collision_objects.push_back(co);
     }
+    if (model->bodies[i].parent<0)
+    	model->updateCollisionObjects(i);  // update static objects only once - right here on load
 #endif
   }
   

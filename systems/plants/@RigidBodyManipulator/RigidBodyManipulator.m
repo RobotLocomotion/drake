@@ -804,6 +804,7 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function fr = constructStateFrame(model)
+      frame_dims=[];
       for i=1:length(model.name)
         joints={};
         for j=1:length(model.body)
@@ -816,12 +817,13 @@ classdef RigidBodyManipulator < Manipulator
             else
               joints = vertcat(joints,{b.jointname});
             end
+            frame_dims(b.dofnum)=i;
           end
         end
         coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
         fr{i} = SingletonCoordinateFrame([model.name{i},'State'],length(coordinates),'x',coordinates);
       end
-      frame_dims=[model.body(arrayfun(@(a) ~isempty(a.parent),model.body)).robotnum];
+%      frame_dims=[model.body(arrayfun(@(a) ~isempty(a.parent),model.body)).robotnum];
       frame_dims=[frame_dims,frame_dims];
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
