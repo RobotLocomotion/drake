@@ -25,7 +25,7 @@ function [ltvsys,V] = tvlqr(obj,xtraj,utraj,Q,R,Qf,options)
 % in the following ybar = y-y0, where y0(t) = output(obj,t,x0(t),u0(t))
 % @option Qy adds terms of the form ybar'*Qy{1}*ybar + ybar'*Qy{2} + Qy{3}. @default all zeros
 % @option Ny adds terms of the form 2*ybar'*Ny*ubar.  @default 0.
-% @option ydtraj adds terms of the form (ybar - ybar_d)'*Qy{1}*(ybar - ybar_d) + (ybar - ybar+d)'*Qy{2}. @default 0
+% @option ydtraj adds terms of the form (ybar - ybar_d)'*Qy{1}*(ybar - ybar_d) + (ybar - ybar_d)'*Qy{2}. @default 0
 %
 
 if (nargin<7) options=struct(); end

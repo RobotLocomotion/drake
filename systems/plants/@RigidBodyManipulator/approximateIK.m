@@ -76,6 +76,12 @@ while i<=length(varargin)
     [x,J] = getCOM(obj,kinsol);
   else
     [x,J] = forwardKin(obj,kinsol,body_ind,body_pos,(rows==6));
+    if (rows==6)
+      % make sure desired/current angles are unwrapped
+      unwrapped = unwrap([x(4:6), world_pos(4:6)],[],2);
+      x(4:6) = unwrapped(1:3,1);
+      world_pos(4:6) = unwrapped(1:3,2);
+    end
   end
   
   % build equality constraints
