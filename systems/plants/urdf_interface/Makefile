@@ -2,13 +2,14 @@
 CXX = g++
 CFLAGS = $(shell pkg-config --cflags tinyxml)
 
+all: CXX += -O3
 all: joint.o link.o
 
 debug: CXX += -g
-debug: all 
+debug: joint.o link.o
 
 %.o : %.cpp 
-	$(CXX) -O3 $< -c $(CFLAGS) -I..
+	$(CXX) $< -c $(CFLAGS) -I..
 
 clean : 
 	-rm -f *.o

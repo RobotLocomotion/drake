@@ -38,53 +38,37 @@ void mexErrMsgIdandTxt(const char *errorid, const char *errormsg, ...)
   exit(1);
 }
 
-URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, const string & root_dir, const string& floating_base_type)
+URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string & root_dir)
 : 
-  RigidBodyManipulator((int)jointname_to_jointnum.size()),
-  joint_map(jointname_to_jointnum),
+  RigidBodyManipulator((int)jointname_to_jointnum.size()+6,-1,(int)jointname_to_jointnum.size()),
+  joint_map(jointname_to_jointnum), dof_map(dofname_to_dofnum),
           urdf_model(_urdf_model)
 {
-    // set up floating base
+	// set up floating base
     // note: i see no harm in adding the floating base here (even if the drake version does not have one)
     // because the base will be set to 0 and it adds minimal expense to the kinematic calculations
   {
     this->bodies[0].linkname = "_world";
     this->parent[0] = -1;
     this->pitch[0] = INF;
-    this->bodies[1].linkname = this->bodies[1].jointname = "base_x";
-    this->bodies[1].T_body_to_joint << 0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
-    
-    this->parent[1] = 0;
-    this->pitch[1] = INF;
-    this->bodies[2].linkname = this->bodies[2].jointname = "base_y";
-    this->bodies[2].T_body_to_joint << 1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
-    
-    this->parent[2] = 1;
-    this->pitch[2] = INF;
-    this->bodies[3].linkname = this->bodies[3].jointname = "base_z";
-    
-    this->parent[3] = 2;
-    this->pitch[3] = 0;
-    this->bodies[4].linkname = this->bodies[4].jointname = "base_roll";
-    this->bodies[4].T_body_to_joint << 0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1;
-    
-    this->parent[4] = 3;
-    this->pitch[4] = 0;
-    this->bodies[5].linkname = this->bodies[5].jointname = "base_pitch";
-    this->bodies[5].T_body_to_joint << 1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1;
-    
-    this->parent[5] = 4;
-    this->pitch[5] = 0;
-    this->bodies[6].linkname = this->bodies[6].jointname = "base_yaw";
+    this->bodies[1].linkname = this->bodies[1].jointname = "floating_base";
+    this->bodies[1].T_body_to_joint = Matrix4d::Identity();
+    this->bodies[1].floating = 1;
+
+    this->bodies[1].dofnum=0;
   }
   
   int index=0;
   for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=urdf_model->joints_.begin(); j!=urdf_model->joints_.end(); j++) {
     map<string, int>::iterator jn=joint_map.find(j->first);
     if (jn == joint_map.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->first.c_str());
+    map<string, int>::iterator dn=dof_map.find(j->first);
+    if (dn == dof_map.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->first.c_str());
+
     index = jn->second;
     this->bodies[index+1].jointname = j->second->name;
     this->bodies[index+1].linkname = j->second->child_link_name;
+    this->bodies[index+1].dofnum = dn->second;
     
     // set parent
     if (!j->second->parent_link_name.empty()) {
@@ -96,11 +80,14 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
         this->parent[index] = j2->second;
 //          printf("%s parent %d\n",j->second->child_link_name.c_str(),j2->second);
       } else {
-        this->parent[index] = 5;  // no parent: attach it to the floating base
-        this->bodies[6].linkname = j->second->parent_link_name;
+        this->parent[index] = 0;  // no parent: attach it to the floating base
+        if (bodies[1].linkname.compare("floating_base")==0)
+        	this->bodies[1].linkname = j->second->parent_link_name;
+        else
+        	bodies[1].linkname += "+" + j->second->parent_link_name;
       }
     } else {
-      this->parent[index] = 5;  // no parent: attach it to the floating base
+      this->parent[index] = 0;  // no parent: attach it to the floating base
     }
     
     // set pitch
@@ -336,7 +323,6 @@ boost::shared_ptr<ModelInterface> parseURDF(const std::string &xml_string)
     }
   }
 
-
   // every link has children links and joints, but no parents, so we create a
   // local convenience data structure for keeping child->parent relations
   std::map<std::string, std::string> parent_link_tree;
@@ -363,7 +349,7 @@ boost::shared_ptr<ModelInterface> parseURDF(const std::string &xml_string)
 
 }
 
-void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, std::map<std::string, int> & jointname_to_jointnum)
+void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, std::map<std::string, int> & jointname_to_jointnum, std::map<std::string, int> & dofname_to_dofnum)
 {
   std::map<std::string, int>::iterator ans = jointname_to_jointnum.find(j->name);
   if (ans != jointname_to_jointnum.end()) // then i've already got a joint num
@@ -378,7 +364,7 @@ void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shar
       if (plink->second->parent_joint.get()) {
         // j has a parent
 //        printf("  ");
-        setJointNum(urdf_model,plink->second->parent_joint,jointname_to_jointnum);
+        setJointNum(urdf_model,plink->second->parent_joint,jointname_to_jointnum,dofname_to_dofnum);
       }
     }
   }
@@ -389,22 +375,18 @@ void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shar
     case urdf::Joint::PRISMATIC:
     case urdf::Joint::FIXED:
       jointname_to_jointnum.insert(std::make_pair(j->name,(int)jointname_to_jointnum.size()));
+      dofname_to_dofnum.insert(std::make_pair(j->name,(int)dofname_to_dofnum.size()));
       break;
     case urdf::Joint::FLOATING:
-      ROS_ERROR("(internal) FLOATING joints not supported yet.");
-      // the problem is that if the joint name here is not the same as 
-      // j->name, then future searches will fail.  it's not hard to 
-      // accomodate, but i'll skip it on the first pass
-
-      jointname_to_jointnum.insert(std::make_pair(j->name+"_x",(int)jointname_to_jointnum.size()));
-      jointname_to_jointnum.insert(std::make_pair(j->name+"_y",(int)jointname_to_jointnum.size()));
-      jointname_to_jointnum.insert(std::make_pair(j->name+"_z",(int)jointname_to_jointnum.size()));
-      jointname_to_jointnum.insert(std::make_pair(j->name+"_roll",(int)jointname_to_jointnum.size()));
-      jointname_to_jointnum.insert(std::make_pair(j->name+"_pitch",(int)jointname_to_jointnum.size()));
-      jointname_to_jointnum.insert(std::make_pair(j->name+"_yaw",(int)jointname_to_jointnum.size()));
-
-      // idea: could also insert the original joint name
-      jointname_to_jointnum.insert(std::make_pair(j->name,-1));
+      ROS_ERROR("(internal) FLOATING joints implemented, but not tested yet.");
+      // actually, i'll have to update the way that I set num_dof in the call to the RigidBodyManipulator constructor, too.
+      jointname_to_jointnum.insert(std::make_pair(j->name,(int)jointname_to_jointnum.size()));
+      dofname_to_dofnum.insert(std::make_pair(j->name + "_x",(int)dofname_to_dofnum.size()));
+      dofname_to_dofnum.insert(std::make_pair(j->name + "_y",(int)dofname_to_dofnum.size()));
+      dofname_to_dofnum.insert(std::make_pair(j->name + "_z",(int)dofname_to_dofnum.size()));
+      dofname_to_dofnum.insert(std::make_pair(j->name + "_roll",(int)dofname_to_dofnum.size()));
+      dofname_to_dofnum.insert(std::make_pair(j->name + "_pitch",(int)dofname_to_dofnum.size()));
+      dofname_to_dofnum.insert(std::make_pair(j->name + "_yaw",(int)dofname_to_dofnum.size()));
       break;
     case urdf::Joint::PLANAR:
       ROS_ERROR("PLANAR joints not supported yet.");
@@ -428,26 +410,26 @@ URDFRigidBodyManipulator* loadURDFfromXML(const std::string &xml_string, const s
   // the floating base joints.  But if these transformations are unused,
   // then they will simply stay at zero.
   std::map<std::string, int> jointname_to_jointnum;
+  std::map<std::string, int> dofname_to_dofnum;
   {  
-    int jointnum=0;
-    jointname_to_jointnum.insert(std::make_pair("base_x",jointnum++));
-    jointname_to_jointnum.insert(std::make_pair("base_y",jointnum++));
-    jointname_to_jointnum.insert(std::make_pair("base_z",jointnum++));
-    jointname_to_jointnum.insert(std::make_pair("base_roll",jointnum++));
-    jointname_to_jointnum.insert(std::make_pair("base_pitch",jointnum++));
-    jointname_to_jointnum.insert(std::make_pair("base_yaw",jointnum++));
+    int dofnum=0;
+    jointname_to_jointnum.insert(std::make_pair("floating_base",0));
+    dofname_to_dofnum.insert(std::make_pair("base_x",dofnum++));
+    dofname_to_dofnum.insert(std::make_pair("base_y",dofnum++));
+    dofname_to_dofnum.insert(std::make_pair("base_z",dofnum++));
+    dofname_to_dofnum.insert(std::make_pair("base_roll",dofnum++));
+    dofname_to_dofnum.insert(std::make_pair("base_pitch",dofnum++));
+    dofname_to_dofnum.insert(std::make_pair("base_yaw",dofnum++));
     
     for (std::map<std::string, boost::shared_ptr<urdf::Joint> >::iterator j=urdf_model->joints_.begin(); j!=urdf_model->joints_.end(); j++)
-      setJointNum(urdf_model,j->second,jointname_to_jointnum);
+      setJointNum(urdf_model,j->second,jointname_to_jointnum,dofname_to_dofnum);
     
 //    for (std::map<std::string, int>::iterator j=jointname_to_jointnum.begin(); j!=jointname_to_jointnum.end(); j++)
 //      printf("%s : %d\n",j->first.c_str(),j->second);
   }
   
   // now populate my model class
-  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator(urdf_model,jointname_to_jointnum,root_dir);
-  
-
+  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator(urdf_model,jointname_to_jointnum,dofname_to_dofnum,root_dir);
   return model;
 }
 
@@ -473,7 +455,7 @@ URDFRigidBodyManipulator* loadURDFfromFile(const std::string &urdf_filename)
   
   boost::filesystem::path mypath(urdf_filename);
   std::string pathname(mypath.parent_path().native());
-  
+
   // parse URDF to get model
   return loadURDFfromXML(xml_string,pathname);
 }

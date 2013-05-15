@@ -44,6 +44,8 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
   glEnable (GL_RESCALE_NORMAL);
 */
+
+  Vector3d pose;
   
   // iterate over each link and draw
   for (std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator l=self->model->urdf_model->links_.begin(); l!=self->model->urdf_model->links_.end(); l++) {
@@ -55,10 +57,10 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
         if (j2 == self->model->joint_map.end()) continue;  // this shouldn't happen, but just in case...
         body_ind = j2->second+1;
       } else {
-        body_ind = 6;  // then it's attached directly to the floating base
+        body_ind = 1;  // then it's attached directly to the floating base
       }
       
-      MatrixXd pose = self->model->forwardKin(body_ind,zero,2);
+      self->model->forwardKin(body_ind,zero,2,pose);
 //      cout << l->second->name << " is at " << pose.transpose() << endl;
       
       double* posedata = pose.data();
@@ -149,7 +151,8 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
       {
         if (self->model) delete self->model;
         self->model = loadURDFfromFile(msg->command_data);
-        MatrixXd q0 = MatrixXd::Zero(self->model->NB,1);
+        break;
+        MatrixXd q0 = MatrixXd::Zero(self->model->num_dof,1);
         self->model->doKinematics(q0.data());
       }
       break;
@@ -168,11 +171,11 @@ static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * chan
   
   if (!self->model) return;
   
-  MatrixXd q = MatrixXd::Zero(self->model->NB,1);
+  MatrixXd q = MatrixXd::Zero(self->model->num_dof,1);
   
   for (int i=0; i<msg->num_joints; i++)
   {
-    map<string, int>::iterator iter = self->model->joint_map.find(msg->joint_name[i]);
+    map<string, int>::iterator iter = self->model->dof_map.find(msg->joint_name[i]);
     if (iter==self->model->joint_map.end())
       cerr << "couldn't find joint named " << msg->joint_name[i] << endl;
     else {
@@ -187,7 +190,7 @@ static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * chan
   // some debugging info
   cout << "q = " << q.transpose() << endl;
   const Vector4d zero(0,0,0,1);
-  for (int i=0; i<=self->model->NB; i++) {
+  for (int i=0; i<=self->model->num_bodies; i++) {
     cout << "forward kin: " << self->model->bodies[i].linkname << " is at " << self->model->forwardKin(i,zero,2).transpose() << ", joint:" << self->model->bodies[i].jointname << endl;
   } 
 */
@@ -211,7 +214,7 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
   
   renderer->draw = my_draw;
   renderer->destroy = my_free;
-  renderer->name = new char[strlen(name)];
+  renderer->name = new char[strlen(name)+1];
   strcpy(renderer->name,name);
   renderer->enabled = 1;
   renderer->user = self;

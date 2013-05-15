@@ -25,6 +25,9 @@ MEX_CPPFILES = deleteModelmex.cpp \
 
 MEXFILES = $(MEX_CPPFILES:%.cpp=%.$(MEXEXT)) 
 
+all: CXX += -O3
+all: CC += -O3
+all: MEX += -O
 all : $(MEXFILES) urdf.o 
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
@@ -46,14 +49,13 @@ debug: $(MEXFILES) urdf.o
 	done
 
 RigidBodyManipulator.o : RigidBodyManipulator.cpp RigidBodyManipulator.h RigidBody.h
-	$(CXX) -O3 $< -c -fPIC $(EIGEN_CFLAGS) $(BULLET_CFLAGS) 
+	$(CXX) $< -c $(EIGEN_CFLAGS) $(BULLET_CFLAGS) 
 
 %.$(MEXEXT) : %.cpp RigidBodyManipulator.o
-	$(MEX) -O $^ $(EIGEN_CFLAGS) $(BULLET_CFLAGS) $(BULLET_LIBS)
+	$(MEX) $^ $(EIGEN_CFLAGS) $(BULLET_CFLAGS) $(BULLET_LIBS)
 
 urdf.o : urdf.cpp RigidBodyManipulator.o
-	$(CXX) -O3 $< -c $(EIGEN_CFLAGS) $(BOTVIS_CFLAGS) 
-
+	$(CXX) $< -c $(EIGEN_CFLAGS) $(BOTVIS_CFLAGS) $(BULLET_CFLAGS)
 
 clean: 
 	-rm -f $(MEXFILES) RigidBodyManipulator.o urdf.o
