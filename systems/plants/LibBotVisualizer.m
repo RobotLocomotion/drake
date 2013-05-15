@@ -9,10 +9,19 @@ classdef LibBotVisualizer < Visualizer
 %    draw
 %    playbackMovie
 %    lcmglwrappers
-    function obj = LibBotVisualizer(urdf_filename)
+    function obj = LibBotVisualizer(urdf_filename,options)
       typecheck(urdf_filename,'char');
       urdf_filename = GetFullPath(urdf_filename);
-      manip = RigidBodyManipulator(urdf_filename,struct('visual',false,'visual_geometry',false,'collision',false));
+      if (nargin<2) options=struct(); end
+      options.visual = false;
+      options.visual_geometry = false;
+      options.collision = false;
+      if isfield(options,'floating') && ~(options.floating == 0 || options.floating == 1 || isempty(options.floating) || strcmp(options.floating,'rpy'))
+        error('only the default floating base (rpy) is currently supported by this visualizer');
+        % one solution would be to convert in this file before sending...
+      end
+        
+      manip = RigidBodyManipulator(urdf_filename,options);
       obj = obj@Visualizer(getStateFrame(manip));
 
       %      obj = addRobotFromURDF(obj,urdf_filename);
