@@ -18,7 +18,7 @@ classdef LibBotVisualizer < Visualizer
       options.collision = false;
       if isfield(options,'floating') && ~(options.floating == 0 || options.floating == 1 || isempty(options.floating) || strcmp(options.floating,'rpy'))
         error('only the default floating base (rpy) is currently supported by this visualizer');
-        % one solution would be to convert in this file before sending...
+        % one solution would be to convert coordinates in this file before sending...
       end
         
       manip = RigidBodyManipulator(urdf_filename,options);
@@ -31,12 +31,13 @@ classdef LibBotVisualizer < Visualizer
       lc = lcm.lcm.LCM.getSingleton();
       lc.publish('DRAKE_VIEWER_COMMAND',vc);
 
+      nq = getNumDOF(manip);
       obj.state_msg = drake.systems.plants.viewer.lcmt_robot_state();
       obj.state_msg.robot_name = manip.name{1};
-      obj.state_msg.num_joints = getNumDOF(manip);
-      obj.state_msg.joint_name = manip.getStateFrame.coordinates(1:getNumDOF(manip));
-      obj.state_msg.joint_position = single(zeros(2,1));
-      obj.state_msg.joint_velocity = single(zeros(2,1));
+      obj.state_msg.num_joints = nq;
+      obj.state_msg.joint_name = manip.getStateFrame.coordinates(1:nq);
+      obj.state_msg.joint_position = single(zeros(nq,1));
+      obj.state_msg.joint_velocity = single(zeros(nq,1));
     end
     
     function drawWrapper(obj,t,y)

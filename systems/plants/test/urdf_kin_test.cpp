@@ -10,15 +10,16 @@ int main(int argc, char* argv[])
   // todo: pull urdf filename off the command line
   URDFRigidBodyManipulator* model = loadURDFfromFile("../../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
 //  URDFRigidBodyManipulator* model = loadURDFfromFile("/Users/russt/drc/software/models/mit_gazebo_models/mit_robot/model.urdf");
+  if (!model) return -1;
   
   // run kinematics with second derivatives 100 times
-  double q[34];
+  VectorXd q(model->num_dof,1);
   int i;
   
   for (int n=0; n<20; n++) {
     for (i=0; i<34; i++)  
-      q[i]=(double)rand() / RAND_MAX;
-    model->doKinematics(q,true);
+      q(i)=(double)rand() / RAND_MAX;
+    model->doKinematics(q.data(),true);
   }
   
   const Vector4d zero(0,0,0,1);
