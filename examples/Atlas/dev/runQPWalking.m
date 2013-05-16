@@ -58,11 +58,14 @@ options.q_nom = q0;
 rfoot_body = r.findLink('r_foot');
 lfoot_body = r.findLink('l_foot');
 
+disp('Computing motion plan.');
 htraj = [];
 for i=1:length(ts)
   t = ts(i);
   if (i>1)
-    q(:,i) = inverseKin(r,q(:,i-1),0,[comtraj.eval(t);nan],rfoot_body,[0;0;0],rfoottraj.eval(t),lfoot_body,[0;0;0],lfoottraj.eval(t),options);
+      q(:,i) = inverseKin(r,q(:,i-1),0,[comtraj.eval(t);nan],[],[],[],...
+        rfoot_body,[0;0;0],rfoottraj.eval(t),[],[],[],...
+        lfoot_body,[0;0;0],lfoottraj.eval(t),[],[],[],options);
   else
     q = q0;
   end
@@ -83,7 +86,9 @@ fnplt(comtraj(2));
 subplot(3,1,3); hold on;
 fnplt(htraj);
 
-limp = LinearInvertedPendulum(htraj);
+disp('Computing ZMP TVLQR.');
+%limp = LinearInvertedPendulum(htraj); % variable height formulation
+limp = LinearInvertedPendulum(com(3));
 [~,V] = ZMPtracker(limp,zmptraj);
 
 hddot = fnder(htraj,2);
@@ -130,6 +135,7 @@ outs(1).output = 1;
 sys = mimoFeedback(pd,sys,[],[],[],outs);
 clear outs;
 
+disp('Running walking controller.');
 S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
 output_select(1).system=1;
 output_select(1).output=1;
