@@ -45,27 +45,26 @@ classdef QPController < MIMODrakeSystem
     end
    
     if options.exclude_torso
-      % free_dof we perform unconstrained minimization to compute 
-      % accelerations and solve for inputs (then threshold).
-      % these should be the joints for which the columns of the contact
-      % jacobian are zero. The remaining dofs are indexed in cnstr_dof.
-      % NOTE: this is highly atlas specific right now
-      jn = getJointNames(r);
-      torso = ~cellfun(@isempty,strfind(jn(2:end),'arm')) + ...
-                    ~cellfun(@isempty,strfind(jn(2:end),'neck')) + ...
-                    ~cellfun(@isempty,strfind(jn(2:end),'back'));
-      B = getB(r);
-      obj.free_dof = find(torso);
+      % perform unconstrained minimization to compute accelerations for a 
+      % subset of atlas DOF, then solve for inputs (then threshold).
+      % generally these should be the joints for which the columns of the 
+      % contact jacobian are zero. The remaining dofs are indexed in con_dof.
+      state_names = r.getStateFrame.coordinates(1:getNumDOF(r));
+      obj.free_dof = find(~cellfun(@isempty,strfind(state_names,'arm')) + ...
+                    ~cellfun(@isempty,strfind(state_names,'neck')));
       obj.con_dof = setdiff(1:getNumDOF(r),obj.free_dof)';
-      obj.free_inputs = find(B'*torso);
-      obj.con_inputs = find(B'*torso==0);
+      
+      input_names = r.getInputFrame.coordinates;
+      obj.free_inputs = find(~cellfun(@isempty,strfind(input_names,'arm')) | ~cellfun(@isempty,strfind(input_names,'neck')));
+      obj.con_inputs = setdiff(1:getNumInputs(r),obj.free_inputs)';
     else
       obj.free_dof = [];
-      obj.con_dof = (1:getNumDOF(r))';
+      obj.con_dof = 1:getNumDOF(r);
       obj.free_inputs = [];
-      obj.con_inputs = (1:getNumInputs(r))';
+      obj.con_inputs = 1:getNumInputs(r);
     end
-
+    
+    
     obj.nu = getNumInputs(r);
     obj.nq = getNumDOF(r);
     if (~isfield(options,'R'))
