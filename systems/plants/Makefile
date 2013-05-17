@@ -13,9 +13,7 @@ CFLAGS += $(shell pkg-config --cflags eigen3)
 #LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
 
 # botvis (not required for mex files)
-BOTVIS_CFLAGS = 
-#BOTVIS_CFLAGS = $(shell pkg-config --cflags bot2-vis)
-
+BOTVIS_CFLAGS = $(shell pkg-config --cflags bot2-vis)
 
 SUBDIRS:=$(shell grep -v "^\#" tobuild.txt)
 

@@ -13,7 +13,7 @@ LDFLAGS += $(shell pkg-config --libs)
 LDFLAGS += -L/opt/local/lib -lboost_filesystem-mt -lboost_system-mt
 
 # bot-vis (required for urdf.cpp)
-#LDFLAGS += $(shell pkg-config --libs bot2-vis)
+LDFLAGS += $(shell pkg-config --libs bot2-vis)
 
 # add bullet
 #CFLAGS += $(shell pkg-config --cflags bullet)
