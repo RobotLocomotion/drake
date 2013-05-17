@@ -49,6 +49,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
     // because the base will be set to 0 and it adds minimal expense to the kinematic calculations
   {
     this->bodies[0].linkname = "_world";
+    this->bodies[0].parent = -1;
     this->parent[0] = -1;
     this->pitch[0] = INF;
     this->bodies[1].linkname = this->bodies[1].jointname = "floating_base";
@@ -186,6 +187,7 @@ boost::shared_ptr<ModelInterface> parseURDF(const std::string &xml_string)
   model->clear();
 
   TiXmlDocument xml_doc;
+  return model;
   xml_doc.Parse(xml_string.c_str());
 
   TiXmlElement *robot_xml = xml_doc.FirstChildElement("robot");

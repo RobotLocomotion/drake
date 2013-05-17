@@ -2,7 +2,7 @@
 #ifndef URDF_H
 #define URDF_H
 
-#define BOT_VIS_SUPPORT  // adds a bunch of dependencies, which are not necessary for all functionality
+//#define BOT_VIS_SUPPORT  // adds a bunch of dependencies, which are not necessary for all functionality
 
 #include "RigidBodyManipulator.h"
 #include "urdf_interface/model.h"

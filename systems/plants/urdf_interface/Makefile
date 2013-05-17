@@ -1,6 +1,6 @@
 
 CXX = g++
-CFLAGS = $(shell pkg-config --cflags tinyxml)
+CFLAGS = 
 
 all: CXX += -O3
 all: joint.o link.o
