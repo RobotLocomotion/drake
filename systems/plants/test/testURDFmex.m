@@ -1,5 +1,12 @@
 function testURDFmex
 
+if (~exist('urdf_kin_test','file'))
+  warning('testURDFmex requires that urdf_kin_test is built (from the command line).  skipping this test');
+  return;
+end
+
+tol = 1e-4; % low tolerance because i'm writing finite precision strings to and from the ascii terminal
+
 for urdf = {'FallingBrick.urdf',...
     '../../../examples/FurutaPendulum/FurutaPendulum.urdf', ...
     '../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'};
@@ -8,18 +15,18 @@ for urdf = {'FallingBrick.urdf',...
   fprintf(1,'testing %s\n', urdffile);
   r = RigidBodyManipulator(urdffile,struct('floating',true));
   
-  q = zeros(getNumDOF(r),1);
+  q = 0*rand(getNumDOF(r),1);
   kinsol = doKinematics(r,q);
   
-  [retval,out] = system(['./urdf_kin_test ',urdffile,sprintf(' %f',q)]);
+  [retval,outstr] = system(['./urdf_kin_test ',urdffile,sprintf(' %f',q)]);
   valuecheck(retval,0);
-  out = textscan(out,'%f','delimiter',',');
-  out = reshape(out{1},6,[])';
+  out = textscan(outstr,'%s %f %f %f %f %f %f');%,'delimiter',',');
   
   for i=1:getNumBodies(r)
-    fprintf(1,'%s\n',getLinkName(r,i));
-    x = forwardKin(r,kinsol,i,zeros(3,1),1);
-    valuecheck(out(i,:)',x);
+    b = findLink(r,out{1}{i});
+    pt = cellfun(@(a) a(i),out(2:end))';
+    x = forwardKin(r,kinsol,b,zeros(3,1),1);
+    valuecheck(pt,x,tol);  
   end
   
 end

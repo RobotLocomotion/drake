@@ -48,88 +48,108 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
     // note: i see no harm in adding the floating base here (even if the drake version does not have one)
     // because the base will be set to 0 and it adds minimal expense to the kinematic calculations
   {
-    this->bodies[0].linkname = "_world";
-    this->bodies[0].parent = -1;
-    this->parent[0] = -1;
-    this->pitch[0] = INF;
-    this->bodies[1].linkname = this->bodies[1].jointname = "floating_base";
-    this->bodies[1].T_body_to_joint = Matrix4d::Identity();
-    this->bodies[1].floating = 1;
-
-    this->bodies[1].dofnum=0;
+    bodies[0].linkname = "world";
+    bodies[0].parent = -1;
   }
   
-  int index=0;
-  for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=urdf_model->joints_.begin(); j!=urdf_model->joints_.end(); j++) {
-    map<string, int>::iterator jn=joint_map.find(j->first);
-    if (jn == joint_map.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->first.c_str());
-    map<string, int>::iterator dn=dof_map.find(j->first);
-    if (dn == dof_map.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->first.c_str());
+  for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=urdf_model->links_.begin(); l!=urdf_model->links_.end(); l++) {
+    int index, _dofnum;
+    if (l->second->parent_joint) {
+    	boost::shared_ptr<urdf::Joint> j = l->second->parent_joint;
+    	map<string, int>::iterator jn=joint_map.find(j->name);
+    	if (jn == joint_map.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->name.c_str());
+    	index = jn->second;
+      map<string, int>::iterator dn=dof_map.find(j->name);
+      if (dn == dof_map.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->name.c_str());
+      _dofnum = dn->second;
 
-    index = jn->second;
-    this->bodies[index+1].jointname = j->second->name;
-    this->bodies[index+1].linkname = j->second->child_link_name;
-    this->bodies[index+1].dofnum = dn->second;
-    
-    // set parent
-    if (!j->second->parent_link_name.empty()) {
-      std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator plink = urdf_model->links_.find(j->second->parent_link_name);
-      if (plink != urdf_model->links_.end() && plink->second->parent_joint.get()) {
-        // j has a parent, find its index
-        std::map<std::string, int>::iterator j2 = joint_map.find(plink->second->parent_joint->name);
-        if (j2 == joint_map.end()) ROS_ERROR("can't find index of parent %s of link %s.", plink->second->parent_joint->name.c_str(), plink->second->name.c_str());
-        this->parent[index] = j2->second;
-//          printf("%s parent %d\n",j->second->child_link_name.c_str(),j2->second);
-      } else {
-        this->parent[index] = 0;  // no parent: attach it to the floating base
-        if (bodies[1].linkname.compare("floating_base")==0)
-        	this->bodies[1].linkname = j->second->parent_link_name;
+    	bodies[index+1].linkname = l->first;
+    	bodies[index+1].jointname = j->name;
+
+    	{ // set up parent
+    		map<string, boost::shared_ptr<urdf::Link> >::iterator pl=urdf_model->links_.find(j->parent_link_name);
+    		if (pl == urdf_model->links_.end()) ROS_ERROR("can't find link %s.  this shouldn't happen", j->parent_link_name.c_str());
+
+    		if (pl->second->parent_joint) {
+    			boost::shared_ptr<urdf::Joint> pj = pl->second->parent_joint;
+    			map<string, int>::iterator pjn=joint_map.find(pj->name);
+    			if (pjn == joint_map.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", pj->name.c_str());
+
+    			bodies[index+1].parent = pjn->second+1;
+    			parent[index] = pjn->second;
+    		} else { // the parent body is the floating base
+    			bodies[index+1].parent = 1;
+    		}
+    	}
+
+    	bodies[index+1].dofnum = _dofnum;
+    	dofnum[index] = _dofnum;
+
+    	// set pitch and floating
+    	switch (j->type) {
+    	case urdf::Joint::PRISMATIC:
+    		pitch[index] = INF;
+    		bodies[index+1].pitch = INF;
+    		bodies[index+1].floating=0;
+    		break;
+      default:  // continuous, rotary, fixed, ...
+      	pitch[index] = 0.0;
+      	bodies[index+1].pitch = 0.0;
+      	bodies[index+1].floating=0;
+      	break;
       }
-    } else {
-      this->parent[index] = 0;  // no parent: attach it to the floating base
+
+      // setup kinematic tree
+      {
+        double x=j->parent_to_joint_origin_transform.position.x,
+                y=j->parent_to_joint_origin_transform.position.y,
+                z=j->parent_to_joint_origin_transform.position.z;
+        double qx,qy,qz,qw;
+        j->parent_to_joint_origin_transform.rotation.getQuaternion(qx,qy,qz,qw);
+        bodies[index+1].Ttree <<
+                qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, x,
+                2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, y,
+                2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, z,
+                0, 0, 0, 1;
+
+        Vector3d zvec; zvec << 0,0,1;
+        Vector3d joint_axis; joint_axis << j->axis.x, j->axis.y, j->axis.z;
+        Vector3d axis = joint_axis.cross(zvec);
+        double angle = acos(joint_axis.dot(zvec));
+        if (axis.squaredNorm()<.0001) //  then it's a scaling of the z axis.
+          axis << 0,1,0;
+        axis.normalize();
+        qw=cos(angle/2.0);
+        qx=axis(0)*sin(angle/2.0);
+        qy=axis(1)*sin(angle/2.0);
+        qz=axis(2)*sin(angle/2.0);
+
+        bodies[index+1].T_body_to_joint <<
+                qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, 0,
+                2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, 0,
+                2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, 0,
+                0, 0, 0, 1;
+      }
+
+    } else { // no joint, this link is attached directly to the floating base
+    	index = 0;   // todo: update this when i support multiple (floating) bodies
+
+    	// set up RigidBody (kinematics)
+    	bodies[index+1].linkname = l->first;
+    	bodies[index+1].jointname = "floating_base";
+    	bodies[index+1].parent = 0;
+    	bodies[index+1].dofnum = 0;  // todo: update this when i support multiple (floating) bodies
+      bodies[index+1].floating = 1;
+      // pitch is irrelevant
+      bodies[index+1].Ttree = Matrix4d::Identity();
+      bodies[index+1].T_body_to_joint = Matrix4d::Identity();
+
+      // todo: set up featherstone structure (dynamics)
+      parent[index] = -1;
+      dofnum[index] = 0;
     }
-    
-    // set pitch
-    switch (j->second->type) {
-      case urdf::Joint::PRISMATIC:
-        this->pitch[index] = INF;
-        break;
-      default:  // continuous, rotary, fixed, ... 
-        this->pitch[index] = 0.0;
-        break;
-    }
-    
-    // setup kinematic tree
-    {
-      double x=j->second->parent_to_joint_origin_transform.position.x,
-              y=j->second->parent_to_joint_origin_transform.position.y,
-              z=j->second->parent_to_joint_origin_transform.position.z;
-      double qx,qy,qz,qw;
-      j->second->parent_to_joint_origin_transform.rotation.getQuaternion(qx,qy,qz,qw);
-      this->bodies[index+1].Ttree <<
-              qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, x,
-              2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, y,
-              2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, z,
-              0, 0, 0, 1;
-      
-      Vector3d zvec; zvec << 0,0,1;
-      Vector3d joint_axis; joint_axis << j->second->axis.x, j->second->axis.y, j->second->axis.z;
-      Vector3d axis = joint_axis.cross(zvec);
-      double angle = acos(joint_axis.dot(zvec));
-      if (axis.squaredNorm()<.0001) //  then it's a scaling of the z axis.
-        axis << 0,1,0;
-      axis.normalize();
-      qw=cos(angle/2.0);
-      qx=axis(0)*sin(angle/2.0);
-      qy=axis(1)*sin(angle/2.0);
-      qz=axis(2)*sin(angle/2.0);
-      
-      this->bodies[index+1].T_body_to_joint <<
-              qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, 0,
-              2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, 0,
-              2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, 0,
-              0, 0, 0, 1;
-    }
+
+
   }
 
 #ifdef BOT_VIS_SUPPORT
