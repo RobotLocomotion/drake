@@ -2,10 +2,20 @@
 CC = gcc
 CXX = g++
 
-EIGEN_CFLAGS = $(shell pkg-config --cflags eigen3)
-BOTVIS_CFLAGS = $(shell pkg-config --cflags bot2-vis)
-BULLET_CFLAGS = $(shell pkg-config --cflags bullet)
-BULLET_LIBS = $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
+CFLAGS = -I.
+LDFLAGS = 
+
+# eigen3
+CFLAGS += $(shell pkg-config --cflags eigen3)
+
+# bullet
+#CFLAGS += $(shell pkg-config --cflags bullet)
+#LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
+
+# botvis (not required for mex files)
+BOTVIS_CFLAGS = 
+#BOTVIS_CFLAGS = $(shell pkg-config --cflags bot2-vis)
+
 
 SUBDIRS:=$(shell grep -v "^\#" tobuild.txt)
 
@@ -49,13 +59,13 @@ debug: $(MEXFILES) urdf.o
 	done
 
 RigidBodyManipulator.o : RigidBodyManipulator.cpp RigidBodyManipulator.h RigidBody.h
-	$(CXX) $< -c $(EIGEN_CFLAGS) $(BULLET_CFLAGS) 
+	$(CXX) $< -c $(CFLAGS)
 
 %.$(MEXEXT) : %.cpp RigidBodyManipulator.o
-	$(MEX) $^ $(EIGEN_CFLAGS) $(BULLET_CFLAGS) $(BULLET_LIBS)
+	$(MEX) $^ $(CFLAGS) $(LDFLAGS)
 
 urdf.o : urdf.cpp RigidBodyManipulator.o
-	$(CXX) $< -c $(EIGEN_CFLAGS) $(BOTVIS_CFLAGS) $(BULLET_CFLAGS)
+	$(CXX) $< -c $(CFLAGS) $(BOTVIS_CFLAGS) 
 
 clean: 
 	-rm -f $(MEXFILES) RigidBodyManipulator.o urdf.o

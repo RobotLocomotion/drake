@@ -1,7 +1,7 @@
 
 #include <iostream>
 #include <cstdlib>
-#include <urdf.h>
+#include "urdf.h"
 
 using namespace std;
 
@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
   int i;
   
   for (int n=0; n<20; n++) {
-    for (i=0; i<34; i++)  
+    for (i=0; i<model->num_dof; i++)
       q(i)=(double)rand() / RAND_MAX;
     model->doKinematics(q.data(),true);
   }
@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
   const Vector4d zero(0,0,0,1);
   Vector3d pt;
   
-  for (i=0; i<=model->NB; i++) {
+  for (i=0; i<=model->num_bodies; i++) {
     model->forwardKin(i,zero,1,pt);
     cout << "forward kin: " << model->bodies[i].linkname << " is at " << pt << endl;
   } 
