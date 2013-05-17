@@ -45,7 +45,7 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
   glEnable (GL_RESCALE_NORMAL);
 */
 
-  Vector3d pose;
+  Matrix<double,7,1> pose;
   
   // iterate over each link and draw
   for (std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator l=self->model->urdf_model->links_.begin(); l!=self->model->urdf_model->links_.end(); l++) {
