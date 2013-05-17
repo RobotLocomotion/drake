@@ -34,8 +34,9 @@ int main(int argc, char* argv[])
   for (i=0; i<model->num_bodies; i++) {
     model->forwardKin(i,zero,1,pt);
 //    cout << i << ": forward kin: " << model->bodies[i].linkname << " is at " << pt.transpose() << endl;
+    cout << model->bodies[i].linkname << " ";
     for (int j=0; j<pt.size(); j++)
-    	cout << pt(j) << ",";
+    	cout << pt(j) << " ";
     cout << endl;
   } 
   

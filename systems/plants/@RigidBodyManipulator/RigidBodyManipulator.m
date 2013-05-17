@@ -457,7 +457,7 @@ classdef RigidBodyManipulator < Manipulator
       if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
       if (length(ind)~=1)
         if (nargin<3 || throw_error)
-          error(['couldn''t find unique link ' ,linkname]);
+          error('couldn''t find unique link %s',linkname);
         else 
           body=[];
         end
