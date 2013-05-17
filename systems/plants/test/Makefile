@@ -3,14 +3,14 @@ CXX = g++
 
 # urdf interface and tinyxml
 CFLAGS = -I.. -I../tinyxml
-LDFLAGS = ../urdf_interface/link.o ../urdf_interface/joint.o ../tinyxml/tinyxml.o ../tinyxml/tinyxmlparser.o ../tinyxml/tinyxmlerror.o ../tinyxml/tinystr.o
+LDFLAGS = ../urdf_interface/link.o ../urdf_interface/joint.o ../tinyxml/tinyxml.o ../tinyxml/tinyxmlparser.o ../tinyxml/tinyxmlerror.o 
 
 # eigen3
 CFLAGS += $(shell pkg-config --cflags eigen3)
 LDFLAGS += $(shell pkg-config --libs)
 
 # boost
-LDFLAGS += -lboost_filesystem-mt -lboost_system-mt
+LDFLAGS += -L/opt/local/lib -lboost_filesystem-mt -lboost_system-mt
 
 # bot-vis (required for urdf.cpp)
 #LDFLAGS += $(shell pkg-config --libs bot2-vis)

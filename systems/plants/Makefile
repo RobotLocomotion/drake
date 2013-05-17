@@ -2,7 +2,7 @@
 CC = gcc
 CXX = g++
 
-CFLAGS = -I.
+CFLAGS = -I. 
 LDFLAGS = 
 
 # eigen3
@@ -65,7 +65,7 @@ RigidBodyManipulator.o : RigidBodyManipulator.cpp RigidBodyManipulator.h RigidBo
 	$(MEX) $^ $(CFLAGS) $(LDFLAGS)
 
 urdf.o : urdf.cpp RigidBodyManipulator.o
-	$(CXX) $< -c $(CFLAGS) $(BOTVIS_CFLAGS) 
+	$(CXX) $< -c -Itinyxml $(CFLAGS) $(BOTVIS_CFLAGS) 
 
 clean: 
 	-rm -f $(MEXFILES) RigidBodyManipulator.o urdf.o

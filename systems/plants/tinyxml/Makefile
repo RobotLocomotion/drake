@@ -13,10 +13,6 @@ DEBUG          := NO
 # PROFILE can be set to YES to include profiling info, or NO otherwise
 PROFILE        := NO
 
-# TINYXML_USE_STL can be used to turn on STL support. NO, then STL
-# will not be used. YES will include the STL files.
-TINYXML_USE_STL := YES
-
 #****************************************************************************
 
 CC     := gcc
@@ -56,11 +52,6 @@ endif
 # Preprocessor directives
 #****************************************************************************
 
-ifeq (YES, ${TINYXML_USE_STL})
-  DEFS := -DTIXML_USE_STL
-else
-  DEFS :=
-endif
 
 #****************************************************************************
 # Include paths
@@ -81,7 +72,7 @@ CXXFLAGS := ${CXXFLAGS} ${DEFS}
 # Source files
 #****************************************************************************
 
-SRCS := tinyxml.cpp tinyxmlparser.cpp tinyxmlerror.cpp tinystr.cpp
+SRCS := tinyxml.cpp tinyxmlparser.cpp tinyxmlerror.cpp
 
 # Add on the sources for libraries
 SRCS := ${SRCS}
@@ -110,12 +101,12 @@ dist:
 	bash makedistlinux
 
 clean:
-	-rm -f core ${OBJS} ${OUTPUT}
+	-rm -f ${OBJS} ${OUTPUT}
 
 depend:
 	#makedepend ${INCS} ${SRCS}
 
-tinyxml.o: tinyxml.h tinystr.h
-tinyxmlparser.o: tinyxml.h tinystr.h
-xmltest.o: tinyxml.h tinystr.h
-tinyxmlerror.o: tinyxml.h tinystr.h
+tinyxml.o: tinyxml.h 
+tinyxmlparser.o: tinyxml.h 
+xmltest.o: tinyxml.h 
+tinyxmlerror.o: tinyxml.h 

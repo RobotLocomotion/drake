@@ -43,6 +43,7 @@ distribution.
 #define DEBUG
 #endif
 
+#define TIXML_USE_STL   // added by Russ (so I don't have to pass it in everytime I reference this header)
 #ifdef TIXML_USE_STL
 	#include <string>
  	#include <iostream>
