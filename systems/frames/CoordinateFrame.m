@@ -9,6 +9,7 @@ classdef CoordinateFrame < handle
     dim=0;          % scalar dimension of this coordinate system
     transforms={};  % handles to CoordinateTransform objects
 
+    name_hash;      % unique hash of the string name
     coordinates={}; % list of coordinate names
 
     poly=[];        % optional msspoly variables for this frame
@@ -36,6 +37,7 @@ classdef CoordinateFrame < handle
       
       typecheck(name,'char');
       obj.name = name;
+      obj.name_hash = java.lang.String(obj.name).hashCode();
       
       typecheck(dim,'double');
       sizecheck(dim,[1 1]);
