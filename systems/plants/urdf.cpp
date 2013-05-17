@@ -40,7 +40,7 @@ void mexErrMsgIdandTxt(const char *errorid, const char *errormsg, ...)
 
 URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string & root_dir)
 : 
-  RigidBodyManipulator((int)jointname_to_jointnum.size()+6,-1,(int)jointname_to_jointnum.size()),
+  RigidBodyManipulator((int)dofname_to_dofnum.size(),-1,(int)jointname_to_jointnum.size()+1),
   joint_map(jointname_to_jointnum), dof_map(dofname_to_dofnum),
           urdf_model(_urdf_model)
 {
@@ -84,8 +84,6 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
         this->parent[index] = 0;  // no parent: attach it to the floating base
         if (bodies[1].linkname.compare("floating_base")==0)
         	this->bodies[1].linkname = j->second->parent_link_name;
-        else
-        	bodies[1].linkname += "+" + j->second->parent_link_name;
       }
     } else {
       this->parent[index] = 0;  // no parent: attach it to the floating base
@@ -135,7 +133,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
   }
 
 #ifdef BOT_VIS_SUPPORT
-  // load mesh geometry
+  // load geometry
   for (std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator l=urdf_model->links_.begin(); l!=urdf_model->links_.end(); l++) {
     if (l->second->visual) { // then at least one default visual tag exists
       map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
@@ -455,7 +453,9 @@ URDFRigidBodyManipulator* loadURDFfromFile(const std::string &urdf_filename)
   }
   
   boost::filesystem::path mypath(urdf_filename);
-  std::string pathname(mypath.parent_path().native());
+  std::string pathname;
+  if (mypath.has_parent_path())
+  	pathname = mypath.parent_path().native();
 
   // parse URDF to get model
   return loadURDFfromXML(xml_string,pathname);

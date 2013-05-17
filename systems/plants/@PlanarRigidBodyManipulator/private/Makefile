@@ -8,13 +8,14 @@ MEXFILES = $(MEX_CPP_FILES:%.cpp=%.$(MEXEXT))
 
 EIGEN_CFLAGS = $(shell pkg-config --cflags eigen3)
 
+all : MEX += -O
 all : $(MEXFILES)
 
 debug: MEX += -g
 debug: $(MEXFILES)
 
 $(MEXFILES): %.$(MEXEXT) : %.cpp 
-	$(MEX) -O $^ $(EIGEN_CFLAGS) 
+	$(MEX) $^ $(EIGEN_CFLAGS) 
 
 clean:
 	-rm -f *.$(MEXEXT)

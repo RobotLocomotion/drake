@@ -77,6 +77,14 @@ classdef RigidBodyManipulator < Manipulator
       n = obj.num_q;
     end
     
+    function n = getNumBodies(obj)
+      n = length(obj.body);
+    end
+    
+    function str = getLinkName(obj,body_ind)
+      str = obj.body(body_ind).linkname;
+    end
+    
     function obj = setGravity(obj,grav)
       sizecheck(grav,size(obj.gravity));
       obj.gravity = grav;

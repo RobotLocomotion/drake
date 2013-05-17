@@ -53,7 +53,7 @@ if (any(abs(val(:)-desired_val(:))>tol))
     tf = false;
 %    warning(['Values don''t match.  Expected ', mat2str(desired_val), ' but got ', mat2str(val)]);
   else
-    if (ndims(val)<=2 && length(val)<=5)
+    if (ndims(val)<=2 && length(val)<=6)
       % clean before printing
       desired_val(abs(desired_val)<tol/2)=0;
       val(abs(val)<tol/2)=0;
@@ -69,9 +69,10 @@ if (any(abs(val(:)-desired_val(:))>tol))
       for i=1:numel(ind)
         b = cellfun(@(b) b(i),a);
         indstr = ['(',sprintf('%d,',b(1:end-1)), sprintf('%d)',b(end))];
-        errstr = [errstr, sprintf('%15s %15f\n',indstr,err(ind(i)))];
+        errstr = [errstr, sprintf('%10s %12f %15f\n',indstr,val(ind(i)),desired_val(ind(i)))];
       end
-      error('Values don''t match.  (Sparse representation of) the errors: \n%s', errstr);
+      error('Values don''t match.\n    Index       Value       Desired Value\n   -------     --------    ---------------\n%s', errstr);
+      
     end
   end
 end
