@@ -1,4 +1,9 @@
-classdef LibBotVisualizer < Visualizer
+classdef BotVisualizer < Visualizer
+  % Wraps the visualizer functionality around the drake libbot visualizer
+  % (externally compiled program).  
+  % Note: unlike other visualizers, only one BotVisualizer window can be
+  % open at a time (multiple BotVisualizer class instances will share the
+  % same viewer)
 
   methods
 %    constructor (with optional urdf arg and call to addRobotFromURDF) 
@@ -9,7 +14,19 @@ classdef LibBotVisualizer < Visualizer
 %    draw
 %    playbackMovie
 %    lcmglwrappers
-    function obj = LibBotVisualizer(urdf_filename,options)
+    function obj = BotVisualizer(urdf_filename,options)
+      
+      if ~exist([getDrakePath(),'/bin/drake_viewer'],'file')
+        error('can''t find drake_viewer executable.  you might need to run make (from the shell).  note: BotVisualizer is not supported on windows yet');
+      end
+      
+      % check if there is an instance of drake_viewer already running
+      [~,ck] = system('ps ax | grep -c -i drake_viewer');
+      if (str2num(ck)<2) 
+        % if not, then launch one...
+        retval = system(['export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &']);
+      end
+
       typecheck(urdf_filename,'char');
       urdf_filename = GetFullPath(urdf_filename);
       if (nargin<2) options=struct(); end

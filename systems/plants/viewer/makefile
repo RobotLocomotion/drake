@@ -24,17 +24,22 @@ LDFLAGS += ../../../drake.a
 CFLAGS += $(shell pkg-config --cflags bullet)
 LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
 
+BINDIR = ../../../bin
+
 all: CC += -O3
-all: drake_viewer
+all: $(BINDIR)/drake_viewer lcmgl_test
 
 debug: CC += -g
-debug: drake_viewer
+debug: $(BINDIR)/drake_viewer lcmgl_test
 
-drake_viewer : main.cpp drake_urdf_renderer.o drake_urdf_renderer.h 
-	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS) -lboost_filesystem-mt -lboost_system-mt 
+$(BINDIR)/drake_viewer : main.cpp drake_urdf_renderer.o drake_urdf_renderer.h
+	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS)
+
+lcmgl_test : lcmgl_test.cpp
+	$(CC) $^ -o $@ $(shell pkg-config --cflags --libs lcm bot2-lcmgl-client)
 
 %.o : %.cpp %.h
 	$(CC) -c $< $(CFLAGS)
 
 clean: 
-	-rm -rf *.o drake_viewer*
+	-rm -rf *.o $(BINDIR)/drake_viewer*

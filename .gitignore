@@ -109,3 +109,6 @@ include/lcmt_huboplus_state.h
 include/lcmt_robot_state.h
 include/lcmt_viewer_command.h
 .matlabroot
+bin/drake_viewer.dSYM
+drake_viewer
+data_t.java

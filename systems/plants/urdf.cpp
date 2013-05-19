@@ -502,7 +502,7 @@ URDFRigidBodyManipulator* loadURDFfromXML(const std::string &xml_string, const s
   std::map<std::string, int> dofname_to_dofnum;
   {  
     int dofnum=0;
-    jointname_to_jointnum.insert(std::make_pair("floating_base",0));
+    jointname_to_jointnum.insert(std::make_pair("base",0));
     dofname_to_dofnum.insert(std::make_pair("base_x",dofnum++));
     dofname_to_dofnum.insert(std::make_pair("base_y",dofnum++));
     dofname_to_dofnum.insert(std::make_pair("base_z",dofnum++));

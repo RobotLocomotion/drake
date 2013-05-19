@@ -37,12 +37,13 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
   const Vector4d zero(0,0,0,1);
   double theta, axis[3], quat[4];
   
-/*  
-  glEnable(GL_LIGHTING);
-  glEnable(GL_COLOR_MATERIAL);
-  glEnable(GL_BLEND);
-  glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+  // todo: move these to setup?
+  /*
+  glEnable (GL_BLEND);
   glEnable (GL_RESCALE_NORMAL);
+  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glShadeModel (GL_SMOOTH);
+  glEnable (GL_LIGHTING);
 */
 
   Matrix<double,7,1> pose;
@@ -111,7 +112,8 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
         } else if (type == urdf::Geometry::BOX) {
           boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(vptr->geometry));
           glScalef(box->dim.x,box->dim.y,box->dim.z);
-          glutSolidCube(1.0);
+//          glutSolidCube(1.0);
+          bot_gl_draw_cube();
         } else if  (type == urdf::Geometry::CYLINDER) {
           boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(vptr->geometry));
           
