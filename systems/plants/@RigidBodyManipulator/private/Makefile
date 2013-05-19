@@ -10,7 +10,7 @@ CFLAGS = $(shell pkg-config --cflags eigen3)
 LDFLAGS = 
 
 # add bullet
-CFLAGS += $(shell pkg-config --cflags bullet)
+CFLAGS += $(shell pkg-config --cflags bullet) -DBULLET_COLLISION
 LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
 
 all : MEX += -O

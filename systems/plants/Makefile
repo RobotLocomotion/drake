@@ -9,7 +9,7 @@ LDFLAGS =
 CFLAGS += $(shell pkg-config --cflags eigen3)
 
 # bullet
-CFLAGS += $(shell pkg-config --cflags bullet)
+CFLAGS += $(shell pkg-config --cflags bullet) -DBULLET_COLLISION
 LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
 
 # botvis (not required for mex files)

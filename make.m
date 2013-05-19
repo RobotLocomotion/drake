@@ -49,6 +49,7 @@ else
       mexMakeRule('HandCmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
       mexMakeRule('doKinematicsmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
       mexMakeRule('forwardKinmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
+      mexMakeRule('bodyKinmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
       
       %    SuperUsers: fix the snoptflags for your platform and uncomment.
       %    will try to make compilation robust soon.
