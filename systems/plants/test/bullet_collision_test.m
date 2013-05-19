@@ -68,7 +68,7 @@ q(6)=randn;
 for x=linspace(-2*(bnd.xmax-bnd.xmin),0,20);
   q(1)=x;
   kinsol = doKinematics(r,q);
-  [ptsA,ptsB] = pairwiseContactTest(r,kinsol,2,3)
+  [ptsA,ptsB] = pairwiseContactTest(r,kinsol,2,3);
   
   if (0) debugLCMGL(r,v,kinsol,ptsA,ptsB); end % use botvis
   if (1)  debugPlot(r,kinsol,ptsA,ptsB); end % use matlab plotting
@@ -82,12 +82,12 @@ q(6+(4:6)) = randn(3,1);
 for x=linspace(-2*(bnd.xmax-bnd.xmin),0,20);
   q(1)=x;
   kinsol = doKinematics(r,q);
-  [ptsA,ptsB] = pairwiseContactTest(r,kinsol,2,3)
+  [ptsA,ptsB] = pairwiseContactTest(r,kinsol,2,3);
   
   if (0) debugLCMGL(r,v,kinsol,ptsA,ptsB); end % use botvis
   if (1)  debugPlot(r,kinsol,ptsA,ptsB); end % use matlab plotting
   
-  pause;
+  pause(.1);
 end
 
 
