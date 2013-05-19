@@ -69,7 +69,8 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
       glPushMatrix();
       glTranslatef(pose(0),pose(1),pose(2));
       glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]); 
-      
+
+      // todo: iterate over all visual groups (not just "default")
       map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
       if (v_grp_it == l->second->visual_groups.end()) continue;
 

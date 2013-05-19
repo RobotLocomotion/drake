@@ -1,7 +1,7 @@
 #ifndef __RigidBodyManipulator_H__
 #define __RigidBodyManipulator_H__
 
-//#define BULLET_COLLISION  // adds a bunch of dependencies, which are not necessary for all functionality
+#define BULLET_COLLISION  // adds a bunch of dependencies, which are not necessary for all functionality
 
 #include <Eigen/Dense>
 #include <set>
@@ -133,8 +133,7 @@ public:
 
   void updateCollisionObjects(int body_ind);
 
-  template <typename Derived>
-  void getPairwiseCollision(const int body_ind1, const int body_ind2);
+  bool getPairwiseCollision(const int body_ind1, const int body_ind2);
 #endif
 };
 

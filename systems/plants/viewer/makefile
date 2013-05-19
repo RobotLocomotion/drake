@@ -21,8 +21,8 @@ CFLAGS += -I../../../include
 LDFLAGS += ../../../drake.a
 
 # add bullet
-#CFLAGS += $(shell pkg-config --cflags bullet)
-#LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
+CFLAGS += $(shell pkg-config --cflags bullet)
+LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
 
 all: CC += -O3
 all: drake_viewer
