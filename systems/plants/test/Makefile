@@ -16,7 +16,7 @@ LDFLAGS += -L/opt/local/lib -lboost_filesystem-mt -lboost_system-mt
 LDFLAGS += $(shell pkg-config --libs bot2-vis)
 
 # add bullet
-CFLAGS += $(shell pkg-config --cflags bullet)
+CFLAGS += $(shell pkg-config --cflags bullet) -DBULLET_COLLISION
 LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
 
 all: CXX += -O3

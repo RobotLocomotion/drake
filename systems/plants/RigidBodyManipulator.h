@@ -1,7 +1,7 @@
 #ifndef __RigidBodyManipulator_H__
 #define __RigidBodyManipulator_H__
 
-#define BULLET_COLLISION  // adds a bunch of dependencies, which are not necessary for all functionality
+//#define BULLET_COLLISION  // adds a bunch of dependencies, which are not necessary for all functionality
 
 #include <Eigen/Dense>
 #include <set>
