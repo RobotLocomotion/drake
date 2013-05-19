@@ -16,7 +16,16 @@ checkDirty(obj);
 
 if (kinsol.mex)
   if (isa(body_ind,'RigidBody')) body_ind = find(obj.body==body_ind,1); end
-  error('not implemented yet');
+
+  if (obj.mex_model_ptr==0)
+    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
+  end
+  if  ~isnumeric(pts)
+    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not valid because it was computed via mex, and you are now asking for an evaluation with non-numeric pts.  If you intended to use something like TaylorVar, then you must call doKinematics with use_mex = false');
+  end
+  
+  x = bodyKinmex(obj.mex_model_ptr.getData,kinsol.q,body_ind,pts);
+  
 else
   if ~all(abs(kinsol.q-[obj.body.cached_q]')<1e-8)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not longer valid.  Somebody has called doKinematics with a different q since the solution was computed.  If this happens a lot, I could consider returning the full T tree in kinsol, so I don''t have to rely on this caching mechanism');

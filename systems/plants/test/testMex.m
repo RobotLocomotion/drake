@@ -36,10 +36,9 @@ for i=1:100
   kinsol = p.doKinematics(rq,true,false);
   [x,J,dJ] = forwardKin(p,kinsol,rb,rp);
 
-  valuecheck(x,xm,1e-8);
-  valuecheck(J,Jm,1e-8);
-  valuecheck(dJ,dJm,1e-8);
-
+  valuecheck(xm,x,1e-8);
+  valuecheck(Jm,J,1e-8);
+  valuecheck(dJm,dJ,1e-8);
 end
 
 p = RigidBodyManipulator('../../../examples/FurutaPendulum/FurutaPendulum.urdf');
@@ -75,10 +74,12 @@ for i=1:100
   rp = rand(3,1);
   [xm,Jm,dJm] = forwardKin(p,kinsol,rb,rp);
   [commex,Jcommex,dJcommex]=getCOM(p,kinsol);
+  xbm = bodyKin(p,kinsol,rb,rp);
   
   kinsol=p.doKinematics(rq,true,false);
   [x,J,dJ] = forwardKin(p,kinsol,rb,rp);
   [com,Jcom,dJcom]=getCOM(p,kinsol);
+  xb = bodyKin(p,kinsol,rb,rp);
 
   valuecheck(x,xm,1e-8);
   valuecheck(J,Jm,1e-8);
@@ -88,5 +89,7 @@ for i=1:100
   valuecheck(com,commex,1e-8);
   valuecheck(Jcom,Jcommex,1e-8);
   valuecheck(dJcom,dJcommex,1e-8);
+  
+  valuecheck(xbm,xb);
 end
 

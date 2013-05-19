@@ -13,9 +13,9 @@ function [phi,Jphi] = pairwiseContactConstraint(obj,kinsol,body_indA,body_indB)
 % @retval Jphi the kinematic jacobian of phi
 
 if (nargout>1)
-  [ptsA,ptsB,JA,JB] = pairwiseContactTest(obj,kinsol,body_indA,body_indB)
+  [ptsA,ptsB,JA,JB] = pairwiseContactTest(obj,kinsol,body_indA,body_indB);
 else
-  [ptsA,ptsB] = pairwiseContactTest(obj,kinsol,body_indA,body_indB)
+  [ptsA,ptsB] = pairwiseContactTest(obj,kinsol,body_indA,body_indB);
 end
 
 if isempty(ptsA)
@@ -26,7 +26,7 @@ else
   phi = -p'*p;
   
   if (nargout>1)
-    dphi = -2*p'*(JA-JB);
+    Jphi = -2*p'*(JA-JB);
   end
 end
 

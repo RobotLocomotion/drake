@@ -26,6 +26,7 @@ MEX_CPPFILES = deleteModelmex.cpp \
 	doKinematicsmex.cpp \
 	forwardKinmex.cpp \
 	collisionmex.cpp \
+	bodyKinmex.cpp \
 	deleteModelpmex.cpp \
 	doKinematicspmex.cpp \
 	HandCpmex.cpp \

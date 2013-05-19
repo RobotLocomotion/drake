@@ -411,7 +411,6 @@ void RigidBodyManipulator::updateCollisionObjects(int body_ind)
     	pos.setValue( T(0,3), T(1,3), T(2,3) );
     	btT.setOrigin(pos);
 
-    	std::cerr << "T[" << body_ind << "] = " << T << std::endl;
     	iter->bt_obj->setWorldTransform(btT);
     	bt_collision_world.updateSingleAabb(iter->bt_obj);
 	}
@@ -837,6 +836,14 @@ void RigidBodyManipulator::forwardKin(const int body_ind, const MatrixBase<Deriv
 }
 
 template <typename DerivedA, typename DerivedB>
+void RigidBodyManipulator::bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x)
+{
+  int dim=3, n_pts = pts.cols();
+  MatrixXd Tinv = bodies[body_ind].T.inverse();
+  x = Tinv.topLeftCorner(dim,dim+1)*pts;
+}
+
+template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJac(const int body_ind, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
 {
   int dim = 3, n_pts = pts.cols();
@@ -1112,6 +1119,7 @@ template void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d >
 //template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vector4d > &, const int, MatrixBase< MatrixXd > &);
 //template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
 //template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
+template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &);
 
 template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
 template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
