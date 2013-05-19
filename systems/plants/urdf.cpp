@@ -38,6 +38,19 @@ void mexErrMsgIdandTxt(const char *errorid, const char *errormsg, ...)
   exit(1);
 }
 
+void poseToTransform(const urdf::Pose& pose, Matrix4d& T)
+{
+  double x=pose.position.x,
+          y=pose.position.y,
+          z=pose.position.z;
+  double qx,qy,qz,qw;
+  pose.rotation.getQuaternion(qx,qy,qz,qw);
+  T <<    qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, x,
+          2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, y,
+          2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, z,
+          0, 0, 0, 1;
+}
+
 URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string & root_dir)
 : 
   RigidBodyManipulator((int)dofname_to_dofnum.size(),-1,(int)jointname_to_jointnum.size()+1),
@@ -101,21 +114,13 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
 
       // setup kinematic tree
       {
-        double x=j->parent_to_joint_origin_transform.position.x,
-                y=j->parent_to_joint_origin_transform.position.y,
-                z=j->parent_to_joint_origin_transform.position.z;
-        double qx,qy,qz,qw;
-        j->parent_to_joint_origin_transform.rotation.getQuaternion(qx,qy,qz,qw);
-        bodies[index+1].Ttree <<
-                qw*qw + qx*qx - qy*qy - qz*qz, 2*qx*qy - 2*qw*qz, 2*qx*qz + 2*qw*qy, x,
-                2*qx*qy + 2*qw*qz,  qw*qw + qy*qy - qx*qx - qz*qz, 2*qy*qz - 2*qw*qx, y,
-                2*qx*qz - 2*qw*qy, 2*qy*qz + 2*qw*qx, qw*qw + qz*qz - qx*qx - qy*qy, z,
-                0, 0, 0, 1;
+      	poseToTransform(j->parent_to_joint_origin_transform,bodies[index+1].Ttree);
 
         Vector3d zvec; zvec << 0,0,1;
         Vector3d joint_axis; joint_axis << j->axis.x, j->axis.y, j->axis.z;
         Vector3d axis = joint_axis.cross(zvec);
         double angle = acos(joint_axis.dot(zvec));
+        double qx,qy,qz,qw;
         if (axis.squaredNorm()<.0001) //  then it's a scaling of the z axis.
           axis << 0,1,0;
         axis.normalize();
@@ -149,13 +154,10 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
       dofnum[index] = 0;
     }
 
-
-  }
-
 #ifdef BOT_VIS_SUPPORT
-  // load geometry
-  for (std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator l=urdf_model->links_.begin(); l!=urdf_model->links_.end(); l++) {
+    // load geometry
     if (l->second->visual) { // then at least one default visual tag exists
+      // todo: iterate over all visual groups (not just "default")
       map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
       for (size_t iv = 0;iv < v_grp_it->second->size();iv++)
       {
@@ -189,8 +191,76 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
         }
       }
     }
-  }  
 #endif
+
+#ifdef BULLET_COLLISION
+    if (l->second->collision) { // then at least one collision element exists
+      // todo: iterate over all collision groups (not just "default")
+      map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Collision> > > >::iterator c_grp_it = l->second->collision_groups.find("default");
+      for (size_t ic = 0;ic < c_grp_it->second->size();ic++)
+      {
+        vector<boost::shared_ptr<urdf::Collision> > *collisions = c_grp_it->second.get();
+        for (vector<boost::shared_ptr<urdf::Collision> >::iterator citer = collisions->begin(); citer!=collisions->end(); citer++)
+        {
+          urdf::Collision * cptr = citer->get();
+          if (!cptr) continue;
+
+        	RigidBody::CollisionObject co;
+        	co.bt_obj = new btCollisionObject();
+          int type = cptr->geometry->type;
+        	switch (type) {
+        	case urdf::Geometry::BOX:
+            {
+          	  boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(cptr->geometry));
+          	  co.bt_shape = new btBoxShape( btVector3(box->dim.x/2,box->dim.y/2,box->dim.z/2) );
+            }
+        		break;
+        	case urdf::Geometry::SPHERE:
+           	{
+          		boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(cptr->geometry));
+          		co.bt_shape = new btSphereShape(sphere->radius) ;
+          	}
+        		break;
+        	case urdf::Geometry::CYLINDER:
+          	{
+          		boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(cptr->geometry));
+          		co.bt_shape = new btCylinderShapeZ( btVector3(cyl->radius,cyl->radius,cyl->length/2) );
+          	}
+        		break;
+        	case urdf::Geometry::MESH:
+          	{
+          	  // not implemented yet
+          	}
+        		break;
+        	default:
+        		cerr << "Link " << l->first << " has a collision element with an unknown type " << type << endl;
+        		break;
+        	}
+
+        	co.bt_obj->setCollisionShape(co.bt_shape);
+        	poseToTransform(cptr->origin,co.T);
+
+        	// add to the manipulator's collision world
+        	bt_collision_world.addCollisionObject(co.bt_obj);
+
+        	if (bodies[index+1].parent>=0) {
+        		co.bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+        		co.bt_obj->activate();
+        	} else {
+        		co.bt_obj->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
+        	}
+
+        	// add to the body
+        	bodies[index+1].collision_objects.push_back(co);
+        }
+      }
+      if (bodies[index+1].parent<0)
+      	updateCollisionObjects(index+1);  // update static objects only once - right here on load
+    }
+#endif
+
+  }
+
 
   compile();  
 }

@@ -403,10 +403,10 @@ void RigidBodyManipulator::updateCollisionObjects(int body_ind)
 	Matrix4d T;
 	for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[body_ind].collision_objects.begin(); iter!=bodies[body_ind].collision_objects.end(); iter++) {
 		T = bodies[body_ind].T*(iter->T);
-    	rot.setValue( T(1,1), T(2,1), T(3,1),
-    			T(1,2), T(2,2), T(3,2),
-    			T(1,3), T(2,3), T(3,3) );
-    	pos.setValue( T(1,4), T(2,4), T(3,4) );
+    	rot.setValue( T(0,0), T(1,0), T(2,0),
+    			T(0,1), T(1,1), T(2,1),
+    			T(0,2), T(1,2), T(2,2) );
+    	pos.setValue( T(0,3), T(1,3), T(2,3) );
     	btT.setBasis(rot);
     	btT.setOrigin(pos);
 
@@ -415,6 +415,12 @@ void RigidBodyManipulator::updateCollisionObjects(int body_ind)
 	}
 
 }
+
+bool RigidBodyManipulator::getPairwiseCollision(const int body_ind1, const int body_ind2)
+{
+  return false;
+}
+
 #endif
 
 void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivatives, double* qd)

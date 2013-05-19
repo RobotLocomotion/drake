@@ -9,8 +9,8 @@ LDFLAGS =
 CFLAGS += $(shell pkg-config --cflags eigen3)
 
 # bullet
-#CFLAGS += $(shell pkg-config --cflags bullet)
-#LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
+CFLAGS += $(shell pkg-config --cflags bullet)
+LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
 
 # botvis (not required for mex files)
 BOTVIS_CFLAGS = $(shell pkg-config --cflags bot2-vis)
@@ -25,6 +25,7 @@ MEX_CPPFILES = deleteModelmex.cpp \
 	HandCmex.cpp \
 	doKinematicsmex.cpp \
 	forwardKinmex.cpp \
+	collisionmex.cpp \
 	deleteModelpmex.cpp \
 	doKinematicspmex.cpp \
 	HandCpmex.cpp \
