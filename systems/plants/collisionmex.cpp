@@ -30,8 +30,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   {
   case 1:  // pairwiseCollision()
     {
-    	int body_ind1 = (int) mxGetScalar(prhs[2]), body_ind2 = (int) mxGetScalar(prhs[3]);
-      bool b = model->getPairwiseCollision(body_ind1,body_ind2);
+    	int body_indA = (int) mxGetScalar(prhs[2])-1, body_indB = (int) mxGetScalar(prhs[3])-1;
+      bool b = model->getPairwiseCollision(body_indA,body_indB);
       if (nlhs>0) plhs[0] = mxCreateLogicalScalar(b);
     }
   	break;

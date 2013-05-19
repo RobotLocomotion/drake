@@ -241,7 +241,12 @@ classdef MultiCoordinateFrame < CoordinateFrame
         error('frame matched multiple children.  child frames must be unique, otherwise the behavior could get confusing fast');
       end
     end
-        
+
+    function str = getCoordinateName(obj,i)
+      ind = obj.frame_id(i);
+      str = getCoordinateName(obj.frame{ind},find(obj.coord_ids{ind}==i));
+    end
+    
     function insys=setupMultiInput(obj,mdl,subsys)
       if ~valuecheck(obj.frame_id,sort(obj.frame_id))  % assume that the simple ordering is ok
         insys = [subsys,'inselector'];

@@ -5,7 +5,6 @@ r = RigidBodyManipulator();
 for i=1:2
   r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),struct('floating',true));
 end
-
 v = r.constructVisualizer();
 
 for i=1:20

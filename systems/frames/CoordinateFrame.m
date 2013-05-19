@@ -260,6 +260,10 @@ classdef CoordinateFrame < handle
         tf=obj.transforms{ind};
       end
     end
+    
+    function str = getCoordinateName(obj,i)
+      str = obj.coordinates{i};
+    end
         
     function setCoordinateNames(obj,cnames)
       % Updates the coordinate names
