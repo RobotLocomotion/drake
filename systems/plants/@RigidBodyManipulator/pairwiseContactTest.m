@@ -23,11 +23,16 @@ if (isa(body_indB,'RigidBody')) body_indB = find(obj.body==body_indB,1); end
 
 [ptsA,ptsB] = collisionmex(obj.mex_model_ptr.getData,1,body_indA,body_indB);
 
+if isempty(ptsA)
+  JA=[]; JB=[];
+  return;
+end
+
 if (nargin>2)
   x = bodyKin(obj,kinsol,body_indA,ptsA);
-  [~,JA] = forwardKin(obj,body_indA,x);
+  [~,JA] = forwardKin(obj,kinsol,body_indA,x);
 end
 if (nargin>3)
   x = bodyKin(obj,kinsol,body_indB,ptsB);
-  [~,JB] = forwardKin(obj,body_indB,x);
+  [~,JB] = forwardKin(obj,kinsol,body_indB,x);
 end
