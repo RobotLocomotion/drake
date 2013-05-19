@@ -59,7 +59,7 @@ debug: $(MEXFILES) urdf.o
 	done
 
 RigidBodyManipulator.o : RigidBodyManipulator.cpp RigidBodyManipulator.h RigidBody.h
-	$(CXX) $< -c $(CFLAGS)
+	$(CXX) $< -c $(CFLAGS) -fPIC
 
 %.$(MEXEXT) : %.cpp RigidBodyManipulator.o
 	$(MEX) $^ $(CFLAGS) $(LDFLAGS)
