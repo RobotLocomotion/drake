@@ -406,19 +406,42 @@ void RigidBodyManipulator::updateCollisionObjects(int body_ind)
     	rot.setValue( T(0,0), T(1,0), T(2,0),
     			T(0,1), T(1,1), T(2,1),
     			T(0,2), T(1,2), T(2,2) );
-    	pos.setValue( T(0,3), T(1,3), T(2,3) );
     	btT.setBasis(rot);
+    	pos.setValue( T(0,3), T(1,3), T(2,3) );
     	btT.setOrigin(pos);
 
+    	std::cerr << "T[" << body_ind << "] = " << T << std::endl;
     	iter->bt_obj->setWorldTransform(btT);
     	bt_collision_world.updateSingleAabb(iter->bt_obj);
 	}
 
 }
 
-bool RigidBodyManipulator::getPairwiseCollision(const int body_ind1, const int body_ind2)
+class MyCollisionResultCollector : public btCollisionWorld::ContactResultCallback
 {
-  return false;
+public:
+	bool bHasCollision;
+
+	MyCollisionResultCollector() : bHasCollision(false) {};
+
+	virtual	btScalar	addSingleResult(btManifoldPoint& cp,	const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0,const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
+	{
+		bHasCollision = true;
+		return 0;
+	}
+};
+
+
+bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int body_indB)
+{
+	MyCollisionResultCollector c;
+	for (std::vector<RigidBody::CollisionObject>::iterator iterA=bodies[body_indA].collision_objects.begin(); iterA!=bodies[body_indA].collision_objects.end(); iterA++) {
+		for (std::vector<RigidBody::CollisionObject>::iterator iterB=bodies[body_indB].collision_objects.begin(); iterB!=bodies[body_indB].collision_objects.end(); iterB++) {
+			bt_collision_world.contactPairTest(iterA->bt_obj,iterB->bt_obj,c);
+		}
+	}
+
+  return c.bHasCollision;
 }
 
 #endif

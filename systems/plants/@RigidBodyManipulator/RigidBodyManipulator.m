@@ -130,7 +130,15 @@ classdef RigidBodyManipulator < Manipulator
         error('there is already a joint connecting this child to a parent');
       end
       
-      child.jointname = regexprep(name, '\.', '_', 'preservecase');
+      jointname = regexprep(name, '\.', '_', 'preservecase');
+      if ismember(lower(jointname),lower({model.body.jointname}))
+        num = 2;
+        while ismember(lower([jointname,num2str(num)]),lower({model.body.jointname}))
+          num = num+1;
+        end
+        jointname = [jointname,num2str(num)];
+      end
+      child.jointname = jointname;
       child.parent = parent;
       
 %      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
@@ -222,60 +230,60 @@ classdef RigidBodyManipulator < Manipulator
 
       switch (joint_type)
         case 'rpy'  % extrinsic coordinates 
-          model = addJoint(model,['floating_base'],'floating_rpy',parent,rootlink,zeros(3,1),zeros(3,1));
+          model = addJoint(model,'base','floating_rpy',parent,rootlink,zeros(3,1),zeros(3,1));
 
         case 'quat'
-          model = addJoint(model,['floating_base'],'floating_quat',parent,rootlink,zeros(3,1),zeros(3,1));
+          model = addJoint(model,'base','floating_quat',parent,rootlink,zeros(3,1),zeros(3,1));
         
         case 'RPY'  % instrinsic coordinates
           body1 = newBody(model);
-          body1.linkname = ['base_x'];
+          body1.linkname = 'base_x';
           body1.robotnum=rootlink.robotnum;
           model.body = [model.body,body1];
           model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,[1;0;0],0);
           
           body2=newBody(model);
-          body2.linkname = ['base_y'];
+          body2.linkname = 'base_y';
           body2.robotnum=rootlink.robotnum;
           model.body = [model.body,body2];
           model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),[0;1;0],0);
           
           body3=newBody(model);
-          body3.linkname = ['base_z'];
+          body3.linkname = 'base_z';
           body3.robotnum=rootlink.robotnum;
           model.body = [model.body,body3];
           model = addJoint(model,body3.linkname,'prismatic',body2,body3,zeros(3,1),zeros(3,1),[0;0;1],0);
           
           body4=newBody(model);
-          body4.linkname = ['base_relative_roll'];
+          body4.linkname = 'base_relative_roll';
           body4.robotnum=rootlink.robotnum;
           model.body = [model.body,body4];
           model = addJoint(model,body4.linkname,'revolute',body3,body4,zeros(3,1),zeros(3,1),[1;0;0],0);
           
           body5=newBody(model);
-          body5.linkname = ['base_relative_pitch'];
+          body5.linkname = 'base_relative_pitch';
           body5.robotnum=rootlink.robotnum;
           model.body = [model.body,body5];
           model = addJoint(model,body5.linkname,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
           
-          model = addJoint(model,['base_relative_yaw'],'revolute',body5,rootlink,zeros(3,1),zeros(3,1),[0;0;1],0);
+          model = addJoint(model,'base_relative_yaw','revolute',body5,rootlink,zeros(3,1),zeros(3,1),[0;0;1],0);
           
         case 'YPR' % intrinsic
         
           body1 = newBody(model);
-          body1.linkname = ['base_x'];
+          body1.linkname = 'base_x';
           body1.robotnum=rootlink.robotnum;
           model.body = [model.body,body1];
           model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,[1;0;0],0);
           
           body2=newBody(model);
-          body2.linkname = ['base_y'];
+          body2.linkname = 'base_y';
           body2.robotnum=rootlink.robotnum;
           model.body = [model.body,body2];
           model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),[0;1;0],0);
           
           body3=newBody(model);
-          body3.linkname = ['base_z'];
+          body3.linkname = 'base_z';
           body3.robotnum=rootlink.robotnum;
           model.body = [model.body,body3];
           model = addJoint(model,body3.linkname,'prismatic',body2,body3,zeros(3,1),zeros(3,1),[0;0;1],0);
@@ -287,12 +295,12 @@ classdef RigidBodyManipulator < Manipulator
           model = addJoint(model,body4.linkname,'revolute',body3,body4,zeros(3,1),zeros(3,1),[0;0;1],0);
           
           body5=newBody(model);
-          body5.linkname = ['base_relative_pitch'];
+          body5.linkname = 'base_relative_pitch';
           body5.robotnum=rootlink.robotnum;
           model.body = [model.body,body5];
           model = addJoint(model,body5.linkname,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
           
-          model = addJoint(model,['base_relative_roll'],'revolute',body5,rootlink,zeros(3,1),zeros(3,1),[1;0;0],0);
+          model = addJoint(model,'base_relative_roll','revolute',body5,rootlink,zeros(3,1),zeros(3,1),[1;0;0],0);
 
         otherwise
           error('unknown floating base type');
@@ -819,9 +827,9 @@ classdef RigidBodyManipulator < Manipulator
           b = model.body(j);
           if ~isempty(b.parent) && b.robotnum==i
             if (b.floating==1)
-              joints = vertcat(joints,{'base_x';'base_y';'base_z';'base_roll';'base_pitch';'base_yaw'});
+              joints = vertcat(joints,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_roll'];[b.jointname,'_pitch'];[b.jointname,'_yaw']});
             elseif (b.floating==2)
-              joints = vertcat(joints,{'base_x';'base_y';'base_z';'base_qw';'base_qx';'base_qy';'base_qz'});
+              joints = vertcat(joints,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_qw'];[b.jointname,'_qx'];[b.jointname,'_qy'];[b.jointname,'_qz']});
             else
               joints = vertcat(joints,{b.jointname});
             end
