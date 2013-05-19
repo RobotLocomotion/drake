@@ -342,12 +342,13 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
 RigidBodyManipulator::~RigidBodyManipulator() {
 
 #ifdef BULLET_COLLISION
-	/*
   for (int i=0; i<num_bodies; i++) {
 	  for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[i].collision_objects.begin(); iter!=bodies[i].collision_objects.end(); iter++) {
 	  	bt_collision_world.removeCollisionObject(iter->bt_obj);
+	  	delete iter->bt_obj;
+	  	delete iter->bt_shape;
 	  }
-  }*/
+  }
 #endif
 
 
