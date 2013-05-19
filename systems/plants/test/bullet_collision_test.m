@@ -7,26 +7,128 @@ for i=1:2
 end
 %v = r.constructVisualizer();
 
-v = BotVisualizer('FallingBrick.urdf',struct('floating',true));
+%v = BotVisualizer('FallingBrick.urdf',struct('floating',true));
+%lcmgl = bot_lcmgl_init('contact_points');
 
-lcmgl = bot_lcmgl_init('contact_points');
+%q = randn(getNumDOF(r),1);
+q = zeros(getNumDOF(r),1);
 
-for i=1:20
-  q = randn(getNumDOF(r),1);
-  v.draw(0,[q;0*q]);
+kinsol = doKinematics(r,q);
+pts = contactPositions(r,kinsol);
+bnd.xmin=min(pts(1,:));
+bnd.xmax=max(pts(1,:));
+bnd.ymin=min(pts(2,:));
+bnd.ymax=max(pts(2,:));
+bnd.zmin=min(pts(3,:));
+bnd.zmax=max(pts(3,:));
+
+for x=linspace(-2*(bnd.xmax-bnd.xmin),0,20);
+  q(1)=x;
   
   kinsol = doKinematics(r,q);
+  [ptsA,ptsB] = pairwiseContactTest(r,kinsol,2,3);
   
-  b = pairwiseContactTest(r,2,3)
+  if (0) debugLCMGL(r,v,kinsol,ptsA,ptsB); end % use botvis
+  if (1)  debugPlot(r,kinsol,ptsA,ptsB); end % use matlab plotting
   
-  pts = contactPositions(r,kinsol);
+  should_have_contact = (bnd.xmax+x >= bnd.xmin);
+  assert(should_have_contact==~isempty(ptsA),'collision error');
+end
+q(1)=0;
+
+for y=linspace(-2*(bnd.ymax-bnd.ymin),0,20);
+  q(2)=y;
   
-  bot_lcmgl_color3f(lcmgl,0,0,1); 
-  for j=1:size(pts,2)
-    bot_lcmgl_sphere(lcmgl,pts(:,j),.05,36,36);
-  end
-  bot_lcmgl_color3f(lcmgl,.7,.7,.7); 
+  kinsol = doKinematics(r,q);
+  [ptsA,ptsB] = pairwiseContactTest(r,kinsol,2,3);
   
-  bot_lcmgl_switch_buffer(lcmgl);
+  if (0) debugLCMGL(r,v,kinsol,ptsA,ptsB); end % use botvis
+  if (1)  debugPlot(r,kinsol,ptsA,ptsB); end % use matlab plotting
+  
+  should_have_contact = (bnd.ymax+y >= bnd.ymin);
+  assert(should_have_contact==~isempty(ptsA),'collision error');
+end
+q(2)=0;
+
+for z=linspace(-2*(bnd.zmax-bnd.zmin),0,20);
+  q(3)=z;
+  
+  kinsol = doKinematics(r,q);
+  [ptsA,ptsB] = pairwiseContactTest(r,kinsol,2,3);
+  
+  if (0) debugLCMGL(r,v,kinsol,ptsA,ptsB); end % use botvis
+  if (1)  debugPlot(r,kinsol,ptsA,ptsB); end % use matlab plotting
+  
+  should_have_contact = (bnd.zmax+z >= bnd.zmin);
+  assert(should_have_contact==~isempty(ptsA),'collision error');
+end
+q(3)=0;
+
+q(6)=randn;
+for x=linspace(-2*(bnd.xmax-bnd.xmin),0,20);
+  q(1)=x;
+  kinsol = doKinematics(r,q);
+  [ptsA,ptsB] = pairwiseContactTest(r,kinsol,2,3)
+  
+  if (0) debugLCMGL(r,v,kinsol,ptsA,ptsB); end % use botvis
+  if (1)  debugPlot(r,kinsol,ptsA,ptsB); end % use matlab plotting
+  
+  pause(0.01);
+end
+q(1)=0;
+
+q(4:6) = randn(3,1);
+q(6+(4:6)) = randn(3,1);
+for x=linspace(-2*(bnd.xmax-bnd.xmin),0,20);
+  q(1)=x;
+  kinsol = doKinematics(r,q);
+  [ptsA,ptsB] = pairwiseContactTest(r,kinsol,2,3)
+  
+  if (0) debugLCMGL(r,v,kinsol,ptsA,ptsB); end % use botvis
+  if (1)  debugPlot(r,kinsol,ptsA,ptsB); end % use matlab plotting
+  
   pause;
+end
+
+
+end
+
+function debugLCMGL(r,v,kinsol,ptsA,ptsB)
+    pts = contactPositions(r,kinsol);
+  
+    v.draw(0,[q;0*q]);
+    bot_lcmgl_color3f(lcmgl,0,0,1); % blue
+    for j=1:size(pts,2)
+      bot_lcmgl_sphere(lcmgl,pts(:,j),.05,20,20);
+    end
+    
+    for j=1:size(ptsA,2)
+      bot_lcmgl_color3f(lcmgl,1,0,0); % red
+      bot_lcmgl_sphere(lcmgl,ptsA(:,j),.05,20,20);
+      bot_lcmgl_color3f(lcmgl,0,1,0); % green
+      bot_lcmgl_sphere(lcmgl,ptsB(:,j),.05,20,20);
+    end
+    
+    bot_lcmgl_color3f(lcmgl,.7,.7,.7); % gray
+    
+    bot_lcmgl_switch_buffer(lcmgl);
+end
+
+function debugPlot(r,kinsol,ptsA,ptsB)
+    pts = contactPositions(r,kinsol);
+  
+    figure(1); clf; hold on;
+    plotBox(pts(:,1:8));
+    plotBox(pts(:,9:end));
+    plot3(pts(1,:),pts(2,:),pts(3,:),'b.');
+    plot3(ptsA(1,:),ptsA(2,:),ptsA(3,:),'r*');
+    plot3(ptsB(1,:),ptsB(2,:),ptsB(3,:),'g*');
+    axis equal
+    drawnow;
+end
+
+function plotBox(pts)
+  x=pts(1,:); y=pts(2,:); z=pts(3,:);
+  ind=[1,2;2,4;4,3;3,1;5,6;6,8;8,7;7,5;1,5;2,6;3,7;4,8]';
+  line(x(ind),y(ind),z(ind),'Color','b');
 end
