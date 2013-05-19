@@ -25,6 +25,7 @@ classdef BotVisualizer < Visualizer
       if (str2num(ck)<2) 
         % if not, then launch one...
         retval = system(['export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &']);
+        pause(.01);  % wait for viewer to come up
       end
 
       typecheck(urdf_filename,'char');

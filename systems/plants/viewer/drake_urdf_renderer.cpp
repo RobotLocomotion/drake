@@ -38,13 +38,32 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
   double theta, axis[3], quat[4];
   
   // todo: move these to setup?
-  /*
-  glEnable (GL_BLEND);
+  glDisable (GL_BLEND);
+  glDisable (GL_CULL_FACE);
+  glEnable (GL_DEPTH_TEST);
   glEnable (GL_RESCALE_NORMAL);
-  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glShadeModel (GL_SMOOTH);
+//  glEnable (GL_CULL_FACE);
+//  glCullFace (GL_BACK);
+//  glFrontFace (GL_CCW);
+//  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//  glShadeModel (GL_SMOOTH);
+
+  glMatrixMode (GL_MODELVIEW);
+
+  /* give the ambient light a blue tint to match the blue sky */
+  float light0_amb[] = { 0.4, 0.4, .5, 1 };
+  float light0_dif[] = { 1, 1, 1, 1 };
+  float light0_spe[] = { .5, .5, .5, 1 };
+  float light0_pos[] = { 100, 100, 100, 0 };
+  glLightfv (GL_LIGHT0, GL_AMBIENT, light0_amb);
+  glLightfv (GL_LIGHT0, GL_DIFFUSE, light0_dif);
+  glLightfv (GL_LIGHT0, GL_SPECULAR, light0_spe);
+  glLightfv (GL_LIGHT0, GL_POSITION, light0_pos);
+  glEnable (GL_LIGHT0);
+
   glEnable (GL_LIGHTING);
-*/
+  glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+  glEnable (GL_COLOR_MATERIAL);
 
   Matrix<double,7,1> pose;
   
@@ -69,7 +88,7 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 
       glPushMatrix();
       glTranslatef(pose(0),pose(1),pose(2));
-      glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]); 
+      glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
 
       // todo: iterate over all visual groups (not just "default")
       map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
@@ -84,11 +103,21 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
         glPushMatrix();
         
         // handle visual material 
-        if (vptr->material)
-          glColor4f(vptr->material->color.r,
-                  vptr->material->color.g,
-                  vptr->material->color.b,
-                  vptr->material->color.a);
+        if (vptr->material) {
+        	glColor4f(vptr->material->color.r,
+        			vptr->material->color.g,
+        			vptr->material->color.b,
+        			vptr->material->color.a);
+/*
+        	 GLfloat mat[4] = { vptr->material->color.r,
+               vptr->material->color.g,
+               vptr->material->color.b,
+               vptr->material->color.a };
+        	 GLfloat white[4] = {1,1,1,1};
+        	 glMaterialfv(GL_FRONT,GL_DIFFUSE,mat);
+        	 glMaterialfv(GL_FRONT,GL_AMBIENT,mat);
+        	 glMaterialfv(GL_FRONT,GL_SPECULAR,white); */
+        }
 
         // todo: handle textures here?
         
@@ -114,6 +143,7 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
           glScalef(box->dim.x,box->dim.y,box->dim.z);
 //          glutSolidCube(1.0);
           bot_gl_draw_cube();
+//          glutSolidSphere(1,36,36);
         } else if  (type == urdf::Geometry::CYLINDER) {
           boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(vptr->geometry));
           
