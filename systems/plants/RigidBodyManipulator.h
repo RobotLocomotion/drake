@@ -5,6 +5,7 @@
 
 #include <Eigen/Dense>
 #include <set>
+#include <vector>
 
 #ifdef BULLET_COLLISION
 #include <btBulletCollisionCommon.h>
@@ -133,7 +134,7 @@ public:
 
   void updateCollisionObjects(int body_ind);
 
-  bool getPairwiseCollision(const int body_ind1, const int body_ind2);
+  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB);
 #endif
 };
 

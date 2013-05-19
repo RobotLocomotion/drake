@@ -404,9 +404,9 @@ void RigidBodyManipulator::updateCollisionObjects(int body_ind)
 	Matrix4d T;
 	for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[body_ind].collision_objects.begin(); iter!=bodies[body_ind].collision_objects.end(); iter++) {
 		T = bodies[body_ind].T*(iter->T);
-    	rot.setValue( T(0,0), T(1,0), T(2,0),
-    			T(0,1), T(1,1), T(2,1),
-    			T(0,2), T(1,2), T(2,2) );
+		  rot.setValue( T(0,0), T(0,1), T(0,2),
+  			T(1,0), T(1,1), T(1,2),
+  			T(2,0), T(2,1), T(2,2) );
     	btT.setBasis(rot);
     	pos.setValue( T(0,3), T(1,3), T(2,3) );
     	btT.setOrigin(pos);
@@ -421,23 +421,28 @@ void RigidBodyManipulator::updateCollisionObjects(int body_ind)
 class MyCollisionResultCollector : public btCollisionWorld::ContactResultCallback
 {
 public:
-	bool bHasCollision;
-
-	MyCollisionResultCollector() : bHasCollision(false) {};
+	std::vector<Vector3d> ptsA, ptsB;
 
 	virtual	btScalar	addSingleResult(btManifoldPoint& cp,	const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0,const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
 	{
-		bHasCollision = true;
-		btVector3 ptA = cp.getPositionWorldOnA();
-		btVector3 ptB = cp.getPositionWorldOnB();
+		Vector3d pt;
+		btVector3 bt_pt = cp.getPositionWorldOnA();
+		pt(0) = (double) bt_pt.getX();
+		pt(1) = (double) bt_pt.getY();
+		pt(2) = (double) bt_pt.getZ();
+		ptsA.push_back(pt);
 
-		std::cout << "Pos on obj A:" << ptA << std::endl;
+		bt_pt = cp.getPositionWorldOnB();
+		pt(0) = (double) bt_pt.getX();
+		pt(1) = (double) bt_pt.getY();
+		pt(2) = (double) bt_pt.getZ();
+		ptsB.push_back(pt);
+
 		return 0;
 	}
 };
 
-
-bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int body_indB)
+bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB)
 {
 	MyCollisionResultCollector c;
 	for (std::vector<RigidBody::CollisionObject>::iterator iterA=bodies[body_indA].collision_objects.begin(); iterA!=bodies[body_indA].collision_objects.end(); iterA++) {
@@ -446,7 +451,15 @@ bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int b
 		}
 	}
 
-  return c.bHasCollision;
+	ptsA.resize(3,c.ptsA.size());
+	ptsB.resize(3,c.ptsB.size());
+
+	for (int i=0; i<c.ptsA.size(); i++) {
+		ptsA.col(i) = c.ptsA[i];
+		ptsB.col(i) = c.ptsB[i];
+	}
+
+  return (c.ptsA.size() > 0);
 }
 
 #endif

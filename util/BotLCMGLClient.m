@@ -17,7 +17,7 @@ classdef BotLCMGLClient < handle
       lcmgl.data_t.scene = now;
       lcmgl.data_t.sequence = 0;
       lcmgl.data_t.datalen = 0;
-      lcmgl.data_t.data = zeros(1024*1024,1);
+      lcmgl.data_t.data = zeros(1024,1);%zeros(1024*1024,1);
     end
     
     function bot_lcmgl_switch_buffer(lcmgl)
@@ -31,6 +31,7 @@ classdef BotLCMGLClient < handle
     
     function bot_lcmgl_destroy(lcmgl)
       % not required for matlab version, but left in for compatibility
+      lcmgl.data_t = [];  % this should generate an error if the object is called again
     end
     
   end
@@ -215,184 +216,184 @@ classdef BotLCMGLClient < handle
       bot_lcmgl_encode_u32(lcmgl, func);
     end
 
-  %% ================ drawing routines not part of OpenGL =============== 
-
-  function bot_lcmgl_box(lcmgl, xyz, size)
-    bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_BOX);
-    bot_lcmgl_encode_double(lcmgl, xyz(1));
-    bot_lcmgl_encode_double(lcmgl, xyz(2));
-    bot_lcmgl_encode_double(lcmgl, xyz(3));
-    bot_lcmgl_encode_float(lcmgl, size(1));
-    bot_lcmgl_encode_float(lcmgl, size(2));
-    bot_lcmgl_encode_float(lcmgl, size(3));
-  end
+    %% ================ drawing routines not part of OpenGL ===============
   
-  function bot_lcmgl_circle(lcmgl, xyz, radius)
-    bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_CIRCLE);
-    bot_lcmgl_encode_double(lcmgl, xyz(1));
-    bot_lcmgl_encode_double(lcmgl, xyz(2));
-    bot_lcmgl_encode_double(lcmgl, xyz(3));
-    bot_lcmgl_encode_float(lcmgl, radius);
-  end
-  
-  function bot_lcmgl_disk(lcmgl, xyz, r_in, r_out)
-    bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_DISK);
-    bot_lcmgl_encode_double(lcmgl, xyz(1));
-    bot_lcmgl_encode_double(lcmgl, xyz(2));
-    bot_lcmgl_encode_double(lcmgl, xyz(3));
-    bot_lcmgl_encode_float(lcmgl, r_in);
-    bot_lcmgl_encode_float(lcmgl, r_out);
-  end
-  
-  function bot_lcmgl_cylinder(lcmgl, base_xyz, base_radius, top_radius, height, slices, stacks)
-    bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_CYLINDER);
-    bot_lcmgl_encode_double(lcmgl, base_xyz(1));
-    bot_lcmgl_encode_double(lcmgl, base_xyz(2));
-    bot_lcmgl_encode_double(lcmgl, base_xyz(3));
-    bot_lcmgl_encode_double(lcmgl, base_radius);
-    bot_lcmgl_encode_double(lcmgl, top_radius);
-    bot_lcmgl_encode_double(lcmgl, height);
-    bot_lcmgl_encode_u32(lcmgl, slices);
-    bot_lcmgl_encode_u32(lcmgl, stacks);
-  end
-
-  function bot_lcmgl_sphere(lcmgl, xyz, radius, slices, stacks)
-    bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_SPHERE);
-    bot_lcmgl_encode_double(lcmgl, xyz(1));
-    bot_lcmgl_encode_double(lcmgl, xyz(2));
-    bot_lcmgl_encode_double(lcmgl, xyz(3));
-    bot_lcmgl_encode_double(lcmgl, radius);
-    bot_lcmgl_encode_u32(lcmgl, slices);
-    bot_lcmgl_encode_u32(lcmgl, stacks);
-  end
-    
-  function bot_lcmgl_line_width(lcmgl, line_width)
-    bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_LINE_WIDTH);
-    bot_lcmgl_encode_float(lcmgl, line_width);
-  end
-  
-  function bot_lcmgl_text_ex(lcmgl, xyz, text, font, flags)
-    bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_TEXT_LONG);
-    bot_lcmgl_encode_u32(lcmgl, font);
-    bot_lcmgl_encode_u32(lcmgl, flags);
-
-    bot_lcmgl_encode_double(lcmgl, xyz(1));
-    bot_lcmgl_encode_double(lcmgl, xyz(2));
-    bot_lcmgl_encode_double(lcmgl, xyz(3));
-
-    len = length(text);
-
-    bot_lcmgl_encode_u32(lcmgl, len);
-    for i=1:len
-      bot_lcmgl_encode_u8(lcmgl, text(i));
+    function bot_lcmgl_box(lcmgl, xyz, size)
+      bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_BOX);
+      bot_lcmgl_encode_double(lcmgl, xyz(1));
+      bot_lcmgl_encode_double(lcmgl, xyz(2));
+      bot_lcmgl_encode_double(lcmgl, xyz(3));
+      bot_lcmgl_encode_float(lcmgl, size(1));
+      bot_lcmgl_encode_float(lcmgl, size(2));
+      bot_lcmgl_encode_float(lcmgl, size(3));
     end
-  end
-  
-  function bot_lcmgl_text(lcmgl, xyz, text)
-    bot_lcmgl_text_ex(lcmgl, xyz, text, 0,
-                 lcmgl.BOT_GL_DRAW_TEXT_DROP_SHADOW +
-                 lcmgl.BOT_GL_DRAW_TEXT_JUSTIFY_CENTER +
-                 lcmgl.BOT_GL_DRAW_TEXT_ANCHOR_HCENTER +
-                 lcmgl.BOT_GL_DRAW_TEXT_ANCHOR_VCENTER);
-  end
-
-  function bot_lcmgl_draw_axes(lcmgl)
-    % x-axis
-    lcmglBegin(lcmgl.LCMGL_LINES);
-    lcmglColor3f(1, 0, 0);
-    lcmglVertex3f(1, 0, 0);
-    lcmglVertex3f(0, 0, 0);
-    lcmglEnd();
-
-    % y-axis
-    lcmglBegin(lcmgl.LCMGL_LINES);
-    lcmglColor3f(0, 1, 0);
-    lcmglVertex3f(0, 1, 0);
-    lcmglVertex3f(0, 0, 0);
-    lcmglEnd();
-
-    % z-axis
-    lcmglBegin(lcmgl.LCMGL_LINES);
-    lcmglColor3f(0, 0, 1);
-    lcmglVertex3f(0, 0, 1);
-    lcmglVertex3f(0, 0, 0);
-    lcmglEnd();
-  end
-
-  function bot_lcmgl_line(lcmgl, x_start, y_start, x_end, y_end)
-    lcmglBegin(lcmgl.LCMGL_LINES);
-    lcmglVertex2d(x_start, y_start);
-    lcmglVertex2d(x_end, y_end);
-    lcmglEnd();
-  end
-
-  function bot_lcmgl_draw_ortho_circles_3d(lcmgl)
-    xyz_zero = zeros(3,1);
-    bot_lcmgl_circle(lcmgl, xyz_zero, 1);
-    bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
-    bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
-
-    lcmglPushMatrix();
-    lcmglRotated(90, 1, 0, 0);
-    bot_lcmgl_circle(lcmgl, xyz_zero, 1);
-    bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
-    bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
-    lcmglPopMatrix();
     
-    lcmglPushMatrix();
-    lcmglRotated(90, 0, 1, 0);
-    bot_lcmgl_circle(lcmgl, xyz_zero, 1);
-    bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
-    bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
-    lcmglPopMatrix();
-  end
-  
-  function bot_lcmgl_draw_arrow_3d (lcmgl, length, head_width, head_length, body_width)
-    slices = 20;
-    stacks = 20;
+    function bot_lcmgl_circle(lcmgl, xyz, radius)
+      bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_CIRCLE);
+      bot_lcmgl_encode_double(lcmgl, xyz(1));
+      bot_lcmgl_encode_double(lcmgl, xyz(2));
+      bot_lcmgl_encode_double(lcmgl, xyz(3));
+      bot_lcmgl_encode_float(lcmgl, radius);
+    end
     
-    xyz = zeros(3,1);
-
-    % apply translations so the drawing is centered at origin along the x axis per bot_gl_draw_arrow_2d
-    lcmglPushMatrix();
-    lcmglTranslated(-length / 2, 0, 0);
-    lcmglRotated(90, 0, 1, 0);
+    function bot_lcmgl_disk(lcmgl, xyz, r_in, r_out)
+      bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_DISK);
+      bot_lcmgl_encode_double(lcmgl, xyz(1));
+      bot_lcmgl_encode_double(lcmgl, xyz(2));
+      bot_lcmgl_encode_double(lcmgl, xyz(3));
+      bot_lcmgl_encode_float(lcmgl, r_in);
+      bot_lcmgl_encode_float(lcmgl, r_out);
+    end
     
-    % draw body
-    lcmglCylinder(xyz, body_width, body_width, length - head_length, slices, stacks);
+    function bot_lcmgl_cylinder(lcmgl, base_xyz, base_radius, top_radius, height, slices, stacks)
+      bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_CYLINDER);
+      bot_lcmgl_encode_double(lcmgl, base_xyz(1));
+      bot_lcmgl_encode_double(lcmgl, base_xyz(2));
+      bot_lcmgl_encode_double(lcmgl, base_xyz(3));
+      bot_lcmgl_encode_double(lcmgl, base_radius);
+      bot_lcmgl_encode_double(lcmgl, top_radius);
+      bot_lcmgl_encode_double(lcmgl, height);
+      bot_lcmgl_encode_u32(lcmgl, slices);
+      bot_lcmgl_encode_u32(lcmgl, stacks);
+    end
     
-    % draw head
-    lcmglTranslated(0, 0, length - head_length);
-    lcmglCylinder(xyz, head_width, 0, head_length, slices, stacks);
+    function bot_lcmgl_sphere(lcmgl, xyz, radius, slices, stacks)
+      bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_SPHERE);
+      bot_lcmgl_encode_double(lcmgl, xyz(1));
+      bot_lcmgl_encode_double(lcmgl, xyz(2));
+      bot_lcmgl_encode_double(lcmgl, xyz(3));
+      bot_lcmgl_encode_double(lcmgl, radius);
+      bot_lcmgl_encode_u32(lcmgl, slices);
+      bot_lcmgl_encode_u32(lcmgl, stacks);
+    end
+    
+    function bot_lcmgl_line_width(lcmgl, line_width)
+      bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_LINE_WIDTH);
+      bot_lcmgl_encode_float(lcmgl, line_width);
+    end
+    
+    function bot_lcmgl_text_ex(lcmgl, xyz, text, font, flags)
+      bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_TEXT_LONG);
+      bot_lcmgl_encode_u32(lcmgl, font);
+      bot_lcmgl_encode_u32(lcmgl, flags);
+      
+      bot_lcmgl_encode_double(lcmgl, xyz(1));
+      bot_lcmgl_encode_double(lcmgl, xyz(2));
+      bot_lcmgl_encode_double(lcmgl, xyz(3));
+      
+      len = length(text);
+      
+      bot_lcmgl_encode_u32(lcmgl, len);
+      for i=1:len
+        bot_lcmgl_encode_u8(lcmgl, text(i));
+      end
+    end
+    
+    function bot_lcmgl_text(lcmgl, xyz, text)
+      bot_lcmgl_text_ex(lcmgl, xyz, text, 0, ...
+        lcmgl.BOT_GL_DRAW_TEXT_DROP_SHADOW + ...
+        lcmgl.BOT_GL_DRAW_TEXT_JUSTIFY_CENTER + ...
+        lcmgl.BOT_GL_DRAW_TEXT_ANCHOR_HCENTER + ...
+        lcmgl.BOT_GL_DRAW_TEXT_ANCHOR_VCENTER);
+    end
+    
+    function bot_lcmgl_draw_axes(lcmgl)
+      % x-axis
+      lcmglBegin(lcmgl.LCMGL_LINES);
+      lcmglColor3f(1, 0, 0);
+      lcmglVertex3f(1, 0, 0);
+      lcmglVertex3f(0, 0, 0);
+      lcmglEnd();
+      
+      % y-axis
+      lcmglBegin(lcmgl.LCMGL_LINES);
+      lcmglColor3f(0, 1, 0);
+      lcmglVertex3f(0, 1, 0);
+      lcmglVertex3f(0, 0, 0);
+      lcmglEnd();
+      
+      % z-axis
+      lcmglBegin(lcmgl.LCMGL_LINES);
+      lcmglColor3f(0, 0, 1);
+      lcmglVertex3f(0, 0, 1);
+      lcmglVertex3f(0, 0, 0);
+      lcmglEnd();
+    end
+    
+    function bot_lcmgl_line(lcmgl, x_start, y_start, x_end, y_end)
+      lcmglBegin(lcmgl.LCMGL_LINES);
+      lcmglVertex2d(x_start, y_start);
+      lcmglVertex2d(x_end, y_end);
+      lcmglEnd();
+    end
 
-    lcmglPopMatrix();
-  end
-  
-  function bot_lcmgl_rect(lcmgl, xyz, size, filled)
-    bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_RECT);
-
-    bot_lcmgl_encode_double(lcmgl, xyz(1));
-    bot_lcmgl_encode_double(lcmgl, xyz(2));
-    bot_lcmgl_encode_double(lcmgl, xyz(3));
-
-    bot_lcmgl_encode_double(lcmgl, size(1));
-    bot_lcmgl_encode_double(lcmgl, size(2));
-
-    bot_lcmgl_encode_u8(lcmgl, filled);
-  end
-
-  function bot_lcmgl_scale_to_viewer_ar(lcmgl){
-    bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_SCALE_TO_VIEWER_AR);
-  end
-
-  %% texture API
-  
-  function texture_id = bot_lcmgl_texture2d(lcmgl, data, ...
+    function bot_lcmgl_draw_ortho_circles_3d(lcmgl)
+      xyz_zero = zeros(3,1);
+      bot_lcmgl_circle(lcmgl, xyz_zero, 1);
+      bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
+      bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
+      
+      lcmglPushMatrix();
+      lcmglRotated(90, 1, 0, 0);
+      bot_lcmgl_circle(lcmgl, xyz_zero, 1);
+      bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
+      bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
+      lcmglPopMatrix();
+      
+      lcmglPushMatrix();
+      lcmglRotated(90, 0, 1, 0);
+      bot_lcmgl_circle(lcmgl, xyz_zero, 1);
+      bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
+      bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
+      lcmglPopMatrix();
+    end
+    
+    function bot_lcmgl_draw_arrow_3d (lcmgl, length, head_width, head_length, body_width)
+      slices = 20;
+      stacks = 20;
+      
+      xyz = zeros(3,1);
+      
+      % apply translations so the drawing is centered at origin along the x axis per bot_gl_draw_arrow_2d
+      lcmglPushMatrix();
+      lcmglTranslated(-length / 2, 0, 0);
+      lcmglRotated(90, 0, 1, 0);
+      
+      % draw body
+      lcmglCylinder(xyz, body_width, body_width, length - head_length, slices, stacks);
+      
+      % draw head
+      lcmglTranslated(0, 0, length - head_length);
+      lcmglCylinder(xyz, head_width, 0, head_length, slices, stacks);
+      
+      lcmglPopMatrix();
+    end
+    
+    function bot_lcmgl_rect(lcmgl, xyz, size, filled)
+      bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_RECT);
+      
+      bot_lcmgl_encode_double(lcmgl, xyz(1));
+      bot_lcmgl_encode_double(lcmgl, xyz(2));
+      bot_lcmgl_encode_double(lcmgl, xyz(3));
+      
+      bot_lcmgl_encode_double(lcmgl, size(1));
+      bot_lcmgl_encode_double(lcmgl, size(2));
+      
+      bot_lcmgl_encode_u8(lcmgl, filled);
+    end
+    
+    function bot_lcmgl_scale_to_viewer_ar(lcmgl)
+      bot_lcmgl_encode_u8(lcmgl, lcmgl.BOT_LCMGL_SCALE_TO_VIEWER_AR);
+    end
+    
+    %% texture API
+    
+    function texture_id = bot_lcmgl_texture2d(lcmgl, data, ...
         width, height, row_stride, ...
         format, type, compression)
       
       error('not implemented yet (just have to translate the code below');
-  end
+    end
 % int 
 % bot_lcmgl_texture2d(bot_lcmgl_t *lcmgl, const void *data, 
 %         int width, int height, int row_stride,
