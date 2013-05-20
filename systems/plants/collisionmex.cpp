@@ -32,6 +32,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     {
     	MatrixXd ptsA, ptsB;
     	int body_indA = (int) mxGetScalar(prhs[2])-1, body_indB = (int) mxGetScalar(prhs[3])-1;
+    	if (body_indA<0 || body_indA>=model->num_bodies || body_indB<0 || body_indB>=model->num_bodies)
+    		mexErrMsgIdAndTxt("Drake:collisionmex:BadInputs","body indices must be between 1 and num_bodies");
       model->getPairwiseCollision(body_indA,body_indB,ptsA,ptsB);
       if (nlhs>0) {
       	plhs[0] = mxCreateDoubleMatrix(3,ptsA.cols(),mxREAL);
