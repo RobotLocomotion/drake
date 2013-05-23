@@ -2,9 +2,7 @@ function runLQR
 
 p = RigidBodyManipulator('FurutaPendulum.urdf');
 
-if checkDependency('vrml_enabled')
-  v = p.constructVisualizer;
-end
+v = p.constructVisualizer;
 
 xG = Point(p.getStateFrame,[0;pi;0;0]);
 uG = Point(p.getInputFrame,0);

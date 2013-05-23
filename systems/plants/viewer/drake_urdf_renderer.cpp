@@ -184,9 +184,9 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
       {
         if (self->model) delete self->model;
         self->model = loadURDFfromFile(msg->command_data);
-        break;
         MatrixXd q0 = MatrixXd::Zero(self->model->num_dof,1);
         self->model->doKinematics(q0.data());
+        cout << "loading urdf: " << msg->command_data << endl;
       }
       break;
 
@@ -194,6 +194,7 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
       cerr << "viewer command " << msg->command_type << " not implemented yet" << endl;
       break;
   }
+
   bot_viewer_request_redraw(self->viewer);
 }
 

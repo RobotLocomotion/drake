@@ -5,6 +5,7 @@ classdef RigidBodyManipulator < Manipulator
     
   properties (SetAccess=protected)
     name={};        % names of the objects in the rigid body system
+    urdf={};        % names of the urdf files loaded
     body=[];        % array of RigidBody objects
     actuator = [];  % array of RigidBodyActuator objects
     loop=[];        % array of RigidBodyLoop objects
@@ -14,12 +15,12 @@ classdef RigidBodyManipulator < Manipulator
       % a variety of derived classes), but can get away with [] for arrays
       % with elements that are all exactly the same type
     gravity=[0;0;-9.81];
+    terrain;
   end
   
   properties (Access=protected)
     B = [];
     featherstone = [];
-    terrain;
     mex_model_ptr = 0;
     dirty = true;
   end
@@ -589,7 +590,12 @@ classdef RigidBodyManipulator < Manipulator
     
     function v = constructVisualizer(obj,options)
       checkDirty(obj);
-      v = RigidBodyWRLVisualizer(obj);
+      try 
+        v = BotVisualizer(obj);
+      catch ex
+        warning(ex.identifier,ex.message);
+        v = RigidBodyWRLVisualizer(obj);
+      end      
     end
     
     function index = getActuatedJoints(model)
