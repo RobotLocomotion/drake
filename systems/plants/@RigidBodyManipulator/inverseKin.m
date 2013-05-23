@@ -137,6 +137,18 @@ while i<=length(varargin)
     minpos=worldposi; maxpos=worldposi;
   end
   [rows,cols]=size(minpos);
+
+  if (rows == 6)
+    % convert RPY to quaternions internally
+    maxpos(7,:) = 0;
+    minpos(7,:) = 0;
+    for j = 1:cols
+      minpos(4:7,j) = rpy2quat(minpos(4:6,j));
+      maxpos(4:7,j) = rpy2quat(maxpos(4:6,j));
+    end
+    rows = 7;
+  end
+  
   if (rows ~= 3 && rows ~= 6 && rows ~=7) error('worldpos must have 3, 6 or 7 rows'); end
   if (body_ind(n)==0 && rows ~= 3) error('com pos must have only 3 rows (there is no orientation)'); end
   if (cols~=mi) error('worldpos must have the same number of elements as bodypos'); end
