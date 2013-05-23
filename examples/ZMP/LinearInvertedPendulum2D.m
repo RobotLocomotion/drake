@@ -36,11 +36,12 @@ classdef LinearInvertedPendulum2D < LinearSystem
       v = MultiVisualizer({CartTable2DVisualizer,ZMP2DVisualizer,desiredZMP2DVisualizer});
     end
     
-    function varargout = lqr(obj)
+    function varargout = lqr(obj,com0)
       % objective min_u \int dt [ x_zmp(t)^2 ] 
       varargout = cell(1,nargout);
       options.Qy = diag([0 0 1]);
-      [varargout{:}] = tilqr(obj,Point(obj.getStateFrame),Point(obj.getInputFrame),zeros(2),0,options);
+      if (nargin<2) com0 = 0; end
+      [varargout{:}] = tilqr(obj,Point(obj.getStateFrame,[com0;0*com0]),Point(obj.getInputFrame),zeros(2),0,options);
     end
     
     function c = ZMPtracker(obj,dZMP)
@@ -48,10 +49,12 @@ classdef LinearInvertedPendulum2D < LinearSystem
       dZMP = dZMP.inFrame(desiredZMP1D);
       dZMP = setOutputFrame(dZMP,getFrameByNum(getOutputFrame(obj),2)); % override it before sending in to tvlqr
       
-      [c,V] = lqr(obj);
-      options.tspan = linspace(dZMP.tspan(1),dZMP.tspan(2),10);
+      zmp_tf = dZMP.eval(dZMP.tspan(end));
+      [~,V] = lqr(obj,zmp_tf);
+
+      options.tspan = linspace(dZMP.tspan(1),dZMP.tspan(end),10);
       options.sqrtmethod = false;
-      x0traj = setOutputFrame(ConstantTrajectory([0;0]),getStateFrame(obj));
+      x0traj = setOutputFrame(ConstantTrajectory([zmp_tf;0]),getStateFrame(obj));
       u0traj = setOutputFrame(ConstantTrajectory(0),getInputFrame(obj));
       options.Qy = diag([0,0,1]);
       options.ydtraj = [x0traj;dZMP];
@@ -60,18 +63,39 @@ classdef LinearInvertedPendulum2D < LinearSystem
       warning(S);
     end
     
-    function comtraj = ZMPplanner(obj,com0,comdot0,dZMP)
-      % got a com plan from the ZMP tracking controller
-      c = ZMPtracker(obj,dZMP);
-      
+    
+    function comtraj = ZMPplanFromTracker(obj,com0,comdot0,dZMP,c)  
+      % get a com plan from the ZMP tracking controller
       doubleIntegrator = LinearSystem([0 1;0 0],[0;1],[],[],eye(2),[0;0]);
-      doubleIntegrator = setInputFrame(doubleIntegrator,getOutputFrame(c));
-      doubleIntegrator = setOutputFrame(doubleIntegrator,getInputFrame(c));
+      doubleIntegrator = setInputFrame(doubleIntegrator,getInputFrame(obj));
+      doubleIntegrator = setStateFrame(doubleIntegrator,getStateFrame(obj));
+      doubleIntegrator = setOutputFrame(doubleIntegrator,getStateFrame(obj));  % looks like a typo, but this is intentional: output is only the LIMP state
       sys = feedback(doubleIntegrator,c);
       
       comtraj = simulate(sys,dZMP.tspan,[com0;comdot0]);
+      comtraj = inOutputFrame(comtraj,sys.getOutputFrame);
       comtraj = comtraj(1);  % only return position (not velocity)
     end
+    
+    function comtraj = ZMPplan(obj,com0,comdot0,dZMP)
+      sizecheck(com0,1);
+      sizecheck(comdot0,1);
+      typecheck(dZMP,'Trajectory');
+      dZMP = dZMP.inFrame(desiredZMP1D);
+
+      
+    end
+    
+    function comtraj = ZMPPlanner(obj,com0,comdot0,dZMP,options)
+      warning('Drake:DeprecatedMethod','The ZMPPlanner function is deprecated.  Please use ZMPPlan (using the closed-form solution) or ZMPPlanFromTracker'); 
+    
+      % got a com plan from the ZMP tracking controller
+      if(nargin<5) options = struct(); end
+      c = ZMPtracker(obj,dZMP,options);
+      comtraj = ZMPPlanFromTracker(obj,com0,comdot0,dZMP,c);
+    end
+    
+    
   end
   
   methods (Static)
