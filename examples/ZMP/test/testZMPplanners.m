@@ -2,21 +2,26 @@ function testZMPplanners
 
 oldpath = addpath(fullfile(pwd,'..'));
 
+tf = 10;
 limp = LinearInvertedPendulum2D(1.0);
-ts = linspace(0,10,100); 
+ts = linspace(0,tf,100); 
 x0 = randn;
 zmptraj = setOutputFrame(PPTrajectory(spline(ts,x0 + 0.5*cos(ts*pi))),desiredZMP1D);
-%comtraj = ZMPplan(limp,x0,0,zmptraj);
+tic 
 c = ZMPtracker(limp,zmptraj);
-comtraj2 = ZMPplanFromTracker(limp,x0,0,zmptraj,c);
+comtraj = ZMPplanFromTracker(limp,x0,0,zmptraj,c);
+toc
+tic
+comtraj2 = ZMPplan(limp,x0,eval(comtraj,tf),zmptraj);
+toc
 
 figure(1); clf; hold on;
 h = fnplt(zmptraj); set(h,'Color','k');
-%h = fnplt(comtraj); set(h,'Color','b');
-h = fnplt(comtraj2); set(h,'Color','r');
-%legend('com','zmp from closed form','zmp from tracker');
-legend('com','zmp from tracker');
+h = fnplt(comtraj2); set(h,'Color','b');
+h = fnplt(comtraj); set(h,'Color','r');
+legend('zmp','com from closed form','com from tracker');
 
+return;
 
 limp = LinearInvertedPendulum(1.0);
 x0 = randn(2,1);
