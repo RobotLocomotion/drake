@@ -47,6 +47,7 @@ end
 
 model = parseRobot(model,robot,xyz,rpy,options);
 
+model.urdf = vertcat(model.urdf, GetFullPath(urdf_filename));
 model.dirty = true;
 
 model = compile(model);  % ideally this would happen on entry into any function...

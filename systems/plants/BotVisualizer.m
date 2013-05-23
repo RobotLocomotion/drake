@@ -14,10 +14,18 @@ classdef BotVisualizer < Visualizer
 %    draw
 %    playbackMovie
 %    lcmglwrappers
-    function obj = BotVisualizer(urdf_filename,options)
+    function obj = BotVisualizer(manip)
       
       if ~exist([getDrakePath(),'/bin/drake_viewer'],'file')
         error('can''t find drake_viewer executable.  you might need to run make (from the shell).  note: BotVisualizer is not supported on windows yet');
+      end
+      typecheck(manip,'RigidBodyManipulator');
+      
+      if ~strcmp(class(manip.terrain),'RigidBodyTerrain')
+        error('Drake:BotVisualizer:UnsupportedModel','This model has (non-zero) terrain.  Not supported (yet)');
+      end
+      if numel(manip.urdf)~=1
+        error('Drake:BotVisualizer:UnsupportedModel','I don''t actually support robots with multiple urdfs yet, but it will be easy enough');
       end
       
       % check if there is an instance of drake_viewer already running
@@ -28,24 +36,12 @@ classdef BotVisualizer < Visualizer
         pause(.01);  % wait for viewer to come up
       end
 
-      typecheck(urdf_filename,'char');
-      urdf_filename = GetFullPath(urdf_filename);
-      if (nargin<2) options=struct(); end
-      options.visual = false;
-      options.visual_geometry = false;
-      options.collision = false;
-      if isfield(options,'floating') && ~(options.floating == 0 || options.floating == 1 || isempty(options.floating) || strcmp(options.floating,'rpy'))
-        error('only the default floating base (rpy) is currently supported by this visualizer');
-        % one solution would be to convert coordinates in this file before sending...
-      end
-        
-      manip = RigidBodyManipulator(urdf_filename,options);
       obj = obj@Visualizer(getStateFrame(manip));
 
       %      obj = addRobotFromURDF(obj,urdf_filename);
       vc = drake.systems.plants.viewer.lcmt_viewer_command();
       vc.command_type = vc.LOAD_URDF;
-      vc.command_data = urdf_filename;
+      vc.command_data = [sprintf('%s:',manip.urdf{1:end-1}),manip.urdf{end}];
       lc = lcm.lcm.LCM.getSingleton();
       lc.publish('DRAKE_VIEWER_COMMAND',vc);
 

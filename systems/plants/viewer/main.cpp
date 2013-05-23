@@ -43,9 +43,9 @@ int main(int argc, char *argv[])
   viewer->view_handler->set_look_at(viewer->view_handler, eye, lookat, up); 
 
   // core renderers
+  drake_urdf_add_renderer_to_viewer(viewer, lcm, 1);
   bot_viewer_add_stock_renderer(viewer, BOT_VIEWER_STOCK_RENDERER_GRID, 1);
   bot_lcmgl_add_renderer_to_viewer(viewer, lcm, 1);
-  drake_urdf_add_renderer_to_viewer(viewer, lcm, 1);
           
   // load the renderer params from the config file.
   const char *fname = ".viewer-prefs"; //g_build_filename(g_get_user_config_dir(), vis_config_file.c_str() , NULL);
