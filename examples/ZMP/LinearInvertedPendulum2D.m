@@ -100,12 +100,6 @@ classdef LinearInvertedPendulum2D < LinearSystem
         A(i+1,:) = coefs(:,n+1-i)' + (obj.h/obj.g)*(i+1)*(i+2)*A(i+3,:);
       end
 
-%      syms Tc com0 comf real;
-%      V=sym('V',[m 1]); sym(V,'real');
-%      W=sym('W',[m 1]); sym(W,'real');
-%      A=sym('A',[k,m]); sym(A,'real');
-%      y = reshape([V';W'],2*m,1);
-      
       % equation (12)
       dt = diff(breaks); 
       dtn = ones(1,m); for i=1:n, dtn(i+1,:) = dt.*dtn(i,:); end  % dtn(a,j) = dt(j)^(a-1)
@@ -116,7 +110,6 @@ classdef LinearInvertedPendulum2D < LinearSystem
 
 
       Z = zeros(2*m);
-%      Z = Z+0*Tc; 
       Z(1,1) = 1; 
       % todo: vectorize this.  (should it be a sparse matrix?)
       for j=1:m-1, 
@@ -125,23 +118,13 @@ classdef LinearInvertedPendulum2D < LinearSystem
       end
       Z(end,end-1:end) = [ cosh(Tc*dt(m)), sinh(Tc*dt(m)) ];
       
-%      keyboard;
-      
       y = reshape((Z\w)',2,m);
       V = y(1,:); W = y(2,:);
-      
       
       % equation (5)
       % Note: i could return a function handle trajectory which is exact
       % (with the cosh,sinh terms), but for now I think it's sufficient and more
       % practical to make a new spline.
-      
-%      clf;
-%      subplot(2,1,1);
-%      plot(breaks(1:end-1),V+A(1,:),'b',breaks(2:end),V.*cosh(Tc*dt)+W.*sinh(Tc*dt)+sum(A.*dtn),'r--')
-%      subplot(2,1,2);
-%      plot(breaks(1:end-1),W*Tc+A(2,:),'b',breaks(2:end),Tc*V.*sinh(Tc*dt)+Tc*W.*cosh(Tc*dt)+sum(repmat((1:n)',1,m).*A(2:end,:).*dtn(1:end-1,:)),'r--')
-      
       com_knots = [V+A(1,:),V(end)*cosh(Tc*dt(end)) + W(end)*sinh(Tc*dt(end)) + A(:,end)'*dtn(:,end)];
       comtraj = PPTrajectory(spline(breaks,com_knots));
     end
