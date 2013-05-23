@@ -104,7 +104,7 @@ classdef LinearInvertedPendulum < LinearSystem
       warning(S);
     end
     
-    function comtraj = ZMPPlanFromTracker(obj,com0,comdot0,dZMP,c)
+    function comtraj = ZMPplanFromTracker(obj,com0,comdot0,dZMP,c)
       doubleIntegrator = LinearSystem([zeros(2),eye(2);zeros(2,4)],[zeros(2);eye(2)],[],[],eye(4),zeros(4,2));
       doubleIntegrator = setInputFrame(doubleIntegrator,getInputFrame(obj));
       doubleIntegrator = setStateFrame(doubleIntegrator,getStateFrame(obj));
@@ -116,12 +116,20 @@ classdef LinearInvertedPendulum < LinearSystem
       comtraj = comtraj(1:2);  % only return position (not velocity)
     end
     
+    function comtraj = ZMPplan(obj,com0,comdot0,dZMP,options)
+      error('not implemented yet');
+    end
+    
     function comtraj = ZMPplanner(obj,com0,comdot0,dZMP,options)
+      warning('Drake:DeprecatedMethod','The ZMPPlanner function is deprecated.  Please use ZMPPlan (using the closed-form solution) or ZMPPlanFromTracker'); 
+    
       % got a com plan from the ZMP tracking controller
       if(nargin<5) options = struct(); end
       c = ZMPtracker(obj,dZMP,options);
       comtraj = ZMPPlanFromTracker(obj,com0,comdot0,dZMP,c);
     end
+    
+    
   end
   
   methods (Static)
