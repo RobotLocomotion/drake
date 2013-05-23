@@ -3,7 +3,7 @@ CC = g++
 
 # urdf interface and tinyxml
 CFLAGS = -I.. -I../tinyxml
-LDFLAGS = ../RigidBodyManipulator.o ../urdf.o ../urdf_interface/link.o ../urdf_interface/joint.o ../tinyxml/tinyxml.o ../tinyxml/tinyxmlparser.o ../tinyxml/tinyxmlerror.o 
+LDFLAGS = ../urdf_interface/link.o ../urdf_interface/joint.o ../tinyxml/tinyxml.o ../tinyxml/tinyxmlparser.o ../tinyxml/tinyxmlerror.o
 
 # eigen3
 CFLAGS += $(shell pkg-config --cflags eigen3)
@@ -32,7 +32,7 @@ all: $(BINDIR)/drake_viewer lcmgl_test
 debug: CC += -g
 debug: $(BINDIR)/drake_viewer lcmgl_test
 
-$(BINDIR)/drake_viewer : main.cpp drake_urdf_renderer.o drake_urdf_renderer.h
+$(BINDIR)/drake_viewer : main.cpp drake_urdf_renderer.o drake_urdf_renderer.h ../urdf.o ../RigidBodyManipulator.o
 	$(CC) $^ -o $@ $(CFLAGS) $(LDFLAGS)
 
 lcmgl_test : lcmgl_test.cpp

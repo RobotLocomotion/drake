@@ -64,8 +64,8 @@ RigidBodyManipulator.o : RigidBodyManipulator.cpp RigidBodyManipulator.h RigidBo
 %.$(MEXEXT) : %.cpp RigidBodyManipulator.o
 	$(MEX) $^ $(CFLAGS) $(LDFLAGS)
 
-urdf.o : urdf.cpp RigidBodyManipulator.o
-	$(CXX) $< -c -Itinyxml $(CFLAGS) $(BOTVIS_CFLAGS) 
+urdf.o : urdf.cpp RigidBodyManipulator.o urdf.h
+	$(CXX) $< -c -fPIC -Itinyxml $(CFLAGS) $(BOTVIS_CFLAGS)
 
 clean: 
 	-rm -f $(MEXFILES) RigidBodyManipulator.o urdf.o

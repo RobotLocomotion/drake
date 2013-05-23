@@ -15,6 +15,10 @@ if isempty(packages)  % cache packages
   end
 end
 
+if strcmp(package,'-list')
+  packages
+end
+
 ind = find(strcmpi(package,packages),1);
 if isempty(ind)
   % check local directory for a folder with the package name

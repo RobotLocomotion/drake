@@ -165,6 +165,10 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
         if (visuals[iv]->geometry->type == urdf::Geometry::MESH) {
           boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(visuals[iv]->geometry));
           
+          map<string,BotWavefrontModel*>::iterator iter = mesh_map.find(mesh->filename);
+          if (iter!=mesh_map.end())  // then it's already in the map... no need to load it again
+          	continue;
+
           bool has_package = boost::find_first(mesh->filename,"package://");
           std::string fname = root_dir + "/" + mesh->filename;
           if (has_package) boost::replace_first(fname,"package:/","..");
@@ -185,9 +189,22 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
             BotWavefrontModel* wavefront_model = bot_wavefront_model_create(fname.c_str());
             if (!wavefront_model) {
               cerr << "Error loading mesh: " << fname << endl;
+            } else {
+            	mesh_map.insert(make_pair(mesh->filename, wavefront_model));
             }
-          } else
-            cout << "Warning: Mesh " << fname << " ignored because it does not have extension .dae" << endl;
+          } else {
+          	// try changing the extension to dae and loading
+          	if ( boost::filesystem::exists( mypath.replace_extension(".dae") ) ) {
+          		BotWavefrontModel* wavefront_model = bot_wavefront_model_create(mypath.replace_extension(".dae").native().c_str());
+              if (!wavefront_model) {
+                cerr << "Error loading mesh: " << fname << endl;
+              } else {
+              	mesh_map.insert(make_pair(mesh->filename, wavefront_model));
+              }
+          	} else {
+              cout << "Warning: Mesh " << mypath.native() << " ignored because it does not have extension .dae (nor can I find a juxtaposed file with a .dae extension)" << endl;
+            }
+          }
         }
       }
     }
@@ -229,7 +246,8 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
         		break;
         	case urdf::Geometry::MESH:
           	{
-          	  // not implemented yet
+//              boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
+              cerr << "Warning: mesh collision elements are not supported yet." << endl;
           	}
         		break;
         	default:
@@ -265,11 +283,19 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
   compile();  
 }
 
+URDFRigidBodyManipulator::~URDFRigidBodyManipulator(void)
+{
+#ifdef BOT_VIS_SUPPORT
+	for (map<string, BotWavefrontModel*>::iterator iter = mesh_map.begin(); iter!=mesh_map.end(); iter++)
+		bot_wavefront_model_destroy(iter->second);
+#endif
+}
+
 
 namespace urdf {
 
 // pulled directly from ROS (actually from drc/software/robot_model/urdf_parser/)
-boost::shared_ptr<ModelInterface> parseURDF(const std::string &xml_string)
+boost::shared_ptr<ModelInterface> parseURDF(const string &xml_string)
 {
   boost::shared_ptr<ModelInterface> model(new ModelInterface);
   model->clear();
@@ -293,7 +319,7 @@ boost::shared_ptr<ModelInterface> parseURDF(const std::string &xml_string)
     model.reset();
     return model;
   }
-  model->name_ = std::string(name);
+  model->name_ = string(name);
 
   // Get all Material elements
   for (TiXmlElement* material_xml = robot_xml->FirstChildElement("material"); material_xml; material_xml = material_xml->NextSiblingElement("material"))
@@ -414,7 +440,7 @@ boost::shared_ptr<ModelInterface> parseURDF(const std::string &xml_string)
 
   // every link has children links and joints, but no parents, so we create a
   // local convenience data structure for keeping child->parent relations
-  std::map<std::string, std::string> parent_link_tree;
+  map<string, string> parent_link_tree;
   parent_link_tree.clear();
 
   // building tree: name mapping
