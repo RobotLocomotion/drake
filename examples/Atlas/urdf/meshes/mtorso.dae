@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
+  <asset>
+    <contributor>
+      <author></author>
+      <authoring_tool>FBX COLLADA exporter</authoring_tool>
+      <comments></comments>
+    </contributor>
+    <created>2013-04-12T18:52:55Z</created>
+    <keywords></keywords>
+    <modified>2013-04-12T18:52:55Z</modified>
+    <revision></revision>
+    <subject></subject>
+    <title></title>
+    <unit meter="1.0" name="meter"></unit>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_images>
+    <image id="Map #4-image" name="Map #4">
+      <init_from>../materials/textures/drc_torso_head_diffuse.jpg</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="drc_torso_head_diffuse" name="drc_torso_head_diffuse">
+      <instance_effect url="#drc_torso_head_diffuse-fx"/>
+    </material>
+  </library_materials>
+  <library_effects>
+    <effect id="drc_torso_head_diffuse-fx" name="drc_torso_head_diffuse">
+      <profile_COMMON>
+        <technique sid="standard">
+          <phong>
+            <emission>
+              <color sid="emission">0.000000  0.000000 0.000000 1.000000</color>
+            </emission>
+            <ambient>
+              <color sid="ambient">0.588235  0.588235 0.588235 1.000000</color>
+            </ambient>
+            <diffuse>
+              <texture texture="Map #4-image" texcoord="CHANNEL0">
+                <extra>
+                  <technique profile="MAYA">
+                    <wrapU sid="wrapU0">TRUE</wrapU>
+                    <wrapV sid="wrapV0">TRUE</wrapV>
+                    <blend_mode>ADD</blend_mode>
+                  </technique>
+                </extra>
+              </texture>
+            </diffuse>
+            <specular>
+              <color sid="specular">0.000000  0.000000 0.000000 1.000000</color>
+            </specular>
+            <shininess>
+              <float sid="shininess">2.000000</float>
+            </shininess>
+            <reflective>
+              <color sid="reflective">0.000000  0.000000 0.000000 1.000000</color>
+            </reflective>
+            <reflectivity>
+              <float sid="reflectivity">1.000000</float>
+            </reflectivity>
+            <transparent opaque="RGB_ZERO">
+              <color sid="transparent">1.000000  1.000000 1.000000 1.000000</color>
+            </transparent>
+            <transparency>
+              <float sid="transparency">0.000000</float>
+            </transparency>
+          </phong>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_geometries>
+    <geometry id="mtorso_ncl1_1-lib" name="mtorso_ncl1_1Mesh">
+      <mesh>
+        <source id="mtorso_ncl1_1-POSITION">
+          <float_array id="mtorso_ncl1_1-POSITION-array" count="36">
+0.018959 0.001340 -0.059996
+0.018959 -0.014730 -0.050697
+-0.017902 -0.014730 -0.050697
+-0.017902 0.001340 -0.059996
+0.018959 -0.014712 0.006864
+-0.017902 -0.014712 0.006864
+0.018959 0.001376 0.016131
+-0.017902 0.001376 0.016131
+0.018959 0.017445 0.006833
+-0.017902 0.017445 0.006833
+0.018959 0.017427 -0.050728
+-0.017902 0.017427 -0.050728
+</float_array>
+          <technique_common>
+            <accessor source="#mtorso_ncl1_1-POSITION-array" count="12" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="mtorso_ncl1_1-Normal0">
+          <float_array id="mtorso_ncl1_1-Normal0-array" count="180">
+-0.610041 -0.686468 -0.395743
+-0.609993 -0.000770 -0.792407
+0.609994 -0.000767 -0.792405
+0.609994 -0.000767 -0.792405
+0.610044 -0.686466 -0.395742
+-0.610041 -0.686468 -0.395743
+-0.609947 -0.686023 0.396657
+-0.610041 -0.686468 -0.395743
+0.610044 -0.686466 -0.395742
+0.610044 -0.686466 -0.395742
+0.609948 -0.686021 0.396660
+-0.609947 -0.686023 0.396657
+-0.609994 0.000767 0.792406
+-0.609947 -0.686023 0.396657
+0.609948 -0.686021 0.396660
+0.609948 -0.686021 0.396660
+0.609994 0.000768 0.792406
+-0.609994 0.000767 0.792406
+-0.610044 0.686465 0.395743
+-0.609994 0.000767 0.792406
+0.609994 0.000768 0.792406
+0.609994 0.000768 0.792406
+0.610040 0.686467 0.395745
+-0.610044 0.686465 0.395743
+-0.609947 0.686021 -0.396661
+-0.610044 0.686465 0.395743
+0.610040 0.686467 0.395745
+0.610040 0.686467 0.395745
+0.609947 0.686023 -0.396658
+-0.609947 0.686021 -0.396661
+-0.609993 -0.000770 -0.792407
+-0.609947 0.686021 -0.396661
+0.609947 0.686023 -0.396658
+0.609947 0.686023 -0.396658
+0.609994 -0.000767 -0.792405
+-0.609993 -0.000770 -0.792407
+0.609994 0.000768 0.792406
+0.610044 -0.686466 -0.395742
+0.609947 0.686023 -0.396658
+0.609947 0.686023 -0.396658
+0.610040 0.686467 0.395745
+0.609994 0.000768 0.792406
+0.609994 0.000768 0.792406
+0.609948 -0.686021 0.396660
+0.610044 -0.686466 -0.395742
+0.609994 -0.000767 -0.792405
+0.609947 0.686023 -0.396658
+0.610044 -0.686466 -0.395742
+-0.610044 0.686465 0.395743
+-0.609993 -0.000770 -0.792407
+-0.609947 -0.686023 0.396657
+-0.609947 -0.686023 0.396657
+-0.609994 0.000767 0.792406
+-0.610044 0.686465 0.395743
+-0.610044 0.686465 0.395743
+-0.609947 0.686021 -0.396661
+-0.609993 -0.000770 -0.792407
+-0.610041 -0.686468 -0.395743
+-0.609947 -0.686023 0.396657
+-0.609993 -0.000770 -0.792407
+</float_array>
+          <technique_common>
+            <accessor source="#mtorso_ncl1_1-Normal0-array" count="60" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="mtorso_ncl1_1-UV0">
+          <float_array id="mtorso_ncl1_1-UV0-array" count="52">
+0.153255 0.312384
+0.153506 0.290904
+0.161567 0.287497
+0.169295 0.312495
+0.161233 0.315903
+0.169541 0.291015
+0.150867 0.316580
+0.179569 0.316146
+0.184365 0.322073
+0.179903 0.328145
+0.151203 0.328577
+0.146406 0.322651
+0.123242 0.419343
+0.132502 0.419319
+0.132565 0.433075
+0.123306 0.433099
+0.161207 0.419245
+0.161271 0.433001
+0.170465 0.419220
+0.170531 0.432976
+0.179723 0.419196
+0.179788 0.432952
+0.208430 0.419122
+0.208493 0.432878
+0.217688 0.419099
+0.217752 0.432854
+</float_array>
+          <technique_common>
+            <accessor source="#mtorso_ncl1_1-UV0-array" count="26" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="mtorso_ncl1_1-VERTEX">
+          <input semantic="POSITION" source="#mtorso_ncl1_1-POSITION"/>
+        </vertices>
+        <triangles count="20" material="drc_torso_head_diffuse">
+          <input semantic="VERTEX" offset="0" source="#mtorso_ncl1_1-VERTEX"/>
+          <input semantic="NORMAL" offset="1" source="#mtorso_ncl1_1-Normal0"/>
+          <input semantic="TEXCOORD" offset="2" set="0" source="#mtorso_ncl1_1-UV0"/>
+          <p> 2 0 14 3 1 15 0 2 12 0 3 12 1 4 13 2 5 14 5 6 17 2 7 14 1 8 13 1 9 13 4 10 16 5 11 17 7 12 19 5 13 17 4 14 16 4 15 16 6 16 18 7 17 19 9 18 21 7 19 19 6 20 18 6 21 18 8 22 20 9 23 21 11 24 23 9 25 21 8 26 20 8 27 20 10 28 22 11 29 23 3 30 25 11 31 23 10 32 22 10 33 22 0 34 24 3 35 25 6 36 8 1 37 10 10 38 6 10 39 6 8 40 7 6 41 8 6 42 8 4 43 9 1 44 10 0 45 11 10 46 6 1 47 10 9 48 0 3 49 2 5 50 3 5 51 3 7 52 4 9 53 0 9 54 0 11 55 1 3 56 2 2 57 5 5 58 3 3 59 2</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="test" name="">
+      <node name="g27" id="g27" sid="g27">
+        <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
+        <extra>
+          <technique profile="FCOLLADA">
+            <visibility>1.000000</visibility>
+          </technique>
+        </extra>
+        <node name="mtorso" id="mtorso" sid="mtorso">
+          <matrix sid="matrix">1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000 0.000000 0.000000 0.000000 0.000000 1.000000</matrix>
+          <extra>
+            <technique profile="FCOLLADA">
+              <visibility>1.000000</visibility>
+            </technique>
+          </extra>
+          <node name="mtorso_ncl1_1" id="mtorso_ncl1_1" sid="mtorso_ncl1_1">
+            <matrix sid="matrix">1.000000 0.000000 0.000000 0.001057 0.000000 1.000000 0.000000 -0.003089 0.000000 0.000000 1.000000 0.045644 0.000000 0.000000 0.000000 1.000000</matrix>
+            <instance_geometry url="#mtorso_ncl1_1-lib">
+              <bind_material>
+                <technique_common>
+                  <instance_material symbol="drc_torso_head_diffuse" target="#drc_torso_head_diffuse"/>
+                </technique_common>
+              </bind_material>
+            </instance_geometry>
+            <extra>
+              <technique profile="FCOLLADA">
+                <visibility>1.000000</visibility>
+              </technique>
+            </extra>
+          </node>
+        </node>
+      </node>
+      <extra>
+        <technique profile="MAX3D">
+          <frame_rate>30.000000</frame_rate>
+        </technique>
+        <technique profile="FCOLLADA">
+          <start_time>0.000000</start_time>
+          <end_time>3.333333</end_time>
+        </technique>
+      </extra>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#test"></instance_visual_scene>
+  </scene>
+</COLLADA>
+
