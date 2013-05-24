@@ -524,7 +524,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function obj = setTerrain(obj,varargin)
       obj.manip = setTerrain(obj.manip,varargin{:});
     end
-    
+
+    function terrain = getTerrain(obj)
+      terrain = obj.manip.terrain;
+    end
+
     function varargout = getTerrainHeight(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}] = getTerrainHeight(obj.manip,varargin{:});
