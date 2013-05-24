@@ -80,6 +80,7 @@ classdef LinearInvertedPendulum2D < LinearSystem
     end
     
     function comtraj = ZMPplan(obj,com0,comf,dZMP)
+      
       % implements analytic method from Harada06
       %  notice the different arugments (comf instead of comdot0)
       sizecheck(com0,1);
@@ -87,8 +88,28 @@ classdef LinearInvertedPendulum2D < LinearSystem
       typecheck(dZMP,'PPTrajectory');  
       dZMP = dZMP.inFrame(desiredZMP1D);
 
-      Tc = sqrt(obj.g/obj.h);
-      [breaks,coefs,l,k,d] = unmkpp(dZMP.pp);  
+      valuecheck(obj.g,9.81);
+      com_pp = LinearInvertedPendulum2D.COMsplineFromZMP(obj.h,com0,comf,dZMP.pp);
+
+      comtraj = PPTrajectory(com_pp);
+    end
+    
+    function comtraj = ZMPPlanner(obj,com0,comdot0,dZMP,options)
+      warning('Drake:DeprecatedMethod','The ZMPPlanner function is deprecated.  Please use ZMPPlan (using the closed-form solution) or ZMPPlanFromTracker'); 
+    
+      % got a com plan from the ZMP tracking controller
+      if(nargin<5) options = struct(); end
+      c = ZMPtracker(obj,dZMP,options);
+      comtraj = ZMPPlanFromTracker(obj,com0,comdot0,dZMP,c);
+    end
+    
+  end
+
+  methods (Static)
+    function [V,W,A,Tc,breaks] = AnalyticZMP_internal(h,com0,comf,zmp_pp)
+      g=9.81;
+      Tc = sqrt(g/h);
+      [breaks,coefs,l,k,d] = unmkpp(zmp_pp);  
       m = l; %  to match Harada06 eq (1)
       n = k-1;
       assert(d==1);
@@ -97,7 +118,7 @@ classdef LinearInvertedPendulum2D < LinearSystem
       A(n+1,:) = coefs(:,1)';
       A(n,:) = coefs(:,2)';
       for i=n-2:-1:0
-        A(i+1,:) = coefs(:,n+1-i)' + (obj.h/obj.g)*(i+1)*(i+2)*A(i+3,:);
+        A(i+1,:) = coefs(:,n+1-i)' + (h/g)*(i+1)*(i+2)*A(i+3,:);
       end
 
       % equation (12)
@@ -107,7 +128,6 @@ classdef LinearInvertedPendulum2D < LinearSystem
            reshape([A(1,2:end) - sum(A(:,1:end-1).*dtn(:,1:end-1)); ...
            A(2,2:end) - sum(repmat((1:n)',1,m-1).*A(2:end,1:end-1).*dtn(1:end-1,1:end-1))],2*(m-1),1); ...
            comf - A(:,end)'*dtn(:,end) ];
-
 
       Z = zeros(2*m);
       Z(1,1) = 1; 
@@ -121,27 +141,38 @@ classdef LinearInvertedPendulum2D < LinearSystem
       y = reshape((Z\w)',2,m);
       V = y(1,:); W = y(2,:);
       
+      % NOTEST
+    end
+  end
+  
+  methods (Static)
+    function com_pp = COMsplineFromZMP(h,com0,comf,zmp_pp)
+      % fast method for computing closed-form ZMP solution (from Harada06)
+      % note: there is no error checking on this method (intended to be fast).
+      % use ZMPplan to be more safe.
+      
+      [V,W,A,Tc,breaks] = LinearInvertedPendulum2D.AnalyticZMP_internal(h,com0,comf,zmp_pp);
+      
       % equation (5)
       % Note: i could return a function handle trajectory which is exact
       % (with the cosh,sinh terms), but for now I think it's sufficient and more
       % practical to make a new spline.
-      com_knots = [V+A(1,:),V(end)*cosh(Tc*dt(end)) + W(end)*sinh(Tc*dt(end)) + A(:,end)'*dtn(:,end)];
-      comtraj = PPTrajectory(spline(breaks,com_knots));
+      com_knots = [V+A(1,:),comf];
+      com_pp = spline(breaks,com_knots);
+      
+      % NOTEST
     end
     
-    function comtraj = ZMPPlanner(obj,com0,comdot0,dZMP,options)
-      warning('Drake:DeprecatedMethod','The ZMPPlanner function is deprecated.  Please use ZMPPlan (using the closed-form solution) or ZMPPlanFromTracker'); 
-    
-      % got a com plan from the ZMP tracking controller
-      if(nargin<5) options = struct(); end
-      c = ZMPtracker(obj,dZMP,options);
-      comtraj = ZMPPlanFromTracker(obj,com0,comdot0,dZMP,c);
+    function horz_comddot_d = COMaccelerationFromZMP(h,com0,comf,dZMP)
+      % fast method for computing instantaneous COM acceleration (using
+      % Harada06)
+
+      [V,~,A,Tc] = LinearInvertedPendulum2D.AnalyticZMP_internal(h,com0,comf,zmp_pp);
+      
+      horz_comddot_d = V(1)*Tc^2 + 2*A(3,1);
+      % NOTEST
     end
     
-    
-  end
-  
-  methods (Static)
     function runPassive
       r = LinearInvertedPendulum2D(1.055);
       v = r.constructVisualizer();

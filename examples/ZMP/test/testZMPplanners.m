@@ -7,19 +7,19 @@ limp = LinearInvertedPendulum2D(1.0);
 ts = linspace(0,tf,100); 
 x0 = randn;
 zmptraj = setOutputFrame(PPTrajectory(spline(ts,x0 + 0.5*cos(ts*pi))),desiredZMP1D);
-% tic 
-% c = ZMPtracker(limp,zmptraj);
-% comtraj = ZMPplanFromTracker(limp,x0,0,zmptraj,c);
-% toc
-% tic
-% comtraj2 = ZMPplan(limp,x0,eval(comtraj,tf),zmptraj);
-% toc
-% 
-% figure(1); clf; hold on;
-% h = fnplt(zmptraj); set(h,'Color','k');
-% h = fnplt(comtraj2); set(h,'Color','b');
-% h = fnplt(comtraj); set(h,'Color','r');
-% legend('zmp','com from closed form','com from tracker');
+tic 
+c = ZMPtracker(limp,zmptraj);
+comtraj = ZMPplanFromTracker(limp,x0,0,zmptraj,c);
+toc
+tic
+comtraj2 = ZMPplan(limp,x0,eval(comtraj,tf),zmptraj);
+toc
+
+figure(1); clf; hold on;
+h = fnplt(zmptraj); set(h,'Color','k');
+h = fnplt(comtraj2); set(h,'Color','b');
+h = fnplt(comtraj); set(h,'Color','r');
+legend('zmp','com from closed form','com from tracker');
 
 limp = LinearInvertedPendulum(1.0);
 x0 = randn(2,1);
