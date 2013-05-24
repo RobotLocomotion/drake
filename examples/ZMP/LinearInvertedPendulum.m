@@ -127,48 +127,10 @@ classdef LinearInvertedPendulum < LinearSystem
       dZMP = dZMP.inFrame(desiredZMP);
       if ~isnumeric(obj.h) error('variable height not implemented yet'); end
       
-      Tc = sqrt(obj.g/obj.h);
-      for ax=1:2
-        ax_zmp = dZMP(ax);
-        [breaks,coefs,l,k,d] = unmkpp(ax_zmp.pp);
-        m = l; %  to match Harada06 eq (1)
-        n = k-1;
-        assert(prod(d)==1);
-      
-        % equations (6) and (7), solved for A(i+1,j)
-        A(n+1,:) = coefs(:,1)';
-        A(n,:) = coefs(:,2)';
-        for i=n-2:-1:0
-          A(i+1,:) = coefs(:,n+1-i)' + (obj.h/obj.g)*(i+1)*(i+2)*A(i+3,:);
-        end
+      valuecheck(obj.g,9.81);
+      com_pp = LinearInvertedPendulum.COMsplineFromZMP(obj.h,com0,comf,dZMP.pp);
 
-        % equation (12)
-        dt = diff(breaks);
-        dtn = ones(1,m); for i=1:n, dtn(i+1,:) = dt.*dtn(i,:); end  % dtn(a,j) = dt(j)^(a-1)
-        w = [com0(ax) - A(1,1); ...
-          reshape([A(1,2:end) - sum(A(:,1:end-1).*dtn(:,1:end-1)); ...
-          A(2,2:end) - sum(repmat((1:n)',1,m-1).*A(2:end,1:end-1).*dtn(1:end-1,1:end-1))],2*(m-1),1); ...
-          comf(ax) - A(:,end)'*dtn(:,end) ];
-        
-        Z = zeros(2*m);
-        Z(1,1) = 1;
-        % todo: vectorize this.  (should it be a sparse matrix?)
-        for j=1:m-1,
-          Z(2*j+(0:1),2*(j-1) + (1:4)) = [cosh(Tc*dt(j)),    sinh(Tc*dt(j)),   -1, 0; ...
-                                        Tc*sinh(Tc*dt(j)), Tc*cosh(Tc*dt(j)), 0, -Tc];
-        end
-        Z(end,end-1:end) = [ cosh(Tc*dt(m)), sinh(Tc*dt(m)) ];
-      
-        y = reshape((Z\w)',2,m);
-        V = y(1,:); W = y(2,:);
-      
-        % equation (5)
-        % Note: i could return a function handle trajectory which is exact
-        % (with the cosh,sinh terms), but for now I think it's sufficient and more
-        % practical to make a new spline.
-        com_knots(ax,:) = [V+A(1,:),V(end)*cosh(Tc*dt(end)) + W(end)*sinh(Tc*dt(end)) + A(:,end)'*dtn(:,end)];
-      end
-      comtraj = PPTrajectory(spline(breaks,com_knots));
+      comtraj = PPTrajectory(com_pp);
     end
     
     function comtraj = ZMPplanner(obj,com0,comdot0,dZMP,options)
@@ -184,6 +146,44 @@ classdef LinearInvertedPendulum < LinearSystem
   end
   
   methods (Static)
+    function com_pp = COMsplineFromZMP(h,com0,comf,zmp_pp)
+      % fast method for computing closed-form ZMP solution (from Harada06)
+      % note: there is no error checking on this method (intended to be fast).
+      % use ZMPplan to be more safe.
+      
+      [breaks,coefs,l,k,d] = unmkpp(zmp_pp);
+      
+      for i=1:2
+        this_zmp_pp = mkpp(breaks,coefs(i:2:end,:));
+        [V,W,A,Tc] = LinearInvertedPendulum2D.AnalyticZMP_internal(h,com0(i),comf(i),this_zmp_pp);
+      
+        % equation (5)
+        % Note: i could return a function handle trajectory which is exact
+        % (with the cosh,sinh terms), but for now I think it's sufficient and more
+        % practical to make a new spline.
+        com_knots(i,:) = [V+A(1,:),comf(i)];
+      end
+      com_pp = spline(breaks,com_knots);
+      
+      % NOTEST
+    end
+    
+    function horz_comddot_d = COMaccelerationFromZMP(h,com0,comf,dZMP)
+      % fast method for computing instantaneous COM acceleration (using
+      % Harada06)
+
+      [breaks,coefs,l,k,d] = unmkpp(zmp_pp);
+      
+      for i=1:2
+        this_zmp_pp = mkpp(breaks,coefs(i,:,:),1);
+        [V,W,A,Tc] = LinearInvertedPendulum2D.AnalyticZMP_internal(h,com0(i),comf(i),this_zmp_pp);
+        
+        horz_comddot_d(i) = V(1)*Tc^2 + 2*A(3,1);
+      end
+      
+      % NOTEST
+    end
+    
     function runPassive
       r = LinearInvertedPendulum(1.055);
       v = r.constructVisualizer();
