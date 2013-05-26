@@ -351,7 +351,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
           e=[];
           coefs = reshape(coefs,[d,l,k]);
           s.subs = {s.subs{:},':',':'};
-          subsasgn(e,s,coefs);
+          e = subsasgn(e,s,coefs);
           d=size(coefs); d=d(1:end-2);
           a = PPTrajectory(mkpp(breaks,e,d));
           return;
