@@ -89,9 +89,9 @@ classdef LinearInvertedPendulum2D < LinearSystem
       dZMP = dZMP.inFrame(desiredZMP1D);
 
       valuecheck(obj.g,9.81);
-      com_pp = LinearInvertedPendulum2D.COMsplineFromZMP(obj.h,com0,comf,dZMP.pp);
-
-      comtraj = PPTrajectory(com_pp);
+      comtraj = LinearInvertedPendulum2D.COMtrajFromZMP(obj.h,com0,comf,dZMP.pp);
+%      com_pp = LinearInvertedPendulum2D.COMsplineFromZMP(obj.h,com0,comf,dZMP.pp);
+%      comtraj = PPTrajectory(com_pp);
     end
     
     function comtraj = ZMPPlanner(obj,com0,comdot0,dZMP,options)
@@ -106,13 +106,13 @@ classdef LinearInvertedPendulum2D < LinearSystem
   end
 
   methods (Static)
-    function [V,W,A,Tc,breaks] = AnalyticZMP_internal(h,com0,comf,zmp_pp)
+    function [V,W,A,Tc,breaks,comdot0,comdotf] = AnalyticZMP_internal(h,com0,comf,zmp_pp)
       g=9.81;
       Tc = sqrt(g/h);
       [breaks,coefs,l,k,d] = unmkpp(zmp_pp);  
       m = l; %  to match Harada06 eq (1)
       n = k-1;
-      assert(d==1);
+      assert(prod(d)==1);
       
       % equations (6) and (7), solved for A(i+1,j)
       A(n+1,:) = coefs(:,1)';
@@ -141,25 +141,61 @@ classdef LinearInvertedPendulum2D < LinearSystem
       y = reshape((Z\w)',2,m);
       V = y(1,:); W = y(2,:);
       
+      if (nargout>5)
+        comdot0 = W(1)*Tc + A(2,1);
+        comdotf = V(m)*Tc*sinh(Tc*dt(m))+W(m)*Tc*cosh(Tc*dt(m));
+        for i=2:size(A,1)
+          comdotf = comdotf+(i-1)*A(i,m)*dt(m)^(i-2);
+        end
+        comdotf
+      end
+      
       % NOTEST
     end
   end
   
   methods (Static)
+    function comtraj = COMtrajFromZMP(h,com0,comf,zmp_pp)
+      [V,W,A,Tc,breaks] = LinearInvertedPendulum2D.AnalyticZMP_internal(h,com0,comf,zmp_pp);
+      
+      function com = analyticCOM(t,V,W,A,Tc,breaks)
+        j=find(t>=breaks(1:end-1),1,'last');
+        dt = t-breaks(j); 
+        com = V(j)*cosh(Tc*dt)+W(j)*sinh(Tc*dt);
+        for i=1:size(A,1)
+          com = com+A(i,j)*dt^(i-1);
+        end
+      end
+      
+      function comdot = analyticCOMdot(t,V,W,A,Tc,breaks)
+        j=find(t>=breaks(1:end-1),1,'last');
+        dt = t-breaks(j); 
+        comdot = V(j)*Tc*sinh(Tc*dt)+W(j)*Tc*cosh(Tc*dt);
+        for i=2:size(A,1)
+          comdot = comdot+(i-1)*A(i,j)*dt^(i-2);
+        end
+      end
+      
+      comtraj = FunctionHandleTrajectory(@(t)analyticCOM(t,V,W,A,Tc,breaks),1,breaks,@(t)analyticCOMdot(t,V,W,A,Tc,breaks));
+    end
+    
     function com_pp = COMsplineFromZMP(h,com0,comf,zmp_pp)
       % fast method for computing closed-form ZMP solution (from Harada06)
       % note: there is no error checking on this method (intended to be fast).
       % use ZMPplan to be more safe.
       
-      [V,W,A,Tc,breaks] = LinearInvertedPendulum2D.AnalyticZMP_internal(h,com0,comf,zmp_pp);
+      [V,W,A,Tc,breaks,comdot0,comdotf] = LinearInvertedPendulum2D.AnalyticZMP_internal(h,com0,comf,zmp_pp);
       
       % equation (5)
       % Note: i could return a function handle trajectory which is exact
       % (with the cosh,sinh terms), but for now I think it's sufficient and more
       % practical to make a new spline.
       com_knots = [V+A(1,:),comf];
-      com_pp = spline(breaks,com_knots);
-      
+      plot(breaks,com_knots,'*');
+
+%      com_pp = spline(breaks,com_knots);
+      com_pp = csape(breaks,[comdot0,com_knots,comdotf],[1 1]);
+
       % NOTEST
     end
     

@@ -103,7 +103,7 @@ classdef Trajectory < DrakeSystem
           error('Drake:Trajectory:IncompatibleTimesForConcatenation','concatenated trajectories do not overlap in time');
         end
         
-        breaks = unique([reshape(a.getBreaks,[],1);reshape(b.getBreaks,[],1)]);
+        breaks = unique([reshape(a.getBreaks,1,[]),reshape(b.getBreaks,1,[])]);
         breaks = breaks(breaks>=tspan(1) & breaks<=tspan(2));
     end
     

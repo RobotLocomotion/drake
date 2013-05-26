@@ -128,9 +128,10 @@ classdef LinearInvertedPendulum < LinearSystem
       if ~isnumeric(obj.h) error('variable height not implemented yet'); end
       
       valuecheck(obj.g,9.81);
-      com_pp = LinearInvertedPendulum.COMsplineFromZMP(obj.h,com0,comf,dZMP.pp);
-
-      comtraj = PPTrajectory(com_pp);
+ 
+      comtraj = LinearInvertedPendulum.COMtrajFromZMP(obj.h,com0,comf,dZMP.pp);
+%      com_pp = LinearInvertedPendulum.COMsplineFromZMP(obj.h,com0,comf,dZMP.pp);
+%      comtraj = PPTrajectory(com_pp);
     end
     
     function comtraj = ZMPplanner(obj,com0,comdot0,dZMP,options)
@@ -146,6 +147,15 @@ classdef LinearInvertedPendulum < LinearSystem
   end
   
   methods (Static)
+    function comtraj = COMtrajFromZMP(h,com0,comf,zmp_pp)
+      [breaks,coefs,l,k,d] = unmkpp(zmp_pp);
+      for i=1:2
+        this_zmp_pp = mkpp(breaks,coefs(i:2:end,:));
+        ct{i} = LinearInvertedPendulum2D.COMtrajFromZMP(h,com0(i),comf(i),this_zmp_pp);
+      end
+      comtraj = vertcat(ct{1},ct{2});
+    end
+    
     function com_pp = COMsplineFromZMP(h,com0,comf,zmp_pp)
       % fast method for computing closed-form ZMP solution (from Harada06)
       % note: there is no error checking on this method (intended to be fast).
@@ -155,15 +165,15 @@ classdef LinearInvertedPendulum < LinearSystem
       
       for i=1:2
         this_zmp_pp = mkpp(breaks,coefs(i:2:end,:));
-        [V,W,A,Tc] = LinearInvertedPendulum2D.AnalyticZMP_internal(h,com0(i),comf(i),this_zmp_pp);
+        [V,W,A,Tc,~,comdot0,comdotf] = LinearInvertedPendulum2D.AnalyticZMP_internal(h,com0(i),comf(i),this_zmp_pp);
       
         % equation (5)
         % Note: i could return a function handle trajectory which is exact
         % (with the cosh,sinh terms), but for now I think it's sufficient and more
         % practical to make a new spline.
-        com_knots(i,:) = [V+A(1,:),comf(i)];
+        com_knots(i,:) = [comdot0,V+A(1,:),comf(i),comdotf];
       end
-      com_pp = spline(breaks,com_knots);
+      com_pp = csape(breaks,com_knots,[1 1]);
       
       % NOTEST
     end

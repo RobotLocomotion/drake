@@ -46,6 +46,11 @@ classdef FunctionHandleTrajectory < Trajectory
       t = obj.breaks;
     end
     
+    function dtraj = fnder(obj)
+      if (isempty(obj.dhandle)) error('the derivative was not defined for this handle'); end
+      dtraj = FunctionHandleTrajectory(obj.dhandle,obj.dim,obj.breaks);
+    end
+    
     function pp = flipToPP(obj,ppbuilder)
       if (nargin<2) 
         if isempty(obj.dhandle) ppbuilder=@foh;
