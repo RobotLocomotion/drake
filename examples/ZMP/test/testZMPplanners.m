@@ -9,6 +9,8 @@ x0 = randn;
 zmptraj = setOutputFrame(PPTrajectory(spline(ts,x0 + 0.5*cos(ts*pi))),desiredZMP1D);
 tic 
 c = ZMPtracker(limp,zmptraj);
+toc
+tic
 comtraj = ZMPplanFromTracker(limp,x0,0,zmptraj,c);
 toc
 tic
