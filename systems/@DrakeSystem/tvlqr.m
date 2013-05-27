@@ -157,8 +157,8 @@ if isfield(options,'xdtraj')
   typecheck(options.xdtraj,'Trajectory');
   options.xdtraj = options.xdtraj.inFrame(iframe);
   
-  Q{2} = Q{2} - 2*Q{1}*options.xdtraj;
   Q{3} = Q{3} + options.xdtraj'*Q{1}*options.xdtraj - options.xdtraj'*Q{2};
+  Q{2} = Q{2} - 2*Q{1}*options.xdtraj;
 end
 
 % udtraj adds terms so that the cost is (ubar - ubar_d)'*R{1}*(ubar - ubar_d) + (ubar - ubar_d)'*R{2}. @default 0
@@ -166,8 +166,8 @@ if isfield(options,'udtraj')
   typecheck(udtraj,'Trajectory');
   options.udtraj = options.udtraj.inFrame(oframe);
   
-  R{2} = R{2} - 2*R{2}*options.udtraj;
   R{3} = R{3} + options.udtraj'*R{1}*option.udtraj - options.udtraj'*R{2};
+  R{2} = R{2} - 2*R{2}*options.udtraj;
 end
 
 nY = getNumOutputs(obj);
@@ -211,8 +211,8 @@ if isfield(options,'ydtraj') && ~isempty(Qy)
   typecheck(options.ydtraj,'Trajectory');
 
   ybar_d = options.ydtraj.inFrame(getOutputFrame(obj)) - y0traj;
-  Qy{2} = Qy{2} - 2*Qy{1}*ybar_d;
   Qy{3} = Qy{3} + ybar_d'*Qy{1}*ybar_d - ybar_d'*Qy{2};
+  Qy{2} = Qy{2} - 2*Qy{1}*ybar_d;
 end
 
 if ~isempty(Qy)
@@ -304,7 +304,7 @@ function K = Ksoln(S,Ri,B)
 end
 
 function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj,options)
-  % see doc/derivations/tvlqr_latexit.pdf 
+  % see doc/derivations/tvlqr-latexit.pdf 
 
   x0 = xtraj.eval(t); u0 = utraj.eval(t); xdot0 = xdottraj.eval(t);
   Q{1}=Qtraj{1}.eval(t); Q{2}=Qtraj{2}.eval(t); Q{3}=Qtraj{3}.eval(t); 
@@ -329,10 +329,31 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj
   if (min(eig(Sorig))<0) 
     warning('Drake:TVLQR:NegativeS','S is not positive definite'); 
   end
-    
+  
   rs = (R{2}+B'*S{2})/2;
   Sdot{2} = -(Q{2} - 2*(N+Sorig*B)*Ri*rs + A'*S{2} + 2*Sorig*c);
   Sdot{3} = -(Q{3}+R{3} - rs'*Ri*rs + S{2}'*c);  
+
+%  plot(t,S{2}(1),'r.');
+  if (0) %9.95<=t & t<10)
+    t
+    disp(['Q{1} = ',mat2str(Q{1})]);
+    disp(['Q{2} = ',mat2str(Q{2})]);
+    disp(['Q{3}+R{3} = ',mat2str(Q{3}+R{3})]);
+    disp(['R{1} = ',mat2str(R{1})]);
+    disp(['R{2} = ',mat2str(R{2})]);
+%    N
+%    A
+%    B
+%    c
+    disp(['S{1} = ',mat2str(S{1})]);
+    disp(['S{2} = ',mat2str(S{2})]);
+    disp(['S{3} = ',mat2str(S{3})]);
+    disp(['Sdot{1} = ',mat2str(Sdot{1})]);
+    disp(['Sdot{2} = ',mat2str(Sdot{2})]);
+    disp(['Sdot{3} = ',mat2str(Sdot{3})]);
+  end
+  
 end
     
 function S = recompS(Ssqrt)
