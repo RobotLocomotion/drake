@@ -78,9 +78,8 @@ while i<=length(varargin)
     [x,J] = forwardKin(obj,kinsol,body_ind,body_pos,(rows==6));
     if (rows==6)
       % make sure desired/current angles are unwrapped
-      unwrapped = unwrap([x(4:6), world_pos(4:6)],[],2);
-      x(4:6) = unwrapped(1:3,1);
-      world_pos(4:6) = unwrapped(1:3,2);
+      delta = angleDiff(x(4:6),world_pos(4:6));
+      world_pos(4:6) = x(4:6)+delta;
     end
   end
   
@@ -109,12 +108,15 @@ model.Q = sparse(Q);
 model.obj = f;
 model.A = Aeq;
 model.rhs = beq;
-model.sense = repmat('=',length(beq),1);
+model.sense = repmat('=',length(beq),1); %% using repmat is inefficient 
 model.lb = obj.joint_limit_min;
 model.ub = obj.joint_limit_max;
 
 params.outputflag = 0; % not verbose
 params.method = 2; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
+params.bariterlimit = 20; % iteration limit
+params.barhomogeneous = 0; % 0 off, 1 on
+params.barconvtol = 1e-3;
 
 result = gurobi(model,params);
 q = result.x;  
