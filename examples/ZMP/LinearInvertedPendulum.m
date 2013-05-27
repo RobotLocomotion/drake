@@ -16,10 +16,12 @@ classdef LinearInvertedPendulum < LinearSystem
       if(isa(h,'numeric'))
         rangecheck(h,0,inf);
         Czmp = [eye(2),zeros(2)];
+        C = [eye(4);Czmp];
         Dzmp = -h/g*eye(2);
         D = [zeros(4,2);Dzmp];
       elseif(isa(h,'PPTrajectory'))
         Czmp = [eye(2),zeros(2)];
+        C = [eye(4);Czmp]
         h_breaks = h.getBreaks;
         ddh = fnder(h,2);
         Dzmp_val = -h.eval(h_breaks)./(g+ddh.eval(h_breaks));
@@ -30,7 +32,7 @@ classdef LinearInvertedPendulum < LinearSystem
         error('LinearInvertedPendulum: unknown type for argument h.')
       end
              
-      obj = obj@LinearSystem([zeros(2),eye(2);zeros(2,4)],[zeros(2);eye(2)],[],[],[eye(4);Czmp],D);
+      obj = obj@LinearSystem([zeros(2),eye(2);zeros(2,4)],[zeros(2);eye(2)],[],[],C,D);
       obj.h = h;
       obj.g = g;
       
@@ -61,10 +63,16 @@ classdef LinearInvertedPendulum < LinearSystem
     
     function [c,Vt] = ZMPtracker(obj,dZMP,options)
       if nargin<3 options = struct(); end
+      if ~isfield(options,'use_mex') options.use_mex = true; end
+      if options.use_mex
+        if isfield(options,'dCOM') || ~isTI(obj) || ~isa(dZMP,'PPTrajectory')
+          warning('mex not implemented for these options yet');
+          options.use_mex = false;
+        end
+      end        
       
       typecheck(dZMP,'Trajectory');
       dZMP = dZMP.inFrame(desiredZMP);
-      dZMP = setOutputFrame(dZMP,getFrameByNum(getOutputFrame(obj),2)); % override it before sending in to tvlqr
       
       zmp_tf = dZMP.eval(dZMP.tspan(end));
       if(isTI(obj))
@@ -94,31 +102,128 @@ classdef LinearInvertedPendulum < LinearSystem
       else
         Q = zeros(4);
       end
-      % note: the system is actually linear, so x0traj and u0traj should
-      % have no effect on the numerical results (they just set up the
-      % frames)
-      x0traj = setOutputFrame(ConstantTrajectory([zmp_tf;0;0]),obj.getStateFrame);
-      u0traj = setOutputFrame(ConstantTrajectory([0;0]),obj.getInputFrame);
-      options.Qy = diag([0 0 0 0 1 1]);
-      options.ydtraj = [x0traj;dZMP];
-      S = warning('off','Drake:TVLQR:NegativeS');  % i expect to have some zero eigenvalues, which numerically fluctuate below 0
-      [c,Vt] = tvlqr(obj,x0traj,u0traj,Q,zeros(2),V,options);
-      warning(S);
+
+      if options.use_mex 
+        % ok, not actually mex yet... but should be optimized considerably
+        ts = options.tspan;
+        V = V.inFrame(getStateFrame(obj));
+        
+        % cost ((zmp-zmp_des)'*(zmp-zmp_des) + u'*R*u)
+        %   with zmp = x(1:2) -h/g*u
+        %  =>  cost x'*Q*x + x'*q2 + u'*R*u + u'*r2 + 2*x'*N*u + r3 with
+        %   Q = diag([1 1 0 0]);  q2 = -2*[zmp_des;0;0]
+        %   R = R + (h/g)^2*eye(2);  r2 = 2*zmp_des*h/g;
+        %   N = -h/g*[eye(2);zeros(2)];  r3 = zmp_des'*zmp_des
+        hg = obj.h/obj.g;
+        A = obj.Ac; B = obj.Bc; 
+        Q = diag([1 1 0 0]);
+        R = hg^2*eye(2); Ri = inv(R);
+        N = -hg*[eye(2);zeros(2)];
+        
+        [ts,S] = ode45(@zmpRiccati,dZMP.tspan([end,1]),[V.S(:);V.s1;V.s2]);
+        ts = flipud(ts); S = flipud(S)';
+        m = length(ts);
+        K1 = reshape(-Ri*(B'*reshape(S(1:16,:),[4 4*m]) + repmat(N',[1 m])),[2 4 m]);
+        r2 = 2*eval(dZMP,ts)*hg;
+        K2 = reshape(-.5*Ri*(B'*reshape(S(17:20,:),[4 m]) + r2),[2 m]);
+        Sdot=S; % preallocate
+        for i=1:length(ts)
+          Sdot(:,i) = zmpRiccati(ts(i),S(:,i));
+        end
+        Kdot1 = reshape(-Ri*(B'*reshape(Sdot(1:16,:),[4 4*m]) + repmat(N',[1 m])),[2 4 m]);
+        r2dot = 2*deriv(dZMP,ts)*hg;
+        Kdot2 = reshape(-.5*Ri*(B'*reshape(Sdot(17:20,:),[4 m]) + r2dot),[2 m]);
+        Kpp1 = pchipDeriv(ts,K1,Kdot1,Kdot1,[2 4]);
+        Kpp2 = pchipDeriv(ts,K2,Kdot2,Kdot2,[2 1]);
+
+        c = AffineSystem([],[],[],[],[],[],[],PPTrajectory(Kpp1),PPTrajectory(Kpp2)); 
+        c = setInputFrame(c,getStateFrame(obj));
+        c = setOutputFrame(c,getInputFrame(obj));
+        
+        if (nargout>1)
+          Spp1 = pchipDeriv(ts,S(1:16,:),Sdot(1:16,:),[],[4 4]);
+          Spp2 = pchipDeriv(ts,S(17:20,:),Sdot(17:20,:),[],[4 1]);
+          Spp3 = pchipDeriv(ts,S(21,:),Sdot(21,:));
+          Vt = QuadraticLyapunovFunction(getStateFrame(obj),PPTrajectory(Spp1),PPTrajectory(Spp2),PPTrajectory(Spp3));
+        end
+      else
+        dZMP = setOutputFrame(dZMP,getFrameByNum(getOutputFrame(obj),2)); % override it before sending in to tvlqr
+        % note: the system is actually linear, so x0traj and u0traj should
+        % have no effect on the numerical results (they just set up the
+        % frames)
+        x0traj = setOutputFrame(ConstantTrajectory([zmp_tf;0;0]),obj.getStateFrame);
+        u0traj = setOutputFrame(ConstantTrajectory([0;0]),obj.getInputFrame);
+        options.Qy = diag([0 0 0 0 1 1]);
+        options.ydtraj = [x0traj;dZMP];
+        WS = warning('off','Drake:TVLQR:NegativeS');  % i expect to have some zero eigenvalues, which numerically fluctuate below 0
+        [c,Vt] = tvlqr(obj,x0traj,u0traj,Q,zeros(2),V,options);
+        warning(WS);
+      end
+      
+        function Sdotvec = zmpRiccati(t,Svec)
+          S1 = reshape(Svec(1:16),[4 4]);
+          S2 = reshape(Svec(17:20),[4 1]);
+          S3 = Svec(21);
+          zmp_des = eval(dZMP,t);
+          q2 = [-2*zmp_des;0;0];
+          r2 = 2*zmp_des*hg;
+          q3 = zmp_des'*zmp_des;
+          
+          Sdot1 = -(Q - (N+S1*B)*Ri*(B'*S1+N') + S1*A + A'*S1);
+          rs = (r2+B'*S2)/2;
+          Sdot2 = -(q2 - 2*(N+S1*B)*Ri*rs + A'*S2);
+          Sdot3 = -(q3 - rs'*Ri*rs);
+          
+          Sdotvec = [Sdot1(:); Sdot2; Sdot3];
+          
+          if (0)
+          c = [zmp_tf;0;0];
+          Qt{1} = Q;
+          Qt{2} = (Q+Q')*c + q2;
+          Qt{3} = c'*Q*c + c'*q2 +q3;
+          Rt{1} = R;
+          Rt{2} = (r2' + 2*c'*N)';
+          Rt{3} = 0;
+          St{1} = S1; St{2} = (S1+S1')*c + S2; St{3} = c'*S1*c + c'*S2 + S3;
+          Stdot{1} = Sdot1;  Stdot{2}=(Sdot1+Sdot1')*c + Sdot2; Stdot{3}=c'*Sdot1*c + c'*Sdot2 + Sdot3;
+%          plot(t,St{2}(1),'b.');
+          if (0) %9.95<=t & t<10)
+            t
+            disp(['Qt{1} = ',mat2str(Qt{1})]);
+            disp(['Qt{2} = ',mat2str(Qt{2})]);
+            disp(mat2str(-2*zmp_des + 2*zmp_tf));
+            disp(['Qt{3}+Rt{3} = ',mat2str(Qt{3}+Rt{3})]);
+            disp(['Rt{1} = ',mat2str(Rt{1})]);
+            disp(['Rt{2} = ',mat2str(Rt{2})]);
+%            N
+%            A
+%            B
+            disp(['St{1} = ',mat2str(St{1})]);
+            disp(['St{2} = ',mat2str(St{2})]);
+            disp(['St{3} = ',mat2str(St{3})]);
+            disp(['Stdot{1} = ',mat2str(Stdot{1})]);
+            disp(['Stdot{2} = ',mat2str(Stdot{2})]);
+            disp(['Stdot{3} = ',mat2str(Stdot{3})]);
+          end
+          end
+          
+        end
+      
     end
     
-    function comtraj = ZMPplanFromTracker(obj,com0,comdot0,dZMP,c)
+    function comtraj = COMplanFromTracker(obj,com0,comdot0,tspan,c)
       doubleIntegrator = LinearSystem([zeros(2),eye(2);zeros(2,4)],[zeros(2);eye(2)],[],[],eye(4),zeros(4,2));
       doubleIntegrator = setInputFrame(doubleIntegrator,getInputFrame(obj));
       doubleIntegrator = setStateFrame(doubleIntegrator,getStateFrame(obj));
       doubleIntegrator = setOutputFrame(doubleIntegrator,getStateFrame(obj));  % looks like a typo, but this is intentional: output is only the LIMP state
       sys = feedback(doubleIntegrator,c);
       
-      comtraj = simulate(sys,dZMP.tspan,[com0;comdot0]);
+      comtraj = simulate(sys,tspan,[com0;comdot0]);
       comtraj = inOutputFrame(comtraj,sys.getOutputFrame);
       comtraj = comtraj(1:2);  % only return position (not velocity)
     end
     
-    function comtraj = ZMPplan(obj,com0,comf,dZMP,options)
+    function comtraj = COMplan(obj,com0,comf,dZMP,options)
       % implements analytic method from Harada06
       %  notice the different arugments (comf instead of comdot0)
       sizecheck(com0,2);
@@ -135,12 +240,12 @@ classdef LinearInvertedPendulum < LinearSystem
     end
     
     function comtraj = ZMPplanner(obj,com0,comdot0,dZMP,options)
-      warning('Drake:DeprecatedMethod','The ZMPPlanner function is deprecated.  Please use ZMPPlan (using the closed-form solution) or ZMPPlanFromTracker'); 
+      warning('Drake:DeprecatedMethod','The ZMPPlanner function is deprecated.  Please use COMplan (using the closed-form solution) or ZMPPlanFromTracker'); 
     
       % got a com plan from the ZMP tracking controller
       if(nargin<5) options = struct(); end
-      c = ZMPtracker(obj,dZMP,options);
-      comtraj = ZMPPlanFromTracker(obj,com0,comdot0,dZMP,c);
+      c = COMtracker(obj,dZMP,options);
+      comtraj = COMplanFromTracker(obj,com0,comdot0,dZMP.tspan,c);
     end
     
     
