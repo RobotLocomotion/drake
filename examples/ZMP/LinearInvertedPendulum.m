@@ -106,10 +106,11 @@ classdef LinearInvertedPendulum < LinearSystem
       if options.use_mex 
         % ok, not actually mex yet... but should be optimized considerably
         ts = options.tspan;
-        V = V.inFrame(getStateFrame(obj));
         
         % cost ((zmp-zmp_des)'*(zmp-zmp_des) + u'*R*u)
         %   with zmp = x(1:2) -h/g*u
+        %   and everything in zmp - zmp_tf coordinates (necessary for
+        %   translational invariance.. otherwise the numerics get dicey).
         %  =>  cost x'*Q*x + x'*q2 + u'*R*u + u'*r2 + 2*x'*N*u + r3 with
         %   Q = diag([1 1 0 0]);  q2 = -2*[zmp_des;0;0]
         %   R = R + (h/g)^2*eye(2);  r2 = 2*zmp_des*h/g;
@@ -120,16 +121,39 @@ classdef LinearInvertedPendulum < LinearSystem
         R = hg^2*eye(2); Ri = inv(R);
         N = -hg*[eye(2);zeros(2)];
         
-        [ts,S] = ode45(@zmpRiccati,dZMP.tspan([end,1]),[V.S(:);V.s1;V.s2]);
+        % commented out to leave V in relative coordinates from the lqr
+        % solution
+%        V = V.inFrame(getStateFrame(obj));
+        
+        [ts,S] = ode45(@(t,x)zmpRiccati(t,x,zmp_tf),dZMP.tspan([end,1]),[V.S(:);V.s1;V.s2]);
         ts = flipud(ts); S = flipud(S)';
         m = length(ts);
+
+        % flip S back to world coordinates
+        % vectorized version of this:
+        %  c = [-zmp_tf;0;0];
+        %  S(17:21,i) = [ (S1+S1')*c + S2; c'*S1*c + c'*S2 + S3 ];
+%        S(17,:) = S(17,:) - 2*S(1,:)*zmp_tf(1) - (S(2,:)+S(5,:))*zmp_tf(2);
+%        S(18,:) = S(18,:) - (S(2,:)+S(5,:))*zmp_tf(1) - 2*S(6,:)*zmp_tf(2);
+%        S(21,:) = S(21,:) + zmp_tf'*[S(1,:)*zmp_tf(1) + S(5,:)*zmp_tf(2);S(2,:)*zmp_tf(1) + S(6,:)*zmp_tf(2)];
+        
+        Sdot=S; % preallocate
+        for i=1:length(ts)
+          S1 = reshape(S(1:16,i),[4 4]);  % flip S back to world coordinates
+          S2 = S(17:20,i);
+          S3 = S(21,i);
+          c = [-zmp_tf;0;0];
+          S(17:21,i) = [ (S1+S1')*c + S2; c'*S1*c + c'*S2 + S3 ];
+          Sdot(:,i) = zmpRiccati(ts(i),S(:,i),zeros(2,1));
+%          Sdot1 = reshape(Sdot(1:16,i),[4 4]);
+%          Sdot2 = Sdot(17:20,i);
+%          Sdot3 = S(21,i);
+%          Sdot(17:21,i) = [ (Sdot1+Sdot1')*c + Sdot2; c'*Sdot1*c + c'*Sdot2 + Sdot3 ];
+        end
+        
         K1 = reshape(-Ri*(B'*reshape(S(1:16,:),[4 4*m]) + repmat(N',[1 m])),[2 4 m]);
         r2 = 2*eval(dZMP,ts)*hg;
         K2 = reshape(-.5*Ri*(B'*reshape(S(17:20,:),[4 m]) + r2),[2 m]);
-        Sdot=S; % preallocate
-        for i=1:length(ts)
-          Sdot(:,i) = zmpRiccati(ts(i),S(:,i));
-        end
         Kdot1 = reshape(-Ri*(B'*reshape(Sdot(1:16,:),[4 4*m]) + repmat(N',[1 m])),[2 4 m]);
         r2dot = 2*deriv(dZMP,ts)*hg;
         Kdot2 = reshape(-.5*Ri*(B'*reshape(Sdot(17:20,:),[4 m]) + r2dot),[2 m]);
@@ -160,11 +184,11 @@ classdef LinearInvertedPendulum < LinearSystem
         warning(WS);
       end
       
-        function Sdotvec = zmpRiccati(t,Svec)
+        function Sdotvec = zmpRiccati(t,Svec,zmp0)
           S1 = reshape(Svec(1:16),[4 4]);
           S2 = reshape(Svec(17:20),[4 1]);
           S3 = Svec(21);
-          zmp_des = eval(dZMP,t);
+          zmp_des = eval(dZMP,t) - zmp0;
           q2 = [-2*zmp_des;0;0];
           r2 = 2*zmp_des*hg;
           q3 = zmp_des'*zmp_des;
@@ -177,7 +201,7 @@ classdef LinearInvertedPendulum < LinearSystem
           Sdotvec = [Sdot1(:); Sdot2; Sdot3];
           
           if (0)
-          c = [zmp_tf;0;0];
+          c = [zmp_tf-zmp0;0;0];
           Qt{1} = Q;
           Qt{2} = (Q+Q')*c + q2;
           Qt{3} = c'*Q*c + c'*q2 +q3;
