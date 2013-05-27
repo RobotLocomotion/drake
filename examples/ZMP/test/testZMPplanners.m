@@ -1,6 +1,7 @@
 function testZMPplanners
 
-oldpath = addpath(fullfile(pwd,'..'));
+oldpath = path;
+%oldpath = addpath(fullfile(pwd,'..'));
 
 tf = 10;
 limp = LinearInvertedPendulum2D(1.0);
@@ -30,10 +31,12 @@ zmptraj = setOutputFrame(PPTrajectory(spline(ts,[x0(1) + 0.5*cos(ts*pi); x0(2) +
 %comtraj2 = ZMPplanFromTracker(limp,x0,zeros(2,1),zmptraj);
 tic 
 c = ZMPtracker(limp,zmptraj);
-comtraj = ZMPplanFromTracker(limp,x0,zeros(2,1),zmptraj,c);
+toc
+tic
+comtraj = COMplanFromTracker(limp,x0,zeros(2,1),zmptraj.tspan,c);
 toc
 tic 
-comtraj2 = ZMPplan(limp,x0,eval(comtraj,tf),zmptraj);
+comtraj2 = COMplan(limp,x0,eval(comtraj,tf),zmptraj);
 toc
 
 figure(2); clf;
