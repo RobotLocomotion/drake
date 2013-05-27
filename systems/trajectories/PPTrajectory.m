@@ -334,6 +334,11 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       if (length(s)==1 && strcmp(s(1).type,'()'))
         [breaks,coefs,l,k,d] = unmkpp(a.pp);
         coefs = reshape(coefs,[d,l,k]);
+        if (length(s.subs)==1 && length(d)>1)
+          subs = cell(1,length(d));
+          [subs{:}] = ind2sub(d,s.subs{:});
+          s.subs = subs;
+        end
         s.subs = {s.subs{:},':',':'};
         coefs = subsref(coefs,s);
         d=size(subsref(a.eval(a.tspan(1)),s));
