@@ -3,9 +3,9 @@ function pp = pchipDeriv(t,y,ydot_minus,ydot_plus,dim)
 % implements piecewise cubic Hermite polynomials with the derivatives
 % specified.  (e.g., as in Hargraves86).
 
-if (nargin<4) ydot_plus = ydot_minus; end
+if (nargin<4 || isempty(ydot_plus)) ydot_plus = ydot_minus; end
 
-n = size(y,1);
+s = size(y);  n = prod(s(1:end-1));
 
 if (nargin<5) 
   dim=n; 
@@ -13,8 +13,12 @@ else
   if (prod(dim)~=n) error('dim does not match size of y'); end
 end
 
-if (length(size(y))~=2) error('only handle vectors for now'); end
-if (size(y,2)~=length(t)) error('y should be the same size as t'); end
+if (length(size(y))~=2) 
+  y = reshape(y,n,[]);
+  ydot_minus = reshape(ydot_minus,n,[]);
+  ydot_plus = reshape(ydot_plus,n,[]);
+end
+if (size(y,2)~=length(t)) error('last dimension of y should be the same size as t'); end
 
 if (size(ydot_minus,2)>=length(t)) ydot_minus = ydot_minus(:,2:end); end
 if (size(ydot_minus,2)~=(length(t)-1)) error('ydot_minus is the wrong size'); end
