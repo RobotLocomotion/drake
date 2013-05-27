@@ -10,26 +10,15 @@ x0 = 0; y0 = 0;
 [zmptraj,comtraj] = plan(x0,y0);
 
 
-x0 = 100;%*randn(); 
-y0 = 100;%*randn();
+x0 = 1000;%*randn(); 
+y0 = 1000;%*randn();
 tol = 1e-3;  % note: low tolerance seems potentially reasonable since we're integrating the result of multiplying big numbers
 [zmptraj_offset,comtraj_offset] = plan(x0,y0);
 
-figure(1); clf; 
-for i=1:2;
-  subplot(2,1,i); hold on;
-  fnplt(comtraj,i);
-  h = fnplt(comtraj_offset-[x0;y0],i); set(h,'Color','r');
-end
-drawnow;
-
 path(oldpath);
 
-for ts = getBreaks(comtraj);
-  valuecheck(eval(zmptraj,ts),eval(zmptraj_offset,ts)-[x0;y0]);
-  valuecheck(eval(comtraj,ts),eval(comtraj_offset,ts)-[x0;y0],tol);
-end
-
+valuecheck(zmptraj,zmptraj_offset-[x0;y0]);
+valuecheck(comtraj,comtraj_offset-[x0;y0],tol);
 
 
 return;
