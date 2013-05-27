@@ -235,6 +235,58 @@ classdef Trajectory < DrakeSystem
       error('not implemented yet.  use subsref?');
     end
     
+    function tf = valuecheck(traj,desired_traj,tol,belementwise)
+      if (nargin<3) tol=[]; end % use the default in valuecheck
+      if (nargin<4) belementwise = true; end
+      
+      if ((length(size(traj))~=length(size(desired_traj))) || any(size(traj)~=size(desired_traj)))
+        if (nargout>0)
+          tf = false;
+          warning(['Wrong size.  Expected ', mat2str(size(desired_traj)),' but got ', mat2str(size(traj))]);
+          return;
+        else
+          error(['Wrong size.  Expected ', mat2str(size(desired_traj)),' but got ', mat2str(size(traj))]);
+        end
+      end
+      
+      breaks = getBreaks(desired_traj);
+      ts = [breaks; breaks+[diff(breaks),0]]; ts = ts(1:end-1);
+      
+      if (belementwise)
+        % go through element by element
+        tf = true;
+        
+        for i=1:prod(size(traj))
+          S.type = '()'; S.subs = {i};
+          sub_traj = subsref(traj,S);
+          sub_desired_traj = subsref(desired_traj,S);
+          
+          if (~valuecheck(eval(sub_traj,ts),eval(sub_desired_traj,ts),tol))
+            tf = false;
+            
+            if (nargout<1)
+              figure(1043); clf; hold on;  
+              h = fnplt(sub_desired_traj);  set(h,'Color','r','LineStyle','--');
+              h = fnplt(sub_traj);
+              error('trajectory element %d doesn''t match.',i);
+            end
+          end
+        end
+      else
+        % go through by time
+        if (nargout>0)
+          for i=1:length(ts)
+            tf(i)=valuecheck(eval(traj,ts(i)),eval(desired_traj,ts(i)),tol);
+          end
+          tf = all(tf);
+        else
+          for i=1:length(ts)
+            valuecheck(eval(traj,ts(i)),eval(desired_traj,ts(i)),tol);
+          end
+        end
+      end
+    end
+    
     function h=fnplt(obj,plotdims)
       if (nargin>1 && ~isempty(plotdims) && any(plotdims>prod(obj.dim) | plotdims<1)) error('plotdims out of range'); end
       breaks=obj.getBreaks();

@@ -3,7 +3,7 @@ function tf = valuecheck(val,desired_val,tol)
 % VALUECHECK
 %   Usage:  valuecheck(val,desired_val)
 
-if (nargin<3) tol=1e-8; end
+if (nargin<3 || isempty(tol)) tol=1e-8; end
 
 tf = true;
 
