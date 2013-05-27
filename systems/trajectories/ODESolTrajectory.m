@@ -25,10 +25,11 @@ classdef ODESolTrajectory < Trajectory
       if isempty(obj.shape)
         return;
       elseif iscell(obj.shape)
+        nt = length(t);
         offset = 0;
         for i=1:length(obj.shape)
           n = prod(obj.shape{i});
-          yout{i} = reshape(y(offset + (1:n)),obj.shape{i});
+          yout{i} = reshape(y(offset + (1:n),:),[obj.shape{i},nt]);
           offset = offset+n;
         end
         y=yout;
