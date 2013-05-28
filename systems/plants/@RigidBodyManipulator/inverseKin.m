@@ -78,6 +78,11 @@ else
     shrinkFactor = 0.95;
 end
 nq = obj.num_q;
+  sizecheck(q0,[nq,1]);
+  sizecheck(q_nom,[nq,1]);
+  sizecheck(Q,[nq,nq]);
+  sizecheck(joint_limit_max,[nq,1]);
+  sizecheck(joint_limit_min,[nq,1]);
 Fmin=0; 
 Fmax=inf;
 i=1;n=1;
@@ -103,7 +108,9 @@ while i<=length(varargin)
     worldposi = varargin{i+1};
     support_polygon_flag{n} = false;
     body_num_support_vert(n) = 0;
-    contact_state{n} = ActionKinematicConstraint.NOT_IN_CONTACT;
+      contact_state{n} = {ActionKinematicConstraint.UNDEFINED_CONTACT};
+      contact_affs{n} = {ContactAffordance()};
+      contact_dist{n} = {struct('min',0,'max',inf)};
     i=i+5;
     mi=1;
   else
@@ -116,7 +123,13 @@ while i<=length(varargin)
 %      worldposi = repmat(worldposi,1,size(bodyposi,2));
     end
     if(isempty(varargin{i+3}))
-        contact_state{n} = ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,size(bodyposi,2));
+        contact_state{n} = {ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,size(bodyposi,2))};
+        contact_affs{n} = {ContactAffordance()};
+        contact_dist{n} = {struct('max',inf,'min',0)};
+      else
+        contact_state{n} = varargin{i+3};
+        contact_affs{n} = varargin{i+4};
+        contact_dist{n} = varargin{i+5};
     end
     if(quasiStaticFlag)
       support_polygon_flag{n} = any(cell2mat(varargin{i+3}') == ActionKinematicConstraint.STATIC_PLANAR_CONTACT,1)|...
@@ -158,18 +171,18 @@ while i<=length(varargin)
   maxpos(isnan(maxpos))=inf;
   
   if(all(all(isinf(minpos)))&&all(all(isinf(maxpos))))
-      body_ind = body_ind(1:end-1);
-      continue;
+      poscon_type(n) = -1; % No constraint on the worldpos
+    else
+      poscon_type(n) = 0*(rows==3)+(rows==6)+2*(rows==7);
   end
   body_pos{n} = bodyposi;
-  rotation_type(n)= (rows==6)+2*(rows ==7);
-  if(rotation_type(n) == 0 ||rotation_type(n) == 1)
+    if(poscon_type(n) == 0 ||poscon_type(n) == 1)
     Fmin=[Fmin;minpos(:)];
     Fmax=[Fmax;maxpos(:)];
     iGfun = [iGfun;nF+repmat((1:rows*cols)',nq,1)];
     jGvar = [jGvar;reshape(bsxfun(@times,ones(rows*cols,1),(1:nq)),[],1)];
     nF = nF+rows*cols;
-  elseif(rotation_type(n) == 2)
+    elseif(poscon_type(n) == 2)
       % The constraints are that the position matchs, and
       % (quat_des'*quat)^2 = 1. And quat_des'*quat_des = 1
       Fmin = [Fmin;reshape(minpos(1:3,:),[],1);ones(2,1)];
@@ -196,6 +209,19 @@ while i<=length(varargin)
       w0 = [w0;quat_des0];
       nF = nF+3*cols+2;
       cum_quat_des = cum_quat_des+4;
+    end
+
+    % Currently deal with the collision avoidance only, will handle affordance contact
+    % later
+    if(~isempty(contact_state{n}))
+      if(contact_state{n}{1} == ActionKinematicConstraint.COLLISION_AVOIDANCE)
+        num_rigid_bodies = length(contact_affs{n});
+        Fmin = [Fmin; ones(num_rigid_bodies,1)];
+        Fmax = [Fmax; ones(num_rigid_bodies,1)];
+        iGfun = [iGfun;nF+reshape(bsxfun(@times,(1:num_rigid_bodies)',ones(1,nq)),[],1)];
+        jGvar = [jGvar;reshape(bsxfun(@times,ones(num_rigid_bodies,1),(1:nq)),[],1)];
+        nF = nF+num_rigid_bodies;
+      end
   end
   if(options.use_mex)
 	  mex_varargin = [mex_varargin,{[bodyposi;ones(1,size(bodyposi,2))]}];
@@ -240,8 +266,8 @@ if options.use_mex
   wmax(wmax_nan) = 1e20*ones(sum(wmax_nan),1);
   wmax_inf = isinf(wmax);
   wmax(wmax_inf) = 1e20*ones(sum(wmax_inf),1);
-  [w_sol,info] = inverseKinmex(obj.mex_model_ptr.getData,w0,q_nom,Q,Fmax,Fmin,wmax,wmin,iGfun,jGvar,body_ind,rotation_type,mex_varargin{:});
-%   [w_sol,f,G] = inverseKinmex(obj.mex_model_ptr.getData,w0,q_nom,Q,Fmax,Fmin,wmax,wmin,iGfun,jGvar,body_ind,rotation_type,mex_varargin{:});
+    [w_sol,info] = inverseKinmex(obj.mex_model_ptr.getData,w0,q_nom,Q,Fmax,Fmin,wmax,wmin,iGfun,jGvar,body_ind,poscon_type,mex_varargin{:});
+    %   [w_sol,f,G] = inverseKinmex(obj.mex_model_ptr.getData,w0,q_nom,Q,Fmax,Fmin,wmax,wmin,iGfun,jGvar,body_ind,poscon_type,mex_varargin{:});
 % keyboard
 else
 
@@ -263,8 +289,8 @@ else
 snsetr('Major optimality tolerance',5e-3);
 snseti('Major Iterations Limit',300);
   global SNOPT_USERFUN;
-  SNOPT_USERFUN = @(w) ik(w,obj,nq,nF,nG,q_nom,Q,body_ind,body_pos,rotation_type,...
-      cum_quat_des,quasiStaticFlag,total_num_support_vert,body_num_support_vert,support_polygon_flag,shrinkFactor);
+    SNOPT_USERFUN = @(w) ik(w,obj,nq,nF,nG,q_nom,Q,body_ind,body_pos,poscon_type,...
+      cum_quat_des,quasiStaticFlag,total_num_support_vert,body_num_support_vert,support_polygon_flag,shrinkFactor,contact_state,contact_affs,contact_dist);
   
 %   [iGfun,jGvar] = ind2sub([nF,obj.num_q],1:(nF*obj.num_q));
   [w_sol,F,info] = snopt(w0,wmin,wmax,Fmin,Fmax,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
@@ -279,8 +305,9 @@ end
 % keyboard
 end
 
-function [f,G] = ik(w,obj,nq,nF,nG,q_nom,Q,body_ind,body_pos,rotation_type,cum_quat_des,...
-    quasiStaticFlag,total_num_support_vert,body_num_support_vert,support_polygon_flag,shrinkFactor)
+function [f,G] = ik(w,obj,nq,nF,nG,q_nom,Q,body_ind,body_pos,poscon_type,cum_quat_des,...
+    quasiStaticFlag,total_num_support_vert,body_num_support_vert,support_polygon_flag,shrinkFactor,...
+    contact_state,contact_affs,contact_dist)
 support_vert_pos = zeros(2,total_num_support_vert);
 dsupport_vert_pos = zeros(2*total_num_support_vert,nq);
 f = zeros(nF,1); G = zeros(nG,1);
@@ -309,7 +336,7 @@ for i=1:length(body_ind)
         [x,J] = getCOM(obj,kinsol);
       end
   else
-    [x,J] = forwardKin(obj,kinsol,body_ind(i),body_pos{i},rotation_type(i));
+      [x,J] = forwardKin(obj,kinsol,body_ind(i),body_pos{i},poscon_type(i));
     [rows,cols] = size(x);
     if(quasiStaticFlag)
       support_vert_pos(:,support_vert_count+(1:body_num_support_vert(i))) = x(1:2,support_polygon_flag{i});
@@ -322,12 +349,15 @@ for i=1:length(body_ind)
   end
   [rows,cols] = size(x);
   n = rows*cols;
-  if(rotation_type(i) == 0|| rotation_type(i) == 1)
+    if(poscon_type(i) == 0|| poscon_type(i) == 1)
+      if isa(contact_affs{i}(1),'ContactShapeAffordance')
+        [x,J] = contact_affs{i}(1).inGeomFrame(x,J);
+      end
       f(nf+(1:n))=x(:);
       G(ng+(1:numel(J))) = J(:);
       nf=nf+n;
       ng = ng+numel(J);
-  elseif(rotation_type(i) == 2)
+    elseif(poscon_type(i) == 2)
       f(nf+(1:3*cols)) = reshape(x(1:3,:),[],1);
       quat = x(4:7,1);
       quat_des = quat_des_all(cum_quat_des+(1:4));
@@ -342,6 +372,18 @@ for i=1:length(body_ind)
       nf = nf+3*cols+2;
       ng = ng+3*cols*nq+(nq+4)+4;
       cum_quat_des = cum_quat_des+4;
+    end
+    if(contact_state{i}{1} == ActionKinematicConstraint.COLLISION_AVOIDANCE)
+      num_rigid_bodies = length(contact_affs{i});
+      col_dist = zeros(num_rigid_bodies,1);
+      dcol_dist = zeros(num_rigid_bodies,nq);
+      for j = 1:num_rigid_bodies
+        [col_dist(j),dcol_dist(j,:)] = pairwiseContactConstraint(obj,kinsol,body_ind(i),contact_affs{i}{j});
+      end
+      f(nf+(1:num_rigid_bodies)) = col_dist;
+      G(ng+(1:num_rigid_bodies*nq)) = dcol_dist(:);
+      nf = nf+num_rigid_bodies;
+      ng = ng+num_rigid_bodies*nq;
   end
 end
 if(quasiStaticFlag)

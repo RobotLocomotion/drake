@@ -17,7 +17,7 @@ classdef ActionKinematicConstraint
     contact_dist_min % A cell, contact_dist_min can be nonzero only in NOT_IN_CONTACT state
     contact_dist_max % A cell contact_dist_max can be nonzero only in NOT_IN_CONTACT state
     contact_grp
-    contact_aff % A cell contains all ContactAffordance objects for the same body
+    contact_aff % A cell contains all affordance objects for the same body, can be either a ContactAffordance object, or a RigidBody Object
     num_aff     % the number of affordance
   end
   properties
@@ -32,6 +32,7 @@ classdef ActionKinematicConstraint
     BREAK_CONTACT = 2;
     STATIC_PLANAR_CONTACT = 3;
     STATIC_GRIP_CONTACT = 4;
+    COLLISION_AVOIDANCE = 5;
   end
   
   methods
@@ -233,25 +234,43 @@ classdef ActionKinematicConstraint
           obj.STATIC_PLANAR_CONTACT obj.BREAK_CONTACT obj.NOT_IN_CONTACT;...
           obj.STATIC_GRIP_CONTACT obj.STATIC_GRIP_CONTACT obj.STATIC_GRIP_CONTACT;...
           obj.STATIC_GRIP_CONTACT obj.STATIC_GRIP_CONTACT obj.BREAK_CONTACT;...
-          obj.STATIC_GRIP_CONTACT obj.BREAK_CONTACT obj.NOT_IN_CONTACT];
+          obj.STATIC_GRIP_CONTACT obj.BREAK_CONTACT obj.NOT_IN_CONTACT;...
+          obj.UNDEFINED_CONTACT obj.COLLISION_AVOIDANCE obj.UNDEFINED_CONTACT;...
+          obj.UNDEFINED_CONTACT obj.COLLISION_AVOIDANCE obj.COLLISION_AVOIDANCE;...
+          obj.COLLISION_AVOIDANCE obj.COLLISION_AVOIDANCE obj.UNDEFINED_CONTACT;...
+          obj.COLLISION_AVOIDANCE obj.COLLISION_AVOIDANCE obj.COLLISION_AVOIDANCE];
+      n_pts = size(obj.body_pts,2);
       for i = 1:obj.num_aff
-          sizecheck(obj.contact_state0{i},[1,nan]);
-          sizecheck(obj.contact_statei{i},[1,nan]);
-          sizecheck(obj.contact_statef{i},[1,nan]);
+          sizecheck(obj.contact_state0{i},[1,n_pts]);
+          sizecheck(obj.contact_statei{i},[1,n_pts]);
+          sizecheck(obj.contact_statef{i},[1,n_pts]);
           valid_contact_flag = ismember([obj.contact_state0{i};obj.contact_statei{i};obj.contact_statef{i}]',valid_contact_comb,'rows');
           if(~all(valid_contact_flag))
               error('The contact state for the %d th point is not valid',find(~valid_contact_flag));
           end
+          % allow contact_aff{i} being a rigid body, as the latter is the
+          % input to the pairwiseContactConstraint function
+          if(isa(contact_aff{i},'ContactAffordance')||isa(contact_aff{i},'RigidBody'))
+            obj.contact_aff{i} = contact_aff{i};
           if(isa(contact_aff{i},'ContactAffordance'))
             obj.contact_aff{i} = contact_aff{i};
             contact_aff_names{i} = contact_aff{i}.name;
+            elseif(isa(contact_aff{i},'RigidBody'))
+                contact_aff_names{i} = contact_aff{i}.linkname;
+            end
             if(i>1)
                 if(any(cellfun(@(x) strcmp(x,contact_aff_names{i}),contact_aff_names(1:i-1))))
                     error('The contact affordances should not be the same, check the name of the affordance')
                 end
             end
+            if(any(obj.contact_statei{i}==obj.COLLISION_AVOIDANCE))
+                sizecheck(obj.contact_statei,[1,1]); % For collision avoidance, 
+                if(any(obj.body_pts ~= [0;0;0]))
+                    error('For collision avoidance, the body points must be [0;0;0]');
+                end
+            end
           else
-              error('contact_aff must be a ContactAffordance object');
+              error('contact_aff must be either a ContactAffordance object or a RigidBody object');
           end
           if(isstruct(contact_distance{i}))
               if(~isfield(contact_distance{i},'min')||~isfield(contact_distance{i},'max'))
