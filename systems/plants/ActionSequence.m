@@ -94,99 +94,126 @@ classdef ActionSequence
       % together
       bodys = [];
       bodys_ikargs = {};
+      collision_bodys = [];
+      collision_ikargs = {}; % We do not aggregate the ikargs for collision to the ikargs of contact, since they are not for contact points, but for the body.
       for i=1:length(obj.kincons)
+        if(isa(obj.kincons{i},'CollisionAvoidanceConstraint'))
+          kin_col_ikargs = obj.kincons{i}.getIKArguments(t);
+          if(~isempty(kin_col_ikargs))
+            collision_state = kin_col_ikargs{4}{1};
+            if(collision_state == ActionKinematicConstraint.UNDEFINED_CONTACT)
+              if(t == obj.tspan(1)|| t == obj.tspan(end))
+                collision_state = ActionKinematicConstraint.COLLISION_AVOIDANCE;
+              else
+                continue;
+              end
+            end
+            kin_col_ikargs{4}{1} = collision_state;
+            body_ind = kin_col_ikargs{1};
+            bodys_ind = find(body_ind == collision_bodys,1);
+            if(isempty(bodys_ind))
+              collision_bodys = [collision_bodys body_ind];
+              collision_ikargs = [collision_ikargs {kin_col_ikargs}];
+            else
+              collision_ikargs{bodys_ind}{4} = [collision_ikargs{bodys_ind}{4} {collision_state}];
+              collision_ikargs{bodys_ind}{5} = [collision_ikargs{bodys_ind}{5} kin_col_ikargs{5}];
+              collision_ikargs{bodys_ind}{6} = [collision_ikargs{bodys_ind}{6} kin_col_ikargs{6}];
+            end
+          end
+        else
           kincon_ikargs = obj.kincons{i}.getIKArguments(t);
           if(~isempty(kincon_ikargs))
-              body_ind = kincon_ikargs{1}; % This is the index in the robot
-              bodys_ind = find(body_ind == bodys,1); % This is the index in the ik arguments
-              if(body_ind==0) 
-                worldpos_ind = 2;
-              else
-                worldpos_ind = 3;
-              end
-              if(~isstruct(kincon_ikargs{worldpos_ind}))
+            body_ind = kincon_ikargs{1}; % This is the index in the robot
+            bodys_ind = find(body_ind == bodys,1); % This is the index in the ik arguments
+            if(body_ind==0)
+              worldpos_ind = 2;
+            else
+              worldpos_ind = 3;
+            end
+            if(~isstruct(kincon_ikargs{worldpos_ind}))
+              worldpos = struct();
+              worldpos.max = kincon_ikargs{worldpos_ind};
+              worldpos.min = kincon_ikargs{worldpos_ind};
+              kincon_ikargs{worldpos_ind} = worldpos;
+            end
+            if(isempty(bodys_ind))
+              bodys = [bodys body_ind];
+              bodys_ikargs = [bodys_ikargs,{kincon_ikargs}];
+            else
+              if(body_ind~=0)
+                bodys_pts = [bodys_ikargs{bodys_ind}{2} kincon_ikargs{2}];
                 worldpos = struct();
-                worldpos.max = kincon_ikargs{worldpos_ind};
-                worldpos.min = kincon_ikargs{worldpos_ind};
-                kincon_ikargs{worldpos_ind} = worldpos;
-              end
-              if(isempty(bodys_ind))
-                  bodys = [bodys body_ind];
-                  bodys_ikargs = [bodys_ikargs,{kincon_ikargs}];
+                if(size(bodys_ikargs{bodys_ind}{3}.max,1) == 6&&size(kincon_ikargs{3}.max,1)==3)
+                  kincon_ikargs{3}.max = [kincon_ikargs{3}.max;inf(3,size(kincon_ikargs{3}.max,2))];
+                  kincon_ikargs{3}.min = [kincon_ikargs{3}.min;-inf(3,size(kincon_ikargs{3}.min,2))];
+                elseif(size(bodys_ikargs{bodys_ind}{3}.max,1) == 3&&size(kincon_ikargs{3}.max,1)==6)
+                  bodys_ikargs{bodys_ind}{3}.max = [bodys_ikargs{bodys_ind}{3}.max inf(3,size(bodys_ikargs{bodys_ind}{3}.max,2))];
+                  bodys_ikargs{bodys_ind}{3}.min = [bodys_ikargs{bodys_ind}{3}.min -inf(3,size(bodys_ikargs{bodys_ind}{3}.min,2))];
+                elseif(size(bodys_ikargs{bodys_ind}{3}.max,1) == 7&&size(kincon_ikargs{3}.max,1)==3)
+                  kincon_ikargs{3}.max = [kincon_ikargs{3}.max;ones(4,size(kincon_ikargs{3}.max,2))];
+                  kincon_ikargs{3}.min = [kincon_ikargs{3}.min;-ones(4,size(kincon_ikargs{3}.min,2))];
+                elseif(size(bodys_ikargs{bodys_ind}{3}.max,1) == 3&&size(kincon_ikargs{3}.max,1)==7)
+                  bodys_ikargs{bodys_ind}{3}.max = [bodys_ikargs{bodys_ind}{3}.max ones(4,size(bodys_ikargs{bodys_ind}{3}.max,2))];
+                  bodys_ikargs{bodys_ind}{3}.min = [bodys_ikargs{bodys_ind}{3}.min -ones(4,size(bodys_ikargs{bodys_ind}{3}.min,2))];
+                elseif((size(bodys_ikargs{bodys_ind}{3}.max,1) == 6&&size(kincon_ikargs{3}.max,1)==7)...
+                    ||(size(bodys_ikargs{bodys_ind}{3}.max,1) == 7&&size(kincon_ikargs{3}.max,1)==6))
+                  error('Currently I cannot support that both quaternion and Euler angles are used for the same contact point at the same time');
+                end
+                worldpos.max = [bodys_ikargs{bodys_ind}{3}.max kincon_ikargs{3}.max];
+                worldpos.min = [bodys_ikargs{bodys_ind}{3}.min kincon_ikargs{3}.min];
+                [bodys_unique_pts,bodys_unique_pts_ind,body_pts_ind] = unique(bodys_pts','rows');
+                bodys_unique_pts = bodys_unique_pts';
+                num_bodys_unique_pts = size(bodys_unique_pts,2);
+                worldpos_unique = struct();
+                worldpos_unique.max = inf(size(worldpos.max,1),num_bodys_unique_pts);
+                worldpos_unique.min = -inf(size(worldpos.min,1),num_bodys_unique_pts);
+                for j = 1:size(worldpos.max,2)
+                  worldpos_unique.max(:,body_pts_ind(j)) = min([worldpos_unique.max(:,body_pts_ind(j)) worldpos.max(:,j)],[],2);
+                  worldpos_unique.min(:,body_pts_ind(j)) = max([worldpos_unique.min(:,body_pts_ind(j)) worldpos.min(:,j)],[],2);
+                  worldpos_unique.max(:,body_pts_ind(j)) = max([worldpos_unique.max(:,body_pts_ind(j)) worldpos_unique.min(:,body_pts_ind(j))],[],2);
+                end
+                
+                % Should consider aggregating the contact constraints
+                % also, to find out the minimal set of distance
+                org_body_pts_ind = body_pts_ind(1:size(bodys_ikargs{bodys_ind}{2},2));
+                kincon_pts_ind = body_pts_ind(size(bodys_ikargs{bodys_ind}{2},2)+1:end);
+                org_num_contact_aff = length(bodys_ikargs{bodys_ind}{5});
+                kincon_num_contact_aff = length(kincon_ikargs{5});
+                contact_state = cell(1,org_num_contact_aff+kincon_num_contact_aff);
+                contact_aff = cell(1,org_num_contact_aff+kincon_num_contact_aff);
+                contact_dist = cell(1,org_num_contact_aff+kincon_num_contact_aff);
+                for k = 1:org_num_contact_aff
+                  contact_state{k} = ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,num_bodys_unique_pts);
+                  contact_state{k}(org_body_pts_ind) = bodys_ikargs{bodys_ind}{4}{k};
+                  contact_dist{k} = struct();
+                  contact_dist{k}.max = inf(1,num_bodys_unique_pts);
+                  contact_dist{k}.min = zeros(1,num_bodys_unique_pts);
+                  contact_dist{k}.max(org_body_pts_ind) = bodys_ikargs{bodys_ind}{6}{k}.max;
+                  contact_dist{k}.min(org_body_pts_ind) = bodys_ikargs{bodys_ind}{6}{k}.min;
+                  contact_aff{k} = bodys_ikargs{bodys_ind}{5}{k};
+                end
+                for k = 1:kincon_num_contact_aff
+                  contact_state{org_num_contact_aff+k} = ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,num_bodys_unique_pts);
+                  contact_state{org_num_contact_aff+k}(kincon_pts_ind) = kincon_ikargs{4}{k};
+                  contact_dist{org_num_contact_aff+k} = struct();
+                  contact_dist{org_num_contact_aff+k}.max = inf(1,num_bodys_unique_pts);
+                  contact_dist{org_num_contact_aff+k}.min = zeros(1,num_bodys_unique_pts);
+                  contact_dist{org_num_contact_aff+k}.max(kincon_pts_ind) = kincon_ikargs{6}{k}.max;
+                  contact_dist{org_num_contact_aff+k}.min(kincon_pts_ind) = kincon_ikargs{6}{k}.min;
+                  contact_aff{org_num_contact_aff+k} = kincon_ikargs{5}{k};
+                end
+                bodys_ikargs{bodys_ind} = {body_ind,bodys_unique_pts,worldpos_unique,contact_state,contact_aff,contact_dist};
               else
-                  if(body_ind~=0)
-                    bodys_pts = [bodys_ikargs{bodys_ind}{2} kincon_ikargs{2}];
-                    worldpos = struct();
-                    if(size(bodys_ikargs{bodys_ind}{3}.max,1) == 6&&size(kincon_ikargs{3}.max,1)==3)
-                        kincon_ikargs{3}.max = [kincon_ikargs{3}.max;inf(3,size(kincon_ikargs{3}.max,2))];
-                        kincon_ikargs{3}.min = [kincon_ikargs{3}.min;-inf(3,size(kincon_ikargs{3}.min,2))];
-                    elseif(size(bodys_ikargs{bodys_ind}{3}.max,1) == 3&&size(kincon_ikargs{3}.max,1)==6)
-                        bodys_ikargs{bodys_ind}{3}.max = [bodys_ikargs{bodys_ind}{3}.max inf(3,size(bodys_ikargs{bodys_ind}{3}.max,2))];
-                        bodys_ikargs{bodys_ind}{3}.min = [bodys_ikargs{bodys_ind}{3}.min -inf(3,size(bodys_ikargs{bodys_ind}{3}.min,2))];
-                    elseif(size(bodys_ikargs{bodys_ind}{3}.max,1) == 7&&size(kincon_ikargs{3}.max,1)==3)
-                        kincon_ikargs{3}.max = [kincon_ikargs{3}.max;ones(4,size(kincon_ikargs{3}.max,2))];
-                        kincon_ikargs{3}.min = [kincon_ikargs{3}.min;-ones(4,size(kincon_ikargs{3}.min,2))];
-                    elseif(size(bodys_ikargs{bodys_ind}{3}.max,1) == 3&&size(kincon_ikargs{3}.max,1)==7)
-                        bodys_ikargs{bodys_ind}{3}.max = [bodys_ikargs{bodys_ind}{3}.max ones(4,size(bodys_ikargs{bodys_ind}{3}.max,2))];
-                        bodys_ikargs{bodys_ind}{3}.min = [bodys_ikargs{bodys_ind}{3}.min -ones(4,size(bodys_ikargs{bodys_ind}{3}.min,2))];
-                    elseif((size(bodys_ikargs{bodys_ind}{3}.max,1) == 6&&size(kincon_ikargs{3}.max,1)==7)...
-                            ||(size(bodys_ikargs{bodys_ind}{3}.max,1) == 7&&size(kincon_ikargs{3}.max,1)==6))
-                        error('Currently I cannot support that both quaternion and Euler angles are used for the same contact point at the same time');
-                    end
-                    worldpos.max = [bodys_ikargs{bodys_ind}{3}.max kincon_ikargs{3}.max];
-                    worldpos.min = [bodys_ikargs{bodys_ind}{3}.min kincon_ikargs{3}.min];
-                    [bodys_unique_pts,bodys_unique_pts_ind,body_pts_ind] = unique(bodys_pts','rows');
-                    bodys_unique_pts = bodys_unique_pts';
-                    num_bodys_unique_pts = size(bodys_unique_pts,2);
-                    worldpos_unique = struct();
-                    worldpos_unique.max = inf(size(worldpos.max,1),num_bodys_unique_pts);
-                    worldpos_unique.min = -inf(size(worldpos.min,1),num_bodys_unique_pts);
-                    for j = 1:size(worldpos.max,2)
-                        worldpos_unique.max(:,body_pts_ind(j)) = min([worldpos_unique.max(:,body_pts_ind(j)) worldpos.max(:,j)],[],2);
-                        worldpos_unique.min(:,body_pts_ind(j)) = max([worldpos_unique.min(:,body_pts_ind(j)) worldpos.min(:,j)],[],2);
-                        worldpos_unique.max(:,body_pts_ind(j)) = max([worldpos_unique.max(:,body_pts_ind(j)) worldpos_unique.min(:,body_pts_ind(j))],[],2);
-                    end
-                    
-                    % Should consider aggregating the contact constraints
-                    % also, to find out the minimal set of distance
-                    org_body_pts_ind = body_pts_ind(1:size(bodys_ikargs{bodys_ind}{2},2));
-                    kincon_pts_ind = body_pts_ind(size(bodys_ikargs{bodys_ind}{2},2)+1:end);
-                    org_num_contact_aff = length(bodys_ikargs{bodys_ind}{5});
-                    kincon_num_contact_aff = length(kincon_ikargs{5});
-                    contact_state = cell(1,org_num_contact_aff+kincon_num_contact_aff);
-                    contact_aff = cell(1,org_num_contact_aff+kincon_num_contact_aff);
-                    contact_dist = cell(1,org_num_contact_aff+kincon_num_contact_aff);
-                    for k = 1:org_num_contact_aff
-                        contact_state{k} = ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,num_bodys_unique_pts);
-                        contact_state{k}(org_body_pts_ind) = bodys_ikargs{bodys_ind}{4}{k};
-                        contact_dist{k} = struct();
-                        contact_dist{k}.max = inf(1,num_bodys_unique_pts);
-                        contact_dist{k}.min = zeros(1,num_bodys_unique_pts);
-                        contact_dist{k}.max(org_body_pts_ind) = bodys_ikargs{bodys_ind}{6}{k}.max;
-                        contact_dist{k}.min(org_body_pts_ind) = bodys_ikargs{bodys_ind}{6}{k}.min;
-                        contact_aff{k} = bodys_ikargs{bodys_ind}{5}{k};
-                    end
-                    for k = 1:kincon_num_contact_aff
-                        contact_state{org_num_contact_aff+k} = ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,num_bodys_unique_pts);
-                        contact_state{org_num_contact_aff+k}(kincon_pts_ind) = kincon_ikargs{4}{k};
-                        contact_dist{org_num_contact_aff+k} = struct();
-                        contact_dist{org_num_contact_aff+k}.max = inf(1,num_bodys_unique_pts);
-                        contact_dist{org_num_contact_aff+k}.min = zeros(1,num_bodys_unique_pts);
-                        contact_dist{org_num_contact_aff+k}.max(kincon_pts_ind) = kincon_ikargs{6}{k}.max;
-                        contact_dist{org_num_contact_aff+k}.min(kincon_pts_ind) = kincon_ikargs{6}{k}.min;
-                        contact_aff{org_num_contact_aff+k} = kincon_ikargs{5}{k};
-                    end
-                    bodys_ikargs{bodys_ind} = {body_ind,bodys_unique_pts,worldpos_unique,contact_state,contact_aff,contact_dist};
-                  else
-                      worldpos_unique.max = min([bodys_ikargs{body_ind}{2}.max kincon_ikargs{2}.max],[],2);
-                      worldpos_unique.min = max([bodys_ikargs{body_ind}{2}.min kincon_ikargs{2}.min],[],2);
-                      worldpos_unique.max = max([worldpos_unique.max worldpos_unique.min]);
-                      bodys_ikargs{bodys_ind} = {body_ind,worldpos_unique,-1,ContactAffordance,struct('min',0,'max',inf)};
-                  end
+                worldpos_unique.max = min([bodys_ikargs{body_ind}{2}.max kincon_ikargs{2}.max],[],2);
+                worldpos_unique.min = max([bodys_ikargs{body_ind}{2}.min kincon_ikargs{2}.min],[],2);
+                worldpos_unique.max = max([worldpos_unique.max worldpos_unique.min]);
+                bodys_ikargs{bodys_ind} = {body_ind,worldpos_unique,-1,ContactAffordance,struct('min',0,'max',inf)};
               end
+            end
           end
+        end
       end
-      ikargs = [bodys_ikargs{:}];
+      ikargs = [bodys_ikargs{:} collision_ikargs{:}];
     end
 
     function contact_states = getContactStates(obj,t)
@@ -200,6 +227,64 @@ classdef ActionSequence
     function kincons = getKinematicConstraints(obj)
       kincons = obj.kincons;
     end
+    
+    function obj = generateImplicitConstraints(obj, robot, q0, options)
+      NB = robot.getNumBodies;
+      tspan = [0 obj.tspan(1)];
+      for i=2:NB
+        ptsA = []; ptsB = [];
+        B = robot.body(i);
+        num_coll_groups = numel(B.collision_group);
+        kinsol = doKinematics(robot,q0);
+        if isfield(options,'initial_contact_groups')
+          link_ind = strmatch(B.linkname,options.initial_contact_groups.linknames);
+          if ~isempty(link_ind)
+            for ind = reshape(link_ind,1,[])
+              ptsB_new = getContactPoints(B,options.initial_contact_groups.groupnames{ind});
+              ptsB = [ptsB, ptsB_new];
+              ptsA = [ptsA, forwardKin(robot,kinsol,B,ptsB_new)];
+            end
+          end
+        else
+          [ptsA,ptsB] = pairwiseContactTest(robot,kinsol,robot.body(1),B);
+        end
+        if ~isempty(ptsA)
+          kc = createContactConstraint(robot,robot.body(1),ptsA,B,ptsB,tspan);
+          for kc = reshape(kc,1,[])
+            obj = addKinematicConstraint(obj,kc);
+          end
+        end
+      end
+      
+      function kc = createContactConstraint(robot,body_indA,ptsA,body_indB,ptsB,tspan);
+        % dummy implementation - assumes that bodyA is the world link !!!
+        % Creates two `ActionKinematicConstraint`
+        %   z equality constraint
+        %   xy bounding box
+        
+        n_pts = size(ptsA,2);
+        name_z = sprintf('z_%s_in_contact_with_%s_from_%3.1f_to_%3.1f', ...
+          body_indB.linkname, body_indA.linkname, tspan);
+        name_xy = sprintf('xy_%s_in_contact_with_%s_from_%3.1f_to_%3.1f', ...
+          body_indB.linkname, body_indA.linkname, tspan);
+        worldpos_z.min = [-Inf(2,n_pts); ptsA(3,:)];
+        worldpos_z.max = [Inf(2,size(ptsA,2)); ptsA(3,:)];
+        worldpos_xy.min = repmat([min(ptsA(1:2,:),[],2); -Inf],1,n_pts);
+        worldpos_xy.max = repmat([max(ptsA(1:2,:),[],2); Inf],1,n_pts);
+        kc = [ActionKinematicConstraint(robot,body_indB,ptsB,worldpos_z,tspan, name_z, ...
+          {ActionKinematicConstraint.MAKE_CONTACT*ones(1,n_pts)}, ...
+          {ActionKinematicConstraint.STATIC_PLANAR_CONTACT*ones(1,n_pts)}, ...
+          {ActionKinematicConstraint.STATIC_PLANAR_CONTACT*ones(1,n_pts)}, {body_indA}, {zeros(1,n_pts)}); ...
+          ActionKinematicConstraint(robot,body_indB,ptsB,worldpos_xy,tspan, name_xy, ...
+          {ActionKinematicConstraint.NOT_IN_CONTACT*ones(1,n_pts)}, ...
+          {ActionKinematicConstraint.NOT_IN_CONTACT*ones(1,n_pts)}, ...
+          {ActionKinematicConstraint.NOT_IN_CONTACT*ones(1,n_pts)}, {body_indA}, {zeros(1,n_pts)})];
+        kc = kc(1);
+      end
+      
+    end
+
+    
   end
   
 end

@@ -12,6 +12,7 @@ classdef RigidBody < handle
 
     contact_pts=[];  % a 3xn matrix with [x;y;z] positions of contact points
     contact_shapes=[]; %struct('type',[],'T',[],'params',[]);  with params as used by URDF (not necessarily by Bullet)
+    contact_shape_group=[]; % contact_shape_group{i} is a list of indices into contact_shapes which belong to collision_group_name{i}
     
     % joint properties
     jointname=''
@@ -74,6 +75,23 @@ classdef RigidBody < handle
           collision_group = find(strcmpi(collision_group,body.collision_group_name));
         end
         pts = body.contact_pts(:,body.collision_group{collision_group});
+      end
+    end
+
+    function shapes = getContactShapes(body,collision_group,collision_ind)
+      % @param collision_group (optional) return structures for only the
+      % contact_shapes in that group.  can be an integer index or a string.
+      if (nargin<2) 
+        shapes = body.contact_shapes;
+      else
+        if isa(collision_group,'char')
+          collision_group = find(strcmpi(collision_group,body.collision_group_name));
+        end
+        if (nargin < 2)
+          shapes = body.contact_shapes(:,body.contact_shape_group{collision_group});
+        else
+          shapes = body.contact_shapes(:,body.contact_shape_group{collision_group}(collision_ind));
+        end
       end
     end
     
@@ -280,7 +298,9 @@ classdef RigidBody < handle
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         [xpts,ypts,zpts,shape] = RigidBody.parseGeometry(geomnode,xyz,rpy,options);
-        body.contact_pts=unique([body.contact_pts';xpts(:), ypts(:), zpts(:)],'rows')';
+        npts_additional = numel(xpts);
+        [body.contact_pts,ind_old,ind_new]=unique([body.contact_pts';xpts(:), ypts(:), zpts(:)],'rows','stable');
+        body.contact_pts = body.contact_pts';
         body.contact_shapes = horzcat(body.contact_shapes,shape);
       end
       if (node.hasAttribute('group'))
@@ -292,9 +312,11 @@ classdef RigidBody < handle
       if isempty(ind)
         body.collision_group_name=horzcat(body.collision_group_name,name);
         ind=length(body.collision_group_name);
-        body.collision_group{ind}=npts+1:size(body.contact_pts,2);
+        body.collision_group{ind}=ind_new(npts+(1:npts_additional))';
+        body.contact_shape_group{ind} = length(body.contact_shapes);
       else
-        body.collision_group{ind}=[body.collision_group{ind},npts+1:size(body.contact_pts,2)];
+        body.collision_group{ind}=[body.collision_group{ind},ind_new(npts+(1:npts_additional))'];
+        body.contact_shape_group{ind} = [body.contact_shape_group{ind},length(body.contact_shapes)];
       end
     end
       
