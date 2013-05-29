@@ -1,4 +1,4 @@
-function [phi,n,D,mu,dn,dD] = contactConstraints(obj,kinsol,body_idx)
+function [phi,n,D,mu,dn,dD] = contactConstraints(obj,kinsol,body_idx,body_contacts)
 %
 % @retval phi  phi(i,1) is the signed distance from the contact
 % point on the robot to the closes object in the world.
@@ -10,13 +10,18 @@ function [phi,n,D,mu,dn,dD] = contactConstraints(obj,kinsol,body_idx)
 % @retval mu mu(i,1) is the coefficient of friction for the ith contact
 
 if nargin<3, body_idx = 1:length(obj.body); end
+if nargin<4
+  varargin = {kinsol,body_idx};
+else
+  varargin = {kinsol,body_idx,body_contacts};
+end
 
 if (nargout>4)
-  [contact_pos,J,dJ] = contactPositions(obj,kinsol,body_idx);
+  [contact_pos,J,dJ] = contactPositions(obj,varargin{:});
 elseif (nargout>1)
-  [contact_pos,J] = contactPositions(obj,kinsol,body_idx);
+  [contact_pos,J] = contactPositions(obj,varargin{:});
 else
-  contact_pos = contactPositions(obj,kinsol,body_idx);
+  contact_pos = contactPositions(obj,varargin{:});
 end
 
 %      axis equal;
