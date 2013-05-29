@@ -112,3 +112,7 @@ include/lcmt_viewer_command.h
 bin/drake_viewer.dSYM
 drake_viewer
 data_t.java
+examples/ZMP/zmp-riccati.log
+examples/ZMP/zmp-riccati.nav
+zmp-riccati.snm
+zmp-riccati.toc

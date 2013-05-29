@@ -63,11 +63,11 @@ classdef LinearInvertedPendulum < LinearSystem
     
     function [c,Vt] = ZMPtracker(obj,dZMP,options)
       if nargin<3 options = struct(); end
-      if ~isfield(options,'use_mex') options.use_mex = false; end
-      if options.use_mex
+      if ~isfield(options,'use_tvlqr') options.use_tvlqr = false; end
+      if ~options.use_tvlqr
         if isfield(options,'dCOM') || ~isTI(obj) || ~isa(dZMP,'PPTrajectory')
-          warning('mex not implemented for these options yet');
-          options.use_mex = false;
+          warning('closed-form solution not implemented for these options (yet)');
+          options.use_tvlqr = true;
         end
       end        
       
@@ -103,74 +103,7 @@ classdef LinearInvertedPendulum < LinearSystem
         Q = zeros(4);
       end
 
-      if options.use_mex 
-        % ok, not actually mex yet... but should be optimized considerably
-        ts = options.tspan;
-        
-        % cost ((zmp-zmp_des)'*(zmp-zmp_des) + u'*R*u)
-        %   with zmp = x(1:2) -h/g*u
-        %   and everything in zmp - zmp_tf coordinates (necessary for
-        %   translational invariance.. otherwise the numerics get dicey).
-        %  =>  cost x'*Q*x + x'*q2 + u'*R*u + u'*r2 + 2*x'*N*u + r3 with
-        %   Q = diag([1 1 0 0]);  q2 = -2*[zmp_des;0;0]
-        %   R = R + (h/g)^2*eye(2);  r2 = 2*zmp_des*h/g;
-        %   N = -h/g*[eye(2);zeros(2)];  r3 = zmp_des'*zmp_des
-        hg = obj.h/obj.g;
-        A = obj.Ac; B = obj.Bc; 
-        Q = diag([1 1 0 0]);
-        R = hg^2*eye(2); Ri = inv(R);
-        N = -hg*[eye(2);zeros(2)];
-        
-        % commented out to leave V in relative coordinates from the lqr
-        % solution
-%        V = V.inFrame(getStateFrame(obj));
-        
-        [ts,S] = ode45(@(t,x)zmpRiccati(t,x,zmp_tf),dZMP.tspan([end,1]),[V.S(:);V.s1;V.s2]);
-        ts = flipud(ts); S = flipud(S)';
-        m = length(ts);
-
-        % flip S back to world coordinates
-        % vectorized version of this:
-        %  c = [-zmp_tf;0;0];
-        %  S(17:21,i) = [ (S1+S1')*c + S2; c'*S1*c + c'*S2 + S3 ];
-%        S(17,:) = S(17,:) - 2*S(1,:)*zmp_tf(1) - (S(2,:)+S(5,:))*zmp_tf(2);
-%        S(18,:) = S(18,:) - (S(2,:)+S(5,:))*zmp_tf(1) - 2*S(6,:)*zmp_tf(2);
-%        S(21,:) = S(21,:) + zmp_tf'*[S(1,:)*zmp_tf(1) + S(5,:)*zmp_tf(2);S(2,:)*zmp_tf(1) + S(6,:)*zmp_tf(2)];
-        
-        Sdot=S; % preallocate
-        for i=1:length(ts)
-          S1 = reshape(S(1:16,i),[4 4]);  % flip S back to world coordinates
-          S2 = S(17:20,i);
-          S3 = S(21,i);
-          c = [-zmp_tf;0;0];
-          S(17:21,i) = [ (S1+S1')*c + S2; c'*S1*c + c'*S2 + S3 ];
-          Sdot(:,i) = zmpRiccati(ts(i),S(:,i),zeros(2,1));
-%          Sdot1 = reshape(Sdot(1:16,i),[4 4]);
-%          Sdot2 = Sdot(17:20,i);
-%          Sdot3 = S(21,i);
-%          Sdot(17:21,i) = [ (Sdot1+Sdot1')*c + Sdot2; c'*Sdot1*c + c'*Sdot2 + Sdot3 ];
-        end
-        
-        K1 = reshape(-Ri*(B'*reshape(S(1:16,:),[4 4*m]) + repmat(N',[1 m])),[2 4 m]);
-        r2 = 2*eval(dZMP,ts)*hg;
-        K2 = reshape(-.5*Ri*(B'*reshape(S(17:20,:),[4 m]) + r2),[2 m]);
-        Kdot1 = reshape(-Ri*(B'*reshape(Sdot(1:16,:),[4 4*m]) + repmat(N',[1 m])),[2 4 m]);
-        r2dot = 2*deriv(dZMP,ts)*hg;
-        Kdot2 = reshape(-.5*Ri*(B'*reshape(Sdot(17:20,:),[4 m]) + r2dot),[2 m]);
-        Kpp1 = pchipDeriv(ts,K1,Kdot1,Kdot1,[2 4]);
-        Kpp2 = pchipDeriv(ts,K2,Kdot2,Kdot2,[2 1]);
-
-        c = AffineSystem([],[],[],[],[],[],[],PPTrajectory(Kpp1),PPTrajectory(Kpp2)); 
-        c = setInputFrame(c,getStateFrame(obj));
-        c = setOutputFrame(c,getInputFrame(obj));
-        
-        if (nargout>1)
-          Spp1 = pchipDeriv(ts,S(1:16,:),Sdot(1:16,:),[],[4 4]);
-          Spp2 = pchipDeriv(ts,S(17:20,:),Sdot(17:20,:),[],[4 1]);
-          Spp3 = pchipDeriv(ts,S(21,:),Sdot(21,:));
-          Vt = QuadraticLyapunovFunction(getStateFrame(obj),PPTrajectory(Spp1),PPTrajectory(Spp2),PPTrajectory(Spp3));
-        end
-      else
+      if options.use_tvlqr
         dZMP = setOutputFrame(dZMP,getFrameByNum(getOutputFrame(obj),2)); % override it before sending in to tvlqr
         % note: the system is actually linear, so x0traj and u0traj should
         % have no effect on the numerical results (they just set up the
@@ -181,58 +114,56 @@ classdef LinearInvertedPendulum < LinearSystem
         options.ydtraj = [x0traj;dZMP];
         WS = warning('off','Drake:TVLQR:NegativeS');  % i expect to have some zero eigenvalues, which numerically fluctuate below 0
         [c,Vt] = tvlqr(obj,x0traj,u0traj,Q,zeros(2),V,options);
-        warning(WS);
+        warning(WS);        
+      else
+        % closed-form solution, see derivation in zmp_riccati.pdf
+
+        [breaks,coefs,n,k,d] = unmkpp(dZMP.pp);
+        assert(prod(d)==2);
+        c = reshape(coefs,[2,n,k]);
+        c(:,:,1) = c(:,:,1) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
+        dt = diff(breaks);
+
+        hg = obj.h/obj.g;
+        A = obj.Ac; B = obj.Bc; S = V.S;
+        Q = diag([1 1 0 0]);
+        R = hg^2*eye(2); Ri = inv(R);
+        N = -hg*[eye(2);zeros(2)];
+
+        A2 = (N+S*B)*Ri*B' - A';
+        B2 = [-2*eye(2); zeros(2)] + 2*hg*(N + S*B)*Ri*eye(2);
+        
+        alpha = zeros(4,n);
+        beta = zeros(4,n,k);
+        for j=n:-1:1
+          beta(:,j,1) = B2*c(:,j,1);
+          for i=2:k
+            beta(:,j,i) = ( A2*beta(:,j,i-1) + B2*c(:,j,i-1) )/(i+1);
+          end
+          if (j==n) 
+            s1dt = zeros(4,1);
+          else
+            s1dt = alpha(:,j+1) + beta(:,j+1,1);
+          end
+          alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(0:k-1)'));
+        end
+        
+        c = lqr(obj,zmp_tf);  % placeholder until I do the right thing here
+        if (nargout>1)
+          % note: writing directly on top of V's elements might not be
+          % allowed in the future (it probably shouldn't be!)
+          Vt = V;
+          Vt.s1 = FunctionHandleTrajectory(@(t)s1ClosedFormRiccati(t,breaks,A2,alpha,beta), 4, breaks);
+          %  Vt.s2 is left alone (until I finish this)
+        end
       end
       
-        function Sdotvec = zmpRiccati(t,Svec,zmp0)
-          S1 = reshape(Svec(1:16),[4 4]);
-          S2 = reshape(Svec(17:20),[4 1]);
-          S3 = Svec(21);
-          zmp_des = eval(dZMP,t) - zmp0;
-          q2 = [-2*zmp_des;0;0];
-          r2 = 2*zmp_des*hg;
-          q3 = zmp_des'*zmp_des;
-          
-          Sdot1 = -(Q - (N+S1*B)*Ri*(B'*S1+N') + S1*A + A'*S1);
-          rs = (r2+B'*S2)/2;
-          Sdot2 = -(q2 - 2*(N+S1*B)*Ri*rs + A'*S2);
-          Sdot3 = -(q3 - rs'*Ri*rs);
-          
-          Sdotvec = [Sdot1(:); Sdot2; Sdot3];
-          
-          if (0)
-          c = [zmp_tf-zmp0;0;0];
-          Qt{1} = Q;
-          Qt{2} = (Q+Q')*c + q2;
-          Qt{3} = c'*Q*c + c'*q2 +q3;
-          Rt{1} = R;
-          Rt{2} = (r2' + 2*c'*N)';
-          Rt{3} = 0;
-          St{1} = S1; St{2} = (S1+S1')*c + S2; St{3} = c'*S1*c + c'*S2 + S3;
-          Stdot{1} = Sdot1;  Stdot{2}=(Sdot1+Sdot1')*c + Sdot2; Stdot{3}=c'*Sdot1*c + c'*Sdot2 + Sdot3;
-%          plot(t,St{2}(1),'b.');
-          if (0) %9.95<=t & t<10)
-            t
-            disp(['Qt{1} = ',mat2str(Qt{1})]);
-            disp(['Qt{2} = ',mat2str(Qt{2})]);
-            disp(mat2str(-2*zmp_des + 2*zmp_tf));
-            disp(['Qt{3}+Rt{3} = ',mat2str(Qt{3}+Rt{3})]);
-            disp(['Rt{1} = ',mat2str(Rt{1})]);
-            disp(['Rt{2} = ',mat2str(Rt{2})]);
-%            N
-%            A
-%            B
-            disp(['St{1} = ',mat2str(St{1})]);
-            disp(['St{2} = ',mat2str(St{2})]);
-            disp(['St{3} = ',mat2str(St{3})]);
-            disp(['Stdot{1} = ',mat2str(Stdot{1})]);
-            disp(['Stdot{2} = ',mat2str(Stdot{2})]);
-            disp(['Stdot{3} = ',mat2str(Stdot{3})]);
-          end
-          end
-          
-        end
-      
+      function s1 = s1ClosedFormRiccati(t,breaks,A2,alpha,beta)
+        j = find(t>=breaks(1:end-1),1,'last');
+        if isempty(j), j=length(breaks)-1; end
+        trel = t-breaks(j);
+        s1 = expm(A2*trel)*alpha(:,j) + squeeze(beta(:,j,:))*(trel.^(0:size(beta,3)-1)');
+      end
     end
     
     function comtraj = COMplanFromTracker(obj,com0,comdot0,tspan,c)

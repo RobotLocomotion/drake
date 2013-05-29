@@ -1,0 +1,83 @@
+\documentclass{article}
+\usepackage{amsmath,movie15,multicol,relsize,xstring}
+\usepackage{russt}
+
+\newcommand{\moviedir}{/Users/russt/Movies}
+
+%\title{Title goes here}
+%\author[Russ Tedrake, MIT]{Russ Tedrake \\ MIT Computer Science and Artificial Intelligence Lab}
+%\date{November 11, 2011}
+
+\begin{document}
+
+\section{ZMP LQR Riccati Equation}
+
+Using $z(t)$ as the 2D position of the ZMP, we formulate:
+\begin{flalign*}
+\minimize_{u(t)} \quad & \int_0^\infty \left[ \| z(t) - z_d(t) \|_2^2 +
+  \|u(t)\|_R^2 \right] dt,  \\
+\subjto \quad & R = R' > 0, \\
+& z_d(t) = z_d(t_f), \quad \forall t \ge t_f \\ 
+& \dot{x}(t) = A x(t) + B u(t), \quad z(t) = C x(t) + D u(t) \\ 
+& A = \begin{bmatrix} 0_{2 \times 2} & I_{2 \times 2}  \\ 0_{2 \times 2} &
+  0_{2 \times 2} \end{bmatrix},  \quad B = \begin{bmatrix} 0_{2 \times 2} \\ I_{2 \times 2} \end{bmatrix} \\
+& C = \begin{bmatrix} I_{2 \times 2} & 0_{2 \times 2} \end{bmatrix}, \quad D = -\frac{h}{g}
+I_{2 \times 2} 
+\end{flalign*} 
+
+This can be rewritten as a cost on state, \emph{in coordinates
+  relative to the final conditions}, $\bar{x} = x - \begin{bmatrix} z_d^T(t_f)
+  & 0 & 0 \end{bmatrix}^T$, $\bar{z}_d(t) = z_d(t) - z_d(t_f)$:
+
+\begin{flalign*}
+\minimize_{u(t)} \quad & \int_0^\infty \bar{x}^T Q_1 \bar{x} + \bar{x}^T q_2(t) + q_3(t) + u^T R_1 y + u^T
+r_2(t) + 2 \bar{x}^T N u \\ 
+\subjto \quad & Q_1 = \text{diag}( \begin{matrix} 1 & 1 & 0 &
+  0 \end{matrix} ), \quad q_2(t) = \begin{bmatrix} -2 \bar{z}_d(t) \\ 0_{2 \times 1} \end{bmatrix},
+\quad q_3(t) = \| \bar{z}_d(t) \|_2^2  \\
+& R_1 = R + \left(\frac{h}{g}\right)^2 I_{2 \times 2}, \quad r_2(t) =
+2 \bar{z}_d(t) \frac{h}{g}, \quad N = -\frac{h}{g} \begin{bmatrix} I_{2
+    \times 2} \\ 0_{2 \times 2} \end{bmatrix} \\
+& \dot{x}(t) = A x(t) + B u(t) \\
+& A = \begin{bmatrix} 0_{2 \times 2} & I_{2 \times 2}  \\ 0_{2 \times 2} &
+  0_{2 \times 2} \end{bmatrix},  \quad B = \begin{bmatrix} 0_{2 \times 2} \\ I_{2 \times 2} \end{bmatrix} \\
+\end{flalign*}
+Note that this implies that $\bar{x}(\infty) = 0$ in order for the cost to be finite.  
+
+The resulting cost-to-go is given by \[ J = \bar{x}^T S_1(t) \bar{x} + \bar{x}^T s_2(t)
++ s_3(t), \] with the corresponding Riccati differential equation
+given by 
+\begin{align*}
+\dot{S}_1 &= -\left( Q_1 - (N_1+S_1 B)R^{-1} (B^T S_1+N^T) + S_1 A +
+  A^T S_1\right) \\
+\dot{s}_2 &= -\left(q_2(t) - 2(N+S_1 B) R^{-1} r_s(t) + A^T s_2 \right),
+  \quad r_s(t) = \frac{1}{2} (r_2(t)+B^T s_2(t)) \\
+\dot{s}_3 &= -\left(q_3(t) - r_s(t)'^T R^{-1} r_s(t) \right)
+\end{align*}
+Note that $S_1$ has no time-dependent terms, and therefore $S_1(t)$ is
+a constant, given by the steady-state solution of the algebraic
+Riccati equation (e.g. from time-invariant LQR).  Given this, the
+affine terms in the Riccati differential equation are given by the
+linear differential equations:
+\[ \dot{s}_2(t) = A_2 s_2(t) + B_2 z_d(t), \quad s_2(t_f) = 0 \]
+with \[ A_2 = (N + S_1 B) R^{-1} B^T - A^T, \quad B_2
+= \begin{bmatrix} -2 I_{2
+  \times 2} \\ 0_{2 \times 2} \end{bmatrix}
++ 2 \frac{h}{g} (N + S_1B) R^{-1} I_{2 \times 2} \]
+Assuming $\bar{z}_d(t)$ is described by a
+\emph{continuous} piecewise polynomial of
+degree $m$ with $n+1$ breaks at $t_j$ (with $t_0 = 0$ and $t_{n}=t_f$): \[ \bar{z}_d(t) =
+\sum_{i=0}^{k} c_{j,i} (t - t_j)^i, \quad \text{for } j=0,...,n-1,
+\text{ and } \forall t \in [t_j,
+t_{j+1}], \] this system has a closed-form solution given by:
+\[ s_2(t) = e^{A_2 t} \alpha_j + \sum_{i=0}^k \beta_{j,i} (t-t_j)^{i+1},
+\quad \forall t \in [t_j,t_{j+1}], \] with
+\begin{gather*}
+\beta_{j,0} = B_2 c_0 \\
+\beta_{j,i} = \frac{1}{i+1} \left( A_2 \beta_{j,i-1} + B_2 c_{j,i} \right), \quad \text{for }
+i=1,...,k \\
+e^{A(t_{j+1} - t_j)} \alpha_j + \sum_{i=0}^k \beta_{j,i} (t_{j+1} -
+t_j)^i = s(t_{j+1}).
+\end{gather*}
+
+\end{document}
