@@ -63,7 +63,7 @@ classdef LinearInvertedPendulum < LinearSystem
     
     function [c,Vt] = ZMPtracker(obj,dZMP,options)
       if nargin<3 options = struct(); end
-      if ~isfield(options,'use_tvlqr') options.use_tvlqr = false; end
+      if ~isfield(options,'use_tvlqr') options.use_tvlqr = true; end
       if ~options.use_tvlqr
         if isfield(options,'dCOM') || ~isTI(obj) || ~isa(dZMP,'PPTrajectory')
           warning('closed-form solution not implemented for these options (yet)');
