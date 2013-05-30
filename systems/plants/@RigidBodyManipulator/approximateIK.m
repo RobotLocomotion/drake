@@ -25,6 +25,8 @@ function q = approximateIK(obj,q0,varargin)
 %   * if worldposi is pos is 6 rows, then it also constrains the orientation 
 %   * it does not make sense to specify an orientation for the COM.
 %   * elements with NAN are treated as don't care (min=-inf, max=inf)
+%   * worldposi can be a structure with worldposi.min and worldposi.max 
+%     both 3xmi or 6xmi which sets lower and upper bounds for bodyposi
 % @option q_nom  replaces the cost function with (q-q_nom)'*(q-q_nom).
 %     @default q_nom = q0
 % @option Q  puts a weight on the cost function qtilde'*Q*qtilde
@@ -45,7 +47,8 @@ if isfield(options,'Q') Q = options.Q; else Q = eye(obj.num_q); end
 
 kinsol = doKinematics(obj,q0,false);
 
-i=1;n=1;
+A={};b={};Ai={};bi={};
+i=1;neq=1;nin=1;
 while i<=length(varargin)
   % support input as bodies instead of body inds
   if (isa(varargin{i},'RigidBody')) varargin{i} = find(obj.body==varargin{i},1); end
@@ -55,7 +58,6 @@ while i<=length(varargin)
     body_pos = [0;0;0];
     world_pos = varargin{i+1};
     i=i+2;
-    rows=3;
   else
     body_pos = varargin{i+1};
     world_pos = varargin{i+2};
@@ -66,34 +68,79 @@ while i<=length(varargin)
     i=i+3;
     [rows,~] = size(body_pos);
     if (rows ~=3) error('bodypos must be 3xmi'); end
-    [rows,~] = size(world_pos);
   end
   
-  if (rows ~= 3 && rows ~= 6) error('worldpos must have 3 or 6 rows'); end
+  if isstruct(world_pos)
+    if ~isfield(world_pos,'min') || ~isfield(world_pos,'max')
+      error('if world_pos is a struct, it must have fields .min and .max');
+    end
+    minpos=[world_pos.min];  maxpos=[world_pos.max];
+    
+    [minrows,~] = size(minpos);
+    [maxrows,~] = size(maxpos);
+    if (minrows ~= 3 && minrows ~= 6 && minrows ~= 7) error('world_pos.min must have 3, 6 or 7 rows'); end
+    if (maxrows ~= 3 && maxrows ~= 6 && maxrows ~= 7) error('world_pos.max must have 3, 6 or 7 rows'); end
+    rows = max(minrows,maxrows);
+  else
+    minpos=[]; maxpos=[];
+    [rows,~] = size(world_pos);
+    if (rows ~= 3 && rows ~= 6 && rows ~= 7) error('worldpos must have 3, 6 or 7 rows'); end
+  end
   if (body_ind==0 && rows ~= 3) error('com pos must have only 3 rows (there is no orientation)'); end
   
   if (body_ind==0)
     [x,J] = getCOM(obj,kinsol);
   else
     [x,J] = forwardKin(obj,kinsol,body_ind,body_pos,(rows==6));
-    if (rows==6)
+    if rows==6 && isempty(minpos) && isempty(maxpos) 
       % make sure desired/current angles are unwrapped
       delta = angleDiff(x(4:6),world_pos(4:6));
       world_pos(4:6) = x(4:6)+delta;
     end
+      % TODO: implement angle wrap protection for inequality constraints (or convert to quaternions)
+%     if rows==6 && ~isempty(minpos)
+%       delta = angleDiff(x(4:6),minpos(4:6));
+%       minpos(4:6) = x(4:6)+delta;
+%       delta = angleDiff(x(4:6),maxpos(4:6));
+%       maxpos(4:6) = x(4:6)+delta;
+%       swapidx = minpos>maxpos;
+%       tmp = minpos;
+%       minpos(swapidx) = maxpos(swapidx);
+%       maxpos(swapidx) = tmp(swapidx);
+%     end
   end
   
-  % build equality constraints
-  idx = ~isnan(world_pos);
-  A{n} = J(idx,:);
-  b{n} = world_pos(idx) - x(idx) + J(idx,:)*q0;
-  
-  n=n+1;
+  if ~isempty(maxpos) 
+    % add inequality constraint
+    idx = ~isnan(maxpos);
+    Ai{nin} = J(idx,:);
+    bi{nin} = maxpos(idx) - x(idx) + J(idx,:)*q0;
+    nin=nin+1;
+  end
+    
+  if ~isempty(minpos) 
+    % add inequality constraint
+    idx = ~isnan(minpos);
+    Ai{nin} = -J(idx,:);
+    bi{nin} = -(minpos(idx) - x(idx) + J(idx,:)*q0);
+    nin=nin+1;
+  end
+    
+  if isempty(minpos) && isempty(maxpos) 
+    % add equality constraint
+    idx = ~isnan(world_pos);
+    A{neq} = J(idx,:);
+    b{neq} = world_pos(idx) - x(idx) + J(idx,:)*q0;
+    neq=neq+1;
+  end
+    
 end
 
 Aeq = sparse(vertcat(A{:}));
 beq = vertcat(b{:});
 
+Ain = sparse(vertcat(Ai{:}));
+bin = vertcat(bi{:});
 
 f = -2*q_nom'*Q;
 
@@ -106,9 +153,9 @@ f = -2*q_nom'*Q;
 % solve QP
 model.Q = sparse(Q);
 model.obj = f;
-model.A = Aeq;
-model.rhs = beq;
-model.sense = repmat('=',length(beq),1); %% using repmat is inefficient 
+model.A = [Aeq; Ain];
+model.rhs = [beq; bin];
+model.sense = [repmat('=',length(beq),1);repmat('<',length(bin),1)]; % using repmat is inefficient 
 model.lb = obj.joint_limit_min;
 model.ub = obj.joint_limit_max;
 
