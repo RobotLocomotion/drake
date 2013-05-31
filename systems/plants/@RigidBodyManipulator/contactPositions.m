@@ -19,7 +19,7 @@ if nargin<4
   n_contact_pts = size([obj.body(body_idx).contact_pts],2);
   body_contacts = [];
 else
-  n_contact_pts = length(body_idx)*vertcat(body_contacts{:});
+  n_contact_pts = sum(cellfun('length',body_contacts));
 end
 
 d=length(obj.gravity);  % 2 for planar, 3 for 3D
