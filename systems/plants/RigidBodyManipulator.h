@@ -136,7 +136,7 @@ public:
 
   void updateCollisionObjects(int body_ind);
 
-  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB);
+  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals);
 #endif
 };
 

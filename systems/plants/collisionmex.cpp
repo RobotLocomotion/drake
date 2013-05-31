@@ -30,11 +30,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   {
   case 1:  // pairwiseCollision()
     {
-    	MatrixXd ptsA, ptsB;
+    	MatrixXd ptsA, ptsB, normals;
     	int body_indA = (int) mxGetScalar(prhs[2])-1, body_indB = (int) mxGetScalar(prhs[3])-1;
     	if (body_indA<0 || body_indA>=model->num_bodies || body_indB<0 || body_indB>=model->num_bodies)
     		mexErrMsgIdAndTxt("Drake:collisionmex:BadInputs","body indices must be between 1 and num_bodies");
-      model->getPairwiseCollision(body_indA,body_indB,ptsA,ptsB);
+      model->getPairwiseCollision(body_indA,body_indB,ptsA,ptsB,normals);
       if (nlhs>0) {
       	plhs[0] = mxCreateDoubleMatrix(3,ptsA.cols(),mxREAL);
       	memcpy(mxGetPr(plhs[0]),ptsA.data(),sizeof(double)*3*ptsA.cols());
@@ -42,6 +42,10 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       if (nlhs>1) {
       	plhs[1] = mxCreateDoubleMatrix(3,ptsB.cols(),mxREAL);
       	memcpy(mxGetPr(plhs[1]),ptsB.data(),sizeof(double)*3*ptsB.cols());
+      }
+      if (nlhs>2) {
+      	plhs[2] = mxCreateDoubleMatrix(3,normals.cols(),mxREAL);
+      	memcpy(mxGetPr(plhs[2]),normals.data(),sizeof(double)*3*normals.cols());
       }
     }
   	break;

@@ -378,7 +378,7 @@ for i=1:length(body_ind)
       col_dist = zeros(num_rigid_bodies,1);
       dcol_dist = zeros(num_rigid_bodies,nq);
       for j = 1:num_rigid_bodies
-        [col_dist(j),dcol_dist(j,:)] = pairwiseContactConstraint(obj,kinsol,body_ind(i),contact_affs{i}{j});
+        [col_dist(j),dcol_dist(j,:)] = pairwiseContactDistance(obj,kinsol,body_ind(i),contact_affs{i}{j});
       end
       f(nf+(1:num_rigid_bodies)) = col_dist;
       G(ng+(1:num_rigid_bodies*nq)) = dcol_dist(:);

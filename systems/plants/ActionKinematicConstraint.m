@@ -249,7 +249,7 @@ classdef ActionKinematicConstraint
               error('The contact state for the %d th point is not valid',find(~valid_contact_flag));
           end
           % allow contact_aff{i} being a rigid body, as the latter is the
-          % input to the pairwiseContactConstraint function
+          % input to the pairwiseContactDistance function
           if(isa(contact_aff{i},'ContactAffordance')||isa(contact_aff{i},'RigidBody'))
             obj.contact_aff{i} = contact_aff{i};
           if(isa(contact_aff{i},'ContactAffordance'))

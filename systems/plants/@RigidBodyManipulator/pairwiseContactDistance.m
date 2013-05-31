@@ -1,4 +1,4 @@
-function [phi,Jphi] = pairwiseContactConstraint(obj,kinsol,body_indA,body_indB)
+function [phi,Jphi] = pairwiseContactDistance(obj,kinsol,body_indA,body_indB)
 
 % Uses bullet to perform collision detection between rigid body A and rigid
 % body B, and returns a single penetration constraint
@@ -13,7 +13,7 @@ function [phi,Jphi] = pairwiseContactConstraint(obj,kinsol,body_indA,body_indB)
 % @retval Jphi the kinematic jacobian of phi
 
 if (nargout>1)
-  [ptsA,ptsB,JA,JB] = pairwiseContactTest(obj,kinsol,body_indA,body_indB);
+  [ptsA,ptsB,~,JA,JB] = pairwiseContactTest(obj,kinsol,body_indA,body_indB);
 else
   [ptsA,ptsB] = pairwiseContactTest(obj,kinsol,body_indA,body_indB);
 end
@@ -30,4 +30,4 @@ else
   end
 end
 
-  
+end
