@@ -607,7 +607,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       varargout=cell(1,nargout);
       [varargout{:}] = contactConstraints(obj.manip,varargin{:});
     end
-    
+
+    function varargout = pairwiseContactConstraints(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = pairwiseContactConstraints(obj.manip,varargin{:});
+    end
+
     function varargout = contactPositions(obj,varargin)
       varargout=cell(1,nargout);
       [varargout{:}] = contactPositions(obj.manip,varargin{:});

@@ -17,7 +17,7 @@ c = mycon(randn(12,1));  % call it once to make sure it doesn't crash
   function [c,ceq,GC,GCeq] = mycon(q)
     ceq=[]; GCeq=[];
     kinsol = doKinematics(r,q);
-    [c,GC] = pairwiseContactConstraint(r,kinsol,2,3);
+    [c,GC] = pairwiseContactDistance(r,kinsol,2,3);
     c = -c;
     GC = -GC';
   end
