@@ -61,9 +61,10 @@ classdef LinearInvertedPendulum < LinearSystem
       [varargout{:}] = tilqr(obj,Point(obj.getStateFrame,[com0;0*com0]),Point(obj.getInputFrame),zeros(4),zeros(2),options);
     end
     
-    function [c,Vt] = ZMPtracker(obj,dZMP,options)
+    function [ct,Vt,comtraj] = ZMPtracker(obj,dZMP,options)
       if nargin<3 options = struct(); end
       if ~isfield(options,'use_tvlqr') options.use_tvlqr = true; end
+      if ~isfield(options,'ignore_frames') options.ignore_frames = false; end
       if ~options.use_tvlqr
         if isfield(options,'dCOM') || ~isTI(obj) || ~isa(dZMP,'PPTrajectory')
           warning('closed-form solution not implemented for these options (yet)');
@@ -75,35 +76,35 @@ classdef LinearInvertedPendulum < LinearSystem
       dZMP = dZMP.inFrame(desiredZMP);
       
       zmp_tf = dZMP.eval(dZMP.tspan(end));
-      if(isTI(obj))
-        [~,V] = lqr(obj,zmp_tf);
-      else
-        % note: i've merged this in from hongkai (it's a time crunch!), but i don't agree with
-        % it. it's bad form to assume that the tv system is somehow stationary after D.tspan(end).  
-        % - Russ
-        valuecheck(dZMP.tspan(end),obj.D.tspan(end)); % assume this
-        t_end = obj.D.tspan(end);
-        ti_obj = LinearSystem(obj.Ac.eval(t_end),obj.Bc.eval(t_end),[],[],obj.C.eval(t_end),obj.D.eval(t_end));
-        ti_obj = setStateFrame(ti_obj,obj.getStateFrame());
-        ti_obj = setInputFrame(ti_obj,obj.getInputFrame());
-        ti_obj = setOutputFrame(ti_obj,obj.getOutputFrame());
-        Q = zeros(4);
-  		  options.Qy = diag([0 0 0 0 1 1]);
-        [~,V] = tilqr(ti_obj,Point(ti_obj.getStateFrame,[zmp_tf;0*zmp_tf]),Point(ti_obj.getInputFrame),Q,zeros(2),options);
-      end
-      
-      options.tspan = linspace(dZMP.tspan(1),dZMP.tspan(2),10);
-      options.sqrtmethod = false;
-      if(isfield(options,'dCOM'))
-%        options.dCOM = setOutputFrame(options.dCOM,obj.getStateFrame);
-        options.dCOM = options.dCOM.inFrame(obj.getStateFrame);
-        options.xdtraj = options.dCOM;
-        Q = eye(4);
-      else
-        Q = zeros(4);
-      end
-
       if options.use_tvlqr
+        if(isTI(obj))
+          [c,V] = lqr(obj,zmp_tf);
+        else
+          % note: i've merged this in from hongkai (it's a time crunch!), but i don't agree with
+          % it. it's bad form to assume that the tv system is somehow stationary after D.tspan(end).
+          % - Russ
+          valuecheck(dZMP.tspan(end),obj.D.tspan(end)); % assume this
+          t_end = obj.D.tspan(end);
+          ti_obj = LinearSystem(obj.Ac.eval(t_end),obj.Bc.eval(t_end),[],[],obj.C.eval(t_end),obj.D.eval(t_end));
+          ti_obj = setStateFrame(ti_obj,obj.getStateFrame());
+          ti_obj = setInputFrame(ti_obj,obj.getInputFrame());
+          ti_obj = setOutputFrame(ti_obj,obj.getOutputFrame());
+          Q = zeros(4);
+          options.Qy = diag([0 0 0 0 1 1]);
+          [c,V] = tilqr(ti_obj,Point(ti_obj.getStateFrame,[zmp_tf;0*zmp_tf]),Point(ti_obj.getInputFrame),Q,zeros(2),options);
+        end
+        
+        options.tspan = linspace(dZMP.tspan(1),dZMP.tspan(2),10);
+        options.sqrtmethod = false;
+        if(isfield(options,'dCOM'))
+          %        options.dCOM = setOutputFrame(options.dCOM,obj.getStateFrame);
+          options.dCOM = options.dCOM.inFrame(obj.getStateFrame);
+          options.xdtraj = options.dCOM;
+          Q = eye(4);
+        else
+          Q = zeros(4);
+        end
+
         dZMP = setOutputFrame(dZMP,getFrameByNum(getOutputFrame(obj),2)); % override it before sending in to tvlqr
         % note: the system is actually linear, so x0traj and u0traj should
         % have no effect on the numerical results (they just set up the
@@ -113,23 +114,25 @@ classdef LinearInvertedPendulum < LinearSystem
         options.Qy = diag([0 0 0 0 1 1]);
         options.ydtraj = [x0traj;dZMP];
         WS = warning('off','Drake:TVLQR:NegativeS');  % i expect to have some zero eigenvalues, which numerically fluctuate below 0
-        [c,Vt] = tvlqr(obj,x0traj,u0traj,Q,zeros(2),V,options);
+        [ct,Vt] = tvlqr(obj,x0traj,u0traj,Q,zeros(2),V,options);
         warning(WS);        
       else
         % closed-form solution, see derivation in zmp_riccati.pdf
 
         [breaks,coefs,n,k,d] = unmkpp(dZMP.pp);
         assert(prod(d)==2);
-        c = reshape(coefs,[2,n,k]);
-        c(:,:,k) = c(:,:,k) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
+        cf = reshape(coefs,[2,n,k]);
+        cf(:,:,k) = cf(:,:,k) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
         dt = diff(breaks);
 
         hg = obj.h/obj.g;
-        A = obj.Ac; B = obj.Bc; S = V.S;
+        A = obj.Ac; B = obj.Bc; 
         Q = diag([1 1 0 0]);
         R = hg^2*eye(2); Ri = inv(R);
         N = -hg*[eye(2);zeros(2)];
 
+        [K,S] = lqr(A,B,Q,R,N);
+        
         A2 = (N+S*B)*Ri*B' - A';
         B2 = [2*eye(2); zeros(2)] + 2*hg*(N + S*B)*Ri;
         
@@ -138,34 +141,63 @@ classdef LinearInvertedPendulum < LinearSystem
         
         alpha = zeros(4,n);
         beta = zeros(4,n,k);
+        gamma = zeros(2,n,k);
         for j=n:-1:1
-          beta(:,j,k) = -A2i*B2*c(:,j,1);
+          beta(:,j,k) = -A2i*B2*cf(:,j,1);
+          gamma(:,j,k) = -hg*Ri*cf(:,j,1) - .5*Ri*B'*beta(:,j,k);
           for i=k-1:-1:1
-            beta(:,j,i) = A2i*( i*beta(:,j,i+1) - B2*c(:,j,k-i+1) );
+            beta(:,j,i) = A2i*( i*beta(:,j,i+1) - B2*cf(:,j,k-i+1) );
+            gamma(:,j,i) = -hg*Ri*cf(:,j,k-i+1) - .5*Ri*B'*beta(:,j,i);
           end
-          if (j==n) 
+          if (j==n)
             s1dt = zeros(4,1);
           else
-            s1dt = alpha(:,j+1) + beta(:,j+1,1); 
+            s1dt = alpha(:,j+1) + beta(:,j+1,1);
           end
           alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(0:k-1)'));
         end
+
+        ct = AffineSystem([],[],[],[],[],[],[],K,ExpPlusPPTrajectory(breaks,-.5*Ri*B',A2,alpha,gamma));
+        if ~options.ignore_frames
+          ct = setInputFrame(ct,CoordinateFrame('com_tf',4,'x'));
+          obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ct.getInputFrame,eye(4),-[zmp_tf;0;0]),true);
+          ct.getInputFrame.addTransform(AffineTransform(ct.getInputFrame,obj.getStateFrame,eye(4),+[zmp_tf;0;0]),true);
+          ct = setOutputFrame(ct,getInputFrame(obj));
+        end
         
-        c = lqr(obj,zmp_tf);  % placeholder until I do the right thing here
         if (nargout>1)
           % note: writing directly on top of V's elements might not be
           % allowed in the future (it probably shouldn't be!)
-          Vt = V;
-          Vt.s1 = FunctionHandleTrajectory(@(t)s1ClosedFormRiccati(t,breaks,A2,alpha,beta), 4, breaks);
-          %  Vt.s2 is left alone (until I finish this)
+          s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
+          s2 = 0;  % for now (todo: call ode45 here only)
+          Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2);
         end
-      end
-      
-      function s1 = s1ClosedFormRiccati(t,breaks,A2,alpha,beta)
-        j = find(t>=breaks(1:end-1),1,'last');
-        if isempty(j), j=length(breaks)-1; end
-        trel = t-breaks(j);
-        s1 = expm(A2*trel)*alpha(:,j) + squeeze(beta(:,j,:))*(trel.^(0:size(beta,3)-1)');
+        
+        if (nargout>2)
+          Ay = [A + B*K, -.5*B*Ri*B'; zeros(4), A2];
+          Ayi = inv(Ay);
+          By = [-hg*B*Ri; B2];
+          
+          a = zeros(4,n);
+          b = zeros(4,n,k);
+          
+          x = zeros(4,1);
+          if isfield(options,'com0'), x(1:2) = options.com0; end
+          if isfield(options,'comdot0'), x(3:4) = options.comdot0; end
+            
+          for j=1:n
+            b(:,j,k) = -Ayi(1:4,:)*By*cf(:,j,1);
+%            valuecheck(-Ayi(5:8,:)*By*cf(:,j,1),beta(:,j,k));
+            for i=k-1:-1:1
+              b(:,j,i) = Ayi(1:4,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*cf(:,j,k-i+1) );
+%              valuecheck( Ayi(5:8,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*cf(:,j,k-i+1) ),beta(:,j,i));
+            end
+            a(:,j) = x - b(:,j,1);
+            x = [eye(4),zeros(4)]*expm(Ay*dt(j))*[a(:,j);alpha(:,j)] + squeeze(b(:,j,:))*(dt(j).^(0:k-1)');
+          end
+          
+          comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
+        end
       end
     end
     

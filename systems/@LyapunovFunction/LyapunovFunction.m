@@ -91,6 +91,10 @@ classdef LyapunovFunction
       end
     end
     
+    function obj = setTIFlag(obj,time_invariant_flag)
+      obj.time_invariant_flag = time_invariant_flag;
+    end
+    
     function b = isTI(obj)
       b = obj.time_invariant_flag;
     end

@@ -99,7 +99,7 @@ classdef CoordinateFrame < handle
       end
     end
     
-    function addTransform(obj,transform)
+    function addTransform(obj,transform,bforce)
       % Attaches a new coordinate transform from the current frame to a
       % different frame. An error is throw if there already exists any
       % transform (or combination of transforms) that can already transform
@@ -107,12 +107,17 @@ classdef CoordinateFrame < handle
       % 
       % @param transform a CoordinateTransform object with the input frame
       % matching this current frame.
+      % @param bforce if true, then it forces the addition (overriding the
+      % search for existing transforms).  This was added to optimize
+      % transform addition for the case when we are sure that no transform
+      % already exists.  Use with caution.
       
       typecheck(transform,'CoordinateTransform');
+      if (nargin<3) bforce = false; end
       if (getInputFrame(transform) ~= obj || getOutputFrame(transform) == obj)
         error('Drake:CoordinateFrame:BadTransform','transform must be from this coordinate frame to another to be added');
       end
-      if ~isempty(findTransform(obj,getOutputFrame(transform)))
+      if ~bforce && ~isempty(findTransform(obj,getOutputFrame(transform)))
         error('Drake:CoordinateFrame:ExistingTransform','i already have a transform that gets me to that frame');
       end
       obj.transforms{end+1}=transform;
