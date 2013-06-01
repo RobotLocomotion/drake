@@ -131,7 +131,7 @@ classdef LinearInvertedPendulum < LinearSystem
         R = hg^2*eye(2); Ri = inv(R);
         N = -hg*[eye(2);zeros(2)];
 
-        [K,S] = lqr(A,B,Q,R,N);
+        [K,S] = lqr(A,B,Q,R,N); K=-K;
         
         A2 = (N+S*B)*Ri*B' - A';
         B2 = [2*eye(2); zeros(2)] + 2*hg*(N + S*B)*Ri;
@@ -182,7 +182,7 @@ classdef LinearInvertedPendulum < LinearSystem
           b = zeros(4,n,k);
           
           x = zeros(4,1);
-          if isfield(options,'com0'), x(1:2) = options.com0; end
+          if isfield(options,'com0'), x(1:2) = options.com0 - zmp_tf; end
           if isfield(options,'comdot0'), x(3:4) = options.comdot0; end
             
           for j=1:n
@@ -194,6 +194,7 @@ classdef LinearInvertedPendulum < LinearSystem
             end
             a(:,j) = x - b(:,j,1);
             x = [eye(4),zeros(4)]*expm(Ay*dt(j))*[a(:,j);alpha(:,j)] + squeeze(b(:,j,:))*(dt(j).^(0:k-1)');
+            b(1:2,j,1) = b(1:2,j,1)+zmp_tf;  % back in world coordinates
           end
           
           comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
