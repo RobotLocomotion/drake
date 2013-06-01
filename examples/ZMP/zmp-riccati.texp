@@ -48,36 +48,39 @@ The resulting cost-to-go is given by \[ J = \bar{x}^T S_1(t) \bar{x} + \bar{x}^T
 + s_3(t), \] with the corresponding Riccati differential equation
 given by 
 \begin{align*}
-\dot{S}_1 &= -\left( Q_1 - (N_1+S_1 B)R^{-1} (B^T S_1+N^T) + S_1 A +
+\dot{S}_1 &= -\left( Q_1 - (N+S_1 B)R_1^{-1} (B^T S_1+N^T) + S_1 A +
   A^T S_1\right) \\
 \dot{s}_2 &= -\left(q_2(t) - 2(N+S_1 B) R^{-1} r_s(t) + A^T s_2 \right),
   \quad r_s(t) = \frac{1}{2} (r_2(t)+B^T s_2(t)) \\
-\dot{s}_3 &= -\left(q_3(t) - r_s(t)'^T R^{-1} r_s(t) \right)
+\dot{s}_3 &= -\left(q_3(t) - r_s(t)^T R^{-1} r_s(t) \right)
 \end{align*}
 Note that $S_1$ has no time-dependent terms, and therefore $S_1(t)$ is
 a constant, given by the steady-state solution of the algebraic
 Riccati equation (e.g. from time-invariant LQR).  Given this, the
 affine terms in the Riccati differential equation are given by the
 linear differential equations:
-\[ \dot{s}_2(t) = A_2 s_2(t) + B_2 z_d(t), \quad s_2(t_f) = 0 \]
+\[ \dot{s}_2(t) = A_2 s_2(t) + B_2 \bar{z}_d(t), \quad s_2(t_f) = 0 \]
 with \[ A_2 = (N + S_1 B) R^{-1} B^T - A^T, \quad B_2
-= \begin{bmatrix} -2 I_{2
+= \begin{bmatrix} 2 I_{2
   \times 2} \\ 0_{2 \times 2} \end{bmatrix}
-+ 2 \frac{h}{g} (N + S_1B) R^{-1} I_{2 \times 2} \]
++ 2 \frac{h}{g} (N + S_1B) R^{-1} \]
 Assuming $\bar{z}_d(t)$ is described by a
 \emph{continuous} piecewise polynomial of
-degree $m$ with $n+1$ breaks at $t_j$ (with $t_0 = 0$ and $t_{n}=t_f$): \[ \bar{z}_d(t) =
+degree $k$ with $n+1$ breaks at $t_j$ (with $t_0 = 0$ and $t_{n}=t_f$): \[ \bar{z}_d(t) =
 \sum_{i=0}^{k} c_{j,i} (t - t_j)^i, \quad \text{for } j=0,...,n-1,
 \text{ and } \forall t \in [t_j,
-t_{j+1}], \] this system has a closed-form solution given by:
-\[ s_2(t) = e^{A_2 t} \alpha_j + \sum_{i=0}^k \beta_{j,i} (t-t_j)^{i+1},
-\quad \forall t \in [t_j,t_{j+1}], \] with
+t_{j+1}), \] this system has a closed-form solution given by:
+\[ s_2(t) = e^{A_2 (t-t_j)} \alpha_j + \sum_{i=0}^k \beta_{j,i} (t-t_j)^{i+1},
+\quad \forall t \in [t_j,t_{j+1}), \] with
 \begin{gather*}
 \beta_{j,0} = B_2 c_0 \\
-\beta_{j,i} = \frac{1}{i+1} \left( A_2 \beta_{j,i-1} + B_2 c_{j,i} \right), \quad \text{for }
+(i+1)\beta_{j,i} - A_2 \beta_{j,i-1} = B_2 c_{j,i}, \quad \text{for }
 i=1,...,k \\
 e^{A(t_{j+1} - t_j)} \alpha_j + \sum_{i=0}^k \beta_{j,i} (t_{j+1} -
-t_j)^i = s(t_{j+1}).
+t_j)^{i+1} = s(t_{j+1}).
 \end{gather*}
+where the first line is due to $\sdot$ evaluated at $t_j$, the second
+term is matching the coefficients of $(t-t_j)$ raised to a non-zero
+power, and the final term enforces continuity of solutions/boundary conditions.
 
 \end{document}
