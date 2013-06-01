@@ -37,8 +37,9 @@ else
   options.com0 = com0;
   options.comdot0 = zeros(2,1);
   options.ignore_frames = true;
+%  options.compute_lyapunov = false;
   tic
-  [ct,Vt,comtraj] = ZMPtracker(limp,zmptraj,options);
+  [ct,~,comtraj] = ZMPtracker(limp,zmptraj,options);
   toc
   
   for i=1:2
