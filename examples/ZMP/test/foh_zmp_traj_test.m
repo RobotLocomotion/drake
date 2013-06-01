@@ -1,4 +1,4 @@
-function debug_zmp
+function foh_zmp_traj_test
 
 load zmp_plan_debug;
 
@@ -33,12 +33,17 @@ else
 
   limp = LinearInvertedPendulum(h);
 
-  ct = ZMPplan(limp,com0,comf,zmptraj);
-
+  options.use_tvlqr = false;
+  options.com0 = com0;
+  options.comdot0 = zeros(2,1);
+  options.ignore_frames = true;
+  tic
+  [ct,Vt,comtraj] = ZMPtracker(limp,zmptraj,options);
+  toc
+  
   for i=1:2
     figure(i); clf; hold on;
     h = fnplt(comtraj(i)); set(h,'Color','r');
-    h = fnplt(ct(i));
     h = fnplt(zmptraj(i)); set(h,'Color','k');
     legend('from tracker','from analytic','desired zmp');
   end

@@ -116,6 +116,13 @@ classdef LinearInvertedPendulum < LinearSystem
         WS = warning('off','Drake:TVLQR:NegativeS');  % i expect to have some zero eigenvalues, which numerically fluctuate below 0
         [ct,Vt] = tvlqr(obj,x0traj,u0traj,Q,zeros(2),V,options);
         warning(WS);        
+        
+        if (nargout>2)
+          if ~isfield(options,'com0'), options.com0 = zeros(2,1); end
+          if ~isfield(options,'comdot0'), options.comdot0 = zeros(2,1); end
+          
+          comtraj = COMplanFromTracker(obj,options.com0,options.comdot0,tspan,c);
+        end
       else
         % closed-form solution, see derivation in zmp_riccati.pdf
 
@@ -169,8 +176,11 @@ classdef LinearInvertedPendulum < LinearSystem
           % note: writing directly on top of V's elements might not be
           % allowed in the future (it probably shouldn't be!)
           s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
-          s2 = 0;  % for now (todo: call ode45 here only)
-          Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2);
+%          s2traj = ODESolTrajectory(ode45(@s2dynamics,fliplr(breaks),0),[1 1]);
+%          s2traj = flipToPP(s2traj);
+          [t,y,ydot] = ode4(@s2dynamics,fliplr(breaks),0);
+          s2traj = PPTrajectory(pchipDeriv(breaks,fliplr(y.'),fliplr(ydot.')));
+          Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2traj);
         end
         
         if (nargout>2)
@@ -199,6 +209,14 @@ classdef LinearInvertedPendulum < LinearSystem
           
           comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
         end
+      end
+      
+      function s2dot = s2dynamics(t,s2)
+        [s1,j] = eval(s1traj,t);
+        trel = t-breaks(j);
+        zbar = squeeze(cf(:,j,:))*trel.^(k-1:-1:0)';
+        rs = hg*zbar + .5*B'*s1;
+        s2dot = - zbar'*zbar + rs'*Ri*rs;
       end
     end
     

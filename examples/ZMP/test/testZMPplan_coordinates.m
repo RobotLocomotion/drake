@@ -55,7 +55,7 @@ V = V.inFrame(limp.getStateFrame);
 tol = 1e-3;
 valuecheck(V.S,V_tvlqr.S,tol,true);
 valuecheck(V.s1,V_tvlqr.s1,tol,true);
-%valuecheck(V.s2,V_tvlqr.s2,tol,true);
+valuecheck(V.s2,V_tvlqr.s2,tol,true);
 valuecheck(c.y0,c_tvlqr.y0,100*tol,true);
 valuecheck(c.D,c_tvlqr.D,tol,true);
 

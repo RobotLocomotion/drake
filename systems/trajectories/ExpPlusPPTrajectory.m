@@ -29,7 +29,7 @@ classdef ExpPlusPPTrajectory < Trajectory
       obj.pporder = size(gamma,3);
     end
     
-    function y = eval(obj,t)
+    function [y,j] = eval(obj,t)
       assert(isscalar(t));
       j = find(t>=obj.breaks(1:end-1),1,'last');
       if isempty(j), j=length(obj.breaks)-1; end
