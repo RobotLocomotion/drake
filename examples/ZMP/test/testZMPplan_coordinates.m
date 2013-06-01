@@ -50,7 +50,7 @@ c = c.inInputFrame(limp.getStateFrame);
 c = c.inOutputFrame(limp.getInputFrame);
 V = V.inFrame(limp.getStateFrame);
 
-tol = 1e-6;
+tol = 1e-3;
 %valuecheck(V.S,V_tvlqr.S,tol,true);
 valuecheck(V.s1,V_tvlqr.s1,tol,true);
 valuecheck(V.s2,V_tvlqr.s2,tol,true);
