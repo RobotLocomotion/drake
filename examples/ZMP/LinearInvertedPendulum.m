@@ -64,6 +64,7 @@ classdef LinearInvertedPendulum < LinearSystem
     function [ct,Vt,comtraj] = ZMPtracker(obj,dZMP,options)
       if nargin<3 options = struct(); end
       if ~isfield(options,'use_tvlqr') options.use_tvlqr = true; end
+      if ~isfield(options,'compute_lyapunov') options.compute_lyapunov = (nargout>1); end
       if ~isfield(options,'ignore_frames') options.ignore_frames = false; end
       if ~options.use_tvlqr
         if isfield(options,'dCOM') || ~isTI(obj) || ~isa(dZMP,'PPTrajectory')
@@ -172,15 +173,15 @@ classdef LinearInvertedPendulum < LinearSystem
           ct = setOutputFrame(ct,getInputFrame(obj));
         end
         
-        if (nargout>1)
-          % note: writing directly on top of V's elements might not be
-          % allowed in the future (it probably shouldn't be!)
+        if options.compute_lyapunov
           s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
 %          s2traj = ODESolTrajectory(ode45(@s2dynamics,fliplr(breaks),0),[1 1]);
 %          s2traj = flipToPP(s2traj);
           [t,y,ydot] = ode4(@s2dynamics,fliplr(breaks),0);
           s2traj = PPTrajectory(pchipDeriv(breaks,fliplr(y.'),fliplr(ydot.')));
           Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2traj);
+        else
+          Vt = [];
         end
         
         if (nargout>2)
