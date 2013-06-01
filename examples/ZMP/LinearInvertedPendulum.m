@@ -121,7 +121,7 @@ classdef LinearInvertedPendulum < LinearSystem
         [breaks,coefs,n,k,d] = unmkpp(dZMP.pp);
         assert(prod(d)==2);
         c = reshape(coefs,[2,n,k]);
-        c(:,:,1) = c(:,:,1) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
+        c(:,:,k) = c(:,:,k) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
         dt = diff(breaks);
 
         hg = obj.h/obj.g;
@@ -131,21 +131,22 @@ classdef LinearInvertedPendulum < LinearSystem
         N = -hg*[eye(2);zeros(2)];
 
         A2 = (N+S*B)*Ri*B' - A';
-        B2 = [-2*eye(2); zeros(2)] + 2*hg*(N + S*B)*Ri*eye(2);
+        B2 = [2*eye(2); zeros(2)] + 2*hg*(N + S*B)*Ri;
         
         alpha = zeros(4,n);
         beta = zeros(4,n,k);
         for j=n:-1:1
-          beta(:,j,1) = B2*c(:,j,1);
+          beta(:,j,1) = B2*c(:,j,k);
           for i=2:k
-            beta(:,j,i) = ( A2*beta(:,j,i-1) + B2*c(:,j,i-1) )/(i+1);
+            beta(:,j,i) = ( A2*beta(:,j,i-1) + B2*c(:,j,k-i+1) )/i;
           end
+%          valuecheck(A2*beta(:,j,k),zeros(4,1));
           if (j==n) 
             s1dt = zeros(4,1);
           else
-            s1dt = alpha(:,j+1) + beta(:,j+1,1);
+            s1dt = alpha(:,j+1); 
           end
-          alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(0:k-1)'));
+          alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(1:k)'));
         end
         
         c = lqr(obj,zmp_tf);  % placeholder until I do the right thing here
@@ -162,7 +163,7 @@ classdef LinearInvertedPendulum < LinearSystem
         j = find(t>=breaks(1:end-1),1,'last');
         if isempty(j), j=length(breaks)-1; end
         trel = t-breaks(j);
-        s1 = expm(A2*trel)*alpha(:,j) + squeeze(beta(:,j,:))*(trel.^(0:size(beta,3)-1)');
+        s1 = expm(A2*trel)*alpha(:,j) + squeeze(beta(:,j,:))*(trel.^(1:size(beta,3))');
       end
     end
     
