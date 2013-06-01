@@ -9,10 +9,14 @@ classdef LinearInvertedPendulum < LinearSystem
   % - The output is the state and the [x,y] position of the ZMP.  
   
   methods 
-    function obj = LinearInvertedPendulum(h,g)
+    function obj = LinearInvertedPendulum(h,g,options)
       % @param h the (constant) height of the center of mass
       % @param g the scalar gravity @default 9.81
       if (nargin<2) g=9.81; end
+      if nargin<3 || ~isfield(options,'ignore_frames') 
+        options.ignore_frames = false; 
+      end
+      
       if(isa(h,'numeric'))
         rangecheck(h,0,inf);
         Czmp = [eye(2),zeros(2)];
@@ -36,17 +40,21 @@ classdef LinearInvertedPendulum < LinearSystem
       obj.h = h;
       obj.g = g;
       
-      cartstateframe = CartTableState;
-      obj = setInputFrame(obj,CartTableInput);
-      sframe = SingletonCoordinateFrame('LIMPState',4,'x',{'x_com','y_com','xdot_com','ydot_com'});
-      if isempty(findTransform(sframe,cartstateframe))
-        addTransform(sframe,AffineTransform(sframe,cartstateframe,sparse([7 8 15 16],[1 2 3 4],[1 1 1 1],16,4),zeros(16,1)));
-        addTransform(cartstateframe,AffineTransform(cartstateframe,sframe,sparse([1 2 3 4],[7 8 15 16],[1 1 1 1],4,16),zeros(4,1)));
-      end
-      obj = setStateFrame(obj,sframe);
+      if ~options.ignore_frames
+        % note: can only ignore frames if you are planning with, but not
+        % simulating with this model
+        cartstateframe = CartTableState;
+        obj = setInputFrame(obj,CartTableInput);
+        sframe = SingletonCoordinateFrame('LIMPState',4,'x',{'x_com','y_com','xdot_com','ydot_com'});
+        if isempty(findTransform(sframe,cartstateframe))
+          addTransform(sframe,AffineTransform(sframe,cartstateframe,sparse([7 8 15 16],[1 2 3 4],[1 1 1 1],16,4),zeros(16,1)));
+          addTransform(cartstateframe,AffineTransform(cartstateframe,sframe,sparse([1 2 3 4],[7 8 15 16],[1 1 1 1],4,16),zeros(4,1)));
+        end
+        obj = setStateFrame(obj,sframe);
       
-      zmpframe = CoordinateFrame('ZMP',2,'z',{'x_zmp','y_zmp'});
-      obj = setOutputFrame(obj,MultiCoordinateFrame({sframe,zmpframe}));
+        zmpframe = CoordinateFrame('ZMP',2,'z',{'x_zmp','y_zmp'});
+        obj = setOutputFrame(obj,MultiCoordinateFrame({sframe,zmpframe}));
+      end
     end
     
     function v = constructVisualizer(obj)
