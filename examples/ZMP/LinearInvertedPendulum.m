@@ -133,20 +133,22 @@ classdef LinearInvertedPendulum < LinearSystem
         A2 = (N+S*B)*Ri*B' - A';
         B2 = [2*eye(2); zeros(2)] + 2*hg*(N + S*B)*Ri;
         
+        assert(rank(A2)==4);
+        A2i = inv(A2);
+        
         alpha = zeros(4,n);
         beta = zeros(4,n,k);
         for j=n:-1:1
-          beta(:,j,1) = B2*c(:,j,k);
-          for i=2:k
-            beta(:,j,i) = ( A2*beta(:,j,i-1) + B2*c(:,j,k-i+1) )/i;
+          beta(:,j,k) = -A2i*B2*c(:,j,1);
+          for i=k-1:-1:1
+            beta(:,j,i) = A2i*( i*beta(:,j,i+1) - B2*c(:,j,k-i+1) );
           end
-%          valuecheck(A2*beta(:,j,k),zeros(4,1));
           if (j==n) 
             s1dt = zeros(4,1);
           else
-            s1dt = alpha(:,j+1); 
+            s1dt = alpha(:,j+1) + beta(:,j+1,1); 
           end
-          alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(1:k)'));
+          alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(0:k-1)'));
         end
         
         c = lqr(obj,zmp_tf);  % placeholder until I do the right thing here
@@ -163,7 +165,7 @@ classdef LinearInvertedPendulum < LinearSystem
         j = find(t>=breaks(1:end-1),1,'last');
         if isempty(j), j=length(breaks)-1; end
         trel = t-breaks(j);
-        s1 = expm(A2*trel)*alpha(:,j) + squeeze(beta(:,j,:))*(trel.^(1:size(beta,3))');
+        s1 = expm(A2*trel)*alpha(:,j) + squeeze(beta(:,j,:))*(trel.^(0:size(beta,3)-1)');
       end
     end
     

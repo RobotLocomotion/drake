@@ -19,6 +19,8 @@ classdef FunctionHandleTrajectory < Trajectory
         obj.handle=handle;
         obj.dhandle=dhandle;
         obj.breaks = breaks;
+        dim = dim(1:find(dim~=1,1,'last')); % strip trailing 1's
+        if (isempty(dim)) dim=1; end  
         obj.dim = dim;
         obj.tspan = [min(breaks), max(breaks)];
       end
