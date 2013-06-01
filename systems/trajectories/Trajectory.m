@@ -239,6 +239,14 @@ classdef Trajectory < DrakeSystem
       if (nargin<3) tol=[]; end % use the default in valuecheck
       if (nargin<4) belementwise = true; end
       
+      if ~isa(traj,'Trajectory')
+        traj = ConstantTrajectory(traj); 
+      end
+      
+      if ~isa(desired_traj,'Trajectory')
+        desired_traj = ConstantTrajectory(desired_traj); 
+      end
+      
       if ((length(size(traj))~=length(size(desired_traj))) || any(size(traj)~=size(desired_traj)))
         if (nargout>0)
           tf = false;
@@ -261,14 +269,14 @@ classdef Trajectory < DrakeSystem
           sub_traj = subsref(traj,S);
           sub_desired_traj = subsref(desired_traj,S);
           
-          if (~valuecheck(eval(sub_traj,ts),eval(sub_desired_traj,ts),tol))
+          [thistf,errstr] = valuecheck(eval(sub_traj,ts),eval(sub_desired_traj,ts),tol);
+          if ~thistf
             tf = false;
-            
             if (nargout<1)
               figure(1043); clf; hold on;  
               h = fnplt(sub_desired_traj);  set(h,'Color','r','LineStyle','--');
               h = fnplt(sub_traj);
-              error('trajectory element %d doesn''t match.',i);
+              error('trajectory element %d doesn''t match.\n%s',i,errstr);
             end
           end
         end
