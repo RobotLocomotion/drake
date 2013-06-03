@@ -22,7 +22,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   
   methods
     function y = eval(obj,t)
-      if isscalar(t) && isnumeric(t)
+      if 0 %isscalar(t) && isnumeric(t)
         y = obj.javapp.eval(t);
       else
     	t=max(min(t,obj.tspan(end)),obj.tspan(1));
