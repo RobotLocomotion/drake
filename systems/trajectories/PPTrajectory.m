@@ -12,6 +12,15 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
       obj.javapp = drake.systems.trajectories.JavaPP(ppform.breaks, ppform.coefs, ppform.order, ppform.dim);
     end
+  end
+  methods (Static)
+    function obj = loadobj(a)
+      obj = a;
+      obj.javapp = drake.systems.trajectories.JavaPP(obj.pp.breaks, obj.pp.coefs, obj.pp.order, obj.pp.dim);
+    end
+  end
+  
+  methods
     function y = eval(obj,t)
       if isscalar(t) && isnumeric(t)
         y = obj.javapp.eval(t);
