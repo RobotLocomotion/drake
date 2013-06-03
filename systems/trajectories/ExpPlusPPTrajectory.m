@@ -29,12 +29,16 @@ classdef ExpPlusPPTrajectory < Trajectory
       obj.pporder = size(gamma,3);
     end
     
-    function [y,j] = eval(obj,t)
-      assert(isscalar(t));
-      j = find(t>=obj.breaks(1:end-1),1,'last');
-      if isempty(j), j=length(obj.breaks)-1; end
-      trel = t-obj.breaks(j);
-      y = obj.K*expm(obj.A*trel)*obj.alpha(:,j) + squeeze(obj.gamma(:,j,:))*(trel.^(0:obj.pporder-1)');
+    function [y,jj] = eval(obj,t)
+      y = zeros(size(obj.K,1),length(t));
+      jj = zeros(length(t));
+      for k=1:length(t)
+        j = find(t(k)>=obj.breaks(1:end-1),1,'last');
+        if isempty(j), j=0; end %j=length(obj.breaks)-1; end   % kaess: I believe this was wrong
+        trel = t(k)-obj.breaks(j);
+        y(:,k) = obj.K*expm(obj.A*trel)*obj.alpha(:,j) + squeeze(obj.gamma(:,j,:))*(trel.^(0:obj.pporder-1)');
+        jj(k) = j;
+      end
     end
 
     function t = getBreaks(obj)
