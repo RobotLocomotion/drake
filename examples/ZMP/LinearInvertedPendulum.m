@@ -9,13 +9,10 @@ classdef LinearInvertedPendulum < LinearSystem
   % - The output is the state and the [x,y] position of the ZMP.  
   
   methods 
-    function obj = LinearInvertedPendulum(h,g,options)
+    function obj = LinearInvertedPendulum(h,g)
       % @param h the (constant) height of the center of mass
       % @param g the scalar gravity @default 9.81
       if (nargin<2) g=9.81; end
-      if nargin<3 || ~isfield(options,'ignore_frames') 
-        options.ignore_frames = false; 
-      end
       
       if(isa(h,'numeric'))
         rangecheck(h,0,inf);
@@ -40,21 +37,17 @@ classdef LinearInvertedPendulum < LinearSystem
       obj.h = h;
       obj.g = g;
       
-      if ~options.ignore_frames
-        % note: can only ignore frames if you are planning with, but not
-        % simulating with this model
-        cartstateframe = CartTableState;
-        obj = setInputFrame(obj,CartTableInput);
-        sframe = SingletonCoordinateFrame('LIMPState',4,'x',{'x_com','y_com','xdot_com','ydot_com'});
-        if isempty(findTransform(sframe,cartstateframe))
-          addTransform(sframe,AffineTransform(sframe,cartstateframe,sparse([7 8 15 16],[1 2 3 4],[1 1 1 1],16,4),zeros(16,1)));
-          addTransform(cartstateframe,AffineTransform(cartstateframe,sframe,sparse([1 2 3 4],[7 8 15 16],[1 1 1 1],4,16),zeros(4,1)));
-        end
-        obj = setStateFrame(obj,sframe);
-      
-        zmpframe = CoordinateFrame('ZMP',2,'z',{'x_zmp','y_zmp'});
-        obj = setOutputFrame(obj,MultiCoordinateFrame({sframe,zmpframe}));
+      cartstateframe = CartTableState;
+      obj = setInputFrame(obj,CartTableInput);
+      sframe = SingletonCoordinateFrame('LIMPState',4,'x',{'x_com','y_com','xdot_com','ydot_com'});
+      if isempty(findTransform(sframe,cartstateframe))
+        addTransform(sframe,AffineTransform(sframe,cartstateframe,sparse([7 8 15 16],[1 2 3 4],[1 1 1 1],16,4),zeros(16,1)));
+        addTransform(cartstateframe,AffineTransform(cartstateframe,sframe,sparse([1 2 3 4],[7 8 15 16],[1 1 1 1],4,16),zeros(4,1)));
       end
+      obj = setStateFrame(obj,sframe);
+      
+      zmpframe = CoordinateFrame('ZMP',2,'z',{'x_zmp','y_zmp'});
+      obj = setOutputFrame(obj,MultiCoordinateFrame({sframe,zmpframe}));
     end
     
     function v = constructVisualizer(obj)
@@ -73,19 +66,40 @@ classdef LinearInvertedPendulum < LinearSystem
       if nargin<3 options = struct(); end
       if ~isfield(options,'use_tvlqr') options.use_tvlqr = true; end
       if ~isfield(options,'compute_lyapunov') options.compute_lyapunov = (nargout>1); end
-      if ~isfield(options,'ignore_frames') options.ignore_frames = false; end
       if ~options.use_tvlqr
         if isfield(options,'dCOM') || ~isTI(obj) || ~isa(dZMP,'PPTrajectory')
           warning('closed-form solution not implemented for these options (yet)');
           options.use_tvlqr = true;
         end
       end        
-      
-      typecheck(dZMP,'Trajectory');
-      dZMP = dZMP.inFrame(desiredZMP);
-      
-      zmp_tf = dZMP.eval(dZMP.tspan(end));
-      if options.use_tvlqr
+
+      if ~options.use_tvlqr
+        assert(obj.g==9.81);
+        
+        if (nargout>2)
+          [ct,Vt,comtraj] = LinearInvertedPendulum.ZMPtrackerClosedForm(obj.h,dZMP,options);
+        elseif (nargout>1)
+          [ct,Vt] = LinearInvertedPendulum.ZMPtrackerClosedForm(obj.h,dZMP,options);
+        else
+          ct = LinearInvertedPendulum.ZMPtrackerClosedForm(obj.h,dZMP,options);
+        end
+        
+        zmp_tf = double(inFrame(Point(getOutputFrame(dZMP),dZMP.eval(dZMP.tspan(end))),desiredZMP));
+        
+        % set up frames
+        ct = setInputFrame(ct,CoordinateFrame('com_tf',4,'x'));
+        obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ct.getInputFrame,eye(4),-[zmp_tf;0;0]),true);
+        ct.getInputFrame.addTransform(AffineTransform(ct.getInputFrame,obj.getStateFrame,eye(4),+[zmp_tf;0;0]),true);
+        ct = setOutputFrame(ct,getInputFrame(obj));
+        
+        if (nargout>1)
+          Vt = setFrame(Vt,getInputFrame(ct));
+        end
+      else
+        typecheck(dZMP,'Trajectory');
+        dZMP = dZMP.inFrame(desiredZMP);
+        
+        zmp_tf = dZMP.eval(dZMP.tspan(end));
         if(isTI(obj))
           [c,V] = lqr(obj,zmp_tf);
         else
@@ -113,7 +127,7 @@ classdef LinearInvertedPendulum < LinearSystem
         else
           Q = zeros(4);
         end
-
+        
         dZMP = setOutputFrame(dZMP,getFrameByNum(getOutputFrame(obj),2)); % override it before sending in to tvlqr
         % note: the system is actually linear, so x0traj and u0traj should
         % have no effect on the numerical results (they just set up the
@@ -124,7 +138,7 @@ classdef LinearInvertedPendulum < LinearSystem
         options.ydtraj = [x0traj;dZMP];
         WS = warning('off','Drake:TVLQR:NegativeS');  % i expect to have some zero eigenvalues, which numerically fluctuate below 0
         [ct,Vt] = tvlqr(obj,x0traj,u0traj,Q,zeros(2),V,options);
-        warning(WS);        
+        warning(WS);
         
         if (nargout>2)
           if ~isfield(options,'com0'), options.com0 = zeros(2,1); end
@@ -132,101 +146,8 @@ classdef LinearInvertedPendulum < LinearSystem
           
           comtraj = COMplanFromTracker(obj,options.com0,options.comdot0,tspan,c);
         end
-      else
-        % closed-form solution, see derivation in zmp_riccati.pdf
-
-        [breaks,coefs,n,k,d] = unmkpp(dZMP.pp);
-        assert(prod(d)==2);
-        cf = reshape(coefs,[2,n,k]);
-        cf(:,:,k) = cf(:,:,k) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
-        dt = diff(breaks);
-
-        hg = obj.h/obj.g;
-        A = obj.Ac; B = obj.Bc; 
-        Q = diag([1 1 0 0]);
-        R = hg^2*eye(2); Ri = inv(R);
-        N = -hg*[eye(2);zeros(2)];
-
-        [K,S] = lqr(A,B,Q,R,N); K=-K;
-        
-        A2 = (N+S*B)*Ri*B' - A';
-        B2 = [2*eye(2); zeros(2)] + 2*hg*(N + S*B)*Ri;
-        
-        assert(rank(A2)==4);
-        A2i = inv(A2);
-        
-        alpha = zeros(4,n);
-        beta = zeros(4,n,k);
-        gamma = zeros(2,n,k);
-        for j=n:-1:1
-          beta(:,j,k) = -A2i*B2*cf(:,j,1);
-          gamma(:,j,k) = -hg*Ri*cf(:,j,1) - .5*Ri*B'*beta(:,j,k);
-          for i=k-1:-1:1
-            beta(:,j,i) = A2i*( i*beta(:,j,i+1) - B2*cf(:,j,k-i+1) );
-            gamma(:,j,i) = -hg*Ri*cf(:,j,k-i+1) - .5*Ri*B'*beta(:,j,i);
-          end
-          if (j==n)
-            s1dt = zeros(4,1);
-          else
-            s1dt = alpha(:,j+1) + beta(:,j+1,1);
-          end
-          alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(0:k-1)'));
-        end
-
-        ct = AffineSystem([],[],[],[],[],[],[],K,ExpPlusPPTrajectory(breaks,-.5*Ri*B',A2,alpha,gamma));
-        if ~options.ignore_frames
-          ct = setInputFrame(ct,CoordinateFrame('com_tf',4,'x'));
-          obj.getStateFrame.addTransform(AffineTransform(obj.getStateFrame,ct.getInputFrame,eye(4),-[zmp_tf;0;0]),true);
-          ct.getInputFrame.addTransform(AffineTransform(ct.getInputFrame,obj.getStateFrame,eye(4),+[zmp_tf;0;0]),true);
-          ct = setOutputFrame(ct,getInputFrame(obj));
-        end
-        
-        if options.compute_lyapunov
-          s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
-%          s2traj = ODESolTrajectory(ode45(@s2dynamics,fliplr(breaks),0),[1 1]);
-%          s2traj = flipToPP(s2traj);
-          [t,y,ydot] = ode4(@s2dynamics,fliplr(breaks),0);
-          s2traj = PPTrajectory(pchipDeriv(breaks,fliplr(y.'),fliplr(ydot.')));
-          Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2traj);
-        else
-          Vt = [];
-        end
-        
-        if (nargout>2)
-          Ay = [A + B*K, -.5*B*Ri*B'; zeros(4), A2];
-          Ayi = inv(Ay);
-          By = [-hg*B*Ri; B2];
-          
-          a = zeros(4,n);
-          b = zeros(4,n,k);
-          
-          x = zeros(4,1);
-          if isfield(options,'com0'), x(1:2) = options.com0 - zmp_tf; end
-          if isfield(options,'comdot0'), x(3:4) = options.comdot0; end
-            
-          for j=1:n
-            b(:,j,k) = -Ayi(1:4,:)*By*cf(:,j,1);
-%            valuecheck(-Ayi(5:8,:)*By*cf(:,j,1),beta(:,j,k));
-            for i=k-1:-1:1
-              b(:,j,i) = Ayi(1:4,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*cf(:,j,k-i+1) );
-%              valuecheck( Ayi(5:8,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*cf(:,j,k-i+1) ),beta(:,j,i));
-            end
-            a(:,j) = x - b(:,j,1);
-            x = [eye(4),zeros(4)]*expm(Ay*dt(j))*[a(:,j);alpha(:,j)] + squeeze(b(:,j,:))*(dt(j).^(0:k-1)');
-            b(1:2,j,1) = b(1:2,j,1)+zmp_tf;  % back in world coordinates
-          end
-          
-          comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
-        end
       end
-      
-      function s2dot = s2dynamics(t,s2)
-        [s1,j] = eval(s1traj,t);
-        trel = t-breaks(j);
-        zbar = squeeze(cf(:,j,:))*trel.^(k-1:-1:0)';
-        rs = hg*zbar + .5*B'*s1;
-        s2dot = - zbar'*zbar + rs'*Ri*rs;
-      end
+
     end
     
     function comtraj = COMplanFromTracker(obj,com0,comdot0,tspan,c)
@@ -270,6 +191,103 @@ classdef LinearInvertedPendulum < LinearSystem
   end
   
   methods (Static)
+    function [ct,Vt,comtraj] = ZMPtrackerClosedForm(h,dZMP,options)
+      if nargin<3 options = struct(); end
+      if ~isfield(options,'compute_lyapunov') options.compute_lyapunov = (nargout>1); end
+      
+      typecheck(dZMP,'Trajectory');
+      dZMP = dZMP.inFrame(desiredZMP);
+      
+      zmp_tf = dZMP.eval(dZMP.tspan(end));
+
+      % closed-form solution, see derivation in zmp_riccati.pdf
+      [breaks,coefs,n,k,d] = unmkpp(dZMP.pp);
+      assert(prod(d)==2);
+      cf = reshape(coefs,[2,n,k]);
+      cf(:,:,k) = cf(:,:,k) - repmat(zmp_tf,1,n);  % switch to zbar coordinates
+      dt = diff(breaks);
+
+      hg = h/9.81;
+      A = [zeros(2),eye(2);zeros(2,4)]; B = [zeros(2);eye(2)];
+      Q = diag([1 1 0 0]);
+      R = hg^2*eye(2); Ri = inv(R);
+      N = -hg*[eye(2);zeros(2)];
+      
+      [K,S] = lqr(A,B,Q,R,N); K=-K;
+      
+      A2 = (N+S*B)*Ri*B' - A';
+      B2 = [2*eye(2); zeros(2)] + 2*hg*(N + S*B)*Ri;
+      
+      assert(rank(A2)==4);
+      A2i = inv(A2);
+      
+      alpha = zeros(4,n);
+      beta = zeros(4,n,k);
+      gamma = zeros(2,n,k);
+      for j=n:-1:1
+        beta(:,j,k) = -A2i*B2*cf(:,j,1);
+        gamma(:,j,k) = -hg*Ri*cf(:,j,1) - .5*Ri*B'*beta(:,j,k);
+        for i=k-1:-1:1
+          beta(:,j,i) = A2i*( i*beta(:,j,i+1) - B2*cf(:,j,k-i+1) );
+          gamma(:,j,i) = -hg*Ri*cf(:,j,k-i+1) - .5*Ri*B'*beta(:,j,i);
+        end
+        if (j==n)
+          s1dt = zeros(4,1);
+        else
+          s1dt = alpha(:,j+1) + beta(:,j+1,1);
+        end
+        alpha(:,j) = expm(A2*dt(j)) \ (s1dt - squeeze(beta(:,j,:))*(dt(j).^(0:k-1)'));
+      end
+      
+      ct = AffineSystem([],[],[],[],[],[],[],K,ExpPlusPPTrajectory(breaks,-.5*Ri*B',A2,alpha,gamma));
+        
+      if options.compute_lyapunov
+        s1traj = ExpPlusPPTrajectory(breaks,eye(4),A2,alpha,beta);
+%          s2traj = ODESolTrajectory(ode45(@s2dynamics,fliplr(breaks),0),[1 1]);
+%          s2traj = flipToPP(s2traj);
+        [t,y,ydot] = ode4(@s2dynamics,fliplr(breaks),0);
+        s2traj = PPTrajectory(pchipDeriv(breaks,fliplr(y.'),fliplr(ydot.')));
+        Vt = QuadraticLyapunovFunction(getInputFrame(ct),S,s1traj,s2traj);
+      else
+        Vt = [];
+      end
+        
+      if (nargout>2)
+        Ay = [A + B*K, -.5*B*Ri*B'; zeros(4), A2];
+        Ayi = inv(Ay);
+        By = [-hg*B*Ri; B2];
+        
+        a = zeros(4,n);
+        b = zeros(4,n,k);
+        
+        x = zeros(4,1);
+        if isfield(options,'com0'), x(1:2) = options.com0 - zmp_tf; end
+        if isfield(options,'comdot0'), x(3:4) = options.comdot0; end
+        
+        for j=1:n
+          b(:,j,k) = -Ayi(1:4,:)*By*cf(:,j,1);
+          %            valuecheck(-Ayi(5:8,:)*By*cf(:,j,1),beta(:,j,k));
+          for i=k-1:-1:1
+            b(:,j,i) = Ayi(1:4,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*cf(:,j,k-i+1) );
+            %              valuecheck( Ayi(5:8,:)*( i*[b(:,j,i+1);beta(:,j,i+1)] - By*cf(:,j,k-i+1) ),beta(:,j,i));
+          end
+          a(:,j) = x - b(:,j,1);
+          x = [eye(4),zeros(4)]*expm(Ay*dt(j))*[a(:,j);alpha(:,j)] + squeeze(b(:,j,:))*(dt(j).^(0:k-1)');
+          b(1:2,j,1) = b(1:2,j,1)+zmp_tf;  % back in world coordinates
+        end
+        
+        comtraj = ExpPlusPPTrajectory(breaks,[eye(2),zeros(2,6)],Ay,[a;alpha],b(1:2,:,:));
+      end
+      
+      function s2dot = s2dynamics(t,s2)
+        [s1,j] = eval(s1traj,t);
+        trel = t-breaks(j);
+        zbar = squeeze(cf(:,j,:))*trel.^(k-1:-1:0)';
+        rs = hg*zbar + .5*B'*s1;
+        s2dot = - zbar'*zbar + rs'*Ri*rs;
+      end
+    end
+    
     function comtraj = COMtrajFromZMP(h,com0,comf,zmp_pp)
       [breaks,coefs,l,k,d] = unmkpp(zmp_pp);
       for i=1:2

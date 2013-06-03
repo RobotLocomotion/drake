@@ -1,7 +1,7 @@
 function testZMPplanners
 
-oldpath = path;
-%oldpath = addpath(fullfile(pwd,'..'));
+%oldpath = path;
+oldpath = addpath(fullfile(pwd,'..'));
 
 tf = 10;
 limp = LinearInvertedPendulum2D(1.0);
