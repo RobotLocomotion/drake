@@ -2,6 +2,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   
   properties
     pp
+    javapp
   end
   
   methods
@@ -9,10 +10,15 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       obj = obj@Trajectory(ppform.dim);
       obj.pp = PPTrajectory.minimalOrder(ppform);
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
+      obj.javapp = drake.systems.trajectories.JavaPP(ppform.breaks, ppform.coefs, ppform.order, ppform.dim);
     end
     function y = eval(obj,t)
-      t=max(min(t,obj.tspan(end)),obj.tspan(1));
-      y = ppvalSafe(obj.pp,t);  % still benefits from being safe (e.g. for supporting TaylorVar)
+      if isscalar(t) && isnumeric(t)
+        y = obj.javapp.eval(t);
+      else
+    	t=max(min(t,obj.tspan(end)),obj.tspan(1));
+        y = ppvalSafe(obj.pp,t);  % still benefits from being safe (e.g. for supporting TaylorVar)
+      end
     end
 
     function dtraj = fnder(obj,order)
@@ -61,10 +67,12 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       sizecheck(offset,[1 1]);
       obj.tspan = obj.tspan + offset;
       obj.pp.breaks = obj.pp.breaks + offset;
+      obj.javaPP.shiftTime(offset);
     end
     
     function obj = uminus(obj)
       obj.pp.coefs = -obj.pp.coefs;
+      obj.javapp.uminus();
     end
     
     function t = getBreaks(obj)
@@ -94,7 +102,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
 %      warning('this is a short-term hack to get around the Curve-fitting toolbox dep');
 %      obj.pp = spline(newbreaks,eval(obj,newbreaks));
 
-      obj.pp = pprfn(obj.pp,newbreaks);
+      obj = PPTrajectory(pprfn(obj.pp,newbreaks));
     end
     
     function c = plus(a,b)
@@ -161,7 +169,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
         for i=1:l
           coefs(:,:,i) = inv(coefs(:,:,i));
         end
-        a.pp = mkpp(breaks,coefs,d);
+        a = PPTrajectory(mkpp(breaks,coefs,d));
       else
         a = inv@Trajectory(a);
       end
@@ -474,17 +482,22 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       
       newtraj = obj;
       
-      newtraj.tspan = [min(obj.pp.breaks) max(trajAtEnd.pp.breaks)];
-      
       newtraj.pp.dim = obj.pp.dim;
       newtraj.pp.order = obj.pp.order;
       
       newtraj.pp.pieces = obj.pp.pieces + trajAtEnd.pp.pieces;
       
-      newtraj.dim = obj.dim;
-      
       newtraj.pp.breaks = [obj.pp.breaks trajAtEnd.pp.breaks(2:end)];
       newtraj.pp.coefs = [obj.pp.coefs; trajAtEnd.pp.coefs];
+
+      % update javapp (could also construct a new object)
+      newtraj.javapp = drake.systems.trajectories.JavaPP(...
+          newtraj.pp.breaks, newtraj.pp.coefs, newtraj.pp.order, newtraj.pp.dim);
+%      newtraj = PPTrajectory(newtraj.pp);
+      
+      newtraj.dim = obj.dim;
+      
+      newtraj.tspan = [min(obj.pp.breaks) max(trajAtEnd.pp.breaks)];
       
       newtraj = setInputLimits(newtraj, obj.umin, obj.umax);
     end % append
