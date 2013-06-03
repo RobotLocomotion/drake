@@ -200,6 +200,7 @@ if (~conf.gurobi_enabled)
   disp(' Please see <a href="http://drake.mit.edu/quickstart">http://drake.mit.edu/quickstart</a> for more info.');
   disp(' ');
 end
+writeGurobiPC(conf);
 
 conf.cplex_enabled = logical(exist('cplexlp'));
 if (~conf.cplex_enabled)
@@ -230,6 +231,7 @@ if ~conf.eigen3_enabled
    conf.eigen3_incdir = [conf.root,'/thirdParty/eigen3/'];
    conf.eigen3_enabled = isfield(conf,'eigen3_incdir') && ~isempty(conf.eigen3_incdir);
 end
+writeEigenPC(conf);
 
 if ~isfield(conf,'conf.additional_unit_test_dirs')
   conf.additional_unit_test_dirs={};
@@ -342,5 +344,45 @@ function [obj,lib,libprefix] = extensions
     lib = 'a';
     libprefix = 'lib';
   end
+
+end
+
+
+function writeEigenPC(conf)
+
+fptr = fopen(fullfile(conf.root,'thirdParty','eigen3.pc'),'w');
+
+fprintf(fptr,'Name: Eigen3\n');
+fprintf(fptr,'Description: A C++ template library for linear algebra: vectors, matrices, and related algorithms\n');
+fprintf(fptr,'Requires:\n');
+fprintf(fptr,'Version: 3.1.0\n');
+fprintf(fptr,'Libs:\n');
+fprintf(fptr,'Cflags: -I%s/thirdParty/eigen3\n',conf.root);
+
+fclose(fptr);
+
+end
+
+function writeGurobiPC(conf)
+
+% todo: also handle windows/mac here (by including the correct OS dir):
+if ~isunix || ismac
+  return
+end
+
+fptr = fopen(fullfile(conf.root,'thirdParty','gurobi.pc'),'w');
+
+fprintf(fptr,'prefix=%s/thirdParty/gurobi/linux64\n',conf.root);
+fprintf(fptr,'exec_prefix=${prefix}\n');
+fprintf(fptr,'includedir=${prefix}/include\n');
+fprintf(fptr,'libdir=${exec_prefix}/lib\n');
+fprintf(fptr,'\n');
+fprintf(fptr,'Name: gurobi\n');
+fprintf(fptr,'Description: Gurobi Optimizer\n');
+fprintf(fptr,'Version: 5.1\n');
+fprintf(fptr,'Cflags: -I${includedir}\n');
+fprintf(fptr,'Libs: -L${libdir} -lgurobi51\n');
+
+fclose(fptr);
 
 end
