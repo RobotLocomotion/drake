@@ -116,3 +116,5 @@ examples/ZMP/zmp-riccati.log
 examples/ZMP/zmp-riccati.nav
 zmp-riccati.snm
 zmp-riccati.toc
+gurobi.pc
+eigen3.pc
