@@ -43,6 +43,7 @@ public class JavaPP {
     } else {
       // search for the correct interval
       idx = java.util.Arrays.binarySearch(m_breaks, t);
+      if (idx==m_breaks.length) idx=m_breaks.length-1; // the last break does not matter
       if (idx<0) idx = -idx-1;
       idx = idx -1;
       if (idx<0) idx=0;
