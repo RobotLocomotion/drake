@@ -355,8 +355,8 @@ if(options.quasiStaticFlag)
 end
 nF = length(Fmin);
 nG = length(iGfun);
-
-snset('Major optimality tolerance=5e-2');
+%snprint('snopt.out');
+snset('Major optimality tolerance=5e-4');
 setSNOPTParam(options,'Iterations Limit',1e6);
 setSNOPTParam(options,'Major Iterations Limit',5e2);
 setSNOPTParam(options,'Superbasics Limit',1000);
