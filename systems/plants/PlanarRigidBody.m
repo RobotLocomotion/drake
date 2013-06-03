@@ -146,8 +146,10 @@ classdef PlanarRigidBody < RigidBody
         body.collision_group_name=horzcat(body.collision_group_name,name);
         ind=length(body.collision_group_name);
         body.collision_group{ind}=npts+1:size(body.contact_pts,2);
+        body.contact_shape_group{ind} = [];  % not supported for planar case (yet)
       else
         body.collision_group{ind}=[body.collision_group{ind},npts+1:size(body.contact_pts,2)];
+        body.contact_shape_group{ind} = [];  % not supported for planar case (yet)
       end
     end
     

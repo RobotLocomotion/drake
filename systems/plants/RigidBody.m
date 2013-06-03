@@ -11,8 +11,10 @@ classdef RigidBody < handle
     gravity_off=false;
 
     contact_pts=[];  % a 3xn matrix with [x;y;z] positions of contact points
+    collision_group_name={};  % string names of the groups
+    collision_group={};       % collision_group{i} is a list of indices into contact_pts which belong to collision_group_name{i}
     contact_shapes=[]; %struct('type',[],'T',[],'params',[]);  with params as used by URDF (not necessarily by Bullet)
-    contact_shape_group=[]; % contact_shape_group{i} is a list of indices into contact_shapes which belong to collision_group_name{i}
+    contact_shape_group={}; % contact_shape_group{i} is a list of indices into contact_shapes which belong to collision_group_name{i}
     
     % joint properties
     jointname=''
@@ -31,9 +33,6 @@ classdef RigidBody < handle
     effort_limit=[];
     velocity_limit=[];
     
-    collision_group_name={};  % string names of the groups
-    collision_group={};       % collision_group{i} is a list of indices into contact_pts which belong to collision_group_name{i}
-
     % dynamic properties (e.g. state at runtime)
     cached_q=[];  % the current kinematics were computed using these q and qd values 
     cached_qd=[]
@@ -113,6 +112,8 @@ classdef RigidBody < handle
           end
           body.collision_group(group_elements) = [];
           body.collision_group_name(group_elements) = [];
+          % todo: should actually remove the contact shapes, too
+          body.contact_shape_group(group_elements) = [];
         end
       end
     end
@@ -135,6 +136,8 @@ classdef RigidBody < handle
           end
           body.collision_group(i) = [];
           body.collision_group_name(i) = [];
+          % todo: should actually remove the contact shapes, too
+          body.contact_shape_group(i) = [];
         else
           i=i+1;
         end
