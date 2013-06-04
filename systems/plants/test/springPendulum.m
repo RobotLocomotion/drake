@@ -1,5 +1,5 @@
 function springPendulum
-% NOTEST
+
 r = RigidBodyManipulator('SpringPendulum.urdf');
 x0 = [-pi/2;0];
 run_time = 10;

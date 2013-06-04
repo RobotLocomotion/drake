@@ -1,5 +1,5 @@
 function runWalkDemo(num_steps,step_length,step_time)
-% NOTEST
+
 if (nargin<1) num_steps = 8; end
 if (nargin<2) step_length = 0.4; end
 if (nargin<3) step_time = 1; end

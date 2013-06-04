@@ -1,5 +1,5 @@
 function terrainInterpTest
-% NOTEST
+
 
 [X,Y] = meshgrid(linspace(-9,9,31),linspace(-9,9,31));
 r = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,struct('floating',true));

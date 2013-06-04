@@ -1,5 +1,5 @@
 function [xstar,ustar,zstar] = runCOMFixedPointSearch()
-% NOTEST
+
 planar = false;
 runsim = false; % run 1s sim with constant input after search
 

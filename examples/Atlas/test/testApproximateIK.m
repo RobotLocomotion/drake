@@ -1,5 +1,5 @@
 function testApproximateIK
-% NOTEST
+
 addpath('..');
 options.floating = true;
 options.dt = 0.001;

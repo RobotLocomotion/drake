@@ -1,5 +1,5 @@
 function bullet_collision_jac_test
-% NOTEST
+
 r = RigidBodyManipulator();
 
 for i=1:2

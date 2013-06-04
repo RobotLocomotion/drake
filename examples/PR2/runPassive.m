@@ -1,5 +1,5 @@
 function runPassive
-% NOTEST
+
 
 r = RigidBodyManipulator('pr2.urdf');
 r = setSimulinkParam(r,'MinStep','0.001');
