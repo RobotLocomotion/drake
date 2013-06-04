@@ -163,6 +163,7 @@ public class MessageMonitor implements LCMSubscriber
     return m_data;
   }
   
+    /*
   public static void main(String[] args) throws InterruptedException
   {
     MessageMonitor m = new MessageMonitor(new drc.robot_state_t(),"utime");
@@ -172,5 +173,5 @@ public class MessageMonitor implements LCMSubscriber
     while(true)
       Thread.sleep(1000);
   }
-  
+    */  
 }
