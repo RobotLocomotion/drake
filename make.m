@@ -1,5 +1,8 @@
 function make(varargin)
 
+% If we are UNIX, use the GNU makefile instead
+
+
 % Builds all mex files in the directory 
 
 flags = {'-O'};

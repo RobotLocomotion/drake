@@ -1,4 +1,5 @@
 function runPD()
+% NOTEST
 
 options.floating = true;
 options.dt = 0.001;

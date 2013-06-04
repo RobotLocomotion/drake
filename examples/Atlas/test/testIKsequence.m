@@ -1,4 +1,5 @@
 function [qtraj,info] = testIKsequence(qtraj0)
+% NOTEST
 options.floating = true;
 options.dt = 0.001;
 oldpath = addpath(fullfile(pwd,'..'));
