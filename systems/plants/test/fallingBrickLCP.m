@@ -1,5 +1,5 @@
 function fallingBrickLCP
-% NOTEST
+
 options.floating = true;
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 x0 = p.resolveConstraints([0;1+rand;randn(10,1)]);

@@ -1,5 +1,5 @@
 function doublePendWBiceptSpring
-% NOTEST
+
 r = RigidBodyManipulator('DoublePendWBiceptSpring.urdf');
 x0 = [0;pi;0;0]+.1*randn(4,1);
 run_time = 10;

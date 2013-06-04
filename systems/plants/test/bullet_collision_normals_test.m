@@ -1,5 +1,5 @@
 function bullet_collision_normals_test
-% NOTEST
+
 r = RigidBodyManipulator();
 r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),struct('floating',true));
 r = addRobotFromURDF(r,'ground_plane.urdf',zeros(3,1),zeros(3,1),struct('floating',false));

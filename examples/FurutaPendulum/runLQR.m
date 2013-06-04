@@ -1,5 +1,5 @@
 function runLQR
-% NOTEST
+
 
 p = RigidBodyManipulator('FurutaPendulum.urdf');
 

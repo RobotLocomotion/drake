@@ -1,5 +1,5 @@
 function runPassiveWRL
-% NOTEST
+
 p = PlanarRigidBodyManipulator('Pendulum.urdf');
 x = p.simulate([0 5],randn(2,1));
 
