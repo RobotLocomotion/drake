@@ -1,4 +1,4 @@
-classdef RigidBodyWRLVIsualizer < Visualizer
+classdef RigidBodyWRLVisualizer < Visualizer
 % the visualizer that doesn't visualize (helpful for simulink simulation)
   
   methods
