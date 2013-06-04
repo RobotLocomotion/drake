@@ -17,6 +17,7 @@ class IndexRange {
 class RigidBody {
 public:
   RigidBody() {
+    dofnum=0;
     mass = 0.0;
     floating = 0;
     com << Vector3d::Zero(), 1;
@@ -39,7 +40,7 @@ public:
   {
     if (dofnum>=0) {
       int i,j;
-      if (model->parent[dofnum]>=0) {
+      if (parent>=0) {
         ancestor_dofs = model->bodies[parent].ancestor_dofs;
         ddTdqdq_nonzero_rows = model->bodies[parent].ddTdqdq_nonzero_rows;
       }
