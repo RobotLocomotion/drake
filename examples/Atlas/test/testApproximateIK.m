@@ -102,7 +102,7 @@ for i=1:10
   r_foot_pos = r_foot_pos+0.005*randn(6,1);
 
   q = approximateIK(r,q,l_foot,l_foot_pts,l_foot_pos,r_foot,r_foot_pts,r_foot_pos,options);
-  qik = inverseKin(r,q,l_foot,l_foot_pts,l_foot_pos,[],[],[],r_foot,r_foot_pts,r_foot_pos,[],[],[],options);
+  qik = inverseKin(r,q,l_foot,l_foot_pts,l_foot_pos,r_foot,r_foot_pts,r_foot_pos,options);
   v.draw(1,[q;0*q]); drawnow;
   v.draw(1,[qik;0*q]); drawnow;
   valuecheck(qik,q,0.1); % pretty loose

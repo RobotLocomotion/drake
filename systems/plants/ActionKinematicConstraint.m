@@ -17,7 +17,7 @@ classdef ActionKinematicConstraint
     contact_dist_min % A cell, contact_dist_min can be nonzero only in NOT_IN_CONTACT state
     contact_dist_max % A cell contact_dist_max can be nonzero only in NOT_IN_CONTACT state
     contact_grp
-    contact_aff % A cell contains all affordance objects for the same body, can be either a ContactAffordance object, or a RigidBody Object
+    contact_affs % A cell contains all affordance objects for the same body, can be either a ContactAffordance object, or a RigidBody Object
     num_aff     % the number of affordance
   end
   properties
@@ -36,7 +36,7 @@ classdef ActionKinematicConstraint
   end
   
   methods
-    function obj = ActionKinematicConstraint(robot,body_ind,body_pts,worldpos,tspan,name,contact_state0,contact_statei,contact_statef,contact_aff,contact_distance,contact_grp)
+    function obj = ActionKinematicConstraint(robot,body_ind,body_pts,worldpos,tspan,name,contact_state0,contact_statei,contact_statef,contact_affs,contact_distance,contact_grp)
       if nargin < 12
         contact_grp = '';
       end
@@ -70,7 +70,7 @@ classdef ActionKinematicConstraint
 
       if(nargin>6)
         if(nargin<10)
-          contact_aff = {ContactAffordance()};
+          contact_affs = {ContactAffordance()};
           contact_distance{1}.min = ConstantTrajectory(zeros(1,size(obj.body_pts,2)));
           %contact_distance{1}.max = ConstantTrajectory(inf(1,size(obj.body_pts,2)));
           contact_distance{1}.max = ConstantTrajectory(zeros(1,size(obj.body_pts,2)));
@@ -84,15 +84,24 @@ classdef ActionKinematicConstraint
         if(~iscell(contact_statef))
           contact_statef = {contact_statef};
         end
-        obj = setContact(obj,contact_state0,contact_statei,contact_statef,contact_aff,contact_distance);
+        obj = setContact(obj,contact_state0,contact_statei,contact_statef,contact_affs,contact_distance);
       else
-        contact_state0 = {-ones(1,size(obj.body_pts,2))};
-        contact_statei = {-ones(1,size(obj.body_pts,2))};
-        contact_statef = {-ones(1,size(obj.body_pts,2))};
-        contact_aff = {ContactAffordance()};
+        if(    isa(obj.pos_min, 'ConstantTrajectory') ...
+            && isa(obj.pos_max, 'ConstantTrajectory') ...
+            && abs(obj.pos_min.pt(3)) < eps && abs(obj.pos_max.pt(3)) < eps)
+          contact_state0 = {ActionKinematicConstraint.MAKE_CONTACT*ones(1,size(obj.body_pts,2))};
+          contact_statei = {ActionKinematicConstraint.STATIC_PLANAR_CONTACT*ones(1,size(obj.body_pts,2))};
+          contact_statef = {ActionKinematicConstraint.BREAK_CONTACT*ones(1,size(obj.body_pts,2))};
+          contact_dist{1}.max = ConstantTrajectory(zeros(1,size(obj.body_pts,2)));
+        else
+          contact_state0 = {ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,size(obj.body_pts,2))};
+          contact_statei = {ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,size(obj.body_pts,2))};
+          contact_statef = {ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,size(obj.body_pts,2))};
+          contact_dist{1}.max = ConstantTrajectory(inf(1,size(obj.body_pts,2)));
+        end
+        contact_affs = {ContactAffordance()};
         contact_dist{1}.min = ConstantTrajectory(zeros(1,size(obj.body_pts,2)));
-        contact_dist{1}.max = ConstantTrajectory(inf(1,size(obj.body_pts,2)));
-        obj = setContact(obj,contact_state0,contact_statei,contact_statef,contact_aff,contact_dist);
+        obj = setContact(obj,contact_state0,contact_statei,contact_statef,contact_affs,contact_dist);
       end
     end
 
@@ -169,29 +178,34 @@ classdef ActionKinematicConstraint
     end
     
     function ikargs = getIKArguments(obj,t)
-        % Return 6 arguments, the body index, the body points, the world
-        % position, the contact state, the contact affordances, and the
-        % contact distance
+        % Return 3 arguments, the body index, the body points, and the world
+        % position structure, which has the following fields:
+        %   * min
+        %   * max
+        %   * contact_state
+        %   * contact_affs
+        %   * contact_dist
       if t<obj.tspan(1) || t>obj.tspan(2)
         ikargs={};
       else
         pos.min = eval(obj.pos_min,t);
         pos.max = eval(obj.pos_max,t);
-        contact_state = obj.getContactState(t);
-        contact_dist = cell(1,obj.num_aff);
+        pos.contact_state = obj.getContactState(t);
+        pos.contact_dist = cell(1,obj.num_aff);
+        pos.contact_affs = obj.contact_affs;
         for i = 1:obj.num_aff
-            contact_dist{i} = struct();
-            contact_dist{i}.min = eval(obj.contact_dist_min{i},t);
-            contact_dist{i}.max = eval(obj.contact_dist_max{i},t);
-            if(any(contact_dist{i}.max(contact_state{i} == obj.MAKE_CONTACT|contact_state{i}==obj.BREAK_CONTACT|...
-                    contact_state{i} == obj.STATIC_PLANAR_CONTACT| contact_state{i} == obj.STATIC_GRIP_CONTACT)>eps))
+            pos.contact_dist{i} = struct();
+            pos.contact_dist{i}.min = eval(obj.contact_dist_min{i},t);
+            pos.contact_dist{i}.max = eval(obj.contact_dist_max{i},t);
+            if(any(pos.contact_dist{i}.max(pos.contact_state{i} == obj.MAKE_CONTACT|pos.contact_state{i}==obj.BREAK_CONTACT|...
+                    pos.contact_state{i} == obj.STATIC_PLANAR_CONTACT| pos.contact_state{i} == obj.STATIC_GRIP_CONTACT)>eps))
                 error('The maximum contact distance should be zero for points in contact')
             end
         end
         if (obj.body_ind==0)
-          ikargs = {obj.body_ind,pos,contact_state,obj.contact_aff,contact_dist};
+          ikargs = {obj.body_ind,pos};
         else
-          ikargs = {obj.body_ind,obj.body_pts,pos,contact_state,obj.contact_aff,contact_dist};
+          ikargs = {obj.body_ind,obj.body_pts,pos};
         end
       end
     end
@@ -209,16 +223,16 @@ classdef ActionKinematicConstraint
         end
     end
     
-    function obj = setContact(obj,contact_state0,contact_statei,contact_statef,contact_aff,contact_distance)
-        if(~iscell(contact_state0)||~iscell(contact_statei)||~iscell(contact_statef)||~iscell(contact_aff)||~iscell(contact_distance))
+    function obj = setContact(obj,contact_state0,contact_statei,contact_statef,contact_affs,contact_distance)
+        if(~iscell(contact_state0)||~iscell(contact_statei)||~iscell(contact_statef)||~iscell(contact_affs)||~iscell(contact_distance))
             error('All input arguments to setContact should be cells, each cell has the number of entries equal to the number of contact affordance');
         end
-        obj.num_aff = length(contact_aff);
+        obj.num_aff = length(contact_affs);
       obj.contact_state0 = contact_state0;
       obj.contact_statei = contact_statei;
       obj.contact_statef = contact_statef;
-      obj.contact_aff = cell(1,obj.num_aff);
-      contact_aff_names = cell(1,obj.num_aff);
+      obj.contact_affs = cell(1,obj.num_aff);
+      contact_affs_names = cell(1,obj.num_aff);
       % check if the contact state if a valid combination
       valid_contact_comb = [obj.UNDEFINED_CONTACT obj.UNDEFINED_CONTACT obj.UNDEFINED_CONTACT;...
           obj.NOT_IN_CONTACT obj.NOT_IN_CONTACT obj.NOT_IN_CONTACT;...
@@ -248,15 +262,15 @@ classdef ActionKinematicConstraint
           if(~all(valid_contact_flag))
               error('The contact state for the %d th point is not valid',find(~valid_contact_flag));
           end
-          % allow contact_aff{i} being a rigid body, as the latter is the
+          % allow contact_affs{i} being a rigid body, as the latter is the
           % input to the pairwiseContactDistance function
-          if(isa(contact_aff{i},'ContactAffordance')||isa(contact_aff{i},'RigidBody'))
-            obj.contact_aff{i} = contact_aff{i};
-          if(isa(contact_aff{i},'ContactAffordance'))
-            obj.contact_aff{i} = contact_aff{i};
-            contact_aff_names{i} = contact_aff{i}.name;
-            elseif(isa(contact_aff{i},'RigidBody'))
-                contact_aff_names{i} = contact_aff{i}.linkname;
+          if(isa(contact_affs{i},'ContactAffordance')||isa(contact_affs{i},'RigidBody'))
+            obj.contact_affs{i} = contact_affs{i};
+          if(isa(contact_affs{i},'ContactAffordance'))
+            obj.contact_affs{i} = contact_affs{i};
+            contact_aff_names{i} = contact_affs{i}.name;
+            elseif(isa(contact_affs{i},'RigidBody'))
+                contact_aff_names{i} = contact_affs{i}.linkname;
             end
             if(i>1)
                 if(any(cellfun(@(x) strcmp(x,contact_aff_names{i}),contact_aff_names(1:i-1))))

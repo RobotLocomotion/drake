@@ -24,9 +24,28 @@ function [q,info] = inverseKin(obj,q0,varargin)
 %   * if worldposi is pos in 7 rows, then it also constraints the
 %   orientation in quaternion.
 %   * it does not make sense to specify an orientation for the COM.
+%   * elements with NAN are treated as don't care (min=-inf, max=inf)
 %   * worldposi can be a structure with worldposi.min and worldposi.max 
 %     both 3xmi or 6xmi which sets lower and upper bounds for bodyposi
-%   * elements with NAN are treated as don't care (min=-inf, max=inf)
+%     - It can also contain the following optional fields
+%       * contact_affs - [n_aff x 1] cell array, where n_aff is the number of
+%         affordances with respect to which bodyi is constrained
+%       * contact_state - [n_aff x 1] cell array of [1 x mi] arrays, where each
+%         element of the arrays is one of the following: 
+%         - ActionKinematicConstraint.UNDEFINED_CONTACT
+%         - ActionKinematicConstraint.NOT_IN_CONTACT
+%         - ActionKinematicConstraint.MAKE_CONTACT
+%         - ActionKinematicConstraint.BREAK_CONTACT
+%         - ActionKinematicConstraint.STATIC_PLANAR_CONTACT
+%         - ActionKinematicConstraint.STATIC_GRIP_CONTACT
+%       * contact_dist - [n_aff x 1] cell array of structures, where the j-th
+%         structure has the following fields
+%         - min - [1 x mi] array giving the minimum allowable distance from
+%           each point in bodyposi to the affordance specified by
+%           worldposi.contact_affs{j}
+%         - max - [1 x mi] array giving the maximum allowable distance from
+%           each point in bodyposi to the affordance specified by
+%           worldposi.contact_affs{j}
 % @option q_nom  replaces the cost function with (q-q_nom)'*(q-q_nom).
 %     @default q_nom = q0
 % @option Q  puts a weight on the cost function qtilde'*Q*qtilde
@@ -93,8 +112,8 @@ jGvar = (1:nq)';
 iAfun = [];
 jAvar = [];
 A = [];
-wmax = obj.joint_limit_max;
-wmin = obj.joint_limit_min;
+wmax = joint_limit_max;
+wmin = joint_limit_min;
 w0 = q0;
 total_num_support_vert = 0;
 support_polygon_flag = {};
@@ -108,10 +127,7 @@ while i<=length(varargin)
     worldposi = varargin{i+1};
     support_polygon_flag{n} = false;
     body_num_support_vert(n) = 0;
-      contact_state{n} = {ActionKinematicConstraint.UNDEFINED_CONTACT};
-      contact_affs{n} = {ContactAffordance()};
-      contact_dist{n} = {struct('min',0,'max',inf)};
-    i=i+5;
+    i=i+2;
     mi=1;
   else
     bodyposi = varargin{i+1};
@@ -122,22 +138,7 @@ while i<=length(varargin)
 %      bodyposi = getContactPoints(b,bodyposi);
 %      worldposi = repmat(worldposi,1,size(bodyposi,2));
     end
-    if(isempty(varargin{i+3}))
-        contact_state{n} = {ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,size(bodyposi,2))};
-        contact_affs{n} = {ContactAffordance()};
-        contact_dist{n} = {struct('max',inf,'min',0)};
-      else
-        contact_state{n} = varargin{i+3};
-        contact_affs{n} = varargin{i+4};
-        contact_dist{n} = varargin{i+5};
-    end
-    if(quasiStaticFlag)
-      support_polygon_flag{n} = any(cell2mat(varargin{i+3}') == ActionKinematicConstraint.STATIC_PLANAR_CONTACT,1)|...
-        any(cell2mat(varargin{i+3}') == ActionKinematicConstraint.STATIC_GRIP_CONTACT,1);
-      body_num_support_vert(n) = sum(support_polygon_flag{n});
-      total_num_support_vert  = total_num_support_vert+body_num_support_vert(n);
-    end
-    i=i+6;
+    i=i+3;
     [rows,mi] = size(bodyposi);
     if (rows ~=3) error('bodypos must be 3xmi'); end
   end
@@ -146,8 +147,52 @@ while i<=length(varargin)
       error('if worldpos is a struct, it must have fields .min and .max');
     end
     minpos=[worldposi.min];  maxpos=[worldposi.max];
+
+    % The remaining fields in worldposi are optional
+    if isfield(worldposi,'contact_state')
+        if iscell(worldposi.contact_state)
+            contact_state{n} = worldposi.contact_state;
+        else
+            contact_state{n} = {worldposi.contact_state};
+        end
+    elseif(abs(minpos(3))<eps && abs(maxpos(3)<eps))
+      contact_state{n} = {ActionKinematicConstraint.STATIC_PLANAR_CONTACT ...
+                            *ones(1,size(bodyposi,2))};
+    else
+      contact_state{n} = {ActionKinematicConstraint.UNDEFINED_CONTACT ...
+                            *ones(1,size(bodyposi,2))};
+    end
+
+    if isfield(worldposi,'contact_affs')
+      contact_affs{n} = worldposi.contact_affs;
+    else
+      contact_affs{n} = {ContactAffordance()};
+    end
+
+    if isfield(worldposi,'contact_dist')
+      contact_dist{n} = worldposi.contact_dist;
+    else
+      contact_dist{n} = {struct('max',inf,'min',0)};
+    end
   else
     minpos=worldposi; maxpos=worldposi;
+    if(abs(minpos(3))<eps)
+      contact_state{n} = {ActionKinematicConstraint.STATIC_PLANAR_CONTACT ...
+        *ones(1,size(bodyposi,2))};
+    else
+      contact_state{n} = {ActionKinematicConstraint.UNDEFINED_CONTACT ...
+        *ones(1,size(bodyposi,2))};
+    end
+    contact_affs{n} = {ContactAffordance()};
+    contact_dist{n} = {struct('max',inf,'min',0)};
+  end
+  if(quasiStaticFlag)
+    support_polygon_flag{n} = any(cell2mat(contact_state{n}') == ActionKinematicConstraint.STATIC_PLANAR_CONTACT,1)|...
+                              any(cell2mat(contact_state{n}') == ActionKinematicConstraint.STATIC_GRIP_CONTACT,1)|...
+                              (any(cell2mat(contact_state{n}') == ActionKinematicConstraint.MAKE_CONTACT,1)&...
+                               any(cell2mat(contact_state{n}') == ActionKinematicConstraint.BREAK_CONTACT,1));
+    body_num_support_vert(n) = sum(support_polygon_flag{n});
+    total_num_support_vert  = total_num_support_vert+body_num_support_vert(n);
   end
   [rows,cols]=size(minpos);
 

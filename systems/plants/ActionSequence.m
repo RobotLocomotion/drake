@@ -41,11 +41,11 @@ classdef ActionSequence
       ikargs2 = kc.getIKArguments(kc.tspan(2));
       if(ikargs1{1} ~=0)
           k = 1;
-          while(k<=length(ikargs1{4}))
-              if(any(ikargs1{4}{k}==ActionKinematicConstraint.MAKE_CONTACT))
+          while(k<=length(ikargs1{3}.contact_state))
+              if(any(ikargs1{3}.contact_state{k}==ActionKinematicConstraint.MAKE_CONTACT))
                   obj.make_contact_time = [obj.make_contact_time kc.tspan(1)];
               end
-              if(any(ikargs2{4}{k}==ActionKinematicConstraint.BREAK_CONTACT))
+              if(any(ikargs2{3}.contact_state{k}==ActionKinematicConstraint.BREAK_CONTACT))
                   obj.break_contact_time = [obj.break_contact_time kc.tspan(2)];
               end
               k = k+1;
@@ -100,7 +100,7 @@ classdef ActionSequence
         if(isa(obj.kincons{i},'CollisionAvoidanceConstraint'))
           kin_col_ikargs = obj.kincons{i}.getIKArguments(t);
           if(~isempty(kin_col_ikargs))
-            collision_state = kin_col_ikargs{4}{1};
+            collision_state = kin_col_ikargs{3}.contact_state{1};
             if(collision_state == ActionKinematicConstraint.UNDEFINED_CONTACT)
               if(t == obj.tspan(1)|| t == obj.tspan(end))
                 collision_state = ActionKinematicConstraint.COLLISION_AVOIDANCE;
@@ -108,16 +108,16 @@ classdef ActionSequence
                 continue;
               end
             end
-            kin_col_ikargs{4}{1} = collision_state;
+            kin_col_ikargs{3}.contact_state{1} = collision_state;
             body_ind = kin_col_ikargs{1};
             bodys_ind = find(body_ind == collision_bodys,1);
             if(isempty(bodys_ind))
               collision_bodys = [collision_bodys body_ind];
               collision_ikargs = [collision_ikargs {kin_col_ikargs}];
             else
-              collision_ikargs{bodys_ind}{4} = [collision_ikargs{bodys_ind}{4} {collision_state}];
-              collision_ikargs{bodys_ind}{5} = [collision_ikargs{bodys_ind}{5} kin_col_ikargs{5}];
-              collision_ikargs{bodys_ind}{6} = [collision_ikargs{bodys_ind}{6} kin_col_ikargs{6}];
+              collision_ikargs{bodys_ind}{3}.contact_state = [collision_ikargs{bodys_ind}{3}.contact_state {collision_state}];
+              collision_ikargs{bodys_ind}{3}.contact_affs = [collision_ikargs{bodys_ind}{3}.contact_affs kin_col_ikargs{3}.contact_affs];
+              collision_ikargs{bodys_ind}{3}.contact_dist = [collision_ikargs{bodys_ind}{3}.contact_dist kin_col_ikargs{3}.contact_dist];
             end
           end
         else
@@ -177,37 +177,43 @@ classdef ActionSequence
                 % also, to find out the minimal set of distance
                 org_body_pts_ind = body_pts_ind(1:size(bodys_ikargs{bodys_ind}{2},2));
                 kincon_pts_ind = body_pts_ind(size(bodys_ikargs{bodys_ind}{2},2)+1:end);
-                org_num_contact_aff = length(bodys_ikargs{bodys_ind}{5});
-                kincon_num_contact_aff = length(kincon_ikargs{5});
+                org_num_contact_aff = length(bodys_ikargs{bodys_ind}{3}.contact_affs);
+                kincon_num_contact_aff = length(kincon_ikargs{3}.contact_affs);
                 contact_state = cell(1,org_num_contact_aff+kincon_num_contact_aff);
-                contact_aff = cell(1,org_num_contact_aff+kincon_num_contact_aff);
+                contact_affs = cell(1,org_num_contact_aff+kincon_num_contact_aff);
                 contact_dist = cell(1,org_num_contact_aff+kincon_num_contact_aff);
                 for k = 1:org_num_contact_aff
                   contact_state{k} = ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,num_bodys_unique_pts);
-                  contact_state{k}(org_body_pts_ind) = bodys_ikargs{bodys_ind}{4}{k};
+                  contact_state{k}(org_body_pts_ind) = bodys_ikargs{bodys_ind}{3}.contact_state{k};
                   contact_dist{k} = struct();
                   contact_dist{k}.max = inf(1,num_bodys_unique_pts);
                   contact_dist{k}.min = zeros(1,num_bodys_unique_pts);
-                  contact_dist{k}.max(org_body_pts_ind) = bodys_ikargs{bodys_ind}{6}{k}.max;
-                  contact_dist{k}.min(org_body_pts_ind) = bodys_ikargs{bodys_ind}{6}{k}.min;
-                  contact_aff{k} = bodys_ikargs{bodys_ind}{5}{k};
+                  contact_dist{k}.max(org_body_pts_ind) = bodys_ikargs{bodys_ind}{3}.contact_dist{k}.max;
+                  contact_dist{k}.min(org_body_pts_ind) = bodys_ikargs{bodys_ind}{3}.contact_dist{k}.min;
+                  contact_affs{k} = bodys_ikargs{bodys_ind}{3}.contact_affs{k};
                 end
                 for k = 1:kincon_num_contact_aff
                   contact_state{org_num_contact_aff+k} = ActionKinematicConstraint.UNDEFINED_CONTACT*ones(1,num_bodys_unique_pts);
-                  contact_state{org_num_contact_aff+k}(kincon_pts_ind) = kincon_ikargs{4}{k};
+                  contact_state{org_num_contact_aff+k}(kincon_pts_ind) = kincon_ikargs{3}.contact_state{k};
                   contact_dist{org_num_contact_aff+k} = struct();
                   contact_dist{org_num_contact_aff+k}.max = inf(1,num_bodys_unique_pts);
                   contact_dist{org_num_contact_aff+k}.min = zeros(1,num_bodys_unique_pts);
-                  contact_dist{org_num_contact_aff+k}.max(kincon_pts_ind) = kincon_ikargs{6}{k}.max;
-                  contact_dist{org_num_contact_aff+k}.min(kincon_pts_ind) = kincon_ikargs{6}{k}.min;
-                  contact_aff{org_num_contact_aff+k} = kincon_ikargs{5}{k};
+                  contact_dist{org_num_contact_aff+k}.max(kincon_pts_ind) = kincon_ikargs{3}.contact_dist{k}.max;
+                  contact_dist{org_num_contact_aff+k}.min(kincon_pts_ind) = kincon_ikargs{3}.contact_dist{k}.min;
+                  contact_affs{org_num_contact_aff+k} = kincon_ikargs{3}.contact_affs{k};
                 end
-                bodys_ikargs{bodys_ind} = {body_ind,bodys_unique_pts,worldpos_unique,contact_state,contact_aff,contact_dist};
+                worldpos_unique.contact_state = contact_state;
+                worldpos_unique.contact_affs = contact_affs;
+                worldpos_unique.contact_dist = contact_dist;
+                bodys_ikargs{bodys_ind} = {body_ind,bodys_unique_pts,worldpos_unique};
               else
                 worldpos_unique.max = min([bodys_ikargs{body_ind}{2}.max kincon_ikargs{2}.max],[],2);
                 worldpos_unique.min = max([bodys_ikargs{body_ind}{2}.min kincon_ikargs{2}.min],[],2);
                 worldpos_unique.max = max([worldpos_unique.max worldpos_unique.min]);
-                bodys_ikargs{bodys_ind} = {body_ind,worldpos_unique,-1,ContactAffordance,struct('min',0,'max',inf)};
+                worldpos_unique.contact_state = ActionKinematicConstraint.UNDEFINED_CONTACT;
+                worldpos_unique.contact_affs = ContactAffordance;
+                worldpos_unique.contact_dist = struct('min',0,'max',inf);
+                bodys_ikargs{bodys_ind} = {body_ind,worldpos_unique};
               end
             end
           end
@@ -274,7 +280,7 @@ classdef ActionSequence
         kc = [ActionKinematicConstraint(robot,body_indB,ptsB,worldpos_z,tspan, name_z, ...
           {ActionKinematicConstraint.MAKE_CONTACT*ones(1,n_pts)}, ...
           {ActionKinematicConstraint.STATIC_PLANAR_CONTACT*ones(1,n_pts)}, ...
-          {ActionKinematicConstraint.STATIC_PLANAR_CONTACT*ones(1,n_pts)}, {body_indA}, {zeros(1,n_pts)}); ...
+          {ActionKinematicConstraint.BREAK_CONTACT*ones(1,n_pts)}, {body_indA}, {zeros(1,n_pts)}); ...
           ActionKinematicConstraint(robot,body_indB,ptsB,worldpos_xy,tspan, name_xy, ...
           {ActionKinematicConstraint.NOT_IN_CONTACT*ones(1,n_pts)}, ...
           {ActionKinematicConstraint.NOT_IN_CONTACT*ones(1,n_pts)}, ...
