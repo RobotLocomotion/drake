@@ -1,9 +1,9 @@
-classdef NullVisualizer < Visualizer
+classdef RigidBodyWRLVIsualizer < Visualizer
 % the visualizer that doesn't visualize (helpful for simulink simulation)
   
   methods
-    function obj = NullVisualizer(frame)  
-      obj = obj@Visualizer(frame);
+    function obj = RigidBodyWRLVisualizer(manip,options)  
+      obj = obj@Visualizer(getStateFrame(manip));
       obj.display_dt = -1;
     end
     
