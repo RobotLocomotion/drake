@@ -1,5 +1,5 @@
 
-// prints (and returns the input)
+// prints the input
 
 #include <mex.h>
 

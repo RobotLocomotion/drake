@@ -26,9 +26,5 @@ eval(sprintf('nlhs_%s = nargout;',countstr));
 eval(sprintf('varargin_%s = varargin;',countstr));
 eval(sprintf('save([fun,''_mexdebug.mat''],''nrhs_%s'',''nlhs_%s'',''varargin_%s'',''%s'')',countstr,countstr,countstr,appendstr));
 
-%if (nargout>0)
-  varargout=cell(1:nargout);
-  [varargout{:}] = feval(fun,varargin{:});
-%else
-%  feval(fun,varargin{:});
-%end
+varargout=cell(1:nargout);
+[varargout{:}] = feval(fun,varargin{:});
