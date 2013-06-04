@@ -22,10 +22,10 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   
   methods
     function y = eval(obj,t)
-      if 0 %isscalar(t) && isnumeric(t)
+      t=max(min(t,obj.tspan(end)),obj.tspan(1));
+      if isscalar(t) && isnumeric(t)
         y = obj.javapp.eval(t);
       else
-    	t=max(min(t,obj.tspan(end)),obj.tspan(1));
         y = ppvalSafe(obj.pp,t);  % still benefits from being safe (e.g. for supporting TaylorVar)
       end
     end
