@@ -1,5 +1,5 @@
 classdef CartTable < TimeSteppingRigidBodyManipulator
-  
+% NOTEST  
   methods
     function obj = CartTable()
       obj = obj@TimeSteppingRigidBodyManipulator('CartTable.urdf',0.005,struct('floating',true));

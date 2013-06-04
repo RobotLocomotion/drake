@@ -1,4 +1,5 @@
 function terrainTest
+% NOTEST
 
 r = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,struct('floating',true));
 r = setTerrain(r,RigidBodyHeightMapTerrain('terrainTest.png',[-10;10;0],[40,40,10]));
