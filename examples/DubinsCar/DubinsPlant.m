@@ -60,7 +60,7 @@ classdef DubinsPlant < DrakeSystem
       info = 0;
       while (info~=1)
         % generate a random trajectory
-        utraj0 = PPTrajectory(foh(linspace(0,tf0,11),randn(1,11)));
+        utraj0 = PPTrajectory(foh(linspace(0,tf0,11),0*randn(1,11)));
         
         tic
         [utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj0,con,options);
