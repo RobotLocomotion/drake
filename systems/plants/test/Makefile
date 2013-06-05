@@ -17,8 +17,8 @@ CFLAGS += $(shell pkg-config --cflags bot2-vis)
 LDFLAGS += $(shell pkg-config --libs bot2-vis)
 
 # add bullet
-CFLAGS += $(shell pkg-config --cflags bullet) -DBULLET_COLLISION
-LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
+#CFLAGS += $(shell pkg-config --cflags bullet) -DBULLET_COLLISION
+#LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMath
 
 all: CXX += -O3
 all : urdf_kin_test
