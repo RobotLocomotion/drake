@@ -6,14 +6,14 @@ p = setInputLimits(p,-inf,inf);
 
 % Trajectory optimization
 x0 = [0;0;0]; % Initial state that trajectory should start from
-xf = [1;0.2;0]; % Final desired state 
+xf = [1.5;0;0]; % Final desired state 
 tf0 = 0.5; % Guess for how long trajectory should take
 [utraj,xtraj]=runDircol(p,x0,xf,tf0);
 
 % Do tvlqr
-Q = 20*eye(3);
+Q = eye(3);
 R=1;
-Qf = 20*eye(3);
+Qf = 1*Q;
 
 [c,V]=tvlqr(p,xtraj,utraj,Q,R,Qf); 
 poly = taylorApprox(feedback(p,c),xtraj,[],3);
@@ -21,10 +21,9 @@ ts = xtraj.getBreaks();
 
 % Options for funnel computation
 options = struct();
-options.rho0_tau = 10; % Determine initial guess for rho
+options.rho0_tau = 2; % Determine initial guess for rho
 options.max_iterations = 5; % Maximum number of iterations to run for
-
-%options.stability = true;
+options.stability = false;
 
 % Do funnel computation
 Vtraj=sampledFiniteTimeVerification(poly,xtraj.getBreaks(),Qf,V,options);
