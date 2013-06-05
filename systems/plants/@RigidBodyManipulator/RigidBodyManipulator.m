@@ -821,7 +821,7 @@ classdef RigidBodyManipulator < Manipulator
     
     function obj = createMexPointer(obj)
       if (exist('constructModelmex')==3)
-        obj.mex_model_ptr = SharedDataHandle(constructModelmex(obj.featherstone,obj.body,obj.gravity),@deleteModelmex);
+        obj.mex_model_ptr = SharedDataHandle(constructModelmex(obj.featherstone,obj.body,obj.gravity));%,@deleteModelmex);
       end
     end
     
