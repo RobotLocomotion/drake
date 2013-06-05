@@ -473,7 +473,47 @@ bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int b
 	}
 
   return (c.ptsA.size() > 0);
-}
+};
+
+bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal)
+{
+  RigidBody::CollisionObject co = bodies[body_indA].collision_objects.at(body_collision_indA);
+	MyCollisionResultCollector c;
+  for (std::vector<RigidBody::CollisionObject>::iterator iterB=bodies[body_indB].collision_objects.begin(); iterB!=bodies[body_indB].collision_objects.end(); iterB++) {
+    bt_collision_world.contactPairTest(co.bt_obj,iterB->bt_obj,c);
+	}
+	
+	if (c.ptsA.size() > 0) {
+		ptA = c.ptsA[0];
+		ptB = c.ptsB[0];
+		normal = c.normals[0];
+  }
+  else {
+		ptA << 1,1,1;
+		ptB << -1,-1,-1;
+		normal << 0,0,1;
+  }
+  return (c.ptsA.size() > 0);
+};
+
+bool RigidBodyManipulator::getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal)
+{
+  RigidBody::CollisionObject co = bodies[body_ind].collision_objects.at(body_collision_ind);
+	MyCollisionResultCollector c;
+  bt_collision_world.contactTest(co.bt_obj,c);
+	
+	if (c.ptsA.size() > 0) {
+		ptA = c.ptsA[0];
+		ptB = c.ptsB[0];
+		normal = c.normals[0];
+  }
+  else {
+		ptA << 1,1,1;
+		ptB << -1,-1,-1;
+		normal << 0,0,1;
+  }
+  return (c.ptsA.size() > 0);
+};
 
 #endif
 

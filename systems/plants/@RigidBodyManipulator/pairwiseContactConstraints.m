@@ -1,4 +1,4 @@
-function [phi,n,D,mu,dn,dD] = pairwiseContactConstraints(obj,kinsol,body_indA,body_indB)
+function [phi,n,D,mu,dn,dD] = pairwiseContactConstraints(obj,kinsol,body_indA,body_indB,body_collision_indA)
 
 % Uses bullet to perform collision detection between rigid body A and rigid
 % body B, and returns a single penetration constraint
@@ -7,6 +7,8 @@ function [phi,n,D,mu,dn,dD] = pairwiseContactConstraints(obj,kinsol,body_indA,bo
 % @param body_indA  numerical index of rigid body A or 
 %     (less efficient:) a rigidbody object
 % @param body_indB  numerical index of rigid body B (or the rigidbody object)
+%     if body_indB is -1, compute collisions with entire world
+% @param body_collision_indA  index vector of collision objects on body A
 %
 % @retval phi  phi(i,1) is the signed distance from the contact
 %      point on body A to the contact on body B the robot to the closes object in the world.
@@ -19,12 +21,18 @@ function [phi,n,D,mu,dn,dD] = pairwiseContactConstraints(obj,kinsol,body_indA,bo
 % @retval mu mu(i,1) is the coefficient of friction for the ith contact
 
 
-if (nargout>4)
-  [ptsA,ptsB,normal,JA,~,dJA] = pairwiseContactTest(obj,kinsol,body_indA,body_indB);
-elseif (nargout>1)
-  [ptsA,ptsB,normal,JA] = pairwiseContactTest(obj,kinsol,body_indA,body_indB);
+if nargin > 4
+  varargin = {kinsol,body_indA,body_indB,body_collision_indA};
 else
-  [ptsA,ptsB,normal] = pairwiseContactTest(obj,kinsol,body_indA,body_indB);
+  varargin = {kinsol,body_indA,body_indB};
+end
+
+if (nargout>4)
+  [ptsA,ptsB,normal,JA,~,dJA] = pairwiseContactTest(obj,varargin{:});
+elseif (nargout>1)
+  [ptsA,ptsB,normal,JA] = pairwiseContactTest(obj,varargin{:});
+else
+  [ptsA,ptsB,normal] = pairwiseContactTest(obj,varargin{:});
 end
 
 
