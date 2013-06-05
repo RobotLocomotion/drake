@@ -269,6 +269,10 @@ ptr = fopen('.matlabroot','w');
 fprintf(ptr,'%s',matlabroot);
 fclose(ptr);
 
+ptr = fopen('.matlabcpu','w');
+fprintf(ptr,'%s',lower(computer));
+fclose(ptr);
+
 end
 
 function conf = setconf(conf,field,longname,candidates)

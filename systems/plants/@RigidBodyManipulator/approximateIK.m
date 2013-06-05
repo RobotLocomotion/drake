@@ -1,4 +1,4 @@
-function q = approximateIK(obj,q0,varargin)
+function [q,info] = approximateIK(obj,q0,varargin)
 %
 % approximateIK(obj,q0,body1,bodypos1,worldpos1,body2,bodypos2,worldpos2...,options)
 %
@@ -44,6 +44,7 @@ end
 
 if isfield(options,'q_nom') q_nom = options.q_nom; else q_nom = q0; end
 if isfield(options,'Q') Q = options.Q; else Q = eye(obj.num_q); end
+if ~isfield(options,'use_mex') options.use_mex = false; end
 
 kinsol = doKinematics(obj,q0,false);
 

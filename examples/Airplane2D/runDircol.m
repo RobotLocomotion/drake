@@ -6,7 +6,7 @@ end
 
 x0 = [0; 0; 0; 0];
 tf0 = .5;
-xf = [0; 5; 0; 0];
+xf = [0; 3; 0; 0];
 
 
 %con.u.lb = p.umin;
@@ -24,7 +24,7 @@ options.method='dircol';
 info = 0;
 while (info~=1)
   % generate a random trajectory
-  utraj0 = PPTrajectory(foh(linspace(0,tf0,11),randn(1,11)));
+  utraj0 = PPTrajectory(foh(linspace(0,tf0,11),zeros(1,11)));
   
   tic
   [utraj,xtraj,info] = trajectoryOptimization(p,@cost,@finalcost,x0,utraj0,con,options);
