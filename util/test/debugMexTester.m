@@ -4,5 +4,5 @@ function debugMexTester
 % line
 
 for i=1:10
-  debugMexEval('debugMexTest',i);
+  debugMexEval('debugMexTest',i,char('a'+i-1));
 end

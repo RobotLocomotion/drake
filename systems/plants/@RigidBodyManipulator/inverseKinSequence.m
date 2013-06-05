@@ -424,9 +424,13 @@ toc
 if(info == 13)
     f_sol = SNOPT_USERFUN(w);
     f_sol = f_sol+sparse(iAfun,jAvar,A,nF,length(w))*w;
-    max_ub_error = max(f_sol-Fmax);
+    ub_err = f_sol-Fmax;
+    ub_err = ub_err(~isinf(ub_err));
+    max_ub_error = max(ub_err);
     max_ub_error = max_ub_error*(max_ub_error>0);
-    max_lb_error = max(f_sol-Fmin);
+    lb_err = Fmin-f_sol;
+    lb_err = lb_err(~isinf(lb_err));
+    max_lb_error = max(lb_err);
     max_lb_error = max_lb_error*(max_lb_error<0);
     if(max_ub_error+max_lb_error>1e-4)
         info = 13;

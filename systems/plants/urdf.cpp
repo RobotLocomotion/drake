@@ -570,7 +570,7 @@ URDFRigidBodyManipulator* loadURDFfromFile(const std::string &urdf_filename)
   
   boost::filesystem::path mypath(urdf_filename);
   std::string pathname;
-  if (mypath.has_parent_path())
+  if (!mypath.empty() && mypath.has_parent_path())
   	pathname = mypath.parent_path().native();
 
   // parse URDF to get model

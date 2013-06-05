@@ -15,13 +15,17 @@ LDFLAGS += $(shell pkg-config --libs-only-L bullet) -lBulletCollision -lLinearMa
 # botvis (not required for mex files)
 BOTVIS_CFLAGS = $(shell pkg-config --cflags bot2-vis)
 
+# gurobi flags (required for someflags)
+GUROBI_FLAGS = $(shell pkg-config --cflags --libs gurobi)
+
 SUBDIRS:=$(shell grep -v "^\#" tobuild.txt)
 
 MATLABROOT = $(strip $(shell cat ../../.matlabroot))
 MEX = $(MATLABROOT)/bin/mex
 MEXEXT = $(shell $(MATLABROOT)/bin/mexext)    
 
-MEX_CPPFILES = deleteModelmex.cpp \
+MEX_CPPFILES = constructModelmex.cpp \
+	deleteModelmex.cpp \
 	HandCmex.cpp \
 	doKinematicsmex.cpp \
 	forwardKinmex.cpp \
@@ -61,8 +65,11 @@ debug: $(MEXFILES) urdf.o
 RigidBodyManipulator.o : RigidBodyManipulator.cpp RigidBodyManipulator.h RigidBody.h
 	$(CXX) $< -c $(CFLAGS) -fPIC
 
-%.$(MEXEXT) : %.cpp RigidBodyManipulator.o
-	$(MEX) $^ $(CFLAGS) $(LDFLAGS)
+%.$(MEXEXT) : %.cpp RigidBodyManipulator.o RigidBodyManipulator.h RigidBody.h
+	$(MEX) $< RigidBodyManipulator.o $(CFLAGS) $(LDFLAGS)
+
+approximateIKmex.$(MEXEXT) : approximateIKmex.cpp RigidBodyManipulator.o RigidBodyManipulator.h RigidBody.h
+	$(MEX) $< RigidBodyManipulator.o $(CFLAGS) $(LDFLAGS) $(GUROBI_FLAGS)
 
 urdf.o : urdf.cpp RigidBodyManipulator.o urdf.h
 	$(CXX) $< -c -fPIC -Itinyxml $(CFLAGS) $(BOTVIS_CFLAGS)

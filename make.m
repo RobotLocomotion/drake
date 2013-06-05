@@ -19,11 +19,9 @@ if (nargin>0 && strcmpi(varargin{1},'clean'))
   delete(['*.',objext]);
   delete(['*.',mexext]);
 
-  cd @RigidBodyManipulator/private;
+  cd @PlanarRigidBodyManipulator/private;
   delete(['*.',mexext]);
-
-  cd ../../@PlanarRigidBodyManipulator/private;
-  delete(['*.',mexext]);
+  cd ..;
 
   cd(getDrakePath());
 else
@@ -48,6 +46,7 @@ else
       
       makeRule(['RigidBodyManipulator.',objext],{'RigidBodyManipulator.cpp','RigidBodyManipulator.h','RigidBody.h'},['mex -c RigidBodyManipulator.cpp ',sprintf('%s ',flags{:},eigenflags{:})]);
       modelflags = {['RigidBodyManipulator.',objext]};
+      mexMakeRule('constructModelmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
       mexMakeRule('deleteModelmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
       mexMakeRule('HandCmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
       mexMakeRule('doKinematicsmex.cpp',horzcat(modelflags,flags,eigenflags),modelflags);
@@ -70,11 +69,10 @@ else
       mexMakeRule('forwardKinVelpmex.cpp',horzcat(flags,eigenflags),modelflags);
       
       modelflags = {fullfile('..','..',['RigidBodyManipulator.',objext]),eigenflags{:}};
-      cd @RigidBodyManipulator/private;
-      mexMakeRule('constructModelmex.cpp',horzcat(modelflags,flags),modelflags);
-      
-      cd ../../@PlanarRigidBodyManipulator/private;
+      cd @PlanarRigidBodyManipulator/private;
       mexMakeRule('constructModelpmex.cpp',horzcat(flags,eigenflags));
+      cd ..;
+      
       cd(getDrakePath());
     end
     

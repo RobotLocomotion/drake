@@ -332,6 +332,9 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
   bdJ = MatrixXd::Zero(3,num_dof*num_dof);
   dTdTmult = MatrixXd::Zero(3*num_dof,4);
 
+  // other prealloc
+  qtmp = VectorXd::Zero(num_dof);
+
   initialized = false;
   kinematicsInit = false;
   cached_q = new double[num_dof];
@@ -1130,7 +1133,7 @@ template void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d >
 template void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d > const&, const int, MatrixBase< Matrix<double,6,1> > &);
 template void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d > const&, const int, MatrixBase< Matrix<double,7,1> > &);
 //template void RigidBodyManipulator::forwardKin(const int, const MatrixBase< Vector4d >&, const int, MatrixBase< Vector3d > &);
-//template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vector4d > &, const int, MatrixBase< MatrixXd > &);
+template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vector4d > &, const int, MatrixBase< MatrixXd > &);
 //template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
 //template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
 template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &);

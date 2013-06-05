@@ -34,7 +34,7 @@ int main(int argc, char* argv[])  // todo: take the mex function and dynamically
   string mexfile(argv[1]);
 
   // Dynamically load the mex file:
-  void* handle = dlopen((mexfile+".mexa64").c_str(),RTLD_LAZY);
+  void* handle = dlopen((mexfile+".mexmaci64").c_str(),RTLD_LAZY);
   if (!handle) {
     fprintf(stderr,"%s\n",dlerror());
     exit(EXIT_FAILURE);
