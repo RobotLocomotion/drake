@@ -58,6 +58,7 @@ else
   V0 = varargin{1};
 end
 
+
 if (isnumeric(G) && ismatrix(G) && all(size(G)==[num_xc,num_xc]))
   G = QuadraticLyapunovFunction(V0.getFrame,G);
 end
@@ -298,7 +299,7 @@ if (any(abs(doubleSafe(subs(diff(C,x),x,0*x)))>1e-4))
   tf=false; return;
 end
 
-if (any(abs(doubleSafe(subs(diff(diff(C,x)',x),x,0*x)))>1e-4))
+if any((any(abs(doubleSafe(subs(diff(diff(C,x)',x),x,0*x)))>1e-4)))
   tf=false; return;
 end
 
