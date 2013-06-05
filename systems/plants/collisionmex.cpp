@@ -49,6 +49,76 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       }
     }
   	break;
+  case 2: // pairwise collisions with specified bodyA points  
+    {
+    	MatrixXd ptsA, ptsB, normals;
+    	Vector3d ptA, ptB, normal;
+    	int body_indA = (int) mxGetScalar(prhs[2])-1, body_indB = (int) mxGetScalar(prhs[3])-1;
+    	if (body_indA<0 || body_indA>=model->num_bodies || body_indB<0 || body_indB>=model->num_bodies)
+    		mexErrMsgIdAndTxt("Drake:collisionmex:BadInputs","body indices must be between 1 and num_bodies");
+
+      double* pr = mxGetPr(prhs[4]);
+      int num_pts = mxGetNumberOfElements(prhs[4]);
+      
+      ptsA.resize(3,num_pts);
+      ptsB.resize(3,num_pts);
+      normals.resize(3,num_pts);
+      for (int i=0; i<num_pts; i++) {
+        model->getPairwisePointCollision(body_indA,body_indB,(int)pr[i]-1,ptA,ptB,normal);
+        ptsA.col(i) = ptA;
+        ptsB.col(i) = ptB;
+        normals.col(i) = normal;
+      }
+  
+      if (nlhs>0) {
+      	plhs[0] = mxCreateDoubleMatrix(3,ptsA.cols(),mxREAL);
+      	memcpy(mxGetPr(plhs[0]),ptsA.data(),sizeof(double)*3*ptsA.cols());
+      }
+      if (nlhs>1) {
+      	plhs[1] = mxCreateDoubleMatrix(3,ptsB.cols(),mxREAL);
+      	memcpy(mxGetPr(plhs[1]),ptsB.data(),sizeof(double)*3*ptsB.cols());
+      }
+      if (nlhs>2) {
+      	plhs[2] = mxCreateDoubleMatrix(3,normals.cols(),mxREAL);
+      	memcpy(mxGetPr(plhs[2]),normals.data(),sizeof(double)*3*normals.cols());
+      }
+    }
+    break;
+  case 3: // full world collisions with specified bodyA points  
+    {
+    	MatrixXd ptsA, ptsB, normals;
+    	Vector3d ptA, ptB, normal;
+    	int body_indA = (int) mxGetScalar(prhs[2])-1;
+    	if (body_indA<0 || body_indA>=model->num_bodies)
+    		mexErrMsgIdAndTxt("Drake:collisionmex:BadInputs","body indices must be between 1 and num_bodies");
+
+      double* pr = mxGetPr(prhs[3]);
+      int num_pts = mxGetNumberOfElements(prhs[3]);
+      
+      ptsA.resize(3,num_pts);
+      ptsB.resize(3,num_pts);
+      normals.resize(3,num_pts);
+      for (int i=0; i<num_pts; i++) {
+        model->getPointCollision(body_indA,(int)pr[i]-1,ptA,ptB,normal);
+        ptsA.col(i) = ptA;
+        ptsB.col(i) = ptB;
+        normals.col(i) = normal;
+      }
+  
+      if (nlhs>0) {
+      	plhs[0] = mxCreateDoubleMatrix(3,ptsA.cols(),mxREAL);
+      	memcpy(mxGetPr(plhs[0]),ptsA.data(),sizeof(double)*3*ptsA.cols());
+      }
+      if (nlhs>1) {
+      	plhs[1] = mxCreateDoubleMatrix(3,ptsB.cols(),mxREAL);
+      	memcpy(mxGetPr(plhs[1]),ptsB.data(),sizeof(double)*3*ptsB.cols());
+      }
+      if (nlhs>2) {
+      	plhs[2] = mxCreateDoubleMatrix(3,normals.cols(),mxREAL);
+      	memcpy(mxGetPr(plhs[2]),normals.data(),sizeof(double)*3*normals.cols());
+      }
+    }
+    break;
   default:
   	mexErrMsgIdAndTxt("Drake:collisionmex:BadInputs","unknown collision command");
   	break;

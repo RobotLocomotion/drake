@@ -1,4 +1,4 @@
-function [ptsA,ptsB,normal,JA,JB,dJA,dJB] = pairwiseContactTest(obj,kinsol,body_indA,body_indB)
+function [ptsA,ptsB,normal,JA,JB,dJA,dJB] = pairwiseContactTest(obj,kinsol,body_indA,body_indB,body_collision_indA)
 
 % Uses bullet to perform collision detection between rigid body A and rigid body B
 %
@@ -6,7 +6,9 @@ function [ptsA,ptsB,normal,JA,JB,dJA,dJB] = pairwiseContactTest(obj,kinsol,body_
 % @param body_indA  numerical index of rigid body A or 
 %     (less efficient:) a rigidbody object
 % @param body_indB  numerical index of rigid body B (or the rigidbody object)
-%
+%     if body_indB is -1, compute collisions with entire world
+% @param body_collision_indA  index vector of collision objects on body A
+% 
 % @retval ptsA the points (in world coordinates) on bodyA that are in
 % collision
 % @retval ptsB the point (in world coordinates) on bodyB that are in
@@ -27,7 +29,15 @@ end
 if (isa(body_indA,'RigidBody')) body_indA = find(obj.body==body_indA,1); end
 if (isa(body_indB,'RigidBody')) body_indB = find(obj.body==body_indB,1); end
 
-[ptsA,ptsB,normal] = collisionmex(obj.mex_model_ptr.getData,1,body_indA,body_indB);
+if nargin > 4
+  if body_indB == -1
+    [ptsA,ptsB,normal] = collisionmex(obj.mex_model_ptr.getData,3,body_indA,body_collision_indA);
+  else
+    [ptsA,ptsB,normal] = collisionmex(obj.mex_model_ptr.getData,2,body_indA,body_indB,body_collision_indA);
+  end
+else
+  [ptsA,ptsB,normal] = collisionmex(obj.mex_model_ptr.getData,1,body_indA,body_indB);
+end
 
 if isempty(ptsA)
   JA=[]; JB=[];

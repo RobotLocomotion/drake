@@ -1,6 +1,6 @@
 function [contact_pos,J,dJ] = contactPositions(obj,kinsol,body_idx,body_contacts)
-% body_idx is an array of body indexes
-% body_contacts is a cell array of vectors containing contact point indices
+% @param body_idx is an array of body indexes
+% @param body_contacts is a cell array of vectors containing contact point indices
 % 
 % @retval p(:,i)=[px;py;pz] is the position of the ith contact point 
 % @retval J is dpdq
@@ -19,7 +19,12 @@ if nargin<4
   n_contact_pts = size([obj.body(body_idx).contact_pts],2);
   body_contacts = [];
 else
-  n_contact_pts = sum(cellfun('length',body_contacts));
+  if isa(body_contacts,'cell')
+    n_contact_pts = sum(cellfun('length',body_contacts));
+  else
+    n_contact_pts = length(body_contacts);
+    body_contacts = {body_contacts};
+  end
 end
 
 d=length(obj.gravity);  % 2 for planar, 3 for 3D

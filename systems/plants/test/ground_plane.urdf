@@ -3,20 +3,15 @@
   <link name="ground_plane">
     <visual>
       <geometry>
-        <box size="10 10 0.0000000001"/>
+        <box size="10 10 0"/>
       </geometry>
-      <origin xyz="0 0 0.00000000005"/>
+      <origin xyz="0 0 0"/>
     </visual>
     <collision>
       <geometry>
-        <box size="10 10 0.0000000001"/>
+        <box size="10 10 1"/>
       </geometry>
-      <origin xyz="0 0 0.00000000005"/>
+      <origin xyz="0 0 -0.5"/>
     </collision>
-    <inertial>
-      <mass value="10"/>
-      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
-      <origin xyz="0 0 0"/>
-    </inertial>
   </link>
 </robot>
