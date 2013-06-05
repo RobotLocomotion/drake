@@ -3,7 +3,7 @@
 
 CC = gcc
 CXX = g++
-PKG_CONFIG_PATH := ${PKG_CONFIG_PATH}:$(shell pwd)/thirdParty
+#PKG_CONFIG_PATH := ${PKG_CONFIG_PATH}:$(shell pwd)/thirdParty
 
 LCMFILES = $(shell find . -iname "*.lcm" | tr "\n" " " | sed "s|\./||g")
 SUBDIRS:=$(shell grep -v "^\#" tobuild.txt)
