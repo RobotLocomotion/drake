@@ -1,7 +1,14 @@
 function make(varargin)
 
 % If we are UNIX, use the GNU makefile instead
+if ~ispc
+  error(['This makefile is only maintained for Windows users.' ...
+	' Please call make from the unix/mac command line instead']);
 
+  % note that I don't call it for you here using 'system', because matlab
+  % butchers the environment variables.  it's much easier for now to force people
+  % to use the command line.
+end
 
 % Builds all mex files in the directory 
 
