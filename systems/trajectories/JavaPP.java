@@ -47,6 +47,8 @@ public class JavaPP {
       if (idx<0) idx = -idx-1;
       idx = idx -1;
       if (idx<0) idx=0;
+      // handle degenerate case of duplicate breaks consistently with Matlab
+      while (m_breaks[idx]==m_breaks[idx+1] && idx<m_breaks.length-2) idx++;
       m_cached_idx = idx;
     }
 
