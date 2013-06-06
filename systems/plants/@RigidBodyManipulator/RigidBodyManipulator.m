@@ -444,12 +444,29 @@ classdef RigidBodyManipulator < Manipulator
       % robot=0 means look at all robots
       if nargin<3 || isempty(robot), robot=0; end
       if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
-      ind = strmatch(lower(linkname),lower({model.body.linkname}),'exact');
+      items = strfind(lower({model.body.linkname}),lower(linkname));
+      ind = find(~cellfun(@isempty,items));
       if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
+      if (length(ind)>0) % then handle removed fixed joints
+        i=1;
+        while i<=length(ind)
+%          sublinks=strsplit(lower(model.body(i).linkname),'+');  % for >R2013a
+          sublinks = strread(lower(model.body(ind(i)).linkname),'%s','delimiter','+');  % for older versions
+          subind = strmatch(lower(linkname),sublinks,'exact');
+          if isempty(subind),
+            ind(i)=[]; % not actually a match
+            i=i-1;
+          elseif subind>1
+            warning(['found ', linkname,' but it has been welded to it''s parent link (and the link''s coordinate frame may have changed).']);
+          end
+          i=i+1;
+        end
+      end
       if (length(ind)~=1)
-        if (nargin<3 || throw_error)
+        if (nargin<4 || throw_error)
           error(['couldn''t find unique link ' ,linkname]);
         else 
+          warning(['couldn''t find unique link ' ,linkname]);
           body_ind=[];
         end
       else
@@ -457,22 +474,11 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function body = findLink(model,linkname,robot,throw_error)
+    function body = findLink(model,linkname,varargin)
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
-      if nargin<3 || isempty(robot), robot=0; end
-      if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
-      ind = strmatch(lower(linkname),lower({model.body.linkname}),'exact');
-      if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
-      if (length(ind)~=1)
-        if (nargin<3 || throw_error)
-          error('couldn''t find unique link %s',linkname);
-        else 
-          body=[];
-        end
-      else
-        body = model.body(ind);
-      end
+      ind = findLinkInd(model,linkname,varargin{:});
+      body = model.body(ind);
     end
         
     function body = findJoint(model,jointname,robot)
