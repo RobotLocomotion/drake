@@ -269,6 +269,10 @@ classdef CoordinateFrame < handle
     function str = getCoordinateName(obj,i)
       str = obj.coordinates{i};
     end
+    
+    function strs = getCoordinateNames(obj)
+      strs = obj.coordinates;
+    end
         
     function setCoordinateNames(obj,cnames)
       % Updates the coordinate names
