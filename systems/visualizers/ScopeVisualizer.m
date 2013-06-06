@@ -4,25 +4,33 @@ classdef ScopeVisualizer < Visualizer
 % Todo: make this a lot better/prettier
   
   methods
-    function obj = ScopeVisualizer(frame,ind)
+    function obj = ScopeVisualizer(frame)
       obj = obj@Visualizer(frame);
-      obj.plot_index = ind;
       figure(1204); 
       clf; 
-      hold on; 
-      xlabel('t (sec)'); 
-      ylabel(getCoordinateName(frame,ind));
+      numu = getNumInputs(obj);
+      cs = regexprep(getCoordinateNames(frame),'_',' ');
+      obj.plotrows = ceil(sqrt(numu)); obj.plotcols=ceil(numu/obj.plotrows);
+      for i=1:getNumInputs(obj)
+        subplot(obj.plotrows,obj.plotcols,i); hold on;
+        xlabel('t (sec)');
+        ylabel(cs{i});
+      end
     end
     
     function draw(obj,t,y)
-      figure(1204);
-      plot(t,y(obj.plot_index),'.');
+      figure(1204); 
+      for i=1:getNumInputs(obj)
+        subplot(obj.plotrows,obj.plotcols,i); 
+        plot(t,y(i),'.','MarkerSize',1.5);
+      end
     end
     
   end
   
   properties
-    plot_index
+    plotrows
+    plotcols
   end
   
 end
