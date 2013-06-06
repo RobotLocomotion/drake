@@ -10,7 +10,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       obj = obj@Trajectory(ppform.dim);
       obj.pp = PPTrajectory.minimalOrder(ppform);
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
-      obj.javapp = drake.systems.trajectories.JavaPP(ppform.breaks, ppform.coefs, ppform.order, ppform.dim);
+      obj.javapp = drake.systems.trajectories.JavaPP(obj.pp.breaks, obj.pp.coefs, obj.pp.order, obj.pp.dim);
     end
   end
   methods (Static)
