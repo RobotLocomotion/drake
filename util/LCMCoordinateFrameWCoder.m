@@ -52,6 +52,10 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
       end
     end
     
+    function t = getLastTimestamp(obj)
+      t = obj.monitor.getLastTimestamp();
+    end
+    
     function publish(obj,t,x,channel,varargin)
       msg = obj.lcmcoder.encode(t,x,varargin{:});
       obj.lc.publish(channel,msg);
