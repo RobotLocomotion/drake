@@ -443,21 +443,24 @@ classdef RigidBodyManipulator < Manipulator
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
       if nargin<3 || isempty(robot), robot=0; end
+      linkname = lower(linkname);
       if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
-      items = strfind(lower({model.body.linkname}),lower(linkname));
+      items = strfind(lower({model.body.linkname}),linkname);
       ind = find(~cellfun(@isempty,items));
       if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
       if (length(ind)>0) % then handle removed fixed joints
         i=1;
         while i<=length(ind)
-%          sublinks=strsplit(lower(model.body(i).linkname),'+');  % for >R2013a
-          sublinks = strread(lower(model.body(ind(i)).linkname),'%s','delimiter','+');  % for older versions
-          subind = strmatch(lower(linkname),sublinks,'exact');
-          if isempty(subind),
-            ind(i)=[]; % not actually a match
-            i=i-1;
-          elseif subind>1
-            warning(['found ', linkname,' but it has been welded to it''s parent link (and the link''s coordinate frame may have changed).']);
+          if ~strcmp(lower(model.body(ind(i)).linkname),linkname)
+            %          sublinks=strsplit(lower(model.body(i).linkname),'+');  % for >R2013a
+            sublinks = strread(lower(model.body(ind(i)).linkname),'%s','delimiter','+');  % for older versions
+            subind = strmatch(linkname,sublinks,'exact');
+            if isempty(subind),
+              ind(i)=[]; % not actually a match
+              i=i-1;
+            elseif subind>1
+              warning(['found ', linkname,' but it has been welded to it''s parent link (and the link''s coordinate frame may have changed).']);
+            end
           end
           i=i+1;
         end
