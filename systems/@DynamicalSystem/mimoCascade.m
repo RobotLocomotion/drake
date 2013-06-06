@@ -136,7 +136,7 @@ if length(unique(in2))<length(in2)
 end
 
 % now start constructing the simulink model
-mdl = ['Cascade_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
+mdl = ['MIMOCascade_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
 new_system(mdl,'Model');
 set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
 
@@ -250,3 +250,8 @@ end
 newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
 newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);
 
+%m = Simulink.Mask.create([mdl,'/system1']);
+%m.set('Display',['fprintf(''',class(sys1),''')']);
+
+%m = Simulink.Mask.create([mdl,'/system2']);
+%m.set('Display',['fprintf(''',class(sys2),''')']);

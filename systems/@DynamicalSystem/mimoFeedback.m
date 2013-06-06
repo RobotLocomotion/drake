@@ -137,7 +137,7 @@ if length(unique(in2))<length(in2)
 end
 
 % now start constructing the simulink model
-mdl = ['Feedback_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
+mdl = ['MIMOFeedback_',datestr(now,'MMSSFFF')];  % use the class name + uid as the model name
 new_system(mdl,'Model');
 set_param(mdl,'SolverPrmCheckMsg','none');  % disables warning for automatic selection of default timestep
 
@@ -146,6 +146,8 @@ load_system('simulink3');
 % construct subsystem (including mux/demux if necessary) and output
 % number for sys1
 add_block('simulink3/Subsystems/Subsystem',[mdl,'/system1']);
+%m = Simulink.Mask.create([mdl,'/system1']);
+%m.set('Display',['fprintf(''',class(sys1),''')']);
 Simulink.SubSystem.deleteContents([mdl,'/system1']);
 Simulink.BlockDiagram.copyContentsToSubSystem(sys1.getModel(),[mdl,'/system1']);
 in{1} = setupMultiInput(sys1.getInputFrame,mdl,'system1');
@@ -154,6 +156,8 @@ out{1} = setupMultiOutput(sys1.getOutputFrame,mdl,'system1');
 % construct subsystem (including mux/demux if necessary) and input number
 % for sys2
 add_block('simulink3/Subsystems/Subsystem',[mdl,'/system2']);
+%m = Simulink.Mask.create([mdl,'/system2']);
+%m.set('Display',['fprintf(''',class(sys2),''')']);
 Simulink.SubSystem.deleteContents([mdl,'/system2']);
 Simulink.BlockDiagram.copyContentsToSubSystem(sys2.getModel(),[mdl,'/system2']);
 in{2} = setupMultiInput(sys2.getInputFrame,mdl,'system2');
