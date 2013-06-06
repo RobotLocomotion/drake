@@ -193,6 +193,10 @@ classdef DrakeSystem < DynamicalSystem
       add_block('simulink/User-Defined Functions/S-Function',[mdl,'/DrakeSys'], ...
         'FunctionName','DCSFunction', ...
         'parameters',[mdl,'_obj']);
+
+      m = Simulink.Mask.create([mdl,'/DrakeSys']);
+      m.set('Display',['fprintf(''',class(obj),''')']);
+      
       if (getNumInputs(obj)>0)
         add_block('simulink3/Sources/In1',[mdl,'/in']);
         
