@@ -1,3 +1,4 @@
+
 classdef ExpPlusPPTrajectory < Trajectory
 % useful for solutions to linear systems driven by pptrajectory inputs
 %   in interval j, we have
@@ -10,6 +11,7 @@ classdef ExpPlusPPTrajectory < Trajectory
     A       % square matrix from the matrix exponential
     alpha   % must be size(A,1) x n
     gamma   % must be dim x n x pporder
+    evalmex % higher speed eval in C++
   end    
 
   methods
@@ -27,17 +29,28 @@ classdef ExpPlusPPTrajectory < Trajectory
       sizecheck(gamma,[obj.dim,n,nan]);
       obj.gamma = gamma;
       obj.pporder = size(gamma,3);
+      
+      gamma_reshaped = reshape(obj.gamma, size(obj.gamma,1)*size(obj.gamma,2), size(obj.gamma,3));
+      obj.evalmex = ExpPlusPPTrajectoryEvalmex(obj.breaks, obj.K, obj.A, obj.alpha, gamma_reshaped);
     end
     
     function [y,jj] = eval(obj,t)
-      y = zeros(size(obj.K,1),length(t));
-      jj = zeros(length(t));
-      for k=1:length(t)
-        j = find(t(k)>=obj.breaks(1:end-1),1,'last');
-        if isempty(j), j=1; end 
-        trel = t(k)-obj.breaks(j);
-        y(:,k) = obj.K*expm(obj.A*trel)*obj.alpha(:,j) + squeeze(obj.gamma(:,j,:))*(trel.^(0:obj.pporder-1)');
-        jj(k) = j;
+      if true
+        % fast C++ version
+        [y,jj] = ExpPlusPPTrajectoryEvalmex(obj.evalmex, t);
+      else
+        y = zeros(size(obj.K,1),length(t));
+        jj = zeros(length(t));
+        for k=1:length(t)
+          j = find(t(k)>=obj.breaks(1:end-1),1,'last');
+          if isempty(j), j=1; end 
+          trel = t(k)-obj.breaks(j);
+          y(:,k) = obj.K*expm(obj.A*trel)*obj.alpha(:,j) + squeeze(obj.gamma(:,j,:))*(trel.^(0:obj.pporder-1)');
+          jj(k) = j;
+        end
+        %if sum (abs(y-y_) > (0.0000001*max(abs(y),abs(y_))+eps)) > 0
+        %    'error in y_', y, y_
+        %end
       end
     end
 
