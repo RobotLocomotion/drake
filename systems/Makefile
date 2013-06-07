@@ -2,7 +2,7 @@
 CC = gcc
 CXX = g++
 
-SUBDIRS = plants
+SUBDIRS = plants trajectories
 
 MATLABROOT = $(strip $(shell cat ../.matlabroot))
 MEX = $(MATLABROOT)/bin/mex
