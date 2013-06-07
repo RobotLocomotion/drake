@@ -2,6 +2,8 @@
 CC = gcc
 CXX = g++
 
+PKG_CONFIG_PATH := ${PKG_CONFIG_PATH}:$(shell pwd)/../../thirdParty
+
 CFLAGS = -I. 
 LDFLAGS = 
 
