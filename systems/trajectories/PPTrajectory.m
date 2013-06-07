@@ -76,7 +76,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       sizecheck(offset,[1 1]);
       obj.tspan = obj.tspan + offset;
       obj.pp.breaks = obj.pp.breaks + offset;
-      obj.javaPP.shiftTime(offset);
+      obj.javapp.shiftTime(offset);
     end
     
     function obj = uminus(obj)
