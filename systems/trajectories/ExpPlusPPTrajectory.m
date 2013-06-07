@@ -35,7 +35,7 @@ classdef ExpPlusPPTrajectory < Trajectory
     end
     
     function [y,jj] = eval(obj,t)
-      if true
+      if false
         % fast C++ version
         [y,jj] = ExpPlusPPTrajectoryEvalmex(obj.evalmex, t);
       else
