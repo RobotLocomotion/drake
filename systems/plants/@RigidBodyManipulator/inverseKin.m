@@ -46,6 +46,20 @@ function [q,info] = inverseKin(obj,q0,varargin)
 %         - max - [1 x mi] array giving the maximum allowable distance from
 %           each point in bodyposi to the affordance specified by
 %           worldposi.contact_affs{j}
+%    *Lastly, worldposi can be a general purpose struct--this currently
+%     only implements the gaze constraint type, with the following
+%     fields used:
+%       * type (must be 'gaze')
+%       * gaze_orientation (3x1 (rpy) or 4x1(quaternion))
+%         * __XOR__ gaze_target (3x1 (xyz) position in space to look at)
+%         * __XOR__ gaze_dir (3x1 (xyz) unit vector direction to look down)
+%       * gaze_axis (3x1 unit vector)
+%       * (gaze_threshold))  optional, default INF
+%            determine the max angular rotation about the gaze axis
+%       * (gaze_conethreshold) optional, defualt to 0
+%          allows the gaze_axis to be within a cone of the specified angle
+%          from the nominal
+%        
 % @option q_nom  replaces the cost function with (q-q_nom)'*(q-q_nom).
 %     @default q_nom = q0
 % @option Q  puts a weight on the cost function qtilde'*Q*qtilde
@@ -118,6 +132,8 @@ w0 = q0;
 total_num_support_vert = 0;
 support_polygon_flag = {};
 body_num_support_vert = [];
+gaze_con = {};
+
 while i<=length(varargin)
   % support input as bodies instead of body inds
   if (isa(varargin{i},'RigidBody')) varargin{i} = find(obj.body==varargin{i},1); end
@@ -139,133 +155,227 @@ while i<=length(varargin)
 %      worldposi = repmat(worldposi,1,size(bodyposi,2));
     end
     i=i+3;
+  end
+  if isstruct(worldposi) && isfield(worldposi,'type')
+    if options.use_mex
+      error('Gaze constraints and mex not currently supported.  Please disable use_mex');
+    end
+    
+    % this case added by mposa for gaze constraints
+    if strcmp(worldposi.type,'gaze')
+      if isfield(worldposi,'gaze_orientation') + isfield(worldposi,'gaze_target') + isfield(worldposi,'gaze_dir') ~= 1
+        error('Must constrain exactly one of gaze orientation, target, or direction')
+      end
+      
+      if ~isfield(worldposi,'gaze_axis')
+        error('Must supply a gaze axis')
+      end
+      
+      gaze_i = struct();
+      gaze_i.axis = worldposi.gaze_axis;
+      gaze_i.axis = gaze_i.axis/norm(gaze_i.axis);
+      sizecheck(gaze_i.axis,3);
+      
+      if isfield(worldposi,'gaze_orientation')
+        gaze_i.type = 1;  %for orientation
+        if length(worldposi.gaze_orientation) == 3,
+          gaze_i.orientation = rpy2quat(worldposi.gaze_orientation);
+        else
+          gaze_i.orientation = worldposi.gaze_orientation;
+          gaze_i.orientation = gaze_i.orientation/norm(gaze_i.orientation);
+        end
+        sizecheck(gaze_i.orientation,4);
+      elseif isfield(worldposi,'gaze_target')
+        gaze_i.type = 2;  %for target
+        gaze_i.target = worldposi.gaze_target;
+        sizecheck(gaze_i.target,3);
+      elseif isfield(worldposi, 'gaze_dir')
+        gaze_i.type = 1;
+        %Construct a quaternion from the given direction
+        dir = worldposi.gaze_dir;
+        dir = dir/norm(dir);
+        if abs(dir'*gaze_i.axis - 1) < 1e-6
+          gaze_i.orientation = [1;0;0;0];
+        elseif abs(dir'*gaze_i.axis + 1) < 1e-6
+          %then they're pointed in opposite directions
+          % get a random vector orthogonal to our axis
+          gaze_i.orientation = [1;0;0;0];
+          rand_vec = randn(3,1);
+          rand_vec = rand_vec - gaze_i.axis*(gaze_i.axis'*rand_vec);
+          rand_vec = rand_vec/norm(rand_vec);
+          gaze_i.orientation = axis2quat([rand_vec;pi]);
+        else
+          quat_axis = cross(gaze_i.axis,dir);
+          quat_ang = acos(dir'*gaze_i.axis);          
+
+          gaze_i.orientation = axis2quat([quat_axis;quat_ang]);
+        end
+      else
+        error('Unknown gaze constraint.  This error should be impossible')
+      end
+      
+      % setup constraint here
+      if isfield(worldposi,'gaze_conethreshold')
+        gaze_bound = cos(worldposi.gaze_conethreshold) - 1;
+      else
+        gaze_bound = 0;
+      end
+      
+      Fmin = [Fmin;gaze_bound];
+      Fmax = [Fmax;0];
+      iGfun = [iGfun;repmat(nF+1,nq,1)];
+      jGvar = [jGvar;(1:nq)'];
+      nF = nF + 1;
+      
+      if isfield(worldposi,'gaze_threshold')
+				if ~isfield(worldposi,'gaze_orientation')
+					error('Cannot supply a gaze_threshold if the orientation was not fully specified (as gaze_orientation).')
+				end
+        gaze_i.check_angle = 1;
+        %Add in an angle constraint here
+        Fmin = [Fmin; cos(worldposi.gaze_threshold/2)];
+        Fmax = [Fmax;inf];
+        iGfun = [iGfun;repmat(nF+1,nq,1)];
+        jGvar = [jGvar;(1:nq)'];
+        nF = nF + 1; 
+      else
+        gaze_i.check_angle = 0;
+      end
+      
+      gaze_con{n} = gaze_i;
+      
+    else
+      error(strcat('Unknown worldpos.type=',worldposi.type));
+    end
+  else  
     [rows,mi] = size(bodyposi);
     if (rows ~=3) error('bodypos must be 3xmi'); end
-  end
-  if isstruct(worldposi)
-    if ~isfield(worldposi,'min') || ~isfield(worldposi,'max')
-      error('if worldpos is a struct, it must have fields .min and .max');
-    end
-    minpos=[worldposi.min];  maxpos=[worldposi.max];
+    
+    if isstruct(worldposi)
+      if ~isfield(worldposi,'min') || ~isfield(worldposi,'max')
+        error('if worldpos is a struct, it must have fields .min and .max');
+      end
+      minpos=[worldposi.min];  maxpos=[worldposi.max];
 
-    % The remaining fields in worldposi are optional
-    if isfield(worldposi,'contact_state')
-        if iscell(worldposi.contact_state)
-            contact_state{n} = worldposi.contact_state;
-        else
-            contact_state{n} = {worldposi.contact_state};
-        end
-    elseif(abs(minpos(3))<eps && abs(maxpos(3)<eps))
-      contact_state{n} = {ActionKinematicConstraint.STATIC_PLANAR_CONTACT ...
-                            *ones(1,size(bodyposi,2))};
-    else
-      contact_state{n} = {ActionKinematicConstraint.UNDEFINED_CONTACT ...
-                            *ones(1,size(bodyposi,2))};
-    end
+      % The remaining fields in worldposi are optional
+      if isfield(worldposi,'contact_state')
+          if iscell(worldposi.contact_state)
+              contact_state{n} = worldposi.contact_state;
+          else
+              contact_state{n} = {worldposi.contact_state};
+          end
+      elseif(abs(minpos(3))<eps && abs(maxpos(3)<eps))
+        contact_state{n} = {ActionKinematicConstraint.STATIC_PLANAR_CONTACT ...
+                              *ones(1,size(bodyposi,2))};
+      else
+        contact_state{n} = {ActionKinematicConstraint.UNDEFINED_CONTACT ...
+                              *ones(1,size(bodyposi,2))};
+      end
 
-    if isfield(worldposi,'contact_affs')
-      contact_affs{n} = worldposi.contact_affs;
+      if isfield(worldposi,'contact_affs')
+        contact_affs{n} = worldposi.contact_affs;
+      else
+        contact_affs{n} = {ContactAffordance()};
+      end
+
+      if isfield(worldposi,'contact_dist')
+        contact_dist{n} = worldposi.contact_dist;
+      else
+        contact_dist{n} = {struct('max',inf,'min',0)};
+      end
     else
+      minpos=worldposi; maxpos=worldposi;
+      if(abs(minpos(3))<eps)
+        contact_state{n} = {ActionKinematicConstraint.STATIC_PLANAR_CONTACT ...
+          *ones(1,size(bodyposi,2))};
+      else
+        contact_state{n} = {ActionKinematicConstraint.UNDEFINED_CONTACT ...
+          *ones(1,size(bodyposi,2))};
+      end
       contact_affs{n} = {ContactAffordance()};
-    end
-
-    if isfield(worldposi,'contact_dist')
-      contact_dist{n} = worldposi.contact_dist;
-    else
       contact_dist{n} = {struct('max',inf,'min',0)};
     end
-  else
-    minpos=worldposi; maxpos=worldposi;
-    if(abs(minpos(3))<eps)
-      contact_state{n} = {ActionKinematicConstraint.STATIC_PLANAR_CONTACT ...
-        *ones(1,size(bodyposi,2))};
-    else
-      contact_state{n} = {ActionKinematicConstraint.UNDEFINED_CONTACT ...
-        *ones(1,size(bodyposi,2))};
+    if(quasiStaticFlag)
+      support_polygon_flag{n} = any(cell2mat(contact_state{n}') == ActionKinematicConstraint.STATIC_PLANAR_CONTACT,1)|...
+                                any(cell2mat(contact_state{n}') == ActionKinematicConstraint.STATIC_GRIP_CONTACT,1)|...
+                                (any(cell2mat(contact_state{n}') == ActionKinematicConstraint.MAKE_CONTACT,1)&...
+                                 any(cell2mat(contact_state{n}') == ActionKinematicConstraint.BREAK_CONTACT,1));
+      body_num_support_vert(n) = sum(support_polygon_flag{n});
+      total_num_support_vert  = total_num_support_vert+body_num_support_vert(n);
     end
-    contact_affs{n} = {ContactAffordance()};
-    contact_dist{n} = {struct('max',inf,'min',0)};
-  end
-  if(quasiStaticFlag)
-    support_polygon_flag{n} = any(cell2mat(contact_state{n}') == ActionKinematicConstraint.STATIC_PLANAR_CONTACT,1)|...
-                              any(cell2mat(contact_state{n}') == ActionKinematicConstraint.STATIC_GRIP_CONTACT,1)|...
-                              (any(cell2mat(contact_state{n}') == ActionKinematicConstraint.MAKE_CONTACT,1)&...
-                               any(cell2mat(contact_state{n}') == ActionKinematicConstraint.BREAK_CONTACT,1));
-    body_num_support_vert(n) = sum(support_polygon_flag{n});
-    total_num_support_vert  = total_num_support_vert+body_num_support_vert(n);
-  end
-  [rows,cols]=size(minpos);
+    [rows,cols]=size(minpos);
 
-  if (rows == 6)
-    % convert RPY to quaternions internally
-    maxpos(7,:) = 0;
-    minpos(7,:) = 0;
-    for j = 1:cols
-      minpos(4:7,j) = rpy2quat(minpos(4:6,j));
-      maxpos(4:7,j) = rpy2quat(maxpos(4:6,j));
-    end
-    rows = 7;
-  end
-  
-  if (rows ~= 3 && rows ~= 6 && rows ~=7) error('worldpos must have 3, 6 or 7 rows'); end
-  if (body_ind(n)==0 && rows ~= 3) error('com pos must have only 3 rows (there is no orientation)'); end
-  if (cols~=mi) error('worldpos must have the same number of elements as bodypos'); end
-  sizecheck(maxpos,[rows,mi]);
-  
-  minpos(isnan(minpos))=-inf;
-  maxpos(isnan(maxpos))=inf;
-  
-  if(all(all(isinf(minpos)))&&all(all(isinf(maxpos))))
-      poscon_type(n) = -1; % No constraint on the worldpos
-    else
-      poscon_type(n) = 0*(rows==3)+(rows==6)+2*(rows==7);
-  end
-  body_pos{n} = bodyposi;
-    if(poscon_type(n) == 0 ||poscon_type(n) == 1)
-    Fmin=[Fmin;minpos(:)];
-    Fmax=[Fmax;maxpos(:)];
-    iGfun = [iGfun;nF+repmat((1:rows*cols)',nq,1)];
-    jGvar = [jGvar;reshape(bsxfun(@times,ones(rows*cols,1),(1:nq)),[],1)];
-    nF = nF+rows*cols;
-    elseif(poscon_type(n) == 2)
-      % The constraints are that the position matchs, and
-      % (quat_des'*quat)^2 = 1. And quat_des'*quat_des = 1
-      Fmin = [Fmin;reshape(minpos(1:3,:),[],1);ones(2,1)];
-      Fmax = [Fmax;reshape(maxpos(1:3,:),[],1);ones(2,1)];
-      iGfun = [iGfun;nF+repmat((1:3*cols)',nq,1);nF+3*cols+ones(nq+4,1);...
-          nF+3*cols+1+ones(4,1)];
-      jGvar = [jGvar;reshape(bsxfun(@times,1:nq,ones(3*cols,1)),[],1);...
-          (1:nq)';...
-          nq+cum_quat_des+(1:4)';...
-          nq+cum_quat_des+(1:4)'];
-      maxpos(4:7,:) = min(maxpos(4:7,:),1+eps); % quaternion cannot be larger than 1
-      minpos(4:7,:) = max(minpos(4:7,:),-1-eps);
-      quat_max = min([maxpos(4:7,:) [1;1;1;1]],[],2);
-      quat_min = max([minpos(4:7,:) -[1;1;1;1]],[],2);
-      wmax = [wmax;reshape(quat_max,[],1)];
-      wmin = [wmin;reshape(quat_min,[],1)];
-      quat_des0 = (quat_max+quat_min)/2;
-      quat_des0_norm = sqrt(sum(quat_des0.*quat_des0,1));
-      if(quat_des0_norm~=0)
-          quat_des0 = quat_des0./quat_des0_norm;
-      else
-          quat_des0 = [1/2;1/2;1/2;1/2];
+    if (rows == 6)
+      % convert RPY to quaternions internally
+      maxpos(7,:) = 0;
+      minpos(7,:) = 0;
+      for j = 1:cols
+        minpos(4:7,j) = rpy2quat(minpos(4:6,j));
+        maxpos(4:7,j) = rpy2quat(maxpos(4:6,j));
       end
-      w0 = [w0;quat_des0];
-      nF = nF+3*cols+2;
-      cum_quat_des = cum_quat_des+4;
+      rows = 7;
     end
 
-    % Currently deal with the collision avoidance only, will handle affordance contact
-    % later
-    if(~isempty(contact_state{n}))
-      if(contact_state{n}{1} == ActionKinematicConstraint.COLLISION_AVOIDANCE)
-        num_rigid_bodies = length(contact_affs{n});
-        Fmin = [Fmin; ones(num_rigid_bodies,1)];
-        Fmax = [Fmax; ones(num_rigid_bodies,1)];
-        iGfun = [iGfun;nF+reshape(bsxfun(@times,(1:num_rigid_bodies)',ones(1,nq)),[],1)];
-        jGvar = [jGvar;reshape(bsxfun(@times,ones(num_rigid_bodies,1),(1:nq)),[],1)];
-        nF = nF+num_rigid_bodies;
+    if (rows ~= 3 && rows ~= 6 && rows ~=7) error('worldpos must have 3, 6 or 7 rows'); end
+    if (body_ind(n)==0 && rows ~= 3) error('com pos must have only 3 rows (there is no orientation)'); end
+    if (cols~=mi) error('worldpos must have the same number of elements as bodypos'); end
+    sizecheck(maxpos,[rows,mi]);
+
+    minpos(isnan(minpos))=-inf;
+    maxpos(isnan(maxpos))=inf;
+
+    if(all(all(isinf(minpos)))&&all(all(isinf(maxpos))))
+        poscon_type(n) = -1; % No constraint on the worldpos
+      else
+        poscon_type(n) = 0*(rows==3)+(rows==6)+2*(rows==7);
+    end
+    body_pos{n} = bodyposi;
+      if(poscon_type(n) == 0 ||poscon_type(n) == 1)
+      Fmin=[Fmin;minpos(:)];
+      Fmax=[Fmax;maxpos(:)];
+      iGfun = [iGfun;nF+repmat((1:rows*cols)',nq,1)];
+      jGvar = [jGvar;reshape(bsxfun(@times,ones(rows*cols,1),(1:nq)),[],1)];
+      nF = nF+rows*cols;
+      elseif(poscon_type(n) == 2)
+        % The constraints are that the position matchs, and
+        % (quat_des'*quat)^2 = 1. And quat_des'*quat_des = 1
+        Fmin = [Fmin;reshape(minpos(1:3,:),[],1);ones(2,1)];
+        Fmax = [Fmax;reshape(maxpos(1:3,:),[],1);ones(2,1)];
+        iGfun = [iGfun;nF+repmat((1:3*cols)',nq,1);nF+3*cols+ones(nq+4,1);...
+            nF+3*cols+1+ones(4,1)];
+        jGvar = [jGvar;reshape(bsxfun(@times,1:nq,ones(3*cols,1)),[],1);...
+            (1:nq)';...
+            nq+cum_quat_des+(1:4)';...
+            nq+cum_quat_des+(1:4)'];
+        maxpos(4:7,:) = min(maxpos(4:7,:),1+eps); % quaternion cannot be larger than 1
+        minpos(4:7,:) = max(minpos(4:7,:),-1-eps);
+        quat_max = min([maxpos(4:7,:) [1;1;1;1]],[],2);
+        quat_min = max([minpos(4:7,:) -[1;1;1;1]],[],2);
+        wmax = [wmax;reshape(quat_max,[],1)];
+        wmin = [wmin;reshape(quat_min,[],1)];
+        quat_des0 = (quat_max+quat_min)/2;
+        quat_des0_norm = sqrt(sum(quat_des0.*quat_des0,1));
+        if(quat_des0_norm~=0)
+            quat_des0 = quat_des0./quat_des0_norm;
+        else
+            quat_des0 = [1/2;1/2;1/2;1/2];
+        end
+        w0 = [w0;quat_des0];
+        nF = nF+3*cols+2;
+        cum_quat_des = cum_quat_des+4;
+      end
+
+      % Currently deal with the collision avoidance only, will handle affordance contact
+      % later
+      if(~isempty(contact_state{n}))
+        if(contact_state{n}{1} == ActionKinematicConstraint.COLLISION_AVOIDANCE)
+          num_rigid_bodies = length(contact_affs{n});
+          Fmin = [Fmin; ones(num_rigid_bodies,1)];
+          Fmax = [Fmax; ones(num_rigid_bodies,1)];
+          iGfun = [iGfun;nF+reshape(bsxfun(@times,(1:num_rigid_bodies)',ones(1,nq)),[],1)];
+          jGvar = [jGvar;reshape(bsxfun(@times,ones(num_rigid_bodies,1),(1:nq)),[],1)];
+          nF = nF+num_rigid_bodies;
+        end
       end
   end
   if(options.use_mex)
@@ -273,6 +383,8 @@ while i<=length(varargin)
   end
   n=n+1;
 end
+
+gaze_con{n} = []; %total hack to make it empty
 
 if(quasiStaticFlag)
     if(total_num_support_vert == 0)
@@ -331,11 +443,14 @@ else
 % valuecheck(fmex,f);
 % valuecheck(Gmex,G);
 % return;
+% snprint('snopt.out')
 snsetr('Major optimality tolerance',5e-3);
 snseti('Major Iterations Limit',300);
+% snseti('Verify Level',3);
+
   global SNOPT_USERFUN;
     SNOPT_USERFUN = @(w) ik(w,obj,nq,nF,nG,q_nom,Q,body_ind,body_pos,poscon_type,...
-      cum_quat_des,quasiStaticFlag,total_num_support_vert,body_num_support_vert,support_polygon_flag,shrinkFactor,contact_state,contact_affs,contact_dist);
+      cum_quat_des,quasiStaticFlag,total_num_support_vert,body_num_support_vert,support_polygon_flag,shrinkFactor,contact_state,contact_affs,contact_dist,gaze_con);
   
 %   [iGfun,jGvar] = ind2sub([nF,obj.num_q],1:(nF*obj.num_q));
   [w_sol,F,info] = snopt(w0,wmin,wmax,Fmin,Fmax,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
@@ -345,14 +460,29 @@ if (info~=1)
   [str,cat] = snoptInfo(info);
   warning('SNOPT:InfoNotOne',['SNOPT exited w/ info = ',num2str(info),'.\n',cat,': ',str,'\n  Check p19 of Gill06 for more information.']);
 end
-  
+
+if(info == 13)
+    ub_err = F-Fmax;
+    ub_err = ub_err(~isinf(ub_err));
+    max_ub_error = max(ub_err);
+    max_ub_error = max_ub_error*(max_ub_error>0);
+    lb_err = Fmin-F;
+    lb_err = lb_err(~isinf(lb_err));
+    max_lb_error = max(lb_err);
+    max_lb_error = max_lb_error*(max_lb_error<0);
+    if(max_ub_error+max_lb_error>1e-4)
+        info = 13;
+    else
+        info = 4;
+    end
+end  
   
 % keyboard
 end
 
 function [f,G] = ik(w,obj,nq,nF,nG,q_nom,Q,body_ind,body_pos,poscon_type,cum_quat_des,...
     quasiStaticFlag,total_num_support_vert,body_num_support_vert,support_polygon_flag,shrinkFactor,...
-    contact_state,contact_affs,contact_dist)
+    contact_state,contact_affs,contact_dist,gaze_con)
 support_vert_pos = zeros(2,total_num_support_vert);
 dsupport_vert_pos = zeros(2*total_num_support_vert,nq);
 f = zeros(nF,1); G = zeros(nG,1);
@@ -370,30 +500,31 @@ kinsol = doKinematics(obj,q,false);
 nf = 1;
 support_vert_count = 0;
 for i=1:length(body_ind)
-  if(quasiStaticFlag)
-    [com,dcom] = getCOM(obj,kinsol);
-  end
-  if (body_ind(i)==0)
+  if isempty(gaze_con{i})
+    if(quasiStaticFlag)
+      [com,dcom] = getCOM(obj,kinsol);
+    end
+    if (body_ind(i)==0)
       if(quasiStaticFlag)
-          x = com;
-          J = dcom;
+        x = com;
+        J = dcom;
       else
         [x,J] = getCOM(obj,kinsol);
       end
-  else
+    else
       [x,J] = forwardKin(obj,kinsol,body_ind(i),body_pos{i},poscon_type(i));
-    [rows,cols] = size(x);
-    if(quasiStaticFlag)
-      support_vert_pos(:,support_vert_count+(1:body_num_support_vert(i))) = x(1:2,support_polygon_flag{i});
-      J_support_polygon_row = reshape(1:rows*cols,rows,cols);
-      J_support_polygon_row = reshape(J_support_polygon_row(1:2,support_polygon_flag{i}),[],1);
-      dsupport_vert_pos(2*support_vert_count+(1:2*body_num_support_vert(i)),:) = ...
-        J(J_support_polygon_row,:);
-      support_vert_count = support_vert_count+body_num_support_vert(i);
+      [rows,cols] = size(x);
+      if(quasiStaticFlag)
+        support_vert_pos(:,support_vert_count+(1:body_num_support_vert(i))) = x(1:2,support_polygon_flag{i});
+        J_support_polygon_row = reshape(1:rows*cols,rows,cols);
+        J_support_polygon_row = reshape(J_support_polygon_row(1:2,support_polygon_flag{i}),[],1);
+        dsupport_vert_pos(2*support_vert_count+(1:2*body_num_support_vert(i)),:) = ...
+          J(J_support_polygon_row,:);
+        support_vert_count = support_vert_count+body_num_support_vert(i);
+      end
     end
-  end
-  [rows,cols] = size(x);
-  n = rows*cols;
+    [rows,cols] = size(x);
+    n = rows*cols;
     if(poscon_type(i) == 0|| poscon_type(i) == 1)
       if isa(contact_affs{i}(1),'ContactShapeAffordance')
         [x,J] = contact_affs{i}(1).inGeomFrame(x,J);
@@ -429,6 +560,46 @@ for i=1:length(body_ind)
       G(ng+(1:num_rigid_bodies*nq)) = dcol_dist(:);
       nf = nf+num_rigid_bodies;
       ng = ng+num_rigid_bodies*nq;
+    end
+  else
+    % Gaze constraint here
+    [x,J] = forwardKin(obj,kinsol,body_ind(i),[0;0;0],2); %2 for quaternions
+    
+    gaze_axis = gaze_con{i}.axis;
+    if gaze_con{i}.type == 2,
+      % Desired gaze direction
+      gaze_vec = gaze_con{i}.target - x(1:3);
+      gaze_len = norm(gaze_vec);
+      
+      quat_vec = [0; -(gaze_vec/gaze_len + gaze_axis)];
+      quat_len = norm(quat_vec);
+      quat_des = quat_vec/norm(quat_len);
+      
+      dquatvecdx = eye(3)/gaze_len - gaze_vec*gaze_vec'/(gaze_len^3);
+      dquat = (eye(3)/quat_len - quat_vec(2:4)*quat_vec(2:4)'/(quat_len^3))*dquatvecdx;
+            
+      dquat_des = [zeros(1,nq); dquat*J(1:3,:)];
+    else
+      quat_des = gaze_con{i}.orientation;
+      dquat_des = zeros(4,nq);
+    end
+    
+    [axis_err, daxis_err] = quatDiffAxisInvar(x(4:7),quat_des,gaze_axis);
+    daxis_err_dq = daxis_err(1:4)*J(4:7,:) + daxis_err(5:8)*dquat_des;
+    f(nf + 1) = axis_err;
+    G(ng+(1:nq)) = daxis_err_dq';
+    nf = nf + 1;
+    ng = ng + nq;
+    
+    if gaze_con{i}.check_angle,
+      [q_diff,dq_diff] = quatDiff(x(4:7),quat_des);
+      dq_diff_dq = dq_diff(1:4)*J(4:7,:) + dq_diff(5:8)*dquat_des;
+      f(nf + 1) = q_diff(1);
+
+      G(ng+(1:nq)) = dq_diff_dq';
+      nf = nf + 1;
+      ng = ng + nq;
+    end    
   end
 end
 if(quasiStaticFlag)

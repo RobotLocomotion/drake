@@ -1,11 +1,11 @@
 function testIK
-
-addpath('..');
+ 
+addpath(fullfile(pwd,'..'));
 options.floating = true;
 options.dt = 0.001;
 r = Atlas('../urdf/atlas_minimal_contact.urdf',options);
 v = r.constructVisualizer();
-
+ 
 cost = Point(r.getStateFrame,1);
 cost.base_x = 0;
 cost.base_y = 0;
@@ -18,27 +18,28 @@ cost.back_ubx = 100;
 options = struct();
 cost = double(cost);
 options.Q = diag(cost(1:r.getNumDOF));
-
+ 
 mexoptions = options;
+approxmexoptions = options;
+approxmexoptions.use_mex = true;
 if (exist('inverseKinmex')==3)
   mexoptions.use_mex = true;
 else
   warning('mex inverseKinematics is disabled... so I can''t test that'); 
 end
 options.use_mex = false;
-
+ 
 % set initial state to fixed point
-load('../data/atlas_fp.mat');
-
-q0 = xstar(1:r.getNumDOF);
-
+d = load('../data/atlas_fp.mat');
+ 
+q0 = d.xstar(1:r.getNumDOF);
+ 
 % q = inverseKin(r,q0,options);
 % qmex = inverseKin(r,q0,mexoptions);
 % valuecheck(qmex,q,1e-5);
 % v.draw(0,[q;0*q]); drawnow;
 
-
-
+ 
 %%%% Try to test wraparound bug for euler angles %%%%
 % First, a case which should not exhibit the wraparound bug (since we're
 % operating around pi/2 instead of +/- pi):
@@ -67,7 +68,7 @@ if ~valuecheck(l_foot_pos_q, l_foot_sol_q,1e-2) && ...
     ~valuecheck(-l_foot_pos_q, l_foot_sol_q,1e-2)
   error('testIK: values dont match');
 end
-
+ 
 % Next, a case which exhibits the wraparound bug:
 v.draw(1,[q0;0*q0]); drawnow;
 q_rot0 = q0;
@@ -96,8 +97,35 @@ if ~valuecheck(l_foot_pos_q, l_foot_sol_q,1e-2) && ...
 end
 %%%% End wraparound test %%%%
 
+%test trivial approx IK (For 1/2 bug)
 
 
+alt_options.Q = eye(34);
+alt_options.use_mex = 0;
+q = r.approximateIK(q0,1,zeros(3,1),struct('min',-inf(3,1),'max',inf(3,1)),alt_options);
+valuecheck(q,q0)
+alt_options.use_mex = 1;
+q = r.approximateIK(q0,1,zeros(3,1),struct('min',-inf(3,1),'max',inf(3,1)),alt_options);
+valuecheck(q,q0,1e-3);
+ 
+function testmex(varargin)
+  display('testing mex')
+  tic
+  q = approximateIK(r,q0,varargin{:},options);
+  toc
+  tic
+  qmex = approximateIK(r,q0,varargin{:},approxmexoptions);
+  toc
+  valuecheck(qmex,q,1e-1);
+  v.draw(1,[q;0*q]); drawnow;
+end
+ 
+testmex(0,[0;0;2]);
+ 
+r_foot = r.findLink('r_foot');
+testmex(0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2]);
+testmex(0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2;0;0;0]);
+testmex(0,[0;0;nan],r_foot,[0;0;0],[0;-.1;.2;0;0;0]);
 
 
 
@@ -166,3 +194,5 @@ toc
 % toc
 % valuecheck(qmex,q,1e-5);
 % v.draw(1,[q;0*q]); drawnow;
+ 
+end

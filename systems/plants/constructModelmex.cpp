@@ -11,18 +11,18 @@ using namespace std;
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
-  if (nrhs<3) {
-    mexErrMsgIdAndTxt("Drake:constructModelmex:NotEnoughInputs","Usage model_ptr = constructModelmex(featherstone,bodies,gravity)");
+  if (nrhs!=1) {
+    mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","Usage model_ptr = constructModelmex(obj)");
   }
 
   RigidBodyManipulator *model=NULL;
 
-  const mxArray* featherstone = prhs[0]; //mxGetProperty(prhs[0],0,"featherstone");
+  const mxArray* featherstone = mxGetProperty(prhs[0],0,"featherstone");
   if (!featherstone) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs", "the featherstone array is invalid");
 
-  const mxArray* pBodies = prhs[1]; //mxGetProperty(prhs[0],0,"body");
+  const mxArray* pBodies = mxGetProperty(prhs[0],0,"body");
   if (!pBodies) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the body array is invalid");
-  int num_bodies = mxGetNumberOfElements(prhs[1]);
+  int num_bodies = mxGetNumberOfElements(pBodies);
 
   // set up the model
   mxArray *pm;
@@ -127,12 +127,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
       }
     }
     
-    if (model->bodies[i].dofnum>=0) {
-      pm = mxGetProperty(pBodies,i,"joint_limit_min");
-      model->joint_limit_min[model->bodies[i].dofnum] = mxGetScalar(pm);
-      pm = mxGetProperty(pBodies,i,"joint_limit_max");
-      model->joint_limit_max[model->bodies[i].dofnum] = mxGetScalar(pm);
-    }    
+//     if (model->bodies[i].dofnum>=0) {
+//       pm = mxGetProperty(pBodies,i,"joint_limit_min");
+//       model->joint_limit_min[model->bodies[i].dofnum] = mxGetScalar(pm);
+//       pm = mxGetProperty(pBodies,i,"joint_limit_max");
+//       model->joint_limit_max[model->bodies[i].dofnum] = mxGetScalar(pm);
+//     }    
     
     pm = mxGetProperty(pBodies,i,"Ttree");
     // todo: check that the size is 4x4
@@ -187,7 +187,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 #endif
   }
   
-  const mxArray* a_grav_array = prhs[2]; //mxGetProperty(prhs[0],0,"gravity");
+  double *min = mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min"));
+  double *max = mxGetPr(mxGetProperty(prhs[0], 0, "joint_limit_max"));
+  
+  memcpy(model->joint_limit_min, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min")), sizeof(double)*model->num_dof);
+  memcpy(model->joint_limit_max, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_max")), sizeof(double)*model->num_dof);
+  
+  const mxArray* a_grav_array = mxGetProperty(prhs[0],0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {
     double* p = mxGetPr(a_grav_array);
     model->a_grav[3] = p[0];

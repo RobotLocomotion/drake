@@ -44,9 +44,25 @@ end
 
 if isfield(options,'q_nom') q_nom = options.q_nom; else q_nom = q0; end
 if isfield(options,'Q') Q = options.Q; else Q = eye(obj.num_q); end
-if ~isfield(options,'use_mex') options.use_mex = false; end
+if ~isfield(options,'use_mex') options.use_mex = true; end
 
-kinsol = doKinematics(obj,q0,false);
+i=1;
+while i<=length(varargin)
+  if (isa(varargin{i},'RigidBody')) varargin{i} = find(obj.body==varargin{i},1); end
+  body_ind=varargin{i}; 
+  if (body_ind==0)
+    i = i+2;
+  else
+    i = i+3;
+  end
+end
+
+if options.use_mex
+  [q,info] = approximateIKmex(obj.getMexModelPtr.getData,q0,q_nom,Q,varargin{:});
+  return;
+end
+
+kinsol = obj.doKinematics(q0);
 
 A={};b={};Ai={};bi={};
 i=1;neq=1;nin=1;
@@ -63,7 +79,7 @@ while i<=length(varargin)
     body_pos = varargin{i+1};
     world_pos = varargin{i+2};
     if ischar(body_pos) || numel(body_pos)==1 % then it's the name of a collision group
-      b = obj.body(body_ind(n));
+      b = obj.body(body_ind);
       body_pos = mean(getContactPoints(b,body_pos),2);
     end
     i=i+3;
@@ -77,11 +93,10 @@ while i<=length(varargin)
     end
     minpos=[world_pos.min];  maxpos=[world_pos.max];
     
-    [minrows,~] = size(minpos);
-    [maxrows,~] = size(maxpos);
-    if (minrows ~= 3 && minrows ~= 6 && minrows ~= 7) error('world_pos.min must have 3, 6 or 7 rows'); end
-    if (maxrows ~= 3 && maxrows ~= 6 && maxrows ~= 7) error('world_pos.max must have 3, 6 or 7 rows'); end
-    rows = max(minrows,maxrows);
+    rows = size(minpos,1);
+    maxrows = size(maxpos,1);
+    if (rows ~= 3 && rows ~= 6) error('world_pos.min must have 3 or 6 rows'); end
+    if (maxrows ~= rows) error('world_pos.max must have the same number of rows as world_pos.min'); end
   else
     minpos=[]; maxpos=[];
     [rows,~] = size(world_pos);
@@ -164,7 +179,7 @@ params.outputflag = 0; % not verbose
 params.method = 2; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
 params.bariterlimit = 20; % iteration limit
 params.barhomogeneous = 0; % 0 off, 1 on
-params.barconvtol = 1e-3;
+params.barconvtol = 1e-4;
 
 result = gurobi(model,params);
 q = result.x;  
