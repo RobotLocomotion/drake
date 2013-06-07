@@ -79,7 +79,8 @@ urdf.o : urdf.cpp RigidBodyManipulator.o urdf.h
 	$(CXX) $< -c -fPIC -Itinyxml $(CFLAGS) $(BOTVIS_CFLAGS)
 
 clean: 
-	-rm -f $(MEXFILES) RigidBodyManipulator.o urdf.o
+	-rm -f *.$(MEXEXT) RigidBodyManipulator.o urdf.o
+	-rm -rf @RigidBodyManipulator/private     # this is temporary, to help people that still have that old directory
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
 		echo "-- $$subdir"; \
