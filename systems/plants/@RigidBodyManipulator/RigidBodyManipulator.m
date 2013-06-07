@@ -18,9 +18,12 @@ classdef RigidBodyManipulator < Manipulator
     terrain;
   end
   
-  properties (Access=protected)
-    B = [];
+  properties (Access=public)
     featherstone = [];
+  end
+  
+  properties (Access=public)
+    B = [];
     mex_model_ptr = 0;
     dirty = true;
   end
@@ -830,7 +833,14 @@ classdef RigidBodyManipulator < Manipulator
     
     function obj = createMexPointer(obj)
       if (exist('constructModelmex')==3)
-        obj.mex_model_ptr = SharedDataHandle(constructModelmex(obj.featherstone,obj.body,obj.gravity),@deleteModelmex);
+%	ptr = debugMexEval('constructModelmex',obj.featherstone,obj.body,obj.gravity);
+%  note: this didn't actually work out.  (it seems that matlab can't load the class obj
+%  without the matlab engine attached).  featherstone and gravity come
+%  through fine, but obj.body is 0x0.
+
+%         ptr = constructModelmex(obj.featherstone,obj.body,obj.gravity);
+        ptr = constructModelmex(obj);
+        obj.mex_model_ptr = SharedDataHandle(ptr,@deleteModelmex);
       end
     end
     
