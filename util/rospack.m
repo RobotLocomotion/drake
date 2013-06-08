@@ -3,6 +3,16 @@ function path = rospack(package)
 % installed.  this is intended to (at least) help parsing ROS urdf files with
 % package:// tags.
 
+
+% first try to actually use rospack 
+[info,path]=system(['rospack find ',package]);
+if info==0  % success!
+  path = regexprep(path,'\n','');
+  return;
+end
+
+% otherwise, implement the algorithm myself (so it works on any system):
+
 persistent packages package_paths;
 
 if isempty(packages)  % cache packages 
@@ -32,15 +42,6 @@ if isempty(ind)
 end
   
 path = package_paths{ind};
-
-% the old version:  actually uses rospack (but libraries paths were an
-% issue)
-%[info,path]=system(['rospack find ',package]);
-%if info==0  % success!
-%  path = regexprep(path,'\n','');
-%else
-%  error(path);
-%end
 
 end
 
