@@ -163,6 +163,17 @@ public class MessageMonitor implements LCMSubscriber
     return m_data;
   }
   
+  public synchronized void markAsRead()
+  {
+    m_has_new_message = false;
+  }
+  
+  public synchronized void markAsReadBefore(long timestamp)
+  {
+    if (m_last_timestamp<timestamp)
+      m_has_new_message = false;
+  }
+  
     /*
   public static void main(String[] args) throws InterruptedException
   {

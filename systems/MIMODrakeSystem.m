@@ -45,8 +45,8 @@ classdef MIMODrakeSystem < DrakeSystem
     end
     
     function xdn = update(obj,t,x,u)
-      if isa(obj.getInputFrame(),'MultiCoordinateFrame')
-        mimo_u = splitCoordinates(obj.getInputFrame(),u);
+      if isa(getInputFrame(obj),'MultiCoordinateFrame')
+        mimo_u = splitCoordinates(getInputFrame(obj),u);
         xdn = mimoUpdate(obj,t,x,mimo_u{:});
       else
         xdn = mimoUpdate(obj,t,x,u);
@@ -54,9 +54,9 @@ classdef MIMODrakeSystem < DrakeSystem
     end
     
     function y = output(obj,t,x,u)
-      if (obj.isDirectFeedthrough())
-        if isa(obj.getInputFrame(),'MultiCoordinateFrame')
-          mimo_u = splitCoordinates(obj.getInputFrame(),u);
+      if (isDirectFeedthrough(obj))
+        if isa(getInputFrame(obj),'MultiCoordinateFrame')
+          mimo_u = splitCoordinates(getInputFrame(obj),u);
         else
           mimo_u = {u};
         end
@@ -64,10 +64,10 @@ classdef MIMODrakeSystem < DrakeSystem
         mimo_u={};
       end
       
-      if isa(obj.getOutputFrame(),'MultiCoordinateFrame')
+      if isa(getOutputFrame(obj),'MultiCoordinateFrame')
         mimo_y = cell(1,length(obj.getOutputFrame().frame));
         [mimo_y{:}] = mimoOutput(obj,t,x,mimo_u{:});
-        y = mergeCoordinates(obj.getOutputFrame(),mimo_y);
+        y = mergeCoordinates(getOutputFrame(obj),mimo_y);
       else
         y = mimoOutput(obj,t,x,mimo_u{:});
       end      

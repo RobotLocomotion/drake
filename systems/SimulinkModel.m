@@ -89,7 +89,11 @@ classdef SimulinkModel < DynamicalSystem
     end
     
     function [y,dy] = output(obj,t,x,u)
-      x = stateVectorToStructure(obj,x);
+      if (obj.num_x>0)  % speeds things up, since the call from inside DynamicalSystem is virtual
+        x = stateVectorToStructure(obj,x);
+      else
+        x=[];
+      end
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         set_param(obj.mdl,'StopTime',num2str(inf));
         feval(obj.mdl,[],[],[],'compile');
