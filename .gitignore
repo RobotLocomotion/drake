@@ -122,3 +122,4 @@ eigen3.pc
 util/debugMex
 util/test/debugMexTest_mexdebug.mat
 *_mexdebug.mat
+*.class
