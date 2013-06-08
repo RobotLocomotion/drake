@@ -431,7 +431,7 @@ if(info == 13)
     lb_err = Fmin-f_sol;
     lb_err = lb_err(~isinf(lb_err));
     max_lb_error = max(lb_err);
-    max_lb_error = max_lb_error*(max_lb_error<0);
+    max_lb_error = max_lb_error*(max_lb_error>0);
     if(max_ub_error+max_lb_error>1e-4)
         info = 13;
     else
