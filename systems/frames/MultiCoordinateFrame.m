@@ -12,7 +12,10 @@ classdef MultiCoordinateFrame < CoordinateFrame
     frame={};     % a list of CoordinateFrame objects
     frame_id=[];  % for each coordinate, an integer index into the frame 
                   % (from the list above) associated with that coordinate
-    coord_ids={}; % for each frame, a list of associate coordinates              
+    coord_ids={}; % for each frame, a list of associate coordinates   
+    
+    % speed optimization
+    cell_vals={};
   end
 
   methods
@@ -44,11 +47,11 @@ classdef MultiCoordinateFrame < CoordinateFrame
         name = [name,'+',coordinate_frames{i}.name];
         dim = dim+coordinate_frames{i}.dim;
         prefix = vertcat(prefix,coordinate_frames{i}.prefix);
-         if size(coordinate_frames{i}.coordinates,2)==coordinate_frames{i}.dim
-         coordinates = vertcat(coordinates,coordinate_frames{i}.coordinates');
-       else
-         coordinates = vertcat(coordinates,coordinate_frames{i}.coordinates);
-    end
+        if size(coordinate_frames{i}.coordinates,2)==coordinate_frames{i}.dim
+          coordinates = vertcat(coordinates,coordinate_frames{i}.coordinates');
+        else
+          coordinates = vertcat(coordinates,coordinate_frames{i}.coordinates);
+        end
       end
       name=name(2:end);
       
@@ -78,6 +81,12 @@ classdef MultiCoordinateFrame < CoordinateFrame
           tf = AffineTransform(obj,coordinate_frames{i},T,zeros(d,1));
           addTransform(obj,tf);
         end
+      end
+      
+      % preallocate
+      obj.cell_vals = cell(1,length(obj.frame));
+      for i=1:length(obj.frame)
+        obj.cell_vals{i} = zeros(numel(obj.coord_ids{i}),1);
       end
     end
     
@@ -212,14 +221,14 @@ classdef MultiCoordinateFrame < CoordinateFrame
     end
     
     function cell_vals = splitCoordinates(obj,vector_vals)
-      cell_vals = cell(1,length(obj.frame));
       for i=1:length(obj.frame)
-        cell_vals{i} = vector_vals(obj.coord_ids{i});
+        obj.cell_vals{i} = vector_vals(obj.coord_ids{i});
       end
+      cell_vals = obj.cell_vals;
     end      
     
     function vector_vals = mergeCoordinates(obj,cell_vals)
-      sizecheck(cell_vals,length(obj.frame));
+%      sizecheck(cell_vals,length(obj.frame));  % commented out for speed
       vector_vals = cell_vals{1}(1)*zeros(obj.dim,1);
       for i=1:length(obj.frame)
         vector_vals(obj.coord_ids{i}) = cell_vals{i};

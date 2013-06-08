@@ -19,11 +19,12 @@ OTHER_JAVAFILES = util/MyLCMTypeDatabase.java util/MessageMonitor.java util/Coor
 JAVAFILES = $(LCM_JAVAFILES) $(OTHER_JAVAFILES)
 
 OBJFILES = $(LCM_CFILES:%.c=%.o) 
-MEXFILES = $(MEX_CFILES:%.c=%.mexmaci64)
 CLASSFILES = $(JAVAFILES:%.java=%.class) 
 EXTRACLASSFILES = util/MyLCMTypeDatabase*MyClassVisitor.class
 
-all: java c 
+MATLAB = $(shell which matlab)
+
+all: matlab_config java c
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
 		echo "-- $$subdir"; \
@@ -33,7 +34,7 @@ all: java c
 
 debug: CXX += -g
 debug: CC += -g
-debug: java c 
+debug: matlab_config java c
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
 		echo "-- $$subdir"; \
@@ -44,6 +45,12 @@ debug: java c
 java : drake.jar
 
 c : drake.a 
+
+matlab_config : util/drake_config.mat .matlabroot
+
+util/drake_config.mat .matlabroot : configure.m
+	matlab -nosplash -nodesktop -r "configure;exit";
+# todo: consider using configure(struct('autoconfig',true))
 
 drake.jar : $(CLASSFILES)
 	cd ..; jar -cf drake/drake.jar $(CLASSFILES:%=drake/%) $(EXTRACLASSFILES:%=drake/%)
