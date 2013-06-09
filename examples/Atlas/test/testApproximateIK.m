@@ -42,15 +42,16 @@ kinsol = doKinematics(r, q_rot0);
 r_foot_pts = [0;0;0];
 r_foot_pos = forwardKin(r, kinsol, r_foot, r_foot_pts, 1);
 tic
-q = approximateIK(r,q_rot0,0,[0;0;nan],l_foot,l_foot_pts,l_foot_pos,r_foot,r_foot_pts,r_foot_pos,options);
+[q,info] = approximateIK(r,q_rot0,0,[0;0;nan],l_foot,l_foot_pts,l_foot_pos,r_foot,r_foot_pts,r_foot_pos,options);
 toc
 v.draw(1,[q;0*q]); drawnow;
 kinsol = doKinematics(r, q);
 l_foot_sol_q = forwardKin(r, kinsol, l_foot, l_foot_pts,2);
 % low tolerances here
-if ~valuecheck(l_foot_pos_q, l_foot_sol_q,1e-2) && ...
-    ~valuecheck(-l_foot_pos_q, l_foot_sol_q,1e-2)
-  error('testApproximateIK: values dont match');
+if ~valuecheck(l_foot_sol_q, l_foot_pos_q,1e-2) && ...
+    ~valuecheck(-l_foot_pos_q, l_foot_pos_q,1e-2)
+  info
+  valuecheck(l_foot_sol_q, l_foot_pos_q,1e-2);  % note, could be either sign?
 end
 
 % Next, a case which exhibits the wraparound bug:
@@ -69,7 +70,7 @@ kinsol = doKinematics(r, q_rot0);
 r_foot_pts = [0;0;0];
 r_foot_pos = forwardKin(r, kinsol, r_foot, r_foot_pts, 1);
 tic
-q = approximateIK(r,q_rot0,0,[0;0;nan],l_foot,l_foot_pts,l_foot_pos,r_foot,r_foot_pts,r_foot_pos,options);
+[q,info] = approximateIK(r,q_rot0,0,[0;0;nan],l_foot,l_foot_pts,l_foot_pos,r_foot,r_foot_pts,r_foot_pos,options);
 toc
 v.draw(1,[q;0*q]); drawnow;
 kinsol = doKinematics(r, q);
@@ -77,7 +78,8 @@ l_foot_sol_q = forwardKin(r, kinsol, l_foot, l_foot_pts,2);
 % low tolerances here
 if ~valuecheck(l_foot_pos_q, l_foot_sol_q,1e-2) && ...
     ~valuecheck(-l_foot_pos_q, l_foot_sol_q,1e-2)
-  error('testApproximateIK: values dont match');
+  info
+  valuecheck(l_foot_sol_q, l_foot_pos_q,1e-2);
 end
 %%%% End wraparound test %%%%
 

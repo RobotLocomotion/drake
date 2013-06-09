@@ -1,5 +1,4 @@
-
-/*o
+/*
  * A c++ version of @RigidBodyManipulator/approximateIK.m
  */
 #include <math.h>
@@ -8,12 +7,170 @@
 #include <Eigen/Dense>
 #include "RigidBodyManipulator.h"
 #include <iostream>
+#include <Eigen/Cholesky>
+#include <Eigen/LU>
+#include <Eigen/SVD>
+
+#define USE_EIQUADPROG_BACKUP 1
+
+#if USE_EIQUADPROG_BACKUP
 #include "eiquadprog.hpp"
+#endif
 
 #define _USE_MATH_DEFINES
 
 #define MAX_CONSTRS 1000
 #define MAX_STATE   1000
+#define MAX_ITER    20
+using namespace std;
+
+int fastQP(const VectorXd Qdiag, const VectorXd f, const MatrixXd Aeq, const VectorXd beq, const MatrixXd Ain, const VectorXd bin, VectorXd* active, VectorXd* x) {
+  int fail = 0;
+  int iterCnt = 0;
+  
+  int M_in = bin.size();
+  int M = Aeq.rows();
+  int N = Aeq.cols();
+  int n_active = (*active).size();
+  
+  MatrixXd Aact = MatrixXd(n_active, N);
+  VectorXd bact = VectorXd(n_active);
+  
+            
+  int i;
+  
+  for (i=0; i<n_active; i++) {
+    Aact.row(i) = Ain.row((*active)(i));
+    bact(i) = bin((*active)(i));
+  }
+ 
+  // calculate a bunch of stuff that is constant during each iteration
+  VectorXd Qdiag_mod = Qdiag + VectorXd::Constant(N,1e-8);
+    
+  VectorXd QinvDiag = Qdiag_mod.cwiseInverse();
+    
+  MatrixXd QinvAteq = QinvDiag.asDiagonal()*Aeq.transpose(); 
+  VectorXd minusQinvf = -QinvDiag.cwiseProduct(f);
+  
+  MatrixXd A;
+  VectorXd b;
+  MatrixXd QinvAt;
+  VectorXd lam, lamIneq;
+  VectorXd violated(M_in);
+  VectorXd violation;
+  
+//       cout << "nactive" << n_active << endl;
+//   return 0;
+  
+  while(1) {
+    A.resize(Aeq.rows() + Aact.rows(),N);
+    b.resize(beq.size() + bact.size());
+    A << Aeq,Aact;
+    b << beq,bact;
+    
+//     cout << "dbg: " << A << endl;
+//     cout << "dbg: " << b << endl;
+    
+    if (A.rows() > 0) {
+      //Solve H * [x;lam] = [-f;b] using Schur complements
+      QinvAt.resize(QinvAteq.rows(), QinvAteq.cols() + Aact.rows());
+      QinvAt << QinvAteq, QinvDiag.asDiagonal()*Aact.transpose();
+      
+//     cout << "dbg: " << f.transpose()*QinvAt << endl;
+//         cout << "dbg: " << A*QinvAt << endl;
+//         cout << "dbg: " << b + f.transpose()*QinvAt << endl;
+      
+      lam.resize(QinvAt.cols());
+      lam = -(A*QinvAt).ldlt().solve(b + (f.transpose()*QinvAt).transpose());
+//     cout << "dbgl: " << lam << endl;
+      
+      *x = minusQinvf - QinvAt*lam;
+      lamIneq = lam.tail(lam.size() - M);
+    } else {
+      *x = minusQinvf;
+      lamIneq.resize(0);
+    }
+    
+//     cout << "dbg: " << *x << endl;
+//     return 0;
+    
+    
+    if(Ain.rows() == 0) {
+      (*active).resize(0);
+      break;
+    }
+//     cout << "dbg: " << A << endl;
+    
+    
+    violation = Ain*(*x) - bin;
+    
+//     cout << "violation: " << violation << endl;
+    
+    violated.conservativeResize(M_in);
+    int violCount = 0;
+    for(i=0; i < M_in; i++) {
+      if (violation(i) >= 1e-6) {
+        violated(violCount) = i;
+        violCount++;
+      }
+    }
+    
+//     cout << "lamIneq: " << lamIneq << endl;
+    if (violCount == 0 && lamIneq.all()) {
+      break;
+    }    
+    violated.conservativeResize(violCount);
+//     cout << "violated: " << violated << endl;
+    int prevActiveCount = (*active).size();
+//     cout << "prevActive: " << *active << endl;
+    (*active).conservativeResize(M_in);
+    
+    int newActiveCount = 0;
+    
+    
+    
+    for (i=0; i < prevActiveCount; i++) {
+     if (lamIneq(i) < 0 ) {
+      if(violCount > 0) {
+        violCount--;
+        (*active)(newActiveCount) = violated(violCount);
+        newActiveCount++;
+      }
+     } else {
+      newActiveCount++; 
+     }
+    }
+    
+    while(violCount > 0) {
+      violCount--;
+      (*active)(newActiveCount) = violated(violCount);
+      newActiveCount++;
+    }
+    
+    (*active).conservativeResize(newActiveCount);
+    
+//     cout << "newActive: " << *active << endl;
+    
+    n_active = newActiveCount;
+    Aact.resize(n_active,N);
+    bact.resize(n_active);
+    
+    for (i=0; i<n_active; i++) {
+      Aact.row(i) = Ain.row((*active)(i));
+      bact(i) = bin((*active)(i));
+    }
+    iterCnt++;
+
+    if (iterCnt > MAX_ITER) {
+      //Default to calling this method
+      cout << "FastQP max iter reached." << endl;
+//       mexErrMsgIdAndTxt("Drake:approximateIKmex:Error", "Max iter reached. Problem is likely infeasible");
+      fail = 1;
+      return fail;
+    }
+  }  
+  return fail;
+}
 
 
 void angleDiff(VectorXd phi1, VectorXd phi2, VectorXd* d) {
@@ -44,6 +201,11 @@ void angleDiff(MatrixXd phi1, MatrixXd phi2, MatrixXd* d) {
 
 using namespace std;
 
+/**
+ * Use Frank's fastQP code (mexed)
+ * [q,info] = approximateIKEIQPmex(objgetMexModelPtr, q0, q_nom, Q, varargin)
+ * info = 0 on success, 1 on failure
+ **/
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs < 4) {
     mexErrMsgIdAndTxt("Drake:approximateIKmex:NotEnoughInputs", "Usage approximateIKmex(model_ptr,q0,q_nom,Q,...)");
@@ -77,7 +239,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   MatrixXd Ain = Map<MatrixXd>(Aindata, nq, MAX_CONSTRS);
   
   //Add joint limits
-  if (lastModel != model) {
+  if (lastModel != model || true) {
     lastModel = model;
     for (i=0;i<nq;i++) {
       if(!mxIsInf(model->joint_limit_max[i])) {
@@ -85,7 +247,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         Ain.col(inequality_ind) = VectorXd::Zero(nq);
         Ain(i, inequality_ind) = 1;
         
-//         cout << Ain.col(inequality_ind) << endl << endl;
+//         cout << bin(inequality_ind) << endl << endl;
         inequality_ind++;
       }
       
@@ -93,6 +255,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         bin(inequality_ind) = -model->joint_limit_min[i];
         Ain.col(inequality_ind) << VectorXd::Zero(nq);
         Ain(i, inequality_ind) = -1;
+//         cout << bin(inequality_ind) << endl << endl;
         inequality_ind++;
       }
     }
@@ -160,15 +323,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       
       if (mxIsClass(prhs[i+1], "char") || mxGetM(prhs[i+1]) == 1) {
         mexErrMsgIdAndTxt("Drake:approximateIKMex:NotImplemented", "collision group not implemented in mex (mposa)");
-        
-//         set<int> body_idx;
-//         body_idx.insert(body_ind);
-//         int n_contactpts = model->getNumContacts(body_idx);
-//         MatrixXd contact_pos = MatrixXd::Zero(3,n_contactpts);
-//         model->getContactPositions(contact_pos,body_idx);
-//         body_pos = contact_pos.rowwise().mean();
-//         body_pos = new Map<MatrixXd>(contact_pos.rowwise().mean(),3,1);
-//         std::cout << contact_pos.rowwise().mean() << std::endl;;
       } else {
         if (mxGetM(prhs[i+1]) !=3) {
           mexErrMsgIdAndTxt("Drake:approximateIKMex:BadInputs", "bodypos must be 3xmi");
@@ -178,8 +332,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         Map<MatrixXd> pts_tmp(mxGetPr(prhs[i+1]), 3, n_pts);
         body_pos.resize(4, n_pts);
         body_pos << pts_tmp, MatrixXd::Ones(1, n_pts);
-        
-//         body_pos = new Map<MatrixXd>(mxGetPr(prhs[i+1]),3,n_pts);
       }
       i += 3;
     }
@@ -220,7 +372,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
               mexErrMsgIdAndTxt("Drake:approximateIKMex:BadInputs", "RHS of a constraint evaluates to -inf");
             }
           } else {
-            Ain.col(inequality_ind) << J.row(j);
+            Ain.col(inequality_ind) << J.row(j).transpose();
             bin(inequality_ind) = rhs;
             inequality_ind++;
           }
@@ -240,7 +392,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
               mexErrMsgIdAndTxt("Drake:approximateIKMex:BadInputs", "RHS of a constraint evaluates to -inf");
             }
           } else {
-            Ain.col(inequality_ind) << J.row(j);
+            Ain.col(inequality_ind) << J.row(j).transpose();
             bin(inequality_ind) = rhs;
             inequality_ind++;
           }
@@ -251,11 +403,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     if (min == NULL && max == NULL) {
       for (j = 0; j < rows; j++) {
         if (!mxIsNaN((*world_pos)(j))) {
-          VectorXd rowVec = J.row(j);
-          double *Jrow = rowVec.data();
           double rhs =  (*world_pos)(j) - x(j) + J.row(j)*q0vec;
           
-          Aeq.col(equality_ind) << J.row(j);
+          Aeq.col(equality_ind) << J.row(j).transpose();
           beq(equality_ind) = rhs;
           equality_ind++;
         }
@@ -270,15 +420,35 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   
 //   cout << Aeq << endl << endl;
 //   cout << beq << endl << endl;
-//
+// 
 //   cout << Ain << endl << endl;
 //   cout << bin << endl << endl;
+//   
+//   cout << Q << endl << endl;
+//   
+//   cout << c << endl << endl;
+  VectorXd q = VectorXd::Zero(nq);
+//   double result = solve_quadprog(Q, c, -Aeq, beq, -Ain, bin, q);
   
-  VectorXd q;
-  double result = solve_quadprog(Q, c, -Aeq, beq, -Ain, bin, q);
+  VectorXd active = VectorXd::Zero(0);
+  double result = fastQP(Q.diagonal(), c, Aeq.transpose(), beq, Ain.transpose(), bin, &active, &q);  
+  
+  //Enable the block below to use stephens' qp code
+  #if USE_EIQUADPROG_BACKUP
+  if(result == 1) {
+    Q += 1e-8*MatrixXd::Identity(nq,nq);
+    result = solve_quadprog(Q, c, -Aeq, beq, -Ain, bin, q);
+    
+    if (mxIsInf(result)) {
+      result = 1;
+    } else {
+      result = 0;
+    }
+  }
+  #endif  
   
 //   cout << result << endl << endl;
-//   cout << q << endl;
+//   cout << q << endl << endl;
   plhs[0] = mxCreateDoubleMatrix(nq, 1, mxREAL);
   memcpy(mxGetPr(plhs[0]), q.data(), sizeof(double)*nq);
   
@@ -286,20 +456,5 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     plhs[1] = mxCreateDoubleScalar(result);
   }
   
-//   CGE(GRBupdatemodel(grb_model), grb_env);
-//
-//   CGE(GRBoptimize(grb_model), grb_env);
-//
-//   plhs[0] = mxCreateDoubleMatrix(nq,1,mxREAL);
-//   error = GRBgetdblattrarray(grb_model, GRB_DBL_ATTR_X, 0, nq,mxGetPr(plhs[0]));
-//
-//   if (nlhs>1) {
-//   	int status;
-//   	error = GRBgetintattr(grb_model, GRB_INT_ATTR_STATUS, &status);
-//   	plhs[1] = mxCreateDoubleScalar(status);
-//   }
-//
-//   GRBfreemodel(grb_model);
-//   GRBfreeenv(grb_env);
   return;
 }

@@ -64,13 +64,17 @@ classdef SimulinkModel < DynamicalSystem
       x0 = stateStructureToVector(obj,x0);
     end
     
-    function [xcdot,df] = dynamics(obj,t,x,u)
+    function [xcdot,df] = dynamics(obj,t,x,u,yes_i_promise_that_i_called_output_first)
       x = stateVectorToStructure(obj,x);
 %      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
 %        feval(obj.mdl,[],[],[],'compile');
 %      end
-      feval(obj.mdl,[],[],[],'all');
-      feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
+
+%      feval(obj.mdl,[],[],[],'all');   % can't see this in the documentation.. don't know where I got it from?
+
+      if (nargin<5 || ~yes_i_promise_that_i_called_output_first)
+        feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
+      end
       xcdot = feval(obj.mdl,t,x,u,'derivs');
       
       xcdot = stateStructureToVector(obj,xcdot);
@@ -82,13 +86,17 @@ classdef SimulinkModel < DynamicalSystem
       
     end
     
-    function xdn = update(obj,t,x,u)
+    function xdn = update(obj,t,x,u,yes_i_promise_that_i_called_output_first)
       x = stateVectorToStructure(obj,x);
 %      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
 %        feval(obj.mdl,[],[],[],'compile');
 %      end
-      feval(obj.mdl,[],[],[],'all');
-      feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
+
+%      feval(obj.mdl,[],[],[],'all');   % can't see this in the documentation.. don't know where I got it from?
+
+      if (nargin<5 || ~yes_i_promise_that_i_called_output_first)
+        feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
+      end
       xdn = feval(obj.mdl,t,x,u,'update');
       xdn = stateStructureToVector(obj,xdn);
     end
@@ -103,8 +111,9 @@ classdef SimulinkModel < DynamicalSystem
 %        set_param(obj.mdl,'StopTime',num2str(inf));
 %        feval(obj.mdl,[],[],[],'compile');
 %      end
-%      tu=mat2str([t reshape(u,1,numel(u))]);
-      feval(obj.mdl,[],[],[],'all');
+
+%      feval(obj.mdl,[],[],[],'all');   % can't see this in the documentation.. don't know where I got it from?
+
       y = feval(obj.mdl,t,x,u,'outputs');
 
       if (nargout>1)
