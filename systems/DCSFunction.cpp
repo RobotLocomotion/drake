@@ -249,7 +249,6 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   mxArray *prhs[5];
   prhs[0] = psys;                                  // obj
   prhs[1] = mxCreateDoubleScalar(t);               // t
-
   prhs[2] = mxCreateDoubleMatrix(num_xd + num_xc,1,mxREAL); // x
   real_T* px = mxGetPr(prhs[2]);
   real_T* pxtmp=px;
@@ -262,12 +261,10 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   }
   
   prhs[3] = mxCreateDoubleMatrix(num_u, 1, mxREAL);  // u
-  if (mexCallMATLABsafe(S,1, plhs, 1, &psys, "isDirectFeedthrough")) return;
-  if (num_u>0 && (int)mxGetScalar(plhs[0])) { // not allowed to reference the input port signal unless it's feedthrough
+  if (num_u>0 && ssGetInputPortDirectFeedThrough(S,0)) { // not allowed to reference the input port signal unless it's feedthrough
     u = ssGetInputPortRealSignal(S,0);
     memcpy(mxGetPr(prhs[3]), u, sizeof(real_T)*num_u);
   } // else: leave u at random values (shouldn't be used)
-  mxDestroyArray(plhs[0]);
 
   prhs[4] = mxCreateDoubleMatrix(num_w, 1, mxREAL); // w
   if (num_w>0) memcpy(mxGetPr(prhs[4]), w, sizeof(real_T)*num_w);

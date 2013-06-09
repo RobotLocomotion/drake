@@ -13,6 +13,13 @@ classdef MIMODrakeSystem < DrakeSystem
       obj = obj@DrakeSystem(num_xc,num_xd,inputFrame.dim,outputFrame.dim,direct_feedthrough_flag,time_invariant_flag);
       obj = setInputFrame(obj,inputFrame);
       obj = setOutputFrame(obj,outputFrame);
+      
+      % cache these for efficiency:
+      obj.b_input_is_multiframe = isa(inputFrame,'MultiCoordinateFrame');
+      obj.b_output_is_multiframe = isa(outputFrame,'MultiCoordinateFrame');
+      if obj.b_output_is_multiframe
+        obj.mimo_y = cell(1,length(outputFrame.frame));
+      end
     end
     
     function xcdot = mimoDynamics(obj,t,x,varargin)
@@ -36,7 +43,7 @@ classdef MIMODrakeSystem < DrakeSystem
 
     % todo: pass gradients through, etc.
     function xcdot = dynamics(obj,t,x,u)
-      if isa(obj.getInputFrame(),'MultiCoordinateFrame')
+      if obj.b_input_is_multiframe
         mimo_u = splitCoordinates(obj.getInputFrame(),u);
         xcdot = mimoDynamics(obj,t,x,mimo_u{:});
       else
@@ -45,7 +52,7 @@ classdef MIMODrakeSystem < DrakeSystem
     end
     
     function xdn = update(obj,t,x,u)
-      if isa(getInputFrame(obj),'MultiCoordinateFrame')
+      if obj.b_input_is_multiframe
         mimo_u = splitCoordinates(getInputFrame(obj),u);
         xdn = mimoUpdate(obj,t,x,mimo_u{:});
       else
@@ -55,7 +62,7 @@ classdef MIMODrakeSystem < DrakeSystem
     
     function y = output(obj,t,x,u)
       if (isDirectFeedthrough(obj))
-        if isa(getInputFrame(obj),'MultiCoordinateFrame')
+        if obj.b_input_is_multiframe
           mimo_u = splitCoordinates(getInputFrame(obj),u);
         else
           mimo_u = {u};
@@ -64,23 +71,28 @@ classdef MIMODrakeSystem < DrakeSystem
         mimo_u={};
       end
       
-      if isa(getOutputFrame(obj),'MultiCoordinateFrame')
-        mimo_y = cell(1,length(obj.getOutputFrame().frame));
-        [mimo_y{:}] = mimoOutput(obj,t,x,mimo_u{:});
-        y = mergeCoordinates(getOutputFrame(obj),mimo_y);
+      if obj.b_output_is_multiframe
+        [obj.mimo_y{:}] = mimoOutput(obj,t,x,mimo_u{:});
+        y = mergeCoordinates(getOutputFrame(obj),obj.mimo_y);
       else
         y = mimoOutput(obj,t,x,mimo_u{:});
       end      
     end
     
     function zcs = zeroCrossings(obj,t,x,u)
-      if isa(obj.getInputFrame(),'MultiCoordinateFrame')
+      if pbj.b_input_is_multiframe
         mimo_u = splitCoordinates(obj.getInputFrame(),u);
         zcs = mimoZeroCrossings(obj,t,x,mimo_u{:});
       else
         zcs = mimoZeroCrossings(obj,t,x,u);
       end      
     end
+  end
+  
+  properties
+    b_input_is_multiframe    % cache these checks so I don't need to do e.g. isa(getInputFrame(obj),'MultiCoordinateFrame') in the main simulation loop
+    b_output_is_multiframe
+    mimo_y
   end
   
 end
