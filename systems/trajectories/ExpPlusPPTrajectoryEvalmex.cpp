@@ -7,8 +7,6 @@
 #include <vector>
 #include <iostream>
 
-#include "ObjectHandle.h"
-
 using namespace Eigen;
 using namespace std;
 
@@ -83,6 +81,7 @@ public:
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs == 5 && nlhs == 1) {
 
+    // create object
     Map<VectorXd> breaks(mxGetPr(prhs[0]), mxGetNumberOfElements(prhs[0]));
     Map<MatrixXd>      K(mxGetPr(prhs[1]), mxGetM(prhs[1]), mxGetN(prhs[1]));
     Map<MatrixXd>      A(mxGetPr(prhs[2]), mxGetM(prhs[2]), mxGetN(prhs[2]));
@@ -90,31 +89,46 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     Map<MatrixXd>  gamma(mxGetPr(prhs[4]), mxGetM(prhs[4]), mxGetN(prhs[4]));
 
     Eval *eval = new Eval(breaks, K, A, alpha, gamma);
-    ObjectHandle<Eval> *handle = new ObjectHandle<Eval>(eval);
-    plhs[0] = handle->to_mex_handle();
+    mxClassID cid;
+    if (sizeof(eval)==4) cid = mxUINT32_CLASS;
+    else if (sizeof(eval)==8) cid = mxUINT64_CLASS;
+    else mexErrMsgIdAndTxt("Drake:ExpPlusPPTmex:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
+    plhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
+    memcpy(mxGetData(plhs[0]),&eval,sizeof(eval));
 
   } else {
 
-    if (nrhs != 2) {
-      mexErrMsgIdAndTxt("Drake:ExpPlusPPTrajectoryEval:WrongNumberOfInputs","Usage ExpPlusPPTrajectoryEvalmex(t,breaks,K,A,alpha,gamma)");
+    // retrieve object
+    Eval *eval = NULL;
+    if (nrhs==0 || !mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
+      mexErrMsgIdAndTxt("Drake:ExpPlusPPTmex:BadInputs","the first argument should be the mex_ptr");
+    memcpy(&eval,mxGetData(prhs[0]),sizeof(eval));
+
+    if (nrhs == 1) {
+
+      // delete object   
+      delete eval;
+
+    } else {
+
+      // eval() function call
+      if (nrhs != 2 || nlhs != 2) {
+        mexErrMsgIdAndTxt("Drake:ExpPlusPPTmex:WrongNumberOfInputs","Usage obj = ExpPlusPPTmex(breaks,K,A,alpha,gamma) or [y,jj] = ExpPlusPPTmex(obj,t)");
+      }
+
+      Map<VectorXd> t(mxGetPr(prhs[1]), mxGetNumberOfElements(prhs[1]));
+
+      int m = t.rows();
+      int d = eval->dim();
+
+      plhs[0] = mxCreateDoubleMatrix(d,m,mxREAL);
+      Map<MatrixXd> y(mxGetPr(plhs[0]),d,m);
+      plhs[1] = mxCreateDoubleMatrix(m,1,mxREAL);
+      Map<MatrixXd> jj(mxGetPr(plhs[1]),m,1);
+
+      eval->compute(t, y, jj);
+
     }
-    if (nlhs != 2) {
-      mexErrMsgIdAndTxt("Drake:ExpPlusPPTrajectoryEval:WrongNumberOfOutputs","Returns [y,jj]");
-    }
-
-    Eval& eval = get_object<Eval>(prhs[0]);
-
-    Map<VectorXd> t(mxGetPr(prhs[1]), mxGetNumberOfElements(prhs[1]));
-
-    int m = t.rows();
-    int d = eval.dim();
-
-    plhs[0] = mxCreateDoubleMatrix(d,m,mxREAL);
-    Map<MatrixXd> y(mxGetPr(plhs[0]),d,m);
-    plhs[1] = mxCreateDoubleMatrix(m,1,mxREAL);
-    Map<MatrixXd> jj(mxGetPr(plhs[1]),m,1);
-
-    eval.compute(t, y, jj);
 
   }
 
