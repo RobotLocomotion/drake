@@ -29,6 +29,11 @@ classdef SimulinkModel < DynamicalSystem
       obj=obj.setInputFrame(CoordinateFrame([mdl,'Input'],obj.num_u,'u'));
       obj=obj.setStateFrame(CoordinateFrame([mdl,'State'],obj.num_xc+obj.num_xd,'x'));
       obj=obj.setOutputFrame(CoordinateFrame([mdl,'Output'],obj.num_y,'y'));
+      
+      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
+        set_param(obj.mdl,'StopTime',num2str(inf));
+        feval(obj.mdl,[],[],[],'compile');
+      end
     end
   end
   
@@ -61,9 +66,9 @@ classdef SimulinkModel < DynamicalSystem
     
     function [xcdot,df] = dynamics(obj,t,x,u)
       x = stateVectorToStructure(obj,x);
-      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
-        feval(obj.mdl,[],[],[],'compile');
-      end
+%      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
+%        feval(obj.mdl,[],[],[],'compile');
+%      end
       feval(obj.mdl,[],[],[],'all');
       feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
       xcdot = feval(obj.mdl,t,x,u,'derivs');
@@ -79,9 +84,9 @@ classdef SimulinkModel < DynamicalSystem
     
     function xdn = update(obj,t,x,u)
       x = stateVectorToStructure(obj,x);
-      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
-        feval(obj.mdl,[],[],[],'compile');
-      end
+%      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
+%        feval(obj.mdl,[],[],[],'compile');
+%      end
       feval(obj.mdl,[],[],[],'all');
       feval(obj.mdl,t,x,u,'outputs'); % have to call this before derivs (see email thread with mathworks in bug 695)
       xdn = feval(obj.mdl,t,x,u,'update');
@@ -94,10 +99,10 @@ classdef SimulinkModel < DynamicalSystem
       else
         x=[];
       end
-      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
-        set_param(obj.mdl,'StopTime',num2str(inf));
-        feval(obj.mdl,[],[],[],'compile');
-      end
+%      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
+%        set_param(obj.mdl,'StopTime',num2str(inf));
+%        feval(obj.mdl,[],[],[],'compile');
+%      end
 %      tu=mat2str([t reshape(u,1,numel(u))]);
       feval(obj.mdl,[],[],[],'all');
       y = feval(obj.mdl,t,x,u,'outputs');
