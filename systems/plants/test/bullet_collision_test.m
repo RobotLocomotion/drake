@@ -132,3 +132,6 @@ function plotBox(pts)
   ind=[1,2;2,4;4,3;3,1;5,6;6,8;8,7;7,5;1,5;2,6;3,7;4,8]';
   line(x(ind),y(ind),z(ind),'Color','b');
 end
+
+
+% NOTEST
