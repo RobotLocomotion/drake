@@ -356,6 +356,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       if (rows == 6 && min == NULL && max == NULL) {
         VectorXd delta;
         angleDiff(x.block(3, 0, 3, n_pts), (*world_pos).block(3, 0, 3, n_pts), &delta);
+        (*world_pos).block(3,0,3,n_pts) = x.block(3,0,3,n_pts)+delta;
       }
     }
     
