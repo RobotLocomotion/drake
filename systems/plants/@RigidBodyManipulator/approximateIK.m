@@ -31,6 +31,7 @@ function [q,info] = approximateIK(obj,q0,varargin)
 %     @default q_nom = q0
 % @option Q  puts a weight on the cost function qtilde'*Q*qtilde
 %   
+% @result info is 0 on success, 1 on failure
 
 if isstruct(varargin{end}) 
   options = varargin{end};
@@ -58,7 +59,15 @@ while i<=length(varargin)
 end
 
 if options.use_mex
-  [q,info] = approximateIKmex(obj.getMexModelPtr.getData,q0,q_nom,Q,varargin{:});
+% Frank's fast QP (mex'd by Mike)
+  [q,info] = approximateIKEIQPmex(obj.getMexModelPtr.getData,q0,q_nom,Q,varargin{:});
+
+% Mex'd gurobi version  
+  if info
+    warning('approximateIKEIQP failed.  trying gurobi version.');
+    [q,info] = approximateIKmex(obj.getMexModelPtr.getData,q0,q_nom,Q,varargin{:});
+    info = (info~=2);  % gurobi "OPTIMAL" http://www.gurobi.com/documentation/5.5/reference-manual/node896#sec:StatusCodes
+  end
   return;
 end
 
@@ -182,6 +191,11 @@ params.barhomogeneous = 0; % 0 off, 1 on
 params.barconvtol = 1e-4;
 
 result = gurobi(model,params);
-q = result.x;  
+info = ~strcmp(result.status,'OPTIMAL');
+if (info)
+  q = q0;
+else
+  q = result.x;
+end
 
 end

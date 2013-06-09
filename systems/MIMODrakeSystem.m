@@ -61,7 +61,7 @@ classdef MIMODrakeSystem < DrakeSystem
     end
     
     function y = output(obj,t,x,u)
-      if (isDirectFeedthrough(obj))
+      if obj.direct_feedthrough_flag
         if obj.b_input_is_multiframe
           mimo_u = splitCoordinates(getInputFrame(obj),u);
         else
