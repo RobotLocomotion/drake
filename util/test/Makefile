@@ -19,4 +19,3 @@ $(MEXFILES): %.$(MEXEXT) : %.cpp
 
 clean:
 	-rm -f *.$(MEXEXT)
-	-rm debugMex
