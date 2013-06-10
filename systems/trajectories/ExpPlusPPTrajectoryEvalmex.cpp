@@ -95,6 +95,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     else mexErrMsgIdAndTxt("Drake:ExpPlusPPTmex:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
     plhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
     memcpy(mxGetData(plhs[0]),&eval,sizeof(eval));
+    
+    //    mexPrintf("constructor\n"); mexCallMATLAB(0,NULL,0,NULL,"drawnow");
 
   } else {
 
@@ -105,11 +107,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     memcpy(&eval,mxGetData(prhs[0]),sizeof(eval));
 
     if (nrhs == 1) {
+      //      mexPrintf("delete\n"); mexCallMATLAB(0,NULL,0,NULL,"drawnow");
 
       // delete object   
-      delete eval;
+      if (eval)
+	delete eval;
 
     } else {
+
+      //      mexPrintf("eval\n"); mexCallMATLAB(0,NULL,0,NULL,"drawnow");
 
       // eval() function call
       if (nrhs != 2 || nlhs != 2) {
