@@ -33,16 +33,13 @@ classdef ExpPlusPPTrajectory < Trajectory
       gamma_reshaped = reshape(obj.gamma, ...
           size(obj.gamma,1)*size(obj.gamma,2), size(obj.gamma,3));
       obj.mex_ptr = SharedDataHandle(ExpPlusPPTrajectoryEvalmex(...
-          obj.breaks, obj.K, obj.A, obj.alpha, gamma_reshaped));%,@ExpPlusPPTrajectoryEvalmex);
+          obj.breaks, obj.K, obj.A, obj.alpha, gamma_reshaped),@ExpPlusPPTrajectoryEvalmex);
     end
   end
   
   methods (Static)
-    function obj = loadobj(obj)
-      gamma_reshaped = reshape(obj.gamma, ...
-          size(obj.gamma,1)*size(obj.gamma,2), size(obj.gamma,3));
-      obj.mex_ptr = SharedDataHandle(ExpPlusPPTrajectoryEvalmex(...
-          obj.breaks, obj.K, obj.A, obj.alpha, gamma_reshaped));%,@ExpPlusPPTrajectoryEvalmex);
+    function obj = loadobj(a)
+      obj = ExpPlusPPTrajectory(a.breaks,a.K,a.A,a.alpha,a.gamma);
     end
   end
   
