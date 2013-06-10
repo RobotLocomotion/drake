@@ -7,20 +7,22 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
       sizecheck(dim,1);
       typecheck(prefix,'char');
       sizecheck(prefix,1);
-      typecheck(lcmcoder,'LCMCoder');
       
       obj = obj@CoordinateFrame(name,dim,prefix);
-      if isempty(obj.lcmcoder) % otherwise I already had the singleton object
-        % todo: add error checking here
-        obj.lcmcoder = lcmcoder;
-        obj.channel = name;
-        
-        msg = obj.lcmcoder.encode(0,zeros(obj.dim,1));
-        obj.monitor = drake.util.MessageMonitor(msg,obj.lcmcoder.timestampName());
-        obj.lc = lcm.lcm.LCM.getSingleton();
+      if (nargin>3)
+        obj = setLCMCoder(obj,lcmcoder);
       end
+      obj.channel = name;
     end
   
+    function obj = setLCMCoder(obj,lcmcoder)
+      typecheck(lcmcoder,'LCMCoder');
+      obj.lcmcoder = lcmcoder;
+      msg = obj.lcmcoder.encode(0,zeros(obj.dim,1));
+      obj.monitor = drake.util.MessageMonitor(msg,obj.lcmcoder.timestampName());
+      obj.lc = lcm.lcm.LCM.getSingleton();
+    end
+    
     function obj = subscribe(obj,channel)
       obj.lc.subscribe(channel,obj.monitor);
     end
@@ -102,7 +104,7 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
   
   properties
     lc;
-    lcmcoder;
+    lcmcoder=[];
     monitor;
     channel;
   end
