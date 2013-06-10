@@ -7,7 +7,7 @@ MEX = $(MATLABROOT)/bin/mex
 MEXEXT = $(shell $(MATLABROOT)/bin/mexext)    
 MATLABBIN = $(MATLABROOT)/bin/$(strip $(shell cat ../.matlabcpu))
 
-MEX_CPP_FILES = realtime.cpp
+MEX_CPP_FILES = realtime.cpp fastQPmex.cpp
 MEXFILES = $(MEX_CPP_FILES:%.cpp=%.$(MEXEXT))
 
 SUBDIRS = test
@@ -31,6 +31,9 @@ debug: all
 
 $(MEXFILES): %.$(MEXEXT) : %.cpp
 	$(MEX) -O $^ $(CFLAGS)
+
+fastQPmex.$(MEXEXT) : fastQPmex.cpp
+	$(MEX) -g $^ $(CFLAGS) $(shell pkg-config --cflags eigen3)
 
 debugMex: debugMex.cpp
 	$(CXX) -o debugMex debugMex.cpp -I$(MATLABROOT)/extern/include -L$(MATLABBIN) -lmat -lmx -Wl,-rpath,$(MATLABBIN)
