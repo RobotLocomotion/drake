@@ -14,8 +14,8 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
     end
   end
   methods (Static)
-    function obj = loadobj(obj)
-      obj.javapp = drake.systems.trajectories.JavaPP(obj.pp.breaks, obj.pp.coefs, obj.pp.order, obj.pp.dim);
+    function obj = loadobj(a)
+      obj = PPTrajectory(a.pp);
     end
   end
   
