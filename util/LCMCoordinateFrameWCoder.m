@@ -10,12 +10,15 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
       typecheck(lcmcoder,'LCMCoder');
       
       obj = obj@CoordinateFrame(name,dim,prefix);
-      obj.lcmcoder = lcmcoder;
-      obj.channel = name;
-
-      msg = obj.lcmcoder.encode(0,zeros(obj.dim,1));
-      obj.monitor = drake.util.MessageMonitor(msg,obj.lcmcoder.timestampName());
-      obj.lc = lcm.lcm.LCM.getSingleton();
+      if isempty(obj.lcmcoder) % otherwise I already had the singleton object
+        % todo: add error checking here
+        obj.lcmcoder = lcmcoder;
+        obj.channel = name;
+        
+        msg = obj.lcmcoder.encode(0,zeros(obj.dim,1));
+        obj.monitor = drake.util.MessageMonitor(msg,obj.lcmcoder.timestampName());
+        obj.lc = lcm.lcm.LCM.getSingleton();
+      end
     end
   
     function obj = subscribe(obj,channel)
@@ -68,6 +71,10 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
 
     function channel = defaultChannel(obj)
       channel = obj.channel;
+    end
+    
+    function markAsRead(obj)
+      obj.monitor.markAsRead();
     end
 
     function setupLCMInputs(obj,mdl,subsys,subsys_portnum)
