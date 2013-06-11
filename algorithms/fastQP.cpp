@@ -1,12 +1,10 @@
-#include <vector>
 #include <math.h>
-#include <set>
-#include <Eigen/Dense>
 #include <iostream>
 #include <Eigen/Cholesky>
 #include <Eigen/LU>
 #include <Eigen/SVD>
-#include <mex.h>
+
+#include "fastQP.h"
 
 #define _USE_MATH_DEFINES
 
@@ -17,7 +15,7 @@
 using namespace Eigen;
 using namespace std;
 
-int fastQP(vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const Map<MatrixXd> Aeq, const Map<VectorXd> beq, const Map<MatrixXd> Ain, const Map<VectorXd> bin, set<int>& active, Map<VectorXd>& x) {
+int fastQP(std::vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const Map<MatrixXd> Aeq, const Map<VectorXd> beq, const Map<MatrixXd> Ain, const Map<VectorXd> bin, std::set<int>& active, Map<VectorXd>& x) {
 
   int i,d;
   int fail = 0;
@@ -27,11 +25,11 @@ int fastQP(vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const Map<Ma
   int M = Aeq.rows();
   int N = Aeq.cols();
   
-  if (f.rows() != N) mexErrMsgTxt("size of f doesn't match cols of Aeq");
-  if (beq.rows() !=M) mexErrMsgTxt("size of beq doesn't match rows of Aeq");
-  if (Ain.cols() !=N) mexErrMsgTxt("cols of Ain doesn't match cols of Aeq");
-  if (bin.rows() != Ain.rows()) mexErrMsgTxt("bin rows doesn't match Ain rows");
-  if (x.rows() != N) mexErrMsgTxt("x doesn't match Aeq");
+  if (f.rows() != N) { cerr << "size of f doesn't match cols of Aeq" << endl; return 2; }
+  if (beq.rows() !=M) { cerr << "size of beq doesn't match rows of Aeq" << endl; return 2; }
+  if (Ain.cols() !=N) { cerr << "cols of Ain doesn't match cols of Aeq" << endl; return 2; };
+  if (bin.rows() != Ain.rows()) { cerr << "bin rows doesn't match Ain rows" << endl; return 2; };
+  if (x.rows() != N) { cerr << "x doesn't match Aeq" << endl; return 2; }
 
   int n_active = active.size();
   MatrixXd Aact = MatrixXd(n_active, N);
@@ -67,7 +65,8 @@ int fastQP(vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const Map<Ma
       startrow=startrow+d;
   	}
   	if (startrow>N) {
-  		mexErrMsgTxt("Q is too big!");
+  		cerr << "Q is too big!" << endl;
+  		return 2;
   	}
   }
 
@@ -83,9 +82,10 @@ int fastQP(vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const Map<Ma
     Aact.resize(n_active,N);
     bact.resize(n_active);
 
+    i=0;
     for (set<int>::iterator iter=active.begin(); iter!=active.end(); iter++) {
       Aact.row(i) = Ain.row(*iter);
-      bact(i) = bin(*iter);
+      bact(i++) = bin(*iter);
     }
 
     A.resize(Aeq.rows() + Aact.rows(),N);
@@ -104,9 +104,9 @@ int fastQP(vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const Map<Ma
 					int numCol = iterQinv->cols();
 
 					if (numCol == 1) {  // it's a vector
-						QinvAt.block(startrow,0,d,M) << QinvAteq.block(startrow,0,d,M), ((*iterQinv).asDiagonal())*Aact.block(0,startrow,n_active,d).transpose();
+						QinvAt.block(startrow,0,d,M+n_active) << QinvAteq.block(startrow,0,d,M), ((*iterQinv).asDiagonal())*Aact.block(0,startrow,n_active,d).transpose();
 					} else { // it's a matrix
-						QinvAt.block(startrow,0,d,M) << QinvAteq.block(startrow,0,d,M), (*iterQinv)*Aact.block(0,startrow,n_active,d).transpose();
+						QinvAt.block(startrow,0,d,M+n_active) << QinvAteq.block(startrow,0,d,M), (*iterQinv)*Aact.block(0,startrow,n_active,d).transpose();
 					}
 				}
       } else {
@@ -151,9 +151,13 @@ int fastQP(vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const Map<Ma
     }
 
     i=0;
-    for (set<int>::iterator iter=active.begin(); iter!=active.end(); iter++)
-    	if (lamIneq(i++)>=-1e-6)
-    		active.erase(*iter);
+    set<int>::iterator iter=active.begin(), tmp;
+    while (iter!=active.end()) { // to accomodating inloop erase
+  		tmp = iter++;
+    	if (lamIneq(i++)>=-1e-6) {
+    		active.erase(tmp);
+    	}
+    }
     active.insert(new_active.begin(),new_active.end());
 
     iterCnt++;
@@ -167,47 +171,5 @@ int fastQP(vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const Map<Ma
     }
   }  
   return fail;
-}
-
-
-void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
-  
-  if (nrhs < 4) {
-    mexErrMsgIdAndTxt("Drake:fastQP:NotEnoughInputs", "Usage [x,info,active] = fastQP(Q,f,Aeq,beq,Ain,bin,active)");
-  }
-  if (nlhs<1) return;
-
-  int arg=0;
-  
-  mxArray* QblkDiagCellArray = (mxArray *) prhs[arg++];
-  vector<Map<MatrixXd> > QblkMat;
-  for (int i=0; i< mxGetNumberOfElements(QblkDiagCellArray);i++) {
-  	mxArray* Qblk = mxGetCell(QblkDiagCellArray,i);
-  	QblkMat.push_back(Map<MatrixXd>(mxGetPr(Qblk), mxGetM(Qblk), mxGetN(Qblk)));
-  }
-
-  Map<VectorXd> f(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg])); arg++;
-  Map<MatrixXd> Aeq(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg])); arg++;
-  Map<VectorXd> beq(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg])); arg++;
-  Map<MatrixXd> Ain(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg])); arg++;
-  Map<VectorXd> bin(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg])); arg++;
-
-  set<int> active;
-  double* pact = mxGetPr(prhs[arg]);
-  for (int i=0; i<mxGetNumberOfElements(prhs[arg]); i++)
-  		active.insert((int)pact[i]);
-
-  plhs[0] = mxCreateDoubleMatrix(f.rows(), 1, mxREAL);
-  Map<VectorXd> x(mxGetPr(plhs[0]),f.rows());
-
-  int info = fastQP(QblkMat,f,Aeq,beq,Ain,bin,active,x);
-
-  if (nlhs>1) plhs[1] = mxCreateDoubleScalar((double)info);
-  if (nlhs>2) {
-  	plhs[2] = mxCreateDoubleMatrix(active.size(),1,mxREAL); pact = mxGetPr(plhs[2]);
-  	int i=0;
-  	for (set<int>::iterator iter = active.begin(); iter!=active.end(); iter++)
-  		pact[i++] = (double) *iter;
-  }
 }
 
