@@ -12,6 +12,7 @@ MEXFILES = $(MEX_CPP_FILES:%.cpp=%.$(MEXEXT))
 
 SUBDIRS = test
 
+all: MEX += -O
 all : $(MEXFILES) debugMex
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
@@ -21,7 +22,7 @@ all : $(MEXFILES) debugMex
 	done
 
 debug: MEX += -g
-debug: all 
+debug: $(MEXFILES) debugMex
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
 		echo "-- $$subdir"; \
@@ -30,10 +31,10 @@ debug: all
 	done
 
 $(MEXFILES): %.$(MEXEXT) : %.cpp
-	$(MEX) -O $^ $(CFLAGS)
+	$(MEX) $^ $(CFLAGS)
 
 fastQPmex.$(MEXEXT) : fastQPmex.cpp
-	$(MEX) -g $^ $(CFLAGS) $(shell pkg-config --cflags eigen3)
+	$(MEX) $^ $(CFLAGS) $(shell pkg-config --cflags eigen3)
 
 debugMex: debugMex.cpp
 	$(CXX) -o debugMex debugMex.cpp -I$(MATLABROOT)/extern/include -L$(MATLABBIN) -lmat -lmx -Wl,-rpath,$(MATLABBIN)
