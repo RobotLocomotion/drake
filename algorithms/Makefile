@@ -39,7 +39,7 @@ fastQPmex.$(MEXEXT) : fastQPmex.cpp fastQP.o
 	$(MEX) $^ $(CFLAGS) $(shell pkg-config --cflags eigen3)
 
 fastQP.o :fastQP.cpp fastQP.h
-	$(CXX) -c $< $(shell pkg-config --cflags eigen3)
+	$(CXX) -c $< $(shell pkg-config --cflags eigen3) -fPIC
 
 clean:
 	-rm -f *.$(MEXEXT)
