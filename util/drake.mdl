@@ -16,9 +16,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "russt"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Fri Jan 11 22:36:31 2013"
-  RTWModifiedTimeStamp	  279844585
-  ModelVersionFormat	  "1.%<AutoIncrement:22>"
+  LastModifiedDate	  "Wed Jun 12 01:26:47 2013"
+  RTWModifiedTimeStamp	  292900869
+  ModelVersionFormat	  "1.%<AutoIncrement:25>"
   ConfigurationManager	  "None"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -618,7 +618,7 @@ Library {
   }
   System {
     Name		    "drake"
-    Location		    [449, 322, 1029, 582]
+    Location		    [450, 367, 1030, 627]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -736,22 +736,23 @@ Library {
       Ports		      []
       Position		      [35, 25, 95, 55]
       FunctionName	      "realtime"
-      Parameters	      "sample_time"
+      Parameters	      "sample_time,speed"
       EnableBusSupport	      off
-      MaskPromptString	      "Sample Time"
-      MaskStyleString	      "edit"
-      MaskVariables	      "sample_time=@1;"
-      MaskTunableValueString  "on"
-      MaskEnableString	      "on"
-      MaskVisibilityString    "on"
-      MaskToolTipString	      "on"
+      MaskPromptString	      "Sample Time|Realtime Factor"
+      MaskStyleString	      "edit,edit"
+      MaskVariables	      "sample_time=@1;speed=@2;"
+      MaskTunableValueString  "on,on"
+      MaskCallbackString      "|"
+      MaskEnableString	      "on,on"
+      MaskVisibilityString    "on,on"
+      MaskToolTipString	      "on,on"
       MaskDisplay	      "fprintf('Realtime')"
       MaskIconFrame	      on
       MaskIconOpaque	      on
       MaskIconRotate	      "none"
       MaskPortRotate	      "default"
       MaskIconUnits	      "autoscale"
-      MaskValueString	      ".01"
+      MaskValueString	      ".01|1"
     }
   }
 }
