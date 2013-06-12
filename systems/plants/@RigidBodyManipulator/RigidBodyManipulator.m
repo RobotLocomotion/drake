@@ -486,6 +486,10 @@ classdef RigidBodyManipulator < Manipulator
       ind = findLinkInd(model,linkname,varargin{:});
       body = model.body(ind);
     end
+    
+    function body = getLink(model,body_ind)
+      body = model.body(body_ind);
+    end
         
     function body = findJoint(model,jointname,robot)
       % @param robot can be the robot number or the name of a robot
