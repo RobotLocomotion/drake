@@ -85,7 +85,7 @@ classdef RigidBodyWRLVisualizer < Visualizer
       if (nargin<4) minrange = jlmin(state_dims); end
       if (nargin<5) maxrange = jlmax(state_dims); end
       
-      inspector@Visualizer(obj,state_dims,minrange,maxrange);
+      inspector@Visualizer(obj,x0,state_dims,minrange,maxrange);
     end
     
     function playbackAVI(obj,xtraj,filename)
