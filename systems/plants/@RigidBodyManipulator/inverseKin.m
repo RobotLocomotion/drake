@@ -324,6 +324,11 @@ while i<=length(varargin)
     minpos(isnan(minpos))=-inf;
     maxpos(isnan(maxpos))=inf;
 
+    if(all(all(isinf(minpos)))&&all(all(isinf(maxpos))))
+        poscon_type(n) = -1; % No constraint on the worldpos
+      else
+        poscon_type(n) = 0*(rows==3)+(rows==6)+2*(rows==7);
+    end
     body_pos{n} = bodyposi;
       if(poscon_type(n) == 0 ||poscon_type(n) == 1)
       Fmin=[Fmin;minpos(:)];
