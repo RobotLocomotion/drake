@@ -194,6 +194,9 @@ classdef Visualizer < DrakeSystem
       if (nargin<3) state_dims = 1:fr.dim; end
       if (nargin<4) minrange = repmat(-5,size(state_dims)); end
       if (nargin<5) maxrange = -minrange; end
+      
+      x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
+      
       obj.drawWrapper(0,x0);
       
       rows = ceil(length(state_dims)/2);
@@ -205,7 +208,7 @@ classdef Visualizer < DrakeSystem
         label{i} = uicontrol('Style','text','String',getCoordinateName(fr,state_dims(i)), ...
           'Position',[10+280*(i>rows), y+30*rows*(i>rows), 90, 20],'BackgroundColor',[.8 .8 .8]);
         slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
-          'Value', 0, 'Position', [100+280*(i>rows), y+30*rows*(i>rows), 170, 20],...
+          'Value', x0(i), 'Position', [100+280*(i>rows), y+30*rows*(i>rows), 170, 20],...
           'Callback',{@update_display});
 
         % use a little undocumented matlab to get continuous slider feedback:
@@ -214,7 +217,7 @@ classdef Visualizer < DrakeSystem
       end
       
       function update_display(source, eventdata)
-        t = 0; x = zeros(fr.dim,1);
+        t = 0; x = x0;
         for i=state_dims
           x(state_dims(i)) = get(slider{i}, 'Value');
         end
