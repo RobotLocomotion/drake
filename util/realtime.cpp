@@ -142,14 +142,16 @@ timespec *remaining_delay)
 #define MDL_INITIAL_SIZES
 static void mdlInitializeSizes(SimStruct *S)
 {
-  ssSetNumSFcnParams(S, 1);
+  ssSetNumSFcnParams(S, 2);
   ssSetNumContStates(S, 0);
   ssSetNumDiscStates(S, 0);
   ssSetNumInputPorts(S, 0);
   ssSetNumOutputPorts(S, 0);
   
   ssSetNumSampleTimes(S, 1);
-  ssSetNumPWork(S, 1);
+  ssSetNumDWork(S, 1);  // wall t0
+  ssSetDWorkWidth(S, 0, 1);
+  ssSetDWorkDataType(S, 0, SS_DOUBLE);
 }
 
 #define MDL_INITIALIZE_SAMPLE_TIMES
@@ -158,64 +160,67 @@ static void mdlInitializeSampleTimes(SimStruct *S)
   ssSetSampleTime(S, 0, mxGetScalar(ssGetSFcnParam(S, 0)));
 }
 
+#define MDL_CHECK_PARAMETERS
+#if defined(MDL_CHECK_PARAMETERS) && defined(MATLAB_MEX_FILE)
+static void mdlCheckParameters(SimStruct *S)
+{
+	// todo: verify dialog parameters here
+}
+#endif /* MDL_CHECK_PARAMETERS */
+
+double timevalToDouble(struct timeval tv)
+{
+	double t;
+	// set the struct values
+  if ( tv.tv_sec < 0 )
+     t = (double)tv.tv_sec - (double)tv.tv_usec / 1000000.0;
+  else
+     t = (double)tv.tv_sec + (double)tv.tv_usec / 1000000.0;
+  return t;
+}
+
+struct timeval doubleToTimeval(double t)
+{
+  // create the struct timeval
+	struct timeval tv;
+	tv.tv_sec = (time_t) t;
+	tv.tv_usec = (suseconds_t)((t - tv.tv_sec ) * 1000000.0 );
+
+	// return the timeval struct
+	return( tv );
+}
+
 #define MDL_START
 static void mdlStart(SimStruct *S)
 {
-  struct timeval* p = new struct timeval;
-  ssGetPWork(S)[0] = p;
-  gettimeofday(p, NULL);
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  double *wall_t0 = (double*) ssGetDWork(S,0);
+  *wall_t0 = timevalToDouble(tv);
 }
-
-/* Subtract the `struct timeval' values X and Y,
- * storing the result in RESULT.
- * Return 1 if the difference is negative, otherwise 0.
- * (from http://www.gnu.org/s/libc/manual/html_node/Elapsed-Time.html)
- */
-int timeval_subtract(struct timeval* result, struct timeval *x, struct timeval* y)
-{
-  /* Perform the carry for the later subtraction by updating y. */
-  if (x->tv_usec < y->tv_usec) {
-    int nsec = (y->tv_usec - x->tv_usec) / 1000000 + 1;
-    y->tv_usec -= 1000000 * nsec;
-    y->tv_sec += nsec;
-  }
-  if (x->tv_usec - y->tv_usec > 1000000) {
-    int nsec = (x->tv_usec - y->tv_usec) / 1000000;
-    y->tv_usec += 1000000 * nsec;
-    y->tv_sec -= nsec;
-  }
-  
-  /* Compute the time remaining to wait.
-   * tv_usec is certainly positive. */
-  result->tv_sec = x->tv_sec - y->tv_sec;
-  result->tv_usec = x->tv_usec - y->tv_usec;
-  
-  /* Return 1 if result is negative. */
-  return x->tv_sec < y->tv_sec;
-}
-
 
 #define MDL_UPDATE
 static void mdlUpdate(SimStruct *S, int_T tid)
 {
-  struct timeval tv, tv_elapsed_time, tv_sim_time, tv_diff;
-  
-  // get elapsed time
+  struct timeval tv,tv_diff;
   gettimeofday(&tv, NULL);
-  timeval_subtract(&tv_elapsed_time, &tv, (struct timeval*)ssGetPWork(S)[0]);
-  
-  // get simulation time
-  time_T simtime = ssGetT(S);
-  tv_sim_time.tv_sec = (long)simtime;
-  tv_sim_time.tv_usec = (simtime - tv_sim_time.tv_sec)*1000000;
-  
-  if (!timeval_subtract(&tv_diff, &tv_sim_time, &tv_elapsed_time)) {
+  double wall_t = timevalToDouble(tv),
+  			*wall_t0 = (double*) ssGetDWork(S,0),
+  			simtime = ssGetT(S),
+  			realtime_factor = mxGetScalar(ssGetSFcnParam(S, 1));
+
+  double t_diff = (wall_t - *wall_t0)*realtime_factor - simtime;
+  tv_diff = doubleToTimeval(-t_diff);
+//  mexPrintf("wall time: %f, sim time: %f, (scaled) diff: %f\n", wall_t-*wall_t0, simtime, t_diff);
+
+  if (t_diff<0.0) {
     timespec tosleep;
     tosleep.tv_sec = tv_diff.tv_sec;
     tosleep.tv_nsec = tv_diff.tv_usec * 1000;
+//    mexPrintf("sleeping...  %d sec, %d nsec\n", tosleep.tv_sec, tosleep.tv_nsec);
     nanosleep(&tosleep, NULL);
-  } else if (tv_diff.tv_sec<-1) {  // then I'm behind by more than 1 second
-    mexPrintf("at time %d, I'm behind by %d sec, %d usec\n", tv_sim_time.tv_sec, tv_diff.tv_sec, tv_diff.tv_usec);
+  } else if (t_diff>1.0) {  // then I'm behind by more than 1 second
+    mexPrintf("at time %f, I'm behind by %f sec\n", simtime, t_diff);
     ssSetErrorStatus(S, "Simulink is not keeping up with real time.  Consider reducing demands on your ODE solver, or optimizing your code.");
   }
 }
@@ -227,8 +232,6 @@ static void mdlOutputs(SimStruct *S, int_T tid) {}
 
 static void mdlTerminate(SimStruct *S) 
 {
-  struct timeval *p = (struct timeval*) ssGetPWork(S)[0];
-  delete p;
 }
 
 #ifdef MATLAB_MEX_FILE    /* Is this file being compiled as a 

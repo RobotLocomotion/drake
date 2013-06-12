@@ -7,7 +7,8 @@ function runLCM(obj,x0,options)
 %  @option tspan a 1x2 vector defining the start and end time of the simulation.  default [0,inf]
 %  @option timekeeper the full name (system/block) of a simulink block that maintains the simulation
 %  time (e.g. by sleeping).  set to '' to have no timekeeper.  @default 'drake/realtime'
-
+%  @option realtime_factor @default 1  (only guaranteed to work for
+%  drake/realtime timekeeper)
 
 if (nargin<2) x0=[]; end
 if (nargin<3) options = struct(); end
@@ -82,7 +83,11 @@ else % otherwise set up the LCM blocks and run simulink.
 
   % add realtime block
   if ~isempty(options.timekeeper) 
-    add_block(options.timekeeper,[mdl,'/timekeeper']);
+    if isfield(options,'realtime_factor')
+      add_block(options.timekeeper,[mdl,'/timekeeper'],'speed',num2str(options.realtime_factor));
+    else
+      add_block(options.timekeeper,[mdl,'/timekeeper']);
+    end
   end
   
   pstruct = obj.simulink_params;
