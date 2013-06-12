@@ -64,16 +64,21 @@ classdef RigidBody < handle
       error('forwardKin(body,...) has been replaced by forwardKin(model,body_num,...), because it has a mex version.  please update your kinematics calls');
     end
     
-    function pts = getContactPoints(body,collision_group)
+    function [pts,inds] = getContactPoints(body,collision_group)
       % @param collision_group (optional) return only the points in that
       % group.  can be an integer index or a string.
       if (nargin<2) 
         pts = body.contact_pts;
+        inds = 1:length(body.contact_pts);
       else
         if isa(collision_group,'char')
-          collision_group = find(strcmpi(collision_group,body.collision_group_name));
+          collision_group_ind = find(strcmpi(collision_group,body.collision_group_name));
+          if isempty(collision_group_ind)
+            error(['cannot find collision group ',collision_group]);
+          end
         end
-        pts = body.contact_pts(:,body.collision_group{collision_group});
+        inds = body.collision_group{collision_group_ind};
+        pts = body.contact_pts(:,inds);
       end
     end
 

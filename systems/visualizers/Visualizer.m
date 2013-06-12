@@ -185,23 +185,27 @@ classdef Visualizer < DrakeSystem
       end
     end
     
-    function inspector(obj)
+    function inspector(obj,x0,state_dims,minrange,maxrange)
       % set up a little gui with sliders to manually adjust each of the
       % coordinates.
-      
-      fr = obj.getInputFrame();
-      obj.drawWrapper(0,zeros(fr.dim,1));
-      
-      f = sfigure(99); clf;
-      set(f, 'Position', [560 400 560 20 + 30*ceil(fr.dim/2)]);
 
+      fr = obj.getInputFrame();
+      if (nargin<2) x0 = zeros(fr.dim,1); end
+      if (nargin<3) state_dims = 1:fr.dim; end
+      if (nargin<4) minrange = repmat(-5,size(state_dims)); end
+      if (nargin<5) maxrange = -minrange; end
+      obj.drawWrapper(0,x0);
       
-      y=30*ceil(fr.dim/2)-10;
-      for i=1:fr.dim
-        label{i} = uicontrol('Style','text','String',getCoordinateName(fr,i), ...
-          'Position',[10+280*(i>fr.dim/2), y+30*ceil(fr.dim/2)*(i>fr.dim/2), 90, 20],'BackgroundColor',[.8 .8 .8]);
-        slider{i} = uicontrol('Style', 'slider', 'Min', -5, 'Max', 5, ...
-          'Value', 0, 'Position', [100+280*(i>fr.dim/2), y+30*ceil(fr.dim/2)*(i>fr.dim/2), 170, 20],...
+      rows = ceil(length(state_dims)/2);
+      f = sfigure(99); clf;
+      set(f, 'Position', [560 400 560 20 + 30*rows]);
+
+      y=30*rows-10;
+      for i=state_dims
+        label{i} = uicontrol('Style','text','String',getCoordinateName(fr,state_dims(i)), ...
+          'Position',[10+280*(i>rows), y+30*rows*(i>rows), 90, 20],'BackgroundColor',[.8 .8 .8]);
+        slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
+          'Value', 0, 'Position', [100+280*(i>rows), y+30*rows*(i>rows), 170, 20],...
           'Callback',{@update_display});
 
         % use a little undocumented matlab to get continuous slider feedback:
@@ -211,9 +215,10 @@ classdef Visualizer < DrakeSystem
       
       function update_display(source, eventdata)
         t = 0; x = zeros(fr.dim,1);
-        for i=1:fr.dim
-          x(i) = get(slider{i}, 'Value');
+        for i=state_dims
+          x(state_dims(i)) = get(slider{i}, 'Value');
         end
+        x
         obj.drawWrapper(t,x);
       end      
     end
