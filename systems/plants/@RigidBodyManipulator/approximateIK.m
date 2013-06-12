@@ -181,8 +181,18 @@ model.obj = f;
 model.A = [Aeq; Ain];
 model.rhs = [beq; bin];
 model.sense = [repmat('=',length(beq),1);repmat('<',length(bin),1)]; % using repmat is inefficient 
-model.lb = obj.joint_limit_min;
-model.ub = obj.joint_limit_max;
+
+if isfield(options,'jointLimitMin')
+  model.lb = options.jointLimitMin;
+else
+  model.lb = obj.joint_limit_min;
+end
+
+if isfield(options,'jointLimitMax')
+  model.ub = options.jointLimitMax;
+else
+  model.ub = obj.joint_limit_max;
+end
 
 params.outputflag = 0; % not verbose
 params.method = 2; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
