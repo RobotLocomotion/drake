@@ -55,6 +55,6 @@ if (strcmp(disp, ''))
     warning('You do not appear to have a valid DISPLAY, so I am not going to attempt to show the image.')
 else
     image(imread([dotfile,'.png']));
+    axis image; axis off
 end
-
 
