@@ -235,6 +235,17 @@ classdef Trajectory < DrakeSystem
       error('not implemented yet.  use subsref?');
     end
     
+    function traj = trim(obj,newtspan)
+      sizecheck(newtspan,[1 2]);
+      assert(newtspan(1)>=obj.tspan(1));
+      assert(newtspan(2)<=obj.tspan(2));
+      breaks = getBreaks(obj);
+      breaks(breaks<newtspan(1))=[];
+      breaks(breaks>newtspan(2))=[];
+      breaks = unique([newtspan(1),breaks,newtspan(2)]);
+      traj = FunctionHandleTrajectory(@(t) eval(obj,t), obj.dim, breaks);
+    end
+    
     function tf = valuecheck(traj,desired_traj,tol,belementwise)
       if (nargin<3) tol=[]; end % use the default in valuecheck
       if (nargin<4) belementwise = true; end
