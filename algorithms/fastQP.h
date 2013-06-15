@@ -3,7 +3,7 @@
 #define __FAST_QP__
 #include <Eigen/Dense>
 #include <vector>
-
+#include <set>
 
 // todo: template this
 template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
