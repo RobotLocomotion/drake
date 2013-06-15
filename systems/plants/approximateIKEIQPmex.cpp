@@ -11,6 +11,8 @@
 #include <Eigen/LU>
 #include <Eigen/SVD>
 
+#include "fastQP.h"
+
 #define USE_EIQUADPROG_BACKUP 1
 
 #if USE_EIQUADPROG_BACKUP
@@ -20,157 +22,8 @@
 #define _USE_MATH_DEFINES
 
 #define MAX_CONSTRS 1000
-#define MAX_STATE   1000
 #define MAX_ITER    20
 using namespace std;
-
-int fastQP(const VectorXd Qdiag, const VectorXd f, const MatrixXd Aeq, const VectorXd beq, const MatrixXd Ain, const VectorXd bin, VectorXd* active, VectorXd* x) {
-  int fail = 0;
-  int iterCnt = 0;
-  
-  int M_in = bin.size();
-  int M = Aeq.rows();
-  int N = Aeq.cols();
-  int n_active = (*active).size();
-  
-  MatrixXd Aact = MatrixXd(n_active, N);
-  VectorXd bact = VectorXd(n_active);
-  
-            
-  int i;
-  
-  for (i=0; i<n_active; i++) {
-    Aact.row(i) = Ain.row((*active)(i));
-    bact(i) = bin((*active)(i));
-  }
- 
-  // calculate a bunch of stuff that is constant during each iteration
-  VectorXd Qdiag_mod = Qdiag + VectorXd::Constant(N,1e-8);
-    
-  VectorXd QinvDiag = Qdiag_mod.cwiseInverse();
-    
-  MatrixXd QinvAteq = QinvDiag.asDiagonal()*Aeq.transpose(); 
-  VectorXd minusQinvf = -QinvDiag.cwiseProduct(f);
-  
-  MatrixXd A;
-  VectorXd b;
-  MatrixXd QinvAt;
-  VectorXd lam, lamIneq;
-  VectorXd violated(M_in);
-  VectorXd violation;
-  
-//       cout << "nactive" << n_active << endl;
-//   return 0;
-  
-  while(1) {
-    A.resize(Aeq.rows() + Aact.rows(),N);
-    b.resize(beq.size() + bact.size());
-    A << Aeq,Aact;
-    b << beq,bact;
-    
-//     cout << "dbg: " << A << endl;
-//     cout << "dbg: " << b << endl;
-    
-    if (A.rows() > 0) {
-      //Solve H * [x;lam] = [-f;b] using Schur complements
-      QinvAt.resize(QinvAteq.rows(), QinvAteq.cols() + Aact.rows());
-      QinvAt << QinvAteq, QinvDiag.asDiagonal()*Aact.transpose();
-      
-//     cout << "dbg: " << f.transpose()*QinvAt << endl;
-//         cout << "dbg: " << A*QinvAt << endl;
-//         cout << "dbg: " << b + f.transpose()*QinvAt << endl;
-      
-      lam.resize(QinvAt.cols());
-      lam = -(A*QinvAt).ldlt().solve(b + (f.transpose()*QinvAt).transpose());
-//     cout << "dbgl: " << lam << endl;
-      
-      *x = minusQinvf - QinvAt*lam;
-      lamIneq = lam.tail(lam.size() - M);
-    } else {
-      *x = minusQinvf;
-      lamIneq.resize(0);
-    }
-    
-//     cout << "dbg: " << *x << endl;
-//     return 0;
-    
-    
-    if(Ain.rows() == 0) {
-      (*active).resize(0);
-      break;
-    }
-//     cout << "dbg: " << A << endl;
-    
-    
-    violation = Ain*(*x) - bin;
-    
-//     cout << "violation: " << violation << endl;
-    
-    violated.conservativeResize(M_in);
-    int violCount = 0;
-    for(i=0; i < M_in; i++) {
-      if (violation(i) >= 1e-6) {
-        violated(violCount) = i;
-        violCount++;
-      }
-    }
-    
-//     cout << "lamIneq: " << lamIneq << endl;
-    if (violCount == 0 && lamIneq.all()) {
-      break;
-    }    
-    violated.conservativeResize(violCount);
-//     cout << "violated: " << violated << endl;
-    int prevActiveCount = (*active).size();
-//     cout << "prevActive: " << *active << endl;
-    (*active).conservativeResize(M_in);
-    
-    int newActiveCount = 0;
-    
-    
-    
-    for (i=0; i < prevActiveCount; i++) {
-     if (lamIneq(i) < 0 ) {
-      if(violCount > 0) {
-        violCount--;
-        (*active)(newActiveCount) = violated(violCount);
-        newActiveCount++;
-      }
-     } else {
-      newActiveCount++; 
-     }
-    }
-    
-    while(violCount > 0) {
-      violCount--;
-      (*active)(newActiveCount) = violated(violCount);
-      newActiveCount++;
-    }
-    
-    (*active).conservativeResize(newActiveCount);
-    
-//     cout << "newActive: " << *active << endl;
-    
-    n_active = newActiveCount;
-    Aact.resize(n_active,N);
-    bact.resize(n_active);
-    
-    for (i=0; i<n_active; i++) {
-      Aact.row(i) = Ain.row((*active)(i));
-      bact(i) = bin((*active)(i));
-    }
-    iterCnt++;
-
-    if (iterCnt > MAX_ITER) {
-      //Default to calling this method
-      cout << "FastQP max iter reached." << endl;
-//       mexErrMsgIdAndTxt("Drake:approximateIKmex:Error", "Max iter reached. Problem is likely infeasible");
-      fail = 1;
-      return fail;
-    }
-  }  
-  return fail;
-}
 
 
 void angleDiff(VectorXd phi1, VectorXd phi2, VectorXd* d) {
@@ -221,22 +74,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   memcpy(&model, mxGetData(prhs[0]), sizeof(model));
   int i, j, error, nq = model->num_dof;
   
-  //Constraint preallocation
-  static double Aeqdata[MAX_CONSTRS*MAX_STATE];
-  static double Aindata[MAX_CONSTRS*MAX_STATE];
-  static double beqdata[MAX_CONSTRS];
-  static double bindata[MAX_CONSTRS];
   static RigidBodyManipulator* lastModel=NULL;
   static int lastNumJointLimits = 0;
   
   int equality_ind = 0;
   int inequality_ind = 0;
   
-  VectorXd beq = Map<VectorXd>(beqdata, MAX_CONSTRS);
-  VectorXd bin = Map<VectorXd>(bindata, MAX_CONSTRS);
-  //Matrices are actually transposed
-  MatrixXd Aeq = Map<MatrixXd>(Aeqdata, nq, MAX_CONSTRS);
-  MatrixXd Ain = Map<MatrixXd>(Aindata, nq, MAX_CONSTRS);
+  //Constraint preallocation
+  Matrix<double,-1,1,0,MAX_CONSTRS,1> beq(MAX_CONSTRS);
+  Matrix<double,-1,1,0,MAX_CONSTRS,1> bin(MAX_CONSTRS);
+  Matrix<double,-1,-1,RowMajor,MAX_CONSTRS,-1> Aeq(MAX_CONSTRS,nq);
+  Matrix<double,-1,-1,RowMajor,MAX_CONSTRS,-1> Ain(MAX_CONSTRS,nq);
   
   //Add joint limits
   if (lastModel != model || true) {
@@ -244,8 +92,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     for (i=0;i<nq;i++) {
       if(!mxIsInf(model->joint_limit_max[i])) {
         bin(inequality_ind) = model->joint_limit_max[i];
-        Ain.col(inequality_ind) = VectorXd::Zero(nq);
-        Ain(i, inequality_ind) = 1;
+        Ain.row(inequality_ind) = MatrixXd::Zero(1,nq);
+        Ain(inequality_ind,i) = 1;
         
 //         cout << bin(inequality_ind) << endl << endl;
         inequality_ind++;
@@ -253,8 +101,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
       
       if(!mxIsInf(model->joint_limit_min[i])) {
         bin(inequality_ind) = -model->joint_limit_min[i];
-        Ain.col(inequality_ind) << VectorXd::Zero(nq);
-        Ain(i, inequality_ind) = -1;
+        Ain.row(inequality_ind) << MatrixXd::Zero(1,nq);
+        Ain(inequality_ind,i) = -1;
 //         cout << bin(inequality_ind) << endl << endl;
         inequality_ind++;
       }
@@ -266,8 +114,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   
   // cost:  (q-q_nom)'*Q*(q-q_nom)  \equiv q'*Q*q - 2*q_nom'*Q*q  (const term doesn't matter)
   Map<VectorXd> q_nom(mxGetPr(prhs[2]), nq);
-//   Map<MatrixXd> Q(mxGetPr(prhs[3]), nq, nq);
-  MatrixXd Q =  Map<MatrixXd>(mxGetPr(prhs[3]), nq, nq);
+  Map<MatrixXd> Q(mxGetPr(prhs[3]), nq, nq);
   VectorXd c = -Q*q_nom;
   
   double *q0 = mxGetPr(prhs[1]);
@@ -275,13 +122,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   
   VectorXd q0vec = Map<VectorXd>(q0, nq);
   
-  double zero_vec[3] = {0.0, 0.0, 0.0};
-  double zero_hvec[4] = {0.0, 0.0, 0.0, 1.0};
   i=4;
-  
   while (i<nrhs) {
-//     Map<MatrixXd>* body_pos = NULL;
-    MatrixXd body_pos;
+  	MatrixXd body_pos;
     Map<MatrixXd>* world_pos = NULL;
     int rows;
     int body_ind = mxGetScalar(prhs[i]) - 1;
@@ -290,7 +133,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     int n_pts;
     if (body_ind==-1) {
       int n_pts = mxGetN(prhs[i+1]);
-//       body_pos = new Map<MatrixXd>(zero_hvec,4,1);
       body_pos.resize(4, 1);
       body_pos << 0, 0, 0, 1;
       world_pos = new Map<MatrixXd>(mxGetPr(prhs[i+1]), 3, n_pts);
@@ -340,7 +182,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     MatrixXd J;
     if (body_ind == -1) {
       x = VectorXd::Zero(3, 1);
-      Vector3d x_com;// = Map<Vector3d>(x.data(),3);
+      Vector3d x_com;
       
       model->getCOM(x_com);
       model->getCOMJac(J);
@@ -373,7 +215,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
               mexErrMsgIdAndTxt("Drake:approximateIKMex:BadInputs", "RHS of a constraint evaluates to -inf");
             }
           } else {
-            Ain.col(inequality_ind) << J.row(j).transpose();
+            Ain.row(inequality_ind) << J.row(j);
             bin(inequality_ind) = rhs;
             inequality_ind++;
           }
@@ -393,7 +235,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
               mexErrMsgIdAndTxt("Drake:approximateIKMex:BadInputs", "RHS of a constraint evaluates to -inf");
             }
           } else {
-            Ain.col(inequality_ind) << J.row(j).transpose();
+            Ain.row(inequality_ind) << J.row(j);
             bin(inequality_ind) = rhs;
             inequality_ind++;
           }
@@ -406,39 +248,38 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         if (!mxIsNaN((*world_pos)(j))) {
           double rhs =  (*world_pos)(j) - x(j) + J.row(j)*q0vec;
           
-          Aeq.col(equality_ind) << J.row(j).transpose();
+          Aeq.row(equality_ind) << J.row(j);
           beq(equality_ind) = rhs;
           equality_ind++;
         }
       }
     }
+    delete world_pos;
+    if (min) mxDestroyArray(min);
+    if (max) mxDestroyArray(max);
   }
   
-  Aeq.conservativeResize(nq, equality_ind);
-  Ain.conservativeResize(nq, inequality_ind);
+  Aeq.conservativeResize(equality_ind, nq);
+  Ain.conservativeResize(inequality_ind, nq);
   beq.conservativeResize(equality_ind);
   bin.conservativeResize(inequality_ind);
   
-//   cout << Aeq << endl << endl;
-//   cout << beq << endl << endl;
-// 
-//   cout << Ain << endl << endl;
-//   cout << bin << endl << endl;
-//   
-//   cout << Q << endl << endl;
-//   
-//   cout << c << endl << endl;
+  cout << "c is " << c.rows() << endl;
+  cout << "Aeq is " << Aeq.rows() << " by " << Aeq.cols() << endl;
+
   VectorXd q = VectorXd::Zero(nq);
 //   double result = solve_quadprog(Q, c, -Aeq, beq, -Ain, bin, q);
   
-  VectorXd active = VectorXd::Zero(0);
-  double result = fastQP(Q.diagonal(), c, Aeq.transpose(), beq, Ain.transpose(), bin, &active, &q);  
+  VectorXd Qdiag = Q.diagonal();
+  vector< MatrixBase<VectorXd > > blkQ;  blkQ.push_back(Qdiag);
+  set<int> active;
+  double result = fastQP(blkQ, c, Aeq, beq, Ain, bin, active, q);
   
   //Enable the block below to use stephens' qp code
   #if USE_EIQUADPROG_BACKUP
   if(result == 1) {
     Q += 1e-8*MatrixXd::Identity(nq,nq);
-    result = solve_quadprog(Q, c, -Aeq, beq, -Ain, bin, q);
+    result = solve_quadprog(Q, c, -Aeq.transpose(), beq, -Ain.transpose(), bin, q);
     
     if (mxIsInf(result)) {
       result = 1;
@@ -448,8 +289,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
   #endif  
   
-//   cout << result << endl << endl;
-//   cout << q << endl << endl;
   plhs[0] = mxCreateDoubleMatrix(nq, 1, mxREAL);
   memcpy(mxGetPr(plhs[0]), q.data(), sizeof(double)*nq);
   

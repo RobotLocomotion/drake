@@ -69,11 +69,14 @@ debug: $(MEXFILES) urdf.o
 RigidBodyManipulator.o : RigidBodyManipulator.cpp RigidBodyManipulator.h RigidBody.h
 	$(CXX) $< -c $(CFLAGS) -fPIC
 
-%.$(MEXEXT) : %.cpp RigidBodyManipulator.o RigidBodyManipulator.h RigidBody.h
-	$(MEX) $< RigidBodyManipulator.o $(CFLAGS) $(LDFLAGS)
+%.$(MEXEXT) : %.cpp RigidBodyManipulator.o
+	$(MEX) $^ $(CFLAGS) $(LDFLAGS)
 
-approximateIKmex.$(MEXEXT) : approximateIKmex.cpp RigidBodyManipulator.o RigidBodyManipulator.h RigidBody.h
-	$(MEX) $< RigidBodyManipulator.o $(CFLAGS) $(LDFLAGS) $(GUROBI_FLAGS)
+approximateIKmex.$(MEXEXT) : approximateIKmex.cpp RigidBodyManipulator.o
+	$(MEX) $^ $(CFLAGS) $(LDFLAGS) $(GUROBI_FLAGS)
+
+approximateIKEIQPmex.$(MEXEXT) : approximateIKEIQPmex.cpp RigidBodyManipulator.o ../../algorithms/fastQP.o
+	$(MEX) $^ $(CFLAGS) $(LDFLAGS) -I../../algorithms
 
 urdf.o : urdf.cpp RigidBodyManipulator.o urdf.h
 	$(CXX) $< -c -fPIC -Itinyxml $(CFLAGS) $(BOTVIS_CFLAGS)
