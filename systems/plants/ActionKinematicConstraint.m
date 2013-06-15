@@ -153,10 +153,7 @@ classdef ActionKinematicConstraint
           rows = worldpos_size(1);
           cols = worldpos_size(2);
       else
-          worldpos_size = size(minpos);
-          rows = worldpos_size(1);
-          cols = worldpos_size(2);
-          %[rows,cols]=size(minpos);
+          [rows,cols]=size(minpos);
       end
       if (rows ~= 3 && rows ~= 6 && rows ~=7) error('worldpos must have 3 or 6 rows'); end
       if (obj.body_ind==0 && rows ~= 3) error('com pos must have only 3 rows (there is no orientation)'); end
@@ -220,10 +217,8 @@ classdef ActionKinematicConstraint
             contact_state = obj.contact_statef;
         elseif(obj.tspan(1)<t&&t<obj.tspan(end))
             contact_state = obj.contact_statei;
-        else
-          contact_state = [];
         end
-        if(~isempty(contact_state) && ~iscell(contact_state))
+        if(~iscell(contact_state))
             error('Contact state should be a cell. If there is only one affordance, then the contact state should be a cell with one entry');
         end
     end
