@@ -7,6 +7,7 @@
 #include <set>
 
 // todo: template this
-int fastQP(std::vector< Eigen::Map<Eigen::MatrixXd> > QblkDiag, const Eigen::Map<Eigen::VectorXd> f, const Eigen::Map<Eigen::MatrixXd> Aeq, const Eigen::Map<Eigen::VectorXd> beq, const Eigen::Map<Eigen::MatrixXd> Ain, const Eigen::Map<Eigen::VectorXd> bin, std::set<int>& active, Eigen::Map<Eigen::VectorXd>& x);
+template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
+int fastQP(std::vector< Eigen::MatrixBase<tA> > QblkDiag, const Eigen::MatrixBase<tB> f, const Eigen::MatrixBase<tC> Aeq, const Eigen::MatrixBase<tD> beq, const Eigen::MatrixBase<tE> Ain, const Eigen::MatrixBase<tF> bin, std::set<int>& active, Eigen::MatrixBase<tG>& x);
 
 #endif

@@ -15,8 +15,9 @@
 using namespace Eigen;
 using namespace std;
 
-int fastQP(std::vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const Map<MatrixXd> Aeq, const Map<VectorXd> beq, const Map<MatrixXd> Ain, const Map<VectorXd> bin, std::set<int>& active, Map<VectorXd>& x) {
-
+template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
+int fastQP(vector< MatrixBase<tA> > QblkDiag, const MatrixBase<tB> f, const MatrixBase<tC> Aeq, const MatrixBase<tD> beq, const MatrixBase<tE> Ain, const MatrixBase<tF> bin, set<int>& active, MatrixBase<tG>& x)
+{
   int i,d;
   int fail = 0;
   int iterCnt = 0;
@@ -25,7 +26,7 @@ int fastQP(std::vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const M
   int M = Aeq.rows();
   int N = Aeq.cols();
   
-  if (f.rows() != N) { cerr << "size of f doesn't match cols of Aeq" << endl; return 2; }
+  if (f.rows() != N) { cerr << "size of f (" << f.rows() << " by " << f.cols() << ") doesn't match cols of Aeq (" << Aeq.rows() << " by " << Aeq.cols() << ")" << endl; return 2; }
   if (beq.rows() !=M) { cerr << "size of beq doesn't match rows of Aeq" << endl; return 2; }
   if (Ain.cols() !=N) { cerr << "cols of Ain doesn't match cols of Aeq" << endl; return 2; };
   if (bin.rows() != Ain.rows()) { cerr << "bin rows doesn't match Ain rows" << endl; return 2; };
@@ -40,10 +41,11 @@ int fastQP(std::vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const M
   VectorXd minusQinvf(N);
 
   vector<MatrixXd> Qinv;
+  typedef typename vector< MatrixBase<tA> >::iterator Qiterator;
 
   // calculate a bunch of stuff that is constant during each iteration
   int startrow=0;
-  for (vector<Map<MatrixXd> >::iterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
+  for (Qiterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
   	int numRow = iterQ->rows();
   	int numCol = iterQ->cols();
 
@@ -172,4 +174,8 @@ int fastQP(std::vector< Map<MatrixXd> > QblkDiag, const Map<VectorXd> f, const M
   }  
   return fail;
 }
+
+template int fastQP(vector< MatrixBase< Map<MatrixXd> > >, const MatrixBase< Map<VectorXd> >, const MatrixBase< Map<MatrixXd> >, const MatrixBase< Map<VectorXd> >, const MatrixBase< Map<MatrixXd> >, const MatrixBase< Map<VectorXd> >, set<int>&, MatrixBase< Map<VectorXd> >&);
+template int fastQP(vector< MatrixBase< VectorXd > >, const MatrixBase< VectorXd >, const MatrixBase< Matrix<double,-1,-1,RowMajor,1000,-1> >, const MatrixBase< Matrix<double,-1,1,0,1000,1> >, const MatrixBase< Matrix<double,-1,-1,RowMajor,1000,-1> >, const MatrixBase< Matrix<double,-1,1,0,1000,1> >, set<int>&, MatrixBase< VectorXd >&);
+
 

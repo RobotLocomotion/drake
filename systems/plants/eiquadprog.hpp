@@ -136,10 +136,11 @@ double solve_quadprog2(LLT<MatrixXd,Lower> &chol,  double c1, VectorXd & g0,
                       VectorXd& x);
 
 /* solve_quadprog is used for on-demand QP solving */
-inline double solve_quadprog(MatrixXd & G,  VectorXd & g0,  
-                      const MatrixXd & CE, const VectorXd & ce0,  
-                      const MatrixXd & CI, const VectorXd & ci0, 
-                      VectorXd& x){
+template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
+inline double solve_quadprog(MatrixBase<tA> & G,  MatrixBase<tB> & g0,
+                      const MatrixBase<tC> & CE, const MatrixBase<tD> & ce0,
+                      const MatrixBase<tE> & CI, const MatrixBase<tF> & ci0,
+                      MatrixBase<tG>& x){
 						  
   LLT<MatrixXd,Lower> chol(G.cols());
   double c1;
@@ -155,10 +156,11 @@ inline double solve_quadprog(MatrixXd & G,  VectorXd & g0,
 }
 
 /* solve_quadprog2 is used for when the Cholesky decomposition of G is pre-computed */
-inline double solve_quadprog2(LLT<MatrixXd,Lower> &chol,  double c1, VectorXd & g0,  
-                      const MatrixXd & CE, const VectorXd & ce0,  
-                      const MatrixXd & CI, const VectorXd & ci0, 
-                      VectorXd& x)
+template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF>
+inline double solve_quadprog2(LLT<MatrixXd,Lower> &chol,  double c1, MatrixBase<tA> & g0,
+                      const MatrixBase<tB> & CE, const MatrixBase<tC> & ce0,
+                      const MatrixBase<tD> & CI, const MatrixBase<tE> & ci0,
+                      MatrixBase<tF>& x)
 {
   int i, j, k, l; /* indices */
   int ip, me, mi;
