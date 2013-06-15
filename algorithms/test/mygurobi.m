@@ -18,7 +18,11 @@ if params.method == 2
   params.barconvtol = 5e-4;
 end
 
-if iscell(Q), error('need to implement this case'); end
+bigQ
+if iscell(Q), 
+  for i=1:length(Q), if isvector(Q{i}), Q{i} = diag(Q{i}); end, end
+  Q = cellfun(@(a) if isvector(a), a=diag(a)error('need to implement this case'); 
+end
 if isvector(Q), Q = diag(Q); end
 model.Q = sparse(Q);
 model.obj = f;
