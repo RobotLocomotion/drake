@@ -1,7 +1,8 @@
 #include <math.h>
 #include <iostream>
 #include <mex.h>
-
+#include <vector>
+#include <set>
 #include "fastQP.h"
 
 using namespace Eigen;
@@ -17,36 +18,35 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   int arg=0;
 
-	vector< MatrixBase <Map <MatrixXd> > > QblkMat;
+  vector<Map<MatrixXd> > QblkMat;
   if (mxIsCell(prhs[arg])) {
-		mxArray* QblkDiagCellArray = (mxArray *) prhs[arg++];
-		for (int i=0; i< mxGetNumberOfElements(QblkDiagCellArray);i++) {
-			mxArray* Qblk = mxGetCell(QblkDiagCellArray,i);
-			QblkMat.push_back(Map<MatrixXd>(mxGetPr(Qblk), mxGetM(Qblk), mxGetN(Qblk)));
-		}
+          mxArray* QblkDiagCellArray = (mxArray *) prhs[arg++];
+          for (int i=0; i< mxGetNumberOfElements(QblkDiagCellArray);i++) {
+            mxArray* Qblk = mxGetCell(QblkDiagCellArray,i); 
+            QblkMat.push_back(Map<MatrixXd>(mxGetPr(Qblk), mxGetM(Qblk), mxGetN(Qblk)));
+          }
   } else {
-  	QblkMat.push_back(Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]))); arg++;
+  	    QblkMat.push_back(Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]))); arg++;
   }
 
-  Map<VectorXd> f(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg])); arg++;
+  Map<VectorXd>f(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg])); arg++;
   int N = f.rows()*f.cols();  // support row or column vectors
 
-  Map<MatrixXd> *Aeq,*Ain;  Map<VectorXd> *beq, *bin;
+  Map<MatrixXd> Aeq(NULL,0,N);
+  Map<VectorXd> beq(NULL,0);
+  Map<MatrixXd> Ain(NULL,0,N);
+  Map<VectorXd> bin(NULL,0);
 
-  if (nrhs>arg) Aeq = new Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]));
-  else Aeq = new Map<MatrixXd>(NULL,0,N);
+  if (nrhs>arg) new (&Aeq) Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]));
   arg++;
 
-  if (nrhs>arg) beq = new Map<VectorXd>(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg]));
-  else beq = new Map<VectorXd>(NULL,0);
+  if (nrhs>arg) new (&beq) Map<VectorXd>(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg]));
   arg++;
 
-  if (nrhs>arg) Ain = new Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]));
-  else Ain = new Map<MatrixXd>(NULL,0,N);
+  if (nrhs>arg) new (&Ain) Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]));
   arg++;
 
-  if (nrhs>arg) bin = new Map<VectorXd>(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg]));
-  else bin = new Map<VectorXd>(NULL,0);
+  if (nrhs>arg) new (&bin) Map<VectorXd>(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg]));
   arg++;
 
   set<int> active;
@@ -58,9 +58,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   plhs[0] = mxCreateDoubleMatrix(f.rows(), 1, mxREAL);
   Map<VectorXd> x(mxGetPr(plhs[0]),f.rows());
-
-  int info = fastQP(QblkMat,f,*Aeq,*beq,*Ain,*bin,active,x);
-
+  
+  int info = fastQP(QblkMat,f, Aeq, beq, Ain, bin,active,x);
   if (nlhs>1) plhs[1] = mxCreateDoubleScalar((double)info);
   if (nlhs>2) {
   	plhs[2] = mxCreateDoubleMatrix(active.size(),1,mxREAL);
