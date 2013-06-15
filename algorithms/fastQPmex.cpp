@@ -20,17 +20,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   vector<Map<MatrixXd> > QblkMat;
   if (mxIsCell(prhs[arg])) {
-          mxArray* QblkDiagCellArray = (mxArray *) prhs[arg++];
-          for (int i=0; i< mxGetNumberOfElements(QblkDiagCellArray);i++) {
-            mxArray* Qblk = mxGetCell(QblkDiagCellArray,i); 
-            QblkMat.push_back(Map<MatrixXd>(mxGetPr(Qblk), mxGetM(Qblk), mxGetN(Qblk)));
-          }
+  	mxArray* QblkDiagCellArray = (mxArray *) prhs[arg++];
+  	for (int i=0; i< mxGetNumberOfElements(QblkDiagCellArray);i++) {
+  		mxArray* Qblk = mxGetCell(QblkDiagCellArray,i);
+  		QblkMat.push_back(Map<MatrixXd>(mxGetPr(Qblk), mxGetM(Qblk), mxGetN(Qblk)));
+  	}
   } else {
-  	    QblkMat.push_back(Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]))); arg++;
+  	QblkMat.push_back(Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]))); arg++;
   }
 
-  Map<VectorXd>f(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg])); arg++;
-  int N = f.rows()*f.cols();  // support row or column vectors
+  Map<VectorXd>f(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg])); arg++;
+  int N = f.rows();  // support row or column vectors
 
   Map<MatrixXd> Aeq(NULL,0,N);
   Map<VectorXd> beq(NULL,0);

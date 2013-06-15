@@ -20,7 +20,7 @@ if ((length(size(val))~=length(size(desired_val))) || any(size(val)~=size(desire
   end
 end
 
-if (~isequal(isnan(val(:)),isnan(desired_val(:))))
+if (tf && ~isequal(isnan(val(:)),isnan(desired_val(:))))
   errstr = 'NANs don''t match. ';
   if any(isnan(val(:)))
     val
@@ -46,7 +46,7 @@ if (~isequal(isnan(val(:)),isnan(desired_val(:))))
   end  
 end
 
-if (any(abs(val(:)-desired_val(:))>tol))
+if (tf && any(abs(val(:)-desired_val(:))>tol))
   if (ndims(val)<=2 && length(val)<=6)
     % clean before printing
     desired_val(abs(desired_val)<tol/2)=0;
