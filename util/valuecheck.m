@@ -14,8 +14,8 @@ end
 
 if ((length(size(val))~=length(size(desired_val))) || any(size(val)~=size(desired_val)))
   errstr = ['Wrong size.  Expected ', mat2str(size(desired_val)),' but got ', mat2str(size(val))];
+  tf = false;
   if (nargout>0)
-    tf = false;
     return;
   end
 end
@@ -40,8 +40,8 @@ if (~isequal(isnan(val(:)),isnan(desired_val(:))))
   %    err(abs(err)<tol)=0;
   %    err=sparse(err)
   
+  tf = false;
   if (nargout>0)
-    tf = false;
     return;
   end  
 end
@@ -68,10 +68,12 @@ if (any(abs(val(:)-desired_val(:))>tol))
     errstr = sprintf('Values don''t match.\n    Index       Value       Desired Value\n   -------     --------    ---------------\n%s', errstr);
   end
   
+  tf = false;
   if (nargout>0)
-    tf = false;
     return;
   end
 end
 
-error(errstr);
+if ~tf, 
+  error(errstr); 
+end

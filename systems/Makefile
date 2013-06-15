@@ -13,6 +13,10 @@ MEXFILES = $(MEX_CPP_FILES:%.cpp=%.$(MEXEXT))
 
 CFLAGS = 
 
+
+all: CXX += -O3
+all: CC += -O3
+all: MEX += -O
 all : $(MEXFILES)
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
@@ -34,7 +38,7 @@ debug: $(MEXFILES)
 	done
 
 $(MEXFILES): %.$(MEXEXT) : %.cpp
-	$(MEX) -O $^ $(CFLAGS)
+	$(MEX) $^ $(CFLAGS)
 
 clean:
 	-rm -f *.$(MEXEXT)
