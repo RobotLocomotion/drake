@@ -16,23 +16,10 @@
 using namespace Eigen;
 using namespace std;
 
+
 template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
-int fastQP(std::vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const MatrixBase<tC>& Aeq, const MatrixBase<tD>& beq, const MatrixBase<tE>& Ain, const MatrixBase<tF>& bin, set<int>& active, MatrixBase<tG>& x)
+int fastQPThatTakesQinv(vector< Map<tA> > QinvblkDiag, const MatrixBase<tB>& f, const MatrixBase<tC>& Aeq, const MatrixBase<tD>& beq, const MatrixBase<tE>& Ain, const MatrixBase<tF>& bin, set<int>& active, MatrixBase<tG>& x)
 {
-  /* min 1/2 * x'QblkDiag'x + f'x s.t A x = b, Ain x <= bin
-   * using active set method.  Iterative solve a linearly constrained
-   * quadratic minimization problem where linear constraints include
-   * Ain(active,:)x == bin(active).  Quit if all dual variables associated
-   * with these equations are positive (i.e. they satisfy KKT conditions).
-   *
-   * Note:
-   * fails if QP is infeasible.
-   * active == initial rows of Ain to treat as equations.
-   * Frank Permenter - June 6th 2013
-   *
-   * @retval  if feasible then iterCnt, else -1 for infeasible, -2 for input error
-   */
-     
   int i,d;
   int fail = 0;
   int iterCnt = 0;
@@ -54,43 +41,33 @@ int fastQP(std::vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const Matri
   MatrixXd QinvAteq(N,M);
   VectorXd minusQinvf(N);
 
-  vector<MatrixXd> Qinv;
-  #define REG 1e-13
   // calculate a bunch of stuff that is constant during each iteration
   int startrow=0;
-  //typedef typename vector< MatrixBase<tA> >::iterator Qiterator;
-
-  for (vector<Map<MatrixXd> >::iterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
-  	int numRow = iterQ->rows();
-  	int numCol = iterQ->cols();
+  for (vector<Map<MatrixXd> >::iterator iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
+  	int numRow = iterQinv->rows();
+  	int numCol = iterQinv->cols();
 
   	if (numRow == 1 || numCol == 1) {  // it's a vector
   		d = numRow*numCol;
-        VectorXd Qdiag_mod = *iterQ + VectorXd::Constant(d,REG); // regularize
-        VectorXd QinvDiag = Qdiag_mod.cwiseInverse();
-        QinvAteq.block(startrow,0,d,M)= QinvDiag.asDiagonal()*Aeq.block(0,startrow,M,d).transpose();  // Aeq.transpoODse().block(startrow,0,d,N)
-        minusQinvf.segment(startrow,d) = -QinvDiag.cwiseProduct(f.segment(startrow,d));
-        Qinv.push_back(QinvDiag);
-        startrow=startrow+d;
+  		if (M>0) QinvAteq.block(startrow,0,d,M)= iterQinv->asDiagonal()*Aeq.block(0,startrow,M,d).transpose();  // Aeq.transpoODse().block(startrow,0,d,N)
+			minusQinvf.segment(startrow,d) = -iterQinv->cwiseProduct(f.segment(startrow,d));
+			startrow=startrow+d;
   	} else { // potentially dense matrix
-        d = numRow;   
-        if (numRow!=numCol) {
-            cerr << "Q is not square! " << numRow << "x" << numCol << "\n";
-            return -2;
-        }
-
-        MatrixXd Q_mod = *iterQ + REG*MatrixXd::Identity(d,d);
-        MatrixXd thisQinv = Q_mod.inverse();
-        QinvAteq.block(startrow,0,d,M) = thisQinv*Aeq.block(0,startrow,M,d).transpose();  // Aeq.transpose().block(startrow,0,d,N)
-        minusQinvf.segment(startrow,d) = -thisQinv*f.segment(startrow,d);
-        Qinv.push_back(thisQinv);
-        startrow=startrow+d;
-  	}
+			d = numRow;
+			if (numRow!=numCol) {
+					cerr << "Q is not square! " << numRow << "x" << numCol << "\n";
+					return -2;
+			}
+			if (M>0) QinvAteq.block(startrow,0,d,M) = (*iterQinv)*Aeq.block(0,startrow,M,d).transpose();  // Aeq.transpose().block(startrow,0,d,N)
+			minusQinvf.segment(startrow,d) = -(*iterQinv)*f.segment(startrow,d);
+			startrow=startrow+d;
+		}
   	if (startrow>N) {
-  		cerr << "Q is too big!" << endl;
-  		return -2;
-  	}
+			cerr << "Q is too big!" << endl;
+			return -2;
+		}
   }
+  if (startrow!=N) { cerr << "Q is the wrong size.  Got " << startrow << "by" << startrow << " but needed " << N << "by" << N << endl; return -2; }
 
   MatrixXd A;
   VectorXd b;
@@ -123,7 +100,7 @@ int fastQP(std::vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const Matri
 
       if (n_active>0) {
 				int startrow=0;
-				for (vector<MatrixXd>::iterator iterQinv=Qinv.begin(); iterQinv!=Qinv.end(); iterQinv++) {
+				for (vector< Map<MatrixXd> >::iterator iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
 					d = iterQinv->rows();
 					int numCol = iterQinv->cols();
 
@@ -192,12 +169,77 @@ int fastQP(std::vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const Matri
   return iterCnt;
 }
 
+template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
+int fastQP(vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const MatrixBase<tC>& Aeq, const MatrixBase<tD>& beq, const MatrixBase<tE>& Ain, const MatrixBase<tF>& bin, set<int>& active, MatrixBase<tG>& x)
+{
+  /* min 1/2 * x'QblkDiag'x + f'x s.t A x = b, Ain x <= bin
+   * using active set method.  Iterative solve a linearly constrained
+   * quadratic minimization problem where linear constraints include
+   * Ain(active,:)x == bin(active).  Quit if all dual variables associated
+   * with these equations are positive (i.e. they satisfy KKT conditions).
+   *
+   * Note:
+   * fails if QP is infeasible.
+   * active == initial rows of Ain to treat as equations.
+   * Frank Permenter - June 6th 2013
+   *
+   * @retval  if feasible then iterCnt, else -1 for infeasible, -2 for input error
+   */
+
+	int N = f.rows();
+
+  MatrixXd* Qinv = new MatrixXd[QblkDiag.size()];
+  vector< Map<MatrixXd> > Qinvmap;
+
+	#define REG 1e-13
+  // calculate a bunch of stuff that is constant during each iteration
+  int d,startrow=0;
+  //typedef typename vector< MatrixBase<tA> >::iterator Qiterator;
+
+  int i=0;
+  for (vector<Map<MatrixXd> >::iterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
+  	int numRow = iterQ->rows();
+  	int numCol = iterQ->cols();
+
+  	if (numCol == 1) {  // it's a vector
+  		VectorXd Qdiag_mod = *iterQ + VectorXd::Constant(numRow,REG); // regularize
+  		Qinv[i] = Qdiag_mod.cwiseInverse();
+  		Qinvmap.push_back( Map<MatrixXd>(Qinv[i].data(),numRow,numCol) );
+  		startrow=startrow+numRow;
+		} else { // potentially dense matrix
+			if (numRow!=numCol) {
+				if (numRow==1)
+					cerr << "diagonal Q's must be set as column vectors" << endl;
+				else
+					cerr << "Q is not square! " << numRow << "x" << numCol << endl;
+				return -2;
+			}
+
+			MatrixXd Q_mod = *iterQ + REG*MatrixXd::Identity(numRow,numRow);
+			Qinv[i] = Q_mod.inverse();
+  		Qinvmap.push_back( Map<MatrixXd>(Qinv[i].data(),numRow,numCol) );
+  		startrow=startrow+numRow;
+		}
+  	cout << "Qinv{" << i << "} = " << Qinv[i] << endl;
+		if (startrow>N) {
+			cerr << "Q is too big!" << endl;
+			return -2;
+		}
+		i++;
+  }
+  if (startrow!=N) { cerr << "Q is the wrong size.  Got " << startrow << "by" << startrow << " but needed " << N << "by" << N << endl; return -2; }
+
+  int info = fastQPThatTakesQinv(Qinvmap,f,Aeq,beq,Ain,bin,active,x);
+
+  delete[] Qinv;
+  return info;
+}
 
 
 
 
 template <typename DerivedA,typename DerivedB>
-int myGRBaddconstrs(GRBmodel *model, MatrixBase<DerivedA> const & A, MatrixBase<DerivedB> const & b, char sense, double sparseness_threshold = 1e-10)
+int myGRBaddconstrs(GRBmodel *model, MatrixBase<DerivedA> const & A, MatrixBase<DerivedB> const & b, char sense, double sparseness_threshold = 1e-14)
 {
   int i,j,nnz,error;
 /*
@@ -270,8 +312,8 @@ GRBmodel* gurobiQP(GRBenv *env, vector< Map<tA> > QblkDiag, VectorXd& f, const M
 
   CGE (GRBsetdblattrarray(model,"Obj",0,nparams,f.data()), env);
 
-  CGE (myGRBaddconstrs(model,Aeq,beq,GRB_EQUAL, 1e-10), env);
-  CGE (myGRBaddconstrs(model,Ain,bin,GRB_LESS_EQUAL, 1e-10), env);
+  if (Aeq.rows()>0) CGE (myGRBaddconstrs(model,Aeq,beq,GRB_EQUAL, 1e-10), env);
+  if (Ain.rows()>0) CGE (myGRBaddconstrs(model,Ain,bin,GRB_LESS_EQUAL, 1e-10), env);
 
   CGE (GRBupdatemodel(model), env);
   CGE (GRBoptimize(model), env);

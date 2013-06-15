@@ -10,6 +10,9 @@
 template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
 int fastQP(std::vector< Eigen::Map<tA> > QblkDiag, const Eigen::MatrixBase<tB>& f, const Eigen::MatrixBase<tC>& Aeq, const Eigen::MatrixBase<tD>& beq, const Eigen::MatrixBase<tE>& Ain, const Eigen::MatrixBase<tF>& bin, std::set<int>& active, Eigen::MatrixBase<tG>& x);
 
+template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
+int fastQPThatTakesQinv(std::vector< Eigen::Map<tA> > QinvblkDiag, const Eigen::MatrixBase<tB>& f, const Eigen::MatrixBase<tC>& Aeq, const Eigen::MatrixBase<tD>& beq, const Eigen::MatrixBase<tE>& Ain, const Eigen::MatrixBase<tF>& bin, std::set<int>& active, Eigen::MatrixBase<tG>& x);
+
 
 #include <gurobi_c++.h>
 

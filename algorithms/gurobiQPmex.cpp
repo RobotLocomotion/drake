@@ -25,20 +25,33 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   CGE ( GRBsetintparam(env,"method",2), env);
   CGE ( GRBsetintparam(env,"presolve",0), env);
   CGE ( GRBsetintparam(env,"bariterlimit",20), env);
-  CGE ( GRBsetintparam(env,"barhomogenous",0), env);
+  CGE ( GRBsetintparam(env,"barhomogeneous",0), env);
   CGE ( GRBsetdblparam(env,"barconvtol",0.0005), env);
 
   int arg=0;
 
-  vector<Map<MatrixXd> > QblkMat;
+  vector< Map<MatrixXd> > QblkMat;
   if (mxIsCell(prhs[arg])) {
   	mxArray* QblkDiagCellArray = (mxArray *) prhs[arg++];
   	for (int i=0; i< mxGetNumberOfElements(QblkDiagCellArray);i++) {
   		mxArray* Qblk = mxGetCell(QblkDiagCellArray,i);
-  		QblkMat.push_back(Map<MatrixXd>(mxGetPr(Qblk), mxGetM(Qblk), mxGetN(Qblk)));
+  		int m=mxGetM(Qblk),n=mxGetN(Qblk);
+  		if (m*n==0) continue;
+  		else if (m==1 || n==1) // then it's a vector
+  			QblkMat.push_back(Map<MatrixXd>(mxGetPr(Qblk), m*n, 1));  // always want a column vector
+  		else
+  			QblkMat.push_back(Map<MatrixXd>(mxGetPr(Qblk), m, n));
   	}
+    if (QblkMat.size()<1) mexErrMsgIdAndTxt("Drake:gurobiQP:BadInputs","Q is empty");
   } else {
-  	QblkMat.push_back(Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]))); arg++;
+		int m=mxGetM(prhs[arg]),n=mxGetN(prhs[arg]);
+		if (m*n==0)
+			mexErrMsgIdAndTxt("Drake:gurobiQP:BadInputs","Q is empty");
+		else if (m==1 || n==1) // then it's a vector
+			QblkMat.push_back(Map<MatrixXd>(mxGetPr(prhs[arg]),m*n,1)); // always want a column vector
+		else
+			QblkMat.push_back(Map<MatrixXd>(mxGetPr(prhs[arg]),m,n));
+		arg++;
   }
 
   int nparams = mxGetNumberOfElements(prhs[arg]);
