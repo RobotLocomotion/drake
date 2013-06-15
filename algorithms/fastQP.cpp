@@ -12,6 +12,7 @@
 #define MAX_STATE   1000
 #define MAX_ITER    10
 
+
 using namespace Eigen;
 using namespace std;
 
@@ -177,7 +178,101 @@ int fastQP(std::vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const Matri
   }  
   return fail;
 }
-template int fastQP(std::vector< Map<MatrixXd> > QblkDiag, const MatrixBase< Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase< Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase< Map<VectorXd> >&, set<int>&, MatrixBase< Map<VectorXd> >&);
+
+
+
+
+
+template <typename DerivedA,typename DerivedB>
+int myGRBaddconstrs(GRBmodel *model, MatrixBase<DerivedA> const & A, MatrixBase<DerivedB> const & b, char sense, double sparseness_threshold = 1e-10)
+{
+  int i,j,nnz,error;
+/*
+  // todo: it seems like I should just be able to do something like this:
+  SparseMatrix<double,RowMajor> sparseAeq(Aeq.sparseView());
+  sparseAeq.makeCompressed();
+  error = GRBaddconstrs(model,nq_con,sparseAeq.nonZeros(),sparseAeq.InnerIndices(),sparseAeq.OuterStarts(),sparseAeq.Values(),beq.data(),NULL);
+*/
+
+  int *cind = new int[A.cols()];
+  double* cval = new double[A.cols()];
+  for (i=0; i<A.rows(); i++) {
+    nnz=0;
+    for (j=0; j<A.cols(); j++) {
+      if (abs(A(i,j))>sparseness_threshold) {
+        cval[nnz] = A(i,j);
+        cind[nnz++] = j;
+      }
+    }
+    error = GRBaddconstr(model,nnz,cind,cval,sense,b(i),NULL);
+    if (error) break;
+  }
+
+  delete[] cind;
+  delete[] cval;
+  return error;
+}
+
+template <typename tA, typename tB, typename tC, typename tD, typename tE>
+GRBmodel* gurobiQP(GRBenv *env, vector< Map<tA> > QblkDiag, VectorXd& f, const MatrixBase<tB>& Aeq, const MatrixBase<tC>& beq, const MatrixBase<tD>& Ain, const MatrixBase<tE>& bin, VectorXd& lb, VectorXd& ub, set<int>& active, VectorXd& x)
+{
+	// Note: f,lb, and ub are VectorXd instead of const MatrixBase templates because i want to be able to call f.data() on them
+
+	// NOTE:  this allocates memory for a new GRBmodel and returns it. (you should delete this object when you're done with it)
+	// NOTE:  by convention here, the active set indices correspond to Ain,bin first, then lb, then ub.
+
+	// WARNING:  If there are no constraints, I think you will need to do scale (f = 2*f);
+	//  				 This is very strange, and appears to be related to the bug Michael found in gurobi.
+
+  GRBmodel *model = NULL;
+
+  int i,j,nparams = f.rows();
+  CGE (GRBnewmodel(env,&model,"QP",nparams,NULL,lb.data(),ub.data(),NULL,NULL), env);
+
+  int startrow=0,d;
+  for (vector<Map<MatrixXd> >::iterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
+  	Map<tA> Q=*iterQ;
+  	if (Q.rows() == 1 || Q.cols() == 1) {  // it's a vector
+  		d = Q.rows()*Q.cols();
+  	  for (i=0; i<d; i++)
+  	  	CGE (GRBaddqpterms(model,1,&i,&i,&(Q(i))), env);
+  	  startrow=startrow+d;
+  	} else { // potentially dense matrix
+  		d = Q.rows();
+  		if (d!=Q.cols()) {
+  			cerr << "Q is not square! " << Q.rows() << "x" << Q.cols() << "\n";
+  			return NULL;
+  		}
+
+  	  for (i=0; i<d; i++)
+    	  for (j=0; j<d; j++)
+    	  	CGE (GRBaddqpterms(model,1,&i,&j,&(Q(i,j))), env);
+  	  startrow=startrow+d;
+  	}
+  	if (startrow>nparams) {
+  		cerr << "Q is too big!" << endl;
+  		return NULL;
+  	}
+  }
+
+  CGE (GRBsetdblattrarray(model,"Obj",0,nparams,f.data()), env);
+
+  CGE (myGRBaddconstrs(model,Aeq,beq,GRB_EQUAL, 1e-10), env);
+  CGE (myGRBaddconstrs(model,Ain,bin,GRB_LESS_EQUAL, 1e-10), env);
+
+  CGE (GRBupdatemodel(model), env);
+  CGE (GRBoptimize(model), env);
+
+  CGE (GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, nparams, x.data()), env);
+
+  // todo: populate active set
+
+  return model;
+}
+
+
+template int fastQP(vector< Map<MatrixXd> > QblkDiag, const MatrixBase< Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase< Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase< Map<VectorXd> >&, set<int>&, MatrixBase< Map<VectorXd> >&);
+template GRBmodel* gurobiQP(GRBenv *env, vector< Map<MatrixXd> > QblkDiag, VectorXd& f, const MatrixBase< Map<MatrixXd> >& Aeq, const MatrixBase< Map<VectorXd> >& beq, const MatrixBase< Map<MatrixXd> >& Ain, const MatrixBase< Map<VectorXd> >&bin, VectorXd& lb, VectorXd& ub, set<int>&, VectorXd&);
 
 /*
 template int fastQP(vector< MatrixBase< VectorXd > >, const MatrixBase< VectorXd >&, const MatrixBase< Matrix<double,-1,-1,RowMajor,1000,-1> >&, const MatrixBase< Matrix<double,-1,1,0,1000,1> >&, const MatrixBase< Matrix<double,-1,-1,RowMajor,1000,-1> >&, const MatrixBase< Matrix<double,-1,1,0,1000,1> >&, set<int>&, MatrixBase< VectorXd >&);

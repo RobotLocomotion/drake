@@ -7,8 +7,14 @@ MEX = $(MATLABROOT)/bin/mex
 MEXEXT = $(shell $(MATLABROOT)/bin/mexext)    
 MATLABBIN = $(MATLABROOT)/bin/$(strip $(shell cat ../.matlabcpu))
 
-MEX_CPP_FILES = fastQPmex.cpp
+MEX_CPP_FILES = fastQPmex.cpp gurobiQPmex.cpp
 MEXFILES = $(MEX_CPP_FILES:%.cpp=%.$(MEXEXT))
+
+# eigen flags
+CFLAGS = $(shell pkg-config --cflags eigen3)
+
+# gurobi flags
+CFLAGS += $(shell pkg-config --cflags --libs gurobi)
 
 SUBDIRS =
 
@@ -36,10 +42,10 @@ debug: $(MEXFILES)
 	$(MEX) $^ $(CFLAGS)
 
 fastQPmex.$(MEXEXT) : fastQPmex.cpp fastQP.o
-	$(MEX) $^ $(CFLAGS) $(shell pkg-config --cflags eigen3)
+gurobiQPmex.$(MEXEXT) : gurobiQPmex.cpp fastQP.o
 
 fastQP.o :fastQP.cpp fastQP.h
-	$(CXX) -c $< $(shell pkg-config --cflags eigen3) -fPIC
+	$(CXX) -c $< $(CFLAGS) -fPIC
 
 clean:
 	-rm -f *.$(MEXEXT)

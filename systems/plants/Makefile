@@ -37,8 +37,8 @@ MEX_CPPFILES = constructModelmex.cpp \
 	HandCpmex.cpp \
 	forwardKinpmex.cpp \
 	forwardKinVelpmex.cpp \
-	approximateIKmex.cpp \
-	approximateIKEIQPmex.cpp
+	approximateIKmex.cpp
+#	approximateIKEIQPmex.cpp
 #	collisionmex.cpp 
 
 MEXFILES = $(MEX_CPPFILES:%.cpp=%.$(MEXEXT)) 

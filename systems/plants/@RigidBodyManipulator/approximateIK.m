@@ -60,14 +60,14 @@ end
 
 if options.use_mex
 % Frank's fast QP (mex'd by Mike)
-  [q,info] = approximateIKEIQPmex(obj.getMexModelPtr.getData,q0,q_nom,Q,varargin{:});
+%  [q,info] = approximateIKEIQPmex(obj.getMexModelPtr.getData,q0,q_nom,Q,varargin{:});
 
 % Mex'd gurobi version  
-  if info
-    warning('approximateIKEIQP failed.  trying gurobi version.');
+%  if info
+%    warning('approximateIKEIQP failed.  trying gurobi version.');
     [q,info] = approximateIKmex(obj.getMexModelPtr.getData,q0,q_nom,Q,varargin{:});
     info = (info~=2);  % gurobi "OPTIMAL" http://www.gurobi.com/documentation/5.5/reference-manual/node896#sec:StatusCodes
-  end
+%  end
   return;
 end
 
