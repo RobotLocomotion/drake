@@ -50,8 +50,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   Map<VectorXd> beq(NULL,0);
   Map<MatrixXd> Ain(NULL,0,nparams);
   Map<VectorXd> bin(NULL,0);
-  VectorXd lb;
-  VectorXd ub;
+  VectorXd lb(nparams);
+  VectorXd ub(nparams);
 
   if (nrhs>arg) new (&Aeq) Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]));
   arg++;
@@ -67,14 +67,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
   if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) {
   	if (nparams != mxGetNumberOfElements(prhs[arg])) mexErrMsgTxt("lb must be the same size as f");
-  	lb.resize(nparams);
   	memcpy(lb.data(),mxGetPr(prhs[arg]),sizeof(double)*lb.rows());
+  } else {
+  	lb = VectorXd::Constant(nparams,-1e8);  // -inf
   }
   arg++;
 
   if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) {
-  	ub.resize(mxGetNumberOfElements(prhs[arg]));
+  	if (nparams != mxGetNumberOfElements(prhs[arg])) mexErrMsgTxt("ub must be the same size as f");
   	memcpy(ub.data(),mxGetPr(prhs[arg]),sizeof(double)*ub.rows());
+  } else {
+  	ub = VectorXd::Constant(nparams,1e8);  // inf
   }
   arg++;
 

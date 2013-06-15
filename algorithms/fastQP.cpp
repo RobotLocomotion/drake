@@ -19,6 +19,19 @@ using namespace std;
 template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
 int fastQP(std::vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const MatrixBase<tC>& Aeq, const MatrixBase<tD>& beq, const MatrixBase<tE>& Ain, const MatrixBase<tF>& bin, set<int>& active, MatrixBase<tG>& x)
 {
+  /* min 1/2 * x'QblkDiag'x + f'x s.t A x = b, Ain x <= bin
+   * using active set method.  Iterative solve a linearly constrained
+   * quadratic minimization problem where linear constraints include
+   * Ain(active,:)x == bin(active).  Quit if all dual variables associated
+   * with these equations are positive (i.e. they satisfy KKT conditions).
+   *
+   * Note:
+   * fails if QP is infeasible.
+   * active == initial rows of Ain to treat as equations.
+   * Frank Permenter - June 6th 2013
+   *
+   * @retval  if feasible then iterCnt, else -1 for infeasible, -2 for input error
+   */
      
   int i,d;
   int fail = 0;
@@ -63,7 +76,7 @@ int fastQP(std::vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const Matri
         d = numRow;   
         if (numRow!=numCol) {
             cerr << "Q is not square! " << numRow << "x" << numCol << "\n";
-            return 2;
+            return -2;
         }
 
         MatrixXd Q_mod = *iterQ + REG*MatrixXd::Identity(d,d);
@@ -75,7 +88,7 @@ int fastQP(std::vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const Matri
   	}
   	if (startrow>N) {
   		cerr << "Q is too big!" << endl;
-  		return 2;
+  		return -2;
   	}
   }
 
@@ -87,6 +100,8 @@ int fastQP(std::vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const Matri
   VectorXd violation;
   
   while(1) {
+    iterCnt++;
+
     n_active = active.size();
     Aact.resize(n_active,N);
     bact.resize(n_active);
@@ -118,7 +133,7 @@ int fastQP(std::vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const Matri
 						QinvAt.block(startrow,0,d,M+n_active) << QinvAteq.block(startrow,0,d,M), (*iterQinv)*Aact.block(0,startrow,n_active,d).transpose();
 					}
 
-                    startrow=startrow+d;
+					startrow=startrow+d;
 				}
       } else {
       	QinvAt = QinvAteq;
@@ -167,16 +182,14 @@ int fastQP(std::vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const Matri
     }
     active.insert(new_active.begin(),new_active.end());
 
-    iterCnt++;
     if (iterCnt > MAX_ITER) {
       //Default to calling this method
       cout << "FastQP max iter reached." << endl;
 //       mexErrMsgIdAndTxt("Drake:approximateIKmex:Error", "Max iter reached. Problem is likely infeasible");
-      fail = 1;
-      return fail;
+      return -1;
     }
   }  
-  return fail;
+  return iterCnt;
 }
 
 
