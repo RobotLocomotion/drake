@@ -209,7 +209,7 @@ classdef ActionSequence
               else
                 worldpos_unique.max = min([bodys_ikargs{bodys_ind}{2}.max kincon_ikargs{2}.max],[],2);
                 worldpos_unique.min = max([bodys_ikargs{bodys_ind}{2}.min kincon_ikargs{2}.min],[],2);
-                worldpos_unique.max = max([worldpos_unique.max worldpos_unique.min],[],2);
+                worldpos_unique.max = max([worldpos_unique.max worldpos_unique.min]);
                 worldpos_unique.contact_state = ActionKinematicConstraint.UNDEFINED_CONTACT;
                 worldpos_unique.contact_affs = ContactAffordance;
                 worldpos_unique.contact_dist = struct('min',0,'max',inf);
