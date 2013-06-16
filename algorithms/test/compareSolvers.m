@@ -18,8 +18,8 @@ bin_b = [bin; -lb; ub];
 [x_gurobimex,info_gurobimex,active_gurobimex] = gurobiQPmex(Q,f,Aeq,beq,Ain,bin,lb,ub,active);
 [x_gurobi,info_gurobi,active_gurobi] = mygurobi(Q,f,Aeq,beq,Ain,bin,lb,ub,active);
 
-valuecheck(x_fastqp,x_gurobi);
-valuecheck(x_gurobimex,x_gurobi);
+valuecheck(x_fastqp,x_gurobi,1e-5);
+valuecheck(x_gurobimex,x_gurobi,1e-5);
 
 end
 
