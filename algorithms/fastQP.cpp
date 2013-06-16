@@ -223,7 +223,7 @@ int fastQP(vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const MatrixBase
   		Qinvmap.push_back( Map<MatrixXd>(Qinv[i].data(),numRow,numCol) );
   		startrow=startrow+numRow;
 		}
-  	cout << "Qinv{" << i << "} = " << Qinv[i] << endl;
+//  	cout << "Qinv{" << i << "} = " << Qinv[i] << endl;
 		if (startrow>N) {
 			cerr << "Q is too big!" << endl;
 			return -2;

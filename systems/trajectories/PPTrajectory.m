@@ -22,6 +22,11 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   end
   
   methods
+    function y = fasteval(obj,t)
+      % no error checking. numeric scalar t only.
+      y = PPTmex(obj.mex_ptr.getData, 1, t);
+    end
+    
     function y = eval(obj,t)
       if isscalar(t) && isnumeric(t)
 %        y = obj.javapp.eval(t);
