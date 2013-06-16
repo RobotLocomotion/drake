@@ -85,6 +85,9 @@ int fastQPThatTakesQinv(vector< Map<tA> > QinvblkDiag, const MatrixBase<tB>& f, 
 
     i=0;
     for (set<int>::iterator iter=active.begin(); iter!=active.end(); iter++) {
+    	if (*iter<0 || *iter>=Ain.rows()) {
+    		return -3;  // active set is invalid.  exit quietly, because this is expected behavior in normal operation (e.g. it means I should immediately kick out to gurobi)
+    	}
       Aact.row(i) = Ain.row(*iter);
       bact(i++) = bin(*iter);
     }
