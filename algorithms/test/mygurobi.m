@@ -1,9 +1,11 @@
 function [x,info,active] = mygurobi(Q,f,Aeq,beq,Ain,bin,lb,ub,active)
 
+%min 1/2 * x'diag(Qdiag)'x + f'x s.t A x = b, Ain x <= bin, 1b<=x<=ub
+
 n = length(f);
-if nargin<3, Aeq=zeros(0,n); end
+if nargin<3 || isempty(Aeq), Aeq=zeros(0,n); end
 if nargin<4, beq=[]; end
-if nargin<5, Ain=zeros(0,n); end
+if nargin<5 || isempty(Ain), Ain=zeros(0,n); end
 if nargin<6, bin=[]; end
 if nargin<7, lb=[]; end
 if nargin<8, ub=[]; end
@@ -26,7 +28,7 @@ model.Q = sparse(Q);
 model.obj = f;
 model.A = sparse([Aeq;Ain]);
 model.rhs = [beq,bin];
-model.sense = [repmat('=',length(beq),1); repmat('<',length(bin),1)];
+model.sense = char([repmat('=',length(beq),1); repmat('<',length(bin),1)]);
 if isempty(lb)
   model.lb = -inf + 0*f;
 else
@@ -36,6 +38,13 @@ if isempty(ub)
   model.ub = inf + 0*f;
 else
   model.ub = ub;
+end
+
+if ~isempty(model.A) 
+  model.obj = 2*model.obj;   
+  % according to the documentation, I should always need this ...
+  % (they claim to optimize x'Qx + f'x), but it seems that they are off by
+  % a factor of 2 when there are no constraints.
 end
 
 result = gurobi(model,params);

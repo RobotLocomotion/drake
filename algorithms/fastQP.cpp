@@ -279,9 +279,6 @@ GRBmodel* gurobiQP(GRBenv *env, vector< Map<tA> > QblkDiag, VectorXd& f, const M
 	// NOTE:  this allocates memory for a new GRBmodel and returns it. (you should delete this object when you're done with it)
 	// NOTE:  by convention here, the active set indices correspond to Ain,bin first, then lb, then ub.
 
-	// WARNING:  If there are no constraints, I think you will need to do scale (f = 2*f);
-	//  				 This is very strange, and appears to be related to the bug Michael found in gurobi.
-
   GRBmodel *model = NULL;
 
   int i,j,nparams = f.rows();
@@ -312,6 +309,11 @@ GRBmodel* gurobiQP(GRBenv *env, vector< Map<tA> > QblkDiag, VectorXd& f, const M
   		return NULL;
   	}
   }
+
+  // Scale f by 2 because gurobi solves min x'Qx + f'x
+  if (Aeq.rows()+Ain.rows()>0) f = 2*f;
+	// WARNING:  If there are no constraints, then gurobi clearly solves a different problem: min 1/2 x'Qx + f'x
+	//  				 This is very strange, and appears to be related to the bug Michael found in gurobi.
 
   CGE (GRBsetdblattrarray(model,"Obj",0,nparams,f.data()), env);
 
