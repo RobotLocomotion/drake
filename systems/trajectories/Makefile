@@ -13,7 +13,7 @@ MATLABROOT = $(strip $(shell cat ../../.matlabroot))
 MEX = $(MATLABROOT)/bin/mex
 MEXEXT = $(shell $(MATLABROOT)/bin/mexext)    
 
-MEX_CPPFILES = ExpPlusPPTrajectoryEvalmex.cpp
+MEX_CPPFILES = ExpPlusPPTrajectoryEvalmex.cpp PPTmex.cpp
 
 MEXFILES = $(MEX_CPPFILES:%.cpp=%.$(MEXEXT)) 
 

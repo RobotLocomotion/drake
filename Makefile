@@ -15,7 +15,7 @@ EIGEN_CFLAGS = $(shell pkg-config --cflags eigen3)
 
 #CFILES = $(LCM_CFILES)
 LCM_JAVAFILES = $(LCMFILES:%.lcm=%.java)
-OTHER_JAVAFILES = util/MyLCMTypeDatabase.java util/MessageMonitor.java util/CoordinateFrameData.java util/LCMCoder.java util/Transform.java systems/trajectories/JavaPP.java
+OTHER_JAVAFILES = util/MyLCMTypeDatabase.java util/MessageMonitor.java util/CoordinateFrameData.java util/LCMCoder.java util/Transform.java
 JAVAFILES = $(LCM_JAVAFILES) $(OTHER_JAVAFILES)
 
 OBJFILES = $(LCM_CFILES:%.c=%.o) 
