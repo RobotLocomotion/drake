@@ -24,7 +24,11 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
     end
     
     function obj = subscribe(obj,channel)
-      obj.lc.subscribe(channel,obj.monitor);
+      chash = java.lang.String(channel).hashCode();
+      if ~any(chash==obj.subscriptions)  % don't subscribe multiple times to the same channel
+        obj.lc.subscribe(channel,obj.monitor);
+        obj.subscriptions(end+1)=chash;
+      end
     end
     
     function [x,t] = getNextMessage(obj,timeout)   % x=t=[] if timeout
@@ -107,5 +111,6 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
     lcmcoder=[];
     monitor;
     channel;
+    subscriptions;
   end
 end

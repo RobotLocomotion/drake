@@ -85,7 +85,7 @@ public class MessageMonitor implements LCMSubscriber
       long timestamp = m_timestamp_field.getLong(msg);
       long systime = System.currentTimeMillis();
       // include a 1 second timeout
-      if (timestamp>=m_last_timestamp || systime-m_time_of_last_message>=m_reset_time) {
+      if (timestamp>m_last_timestamp || systime-m_time_of_last_message>=m_reset_time) {
         m_data = data.clone();
         m_has_new_message = true;
         m_last_timestamp = timestamp;
@@ -94,13 +94,13 @@ public class MessageMonitor implements LCMSubscriber
       m_time_of_last_message = systime;
       notifyAll();
     } catch (IOException ex) {
-      System.out.println("Exception: " + ex);
+      System.out.println("MessageMonitor Exception: " + ex);
     } catch (InstantiationException ex) {
-      System.out.println("Exception: " + ex);
+      System.out.println("MessageMonitor Exception: " + ex);
     } catch (IllegalAccessException ex) {
-      System.out.println("Exception: " + ex);
+      System.out.println("MessageMonitor Exception: " + ex);
     } catch (InvocationTargetException ex) {
-      System.out.println("Exception: " + ex);
+      System.out.println("MessageMonitor Exception: " + ex);
     }
   }
     
@@ -160,7 +160,8 @@ public class MessageMonitor implements LCMSubscriber
   
   public synchronized byte[] getMessage()
   {
-    return m_data;
+  	m_has_new_message = false;
+  	return m_data;
   }
   
   public synchronized void markAsRead()
