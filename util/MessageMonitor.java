@@ -94,13 +94,13 @@ public class MessageMonitor implements LCMSubscriber
       m_time_of_last_message = systime;
       notifyAll();
     } catch (IOException ex) {
-      System.out.println("MessageMonitor Exception: " + ex);
+      System.out.println("MessageMonitor " + ex + " on channel " + channel);
     } catch (InstantiationException ex) {
-      System.out.println("MessageMonitor Exception: " + ex);
+      System.out.println("MessageMonitor " + ex + " on channel " + channel);
     } catch (IllegalAccessException ex) {
-      System.out.println("MessageMonitor Exception: " + ex);
+      System.out.println("MessageMonitor " + ex + " on channel " + channel);
     } catch (InvocationTargetException ex) {
-      System.out.println("MessageMonitor Exception: " + ex);
+      System.out.println("MessageMonitor " + ex + " on channel " + channel);
     }
   }
     
