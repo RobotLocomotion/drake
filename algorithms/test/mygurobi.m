@@ -12,7 +12,7 @@ if nargin<8, ub=[]; end
 if nargin<9, active=[]; end
 
 params.outputflag = 0; % not verbose
-params.method = -1; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
+params.method = 2; % -1=automatic, 0=primal simplex, 1=dual simplex, 2=barrier
 params.presolve = 0;
 if params.method == 2
   params.bariterlimit = 20; % iteration limit
@@ -40,17 +40,26 @@ else
   model.ub = ub;
 end
 
-if ~isempty(model.A) 
+if ~isempty(model.A) && params.method==2 
   model.obj = 2*model.obj;   
   % according to the documentation, I should always need this ...
   % (they claim to optimize x'Qx + f'x), but it seems that they are off by
   % a factor of 2 when there are no constraints.
 end
 
+
 result = gurobi(model,params);
 
 info = result.status;
 x = result.x;
+
+if isempty(model.A) && params.method==2
+  x = x/2;   
+  % according to the documentation, I should always need this ...
+  % (they claim to optimize x'Qx + f'x), but it seems that they are off by
+  % a factor of 2 when there are no constraints.
+end
+
 if (size(Ain,1)>0)
   active = find(abs(result.slack(size(Aeq,1)+1:end))<1e-6);
 else
