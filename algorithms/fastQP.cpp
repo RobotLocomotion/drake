@@ -310,6 +310,9 @@ GRBmodel* gurobiQP(GRBenv *env, vector< Map<tA> > QblkDiag, VectorXd& f, const M
   	}
   }
 
+  int method;  GRBgetintparam(env,"method",&method);
+
+  if (method==2)
   // Scale f by 2 because gurobi solves min x'Qx + f'x
   if (Aeq.rows()+Ain.rows()>0) f = 2*f;
 	// WARNING:  If there are no constraints, then gurobi clearly solves a different problem: min 1/2 x'Qx + f'x
@@ -325,6 +328,8 @@ GRBmodel* gurobiQP(GRBenv *env, vector< Map<tA> > QblkDiag, VectorXd& f, const M
 
   CGE (GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, nparams, x.data()), env);
 
+  if (Aeq.rows()+Ain.rows()==0) x = x/2;  // this is absolutely unbelievable.  see drake/algorithms/test/mygurobi.m
+
   // todo: populate active set
 
   return model;
@@ -333,6 +338,7 @@ GRBmodel* gurobiQP(GRBenv *env, vector< Map<tA> > QblkDiag, VectorXd& f, const M
 
 template int fastQP(vector< Map<MatrixXd> > QblkDiag, const MatrixBase< Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase< Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase< Map<VectorXd> >&, set<int>&, MatrixBase< Map<VectorXd> >&);
 template GRBmodel* gurobiQP(GRBenv *env, vector< Map<MatrixXd> > QblkDiag, VectorXd& f, const MatrixBase< Map<MatrixXd> >& Aeq, const MatrixBase< Map<VectorXd> >& beq, const MatrixBase< Map<MatrixXd> >& Ain, const MatrixBase< Map<VectorXd> >&bin, VectorXd& lb, VectorXd& ub, set<int>&, VectorXd&);
+template GRBmodel* gurobiQP(GRBenv *env, vector< Map<MatrixXd> > QblkDiag, VectorXd& f, const MatrixBase< MatrixXd >& Aeq, const MatrixBase< VectorXd >& beq, const MatrixBase< MatrixXd >& Ain, const MatrixBase< VectorXd >&bin, VectorXd&lb, VectorXd&ub, set<int>&, VectorXd&);
 
 /*
 template int fastQP(vector< MatrixBase< VectorXd > >, const MatrixBase< VectorXd >&, const MatrixBase< Matrix<double,-1,-1,RowMajor,1000,-1> >&, const MatrixBase< Matrix<double,-1,1,0,1000,1> >&, const MatrixBase< Matrix<double,-1,-1,RowMajor,1000,-1> >&, const MatrixBase< Matrix<double,-1,1,0,1000,1> >&, set<int>&, MatrixBase< VectorXd >&);
