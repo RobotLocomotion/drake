@@ -44,6 +44,11 @@ classdef ExpPlusPPTrajectory < Trajectory
   end
   
   methods  
+    function y = fasteval(obj,t)
+      % no error checking. numeric scalar t only.
+      [y,~] = ExpPlusPPTrajectoryEvalmex(obj.mex_ptr.getData, t);
+    end
+    
     function [y,jj] = eval(obj,t)
       if true && obj.mex_ptr~=0
         % fast C++ version

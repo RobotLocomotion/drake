@@ -41,6 +41,11 @@ classdef Trajectory < DrakeSystem
       end
     end
     
+    function y = fasteval(obj,t)
+      % derived classes should overload this to provide a fast, no-error-checking, eval method which supports only scalar numeric t inputs.      
+      y = eval(obj,t)
+    end
+    
     function dtraj = fnder(obj)
       error('not implemented yet');
     end
