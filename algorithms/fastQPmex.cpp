@@ -66,7 +66,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   if (nrhs>arg) {
   	double* pact = mxGetPr(prhs[arg]);
   	for (int i=0; i<mxGetNumberOfElements(prhs[arg]); i++)
-  		active.insert((int)pact[i]);
+  		active.insert((int)pact[i]-1);
   }
 
   plhs[0] = mxCreateDoubleMatrix(f.rows(), 1, mxREAL);
@@ -78,7 +78,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   	plhs[2] = mxCreateDoubleMatrix(active.size(),1,mxREAL);
   	int i=0; double* pact = mxGetPr(plhs[2]);
   	for (set<int>::iterator iter = active.begin(); iter!=active.end(); iter++)
-  		pact[i++] = (double) *iter;
+  		pact[i++] = (double) (*iter + 1);
   }
 }
 
