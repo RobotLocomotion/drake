@@ -2,7 +2,8 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   
   properties
     pp
-    javapp
+%    javapp
+    mex_ptr = 0
   end
   
   methods
@@ -10,7 +11,8 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       obj = obj@Trajectory(ppform.dim);
       obj.pp = PPTrajectory.minimalOrder(ppform);
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
-      obj.javapp = drake.systems.trajectories.JavaPP(obj.pp.breaks, obj.pp.coefs, obj.pp.order, obj.pp.dim);
+%      obj.javapp = drake.systems.trajectories.JavaPP(obj.pp.breaks, obj.pp.coefs, obj.pp.order, obj.pp.dim);
+      obj.mex_ptr = SharedDataHandle(PPTmex(obj.pp.breaks, obj.pp.coefs, obj.pp.order, obj.pp.dim));
     end
   end
   methods (Static)
@@ -21,10 +23,11 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   
   methods
     function y = eval(obj,t)
-      t=max(min(t,obj.tspan(end)),obj.tspan(1));
       if isscalar(t) && isnumeric(t)
-        y = obj.javapp.eval(t);
+%        y = obj.javapp.eval(t);
+         y = PPTmex(obj.mex_ptr.getData, 1, t);
       else
+        t=max(min(t,obj.tspan(end)),obj.tspan(1));
         y = ppvalSafe(obj.pp,t);  % still benefits from being safe (e.g. for supporting TaylorVar)
       end
     end
@@ -75,12 +78,14 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       sizecheck(offset,[1 1]);
       obj.tspan = obj.tspan + offset;
       obj.pp.breaks = obj.pp.breaks + offset;
-      obj.javapp.shiftTime(offset);
+%      obj.javapp.shiftTime(offset);
+      PPTmex(obj.mex_ptr, 2, offset);
     end
     
     function obj = uminus(obj)
       obj.pp.coefs = -obj.pp.coefs;
-      obj.javapp.uminus();
+%      obj.javapp.uminus();
+      PPTmex(obj.mex_ptr, 3);
     end
     
     function t = getBreaks(obj)
@@ -499,9 +504,9 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       newtraj.pp.coefs = [obj.pp.coefs; trajAtEnd.pp.coefs];
 
       % update javapp (could also construct a new object)
-      newtraj.javapp = drake.systems.trajectories.JavaPP(...
-          newtraj.pp.breaks, newtraj.pp.coefs, newtraj.pp.order, newtraj.pp.dim);
-%      newtraj = PPTrajectory(newtraj.pp);
+%      newtraj.javapp = drake.systems.trajectories.JavaPP(...
+%          newtraj.pp.breaks, newtraj.pp.coefs, newtraj.pp.order, newtraj.pp.dim);
+      newtraj = PPTrajectory(newtraj.pp);
       
       newtraj.dim = obj.dim;
       
