@@ -65,7 +65,7 @@ if options.use_mex
 % Mex'd gurobi version  
 %  if info
 %    warning('approximateIKEIQP failed.  trying gurobi version.');
-    [q,info] = approximateIKmex(obj.getMexModelPtr.getData,q0,q_nom,Q,varargin{:});
+    [q,info] = approximateIKmex(obj.getMexModelPtr.data,q0,q_nom,Q,varargin{:});
     info = (info~=2);  % gurobi "OPTIMAL" http://www.gurobi.com/documentation/5.5/reference-manual/node896#sec:StatusCodes
 %  end
   return;
