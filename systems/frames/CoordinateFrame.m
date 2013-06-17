@@ -64,7 +64,7 @@ classdef CoordinateFrame < handle
       
       ind=1;
       function str=coordinateName(~);
-        str=[prefix(ind),num2str(sum(prefix(1:ind)==prefix(ind)))];
+        str=[prefix(ind),sprintf('%d',sum(prefix(1:ind)==prefix(ind)))];
         ind=ind+1;
       end
       if (nargin<4 || isempty(coordinates))
