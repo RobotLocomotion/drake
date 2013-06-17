@@ -79,9 +79,13 @@ classdef CoordinateFrame < handle
       end
       if dim>0
         if (prefix=='t') error('oops.  destined for a collision with msspoly representing time'); end
-        obj.poly=msspoly('_',dim); % to be replaced below... just initializing 
-        for u=unique(prefix')
-          obj.poly(prefix==u)=msspoly(u,sum(prefix==u));
+        if all(prefix==prefix(1))
+          obj.poly=msspoly(prefix(1),dim);
+        else
+          obj.poly=msspoly('_',dim); % to be replaced below... just initializing 
+          for u=unique(prefix')
+            obj.poly(prefix==u)=msspoly(u,sum(prefix==u));
+          end
         end
       end
     end
