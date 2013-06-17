@@ -169,7 +169,7 @@ int fastQPThatTakesQinv(vector< MatrixXd* > QinvblkDiag, const VectorXd& f, cons
 
     if (iterCnt > MAX_ITER) {
       //Default to calling this method
-      cout << "FastQP max iter reached." << endl;
+//      cout << "FastQP max iter reached." << endl;
 //       mexErrMsgIdAndTxt("Drake:approximateIKmex:Error", "Max iter reached. Problem is likely infeasible");
       return -1;
     }
