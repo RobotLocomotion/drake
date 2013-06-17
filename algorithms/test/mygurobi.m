@@ -60,8 +60,9 @@ if isempty(model.A) && params.method==2
   % a factor of 2 when there are no constraints.
 end
 
-if (size(Ain,1)>0)
-  active = find(abs(result.slack(size(Aeq,1)+1:end))<1e-6);
+if (size(Ain,1)>0 || ~isempty(lb) || ~isempty(ub))
+  % note: result.slack(for Ain indices) = bin-Ain*x
+  active = find([result.slack(size(Aeq,1)+1:end); x-model.lb; model.ub-x]<1e-4);
 else
   active=[];
 end
