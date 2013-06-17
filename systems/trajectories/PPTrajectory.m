@@ -24,13 +24,13 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   methods
     function y = fasteval(obj,t)
       % no error checking. numeric scalar t only.
-      y = PPTmex(obj.mex_ptr.getData, 1, t);
+      y = PPTmex(obj.mex_ptr.data, 1, t);
     end
     
     function y = eval(obj,t)
       if isscalar(t) && isnumeric(t)
 %        y = obj.javapp.eval(t);
-         y = PPTmex(obj.mex_ptr.getData, 1, t);
+         y = PPTmex(obj.mex_ptr.data, 1, t);
       else
         t=max(min(t,obj.tspan(end)),obj.tspan(1));
         y = ppvalSafe(obj.pp,t);  % still benefits from being safe (e.g. for supporting TaylorVar)

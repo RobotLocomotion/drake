@@ -23,7 +23,7 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
     dH = [dH, zeros(m.NB*m.NB,m.NB)];
     dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
-    [H,C] = HandCmex(obj.mex_model_ptr.getData,q,qd,f_ext);
+    [H,C] = HandCmex(obj.mex_model_ptr.data,q,qd,f_ext);
   end
 else  
   if (nargout>3)
