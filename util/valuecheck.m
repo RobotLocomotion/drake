@@ -63,7 +63,7 @@ if (tf && any(abs(val(:)-desired_val(:))>tol))
     for i=1:numel(ind)
       b = cellfun(@(b) b(i),a);
       indstr = ['(',sprintf('%d,',b(1:end-1)), sprintf('%d)',b(end))];
-      errstr = [errstr, sprintf('%10s %12f %15f\n',indstr,val(ind(i)),desired_val(ind(i)))];
+      errstr = [errstr, sprintf('%10s %12f %15f\n',indstr,full(val(ind(i))),full(desired_val(ind(i))))];
     end
     errstr = sprintf('Values don''t match.\n    Index       Value       Desired Value\n   -------     --------    ---------------\n%s', errstr);
   end

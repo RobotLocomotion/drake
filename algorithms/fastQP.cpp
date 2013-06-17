@@ -245,6 +245,48 @@ int fastQP(vector< MatrixXd* > QblkDiag, const VectorXd& f, const MatrixXd& Aeq,
   return info;
 }
 
+/* Example call (allocate inequality matrix, call function, resize inequalites:
+  VectorXd binBnd = VectorXd(2*N);
+  AinBnd.setZero();
+  int numIneq = boundToIneq(ub,lb,AinBnd,binBnd);
+  AinBnd.resize(numIneq,N);
+  binBnd.resize(numIneq);
+*/
+/*
+int boundToIneq(const VectorXd& uB,const VectorXd& lB, MatrixXd& Ain, VectorXd& bin)
+{
+    int rCnt = 0;
+    int cCnt = 0;
+
+    if (uB.rows()+lB.rows() > A.rows() ) {
+        cerr << "not enough memory allocated";
+    }
+
+    if (uB.rows()+lB.rows() > b.rows() ) {
+        cerr << "not enough memory allocated";
+    }
+
+    for (int i = 0; i < lB.rows(); i++ ) {
+        if (!isinf(lB(i))) {
+            cout << lB(i);
+            cout << i;
+            Ain(rCnt,cCnt++) = -1;//lB(i);
+            bin(rCnt++) = -lB(i);
+        }
+    }
+    cCnt = 0;
+    for (int i = 0; i < uB.rows(); i++ ) {
+        if (!isinf(uB(i))) {
+            Ain(rCnt,cCnt++) = 1;//uB(i);
+            bin(rCnt++) = uB(i);
+        }
+    }
+
+    //resizing inside function all causes exception (why??)
+    //A.resize(rCnt,uB.rows());
+    return rCnt;
+}
+*/
 
 
 
@@ -280,7 +322,7 @@ int myGRBaddconstrs(GRBmodel *model, MatrixBase<DerivedA> const & A, MatrixBase<
 
 //template <typename tA, typename tB, typename tC, typename tD, typename tE>
 //GRBmodel* gurobiQP(GRBenv *env, vector< MatrixBase<tA>* > QblkDiag, VectorXd& f, const MatrixBase<tB>& Aeq, const MatrixBase<tC>& beq, const MatrixBase<tD>& Ain, const MatrixBase<tE>& bin, VectorXd& lb, VectorXd& ub, set<int>& active, VectorXd& x)
-GRBmodel* gurobiQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd& f, const MatrixXd& Aeq, const VectorXd& beq, const MatrixXd& Ain, const VectorXd& bin, VectorXd& lb, VectorXd& ub, set<int>& active, VectorXd& x)
+GRBmodel* gurobiQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd& f, const MatrixXd& Aeq, const VectorXd& beq, const MatrixXd& Ain, const VectorXd& bin, VectorXd& lb, VectorXd& ub, set<int>& active, VectorXd& x, double active_set_slack_tolerance)
 {
 	// Note: f,lb, and ub are VectorXd instead of const MatrixBase templates because i want to be able to call f.data() on them
 
@@ -289,16 +331,21 @@ GRBmodel* gurobiQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd& f, const
 
   GRBmodel *model = NULL;
 
-  int i,j,nparams = f.rows();
-  CGE (GRBnewmodel(env,&model,"QP",nparams,NULL,lb.data(),ub.data(),NULL,NULL), env);
+  int i,j,nparams = f.rows(),Qi,Qj;
+  double *lbdata = NULL, *ubdata=NULL;
+  if (lb.rows()==nparams) lbdata = lb.data();
+  if (ub.rows()==nparams) ubdata = ub.data();
+  CGE (GRBnewmodel(env,&model,"QP",nparams,NULL,lbdata,ubdata,NULL,NULL), env);
 
   int startrow=0,d;
   for (vector< MatrixXd* >::iterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
   	MatrixXd* Q=*iterQ;
   	if (Q->rows() == 1 || Q->cols() == 1) {  // it's a vector
   		d = Q->rows()*Q->cols();
-  	  for (i=0; i<d; i++)
-  	  	CGE (GRBaddqpterms(model,1,&i,&i,&(Q->operator()(i))), env);
+  	  for (i=0; i<d; i++) {
+  	  	Qi=i+startrow;
+  	  	CGE (GRBaddqpterms(model,1,&Qi,&Qi,&(Q->operator()(i))), env);
+  	  }
   	  startrow=startrow+d;
   	} else { // potentially dense matrix
   		d = Q->rows();
@@ -308,8 +355,10 @@ GRBmodel* gurobiQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd& f, const
   		}
 
   	  for (i=0; i<d; i++)
-    	  for (j=0; j<d; j++)
-    	  	CGE (GRBaddqpterms(model,1,&i,&j,&(Q->operator()(i,j))), env);
+    	  for (j=0; j<d; j++) {
+    	  	Qi=i+startrow; Qj = j+startrow;
+    	  	CGE (GRBaddqpterms(model,1,&Qi,&Qj,&(Q->operator()(i,j))), env);
+    	  }
   	  startrow=startrow+d;
   	}
   	if (startrow>nparams) {
@@ -336,9 +385,26 @@ GRBmodel* gurobiQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd& f, const
 
   CGE (GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, nparams, x.data()), env);
 
-  if (Aeq.rows()+Ain.rows()==0) x = x/2;  // this is absolutely unbelievable.  see drake/algorithms/test/mygurobi.m
+  if (Aeq.rows()+Ain.rows()==0) x /= 2.0;  // this is absolutely unbelievable.  see drake/algorithms/test/mygurobi.m
 
-  // todo: populate active set
+  VectorXd slack(Aeq.rows()+Ain.rows());
+  CGE (GRBgetdblattrarray(model, "Slack", 0, nparams, slack.data()), env);
+
+  int offset=Aeq.rows();
+  active.clear();
+  for (int i=0; i<Ain.rows(); i++) {
+  	if (slack(offset+i)<active_set_slack_tolerance)
+  		active.insert(i);
+  }
+  offset = Ain.rows();
+  if (lb.rows()==nparams)
+  	for (int i=0; i<nparams; i++)
+  		if (x(i)-lb(i) < active_set_slack_tolerance)
+  			active.insert(offset+i);
+  if (ub.rows()==nparams)
+  	for (int i=0; i<nparams; i++)
+  		if (ub(i)-x(i) < active_set_slack_tolerance)
+  			active.insert(offset+i+nparams);
 
   return model;
 }
