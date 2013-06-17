@@ -387,13 +387,13 @@ GRBmodel* gurobiQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd& f, const
 
   if (Aeq.rows()+Ain.rows()==0) x /= 2.0;  // this is absolutely unbelievable.  see drake/algorithms/test/mygurobi.m
 
-  VectorXd slack(Aeq.rows()+Ain.rows());
-  CGE (GRBgetdblattrarray(model, "Slack", 0, nparams, slack.data()), env);
+  VectorXd slack(Ain.rows());
+  CGE (GRBgetdblattrarray(model, "Slack", Aeq.rows(), Ain.rows(), slack.data()), env);
 
-  int offset=Aeq.rows();
+  int offset=0;
   active.clear();
   for (int i=0; i<Ain.rows(); i++) {
-  	if (slack(offset+i)<active_set_slack_tolerance)
+  	if (slack(i)<active_set_slack_tolerance)
   		active.insert(i);
   }
   offset = Ain.rows();
