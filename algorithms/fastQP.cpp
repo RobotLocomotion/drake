@@ -17,8 +17,9 @@ using namespace Eigen;
 using namespace std;
 
 
-template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
-int fastQPThatTakesQinv(vector< Map<tA> > QinvblkDiag, const MatrixBase<tB>& f, const MatrixBase<tC>& Aeq, const MatrixBase<tD>& beq, const MatrixBase<tE>& Ain, const MatrixBase<tF>& bin, set<int>& active, MatrixBase<tG>& x)
+//template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
+//int fastQPThatTakesQinv(vector< MatrixBase<tA>* > QinvblkDiag, const MatrixBase<tB>& f, const MatrixBase<tC>& Aeq, const MatrixBase<tD>& beq, const MatrixBase<tE>& Ain, const MatrixBase<tF>& bin, set<int>& active, MatrixBase<tG>& x)
+int fastQPThatTakesQinv(vector< MatrixXd* > QinvblkDiag, const VectorXd& f, const MatrixXd& Aeq, const VectorXd& beq, const MatrixXd& Ain, const VectorXd& bin, set<int>& active, VectorXd& x)
 {
   int i,d;
   int fail = 0;
@@ -43,14 +44,17 @@ int fastQPThatTakesQinv(vector< Map<tA> > QinvblkDiag, const MatrixBase<tB>& f, 
 
   // calculate a bunch of stuff that is constant during each iteration
   int startrow=0;
-  for (vector<Map<MatrixXd> >::iterator iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
-  	int numRow = iterQinv->rows();
-  	int numCol = iterQinv->cols();
+//  for (typename vector< MatrixBase<tA>* >::iterator iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
+//  	MatrixBase<tA> *thisQinv = *iterQinv;
+  for (typename vector< MatrixXd* >::iterator iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
+  	MatrixXd *thisQinv = *iterQinv;
+  	int numRow = thisQinv->rows();
+  	int numCol = thisQinv->cols();
 
   	if (numRow == 1 || numCol == 1) {  // it's a vector
   		d = numRow*numCol;
-  		if (M>0) QinvAteq.block(startrow,0,d,M)= iterQinv->asDiagonal()*Aeq.block(0,startrow,M,d).transpose();  // Aeq.transpoODse().block(startrow,0,d,N)
-			minusQinvf.segment(startrow,d) = -iterQinv->cwiseProduct(f.segment(startrow,d));
+  		if (M>0) QinvAteq.block(startrow,0,d,M)= thisQinv->asDiagonal()*Aeq.block(0,startrow,M,d).transpose();  // Aeq.transpoODse().block(startrow,0,d,N)
+			minusQinvf.segment(startrow,d) = -thisQinv->cwiseProduct(f.segment(startrow,d));
 			startrow=startrow+d;
   	} else { // potentially dense matrix
 			d = numRow;
@@ -58,8 +62,8 @@ int fastQPThatTakesQinv(vector< Map<tA> > QinvblkDiag, const MatrixBase<tB>& f, 
 					cerr << "Q is not square! " << numRow << "x" << numCol << "\n";
 					return -2;
 			}
-			if (M>0) QinvAteq.block(startrow,0,d,M) = (*iterQinv)*Aeq.block(0,startrow,M,d).transpose();  // Aeq.transpose().block(startrow,0,d,N)
-			minusQinvf.segment(startrow,d) = -(*iterQinv)*f.segment(startrow,d);
+			if (M>0) QinvAteq.block(startrow,0,d,M) = thisQinv->operator*(Aeq.block(0,startrow,M,d).transpose());  // Aeq.transpose().block(startrow,0,d,N)
+			minusQinvf.segment(startrow,d) = -thisQinv->operator*(f.segment(startrow,d));
 			startrow=startrow+d;
 		}
   	if (startrow>N) {
@@ -103,14 +107,15 @@ int fastQPThatTakesQinv(vector< Map<tA> > QinvblkDiag, const MatrixBase<tB>& f, 
 
       if (n_active>0) {
 				int startrow=0;
-				for (vector< Map<MatrixXd> >::iterator iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
-					d = iterQinv->rows();
-					int numCol = iterQinv->cols();
+				for (vector< MatrixXd* >::iterator iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
+					MatrixXd* thisQinv = (*iterQinv);
+					d = thisQinv->rows();
+					int numCol = thisQinv->cols();
 
 					if (numCol == 1) {  // it's a vector
-						QinvAt.block(startrow,0,d,M+n_active) << QinvAteq.block(startrow,0,d,M), ((*iterQinv).asDiagonal())*Aact.block(0,startrow,n_active,d).transpose();
+						QinvAt.block(startrow,0,d,M+n_active) << QinvAteq.block(startrow,0,d,M), thisQinv->asDiagonal()*Aact.block(0,startrow,n_active,d).transpose();
 					} else { // it's a matrix
-						QinvAt.block(startrow,0,d,M+n_active) << QinvAteq.block(startrow,0,d,M), (*iterQinv)*Aact.block(0,startrow,n_active,d).transpose();
+						QinvAt.block(startrow,0,d,M+n_active) << QinvAteq.block(startrow,0,d,M), thisQinv->operator*(Aact.block(0,startrow,n_active,d).transpose());
 					}
 
 					startrow=startrow+d;
@@ -172,8 +177,9 @@ int fastQPThatTakesQinv(vector< Map<tA> > QinvblkDiag, const MatrixBase<tB>& f, 
   return iterCnt;
 }
 
-template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
-int fastQP(vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const MatrixBase<tC>& Aeq, const MatrixBase<tD>& beq, const MatrixBase<tE>& Ain, const MatrixBase<tF>& bin, set<int>& active, MatrixBase<tG>& x)
+//template <typename tA, typename tB, typename tC, typename tD, typename tE, typename tF, typename tG>
+//int fastQP(vector< MatrixBase<tA>* > QblkDiag, const MatrixBase<tB>& f, const MatrixBase<tC>& Aeq, const MatrixBase<tD>& beq, const MatrixBase<tE>& Ain, const MatrixBase<tF>& bin, set<int>& active, MatrixBase<tG>& x)
+int fastQP(vector< MatrixXd* > QblkDiag, const VectorXd& f, const MatrixXd& Aeq, const VectorXd& beq, const MatrixXd& Ain, const VectorXd& bin, set<int>& active, VectorXd& x)
 {
   /* min 1/2 * x'QblkDiag'x + f'x s.t A x = b, Ain x <= bin
    * using active set method.  Iterative solve a linearly constrained
@@ -192,7 +198,7 @@ int fastQP(vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const MatrixBase
 	int N = f.rows();
 
   MatrixXd* Qinv = new MatrixXd[QblkDiag.size()];
-  vector< Map<MatrixXd> > Qinvmap;
+  vector< MatrixXd* > Qinvmap;
 
 	#define REG 1e-13
   // calculate a bunch of stuff that is constant during each iteration
@@ -200,14 +206,15 @@ int fastQP(vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const MatrixBase
   //typedef typename vector< MatrixBase<tA> >::iterator Qiterator;
 
   int i=0;
-  for (vector<Map<MatrixXd> >::iterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
-  	int numRow = iterQ->rows();
-  	int numCol = iterQ->cols();
+  for (vector< MatrixXd* >::iterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
+  	MatrixXd* thisQ = *iterQ;
+  	int numRow = thisQ->rows();
+  	int numCol = thisQ->cols();
 
   	if (numCol == 1) {  // it's a vector
-  		VectorXd Qdiag_mod = *iterQ + VectorXd::Constant(numRow,REG); // regularize
+  		VectorXd Qdiag_mod = thisQ->operator+(VectorXd::Constant(numRow,REG)); // regularize
   		Qinv[i] = Qdiag_mod.cwiseInverse();
-  		Qinvmap.push_back( Map<MatrixXd>(Qinv[i].data(),numRow,numCol) );
+  		Qinvmap.push_back( &Qinv[i] );
   		startrow=startrow+numRow;
 		} else { // potentially dense matrix
 			if (numRow!=numCol) {
@@ -218,9 +225,9 @@ int fastQP(vector< Map<tA> > QblkDiag, const MatrixBase<tB>& f, const MatrixBase
 				return -2;
 			}
 
-			MatrixXd Q_mod = *iterQ + REG*MatrixXd::Identity(numRow,numRow);
+			MatrixXd Q_mod = thisQ->operator+(REG*MatrixXd::Identity(numRow,numRow));
 			Qinv[i] = Q_mod.inverse();
-  		Qinvmap.push_back( Map<MatrixXd>(Qinv[i].data(),numRow,numCol) );
+  		Qinvmap.push_back( &Qinv[i] );
   		startrow=startrow+numRow;
 		}
 //  	cout << "Qinv{" << i << "} = " << Qinv[i] << endl;
@@ -271,8 +278,9 @@ int myGRBaddconstrs(GRBmodel *model, MatrixBase<DerivedA> const & A, MatrixBase<
   return error;
 }
 
-template <typename tA, typename tB, typename tC, typename tD, typename tE>
-GRBmodel* gurobiQP(GRBenv *env, vector< Map<tA> > QblkDiag, VectorXd& f, const MatrixBase<tB>& Aeq, const MatrixBase<tC>& beq, const MatrixBase<tD>& Ain, const MatrixBase<tE>& bin, VectorXd& lb, VectorXd& ub, set<int>& active, VectorXd& x)
+//template <typename tA, typename tB, typename tC, typename tD, typename tE>
+//GRBmodel* gurobiQP(GRBenv *env, vector< MatrixBase<tA>* > QblkDiag, VectorXd& f, const MatrixBase<tB>& Aeq, const MatrixBase<tC>& beq, const MatrixBase<tD>& Ain, const MatrixBase<tE>& bin, VectorXd& lb, VectorXd& ub, set<int>& active, VectorXd& x)
+GRBmodel* gurobiQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd& f, const MatrixXd& Aeq, const VectorXd& beq, const MatrixXd& Ain, const VectorXd& bin, VectorXd& lb, VectorXd& ub, set<int>& active, VectorXd& x)
 {
 	// Note: f,lb, and ub are VectorXd instead of const MatrixBase templates because i want to be able to call f.data() on them
 
@@ -285,23 +293,23 @@ GRBmodel* gurobiQP(GRBenv *env, vector< Map<tA> > QblkDiag, VectorXd& f, const M
   CGE (GRBnewmodel(env,&model,"QP",nparams,NULL,lb.data(),ub.data(),NULL,NULL), env);
 
   int startrow=0,d;
-  for (vector<Map<MatrixXd> >::iterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
-  	Map<tA> Q=*iterQ;
-  	if (Q.rows() == 1 || Q.cols() == 1) {  // it's a vector
-  		d = Q.rows()*Q.cols();
+  for (vector< MatrixXd* >::iterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
+  	MatrixXd* Q=*iterQ;
+  	if (Q->rows() == 1 || Q->cols() == 1) {  // it's a vector
+  		d = Q->rows()*Q->cols();
   	  for (i=0; i<d; i++)
-  	  	CGE (GRBaddqpterms(model,1,&i,&i,&(Q(i))), env);
+  	  	CGE (GRBaddqpterms(model,1,&i,&i,&(Q->operator()(i))), env);
   	  startrow=startrow+d;
   	} else { // potentially dense matrix
-  		d = Q.rows();
-  		if (d!=Q.cols()) {
-  			cerr << "Q is not square! " << Q.rows() << "x" << Q.cols() << "\n";
+  		d = Q->rows();
+  		if (d!=Q->cols()) {
+  			cerr << "Q is not square! " << Q->rows() << "x" << Q->cols() << "\n";
   			return NULL;
   		}
 
   	  for (i=0; i<d; i++)
     	  for (j=0; j<d; j++)
-    	  	CGE (GRBaddqpterms(model,1,&i,&j,&(Q(i,j))), env);
+    	  	CGE (GRBaddqpterms(model,1,&i,&j,&(Q->operator()(i,j))), env);
   	  startrow=startrow+d;
   	}
   	if (startrow>nparams) {
@@ -320,8 +328,8 @@ GRBmodel* gurobiQP(GRBenv *env, vector< Map<tA> > QblkDiag, VectorXd& f, const M
 
   CGE (GRBsetdblattrarray(model,"Obj",0,nparams,f.data()), env);
 
-  if (Aeq.rows()>0) CGE (myGRBaddconstrs(model,Aeq,beq,GRB_EQUAL, 1e-10), env);
-  if (Ain.rows()>0) CGE (myGRBaddconstrs(model,Ain,bin,GRB_LESS_EQUAL, 1e-10), env);
+  if (Aeq.rows()>0) CGE (myGRBaddconstrs(model,Aeq,beq,GRB_EQUAL, 1e-18), env);
+  if (Ain.rows()>0) CGE (myGRBaddconstrs(model,Ain,bin,GRB_LESS_EQUAL, 1e-18), env);
 
   CGE (GRBupdatemodel(model), env);
   CGE (GRBoptimize(model), env);
@@ -335,10 +343,11 @@ GRBmodel* gurobiQP(GRBenv *env, vector< Map<tA> > QblkDiag, VectorXd& f, const M
   return model;
 }
 
-
-template int fastQP(vector< Map<MatrixXd> > QblkDiag, const MatrixBase< Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase< Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase< Map<VectorXd> >&, set<int>&, MatrixBase< Map<VectorXd> >&);
-template GRBmodel* gurobiQP(GRBenv *env, vector< Map<MatrixXd> > QblkDiag, VectorXd& f, const MatrixBase< Map<MatrixXd> >& Aeq, const MatrixBase< Map<VectorXd> >& beq, const MatrixBase< Map<MatrixXd> >& Ain, const MatrixBase< Map<VectorXd> >&bin, VectorXd& lb, VectorXd& ub, set<int>&, VectorXd&);
-template GRBmodel* gurobiQP(GRBenv *env, vector< Map<MatrixXd> > QblkDiag, VectorXd& f, const MatrixBase< MatrixXd >& Aeq, const MatrixBase< VectorXd >& beq, const MatrixBase< MatrixXd >& Ain, const MatrixBase< VectorXd >&bin, VectorXd&lb, VectorXd&ub, set<int>&, VectorXd&);
+/*
+template int fastQP(vector< MatrixBase<MatrixXd>* > QblkDiag, const MatrixBase< Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase< Map<VectorXd> >&, const MatrixBase< Map<MatrixXd> >&, const MatrixBase< Map<VectorXd> >&, set<int>&, MatrixBase< Map<VectorXd> >&);
+template GRBmodel* gurobiQP(GRBenv *env, vector< MatrixBase<MatrixXd>* > QblkDiag, VectorXd& f, const MatrixBase< Map<MatrixXd> >& Aeq, const MatrixBase< Map<VectorXd> >& beq, const MatrixBase< Map<MatrixXd> >& Ain, const MatrixBase< Map<VectorXd> >&bin, VectorXd& lb, VectorXd& ub, set<int>&, VectorXd&);
+template GRBmodel* gurobiQP(GRBenv *env, vector< MatrixBase<MatrixXd>* > QblkDiag, VectorXd& f, const MatrixBase< MatrixXd >& Aeq, const MatrixBase< VectorXd >& beq, const MatrixBase< MatrixXd >& Ain, const MatrixBase< VectorXd >&bin, VectorXd&lb, VectorXd&ub, set<int>&, VectorXd&);
+*/
 
 /*
 template int fastQP(vector< MatrixBase< VectorXd > >, const MatrixBase< VectorXd >&, const MatrixBase< Matrix<double,-1,-1,RowMajor,1000,-1> >&, const MatrixBase< Matrix<double,-1,1,0,1000,1> >&, const MatrixBase< Matrix<double,-1,-1,RowMajor,1000,-1> >&, const MatrixBase< Matrix<double,-1,1,0,1000,1> >&, set<int>&, MatrixBase< VectorXd >&);

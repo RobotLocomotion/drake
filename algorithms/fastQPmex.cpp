@@ -16,19 +16,30 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   }
   if (nlhs<1) return;
 
-  int arg=0;
+  int arg=0, nblks=1;
 
-  vector< Map<MatrixXd> > QblkMat;
+  if (mxIsCell(prhs[arg])) nblks = mxGetNumberOfElements(prhs[arg]);
+  MatrixXd* Q = new MatrixXd[nblks];
+
+  vector < MatrixXd* > QblkMat;
+
+  /*
+   * NOTE: I am copying memory from the matlab inputs to the MatrixXd structures in the loop below.
+   * This could be avoided by passing Map<>* through to fastQP, but the getting all of the templates
+   *  right is a pain and I'm out of time.  :)  Will finish it later.
+   */
+
   if (mxIsCell(prhs[arg])) {
   	mxArray* QblkDiagCellArray = (mxArray *) prhs[arg++];
-  	for (int i=0; i< mxGetNumberOfElements(QblkDiagCellArray);i++) {
+  	for (int i=0; i<nblks; i++) {
   		mxArray* Qblk = mxGetCell(QblkDiagCellArray,i);
   		int m=mxGetM(Qblk),n=mxGetN(Qblk);
   		if (m*n==0) continue;
-  		else if (m==1 || n==1) // then it's a vector
-  			QblkMat.push_back(Map<MatrixXd>(mxGetPr(Qblk), m*n, 1));  // always want a column vector
+  		else if (m==1 || n==1)  // then it's a vector
+  			Q[i] = Map<MatrixXd>(mxGetPr(Qblk), m*n, 1);
   		else
-  			QblkMat.push_back(Map<MatrixXd>(mxGetPr(Qblk), m, n));
+  			Q[i] = Map<MatrixXd>(mxGetPr(Qblk), m, n);
+  		QblkMat.push_back(&Q[i]);
   	}
     if (QblkMat.size()<1) mexErrMsgIdAndTxt("Drake:FastQP:BadInputs","Q is empty");
   } else {
@@ -36,11 +47,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 		if (m*n==0)
 			mexErrMsgIdAndTxt("Drake:FastQP:BadInputs","Q is empty");
 		else if (m==1 || n==1) // then it's a vector
-			QblkMat.push_back(Map<MatrixXd>(mxGetPr(prhs[arg]),m*n,1)); // always want a column vector
+			Q[0] = Map<MatrixXd>(mxGetPr(prhs[arg]),m*n,1); // always want a column vector
 		else
-			QblkMat.push_back(Map<MatrixXd>(mxGetPr(prhs[arg]),m,n));
+			Q[0] = Map<MatrixXd>(mxGetPr(prhs[arg]),m,n);
 		arg++;
+		QblkMat.push_back(&Q[0]);
   }
+
 
   Map<VectorXd>f(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg])); arg++;
   int N = f.rows();  // support row or column vectors
@@ -69,10 +82,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   		active.insert((int)pact[i]-1);
   }
 
+  // NOTE: another copy happening down here.  TODO: fix it with templates (later)
+  VectorXd x(f.rows());
+  int info = fastQP(QblkMat,f, Aeq, beq, Ain, bin, active, x);
+
   plhs[0] = mxCreateDoubleMatrix(f.rows(), 1, mxREAL);
-  Map<VectorXd> x(mxGetPr(plhs[0]),f.rows());
-  
-  int info = fastQP(QblkMat,f, Aeq, beq, Ain, bin,active,x);
+  memcpy(mxGetPr(plhs[0]),x.data(),sizeof(double)*f.rows());
+
   if (nlhs>1) plhs[1] = mxCreateDoubleScalar((double)info);
   if (nlhs>2) {
   	plhs[2] = mxCreateDoubleMatrix(active.size(),1,mxREAL);
