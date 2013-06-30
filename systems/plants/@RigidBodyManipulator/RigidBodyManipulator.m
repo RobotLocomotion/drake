@@ -491,11 +491,18 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function body = findLink(model,linkname,varargin)
-      error('the finkLink method has been deprecated.  if you really must get a *copy* of the body, then use finkLinkInd followed by getLink');
+      error('the finkLink method has been deprecated.  if you really must get a *copy* of the body, then use finkLinkInd followed by getBody');
     end
     
-    function body = getLink(model,body_ind)
+    function body = getBody(model,body_ind)
       body = model.body(body_ind);
+    end
+    
+    function model = setBody(model,body_ind,body)
+      typecheck(body_ind,'double');
+      typecheck(body,'RigidBody');
+      model.body(body_ind) = body;
+      model.dirty = true;
     end
         
     function body_ind = findJointInd(model,jointname,robot)
@@ -512,7 +519,7 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function body = findJoint(model,jointname,robot)
-      error('the finkJoint method has been deprecated.  if you really must get a *copy* of the body associated with this joint, then use finkJointInd followed by getLink');
+      error('the finkJoint method has been deprecated.  if you really must get a *copy* of the body associated with this joint, then use finkJointInd followed by getBody');
     end      
     
     function b=leastCommonAncestor(model,body1,body2)
@@ -648,7 +655,7 @@ classdef RigidBodyManipulator < Manipulator
     
     function index = getActuatedJoints(model)
       joint = [model.actuator.joint];
-      index = [joint.dofnum];
+      index = [model.body(joint).dofnum];
     end        
     
     function varargout = pdcontrol(sys,Kp,Kd,index)
@@ -1042,11 +1049,11 @@ classdef RigidBodyManipulator < Manipulator
         for j=1:length(model.loop)
           if (model.loop(j).body1 == i)
             model.loop(j).pt1 = body.Ttree(1:end-1,:)*[model.loop(j).pt1;1];
-            model.loop(j).body1 = parent;
+            model.loop(j).body1 = body.parent;
           end
           if (model.loop(j).body2 == i)
             model.loop(j).pt2 = body.Ttree(1:end-1,:)*[model.loop(j).pt2;1];
-            model.loop(j).body2 = parent;
+            model.loop(j).body2 = body.parent;
           end
         end
         
@@ -1065,7 +1072,7 @@ classdef RigidBodyManipulator < Manipulator
           
         % error on actuators
         if (~isempty(model.actuator) && any([model.actuator.joint] == i))
-          model.actuator(find([model.actuator.joint]==body))=[];
+          model.actuator(find([model.actuator.joint]==i))=[];
           % actuators could be attached to fixed joints, because I
           % occasionally weld joints together (e.g. in planar processing of
           % a 3D robot)

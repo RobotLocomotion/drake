@@ -5,7 +5,7 @@ classdef CartTable2D < TimeSteppingRigidBodyManipulator
       obj = obj@TimeSteppingRigidBodyManipulator('CartTable.urdf',0.005,struct('floating',true,'twoD',true));
       
       obj = addSensor(obj,FullStateFeedbackSensor());
-      s = ContactForceTorqueSensor(obj,findLink(obj,'base+base_part2+base_part3'),[0;0],0);
+      s = ContactForceTorqueSensor(obj,findLinkInd(obj,'base'),[0;0],0);
       s.frame = CartTable2DFT;
       obj = addSensor(obj,s);
       obj = compile(obj);

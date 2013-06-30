@@ -34,8 +34,8 @@ q0 = xstar(1:r.getNumDOF);
 for i=1:1,
 %DEFAULT CHECK
 
-r_foot = r.findLink('r_foot');
-head = r.findLink('head');
+r_foot = r.findLinkInd('r_foot');
+head = r.findLinkInd('head');
 head_con.type = 'gaze';
 head_con.gaze_axis = [1;0;0];
 head_con.gaze_orientation = rpy2quat([randn/10;randn/10;randn/2]*0);

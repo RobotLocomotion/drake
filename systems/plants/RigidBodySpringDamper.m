@@ -12,7 +12,9 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
   
   methods
     function [f_ext,bodyind] = computeSpatialForce(obj,manip,q,qd)
-      kinsol = doKinematics(manip,q);  
+      % todo: re-enable mex for planar version when i write mex the planer
+      % bodykin
+      kinsol = doKinematics(manip,q,false,~isa(manip,'PlanarRigidBodyManipulator'));  
       
       if (obj.b~=0)
         [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);

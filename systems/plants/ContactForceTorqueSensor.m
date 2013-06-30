@@ -44,10 +44,10 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
     function obj = compile(obj,tsmanip,manip)
       if (tsmanip.position_control) error('need to update this method for this case'); end
 
-      body = getLink(manip,obj.body);
+      body = getBody(manip,obj.body);
       
       if isempty(body.contact_pts)
-        error('Drake:ContactForceTorqueSensor:NoContactPts','There are no contact points associated with body %s',body.name);
+        error('Drake:ContactForceTorqueSensor:NoContactPts','There are no contact points associated with body %s',body.linkname);
       end
 
       if tsmanip.twoD
@@ -120,7 +120,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
       
       % todo: re-enable mex here when i implement the planar mex version of
       % bodykin
-      kinsol = doKinematics(manip,x(1:manip.getNumDOF),false,false);
+      kinsol = doKinematics(manip,x(1:manip.getNumDOF),false,~isa(manip,'PlanarRigidBodyManipulator'));
       contact_pos = forwardKin(manip,kinsol,obj.body,body.contact_pts);
       
       [d,N] = size(contact_pos);

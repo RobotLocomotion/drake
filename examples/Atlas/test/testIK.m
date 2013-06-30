@@ -48,12 +48,12 @@ q_rot0 = q0;
 q_rot1 = q0;
 q_rot0(6) = pi/2 - 0.01;
 q_rot1(6) = pi/2 + 0.01;
-l_foot = r.findLink('l_foot');
+l_foot = r.findLinkInd('l_foot');
 kinsol = doKinematics(r, q_rot1);
 l_foot_pts = [0;0;0];
 l_foot_pos = forwardKin(r, kinsol, l_foot, l_foot_pts, 1);
 l_foot_pos_q = forwardKin(r, kinsol, l_foot, l_foot_pts, 2);
-r_foot = r.findLink('r_foot');
+r_foot = r.findLinkInd('r_foot');
 kinsol = doKinematics(r, q_rot0);
 r_foot_pts = [0;0;0];
 r_foot_pos = forwardKin(r, kinsol, r_foot, r_foot_pts, 1);
@@ -75,12 +75,12 @@ q_rot0 = q0;
 q_rot1 = q0;
 q_rot0(6) = pi - 0.01;
 q_rot1(6) = -pi + 0.01;
-l_foot = r.findLink('l_foot');
+l_foot = r.findLinkInd('l_foot');
 kinsol = doKinematics(r, q_rot1);
 l_foot_pts = [0;0;0];
 l_foot_pos = forwardKin(r, kinsol, l_foot, l_foot_pts, 1);
 l_foot_pos_q = forwardKin(r, kinsol, l_foot, l_foot_pts, 2);
-r_foot = r.findLink('r_foot');
+r_foot = r.findLinkInd('r_foot');
 kinsol = doKinematics(r, q_rot0);
 r_foot_pts = [0;0;0];
 r_foot_pos = forwardKin(r, kinsol, r_foot, r_foot_pts, 1);
@@ -122,7 +122,7 @@ end
  
 testmex(0,[0;0;2]);
  
-r_foot = r.findLink('r_foot');
+r_foot = r.findLinkINd('r_foot');
 testmex(0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2]);
 testmex(0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2;0;0;0]);
 testmex(0,[0;0;nan],r_foot,[0;0;0],[0;-.1;.2;0;0;0]);
@@ -134,7 +134,7 @@ qmex = inverseKin(r,q0,0,[0;0;2],mexoptions);
 valuecheck(qmex,q,1e-5);
 v.draw(1,[q;0*q]); drawnow;
 
-r_foot = r.findLink('r_foot');
+r_foot = r.findLinkInd('r_foot');
 q = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],options);
 tic
 qmex = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],mexoptions);
@@ -171,14 +171,14 @@ tic
 [q,info] = inverseKin(r,q0,0,[0;0;nan],r_foot,r_foot_pts,r_foot_pos,l_foot,l_foot_pts,l_foot_pos,options);
 toc
 
-pelvis = r.findLink('pelvis');
+pelvis = r.findLinkInd('pelvis');
 kinsol = doKinematics(r,q+0.01*randn(size(q)));
 pelvis_pos = forwardKin(r,kinsol,pelvis,[0;0;0],1);
 tic
 [q,info] = inverseKin(r,q0,0,[0;0;nan],r_foot,r_foot_pts,r_foot_pos,l_foot,l_foot_pts,l_foot_pos,pelvis,[0;0;0],pelvis_pos,options);
 toc
 
-l_hand = r.findLink('l_hand');
+l_hand = r.findLinkInd('l_hand');
 kinsol = doKinematics(r,q+0.01*randn(size(q)));
 l_hand_pts = [[0;0;0] [1;0.1;0.2]];
 l_hand_pos = forwardKin(r,kinsol,l_hand,l_hand_pts,2);

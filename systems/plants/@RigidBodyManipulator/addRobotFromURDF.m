@@ -122,7 +122,7 @@ function model = parseGazebo(model,robotnum,node,options)
 ref = char(node.getAttribute('reference'));
 if ~isempty(ref)
   body_ind = findLinkInd(model,ref,robotnum,false);
-  if ~isempty(body_ind)
+  if body_ind>0
     grav = node.getElementsByTagName('turnGravityOff').item(0);
     if ~isempty(grav)
       val='';
