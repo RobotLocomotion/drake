@@ -4,8 +4,8 @@ CXX = g++
 
 PKG_CONFIG_PATH := ${PKG_CONFIG_PATH}:$(shell pwd)/../../thirdParty
 
-CFLAGS = -I. 
-LDFLAGS = 
+CFLAGS = -I. -I../../util/
+LDFLAGS = ../../util/drakeUtil.o
 
 # eigen3
 CFLAGS += $(shell pkg-config --cflags eigen3)
@@ -27,7 +27,6 @@ MEX = $(MATLABROOT)/bin/mex
 MEXEXT = $(shell $(MATLABROOT)/bin/mexext)    
 
 MEX_CPPFILES = constructModelmex.cpp \
-	deleteModelmex.cpp \
 	HandCmex.cpp \
 	doKinematicsmex.cpp \
 	forwardKinmex.cpp \

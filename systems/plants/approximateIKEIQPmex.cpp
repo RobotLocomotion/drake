@@ -11,6 +11,7 @@
 #include <Eigen/LU>
 #include <Eigen/SVD>
 
+#include "drakeUtil.h"
 #include "fastQP.h"
 
 #define USE_EIQUADPROG_BACKUP 1
@@ -66,12 +67,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   
   if (nlhs<1) return;
   
-  RigidBodyManipulator *model=NULL;
-  
   // first get the model_ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:approximateIKMex:BadInputs", "the first argument should be the model_ptr");
-  memcpy(&model, mxGetData(prhs[0]), sizeof(model));
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
   int i, j, error, nq = model->num_dof;
   
   static RigidBodyManipulator* lastModel=NULL;

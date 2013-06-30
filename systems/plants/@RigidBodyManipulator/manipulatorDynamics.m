@@ -19,11 +19,11 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
   if (nargout>3)
     if ~isempty(f_ext) error('not implemented yet'); end
-    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr.getData,q,qd,f_ext);
+    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd,f_ext);
     dH = [dH, zeros(m.NB*m.NB,m.NB)];
     dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
-    [H,C] = HandCmex(obj.mex_model_ptr.data,q,qd,f_ext);
+    [H,C] = HandCmex(obj.mex_model_ptr,q,qd,f_ext);
   end
 else  
   if (nargout>3)

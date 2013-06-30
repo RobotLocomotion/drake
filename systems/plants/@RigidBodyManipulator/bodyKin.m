@@ -24,7 +24,7 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not valid because it was computed via mex, and you are now asking for an evaluation with non-numeric pts.  If you intended to use something like TaylorVar, then you must call doKinematics with use_mex = false');
   end
   
-  x = bodyKinmex(obj.mex_model_ptr.getData,kinsol.q,body_ind,pts);
+  x = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_ind,pts);
   
 else
   if ~all(abs(kinsol.q-[obj.body.cached_q]')<1e-8)

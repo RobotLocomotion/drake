@@ -18,7 +18,7 @@ kinsol.q = q;
 kinsol.qd = qd;
 
 if (use_mex && model.mex_model_ptr~=0 && isnumeric(q))
-  doKinematicsmex(model.mex_model_ptr.data,q,b_compute_second_derivatives,qd);
+  doKinematicsmex(model.mex_model_ptr,q,b_compute_second_derivatives,qd);
   kinsol.mex = true;
 else
   kinsol.mex = false;

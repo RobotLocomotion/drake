@@ -423,8 +423,8 @@ if options.use_mex
   wmax(wmax_nan) = 1e20*ones(sum(wmax_nan),1);
   wmax_inf = isinf(wmax);
   wmax(wmax_inf) = 1e20*ones(sum(wmax_inf),1);
-    [w_sol,info] = inverseKinmex(obj.mex_model_ptr.getData,w0,q_nom,Q,Fmax,Fmin,wmax,wmin,iGfun,jGvar,body_ind,poscon_type,mex_varargin{:});
-    %   [w_sol,f,G] = inverseKinmex(obj.mex_model_ptr.getData,w0,q_nom,Q,Fmax,Fmin,wmax,wmin,iGfun,jGvar,body_ind,poscon_type,mex_varargin{:});
+    [w_sol,info] = inverseKinmex(obj.mex_model_ptr,w0,q_nom,Q,Fmax,Fmin,wmax,wmin,iGfun,jGvar,body_ind,poscon_type,mex_varargin{:});
+    %   [w_sol,f,G] = inverseKinmex(obj.mex_model_ptr,w0,q_nom,Q,Fmax,Fmin,wmax,wmin,iGfun,jGvar,body_ind,poscon_type,mex_varargin{:});
 % keyboard
 else
 
@@ -436,7 +436,7 @@ else
 %     k=k+1;
 %   end
 % end
-% [q,fmex,Gmex]=inverseKinmex(obj.mex_model_ptr.getData,q0,q_nom,Q,varargin{:});
+% [q,fmex,Gmex]=inverseKinmex(obj.mex_model_ptr,q0,q_nom,Q,varargin{:});
 % Gmex = full(sparse(iGfun,jGvar,Gmex));
 % [f,G] = ik(q0);
 % G = reshape(G,nF,obj.num_q);

@@ -1,4 +1,5 @@
 #include "mex.h"
+#include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
 
 
@@ -18,12 +19,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:doKinematicsmex:NotEnoughInputs", "Usage doKinematicsmex(model_ptr,q,b_compute_second_derivatives,qd)");
   }
   
-  RigidBodyManipulator *model=NULL;
-
   // first get the model_ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:doKinematics:BadInputs","the first argument should be the model_ptr");
-  memcpy(&model,mxGetData(prhs[0]),sizeof(model));
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   
   double *q, *qd=NULL;
   if (mxGetNumberOfElements(prhs[1])!=model->NB)

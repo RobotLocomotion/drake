@@ -2,6 +2,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
+#include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
 
 #define INF -2147483648
@@ -24,12 +25,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:HandCmex:NotEnoughInputs","Usage [H,C] = HandCmex(model_ptr,q,qd[,f_ext]).");
   }
 
-  RigidBodyManipulator *model=NULL;
-
   // first get the model_ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","the first argument should be the model_ptr");
-  memcpy(&model,mxGetData(prhs[0]),sizeof(model));
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   
   double *q,*qd;
   Map<MatrixXd> *f_ext=NULL;

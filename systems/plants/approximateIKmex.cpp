@@ -7,6 +7,7 @@
 #include <mex.h>
 #include <Eigen/Dense>
 #include <gurobi_c++.h>
+#include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
 
 #define CHECK_GUROBI_ERRORS
@@ -61,12 +62,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   if (nlhs<1) return;
 
-  RigidBodyManipulator *model=NULL;
-
   // first get the model_ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:approximateIKMex:BadInputs","the first argument should be the model_ptr");
-  memcpy(&model,mxGetData(prhs[0]),sizeof(model));
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
+
   int i,j,error,nq = model->num_dof;
 
   GRBenv *grb_env = NULL;

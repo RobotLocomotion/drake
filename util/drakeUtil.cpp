@@ -1,10 +1,12 @@
 /*
- * drake.cpp
+ * drakeUtil.cpp
  *
  *  Created on: Jun 19, 2013
  *      Author: russt
  */
 
+#include <mex.h>
+#include <string.h>
 
 bool isa(const mxArray* mxa, const char* class_str)
 // mxIsClass seems to not be able to handle derived classes. so i'll implement what I need by calling back to matlab
@@ -34,7 +36,7 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
     mexPrintf(errmsg);
     mxFree(errmsg);
     mxDestroyArray(report);
-    mexErrMsgAndTxt("Drake:mexCallMATLABsafe:CallbackError", "Error in MATLAB callback.\nSee additional debugging information above");
+    mexErrMsgIdAndTxt("Drake:mexCallMATLABsafe:CallbackError", "Error in MATLAB callback.\nSee additional debugging information above");
     mxDestroyArray(ex);
     return true;
   }
@@ -43,7 +45,7 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
       mexPrintf("Drake mexCallMATLABsafe: error when calling ''%s'' with the following arguments:\n", filename);
       for (i=0; i<nrhs; i++)
         mexCallMATLAB(0,NULL,1,&prhs[i],"disp");
-      mexErrMsgAndTxt("Drake:mexCallMATLABsafe:NotEnoughOutputs","Asked for %d outputs, but function only returned %d\n",nrhs,i);
+      mexErrMsgIdAndTxt("Drake:mexCallMATLABsafe:NotEnoughOutputs","Asked for %d outputs, but function only returned %d\n",nrhs,i);
       return true;
     }
   return false;
@@ -51,7 +53,7 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
 
 
 
-mxArray* constructDrakeMexPointer(void* ptr, void (*delete_fcn)(void*))
+mxArray* createDrakeMexPointer(void* ptr, void (*delete_fcn)(void*))
 {
 	mxClassID cid;
 	if (sizeof(ptr)==4) cid = mxUINT32_CLASS;
@@ -60,12 +62,12 @@ mxArray* constructDrakeMexPointer(void* ptr, void (*delete_fcn)(void*))
 
 	int nrhs=1;
 	mxArray *prhs[2], *plhs[1];
-	mxArray *prhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
+	prhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
   memcpy(mxGetData(prhs[0]),&ptr,sizeof(ptr));
 
   if (delete_fcn) {
   	nrhs=2;
-  	mxArray *prhs[1] = mxCreateNumericMatrix(1,1,cid,mxREAL);
+  	prhs[1] = mxCreateNumericMatrix(1,1,cid,mxREAL);
     memcpy(mxGetData(prhs[1]),&delete_fcn,sizeof(delete_fcn));
   }
 
@@ -87,7 +89,7 @@ void* getDrakeMexPointer(const mxArray* mx)
 
   if (!mxIsNumeric(ptrArray) || mxGetNumberOfElements(ptrArray)!=1)
     mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs","the ptr property of this DrakeMexPointer does not appear to contain a valid pointer");
-  memcpy(&ptr,mxGetData(ptrArray),sizeof(ptr));
+  memcpy(&ptr,mxGetData(ptrArray),sizeof(ptr));     // note: could use a reinterpret_cast here instead
 
   return ptr;
 }
