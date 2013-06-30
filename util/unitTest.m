@@ -49,7 +49,8 @@ elseif ~iscell(options.additional_dirs)
   options.additional_dirs = {options.additional_dirs};
 end
 load drake_config.mat;
-if isfield(conf,'additional_unit_test_dirs')
+bRunFromDrakeRoot = strcmp(pwd,conf.root);
+if bRunFromDrakeRoot && isfield(conf,'additional_unit_test_dirs')
   if ~iscell(conf.additional_unit_test_dirs)
     conf.additional_unit_test_dirs = {conf.additional_unit_test_dirs};
   end
@@ -73,10 +74,15 @@ end
 
 warning('on');
 
-crawlDir('systems',root,true,options);
-crawlDir('drivers',root,true,options);
-crawlDir('util',root,true,options);
-crawlDir('examples',root,false,options);
+if bRunFromDrakeRoot
+  crawlDir('systems',root,true,options);
+  crawlDir('drivers',root,true,options);
+  crawlDir('util',root,true,options);
+  crawlDir('examples',root,false,options);
+else
+  crawlDir('.',root,false,options);
+end
+
 for i=1:numel(options.additional_dirs)
   crawlDir(options.additional_dirs{1},root,false,options);
 end
@@ -142,8 +148,9 @@ end
 
 
 function tree=reloadGui(h,env,tree)
+  d = get(tree.getRoot,'UserData');  
+  cd(d.path);
   megaclear;
-  cd(getDrakePath);
   tree=unitTest;
 end
 
@@ -155,7 +162,8 @@ end
 
 function saveTree(tree)
   p=pwd;
-  cd(getDrakePath);
+  d = get(tree.getRoot,'UserData');  
+  cd(d.path);
   backupname = '.unitTestData.mat';
   userdata={};
   iter = tree.getRoot.breadthFirstEnumeration;
