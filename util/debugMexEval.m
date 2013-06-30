@@ -6,67 +6,68 @@ function varargout = debugMexEval(fun,varargin)
 % Note: on mac, I needed to do the following to run debugMex from the
 % command line:
 %  export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/Applications/MATLAB_R2012a.app/bin/maci64
+%  export DYLD_FORCE_FLAT_NAMESPACE=1
+%  export DYLD_INSERT_LIBRARIES=PATH_TO_DRAKE/bin/libDrakeDebugMex.dylib 
+%
+% on another platform, you presumably need to:
+%  export LD_PRELOAD=libDrakeDebugMex.so
+%  export LD_LIBRARY_PATH=PATH_TO_DRAKE/bin/:$LD_LIBRARY_PATH%  
+% but this is untested (so far)
 
+% note: adding the -DMX_COMPAT_32 changed my symbol from _mxGetProperty_730
+% to _mxGetProperty_700, which is what I needed
 
-%
-% TODO:
-%
-% support multiple mex files from a single program
-%   write data to a single location instead of one named after a particular
-%   mex file
-%   write out path to the mex file so that the debuMex script doesn't have
-%   to be in any single directory.
-%
-% *first* arg in is structure implies options
-%   input_pointer_mask
-%   output_pointer_mask
-% debugMex executable then keeps a global table and fills in the right
+% debugMex executable needs to keep a global table and fills in the right
 % pointer.  will need to handle the case that this pointer does not exists,
 % and give a useful warning so that people put a debugMexEval around the
 % function that creates that pointer, as well. 
 %
-% Alternatively, if I replace my use of SharedDataHandle with matlab's
-% lib.pointer class:
-% http://www.mathworks.com/help/matlab/matlab_external/working-with-pointers.html
-% then I could do everything automagically (without requiring the use of
-% additional arguments)
-%
-% 
-% if one of the arguments is a class, then convert it to a structure before
-% saving.  debugMex executable then overloads the mxGetProperty method 
-% using this technique: 
+% note: it appears that the matrix library cannot load matlab class objects
+% with the matlab engine disconnected.  The work-around is that I write out the 
+% class objects passed in here as structures, and the debugMex executable 
+% overloads the mxGetProperty method using this technique: 
 %   http://www.ibm.com/developerworks/library/l-glibc/index.html
 %   https://blogs.oracle.com/DatabaseEmporium/entry/where_is_ld_preload_under
-
-
-persistent funmap;
-if isempty(funmap), 
-  funmap = containers.Map; 
-end
+% sigh.  
 
 typecheck(fun,'char');
-if isKey(funmap,fun) 
-  count = funmap(fun)+1; 
-  appendstr = '-append';
-else, 
-  count=1; 
+
+% logic to keep track of individual function calls
+persistent count;
+if isempty(count), 
+  count = 1;
   appendstr = '';
+else
+  count = count+1;
+  appendstr = '-append';
 end
-countstr = num2str(count);  countstr=[repmat('0',1,5-length(countstr)),countstr];
-funmap(fun)=count;
+countstr = sprintf('%d',count);  
+if (length(countstr)>5) error('oops.  need to increase the count limit'); end
+countstr=[repmat('0',1,5-length(countstr)),countstr];
 
 % convert classes to structures, so that they can be loaded without the
 % matlab engine attached.  (note: i don't feel like I should have to do
 % this!)
+% todo: need to do this recursively (e.g, for properties that are classes)
+varargin_to_write = varargin;
+S = warning('off');
+for i=1:length(varargin)
+  if isobject(varargin{i})
+    varargin_to_write{i} = struct(varargin{i});
+    if isfield(varargin_to_write{i},'debug_mex_classname')
+      error('i assumed that you didn''t use this as a fieldname');
+    end
+    varargin_to_write{i}.debug_mex_classname = class(varargin{i});
+  end
+end
+warning(S);
 
-
-
-% note: it writes out consequitive calls with the notation nrhs_0001, etc.
-
+% Write out consequitive calls with the notation nrhs_0001, etc.
+eval(sprintf('fun_%s = which(fun);',countstr));
 eval(sprintf('nrhs_%s = length(varargin);',countstr));
 eval(sprintf('nlhs_%s = nargout;',countstr));
-eval(sprintf('varargin_%s = varargin;',countstr));
-eval(sprintf('save([fun,''_mexdebug.mat''],''nrhs_%s'',''nlhs_%s'',''varargin_%s'',''%s'')',countstr,countstr,countstr,appendstr));
+eval(sprintf('varargin_%s = varargin_to_write;',countstr));
+eval(sprintf('save([''/tmp/mex_debug.mat''],''fun_%s'',''nrhs_%s'',''nlhs_%s'',''varargin_%s'',''%s'')',countstr,countstr,countstr,countstr,appendstr));
 
 varargout=cell(1:nargout);
 [varargout{:}] = feval(fun,varargin{:});
