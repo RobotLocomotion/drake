@@ -6,9 +6,10 @@ function Jdot = forwardJacDot(obj,kinsol,body_ind,pts)
 
 if nargin<4, pts=[]; end
 
-if (kinsol.mex)
-  if (isa(body_ind,'RigidBody')) body_ind = find(obj.body==body_ind,1); end
+% todo: zap this after the transition
+if isa(body_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
 
+if (kinsol.mex)
   if (obj.mex_model_ptr==0)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
@@ -18,13 +19,6 @@ if (kinsol.mex)
   
   Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_ind,pts,false,true);
 else
-  if ~all(abs(kinsol.q-[obj.body.cached_q]')<1e-8)
-    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not longer valid.  Somebody has called doKinematics with a different q since the solution was computed.  If this happens a lot, I could consider returning the full T tree in kinsol, so I don''t have to rely on this caching mechanism');
-  end
-  if ~all(abs(kinsol.qd-[obj.body.cached_qd]')<1e-8)
-    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not longer valid.  Somebody has called doKinematics with a different q since the solution was computed.  If this happens a lot, I could consider returning the full T tree in kinsol, so I don''t have to rely on this caching mechanism');
-  end
-  
   if (body_ind == 0) 
     nq=getNumDOF(obj);
     
@@ -42,13 +36,10 @@ else
       end
     end
   else
-    if (isa(body_ind,'RigidBody')) body=body_ind;
-    else body = obj.body(body_ind); end
-    
     m = size(pts,2);
     pts = [pts;ones(1,m)];
     
-    Jdot = reshape(body.dTdqdot*pts,obj.getNumDOF,[])';
+    Jdot = reshape(kinsol.dTdqdot{body_ind}*pts,obj.getNumDOF,[])';
   end
   
 end

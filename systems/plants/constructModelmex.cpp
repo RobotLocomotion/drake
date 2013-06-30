@@ -111,28 +111,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     pm = mxGetProperty(pBodies,i,"pitch");
     model->bodies[i].pitch = (int) mxGetScalar(pm);
     
-    {  // lookup parent index
-      pm = mxGetProperty(pBodies,i,"parent");
-      if (!pm || mxIsEmpty(pm)) {
-      	model->bodies[i].parent = -1;
-      } else {
-      	pm = mxGetProperty(pm,0,"dofnum");
-      	if (!pm) { mexPrintf("i=%d\n",i); mexErrMsgTxt("couldn't get dofnum property"); }
-      	int parent_dofnum = mxGetScalar(pm) - 1;
-      	bool b_found=false;
-      	for (int j=0; j<i; j++) {
-      		if (model->bodies[j].dofnum == parent_dofnum) {
-      			b_found = true;
-      			model->bodies[i].parent = j;
-      			break;
-      		}
-      	}
-      	if (!b_found) {
-      		mexPrintf("i=%d\n");
-  				mexErrMsgTxt("oops! parent link was expected but not found.");  // note that this assumed that the parent comes before the child in pBodies, which should be enforced before this gets called.
-      	}
-      }
-    }
+    pm = mxGetProperty(pBodies,i,"parent");
+    if (!pm || mxIsEmpty(pm))
+    	model->bodies[i].parent = -1;
+    else
+    	model->bodies[i].parent = mxGetScalar(pm) - 1;
     
 //     if (model->bodies[i].dofnum>=0) {
 //       pm = mxGetProperty(pBodies,i,"joint_limit_min");

@@ -48,7 +48,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
             plot(com(1),com(2),'ro');
             line([origin(1),com(1)],[origin(2),com(2)],'Color','r');
           end
-          if ~isempty(body.parent)
+          if body.parent>0
             parent_origin = forwardKin(obj.model,kinsol,body.parent,[0;0]);
             line([origin(1),parent_origin(1)],[origin(2),parent_origin(2)],'Color','k');
           end

@@ -103,14 +103,14 @@ for i=0:(gazebos.getLength()-1)
 end
 
 % weld the root link of this robot to the world link
-ind = find(cellfun(@isempty,{model.body.parent}));
-ind = ind([model.body(ind).robotnum]==robotnum);
-rootlink = model.body(ind);
+ind = find([model.body.parent]<1);
+rootlink = ind([model.body(ind).robotnum]==robotnum);
+worldlink = 1;
 
 if ~isempty(options.floating)
-  model = addFloatingBase(model,model.body(1),rootlink,xyz,rpy,options.floating);
+  model = addFloatingBase(model,worldlink,rootlink,xyz,rpy,options.floating);
 else
-  model = addJoint(model,'','fixed',model.body(1),rootlink,xyz,rpy);
+  model = addJoint(model,'','fixed',worldlink,rootlink,xyz,rpy);
 end
 
 
@@ -121,8 +121,8 @@ end
 function model = parseGazebo(model,robotnum,node,options)
 ref = char(node.getAttribute('reference'));
 if ~isempty(ref)
-  body = findLink(model,ref,robotnum,false);
-  if ~isempty(body)
+  body_ind = findLinkInd(model,ref,robotnum,false);
+  if ~isempty(body_ind)
     grav = node.getElementsByTagName('turnGravityOff').item(0);
     if ~isempty(grav)
       val='';
@@ -132,7 +132,7 @@ if ~isempty(ref)
         val = grav.getChildNodes.item(0).getNodeValue();
       end
       if strcmpi(val,'true')
-        body.gravity_off = true;
+        model.body(body_ind).gravity_off = true;
       end
     end
   end
@@ -162,7 +162,7 @@ for i=1:childNodes.getLength()
       actuator.name=regexprep(actuator.name, '\.', '_', 'preservecase');
     case 'joint'
       jn=regexprep(char(thisNode.getAttribute('name')), '\.', '_', 'preservecase');
-      actuator.joint = findJoint(model,jn,robotnum);
+      actuator.joint = findJointInd(model,jn,robotnum);
     case 'mechanicalreduction'
       actuator.reduction = str2num(char(thisNode.getFirstChild().getNodeValue()));
     case {'#text','#comment'}

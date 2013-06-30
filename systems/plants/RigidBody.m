@@ -1,4 +1,4 @@
-classdef RigidBody < handle
+classdef RigidBody
   
   properties 
     robotnum = 0;  % this body is associated with a particular robot/object number, named in model.name{objnum} 
@@ -17,8 +17,8 @@ classdef RigidBody < handle
     contact_shape_group={}; % contact_shape_group{i} is a list of indices into contact_shapes which belong to collision_group_name{i}
     
     % joint properties
-    jointname=''
-    parent
+    jointname='';
+    parent=0;       % index (starting at 1) for rigid body parent.  0 means no parent
     pitch=0;        % for featherstone 3D models
     floating=0; % 0 = not floating base, 1 = rpy floating base, 2 = quaternion floating base
     joint_axis=[1;0;0]; 
@@ -32,15 +32,6 @@ classdef RigidBody < handle
     joint_limit_max=[];
     effort_limit=[];
     velocity_limit=[];
-    
-    % dynamic properties (e.g. state at runtime)
-    cached_q=[];  % the current kinematics were computed using these q and qd values 
-    cached_qd=[]
-    T = eye(4);  % transformation from this body to world coordinates
-    dTdq = [];
-    ddTdqdq = [];
-    Tdot = [];
-    dTdqdot = [];
   end
   
   properties (Constant)
@@ -195,10 +186,10 @@ classdef RigidBody < handle
       if any(rpy)
         error([body.linkname,': rpy in inertia block not implemented yet (but would be easy)']);
       end
-      setInertial(body,mass,xyz,inertia);
+      body = setInertial(body,mass,xyz,inertia);
     end
     
-    function setInertial(body,varargin)
+    function body = setInertial(body,varargin)
       % setInertial(body,mass,com,inertia) or setInertial(body,spatialI)
       % this guards against things getting out of sync
       
@@ -328,30 +319,12 @@ classdef RigidBody < handle
       end
     end
       
-    function b=leastCommonAncestor(body1,body2)
-      % recursively searches for the lowest body in the tree that is an
-      % ancestor to both body1 and body2
-
-      b=body2;
-      if (body1==body2) return; end
-      
-      % check if body1 is an ancestor to body2
-      while (~isempty(b.parent))
-        b=b.parent;
-        if (body1==b) return; end
-      end
-      
-      % body1 is not an ancestor to body2.  check body1's parent (and
-      % recurse)
-      b = leastCommonAncestor(body1.parent,body2);
-    end
-    
     function writeWRLJoint(body,fp)
       if isempty(body.jointname)
         fprintf(fp,'Transform {\n');
       else
-          % get rid of dots in joint name
-          body.jointname = regexprep(body.jointname, '\.', '_', 'preservecase');
+        % get rid of dots in joint name
+        body.jointname = regexprep(body.jointname, '\.', '_', 'preservecase');
 
         fprintf(fp,'DEF %s Transform {\n',body.jointname); 
       end

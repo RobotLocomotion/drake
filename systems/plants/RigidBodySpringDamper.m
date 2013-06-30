@@ -12,7 +12,7 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
   
   methods
     function [f_ext,bodyind] = computeSpatialForce(obj,manip,q,qd)
-      kinsol = doKinematics(manip,q,false,false);  % use_mex = false because bodyKin doesn't have a mex implementation yet
+      kinsol = doKinematics(manip,q);  
       
       if (obj.b~=0)
         [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
@@ -37,12 +37,19 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
         f_ext = sparse(3,getNumDOF(manip));
       end
       
-      if (obj.body1.dofnum>0)
-        f_ext(:,obj.body1.dofnum)=cartesianForceToSpatialForce(manip,kinsol,obj.body1,obj.pos1,force*(x2-x1)/length);
+      dofnum1=manip.body(obj.body1).dofnum;
+      if (dofnum1>0)
+        f_ext(:,dofnum1)=cartesianForceToSpatialForce(manip,kinsol,obj.body1,obj.pos1,force*(x2-x1)/length);
       end
-      if (obj.body2.dofnum>0)
-        f_ext(:,obj.body2.dofnum)=cartesianForceToSpatialForce(manip,kinsol,obj.body2,obj.pos2,force*(x1-x2)/length);
+      dofnum2=manip.body(obj.body2).dofnum;
+      if (dofnum2>0)
+        f_ext(:,dofnum2)=cartesianForceToSpatialForce(manip,kinsol,obj.body2,obj.pos2,force*(x1-x2)/length);
       end
+    end
+    
+    function obj = updateBodyIndices(obj,map_from_old_to_new)
+      obj.body1 = map_from_old_to_new(obj.body1);
+      obj.body2 = map_from_old_to_new(obj.body2);
     end
   end
 end

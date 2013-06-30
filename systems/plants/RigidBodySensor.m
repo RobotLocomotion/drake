@@ -19,6 +19,10 @@ classdef RigidBodySensor
       % intentionally do nothing here, but can be overloaded if this
       % functionality is needed
     end
+    
+    function obj = updateBodyIndices(obj,map_from_old_to_new)
+      % intentionally do nothing
+    end
   end
   
     

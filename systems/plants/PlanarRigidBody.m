@@ -11,7 +11,6 @@ classdef PlanarRigidBody < RigidBody
       obj.I = zeros(3);
       obj.Xtree = eye(3);
       obj.Ttree = eye(3);
-      obj.T = eye(3);
     end
     
 
@@ -89,10 +88,10 @@ classdef PlanarRigidBody < RigidBody
         error('rpy in inertia block not implemented yet (but would be easy)');
       end
       com = [options.x_axis'; options.y_axis']*xyz;
-      setInertial(body,mass,com,inertia);
+      body = setInertial(body,mass,com,inertia);
     end    
  
-    function setInertial(body,varargin)  
+    function body=setInertial(body,varargin)  
       % setInertial(body,mass,com,inertia) or setInertial(body,spatialI)
       % this guards against things getting out of sync
       

@@ -23,7 +23,7 @@ for urdf = {'./FallingBrick.urdf',...
   out = textscan(outstr,'%s %f %f %f %f %f %f');%,'delimiter',',');
   
   for i=1:getNumBodies(r)
-    b = findLink(r,out{1}{i});
+    b = findLinkInd(r,out{1}{i});
     pt = cellfun(@(a) a(i),out(2:end))';
     x = forwardKin(r,kinsol,b,zeros(3,1),1);
     valuecheck(pt,x,tol);  
