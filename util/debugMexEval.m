@@ -49,16 +49,9 @@ countstr=[repmat('0',1,5-length(countstr)),countstr];
 % matlab engine attached.  (note: i don't feel like I should have to do
 % this!)
 % todo: need to do this recursively (e.g, for properties that are classes)
-varargin_to_write = varargin;
 S = warning('off');
 for i=1:length(varargin)
-  if isobject(varargin{i})
-    varargin_to_write{i} = struct(varargin{i});
-    if isfield(varargin_to_write{i},'debug_mex_classname')
-      error('i assumed that you didn''t use this as a fieldname');
-    end
-    varargin_to_write{i}.debug_mex_classname = class(varargin{i});
-  end
+  varargin_to_write{i} = obj2struct(varargin{i});
 end
 warning(S);
 
@@ -71,3 +64,32 @@ eval(sprintf('save([''/tmp/mex_debug.mat''],''fun_%s'',''nrhs_%s'',''nlhs_%s'','
 
 varargout=cell(1:nargout);
 [varargout{:}] = feval(fun,varargin{:});
+
+
+end
+
+
+function s = obj2struct(obj)
+
+if isobject(obj)
+  for i=1:numel(obj)  % support obj arrays
+    s(i) = struct(obj(i));
+  end
+  if isfield(s,'debug_mex_classname')
+    error('i assumed that you didn''t use this as a property name');
+  end
+  [s.debug_mex_classname] = deal(class(obj));
+else
+  s = obj;
+end
+
+if isstruct(s)
+  f = fieldnames(s);
+  for i=1:numel(s)
+    for j=1:numel(f)
+      s(i).(f{j})=obj2struct(s(i).(f{j}));
+    end
+  end
+end
+
+end
