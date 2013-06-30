@@ -97,7 +97,7 @@ int main(int argc, char* argv[])  // todo: take the mex function and dynamically
     for (i=0; i<nrhs; i++) 
       prhs[i] = mxGetCell(varargin,i);
     
-    printf("input %s\n",countstr);
+    printf("%s: %s\n",countstr,funstr.c_str());
     
     iter->second.mexFunction(nlhs,plhs,nrhs,const_cast<const mxArray**>(prhs));
 
