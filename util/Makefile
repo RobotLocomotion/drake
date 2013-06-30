@@ -7,13 +7,18 @@ MEX = $(MATLABROOT)/bin/mex
 MEXEXT = $(shell $(MATLABROOT)/bin/mexext)    
 MATLABBIN = $(MATLABROOT)/bin/$(strip $(shell cat ../.matlabcpu))
 
-MEX_CPP_FILES = realtime.cpp
+MEX_CPP_FILES = realtime.cpp deleteMexPointer.cpp
 MEXFILES = $(MEX_CPP_FILES:%.cpp=%.$(MEXEXT))
+
+EXES = debugMex
+
+BINDIR = ../bin
+BINEXES = $(EXES:%=$(BINDIR)/%)
 
 SUBDIRS = test
 
 all: MEX += -O
-all : $(MEXFILES) debugMex
+all : drakeUtil.o $(MEXFILES) $(BINEXES)
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
 		echo "-- $$subdir"; \
@@ -22,7 +27,7 @@ all : $(MEXFILES) debugMex
 	done
 
 debug: MEX += -g
-debug: $(MEXFILES) debugMex
+debug: drakeUtil.o $(MEXFILES) $(BINEXES)
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
 		echo "-- $$subdir"; \
@@ -30,12 +35,17 @@ debug: $(MEXFILES) debugMex
 		$(MAKE) -C $$subdir debug || exit 2; \
 	done
 
+drakeUtil.o : drakeUtil.cpp drakeUtil.h
+	$(MEX) $< -c $(CFLAGS) # -fPIC
+
+deleteMexPointer.$(MEXEXT) : deleteMexPointer.cpp drakeUtil.o
+
 $(MEXFILES): %.$(MEXEXT) : %.cpp
 	$(MEX) $^ $(CFLAGS)
 
-debugMex: debugMex.cpp
-	$(CXX) -o debugMex debugMex.cpp -I$(MATLABROOT)/extern/include -L$(MATLABBIN) -lmat -lmx -Wl,-rpath,$(MATLABBIN)
+$(BINDIR)/debugMex: debugMex.cpp
+	$(CXX) -o $(BINDIR)/debugMex debugMex.cpp -I$(MATLABROOT)/extern/include -L$(MATLABBIN) -lmat -lmx -Wl,-rpath,$(MATLABBIN)
 
 clean:
 	-rm -f *.$(MEXEXT)
-	-rm -f debugMex
+	-rm -f $(BINEXES)

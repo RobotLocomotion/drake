@@ -842,9 +842,7 @@ classdef RigidBodyManipulator < Manipulator
 %  without the matlab engine attached).  featherstone and gravity come
 %  through fine, but obj.body is 0x0.
 
-%         ptr = constructModelmex(obj.featherstone,obj.body,obj.gravity);
-        ptr = constructModelmex(obj);
-        obj.mex_model_ptr = SharedDataHandle(ptr,@deleteModelmex);
+        obj.mex_model_ptr = constructModelmex(obj);
       end
     end
     

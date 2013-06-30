@@ -16,7 +16,7 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not valid because it was computed via mex, and you are now asking for an evaluation with non-numeric pts.  If you intended to use something like TaylorVar, then you must call doKinematics with use_mex = false');
   end
   
-  Jdot = forwardKinmex(obj.mex_model_ptr.getData,kinsol.q,body_ind,pts,false,true);
+  Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_ind,pts,false,true);
 else
   if ~all(abs(kinsol.q-[obj.body.cached_q]')<1e-8)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not longer valid.  Somebody has called doKinematics with a different q since the solution was computed.  If this happens a lot, I could consider returning the full T tree in kinsol, so I don''t have to rely on this caching mechanism');

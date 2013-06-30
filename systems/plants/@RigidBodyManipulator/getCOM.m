@@ -16,11 +16,11 @@ if (kinsol.mex)
   end
   
   if nargout > 2
-    [com,J,dJ] = forwardKinmex(model.mex_model_ptr.getData,kinsol.q,0);
+    [com,J,dJ] = forwardKinmex(model.mex_model_ptr,kinsol.q,0);
   elseif nargout > 1
-    [com,J] = forwardKinmex(model.mex_model_ptr.getData,kinsol.q,0);
+    [com,J] = forwardKinmex(model.mex_model_ptr,kinsol.q,0);
   else
-    com = forwardKinmex(model.mex_model_ptr.getData,kinsol.q,0);
+    com = forwardKinmex(model.mex_model_ptr,kinsol.q,0);
   end
 else
   nq=getNumDOF(model);

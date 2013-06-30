@@ -2,12 +2,19 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
+#include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
 
 #define INF -2147483648
 
 using namespace Eigen;
 using namespace std;
+
+void cleanup(void* modelptr)
+{
+	RigidBodyManipulator *model = (RigidBodyManipulator*) modelptr;
+	delete model;
+}
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
@@ -206,13 +213,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   model->compile();
   
   if (nlhs>0) {  // return a pointer to the model
-    mxClassID cid;
-    if (sizeof(model)==4) cid = mxUINT32_CLASS;
-    else if (sizeof(model)==8) cid = mxUINT64_CLASS;
-    else mexErrMsgIdAndTxt("Drake:constructModelmex:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
-    
-    plhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
-    memcpy(mxGetData(plhs[0]),&model,sizeof(model));
+  	plhs[0] = createDrakeMexPointer((void*)model,cleanup);
   }
 
 }

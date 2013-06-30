@@ -124,3 +124,4 @@ util/test/debugMexTest_mexdebug.mat
 *_mexdebug.mat
 *.class
 tmp_w.mat
+bin

@@ -31,12 +31,12 @@ if (isa(body_indB,'RigidBody')) body_indB = find(obj.body==body_indB,1); end
 
 if nargin > 4
   if body_indB == -1
-    [ptsA,ptsB,normal] = collisionmex(obj.mex_model_ptr.getData,3,body_indA,body_collision_indA);
+    [ptsA,ptsB,normal] = collisionmex(obj.mex_model_ptr,3,body_indA,body_collision_indA);
   else
-    [ptsA,ptsB,normal] = collisionmex(obj.mex_model_ptr.getData,2,body_indA,body_indB,body_collision_indA);
+    [ptsA,ptsB,normal] = collisionmex(obj.mex_model_ptr,2,body_indA,body_indB,body_collision_indA);
   end
 else
-  [ptsA,ptsB,normal] = collisionmex(obj.mex_model_ptr.getData,1,body_indA,body_indB);
+  [ptsA,ptsB,normal] = collisionmex(obj.mex_model_ptr,1,body_indA,body_indB);
 end
 
 if isempty(ptsA)

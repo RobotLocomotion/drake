@@ -18,7 +18,9 @@ classdef DrakeMexPointer < handle
     end
     
     function delete(obj)
-      % todo: write a mex function that just calls delete
+      if (obj.delete_fcn_ptr)
+        deleteMexPointer(obj);
+      end
     end
   end
 end

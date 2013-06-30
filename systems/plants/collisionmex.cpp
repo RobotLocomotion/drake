@@ -2,6 +2,7 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <iostream>
+#include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
 #include "math.h"
 
@@ -18,12 +19,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     mexErrMsgIdAndTxt("Drake:collisionmex:NotEnoughInputs","Usage collisionmex(model_ptr,command,arg1,arg2,...");
   }
 
-  RigidBodyManipulator *model=NULL;
-
   // first get the model_ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:collisionmex:BadInputs","the first argument should be the model_ptr");
-  memcpy(&model,mxGetData(prhs[0]),sizeof(model));
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
   int command = (int) mxGetScalar(prhs[1]);
   switch (command)

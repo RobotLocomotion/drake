@@ -11,7 +11,8 @@
 #undef max
 #undef min
 
-#include "Model.h"
+#include "drakeUtil.h"
+#include "RigidBodyManipulator.h"
 
 using namespace Eigen;
 using namespace std;
@@ -85,9 +86,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   }
 
   // first get the model_ptr back from matlab
-  if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("Drake:inverseKinmex:BadInputs","the first argument should be the model_ptr");
-  memcpy(&model,mxGetData(prhs[0]),sizeof(model));
+  RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   
   integer nq = mxGetM(prhs[1]);
 
