@@ -27,6 +27,13 @@ int mexPrintf(const char* message)  // todo: handle the variable arguments case
   printf("%s", message);  
 }
 
+mxArray *mexCallMATLABWithTrap(int nlhs, mxArray *plhs[], int nrhs,
+   mxArray *prhs[], const char *functionName)
+{
+	printf("called mexCallMATLABWithTrap.\n");
+	return NULL;
+}
+
 // todo: implement stubs for other mex functions (mexErrMsgAndTxt, ...) here
 
 typedef struct _dl_data
@@ -67,7 +74,7 @@ int main(int argc, char* argv[])  // todo: take the mex function and dynamically
     if (iter == mexfiles.end()) {
     	DLData d;
     	// Dynamically load the mex file:
-			d.handle = dlopen(funstr.c_str(),RTLD_LAZY);
+			d.handle = dlopen(funstr.c_str(),RTLD_NOW);
 			if (!d.handle) {
 				fprintf(stderr,"%s\n",dlerror());
 				exit(EXIT_FAILURE);
