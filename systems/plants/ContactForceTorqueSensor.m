@@ -2,7 +2,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
   
   properties
     frame;
-    body
+    body;
     normal_ind=[];
     tangent_ind=[];
     jsign=1;
@@ -13,7 +13,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
   
   methods
     function obj = ContactForceTorqueSensor(tsmanip,body,xyz,rpy)
-      typecheck(body,'RigidBody');
+      typecheck(body,'double');  % must be a body index
       
       if tsmanip.twoD
         if (nargin<3) xyz=zeros(2,1);
@@ -44,7 +44,9 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
     function obj = compile(obj,tsmanip,manip)
       if (tsmanip.position_control) error('need to update this method for this case'); end
 
-      if isempty(obj.body.contact_pts)
+      body = getLink(manip,obj.body);
+      
+      if isempty(body.contact_pts)
         error('Drake:ContactForceTorqueSensor:NoContactPts','There are no contact points associated with body %s',body.name);
       end
 
@@ -61,7 +63,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
         coords{6}='torque_z';
       end
       if isempty(obj.frame) || obj.frame.dim ~= length(coords)
-        obj.frame = CoordinateFrame([obj.body.linkname,'ForceTorqueSensor'],length(coords),'f',coords);
+        obj.frame = CoordinateFrame([body.linkname,'ForceTorqueSensor'],length(coords),'f',coords);
       end
       obj = setInputFrame(obj,MultiCoordinateFrame({getStateFrame(tsmanip),obj.frame}));
       
@@ -70,9 +72,8 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
       nP = 2*manip.num_position_constraints;  % number of position constraints
       nV = manip.num_velocity_constraints;  
 
-      body_ind = find(manip.body==obj.body,1);
-      num_body_contacts = size(obj.body.contact_pts,2);
-      contact_ind_offset = size([manip.body(1:body_ind-1).contact_pts],2);
+      num_body_contacts = size(body.contact_pts,2);
+      contact_ind_offset = size([manip.body(1:obj.body-1).contact_pts],2);
       
       % z(nL+nP+(1:nC)) = cN
       obj.normal_ind = nL+nP+contact_ind_offset+(1:num_body_contacts);
@@ -97,12 +98,12 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
       
       xft = splitCoordinates(getInputFrame(obj),xft);
       x = xft{1}; ft = xft{2};
+
+      kinsol = doKinematics(obj.manip,x(1:obj.manip.getNumDOF),false);
       
-      body_pts = obj.T\[obj.xyz, obj.xyz+.001*ft(1:2); 1 1];  % convert force from sensor coords to body coords
+      body_pts = kinsol.T{obj.body}\[obj.xyz, obj.xyz+.001*ft(1:2); 1 1];  % convert force from sensor coords to body coords
       body_pts = body_pts(1:2,:);
       
-      % todo: enable mex here (by implementing the mex version of bodyKin)
-      kinsol = doKinematics(obj.manip,x(1:obj.manip.getNumDOF),false);
       world_pts = forwardKin(obj.manip,kinsol,obj.body,body_pts);
       
       figure(1); clf; xlim([-2 2]); ylim([-1 3]); axis equal;
@@ -115,10 +116,12 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
       % todo: could do this more efficiently by only computing everything
       % below for indices where the normal forces are non-zero
 
-      % todo: enable mex here (by implementing the mex version of bodyKin)
-      use_mex = false;
-      kinsol = doKinematics(manip,x(1:manip.getNumDOF),false,use_mex);
-      contact_pos = forwardKin(manip,kinsol,obj.body,obj.body.contact_pts);
+      body = manip.body(obj.body);
+      
+      % todo: re-enable mex here when i implement the planar mex version of
+      % bodykin
+      kinsol = doKinematics(manip,x(1:manip.getNumDOF),false,false);
+      contact_pos = forwardKin(manip,kinsol,obj.body,body.contact_pts);
       
       [d,N] = size(contact_pos);
       [pos,~,normal] = collisionDetect(manip,contact_pos);
@@ -150,6 +153,10 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
       fr = obj.frame;
     end
     
+    function obj = updateBodyIndices(obj,map_from_old_to_new)
+      obj.body = map_from_old_to_new(obj.body);
+    end
+
   end
     
   methods (Access=private)

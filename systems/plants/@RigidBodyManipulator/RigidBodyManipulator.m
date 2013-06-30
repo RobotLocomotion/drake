@@ -99,17 +99,19 @@ classdef RigidBodyManipulator < Manipulator
       ptr = obj.mex_model_ptr;
     end
     
-    function f = cartesianForceToSpatialForce(obj,kinsol,body,point,force)  
-      % @param body is a rigid body element
+    function f = cartesianForceToSpatialForce(obj,kinsol,body_ind,point,force)  
+      % @param body_ind is an index of the body
       % @param point is a point on the rigid body (in body coords)
       % @param force is a cartesion force (in world coords)
       
       % convert force to body coordinates
-      ftmp=bodyKin(obj,kinsol,body,[force,zeros(3,1)]);
+      ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
+      
+      T_body_to_joint = obj.body(body_ind).T_body_to_joint;
       
       % convert to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
-      point = body.T_body_to_joint(1:end-1,:)*[point;1];
-      ftmp = body.T_body_to_joint(1:end-1,:)*[ftmp; 1,1];
+      point = T_body_to_joint(1:end-1,:)*[point;1];
+      ftmp = T_body_to_joint(1:end-1,:)*[ftmp; 1,1];
 
       force = ftmp(:,1)-ftmp(:,2);  
       
@@ -117,7 +119,9 @@ classdef RigidBodyManipulator < Manipulator
       f = [ cross(point,force,1); force ];
     end
     
-    function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits)
+    function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,limits)
+      typecheck(parent_ind,'double');
+      typecheck(child_ind,'double');
       if (nargin<6) xyz=zeros(3,1); end
       if (nargin<7) rpy=zeros(3,1); end
       if (nargin<8) axis=[1;0;0]; end
@@ -129,8 +133,10 @@ classdef RigidBodyManipulator < Manipulator
         limits.effort_limit = Inf;
         limits.velocity_limit = Inf;
       end
-        
-      if ~isempty(child.parent)
+      
+      child = model.body(child_ind);
+      
+      if child.parent>0
         error('there is already a joint connecting this child to a parent');
       end
       
@@ -143,7 +149,8 @@ classdef RigidBodyManipulator < Manipulator
         jointname = [jointname,num2str(num)];
       end
       child.jointname = jointname;
-      child.parent = parent;
+      rangecheck(parent_ind,1,getNumBodies(model));
+      child.parent = parent_ind;
       
 %      axis = quat2rotmat(rpy2quat(rpy))*axis;  % axis is specified in joint frame
 
@@ -222,6 +229,7 @@ classdef RigidBodyManipulator < Manipulator
       child.effort_limit = limits.effort_limit;
       child.velocity_limit = limits.velocity_limit;
       
+      model.body(child_ind) = child;
       model.dirty = true;
     end
     
@@ -229,6 +237,10 @@ classdef RigidBodyManipulator < Manipulator
       % note that the case matters.
       % use lower case for extrinsic (absolute) rotations, and upper case
       % for intrinsic (relative) rotations
+
+      typecheck(parent,'double');      % these should be body indices
+      typecheck(rootlink,'double');
+      robotnum = model.body(rootlink).robotnum;
       
       if (nargin<6) joint_type = 'rpy'; end
 
@@ -242,69 +254,79 @@ classdef RigidBodyManipulator < Manipulator
         case 'RPY'  % instrinsic coordinates
           body1 = newBody(model);
           body1.linkname = 'base_x';
-          body1.robotnum=rootlink.robotnum;
+          body1.robotnum=robotnum;
           model.body = [model.body,body1];
-          model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,[1;0;0],0);
+          body1_ind = length(model.body);
+          model = addJoint(model,body1.linkname,'prismatic',parent,body1_ind,xyz,rpy,[1;0;0],0);
           
           body2=newBody(model);
           body2.linkname = 'base_y';
-          body2.robotnum=rootlink.robotnum;
+          body2.robotnum=robotnum;
           model.body = [model.body,body2];
-          model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),[0;1;0],0);
+          body2_ind = length(model.body);
+          model = addJoint(model,body2.linkname,'prismatic',body1_ind,body2_ind,zeros(3,1),zeros(3,1),[0;1;0],0);
           
           body3=newBody(model);
           body3.linkname = 'base_z';
-          body3.robotnum=rootlink.robotnum;
+          body3.robotnum=robotnum;
           model.body = [model.body,body3];
-          model = addJoint(model,body3.linkname,'prismatic',body2,body3,zeros(3,1),zeros(3,1),[0;0;1],0);
+          body3_ind = length(model.body);
+          model = addJoint(model,body3.linkname,'prismatic',body2_ind,body3_ind,zeros(3,1),zeros(3,1),[0;0;1],0);
           
           body4=newBody(model);
           body4.linkname = 'base_relative_roll';
-          body4.robotnum=rootlink.robotnum;
+          body4.robotnum=robotnum;
           model.body = [model.body,body4];
-          model = addJoint(model,body4.linkname,'revolute',body3,body4,zeros(3,1),zeros(3,1),[1;0;0],0);
+          body4_ind = length(model.body);
+          model = addJoint(model,body4.linkname,'revolute',body3_ind,body4_ind,zeros(3,1),zeros(3,1),[1;0;0],0);
           
           body5=newBody(model);
           body5.linkname = 'base_relative_pitch';
-          body5.robotnum=rootlink.robotnum;
+          body5.robotnum=robotnum;
           model.body = [model.body,body5];
-          model = addJoint(model,body5.linkname,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
+          body5_ind = length(model.body);
+          model = addJoint(model,body5.linkname,'revolute',body4_ind,body5_ind,zeros(3,1),zeros(3,1),[0;1;0],0);
           
-          model = addJoint(model,'base_relative_yaw','revolute',body5,rootlink,zeros(3,1),zeros(3,1),[0;0;1],0);
+          model = addJoint(model,'base_relative_yaw','revolute',body5_ind,rootlink,zeros(3,1),zeros(3,1),[0;0;1],0);
           
         case 'YPR' % intrinsic
         
           body1 = newBody(model);
           body1.linkname = 'base_x';
-          body1.robotnum=rootlink.robotnum;
+          body1.robotnum=robotnum;
           model.body = [model.body,body1];
-          model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,[1;0;0],0);
+          body1_ind = length(model.body);
+          model = addJoint(model,body1.linkname,'prismatic',parent,body1_ind,xyz,rpy,[1;0;0],0);
           
           body2=newBody(model);
           body2.linkname = 'base_y';
-          body2.robotnum=rootlink.robotnum;
+          body2.robotnum=robotnum;
           model.body = [model.body,body2];
-          model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),[0;1;0],0);
+          body2_ind = length(model.body);
+          model = addJoint(model,body2.linkname,'prismatic',body1_ind,body2_ind,zeros(3,1),zeros(3,1),[0;1;0],0);
           
           body3=newBody(model);
           body3.linkname = 'base_z';
-          body3.robotnum=rootlink.robotnum;
+          body3.robotnum=robotnum;
           model.body = [model.body,body3];
-          model = addJoint(model,body3.linkname,'prismatic',body2,body3,zeros(3,1),zeros(3,1),[0;0;1],0);
+          body3_ind = length(model.body);
+          model = addJoint(model,body3.linkname,'prismatic',body2_ind,body3_ind,zeros(3,1),zeros(3,1),[0;0;1],0);
           
           body4=newBody(model);
           body4.linkname = ['base_relative_yaw'];
-          body4.robotnum=rootlink.robotnum;
+          body4.robotnum=robotnum;
           model.body = [model.body,body4];
-          model = addJoint(model,body4.linkname,'revolute',body3,body4,zeros(3,1),zeros(3,1),[0;0;1],0);
+          body4_ind = length(model.body);
+          model = addJoint(model,body4.linkname,'revolute',body3_ind,body4_ind,zeros(3,1),zeros(3,1),[0;0;1],0);
           
           body5=newBody(model);
           body5.linkname = 'base_relative_pitch';
-          body5.robotnum=rootlink.robotnum;
+          body5.robotnum=robotnum;
           model.body = [model.body,body5];
-          model = addJoint(model,body5.linkname,'revolute',body4,body5,zeros(3,1),zeros(3,1),[0;1;0],0);
+          body5_ind = length(model.body);
+          model = addJoint(model,body5.linkname,'revolute',body4_ind,body5_ind,zeros(3,1),zeros(3,1),[0;1;0],0);
           
-          model = addJoint(model,'base_relative_roll','revolute',body5,rootlink,zeros(3,1),zeros(3,1),[1;0;0],0);
+          model = addJoint(model,'base_relative_roll','revolute',body5_ind,rootlink,zeros(3,1),zeros(3,1),[1;0;0],0);
 
         otherwise
           error('unknown floating base type');
@@ -331,10 +353,10 @@ classdef RigidBodyManipulator < Manipulator
       % kinematics/dynamics correctly)
       i=1;
       while(i<=length(model.body))
-        if (~isempty(model.body(i).parent))
-          ind = find([model.body] == model.body(i).parent);
+        if model.body(i).parent>0
+          ind = model.body(i).parent;
           if (ind>i)
-            model.body = [model.body(1:i-1),model.body(ind),model.body(i:ind-1),model.body(ind+1:end)];
+            model = updateBodyIndices(model,[1:i-1,ind,i:ind-1,ind+1:length(model.body)]);
             i=i-1;
           end
         end
@@ -351,12 +373,13 @@ classdef RigidBodyManipulator < Manipulator
       %% extract B matrix
       B = sparse(num_dof,0);
       for i=1:length(model.actuator)
-        B(model.actuator(i).joint.dofnum,i) = model.actuator(i).reduction;
-        if ~isinf(model.actuator(i).joint.effort_limit)
-          u_limit(i) = abs(model.actuator(i).joint.effort_limit/model.actuator(i).reduction);
-          if sum(B(model.actuator(i).joint.dofnum,:)~=0)>1
+        joint = model.body(model.actuator(i).joint);
+        B(joint.dofnum,i) = model.actuator(i).reduction;
+        if ~isinf(joint.effort_limit)
+          u_limit(i) = abs(joint.effort_limit/model.actuator(i).reduction);
+          if sum(B(joint.dofnum,:)~=0)>1
             warning('Drake:RigidBodyManipulator:UnsupportedJointEffortLimit','The specified joint effort limit cannot be expressed as simple input limits; the offending limits will be ignored');
-            u_limit(B(model.actuator(i).joint.dofnum,:)~=0)=inf;
+            u_limit(B(joint.dofnum,:)~=0)=inf;
           end
         end
       end
@@ -412,21 +435,8 @@ classdef RigidBodyManipulator < Manipulator
       
       model = model.setInputLimits(-u_limit,u_limit);
       
-      %% initialize kinematics caching
+      %% check basic assumption from kinematics:
       for i=1:length(model.body)
-        if ~isempty(model.body(i).parent)
-          if (model.body(i).floating==1)
-            model.body(i).cached_q = nan(1,6);
-            model.body(i).cached_qd = nan(1,6);
-          elseif (model.body(i).floating==2)
-            model.body(i).cached_q = nan(1,7);
-            model.body(i).cached_qd = nan(1,7);
-          else
-            model.body(i).cached_q = nan;
-            model.body(i).cached_qd = nan;
-          end
-        end
-        % check basic assumption from kinematics:
         valuecheck(model.body(i).Ttree(end,1:end-1),0);
         valuecheck(model.body(i).Ttree(end,end),1);
         valuecheck(model.body(i).T_body_to_joint(end,1:end-1),0);
@@ -473,7 +483,7 @@ classdef RigidBodyManipulator < Manipulator
           error(['couldn''t find unique link ' ,linkname]);
         else 
           warning(['couldn''t find unique link ' ,linkname]);
-          body_ind=[];
+          body_ind=0;
         end
       else
         body_ind = ind;
@@ -481,17 +491,14 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function body = findLink(model,linkname,varargin)
-      % @param robot can be the robot number or the name of a robot
-      % robot=0 means look at all robots
-      ind = findLinkInd(model,linkname,varargin{:});
-      body = model.body(ind);
+      error('the finkLink method has been deprecated.  if you really must get a *copy* of the body, then use finkLinkInd followed by getLink');
     end
     
     function body = getLink(model,body_ind)
       body = model.body(body_ind);
     end
         
-    function body = findJoint(model,jointname,robot)
+    function body_ind = findJointInd(model,jointname,robot)
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
       if nargin<3 || isempty(robot), robot=0; end
@@ -500,10 +507,35 @@ classdef RigidBodyManipulator < Manipulator
       if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
       if (length(ind)~=1)
         error(['couldn''t find unique joint ' ,jointname]);
-      else
-        body = model.body(ind);
       end
+      body_ind = ind;
     end
+    
+    function body = findJoint(model,jointname,robot)
+      error('the finkJoint method has been deprecated.  if you really must get a *copy* of the body associated with this joint, then use finkJointInd followed by getLink');
+    end      
+    
+    function b=leastCommonAncestor(model,body1,body2)
+      % recursively searches for the lowest body in the tree that is an
+      % ancestor to both body1 and body2
+      
+      typecheck(body1,'double');  % takes in body indices
+      typecheck(body2,'double');
+
+      b=body2;
+      if (body1==body2) return; end
+      
+      % check if body1 is an ancestor to body2
+      while b.parent>0
+        b=b.parent;
+        if (body1==b) return; end
+      end
+      
+      % body1 is not an ancestor to body2.  check body1's parent (and
+      % recurse)
+      b = leastCommonAncestor(model,body1.parent,body2);
+    end
+    
     
     function groups = getContactGroups(model)
       groups = {};
@@ -533,8 +565,8 @@ classdef RigidBodyManipulator < Manipulator
       
       A = cell(length(model.body));
       for i=1:length(model.body)
-        if ~isempty(model.body(i).parent)
-          A{find(model.body(i).parent==[model.body]),i} = model.body(i).jointname;
+        if model.body(i).parent>0
+          A{model.body(i).parent,i} = model.body(i).jointname;
         end
       end
       node_names = {model.body.linkname};
@@ -848,7 +880,7 @@ classdef RigidBodyManipulator < Manipulator
         joints={};
         for j=1:length(model.body)
           b = model.body(j);
-          if ~isempty(b.parent) && b.robotnum==i
+          if b.parent>0 && b.robotnum==i
             if (b.floating==1)
               joints = vertcat(joints,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_roll'];[b.jointname,'_pitch'];[b.jointname,'_yaw']});
             elseif (b.floating==2)
@@ -868,12 +900,12 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function fr = constructInputFrame(model)
+      actjoints = [model.body([model.actuator.joint])];
       for i=1:length(model.name)
-        robot_inputs = cellfun(@(a) a.robotnum==i,{model.actuator.joint});
+        robot_inputs = [actjoints.robotnum]==i;
         coordinates = {model.actuator(robot_inputs).name}';
         fr{i}=SingletonCoordinateFrame([model.name{i},'Input'],sum(robot_inputs),'u',coordinates);
       end
-      actjoints = [model.actuator.joint];
       frame_dims = [actjoints.robotnum];
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
@@ -882,7 +914,7 @@ classdef RigidBodyManipulator < Manipulator
 %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
       dof=0;inds=[];
       for i=1:length(model.body)
-        if (~isempty(model.body(i).parent))
+        if model.body(i).parent>0
           if (model.body(i).floating==1)
             model.body(i).dofnum=dof+(1:6)';
             dof=dof+6;
@@ -909,7 +941,7 @@ classdef RigidBodyManipulator < Manipulator
           m.pitch(n+(0:2)) = inf;  % prismatic
           m.pitch(n+(3:5)) = 0;    % revolute
           m.damping(n+(0:5)) = 0;
-          m.parent(n+(0:5)) = [b.parent.dofnum,n+(0:4)];  % rel ypr
+          m.parent(n+(0:5)) = [model.body(b.parent).dofnum,n+(0:4)];  % rel ypr
           m.Xtree{n} = Xroty(pi/2);   % x
           m.Xtree{n+1} = Xrotx(-pi/2)*Xroty(-pi/2); % y (note these are relative changes, x was up, now I'm rotating so y will be up)
           m.Xtree{n+2} = Xrotx(pi/2); % z
@@ -923,14 +955,15 @@ classdef RigidBodyManipulator < Manipulator
         elseif (b.floating==2)
           error('dynamics for quaternion floating base not implemented yet');
         else
-          m.parent(n) = max(b.parent.dofnum);
+          m.parent(n) = max(model.body(b.parent).dofnum);
           m.dofnum(n) = b.dofnum;  % note: only need this for my floating hack above (remove it when gone)
           m.pitch(n) = b.pitch;
-          m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*b.parent.X_joint_to_body;
+          m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*model.body(b.parent).X_joint_to_body;
           m.I{n} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
           m.damping(n) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
           n=n+1;
         end
+        model.body(inds(i)) = b;  % b isn't a handle anymore, so store any changes
       end
       model.featherstone = m;
     end
@@ -945,14 +978,14 @@ classdef RigidBodyManipulator < Manipulator
       
       for i=fixedind(end:-1:1)  % go backwards, since it is presumably more efficient to start from the bottom of the tree
         body = model.body(i);
-        parent = body.parent;
-        if isempty(parent)
+        if body.parent<1
           % if it happens to be the root joint, then don't remove this one.
           continue;
         end
+        parent = model.body(body.parent);
           
         if ~isnan(body.pitch)
-          if any([model.body.parent] == body) || any(any(body.I))
+          if any([model.body.parent] == i) || any(any(body.I))
             % link has inertial importance from child links
             % pr link has inertia now (from a fixed link coming from a
             % descendant).  abort removal.
@@ -967,7 +1000,7 @@ classdef RigidBodyManipulator < Manipulator
         % add inertia into parent
         if (any(any(body.I))) 
           % same as the composite inertia calculation in HandC.m
-          setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
+          parent = setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
         end
         
         % add wrl geometry into parent
@@ -1007,11 +1040,11 @@ classdef RigidBodyManipulator < Manipulator
         end
         
         for j=1:length(model.loop)
-          if (model.loop(j).body1 == body)
+          if (model.loop(j).body1 == i)
             model.loop(j).pt1 = body.Ttree(1:end-1,:)*[model.loop(j).pt1;1];
             model.loop(j).body1 = parent;
           end
-          if (model.loop(j).body2 == body)
+          if (model.loop(j).body2 == i)
             model.loop(j).pt2 = body.Ttree(1:end-1,:)*[model.loop(j).pt2;1];
             model.loop(j).body2 = parent;
           end
@@ -1019,19 +1052,19 @@ classdef RigidBodyManipulator < Manipulator
         
         for j=1:length(model.force)
           if isa(model.force{j},'RigidBodySpringDamper')
-            if (model.force{j}.body1 == body)
+            if (model.force{j}.body1 == i)
               model.force{j}.pos1 = body.Ttree(1:end-1,:)*[model.force{j}.pos1;1];
-              model.force{j}.body1 = parent;
+              model.force{j}.body1 = body.parent;
             end
-            if (model.force{j}.body2 == body)
+            if (model.force{j}.body2 == i)
               model.force{j}.pos2 = body.Ttree(1:end-1,:)*[model.force{j}.pos2;1];
-              model.force{j}.body2 = parent;
+              model.force{j}.body2 = body.parent;
             end
           end
         end
           
         % error on actuators
-        if (~isempty(model.actuator) && any([model.actuator.joint] == body))
+        if (~isempty(model.actuator) && any([model.actuator.joint] == i))
           model.actuator(find([model.actuator.joint]==body))=[];
           % actuators could be attached to fixed joints, because I
           % occasionally weld joints together (e.g. in planar processing of
@@ -1041,7 +1074,7 @@ classdef RigidBodyManipulator < Manipulator
         % connect children to parents
 %        children = find([model.body.parent] == body);
         for j=1:length(model.body),
-          if model.body(j).parent == body
+          if model.body(j).parent == i
             if (body.gravity_off && ~model.body(j).gravity_off)
               error([model.body(j).linkname,' has gravity on, but it''s parent, ', body.linkname,' has gravity off']);
             end
@@ -1053,8 +1086,8 @@ classdef RigidBodyManipulator < Manipulator
             end
           end
         end
-        model.body(i)=[];
-        delete(body);
+        model.body(body.parent) = parent;
+        model = updateBodyIndices(model,[1:i-1,i+1:length(model.body)]);
       end
     end
     
@@ -1124,10 +1157,10 @@ classdef RigidBodyManipulator < Manipulator
       if isempty(parentNode) % then it's not the main joint element.  for instance, the transmission element has a joint element, too
         return
       end
-      parent = findLink(model,char(parentNode.getAttribute('link')),robotnum);
+      parent = findLinkInd(model,char(parentNode.getAttribute('link')),robotnum);
       
       childNode = node.getElementsByTagName('child').item(0);
-      child = findLink(model,char(childNode.getAttribute('link')),robotnum);
+      child = findLinkInd(model,char(childNode.getAttribute('link')),robotnum);
       
       name = char(node.getAttribute('name'));
       type = char(node.getAttribute('type'));
@@ -1194,12 +1227,12 @@ classdef RigidBodyManipulator < Manipulator
       loop.name = regexprep(loop.name, '\.', '_', 'preservecase');
 
       link1Node = node.getElementsByTagName('link1').item(0);
-      link1 = findLink(model,char(link1Node.getAttribute('link')),robotnum);
+      link1 = findLinkInd(model,char(link1Node.getAttribute('link')),robotnum);
       loop.body1 = link1;
       loop.pt1 = loop.parseLink(link1Node,options);
       
       link2Node = node.getElementsByTagName('link2').item(0);
-      link2 = findLink(model,char(link2Node.getAttribute('link')),robotnum);
+      link2 = findLinkInd(model,char(link2Node.getAttribute('link')),robotnum);
       loop.body2 = link2;
       loop.pt2 = loop.parseLink(link2Node,options);
       
@@ -1233,12 +1266,12 @@ classdef RigidBodyManipulator < Manipulator
           fe = RigidBodySpringDamper();
           fe.name = name;
           linkNode = node.getElementsByTagName('link1').item(0);
-          fe.body1 = findLink(model,char(linkNode.getAttribute('link')),robotnum);
+          fe.body1 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
           if linkNode.hasAttribute('xyz')
             fe.pos1 = reshape(str2num(char(linkNode.getAttribute('xyz'))),3,1);
           end
           linkNode = node.getElementsByTagName('link2').item(0);
-          fe.body2 = findLink(model,char(linkNode.getAttribute('link')),robotnum);
+          fe.body2 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
           if linkNode.hasAttribute('xyz')
             fe.pos2 = reshape(str2num(char(linkNode.getAttribute('xyz'))),3,1);
           end
@@ -1260,6 +1293,35 @@ classdef RigidBodyManipulator < Manipulator
 
         otherwise
           error(['force element type ',type,' not supported (yet?)']);
+      end
+    end
+    
+    function model = updateBodyIndices(model,map_from_new_to_old)
+      nold = length(model.body);
+      model.body = model.body(map_from_new_to_old);
+      
+      % build a simple function to map from old indices to new indices:
+      map = zeros(1,nold);
+      map(map_from_new_to_old) = 1:length(model.body);
+      map = [0,map];
+      mapfun = @(i) map(i+1);
+      
+      % todo: can i vectorize these (obj array access)
+      for i=1:length(model.body)  
+        model.body(i).parent = mapfun(model.body(i).parent);
+      end
+      for i=1:length(model.actuator)
+        model.actuator(i).joint = mapfun(model.actuator(i).joint);
+      end
+      for i=1:length(model.loop)
+        model.loop(i).body1 = mapfun(model.loop(i).body1);
+        model.loop(i).body2 = mapfun(model.loop(i).body2);
+      end
+      for i=1:length(model.sensor)
+        model.sensor{i} = updateBodyIndices(model.sensor{i},mapfun);
+      end
+      for i=1:length(model.force)
+        model.force{i} = updateBodyIndices(model.force{i},mapfun);
       end
     end
     

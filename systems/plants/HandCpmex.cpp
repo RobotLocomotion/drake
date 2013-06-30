@@ -155,7 +155,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
       memcpy(f_ext.data(), mxGetPr(prhs[3]), sizeof(double)*3*model->NB);
     }
   }
-  
+
   Vector3d vJ, fh, dfh, dvJdqd;
   Matrix3d XJ, dXJdq;
   int i,j,k;
@@ -220,7 +220,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
       
     }
   }
-  
+
   for (i=(model->NB-1); i>=0; i--) {
     model->C(i) = (model->S[i]).transpose() * model->fvp[i];
     
@@ -247,7 +247,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
       }
     }
   }
-  
+
   for (i=0; i<model->NB; i++) {
     fh = model->IC[i] * model->S[i];
     model->H(i,i) = (model->S[i]).transpose() * fh;
@@ -282,8 +282,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
       }
     }
   }
-  
-  
+
   if (nlhs>0) {
     plhs[0] = mxCreateDoubleMatrix(model->NB,model->NB,mxREAL);
     memcpy(mxGetPr(plhs[0]),model->H.data(),sizeof(double)*model->NB*model->NB);

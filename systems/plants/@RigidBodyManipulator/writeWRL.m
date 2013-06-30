@@ -46,32 +46,33 @@ else
 end
 % loop through bodies
 for i=1:length(model.body)
-  if isempty(model.body(i).parent)
-    writeWRLBodyAndChildren(model,model.body(i),fp);
+  if model.body(i).parent<1
+    writeWRLBodyAndChildren(model,i,fp);
   end
 end
 end
 
-function writeWRLBodyAndChildren(model,body,fp,td)
+function writeWRLBodyAndChildren(model,body_ind,fp,td)
 if (nargin<4) td=0; end % tab depth
   function tabprintf(varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
 
+body = model.body(body_ind);
 if ~isempty(body.wrljoint)
   fprintf(fp,'Transform {\n%s\n\tchildren [\n',body.wrljoint);
 end
 
 % if there is a a joint between the parent and the body, add it here
-if ~isempty(body.parent)
+if body.parent>0
   writeWRLJoint(body,fp);
   tabprintf('children [\n'); td=td+1;
 end
 td = writeWRLBody(body,fp,td);
 for i=1:length(model.body)
-  if (model.body(i).parent == body)
-    writeWRLBodyAndChildren(model,model.body(i),fp,td);
+  if (model.body(i).parent == body_ind)
+    writeWRLBodyAndChildren(model,i,fp,td);
   end
 end
-if ~isempty(body.parent)
+if body.parent>0
   td=td-1; tabprintf(']\n');
   td=td-1; tabprintf('}\n'); % end Transform {
 end

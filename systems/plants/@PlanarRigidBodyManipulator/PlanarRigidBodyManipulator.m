@@ -72,7 +72,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
     end
         
     function f = cartesianForceToSpatialForce(obj,kinsol,body,point,force)  
-      % @param body is a rigid body element
+      % @param body is a body index
       % @param point is a point on the rigid body (in body coords)
       % @param force is a cartesion force (in world coords)
       
@@ -84,7 +84,9 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       f = [ point(1,:).*force(2,:) - point(2,:).*force(1,:); force ];
     end
     
-    function model=addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,limits,options)
+    function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,limits,options)
+      typecheck(parent_ind,'double');
+      typecheck(child_ind,'double');
       if (nargin<6) xyz=zeros(3,1); end
       if (nargin<7) rpy=zeros(3,1); end
       if (nargin<9) damping=0; end
@@ -108,18 +110,20 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         case {'revolute','continuous','planar'}
           if abs(dot(axis,model.view_axis))<(1-1e-6)
             warning('Drake:PlanarRigidBodyManipulator:RemovedJoint',['Welded revolute joint ', child.jointname,' because it did not align with the viewing axis']);
-            model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,limits,options);
+            model = addJoint(model,name,'fixed',parent_ind,child_ind,xyz,rpy,axis,damping,limits,options);
             return;
           end
         case 'prismatic'
           if abs(dot(axis,model.view_axis))>1e-6
             warning('Drake:PlanarRigidBodyManipulator:RemovedJoint',['Welded prismatic joint ', child.jointname,' because it did not align with the viewing axis']);
-            model = addJoint(model,name,'fixed',parent,child,xyz,rpy,axis,damping,limits,options);
+            model = addJoint(model,name,'fixed',parent_ind,child_ind,xyz,rpy,axis,damping,limits,options);
             return;
           end
       end
       
-      if ~isempty(child.parent)
+      child = model.body(child_ind);
+      
+      if child.parent>0
         error('there is already a joint connecting this child to a parent');
       end
       
@@ -158,15 +162,17 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           body1.linkname=[name,'_',model.x_axis_label];
           body1.robotnum = child.robotnum;
           model.body = [model.body,body1];
-          model = addJoint(model,body1.linkname,'prismatic',parent,body1,xyz,rpy,jsign*model.x_axis,damping);
+          body1_ind = length(model.body);
+          model = addJoint(model,body1.linkname,'prismatic',parent_ind,body1_ind,xyz,rpy,jsign*model.x_axis,damping);
           
           body2=newBody(model);
           body2.linkname=[name,'_',model.y_axis_label];
           body2.robotnum = child.robotnum;
           model.body = [model.body,body2];
-          model = addJoint(model,body2.linkname,'prismatic',body1,body2,zeros(3,1),zeros(3,1),jsign*model.y_axis,damping);
+          body2_ind = length(model.body);
+          model = addJoint(model,body2.linkname,'prismatic',body1_ind,body2_ind,zeros(3,1),zeros(3,1),jsign*model.y_axis,damping);
           
-          model = addJoint(model,[name,'_p'],'revolute',body2,child,zeros(3,1),zeros(3,1),axis,damping);
+          model = addJoint(model,[name,'_p'],'revolute',body2_ind,child_ind,zeros(3,1),zeros(3,1),axis,damping);
           return;
           
         case 'fixed'
@@ -177,7 +183,9 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       end
       
       child.jointname = name;
-      child.parent = parent;
+
+      rangecheck(parent_ind,1,getNumBodies(model));
+      child.parent = parent_ind;
       
       wrl_joint_origin='';
       if any(xyz)
@@ -212,12 +220,12 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       
       child.Xtree = Xpln(p,xy);
       child.Ttree = [rotmat(p),xy; 0,0,1];
-      child.T = parent.T*child.Ttree;
       child.damping = damping;
       child.joint_limit_min = limits.joint_limit_min;
       child.joint_limit_max = limits.joint_limit_max;
       child.effort_limit = limits.effort_limit;
       child.velocity_limit = limits.velocity_limit;
+      model.body(child_ind) = child;
       model.dirty = true;
     end
     
@@ -226,9 +234,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
     end
     
     function model = compile(model)
-      S = warning('off','Drake:RigidBodyManipulator:UnsupportedLoopJoint');
       model = compile@RigidBodyManipulator(model);
-      warning(S);
       model = model.setNumPositionConstraints(2*length(model.loop));
     end
     
@@ -274,7 +280,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
 %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
       dof=0;inds=[];
       for i=1:length(model.body)
-        if (~isempty(model.body(i).parent))
+        if model.body(i).parent>0
           dof=dof+1;
           model.body(i).dofnum=dof;
           inds = [inds,i];
@@ -283,7 +289,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       m.NB=length(inds);
       for i=1:m.NB
         b=model.body(inds(i));
-        m.parent(i) = b.parent.dofnum;
+        m.parent(i) = model.body(b.parent).dofnum;
         m.jcode(i) = b.jcode;
         m.jsign(i) = b.jsign;
         m.Xtree{i} = b.Xtree;
@@ -298,7 +304,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       
       for i=fixedind(end:-1:1)  % go backwards, since it is presumably more efficient to start from the bottom of the tree
         body = model.body(i);
-        parent = body.parent;
+        parent = model.body(body.parent);
         
         % add geometry into parent
         if (~isempty(body.geometry))
@@ -309,8 +315,10 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
             parent.geometry = {parent.geometry{:},body.geometry{j}};
           end
         end
+        
+        model.body(body.parent) = parent;
       end
-      
+
       model = removeFixedJoints@RigidBodyManipulator(model);
     end
     
@@ -335,11 +343,11 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       if isempty(childNode) % then it's not the main joint element
         return;
       end
-      child = findLink(model,char(childNode.getAttribute('link')),robotnum);
+      child = findLinkInd(model,char(childNode.getAttribute('link')),robotnum);
       
       parentNode = node.getElementsByTagName('parent').item(0);
-      parent = findLink(model,char(parentNode.getAttribute('link')),robotnum,false);
-      if (isempty(parent))
+      parent = findLinkInd(model,char(parentNode.getAttribute('link')),robotnum,false);
+      if parent<1
         % could have been zapped
         warning(['joint ',name,' parent link is missing or was deleted.  deleting the child link:', child.linkname,'(too)']);
         ind = find([model.body]==child);
@@ -414,12 +422,12 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       options.view_axis = model.view_axis;
 
       link1Node = node.getElementsByTagName('link1').item(0);
-      link1 = findLink(model,char(link1Node.getAttribute('link')),robotnum);
+      link1 = findLinkInd(model,char(link1Node.getAttribute('link')),robotnum);
       loop.body1 = link1;
       loop.pt1 = loop.parseLink(link1Node,options);
       
       link2Node = node.getElementsByTagName('link2').item(0);
-      link2 = findLink(model,char(link2Node.getAttribute('link')),robotnum);
+      link2 = findLinkInd(model,char(link2Node.getAttribute('link')),robotnum);
       loop.body2 = link2;
       loop.pt2 = loop.parseLink(link2Node,options);
       
@@ -463,12 +471,12 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           fe = RigidBodySpringDamper();
           fe.name = name;
           linkNode = node.getElementsByTagName('link1').item(0);
-          fe.body1 = findLink(model,char(linkNode.getAttribute('link')),robotnum);
+          fe.body1 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
           if linkNode.hasAttribute('xyz')
             fe.pos1 = [model.x_axis'; model.y_axis']*reshape(str2num(char(linkNode.getAttribute('xyz'))),3,1);
           end
           linkNode = node.getElementsByTagName('link2').item(0);
-          fe.body2 = findLink(model,char(linkNode.getAttribute('link')),robotnum);
+          fe.body2 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
           if linkNode.hasAttribute('xyz')
             fe.pos2 = [model.x_axis'; model.y_axis']*reshape(str2num(char(linkNode.getAttribute('xyz'))),3,1);
           end
@@ -490,7 +498,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           
         case 'wing'
           elNode = node.getElementsByTagName('parent').item(0);
-          parent = findLink(model,char(elNode.getAttribute('link')),robotnum);
+          parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
           
           xyz=zeros(3,1); rpy=zeros(3,1);
           elnode = node.getElementsByTagName('origin').item(0);

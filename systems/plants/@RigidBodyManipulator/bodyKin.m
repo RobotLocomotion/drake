@@ -2,8 +2,7 @@ function x = bodyKin(obj,kinsol,body_ind,pts)
 % computes the position of pts (given in the global frame) in the body frame
 %
 % @param kinsol solution structure obtained from doKinematics
-% @param body_ind, an integer index for the body.  if body_ind is a
-% RigidBody object, then this method will look up the index for you.
+% @param body_ind, an integer index for the body.  
 % @retval x the position of pts (given in the body frame) in the global frame
 %% @retval J the Jacobian, dxdq
 %% @retval dJ the gradients of the Jacobian, dJdq
@@ -14,9 +13,10 @@ function x = bodyKin(obj,kinsol,body_ind,pts)
 
 checkDirty(obj);
 
+% todo: zap this after the transition
+if isa(body_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
+  
 if (kinsol.mex)
-  if (isa(body_ind,'RigidBody')) body_ind = find(obj.body==body_ind,1); end
-
   if (obj.mex_model_ptr==0)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is no longer valid because the mex model ptr has been deleted.');
   end
@@ -27,16 +27,10 @@ if (kinsol.mex)
   x = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_ind,pts);
   
 else
-  if ~all(abs(kinsol.q-[obj.body.cached_q]')<1e-8)
-    error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not longer valid.  Somebody has called doKinematics with a different q since the solution was computed.  If this happens a lot, I could consider returning the full T tree in kinsol, so I don''t have to rely on this caching mechanism');
-  end
-  if (isa(body_ind,'RigidBody')) body=body_ind; 
-  else body = obj.body(body_ind); end
-  
   d = length(obj.gravity);
   m = size(pts,2);
   pts = [pts;ones(1,m)];
-  x = inv(body.T)*pts;
+  x = inv(kinsol.T{body_ind})*pts;
   x = x(1:d,:);
   
   % todo: implement jacobians

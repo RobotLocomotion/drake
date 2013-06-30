@@ -34,7 +34,8 @@ for i=1:100
   Rz = [cos(rpy(3)) -sin(rpy(3)) 0; sin(rpy(3)) cos(rpy(3)) 0; 0 0 1];
   
   R = Rz*Ry*Rx;
-  valuecheck(R,p.body(body_ind).T(1:3,1:3),1e-6);
+  kinsol = p.doKinematics(q,false,false);
+  valuecheck(R,kinsol.T{body_ind}(1:3,1:3),1e-6);
   
   [~,J] = myfun5(q);
   [~,J2] = geval(@myfun5,q,struct('grad_method','numerical'));
@@ -69,10 +70,10 @@ end
     J = J(4:7,:);
   end
 
-    function [x,J] = myfun5(q)
-        kinsol = p.doKinematics(q,false,true);
-        [x,J] = p.forwardKin(kinsol,lower_link,[[0;1;0] [1;0;0.5]],1);
-        x = x(:);
-    end
+  function [x,J] = myfun5(q)
+    kinsol = p.doKinematics(q,false,true);
+    [x,J] = p.forwardKin(kinsol,lower_link,[[0;1;0] [1;0;0.5]],1);
+    x = x(:);
+  end
 
 end

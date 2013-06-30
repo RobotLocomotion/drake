@@ -14,7 +14,9 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_ind,pts)
 % and dJ will be a (2xm)x(nq^2) matrix
 
 checkDirty(obj);
-if (isa(body_ind,'PlanarRigidBody')) body_ind = find(obj.body==body_ind,1); end
+
+% todo: zap this after the transition
+if isa(body_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
 
 if (kinsol.mex)
   if (obj.mex_model_ptr==0)
@@ -32,22 +34,18 @@ if (kinsol.mex)
     x = forwardKinpmex(obj.mex_model_ptr.getData,kinsol.q,body_ind-1,pts);
   end
 else
-  if ~all(abs(kinsol.q-[obj.body.cached_q]')<1e-8)
-    error('Drake:PlanarRigidBodyManipulator:InvalidKinematics','This kinsol is not longer valid.  Somebody has called doKinematics with a different q since the solution was computed.  If this happens a lot, I could consider returning the full T tree in kinsol, so I don''t have to rely on this caching mechanism');
-  end
-  body = obj.body(body_ind);
   m = size(pts,2);
   pts = [pts;ones(1,m)];
-  x = body.T(1:2,:)*pts;
+  x = kinsol.T{body_ind}(1:2,:)*pts;
   if (nargout>1)
-    nq = size(body.dTdq,1)/3;
-    J = reshape(body.dTdq(1:2*nq,:)*pts,nq,[])';
+    nq = size(kinsol.dTdq{body_ind},1)/3;
+    J = reshape(kinsol.dTdq{body_ind}(1:2*nq,:)*pts,nq,[])';
     if (nargout>2)
-      if isempty(body.ddTdqdq)
+      if isempty(kinsol.ddTdqdq{body_ind})
         error('you must call doKinematics with the second derivative option enabled');
       end
       ind = repmat(1:2*nq,nq,1)+repmat((0:3*nq:3*nq*(nq-1))',1,2*nq);
-      dJ = reshape(body.ddTdqdq(ind,:)*pts,nq^2,[])';
+      dJ = reshape(kinsol.ddTdqdq{body_ind}(ind,:)*pts,nq^2,[])';
     end
   end
 end
