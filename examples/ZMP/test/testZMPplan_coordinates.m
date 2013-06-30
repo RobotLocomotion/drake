@@ -3,8 +3,7 @@ function testZMPplan_coordinates
 % zmp plan should be coordinate independent (shifting the origin should
 % just shift the resulting plan)
 
-oldpath = path;
-%oldpath = addpath(fullfile(pwd,'..'));
+oldpath = addpath(fullfile(pwd,'..'));
 
 x0 = 0; y0 = 0;
 [zmptraj,comtraj] = plan(x0,y0);

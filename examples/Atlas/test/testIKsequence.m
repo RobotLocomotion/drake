@@ -9,15 +9,15 @@ p = p.setInitialState(xstar);
 path(oldpath);
 
 ks = ActionSequence();
-r_foot = p.findLink('r_foot');
-l_foot = p.findLink('l_foot');
-r_hand = p.findLink('r_hand');
-l_hand = p.findLink('l_hand');
+r_foot = p.findLinkInd('r_foot');
+l_foot = p.findLinkInd('l_foot');
+r_hand = p.findLinkInd('r_hand');
+l_hand = p.findLinkInd('l_hand');
 
-r_foot_contact_pts = r_foot.getContactPoints();
-l_foot_contact_pts = l_foot.getContactPoints();
-r_hand_contact_pts = mean(r_hand.getContactPoints(),2);
-l_hand_contact_pts = mean(l_hand.getContactPoints(),2);
+r_foot_contact_pts = getContactPoints(getBody(p,r_foot));
+l_foot_contact_pts = getContactPoints(getBody(p,l_foot));
+r_hand_contact_pts = mean(getContactPoints(getBody(p,r_hand)),2);
+l_hand_contact_pts = mean(getContactPoints(getBody(p,l_hand)),2);
 
 nq = p.getNumDOF();
 q0 = xstar(1:nq);

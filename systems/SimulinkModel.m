@@ -66,9 +66,9 @@ classdef SimulinkModel < DynamicalSystem
     
     function [xcdot,df] = dynamics(obj,t,x,u,yes_i_promise_that_i_called_output_first)
       x = stateVectorToStructure(obj,x);
-%      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
-%        feval(obj.mdl,[],[],[],'compile');
-%      end
+      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
+        feval(obj.mdl,[],[],[],'compile');
+      end
 
 %      feval(obj.mdl,[],[],[],'all');   % can't see this in the documentation.. don't know where I got it from?
 
@@ -88,9 +88,10 @@ classdef SimulinkModel < DynamicalSystem
     
     function xdn = update(obj,t,x,u,yes_i_promise_that_i_called_output_first)
       x = stateVectorToStructure(obj,x);
-%      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
-%        feval(obj.mdl,[],[],[],'compile');
-%      end
+      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
+        set_param(obj.mdl,'StopTime',num2str(inf));
+        feval(obj.mdl,[],[],[],'compile');
+      end
 
 %      feval(obj.mdl,[],[],[],'all');   % can't see this in the documentation.. don't know where I got it from?
 
@@ -107,10 +108,10 @@ classdef SimulinkModel < DynamicalSystem
       else
         x=[];
       end
-%      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
-%        set_param(obj.mdl,'StopTime',num2str(inf));
-%        feval(obj.mdl,[],[],[],'compile');
-%      end
+      if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
+        set_param(obj.mdl,'StopTime',num2str(inf));
+        feval(obj.mdl,[],[],[],'compile');
+      end
 
 %      feval(obj.mdl,[],[],[],'all');   % can't see this in the documentation.. don't know where I got it from?
 

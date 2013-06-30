@@ -106,6 +106,8 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         rpy = rpy(1)*model.view_axis; % seems to simple, but i think it's right
       end
       
+      child = model.body(child_ind);
+      
       switch (lower(type))
         case {'revolute','continuous','planar'}
           if abs(dot(axis,model.view_axis))<(1-1e-6)
@@ -120,8 +122,6 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
             return;
           end
       end
-      
-      child = model.body(child_ind);
       
       if child.parent>0
         error('there is already a joint connecting this child to a parent');
@@ -203,8 +203,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         rpya=rpy2axis(rpy); p=rpya(4); rpyaxis=rpya(1:3);
         if abs(dot(rpyaxis,model.view_axis))<(1-1e-6)
           warning(['joint ',child.jointname,': joint axes out of the plane are not supported.  the dependent link ',child.linkname,' (and all of it''s decendants) will be zapped']);
-          ind = find([model.body]==child);
-          model.body(ind)=[];
+          model.body(child_ind)=[];
           return;
           % note that if they were, it would change the way that I have to
           % parse geometries, inertias, etc, for all of the children.
@@ -349,9 +348,8 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       parent = findLinkInd(model,char(parentNode.getAttribute('link')),robotnum,false);
       if parent<1
         % could have been zapped
-        warning(['joint ',name,' parent link is missing or was deleted.  deleting the child link:', child.linkname,'(too)']);
-        ind = find([model.body]==child);
-        model.body(ind)=[];
+        warning(['joint ',name,' parent link is missing or was deleted.  deleting the child link:', model.body(child).linkname,'(too)']);
+        model.body(child)=[];
         return;
       end
       

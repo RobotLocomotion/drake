@@ -41,7 +41,7 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       % link properties
       body.linkname=['link',num2str(ind-1)];
       body.robotnum=1;
-      setInertial(body,mass,[0;-len/2],mass*len^2/12);  % solid rod w/ uniform mass
+      body = setInertial(body,mass,[0;-len/2],mass*len^2/12);  % solid rod w/ uniform mass
       body.geometry{1}.x = radius*[-1 1 1 -1 -1];
       body.geometry{1}.y = len*[0 0 -1 -1 0];
       h=figure(1035); set(h,'Visible','off');
@@ -56,12 +56,12 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       else
         parentlen = 0;
       end
-      model = addJoint(model,['joint',num2str(ind-1)],'revolute',model.body(ind-1),body,[0;0;-parentlen],zeros(3,1),model.view_axis,.1);
+      model = addJoint(model,['joint',num2str(ind-1)],'revolute',ind-1,ind,[0;0;-parentlen],zeros(3,1),model.view_axis,.1);
       
       if (ind>2)  % leave the first joint as passive
         actuator = RigidBodyActuator();
         actuator.name = ['joint',num2str(ind),'_torque'];
-        actuator.joint=body;
+        actuator.joint=ind;
         model.actuator = [model.actuator; actuator];
       end
     end

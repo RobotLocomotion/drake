@@ -2,6 +2,7 @@ function foh_zmp_traj_test
 
 load zmp_plan_debug;
 
+p = addpath(fullfile(pwd,'..'));
 % resample as a spline
 %breaks = getBreaks(zmptraj);
 %zmptraj = PPTrajectory(spline(breaks,eval(zmptraj,breaks)));
@@ -49,3 +50,5 @@ else
     legend('from tracker','from analytic','desired zmp');
   end
 end
+
+path(p);

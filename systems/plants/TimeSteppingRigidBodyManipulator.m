@@ -497,7 +497,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   
   methods  % pass through methods (to the manipulator)
     function B = getB(obj)
-      B = obj.manip.getB();
+      B = getB(obj.manip);
     end
     
     function num_q = getNumDOF(obj)
@@ -644,17 +644,21 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
     
     function body_ind = findLinkInd(model,varargin)
-        body_ind = model.manip.findLinkInd(varargin{:});
+        body_ind = findLinkInd(model.manip,varargin{:});
     end
     
     function body = findLink(model,varargin)
-      body = model.manip.findLink(varargin{:});
+      body = findLink(model.manip,varargin{:});
     end
     
-    function body = getLink(model,varargin)
-      body = model.manip.getLink(varargin{:});
+    function body = getBody(model,varargin)
+      body = getBody(model.manip,varargin{:});
     end
         
+    function model = setBody(model,varargin)
+      model = setBody(model.manip,varargin{:});
+    end
+    
     function v = constructVisualizer(obj)
       v = constructVisualizer(obj.manip);
       v = setInputFrame(v,obj.getStateFrame());
@@ -703,7 +707,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
   
     function index = getActuatedJoints(obj)
-      index = obj.manip.getActuatedJoints();
+      index = getActuatedJoints(obj.manip);
     end
     
     function ptr = getMexModelPtr(obj)

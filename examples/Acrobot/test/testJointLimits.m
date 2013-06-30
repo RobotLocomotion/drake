@@ -4,8 +4,10 @@ function testJointLimits()
 %r = PlanarRigidBodyManipulator('../Acrobot.urdf');
 %r = HybridPlanarRigidBodyManipulator('../Acrobot.urdf');
 m = PlanarRigidBodyManipulator('../Acrobot.urdf');
-m.body(3).joint_limit_min=-1.5;
-m.body(3).joint_limit_max=1.5;
+b = getBody(m,3);
+b.joint_limit_min=-1.5;
+b.joint_limit_max=1.5;
+m = setBody(m,3,b);
 m = compile(m);
 r = TimeSteppingRigidBodyManipulator(m,.01);
 v = r.constructVisualizer;
