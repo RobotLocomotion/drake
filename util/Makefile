@@ -27,6 +27,7 @@ BINEXES = $(EXES:%=$(BINDIR)/%)
 SUBDIRS = test
 
 all: MEX += -O
+all: CXX += -O3
 all : drakeUtil.o $(MEXFILES) $(BINEXES)
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
@@ -36,6 +37,7 @@ all : drakeUtil.o $(MEXFILES) $(BINEXES)
 	done
 
 debug: MEX += -g
+debug: CXX += -g
 debug: drakeUtil.o $(MEXFILES) $(BINEXES)
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
@@ -57,6 +59,8 @@ $(MEXFILES): %.$(MEXEXT) : %.cpp
 
 $(BINDIR)/debugMex: debugMex.cpp
 	$(CXX) -o $(BINDIR)/debugMex debugMex.cpp $(MATLABFLAGS)
+
 clean:
+	-rm -f *.o
 	-rm -f *.$(MEXEXT)
 	-rm -f $(BINEXES)

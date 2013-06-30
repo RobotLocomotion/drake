@@ -837,11 +837,7 @@ classdef RigidBodyManipulator < Manipulator
     
     function obj = createMexPointer(obj)
       if (exist('constructModelmex')==3)
-%	ptr = debugMexEval('constructModelmex',obj.featherstone,obj.body,obj.gravity);
-%  note: this didn't actually work out.  (it seems that matlab can't load the class obj
-%  without the matlab engine attached).  featherstone and gravity come
-%  through fine, but obj.body is 0x0.
-
+%        obj.mex_model_ptr = debugMexEval('constructModelmex',obj);
         obj.mex_model_ptr = constructModelmex(obj);
       end
     end
