@@ -46,7 +46,7 @@ int fastQPThatTakesQinv(vector< MatrixXd* > QinvblkDiag, const VectorXd& f, cons
   int startrow=0;
 //  for (typename vector< MatrixBase<tA>* >::iterator iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
 //  	MatrixBase<tA> *thisQinv = *iterQinv;
-  for (typename vector< MatrixXd* >::iterator iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
+  for (vector< MatrixXd* >::iterator iterQinv=QinvblkDiag.begin(); iterQinv!=QinvblkDiag.end(); iterQinv++) {
   	MatrixXd *thisQinv = *iterQinv;
   	int numRow = thisQinv->rows();
   	int numCol = thisQinv->cols();
