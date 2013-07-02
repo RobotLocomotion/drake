@@ -11,12 +11,16 @@ MATLABFLAGS = -I$(MATLABROOT)/extern/include -L$(MATLABBIN) -lmat -lmx -Wl,-rpat
 MEX_CPP_FILES = realtime.cpp deleteMexPointer.cpp
 MEXFILES = $(MEX_CPP_FILES:%.cpp=%.$(MEXEXT))
 
-# for mac:
-LIBEXT = dylib
-LIBFLAGS = -dynamiclib -flat_namespace
-# for everyone else:
-#LIBEXT = so
-#LIBFLAGS = -shared
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+  # for mac:
+  LIBEXT = dylib
+  LIBFLAGS = -dynamiclib -flat_namespace
+else
+  # for everyone else:
+  LIBEXT = so
+  LIBFLAGS = -shared -fPIC
+endif
 
 EXES = debugMex libDrakeDebugMex.$(LIBEXT)
 
