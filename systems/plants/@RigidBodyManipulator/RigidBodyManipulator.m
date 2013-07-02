@@ -511,6 +511,14 @@ classdef RigidBodyManipulator < Manipulator
     function body = findLink(model,linkname,varargin)
       error('the finkLink method has been deprecated.  if you really must get a *copy* of the body, then use finkLinkInd followed by getBody');
     end
+
+    function is_valid = isValidLinkIndex(obj,idx)
+      if ~isnumeric(idx) 
+        is_valid=false(size(idx));
+      else
+        is_valid = idx >= 1 & idx <= obj.getNumBodies() & mod(idx,1) == 0;
+      end
+    end
     
     function body = getBody(model,body_ind)
       body = model.body(body_ind);

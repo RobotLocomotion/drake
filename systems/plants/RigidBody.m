@@ -67,6 +67,8 @@ classdef RigidBody
           if isempty(collision_group_ind)
             error(['cannot find collision group ',collision_group]);
           end
+        else
+          collision_group_ind = collision_group;
         end
         inds = body.collision_group{collision_group_ind};
         pts = body.contact_pts(:,inds);
