@@ -122,7 +122,7 @@ end
  
 testmex(0,[0;0;2]);
  
-r_foot = r.findLinkINd('r_foot');
+r_foot = r.findLinkInd('r_foot');
 testmex(0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2]);
 testmex(0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2;0;0;0]);
 testmex(0,[0;0;nan],r_foot,[0;0;0],[0;-.1;.2;0;0;0]);
