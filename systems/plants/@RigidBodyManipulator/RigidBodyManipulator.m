@@ -572,14 +572,14 @@ classdef RigidBodyManipulator < Manipulator
     
     function model = removeCollisionGroups(model,contact_groups)
       for i=1:length(model.body)
-        removeCollisionGroups(model.body(i),contact_groups);
+        model.body(i) = removeCollisionGroups(model.body(i),contact_groups);
       end
       model.dirty = true;
     end
     
     function model = removeCollisionGroupsExcept(model,contact_groups)
       for i=1:length(model.body)
-        removeCollisionGroupsExcept(model.body(i),contact_groups);
+        model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
       end
       model.dirty = true;
     end
