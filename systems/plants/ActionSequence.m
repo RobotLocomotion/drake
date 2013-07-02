@@ -68,7 +68,7 @@ classdef ActionSequence
                     body_ind = obj.kincons{i}.body_ind;
                     body_pts = obj.kincons{i}.body_pts(:,body_pts_ind);
                     worldpos = forwardKin(robot,kinsol,body_ind,body_pts,0);
-                    name = [robot.body(body_ind).linkname,' static contact from ',num2str(obj.kincons{i}.tspan(1)),' to ',num2str(obj.kincons{i}.tspan(end))];
+                    name = [robot.getLinkName(body_ind),' static contact from ',num2str(obj.kincons{i}.tspan(1)),' to ',num2str(obj.kincons{i}.tspan(end))];
                     kc = ActionKinematicConstraint(robot,body_ind,body_pts,worldpos,obj.kincons{i}.tspan,name,obj.kincons{i}.contact_state0{1}(body_pts_ind),3*ones(size(body_pts_ind)),obj.kincons{i}.contact_statef{1}(body_pts_ind));
                     obj = obj.addKinematicConstraint(kc);
                 end
@@ -237,25 +237,30 @@ classdef ActionSequence
     function obj = generateImplicitConstraints(obj, robot, q0, options)
       NB = robot.getNumBodies;
       tspan = [0 obj.tspan(1)];
+      if isfield(options,'initial_contact_groups')
+          initial_contact_link_inds = zeros(size(options.initial_contact_groups.linknames))
+          for i = 1:length(options.initial_contact_groups.linknames)
+              initial_contact_link_inds(i) = findLinkInd(robot,options.initial_contact_groups.linknames{i});
+          end
+      end
       for i=2:NB
         ptsA = []; ptsB = [];
-        B = robot.body(i);
-        num_coll_groups = numel(B.collision_group);
         kinsol = doKinematics(robot,q0);
         if isfield(options,'initial_contact_groups')
-          link_ind = strmatch(B.linkname,options.initial_contact_groups.linknames);
+           
+          link_ind = find(i == initial_contact_link_inds);
           if ~isempty(link_ind)
             for ind = reshape(link_ind,1,[])
-              ptsB_new = getContactPoints(B,options.initial_contact_groups.groupnames{ind});
+              ptsB_new = getContactPoints(robot.getBody(i),options.initial_contact_groups.groupnames{ind});
               ptsB = [ptsB, ptsB_new];
-              ptsA = [ptsA, forwardKin(robot,kinsol,B,ptsB_new)];
+              ptsA = [ptsA, forwardKin(robot,kinsol,i,ptsB_new)];
             end
           end
         else
-          [ptsA,ptsB] = pairwiseContactTest(robot,kinsol,robot.body(1),B);
+          [ptsA,ptsB] = pairwiseContactTest(robot,kinsol,1,i);
         end
         if ~isempty(ptsA)
-          kc = createContactConstraint(robot,robot.body(1),ptsA,B,ptsB,tspan);
+          kc = createContactConstraint(robot,1,ptsA,i,ptsB,tspan);
           for kc = reshape(kc,1,[])
             obj = addKinematicConstraint(obj,kc);
           end
@@ -270,9 +275,9 @@ classdef ActionSequence
         
         n_pts = size(ptsA,2);
         name_z = sprintf('z_%s_in_contact_with_%s_from_%3.1f_to_%3.1f', ...
-          body_indB.linkname, body_indA.linkname, tspan);
+          robot.getLinkName(body_indB), robot.getLinkName(body_indA), tspan);
         name_xy = sprintf('xy_%s_in_contact_with_%s_from_%3.1f_to_%3.1f', ...
-          body_indB.linkname, body_indA.linkname, tspan);
+          robot.getLinkName(body_indB), robot.getLinkName(body_indA), tspan);
         worldpos_z.min = [-Inf(2,n_pts); ptsA(3,:)];
         worldpos_z.max = [Inf(2,size(ptsA,2)); ptsA(3,:)];
         worldpos_xy.min = repmat([min(ptsA(1:2,:),[],2); -Inf],1,n_pts);

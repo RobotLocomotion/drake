@@ -47,12 +47,12 @@ classdef ActionKinematicConstraint
       
        
       if(isa(body_ind,'RigidBody'))
-        body_ind = robot.findLinkInd(body_ind.linkname);
+        error('body_ind must be a numeric index, not a RigidBody');
       end
       obj.body_ind = body_ind;
       
       if(ischar(body_pts)||numel(body_pts)==1)
-          body_pts = robot.body(body_ind).getContactPoints(body_pts);
+          body_pts = robot.getBody(body_ind).getContactPoints(body_pts);
       end
       sizecheck(body_pts,[3 nan]);
       obj.body_pts = body_pts;
@@ -108,7 +108,7 @@ classdef ActionKinematicConstraint
     function obj = setBodyInd(obj,body)
       switch class(body)
         case 'RigidBody'
-          body = obj.robot.findLinkInd(body.linkname);
+          error('body_ind must be a numeric index, not a RigidBody');
         case 'char'
           body = obj.robot.findLinkInd(body);
       end
@@ -262,29 +262,29 @@ classdef ActionKinematicConstraint
           if(~all(valid_contact_flag))
               error('The contact state for the %d th point is not valid',find(~valid_contact_flag));
           end
-          % allow contact_affs{i} being a rigid body, as the latter is the
+          % allow contact_affs{i} being a rigid body index, as the latter is the
           % input to the pairwiseContactDistance function
-          if(isa(contact_affs{i},'ContactAffordance')||isa(contact_affs{i},'RigidBody'))
+          if(isa(contact_affs{i},'ContactAffordance')||isValidLinkIndex(obj.robot,contact_affs{i}))
             obj.contact_affs{i} = contact_affs{i};
-          if(isa(contact_affs{i},'ContactAffordance'))
-            obj.contact_affs{i} = contact_affs{i};
-            contact_aff_names{i} = contact_affs{i}.name;
-            elseif(isa(contact_affs{i},'RigidBody'))
-                contact_aff_names{i} = contact_affs{i}.linkname;
+            if(isa(contact_affs{i},'ContactAffordance'))
+              obj.contact_affs{i} = contact_affs{i};
+              contact_aff_names{i} = contact_affs{i}.name;
+            elseif(isValidLinkIndex(obj.robot,contact_affs{i}))
+              contact_aff_names{i} = getLinkName(obj.robot,contact_affs{i});
             end
             if(i>1)
-                if(any(cellfun(@(x) strcmp(x,contact_aff_names{i}),contact_aff_names(1:i-1))))
-                    error('The contact affordances should not be the same, check the name of the affordance')
-                end
+              if(any(cellfun(@(x) strcmp(x,contact_aff_names{i}),contact_aff_names(1:i-1))))
+                error('The contact affordances should not be the same, check the name of the affordance')
+              end
             end
             if(any(obj.contact_statei{i}==obj.COLLISION_AVOIDANCE))
-                sizecheck(obj.contact_statei,[1,1]); % For collision avoidance, 
-                if(any(obj.body_pts ~= [0;0;0]))
-                    error('For collision avoidance, the body points must be [0;0;0]');
-                end
+              sizecheck(obj.contact_statei,[1,1]); % For collision avoidance, 
+              if(any(obj.body_pts ~= [0;0;0]))
+                error('For collision avoidance, the body points must be [0;0;0]');
+              end
             end
           else
-              error('contact_aff must be either a ContactAffordance object or a RigidBody object');
+            error('contact_aff must be either a ContactAffordance object or a link index');
           end
           if(isstruct(contact_distance{i}))
               if(~isfield(contact_distance{i},'min')||~isfield(contact_distance{i},'max'))
