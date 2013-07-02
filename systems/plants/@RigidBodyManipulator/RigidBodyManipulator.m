@@ -30,6 +30,11 @@ classdef RigidBodyManipulator < Manipulator
   
   methods
     function obj = RigidBodyManipulator(urdf_filename,options)
+      % Construct a new rigid body manipulator object with a single (empty)
+      % RigidBody (called 'world'), and optionally load a first robot from
+      % urdf (see documentation for addRobotFromURDF for details on the
+      % inputs).
+      
       obj = obj@Manipulator(0,0);
       obj.body = newBody(obj);
       obj.body.linkname = 'world';
@@ -41,13 +46,11 @@ classdef RigidBodyManipulator < Manipulator
       obj.terrain = RigidBodyTerrain;
     end
     
-    function checkDirty(obj)
-      if (obj.dirty)
-        error('You''ve changed something about this model and need to manually compile it.  Use obj=compile(obj).');
-      end
-    end
-    
     function y = output(obj,t,x,u)
+      % The outputs of this dynamical system are concatenated from each of
+      % the sensors.  If no sensor has been added to the system, then the
+      % output defaults to the full robot state.
+      
       checkDirty(obj);
       
       if isempty(obj.sensor)
@@ -64,15 +67,30 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function obj = setTerrain(obj,terrain)
+      % Set the ground height profile which the contact points on the robot
+      % may not penetrate.
+      %
+      % @param terrain a RigidBodyTerrain object
+      
       typecheck(terrain,'RigidBodyTerrain');
       obj.terrain = terrain;
     end
 
     function [z,normal] = getTerrainHeight(obj,contact_pos)
+      % Access method for querying the terrain height from the
+      % RigidBodyTerrain object assigned to this manipulator
+      %
+      % @param contact_pos a 2xN or 3xN list of positions in the world
+      % frame below which to compute the height of the terrain.
+      %
+      % @retval z a 1xN list of terrain heights in world coordinates
+      % @retval normal a 3xN list of surface normals in world cooridinates
+      
       [z,normal] = getHeight(obj.terrain,contact_pos(1:2,:));
     end
   
     function B = getB(obj)
+      % 
       checkDirty(obj);
       B = obj.B;
     end
@@ -597,33 +615,6 @@ classdef RigidBodyManipulator < Manipulator
       body = RigidBody();
     end
     
-    function newmodel = copy(model)
-      % Makes a deep copy of the manipulator
-      % Since RigidBody's are handles, they must be copied more carefully.
-      
-      newmodel = model;
-      for i=1:length(model.body)
-        newmodel.body(i) = copy(model.body(i));
-        a=model.body(i); b=newmodel.body(i);
-        
-        % now crawl through data structures and update all pointers
-        for j=1:length(newmodel.body)
-          if (newmodel.body(j).parent == a), newmodel.body(j).parent = b; end
-        end
-        
-        for j=1:length(newmodel.actuator)
-          if (newmodel.actuator(j).body == a), newmodel.actuator(j).body = b; end
-        end
-        
-        for j=1:length(newmodel.loop)
-          if (newmodel.loop(j).body1 == a), newmodel.loop(j).body1 = b; end
-          if (newmodel.loop(j).body2 == a), newmodel.loop(j).body2 = b; end
-        end
-        
-      end
-      
-    end
-
     function fr = constructCOMFrame(model)
       fr = SingletonCoordinateFrame([model.name,'COM'],3,'m',{'com_x','com_y','com_z'});
       
@@ -873,6 +864,12 @@ classdef RigidBodyManipulator < Manipulator
   end
   
   methods (Access=protected)
+    
+    function checkDirty(obj)
+      if (obj.dirty)
+        error('You''ve changed something about this model and need to manually compile it.  Use obj=compile(obj).');
+      end
+    end
     
     function obj = createMexPointer(obj)
       if (exist('constructModelmex')==3)
