@@ -640,12 +640,18 @@ classdef RigidBodyManipulator < Manipulator
     
     function v = constructVisualizer(obj,options)
       checkDirty(obj);
-      try 
-        v = BotVisualizer(obj);
-      catch ex
-        warning(ex.identifier,ex.message);
-       v = RigidBodyWRLVisualizer(obj);
-      end      
+      if nargin<2, options=struct(); end 
+      v=[];
+      if isfield(options,'use_viewer') && options.use_viewer
+        try
+          v = BotVisualizer(obj);
+        catch ex
+          warning(ex.identifier,ex.message);
+        end
+      end  
+      if isempty(v)
+        v = RigidBodyWRLVisualizer(obj);
+      end        
     end
     
     function index = getActuatedJoints(model)
