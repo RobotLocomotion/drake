@@ -7,7 +7,7 @@ length(q) = 5, 10 total states.
  Elevator angle
  Leg angle]
 %}
-options.floating = 'RPY';
+options.floating = true; %'RPY';
 p = RigidBodyManipulator('TestWing.urdf', options);
 
 x0 = [0 0 3 0 0 0 6 0 0 0 0 0]';

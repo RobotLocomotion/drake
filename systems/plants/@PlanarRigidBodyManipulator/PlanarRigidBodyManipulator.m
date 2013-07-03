@@ -286,6 +286,8 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         end
       end
       m.NB=length(inds);
+      m.f_ext_map_from = inds;  % size is length(model.body) output is index into NB, or zero
+      m.f_ext_map_to = 1:m.NB;
       for i=1:m.NB
         b=model.body(inds(i));
         m.parent(i) = model.body(b.parent).dofnum;

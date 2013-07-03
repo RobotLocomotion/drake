@@ -80,7 +80,7 @@ classdef RigidBodyWing < RigidBodyForceElement
             elseif strcmpi(profile, 'flat plate')
                 flatplate()
             else % not flat plate
-              error('avl support not ported to trunk yet');
+              error('avl/xfoil support not ported to trunk yet');
                 if strcmp(profile(1:4),'NACA')
                     profile = strtrim(profile(5:end));
                     avlprofile = strcat('NACA', '\n', profile);
