@@ -659,8 +659,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       model = setBody(model.manip,varargin{:});
     end
     
-    function v = constructVisualizer(obj)
-      v = constructVisualizer(obj.manip);
+    function v = constructVisualizer(obj,varargin)
+      v = constructVisualizer(obj.manip,varargin{:});
       v = setInputFrame(v,obj.getStateFrame());
     end
     
