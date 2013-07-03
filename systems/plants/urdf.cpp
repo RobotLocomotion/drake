@@ -185,7 +185,8 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
           std::string ext = mypath.extension().native();
           boost::to_lower(ext);
           
-          if (ext.compare(".dae")==0) {
+          if (ext.compare(".obj")==0) {
+            cout << "Loading mesh from " << fname << endl;
             BotWavefrontModel* wavefront_model = bot_wavefront_model_create(fname.c_str());
             if (!wavefront_model) {
               cerr << "Error loading mesh: " << fname << endl;
@@ -194,15 +195,16 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
             }
           } else {
           	// try changing the extension to dae and loading
-          	if ( boost::filesystem::exists( mypath.replace_extension(".dae") ) ) {
-          		BotWavefrontModel* wavefront_model = bot_wavefront_model_create(mypath.replace_extension(".dae").native().c_str());
+          	if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
+              cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
+          		BotWavefrontModel* wavefront_model = bot_wavefront_model_create(mypath.replace_extension(".obj").native().c_str());
               if (!wavefront_model) {
                 cerr << "Error loading mesh: " << fname << endl;
               } else {
               	mesh_map.insert(make_pair(mesh->filename, wavefront_model));
               }
           	} else {
-              cout << "Warning: Mesh " << mypath.native() << " ignored because it does not have extension .dae (nor can I find a juxtaposed file with a .dae extension)" << endl;
+              cout << "Warning: Mesh " << mypath.native() << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
             }
           }
         }
