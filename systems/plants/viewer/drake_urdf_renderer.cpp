@@ -165,9 +165,11 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
         	boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(vptr->geometry));
         	glScalef(mesh->scale.x,mesh->scale.y,mesh->scale.z);
         	map<string,BotWavefrontModel*>::iterator iter = self->model->mesh_map.find(mesh->filename);
-        	bot_wavefront_model_gl_draw(iter->second);
-//        	glmDraw(iter->second->glm_model, GLM_SMOOTH);
-        	cout << "got here" << endl;
+        	if (iter!= self->model->mesh_map.end()) {
+        		bot_wavefront_model_gl_draw(iter->second);
+        		//        	glmDraw(iter->second->glm_model, GLM_SMOOTH);
+        		cout << "got here" << endl;
+        	}
         } 
         glPopMatrix();
       }

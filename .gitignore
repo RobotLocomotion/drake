@@ -125,3 +125,4 @@ util/test/debugMexTest_mexdebug.mat
 *.class
 tmp_w.mat
 bin
+drake.jar
