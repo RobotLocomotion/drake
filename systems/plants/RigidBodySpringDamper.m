@@ -11,7 +11,7 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
   end
   
   methods
-    function [f_ext,bodyind] = computeSpatialForce(obj,manip,q,qd)
+    function f_ext = computeSpatialForce(obj,manip,q,qd)
       % todo: re-enable mex for planar version when i write mex the planer
       % bodykin
       kinsol = doKinematics(manip,q,false,~isa(manip,'PlanarRigidBodyManipulator'));  
@@ -34,19 +34,13 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
       force = obj.k*(length-obj.rest_length) + obj.b*vel;
       
       if size(x1,1)==3  % then it's in 3D
-        f_ext = sparse(6,getNumDOF(manip));
+        f_ext = sparse(6,getNumBodies(manip));
       else % then 2D
-        f_ext = sparse(3,getNumDOF(manip));
+        f_ext = sparse(3,getNumBodies(manip));
       end
       
-      dofnum1=manip.body(obj.body1).dofnum;
-      if (dofnum1>0)
-        f_ext(:,dofnum1)=cartesianForceToSpatialForce(manip,kinsol,obj.body1,obj.pos1,force*(x2-x1)/length);
-      end
-      dofnum2=manip.body(obj.body2).dofnum;
-      if (dofnum2>0)
-        f_ext(:,dofnum2)=cartesianForceToSpatialForce(manip,kinsol,obj.body2,obj.pos2,force*(x1-x2)/length);
-      end
+      f_ext(:,obj.body1)=cartesianForceToSpatialForce(manip,kinsol,obj.body1,obj.pos1,force*(x2-x1)/length);
+      f_ext(:,obj.body2)=cartesianForceToSpatialForce(manip,kinsol,obj.body2,obj.pos2,force*(x1-x2)/length);
     end
     
     function obj = updateBodyIndices(obj,map_from_old_to_new)
