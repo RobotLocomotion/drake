@@ -1,6 +1,0 @@
-OPER
-X
-W
-results.txt
-
-quit
