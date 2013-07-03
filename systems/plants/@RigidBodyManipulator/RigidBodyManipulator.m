@@ -511,7 +511,7 @@ classdef RigidBodyManipulator < Manipulator
     function body = findLink(model,linkname,varargin)
       error('the finkLink method has been deprecated.  if you really must get a *copy* of the body, then use finkLinkInd followed by getBody');
     end
-
+    
     function is_valid = isValidLinkIndex(obj,idx)
       if ~isnumeric(idx) 
         is_valid=false(size(idx));
@@ -944,6 +944,8 @@ classdef RigidBodyManipulator < Manipulator
       end
       m.NB= dof;  
       n=1;
+      m.f_ext_map_from = inds;  % size is length(model.body) output is index into NB, or zero
+      m.f_ext_map_to = [];
       for i=1:length(inds) % number of links with parents
         b=model.body(inds(i));
         if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
@@ -963,6 +965,7 @@ classdef RigidBodyManipulator < Manipulator
           b.X_joint_to_body = Xroty(-pi/2);
           for j=0:4, m.I{n+j} = zeros(6); end
           m.I{n+5} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
+          m.f_ext_map_to = [m.f_ext_map_to,n+5];
           n=n+6;
         elseif (b.floating==2)
           error('dynamics for quaternion floating base not implemented yet');
@@ -973,6 +976,7 @@ classdef RigidBodyManipulator < Manipulator
           m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*model.body(b.parent).X_joint_to_body;
           m.I{n} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
           m.damping(n) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
+          m.f_ext_map_to = [m.f_ext_map_to,n];
           n=n+1;
         end
         model.body(inds(i)) = b;  % b isn't a handle anymore, so store any changes
@@ -1300,9 +1304,41 @@ classdef RigidBodyManipulator < Manipulator
           if ~isempty(elnode) && elnode.hasAttribute('value')
             fe.b = str2num(char(elnode.getAttribute('value')));
           end
-          
           model.force{end+1} = fe;
+          
+        case 'wing'
+          elNode = node.getElementsByTagName('parent').item(0);
+          parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
+          
+          xyz=zeros(3,1); rpy=zeros(3,1);
+          elnode = node.getElementsByTagName('origin').item(0);
+          if ~isempty(elnode)
+            if elnode.hasAttribute('xyz')
+              xyz = str2num(char(elnode.getAttribute('xyz')));
+            end
+            if elnode.hasAttribute('rpy')
+              rpy = str2num(char(elnode.getAttribute('rpy')));
+            end
+          end
+          
+          elNode = node.getElementsByTagName('profile').item(0);
+          profile = char(elNode.getAttribute('value'));
 
+          elnode = node.getElementsByTagName('chord').item(0);
+          chord = str2num(char(elnode.getAttribute('value')));
+          
+          elnode = node.getElementsByTagName('span').item(0);
+          span = str2num(char(elnode.getAttribute('value')));
+          
+          elnode = node.getElementsByTagName('stall_angle').item(0);
+          stall_angle = str2num(char(elnode.getAttribute('value')));
+
+          elnode = node.getElementsByTagName('nominal_speed').item(0);
+          nominal_speed = str2num(char(elnode.getAttribute('value')));
+          
+          fe = RigidBodyWing(profile, xyz', chord, span, stall_angle, nominal_speed, parent);
+          fe.name = name;
+          model.force{end+1} = fe;
         otherwise
           error(['force element type ',type,' not supported (yet?)']);
       end

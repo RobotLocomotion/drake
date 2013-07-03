@@ -5,7 +5,7 @@ classdef RigidBodyForceElement
   end
   
   methods
-    % f_ext is a (potentially sparse) matrix with manip.getNumDOF columns
+    % f_ext is a (potentially sparse) matrix with manip.getNumBodies columns
     f_ext = computeSpatialForce(obj,manip,q,qd)
   end
   
