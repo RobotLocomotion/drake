@@ -516,7 +516,16 @@ void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shar
 URDFRigidBodyManipulator* loadURDFfromXML(const std::string &xml_string, const std::string &root_dir)
 {
   // call ROS urdf parsing
-  boost::shared_ptr<urdf::ModelInterface> urdf_model = urdf::parseURDF(xml_string);
+	boost::shared_ptr<urdf::ModelInterface> urdf_model;
+	try {
+		 urdf_model = urdf::parseURDF(xml_string);
+  } catch (urdf::ParseError &e) {
+  	std::cerr << e.what() << endl;
+  	return NULL;
+  } catch (urdf::ParseError *e) {
+  	std::cerr << e->what() << endl;
+  	return NULL;
+  }
 
   // produce a joint number for each joint where the parent has a
   // lower number than all of it's children.

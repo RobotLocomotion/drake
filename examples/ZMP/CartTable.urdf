@@ -9,7 +9,7 @@
     <inertial>
       <origin xyz="0 0 0" />
       <mass value="1" />
-      <inertia ixx="1" iyy="1" izz="1"/>
+      <inertia ixx="1" iyy="1" izz="1" ixy="0" ixz="0" iyz="0"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" />
@@ -41,7 +41,7 @@
       </geometry>
     </visual>
   </link> 
-  <joint name="base_weld" type="fixed">
+  <joint name="base_weld2" type="fixed">
     <parent link="base_part2" />
     <child link="base_part3" />
     <origin xyz="0 0 0" />
@@ -66,7 +66,7 @@
     <inertial>
       <origin xyz="0 0 0" />
       <mass value="50" />
-      <inertia ixx="10" iyy="10" izz="1"/>
+      <inertia ixx="10" iyy="10" izz="1" ixy="0" ixz="0" iyz="0"/>
       <!-- inertia about COM is zero -->
     </inertial>
     <visual>
