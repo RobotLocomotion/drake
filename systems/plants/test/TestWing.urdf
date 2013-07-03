@@ -1,0 +1,68 @@
+<robot
+  name="Test_3D_Glider">
+<!-- 
+  <link name="Floating_Base">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass value="0" />
+    </inertial>
+  </link>
+-->
+  <link
+    name="Wing3D">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value=".1" />
+      <inertia
+        ixx="0.008333"
+        ixy="0"
+        ixz="0"
+        iyy=".003648"
+        iyz="0"
+        izz="0.008696" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="-.10 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size = ".4 1 .01"/>
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 0 0 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-.10 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box size = ".4 1 .04"/>
+      </geometry>
+    </collision>
+  </link>
+<!--  
+<joint name = "Wing_Joint" type="fixed">
+    <parent link = "Floating_Base" />
+    <child link = "Wing" />  
+    <origin xyz="0 0 0"
+            rpy = "0 0 0" />
+  </joint>
+-->
+  <force_element name="Wing_force" type="wing"> 
+  	<parent link="Wing3D"/>
+  	<profile value="flat plate"/> 
+  	<origin xyz="0 0 0" rpy="0 0 0"/> 
+  	<chord value=".4"/> 
+  	<span value="1"/> 
+  	<nominal_speed value="10"/> 
+    <stall_angle value ="12"/>
+  </force_element>
+</robot>

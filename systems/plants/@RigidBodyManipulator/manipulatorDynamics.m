@@ -9,7 +9,10 @@ m = obj.featherstone;
 if length(obj.force)>0
   f_ext = sparse(6,m.NB);
   for i=1:length(obj.force)
-    f_ext = f_ext+computeSpatialForce(obj.force{i},obj,q,qd);
+    % compute spatial force should return something that is the same length
+    % as the number of bodies in the manipulator
+    force = computeSpatialForce(obj.force{i},obj,q,qd);
+    f_ext(:,m.f_ext_map_to) = f_ext(:,m.f_ext_map_to)+force(:,m.f_ext_map_from);
   end
 else
   f_ext=[];
