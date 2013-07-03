@@ -42,6 +42,9 @@ debug: matlab_config java c
 		$(MAKE) -C $$subdir debug || exit 2; \
 	done
 
+doxygen :
+	doxygen doc/Doxyfile
+
 java : drake.jar
 
 c : drake.a 
@@ -80,6 +83,7 @@ util/LCMCoder.class : util/LCMCoder.java util/CoordinateFrameData.class
 
 clean : 
 	-rm -f drake.jar drake.a $(LIBS) $(LCM_HFILES) $(LCM_CFILES) $(OBJFILES) $(LCM_JAVAFILES) $(CLASSFILES) $(EXTRACLASSFILES)
+	-rm -rf doc/DoxygenMatlab/html 
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
 		echo "-- $$subdir"; \
