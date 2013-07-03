@@ -187,10 +187,12 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
     case 1: //msg->LOAD_URDF:
       {
         if (self->model) delete self->model;
-        self->model = loadURDFfromFile(msg->command_data);
-        MatrixXd q0 = MatrixXd::Zero(self->model->num_dof,1);
-        self->model->doKinematics(q0.data());
         cout << "loading urdf: " << msg->command_data << endl;
+        self->model = loadURDFfromFile(msg->command_data);
+        if (self->model) {
+        	MatrixXd q0 = MatrixXd::Zero(self->model->num_dof,1);
+        	self->model->doKinematics(q0.data());
+        }
       }
       break;
 
