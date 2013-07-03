@@ -167,8 +167,7 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
         	map<string,BotWavefrontModel*>::iterator iter = self->model->mesh_map.find(mesh->filename);
         	if (iter!= self->model->mesh_map.end()) {
         		bot_wavefront_model_gl_draw(iter->second);
-        		//        	glmDraw(iter->second->glm_model, GLM_SMOOTH);
-        		cout << "got here" << endl;
+//        		glmDraw(iter->second->glm_model, GLM_SMOOTH);
         	}
         } 
         glPopMatrix();
