@@ -125,16 +125,12 @@ classdef RigidBodyManipulator < Manipulator
       % convert force to body coordinates
       ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
       
-      T_body_to_joint = obj.body(body_ind).T_body_to_joint;
+      % try to do it the Xtree way
+      force = ftmp(:,1)-ftmp(:,2);
+      f_body = [ cross(point,force,1); force ];  % spatial force in body coordinates
       
       % convert to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
-      point = T_body_to_joint(1:end-1,:)*[point;1];
-      ftmp = T_body_to_joint(1:end-1,:)*[ftmp; 1,1];
-
-      force = ftmp(:,1)-ftmp(:,2);  
-      
-      % compute spatial force (from Fpt in featherstone v2)
-      f = [ cross(point,force,1); force ];
+      f = obj.body(body_ind).X_joint_to_body'*f_body;
     end
     
     function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,limits)
