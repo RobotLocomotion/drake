@@ -171,7 +171,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
 
           bool has_package = boost::find_first(mesh->filename,"package://");
           std::string fname = root_dir + "/" + mesh->filename;
-          if (has_package) boost::replace_first(fname,"package:/","..");
+          if (has_package) boost::replace_first(fname,"package://","");
           boost::filesystem::path mypath(fname);
           
           if (!boost::filesystem::exists(fname)) {
