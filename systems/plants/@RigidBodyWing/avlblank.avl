@@ -1,0 +1,38 @@
+URDF Model
+#Mach
+$mach
+#IYsym   IZsym   Zsym
+ 0       0       0.0
+#Sref     Cref    Bref
+ $area     $chord     $span
+#Xref    Yref    Zref-- CG of wing
+$Xorig     $Yorig     $Zorig
+#
+#
+#====================================================================
+SURFACE 
+Wing 
+#Nchordwise  Cspace   Nspanwise   Sspace
+8            1.0       16         1.0
+#
+YDUPLICATE
+0
+#
+ANGLE
+0
+#-------------------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  
+0.      0.     0.      $chord     0.0  
+
+$airfoil
+
+
+#-------------------------------------------------------------
+SECTION
+#Xle    Yle    Zle     Chord   Ainc  
+0.      $yle     0.      $chord     0.0 
+
+$airfoil
+
+

@@ -1,0 +1,22 @@
+$airfoil
+oper
+Visc $re
+Mach $mach
+iter
+50
+Pacc
+xfoilPolar.txt
+
+aseq
+0
+$negStallAngle
+.5
+
+$airfoil
+oper
+aseq
+0
+$stallAngle
+.5
+
+quit
