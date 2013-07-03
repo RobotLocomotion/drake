@@ -226,13 +226,24 @@ if (~conf.simulationconstructionset_enabled)
   disp(' SimulationConstructionSet not found.  SCS support will be disabled.  To re-enable, get SCS on your machine and add all of the necessary class directories and jar files to your matlab java class path');
 end
 
-conf.eigen3_enabled = isfield(conf,'eigen3_incdir') && ~isempty(conf.eigen3_incdir);
-if ~conf.eigen3_enabled
-  %disp(' Eigen3 support is disabled; mex files that use eigen3 will be disabled.  To re-enable, set the path to eigen3 using editDrakeConfig(''eigen3_incdir'',path_to_eigen) and rerun configure');
-   conf.eigen3_incdir = [conf.root,'/thirdParty/eigen3/'];
-   conf.eigen3_enabled = isfield(conf,'eigen3_incdir') && ~isempty(conf.eigen3_incdir);
-end
 writeEigenPC(conf);
+
+if ~isfield(conf,'avl') || isempty(conf.avl)
+  [retval,path_to_avl] = system('which avl');
+  if (retval==0)
+    conf.avl = path_to_avl;
+  else
+    disp(' AVL support is disabled.  To enable it, install AVL from here: http://web.mit.edu/drela/Public/web/avl/, then add it to the matlab path or set the path to the avl executable explicitly using editDrakeConfig(''avl'',path_to_avl_executable) and rerun configure');
+  end
+end
+if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
+  [retval,path_to_xfoil] = system('which xfoil');
+  if (retval==0)
+    conf.xfoil = path_to_xfoil;
+  else
+    disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun configure');
+  end
+end
 
 if ~isfield(conf,'conf.additional_unit_test_dirs')
   conf.additional_unit_test_dirs={};

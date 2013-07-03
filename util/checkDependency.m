@@ -17,7 +17,7 @@ if (isempty(conf))
   end
 end
 
-ok = isfield(conf,conf_var) && getfield(conf,conf_var);
+ok = isfield(conf,conf_var) && ~isempty(getfield(conf,conf_var));
 if (nargout<1 && ~ok)
   error(['Drake:MissingDependency:',conf_var],['Cannot run this function because ', conf_var, ' was not set in the configure script']);
 end
