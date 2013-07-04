@@ -8,7 +8,10 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-	if (argc<2) cerr << "Usage: urdf_kin_test urdf_filename" << endl;
+	if (argc<2) {
+		cerr << "Usage: urdf_kin_test urdf_filename" << endl;
+		exit(-1);
+	}
   URDFRigidBodyManipulator* model = loadURDFfromFile(argv[1]);
 //  URDFRigidBodyManipulator* model = loadURDFfromFile("/Users/russt/drc/software/models/mit_gazebo_models/mit_robot/model.urdf");
   if (!model) return -1;

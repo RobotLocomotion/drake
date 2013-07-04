@@ -32,4 +32,6 @@ public:
 URDFRigidBodyManipulator* loadURDFfromXML(const std::string &xml_string, const std::string &root_dir = ".");
 URDFRigidBodyManipulator* loadURDFfromFile(const std::string &urdf_filename);
 
+std::string rospack(std::string package);
+
 #endif
