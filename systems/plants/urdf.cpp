@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <fstream>
+#include <sstream>
 #include <map>
 
 #include "urdf.h"
@@ -36,6 +37,59 @@ void mexErrMsgIdandTxt(const char *errorid, const char *errormsg, ...)
   va_end(vl);  
   printf("\n");
   exit(1);
+}
+
+string exec(string cmd)
+{
+	// from http://stackoverflow.com/questions/478898/how-to-execute-a-command-and-get-output-of-command-within-c
+	// note: replace popen and pclose with _popen and _pclose for Windows.
+	FILE* pipe = popen(cmd.c_str(), "r");
+	if (!pipe) return "ERROR";
+	char buffer[128];
+	string result = "";
+	while(!feof(pipe)) {
+		if(fgets(buffer, 128, pipe) != NULL)
+			result += buffer;
+    }
+	pclose(pipe);
+	return result;
+}
+
+void searchenvvar(map<string,string> &package_map, string envvar)
+{
+	char* cstrpath = getenv(envvar.c_str());
+	if (!cstrpath) return;
+
+	string path(cstrpath), token, t;
+	istringstream iss(path);
+
+	while (getline(iss,token,':')) {
+		istringstream p(exec("find -L "+token+" -iname manifest.xml"));
+	  while (getline(p,t)) {
+	  	boost::filesystem::path mypath(t);
+	  	mypath = mypath.parent_path();
+//	  	cout << "found package: " << mypath.filename().native() << " in " << mypath.native() << endl;
+	  	package_map.insert(make_pair(mypath.filename().native(),mypath.native()));
+	  }
+	}
+}
+
+string rospack(string package)
+{
+	// my own quick and dirty implementation of the rospack algorithm (based on my matlab version in rospack.m)
+	static map<string,string> package_map;
+
+	if (package_map.empty()) {
+		searchenvvar(package_map,"ROS_ROOT");
+		searchenvvar(package_map,"ROS_PACKAGE_PATH");
+	}
+
+	map<string,string>::iterator iter = package_map.find(package);
+	if (iter != package_map.end())
+		return iter->second;
+
+	cerr << "Couldn't find package " << package << " in ROS_ROOT or ROS_PACKAGE_PATH" << endl;
+	return "";
 }
 
 void poseToTransform(const urdf::Pose& pose, Matrix4d& T)
@@ -169,11 +223,17 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
           if (iter!=mesh_map.end())  // then it's already in the map... no need to load it again
           	continue;
 
+          string fname = mesh->filename;
           bool has_package = boost::find_first(mesh->filename,"package://");
-          std::string fname = root_dir + "/" + mesh->filename;
-          if (has_package) boost::replace_first(fname,"package://","");
+          if (has_package) {
+          	cout << "replacing " << fname;
+          	boost::replace_first(fname,"package://","");
+          	string package = fname.substr(0,fname.find_first_of("/"));
+          	boost::replace_first(fname,package,rospack(package));
+          	cout << " with " << fname << endl;
+          }
           boost::filesystem::path mypath(fname);
-          
+
           if (!boost::filesystem::exists(fname)) {
             cerr << "cannot find mesh file: " << fname;
             if (has_package)
