@@ -641,7 +641,7 @@ classdef RigidBodyManipulator < Manipulator
     function v = constructVisualizer(obj,options)
       checkDirty(obj);
       if nargin<2, options=struct(); end 
-      if ~isfield(options,'use_viewer') options.use_viewer = ismac(); end
+      if ~isfield(options,'use_viewer') options.use_viewer = true; end
 
       v=[];
       if options.use_viewer

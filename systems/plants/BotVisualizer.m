@@ -32,6 +32,7 @@ classdef BotVisualizer < Visualizer
       [~,ck] = system('ps ax | grep -c -i drake_viewer');
       if (str2num(ck)<2) 
         % if not, then launch one...
+        if ~ismac, error('autolaunch only works on mac so far'); end
         retval = system(['export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &']);
         pause(.01);  % wait for viewer to come up
       end
