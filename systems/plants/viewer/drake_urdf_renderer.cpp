@@ -68,20 +68,24 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
   Matrix<double,7,1> pose;
   
   // iterate over each model
-  for (vector<boost::shared_ptr<urdf::ModelInterface> >::iterator miter=self->model->urdf_model.begin(); miter!= self->model->urdf_model.end(); miter++) {
+  for (int robot=0; robot< self->model->urdf_model.size(); robot++) {
 
   	// iterate over each link and draw
-  	for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=(*miter)->links_.begin(); l!=(*miter)->links_.end(); l++) {
+  	for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=self->model->urdf_model[robot]->links_.begin(); l!=self->model->urdf_model[robot]->links_.end(); l++) {
 			if (l->second->visual) { // then at least one default visual tag exists
 
 				int body_ind;
 				if (l->second->parent_joint) {
-					map<string, int>::iterator j2 = self->model->joint_map.find(l->second->parent_joint->name);
-					if (j2 == self->model->joint_map.end()) continue;  // this shouldn't happen, but just in case...
-					body_ind = j2->second+1;
+					map<string, int>::iterator j2 = self->model->joint_map[robot].find(l->second->parent_joint->name);
+					if (j2 == self->model->joint_map[robot].end()) continue;  // this shouldn't happen, but just in case...
+					body_ind = j2->second;
 				} else {
-					body_ind = 1;  // then it's attached directly to the floating base
+					map<string, int>::iterator j2 = self->model->joint_map[robot].find("floating_base");
+					if (j2 == self->model->joint_map[robot].end()) continue;  // this shouldn't happen, but just in case...
+					body_ind = j2->second;  // then it's attached directly to the floating base
 				}
+
+				cout << "drawing robot " << robot << " body_ind " << body_ind << ": " << self->model->bodies[body_ind].linkname << endl;
 
 				self->model->forwardKin(body_ind,zero,2,pose);
 	//      cout << l->second->name << " is at " << pose.transpose() << endl;
@@ -217,12 +221,30 @@ static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * chan
   if (!self->model) return;
   
   MatrixXd q = MatrixXd::Zero(self->model->num_dof,1);
-  
+
+/*
+  int* robot_map = new int[msg->num_robots];
+  for (int i=0; i<msg->num_robots; i++)
+  {
+    map<string, int>::iterator iter = self->model->robot_map.find(msg->robot_name[i]);
+    if (iter==self->model->robot_map.end()) {
+    	cerr << "couldn't find robot name " << msg->robot_name[i] << endl;
+    	robot_map[i] = -1;
+    } else {
+    	robot_map[i]=iter->second;
+    }
+  }
+*/
+
   for (int i=0; i<msg->num_joints; i++)
   {
-    map<string, int>::iterator iter = self->model->dof_map.find(msg->joint_name[i]);
-    if (iter==self->model->joint_map.end())
-      cerr << "couldn't find joint named " << msg->joint_name[i] << endl;
+//  	int robot = robot_map[msg->joint_robot[i]];
+//  	if (robot<0) continue;
+  	int robot = msg->joint_robot[i];
+
+    map<string, int>::iterator iter = self->model->dof_map[robot].find(msg->joint_name[i]);
+    if (iter==self->model->dof_map[robot].end())
+      cerr << "couldn't find dof named " << msg->joint_name[i] << endl;
     else {
       q(iter->second) = (double) msg->joint_position[i];
 //      cout << self->model->bodies[iter->second+1].jointname << " = " << q(iter->second) << ", " << iter->second << "=" << self->model->bodies[iter->second+1].dofnum << endl;
@@ -231,7 +253,7 @@ static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * chan
   
   self->model->doKinematics(q.data());
   
-/*
+  /*
   // some debugging info
   cout << "q = " << q.transpose() << endl;
   const Vector4d zero(0,0,0,1);
@@ -241,6 +263,7 @@ static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * chan
 */
   
   bot_viewer_request_redraw(self->viewer);
+//  delete[] robot_map;
 }
 
 

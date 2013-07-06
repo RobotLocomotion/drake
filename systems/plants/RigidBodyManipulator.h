@@ -74,6 +74,8 @@ public:
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL);
 
 public:
+  std::vector<std::string> robot_name;
+
   int num_dof;
   double* joint_limit_min;
   double* joint_limit_max;
