@@ -105,12 +105,23 @@ void poseToTransform(const urdf::Pose& pose, Matrix4d& T)
           0, 0, 0, 1;
 }
 
-URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string & root_dir)
+URDFRigidBodyManipulator::URDFRigidBodyManipulator(void)
 : 
-  RigidBodyManipulator((int)dofname_to_dofnum.size(),-1,(int)jointname_to_jointnum.size()+1),
-  joint_map(jointname_to_jointnum), dof_map(dofname_to_dofnum),
-          urdf_model(_urdf_model)
+  RigidBodyManipulator(0,0,0)
+{}
+
+void URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string & root_dir)
 {
+	if (!urdf_model.empty()) {
+		cerr << "ERROR: multi-urdfs not supported yet.  (working on it!)" << endl;
+		return;
+	}
+
+  resize((int)dofname_to_dofnum.size(),-1,(int)jointname_to_jointnum.size()+1);
+	joint_map = jointname_to_jointnum;
+	dof_map = dofname_to_dofnum;
+	urdf_model.push_back(_urdf_model);
+
 	// set up floating base
     // note: i see no harm in adding the floating base here (even if the drake version does not have one)
     // because the base will be set to 0 and it adds minimal expense to the kinematic calculations
@@ -119,7 +130,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
     bodies[0].parent = -1;
   }
   
-  for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=urdf_model->links_.begin(); l!=urdf_model->links_.end(); l++) {
+  for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=_urdf_model->links_.begin(); l!=_urdf_model->links_.end(); l++) {
     int index, _dofnum;
     if (l->second->parent_joint) {
     	boost::shared_ptr<urdf::Joint> j = l->second->parent_joint;
@@ -134,8 +145,8 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
     	bodies[index+1].jointname = j->name;
 
     	{ // set up parent
-    		map<string, boost::shared_ptr<urdf::Link> >::iterator pl=urdf_model->links_.find(j->parent_link_name);
-    		if (pl == urdf_model->links_.end()) ROS_ERROR("can't find link %s.  this shouldn't happen", j->parent_link_name.c_str());
+    		map<string, boost::shared_ptr<urdf::Link> >::iterator pl=_urdf_model->links_.find(j->parent_link_name);
+    		if (pl == _urdf_model->links_.end()) ROS_ERROR("can't find link %s.  this shouldn't happen", j->parent_link_name.c_str());
 
     		if (pl->second->parent_joint) {
     			boost::shared_ptr<urdf::Joint> pj = pl->second->parent_joint;
@@ -346,6 +357,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
 
   compile();  
 }
+
 
 URDFRigidBodyManipulator::~URDFRigidBodyManipulator(void)
 {
@@ -577,6 +589,12 @@ void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shar
   }
 }
 
+void URDFRigidBodyManipulator::addURDFfromXML(const std::string &xml_string, const std::string &root_dir)
+{
+	cerr << "ERROR: addURDFfromXML is not implemented yet" << endl;
+}
+
+
 URDFRigidBodyManipulator* loadURDFfromXML(const std::string &xml_string, const std::string &root_dir)
 {
   // call ROS urdf parsing
@@ -617,7 +635,8 @@ URDFRigidBodyManipulator* loadURDFfromXML(const std::string &xml_string, const s
   }
   
   // now populate my model class
-  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator(urdf_model,jointname_to_jointnum,dofname_to_dofnum,root_dir);
+  URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
+  model->addURDF(urdf_model,jointname_to_jointnum,dofname_to_dofnum,root_dir);
   return model;
 }
 
