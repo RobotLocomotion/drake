@@ -254,78 +254,118 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
                        &bt_collision_configuration )
 #endif
 {
-  num_dof = ndof;
+	num_dof=0; NB=0; num_bodies=0;
+	a_grav = VectorXd::Zero(6);
+	resize(ndof,num_featherstone_bodies,num_rigid_body_objects);
+}
+
+template <typename T>
+void myrealloc(T* &ptr, int old_size, int new_size)
+{
+	T* newptr = new T[new_size];
+	if (old_size>0) {
+		int s = old_size;
+		if (new_size<old_size) s = new_size;
+		memcpy(newptr,ptr,sizeof(T)*s);
+		delete[] ptr;
+	}
+	ptr = newptr;
+}
+
+void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects)
+{
+	int last_num_dof = num_dof, last_NB = NB, last_num_bodies = num_bodies;
+
+	num_dof = ndof;
+
   if (num_featherstone_bodies<0)
-    NB = num_dof;
+    NB = ndof;
   else
     NB = num_featherstone_bodies;
-  pitch = new int[NB];
-  parent = new int[NB];
-  dofnum = new int[NB];
-  damping = new double[NB];
-  joint_limit_min = new double[NB];
-  joint_limit_max = new double[NB];
-  Xtree = new MatrixXd[NB];
-  I = new MatrixXd[NB];
-  a_grav = VectorXd::Zero(6);
   
-  S = new VectorXd[NB];
-  Xup = new MatrixXd[NB];
-  v = new VectorXd[NB];
-  avp = new VectorXd[NB];
-  fvp = new VectorXd[NB];
-  IC = new MatrixXd[NB];
-  
-  for(int i=0; i < NB; i++) {
-    Xtree[i] = MatrixXd::Zero(6,6);
-    I[i] = MatrixXd::Zero(6,6);
-    S[i] = VectorXd::Zero(6);
-    Xup[i] = MatrixXd::Zero(6,6);
-    v[i] = VectorXd::Zero(6);
-    avp[i] = VectorXd::Zero(6);
-    fvp[i] = VectorXd::Zero(6);
-    IC[i] = MatrixXd::Zero(6,6);
-  }
-  
-  //Variable allocation for gradient calculations
-  dXupdq = new MatrixXd[NB];
-  dIC = new MatrixXd*[NB];
-  for(int i=0; i < NB; i++) {
-    dIC[i] = new MatrixXd[NB];
-    for(int j=0; j < NB; j++) {
-      dIC[i][j] = MatrixXd::Zero(6,6);
-    }
-  }
-  dvJdqd_mat = MatrixXd::Zero(6,num_dof);
-//     dcross.resize(6,n);
-  
-  dvdq = new MatrixXd[NB];
-  dvdqd = new MatrixXd[NB];
-  davpdq = new MatrixXd[NB];
-  davpdqd = new MatrixXd[NB];
-  dfvpdq = new MatrixXd[NB];
-  dfvpdqd = new MatrixXd[NB];
-  
-  for(int i=0; i < NB; i++) {
-    dvdq[i] = MatrixXd::Zero(6,num_dof);
-    dvdqd[i] = MatrixXd::Zero(6,num_dof);
-    davpdq[i] = MatrixXd::Zero(6,num_dof);
-    davpdqd[i] = MatrixXd::Zero(6,num_dof);
-    dfvpdq[i] = MatrixXd::Zero(6,num_dof);
-    dfvpdqd[i] = MatrixXd::Zero(6,num_dof);
+  if (NB != last_NB) {
+  	myrealloc(pitch,last_NB,NB);
+		myrealloc(parent,last_NB,NB);
+		myrealloc(dofnum,last_NB,NB);
+		myrealloc(damping,last_NB,NB);
+		myrealloc(joint_limit_min,last_NB,NB);
+		myrealloc(joint_limit_max,last_NB,NB);
+		myrealloc(Xtree,last_NB,NB);
+		myrealloc(I,last_NB,NB);
+
+		myrealloc(S,last_NB,NB);
+		myrealloc(Xup,last_NB,NB);
+		myrealloc(v,last_NB,NB);
+		myrealloc(avp,last_NB,NB);
+		myrealloc(fvp,last_NB,NB);
+		myrealloc(IC,last_NB,NB);
+
+		for(int i=last_NB; i < NB; i++) {
+			Xtree[i] = MatrixXd::Zero(6,6);
+			I[i] = MatrixXd::Zero(6,6);
+			S[i] = VectorXd::Zero(6);
+			Xup[i] = MatrixXd::Zero(6,6);
+			v[i] = VectorXd::Zero(6);
+			avp[i] = VectorXd::Zero(6);
+			fvp[i] = VectorXd::Zero(6);
+			IC[i] = MatrixXd::Zero(6,6);
+		}
   }
 
   if (num_rigid_body_objects<0)
     num_bodies = NB+1;  // this was my old assumption, so leave it here as the default behavior
   else
     num_bodies = num_rigid_body_objects;
-  bodies = new RigidBody[num_bodies];
-  
-  for(int i=0; i < num_bodies; i++) {
-    bodies[i].setN(NB);
-    bodies[i].dofnum = i-1;  // setup default dofnums
+
+  if (num_bodies != last_num_bodies) {
+  	myrealloc(bodies,last_num_bodies,num_bodies);
+
+  	for(int i=0; i < num_bodies; i++) bodies[i].setN(NB);
+  	for(int i=last_num_bodies; i<num_bodies; i++) bodies[i].dofnum = i-1;  // setup default dofnums
   }
-  
+
+  //Variable allocation for gradient calculations
+  if (last_NB>0) {
+  	delete[] dXupdq;
+    for (int i=0; i<NB; i++) {
+      delete[] dIC[i];
+    }
+    delete[] dIC;
+    delete[] dvdq;
+    delete[] dvdqd;
+    delete[] davpdq;
+    delete[] davpdqd;
+    delete[] dfvpdq;
+    delete[] dfvpdqd;
+  }
+
+  dXupdq = new MatrixXd[NB];
+  dIC = new MatrixXd*[NB];
+  for(int i=0; i < NB; i++) {
+    dIC[i] = new MatrixXd[NB];
+  	for(int j=0; j < NB; j++) {
+  		dIC[i][j] = MatrixXd::Zero(6,6);
+		}
+  }
+	//     dcross.resize(6,n);
+
+  dvdq = new MatrixXd[NB];
+  dvdqd = new MatrixXd[NB];
+  davpdq = new MatrixXd[NB];
+  davpdqd = new MatrixXd[NB];
+  dfvpdq = new MatrixXd[NB];
+  dfvpdqd = new MatrixXd[NB];
+
+  dvJdqd_mat = MatrixXd::Zero(6,num_dof);
+  for(int i=0; i < NB; i++) {
+  	dvdq[i] = MatrixXd::Zero(6,num_dof);
+  	dvdqd[i] = MatrixXd::Zero(6,num_dof);
+  	davpdq[i] = MatrixXd::Zero(6,num_dof);
+  	davpdqd[i] = MatrixXd::Zero(6,num_dof);
+  	dfvpdq[i] = MatrixXd::Zero(6,num_dof);
+  	dfvpdqd[i] = MatrixXd::Zero(6,num_dof);
+	}
+
   // preallocate for COM functions
   bc = Vector3d::Zero();
   bJ = MatrixXd::Zero(3,num_dof);
@@ -337,6 +377,10 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
 
   initialized = false;
   kinematicsInit = false;
+  if (last_num_dof>0) {
+  	delete[] cached_q;
+  	delete[] cached_qd;
+  }
   cached_q = new double[num_dof];
   cached_qd = new double[num_dof];
   secondDerivativesCached = 0;

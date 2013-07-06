@@ -25,6 +25,8 @@ public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1);
   ~RigidBodyManipulator(void);
   
+  void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1);
+
   void compile(void);  // call me after the model is loaded
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
 

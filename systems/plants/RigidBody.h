@@ -21,6 +21,8 @@ public:
     mass = 0.0;
     floating = 0;
     com << Vector3d::Zero(), 1;
+    Ttree = Matrix4d::Identity();
+    T_body_to_joint = Matrix4d::Identity();
   }
   
   ~RigidBody() {
@@ -32,8 +34,6 @@ public:
     dTdqdot = MatrixXd::Zero(3*n,4);
     Tdot = Matrix4d::Zero();
     ddTdqdq = MatrixXd::Zero(3*n*n,4);
-    Ttree = Matrix4d::Identity();
-    T_body_to_joint = Matrix4d::Identity();
   }
 
   void computeAncestorDOFs(RigidBodyManipulator* model)
