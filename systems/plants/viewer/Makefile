@@ -41,5 +41,7 @@ lcmgl_test : lcmgl_test.cpp
 %.o : %.cpp %.h
 	$(CC) -c $< $(CFLAGS)
 
+drake_urdf_renderer.o : ../urdf.o ../RigidBodyManipulator.o
+
 clean: 
 	-rm -rf *.o $(BINDIR)/drake_viewer*

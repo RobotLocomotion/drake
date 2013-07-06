@@ -67,114 +67,118 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 
   Matrix<double,7,1> pose;
   
-  // iterate over each link and draw
-  for (std::map<std::string, boost::shared_ptr<urdf::Link> >::iterator l=self->model->urdf_model->links_.begin(); l!=self->model->urdf_model->links_.end(); l++) {
-    if (l->second->visual) { // then at least one default visual tag exists
+  // iterate over each model
+  for (vector<boost::shared_ptr<urdf::ModelInterface> >::iterator miter=self->model->urdf_model.begin(); miter!= self->model->urdf_model.end(); miter++) {
+
+  	// iterate over each link and draw
+  	for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=(*miter)->links_.begin(); l!=(*miter)->links_.end(); l++) {
+			if (l->second->visual) { // then at least one default visual tag exists
+
+				int body_ind;
+				if (l->second->parent_joint) {
+					map<string, int>::iterator j2 = self->model->joint_map.find(l->second->parent_joint->name);
+					if (j2 == self->model->joint_map.end()) continue;  // this shouldn't happen, but just in case...
+					body_ind = j2->second+1;
+				} else {
+					body_ind = 1;  // then it's attached directly to the floating base
+				}
+
+				self->model->forwardKin(body_ind,zero,2,pose);
+	//      cout << l->second->name << " is at " << pose.transpose() << endl;
+
+				double* posedata = pose.data();
+				bot_quat_to_angle_axis(&posedata[3], &theta, axis);
+
+				glPushMatrix();
+				glTranslatef(pose(0),pose(1),pose(2));
+				glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
+
+				// todo: iterate over all visual groups (not just "default")
+				map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
+				if (v_grp_it == l->second->visual_groups.end()) continue;
+
+				vector<boost::shared_ptr<urdf::Visual> > *visuals = v_grp_it->second.get();
+				for (vector<boost::shared_ptr<urdf::Visual> >::iterator viter = visuals->begin(); viter!=visuals->end(); viter++)
+				{
+					urdf::Visual * vptr = viter->get();
+					if (!vptr) continue;
+
+					glPushMatrix();
+
+					// handle visual material
+					if (vptr->material) {
+						glColor4f(vptr->material->color.r,
+								vptr->material->color.g,
+								vptr->material->color.b,
+								vptr->material->color.a);
+	/*
+						 GLfloat mat[4] = { vptr->material->color.r,
+								 vptr->material->color.g,
+								 vptr->material->color.b,
+								 vptr->material->color.a };
+						 GLfloat white[4] = {1,1,1,1};
+						 glMaterialfv(GL_FRONT,GL_DIFFUSE,mat);
+						 glMaterialfv(GL_FRONT,GL_AMBIENT,mat);
+						 glMaterialfv(GL_FRONT,GL_SPECULAR,white); */
+					}
+
+					// todo: handle textures here?
+
+					// handle visual origin
+					glTranslatef(vptr->origin.position.x,
+									vptr->origin.position.y,
+									vptr->origin.position.z);
+
+					quat[0] = vptr->origin.rotation.w;
+					quat[1] = vptr->origin.rotation.x;
+					quat[2] = vptr->origin.rotation.y;
+					quat[3] = vptr->origin.rotation.z;
+					bot_quat_to_angle_axis(quat, &theta, axis);
+					glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
+
+					int type = vptr->geometry->type;
+					if (type == urdf::Geometry::SPHERE) {
+						boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(vptr->geometry));
+						double radius = sphere->radius;
+						glutSolidSphere(radius,36,36);
+					} else if (type == urdf::Geometry::BOX) {
+						boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(vptr->geometry));
+						glScalef(box->dim.x,box->dim.y,box->dim.z);
+	//          glutSolidCube(1.0);
+						bot_gl_draw_cube();
+	//          glutSolidSphere(1,36,36);
+					} else if  (type == urdf::Geometry::CYLINDER) {
+						boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(vptr->geometry));
+
+						// transform to center of cylinder
+						glTranslatef(0.0,0.0,-cyl->length/2.0);
+
+						GLUquadricObj* quadric = gluNewQuadric();
+						gluQuadricDrawStyle(quadric, GLU_FILL);
+						gluQuadricNormals(quadric, GLU_SMOOTH);
+						gluQuadricOrientation(quadric, GLU_OUTSIDE);
+						gluCylinder(quadric,
+										cyl->radius,
+										cyl->radius,
+										(double) cyl->length,
+										36,
+										1);
+						gluDeleteQuadric(quadric);
+					} else if (type == urdf::Geometry::MESH) {
+						boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(vptr->geometry));
+						glScalef(mesh->scale.x,mesh->scale.y,mesh->scale.z);
+						map<string,BotWavefrontModel*>::iterator iter = self->model->mesh_map.find(mesh->filename);
+						if (iter!= self->model->mesh_map.end()) {
+							bot_wavefront_model_gl_draw(iter->second);
+	//        		glmDraw(iter->second->glm_model, GLM_SMOOTH);
+						}
+					}
+					glPopMatrix();
+				}
       
-      int body_ind;
-      if (l->second->parent_joint) {
-        std::map<std::string, int>::iterator j2 = self->model->joint_map.find(l->second->parent_joint->name);
-        if (j2 == self->model->joint_map.end()) continue;  // this shouldn't happen, but just in case...
-        body_ind = j2->second+1;
-      } else {
-        body_ind = 1;  // then it's attached directly to the floating base
-      }
-      
-      self->model->forwardKin(body_ind,zero,2,pose);
-//      cout << l->second->name << " is at " << pose.transpose() << endl;
-      
-      double* posedata = pose.data();
-      bot_quat_to_angle_axis(&posedata[3], &theta, axis);
-
-      glPushMatrix();
-      glTranslatef(pose(0),pose(1),pose(2));
-      glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
-
-      // todo: iterate over all visual groups (not just "default")
-      map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
-      if (v_grp_it == l->second->visual_groups.end()) continue;
-
-      vector<boost::shared_ptr<urdf::Visual> > *visuals = v_grp_it->second.get();
-      for (vector<boost::shared_ptr<urdf::Visual> >::iterator viter = visuals->begin(); viter!=visuals->end(); viter++) 
-      {
-        urdf::Visual * vptr = viter->get();
-        if (!vptr) continue;
-        
-        glPushMatrix();
-        
-        // handle visual material 
-        if (vptr->material) {
-        	glColor4f(vptr->material->color.r,
-        			vptr->material->color.g,
-        			vptr->material->color.b,
-        			vptr->material->color.a);
-/*
-        	 GLfloat mat[4] = { vptr->material->color.r,
-               vptr->material->color.g,
-               vptr->material->color.b,
-               vptr->material->color.a };
-        	 GLfloat white[4] = {1,1,1,1};
-        	 glMaterialfv(GL_FRONT,GL_DIFFUSE,mat);
-        	 glMaterialfv(GL_FRONT,GL_AMBIENT,mat);
-        	 glMaterialfv(GL_FRONT,GL_SPECULAR,white); */
-        }
-
-        // todo: handle textures here?
-        
-        // handle visual origin
-        glTranslatef(vptr->origin.position.x, 
-                vptr->origin.position.y,
-                vptr->origin.position.z);
-
-        quat[0] = vptr->origin.rotation.w;
-        quat[1] = vptr->origin.rotation.x;
-        quat[2] = vptr->origin.rotation.y;
-        quat[3] = vptr->origin.rotation.z;
-        bot_quat_to_angle_axis(quat, &theta, axis);
-        glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
-        
-        int type = vptr->geometry->type;
-        if (type == urdf::Geometry::SPHERE) {
-          boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(vptr->geometry));
-          double radius = sphere->radius;
-          glutSolidSphere(radius,36,36);
-        } else if (type == urdf::Geometry::BOX) {
-          boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(vptr->geometry));
-          glScalef(box->dim.x,box->dim.y,box->dim.z);
-//          glutSolidCube(1.0);
-          bot_gl_draw_cube();
-//          glutSolidSphere(1,36,36);
-        } else if  (type == urdf::Geometry::CYLINDER) {
-          boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(vptr->geometry));
-          
-          // transform to center of cylinder
-          glTranslatef(0.0,0.0,-cyl->length/2.0);
-          
-          GLUquadricObj* quadric = gluNewQuadric();
-          gluQuadricDrawStyle(quadric, GLU_FILL);
-          gluQuadricNormals(quadric, GLU_SMOOTH);
-          gluQuadricOrientation(quadric, GLU_OUTSIDE);
-          gluCylinder(quadric,
-                  cyl->radius,
-                  cyl->radius,
-                  (double) cyl->length,
-                  36,
-                  1);
-          gluDeleteQuadric(quadric);
-        } else if (type == urdf::Geometry::MESH) {
-        	boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(vptr->geometry));
-        	glScalef(mesh->scale.x,mesh->scale.y,mesh->scale.z);
-        	map<string,BotWavefrontModel*>::iterator iter = self->model->mesh_map.find(mesh->filename);
-        	if (iter!= self->model->mesh_map.end()) {
-        		bot_wavefront_model_gl_draw(iter->second);
-//        		glmDraw(iter->second->glm_model, GLM_SMOOTH);
-        	}
-        } 
-        glPopMatrix();
-      }
-      
-      glPopMatrix();
-    }
+				glPopMatrix();
+			}
+		}
   }
 }
 
