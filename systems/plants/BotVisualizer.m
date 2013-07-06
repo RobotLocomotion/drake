@@ -36,7 +36,7 @@ classdef BotVisualizer < Visualizer
       [~,ck] = system('ps ax | grep -c -i drake_viewer');
       if (str2num(ck)<2) 
         % if not, then launch one...
-        retval = system(['export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &']);
+        retval = system(['export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &> drake_viewer.out']);
         pause(.01);  % wait for viewer to come up
         [~,ck] = system('ps ax | grep -c -i drake_viewer');
         if str2num(ck)<2, error('autolaunch failed.  please manually start an instance of the drake_viewer'); end

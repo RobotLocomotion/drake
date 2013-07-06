@@ -231,6 +231,8 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
           	string package = fname.substr(0,fname.find_first_of("/"));
           	boost::replace_first(fname,package,rospack(package));
           	cout << " with " << fname << endl;
+          } else {
+            fname = root_dir + "/" + mesh->filename;
           }
           boost::filesystem::path mypath(fname);
 
@@ -246,7 +248,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
           boost::to_lower(ext);
           
           if (ext.compare(".obj")==0) {
-            cout << "Loading mesh from " << fname << endl;
+//            cout << "Loading mesh from " << fname << endl;
             BotWavefrontModel* wavefront_model = bot_wavefront_model_create(fname.c_str());
             if (!wavefront_model) {
               cerr << "Error loading mesh: " << fname << endl;
@@ -256,7 +258,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
           } else {
           	// try changing the extension to dae and loading
           	if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
-              cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
+ //             cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
           		BotWavefrontModel* wavefront_model = bot_wavefront_model_create(mypath.replace_extension(".obj").native().c_str());
               if (!wavefront_model) {
                 cerr << "Error loading mesh: " << fname << endl;
@@ -264,7 +266,7 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(boost::shared_ptr<urdf::Model
               	mesh_map.insert(make_pair(mesh->filename, wavefront_model));
               }
           	} else {
-              cout << "Warning: Mesh " << mypath.native() << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
+              cerr << "Warning: Mesh " << mypath.native() << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
             }
           }
         }
@@ -621,29 +623,36 @@ URDFRigidBodyManipulator* loadURDFfromXML(const std::string &xml_string, const s
 
 URDFRigidBodyManipulator* loadURDFfromFile(const std::string &urdf_filename)
 {
-  std::string xml_string;
-  std::fstream xml_file(urdf_filename.c_str(), std::fstream::in);
-  if (xml_file.is_open())
-  {
-    while ( xml_file.good() )
-    {
-      std::string line;
-      std::getline( xml_file, line);
-      xml_string += (line + "\n");
-    }
-    xml_file.close();
-  }
-  else
-  {
-    std::cerr << "Could not open file ["<<urdf_filename.c_str()<<"] for parsing."<< std::endl;
-    return NULL;
-  }
-  
-  boost::filesystem::path mypath(urdf_filename);
-  std::string pathname;
-  if (!mypath.empty() && mypath.has_parent_path())
-  	pathname = mypath.parent_path().native();
+	// urdf_filename can be a list of urdf files seperated by a :
 
-  // parse URDF to get model
-  return loadURDFfromXML(xml_string,pathname);
+	string xml_string, token;
+	istringstream iss(urdf_filename);
+
+	while (getline(iss,token,':')) {
+		fstream xml_file(token.c_str(), fstream::in);
+		if (xml_file.is_open())
+		{
+			while ( xml_file.good() )
+			{
+				string line;
+				getline( xml_file, line);
+				xml_string += (line + "\n");
+			}
+			xml_file.close();
+		}
+		else
+		{
+			cerr << "Could not open file ["<<urdf_filename.c_str()<<"] for parsing."<< endl;
+			return NULL;
+		}
+
+		boost::filesystem::path mypath(urdf_filename);
+		string pathname;
+		if (!mypath.empty() && mypath.has_parent_path())
+			pathname = mypath.parent_path().native();
+
+		// parse URDF to get model
+	  return loadURDFfromXML(xml_string,pathname);
+	}
+
 }

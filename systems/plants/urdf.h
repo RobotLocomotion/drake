@@ -21,7 +21,9 @@ public:
   virtual ~URDFRigidBodyManipulator(void);
 
   void drawBody(void) {};
-  
+
+  void addURDFfromXML(const std::string &xml_string, const std::string &root_dir = ".");
+
 #ifdef BOT_VIS_SUPPORT  // adds a bunch of dependencies, which are not necessary for all functionality
   std::map<std::string, BotWavefrontModel*> mesh_map;
 #endif
