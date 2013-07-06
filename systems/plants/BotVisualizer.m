@@ -16,6 +16,10 @@ classdef BotVisualizer < Visualizer
 %    lcmglwrappers
     function obj = BotVisualizer(manip)
       
+      if ispc
+        error('botvis doesn''t support windows yet');
+      end
+      
       if ~exist([getDrakePath(),'/bin/drake_viewer'],'file')
         error('can''t find drake_viewer executable.  you might need to run make (from the shell).  note: BotVisualizer is not supported on windows yet');
       end
@@ -32,9 +36,10 @@ classdef BotVisualizer < Visualizer
       [~,ck] = system('ps ax | grep -c -i drake_viewer');
       if (str2num(ck)<2) 
         % if not, then launch one...
-        if ~ismac, error('autolaunch only works on mac so far'); end
         retval = system(['export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &']);
         pause(.01);  % wait for viewer to come up
+        [~,ck] = system('ps ax | grep -c -i drake_viewer');
+        if str2num(ck)<2, error('autolaunch failed.  please manually start an instance of the drake_viewer'); end
       end
 
       obj = obj@Visualizer(getStateFrame(manip));
