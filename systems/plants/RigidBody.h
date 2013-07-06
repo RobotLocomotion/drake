@@ -26,6 +26,10 @@ public:
   }
   
   ~RigidBody() {
+  	// NOTE: (I'm playing with fire here, but...)
+  	// The default operator= is being used in myrealloc to resize RigidBodyManipulator.
+  	// This should be suffiicent *except* for the collision object pointers, but since they are being
+  	// created and deleted at a level above, I am currently getting away with it.  (yuck!)
   }
 
   void setN(int n) {    

@@ -28,15 +28,15 @@ classdef BotVisualizer < Visualizer
       if ~strcmp(class(manip.terrain),'RigidBodyTerrain')
         error('Drake:BotVisualizer:UnsupportedModel','This model has (non-zero) terrain.  Not supported (yet)');
       end
-      if numel(manip.urdf)~=1
-        error('Drake:BotVisualizer:UnsupportedModel','I don''t actually support robots with multiple urdfs yet, but it will be easy enough');
-      end
+%      if numel(manip.urdf)~=1
+%        error('Drake:BotVisualizer:UnsupportedModel','I don''t actually support robots with multiple urdfs yet, but it will be easy enough');
+%      end
       
       % check if there is an instance of drake_viewer already running
       [~,ck] = system('ps ax | grep -c -i drake_viewer');
       if (str2num(ck)<2) 
         % if not, then launch one...
-        retval = system(['export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &> drake_viewer.out']);
+        retval = system(['export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &> drake_viewer.out &']);
         pause(.01);  % wait for viewer to come up
         [~,ck] = system('ps ax | grep -c -i drake_viewer');
         if str2num(ck)<2, error('autolaunch failed.  please manually start an instance of the drake_viewer'); end
@@ -53,8 +53,15 @@ classdef BotVisualizer < Visualizer
 
       nq = getNumDOF(manip);
       obj.state_msg = drake.systems.plants.viewer.lcmt_robot_state();
-      obj.state_msg.robot_name = manip.name{1};
+      obj.state_msg.num_robots = length(manip.name);
+      obj.state_msg.robot_name = manip.name;
       obj.state_msg.num_joints = nq;
+      for i=1:length(manip.body)
+        b = manip.body(i);
+        if (b.dofnum>0)
+          obj.state_msg.joint_robot(b.dofnum) = b.robotnum-1;
+        end
+      end
       obj.state_msg.joint_name = manip.getStateFrame.coordinates(1:nq);
       obj.state_msg.joint_position = single(zeros(nq,1));
       obj.state_msg.joint_velocity = single(zeros(nq,1));

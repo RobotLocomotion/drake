@@ -266,7 +266,7 @@ void myrealloc(T* &ptr, int old_size, int new_size)
 	if (old_size>0) {
 		int s = old_size;
 		if (new_size<old_size) s = new_size;
-		memcpy(newptr,ptr,sizeof(T)*s);
+		for (int i=0; i<s; i++) newptr[i] = ptr[i];  // invoke c++ copy operator
 		delete[] ptr;
 	}
 	ptr = newptr;
@@ -327,7 +327,7 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   //Variable allocation for gradient calculations
   if (last_NB>0) {
   	delete[] dXupdq;
-    for (int i=0; i<NB; i++) {
+    for (int i=0; i<last_NB; i++) {
       delete[] dIC[i];
     }
     delete[] dIC;

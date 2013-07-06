@@ -22,13 +22,14 @@ public:
 
   void drawBody(void) {};
 
-  void addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, std::map<std::string, int> jointname_to_jointnum, std::map<std::string,int> dofname_to_dofnum, const std::string & root_dir = ".");
-  void addURDFfromXML(const std::string &xml_string, const std::string &root_dir = ".");
+  bool addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, std::map<std::string, int> jointname_to_jointnum, std::map<std::string,int> dofname_to_dofnum, const std::string & root_dir = ".");
+  bool addURDFfromXML(const std::string &xml_string, const std::string &root_dir = ".");
 
 #ifdef BOT_VIS_SUPPORT  // adds a bunch of dependencies, which are not necessary for all functionality
   std::map<std::string, BotWavefrontModel*> mesh_map;
 #endif
-  std::map<std::string, int> joint_map, dof_map;
+  std::map<std::string, int> robot_map;
+  std::vector< std::map<std::string, int> > joint_map, dof_map;
   std::vector<boost::shared_ptr<urdf::ModelInterface> > urdf_model;
 };
 

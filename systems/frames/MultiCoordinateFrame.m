@@ -47,10 +47,11 @@ classdef MultiCoordinateFrame < CoordinateFrame
         name = [name,'+',coordinate_frames{i}.name];
         dim = dim+coordinate_frames{i}.dim;
         prefix = vertcat(prefix,coordinate_frames{i}.prefix);
-        if size(coordinate_frames{i}.coordinates,2)==coordinate_frames{i}.dim
-          coordinates = vertcat(coordinates,coordinate_frames{i}.coordinates');
+        c = reshape(coordinate_frames{i}.coordinates,[],1);
+        if isempty(frame_id)
+          coordinates = vertcat(coordinates,c);
         else
-          coordinates = vertcat(coordinates,coordinate_frames{i}.coordinates);
+          coordinates(frame_id==i) = c;
         end
       end
       name=name(2:end);
