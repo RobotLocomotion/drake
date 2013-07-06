@@ -42,6 +42,12 @@ classdef MultiCoordinateFrame < CoordinateFrame
         end
       end
       
+      if (nargin<2) frame_id = []; end
+      if ~isempty(frame_id)
+        sizecheck(frame_id,dim);
+        rangecheck(frame_id,1,length(coordinate_frames));
+      end
+      
       for i=1:length(coordinate_frames)
         typecheck(coordinate_frames{i},'CoordinateFrame');
         name = [name,'+',coordinate_frames{i}.name];
@@ -56,11 +62,6 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
       name=name(2:end);
       
-      if (nargin<2) frame_id = []; end
-      if ~isempty(frame_id)
-        sizecheck(frame_id,dim);
-        rangecheck(frame_id,1,length(coordinate_frames));
-      end
       
       obj = obj@CoordinateFrame(name,dim,prefix,coordinates);
       obj.frame = coordinate_frames;
