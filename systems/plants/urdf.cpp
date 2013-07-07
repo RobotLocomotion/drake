@@ -280,7 +280,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
               	mesh_map.insert(make_pair(mesh->filename, wavefront_model));
               }
           	} else {
-              cerr << "Warning: Mesh " << mypath.native() << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
+              cerr << "Warning: Mesh " << fname << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
             }
           }
         }
