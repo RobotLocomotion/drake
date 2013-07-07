@@ -43,16 +43,19 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
       
       if (nargin<2) frame_id = []; end
+      for i=1:length(coordinate_frames)
+        typecheck(coordinate_frames{i},'CoordinateFrame');
+        name = [name,'+',coordinate_frames{i}.name];
+        dim = dim+coordinate_frames{i}.dim;
+        prefix = vertcat(prefix,coordinate_frames{i}.prefix);
+      end
+      
       if ~isempty(frame_id)
         sizecheck(frame_id,dim);
         rangecheck(frame_id,1,length(coordinate_frames));
       end
       
       for i=1:length(coordinate_frames)
-        typecheck(coordinate_frames{i},'CoordinateFrame');
-        name = [name,'+',coordinate_frames{i}.name];
-        dim = dim+coordinate_frames{i}.dim;
-        prefix = vertcat(prefix,coordinate_frames{i}.prefix);
         c = reshape(coordinate_frames{i}.coordinates,[],1);
         if isempty(frame_id)
           coordinates = vertcat(coordinates,c);

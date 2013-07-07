@@ -85,7 +85,7 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 					body_ind = j2->second;  // then it's attached directly to the floating base
 				}
 
-				cout << "drawing robot " << robot << " body_ind " << body_ind << ": " << self->model->bodies[body_ind].linkname << endl;
+//				cout << "drawing robot " << robot << " body_ind " << body_ind << ": " << self->model->bodies[body_ind].linkname << endl;
 
 				self->model->forwardKin(body_ind,zero,2,pose);
 	//      cout << l->second->name << " is at " << pose.transpose() << endl;
