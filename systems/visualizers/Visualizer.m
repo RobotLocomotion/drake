@@ -191,7 +191,7 @@ classdef Visualizer < DrakeSystem
 
       fr = obj.getInputFrame();
       if (nargin<2) x0 = zeros(fr.dim,1); end
-      if (nargin<3) state_dims = 1:fr.dim; end
+      if (nargin<3) state_dims = (1:fr.dim)'; end
       if (nargin<4) minrange = repmat(-5,size(state_dims)); end
       if (nargin<5) maxrange = -minrange; end
       
@@ -204,7 +204,7 @@ classdef Visualizer < DrakeSystem
       set(f, 'Position', [560 400 560 20 + 30*rows]);
 
       y=30*rows-10;
-      for i=state_dims
+      for i=state_dims'
         label{i} = uicontrol('Style','text','String',getCoordinateName(fr,state_dims(i)), ...
           'Position',[10+280*(i>rows), y+30*rows*(i>rows), 90, 20],'BackgroundColor',[.8 .8 .8]);
         slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
