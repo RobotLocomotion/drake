@@ -33,13 +33,13 @@ classdef BotVisualizer < Visualizer
 %      end
       
       % check if there is an instance of drake_viewer already running
-      [~,ck] = system('ps ax | grep -c -i drake_viewer');
-      if (str2num(ck)<2) 
+      [~,ck] = system('ps ax | grep -i drake_viewer | grep -c -v grep');
+      if (str2num(ck)<1) 
         % if not, then launch one...
-        retval = system(['export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &> drake_viewer.out &']);
+        retval = system(['export LD_LIBRARY_PATH=$HOME/drc/software/build/lib; export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &> drake_viewer.out &']);
         pause(1);  % wait for viewer to come up
-        [~,ck] = system('ps ax | grep -c -i drake_viewer');
-        if str2num(ck)<2, error('autolaunch failed.  please manually start an instance of the drake_viewer'); end
+        [~,ck] = system('ps ax | grep -i drake_viewer | grep -c -v grep');
+        if str2num(ck)<1, error('autolaunch failed.  please manually start an instance of the drake_viewer'); end
       end
 
       obj = obj@Visualizer(getStateFrame(manip));
