@@ -291,6 +291,12 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
   lcmt_robot_state_subscribe(lcm,"DRAKE_VIEWER_STATE",&handle_lcm_robot_state,self);
   
   bot_viewer_add_renderer(viewer, renderer, priority);
+
+  lcmt_viewer_command status_message;
+  status_message.command_type = LCMT_VIEWER_COMMAND_STATUS;
+  status_message.command_data = (char*) "loaded";
+
+  lcmt_viewer_command_publish(lcm, "DRAKE_VIEWER_STATUS", &status_message);
 }
 
 /*

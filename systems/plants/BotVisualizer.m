@@ -31,15 +31,21 @@ classdef BotVisualizer < Visualizer
 %      if numel(manip.urdf)~=1
 %        error('Drake:BotVisualizer:UnsupportedModel','I don''t actually support robots with multiple urdfs yet, but it will be easy enough');
 %      end
-      
+
+      lc = lcm.lcm.LCM.getSingleton();
+
       % check if there is an instance of drake_viewer already running
       [~,ck] = system('ps ax | grep -i drake_viewer | grep -c -v grep');
       if (str2num(ck)<1) 
         % if not, then launch one...
-        retval = system(['export LD_LIBRARY_PATH=$HOME/drc/software/build/lib; export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &> drake_viewer.out &']);
-        pause(1);  % wait for viewer to come up
-        [~,ck] = system('ps ax | grep -i drake_viewer | grep -c -v grep');
-        if str2num(ck)<1, error('autolaunch failed.  please manually start an instance of the drake_viewer'); end
+        retval = system(['export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &> drake_viewer.out &']);
+        
+        % listen for ready message
+        agg = lcm.lcm.MessageAggregator();
+        lc.subscribe('DRAKE_VIEWER_STATUS',agg);
+        if isempty(agg.getNextMessage(5000)) % wait for viewer to come up
+          error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer');
+        end
       end
 
       obj = obj@Visualizer(getStateFrame(manip));
@@ -48,7 +54,6 @@ classdef BotVisualizer < Visualizer
       vc = drake.systems.plants.viewer.lcmt_viewer_command();
       vc.command_type = vc.LOAD_URDF;
       vc.command_data = [sprintf('%s:',manip.urdf{1:end-1}),manip.urdf{end}];
-      lc = lcm.lcm.LCM.getSingleton();
       lc.publish('DRAKE_VIEWER_COMMAND',vc);
 
       nq = getNumDOF(manip);
