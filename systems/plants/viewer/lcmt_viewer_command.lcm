@@ -5,6 +5,7 @@ struct lcmt_viewer_command
   string command_data;
 
   // enum for viewer command type
+  const int8_t STATUS           = 0;
   const int8_t LOAD_URDF        = 1;
   const int8_t LOAD_RENDERER    = 2;
   const int8_t SHUTDOWN         = 3;
