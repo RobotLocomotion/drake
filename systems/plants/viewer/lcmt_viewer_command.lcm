@@ -11,4 +11,6 @@ struct lcmt_viewer_command
   const int8_t SHUTDOWN         = 3;
   const int8_t START_RECORDING  = 4;
   const int8_t STOP_RECORDING   = 5;
+  const int8_t LOAD_TERRAIN     = 6;
+  const int8_t SET_TERRAIN_TRANSFORM = 7;
 }

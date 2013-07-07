@@ -193,7 +193,7 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
   RendererData *self = (RendererData*) user;
   
   switch(msg->command_type) {
-    case 1: //msg->LOAD_URDF:
+    case LCMT_VIEWER_COMMAND_LOAD_URDF:
       {
         if (self->model) delete self->model;
         cout << "loading urdf: " << msg->command_data << endl;
@@ -204,6 +204,18 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
         }
       }
       break;
+
+    case LCMT_VIEWER_COMMAND_LOAD_TERRAIN:
+      {
+      	cerr << "Terrain loading from file not implemented yet" << endl;
+      }
+    	break;
+
+    case LCMT_VIEWER_COMMAND_SET_TERRAIN_TRANSFORM:
+			{
+      	cerr << "Setting the terrain transform is not implemented yet" << endl;
+			}
+    	break;
 
     default:
       cerr << "viewer command " << msg->command_type << " not implemented yet" << endl;
