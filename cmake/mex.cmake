@@ -3,8 +3,21 @@
 
 #cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
+macro(get_mex_option option)
+  # writes MEX_${option} 
+  execute_process(COMMAND ${MATLAB_ROOT}/bin/mex -v COMMAND grep ${option} COMMAND head -n 1 COMMAND cut -d "=" -f2 OUTPUT_VARIABLE value ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(MEX_${option} ${value} PARENT_SCOPE)
+endmacro()
+
+macro(get_mex_arguments afterstring)
+  # writes MEX_${afterstring}_ARGUMENTS 
+  execute_process(COMMAND ${MATLAB_ROOT}/bin/mex -v COMMAND sed -e "1,/${afterstring}/d" COMMAND grep arguments COMMAND head -n 1 COMMAND cut -d "=" -f2 OUTPUT_VARIABLE value ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+  set(MEX_${afterstring}_ARGUMENTS ${value} PARENT_SCOPE)
+endmacro()
+
 function(find_matlab)
   # sets the variables: MATLAB_ROOT, MATLAB_CPU, MEX, MEX_EXT
+  #    as well as all of the mexopts
 
   # first run matlab (if necessary) to find matlabroot and cpu path
   if (NOT EXISTS .matlabroot OR NOT EXISTS .matlabcpu)
@@ -23,6 +36,33 @@ function(find_matlab)
   set(MEX ${MATLAB_ROOT}/bin/mex PARENT_SCOPE)
   set(MEX_EXT ${MEX_EXT} PARENT_SCOPE)
 
+  get_mex_option(CC)
+  get_mex_option(CFLAGS)
+  get_mex_option(CDEBUGFLAGS)
+  get_mex_option(COPTIMFLAGS)
+  get_mex_option(CLIBS)
+  get_mex_arguments(CC)
+  
+  get_mex_option(CXX)
+  get_mex_option(CXXDEBUGFLAGS)
+  get_mex_option(CXXOPTIMFLAGS)
+  get_mex_option(CXXLIBS)
+  get_mex_arguments(CXX)
+
+  get_mex_option(FC)
+  get_mex_option(FFLAGS)
+  get_mex_option(FDEBUGFLAGS)
+  get_mex_option(FOPTIMFLAGS)
+  get_mex_option(FLIBS)
+  get_mex_arguments(FC)
+
+  get_mex_option(LD)
+  get_mex_option(LDFLAGS)
+  get_mex_option(LDDEBUGFLAGS)
+  get_mex_option(LDOPTIMFLAGS)
+  get_mex_option(LDEXTENSION)
+  get_mex_arguments(LD)
+
 #  set(MATLAB_EXT_LIB ${MATLAB_ROOT}/sys/os/${MATLAB_CPU})
 #  find_library(MATLAB_MEX_LIBRARY mex ${MATLAB_BIN} )
 #  find_library(MATLAB_MX_LIBRARY  mx  ${MATLAB_BIN} )
@@ -37,6 +77,7 @@ function(add_mex)
   list(REMOVE_AT ARGV 0)
 
   message(STATUS MATLAB_ROOT = ${MATLAB_ROOT} )
+  message(STATUS MEX_CC_ARGUMENTS = ${MEX_CC_ARGUMENTS} )
   include_directories( ${MATLAB_ROOT}/extern/include ${MATLAB_ROOT}/simulink/include )
 #  set(full_target ${target}.${MEX_EXT})
 
