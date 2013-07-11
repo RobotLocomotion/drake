@@ -9,6 +9,7 @@ link_directories( ${Boost_LIBRARY_DIRS} )
 #target_link_libraries(URDFRigidBodyManipulator urdf_interface tinyxml ${Boost_LIBRARIES})
 
 add_library(drakeRBM STATIC RigidBodyManipulator.cpp)
+set_target_properties(drakeRBM PROPERTIES COMPILE_FLAGS -fPIC)
 add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp)
 target_link_libraries(URDFRigidBodyManipulator drakeRBM urdf_interface tinyxml ${Boost_LIBRARIES})
 
@@ -35,7 +36,7 @@ pods_use_pkg_config_packages(approximateIKmex gurobi)
 macro(add_planar_rbm_mex)
 # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
 #  add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
-  add_mex(${ARGV} ${ARGV}.cpp)
+add_mex(${ARGV} ${ARGV}.cpp)
   target_link_libraries(${ARGV} drakeUtil)
 endmacro()
 

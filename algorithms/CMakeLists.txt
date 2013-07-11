@@ -2,6 +2,7 @@
 # todo: still build something useful if gurobi does not exist
 
 add_library(drakeQP STATIC QP.cpp)
+set_target_properties(drakeQP PROPERTIES COMPILE_FLAGS -fPIC)
 
 add_mex(fastQPmex fastQPmex.cpp)
 target_link_libraries(fastQPmex drakeQP)
