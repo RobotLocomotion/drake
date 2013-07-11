@@ -15,8 +15,11 @@ target_link_libraries(URDFRigidBodyManipulator drakeRBM urdf_interface tinyxml $
 pods_use_pkg_config_packages(URDFRigidBodyManipulator bot2-vis)
 
 macro(add_rbm_mex)
-  add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
-  target_link_libraries(${ARGV} drakeRBM)
+# todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
+#  add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
+#  target_link_libraries(${ARGV} drakeRBM)
+  add_mex(${ARGV} ${ARGV}.cpp)
+  target_link_libraries(${ARGV} drakeRBM drakeUtil)
 endmacro()
 
 add_rbm_mex(constructModelmex)
@@ -30,7 +33,10 @@ pods_use_pkg_config_packages(approximateIKmex gurobi)
 #	collisionmex.cpp 
 
 macro(add_planar_rbm_mex)
-  add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
+# todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
+#  add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
+  add_mex(${ARGV} ${ARGV}.cpp)
+  target_link_libraries(${ARGV} drakeUtil)
 endmacro()
 
 add_subdirectory(@PlanarRigidBodyManipulator/private)

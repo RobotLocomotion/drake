@@ -1,8 +1,14 @@
 
 add_mex(realtime realtime.cpp)
-add_mex(drakeUtil OBJECT drakeUtil.cpp)
- 
-add_mex(deleteMexPointer deleteMexPointer.cpp $<TARGET_OBJECTS:drakeUtil>)
+
+# todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
+#add_mex(drakeUtil OBJECT drakeUtil.cpp)
+#add_mex(deleteMexPointer deleteMexPointer.cpp $<TARGET_OBJECTS:drakeUtil>)
+
+add_mex(drakeUtil SHARED drakeUtil.cpp)
+add_mex(deleteMexPointer deleteMexPointer.cpp)
+target_link_libraries(deleteMexPointer drakeUtil)
+
 add_mex(drakeDebugMex SHARED drakeDebugMex.cpp)
 
 add_subdirectory(test)
