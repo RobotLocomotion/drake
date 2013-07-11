@@ -35,9 +35,11 @@
 /* Author: John Hsu */
 
 #include <sstream>
-#include <urdf_interface/joint.h>
 #include <boost/lexical_cast.hpp>
-#include <urdf_interface/exceptions.h>
+
+#include "exceptions.h"
+#include "joint.h"
+
 
 namespace urdf{
 

@@ -5,7 +5,7 @@
 #include <sstream>
 #include <map>
 
-#include "urdf.h"
+#include "URDFRigidBodyManipulator.h"
 
 
 #ifdef BOT_VIS_SUPPORT
