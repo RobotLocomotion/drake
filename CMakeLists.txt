@@ -15,6 +15,8 @@ mex_setup()
 include_directories( ${CMAKE_SOURCE_DIR}/thirdParty/eigen3 ${CMAKE_SOURCE_DIR}/util )
 
 add_subdirectory(util)
-#add_subdirectory(algorithms)
+add_subdirectory(algorithms)
 add_subdirectory(systems)
+add_subdirectory(thirdParty/GetFullPath)
+
 
