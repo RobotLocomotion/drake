@@ -152,3 +152,6 @@ function(add_mex)
   # todo: add CLIBS or CXXLIBS to LINK_FLAGS selectively based in if it's a c or cxx target (always added CXX above)
 
 endfunction()
+
+
+mex_setup()
