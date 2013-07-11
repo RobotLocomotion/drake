@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.8.8)  # need the object library
+cmake_minimum_required(VERSION 2.6.0) 
+#cmake_minimum_required(VERSION 2.8.8)  # need the object library
 
 # set up pods
 set(POD_NAME drake)
