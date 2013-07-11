@@ -35,12 +35,13 @@
 /* Author: Wim Meeussen */
 
 
-#include <urdf_interface/link.h>
 #include <fstream>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
-#include <urdf_interface/exceptions.h>
+
+#include "link.h"
+#include "exceptions.h"
 
 namespace urdf{
 

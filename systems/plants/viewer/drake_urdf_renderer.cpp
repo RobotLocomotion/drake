@@ -5,10 +5,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <urdf.h>
+#include "plants/URDFRigidBodyManipulator.h"
 
-#include <lcmt_viewer_command.h>
-#include <lcmt_robot_state.h>
+#include "lcmtypes/drake.h"
 
 #include "drake_urdf_renderer.h"
 
@@ -188,12 +187,12 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 
 
 static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * channel, 
-        const lcmt_viewer_command * msg, void * user)
+        const drake_lcmt_viewer_command * msg, void * user)
 {
   RendererData *self = (RendererData*) user;
   
   switch(msg->command_type) {
-    case LCMT_VIEWER_COMMAND_LOAD_URDF:
+    case DRAKE_LCMT_VIEWER_COMMAND_LOAD_URDF:
       {
         if (self->model) delete self->model;
         cout << "loading urdf: " << msg->command_data << endl;
@@ -205,13 +204,13 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
       }
       break;
 
-    case LCMT_VIEWER_COMMAND_LOAD_TERRAIN:
+    case DRAKE_LCMT_VIEWER_COMMAND_LOAD_TERRAIN:
       {
       	cerr << "Terrain loading from file not implemented yet" << endl;
       }
     	break;
 
-    case LCMT_VIEWER_COMMAND_SET_TERRAIN_TRANSFORM:
+    case DRAKE_LCMT_VIEWER_COMMAND_SET_TERRAIN_TRANSFORM:
 			{
       	cerr << "Setting the terrain transform is not implemented yet" << endl;
 			}
@@ -226,7 +225,7 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
 }
 
 static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * channel, 
-        const lcmt_robot_state * msg, void * user)
+        const drake_lcmt_robot_state * msg, void * user)
 {
   RendererData *self = (RendererData*) user;
   
@@ -299,16 +298,16 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
   renderer->enabled = 1;
   renderer->user = self;
   
-  lcmt_viewer_command_subscribe(lcm,"DRAKE_VIEWER_COMMAND",&handle_lcm_viewer_command,self);
-  lcmt_robot_state_subscribe(lcm,"DRAKE_VIEWER_STATE",&handle_lcm_robot_state,self);
+  drake_lcmt_viewer_command_subscribe(lcm,"DRAKE_VIEWER_COMMAND",&handle_lcm_viewer_command,self);
+  drake_lcmt_robot_state_subscribe(lcm,"DRAKE_VIEWER_STATE",&handle_lcm_robot_state,self);
   
   bot_viewer_add_renderer(viewer, renderer, priority);
 
-  lcmt_viewer_command status_message;
-  status_message.command_type = LCMT_VIEWER_COMMAND_STATUS;
+  drake_lcmt_viewer_command status_message;
+  status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
   status_message.command_data = (char*) "loaded";
 
-  lcmt_viewer_command_publish(lcm, "DRAKE_VIEWER_STATUS", &status_message);
+  drake_lcmt_viewer_command_publish(lcm, "DRAKE_VIEWER_STATUS", &status_message);
 }
 
 /*

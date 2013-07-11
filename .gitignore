@@ -82,3 +82,8 @@ bin
 drake.jar
 *.out
 urdf_kin_test
+pod-build
+lcmtypes/c
+lcmtypes/cpp
+lcmtypes/java
+lcmtypes/python

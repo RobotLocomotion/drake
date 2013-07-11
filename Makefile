@@ -1,93 +1,49 @@
+# Default pod makefile distributed with pods version: 12.11.14
 
-# Note: make will automatically delete intermediate files (google "make chains of implicit rules")
+default_target: all
 
-CC = gcc
-CXX = g++
-PKG_CONFIG_PATH := ${PKG_CONFIG_PATH}:$(shell pwd)/thirdParty
+# Default to a less-verbose build.  If you want all the gory compiler output,
+# run "make VERBOSE=1"
+$(VERBOSE).SILENT:
 
-LCMFILES = $(shell find . -iname "*.lcm" | tr "\n" " " | sed "s|\./||g")
-SUBDIRS:=$(shell grep -v "^\#" tobuild.txt)
+# Figure out where to build the software.
+#   Use BUILD_PREFIX if it was passed in.
+#   If not, search up to four parent directories for a 'build' directory.
+#   Otherwise, use ./build.
+ifeq "$(BUILD_PREFIX)" ""
+BUILD_PREFIX:=$(shell for pfx in ./ .. ../.. ../../.. ../../../..; do d=`pwd`/$$pfx/build;\
+               if [ -d $$d ]; then echo $$d; exit 0; fi; done; echo `pwd`/build)
+endif
+# create the build directory if needed, and normalize its path name
+BUILD_PREFIX:=$(shell mkdir -p $(BUILD_PREFIX) && cd $(BUILD_PREFIX) && echo `pwd`)
 
-LCM_CFILES = $(LCMFILES:%.lcm=%.c) 
-LCM_CFLAGS = $(shell pkg-config --cflags lcm)
-LCM_LDFLAGS = $(shell pkg-config --libs lcm)
-EIGEN_CFLAGS = $(shell pkg-config --cflags eigen3)
+# Default to a release build.  If you want to enable debugging flags, run
+# "make BUILD_TYPE=Debug"
+ifeq "$(BUILD_TYPE)" ""
+BUILD_TYPE="Release"
+endif
 
-#CFILES = $(LCM_CFILES)
-LCM_JAVAFILES = $(LCMFILES:%.lcm=%.java)
-OTHER_JAVAFILES = util/MyLCMTypeDatabase.java util/MessageMonitor.java util/CoordinateFrameData.java util/LCMCoder.java util/Transform.java
-JAVAFILES = $(LCM_JAVAFILES) $(OTHER_JAVAFILES)
+all: pod-build/Makefile
+	$(MAKE) -C pod-build all install
 
-OBJFILES = $(LCM_CFILES:%.c=%.o) 
-CLASSFILES = $(JAVAFILES:%.java=%.class) 
-EXTRACLASSFILES = util/MyLCMTypeDatabase*MyClassVisitor.class
+pod-build/Makefile:
+	$(MAKE) configure
 
-MATLAB = $(shell which matlab)
+.PHONY: configure
+configure:
+	@echo "\nBUILD_PREFIX: $(BUILD_PREFIX)\n\n"
 
-all: matlab_config java c
-	@for subdir in $(SUBDIRS); do \
-		echo "\n-------------------------------------------"; \
-		echo "-- $$subdir"; \
-		echo "-------------------------------------------"; \
-		$(MAKE) -C $$subdir all || exit 2; \
-	done
+	# create the temporary build directory if needed
+	@mkdir -p pod-build
 
-debug: CXX += -g
-debug: CC += -g
-debug: matlab_config java c
-	@for subdir in $(SUBDIRS); do \
-		echo "\n-------------------------------------------"; \
-		echo "-- $$subdir"; \
-		echo "-------------------------------------------"; \
-		$(MAKE) -C $$subdir debug || exit 2; \
-	done
+	# run CMake to generate and configure the build scripts
+	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
+		   -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
-doxygen :
-	doxygen doc/Doxyfile
+clean:
+	-if [ -e pod-build/install_manifest.txt ]; then rm -f `cat pod-build/install_manifest.txt`; fi
+	-if [ -d pod-build ]; then $(MAKE) -C pod-build clean; rm -rf pod-build; fi
 
-java : drake.jar
-
-c : drake.a 
-
-matlab_config : util/drake_config.mat .matlabroot
-
-util/drake_config.mat .matlabroot : configure.m
-	matlab -nosplash -nodesktop -r "configure;exit";
-# todo: consider using configure(struct('autoconfig',true))
-
-drake.jar : $(CLASSFILES)
-	cd ..; jar -cf drake/drake.jar $(CLASSFILES:%=drake/%) $(EXTRACLASSFILES:%=drake/%)
-
-drake.a : $(OBJFILES)
-	ar rc $@ $^
-
-.INTERMEDIATE : $(OBJFILES) $(CLASSFILES)
-.PRECIOUS : $(LCMFILES) $(OTHER_JAVAFILES)
-
-util/LCMCoder.class : util/LCMCoder.java util/CoordinateFrameData.class
-	javac $< -cp $(CLASSPATH):$(shell pwd)/../
-
-%.class : %.java
-	javac $<
-
-%.o : %.c
-	$(CC) -c -I include/ $< -o $@ $(LCM_CFLAGS) $(EIGEN_CFLAGS)
-
-%.c : %.lcm
-	@if grep -i package $< ; then echo "\n *** ERROR: $< has a package specified.  Don't do that. *** \n"; exit 1; fi
-	lcm-gen -c --c-cpath="$(shell echo $< | sed "s|/[A-Za-z0-9_]*\.lcm|/|")" --c-hpath="include/" $< 
-
-%.java : %.lcm
-	@if grep -i package $< ; then echo "\n *** ERROR: $< has a package specified.  Don't do that. *** \n"; exit 1; fi
-	lcm-gen -j --jdefaultpkg="drake.$(shell echo $< | sed "s|/[A-Za-z0-9._]*\.lcm||g" | tr "/" ".")" --jpath=".." $<
-
-clean : 
-	-rm -f drake.jar drake.a $(LIBS) $(LCM_HFILES) $(LCM_CFILES) $(OBJFILES) $(LCM_JAVAFILES) $(CLASSFILES) $(EXTRACLASSFILES)
-	-rm -rf doc/DoxygenMatlab/html 
-	@for subdir in $(SUBDIRS); do \
-		echo "\n-------------------------------------------"; \
-		echo "-- $$subdir"; \
-		echo "-------------------------------------------"; \
-		$(MAKE) -C $$subdir clean; \
-	done
-
+# other (custom) targets are passed through to the cmake-generated Makefile 
+%::
+	$(MAKE) -C pod-build $@
