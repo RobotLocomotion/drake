@@ -38,14 +38,12 @@ add_subdirectory(thirdParty/GetFullPath)
 include(cmake/matlab_pods.cmake)
 pods_configure_matlab_paths()
 
-file(WRITE addpath_drake.m
+file(WRITE ${CMAKE_BINARY_DIR}/matlab/addpath_drake.m
 	   "function addpath_drake()\n"
 	   "  wd = cd ${CMAKE_CURRENT_SOURCE_DIR};\n"
 	   "  configure();\n"
 	   "  cd(wd);\n"
     )
-install(FILES addpath_drake.m DESTINATION matlab)
-
 
 #install(FILE addpath_drake.m DESTINATION matlab/)
 #install(FILE rmpath_drake.m DESTINATION matlab/)

@@ -5,6 +5,7 @@
 #include <Eigen/SVD>
 
 #include "fastQP.h"
+#include "gurobiQP.h"
 
 #define _USE_MATH_DEFINES
 
