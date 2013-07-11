@@ -26,6 +26,8 @@
 #ifndef EIGEN_HYPERPLANE_H
 #define EIGEN_HYPERPLANE_H
 
+namespace Eigen { 
+
 /** \geometry_module \ingroup Geometry_Module
   *
   * \class Hyperplane
@@ -276,5 +278,7 @@ protected:
 
   Coefficients m_coeffs;
 };
+
+} // end namespace Eigen
 
 #endif // EIGEN_HYPERPLANE_H

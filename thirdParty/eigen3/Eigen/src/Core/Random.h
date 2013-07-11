@@ -25,6 +25,8 @@
 #ifndef EIGEN_RANDOM_H
 #define EIGEN_RANDOM_H
 
+namespace Eigen { 
+
 namespace internal {
 
 template<typename Scalar> struct scalar_random_op {
@@ -159,5 +161,7 @@ PlainObjectBase<Derived>::setRandom(Index rows, Index cols)
   resize(rows, cols);
   return setRandom();
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_RANDOM_H

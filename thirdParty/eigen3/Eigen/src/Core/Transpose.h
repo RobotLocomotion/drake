@@ -26,6 +26,8 @@
 #ifndef EIGEN_TRANSPOSE_H
 #define EIGEN_TRANSPOSE_H
 
+namespace Eigen { 
+
 /** \class Transpose
   * \ingroup Core_Module
   *
@@ -91,7 +93,7 @@ template<typename MatrixType> class Transpose
     nestedExpression() { return m_matrix.const_cast_derived(); }
 
   protected:
-    const typename MatrixType::Nested m_matrix;
+    typename MatrixType::Nested m_matrix;
 };
 
 namespace internal {
@@ -152,12 +154,12 @@ template<typename MatrixType> class TransposeImpl<MatrixType,Dense>
       return derived().nestedExpression().coeffRef(index);
     }
 
-    inline const CoeffReturnType coeff(Index row, Index col) const
+    inline CoeffReturnType coeff(Index row, Index col) const
     {
       return derived().nestedExpression().coeff(col, row);
     }
 
-    inline const CoeffReturnType coeff(Index index) const
+    inline CoeffReturnType coeff(Index index) const
     {
       return derived().nestedExpression().coeff(index);
     }
@@ -421,5 +423,7 @@ void DenseBase<Derived>::checkTransposeAliasing(const OtherDerived& other) const
     internal::checkTransposeAliasing_impl<Derived, OtherDerived>::run(derived(), other);
 }
 #endif
+
+} // end namespace Eigen
 
 #endif // EIGEN_TRANSPOSE_H

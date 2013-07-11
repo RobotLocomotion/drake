@@ -25,6 +25,8 @@
 #ifndef EIGEN_ARRAY_H
 #define EIGEN_ARRAY_H
 
+namespace Eigen {
+
 /** \class Array 
   * \ingroup Core_Module
   *
@@ -316,5 +318,6 @@ EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE(d) \
 EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE(cf) \
 EIGEN_USING_ARRAY_TYPEDEFS_FOR_TYPE(cd)
 
+} // end namespace Eigen
 
 #endif // EIGEN_ARRAY_H

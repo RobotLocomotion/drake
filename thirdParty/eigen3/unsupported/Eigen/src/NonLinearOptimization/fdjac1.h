@@ -1,3 +1,5 @@
+namespace Eigen { 
+
 namespace internal {
 
 template<typename FunctorType, typename Scalar>
@@ -70,3 +72,5 @@ DenseIndex fdjac1(
 }
 
 } // end namespace internal
+
+} // end namespace Eigen

@@ -26,6 +26,8 @@
 #ifndef EIGEN_DIAGONALMATRIX_H
 #define EIGEN_DIAGONALMATRIX_H
 
+namespace Eigen { 
+
 #ifndef EIGEN_PARSED_BY_DOXYGEN
 template<typename Derived>
 class DiagonalBase : public EigenBase<Derived>
@@ -72,7 +74,7 @@ class DiagonalBase : public EigenBase<Derived>
     const DiagonalProduct<MatrixDerived, Derived, OnTheLeft>
     operator*(const MatrixBase<MatrixDerived> &matrix) const;
 
-    inline const DiagonalWrapper<CwiseUnaryOp<internal::scalar_inverse_op<Scalar>, const DiagonalVectorType> >
+    inline const DiagonalWrapper<const CwiseUnaryOp<internal::scalar_inverse_op<Scalar>, const DiagonalVectorType> >
     inverse() const
     {
       return diagonal().cwiseInverse();
@@ -251,13 +253,13 @@ class DiagonalWrapper
     #endif
 
     /** Constructor from expression of diagonal coefficients to wrap. */
-    inline DiagonalWrapper(const DiagonalVectorType& diagonal) : m_diagonal(diagonal) {}
+    inline DiagonalWrapper(DiagonalVectorType& diagonal) : m_diagonal(diagonal) {}
 
     /** \returns a const reference to the wrapped expression of diagonal coefficients. */
     const DiagonalVectorType& diagonal() const { return m_diagonal; }
 
   protected:
-    const typename DiagonalVectorType::Nested m_diagonal;
+    typename DiagonalVectorType::Nested m_diagonal;
 };
 
 /** \returns a pseudo-expression of a diagonal matrix with *this as vector of diagonal coefficients
@@ -302,5 +304,7 @@ bool MatrixBase<Derived>::isDiagonal(RealScalar prec) const
     }
   return true;
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_DIAGONALMATRIX_H

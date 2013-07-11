@@ -25,6 +25,8 @@
 #ifndef EIGEN_SKYLINEINPLACELU_H
 #define EIGEN_SKYLINEINPLACELU_H
 
+namespace Eigen { 
+
 /** \ingroup Skyline_Module
  *
  * \class SkylineInplaceLU
@@ -359,5 +361,7 @@ bool SkylineInplaceLU<MatrixType>::solve(const MatrixBase<BDerived> &b, MatrixBa
 
     return true;
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_SKYLINELU_H

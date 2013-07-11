@@ -25,6 +25,8 @@
 #ifndef EIGEN_SKYLINEPRODUCT_H
 #define EIGEN_SKYLINEPRODUCT_H
 
+namespace Eigen { 
+
 template<typename Lhs, typename Rhs, int ProductMode>
 struct SkylineProductReturnType {
     typedef const typename internal::nested<Lhs, Rhs::RowsAtCompileTime>::type LhsNested;
@@ -302,5 +304,7 @@ SkylineMatrixBase<Derived>::operator*(const MatrixBase<OtherDerived> &other) con
 
     return typename SkylineProductReturnType<Derived, OtherDerived>::Type(derived(), other.derived());
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_SKYLINEPRODUCT_H

@@ -25,6 +25,8 @@
 #ifndef EIGEN_MATRIX_FUNCTION_ATOMIC
 #define EIGEN_MATRIX_FUNCTION_ATOMIC
 
+namespace Eigen { 
+
 /** \ingroup MatrixFunctions_Module
   * \class MatrixFunctionAtomic
   * \brief Helper class for computing matrix functions of atomic matrices.
@@ -138,5 +140,7 @@ bool MatrixFunctionAtomic<MatrixType>::taylorConverged(Index s, const MatrixType
   }
   return false;
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_MATRIX_FUNCTION_ATOMIC

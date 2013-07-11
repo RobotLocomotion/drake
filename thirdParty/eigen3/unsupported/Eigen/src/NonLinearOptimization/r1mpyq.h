@@ -1,3 +1,5 @@
+namespace Eigen { 
+
 namespace internal {
 
 // TODO : move this to GivensQR once there's such a thing in Eigen
@@ -24,3 +26,5 @@ void r1mpyq(DenseIndex m, DenseIndex n, Scalar *a, const std::vector<JacobiRotat
 }
 
 } // end namespace internal
+
+} // end namespace Eigen

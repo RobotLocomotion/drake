@@ -25,6 +25,7 @@
 #ifndef EIGEN_MATRIX_FUNCTIONS
 #define EIGEN_MATRIX_FUNCTIONS
 
+#include <cfloat>
 #include <list>
 #include <functional>
 #include <iterator>
@@ -32,8 +33,6 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/Eigenvalues>
-
-namespace Eigen {
 
 /** \ingroup Unsupported_modules
   * \defgroup MatrixFunctions_Module Matrix functions module
@@ -50,9 +49,11 @@ namespace Eigen {
   *  - \ref matrixbase_cos "MatrixBase::cos()", for computing the matrix cosine
   *  - \ref matrixbase_cosh "MatrixBase::cosh()", for computing the matrix hyperbolic cosine
   *  - \ref matrixbase_exp "MatrixBase::exp()", for computing the matrix exponential
+  *  - \ref matrixbase_log "MatrixBase::log()", for computing the matrix logarithm
   *  - \ref matrixbase_matrixfunction "MatrixBase::matrixFunction()", for computing general matrix functions
   *  - \ref matrixbase_sin "MatrixBase::sin()", for computing the matrix sine
   *  - \ref matrixbase_sinh "MatrixBase::sinh()", for computing the matrix hyperbolic sine
+  *  - \ref matrixbase_sqrt "MatrixBase::sqrt()", for computing the matrix square root
   *
   * These methods are the main entry points to this module. 
   *
@@ -69,6 +70,8 @@ namespace Eigen {
 
 #include "src/MatrixFunctions/MatrixExponential.h"
 #include "src/MatrixFunctions/MatrixFunction.h"
+#include "src/MatrixFunctions/MatrixSquareRoot.h"
+#include "src/MatrixFunctions/MatrixLogarithm.h"
 
 
 
@@ -166,9 +169,66 @@ the z-axis.
 \include MatrixExponential.cpp
 Output: \verbinclude MatrixExponential.out
 
-\note \p M has to be a matrix of \c float, \c double,
-\c complex<float> or \c complex<double> .
+\note \p M has to be a matrix of \c float, \c double, \c long double
+\c complex<float>, \c complex<double>, or \c complex<long double> .
 
+
+\section matrixbase_log MatrixBase::log()
+
+Compute the matrix logarithm.
+
+\code
+const MatrixLogarithmReturnValue<Derived> MatrixBase<Derived>::log() const
+\endcode
+
+\param[in]  M  invertible matrix whose logarithm is to be computed.
+\returns    expression representing the matrix logarithm root of \p M.
+
+The matrix logarithm of \f$ M \f$ is a matrix \f$ X \f$ such that 
+\f$ \exp(X) = M \f$ where exp denotes the matrix exponential. As for
+the scalar logarithm, the equation \f$ \exp(X) = M \f$ may have
+multiple solutions; this function returns a matrix whose eigenvalues
+have imaginary part in the interval \f$ (-\pi,\pi] \f$.
+
+In the real case, the matrix \f$ M \f$ should be invertible and
+it should have no eigenvalues which are real and negative (pairs of
+complex conjugate eigenvalues are allowed). In the complex case, it
+only needs to be invertible.
+
+This function computes the matrix logarithm using the Schur-Parlett
+algorithm as implemented by MatrixBase::matrixFunction(). The
+logarithm of an atomic block is computed by MatrixLogarithmAtomic,
+which uses direct computation for 1-by-1 and 2-by-2 blocks and an
+inverse scaling-and-squaring algorithm for bigger blocks, with the
+square roots computed by MatrixBase::sqrt().
+
+Details of the algorithm can be found in Section 11.6.2 of:
+Nicholas J. Higham,
+<em>Functions of Matrices: Theory and Computation</em>,
+SIAM 2008. ISBN 978-0-898716-46-7.
+
+Example: The following program checks that
+\f[ \log \left[ \begin{array}{ccc} 
+      \frac12\sqrt2 & -\frac12\sqrt2 & 0 \\
+      \frac12\sqrt2 & \frac12\sqrt2 & 0 \\
+      0 & 0 & 1
+    \end{array} \right] = \left[ \begin{array}{ccc}
+      0 & \frac14\pi & 0 \\ 
+      -\frac14\pi & 0 & 0 \\
+      0 & 0 & 0 
+    \end{array} \right]. \f]
+This corresponds to a rotation of \f$ \frac14\pi \f$ radians around
+the z-axis. This is the inverse of the example used in the
+documentation of \ref matrixbase_exp "exp()".
+
+\include MatrixLogarithm.cpp
+Output: \verbinclude MatrixLogarithm.out
+
+\note \p M has to be a matrix of \c float, \c double, \c long double
+\c complex<float>, \c complex<double>, or \c complex<long double> .
+
+\sa MatrixBase::exp(), MatrixBase::matrixFunction(), 
+    class MatrixLogarithmAtomic, MatrixBase::sqrt().
 
 
 \section matrixbase_matrixfunction MatrixBase::matrixFunction()
@@ -245,7 +305,7 @@ Output: \verbinclude MatrixSine.out
 
 
 
-\section matrixbase_sinh const MatrixBase::sinh()
+\section matrixbase_sinh MatrixBase::sinh()
 
 Compute the matrix hyperbolic sine.
 
@@ -261,9 +321,75 @@ This function calls \ref matrixbase_matrixfunction "matrixFunction()" with StdSt
 Example: \include MatrixSinh.cpp
 Output: \verbinclude MatrixSinh.out
 
-*/
 
-}
+\section matrixbase_sqrt MatrixBase::sqrt()
+
+Compute the matrix square root.
+
+\code
+const MatrixSquareRootReturnValue<Derived> MatrixBase<Derived>::sqrt() const
+\endcode
+
+\param[in]  M  invertible matrix whose square root is to be computed.
+\returns    expression representing the matrix square root of \p M.
+
+The matrix square root of \f$ M \f$ is the matrix \f$ M^{1/2} \f$
+whose square is the original matrix; so if \f$ S = M^{1/2} \f$ then
+\f$ S^2 = M \f$. 
+
+In the <b>real case</b>, the matrix \f$ M \f$ should be invertible and
+it should have no eigenvalues which are real and negative (pairs of
+complex conjugate eigenvalues are allowed). In that case, the matrix
+has a square root which is also real, and this is the square root
+computed by this function. 
+
+The matrix square root is computed by first reducing the matrix to
+quasi-triangular form with the real Schur decomposition. The square
+root of the quasi-triangular matrix can then be computed directly. The
+cost is approximately \f$ 25 n^3 \f$ real flops for the real Schur
+decomposition and \f$ 3\frac13 n^3 \f$ real flops for the remainder
+(though the computation time in practice is likely more than this
+indicates).
+
+Details of the algorithm can be found in: Nicholas J. Highan,
+"Computing real square roots of a real matrix", <em>Linear Algebra
+Appl.</em>, 88/89:405&ndash;430, 1987.
+
+If the matrix is <b>positive-definite symmetric</b>, then the square
+root is also positive-definite symmetric. In this case, it is best to
+use SelfAdjointEigenSolver::operatorSqrt() to compute it.
+
+In the <b>complex case</b>, the matrix \f$ M \f$ should be invertible;
+this is a restriction of the algorithm. The square root computed by
+this algorithm is the one whose eigenvalues have an argument in the
+interval \f$ (-\frac12\pi, \frac12\pi] \f$. This is the usual branch
+cut.
+
+The computation is the same as in the real case, except that the
+complex Schur decomposition is used to reduce the matrix to a
+triangular matrix. The theoretical cost is the same. Details are in:
+&Aring;ke Bj&ouml;rck and Sven Hammarling, "A Schur method for the
+square root of a matrix", <em>Linear Algebra Appl.</em>,
+52/53:127&ndash;140, 1983.
+
+Example: The following program checks that the square root of
+\f[ \left[ \begin{array}{cc} 
+              \cos(\frac13\pi) & -\sin(\frac13\pi) \\
+              \sin(\frac13\pi) & \cos(\frac13\pi)
+    \end{array} \right], \f]
+corresponding to a rotation over 60 degrees, is a rotation over 30 degrees:
+\f[ \left[ \begin{array}{cc} 
+              \cos(\frac16\pi) & -\sin(\frac16\pi) \\
+              \sin(\frac16\pi) & \cos(\frac16\pi)
+    \end{array} \right]. \f]
+
+\include MatrixSquareRoot.cpp
+Output: \verbinclude MatrixSquareRoot.out
+
+\sa class RealSchur, class ComplexSchur, class MatrixSquareRoot,
+    SelfAdjointEigenSolver::operatorSqrt().
+
+*/
 
 #endif // EIGEN_MATRIX_FUNCTIONS
 

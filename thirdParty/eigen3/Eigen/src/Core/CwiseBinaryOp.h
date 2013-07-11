@@ -26,6 +26,8 @@
 #ifndef EIGEN_CWISE_BINARY_OP_H
 #define EIGEN_CWISE_BINARY_OP_H
 
+namespace Eigen {
+
 /** \class CwiseBinaryOp
   * \ingroup Core_Module
   *
@@ -167,8 +169,8 @@ class CwiseBinaryOp : internal::no_assignment_operator,
     const BinaryOp& functor() const { return m_functor; }
 
   protected:
-    const LhsNested m_lhs;
-    const RhsNested m_rhs;
+    LhsNested m_lhs;
+    RhsNested m_rhs;
     const BinaryOp m_functor;
 };
 
@@ -236,5 +238,7 @@ MatrixBase<Derived>::operator+=(const MatrixBase<OtherDerived>& other)
   tmp = other.derived();
   return derived();
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_CWISE_BINARY_OP_H

@@ -26,6 +26,8 @@
 #ifndef EIGEN_MATRIXBASEEIGENVALUES_H
 #define EIGEN_MATRIXBASEEIGENVALUES_H
 
+namespace Eigen { 
+
 namespace internal {
 
 template<typename Derived, bool IsComplex>
@@ -166,5 +168,7 @@ SelfAdjointView<MatrixType, UpLo>::operatorNorm() const
 {
   return eigenvalues().cwiseAbs().maxCoeff();
 }
+
+} // end namespace Eigen
 
 #endif

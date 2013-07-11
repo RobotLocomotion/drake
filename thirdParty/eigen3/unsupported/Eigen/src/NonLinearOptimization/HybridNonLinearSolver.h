@@ -28,6 +28,8 @@
 #ifndef EIGEN_HYBRIDNONLINEARSOLVER_H
 #define EIGEN_HYBRIDNONLINEARSOLVER_H
 
+namespace Eigen { 
+
 namespace HybridNonLinearSolverSpace { 
     enum Status {
         Running = -1,
@@ -602,6 +604,8 @@ HybridNonLinearSolver<FunctorType,Scalar>::solveNumericalDiff(FVectorType  &x)
     return status;
 }
 
-//vim: ai ts=4 sts=4 et sw=4
+} // end namespace Eigen
+
 #endif // EIGEN_HYBRIDNONLINEARSOLVER_H
 
+//vim: ai ts=4 sts=4 et sw=4

@@ -25,6 +25,8 @@
 #ifndef EIGEN_EULERANGLES_H
 #define EIGEN_EULERANGLES_H
 
+namespace Eigen { 
+
 /** \geometry_module \ingroup Geometry_Module
   *
   *
@@ -92,5 +94,6 @@ MatrixBase<Derived>::eulerAngles(Index a0, Index a1, Index a2) const
   return res;
 }
 
+} // end namespace Eigen
 
 #endif // EIGEN_EULERANGLES_H

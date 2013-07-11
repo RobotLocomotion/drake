@@ -30,6 +30,8 @@
 #ifndef EIGEN_MATH_FUNCTIONS_SSE_H
 #define EIGEN_MATH_FUNCTIONS_SSE_H
 
+namespace Eigen {
+
 namespace internal {
 
 template<> EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS EIGEN_UNUSED
@@ -121,7 +123,7 @@ Packet4f pexp<Packet4f>(const Packet4f& _x)
   _EIGEN_DECLARE_CONST_Packet4i(0x7f, 0x7f);
 
 
-  _EIGEN_DECLARE_CONST_Packet4f(exp_hi, 88.3762626647949f);
+  _EIGEN_DECLARE_CONST_Packet4f(exp_hi,  88.3762626647950f);
   _EIGEN_DECLARE_CONST_Packet4f(exp_lo, -88.3762626647949f);
 
   _EIGEN_DECLARE_CONST_Packet4f(cephes_LOG2EF, 1.44269504088896341f);
@@ -168,7 +170,7 @@ Packet4f pexp<Packet4f>(const Packet4f& _x)
   y = pmadd(y, z, x);
   y = padd(y, p4f_1);
 
-  /* build 2^n */
+  // build 2^n
   emm0 = _mm_cvttps_epi32(fx);
   emm0 = _mm_add_epi32(emm0, p4i_0x7f);
   emm0 = _mm_slli_epi32(emm0, 23);
@@ -391,5 +393,7 @@ Packet4f psqrt<Packet4f>(const Packet4f& _x)
 }
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_MATH_FUNCTIONS_SSE_H

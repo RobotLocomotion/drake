@@ -28,6 +28,8 @@
 #include "SkylineStorage.h"
 #include "SkylineMatrixBase.h"
 
+namespace Eigen { 
+
 /** \ingroup Skyline_Module
  *
  * \class SkylineMatrix
@@ -869,5 +871,7 @@ protected:
     const Index m_start;
     const Index m_end;
 };
+
+} // end namespace Eigen
 
 #endif // EIGEN_SkylineMatrix_H

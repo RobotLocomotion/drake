@@ -26,6 +26,8 @@
 #ifndef EIGEN_HESSENBERGDECOMPOSITION_H
 #define EIGEN_HESSENBERGDECOMPOSITION_H
 
+namespace Eigen { 
+
 namespace internal {
   
 template<typename MatrixType> struct HessenbergDecompositionMatrixHReturnType;
@@ -379,6 +381,8 @@ template<typename MatrixType> struct HessenbergDecompositionMatrixHReturnType
     const HessenbergDecomposition<MatrixType>& m_hess;
 };
 
-}
+} // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_HESSENBERGDECOMPOSITION_H

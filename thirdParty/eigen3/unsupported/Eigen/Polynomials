@@ -16,8 +16,6 @@
   #undef EIGEN_HIDE_HEAVY_CODE
 #endif
 
-namespace Eigen {
-
 /** \ingroup Unsupported_modules
   * \defgroup Polynomials_Module Polynomials module
   *
@@ -128,8 +126,6 @@ namespace Eigen {
 
   Output: \verbinclude PolynomialSolver1.out
 */
-
-} // namespace Eigen
 
 #include <Eigen/src/Core/util/ReenableStupidWarnings.h>
 

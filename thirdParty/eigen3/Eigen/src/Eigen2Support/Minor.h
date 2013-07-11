@@ -25,6 +25,8 @@
 #ifndef EIGEN_MINOR_H
 #define EIGEN_MINOR_H
 
+namespace Eigen { 
+
 /**
   * \class Minor
   *
@@ -124,5 +126,7 @@ MatrixBase<Derived>::minor(Index row, Index col) const
 {
   return Minor<Derived>(derived(), row, col);
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_MINOR_H

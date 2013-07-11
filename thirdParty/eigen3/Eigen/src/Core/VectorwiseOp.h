@@ -26,6 +26,8 @@
 #ifndef EIGEN_PARTIAL_REDUX_H
 #define EIGEN_PARTIAL_REDUX_H
 
+namespace Eigen { 
+
 /** \class PartialReduxExpr
   * \ingroup Core_Module
   *
@@ -110,7 +112,7 @@ class PartialReduxExpr : internal::no_assignment_operator,
     }
 
   protected:
-    const MatrixTypeNested m_matrix;
+    MatrixTypeNested m_matrix;
     const MemberOp m_functor;
 };
 
@@ -237,7 +239,10 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
     typename ExtendedType<OtherDerived>::Type
     extendedTo(const DenseBase<OtherDerived>& other) const
     {
-      EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived);
+      EIGEN_STATIC_ASSERT(EIGEN_IMPLIES(Direction==Vertical, OtherDerived::MaxColsAtCompileTime==1),
+                          YOU_PASSED_A_ROW_VECTOR_BUT_A_COLUMN_VECTOR_WAS_EXPECTED)
+      EIGEN_STATIC_ASSERT(EIGEN_IMPLIES(Direction==Horizontal, OtherDerived::MaxRowsAtCompileTime==1),
+                          YOU_PASSED_A_COLUMN_VECTOR_BUT_A_ROW_VECTOR_WAS_EXPECTED)
       return typename ExtendedType<OtherDerived>::Type
                       (other.derived(),
                        Direction==Vertical   ? 1 : m_matrix.rows(),
@@ -418,10 +423,9 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
     ExpressionType& operator=(const DenseBase<OtherDerived>& other)
     {
       EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
+      EIGEN_STATIC_ASSERT_SAME_XPR_KIND(ExpressionType, OtherDerived)
       //eigen_assert((m_matrix.isNull()) == (other.isNull())); FIXME
-      for(Index j=0; j<subVectors(); ++j)
-        subVector(j) = other;
-      return const_cast<ExpressionType&>(m_matrix);
+      return const_cast<ExpressionType&>(m_matrix = extendedTo(other.derived()));
     }
 
     /** Adds the vector \a other to each subvector of \c *this */
@@ -429,9 +433,8 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
     ExpressionType& operator+=(const DenseBase<OtherDerived>& other)
     {
       EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
-      for(Index j=0; j<subVectors(); ++j)
-        subVector(j) += other.derived();
-      return const_cast<ExpressionType&>(m_matrix);
+      EIGEN_STATIC_ASSERT_SAME_XPR_KIND(ExpressionType, OtherDerived)
+      return const_cast<ExpressionType&>(m_matrix += extendedTo(other.derived()));
     }
 
     /** Substracts the vector \a other to each subvector of \c *this */
@@ -439,8 +442,29 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
     ExpressionType& operator-=(const DenseBase<OtherDerived>& other)
     {
       EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
-      for(Index j=0; j<subVectors(); ++j)
-        subVector(j) -= other.derived();
+      EIGEN_STATIC_ASSERT_SAME_XPR_KIND(ExpressionType, OtherDerived)
+      return const_cast<ExpressionType&>(m_matrix -= extendedTo(other.derived()));
+    }
+
+    /** Multiples each subvector of \c *this by the vector \a other */
+    template<typename OtherDerived>
+    ExpressionType& operator*=(const DenseBase<OtherDerived>& other)
+    {
+      EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
+      EIGEN_STATIC_ASSERT_ARRAYXPR(ExpressionType)
+      EIGEN_STATIC_ASSERT_SAME_XPR_KIND(ExpressionType, OtherDerived)
+      m_matrix *= extendedTo(other.derived());
+      return const_cast<ExpressionType&>(m_matrix);
+    }
+
+    /** Divides each subvector of \c *this by the vector \a other */
+    template<typename OtherDerived>
+    ExpressionType& operator/=(const DenseBase<OtherDerived>& other)
+    {
+      EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
+      EIGEN_STATIC_ASSERT_ARRAYXPR(ExpressionType)
+      EIGEN_STATIC_ASSERT_SAME_XPR_KIND(ExpressionType, OtherDerived)
+      m_matrix /= extendedTo(other.derived());
       return const_cast<ExpressionType&>(m_matrix);
     }
 
@@ -451,7 +475,8 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
                   const typename ExtendedType<OtherDerived>::Type>
     operator+(const DenseBase<OtherDerived>& other) const
     {
-      EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived);
+      EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
+      EIGEN_STATIC_ASSERT_SAME_XPR_KIND(ExpressionType, OtherDerived)
       return m_matrix + extendedTo(other.derived());
     }
 
@@ -462,8 +487,37 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
                   const typename ExtendedType<OtherDerived>::Type>
     operator-(const DenseBase<OtherDerived>& other) const
     {
-      EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived);
+      EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
+      EIGEN_STATIC_ASSERT_SAME_XPR_KIND(ExpressionType, OtherDerived)
       return m_matrix - extendedTo(other.derived());
+    }
+
+    /** Returns the expression where each subvector is the product of the vector \a other
+      * by the corresponding subvector of \c *this */
+    template<typename OtherDerived> EIGEN_STRONG_INLINE
+    CwiseBinaryOp<internal::scalar_product_op<Scalar>,
+                  const ExpressionTypeNestedCleaned,
+                  const typename ExtendedType<OtherDerived>::Type>
+    operator*(const DenseBase<OtherDerived>& other) const
+    {
+      EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
+      EIGEN_STATIC_ASSERT_ARRAYXPR(ExpressionType)
+      EIGEN_STATIC_ASSERT_SAME_XPR_KIND(ExpressionType, OtherDerived)
+      return m_matrix * extendedTo(other.derived());
+    }
+
+    /** Returns the expression where each subvector is the quotient of the corresponding
+      * subvector of \c *this by the vector \a other */
+    template<typename OtherDerived>
+    CwiseBinaryOp<internal::scalar_quotient_op<Scalar>,
+                  const ExpressionTypeNestedCleaned,
+                  const typename ExtendedType<OtherDerived>::Type>
+    operator/(const DenseBase<OtherDerived>& other) const
+    {
+      EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
+      EIGEN_STATIC_ASSERT_ARRAYXPR(ExpressionType)
+      EIGEN_STATIC_ASSERT_SAME_XPR_KIND(ExpressionType, OtherDerived)
+      return m_matrix / extendedTo(other.derived());
     }
 
 /////////// Geometry module ///////////
@@ -509,7 +563,7 @@ template<typename ExpressionType, int Direction> class VectorwiseOp
   * Example: \include MatrixBase_colwise.cpp
   * Output: \verbinclude MatrixBase_colwise.out
   *
-  * \sa rowwise(), class VectorwiseOp
+  * \sa rowwise(), class VectorwiseOp, \ref TutorialReductionsVisitorsBroadcasting
   */
 template<typename Derived>
 inline const typename DenseBase<Derived>::ConstColwiseReturnType
@@ -520,7 +574,7 @@ DenseBase<Derived>::colwise() const
 
 /** \returns a writable VectorwiseOp wrapper of *this providing additional partial reduction operations
   *
-  * \sa rowwise(), class VectorwiseOp
+  * \sa rowwise(), class VectorwiseOp, \ref TutorialReductionsVisitorsBroadcasting
   */
 template<typename Derived>
 inline typename DenseBase<Derived>::ColwiseReturnType
@@ -534,7 +588,7 @@ DenseBase<Derived>::colwise()
   * Example: \include MatrixBase_rowwise.cpp
   * Output: \verbinclude MatrixBase_rowwise.out
   *
-  * \sa colwise(), class VectorwiseOp
+  * \sa colwise(), class VectorwiseOp, \ref TutorialReductionsVisitorsBroadcasting
   */
 template<typename Derived>
 inline const typename DenseBase<Derived>::ConstRowwiseReturnType
@@ -545,7 +599,7 @@ DenseBase<Derived>::rowwise() const
 
 /** \returns a writable VectorwiseOp wrapper of *this providing additional partial reduction operations
   *
-  * \sa colwise(), class VectorwiseOp
+  * \sa colwise(), class VectorwiseOp, \ref TutorialReductionsVisitorsBroadcasting
   */
 template<typename Derived>
 inline typename DenseBase<Derived>::RowwiseReturnType
@@ -553,5 +607,7 @@ DenseBase<Derived>::rowwise()
 {
   return derived();
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_PARTIAL_REDUX_H

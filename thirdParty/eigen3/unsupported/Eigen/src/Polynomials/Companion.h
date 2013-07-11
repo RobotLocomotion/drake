@@ -29,9 +29,11 @@
 // * Eigen/Core
 // * Eigen/src/PolynomialSolver.h
 
-#ifndef EIGEN_PARSED_BY_DOXYGEN
+namespace Eigen { 
 
 namespace internal {
+
+#ifndef EIGEN_PARSED_BY_DOXYGEN
 
 template <typename T>
 T radix(){ return 2; }
@@ -282,5 +284,7 @@ void companion<_Scalar,_Deg>::balance()
 }
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_COMPANION_H

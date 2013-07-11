@@ -25,6 +25,8 @@
 #ifndef EIGEN_VISITOR_H
 #define EIGEN_VISITOR_H
 
+namespace Eigen { 
+
 namespace internal {
 
 template<typename Visitor, typename Derived, int UnrollCount>
@@ -35,7 +37,7 @@ struct visitor_impl
     row = (UnrollCount-1) % Derived::RowsAtCompileTime
   };
 
-  inline static void run(const Derived &mat, Visitor& visitor)
+  static inline void run(const Derived &mat, Visitor& visitor)
   {
     visitor_impl<Visitor, Derived, UnrollCount-1>::run(mat, visitor);
     visitor(mat.coeff(row, col), row, col);
@@ -45,7 +47,7 @@ struct visitor_impl
 template<typename Visitor, typename Derived>
 struct visitor_impl<Visitor, Derived, 1>
 {
-  inline static void run(const Derived &mat, Visitor& visitor)
+  static inline void run(const Derived &mat, Visitor& visitor)
   {
     return visitor.init(mat.coeff(0, 0), 0, 0);
   }
@@ -55,7 +57,7 @@ template<typename Visitor, typename Derived>
 struct visitor_impl<Visitor, Derived, Dynamic>
 {
   typedef typename Derived::Index Index;
-  inline static void run(const Derived& mat, Visitor& visitor)
+  static inline void run(const Derived& mat, Visitor& visitor)
   {
     visitor.init(mat.coeff(0,0), 0, 0);
     for(Index i = 1; i < mat.rows(); ++i)
@@ -244,5 +246,7 @@ DenseBase<Derived>::maxCoeff(IndexType* index) const
   *index = (RowsAtCompileTime==1) ? maxVisitor.col : maxVisitor.row;
   return maxVisitor.res;
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_VISITOR_H

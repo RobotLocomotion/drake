@@ -24,6 +24,7 @@
 
 // no include guard, we'll include this twice from All.h from Eigen2Support, and it's internal anyway
 
+namespace Eigen { 
 
 /** \geometry_module \ingroup Geometry_Module
   *
@@ -224,3 +225,5 @@ AngleAxis<Scalar>::toRotationMatrix(void) const
 
   return res;
 }
+
+} // end namespace Eigen

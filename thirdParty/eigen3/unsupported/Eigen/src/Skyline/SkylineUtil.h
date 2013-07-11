@@ -25,6 +25,8 @@
 #ifndef EIGEN_SKYLINEUTIL_H
 #define EIGEN_SKYLINEUTIL_H
 
+namespace Eigen { 
+
 #ifdef NDEBUG
 #define EIGEN_DBG_SKYLINE(X)
 #else
@@ -97,5 +99,6 @@ template<typename T> class eval<T,IsSkyline>
 
 } // end namespace internal
 
+} // end namespace Eigen
 
 #endif // EIGEN_SKYLINEUTIL_H

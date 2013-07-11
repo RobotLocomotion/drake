@@ -28,6 +28,8 @@
 #ifndef EIGEN_NUMERICAL_DIFF_H
 #define EIGEN_NUMERICAL_DIFF_H
 
+namespace Eigen { 
+
 enum NumericalDiffMode {
     Forward,
     Central
@@ -64,7 +66,7 @@ public:
     template<typename T0, typename T1>
         NumericalDiff(const T0& a0, const T1& a1) : Functor(a0, a1), epsfcn(0) {}
     template<typename T0, typename T1, typename T2>
-        NumericalDiff(const T0& a0, const T1& a1, const T1& a2) : Functor(a0, a1, a2), epsfcn(0) {}
+        NumericalDiff(const T0& a0, const T1& a1, const T2& a2) : Functor(a0, a1, a2), epsfcn(0) {}
 
     enum {
         InputsAtCompileTime = Functor::InputsAtCompileTime,
@@ -133,6 +135,8 @@ private:
 
     NumericalDiff& operator=(const NumericalDiff&);
 };
+
+} // end namespace Eigen
 
 //vim: ai ts=4 sts=4 et sw=4
 #endif // EIGEN_NUMERICAL_DIFF_H

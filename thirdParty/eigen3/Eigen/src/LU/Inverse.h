@@ -25,6 +25,8 @@
 #ifndef EIGEN_INVERSE_H
 #define EIGEN_INVERSE_H
 
+namespace Eigen { 
+
 namespace internal {
 
 /**********************************
@@ -286,7 +288,7 @@ struct inverse_impl : public ReturnByValue<inverse_impl<MatrixType> >
   typedef typename MatrixType::Index Index;
   typedef typename internal::eval<MatrixType>::type MatrixTypeNested;
   typedef typename remove_all<MatrixTypeNested>::type MatrixTypeNestedCleaned;
-  const MatrixTypeNested m_matrix;
+  MatrixTypeNested m_matrix;
 
   inverse_impl(const MatrixType& matrix)
     : m_matrix(matrix)
@@ -403,5 +405,7 @@ inline void MatrixBase<Derived>::computeInverseWithCheck(
   eigen_assert(rows() == cols());
   computeInverseAndDetWithCheck(inverse,determinant,invertible,absDeterminantThreshold);
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_INVERSE_H

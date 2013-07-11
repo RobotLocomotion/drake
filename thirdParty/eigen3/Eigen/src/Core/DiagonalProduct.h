@@ -26,6 +26,8 @@
 #ifndef EIGEN_DIAGONALPRODUCT_H
 #define EIGEN_DIAGONALPRODUCT_H
 
+namespace Eigen { 
+
 namespace internal {
 template<typename MatrixType, typename DiagonalType, int ProductOrder>
 struct traits<DiagonalProduct<MatrixType, DiagonalType, ProductOrder> >
@@ -107,8 +109,8 @@ class DiagonalProduct : internal::no_assignment_operator,
                      m_diagonal.diagonal().template packet<DiagonalVectorPacketLoadMode>(id));
     }
 
-    const typename MatrixType::Nested m_matrix;
-    const typename DiagonalType::Nested m_diagonal;
+    typename MatrixType::Nested m_matrix;
+    typename DiagonalType::Nested m_diagonal;
 };
 
 /** \returns the diagonal matrix product of \c *this by the diagonal matrix \a diagonal.
@@ -131,5 +133,6 @@ DiagonalBase<DiagonalDerived>::operator*(const MatrixBase<MatrixDerived> &matrix
   return DiagonalProduct<MatrixDerived, DiagonalDerived, OnTheLeft>(matrix.derived(), derived());
 }
 
+} // end namespace Eigen
 
 #endif // EIGEN_DIAGONALPRODUCT_H

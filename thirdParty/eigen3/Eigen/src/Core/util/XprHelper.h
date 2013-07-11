@@ -37,6 +37,8 @@
   #define EIGEN_EMPTY_STRUCT_CTOR(X)
 #endif
 
+namespace Eigen {
+
 typedef EIGEN_DEFAULT_DENSE_INDEX_TYPE DenseIndex;
 
 namespace internal {
@@ -260,30 +262,27 @@ template<typename T> struct plain_matrix_type_row_major
 // we should be able to get rid of this one too
 template<typename T> struct must_nest_by_value { enum { ret = false }; };
 
-template<class T>
-struct is_reference
-{
-  enum { ret = false };
-};
-
-template<class T>
-struct is_reference<T&>
-{
-  enum { ret = true };
-};
-
-/**
-* \internal The reference selector for template expressions. The idea is that we don't
-* need to use references for expressions since they are light weight proxy
-* objects which should generate no copying overhead.
-**/
+/** \internal The reference selector for template expressions. The idea is that we don't
+  * need to use references for expressions since they are light weight proxy
+  * objects which should generate no copying overhead. */
 template <typename T>
 struct ref_selector
 {
   typedef typename conditional<
     bool(traits<T>::Flags & NestByRefBit),
     T const&,
-    T
+    const T
+  >::type type;
+};
+
+/** \internal Adds the const qualifier on the value-type of T2 if and only if T1 is a const type */
+template<typename T1, typename T2>
+struct transfer_constness
+{
+  typedef typename conditional<
+    bool(internal::is_const<T1>::value),
+    typename internal::add_const_on_value_type<T2>::type,
+    T2
   >::type type;
 };
 
@@ -296,6 +295,8 @@ struct ref_selector
   *
   * \param T the type of the expression being nested
   * \param n the number of coefficient accesses in the nested expression for each coefficient access in the bigger expression.
+  *
+  * Note that if no evaluation occur, then the constness of T is preserved.
   *
   * Example. Suppose that a, b, and c are of type Matrix3d. The user forms the expression a*(b+c).
   * b+c is an expression "sum of matrices", which we will denote by S. In order to determine how to nest it,
@@ -455,5 +456,7 @@ struct is_lvalue
 };
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_XPRHELPER_H

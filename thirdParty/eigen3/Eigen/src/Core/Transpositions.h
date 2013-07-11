@@ -25,6 +25,8 @@
 #ifndef EIGEN_TRANSPOSITIONS_H
 #define EIGEN_TRANSPOSITIONS_H
 
+namespace Eigen { 
+
 /** \class Transpositions
   * \ingroup Core_Module
   *
@@ -404,7 +406,7 @@ struct transposition_matrix_product_retval
 
   protected:
     const TranspositionType& m_transpositions;
-    const typename MatrixType::Nested m_matrix;
+    typename MatrixType::Nested m_matrix;
 };
 
 } // end namespace internal
@@ -443,5 +445,7 @@ class Transpose<TranspositionsBase<TranspositionsDerived> >
   protected:
     const TranspositionType& m_transpositions;
 };
+
+} // end namespace Eigen
 
 #endif // EIGEN_TRANSPOSITIONS_H

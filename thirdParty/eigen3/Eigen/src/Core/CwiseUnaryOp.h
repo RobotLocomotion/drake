@@ -26,6 +26,8 @@
 #ifndef EIGEN_CWISE_UNARY_OP_H
 #define EIGEN_CWISE_UNARY_OP_H
 
+namespace Eigen { 
+
 /** \class CwiseUnaryOp
   * \ingroup Core_Module
   *
@@ -95,7 +97,7 @@ class CwiseUnaryOp : internal::no_assignment_operator,
     nestedExpression() { return m_xpr.const_cast_derived(); }
 
   protected:
-    const typename XprType::Nested m_xpr;
+    typename XprType::Nested m_xpr;
     const UnaryOp m_functor;
 };
 
@@ -133,5 +135,7 @@ class CwiseUnaryOpImpl<UnaryOp,XprType,Dense>
       return derived().functor().packetOp(derived().nestedExpression().template packet<LoadMode>(index));
     }
 };
+
+} // end namespace Eigen
 
 #endif // EIGEN_CWISE_UNARY_OP_H

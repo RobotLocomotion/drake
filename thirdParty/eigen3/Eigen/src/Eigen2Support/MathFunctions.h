@@ -25,6 +25,8 @@
 #ifndef EIGEN2_MATH_FUNCTIONS_H
 #define EIGEN2_MATH_FUNCTIONS_H
 
+namespace Eigen { 
+
 template<typename T> inline typename NumTraits<T>::Real ei_real(const T& x) { return internal::real(x); }
 template<typename T> inline typename NumTraits<T>::Real ei_imag(const T& x) { return internal::imag(x); }
 template<typename T> inline T ei_conj(const T& x) { return internal::conj(x); }
@@ -64,5 +66,7 @@ inline bool ei_isApproxOrLessThan(const Scalar& x, const Scalar& y,
 {
   return internal::isApproxOrLessThan(x, y, precision);
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN2_MATH_FUNCTIONS_H

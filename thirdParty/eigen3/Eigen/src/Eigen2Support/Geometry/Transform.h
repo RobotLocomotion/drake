@@ -25,6 +25,7 @@
 
 // no include guard, we'll include this twice from All.h from Eigen2Support, and it's internal anyway
 
+namespace Eigen { 
 
 // Note that we have to pass Dim and HDim because it is not allowed to use a template
 // parameter to define a template specialization. To be more precise, in the following
@@ -796,3 +797,5 @@ struct ei_transform_product_impl<Other,Dim,HDim, Dim,1>
   { return ((tr.linear() * other) + tr.translation())
           * (Scalar(1) / ( (tr.matrix().template block<1,Dim>(Dim,0) * other).coeff(0) + tr.matrix().coeff(Dim,Dim))); }
 };
+
+} // end namespace Eigen

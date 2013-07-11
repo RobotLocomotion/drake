@@ -27,6 +27,8 @@
 #ifndef EIGEN_QR_H
 #define EIGEN_QR_H
 
+namespace Eigen { 
+
 /** \ingroup QR_Module
   *
   *
@@ -351,5 +353,6 @@ MatrixBase<Derived>::householderQr() const
   return HouseholderQR<PlainObject>(eval());
 }
 
+} // end namespace Eigen
 
 #endif // EIGEN_QR_H

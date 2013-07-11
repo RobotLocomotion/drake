@@ -28,6 +28,7 @@
 #ifndef EIGEN_LEVENBERGMARQUARDT__H
 #define EIGEN_LEVENBERGMARQUARDT__H
 
+namespace Eigen { 
 
 namespace LevenbergMarquardtSpace {
     enum Status {
@@ -640,7 +641,7 @@ LevenbergMarquardt<FunctorType,Scalar>::lmdif1(
 
     NumericalDiff<FunctorType> numDiff(functor);
     // embedded LevenbergMarquardt
-    LevenbergMarquardt<NumericalDiff<FunctorType> > lm(numDiff);
+    LevenbergMarquardt<NumericalDiff<FunctorType>, Scalar > lm(numDiff);
     lm.parameters.ftol = tol;
     lm.parameters.xtol = tol;
     lm.parameters.maxfev = 200*(n+1);
@@ -651,6 +652,8 @@ LevenbergMarquardt<FunctorType,Scalar>::lmdif1(
     return info;
 }
 
-//vim: ai ts=4 sts=4 et sw=4
+} // end namespace Eigen
+
 #endif // EIGEN_LEVENBERGMARQUARDT__H
 
+//vim: ai ts=4 sts=4 et sw=4

@@ -91,6 +91,16 @@ cwiseMin(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
   return CwiseBinaryOp<internal::scalar_min_op<Scalar>, const Derived, const OtherDerived>(derived(), other.derived());
 }
 
+/** \returns an expression of the coefficient-wise min of *this and scalar \a other
+  *
+  * \sa class CwiseBinaryOp, min()
+  */
+EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_min_op<Scalar>, const Derived, const ConstantReturnType>
+cwiseMin(const Scalar &other) const
+{
+  return cwiseMin(Derived::PlainObject::Constant(rows(), cols(), other));
+}
+
 /** \returns an expression of the coefficient-wise max of *this and \a other
   *
   * Example: \include MatrixBase_cwiseMax.cpp
@@ -104,6 +114,17 @@ cwiseMax(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
 {
   return CwiseBinaryOp<internal::scalar_max_op<Scalar>, const Derived, const OtherDerived>(derived(), other.derived());
 }
+
+/** \returns an expression of the coefficient-wise max of *this and scalar \a other
+  *
+  * \sa class CwiseBinaryOp, min()
+  */
+EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_max_op<Scalar>, const Derived, const ConstantReturnType>
+cwiseMax(const Scalar &other) const
+{
+  return cwiseMax(Derived::PlainObject::Constant(rows(), cols(), other));
+}
+
 
 /** \returns an expression of the coefficient-wise quotient of *this and \a other
   *

@@ -26,6 +26,8 @@
 #ifndef EIGEN_BLOCK_H
 #define EIGEN_BLOCK_H
 
+namespace Eigen { 
+
 /** \class Block
   * \ingroup Core_Module
   *
@@ -242,6 +244,21 @@ template<typename XprType, int BlockRows, int BlockCols, bool InnerPanel, bool H
     inline Index outerStride() const;
     #endif
 
+    const typename internal::remove_all<typename XprType::Nested>::type& nestedExpression() const 
+    { 
+      return m_xpr; 
+    }
+      
+    Index startRow() const 
+    { 
+      return m_startRow.value(); 
+    }
+      
+    Index startCol() const 
+    { 
+      return m_startCol.value(); 
+    }
+
   protected:
 
     const typename XprType::Nested m_xpr;
@@ -304,6 +321,11 @@ class Block<XprType,BlockRows,BlockCols, InnerPanel,true>
       init();
     }
 
+    const typename internal::remove_all<typename XprType::Nested>::type& nestedExpression() const 
+    { 
+      return m_xpr; 
+    }
+      
     /** \sa MapBase::innerStride() */
     inline Index innerStride() const
     {
@@ -341,9 +363,10 @@ class Block<XprType,BlockRows,BlockCols, InnerPanel,true>
                     : m_xpr.innerStride();
     }
 
-    const typename XprType::Nested m_xpr;
-    int m_outerStride;
+    typename XprType::Nested m_xpr;
+    Index m_outerStride;
 };
 
+} // end namespace Eigen
 
 #endif // EIGEN_BLOCK_H

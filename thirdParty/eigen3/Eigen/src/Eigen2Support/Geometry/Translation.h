@@ -24,6 +24,7 @@
 
 // no include guard, we'll include this twice from All.h from Eigen2Support, and it's internal anyway
 
+namespace Eigen { 
 
 /** \geometry_module \ingroup Geometry_Module
   *
@@ -194,3 +195,5 @@ Translation<Scalar,Dim>::operator* (const TransformType& t) const
   res.pretranslate(m_coeffs);
   return res;
 }
+
+} // end namespace Eigen

@@ -32,6 +32,8 @@
 # define EIGEN_INITIALIZE_BY_ZERO_IF_THAT_OPTION_IS_ENABLED
 #endif
 
+namespace Eigen {
+
 namespace internal {
 
 template<typename Index>
@@ -47,13 +49,13 @@ EIGEN_ALWAYS_INLINE void check_rows_cols_for_overflow(Index rows, Index cols)
     throw_std_bad_alloc();
 }
 
-template <typename Derived, typename OtherDerived = Derived, bool IsVector = static_cast<bool>(Derived::IsVectorAtCompileTime)> struct conservative_resize_like_impl;
+template <typename Derived, typename OtherDerived = Derived, bool IsVector = bool(Derived::IsVectorAtCompileTime)> struct conservative_resize_like_impl;
 
 template<typename MatrixTypeA, typename MatrixTypeB, bool SwapPointers> struct matrix_swap_impl;
 
 } // end namespace internal
 
-/**
+/** \class PlainObjectBase
   * \brief %Dense storage base class for matrices and arrays.
   *
   * This class can be extended with the help of the plugin mechanism described on the page
@@ -61,8 +63,29 @@ template<typename MatrixTypeA, typename MatrixTypeB, bool SwapPointers> struct m
   *
   * \sa \ref TopicClassHierarchy
   */
+#ifdef EIGEN_PARSED_BY_DOXYGEN
+namespace internal {
+
+// this is a warkaround to doxygen not being able to understand the inheritence logic
+// when it is hidden by the dense_xpr_base helper struct.
+template<typename Derived> struct dense_xpr_base_dispatcher_for_doxygen;// : public MatrixBase<Derived> {};
+/** This class is just a workaround for Doxygen and it does not not actually exist. */
+template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+struct dense_xpr_base_dispatcher_for_doxygen<Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> >
+    : public MatrixBase<Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> > {};
+/** This class is just a workaround for Doxygen and it does not not actually exist. */
+template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
+struct dense_xpr_base_dispatcher_for_doxygen<Array<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> >
+    : public ArrayBase<Array<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> > {};
+
+} // namespace internal
+
+template<typename Derived>
+class PlainObjectBase : public internal::dense_xpr_base_dispatcher_for_doxygen<Derived>
+#else
 template<typename Derived>
 class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
+#endif
 {
   public:
     enum { Options = internal::traits<Derived>::Options };
@@ -443,68 +466,68 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
       * \see class Map
       */
     //@{
-    inline static ConstMapType Map(const Scalar* data)
+    static inline ConstMapType Map(const Scalar* data)
     { return ConstMapType(data); }
-    inline static MapType Map(Scalar* data)
+    static inline MapType Map(Scalar* data)
     { return MapType(data); }
-    inline static ConstMapType Map(const Scalar* data, Index size)
+    static inline ConstMapType Map(const Scalar* data, Index size)
     { return ConstMapType(data, size); }
-    inline static MapType Map(Scalar* data, Index size)
+    static inline MapType Map(Scalar* data, Index size)
     { return MapType(data, size); }
-    inline static ConstMapType Map(const Scalar* data, Index rows, Index cols)
+    static inline ConstMapType Map(const Scalar* data, Index rows, Index cols)
     { return ConstMapType(data, rows, cols); }
-    inline static MapType Map(Scalar* data, Index rows, Index cols)
+    static inline MapType Map(Scalar* data, Index rows, Index cols)
     { return MapType(data, rows, cols); }
 
-    inline static ConstAlignedMapType MapAligned(const Scalar* data)
+    static inline ConstAlignedMapType MapAligned(const Scalar* data)
     { return ConstAlignedMapType(data); }
-    inline static AlignedMapType MapAligned(Scalar* data)
+    static inline AlignedMapType MapAligned(Scalar* data)
     { return AlignedMapType(data); }
-    inline static ConstAlignedMapType MapAligned(const Scalar* data, Index size)
+    static inline ConstAlignedMapType MapAligned(const Scalar* data, Index size)
     { return ConstAlignedMapType(data, size); }
-    inline static AlignedMapType MapAligned(Scalar* data, Index size)
+    static inline AlignedMapType MapAligned(Scalar* data, Index size)
     { return AlignedMapType(data, size); }
-    inline static ConstAlignedMapType MapAligned(const Scalar* data, Index rows, Index cols)
+    static inline ConstAlignedMapType MapAligned(const Scalar* data, Index rows, Index cols)
     { return ConstAlignedMapType(data, rows, cols); }
-    inline static AlignedMapType MapAligned(Scalar* data, Index rows, Index cols)
+    static inline AlignedMapType MapAligned(Scalar* data, Index rows, Index cols)
     { return AlignedMapType(data, rows, cols); }
 
     template<int Outer, int Inner>
-    inline static typename StridedConstMapType<Stride<Outer, Inner> >::type Map(const Scalar* data, const Stride<Outer, Inner>& stride)
+    static inline typename StridedConstMapType<Stride<Outer, Inner> >::type Map(const Scalar* data, const Stride<Outer, Inner>& stride)
     { return typename StridedConstMapType<Stride<Outer, Inner> >::type(data, stride); }
     template<int Outer, int Inner>
-    inline static typename StridedMapType<Stride<Outer, Inner> >::type Map(Scalar* data, const Stride<Outer, Inner>& stride)
+    static inline typename StridedMapType<Stride<Outer, Inner> >::type Map(Scalar* data, const Stride<Outer, Inner>& stride)
     { return typename StridedMapType<Stride<Outer, Inner> >::type(data, stride); }
     template<int Outer, int Inner>
-    inline static typename StridedConstMapType<Stride<Outer, Inner> >::type Map(const Scalar* data, Index size, const Stride<Outer, Inner>& stride)
+    static inline typename StridedConstMapType<Stride<Outer, Inner> >::type Map(const Scalar* data, Index size, const Stride<Outer, Inner>& stride)
     { return typename StridedConstMapType<Stride<Outer, Inner> >::type(data, size, stride); }
     template<int Outer, int Inner>
-    inline static typename StridedMapType<Stride<Outer, Inner> >::type Map(Scalar* data, Index size, const Stride<Outer, Inner>& stride)
+    static inline typename StridedMapType<Stride<Outer, Inner> >::type Map(Scalar* data, Index size, const Stride<Outer, Inner>& stride)
     { return typename StridedMapType<Stride<Outer, Inner> >::type(data, size, stride); }
     template<int Outer, int Inner>
-    inline static typename StridedConstMapType<Stride<Outer, Inner> >::type Map(const Scalar* data, Index rows, Index cols, const Stride<Outer, Inner>& stride)
+    static inline typename StridedConstMapType<Stride<Outer, Inner> >::type Map(const Scalar* data, Index rows, Index cols, const Stride<Outer, Inner>& stride)
     { return typename StridedConstMapType<Stride<Outer, Inner> >::type(data, rows, cols, stride); }
     template<int Outer, int Inner>
-    inline static typename StridedMapType<Stride<Outer, Inner> >::type Map(Scalar* data, Index rows, Index cols, const Stride<Outer, Inner>& stride)
+    static inline typename StridedMapType<Stride<Outer, Inner> >::type Map(Scalar* data, Index rows, Index cols, const Stride<Outer, Inner>& stride)
     { return typename StridedMapType<Stride<Outer, Inner> >::type(data, rows, cols, stride); }
 
     template<int Outer, int Inner>
-    inline static typename StridedConstAlignedMapType<Stride<Outer, Inner> >::type MapAligned(const Scalar* data, const Stride<Outer, Inner>& stride)
+    static inline typename StridedConstAlignedMapType<Stride<Outer, Inner> >::type MapAligned(const Scalar* data, const Stride<Outer, Inner>& stride)
     { return typename StridedConstAlignedMapType<Stride<Outer, Inner> >::type(data, stride); }
     template<int Outer, int Inner>
-    inline static typename StridedAlignedMapType<Stride<Outer, Inner> >::type MapAligned(Scalar* data, const Stride<Outer, Inner>& stride)
+    static inline typename StridedAlignedMapType<Stride<Outer, Inner> >::type MapAligned(Scalar* data, const Stride<Outer, Inner>& stride)
     { return typename StridedAlignedMapType<Stride<Outer, Inner> >::type(data, stride); }
     template<int Outer, int Inner>
-    inline static typename StridedConstAlignedMapType<Stride<Outer, Inner> >::type MapAligned(const Scalar* data, Index size, const Stride<Outer, Inner>& stride)
+    static inline typename StridedConstAlignedMapType<Stride<Outer, Inner> >::type MapAligned(const Scalar* data, Index size, const Stride<Outer, Inner>& stride)
     { return typename StridedConstAlignedMapType<Stride<Outer, Inner> >::type(data, size, stride); }
     template<int Outer, int Inner>
-    inline static typename StridedAlignedMapType<Stride<Outer, Inner> >::type MapAligned(Scalar* data, Index size, const Stride<Outer, Inner>& stride)
+    static inline typename StridedAlignedMapType<Stride<Outer, Inner> >::type MapAligned(Scalar* data, Index size, const Stride<Outer, Inner>& stride)
     { return typename StridedAlignedMapType<Stride<Outer, Inner> >::type(data, size, stride); }
     template<int Outer, int Inner>
-    inline static typename StridedConstAlignedMapType<Stride<Outer, Inner> >::type MapAligned(const Scalar* data, Index rows, Index cols, const Stride<Outer, Inner>& stride)
+    static inline typename StridedConstAlignedMapType<Stride<Outer, Inner> >::type MapAligned(const Scalar* data, Index rows, Index cols, const Stride<Outer, Inner>& stride)
     { return typename StridedConstAlignedMapType<Stride<Outer, Inner> >::type(data, rows, cols, stride); }
     template<int Outer, int Inner>
-    inline static typename StridedAlignedMapType<Stride<Outer, Inner> >::type MapAligned(Scalar* data, Index rows, Index cols, const Stride<Outer, Inner>& stride)
+    static inline typename StridedAlignedMapType<Stride<Outer, Inner> >::type MapAligned(Scalar* data, Index rows, Index cols, const Stride<Outer, Inner>& stride)
     { return typename StridedAlignedMapType<Stride<Outer, Inner> >::type(data, rows, cols, stride); }
     //@}
 
@@ -594,6 +617,9 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
     template<typename T0, typename T1>
     EIGEN_STRONG_INLINE void _init2(Index rows, Index cols, typename internal::enable_if<Base::SizeAtCompileTime!=2,T0>::type* = 0)
     {
+      EIGEN_STATIC_ASSERT(bool(NumTraits<T0>::IsInteger) &&
+                          bool(NumTraits<T1>::IsInteger),
+                          FLOATING_POINT_ARGUMENT_PASSED__INTEGER_WAS_EXPECTED)
       eigen_assert(rows >= 0 && (RowsAtCompileTime == Dynamic || RowsAtCompileTime == rows)
              && cols >= 0 && (ColsAtCompileTime == Dynamic || ColsAtCompileTime == cols));
       internal::check_rows_cols_for_overflow(rows, cols);      
@@ -623,7 +649,7 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
 
   public:
 #ifndef EIGEN_PARSED_BY_DOXYGEN
-    EIGEN_STRONG_INLINE static void _check_template_params()
+    static EIGEN_STRONG_INLINE void _check_template_params()
     {
       EIGEN_STATIC_ASSERT((EIGEN_IMPLIES(MaxRowsAtCompileTime==1 && MaxColsAtCompileTime!=1, (Options&RowMajor)==RowMajor)
                         && EIGEN_IMPLIES(MaxColsAtCompileTime==1 && MaxRowsAtCompileTime!=1, (Options&RowMajor)==0)
@@ -750,5 +776,7 @@ struct matrix_swap_impl<MatrixTypeA, MatrixTypeB, true>
 };
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_DENSESTORAGEBASE_H

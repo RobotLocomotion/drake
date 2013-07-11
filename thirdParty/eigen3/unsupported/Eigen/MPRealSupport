@@ -30,11 +30,12 @@
 #ifndef EIGEN_MPREALSUPPORT_MODULE_H
 #define EIGEN_MPREALSUPPORT_MODULE_H
 
+#include <ctime>
 #include <mpreal.h>
 #include <Eigen/Core>
 
 namespace Eigen {
-
+  
   /** \ingroup Unsupported_modules
     * \defgroup MPRealSupport_Module MPFRC++ Support module
     *
@@ -43,7 +44,7 @@ namespace Eigen {
     * \endcode
     *
     * This module provides support for multi precision floating point numbers
-    * via the <a href="http://www.holoborodko.com/pavel/?page_id=12">MPFR C++</a>
+    * via the <a href="http://www.holoborodko.com/pavel/mpfr">MPFR C++</a>
     * library which itself is built upon <a href="http://www.mpfr.org/">MPFR</a>/<a href="http://gmplib.org/">GMP</a>.
     *
     * You can find a copy of MPFR C++ that is known to be compatible in the unsupported/test/mpreal folder.
@@ -52,7 +53,7 @@ namespace Eigen {
     *
 \code
 #include <iostream>
-#include <Eigen/Mpfrc++Support>
+#include <Eigen/MPRealSupport>
 #include <Eigen/LU>
 using namespace mpfr;
 using namespace Eigen;
@@ -106,7 +107,7 @@ int main()
     }
   };
 
-  namespace internal {
+namespace internal {
 
   template<> mpfr::mpreal random<mpfr::mpreal>()
   {
@@ -146,8 +147,17 @@ int main()
   {
     return a <= b || isApprox(a, b, prec);
   }
+  
+  template<> inline long double cast<mpfr::mpreal,long double>(const mpfr::mpreal& x)
+  { return x.toLDouble(); }
+  template<> inline double cast<mpfr::mpreal,double>(const mpfr::mpreal& x)
+  { return x.toDouble(); }
+  template<> inline long cast<mpfr::mpreal,long>(const mpfr::mpreal& x)
+  { return x.toLong(); }
+  template<> inline int cast<mpfr::mpreal,int>(const mpfr::mpreal& x)
+  { return int(x.toLong()); }
 
-  } // end namespace internal
+} // end namespace internal
 }
 
 #endif // EIGEN_MPREALSUPPORT_MODULE_H

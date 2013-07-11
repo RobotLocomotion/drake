@@ -25,6 +25,8 @@
 #ifndef EIGEN_HOMOGENEOUS_H
 #define EIGEN_HOMOGENEOUS_H
 
+namespace Eigen { 
+
 /** \geometry_module \ingroup Geometry_Module
   *
   * \class Homogeneous
@@ -121,7 +123,7 @@ template<typename MatrixType,int _Direction> class Homogeneous
     }
 
   protected:
-    const typename MatrixType::Nested m_matrix;
+    typename MatrixType::Nested m_matrix;
 };
 
 /** \geometry_module
@@ -216,8 +218,8 @@ template<typename Scalar, int Dim, int Mode,int Options>
 struct take_matrix_for_product<Transform<Scalar, Dim, Mode, Options> >
 {
   typedef Transform<Scalar, Dim, Mode, Options> TransformType;
-  typedef typename TransformType::ConstAffinePart type;
-  static const type run (const TransformType& x) { return x.affine(); }
+  typedef typename internal::add_const<typename TransformType::ConstAffinePart>::type type;
+  static type run (const TransformType& x) { return x.affine(); }
 };
 
 template<typename Scalar, int Dim, int Options>
@@ -270,8 +272,8 @@ struct homogeneous_left_product_impl<Homogeneous<MatrixType,Vertical>,Lhs>
             .template replicate<MatrixType::ColsAtCompileTime>(m_rhs.cols());
   }
 
-  const typename LhsMatrixTypeCleaned::Nested m_lhs;
-  const typename MatrixType::Nested m_rhs;
+  typename LhsMatrixTypeCleaned::Nested m_lhs;
+  typename MatrixType::Nested m_rhs;
 };
 
 template<typename MatrixType,typename Rhs>
@@ -309,10 +311,12 @@ struct homogeneous_right_product_impl<Homogeneous<MatrixType,Horizontal>,Rhs>
             .template replicate<MatrixType::RowsAtCompileTime>(m_lhs.rows());
   }
 
-  const typename MatrixType::Nested m_lhs;
-  const typename Rhs::Nested m_rhs;
+  typename MatrixType::Nested m_lhs;
+  typename Rhs::Nested m_rhs;
 };
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_HOMOGENEOUS_H

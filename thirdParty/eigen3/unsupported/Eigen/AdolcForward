@@ -79,33 +79,22 @@ namespace Eigen {
 
 } // namespace Eigen
 
-// the Adolc's type adouble is defined in the adtl namespace
-// therefore, the following internal::* functions *must* be defined
-// in the same namespace
-namespace Eigen {
+// Eigen's require a few additional functions which must be defined in the same namespace
+// than the custom scalar type own namespace
+namespace adtl {
 
-  namespace internal {
-
-    inline const adtl::adouble& conj(const adtl::adouble& x)  { return x; }
-    inline const adtl::adouble& real(const adtl::adouble& x)  { return x; }
-    inline adtl::adouble imag(const adtl::adouble&)    { return 0.; }
-    inline adtl::adouble abs(const adtl::adouble&  x)  { return adtl::fabs(x); }
-    inline adtl::adouble abs2(const adtl::adouble& x)  { return x*x; }
-    
-    using adtl::sqrt;
-    using adtl::exp;
-    using adtl::log;
-    using adtl::sin;
-    using adtl::cos;
-    using adtl::pow;
-
-  }
+inline const adouble& conj(const adouble& x)  { return x; }
+inline const adouble& real(const adouble& x)  { return x; }
+inline adouble imag(const adouble&)    { return 0.; }
+inline adouble abs(const adouble&  x)  { return fabs(x); }
+inline adouble abs2(const adouble& x)  { return x*x; }
 
 }
 
 namespace Eigen {
 
 template<> struct NumTraits<adtl::adouble>
+    : NumTraits<double>
 {
   typedef adtl::adouble Real;
   typedef adtl::adouble NonInteger;

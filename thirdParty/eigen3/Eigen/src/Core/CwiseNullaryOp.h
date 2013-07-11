@@ -25,6 +25,8 @@
 #ifndef EIGEN_CWISE_NULLARY_OP_H
 #define EIGEN_CWISE_NULLARY_OP_H
 
+namespace Eigen {
+
 /** \class CwiseNullaryOp
   * \ingroup Core_Module
   *
@@ -100,6 +102,9 @@ class CwiseNullaryOp : internal::no_assignment_operator,
     {
       return m_functor.packetOp(index);
     }
+
+    /** \returns the functor representing the nullary operation */
+    const NullaryOp& functor() const { return m_functor; }
 
   protected:
     const internal::variable_if_dynamic<Index, RowsAtCompileTime> m_rows;
@@ -238,6 +243,8 @@ DenseBase<Derived>::Constant(const Scalar& value)
   * assumed to be a(0), a(1), ..., a(size). This assumption allows for better vectorization
   * and yields faster code than the random access version.
   *
+  * When size is set to 1, a vector of length 1 containing 'high' is returned.
+  *
   * \only_for_vectors
   *
   * Example: \include DenseBase_LinSpaced_seq.cpp
@@ -270,6 +277,7 @@ DenseBase<Derived>::LinSpaced(Sequential_t, const Scalar& low, const Scalar& hig
   * \brief Sets a linearly space vector.
   *
   * The function generates 'size' equally spaced values in the closed interval [low,high].
+  * When size is set to 1, a vector of length 1 containing 'high' is returned.
   *
   * \only_for_vectors
   *
@@ -381,6 +389,7 @@ PlainObjectBase<Derived>::setConstant(Index rows, Index cols, const Scalar& valu
   * \brief Sets a linearly space vector.
   *
   * The function generates 'size' equally spaced values in the closed interval [low,high].
+  * When size is set to 1, a vector of length 1 containing 'high' is returned.
   *
   * \only_for_vectors
   *
@@ -394,6 +403,23 @@ EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setLinSpaced(Index size, const 
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
   return derived() = Derived::NullaryExpr(size, internal::linspaced_op<Scalar,false>(low,high,size));
+}
+
+/**
+  * \brief Sets a linearly space vector.
+  *
+  * The function fill *this with equally spaced values in the closed interval [low,high].
+  * When size is set to 1, a vector of length 1 containing 'high' is returned.
+  *
+  * \only_for_vectors
+  *
+  * \sa setLinSpaced(Index, const Scalar&, const Scalar&), CwiseNullaryOp
+  */
+template<typename Derived>
+EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setLinSpaced(const Scalar& low, const Scalar& high)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
+  return setLinSpaced(size(), low, high);
 }
 
 // zero:
@@ -847,5 +873,7 @@ EIGEN_STRONG_INLINE const typename MatrixBase<Derived>::BasisReturnType MatrixBa
 template<typename Derived>
 EIGEN_STRONG_INLINE const typename MatrixBase<Derived>::BasisReturnType MatrixBase<Derived>::UnitW()
 { return Derived::Unit(3); }
+
+} // end namespace Eigen
 
 #endif // EIGEN_CWISE_NULLARY_OP_H

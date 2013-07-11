@@ -25,6 +25,8 @@
 #ifndef EIGEN_POLYNOMIAL_SOLVER_H
 #define EIGEN_POLYNOMIAL_SOLVER_H
 
+namespace Eigen { 
+
 /** \ingroup Polynomials_Module
  *  \class PolynomialSolverBase.
  *
@@ -393,5 +395,7 @@ class PolynomialSolver<_Scalar,1> : public PolynomialSolverBase<_Scalar,1>
   protected:
     using                   PS_Base::m_roots;
 };
+
+} // end namespace Eigen
 
 #endif // EIGEN_POLYNOMIAL_SOLVER_H

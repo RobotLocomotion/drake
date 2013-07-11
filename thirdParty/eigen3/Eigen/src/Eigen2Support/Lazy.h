@@ -25,6 +25,8 @@
 #ifndef EIGEN_LAZY_H
 #define EIGEN_LAZY_H
 
+namespace Eigen { 
+
 /** \deprecated it is only used by lazy() which is deprecated
   *
   * \returns an expression of *this with added flags
@@ -78,5 +80,7 @@ Derived& MatrixBase<Derived>::operator-=(const Flagged<ProductBase<ProductDerive
 {
   other._expression().derived().subTo(derived()); return derived();
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_LAZY_H

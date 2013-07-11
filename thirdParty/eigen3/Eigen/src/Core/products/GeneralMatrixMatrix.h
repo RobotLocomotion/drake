@@ -25,6 +25,8 @@
 #ifndef EIGEN_GENERAL_MATRIX_MATRIX_H
 #define EIGEN_GENERAL_MATRIX_MATRIX_H
 
+namespace Eigen { 
+
 namespace internal {
 
 template<typename _LhsScalar, typename _RhsScalar> class level3_blocking;
@@ -77,7 +79,7 @@ static void run(Index rows, Index cols, Index depth,
 
   typedef gebp_traits<LhsScalar,RhsScalar> Traits;
 
-  Index kc = blocking.kc();                 // cache block size along the K direction
+  Index kc = blocking.kc();                   // cache block size along the K direction
   Index mc = (std::min)(rows,blocking.mc());  // cache block size along the M direction
   //Index nc = blocking.nc(); // cache block size along the N direction
 
@@ -247,7 +249,7 @@ struct gemm_functor
     BlockingType& m_blocking;
 };
 
-template<int StorageOrder, typename LhsScalar, typename RhsScalar, int MaxRows, int MaxCols, int MaxDepth,
+template<int StorageOrder, typename LhsScalar, typename RhsScalar, int MaxRows, int MaxCols, int MaxDepth, int KcFactor=1,
 bool FiniteAtCompileTime = MaxRows!=Dynamic && MaxCols!=Dynamic && MaxDepth != Dynamic> class gemm_blocking_space;
 
 template<typename _LhsScalar, typename _RhsScalar>
@@ -280,8 +282,8 @@ class level3_blocking
     inline RhsScalar* blockW() { return m_blockW; }
 };
 
-template<int StorageOrder, typename _LhsScalar, typename _RhsScalar, int MaxRows, int MaxCols, int MaxDepth>
-class gemm_blocking_space<StorageOrder,_LhsScalar,_RhsScalar,MaxRows, MaxCols, MaxDepth, true>
+template<int StorageOrder, typename _LhsScalar, typename _RhsScalar, int MaxRows, int MaxCols, int MaxDepth, int KcFactor>
+class gemm_blocking_space<StorageOrder,_LhsScalar,_RhsScalar,MaxRows, MaxCols, MaxDepth, KcFactor, true>
   : public level3_blocking<
       typename conditional<StorageOrder==RowMajor,_RhsScalar,_LhsScalar>::type,
       typename conditional<StorageOrder==RowMajor,_LhsScalar,_RhsScalar>::type>
@@ -322,8 +324,8 @@ class gemm_blocking_space<StorageOrder,_LhsScalar,_RhsScalar,MaxRows, MaxCols, M
     inline void allocateAll() {}
 };
 
-template<int StorageOrder, typename _LhsScalar, typename _RhsScalar, int MaxRows, int MaxCols, int MaxDepth>
-class gemm_blocking_space<StorageOrder,_LhsScalar,_RhsScalar,MaxRows, MaxCols, MaxDepth, false>
+template<int StorageOrder, typename _LhsScalar, typename _RhsScalar, int MaxRows, int MaxCols, int MaxDepth, int KcFactor>
+class gemm_blocking_space<StorageOrder,_LhsScalar,_RhsScalar,MaxRows, MaxCols, MaxDepth, KcFactor, false>
   : public level3_blocking<
       typename conditional<StorageOrder==RowMajor,_RhsScalar,_LhsScalar>::type,
       typename conditional<StorageOrder==RowMajor,_LhsScalar,_RhsScalar>::type>
@@ -347,7 +349,7 @@ class gemm_blocking_space<StorageOrder,_LhsScalar,_RhsScalar,MaxRows, MaxCols, M
       this->m_nc = Transpose ? rows : cols;
       this->m_kc = depth;
 
-      computeProductBlockingSizes<LhsScalar,RhsScalar>(this->m_kc, this->m_mc, this->m_nc);
+      computeProductBlockingSizes<LhsScalar,RhsScalar,KcFactor>(this->m_kc, this->m_mc, this->m_nc);
       m_sizeA = this->m_mc * this->m_kc;
       m_sizeB = this->m_kc * this->m_nc;
       m_sizeW = this->m_kc*Traits::WorkSpaceFactor;
@@ -412,8 +414,8 @@ class GeneralProduct<Lhs, Rhs, GemmProduct>
     {
       eigen_assert(dst.rows()==m_lhs.rows() && dst.cols()==m_rhs.cols());
 
-      const ActualLhsType lhs = LhsBlasTraits::extract(m_lhs);
-      const ActualRhsType rhs = RhsBlasTraits::extract(m_rhs);
+      typename internal::add_const_on_value_type<ActualLhsType>::type lhs = LhsBlasTraits::extract(m_lhs);
+      typename internal::add_const_on_value_type<ActualRhsType>::type rhs = RhsBlasTraits::extract(m_rhs);
 
       Scalar actualAlpha = alpha * LhsBlasTraits::extractScalarFactor(m_lhs)
                                  * RhsBlasTraits::extractScalarFactor(m_rhs);
@@ -435,5 +437,7 @@ class GeneralProduct<Lhs, Rhs, GemmProduct>
       internal::parallelize_gemm<(Dest::MaxRowsAtCompileTime>32 || Dest::MaxRowsAtCompileTime==Dynamic)>(GemmFunctor(lhs, rhs, dst, actualAlpha, blocking), this->rows(), this->cols(), Dest::Flags&RowMajorBit);
     }
 };
+
+} // end namespace Eigen
 
 #endif // EIGEN_GENERAL_MATRIX_MATRIX_H

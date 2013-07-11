@@ -26,6 +26,8 @@
 #ifndef EIGEN_MOREVECTORIZATION_MATHFUNCTIONS_H
 #define EIGEN_MOREVECTORIZATION_MATHFUNCTIONS_H
 
+namespace Eigen { 
+
 namespace internal {
 
 /** \internal \returns the arcsin of \a a (coeff-wise) */
@@ -99,8 +101,10 @@ template<> EIGEN_DONT_INLINE Packet4f pasin(Packet4f x)
   return _mm_xor_ps(z, sign_bit);
 }
 
+#endif // EIGEN_VECTORIZE_SSE
+
 } // end namespace internal
 
-#endif
+} // end namespace Eigen
 
 #endif // EIGEN_MOREVECTORIZATION_MATHFUNCTIONS_H

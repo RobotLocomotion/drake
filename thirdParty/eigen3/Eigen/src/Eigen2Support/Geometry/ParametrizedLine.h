@@ -25,6 +25,7 @@
 
 // no include guard, we'll include this twice from All.h from Eigen2Support, and it's internal anyway
 
+namespace Eigen { 
 
 /** \geometry_module \ingroup Geometry_Module
   *
@@ -151,3 +152,5 @@ inline _Scalar ParametrizedLine<_Scalar, _AmbientDim>::intersection(const Hyperp
   return -(hyperplane.offset()+origin().eigen2_dot(hyperplane.normal()))
           /(direction().eigen2_dot(hyperplane.normal()));
 }
+
+} // end namespace Eigen

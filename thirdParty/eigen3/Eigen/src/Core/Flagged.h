@@ -25,6 +25,8 @@
 #ifndef EIGEN_FLAGGED_H
 #define EIGEN_FLAGGED_H
 
+namespace Eigen { 
+
 /** \class Flagged
   * \ingroup Core_Module
   *
@@ -147,5 +149,7 @@ DenseBase<Derived>::flagged() const
 {
   return derived();
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_FLAGGED_H

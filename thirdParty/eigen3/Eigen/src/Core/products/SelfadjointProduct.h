@@ -31,6 +31,8 @@
 * It corresponds to the level 3 SYRK and level 2 SYR Blas routines.
 **********************************************************************/
 
+namespace Eigen { 
+
 template<typename Scalar, typename Index, int StorageOrder, int UpLo, bool ConjLhs, bool ConjRhs>
 struct selfadjoint_rank1_update;
 
@@ -72,7 +74,7 @@ struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,true>
     typedef internal::blas_traits<OtherType> OtherBlasTraits;
     typedef typename OtherBlasTraits::DirectLinearAccessType ActualOtherType;
     typedef typename internal::remove_all<ActualOtherType>::type _ActualOtherType;
-    const ActualOtherType actualOther = OtherBlasTraits::extract(other.derived());
+    typename internal::add_const_on_value_type<ActualOtherType>::type actualOther = OtherBlasTraits::extract(other.derived());
 
     Scalar actualAlpha = alpha * OtherBlasTraits::extractScalarFactor(other.derived());
 
@@ -105,12 +107,12 @@ struct selfadjoint_product_selector<MatrixType,OtherType,UpLo,false>
     typedef internal::blas_traits<OtherType> OtherBlasTraits;
     typedef typename OtherBlasTraits::DirectLinearAccessType ActualOtherType;
     typedef typename internal::remove_all<ActualOtherType>::type _ActualOtherType;
-    const ActualOtherType actualOther = OtherBlasTraits::extract(other.derived());
+    typename internal::add_const_on_value_type<ActualOtherType>::type actualOther = OtherBlasTraits::extract(other.derived());
 
     Scalar actualAlpha = alpha * OtherBlasTraits::extractScalarFactor(other.derived());
 
     enum { IsRowMajor = (internal::traits<MatrixType>::Flags&RowMajorBit) ? 1 : 0 };
-    
+
     internal::general_matrix_matrix_triangular_product<Index,
       Scalar, _ActualOtherType::Flags&RowMajorBit ? RowMajor : ColMajor,   OtherBlasTraits::NeedToConjugate  && NumTraits<Scalar>::IsComplex,
       Scalar, _ActualOtherType::Flags&RowMajorBit ? ColMajor : RowMajor, (!OtherBlasTraits::NeedToConjugate) && NumTraits<Scalar>::IsComplex,
@@ -132,5 +134,7 @@ SelfAdjointView<MatrixType,UpLo>& SelfAdjointView<MatrixType,UpLo>
 
   return *this;
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_SELFADJOINT_PRODUCT_H

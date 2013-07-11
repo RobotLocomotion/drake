@@ -25,6 +25,8 @@
 #ifndef EIGEN_SCALING_H
 #define EIGEN_SCALING_H
 
+namespace Eigen { 
+
 /** \geometry_module \ingroup Geometry_Module
   *
   * \class Scaling
@@ -178,5 +180,7 @@ UniformScaling<Scalar>::operator* (const Transform<Scalar,Dim, Mode, Options>& t
   res.prescale(factor());
   return res;
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_SCALING_H

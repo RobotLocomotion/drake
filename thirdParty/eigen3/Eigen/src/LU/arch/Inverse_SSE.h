@@ -42,6 +42,8 @@
 #ifndef EIGEN_INVERSE_SSE_H
 #define EIGEN_INVERSE_SSE_H
 
+namespace Eigen { 
+
 namespace internal {
 
 template<typename MatrixType, typename ResultType>
@@ -335,6 +337,8 @@ struct compute_inverse_size4<Architecture::SSE, double, MatrixType, ResultType>
   }
 };
 
-}
+} // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_INVERSE_SSE_H

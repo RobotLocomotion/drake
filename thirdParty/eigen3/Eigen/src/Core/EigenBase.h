@@ -26,6 +26,7 @@
 #ifndef EIGEN_EIGENBASE_H
 #define EIGEN_EIGENBASE_H
 
+namespace Eigen {
 
 /** Common base class for all classes T such that MatrixBase has an operator=(T) and a constructor MatrixBase(T).
   *
@@ -168,5 +169,7 @@ inline void MatrixBase<Derived>::applyOnTheLeft(const EigenBase<OtherDerived> &o
 {
   other.derived().applyThisOnTheLeft(derived());
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_EIGENBASE_H
