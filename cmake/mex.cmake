@@ -26,11 +26,12 @@ function(mex_setup)
   # first run matlab (if necessary) to find matlabroot and cpu path
   if (NOT EXISTS .matlabroot OR NOT EXISTS .matlabcpu)
     find_program(matlab matlab)
-    execute_process(COMMAND ${matlab} -nodisplay -r "ptr=fopen('.matlabroot','w'); fprintf(ptr,'%s',matlabroot); fclose(ptr); ptr=fopen('.matlabcpu','w'); fprintf(ptr,'%s',lower(computer)); fclose(ptr); exit")
+    execute_process(COMMAND ${matlab} -nodisplay -r "ptr=fopen('${CMAKE_BINARY_DIR}/.matlabroot','w'); fprintf(ptr,'%s',matlabroot); fclose(ptr); ptr=fopen('${CMAKE_BINARY_DIR}/.matlabcpu','w'); fprintf(ptr,'%s',lower(computer)); fclose(ptr); exit")
   endif()  
 
-  file(READ .matlabroot MATLAB_ROOT)
-  file(READ .matlabcpu MATLAB_CPU)
+#  execute_process(COMMAND pwd OUTPUT_VARIABLE pwd OUTPUT_STRIP_TRAILING_WHITESPACE)
+  file(READ ${CMAKE_BINARY_DIR}/.matlabroot MATLAB_ROOT)
+  file(READ ${CMAKE_BINARY_DIR}/.matlabcpu MATLAB_CPU)
   execute_process(COMMAND ${MATLAB_ROOT}/bin/mexext OUTPUT_VARIABLE MEX_EXT OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   if (NOT MATLAB_ROOT OR NOT MATLAB_CPU OR NOT MEX_EXT)

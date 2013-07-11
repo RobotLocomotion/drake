@@ -1,9 +1,7 @@
 #include <math.h>
 #include <iostream>
 #include <mex.h>
-#include <vector>
-#include <set>
-#include "fastQP.h"
+#include "gurobiQP.h"
 
 using namespace Eigen;
 using namespace std;
