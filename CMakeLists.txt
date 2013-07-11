@@ -12,8 +12,20 @@ lcmtypes_build()
 include(cmake/mex.cmake)
 mex_setup()
 
-#find_package(Java)
-#add_library(drake util/MyLCMTypeDatabase.java util/MessageMonitor.java util/CoordinateFrameData.java util/LCMCoder.java util/Transform.java)
+find_package(Java)
+include(UseJava)
+execute_process(COMMAND pkg-config --variable=classpath lcm-java OUTPUT_VARIABLE LCM_JAR_FILE)
+string(STRIP ${LCM_JAR_FILE} LCM_JAR_FILE)
+
+set( CMAKE_JAVA_INCLUDE_PATH ${LCM_JAR_FILE}:${LCMTYPES_JAR} )
+
+add_jar(drake
+	util/MyLCMTypeDatabase.java
+	util/MessageMonitor.java
+	util/CoordinateFrameData.java
+	util/LCMCoder.java
+	util/Transform.java
+	)
 
 include_directories( ${CMAKE_SOURCE_DIR}/thirdParty/eigen3 ${CMAKE_SOURCE_DIR}/util )
 
