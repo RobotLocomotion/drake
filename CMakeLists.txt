@@ -20,7 +20,7 @@ file(WRITE ${PKG_CONFIG_OUTPUT_PATH}/gurobi.pc
 	   "Description: Gurobi Optimizer\n"
 	   "Version: 5.1\n"
 	   "Cflags: -I\${includedir}\n"
-	   "Libs: -L\$[libdir} -lgurobi51\n"
+	   "Libs: -L\${libdir} -lgurobi51\n"
 	   )
 
 endif()

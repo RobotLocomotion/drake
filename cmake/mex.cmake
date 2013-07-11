@@ -8,7 +8,8 @@ macro(get_mex_option option)
 
   # todo: do the string parsing using CMAKE commands to make it less platform dependent
   execute_process(COMMAND ${MATLAB_ROOT}/bin/mex -v COMMAND grep ${option} COMMAND head -n 1 COMMAND cut -d "=" -f2 OUTPUT_VARIABLE value ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-  set(MEX_${option} ${value} PARENT_SCOPE)
+  string(STRIP ${value} svalue)
+  set(MEX_${option} ${svalue} PARENT_SCOPE)
 endmacro()
 
 macro(get_mex_arguments afterstring)
@@ -75,6 +76,10 @@ function(mex_setup)
 
 #  note: skipping LDCXX (and just always use LD)
 
+  if (NOT EXISTS /tmp/dummy.c)
+    execute_process(COMMAND touch /tmp/dummy.c)
+  endif()
+
 endfunction()
 
 function(add_mex)
@@ -102,17 +107,23 @@ function(add_mex)
   set (CMAKE_C_COMPILER_BK ${CMAKE_C_COMPILER})
   set (CMAKE_C_FLAGS_DEBUG_BK ${CMAKE_C_FLAGS_DEBUG})
   set (CMAKE_C_FLAGS_RELEASE_BK ${CMAKE_C_FLAGS_RELEASE})
+  set (CMAKE_C_LINK_EXECUTABLE_BK ${CMAKE_C_LINK_EXECUTABLE})
   set (CMAKE_CXX_COMPILER_BK ${CMAKE_CXX_COMPILER})
   set (CMAKE_CXX_FLAGS_DEBUG_BK ${CMAKE_CXX_FLAGS_DEBUG})
   set (CMAKE_CXX_FLAGS_RELEASE_BK ${CMAKE_CXX_FLAGS_RELEASE})  
+  set (CMAKE_CXX_LINK_EXECUTABLE_BK ${CMAKE_C_LINK_EXECUTABLE})
 
   # set global props
   set (CMAKE_C_COMPILER ${MEX_CC})
   set (CMAKE_C_FLAGS_DEBUG ${MEX_CFLAGS} ${MEX_CDEBUGFLAGS} ${MEX_CC_ARGUMENTS})
   set (CMAKE_C_FLAGS_RELEASE ${MEX_CFLAGS} ${MEX_COPTIMFLAGS} ${MEX_CC_ARGUMENTS})
+#  set (CMAKE_C_LINK_EXECUTABLE "${CMAKE_C_LINK_EXECUTABLE} ${MEX_CLIBS}")
   set (CMAKE_CXX_COMPILER ${MEX_CXX})
   set (CMAKE_CXX_FLAGS_DEBUG ${MEX_CXXFLAGS} ${MEX_CXXDEBUGFLAGS} ${MEX_CXX_ARGUMENTS})
   set (CMAKE_CXX_FLAGS_RELEASE ${MEX_CXXFLAGS} ${MEX_CXXOPTIMFLAGS} ${MEX_CXX_ARGUMENTS})
+#  set (CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} ${MEX_CXXLIBS}")
+
+  message(STATUS CMAKE_C_FLAGS_LINK_EXECUTABLE=${CMAKE_C_LINK_EXECUTABLE})
 
   list(FIND ARGV SHARED isshared)
   if (isshared EQUAL -1)
@@ -125,27 +136,42 @@ function(add_mex)
   set (CMAKE_C_COMPILER ${CMAKE_C_COMPILER_BK})
   set (CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG_BK})  
   set (CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE_BK})  
+  set (CMAKE_C_LINK_EXECUTABLE ${CMAKE_C_LINK_EXECUTABLE_BK})
   set (CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER_BK})
   set (CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG_BK})  
   set (CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE_BK})  
+  set (CMAKE_CXX_LINK_EXECUTABLE ${CMAKE_CXX_LINK_EXECUTABLE_BK})
 
   set_target_properties(${target} PROPERTIES 
     COMPILE_FLAGS "-DMATLAB_MEX_FILE" 
     )
 
   if (isshared EQUAL -1)
+    # note: on ubuntu, gcc did not like the MEX_CLIBS coming along with LINK_FLAGS (it only works if they appear after the input files).  this is a nasty trick that I found online
+    if (NOT TARGET last) 
+      add_library(last STATIC /tmp/dummy.c)
+      target_link_libraries(last ${MEX_CLIBS})
+    endif()
+
+    get_target_property(link_flags_before ${target} LINK_FLAGS)
+    get_target_property(link_flags_release_before ${target} LINK_FLAGS_RELEASE)
     set_target_properties(${target} PROPERTIES 
       PREFIX ""
       SUFFIX ".${MEX_EXT}"
-      LINK_FLAGS "${MEX_LDFLAGS} ${MEX_LD_ARGUMENTS} ${MEX_CXXLIBS}"  
+      LINK_FLAGS "${MEX_LDFLAGS} ${MEX_LD_ARGUMENTS}"  
       LINK_FLAGS_DEBUG	"${MEX_LDDEBUGFLAGS}"
       LINK_FLAGS_RELEASE	"${MEX_LDOPTIMFLAGS}"
       ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"   
       )
+    target_link_libraries(${target} last)
+    get_target_property(link_flags_after ${target} LINK_FLAGS)
+    get_target_property(link_flags_release_after ${target} LINK_FLAGS_RELEASE)
+    message(STATUS "link flags before: ${link_flags_before}   after: ${link_flags_after}")
+    message(STATUS "link flags release before: ${link_flags_release_before}   after: ${link_flags_release_after}")
   else()
     set_target_properties(${target} PROPERTIES
-      LINK_FLAGS "${MEX_CXXLIBS}"
+      LINK_FLAGS "${MEX_CLIBS}"
       )
   endif()
 
