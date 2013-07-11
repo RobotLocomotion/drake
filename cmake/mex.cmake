@@ -85,7 +85,7 @@ function(add_mex)
   list(REMOVE_AT ARGV 0)
 
   if (NOT MATLAB_ROOT OR NOT MATLAB_CPU OR NOT MEX_EXT)
-     message(FATAL_ERROR "you must call mex_setup first")
+     message(FATAL_ERROR "you must call FindMex first")
   endif()
 
   include_directories( ${MATLAB_ROOT}/extern/include ${MATLAB_ROOT}/simulink/include )
@@ -113,7 +113,12 @@ function(add_mex)
   set (CMAKE_CXX_FLAGS_DEBUG ${MEX_CXXFLAGS} ${MEX_CXXDEBUGFLAGS} ${MEX_CXX_ARGUMENTS})
   set (CMAKE_CXX_FLAGS_RELEASE ${MEX_CXXFLAGS} ${MEX_CXXOPTIMFLAGS} ${MEX_CXX_ARGUMENTS})
 
-  add_library(${target} ${ARGV})
+  list(FIND ARGV SHARED isshared)
+  if (isshared EQUAL -1)
+    add_library(${target} MODULE ${ARGV})
+  else()
+    add_library(${target} ${ARGV})
+  endif()
 
   # restore global props
   set (CMAKE_C_COMPILER ${CMAKE_C_COMPILER_BK})
@@ -127,8 +132,6 @@ function(add_mex)
     COMPILE_FLAGS "-DMATLAB_MEX_FILE" 
     )
 
-  list(FIND ARGV SHARED isshared)
-
   if (isshared EQUAL -1)
     set_target_properties(${target} PROPERTIES 
       PREFIX ""
@@ -136,7 +139,8 @@ function(add_mex)
       LINK_FLAGS "${MEX_LDFLAGS} ${MEX_LD_ARGUMENTS} ${MEX_CXXLIBS}"  
       LINK_FLAGS_DEBUG	"${MEX_LDDEBUGFLAGS}"
       LINK_FLAGS_RELEASE	"${MEX_LDOPTIMFLAGS}"
-      LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"   # build them in their current directory (could take this as an option)
+      ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"   
       )
   else()
     set_target_properties(${target} PROPERTIES

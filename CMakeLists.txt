@@ -12,6 +12,9 @@ lcmtypes_build()
 include(cmake/mex.cmake)
 mex_setup()
 
+#find_package(Java)
+#add_library(drake util/MyLCMTypeDatabase.java util/MessageMonitor.java util/CoordinateFrameData.java util/LCMCoder.java util/Transform.java)
+
 include_directories( ${CMAKE_SOURCE_DIR}/thirdParty/eigen3 ${CMAKE_SOURCE_DIR}/util )
 
 add_subdirectory(util)
