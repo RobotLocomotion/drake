@@ -18,7 +18,6 @@ execute_process(COMMAND pkg-config --variable=classpath lcm-java OUTPUT_VARIABLE
 string(STRIP ${LCM_JAR_FILE} LCM_JAR_FILE)
 
 set( CMAKE_JAVA_INCLUDE_PATH ${LCM_JAR_FILE}:${LCMTYPES_JAR} )
-
 add_jar(drake
 	util/MyLCMTypeDatabase.java
 	util/MessageMonitor.java
@@ -26,6 +25,7 @@ add_jar(drake
 	util/LCMCoder.java
 	util/Transform.java
 	)
+install_jar(drake share/java)
 
 include_directories( ${CMAKE_SOURCE_DIR}/thirdParty/eigen3 ${CMAKE_SOURCE_DIR}/util )
 
@@ -33,5 +33,22 @@ add_subdirectory(util)
 add_subdirectory(algorithms)
 add_subdirectory(systems)
 add_subdirectory(thirdParty/GetFullPath)
+
+# setup matlab pods-compliance
+include(cmake/matlab_pods.cmake)
+pods_configure_matlab_paths()
+
+file(WRITE addpath_drake.m
+	   "function addpath_drake()\n"
+	   "  wd = cd ${CMAKE_CURRENT_SOURCE_DIR};\n"
+	   "  configure();\n"
+	   "  cd(wd);\n"
+    )
+install(FILES addpath_drake.m DESTINATION matlab)
+
+
+#install(FILE addpath_drake.m DESTINATION matlab/)
+#install(FILE rmpath_drake.m DESTINATION matlab/)
+
 
 
