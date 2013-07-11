@@ -2,7 +2,7 @@
 
 #include <iostream>
 #include <cstdlib>
-#include "urdf.h"
+#include "plants/URDFRigidBodyManipulator.h"
 
 using namespace std;
 

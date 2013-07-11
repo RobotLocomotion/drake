@@ -8,7 +8,7 @@ target_link_libraries(URDFRigidBodyManipulator RigidBodyManipulator urdf_interfa
 
 add_subdirectory(urdf_interface)
 add_subdirectory(viewer)
-
+add_subdirectory(test)
 
 pods_use_pkg_config_packages(RigidBodyManipulator
   eigen3)
