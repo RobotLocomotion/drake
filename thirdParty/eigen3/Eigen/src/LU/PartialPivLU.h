@@ -26,6 +26,8 @@
 #ifndef EIGEN_PARTIALLU_H
 #define EIGEN_PARTIALLU_H
 
+namespace Eigen { 
+
 /** \ingroup LU_Module
   *
   * \class PartialPivLU
@@ -505,5 +507,7 @@ MatrixBase<Derived>::lu() const
   return PartialPivLU<PlainObject>(eval());
 }
 #endif
+
+} // end namespace Eigen
 
 #endif // EIGEN_PARTIALLU_H

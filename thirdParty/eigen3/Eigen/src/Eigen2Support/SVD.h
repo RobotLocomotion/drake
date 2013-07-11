@@ -25,6 +25,8 @@
 #ifndef EIGEN2_SVD_H
 #define EIGEN2_SVD_H
 
+namespace Eigen {
+
 /** \ingroup SVD_Module
   * \nonstableyet
   *
@@ -390,7 +392,7 @@ void SVD<MatrixType>::compute(const MatrixType& matrix)
         Scalar ek = e[k]/scale;
         Scalar b = ((spm1 + sp)*(spm1 - sp) + epm1*epm1)/Scalar(2);
         Scalar c = (sp*epm1)*(sp*epm1);
-        Scalar shift = 0.0;
+        Scalar shift(0);
         if ((b != 0.0) || (c != 0.0))
         {
           shift = ei_sqrt(b*b + c);
@@ -645,5 +647,7 @@ MatrixBase<Derived>::svd() const
 {
   return SVD<PlainObject>(derived());
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN2_SVD_H

@@ -25,6 +25,8 @@
 #ifndef EIGEN_STEM_FUNCTION
 #define EIGEN_STEM_FUNCTION
 
+namespace Eigen { 
+
 /** \ingroup MatrixFunctions_Module 
   * \brief Stem functions corresponding to standard mathematical functions.
   */
@@ -112,5 +114,7 @@ class StdStemFunctions
     }
 
 }; // end of class StdStemFunctions
+
+} // end namespace Eigen
 
 #endif // EIGEN_STEM_FUNCTION

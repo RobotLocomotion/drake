@@ -31,9 +31,8 @@
 
 #include "src/Core/util/DisableStupidWarnings.h"
 
-namespace Eigen {
-
-/** \defgroup Eigen2Support_Module Eigen2 support module
+/** \ingroup Support_modules
+  * \defgroup Eigen2Support_Module Eigen2 support module
   * This module provides a couple of deprecated functions improving the compatibility with Eigen2.
   *
   * To use it, define EIGEN2_SUPPORT before including any Eigen header
@@ -56,12 +55,28 @@ namespace Eigen {
 #include "src/Eigen2Support/MathFunctions.h"
 
 
-} // namespace Eigen
-
 #include "src/Core/util/ReenableStupidWarnings.h"
 
 // Eigen2 used to include iostream
 #include<iostream>
+
+#define EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, SizeSuffix) \
+using Eigen::Matrix##SizeSuffix##TypeSuffix; \
+using Eigen::Vector##SizeSuffix##TypeSuffix; \
+using Eigen::RowVector##SizeSuffix##TypeSuffix;
+
+#define EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(TypeSuffix) \
+EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 2) \
+EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 3) \
+EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 4) \
+EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, X) \
+
+#define EIGEN_USING_MATRIX_TYPEDEFS \
+EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(i) \
+EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(f) \
+EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(d) \
+EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(cf) \
+EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(cd)
 
 #define USING_PART_OF_NAMESPACE_EIGEN \
 EIGEN_USING_MATRIX_TYPEDEFS \

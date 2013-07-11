@@ -26,6 +26,8 @@
 #ifndef EIGEN_COMMAINITIALIZER_H
 #define EIGEN_COMMAINITIALIZER_H
 
+namespace Eigen { 
+
 /** \class CommaInitializer
   * \ingroup Core_Module
   *
@@ -146,5 +148,7 @@ DenseBase<Derived>::operator<<(const DenseBase<OtherDerived>& other)
 {
   return CommaInitializer<Derived>(*static_cast<Derived *>(this), other);
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_COMMAINITIALIZER_H

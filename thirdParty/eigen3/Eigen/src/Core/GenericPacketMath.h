@@ -26,6 +26,8 @@
 #ifndef EIGEN_GENERIC_PACKET_MATH_H
 #define EIGEN_GENERIC_PACKET_MATH_H
 
+namespace Eigen {
+
 namespace internal {
 
 /** \internal
@@ -312,7 +314,7 @@ template<int Offset,typename PacketType>
 struct palign_impl
 {
   // by default data are aligned, so there is nothing to be done :)
-  inline static void run(PacketType&, const PacketType&) {}
+  static inline void run(PacketType&, const PacketType&) {}
 };
 
 /** \internal update \a first using the concatenation of the \a Offset last elements
@@ -334,6 +336,8 @@ template<> inline std::complex<double> pmul(const std::complex<double>& a, const
 { return std::complex<double>(real(a)*real(b) - imag(a)*imag(b), imag(a)*real(b) + real(a)*imag(b)); }
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_GENERIC_PACKET_MATH_H
 

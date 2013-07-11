@@ -26,6 +26,8 @@
 #ifndef EIGEN_RETURNBYVALUE_H
 #define EIGEN_RETURNBYVALUE_H
 
+namespace Eigen {
+
 /** \class ReturnByValue
   * \ingroup Core_Module
   *
@@ -95,5 +97,7 @@ Derived& DenseBase<Derived>::operator=(const ReturnByValue<OtherDerived>& other)
   other.evalTo(derived());
   return derived();
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_RETURNBYVALUE_H

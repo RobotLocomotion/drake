@@ -25,6 +25,8 @@
 #ifndef EIGEN_BIDIAGONALIZATION_H
 #define EIGEN_BIDIAGONALIZATION_H
 
+namespace Eigen { 
+
 namespace internal {
 // UpperBidiagonalization will probably be replaced by a Bidiagonalization class, don't want to make it stable API.
 // At the same time, it's useful to keep for now as it's about the only thing that is testing the BandMatrix class.
@@ -155,5 +157,7 @@ MatrixBase<Derived>::bidiagonalization() const
 #endif
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_BIDIAGONALIZATION_H

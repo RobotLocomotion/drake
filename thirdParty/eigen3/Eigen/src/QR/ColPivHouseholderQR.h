@@ -26,6 +26,8 @@
 #ifndef EIGEN_COLPIVOTINGHOUSEHOLDERQR_H
 #define EIGEN_COLPIVOTINGHOUSEHOLDERQR_H
 
+namespace Eigen { 
+
 /** \ingroup QR_Module
   *
   * \class ColPivHouseholderQR
@@ -528,5 +530,6 @@ MatrixBase<Derived>::colPivHouseholderQr() const
   return ColPivHouseholderQR<PlainObject>(eval());
 }
 
+} // end namespace Eigen
 
 #endif // EIGEN_COLPIVOTINGHOUSEHOLDERQR_H

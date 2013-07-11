@@ -97,15 +97,14 @@ namespace Eigen {
   * The following is a simple but complete example for how to use the BVH to accelerate the search for a closest red-blue point pair:
   * \include BVH_Example.cpp
   * Output: \verbinclude BVH_Example.out
-
   */
+}
+
 //@{
 
 #include "src/BVH/BVAlgorithms.h"
 #include "src/BVH/KdBVH.h"
 
 //@}
-
-}
 
 #endif // EIGEN_BVH_MODULE_H

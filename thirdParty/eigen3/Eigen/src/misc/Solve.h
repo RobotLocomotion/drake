@@ -25,6 +25,8 @@
 #ifndef EIGEN_MISC_SOLVE_H
 #define EIGEN_MISC_SOLVE_H
 
+namespace Eigen { 
+
 namespace internal {
 
 /** \class solve_retval_base
@@ -66,7 +68,7 @@ template<typename _DecompositionType, typename Rhs> struct solve_retval_base
 
   protected:
     const DecompositionType& m_dec;
-    const typename Rhs::Nested m_rhs;
+    typename Rhs::Nested m_rhs;
 };
 
 } // end namespace internal
@@ -83,5 +85,7 @@ template<typename _DecompositionType, typename Rhs> struct solve_retval_base
   using Base::cols; \
   solve_retval(const DecompositionType& dec, const Rhs& rhs) \
     : Base(dec, rhs) {}
+
+} // end namespace Eigen
 
 #endif // EIGEN_MISC_SOLVE_H

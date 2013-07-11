@@ -25,6 +25,8 @@
 #ifndef EIGEN2_META_H
 #define EIGEN2_META_H
 
+namespace Eigen { 
+
 template<typename T>
 struct ei_traits : internal::traits<T>
 {};
@@ -82,5 +84,7 @@ class ei_meta_sqrt
 
 template<int Y, int InfX, int SupX>
 class ei_meta_sqrt<Y, InfX, SupX, true> { public:  enum { ret = (SupX*SupX <= Y) ? SupX : InfX }; };
+
+} // end namespace Eigen
 
 #endif // EIGEN2_META_H

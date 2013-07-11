@@ -26,6 +26,8 @@
 #ifndef EIGEN_VECTORBLOCK_H
 #define EIGEN_VECTORBLOCK_H
 
+namespace Eigen { 
+
 /** \class VectorBlock
   * \ingroup Core_Module
   *
@@ -292,5 +294,6 @@ DenseBase<Derived>::tail() const
   return typename ConstFixedSegmentReturnType<Size>::Type(derived(), size() - Size);
 }
 
+} // end namespace Eigen
 
 #endif // EIGEN_VECTORBLOCK_H

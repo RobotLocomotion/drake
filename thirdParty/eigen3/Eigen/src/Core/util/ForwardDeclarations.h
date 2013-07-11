@@ -26,6 +26,7 @@
 #ifndef EIGEN_FORWARDDECLARATIONS_H
 #define EIGEN_FORWARDDECLARATIONS_H
 
+namespace Eigen {
 namespace internal {
 
 template<typename T> struct traits;
@@ -133,6 +134,7 @@ template<typename ExpressionType> class WithFormat;
 template<typename MatrixType> struct CommaInitializer;
 template<typename Derived> class ReturnByValue;
 template<typename ExpressionType> class ArrayWrapper;
+template<typename ExpressionType> class MatrixWrapper;
 
 namespace internal {
 template<typename DecompositionType, typename Rhs> struct solve_retval_base;
@@ -282,6 +284,8 @@ template<typename MatrixType,int Direction> class Homogeneous;
 // MatrixFunctions module
 template<typename Derived> struct MatrixExponentialReturnValue;
 template<typename Derived> class MatrixFunctionReturnValue;
+template<typename Derived> class MatrixSquareRootReturnValue;
+template<typename Derived> class MatrixLogarithmReturnValue;
 
 namespace internal {
 template <typename Scalar>
@@ -303,5 +307,7 @@ namespace internal {
 template<typename MatrixType, unsigned int Mode> struct eigen2_part_return_type;
 }
 #endif
+
+} // end namespace Eigen
 
 #endif // EIGEN_FORWARDDECLARATIONS_H

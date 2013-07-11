@@ -25,6 +25,8 @@
 #ifndef EIGEN_STABLENORM_H
 #define EIGEN_STABLENORM_H
 
+namespace Eigen { 
+
 namespace internal {
 template<typename ExpressionType, typename Scalar>
 inline void stable_norm_kernel(const ExpressionType& bl, Scalar& ssq, Scalar& scale, Scalar& invScale)
@@ -58,9 +60,9 @@ MatrixBase<Derived>::stableNorm() const
 {
   using std::min;
   const Index blockSize = 4096;
-  RealScalar scale = 0;
-  RealScalar invScale = 1;
-  RealScalar ssq = 0; // sum of square
+  RealScalar scale(0);
+  RealScalar invScale(1);
+  RealScalar ssq(0); // sum of square
   enum {
     Alignment = (int(Flags)&DirectAccessBit) || (int(Flags)&AlignedBit) ? 1 : 0
   };
@@ -186,5 +188,7 @@ MatrixBase<Derived>::hypotNorm() const
 {
   return this->cwiseAbs().redux(internal::scalar_hypot_op<RealScalar>());
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_STABLENORM_H

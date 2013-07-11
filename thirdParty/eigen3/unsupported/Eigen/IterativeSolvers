@@ -25,27 +25,31 @@
 #ifndef EIGEN_ITERATIVE_SOLVERS_MODULE_H
 #define EIGEN_ITERATIVE_SOLVERS_MODULE_H
 
-#include <Eigen/Core>
-
-namespace Eigen {
+#include <Eigen/Sparse>
 
 /** \ingroup Unsupported_modules
   * \defgroup IterativeSolvers_Module Iterative solvers module
   * This module aims to provide various iterative linear and non linear solver algorithms.
   * It currently provides:
   *  - a constrained conjugate gradient
-  *
+  *  - a Householder GMRES implementation
   * \code
   * #include <unsupported/Eigen/IterativeSolvers>
   * \endcode
   */
 //@{
 
+#include "../../Eigen/src/misc/Solve.h"
+#include "../../Eigen/src/misc/SparseSolve.h"
+
 #include "src/IterativeSolvers/IterationController.h"
 #include "src/IterativeSolvers/ConstrainedConjGrad.h"
+#include "src/IterativeSolvers/IncompleteLU.h"
+#include "../../Eigen/Jacobi"
+#include "../../Eigen/Householder"
+#include "src/IterativeSolvers/GMRES.h"
+//#include "src/IterativeSolvers/SSORPreconditioner.h"
 
 //@}
-
-}
 
 #endif // EIGEN_ITERATIVE_SOLVERS_MODULE_H

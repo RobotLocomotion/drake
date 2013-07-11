@@ -22,6 +22,8 @@
 // License and a copy of the GNU General Public License along with
 // Eigen. If not, see <http://www.gnu.org/licenses/>.
 
+namespace Eigen { 
+
 namespace internal {
 
   // FFTW uses non-const arguments
@@ -268,5 +270,7 @@ namespace internal {
   };
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 /* vim: set filetype=cpp et sw=2 ts=2 ai: */

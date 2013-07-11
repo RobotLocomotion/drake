@@ -27,6 +27,8 @@
 
 #include "SkylineUtil.h"
 
+namespace Eigen { 
+
 /** \ingroup Skyline_Module
  *
  * \class SkylineMatrixBase
@@ -219,5 +221,7 @@ public:
 protected:
     bool m_isRValue;
 };
+
+} // end namespace Eigen
 
 #endif // EIGEN_SkylineMatrixBase_H

@@ -32,8 +32,6 @@
 #include <Eigen/QR>
 #include <unsupported/Eigen/NumericalDiff>
 
-namespace Eigen {
-
 /** \ingroup Unsupported_modules
   * \defgroup NonLinearOptimization_Module Non linear optimization module
   *
@@ -146,9 +144,6 @@ namespace Eigen {
 
 #include "src/NonLinearOptimization/HybridNonLinearSolver.h"
 #include "src/NonLinearOptimization/LevenbergMarquardt.h"
-
-}
-
 
 
 #endif // EIGEN_NONLINEAROPTIMIZATION_MODULE

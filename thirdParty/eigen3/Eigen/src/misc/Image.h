@@ -25,6 +25,8 @@
 #ifndef EIGEN_MISC_IMAGE_H
 #define EIGEN_MISC_IMAGE_H
 
+namespace Eigen { 
+
 namespace internal {
 
 /** \class image_retval_base
@@ -91,5 +93,7 @@ template<typename _DecompositionType> struct image_retval_base
   using Base::cols; \
   image_retval(const DecompositionType& dec, const MatrixType& originalMatrix) \
     : Base(dec, originalMatrix) {}
+
+} // end namespace Eigen
 
 #endif // EIGEN_MISC_IMAGE_H

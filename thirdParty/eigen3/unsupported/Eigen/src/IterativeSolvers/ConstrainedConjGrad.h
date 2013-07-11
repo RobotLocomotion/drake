@@ -50,6 +50,8 @@
 
 #include <Eigen/Core>
 
+namespace Eigen { 
+
 namespace internal {
 
 /** \ingroup IterativeSolvers_Module
@@ -194,5 +196,7 @@ void constrained_cg(const TMatrix& A, const CMatrix& C, VectorX& x,
 }
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_CONSTRAINEDCG_H

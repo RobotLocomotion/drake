@@ -25,6 +25,8 @@
 #ifndef EIGEN_MISC_KERNEL_H
 #define EIGEN_MISC_KERNEL_H
 
+namespace Eigen { 
+
 namespace internal {
 
 /** \class kernel_retval_base
@@ -88,5 +90,7 @@ template<typename _DecompositionType> struct kernel_retval_base
   using Base::rows; \
   using Base::cols; \
   kernel_retval(const DecompositionType& dec) : Base(dec) {}
+
+} // end namespace Eigen
 
 #endif // EIGEN_MISC_KERNEL_H

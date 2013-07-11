@@ -25,6 +25,8 @@
 #ifndef EIGEN_COMPLEX_SSE_H
 #define EIGEN_COMPLEX_SSE_H
 
+namespace Eigen {
+
 namespace internal {
 
 //---------- float ----------
@@ -102,7 +104,7 @@ template<> EIGEN_STRONG_INLINE Packet2cf pset1<Packet2cf>(const std::complex<flo
   Packet2cf res;
   #if EIGEN_GNUC_AT_MOST(4,2)
   // workaround annoying "may be used uninitialized in this function" warning with gcc 4.2
-  res.v = _mm_loadl_pi(_mm_set1_ps(0.0f), (const __m64*)&from);
+  res.v = _mm_loadl_pi(_mm_set1_ps(0.0f), reinterpret_cast<const __m64*>(&from));
   #else
   res.v = _mm_loadl_pi(res.v, (const __m64*)&from);
   #endif
@@ -151,7 +153,7 @@ template<> EIGEN_STRONG_INLINE std::complex<float> predux_mul<Packet2cf>(const P
 template<int Offset>
 struct palign_impl<Offset,Packet2cf>
 {
-  EIGEN_STRONG_INLINE static void run(Packet2cf& first, const Packet2cf& second)
+  static EIGEN_STRONG_INLINE void run(Packet2cf& first, const Packet2cf& second)
   {
     if (Offset==1)
     {
@@ -350,7 +352,7 @@ template<> EIGEN_STRONG_INLINE std::complex<double> predux_mul<Packet1cd>(const 
 template<int Offset>
 struct palign_impl<Offset,Packet1cd>
 {
-  EIGEN_STRONG_INLINE static void run(Packet1cd& /*first*/, const Packet1cd& /*second*/)
+  static EIGEN_STRONG_INLINE void run(Packet1cd& /*first*/, const Packet1cd& /*second*/)
   {
     // FIXME is it sure we never have to align a Packet1cd?
     // Even though a std::complex<double> has 16 bytes, it is not necessarily aligned on a 16 bytes boundary...
@@ -443,5 +445,7 @@ EIGEN_STRONG_INLINE Packet1cd pcplxflip/*<Packet1cd>*/(const Packet1cd& x)
 }
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_COMPLEX_SSE_H

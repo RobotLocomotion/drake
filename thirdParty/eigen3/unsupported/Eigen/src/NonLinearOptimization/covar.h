@@ -1,3 +1,5 @@
+namespace Eigen { 
+
 namespace internal {
 
 template <typename Scalar>
@@ -63,3 +65,5 @@ void covar(
 }
 
 } // end namespace internal
+
+} // end namespace Eigen

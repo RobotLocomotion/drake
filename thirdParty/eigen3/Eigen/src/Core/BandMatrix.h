@@ -25,8 +25,9 @@
 #ifndef EIGEN_BANDMATRIX_H
 #define EIGEN_BANDMATRIX_H
 
-namespace internal {
+namespace Eigen { 
 
+namespace internal {
 
 template<typename Derived>
 class BandMatrixBase : public EigenBase<Derived>
@@ -342,5 +343,7 @@ class TridiagonalMatrix : public BandMatrix<Scalar,Size,Size,Options&SelfAdjoint
 };
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_BANDMATRIX_H

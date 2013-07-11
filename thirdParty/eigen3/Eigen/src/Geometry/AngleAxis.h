@@ -25,6 +25,8 @@
 #ifndef EIGEN_ANGLEAXIS_H
 #define EIGEN_ANGLEAXIS_H
 
+namespace Eigen { 
+
 /** \geometry_module \ingroup Geometry_Module
   *
   * \class AngleAxis
@@ -144,7 +146,7 @@ public:
     m_angle = Scalar(other.angle());
   }
 
-  inline static const AngleAxis Identity() { return AngleAxis(0, Vector3::UnitX()); }
+  static inline const AngleAxis Identity() { return AngleAxis(0, Vector3::UnitX()); }
 
   /** \returns \c true if \c *this is approximately equal to \a other, within the precision
     * determined by \a prec.
@@ -237,5 +239,7 @@ AngleAxis<Scalar>::toRotationMatrix(void) const
 
   return res;
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_ANGLEAXIS_H

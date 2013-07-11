@@ -24,6 +24,7 @@
 
 // no include guard, we'll include this twice from All.h from Eigen2Support, and it's internal anyway
 
+namespace Eigen { 
 
 /** \geometry_module \ingroup Geometry_Module
   *
@@ -155,3 +156,5 @@ Rotation2D<Scalar>::toRotationMatrix(void) const
   Scalar cosA = ei_cos(m_angle);
   return (Matrix2() << cosA, -sinA, sinA, cosA).finished();
 }
+
+} // end namespace Eigen

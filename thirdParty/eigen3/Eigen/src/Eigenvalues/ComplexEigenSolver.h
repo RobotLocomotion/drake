@@ -27,8 +27,9 @@
 #ifndef EIGEN_COMPLEX_EIGEN_SOLVER_H
 #define EIGEN_COMPLEX_EIGEN_SOLVER_H
 
-#include "./EigenvaluesCommon.h"
 #include "./ComplexSchur.h"
+
+namespace Eigen { 
 
 /** \eigenvalues_module \ingroup Eigenvalues_Module
   *
@@ -328,5 +329,6 @@ void ComplexEigenSolver<MatrixType>::sortEigenvalues(bool computeEigenvectors)
   }
 }
 
+} // end namespace Eigen
 
 #endif // EIGEN_COMPLEX_EIGEN_SOLVER_H

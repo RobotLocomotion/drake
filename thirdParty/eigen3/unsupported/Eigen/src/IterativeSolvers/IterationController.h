@@ -75,6 +75,8 @@
 #ifndef EIGEN_ITERATION_CONTROLLER_H
 #define EIGEN_ITERATION_CONTROLLER_H
 
+namespace Eigen { 
+
 /** \ingroup IterativeSolvers_Module
   * \class IterationController
   *
@@ -162,5 +164,7 @@ class IterationController
     { return finished(double(v.squaredNorm())); }
 
 };
+
+} // end namespace Eigen
 
 #endif // EIGEN_ITERATION_CONTROLLER_H

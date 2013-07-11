@@ -25,6 +25,8 @@
 #ifndef EIGEN_STRIDE_H
 #define EIGEN_STRIDE_H
 
+namespace Eigen { 
+
 /** \class Stride
   * \ingroup Core_Module
   *
@@ -115,5 +117,7 @@ class OuterStride : public Stride<Value, 0>
     OuterStride() : Base() {}
     OuterStride(Index v) : Base(v,0) {}
 };
+
+} // end namespace Eigen
 
 #endif // EIGEN_STRIDE_H

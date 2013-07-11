@@ -26,6 +26,8 @@
 #ifndef EIGEN2_VECTORBLOCK_H
 #define EIGEN2_VECTORBLOCK_H
 
+namespace Eigen { 
+
 /** \deprecated use DenseMase::head(Index) */
 template<typename Derived>
 inline VectorBlock<Derived>
@@ -101,5 +103,7 @@ MatrixBase<Derived>::end() const
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
   return VectorBlock<const Derived, Size>(derived(), size() - Size);
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN2_VECTORBLOCK_H

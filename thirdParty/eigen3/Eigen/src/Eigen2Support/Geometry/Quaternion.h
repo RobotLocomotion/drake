@@ -24,6 +24,8 @@
 
 // no include guard, we'll include this twice from All.h from Eigen2Support, and it's internal anyway
 
+namespace Eigen { 
+
 template<typename Other,
          int OtherRows=Other::RowsAtCompileTime,
          int OtherCols=Other::ColsAtCompileTime>
@@ -143,7 +145,7 @@ public:
   /** \returns a quaternion representing an identity rotation
     * \sa MatrixBase::Identity()
     */
-  inline static Quaternion Identity() { return Quaternion(1, 0, 0, 0); }
+  static inline Quaternion Identity() { return Quaternion(1, 0, 0, 0); }
 
   /** \sa Quaternion::Identity(), MatrixBase::setIdentity()
     */
@@ -314,9 +316,9 @@ Quaternion<Scalar>::toRotationMatrix(void) const
   // it has to be inlined, and so the return by value is not an issue
   Matrix3 res;
 
-  const Scalar tx  = 2*this->x();
-  const Scalar ty  = 2*this->y();
-  const Scalar tz  = 2*this->z();
+  const Scalar tx  = Scalar(2)*this->x();
+  const Scalar ty  = Scalar(2)*this->y();
+  const Scalar tz  = Scalar(2)*this->z();
   const Scalar twx = tx*this->w();
   const Scalar twy = ty*this->w();
   const Scalar twz = tz*this->w();
@@ -327,15 +329,15 @@ Quaternion<Scalar>::toRotationMatrix(void) const
   const Scalar tyz = tz*this->y();
   const Scalar tzz = tz*this->z();
 
-  res.coeffRef(0,0) = 1-(tyy+tzz);
+  res.coeffRef(0,0) = Scalar(1)-(tyy+tzz);
   res.coeffRef(0,1) = txy-twz;
   res.coeffRef(0,2) = txz+twy;
   res.coeffRef(1,0) = txy+twz;
-  res.coeffRef(1,1) = 1-(txx+tzz);
+  res.coeffRef(1,1) = Scalar(1)-(txx+tzz);
   res.coeffRef(1,2) = tyz-twx;
   res.coeffRef(2,0) = txz-twy;
   res.coeffRef(2,1) = tyz+twx;
-  res.coeffRef(2,2) = 1-(txx+tyy);
+  res.coeffRef(2,2) = Scalar(1)-(txx+tyy);
 
   return res;
 }
@@ -460,7 +462,7 @@ template<typename Other>
 struct ei_quaternion_assign_impl<Other,3,3>
 {
   typedef typename Other::Scalar Scalar;
-  inline static void run(Quaternion<Scalar>& q, const Other& mat)
+  static inline void run(Quaternion<Scalar>& q, const Other& mat)
   {
     // This algorithm comes from  "Quaternion Calculus and Fast Animation",
     // Ken Shoemake, 1987 SIGGRAPH course notes
@@ -499,8 +501,10 @@ template<typename Other>
 struct ei_quaternion_assign_impl<Other,4,1>
 {
   typedef typename Other::Scalar Scalar;
-  inline static void run(Quaternion<Scalar>& q, const Other& vec)
+  static inline void run(Quaternion<Scalar>& q, const Other& vec)
   {
     q.coeffs() = vec;
   }
 };
+
+} // end namespace Eigen

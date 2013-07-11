@@ -25,6 +25,8 @@
 #ifndef EIGEN_TRIANGULAR_MATRIX_MATRIX_H
 #define EIGEN_TRIANGULAR_MATRIX_MATRIX_H
 
+namespace Eigen { 
+
 namespace internal {
 
 // template<typename Scalar, int mr, int StorageOrder, bool Conjugate, int Mode>
@@ -58,16 +60,16 @@ template <typename Scalar, typename Index,
           int Mode, bool LhsIsTriangular,
           int LhsStorageOrder, bool ConjugateLhs,
           int RhsStorageOrder, bool ConjugateRhs,
-          int ResStorageOrder>
+          int ResStorageOrder, int Version = Specialized>
 struct product_triangular_matrix_matrix;
 
 template <typename Scalar, typename Index,
           int Mode, bool LhsIsTriangular,
           int LhsStorageOrder, bool ConjugateLhs,
-          int RhsStorageOrder, bool ConjugateRhs>
+          int RhsStorageOrder, bool ConjugateRhs, int Version>
 struct product_triangular_matrix_matrix<Scalar,Index,Mode,LhsIsTriangular,
                                            LhsStorageOrder,ConjugateLhs,
-                                           RhsStorageOrder,ConjugateRhs,RowMajor>
+                                           RhsStorageOrder,ConjugateRhs,RowMajor,Version>
 {
   static EIGEN_STRONG_INLINE void run(
     Index rows, Index cols, Index depth,
@@ -91,15 +93,15 @@ struct product_triangular_matrix_matrix<Scalar,Index,Mode,LhsIsTriangular,
 // implements col-major += alpha * op(triangular) * op(general)
 template <typename Scalar, typename Index, int Mode,
           int LhsStorageOrder, bool ConjugateLhs,
-          int RhsStorageOrder, bool ConjugateRhs>
+          int RhsStorageOrder, bool ConjugateRhs, int Version>
 struct product_triangular_matrix_matrix<Scalar,Index,Mode,true,
                                            LhsStorageOrder,ConjugateLhs,
-                                           RhsStorageOrder,ConjugateRhs,ColMajor>
+                                           RhsStorageOrder,ConjugateRhs,ColMajor,Version>
 {
   
   typedef gebp_traits<Scalar,Scalar> Traits;
   enum {
-    SmallPanelWidth   = EIGEN_PLAIN_ENUM_MAX(Traits::mr,Traits::nr),
+    SmallPanelWidth   = 2 * EIGEN_PLAIN_ENUM_MAX(Traits::mr,Traits::nr),
     IsLower = (Mode&Lower) == Lower,
     SetDiag = (Mode&(ZeroDiag|UnitDiag)) ? 0 : 1
   };
@@ -220,10 +222,10 @@ struct product_triangular_matrix_matrix<Scalar,Index,Mode,true,
 // implements col-major += alpha * op(general) * op(triangular)
 template <typename Scalar, typename Index, int Mode,
           int LhsStorageOrder, bool ConjugateLhs,
-          int RhsStorageOrder, bool ConjugateRhs>
+          int RhsStorageOrder, bool ConjugateRhs, int Version>
 struct product_triangular_matrix_matrix<Scalar,Index,Mode,false,
                                            LhsStorageOrder,ConjugateLhs,
-                                           RhsStorageOrder,ConjugateRhs,ColMajor>
+                                           RhsStorageOrder,ConjugateRhs,ColMajor,Version>
 {
   typedef gebp_traits<Scalar,Scalar> Traits;
   enum {
@@ -378,8 +380,8 @@ struct TriangularProduct<Mode,LhsIsTriangular,Lhs,false,Rhs,false>
 
   template<typename Dest> void scaleAndAddTo(Dest& dst, Scalar alpha) const
   {
-    const ActualLhsType lhs = LhsBlasTraits::extract(m_lhs);
-    const ActualRhsType rhs = RhsBlasTraits::extract(m_rhs);
+    typename internal::add_const_on_value_type<ActualLhsType>::type lhs = LhsBlasTraits::extract(m_lhs);
+    typename internal::add_const_on_value_type<ActualRhsType>::type rhs = RhsBlasTraits::extract(m_rhs);
 
     Scalar actualAlpha = alpha * LhsBlasTraits::extractScalarFactor(m_lhs)
                                * RhsBlasTraits::extractScalarFactor(m_rhs);
@@ -399,5 +401,6 @@ struct TriangularProduct<Mode,LhsIsTriangular,Lhs,false,Rhs,false>
   }
 };
 
+} // end namespace Eigen
 
 #endif // EIGEN_TRIANGULAR_MATRIX_MATRIX_H

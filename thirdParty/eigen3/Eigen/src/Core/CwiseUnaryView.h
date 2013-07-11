@@ -25,6 +25,8 @@
 #ifndef EIGEN_CWISE_UNARY_VIEW_H
 #define EIGEN_CWISE_UNARY_VIEW_H
 
+namespace Eigen {
+
 /** \class CwiseUnaryView
   * \ingroup Core_Module
   *
@@ -97,7 +99,7 @@ class CwiseUnaryView : internal::no_assignment_operator,
 
   protected:
     // FIXME changed from MatrixType::Nested because of a weird compilation error with sun CC
-    const typename internal::nested<MatrixType>::type m_matrix;
+    typename internal::nested<MatrixType>::type m_matrix;
     ViewOp m_functor;
 };
 
@@ -143,6 +145,6 @@ class CwiseUnaryViewImpl<ViewOp,MatrixType,Dense>
     }
 };
 
-
+} // end namespace Eigen
 
 #endif // EIGEN_CWISE_UNARY_VIEW_H

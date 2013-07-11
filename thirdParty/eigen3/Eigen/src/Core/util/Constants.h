@@ -26,6 +26,8 @@
 #ifndef EIGEN_CONSTANTS_H
 #define EIGEN_CONSTANTS_H
 
+namespace Eigen {
+
 /** This value means that a quantity is not known at compile-time, and that instead the value is
   * stored in some runtime variable.
   *
@@ -188,7 +190,9 @@ enum {
   /** View matrix as an upper triangular matrix with zeros on the diagonal. */
   StrictlyUpper=ZeroDiag|Upper,
   /** Used in BandMatrix and SelfAdjointView to indicate that the matrix is self-adjoint. */
-  SelfAdjoint=0x10
+  SelfAdjoint=0x10,
+  /** Used to support symmetric, non-selfadjoint, complex matrices. */
+  Symmetric=0x20
 };
 
 /** \ingroup enums
@@ -199,8 +203,6 @@ enum {
   /** Object is aligned for vectorization. */
   Aligned=1 
 };
-
-enum { ConditionalJumpCost = 5 };
 
 /** \ingroup enums
  * Enum used by DenseBase::corner() in Eigen2 compatibility mode. */
@@ -222,8 +224,6 @@ enum DirectionType {
     * not used for PartialReduxExpr and VectorwiseOp. */
   BothDirections 
 };
-
-enum ProductEvaluationMode { NormalProduct, CacheFriendlyProduct };
 
 /** \internal \ingroup enums
   * Enum to specify how to traverse the entries of a matrix. */
@@ -257,6 +257,13 @@ enum {
   CompleteUnrolling
 };
 
+/** \internal \ingroup enums
+  * Enum to specify whether to use the default (built-in) implementation or the specialization. */
+enum {
+  Specialized,
+  BuiltIn
+};
+
 /** \ingroup enums
   * Enum containing possible values for the \p _Options template parameter of
   * Matrix, Array and BandMatrix. */
@@ -280,26 +287,21 @@ enum {
   OnTheRight = 2  
 };
 
-/* the following could as well be written:
- *   enum NoChange_t { NoChange };
- * but it feels dangerous to disambiguate overloaded functions on enum/integer types.
- * If on some platform it is really impossible to get rid of "unused variable" warnings, then
- * we can always come back to that solution.
+/* the following used to be written as:
+ *
+ *   struct NoChange_t {};
+ *   namespace {
+ *     EIGEN_UNUSED NoChange_t NoChange;
+ *   }
+ *
+ * on the ground that it feels dangerous to disambiguate overloaded functions on enum/integer types.  
+ * However, this leads to "variable declared but never referenced" warnings on Intel Composer XE,
+ * and we do not know how to get rid of them (bug 450).
  */
-struct NoChange_t {};
-namespace {
-  EIGEN_UNUSED NoChange_t NoChange;
-}
 
-struct Sequential_t {};
-namespace {
-  EIGEN_UNUSED Sequential_t Sequential;
-}
-
-struct Default_t {};
-namespace {
-  EIGEN_UNUSED Default_t Default;
-}
+enum NoChange_t   { NoChange };
+enum Sequential_t { Sequential };
+enum Default_t    { Default };
 
 /** \internal \ingroup enums
   * Used in AmbiVector. */
@@ -375,7 +377,7 @@ enum QRPreconditioners {
 #error The preprocessor symbol 'Success' is defined, possibly by the X11 header file X.h
 #endif
 
-/** \ingroups enums
+/** \ingroup enums
   * Enum for reporting the status of a computation. */
 enum ComputationInfo {
   /** Computation was successful. */
@@ -383,7 +385,10 @@ enum ComputationInfo {
   /** The provided data did not satisfy the prerequisites. */
   NumericalIssue = 1, 
   /** Iterative procedure did not converge. */
-  NoConvergence = 2
+  NoConvergence = 2,
+  /** The inputs are invalid, or the algorithm has been improperly called.
+    * When assertions are enabled, such errors trigger an assert. */
+  InvalidInput = 3
 };
 
 /** \ingroup enums
@@ -435,5 +440,7 @@ struct MatrixXpr {};
 
 /** The type used to identify an array expression */
 struct ArrayXpr {};
+
+} // end namespace Eigen
 
 #endif // EIGEN_CONSTANTS_H

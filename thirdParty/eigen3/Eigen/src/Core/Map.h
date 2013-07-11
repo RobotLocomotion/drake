@@ -26,6 +26,8 @@
 #ifndef EIGEN_MAP_H
 #define EIGEN_MAP_H
 
+namespace Eigen { 
+
 /** \class Map
   * \ingroup Core_Module
   *
@@ -199,5 +201,7 @@ inline Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>
 {
   this->_set_noalias(Eigen::Map<const Matrix>(data));
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_MAP_H

@@ -25,6 +25,8 @@
 #ifndef EIGEN_SKYLINE_STORAGE_H
 #define EIGEN_SKYLINE_STORAGE_H
 
+namespace Eigen { 
+
 /** Stores a skyline set of values in three structures :
  * The diagonal elements
  * The upper elements
@@ -266,5 +268,7 @@ public:
     Index m_allocatedSize;
 
 };
+
+} // end namespace Eigen
 
 #endif // EIGEN_COMPRESSED_STORAGE_H

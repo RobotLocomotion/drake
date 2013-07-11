@@ -26,6 +26,8 @@
 #ifndef EIGEN_BLOCK2_H
 #define EIGEN_BLOCK2_H
 
+namespace Eigen { 
+
 /** \returns a dynamic-size expression of a corner of *this.
   *
   * \param type the type of corner. Can be \a Eigen::TopLeft, \a Eigen::TopRight,
@@ -133,5 +135,7 @@ DenseBase<Derived>::corner(CornerType type) const
       return Block<Derived, CRows, CCols>(derived(), rows() - CRows, cols() - CCols);
   }
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_BLOCK2_H

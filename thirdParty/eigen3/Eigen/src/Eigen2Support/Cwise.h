@@ -26,6 +26,8 @@
 #ifndef EIGEN_CWISE_H
 #define EIGEN_CWISE_H
 
+namespace Eigen { 
+
 /** \internal
   * convenient macro to defined the return type of a cwise binary operation */
 #define EIGEN_CWISE_BINOP_RETURN_TYPE(OP) \
@@ -199,5 +201,7 @@ inline Cwise<Derived> MatrixBase<Derived>::cwise()
 {
   return derived();
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_CWISE_H

@@ -86,23 +86,23 @@
 #ifdef EIGEN_FFTW_DEFAULT
 // FFTW: faster, GPL -- incompatible with Eigen in LGPL form, bigger code size
 #  include <fftw3.h>
+#  include "src/FFT/ei_fftw_impl.h"
    namespace Eigen {
-#    include "src/FFT/ei_fftw_impl.h"
      //template <typename T> typedef struct internal::fftw_impl  default_fft_impl; this does not work
      template <typename T> struct default_fft_impl : public internal::fftw_impl<T> {};
    }
 #elif defined EIGEN_MKL_DEFAULT
 // TODO 
 // intel Math Kernel Library: fastest, commercial -- may be incompatible with Eigen in GPL form
+#  include "src/FFT/ei_imklfft_impl.h"
    namespace Eigen {
-#    include "src/FFT/ei_imklfft_impl.h"
      template <typename T> struct default_fft_impl : public internal::imklfft_impl {};
    }
 #else
 // internal::kissfft_impl:  small, free, reasonably efficient default, derived from kissfft
 //
+# include "src/FFT/ei_kissfft_impl.h"
   namespace Eigen {
-#   include "src/FFT/ei_kissfft_impl.h"
      template <typename T> 
        struct default_fft_impl : public internal::kissfft_impl<T> {};
   }

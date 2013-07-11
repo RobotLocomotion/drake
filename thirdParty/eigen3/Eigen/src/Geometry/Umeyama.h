@@ -31,6 +31,8 @@
 // * Eigen/SVD
 // * Eigen/Array
 
+namespace Eigen { 
+
 #ifndef EIGEN_PARSED_BY_DOXYGEN
 
 // These helpers are required since it allows to use mixed types as parameters
@@ -179,5 +181,7 @@ umeyama(const MatrixBase<Derived>& src, const MatrixBase<OtherDerived>& dst, boo
 
   return Rt;
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_UMEYAMA_H

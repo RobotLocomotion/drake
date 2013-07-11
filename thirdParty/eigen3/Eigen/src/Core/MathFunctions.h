@@ -25,6 +25,8 @@
 #ifndef EIGEN_MATHFUNCTIONS_H
 #define EIGEN_MATHFUNCTIONS_H
 
+namespace Eigen {
+
 namespace internal {
 
 /** \internal \struct global_math_functions_filtering_base
@@ -309,8 +311,7 @@ struct abs2_impl<std::complex<RealScalar> >
 {
   static inline RealScalar run(const std::complex<RealScalar>& x)
   {
-    using std::norm;
-    return norm(x);
+    return real(x)*real(x) + imag(x)*imag(x);
   }
 };
 
@@ -553,7 +554,7 @@ struct pow_default_impl<Scalar, true>
 {
   static inline Scalar run(Scalar x, Scalar y)
   {
-    Scalar res = 1;
+    Scalar res(1);
     eigen_assert(!NumTraits<Scalar>::IsSigned || y >= 0);
     if(y & 1) res *= x;
     y >>= 1;
@@ -838,6 +839,19 @@ template<> struct scalar_fuzzy_impl<bool>
   
 };
 
+/****************************************************************************
+* Special functions                                                          *
+****************************************************************************/
+
+// std::isfinite is non standard, so let's define our own version,
+// even though it is not very efficient.
+template<typename T> bool isfinite(const T& x)
+{
+  return x<NumTraits<T>::highest() && x>NumTraits<T>::lowest();
+}
+
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_MATHFUNCTIONS_H

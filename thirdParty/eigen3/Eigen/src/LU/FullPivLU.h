@@ -25,6 +25,8 @@
 #ifndef EIGEN_LU_H
 #define EIGEN_LU_H
 
+namespace Eigen { 
+
 /** \ingroup LU_Module
   *
   * \class FullPivLU
@@ -282,6 +284,7 @@ template<typename _MatrixType> class FullPivLU
     FullPivLU& setThreshold(Default_t)
     {
       m_usePrescribedThreshold = false;
+      return *this;
     }
 
     /** Returns the threshold that will be used by certain methods such as rank().
@@ -742,5 +745,7 @@ MatrixBase<Derived>::fullPivLu() const
 {
   return FullPivLU<PlainObject>(eval());
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_LU_H

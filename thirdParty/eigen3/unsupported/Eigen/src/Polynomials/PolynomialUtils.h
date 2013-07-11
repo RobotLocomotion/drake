@@ -25,6 +25,8 @@
 #ifndef EIGEN_POLYNOMIAL_UTILS_H
 #define EIGEN_POLYNOMIAL_UTILS_H
 
+namespace Eigen { 
+
 /** \ingroup Polynomials_Module
  * \returns the evaluation of the polynomial at x using Horner algorithm.
  *
@@ -149,5 +151,6 @@ void roots_to_monicPolynomial( const RootVector& rv, Polynomial& poly )
   }
 }
 
+} // end namespace Eigen
 
 #endif // EIGEN_POLYNOMIAL_UTILS_H

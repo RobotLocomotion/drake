@@ -24,6 +24,8 @@
 
 // no include guard, we'll include this twice from All.h from Eigen2Support, and it's internal anyway
 
+namespace Eigen { 
+
 /** \geometry_module \ingroup Geometry_Module
   * \nonstableyet
   *
@@ -63,7 +65,7 @@ EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF_VECTORIZABLE_FIXED_SIZE(_Scalar,_AmbientDim==
   ~AlignedBox() {}
 
   /** \returns the dimension in which the box holds */
-  inline int dim() const { return AmbientDimAtCompileTime==Dynamic ? m_min.size()-1 : int(AmbientDimAtCompileTime); }
+  inline int dim() const { return AmbientDimAtCompileTime==Dynamic ? m_min.size()-1 : AmbientDimAtCompileTime; }
 
   /** \returns true if the box is null, i.e, empty. */
   inline bool isNull() const { return (m_min.cwise() > m_max).any(); }
@@ -157,14 +159,16 @@ protected:
 template<typename Scalar,int AmbiantDim>
 inline Scalar AlignedBox<Scalar,AmbiantDim>::squaredExteriorDistance(const VectorType& p) const
 {
-  Scalar dist2 = 0.;
+  Scalar dist2(0);
   Scalar aux;
   for (int k=0; k<dim(); ++k)
   {
-    if ((aux = (p[k]-m_min[k]))<0.)
+    if ((aux = (p[k]-m_min[k]))<Scalar(0))
       dist2 += aux*aux;
-    else if ( (aux = (m_max[k]-p[k]))<0. )
+    else if ( (aux = (m_max[k]-p[k]))<Scalar(0))
       dist2 += aux*aux;
   }
   return dist2;
 }
+
+} // end namespace Eigen

@@ -26,6 +26,8 @@
 #ifndef EIGEN_MATRIX_H
 #define EIGEN_MATRIX_H
 
+namespace Eigen {
+
 /** \class Matrix
   * \ingroup Core_Module
   *
@@ -411,25 +413,8 @@ EIGEN_MAKE_TYPEDEFS_ALL_SIZES(std::complex<double>, cd)
 
 #undef EIGEN_MAKE_TYPEDEFS_ALL_SIZES
 #undef EIGEN_MAKE_TYPEDEFS
+#undef EIGEN_MAKE_FIXED_TYPEDEFS
 
-#undef EIGEN_MAKE_TYPEDEFS_LARGE
-
-#define EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, SizeSuffix) \
-using Eigen::Matrix##SizeSuffix##TypeSuffix; \
-using Eigen::Vector##SizeSuffix##TypeSuffix; \
-using Eigen::RowVector##SizeSuffix##TypeSuffix;
-
-#define EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(TypeSuffix) \
-EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 2) \
-EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 3) \
-EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, 4) \
-EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE_AND_SIZE(TypeSuffix, X) \
-
-#define EIGEN_USING_MATRIX_TYPEDEFS \
-EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(i) \
-EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(f) \
-EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(d) \
-EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(cf) \
-EIGEN_USING_MATRIX_TYPEDEFS_FOR_TYPE(cd)
+} // end namespace Eigen
 
 #endif // EIGEN_MATRIX_H

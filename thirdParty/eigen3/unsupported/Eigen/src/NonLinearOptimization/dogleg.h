@@ -1,3 +1,5 @@
+namespace Eigen { 
+
 namespace internal {
 
 template <typename Scalar>
@@ -98,3 +100,5 @@ algo_end:
 }
 
 } // end namespace internal
+
+} // end namespace Eigen

@@ -101,7 +101,7 @@ class AutoDiffScalar
 
     /** Conversion from a scalar constant to an active scalar.
       * The derivatives are set to zero. */
-    explicit AutoDiffScalar(const Real& value)
+    /*explicit*/ AutoDiffScalar(const Real& value)
       : m_value(value)
     {
       if(m_derivatives.size()>0)
@@ -151,6 +151,27 @@ class AutoDiffScalar
     inline const DerType& derivatives() const { return m_derivatives; }
     inline DerType& derivatives() { return m_derivatives; }
 
+    inline bool operator< (const Scalar& other) const  { return m_value <  other; }
+    inline bool operator<=(const Scalar& other) const  { return m_value <= other; }
+    inline bool operator> (const Scalar& other) const  { return m_value >  other; }
+    inline bool operator>=(const Scalar& other) const  { return m_value >= other; }
+    inline bool operator==(const Scalar& other) const  { return m_value == other; }
+    inline bool operator!=(const Scalar& other) const  { return m_value != other; }
+
+    friend inline bool operator< (const Scalar& a, const AutoDiffScalar& b) { return a <  b.value(); }
+    friend inline bool operator<=(const Scalar& a, const AutoDiffScalar& b) { return a <= b.value(); }
+    friend inline bool operator> (const Scalar& a, const AutoDiffScalar& b) { return a >  b.value(); }
+    friend inline bool operator>=(const Scalar& a, const AutoDiffScalar& b) { return a >= b.value(); }
+    friend inline bool operator==(const Scalar& a, const AutoDiffScalar& b) { return a == b.value(); }
+    friend inline bool operator!=(const Scalar& a, const AutoDiffScalar& b) { return a != b.value(); }
+
+    template<typename OtherDerType> inline bool operator< (const AutoDiffScalar<OtherDerType>& b) const  { return m_value <  b.value(); }
+    template<typename OtherDerType> inline bool operator<=(const AutoDiffScalar<OtherDerType>& b) const  { return m_value <= b.value(); }
+    template<typename OtherDerType> inline bool operator> (const AutoDiffScalar<OtherDerType>& b) const  { return m_value >  b.value(); }
+    template<typename OtherDerType> inline bool operator>=(const AutoDiffScalar<OtherDerType>& b) const  { return m_value >= b.value(); }
+    template<typename OtherDerType> inline bool operator==(const AutoDiffScalar<OtherDerType>& b) const  { return m_value == b.value(); }
+    template<typename OtherDerType> inline bool operator!=(const AutoDiffScalar<OtherDerType>& b) const  { return m_value != b.value(); }
+
     inline const AutoDiffScalar<DerType&> operator+(const Scalar& other) const
     {
       return AutoDiffScalar<DerType&>(m_value + other, m_derivatives);
@@ -195,6 +216,24 @@ class AutoDiffScalar
       return *this;
     }
 
+    inline const AutoDiffScalar<DerType&> operator-(const Scalar& b) const
+    {
+      return AutoDiffScalar<DerType&>(m_value - b, m_derivatives);
+    }
+
+    friend inline const AutoDiffScalar<CwiseUnaryOp<internal::scalar_opposite_op<Scalar>, const DerType> >
+    operator-(const Scalar& a, const AutoDiffScalar& b)
+    {
+      return AutoDiffScalar<CwiseUnaryOp<internal::scalar_opposite_op<Scalar>, const DerType> >
+            (a - b.value(), -b.derivatives());
+    }
+
+    inline AutoDiffScalar& operator-=(const Scalar& other)
+    {
+      value() -= other;
+      return *this;
+    }
+
     template<typename OtherDerType>
     inline const AutoDiffScalar<CwiseBinaryOp<internal::scalar_difference_op<Scalar>, const DerType,const typename internal::remove_all<OtherDerType>::type> >
     operator-(const AutoDiffScalar<OtherDerType>& other) const
@@ -213,7 +252,6 @@ class AutoDiffScalar
       return *this;
     }
 
-    template<typename OtherDerType>
     inline const AutoDiffScalar<CwiseUnaryOp<internal::scalar_opposite_op<Scalar>, const DerType> >
     operator-() const
     {
@@ -267,7 +305,7 @@ class AutoDiffScalar
     {
       return AutoDiffScalar<CwiseUnaryOp<internal::scalar_multiple_op<Scalar>, const DerType> >(
         other / a.value(),
-        a.derivatives() * (-Scalar(1)/other));
+        a.derivatives() * (Scalar(-other) / (a.value()*a.value())));
     }
 
 //     inline const AutoDiffScalar<typename CwiseUnaryOp<internal::scalar_multiple_op<Real>, DerType>::Type >
@@ -327,6 +365,19 @@ class AutoDiffScalar
     inline AutoDiffScalar& operator*=(const AutoDiffScalar<OtherDerType>& other)
     {
       *this = *this * other;
+      return *this;
+    }
+
+    inline AutoDiffScalar& operator/=(const Scalar& other)
+    {
+      *this = *this / other;
+      return *this;
+    }
+
+    template<typename OtherDerType>
+    inline AutoDiffScalar& operator/=(const AutoDiffScalar<OtherDerType>& other)
+    {
+      *this = *this / other;
       return *this;
     }
 
@@ -463,15 +514,13 @@ template<typename A_Scalar, int A_Rows, int A_Cols, int A_Options, int A_MaxRows
    typedef Matrix<A_Scalar, A_Rows, A_Cols, A_Options, A_MaxRows, A_MaxCols> ReturnType;
 };
 
-template<typename DerType, typename T>
-struct scalar_product_traits<AutoDiffScalar<DerType>,T>
+template<typename DerType>
+struct scalar_product_traits<AutoDiffScalar<DerType>,typename DerType::Scalar>
 {
  typedef AutoDiffScalar<DerType> ReturnType;
 };
 
 } // end namespace internal
-
-} // end namespace Eigen
 
 #define EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(FUNC,CODE) \
   template<typename DerType> \
@@ -483,87 +532,109 @@ struct scalar_product_traits<AutoDiffScalar<DerType>,T>
     CODE; \
   }
 
-namespace std
-{
-  EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(abs,
-    return ReturnType(std::abs(x.value()), x.derivatives() * (sign(x.value())));)
-
-  EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(sqrt,
-    Scalar sqrtx = std::sqrt(x.value());
-    return ReturnType(sqrtx,x.derivatives() * (Scalar(0.5) / sqrtx));)
-
-  EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(cos,
-    return ReturnType(std::cos(x.value()), x.derivatives() * (-std::sin(x.value())));)
-
-  EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(sin,
-    return ReturnType(std::sin(x.value()),x.derivatives() * std::cos(x.value()));)
-
-  EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(exp,
-    Scalar expx = std::exp(x.value());
-    return ReturnType(expx,x.derivatives() * expx);)
-
-  EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(log,
-    return ReturnType(std::log(x.value()),x.derivatives() * (Scalar(1)/x.value()));)
-
-  template<typename DerType>
-  inline const Eigen::AutoDiffScalar<Eigen::CwiseUnaryOp<Eigen::internal::scalar_multiple_op<typename Eigen::internal::traits<DerType>::Scalar>, const DerType> >
-  pow(const Eigen::AutoDiffScalar<DerType>& x, typename Eigen::internal::traits<DerType>::Scalar y)
-  {
-    using namespace Eigen;
-    typedef typename Eigen::internal::traits<DerType>::Scalar Scalar;
-    return AutoDiffScalar<CwiseUnaryOp<Eigen::internal::scalar_multiple_op<Scalar>, const DerType> >(
-      std::pow(x.value(),y),
-      x.derivatives() * (y * std::pow(x.value(),y-1)));
-  }
-
-}
-
-namespace Eigen {
-
-namespace internal {
-
 template<typename DerType>
 inline const AutoDiffScalar<DerType>& conj(const AutoDiffScalar<DerType>& x)  { return x; }
 template<typename DerType>
 inline const AutoDiffScalar<DerType>& real(const AutoDiffScalar<DerType>& x)  { return x; }
 template<typename DerType>
 inline typename DerType::Scalar imag(const AutoDiffScalar<DerType>&)    { return 0.; }
+template<typename DerType, typename T>
+inline AutoDiffScalar<DerType> (min)(const AutoDiffScalar<DerType>& x, const T& y)    { return (x <= y ? x : y); }
+template<typename DerType, typename T>
+inline AutoDiffScalar<DerType> (max)(const AutoDiffScalar<DerType>& x, const T& y)    { return (x >= y ? x : y); }
+template<typename DerType, typename T>
+inline AutoDiffScalar<DerType> (min)(const T& x, const AutoDiffScalar<DerType>& y)    { return (x < y ? x : y); }
+template<typename DerType, typename T>
+inline AutoDiffScalar<DerType> (max)(const T& x, const AutoDiffScalar<DerType>& y)    { return (x > y ? x : y); }
 
+#define sign(x) x >= 0 ? 1 : -1 // required for abs function below
+  
 EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(abs,
+  using std::abs;
   return ReturnType(abs(x.value()), x.derivatives() * (sign(x.value())));)
 
 EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(abs2,
+  using internal::abs2;
   return ReturnType(abs2(x.value()), x.derivatives() * (Scalar(2)*x.value()));)
 
 EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(sqrt,
+  using std::sqrt;
   Scalar sqrtx = sqrt(x.value());
   return ReturnType(sqrtx,x.derivatives() * (Scalar(0.5) / sqrtx));)
 
 EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(cos,
+  using std::cos;
+  using std::sin;
   return ReturnType(cos(x.value()), x.derivatives() * (-sin(x.value())));)
 
 EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(sin,
+  using std::sin;
+  using std::cos;
   return ReturnType(sin(x.value()),x.derivatives() * cos(x.value()));)
 
 EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(exp,
+  using std::exp;
   Scalar expx = exp(x.value());
   return ReturnType(expx,x.derivatives() * expx);)
 
 EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(log,
+  using std::log;
   return ReturnType(log(x.value()),x.derivatives() * (Scalar(1)/x.value()));)
 
 template<typename DerType>
-inline const AutoDiffScalar<CwiseUnaryOp<scalar_multiple_op<typename traits<DerType>::Scalar>, DerType> >
-pow(const AutoDiffScalar<DerType>& x, typename traits<DerType>::Scalar y)
-{ return std::pow(x,y);}
+inline const Eigen::AutoDiffScalar<Eigen::CwiseUnaryOp<Eigen::internal::scalar_multiple_op<typename Eigen::internal::traits<DerType>::Scalar>, const DerType> >
+pow(const Eigen::AutoDiffScalar<DerType>& x, typename Eigen::internal::traits<DerType>::Scalar y)
+{
+  using namespace Eigen;
+  typedef typename Eigen::internal::traits<DerType>::Scalar Scalar;
+  return AutoDiffScalar<CwiseUnaryOp<Eigen::internal::scalar_multiple_op<Scalar>, const DerType> >(
+    std::pow(x.value(),y),
+    x.derivatives() * (y * std::pow(x.value(),y-1)));
+}
 
-} // end namespace internal
+
+template<typename DerTypeA,typename DerTypeB>
+inline const AutoDiffScalar<Matrix<typename internal::traits<DerTypeA>::Scalar,Dynamic,1> >
+atan2(const AutoDiffScalar<DerTypeA>& a, const AutoDiffScalar<DerTypeB>& b)
+{
+  using std::atan2;
+  using std::max;
+  typedef typename internal::traits<DerTypeA>::Scalar Scalar;
+  typedef AutoDiffScalar<Matrix<Scalar,Dynamic,1> > PlainADS;
+  PlainADS ret;
+  ret.value() = atan2(a.value(), b.value());
+  
+  Scalar tmp2 = a.value() * a.value();
+  Scalar tmp3 = b.value() * b.value();
+  Scalar tmp4 = tmp3/(tmp2+tmp3);
+  
+  if (tmp4!=0)
+    ret.derivatives() = (a.derivatives() * b.value() - a.value() * b.derivatives()) * (tmp2+tmp3);
+
+  return ret;
+}
+
+EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(tan,
+  using std::tan;
+  using std::cos;
+  return ReturnType(tan(x.value()),x.derivatives() * (Scalar(1)/internal::abs2(cos(x.value()))));)
+
+EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(asin,
+  using std::sqrt;
+  using std::asin;
+  return ReturnType(asin(x.value()),x.derivatives() * (Scalar(1)/sqrt(1-internal::abs2(x.value()))));)
+  
+EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY(acos,
+  using std::sqrt;
+  using std::acos;
+  return ReturnType(acos(x.value()),x.derivatives() * (Scalar(-1)/sqrt(1-internal::abs2(x.value()))));)
 
 #undef EIGEN_AUTODIFF_DECLARE_GLOBAL_UNARY
 
 template<typename DerType> struct NumTraits<AutoDiffScalar<DerType> >
   : NumTraits< typename NumTraits<typename DerType::Scalar>::Real >
 {
+  typedef AutoDiffScalar<Matrix<typename NumTraits<typename DerType::Scalar>::Real,DerType::RowsAtCompileTime,DerType::ColsAtCompileTime> > Real;
   typedef AutoDiffScalar<DerType> NonInteger;
   typedef AutoDiffScalar<DerType>& Nested;
   enum{

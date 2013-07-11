@@ -25,6 +25,8 @@
 #ifndef EIGEN_ARRAY_CWISE_OPERATORS_H
 #define EIGEN_ARRAY_CWISE_OPERATORS_H
 
+namespace Eigen { 
+
 /***************************************************************************
 * The following functions were defined in Core
 ***************************************************************************/
@@ -305,5 +307,7 @@ inline ExpressionType& Cwise<ExpressionType>::operator-=(const Scalar& scalar)
 {
   return m_matrix.const_cast_derived() = *this - scalar;
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_ARRAY_CWISE_OPERATORS_H

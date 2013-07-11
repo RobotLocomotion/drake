@@ -25,6 +25,8 @@
 #ifndef EIGEN2_LEASTSQUARES_H
 #define EIGEN2_LEASTSQUARES_H
 
+namespace Eigen { 
+
 /** \ingroup LeastSquares_Module
   *
   * \leastsquares_module
@@ -178,5 +180,6 @@ void fitHyperplane(int numPoints,
   result->offset() = - (result->normal().cwise()* mean).sum();
 }
 
+} // end namespace Eigen
 
 #endif // EIGEN2_LEASTSQUARES_H

@@ -1,3 +1,5 @@
+namespace Eigen { 
+
 namespace internal {
 
 template <typename Scalar>
@@ -93,3 +95,5 @@ void r1updt(
 }
 
 } // end namespace internal
+
+} // end namespace Eigen

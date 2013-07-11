@@ -25,6 +25,8 @@
 #ifndef EIGEN2_MEMORY_H
 #define EIGEN2_MEMORY_H
 
+namespace Eigen { 
+
 inline void* ei_aligned_malloc(size_t size) { return internal::aligned_malloc(size); }
 inline void  ei_aligned_free(void *ptr) { internal::aligned_free(ptr); }
 inline void* ei_aligned_realloc(void *ptr, size_t new_size, size_t old_size) { return internal::aligned_realloc(ptr, new_size, old_size); }
@@ -53,6 +55,6 @@ template<typename T> inline void ei_aligned_delete(T *ptr, size_t size)
   return internal::aligned_delete(ptr, size);
 }
 
-
+} // end namespace Eigen
 
 #endif // EIGEN2_MACROS_H

@@ -25,6 +25,8 @@
 #ifndef KDBVH_H_INCLUDED
 #define KDBVH_H_INCLUDED
 
+namespace Eigen { 
+
 namespace internal {
 
 //internal pair class for the BVH--used instead of std::pair because of alignment
@@ -69,7 +71,7 @@ struct get_boxes_helper<ObjectList, VolumeList, int> {
  *
  *  \param _Scalar The underlying scalar type of the bounding boxes
  *  \param _Dim The dimension of the space in which the hierarchy lives
- *  \param _Object The object type that lives in the hierarchy.  It must have value semantics.  Either internal::bounding_box(_Object) must
+ *  \param _Object The object type that lives in the hierarchy.  It must have value semantics.  Either bounding_box(_Object) must
  *                 be defined and return an AlignedBox<_Scalar, _Dim> or bounding boxes must be provided to the tree initializer.
  *
  *  This class provides a simple (as opposed to optimized) implementation of a bounding volume hierarchy analogous to a Kd-tree.
@@ -92,14 +94,14 @@ public:
 
   KdBVH() {}
 
-  /** Given an iterator range over \a Object references, constructs the BVH.  Requires that internal::bounding_box(Object) return a Volume. */
+  /** Given an iterator range over \a Object references, constructs the BVH.  Requires that bounding_box(Object) return a Volume. */
   template<typename Iter> KdBVH(Iter begin, Iter end) { init(begin, end, 0, 0); } //int is recognized by init as not being an iterator type
 
   /** Given an iterator range over \a Object references and an iterator range over their bounding boxes, constructs the BVH */
   template<typename OIter, typename BIter> KdBVH(OIter begin, OIter end, BIter boxBegin, BIter boxEnd) { init(begin, end, boxBegin, boxEnd); }
 
   /** Given an iterator range over \a Object references, constructs the BVH, overwriting whatever is in there currently.
-    * Requires that internal::bounding_box(Object) return a Volume. */
+    * Requires that bounding_box(Object) return a Volume. */
   template<typename Iter> void init(Iter begin, Iter end) { init(begin, end, 0, 0); }
 
   /** Given an iterator range over \a Object references and an iterator range over their bounding boxes,
@@ -229,5 +231,7 @@ private:
   VolumeList boxes;
   ObjectList objects;
 };
+
+} // end namespace Eigen
 
 #endif //KDBVH_H_INCLUDED

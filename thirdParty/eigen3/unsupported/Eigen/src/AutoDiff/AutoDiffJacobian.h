@@ -40,7 +40,7 @@ public:
   template<typename T0, typename T1>
   AutoDiffJacobian(const T0& a0, const T1& a1) : Functor(a0, a1) {}
   template<typename T0, typename T1, typename T2>
-  AutoDiffJacobian(const T0& a0, const T1& a1, const T1& a2) : Functor(a0, a1, a2) {}
+  AutoDiffJacobian(const T0& a0, const T1& a1, const T2& a2) : Functor(a0, a1, a2) {}
 
   enum {
     InputsAtCompileTime = Functor::InputsAtCompileTime,

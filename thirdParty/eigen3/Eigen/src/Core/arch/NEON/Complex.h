@@ -25,6 +25,8 @@
 #ifndef EIGEN_COMPLEX_NEON_H
 #define EIGEN_COMPLEX_NEON_H
 
+namespace Eigen {
+
 namespace internal {
 
 static uint32x4_t p4ui_CONJ_XOR = EIGEN_INIT_NEON_PACKET4(0x00000000, 0x80000000, 0x00000000, 0x80000000);
@@ -266,5 +268,7 @@ template<> EIGEN_STRONG_INLINE Packet2cf pdiv<Packet2cf>(const Packet2cf& a, con
 }
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_COMPLEX_NEON_H

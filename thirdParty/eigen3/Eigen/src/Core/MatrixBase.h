@@ -26,6 +26,8 @@
 #ifndef EIGEN_MATRIXBASE_H
 #define EIGEN_MATRIXBASE_H
 
+namespace Eigen {
+
 /** \class MatrixBase
   * \ingroup Core_Module
   *
@@ -250,8 +252,7 @@ template<typename Derived> class MatrixBase
     
     // huuuge hack. make Eigen2's matrix.part<Diagonal>() work in eigen3. Problem: Diagonal is now a class template instead
     // of an integer constant. Solution: overload the part() method template wrt template parameters list.
-    // Note: replacing next line by "template<template<typename T, int n> class U>" produces a mysterious error C2082 in MSVC.
-    template<template<typename, int> class U>
+    template<template<typename T, int n> class U>
     const DiagonalWrapper<ConstDiagonalReturnType> part() const
     { return diagonal().asDiagonal(); }
     #endif // EIGEN2_SUPPORT
@@ -331,7 +332,7 @@ template<typename Derived> class MatrixBase
     /** \returns an \link ArrayBase Array \endlink expression of this matrix
       * \sa ArrayBase::matrix() */
     ArrayWrapper<Derived> array() { return derived(); }
-    const ArrayWrapper<Derived> array() const { return derived(); }
+    const ArrayWrapper<const Derived> array() const { return derived(); }
 
 /////////// LU module ///////////
 
@@ -466,6 +467,8 @@ template<typename Derived> class MatrixBase
     const MatrixFunctionReturnValue<Derived> sinh() const;
     const MatrixFunctionReturnValue<Derived> cos() const;
     const MatrixFunctionReturnValue<Derived> sin() const;
+    const MatrixSquareRootReturnValue<Derived> sqrt() const;
+    const MatrixLogarithmReturnValue<Derived> log() const;
 
 #ifdef EIGEN2_SUPPORT
     template<typename ProductDerived, typename Lhs, typename Rhs>
@@ -512,10 +515,12 @@ template<typename Derived> class MatrixBase
   protected:
     // mixing arrays and matrices is not legal
     template<typename OtherDerived> Derived& operator+=(const ArrayBase<OtherDerived>& )
-    {EIGEN_STATIC_ASSERT(sizeof(typename OtherDerived::Scalar)==-1,YOU_CANNOT_MIX_ARRAYS_AND_MATRICES);}
+    {EIGEN_STATIC_ASSERT(std::ptrdiff_t(sizeof(typename OtherDerived::Scalar))==-1,YOU_CANNOT_MIX_ARRAYS_AND_MATRICES); return *this;}
     // mixing arrays and matrices is not legal
     template<typename OtherDerived> Derived& operator-=(const ArrayBase<OtherDerived>& )
-    {EIGEN_STATIC_ASSERT(sizeof(typename OtherDerived::Scalar)==-1,YOU_CANNOT_MIX_ARRAYS_AND_MATRICES);}
+    {EIGEN_STATIC_ASSERT(std::ptrdiff_t(sizeof(typename OtherDerived::Scalar))==-1,YOU_CANNOT_MIX_ARRAYS_AND_MATRICES); return *this;}
 };
+
+} // end namespace Eigen
 
 #endif // EIGEN_MATRIXBASE_H

@@ -25,6 +25,8 @@
 #ifndef EIGEN_COMPLEX_ALTIVEC_H
 #define EIGEN_COMPLEX_ALTIVEC_H
 
+namespace Eigen {
+
 namespace internal {
 
 static Packet4ui  p4ui_CONJ_XOR = vec_mergeh((Packet4ui)p4i_ZERO, (Packet4ui)p4f_ZERO_);//{ 0x00000000, 0x80000000, 0x00000000, 0x80000000 };
@@ -168,7 +170,7 @@ template<> EIGEN_STRONG_INLINE std::complex<float> predux_mul<Packet2cf>(const P
 template<int Offset>
 struct palign_impl<Offset,Packet2cf>
 {
-  EIGEN_STRONG_INLINE static void run(Packet2cf& first, const Packet2cf& second)
+  static EIGEN_STRONG_INLINE void run(Packet2cf& first, const Packet2cf& second)
   {
     if (Offset==1)
     {
@@ -224,5 +226,7 @@ template<> EIGEN_STRONG_INLINE Packet2cf pcplxflip<Packet2cf>(const Packet2cf& x
 }
 
 } // end namespace internal
+
+} // end namespace Eigen
 
 #endif // EIGEN_COMPLEX_ALTIVEC_H

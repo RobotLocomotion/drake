@@ -25,6 +25,8 @@
 #ifndef EIGEN_TRANSLATION_H
 #define EIGEN_TRANSLATION_H
 
+namespace Eigen { 
+
 /** \geometry_module \ingroup Geometry_Module
   *
   * \class Translation
@@ -54,6 +56,8 @@ public:
   typedef Matrix<Scalar,Dim,Dim> LinearMatrixType;
   /** corresponding affine transformation type */
   typedef Transform<Scalar,Dim,Affine> AffineTransformType;
+  /** corresponding isometric transformation type */
+  typedef Transform<Scalar,Dim,Isometry> IsometryTransformType;
 
 protected:
 
@@ -114,8 +118,8 @@ public:
 
   /** Concatenates a translation and a rotation */
   template<typename Derived>
-  inline AffineTransformType operator*(const RotationBase<Derived,Dim>& r) const
-  { return *this * r.toRotationMatrix(); }
+  inline IsometryTransformType operator*(const RotationBase<Derived,Dim>& r) const
+  { return *this * IsometryTransformType(r); }
 
   /** \returns the concatenation of a linear transformation \a l with the translation \a t */
   // its a nightmare to define a templated friend function outside its declaration
@@ -211,5 +215,7 @@ Translation<Scalar,Dim>::operator* (const EigenBase<OtherDerived>& linear) const
   res(Dim,Dim) = Scalar(1);
   return res;
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_TRANSLATION_H

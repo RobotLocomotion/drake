@@ -25,6 +25,8 @@
 #ifndef EIGEN_NOALIAS_H
 #define EIGEN_NOALIAS_H
 
+namespace Eigen {
+
 /** \class NoAlias
   * \ingroup Core_Module
   *
@@ -132,5 +134,7 @@ NoAlias<Derived,MatrixBase> MatrixBase<Derived>::noalias()
 {
   return derived();
 }
+
+} // end namespace Eigen
 
 #endif // EIGEN_NOALIAS_H
