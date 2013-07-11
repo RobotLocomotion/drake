@@ -5,5 +5,4 @@ include_directories( .. )
 target_link_libraries(urdf_kin_test URDFRigidBodyManipulator urdf_interface)
 
 pods_use_pkg_config_packages(urdf_kin_test
-  bot2-vis
-  eigen3)
+  bot2-vis)

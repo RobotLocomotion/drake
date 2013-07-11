@@ -10,9 +10,11 @@ lcmtypes_build()
 
 # set up matlab build
 include(cmake/mex.cmake)
-find_matlab()
+mex_setup()
 
-#add_subdirectory(util)
+include_directories( ${CMAKE_SOURCE_DIR}/thirdParty/eigen3 ${CMAKE_SOURCE_DIR}/util )
+
+add_subdirectory(util)
 #add_subdirectory(algorithms)
 add_subdirectory(systems)
 
