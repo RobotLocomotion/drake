@@ -5,7 +5,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "plants/URDFRigidBodyManipulator.h"
+#include "URDFRigidBodyManipulator.h"
 
 #include "lcmtypes/drake.h"
 
