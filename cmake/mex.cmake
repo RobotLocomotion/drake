@@ -15,14 +15,14 @@ macro(get_mex_arguments afterstring)
   set(MEX_${afterstring}_ARGUMENTS ${value} PARENT_SCOPE)
 endmacro()
 
-function(find_matlab)
+function(mex_setup)
   # sets the variables: MATLAB_ROOT, MATLAB_CPU, MEX, MEX_EXT
   #    as well as all of the mexopts
 
   # first run matlab (if necessary) to find matlabroot and cpu path
   if (NOT EXISTS .matlabroot OR NOT EXISTS .matlabcpu)
-    # todo: find_program matlab instead of just calling it?
-    execute_process(COMMAND matlab -nodisplay -r "ptr=fopen('.matlabroot','w'); fprintf(ptr,'%s',matlabroot); fclose(ptr); ptr=fopen('.matlabcpu','w'); fprintf(ptr,'%s',lower(computer)); fclose(ptr); exit")
+    find_program(matlab matlab)
+    execute_process(COMMAND ${matlab} -nodisplay -r "ptr=fopen('.matlabroot','w'); fprintf(ptr,'%s',matlabroot); fclose(ptr); ptr=fopen('.matlabcpu','w'); fprintf(ptr,'%s',lower(computer)); fclose(ptr); exit")
   endif()  
 
   execute_process(COMMAND cat .matlabroot OUTPUT_VARIABLE MATLAB_ROOT)
@@ -49,12 +49,13 @@ function(find_matlab)
   get_mex_option(CXXLIBS)
   get_mex_arguments(CXX)
 
-  get_mex_option(FC)
-  get_mex_option(FFLAGS)
-  get_mex_option(FDEBUGFLAGS)
-  get_mex_option(FOPTIMFLAGS)
-  get_mex_option(FLIBS)
-  get_mex_arguments(FC)
+#  not supporting fortran yet below, so might as well comment these out
+#  get_mex_option(FC)
+#  get_mex_option(FFLAGS)
+#  get_mex_option(FDEBUGFLAGS)
+#  get_mex_option(FOPTIMFLAGS)
+#  get_mex_option(FLIBS)
+#  get_mex_arguments(FC)
 
   get_mex_option(LD)
   get_mex_option(LDFLAGS)
@@ -76,19 +77,47 @@ function(add_mex)
   list(GET ARGV 0 target)
   list(REMOVE_AT ARGV 0)
 
-  message(STATUS MATLAB_ROOT = ${MATLAB_ROOT} )
-  message(STATUS MEX_CC_ARGUMENTS = ${MEX_CC_ARGUMENTS} )
+  # todo: error if mex_setup hasn't been called
+
+#  message(STATUS MATLAB_ROOT = ${MATLAB_ROOT} )
   include_directories( ${MATLAB_ROOT}/extern/include ${MATLAB_ROOT}/simulink/include )
-#  set(full_target ${target}.${MEX_EXT})
+
+  # todo error if CMAKE_BUILD_TYPE is not Debug or Release
+
+  # set up compiler/linker options
+  # NOTE: due to a CMAKE quirk, the compiler flags for each build type
+  # need to be set via the global variables, while the linker flags
+  # need to be set using set_target_properties
+
+  # backup global props
+  set (CMAKE_C_FLAGS_DEBUG_BK ${CMAKE_C_FLAGS_DEBUG})
+  set (CMAKE_C_FLAGS_RELEASE_BK ${CMAKE_C_FLAGS_RELEASE})
+  set (CMAKE_CXX_FLAGS_DEBUG_BK ${CMAKE_CXX_FLAGS_DEBUG})
+  set (CMAKE_CXX_FLAGS_RELEASE_BK ${CMAKE_CXX_FLAGS_RELEASE})  
+
+  # set global props
+  set (CMAKE_C_FLAGS_DEBUG ${MEX_CFLAGS} ${MEX_CDEBUGFLAGS} ${MEX_CC_ARGUMENTS})
+  set (CMAKE_C_FLAGS_RELEASE ${MEX_CFLAGS} ${MEX_COPTIMFLAGS} ${MEX_CC_ARGUMENTS})
+  set (CMAKE_CXX_FLAGS_DEBUG ${MEX_CXXFLAGS} ${MEX_CXXDEBUGFLAGS} ${MEX_CXX_ARGUMENTS})
+  set (CMAKE_CXX_FLAGS_RELEASE ${MEX_CXXFLAGS} ${MEX_CXXOPTIMFLAGS} ${MEX_CXX_ARGUMENTS})
 
   add_library(${target} MODULE ${ARGV}) 
-#  add_custom_command(OUTPUT ${target} COMMAND ${MEX} -o ${full_target} ${ARGV} WORKING_DIRECTORY .)
-  set_target_properties(${target} PROPERTIES PREFIX "" SUFFIX  ".${MEX_EXT}" )
 
-  # set up compile/link flags 
-  # TODO: actually mine these from mexopts.sh (but have to get the search path correct)
-  set_target_properties(${target} PROPERTIES COMPILE_FLAGS "-DMATLAB_MEX_FILE -fno-common -fexceptions -DMX_COMPAT_32")
-  set_target_properties(${target} PROPERTIES COMPILE_FLAGS_RELEASE "-DNDEBUG")
-  set_target_properties(${target} PROPERTIES LINK_FLAGS "-exported_symbols_list,${MATLAB_ROOT}/extern/lib/${MATLAB_CPU}/mexFunction.map -L${MATLAB_ROOT}/bin/${MATLAB_CPU} -lmx -lmex -lmat -lstdc++")
+  # restore global props
+  set (CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG_BK})  
+  set (CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE_BK})  
+  set (CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG_BK})  
+  set (CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE_BK})  
+
+  set_target_properties(${target} PROPERTIES 
+    PREFIX ""
+    SUFFIX ".${MEX_EXT}"
+    COMPILE_FLAGS "-DMATLAB_MEX_FILE" 
+    LINK_FLAGS "${MEX_LDFLAGS} ${MEX_LD_ARGUMENTS} ${MEX_CXXLIBS}"  
+    LINK_FLAGS_DEBUG	"${MEX_LDDEBUGFLAGS}"
+    LINK_FLAGS_RELEASE	"${MEX_LDOPTIMFLAGS}"
+    )
+
+  # todo: add CLIBS or CXXLIBS to LINK_FLAGS selectively based in if it's a c or cxx target (always added CXX above)
 
 endfunction()
