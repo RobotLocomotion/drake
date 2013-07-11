@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 2.6.0)
+
+add_mex(DCSFunction DCSFunction.cpp)
 
 add_subdirectory(plants)
+add_subdirectory(trajectories)
 
