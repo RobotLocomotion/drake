@@ -4,14 +4,19 @@ find_package( Boost REQUIRED filesystem system )
 include_directories ( ${Boost_INCLUDE_DIR} )
 link_directories( ${Boost_LIBRARY_DIRS} )
 
-add_library(RigidBodyManipulator OBJECT RigidBodyManipulator.cpp)
+#add_library(RigidBodyManipulator OBJECT RigidBodyManipulator.cpp)
+#add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp $<TARGET_OBJECTS:RigidBodyManipulator>)
+#target_link_libraries(URDFRigidBodyManipulator urdf_interface tinyxml ${Boost_LIBRARIES})
 
-add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp $<TARGET_OBJECTS:RigidBodyManipulator>)
-target_link_libraries(URDFRigidBodyManipulator urdf_interface tinyxml ${Boost_LIBRARIES})
+add_library(drakeRBM STATIC RigidBodyManipulator.cpp)
+add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp)
+target_link_libraries(URDFRigidBodyManipulator drakeRBM urdf_interface tinyxml ${Boost_LIBRARIES})
+
 pods_use_pkg_config_packages(URDFRigidBodyManipulator bot2-vis)
 
 macro(add_rbm_mex)
-  add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:RigidBodyManipulator> $<TARGET_OBJECTS:drakeUtil>)
+  add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
+  target_link_libraries(${ARGV} drakeRBM)
 endmacro()
 
 add_rbm_mex(constructModelmex)
@@ -39,4 +44,9 @@ add_subdirectory(urdf_interface)
 add_subdirectory(viewer)
 add_subdirectory(test)
 
-# todo:  pod install (headers and libs) for rigidbodymanipulator?
+pods_install_libraries(drakeRBM)
+pods_install_headers(RigidBodyManipulator.h RigidBody.h DESTINATION drake)
+pods_install_pkg_config_file(drake-rbm
+    LIBS -ldrakeRBM
+    REQUIRES  
+    VERSION 0.0.1)

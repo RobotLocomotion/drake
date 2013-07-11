@@ -1,10 +1,22 @@
 
-add_library(QP OBJECT QP.cpp)
-add_mex(fastQPmex fastQPmex.cpp $<TARGET_OBJECTS:QP>)
-add_mex(gurobiQPmex gurobiQPmex.cpp $<TARGET_OBJECTS:QP>)
+# todo: still build something useful if gurobi does not exist
 
-pods_use_pkg_config_packages(fastQPmex gurobi)
-pods_use_pkg_config_packages(gurobiQPmex gurobi)
+add_library(drakeQP STATIC QP.cpp)
+
+add_mex(fastQPmex fastQPmex.cpp)
+target_link_libraries(fastQPmex drakeQP)
+
+add_mex(gurobiQPmex gurobiQPmex.cpp)
+target_link_libraries(gurobiQPmex drakeQP)
+
+pods_use_pkg_config_packages(drakeQP gurobi)
+
+pods_install_libraries(drakeQP)
+pods_install_headers(fastQP.h gurobiQP.h DESTINATION drake)
+pods_install_pkg_config_file(drake-qp
+    LIBS -ldrakeQP
+    REQUIRES gurobi 
+    VERSION 0.0.1)
 
 
 
