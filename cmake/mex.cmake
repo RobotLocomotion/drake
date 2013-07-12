@@ -123,8 +123,6 @@ function(add_mex)
   set (CMAKE_CXX_FLAGS_RELEASE ${MEX_CXXFLAGS} ${MEX_CXXOPTIMFLAGS} ${MEX_CXX_ARGUMENTS})
 #  set (CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE} ${MEX_CXXLIBS}")
 
-  message(STATUS CMAKE_C_FLAGS_LINK_EXECUTABLE=${CMAKE_C_LINK_EXECUTABLE})
-
   list(FIND ARGV SHARED isshared)
   if (isshared EQUAL -1)
     add_library(${target} MODULE ${ARGV})
@@ -153,8 +151,6 @@ function(add_mex)
       target_link_libraries(last ${MEX_CLIBS})
     endif()
 
-    get_target_property(link_flags_before ${target} LINK_FLAGS)
-    get_target_property(link_flags_release_before ${target} LINK_FLAGS_RELEASE)
     set_target_properties(${target} PROPERTIES 
       PREFIX ""
       SUFFIX ".${MEX_EXT}"
@@ -165,10 +161,6 @@ function(add_mex)
       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"   
       )
     target_link_libraries(${target} last)
-    get_target_property(link_flags_after ${target} LINK_FLAGS)
-    get_target_property(link_flags_release_after ${target} LINK_FLAGS_RELEASE)
-    message(STATUS "link flags before: ${link_flags_before}   after: ${link_flags_after}")
-    message(STATUS "link flags release before: ${link_flags_release_before}   after: ${link_flags_release_after}")
   else()
     set_target_properties(${target} PROPERTIES
       LINK_FLAGS "${MEX_CLIBS}"

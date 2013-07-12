@@ -9,8 +9,8 @@ if (UNIX)
 
 # install pkg-config file for gurobi
 # todo: move gurobi to it's own (wrapper) pod
-message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab") 
-file(WRITE ${PKG_CONFIG_OUTPUT_PATH}/gurobi.pc
+set(gurobi_pc ${PKG_CONFIG_OUTPUT_PATH}/gurobi.pc)
+file(WRITE ${gurobi_pc}
            "prefix=${CMAKE_CURRENT_SOURCE_DIR}/thirdParty/gurobi/linux64\n"
 	   "exec_prefix=\${prefix}\n"
 	   "includedir=\${prefix}/include\n"
@@ -22,11 +22,8 @@ file(WRITE ${PKG_CONFIG_OUTPUT_PATH}/gurobi.pc
 	   "Cflags: -I\${includedir}\n"
 	   "Libs: -L\${libdir} -lgurobi51\n"
 	   )
-
 endif()
-
-
-
+install(FILES ${gurobi_pc} DESTINATION lib/pkgconfig)
 
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
@@ -65,14 +62,14 @@ pods_configure_matlab_paths()
 message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab") 
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
 	   "function addpath_drake()\n"
-	   "  wd = cd ${CMAKE_CURRENT_SOURCE_DIR};\n"
+	   "  wd = cd('${CMAKE_CURRENT_SOURCE_DIR}');\n"
 	   "  addpath_drake();\n"
 	   "  cd(wd);\n"
     )
 
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
 	   "function addpath_drake()\n"
-	   "  wd = cd ${CMAKE_CURRENT_SOURCE_DIR};\n"
+	   "  wd = cd('${CMAKE_CURRENT_SOURCE_DIR}');\n"
 	   "  rmpath_drake();\n"
 	   "  cd(wd);\n"
     )
