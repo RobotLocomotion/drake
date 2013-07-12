@@ -54,6 +54,11 @@ addpath(fullfile(conf.root,'thirdParty','spatial'));
 addpath(fullfile(conf.root,'thirdParty','cprintf'));
 addpath(fullfile(conf.root,'thirdParty','GetFullPath'));
 
+% todo: move spot to a pod of it's own.  until then...
+cd externals/spotless;
+spot_install;
+cd(conf.root);
+
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 javaaddpath(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
 
