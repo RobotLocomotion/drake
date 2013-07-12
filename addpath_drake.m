@@ -54,10 +54,6 @@ addpath(fullfile(conf.root,'thirdParty','spatial'));
 addpath(fullfile(conf.root,'thirdParty','cprintf'));
 addpath(fullfile(conf.root,'thirdParty','GetFullPath'));
 
-% todo: move spot to a pod of it's own.  until then...
-cd externals/spotless;
-spot_install;
-cd(conf.root);
 
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 javaaddpath(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
@@ -77,6 +73,11 @@ elseif verLessThan('simulink','7.3')
   conf.simulink_enabled = false;
 else
   conf.simulink_enabled = true;
+end
+
+% require spotless 
+if ~logical(exist('msspoly')) 
+  pod_pkg_config('spotless');
 end
 
 conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
@@ -287,41 +288,4 @@ function [obj,lib,libprefix] = extensions
 end
 
 
-function writeEigenPC(conf)
 
-fptr = fopen(fullfile(conf.root,'thirdParty','eigen3.pc'),'w');
-
-fprintf(fptr,'Name: Eigen3\n');
-fprintf(fptr,'Description: A C++ template library for linear algebra: vectors, matrices, and related algorithms\n');
-fprintf(fptr,'Requires:\n');
-fprintf(fptr,'Version: 3.1.0\n');
-fprintf(fptr,'Libs:\n');
-fprintf(fptr,'Cflags: -I%s/thirdParty/eigen3\n',conf.root);
-
-fclose(fptr);
-
-end
-
-function writeGurobiPC(conf)
-
-% todo: also handle windows/mac here (by including the correct OS dir):
-if ~isunix || ismac
-  return
-end
-
-fptr = fopen(fullfile(conf.root,'thirdParty','gurobi.pc'),'w');
-
-fprintf(fptr,'prefix=%s/thirdParty/gurobi/linux64\n',conf.root);
-fprintf(fptr,'exec_prefix=${prefix}\n');
-fprintf(fptr,'includedir=${prefix}/include\n');
-fprintf(fptr,'libdir=${exec_prefix}/lib\n');
-fprintf(fptr,'\n');
-fprintf(fptr,'Name: gurobi\n');
-fprintf(fptr,'Description: Gurobi Optimizer\n');
-fprintf(fptr,'Version: 5.1\n');
-fprintf(fptr,'Cflags: -I${includedir}\n');
-fprintf(fptr,'Libs: -L${libdir} -lgurobi51\n');
-
-fclose(fptr);
-
-end
