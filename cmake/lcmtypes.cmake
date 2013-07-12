@@ -401,6 +401,12 @@ function(lcmtypes_build_java)
     install(FILES ${LCMTYPES_JAR} DESTINATION share/java)
     set(LCMTYPES_JAR ${LCMTYPES_JAR} PARENT_SCOPE)
 
+    pods_install_pkg_config_file(lcmtypes_${PROJECT_NAME}-java
+    	CLASSPATH lcmtypes_${PROJECT_NAME}
+    	DESCRIPTION "LCM type java bindings for ${PROJECT_NAME}"
+    	REQUIRES lcm-java
+    	VERSION 0.0.0)
+
     lcmtypes_add_clean_dir(${_lcmtypes_java_dir})
 endfunction()
 

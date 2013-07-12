@@ -9,11 +9,14 @@
 # Next, any of the following macros can be used.  See the individual macro
 # definitions in this file for individual documentation.
 #
+# General
+#   pods_install_pkg_config_file(...)
+#   pods_install_bash_setup(...)
+#
 # C/C++
 #   pods_install_headers(...)
 #   pods_install_libraries(...)
 #   pods_install_executables(...)
-#   pods_install_pkg_config_file(...)
 #
 #   pods_use_pkg_config_packages(...)
 #
@@ -22,7 +25,7 @@
 #   pods_install_python_script(...)
 #
 # Java
-#   None yet
+#   pods_use_pkg_config_classpath(...)
 #
 # ----
 # File: pods.cmake
@@ -78,6 +81,7 @@ endfunction(pods_install_libraries)
 #                              [DESCRIPTION <description>]
 #                              [CFLAGS <cflag> ...]
 #                              [LIBS <lflag> ...]
+#                              [CLASSPATH <target-jar1> <target-jar2> ...]
 #                              [REQUIRES <required-package-name> ...])
 # 
 # Create and install a pkg-config .pc file.
@@ -94,9 +98,10 @@ function(pods_install_pkg_config_file)
     set(pc_requires "")
     set(pc_libs "")
     set(pc_cflags "")
+    set(pc_classpath "")
     set(pc_fname "${PKG_CONFIG_OUTPUT_PATH}/${pc_name}.pc")
     
-    set(modewords LIBS CFLAGS REQUIRES VERSION DESCRIPTION)
+    set(modewords LIBS CFLAGS CLASSPATH REQUIRES VERSION DESCRIPTION)
     set(curmode "")
 
     # parse function arguments and populate pkg-config parameters
@@ -109,6 +114,8 @@ function(pods_install_pkg_config_file)
             set(pc_libs "${pc_libs} ${word}")
         elseif(curmode STREQUAL CFLAGS)
             set(pc_cflags "${pc_cflags} ${word}")
+	elseif(curmode STREQUAL CLASSPATH)
+	    set(pc_classpath "${pc_classpath}:\${prefix}/share/java/${word}.jar")
         elseif(curmode STREQUAL REQUIRES)
             set(pc_requires "${pc_requires} ${word}")
         elseif(curmode STREQUAL VERSION)
@@ -135,13 +142,30 @@ function(pods_install_pkg_config_file)
         "Requires: ${pc_requires}\n"
         "Version: ${pc_version}\n"
         "Libs: -L\${libdir} ${pc_libs}\n"
-        "Cflags: -I\${includedir} ${pc_cflags}\n")
+        "Cflags: -I\${includedir} ${pc_cflags}\n"
+	"classpath=${pc_classpath}\n"
+	)
 
     # mark the .pc file for installation to the lib/pkgconfig directory
     install(FILES ${pc_fname} DESTINATION lib/pkgconfig)
     
 endfunction(pods_install_pkg_config_file)
 
+# pods_install_bash_setup(<package-name> <line1> <line2> ...) 
+# 
+# Create and install the lines into config/${package}_setup.sh
+#
+# example:
+#    pods_install_pkg_bash_setup(mypod "export LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib")
+function(pods_install_bash_setup package)
+  list(REMOVE_AT ARGV 0)
+  set(filename ${CMAKE_BINARY_DIR}/config/${package}_setup.sh)  
+  
+  # todo: add a \n at the end of every element of ARGV?
+  file(WRITE ${filename} ${ARGV} )
+
+  install(FILES ${filename} DESTINATION config)
+endfunction()
 
 # pods_install_python_script(<script_name> <python_module_or_file>)
 #
@@ -296,6 +320,7 @@ macro(pods_use_pkg_config_packages target)
         return()
     endif()
     find_package(PkgConfig REQUIRED)
+
     execute_process(COMMAND 
         ${PKG_CONFIG_EXECUTABLE} --cflags-only-I ${ARGN}
         OUTPUT_VARIABLE _pods_pkg_include_flags)
@@ -328,6 +353,68 @@ macro(pods_use_pkg_config_packages target)
     unset(_pods_pkg_include_flags)
     unset(_pods_pkg_ldflags)
 endmacro()
+
+# pods_use_pkg_config_includes(<package-name> ...)
+#
+# Invokes `pkg-config --cflags-only-I <package-name> ...` and adds the result to the
+# include directories.
+#
+macro(pods_use_pkg_config_includes)
+    if(${ARGC} LESS 1)
+        message(WARNING "Useless invocation of pods_use_pkg_config_includes")
+        return()
+    endif()
+
+    find_package(PkgConfig REQUIRED)
+
+    execute_process(COMMAND 
+        ${PKG_CONFIG_EXECUTABLE} --cflags-only-I ${ARGN}
+        OUTPUT_VARIABLE _pods_pkg_include_flags)
+    string(STRIP ${_pods_pkg_include_flags} _pods_pkg_include_flags)
+    string(REPLACE "-I" "" _pods_pkg_include_flags "${_pods_pkg_include_flags}")
+
+    include_directories(${_pods_pkg_include_flags})
+endmacro()
+
+
+# pods_use_pkg_config_classpath(<package-name> ...)
+#
+# Convenience macro to get classpath flags from pkg-config and add them to CMAKE_JAVA_INCLUDE_PATH
+#
+# Invokes `pkg-config --variable=classpath <package-name> ...`, adds the result to the
+# include path, and then calls pods_use_pkg_config_classpath on the required packages (to recursively add the path)
+#
+# example:
+#   pods_use_pkg_config_classpath(lcm-java)
+
+function(pods_use_pkg_config_classpath)
+    if(${ARGC} LESS 1)
+        message(WARNING "Useless invocation of pods_use_pkg_config_packages")
+        return()
+    endif()
+    find_package(PkgConfig REQUIRED)
+
+#    message(STATUS "adding classpath for pkgs ${ARGV}")
+    execute_process(COMMAND 
+        ${PKG_CONFIG_EXECUTABLE} --variable=classpath ${ARGV}
+        OUTPUT_VARIABLE _pods_pkg_classpath_flags)
+    string(STRIP ${_pods_pkg_classpath_flags} _pods_pkg_classpath_flags)
+    string(REPLACE " " ":" _pods_pkg_classpath_flags ${_pods_pkg_classpath_flags})
+
+    set( CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${_pods_pkg_classpath_flags})
+    string(REPLACE "::" ":" CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH})
+
+    execute_process(COMMAND 
+        ${PKG_CONFIG_EXECUTABLE} --print-requires ${ARGV}
+        OUTPUT_VARIABLE _pods_pkg_classpath_requires OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    if (NOT "${_pods_pkg_classpath_requires}" STREQUAL "")
+        string(STRIP ${_pods_pkg_classpath_requires} _pods_pkg_classpath_requires)
+        pods_use_pkg_config_classpath(${_pods_pkg_classpath_requires})
+    endif()
+
+    set( CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH} PARENT_SCOPE )
+endfunction()
 
 
 # pods_config_search_paths()
