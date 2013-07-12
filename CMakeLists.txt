@@ -5,28 +5,6 @@ cmake_minimum_required(VERSION 2.6.0)
 set(POD_NAME drake)
 include(cmake/pods.cmake)
 
-if (NOT APPLE)
-
-# install pkg-config file for gurobi
-# todo: move gurobi to it's own (wrapper) pod
-set(gurobi_pc ${PKG_CONFIG_OUTPUT_PATH}/gurobi.pc)
-file(WRITE ${gurobi_pc}
-           "prefix=${CMAKE_CURRENT_SOURCE_DIR}/thirdParty/gurobi/linux64\n"
-	   "exec_prefix=\${prefix}\n"
-	   "includedir=\${prefix}/include\n"
-	   "libdir=\${exec_prefix}/lib\n"
-	   "\n"
-	   "Name: gurobi\n"
-	   "Description: Gurobi Optimizer\n"
-	   "Version: 5.1\n"
-	   "Cflags: -I\${includedir}\n"
-	   "Libs: -L\${libdir} -lgurobi51\n"
-	   )
-
-install(FILES ${gurobi_pc} DESTINATION lib/pkgconfig)
-
-endif()
-
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
 lcmtypes_build()  
