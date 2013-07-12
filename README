@@ -11,6 +11,12 @@ Summary:      A planning, control, and analysis toolbox for nonlinear dynamical 
 Description:  http://drake.mit.edu
 
 Requirements: 
+	      eigen3
+	      spotless
+
+Optional Dependencies:
+	      gurobi
+	      snopt7
 
 License:      BSD  (http://drake.mit.edu/license)
 
