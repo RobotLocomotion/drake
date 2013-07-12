@@ -134,7 +134,7 @@ end
 
 conf.gurobi_enabled = logical(exist('gurobi') && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME')));
 if (~conf.gurobi_enabled)
-  conf.gurobi_enabled = pod_pkg_config('gurobi') && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME')));
+  conf.gurobi_enabled = pod_pkg_config('gurobi') && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME'));
 
 if (~conf.gurobi_enabled)
 
