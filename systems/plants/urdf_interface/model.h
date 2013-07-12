@@ -40,7 +40,7 @@
 #include <string>
 #include <map>
 #include <boost/function.hpp>
-#include <urdf_interface/link.h>
+#include "link.h"
 
 
 namespace urdf {
