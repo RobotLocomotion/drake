@@ -100,7 +100,7 @@ end
 
 conf.snopt_enabled = logical(exist('snopt'));
 if (~conf.snopt_enabled) 
-  conf.snopt_enabled = pod_pkg_config('snopt7') && logical(exist('snopt'));
+  conf.snopt_enabled = pod_pkg_config('snopt') && logical(exist('snopt'));
   if (~conf.snopt_enabled) 
     disp(' ');
     disp(' SNOPT not found.  SNOPT support will be disabled.');

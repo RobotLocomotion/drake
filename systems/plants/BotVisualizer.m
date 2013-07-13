@@ -20,7 +20,7 @@ classdef BotVisualizer < Visualizer
         error('botvis doesn''t support windows yet');
       end
       
-      if ~exist([getDrakePath(),'/bin/drake_viewer'],'file')
+      if ~exist(fullfile(pods_get_bin_path,'drake_viewer'),'file')
         error('can''t find drake_viewer executable.  you might need to run make (from the shell).  note: BotVisualizer is not supported on windows yet');
       end
       typecheck(manip,'RigidBodyManipulator');
@@ -38,7 +38,7 @@ classdef BotVisualizer < Visualizer
       [~,ck] = system('ps ax | grep -i drake_viewer | grep -c -v grep');
       if (str2num(ck)<1) 
         % if not, then launch one...
-        retval = system(['export DYLD_LIBRARY_PATH=$HOME/drc/software/build/lib; ',getDrakePath(),'/bin/drake_viewer &> drake_viewer.out &']);
+        retval = system(['export DYLD_LIBRARY_PATH=',pods_get_lib_path,'; ',fullfile(pods_get_bin_path,'drake_viewer'),' &> drake_viewer.out &']);
         
         % listen for ready message
         agg = lcm.lcm.MessageAggregator();
@@ -51,13 +51,13 @@ classdef BotVisualizer < Visualizer
       obj = obj@Visualizer(getStateFrame(manip));
 
       %      obj = addRobotFromURDF(obj,urdf_filename);
-      vc = drake.systems.plants.viewer.lcmt_viewer_command();
+      vc = drake.lcmt_viewer_command();
       vc.command_type = vc.LOAD_URDF;
       vc.command_data = [sprintf('%s:',manip.urdf{1:end-1}),manip.urdf{end}];
       lc.publish('DRAKE_VIEWER_COMMAND',vc);
 
       nq = getNumDOF(manip);
-      obj.state_msg = drake.systems.plants.viewer.lcmt_robot_state();
+      obj.state_msg = drake.lcmt_robot_state();
       obj.state_msg.num_robots = length(manip.name);
       obj.state_msg.robot_name = manip.name;
       obj.state_msg.num_joints = nq;
