@@ -7,16 +7,260 @@
 
 #include "URDFRigidBodyManipulator.h"
 
-
-#ifdef BOT_VIS_SUPPORT
-#include <bot_core/bot_core.h>
-#include <bot_vis/bot_vis.h>
-#endif
-
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
 
 using namespace std;
+
+
+#ifdef BOT_VIS_SUPPORT
+#include <bot_core/bot_core.h>
+#include <bot_vis/bot_vis.h>
+
+class URDFRigidBodyManipulatorWBotVis : public URDFRigidBodyManipulator
+{
+public:
+  URDFRigidBodyManipulatorWBotVis(void) {};
+  virtual ~URDFRigidBodyManipulatorWBotVis(void)
+  {
+    for (map<string, BotWavefrontModel*>::iterator iter = mesh_map.begin(); iter!=mesh_map.end(); iter++)
+      bot_wavefront_model_destroy(iter->second);
+  }
+
+  map<string, BotWavefrontModel*> mesh_map;
+
+  virtual bool addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, std::map<std::string, int> jointname_to_jointnum, std::map<std::string,int> dofname_to_dofnum, const std::string & root_dir = ".")
+  {
+    if (!URDFRigidBodyManipulator::addURDF(_urdf_model, jointname_to_jointnum, dofname_to_dofnum, root_dir))
+      return false;
+
+    for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=_urdf_model->links_.begin(); l!=_urdf_model->links_.end(); l++) {
+      // load geometry
+      if (l->second->visual) { // then at least one default visual tag exists
+	// todo: iterate over all visual groups (not just "default")
+	map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
+	for (size_t iv = 0;iv < v_grp_it->second->size();iv++)
+	  {
+	    vector<boost::shared_ptr<urdf::Visual> > visuals = (*v_grp_it->second);
+	    if (visuals[iv]->geometry->type == urdf::Geometry::MESH) {
+	      boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(visuals[iv]->geometry));
+	      
+	      map<string,BotWavefrontModel*>::iterator iter = mesh_map.find(mesh->filename);
+	      if (iter!=mesh_map.end())  // then it's already in the map... no need to load it again
+          	continue;
+	      
+	      string fname = mesh->filename;
+	      bool has_package = boost::find_first(mesh->filename,"package://");
+	      if (has_package) {
+          	cout << "replacing " << fname;
+          	boost::replace_first(fname,"package://","");
+          	string package = fname.substr(0,fname.find_first_of("/"));
+          	boost::replace_first(fname,package,rospack(package));
+          	cout << " with " << fname << endl;
+	      } else {
+		fname = root_dir + "/" + mesh->filename;
+	      }
+	      boost::filesystem::path mypath(fname);
+	      
+	      if (!boost::filesystem::exists(fname)) {
+		cerr << "cannot find mesh file: " << fname;
+		if (has_package)
+		  cerr << " (note: original mesh string had a package:// in it, and I haven't really implemented rospack yet)";
+		cerr << endl;
+		continue;
+	      }
+	      
+	      string ext = mypath.extension().native();
+	      boost::to_lower(ext);
+	      
+	      if (ext.compare(".obj")==0) {
+		//            cout << "Loading mesh from " << fname << endl;
+		BotWavefrontModel* wavefront_model = bot_wavefront_model_create(fname.c_str());
+		if (!wavefront_model) {
+		  cerr << "Error loading mesh: " << fname << endl;
+		} else {
+		  mesh_map.insert(make_pair(mesh->filename, wavefront_model));
+		}
+	      } else {
+		// try changing the extension to dae and loading
+		if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
+		  //             cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
+		  BotWavefrontModel* wavefront_model = bot_wavefront_model_create(mypath.replace_extension(".obj").native().c_str());
+		  if (!wavefront_model) {
+		    cerr << "Error loading mesh: " << fname << endl;
+		  } else {
+		    mesh_map.insert(make_pair(mesh->filename, wavefront_model));
+		  }
+		} else {
+		  cerr << "Warning: Mesh " << fname << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
+		}
+	      }
+	    }
+	  }
+      }
+    }
+    return true;
+  }
+
+
+  virtual void draw(void)
+  {
+    const Vector4d zero(0,0,0,1);
+    double theta, axis[3], quat[4];
+  
+    // todo: move these to setup?
+    glDisable (GL_BLEND);
+    glDisable (GL_CULL_FACE);
+    glEnable (GL_DEPTH_TEST);
+    glEnable (GL_RESCALE_NORMAL);
+    //  glEnable (GL_CULL_FACE);
+    //  glCullFace (GL_BACK);
+    //  glFrontFace (GL_CCW);
+    //  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //  glShadeModel (GL_SMOOTH);
+
+    glMatrixMode (GL_MODELVIEW);
+
+    /* give the ambient light a blue tint to match the blue sky */
+    float light0_amb[] = { 0.4, 0.4, .5, 1 };
+    float light0_dif[] = { 1, 1, 1, 1 };
+    float light0_spe[] = { .5, .5, .5, 1 };
+    float light0_pos[] = { 100, 100, 100, 0 };
+    glLightfv (GL_LIGHT0, GL_AMBIENT, light0_amb);
+    glLightfv (GL_LIGHT0, GL_DIFFUSE, light0_dif);
+    glLightfv (GL_LIGHT0, GL_SPECULAR, light0_spe);
+    glLightfv (GL_LIGHT0, GL_POSITION, light0_pos);
+    glEnable (GL_LIGHT0);
+
+    glEnable (GL_LIGHTING);
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    glEnable (GL_COLOR_MATERIAL);
+
+    Matrix<double,7,1> pose;
+  
+    // iterate over each model
+    for (int robot=0; robot< urdf_model.size(); robot++) {
+
+      // iterate over each link and draw
+      for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=urdf_model[robot]->links_.begin(); l!=urdf_model[robot]->links_.end(); l++) {
+	if (l->second->visual) { // then at least one default visual tag exists
+
+	  int body_ind;
+	  if (l->second->parent_joint) {
+	    map<string, int>::iterator j2 = joint_map[robot].find(l->second->parent_joint->name);
+	    if (j2 == joint_map[robot].end()) continue;  // this shouldn't happen, but just in case...
+	    body_ind = j2->second;
+	  } else {
+	    map<string, int>::iterator j2 = joint_map[robot].find("floating_base");
+	    if (j2 == joint_map[robot].end()) continue;  // this shouldn't happen, but just in case...
+	    body_ind = j2->second;  // then it's attached directly to the floating base
+	  }
+
+	  //				cout << "drawing robot " << robot << " body_ind " << body_ind << ": " << bodies[body_ind].linkname << endl;
+
+	  forwardKin(body_ind,zero,2,pose);
+	  //      cout << l->second->name << " is at " << pose.transpose() << endl;
+
+	  double* posedata = pose.data();
+	  bot_quat_to_angle_axis(&posedata[3], &theta, axis);
+
+	  glPushMatrix();
+	  glTranslatef(pose(0),pose(1),pose(2));
+	  glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
+
+	  // todo: iterate over all visual groups (not just "default")
+	  map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
+	  if (v_grp_it == l->second->visual_groups.end()) continue;
+
+	  vector<boost::shared_ptr<urdf::Visual> > *visuals = v_grp_it->second.get();
+	  for (vector<boost::shared_ptr<urdf::Visual> >::iterator viter = visuals->begin(); viter!=visuals->end(); viter++)
+	    {
+	      urdf::Visual * vptr = viter->get();
+	      if (!vptr) continue;
+
+	      glPushMatrix();
+
+	      // handle visual material
+	      if (vptr->material) {
+		glColor4f(vptr->material->color.r,
+			  vptr->material->color.g,
+			  vptr->material->color.b,
+			  vptr->material->color.a);
+		/*
+		  GLfloat mat[4] = { vptr->material->color.r,
+		  vptr->material->color.g,
+		  vptr->material->color.b,
+		  vptr->material->color.a };
+		  GLfloat white[4] = {1,1,1,1};
+		  glMaterialfv(GL_FRONT,GL_DIFFUSE,mat);
+		  glMaterialfv(GL_FRONT,GL_AMBIENT,mat);
+		  glMaterialfv(GL_FRONT,GL_SPECULAR,white); */
+	      }
+
+	      // todo: handle textures here?
+
+	      // handle visual origin
+	      glTranslatef(vptr->origin.position.x,
+			   vptr->origin.position.y,
+			   vptr->origin.position.z);
+
+	      quat[0] = vptr->origin.rotation.w;
+	      quat[1] = vptr->origin.rotation.x;
+	      quat[2] = vptr->origin.rotation.y;
+	      quat[3] = vptr->origin.rotation.z;
+	      bot_quat_to_angle_axis(quat, &theta, axis);
+	      glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
+
+	      int type = vptr->geometry->type;
+	      if (type == urdf::Geometry::SPHERE) {
+		boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(vptr->geometry));
+		double radius = sphere->radius;
+		glutSolidSphere(radius,36,36);
+	      } else if (type == urdf::Geometry::BOX) {
+		boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(vptr->geometry));
+		glScalef(box->dim.x,box->dim.y,box->dim.z);
+		//          glutSolidCube(1.0);
+		bot_gl_draw_cube();
+		//          glutSolidSphere(1,36,36);
+	      } else if  (type == urdf::Geometry::CYLINDER) {
+		boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(vptr->geometry));
+
+		// transform to center of cylinder
+		glTranslatef(0.0,0.0,-cyl->length/2.0);
+
+		GLUquadricObj* quadric = gluNewQuadric();
+		gluQuadricDrawStyle(quadric, GLU_FILL);
+		gluQuadricNormals(quadric, GLU_SMOOTH);
+		gluQuadricOrientation(quadric, GLU_OUTSIDE);
+		gluCylinder(quadric,
+			    cyl->radius,
+			    cyl->radius,
+			    (double) cyl->length,
+			    36,
+			    1);
+		gluDeleteQuadric(quadric);
+	      } else if (type == urdf::Geometry::MESH) {
+		boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(vptr->geometry));
+		glScalef(mesh->scale.x,mesh->scale.y,mesh->scale.z);
+		map<string,BotWavefrontModel*>::iterator iter = mesh_map.find(mesh->filename);
+		if (iter!= mesh_map.end()) {
+		  bot_wavefront_model_gl_draw(iter->second);
+		  //        		glmDraw(iter->second->glm_model, GLM_SMOOTH);
+		}
+	      }
+	      glPopMatrix();
+	    }
+      
+	  glPopMatrix();
+	}
+      }
+    }
+  }
+
+};
+
+#endif
+
 
 // Defines a method to load a model directly from a URDF file
 
@@ -115,12 +359,12 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(void)
 
 bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string & root_dir)
 {
-	robot_map.insert(make_pair(_urdf_model->getName(),(int)robot_name.size()));
-	robot_name.push_back(_urdf_model->getName());
-	resize(num_dof + (int)dofname_to_dofnum.size(),-1,num_bodies + (int)jointname_to_jointnum.size());
-	joint_map.push_back(jointname_to_jointnum);
-	dof_map.push_back(dofname_to_dofnum);
-	urdf_model.push_back(_urdf_model);
+  robot_map.insert(make_pair(_urdf_model->getName(),(int)robot_name.size()));
+  robot_name.push_back(_urdf_model->getName());
+  resize(num_dof + (int)dofname_to_dofnum.size(),-1,num_bodies + (int)jointname_to_jointnum.size());
+  joint_map.push_back(jointname_to_jointnum);
+  dof_map.push_back(dofname_to_dofnum);
+  urdf_model.push_back(_urdf_model);
   
   for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=_urdf_model->links_.begin(); l!=_urdf_model->links_.end(); l++) {
     int index, _dofnum;
@@ -222,71 +466,6 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       dofnum[index-1] = _dofnum;
     }
 
-#ifdef BOT_VIS_SUPPORT
-    // load geometry
-    if (l->second->visual) { // then at least one default visual tag exists
-      // todo: iterate over all visual groups (not just "default")
-      map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
-      for (size_t iv = 0;iv < v_grp_it->second->size();iv++)
-      {
-        vector<boost::shared_ptr<urdf::Visual> > visuals = (*v_grp_it->second);
-        if (visuals[iv]->geometry->type == urdf::Geometry::MESH) {
-          boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(visuals[iv]->geometry));
-          
-          map<string,BotWavefrontModel*>::iterator iter = mesh_map.find(mesh->filename);
-          if (iter!=mesh_map.end())  // then it's already in the map... no need to load it again
-          	continue;
-
-          string fname = mesh->filename;
-          bool has_package = boost::find_first(mesh->filename,"package://");
-          if (has_package) {
-          	cout << "replacing " << fname;
-          	boost::replace_first(fname,"package://","");
-          	string package = fname.substr(0,fname.find_first_of("/"));
-          	boost::replace_first(fname,package,rospack(package));
-          	cout << " with " << fname << endl;
-          } else {
-            fname = root_dir + "/" + mesh->filename;
-          }
-          boost::filesystem::path mypath(fname);
-
-          if (!boost::filesystem::exists(fname)) {
-            cerr << "cannot find mesh file: " << fname;
-            if (has_package)
-              cerr << " (note: original mesh string had a package:// in it, and I haven't really implemented rospack yet)";
-            cerr << endl;
-            continue;
-          }
-          
-          string ext = mypath.extension().native();
-          boost::to_lower(ext);
-          
-          if (ext.compare(".obj")==0) {
-//            cout << "Loading mesh from " << fname << endl;
-            BotWavefrontModel* wavefront_model = bot_wavefront_model_create(fname.c_str());
-            if (!wavefront_model) {
-              cerr << "Error loading mesh: " << fname << endl;
-            } else {
-            	mesh_map.insert(make_pair(mesh->filename, wavefront_model));
-            }
-          } else {
-          	// try changing the extension to dae and loading
-          	if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
- //             cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
-          		BotWavefrontModel* wavefront_model = bot_wavefront_model_create(mypath.replace_extension(".obj").native().c_str());
-              if (!wavefront_model) {
-                cerr << "Error loading mesh: " << fname << endl;
-              } else {
-              	mesh_map.insert(make_pair(mesh->filename, wavefront_model));
-              }
-          	} else {
-              cerr << "Warning: Mesh " << fname << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
-            }
-          }
-        }
-      }
-    }
-#endif
 
 #ifdef BULLET_COLLISION
     if (l->second->collision) { // then at least one collision element exists
@@ -363,12 +542,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 
 
 URDFRigidBodyManipulator::~URDFRigidBodyManipulator(void)
-{
-#ifdef BOT_VIS_SUPPORT
-	for (map<string, BotWavefrontModel*>::iterator iter = mesh_map.begin(); iter!=mesh_map.end(); iter++)
-		bot_wavefront_model_destroy(iter->second);
-#endif
-}
+{}
 
 
 namespace urdf {
@@ -642,7 +816,11 @@ bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const st
 
 URDFRigidBodyManipulator* loadURDFfromXML(const string &xml_string, const string &root_dir)
 {
+#ifdef BOT_VIS_SUPPORT
+  URDFRigidBodyManipulatorWBotVis* model = new URDFRigidBodyManipulatorWBotVis();
+#else
   URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
+#endif
   model->addURDFfromXML(xml_string,root_dir);
   return model;
 }
@@ -650,37 +828,41 @@ URDFRigidBodyManipulator* loadURDFfromXML(const string &xml_string, const string
 URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
 {
 	// urdf_filename can be a list of urdf files seperated by a :
+#ifdef BOT_VIS_SUPPORT
+  URDFRigidBodyManipulatorWBotVis* model = new URDFRigidBodyManipulatorWBotVis();
+#else
   URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
+#endif
 
-	string xml_string, token;
-	istringstream iss(urdf_filename);
-
-	while (getline(iss,token,':')) {
-		fstream xml_file(token.c_str(), fstream::in);
-		if (xml_file.is_open())
-		{
-			while ( xml_file.good() )
-			{
-				string line;
-				getline( xml_file, line);
-				xml_string += (line + "\n");
-			}
-			xml_file.close();
-		}
-		else
-		{
-			cerr << "Could not open file ["<<urdf_filename.c_str()<<"] for parsing."<< endl;
-			return NULL;
-		}
-
-		boost::filesystem::path mypath(urdf_filename);
-		string pathname;
-		if (!mypath.empty() && mypath.has_parent_path())		// note: if you see a segfault on has_parent_path(), then you probably tried to load the model without a parent path. (it shouldn't segfault, but a workaround is to load the model with a parent path)
-			pathname = mypath.parent_path().native();
-
-		// parse URDF to get model
-	  model->addURDFfromXML(xml_string,pathname);
-	}
-
+  string xml_string, token;
+  istringstream iss(urdf_filename);
+  
+  while (getline(iss,token,':')) {
+    fstream xml_file(token.c_str(), fstream::in);
+    if (xml_file.is_open())
+      {
+	while ( xml_file.good() )
+	  {
+	    string line;
+	    getline( xml_file, line);
+	    xml_string += (line + "\n");
+	  }
+	xml_file.close();
+      }
+    else
+      {
+	cerr << "Could not open file ["<<urdf_filename.c_str()<<"] for parsing."<< endl;
+	return NULL;
+      }
+    
+    boost::filesystem::path mypath(urdf_filename);
+    string pathname;
+    if (!mypath.empty() && mypath.has_parent_path())		// note: if you see a segfault on has_parent_path(), then you probably tried to load the model without a parent path. (it shouldn't segfault, but a workaround is to load the model with a parent path)
+      pathname = mypath.parent_path().native();
+    
+    // parse URDF to get model
+    model->addURDFfromXML(xml_string,pathname);
+  }
+  
   return model;
 }

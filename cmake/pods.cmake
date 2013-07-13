@@ -10,6 +10,7 @@
 # definitions in this file for individual documentation.
 #
 # General
+#   pods_find_pkg_config(...)
 #   pods_install_pkg_config_file(...)
 #   pods_install_bash_setup(...)
 #
@@ -312,6 +313,34 @@ function(pods_install_python_packages py_src_dir)
     endif()
 endfunction()
 
+
+# pods_find_pkg_config(<package-name>)
+#
+# Invokes `pkg-config --exists <package-name>` and, per the cmake standard, 
+# sets the variable <package-name>_FOUND if it succeeds
+#
+# example usage:
+#   pods_find_pkg_config(eigen3)
+#   if (eigen3_FOUND)
+#      ... do something ... 
+#   endif()
+function(pods_find_pkg_config)
+    if(NOT ${ARGC} EQUAL 1)
+      message(FATAL_ERROR "pods_find_pkg_config takes only a single argument")
+    endif()
+    find_package(PkgConfig REQUIRED)
+
+    execute_process(COMMAND 
+        ${PKG_CONFIG_EXECUTABLE} --exists ${ARGV}
+        RESULT_VARIABLE found)
+
+    if (found EQUAL 0)
+       message(STATUS "Found ${ARGV}")
+       set(${ARGV}_FOUND 1 PARENT_SCOPE)
+    elseif()
+	message(WARNING "Could not find ${ARGV} using pods_find_pkg_config")	
+    endif()
+endfunction()
 
 # pods_use_pkg_config_packages(<target> <package-name> ...)
 #

@@ -31,8 +31,11 @@ pods_install_pkg_config_file(drake-java
     REQUIRES lcm-java lcmtypes_drake-java
     VERSION 0.0.1)
 
-pods_use_pkg_config_includes( eigen3 )
-#include_directories( ${CMAKE_SOURCE_DIR}/thirdParty/eigen3 ${CMAKE_SOURCE_DIR}/util )
+pods_find_pkg_config(eigen3)
+
+if (eigen3_FOUND)
+   pods_use_pkg_config_includes( eigen3 )
+endif()
 
 add_subdirectory(util)
 add_subdirectory(algorithms)
