@@ -137,7 +137,7 @@ end
 
 conf.gurobi_enabled = logical(exist('gurobi') && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME')));
 if (~conf.gurobi_enabled)
-  conf.gurobi_enabled = pod_pkg_config('gurobi') && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME'));
+%  conf.gurobi_enabled = pod_pkg_config('gurobi') && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME'));
 
   if (~conf.gurobi_enabled)
     
@@ -161,14 +161,15 @@ if (~conf.yalmip_enabled)
   disp(' YALMIP not found.  YALMIP support will be disabled.  To re-enable, install YALMIP and rerun configure.'); 
 end
 
-conf.pathlcp_enabled = ~isempty(getenv('PATH_LICENSE_STRING'));
-if (~conf.pathlcp_enabled)
-  disp(' ');
-  disp(' The PATH LCP solver (in the thirdparty directory) needs you to get the setup the license: http://pages.cs.wisc.edu/~ferris/path.html');
-  disp(' I recommend adding a setenv(''PATH_LICENSE_STRING'',...) line to your startup.m');
-  disp(' The LCP solver will be disabled');
-  disp(' ');
-end
+setenv('PATH_LICENSE_STRING','2069810742&Courtesy_License&&&USR&2013&14_12_2011&1000&PATH&GEN&31_12_2013&0_0_0&0&0_0');
+%conf.pathlcp_enabled = ~isempty(getenv('PATH_LICENSE_STRING'));
+%if (~conf.pathlcp_enabled)
+%  disp(' ');
+%  disp(' The PATH LCP solver (in the thirdparty directory) needs you to get the setup the license: http://pages.cs.wisc.edu/~ferris/path.html');
+%  disp(' I recommend adding a setenv(''PATH_LICENSE_STRING'',...) line to your startup.m');
+%  disp(' The LCP solver will be disabled');
+%  disp(' ');
+%end
 
 % todo: add lcmgl_enabled (using pod_pkg_config)
 
