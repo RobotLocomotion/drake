@@ -1,5 +1,0 @@
-Version 1.1 -- July 6, 2011
-    README file changed to account for FTDI driver needed in installation instead of just for building from source.
-    
-Version 1.0 -- June 17, 2011
-    Original release.
