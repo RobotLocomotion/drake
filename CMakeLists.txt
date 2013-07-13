@@ -35,6 +35,13 @@ pods_find_pkg_config(eigen3)
 
 if (eigen3_FOUND)
    pods_use_pkg_config_includes( eigen3 )
+else()
+   # then use the traditional approach to finding Eigen3
+   find_package( Eigen3 )
+   if (Eigen3_FOUND)
+      set(eigen3_FOUND 1)
+      include_directories( EIGEN3_INCLUDE_DIR )
+   endif()
 endif()
 
 add_subdirectory(util)
