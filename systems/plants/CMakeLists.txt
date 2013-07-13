@@ -4,16 +4,23 @@ find_package( Boost REQUIRED filesystem system )
 include_directories ( ${Boost_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/util )
 link_directories( ${Boost_LIBRARY_DIRS} )
 
+pods_find_pkg_config(bot2-vis)
+   add_definitions( -DBOT_VIS_SUPPORT )   
+
 #add_library(RigidBodyManipulator OBJECT RigidBodyManipulator.cpp)
 #add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp $<TARGET_OBJECTS:RigidBodyManipulator>)
 #target_link_libraries(URDFRigidBodyManipulator urdf_interface tinyxml ${Boost_LIBRARIES})
 
 add_library(drakeRBM STATIC RigidBodyManipulator.cpp)
 set_target_properties(drakeRBM PROPERTIES COMPILE_FLAGS -fPIC)
+
 add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp)
 target_link_libraries(URDFRigidBodyManipulator drakeRBM urdf_interface tinyxml ${Boost_LIBRARIES})
 
-pods_use_pkg_config_packages(URDFRigidBodyManipulator bot2-vis)
+if (bot2-vis_FOUND)
+   pods_use_pkg_config_packages(URDFRigidBodyManipulator bot2-vis)
+endif()
+
 
 macro(add_rbm_mex)
 # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
@@ -57,3 +64,6 @@ pods_install_pkg_config_file(drake-rbm
     LIBS -ldrakeRBM
     REQUIRES  
     VERSION 0.0.1)
+
+# NOTE : if I'm ever going to make a public facing copy of URDFRigidBodyManipulator, 
+# then I need to be VERY careful about the BOT_VIS #define
