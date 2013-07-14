@@ -17,6 +17,12 @@
         <box size=".2 .2 .01" />
       </geometry> 
     </visual>
+    <collision>
+      <origin xyz="0 0 0" />
+      <geometry>
+        <box size=".2 .2 .01" />
+      </geometry>
+    </collision>
   </link>
   <link name="base_part2">
     <!-- no inertia -->
