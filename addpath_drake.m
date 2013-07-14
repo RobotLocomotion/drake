@@ -137,7 +137,7 @@ end
 
 conf.gurobi_enabled = logical(exist('gurobi') && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME')));
 if (~conf.gurobi_enabled)
-%  conf.gurobi_enabled = pod_pkg_config('gurobi') && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME'));
+  conf.gurobi_enabled = pod_pkg_config('gurobi');% && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME'));
 
   if (~conf.gurobi_enabled)
     
@@ -162,6 +162,8 @@ if (~conf.yalmip_enabled)
 end
 
 setenv('PATH_LICENSE_STRING','2069810742&Courtesy_License&&&USR&2013&14_12_2011&1000&PATH&GEN&31_12_2013&0_0_0&0&0_0');
+conf.pathlcp_enabled = true;
+
 %conf.pathlcp_enabled = ~isempty(getenv('PATH_LICENSE_STRING'));
 %if (~conf.pathlcp_enabled)
 %  disp(' ');
@@ -246,7 +248,7 @@ function success=pod_pkg_config(podname)
     eval(cmd);
     success=true;
   elseif nargout<1
-    error(['Cannot find pod ',podname]);
+    error(['Cannot find required pod ',podname]);
   end
 end
 

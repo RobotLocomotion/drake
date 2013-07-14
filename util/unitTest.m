@@ -76,7 +76,6 @@ warning('on');
 
 if bRunFromDrakeRoot
   crawlDir('systems',root,true,options);
-  crawlDir('drivers',root,true,options);
   crawlDir('util',root,true,options);
   crawlDir('examples',root,false,options);
 else
