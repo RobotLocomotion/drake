@@ -99,7 +99,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
       xft = splitCoordinates(getInputFrame(obj),xft);
       x = xft{1}; ft = xft{2};
 
-      kinsol = doKinematics(obj.manip,x(1:obj.manip.getNumDOF),false);
+      kinsol = doKinematics(obj.manip,x(1:obj.manip.getNumDOF),false,false);
       
       body_pts = kinsol.T{obj.body}\[obj.xyz, obj.xyz+.001*ft(1:2); 1 1];  % convert force from sensor coords to body coords
       body_pts = body_pts(1:2,:);

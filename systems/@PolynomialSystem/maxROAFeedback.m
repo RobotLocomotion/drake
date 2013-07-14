@@ -24,9 +24,10 @@ function [c,V] = maxROAFeedback(sys,c0,V,options)
 % @option Lup Multiplier degree
 % @option Lum Multiplier degree
 
+checkDependency('sedumi');
+
 typecheck(c0,'PolynomialSystem');
 typecheck(V,'QuadraticLyapunovFunction'); 
-
 
 % Default options
 if (nargin<5) options = struct(); end
