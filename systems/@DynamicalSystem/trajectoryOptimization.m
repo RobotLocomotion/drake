@@ -101,7 +101,7 @@ function [utraj,xtraj,info,trans_info] = trajectoryOptimization(sys,costFun,fina
 
 global SNOPT_USERFUN;
 
-checkDependency('snopt_enabled');
+checkDependency('snopt');
 
 if (nargin<6) con = struct(); end
 if (nargin<7) options = struct(); end

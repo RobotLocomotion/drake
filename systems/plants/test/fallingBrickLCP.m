@@ -4,7 +4,7 @@ options.floating = true;
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 x0 = p.resolveConstraints([0;1+rand;randn(10,1)]);
 
-if 0 %checkDependency('vrml_enabled')
+if 0 %checkDependency('vrml')
   v = p.constructVisualizer();
   sys = cascade(p,v);
   sys.simulate([0 8],x0);
@@ -12,7 +12,7 @@ if 0 %checkDependency('vrml_enabled')
 end
 
 xtraj = p.simulate([0 4],x0);
-if (checkDependency('vrml_enabled'))
+if (checkDependency('vrml'))
   v = p.constructVisualizer();
   v.playback(xtraj);
 end

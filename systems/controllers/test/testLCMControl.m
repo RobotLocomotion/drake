@@ -5,7 +5,7 @@ function testLCMControl
 
 % this one is not playing nicely with matlabpool (at least not consistently).  
 
-checkDependency('lcm_enabled');
+checkDependency('lcm');
 
 p = addpath([getDrakePath,'/examples/Pendulum']);
 

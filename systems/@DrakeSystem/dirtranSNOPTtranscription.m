@@ -15,7 +15,7 @@ function [utraj,xtraj,info] = dirtranSNOPTtranscription(sys,costFun,finalCostFun
 
 error('need to update this interface to be a transcription, instead of a complete trajectoryOptimization method'); 
 
-checkDependency('snopt_enabled');
+checkDependency('snopt');
 
 if (nargin<6) options = struct(); end
 breaks = utraj0.getBreaks();

@@ -4,7 +4,7 @@ global g_scope_enable;
 
 if (isempty(g_scope_enable)) g_scope_enable=true; end
 
-if (g_scope_enable && checkDependency('lcm_enabled'))
+if (g_scope_enable && checkDependency('lcm'))
   
   if (nargin<5) options = struct();
   else typecheck(options,'struct'); end

@@ -117,6 +117,10 @@ else
 end
 
 conf.sedumi_enabled = logical(exist('sedumi'));
+if (~conf.sedumi_enabled)
+  conf.sedumi_enabled = pod_pkg_config('sedumi') && logical(exist('sedumi'));
+end
+
 if (conf.sedumi_enabled)
   sedumiA=[10,2,3,4;5,7,6,4];
   sedumib=[4;6];
@@ -125,9 +129,7 @@ if (conf.sedumi_enabled)
   if(~sedumiT)
     error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
   end
-end
-
-if (~conf.sedumi_enabled)
+else
   disp(' ');
   disp(' SeDuMi not found.  SeDuMi support will be disabled.');
   disp(' To re-enable, add SeDuMi to your matlab path and rerun configure.');
