@@ -59,8 +59,11 @@ classdef BotVisualizer < Visualizer
       ack = agg.getNextMessage(5000);
       if isempty(ack)
         error('Drake:BotVisualizer:LoadURDFFailed','Did not receive ack from viewer');
-      elseif ~strcmp(vc.command_data,ack.command_data)
-        error('Drake:BotVisualizer:LoadURDFFailed','ack from viewer contained different data');
+      else
+        msg = drake.lcmt_viewer_command(ack.data);
+        if ~strcmp(vc.command_data,msg.command_data)
+          error('Drake:BotVisualizer:LoadURDFFailed','ack from viewer contained different data');
+        end
       end
 
       nq = getNumDOF(manip);
