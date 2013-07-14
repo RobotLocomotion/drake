@@ -9,7 +9,7 @@ if (nargin<2)
   exitMatlabOnClose = false;
 end
 
-checkDependency('lcm_enabled');
+checkDependency('lcm');
 
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();

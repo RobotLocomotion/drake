@@ -20,7 +20,10 @@ int main(int argc, char *argv[])
   
   gtk_init(&argc, &argv);
   glutInit(&argc, argv);
+
+#ifndef GLIB_VERSION_2_32
   g_thread_init(NULL);  // deprecated since 2.32, but leave in for backwards compatibility
+#endif
 
   lcm_t *lcm = lcm_create("");
   

@@ -19,7 +19,7 @@ else options.tspan = [0,inf]; end
 
 % todo: handle options sampleTime, and ttl (others?)
 
-checkDependency('lcm_enabled');
+checkDependency('lcm');
 fin = obj.getInputFrame;
 fout = obj.getOutputFrame;
 if obj.getNumOutputs>0 && typecheck(fout,'LCMPublisher');

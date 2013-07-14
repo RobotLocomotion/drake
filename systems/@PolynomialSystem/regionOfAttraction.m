@@ -45,6 +45,7 @@ if (sys.num_xcon>0) error('state constraints not implemented yet'); end
 if (isRational(sys)) error('rational dynamics not supported yet'); end
 if (~isTI(sys)) error('only works for time-invariant systems (so far)'); end
   
+checkDependency('sedumi');
 
 %% get Lyapunov candidate
 num_x = sys.getNumStates();
@@ -319,7 +320,7 @@ function V = levelSetMethod(V0,f,options)
 end
 
 function V=levelSetMethodYalmip(V0,f,options)
-  checkDependency('yalmip_enabled');
+  checkDependency('yalmip');
 
   x = V0.frame.poly;
   [T,V,f] = balance(x,V0.Vpoly,f);

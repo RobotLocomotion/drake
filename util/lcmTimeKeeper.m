@@ -21,7 +21,7 @@ setup(block);
 
 function setup(block)
 
-  checkDependency('lcm_enabled');
+  checkDependency('lcm');
 
   % Register number of ports
   block.NumInputPorts  = 0;

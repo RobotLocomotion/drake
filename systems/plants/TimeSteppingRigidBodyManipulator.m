@@ -17,7 +17,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
   
   methods
     function obj=TimeSteppingRigidBodyManipulator(manipulator_or_urdf_filename,timestep,options)
-      checkDependency('pathlcp_enabled');
+      checkDependency('pathlcp');
       if (nargin<3) options=struct(); end
       if ~isfield(options,'twoD') options.twoD = false; end
       

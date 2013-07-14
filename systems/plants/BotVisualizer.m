@@ -33,6 +33,8 @@ classdef BotVisualizer < Visualizer
 %      end
 
       lc = lcm.lcm.LCM.getSingleton();
+      agg = lcm.lcm.MessageAggregator();
+      lc.subscribe('DRAKE_VIEWER_STATUS',agg);
 
       % check if there is an instance of drake_viewer already running
       [~,ck] = system('ps ax | grep -i drake_viewer | grep -c -v grep');
@@ -41,8 +43,6 @@ classdef BotVisualizer < Visualizer
         retval = system(['export DYLD_LIBRARY_PATH=',pods_get_lib_path,'; ',fullfile(pods_get_bin_path,'drake_viewer'),' &> drake_viewer.out &']);
         
         % listen for ready message
-        agg = lcm.lcm.MessageAggregator();
-        lc.subscribe('DRAKE_VIEWER_STATUS',agg);
         if isempty(agg.getNextMessage(5000)) % wait for viewer to come up
           error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer');
         end
@@ -55,6 +55,13 @@ classdef BotVisualizer < Visualizer
       vc.command_type = vc.LOAD_URDF;
       vc.command_data = [sprintf('%s:',manip.urdf{1:end-1}),manip.urdf{end}];
       lc.publish('DRAKE_VIEWER_COMMAND',vc);
+      % listen for acknowledgement
+      ack = agg.getNextMessage(5000);
+      if isempty(ack)
+        error('Drake:BotVisualizer:LoadURDFFailed','Did not receive ack from viewer');
+      elseif ~strcmp(vc.command_data,ack.command_data)
+        error('Drake:BotVisualizer:LoadURDFFailed','ack from viewer contained different data');
+      end
 
       nq = getNumDOF(manip);
       obj.state_msg = drake.lcmt_robot_state();

@@ -51,6 +51,12 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
         if (self->model) {
         	MatrixXd q0 = MatrixXd::Zero(self->model->num_dof,1);
         	self->model->doKinematics(q0.data());
+
+        	// send ack that model was successfully loaded
+        	drake_lcmt_viewer_command status_message;
+          status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
+          status_message.command_data = msg->command_data;
+          drake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
         }
       }
       break;

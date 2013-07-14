@@ -26,7 +26,7 @@ classdef SimulationConstructionSetRobot < DrakeSystem
       % todo: compute correct number of states and inputs here
       obj=obj@DrakeSystem(0,0,0,0,0,1);
       
-      checkDependency('simulationconstructionset_enabled');
+      checkDependency('simulationconstructionset');
       
       typecheck(robotobj,'com.yobotics.simulationconstructionset.Robot');
       obj.robotobj=robotobj;

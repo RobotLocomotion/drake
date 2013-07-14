@@ -1,6 +1,6 @@
 function testLCMPlant
 
-checkDependency('lcm_enabled');
+checkDependency('lcm');
 
 p = addpath([getDrakePath,'/examples/Pendulum']);
 

@@ -7,7 +7,7 @@ classdef RigidBodyWRLVisualizer < Visualizer
     function obj = RigidBodyWRLVisualizer(manip,options)
       % @option ground set options.ground = true to have ground visualized
 
-      checkDependency('vrml_enabled');
+      checkDependency('vrml');
       typecheck(manip,'RigidBodyManipulator');
       
       obj=obj@Visualizer(manip.getStateFrame());
