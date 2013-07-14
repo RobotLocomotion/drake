@@ -365,7 +365,10 @@ macro(pods_use_pkg_config_packages target)
 
     execute_process(COMMAND 
         ${PKG_CONFIG_EXECUTABLE} --cflags-only-I ${ARGN}
-        OUTPUT_VARIABLE _pods_pkg_include_flags)
+        RESULT_VARIABLE _pods_pkg_found OUTPUT_VARIABLE _pods_pkg_include_flags)
+    if (NOT _pods_pkg_found EQUAL 0)
+       message(FATAL_ERROR "ERROR: pods_use_pkg_config_packages FAILED.  could not find package ${ARGN}")
+    endif()
     string(STRIP ${_pods_pkg_include_flags} _pods_pkg_include_flags)
     string(REPLACE "-I" "" _pods_pkg_include_flags "${_pods_pkg_include_flags}")
 	separate_arguments(_pods_pkg_include_flags)
