@@ -1,7 +1,12 @@
 function testURDFmex
 
-if (~exist('urdf_kin_test','file'))
-  warning('testURDFmex requires that urdf_kin_test is built (from the command line).  skipping this test');
+urdf_kin_test = '../../../pod-build/bin/urdf_kin_test';
+if ispc
+  urdf_kin_test = [urdf_kin_test,'.exe'];
+end
+
+if (~exist(urdf_kin_test,'file'))
+  error('testURDFmex requires that urdf_kin_test is built (from the command line).  skipping this test');
   return;
 end
 
@@ -18,7 +23,7 @@ for urdf = {'./FallingBrick.urdf',...
   q = 0*rand(getNumDOF(r),1);
   kinsol = doKinematics(r,q);
   
-  [retval,outstr] = system(['./urdf_kin_test ',urdffile,sprintf(' %f',q)]);
+  [retval,outstr] = system([urdf_kin_test,' ',urdffile,sprintf(' %f',q)]);
   valuecheck(retval,0);
   out = textscan(outstr,'%s %f %f %f %f %f %f');%,'delimiter',',');
   
