@@ -1,3 +1,5 @@
+function runFunnel
+
 % Declare Dubins car model 
 p = DubinsPlant();
 

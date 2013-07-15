@@ -33,6 +33,8 @@ function V = sampledFiniteTimeVerification(sys,ts,G,varargin)
 %
 % Implements the algorithm described in http://arxiv.org/pdf/1010.3013v1
 
+checkDependency('sedumi');
+
 t=msspoly('t',1);
 ts=ts(:);
 
