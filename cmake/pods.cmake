@@ -429,6 +429,7 @@ endmacro()
 # Invokes `pkg-config --variable=classpath <package-name> ...`, adds the result to the
 # include path, and then calls pods_use_pkg_config_classpath on the required packages (to recursively add the path)
 #
+# also sets the variable <package-name>
 # example:
 #   pods_use_pkg_config_classpath(lcm-java)
 
@@ -439,26 +440,31 @@ function(pods_use_pkg_config_classpath)
     endif()
     find_package(PkgConfig REQUIRED)
 
-#    message(STATUS "adding classpath for pkgs ${ARGV}")
-    execute_process(COMMAND 
-        ${PKG_CONFIG_EXECUTABLE} --variable=classpath ${ARGV}
+    foreach(arg ${ARGV}) 
+      string(STRIP ${arg} _arg)
+      execute_process(COMMAND 
+        ${PKG_CONFIG_EXECUTABLE} --variable=classpath ${arg}
         OUTPUT_VARIABLE _pods_pkg_classpath_flags)
-    string(STRIP ${_pods_pkg_classpath_flags} _pods_pkg_classpath_flags)
-    string(REPLACE " " ":" _pods_pkg_classpath_flags ${_pods_pkg_classpath_flags})
+      string(STRIP ${_pods_pkg_classpath_flags} _pods_pkg_classpath_flags)
+      string(REPLACE " " ":" _pods_pkg_classpath_flags ${_pods_pkg_classpath_flags})
 
-    set( CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${_pods_pkg_classpath_flags})
-    string(REPLACE "::" ":" CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH})
+      set( CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${_pods_pkg_classpath_flags})
+      string(REPLACE "::" ":" CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH})
 
-    execute_process(COMMAND 
-        ${PKG_CONFIG_EXECUTABLE} --print-requires ${ARGV}
-        OUTPUT_VARIABLE _pods_pkg_classpath_requires OUTPUT_STRIP_TRAILING_WHITESPACE)
+      execute_process(COMMAND 
+          ${PKG_CONFIG_EXECUTABLE} --print-requires ${arg}
+          OUTPUT_VARIABLE _pods_pkg_classpath_requires OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-    if (NOT "${_pods_pkg_classpath_requires}" STREQUAL "")
-        string(STRIP ${_pods_pkg_classpath_requires} _pods_pkg_classpath_requires)
-        pods_use_pkg_config_classpath(${_pods_pkg_classpath_requires})
-    endif()
+      if (NOT "${_pods_pkg_classpath_requires}" STREQUAL "")
+          string(STRIP ${_pods_pkg_classpath_requires} _pods_pkg_classpath_requires)
+          pods_use_pkg_config_classpath(${_pods_pkg_classpath_requires})
+      endif()
 
+      set( ${_arg}_CLASSPATH "${_pods_pkg_classpath_flags}" PARENT_SCOPE )
+    endforeach()
+ 
     set( CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH} PARENT_SCOPE )
+
 endfunction()
 
 
