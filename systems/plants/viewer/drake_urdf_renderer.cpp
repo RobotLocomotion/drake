@@ -121,15 +121,16 @@ static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * chan
   
   self->model->doKinematics(q.data());
   
-  /*
+/*
   // some debugging info
   cout << "q = " << q.transpose() << endl;
   const Vector4d zero(0,0,0,1);
-  for (int i=0; i<=self->model->num_bodies; i++) {
-    cout << "forward kin: " << self->model->bodies[i].linkname << " is at " << self->model->forwardKin(i,zero,2).transpose() << ", joint:" << self->model->bodies[i].jointname << endl;
+  Vector3d pos;
+  for (int i=0; i<self->model->num_bodies; i++) {
+    self->model->forwardKin(i,zero,0,pos);
+    cout << "forward kin: " << self->model->bodies[i].linkname << " is at " << pos.transpose() << ", joint:" << self->model->bodies[i].jointname << endl;
   } 
-*/
-  
+*/  
   bot_viewer_request_redraw(self->viewer);
 //  delete[] robot_map;
 }

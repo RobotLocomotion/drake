@@ -393,7 +393,10 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
     			bodies[index].parent = pjn->second;
     			parent[index-1] = pjn->second-1;
     		} else { // the parent body is the floating base
-    			bodies[index].parent = 0;
+            	string jointname="floating_base";
+                map<string, int>::iterator jn=jointname_to_jointnum.find(jointname);
+                if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen",jointname.c_str());
+                bodies[index].parent = jn->second;
     		}
     	}
 
