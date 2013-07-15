@@ -3,6 +3,8 @@
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
 
+using namespace std;
+
 template<typename Derived>
 bool isnotnan(const MatrixBase<Derived>& x)
 {
@@ -244,6 +246,9 @@ void rotz(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
   ddM << -c,s,0, -s,-c,0, 0,0,0;
 }
 
+
+
+
 RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects) 
 #ifdef BULLET_COLLISION
   :  bt_collision_configuration(),
@@ -262,11 +267,15 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
 template <typename T>
 void myrealloc(T* &ptr, int old_size, int new_size)
 {
-	T* newptr = new T[new_size];
+	T* newptr = NULL;
+	if (new_size>0) newptr = new T[new_size];
 	if (old_size>0) {
 		int s = old_size;
 		if (new_size<old_size) s = new_size;
-		for (int i=0; i<s; i++) newptr[i] = ptr[i];  // invoke c++ copy operator
+		for (int i=0; i<s; i++) {
+//			cout << "copying " << ptr[i] << endl;
+			newptr[i] = ptr[i];  // invoke c++ copy operator
+		}
 		delete[] ptr;
 	}
 	ptr = newptr;
@@ -277,6 +286,10 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 	int last_num_dof = num_dof, last_NB = NB, last_num_bodies = num_bodies;
 
 	num_dof = ndof;
+	if (num_dof != last_num_dof) {
+		myrealloc(joint_limit_min,last_num_dof,num_dof);
+		myrealloc(joint_limit_max,last_num_dof,num_dof);
+	}
 
   if (num_featherstone_bodies<0)
     NB = ndof;
@@ -288,8 +301,6 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 		myrealloc(parent,last_NB,NB);
 		myrealloc(dofnum,last_NB,NB);
 		myrealloc(damping,last_NB,NB);
-		myrealloc(joint_limit_min,last_NB,NB);
-		myrealloc(joint_limit_max,last_NB,NB);
 		myrealloc(Xtree,last_NB,NB);
 		myrealloc(I,last_NB,NB);
 
@@ -339,22 +350,24 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
     delete[] dfvpdqd;
   }
 
-  dXupdq = new MatrixXd[NB];
-  dIC = new MatrixXd*[NB];
-  for(int i=0; i < NB; i++) {
-    dIC[i] = new MatrixXd[NB];
-  	for(int j=0; j < NB; j++) {
-  		dIC[i][j] = MatrixXd::Zero(6,6);
+  if (NB>0) {
+		dXupdq = new MatrixXd[NB];
+		dIC = new MatrixXd*[NB];
+		for(int i=0; i < NB; i++) {
+			dIC[i] = new MatrixXd[NB];
+			for(int j=0; j < NB; j++) {
+				dIC[i][j] = MatrixXd::Zero(6,6);
+			}
 		}
-  }
-	//     dcross.resize(6,n);
+		//     dcross.resize(6,n);
 
-  dvdq = new MatrixXd[NB];
-  dvdqd = new MatrixXd[NB];
-  davpdq = new MatrixXd[NB];
-  davpdqd = new MatrixXd[NB];
-  dfvpdq = new MatrixXd[NB];
-  dfvpdqd = new MatrixXd[NB];
+		dvdq = new MatrixXd[NB];
+		dvdqd = new MatrixXd[NB];
+		davpdq = new MatrixXd[NB];
+		davpdqd = new MatrixXd[NB];
+		dfvpdq = new MatrixXd[NB];
+		dfvpdqd = new MatrixXd[NB];
+  }
 
   dvJdqd_mat = MatrixXd::Zero(6,num_dof);
   for(int i=0; i < NB; i++) {
@@ -390,7 +403,7 @@ RigidBodyManipulator::~RigidBodyManipulator() {
 
 #ifdef BULLET_COLLISION
   for (int i=0; i<num_bodies; i++) {
-	  for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[i].collision_objects.begin(); iter!=bodies[i].collision_objects.end(); iter++) {
+	  for (vector<RigidBody::CollisionObject>::iterator iter=bodies[i].collision_objects.begin(); iter!=bodies[i].collision_objects.end(); iter++) {
 	  	bt_collision_world.removeCollisionObject(iter->bt_obj);
 	  	delete iter->bt_obj;
 	  	delete iter->bt_shape;
@@ -398,35 +411,46 @@ RigidBodyManipulator::~RigidBodyManipulator() {
   }
 #endif
 
-
-  delete[] pitch;
-  delete[] parent;
-  delete[] Xtree;
-  delete[] I;
-  
-  delete[] S;
-  delete[] Xup;
-  delete[] v;
-  delete[] avp;
-  delete[] fvp;
-  delete[] IC;
-  
-  delete[] dXupdq;
-  for (int i=0; i<NB; i++) {
-    delete[] dIC[i];
+  if (num_dof>0) {
+  	delete[] joint_limit_min;
+  	delete[] joint_limit_max;
   }
-  delete[] dIC;
-  delete[] dvdq;
-  delete[] dvdqd;
-  delete[] davpdq;
-  delete[] davpdqd;
-  delete[] dfvpdq;
-  delete[] dfvpdqd;
-  
-  delete[] bodies;
-  delete[] cached_q;
-  delete[] cached_qd;
 
+  if (NB>0) {
+  	delete[] pitch;
+  	delete[] parent;
+  	delete[] dofnum;
+  	delete[] damping;
+  	delete[] Xtree;
+  	delete[] I;
+  
+		delete[] S;
+		delete[] Xup;
+		delete[] v;
+		delete[] avp;
+		delete[] fvp;
+		delete[] IC;
+
+		delete[] dXupdq;
+		for (int i=0; i<NB; i++) {
+			delete[] dIC[i];
+		}
+		delete[] dIC;
+		delete[] dvdq;
+		delete[] dvdqd;
+		delete[] davpdq;
+		delete[] davpdqd;
+		delete[] dfvpdq;
+		delete[] dfvpdqd;
+  }
+
+  if (num_bodies>0)
+  	delete[] bodies;
+
+  if (num_dof>0) {
+		delete[] cached_q;
+		delete[] cached_qd;
+  }
 }
 
 void RigidBodyManipulator::compile(void) 
@@ -449,7 +473,7 @@ void RigidBodyManipulator::updateCollisionObjects(int body_ind)
 	btVector3 pos;
 	btTransform btT;
 	Matrix4d T;
-	for (std::vector<RigidBody::CollisionObject>::iterator iter=bodies[body_ind].collision_objects.begin(); iter!=bodies[body_ind].collision_objects.end(); iter++) {
+	for (vector<RigidBody::CollisionObject>::iterator iter=bodies[body_ind].collision_objects.begin(); iter!=bodies[body_ind].collision_objects.end(); iter++) {
 		T = bodies[body_ind].T*(iter->T);
 		  rot.setValue( T(0,0), T(0,1), T(0,2),
   			T(1,0), T(1,1), T(1,2),
@@ -467,7 +491,7 @@ void RigidBodyManipulator::updateCollisionObjects(int body_ind)
 class MyCollisionResultCollector : public btCollisionWorld::ContactResultCallback
 {
 public:
-	std::vector<Vector3d> ptsA, ptsB, normals;
+	vector<Vector3d> ptsA, ptsB, normals;
   double distance;
 
 	virtual	btScalar	addSingleResult(btManifoldPoint& cp,	const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0,const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
@@ -500,8 +524,8 @@ public:
 bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals)
 {
 	MyCollisionResultCollector c;
-	for (std::vector<RigidBody::CollisionObject>::iterator iterA=bodies[body_indA].collision_objects.begin(); iterA!=bodies[body_indA].collision_objects.end(); iterA++) {
-		for (std::vector<RigidBody::CollisionObject>::iterator iterB=bodies[body_indB].collision_objects.begin(); iterB!=bodies[body_indB].collision_objects.end(); iterB++) {
+	for (vector<RigidBody::CollisionObject>::iterator iterA=bodies[body_indA].collision_objects.begin(); iterA!=bodies[body_indA].collision_objects.end(); iterA++) {
+		for (vector<RigidBody::CollisionObject>::iterator iterB=bodies[body_indB].collision_objects.begin(); iterB!=bodies[body_indB].collision_objects.end(); iterB++) {
 			bt_collision_world.contactPairTest(iterA->bt_obj,iterB->bt_obj,c);
 		}
 	}
@@ -523,7 +547,7 @@ bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA, const 
 {
   RigidBody::CollisionObject co = bodies[body_indA].collision_objects.at(body_collision_indA);
 	MyCollisionResultCollector c;
-  for (std::vector<RigidBody::CollisionObject>::iterator iterB=bodies[body_indB].collision_objects.begin(); iterB!=bodies[body_indB].collision_objects.end(); iterB++) {
+  for (vector<RigidBody::CollisionObject>::iterator iterB=bodies[body_indB].collision_objects.begin(); iterB!=bodies[body_indB].collision_objects.end(); iterB++) {
     bt_collision_world.contactPairTest(co.bt_obj,iterB->bt_obj,c);
 	}
 	
@@ -630,7 +654,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       }
 
       if (b_compute_second_derivatives) {
-        std::cerr << "mex kinematics for floating base second derivatives are not implemented yet" << std::endl;
+        cerr << "mex kinematics for floating base second derivatives are not implemented yet" << endl;
       }
       if (qd) {
         double qdi[6];
@@ -662,7 +686,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       }
       
     } else if (bodies[i].floating == 2) {
-      std::cerr << "mex kinematics for quaternion floating bases are not implemented yet" << std::endl;
+      cerr << "mex kinematics for quaternion floating bases are not implemented yet" << endl;
     } else {
       double qi = q[bodies[i].dofnum];
       Tjcalc(bodies[i].pitch,qi,&TJ);
@@ -691,7 +715,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       if (b_compute_second_derivatives) {
         //ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
         //	bodies[i].ddTdqdq = bodies[parent].ddTdqdq * Tmult; // pushed this into the loop below to exploit the sparsity
-        for (std::set<IndexRange>::iterator iter = bodies[parent].ddTdqdq_nonzero_rows_grouped.begin(); iter != bodies[parent].ddTdqdq_nonzero_rows_grouped.end(); iter++) {
+        for (set<IndexRange>::iterator iter = bodies[parent].ddTdqdq_nonzero_rows_grouped.begin(); iter != bodies[parent].ddTdqdq_nonzero_rows_grouped.end(); iter++) {
           bodies[i].ddTdqdq.block(iter->start,0,iter->length,4) = bodies[parent].ddTdqdq.block(iter->start,0,iter->length,4) * Tmult;
         }
 
@@ -822,11 +846,11 @@ void RigidBodyManipulator::getCOMdJac(MatrixBase<Derived> &dJcom)
   }
 }
 
-int RigidBodyManipulator::getNumContacts(const std::set<int> &body_idx)
+int RigidBodyManipulator::getNumContacts(const set<int> &body_idx)
 {
   int n=0,nb=body_idx.size(),bi;
   if (nb==0) nb=num_bodies; 
-  std::set<int>::iterator iter = body_idx.begin();
+  set<int>::iterator iter = body_idx.begin();
   for (int i=0; i<nb; i++) {
     if (body_idx.size()==0) bi=i;
     else bi=*iter++;
@@ -837,11 +861,11 @@ int RigidBodyManipulator::getNumContacts(const std::set<int> &body_idx)
 
 
 template <typename Derived>
-void RigidBodyManipulator::getContactPositions(MatrixBase<Derived> &pos, const std::set<int> &body_idx)
+void RigidBodyManipulator::getContactPositions(MatrixBase<Derived> &pos, const set<int> &body_idx)
 {
   int n=0,nc,nb=body_idx.size(),bi;
   if (nb==0) nb=num_bodies; 
-  std::set<int>::iterator iter = body_idx.begin();
+  set<int>::iterator iter = body_idx.begin();
   MatrixXd p;
   for (int i=0; i<nb; i++) {
     if (body_idx.size()==0) bi=i;
@@ -859,11 +883,11 @@ void RigidBodyManipulator::getContactPositions(MatrixBase<Derived> &pos, const s
 }
 
 template <typename Derived>
-void RigidBodyManipulator::getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx)
+void RigidBodyManipulator::getContactPositionsJac(MatrixBase<Derived> &J, const set<int> &body_idx)
 {
   int n=0,nc,nb=body_idx.size(),bi;
   if (nb==0) nb=num_bodies; 
-  std::set<int>::iterator iter = body_idx.begin();
+  set<int>::iterator iter = body_idx.begin();
   MatrixXd p;
   for (int i=0; i<nb; i++) {
     if (body_idx.size()==0) bi=i;
@@ -879,11 +903,11 @@ void RigidBodyManipulator::getContactPositionsJac(MatrixBase<Derived> &J, const 
 }
 
 template <typename Derived>
-void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx)
+void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const set<int> &body_idx)
 {
   int n=0,nc,nb=body_idx.size(),bi;
   if (nb==0) nb=num_bodies; 
-  std::set<int>::iterator iter = body_idx.begin();
+  set<int>::iterator iter = body_idx.begin();
   MatrixXd p;
   for (int i=0; i<nb; i++) {
     if (body_idx.size()==0) bi=i;
@@ -1201,9 +1225,9 @@ template void RigidBodyManipulator::getCOMJac(MatrixBase< MatrixXd > &);
 template void RigidBodyManipulator::getCOMdJac(MatrixBase< MatrixXd > &);
 template void RigidBodyManipulator::getCOMJacDot(MatrixBase< MatrixXd > &);
 
-template void RigidBodyManipulator::getContactPositions(MatrixBase <MatrixXd > &, const std::set<int> &);
-template void RigidBodyManipulator::getContactPositionsJac(MatrixBase <MatrixXd > &,const std::set<int> &);
-template void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase <MatrixXd > &,const std::set<int> &);
+template void RigidBodyManipulator::getContactPositions(MatrixBase <MatrixXd > &, const set<int> &);
+template void RigidBodyManipulator::getContactPositionsJac(MatrixBase <MatrixXd > &,const set<int> &);
+template void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase <MatrixXd > &,const set<int> &);
 
 template void RigidBodyManipulator::forwardKin(const int, const MatrixBase< MatrixXd >&, const int, MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< Map<MatrixXd> > &);

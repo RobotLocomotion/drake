@@ -7,6 +7,8 @@
 #include <set>
 #include <vector>
 
+#include "RigidBody.h"
+
 #ifdef BULLET_COLLISION
 #include <btBulletCollisionCommon.h>
 #endif
@@ -15,7 +17,6 @@
 #define INF -2147483648
 using namespace Eigen;
 
-class RigidBody;
 
 const std::set<int> emptyIntSet;
 
@@ -150,6 +151,5 @@ public:
 #endif
 };
 
-#include "RigidBody.h"
 
 #endif

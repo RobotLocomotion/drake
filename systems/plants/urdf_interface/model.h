@@ -166,7 +166,7 @@ public:
   };
 
 
-  /// in initXml(), onece tree is built,
+  /// in initXml(), once tree is built,
   /// it's time to find the root Link
   bool initRoot(std::map<std::string, std::string> &parent_link_tree)
   {
