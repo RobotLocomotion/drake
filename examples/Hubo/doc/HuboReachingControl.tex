@@ -1,0 +1,57 @@
+\tolerance=10000
+\documentclass{article}
+\usepackage{amsmath,times,graphicx,url}
+
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\bq}{{\bf q}}
+\newcommand{\bx}{{\bf x}}
+\newcommand{\bu}{{\bf u}}
+\newcommand{\bw}{{\bf w}}
+\newcommand{\bz}{{\bf z}}
+\newcommand{\bK}{{\bf K}}
+\newcommand{\balpha}{{\bf \alpha}}
+\newcommand{\bbeta}{{\bf \beta}}
+\newcommand{\avg}[1]{E\left[ #1 \right]}
+\DeclareMathOperator*{\argmin}{argmin}
+\DeclareMathOperator*{\sgn}{sgn}
+
+\usepackage{xcolor}
+% switch to other comment command to remove all comments.
+\newcommand{\mycomment}[2]{\textcolor{red}{#1}\footnote{\textcolor{red}{#2}}}
+%\newcommand{\mycomment}[1]{#1}
+
+\begin{document}
+
+First, define $q = [q_p^T,q_a^T]^T$, where $q_p$ are the passive
+(floating base) joints, and $q_a$ are the actuated joints.  If I
+assume that the ground contacts on the feet will stay stationary, then
+I have \begin{gather*} \dot{x}_{gc} = [ J_{gc}^p, J_{gc}^a
+  ] \begin{bmatrix} \dot{q}_p \\ \dot{q}_a \end{bmatrix} = 0, \\
+  \Rightarrow \quad J_{gc}^p \dot{q}_p = - J_{gc}^a \dot{q}_a, \\
+  \Rightarrow \quad \dot{q}_p = -J_{gc}^{p+} J_{gc}^a \dot{q}_a, \\
+  \Rightarrow \quad \dot{q} = \begin{bmatrix} -J_{gc}^{p+} J_{gc}^a,
+    \\ I \end{bmatrix} \dot{q}_a = A \dot{q}_a, \end{gather*} where
+$J_{gc}$ is the kinematic Jacobian of the ground contacts, the
+superscripts $a$ and $p$ denote the subsets of this matrix related to
+$q_a$ and $q_p$, and the superscript $+$ indicates a pseudo-inverse.
+In the planar case, $J_{gc}^p$ will likely have full column rank if
+there are two contact points (even on a single foot); in the 3D case
+you'd like to have three contact points (presumably on at least two
+different bodies).
+
+For control, I want to regulate the $x$ and $y$ positions of the center of mass (first priority), then regulate hand position (second priority), then stay near a comfortable posture (last priority).  For a good summary of kinematic Jacobian control, see \cite{Siciliano90}.  We will use 
+\begin{gather*} 
+\dot{x}_{com,xy} = \begin{bmatrix} I & 0 \end{bmatrix} J_{com} A \dot{q}_a = J_1 \dot{q}_a, \quad x_{com,xy}^d = x_{csp}, \text{ and} \\
+\dot{x}_{rhand} = J_{rhand} A \dot{q}_a = J_2 \dot{q}_a,
+\end{gather*} 
+where COM stands for ``center of mass'' and CSP stands for ``center of support polygon''.  Set \begin{gather*} \dot{x}_1 = \eta_1 (x_{com,xy}^d - x_{com,xy}) \\ 
+\dot{x}_2 = \eta_2 (x_{rhand}^d - x_{hand}) \\ \dot{q}_0 = \eta_3 (q_{0}^d - q_0) \end{gather*} Finally, the control law is given by (\cite{Siciliano90} eq 15):
+\[ q_d = q + J_1^+ \dot{x}_1 +  (I - J_1^+ J_1) J_2^+ (\dot{x}_2 - J_2 J^1+ \dot{x} ) + (I - J_1^+ J_1) (I - J_2^+ J_2) \dot{q}_0. \]
+
+
+
+
+\bibliographystyle{plain}
+\bibliography{elib}
+
+\end{document}

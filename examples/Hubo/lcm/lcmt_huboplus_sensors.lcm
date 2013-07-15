@@ -1,0 +1,29 @@
+struct lcmt_huboplus_sensors
+{
+
+	int64_t timestamp;
+
+	double ForceTorque0MX;
+	double ForceTorque0MY;
+	double ForceTorque0FZ;
+	double ForceTorque1MX;
+	double ForceTorque1MY;
+	double ForceTorque1FZ;
+	double ForceTorque2MX;
+	double ForceTorque2MY;
+	double ForceTorque2FZ;
+	double ForceTorque3MX;
+	double ForceTorque3MY;
+	double ForceTorque3FZ;
+	double IMU0AX;
+	double IMU0AY;
+	double IMU0AZ;
+	double IMU1AX;
+	double IMU1AY;
+	double IMU1AZ;
+	double IMU2AX;
+	double IMU2AY;
+	double IMU2WX;
+	double IMU2WY;
+}
+
