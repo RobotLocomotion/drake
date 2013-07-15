@@ -1,8 +1,15 @@
-function addpath_drake
+function addpath_drake(options)
 % Checks dependencies and sets up matlab path.
 % Searches the machine for necessary support programs, and generates
 % config.mat.  If required tools aren't found, it tries to be helpful in
 % directing you to their location.
+%
+% some options that get passed in (sort-of) by cmake:
+% @options lcm_java_classpath file location of the lcm jar file 
+
+if (nargin<1 || isempty(options)) options = struct(); end
+%if ~isfield(options,'pkg-config-bin') options.pkg-config-bin = 'pkg-config'; end
+%if ~isfield(options,'pkg-config-path') options.
 
 try
   load drake_config.mat; 
@@ -10,6 +17,7 @@ catch
   conf=struct();
 end
 conf.root = pwd;
+
 
 if ~exist('pods_get_base_path')
   % todo: implement the BUILD_PREFIX logic from the pod Makefiles (e.g.
@@ -81,6 +89,13 @@ if ~logical(exist('msspoly'))
 end
 
 conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
+if (~conf.lcm_enabled && isfield(options,'lcm_java_classpath'))
+  disp(' Added the lcm jar to your javaclasspath (found via cmake)');
+  javaaddpath(options.lcm_java_classpath);
+
+  conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
+end
+
 if (~conf.lcm_enabled)
   [retval,cp] = system('pkg-config --variable=classpath lcm-java');
   if (retval==0 && ~isempty(cp))
@@ -89,13 +104,14 @@ if (~conf.lcm_enabled)
   end
 
   conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
-  if (~conf.lcm_enabled)
-    disp(' ');
-    disp(' LCM not found.  LCM support will be disabled.');
-    disp(' To re-enable, add lcm-###.jar to your matlab classpath');
-    disp(' (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.9.2.jar'') into your startup.m .');
-    disp(' ');
-  end
+end
+
+if (~conf.lcm_enabled)
+  disp(' ');
+  disp(' LCM not found.  LCM support will be disabled.');
+  disp(' To re-enable, add lcm-###.jar to your matlab classpath');
+  disp(' (e.g., by putting javaaddpath(''/usr/local/share/java/lcm-0.9.2.jar'') into your startup.m .');
+  disp(' ');
 end
 
 conf.snopt_enabled = logical(exist('snopt'));

@@ -56,8 +56,9 @@ pods_configure_matlab_paths()
 message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab") 
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
 	   "function addpath_drake()\n"
+     "  options.lcm_java_classpath = '${lcm-java_CLASSPATH}';\n"
 	   "  wd = cd('${CMAKE_CURRENT_SOURCE_DIR}');\n"
-	   "  addpath_drake();\n"
+	   "  addpath_drake(options);\n"
 	   "  cd(wd);\n"
     )
 
