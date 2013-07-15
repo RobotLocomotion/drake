@@ -17,7 +17,7 @@ endif()
 #target_link_libraries(URDFRigidBodyManipulator urdf_interface tinyxml ${Boost_LIBRARIES})
 
 if (eigen3_FOUND)
-  add_library(drakeRBM STATIC RigidBodyManipulator.cpp)
+  add_library(drakeRBM STATIC RigidBodyManipulator.cpp RigidBody.cpp)
   set_target_properties(drakeRBM PROPERTIES COMPILE_FLAGS -fPIC)
 
   if (Boost_FOUND)

@@ -12,7 +12,6 @@
 
 using namespace std;
 
-
 #ifdef BOT_VIS_SUPPORT
 #include <bot_core/bot_core.h>
 #include <bot_vis/bot_vis.h>
@@ -58,16 +57,16 @@ public:
           	boost::replace_first(fname,package,rospack(package));
           	cout << " with " << fname << endl;
 	      } else {
-		fname = root_dir + "/" + mesh->filename;
+	      	fname = root_dir + "/" + mesh->filename;
 	      }
 	      boost::filesystem::path mypath(fname);
 	      
 	      if (!boost::filesystem::exists(fname)) {
-		cerr << "cannot find mesh file: " << fname;
-		if (has_package)
-		  cerr << " (note: original mesh string had a package:// in it, and I haven't really implemented rospack yet)";
-		cerr << endl;
-		continue;
+	      	cerr << "cannot find mesh file: " << fname;
+	      	if (has_package)
+	      		cerr << " (note: original mesh string had a package:// in it, and I haven't really implemented rospack yet)";
+	      	cerr << endl;
+	      	continue;
 	      }
 	      
 	      string ext = mypath.extension().native();
@@ -839,25 +838,21 @@ URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
   
   while (getline(iss,token,':')) {
     fstream xml_file(token.c_str(), fstream::in);
-    if (xml_file.is_open())
-      {
-	while ( xml_file.good() )
-	  {
-	    string line;
-	    getline( xml_file, line);
-	    xml_string += (line + "\n");
-	  }
-	xml_file.close();
-      }
-    else
-      {
-	cerr << "Could not open file ["<<urdf_filename.c_str()<<"] for parsing."<< endl;
-	return NULL;
-      }
+    if (xml_file.is_open()) {
+    	while ( xml_file.good() ) {
+    		string line;
+    		getline( xml_file, line);
+    		xml_string += (line + "\n");
+    	}
+    	xml_file.close();
+    } else {
+    	cerr << "Could not open file ["<<urdf_filename.c_str()<<"] for parsing."<< endl;
+    	return NULL;
+    }
     
     boost::filesystem::path mypath(urdf_filename);
     string pathname;
-    if (!mypath.empty() && mypath.has_parent_path())		// note: if you see a segfault on has_parent_path(), then you probably tried to load the model without a parent path. (it shouldn't segfault, but a workaround is to load the model with a parent path)
+    if (!mypath.empty() && mypath.has_parent_path())		// note: if you see a segfault on has_parent_path(), then you probably tried to load the model without a parent path. (it shouldn't segfault, but a workaround is to load the model with a parent path, e.g. ./FallingBrick.urdf instead of FallingBrick.urdf)
       pathname = mypath.parent_path().native();
     
     // parse URDF to get model
