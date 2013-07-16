@@ -595,13 +595,14 @@ classdef TaylorVar
           a.df{o} = subsasgn(a.df{o},s,b.df{o});
         end
         a.dim = size(f);
-      else % b is a const
+      else % b is a const or empty
         f = subsasgn(reshape(a.f,a.dim),s,b);
         a.f = reshape(f,numel(f),1);
         cleanup_subs();
         s.subs{end+1}=':';
+        if (isempty(b)), b_df = []; else, b_df = 0; end
         for o=1:length(a.df)
-          a.df{o} = subsasgn(a.df{o},s,0);
+            a.df{o} = subsasgn(a.df{o},s,b_df);
         end
         a.dim = size(f);
       end
