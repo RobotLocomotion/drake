@@ -546,6 +546,10 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 URDFRigidBodyManipulator::~URDFRigidBodyManipulator(void)
 {}
 
+void URDFRigidBodyManipulator::draw(void)
+{
+	cerr << "Draw not implemented.  Did you mean to compile with BOT_VIS_SUPPORT?" << endl;
+}
 
 namespace urdf {
 
@@ -836,11 +840,12 @@ URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
   URDFRigidBodyManipulator* model = new URDFRigidBodyManipulator();
 #endif
 
-  string xml_string, token;
+  string token;
   istringstream iss(urdf_filename);
   
   while (getline(iss,token,':')) {
     fstream xml_file(token.c_str(), fstream::in);
+  	string xml_string;
     if (xml_file.is_open()) {
     	while ( xml_file.good() ) {
     		string line;
@@ -852,9 +857,9 @@ URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
     	cerr << "Could not open file ["<<urdf_filename.c_str()<<"] for parsing."<< endl;
     	return NULL;
     }
-    
-    boost::filesystem::path mypath(urdf_filename);
+
     string pathname;
+    boost::filesystem::path mypath(urdf_filename);
     if (!mypath.empty() && mypath.has_parent_path())		// note: if you see a segfault on has_parent_path(), then you probably tried to load the model without a parent path. (it shouldn't segfault, but a workaround is to load the model with a parent path, e.g. ./FallingBrick.urdf instead of FallingBrick.urdf)
       pathname = mypath.parent_path().native();
     
