@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 2.6.0)
 
 find_package( Boost COMPONENTS filesystem system )
 
@@ -12,17 +11,13 @@ if (bot2-vis_FOUND)
   add_definitions( -DBOT_VIS_SUPPORT )   
 endif()
 
-#add_library(RigidBodyManipulator OBJECT RigidBodyManipulator.cpp)
-#add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp $<TARGET_OBJECTS:RigidBodyManipulator>)
-#target_link_libraries(URDFRigidBodyManipulator urdf_interface tinyxml ${Boost_LIBRARIES})
-
 if (eigen3_FOUND)
   add_library(drakeRBM STATIC RigidBodyManipulator.cpp RigidBody.cpp)
   set_target_properties(drakeRBM PROPERTIES COMPILE_FLAGS -fPIC)
 
   if (Boost_FOUND)
-    add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp)
-    target_link_libraries(URDFRigidBodyManipulator drakeRBM urdf_interface tinyxml ${Boost_LIBRARIES})
+    add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
+    target_link_libraries(URDFRigidBodyManipulator drakeRBM urdf_interface ${Boost_LIBRARIES})
 
     if (bot2-vis_FOUND)
 	   pods_use_pkg_config_packages(URDFRigidBodyManipulator bot2-vis)
@@ -34,8 +29,8 @@ if (eigen3_FOUND)
 
   macro(add_rbm_mex)
     # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
-    #  add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
-    #  target_link_libraries(${ARGV} drakeRBM)
+#    add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
+#    target_link_libraries(${ARGV} drakeRBM)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeUtil)
   endmacro()
