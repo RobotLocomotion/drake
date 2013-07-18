@@ -5,13 +5,20 @@ checkDirty(obj);
 if (nargin<4) use_mex = true; end
 
 m = obj.featherstone;
+B = obj.B;
 
 if length(obj.force)>0
+  if (nargout>3) error('derivatives not implemented yet for force elements'); end
   f_ext = sparse(6,m.NB);
   for i=1:length(obj.force)
     % compute spatial force should return something that is the same length
     % as the number of bodies in the manipulator
-    force = computeSpatialForce(obj.force{i},obj,q,qd);
+    if (obj.force{i}.direct_feedthrough_flag)
+      [force,B_force] = computeSpatialForce(obj.force{i},obj,q,qd);
+      B = B+B_force;
+    else
+      force = computeSpatialForce(obj.force{i},obj,q,qd);
+    end
     f_ext(:,m.f_ext_map_to) = f_ext(:,m.f_ext_map_to)+force(:,m.f_ext_map_from);
   end
 else
@@ -176,7 +183,5 @@ else
   
   C=C+m.damping'.*qd;
 end
-
-B = obj.B;
 
 end

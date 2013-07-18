@@ -89,10 +89,22 @@ classdef RigidBodyManipulator < Manipulator
       [z,normal] = getHeight(obj.terrain,contact_pos(1:2,:));
     end
   
-    function B = getB(obj)
-      % 
+    function B = getB(obj,q,qd)
+      % Note:  getB(obj) is ok iff there are no direct feedthrough force
+      % elements.
       checkDirty(obj);
+      
       B = obj.B;
+      if length(obj.force)>0
+        f_ext = sparse(6,m.NB);
+        for i=1:length(obj.force)
+          if (obj.force{i}.direct_feedthrough_flag)
+            [~,B_force] = computeSpatialForce(obj.force{i},obj,q,qd);
+            B = B+B_force;
+          end
+        end
+      end
+      
     end
     
     function n = getNumDOF(obj)
