@@ -5,7 +5,7 @@ Mach $mach
 iter
 50
 Pacc
-xfoilPolar.txt
+
 
 aseq
 0
@@ -18,5 +18,7 @@ aseq
 0
 $stallAngle
 .5
+pwrt
+$polarLocation
 
 quit
