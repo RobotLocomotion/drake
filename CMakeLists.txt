@@ -16,6 +16,7 @@ find_package(Java)
 include(UseJava)
 
 pods_use_pkg_config_classpath(lcm-java)
+set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" )
 
 add_jar(drake
 	util/MyLCMTypeDatabase.java
@@ -68,6 +69,9 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
 	   "  rmpath_drake();\n"
 	   "  cd(wd);\n"
     )
+
+find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin )
+find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin )
 
 
 # todo: build doxygen here (and remove it from the Makefile)
