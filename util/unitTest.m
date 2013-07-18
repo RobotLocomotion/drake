@@ -28,6 +28,10 @@ function tree=unitTest(options)
 % todo: figure out a good way to clear classes before/after runTest,
 % without doing the clear all that zaps the gui content, too.
 
+warning('on');
+warning('off','MATLAB:uitree:DeprecatedFunction');
+warning('off','MATLAB:uitreenode:DeprecatedFunction');
+
 if (nargin<1) options=struct(); end
 if ~isfield(options,'autorun') options.autorun = false; end
 if ~isfield(options,'ignore_vrml') options.ignore_vrml = false; end
@@ -71,8 +75,6 @@ if (options.gui)
 else
   root = [];
 end
-
-warning('on');
 
 if bRunFromDrakeRoot
   crawlDir('systems',root,true,options);

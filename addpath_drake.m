@@ -1,15 +1,9 @@
-function addpath_drake(options)
+function addpath_drake
 % Checks dependencies and sets up matlab path.
 % Searches the machine for necessary support programs, and generates
 % config.mat.  If required tools aren't found, it tries to be helpful in
 % directing you to their location.
 %
-% some options that get passed in (sort-of) by cmake:
-% @options lcm_java_classpath file location of the lcm jar file 
-
-if (nargin<1 || isempty(options)) options = struct(); end
-%if ~isfield(options,'pkg-config-bin') options.pkg-config-bin = 'pkg-config'; end
-%if ~isfield(options,'pkg-config-path') options.
 
 try
   load drake_config.mat; 
@@ -62,7 +56,6 @@ addpath(fullfile(conf.root,'thirdParty','spatial'));
 addpath(fullfile(conf.root,'thirdParty','cprintf'));
 addpath(fullfile(conf.root,'thirdParty','GetFullPath'));
 
-
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 javaaddpath(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
 
@@ -89,11 +82,13 @@ if ~logical(exist('msspoly'))
 end
 
 conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
-if (~conf.lcm_enabled && isfield(options,'lcm_java_classpath'))
-  disp(' Added the lcm jar to your javaclasspath (found via cmake)');
-  javaaddpath(options.lcm_java_classpath);
-
-  conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
+if (~conf.lcm_enabled)
+  lcm_java_classpath = getCmakeParam('lcm_java_classpath');
+  if ~isempty(lcm_java_classpath)
+    javaaddpath(lcm_java_classpath);
+    disp(' Added the lcm jar to your javaclasspath (found via cmake)');
+    conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
+  end
 end
 
 if (~conf.lcm_enabled)
@@ -133,7 +128,7 @@ else
 end
 
 conf.sedumi_enabled = logical(exist('sedumi'));
-if (~conf.sedumi_enabled)
+if (0) %~conf.sedumi_enabled)
   conf.sedumi_enabled = pod_pkg_config('sedumi') && logical(exist('sedumi'));
 end
 
@@ -194,21 +189,26 @@ conf.pathlcp_enabled = true;
 % todo: add lcmgl_enabled (using pod_pkg_config)
 
 if ~isfield(conf,'avl') || isempty(conf.avl)
-  [retval,path_to_avl] = system('which avl');
-  if (retval==0)
+  path_to_avl = getCmakeParam('avl');
+  if isempty(path_to_avl) || strcmp(path_to_avl,'avl-NOTFOUND')
+    disp(' AVL support is disabled.  To enable it, install AVL from here: http://web.mit.edu/drela/Public/web/avl/, then add it to the matlab path or set the path to the avl executable explicitly using editDrakeConfig(''avl'',path_to_avl_executable) and rerun make');
+    conf.avl = '';
+  else
     conf.avl = path_to_avl;
-  else
-    disp(' AVL support is disabled.  To enable it, install AVL from here: http://web.mit.edu/drela/Public/web/avl/, then add it to the matlab path or set the path to the avl executable explicitly using editDrakeConfig(''avl'',path_to_avl_executable) and rerun configure');
   end
 end
+conf.avl_enabled = ~isempty(conf.avl);
+
 if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
-  [retval,path_to_xfoil] = system('which xfoil');
-  if (retval==0)
-    conf.xfoil = path_to_xfoil;
-  else
+  path_to_xfoil = getCmakeParam('xfoil');
+  if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'xfoil-NOTFOUND')
     disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun configure');
+    conf.xfoil = '';
+  else
+    conf.xfoil = path_to_xfoil;
   end
 end
+conf.xfoil_enabled = ~isempty(conf.xfoil);
 
 if ~isfield(conf,'conf.additional_unit_test_dirs')
   conf.additional_unit_test_dirs={};
@@ -311,5 +311,10 @@ function [obj,lib,libprefix] = extensions
 
 end
 
+function val = getCmakeParam(param)
 
+[retval,val] = system(['cmake -L -N pod-build | grep ', param,' | cut -d "=" -f2']);
+val = strtrim(val);
+
+end
 
