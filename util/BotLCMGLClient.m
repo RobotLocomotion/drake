@@ -299,74 +299,78 @@ classdef BotLCMGLClient < handle
     
     function bot_lcmgl_draw_axes(lcmgl)
       % x-axis
-      lcmglBegin(lcmgl.LCMGL_LINES);
-      lcmglColor3f(1, 0, 0);
-      lcmglVertex3f(1, 0, 0);
-      lcmglVertex3f(0, 0, 0);
-      lcmglEnd();
+      bot_lcmgl_begin(lcmgl, lcmgl.LCMGL_LINES);
+      bot_lcmgl_color3f(lcmgl, 1, 0, 0);
+      bot_lcmgl_vertex3f(lcmgl, 1, 0, 0);
+      bot_lcmgl_vertex3f(lcmgl, 0, 0, 0);
+      bot_lcmgl_end(lcmgl);
       
       % y-axis
-      lcmglBegin(lcmgl.LCMGL_LINES);
-      lcmglColor3f(0, 1, 0);
-      lcmglVertex3f(0, 1, 0);
-      lcmglVertex3f(0, 0, 0);
-      lcmglEnd();
+      bot_lcmgl_begin(lcmgl, lcmgl.LCMGL_LINES);
+      bot_lcmgl_color3f(lcmgl, 0, 1, 0);
+      bot_lcmgl_vertex3f(lcmgl, 0, 1, 0);
+      bot_lcmgl_vertex3f(lcmgl, 0, 0, 0);
+      bot_lcmgl_end(lcmgl);
       
       % z-axis
-      lcmglBegin(lcmgl.LCMGL_LINES);
-      lcmglColor3f(0, 0, 1);
-      lcmglVertex3f(0, 0, 1);
-      lcmglVertex3f(0, 0, 0);
-      lcmglEnd();
+      bot_lcmgl_begin(lcmgl, lcmgl.LCMGL_LINES);
+      bot_lcmgl_color3f(lcmgl, 0, 0, 1);
+      bot_lcmgl_vertex3f(lcmgl, 0, 0, 1);
+      bot_lcmgl_vertex3f(lcmgl, 0, 0, 0);
+      bot_lcmgl_end(lcmgl);
     end
     
     function bot_lcmgl_line(lcmgl, x_start, y_start, x_end, y_end)
-      lcmglBegin(lcmgl.LCMGL_LINES);
-      lcmglVertex2d(x_start, y_start);
-      lcmglVertex2d(x_end, y_end);
-      lcmglEnd();
+      bot_lcmgl_begin(lcmgl, lcmgl.LCMGL_LINES);
+      bot_lcmgl_vertex2d(lcmgl,x_start, y_start);
+      bot_lcmgl_vertex2d(lcmgl,x_end, y_end);
+      bot_lcmgl_end(lcmgl);
     end
 
     function bot_lcmgl_draw_ortho_circles_3d(lcmgl)
       xyz_zero = zeros(3,1);
+%       bot_lcmgl_color3f(lcmgl, 1, 0, 0);
       bot_lcmgl_circle(lcmgl, xyz_zero, 1);
       bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
       bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
       
-      lcmglPushMatrix();
-      lcmglRotated(90, 1, 0, 0);
+%       bot_lcmgl_color3f(lcmgl, 0, 0, 1);
+      bot_lcmgl_push_matrix(lcmgl);
+      bot_lcmgl_rotated(lcmgl,90, 1, 0, 0);
       bot_lcmgl_circle(lcmgl, xyz_zero, 1);
       bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
       bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
-      lcmglPopMatrix();
+      bot_lcmgl_pop_matrix(lcmgl);
       
-      lcmglPushMatrix();
-      lcmglRotated(90, 0, 1, 0);
+%       bot_lcmgl_color3f(lcmgl, 0, 1, 0);
+      bot_lcmgl_push_matrix(lcmgl);
+      bot_lcmgl_rotated(lcmgl,90, 0, 1, 0);
       bot_lcmgl_circle(lcmgl, xyz_zero, 1);
       bot_lcmgl_line(lcmgl, -1, 0, 1, 0);
       bot_lcmgl_line(lcmgl, 0, -1, 0, 1);
-      lcmglPopMatrix();
+      bot_lcmgl_pop_matrix(lcmgl);
     end
     
-    function bot_lcmgl_draw_arrow_3d (lcmgl, length, head_width, head_length, body_width)
+    function bot_lcmgl_draw_arrow_3d(lcmgl, length, head_width, head_length, body_width)
       slices = 20;
       stacks = 20;
       
       xyz = zeros(3,1);
       
-      % apply translations so the drawing is centered at origin along the x axis per bot_gl_draw_arrow_2d
-      lcmglPushMatrix();
-      lcmglTranslated(-length / 2, 0, 0);
-      lcmglRotated(90, 0, 1, 0);
+      % apply translations so the drawing is centered at origin along the x axis per bot_gl_draw_arrow_3d
+      bot_lcmgl_push_matrix(lcmgl);
+      bot_lcmgl_translated(lcmgl,-length / 2, 0, 0);
+      bot_lcmgl_rotated(lcmgl,90,0,1,0);
       
       % draw body
-      lcmglCylinder(xyz, body_width, body_width, length - head_length, slices, stacks);
+      bot_lcmgl_cylinder(lcmgl, xyz, body_width, body_width, length - head_length, slices, stacks);
       
       % draw head
-      lcmglTranslated(0, 0, length - head_length);
-      lcmglCylinder(xyz, head_width, 0, head_length, slices, stacks);
+      bot_lcmgl_translated(lcmgl,0, 0, length - head_length);
+      bot_lcmgl_cylinder(lcmgl, xyz, head_width, 0, head_length, slices, stacks);
       
-      lcmglPopMatrix();
+      bot_lcmgl_pop_matrix(lcmgl);
+      bot_lcmgl_push_matrix(lcmgl);
     end
     
     function bot_lcmgl_rect(lcmgl, xyz, size, filled)
