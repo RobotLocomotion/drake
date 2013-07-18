@@ -292,6 +292,7 @@ classdef Trajectory < DrakeSystem
               figure(1043); clf; hold on;  
               h = fnplt(sub_desired_traj);  set(h,'Color','r','LineStyle','--');
               h = fnplt(sub_traj);
+              legend('desired','traj');
               error('trajectory element %d doesn''t match.\n%s',i,errstr);
             end
           end
