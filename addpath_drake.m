@@ -128,7 +128,7 @@ else
 end
 
 conf.sedumi_enabled = logical(exist('sedumi'));
-if (0) %~conf.sedumi_enabled)
+if (~conf.sedumi_enabled)
   conf.sedumi_enabled = pod_pkg_config('sedumi') && logical(exist('sedumi'));
 end
 
