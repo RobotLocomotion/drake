@@ -156,15 +156,15 @@ toc
 valuecheck(qmex,q,1e-5);
 v.draw(1,[q;0*q]); drawnow;
 
-r_foot_pts = r_foot.getContactPoints();
+r_foot_pts = r.getBody(r_foot).getContactPoints();
 kinsol = doKinematics(r,q+0.1*randn(size(q)));
 r_foot_pos = forwardKin(r,kinsol,r_foot,r_foot_pts,2);
 tic
 [q,info] = inverseKin(r,q0,0,[0;0;nan],r_foot,r_foot_pts,r_foot_pos,options);
 toc
 
-l_foot = r.findLink('l_foot');
-l_foot_pts = l_foot.getContactPoints();
+l_foot = r.findLinkInd('l_foot');
+l_foot_pts = r.getBody(l_foot).getContactPoints();
 kinsol = doKinematics(r,q+0.01*randn(size(q)));
 l_foot_pos = forwardKin(r,kinsol,l_foot,l_foot_pts,1);
 tic
