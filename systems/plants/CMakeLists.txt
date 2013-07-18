@@ -36,6 +36,7 @@ if (eigen3_FOUND)
   endmacro()
 
   add_rbm_mex(constructModelmex)
+  add_rbm_mex(deleteModelmex)
   add_rbm_mex(HandCmex)
   add_rbm_mex(doKinematicsmex)
   add_rbm_mex(forwardKinmex)

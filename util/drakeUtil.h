@@ -14,9 +14,8 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
 
 
 // Mex pointers shared through matlab
-mxArray* createDrakeMexPointer(void* ptr, void (*delete_fcn)(void*)=NULL);
+mxArray* createDrakeMexPointer(void* ptr, const char* deleteMethod="", const char* name="");
 void* getDrakeMexPointer(const mxArray* mx);
-void destroyDrakeMexPointer(const mxArray* mx);
 
 
 

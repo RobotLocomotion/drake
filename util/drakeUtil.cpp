@@ -7,6 +7,9 @@
 
 #include <mex.h>
 #include <string.h>
+#include <string>
+
+using namespace std;
 
 bool isa(const mxArray* mxa, const char* class_str)
 // mxIsClass seems to not be able to handle derived classes. so i'll implement what I need by calling back to matlab
@@ -53,23 +56,22 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
 
 
 
-mxArray* createDrakeMexPointer(void* ptr, void (*delete_fcn)(void*))
+mxArray* createDrakeMexPointer(void* ptr, const char* deleteMethod, const char* name)
 {
 	mxClassID cid;
 	if (sizeof(ptr)==4) cid = mxUINT32_CLASS;
 	else if (sizeof(ptr)==8) cid = mxUINT64_CLASS;
   else mexErrMsgIdAndTxt("Drake:constructDrakeMexPointer:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
 
-	int nrhs=1;
-	mxArray *prhs[2], *plhs[1];
+	int nrhs=3;
+	mxArray *prhs[nrhs], *plhs[1];
+
 	prhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
   memcpy(mxGetData(prhs[0]),&ptr,sizeof(ptr));
 
-  if (delete_fcn) {
-  	nrhs=2;
-  	prhs[1] = mxCreateNumericMatrix(1,1,cid,mxREAL);
-    memcpy(mxGetData(prhs[1]),&delete_fcn,sizeof(delete_fcn));
-  }
+	prhs[1] = mxCreateString(deleteMethod);
+
+  prhs[2] = mxCreateString(name);
 
   // call matlab to construct mex pointer object
   mexCallMATLABsafe(1,plhs,nrhs,prhs,"DrakeMexPointer");
@@ -93,25 +95,4 @@ void* getDrakeMexPointer(const mxArray* mx)
 
   return ptr;
 }
-
-void destroyDrakeMexPointer(const mxArray* mx)
-{
-  void* ptr = getDrakeMexPointer(mx);
-  void (*delete_fcn)(void*);
-
-	mxArray* ptrArray = mxGetProperty(mx,0,"delete_fcn_ptr");
-	if (!ptrArray)
-		mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs","cannot retrieve 'delete_fcn_ptr' field from this mxArray.  are you sure it's a valid DrakeMexPointer object?");
-
-  if (!mxIsNumeric(ptrArray) || mxGetNumberOfElements(ptrArray)!=1)
-    mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs","the delete_fcn_ptr property of this DrakeMexPointer does not appear to contain a valid pointer");
-  memcpy(&delete_fcn,mxGetData(ptrArray),sizeof(delete_fcn));
-
-  if (!delete_fcn)
-    mexErrMsgIdAndTxt("Drake:getDrakeMexPointer:BadInputs","the delete_fcn_ptr property of this DrakeMexPointer does not appear to contain a valid pointer");
-
-  // todo: is there any way to protect against this pointer becoming invalid (e.g. by the original mex function being cleared?)
-  delete_fcn(ptr);
-}
-
 

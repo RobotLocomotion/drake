@@ -10,19 +10,35 @@
 using namespace Eigen;
 using namespace std;
 
-void cleanup(void* modelptr)
-{
-	RigidBodyManipulator *model = (RigidBodyManipulator*) modelptr;
-	delete model;
+// convert Matlab cell array of strings into a C++ vector of strings
+vector<string> get_strings(const mxArray *rhs) {
+  int num = mxGetNumberOfElements(rhs);
+  vector<string> strings(num);
+  for (int i=0; i<num; i++) {
+    const mxArray *ptr = mxGetCell(rhs,i);
+    int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+    char* str = (char*)mxMalloc(buflen);
+    mxGetString(ptr, str, buflen);
+    strings[i] = string(str);
+    mxFree(str);
+  }
+  return strings;
 }
 
-void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
+
+
+void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
+{
+  char buf[100];
+  mxArray *pm;
 
   if (nrhs!=1) {
     mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","Usage model_ptr = constructModelmex(obj)");
   }
 
   RigidBodyManipulator *model=NULL;
+
+//  model->robot_name = get_strings(mxGetProperty(prhs[0],0,"name"));
 
   const mxArray* featherstone = mxGetProperty(prhs[0],0,"featherstone");
   if (!featherstone) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs", "the featherstone array is invalid");
@@ -32,7 +48,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   int num_bodies = mxGetNumberOfElements(pBodies);
 
   // set up the model
-  mxArray *pm;
   int dim=3;
   
   pm = mxGetField(featherstone,0,"NB");
@@ -79,7 +94,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     memcpy(model->I[i].data(),mxGetPr(pIi),sizeof(double)*6*6);
   }
 
-  char buf[100];
   for (int i=0; i<model->num_bodies; i++) {
     pm = mxGetProperty(pBodies,i,"linkname");
     mxGetString(pm,buf,100);
@@ -196,7 +210,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   model->compile();
   
   if (nlhs>0) {  // return a pointer to the model
-  	plhs[0] = createDrakeMexPointer((void*)model,cleanup);
+  	plhs[0] = createDrakeMexPointer((void*)model,"deleteModelmex","RigidBodyManipulator");
   }
 
 }
