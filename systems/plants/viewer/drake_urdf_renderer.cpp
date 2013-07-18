@@ -57,6 +57,8 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
           status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
           status_message.command_data = msg->command_data;
           drake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
+        } else {
+        	cout << "failed to load urdf." << endl;
         }
       }
       break;

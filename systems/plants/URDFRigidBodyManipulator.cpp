@@ -36,66 +36,66 @@ public:
     for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=_urdf_model->links_.begin(); l!=_urdf_model->links_.end(); l++) {
       // load geometry
       if (l->second->visual) { // then at least one default visual tag exists
-	// todo: iterate over all visual groups (not just "default")
-	map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
-	for (size_t iv = 0;iv < v_grp_it->second->size();iv++)
-	  {
-	    vector<boost::shared_ptr<urdf::Visual> > visuals = (*v_grp_it->second);
-	    if (visuals[iv]->geometry->type == urdf::Geometry::MESH) {
-	      boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(visuals[iv]->geometry));
+      	// todo: iterate over all visual groups (not just "default")
+      	map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Visual> > > >::iterator v_grp_it = l->second->visual_groups.find("default");
+      	for (size_t iv = 0;iv < v_grp_it->second->size();iv++)
+      	{
+      		vector<boost::shared_ptr<urdf::Visual> > visuals = (*v_grp_it->second);
+      		if (visuals[iv]->geometry->type == urdf::Geometry::MESH) {
+      			boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(visuals[iv]->geometry));
 	      
-	      map<string,BotWavefrontModel*>::iterator iter = mesh_map.find(mesh->filename);
-	      if (iter!=mesh_map.end())  // then it's already in the map... no need to load it again
-          	continue;
+      			map<string,BotWavefrontModel*>::iterator iter = mesh_map.find(mesh->filename);
+      			if (iter!=mesh_map.end())  // then it's already in the map... no need to load it again
+      				continue;
 	      
-	      string fname = mesh->filename;
-	      bool has_package = boost::find_first(mesh->filename,"package://");
-	      if (has_package) {
-          	cout << "replacing " << fname;
-          	boost::replace_first(fname,"package://","");
-          	string package = fname.substr(0,fname.find_first_of("/"));
-          	boost::replace_first(fname,package,rospack(package));
-          	cout << " with " << fname << endl;
-	      } else {
-	      	fname = root_dir + "/" + mesh->filename;
-	      }
-	      boost::filesystem::path mypath(fname);
+      			string fname = mesh->filename;
+      			bool has_package = boost::find_first(mesh->filename,"package://");
+      			if (has_package) {
+      				cout << "replacing " << fname;
+							boost::replace_first(fname,"package://","");
+							string package = fname.substr(0,fname.find_first_of("/"));
+							boost::replace_first(fname,package,rospack(package));
+							cout << " with " << fname << endl;
+      			} else {
+      				fname = root_dir + "/" + mesh->filename;
+      			}
+      			boost::filesystem::path mypath(fname);
 	      
-	      if (!boost::filesystem::exists(fname)) {
-	      	cerr << "cannot find mesh file: " << fname;
-	      	if (has_package)
-	      		cerr << " (note: original mesh string had a package:// in it, and I haven't really implemented rospack yet)";
-	      	cerr << endl;
-	      	continue;
-	      }
+      			if (!boost::filesystem::exists(fname)) {
+      				cerr << "cannot find mesh file: " << fname;
+      				if (has_package)
+      					cerr << " (note: original mesh string had a package:// in it, and I haven't really implemented rospack yet)";
+      				cerr << endl;
+      				continue;
+      			}
 	      
-	      string ext = mypath.extension().native();
-	      boost::to_lower(ext);
+      			string ext = mypath.extension().native();
+      			boost::to_lower(ext);
 	      
-	      if (ext.compare(".obj")==0) {
+      			if (ext.compare(".obj")==0) {
 		//            cout << "Loading mesh from " << fname << endl;
-		BotWavefrontModel* wavefront_model = bot_wavefront_model_create(fname.c_str());
-		if (!wavefront_model) {
-		  cerr << "Error loading mesh: " << fname << endl;
-		} else {
-		  mesh_map.insert(make_pair(mesh->filename, wavefront_model));
-		}
-	      } else {
-		// try changing the extension to dae and loading
-		if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
-		  //             cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
-		  BotWavefrontModel* wavefront_model = bot_wavefront_model_create(mypath.replace_extension(".obj").native().c_str());
-		  if (!wavefront_model) {
-		    cerr << "Error loading mesh: " << fname << endl;
-		  } else {
-		    mesh_map.insert(make_pair(mesh->filename, wavefront_model));
-		  }
-		} else {
-		  cerr << "Warning: Mesh " << fname << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
-		}
-	      }
-	    }
-	  }
+      				BotWavefrontModel* wavefront_model = bot_wavefront_model_create(fname.c_str());
+      				if (!wavefront_model) {
+      					cerr << "Error loading mesh: " << fname << endl;
+      				} else {
+      					mesh_map.insert(make_pair(mesh->filename, wavefront_model));
+      				}
+      			} else {
+      				// try changing the extension to dae and loading
+      				if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
+      					//             cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
+      					BotWavefrontModel* wavefront_model = bot_wavefront_model_create(mypath.replace_extension(".obj").native().c_str());
+      					if (!wavefront_model) {
+      						cerr << "Error loading mesh: " << fname << endl;
+      					} else {
+      						mesh_map.insert(make_pair(mesh->filename, wavefront_model));
+      					}
+      				} else {
+      					cerr << "Warning: Mesh " << fname << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
+      				}
+      			}
+      		}
+      	}
       }
     }
     return true;
@@ -155,7 +155,7 @@ public:
 	    body_ind = j2->second;  // then it's attached directly to the floating base
 	  }
 
-	  //				cout << "drawing robot " << robot << " body_ind " << body_ind << ": " << bodies[body_ind].linkname << endl;
+//	  cout << "drawing robot " << robot << " body_ind " << body_ind << ": " << bodies[body_ind].linkname << endl;
 
 	  forwardKin(body_ind,zero,2,pose);
 	  //      cout << l->second->name << " is at " << pose.transpose() << endl;
@@ -540,6 +540,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 
 
   compile();  
+  return true;
 }
 
 
