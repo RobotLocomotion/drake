@@ -12,7 +12,7 @@
          <box size=".2 .2 .2" />
       </geometry>
       <material name="green">
-	<color rgba="0 1 0 1" />
+      	<color rgba="0 1 0 1" />
       </material>
     </visual>
   </link>
@@ -29,7 +29,7 @@
          <cylinder length="1" radius=".05" />
       </geometry>
       <material name="red">
-	<color rgba="1 0 0 1" />
+	      <color rgba="1 0 0 1" />
       </material>
     </visual>
   </link>
@@ -38,15 +38,16 @@
     <inertial>
       <origin xyz="0 0 -1" rpy="0 0 0" />
       <mass value="1" />
+      <!-- note: the inertia of a ROD about it's COM is 1/12 m*L^2 -->
       <inertia ixx="1" ixy="0" ixz="0" iyy="0.33" iyz="0" izz="1" />
     </inertial>
     <visual>
       <origin xyz="0 0 -1" rpy="0 0 0" />
       <geometry>
-         <cylinder length="2.1" radius=".05" />
+        <cylinder length="2.1" radius=".05" />
       </geometry>
       <material name="blue">
-	<color rgba="0 0 1 1" />
+	      <color rgba="0 0 1 1" />
       </material>
     </visual>
   </link>
