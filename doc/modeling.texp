@@ -406,8 +406,8 @@ These generate the plots in Figure~\ref{f:simulate_examples}
 \begin{figure}[!h]
 \hfill
 \begin{matlabFigure}[width=.45\textwidth]
-load drake_config;
-cd([conf.root,'/examples/']);
+addpath_drake;
+cd(fullfile(getDrakePath,'examples'));
 sys = SimpleCTExample;
 traj = simulate(sys, [0 10], .99);
 fnplt(traj);
@@ -415,8 +415,8 @@ set(gca,'FontSize',20);
 \end{matlabFigure}
 \hfill
 \begin{matlabFigure}[width=.45\textwidth]
-load drake_config;
-cd([conf.root,'/examples/']);
+addpath_drake;
+cd(fullfile(getDrakePath,'examples'));
 sys = SimpleDTExample;
 traj = simulate(sys, [0 10], .99);
 fnplt(traj);
