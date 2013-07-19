@@ -78,19 +78,17 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       end
     end
     
-    function obj = shiftTime(obj,offset)
+    function nobj = shiftTime(obj,offset)
       typecheck(offset,'double');
       sizecheck(offset,[1 1]);
       obj.tspan = obj.tspan + offset;
       obj.pp.breaks = obj.pp.breaks + offset;
-%      obj.javapp.shiftTime(offset);
-      PPTmex(obj.mex_ptr.getData, 2, offset);
+      nobj = PPTrajectory(obj.pp); 
     end
     
-    function obj = uminus(obj)
+    function nobj = uminus(obj)
       obj.pp.coefs = -obj.pp.coefs;
-%      obj.javapp.uminus();
-      PPTmex(obj.mex_ptr.getData, 3);
+      nobj = PPTrajectory(obj.pp);
     end
     
     function t = getBreaks(obj)
