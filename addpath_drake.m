@@ -112,13 +112,14 @@ end
 conf.snopt_enabled = logical(exist('snopt'));
 if (~conf.snopt_enabled) 
   conf.snopt_enabled = pod_pkg_config('snopt') && logical(exist('snopt'));
-  if (~conf.snopt_enabled) 
-    disp(' ');
-    disp(' SNOPT not found.  SNOPT support will be disabled.');
-    disp(' To re-enable, add the SNOPT matlab folder to your path and rerun configure.');
-    disp(' SNOPT can be obtained from <a href="https://tig.csail.mit.edu/software/">https://tig.csail.mit.edu/software/</a> .');
-    disp(' ');
-  end
+end
+
+if (~conf.snopt_enabled) 
+  disp(' ');
+  disp(' SNOPT not found.  SNOPT support will be disabled.');
+  disp(' To re-enable, add the SNOPT matlab folder to your path and rerun configure.');
+  disp(' SNOPT can be obtained from <a href="https://tig.csail.mit.edu/software/">https://tig.csail.mit.edu/software/</a> .');
+  disp(' ');
 end
 
 if(exist('vrinstall'))
@@ -150,18 +151,17 @@ end
 
 conf.gurobi_enabled = logical(exist('gurobi') && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME')));
 if (~conf.gurobi_enabled)
-  conf.gurobi_enabled = pod_pkg_config('gurobi');% && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME'));
+  conf.gurobi_enabled = pod_pkg_config('gurobi') && ~isempty(getenv('GRB_LICENSE_FILE')) && ~isempty(getenv('GUROBI_HOME'));
+end
 
-  if (~conf.gurobi_enabled)
-    
-    disp(' ');
-    disp(' GUROBI not found. GUROBI support will be disabled.');
-    disp('    To enable, install GUROBI and a free academic license from');
-    disp('    <a href="http://www.gurobi.com/download/licenses/free-academic">http://www.gurobi.com/download/licenses/free-academic</a> .');
-    disp(' Then, you will need to set several environment variables.');
-    disp(' Please see <a href="http://drake.mit.edu/quickstart">http://drake.mit.edu/quickstart</a> for more info.');
-    disp(' ');
-  end
+if (~conf.gurobi_enabled)
+  disp(' ');
+  disp(' GUROBI not found. GUROBI support will be disabled.');
+  disp('    To enable, install GUROBI and a free academic license from');
+  disp('    <a href="http://www.gurobi.com/download/licenses/free-academic">http://www.gurobi.com/download/licenses/free-academic</a> .');
+  disp(' Then, you will need to set several environment variables.');
+  disp(' Please see <a href="http://drake.mit.edu/quickstart">http://drake.mit.edu/quickstart</a> for more info.');
+  disp(' ');
 end
 
 conf.cplex_enabled = logical(exist('cplexlp'));
