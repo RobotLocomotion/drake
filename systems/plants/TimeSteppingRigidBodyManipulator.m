@@ -638,7 +638,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       varargout=cell(1,nargout);
       [varargout{:}] = getCOM(obj.manip,varargin{:});
     end
-    
+
+    function varargout = getCMM(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = getCMM(obj.manip,varargin{:});
+    end
+
     function grav = getGravity(obj)
       grav = obj.manip.gravity;
     end
