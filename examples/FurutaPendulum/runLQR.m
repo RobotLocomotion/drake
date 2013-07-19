@@ -1,21 +1,28 @@
 function runLQR
 
+% Construct robot and visualizer from urdf
+plant = RigidBodyManipulator('FurutaPendulum.urdf');
+visualizer = plant.constructVisualizer;
 
-p = RigidBodyManipulator('FurutaPendulum.urdf');
+% Set the goal state for balancing
+xGoal = Point(getStateFrame(plant));  % default is all zeros
+xGoal.elbow = pi;
+uGoal = Point(getInputFrame(plant));
 
-v = p.constructVisualizer;
+% Set up an LQR problem (tilqr == Time Invariant Linear Quadratic Regulator)
+Q = diag([10 10 1 1]);
+R = .1;
+controller = tilqr(plant,xGoal,uGoal,Q,R);
 
-xG = Point(p.getStateFrame,[0;pi;0;0]);
-uG = Point(p.getInputFrame,0);
-c = tilqr(p,xG,uG,diag([10 10 1 1]),.1);
+% Combine the feedback controller with the robot to get a new closed-loop
+% system
+sys = feedback(plant,controller);
 
-sys = feedback(p,c);
-
+% Simulate the closed loop system from a handful of random initial
+% conditions, and visualize the results
 for i=1:5
-  x0 = double(xG)+.2*randn(4,1);
+  x0 = double(xGoal)+.2*randn(4,1);
   xtraj = simulate(sys,[0 4],x0);
-  if checkDependency('vrml')
-    v.playback(xtraj);
-  end
+  visualizer.playback(xtraj);
 end
 
