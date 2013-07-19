@@ -15,10 +15,6 @@ using namespace std;
 //   obj = PPTmex(breaks,coefs,order,dims)
 // Evaluation:
 //   y = PPTmex(obj, 1, t)
-// ShiftTime:
-//       PPTmex(obj, 2, offset)
-// uminus:
-//       PPTmex(obj, 3)
 //
 // t:      1      single evaluation point
 //
@@ -85,17 +81,6 @@ public:
       r = local*r + m_coefs.block(base, i-1, m_d1*m_d2, 1);
     }
   }
-
-  void shiftTime(double offset) {
-    VectorXd tmp = m_breaks + VectorXd::Ones(m_breaks.rows()) * offset;
-    m_breaks = tmp;
-  }
-
-  void uminus() {
-    MatrixXd tmp = -m_coefs;
-    m_coefs = tmp;
-  }
-
 };
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -150,17 +135,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
         plhs[0] = mxCreateDoubleMatrix(d1,d2,mxREAL);
         Map<MatrixXd> y(mxGetPr(plhs[0]),d1,d2);
         ppt->eval(*t, y);
-        break;
-      }
-
-      case 2: { // shiftTime
-        double *offset = mxGetPr(prhs[2]);
-        ppt->shiftTime(*offset);
-        break;
-      }
-
-      case 3: { // uminus
-        ppt->uminus();
         break;
       }
 

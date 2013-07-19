@@ -53,20 +53,12 @@ if (info~=1) error('failed to improve the trajectory'); end
 
 hold off;
 
-
-
 if (nargout>0) 
   return;
 end
 
-disp('Stabilizing trajectory...');
-
+%disp('Stabilizing trajectory...');
 c = tvlqr(p,xtraj,utraj,eye(4),1,eye(4));
-
-t = xtraj.getBreaks();
-t = linspace(t(1),t(end),100);
-x = xtraj.eval(t);
-%plot(x(2,:),x(4,:));
 
 disp('Visualizing trajectory...');
 v.playback(xtraj);
