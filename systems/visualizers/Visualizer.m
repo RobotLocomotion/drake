@@ -120,6 +120,7 @@ classdef Visualizer < DrakeSystem
       end
       function update_time_display(source, eventdata)
         t = get(time_slider, 'Value');
+        if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
         set(time_display, 'String', sprintf(time_format, t));
         obj.drawWrapper(t, xtraj.eval(t));
       end
