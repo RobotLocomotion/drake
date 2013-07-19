@@ -218,7 +218,7 @@ classdef Visualizer < DrakeSystem
       
       function update_display(source, eventdata)
         t = 0; x = x0;
-        for i=state_dims
+        for i=state_dims(:)'
           x(state_dims(i)) = get(slider{i}, 'Value');
         end
         x

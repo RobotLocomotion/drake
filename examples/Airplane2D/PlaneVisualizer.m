@@ -1,8 +1,6 @@
 classdef PlaneVisualizer < Visualizer
 % Implements the draw function for the Plane 
 
-
-
   properties
     obstaclefield=[];
   end
