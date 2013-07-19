@@ -16,20 +16,20 @@ sizecheck(a4,[1  1]);
 a3_3=a3(3);
 a3_4=a3(4);
 a4_1=a4(1);
-
+v = a1.v;
 
 % Compute Gradients:
 df = sparse(4,6);
-df(1,4) = -10*cos(a3_3);
-df(2,4) = -10*sin(a3_3);
+df(1,4) = -v*cos(a3_3);
+df(2,4) = -v*sin(a3_3);
 df(3,5) = 1;
 df(4,6) = 1;
 
 % d2f
 if (order>=2)
   d2f = sparse(4,36);
-  d2f(1,22) = 10*sin(a3_3);
-  d2f(2,22) = -10*cos(a3_3);
+  d2f(1,22) = v*sin(a3_3);
+  d2f(2,22) = -v*cos(a3_3);
 else
   d2f=[];
 end  % if (order>=2)
@@ -37,8 +37,8 @@ end  % if (order>=2)
 % d3f
 if (order>=3)
   d3f = sparse(4,216);
-  d3f(1,130) = 10*cos(a3_3);
-  d3f(2,130) = 10*sin(a3_3);
+  d3f(1,130) = v*cos(a3_3);
+  d3f(2,130) = v*sin(a3_3);
 else
   d3f=[];
 end  % if (order>=3)
