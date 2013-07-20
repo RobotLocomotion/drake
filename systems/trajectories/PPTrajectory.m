@@ -83,12 +83,12 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       sizecheck(offset,[1 1]);
       obj.tspan = obj.tspan + offset;
       obj.pp.breaks = obj.pp.breaks + offset;
-      nobj = PPTrajectory(obj.pp); 
+      nobj = setOutputFrame(PPTrajectory(obj.pp),getOutputFrame(obj)); 
     end
     
     function nobj = uminus(obj)
       obj.pp.coefs = -obj.pp.coefs;
-      nobj = PPTrajectory(obj.pp);
+      nobj = setOutputFrame(PPTrajectory(obj.pp),getOutputFrame(obj));
     end
     
     function t = getBreaks(obj)
