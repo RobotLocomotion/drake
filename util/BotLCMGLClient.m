@@ -4,9 +4,7 @@ classdef BotLCMGLClient < handle
 
   methods
     function lcmgl = BotLCMGLClient(name)
-      if ~exist('bot_lcmgl.data_t','class')
-        error('can''t find bot_lcmgl.data_t.  for me, i put \n\t%s\n into my startup.m','javaaddpath(''/Users/russt/drc/software/build/share/java/bot2-lcmgl.jar'');');
-      end
+      checkDependency('lcmgl');
       
       lcmgl.lcm = lcm.lcm.LCM.getSingleton();
       lcmgl.channel = ['LCMGL_',name];

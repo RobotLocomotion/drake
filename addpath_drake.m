@@ -109,6 +109,27 @@ if (~conf.lcm_enabled)
   disp(' ');
 end
 
+conf.lcmgl_enabled = false;
+if (conf.lcm_enabled)
+  conf.lcmgl_enabled = logical(exist('bot_lcmgl.data_t','class'));
+  
+  if (~conf.lcmgl_enabled)
+    try % try to add bot2-lcmgl.jar
+      javaaddpath(fullfile(pods_get_base_path,'share','java','bot2-lcmgl.jar'));
+    catch
+    end
+    conf.lcmgl_enabled = exist('bot_lcmgl.data_t','class');
+  end
+  if (~conf.lcmgl_enabled)
+    disp(' ');
+    disp(' LCMGL not found.  LCMGL support will be disabled.');
+    disp(' To re-enable, add bot2-lcmgl.jar to your matlab classpath using javaaddpath.');
+    disp(' ');
+  end
+end
+
+
+
 conf.snopt_enabled = logical(exist('snopt'));
 if (~conf.snopt_enabled) 
   conf.snopt_enabled = pod_pkg_config('snopt') && logical(exist('snopt'));
