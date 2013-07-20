@@ -49,7 +49,7 @@ fprintf(fptr,'}\n');
 fclose(fptr);
 
 %drawDot(dotfile,gca,varargin{:});
-system(['dot -Tpng -O ',dotfile]);
+systemWCMakeEnv(['dot -Tpng -O ',dotfile]);
 disp = getenv('DISPLAY');
 if (strcmp(disp, ''))
     warning('You do not appear to have a valid DISPLAY, so I am not going to attempt to show the image.')
