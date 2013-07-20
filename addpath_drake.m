@@ -83,7 +83,7 @@ end
 
 conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
 if (~conf.lcm_enabled)
-  lcm_java_classpath = getCmakeParam('lcm_java_classpath');
+  lcm_java_classpath = getCMakeParam('lcm_java_classpath');
   if ~isempty(lcm_java_classpath)
     javaaddpath(lcm_java_classpath);
     disp(' Added the lcm jar to your javaclasspath (found via cmake)');
@@ -189,7 +189,7 @@ conf.pathlcp_enabled = true;
 % todo: add lcmgl_enabled (using pod_pkg_config)
 
 if ~isfield(conf,'avl') || isempty(conf.avl)
-  path_to_avl = getCmakeParam('avl');
+  path_to_avl = getCMakeParam('avl');
   if isempty(path_to_avl) || strcmp(path_to_avl,'avl-NOTFOUND')
     disp(' AVL support is disabled.  To enable it, install AVL from here: http://web.mit.edu/drela/Public/web/avl/, then add it to the matlab path or set the path to the avl executable explicitly using editDrakeConfig(''avl'',path_to_avl_executable) and rerun make');
     conf.avl = '';
@@ -200,7 +200,7 @@ end
 conf.avl_enabled = ~isempty(conf.avl);
 
 if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
-  path_to_xfoil = getCmakeParam('xfoil');
+  path_to_xfoil = getCMakeParam('xfoil');
   if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'xfoil-NOTFOUND')
     disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun configure');
     conf.xfoil = '';
@@ -311,10 +311,4 @@ function [obj,lib,libprefix] = extensions
 
 end
 
-function val = getCmakeParam(param)
-
-[retval,val] = system(['cmake -L -N pod-build | grep ', param,' | cut -d "=" -f2']);
-val = strtrim(val);
-
-end
 

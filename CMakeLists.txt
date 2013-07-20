@@ -16,7 +16,6 @@ find_package(Java)
 include(UseJava)
 
 pods_use_pkg_config_classpath(lcm-java)
-set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" )
 
 add_jar(drake
 	util/MyLCMTypeDatabase.java
@@ -77,3 +76,11 @@ find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin )
 # http://majewsky.wordpress.com/2010/08/14/tip-of-the-day-cmake-and-doxygen/
 
 
+# write some additional information to the CMake cache
+set(lcm_java_classpath "${lcm-java_CLASSPATH}" CACHE FILEPATH "${lcm-java_CLASSPATH}" )
+
+if (APPLE)
+  set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "$ENV{DYLD_LIBRARY_PATH}" )
+else()
+  set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "$ENV{LD_LIBRARY_PATH}" )
+endif()
