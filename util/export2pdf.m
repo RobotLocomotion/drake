@@ -21,7 +21,7 @@ if (options.tight || ~isempty(options.bbox))
   if (~isempty(options.bbox))
     system(['sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(options.bbox),'/g" -i "" ', filename,'.eps']);
   end
-  if (systemWExports(['epstopdf --outfile=', filename, '.pdf ', filename, '.eps'],'gs') ~= 0) error('epstopdf failed.'); end
+  if (systemWCMakeEnv(['epstopdf --outfile=', filename, '.pdf ', filename, '.eps']) ~= 0) error('epstopdf failed.'); end
   delete([filename,'.eps']);
   
 else
