@@ -113,12 +113,12 @@ else
         end
 
       else
-        body.ddTdqdq = [];
+        kinsol.ddTdqdq{i} = [];
       end
       
       if isempty(qd)
-        body.Tdot = [];
-        body.dTdqdot = [];
+        kinsol.Tdot{i} = [];
+        kinsol.dTdqdot{i} = [];
       else
         qdi = qd(body.dofnum);
         TJdot = zeros(4);
@@ -141,10 +141,30 @@ else
       end
     elseif body.floating==2
       qi = q(body.dofnum);  % qi is 7x1
-      TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(1,3),1];
+      [R,dR] = quat2rotman(qi(4:7));
+      TJ = [R,qi(1:3);zeros(1,3),1];
       kinsol.T{i}=kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
       
-      warning('first derivatives of quaternion floating base not implemented yet');
+      dTJ{1} = sparse(1,4,1,4,4);
+      dTJ{2} = sparse(2,4,1,4,4);
+      dTJ{3} = sparse(3,4,1,4,4);
+      dTJ{4} = [reshape(dR(:,1),3,3),zeros(3,1); zeros(1,4)];
+      dTJ{5} = [reshape(dR(:,2),3,3),zeros(3,1); zeros(1,4)];
+      dTJ{6} = [reshape(dR(:,3),3,3),zeros(3,1); zeros(1,4)];
+      dTJ{7} = [reshape(dR(:,4),3,3),zeros(3,1); zeros(1,4)];
+
+      kinsol.dTdq{i} = kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+      for j=1:7
+        this_dof_ind = body.dofnum(j)+0:nq:3*nq;
+        kinsol.dTdq{i}(this_dof_ind,:) = kinsol.dTdq{i}(this_dof_ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
+      end
+
+      if (b_compute_second_derivatives)
+        error('second derivatives of quaternion floating base not implemented yet');
+      end
+      if ~isempty(qd)
+        error('jacobian time derivative of quaternion floating base not implemented yet');
+      end
     else
       qi = q(body.dofnum);
       
