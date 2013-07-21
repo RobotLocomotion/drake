@@ -108,31 +108,10 @@ else
             for k = 4:6  
               ind = 3*nq*(body.dofnum(k)-1) + (body.dofnum(j)+0:nq:3*nq);  % ddTdqjdqk
               kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ{j,k}*body.T_body_to_joint;
+            end
+          end
+        end
 
-%              ind = 3*nq*(body.dofnum(j)-1) + (body.dofnum(k)+0:nq:3*nq);  % ddTdqkdqj
-%              kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ{k,j}*body.T_body_to_joint;
-            end
-          end
-        end
-        
-        if ~isnumeric(q)
-        for r=1:3,
-          for j=1:nq,
-            J = jacobian(kinsol.T{i}(r,:),q(j));
-            for k=1:nq,
-              dJ(r,j,k,:) = jacobian(J,q(k));
-              dJ2(r,j,k,:) = kinsol.ddTdqdq{i}(3*nq*(k-1) + nq*(r-1) + j,:);
-              if ~isequal(dJ(r,j,k,:),dJ2(r,j,k,:))
-                r
-                j
-                k
-                dJ(r,j,k,:) == dJ2(r,j,k,:)
-                keyboard;
-              end
-            end
-          end
-        end
-        end
       else
         body.ddTdqdq = [];
       end
