@@ -15,7 +15,8 @@ m_ypr_rel = TimeSteppingRigidBodyManipulator(urdf,.01,options);
 % flopped
 
 nq=getNumDOF(m_rpy);
-ind = [1;2;3;6;5;4;(7:nq)']; xind = [ind;nq+ind];
+ind = [1;2;3;6;5;4;(7:nq)'];
+xind = [ind;nq+ind];
 
 x0 = resolveConstraints(m_rpy,Point(getStateFrame(m_rpy)));
 x02 = resolveConstraints(m_ypr_rel,Point(getStateFrame(m_ypr_rel)));
@@ -26,16 +27,24 @@ for i=1:100
 
   % check kinematics:
   
-  kinsol = doKinematics(m_rpy,q,false,false,qd);
+  kinsol = doKinematics(m_rpy,q,true,false,qd);
   [pt,J,Jdot] = contactPositionsJdot(m_rpy,kinsol);
+  [~,~,dJ] = contactPositions(m_rpy,kinsol);
   phi = [jointLimits(m_rpy,q); contactConstraints(m_rpy,kinsol)];
   
-  kinsol2 = doKinematics(m_ypr_rel,q(ind),false,false,qd(ind));
+  kinsol2 = doKinematics(m_ypr_rel,q(ind),true,false,qd(ind));
   [pt2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2);
+  [~,~,dJ2] = contactPositions(m_ypr_rel,kinsol2);
   
-  valuecheck(pt,pt2);
+  % Russ's indexing code.
+  n = size(pt,2);
+  J2ind = reshape(1:3*n*nq,[3*n,nq]);  
+  J2ind = reshape(J2ind(:,ind),3*n*nq,1); 
+  
+  valuecheck(pt,pt2)
   valuecheck(J,J2(:,ind));
-  valuecheck(Jdot,Jdot2(:,ind));
+  valuecheck(Jdot,Jdot2(:,ind))
+  valuecheck(full(dJ),full(dJ2)); % RV: THIS LINE does not work.
   
   kinsol = doKinematics(m_rpy,q,false,true,qd);
   [pt2,J2,Jdot2] = contactPositionsJdot(m_rpy,kinsol);
