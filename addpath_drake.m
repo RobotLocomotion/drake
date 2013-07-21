@@ -333,3 +333,11 @@ function [obj,lib,libprefix] = extensions
 end
 
 
+function val = getCMakeParam(param)
+% note: takes precedence over the function by the same name in util, since
+% that one requires getDrakePath to be set first.
+
+[retval,val] = system(['cmake -L -N pod-build | grep ', param,' | cut -d "=" -f2']);
+val = strtrim(val);
+
+end
