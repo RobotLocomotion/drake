@@ -22,7 +22,7 @@ if (use_mex && model.mex_model_ptr~=0 && isnumeric(q))
   kinsol.mex = true;
 else
   kinsol.mex = false;
-
+  
   nq = getNumDOF(model);
   nb = length(model.body);
   kinsol.T = cell(1,nb);
@@ -64,10 +64,63 @@ else
       end
       
       if (b_compute_second_derivatives)
-        error('floating base second derivatives not implemented yet');
+        % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
+        kinsol.ddTdqdq{i} = kinsol.ddTdqdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+        
+        ddTJ = cell(6,6);
+        for j = 1:6
+          for k = 1:6
+            if( j <= 3 )
+              ddTJ{j,k} = zeros(4);
+            elseif( k<=3 )
+              ddTJ{j,k} = zeros(4);
+            elseif( j == 4 )
+              if( k == 4 )
+                ddTJ{j,k} = [rz*ry*ddrx,zeros(3,1); zeros(1,4)];
+              elseif( k == 5 )
+                ddTJ{j,k} = [rz*dry*drx,zeros(3,1); zeros(1,4)];
+              else
+                ddTJ{j,k} = [drz*ry*drx,zeros(3,1); zeros(1,4)];
+              end
+            elseif( j == 5 )
+              if( k == 4 )
+                ddTJ{j,k} = [rz*dry*drx,zeros(3,1); zeros(1,4)];
+              elseif( k == 5 )
+                ddTJ{j,k} = [rz*ddry*rx,zeros(3,1); zeros(1,4)];
+              else
+                ddTJ{j,k} = [drz*dry*rx,zeros(3,1); zeros(1,4)];
+              end
+            else
+              if( k == 4 )
+                ddTJ{j,k} = [drz*ry*drx,zeros(3,1); zeros(1,4)];
+              elseif( k == 5 )
+                ddTJ{j,k} = [drz*dry*rx,zeros(3,1); zeros(1,4)];
+              else
+                ddTJ{j,k} = [ddrz*ry*rx,zeros(3,1); zeros(1,4)];
+              end
+            end
+          end
+        end
+        for j = 1:6
+          ind = 3*nq*(body.dofnum(j)-1) + (1:3*nq); %ddTdqdqi
+          kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
+          
+          ind = reshape(reshape(body.dofnum(j)+0:nq:3*nq*nq,3,[])',[],1); %ddTdqidq
+          kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
+          
+          for k = 1:6
+            ind = (body.dofnum(k) - 1)*nq+(body.dofnum(j)+0:nq*nq:3*nq*nq); % ddTdqidqi
+            kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ{j,k}*body.T_body_to_joint;
+          end
+        end
+      else
+        body.ddTdqdq = [];
       end
       
-      if ~isempty(qd)
+      if isempty(qd)
+        body.Tdot = [];
+        body.dTdqdot = [];
+      else
         qdi = qd(body.dofnum);
         TJdot = zeros(4);
         dTJdot{1} = zeros(4);
@@ -79,7 +132,7 @@ else
         for j=1:6
           TJdot = TJdot+dTJ{j}*qdi(j);
         end
-
+        
         kinsol.Tdot{i} = kinsol.Tdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
         kinsol.dTdqdot{i} = kinsol.dTdqdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
         for j=1:6
@@ -91,8 +144,8 @@ else
       qi = q(body.dofnum);  % qi is 7x1
       TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(1,3),1];
       kinsol.T{i}=kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-
-      warning('first derivatives of quaternion floating base not implemented yet'); 
+      
+      warning('first derivatives of quaternion floating base not implemented yet');
     else
       qi = q(body.dofnum);
       
@@ -132,4 +185,5 @@ else
     end
   end
 end
+
 end
