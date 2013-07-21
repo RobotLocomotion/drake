@@ -34,13 +34,13 @@ else
     body = model.body(i);
     if body.parent<1
       kinsol.T{i} = body.Ttree;
-      kinsol.dTdq{i} = zeros(3*nq,4);
+      kinsol.dTdq{i} = sparse(3*nq,4);
       if ~isempty(qd)
         kinsol.Tdot{i} = zeros(4);
-        kinsol.dTdqdot{i} = zeros(3*nq,4);
+        kinsol.dTdqdot{i} = sparse(3*nq,4);
       end
       if (b_compute_second_derivatives)
-        kinsol.ddTdqdq{i} = zeros(3*nq*nq,4);
+        kinsol.ddTdqdq{i} = sparse(3*nq*nq,4);
       end
     elseif body.floating==1
       qi = q(body.dofnum); % qi is 6x1
@@ -64,17 +64,11 @@ else
       end
       
       if (b_compute_second_derivatives)
-        % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
-        kinsol.ddTdqdq{i} = kinsol.ddTdqdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-        
         ddTJ = cell(6,6);
-        for j = 1:6
-          for k = 1:6
-            if( j <= 3 )
-              ddTJ{j,k} = zeros(4);
-            elseif( k<=3 )
-              ddTJ{j,k} = zeros(4);
-            elseif( j == 4 )
+        for j = 4:6
+          for k = 4:6
+            % if j<=3 or k<=3, then ddTJ{j,k} = zeros(4);
+            if( j == 4 )
               if( k == 4 )
                 ddTJ{j,k} = [rz*ry*ddrx,zeros(3,1); zeros(1,4)];
               elseif( k == 5 )
@@ -101,17 +95,43 @@ else
             end
           end
         end
+        % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
+        kinsol.ddTdqdq{i} = kinsol.ddTdqdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
         for j = 1:6
-          ind = 3*nq*(body.dofnum(j)-1) + (1:3*nq); %ddTdqdqi
+          ind = 3*nq*(body.dofnum(j)-1) + (1:3*nq); %ddTdqdqj
           kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
           
-          ind = reshape(reshape(body.dofnum(j)+0:nq:3*nq*nq,3,[])',[],1); %ddTdqidq
+          ind = reshape(reshape(body.dofnum(j)+0:nq:3*nq*nq,3,[])',[],1); %ddTdqjdq
           kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
           
-          for k = 1:6
-            ind = (body.dofnum(k) - 1)*nq+(body.dofnum(j)+0:nq*nq:3*nq*nq); % ddTdqidqi
-            kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ{j,k}*body.T_body_to_joint;
+          if (j>=4)
+            for k = 4:6  
+              ind = 3*nq*(body.dofnum(k)-1) + (body.dofnum(j)+0:nq:3*nq);  % ddTdqjdqk
+              kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ{j,k}*body.T_body_to_joint;
+
+%              ind = 3*nq*(body.dofnum(j)-1) + (body.dofnum(k)+0:nq:3*nq);  % ddTdqkdqj
+%              kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ{k,j}*body.T_body_to_joint;
+            end
           end
+        end
+        
+        if ~isnumeric(q)
+        for r=1:3,
+          for j=1:nq,
+            J = jacobian(kinsol.T{i}(r,:),q(j));
+            for k=1:nq,
+              dJ(r,j,k,:) = jacobian(J,q(k));
+              dJ2(r,j,k,:) = kinsol.ddTdqdq{i}(3*nq*(k-1) + nq*(r-1) + j,:);
+              if ~isequal(dJ(r,j,k,:),dJ2(r,j,k,:))
+                r
+                j
+                k
+                dJ(r,j,k,:) == dJ2(r,j,k,:)
+                keyboard;
+              end
+            end
+          end
+        end
         end
       else
         body.ddTdqdq = [];

@@ -26,6 +26,8 @@ for i=1:100
   q = randn(nq,1); qd = randn(nq,1); u = randn(getNumInputs(m_rpy),1);
 
   % check kinematics:
+  qsym = sym('q',[6,1]); qsym = sym(qsym,'real');
+  kinsol = doKinematics(m_rpy,qsym,true,false,qd);
   
   kinsol = doKinematics(m_rpy,q,true,false,qd);
   [pt,J,Jdot] = contactPositionsJdot(m_rpy,kinsol);
