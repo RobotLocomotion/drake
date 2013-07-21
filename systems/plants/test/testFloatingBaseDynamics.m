@@ -25,10 +25,6 @@ valuecheck(x0,x02(xind),1e-4);
 for i=1:100
   q = randn(nq,1); qd = randn(nq,1); u = randn(getNumInputs(m_rpy),1);
 
-  % check kinematics:
-  qsym = sym('q',[6,1]); qsym = sym(qsym,'real');
-  kinsol = doKinematics(m_rpy,qsym,true,false,qd);
-  
   kinsol = doKinematics(m_rpy,q,true,false,qd);
   [pt,J,Jdot] = contactPositionsJdot(m_rpy,kinsol);
   [~,~,dJ] = contactPositions(m_rpy,kinsol);
@@ -38,15 +34,13 @@ for i=1:100
   [pt2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2);
   [~,~,dJ2] = contactPositions(m_ypr_rel,kinsol2);
   
-  % Russ's indexing code.
-  n = size(pt,2);
-  J2ind = reshape(1:3*n*nq,[3*n,nq]);  
-  J2ind = reshape(J2ind(:,ind),3*n*nq,1); 
+  dJind = reshape(1:nq*nq,[nq,nq]);  
+  dJind = reshape(dJind(ind,ind),nq*nq,1); 
   
-  valuecheck(pt,pt2)
+  valuecheck(pt,pt2);
   valuecheck(J,J2(:,ind));
   valuecheck(Jdot,Jdot2(:,ind))
-  valuecheck(full(dJ),full(dJ2)); % RV: THIS LINE does not work.
+  valuecheck(full(dJ),full(dJ2(:,dJind))); 
   
   kinsol = doKinematics(m_rpy,q,false,true,qd);
   [pt2,J2,Jdot2] = contactPositionsJdot(m_rpy,kinsol);
