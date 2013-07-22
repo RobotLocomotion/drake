@@ -1,6 +1,6 @@
 function testBrickKinematics
 
-for fb = {'rpy','RPY','quat'};
+for fb = {'rpy','RPY'};%,'quat'};
   options.floating = fb{1};
   m = RigidBodyManipulator('FallingBrick.urdf',options);
   
