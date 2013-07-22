@@ -11,8 +11,9 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       obj = obj@Trajectory(ppform.dim);
       obj.pp = PPTrajectory.minimalOrder(ppform);
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
-%      obj.javapp = drake.systems.trajectories.JavaPP(obj.pp.breaks, obj.pp.coefs, obj.pp.order, obj.pp.dim);
-      obj.mex_ptr = SharedDataHandle(PPTmex(obj.pp.breaks, obj.pp.coefs, obj.pp.order, obj.pp.dim));
+      if exist('PPTmex')
+        obj.mex_ptr = SharedDataHandle(PPTmex(obj.pp.breaks, obj.pp.coefs, obj.pp.order, obj.pp.dim));
+      end      
     end
   end
   methods (Static)
@@ -24,12 +25,13 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   methods
     function y = fasteval(obj,t)
       % no error checking. numeric scalar t only.
+      % note: this will error if PPTmex is not build 
+      % (and PPTmex requires eigen3 to be found by cmake)
       y = PPTmex(obj.mex_ptr.data, 1, t);
     end
     
     function y = eval(obj,t)
-      if isscalar(t) && isnumeric(t)
-%        y = obj.javapp.eval(t);
+      if obj.mex_ptr~=0 && isscalar(t) && isnumeric(t) 
          y = PPTmex(obj.mex_ptr.data, 1, t);
       else
         t=max(min(t,obj.tspan(end)),obj.tspan(1));
@@ -88,7 +90,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
     
     function nobj = uminus(obj)
       obj.pp.coefs = -obj.pp.coefs;
-      nobj = setOutputFrame(PPTrajectory(obj.pp),getOutputFrame(obj));
+      nobj = PPTrajectory(obj.pp);
     end
     
     function t = getBreaks(obj)
@@ -118,7 +120,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
 %      warning('this is a short-term hack to get around the Curve-fitting toolbox dep');
 %      obj.pp = spline(newbreaks,eval(obj,newbreaks));
 
-      obj = PPTrajectory(pprfn(obj.pp,newbreaks));
+      obj = setOutputFrame(PPTrajectory(pprfn(obj.pp,newbreaks)),getOutputFrame(obj));
     end
     
     function c = plus(a,b)
