@@ -587,7 +587,7 @@ bool RigidBodyManipulator::getPointCollision(const int body_ind, const int body_
 
 void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivatives, double* qd)
 {
-  int i,j,k;
+  int i,j,k,l;
 
   //Check against cached values for bodies[1];
   if (kinematicsInit) {
@@ -608,7 +608,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
   if (!initialized) compile();
 
   Matrix4d TJ, dTJ, ddTJ, Tbinv, Tb, Tmult, dTmult, dTdotmult, TdTmult, TJdot, dTJdot, TddTmult;
-  Matrix4d fb_dTJ[6], fb_dTJdot[6], fb_dTmult[6];  // will be 7 when quats implemented...
+  Matrix4d fb_dTJ[6], fb_dTJdot[6], fb_dTmult[6], fb_ddTJ[3][3];  // will be 7 when quats implemented...
 
   Matrix3d rx,drx,ddrx,ry,dry,ddry,rz,drz,ddrz;
   
@@ -619,7 +619,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       //dTdq, ddTdqdq initialized as all zeros
     } else if (bodies[i].floating == 1) {
       double qi[6];
-      for (int j=0; j<6; j++) qi[j] = q[bodies[i].dofnum+j]; 
+      for (j=0; j<6; j++) qi[j] = q[bodies[i].dofnum+j];
       
       rotx(qi[3],rx,drx,ddrx);
       roty(qi[4],ry,dry,ddry);
@@ -645,7 +645,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       fb_dTJ[4] = Matrix4d::Zero(); fb_dTJ[4].block<3,3>(0,0) = rz*dry*rx;
       fb_dTJ[5] = Matrix4d::Zero(); fb_dTJ[5].block<3,3>(0,0) = drz*ry*rx;
 
-      for (int j=0; j<6; j++) {
+      for (j=0; j<6; j++) {
         fb_dTmult[j] = bodies[i].Ttree * Tbinv * fb_dTJ[j] * Tb;
         TdTmult = bodies[parent].T * fb_dTmult[j];
         bodies[i].dTdq.row(bodies[i].dofnum + j) += TdTmult.row(0);
@@ -654,7 +654,49 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       }
 
       if (b_compute_second_derivatives) {
-        cerr << "mex kinematics for floating base second derivatives are not implemented yet" << endl;
+        fb_ddTJ[0][0] << rz*ry*ddrx, MatrixXd::Zero(3,1), MatrixXd::Zero(1,4);
+        fb_ddTJ[0][1] << rz*dry*drx, MatrixXd::Zero(3,1), MatrixXd::Zero(1,4);
+        fb_ddTJ[0][2] << drz*ry*drx, MatrixXd::Zero(3,1), MatrixXd::Zero(1,4);
+        fb_ddTJ[1][0] << rz*dry*drx, MatrixXd::Zero(3,1), MatrixXd::Zero(1,4);
+        fb_ddTJ[1][1] << rz*ddry*rx, MatrixXd::Zero(3,1), MatrixXd::Zero(1,4);
+        fb_ddTJ[1][2] << drz*dry*rx, MatrixXd::Zero(3,1), MatrixXd::Zero(1,4);
+        fb_ddTJ[2][0] << drz*ry*drx, MatrixXd::Zero(3,1), MatrixXd::Zero(1,4);
+        fb_ddTJ[2][1] << drz*dry*rx, MatrixXd::Zero(3,1), MatrixXd::Zero(1,4);
+        fb_ddTJ[2][2] << ddrz*ry*rx, MatrixXd::Zero(3,1), MatrixXd::Zero(1,4);
+
+        // ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
+//        bodies[i].ddTdqdq = bodies[parent].ddTdqdq * Tmult;
+        for (set<IndexRange>::iterator iter = bodies[parent].ddTdqdq_nonzero_rows_grouped.begin(); iter != bodies[parent].ddTdqdq_nonzero_rows_grouped.end(); iter++) {
+          bodies[i].ddTdqdq.block(iter->start,0,iter->length,4) = bodies[parent].ddTdqdq.block(iter->start,0,iter->length,4) * Tmult;
+        }
+
+        for (j=0; j<6; j++) {
+          dTmult = bodies[i].Ttree * Tbinv * fb_dTJ[j] * Tb;
+
+          dTdTmult = bodies[parent].dTdq * dTmult;
+          for (k=0; k<3*num_dof; k++) {
+            bodies[i].ddTdqdq.row(3*num_dof*(bodies[i].dofnum+j) + k) = dTdTmult.row(k);
+          }
+
+          for (l=0; l<3; l++) {
+            for (k=0;k<num_dof;k++) {
+              if (k == bodies[i].dofnum+j) {
+                bodies[i].ddTdqdq.row(bodies[i].dofnum+j + (3*k+l)*num_dof) += dTdTmult.row(l*num_dof+k);
+              } else {
+                bodies[i].ddTdqdq.row(bodies[i].dofnum+j + (3*k+l)*num_dof) = dTdTmult.row(l*num_dof+k);
+              }
+            }
+          }
+
+          if (j>=3) {
+          	for (k=3; k<6; k++) {
+              TddTmult = bodies[parent].T*bodies[i].Ttree * Tbinv * fb_ddTJ[j-3][k-3] * Tb;
+              bodies[i].ddTdqdq.row(3*num_dof*(bodies[i].dofnum+k) + bodies[i].dofnum+j) += TddTmult.row(0);
+              bodies[i].ddTdqdq.row(3*num_dof*(bodies[i].dofnum+k) + bodies[i].dofnum+j + num_dof) += TddTmult.row(1);
+              bodies[i].ddTdqdq.row(3*num_dof*(bodies[i].dofnum+k) + bodies[i].dofnum+j + 2*num_dof) += TddTmult.row(2);
+          	}
+          }
+        }
       }
       if (qd) {
         double qdi[6];
