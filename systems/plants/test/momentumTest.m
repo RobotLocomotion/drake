@@ -13,6 +13,12 @@ x0(6+6) = 0.5*randn();
 
 v = r.constructVisualizer();
 
+  function A = myfun(q)
+    % for derivative check
+    kinsol = doKinematics(r,q,false);
+    A = getCMM(r,kinsol);
+  end
+
 T = 3.0;
 xtraj = r.simulate([0 T],x0);
 lcmgl = bot_lcmgl_init('qp-control-block-debug');
@@ -25,18 +31,27 @@ for t=0:0.05:T
   draw(v,t,x);
   q = x(1:nq);
   qd = x(nq+(1:nq));
+  
+  % test derivative
+  [A,dAdq] = geval(@myfun,q);
+  Adot_tv = 0*A;
+  for jj=1:nq
+    Adot_tv = Adot_tv + reshape(dAdq(:,jj),size(A)) * qd(jj);
+  end
+  
   kinsol = doKinematics(r,q,false,true);
-  xyzrpy = forwardKin(r,kinsol,2,[0;0;0],1);
-  
-  A = getCMM(r,q);
+  [A,Adot] = getCMM(r,kinsol,qd);
+  valuecheck(Adot,Adot_tv);
+
   h = A*qd;
-  
+
   omega = rpydot2angularvel(q(4:6),qd(4:6));
   am = body.inertia * omega;
 
   valuecheck(h(1:3),am); 
   valuecheck(h(4:6),body.mass*qd(1:3));
   
+  xyzrpy = forwardKin(r,kinsol,2,[0;0;0],1);
   xcom = getCOM(r,kinsol);
 
   % plot centroidal linear momentum
@@ -83,9 +98,6 @@ for t=0:0.05:T
   bot_lcmgl_switch_buffer(lcmgl);
   pause(0.1);
 end
-
-
-
 
 clear r;
 r = TimeSteppingRigidBodyManipulator('brick1.urdf',0.005,struct('floating',true));

@@ -34,10 +34,4 @@ for i=1:100
   valuecheck(Jcdotmex,matGradMult(reshape(dJcmex,3*nq,nq),qd));
 end
 
-
-  function [com,Jc,dJc] = myfun(q)
-    kinsol = p.doKinematics(q,true,false);
-    [com,Jc,dJc] = p.getCOM(kinsol); 
-  end
-
 end
