@@ -39,7 +39,7 @@ for i=1:100
   
   valuecheck(pt,pt2);
   valuecheck(J,J2(:,ind));
-  valuecheck(Jdot,Jdot2(:,ind))
+  valuecheck(Jdot,Jdot2(:,ind));
   valuecheck(full(dJ),full(dJ2(:,dJind))); 
   
   kinsol = doKinematics(m_rpy,q,false,true,qd);

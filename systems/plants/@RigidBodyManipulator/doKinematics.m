@@ -65,36 +65,17 @@ else
       
       if (b_compute_second_derivatives)
         ddTJ = cell(6,6);
-        for j = 4:6
-          for k = 4:6
-            % if j<=3 or k<=3, then ddTJ{j,k} = zeros(4);
-            if( j == 4 )
-              if( k == 4 )
-                ddTJ{j,k} = [rz*ry*ddrx,zeros(3,1); zeros(1,4)];
-              elseif( k == 5 )
-                ddTJ{j,k} = [rz*dry*drx,zeros(3,1); zeros(1,4)];
-              else
-                ddTJ{j,k} = [drz*ry*drx,zeros(3,1); zeros(1,4)];
-              end
-            elseif( j == 5 )
-              if( k == 4 )
-                ddTJ{j,k} = [rz*dry*drx,zeros(3,1); zeros(1,4)];
-              elseif( k == 5 )
-                ddTJ{j,k} = [rz*ddry*rx,zeros(3,1); zeros(1,4)];
-              else
-                ddTJ{j,k} = [drz*dry*rx,zeros(3,1); zeros(1,4)];
-              end
-            else
-              if( k == 4 )
-                ddTJ{j,k} = [drz*ry*drx,zeros(3,1); zeros(1,4)];
-              elseif( k == 5 )
-                ddTJ{j,k} = [drz*dry*rx,zeros(3,1); zeros(1,4)];
-              else
-                ddTJ{j,k} = [ddrz*ry*rx,zeros(3,1); zeros(1,4)];
-              end
-            end
-          end
-        end
+        % if j<=3 or k<=3, then ddTJ{j,k} = zeros(4); so I've left them out
+        ddTJ{4,4} = [rz*ry*ddrx,zeros(3,1); zeros(1,4)];
+        ddTJ{4,5} = [rz*dry*drx,zeros(3,1); zeros(1,4)];
+        ddTJ{4,6} = [drz*ry*drx,zeros(3,1); zeros(1,4)];
+        ddTJ{5,4} = [rz*dry*drx,zeros(3,1); zeros(1,4)];
+        ddTJ{5,5} = [rz*ddry*rx,zeros(3,1); zeros(1,4)];
+        ddTJ{5,6} = [drz*dry*rx,zeros(3,1); zeros(1,4)];
+        ddTJ{6,4} = [drz*ry*drx,zeros(3,1); zeros(1,4)];
+        ddTJ{6,5} = [drz*dry*rx,zeros(3,1); zeros(1,4)];
+        ddTJ{6,6} = [ddrz*ry*rx,zeros(3,1); zeros(1,4)];
+        
         % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
         kinsol.ddTdqdq{i} = kinsol.ddTdqdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
         for j = 1:6
