@@ -665,25 +665,26 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
         fb_ddTJ[2][2] << ddrz*ry*rx, MatrixXd::Zero(3,1), MatrixXd::Zero(1,4);
 
         // ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
-//        bodies[i].ddTdqdq = bodies[parent].ddTdqdq * Tmult;
+        bodies[i].ddTdqdq = MatrixXd::Zero(3*num_dof*num_dof,4);  // note: could be faster if I skipped this (like I do for floating == 0 below)
+
+        //        bodies[i].ddTdqdq = bodies[parent].ddTdqdq * Tmult;
         for (set<IndexRange>::iterator iter = bodies[parent].ddTdqdq_nonzero_rows_grouped.begin(); iter != bodies[parent].ddTdqdq_nonzero_rows_grouped.end(); iter++) {
           bodies[i].ddTdqdq.block(iter->start,0,iter->length,4) = bodies[parent].ddTdqdq.block(iter->start,0,iter->length,4) * Tmult;
         }
 
         for (j=0; j<6; j++) {
           dTmult = bodies[i].Ttree * Tbinv * fb_dTJ[j] * Tb;
-
           dTdTmult = bodies[parent].dTdq * dTmult;
           for (k=0; k<3*num_dof; k++) {
-            bodies[i].ddTdqdq.row(3*num_dof*(bodies[i].dofnum+j) + k) = dTdTmult.row(k);
+            bodies[i].ddTdqdq.row(3*num_dof*(bodies[i].dofnum+j) + k) += dTdTmult.row(k);
           }
 
           for (l=0; l<3; l++) {
             for (k=0;k<num_dof;k++) {
-              if (k == bodies[i].dofnum+j) {
+              if (k>=bodies[i].dofnum && k<=bodies[i].dofnum+j) {
                 bodies[i].ddTdqdq.row(bodies[i].dofnum+j + (3*k+l)*num_dof) += dTdTmult.row(l*num_dof+k);
               } else {
-                bodies[i].ddTdqdq.row(bodies[i].dofnum+j + (3*k+l)*num_dof) = dTdTmult.row(l*num_dof+k);
+                bodies[i].ddTdqdq.row(bodies[i].dofnum+j + (3*k+l)*num_dof) += dTdTmult.row(l*num_dof+k);
               }
             }
           }
@@ -766,6 +767,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
           bodies[i].ddTdqdq.row(3*num_dof*(bodies[i].dofnum) + j) = dTdTmult.row(j);
         }
 
+        // ind = reshape(reshape(body.dofnum+0:nq:3*nq*nq,3,[])',[],1); % ddTdqidq
         for (j = 0; j < 3; j++) {
           for (k = 0; k < num_dof; k++) { 
             if (k == bodies[i].dofnum) {

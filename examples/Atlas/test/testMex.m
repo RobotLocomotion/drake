@@ -46,7 +46,7 @@ options.floating=true;
 p = RigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
 nq = getNumDOF(p);
 
-for i=1:100
+for i=1:25
   q = randn(nq,1);
   qd = randn(nq,1);
   
