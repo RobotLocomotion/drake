@@ -184,7 +184,16 @@ classdef RigidBody
         if inode.hasAttribute('iyz'), inertia(2,3)=str2num(char(inode.getAttribute('iyz'))); inertia(3,2)=inertia(2,3); end
         if inode.hasAttribute('izz'), inertia(3,3)=str2num(char(inode.getAttribute('izz'))); end
       end      
-
+      
+      % randomly scale inertia
+      % keep scale factor positive to ensure positive definiteness
+      % x'*I*x > 0 && eta > 0 ==> x'*(eta*I)*x > 0
+      eta = 1 + min(1,max(-0.9999,options.inertia_error*randn()));
+      inertia = eta*inertia;  
+      
+      if ~all(eig(inertia)>0)
+        warning('RigidBody: inertia matrix not positive definite!');
+      end
       if any(rpy)
         error([body.linkname,': rpy in inertia block not implemented yet (but would be easy)']);
       end
