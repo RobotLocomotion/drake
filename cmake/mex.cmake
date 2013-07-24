@@ -24,15 +24,22 @@ function(mex_setup)
   # sets the variables: MATLAB_ROOT, MATLAB_CPU, MEX, MEX_EXT
   #    as well as all of the mexopts
 
-  # first run matlab (if necessary) to find matlabroot and cpu path
-  if (NOT EXISTS .matlabroot OR NOT EXISTS .matlabcpu)
-    find_program(matlab matlab)
-    execute_process(COMMAND ${matlab} -nodisplay -r "ptr=fopen('${CMAKE_BINARY_DIR}/.matlabroot','w'); fprintf(ptr,'%s',matlabroot); fclose(ptr); ptr=fopen('${CMAKE_BINARY_DIR}/.matlabcpu','w'); fprintf(ptr,'%s',lower(computer)); fclose(ptr); exit")
-  endif()  
+  find_program(matlab matlab)
+  if ( matlab-NOTFOUND )
+     message(FATAL_ERROR "Could not find matlab executable")
+  endif()
+  execute_process(COMMAND ${matlab} -n COMMAND grep "MATLAB " COMMAND cut -d "=" -f2 OUTPUT_VARIABLE _matlab_root)
+  if (NOT _matlab_root)
+    message(FATAL_ERROR "Failed to extract MATLAB_ROOT from running matlab -n")
+  endif()
+  string(STRIP ${_matlab_root} MATLAB_ROOT)
 
-#  execute_process(COMMAND pwd OUTPUT_VARIABLE pwd OUTPUT_STRIP_TRAILING_WHITESPACE)
-  file(READ ${CMAKE_BINARY_DIR}/.matlabroot MATLAB_ROOT)
-  file(READ ${CMAKE_BINARY_DIR}/.matlabcpu MATLAB_CPU)
+  execute_process(COMMAND ${matlab} -n COMMAND grep "ARCH" COMMAND cut -d "=" -f2 OUTPUT_VARIABLE _matlab_cpu)
+  if (NOT _matlab_cpu)
+    message(FATAL_ERROR "Failed to extract MATLAB_CPU from running matlab -n")
+  endif()
+  string(STRIP ${_matlab_cpu} MATLAB_CPU)
+
   execute_process(COMMAND ${MATLAB_ROOT}/bin/mexext OUTPUT_VARIABLE MEX_EXT OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   if (NOT MATLAB_ROOT OR NOT MATLAB_CPU OR NOT MEX_EXT)
@@ -91,7 +98,7 @@ function(add_mex)
   list(REMOVE_AT ARGV 0)
 
   if (NOT MATLAB_ROOT OR NOT MATLAB_CPU OR NOT MEX_EXT)
-     message(FATAL_ERROR "you must call FindMex first")
+     message(FATAL_ERROR "MATLAB not found (or MATLAB_ROOT/MATLAB_CPU not properly parsed)")
   endif()
 
   include_directories( ${MATLAB_ROOT}/extern/include ${MATLAB_ROOT}/simulink/include )
