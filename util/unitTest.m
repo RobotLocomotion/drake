@@ -2,25 +2,42 @@ function tree=unitTest(options)
 
 % Opens a gui for running unit tests
 %
-% Recurses through the Drake directories, locating all test scripts 
-% (in test subdirectories) and all testable methods/scripts/class static methods 
-% in the examples directory.
-%
 % A test function is any valid .m file which calls error() if the test
-% fails, and returns without error if the test passes. 
+% fails, and returns without error if the test passes.
 %
-% crawls static methods, looks for NOTEST, ...
+% By default, it recurses through the current directory, locating all 
+% testable methods/functions (not scripts)/class static methods .   
+%
+% This default behavior can be changed in a number of ways:
+%
+% If any directory that is being crawled through has a file name .NOTEST,
+% then that entire directory is skipped.  In addition if any function file
+% contains the string NOTEST, then it will be skipped; or if any static
+% class method contains the string NOTEST, then that method will be
+% skipped.
+%
+% If a directory that is being crawled through has a file named .UNITTEST,
+% then the entire directory is not searched.  Instead this script parses
+% the contents of the .UNITTEST file, expecting one filename/directory name
+% entry per line.  A line with a directory name on it can optionally have a 
+% second token (ALL_FILES or TEST_DIRS_ONLY) which tell this script to 
+% continue crawling into this directory recursively using the modified policy.
+%
+%     test1.m
+%     test2.m
+%     testdir
+%     systems TEST_DIRS_ONLY
+%     examples ALL
+%
 %
 % @option autorun if true, starts running the tests immediately.  @default
 % false
+% @option test_dirs_only if true, starts the crawling procedure in
+% test_dirs_only mode (but this could be overwritten by a downstream
+% .UNITTEST file)
 % @option gui if true, shows the gui. set to false for the text only, non-interactive version 
 % @default true
 % @option logfile file name for writing information about FAILED tests only
-% @option additional_dirs a cell matrix of strings specifying additional
-% directories to use as unit tests.
-% NOTE: you may also add additional unit test directories by using
-%  editDrakeConfig('additional_unit_test_dirs',dirs)
-% where dirs is the cell matrix of strings.
 %
 % All unit tests should always be run (and all tests should pass) before 
 % anything is committed back into the Drake repository.
@@ -37,6 +54,7 @@ if ~isfield(options,'autorun') options.autorun = false; end
 if ~isfield(options,'ignore_vrml') options.ignore_vrml = false; end
 if ~isfield(options,'gui') options.gui = true; end
 if ~isfield(options,'logfile') options.logfile = ''; end
+if ~isfield(options,'test_dirs_only') options.test_dirs_only = false; end
 if ~isempty(options.logfile)
   if (options.gui)
     warning('At the moment, writing to logfile is only implemented for gui=false.  Disabling logfile.');
@@ -47,18 +65,6 @@ if ~isempty(options.logfile)
   options.logfileptr = fopen(options.logfile,'w');
 else
   options.logfileptr = -1;
-end
-if ~isfield(options,'additional_dirs') options.additional_dirs = {}; 
-elseif ~iscell(options.additional_dirs) 
-  options.additional_dirs = {options.additional_dirs};
-end
-load drake_config.mat;
-bRunFromDrakeRoot = strcmp(pwd,conf.root);
-if bRunFromDrakeRoot && isfield(conf,'additional_unit_test_dirs')
-  if ~iscell(conf.additional_unit_test_dirs)
-    conf.additional_unit_test_dirs = {conf.additional_unit_test_dirs};
-  end
-  options.additional_dirs = {options.additional_dirs{:},conf.additional_unit_test_dirs{:}};
 end
 
 if (options.gui)
@@ -76,17 +82,7 @@ else
   root = [];
 end
 
-if bRunFromDrakeRoot
-  crawlDir('systems',root,true,options);
-  crawlDir('util',root,true,options);
-  crawlDir('examples',root,false,options);
-else
-  crawlDir('.',root,false,options);
-end
-
-for i=1:numel(options.additional_dirs)
-  crawlDir(options.additional_dirs{1},root,false,options);
-end
+crawlDir('.',root,options.test_dirs_only,options);
 
 if (options.gui)
   [tree,treecont] = uitree('v0','Root',root);
@@ -274,9 +270,12 @@ function expandAll(tree,node)
 end
 
 function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
-
+  disp(pdir);
   p = pwd;
   cd(pdir);
+  if strcmp(pdir,'.')
+    [~,pdir]=fileparts(pwd);
+  end
   if exist('.NOTEST','file')
     cd(p);
     return;
@@ -292,9 +291,43 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
     node=[p,'/',pdir];
   end
   
-  files=dir('.');
+  if exist('.UNITTEST','file')
+    files=dir('');
+    fid=fopen('.UNITTEST');
+    if (fid<0) return; end  % couldn't open the file.  skip it.
+    while true  % check the file for the strings
+      tline = fgetl(fid);
+      if (~ischar(tline))
+        break;
+      end
+      [name,param] = strtok(tline);  
+      name=strtrim(name);
+      param=strtrim(param);
+      if exist(name,'dir')
+        if strcmpi(param,'test_dirs_only')
+          crawlDir(name,node,true,options);
+        elseif strcmpi(param,'all')
+          crawlDir(name,node,false,options);
+        elseif ~isempty(param)
+          error([fullfile(pwd,'.UNITTEST'),' has a an unknown tag: ',param]);
+        else
+          crawlDir(name,node,only_test_dirs && ~strcmpi(name,'test'),options);
+        end
+      elseif exist(name,'file')
+        files=vertcat(files,dir(name));
+      end
+    end
+    fclose(fid);
+  else
+    files=dir('.');
+  end 
   
   for i=1:length(files)
+    if (files(i).name(1)=='@')  % handle class directories
+      files(i).name = fullfile(files(i).name,[files(i).name(2:end),'.m']);
+      files(i).isdir = false;
+    end
+    
     if (files(i).isdir)
       % then recurse into the directory
       if (files(i).name(1)~='.' && ~any(strcmpi(files(i).name,{'dev','slprj','autogen-matlab','autogen-posters'})))  % skip . and dev directories
@@ -311,7 +344,7 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
     ind=find(testname=='.',1);
     testname=testname(1:(ind-1));
     
-    isClass = checkFile(files(i).name,'classdef');
+    isClass = checkFile(files(i).name,'classdef',false);
     if (isClass)
       if (checkFile(files(i).name,'NOTEST'))
         continue; 
@@ -333,6 +366,10 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
     else
       % reject if there is a notest
       if (checkFile(files(i).name,'NOTEST'))
+        continue;
+      end
+      % reject if it is a script
+      if (~checkFile(files(i).name,'function',false))
         continue;
       end
       if (options.gui)
@@ -563,8 +600,10 @@ function feval_in_contained_workspace(f) % helps with scripts
   feval(f);
 end
 
-function bfound = checkFile(filename,strings)
+function bfound = checkFile(filename,strings,search_comments)
 % opens the file and checks for the existence of the string (or strings)
+
+if nargin<3, search_comments=true; end
 
 if ~iscell(strings), strings = {strings}; end
 
@@ -575,6 +614,9 @@ while true  % check the file for the strings
   tline = fgetl(fid);
   if (~ischar(tline))
     break;
+  end
+  if ~search_comments
+    tline = strtok(tline,'%');  % remove text after comments
   end
   for i=1:length(strings)
     if (~isempty(strfind(tline,strings{i})))
