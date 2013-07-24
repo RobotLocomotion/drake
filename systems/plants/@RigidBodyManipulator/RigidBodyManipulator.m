@@ -1222,6 +1222,9 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
       
+      % add noise to damping
+      damping = max(0,(1+options.damping_error*randn())*damping);
+
       joint_limit_min=-inf;
       joint_limit_max=inf;
       effort_limit=inf;
