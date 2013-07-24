@@ -16,7 +16,12 @@ catch ex
   disp(['parse error in ',classname]);
   rethrow(ex);
 end
-m=c.Methods;
-b=cellfun(@(a) a.Static && ~a.Hidden && ~a.Abstract && strcmp(a.Access,'public'),m);
-method=cellfun(@(a) a.Name,m(b),'UniformOutput',false);
-definingclass=cellfun(@(a) a.DefiningClass.Name,m(b),'UniformOutput',false);
+if isempty(c)
+  method={};
+  definingclass={};
+else
+  m=c.Methods;
+  b=cellfun(@(a) a.Static && ~a.Hidden && ~a.Abstract && strcmp(a.Access,'public'),m);
+  method=cellfun(@(a) a.Name,m(b),'UniformOutput',false);
+  definingclass=cellfun(@(a) a.DefiningClass.Name,m(b),'UniformOutput',false);
+end
