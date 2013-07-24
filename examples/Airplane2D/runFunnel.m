@@ -27,6 +27,7 @@ V=sampledFiniteTimeVerification(poly,xtraj.getBreaks(),diag([1 1 10 10]),V,optio
 disp('done');
 
 options.plotdims = [1 2];
+options.x0 = xtraj;
 plotFunnel(V.inFrame(p.getStateFrame()),options);
 fnplt(xtraj,[1 2]); 
 
