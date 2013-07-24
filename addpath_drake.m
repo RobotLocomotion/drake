@@ -155,13 +155,13 @@ if (~conf.sedumi_enabled)
 end
 
 if (conf.sedumi_enabled)
-  sedumiA=[10,2,3,4;5,7,6,4];
-  sedumib=[4;6];
-  sedumic=[0;1;0;1];
-  sedumiT=sedumi(sedumiA,sedumib,sedumic,struct('f',4),struct('fid',0));
-  if(~sedumiT)
-    error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
-  end
+%  sedumiA=[10,2,3,4;5,7,6,4];
+%  sedumib=[4;6];
+%  sedumic=[0;1;0;1];
+%  sedumiT=sedumi(sedumiA,sedumib,sedumic);%,struct('f',4),struct('fid',0));
+%  if(~sedumiT)
+%    error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
+%  end
 else
   disp(' ');
   disp(' SeDuMi not found.  SeDuMi support will be disabled.');
