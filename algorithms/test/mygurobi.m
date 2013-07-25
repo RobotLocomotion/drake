@@ -66,3 +66,5 @@ if (size(Ain,1)>0 || ~isempty(lb) || ~isempty(ub))
 else
   active=[];
 end
+
+% NOTEST
