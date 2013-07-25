@@ -1,6 +1,6 @@
 function testForwardJacDot
 
-p = RigidBodyManipulator('FurutaPendulum.urdf');
+p = RigidBodyManipulator('../../../examples/FurutaPendulum/FurutaPendulum.urdf');
 nq = p.getNumStates()/2;
 
 options.grad_method = {'user','taylorvar'};
