@@ -1,0 +1,8 @@
+
+
+struct lcmt_acrobot_u
+{
+	int64_t timestamp;
+
+	double tau;     // Newton-meters
+}
