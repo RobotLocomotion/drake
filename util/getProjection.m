@@ -12,6 +12,7 @@ function y=getProjection(x,f,x0,plotdims,options)
 if (nargin<5) options=struct(); end
 if (~isfield(options,'tol')) options.tol = 2e-3; end % default tolerance of fplot
 if (~isfield(options,'method')) options.method = 'hull'; end
+if (~isfield(options,'num_samples')) options.num_samples = 100; end
 
 typecheck(x,'msspoly'); 
 if ~issimple(x) error('x should be a simple msspoly'); end
@@ -31,7 +32,7 @@ v = double(subs(f,x,d));
 if v > 1, y = []; return; end
 Q = Q/(1-v);
 % First, construct a set of directions:
-N = 100;
+N = options.num_samples;
 X = zeros(length(x0),N);
 if length(plotdims) == 2
   thetas = linspace(-pi,pi,N);
