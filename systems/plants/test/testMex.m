@@ -1,6 +1,6 @@
 function testMex
 
-p = PlanarRigidBodyManipulator('Acrobot.urdf');
+p = PlanarRigidBodyManipulator('../../../examples/Acrobot/Acrobot.urdf');
 
 nq = p.getNumStates()/2;
 
@@ -41,7 +41,7 @@ for i=1:100
   valuecheck(dJm,dJ,1e-8);
 end
 
-p = RigidBodyManipulator('FurutaPendulum.urdf');
+p = RigidBodyManipulator('../../../examples/FurutaPendulum/FurutaPendulum.urdf');
 
 nq = p.getNumStates()/2;
 
