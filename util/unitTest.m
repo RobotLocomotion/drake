@@ -1,4 +1,4 @@
-function tree=unitTest(options)
+function gui_tree_or_command_line_data =unitTest(options)
 
 % Opens a gui for running unit tests
 %
@@ -71,7 +71,7 @@ if (options.gui)
   warning('off','MATLAB:uitree:DeprecatedFunction');
     
   h=figure(1302);
-  clear global runNode_mutex;
+  clear global runNode_mutex command_line_data;
   set(h,'HandleVisibility','on');
   clf;
 
@@ -79,6 +79,8 @@ if (options.gui)
   root = uitreenode('v0','All Tests',sprintf('<html>All Tests &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait),[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
   set(root,'UserData',data);
 else
+  global command_line_data;
+  command_line_data=struct('pass',0,'fail',0);
   root = [];
 end
 
@@ -107,7 +109,12 @@ if (options.gui)
   if (options.autorun)
     tree.setSelectedNode(root);
   end
+  
+  gui_tree_or_command_line_data = tree;
+else
+  gui_tree_or_command_line_data = command_line_data;
 end
+
 
 if ~isempty(options.logfile)
   fclose(options.logfileptr);
@@ -273,9 +280,9 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
   disp(pdir);
   p = pwd;
   cd(pdir);
-  if strcmp(pdir,'.')
-    [~,pdir]=fileparts(pwd);
-  end
+%  if strcmp(pdir,'.')
+%    [~,pdir]=fileparts(pwd);
+%  end
   if exist('.NOTEST','file')
     cd(p);
     return;
@@ -515,12 +522,15 @@ function tree=runNode(tree,node)
 end
 
 function pass = runCommandLineTest(path,test,options)
+global command_line_data;
 fprintf(1,'%-40s ',test);
 pass = runTest(path,test,options.logfileptr);
 if (pass)
-    fprintf(1,'[PASSED]\n');
+  command_line_data.pass = command_line_data.pass+1;
+  fprintf(1,'[PASSED]\n');
 else
-    fprintf(1,'\n[FAILED]\n');  % \n because runTest will print things
+  command_line_data.fail = command_line_data.fail+1;
+  fprintf(1,'\n[FAILED]\n');  % \n because runTest will print things
 end
 end
 
@@ -536,7 +546,7 @@ else  % for older versions of matlab
 end
 force_close_system();
 close all;
-clearvars -global -except runNode_mutex;
+clearvars -global -except runNode_mutex command_line_data;
 clear Singleton;
 
 s=dbstatus; oldpath=path();
@@ -587,7 +597,7 @@ end
 
 force_close_system();
 close all;
-clearvars -global -except runNode_mutex;
+clearvars -global -except runNode_mutex command_line_data;
 
 t = timerfind;
 if (~isempty(t)) stop(t); end
