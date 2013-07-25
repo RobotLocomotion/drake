@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 2.8.7)
 set(POD_NAME drake)
 include(cmake/pods.cmake)
 
+
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
 lcmtypes_build()  
@@ -83,4 +84,13 @@ if (APPLE)
   set(DYLD_LIBRARY_PATH "$ENV{DYLD_LIBRARY_PATH}" CACHE STRING "$ENV{DYLD_LIBRARY_PATH}" )
 else()
   set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "$ENV{LD_LIBRARY_PATH}" )
+endif()
+
+
+enable_testing()
+find_program(matlab matlab)
+if (NOT matlab-NOTFOUND)
+   add_test(NAME MATLAB_Unit_Tests 
+   		 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  		 COMMAND ${matlab} -nosplash -r "addpath_drake; options.gui=false; options.autorun=true;options.logfile='.unitTest.log'; d=unitTest(options); exit(d.fail)")
 endif()
