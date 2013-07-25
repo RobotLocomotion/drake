@@ -1,8 +1,8 @@
 function testFloatingBaseDynamics
 
 for urdf = {'FallingBrick.urdf',...
-    '../../../examples/FurutaPendulum/FurutaPendulum.urdf', ...
-    '../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'};
+    'FurutaPendulum.urdf', ...
+    'atlas_minimal_contact_no_meshes.urdf'};
 
 urdf=urdf{1};  
 options.floating = 'rpy';

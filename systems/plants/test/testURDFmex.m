@@ -13,8 +13,8 @@ end
 tol = 1e-4; % low tolerance because i'm writing finite precision strings to and from the ascii terminal
 
 for urdf = {'./FallingBrick.urdf',...
-    '../../../examples/FurutaPendulum/FurutaPendulum.urdf', ...
-    '../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'};
+    './FurutaPendulum.urdf', ...
+    './atlas_minimal_contact_no_meshes.urdf'};
 
   urdffile = GetFullPath(urdf{1});
   fprintf(1,'testing %s\n', urdffile);
