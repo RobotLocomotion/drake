@@ -1,6 +1,6 @@
 function testForwardKinRot
 
-p = RigidBodyManipulator('../../../examples/FurutaPendulum/FurutaPendulum.urdf');
+p = RigidBodyManipulator('FurutaPendulum.urdf');
 nq = p.getNumStates()/2;
 
 options.grad_method = {'user','numerical'};

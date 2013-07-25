@@ -2,7 +2,7 @@ function testGradients
 
 options.grad_method = {'user','taylorvar'};
 
-p = PlanarRigidBodyManipulator('../../../examples/Acrobot/Acrobot.urdf');
+p = PlanarRigidBodyManipulator('Acrobot.urdf');
 for i=1:25
   t = rand;
   x = randn(4,1);
@@ -11,7 +11,7 @@ for i=1:25
   [xdot,dxdot] = geval(@p.dynamics,t,x,u,options);
 end
 
-p = RigidBodyManipulator('../../../examples/FurutaPendulum/FurutaPendulum.urdf');
+p = RigidBodyManipulator('FurutaPendulum.urdf');
 for i=1:25
   t = rand;
   x = randn(4,1);
