@@ -282,7 +282,7 @@ end
 function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
   p = pwd;
   cd(pdir);
-  disp(pwd);
+  disp(['crawling ',pwd]);
 %  if strcmp(pdir,'.')
 %    [~,pdir]=fileparts(pwd);
 %  end
