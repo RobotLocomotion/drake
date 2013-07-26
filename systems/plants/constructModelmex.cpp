@@ -145,50 +145,25 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
     memcpy(model->bodies[i].T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
 
-#ifdef BULLET_COLLISION
     pm = mxGetProperty(pBodies,i,"contact_shapes");
+    Matrix4d T;
     for (int j=0; j<mxGetNumberOfElements(pm); j++) {
-    	// construct bullet collision object and transform
-    	RigidBody::CollisionObject co;
-    	double* params = mxGetPr(mxGetField(pm,j,"params"));
-    	int type = (int)mxGetScalar(mxGetField(pm,j,"type"));
-    	switch (type) {
-    	case 1: // BOX
-    		co.bt_shape = new btBoxShape( btVector3(params[0]/2,params[1]/2,params[2]/2) );
-    		break;
-    	case 2: // SPHERE
-    		co.bt_shape = new btSphereShape(params[0]) ;
-    		break;
-    	case 3: // CYLINDER
-    		co.bt_shape = new btCylinderShapeZ( btVector3(params[0],params[0],params[1]/2) );
-    		break;
-    	case 4: // MESH
-    		co.bt_shape = new btConvexHullShape( (btScalar*) params, (int) mxGetNumberOfElements(mxGetField(pm,j,"params")) ,(int) 3*sizeof(double) );
-    		break;
-    	default:
-    		mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs", "Body %d collision shape %d has an unknown type %d", i+1,j+1,type);
-    		break;
-    	}
-    	co.bt_obj = new btCollisionObject();
-    	co.bt_obj->setCollisionShape(co.bt_shape);
-    	memcpy(co.T.data(), mxGetPr(mxGetField(pm,j,"T")), sizeof(double)*4*4);
-
-    	// add to the manipulator's collision world
-    	model->bt_collision_world.addCollisionObject(co.bt_obj);
-
-    	if (model->bodies[i].parent>=0) {
-    		co.bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
-    		co.bt_obj->activate();
-    	} else {
-    		co.bt_obj->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
-    	}
-
-    	// add to the body
-    	model->bodies[i].collision_objects.push_back(co);
+      // DEBUG
+      //cout << "constructModelmex: Body " << i << ", Element " << j << endl;
+      // DEBUG
+      auto shape = (DrakeCollision::Shape)mxGetScalar(mxGetField(pm,j,"type"));
+      vector<double> params_vec;
+      double* params = mxGetPr(mxGetField(pm,j,"params"));
+      int n_params = (int) mxGetNumberOfElements(mxGetField(pm,j,"params"));
+      for (int k=0; k<n_params; k++) {
+        params_vec.push_back(params[k]);
+      }
+      memcpy(T.data(), mxGetPr(mxGetField(pm,j,"T")), sizeof(double)*4*4);
+      model->addCollisionElement(i,T,shape,params_vec);
+      if (model->bodies[i].parent<0) {
+        model->updateCollisionElements(i);  // update static objects only once - right here on load
+      }
     }
-    if (model->bodies[i].parent<0)
-    	model->updateCollisionObjects(i);  // update static objects only once - right here on load
-#endif
   }
   
   double *min = mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min"));

@@ -1,18 +1,13 @@
 #ifndef __RigidBodyManipulator_H__
 #define __RigidBodyManipulator_H__
 
-//#define BULLET_COLLISION  // adds a bunch of dependencies, which are not necessary for all functionality
-
 #include <Eigen/Dense>
 #include <set>
 #include <vector>
 
+#include "collision/DrakeCollision.h"
+
 #include "RigidBody.h"
-
-#ifdef BULLET_COLLISION
-#include <btBulletCollisionCommon.h>
-#endif
-
 
 #define INF -2147483648
 using namespace Eigen;
@@ -74,6 +69,18 @@ public:
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL);
 
+  void addCollisionElement(const int body_ind, Matrix4d T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params);
+
+  void updateCollisionElements(const int body_ind);
+
+  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals);
+
+  bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
+
+  bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
+
+  bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance);
+
 public:
   std::vector<std::string> robot_name;
 
@@ -134,21 +141,7 @@ private:
   bool kinematicsInit;
   int secondDerivativesCached;
 
-#ifdef BULLET_COLLISION
-protected:
-  btDefaultCollisionConfiguration bt_collision_configuration;
-  btCollisionDispatcher bt_collision_dispatcher;
-  btDbvtBroadphase bt_collision_broadphase;
-
-public:
-  btCollisionWorld bt_collision_world;
-
-  void updateCollisionObjects(int body_ind);
-
-  bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals);
-  bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
-  bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
-#endif
+  std::shared_ptr< DrakeCollision::Model > collision_model;
 };
 
 

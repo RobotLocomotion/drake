@@ -1,3 +1,4 @@
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 find_package( Boost COMPONENTS filesystem system )
 
@@ -12,8 +13,8 @@ if (bot2-vis_FOUND)
 endif()
 
 if (eigen3_FOUND)
-  add_library(drakeRBM STATIC RigidBodyManipulator.cpp RigidBody.cpp)
-  set_target_properties(drakeRBM PROPERTIES COMPILE_FLAGS -fPIC)
+  add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
+  target_link_libraries(drakeRBM drakeCollision)
 
   if (Boost_FOUND)
     add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
@@ -23,6 +24,7 @@ if (eigen3_FOUND)
 	   pods_use_pkg_config_packages(URDFRigidBodyManipulator bot2-vis)
     endif()
 
+    add_subdirectory(collision)
     add_subdirectory(urdf_interface)
     add_subdirectory(viewer)
   endif(Boost_FOUND)
@@ -41,6 +43,7 @@ if (eigen3_FOUND)
   add_rbm_mex(doKinematicsmex)
   add_rbm_mex(forwardKinmex)
   add_rbm_mex(bodyKinmex)
+  add_rbm_mex(collisionmex)
 
   pods_find_pkg_config(gurobi)
   if (gurobi_FOUND)
