@@ -118,6 +118,9 @@ end
 
 if ~isempty(options.logfile)
   fclose(options.logfileptr);
+
+  % strip the html tags out of the logfile (which are irrelevant outside of matlab and make it difficult to read):
+  system(['sed -i -e "s/''[^'']*''//g;s/<[^>]*>//g" ',options.logfile]);
 end
 
 end
@@ -277,9 +280,9 @@ function expandAll(tree,node)
 end
 
 function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
-  disp(pdir);
   p = pwd;
   cd(pdir);
+  disp(pwd);
 %  if strcmp(pdir,'.')
 %    [~,pdir]=fileparts(pwd);
 %  end
