@@ -2,9 +2,11 @@ include_directories ( .. )
 
 set(drakeCollision_SRC_FILES Model.cpp Element.cpp DrakeCollision.cpp)
 pods_find_pkg_config(bullet)
+
 if (bullet_FOUND)
   add_definitions( -DBULLET_COLLISION )   
   set( drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} BulletModel.cpp BulletElement.cpp )   
+  set(bullet "yes" CACHE STRING "yes" )
 endif()
 
 add_library(drakeCollision SHARED ${drakeCollision_SRC_FILES})
