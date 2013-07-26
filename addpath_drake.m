@@ -209,6 +209,8 @@ conf.pathlcp_enabled = true;
 
 % todo: add lcmgl_enabled (using pod_pkg_config)
 
+conf.bullet_enabled = ~isempty(getCMakeParam('bullet'));
+
 if ~isfield(conf,'avl') || isempty(conf.avl)
   path_to_avl = getCMakeParam('avl');
   if isempty(path_to_avl) || strcmp(path_to_avl,'avl-NOTFOUND')
@@ -230,10 +232,6 @@ if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
   end
 end
 conf.xfoil_enabled = ~isempty(conf.xfoil);
-
-if ~isfield(conf,'conf.additional_unit_test_dirs')
-  conf.additional_unit_test_dirs={};
-end
 
 % save configuration options to config.mat
 conf

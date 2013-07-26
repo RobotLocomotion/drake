@@ -1,5 +1,7 @@
 function bullet_collision_closest_distance_jac_test(varargin)
 
+checkDependency('bullet');
+
 if (nargin > 0)
   typecheck(varargin{1},'double');
   draw_pause = varargin{1};
@@ -73,4 +75,3 @@ end
 
 end
 
-% NOTEST

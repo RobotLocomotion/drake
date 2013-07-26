@@ -5,7 +5,6 @@ cmake_minimum_required(VERSION 2.8.7)
 set(POD_NAME drake)
 include(cmake/pods.cmake)
 
-
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
 lcmtypes_build()  
