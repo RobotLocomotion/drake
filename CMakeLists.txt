@@ -92,5 +92,5 @@ find_program(matlab matlab)
 if (NOT matlab-NOTFOUND)
    add_test(NAME MATLAB_Unit_Tests 
    		 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-  		 COMMAND ${matlab} -nosplash -r "addpath('${CMAKE_INSTALL_PREFIX}/build/matlab'); addpath_drake; options.gui=false; options.autorun=true;options.logfile='.unitTest.log'; d=unitTest(options); exit(d.fail)")
+  		 COMMAND ${matlab} -nosplash -r "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_drake; options.gui=false; options.autorun=true;options.logfile='.unitTest.log'; d=unitTest(options); exit(d.fail)")
 endif()
