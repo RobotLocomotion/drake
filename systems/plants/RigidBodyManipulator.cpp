@@ -2,6 +2,7 @@
 
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
+#include "collision/Model.h"
 
 using namespace std;
 
@@ -250,14 +251,7 @@ void rotz(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
 
 
 RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects) 
-#ifdef BULLET_COLLISION
-  :  bt_collision_configuration(),
-     bt_collision_dispatcher( &bt_collision_configuration ),
-     bt_collision_broadphase(),
-     bt_collision_world( &bt_collision_dispatcher,
-                       &bt_collision_broadphase,
-                       &bt_collision_configuration )
-#endif
+  :  collision_model(DrakeCollision::newModel())
 {
 	num_dof=0; NB=0; num_bodies=0;
 	a_grav = VectorXd::Zero(6);
@@ -333,6 +327,8 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 
   	for(int i=0; i < num_bodies; i++) bodies[i].setN(NB);
   	for(int i=last_num_bodies; i<num_bodies; i++) bodies[i].dofnum = i-1;  // setup default dofnums
+
+    collision_model->resize(num_bodies);
   }
 
   //Variable allocation for gradient calculations
@@ -401,16 +397,6 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 
 RigidBodyManipulator::~RigidBodyManipulator() {
 
-#ifdef BULLET_COLLISION
-  for (int i=0; i<num_bodies; i++) {
-	  for (vector<RigidBody::CollisionObject>::iterator iter=bodies[i].collision_objects.begin(); iter!=bodies[i].collision_objects.end(); iter++) {
-	  	bt_collision_world.removeCollisionObject(iter->bt_obj);
-	  	delete iter->bt_obj;
-	  	delete iter->bt_shape;
-	  }
-  }
-#endif
-
   if (num_dof>0) {
   	delete[] joint_limit_min;
   	delete[] joint_limit_max;
@@ -466,124 +452,36 @@ void RigidBodyManipulator::compile(void)
   initialized=true;
 }
 
-#ifdef BULLET_COLLISION
-void RigidBodyManipulator::updateCollisionObjects(int body_ind)
+void RigidBodyManipulator::addCollisionElement(const int body_ind, Matrix4d T_elem_to_lnk, DrakeCollision::Shape shape, vector<double> params)
 {
-	btMatrix3x3 rot;
-	btVector3 pos;
-	btTransform btT;
-	Matrix4d T;
-	for (vector<RigidBody::CollisionObject>::iterator iter=bodies[body_ind].collision_objects.begin(); iter!=bodies[body_ind].collision_objects.end(); iter++) {
-		T = bodies[body_ind].T*(iter->T);
-		  rot.setValue( T(0,0), T(0,1), T(0,2),
-  			T(1,0), T(1,1), T(1,2),
-  			T(2,0), T(2,1), T(2,2) );
-    	btT.setBasis(rot);
-    	pos.setValue( T(0,3), T(1,3), T(2,3) );
-    	btT.setOrigin(pos);
-
-    	iter->bt_obj->setWorldTransform(btT);
-    	bt_collision_world.updateSingleAabb(iter->bt_obj);
-	}
-
+  bool is_static = (bodies[body_ind].parent==0);
+  collision_model->addElement(body_ind,T_elem_to_lnk,shape,params,is_static);
 }
 
-class MyCollisionResultCollector : public btCollisionWorld::ContactResultCallback
+void RigidBodyManipulator::updateCollisionElements(const int body_ind)
 {
-public:
-	vector<Vector3d> ptsA, ptsB, normals;
-  double distance;
-
-	virtual	btScalar	addSingleResult(btManifoldPoint& cp,	const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0,const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
-	{
-		Vector3d pt;
-		btVector3 bt_pt = cp.getPositionWorldOnA();
-		pt(0) = (double) bt_pt.getX();
-		pt(1) = (double) bt_pt.getY();
-		pt(2) = (double) bt_pt.getZ();
-		ptsA.push_back(pt);
-
-		bt_pt = cp.getPositionWorldOnB();
-		pt(0) = (double) bt_pt.getX();
-		pt(1) = (double) bt_pt.getY();
-		pt(2) = (double) bt_pt.getZ();
-		ptsB.push_back(pt);
-
-		bt_pt = cp.m_normalWorldOnB;
-		pt(0) = (double) bt_pt.getX();
-		pt(1) = (double) bt_pt.getY();
-		pt(2) = (double) bt_pt.getZ();
-		normals.push_back(pt);
-
-    distance = cp.m_distance1;
-    
-		return 0;
-	}
+  collision_model->updateElementsForBody(body_ind, bodies[body_ind].T);
 };
 
 bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals)
 {
-	MyCollisionResultCollector c;
-	for (vector<RigidBody::CollisionObject>::iterator iterA=bodies[body_indA].collision_objects.begin(); iterA!=bodies[body_indA].collision_objects.end(); iterA++) {
-		for (vector<RigidBody::CollisionObject>::iterator iterB=bodies[body_indB].collision_objects.begin(); iterB!=bodies[body_indB].collision_objects.end(); iterB++) {
-			bt_collision_world.contactPairTest(iterA->bt_obj,iterB->bt_obj,c);
-		}
-	}
-
-	ptsA.resize(3,c.ptsA.size());
-	ptsB.resize(3,c.ptsB.size());
-	normals.resize(3,c.normals.size());
-	
-	for (int i=0; i<c.ptsA.size(); i++) {
-		ptsA.col(i) = c.ptsA[i];
-		ptsB.col(i) = c.ptsB[i];
-		normals.col(i) = c.normals[i];
-	}
-
-  return (c.ptsA.size() > 0);
+  return collision_model->getPairwiseCollision(body_indA,body_indB,ptsA,ptsB,normals);
 };
 
 bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal)
 {
-  RigidBody::CollisionObject co = bodies[body_indA].collision_objects.at(body_collision_indA);
-	MyCollisionResultCollector c;
-  for (vector<RigidBody::CollisionObject>::iterator iterB=bodies[body_indB].collision_objects.begin(); iterB!=bodies[body_indB].collision_objects.end(); iterB++) {
-    bt_collision_world.contactPairTest(co.bt_obj,iterB->bt_obj,c);
-	}
-	
-	if (c.ptsA.size() > 0) {
-		ptA = c.ptsA[0];
-		ptB = c.ptsB[0];
-		normal = c.normals[0];
-  }
-  else {
-		ptA << 1,1,1;
-		ptB << -1,-1,-1;
-		normal << 0,0,1;
-  }
-  return (c.ptsA.size() > 0);
+  return collision_model->getPairwisePointCollision(body_indA,body_indB,body_collision_indA,ptA,ptB,normal);
 };
 
 bool RigidBodyManipulator::getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal)
 {
-  RigidBody::CollisionObject co = bodies[body_ind].collision_objects.at(body_collision_ind);
-	MyCollisionResultCollector c;
-  bt_collision_world.contactTest(co.bt_obj,c);
-	
-	if (c.ptsA.size() > 0) {
-		ptA = c.ptsA[0];
-		ptB = c.ptsB[0];
-		normal = c.normals[0];
-  }
-  else {
-		ptA << 1,1,1;
-		ptB << -1,-1,-1;
-		normal << 0,0,1;
-  }
-  return (c.ptsA.size() > 0);
+  return collision_model->getPointCollision(body_ind,body_collision_ind,ptA,ptB,normal); 
 };
 
-#endif
+bool RigidBodyManipulator::getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance)
+{
+  return collision_model->getClosestPoints(body_indA,body_indB,ptA,ptB,normal,distance);
+};
 
 void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivatives, double* qd)
 {
@@ -806,12 +704,9 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
       }
     }
 
-#ifdef BULLET_COLLISION
     if (bodies[i].parent>=0) {
-    	updateCollisionObjects(i);
+      collision_model->updateElementsForBody(i,bodies[i].T);
     }
-#endif
-
   }
 
   kinematicsInit = true;

@@ -53,17 +53,6 @@ public:
   double mass;
   Vector4d com;  // this actually stores [com;1] (because that's what's needed in the kinematics functions)
 
-#ifdef BULLET_COLLISION
-  class CollisionObject {
-  public:
-	  btCollisionObject* bt_obj;
-	  btCollisionShape* bt_shape;
-	  Matrix4d T;
-  };
-
-  std::vector< CollisionObject > collision_objects;  // note: should be an unordered_set (but linker didn't find on my first try)
-#endif
-
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);
 };
 

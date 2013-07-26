@@ -468,8 +468,6 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       dofnum[index-1] = _dofnum;
     }
 
-
-#ifdef BULLET_COLLISION
     if (l->second->collision) { // then at least one collision element exists
       // todo: iterate over all collision groups (not just "default")
       map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Collision> > > >::iterator c_grp_it = l->second->collision_groups.find("default");
@@ -481,63 +479,58 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
           urdf::Collision * cptr = citer->get();
           if (!cptr) continue;
 
-        	RigidBody::CollisionObject co;
-        	co.bt_obj = new btCollisionObject();
+          Matrix4d T;
+          poseToTransform(cptr->origin,T);
+          DrakeCollision::Shape shape = DrakeCollision::Shape::UNKNOWN;
+
           int type = cptr->geometry->type;
+          vector<double> params;
         	switch (type) {
         	case urdf::Geometry::BOX:
             {
           	  boost::shared_ptr<urdf::Box> box(boost::dynamic_pointer_cast<urdf::Box>(cptr->geometry));
-          	  co.bt_shape = new btBoxShape( btVector3(box->dim.x/2,box->dim.y/2,box->dim.z/2) );
+              params.push_back(box->dim.x);
+              params.push_back(box->dim.y);
+              params.push_back(box->dim.z);
+              shape = DrakeCollision::Shape::BOX;
             }
         		break;
         	case urdf::Geometry::SPHERE:
            	{
           		boost::shared_ptr<urdf::Sphere> sphere(boost::dynamic_pointer_cast<urdf::Sphere>(cptr->geometry));
-          		co.bt_shape = new btSphereShape(sphere->radius) ;
+              params.push_back(sphere->radius);
+              shape = DrakeCollision::Shape::SPHERE;
           	}
         		break;
         	case urdf::Geometry::CYLINDER:
           	{
           		boost::shared_ptr<urdf::Cylinder> cyl(boost::dynamic_pointer_cast<urdf::Cylinder>(cptr->geometry));
-          		co.bt_shape = new btCylinderShapeZ( btVector3(cyl->radius,cyl->radius,cyl->length/2) );
+              params.push_back(cyl->radius);
+              params.push_back(cyl->length);
+              shape = DrakeCollision::CYLINDER;
           	}
         		break;
         	case urdf::Geometry::MESH:
           	{
+                  shape = DrakeCollision::Shape::MESH;
+                  cerr << "Warning: mesh collision elements are not supported in URDFRigidBodyManipulator yet." << endl;
 //              boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
-              cerr << "Warning: mesh collision elements are not supported yet." << endl;
           	}
         		break;
         	default:
         		cerr << "Link " << l->first << " has a collision element with an unknown type " << type << endl;
         		break;
         	}
-
-        	co.bt_obj->setCollisionShape(co.bt_shape);
-        	poseToTransform(cptr->origin,co.T);
-
-        	// add to the manipulator's collision world
-        	bt_collision_world.addCollisionObject(co.bt_obj);
-
-        	if (bodies[index+1].parent>=0) {
-        		co.bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
-        		co.bt_obj->activate();
-        	} else {
-        		co.bt_obj->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT);
-        	}
-
-        	// add to the body
-        	bodies[index+1].collision_objects.push_back(co);
+                if (shape != DrakeCollision::Shape::MESH){
+                  addCollisionElement(index,T,shape,params);
+                }
         }
       }
-      if (bodies[index+1].parent<0)
-      	updateCollisionObjects(index+1);  // update static objects only once - right here on load
+      if (bodies[index].parent<0) {
+        updateCollisionElements(index);  // update static objects only once - right here on load
+      }
     }
-#endif
-
   }
-
 
   compile();  
   return true;

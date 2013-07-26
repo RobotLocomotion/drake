@@ -45,7 +45,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       	memcpy(mxGetPr(plhs[2]),normals.data(),sizeof(double)*3*normals.cols());
       }
     }
-  	break;
+    break;
   case 2: // pairwise collisions with specified bodyA points  
     {
     	MatrixXd ptsA, ptsB, normals;
@@ -114,6 +114,32 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       	plhs[2] = mxCreateDoubleMatrix(3,normals.cols(),mxREAL);
       	memcpy(mxGetPr(plhs[2]),normals.data(),sizeof(double)*3*normals.cols());
       }
+    }
+    break;
+  case 4: // pairwise closest-distance
+    {
+    	Vector3d ptA, ptB, normal;
+        double dist;
+    	int body_indA = (int) mxGetScalar(prhs[2])-1;
+        int body_indB = (int) mxGetScalar(prhs[3])-1;
+    	if (body_indA<0 || body_indA>=model->num_bodies || body_indB<0 || body_indB>=model->num_bodies)
+    		mexErrMsgIdAndTxt("Drake:collisionmex:BadInputs","body indices must be between 1 and num_bodies");
+        model->getPairwiseClosestPoint(body_indA,body_indB,ptA,ptB,normal,dist);
+        if (nlhs>0) {
+          plhs[0] = mxCreateDoubleMatrix(3,1,mxREAL);
+          memcpy(mxGetPr(plhs[0]),ptA.data(),sizeof(double)*3);
+        }
+        if (nlhs>1) {
+          plhs[1] = mxCreateDoubleMatrix(3,1,mxREAL);
+          memcpy(mxGetPr(plhs[1]),ptB.data(),sizeof(double)*3);
+        }
+        if (nlhs>2) {
+          plhs[2] = mxCreateDoubleMatrix(3,1,mxREAL);
+          memcpy(mxGetPr(plhs[2]),normal.data(),sizeof(double)*3);
+        }
+        if (nlhs>3) {
+          plhs[3] = mxCreateDoubleScalar(dist);
+        }
     }
     break;
   default:
