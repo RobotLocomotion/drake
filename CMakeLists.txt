@@ -85,6 +85,7 @@ else()
   set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "$ENV{LD_LIBRARY_PATH}" )
 endif()
 
+pods_install_bash_setup(drake)
 
 enable_testing()
 find_program(matlab matlab)
