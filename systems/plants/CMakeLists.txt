@@ -2,8 +2,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 find_package( Boost COMPONENTS filesystem system )
 
+include_directories (${CMAKE_SOURCE_DIR}/util )
+
 if (Boost_FOUND)
-  include_directories ( ${Boost_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/util )
+  include_directories ( ${Boost_INCLUDE_DIR} )
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif()
 
@@ -16,6 +18,8 @@ if (eigen3_FOUND)
   add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
   target_link_libraries(drakeRBM drakeCollision)
 
+  add_subdirectory(collision)
+
   if (Boost_FOUND)
     add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
     target_link_libraries(URDFRigidBodyManipulator drakeRBM urdf_interface ${Boost_LIBRARIES})
@@ -24,7 +28,6 @@ if (eigen3_FOUND)
 	   pods_use_pkg_config_packages(URDFRigidBodyManipulator bot2-vis)
     endif()
 
-    add_subdirectory(collision)
     add_subdirectory(urdf_interface)
     add_subdirectory(viewer)
   endif(Boost_FOUND)
