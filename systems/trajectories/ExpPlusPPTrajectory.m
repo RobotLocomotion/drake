@@ -69,6 +69,31 @@ classdef ExpPlusPPTrajectory < Trajectory
         %end
       end
     end
+    
+    function dtraj = fnder(obj,order)
+      if nargin<2 || order < 0
+        order = 1;
+      end
+      
+      if order==0
+        dtraj = obj;
+      else
+        if obj.pporder > 1
+          gam = zeros(size(obj.gamma)-[0 0 1]);
+          for i=2:obj.pporder
+            gam(:,:,i-1) = obj.gamma(:,:,i) * (i-1);
+          end
+        else
+          gam = 0*obj.gamma;
+        end
+        
+        dtraj = ExpPlusPPTrajectory(obj.breaks,obj.K*obj.A,obj.A,obj.alpha,gam);
+
+        if order > 1
+          dtraj = fnder(dtraj,order-1);
+        end
+      end
+    end
 
     function t = getBreaks(obj)
       t = obj.breaks;
