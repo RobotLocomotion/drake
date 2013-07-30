@@ -1245,6 +1245,7 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 
 // explicit instantiations (required for linking):
 template void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
+template void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &);
 template void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::getCOMdJac(MatrixBase< Map<MatrixXd> > &);
