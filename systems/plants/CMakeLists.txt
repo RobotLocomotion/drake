@@ -47,6 +47,7 @@ if (eigen3_FOUND)
   add_rbm_mex(forwardKinmex)
   add_rbm_mex(bodyKinmex)
   add_rbm_mex(collisionmex)
+  add_rbm_mex(getCMMmex)
 
   pods_find_pkg_config(gurobi)
   if (gurobi_FOUND)

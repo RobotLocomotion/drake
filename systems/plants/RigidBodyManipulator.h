@@ -27,6 +27,9 @@ public:
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
 
   template <typename Derived>
+  void getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot);
+
+  template <typename Derived>
   void getCOM(MatrixBase<Derived> &com);
 
   template <typename Derived>
@@ -135,6 +138,26 @@ private:
   Vector3d bc;
   MatrixXd bJ;
   MatrixXd bdJ;
+
+  // preallocate for CMM function
+  MatrixXd P; // spatial incidence matrix 
+  MatrixXd dP; // dP_dq * qd 
+  MatrixXd Pinv;
+  MatrixXd Phi; // joint axis matrix
+  MatrixXd Is; // system inertia matrix
+  MatrixXd Xg; // spatial centroidal projection matrix
+  MatrixXd *Xworld; // spatial transforms from world to each body
+  MatrixXd dXg;  // dXg_dq * qd
+  MatrixXd *dXworld; // dXworld_dq * qd
+  MatrixXd *dXup; // dXup_dq * qd
+  MatrixXd Xcom; // spatial transform from centroid to world
+  MatrixXd Jcom; 
+  MatrixXd dXcom;
+  MatrixXd Xi;
+  MatrixXd dXidq;
+  VectorXd s;
+  MatrixXd Js;
+  MatrixXd Jdot;
 
   int num_contact_pts;
   bool initialized;

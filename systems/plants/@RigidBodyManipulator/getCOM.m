@@ -4,7 +4,7 @@ function [com,J,dJ] = getCOM(model,kinsol)
 
 if ~isstruct(kinsol)  
   % treat input as getCOM(model,q)
-  kinsol = doKinematics(model,kinsol,nargin<2);
+  kinsol = doKinematics(model,kinsol,nargout>2);
 end
 
 if (kinsol.mex)
