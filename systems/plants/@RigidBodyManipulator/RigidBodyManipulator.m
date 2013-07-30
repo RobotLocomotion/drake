@@ -474,7 +474,6 @@ classdef RigidBodyManipulator < Manipulator
       
       H = manipulatorDynamics(model,zeros(model.num_q,1),zeros(model.num_q,1));
       if cond(H)>1e3
-        H
         warning('Drake:RigidBodyManipulator:SingularH','H appears to be singular (cond(H)=%f).  Are you sure you have a well-defined model?',cond(H));
       end
     end
