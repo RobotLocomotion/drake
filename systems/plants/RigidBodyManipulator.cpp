@@ -381,6 +381,39 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   bdJ = MatrixXd::Zero(3,num_dof*num_dof);
   dTdTmult = MatrixXd::Zero(3*num_dof,4);
 
+  
+  
+  // preallocate for CMM function
+  if (last_NB>0) {
+  	delete[] Xworld;
+    delete[] dXworld;
+    delete[] dXup;
+  }
+  Xworld = new MatrixXd[NB]; // spatial transforms from world to each body
+  dXworld = new MatrixXd[NB]; // dXworld_dq * qd
+  dXup = new MatrixXd[NB]; // dXup_dq * qd
+  for(int i=0; i < NB; i++) {
+  	Xworld[i] = MatrixXd::Zero(6,6);
+  	dXworld[i] = MatrixXd::Zero(6,6);
+  	dXup[i] = MatrixXd::Zero(6,6);
+	}
+  
+  P = MatrixXd::Identity(6*NB,6*NB); // spatial incidence matrix
+  Pinv = MatrixXd::Identity(6*NB,6*NB);
+  Phi = MatrixXd::Zero(6*NB,num_dof); // joint axis matrix
+  Js = MatrixXd::Zero(6*NB,num_dof);
+  Jdot = MatrixXd::Zero(6*NB,num_dof);
+  Is = MatrixXd::Zero(6*NB,6*NB); // system inertia matrix
+  Xg = MatrixXd::Zero(6*NB,6); // spatial centroidal projection matrix
+  dP = MatrixXd::Zero(6*NB,6*NB); // dP_dq * qd 
+  dXg = MatrixXd::Zero(6*NB,6);  // dXg_dq * qd
+  Xcom(6,6); // spatial transform from centroid to world
+  Jcom = MatrixXd::Zero(3,num_dof); 
+  dXcom = MatrixXd::Zero(6,6);
+  Xi = MatrixXd::Zero(6,6);
+  dXidq = MatrixXd::Zero(6,6);
+  s = VectorXd::Zero(6);
+  
   // other prealloc
   qtmp = VectorXd::Zero(num_dof);
 
@@ -665,7 +698,7 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
           bodies[i].ddTdqdq.row(3*num_dof*(bodies[i].dofnum) + j) = dTdTmult.row(j);
         }
 
-        // ind = reshape(reshape(body.dofnum+0:nq:3*nq*nq,3,[])',[],1); % ddTdqidq
+        // ind = reshape(reshape(body.dofnum+0:num_dof:3*num_dof*num_dof,3,[])',[],1); % ddTdqidq
         for (j = 0; j < 3; j++) {
           for (k = 0; k < num_dof; k++) { 
             if (k == bodies[i].dofnum) {
@@ -715,6 +748,62 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     if (qd) cached_qd[i] = qd[i];
   }
   secondDerivativesCached = b_compute_second_derivatives;
+}
+
+
+template <typename Derived>
+void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot) 
+{
+  // returns the centroidal momentum matrix as described in Orin & Goswami 2008
+  // 
+  // h = A*qd, where h(4:6) is the total linear momentum and h(1:3) is the 
+  // total angular momentum in the centroid frame (world fram translated to COM).
+
+  Vector3d com; getCOM(com);
+  Xtrans(-com,&Xcom); 
+
+  getCOMJac(Jcom);
+  Map<VectorXd> qdvec(qd,num_dof);
+  Vector3d com_dot = Jcom*qdvec;
+  dXcom = MatrixXd::Zero(6,6);
+  dXcom(5,1) = 1*com_dot(0);
+  dXcom(4,2) = -1*com_dot(0);
+  dXcom(5,0) = -1*com_dot(1);
+  dXcom(3,2) = 1*com_dot(1);
+  dXcom(4,0) = 1*com_dot(2);
+  dXcom(3,1) = -1*com_dot(2);
+  
+  for (int i=0; i < NB; i++) {
+    int n = dofnum[i];
+    jcalc(pitch[i],q[n],&Xi,&s);
+    Xup[i] = Xi * Xtree[i];
+  
+    djcalc(pitch[i], q[n], &dXidq);
+    dXup[i] = dXidq * Xtree[i] * qd[n];
+ 
+    if (parent[i] >= 0) {
+      P.block(i*6,parent[i]*6,6,6) = -Xup[i];
+      Xworld[i] = Xup[i] * Xworld[parent[i]];
+
+      dP.block(i*6,parent[i]*6,6,6) = -dXup[i];
+      dXworld[i] = dXup[i]*Xworld[parent[i]] + Xup[i]*dXworld[parent[i]];
+    }
+    else {
+      Xworld[i] = Xup[i];
+      dXworld[i] = dXup[i];
+    }
+ 
+    Phi.block(i*6,n,6,1) = s;
+    Is.block(i*6,i*6,6,6) = I[i];
+    Xg.block(i*6,0,6,6) = Xworld[i] * Xcom; // spatial transform from centroid to body
+    dXg.block(i*6,0,6,6) = dXworld[i] * Xcom + Xworld[i] * dXcom; 
+  }
+  
+  Pinv = P.inverse(); // potentially suboptimal
+  Js = Pinv * Phi;
+  Jdot = -Pinv * dP * Pinv * Phi;
+  A = Xg.transpose()*Is*Js; //centroidal momentum matrix (eq 27)
+  Adot = Xg.transpose()*Is*Jdot + dXg.transpose()*Is*Js;
 }
 
 template <typename Derived>
@@ -1155,6 +1244,7 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 
 
 // explicit instantiations (required for linking):
+template void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &);
 template void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::getCOMdJac(MatrixBase< Map<MatrixXd> > &);

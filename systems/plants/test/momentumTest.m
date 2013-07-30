@@ -43,8 +43,14 @@ for t=0:0.05:T
   [A,Adot] = getCMM(r,kinsol,qd);
   valuecheck(Adot,Adot_tv);
 
+  % test mex
+  kinsol_matlab = doKinematics(r,q,false,false);
+  [A_mat,Adot_mat] = getCMM(r,kinsol_matlab,qd);
+  valuecheck(A,A_mat);
+  valuecheck(Adot,Adot_mat);
+  
+  % test physics
   h = A*qd;
-
   omega = rpydot2angularvel(q(4:6),qd(4:6));
   am = body.inertia * omega;
 
