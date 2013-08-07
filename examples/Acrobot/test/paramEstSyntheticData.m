@@ -4,9 +4,11 @@ oldpath = addpath(fullfile(pwd,'..'));
 
 r = AcrobotPlant;
 v = AcrobotVisualizer(r);
-[utraj,xtraj] = swingUpTrajectory(r);
 
 true_parameters = getParams(r);
+
+%% test on swingup up data
+[utraj,xtraj] = swingUpTrajectory(r);
 
 % Try parameter estimation without any noise
 Ts = .01; breaks=getBreaks(utraj); T0 = breaks(1); Tf = breaks(end);
