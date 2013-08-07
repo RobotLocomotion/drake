@@ -14,6 +14,10 @@ classdef Manipulator < SecondOrderSystem
   end
 
   methods (Sealed = true)
+    % list this as Sealed to overcome the multiple inheritance diamond
+    % problem: http://www.mathworks.com/help/matlab/matlab_oop/subclassing-multiple-classes.html
+    [phat,estimated_delay] = parameterEstimation(obj,data,options)
+      
     function [qdd,dqdd] = sodynamics(obj,t,q,qd,u)
     % Provides the SecondOrderDynamics interface to the manipulatorDynamics.
 
