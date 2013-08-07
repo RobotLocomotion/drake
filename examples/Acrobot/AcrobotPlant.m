@@ -31,6 +31,7 @@ classdef AcrobotPlant < Manipulator & ParameterizedSystem
       
       obj = setParamFrame(obj,CoordinateFrame('AcrobotParams',10,'p',...
         { 'l1','l2','m1','m2','b1','b2','lc1','lc2','I1','I2' }));
+      obj = setParamLimits(obj,zeros(10,1));
     end
 
     function [H,C,B] = manipulatorDynamics(obj,q,qd)

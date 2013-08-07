@@ -68,6 +68,21 @@ classdef ParameterizedSystem < DrakeSystem
     function fr = getParamFrame(obj)
       fr = obj.param_frame;
     end
+    
+    function obj = setParamLimits(obj,pmin,pmax)
+      d = prod(obj.param_frame.dim);
+      sizecheck(pmin,[d 1]);
+      obj.pmin = pmin;
+      if nargin>2,
+        sizecheck(pmax,[d 1]);
+        obj.pmax = pmax; 
+      end
+    end
+    
+    function [pmin,pmax] = getParamLimits(obj)
+      pmin = obj.pmin;
+      pmax = obj.pmax;
+    end
   end
   
   methods % actual worker methods
@@ -83,5 +98,7 @@ classdef ParameterizedSystem < DrakeSystem
     num_param_con_ineq=0;
     num_param_con_eq=0;
     param_frame;
+    pmin;
+    pmax;
   end
 end  

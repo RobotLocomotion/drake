@@ -9,7 +9,8 @@ function [phat,estimated_delay] = parameterEstimation(obj,data,options)
 %
 % Restrictions: 
 %   H,C,and B must be trig/poly in q,qd and polynomial in p.
-%   All params p must be lower bounded.
+%   All params p must be lower bounded (general constraints are not
+%   implemented yet, but would be easy if they are affine)
 %   data must use the same variable names as the system coordinate frames
 %
 % Algorithm:
@@ -29,6 +30,10 @@ function [phat,estimated_delay] = parameterEstimation(obj,data,options)
 %
 
 typecheck(obj,'ParameterizedSystem'); % only works if the system also implements the parameters interface
+[num_param_ineq,num_param_eq]=getNumParamConstraints(obj)
+if num_param_ineq~=0 || num_param_eq~=0
+  error('not supported yet');
+end
 
 nq = obj.num_q;
 nu = obj.num_u;
@@ -54,8 +59,6 @@ for i=1:size(b,1)
   end
   if (deg(coeff(i))==0) error('don''t expect this case, and would need to handle it explicitly'); end
 end
-
-% todo: do some extract work to find minimal coefficients here?
 
 lumped_params = msspoly('lp',length(coeff));
 % now err=M*coeff and lperr=M*lumped_params;
