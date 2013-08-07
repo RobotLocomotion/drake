@@ -1,4 +1,4 @@
-classdef AcrobotPlant < Manipulator
+classdef AcrobotPlant < Manipulator & ParameterizedSystem
   
   properties
     % parameters from Spong95 (except inertias are now relative to the
@@ -28,6 +28,9 @@ classdef AcrobotPlant < Manipulator
       
       obj.xG = Point(obj.getStateFrame,[pi;0;0;0]);
       obj.uG = Point(obj.getInputFrame,0);
+      
+      obj = setParamFrame(obj,CoordinateFrame('AcrobotParams',10,'p',...
+        { 'l1','l2','m1','m2','b1','b2','lc1','lc2','I1','I2' }));
     end
     
     function [H,C,B] = manipulatorDynamics(obj,q,qd)
