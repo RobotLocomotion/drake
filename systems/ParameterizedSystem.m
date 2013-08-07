@@ -75,9 +75,11 @@ classdef ParameterizedSystem < DrakeSystem
       % @param data an instance of iddata (see 'help iddata' for more info)
       error('todo: implement a generic nonlinear optimization approach here');
     end
+    
+%    function findLumpedParameters(obj)
   end
   
-  properties
+  properties (SetAccess=private, GetAccess=private)
     num_param_con_ineq=0;
     num_param_con_eq=0;
     param_frame;
