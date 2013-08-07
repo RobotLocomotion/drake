@@ -24,6 +24,8 @@ classdef AcrobotPlant < Manipulator & ParameterizedSystem
       obj.I1 = 0.083 + obj.m1*obj.lc1^2;
       obj.I2 = 0.33 + obj.m2*obj.lc2^2;
 
+      obj = setInputFrame(obj,CoordinateFrame('AcrobotInput',1,'u',{'tau'}));
+      obj = setStateFrame(obj,CoordinateFrame('AcrobotState',4,'x',{'theta1','theta2','theta1dot','theta2dot'}));
       obj = setOutputFrame(obj,obj.getStateFrame);
       
       obj.xG = Point(obj.getStateFrame,[pi;0;0;0]);
@@ -32,6 +34,9 @@ classdef AcrobotPlant < Manipulator & ParameterizedSystem
       obj = setParamFrame(obj,CoordinateFrame('AcrobotParams',10,'p',...
         { 'l1','l2','m1','m2','b1','b2','lc1','lc2','I1','I2' }));
       obj = setParamLimits(obj,zeros(10,1));
+%      obj = setParamFrame(obj,CoordinateFrame('AcrobotParams',1,'p',...
+%        { 'lc2' }));
+%      obj = setParamLimits(obj,zeros(10,1));
     end
 
     function [H,C,B] = manipulatorDynamics(obj,q,qd)
