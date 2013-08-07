@@ -32,6 +32,28 @@ classdef AcrobotPlant < Manipulator & ParameterizedSystem
       obj = setParamFrame(obj,CoordinateFrame('AcrobotParams',10,'p',...
         { 'l1','l2','m1','m2','b1','b2','lc1','lc2','I1','I2' }));
     end
+
+    function findLumpedParameters(obj)
+      q=msspoly('q',obj.num_q);
+      s=msspoly('s',obj.num_q);
+      c=msspoly('c',obj.num_q);
+      qt=TrigPoly(q,s,c);
+      qd=msspoly('qd',obj.num_q);
+      p=obj.getParamFrame.poly;
+      pobj = setParams(obj,p);
+      [H,C,B] = manipulatorDynamics(pobj,qt,qd);
+      
+      [a,b]=decomp(getmsspoly([H(:);C(:);B(:)]),[q;s;c;qd]);
+      coeff = msspoly(ones(size(b,1),1));
+      for i=1:size(b,1)
+        % would use prod(a'.^b(i,:)) if msspoly implemented prod
+        for k=find(b(i,:))
+          coeff(i) = coeff(i).*(a(k)^b(i,k));
+        end        
+      end
+      keyboard;
+    end
+    
     
     function [H,C,B] = manipulatorDynamics(obj,q,qd)
       % keep it readable:

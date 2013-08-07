@@ -285,7 +285,8 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
         case '()'
           a.p=subsref(a.p,s);
         otherwise
-          error('not implemented'); 
+          varargout=cell(1,nargout);
+          [varargout{:}] = builtin('subsref',a,s);
       end
     end
     
