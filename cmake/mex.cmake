@@ -25,7 +25,7 @@ function(mex_setup)
   #    as well as all of the mexopts
 
   find_program(matlab matlab)
-  if ( matlab-NOTFOUND )
+  if ( NOT matlab )
      message(FATAL_ERROR "Could not find matlab executable")
   endif()
   execute_process(COMMAND ${matlab} -n COMMAND grep -e "MATLAB \\+=" COMMAND cut -d "=" -f2 OUTPUT_VARIABLE _matlab_root)
