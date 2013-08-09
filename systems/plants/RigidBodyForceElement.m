@@ -3,6 +3,8 @@ classdef RigidBodyForceElement
   properties 
     name
     direct_feedthrough_flag = false;
+    input_num = [];
+    input_limits = [];
   end
   
   methods

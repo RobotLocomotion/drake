@@ -409,6 +409,17 @@ classdef RigidBodyManipulator < Manipulator
           end
         end
       end
+      %Copy first column of u_limit to be the low limits, and the second
+      %column is the high limit.
+      u_limit = [-u_limit u_limit];
+      for i=1:length(model.force)
+        if model.force{i}.direct_feedthrough_flag
+          input_num = size(B,2)+1;
+          B(1,size(B,2)+1) = 0; %Add another column to B
+          model.force{i}.input_num = input_num;
+          u_limit(size(u_limit,1)+1,:) = model.force{i}.input_limits;
+        end
+      end
       model.B = full(B);
 
       model = model.setNumInputs(size(model.B,2));
@@ -459,7 +470,7 @@ classdef RigidBodyManipulator < Manipulator
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
       
-      model = model.setInputLimits(-u_limit,u_limit);
+      model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
       
       %% check basic assumption from kinematics:
       for i=1:length(model.body)
@@ -928,13 +939,25 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function fr = constructInputFrame(model)
-      actjoints = [model.body([model.actuator.joint])];
+      %inputparents is an array of the parent RigidBodies of each joint.
+      inputparents = [];
+      inputnames = {};
+      if ~isempty(model.actuator)
+        inputparents = [model.body([model.actuator.joint])];
+        inputnames = {model.actuator.name};
+      end
+      for i = 1:length(model.force)
+        if model.force{i}.direct_feedthrough_flag
+          inputparents = [inputparents model.body(model.force{i}.bodyind)];
+          inputnames{end+1} = model.force{i}.name;
+        end
+      end
       for i=1:length(model.name)
-        robot_inputs = [actjoints.robotnum]==i;
-        coordinates = {model.actuator(robot_inputs).name}';
+        robot_inputs = [inputparents.robotnum]==i;
+        coordinates = {inputnames{robot_inputs}}';
         fr{i}=SingletonCoordinateFrame([model.name{i},'Input'],sum(robot_inputs),'u',coordinates);
       end
-      frame_dims = [actjoints.robotnum];
+      frame_dims = [inputparents.robotnum];
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
     
@@ -1358,7 +1381,36 @@ classdef RigidBodyManipulator < Manipulator
           fe = RigidBodyWing(profile, xyz', chord, span, stall_angle, nominal_speed, parent);
           fe.name = name;
           model.force{end+1} = fe;
+        case 'thrust'
+          elNode = node.getElementsByTagName('parent').item(0);
+          parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
+          
+          elnode = node.getElementsByTagName('origin').item(0);
+          orig = str2num(char(elnode.getAttribute('xyz')));
+          
+          elnode = node.getElementsByTagName('direction').item(0);
+          dir = str2num(char(elnode.getAttribute('xyz')));
+          
+          scaleFac = 1;
+          elnode = node.getElementsByTagName('scaleFactor').item(0);
+          if ~isempty(elnode)
+            scaleFac = str2num(char(elnode.getAttribute('value')));
+          end
+          
+          elnode = node.getElementsByTagName('limits').item(0);
+          if ~isempty(elnode)
+            limits = str2num(char(elnode.getAttribute('value')));
+          end
+          
+          if exist('limits')
+            th = RigidBodyThrust(parent, orig, dir, scaleFac, limits);
+          else
+              th = RigidBodyThrust(parent, orig, dir, scaleFac);
+          end
+          th.name = name;
+          model.force{end+1} = th;
         otherwise
+            
           error(['force element type ',type,' not supported (yet?)']);
       end
     end

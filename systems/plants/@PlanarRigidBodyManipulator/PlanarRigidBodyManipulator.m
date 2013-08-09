@@ -502,13 +502,8 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           
           xyz=zeros(3,1); rpy=zeros(3,1);
           elnode = node.getElementsByTagName('origin').item(0);
-          if ~isempty(elnode)
-            if elnode.hasAttribute('xyz')
+          if ~isempty(elnode) && elnode.hasAttribute('xyz')
               xyz = str2num(char(elnode.getAttribute('xyz')));
-            end
-            if elnode.hasAttribute('rpy')
-              rpy = str2num(char(elnode.getAttribute('rpy')));
-            end
           end
           
           elNode = node.getElementsByTagName('profile').item(0);
@@ -526,9 +521,37 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           elnode = node.getElementsByTagName('nominal_speed').item(0);
           nominal_speed = str2num(char(elnode.getAttribute('value')));
           
-          fe = PlanarRigidBodyWing();
+          fe = PlanarRigidBodyWing(profile, [xyz(1) xyz(3)], chord, span, stall_angle, nominal_speed, parent);
           fe.name = name;
           model.force{end+1} = fe;
+        case 'thrust'
+          elNode = node.getElementsByTagName('parent').item(0);
+          parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
+          
+          elnode = node.getElementsByTagName('origin').item(0);
+          orig = str2num(char(elnode.getAttribute('xyz')));
+          
+          elnode = node.getElementsByTagName('direction').item(0);
+          dir = str2num(char(elnode.getAttribute('xyz')));
+          
+          scaleFac = 1;
+          elnode = node.getElementsByTagName('scaleFactor').item(0);
+          if ~isempty(elnode)
+            scaleFac = str2num(char(elnode.getAttribute('value')));
+          end
+          
+          elnode = node.getElementsByTagName('limits').item(0);
+          if ~isempty(elnode)
+            limits = str2num(char(elnode.getAttribute('value')));
+          end
+          
+          if exist('limits')
+            th = PlanarRigidBodyThrust(parent, [orig(1) orig(3)], [dir(1) dir(3)], scaleFac, limits);
+          else
+            th = PlanarRigidBodyThrust(parent, [orig(1) orig(3)], [dir(1) dir(3)], scaleFac);
+          end
+          th.name = name;
+          model.force{end+1} = th;
         otherwise
           error(['force element type ',type,' not supported (yet?)']);
       end

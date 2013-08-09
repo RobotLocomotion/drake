@@ -4,11 +4,17 @@ checkDirty(obj);
 if (nargin<4) use_mex=true; end
 
 m = obj.featherstone;
+B = obj.B;
 
 if length(obj.force)>0
   f_ext = sparse(3,m.NB);
   for i=1:length(obj.force)
-    force = computeSpatialForce(obj.force{i},obj,q,qd);
+    if (obj.force{i}.direct_feedthrough_flag)
+      [force,B_force] = computeSpatialForce(obj.force{i},obj,q,qd);
+      B = B+B_force;
+    else
+      force = computeSpatialForce(obj.force{i},obj,q,qd);
+    end
     f_ext(:,m.f_ext_map_to) = f_ext(:,m.f_ext_map_to)+force(:,m.f_ext_map_from);
   end
 else
@@ -161,6 +167,5 @@ else
 end
 
 C=C+m.damping'.*qd;
-B = obj.B;
 
 end
