@@ -136,6 +136,8 @@ sqerr_est = sum(err_est'*err_est);
 
 %%   Step 3: Geometric program to back out original parameters.
 %
+% Note: Now this is actually solved as a QP
+%
 % min | log(p) - log(p_orig) |_2^2 
 %  s.t. forall i, lp_i = lp_est_i
 %                 pmin <= p <= pman
