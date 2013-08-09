@@ -7,8 +7,6 @@ classdef PlanarRigidBodyThrust < RigidBodyForceElement
     %x-axis (rotation around the y-axis)
     direction = 0 
     scaleFactor = 1; %amount to scale the input by.
-    input_num = 0;
-    limits = [-inf inf];
   end
   
   methods
@@ -21,11 +19,13 @@ classdef PlanarRigidBodyThrust < RigidBodyForceElement
         dir = dir/norm(dir);
         obj.direction = reshape(dir,2,1);
         obj.direct_feedthrough_flag = true;
+        obj.input_num=0;
+        obj.input_limits = [-inf inf];
         if (nargin > 3)
             obj.scaleFactor = scaleFac;
         end
         if (nargin > 4)
-            obj.limits = limits;
+            obj.input_limits = limits;
         end
     end %constructor
     

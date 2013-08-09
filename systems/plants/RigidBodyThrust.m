@@ -24,7 +24,7 @@ classdef RigidBodyThrust < RigidBodyForceElement
             obj.scaleFactor = scaleFac;
         end
         if (nargin > 4)
-            obj.input_limits = input_limits;
+            obj.input_limits = limits;
         end
     end %constructor
     
