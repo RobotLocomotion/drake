@@ -1,28 +1,50 @@
-function [p, v, x0, xtraj] = testWing()
+function [p, v, X0, Xtraj] = testWing()
 %{
 length(q) = 5, 10 total states.
-[X pos
- Z pos
+[x pos
+ z pos
  Theta (negative = pitch up
  Elevator angle
  Leg angle]
 %}
+tf = 1;
+x0  = -5;
+z0 = 0;
+pitch0 = -.1;
+Vx0 = 6;
+Vz0 = .1;
+Vpitch0 = -.1;
 options.floating = true; %'RPY';
-p = RigidBodyManipulator('TestWing.urdf', options);
-
-x0 = [0 0 3 0 0 0 6 0 0 0 0 0]';
-
-xtraj = p.simulate([0 1],x0);
-
+p = PlanarRigidBodyManipulator('TestWing.urdf', options);
+% x0=[x  z Pit Vx Vz Vp]
+X0 = [x0 z0 pitch0 Vx0 Vz0 Vpitch0]';
+Xtraj = p.simulate([0 tf],X0);
 v = p.constructVisualizer();
-v.axis = [-6 1 -2 1];
+v.axis = [-6 1 -5.05 1.5];
 v.playback_speed = .25;
-v.playback(xtraj);
+v.playback(Xtraj);
+xfPlanar=Xtraj.eval(tf);
+
+
+disp('Testing 3D wing now...');
+p = RigidBodyManipulator('TestWing.urdf', options);
+% x0=[x  y z  R Pitch  Y Vx Vy Vz Vr Vpit   VY]
+X0 = [x0 0 z0 0 pitch0 0 Vx0 0 Vz0 0 Vpitch0 0]';
+Xtraj = p.simulate([0 tf],X0);
+v = p.constructVisualizer();
+v.playback_speed = .25;
+v.playback(Xtraj);
+xf3D=Xtraj.eval(tf);
+
+xf3Dreduced = [xf3D(1);xf3D(3); xf3D(5); xf3D(7); xf3D(9); xf3D(11)];
+
 %Note: this final state vector only holds for a specific test case:
-%Flat plate, mass = .1, chord = .4, span = 1, origins coincident, nominal
-%speed = 10,
-finalstate = [6 0 2.6831 0 0 0 6 0 -0.3278 0 0 0]';
-assert(norm(finalstate-xtraj.eval(1))<.01, 'Failed Wing test. Please check the parameters of your testWing.xml file, this could cause a false negative!');
+%Ht23.dat, mass = .13, chord = .4, span = 1, quarter chord at xyz=".1 0 0", 
+%nominal speed = 10, stall = 12; iyy = .003648;
+nominal3Dstate = [.4766 0 -.0594 0 .2380 0 5.3765 0 -1.2962 0 1.0474 0]';
+assert(norm(xfPlanar-xf3Dreduced)<.001, 'Failed Wing test. Identical Planar and 3D cases do not produce identical results');
+assert(norm(nominal3Dstate-xf3D)<.01, 'Failed Wing test. Please check the parameters of your testWing.xml file, this could cause a false negative!');
+%{%}
 end
 
 %{
