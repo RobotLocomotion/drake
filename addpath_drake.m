@@ -111,6 +111,12 @@ end
 
 conf.lcmgl_enabled = false;
 if (conf.lcm_enabled)
+  [retval,info] = system('util/check_multicast_is_loopback.sh');
+  if (retval)
+    info = strrep(info,'ERROR: ','');
+    warning(sprintf('Currently all of your LCM traffic will be broadcast to the network, because:\n%s',info));
+  end
+  
   conf.lcmgl_enabled = logical(exist('bot_lcmgl.data_t','class'));
   
   if (~conf.lcmgl_enabled)
@@ -138,7 +144,7 @@ end
 if (~conf.snopt_enabled) 
   disp(' ');
   disp(' SNOPT not found.  SNOPT support will be disabled.');
-  disp(' To re-enable, add the SNOPT matlab folder to your path and rerun configure.');
+  disp(' To re-enable, add the SNOPT matlab folder to your path and rerun addpath_drake.');
   disp(' SNOPT can be obtained from <a href="https://tig.csail.mit.edu/software/">https://tig.csail.mit.edu/software/</a> .');
   disp(' ');
 end
@@ -165,7 +171,7 @@ if (conf.sedumi_enabled)
 else
   disp(' ');
   disp(' SeDuMi not found.  SeDuMi support will be disabled.');
-  disp(' To re-enable, add SeDuMi to your matlab path and rerun configure.');
+  disp(' To re-enable, add SeDuMi to your matlab path and rerun addpath_drake.');
   disp(' SeDuMi can be downloaded for free from <a href="http://sedumi.ie.lehigh.edu/">http://sedumi.ie.lehigh.edu/</a> ');
   disp(' ');
 end
@@ -187,12 +193,12 @@ end
 
 conf.cplex_enabled = logical(exist('cplexlp'));
 if (~conf.cplex_enabled)
-  disp(' CPLEX not found.  CPLEX support will be disabled.  To re-enable, install CPLEX and add the matlab subdirectory to your matlab path, then rerun configure');
+  disp(' CPLEX not found.  CPLEX support will be disabled.  To re-enable, install CPLEX and add the matlab subdirectory to your matlab path, then rerun addpath_drake');
 end
 
 conf.yalmip_enabled = logical(exist('sdpvar'));
 if (~conf.yalmip_enabled)
-  disp(' YALMIP not found.  YALMIP support will be disabled.  To re-enable, install YALMIP and rerun configure.'); 
+  disp(' YALMIP not found.  YALMIP support will be disabled.  To re-enable, install YALMIP and rerun addpath_drake.'); 
 end
 
 setenv('PATH_LICENSE_STRING','2069810742&Courtesy_License&&&USR&2013&14_12_2011&1000&PATH&GEN&31_12_2013&0_0_0&0&0_0');
@@ -225,7 +231,7 @@ conf.avl_enabled = ~isempty(conf.avl);
 if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
   path_to_xfoil = getCMakeParam('xfoil');
   if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'xfoil-NOTFOUND')
-    disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun configure');
+    disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun addpath_drake');
     conf.xfoil = '';
   else
     conf.xfoil = path_to_xfoil;
@@ -234,11 +240,11 @@ end
 conf.xfoil_enabled = ~isempty(conf.xfoil);
 
 % save configuration options to config.mat
-conf
+%conf
 save([conf.root,'/util/drake_config.mat'],'conf');
 
-disp('To manually change any of these entries, use:')
-disp('  editDrakeConfig(param,value);');
+%disp('To manually change any of these entries, use:')
+%disp('  editDrakeConfig(param,value);');
 
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
 
