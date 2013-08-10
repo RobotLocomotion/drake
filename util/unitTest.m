@@ -38,6 +38,7 @@ function gui_tree_or_command_line_data =unitTest(options)
 % @option gui if true, shows the gui. set to false for the text only, non-interactive version 
 % @default true
 % @option logfile file name for writing information about FAILED tests only
+% @option cdash file name for writing the cdash test xml output
 %
 % All unit tests should always be run (and all tests should pass) before 
 % anything is committed back into the Drake repository.
@@ -61,10 +62,28 @@ if ~isempty(options.logfile)
     % fixing this would simply be a matter of finding the right (best) way
     % to pass the logfileptr variable through the tree structure to
     % runTest()
+    options.logfileptr = -1;
+  else
+    options.logfileptr = fopen(options.logfile,'w');
   end
-  options.logfileptr = fopen(options.logfile,'w');
 else
   options.logfileptr = -1;
+end
+if isfield(options,'cdash')
+  if (options.gui)
+    warning('At the moment, writing to logfile is only implemented for gui=false.  Disabling logfile.');
+    options.cdashNode = [];
+  else
+    options.cdashNode = com.mathworks.xml.XMLUtils.createDocument('Testing')
+    cdashRootNode = options.cdashNode.getDocumentElement;
+    cdashTic = tic;
+    appendTextNode(options.cdashNode,cdashRootNode,'StartDateTime',datestr(now));
+    appendTextNode(options.cdashNode,cdashRootNode,'StartTestTime',now);
+    cdashRootNode.appendChild(options.cdashNode.createElement('TestList'));
+    %      thisElement.appendChild(docNode.createTextNode(sprintf('%i',i)));
+  end
+else
+  options.cdashNode = [];
 end
 
 if (options.gui)
@@ -84,6 +103,7 @@ else
   root = [];
 end
 
+options.rootdir = pwd;
 crawlDir('.',root,options.test_dirs_only,options);
 
 if (options.gui)
@@ -118,12 +138,19 @@ end
 
 if ~isempty(options.logfile)
   fclose(options.logfileptr);
+end
 
-  % strip the html tags out of the logfile (which are irrelevant outside of matlab and make it difficult to read):
-  system(['sed -i -e "s/''[^'']*''//g;s/<[^>]*>//g" ',options.logfile]);
+if ~isempty(options.cdashNode)
+  appendTextNode(options.cdashNode,cdashRootNode,'EndDateTime',datestr(now));
+  appendTextNode(options.cdashNode,cdashRootNode,'EndTestTime',now);
+  appendTextNode(options.cdashNode,cdashRootNode,'ElapsedMinutes',toc(cdashTic)/60);
+  xmlFileName = options.cdash;
+  xmlwrite(options.cdash,options.cdashNode);
+%  edit(xmlFileName);
 end
 
 end
+
 
 function dock(h,env)
 
@@ -527,7 +554,7 @@ end
 function pass = runCommandLineTest(path,test,options)
 global command_line_data;
 fprintf(1,'%-40s ',test);
-pass = runTest(path,test,options.logfileptr);
+pass = runTest(path,test,options);
 if (pass)
   command_line_data.pass = command_line_data.pass+1;
   fprintf(1,'[PASSED]\n');
@@ -537,10 +564,49 @@ else
 end
 end
 
-function pass = runTest(runpath,test,logfileptr)
+function [pass,elapsed_time] = runTest(runpath,test,options)
 p=pwd;
 cd(runpath);
 %  disp(['running ',path,'/',test,'...']);
+
+if nargin>2 && ~isempty(options.cdashNode)
+  cdashRootNode = options.cdashNode.getDocumentElement;
+  cdashTestListNode = cdashRootNode.getElementsByTagName('TestList').item(0);
+  appendTextNode(options.cdashNode,cdashTestListNode,'Test',fullfile(runpath,test));
+  cdashTestNode = options.cdashNode.createElement('Test');
+  cdashRootNode.appendChild(cdashTestNode);
+  appendTextNode(options.cdashNode,cdashTestNode,'Name',test);
+  appendTextNode(options.cdashNode,cdashTestNode,'Path',runpath);
+  appendTextNode(options.cdashNode,cdashTestNode,'FullName',fullfile(runpath,test));
+  appendTextNode(options.cdashNode,cdashTestNode,'FullCommandLine',test);
+  cdashResultsNode = options.cdashNode.createElement('Results');
+  cdashTestNode.appendChild(cdashResultsNode);
+%  cdashExitCode = options.cdashNode.createElement('NamedMeasurement');
+%  cdashExitCode.setAttribute('type','text/string');
+%  cdashExitCode.setAttribute('name','Exit Code');
+%  cdashResultsNode.appendChild(cdashExitCode);
+%  cdashExitValue = options.cdashNode.createElement('NamedMeasurement');
+%  cdashExitValue.setAttribute('type','text/string');
+%  cdashExitValue.setAttribute('name','Exit Value');
+%  cdashResultsNode.appendChild(cdashExitValue);
+  cdashExecutionTime = options.cdashNode.createElement('NamedMeasurement');
+  cdashExecutionTime.setAttribute('type','numeric/double');
+  cdashExecutionTime.setAttribute('name','Execution Time');
+  cdashResultsNode.appendChild(cdashExecutionTime);
+  cdashCompletionStatus = options.cdashNode.createElement('NamedMeasurement');
+  cdashCompletionStatus.setAttribute('type','text/string');
+  cdashCompletionStatus.setAttribute('name','Completion Status');
+  cdashResultsNode.appendChild(cdashCompletionStatus);
+  cdashCommandLine = options.cdashNode.createElement('NamedMeasurement');
+  cdashCommandLine.setAttribute('type','text/string');
+  cdashCommandLine.setAttribute('name','CommandLine');
+  appendTextNode(options.cdashNode,cdashCommandLine,'Value',test);
+  cdashResultsNode.appendChild(cdashCommandLine);
+  cdashMeasurement = options.cdashNode.createElement('Measurement');
+  cdashResultsNode.appendChild(cdashMeasurement);
+else
+  cdashTestNode = [];
+end
 
 if (exist('rng'))
     rng('shuffle'); % init rng to current date
@@ -553,44 +619,55 @@ clearvars -global -except runNode_mutex command_line_data;
 clear Singleton;
 
 s=dbstatus; oldpath=path();
+mytic = tic;
+
 % useful for debugging: if 'dbstop if error' is on, then don't use try catch.
 if any(strcmp('error',{s.cond})) ||any(strcmp('warning',{s.cond}))
-    feval_in_contained_workspace(test);
+  feval_in_contained_workspace(test);
 else
-    try
-        feval_in_contained_workspace(test);
-    catch ex
-        if ((strcmp(ex.identifier,'Drake:MissingDependency:vrml_enabled')))
-            % we're running headless and don't care about 3D stuff
-            pass=true;
-        else
-            
-            pass = false;
-            cd(p);
-            disp(' ');
-            disp(' ');
-            disp('*******************************************************');
-            disp(['* error in ',runpath,'/',test]);
-            disp('*******************************************************');
-            disp(getReport(ex,'extended'));
-            disp('*******************************************************');
-            
-            if (nargin>2 && logfileptr>0)
-                fprintf(logfileptr,'*******************************************************\n');
-                fprintf(logfileptr,['* error in ',runpath,'/',test,'\n']);
-                fprintf(logfileptr,'*******************************************************\n');
-                fprintf(logfileptr,'\n');
-                fprintf(logfileptr,getReport(ex,'extended'));
-                fprintf(logfileptr,'\n');
-                fprintf(logfileptr,'*******************************************************\n');
-            end
-        end
-        lasterr(ex.message,ex.identifier);
-        %    rethrow(ex);
-        path(oldpath);
-        return;
+  try
+    feval_in_contained_workspace(test);
+  catch ex
+    if ((strncmp(ex.identifier,'Drake:MissingDependency',23)))
+      % ok to let these slip through
+      lasterr(ex.message,ex.identifier);
+      appendTextNode(options.cdashNode,cdashCompletionStatus,'Value',ex.message);
+    else
+      
+      pass = false;
+      elapsed_time = toc(mytic);
+      
+      cd(p);
+      msg = [ ...
+        sprintf('*******************************************************\n') ...
+        sprintf('* error in %s\n',fullfile(runpath,test)) ...
+        sprintf('*******************************************************\n') ...
+        sprintf('%s\n',getReport(ex,'extended')) ...
+        sprintf('*******************************************************\n') ];
+        
+      fprintf(1,'\n\n%s',msg);
+      
+      % strip the html tags out of the logfile (which are irrelevant outside of matlab and make it difficult to read):
+      msg = regexprep(msg,'''[^'']*''','');
+      msg = regexprep(msg,'<[^>]*>','');
+      
+      if (nargin>2 && options.logfileptr>0)
+        fprintf(options.logfileptr,msg);
+      end
+      
+      if ~isempty(cdashTestNode)
+        cdashTestNode.setAttribute('Status','failed');
+        appendTextNode(options.cdashNode,cdashExecutionTime,'Value',elapsed_time);
+        appendTextNode(options.cdashNode,cdashCompletionStatus,'Value','Terminated with Error');
+        appendTextNode(options.cdashNode,cdashMeasurement,'Value',msg);
+      end
+      lasterr(ex.message,ex.identifier);
+      path(oldpath);
+      return;
     end
+  end
 end
+elapsed_time = toc(mytic);
 path(oldpath);
 
 a=warning;
@@ -606,6 +683,15 @@ t = timerfind;
 if (~isempty(t)) stop(t); end
 
 pass = true;
+if ~isempty(cdashTestNode)
+  cdashTestNode.setAttribute('Status','passed');
+  appendTextNode(options.cdashNode,cdashExecutionTime,'Value',elapsed_time);
+  if ~cdashCompletionStatus.hasChildNodes
+    appendTextNode(options.cdashNode,cdashCompletionStatus,'Value','Completed');
+  end
+  appendTextNode(options.cdashNode,cdashMeasurement,'Value','');
+end
+
 cd(p);
 end
 
@@ -716,3 +802,14 @@ for i=1:length(strs)
 end  
 
 end
+
+
+  function appendTextNode(docNode,parent,element_name,text)
+    if isempty(text) text=''; end
+    if isnumeric(text) || islogical(text)
+      text = num2str(text);
+    end
+    thisElement = docNode.createElement(element_name);
+    thisElement.appendChild(docNode.createTextNode(text));
+    parent.appendChild(thisElement);
+  end
