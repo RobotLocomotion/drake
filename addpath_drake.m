@@ -111,12 +111,6 @@ end
 
 conf.lcmgl_enabled = false;
 if (conf.lcm_enabled)
-  [retval,info] = system('util/check_multicast_is_loopback.sh');
-  if (retval)
-    info = strrep(info,'ERROR: ','');
-    warning(sprintf('Currently all of your LCM traffic will be broadcast to the network, because:\n%s',info));
-  end
-  
   conf.lcmgl_enabled = logical(exist('bot_lcmgl.data_t','class'));
   
   if (~conf.lcmgl_enabled)
@@ -239,6 +233,16 @@ if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
 end
 conf.xfoil_enabled = ~isempty(conf.xfoil);
 
+if (conf.lcm_enabled)
+  [retval,info] = system('util/check_multicast_is_loopback.sh');
+  if (retval)
+    info = strrep(info,'ERROR: ','');
+    info = strrep(info,'./',[conf.root,'/util/']);
+    warning(sprintf('Currently all of your LCM traffic will be broadcast to the network, because:\n%s',info));
+  end
+end  
+
+
 % save configuration options to config.mat
 %conf
 save([conf.root,'/util/drake_config.mat'],'conf');
@@ -288,6 +292,7 @@ function success=pod_pkg_config(podname)
   success=false;
   cmd = ['addpath_',podname];
   if exist(cmd)
+    disp([' Calling ',cmd]);
     eval(cmd);
     success=true;
   elseif nargout<1

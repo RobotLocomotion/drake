@@ -25,8 +25,8 @@ classdef DrakeMexPointer < handle
         else
           fprintf(1,'drake mex pointer %s\n',obj.name);
         end
-        feval(obj.delete_fcn,obj);
       end
+      feval(obj.delete_fcn,obj);
     end
   end
 end
