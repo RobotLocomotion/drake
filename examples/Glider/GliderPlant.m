@@ -22,7 +22,8 @@ classdef GliderPlant < DrakeSystem
     I = 0.003;
     m = 0.082;
     g = 9.81; % m/s^2
-    rho = 1.292; % kg/m^3
+    %Air density for 20 degC dry air, at sea level
+    rho = 1.204; % kg/m^3
     xd = [0,0,pi/4,0,0,-.5,-0.5]';% the goal
     phi_lo_limit = -0.9473; % lower elevator angle limit
     phi_up_limit = 0.4463; % upper elevator angle limit
