@@ -41,7 +41,8 @@ for i = 1:100
     urdf_xdot(3) = -urdf_xdot(3);
     urdf_xdot(4) = -urdf_xdot(4);
     urdf_xdot(7) = -urdf_xdot(7);
-    assert(norm(glider_xdot-urdf_xdot(1:7))<1e-3, 'Dynamics of GliderPlant and GliderBalanced.URDF do not match.  Ensure the elevator is almost massless and inertia-less, else you broke something.');
+    valuecheck(glider_xdot,urdf_xdot(1:7));
+%      error('Dynamics of GliderPlant and GliderBalanced.URDF do not match.  Ensure the elevator is almost massless and inertia-less, else you broke something.');
 end
 cd test
     function u = computeAccel(p, x, vel)
