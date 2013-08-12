@@ -9,7 +9,7 @@ else
   draw_pause = 0.05;
 end
 
-lcmgl = BotLCMGLClient('bullet_collision_closest_distance_test');
+lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_distance_test');
 r = RigidBodyManipulator();
 
 for i=1:2
@@ -28,20 +28,20 @@ c = mycon(randn(12,1));  % call it once to make sure it doesn't crash
 
     kinsol = doKinematics(r,q);
     [ptA,ptB,~,dist] = pairwiseClosestPoints(r,kinsol,2,3);
-    bot_lcmgl_color3f(lcmgl,1,0,0); % red
-    bot_lcmgl_sphere(lcmgl,ptA,.05,20,20);
+    lcmgl.glColor3f(1,0,0); % red
+    lcmgl.sphere(ptA,.05,20,20);
 
-    bot_lcmgl_color3f(lcmgl,0,1,0); % green
-    bot_lcmgl_sphere(lcmgl,ptB,.05,20,20);
+    lcmgl.glColor3f(0,1,0); % green
+    lcmgl.sphere(ptB,.05,20,20);
 
     %dist = norm(ptB-ptA);
 
-    bot_lcmgl_color3f(lcmgl,0,0,0); % black
-    bot_lcmgl_text_ex(lcmgl,(ptB+ptA)/2,num2str(dist),0,0);
+    lcmgl.glColor3f(0,0,0); % black
+    lcmgl.text((ptB+ptA)/2,num2str(dist),0,0);
 
-    bot_lcmgl_color3f(lcmgl,.7,.7,.7); % gray
+    lcmgl.glColor3f(.7,.7,.7); % gray
 
-    bot_lcmgl_switch_buffer(lcmgl);
+    lcmgl.switchBuffers();
 
 
     pause(draw_pause);
