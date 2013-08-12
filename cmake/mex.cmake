@@ -112,7 +112,6 @@ function(add_mex)
   # need to be set using set_target_properties
 
   # backup global props
-  set (CMAKE_C_COMPILER_BK ${CMAKE_C_COMPILER})
   set (CMAKE_C_FLAGS_DEBUG_BK ${CMAKE_C_FLAGS_DEBUG})
   set (CMAKE_C_FLAGS_RELEASE_BK ${CMAKE_C_FLAGS_RELEASE})
   set (CMAKE_CXX_COMPILER_BK ${CMAKE_CXX_COMPILER})
@@ -120,15 +119,11 @@ function(add_mex)
   set (CMAKE_CXX_FLAGS_RELEASE_BK ${CMAKE_CXX_FLAGS_RELEASE})  
 
   # set global props
-#  find_program (mex_c_compiler ${MEX_CC})
-  set (CMAKE_C_COMPILER ${MEX_CC})
   set (CMAKE_C_FLAGS_DEBUG ${MEX_CFLAGS} ${MEX_CDEBUGFLAGS} ${MEX_CC_ARGUMENTS})
   set (CMAKE_C_FLAGS_RELEASE ${MEX_CFLAGS} ${MEX_COPTIMFLAGS} ${MEX_CC_ARGUMENTS})
   find_program (CMAKE_CXX_COMPILER ${MEX_CXX})
   set (CMAKE_CXX_FLAGS_DEBUG ${MEX_CXXFLAGS} ${MEX_CXXDEBUGFLAGS} ${MEX_CXX_ARGUMENTS})
   set (CMAKE_CXX_FLAGS_RELEASE ${MEX_CXXFLAGS} ${MEX_CXXOPTIMFLAGS} ${MEX_CXX_ARGUMENTS})
-
-  message(STATUS "CMAKE_C_COMPILER=${CMAKE_C_COMPILER} , MEX_CC=${MEX_CC}")
 
   list(FIND ARGV SHARED isshared)
   if (isshared EQUAL -1)
@@ -138,7 +133,6 @@ function(add_mex)
   endif()
 
   # restore global props
-  set (CMAKE_C_COMPILER ${CMAKE_C_COMPILER_BK})
   set (CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG_BK})  
   set (CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE_BK})  
   set (CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER_BK})
@@ -180,3 +174,14 @@ endfunction()
 mex_setup()
 
 
+find_program(MEX_C_COMPILER ${MEX_CC})
+if (NOT ${CMAKE_C_COMPILER} STREQUAL ${MEX_C_COMPILER})
+   message(FATAL_ERROR "Your cmake C compiler is: ${CMAKE_C_COMPILER} but your mex options were setup for: ${MEX_CC} .  Consider rerunning 'mex -setup' in  Matlab.")
+endif()
+
+find_program(MEX_CXX_COMPILER ${MEX_CXX})
+if (NOT ${CMAKE_CXX_COMPILER} STREQUAL ${MEX_CXX_COMPILER})
+   message(FATAL_ERROR "Your cmake CXX compiler is: ${CMAKE_CXX_COMPILER} but your mex options were setup for: ${MEX_CXX} .  Consider rerunning 'mex -setup' in Matlab.")
+endif()
+
+# NOTE:  would like to check LD also, but it appears to be difficult with cmake  (there is not explicit linker executable variable, only the make rule), and  even my mex code assumes that LD==LDCXX for simplicity.
