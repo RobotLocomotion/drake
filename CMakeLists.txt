@@ -17,12 +17,23 @@ include(UseJava)
 
 pods_use_pkg_config_classpath(lcm-java)
 
+# annoyingly, libbot does not define a classpath variable. there might be a cleaner way to do this
+execute_process(COMMAND pkg-config --variable=prefix bot2-lcmgl-client OUTPUT_VARIABLE LCMGL_BUILD_DIR)
+if (NOT LCMGL_BUILD_DIR)
+        message(STATUS "\n\n----- ERROR: bot2-lcmgl not found")
+        return()
+endif()
+string(STRIP ${LCMGL_BUILD_DIR} LCMGL_BUILD_DIR)
+set(LCMGL_JAR_FILE "${LCMGL_BUILD_DIR}/share/java/bot2-lcmgl.jar")
+set(CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE})
+
 add_jar(drake
 	util/MyLCMTypeDatabase.java
 	util/MessageMonitor.java
 	util/CoordinateFrameData.java
 	util/LCMCoder.java
 	util/Transform.java
+ 	util/BotLCMGLClient.java
 	)
 install_jar(drake share/java)
 

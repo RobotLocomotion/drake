@@ -8,7 +8,7 @@ end
 %v = r.constructVisualizer();
 
 %v = BotVisualizer('FallingBrick.urdf',struct('floating',true));
-%lcmgl = bot_lcmgl_init('contact_points');
+% lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'contact_points');
 
 %q = randn(getNumDOF(r),1);
 q = zeros(getNumDOF(r),1);
@@ -97,21 +97,21 @@ function debugLCMGL(r,v,kinsol,ptsA,ptsB)
     pts = contactPositions(r,kinsol);
   
     v.draw(0,[q;0*q]);
-    bot_lcmgl_color3f(lcmgl,0,0,1); % blue
+    obj.lcmgl.glColor3f(0,0,1); % blue
     for j=1:size(pts,2)
-      bot_lcmgl_sphere(lcmgl,pts(:,j),.05,20,20);
+      obj.lcmgl.sphere(pts(:,j),.05,20,20);
     end
     
     for j=1:size(ptsA,2)
-      bot_lcmgl_color3f(lcmgl,1,0,0); % red
-      bot_lcmgl_sphere(lcmgl,ptsA(:,j),.05,20,20);
-      bot_lcmgl_color3f(lcmgl,0,1,0); % green
-      bot_lcmgl_sphere(lcmgl,ptsB(:,j),.05,20,20);
+      obj.lcmgl.glColor3f(1,0,0); % red
+      obj.lcmgl.sphere(ptsA(:,j),.05,20,20);
+      obj.lcmgl.glColor3f(0,1,0); % green
+      obj.lcmgl.sphere(ptsB(:,j),.05,20,20);
     end
     
-    bot_lcmgl_color3f(lcmgl,.7,.7,.7); % gray
+    obj.lcmgl.glColor3f(.7,.7,.7); % gray
     
-    bot_lcmgl_switch_buffer(lcmgl);
+    obj.lcmgl.switchBuffers();
 end
 
 function debugPlot(r,kinsol,ptsA,ptsB)

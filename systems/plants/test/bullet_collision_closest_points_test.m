@@ -10,7 +10,7 @@ else
 end
     
 r = RigidBodyManipulator();
-lcmgl = BotLCMGLClient('bullet_collision_closest_points_test');
+lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
 
 for i=1:2
   r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),struct('floating',true));
@@ -75,23 +75,23 @@ function debugLCMGL(r,v,kinsol,ptA,ptB,dist_ref,tol)
   
     v.draw(0,[q;0*q]);
 
-    bot_lcmgl_color3f(lcmgl,1,0,0); % red
-    bot_lcmgl_sphere(lcmgl,ptA,.05,20,20);
+    lcmgl.glColor3f(1,0,0); % red
+    lcmgl.sphere(ptA,.05,20,20);
 
-    bot_lcmgl_color3f(lcmgl,0,1,0); % green
-    bot_lcmgl_sphere(lcmgl,ptB,.05,20,20);
+    lcmgl.glColor3f(0,1,0); % green
+    lcmgl.sphere(ptB,.05,20,20);
 
     dist = norm(ptB-ptA);
     if (abs(dist_ref-dist)<tol)  
-      bot_lcmgl_color3f(lcmgl,0,0,0); % black
+      lcmgl.glColor3f(0,0,0); % black
     else
-      bot_lcmgl_color3f(lcmgl,1,0,0); % red
+      lcmgl.glColor3f(1,0,0); % red
     end
-    bot_lcmgl_text_ex(lcmgl,(ptB+ptA)/2+bnd.zmax*[0;0;1],num2str(dist),0,0);
+    lcmgl.text((ptB+ptA)/2+bnd.zmax*[0;0;1],num2str(dist),0,0);
     
-    bot_lcmgl_color3f(lcmgl,.7,.7,.7); % gray
+    lcmgl.glColor3f(.7,.7,.7); % gray
     
-    bot_lcmgl_switch_buffer(lcmgl);
+    lcmgl.switchBuffers();
 
     pause(draw_pause);
 end
