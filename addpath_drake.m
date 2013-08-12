@@ -5,11 +5,6 @@ function addpath_drake
 % directing you to their location.
 %
 
-if ~isempty(getenv('PODS_MATLAB_SKIP_SETUP'))
-  disp('Found PODS_MATLAB_SKIP_SETUP. Skipping addpath_drake');
-  return;
-end
-
 try
   load drake_config.mat; 
 catch
