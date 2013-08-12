@@ -5,6 +5,11 @@ function addpath_drake
 % directing you to their location.
 %
 
+if ~isempty(getenv('PODS_MATLAB_SKIP_SETUP'))
+  disp('intentionally skipping addpath_drake because PODS_MATLAB_SKIP_SETUP environment variable is set');
+  return;
+end
+
 try
   load drake_config.mat; 
 catch
@@ -12,14 +17,21 @@ catch
 end
 conf.root = pwd;
 
+if ~exist('pods_get_base_path')
+  % search up to 4 directories up for a build/matlab directory
+  pfx='';
+  for i=1:4
+    if exist(fullfile(pwd,pfx,'build','matlab'),'file')
+      disp(['Adding ', fullfile(pwd,pfx,'build','matlab'), ' to the matlab path']);
+      addpath(fullfile(pwd,pfx,'build','matlab'));
+      break;
+    end
+    pfx = fullfile('..',pfx);
+  end
+end
 
 if ~exist('pods_get_base_path')
-  % todo: implement the BUILD_PREFIX logic from the pod Makefiles (e.g.
-  % search up to four directories higher)
-  if ~exist('build/matlab')
-    error('You must run make first (and/or add your pod build/matlab directory to the matlab path)');
-  end
-  addpath(fullfile(pwd,'build','matlab'));  
+  error('You must run make first (and/or add your pod build/matlab directory to the matlab path)');
 end
 
 if verLessThan('matlab','7.6')
@@ -293,9 +305,15 @@ function success=pod_pkg_config(podname)
   cmd = ['addpath_',podname];
   if exist(cmd)
     disp([' Calling ',cmd]);
-    eval(cmd);
-    success=true;
-  elseif nargout<1
+    try 
+      eval(cmd);
+      success=true;
+    catch
+      % intentionally left blank
+    end
+  end
+    
+  if ~success && nargout<1
     error(['Cannot find required pod ',podname]);
   end
 end
