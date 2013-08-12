@@ -6,7 +6,7 @@ function addpath_drake
 %
 
 if ~isempty(getenv('PODS_MATLAB_SKIP_SETUP'))
-  disp('intentionally skipping addpath_drake because PODS_MATLAB_SKIP_SETUP environment variable is set');
+  disp('Found PODS_MATLAB_SKIP_SETUP. Skipping addpath_drake');
   return;
 end
 
