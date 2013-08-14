@@ -170,18 +170,36 @@ function(add_mex)
 
 endfunction()
 
+# tries to be a more robust version of find_program (which supports xcrun, etc)
+function(find_compiler_program var str)
+
+string(STRIP ${str} str)
+string(FIND ${str} xcrun XCRUN)
+if (XCRUN GREATER -1)
+   find_program(xcrun xcrun)
+   string(REPLACE xcrun "" COMPILER ${str})
+   separate_arguments(xcrun_args UNIX_COMMAND ${COMPILER}) 
+   list(INSERT xcrun_args 0 "-find")
+   execute_process(COMMAND ${xcrun} ${xcrun_args} OUTPUT_VARIABLE COMPILER OUTPUT_STRIP_TRAILING_WHITESPACE)
+else()
+   find_program(COMPILER ${str})
+endif()
+  
+set(${var} ${COMPILER} PARENT_SCOPE)
+
+endfunction()
+
 
 mex_setup()
 
-
-find_program(MEX_C_COMPILER ${MEX_CC})
-if (NOT ${CMAKE_C_COMPILER} STREQUAL ${MEX_C_COMPILER})
-   message(WARNING "Your cmake C compiler is: ${CMAKE_C_COMPILER} but your mex options were setup for: ${MEX_CC} .  Consider rerunning 'mex -setup' in  Matlab.")
+find_compiler_program(MEX_C_COMPILER ${MEX_CC})
+if (NOT ${CMAKE_C_COMPILER} STREQUAL "${MEX_C_COMPILER}")
+   message(WARNING "Your cmake C compiler is: ${CMAKE_C_COMPILER} but your mex options end up pointing to: ${MEX_C_COMPILER} .  Consider rerunning 'mex -setup' in  Matlab.")
 endif()
 
-find_program(MEX_CXX_COMPILER ${MEX_CXX})
+find_compiler_program(MEX_CXX_COMPILER ${MEX_CXX})
 if (NOT ${CMAKE_CXX_COMPILER} STREQUAL ${MEX_CXX_COMPILER})
-   message(WARNING "Your cmake CXX compiler is: ${CMAKE_CXX_COMPILER} but your mex options were setup for: ${MEX_CXX} .  Consider rerunning 'mex -setup' in Matlab.")
+   message(WARNING "Your cmake CXX compiler is: ${CMAKE_CXX_COMPILER} but your mex options end up pointing to: ${MEX_CXX_COMPILER} .  Consider rerunning 'mex -setup' in Matlab.")
 endif()
 
 # NOTE:  would like to check LD also, but it appears to be difficult with cmake  (there is not explicit linker executable variable, only the make rule), and  even my mex code assumes that LD==LDCXX for simplicity.
