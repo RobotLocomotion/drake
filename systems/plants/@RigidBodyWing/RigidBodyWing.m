@@ -107,7 +107,7 @@ classdef RigidBodyWing < RigidBodyForceElement
           if ~exist(profile)
               error('Cannot find wing input .dat file.  Please check file path')
           end
-          profile = GetFullPath(profile);
+          profile = which(profile);
           avlprofile = strcat('AFILE', '\n', profile);
           xfoilprofile = strcat('LOAD', '\n', profile);
         else
