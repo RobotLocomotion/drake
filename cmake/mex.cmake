@@ -199,12 +199,12 @@ mex_setup()
 
 compare_compilers(compilers_match "${MEX_CC}" "${CMAKE_C_COMPILER}")
 if (NOT compilers_match)
-   message(FATAL_ERROR "Your cmake C compiler is: ${CMAKE_C_COMPILER} but your mex options use: ${MEX_CC} .  Consider rerunning 'mex -setup' in  Matlab.")
+   message(WARNING "Your cmake C compiler is: ${CMAKE_C_COMPILER} but your mex options use: ${MEX_CC} .  Consider rerunning 'mex -setup' in  Matlab.")
 endif()
 
 compare_compilers(compilers_match ${MEX_CXX} ${CMAKE_CXX_COMPILER})
 if (NOT compilers_match)
-   message(FATAL_ERROR "Your cmake CXX compiler is: ${CMAKE_CXX_COMPILER} but your mex options end up pointing to: ${MEX_CXX} .  Consider rerunning 'mex -setup' in Matlab.")
+   message(WARNING "Your cmake CXX compiler is: ${CMAKE_CXX_COMPILER} but your mex options end up pointing to: ${MEX_CXX} .  Consider rerunning 'mex -setup' in Matlab.")
 endif()
 
 # NOTE:  would like to check LD also, but it appears to be difficult with cmake  (there is not explicit linker executable variable, only the make rule), and  even my mex code assumes that LD==LDCXX for simplicity.
