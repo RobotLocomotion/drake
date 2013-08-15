@@ -107,7 +107,13 @@ classdef RigidBodyWing < RigidBodyForceElement
           if ~exist(profile)
               error('Cannot find wing input .dat file.  Please check file path')
           end
-          profile = which(profile);
+          % xfoil cannot handle long filenames (see bug 1734), so 
+          % copy the profile to the tmp directory and call that instead.
+          % yuck.
+          [~,filename,fileext] = fileparts(profile);
+          copyfile(which(profile),fullfile(tempdir,[filename,fileext]));
+          profile = fullfile(tempdir,[filename,fileext])
+
           avlprofile = strcat('AFILE', '\n', profile);
           xfoilprofile = strcat('LOAD', '\n', profile);
         else
