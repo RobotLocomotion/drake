@@ -170,52 +170,22 @@ function(add_mex)
 
 endfunction()
 
-# tries to be a more robust version of find_program (which supports xcrun, etc)
-function(find_compiler_program var str)
+# calls compilers with -v option and checks the output 
+# (on stderr, since that seems to be the way at least gcc and clang work)
+# returns TRUE if the strings match or FALSE if they don't.  
+#   (note: you can use  if (outvar) to test )
+# this seems to be a more robust and less complex method than trying to call xcrun -find, readlink to follow symlinks, etc.
+function(compare_compilers outvar compiler1 compiler2)
 
-string(STRIP ${str} str)
-string(FIND ${str} xcrun XCRUN)
-if (XCRUN GREATER -1)
-   find_program(xcrun xcrun)
-   string(REPLACE xcrun "" COMPILER ${str})
-   separate_arguments(xcrun_args UNIX_COMMAND ${COMPILER}) 
-   list(INSERT xcrun_args 0 "-find")
-   execute_process(COMMAND ${xcrun} ${xcrun_args} OUTPUT_VARIABLE COMPILER OUTPUT_STRIP_TRAILING_WHITESPACE)
-else()
-   find_program(COMPILER ${str})
-endif()
-  
-set(${var} ${COMPILER} PARENT_SCOPE)
+  separate_arguments(c1_args UNIX_COMMAND ${compiler1}) 
+  list(APPEND c1_args "-v")
+  execute_process(COMMAND ${c1_args} ERROR_VARIABLE c1_ver ERROR_STRIP_TRAILING_WHITESPACE)
 
-endfunction()
+  separate_arguments(c2_args UNIX_COMMAND ${compiler2})
+  list(APPEND c2_args "-v")
+  execute_process(COMMAND ${c2_args} ERROR_VARIABLE c2_ver ERROR_STRIP_TRAILING_WHITESPACE)
 
-
-function(expand_symlinks var str)
-
-find_program(readlink readlink)
-if (APPLE)
-  execute_process(COMMAND ${readlink} ${str} OUTPUT_VARIABLE ${var} OUTPUT_STRIP_TRAILING_WHITESPACE)
-else()
-  execute_process(COMMAND ${readlink} -f ${str} OUTPUT_VARIABLE ${var} OUTPUT_STRIP_TRAILING_WHITESPACE)
-endif()
-if (NOT var)
-   set(var ${str})
-endif()
-
-set(var ${var} PARENT_SCOPE)
-
-endfunction()
-
-# returns TRUE or FALSE so that you can use if (outvar) to test
-function(compare_exe_strs outvar str1 str2)
-
-  find_compiler_program(exe1 ${str1})
-  find_compiler_program(exe2 ${str2})
-
-  expand_symlinks(exe1 ${exe1})
-  expand_symlinks(exe2 ${exe2})
-
-  if (${exe1} STREQUAL ${exe2})
+  if (c1_ver AND c2_ver AND ${c1_ver} STREQUAL ${c2_ver})
     set(${outvar} TRUE PARENT_SCOPE)
   else()
     set(${outvar} FALSE PARENT_SCOPE)
@@ -226,12 +196,12 @@ endfunction()
 
 mex_setup()
 
-compare_exe_strs(compilers_match ${MEX_CC} ${CMAKE_C_COMPILER})
+compare_compilers(compilers_match "${MEX_CC}" "${CMAKE_C_COMPILER}")
 if (NOT compilers_match)
    message(WARNING "Your cmake C compiler is: ${CMAKE_C_COMPILER} but your mex options use: ${MEX_CC} .  Consider rerunning 'mex -setup' in  Matlab.")
 endif()
 
-compare_exe_strs(compilers_match ${MEX_CXX} ${CMAKE_CXX_COMPILER})
+compare_compilers(compilers_match ${MEX_CXX} ${CMAKE_CXX_COMPILER})
 if (NOT compilers_match)
    message(WARNING "Your cmake CXX compiler is: ${CMAKE_CXX_COMPILER} but your mex options end up pointing to: ${MEX_CXX} .  Consider rerunning 'mex -setup' in Matlab.")
 endif()
