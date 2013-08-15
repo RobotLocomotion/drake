@@ -170,18 +170,20 @@ function(add_mex)
 
 endfunction()
 
-# calls compilers with --version option and checks the output 
+## calls compilers with --version option and checks the output 
+# calls compilers with -dumpversion and checks the output
+# (because it appears that ccache messes with the --version output)
 # returns TRUE if the strings match or FALSE if they don't.  
 #   (note: you can use  if (outvar) to test )
 # this seems to be a more robust and less complex method than trying to call xcrun -find, readlink to follow symlinks, etc.
 function(compare_compilers outvar compiler1 compiler2)
 
   separate_arguments(c1_args UNIX_COMMAND ${compiler1}) 
-  list(APPEND c1_args "--version")
+  list(APPEND c1_args "-dumpversion")
   execute_process(COMMAND ${c1_args} OUTPUT_VARIABLE c1_ver OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   separate_arguments(c2_args UNIX_COMMAND ${compiler2})
-  list(APPEND c2_args "--version")
+  list(APPEND c2_args "-dumpversion")
   execute_process(COMMAND ${c2_args} OUTPUT_VARIABLE c2_ver OUTPUT_STRIP_TRAILING_WHITESPACE)
 
   if (c1_ver AND c2_ver AND "${c1_ver}" STREQUAL "${c2_ver}")
@@ -199,12 +201,12 @@ mex_setup()
 
 compare_compilers(compilers_match "${MEX_CC}" "${CMAKE_C_COMPILER}")
 if (NOT compilers_match)
-   message(WARNING "Your cmake C compiler is: ${CMAKE_C_COMPILER} but your mex options use: ${MEX_CC} .  Consider rerunning 'mex -setup' in  Matlab.")
+   message(FATAL_ERROR "Your cmake C compiler is: ${CMAKE_C_COMPILER} but your mex options use: ${MEX_CC} .  Consider rerunning 'mex -setup' in  Matlab.")
 endif()
 
 compare_compilers(compilers_match ${MEX_CXX} ${CMAKE_CXX_COMPILER})
 if (NOT compilers_match)
-   message(WARNING "Your cmake CXX compiler is: ${CMAKE_CXX_COMPILER} but your mex options end up pointing to: ${MEX_CXX} .  Consider rerunning 'mex -setup' in Matlab.")
+   message(FATAL_ERROR "Your cmake CXX compiler is: ${CMAKE_CXX_COMPILER} but your mex options end up pointing to: ${MEX_CXX} .  Consider rerunning 'mex -setup' in Matlab.")
 endif()
 
 # NOTE:  would like to check LD also, but it appears to be difficult with cmake  (there is not explicit linker executable variable, only the make rule), and  even my mex code assumes that LD==LDCXX for simplicity.
