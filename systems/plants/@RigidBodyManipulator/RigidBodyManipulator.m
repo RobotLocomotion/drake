@@ -427,14 +427,17 @@ classdef RigidBodyManipulator < Manipulator
       model = model.setNumOutputs(2*num_dof);
 
       if getNumInputs(model)>0
-        model = setInputFrame(model,constructInputFrame(model));
+        inputframe = constructInputFrame(model);
+        if ~isequal_modulo_transforms(inputframe,getInputFrame(model)) % let the previous handle stay valid if possible
+          model = setInputFrame(model,inputframe);
+        end
       end
 
       if getNumStates(model)>0
         stateframe = constructStateFrame(model);
-        model = setStateFrame(model,stateframe);
-      else
-        stateframe = getStateFrame(model);  % needed for output frame logic below
+        if ~isequal_modulo_transforms(stateframe,getStateFrame(model)) % let the previous handle stay valid if possible
+          model = setStateFrame(model,stateframe);
+        end
       end
       
       if length(model.sensor)>0
@@ -445,11 +448,13 @@ classdef RigidBodyManipulator < Manipulator
           feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
         end
         fr = MultiCoordinateFrame.constructFrame(outframe);
-        model = setNumOutputs(model,fr.dim);
-        model = setOutputFrame(model,fr);
+        if ~isequal_modulo_transforms(fr,getOutputFrame(model)) % let the previous handle stay valid if possible
+          model = setNumOutputs(model,fr.dim);
+          model = setOutputFrame(model,fr);
+        end
         model = setDirectFeedthrough(model,feedthrough);
       else
-        model = setOutputFrame(model,stateframe);  % output = state
+        model = setOutputFrame(model,getStateFrame(model));  % output = state
         model = setDirectFeedthrough(model,false);
       end
       
@@ -544,9 +549,23 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function model = setBody(model,body_ind,body)
-      typecheck(body_ind,'double');
+      typecheck(body_ind,'numeric');
       typecheck(body,'RigidBody');
       model.body(body_ind) = body;
+      model.dirty = true;
+    end
+    
+    function model = weldJoint(model,body_ind_or_joint_name,robot)
+      if ischar(body_ind_or_joint_name)
+        if nargin>2
+          body_ind_or_joint_name = findJointInd(model,body_ind_or_joint_name,robot)
+        else
+          body_ind_or_joint_name = findJointINd(model,body_ind_or_joint_name);
+        end
+      end
+      
+      typecheck(body_ind_or_joint_name,'numeric');
+      model.body(body_ind_or_joint_name).pitch = nan;
       model.dirty = true;
     end
         
@@ -643,7 +662,7 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function fr = constructCOMFrame(model)
-      fr = SingletonCoordinateFrame([model.name,'COM'],3,'m',{'com_x','com_y','com_z'});
+      fr = CoordinateFrame([model.name,'COM'],3,'m',{'com_x','com_y','com_z'});
       
       return; 
       
@@ -931,7 +950,7 @@ classdef RigidBodyManipulator < Manipulator
           end
         end
         coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
-        fr{i} = SingletonCoordinateFrame([model.name{i},'State'],length(coordinates),'x',coordinates);
+        fr{i} = CoordinateFrame([model.name{i},'State'],length(coordinates),'x',coordinates);
       end
 %      frame_dims=[model.body(arrayfun(@(a) ~isempty(a.parent),model.body)).robotnum];
       frame_dims=[frame_dims,frame_dims];
@@ -955,11 +974,14 @@ classdef RigidBodyManipulator < Manipulator
       for i=1:length(model.name)
         robot_inputs = [inputparents.robotnum]==i;
         coordinates = {inputnames{robot_inputs}}';
-        fr{i}=SingletonCoordinateFrame([model.name{i},'Input'],sum(robot_inputs),'u',coordinates);
+        fr{i}=CoordinateFrame([model.name{i},'Input'],sum(robot_inputs),'u',coordinates);
       end
       frame_dims = [inputparents.robotnum];
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
+    
+    function fr = constructOutputFrame(model)
+    end    
     
     function [model,dof] = extractFeatherstone(model)
 %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
@@ -1118,7 +1140,7 @@ classdef RigidBodyManipulator < Manipulator
           end
         end
           
-        % error on actuators
+        % remove actuators
         if (~isempty(model.actuator) && any([model.actuator.joint] == i))
           model.actuator(find([model.actuator.joint]==i))=[];
           % actuators could be attached to fixed joints, because I
