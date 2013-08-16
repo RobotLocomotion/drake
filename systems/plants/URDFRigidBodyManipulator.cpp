@@ -812,6 +812,7 @@ bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const st
   
   // now populate my model class
   addURDF(_urdf_model,jointname_to_jointnum,dofname_to_dofnum,root_dir);
+  return true;
 }
 
 URDFRigidBodyManipulator* loadURDFfromXML(const string &xml_string, const string &root_dir)

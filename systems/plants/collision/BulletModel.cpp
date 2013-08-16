@@ -122,7 +122,7 @@ namespace DrakeCollision
     auto bt_c = static_pointer_cast<BulletResultCollector>(c);
     bt_c->setBodyIdx(bodyA_idx, bodyB_idx);
     bt_collision_world->contactPairTest(elemA.bt_obj.get(),elemB.bt_obj.get(),
-                                        bt_c->getBtPtr());
+                                        *bt_c->getBtPtr());
 
     return (c->pts.size() > 0);
   }
@@ -136,7 +136,7 @@ namespace DrakeCollision
     const BulletElement& elem = bodies.at(body_idx).at(body_collision_idx);
 
     bt_collision_world->contactTest(elem.bt_obj.get(),
-            static_pointer_cast<BulletResultCollector>(c)->getBtPtr());
+            *static_pointer_cast<BulletResultCollector>(c)->getBtPtr());
 
     c->getResults(ptA,ptB,normal);
 

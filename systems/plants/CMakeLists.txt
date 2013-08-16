@@ -3,18 +3,29 @@ if (CMAKE_COMPILER_IS_GNUCC)
    execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
                 OUTPUT_VARIABLE GCC_VERSION)
    if (NOT (GCC_VERSION VERSION_GREATER 4.3 OR GCC_VERSION VERSION_EQUAL 4.3))
-     message(FATAL_ERROR "requires gcc version >= 4.3")  # to support the c++0x flag below
+        message(FATAL_ERROR "requires gcc version >= 4.3")  # to support the c++0x flag below
+   elseif(GCC_VERSION VERSION_LESS 4.7)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+   else()
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
    endif()
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+ if (APPLE)  # this was a step towards getting things to work with
+#   clang on mac, but ultimately we didn't get there...   (but I would
+#   be worried about sharing pointers between objects compiled against
+#   different c++ libs, so removing it)
+#    # http://stackoverflow.com/questions/13445742/apple-and-shared-ptr
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")  
+  endif()
 endif()
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 find_package( Boost COMPONENTS filesystem system )
 
 include_directories (${CMAKE_SOURCE_DIR}/util )
 
 if (Boost_FOUND)
-  include_directories ( ${Boost_INCLUDE_DIR} )
+  include_directories ( ${Boost_INCLUDE_DIR} tinyxml )
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif()
 
@@ -24,6 +35,8 @@ if (bot2-vis_FOUND)
 endif()
 
 if (eigen3_FOUND)
+  # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
+
   add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
   target_link_libraries(drakeRBM drakeCollision)
 

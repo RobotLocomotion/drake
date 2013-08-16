@@ -40,7 +40,7 @@ elseif (length(sizemat)==1)
   end
 else
   docare = ~isnan(sizemat);
-  if (prod(sizemat)>0 && (length(s)~=length(sizemat) || any(s(docare)~=sizemat(docare))))
+  if (length(s)~=length(sizemat) || any(s(docare)~=sizemat(docare)))
     tf = false;
     if (nargout<1)
       error(['Wrong size.  Expected [',num2str(sizemat),'] but got a [', num2str(s), '] instead.']);

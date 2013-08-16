@@ -32,6 +32,7 @@ namespace DrakeCollision
       default:
         cerr << model_type << " is not a recognized collision model type." << endl;
     }
+    return shared_ptr<Model>();
   };
 
 }
