@@ -72,17 +72,7 @@ namespace DrakeCollision
     return *min_element(pts.begin(), pts.end());
   }
 
-  Vector3d toVector3d(const Vector3d& vec)
-  {
-    return vec;
-  };
-
   // explicit instantiations (required for linking):
-  template void ResultCollector::addSingleResult(const int, const int,
-                                                 const Vector3d&, 
-                                                 const Vector3d&,
-                                                 const Vector3d&, double);
-
   template void ResultCollector::getResults(MatrixBase<MatrixXd>&,
                                             MatrixBase<MatrixXd>&,
                                             MatrixBase<MatrixXd>&);
