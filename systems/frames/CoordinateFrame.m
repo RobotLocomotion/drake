@@ -96,7 +96,14 @@ classdef CoordinateFrame < handle
         fprintf(1,'  %s\n',obj.coordinates{i});
       end
     end
-        
+    
+    function tf = isequal_modulo_transforms(a,b)
+      tf = isequal(a.name,b.name) && ...
+        isequal(a.dim,b.dim) && ...
+        isequal(a.coordinates,b.coordinates) && ...
+        isequal(a.prefix,b.prefix);
+    end
+    
     function s = getSym(obj)
       for i=1:length(obj.dim)
         s(1) = sym(obj.coordinates{i},'real');

@@ -88,3 +88,4 @@ lcmtypes/cpp
 lcmtypes/java
 lcmtypes/python
 build
+unitTest.log

@@ -109,6 +109,16 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
     end
     
+    function tf = isequal_modulo_transforms(a,b)
+      tf = isequal_modulo_transforms@CoordinateFrame(a,b) && ...
+        isequal(a.frame_id,b.frame_id) && ...
+        isequal(a.coord_ids,b.coord_ids) && ...
+        isequal(size(a.frame),size(b.frame));
+      for i=1:length(a.frame)
+        tf = tf && isequal_modulo_transforms(a.frame{i},b.frame{i});
+      end
+    end
+    
     function tf = findTransform(obj,target,options)
       % There are two ways to get a transform from this multiframe to
       % another frame.  One is if a transform exists directly from the
