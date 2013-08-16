@@ -47,6 +47,10 @@ classdef RigidBody
     mass = 0;
     com = [];
     inertia = [];
+
+    % Collision filter properties
+    collision_filter = struct('belongs_to',CollisionFilterGroup.DEFAULT_COLLISION_FILTER_GROUP_ID, ...
+                             'collides_with',CollisionFilterGroup.ALL_COLLISION_FILTER_GROUPS);
   end
   
   methods    
@@ -142,7 +146,24 @@ classdef RigidBody
       end
     end
 
+    function body = makeBelongToNoCollisionFilterGroups(body)
+      body.collision_filter.belongs_to = CollisionFilterGroup.NO_COLLISION_FILTER_GROUPS;
+    end
     
+    function body = makeIgnoreNoCollisionFilterGroups(body)
+      body.collision_filter.collides_with = CollisionFilterGroup.ALL_COLLISION_FILTER_GROUPS;
+    end
+
+    function body = makeBelongToCollisionFilterGroup(body,collision_fg_id)
+      body.collision_filter.belongs_to = ...
+        bitor(body.collision_filter.belongs_to,bitshift(1,collision_fg_id-1));
+    end
+
+    function body = makeIgnoreCollisionFilterGroup(body,collision_fg_id)
+      body.collision_filter.collides_with = ...
+        bitand(body.collision_filter.collides_with,bitcmp(bitshift(uint16(1),collision_fg_id-1)));
+    end
+
     function newbody = copy(body)
       % makes a shallow copy of the body
       % note that this functionality is in matlab.mixin.Copyable in newer
@@ -497,6 +518,48 @@ classdef RigidBody
             % intentionally blank
         end
       end
+    end
+
+    function testMakeBelongToCollisionFilterGroup
+      body = RigidBody();
+      collision_fg_id = uint16(3);
+      belongs_to_ref = '0000000000000101';
+      body = makeBelongToCollisionFilterGroup(body,collision_fg_id);
+      belongs_to = dec2bin(body.collision_filter.belongs_to,16);
+      assert(strcmp(belongs_to,belongs_to_ref), ...
+      'Expected ''%s'', found ''%s''',belongs_to_ref,belongs_to);
+    end
+
+    function testMakeIgnoreCollisionFilterGroup
+      body = RigidBody();
+      collision_fg_id = uint16(3);
+      collides_with_ref = '1111111111111011';
+      body = makeIgnoreCollisionFilterGroup(body,collision_fg_id);
+      collides_with = dec2bin(body.collision_filter.collides_with,16);
+      assert(strcmp(collides_with,collides_with_ref), ...
+      'Expected ''%s'', found ''%s''',collides_with_ref,collides_with);
+    end
+
+    function testMakeBelongToNoCollisionFilterGroups
+      body = RigidBody();
+      collision_fg_id = uint16(3);
+      belongs_to_ref = '0000000000000000';
+      body = makeBelongToCollisionFilterGroup(body,collision_fg_id);
+      body = makeBelongToNoCollisionFilterGroups(body);
+      belongs_to = dec2bin(body.collision_filter.belongs_to,16);
+      assert(strcmp(belongs_to,belongs_to_ref), ...
+      'Expected ''%s'', found ''%s''',belongs_to_ref,belongs_to);
+    end
+
+    function testMakeIgnoreNoCollisionFilterGroups
+      body = RigidBody();
+      collision_fg_id = uint16(3);
+      collides_with_ref = '1111111111111111';
+      body = makeIgnoreCollisionFilterGroup(body,collision_fg_id);
+      body = makeIgnoreNoCollisionFilterGroups(body);
+      collides_with = dec2bin(body.collision_filter.collides_with,16);
+      assert(strcmp(collides_with,collides_with_ref), ...
+      'Expected ''%s'', found ''%s''',collides_with_ref,collides_with);
     end
   end
 end

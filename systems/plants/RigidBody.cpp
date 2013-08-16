@@ -19,9 +19,7 @@ RigidBody::~RigidBody(void)
 {}
 // NOTE: (I'm playing with fire here, but...)
 // The default operator= is being used in myrealloc to resize RigidBodyManipulator.
-// This should be sufficient *except* for the collision object pointers, but since they are being
-// created and deleted at a level above, I am currently getting away with it.  (yuck!)
-
+// This should be sufficient. 
 void RigidBody::setN(int n) {
   dTdq = MatrixXd::Zero(3*n,4);
   dTdqdot = MatrixXd::Zero(3*n,4);

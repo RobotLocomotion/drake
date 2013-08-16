@@ -1,27 +1,70 @@
 #ifndef __DrakeCollisionModel_H__
 #define __DrakeCollisionModel_H__
 
-#include "DrakeCollision.h"
+#include <memory>
+#include <Eigen/Dense>
+
+using namespace Eigen;
 
 namespace DrakeCollision
 {
-  class Model
-  {
-    public:
-      void resize(int num_bodies);
-      virtual void addElement(const int body_ind, Matrix4d T_element_to_link, Shape shape, std::vector<double> params,bool is_static);
-      void addElement(const int body_ind,ElementShPtr new_element);
-      void updateElementsForBody(const int body_ind, Matrix4d T_link_to_world);
-      virtual void updateElement(ElementShPtr elem, Matrix4d T_link_to_world);
-      virtual bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals);
-      virtual bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
-      virtual bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
-      virtual bool getClosestPoints(const int body_indA,const int body_indB,Vector3d& ptA,Vector3d& ptB,Vector3d& normal,double& distance);
-
-      friend class Element;
-
-    protected:
-      std::vector< std::vector< std::shared_ptr<Element> > > element_pool;
+  enum Shape {
+    UNKNOWN,
+    BOX,
+    SPHERE,
+    CYLINDER,
+    MESH
   };
+
+  enum ModelType {
+    NONE,
+    AUTO,
+    BULLET
+  };
+
+  class Model {
+    public:
+      virtual void resize(int num_bodies)=0;
+
+      virtual void addElement(const int body_idx, const int parent_idx, 
+                              const Matrix4d& T_element_to_link, Shape shape, 
+                              const std::vector<double>& params,
+                              bool is_static)=0;
+
+      virtual bool updateElementsForBody(const int body_idx, 
+                                  const Matrix4d& T_link_to_world)=0;
+      
+      virtual bool setCollisionFilter(const int body_idx, const uint16_t group, 
+                                     const uint16_t mask)=0;
+
+
+      virtual bool getPointCollision(const int body_idx, 
+                                      const int body_collision_idx, 
+                                      Vector3d &ptA, Vector3d &ptB, 
+                                      Vector3d &normal)=0;
+
+      virtual bool getPairwiseCollision(const int bodyA_idx, const int bodyB_idx, 
+                                MatrixXd& ptsA, MatrixXd& ptsB, 
+                                MatrixXd& normals)=0;
+
+      virtual bool getPairwisePointCollision(const int bodyA_idx, const int bodyB_idx, 
+                                      const int body_collisionA_idx, 
+                                      Vector3d &ptA, Vector3d &ptB, 
+                                      Vector3d &normal)=0;
+
+      virtual bool getClosestPoints(const int bodyA_idx, const int bodyB_idx,
+                            Vector3d& ptA, Vector3d& ptB, Vector3d& normal,
+                            double& distance)=0;
+
+      virtual bool closestPointsAllBodies(std::vector<int>& bodyA_idx, 
+                                               std::vector<int>& bodyB_idx, 
+                                               MatrixXd& ptsA, MatrixXd& ptsB,
+                                               MatrixXd& normal, 
+                                               VectorXd& distance)=0;
+  };
+
+  std::shared_ptr<Model> newModel();
+
+  std::shared_ptr<Model> newModel(ModelType model_type);
 }
 #endif

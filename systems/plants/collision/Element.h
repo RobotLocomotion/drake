@@ -6,15 +6,20 @@
 namespace DrakeCollision
 {
   class Element {
+    friend class GenericModel;
+
     public:
-      virtual void updateWorldTransform(const Matrix4d T_link_to_world);
+      Element(const Matrix4d& T_elem_to_link, Shape shape, 
+              const std::vector<double>& params);
 
-      friend class Model;
+      void updateWorldTransform(const Matrix4d& T_link_to_world);
+
+      const Matrix4d& getWorldTransform() const; 
+
     protected:
-      Element(Matrix4d T_elem_to_link, Shape shape, std::vector<double> params);
-      virtual void setWorldTransform(const Matrix4d T_elem_to_world);
+      virtual void setWorldTransform(const Matrix4d& T_elem_to_world);
 
-      const Matrix4d T_elem_to_link;
+      Matrix4d T_elem_to_link;
       Matrix4d T_elem_to_world;
   };
 }

@@ -29,6 +29,9 @@ vector<string> get_strings(const mxArray *rhs) {
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
+  //DEBUG
+  //cout << "constructModelmex: START" << endl;
+  //END_DEBUG
   char buf[100];
   mxArray *pm;
 
@@ -95,6 +98,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
 
   for (int i=0; i<model->num_bodies; i++) {
+    //DEBUG
+    //cout << "constructModelmex: body " << i << endl;
+    //END_DEBUG
     pm = mxGetProperty(pBodies,i,"linkname");
     mxGetString(pm,buf,100);
     model->bodies[i].linkname.assign(buf,strlen(buf));
@@ -145,24 +151,40 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
     memcpy(model->bodies[i].T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
 
+    //DEBUG
+    //cout << "constructModelmex: About to parse collision geometry"  << endl;
+    //END_DEBUG
     pm = mxGetProperty(pBodies,i,"contact_shapes");
     Matrix4d T;
-    for (int j=0; j<mxGetNumberOfElements(pm); j++) {
-      // DEBUG
-      //cout << "constructModelmex: Body " << i << ", Element " << j << endl;
-      // DEBUG
-      auto shape = (DrakeCollision::Shape)mxGetScalar(mxGetField(pm,j,"type"));
-      vector<double> params_vec;
-      double* params = mxGetPr(mxGetField(pm,j,"params"));
-      int n_params = (int) mxGetNumberOfElements(mxGetField(pm,j,"params"));
-      for (int k=0; k<n_params; k++) {
-        params_vec.push_back(params[k]);
+    if(!mxIsEmpty(pm)){
+      for (int j=0; j<mxGetNumberOfElements(pm); j++) {
+        //DEBUG
+        //cout << "constructModelmex: Body " << i << ", Element " << j << endl;
+        //END_DEBUG
+        auto shape = (DrakeCollision::Shape)mxGetScalar(mxGetField(pm,j,"type"));
+        vector<double> params_vec;
+        double* params = mxGetPr(mxGetField(pm,j,"params"));
+        int n_params = (int) mxGetNumberOfElements(mxGetField(pm,j,"params"));
+        for (int k=0; k<n_params; k++) {
+          params_vec.push_back(params[k]);
+        }
+        memcpy(T.data(), mxGetPr(mxGetField(pm,j,"T")), sizeof(double)*4*4);
+        model->addCollisionElement(i,T,shape,params_vec);
+        if (model->bodies[i].parent<0) {
+          model->updateCollisionElements(i);  // update static objects only once - right here on load
+        }
       }
-      memcpy(T.data(), mxGetPr(mxGetField(pm,j,"T")), sizeof(double)*4*4);
-      model->addCollisionElement(i,T,shape,params_vec);
-      if (model->bodies[i].parent<0) {
-        model->updateCollisionElements(i);  // update static objects only once - right here on load
-      }
+
+
+      // Set collision filtering bitmasks
+      pm = mxGetProperty(pBodies,i,"collision_filter");
+      const uint16_t* group = (uint16_t*)mxGetPr(mxGetField(pm,0,"belongs_to"));
+      const uint16_t* mask = (uint16_t*)mxGetPr(mxGetField(pm,0,"collides_with"));
+      //DEBUG
+      //cout << "constructModelmex: Group: " << *group << endl;
+      //cout << "constructModelmex: Mask " << *mask << endl;
+      //END_DEBUG
+      model->setCollisionFilter(i,*group,*mask);
     }
   }
   

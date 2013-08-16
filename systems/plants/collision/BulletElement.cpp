@@ -5,64 +5,79 @@ using namespace std;
 
 namespace DrakeCollision
 {
-  BulletElement::BulletElement( Matrix4d T_elem_to_link, Shape shape, vector<double> params)
+  BulletElement::BulletElement(const Matrix4d& T_elem_to_link, Shape shape, 
+                                const vector<double>& params)
     : Element(T_elem_to_link, shape, params)
   {
+    //DEBUG
+    //std::cout << "BulletElement::BulletElement: START" << std::endl;
+    //END_DEBUG
+    btCollisionShape* bt_shape;
     switch (shape) {
       case BOX:
         //DEBUG
-        //cout << "BOX" << endl;
-        //DEBUG
+        //std::cout << "BulletElement::BulletElement: Create BOX ..." << std::endl;
+        //END_DEBUG
         bt_shape = new btBoxShape( btVector3(params[0]/2,params[1]/2,params[2]/2) );
+        //DEBUG
+        //std::cout << "BulletElement::BulletElement: Created BOX" << std::endl;
+        //END_DEBUG
         break;
       case SPHERE:
-        //DEBUG
-        //cout << "SPHERE" << endl;
-        //DEBUG
-        bt_shape = new btSphereShape(params[0]) ;
+        if (params[0] != 0) {
+          //DEBUG
+          //std::cout << "BulletElement::BulletElement: Create SPHERE ..." << std::endl;
+          //END_DEBUG
+          bt_shape = new btSphereShape(params[0]) ;
+          //DEBUG
+          //std::cout << "BulletElement::BulletElement: Created SPHERE" << std::endl;
+          //END_DEBUG
+        } else {
+          //DEBUG
+          //std::cout << "BulletElement::BulletElement: THROW" << std::endl;
+          //END_DEBUG
+          throw zeroRadiusSphereException();
+        }
         break;
       case CYLINDER:
         //DEBUG
-        //cout << "CYLINDER" << endl;
-        //DEBUG
+        //std::cout << "BulletElement::BulletElement: Create CYLINDER ..." << std::endl;
+        //END_DEBUG
         bt_shape = new btCylinderShapeZ( btVector3(params[0],params[0],params[1]/2) );
+        //DEBUG
+        //std::cout << "BulletElement::BulletElement: Created CYLINDER ..." << std::endl;
+        //END_DEBUG
         break;
       case MESH:
         //DEBUG
-        //cout << "MESH (params.size() = " << params.size() << ")" << endl;
+        //std::cout << "BulletElement::BulletElement: Create MESH ..." << std::endl;
+        //END_DEBUG
+        bt_shape = new btConvexHullShape( (btScalar*) params.data(), 
+                                          params.size(),
+                                          (int) 3*sizeof(double) );
         //DEBUG
-        bt_shape = new btConvexHullShape( (btScalar*) params.data(), params.size() ,(int) 3*sizeof(double) );
-        //DEBUG
-        //cout << "Created mesh bt_shape" << endl;
-        //DEBUG
-        //cerr << "Warning: mesh collision elements are not supported yet." << endl;
-        //throw unsupportedShapeException(shape);
+        //std::cout << "BulletElement::BulletElement: Created MESH ..." << std::endl;
+        //END_DEBUG
         break;
       default:
         cerr << "Warning: Collision element has an unknown type " << shape << endl;
+        //DEBUG
+        //std::cout << "BulletElement::BulletElement: THROW" << std::endl;
+        //END_DEBUG
         throw unknownShapeException(shape);
-        //mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs", "Body %d collision shape %d has an unknown type %d", i+1,j+1,type);
         break;
     }
-    bt_obj = new btCollisionObject();
+    bt_obj = make_shared<btCollisionObject>();
     bt_obj->setCollisionShape(bt_shape);
     setWorldTransform(this->T_elem_to_world);
+    //DEBUG
+    //std::cout << "BulletElement::BulletElement: END" << std::endl;
+    //END_DEBUG
   }
-  BulletElement::~BulletElement()
+  void BulletElement::setWorldTransform(const Matrix4d& T)
   {
-    delete bt_obj;
-    delete bt_shape;
-  }
-  void BulletElement::setWorldTransform(const Matrix4d T)
-  {
-    // DEBUG
-    //cout << "BulletElement::setWorldTransform" << endl;
-    // DEBUG
     Element::setWorldTransform(T);
 
-    // DEBUG
-    //cout << "BulletElement::setWorldTransform:Creating Bullet objects" << endl;
-    // DEBUG
     btMatrix3x3 rot;
     btVector3 pos;
     btTransform btT;
@@ -74,9 +89,6 @@ namespace DrakeCollision
     pos.setValue( T(0,3), T(1,3), T(2,3) );
     btT.setOrigin(pos);
 
-    // DEBUG
-    //cout << "BulletElement::setWorldTransform: Updating bt_obj" << endl;
-    // DEBUG
     bt_obj->setWorldTransform(btT);
   }
 }

@@ -23,7 +23,7 @@ for urdf = {'./FallingBrick.urdf',...
   q = 0*rand(getNumDOF(r),1);
   kinsol = doKinematics(r,q);
   
-  [retval,outstr] = systemWCMakeEnv([urdf_kin_test,' ',urdffile,sprintf(' %f',q)]);
+  [retval,outstr] = systemWCMakeEnv([urdf_kin_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);
   valuecheck(retval,0);
   out = textscan(outstr,'%s %f %f %f %f %f %f');%,'delimiter',',');
   

@@ -16,6 +16,9 @@ classdef RigidBodyManipulator < Manipulator
       % with elements that are all exactly the same type
     gravity=[0;0;-9.81];
     terrain;
+    %collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
+    collision_filter_groups;     
+      % map of CollisionFilterGroup objects
   end
   
   properties (Access=public)
@@ -118,7 +121,7 @@ classdef RigidBodyManipulator < Manipulator
     function str = getLinkName(obj,body_ind)
       str = obj.body(body_ind).linkname;
     end
-    
+
     function obj = setGravity(obj,grav)
       sizecheck(grav,size(obj.gravity));
       obj.gravity = grav;
@@ -484,6 +487,8 @@ classdef RigidBodyManipulator < Manipulator
         valuecheck(model.body(i).T_body_to_joint(end,1:end-1),0);
         valuecheck(model.body(i).T_body_to_joint(end,end),1);
       end
+
+      model = setupCollisionFiltering(model);
       
       model = createMexPointer(model);
       model.dirty = false;
@@ -887,6 +892,32 @@ classdef RigidBodyManipulator < Manipulator
         end
       end      
     end
+
+    function model = addLinksToCollisionFilterGroup(model,new_members,collision_fg_name,robotnum)
+      model.collision_filter_groups(collision_fg_name) = ...
+        model.collision_filter_groups(collision_fg_name).addMembers(new_members,robotnum);
+      model.dirty = true;
+    end
+
+    function model = removeLinksFromCollisionFilterGroup(model,members,collision_fg_name,robotnum)
+      model.collision_filter_groups(collision_fg_name) = ...
+        model.collision_filter_groups(collision_fg_name).removeMembers(members,robotnum);
+      model.dirty = true;
+    end
+
+    function model = addToIgnoredListOfCollisionFilterGroup(model,ignored_collision_fgs,collision_fg_name)
+      collision_fg = model.collision_filter_groups(collision_fg_name);
+      collision_fg.ignored_collision_fgs = union(collision_fg.ignored_collision_fgs,ignored_collision_fgs);
+      model.collision_filter_groups(collision_fg_name) = collision_fg;
+      model.dirty = true;
+    end
+
+    function model = removeFromIgnoredListOfCollisionFilterGroup(model,ignored_collision_fgs,collision_fg_name)
+      collision_fg = model.collision_filter_groups(collision_fg_name);
+      collision_fg.ignored_collision_fgs = setdiff(collision_fg.ignored_collision_fgs,ignored_collision_fgs);
+      model.collision_filter_groups(collision_fg_name) = collision_fg;
+      model.dirty = true;
+    end
   end
   
   methods (Static)
@@ -1222,7 +1253,107 @@ classdef RigidBodyManipulator < Manipulator
       
       model.body=[model.body,body];
     end
+
+    function model = parseCollisionFilterGroup(model,robotnum,node,options)
+      ignore = char(node.getAttribute('drakeIgnore'));
+      if strcmpi(ignore,'true')
+        return;
+      end
+      collision_fg_name = char(node.getAttribute('name'));
+      if isKey(model.collision_filter_groups,collision_fg_name)
+        error('RigidBodyManipulator:parseCollisionFilterGroup:repeated_collision_fg_name', ...
+              ['A collision filter group with the collision_fg_name %s already exists in this '...
+               'RigidBodyManipulator'], collision_fg_name); 
+      end
+
+      model.collision_filter_groups(collision_fg_name) = CollisionFilterGroup();
+
+      members = node.getElementsByTagName('member');
+      if members.getLength()>0
+        members_cell = cell(1,members.getLength());
+        for i=0:(members.getLength()-1)
+          members_cell{i+1} = char(members.item(i).getAttribute('link'));
+        end
+        model = addLinksToCollisionFilterGroup(model,members_cell,collision_fg_name,robotnum);
+      end
+
+      ignored_collision_fgs = node.getElementsByTagName('ignored_collision_filter_group');
+      if ignored_collision_fgs.getLength()>0
+        ignored_collision_fgs_cell = cell(1,ignored_collision_fgs.getLength());
+        for i=0:(ignored_collision_fgs.getLength()-1)
+          ignored_collision_fgs_cell{i+1} = char(ignored_collision_fgs.item(i).getAttribute('collision_filter_group'));
+        end
+        model = addToIgnoredListOfCollisionFilterGroup(model,ignored_collision_fgs_cell,collision_fg_name);
+      end
+    end
+
+    function id = findCollisionFilterGroupID(model,collision_fg_name)
+        id = uint16(find(~cellfun(@isempty,strfind(model.collision_filter_groups.keys(),collision_fg_name))));
+        if isempty(id)
+          error('RigidBodyManipulator:findCollisionFilterGroupID', ...
+                'Unable to find collision filter group, %s',collision_fg_name);
+        end
+    end
     
+    function model = setupCollisionFiltering(model)
+      % Transfers collision filtering information from the collision_filter_groups map
+      % to the links themselves. Must be run BEFORE createMexPointer.
+
+      % The DEFAULT_COLLISION_FILTER_GROUP is reserved for bodies that don't belong to any
+      % other collision collision_filter_groups.
+      model.collision_filter_groups('default') = CollisionFilterGroup();
+      model = addLinksToCollisionFilterGroup(model, {model.body.linkname}, 'default',{model.body.robotnum});
+      for collision_fg_name = model.collision_filter_groups.keys()
+        if ~strcmp(collision_fg_name,'default')
+          [linknames,robotnums] = model.collision_filter_groups(cell2mat(collision_fg_name)).getMembers();
+          model = removeLinksFromCollisionFilterGroup(model,linknames,'default',robotnums);
+        end
+        model = addToIgnoredListOfCollisionFilterGroup(model,cell2mat(collision_fg_name),'no_collision');
+      end
+
+      % Reset the collision filtering properties for all links
+      for i = 1:model.getNumBodies()
+        model.body(i) = model.body(i).makeBelongToNoCollisionFilterGroups();
+        model.body(i) = model.body(i).makeIgnoreNoCollisionFilterGroups();
+      end
+
+      % Set the collision filtering properties of each body to match those
+      % specified by the collision filter groups.
+      for collision_fg_name = model.collision_filter_groups.keys()
+        collision_fg_id = model.findCollisionFilterGroupID(cell2mat(collision_fg_name));
+        member_indices = findCollisionFilterGroupMemberIndices(model,cell2mat(collision_fg_name));
+        model = makeLinksBelongToCollisionFilterGroup(model,member_indices,collision_fg_id);
+        for ignored_collision_fg_name = getIgnoredCollisionFilterGroups(model.collision_filter_groups(cell2mat(collision_fg_name)))
+          ignored_collision_fg_id = model.findCollisionFilterGroupID(cell2mat(ignored_collision_fg_name));
+          model = makeLinksIgnoreCollisionFilterGroup(model,member_indices,ignored_collision_fg_id);
+        end
+      end
+    end
+
+    function link_indices = findCollisionFilterGroupMemberIndices(model,collision_fg_name)
+      [linknames,robotnums] = model.collision_filter_groups(collision_fg_name).getMembers();
+      link_indices = cellfun(@(name,num) findLinkInd(model,name,num), ...
+                             linknames,robotnums);
+    end
+
+    function model = makeLinksBelongToCollisionFilterGroup(model,link_indices,collision_fg_id)
+      for idx = reshape(link_indices,1,[])
+        model.body(idx) = makeBelongToCollisionFilterGroup(model.body(idx),collision_fg_id);
+      end
+    end
+
+    function model = makeLinksBelongToNoCollisionFilterGroups(model,link_indices)
+      for idx = reshape(link_indices,1,[])
+        model.body(idx) = makeBelongToNoCollisionFilterGroups(model.body(idx));
+      end
+    end
+
+    function model = makeLinksIgnoreCollisionFilterGroup(model,link_indices,collision_fg_id)
+      for idx = reshape(link_indices,1,[])
+        model.body(idx) = makeIgnoreCollisionFilterGroup(model.body(idx),collision_fg_id);
+      end
+    end
+
     function model=parseJoint(model,robotnum,node,options)
       
       ignore = char(node.getAttribute('drakeIgnore'));

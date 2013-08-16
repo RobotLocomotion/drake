@@ -1,21 +1,32 @@
 #include "DrakeCollision.h"
-#include "Model.h"
+#include "GenericModel.h"
+#include "ResultCollector.h"
+
 #ifdef BULLET_COLLISION
 #include "BulletModel.h"
+#include "BulletResultCollector.h"
 #endif
 
 using namespace std;
 
 namespace DrakeCollision
 {
+  badShapeException::badShapeException()
+    : shape_str()
+  {}
   badShapeException::badShapeException(Shape shape)
     : shape_str(to_string(shape))
   {}
 
   const char* badShapeException::what() const throw()
   {
-    return "Ignoring this collision element.";
+    return "Ignoring this collision element";
   }
+
+  const char* zeroRadiusSphereException::what() const throw()
+  {
+    return "Ignoring zero-radius sphere";
+  };
 
   const char* unknownShapeException::what() const throw()
   {
@@ -27,30 +38,12 @@ namespace DrakeCollision
     return ("Unsupported collision shape: " + shape_str + ". " +  badShapeException::what()).c_str();
   }
 
-  shared_ptr<Model> newModel()
+  ResultCollShPtr newResultCollector()
   {
 #ifdef BULLET_COLLISION
-    return newModel(ModelType::BULLET);
+    return ResultCollShPtr(new BulletResultCollector());
 #else
-    return newModel(ModelType::NONE);
+    return ResultCollShPtr(new ResultCollector<>());
 #endif
   }
-
-  shared_ptr<Model> newModel(ModelType model_type)
-  {
-    switch (model_type) {
-      case NONE:
-        return shared_ptr<Model>(new Model());
-        break;
-      case BULLET:
-#ifdef BULLET_COLLISION
-        return shared_ptr<Model>(new BulletModel());
-#else
-        cerr << "Recompile with Bullet enabled (-DBULLET_COLLISION) to use Bullet collision models." << endl;
-#endif
-        break;
-      default:
-        cerr << model_type << " is not a recognized collision model type." << endl;
-    }
-  };
 };
