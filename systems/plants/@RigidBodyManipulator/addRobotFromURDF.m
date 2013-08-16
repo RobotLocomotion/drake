@@ -79,6 +79,15 @@ for i=0:(links.getLength()-1)
   model = parseLink(model,robotnum,links.item(i),options);
 end
 
+if isempty(model.collision_filter_groups)
+  model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
+  model.collision_filter_groups('no_collision') = CollisionFilterGroup();
+end
+collision_filter_groups = node.getElementsByTagName('collision_filter_group');
+for i=0:(collision_filter_groups.getLength()-1)
+  model = parseCollisionFilterGroup(model,robotnum,collision_filter_groups.item(i),options);
+end
+
 joints = node.getElementsByTagName('joint');
 for i=0:(joints.getLength()-1)
   model = parseJoint(model,robotnum,joints.item(i),options);

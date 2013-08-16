@@ -10,17 +10,16 @@ namespace DrakeCollision
 {
   class BulletElement : public Element
   {
+    friend class BulletModel;
+
     public:
-      BulletElement( Matrix4d T_elem_to_link, Shape shape, std::vector<double> params);
-      ~BulletElement();
-
-      virtual void setWorldTransform(const Matrix4d body_transform);
-
-      friend class BulletModel;
+      BulletElement(const Matrix4d& T_elem_to_link, Shape shape, 
+                    const std::vector<double>& params);
 
     private:
-      btCollisionObject* bt_obj;
-      btCollisionShape* bt_shape;
+      virtual void setWorldTransform(const Matrix4d& body_transform);
+
+      std::shared_ptr<btCollisionObject> bt_obj;
   };
 }
 #endif

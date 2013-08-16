@@ -5,7 +5,7 @@
 #include <set>
 #include <vector>
 
-#include "collision/DrakeCollision.h"
+#include "collision/Model.h"
 
 #include "RigidBody.h"
 
@@ -76,6 +76,9 @@ public:
 
   void updateCollisionElements(const int body_ind);
 
+  bool setCollisionFilter(const int body_ind, const uint16_t group, 
+                          const uint16_t mask);
+
   bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals);
 
   bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
@@ -84,6 +87,17 @@ public:
 
   bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance);
 
+  bool closestPointsAllBodies(std::vector<int>& bodyA_idx, 
+                                   std::vector<int>& bodyB_idx, 
+                                   MatrixXd& ptsA, 
+                                   MatrixXd& ptsB,
+                                   MatrixXd& normal, 
+                                   VectorXd& distance,
+                                   MatrixXd& JA, 
+                                   MatrixXd& JB,
+                                   MatrixXd& Jd);
+
+  bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
 public:
   std::vector<std::string> robot_name;
 
@@ -167,5 +181,7 @@ private:
   std::shared_ptr< DrakeCollision::Model > collision_model;
 };
 
-
+template<typename T> int sgn(T val) {
+  return (T(0) < val) - (val < T(0));
+};
 #endif

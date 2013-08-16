@@ -3,6 +3,9 @@
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
 #include "collision/Model.h"
+//DEBUG
+//#include <stdexcept>
+//END_DEBUG
 
 using namespace std;
 
@@ -488,13 +491,24 @@ void RigidBodyManipulator::compile(void)
 void RigidBodyManipulator::addCollisionElement(const int body_ind, Matrix4d T_elem_to_lnk, DrakeCollision::Shape shape, vector<double> params)
 {
   bool is_static = (bodies[body_ind].parent==0);
-  collision_model->addElement(body_ind,T_elem_to_lnk,shape,params,is_static);
+  collision_model->addElement(body_ind,bodies[body_ind].parent,T_elem_to_lnk,shape,params,is_static);
 }
 
 void RigidBodyManipulator::updateCollisionElements(const int body_ind)
 {
   collision_model->updateElementsForBody(body_ind, bodies[body_ind].T);
 };
+
+bool RigidBodyManipulator::setCollisionFilter(const int body_ind, 
+                                              const uint16_t group,
+                                              const uint16_t mask)
+{
+  //DEBUG
+  //cout << "RigidBodyManipulator::setCollisionFilter: Group: " << group << endl;
+  //cout << "RigidBodyManipulator::setCollisionFilter: Mask: " << mask << endl;
+  //END_DEBUG
+  return collision_model->setCollisionFilter(body_ind,group,mask);
+}
 
 bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals)
 {
@@ -516,8 +530,69 @@ bool RigidBodyManipulator::getPairwiseClosestPoint(const int body_indA, const in
   return collision_model->getClosestPoints(body_indA,body_indB,ptA,ptB,normal,distance);
 };
 
+bool RigidBodyManipulator::closestPointsAllBodies(vector<int>& bodyA_idx, 
+                                                       vector<int>& bodyB_idx, 
+                                                       MatrixXd& ptsA, 
+                                                       MatrixXd& ptsB,
+                                                       MatrixXd& normal, 
+                                                       VectorXd& distance,
+                                                       MatrixXd& JA, 
+                                                       MatrixXd& JB,
+                                                       MatrixXd& Jd)
+{
+  collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,
+                                                      ptsB,normal,distance);
+  int num_pts = ptsA.cols();
+  MatrixXd ptsA_1(4,num_pts);
+  MatrixXd ptsB_1(4,num_pts);
+  ptsA_1 << ptsA, MatrixXd::Ones(1,num_pts);
+  ptsB_1 << ptsB, MatrixXd::Ones(1,num_pts);
+  JA = MatrixXd::Zero(3*num_pts,num_dof);
+  JB = MatrixXd::Zero(3*num_pts,num_dof);
+  Jd = MatrixXd::Zero(num_pts,num_dof);
+  MatrixXd JA_i = MatrixXd::Zero(3,num_dof);     
+  MatrixXd JB_i = MatrixXd::Zero(3,num_dof);     
+  for (int i = 0; i < num_pts; ++i) {
+    Vector3d xA, xB;
+    VectorXd ptA_on_body(4); 
+    VectorXd ptB_on_body(4); 
+    bodyKin(bodyA_idx.at(i),ptsA_1.col(i),xA);
+    bodyKin(bodyB_idx.at(i),ptsB_1.col(i),xB);
+    ptA_on_body << xA, 1;
+    ptB_on_body << xB, 1;
+    //DEBUG
+    //cout << "Body A: " << bodyA_idx.at(i) << endl;
+    //END_DEBUG
+    forwardJac(bodyA_idx.at(i),ptA_on_body,0,JA_i);
+    JA.block(3,num_dof,i*3,0) = JA_i;
+    //DEBUG
+    //cout << "Body B: " << bodyB_idx.at(i) << endl;
+    //END_DEBUG
+    forwardJac(bodyB_idx.at(i),ptB_on_body,0,JB_i);
+    JB.block(3,num_dof,i*3,0) = JB_i;
+    //Jd.row(i) = 2*sgn(distance.at(i))*(ptsA.col(i)-ptsB.col(i)).transpose()*(JA_i-JB_i);
+    Jd.row(i) = (1/distance[i])*(ptsA.col(i)-ptsB.col(i)).transpose()*(JA_i-JB_i);
+  }
+  return true;
+};
+
+bool RigidBodyManipulator::closestDistanceAllBodies(VectorXd& distance,
+                                                        MatrixXd& Jd)
+{
+  MatrixXd ptsA, ptsB, normal, JA, JB;
+  vector<int> bodyA_idx, bodyB_idx;
+  bool return_val = closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB,normal,distance, JA,JB,Jd);
+  //DEBUG
+  //cout << "RigidBodyManipulator::closestDistanceAllBodies: distance.size() = " << distance.size() << endl;
+  //END_DEBUG
+  return return_val;
+};
+
 void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivatives, double* qd)
 {
+  //DEBUG
+  //try{
+  //END_DEBUG
   int i,j,k,l;
 
   //Check against cached values for bodies[1];
@@ -738,7 +813,13 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     }
 
     if (bodies[i].parent>=0) {
+      //DEBUG
+      //cout << "RigidBodyManipulator::doKinematics: updating body " << i << " ..." << endl;
+      //END_DEBUG
       collision_model->updateElementsForBody(i,bodies[i].T);
+      //DEBUG
+      //cout << "RigidBodyManipulator::doKinematics: done updating body " << i << endl;
+      //END_DEBUG
     }
   }
 
@@ -748,7 +829,15 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     if (qd) cached_qd[i] = qd[i];
   }
   secondDerivativesCached = b_compute_second_derivatives;
+  //DEBUG
+  //} catch (const out_of_range& oor) {
+    //string msg("In RigidBodyManipulator::doKinematics:\n");
+    //throw std::out_of_range(msg + oor.what());
+  //}
+  //END_DEBUG
 }
+
+
 
 
 template <typename Derived>
@@ -1247,10 +1336,12 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 template void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &);
+template void RigidBodyManipulator::getCOM(MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::getCOMdJac(MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::getCOMJacDot(MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::getCOM(MatrixBase< Vector3d > &);
+template void RigidBodyManipulator::getCOM(MatrixBase< MatrixXd > &);
 template void RigidBodyManipulator::getCOMJac(MatrixBase< MatrixXd > &);
 template void RigidBodyManipulator::getCOMdJac(MatrixBase< MatrixXd > &);
 template void RigidBodyManipulator::getCOMJacDot(MatrixBase< MatrixXd > &);

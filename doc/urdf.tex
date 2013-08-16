@@ -13,6 +13,37 @@ Drake supports most of the tags specified in this documentation, including the t
 However, there is currently little or no support for the \mcode{<sensor>} elements.  We have added a few additional tags
 
 \begin{itemize}
+  \item \mcode{<collision_filter_group>}
+    \begin{itemize}
+      \item Provides a means to exclude certain pairs of bodies from collision
+        detection and closest distance computations. A collision filter group
+        can contain one or more links, and a link may belong to any number of
+        collision filter groups. One collision filter group can ignore another,
+        in which case pairs of bodies with one element from each group are
+        skipped when performing the aforementioned computations.
+      \item Attributes
+        \begin{itemize}
+          \item \mcode{name} (required)
+        \end{itemize}
+      \item Elements
+        \begin{itemize}
+          \item \mcode{<member>} 
+
+            Specifies that a link belongs to this collision filter group.
+            \begin{itemize}
+              \item Attributes: \mcode{link} (required) String naming that link. 
+            \end{itemize}
+
+          \item \mcode{<ignored_collision_filter_group>}
+
+            Specifies that collisions between members of this collision filter
+            group and those of another collision filter group should be ignored.
+            \begin{itemize}
+              \item Attributes: \mcode{collision_filter_group} (required)
+                String naming the other collision filter group. 
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
 \item \mcode{<loop_joint>}
 \begin{itemize}
 \item Adds support for simple closed-loop kinematic chains.  For an example, see \mcode{examples/SimpleFourBar/FourBar.urdf}.  

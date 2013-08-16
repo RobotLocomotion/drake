@@ -7,25 +7,53 @@
 #include <BulletCollision/NarrowPhaseCollision/btPointCollector.h>
 
 #include "DrakeCollision.h"
-#include "Model.h"
+#include "ModelTemplate.h"
+#include "PointPair.h"
+#include "ResultCollector.h"
 
 namespace DrakeCollision
 {
   class BulletModel 
-    : public Model, public std::enable_shared_from_this<BulletModel>
+    : public ModelTemplate<BulletElement>, public std::enable_shared_from_this<BulletModel>
   {
     public:
       BulletModel();
+
       ~BulletModel();
-      virtual void addElement(const int body_ind, Matrix4d T_element_to_link, Shape shape, std::vector<double> params, bool is_static);
-      virtual void updateElement(ElementShPtr elem, Matrix4d T_link_to_world);
-      virtual bool getPairwiseCollision(const int body_indA, const int body_indB, MatrixXd &ptsA, MatrixXd &ptsB, MatrixXd &normals);
-      virtual bool getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
-      virtual bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
-      virtual bool getClosestPoints(const int body_indA,const int body_indB,Vector3d& ptA,Vector3d& ptB,Vector3d& normal,double& distance);
+
+      virtual void addElement(const int body_ind, const int parent_idx, 
+                              const Matrix4d& T_elem_to_link, Shape shape, 
+                              const std::vector<double>& params, 
+                              bool is_static);
+
+      virtual bool updateElementsForBody(const int body_idx,
+                                  const Matrix4d& T_link_to_world);
+
+      //virtual void setCollisionFilter(Body<BulletElement>& body,
+                                       //const bitmask& group,
+                                       //const bitmask&  mask);
 
       btCollisionWorld* bt_collision_world;
+
     protected:
+
+      virtual bool findClosestPointsBtwElements(const int bodyA_idx,
+                                                const int bodyB_idx, 
+                                                const BulletElement& elemA, 
+                                                const BulletElement& elemB, 
+                                                const ResultCollShPtr& c);
+
+      virtual bool findCollisionPointsBtwElements(const int bodyA_idx,
+                                                  const int bodyB_idx, 
+                                                  const BulletElement& elemA, 
+                                                  const BulletElement& elemB, 
+                                                  const ResultCollShPtr& c);
+
+      virtual bool getPointCollision(const int body_idx, 
+                                      const int body_collision_idx, 
+                                      Vector3d &ptA, Vector3d &ptB, 
+                                      Vector3d &normal);
+
 
       btDefaultCollisionConfiguration bt_collision_configuration;
       btCollisionDispatcher* bt_collision_dispatcher;

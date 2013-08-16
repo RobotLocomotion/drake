@@ -1,11 +1,11 @@
 include_directories ( .. )
 
-set(drakeCollision_SRC_FILES Model.cpp Element.cpp DrakeCollision.cpp)
+set(drakeCollision_SRC_FILES Model.cpp GenericModel.cpp Element.cpp PointPair.cpp DrakeCollision.cpp ResultCollector.cpp MinDistResultCollector.cpp)
 pods_find_pkg_config(bullet)
 
 if (bullet_FOUND)
   add_definitions( -DBULLET_COLLISION )   
-  set( drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} BulletModel.cpp BulletElement.cpp )   
+  set( drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} BulletModel.cpp BulletElement.cpp BulletResultCollector.cpp )   
   set(bullet "yes" CACHE STRING "yes" )
 endif()
 
@@ -13,6 +13,10 @@ add_library(drakeCollision SHARED ${drakeCollision_SRC_FILES})
 if (bullet_FOUND)
   pods_use_pkg_config_packages(drakeCollision bullet)
 endif()
+
+enable_testing()
+add_subdirectory(test)
+
 pods_install_libraries(drakeCollision)
-pods_install_headers(DrakeCollision.h Model.h DESTINATION drake/collision)
+pods_install_headers(Model.h DESTINATION drake/collision)
   
