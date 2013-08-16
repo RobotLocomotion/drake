@@ -194,6 +194,7 @@ namespace DrakeCollision
           //throw std::out_of_range(msg + oor.what());
         //}
         //END_DEBUG
+	  return has_result;
       };
       // END Required member functions
 

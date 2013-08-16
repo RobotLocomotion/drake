@@ -21,7 +21,7 @@ namespace DrakeCollision
                                         const btCollisionObjectWrapper* colObj1Wrap,
                                         int partId1,int index1);
 
-      btCollisionWorld::ContactResultCallback& getBtPtr();
+      btCollisionWorld::ContactResultCallback* getBtPtr();
 
       void setBodyIdx(const int bodyA_idx, const int bodyB_idx);
 

@@ -1,6 +1,0 @@
-
-tinyxml
-urdf_interface
-viewer
-test
-@PlanarRigidBodyManipulator/private

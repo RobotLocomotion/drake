@@ -630,8 +630,11 @@ else
   catch ex
     if ((strncmp(ex.identifier,'Drake:MissingDependency',23)))
       % ok to let these slip through
+      warning(ex.message);
       lasterr(ex.message,ex.identifier);
-      appendTextNode(options.cdashNode,cdashCompletionStatus,'Value',ex.message);
+      if ~isempty(cdashTestNode)
+        appendTextNode(options.cdashNode,cdashCompletionStatus,'Value',ex.message);
+      end
     else
       
       pass = false;

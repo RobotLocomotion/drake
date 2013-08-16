@@ -14,7 +14,7 @@
 namespace DrakeCollision
 {
   class BulletModel 
-    : public ModelTemplate<BulletElement>, public std::enable_shared_from_this<BulletModel>
+    : public ModelTemplate<BulletElement>
   {
     public:
       BulletModel();

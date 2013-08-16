@@ -15,9 +15,9 @@ namespace DrakeCollision
     return 0;
   }
 
-  btCollisionWorld::ContactResultCallback& BulletResultCollector::getBtPtr()
+  btCollisionWorld::ContactResultCallback* BulletResultCollector::getBtPtr()
   {
-    static_cast<btCollisionWorld::ContactResultCallback*>(this);
+    return static_cast<btCollisionWorld::ContactResultCallback*>(this);
   }
 
   void BulletResultCollector::setBodyIdx(const int bodyA_idx, const int bodyB_idx)
