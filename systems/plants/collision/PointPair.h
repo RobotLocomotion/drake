@@ -5,16 +5,17 @@
 
 namespace DrakeCollision
 {
+	Vector3d toVector3d(const Vector3d& vec);
+
   class PointPair
   {
     public:
-      template<typename inputVector3T=Vector3d, typename inputScalarT=double>
       PointPair(const int bodyA_idx, const int bodyB_idx,
-                const inputVector3T ptA, const inputVector3T ptB, 
-                const inputVector3T normal, inputScalarT distance)
-      : bodyA_idx(bodyA_idx), bodyB_idx(bodyB_idx), ptA(toVector3d(ptA)), 
-        ptB(toVector3d(ptB)), normal(toVector3d(normal)), 
-        distance((double) distance)
+                const Vector3d ptA, const Vector3d ptB,
+                const Vector3d normal, double distance)
+      : bodyA_idx(bodyA_idx), bodyB_idx(bodyB_idx), ptA(ptA),
+        ptB(ptB), normal(normal),
+        distance(distance)
       {}
 
       int bodyA_idx;
@@ -58,6 +59,5 @@ namespace DrakeCollision
       }
   };
 
-  Vector3d toVector3d(const Vector3d& vec);
 }
 #endif

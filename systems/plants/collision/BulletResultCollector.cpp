@@ -8,9 +8,9 @@ namespace DrakeCollision
 {
   btScalar BulletResultCollector::addSingleResult(btManifoldPoint& cp,	const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0,const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
   {
-    addSingleResult(curr_bodyA_idx, curr_bodyB_idx, cp.getPositionWorldOnA(),
-                    cp.getPositionWorldOnB(), cp.m_normalWorldOnB,
-                    cp.m_distance1);
+    addSingleResult(curr_bodyA_idx, curr_bodyB_idx, toVector3d(cp.getPositionWorldOnA()),
+                    toVector3d(cp.getPositionWorldOnB()), toVector3d(cp.m_normalWorldOnB),
+                    (double) cp.m_distance1);
 
     return 0;
   }
@@ -35,9 +35,4 @@ namespace DrakeCollision
     return vec;
   }
 
-  // explicit instantiations (required for linking):
-  template void ResultCollector::addSingleResult(const int, const int, 
-                                                 const btVector3&, 
-                                                 const btVector3&,
-                                                 const btVector3&, btScalar);
 }

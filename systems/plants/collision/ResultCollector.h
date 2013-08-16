@@ -10,12 +10,11 @@ namespace DrakeCollision
     public:
       virtual void addPointPairResult(const PointPair& result);
         
-      template<typename inputVector3T=Vector3d, typename inputScalarT=double>
       inline void addSingleResult(const int bodyA_idx, const int bodyB_idx,
-                                  const inputVector3T& ptA, 
-                                  const inputVector3T& ptB, 
-                                  const inputVector3T& normal, 
-                                  inputScalarT distance)
+                                  const Vector3d& ptA,
+                                  const Vector3d& ptB,
+                                  const Vector3d& normal,
+                                  double distance)
       {
         addPointPairResult(PointPair(bodyA_idx, bodyB_idx, ptA, ptB, normal, 
                                       distance));

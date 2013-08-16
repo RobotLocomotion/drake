@@ -14,4 +14,9 @@ namespace DrakeCollision
     getResults(ptA,ptB,normal);
     distance = this->distance;
   }
+
+  Vector3d toVector3d(const Vector3d& vec)
+  {
+    return vec;
+  };
 }

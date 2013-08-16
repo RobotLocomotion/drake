@@ -103,8 +103,8 @@ namespace DrakeCollision
       gjkOutput.m_normalOnBInWorld*gjkOutput.m_distance;
 
     if (gjkOutput.m_hasResult) {
-      static_pointer_cast<MinDistResultCollector>(c)->addSingleResult(bodyA_idx,bodyB_idx,pointOnAinWorld,gjkOutput.m_pointInWorld,
-          gjkOutput.m_normalOnBInWorld,gjkOutput.m_distance);
+      static_pointer_cast<MinDistResultCollector>(c)->addSingleResult(bodyA_idx,bodyB_idx,toVector3d(pointOnAinWorld),toVector3d(gjkOutput.m_pointInWorld),
+          toVector3d(gjkOutput.m_normalOnBInWorld),(double) gjkOutput.m_distance);
     } else {
       cerr << "In BulletModel::findClosestPointsBtwElements: No closest point found!" << endl;
       //throw exception();
