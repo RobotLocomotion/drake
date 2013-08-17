@@ -893,19 +893,54 @@ classdef RigidBodyManipulator < Manipulator
       end      
     end
 
-    function model = addLinksToCollisionFilterGroup(model,new_members,collision_fg_name,robotnum)
+    function model = addLinksToCollisionFilterGroup(model,linknames,collision_fg_name,robotnums)
+      % Adds links to the specified collision filter group
+      % @param linknames        Names of the links to be added to the
+      %   collision filter group. Can be a string containing the name of a
+      %   link, a cell-array containing the names of multiple links, or a
+      %   vector of link indices
+      % @param collision_fg_name  String containing the name of the collision
+      %   filter group to which the links should be added
+      % @param robotnums          Robot number of the links to be added to the
+      %   collision filter group. Can be a vector or a 1-d cell-array. If
+      %   non-scalar, it must have the same number of elements as linknames.
+
+      [linknames,robotnums] = model.processCFGroupArgs(linknames,robotnums);
       model.collision_filter_groups(collision_fg_name) = ...
-        model.collision_filter_groups(collision_fg_name).addMembers(new_members,robotnum);
+        model.collision_filter_groups(collision_fg_name).addMembers(linknames,robotnums);
       model.dirty = true;
     end
 
-    function model = removeLinksFromCollisionFilterGroup(model,members,collision_fg_name,robotnum)
+    function model = removeLinksFromCollisionFilterGroup(model,linknames,collision_fg_name,robotnums)
+      % Removes links from the specified collision filter group
+      % @param linknames        Names of the links to be removed from the
+      %   collision filter group. Can be a string containing the name of a
+      %   link, a cell-array containing the names of multiple links, or a
+      %   vector of link indices
+      % @param collision_fg_name  String containing the name of the collision
+      %   filter group from which the links should be removed
+      % @param robotnums           Robot number of the links to be removed from
+      %   the collision filter group. Can be a vector or a 1-d cell-array. If
+      %   non-scalar, it must have the same number of elements as linknames.
+      
+      [linknames,robotnums] = model.processCFGroupArgs(linknames,robotnums);
       model.collision_filter_groups(collision_fg_name) = ...
-        model.collision_filter_groups(collision_fg_name).removeMembers(members,robotnum);
+        model.collision_filter_groups(collision_fg_name).removeMembers(linknames,robotnums);
       model.dirty = true;
     end
 
     function model = addToIgnoredListOfCollisionFilterGroup(model,ignored_collision_fgs,collision_fg_name)
+      % Adds the specified collision filter groups to the "ignored" list of
+      % another collision filter group
+      % @param ignored_collision_fgs  Cell array of strings containing the
+      %   names of the collision filter groups to be ignored.
+      % @param collision_fg_name      String giving the name of the collision
+      %   filter group that should ignore the groups specified by
+      %   ignored_collision_fgs
+
+      typecheck(ignored_collision_fgs,{'cell','char'});
+      typecheck(collision_fg_name,'char');
+
       collision_fg = model.collision_filter_groups(collision_fg_name);
       collision_fg.ignored_collision_fgs = union(collision_fg.ignored_collision_fgs,ignored_collision_fgs);
       model.collision_filter_groups(collision_fg_name) = collision_fg;
@@ -913,6 +948,17 @@ classdef RigidBodyManipulator < Manipulator
     end
 
     function model = removeFromIgnoredListOfCollisionFilterGroup(model,ignored_collision_fgs,collision_fg_name)
+      % Removes the specified collision filter groups from the "ignored" list of
+      % another collision filter group
+      % @param ignored_collision_fgs  Cell array of strings containing the
+      %   names of the collision filter groups that should no longer be ignored
+      % @param collision_fg_name      String giving the name of the collision
+      %   filter group that should no longer ignore the groups specified by
+      %   ignored_collision_fgs
+      
+      typecheck(ignored_collision_fgs,{'cell','char'});
+      typecheck(collision_fg_name,'char');
+
       collision_fg = model.collision_filter_groups(collision_fg_name);
       collision_fg.ignored_collision_fgs = setdiff(collision_fg.ignored_collision_fgs,ignored_collision_fgs);
       model.collision_filter_groups(collision_fg_name) = collision_fg;
@@ -921,6 +967,37 @@ classdef RigidBodyManipulator < Manipulator
   end
   
   methods (Static)
+    function [linknames,robotnums] = processCFGroupArgs(linknames,robotnums)
+      % @param linknames          Names of the links to be added to the
+      %   collision filter group. Can be a string containing the name of a
+      %   link, a cell-array containing the names of multiple links, or a
+      %   vector of link indices
+      % @param robotnum           Robot number of the links to be added to the
+      %   collision filter group. Can be a vector or a 1-d cell-array.
+      if iscell(robotnums)
+        % nothing needs to be done
+      elseif isnumeric(robotnums)
+        robotnums = num2cell(robotnums);
+      else
+        error('robotnums must be a cell array or a numeric array');
+      end
+      assert(isscalar(robotnums) || numel(robotnums) == numel(linknames),...
+        ['If ''robotnums'' is non-scalar, it must have the same number ' ...
+        'of elements as ''linknames'''])
+      robotnums = robotnums(:);
+
+      if iscell(linknames)
+        % nothing needs to be done
+      elseif ischar(linknames)
+        linknames = {linknames};
+      elseif isnumeric(linknames)
+        linknames = arrayfun(@(idx)getLinkName(model,idx),linknames, ...
+                               'UniformOutput',false);
+      else
+        error('linknames must be a string, cell array or numeric array');
+      end
+      linknames = linknames(:);
+    end
     function d=surfaceTangents(normal)
       %% compute tangent vectors, according to the description in the last paragraph of Stewart96, p.2678
       t1=normal; % initialize size
