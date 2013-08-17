@@ -52,7 +52,13 @@ function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,use
     v.draw(0,[qsol;0*qsol]);
 
     if (~success)
-      error('%s failed with exitflag = %d',testName,exitflag);
+      if (exitflag==-2) % fmincon failed to find feasible solution
+        warning('constraintTester:fmincon_failure', ...
+          ['%s failed to find a feasible solution. This may happen ' ...
+          'occaisonally due to difficult initial conditions.'],testName);
+      else
+        error('%s: fmincon failed with exitflag = %d',testName,exitflag);
+      end
     end
   end
 
