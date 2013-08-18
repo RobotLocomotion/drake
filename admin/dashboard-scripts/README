@@ -1,0 +1,2 @@
+This README file explains how to modify the scripts and files in this directory so you can run CTest against the Drake repository and send the results to our CDash server.
+
