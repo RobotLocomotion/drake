@@ -47,8 +47,8 @@ classdef ZMPTrackingControl < DrakeSystem
       cost.base_roll = 1000;
       cost.base_pitch = 1000;
       cost.base_yaw = 0;
-      cost.back_mby = 100;
-      cost.back_ubx = 100;
+      cost.back_bky = 100;
+      cost.back_bkx = 100;
       cost = double(cost);
       obj.ikoptions.Q = diag(cost(1:r.getNumDOF));
       obj.ikoptions.q_nom = q0;

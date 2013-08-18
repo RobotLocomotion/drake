@@ -440,7 +440,7 @@
       </geometry>
     </visual>
   </link>
-  <joint name="back_lbz" type="revolute">
+  <joint name="back_bkz" type="revolute">
     <origin rpy="0 -0 0" xyz="-0.0125 0 0"/>
     <axis xyz="0 0 1"/>
     <parent link="pelvis"/>
@@ -449,7 +449,7 @@
     <limit effort="124.016" lower="-0.610865" upper="0.610865" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10.6109" soft_upper_limit="10.6109"/>
   </joint>
-  <joint name="back_mby" type="revolute">
+  <joint name="back_bky" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0 0.09"/>
     <axis xyz="0 1 0"/>
     <parent link="ltorso"/>
@@ -458,7 +458,7 @@
     <limit effort="206.843" lower="-1.2" upper="1.28" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-11.2" soft_upper_limit="11.28"/>
   </joint>
-  <joint name="back_ubx" type="revolute">
+  <joint name="back_bkx" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0 0.05"/>
     <axis xyz="1 0 0"/>
     <parent link="mtorso"/>
@@ -530,7 +530,7 @@
     <limit effort="220" lower="0" upper="2.45" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10" soft_upper_limit="12.45"/>
   </joint>
-  <joint name="l_leg_lax" type="revolute">
+  <joint name="l_leg_akx" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0 0"/>
     <axis xyz="1 0 0"/>
     <parent link="l_talus"/>
@@ -539,7 +539,7 @@
     <limit effort="90" lower="-0.436" upper="0.436" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10.436" soft_upper_limit="10.436"/>
   </joint>
-  <joint name="l_leg_lhy" type="revolute">
+  <joint name="l_leg_hpy" type="revolute">
     <origin rpy="0 -0 0" xyz="0.05 0 -0.05"/>
     <axis xyz="0 1 0"/>
     <parent link="l_lglut"/>
@@ -548,7 +548,7 @@
     <limit effort="260" lower="-1.75" upper="0.524" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-11.75" soft_upper_limit="10.524"/>
   </joint>
-  <joint name="l_leg_mhx" type="revolute">
+  <joint name="l_leg_hpx" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0 0"/>
     <axis xyz="1 0 0"/>
     <parent link="l_uglut"/>
@@ -557,7 +557,7 @@
     <limit effort="180" lower="-0.47" upper="0.495" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10.47" soft_upper_limit="10.495"/>
   </joint>
-  <joint name="l_leg_uay" type="revolute">
+  <joint name="l_leg_aky" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0 -0.422"/>
     <axis xyz="0 1 0"/>
     <parent link="l_lleg"/>
@@ -566,7 +566,7 @@
     <limit effort="220" lower="-0.698" upper="0.698" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10.698" soft_upper_limit="10.698"/>
   </joint>
-  <joint name="l_leg_uhz" type="revolute">
+  <joint name="l_leg_hpz" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0.089 0"/>
     <axis xyz="0 0 1"/>
     <parent link="pelvis"/>
@@ -649,7 +649,7 @@
     <limit effort="220" lower="0" upper="2.45" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10" soft_upper_limit="12.45"/>
   </joint>
-  <joint name="r_leg_lax" type="revolute">
+  <joint name="r_leg_akx" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0 0"/>
     <axis xyz="1 0 0"/>
     <parent link="r_talus"/>
@@ -658,7 +658,7 @@
     <limit effort="90" lower="-0.436" upper="0.436" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10.436" soft_upper_limit="10.436"/>
   </joint>
-  <joint name="r_leg_lhy" type="revolute">
+  <joint name="r_leg_hpy" type="revolute">
     <origin rpy="0 -0 0" xyz="0.05 0 -0.05"/>
     <axis xyz="0 1 0"/>
     <parent link="r_lglut"/>
@@ -667,7 +667,7 @@
     <limit effort="260" lower="-1.745" upper="0.524" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-11.745" soft_upper_limit="10.524"/>
   </joint>
-  <joint name="r_leg_mhx" type="revolute">
+  <joint name="r_leg_hpx" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0 0"/>
     <axis xyz="1 0 0"/>
     <parent link="r_uglut"/>
@@ -676,7 +676,7 @@
     <limit effort="180" lower="-0.495" upper="0.47" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10.495" soft_upper_limit="10.47"/>
   </joint>
-  <joint name="r_leg_uay" type="revolute">
+  <joint name="r_leg_aky" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0 -0.422"/>
     <axis xyz="0 1 0"/>
     <parent link="r_lleg"/>
@@ -685,7 +685,7 @@
     <limit effort="220" lower="-0.698" upper="0.698" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-10.698" soft_upper_limit="10.698"/>
   </joint>
-  <joint name="r_leg_uhz" type="revolute">
+  <joint name="r_leg_hpz" type="revolute">
     <origin rpy="0 -0 0" xyz="0 -0.089 0"/>
     <axis xyz="0 0 1"/>
     <parent link="pelvis"/>
@@ -694,19 +694,19 @@
     <limit effort="260" lower="-1.14" upper="0.32" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-11.14" soft_upper_limit="10.32"/>
   </joint>
-  <transmission name="back_lbz_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <joint name="back_lbz"/>
-    <actuator name="back_lbz_motor"/>
+  <transmission name="back_bkz_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <joint name="back_bkz"/>
+    <actuator name="back_bkz_motor"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="back_mby_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="back_mby_motor"/>
-    <joint name="back_mby"/>
+  <transmission name="back_bky_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="back_bky_motor"/>
+    <joint name="back_bky"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="back_ubx_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="back_ubx_motor"/>
-    <joint name="back_ubx"/>
+  <transmission name="back_bkx_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="back_bkx_motor"/>
+    <joint name="back_bkx"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
   <transmission name="l_arm_elx_trans" type="pr2_mechanism_model/SimpleTransmission">
@@ -744,29 +744,29 @@
     <joint name="l_leg_kny"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="l_leg_lax_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="l_leg_lax_motor"/>
-    <joint name="l_leg_lax"/>
+  <transmission name="l_leg_akx_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="l_leg_akx_motor"/>
+    <joint name="l_leg_akx"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="l_leg_lhy_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="l_leg_lhy_motor"/>
-    <joint name="l_leg_lhy"/>
+  <transmission name="l_leg_hpy_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="l_leg_hpy_motor"/>
+    <joint name="l_leg_hpy"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="l_leg_mhx_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="l_leg_mhx_motor"/>
-    <joint name="l_leg_mhx"/>
+  <transmission name="l_leg_hpx_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="l_leg_hpx_motor"/>
+    <joint name="l_leg_hpx"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="l_leg_uay_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="l_leg_uay_motor"/>
-    <joint name="l_leg_uay"/>
+  <transmission name="l_leg_aky_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="l_leg_aky_motor"/>
+    <joint name="l_leg_aky"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="l_leg_uhz_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="l_leg_uhz_motor"/>
-    <joint name="l_leg_uhz"/>
+  <transmission name="l_leg_hpz_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="l_leg_hpz_motor"/>
+    <joint name="l_leg_hpz"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
   <transmission name="neck_ay_trans" type="pr2_mechanism_model/SimpleTransmission">
@@ -809,29 +809,29 @@
     <joint name="r_leg_kny"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="r_leg_lax_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="r_leg_lax_motor"/>
-    <joint name="r_leg_lax"/>
+  <transmission name="r_leg_akx_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="r_leg_akx_motor"/>
+    <joint name="r_leg_akx"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="r_leg_lhy_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="r_leg_lhy_motor"/>
-    <joint name="r_leg_lhy"/>
+  <transmission name="r_leg_hpy_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="r_leg_hpy_motor"/>
+    <joint name="r_leg_hpy"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="r_leg_mhx_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="r_leg_mhx_motor"/>
-    <joint name="r_leg_mhx"/>
+  <transmission name="r_leg_hpx_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="r_leg_hpx_motor"/>
+    <joint name="r_leg_hpx"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="r_leg_uay_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="r_leg_uay_motor"/>
-    <joint name="r_leg_uay"/>
+  <transmission name="r_leg_aky_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="r_leg_aky_motor"/>
+    <joint name="r_leg_aky"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
-  <transmission name="r_leg_uhz_trans" type="pr2_mechanism_model/SimpleTransmission">
-    <actuator name="r_leg_uhz_motor"/>
-    <joint name="r_leg_uhz"/>
+  <transmission name="r_leg_hpz_trans" type="pr2_mechanism_model/SimpleTransmission">
+    <actuator name="r_leg_hpz_motor"/>
+    <joint name="r_leg_hpz"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
   <link name="head">
