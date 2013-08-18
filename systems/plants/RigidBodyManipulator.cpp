@@ -410,7 +410,7 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   Xg = MatrixXd::Zero(6*NB,6); // spatial centroidal projection matrix
   dP = MatrixXd::Zero(6*NB,6*NB); // dP_dq * qd 
   dXg = MatrixXd::Zero(6*NB,6);  // dXg_dq * qd
-  Xcom(6,6); // spatial transform from centroid to world
+  Xcom = MatrixXd::Zero(6,6); // spatial transform from centroid to world
   Jcom = MatrixXd::Zero(3,num_dof); 
   dXcom = MatrixXd::Zero(6,6);
   Xi = MatrixXd::Zero(6,6);
