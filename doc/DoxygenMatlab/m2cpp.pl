@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 
+use File::Basename;
 require "doc/DoxygenMatlab/preprocess.pl";
 
 if ($#ARGV != 0)
@@ -13,32 +14,32 @@ else
 
 # If we have a .m file inside a (@)-folder with the same name :
 # we will read each file of this folder
-if ($fname =~ /^(.*)\@([\d\w-_]*)[\/\\](\2)\.m/)
+if ($fname =~ /^(.*)\@([\d\w\-_]*)[\/\\](\2)\.m/)
 {
   $name = $2;
   $nameExt = $name.".m";
   $dir = $1."@".$name."/\*.m";
   @fic = glob($dir);
   $i = 0;
-  @listeFic[0] = $fname;
+  $listeFic[0] = $fname;
   foreach $my_test (@fic)
   {
     if (!($my_test =~ $nameExt))
     {
       $i++;
-      @listeFic[$i] = $my_test;
+      $listeFic[$i] = $my_test;
     }
   }
 
 }
 # otherwise @-folder, but .m with a different name : ignore it (we read it when we read the main class file)
-elsif ($fname =~ /^(.*)\@([\d\w-_]*)[\/\\](.*)\.m/)
+elsif ($fname =~ /^(.*)\@([\d\w\-_]*)[\/\\](.*)\.m/)
 {
 }
 # otherwise
 else
 {
-  @listeFic[0] = $fname;
+  $listeFic[0] = $fname;
 }
 $output = "";
 foreach $my_fic (@listeFic)
@@ -46,12 +47,14 @@ foreach $my_fic (@listeFic)
   $my_fic2 = preprocess($my_fic);
   open(my $in, $my_fic2);
 
+  $fileName = fileparse($my_fic,qr{\.m}); 
+
   $declTypeDef="";
   $inClass = 0;
   $inAbstractMethodBlock = 0;
   $listeProperties = 0;
   $listeEnumeration = 0;
-  $inComment = 0;
+#  $inComment = 0;
   $listeEvents = 0;
   
   #default to public methods since if we're in a file that is not the main class file
@@ -171,6 +174,11 @@ foreach $my_fic (@listeFic)
 #      $linecomment = $5;
       if ($inClass == 0)
       {
+	if ($functionName ne $fileName) 
+	  {  # added by russt - don't include functions with internal scope
+	    next;
+	  }
+
         $output = $declTypeDef.$output;
         $declTypeDef = "";
       }
@@ -205,7 +213,7 @@ foreach $my_fic (@listeFic)
     {
       $className = $3;
       $classInheritance = $4;
-      $classAttributes = $2;
+#      $classAttributes = $2;
       if (!($classInheritance =~ /^$/))
       {
         $classInheritance =~ s/&/,public /g;
