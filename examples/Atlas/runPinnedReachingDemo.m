@@ -28,7 +28,7 @@ left_ee = EndEffector(r,'atlas','l_hand',[0;0;0],'L_HAND_GOAL');
 left_ee = left_ee.setMask(~cellfun(@isempty,strfind(joint_names,'l_arm')));
 head_ee = EndEffector(r,'atlas','head',[0.1;0;0],'GAZE_GOAL');
 headmask = ~cellfun(@isempty,strfind(joint_names,'neck')) + ...
-          ~cellfun(@isempty,strfind(joint_names,'back_lbz'));
+          ~cellfun(@isempty,strfind(joint_names,'back_bkz'));
 head_ee = head_ee.setMask(headmask);
 head_ee = head_ee.setGain(0.25);
 
