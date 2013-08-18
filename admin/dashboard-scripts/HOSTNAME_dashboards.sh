@@ -2,4 +2,4 @@
 
 cd $(dirname $0)
 
-./run_ctest_with_drc_environment.sh drc-trunk-Continuous/software/config/drc_environment.sh paladin02_trunk_continuous.cmake
+./run_ctest_with_drake_environment.sh drake-trunk-Continuous/drake/admin/dashboard-scripts/drake_environment.sh HOSTNAME_trunk_continuous.cmake

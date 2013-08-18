@@ -1,17 +1,17 @@
 
 cmake_minimum_required(VERSION 2.8.7 FATAL_ERROR)
 
-set(CTEST_PROJECT_NAME DRC)
+set(CTEST_PROJECT_NAME Drake)
 
 if(NOT "${dashboard_model}" MATCHES "^(Nightly|Experimental|Continuous)$")
   message(FATAL_ERROR "dashboard_model must be Nightly, Experimental, or Continuous")
 endif()
 
-set(dashboard_source_name "drc-${dashboard_svn_branch}-${dashboard_model}")
+set(dashboard_source_name "drake-${dashboard_svn_branch}-${dashboard_model}")
 set(dashboard_binary_name "build-${dashboard_svn_branch}-${dashboard_model}")
 set(CTEST_SOURCE_DIRECTORY ${CTEST_DASHBOARD_ROOT}/${dashboard_source_name})
 set(CTEST_BINARY_DIRECTORY ${CTEST_DASHBOARD_ROOT}/${dashboard_binary_name})
-set(CTEST_BUILD_COMMAND "bash ${CTEST_SCRIPT_DIRECTORY}/drc_build.sh")
+set(CTEST_BUILD_COMMAND "bash ${CTEST_SCRIPT_DIRECTORY}/drake_build.sh")
 set(CTEST_UPDATE_COMMAND svn)
 set(CTEST_TEST_TIMEOUT 1800)
 set(CTEST_USE_LAUNCHERS 0)
@@ -20,17 +20,17 @@ if(NOT EXISTS "${CTEST_SOURCE_DIRECTORY}")
   # if you set CTEST_CHECKOUT_COMMAND, then ctest can checkout the source
   # from svn automatically, but this often fails do to required server
   # authentication.  So, we won't support automatic checkout.
-  #set(CTEST_CHECKOUT_COMMAND "${CTEST_UPDATE_COMMAND} checkout https://svn.csail.mit.edu/drc/${dashboard_svn_branch} ${CTEST_SOURCE_DIRECTORY}")
-  message(FATAL_ERROR "\nThe svn source directory does not exist.  Checkout with:\n  svn checkout https://svn.csail.mit.edu/drc/${dashboard_svn_branch} ${CTEST_SOURCE_DIRECTORY}\n")
+  #set(CTEST_CHECKOUT_COMMAND "${CTEST_UPDATE_COMMAND} checkout https://svn.csail.mit.edu/locomotion/pods  ${CTEST_SOURCE_DIRECTORY}")
+  message(FATAL_ERROR "\nThe svn source directory does not exist.  Checkout with:\n  svn checkout https://svn.csail.mit.edu/locomotion/pods ${CTEST_SOURCE_DIRECTORY}\n")
 endif()
 
-set(DRC_BASE $ENV{DRC_BASE})
-if(NOT DEFINED DRC_BASE)
-  message(FATAL_ERROR "The DRC_BASE environment variable is not defined.")
+set(DRAKE_BASE $ENV{DRAKE_BASE})
+if(NOT DEFINED DRAKE_BASE)
+  message(FATAL_ERROR "The DRAKE_BASE environment variable is not defined.")
 endif()
 
-if(NOT "${CTEST_SOURCE_DIRECTORY}" STREQUAL ${DRC_BASE})
-  message(FATAL_ERROR "The DRC_BASE environment variable does not match the dashboard source directory: ${CTEST_SOURCE_DIRECTORY}")
+if(NOT "${CTEST_SOURCE_DIRECTORY}" STREQUAL ${DRAKE_BASE})
+  message(FATAL_ERROR "The DRAKE_BASE environment variable does not match the dashboard source directory: ${CTEST_SOURCE_DIRECTORY}")
 endif()
 
 
