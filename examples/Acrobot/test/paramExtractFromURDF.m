@@ -1,4 +1,6 @@
 function paramExtractFromURDF
 
-r = RigidBodyManipulator('../Acrobot.urdf');
-fr = getParamFrame(r)
+r1 = RigidBodyManipulator('../Acrobot.urdf');
+r2 = RigidBodyManipulator('AcrobotWParams.urdf');
+
+fr = getParamFrame(r2)

@@ -1,4 +1,4 @@
-classdef RigidBodyManipulator < Manipulator
+classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
   % This class wraps the spatial vector library (v1) 
   % provided by Roy Featherstone on his website: 
   %   http://users.cecs.anu.edu.au/~roy/spatial/documentation.html
@@ -8,6 +8,7 @@ classdef RigidBodyManipulator < Manipulator
     urdf={};        % names of the urdf files loaded
     body=[];        % array of RigidBody objects
     actuator = [];  % array of RigidBodyActuator objects
+    param_db = [];  % structure array containing parsed parameter info
     loop=[];        % array of RigidBodyLoop objects
     sensor={};      % cell array of RigidBodySensor objects
     force={};       % cell array of RigidBodyForceElement objects 
@@ -1643,6 +1644,10 @@ classdef RigidBodyManipulator < Manipulator
             
           error(['force element type ',type,' not supported (yet?)']);
       end
+    end
+    
+    function val = parseParamString(str)
+      p = strfind(str,'$');
     end
     
     function model = updateBodyIndices(model,map_from_new_to_old)

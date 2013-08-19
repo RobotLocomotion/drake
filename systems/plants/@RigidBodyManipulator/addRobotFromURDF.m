@@ -74,6 +74,11 @@ for i=0:(materials.getLength()-1)
   [~,options] = model.parseMaterial(materials.item(i),options);
 end
 
+parameters = node.getElementsByTagName('parameter');
+for i=0:(parameters.getLength()-1)
+  model = parseParameter(model,robotnum,parameters.item(i),options);
+end
+
 links = node.getElementsByTagName('link');
 for i=0:(links.getLength()-1)
   model = parseLink(model,robotnum,links.item(i),options);
@@ -127,7 +132,17 @@ end
 
 end
 
-
+function model = parseParameter(model,robotnum,node,options)
+  p.robotnum = robotnum;
+  p.name = char(node.getAttribute('name'));    % mandatory
+  p.value = str2num(char(node.getAttribute('value')));  % mandatory
+  n = char(node.getAttribute('lb'));  % optional
+  if isempty(n), p.lb = -inf; else p.lb = str2num(n); end
+  n = char(node.getAttribute('ub'));  % optional
+  if isempty(n), p.ub = inf; else p.ub = str2num(n); end
+  
+  model.param_db = vertcat(model.param_db,p);
+end
 
 function model = parseGazebo(model,robotnum,node,options)
 ref = char(node.getAttribute('reference'));
