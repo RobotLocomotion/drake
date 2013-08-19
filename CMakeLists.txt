@@ -61,7 +61,7 @@ else()
 endif()
 
 add_subdirectory(util)
-add_subdirectory(algorithms)
+add_subdirectory(solvers)
 add_subdirectory(systems)
 add_subdirectory(thirdParty/GetFullPath)
 
