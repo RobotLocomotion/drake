@@ -40,6 +40,9 @@ elseif (length(sizemat)==1)
   end
 else
   docare = ~isnan(sizemat);
+  if (length(sizemat)>length(s))  % pad with ones because matlab evaluates size(ones(3,2,1,1)) to [3,2]
+    s = [s,ones(1,length(sizemat)-length(s))];
+  end
   if (prod(sizemat(docare))>0 && (length(s)~=length(sizemat) || any(s(docare)~=sizemat(docare))))
     tf = false;
     if (nargout<1)
