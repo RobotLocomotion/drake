@@ -56,7 +56,7 @@ addpath(fullfile(conf.root,'systems','estimators'));
 addpath(fullfile(conf.root,'systems','trajectories'));
 addpath(fullfile(conf.root,'systems','frames'));
 addpath(fullfile(conf.root,'systems','visualizers'));
-addpath(fullfile(conf.root,'algorithms'));
+addpath(fullfile(conf.root,'solvers'));
 addpath(fullfile(conf.root,'util'));
 addpath(fullfile(conf.root,'util','obstacles'));
 addpath(fullfile(conf.root,'thirdParty'));

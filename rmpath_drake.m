@@ -15,7 +15,7 @@ rmpath(fullfile(conf.root,'systems','estimators'));
 rmpath(fullfile(conf.root,'systems','trajectories'));
 rmpath(fullfile(conf.root,'systems','frames'));
 rmpath(fullfile(conf.root,'systems','visualizers'));
-rmpath(fullfile(conf.root,'algorithms'));
+rmpath(fullfile(conf.root,'solvers'));
 rmpath(fullfile(conf.root,'util'));
 rmpath(fullfile(conf.root,'util','obstacles'));
 rmpath(fullfile(conf.root,'thirdParty'));
