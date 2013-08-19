@@ -4,8 +4,6 @@ classdef ParameterizedSystem < DrakeSystem
   % it can provide the methods:
   %   setParams
   %   getParams
-  % and optionally 
-  %   paramConstraints
   %
   % Alternatively, if the system calls setParamFrame with the coordinates
   % names as property names, then this class provides default setParam and
@@ -13,6 +11,9 @@ classdef ParameterizedSystem < DrakeSystem
   
   methods
     function obj = setParams(obj,p)
+      % This default setParams method attempts to set class properties of the
+      % system according to the coordinate names in the parameter frame.
+
       if isa(p,'Point')
         p = double(inFrame(p,obj.param_frame));
       else
@@ -25,6 +26,9 @@ classdef ParameterizedSystem < DrakeSystem
     end
     
     function p = getParams(obj)
+      % This default getParams method attempts to get class properties of the
+      % system according to the coordinate names in the parameter frame.
+
       c = obj.param_frame.coordinates;
       p=zeros(obj.param_frame.dim,1);
       for i=1:length(c)
@@ -33,43 +37,23 @@ classdef ParameterizedSystem < DrakeSystem
       p = Point(obj.param_frame,p);
     end
     
-    function [phi_ineq,phi_eq] = paramConstraints(obj,p)
-      % adds constraints that phi_ineq<=0, phi_eq==0 for param I.D.
-      if (obj.num_param_con_ineq>0 || obj.num_param_con_eq>0)
-        error('systems with parameter constraints must overload this method');
-      end
-    end
-  end
-  
-  methods (Access=protected)
-    function obj = setNumParamConstraints(obj,num_ineq,num_eq)
-      sizecheck(num_ineq,1);
-      integervaluedcheck(num_ineq);
-      rangecheck(num_ineq,0,inf);
-      obj.num_param_con_ineq = num_ineq;
-
-      sizecheck(num_eq,1);
-      integervaluedcheck(num_eq);
-      rangecheck(num_eq,0,inf);
-      obj.num_param_con_eq = num_eq;
-    end
   end
   
   methods
-    function [num_ineq,num_eq] = getNumParamConstraints(obj)
-      num_ineq = obj.num_param_con_ineq;
-      num_eq = obj.num_param_con_eq;
-    end
-    
     function obj = setParamFrame(obj,fr)
+      % Set the CoordinateFrame object which describes any system
+      % parameters
       typecheck(fr,'CoordinateFrame');
       obj.param_frame = fr;
     end
     function fr = getParamFrame(obj)
+      % Returns the CoordinateFrame object which describes any system
+      % parameters
       fr = obj.param_frame;
     end
     
     function obj = setParamLimits(obj,pmin,pmax)
+      % Set lower and upper bounds on the system parameters
       d = prod(obj.param_frame.dim);
       sizecheck(pmin,[d 1]);
       obj.pmin = pmin;
@@ -80,6 +64,7 @@ classdef ParameterizedSystem < DrakeSystem
     end
     
     function [pmin,pmax] = getParamLimits(obj)
+      % Returns the current lower and upper bounds on the system parameters
       pmin = obj.pmin;
       pmax = obj.pmax;
     end
@@ -90,13 +75,9 @@ classdef ParameterizedSystem < DrakeSystem
       % @param data an instance of iddata (see 'help iddata' for more info)
       error('todo: implement a generic nonlinear optimization approach here');
     end
-    
-%    function findLumpedParameters(obj)
   end
   
   properties (SetAccess=private, GetAccess=private)
-    num_param_con_ineq=0;
-    num_param_con_eq=0;
     param_frame;
     pmin;
     pmax;
