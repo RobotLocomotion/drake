@@ -30,10 +30,6 @@ function [phat,estimated_delay] = parameterEstimation(obj,data,options)
 %
 
 typecheck(obj,'ParameterizedSystem'); % only works if the system also implements the parameters interface
-[num_param_ineq,num_param_eq]=getNumParamConstraints(obj);
-if num_param_ineq~=0 || num_param_eq~=0
-  error('not supported yet');
-end
 
 if (getOutputFrame(obj)~=getStateFrame(obj))
   error('Only full-state feedback is implemented so far');
