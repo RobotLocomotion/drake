@@ -1,5 +1,7 @@
 #!/usr/bin/perl -w
 
+use File::Basename;
+
 sub preprocess
 {
 
@@ -19,6 +21,9 @@ sub preprocess
     my $numCommentLines = 0;
     my $firstCommentLine = 0;
     my $firstCommentLineEndsNum = -1;
+    
+    my $fileName = fileparse($my_fic,qr{\.m}); 
+
 
     my $firstAt = -1;
     my $lastAt = -1;
@@ -234,13 +239,21 @@ sub preprocess
 
         } elsif ((/(^\s*function)\s*([\] \w\d,_\[]+=)?\s*([.\w\d_-]*)\s*\(?([\w\d\s,~]*)\)?(%?.*)/) || (/(^\s*classdef)\s*(\s*\([\{\}\?\w,=\s]+\s*\))?\s*([\w\d_]+)\s*<?\s*([\s\w\d._&]+)?(.*)/))
         {
-            #print "that was a function!\n";
-            $functionDef = $_;
-            
-            $incommentblock = 1;
-            $blankLineCheck = 1; # check for a single blank line before the comment block
-            
-            $functionReturnVals = $2;
+	  my $functionName = $3;
+
+	  # don't include functions with internal scope
+	  if ($functionName ne $fileName) 
+	  {
+	    next;
+	  }
+
+	  #print "that was a function!\n";
+	  $functionDef = $_;
+	  
+	  $incommentblock = 1;
+	  $blankLineCheck = 1; # check for a single blank line before the comment block
+	  
+	  $functionReturnVals = $2;
             
         } else {
             # nothing special happening... just move along

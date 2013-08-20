@@ -40,6 +40,9 @@ configure:
 	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
 		   -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
+.PHONY: doc
+doc:	doxygen
+
 doxygen :
 	doxygen doc/Doxyfile
 

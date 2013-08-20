@@ -1,6 +1,5 @@
 #!/usr/bin/perl -w
 
-use File::Basename;
 require "doc/DoxygenMatlab/preprocess.pl";
 
 if ($#ARGV != 0)
@@ -46,8 +45,6 @@ foreach $my_fic (@listeFic)
 {
   $my_fic2 = preprocess($my_fic);
   open(my $in, $my_fic2);
-
-  $fileName = fileparse($my_fic,qr{\.m}); 
 
   $declTypeDef="";
   $inClass = 0;
@@ -174,11 +171,6 @@ foreach $my_fic (@listeFic)
 #      $linecomment = $5;
       if ($inClass == 0)
       {
-	if ($functionName ne $fileName) 
-	  {  # added by russt - don't include functions with internal scope
-	    next;
-	  }
-
         $output = $declTypeDef.$output;
         $declTypeDef = "";
       }
