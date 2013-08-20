@@ -10,8 +10,7 @@ classdef AcrobotPlant < Manipulator & ParameterizedSystem
     b1=.1;  b2=.1;
 %    b1=0; b2=0;
     lc1 = .5; lc2 = 1; 
-%    I1 = 0.083 + m1*lc1^2;  I2 = 0.33 + m2*lc2^2;  
-    I1=[]; I2 = [];  % set in constructor
+    Ic1 = .083;  Ic2 = .33;
     
     xG
     uG
@@ -21,8 +20,6 @@ classdef AcrobotPlant < Manipulator & ParameterizedSystem
     function obj = AcrobotPlant
       obj = obj@Manipulator(2,1);
       obj = setInputLimits(obj,-10,10);
-      obj.I1 = 0.083 + obj.m1*obj.lc1^2;
-      obj.I2 = 0.33 + obj.m2*obj.lc2^2;
 
       obj = setInputFrame(obj,CoordinateFrame('AcrobotInput',1,'u',{'tau'}));
       obj = setStateFrame(obj,CoordinateFrame('AcrobotState',4,'x',{'theta1','theta2','theta1dot','theta2dot'}));
@@ -32,7 +29,7 @@ classdef AcrobotPlant < Manipulator & ParameterizedSystem
       obj.uG = Point(obj.getInputFrame,0);
       
       obj = setParamFrame(obj,CoordinateFrame('AcrobotParams',6,'p',...
-        { 'b1','b2','lc1','lc2','I1','I2' }));
+        { 'b1','b2','lc1','lc2','Ic1','Ic2' }));
 %      obj = setParamFrame(obj,CoordinateFrame('AcrobotParams',10,'p',...
 %        { 'l1','l2','m1','m2','b1','b2','lc1','lc2','I1','I2' }));
 %      obj = setParamFrame(obj,CoordinateFrame('AcrobotParams',1,'p',...
@@ -42,7 +39,8 @@ classdef AcrobotPlant < Manipulator & ParameterizedSystem
 
     function [H,C,B] = manipulatorDynamics(obj,q,qd)
       % keep it readable:
-      m1=obj.m1; m2=obj.m2; l1=obj.l1; g=obj.g; lc1=obj.lc1; lc2=obj.lc2; I1=obj.I1; I2=obj.I2; b1=obj.b1; b2=obj.b2;
+      m1=obj.m1; m2=obj.m2; l1=obj.l1; g=obj.g; lc1=obj.lc1; lc2=obj.lc2; b1=obj.b1; b2=obj.b2;
+      I1 = obj.Ic1 + obj.m1*obj.lc1^2; I2 = obj.Ic2 + obj.m2*obj.lc2^2;
       m2l1lc2 = m2*l1*lc2;  % occurs often!
 
       c = cos(q(1:2,:));  s = sin(q(1:2,:));  s12 = sin(q(1,:)+q(2,:));

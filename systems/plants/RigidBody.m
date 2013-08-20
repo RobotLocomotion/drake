@@ -177,33 +177,33 @@ classdef RigidBody
       end
     end
     
-    function body=parseInertial(body,node,options)
+    function body=parseInertial(body,node,model,options)
       mass = 0;
       inertia = eye(3);
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
         if origin.hasAttribute('xyz')
-          xyz = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
+          xyz = reshape(parseParamString(model,char(origin.getAttribute('xyz'))),3,1);
         end
         if origin.hasAttribute('rpy')
-          rpy = reshape(str2num(char(origin.getAttribute('rpy'))),3,1);
+          rpy = reshape(parseParamString(model,char(origin.getAttribute('rpy'))),3,1);
         end
       end
       massnode = node.getElementsByTagName('mass').item(0);
       if ~isempty(massnode)
         if (massnode.hasAttribute('value'))
-          mass = str2num(char(massnode.getAttribute('value')));
+          mass = parseParamString(model,char(massnode.getAttribute('value')));
         end
       end
       inode = node.getElementsByTagName('inertia').item(0);
       if ~isempty(inode)
-        if inode.hasAttribute('ixx'), inertia(1,1)=str2num(char(inode.getAttribute('ixx'))); end
-        if inode.hasAttribute('ixy'), inertia(1,2)=str2num(char(inode.getAttribute('ixy'))); inertia(2,1)=inertia(1,2); end
-        if inode.hasAttribute('ixz'), inertia(1,3)=str2num(char(inode.getAttribute('ixz'))); inertia(3,1)=inertia(1,3); end
-        if inode.hasAttribute('iyy'), inertia(2,2)=str2num(char(inode.getAttribute('iyy'))); end
-        if inode.hasAttribute('iyz'), inertia(2,3)=str2num(char(inode.getAttribute('iyz'))); inertia(3,2)=inertia(2,3); end
-        if inode.hasAttribute('izz'), inertia(3,3)=str2num(char(inode.getAttribute('izz'))); end
+        if inode.hasAttribute('ixx'), inertia(1,1)=parseParamString(model,char(inode.getAttribute('ixx'))); end
+        if inode.hasAttribute('ixy'), inertia(1,2)=parseParamString(model,char(inode.getAttribute('ixy'))); inertia(2,1)=inertia(1,2); end
+        if inode.hasAttribute('ixz'), inertia(1,3)=parseParamString(model,char(inode.getAttribute('ixz'))); inertia(3,1)=inertia(1,3); end
+        if inode.hasAttribute('iyy'), inertia(2,2)=parseParamString(model,char(inode.getAttribute('iyy'))); end
+        if inode.hasAttribute('iyz'), inertia(2,3)=parseParamString(model,char(inode.getAttribute('iyz'))); inertia(3,2)=inertia(2,3); end
+        if inode.hasAttribute('izz'), inertia(3,3)=parseParamString(model,char(inode.getAttribute('izz'))); end
       end      
       
       % randomly scale inertia
@@ -264,10 +264,10 @@ classdef RigidBody
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
         if origin.hasAttribute('xyz')
-          xyz = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
+          xyz = reshape(parseParamString(model,char(origin.getAttribute('xyz'))),3,1);
         end
         if origin.hasAttribute('rpy')
-          rpy = reshape(str2num(char(origin.getAttribute('rpy'))),3,1);
+          rpy = reshape(parseParamString(model,char(origin.getAttribute('rpy'))),3,1);
         end
       end
       if any(xyz)
@@ -296,9 +296,9 @@ classdef RigidBody
       
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
-        wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(geomnode,wrl_appearance_str,options)];
+        wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(geomnode,wrl_appearance_str,model,options)];
         if (options.visual_geometry)
-          [xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,options);
+          [xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,model,options);
           body.geometry{1}.x = xpts;
           body.geometry{1}.y = ypts;
           body.geometry{1}.z = zpts;
@@ -313,15 +313,15 @@ classdef RigidBody
       end
     end
     
-    function body = parseCollision(body,node,options)
+    function body = parseCollision(body,node,model,options)
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
         if origin.hasAttribute('xyz')
-          xyz = reshape(str2num(char(origin.getAttribute('xyz'))),3,1);
+          xyz = reshape(parseParamString(model,char(origin.getAttribute('xyz'))),3,1);
         end
         if origin.hasAttribute('rpy')
-          rpy = reshape(str2num(char(origin.getAttribute('rpy'))),3,1);
+          rpy = reshape(parseParamString(model,char(origin.getAttribute('rpy'))),3,1);
         end
       end
       
@@ -393,7 +393,7 @@ classdef RigidBody
       end
     end
     
-    function wrlstr = parseWRLGeometry(node,wrl_appearance_str,options)
+    function wrlstr = parseWRLGeometry(node,wrl_appearance_str,model,options)
       % param node DOM node for the geometry block
       % param X coordinate transform for the current body
       if (nargin<3) options=struct(); end
@@ -405,19 +405,19 @@ classdef RigidBody
         thisNode = childNodes.item(i-1);
         switch (lower(char(thisNode.getNodeName())))
           case 'box'
-            s = str2num(char(thisNode.getAttribute('size')));
+            s = parseParamString(model,char(thisNode.getAttribute('size')));
             wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry Box { size %f %f %f }\n\t%s}\n',s(1),s(2),s(3),wrl_appearance_str)];
             
           case 'cylinder'
-            r = str2num(char(thisNode.getAttribute('radius')));
-            l = str2num(char(thisNode.getAttribute('length')));
+            r = parseParamString(model,char(thisNode.getAttribute('radius')));
+            l = parseParamString(model,char(thisNode.getAttribute('length')));
             
             % default axis for cylinder in urdf is the z-axis, but
             % the default in vrml is the y-axis. 
             wrlstr=[wrlstr,sprintf('Transform {\n\trotation 1 0 0 1.5708\n\tchildren Shape {\n\t\tgeometry Cylinder {\n\t\t\theight %f\n\t\t\tradius %f\n\t\t}\n\t\t%s\n\t}\n}\n',l,r,wrl_appearance_str)];
             
           case 'sphere'
-            r = str2num(char(thisNode.getAttribute('radius')));
+            r = parseParamString(model,char(thisNode.getAttribute('radius')));
             wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry Sphere { radius %f }\n\t%s}\n',r,wrl_appearance_str)];
 
           case 'mesh'
@@ -447,7 +447,7 @@ classdef RigidBody
       
     end
 
-    function [x,y,z,shape] = parseGeometry(node,x0,rpy,options)
+    function [x,y,z,shape] = parseGeometry(node,x0,rpy,model,options)
       % param node DOM node for the geometry block
       % param X coordinate transform for the current body
       % option twoD true implies that I can safely ignore y.
@@ -460,7 +460,7 @@ classdef RigidBody
         cx=[]; cy=[]; cz=[];
         switch (lower(char(thisNode.getNodeName())))
           case 'box'
-            s = str2num(char(thisNode.getAttribute('size')));
+            s = parseParamString(model,char(thisNode.getAttribute('size')));
             shape = struct('type',RigidBody.BOX,'T',T,'params',s);  % s/2
             
             cx = s(1)/2*[-1 1 1 -1 -1 1 1 -1];
@@ -471,8 +471,8 @@ classdef RigidBody
             x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
             
           case 'cylinder'
-            r = str2num(char(thisNode.getAttribute('radius')));
-            l = str2num(char(thisNode.getAttribute('length')));
+            r = parseParamString(model,char(thisNode.getAttribute('radius')));
+            l = parseParamString(model,char(thisNode.getAttribute('length')));
             shape = struct('type',RigidBody.CYLINDER,'T',T,'params',[r,l]);  % l/2
             
             % treat it as a box, for collisions
@@ -485,7 +485,7 @@ classdef RigidBody
             x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
               
           case 'sphere'
-            r = str2num(char(thisNode.getAttribute('radius')));
+            r = parseParamString(model,char(thisNode.getAttribute('radius')));
             shape = struct('type',RigidBody.SPHERE,'T',T,'params',r);
             if (r~=0)
               warning('for efficiency, 3D sphere geometry will be treated like a point (at the center of the sphere)');
