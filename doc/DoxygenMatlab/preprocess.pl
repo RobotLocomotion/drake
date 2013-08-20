@@ -1,10 +1,10 @@
 #!/usr/bin/perl -w
 
 use File::Basename;
+use Text::Balanced qw(extract_delimited extract_bracketed);
 
 sub preprocess
 {
-
     my $fname=$_[0];
     open(my $in, $fname);
     
@@ -13,7 +13,9 @@ sub preprocess
     # set to 1 to use <pre> above and below in places where there are not @ commands and the comments are long
     my $usePre = 0;
 
+    my $isClass = 0;
     my $incommentblock = 0;
+    my $endTally = 0;
     my $blankLineCheck = 0;
     my $functionDef = "";
     my $commentString = "";
@@ -237,13 +239,34 @@ sub preprocess
                 $functionDefsReturns = 0;
             }
 
-        } elsif ((/(^\s*function)\s*([\] \w\d,_\[]+=)?\s*([.\w\d_-]*)\s*\(?([\w\d\s,~]*)\)?(%?.*)/) || (/(^\s*classdef)\s*(\s*\([\{\}\?\w,=\s]+\s*\))?\s*([\w\d_]+)\s*<?\s*([\s\w\d._&]+)?(.*)/))
+        } 
+
+	s/%.*//; 	# zap comments
+	s/\([^)]*\)//g;  # zap anything inside ()
+	s/\{[^}]*\)//g;  # zap anything inside {}
+	s/'[^']*'//g; # zap anything inside ''
+
+	if ((/(^\s*function)\s*([\] \w\d,_\[]+=)?\s*([.\w\d_-]*)\s*\(?([\w\d\s,~]*)\)?(%?.*)/) || (/(^\s*classdef)\s*(\s*\([\{\}\?\w,=\s]+\s*\))?\s*([\w\d_]+)\s*<?\s*([\s\w\d._&]+)?(.*)/))
         {
+          my $funcorclass = $1;
 	  my $functionName = $3;
+#    print "function: ".$functionName."\n";
+
+	  if (/^\s*classdef/) {
+	    $isClass = 1;
+	  }
+
+	  $endTally = $endTally + 1;
+#	  print $endTally.$funcorclass.$_;
 
 	  # don't include functions with internal scope
-	  if ($functionName ne $fileName) 
+	  if ($isClass and $endTally > 3) {
+#	    print "found nested func: ".$functionName."\n";
+	    next;
+	  }
+	  if (not $isClass and ($functionName ne $fileName))
 	  {
+#      print "skipping function ".$functionName." in ".$fileName." because it has internal scope\n";
 	    next;
 	  }
 
@@ -255,10 +278,20 @@ sub preprocess
 	  
 	  $functionReturnVals = $2;
             
-        } else {
+        } elsif (/(\bfor|\bwhile|\bswitch|\btry|\bif|\bparfor|\bmethods|\bproperties)/) {
+	  $count = () = $_ =~ /(\bfor|\bwhile|\bswitch|\btry|\bif|\bparfor|\bmethods|\bproperties)/g;
+	  $endTally = $endTally + $count;
+#	  print $endTally.$1.$_;
+	} else {
             # nothing special happening... just move along
             $output = $output . $_;
         }
+
+	if (/\bend/) {
+	  $count = () = $_ =~ /(\bend)/g;
+	  $endTally = $endTally - $count;
+#	  print $endTally."end".$_;
+	}
     }
     close($in);
     
