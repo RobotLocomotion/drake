@@ -328,7 +328,7 @@ classdef RigidBody
       npts=size(body.contact_pts,2);
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
-        [xpts,ypts,zpts,shape] = RigidBody.parseGeometry(geomnode,xyz,rpy,options);
+        [xpts,ypts,zpts,shape] = RigidBody.parseGeometry(geomnode,xyz,rpy,model,options);
         npts_additional = numel(xpts);
         [body.contact_pts,ind_old,ind_new]=unique([body.contact_pts';xpts(:), ypts(:), zpts(:)],'rows','stable');
         body.contact_pts = body.contact_pts';
