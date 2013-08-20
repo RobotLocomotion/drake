@@ -62,7 +62,7 @@ foreach $my_fic (@listeFic)
   while (<$in>)
   {
   
-    # convert matlab sytle comments to C sytle comments
+    # convert matlab sytle comments to C style comments
     if (/(^\s*)(%>)(.*)/)
     {
       $output=$output."$1///$3";
@@ -95,7 +95,7 @@ foreach $my_fic (@listeFic)
       $inAbstractMethodBlock = 0;
     }
     
-    if (($listeProperties == 1) && (/^\s*([\w\d]*)\s*(=\s*[\w\d{}'',\s\[\]\.]*)?[;\s]*(%[>]?.*)?/))
+    if (($listeProperties == 1) && (/^\s*([\w\d]*)\s*(=\s*[\w\d{}'',\s\[\]\(\)\.]*)?[;\s]*(%[>]?.*)?/))
     {
       $propertyName = $1;
       $propertyValue = $2;

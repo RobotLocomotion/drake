@@ -16,7 +16,8 @@ classdef SecondOrderSystem < DrakeSystem
   end
   
   methods (Abstract=true)
-    qdd = sodynamics(obj,t,q,qd,u)  % implements qdd = f(t,q,qd,u)
+    % implements qdd = f(t,q,qd,u)
+    qdd = sodynamics(obj,t,q,qd,u)
   end
 
   methods % (Sealed=true) % todo: re-enable this (requires updating generated gradients in acrobot, cartpole, etc classes.)
@@ -45,6 +46,7 @@ classdef SecondOrderSystem < DrakeSystem
     end
 
     function num_q = getNumDOF(obj)
+      % Return the number of degrees of freedom in the system
       num_q = obj.num_q;
     end
     
@@ -65,6 +67,7 @@ classdef SecondOrderSystem < DrakeSystem
         
     
     function sys = feedback(sys1,sys2)
+      % Attempt to produce a new second-order system if possible
       if (isa(sys2,'SecondOrderSystem'))
         % todo: implement this
         warning('feedback combinations of second order systems not handled explicitly yet. kicking out to a combination of DrakeSystems');
@@ -73,6 +76,7 @@ classdef SecondOrderSystem < DrakeSystem
     end
     
     function sys = cascade(sys1,sys2)
+      % Attempt to produce a new second-order system if possible
       if (isa(sys2,'SecondOrderSystem'))
         % todo: implement this
         warning('cascade combinations of second order systems not handled explicitly yet. kicking out to a combination of DrakeSystems');

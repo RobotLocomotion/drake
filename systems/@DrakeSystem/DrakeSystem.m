@@ -37,6 +37,11 @@ classdef DrakeSystem < DynamicalSystem
   % 
   methods
     function x0 = getInitialState(obj)
+      % Return a (potentially random) state double (column) vector of initial conditions
+      %
+      % This method is intended to be overloaded, but by default attempts to
+      % return the result of resolveConstraints using the zero vector as an
+      % initial seed.
       x0 = zeros(obj.num_xd+obj.num_xc,1);
       attempts=0;
       success=false;
@@ -69,18 +74,28 @@ classdef DrakeSystem < DynamicalSystem
     end
     
     function xcdot = dynamics(obj,t,x,u)
+      % Placeholder for the dynamics method.  Systems with continuous state
+      % must overload this method.
       error('Drake:DrakeSystem:AbstractMethod','systems with continuous states must implement Derivatives (ie overload dynamics function)');
     end
     
     function xdn = update(obj,t,x,u)
+      % Placeholder for the update method.  Systems with discrete state
+      % must overload this method.
       error('Drake:DrakeSystem:AbstractMethod','systems with discrete states must implement Update (ie overload update function)');
     end
     
     function y = output(obj,t,x,u)
+      % Placeholder for the output method.  Systems must overload this method.
       error('Drake:DrakeSystem:AbstractMethod','default is intentionally not implemented');
     end
     
     function zcs = zeroCrossings(obj,t,x,u)
+      % Placeholder for the zeroCrossings method: a method 
+      % phi = zeroCrossings(t,x,u) which triggers a zero crossing 
+      % event when phi transitions from positive to negative.  
+      %
+      % Systems with zero crossings must overload this method.
       error('Drake:DrakeSystem:AbstractMethod','systems with zero crossings must implement the zeroCrossings method'); 
     end
     
@@ -89,15 +104,19 @@ classdef DrakeSystem < DynamicalSystem
   % access methods
   methods
     function n = getNumContStates(obj)
+      % Returns the number of continuous states
       n = obj.num_xc;
     end
     function n = getNumDiscStates(obj)
+      % Returns the number of discrete states
       n = obj.num_xd;
     end
     function n = getNumInputs(obj)
+      % Returns the number of inputs to the system
       n = obj.num_u;
     end
     function n = getNumOutputs(obj)
+      % Returns the number of outputs from the system
       n = obj.num_y;
     end
     function x0 = getInitialStateWInput(obj,t,x,u)  
@@ -128,12 +147,23 @@ classdef DrakeSystem < DynamicalSystem
         error('Drake:DrakeSystem:NotImplemented','systems with both discrete and continuous states must implement the getSampleTime method or call setSampleTime to specify the desired behavior');
       end
     end
+    
+  end
+  
+  methods (Sealed = true)
     function ts = getInputSampleTimes(obj)
+      % Returns getSampleTime - a DrakeSystem can only have a single same
+      % time associated with it.
       ts = getSampleTime(obj);
     end
     function ts = getOutputSampleTimes(obj)
+      % Returns getSampleTime - a DrakeSystem can only have a single same
+      % time associated with it.
       ts = getSampleTime(obj);
     end
+  end
+  
+  methods
     function obj = setSampleTime(obj,ts)
       % robust method for setting default sample time
       % 
@@ -173,13 +203,19 @@ classdef DrakeSystem < DynamicalSystem
       obj.direct_feedthrough_flag = tf;
     end
     function mdl = getModel(obj)
-         % First, make sure we have a compiled DCSFunction
-        if(exist('DCSFunction') ~=3)
-            errorMsg={'Sorry, you have not run ''make'' yet in the drake root,'
-                'which means you do not have the compiled MEX files needed to run this program.'
-                'Running configure and make in the drake root directory will fix this.'};
-            error(sprintf('%s\n',errorMsg{:}))
-        end
+      % Constructs a simulink system block for this system to be used by
+      % the simulink engine.
+      %
+      % @retval mdl string id for the simulink system
+      
+      % First, make sure we have a compiled DCSFunction
+      if(exist('DCSFunction') ~=3)
+        errorMsg={'Sorry, you have not run ''make'' yet in the drake root,'
+          'which means you do not have the compiled MEX files needed to run this program.'
+          'Running configure and make in the drake root directory will fix this.'};
+        error(sprintf('%s\n',errorMsg{:}))
+      end
+      
       % make a simulink model from this block
       mdl = [class(obj),'_',obj.uid];  % use the class name + uid as the model name
       close_system(mdl,0);  % close it if there is an instance already open
@@ -220,7 +256,7 @@ classdef DrakeSystem < DynamicalSystem
     end
     
     function [x,success] = resolveConstraints(obj,x0,v)
-      % attempts to find a x which satisfies the constraints,
+      % Attempts to find a x which satisfies the constraints,
       % using x0 as the initial guess.
       %
       % @param x0 initial guess for state satisfying constraints
@@ -419,6 +455,9 @@ classdef DrakeSystem < DynamicalSystem
   % utility methods
   methods
     function [A,B,C,D,x0dot,y0] = linearize(obj,t0,x0,u0)
+      % Uses the geval engine to linearize the model around the nominal
+      % point, at least for the simple case. 
+      
       if (~isCT(obj) || getNumDiscStates(obj)>0)  % boot if it's not the simple case
         [A,B,C,D,x0dot,y0] = linearize@DynamicalSystem(obj,t0,x0,u0);
       end
@@ -498,6 +537,15 @@ classdef DrakeSystem < DynamicalSystem
     end
     
     function sys=cascade(sys1,sys2)
+      % Constructs a cascade combination of sys1 and sys2.  
+      %
+      % @param sys1 first DynamicalSystem 
+      % @param sys2 second DynamicalSystem 
+      %
+      % The input to the cascade system is the input to sys1.  
+      % The output of sys1 is fed to the input of sys2.
+      % The output of the cascade system is the output of sys2.
+
       if isa(sys2,'DrakeSystem')
         try
           sys=CascadeSystem(sys1,sys2);   % try to keep it a drakesystem

@@ -56,6 +56,9 @@ classdef DynamicalSystem
   methods
 
     function sys = inInputFrame(sys,frame)
+      % Ensures that sys has the specified input frame, by
+      % searching for and cascading a coordinate transformation to
+      % the existing input if necessary.
       if (getInputFrame(sys)~=frame)
         tf = findTransform(frame,getInputFrame(sys),struct('throw_error_if_fail',true));
         sys = cascade(tf,sys);
@@ -63,29 +66,18 @@ classdef DynamicalSystem
     end
     
     function sys = inStateFrame(sys,frame)
+      % Ensures that sys has the specified state frame
       error('not implemented yet');  % but shouldn't be too hard using functionhandle systems.
     end
     
     function sys = inOutputFrame(sys,frame)
+      % Ensures that sys has the specified output frame, by
+      % searching for and cascading a coordinate transformation to
+      % the existing output if necessary.
       if (frame ~= sys.getOutputFrame)
         tf = findTransform(getOutputFrame(sys),frame,struct('throw_error_if_fail',true));
         sys = cascade(sys,tf);
       end
-    end
-    
-    
-    function [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2)
-      ind=0;
-      n=sys1.getNumDiscStates();
-      sys1ind = ind+(1:n)';
-      ind=ind+n;
-      n=sys2.getNumDiscStates();
-      sys2ind=  ind+(1:n)'; ind=ind+n;
-
-      n=sys1.getNumContStates();
-      sys1ind = [sys1ind; ind+(1:n)'];  ind=ind+n;
-      n=sys2.getNumContStates();
-      sys2ind = [sys2ind; ind+(1:n)'];  
     end
     
     function newsys = cascade(sys1,sys2)
@@ -347,82 +339,57 @@ classdef DynamicalSystem
       obj.time_invariant_flag = bval;
     end
 
-    function f=getInputFrame(obj)
-      f=obj.input_frame;
+    function fr=getInputFrame(obj)
+      % Access the CoordinateFrame object that defines the input to this
+      % system
+      fr=obj.input_frame;
     end
-    function obj=setInputFrame(obj,f)
-      typecheck(f,'CoordinateFrame');
-      if (f.dim ~= obj.getNumInputs()) error('frame dimension does not match number of inputs'); end
-      obj.input_frame=f;
+    function obj=setInputFrame(obj,fr)
+      % Set the CoordinateFrame object that defines the input of this
+      % system
+      % @param fr CoordinateFrame object which must have the correct
+      % dimension
+      typecheck(fr,'CoordinateFrame');
+      if (fr.dim ~= obj.getNumInputs()) error('frame dimension does not match number of inputs'); end
+      obj.input_frame=fr;
     end
-    function f=getStateFrame(obj)
-      f=obj.state_frame;
+    function fr=getStateFrame(obj)
+      % Access the CoordinateFrame object that defines the state of this
+      % system
+      fr=obj.state_frame;
     end
-    function obj=setStateFrame(obj,f)
-      typecheck(f,'CoordinateFrame');
-      if (f.dim ~= obj.getNumStates()) error('frame dimension does not match number of states'); end
-      obj.state_frame=f;
+    function obj=setStateFrame(obj,fr)
+      % Set the CoordinateFrame object that defines the state of this
+      % system
+      % @param fr CoordinateFrame object which must have the correct
+      % dimension
+      typecheck(fr,'CoordinateFrame');
+      if (fr.dim ~= obj.getNumStates()) error('frame dimension does not match number of states'); end
+      obj.state_frame=fr;
     end
-    function f=getOutputFrame(obj)
-      f=obj.output_frame;
+    function fr=getOutputFrame(obj)
+      % Access the CoordinateFrame object that defines the output to this
+      % system
+      fr=obj.output_frame;
     end
-    function obj=setOutputFrame(obj,f)
-      typecheck(f,'CoordinateFrame');
-      if (f.dim ~= obj.getNumOutputs()) error('frame dimension does not match number of outputs'); end
-      obj.output_frame=f;
+    function obj=setOutputFrame(obj,fr)
+      % Set the CoordinateFrame object that defines the output of this
+      % system
+      % @param fr CoordinateFrame object which must have the correct
+      % dimension
+      typecheck(fr,'CoordinateFrame');
+      if (fr.dim ~= obj.getNumOutputs()) error('frame dimension does not match number of outputs'); end
+      obj.output_frame=fr;
     end
     
-    % Returns the scalar number of state constraints (of the form phi(x)=0)
     function n = getNumStateConstraints(obj);
+      % Returns the scalar number of state constraints (of the form phi(x)=0)
       n = 0;  % default behavior is n=0
     end
     
     function con = stateConstraints(obj,x)
+      % defines state equality constraints in the form phi(x)=0
       error('Drake:DynamicalSystem:AbstractMethod','systems with state constraints must implement the constraints method');
-    end
-    
-    function xs = stateVectorToStructure(obj,xv,mdl)
-      % Converts the vector state xv to the structure xs for simulink state
-      % @param xv the state (in vector form)
-      % @param mdl optional - pass in a model (default: getModel(obj))
-      
-      if (getNumStates(obj)<1) xs=[]; return; end
-      if (nargin<3) mdl = getModel(obj); end
-      
-      if (isempty(obj.structured_x))
-        obj.structured_x = Simulink.BlockDiagram.getInitialState(mdl);
-      end
-      xs = obj.structured_x;
-      if (length(xs.signals)>1)
-        l = {xs.signals(:).label};
-        ind = [find(strcmp(l,'DSTATE')), find(strcmp(l,'CSTATE'))];
-        c = 1;
-        for i=ind
-          d = xs.signals(i).dimensions;
-          xs.signals(i).values = xv(c+[1:d]-1);
-          c = c+d;
-        end
-      else
-        xs.signals.values = xv;
-      end
-    end
-    
-    function xv = stateStructureToVector(obj,xs)
-      % Converts the simulink state structure representation back to the vector state
-      % @param xs the state (in simulink structure format)
-      if (length(xs.signals)>1)
-        l = {xs.signals(:).label};
-        ind = [find(strcmp(l,'DSTATE')), find(strcmp(l,'CSTATE'))];
-        c = 1;
-        for i=ind
-          d = xs.signals(i).dimensions;
-          xv(c+[1:d]-1) = xs.signals(i).values;
-          c = c+d;
-        end
-      else
-        xv = xs.signals.values;
-      end
-      xv = xv';
     end
     
     function obj = setSimulinkParam(obj,varargin)
@@ -506,13 +473,76 @@ classdef DynamicalSystem
     
   end
   
+  methods (Access=protected)
+    function [sys1ind,sys2ind] = stateIndicesForCombination(sys1,sys2)
+      % Helper method to figure out the indices of the discrete and
+      % continuous states after sys1 and sys2 have been combined into a
+      % single system.
+      ind=0;
+      n=sys1.getNumDiscStates();
+      sys1ind = ind+(1:n)';
+      ind=ind+n;
+      n=sys2.getNumDiscStates();
+      sys2ind=  ind+(1:n)'; ind=ind+n;
+
+      n=sys1.getNumContStates();
+      sys1ind = [sys1ind; ind+(1:n)'];  ind=ind+n;
+      n=sys2.getNumContStates();
+      sys2ind = [sys2ind; ind+(1:n)'];  
+    end
+   
+    function xs = stateVectorToStructure(obj,xv,mdl)
+      % Converts the vector state xv to the structure xs for simulink state
+      % @param xv the state (in vector form)
+      % @param mdl optional - pass in a model (default: getModel(obj))
+      
+      if (getNumStates(obj)<1) xs=[]; return; end
+      if (nargin<3) mdl = getModel(obj); end
+      
+      if (isempty(obj.structured_x))
+        obj.structured_x = Simulink.BlockDiagram.getInitialState(mdl);
+      end
+      xs = obj.structured_x;
+      if (length(xs.signals)>1)
+        l = {xs.signals(:).label};
+        ind = [find(strcmp(l,'DSTATE')), find(strcmp(l,'CSTATE'))];
+        c = 1;
+        for i=ind
+          d = xs.signals(i).dimensions;
+          xs.signals(i).values = xv(c+[1:d]-1);
+          c = c+d;
+        end
+      else
+        xs.signals.values = xv;
+      end
+    end
+    
+    function xv = stateStructureToVector(obj,xs)
+      % Converts the simulink state structure representation back to the vector state
+      % @param xs the state (in simulink structure format)
+      if (length(xs.signals)>1)
+        l = {xs.signals(:).label};
+        ind = [find(strcmp(l,'DSTATE')), find(strcmp(l,'CSTATE'))];
+        c = 1;
+        for i=ind
+          d = xs.signals(i).dimensions;
+          xv(c+[1:d]-1) = xs.signals(i).values;
+          c = c+d;
+        end
+      else
+        xv = xs.signals.values;
+      end
+      xv = xv';
+    end    
+  end
+
   properties (SetAccess=private,GetAccess=private)
     time_invariant_flag = false;  % set to true if you know the system is time invariant
     simulink_params=struct();     % simulink model parameters
     structured_x;                 % simulink state structure (cached for efficiency)
 
-    input_frame;  % named coordinate systems for input, state, and output
-    state_frame;
-    output_frame;
+    input_frame;  % CoordinateFrame for the system input
+    state_frame;  % CoordinateFrame for the system state
+    output_frame; % CoordinateFrame for the system output
   end
 end
