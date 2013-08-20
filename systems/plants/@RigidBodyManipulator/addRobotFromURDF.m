@@ -133,15 +133,13 @@ end
 end
 
 function model = parseParameter(model,robotnum,node,options)
-  p.robotnum = robotnum;
-  p.name = char(node.getAttribute('name'));    % mandatory
-  p.value = str2num(char(node.getAttribute('value')));  % mandatory
+  name = char(node.getAttribute('name'));    % mandatory
+  model.param_db.(name).robotnum = robotnum;
+  model.param_db.(name).value = str2num(char(node.getAttribute('value')));  % mandatory
   n = char(node.getAttribute('lb'));  % optional
-  if isempty(n), p.lb = -inf; else p.lb = str2num(n); end
+  if isempty(n), model.param_db.(name).lb = -inf; else model.param_db.(name).lb = str2num(n); end
   n = char(node.getAttribute('ub'));  % optional
-  if isempty(n), p.ub = inf; else p.ub = str2num(n); end
-  
-  model.param_db = vertcat(model.param_db,p);
+  if isempty(n), model.param_db.(name).ub = inf; else model.param_db.ub = str2num(n); end
 end
 
 function model = parseGazebo(model,robotnum,node,options)

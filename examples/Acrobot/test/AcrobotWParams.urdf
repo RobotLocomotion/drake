@@ -7,7 +7,7 @@
   <parameter name="lc1" value=".5" lb="0" />
   <parameter name="lc2" value="1" lb="0" />
   <parameter name="Ic1" value=".083" lb="0" />
-  <parameter name="Ic2" value="1.33" lb="0" />
+  <parameter name="Ic2" value=".33" lb="0" />
 
   <link name="base_link">
     <visual>
