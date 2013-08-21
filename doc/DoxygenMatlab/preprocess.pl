@@ -16,16 +16,17 @@ sub preprocess
     my $isClass = 0;
     my $incommentblock = 0;
     my $endTally = 0;
+    my @endOutput = ("");
     my $blankLineCheck = 0;
     my $functionDef = "";
     my $commentString = "";
+    my $groupString = "";
     my $output = "";
     my $numCommentLines = 0;
     my $firstCommentLine = 0;
     my $firstCommentLineEndsNum = -1;
     
     my $fileName = fileparse($my_fic,qr{\.m}); 
-
 
     my $firstAt = -1;
     my $lastAt = -1;
@@ -53,6 +54,23 @@ sub preprocess
 	  $functionDefsReturns = 1;
 	}
 	
+	if ((/\@ingroup (.*)/)) {
+	  # read this line as @ingroup <group_name>
+	  
+	  $group_name = $1;
+#	  print "found ingroup string: ".$_;
+	  
+#	  if ($isClass) {
+	    # then treat it as a member group http://www.star.bnl.gov/public/comp/sofi/doxygen/grouping.html
+	    
+	    $groupString = "%> \@name " . $group_name . "\n%> \@{\n";
+	    $endOutput[$endTally] = "%> \@}\n";
+#	  } else {
+#	    # todo: treat it as a module command
+#	  }
+	  next;
+	}
+
 	if ((/^\s*%/)) {
 	  #print ("this is a comment right after a function!\n");
 	  
@@ -134,7 +152,7 @@ sub preprocess
 	  } else {
 	    $lastWasBlank = 0;
 	  }
-	  
+
 	} elsif (($blankLineCheck == 1) and (/^\s*$/)) {
 	  # we are in a comment block, but didn't see a comment on the first line.
 	  #                $blankLineCheck = 0;
@@ -167,6 +185,9 @@ sub preprocess
 	    $commentString = $commentString . $functionReturnVals;
 	    
 	  }
+
+	  $commentString = $commentString . $groupString;
+	  $groupString = "";
                 
 	  #print("not searching for comments right after functions anymore!\n");
 	  ################## uncomment to use <pre> ##############
@@ -241,6 +262,7 @@ sub preprocess
 	  }
 	  
 	  $endTally = $endTally + 1;
+	  $endOutput[$endTally]="";
 	  #	      	  print $endTally.$funcorclass.$_;
 	  
 	  # don't include functions with internal scope
@@ -265,6 +287,8 @@ sub preprocess
 	  
 	  $count = () = $_ =~ /(\bfor\b|\bwhile\b|\bswitch\b|\btry\b|\bif\b|\bparfor\b|\bmethods\b|\bproperties\b)/g;
 	  $endTally = $endTally + $count;
+	  $endOutput[$endTally]="";
+
 	  #	      	  print $endTally.$1.$_;
 	  
 	  if (($isClass and ($endTally < 4)) || (not $isClass and ($endTally < 3))) {
@@ -277,8 +301,14 @@ sub preprocess
 	
 	if (/\bend\b/) {
 	  $count = () = $_ =~ /(\bend\b)/g;
-	  $endTally = $endTally - $count;
+	  for my $i (0 .. $count) {
+	    $output = $output . $endOutput[$endTally];
+	    $endOutput[$endTally]="";
+	    if ($endTally>0) {
+	      $endTally = $endTally - 1;
+	    }
 	  #	    	  print $endTally."end".$_;
+	  }
 	}
       }
     }

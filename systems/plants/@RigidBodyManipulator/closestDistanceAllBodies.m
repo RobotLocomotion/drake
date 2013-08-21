@@ -10,6 +10,7 @@ function [phi,Jphi] = closestDistanceAllBodies(obj,kinsol)
 %
 % @retval phi minimum distance between each pair of bodies
 % @retval Jphi the kinematic jacobian of phi
+% @ingroup Collision
 
 if (nargout>1)
   [~,~,~,distance,~,~,Jphi] = closestPointsAllBodies(obj,kinsol);

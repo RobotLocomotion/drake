@@ -10,6 +10,7 @@ function [phi,n,D,mu,dn,dD] = contactConstraints(obj,kinsol,body_idx,body_contac
 %    friction cone, in joint coordinates (figure 1 from Stewart96)
 %    D{k}(i,:) is the kth direction vector for the ith contact (of nC)
 % @retval mu mu(i,1) is the coefficient of friction for the ith contact
+% @ingroup Collision
 
 if nargin<3, body_idx = 1:length(obj.body); end
 if nargin<4

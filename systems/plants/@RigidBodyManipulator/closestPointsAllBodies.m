@@ -23,6 +23,7 @@ function [ptsA,ptsB,normal,distance,JA,JB,Jd,idxA,idxB] = closestPointsAllBodies
 % @retval Jd the kinematic jacobian of distance
 % @retval idxA link indices for the first body in each checked pair
 % @retval idxB link indices for the second body in each checked pair
+% @ingroup Collision
 
 if ~isstruct(kinsol)  
   % treat input as contactPositions(obj,q)

@@ -215,7 +215,7 @@ foreach $my_fic (@listeFic)
       {
         $classDef = "class ".$className;
       }
-      $output=$output.$classDef;
+      $output=$output."/// \@nosubgrouping\n".$classDef;
       $output=$output."{";
       $output=$output.$declTypeDef;
       $output=$output."public:\n";

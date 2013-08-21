@@ -5,6 +5,7 @@ function [contact_pos,J,dJ] = contactPositions(obj,kinsol,body_idx,body_contacts
 % @retval p(:,i)=[px;py;pz] is the position of the ith contact point 
 % @retval J is dpdq
 % @retval dJ is ddpdqdq
+% @ingroup Collision
       
 if ~isstruct(kinsol)  
   % treat input as contactPositions(obj,q)

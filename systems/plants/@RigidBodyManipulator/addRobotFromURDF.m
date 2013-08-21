@@ -12,6 +12,7 @@ function model=addRobotFromURDF(model,urdf_filename,xyz,rpy,options)
 % @options visual_geometry boolean where true means to extract the
 % points from the visual geometries (might be very dense for meshes).
 % Useful for extracting the 2D geometries later.  @default false
+% @ingroup URDF Parsing
 
 if (nargin<3 || isempty(xyz)) xyz = zeros(3,1); end
 if (nargin<4 || isempty(rpy)) rpy = zeros(3,1); end

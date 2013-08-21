@@ -16,6 +16,7 @@ function [ptsA,ptsB,normal,JA,JB,dJA,dJB] = pairwiseContactTest(obj,kinsol,body_
 % @retval normal the contact normal vectors on body B in world coordinates
 % @retval JA the jacobian of ptsA
 % @retval JB the jacobian of ptsB
+% @ingroup Collision
 
 if ~isstruct(kinsol)  
   % treat input as contactPositions(obj,q)

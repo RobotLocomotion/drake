@@ -11,6 +11,7 @@ function [phi,Jphi] = pairwiseContactDistance(obj,kinsol,body_indA,body_indB)
 % @retval phi 1 if no contact; sum of the penetration depths if there is
 % contact
 % @retval Jphi the kinematic jacobian of phi
+% @ingroup Collision
 
 if (nargout>1)
   [ptsA,ptsB,~,JA,JB] = pairwiseContactTest(obj,kinsol,body_indA,body_indB);
