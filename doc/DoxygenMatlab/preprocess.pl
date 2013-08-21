@@ -242,9 +242,10 @@ sub preprocess
         } 
 
 	s/%.*//; 	# zap comments
-	s/\([^)]*\)//g;  # zap anything inside ()
-	s/\{[^}]*\)//g;  # zap anything inside {}
-	s/'[^']*'//g; # zap anything inside ''
+	# http://stackoverflow.com/questions/5410652/regex-delete-contents-of-square-brackets
+	s/\(([^()]++|(?0))*+\)//g;  # zap anything inside ()
+	s/\{([^\{\}]++|(?0))*+\}//g;  # zap anything inside {}
+	s/'([^']++|(?0))*+'//g; # zap anything inside ''
 
 	if ((/(^\s*function)\s*([\] \w\d,_\[]+=)?\s*([.\w\d_-]*)\s*\(?([\w\d\s,~]*)\)?(%?.*)/) || (/(^\s*classdef)\s*(\s*\([\{\}\?\w,=\s]+\s*\))?\s*([\w\d_]+)\s*<?\s*([\s\w\d._&]+)?(.*)/))
         {
