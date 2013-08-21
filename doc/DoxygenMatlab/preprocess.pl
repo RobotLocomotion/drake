@@ -63,8 +63,8 @@ sub preprocess
 #	  if ($isClass) {
 	    # then treat it as a member group http://www.star.bnl.gov/public/comp/sofi/doxygen/grouping.html
 	    
-	    $groupString = "%> \@name " . $group_name . "\n%> \@{\n";
-	    $endOutput[$endTally] = "%> \@}\n";
+	    $groupString = "%> \@name " . $group_name . "\n%> \@{\n\n\n";
+	    $endOutput[$endTally] = "%> \@}\n\n";
 #	  } else {
 #	    # todo: treat it as a module command
 #	  }
@@ -186,7 +186,7 @@ sub preprocess
 	    
 	  }
 
-	  $commentString = $commentString . $groupString;
+	  $commentString = $groupString . $commentString;
 	  $groupString = "";
                 
 	  #print("not searching for comments right after functions anymore!\n");
