@@ -101,6 +101,7 @@ else()
   set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "$ENV{LD_LIBRARY_PATH}" )
 endif()
 
+#set(CMAKE_CTEST_COMMAND "${CMAKE_CTEST_COMMAND} --output-on-failure") # not working
 enable_testing()
 
 # Note: use cmake/add_matlab_unit_tests.pl to write ctest scripts (but i advise doing it at test time, not configure time).  - Russ
