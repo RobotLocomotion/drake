@@ -23,7 +23,7 @@ dPsi = [];
 q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
 nContactConst = obj.num_contacts;
 %       nonContactPConst = obj.num_bilateral_constraints - nContactConst;
-nonContactPConst = obj.getNumJointLimits;
+nonContactPConst = obj.getNumJointLimitConstraints;
 nUniPConstraints = nonContactPConst;
 dconstraint = 0;
 constraint = 0;

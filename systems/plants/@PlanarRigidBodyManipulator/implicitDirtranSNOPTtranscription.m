@@ -4,7 +4,7 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
 
 if (~isfield(options,'xtape0')) options.xtape0='free'; end
 % nL = sys.num_bilateral_constraints - sys.getNumContacts;
-nL = sys.getNumJointLimits;
+nL = sys.getNumJointLimitConstraints;
 nC = sys.num_contacts;
 nU = sys.getNumInputs();
 nX = sys.getNumContStates();
@@ -60,7 +60,7 @@ else % options.xtape0='rand' or 'free'
   x = repmat(x0,1,length(t));%+.1*randn(length(x0),length(t));   x(:,1) = x0;
 end
   
-nJointLimitConst = sys.getNumJointLimits;
+nJointLimitConst = sys.getNumJointLimitConstraints;
 
 %% Set up snopt inputs
 w0 = [tscale; x(:); u(:); lambda(:); cLambda(:); clutch(:)];
@@ -426,7 +426,7 @@ function [f,G] = dirtran_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,nL,nC,nC
     
     %Unilateral position constraints
     if nL > 0
-      nJointLimitConst = sys.getNumJointLimits;
+      nJointLimitConst = sys.getNumJointLimitConstraints;
       jointLimitMult = 10;
       % Handle Joint Limit constraints first
       if (nJointLimitConst > 0)
@@ -476,7 +476,7 @@ function [f,G] = dirtran_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,nL,nC,nC
 
   %Unilateral position constraints
   if nL > 0
-      nJointLimitConst = sys.getNumJointLimits;
+      nJointLimitConst = sys.getNumJointLimitConstraints;
       % Handle Joint Limit constraints first
       if (nJointLimitConst > 0)
         [phi,J] = sys.jointLimitConstraints(x(1:num_q,1));
@@ -648,7 +648,7 @@ function [nf, A, iAfun, jAvar, iGfun, jGvar, Fhigh, Flow, oname] = userfun_grad_
   beta = .01*con.betamult;
   %when switching to real friction limits, 0,0,inf,inf
   %[alpha,inf] for joint limits
-  nJointLimitConst = sys.getNumJointLimits;
+  nJointLimitConst = sys.getNumJointLimitConstraints;
   Fhigh = [Fhigh; repmat([zeros(nX,1);repmat([alpha;inf],nJointLimitConst,1);repmat([0;0],nL-nJointLimitConst,1);repmat([alpha;beta;inf;inf;inf],nC,1)],nT-1,1)];
   Flow = [Flow; repmat([zeros(nX,1);repmat([0;0],nL,1);repmat([0;-beta;0;0;0],nC,1)],nT-1,1)];
 
