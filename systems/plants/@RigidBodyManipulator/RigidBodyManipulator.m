@@ -31,7 +31,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     mex_model_ptr = 0;
     dirty = true;
   end
-  
+    
   methods
     function obj = RigidBodyManipulator(urdf_filename,options)
       % Construct a new rigid body manipulator object with a single (empty)
@@ -116,10 +116,12 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
     
     function n = getNumBodies(obj)
+      % @ingroup Kinematic Tree
       n = length(obj.body);
     end
     
     function str = getLinkName(obj,body_ind)
+      % @ingroup Kinematic Tree
       str = obj.body(body_ind).linkname;
     end
 
@@ -150,6 +152,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
     
     function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,limits)
+      % @ingroup Kinematic Tree
       typecheck(parent_ind,'double');
       typecheck(child_ind,'double');
       if (nargin<6) xyz=zeros(3,1); end
@@ -267,6 +270,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       % note that the case matters.
       % use lower case for extrinsic (absolute) rotations, and upper case
       % for intrinsic (relative) rotations
+      % @ingroup Kinematic Tree
 
       typecheck(parent,'double');      % these should be body indices
       typecheck(rootlink,'double');
@@ -503,6 +507,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     function body_ind = findLinkInd(model,linkname,robot,throw_error)
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
+      % @ingroup Kinematic Tree
       if nargin<3 || isempty(robot), robot=0; end
       linkname = lower(linkname);
       if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
@@ -539,10 +544,12 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
 
     function body = findLink(model,linkname,varargin)
+      % @ingroup Kinematic Tree
       error('the finkLink method has been deprecated.  if you really must get a *copy* of the body, then use finkLinkInd followed by getBody');
     end
     
     function is_valid = isValidLinkIndex(obj,idx)
+      % @ingroup Kinematic Tree
       if ~isnumeric(idx) 
         is_valid=false(size(idx));
       else
@@ -551,10 +558,12 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
     
     function body = getBody(model,body_ind)
+      % @ingroup Kinematic Tree
       body = model.body(body_ind);
     end
     
     function model = setBody(model,body_ind,body)
+      % @ingroup Kinematic Tree
       typecheck(body_ind,'numeric');
       typecheck(body,'RigidBody');
       model.body(body_ind) = body;
@@ -562,6 +571,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
     
     function model = weldJoint(model,body_ind_or_joint_name,robot)
+      % @ingroup Kinematic Tree
       if ischar(body_ind_or_joint_name)
         if nargin>2
           body_ind_or_joint_name = findJointInd(model,body_ind_or_joint_name,robot)
@@ -578,6 +588,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     function body_ind = findJointInd(model,jointname,robot)
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
+      % @ingroup Kinematic Tree
       if nargin<3 || isempty(robot), robot=0; end
       if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
       ind = strmatch(lower(jointname),lower({model.body.jointname}),'exact');
@@ -589,12 +600,14 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
     
     function body = findJoint(model,jointname,robot)
+      % @ingroup Kinematic Tree
       error('the finkJoint method has been deprecated.  if you really must get a *copy* of the body associated with this joint, then use finkJointInd followed by getBody');
     end      
     
     function b=leastCommonAncestor(model,body1,body2)
       % recursively searches for the lowest body in the tree that is an
       % ancestor to both body1 and body2
+      % @ingroup Kinematic Tree
       
       typecheck(body1,'double');  % takes in body indices
       typecheck(body2,'double');
@@ -639,6 +652,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     function drawKinematicTree(model)
       % depends on having graphviz2mat installed (from matlabcentral)
       % todo: make that a dependency in configure?
+      % @ingroup Kinematic Tree
       
       A = cell(length(model.body));
       for i=1:length(model.body)
@@ -664,6 +678,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
 
     function body = newBody(model)
+      % @ingroup Kinematic Tree
       body = RigidBody();
     end
     
@@ -705,6 +720,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
     
     function index = getActuatedJoints(model)
+      % @ingroup Kinematic Tree
       joint = [model.actuator.joint];
       index = [model.body(joint).dofnum];
     end        
@@ -1099,7 +1115,9 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end    
     
     function [model,dof] = extractFeatherstone(model)
-%      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
+      % @ingroup Kinematic Tree
+
+      %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
       dof=0;inds=[];
       for i=1:length(model.body)
         if model.body(i).parent>0
@@ -1164,6 +1182,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       % takes any fixed joints out of the tree, adding their visuals and
       % inertia to their parents, and connecting their children directly to
       % their parents
+      % @ingroup Kinematic Tree
 
       fixedind = find(isnan([model.body.pitch]) | ... % actual fixed joint
         cellfun(@(a)~any(any(a)),{model.body.I}));    % body has no inertia (yes, it happens in pr2.urdf)
@@ -1285,6 +1304,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     
     function [phi,dphi,ddphi] = loopConstraints(obj,q)
       % handle kinematic loops
+
       phi=[];dphi=[];ddphi=[];
 
       kinsol = doKinematics(obj,q,true);
@@ -1653,6 +1673,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
     
     function model = updateBodyIndices(model,map_from_new_to_old)
+      % @ingroup Kinematic Tree
       nold = length(model.body);
       model.body = model.body(map_from_new_to_old);
       
@@ -1682,6 +1703,6 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
     
   end
-  
+
 end
 
