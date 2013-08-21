@@ -37,10 +37,11 @@ classdef BotVisualizer < Visualizer
       lc.subscribe('DRAKE_VIEWER_STATUS',agg);
 
       % check if there is an instance of drake_viewer already running
-      [~,ck] = system('ps ax | grep -i drake_viewer | grep -c -v grep');
+      [~,ck] = system('ps ax 2> /dev/null | grep -i drake_viewer | grep -c -v grep');
       if (str2num(ck)<1) 
         % if not, then launch one...
-        retval = system(['export DYLD_LIBRARY_PATH=',pods_get_lib_path,'; ',fullfile(pods_get_bin_path,'drake_viewer'),' &> drake_viewer.out &']);
+        disp('launching drake_viewer...');
+        retval = systemWCMakeEnv([fullfile(pods_get_bin_path,'drake_viewer'),' &> drake_viewer.out &']);
         
         % listen for ready message
         if isempty(agg.getNextMessage(5000)) % wait for viewer to come up
