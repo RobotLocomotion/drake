@@ -39,6 +39,7 @@ function gui_tree_or_command_line_data =unitTest(options)
 % @default true
 % @option logfile file name for writing information about FAILED tests only
 % @option cdash file name for writing the cdash test xml output
+% @option test_list_file file name to list all of the tests that will be run
 %
 % All unit tests should always be run (and all tests should pass) before 
 % anything is committed back into the Drake repository.
@@ -51,9 +52,9 @@ warning('off','MATLAB:uitree:DeprecatedFunction');
 warning('off','MATLAB:uitreenode:DeprecatedFunction');
 
 if (nargin<1) options=struct(); end
-if ~isfield(options,'autorun') options.autorun = false; end
 if ~isfield(options,'ignore_vrml') options.ignore_vrml = false; end
 if ~isfield(options,'gui') options.gui = true; end
+if ~isfield(options,'autorun') options.autorun = ~options.gui; end
 if ~isfield(options,'logfile') options.logfile = ''; end
 if ~isfield(options,'test_dirs_only') options.test_dirs_only = false; end
 if ~isempty(options.logfile)
@@ -84,6 +85,11 @@ if isfield(options,'cdash')
   end
 else
   options.cdashNode = [];
+end
+if isfield(options,'test_list_file')
+  options.test_list_file = fopen(options.test_list_file,'w');
+else
+  options.test_list_file = -1;
 end
 
 if (options.gui)
@@ -136,8 +142,11 @@ else
 end
 
 
-if ~isempty(options.logfile)
+if options.logfileptr>=0
   fclose(options.logfileptr);
+end
+if options.test_list_file>=0
+  fclose(options.test_list_file);
 end
 
 if ~isempty(options.cdashNode)
@@ -393,9 +402,13 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
           continue;
         end
         
-        if (options.gui)
+        if options.test_list_file>=0
+          fprintf(options.test_list_file,[testname,'.',m{j},'\t',pwd,'\n']);
+        end
+        
+        if options.gui
           node = addTest(node,[testname,'.',m{j}]);
-        else
+        elseif options.autorun
           runCommandLineTest(node,[testname,'.',m{j}],options);
         end
       end
@@ -409,9 +422,14 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
       if (~checkFile(files(i).name,'function',false))
         continue;
       end
+      
+      if options.test_list_file>=0
+        fprintf(options.test_list_file,[testname,'\t',pwd,'\n']);
+      end
+      
       if (options.gui)
         node = addTest(node,testname);
-      else
+      elseif options.autorun
         runCommandLineTest(node,testname,options);
       end
     end
