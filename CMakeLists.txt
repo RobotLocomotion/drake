@@ -103,7 +103,7 @@ endif()
 
 enable_testing()
 find_program(matlab matlab)
-if ( matlab )
+if (0) # matlab )
    execute_process(COMMAND ${matlab} -nodisplay -r "cd ${CMAKE_CURRENT_SOURCE_DIR}; addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_drake; options.gui = false; options.autorun = false; options.test_list_file = '.matlab_ctests'; unitTest(options); exit;")
    file(READ .matlab_ctests MATLAB_CTESTS)
 #   execute_process(COMMAND sed -n '$-' .matlab_ctests OUTPUT_VARIABLE num_tests OUTPUT_STRIP_TRAILING_WHITESPACE)
