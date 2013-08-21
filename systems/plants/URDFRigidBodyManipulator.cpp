@@ -9,12 +9,46 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
 
 using namespace std;
 
 #ifdef BOT_VIS_SUPPORT
 #include <bot_core/bot_core.h>
 #include <bot_vis/bot_vis.h>
+
+/*
+ *   Works like m.find(str), except that a matching key can contain any number
+ *   of digits before any underscores in `str` or at the end. Thus,
+ *
+ *      str="base"  matches  "base1"  or  "base2" etc.
+ *      str="base_x" matches "base1_x" or "base2_x"  or "base_x1" etc.
+ */
+map<string,int>::const_iterator findWithSuffix(const map<string,int> m, const string str)
+{
+   
+  auto first = m.begin();
+  auto last = m.end();
+  boost::regex delim("(_|$)");
+  /*
+   *So many '\' characters! Each std::string initialization eats one from each
+   *set.
+   */
+  boost::regex re(boost::regex_replace(str,delim,"\\\\d*\\1"));
+  auto flexibleNameMatch = 
+    [&](pair<string,int> p)->bool{return boost::regex_match(p.first,re);};
+  //DEBUG
+  //cout << "findWithSuffix: str = "<< str << endl;
+  //cout << "findWithSuffix: re.str() = "<< re.str() << endl;
+  //if (find_if(first,last,f)==last) {
+    //for (auto p : m){
+      //cout << "findWithSuffix: p.first = "<< p.first << endl;
+      //cout << "f(p) = " << f(p) << endl;
+    //}
+  //}
+  //END_DEBUG
+  return find_if(first,last,flexibleNameMatch);
+}
 
 class URDFRigidBodyManipulatorWBotVis : public URDFRigidBodyManipulator
 {
@@ -146,16 +180,18 @@ public:
 
 	  int body_ind;
 	  if (l->second->parent_joint) {
-	    map<string, int>::iterator j2 = joint_map[robot].find(l->second->parent_joint->name);
+	    map<string, int>::const_iterator j2 = findWithSuffix(joint_map[robot],l->second->parent_joint->name);
 	    if (j2 == joint_map[robot].end()) continue;  // this shouldn't happen, but just in case...
 	    body_ind = j2->second;
 	  } else {
-	    map<string, int>::iterator j2 = joint_map[robot].find("floating_base");
+	    map<string, int>::const_iterator j2 = findWithSuffix(joint_map[robot],"base");
 	    if (j2 == joint_map[robot].end()) continue;  // this shouldn't happen, but just in case...
 	    body_ind = j2->second;  // then it's attached directly to the floating base
 	  }
 
-//	  cout << "drawing robot " << robot << " body_ind " << body_ind << ": " << bodies[body_ind].linkname << endl;
+    //DEBUG
+        //cout << "drawing robot " << robot << " body_ind " << body_ind << ": " << bodies[body_ind].linkname << endl;
+    //END_DEBUG
 
 	  forwardKin(body_ind,zero,2,pose);
 	  //      cout << l->second->name << " is at " << pose.transpose() << endl;
@@ -369,10 +405,10 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
     int index, _dofnum;
     if (l->second->parent_joint) {
     	boost::shared_ptr<urdf::Joint> j = l->second->parent_joint;
-    	map<string, int>::iterator jn=jointname_to_jointnum.find(j->name);
+    	map<string, int>::const_iterator jn=findWithSuffix(jointname_to_jointnum,j->name);
     	if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->name.c_str());
     	index = jn->second;
-      map<string, int>::iterator dn=dofname_to_dofnum.find(j->name);
+      map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,j->name);
       if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen", j->name.c_str());
       _dofnum = dn->second;
 
@@ -393,7 +429,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
     			bodies[index].parent = pjn->second;
     			parent[index-1] = pjn->second-1;
     		} else { // the parent body is the floating base
-            	string jointname="floating_base";
+            	string jointname="base";
                 map<string, int>::iterator jn=jointname_to_jointnum.find(jointname);
                 if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen",jointname.c_str());
                 bodies[index].parent = jn->second;
@@ -442,11 +478,18 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       }
 
     } else { // no joint, this link is attached directly to the floating base
-    	string jointname="floating_base";
-    	map<string, int>::iterator jn=jointname_to_jointnum.find(jointname);
+    	string jointname="base";
+      map<string, int>::const_iterator jn=findWithSuffix(jointname_to_jointnum,jointname);
+      //DEBUG
+      //if (jn == jointname_to_jointnum.end()) {
+        //for (auto p : jointname_to_jointnum) {
+          //cout << p.first << endl;
+        //}
+      //}
+      //END_DEBUG
     	if (jn == jointname_to_jointnum.end()) ROS_ERROR("can't find joint %s.  this shouldn't happen",jointname.c_str());
     	index = jn->second;
-      map<string, int>::iterator dn=dofname_to_dofnum.find("base_x");
+      map<string, int>::const_iterator dn=findWithSuffix(dofname_to_dofnum,"base_x");
       if (dn == dofname_to_dofnum.end()) ROS_ERROR("can't find dof base_x.  this shouldn't happen");
       _dofnum = dn->second;
 
@@ -717,7 +760,47 @@ boost::shared_ptr<ModelInterface> parseURDF(const string &xml_string)
 
 }
 
-void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, map<string, int> & jointname_to_jointnum, map<string, int> & dofname_to_dofnum, int& jointnum, int& dofnum)
+/*
+ * Checks if the string formed by concatenating `str` and `to_string(suffix)` 
+ * is present in the range [first,last)
+ */
+bool isComboUnique(const string& str, int suffix,
+							set<string>::iterator first,
+							set<string>::iterator last)
+{
+	return find(first,last,str + to_string(suffix)) == last;
+}
+
+/* 
+ * Finds an integer, `suffix`, such that the concatenation of `str` and 
+ * `to_string(suffix)` is not present in the range [first,last)
+ */
+int findSuffix(const string& str, int suffix,
+								set<string>::iterator first,
+								set<string>::iterator last)
+{
+	while (!isComboUnique(str,suffix,first,last)) {
+		++suffix;
+	}
+	return suffix;
+}
+
+/*
+ * Modifies the string `name` by appending a numerical suffix such that the
+ * modified string is not present in the set `name_set`
+ */
+void makeNameUnique(string& name, const set<string>& name_set)
+{
+  if (name_set.find(name)==name_set.end()) {
+    return;
+  }
+
+  int suffix = findSuffix(name,2,name_set.begin(),name_set.end());
+  name += to_string(suffix);
+  return;
+}
+
+void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, map<string, int> & jointname_to_jointnum, map<string, int> & dofname_to_dofnum, set<string>& joint_name_set,int& jointnum, int& dofnum)
 {
   if (jointname_to_jointnum.find(j->name) != jointname_to_jointnum.end()) { // then i've already got a joint num
     return;  // this could happen if the parent comes after the child, and is allowed
@@ -732,11 +815,14 @@ void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shar
       if (plink->second->parent_joint.get()) {
         // j has a parent
 //        printf("  ");
-        setJointNum(urdf_model,plink->second->parent_joint,jointname_to_jointnum,dofname_to_dofnum,jointnum,dofnum);
+        setJointNum(urdf_model,plink->second->parent_joint,jointname_to_jointnum,dofname_to_dofnum,joint_name_set,jointnum,dofnum);
       }
     }
   }
-  
+
+  makeNameUnique(j->name,joint_name_set);
+  joint_name_set.insert(j->name);
+
   switch (j->type) {
     case urdf::Joint::REVOLUTE:
     case urdf::Joint::CONTINUOUS:
@@ -795,19 +881,28 @@ bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const st
   {  
     int dofnum=num_dof;
     int jointnum = num_bodies;
-    jointname_to_jointnum.insert(make_pair("floating_base",jointnum++));
-    dofname_to_dofnum.insert(make_pair("base_x",dofnum++));
-    dofname_to_dofnum.insert(make_pair("base_y",dofnum++));
-    dofname_to_dofnum.insert(make_pair("base_z",dofnum++));
-    dofname_to_dofnum.insert(make_pair("base_roll",dofnum++));
-    dofname_to_dofnum.insert(make_pair("base_pitch",dofnum++));
-    dofname_to_dofnum.insert(make_pair("base_yaw",dofnum++));
+    string joint_name("base");
+    makeNameUnique(joint_name,joint_name_set);
+    joint_name_set.insert(joint_name);
+    jointname_to_jointnum.insert(make_pair(joint_name,jointnum++));
+
+    dofname_to_dofnum.insert(make_pair(joint_name+"_x",dofnum++));
+    dofname_to_dofnum.insert(make_pair(joint_name+"_y",dofnum++));
+    dofname_to_dofnum.insert(make_pair(joint_name+"_z",dofnum++));
+    dofname_to_dofnum.insert(make_pair(joint_name+"_roll",dofnum++));
+    dofname_to_dofnum.insert(make_pair(joint_name+"_pitch",dofnum++));
+    dofname_to_dofnum.insert(make_pair(joint_name+"_yaw",dofnum++));
     
     for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=_urdf_model->joints_.begin(); j!=_urdf_model->joints_.end(); j++)
-      setJointNum(_urdf_model,j->second,jointname_to_jointnum,dofname_to_dofnum,jointnum,dofnum);
-    
-//    for (map<string, int>::iterator j=jointname_to_jointnum.begin(); j!=jointname_to_jointnum.end(); j++)
-//      printf("%s : %d\n",j->first.c_str(),j->second);
+      setJointNum(_urdf_model,j->second,jointname_to_jointnum,dofname_to_dofnum,joint_name_set,jointnum,dofnum);
+
+    //for (map<string, int>::iterator j=jointname_to_jointnum.begin(); j!=jointname_to_jointnum.end(); j++)
+    //printf("%s : %d\n",j->first.c_str(),j->second);
+    //DEBUG
+    //for (auto p : dofname_to_dofnum) {
+    //cout << "URDFRigidBodyManipulator::addURDFfromXML: p.first << " : " << p.second << endl; 
+    //}
+    //END_DEBUG
   }
   
   // now populate my model class
