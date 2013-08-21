@@ -1,4 +1,5 @@
 function [c,options] = parseMaterial(node,options)
+% @ingroup URDF Parsing
 
 name=char(node.getAttribute('name'));
 name=regexprep(name, '\.', '_', 'preservecase');

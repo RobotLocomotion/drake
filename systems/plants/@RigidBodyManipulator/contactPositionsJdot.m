@@ -2,6 +2,7 @@ function [contact_pos,J,Jdot] = contactPositionsJdot(obj,kinsol,body_idx,body_co
 % @retval p(:,i)=[px;py;pz] is the position of the ith contact point 
 % @retval J is dpdq
 % @retval Jdot is d(dpdq)dt
+% @ingroup Collision
       
 typecheck(kinsol,'struct');
 

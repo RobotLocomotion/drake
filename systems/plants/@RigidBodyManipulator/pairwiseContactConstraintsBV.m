@@ -22,6 +22,7 @@ function [phi,B,JB,mu] = pairwiseContactConstraintsBV(obj,kinsol,body_indA,body_
 %    friction cone, in joint coordinates
 %    JB{k}(i,:) is the ith direction vector for the kth contact (of nC)
 % @retval mu mu(i,1) is the coefficient of friction for the ith contact
+% @ingroup Collision
 
 
 if nargin > 4

@@ -15,6 +15,7 @@ function [ptA,ptB,normal,distance,JA,JB,dJA,dJB] = pairwiseClosestPoints(obj,kin
 % @retval normal the contact normal vectors on body B in world coordinates
 % @retval JA the jacobian of ptA
 % @retval JB the jacobian of ptB
+% @ingroup Collision
 
 if ~isstruct(kinsol)  
   % treat input as contactPositions(obj,q)

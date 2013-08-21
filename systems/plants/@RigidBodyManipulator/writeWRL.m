@@ -1,4 +1,5 @@
 function writeWRL(model,wrlfile,options)
+
 if nargin<2 || isempty(wrlfile)
   [filename,pathname]=uiputfile('*.wrl','Save WRL File',[model.name,'.wrl']);
   wrlfile=[pathname,filename];

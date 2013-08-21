@@ -9,6 +9,7 @@ function [phi,Jphi,distance] = pairwiseClosestDistance(obj,kinsol,bodyA_idx,body
 %
 % @retval phi minimum distance between bodies A and B
 % @retval Jphi the kinematic jacobian of phi
+% @ingroup Collision
 
 if (nargout>1)
   [ptA,ptB,normal,distance,JA,JB] = pairwiseClosestPoints(obj,kinsol,bodyA_idx,bodyB_idx);
