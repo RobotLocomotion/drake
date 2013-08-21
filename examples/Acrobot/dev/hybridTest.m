@@ -11,7 +11,5 @@ p = HybridRigidBodyManipulator(m);
 x0 = resolveConstraints(p,[1;randn(4,1)]);
 xtraj = simulate(p,[0 4],x0);
 
-if (checkDependency('vrml'))
-  v = p.constructVisualizer();
-  v.playback(xtraj);
-end
+v = p.constructVisualizer();
+v.playback(xtraj);
