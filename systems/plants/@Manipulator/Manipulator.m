@@ -4,6 +4,7 @@ classdef Manipulator < SecondOrderSystem
 
   methods
     function obj = Manipulator(num_q, num_u)
+      % Constructor
       obj = obj@SecondOrderSystem(num_q,num_u,true);
     end
   end
@@ -62,8 +63,11 @@ classdef Manipulator < SecondOrderSystem
     
   end
   
-  methods
+  methods (Access=private)
     function constraint_force = computeConstraintForce(obj,q,qd,H,tau,Hinv)
+      % Helper function to compute the internal forces required to enforce 
+      % equality constraints
+      
       alpha = 10;  % 1/time constant of position constraint satisfaction (see my latex rigid body notes)
       beta = 0;    % 1/time constant of velocity constraint satisfaction
     
@@ -95,7 +99,9 @@ classdef Manipulator < SecondOrderSystem
         constraint_force = 0*q;
       end
     end
-          
+  end
+  
+  methods
     function obj = setNumPositionConstraints(obj,num)
     % Set the number of bilateral constraints
       if (~isscalar(num) || num <0)
@@ -113,16 +119,25 @@ classdef Manipulator < SecondOrderSystem
       obj.num_velocity_constraints=num;
       obj.num_xcon=2*obj.num_position_constraints+obj.num_velocity_constraints;
     end
-    
+  end
+  
+  methods (Sealed = true)
     function obj = setNumStateConstraints(obj,num)
+      % Not a valid method.  Enforce that it is not called directly.
       error('you must set position constraints and velocity constraints explicitly.  cannot set general constraints for manipulator plants');
     end
-    
+  end
+  
+  methods
     function phi = positionConstraints(obj,q)
+      % Implements position constraints of the form phi(q) = 0
       error('manipulators with position constraints must overload this function');
     end
     
     function psi = velocityConstraints(obj,q,qd)
+      % Implements velocity constraints of the form psi(q,qdot) = 0
+      % Note: dphidqdot must not be zero. constraints which depend 
+      % only on q should be implemented instead as positionConstraints.
       error('manipulators with velocity constraints must overload this function'); 
     end
     
@@ -145,11 +160,14 @@ classdef Manipulator < SecondOrderSystem
       con = [phi; J*qd; psi];  % phi=0, phidot=0, psi=0
     end
     
-    function n = getNumJointLimits(obj)
+    function n = getNumJointLimitConstraints(obj)
+      % returns number of constraints imposed by finite joint limits
       n = sum(obj.joint_limit_min ~= -inf) + sum(obj.joint_limit_max ~= inf);
     end
     
     function [phi,J,dJ] = jointLimitConstraints(obj,q)
+      % constraint function (with derivatives) to implement unilateral
+      % constraints imposed by joint limits
       phi = [q-obj.joint_limit_min; obj.joint_limit_max-q]; phi=phi(~isinf(phi));
       J = [eye(obj.num_q); -eye(obj.num_q)];  
       J([obj.joint_limit_min==-inf;obj.joint_limit_max==inf],:)=[]; 
@@ -159,10 +177,13 @@ classdef Manipulator < SecondOrderSystem
     end
     
     function n = getNumContacts(obj)
+      % returns the number of contact points
       n = obj.num_contacts;
     end
     
     function [phi,n,D,mu] = contactConstraints(obj,q,dq)
+      % default method (intended to be overloaded) to implement unilater
+      % constraints imposed by contact
       phi=[]; n=zeros(0,obj.num_q); D=cell(); mu=[];
     end
     
@@ -213,6 +234,8 @@ classdef Manipulator < SecondOrderSystem
     end
     
     function sys = feedback(sys1,sys2)
+      % Attempt to produce a new manipulator system if possible
+      
       if (isa(sys2,'Manipulator'))
         % todo: implement this (or decide that it doesn't ever make sense)
         warning('feedback combinations of manipulators not handled explicitly yet. kicking out to a combination of SecondOrderSystems');
@@ -221,6 +244,8 @@ classdef Manipulator < SecondOrderSystem
     end
     
     function sys = cascade(sys1,sys2)
+      % Attempt to produce a new manipulator system if possible
+
       if (isa(sys2,'Manipulator'))
         % todo: implement this (or decide that it doesn't ever make sense)
         warning('cascade combinations of manipulators not handled explicitly yet. kicking out to a combination of SecondOrderSystems');
@@ -229,6 +254,9 @@ classdef Manipulator < SecondOrderSystem
     end
     
     function polysys = makeTrigPolySystem(obj,options)
+      % Creates a (rational) polynomial system representation of the
+      % dynamics
+      
       if (obj.num_xcon>0) error('not implemented yet.  may not be possible.'); end
       
       function rhs = dynamics_rhs(obj,t,x,u)
@@ -323,6 +351,7 @@ classdef Manipulator < SecondOrderSystem
     end
     
     function [jl_min, jl_max] = getJointLimits(obj)
+      % Returns lower and upper joint limit vectors
       jl_min = obj.joint_limit_min;
       jl_max = obj.joint_limit_max;
     end
@@ -331,8 +360,8 @@ classdef Manipulator < SecondOrderSystem
   properties (SetAccess = protected, GetAccess = public)
     num_position_constraints = 0  % the number of position constraints of the form phi(q)=0
     num_velocity_constraints = 0  % the number of velocity constraints of the form psi(q,qd)=0
-    joint_limit_min = -inf;
-    joint_limit_max = inf;
-    num_contacts = 0;
+    joint_limit_min = -inf;       % vector of length num_q with lower limits
+    joint_limit_max = inf;        % vector of length num_q with upper limits
+    num_contacts = 0;             % number of contact points
   end
 end
