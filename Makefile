@@ -48,7 +48,7 @@ doxygen :
 
 test	: all 
 	cmake/add_matlab_unit_tests.pl
-	$(MAKE) -C pod-build $@
+	@cd pod-build && ctest --output-on-failure
 
 clean:
 	-if [ -e pod-build/install_manifest.txt ]; then rm -f `cat pod-build/install_manifest.txt`; fi
