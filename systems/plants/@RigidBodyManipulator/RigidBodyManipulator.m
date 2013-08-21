@@ -1410,6 +1410,12 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       % Transfers collision filtering information from the collision_filter_groups map
       % to the links themselves. Must be run BEFORE createMexPointer.
 
+      % In case no robots were loaded from urdf, initialize
+      % collision_filter_groups here.
+      if isempty(model.collision_filter_groups) 
+        model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
+        model.collision_filter_groups('no_collision') = CollisionFilterGroup();
+      end
       % The DEFAULT_COLLISION_FILTER_GROUP is reserved for bodies that don't belong to any
       % other collision collision_filter_groups.
       model.collision_filter_groups('default') = CollisionFilterGroup();
