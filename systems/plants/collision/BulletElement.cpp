@@ -24,7 +24,7 @@ namespace DrakeCollision
         //END_DEBUG
         break;
       case SPHERE:
-        if (params[0] != 0) {
+        if (true || params[0] != 0) {
           //DEBUG
           //std::cout << "BulletElement::BulletElement: Create SPHERE ..." << std::endl;
           //END_DEBUG
@@ -67,8 +67,17 @@ namespace DrakeCollision
         throw unknownShapeException(shape);
         break;
     }
+    //DEBUG
+    //cout << "BulletElement::BulletElement: Creating btCollisionObject" << endl;
+    //END_DEBUG
     bt_obj = make_shared<btCollisionObject>();
+    //DEBUG
+    //cout << "BulletElement::BulletElement: Setting bt_shape for bt_ob" << endl;
+    //END_DEBUG
     bt_obj->setCollisionShape(bt_shape);
+    //DEBUG
+    //cout << "BulletElement::BulletElement: Setting world transform for bt_ob" << endl;
+    //END_DEBUG
     setWorldTransform(this->T_elem_to_world);
     //DEBUG
     //std::cout << "BulletElement::BulletElement: END" << std::endl;

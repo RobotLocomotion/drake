@@ -1519,6 +1519,22 @@
     <member link="l_foot"/>
     <ignored_collision_filter_group collision_filter_group="l_leg"/>
   </collision_filter_group>
+  <collision_filter_group name="r_arm">
+    <member link="r_scap"/>
+    <member link="r_uarm"/>
+    <member link="r_larm"/>
+    <member link="r_farm"/>
+    <member link="r_hand"/>
+    <ignored_collision_filter_group collision_filter_group="r_arm"/>
+  </collision_filter_group>
+  <collision_filter_group name="l_arm">
+    <member link="l_scap"/>
+    <member link="l_uarm"/>
+    <member link="l_larm"/>
+    <member link="l_farm"/>
+    <member link="l_hand"/>
+    <ignored_collision_filter_group collision_filter_group="l_arm"/>
+  </collision_filter_group>
   <collision_filter_group name="shoulders">
     <member link="utorso"/>
     <member link="r_scap"/>
@@ -1932,37 +1948,6 @@
     <child link="right_palm"/>
     <origin rpy="-1.57079 0 -1.57079" xyz="0 -0.1 0"/>
   </joint>
-  <link name="right_hook">
-    <collision group="default">
-      <origin rpy="0 0 0" xyz="-0.045 0.015 -0.03"/>
-      <geometry>
-        <sphere radius="0"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="-0.045 0.015 -0.03"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
-    <collision group="default">
-      <origin rpy="0 0 0" xyz="-0.045 0.015 0.03"/>
-      <geometry>
-        <sphere radius="0"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="-0.045 0.015 0.03"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
-  </link>
-  <joint name="right_hook_joint" type="fixed">
-    <origin rpy="0 0 0.79" xyz="0.044 -0.04 -0.005"/>
-    <parent link="right_palm"/>
-    <child link="right_hook"/>
-  </joint>
   <link name="left_palm">
     <origin rpy="0 0 0" xyz="0 0 0"/>
     <inertial>
@@ -2115,37 +2100,6 @@
     <parent link="l_hand"/>
     <child link="left_palm"/>
     <origin rpy=" 1.57079 0  1.57079" xyz="0  0.1 0"/>
-  </joint>
-  <link name="left_hook">
-    <collision group="default">
-      <origin rpy="0 0 0" xyz="-0.045 -0.015 -0.03"/>
-      <geometry>
-        <sphere radius="0"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="-0.045 -0.015 -0.03"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
-    <collision group="default">
-      <origin rpy="0 0 0" xyz="-0.045 -0.015 0.03"/>
-      <geometry>
-        <sphere radius="0"/>
-      </geometry>
-    </collision>
-    <visual>
-      <origin rpy="0 0 0" xyz="-0.045 -0.015 0.03"/>
-      <geometry>
-        <sphere radius="0.01"/>
-      </geometry>
-    </visual>
-  </link>
-  <joint name="left_hook_joint" type="fixed">
-    <origin rpy="0 0 -0.79" xyz="0.044 0.04 -0.005"/>
-    <parent link="left_palm"/>
-    <child link="left_hook"/>
   </joint>
   <!--<joint name='rwrist' type='fixed'>
   you can specify xyz offset to locate the manipulator
