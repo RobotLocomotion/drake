@@ -113,12 +113,28 @@ static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * chan
   	int robot = msg->joint_robot[i];
 
     map<string, int>::iterator iter = self->model->dof_map[robot].find(msg->joint_name[i]);
-    if (iter==self->model->dof_map[robot].end())
+    //DEBUG
+    //for (auto p : self->model->dof_map[robot]) {
+      //cout << "drake_urdf_renderer: p.first = " << p.first << endl;
+    //}
+    //END_DEBUG
+    if (iter==self->model->dof_map[robot].end()) {
       cerr << "couldn't find dof named " << msg->joint_name[i] << endl;
-    else {
+    } else {
       q(iter->second) = (double) msg->joint_position[i];
+      //DEBUG
+      //cout << endl;
+      //cout << "drake_urdf_renderer: msg->joint_name[i] = " << msg->joint_name[i] << endl;
+      //cout << "drake_urdf_renderer: iter->first = " << iter->first << endl;
+      //cout << "drake_urdf_renderer: iter->second = " << iter->second << endl;
+      //cout << endl;
+      //END_DEBUG
 //      cout << self->model->bodies[iter->second+1].jointname << " = " << q(iter->second) << ", " << iter->second << "=" << self->model->bodies[iter->second+1].dofnum << endl;
     }
+    //DEBUG
+    //cout << "drake_urdf_renderer: q = " << endl;
+    //cout << q << endl;
+    //END_DEBUG
   }
   
   self->model->doKinematics(q.data());

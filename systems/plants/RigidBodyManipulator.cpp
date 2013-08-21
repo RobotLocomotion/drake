@@ -595,6 +595,12 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
   //END_DEBUG
   int i,j,k,l;
 
+  //DEBUG
+  //cout << "RigidBodyManipulator::doKinematics: q = " << endl;
+  //for (i = 0; i < num_dof; i++) {
+    //cout << q[i] << endl;
+  //}
+  //END_DEBUG
   //Check against cached values for bodies[1];
   if (kinematicsInit) {
     bool skip = true;

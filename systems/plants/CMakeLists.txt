@@ -20,7 +20,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   endif()
 endif()
 
-find_package( Boost COMPONENTS filesystem system )
+find_package( Boost COMPONENTS filesystem system regex)
 
 include_directories (${CMAKE_SOURCE_DIR}/util )
 

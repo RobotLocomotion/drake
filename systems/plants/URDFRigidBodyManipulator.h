@@ -22,6 +22,9 @@ public:
   std::map<std::string, int> robot_map;
   std::vector< std::map<std::string, int> > joint_map, dof_map;
   std::vector<boost::shared_ptr<urdf::ModelInterface> > urdf_model;
+  std::set<std::string> joint_name_set; // Keeps track of all of the joint
+                                        // names in the manipulator, so that 
+                                        // they can be made unique
 };
 
 URDFRigidBodyManipulator* loadURDFfromXML(const std::string &xml_string, const std::string &root_dir = ".");
