@@ -102,29 +102,5 @@ else()
 endif()
 
 enable_testing()
-find_program(matlab matlab)
-if (0) # matlab )
-   execute_process(COMMAND ${matlab} -nodisplay -r "cd ${CMAKE_CURRENT_SOURCE_DIR}; addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_drake; options.gui = false; options.autorun = false; options.test_list_file = '.matlab_ctests'; unitTest(options); exit;")
-   file(READ .matlab_ctests MATLAB_CTESTS)
-#   execute_process(COMMAND sed -n '$-' .matlab_ctests OUTPUT_VARIABLE num_tests OUTPUT_STRIP_TRAILING_WHITESPACE)
-#   string(REGEX MATCHALL "^[^ ]*" matlab_tests ${MATLAB_CTESTS})
-   separate_arguments(matlab_tests UNIX_COMMAND "${MATLAB_CTESTS}")
-   list(LENGTH matlab_tests num_tests)
-   math(EXPR test_range "(${num_tests}/2) -1")
- 
-   foreach(testnum RANGE ${test_range})
-      math(EXPR test_id "2*${testnum}")
-      math(EXPR test_dir_id "${test_id}+1")
-      list(GET matlab_tests ${test_id} test)
-      list(GET matlab_tests ${test_dir_id} testdir)
-#      message(STATUS "adding test ${test} in dir ${testdir}")
-      string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/" "" testname "${testdir}/${test}")
-      add_test(NAME "${testname}" 
-      		    WORKING_DIRECTORY ${testdir}
-		    COMMAND ${matlab} -nosplash -nodisplay -r "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_drake; try, feval('${test}'); catch(ex), disp(getReport(ex,'extended')); force_close_system; exit(-1); end; force_close_system; exit(0)" )
-   endforeach(testnum)
 
-#   add_test(NAME MATLAB_Unit_Tests 
-#   		 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-#  		 COMMAND ${matlab} -nosplash -r "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_drake; options.gui=false; options.autorun=true;options.logfile='unitTest.log';options.cdash='cdash.xml'; d=unitTest(options); exit(d.fail)")
-endif()
+# Note: use cmake/add_matlab_unit_tests.pl to write ctest scripts (but i advise doing it at test time, not configure time).  - Russ

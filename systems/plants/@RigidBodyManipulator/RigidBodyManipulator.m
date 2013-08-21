@@ -714,8 +714,13 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
           warning(ex.identifier,ex.message);
         end
       end        
-      if isempty(v)
-        v = RigidBodyWRLVisualizer(obj);
+      if isempty(v) 
+        if usejava('awt') % usejava('awt') returns 0 if i'm running without a display
+          v = RigidBodyWRLVisualizer(obj);
+        else
+          warning('Drake:RigidBodyManipulator:NoDisplay','No display found.  I suspect you are running headless.  Constructing a NULL visualizer instead');
+          v = NullVisualizer(getOutputFrame(obj));
+        end
       end
     end
     
