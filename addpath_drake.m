@@ -153,7 +153,7 @@ if (~conf.snopt_enabled)
 end
 
 if(exist('vrinstall'))
-  conf.vrml_enabled = logical(vrinstall('-check'));
+  conf.vrml_enabled = logical(vrinstall('-check')) && usejava('awt');  % usejava('awt') return 0 if running with no display
 else
   conf.vrml_enabled=0;
 end
