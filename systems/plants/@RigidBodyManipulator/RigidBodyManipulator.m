@@ -983,6 +983,8 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
     
     function val = parseParamString(model,str)
+      % @ingroup URDF Parsing
+      
       str = regexprep(str,'\$(\w+)','model.param_db.(''$1'').value');
       val = eval(['[',str,']']);
     end
