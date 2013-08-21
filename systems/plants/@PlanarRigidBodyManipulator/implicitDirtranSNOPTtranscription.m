@@ -430,7 +430,7 @@ function [f,G] = dirtran_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,nL,nC,nC
       jointLimitMult = 10;
       % Handle Joint Limit constraints first
       if (nJointLimitConst > 0)
-        [phi,J] = sys.jointLimits(x(1:num_q,i+1));
+        [phi,J] = sys.jointLimitConstraints(x(1:num_q,i+1));
         for j=1:nJointLimitConst,
           d_i(nX+1+(j-1)*2) = lambda(j,i+1) * phi(j) * jointLimitMult;
           dd_i(nX+1+(j-1)*2,1+2*nX+2*nU+nL+2*nC+nClutch+j) = phi(j) * jointLimitMult;
@@ -479,7 +479,7 @@ function [f,G] = dirtran_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,nL,nC,nC
       nJointLimitConst = sys.getNumJointLimits;
       % Handle Joint Limit constraints first
       if (nJointLimitConst > 0)
-        [phi,J] = sys.jointLimits(x(1:num_q,1));
+        [phi,J] = sys.jointLimitConstraints(x(1:num_q,1));
         for j=1:nJointLimitConst,
           d_end(1+(j-1)*2) = lambda(j,1) * phi(j);
           dd_end(1+(j-1)*2,1+nX+nU+j) = phi(j);

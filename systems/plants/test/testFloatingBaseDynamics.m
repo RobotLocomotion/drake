@@ -28,7 +28,7 @@ for i=1:100
   kinsol = doKinematics(m_rpy,q,true,false,qd);
   [pt,J,Jdot] = contactPositionsJdot(m_rpy,kinsol);
   [~,~,dJ] = contactPositions(m_rpy,kinsol);
-  phi = [jointLimits(m_rpy,q); contactConstraints(m_rpy,kinsol)];
+  phi = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol)];
   
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,false,qd(ind));
   [pt2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2);
@@ -44,7 +44,7 @@ for i=1:100
   
   kinsol = doKinematics(m_rpy,q,false,true,qd);
   [pt2,J2,Jdot2] = contactPositionsJdot(m_rpy,kinsol);
-  phi2 = [jointLimits(m_rpy,q); contactConstraints(m_rpy,kinsol)];
+  phi2 = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol)];
 
   valuecheck(pt,pt2);
   valuecheck(J,J2);
