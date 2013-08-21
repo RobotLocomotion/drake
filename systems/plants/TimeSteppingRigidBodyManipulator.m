@@ -252,9 +252,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           % dJ = 0 by default, which is correct here
         else
           if (nargout<4)
-            [phiL,JL] = obj.manip.jointLimits(q);
+            [phiL,JL] = obj.manip.jointLimitConstraints(q);
           else
-            [phiL,JL,dJL] = obj.manip.jointLimits(q);
+            [phiL,JL,dJL] = obj.manip.jointLimitConstraints(q);
             dJ(1:nL,:) = dJL;
           end
         end
@@ -718,9 +718,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       jl_max = obj.manip.joint_limit_max;
     end
     
-    function varargout = jointLimits(obj,varargin)
+    function varargout = jointLimitConstraints(obj,varargin)
       varargout=cell(1,nargout);
-      [varargout{:}] = jointLimits(obj.manip,varargin{:});
+      [varargout{:}] = jointLimitConstraints(obj.manip,varargin{:});
     end
   
     function index = getActuatedJoints(obj)

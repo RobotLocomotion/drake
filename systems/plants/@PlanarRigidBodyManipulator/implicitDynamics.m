@@ -34,7 +34,7 @@ nClutch = 0;
 %kinsol = doKinematics(obj,q,true);  
 
 if (nUniPConstraints > 0)
-  [phi,J,dJ] = obj.jointLimits(q);
+  [phi,J,dJ] = obj.jointLimitConstraints(q);
   %         dJdqlambda = zeros(obj.num_q^2,1);
   %         for i=1:obj.num_q^2,
   %           dJdqlambda(i,1) = dJ(:,i)'*lambda(1:nUniPConstraints);

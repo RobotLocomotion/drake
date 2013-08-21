@@ -149,7 +149,7 @@ classdef Manipulator < SecondOrderSystem
       n = sum(obj.joint_limit_min ~= -inf) + sum(obj.joint_limit_max ~= inf);
     end
     
-    function [phi,J,dJ] = jointLimits(obj,q)
+    function [phi,J,dJ] = jointLimitConstraints(obj,q)
       phi = [q-obj.joint_limit_min; obj.joint_limit_max-q]; phi=phi(~isinf(phi));
       J = [eye(obj.num_q); -eye(obj.num_q)];  
       J([obj.joint_limit_min==-inf;obj.joint_limit_max==inf],:)=[]; 
@@ -189,7 +189,7 @@ classdef Manipulator < SecondOrderSystem
       
       function [c,ceq] = mycon(x)
         q = x(1:obj.num_q); qd = x(obj.num_q + (1:obj.num_q));
-        c = -[jointLimits(obj,q); contactConstraints(obj,q)];
+        c = -[jointLimitConstraints(obj,q); contactConstraints(obj,q)];
         ceq = stateConstraints(obj,x);
       end
       problem.nonlcon = @mycon;
