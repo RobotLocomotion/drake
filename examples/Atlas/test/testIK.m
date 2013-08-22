@@ -1,9 +1,8 @@
 function testIK
  
-addpath(fullfile(pwd,'..'));
 options.floating = true;
 options.dt = 0.001;
-r = Atlas('../urdf/atlas_minimal_contact.urdf',options);
+r = RigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
 v = r.constructVisualizer();
  
 cost = Point(r.getStateFrame,1);
