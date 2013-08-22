@@ -251,7 +251,7 @@ classdef DrakeSystem < DynamicalSystem
       end
       
       if (obj.num_xcon>0)
-        warning('Drake:DrakeSystem:NotImplemented','system has constraints, but they aren''t enforced in the simulink model yet.');
+        warning('Drake:DrakeSystem:ConstraintsNotEnforced','system has constraints, but they aren''t enforced in the simulink model yet.');
       end
     end
     

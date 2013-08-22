@@ -11,9 +11,11 @@ path(oldpath);
 
 tp2 = makeTrigPolySystem(p2,options);
 
+w = warning('off','Drake:DrakeSystem:ConstraintsNotEnforced');
+tf = .5;
 % test numerically, because f and e are different (one has the inertial
 % matrix in f, the other has it in e)
-for i=1:25
+for i=1:5
   x = Point(p1.getStateFrame,randn(4,1));
   xp = x.inFrame(tp1.getStateFrame);
   x = double(x); xp=double(xp);
@@ -24,9 +26,10 @@ for i=1:25
   valuecheck(xdot,p2.dynamics(0,x,u));
   valuecheck(xdotp,tp2.dynamics(0,xp,u));
   
-  dt = .1;
-  xn = x+dt*xdot;
-  xnp = Point(tp1.getStateFrame,xp+dt*xdotp);
-  xnp = double(xnp.inFrame(p1.getStateFrame));
-  valuecheck(xn,xnp,1e-2);
+  xtraj = simulate(p1,[0 tf],x);
+  xptraj = simulate(tp1,[0 tf],xp);
+  
+  valuecheck(xtraj.eval(tf),double(Point(tp1.getStateFrame,xptraj.eval(tf)).inFrame(p1.getStateFrame)),1e-2);
 end
+
+warning(w);
