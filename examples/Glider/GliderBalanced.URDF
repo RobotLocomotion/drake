@@ -18,11 +18,11 @@
     </inertial>
     <visual>
       <origin
-        xyz="0 0 0"
+        xyz="-.135 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="meshes/GliderFuselage.obj" />
+        <!--<mesh filename="meshes/GliderFuselage.obj" />-->
+        <box size =".3 .1 .03"/>
       </geometry>
       <material
         name="">
@@ -50,21 +50,22 @@
  for the dynamics to work-Rick's model assumes this. Ignore condition
  number warnings generated because of this.-->
       <mass
-        value="1e-9" />
+        value=".00001" />
       <inertia
-        ixx="1e-9"
-        ixy="0"
-        ixz="0"
-        iyy="1e-9"
-        iyz="0"
-        izz="1e-9" />
+        ixx="7.8055E-06"
+        ixy="-3.0658E-08"
+        ixz="1.5816E-08"
+        iyy="8.2729E-07"
+        iyz="-9.091E-09"
+        izz="8.6162E-06" />
     </inertial>
     <visual>
       <origin
-        xyz="0 0 0"
+        xyz="-.02 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh filename="meshes/GliderElevator.obj" />
+        <!--<mesh filename="meshes/GliderElevator.obj" />-->
+        <box size=".08 .1 .01"/>
       </geometry>
       <material
         name="">

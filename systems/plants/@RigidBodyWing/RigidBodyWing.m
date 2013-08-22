@@ -348,10 +348,14 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
       function flatplate()
         disp('Using a flat plate airfoil.')
-        angles = [-180:2:-(stallAngle+.0001) -stallAngle:stallAngle/12:(stallAngle-.0001) stallAngle:2:180];
+        laminarpts = 30;
+        angles = [-180:2:-(stallAngle+.0001) -stallAngle:2*stallAngle/laminarpts:(stallAngle-.0001) stallAngle:2:180];
+        %CMangles is used to make the Moment coefficient zero when the wing
+        %is not stalled
+        CMangles = [-180:2:-(stallAngle+.0001) zeros(1,laminarpts) stallAngle:2:180];
+        obj.fCm = foh(angles, -(CMangles./90)*obj.rho*obj.area*chord/4);
         obj.fCl = spline(angles, .5*(2*sind(angles).*cosd(angles))*obj.rho*obj.area);
         obj.fCd = spline(angles, .5*(2*sind(angles).^2)*obj.rho*obj.area);
-        obj.fCm = spline(angles, -(angles./90)*obj.rho*obj.area*chord/4);
       end
       function makeSplines()
         %Dimensionalized splines, such that you only need to
