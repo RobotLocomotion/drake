@@ -48,7 +48,7 @@ doxygen :
 
 .PHONY: mlint
 mlint	:
-	matlab -nodisplay -r "addpath(fullfile(pwd,'thirdParty','runmlint')); runmlint; exit"
+	matlab -nodisplay -r "addpath(fullfile(pwd,'thirdParty','runmlint')); runmlint('.mlintopts'); exit"
 
 test	: all 
 	cmake/add_matlab_unit_tests.pl

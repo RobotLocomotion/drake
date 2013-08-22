@@ -12,7 +12,7 @@ catch
 end
 conf.root = pwd;
 
-if ~exist('pods_get_base_path')
+if ~exist('pods_get_base_path','file')
   % search up to 4 directories up for a build/matlab directory
   pfx='';
   for i=1:4
@@ -25,7 +25,7 @@ if ~exist('pods_get_base_path')
   end
 end
 
-if ~exist('pods_get_base_path')
+if ~exist('pods_get_base_path','file')
   error('You must run make first (and/or add your pod build/matlab directory to the matlab path)');
 end
 
@@ -63,7 +63,7 @@ addpath(fullfile(conf.root,'thirdParty'));
 addpath(fullfile(conf.root,'thirdParty','path'));
 addpath(fullfile(conf.root,'thirdParty','spatial'));
 addpath(fullfile(conf.root,'thirdParty','cprintf'));
-%addpath(fullfile(conf.root,'thirdParty','runmlint'));
+addpath(fullfile(conf.root,'thirdParty','runmlint'));
 addpath(fullfile(conf.root,'thirdParty','GetFullPath'));
 
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
@@ -79,7 +79,7 @@ v=ver('simulink');
 if (isempty(v)) 
   conf.simulink_enabled = false;
 elseif verLessThan('simulink','7.3')
-  warning('Some features of Drake reguires SIMULINK version 7.3 or above.');
+  warning('Drake:SimulinkVersion','Some features of Drake reguires SIMULINK version 7.3 or above.');
   % haven't actually tested with lower versions
   conf.simulink_enabled = false;
 else
@@ -87,17 +87,17 @@ else
 end
 
 % require spotless 
-if ~logical(exist('msspoly')) 
+if ~logical(exist('msspoly','class')) 
   pod_pkg_config('spotless');
 end
 
-conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
+conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
 if (~conf.lcm_enabled)
   lcm_java_classpath = getCMakeParam('lcm_java_classpath');
   if ~isempty(lcm_java_classpath)
     javaaddpath(lcm_java_classpath);
     disp(' Added the lcm jar to your javaclasspath (found via cmake)');
-    conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
+    conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
   end
 end
 
@@ -108,7 +108,7 @@ if (~conf.lcm_enabled)
     javaaddpath(strtrim(cp));
   end
 
-  conf.lcm_enabled = logical(exist('lcm.lcm.LCM'));
+  conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
 end
 
 if (~conf.lcm_enabled)
@@ -140,9 +140,9 @@ end
 
 
 
-conf.snopt_enabled = logical(exist('snopt'));
+conf.snopt_enabled = logical(exist('snopt','file'));
 if (~conf.snopt_enabled) 
-  conf.snopt_enabled = pod_pkg_config('snopt') && logical(exist('snopt'));
+  conf.snopt_enabled = pod_pkg_config('snopt') && logical(exist('snopt','file'));
 end
 
 if (~conf.snopt_enabled) 
@@ -153,15 +153,15 @@ if (~conf.snopt_enabled)
   disp(' ');
 end
 
-if(exist('vrinstall'))
+if(exist('vrinstall','file'))
   conf.vrml_enabled = logical(vrinstall('-check'));% && usejava('awt');  % usejava('awt') return 0 if running with no display
 else
   conf.vrml_enabled=0;
 end
 
-conf.sedumi_enabled = logical(exist('sedumi'));
+conf.sedumi_enabled = logical(exist('sedumi','file'));
 if (~conf.sedumi_enabled)
-  conf.sedumi_enabled = pod_pkg_config('sedumi') && logical(exist('sedumi'));
+  conf.sedumi_enabled = pod_pkg_config('sedumi') && logical(exist('sedumi','file'));
 end
 
 if (conf.sedumi_enabled)
@@ -180,7 +180,7 @@ else
   disp(' ');
 end
 
-conf.gurobi_enabled = logical(exist('gurobi') && ~isempty(getenv('GUROBI_HOME')));
+conf.gurobi_enabled = logical(exist('gurobi','file') && ~isempty(getenv('GUROBI_HOME')));
 if (~conf.gurobi_enabled)
   conf.gurobi_enabled = pod_pkg_config('gurobi') && ~isempty(getenv('GUROBI_HOME'));
 end
@@ -195,12 +195,12 @@ if (~conf.gurobi_enabled)
   disp(' ');
 end
 
-conf.cplex_enabled = logical(exist('cplexlp'));
+conf.cplex_enabled = logical(exist('cplexlp','file'));
 if (~conf.cplex_enabled)
   disp(' CPLEX not found.  CPLEX support will be disabled.  To re-enable, install CPLEX and add the matlab subdirectory to your matlab path, then rerun addpath_drake');
 end
 
-conf.yalmip_enabled = logical(exist('sdpvar'));
+conf.yalmip_enabled = logical(exist('sdpvar','file'));
 if (~conf.yalmip_enabled)
   disp(' YALMIP not found.  YALMIP support will be disabled.  To re-enable, install YALMIP and rerun addpath_drake.'); 
 end
@@ -248,7 +248,7 @@ if (conf.lcm_enabled)
   if (retval)
     info = strrep(info,'ERROR: ','');
     info = strrep(info,'./',[conf.root,'/util/']);
-    warning(sprintf('Currently all of your LCM traffic will be broadcast to the network, because:\n%s',info));
+    warning('Drake:BroadcastingLCM','Currently all of your LCM traffic will be broadcast to the network, because:\n%s',info);
   end
 end  
 
@@ -264,44 +264,10 @@ clear util/checkDependency;  % makes sure that the persistent variable in the de
 
 end
 
-function conf = setconf(conf,field,longname,candidates)
-% prompts the user to select which configuration from a set of candidates
-  fprintf(1,'\n%s:\n',longname);
-  bDefault = isfield(conf,field) && ~isempty(getfield(conf,field));
-  if (bDefault)
-    fprintf('  0) %s \t (current)\n',getfield(conf,field));
-    m=0;
-  else
-    m=1;
-  end
-  if (nargin<4 || isempty(candidates)) 
-    candidates=[];
-    i=0; 
-  else
-    if (~iscell(candidates)) candidates={candidates}; end
-    for i=1:length(candidates)
-      fprintf('  %d) %s\n',i,candidates{i});
-    end
-  end
-  fprintf('  %d) Manually enter a different path\n',i+1);
-  fprintf('  %d) Leave blank for now\n',i+2);
-  n=i+2;
-  a=-1;
-  while (a<m || a>n), a=input(['Enter your selection: [',num2str(m),'-',num2str(n),']: ']); end
-  if (a>0 && a<=length(candidates))
-    conf=setfield(conf,field,candidates{a});
-  elseif a==(n-1)
-    conf=setfield(conf,field,input('Enter path: ','s'));
-  elseif a==n
-    conf=setfield(conf,field,[]);
-  end
-    
-end
-
 function success=pod_pkg_config(podname)
   success=false;
   cmd = ['addpath_',podname];
-  if exist(cmd)
+  if exist(cmd,'file')
     disp([' Calling ',cmd]);
     try 
       eval(cmd);
@@ -316,53 +282,12 @@ function success=pod_pkg_config(podname)
   end
 end
 
-function dir = findfile(fname)
-% locate a support file on the harddrive
-
-% todo: don't depend on locate being installed
-  [a,b]=system(['locate ',fname]);
-  if (a~=0) 
-    warning('looks like you don''t have locate'); 
-    dir = [];
-    return;
-  end
-  if (isempty(b)) 
-    dir=[];
-  else
-    % to do:  if there are multiple hits, allow user to select
-    ind = [0,find(int32(b)==10),length(b)+1];
-    dir={};
-    for i=1:(length(ind)-1)
-      if (ind(i+1)-ind(i)>1) 
-        str = b((ind(i)+1):(ind(i+1)-1));
-        j=strfind(str,fname);
-        dir={dir{:},str(1:(j-2))};
-      end
-    end
-  end
-end
-
-
-function [obj,lib,libprefix] = extensions
-% define library extensions for different platforms
-  if strcmp(computer,'PCWIN')|| strcmp(computer,'PCWIN64')
-    obj = 'obj';
-    lib = 'lib';
-    libprefix = 'lib';
-  else
-    obj = 'o';
-    lib = 'a';
-    libprefix = 'lib';
-  end
-
-end
-
 
 function val = getCMakeParam(param)
 % note: takes precedence over the function by the same name in util, since
 % that one requires getDrakePath to be set first.
 
-[retval,val] = system(['cmake -L -N pod-build | grep ', param,' | cut -d "=" -f2']);
+[~,val] = system(['cmake -L -N pod-build | grep ', param,' | cut -d "=" -f2']);
 val = strtrim(val);
 
 end
