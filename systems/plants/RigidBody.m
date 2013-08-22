@@ -476,7 +476,7 @@ classdef RigidBody
             shape = struct('type',RigidBody.CYLINDER,'T',T,'params',[r,l]);  % l/2
             
             % treat it as a box, for collisions
-            warning('for efficiency, cylinder geometry will be treated like a box for 3D collisions'); 
+            warning('Drake:RigidBody:SimplifiedCollisionGeometry','for efficiency, cylinder geometry will be treated like a box for 3D collisions'); 
             cx = r*[-1 1 1 -1 -1 1 1 -1];
             cy = r*[1 1 1 1 -1 -1 -1 -1];
             cz = l/2*[1 1 -1 -1 -1 -1 1 1];
@@ -488,7 +488,7 @@ classdef RigidBody
             r = parseParamString(model,char(thisNode.getAttribute('radius')));
             shape = struct('type',RigidBody.SPHERE,'T',T,'params',r);
             if (r~=0)
-              warning('for efficiency, 3D sphere geometry will be treated like a point (at the center of the sphere)');
+              warning('Drake:RigidBody:SimplifiedCollisionGeometry','for efficiency, 3D sphere geometry will be treated like a point (at the center of the sphere)');
             end
             cx=0; cy=0; cz=0;
             pts = T(1:end-1,:)*[0;0;0;1];

@@ -6,7 +6,11 @@ function AllBodiesClosestDistanceConstraintTest(n,draw_pause)
     n = [];
   end
   options.floating = true;
+  w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');  
   r = RigidBodyManipulator('model_simple_visuals.urdf',options);
+  warning(w);
 
   % Alternatively, one could remove the collision elements for these links from
   % the urdf ...
@@ -14,7 +18,7 @@ function AllBodiesClosestDistanceConstraintTest(n,draw_pause)
   r = addLinksToCollisionFilterGroup(r,ignored_bodies,'no_collision',1);
   r = compile(r);
 
-  S = load('~/drc/software/control/matlab/data/atlas_fp.mat');
+  S = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
   q_nom = S.xstar(1:r.getNumDOF());
   options = optimset('TolFun',1e-5,'TolX',1e-6);
   constraintTester('AllBodiesClosestDistanceConstraintTest',r,@makeCon, @(r) q_nom, @makeQseed, n, draw_pause,options,@objFun);
