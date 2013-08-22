@@ -48,7 +48,7 @@ end
       function [h,dh] = finalcost(t,x,xd)
         xerr = x-xd;
 
-        Qf = diag([10 10 1 0 1 1 1]);
+        Qf = diag([10 10 10 0 1 1 1]);
         h = sum((Qf*xerr).*xerr,1);
         
         if (nargout>1)
