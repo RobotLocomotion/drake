@@ -46,6 +46,10 @@ doc:	doxygen
 doxygen :
 	doxygen doc/Doxyfile
 
+.PHONY: mlint
+mlint	:
+	matlab -nodisplay -r "addpath(fullfile(pwd,'thirdParty','runmlint')); runmlint; exit"
+
 test	: all 
 	cmake/add_matlab_unit_tests.pl
 	@cd pod-build && ctest --output-on-failure

@@ -89,3 +89,4 @@ lcmtypes/java
 lcmtypes/python
 build
 unitTest.log
+mlint_output.html
