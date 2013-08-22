@@ -4,17 +4,17 @@
     name="fuselage">
     <inertial>
       <origin
-        xyz="0.0 0 0"
+        xyz="0 0 0"
         rpy="0 0 0" />
       <mass
         value="0.082" />
       <inertia
-        ixx="0.0000060588"
-        ixy="-1.4665E-08"
-        ixz="-9.1057E-08"
+        ixx="0.1"
+        ixy="0"
+        ixz="0"
         iyy="0.003"
-        iyz="2.6656E-08"
-        izz="0.000012951" />
+        iyz="0"
+        izz="0.1" />
     </inertial>
     <visual>
       <origin
@@ -44,20 +44,20 @@
     name="Elevator">
     <inertial>
       <origin
-        xyz="-0.022 0 0.0000"
+        xyz="-0.022 0 0"
         rpy="0 0 0" />
 <!--elevator needs to be (almost) massless and inertia-less in order
  for the dynamics to work-Rick's model assumes this. Ignore condition
  number warnings generated because of this.-->
       <mass
-        value="0.00000001" />
+        value="1e-9" />
       <inertia
-        ixx="7.8055E-08"
-        ixy="-3.0658E-08"
-        ixz="1.5816E-08"
-        iyy=".000000001"
-        iyz="-9.091E-09"
-        izz="8.6162E-08" />
+        ixx="1e-9"
+        ixy="0"
+        ixz="0"
+        iyy="1e-9"
+        iyz="0"
+        izz="1e-9" />
     </inertial>
     <visual>
       <origin
@@ -103,7 +103,7 @@
   	<chord value=".08"/> 
   	<span value=".48125"/> 
   	<nominal_speed value="7"/> 
-    <stall_angle value ="10"/>
+    <stall_angle value ="181"/>
   </force_element>
   <force_element name="Elevator_force" type="wing"> 
   	<parent link="Elevator"/>
@@ -112,7 +112,7 @@
   	<chord value=".07"/> 
   	<span value=".21"/> 
   	<nominal_speed value="7"/> 
-    <stall_angle value ="12"/>
+    <stall_angle value ="181"/>
   </force_element>
   <transmission name="ElevatorTorque" type="SimpleTransmission" >
     <joint name="ElevatorHinge" />
