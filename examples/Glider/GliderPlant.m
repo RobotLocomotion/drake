@@ -87,7 +87,7 @@ classdef GliderPlant < DrakeSystem
     end
     
     function x = getInitialState(obj)
-      x = [-3.5 .4 0 0 7.0 0 0]';
+      x = [-3.2 .4 0 0 7.0 0 0]';
     end
     
   end  
