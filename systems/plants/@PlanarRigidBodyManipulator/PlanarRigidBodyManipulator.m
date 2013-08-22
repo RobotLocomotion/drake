@@ -241,9 +241,11 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       body = PlanarRigidBody();
     end
     
-    function v=constructVisualizer(obj)
-      checkDirty(obj);
-      v = PlanarRigidBodyVisualizer(obj);
+    function v=constructVisualizer(obj,options)
+      if nargin<2, options=struct(); end
+      if ~isfield(options,'viewer') options.viewer = {'PlanarRigidBodyVisualizer'}; end
+      
+      v = constructVisualizer@RigidBodyManipulator(obj,options);
     end
     
   end

@@ -704,24 +704,31 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     function v = constructVisualizer(obj,options)
       checkDirty(obj);
       if nargin<2, options=struct(); end 
-      if ~isfield(options,'use_viewer') options.use_viewer = true; end
-
-      v=[];
-      if options.use_viewer
-        try
-          v = BotVisualizer(obj);
-        catch ex
-          warning(ex.identifier,ex.message);
-        end
-      end        
-      if isempty(v) 
-        if usejava('awt') % usejava('awt') returns 0 if i'm running without a display
-          v = RigidBodyWRLVisualizer(obj);
+      if ~isfield(options,'viewer') options.viewer = {'BotVisualizer','RigidBodyWRLVisualizer','NullVisualizer'};
+      elseif ~iscell(options.viewer) options.viewer = {options.viewer}; end
+      
+      v=[]; i=1;
+      while isempty(v)
+        type = options.viewer{i};
+        
+        if strcmp(type,'NullVisualizer')
+          arg = getOutputFrame(obj);
         else
-          warning('Drake:RigidBodyManipulator:NoDisplay','No display found.  I suspect you are running headless.  Constructing a NULL visualizer instead');
-          v = NullVisualizer(getOutputFrame(obj));
+          arg = obj;
         end
+
+        if (i==length(options.viewer))  % then it's the last one
+          v = feval(type,arg);
+        else
+          try
+            v = feval(type,arg);
+          catch ex
+            warning(ex.identifier,ex.message);
+          end
+        end
+        i = i+1;
       end
+      
     end
     
     function index = getActuatedJoints(model)
