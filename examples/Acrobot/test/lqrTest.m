@@ -3,8 +3,7 @@ function lqrTest()
 %% run the lqr controller from a handful of initial conditions on the
 %% boundary of the estimated ROA and verify that it gets to the top
 
-oldpath = path;
-addpath('..');
+oldpath = addpath(fullfile(pwd,'..'));
 
 p = AcrobotPlant;
 p = p.setInputLimits(-inf,inf);  % for now
