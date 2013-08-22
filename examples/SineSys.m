@@ -36,6 +36,8 @@ classdef SineSys < DrakeSystem
   
   methods (Static=true)
     function run()
+      checkDependency('sedumi');
+      
       p=SineSys();
       pp=p.makeTrigPolySystem(struct('replace_output_w_new_state',true));
       V=tilyap(pp,Point(pp.getStateFrame,[sin(0);cos(0)]),eye(2));

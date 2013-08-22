@@ -9,6 +9,10 @@ classdef RigidBodyWRLVisualizer < Visualizer
 
       checkDependency('vrml');
       typecheck(manip,'RigidBodyManipulator');
+
+      if ~usejava('awt') % usejava('awt') returns 0 if i'm running without a display
+        error('Drake:MissingDependency:awt','VRML visualizer will not work without a display');
+      end
       
       obj=obj@Visualizer(manip.getStateFrame());
       obj.model = manip;
