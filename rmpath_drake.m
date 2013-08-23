@@ -10,6 +10,8 @@ end
 rmpath(fullfile(conf.root,'systems'));
 rmpath(fullfile(conf.root,'systems','plants'));
 rmpath(fullfile(conf.root,'systems','plants','affordance'));
+rmpath(fullfile(conf.root,'systems','plants','collision'));
+rmpath(fullfile(conf.root,'systems','plants','Constraint'));
 rmpath(fullfile(conf.root,'systems','controllers'));
 rmpath(fullfile(conf.root,'systems','estimators'));
 rmpath(fullfile(conf.root,'systems','trajectories'));

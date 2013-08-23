@@ -63,7 +63,6 @@ addpath(fullfile(conf.root,'thirdParty'));
 addpath(fullfile(conf.root,'thirdParty','path'));
 addpath(fullfile(conf.root,'thirdParty','spatial'));
 addpath(fullfile(conf.root,'thirdParty','cprintf'));
-addpath(fullfile(conf.root,'thirdParty','runmlint'));
 addpath(fullfile(conf.root,'thirdParty','GetFullPath'));
 
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));

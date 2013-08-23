@@ -25,9 +25,9 @@ classdef DrakeSystem < DynamicalSystem
         obj = setNumContStates(obj,num_xc);
         obj = setNumDiscStates(obj,num_xd);
         obj = setNumInputs(obj,num_u);
-        if (nargin>=4) obj = setNumOutputs(obj,num_y); else obj = setNumOutputs(obj,0); end
-        if (nargin>=5) obj = setDirectFeedthrough(obj,direct_feedthrough_flag); end
-        if (nargin>=6) obj = setTIFlag(obj,time_invariant_flag); end
+        if (nargin>=4), obj = setNumOutputs(obj,num_y); else obj = setNumOutputs(obj,0); end
+        if (nargin>=5), obj = setDirectFeedthrough(obj,direct_feedthrough_flag); end
+        if (nargin>=6), obj = setTIFlag(obj,time_invariant_flag); end
       end
       
     end      
@@ -73,7 +73,8 @@ classdef DrakeSystem < DynamicalSystem
       x0 = double(x0);
     end
     
-    function xcdot = dynamics(obj,t,x,u)
+    function xcdot = dynamics(obj,
+      t,x,u)
       % Placeholder for the dynamics method.  Systems with continuous state
       % must overload this method.
       error('Drake:DrakeSystem:AbstractMethod','systems with continuous states must implement Derivatives (ie overload dynamics function)');
