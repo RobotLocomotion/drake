@@ -73,8 +73,7 @@ classdef DrakeSystem < DynamicalSystem
       x0 = double(x0);
     end
     
-    function xcdot = dynamics(obj,
-      t,x,u)
+    function xcdot = dynamics(obj,t,x,u)
       % Placeholder for the dynamics method.  Systems with continuous state
       % must overload this method.
       error('Drake:DrakeSystem:AbstractMethod','systems with continuous states must implement Derivatives (ie overload dynamics function)');
