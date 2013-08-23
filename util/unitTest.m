@@ -40,6 +40,7 @@ function gui_tree_or_command_line_data =unitTest(options)
 % @option logfile file name for writing information about FAILED tests only
 % @option cdash file name for writing the cdash test xml output
 % @option test_list_file file name to list all of the tests that will be run
+% @option warnings_are_errors boolean @default false
 %
 % All unit tests should always be run (and all tests should pass) before 
 % anything is committed back into the Drake repository.
@@ -57,32 +58,17 @@ if ~isfield(options,'gui') options.gui = true; end
 if ~isfield(options,'autorun') options.autorun = ~options.gui; end
 if ~isfield(options,'logfile') options.logfile = ''; end
 if ~isfield(options,'test_dirs_only') options.test_dirs_only = false; end
-if ~isempty(options.logfile)
-  if (options.gui)
-    warning('At the moment, writing to logfile is only implemented for gui=false.  Disabling logfile.');
-    % fixing this would simply be a matter of finding the right (best) way
-    % to pass the logfileptr variable through the tree structure to
-    % runTest()
-    options.logfileptr = -1;
-  else
-    options.logfileptr = fopen(options.logfile,'w');
-  end
-else
-  options.logfileptr = -1;
-end
+if ~isfield(options,'warnings_are_errors') options.warnings_are_errors = false; end
+if ~isempty(options.logfile) options.logfileptr = fopen(options.logfile,'w');
+else options.logfileptr = -1; end
 if isfield(options,'cdash')
-  if (options.gui)
-    warning('At the moment, writing to logfile is only implemented for gui=false.  Disabling logfile.');
-    options.cdashNode = [];
-  else
-    options.cdashNode = com.mathworks.xml.XMLUtils.createDocument('Testing')
-    cdashRootNode = options.cdashNode.getDocumentElement;
-    cdashTic = tic;
-    appendTextNode(options.cdashNode,cdashRootNode,'StartDateTime',datestr(now));
-    appendTextNode(options.cdashNode,cdashRootNode,'StartTestTime',now);
-    cdashRootNode.appendChild(options.cdashNode.createElement('TestList'));
-    %      thisElement.appendChild(docNode.createTextNode(sprintf('%i',i)));
-  end
+  options.cdashNode = com.mathworks.xml.XMLUtils.createDocument('Testing')
+  cdashRootNode = options.cdashNode.getDocumentElement;
+  cdashTic = tic;
+  appendTextNode(options.cdashNode,cdashRootNode,'StartDateTime',datestr(now));
+  appendTextNode(options.cdashNode,cdashRootNode,'StartTestTime',now);
+  cdashRootNode.appendChild(options.cdashNode.createElement('TestList'));
+  %      thisElement.appendChild(docNode.createTextNode(sprintf('%i',i)));
 else
   options.cdashNode = [];
 end
@@ -92,6 +78,7 @@ else
   options.test_list_file = -1;
 end
 
+options.rootdir = pwd;
 if (options.gui)
   warning('off','MATLAB:uitree:DeprecatedFunction');
     
@@ -100,7 +87,7 @@ if (options.gui)
   set(h,'HandleVisibility','on');
   clf;
 
-  data=struct('pass',0,'fail',0,'wait',0,'path',pwd);
+  data=struct('pass',0,'fail',0,'wait',0,'path',pwd,'options',options);
   root = uitreenode('v0','All Tests',sprintf('<html>All Tests &nbsp;&nbsp;<i>(passed:%d, failed:%d, not yet run:%d)</i></html>',data.pass,data.fail,data.wait),[matlabroot, '/toolbox/matlab/icons/greenarrowicon.gif'],false);
   set(root,'UserData',data);
 else
@@ -109,7 +96,6 @@ else
   root = [];
 end
 
-options.rootdir = pwd;
 crawlDir('.',root,options.test_dirs_only,options);
 
 if (options.gui)
@@ -499,6 +485,9 @@ end
 
 function tree=runNode(tree,node)
   data = get(node,'UserData');
+  root = getRoot(node);
+  rootdata = get(root,'UserData');
+  options = rootdata.options;
   if (isfield(data,'test'))
     global runNode_mutex;
     if ~isempty(runNode_mutex)
@@ -515,7 +504,7 @@ function tree=runNode(tree,node)
     tree.reloadNode(node);
     
     saveTree(tree);
-    pass = runTest(data.path,data.test);
+    pass = runTest(data.path,data.test,options);
     if ~isa(tree,'javahandle_withcallbacks.com.mathworks.hg.peer.UITreePeer')
       % somebody did a close all
       tree=reloadGui([],[],tree);
@@ -587,7 +576,9 @@ p=pwd;
 cd(runpath);
 %  disp(['running ',path,'/',test,'...']);
 
-if nargin>2 && ~isempty(options.cdashNode)
+if nargin<3, error('needs three arguments now'); end
+
+if ~isempty(options.cdashNode)
   cdashRootNode = options.cdashNode.getDocumentElement;
   cdashTestListNode = cdashRootNode.getElementsByTagName('TestList').item(0);
   appendTextNode(options.cdashNode,cdashTestListNode,'Test',fullfile(runpath,test));
@@ -644,7 +635,14 @@ if any(strcmp('error',{s.cond})) ||any(strcmp('warning',{s.cond}))
   feval_in_contained_workspace(test);
 else
   try
+    lastwarn('');  % clears lastwarn
     feval_in_contained_workspace(test);
+    if (options.warnings_are_errors) 
+      [msg,id] = lastwarn;
+      if ~isempty(msg)
+        error(id,['Warning->Error: ',msg]);
+      end
+    end
   catch ex
     if ((strncmp(ex.identifier,'Drake:MissingDependency',23)))
       % ok to let these slip through
@@ -672,7 +670,7 @@ else
       msg = regexprep(msg,'''[^'']*''','');
       msg = regexprep(msg,'<[^>]*>','');
       
-      if (nargin>2 && options.logfileptr>0)
+      if options.logfileptr>0
         fprintf(options.logfileptr,msg);
       end
       
