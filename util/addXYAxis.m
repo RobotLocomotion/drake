@@ -1,4 +1,4 @@
-function h = addXYAxis(xlabel,ylabel);
+function h = addXYAxis(xlabel,ylabel)
 
 v = axis;
 

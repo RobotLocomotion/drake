@@ -544,7 +544,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
 
     function body = findLink(model,linkname,varargin)
-      % @ingroup Kinematic Tree
+      % @ingroup Deprecated
       error('the finkLink method has been deprecated.  if you really must get a *copy* of the body, then use finkLinkInd followed by getBody');
     end
     
@@ -600,7 +600,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
     
     function body = findJoint(model,jointname,robot)
-      % @ingroup Kinematic Tree
+      % @ingroup Deprecated
       error('the finkJoint method has been deprecated.  if you really must get a *copy* of the body associated with this joint, then use finkJointInd followed by getBody');
     end      
     

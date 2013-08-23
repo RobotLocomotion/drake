@@ -4,7 +4,7 @@ function rpydot = angularvel2rpydot(rpy,omega)
 % (rolldot, pitchdot, yawdot).  See eq. (5.41) in Craig05.  
 % Derivation in rpydot2angularvel.
 
-r=rpy(1);p=rpy(2);y=rpy(3);
+p=rpy(2);y=rpy(3);
 
 % warning: note the singularities!
 Einv = [ cos(y)/cos(p), sin(y)/cos(p), 0; ...

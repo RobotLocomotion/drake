@@ -7,8 +7,8 @@ function addtoenv(env,str,delim,insert_at_front)
 % @param delim optional string value that should be inserted between 
 %              entries @default pathsep
 
-if (nargin<3 || isempty(delim)) delim=pathsep; end
-if (nargin<4) insert_at_front=false; end
+if (nargin<3 || isempty(delim)), delim=pathsep; end
+if (nargin<4), insert_at_front=false; end
 
 val = getenv(env);
 

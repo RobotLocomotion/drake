@@ -22,11 +22,11 @@ function polysys = makeTrigPolySystem(sys,options)
 % constraint.  Defines the dynamics off the unit circle to converge to the 
 % unit circle, which helps with numerical stability.  @default: 1
 
-if (nargin<2) options=struct(); end
-if (~isfield(options,'replace_output_w_new_state')) options.replace_output_w_new_state = false; end
-if (~isfield(options,'rational_dynamics_numerator')) options.rational_dynamics_numerator = []; end
-if (~isfield(options,'rational_dynamics_denominator')) options.rational_dynamics_denominator = []; end
-if (~isfield(options,'unit_circle_constraint_tau')) options.constraint_tau = 1; end 
+if (nargin<2), options=struct(); end
+if (~isfield(options,'replace_output_w_new_state')), options.replace_output_w_new_state = false; end
+if (~isfield(options,'rational_dynamics_numerator')), options.rational_dynamics_numerator = []; end
+if (~isfield(options,'rational_dynamics_denominator')), options.rational_dynamics_denominator = []; end
+if (~isfield(options,'unit_circle_constraint_tau')), options.constraint_tau = 1; end 
 
 if (isempty(options.rational_dynamics_numerator) + isempty(options.rational_dynamics_denominator) == 1)
   error('must specify both numerator and denominator if specifying rational dynamics'); 
