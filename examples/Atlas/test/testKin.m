@@ -1,8 +1,8 @@
 function testKin
 
 options.floating = true;
-options.dt = 0.001;
-r = Atlas('../urdf/atlas_minimal_contact.urdf',options);
+%options.dt = 0.001;
+r = RigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
 
 tic
 for i=1:100
