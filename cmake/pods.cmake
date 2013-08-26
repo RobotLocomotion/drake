@@ -551,6 +551,7 @@ if(NOT POD_NAME)
     message(STATUS "POD_NAME is not set... Defaulting to directory name: ${POD_NAME}") 
 endif(NOT POD_NAME)
 project(${POD_NAME})
+set(POD_NAME "${POD_NAME}" CACHE STRING "${POD_NAME}" )
 
 #make sure we're running an out-of-source build
 enforce_out_of_source()
