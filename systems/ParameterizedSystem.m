@@ -72,7 +72,10 @@ classdef ParameterizedSystem < DrakeSystem
   
   methods % actual worker methods
     function phat = parameterEstimation(obj,data,options)
+      % Estimate parameter values from input-output data
+      %
       % @param data an instance of iddata (see 'help iddata' for more info)
+      
       error('todo: implement a generic nonlinear optimization approach here');
     end
   end
