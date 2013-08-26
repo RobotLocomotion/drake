@@ -6,7 +6,7 @@ sys = feedback(obj,controller);
 
 N = obj.getNumStates();
 m = controller.getNumContStates();
-if (controller.getNumDiscStates()~=0) error('not implemented yet'); end
+if (controller.getNumDiscStates()~=0), error('not implemented yet'); end
 
 if (m>0)
   xtraj = MixedTrajectory({xtraj, PPTrajectory(foh(xtraj.tspan,xtraj.tspan))},{1:N,N+(1:m)}); % add controller state

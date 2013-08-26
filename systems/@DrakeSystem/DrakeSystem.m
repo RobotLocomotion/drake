@@ -179,7 +179,7 @@ classdef DrakeSystem < DynamicalSystem
       %   combination, the output gets called continuously).
       if size(ts,2)>1  % if only one ts, then all is well
         if any(ts(1,:)==-1)  % zap superfluous inherited
-          ts=ts(:,find(ts(1,:)~=-1));
+          ts=ts(:,ts(1,:)~=-1);
         end
         if sum(ts(1,:)>0)>1 % then multiple discrete
           error('Drake:DrakeSystem:UnsupportedSampleTime','cannot define a drakesystem using modes that have different discrete sample times');
@@ -198,7 +198,7 @@ classdef DrakeSystem < DynamicalSystem
       % depends on the immediate input)
       tf = obj.direct_feedthrough_flag;
     end
-    function obj = setDirectFeedthrough(obj,tf);
+    function obj = setDirectFeedthrough(obj,tf)
       % Set the direct feedthrough flag
       obj.direct_feedthrough_flag = tf;
     end
@@ -209,11 +209,11 @@ classdef DrakeSystem < DynamicalSystem
       % @retval mdl string id for the simulink system
       
       % First, make sure we have a compiled DCSFunction
-      if(exist('DCSFunction') ~=3)
+      if(~exist('DCSFunction','file'))
         errorMsg={'Sorry, you have not run ''make'' yet in the drake root,'
           'which means you do not have the compiled MEX files needed to run this program.'
           'Running configure and make in the drake root directory will fix this.'};
-        error(sprintf('%s\n',errorMsg{:}))
+        error('%s\n',errorMsg{:})
       end
       
       % make a simulink model from this block
@@ -283,7 +283,7 @@ classdef DrakeSystem < DynamicalSystem
       else
         options=optimset('Display','off','Algorithm','levenberg-marquardt');
       end
-      [x,fval,exitflag] = fsolve(@(x)stateConstraints(obj,x),x0,options);      
+      [x,~,exitflag] = fsolve(@(x)stateConstraints(obj,x),x0,options);      
       success=(exitflag==1);
       if (nargout<2 && ~success)
         error('Drake:DrakeSystem:ResolveConstraintsFailed','failed to resolve constraints');
@@ -308,13 +308,13 @@ classdef DrakeSystem < DynamicalSystem
         u0 = double(u0.inFrame(obj.getInputFrame));
       end
    
-      if ~isTI(obj) error('only makes sense for time invariant systems'); end
+      if ~isTI(obj), error('only makes sense for time invariant systems'); end
             
       function [f,df] = myobj(xu)
-        f = 0; df = 0*xu; return;  % feasibility problem, no objective
-         err = [xu-[x0;u0]];
-         f = err'*err;
-         df = 2*err;
+        f = 0; df = 0*xu;  % feasibility problem, no objective
+%         err = [xu-[x0;u0]];
+%         f = err'*err;
+%         df = 2*err;
       end
       problem.objective = @myobj;
       problem.x0 = [x0;u0];
@@ -360,8 +360,7 @@ classdef DrakeSystem < DynamicalSystem
       ustar = Point(obj.getInputFrame,xu(obj.num_x + (1:obj.num_u)));
       success=(exitflag>0);
       if (~success)
-        exitflag
-        error('Drake:DrakeSystem:FixedPointSearchFailed','failed to find a fixed point');
+        error('Drake:DrakeSystem:FixedPointSearchFailed','failed to find a fixed point (exitflag=%d)',exitflag);
       end
     end    
   end
@@ -376,7 +375,7 @@ classdef DrakeSystem < DynamicalSystem
     end
     function obj = setNumContStates(obj,num_xc)
       % Guards the num_states variable
-      if (num_xc<0) error('num_xc must be >= 0'); end
+      if (num_xc<0), error('num_xc must be >= 0'); end
       obj.num_xc = num_xc;
       obj.num_x = obj.num_xd + obj.num_xc;
       if (isempty(obj.getStateFrame) || obj.num_x~=obj.getStateFrame.dim)
@@ -385,7 +384,7 @@ classdef DrakeSystem < DynamicalSystem
     end
     function obj = setNumDiscStates(obj,num_xd)
       % Guards the num_states variable
-      if (num_xd<0) error('num_xd must be >= 0'); end
+      if (num_xd<0), error('num_xd must be >= 0'); end
       obj.num_xd = num_xd;
       obj.num_x = obj.num_xc + obj.num_xd;
       if (isempty(obj.getStateFrame) || obj.num_x~=obj.getStateFrame.dim)
@@ -396,7 +395,7 @@ classdef DrakeSystem < DynamicalSystem
       % Guards the num_u variable.
       %  Also pads umin and umax for any new inputs with [-inf,inf].
 
-      if (num_u<0) error('num_u must be >=0 or DYNAMICALLY_SIZED'); end
+      if (num_u<0), error('num_u must be >=0 or DYNAMICALLY_SIZED'); end
       
        % cut umin and umax to the right size, and pad new inputs with
       % [-inf,inf]
@@ -415,18 +414,18 @@ classdef DrakeSystem < DynamicalSystem
     function obj = setInputLimits(obj,umin,umax)
       % Guards the input limits to make sure it stay consistent
       
-      if (isscalar(umin)) umin=repmat(umin,obj.num_u,1); end
-      if (isscalar(umax)) umax=repmat(umax,obj.num_u,1); end
+      if (isscalar(umin)), umin=repmat(umin,obj.num_u,1); end
+      if (isscalar(umax)), umax=repmat(umax,obj.num_u,1); end
       
       sizecheck(umin,[obj.num_u,1]);
       sizecheck(umax,[obj.num_u,1]);
-      if (any(obj.umax<obj.umin)) error('umin must be less than umax'); end
+      if (any(obj.umax<obj.umin)), error('umin must be less than umax'); end
       obj.umin = umin;
       obj.umax = umax;
     end
     function obj = setNumOutputs(obj,num_y)
       % Guards the number of outputs to make sure it's consistent
-      if (num_y<0) error('num_y must be >=0'); end
+      if (num_y<0), error('num_y must be >=0'); end
       obj.num_y = num_y;
       if (isempty(obj.getOutputFrame) || obj.num_y~=obj.getOutputFrame.dim)
         obj=setOutputFrame(obj,CoordinateFrame([class(obj),'Output'],num_y,'y'));
@@ -438,7 +437,7 @@ classdef DrakeSystem < DynamicalSystem
     end
     function obj = setNumZeroCrossings(obj,num_zcs)
       % Guards the number of zero crossings to make sure it's valid.
-      if (num_zcs<0) error('num_zcs must be >=0'); end
+      if (num_zcs<0), error('num_zcs must be >=0'); end
       obj.num_zcs = num_zcs;
     end
     function n = getNumStateConstraints(obj)
@@ -447,7 +446,7 @@ classdef DrakeSystem < DynamicalSystem
     end
     function obj = setNumStateConstraints(obj,num_xcon)
       % Guards the number of zero crossings to make sure it's valid.
-      if (num_xcon<0) error('num_xcon must be >=0'); end
+      if (num_xcon<0), error('num_xcon must be >=0'); end
       obj.num_xcon = num_xcon;
     end
   end
@@ -460,16 +459,17 @@ classdef DrakeSystem < DynamicalSystem
       
       if (~isCT(obj) || getNumDiscStates(obj)>0)  % boot if it's not the simple case
         [A,B,C,D,x0dot,y0] = linearize@DynamicalSystem(obj,t0,x0,u0);
+        return;
       end
       
       nX = getNumContStates(obj);
       nU = getNumInputs(obj);
-      [f,df] = geval(@obj.dynamics,t0,x0,u0);
+      [~,df] = geval(@obj.dynamics,t0,x0,u0);
       A = df(:,1+(1:nX));
       B = df(:,nX+1+(1:nU));
       
       if (nargout>2)
-        [y,dy] = geval(@obj.output,t0,x0,u0);
+        [~,dy] = geval(@obj.output,t0,x0,u0);
         C = dy(:,1+(1:nX));
         D = dy(:,nX+1+(1:nU));
         if (nargout>4)
@@ -492,10 +492,10 @@ classdef DrakeSystem < DynamicalSystem
       %
       % No options implemented yet
 
-      if (nargin<3) x0=getInitialState(obj); end
+      if (nargin<3), x0=getInitialState(obj); end
       
-      if (obj.num_zcs>0) warning('system has zero-crossings, but i havne''t passed them to ode45 yet.  (should be trivial)'); end
-      if (obj.num_xcon>0) warning('system has constraints, but they are not explicitly satisfied during simulation (yet - it should be an easy fix in the ode suite)'); end
+      if (obj.num_zcs>0), warning('Drake:DrakeSystem:UnsupportedZeroCrossings','system has zero-crossings, but i havne''t passed them to ode45 yet.  (should be trivial)'); end
+      if (obj.num_xcon>0), warning('Drake:DrakeSystem:UnsupportedConstraints','system has constraints, but they are not explicitly satisfied during simulation (yet - it should be an easy fix in the ode suite)'); end
       
       odeoptions = obj.simulink_params;
       odefun = @(t,x)obj.dynamics(t,x,zeros(obj.getNumInputs(),1));
@@ -576,9 +576,9 @@ classdef DrakeSystem < DynamicalSystem
       if nargin<3, x=getInitialState(obj); end
       if nargin<4, u=getDefaultInput(obj); end
       if nargin<5, options=struct('tol',.01); end
-      if ~isfield(options,'dynamics') options.dynamics=true; end
-      if ~isfield(options,'update') options.update=true; end
-      if ~isfield(options,'output') options.output=true; end
+      if ~isfield(options,'dynamics'), options.dynamics=true; end
+      if ~isfield(options,'update'), options.update=true; end
+      if ~isfield(options,'output'), options.output=true; end
       
       if (options.dynamics && getNumContStates(obj))
         gradTest(@obj.dynamics,t,x,u,options)

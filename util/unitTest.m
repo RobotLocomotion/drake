@@ -617,7 +617,7 @@ else
   cdashTestNode = [];
 end
 
-if (exist('rng'))
+if (exist('rng'))  % rng appeared in MATLAB R2011a
     rng('shuffle'); % init rng to current date
 else  % for older versions of matlab
     rand('seed',sum(100*clock));
