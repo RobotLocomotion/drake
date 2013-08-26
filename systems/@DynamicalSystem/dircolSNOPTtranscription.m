@@ -16,7 +16,7 @@ function [w0,wlow,whigh,Flow,Fhigh,A,iAfun,jAvar,iGfun,jGvar,userfun,wrapupfun,i
 %  to power through unknown difficulties.  
 %
 
-if (~isfield(options,'xtape0')) options.xtape0='free'; end
+if (~isfield(options,'xtape0')), options.xtape0='free'; end
 
 nU = sys.getNumInputs();
 nX = sys.getNumContStates();

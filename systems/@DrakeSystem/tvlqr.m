@@ -28,15 +28,15 @@ function [ltvsys,V] = tvlqr(obj,xtraj,utraj,Q,R,Qf,options)
 % @option ydtraj adds terms of the form (ybar - ybar_d)'*Qy{1}*(ybar - ybar_d) + (ybar - ybar_d)'*Qy{2}. @default 0
 %
 
-if (nargin<7) options=struct(); end
+if (nargin<7), options=struct(); end
 if isfield(options,'tspan') 
   typecheck(options.tspan,'double');
 else  
   options.tspan = utraj.getBreaks(); 
 end
-if ~isfield(options,'sqrtmethod') options.sqrtmethod = true; end
+if ~isfield(options,'sqrtmethod'), options.sqrtmethod = true; end
 
-if (~isCT(obj)) error('only handle CT case so far'); end
+if (~isCT(obj)), error('only handle CT case so far'); end
 
 typecheck(xtraj,'Trajectory');
 xtraj = inOutputFrame(xtraj,getStateFrame(obj));
@@ -47,7 +47,7 @@ nX = obj.getNumStates();
 nU = obj.getNumInputs();
 tspan=options.tspan;
 
-if ~isfield(options,'N') options.N=zeros(nX,nU); end
+if ~isfield(options,'N'), options.N=zeros(nX,nU); end
 
 % create new coordinate frames
 iframe = CoordinateFrame([obj.getStateFrame.name,' - x0(t)'],nX,obj.getStateFrame.prefix);
@@ -69,15 +69,15 @@ elseif isa(Q,'Trajectory')
 elseif isa(Q,'cell')
   sizecheck(Q,3);
   
-  if isa(Q{1},'double') Q{1} = ConstantTrajectory(Q{1}); 
+  if isa(Q{1},'double'), Q{1} = ConstantTrajectory(Q{1}); 
   else typecheck(Q{1},'Trajectory'); end
   sizecheck(Q{1},[nX,nX]);
 
-  if isa(Q{2},'double') Q{2} = ConstantTrajectory(Q{2});
+  if isa(Q{2},'double'), Q{2} = ConstantTrajectory(Q{2});
   else typecheck(Q{2},'Trajectory'); end
   sizecheck(Q{2},[nX,1]);
   
-  if isa(Q{3},'double') Q{3} = ConstantTrajectory(Q{3});
+  if isa(Q{3},'double'), Q{3} = ConstantTrajectory(Q{3});
   else typecheck(Q{3},'Trajectory'); end
   sizecheck(Q{3},1);
 else
@@ -93,15 +93,15 @@ elseif isa(R,'Trajectory')
 elseif isa(R,'cell')
   sizecheck(R,3);
   
-  if isa(R{1},'double') R{1} = ConstantTrajectory(R{1}); 
+  if isa(R{1},'double'), R{1} = ConstantTrajectory(R{1}); 
   else typecheck(R{1},'Trajectory'); end
   sizecheck(Q{1},[nU,nU]);
 
-  if isa(R{2},'double') R{2} = ConstantTrajectory(R{2});
+  if isa(R{2},'double'), R{2} = ConstantTrajectory(R{2});
   else typecheck(R{2},'Trajectory'); end
   sizecheck(R{2},[nU,1]);
   
-  if isa(R{3},'double') R{3} = ConstantTrajectory(R{3});
+  if isa(R{3},'double'), R{3} = ConstantTrajectory(R{3});
   else typecheck(R{3},'Trajectory'); end
   sizecheck(R{3},1);  
 else
@@ -188,15 +188,15 @@ if isfield(options,'Qy')
   elseif isa(Qy,'cell')
     sizecheck(Qy,3);
   
-    if isa(Qy{1},'double') Qy{1} = ConstantTrajectory(Qy{1});
+    if isa(Qy{1},'double'), Qy{1} = ConstantTrajectory(Qy{1});
     else typecheck(Qy{1},'Trajectory'); end
     sizecheck(Qy{1},[nY,nY]);
     
-    if isa(Qy{2},'double') Qy{2} = ConstantTrajectory(Qy{2});
+    if isa(Qy{2},'double'), Qy{2} = ConstantTrajectory(Qy{2});
     else typecheck(Qy{2},'Trajectory'); end
     sizecheck(Qy{2},[nY,1]);
     
-    if isa(Qy{3},'double') Qy{3} = ConstantTrajectory(Qy{3});
+    if isa(Qy{3},'double'), Qy{3} = ConstantTrajectory(Qy{3});
     else typecheck(Qy{3},'Trajectory'); end
     sizecheck(Qy{3},1);
   else
@@ -265,7 +265,7 @@ function B = getBTrajectory(plant,ts,xtraj,utraj,options)
   B = zeros([nX,nU,length(ts)]);
   for i=1:length(ts)
     x0=xtraj.eval(ts(i)); u0 = utraj.eval(ts(i));
-    [f,df] = geval(@plant.dynamics,ts(i),x0,u0,options);
+    [~,df] = geval(@plant.dynamics,ts(i),x0,u0,options);
     B(:,:,i) = df(:,nX+1+(1:nU));
   end
   B = PPTrajectory(spline(ts,B));
@@ -288,20 +288,20 @@ function [y0,C,D] = getOutputTrajectories(plant,ts,xtraj,utraj,options)
   D = PPTrajectory(spline(ts,D));
 end
 
-function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,options)
-  x0 = xtraj.eval(t); u0 = utraj.eval(t);
-  Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
-  nX = length(x0); nU = length(u0);
-  [f,df] = geval(@plant.dynamics,t,x0,u0,options);
-  A = df(:,1+(1:nX));
-  B = df(:,nX+1+(1:nU));
-  Sdot = -(Q - S*B*Ri*B'*S + S*A + A'*S);
-  if (min(eig(S))<0) warning('S is not positive definite'); end
-end
+% function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,options)
+%   x0 = xtraj.eval(t); u0 = utraj.eval(t);
+%   Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
+%   nX = length(x0); nU = length(u0);
+%   [f,df] = geval(@plant.dynamics,t,x0,u0,options);
+%   A = df(:,1+(1:nX));
+%   B = df(:,nX+1+(1:nU));
+%   Sdot = -(Q - S*B*Ri*B'*S + S*A + A'*S);
+%   if (min(eig(S))<0) warning('S is not positive definite'); end
+% end
 
-function K = Ksoln(S,Ri,B)
-  K = -Ri*B'*S;
-end
+% function K = Ksoln(S,Ri,B)
+%   K = -Ri*B'*S;
+% end
 
 function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj,options)
   % see doc/derivations/tvlqr-latexit.pdf 
@@ -309,7 +309,6 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj
   x0 = xtraj.eval(t); u0 = utraj.eval(t); xdot0 = xdottraj.eval(t);
   Q{1}=Qtraj{1}.eval(t); Q{2}=Qtraj{2}.eval(t); Q{3}=Qtraj{3}.eval(t); 
   R{1}=Rtraj{1}.eval(t); R{2}=Rtraj{2}.eval(t); R{3}=Rtraj{3}.eval(t);
-  Ri = inv(R{1});
   N = Ntraj.eval(t);
   
   nX = length(x0); nU = length(u0);
@@ -319,11 +318,11 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj
   c = xdot - xdot0;
   
   if (options.sqrtmethod)
-    ss = inv(S{1}');
-    Sdot{1} = -.5*Q{1}*ss - A'*S{1} + .5*(N+S{1}*S{1}'*B)*Ri*(B'*S{1}+N'*ss);  % sqrt method
+    ss = S{1}';
+    Sdot{1} = -.5*Q{1}/ss - A'*S{1} + .5*(N+S{1}*S{1}'*B)*R{1}\(B'*S{1}+N'/ss);  % sqrt method
     Sorig = S{1}*S{1}';
   else
-    Sdot{1} = -(Q{1} - (N+S{1}*B)*Ri*(B'*S{1}+N') + S{1}*A + A'*S{1});
+    Sdot{1} = -(Q{1} - (N+S{1}*B)*R{1}\(B'*S{1}+N') + S{1}*A + A'*S{1});
     Sorig = S{1};
   end
   if (min(eig(Sorig))<0) 
@@ -335,24 +334,24 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj
   Sdot{3} = -(Q{3}+R{3} - rs'*Ri*rs + S{2}'*c);  
 
 %  plot(t,S{2}(1),'r.');
-  if (0) %9.95<=t & t<10)
-    t
-    disp(['Q{1} = ',mat2str(Q{1})]);
-    disp(['Q{2} = ',mat2str(Q{2})]);
-    disp(['Q{3}+R{3} = ',mat2str(Q{3}+R{3})]);
-    disp(['R{1} = ',mat2str(R{1})]);
-    disp(['R{2} = ',mat2str(R{2})]);
-%    N
-%    A
-%    B
-%    c
-    disp(['S{1} = ',mat2str(S{1})]);
-    disp(['S{2} = ',mat2str(S{2})]);
-    disp(['S{3} = ',mat2str(S{3})]);
-    disp(['Sdot{1} = ',mat2str(Sdot{1})]);
-    disp(['Sdot{2} = ',mat2str(Sdot{2})]);
-    disp(['Sdot{3} = ',mat2str(Sdot{3})]);
-  end
+%   if (9.95<=t & t<10)
+%     t
+%     disp(['Q{1} = ',mat2str(Q{1})]);
+%     disp(['Q{2} = ',mat2str(Q{2})]);
+%     disp(['Q{3}+R{3} = ',mat2str(Q{3}+R{3})]);
+%     disp(['R{1} = ',mat2str(R{1})]);
+%     disp(['R{2} = ',mat2str(R{2})]);
+% %    N
+% %    A
+% %    B
+% %    c
+%     disp(['S{1} = ',mat2str(S{1})]);
+%     disp(['S{2} = ',mat2str(S{2})]);
+%     disp(['S{3} = ',mat2str(S{3})]);
+%     disp(['Sdot{1} = ',mat2str(Sdot{1})]);
+%     disp(['Sdot{2} = ',mat2str(Sdot{2})]);
+%     disp(['Sdot{3} = ',mat2str(Sdot{3})]);
+%   end
   
 end
     
@@ -363,8 +362,7 @@ function S = recompS(Ssqrt)
 end
 
 function K = affineKsoln(S,R,B,N)
-  Ri = inv(R{1});
-  K{1} = -Ri*(B'*S{1}+N');
-  K{2} = -.5*Ri*(B'*S{2} + R{2});
+  K{1} = -R{1}\(B'*S{1}+N');
+  K{2} = -.5*R{1}\(B'*S{2} + R{2});
 end
 

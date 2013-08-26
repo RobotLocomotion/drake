@@ -19,7 +19,7 @@ if (isa(R,'double'))
   R = PPTrajectory(zoh(tspan([1,end]),repmat(R,[1 1 2])));
 end
 
-[Pi, Pidot] = transSurf.getPi(tspan(end));
+Pi = transSurf.getPi(tspan(end));
 
 typecheck(Q,'Trajectory');  
 sizecheck(Q,[nX,nX]);
@@ -31,7 +31,7 @@ if (all(size(Qf)==[nX nX]))
 end
 sizecheck(Qf,[nX-1,nX-1]);
 
-if (~isCT(obj)) error('only handle CT case so far'); end
+if (~isCT(obj)), error('only handle CT case so far'); end
 
 Ssol = matrixODE(@ode45,@(t,S)Sdynamics(t,S,obj,Q,R,xtraj,utraj,transSurf),tspan(end:-1:1),Qf);
 Ksol = FunctionHandleTrajectory(@(t)Ksoln(t,obj,Ssol,R,xtraj,utraj,transSurf),[nX-1, nU],tspan);
@@ -51,7 +51,7 @@ end
 
   function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,transSurf)
     x0 = xtraj.eval(t); u0 = utraj.eval(t);
-    Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
+    Q = Qtraj.eval(t); R = Rtraj.eval(t);
     nX = length(x0); nU = length(u0);
     [ft,df] = geval(@plant.dynamics,t, x0, u0);
     A = df(:,1+(1:nX));
@@ -72,13 +72,12 @@ end
     Btr = Pi*B-Pi*ft*dtau_du;
         
     Qtr = Pi*Q*Pi';
-        
     
-    Sdot = -(Qtr - S*Btr*Ri*Btr'*S + S*Atr + Atr'*S);
+    Sdot = -(Qtr - S*Btr*(R\(Btr'*S)) + S*Atr + Atr'*S); 
   end
       
   function K = Ksoln(t,plant,Straj,Rtraj,xtraj,utraj, transSurfi)
-    S = Straj.eval(t); Ri = inv(Rtraj.eval(t)); x0=xtraj.eval(t); u0 = utraj.eval(t);
+    S = Straj.eval(t); R = Rtraj.eval(t); x0=xtraj.eval(t); u0 = utraj.eval(t);
     nX = length(x0); nU = length(u0);
     [ft,df] = geval(@plant.dynamics,t, x0, u0);
     B = df(:,nX+1+(1:nU));
@@ -90,5 +89,5 @@ end
     dtau_du = zt'*B/(zt'*ft);
     
     Btr = Pi*B-Pi*ft*dtau_du;
-    K = Ri*Btr'*S;
+    K = R\(Btr'*S);
   end

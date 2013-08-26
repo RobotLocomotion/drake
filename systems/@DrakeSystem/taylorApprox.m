@@ -18,17 +18,17 @@ if (sys.getNumStateConstraints()>0)
   error('cannot taylorApprox systems with state constraints');  % should I consider allowing it, but simply dropping the constraint?
 end
 
-if (num_x) p_x = sys.getStateFrame.poly; else p_x=[]; end
-if (num_u) p_u = sys.getInputFrame.poly; else p_u=[]; end
+if (num_x), p_x = sys.getStateFrame.poly; else p_x=[]; end
+if (num_u), p_u = sys.getInputFrame.poly; else p_u=[]; end
 
-if (length(varargin)<1) error('usage: taylorApprox(sys,t0,x0,u0,order), or taylorApprox(sys,xtraj,utraj,order)'); end
+if (length(varargin)<1), error('usage: taylorApprox(sys,t0,x0,u0,order), or taylorApprox(sys,xtraj,utraj,order)'); end
 
 if (isa(varargin{1},'Trajectory'))  
-  if (length(varargin)<3) error('trajectory usage: taylorApprox(sys,xtraj,utraj,order)'); end
+  if (length(varargin)<3), error('trajectory usage: taylorApprox(sys,xtraj,utraj,order)'); end
   x0traj = varargin{1};
   u0traj = varargin{2};
   order = varargin{3};
-  if (length(varargin)<4) ignores=[]; else ignores=varargin{4}; end
+  if (length(varargin)<4), ignores=[]; else ignores=varargin{4}; end
 
   p_xu = [p_x; p_u];
   
@@ -36,7 +36,7 @@ if (isa(varargin{1},'Trajectory'))
   sizecheck(x0traj,num_x);
   
   % note: i should probably search for the transform before kicking out an error
-  if (x0traj.getOutputFrame ~= sys.getStateFrame) error('x0traj does not match state frame'); end
+  if (x0traj.getOutputFrame ~= sys.getStateFrame), error('x0traj does not match state frame'); end
   if (isempty(u0traj))
     % make an empty trajectory object
     u0traj = ConstantTrajectory(zeros(num_u,1));
@@ -45,7 +45,7 @@ if (isa(varargin{1},'Trajectory'))
   else
     typecheck(u0traj,'Trajectory');
     sizecheck(u0traj,num_u);
-    if (u0traj.getOutputFrame ~= sys.getInputFrame) error('u0traj does not match input frame'); end
+    if (u0traj.getOutputFrame ~= sys.getInputFrame), error('u0traj does not match input frame'); end
     breaks = unique([x0traj.getBreaks(),u0traj.getBreaks()]);
   end
   
@@ -70,14 +70,14 @@ if (isa(varargin{1},'Trajectory'))
   polysys = PolynomialTrajectorySystem(sys.getInputFrame,sys.getStateFrame,sys.getOutputFrame,xdothat,xnhat,yhat,sys.isDirectFeedthrough());
   polysys = setInputLimits(polysys,sys.umin,sys.umax);
   
-  if (0) %num_xc==2 && num_xd==0)  % very useful for debugging.  consider making it an option
-    comparePhasePlots(sys,polysys,x0traj,u0traj,linspace(breaks(1),breaks(end),15));
-  end
+%  if (num_xc==2 && num_xd==0)  % very useful for debugging.  consider making it an option
+%    comparePhasePlots(sys,polysys,x0traj,u0traj,linspace(breaks(1),breaks(end),15));
+%  end
 
   
 else
-  if (length(varargin)<4) error('this usage: taylorApprox(sys,t0,x0,u0,order)'); end
-  if (length(varargin)>4) error('ignores not implemented yet'); end
+  if (length(varargin)<4), error('this usage: taylorApprox(sys,t0,x0,u0,order)'); end
+  if (length(varargin)>4), error('ignores not implemented yet'); end
   t0=varargin{1};
   x0=varargin{2};
   u0=varargin{3};
@@ -91,7 +91,7 @@ else
     x0=[];
   end
   if isempty(u0) % empty is ok, use default
-    if (num_u), u0 = zeros(num_u,1); else, u0=[]; end
+    if (num_u), u0 = zeros(num_u,1); else u0=[]; end
   else
     typecheck(u0,'Point');
     u0 = double(u0.inFrame(sys.getInputFrame));
@@ -130,17 +130,17 @@ else
   polysys = setOutputFrame(polysys,sys.getOutputFrame);
   polysys = setSampleTime(polysys,sys.getSampleTime);
   
-  if (0) % num_xc==2 && num_xd==0)   % useful for debugging... consider making it an option
-    x0traj = FunctionHandleTrajectory(@(t) x0, [num_x,1],[0 0]);
-    xdot0traj = FunctionHandleTrajectory(@(t) zeros(num_x,1),[num_x,1],[0 0]);
-    if (isempty(u0))
-      u0traj = FunctionHandleTrajectory(@(t)zeros(0),[0 0],x0traj.tspan);
-    else
-      u0traj = FunctionHandleTrajectory(@(t) u0, [num_u,1],[0 0]);
-    end
-
-    comparePhasePlots(sys,polysys,x0traj,u0traj,0,xdot0traj);
-  end
+%  if (num_xc==2 && num_xd==0)   % useful for debugging... consider making it an option
+%    x0traj = FunctionHandleTrajectory(@(t) x0, [num_x,1],[0 0]);
+%    xdot0traj = FunctionHandleTrajectory(@(t) zeros(num_x,1),[num_x,1],[0 0]);
+%    if (isempty(u0))
+%      u0traj = FunctionHandleTrajectory(@(t)zeros(0),[0 0],x0traj.tspan);
+%    else
+%      u0traj = FunctionHandleTrajectory(@(t) u0, [num_u,1],[0 0]);
+%    end
+%
+%    comparePhasePlots(sys,polysys,x0traj,u0traj,0,xdot0traj);
+%  end
 
 end
   
@@ -155,8 +155,8 @@ end
     p=getmsspoly(feval(fun,t,x0,u0),p_xu-xu0);
   end
   
-
-  function comparePhasePlots(sys,psys,x0traj,u0traj,ts)
+  
+  function comparePhasePlots(sys,psys,x0traj,u0traj,ts) %#ok<DEFNU> 
 
   figure(1);
   xs=x0traj.eval(linspace(ts(1),ts(end),100));
@@ -170,7 +170,7 @@ end
     [X1,X2] = ndgrid(linspace(-1,1,11),linspace(-1,1,11));
     X1dot=X1; X2dot=X1;
     pX1dot=X1; pX2dot=X1;
-    for i=1:prod(size(X1))
+    for i=1:numel(X1)
       x=x0; x(num_xd+plotdims)=x(num_xd+plotdims)+[X1(i);X2(i)];
       xdot = sys.dynamics(t,x,u0);
       X1dot(i)=xdot(plotdims(1)); X2dot(i)=xdot(plotdims(2));

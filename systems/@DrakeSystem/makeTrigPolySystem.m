@@ -70,10 +70,10 @@ end
 
 all_methods=[tp_dynamics_lhs(:);tp_dynamics_rhs;tp_update;tp_output];
 if (~isTrigOrPoly(all_methods))
-  tp_dynamics_lhs
-  tp_dynamics_rhs
-  tp_update
-  tp_output
+  tp_dynamics_lhs  %#ok
+  tp_dynamics_rhs  %#ok
+  tp_update        %#ok
+  tp_output        %#ok
   error('dynamics, update, and/or output methods depend both trigonometrically and polynomially on a single variable');
 end
 all_methods=getmsspoly(all_methods);
@@ -94,19 +94,19 @@ all_methods=getmsspoly(all_methods);
 %  phi(y)=0 := s^2+c^2-1 => 2*s*sdot+2*c*cdot=0 := Phi(y)*ydot=0 with Phi(i,:) = [0...0 2*s 2*c 0 ... 0]
 % but for stability, I impose Phi(y)*ydot = -alpha*phi(y)
 
-xnew=[];
+xnew=[];  %#ok<*AGROW>
 G=msspoly(zeros(sys.num_x)); Phi=msspoly([]); phidot=msspoly([]);
 unit_circle_constraints=[];
-sin_ind=logical(zeros(sys.num_x)); cos_ind=sin_ind; x_ind=sin_ind;
+sin_ind=false(sys.num_x); cos_ind=sin_ind; x_ind=sin_ind;
 name=sys.getStateFrame.coordinates; newname={};
 for i=1:sys.num_x
   if (deg(all_methods,s(i))>0 || deg(all_methods,c(i))>0)
-    xnew=[xnew;s(i);c(i)];
+    xnew=[xnew;s(i);c(i)];  
     yind=size(xnew,1)-1;
     sin_ind(yind,i)=true;
     cos_ind(yind+1,i)=true;
-    newname{yind}=['sin(',name{i},')'];
-    newname{yind+1}=['cos(',name{i},')'];
+    newname{yind}=['sin(',name{i},')'];  
+    newname{yind+1}=['cos(',name{i},')']; 
     if (i<=sys.num_xd)
       error('trig discrete variables not supported yet.  (have to think about if it''s even reasonable...).'); 
     else
@@ -117,9 +117,9 @@ for i=1:sys.num_x
       Phi(cind,yind+1)=2*c(i);
       phidot(cind,1) = -(1/options.constraint_tau)*(s(i)^2 + c(i)^2 - 1);
     end
-    unit_circle_constraints=[unit_circle_constraints;s(i)^2+c(i)^2-1];
+    unit_circle_constraints=[unit_circle_constraints;s(i)^2+c(i)^2-1]; 
   else % leave it as poly 
-    xnew=[xnew;q(i)];
+    xnew=[xnew;q(i)];  
     x_ind(length(xnew),i)=true;
     newname{length(xnew)}=name{i};
     if (i>sys.num_xd)
@@ -132,10 +132,10 @@ if (length(xnew)~=sys.num_x)  % only do this if there are some trig vars
     tp_dynamics_lhs = 0*x(1)+eye(sys.num_xc);
   end
   
-  if (size(Phi,2)<length(xnew)) Phi(end,length(xnew))=0; end  % zero-pad if necessary
-  if (size(sin_ind,1)<length(xnew)) sin_ind(length(xnew),end)=false; end  % zero-pad
-  if (size(cos_ind,1)<length(xnew)) cos_ind(length(xnew),end)=false; end
-  if (size(x_ind,1)<length(xnew)) x_ind(length(xnew),end)=false; end
+  if (size(Phi,2)<length(xnew)), Phi(end,length(xnew))=0; end  % zero-pad if necessary
+  if (size(sin_ind,1)<length(xnew)), sin_ind(length(xnew),end)=false; end  % zero-pad
+  if (size(cos_ind,1)<length(xnew)), cos_ind(length(xnew),end)=false; end
+  if (size(x_ind,1)<length(xnew)), x_ind(length(xnew),end)=false; end
   
   tp_dynamics_lhs = [tp_dynamics_lhs*G'; Phi];  % e(x)*G(x)';
   tp_dynamics_rhs=[tp_dynamics_rhs;phidot];

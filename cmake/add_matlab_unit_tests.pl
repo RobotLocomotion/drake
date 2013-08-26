@@ -20,6 +20,6 @@ while (<$in>) {
 #  $failcondition = "1";   # missing dependency => failure
   $failcondition = "~strncmp(ex.identifier,'Drake:MissingDependency',23)";  # missing dependency => pass
 
-  print $ctestfile "ADD_TEST($testname \"matlab\" \"-nosplash\" \"-nodisplay\" \"-r\" \"addpath('$CMAKE_INSTALL_PREFIX/matlab'); addpath_drake; try, feval('$test'); catch ex, disp(getReport(ex,'extended')); force_close_system; exit($failcondition); end; force_close_system; exit(0)\")\n";
+  print $ctestfile "ADD_TEST($testname \"matlab\" \"-nosplash\" \"-nodisplay\" \"-r\" \"addpath('$CMAKE_INSTALL_PREFIX/matlab'); addpath_drake; rng('shuffle'); try, feval('$test'); catch ex, disp(getReport(ex,'extended')); force_close_system; exit($failcondition); end; force_close_system; exit(0)\")\n";
   print $ctestfile "SET_TESTS_PROPERTIES($testname PROPERTIES  WORKING_DIRECTORY \"$testdir\")\n";
 }
