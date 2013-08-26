@@ -22,11 +22,8 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       % map of CollisionFilterGroup objects
   end
   
-  properties (Access=public)
-    featherstone = [];
-  end
-  
-  properties (Access=private)
+  properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
+    featherstone = [];  
     B = [];
     mex_model_ptr = 0;
     dirty = true;
