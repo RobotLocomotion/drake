@@ -46,12 +46,16 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       end
       obj.terrain = RigidBodyTerrain;
     end
-    
-    function obj = loadobj(a)
-      a.mex_model_ptr = 0;
-      obj = compile(a);
+  end
+  
+  methods (Static)
+    function obj = loadobj(obj)
+      obj.mex_model_ptr = 0;
+      obj = compile(obj);
     end
-    
+  end
+  
+  methods
     function y = output(obj,t,x,u)
       % The outputs of this dynamical system are concatenated from each of
       % the sensors.  If no sensor has been added to the system, then the
