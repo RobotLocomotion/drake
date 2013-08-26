@@ -309,6 +309,7 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj
   x0 = xtraj.eval(t); u0 = utraj.eval(t); xdot0 = xdottraj.eval(t);
   Q{1}=Qtraj{1}.eval(t); Q{2}=Qtraj{2}.eval(t); Q{3}=Qtraj{3}.eval(t); 
   R{1}=Rtraj{1}.eval(t); R{2}=Rtraj{2}.eval(t); R{3}=Rtraj{3}.eval(t);
+  Ri = inv(R{1});
   N = Ntraj.eval(t);
   
   nX = length(x0); nU = length(u0);
@@ -318,11 +319,11 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj
   c = xdot - xdot0;
   
   if (options.sqrtmethod)
-    ss = S{1}';
-    Sdot{1} = -.5*Q{1}/ss - A'*S{1} + .5*(N+S{1}*S{1}'*B)*R{1}\(B'*S{1}+N'/ss);  % sqrt method
+    ss = inv(S{1}');
+    Sdot{1} = -.5*Q{1}*ss - A'*S{1} + .5*(N+S{1}*S{1}'*B)*Ri*(B'*S{1}+N'*ss);  % sqrt method
     Sorig = S{1}*S{1}';
   else
-    Sdot{1} = -(Q{1} - (N+S{1}*B)*R{1}\(B'*S{1}+N') + S{1}*A + A'*S{1});
+    Sdot{1} = -(Q{1} - (N+S{1}*B)*Ri*(B'*S{1}+N') + S{1}*A + A'*S{1});
     Sorig = S{1};
   end
   if (min(eig(Sorig))<0) 
@@ -362,7 +363,8 @@ function S = recompS(Ssqrt)
 end
 
 function K = affineKsoln(S,R,B,N)
-  K{1} = -R{1}\(B'*S{1}+N');
-  K{2} = -.5*R{1}\(B'*S{2} + R{2});
+  Ri = inv(R{1});
+  K{1} = -Ri*(B'*S{1}+N');
+  K{2} = -.5*Ri*(B'*S{2} + R{2});
 end
 
