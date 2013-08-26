@@ -515,14 +515,39 @@ bool RigidBodyManipulator::getPairwiseCollision(const int body_indA, const int b
   return collision_model->getPairwiseCollision(body_indA,body_indB,ptsA,ptsB,normals);
 };
 
-bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA, const int body_indB, const int body_collision_indA, Vector3d &ptA, Vector3d &ptB, Vector3d &normal)
+bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA, 
+                                                     const int body_indB, 
+                                                     const int body_collision_indA, 
+                                                     Vector3d &ptA, 
+                                                     Vector3d &ptB, 
+                                                     Vector3d &normal)
 {
-  return collision_model->getPairwisePointCollision(body_indA,body_indB,body_collision_indA,ptA,ptB,normal);
+  if (collision_model->getPairwisePointCollision(body_indA, body_indB,
+                                                 body_collision_indA,
+                                                 ptA,ptB,normal)) {
+    return true;
+  } else {
+		ptA << 1,1,1;
+		ptB << -1,-1,-1;
+		normal << 0,0,1;
+    return false;
+  }
 };
 
-bool RigidBodyManipulator::getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal)
+bool RigidBodyManipulator::getPointCollision(const int body_ind, 
+                                             const int body_collision_ind, 
+                                             Vector3d &ptA, Vector3d &ptB, 
+                                             Vector3d &normal)
 {
-  return collision_model->getPointCollision(body_ind,body_collision_ind,ptA,ptB,normal); 
+  if (collision_model->getPointCollision(body_ind, body_collision_ind, ptA,ptB,
+                                         normal)) {
+    return true;
+  } else {
+    ptA << 1,1,1;
+    ptB << -1,-1,-1;
+    normal << 0,0,1;
+    return false;
+  }
 };
 
 bool RigidBodyManipulator::getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance)
