@@ -18,7 +18,7 @@ classdef DrakeMexPointer < handle
     end
     
     function delete(obj)
-      if 0 %~isempty(obj.delete_fcn)  % useful for debugging
+      if 0 % ~isempty(obj.delete_fcn)  % useful for debugging
         fprintf(1,'Calling %s to delete ', obj.delete_fcn);
         if isempty(obj.name)
           fprintf(1,'unnamed drake mex pointer\n');
@@ -26,7 +26,18 @@ classdef DrakeMexPointer < handle
           fprintf(1,'drake mex pointer %s\n',obj.name);
         end
       end
-      feval(obj.delete_fcn,obj);
+      if ~isempty(obj.delete_fcn)
+        feval(obj.delete_fcn,obj);
+      end
     end
+  end
+  
+  methods (Static)
+
+    function obj = loadobj(obj)
+      obj.delete_fcn = '';
+      obj = 0;
+    end
+    
   end
 end
