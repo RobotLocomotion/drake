@@ -51,7 +51,7 @@ end
 
   function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,transSurf)
     x0 = xtraj.eval(t); u0 = utraj.eval(t);
-    Q = Qtraj.eval(t); R = Rtraj.eval(t);
+    Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
     nX = length(x0); nU = length(u0);
     [ft,df] = geval(@plant.dynamics,t, x0, u0);
     A = df(:,1+(1:nX));
@@ -73,7 +73,7 @@ end
         
     Qtr = Pi*Q*Pi';
     
-    Sdot = -(Qtr - S*Btr*(R\(Btr'*S)) + S*Atr + Atr'*S); 
+    Sdot = -(Qtr - S*Btr*Ri*Btr'*S + S*Atr + Atr'*S);
   end
       
   function K = Ksoln(t,plant,Straj,Rtraj,xtraj,utraj, transSurfi)

@@ -132,6 +132,9 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     end
 
     function ptr = getMexModelPtr(obj)
+      % Please do note use this.
+      % This access should not be allowed (the method should be private or not exist).
+      % But it is currently used by QPControlBlock to pass to QPControllermex in drc/software/control
       ptr = obj.mex_model_ptr;
     end
     
