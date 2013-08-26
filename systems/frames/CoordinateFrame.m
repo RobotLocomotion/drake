@@ -456,7 +456,7 @@ classdef CoordinateFrame < handle
           end
         end
         if isempty(connection)
-          error('Autonmatic connection failed.  Could not find any possible connections between sys1 and sys2');
+          error('Automatic connection failed.  Could not find any possible connections between sys1 and sys2');
         end
       end      
     end
