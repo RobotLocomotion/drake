@@ -26,7 +26,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     featherstone = [];
   end
   
-  properties (Access=public)
+  properties (Access=private)
     B = [];
     mex_model_ptr = 0;
     dirty = true;

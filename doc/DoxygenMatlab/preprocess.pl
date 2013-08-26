@@ -263,7 +263,7 @@ sub preprocess
 	  
 	  $endTally = $endTally + 1;
 	  $endOutput[$endTally]="";
-	  #	      	  print $endTally.$funcorclass.$_;
+#	  	      	  print $endTally.$funcorclass.$_;
 	  
 	  # don't include functions with internal scope
 	  if ($isClass and $endTally > 3) {
@@ -289,7 +289,7 @@ sub preprocess
 	  $endTally = $endTally + $count;
 	  $endOutput[$endTally]="";
 
-	  #	      	  print $endTally.$1.$_;
+#	  	      	  print $endTally.$1.$_;
 	  
 	  if (($isClass and ($endTally < 4)) || (not $isClass and ($endTally < 3))) {
 	    $output = $output . $line;
@@ -301,13 +301,13 @@ sub preprocess
 	
 	if (/\bend\b/) {
 	  $count = () = $_ =~ /(\bend\b)/g;
-	  for my $i (0 .. $count) {
+	  for my $i (1 .. $count) {
 	    $output = $output . $endOutput[$endTally];
 	    $endOutput[$endTally]="";
 	    if ($endTally>0) {
 	      $endTally = $endTally - 1;
 	    }
-	  #	    	  print $endTally."end".$_;
+#	  	    	  print $endTally."end".$_;
 	  }
 	}
       }
