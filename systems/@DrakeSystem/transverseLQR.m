@@ -73,7 +73,7 @@ end
         
     Qtr = Pi*Q*Pi';
     
-    Sdot = -(Qtr - S*Btr*Ri*Btr'*S + S*Atr + Atr'*S);
+    Sdot = -(Qtr - S*Btr*Ri*Btr'*S + S*Atr + Atr'*S);  %#ok<MINV>
   end
       
   function K = Ksoln(t,plant,Straj,Rtraj,xtraj,utraj, transSurfi)

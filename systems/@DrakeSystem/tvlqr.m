@@ -320,7 +320,7 @@ function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj
   
   if (options.sqrtmethod)
     ss = inv(S{1}');
-    Sdot{1} = -.5*Q{1}*ss - A'*S{1} + .5*(N+S{1}*S{1}'*B)*Ri*(B'*S{1}+N'*ss);  % sqrt method
+    Sdot{1} = -.5*Q{1}*ss - A'*S{1} + .5*(N+S{1}*S{1}'*B)*Ri*(B'*S{1}+N'*ss);  % sqrt method  %#ok<MINV>
     Sorig = S{1}*S{1}';
   else
     Sdot{1} = -(Q{1} - (N+S{1}*B)*Ri*(B'*S{1}+N') + S{1}*A + A'*S{1});
