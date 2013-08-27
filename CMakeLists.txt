@@ -5,6 +5,12 @@ cmake_minimum_required(VERSION 2.8.6) # for UseJava.cmake
 set(POD_NAME drake)
 include(cmake/pods.cmake)
 
+# set up Java, use a target of 1.6
+find_package(Java)
+include(UseJava)
+set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -target 6)
+
+
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
 lcmtypes_build()  
@@ -12,8 +18,6 @@ lcmtypes_build()
 # set up matlab build
 include(cmake/mex.cmake)
 
-find_package(Java)
-include(UseJava)
 
 pods_use_pkg_config_classpath(lcm-java)
 
