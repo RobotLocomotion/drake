@@ -618,9 +618,13 @@ else
 end
 
 if (exist('rng'))  % rng appeared in MATLAB R2011a
-    rng('shuffle'); % init rng to current date
+  rng('shuffle'); % init rng to current date
+  rng_state = rng;
+  rng_instructions = sprintf('To reproduce this test use "rng(%d,''%s'')"', rng_state.Seed, rng_state.Type);
 else  % for older versions of matlab
-    rand('seed',sum(100*clock));
+  rand_seed == sum(100*clock);
+  rand('seed',rand_seed);
+  rng_instructions = sprintf('To reproduce this test use "rand(''seed'',%d)"', rand_seed);
 end
 force_close_system();
 close all;
@@ -659,11 +663,12 @@ else
       cd(p);
       msg = [ ...
         sprintf('*******************************************************\n') ...
-        sprintf('* error in %s\n',fullfile(runpath,test)) ...
+        sprintf('* Error in %s\n',fullfile(runpath,test)) ...
+        sprintf('* %s\n',rng_instructions) ...
         sprintf('*******************************************************\n') ...
         sprintf('%s\n',getReport(ex,'extended')) ...
         sprintf('*******************************************************\n') ];
-        
+      
       fprintf(1,'\n\n%s',msg);
       
       % strip the html tags out of the logfile (which are irrelevant outside of matlab and make it difficult to read):
