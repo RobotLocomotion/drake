@@ -8,7 +8,7 @@ include(cmake/pods.cmake)
 # set up Java, use a target of 1.6
 find_package(Java)
 include(UseJava)
-set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -target 6)
+set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
 
 
 # set up and build lcm types
