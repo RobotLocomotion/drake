@@ -52,6 +52,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     function obj = loadobj(obj)
       obj.mex_model_ptr = 0;
       obj = compile(obj);
+      % NOTEST
     end
   end
   
