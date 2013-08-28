@@ -270,13 +270,22 @@ classdef TaylorVar
           dcdx = reshape(reduceOrder(b)*reshape(tvdiff(a),ma*na,nX) + reshape(reduceOrder(a),ma*na,1)*reshape(tvdiff(b),1,nX),[ma,na,nX]);
         else
           % this version works, but is expensive
-          btmp = repmat({reduceOrder(b)},1,nX);
-          dcdx = reshape(reshape(tvdiff(a),ma,na*nX)*blkdiag(btmp{:}),[ma,nb,nX]) + ...
-            reshape(reduceOrder(a)*reshape(tvdiff(b),mb,nb*nX),[ma,nb,nX]);
+%          btmp = repmat({reduceOrder(b)},1,nX);
+%          dcdx_slow = reshape(reshape(tvdiff(a),ma,na*nX)*blkdiag(btmp{:}),[ma,nb,nX]) + ...
+%            reshape(reduceOrder(a)*reshape(tvdiff(b),mb,nb*nX),[ma,nb,nX]);
           % trying this version instead:
-          %        dcdx=reshape(reduceOrder(a)*reshape(tvdiff(b),mb,nb*nX),[ma,nb,nX]);
-          %        da=tvdiff(a);rb=reduceOrder(b);
-          %        for i=1:nX, dcdx(:,:,i)=dcdx(:,:,i)+da(:,:,i)*rb; end
+          dcdx=reshape(reduceOrder(a)*reshape(tvdiff(b),mb,nb*nX),[ma,nb,nX]);
+          dadx=tvdiff(a);rb=reduceOrder(b);
+          si=substruct('()',{':',':',1});
+          for i=1:nX,
+            % want:
+            %   dcdx(:,:,i)=dcdx(:,:,i)+dadx(:,:,i)*rb;
+            % but can't call subsref and subsasgn implicitly from
+            % inside the class.  have to call it explicitly
+            si.subs{end}=i;
+            dcdx=subsasgn(dcdx,si,subsref(dcdx,si)+subsref(dadx,si)*rb);
+          end
+%          if ~isequal(dcdx,dcdx_slow), keyboard; end
           % end new version
         end
         if (isa(dcdx,'TaylorVar'))
