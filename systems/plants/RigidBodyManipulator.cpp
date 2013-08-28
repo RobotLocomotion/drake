@@ -595,8 +595,7 @@ bool RigidBodyManipulator::closestPointsAllBodies(vector<int>& bodyA_idx,
     //END_DEBUG
     forwardJac(bodyB_idx.at(i),ptB_on_body,0,JB_i);
     JB.block(3,num_dof,i*3,0) = JB_i;
-    //Jd.row(i) = 2*sgn(distance.at(i))*(ptsA.col(i)-ptsB.col(i)).transpose()*(JA_i-JB_i);
-    Jd.row(i) = (1/distance[i])*(ptsA.col(i)-ptsB.col(i)).transpose()*(JA_i-JB_i);
+    Jd.row(i) = normal.col(i).transpose()*(JA_i-JB_i);
   }
   return true;
 };
