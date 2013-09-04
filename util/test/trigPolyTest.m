@@ -18,6 +18,10 @@ shouldBeEqual(cos(x(2)),c(2))
 shouldBeEqual(sin([x(2);4]),[s(2);sin(4)])
 shouldBeEqual(q(1)-sin(x(1)),q(1)-s(1)) % shouldn't evaluate as valid, but should parse
 shouldBeEqual(sin(x(1))-x(1),s(1)-q(1)) % shouldn't evaluate as valid, but should parse
+shouldBeEqual(sin(x).^2+cos(x).^2,s.^2+c.^2)
+shouldBeEqual(diff(sin(x),x),diag(cos(x)))
+shouldBeEqual(diff(cos(x),x),diag(-sin(x)))
+shouldBeEqual(diff(sin(x).^2+cos(x).^2,x),msspoly(zeros(2)))
 
 load drake_config;
 
