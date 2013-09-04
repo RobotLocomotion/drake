@@ -19,7 +19,7 @@ classdef DrakeSystem < DynamicalSystem
       %   dynamics/update/output do not depend on time.  Set to true if
       %   possible.
       
-      obj.uid = datestr(now,'MMSSFFF');
+      obj.uid = sprintf('%018.0f', now * 24*60*60*1e6);
 
       if (nargin>0)
         obj = setNumContStates(obj,num_xc);
