@@ -183,6 +183,18 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       end      
     end
     
+    function a=diff(a,z)
+      a_mss = getmsspoly(a);
+      if isa(z,'TrigPoly'), z = getmsspoly(z); end;
+      %a_mss = a;
+      dads = diff(a_mss,a.s);
+      dadc = diff(a_mss,a.c);
+      dsdq = diag(a.c);
+      dcdq = diag(-a.s);
+      dqdz = diff(a.q,z);
+      a = (dads*dsdq + dadc*dcdq)*dqdz;
+    end
+
     function i=end(a,k,n)
       % I don't think I should have to overload this, but it's not working
       % like (size(x,k)) should be.  see 'doc end'
@@ -261,7 +273,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       if ~isnumeric(n) || any(size(n) ~= 1)
         error('Power only supports constant exponents')
       end
-      a.p=mpower(a,n);
+      a.p=power(a.p,n);
     end
     
     function a=mrdivide(a,b)
