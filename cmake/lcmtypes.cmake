@@ -383,14 +383,14 @@ function(lcmtypes_build_java)
     foreach(javafile ${_lcmtypes_java_files})
         string(REPLACE .java .class __tmp_class_fname ${javafile})
         #        add_custom_command(OUTPUT ${__tmp_class_fname} COMMAND
-        #            ${JAVA_COMPILE} -source 6 -cp ${_lcmtypes_java_dir}:${lcm_jar} ${javafile} VERBATIM DEPENDS ${javafile})
+        #            ${JAVA_COMPILE} -source 6 -target 6 -cp ${_lcmtypes_java_dir}:${lcm_jar} ${javafile} VERBATIM DEPENDS ${javafile})
         list(APPEND _lcmtypes_class_files ${__tmp_class_fname})
         unset(__tmp_class_fname)
     endforeach()
 
     # add a rule to build the .class files from from the .java files
     add_custom_command(OUTPUT ${_lcmtypes_class_files} COMMAND 
-        ${JAVA_COMPILE} -source 6 -cp ${java_classpath} ${_lcmtypes_java_files} 
+        ${JAVA_COMPILE} -source 6 -target 6 -cp ${java_classpath} ${_lcmtypes_java_files} 
         DEPENDS ${_lcmtypes_java_files} VERBATIM)
 
     # add a rule to build a .jar file from the .class files
