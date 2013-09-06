@@ -43,7 +43,7 @@ namespace DrakeCollision
 #ifdef BULLET_COLLISION
     return ResultCollShPtr(new BulletResultCollector());
 #else
-    return ResultCollShPtr(new ResultCollector<>());
+    return ResultCollShPtr(new ResultCollector());
 #endif
   }
 };
