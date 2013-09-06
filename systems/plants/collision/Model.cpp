@@ -1,7 +1,10 @@
 #include "DrakeCollision.h"
 #include "Model.h"
 #include "GenericModel.h"
+
+#ifdef BULLET_COLLISION
 #include "BulletModel.h"
+#endif
 
 using namespace std;
 
