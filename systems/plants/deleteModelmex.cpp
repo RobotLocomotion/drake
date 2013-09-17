@@ -5,7 +5,7 @@
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs<1) {
-    mexErrMsgIdAndTxt("Drake:deleteModelmex:NotEnoughInputs","Usage deleteModelmex(model_ptr)");
+    mexErrMsgIdAndTxt("Drake:deleteModelmex:NotEnoughInputs","Usage deleteModelMex(model_ptr)");
   }
 
   // first get the model_ptr back from matlab

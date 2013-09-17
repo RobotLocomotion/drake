@@ -41,7 +41,6 @@ if (eigen3_FOUND)
   target_link_libraries(drakeRBM drakeCollision)
 
   add_subdirectory(collision)
-  add_subdirectory(constraint)
 
   if (Boost_FOUND)
     add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
@@ -73,26 +72,13 @@ if (eigen3_FOUND)
   add_rbm_mex(getCMMmex)
 
   pods_find_pkg_config(gurobi)
-
-  #add_rbm_mex(approximateIKmex_bk)
-  #pods_use_pkg_config_packages(approximateIKmex_bk gurobi)
-
-  macro(add_constraint_mex)
-    add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} drakeRBM drakeUtil drakeConstraint)
-  endmacro()
-
   if (gurobi_FOUND)
-    add_constraint_mex(approximateIKmex)
+    add_rbm_mex(approximateIKmex)
     pods_use_pkg_config_packages(approximateIKmex gurobi)
   endif()
 
-  pods_find_pkg_config(snopt_cpp)
-  if (snopt_cpp_FOUND)
-    add_mex(inverseKinBackendmex inverseKinBackendmex.cpp)
-    target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeConstraint) 
-    pods_use_pkg_config_packages(inverseKinBackendmex snopt_cpp)
-  endif()
+  #	approximateIKEIQPmex.cpp
+  #	collisionmex.cpp 
 
   macro(add_planar_rbm_mex)
     # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
