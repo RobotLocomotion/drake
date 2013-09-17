@@ -24,14 +24,18 @@ classdef SLIPVisualizer < Visualizer
       line(hip(1)+0.15*sin(t),hip(2)+0.15*cos(t),'Color',[0 0 0]);
       fill(hip(1)+0.15*sin(t),hip(2)+0.15*cos(t),MITlightgray); %[ 0.502 1.000 1.000 ]);
 
-
+      axis equal;
       if (isempty(obj.axis))
-        line(floor(hip(1)/4)+[-.2,4.2],[0 0],'LineWidth',1.5,'Color',MITred);
+        v(1) = 4*floor(hip(1)/4)-.2;
+        v(2) = v(1)+4.4;
+        v(3) = -.1;
+        v(4) = 3;
+        line([v(1)-1 v(2)+1],[0 0],'LineWidth',1.5,'Color',MITred);
+        axis(v)
       else
         line(obj.axis(1:2),[0 0],'LineWidth',1.5,'Color',MITred);
         axis(obj.axis);
       end
-      axis equal;
 
       drawnow;
     end

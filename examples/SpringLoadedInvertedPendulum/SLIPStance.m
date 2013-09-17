@@ -44,8 +44,8 @@ classdef SLIPStance < DrakeSystem
     function y=output(obj,t,x,u)
       r=x(1);theta=x(2);x_toe=x(5);
       rdot=x(3);thetadot=x(4);
-      hip = x_toe-r*[sin(theta);cos(theta)];
-      hipdot = -rdot*[sin(theta);cos(theta)] + r*[cos(theta);-sin(theta)];
+      hip = [x_toe;0]+r*[-sin(theta);cos(theta)];
+      hipdot = rdot*[-sin(theta);cos(theta)] - r*[cos(theta);sin(theta)];
       y=[hip;r;theta;hipdot;rdot;thetadot];
     end
   end
