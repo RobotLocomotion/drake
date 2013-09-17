@@ -21,6 +21,21 @@ or
         </xs:annotation>
         <xs:restriction base="xs:string"/>
     </xs:simpleType>
+    <xs:complexType name="parameter">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:double" use="required"/>
+        <xs:attribute default="-INF" name="lb" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>lower bound</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute default="INF" name="ub" type="xs:double" use="optional">
+            <xs:annotation>
+                <xs:documentation>upper bound
+</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
     <xs:complexType name="loop_joint">
         <xs:sequence>
             <xs:element name="link1" type="link_reference_w_pose" maxOccurs="1" minOccurs="1">
@@ -441,6 +456,11 @@ input to Newtons of force.</xs:documentation>
                 <xs:element name="material" type="material" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
                         <xs:documentation>The material of the visual element. It is allowed to specify a material element outside of the 'link' object, in the top level 'robot' element. From within a link element you can then reference the material by name. </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element maxOccurs="unbounded" minOccurs="0" name="parameter" type="parameter">
+                    <xs:annotation>
+                        <xs:documentation>A robot parameter, which can be referenced in matlab_parameter_expression types.  For example, a parameter with name="m1" could be references in mass value="$m1".  </xs:documentation>
                     </xs:annotation>
                 </xs:element>
                 <xs:element maxOccurs="unbounded" minOccurs="0" name="loop_joint" type="loop_joint">
