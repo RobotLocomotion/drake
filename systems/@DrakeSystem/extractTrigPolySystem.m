@@ -1,4 +1,4 @@
-function polysys = makeTrigPolySystem(sys,options)
+function polysys = extractTrigPolySystem(sys,options)
 
 % tries to convert the current system into a trig-poly system
 %

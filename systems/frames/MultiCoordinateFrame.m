@@ -235,11 +235,24 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end
     end
     
-    function cell_vals = splitCoordinates(obj,vector_vals)
+    function varargout = splitCoordinates(obj,vector_vals)
+      % Extract values of individual CoordinateFrames from a vector in the
+      % multi-frame.  
+      % @param vector_vals a vector in the multi-frame
+      %  
+      % Usage:  cv = splitCoordinates(obj,vv);
+      %   a = cv{1}; b=cv{2};
+      % or 
+      %   [a,b] = splitCoordinates(obj,vv)
+      
       for i=1:length(obj.frame)
         obj.cell_vals{i} = vector_vals(obj.coord_ids{i});
       end
-      cell_vals = obj.cell_vals;
+      if nargout==1
+        varargout = {obj.cell_vals};
+      else
+        varargout = obj.cell_vals;
+      end
     end      
     
     function vector_vals = mergeCoordinates(obj,cell_vals)

@@ -230,6 +230,62 @@ classdef SpotPolynomialSystem < PolynomialSystem
       p_state_constraints = obj.p_state_constraints;
     end
     
+    function sys = extractAffineSystem(obj)
+      if ~isTI(obj)
+        error('time-varying case not implemented yet');
+      end
+      
+      t=0;
+      p_x=obj.getStateFrame.poly;
+      p_u=obj.getInputFrame.poly;
+      
+      Ac = []; Bc = []; xcdot0=[];
+      if (obj.num_xc>0)
+        if deg(obj.p_dynamics_rhs,[p_x;p_u])>1
+          error('Drake:SpotPolynomialSystem:NotAffine','RHS has deg>1');
+        end
+        Ac = double(diff(obj.p_dynamics_rhs,p_x));
+        Bc = double(diff(obj.p_dynamics_rhs,p_u));
+        xcdot0 = double(subs(obj.p_dynamics_rhs,[p_x;p_u],zeros(obj.num_x+obj.num_u,1)));
+        if (isRational(obj))
+          if deg(obj.p_dynamics_lhs,[p_x;p_u])>0
+            error('Drake:SpotPolynomialSystem:NotAffine','LHS has deg>0');
+          end
+          E = double(obj.p_dynamics_lhs);
+          Ac = E\Ac;
+          Bc = E\Bc;
+          xcdot0 = E\xcdot0;
+        end
+      end
+      
+      Ad = []; Bd = [];
+      if (obj.num_xd>0)
+        if deg(obj.p_update,[p_x;p_u])>1
+          error('Drake:SpotPolynomialSystem:NotAffine','update has deg>1');
+        end
+        Ad = double(diff(obj.p_update,p_x));
+        Bd = double(diff(obj.p_update,p_u));
+        xdn0 = double(subs(obj.p_update,[p_x;p_u],zeros(obj.num_x+obj.num_u,1)));
+      end
+      
+      C = []; D = []; y0 = [];
+      if (obj.num_y>0)
+        if deg(obj.p_output,[p_x;p_u])>1
+          error('Drake:SpotPolynomialSystem:NotAffine','output has deg>1');
+        end
+        C = double(diff(obj.p_output,p_x));
+        D = double(diff(obj.p_output,p_u));
+        y0 = double(subs(obj.p_output,[p_x;p_u],zeros(obj.num_x+obj.num_u,1)));
+      end
+      
+      sys = AffineSystem(Ac,Bc,xcdot0,Ad,Bd,xdn0,C,D,y0);
+      
+      sys = setInputFrame(sys,obj.getInputFrame());
+      sys = setStateFrame(sys,obj.getStateFrame());
+      sys = setOutputFrame(sys,obj.getOutputFrame());
+      
+      sys = setSampleTime(sys,obj.getSampleTime);
+    end
   end
   
 end

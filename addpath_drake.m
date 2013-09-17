@@ -52,7 +52,7 @@ addpath(fullfile(conf.root,'systems','plants','affordance'));
 addpath(fullfile(conf.root,'systems','plants','collision'));
 addpath(fullfile(conf.root,'systems','plants','Constraint'));
 addpath(fullfile(conf.root,'systems','controllers'));
-addpath(fullfile(conf.root,'systems','estimators'));
+addpath(fullfile(conf.root,'systems','observers'));
 addpath(fullfile(conf.root,'systems','trajectories'));
 addpath(fullfile(conf.root,'systems','frames'));
 addpath(fullfile(conf.root,'systems','visualizers'));

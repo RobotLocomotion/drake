@@ -13,110 +13,111 @@ classdef AffineSystem < PolynomialSystem
       tiflag = isnumeric(Ac) && isnumeric(Bc) && isnumeric(xcdot0) ...
         && isnumeric(Ad) && isnumeric(Bd) && isnumeric(xdn0) ...
         && isnumeric(C) && isnumeric(D) && isnumeric(y0);
+      % note: currently taylovar's will cause the system to be marked as time-varying
+      
       obj = obj@PolynomialSystem(num_xc,num_xd,num_u,num_y,false,tiflag,false);
       
       if (isempty(Ac)) 
-        obj.Ac = sparse(num_xc,num_xc+num_xd);
+        Ac = sparse(num_xc,num_xc+num_xd);
       else
         sizecheck(Ac,[num_xc,num_xc+num_xd]);
-        if ~tiflag
-          if isnumeric(Ac) Ac = ConstantTrajectory(Ac); end
-          typecheck(Ac,'Trajectory');
-        end
-        obj.Ac = Ac;
       end
+      if ~tiflag
+        if isnumeric(Ac) Ac = ConstantTrajectory(Ac); end
+        typecheck(Ac,'Trajectory');
+      end
+      obj.Ac = Ac;
+      
       if (isempty(Bc)) 
-        obj.Bc = sparse(num_xc,num_u);
+        Bc = sparse(num_xc,num_u);
       else
         sizecheck(Bc,[num_xc,num_u]); 
-        if ~tiflag
-          if isnumeric(Bc) Bc = ConstantTrajectory(Bc); end
-          typecheck(Bc,'Trajectory');
-        end
-        obj.Bc = Bc;
       end
+      if ~tiflag
+        if isnumeric(Bc) Bc = ConstantTrajectory(Bc); end
+        typecheck(Bc,'Trajectory');
+      end
+      obj.Bc = Bc;
+
       if (isempty(xcdot0)) 
-          if ~tiflag
-              obj.xcdot0 = ConstantTrajectory(sparse(num_xc,1));
-          else
-            obj.xcdot0 = sparse(num_xc,1);
-          end
-        
+        xcdot0 = sparse(num_xc,1);
       else
         sizecheck(xcdot0,[num_xc,1]); 
-        if ~tiflag
-          if isnumeric(xcdot0) xcdot0 = ConstantTrajectory(xcdot0); end
-          typecheck(xcdot0,'Trajectory');
-        end
-        obj.xcdot0 = xcdot0;
       end
+      if ~tiflag
+        if isnumeric(xcdot0) xcdot0 = ConstantTrajectory(xcdot0); end
+        typecheck(xcdot0,'Trajectory');
+      end
+      obj.xcdot0 = xcdot0;
+      
       if (isempty(Ad))
-        obj.Ad = sparse(num_xd,num_xc+num_xd);
+        Ad = sparse(num_xd,num_xc+num_xd);
       else
-        sizecheck(Ad,[num_xd,num_xc+num_xd]); 
-        if ~tiflag
-          if isnumeric(Ad) Ad = ConstantTrajectory(Ad); end
-          typecheck(Ad,'Trajectory');
-        end
-        obj.Ad = Ad;
+        sizecheck(Ad,[num_xd,num_xc+num_xd]);
       end
+      if ~tiflag
+        if isnumeric(Ad) Ad = ConstantTrajectory(Ad); end
+        typecheck(Ad,'Trajectory');
+      end
+      obj.Ad = Ad;
+      
       if (isempty(Bd)) 
-        obj.Bd = sparse(num_xd,num_u);
+        Bd = sparse(num_xd,num_u);
       else
         sizecheck(Bd,[num_xd,num_u]);
-        if ~tiflag
-          if isnumeric(Bd) Bd = ConstantTrajectory(Bd); end
-          typecheck(Bd,'Trajectory');
-        end
-        obj.Bd = Bd;
       end
+      if ~tiflag
+        if isnumeric(Bd) Bd = ConstantTrajectory(Bd); end
+        typecheck(Bd,'Trajectory');
+      end
+      obj.Bd = Bd;
+
       if (isempty(xdn0)) 
-        obj.xdn0 = sparse(num_xd,1);
+        xdn0 = sparse(num_xd,1);
       else
         sizecheck(xdn0,[num_xd,1]); 
-        if ~tiflag
-          if isnumeric(xdn0) xdn0 = ConstantTrajectory(xdn0); end
-          typecheck(xdn0,'Trajectory');
-        end
-        obj.xdn0 = xdn0;
       end
+      if ~tiflag
+        if isnumeric(xdn0) xdn0 = ConstantTrajectory(xdn0); end
+        typecheck(xdn0,'Trajectory');
+      end
+      obj.xdn0 = xdn0;
+
       if (isempty(C)) 
-        obj.C = sparse(num_y,num_xc+num_xd);
+        C = sparse(num_y,num_xc+num_xd);
       else
         sizecheck(C,[num_y,num_xc+num_xd]); 
-        if ~tiflag
-          if isnumeric(C) C = ConstantTrajectory(C); end
-          typecheck(C,'Trajectory');
-        end
-        obj.C = C;
       end
+      if ~tiflag
+        if isnumeric(C) C = ConstantTrajectory(C); end
+        typecheck(C,'Trajectory');
+      end
+      obj.C = C;
+
       if (isempty(D)) 
-        obj.D = sparse(num_y,num_u);
+        D = sparse(num_y,num_u);
       else
         sizecheck(D,[num_y,num_u]); 
-        if ~tiflag
-          if isnumeric(D) D = ConstantTrajectory(D); end
-          typecheck(D,'Trajectory');
-        end
-        obj.D = D;
-        if (~tiflag || any(D(:)))  % only if D is non-zero
-          obj = setDirectFeedthrough(obj,true);
-        end
       end
+      if ~tiflag
+        if isnumeric(D) D = ConstantTrajectory(D); end
+        typecheck(D,'Trajectory');
+      end
+      obj.D = D;
+      if (~tiflag || any(D(:)))  % only if D is non-zero
+        obj = setDirectFeedthrough(obj,true);
+      end
+      
       if (isempty(y0)) 
-        if ~tiflag
-            obj.y0 = ConstantTrajectory(sparse(num_y,1));
-        else
-            obj.y0 = sparse(num_y,1);
-        end
+        y0 = sparse(num_y,1);
       else
         sizecheck(y0,[num_y,1]); 
-        if ~tiflag
-          if isnumeric(y0) y0 = ConstantTrajectory(y0); end
-          typecheck(y0,'Trajectory');
-        end
-        obj.y0 = y0;
       end
+      if ~tiflag
+        if isnumeric(y0) y0 = ConstantTrajectory(y0); end
+        typecheck(y0,'Trajectory');
+      end
+      obj.y0 = y0;
     end
 
     function [xcdot,df] = dynamicsRHS(obj,t,x,u)
@@ -179,7 +180,7 @@ classdef AffineSystem < PolynomialSystem
     end
     
     function sys = feedback(sys1,sys2)
-      % try to keep feedback between polynomial systems polynomial.  else,
+      % try to keep feedback between affine systems affine.  else,
       % kick out to DrakeSystem
       %
             
@@ -255,7 +256,7 @@ classdef AffineSystem < PolynomialSystem
     end
     
     function sys = cascade(sys1,sys2)
-      % try to keep cascade between polynomial systems polynomial.  else,
+      % try to keep cascade between affine systems affine.  else,
       % kick out to DrakeSystem
       %
       
@@ -317,7 +318,7 @@ classdef AffineSystem < PolynomialSystem
     end
     
     function sys = parallel(sys1,sys2)
-      % try to keep cascade between polynomial systems polynomial.  else,
+      % try to keep parallel combinations between affine systems affine.  else,
       % kick out to DrakeSystem
       %
       
