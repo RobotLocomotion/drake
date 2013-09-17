@@ -370,6 +370,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
       typecheck(frames,'cell');
       
       if (nargin<2) frame_ids =[]; end
+      if (nargin<3) zap_empty_frames = false; end
       
       if (nargin>1 && zap_empty_frames)
         i=1;
