@@ -74,9 +74,11 @@ classdef MultiCoordinateFrame < CoordinateFrame
         if isempty(frame_id)
           obj.coord_ids{i} = (1:d) + length(obj.frame_id);
           obj.frame_id = vertcat(obj.frame_id,repmat(i,d,1));
-        else
+        elseif d>0
           obj.coord_ids{i} = find(frame_id==i);
-          sizecheck(obj.coord_ids{i},coordinate_frames{i}.dim);
+          sizecheck(obj.coord_ids{i},d);
+        else
+          obj.coord_ids{i} = [];
         end
 
         % add a transform from this multiframe to the child frame
