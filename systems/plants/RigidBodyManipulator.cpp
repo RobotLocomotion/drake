@@ -298,6 +298,9 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 		myrealloc(parent,last_NB,NB);
 		myrealloc(dofnum,last_NB,NB);
 		myrealloc(damping,last_NB,NB);
+        myrealloc(coulomb_friction,last_NB,NB);
+        myrealloc(static_friction,last_NB,NB);
+        myrealloc(coulomb_window,last_NB,NB);
 		myrealloc(Xtree,last_NB,NB);
 		myrealloc(I,last_NB,NB);
 
@@ -442,7 +445,10 @@ RigidBodyManipulator::~RigidBodyManipulator() {
   	delete[] pitch;
   	delete[] parent;
   	delete[] dofnum;
-  	delete[] damping;
+    delete[] damping;
+    delete[] coulomb_friction;
+    delete[] static_friction;
+    delete[] coulomb_window;
   	delete[] Xtree;
   	delete[] I;
   
@@ -1293,6 +1299,16 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
     n = dofnum[i];
     C(n) = (S[i]).transpose() * fvp[i] + damping[i]*qd[n];
     
+    if (qd[n] >= coulomb_window[i]) {
+      C(n) += coulomb_friction[i];
+    } 
+    else if (qd[n] <= -coulomb_window[i]) {
+      C(n) -= coulomb_friction[i];
+    } 
+    else {
+      C(n) += qd[n]/coulomb_window[i] * coulomb_friction[i];
+    } 
+
     if (dC) {
       (*dC).block(n,0,1,NB) = S[i].transpose()*dfvpdq[i];
       (*dC).block(n,NB,1,NB) = S[i].transpose()*dfvpdqd[i];
