@@ -26,7 +26,7 @@ function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,use
   problem.solver = 'fmincon';
   problem.options=optimset('GradConstr','on','Algorithm','interior-point','Display','iter','TolX',1e-14,'TolCon',1e-9,'MaxFunEvals',5000);
   problem.options=optimset(problem.options,'TolFun',1e3);
-  problem.options=optimset(problem.options,user_options);
+  problem.options=optimset(problem.options,user_options)
 
   for i = 1:n
     con = makeCon(r);
@@ -52,16 +52,10 @@ function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,use
     v.draw(0,[qsol;0*qsol]);
 
     if (~success)
-      if (exitflag==0) % fmincon reached maximum iteration limit
-        warning('constraintTester:fmincon_max_iter', ...
-          ['%s stopped because fmincon reached its maximum number of ' ... 
-           'function evaluations. This may happen occaisonally due to ' ...
-           'difficult initial conditions.'],testName);
-      elseif (exitflag==-2) % fmincon failed to find feasible solution
+      if (exitflag==-2) % fmincon failed to find feasible solution
         warning('constraintTester:fmincon_failure', ...
-          ['%s stopped because fmincon failed to find a feasible solution. ' ...
-           'This may happen occaisonally due to difficult initial ' ...
-           'conditions.'],testName);
+          ['%s failed to find a feasible solution. This may happen ' ...
+          'occaisonally due to difficult initial conditions.'],testName);
       else
         error('%s: fmincon failed with exitflag = %d',testName,exitflag);
       end
