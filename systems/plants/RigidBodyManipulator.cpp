@@ -1097,16 +1097,53 @@ void RigidBodyManipulator::forwardKin(const int body_ind, const MatrixBase<Deriv
     x = MatrixXd::Zero(2*dim,n_pts);
     x.block(0,0,3,n_pts) = T*pts;
     x.block(3,0,3,n_pts) = rpy.replicate(1,n_pts);
-  } else if(rotation_type == 2) {
-    Vector4d quat;
-    double qw = sqrt(1+T(0,0)+T(1,1)+T(2,2))/2;
-    double qx = (T(2,1)-T(1,2))/(4*qw);
-    double qy = (T(0,2)-T(2,0))/(4*qw);
-    double qz = (T(1,0)-T(0,1))/(4*qw);
-    quat << qw, qx, qy, qz;
-    x = MatrixXd::Zero(7,n_pts);
-    x.block(0,0,3,n_pts) = T*pts;
-    x.block(3,0,4,n_pts) = quat.replicate(1,n_pts);
+  } 
+  else if(rotation_type == 2)
+  {
+	Vector4d quat;
+	double traceT = 1+T(0,0)+T(1,1)+T(2,2);
+	double eps = 1e-16;
+	double qw,qx,qy,qz;
+	if(traceT>eps)
+	{
+		qw = sqrt(traceT)/2;
+		qx = (T(2,1)-T(1,2))/(4*qw);
+		qy = (T(0,2)-T(2,0))/(4*qw);
+		qz = (T(1,0)-T(0,1))/(4*qw);
+	}
+	else
+	{
+		double s;
+		if(T(0,0)>T(1,1)&&T(0,0)>T(2,2))
+		{
+			s = 2*sqrt(1+T(0,0)-T(1,1)-T(2,2));
+			qw = (T(2,1)-T(1,2))/s;
+			qx = 0.25*s;
+			qy = (T(0,1)+T(1,0))/s;
+			qz = (T(0,2)+T(2,0))/s;
+		}
+		else if(T(1,1)>T(2,2))
+		{
+			s = 2*sqrt(1+T(1,1)-T(0,0)-T(2,2));
+			qw = (T(0,2)-T(2,0))/s;
+			qx = (T(0,1)+T(1,0))/s;
+			qy = 0.25*s;
+			qz = (T(1,2)+T(2,1))/s;
+		}
+		else
+		{
+			s = 2*sqrt(1+T(2,2)-T(1,1)-T(0,0));
+			qw = (T(1,0)-T(0,1))/s;
+			qx = (T(0,2)+T(2,0))/s;
+			qy = (T(1,2)+T(2,1))/s;
+			qz = 0.25*s;
+		}
+
+	}
+	quat << qw, qx, qy, qz;
+	x = MatrixXd::Zero(7,n_pts);
+	x.block(0,0,3,n_pts) = T*pts;
+	x.block(3,0,4,n_pts) = quat.replicate(1,n_pts);
   }
 }
 
@@ -1175,16 +1212,52 @@ void RigidBodyManipulator::forwardJac(const int body_ind, const MatrixBase<Deriv
       dR11_dq(i) = bodies[body_ind].dTdq(num_dof+i,1);
       dR12_dq(i) = bodies[body_ind].dTdq(num_dof+i,2);
     }
-
-    double qw = sqrt(1.0+R(0,0)+R(1,1)+R(2,2))/2.0;
-    MatrixXd Jq = MatrixXd::Zero(4,num_dof);
-    VectorXd dqwdq = (dR00_dq+dR11_dq+dR22_dq)/(4*sqrt(1+R(0,0)+R(1,1)+R(2,2)));
-    double wsquare4 = 4*qw*qw;
-    Jq.block(0,0,1,num_dof) = dqwdq.transpose();
-    Jq.block(1,0,1,num_dof) = (((dR21_dq-dR12_dq)*qw-(R(2,1)-R(1,2))*dqwdq).transpose())/wsquare4;
-    Jq.block(2,0,1,num_dof) = (((dR02_dq-dR20_dq)*qw-(R(0,2)-R(2,0))*dqwdq).transpose())/wsquare4;
-    Jq.block(3,0,1,num_dof) = (((dR10_dq-dR01_dq)*qw-(R(1,0)-R(0,1))*dqwdq).transpose())/wsquare4;
     
+    double traceR = 1.0+R(0,0)+R(1,1)+R(2,2);
+    double epsilon = 1e-16;
+
+    MatrixXd Jq = MatrixXd::Zero(4,num_dof);
+    if(traceR>epsilon)
+    {
+	    double qw = sqrt(1+R(0,0)+R(1,1)+R(2,2))/2.0;
+	    VectorXd dqwdq = (dR00_dq+dR11_dq+dR22_dq)/(4*sqrt(1+R(0,0)+R(1,1)+R(2,2)));
+	    double wsquare4 = 4*qw*qw;
+	    Jq.block(0,0,1,num_dof) = dqwdq.transpose();
+	    Jq.block(1,0,1,num_dof) = (((dR21_dq-dR12_dq)*qw-(R(2,1)-R(1,2))*dqwdq).transpose())/wsquare4;
+	    Jq.block(2,0,1,num_dof) = (((dR02_dq-dR20_dq)*qw-(R(0,2)-R(2,0))*dqwdq).transpose())/wsquare4;
+	    Jq.block(3,0,1,num_dof) = (((dR10_dq-dR01_dq)*qw-(R(1,0)-R(0,1))*dqwdq).transpose())/wsquare4;
+    }
+    else
+    {
+	    if(R(0,0)>R(1,1)&&R(0,0)>R(2,2))
+	    {
+		    double s = 2*sqrt(1+R(0,0)-R(1,1)-R(2,2));
+		    VectorXd dsdq = (dR00_dq-dR11_dq-dR22_dq)/(s/2);
+		    Jq.block(0,0,1,num_dof) = (((dR21_dq-dR12_dq)*s-(R(2,1)-R(1,2))*dsdq).transpose())/(s*s);
+		    Jq.block(1,0,1,num_dof) = 0.25*dsdq.transpose();
+		    Jq.block(2,0,1,num_dof) = (((dR01_dq+dR10_dq)*s-(R(0,1)+R(1,0))*dsdq).transpose())/(s*s);
+		    Jq.block(3,0,1,num_dof) = (((dR02_dq+dR20_dq)*s-(R(0,2)+R(2,0))*dsdq).transpose())/(s*s);
+	    }
+	    else if(R(1,1)>R(2,2))
+	    {
+		    double s = 2*sqrt(1+R(1,1)-R(0,0)-R(2,2));
+		    VectorXd dsdq = (dR11_dq-dR00_dq-dR22_dq)/(s/2);
+		    Jq.block(0,0,1,num_dof) = (((dR02_dq-dR20_dq)*s-(R(0,2)-R(2,0))*dsdq).transpose())/(s*s);
+		    Jq.block(1,0,1,num_dof) = (((dR01_dq+dR10_dq)*s-(R(0,1)-R(1,0))*dsdq).transpose())/(s*s);
+		    Jq.block(2,0,1,num_dof) = 0.25*dsdq.transpose();
+		    Jq.block(3,0,1,num_dof) = (((dR12_dq+dR21_dq)*s-(R(1,2)-R(2,1))*dsdq).transpose())/(s*s);
+	    }
+	    else
+	    {
+		    double s = 2*sqrt(1+R(2,2)-R(0,0)-R(1,1));
+		    VectorXd dsdq = (dR22_dq-dR00_dq-dR11_dq)/(s/2);
+		    Jq.block(0,0,1,num_dof) = (((dR21_dq-dR12_dq)*s-(R(2,1)-R(1,2))*dsdq).transpose())/(s*s);
+		    Jq.block(1,0,1,num_dof) = (((dR02_dq+dR20_dq)*s-(R(0,2)-R(2,0))*dsdq).transpose())/(s*s);
+		    Jq.block(2,0,1,num_dof) = (((dR12_dq+dR21_dq)*s-(R(1,2)-R(2,1))*dsdq).transpose())/(s*s);
+		    Jq.block(3,0,1,num_dof) = 0.25*dsdq.transpose();
+	    }
+		
+    }
     MatrixXd Jfull = MatrixXd::Zero(7*n_pts,num_dof);
     for (int i=0;i<n_pts;i++)
     {
