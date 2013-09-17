@@ -10,6 +10,7 @@ Maintainers:  Russ Tedrake <russt@mit.edu>
 Summary:      A planning, control, and analysis toolbox for nonlinear dynamical systems
 Description:  http://drake.mit.edu
 
+
 Requirements: 
 	      spotless
 
@@ -21,6 +22,24 @@ Optional Dependencies:
 	      snopt7
 	      sedumi
 	      cplex
+
+	      
+MATLAB Toolbox Dependencies:
+       	      Spline Toolbox
+	      Image Processing Toolbox (should be able to remove this one)
+	      % todo: finish this list
+
+Prerequisites for MacPorts:
+	      port install wget gsed graphviz 
+	      % todo: finish this list
+
+Prerequisites for Homebrew:
+	      brew install wget gnu-sed graphviz
+	      % todo: finish this list
+
+Prerequisites for Ubuntu:
+	      apt-get install 
+	      % todo: finish this list
 
 License:      BSD  (http://drake.mit.edu/license)
 
