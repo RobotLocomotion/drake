@@ -39,7 +39,7 @@ classdef SineSys < DrakeSystem
       checkDependency('sedumi');
       
       p=SineSys();
-      pp=p.makeTrigPolySystem(struct('replace_output_w_new_state',true));
+      pp=extractTrigPolySystem(p,struct('replace_output_w_new_state',true));
       V=tilyap(pp,Point(pp.getStateFrame,[sin(0);cos(0)]),eye(2));
       px = pp.getStateFrame.poly;
       
@@ -78,7 +78,7 @@ classdef SineSys < DrakeSystem
     function runTrigPolyVectorFields()
       p=SineSys();
       
-      pp=p.makeTrigPolySystem(struct('replace_output_w_new_state',true));
+      pp=extractTrigPolySystem(p,struct('replace_output_w_new_state',true));
       
       figure(1);
       xs=linspace(-2*pi,2*pi,101);

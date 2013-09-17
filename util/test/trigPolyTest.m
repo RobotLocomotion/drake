@@ -25,21 +25,21 @@ try
   oldpath = addpath([conf.root,'/examples/Pendulum']);
 
   p = PendulumPlant();
-  tp=p.makeTrigPolySystem(struct('replace_output_w_new_state',true));
+  tp=extractTrigPolySystem(p,struct('replace_output_w_new_state',true));
   checkDynamics(p,tp);
   
   path(oldpath);
   oldpath = addpath([conf.root,'/examples/Acrobot']);
 
   p=AcrobotPlant();
-  tp=p.makeTrigPolySystem(struct('replace_output_w_new_state',true));
+  tp=extractTrigPolySystem(p,struct('replace_output_w_new_state',true));
   checkDynamics(p,tp);
   
   path(oldpath);
   oldpath = addpath([conf.root,'/examples']);
   
   p=VanDerPol();
-  pp=p.makeTrigPolySystem();
+  pp=extractTrigPolySystem(p);
   [prhs,plhs]=getPolyDynamics(p);
   [pprhs,pplhs]=getPolyDynamics(pp);
   shouldBeEqual(prhs,pprhs);

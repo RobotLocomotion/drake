@@ -3,13 +3,13 @@ function trigPolyTest
 options.replace_output_w_new_state = true;
 
 p1 = PlanarRigidBodyManipulator('../Acrobot.urdf');
-tp1 = makeTrigPolySystem(p1,options);
+tp1 = extractTrigPolySystem(p1,options);
 
 oldpath=addpath('..');
 p2 = AcrobotPlant();
 path(oldpath);
 
-tp2 = makeTrigPolySystem(p2,options);
+tp2 = extractTrigPolySystem(p2,options);
 
 w = warning('off','Drake:DrakeSystem:ConstraintsNotEnforced');
 tf = .5;

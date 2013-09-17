@@ -20,6 +20,8 @@ classdef MultiCoordinateFrame < CoordinateFrame
 
   methods
     function obj = MultiCoordinateFrame(coordinate_frames,frame_id)
+      if (nargin<2) frame_id = []; end
+      
       typecheck(coordinate_frames,'cell');
       name=[];
       dim=0;
@@ -37,12 +39,16 @@ classdef MultiCoordinateFrame < CoordinateFrame
       for i=1:length(cf)
         if isa(cf{i},'MultiCoordinateFrame')
           coordinate_frames=vertcat(coordinate_frames,cf{i}.frame);
+          if ~isempty(frame_id)
+            % update frame ids accordingly (by wedging these frames in)
+            frame_id(frame_id>i) = frame_id(frame_id>i)+length(cf{i}.frame);
+            frame_id(frame_id==i) = cf{i}.frame_id + i-1;
+          end
         else
           coordinate_frames=vertcat(coordinate_frames,{cf{i}});
         end
       end
       
-      if (nargin<2) frame_id = []; end
       for i=1:length(coordinate_frames)
         typecheck(coordinate_frames{i},'CoordinateFrame');
         name = [name,'+',coordinate_frames{i}.name];

@@ -3,13 +3,13 @@ function trigPolyTest
 options.replace_output_w_new_state = true;
 
 p1 = PlanarRigidBodyManipulator('../Pendulum.urdf');
-tp1 = makeTrigPolySystem(p1,options);
+tp1 = extractTrigPolySystem(p1,options);
 
 oldpath=addpath('..');
 p2 = PendulumPlant();
 path(oldpath);
 
-tp2 = makeTrigPolySystem(p2,options);
+tp2 = extractTrigPolySystem(p2,options);
 
 % test numerically, because f and e are different (one has the inertial
 % matrix in f, the other has it in e)
