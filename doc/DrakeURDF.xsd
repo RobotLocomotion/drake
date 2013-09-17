@@ -9,6 +9,30 @@
 Documents URDF support for Drake, which implements much of the ROS URDF specification, but also adds a number of new elements.
    </xs:documentation>
     </xs:annotation>
+    <xs:complexType name="loop_joint">
+        <xs:sequence>
+            <xs:element name="link1" type="link_reference">
+                <xs:annotation>
+                    <xs:documentation>String naming the link on one side of
+the joint.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="link2" type="link_reference">
+                <xs:annotation>
+                    <xs:documentation>String naming the link on the other side of
+the joint.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element minOccurs="0" name="axis" type="axis"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute fixed="continuous" name="type" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>Currently must be ’continuous’. The intent is to
+eventually support all of the same types as a 'joint' element. See the joint element documentation.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
     <xs:complexType name="pose">
         <xs:attribute name="xyz" type="xs:string" default="0 0 0">
             <xs:annotation>
@@ -164,11 +188,14 @@ Documents URDF support for Drake, which implements much of the ROS URDF specific
     </xs:complexType>
 
 
-    <xs:complexType name="parent">
+    <xs:complexType name="link_reference">
         <xs:attribute name="link" type="xs:string" use="required"/>
     </xs:complexType>
 
-    <xs:complexType name="child">
+    <xs:complexType name="link_reference_w_pose">
+        <xs:sequence>
+            <xs:element minOccurs="0" name="origin" type="pose"/>
+        </xs:sequence>
         <xs:attribute name="link" type="xs:string" use="required"/>
     </xs:complexType>
 
@@ -209,12 +236,12 @@ Documents URDF support for Drake, which implements much of the ROS URDF specific
                     <xs:documentation>This is the transform from the parent link to the child link. The joint is located at the origin of the child link, as shown in the figure above. </xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="parent" type="parent" minOccurs="1" maxOccurs="1">
+            <xs:element name="parent" type="link_reference" minOccurs="1" maxOccurs="1">
                 <xs:annotation>
                     <xs:documentation>Parent link name</xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="child" type="child" minOccurs="1" maxOccurs="1">
+            <xs:element name="child" type="link_reference" minOccurs="1" maxOccurs="1">
                 <xs:annotation>
                     <xs:documentation>Child link name</xs:documentation>
                 </xs:annotation>
@@ -263,6 +290,15 @@ Documents URDF support for Drake, which implements much of the ROS URDF specific
                 <xs:element name="material" type="material" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
                         <xs:documentation>The material of the visual element. It is allowed to specify a material element outside of the 'link' object, in the top level 'robot' element. From within a link element you can then reference the material by name. </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element maxOccurs="unbounded" minOccurs="0" name="loop_joint" type="loop_joint">
+                    <xs:annotation>
+                        <xs:documentation>Adds support for simple closed-loop kinematic chains. For an example, see
+examples/SimpleFourBar/FourBar.urdf
+
+Note: We do not support dynamics or torque at the loop_joint
+yet. (see bug 921)</xs:documentation>
                     </xs:annotation>
                 </xs:element>
             </xs:sequence>
