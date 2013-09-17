@@ -113,7 +113,7 @@
 					<Integer>3</Integer>
 				</field>
 				<field name="openOutputInBrowser">
-					<Boolean>true</Boolean>
+					<Boolean>false</Boolean>
 				</field>
 				<field name="format">
 					<Integer>2</Integer>
