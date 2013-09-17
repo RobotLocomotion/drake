@@ -87,10 +87,11 @@ if (eigen3_FOUND)
     pods_use_pkg_config_packages(approximateIKmex gurobi)
   endif()
 
-  pods_use_pkg_config_packages(snopt_cpp)
+  pods_find_pkg_config(snopt_cpp)
   if (snopt_cpp_FOUND)
     add_mex(inverseKinBackendmex inverseKinBackendmex.cpp)
-    target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeConstraint snopt_cpp) 
+    target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeConstraint) 
+    pods_use_pkg_config_packages(inverseKinBackendmex snopt_cpp)
   endif()
 
   macro(add_planar_rbm_mex)

@@ -1,8 +1,8 @@
 function testApproximateIK()
 options.floating = true;
 options.dt = 0.001;
-urdf = [getenv('DRC_PATH'),'/models/mit_gazebo_models/mit_robot_drake/model_minimal_contact.urdf'];
-r = Atlas(urdf,options);
+urdf = fullfile(getDrakePath,'examples','Atlas','urdf','atlas_minimal_contact.urdf');
+r = RigidBodyManipulator(urdf,options);
 v = r.constructVisualizer();
 nq = r.getNumDOF();
 cost = Point(r.getStateFrame,1);
