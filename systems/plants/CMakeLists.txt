@@ -87,20 +87,11 @@ if (eigen3_FOUND)
     pods_use_pkg_config_packages(approximateIKmex gurobi)
   endif()
 
-  #	approximateIKEIQPmex.cpp
-  #	collisionmex.cpp 
-
-
-  #add_KinCnst_mex(inverseKinBackendmex)
-  set(SNOPT_INCLUDE_DIR "/usr/local/SNOPT/snopt7/f2c/src" "/usr/local/SNOPT/snopt7/cppsrc" "/usr/local/include")
-  set(SNOPT_LINK_DIR "/usr/local/lib")
-  set(CMAKE_INCLUDE_PATH ${SNOPT_INCLUDE_DIR} ${CMAKE_INCLUDE_PATH} )
-  find_library(F2CLIBRARY f2c)
-  message(${F2CLIBRARY})
-  include_directories(${SNOPT_INCLUDE_DIR})
-  link_directories(${SNOPT_LINK_DIR})
-  add_mex(inverseKinBackendmex inverseKinBackendmex.cpp)
-  target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeConstraint snopt snopt_cpp snprint gfortran f2c) 
+  pods_use_pkg_config_packages(snopt_cpp)
+  if (snopt_cpp_FOUND)
+    add_mex(inverseKinBackendmex inverseKinBackendmex.cpp)
+    target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeConstraint snopt_cpp) 
+  endif()
 
   macro(add_planar_rbm_mex)
     # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
