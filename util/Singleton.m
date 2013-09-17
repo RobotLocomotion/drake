@@ -14,26 +14,19 @@ classdef Singleton < handle
   
   methods (Static=true,Access=private)
     function obj = getSingleton(obj,uid)
-      persistent uidStore objectStore;
-      
-      if (isempty(objectStore))
-        uidStore={};
-        objectStore={};
-        ind=0;
-      else
-        [~,ind]=ismember(uid,uidStore);
+      persistent uidMap;
+      if isempty(uidMap)
+        uidMap = containers.Map('UniformValues',false);
       end
-      
-      if ind<1
-        uidStore{end+1}=uid;
-        objectStore{end+1}=obj;
+
+      if ~isKey(uidMap, uid)
+        uidMap(uid) = obj;
       else
-        if (length(ind)>1) error('found multiple matches in the object store.  this shouldn''t happen'); end
-        if strcmp(class(obj),class(objectStore{ind}))
-          obj = objectStore{ind};
+        if strcmp(class(obj), class(uidMap(uid)))
+          obj = uidMap(uid);
         else
           warning('found object in the store with the same uid, but a different type.  overwriting the store with the new object');
-          objectStore{ind} = obj;
+          uidMap(uid) = obj;
         end
       end
     end
