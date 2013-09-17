@@ -110,6 +110,7 @@ classdef Trajectory < DrakeSystem
         
         breaks = unique([reshape(a.getBreaks,1,[]),reshape(b.getBreaks,1,[])]);
         breaks = breaks(breaks>=tspan(1) & breaks<=tspan(2));
+        breaks = breaks';
     end
     
     function b = ctranspose(a)

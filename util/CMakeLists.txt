@@ -9,5 +9,6 @@ add_mex(drakeUtil SHARED drakeUtil.cpp)
 
 add_mex(drakeDebugMex SHARED drakeDebugMex.cpp)
 
+add_mex(drakeQuatUtil SHARED drakeQuatUtil.cpp)
 add_subdirectory(test)
 

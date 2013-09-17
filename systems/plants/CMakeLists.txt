@@ -41,6 +41,7 @@ if (eigen3_FOUND)
   target_link_libraries(drakeRBM drakeCollision)
 
   add_subdirectory(collision)
+  add_subdirectory(constraint)
 
   if (Boost_FOUND)
     add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
@@ -72,13 +73,34 @@ if (eigen3_FOUND)
   add_rbm_mex(getCMMmex)
 
   pods_find_pkg_config(gurobi)
+
+  #add_rbm_mex(approximateIKmex_bk)
+  #pods_use_pkg_config_packages(approximateIKmex_bk gurobi)
+
+  macro(add_constraint_mex)
+    add_mex(${ARGV} ${ARGV}.cpp)
+    target_link_libraries(${ARGV} drakeRBM drakeUtil drakeConstraint)
+  endmacro()
+
   if (gurobi_FOUND)
-    add_rbm_mex(approximateIKmex)
+    add_constraint_mex(approximateIKmex)
     pods_use_pkg_config_packages(approximateIKmex gurobi)
   endif()
 
   #	approximateIKEIQPmex.cpp
   #	collisionmex.cpp 
+
+
+  #add_KinCnst_mex(inverseKinBackendmex)
+  set(SNOPT_INCLUDE_DIR "/usr/local/SNOPT/snopt7/f2c/src" "/usr/local/SNOPT/snopt7/cppsrc" "/usr/local/include")
+  set(SNOPT_LINK_DIR "/usr/local/lib")
+  set(CMAKE_INCLUDE_PATH ${SNOPT_INCLUDE_DIR} ${CMAKE_INCLUDE_PATH} )
+  find_library(F2CLIBRARY f2c)
+  message(${F2CLIBRARY})
+  include_directories(${SNOPT_INCLUDE_DIR})
+  link_directories(${SNOPT_LINK_DIR})
+  add_mex(inverseKinBackendmex inverseKinBackendmex.cpp)
+  target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeConstraint snopt snopt_cpp snprint gfortran f2c) 
 
   macro(add_planar_rbm_mex)
     # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8

@@ -11,6 +11,9 @@ function megaclear()
     vrclear;
     
     evalin('base', 'h=findobj; delete(h(2:end));');  % delete dangling handles first
+    evalin('base', 'clearvars -global');    % clear globals before
+                                            % clearing mex (to help
+                                            % with Hongkai's bug)
     evalin('base', 'clear all classes java imports mex');    % now clear everything else
 
     dbstop(current_breakpoints);
