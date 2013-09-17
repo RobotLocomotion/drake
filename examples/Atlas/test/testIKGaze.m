@@ -40,8 +40,7 @@ head_con.type = 'gaze';
 head_con.gaze_axis = [1;0;0];
 head_con.gaze_orientation = rpy2quat([randn/10;randn/10;randn/2]*0);
 head_con.gaze_orientation = rpy2quat([0;0;pi/2]);
-[q_seed,q_nom,constraint,ikoptions] = inverseKinWrapup(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con,options);
-[q,info] = inverseKin(r,q_seed,q_nom,constraint{:},ikoptions);
+q = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con,options);
 kinsol = r.doKinematics(q);
 xhead = r.forwardKin(kinsol,head,zeros(3,1),2);
 Rhead = quat2rotmat(quatDiff(head_con.gaze_orientation,xhead(4:7)));
@@ -54,8 +53,7 @@ v.draw(1,[q;0*q]); drawnow;
 head_con5.type = 'gaze';
 head_con5.gaze_axis = [1;0;0];
 head_con5.gaze_dir = [randn;randn;0];
-[q_seed,q_nom,constraint,ikoptions] = inverseKinWrapup(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con5,options);
-[q,info] = inverseKin(r,q_seed,q_nom,constraint{:},ikoptions);
+q = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con5,options);
 v.draw(1,[q;0*q]); drawnow;
 
 
@@ -63,8 +61,7 @@ v.draw(1,[q;0*q]); drawnow;
 head_con4.type = 'gaze';
 head_con4.gaze_axis = [1;0;0];
 head_con4.gaze_target = [2*randn;2*randn;0]; %look at the ground
-[q_seed,q_nom,constraint,ikoptions] = inverseKinWrapup(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con4,options);
-[q,info] = inverseKin(r,q_seed,q_nom,constraint{:},ikoptions);
+q = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con4,options);
 v.draw(1,[q;0*q]); drawnow;
 
 kinsol = r.doKinematics(q);
@@ -74,8 +71,7 @@ xhead = r.forwardKin(kinsol,head,zeros(3,1),2);
 % CHECK WITH CONE CONSTRAINT
 head_con2 = head_con;
 head_con2.gaze_conethreshold = .2;
-[q_seed,q_nom,constraint,ikoptions] = inverseKinWrapup(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con2,options);
-[q,info] = inverseKin(r,q_seed,q_nom,constraint{:},ikoptions);
+q = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con2,options);
 
 kinsol = r.doKinematics(q);
 xhead = r.forwardKin(kinsol,head,zeros(3,1),2);
@@ -89,8 +85,7 @@ v.draw(1,[q;0*q]); drawnow;
 head_con3 = head_con;
 head_con3.gaze_orientation = rpy2quat([randn/10;randn/10;randn]);
 head_con3.gaze_threshold = .5;
-[q_seed,q_nom,constraint,ikoptions] = inverseKinWrapup(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con3,options);
-[q,info] = inverseKin(r,q_seed,q_nom,constraint{:},ikoptions);
+q = inverseKin(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con3,options);
 
 kinsol = r.doKinematics(q);
 xhead = r.forwardKin(kinsol,head,zeros(3,1),2);

@@ -19,7 +19,7 @@ classdef KinematicConstraint<Constraint
   
   methods
     function obj = KinematicConstraint(robot,tspan)
-      obj = obj@Constraint(Constraint.KinematicConstraintType);
+      obj = obj@Constraint(Constraint.KinematicConstraint);
       if(nargin<2)
         tspan = [-inf,inf];
       end
@@ -59,6 +59,5 @@ classdef KinematicConstraint<Constraint
     [c,dc] = eval(obj,t,kinsol)
     [lb,ub] = bounds(obj,t)
     name_str = name(obj,t)
-    ptr = constructPtr(varargin);
   end
 end

@@ -4,9 +4,9 @@ classdef Constraint
   end
   
   properties(Constant)
-    KinematicConstraintType = 1;
-    QuasiStaticConstraintType = 2;
-    PostureConstraintType = 3;
+    KinematicConstraint = 1;
+    QuasiStaticConstraint = 2;
+    PostureConstraint = 3;
   end
   
   methods
