@@ -6,7 +6,7 @@ Q = diag([10 1]); R=1;
 [c,V] = tilqr(p,p.xG,p.uG,Q,R);
 
 options.replace_output_w_new_state = true;
-tp = makeTrigPolySystem(p,options);
+tp = extractTrigPolySystem(p,options);
 
 %% quick sanity test on the linearization
 [A,B] = linearize(p,0,double(p.xG),double(p.uG));

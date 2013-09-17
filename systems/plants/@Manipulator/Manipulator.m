@@ -253,7 +253,7 @@ classdef Manipulator < SecondOrderSystem
       sys = cascade@SecondOrderSystem(sys1,sys2);
     end
     
-    function polysys = makeTrigPolySystem(obj,options)
+    function polysys = extractTrigPolySystem(obj,options)
       % Creates a (rational) polynomial system representation of the
       % dynamics
       
@@ -274,7 +274,7 @@ classdef Manipulator < SecondOrderSystem
       options.rational_dynamics_numerator=@(t,x,u)dynamics_rhs(obj,t,x,u);
       options.rational_dynamics_denominator=@(x)dynamics_lhs(obj,x);
       
-      polysys = makeTrigPolySystem@SecondOrderSystem(obj,options);
+      polysys = extractTrigPolySystem@SecondOrderSystem(obj,options);
     end
 
     function varargout = pdcontrol(sys,Kp,Kd,index)

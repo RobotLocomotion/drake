@@ -11,7 +11,7 @@ xG = Point(p.getStateFrame,[pi;0;0;0]);
 uG = Point(p.getInputFrame,0);
 
 options.replace_output_w_new_state = true;
-tp = makeTrigPolySystem(p,options);
+tp = extractTrigPolySystem(p,options);
 
 Q = diag([10 10 10 10 1 1]); R=1;
 c = tilqr(tp,xG,uG,Q,R);
