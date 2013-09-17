@@ -564,6 +564,70 @@ classdef DrakeSystem < DynamicalSystem
       end
     end
     
+    function polysys = extractPolynomialSystem(obj)
+      % Attempts to symbolically extract the extra structure of a
+      % polynomial system from the Drake system
+      % Will throw an error if the system is not truly polynomial.
+      %
+      % See also extractTrigPolySystem, taylorApprox
+      
+      t=msspoly('t',1);
+      x=msspoly('x',sys.num_x);
+      u=msspoly('u',sys.num_u);
+      
+      p_dynamics_rhs=[];
+      p_dynamics_lhs=[];
+      p_update = [];
+      p_output = [];
+      p_state_constraints = [];
+      
+      try 
+        if (obj.num_xc>0)
+          p_dynamics_rhs = dynamics(obj,t,x,u);
+        end
+        if (obj.num_xd>0)
+          p_update = update(obj,t,x,u);
+        end
+        p_output = output(obj,t,x,u);
+        
+        if (obj.num_xcon>0)
+          p_state_constraints = stateConstraints(obj,x);
+        end
+      catch ex
+        error('DrakeSystem:ExtractPolynomialSystem:NotPolynomial','This system appears to not be polynomial');
+      end
+      polysys = SpotPolynomialSystem(getInputFrame(obj),getStateFrame(obj),getOutputFrame(obj),p_dynamics_rhs,p_dynamics_lhs,p_update,p_output,p_state_constraints);
+      
+      polysys = setSampleTime(polysys,obj.getSampleTime);
+    end
+    
+    function sys = extractAffineSystem(obj)
+      % Attempts to symbolically extract the extra structure of an
+      % affine system from the Drake system
+      % Will throw an error if the system is not truly affine.
+      %
+      % See also taylorApprox
+      
+      sys = extractAffineSystem(extractPolynomialSystem(obj));
+    end
+
+    function sys = extractLinearSystem(obj)
+      % Attempts to symbolically extract the extra structure of a
+      % linear system from the Drake system
+      % Will throw an error if the system is not truly linear.
+      %
+      % See also linearize, taylorApprox
+
+      sys = extractLinearSystem(extractAffineSystem(obj));
+    end
+  end
+  
+  methods % deprecated (due to refactoring)
+    function polysys = makeTrigPolySystem(obj,options)
+      % deprecated method (due to refactoring): please use extractTrigPolySystem instead
+      warning('Drake:DeprecatedMethod','makeTrigPolySystem has been refactored and will go away.  Please use extractTrigPolySystem(obj,options) instead');
+      polysys = extractTrigPolySystem(obj,options);
+    end
   end
   
   % utility methods

@@ -405,6 +405,11 @@ classdef PolynomialSystem < DrakeSystem
       end
       
     end
+    
+    function sys = extractAffineSystem(obj)
+      spsys = extractPolynomialSystem(obj);  % first get the spot version
+      sys = extractAffineSystem(spsys);
+    end
   end
     
 end
