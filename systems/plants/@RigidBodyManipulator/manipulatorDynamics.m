@@ -181,7 +181,8 @@ else
     [H,C] = HandC(m,q,qd,f_ext,obj.gravity);
   end
   
-  C=C+m.damping'.*qd;
+  % add friction forces
+  C=C + min(1,max(-1,qd./m.coulomb_window')).*m.coulomb_friction' + m.damping'.*qd;  
 end
 
 end

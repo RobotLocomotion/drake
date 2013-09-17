@@ -115,6 +115,9 @@ public:
   int *parent;
   int *dofnum;
   double* damping;
+  double* coulomb_friction;
+  double* coulomb_window;
+  double* static_friction;
   MatrixXd* Xtree;
   MatrixXd* I;
   VectorXd a_grav;

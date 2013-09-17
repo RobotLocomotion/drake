@@ -161,7 +161,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       f = obj.body(body_ind).X_joint_to_body'*f_body;
     end
     
-    function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,limits)
+    function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits)
       % @ingroup Kinematic Tree
       typecheck(parent_ind,'double');
       typecheck(child_ind,'double');
@@ -169,7 +169,10 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       if (nargin<7) rpy=zeros(3,1); end
       if (nargin<8) axis=[1;0;0]; end
       if (nargin<9) damping=0; end
-      if (nargin<10)
+      if (nargin<10) coulomb_friction=0; end
+      if (nargin<11) static_friction=0; end
+      if (nargin<12) coulomb_window=0.1; end
+      if (nargin<13)
         limits = struct();
         limits.joint_limit_min = -Inf;
         limits.joint_limit_max = Inf;
@@ -239,10 +242,16 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
         case {'revolute','continuous'}
           child.pitch = 0;
           child.damping = damping;
+          child.coulomb_friction = coulomb_friction;
+          child.static_friction = static_friction;
+          child.coulomb_window = coulomb_window;
           
         case 'prismatic'
           child.pitch = inf;
           child.damping = damping;
+          child.coulomb_friction = coulomb_friction;
+          child.static_friction = static_friction;
+          child.coulomb_window = coulomb_window;
           
         case 'fixed'
           child.pitch = nan;
@@ -1173,6 +1182,9 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
           m.pitch(n+(0:2)) = inf;  % prismatic
           m.pitch(n+(3:5)) = 0;    % revolute
           m.damping(n+(0:5)) = 0;
+          m.coulomb_friction(n+(0:5)) = 0;
+          m.static_friction(n+(0:5)) = 0;
+          m.coulomb_window(n+(0:5)) = 0;
           m.parent(n+(0:5)) = [model.body(b.parent).dofnum,n+(0:4)];  % rel ypr
           m.Xtree{n} = Xroty(pi/2);   % x
           m.Xtree{n+1} = Xrotx(-pi/2)*Xroty(-pi/2); % y (note these are relative changes, x was up, now I'm rotating so y will be up)
@@ -1194,6 +1206,9 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
           m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*model.body(b.parent).X_joint_to_body;
           m.I{n} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
           m.damping(n) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
+          m.coulomb_friction(n) = b.coulomb_friction;
+          m.static_friction(n) = b.static_friction;
+          m.coulomb_window(n) = b.coulomb_window;
           m.f_ext_map_to = [m.f_ext_map_to,n];
           n=n+1;
         end
@@ -1525,10 +1540,31 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
         end
       end
       damping=0;
+      coulomb_friction=0;
+      static_friction=0;
+      coulomb_window=0.1;
       dynamics = node.getElementsByTagName('dynamics').item(0);
       if ~isempty(dynamics)
         if dynamics.hasAttribute('damping')
           damping = parseParamString(model,char(dynamics.getAttribute('damping')));
+        end
+        if dynamics.hasAttribute('friction')
+          coulomb_friction = parseParamString(model,char(dynamics.getAttribute('friction')));
+          if coulomb_friction < 0
+            error('RigidBodyManipulator: coulomb_friction must be >= 0');
+          end
+        end
+        if dynamics.hasAttribute('stiction')
+          static_friction = parseParamString(model,char(dynamics.getAttribute('stiction')));
+          if static_friction < 0
+            error('RigidBodyManipulator: static_friction must be >= 0');
+          end
+        end
+        if dynamics.hasAttribute('coulomb_window')
+          coulomb_window = parseParamString(model,char(dynamics.getAttribute('coulomb_window')));
+          if coulomb_window <= 0
+            error('RigidBodyManipulator: coulomb_window must be > 0');
+          end
         end
       end
       
@@ -1562,7 +1598,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       limits.velocity_limit = velocity_limit;
       
       name=regexprep(name, '\.', '_', 'preservecase');
-      model = model.addJoint(name,type,parent,child,xyz,rpy,axis,damping,limits);
+      model = model.addJoint(name,type,parent,child,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits);
     end
     
     

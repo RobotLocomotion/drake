@@ -27,7 +27,10 @@ classdef RigidBody
     Ttree=eye(4);   % position space coordinate transform *from this node to parent*
     T_body_to_joint=eye(4);
     wrljoint='';  % tranformation to joint coordinates in wrl syntax
-    damping=0;
+    damping=0; % viscous friction term
+    coulomb_friction=0; 
+    static_friction=0; % currently not used for simulation
+    coulomb_window=0.1; % the threshold around zero velocity used for the PWL friction model (See Khalil and Dombre, Fig. 9.2(d))
     joint_limit_min=[];
     joint_limit_max=[];
     effort_limit=[];

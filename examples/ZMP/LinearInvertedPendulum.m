@@ -191,7 +191,7 @@ classdef LinearInvertedPendulum < LinearSystem
     
       % got a com plan from the ZMP tracking controller
       if(nargin<5) options = struct(); end
-      c = COMtracker(obj,dZMP,options);
+      c = ZMPtracker(obj,dZMP,options);
       comtraj = COMplanFromTracker(obj,com0,comdot0,dZMP.tspan,c);
     end
     
