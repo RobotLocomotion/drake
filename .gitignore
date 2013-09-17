@@ -91,3 +91,4 @@ build
 unitTest.log
 mlint_output.html
 doc/DoxygenMatlab/latex
+doc/urdf

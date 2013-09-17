@@ -55,13 +55,15 @@ doxygen :
 	doxygen doc/Doxyfile
 
 pdfdoc: 
+	# apologies for hard-coding this for my mac for now... - Russ
 	# todo: fix then enable doxygen pdf output
-	cd doc && /Applications/oxygen/schemaDocumentationMac.sh DrakeURDF.xsd -cfg:oxygen_export_settings_pdf.xml   
-	cd doc && maketex drake.pdf
+	cd doc && make -f ~/code/latex/makefile_tex drake.pdf
+	cd doc && /Applications/oxygen/schemaDocumentationMac.sh drakeURDF.xsd -cfg:oxygen_export_settings_pdf.xml   
+	cp doc/urdf/drakeURDF.pdf doc/drakeURDF.pdf
 
 htmldoc: doxygen
 	# apologies for hard-coding this for my mac for now... - Russ
-	cd doc && /Applications/oxygen/schemaDocumentationMac.sh DrakeURDF.xsd -cfg:oxygen_export_settings_html.xml
+	cd doc && /Applications/oxygen/schemaDocumentationMac.sh drakeURDF.xsd -cfg:oxygen_export_settings_html.xml
 #	cd doc && maketex html   # need to fix this
 
 .PHONY: mlint
