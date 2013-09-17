@@ -118,11 +118,12 @@ classdef DynamicalSystem
       
       newsys = SimulinkModel(mdl,sys1.getNumInputs);
       newsys = setInputFrame(newsys,getInputFrame(sys1));
-      if (getNumStates(sys2)==0)
-        newsys = setStateFrame(newsys,getStateFrame(sys1));
-      elseif (getNumStates(sys1)==0)
-        newsys = setStateFrame(newsys,getStateFrame(sys2));
-      end
+      newsys = setStateFrame(newsys,MultiCoordinateFrame.constructFrame( ...
+        { getStateFrame(sys1),getStateFrame(sys2) }, ...
+        [ ones(getNumContStates(sys1),1); ...
+          2*ones(getNumContStates(sys2),1); ...
+          ones(getNumDiscStates(sys1),1); ...
+          2*ones(getNumDiscStates(sys2),1) ] ) );
       newsys = setOutputFrame(newsys,getOutputFrame(sys2));
       newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
       newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);
@@ -162,11 +163,12 @@ classdef DynamicalSystem
       
       newsys = SimulinkModel(mdl,sys1.getNumInputs);
       newsys = setInputFrame(newsys,getInputFrame(sys1));
-      if (getNumStates(sys2)==0)
-        newsys = setStateFrame(newsys,getStateFrame(sys1));
-      elseif (getNumStates(sys1)==0)
-        newsys = setStateFrame(newsys,getStateFrame(sys2));
-      end
+      newsys = setStateFrame(newsys,MultiCoordinateFrame.constructFrame( ...
+        { getStateFrame(sys1),getStateFrame(sys2) }, ...
+        [ ones(getNumContStates(sys1),1); ...
+          2*ones(getNumContStates(sys2),1); ...
+          ones(getNumDiscStates(sys1),1); ...
+          2*ones(getNumDiscStates(sys2),1) ] ) );
       newsys = setOutputFrame(newsys,getOutputFrame(sys1));
       newsys.time_invariant_flag = sys1.time_invariant_flag && sys2.time_invariant_flag;
       newsys.simulink_params = catstruct(sys1.simulink_params,sys2.simulink_params);
@@ -229,11 +231,12 @@ classdef DynamicalSystem
       if (getNumInputs(newsys)>0)
         newsys = setInputFrame(newsys,inframe);
       end
-      if (getNumStates(sys2)==0)
-        newsys = setStateFrame(newsys,getStateFrame(sys1));
-      elseif (getNumStates(sys1)==0)
-        newsys = setStateFrame(newsys,getStateFrame(sys2));
-      end
+      newsys = setStateFrame(newsys,MultiCoordinateFrame.constructFrame( ...
+        { getStateFrame(sys1),getStateFrame(sys2) }, ...
+        [ ones(getNumContStates(sys1),1); ...
+          2*ones(getNumContStates(sys2),1); ...
+          ones(getNumDiscStates(sys1),1); ...
+          2*ones(getNumDiscStates(sys2),1) ] ) );
       if (getNumOutputs(newsys)>0)
         newsys = setOutputFrame(newsys,outframe);
       end

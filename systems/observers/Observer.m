@@ -18,7 +18,7 @@ classdef Observer < DrakeSystem
       obj = obj@DrakeSystem(num_xc,num_xd,getNumInputs(sys_to_observe)+getNumOutputs(sys_to_observe),getNumStates(sys_to_observer),direct_feedthrough_flag,time_invariant_flag);
 
       % setup input/output frames
-      obj = setInputFrame(obj,MultiCoordinateFrame({getInputFrame(sys_to_observe),getOutputFrame(sys_to_observe)}));
+      obj = setInputFrame(obj,MultiCoordinateFrame.constructFrame({getInputFrame(sys_to_observe),getOutputFrame(sys_to_observe)}));
       obj = setOutputFrame(obj,getStateFrame(sys_to_observe));
       
       obj = setSampleTime(obj,getSampleTime(sys_to_observe));
