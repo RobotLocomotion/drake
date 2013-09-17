@@ -3,9 +3,9 @@ classdef SLIP < HybridDrakeSystem
 % spring loaded inverted pendulum, control input is the angle of attack
 
 properties
-  m=1;  % mass
-  r0=1; % rest length of leg spring
-  k=300; % spring coefficient
+  m=80;  % mass (kg)
+  r0=1; % rest length of leg spring (m)
+  k=14000; % spring coefficient
   g=9.8; % gravity
   stopAtApex = 0; 
 end
@@ -24,7 +24,7 @@ methods
       obj=obj.addMode(pFlight2);
       
       obj=addTransition(obj,1,@collisionGuard,@flight2stance,true,true);
-      obj=addTransition(obj,3,andGuards(obj,@apexGuard1,@apexGuard2),@reachApex,false,true);
+      obj=addTransition(obj,3,@apexGuard,@reachApex,false,true);
       obj=addTransition(obj,2,andGuards(obj,@takeOffGuard1,@takeOffGuard2),@stance2flight,false,true);
     end
     
@@ -43,15 +43,11 @@ methods
       dg=[0 0 0 -1 0 0];
     end
     
-    function [g,dg]=apexGuard1(obj,t,x,u)
+    function [g,dg]=apexGuard(obj,t,x,u)
       g=x(4);  % ydot <= 0
       dg=[0 0 0 0 1 0];
     end
     
-    function [g,dg]=apexGuard2(obj,t,x,u)
-      g=-x(3); % xdot >= 0
-      dg=[0 0 0 -1 0 0];
-    end
     function [xp,mode,status,dxp]=stance2flight(obj,mode,t,xm,u)
       xp=[xm(5)-xm(1)*sin(xm(2));...
         xm(1)*cos(xm(2));...
@@ -152,9 +148,13 @@ methods
         x0=[0;y0;xdot0;0];
       end
       obj.stopAtApex=1;
-      xTraj=simulate(cascade(ConstantControl(theta),obj),[0 10],[x0;0]);
-      xApex=xTraj.eval(xTraj.tspan(end));
-      yn=xApex(3);
+      yTraj=simulate(cascade(setOutputFrame(ConstantTrajectory(theta),getInputFrame(obj)),obj),[0 10],[x0;0]);
+      yApex=Point(getOutputFrame(obj),yTraj.eval(yTraj.tspan(end)));
+      if yApex.xdot<0
+        yn = nan;
+      else
+        yn = yApex.y;
+      end
     end
     
     function theta=angleOfAttackControl(obj,yd,y0,xdot0)
@@ -168,7 +168,7 @@ methods
       r = SLIP();
       v = SLIPVisualizer(r);
       
-      aoa_command = setOutputFrame(ConstantTrajectory(.5),getInputFrame(r));
+      aoa_command = setOutputFrame(ConstantTrajectory(.51),getInputFrame(r));
       ytraj = simulate(cascade(aoa_command,r),[0 5]);
       v.playback(ytraj,struct('slider','true'));
     end
