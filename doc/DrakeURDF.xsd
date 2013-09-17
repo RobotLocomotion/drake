@@ -47,13 +47,13 @@ eventually support all of the same types as a 'joint' element. See the joint ele
     </xs:complexType>
     <xs:complexType name="force_element">
         <xs:choice>
-            <xs:element name="LinearSpringDamper" type="LinearSpringDamper"/>
-            <xs:element name="Wing" type="Wing">
+            <xs:element name="linear_spring_damper" type="linear_spring_damper"/>
+            <xs:element name="wing" type="wing">
                 <xs:annotation>
                     <xs:documentation>See RigidBodyWing.m for more documentation</xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="Thrust" type="Thrust">
+            <xs:element name="thrust" type="thrust">
                 <xs:annotation>
                     <xs:documentation>Thrust elements produce a force on a point on the parent body in a
 specified direction. The magnitude of the force is scaled from an input
@@ -78,7 +78,7 @@ feet of an Atlas robot to make Iron Man.</xs:documentation>
         </xs:attribute>
     </xs:complexType>
 
-    <xs:complexType name="LinearSpringDamper">
+    <xs:complexType name="linear_spring_damper">
         <xs:sequence>
             <xs:element name="link1" type="link_reference_w_pose">
                 <xs:annotation>
@@ -106,7 +106,7 @@ of the spring/damper with an (optional) pose specified relative to the coordinat
             </xs:annotation>
         </xs:attribute>
     </xs:complexType>
-    <xs:complexType name="Wing">
+    <xs:complexType name="wing">
         <xs:sequence>
             <xs:element name="parent" type="link_reference">
                 <xs:annotation>
@@ -162,7 +162,7 @@ Reynolds number around which we design the aerodynamic coefficients.</xs:documen
             </xs:annotation>
         </xs:attribute>
     </xs:complexType>
-    <xs:complexType name="Thrust">
+    <xs:complexType name="thrust">
         <xs:sequence>
             <xs:element name="parent" type="link_reference">
                 <xs:annotation>
