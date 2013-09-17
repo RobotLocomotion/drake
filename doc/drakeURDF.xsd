@@ -23,19 +23,19 @@ or
     </xs:simpleType>
     <xs:complexType name="loop_joint">
         <xs:sequence>
-            <xs:element name="link1" type="link_reference">
+            <xs:element name="link1" type="link_reference_w_pose" maxOccurs="1" minOccurs="1">
                 <xs:annotation>
                     <xs:documentation>String naming the link on one side of
 the joint.</xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="link2" type="link_reference">
+            <xs:element name="link2" type="link_reference_w_pose" maxOccurs="1" minOccurs="1">
                 <xs:annotation>
                     <xs:documentation>String naming the link on the other side of
 the joint.</xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element minOccurs="0" name="axis" type="axis"/>
+            <xs:element minOccurs="0" name="axis" type="axis" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="name" type="xs:string" use="required"/>
         <xs:attribute fixed="continuous" name="type" type="xs:string" use="optional">
@@ -313,7 +313,7 @@ input to Newtons of force.</xs:documentation>
     </xs:complexType>
 
     <xs:complexType name="link">
-        <xs:all>
+        <xs:sequence>
             <xs:element name="inertial" type="inertial" minOccurs="0" maxOccurs="1">
                 <xs:annotation>
                     <xs:documentation>The inertial properties of the link. </xs:documentation>
@@ -329,7 +329,7 @@ input to Newtons of force.</xs:documentation>
                     <xs:documentation>The collision properties of a link. Note that this can be different from the visual properties of a link, for example, simpler collision models are often used to reduce computation time. Note: multiple instances of collision tags can exist for the same link. The union of the geometry they define forms the collision representation of the link. </xs:documentation>
                 </xs:annotation>
             </xs:element>
-        </xs:all>
+        </xs:sequence>
         <xs:attribute name="name" type="xs:string" use="required">
             <xs:annotation>
                 <xs:documentation>The name of the link itself </xs:documentation>
@@ -452,15 +452,40 @@ Note: We do not support dynamics or torque at the loop_joint
 yet. (see bug 921)</xs:documentation>
                     </xs:annotation>
                 </xs:element>
-                <xs:element name="force_element" type="force_element">
+                <xs:element name="force_element" type="force_element" maxOccurs="unbounded"
+                    minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>Adds dynamic, force-producing elements like springs and aerodynamics</xs:documentation>
                     </xs:annotation>
                 </xs:element>
+                <xs:element maxOccurs="unbounded" minOccurs="0" name="collision_filter_group"
+                    type="collision_filter_group"/>
             </xs:sequence>
             <xs:attribute name="name" type="xs:string" use="required"/>
 
             <xs:attribute name="version" type="xs:string" default="1.0"/>
         </xs:complexType>
     </xs:element>
+    <xs:complexType name="collision_filter_group_reference">
+        <xs:attribute name="collision_filter_group"/>
+    </xs:complexType>
+    <xs:complexType name="collision_filter_group">
+        <xs:annotation>
+            <xs:documentation>Provides a means to exclude certain pairs of bodies from collision detec- tion and closest distance computations. A collision filter group can contain one or more links, and a link may belong to any number of collision filter groups. One collision filter group can ignore another, in which case pairs of bodies with one element from each group are skipped when performing the aforementioned computations.</xs:documentation>
+        </xs:annotation>
+        <xs:all>
+            <xs:element name="member" type="link_reference">
+                <xs:annotation>
+                    <xs:documentation>Specifies that a link belongs to this collision filter group.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="ignored_collision_filter_group"
+                type="collision_filter_group_reference">
+                <xs:annotation>
+                    <xs:documentation>Specifies that collisions between members of this collision filter group and those of another collision filter group should be ignored.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute form="unqualified" name="name" type="xs:string" use="required"/>
+    </xs:complexType>
 </xs:schema>
