@@ -1,4 +1,4 @@
-classdef SLIP < HybridDrakeSystem
+classdef BipedalSLIP < HybridDrakeSystem
 
 % spring loaded inverted pendulum, control input is the angle of attack
 
@@ -11,21 +11,20 @@ properties
 end
 
 methods
-    function obj=SLIP()
+    function obj=BipedalSLIP()
       obj = obj@HybridDrakeSystem(1,8);
       obj = setInputFrame(obj,CoordinateFrame('SLIPInput',1,'u',{'angle_of_attack'}));
-      obj = setOutputFrame(obj,CoordinateFrame('SLIPOutput',8,'y',{'x','y','r','theta','xdot','ydot','rdot','thetadot'}));
+      obj = setOutputFrame(obj,CoordinateFrame('SLIPOutput',8,'y',{'x','y','r1','theta1','r2','theta2','xdot','ydot','r1dot','theta1dot','r2dot','theta2dot'}));
       
-      pFlight1=SLIPFlight(obj);
-      obj=obj.addMode(pFlight1);
-      pStance=SLIPStance(obj);
-      obj=obj.addMode(pStance);
-      pFlight2=SLIPFlight(obj);
-      obj=obj.addMode(pFlight2);
+      pFlight=BipedalSLIPFlight(obj);
+      obj=obj.addMode(pFlight);
+      pSingleSupport=BipedalSLIPSingleSupport(obj);
+      obj=obj.addMode(pSingleSupport);
+      pDS=BipedalSLIPDoubleSupport(obj);
+      obj=obj.addMode(pDoubleSupport)
       
-      obj=addTransition(obj,1,@collisionGuard,@flight2stance,true,true);
-      obj=addTransition(obj,3,@apexGuard,@reachApex,false,true);
-      obj=addTransition(obj,2,andGuards(obj,@takeOffGuard1,@takeOffGuard2),@stance2flight,false,true);
+      obj=addTransition(obj,pFlight,@collisionGuard,@flight2stance,true,true);
+      obj=addTransition(obj,pSingleSupport,andGuards(obj,@takeOffGuard1,@takeOffGuard2),@stance2flight,false,true);
     end
     
     function [g,dg]=collisionGuard(obj,t,x,u)
@@ -33,12 +32,12 @@ methods
       dg=[0 0 1 0 0 obj.r0*sin(u)];
     end
     
-    function [g,dg]=takeOffGuard1(obj,t,x,u)
+    function [g,dg]=takeOffGuard1A(obj,t,x,u)
       g=obj.r0-x(1);  % r >= r0
       dg=[0 -1 0 0 0 0];
     end
     
-    function [g,dg]=takeOffGuard2(obj,t,x,u)
+    function [g,dg]=takeOffGuard1B(obj,t,x,u)
       g=-x(3);  % rdot >= 0
       dg=[0 0 0 -1 0 0];
     end
@@ -168,7 +167,7 @@ methods
       r = SLIP();
       v = SLIPVisualizer(r);
       
-      aoa_command = setOutputFrame(ConstantTrajectory(.5),getInputFrame(r));
+      aoa_command = setOutputFrame(ConstantTrajectory(.51),getInputFrame(r));
       ytraj = simulate(cascade(aoa_command,r),[0 5]);
       v.playback(ytraj,struct('slider','true'));
     end

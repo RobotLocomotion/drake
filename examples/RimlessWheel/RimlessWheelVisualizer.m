@@ -16,15 +16,6 @@ classdef RimlessWheelVisualizer < Visualizer
     function draw(obj,t,x)
       l = obj.l;  alpha = obj.alpha; gamma = obj.gamma;
       
-      persistent hFig;
-
-      if (isempty(hFig))
-        hFig = figure(25);
-        set(hFig,'DoubleBuffer','on');
-      end
-      
-      figure(hFig);
-      cla;
       hip = x(3)*[cos(gamma);-sin(gamma)] + l*[sin(x(1));cos(x(1))];
       hold on;
       for t=x(1)+[0:2*alpha:pi]
@@ -40,8 +31,6 @@ classdef RimlessWheelVisualizer < Visualizer
         line(obj.axis(1:2),tan(-gamma)*obj.axis(1:2),'LineWidth',1.5,'Color',MITred);
         axis(obj.axis);
       end
-      
-      drawnow;
     end
   end
 end

@@ -61,7 +61,7 @@ methods
     
     % set common bounding box
     %cmd{1}=['ls ', obj.dirname,'/*.eps | xargs -P 8 sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(obj.bbox),'/g" -i ".bk"'];
-    cmd{1}=['ls ', obj.dirname,'/*.eps | xargs -P 8 sed -e "s/BoundingBox:.*$/BoundingBox: ',num2str(obj.bbox),'/g"'];
+    cmd{1}=['ls ', obj.dirname,'/*.eps | xargs -P 8 sed -i -e "s/BoundingBox:.*$/BoundingBox: ',num2str(obj.bbox),'/g"'];
     
     % convert eps to pdf
     cmd{2}=['ls ', obj.dirname,'/*.eps | xargs -P 8 -n1 epstopdf'];
@@ -92,7 +92,7 @@ methods
     
     for i=1:length(cmd)
       try
-        if (system([cmd{i}]) ~= 0) error('command failed'); end
+        if (systemWCMakeEnv([cmd{i}]) ~= 0) error('command failed'); end
       catch
         fprintf(1,'\n\n\nfailed running this on the command line:\n  ');
         disp(['  ',cmd{i}]);
