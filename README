@@ -24,7 +24,7 @@ Optional Dependencies:
 	      cplex
 
 	      
-MATLAB Toolbox Dependencies:
+MATLAB Dependencies:
        	      Spline Toolbox
 	      Image Processing Toolbox (should be able to remove this one)
 	      % todo: finish this list
