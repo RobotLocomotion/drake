@@ -74,6 +74,16 @@ test	: all
 	cmake/add_matlab_unit_tests.pl
 	@cd pod-build && ctest --output-on-failure
 
+.PHONY: install_prereqs_macports install_prereqs_homebrew install_prereqs_ubuntu
+install_prereqs_macports :
+	port install graphviz
+
+install_prereqs_homebrew :
+	brew install graphviz
+
+install_prereqs_ubuntu :
+	apt-get install graphviz
+
 clean:
 	-if [ -e pod-build/install_manifest.txt ]; then rm -f `cat pod-build/install_manifest.txt`; fi
 	-if [ -d pod-build ]; then $(MAKE) -C pod-build clean; rm -rf pod-build; fi
