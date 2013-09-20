@@ -1313,6 +1313,13 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
       (*dC).block(n,0,1,NB) = S[i].transpose()*dfvpdq[i];
       (*dC).block(n,NB,1,NB) = S[i].transpose()*dfvpdqd[i];
       (*dC)(n,NB+n) += damping[i];
+      
+      if (qd[n]<0 && qd[n]>-coulomb_window[i]) {
+        (*dC)(n,NB+n) -= 1/coulomb_window[i] * coulomb_friction[i];
+      } 
+      else if (qd[n]>=0 && qd[n]<coulomb_window[i]) {
+        (*dC)(n,NB+n) += 1/coulomb_window[i] * coulomb_friction[i];
+      } 
     }
     
     if (parent[i] >= 0) {
