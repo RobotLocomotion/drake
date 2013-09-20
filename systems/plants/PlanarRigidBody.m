@@ -23,10 +23,10 @@ classdef PlanarRigidBody < RigidBody
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
         if origin.hasAttribute('xyz')
-          xyz = reshape(parseParamString(model,char(origin.getAttribute('xyz'))),3,1);
+          xyz = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('xyz'))),3,1);
         end
         if origin.hasAttribute('rpy')
-          rpy = reshape(parseParamString(model,char(origin.getAttribute('rpy'))),3,1);
+          rpy = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('rpy'))),3,1);
         end
       end
         
@@ -37,7 +37,7 @@ classdef PlanarRigidBody < RigidBody
       
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
-        [xpts,ypts] = PlanarRigidBody.parseGeometry(geomnode,xyz,rpy,model,options);
+        [xpts,ypts] = PlanarRigidBody.parseGeometry(geomnode,xyz,rpy,model,body.robotnum,options);
         % % useful for testing local geometry
         % h=patch(xpts,ypts,.7*[1 1 1]);
         % axis equal
@@ -59,26 +59,26 @@ classdef PlanarRigidBody < RigidBody
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
         if origin.hasAttribute('xyz')
-          xyz = reshape(parseParamString(model,char(origin.getAttribute('xyz'))),3,1);
+          xyz = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('xyz'))),3,1);
         end
         if origin.hasAttribute('rpy')
-          rpy = reshape(parseParamString(model,char(origin.getAttribute('rpy'))),3,1);
+          rpy = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('rpy'))),3,1);
         end
       end
       massnode = node.getElementsByTagName('mass').item(0);
       if ~isempty(massnode)
         if (massnode.hasAttribute('value'))
-          mass = parseParamString(model,char(massnode.getAttribute('value')));
+          mass = parseParamString(model,body.robotnum,char(massnode.getAttribute('value')));
         end
       end
       inode = node.getElementsByTagName('inertia').item(0);
       if ~isempty(inode)
         if isequal(options.view_axis,[1;0;0])
-          if inode.hasAttribute('ixx'), inertia=parseParamString(model,char(inode.getAttribute('ixx'))); end
+          if inode.hasAttribute('ixx'), inertia=parseParamString(model,body.robotnum,char(inode.getAttribute('ixx'))); end
         elseif isequal(options.view_axis,[0;1;0])
-          if inode.hasAttribute('iyy'), inertia=parseParamString(model,char(inode.getAttribute('iyy'))); end
+          if inode.hasAttribute('iyy'), inertia=parseParamString(model,body.robotnum,char(inode.getAttribute('iyy'))); end
         elseif isequal(options.view_axis,[0;0;1])
-          if inode.hasAttribute('izz'), inertia=parseParamString(model,char(inode.getAttribute('izz'))); end
+          if inode.hasAttribute('izz'), inertia=parseParamString(model,body.robotnum,char(inode.getAttribute('izz'))); end
         else
           error('view not supported');
         end
@@ -121,10 +121,10 @@ classdef PlanarRigidBody < RigidBody
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
         if origin.hasAttribute('xyz')
-          xyz = reshape(parseParamString(model,char(origin.getAttribute('xyz'))),3,1);
+          xyz = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('xyz'))),3,1);
         end
         if origin.hasAttribute('rpy')
-          rpy = reshape(parseParamString(model,char(origin.getAttribute('rpy'))),3,1);
+          rpy = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('rpy'))),3,1);
         end
       end
       
@@ -132,7 +132,7 @@ classdef PlanarRigidBody < RigidBody
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         options.collision = true; 
-        [xpts,ypts] = PlanarRigidBody.parseGeometry(geomnode,xyz,rpy,model,options);
+        [xpts,ypts] = PlanarRigidBody.parseGeometry(geomnode,xyz,rpy,model,body.robotnum,options);
         body.contact_pts=unique([body.contact_pts';xpts(:), ypts(:)],'rows')';
       end
       if (node.hasAttribute('group'))
@@ -188,7 +188,7 @@ classdef PlanarRigidBody < RigidBody
 %       body.Xtree = body.Xtree;
 %     end
     
-    function [x,y] = parseGeometry(node,x0,rpy,model,options)
+    function [x,y] = parseGeometry(node,x0,rpy,model,robotnum,options)
       % param node DOM node for the geometry block
       % param X coordinate transform for the current body
       % option twoD true implies that I can safely ignore y.
@@ -202,7 +202,7 @@ classdef PlanarRigidBody < RigidBody
         cx=[]; cy=[]; cz=[];
         switch (lower(char(thisNode.getNodeName())))
           case 'box'
-            s = parseParamString(model,char(thisNode.getAttribute('size')));
+            s = parseParamString(model,robotnum,char(thisNode.getAttribute('size')));
             
             cx = s(1)/2*[-1 1 1 -1 -1 1 1 -1];
             cy = s(2)/2*[1 1 1 1 -1 -1 -1 -1];
@@ -213,8 +213,8 @@ classdef PlanarRigidBody < RigidBody
             x=pts(1,i)';y=pts(2,i)';
             
           case 'cylinder'
-            r = parseParamString(model,char(thisNode.getAttribute('radius')));
-            l = parseParamString(model,char(thisNode.getAttribute('length')));
+            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
+            l = parseParamString(model,robotnum,char(thisNode.getAttribute('length')));
             
             if (abs(options.view_axis'*T3*[0;0;1;0]) < 1e-4 || ... % then it just looks like a box or
                 (isfield(options,'collision') && options.collision)) % getting contacts, so use bb corners
@@ -235,7 +235,7 @@ classdef PlanarRigidBody < RigidBody
             end
             
           case 'sphere'
-            r = parseParamString(model,char(thisNode.getAttribute('radius')));
+            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
             if (r==0)
                 cx=0; cy=0; cz=0;
                 pts = T*[0;0;0;1];

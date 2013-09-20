@@ -29,7 +29,7 @@ classdef DrakeSystem < DynamicalSystem
         if (nargin>=5), obj = setDirectFeedthrough(obj,direct_feedthrough_flag); end
         if (nargin>=6), obj = setTIFlag(obj,time_invariant_flag); end
       end
-      
+      obj = setParamFrame(obj,CoordinateFrame([class(obj),'Params'],0,'p'));  % no parameters by default
     end      
   end
   

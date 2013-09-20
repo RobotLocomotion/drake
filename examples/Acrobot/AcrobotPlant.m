@@ -1,4 +1,4 @@
-classdef AcrobotPlant < Manipulator & ParameterizedSystem
+classdef AcrobotPlant < Manipulator 
   
   properties
     % parameters from Spong95 (except inertias are now relative to the
