@@ -176,6 +176,12 @@ else
     
     dH = dH(:,1:m.NB)*[eye(m.NB) zeros(m.NB)];
     dC(:,m.NB+1:end) = dC(:,m.NB+1:end) + diag(m.damping);
+    
+    ind = find(abs(qd)<m.coulomb_window');
+    dind = sign(qd(ind))./m.coulomb_window(ind)' .* m.coulomb_friction(ind)';
+    fc_drv = zeros(m.NB,1);
+    fc_drv(ind) =dind;
+    dC(:,m.NB+1:end) = dC(:,m.NB+1:end)+ diag(fc_drv);
     dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
     [H,C] = HandC(m,q,qd,f_ext,obj.gravity);
