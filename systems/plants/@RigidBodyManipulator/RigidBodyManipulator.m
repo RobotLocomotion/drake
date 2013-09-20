@@ -1,4 +1,4 @@
-classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
+classdef RigidBodyManipulator < Manipulator 
   % This class wraps the spatial vector library (v1) 
   % provided by Roy Featherstone on his website: 
   %   http://users.cecs.anu.edu.au/~roy/spatial/documentation.html
@@ -8,7 +8,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
     urdf={};        % names of the urdf files loaded
     body=[];        % array of RigidBody objects
     actuator = [];  % array of RigidBodyActuator objects
-    param_db = [];  % structure array containing parsed parameter info
+    param_db = {};  % cell of structures (one per robot) containing parsed parameter info
     loop=[];        % array of RigidBodyLoop objects
     sensor={};      % cell array of RigidBodySensor objects
     force={};       % cell array of RigidBodyForceElement objects 
@@ -449,10 +449,15 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       end
       model.B = full(B);
 
-      model = model.setNumInputs(size(model.B,2));
-      model = model.setNumDOF(num_dof);
-      model = model.setNumOutputs(2*num_dof);
+      model = setNumInputs(model,size(model.B,2));
+      model = setNumDOF(model,num_dof);
+      model = setNumOutputs(model,2*num_dof);
 
+      paramframe = constructParamFrame(model);
+      if ~isequal_modulo_transforms(paramframe,getParamFrame(model)) % let the previous handle stay valid if possible
+        model = setParamFrame(model,paramframe);
+      end
+      
       if getNumInputs(model)>0
         inputframe = constructInputFrame(model);
         if ~isequal_modulo_transforms(inputframe,getInputFrame(model)) % let the previous handle stay valid if possible
@@ -1013,10 +1018,10 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       model.dirty = true;
     end
     
-    function val = parseParamString(model,str)
+    function val = parseParamString(model,robotnum,str)
       % @ingroup URDF Parsing
       
-      str = regexprep(str,'\$(\w+)','model.param_db.(''$1'').value');
+      str = regexprep(str,'\$(\w+)','model.param_db{robotnum}.(''$1'').value');
       val = eval(['[',str,']']);
     end
     
@@ -1095,7 +1100,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
         obj.mex_model_ptr = constructModelmex(obj);
       end
     end
-    
+        
     function fr = constructStateFrame(model)
       frame_dims=[];
       for i=1:length(model.name)
@@ -1119,6 +1124,15 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
 %      frame_dims=[model.body(arrayfun(@(a) ~isempty(a.parent),model.body)).robotnum];
       frame_dims=[frame_dims,frame_dims];
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
+    end
+
+    function fr = constructParamFrame(model)
+      fr = getParamFrame(model);
+      return;  
+      
+      % not implemented yet!
+        pn = fieldnames(model.param_db);
+      model = setParamFrame(model,CoordinateFrame([model.name,'Params'],numel(pn),'p',pn));
     end
     
     function fr = constructInputFrame(model)
@@ -1525,17 +1539,17 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
         if origin.hasAttribute('xyz')
-          xyz = reshape(parseParamString(model,char(origin.getAttribute('xyz'))),3,1);
+          xyz = reshape(parseParamString(model,robotnum,char(origin.getAttribute('xyz'))),3,1);
         end
         if origin.hasAttribute('rpy')
-          rpy = reshape(parseParamString(model,char(origin.getAttribute('rpy'))),3,1);
+          rpy = reshape(parseParamString(model,robotnum,char(origin.getAttribute('rpy'))),3,1);
         end
       end
       axis=[1;0;0];  % default according to URDF documentation
       axisnode = node.getElementsByTagName('axis').item(0);
       if ~isempty(axisnode)
         if axisnode.hasAttribute('xyz')
-          axis = reshape(parseParamString(model,char(axisnode.getAttribute('xyz'))),3,1);
+          axis = reshape(parseParamString(model,robotnum,char(axisnode.getAttribute('xyz'))),3,1);
           axis = axis/(norm(axis)+eps); % normalize
         end
       end
@@ -1546,22 +1560,22 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       dynamics = node.getElementsByTagName('dynamics').item(0);
       if ~isempty(dynamics)
         if dynamics.hasAttribute('damping')
-          damping = parseParamString(model,char(dynamics.getAttribute('damping')));
+          damping = parseParamString(model,robotnum,char(dynamics.getAttribute('damping')));
         end
         if dynamics.hasAttribute('friction')
-          coulomb_friction = parseParamString(model,char(dynamics.getAttribute('friction')));
+          coulomb_friction = parseParamString(model,robotnum,char(dynamics.getAttribute('friction')));
           if coulomb_friction < 0
             error('RigidBodyManipulator: coulomb_friction must be >= 0');
           end
         end
         if dynamics.hasAttribute('stiction')
-          static_friction = parseParamString(model,char(dynamics.getAttribute('stiction')));
+          static_friction = parseParamString(model,robotnum,char(dynamics.getAttribute('stiction')));
           if static_friction < 0
             error('RigidBodyManipulator: static_friction must be >= 0');
           end
         end
         if dynamics.hasAttribute('coulomb_window')
-          coulomb_window = parseParamString(model,char(dynamics.getAttribute('coulomb_window')));
+          coulomb_window = parseParamString(model,robotnum,char(dynamics.getAttribute('coulomb_window')));
           if coulomb_window <= 0
             error('RigidBodyManipulator: coulomb_window must be > 0');
           end
@@ -1578,16 +1592,16 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       limits = node.getElementsByTagName('limit').item(0);
       if ~isempty(limits)
         if limits.hasAttribute('lower')
-          joint_limit_min = parseParamString(model,char(limits.getAttribute('lower')));
+          joint_limit_min = parseParamString(model,robotnum,char(limits.getAttribute('lower')));
         end
         if limits.hasAttribute('upper');
-          joint_limit_max = parseParamString(model,char(limits.getAttribute('upper')));
+          joint_limit_max = parseParamString(model,robotnum,char(limits.getAttribute('upper')));
         end
         if limits.hasAttribute('effort');
-          effort_limit = parseParamString(model,char(limits.getAttribute('effort')));
+          effort_limit = parseParamString(model,robotnum,char(limits.getAttribute('effort')));
         end
         if limits.hasAttribute('velocity');
-          velocity_limit = parseParamString(model,char(limits.getAttribute('velocity')));
+          velocity_limit = parseParamString(model,robotnum,char(limits.getAttribute('velocity')));
         end
       end
       
@@ -1621,7 +1635,7 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
       axisnode = node.getElementsByTagName('axis').item(0);
       if ~isempty(axisnode)
         if axisnode.hasAttribute('xyz')
-          axis = reshape(parseParamString(model,char(axisnode.getAttribute('xyz'))),3,1);
+          axis = reshape(parseParamString(model,robotnum,char(axisnode.getAttribute('xyz'))),3,1);
           axis = axis/(norm(axis)+eps); % normalize
         end
       end
@@ -1649,25 +1663,25 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
           linkNode = node.getElementsByTagName('link1').item(0);
           fe.body1 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
           if linkNode.hasAttribute('xyz')
-            fe.pos1 = reshape(parseParamString(model,char(linkNode.getAttribute('xyz'))),3,1);
+            fe.pos1 = reshape(parseParamString(model,robotnum,char(linkNode.getAttribute('xyz'))),3,1);
           end
           linkNode = node.getElementsByTagName('link2').item(0);
           fe.body2 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
           if linkNode.hasAttribute('xyz')
-            fe.pos2 = reshape(parseParamString(model,char(linkNode.getAttribute('xyz'))),3,1);
+            fe.pos2 = reshape(parseParamString(model,robotnum,char(linkNode.getAttribute('xyz'))),3,1);
           end
           
           elnode = node.getElementsByTagName('rest_length').item(0);
           if ~isempty(elnode) && elnode.hasAttribute('value')
-            fe.rest_length = parseParamString(model,char(elnode.getAttribute('value')));
+            fe.rest_length = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
           end
           elnode = node.getElementsByTagName('stiffness').item(0);
           if ~isempty(elnode) && elnode.hasAttribute('value')
-            fe.k = parseParamString(model,char(elnode.getAttribute('value')));
+            fe.k = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
           end
           elnode = node.getElementsByTagName('damping').item(0);
           if ~isempty(elnode) && elnode.hasAttribute('value')
-            fe.b = parseParamString(model,char(elnode.getAttribute('value')));
+            fe.b = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
           end
           model.force{end+1} = fe;
           
@@ -1679,10 +1693,10 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
           elnode = node.getElementsByTagName('origin').item(0);
           if ~isempty(elnode)
             if elnode.hasAttribute('xyz')
-              xyz = parseParamString(model,char(elnode.getAttribute('xyz')));
+              xyz = parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
             end
             if elnode.hasAttribute('rpy')
-              rpy = parseParamString(model,char(elnode.getAttribute('rpy')));
+              rpy = parseParamString(model,robotnum,char(elnode.getAttribute('rpy')));
             end
           end
           
@@ -1690,16 +1704,16 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
           profile = char(elNode.getAttribute('value'));
 
           elnode = node.getElementsByTagName('chord').item(0);
-          chord = parseParamString(model,char(elnode.getAttribute('value')));
+          chord = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
           
           elnode = node.getElementsByTagName('span').item(0);
-          span = parseParamString(model,char(elnode.getAttribute('value')));
+          span = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
           
           elnode = node.getElementsByTagName('stall_angle').item(0);
-          stall_angle = parseParamString(model,char(elnode.getAttribute('value')));
+          stall_angle = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
 
           elnode = node.getElementsByTagName('nominal_speed').item(0);
-          nominal_speed = parseParamString(model,char(elnode.getAttribute('value')));
+          nominal_speed = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
           
           fe = RigidBodyWing(profile, xyz', chord, span, stall_angle, nominal_speed, parent);
           fe.name = name;
@@ -1709,20 +1723,20 @@ classdef RigidBodyManipulator < Manipulator & ParameterizedSystem
           parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
           
           elnode = node.getElementsByTagName('origin').item(0);
-          orig = parseParamString(model,char(elnode.getAttribute('xyz')));
+          orig = parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
           
           elnode = node.getElementsByTagName('direction').item(0);
-          dir = parseParamString(model,char(elnode.getAttribute('xyz')));
+          dir = parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
           
           scaleFac = 1;
           elnode = node.getElementsByTagName('scaleFactor').item(0);
           if ~isempty(elnode)
-            scaleFac = parseParamString(model,char(elnode.getAttribute('value')));
+            scaleFac = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
           end
           
           elnode = node.getElementsByTagName('limits').item(0);
           if ~isempty(elnode)
-            limits = parseParamString(model,char(elnode.getAttribute('value')));
+            limits = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
           end
           
           if exist('limits')

@@ -22,14 +22,10 @@ function [phat,estimated_delay] = parameterEstimation(obj,data,options)
 %      Insert the data and do linear regression
 %   Step 3: Geometric program to back out original parameters.
 %
-% @param obj must be a Manipulator which also implements the parameter
-% interface (by deriving from the ParameterizedSystem class)
 % @param data an instance of iddata (from the system identification 
 % toolbox; see 'help iddata' for more info) containing the data to 
 % be used for estimation.
 %
-
-typecheck(obj,'ParameterizedSystem'); % only works if the system also implements the parameters interface
 
 if (getOutputFrame(obj)~=getStateFrame(obj))
   error('Only full-state feedback is implemented so far');

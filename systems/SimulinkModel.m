@@ -26,9 +26,10 @@ classdef SimulinkModel < DynamicalSystem
         obj.num_u = num_u;  % temporary hack to get around bug 1022
       end
 
-      obj=obj.setInputFrame(CoordinateFrame([mdl,'Input'],obj.num_u,'u'));
-      obj=obj.setStateFrame(CoordinateFrame([mdl,'State'],obj.num_xc+obj.num_xd,'x'));
-      obj=obj.setOutputFrame(CoordinateFrame([mdl,'Output'],obj.num_y,'y'));
+      obj=setInputFrame(obj,CoordinateFrame([mdl,'Input'],obj.num_u,'u'));
+      obj=setStateFrame(obj,CoordinateFrame([mdl,'State'],obj.num_xc+obj.num_xd,'x'));
+      obj=setOutputFrame(obj,CoordinateFrame([mdl,'Output'],obj.num_y,'y'));
+      obj=setParamFrame(obj,CoordinateFrame([mdl,'Params'],0,'p'));
       
       if (~strcmp(get_param(obj.mdl,'SimulationStatus'),'paused'))
         set_param(obj.mdl,'StopTime',num2str(inf));
