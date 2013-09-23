@@ -33,6 +33,7 @@ if (~isfield(options,'visual_geometry')) options.visual_geometry = false; end
 if (~isfield(options,'namesuffix')) options.namesuffix = ''; end
 if (~isfield(options,'inertia_error')) options.inertia_error = 0.0; end
 if (~isfield(options,'damping_error')) options.damping_error = 0.0; end
+if (~isfield(options,'ignore_friction')) options.ignore_friction = false; end
 
 %disp(['Parsing ', urdf_filename]);
 [options.urdfpath,name,ext] = fileparts(urdf_filename);

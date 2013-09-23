@@ -171,7 +171,7 @@ classdef RigidBodyManipulator < Manipulator
       if (nargin<9) damping=0; end
       if (nargin<10) coulomb_friction=0; end
       if (nargin<11) static_friction=0; end
-      if (nargin<12) coulomb_window=0.1; end
+      if (nargin<12) coulomb_window=eps; end
       if (nargin<13)
         limits = struct();
         limits.joint_limit_min = -Inf;
@@ -1198,7 +1198,7 @@ classdef RigidBodyManipulator < Manipulator
           m.damping(n+(0:5)) = 0;
           m.coulomb_friction(n+(0:5)) = 0;
           m.static_friction(n+(0:5)) = 0;
-          m.coulomb_window(n+(0:5)) = 0;
+          m.coulomb_window(n+(0:5)) = eps;
           m.parent(n+(0:5)) = [model.body(b.parent).dofnum,n+(0:4)];  % rel ypr
           m.Xtree{n} = Xroty(pi/2);   % x
           m.Xtree{n+1} = Xrotx(-pi/2)*Xroty(-pi/2); % y (note these are relative changes, x was up, now I'm rotating so y will be up)
@@ -1556,25 +1556,25 @@ classdef RigidBodyManipulator < Manipulator
       damping=0;
       coulomb_friction=0;
       static_friction=0;
-      coulomb_window=0.1;
+      coulomb_window=eps;
       dynamics = node.getElementsByTagName('dynamics').item(0);
       if ~isempty(dynamics)
         if dynamics.hasAttribute('damping')
           damping = parseParamString(model,robotnum,char(dynamics.getAttribute('damping')));
         end
-        if dynamics.hasAttribute('friction')
+        if ~options.ignore_friction && dynamics.hasAttribute('friction')
           coulomb_friction = parseParamString(model,robotnum,char(dynamics.getAttribute('friction')));
           if coulomb_friction < 0
             error('RigidBodyManipulator: coulomb_friction must be >= 0');
           end
         end
-        if dynamics.hasAttribute('stiction')
+        if ~options.ignore_friction && dynamics.hasAttribute('stiction')
           static_friction = parseParamString(model,robotnum,char(dynamics.getAttribute('stiction')));
           if static_friction < 0
             error('RigidBodyManipulator: static_friction must be >= 0');
           end
         end
-        if dynamics.hasAttribute('coulomb_window')
+        if ~options.ignore_friction && dynamics.hasAttribute('coulomb_window')
           coulomb_window = parseParamString(model,robotnum,char(dynamics.getAttribute('coulomb_window')));
           if coulomb_window <= 0
             error('RigidBodyManipulator: coulomb_window must be > 0');
