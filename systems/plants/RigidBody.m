@@ -30,7 +30,7 @@ classdef RigidBody
     damping=0; % viscous friction term
     coulomb_friction=0; 
     static_friction=0; % currently not used for simulation
-    coulomb_window=0.1; % the threshold around zero velocity used for the PWL friction model (See Khalil and Dombre, Fig. 9.2(d))
+    coulomb_window=eps; % the threshold around zero velocity used for the PWL friction model (See Khalil and Dombre, Fig. 9.2(d))
     joint_limit_min=[];
     joint_limit_max=[];
     effort_limit=[];
