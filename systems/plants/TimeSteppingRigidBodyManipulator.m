@@ -692,6 +692,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function groups = getCollisionGroups(obj)
       groups = getCollisionGroups(obj.manip);
     end
+
+    function f_friction = computeFrictionForce(obj,qd)
+      f_friction = computeFrictionForce(obj.manip,qd);
+    end
     
     function obj = removeCollisionGroups(obj,contact_groups)
       obj.manip = removeCollisionGroups(obj.manip,contact_groups);

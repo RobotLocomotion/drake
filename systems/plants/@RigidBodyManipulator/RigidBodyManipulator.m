@@ -138,6 +138,11 @@ classdef RigidBodyManipulator < Manipulator
       obj.dirty = true;
     end
 
+    function f_friction = computeFrictionForce(model,qd)
+      m = model.featherstone;
+      f_friction = min(1,max(-1,qd./m.coulomb_window')).*m.coulomb_friction' + m.damping'.*qd;
+    end
+        
     function ptr = getMexModelPtr(obj)
       % Please do note use this.
       % This access should not be allowed (the method should be private or not exist).
@@ -1751,6 +1756,7 @@ classdef RigidBodyManipulator < Manipulator
           error(['force element type ',type,' not supported (yet?)']);
       end
     end
+    
     
     function model = updateBodyIndices(model,map_from_new_to_old)
       % @ingroup Kinematic Tree
