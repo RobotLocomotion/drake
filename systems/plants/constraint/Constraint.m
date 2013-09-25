@@ -4,19 +4,20 @@ classdef Constraint
   end
   
   properties(Constant)
-    KinematicConstraint = 1;
-    QuasiStaticConstraint = 2;
-    PostureConstraint = 3;
+    SingleTimeKinematicConstraintType = 1;
+    MultipleTimeKinematicConstraintType = 2;
+    QuasiStaticConstraintType = 3;
+    PostureConstraintType = 4;
   end
   
   methods
     function obj = Constraint(type)
       if(~isnumeric(type))
-        error('Drake:Constraint:type has to be an integer');
+        error('Drake:Constraint','Type has to be an integer');
       end
       type = floor(type);
-      if(type>3||type<1)
-        error('Drake:Constraint: Currently type can only be within [1,3]');
+      if(type>4||type<1)
+        error('Drake:Constraint','Currently type can only be within [1,3]');
       end
       obj.type = type;
     end

@@ -64,11 +64,21 @@ for i=1:nSubTraj-1
     Flow=[Flow;zeros(nXc,1)];
 end
 nKnotsInSubTraj(end)=nT-sum(nKnotsInSubTraj);
-if(isfield(con.xf,'ub')||isfield(con.xf,'lb'))
-    iGfun=[iGfun;max(iGfun)+(1:nXc)';max(iGfun)+reshape((1:nXc)'*ones(1,nXc),[],1);max(iGfun)+reshape((1:nXc)'*ones(1,nU*nKnotsInSubTraj(end)),[],1)];
-    jGvar=[jGvar;ones(nXc,1);1+(nSubTraj-1)*nXc+reshape(ones(nXc,1)*(1:nXc),[],1);1+nSubTraj*nXc+sum(nKnotsInSubTraj(1:(nSubTraj-1)))+reshape(ones(nXc,1)*(1:nU*nKnotsInSubTraj(nSubTraj)),[],1)];
-    Fhigh=[Fhigh;con.xf.ub];
-    Flow=[Flow;con.xf.lb];
+if(isfield(con,'xf'))
+    if(isfield(con.xf,'ub')||isfield(con.xf,'lb'))
+        iGfun=[iGfun;max(iGfun)+(1:nXc)';max(iGfun)+reshape((1:nXc)'*ones(1,nXc),[],1);max(iGfun)+reshape((1:nXc)'*ones(1,nU*nKnotsInSubTraj(end)),[],1)];
+        jGvar=[jGvar;ones(nXc,1);1+(nSubTraj-1)*nXc+reshape(ones(nXc,1)*(1:nXc),[],1);1+nSubTraj*nXc+sum(nKnotsInSubTraj(1:(nSubTraj-1)))+reshape(ones(nXc,1)*(1:nU*nKnotsInSubTraj(nSubTraj)),[],1)];
+        Fhigh=[Fhigh;con.xf.ub];
+        Flow=[Flow;con.xf.lb];
+    end
+    if(isfield(con.xf,'ceq'))
+        c=feval(con.xf.ceq,xTraj0.eval(xTraj0.tspan(end)));
+        nC=length(c);
+        iGfun=[iGfun;max(iGfun)+(1:nC)';max(iGfun)+reshape((1:nC)'*ones(1,nXc),[],1);max(iGfun)+reshape((1:nC)'*ones(1,nU*nKnotsInSubTraj(end)),[],1)];
+        jGvar=[jGvar;ones(nC,1);1+(nSubTraj-1)*nXc+reshape(ones(nC,1)*(1:nXc),[],1);1+nSubTraj*nXc+sum(nKnotsInSubTraj(1:(nSubTraj-1)))+reshape(ones(nC,1)*(1:nU*nKnotsInSubTraj(nSubTraj)),[],1)];
+        Fhigh=[Fhigh;zeros(nC,1)];
+        Flow=[Flow;zeros(nC,1)];
+    end
 end
 iname={};
 oname={};
@@ -178,12 +188,20 @@ dJdalpha(1+nXc*nSubTraj+nU*knotsSubTrajStart+(1:nU*(nKnotsInSubTraj(nSubTraj))))
 G(1:(1+nXc*nSubTraj+nT*nU))=dJdalpha';
 f(1)=J;
 if(isfield(con,'xf'))
-    f=[f;xSubTraj(:,nKnotsInSubTraj(nSubTraj))];
-    G=[G;reshape(PsubTraj{nSubTraj},[],1)];
+    if(isfield(con.xf,'lb')||isfield(con.xf,'ub'))
+        f=[f;xSubTraj(:,nKnotsInSubTraj(nSubTraj))];
+        G=[G;reshape(PsubTraj{nSubTraj},[],1)];
+    end
+    if(isfield(con.xf,'ceq'))
+        [c,dc]=geval(con.xf.ceq,xSubTraj(:,nKnotsInSubTraj(nSubTraj)));
+        f=[f;c];
+        G=[G;reshape(dc*PsubTraj{nSubTraj},[],1)];
+    end
 end
 end
 
 function [xNew,dxndt,dxndx,dxndu1,dxndu2,dxnddt]=rungeKuttaDynamics(sys,t,x,u1,u2,dt)
+%Assumes the control tape is first order hold
 nU=sys.getNumInputs();
 nXc=sys.getNumContStates();
 [f1,df1]=geval(@sys.dynamics,t,x,u1);

@@ -1,0 +1,65 @@
+classdef WorldGazeOrientConstraint < GazeOrientConstraint
+% @param robot            A RigidBodyManipulator, or a
+%                         TimeSteppingRigidBodyManipulator
+% @param body             The index of the body
+% @param axis                a 3x1 unit vector, in the body frame
+% @param quat_des            a 4x1 unit vector
+% @param conethreshold       a scalar in [0,pi], default is 0
+% @param threshold           a scalar in [0,pi], default is pi
+% @param tspan            OPTIONAL argument. A 1x2 vector
+% quat_des is the nominal orientation of the body. The actual orientation
+% of the body satisfies that the axis lies within a cone, with the cone
+% aperture being 2*conethreshold, the cone axis being the direction that
+% the body axis would be if body orientation exactly matches quat_des;
+% The body can also rotate around that cone axis within range [-threshold
+% threshold]
+  properties
+    body
+    body_name
+  end
+  
+  methods(Access = protected)
+    function [quat, dquat_dq] = evalOrientation(obj,kinsol)
+      [x,J] = forwardKin(obj.robot,kinsol,obj.body,[0;0;0],2);
+      quat = x(4:7);
+      dquat_dq = J(4:7,:);
+    end
+  end
+  
+  methods
+    function obj = WorldGazeOrientConstraint(robot,body,axis,quat_des,conethreshold,threshold,tspan)
+      if(nargin == 6)
+        tspan = [-inf inf];
+      end
+      ptr = constructPtrWorldGazeOrientConstraintmex(robot.getMexModelPtr,body,axis,quat_des,conethreshold,threshold,tspan);
+      obj = obj@GazeOrientConstraint(robot,axis,quat_des,conethreshold,threshold,tspan);
+      if(isnumeric(body))
+        sizecheck(body,[1,1]);
+        obj.body = body;
+      elseif(typecheck(body,'char'))
+        obj.body = robot.findLinkInd(body);
+      elseif(typecheck(body,'RigidBody'))
+        obj.body = robot.findLinkInd(body.linkname);
+      else
+        error('Drake:WorldGazeOrientConstraint:Body must be either the link name or the link index');
+      end
+      obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.mex_ptr = ptr;
+    end
+    
+    
+
+    function name_str = name(obj,t)
+      if(obj.isTimeValid(t))
+        name_str = {sprintf('%s conic gaze orientation constraint at time %10.4f',obj.body_name,t);...
+          sprintf('%s revolute gaze orientation constraint at time %10.4f',obj.body_name,t)};
+      else
+        name_str = [];
+      end
+    end
+    
+    function ptr = constructPtr(varargin)
+      ptr = constructPtrWorldGazeOrientConstraintmex(varargin{:});
+    end
+  end
+end
