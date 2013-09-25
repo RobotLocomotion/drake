@@ -5,10 +5,13 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
-#include "f2c.h"
+
+namespace snopt {
 #include "snopt.hh"
 #include "snfilewrapper.hh"
 #include "snoptProblem.hh"
+}
+#undef abs
 #undef max
 #undef min
 
@@ -19,6 +22,7 @@
 
 using namespace Eigen;
 using namespace std;
+
 
 RigidBodyManipulator* model = NULL;
 SingleTimeKinematicConstraint** st_kc_array = NULL;
@@ -35,13 +39,13 @@ VectorXd q0;
 VectorXd qdot0;
 bool quasiStaticFlag;
 double shrinkFactor;
-integer nx;
-integer nF;
+snopt::integer nx;
+snopt::integer nF;
 int nC;
-integer nG;
-integer* nc_array;
-integer* nG_array;
-integer* nA_array;
+snopt::integer nG;
+snopt::integer* nc_array;
+snopt::integer* nG_array;
+snopt::integer* nA_array;
 int nq;
 double *t = NULL;
 double* ti = NULL;
@@ -61,9 +65,9 @@ MatrixXd accel_mat_qdf;
 
 
 /* Remeber to delete this*/
-integer nF_tmp;
-integer nG_tmp;
-integer nx_tmp;
+snopt::integer nF_tmp;
+snopt::integer nG_tmp;
+snopt::integer nx_tmp;
 
 void gevalNumerical(void (*func_ptr)(const VectorXd &, VectorXd &),const VectorXd &x, VectorXd &c, MatrixXd &dc,int order = 2)
 {
@@ -143,12 +147,12 @@ void IK_cost_fun(double* x, double &J, double* dJ)
   memcpy(dJ, dJ_vec.data(),sizeof(double)*nq);
 }
 
-int snoptIKfun(integer *Status, integer *n, doublereal x[],
-    integer *needF, integer *neF, doublereal F[],
-    integer *needG, integer *neG, doublereal G[],
-    char *cu, integer *lencu,
-    integer iu[], integer *leniu,
-    doublereal ru[], integer *lenru)
+int snoptIKfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal x[],
+    snopt::integer *needF, snopt::integer *neF, snopt::doublereal F[],
+    snopt::integer *needG, snopt::integer *neG, snopt::doublereal G[],
+    char *cu, snopt::integer *lencu,
+    snopt::integer iu[], snopt::integer *leniu,
+    snopt::doublereal ru[], snopt::integer *lenru)
 {
   double* q = x;
   model->doKinematics(q);
@@ -205,12 +209,12 @@ void IKtraj_cost_fun(double* x,double &J,double* dJ)
   memcpy(dJ,dJ_vec.data(),sizeof(double)*nq*nT);
 }
 
-int snoptIKtrajfun(integer *Status, integer *n, doublereal x[],
-    integer *needF, integer *neF, doublereal F[],
-    integer *needG, integer *neG, doublereal G[],
-    char *cu, integer *lencu,
-    integer iu[], integer *leniu,
-    doublereal ru[], integer *lenru)
+int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal x[],
+    snopt::integer *needF, snopt::integer *neF, snopt::doublereal F[],
+    snopt::integer *needG, snopt::integer *neG, snopt::doublereal G[],
+    char *cu, snopt::integer *lencu,
+    snopt::integer iu[], snopt::integer *leniu,
+    snopt::doublereal ru[], snopt::integer *lenru)
 {
   IKtraj_cost_fun(x,F[0],G);
   int nf_cum = 1;
@@ -244,18 +248,19 @@ int snoptIKtrajfun(integer *Status, integer *n, doublereal x[],
     nf_cum += mtkc_nc[i];
     nG_cum += mtkc_nc[i]*nq*(nT-1);
   }
+  return 0;
 }
 
 
 void snoptIKtraj_userfun(const VectorXd &x_vec, VectorXd &c_vec, VectorXd &G_vec)
 {
-  doublereal* x = new doublereal[nx_tmp];
+  snopt::doublereal* x = new snopt::doublereal[nx_tmp];
   for(int i = 0;i<nx_tmp;i++)
   {
     x[i] = x_vec(i);
   }
-  doublereal* F = new doublereal[nF_tmp];
-  doublereal* G = new doublereal[nG_tmp];
+  snopt::doublereal* F = new snopt::doublereal[nF_tmp];
+  snopt::doublereal* G = new snopt::doublereal[nG_tmp];
   IKtraj_cost_fun(x,F[0],G);
   int nf_cum = 1;
   int nG_cum = nq*nT;
@@ -409,22 +414,22 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   Q.resize(nq,nq);
   memcpy(Q.data(),mxGetPr(pm),sizeof(double)*nq*nq);
   pm = mxGetProperty(prhs[ikoptions_idx],0,"SNOPT_MajorIterationsLimit");
-  integer SNOPT_MajorIterationsLimit = (integer) mxGetScalar(pm);
+  snopt::integer SNOPT_MajorIterationsLimit = (snopt::integer) mxGetScalar(pm);
   pm = mxGetProperty(prhs[ikoptions_idx],0,"SNOPT_IterationsLimit");
-  integer SNOPT_IterationsLimit = (integer) mxGetScalar(pm);
+  snopt::integer SNOPT_IterationsLimit = (snopt::integer) mxGetScalar(pm);
   pm = mxGetProperty(prhs[ikoptions_idx],0,"SNOPT_MajorFeasibilityTolerance");
   double SNOPT_MajorFeasibilityTolerance = mxGetScalar(pm);
   pm = mxGetProperty(prhs[ikoptions_idx],0,"SNOPT_MajorOptimalityTolerance");
   double SNOPT_MajorOptimalityTolerance = mxGetScalar(pm);
   pm = mxGetProperty(prhs[ikoptions_idx],0,"SNOPT_SuperbasicsLimit");
-  integer SNOPT_SuperbasicsLimit = (integer) mxGetScalar(pm);
+  snopt::integer SNOPT_SuperbasicsLimit = (snopt::integer) mxGetScalar(pm);
   pm = mxGetProperty(prhs[ikoptions_idx],0,"debug_mode");
   bool* debug_mode_ptr = mxGetLogicals(pm);
   bool debug_mode = *debug_mode_ptr;
   pm = mxGetProperty(prhs[ikoptions_idx],0,"sequentialSeedFlag");
   bool* sequentialSeedFlag_ptr = mxGetLogicals(pm);
   bool sequentialSeedFlag = *sequentialSeedFlag_ptr;
-  integer* INFO;
+  snopt::integer* INFO;
   double* INFO_tmp;
   mxArray* infeasible_constraint_cell;
   vector<string> infeasible_constraint_vec;
@@ -432,9 +437,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   {
     mwSize ret_dim[1] = {3};
     plhs[0] = mxCreateCellArray(1,ret_dim);
-    INFO = new integer[nT]; 
+    INFO = new snopt::integer[nT]; 
     INFO_tmp = new double[nT];
-    mwSize time_dim[1] = {nT};
+    mwSize time_dim[1];  time_dim[0] = nT;
     for(int j = 0;j<nT;j++)
     {
       INFO[j] = 0;
@@ -444,7 +449,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   {
     mwSize ret_dim[1] = {5};
     plhs[0] = mxCreateCellArray(1,ret_dim);
-    INFO = new integer[1];
+    INFO = new snopt::integer[1];
     INFO_tmp = new double[1];
     INFO[0] = 0;
   }
@@ -462,9 +467,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   memcpy(q_sol.data(),mxGetPr(prhs[3]),sizeof(double)*nq*nT);
   VectorXd* iCfun_array = new VectorXd[nT];
   VectorXd* jCvar_array = new VectorXd[nT];
-  nc_array = new integer[nT];
-  nG_array = new integer[nT];
-  nA_array = new integer[nT];
+  nc_array = new snopt::integer[nT];
+  nG_array = new snopt::integer[nT];
+  nA_array = new snopt::integer[nT];
   for(int i = 0;i<nT;i++)
   {
     nc_array[i] = 0;
@@ -602,12 +607,12 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         nx = nq+num_qsc_pts;
       }
       nG = nq + nG_array[i];
-      integer* iGfun = new integer[nG];
-      integer* jGvar = new integer[nG];
+      snopt::integer* iGfun = new snopt::integer[nG];
+      snopt::integer* jGvar = new snopt::integer[nG];
       for(int k = 0;k<nq;k++)
       {
         iGfun[k] = 1;
-        jGvar[k] = (integer) k+1;
+        jGvar[k] = (snopt::integer) k+1;
       }
       for(int k = nq;k<nG;k++)
       {
@@ -616,10 +621,10 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       }
       nF = nc_array[i]+1;
 
-      integer lenA = A_array[i].size();
-      integer* iAfun;
-      integer* jAvar;
-      doublereal* A;
+      snopt::integer lenA = A_array[i].size();
+      snopt::integer* iAfun;
+      snopt::integer* jAvar;
+      snopt::doublereal* A;
       if(lenA == 0)
       {
         iAfun = NULL;
@@ -628,9 +633,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       }
       else
       {
-        A = new doublereal[lenA];
-        iAfun = new integer[lenA];
-        jAvar = new integer[lenA];
+        A = new snopt::doublereal[lenA];
+        iAfun = new snopt::integer[lenA];
+        jAvar = new snopt::integer[lenA];
         for(int k = 0;k<lenA;k++)
         {
           A[k] = A_array[i](k);
@@ -689,43 +694,43 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         }
       }
 
-      integer minrw,miniw,mincw;
-      integer lenrw = 500000, leniw = 50000, lencw = 500;
-      doublereal rw[lenrw];
-      integer iw[leniw];
+      snopt::integer minrw,miniw,mincw;
+      snopt::integer lenrw = 500000, leniw = 50000, lencw = 500;
+      snopt::doublereal rw[lenrw];
+      snopt::integer iw[leniw];
       char cw[8*lencw];
 
-      integer Cold = 0, Basis = 1, Warm = 2;
-      doublereal *xmul = new doublereal[nx];
-      integer    *xstate = new integer[nx];
+      snopt::integer Cold = 0, Basis = 1, Warm = 2;
+      snopt::doublereal *xmul = new snopt::doublereal[nx];
+      snopt::integer    *xstate = new snopt::integer[nx];
       for(int j = 0;j<nx;j++)
       {
         xstate[j] = 0;
       }
-      doublereal *F      = new doublereal[nF];
-      doublereal *Fmul   = new doublereal[nF];
-      integer    *Fstate = new integer[nF];
+      snopt::doublereal *F      = new snopt::doublereal[nF];
+      snopt::doublereal *Fmul   = new snopt::doublereal[nF];
+      snopt::integer    *Fstate = new snopt::integer[nF];
       for(int j = 0;j<nF;j++)
       {
         Fstate[j] = 0;
       }
-      doublereal ObjAdd = 0.0;
+      snopt::doublereal ObjAdd = 0.0;
 
-      integer ObjRow = 1;
+      snopt::integer ObjRow = 1;
       
-      integer   nxname = 1, nFname = 1, npname;
+      snopt::integer   nxname = 1, nFname = 1, npname;
       char* xnames = new char[nxname*8];
       char* Fnames = new char[nFname*8];
       char Prob[200];
       char printname[200];
       char specname[200];
 
-      integer iSpecs = -1, spec_len;
-      integer iSumm  = -1;
-      integer iPrint = -1, prnt_len;
+      snopt::integer iSpecs = -1, spec_len;
+      snopt::integer iSumm  = -1;
+      snopt::integer iPrint = -1, prnt_len;
 
-      integer nS, nInf;
-      doublereal sInf;
+      snopt::integer nS, nInf;
+      snopt::doublereal sInf;
 
       /*sprintf(specname, "%s","ik.spc");
       sprintf(printname, "%s","ik.out");
@@ -735,26 +740,26 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       npname = strlen(Prob);
       snopenappend_(&iPrint,printname, &INFO[i], prnt_len);*/
 
-      sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
-      //snfilewrapper_(specname,&iSpecs,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,spec_len,8*lencw);
+      snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
+      //snopt::snfilewrapper_(specname,&iSpecs,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,spec_len,8*lencw);
       char strOpt1[200] = "Derivative option";
-      integer DerOpt = 1, strOpt_len = strlen(strOpt1);
-      snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::integer DerOpt = 1, strOpt_len = strlen(strOpt1);
+      snopt::snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
       char strOpt2[200] = "Major optimality tolerance";
       strOpt_len = strlen(strOpt2);
-      snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
       char strOpt3[200] = "Major feasibility tolerance";
       strOpt_len = strlen(strOpt3);
-      snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
       char strOpt4[200] = "Superbasics limit";
       strOpt_len = strlen(strOpt4);
-      snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
       char strOpt5[200] = "Major iterations limit";
       strOpt_len = strlen(strOpt5);
-      snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
       char strOpt6[200] = "Iterations limit";
       strOpt_len = strlen(strOpt6);
-      snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+      snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,&INFO[i],cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
      
 
       //debug only
@@ -818,7 +823,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       
       mxArray* nF_ptr = mxCreateDoubleScalar((double) nF);
       mxSetCell(plhs[0],11,nF_ptr);*/
-      snopta_
+      snopt::snopta_
         ( &Cold, &nF, &nx, &nxname, &nFname,
           &ObjAdd, &ObjRow, Prob, snoptIKfun,
           iAfun, jAvar, &lenA, &lenA, A,
@@ -1069,7 +1074,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     
     nF = 1;
     nG = nq*nT;
-    integer lenA = 0;
+    snopt::integer lenA = 0;
     for(int j = 1;j<nT;j++)
     {
       nF += nc_array[j]; 
@@ -1086,20 +1091,20 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     double* Flow = new double[nF];
     double* Fupp = new double[nF];
     string* Fname = new string[nF];
-    integer* iGfun = new integer[nG];
-    integer* jGvar = new integer[nG];
-    integer* iAfun;
-    integer* jAvar;
-    doublereal* A;
+    snopt::integer* iGfun = new snopt::integer[nG];
+    snopt::integer* jGvar = new snopt::integer[nG];
+    snopt::integer* iAfun;
+    snopt::integer* jAvar;
+    snopt::doublereal* A;
     if(lenA>0)
     {
-      iAfun = new integer[lenA];
-      jAvar = new integer[lenA];
-      A = new doublereal[lenA];
+      iAfun = new snopt::integer[lenA];
+      jAvar = new snopt::integer[lenA];
+      A = new snopt::doublereal[lenA];
     }
     else
     {
-      integer* iAfun = NULL;
+      snopt::integer* iAfun = NULL;
       jAvar = NULL;
       A = NULL;
     }
@@ -1116,9 +1121,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       iGfun[j+(nT-1)*nq] = 1;
       jGvar[j+(nT-1)*nq] = qdotf_idx[j]+1;//C interface uses 1 index
     }
-    integer nf_cum = 1;
-    integer nG_cum = nq*nT;
-    integer nA_cum = 0;
+    snopt::integer nf_cum = 1;
+    snopt::integer nG_cum = nq*nT;
+    snopt::integer nA_cum = 0;
     int x_start_idx = 0;
     for(int j = 1;j<nT;j++)
     {
@@ -1195,64 +1200,64 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       memcpy(x+nq*(nT-1), qdf_seed.data(),sizeof(double)*nq);
     }
     
-    integer minrw,miniw,mincw;
-    integer lenrw = 100000, leniw = 100000, lencw = 5000;
-    doublereal rw[lenrw];
-    integer iw[leniw];
+    snopt::integer minrw,miniw,mincw;
+    snopt::integer lenrw = 100000, leniw = 100000, lencw = 5000;
+    snopt::doublereal rw[lenrw];
+    snopt::integer iw[leniw];
     char cw[8*lencw];
 
-    integer Cold = 0, Basis = 1, Warm = 2;
-    doublereal *xmul = new doublereal[nx];
-    integer    *xstate = new integer[nx];
+    snopt::integer Cold = 0, Basis = 1, Warm = 2;
+    snopt::doublereal *xmul = new snopt::doublereal[nx];
+    snopt::integer    *xstate = new snopt::integer[nx];
     for(int j = 0;j<nx;j++)
     {
       xstate[j] = 0;
     }
 
-    doublereal *F      = new doublereal[nF];
-    doublereal *Fmul   = new doublereal[nF];
-    integer    *Fstate = new integer[nF];
+    snopt::doublereal *F      = new snopt::doublereal[nF];
+    snopt::doublereal *Fmul   = new snopt::doublereal[nF];
+    snopt::integer    *Fstate = new snopt::integer[nF];
     for(int j = 0;j<nF;j++)
     {
       Fstate[j] = 0;
     }
 
-    doublereal ObjAdd = 0.0;
+    snopt::doublereal ObjAdd = 0.0;
 
-    integer ObjRow = 1;
+    snopt::integer ObjRow = 1;
     
-    integer   nxname = 1, nFname = 1, npname;
+    snopt::integer   nxname = 1, nFname = 1, npname;
     char* xnames = new char[nxname*8];
     char* Fnames = new char[nFname*8];
     char Prob[200];
 
-    integer iSpecs = -1, spec_len;
-    integer iSumm = -1;
-    integer iPrint = -1, prnt_len;
+    snopt::integer iSpecs = -1, spec_len;
+    snopt::integer iSumm = -1;
+    snopt::integer iPrint = -1, prnt_len;
 
 
-    integer nS, nInf;
-    doublereal sInf;
+    snopt::integer nS, nInf;
+    snopt::doublereal sInf;
 
-    sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
+    snopt::sninit_(&iPrint,&iSumm,cw,&lencw,iw,&leniw,rw,&lenrw,8*500);
     char strOpt1[200] = "Derivative option";
-    integer DerOpt = 1, strOpt_len = strlen(strOpt1);
-    snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::integer DerOpt = 1, strOpt_len = strlen(strOpt1);
+    snopt::snseti_(strOpt1,&DerOpt,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
     char strOpt2[200] = "Major optimality tolerance";
     strOpt_len = strlen(strOpt2);
-    snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::snsetr_(strOpt2,&SNOPT_MajorOptimalityTolerance,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
     char strOpt3[200] = "Major feasibility tolerance";
     strOpt_len = strlen(strOpt3);
-    snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::snsetr_(strOpt3,&SNOPT_MajorFeasibilityTolerance,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
     char strOpt4[200] = "Superbasics limit";
     strOpt_len = strlen(strOpt4);
-    snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::snseti_(strOpt4,&SNOPT_SuperbasicsLimit,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
     char strOpt5[200] = "Major iterations limit";
     strOpt_len = strlen(strOpt5);
-    snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::snseti_(strOpt5,&SNOPT_MajorIterationsLimit,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
     char strOpt6[200] = "Iterations limit";
     strOpt_len = strlen(strOpt6);
-    snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
+    snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,INFO,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
     //debug only
     /*nx_tmp = nx;
     nG_tmp = nG;
@@ -1320,7 +1325,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     mxSetCell(plhs[0],10,A_ptr);
     mexPrintf("got iAfun jAvar A\n");*/ 
    
-    snopta_
+    snopt::snopta_
       ( &Cold, &nF, &nx, &nxname, &nFname,
         &ObjAdd, &ObjRow, Prob, snoptIKtrajfun,
         iAfun, jAvar, &lenA, &lenA, A,
