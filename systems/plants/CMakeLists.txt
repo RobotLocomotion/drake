@@ -29,6 +29,8 @@ if (Boost_FOUND)
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif()
 
+find_library(F2C_LIBRARY NAMES libf2c.a)  # Need to get static libf2c for snopt
+
 pods_find_pkg_config(bot2-vis)
 if (bot2-vis_FOUND)
   add_definitions( -DBOT_VIS_SUPPORT )   
@@ -41,6 +43,7 @@ if (eigen3_FOUND)
   target_link_libraries(drakeRBM drakeCollision)
 
   add_subdirectory(collision)
+  add_subdirectory(constraint)
 
   if (Boost_FOUND)
     add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
@@ -72,13 +75,26 @@ if (eigen3_FOUND)
   add_rbm_mex(getCMMmex)
 
   pods_find_pkg_config(gurobi)
+
+  macro(add_constraint_mex)
+    add_mex(${ARGV} ${ARGV}.cpp)
+    target_link_libraries(${ARGV} drakeRBM drakeUtil drakeConstraint)
+  endmacro()
+
   if (gurobi_FOUND)
-    add_rbm_mex(approximateIKmex)
+    add_constraint_mex(approximateIKmex)
     pods_use_pkg_config_packages(approximateIKmex gurobi)
   endif()
 
-  #	approximateIKEIQPmex.cpp
-  #	collisionmex.cpp 
+  pods_find_pkg_config(snopt_cpp)
+  if (snopt_cpp_FOUND)
+    add_mex(inverseKinBackendmex inverseKinBackendmex.cpp)
+    target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeConstraint)
+    pods_use_pkg_config_packages(inverseKinBackendmex snopt_cpp)
+    target_link_libraries(inverseKinBackendmex ${F2C_LIBRARY}) # f2c needs to
+                                          # come after snopt_cpp so the linker
+                                          # knows which symbols to load
+  endif()
 
   macro(add_planar_rbm_mex)
     # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
