@@ -51,4 +51,14 @@ for i = 1:1000
     valuecheck(acos(abs(quat'*quat1)),0,1e-6);
 end
 disp('rotmat2axis is correct');
+
+for i = 1:1000
+    axis = randn(4,1);
+    axis(1:3) = axis(1:3)/norm(axis(1:3));
+    R1 = quat2rotmat(axis2quat(axis));
+    R2 = axis2rotmat(axis);
+    valuecheck(R1,R2,1e-6);
+end
+disp('axis to rotmat is correct');
+
 end

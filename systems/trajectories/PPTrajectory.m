@@ -97,6 +97,64 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       t = obj.pp.breaks;
     end
     
+    function [dmin,tmin]=approxNearestPoint(obj,xc)
+        %compute the closest point to xc on the trajectory
+        if(length(obj.getBreaks())==1)
+            dmin=norm(xc-obj.eval(obj.getBreaks()));
+            tmin=obj.getBreaks();
+        else
+            if(length(xc)~=obj.dim) error('Incorrect state dimension'); end
+            tBreaks=obj.getBreaks;
+            xdiff=repmat(xc,1,length(tBreaks))-obj.eval(tBreaks());
+            [dminBreak,tminBreakIndex]=min(sum(xdiff.*xdiff,1));
+            if(tminBreakIndex==1)
+                a=1;b=2;
+            elseif(tminBreakIndex==length(tBreaks))
+                a=tminBreakIndex-1;
+                b=tminBreakIndex;
+            else
+                a=tminBreakIndex-1;
+                b=tminBreakIndex;
+                c=tminBreakIndex+1;
+            end
+            coefs=obj.pp.coefs((a-1)*obj.dim+(1:obj.dim),:);
+            coefs(:,end)=coefs(:,end)-xc;
+            dtcoefs=repmat(fliplr(0:(obj.pp.order-1)),obj.dim,1).*coefs;
+            dtcoefs=dtcoefs(:,1:(end-1));
+            dtPoly=zeros(1,2*obj.pp.order-2);
+            for i=1:obj.dim
+                dtPoly=conv(dtcoefs(i,:),coefs(i,:))+dtPoly;
+            end
+            dtPolyRoots=roots(dtPoly);
+            dtPolyRoots=dtPolyRoots(isreal(dtPolyRoots)&dtPolyRoots>=0&dtPolyRoots<=(tBreaks(b)-tBreaks(a)));
+            if(isempty(dtPolyRoots))
+                tminCandidate=[tBreaks(a) tBreaks(b)];
+            else
+                tminCandidate=[tBreaks(a) tBreaks(a)+dtPolyRoots' tBreaks(b)];
+            end
+            if(tminBreakIndex~=1&&tminBreakIndex~=length(tBreaks))
+                coefs=obj.pp.coefs((b-1)*obj.dim+(1:obj.dim),:);
+                coefs(:,end)=coefs(:,end)-xc;
+                dtcoefs=repmat(fliplr(0:(obj.pp.order-1)),obj.dim,1).*coefs;
+                dtcoefs=dtcoefs(:,1:(end-1));
+                dtPoly=zeros(1,2*obj.pp.order-2);
+                for i=1:obj.dim
+                    dtPoly=conv(dtcoefs(i,:),coefs(i,:))+dtPoly;
+                end
+                dtPolyRoots=roots(dtPoly);
+                dtPolyRoots=dtPolyRoots(isreal(dtPolyRoots)&dtPolyRoots>=0&dtPolyRoots<=(tBreaks(c)-tBreaks(b)));
+                if(isempty(dtPolyRoots))
+                    tminCandidate=[tminCandidate tBreaks(c)];
+                else
+                    tminCandidate=[tminCandidate tBreaks(b)+dtPolyRoots' tBreaks(c)];
+                end
+            end
+            xdiffCandidate=obj.eval(tminCandidate)-repmat(xc,1,length(tminCandidate));
+            [dmin,dminIndex]=min(sum(xdiffCandidate.*xdiffCandidate,1));
+            dmin=sqrt(dmin);
+            tmin=tminCandidate(dminIndex);
+        end
+    end
     function traj = ctranspose(traj)
       [breaks,coefs,l,k,d] = unmkpp(traj.pp);
       if length(d)<2

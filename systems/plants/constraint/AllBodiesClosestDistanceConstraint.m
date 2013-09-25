@@ -1,4 +1,4 @@
-classdef AllBodiesClosestDistanceConstraint < KinematicConstraint
+classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
   properties
     ub
     lb
@@ -8,7 +8,7 @@ classdef AllBodiesClosestDistanceConstraint < KinematicConstraint
       sizecheck(lb,[1,1]);
       sizecheck(ub,[1,1]);
 
-      obj = obj@KinematicConstraint(robot,tspan);
+      obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       obj.lb = lb;
       obj.ub = ub;
       obj = setNumConstraint(obj);
