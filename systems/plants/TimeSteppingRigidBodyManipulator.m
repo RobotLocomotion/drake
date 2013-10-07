@@ -678,6 +678,14 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       body = findLink(model.manip,varargin{:});
     end
     
+    function ancestor_bodies = findAncestorBodies(obj, body_index)
+      ancestor_bodies = obj.manip.findAncestorBodies(body_index);
+    end
+
+    function [body_path, joint_path, signs] = findKinematicPath(obj, start_body, end_body)
+      [body_path, joint_path, signs] = obj.manip.findKinematicPath(start_body, end_body);
+    end
+    
     function body = getBody(model,varargin)
       body = getBody(model.manip,varargin{:});
     end
