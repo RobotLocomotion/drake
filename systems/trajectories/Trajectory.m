@@ -275,6 +275,7 @@ classdef Trajectory < DrakeSystem
       end
       
       breaks = getBreaks(desired_traj);
+      if iscolumn(breaks) breaks = breaks'; end 
       ts = [breaks; breaks+[diff(breaks),0]]; ts = ts(1:end-1);
       
       if (belementwise)
@@ -316,6 +317,7 @@ classdef Trajectory < DrakeSystem
     function h=fnplt(obj,plotdims)
       if (nargin>1 && ~isempty(plotdims) && any(plotdims>prod(obj.dim) | plotdims<1)) error('plotdims out of range'); end
       breaks=obj.getBreaks();
+      if iscolumn(breaks) breaks = breaks'; end 
       m=5; t=linspace(0,1,m)'; n=length(breaks)-1;
       ts = repmat(1-t,1,n).*repmat(breaks(1:end-1),m,1) + repmat(t,1,n).*repmat(breaks(2:end),m,1);
       ts = ts(:);
