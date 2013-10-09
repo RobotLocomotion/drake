@@ -32,4 +32,3 @@ end
 
 path(oldpath);
 
-% NOTEST (not ready yet!)
