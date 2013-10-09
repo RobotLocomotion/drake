@@ -80,6 +80,12 @@ parameters = node.getElementsByTagName('parameter');
 for i=0:(parameters.getLength()-1)
   model = parseParameter(model,robotnum,parameters.item(i),options);
 end
+% set the parameter frame immediately so that I can use the indices in my
+% parameter parsing
+[model,paramframe,pval] = constructParamFrame(model);
+if ~isequal_modulo_transforms(paramframe,getParamFrame(model)) % let the previous handle stay valid if possible
+  model = setParamFrame(model,paramframe);
+end
 
 links = node.getElementsByTagName('link');
 for i=0:(links.getLength()-1)
@@ -131,7 +137,11 @@ else
   model = addJoint(model,'','fixed',worldlink,rootlink,xyz,rpy);
 end
 
-
+% finish parameter parsing
+for i=1:length(model.body)
+  model.body(i) = bindParams(model.body(i),model,pval);
+end
+  
 end
 
 function model = parseParameter(model,robotnum,node,options)

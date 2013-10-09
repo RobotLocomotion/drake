@@ -458,7 +458,7 @@ classdef RigidBodyManipulator < Manipulator
       model = setNumDOF(model,num_dof);
       model = setNumOutputs(model,2*num_dof);
 
-      [paramframe,pmin,pmax] = constructParamFrame(model);
+      [model,paramframe,~,pmin,pmax] = constructParamFrame(model);
       if ~isequal_modulo_transforms(paramframe,getParamFrame(model)) % let the previous handle stay valid if possible
         model = setParamFrame(model,paramframe);
       end
@@ -601,21 +601,29 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function model = setParams(model,p)
-      % This default setParams method attempts to set class properties of the
-      % system according to the coordinate names in the parameter frame.
-
+      fr = getParamFrame(model);
       if isa(p,'Point')
-        p = double(inFrame(p,model.param_frame));
+        p = double(inFrame(p,fr));
       else
-        sizecheck(p,model.param_frame.dim);
+        sizecheck(p,fr.dim);
       end
-      error('not implemented yet');
+      k=1;
+      for i=1:min(numel(model.name),numel(model.param_db))
+        pn = fieldnames(model.param_db{i});
+        for j=1:numel(pn)
+          model.param_db{i}.(pn{j}).value = p(k);
+          k=k+1;
+        end
+      end
+      
+      for i=1:length(model.body)
+        model.body(i) = updateParams(model.body(i),fr.poly,p);
+      end
+      
+      model = compile(model);
     end
     
     function p = getParams(model)
-      % This default getParams method attempts to get class properties of the
-      % system according to the coordinate names in the parameter frame.
-
       p = [];
       for i=1:min(numel(model.name),numel(model.param_db))
         pn = fieldnames(model.param_db{i});
@@ -1053,8 +1061,13 @@ classdef RigidBodyManipulator < Manipulator
     function val = parseParamString(model,robotnum,str)
       % @ingroup URDF Parsing
       
-      str = regexprep(str,'\$(\w+)','model.param_db{robotnum}.(''$1'').value');
-      val = eval(['[',str,']']);
+      fr = getParamFrame(model); p=fr.poly;
+      pstr = regexprep(str,'\$(\w+)','p(model.param_db{robotnum}.(''$1'').index)');
+%      if strcmp(pstr,str)  % then it didn't have any parameters in it
+        val = eval(['[',pstr,']']);
+%      else
+%        val = RigidBodyParameterizedValue(['[',pstr,']'],model,robotnum);
+%      end
     end
     
   end
@@ -1158,15 +1171,19 @@ classdef RigidBodyManipulator < Manipulator
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
 
-    function [fr,pmin,pmax] = constructParamFrame(model)
+    function [model,fr,pval,pmin,pmax] = constructParamFrame(model)
       frames = {};
-      pmin=[]; pmax=[];
+      pval=[]; pmin=[]; pmax=[];
+      index=1;
       for i=1:min(numel(model.name),numel(model.param_db))
         pn = fieldnames(model.param_db{i});
         frames{i} = CoordinateFrame([model.name{i},'Params'],numel(pn),'p',pn);
         for j=1:numel(pn)
+          pval=vertcat(pval,model.param_db{i}.(pn{j}).value);
           pmin=vertcat(pmin,model.param_db{i}.(pn{j}).lb);
           pmax=vertcat(pmax,model.param_db{i}.(pn{j}).ub);
+          model.param_db{i}.(pn{j}).index = index;
+          index = index+1;
         end
       end
       fr = MultiCoordinateFrame.constructFrame(frames);
@@ -1272,7 +1289,7 @@ classdef RigidBodyManipulator < Manipulator
       % @ingroup Kinematic Tree
 
       fixedind = find(isnan([model.body.pitch]) | ... % actual fixed joint
-        cellfun(@(a)~any(any(a)),{model.body.I}));    % body has no inertia (yes, it happens in pr2.urdf)
+        cellfun(@(a) (isnumeric(a) && ~any(any(a))),{model.body.I}));    % body has no inertia (yes, it happens in pr2.urdf)
       
       for i=fixedind(end:-1:1)  % go backwards, since it is presumably more efficient to start from the bottom of the tree
         body = model.body(i);
@@ -1617,7 +1634,12 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       % add noise to damping
-      damping = max(0,(1+options.damping_error*randn())*damping);
+      if ~isnumeric(damping) && options.damping_error
+        warning('damping error not supported for parameterized values (yet)');
+      end
+      if isnumeric(damping)
+        damping = max(0,(1+options.damping_error*randn())*damping);
+      end
 
       joint_limit_min=-inf;
       joint_limit_max=inf;
