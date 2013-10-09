@@ -88,6 +88,17 @@ classdef Point
         pobj = Point(fr,tf.output(t,[],obj.p));
       end
     end
+    
+    function varargout = valuecheck(val,desired_val,varargin)
+      val = double(val);
+      desired_val = double(desired_val);
+      if nargout>0
+        varargout=cell(1,nargout);
+        [varargout{:}] = valuecheck(val,desired_val,varargin{:});
+      else
+        valuecheck(val,desired_val,varargin{:});
+      end
+    end
   end
   
 end

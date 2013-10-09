@@ -35,6 +35,8 @@ classdef RigidBody
     joint_limit_max=[];
     effort_limit=[];
     velocity_limit=[];
+    
+    param_bindings=struct();   % structure containing msspoly parameterized representations of some properties
   end
   
   properties (Constant)
@@ -180,6 +182,26 @@ classdef RigidBody
       end
     end
     
+    function body=bindParams(body,model,pval)
+      fr = getParamFrame(model);
+      pn = properties(body);
+      for i=1:length(pn)
+        if isa(body.(pn{i}),'msspoly')
+          body.param_bindings.(pn{i}) = body.(pn{i});
+          body.(pn{i}) = double(subs(body.(pn{i}),fr.poly,pval));
+        end
+      end
+    end
+    
+    function body=updateParams(body,poly,pval)
+      % this is only intended to be called from the parent manipulator
+      % class. (maybe I should move it up to there?)
+      fn = fieldnames(body.param_bindings);
+      for i=1:length(fn)
+        body.(fn{i}) = double(subs(body.param_bindings.(fn{i}),poly,pval));
+      end
+    end
+    
     function body=parseInertial(body,node,model,options)
       mass = 0;
       inertia = eye(3);
@@ -201,13 +223,11 @@ classdef RigidBody
       end
       inode = node.getElementsByTagName('inertia').item(0);
       if ~isempty(inode)
-        if inode.hasAttribute('ixx'), inertia(1,1)=parseParamString(model,body.robotnum,char(inode.getAttribute('ixx'))); end
-        if inode.hasAttribute('ixy'), inertia(1,2)=parseParamString(model,body.robotnum,char(inode.getAttribute('ixy'))); inertia(2,1)=inertia(1,2); end
-        if inode.hasAttribute('ixz'), inertia(1,3)=parseParamString(model,body.robotnum,char(inode.getAttribute('ixz'))); inertia(3,1)=inertia(1,3); end
-        if inode.hasAttribute('iyy'), inertia(2,2)=parseParamString(model,body.robotnum,char(inode.getAttribute('iyy'))); end
-        if inode.hasAttribute('iyz'), inertia(2,3)=parseParamString(model,body.robotnum,char(inode.getAttribute('iyz'))); inertia(3,2)=inertia(2,3); end
-        if inode.hasAttribute('izz'), inertia(3,3)=parseParamString(model,body.robotnum,char(inode.getAttribute('izz'))); end
-      end      
+        inertia = [ parseParamString(model,body.robotnum,char(inode.getAttribute('ixx'))), parseParamString(model,body.robotnum,char(inode.getAttribute('ixy'))), parseParamString(model,body.robotnum,char(inode.getAttribute('ixz'))); ...
+                    0, parseParamString(model,body.robotnum,char(inode.getAttribute('iyy'))), parseParamString(model,body.robotnum,char(inode.getAttribute('iyz'))); ...
+                    0, 0, parseParamString(model,body.robotnum,char(inode.getAttribute('izz'))) ];
+        inertia(2,1) = inertia(1,2); inertia(3,1) = inertia(1,3); inertia(3,2) = inertia(2,3);
+      end
       
       % randomly scale inertia
       % keep scale factor positive to ensure positive definiteness
@@ -215,7 +235,7 @@ classdef RigidBody
       eta = 1 + min(1,max(-0.9999,options.inertia_error*randn()));
       inertia = eta*inertia;  
       
-      if ~all(eig(inertia)>0)
+      if isnumeric(inertia) && ~all(eig(inertia)>0)
         warning('RigidBody: inertia matrix not positive definite!');
       end
       if any(rpy)
