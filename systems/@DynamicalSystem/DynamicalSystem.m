@@ -508,11 +508,22 @@ classdef DynamicalSystem
       p = Point(obj.param_frame,p);
     end
     
+    function n = getNumParams(obj)
+      n = obj.param_frame.dim;
+    end
+    
     function obj = setParamFrame(obj,fr)
       % Set the CoordinateFrame object which describes any system
       % parameters
       typecheck(fr,'CoordinateFrame');
       obj.param_frame = fr;
+      if numel(obj.pmin)>fr.dim
+        obj.pmin=-inf(fr.dim,1);
+        obj.pmax=inf(fr.dim,1);
+      elseif numel(obj.pmin)<fr.dim
+        obj.pmin=vertcat(obj.pmin,-inf(fr.dim-numel(obj.pmin),1));
+        obj.pmax=vertcat(obj.pmax,inf(fr.dim-numel(obj.pmax),1));
+      end
     end
     function fr = getParamFrame(obj)
       % Returns the CoordinateFrame object which describes any system

@@ -458,10 +458,11 @@ classdef RigidBodyManipulator < Manipulator
       model = setNumDOF(model,num_dof);
       model = setNumOutputs(model,2*num_dof);
 
-      paramframe = constructParamFrame(model);
+      [paramframe,pmin,pmax] = constructParamFrame(model);
       if ~isequal_modulo_transforms(paramframe,getParamFrame(model)) % let the previous handle stay valid if possible
         model = setParamFrame(model,paramframe);
       end
+      model = setParamLimits(model,pmin,pmax);
       
       if getNumInputs(model)>0
         inputframe = constructInputFrame(model);
@@ -598,6 +599,32 @@ classdef RigidBodyManipulator < Manipulator
       model.body(body_ind) = body;
       model.dirty = true;
     end
+    
+    function model = setParams(model,p)
+      % This default setParams method attempts to set class properties of the
+      % system according to the coordinate names in the parameter frame.
+
+      if isa(p,'Point')
+        p = double(inFrame(p,model.param_frame));
+      else
+        sizecheck(p,model.param_frame.dim);
+      end
+      error('not implemented yet');
+    end
+    
+    function p = getParams(model)
+      % This default getParams method attempts to get class properties of the
+      % system according to the coordinate names in the parameter frame.
+
+      p = [];
+      for i=1:min(numel(model.name),numel(model.param_db))
+        pn = fieldnames(model.param_db{i});
+        for j=1:numel(pn)
+          p = vertcat(p,model.param_db{i}.(pn{j}).value);
+        end
+      end
+      p = Point(getParamFrame(model),p);
+    end    
     
     function model = weldJoint(model,body_ind_or_joint_name,robot)
       % @ingroup Kinematic Tree
@@ -1131,13 +1158,18 @@ classdef RigidBodyManipulator < Manipulator
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
 
-    function fr = constructParamFrame(model)
-      fr = getParamFrame(model);
-      return;  
-      
-      % not implemented yet!
-        pn = fieldnames(model.param_db);
-      model = setParamFrame(model,CoordinateFrame([model.name,'Params'],numel(pn),'p',pn));
+    function [fr,pmin,pmax] = constructParamFrame(model)
+      frames = {};
+      pmin=[]; pmax=[];
+      for i=1:min(numel(model.name),numel(model.param_db))
+        pn = fieldnames(model.param_db{i});
+        frames{i} = CoordinateFrame([model.name{i},'Params'],numel(pn),'p',pn);
+        for j=1:numel(pn)
+          pmin=vertcat(pmin,model.param_db{i}.(pn{j}).lb);
+          pmax=vertcat(pmax,model.param_db{i}.(pn{j}).ub);
+        end
+      end
+      fr = MultiCoordinateFrame.constructFrame(frames);
     end
     
     function fr = constructInputFrame(model)
@@ -1162,10 +1194,7 @@ classdef RigidBodyManipulator < Manipulator
       frame_dims = [inputparents.robotnum];
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
-    
-    function fr = constructOutputFrame(model)
-    end    
-    
+        
     function [model,dof] = extractFeatherstone(model)
       % @ingroup Kinematic Tree
 

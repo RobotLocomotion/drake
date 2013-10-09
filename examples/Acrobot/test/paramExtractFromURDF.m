@@ -3,7 +3,7 @@ function paramExtractFromURDF
 r1 = RigidBodyManipulator('AcrobotWParams.urdf');
 r2 = RigidBodyManipulator('../Acrobot.urdf');
 
-p = getParams(r2)
+p = getParams(r1)
 
 %q=sym('q',[2,1]); q=sym(q,'real');
 %qdot=sym('q',[2,1]); qdot=sym(qdot,'real');
