@@ -4,7 +4,7 @@ classdef FullStateFeedbackSensor < RigidBodySensor
     function y = output(obj,manip,t,x,u)
       y=x;
     end
-    function fr = getFrame(obj,manip)
+    function fr = constructFrame(obj,manip)
       fr = manip.getStateFrame;
     end
     function tf = isDirectFeedthrough(obj)

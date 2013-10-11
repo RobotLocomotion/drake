@@ -29,8 +29,8 @@ classdef DrakeSystemWGaussianNoise < StochasticDrakeSystem
       
       obj = obj@StochasticDrakeSystem(getNumContStates(drake_system),getNumDiscStates(drake_system),getNumInputs(drake_system),getNumOutputs(drake_system),isDirectFeedthrough(drake_system),isTI(drake_system),getNumStates(drake_system)+getNumOutputs(drake_system),ts_noise);
       obj.sys = drake_system;
-      if (getNumContStates(obj)) obj.Wc = chol(dynamics_covariance+eps*eye(getNumOutputs(obj))); end
-      if (getNumDiscStates(obj)) obj.Wd = chol(update_covariance+eps*eye(getNumOutputs(obj))); end
+      if (getNumContStates(obj)) obj.Wc = chol(dynamics_covariance+eps*eye(getNumContStates(obj))); end
+      if (getNumDiscStates(obj)) obj.Wd = chol(update_covariance+eps*eye(getNumDiscStates(obj))); end
       if (getNumOutputs(obj)) obj.V = chol(output_covariance+eps*eye(getNumOutputs(obj))); end
 
       obj = setInputFrame(obj,getInputFrame(drake_system));
