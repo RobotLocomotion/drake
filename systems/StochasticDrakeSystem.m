@@ -41,6 +41,9 @@ classdef (InferiorClasses = {?DrakeSystem}) StochasticDrakeSystem < DrakeSystem
         error('num_w must be a positive integer');
       end
       obj.num_w = num_w;
+      if (nargin>7)
+        obj.ts_w = ts_w;
+      end
     end
     
     function xcdot = dynamics(obj,t,x,u)
@@ -67,11 +70,22 @@ classdef (InferiorClasses = {?DrakeSystem}) StochasticDrakeSystem < DrakeSystem
         else  % for older versions of matlab
           rand('seed',sum(100*clock));
         end
+        
+        cov_scale = 1;
+        ts_w = obj.ts_w;
+        
+        % try to do the right thing for DT systems:
+        if (isDT(obj)) 
+          ts = getSampleTime(obj);
+          ts_w = ts(1);  % set the sample time of the noise block to match the sample time of the system
+          cov_scale = ts_w;  % undue the scaling done by the band-limited noise block
+        end
+        
         add_block('simulink3/Sources/Band-Limited White Noise',[mdl,'/noise'],...
-          'Cov',mat2str(ones(obj.num_w,1)),...%mat2str((1/obj.ts_w)*eye(obj.num_w)),...
-          'Ts', num2str(obj.ts_w),...
-          'seed', mat2str(uint32(1e5*rand(obj.num_w,1))));
-
+          'Cov',mat2str(cov_scale*ones(obj.num_w,1)),...
+          'Ts', num2str(ts_w),...
+          'Seed', mat2str(uint32(1e5*rand(obj.num_w,1))));
+        
         if (getNumInputs(obj)>0)
           add_line(mdl,'noise/1','DrakeSys/2');
         else
