@@ -33,6 +33,9 @@ classdef DrakeSystemWGaussianNoise < StochasticDrakeSystem
       if (getNumDiscStates(obj)) obj.Wd = chol(update_covariance+eps*eye(getNumOutputs(obj))); end
       if (getNumOutputs(obj)) obj.V = chol(output_covariance+eps*eye(getNumOutputs(obj))); end
 
+      obj = setInputFrame(obj,getInputFrame(drake_system));
+      obj = setStateFrame(obj,getStateFrame(drake_system));
+      obj = setOutputFrame(obj,getOutputFrame(drake_system));
       obj = setSampleTime(obj,getSampleTime(drake_system));
     end
     
