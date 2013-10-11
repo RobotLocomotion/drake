@@ -10,7 +10,7 @@ classdef RigidBodySensor
   
   methods (Abstract=true)
     y = output(obj,manip,t,x,u);
-    fr = getFrame(obj,manip);
+    fr = constructFrame(obj,manip);
     tf = isDirectFeedthrough(obj);
   end
   
