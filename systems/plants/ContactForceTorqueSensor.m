@@ -1,6 +1,7 @@
 classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
   
   properties
+    name;
     frame;
     body;
     normal_ind=[];

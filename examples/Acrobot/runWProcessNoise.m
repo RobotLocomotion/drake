@@ -1,8 +1,6 @@
 function runWProcessNoise
 
-r = RigidBodyManipulator('Acrobot.urdf');
-r = addSensor(r,RigidBodyJointSensor(r,[1;1]));
-r = compile(r);
+r = RigidBodyManipulator('Acrobot.urdf',struct('sensors',true));
 sys = DrakeSystemWGaussianNoise(r,0.1*diag([0 0 1 1]),[],zeros(2),.01);
 
 x0 = randn(4,1);

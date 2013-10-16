@@ -1459,9 +1459,21 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
       
+      if options.sensors && node.getElementsByTagName('sensor').getLength()>0
+        sensorItem = 0;
+        while(~isempty(node.getElementsByTagName('sensor').item(sensorItem)))
+          model = parseSensor(model,robotnum,node.getElementsByTagName('sensor').item(sensorItem),body,options);
+          sensorItem = sensorItem+1;
+        end
+      end          
+      
       model.body=[model.body,body];
     end
 
+    function model = parseSensor(model,robotnum,node,body,options)
+      % todo: implement this
+    end
+    
     function model = parseCollisionFilterGroup(model,robotnum,node,options)
       ignore = char(node.getAttribute('drakeIgnore'));
       if strcmpi(ignore,'true')
@@ -1668,7 +1680,13 @@ classdef RigidBodyManipulator < Manipulator
       limits.velocity_limit = velocity_limit;
       
       name=regexprep(name, '\.', '_', 'preservecase');
-      model = model.addJoint(name,type,parent,child,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits);
+      model = addJoint(model,name,type,parent,child,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits);
+      
+      if node.hasAttribute('has_position_sensor')
+        model.body(child).has_position_sensor = str2num(char(node.getAttribute('has_position_sensor')));
+      else
+        model.body(child).has_position_sensor = true;
+      end          
     end
     
     

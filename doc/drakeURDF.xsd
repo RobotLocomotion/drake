@@ -11,12 +11,12 @@ Documents URDF support for Drake, which implements much of the ROS URDF specific
     </xs:annotation>
     <xs:simpleType name="matlab_parameter_expression">
         <xs:annotation>
-            <xs:documentation>Can be any string that will evaluate with "eval" in the matlab environment, where parameters are referenced with $param_name.
+            <xs:documentation>Can be any string that will evaluate as a polynomial using "eval" in the matlab environment, where parameters are referenced with $param_name.
 Example: 
 
-"$m $l^2"
+"$m * $l^2"
 or
-"$m2 ($lc2 - $l1)" 
+"$m2 * ($lc2 - $l1)" 
 </xs:documentation>
         </xs:annotation>
         <xs:restriction base="xs:string"/>
@@ -328,7 +328,7 @@ input to Newtons of force.</xs:documentation>
     </xs:complexType>
 
     <xs:complexType name="link">
-        <xs:sequence>
+        <xs:all>
             <xs:element name="inertial" type="inertial" minOccurs="0" maxOccurs="1">
                 <xs:annotation>
                     <xs:documentation>The inertial properties of the link. </xs:documentation>
@@ -344,7 +344,8 @@ input to Newtons of force.</xs:documentation>
                     <xs:documentation>The collision properties of a link. Note that this can be different from the visual properties of a link, for example, simpler collision models are often used to reduce computation time. Note: multiple instances of collision tags can exist for the same link. The union of the geometry they define forms the collision representation of the link. </xs:documentation>
                 </xs:annotation>
             </xs:element>
-        </xs:sequence>
+            <xs:element maxOccurs="unbounded" minOccurs="0" name="sensor" type="sensor"/>
+        </xs:all>
         <xs:attribute name="name" type="xs:string" use="required">
             <xs:annotation>
                 <xs:documentation>The name of the link itself </xs:documentation>
@@ -437,8 +438,56 @@ input to Newtons of force.</xs:documentation>
     planar - This joint allows motion in a plane perpendicular to the axis. </xs:documentation>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute default="1" name="has_position_sensor" type="xs:boolean" use="optional"/>
     </xs:complexType>
 
+    <xs:complexType name="joint_reference">
+        <xs:attribute name="name" type="xs:string"/>
+    </xs:complexType>
+    <xs:complexType name="gazebo_sensor">
+        <xs:sequence>
+            <xs:element name="pose" type="matlab_parameter_expression"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="type" type="sensor_type"/>
+    </xs:complexType>
+    <xs:complexType name="gazebo">
+        <xs:all>
+            <xs:element maxOccurs="unbounded" minOccurs="0" name="sensor" type="gazebo_sensor"/>
+        </xs:all>
+        <xs:attribute name="reference" type="xs:string"/>
+    </xs:complexType>
+    <xs:complexType name="sensor">
+        <xs:all>
+            <xs:element maxOccurs="1" minOccurs="0" name="pose" type="pose"/>
+        </xs:all>
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="type" type="sensor_type"/>
+    </xs:complexType>
+    <xs:simpleType name="sensor_type">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="imu"/>
+            <xs:enumeration value="contact"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="transmission">
+        <xs:all>
+            <xs:element maxOccurs="1" minOccurs="1" name="joint" type="joint_reference"/>
+            <xs:element maxOccurs="1" minOccurs="1" name="actuator" type="actuator"/>
+            <xs:element default="1" maxOccurs="1" minOccurs="0" name="mechanicalReduction"
+                type="xs:double"/>
+        </xs:all>
+        <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="type" type="transmission_type"/>
+    </xs:complexType>
+    <xs:complexType name="actuator">
+        <xs:attribute name="name" type="xs:string"/>
+    </xs:complexType>
+    <xs:simpleType name="transmission_type">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="SimpleTransmission"/>
+        </xs:restriction>
+    </xs:simpleType>
     <xs:element name="robot">
         <xs:complexType>
             <xs:sequence minOccurs="0" maxOccurs="unbounded">
@@ -453,6 +502,8 @@ input to Newtons of force.</xs:documentation>
                     </xs:annotation>
                 </xs:element>
 
+                <xs:element maxOccurs="unbounded" minOccurs="0" name="transmission"
+                    type="transmission"/>
                 <xs:element name="material" type="material" minOccurs="0" maxOccurs="unbounded">
                     <xs:annotation>
                         <xs:documentation>The material of the visual element. It is allowed to specify a material element outside of the 'link' object, in the top level 'robot' element. From within a link element you can then reference the material by name. </xs:documentation>
