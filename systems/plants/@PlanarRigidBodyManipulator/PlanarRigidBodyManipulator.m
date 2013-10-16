@@ -525,7 +525,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           xyz=zeros(3,1); rpy=zeros(3,1);
           elnode = node.getElementsByTagName('origin').item(0);
           if ~isempty(elnode) && elnode.hasAttribute('xyz')
-              xyz = [model.x_axis'; model.y_axis']*parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
+            xyz = [model.x_axis'; model.y_axis']*reshape(parseParamString(model,robotnum,char(elnode.getAttribute('xyz'))),3,1);
           end
           
           elNode = node.getElementsByTagName('profile').item(0);
@@ -551,10 +551,10 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
           
           elnode = node.getElementsByTagName('origin').item(0);
-          orig = [model.x_axis'; model.y_axis']*parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
+          orig = [model.x_axis'; model.y_axis']*reshape(parseParamString(model,robotnum,char(elnode.getAttribute('xyz'))),3,1);
           
           elnode = node.getElementsByTagName('direction').item(0);
-          dir = [model.x_axis'; model.y_axis']*parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
+          dir = [model.x_axis'; model.y_axis']*reshape(parseParamString(model,robotnum,char(elnode.getAttribute('xyz'))),3,1);
           
           scaleFac = 1;
           elnode = node.getElementsByTagName('scaleFactor').item(0);
