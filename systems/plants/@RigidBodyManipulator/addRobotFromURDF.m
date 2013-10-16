@@ -29,6 +29,7 @@ end
 if (~isfield(options,'inertial')) options.inertial = true; end
 if (~isfield(options,'visual')) options.visual = true; end
 if (~isfield(options,'collision')) options.collision = true; end
+if (~isfield(options,'sensors')) options.sensors = false; end
 if (~isfield(options,'visual_geometry')) options.visual_geometry = false; end
 if (~isfield(options,'namesuffix')) options.namesuffix = ''; end
 if (~isfield(options,'inertia_error')) options.inertia_error = 0.0; end
@@ -135,6 +136,10 @@ if ~isempty(options.floating)
   model = addFloatingBase(model,worldlink,rootlink,xyz,rpy,options.floating);
 else
   model = addJoint(model,'','fixed',worldlink,rootlink,xyz,rpy);
+end
+
+if options.sensors
+  model = addSensor(model,RigidBodyJointSensor(model,robotnum));
 end
 
 % finish parameter parsing

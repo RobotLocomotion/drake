@@ -35,6 +35,7 @@ classdef RigidBody
     joint_limit_max=[];
     effort_limit=[];
     velocity_limit=[];
+    has_position_sensor=false;
     
     param_bindings=struct();   % structure containing msspoly parameterized representations of some properties
   end
@@ -373,7 +374,7 @@ classdef RigidBody
         body.contact_shape_group{ind} = [body.contact_shape_group{ind},length(body.contact_shapes)];
       end
     end
-      
+          
     function writeWRLJoint(body,fp)
       if isempty(body.jointname)
         fprintf(fp,'Transform {\n');
