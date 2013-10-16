@@ -1462,7 +1462,7 @@ classdef RigidBodyManipulator < Manipulator
       if options.sensors && node.getElementsByTagName('sensor').getLength()>0
         sensorItem = 0;
         while(~isempty(node.getElementsByTagName('sensor').item(sensorItem)))
-          model = parseSensor(model,robotnum,node.getElementsByTagName('sensor').item(sensorItem),body,options);
+          model = parseSensor(model,robotnum,node.getElementsByTagName('sensor').item(sensorItem),numel(model.body)+1,options);
           sensorItem = sensorItem+1;
         end
       end          
@@ -1470,8 +1470,21 @@ classdef RigidBodyManipulator < Manipulator
       model.body=[model.body,body];
     end
 
-    function model = parseSensor(model,robotnum,node,body,options)
-      % todo: implement this
+    function model = parseSensor(model,robotnum,node,body_ind,options)
+      switch char(node.getAttribute('type'))
+        case 'imu'
+          xyz = zeros(3,1); rpy = zeros(3,1);
+          origin = node.getElementsByTagName('pose').item(0);  
+          if ~isempty(origin)
+            if origin.hasAttribute('xyz')
+              xyz = reshape(parseParamString(model,robotnum,char(origin.getAttribute('xyz'))),3,1);
+            end
+            if origin.hasAttribute('rpy')
+              rpy = reshape(parseParamString(model,robotnum,char(origin.getAttribute('rpy'))),3,1);
+            end
+          end
+          model = addSensor(model,RigidBodyInertialMeasurementUnit(model,body_ind,xyz,rpy));
+      end
     end
     
     function model = parseCollisionFilterGroup(model,robotnum,node,options)

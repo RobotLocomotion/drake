@@ -463,6 +463,26 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       model.loop=[model.loop,loop];
     end
     
+    function model = parseSensor(model,robotnum,node,body_ind,options)
+      switch char(node.getAttribute('type'))
+        case 'imu'
+          xyz = zeros(3,1); rpy = zeros(3,1);
+          origin = node.getElementsByTagName('pose').item(0);  
+          if ~isempty(origin)
+            if origin.hasAttribute('xyz')
+              xyz = reshape(parseParamString(model,robotnum,char(origin.getAttribute('xyz'))),3,1);
+            end
+            if origin.hasAttribute('rpy')
+              rpy = reshape(parseParamString(model,robotnum,char(origin.getAttribute('rpy'))),3,1);
+            end
+          end
+          
+          if any(rpy), error('Drake:PlanarRigidBodyManipulator:RPYnotimplemented','non-zero rpy support is not implemented yet'); end
+          model = addSensor(model,RigidBodyInertialMeasurementUnit(model,body_ind,...
+            [model.x_axis'; model.y_axis']*xyz, 0));
+      end
+    end    
+    
     function model = parseForceElement(model,robotnum,node,options)
       name = char(node.getAttribute('name'));
       name = regexprep(name, '\.', '_', 'preservecase');
@@ -505,7 +525,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           xyz=zeros(3,1); rpy=zeros(3,1);
           elnode = node.getElementsByTagName('origin').item(0);
           if ~isempty(elnode) && elnode.hasAttribute('xyz')
-              xyz = parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
+              xyz = [model.x_axis'; model.y_axis']*parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
           end
           
           elNode = node.getElementsByTagName('profile').item(0);
@@ -523,7 +543,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           elnode = node.getElementsByTagName('nominal_speed').item(0);
           nominal_speed = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
           
-          fe = PlanarRigidBodyWing(profile, [xyz(1) xyz(3)], chord, span, stall_angle, nominal_speed, parent);
+          fe = PlanarRigidBodyWing(profile, xyz, chord, span, stall_angle, nominal_speed, parent);
           fe.name = name;
           model.force{end+1} = fe;
         case 'thrust'
@@ -531,10 +551,10 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
           
           elnode = node.getElementsByTagName('origin').item(0);
-          orig = parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
+          orig = [model.x_axis'; model.y_axis']*parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
           
           elnode = node.getElementsByTagName('direction').item(0);
-          dir = parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
+          dir = [model.x_axis'; model.y_axis']*parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
           
           scaleFac = 1;
           elnode = node.getElementsByTagName('scaleFactor').item(0);
@@ -548,9 +568,9 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
           end
           
           if exist('limits')
-            th = PlanarRigidBodyThrust(parent, [orig(1) orig(3)], [dir(1) dir(3)], scaleFac, limits);
+            th = PlanarRigidBodyThrust(parent, orig, dir, scaleFac, limits);
           else
-            th = PlanarRigidBodyThrust(parent, [orig(1) orig(3)], [dir(1) dir(3)], scaleFac);
+            th = PlanarRigidBodyThrust(parent, orig, dir, scaleFac);
           end
           th.name = name;
           model.force{end+1} = th;

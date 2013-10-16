@@ -114,7 +114,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         outframe{1} = getOutputFrame(model.manip);
         for i=1:length(model.sensor)
           model.sensor{i} = model.sensor{i}.compile(model,model.manip);
-          outframe{i+1} = model.sensor{i}.getFrame(model);
+          outframe{i+1} = model.sensor{i}.constructFrame(model);
           feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
         end
         fr = MultiCoordinateFrame.constructFrame(outframe);

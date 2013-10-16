@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 
-<robot name="RimlessWheel" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd"
+ xmlns:xacro="http://ros.org/wiki/xacro" name="RimlessWheel">
 
   <xacro:property name="m" value="1" />
   <!-- I have to add rotational inertia about the COM to the model to have a well-defined flight phase, even though the ideal rimless wheel model does not have it. -->
@@ -19,6 +22,9 @@
         <cylinder radius=".2" length=".2"/>
       </geometry>
     </visual>
+    <sensor type="imu">
+      <pose xyz="0 0 0" rpy="0 0 0"/>
+    </sensor>
   </link>
 
   <xacro:macro name="leg" params="n">
