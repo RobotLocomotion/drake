@@ -25,6 +25,8 @@ classdef RigidBodySensor
     end
   end
   
-    
+  properties
+    name;
+  end
 end
     

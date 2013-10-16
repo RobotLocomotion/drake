@@ -3,7 +3,7 @@ classdef TimeSteppingRigidBodySensor
   
   methods (Abstract=true)
     y = output(obj,tsmanip,manip,t,x,u);
-    fr = getFrame(obj,tsmanip);
+    fr = constructFrame(obj,tsmanip);
     tf = isDirectFeedthrough(obj);
   end
   
@@ -14,4 +14,7 @@ classdef TimeSteppingRigidBodySensor
     end
   end
   
+  properties
+    name;
+  end
 end

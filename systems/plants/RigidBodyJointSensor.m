@@ -6,7 +6,6 @@ classdef RigidBodyJointSensor < RigidBodySensor
     function obj = RigidBodyJointSensor(manip,robotnum)
       typecheck(manip,'RigidBodyManipulator');
       if (nargin<3) robotnum = 1; end
-      
       obj.robotnum = robotnum;
     end
     
@@ -24,7 +23,8 @@ classdef RigidBodyJointSensor < RigidBodySensor
     
     function obj = compile(obj,manip)
       obj.dof_mask = [manip.body([manip.body.has_position_sensor] & [manip.body.robotnum]==obj.robotnum).dofnum];
-    end    
+    end
+        
   end
   
   properties

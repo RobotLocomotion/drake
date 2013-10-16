@@ -1,7 +1,6 @@
 classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
   
   properties
-    name;
     frame;
     body;
     normal_ind=[];
@@ -150,7 +149,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
       end
     end
     
-    function fr = getFrame(obj,manip)
+    function fr = constructFrame(obj,manip)
       fr = obj.frame;
     end
     
