@@ -33,7 +33,7 @@ classdef PlanarRigidBodyThrust < RigidBodyForceElement
         %B_mod maps the input to generalized forces.
         kinsol = doKinematics(manip,q, false, false);
         %origin = [x y z] of the reference point
-        [x,J] = forwardKin(manip,kinsol,obj.bodyind,obj.origin(1:2)', 0);
+        [x,J] = forwardKin(manip,kinsol,obj.bodyind,obj.origin(1:2), 0);
         B_mod = manip.B*0; %initialize B_mod
         force = sparse(3,getNumBodies(manip));
         %J expects the force to be in world coordinates
