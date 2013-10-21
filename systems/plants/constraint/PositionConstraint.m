@@ -1,5 +1,5 @@
 classdef PositionConstraint < SingleTimeKinematicConstraint
-  properties
+  properties(SetAccess = protected)
     ub
     lb
     null_constraint_rows

@@ -8,7 +8,7 @@ classdef WorldGazeDirConstraint < GazeDirConstraint
 % @param tspan            OPTIONAL argument. A 1x2 vector
 % The body axis lies within a cone, with the cone
 % aperture being 2*conethreshold, the cone axis being dir
-  properties
+  properties(SetAccess = protected)
     body;
     body_name;
   end
@@ -50,6 +50,11 @@ classdef WorldGazeDirConstraint < GazeDirConstraint
       else
         name_str = [];
       end
+    end
+    
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      updatePtrWorldGazeDirConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)

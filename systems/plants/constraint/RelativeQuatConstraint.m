@@ -4,7 +4,7 @@ classdef RelativeQuatConstraint < QuatConstraint
   % of Frame A and Frame B' must satisfy:
   %
   % (quat_a'*quat_bp)^2 in [1-tol, 1]
-  properties
+  properties(SetAccess = protected)
     bodyA = struct('idx',[],'name','');
     bodyB = struct('idx',[],'name','','q_bp2b',[]);
   end

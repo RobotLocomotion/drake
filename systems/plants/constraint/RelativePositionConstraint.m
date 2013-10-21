@@ -1,5 +1,5 @@
 classdef RelativePositionConstraint < PositionConstraint
-  properties
+  properties(SetAccess = protected)
     bodyA = struct('idx',[],'name','');
     bodyB = struct('idx',[],'name','','bpTb',[]);
   end

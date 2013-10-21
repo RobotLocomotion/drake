@@ -45,6 +45,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     }
   }
   int num_cnst = cnst->getNumConstraint(t_ptr);
+  //mexPrintf("num_cnst = %d\n",num_cnst);
   double num_cnst_double = (double) num_cnst;
   int nq = cnst->getRobotPointer()->num_dof;
   double* q = new double[nq];
@@ -53,11 +54,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   VectorXd c(num_cnst);
   MatrixXd dc(num_cnst,nq);
   cnst->eval(t_ptr,c,dc);
+  //mexPrintf("get c,dc\n");
   VectorXd lb(num_cnst);
   VectorXd ub(num_cnst);
   cnst->bounds(t_ptr,lb,ub);
+  //mexPrintf("get lb, ub\n");
   std::vector<std::string> cnst_names;
   cnst->name(t_ptr,cnst_names);
+  //mexPrintf("get name\n");
   plhs[0] = mxCreateDoubleMatrix(1,1,mxREAL);
   memcpy(mxGetPr(plhs[0]),&num_cnst_double,sizeof(double));
   plhs[1] = mxCreateDoubleMatrix(num_cnst,1,mxREAL);

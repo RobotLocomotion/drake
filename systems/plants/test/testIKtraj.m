@@ -29,7 +29,7 @@ l_foot_pos = forwardKin(r,kinsol0,l_foot,l_foot_pts,2);
 l_foot_pos(3,:) = 0;
 r_hand_pos = forwardKin(r,kinsol0,r_hand,r_hand_pts,0);
 l_hand_pos = forwardKin(r,kinsol0,l_hand,l_hand_pts,0);
-com_pos0 = getCOM(r,kinsol0);
+com_pos0 = getCOM(r,kinsol0,1);
 com_height = com_pos0(3);
 tspan = [0,1];
 kc1 = {WorldPositionConstraint(r,r_foot,r_foot_pts,r_foot_pos(1:3),r_foot_pos(1:3),tspan),...
@@ -38,7 +38,7 @@ kc2 = {WorldPositionConstraint(r,l_foot,l_foot_pts,l_foot_pos(1:3),l_foot_pos(1:
   WorldQuatConstraint(r,l_foot,l_foot_pos(4:7),0,tspan)};
 kc3 = WorldPositionConstraint(r,r_hand,r_hand_pts,r_hand_pos+[0.1;0.05;1],r_hand_pos+[0.1;0.05;1],[tspan(end) tspan(end)]);
 kc4 = WorldPositionConstraint(r,l_hand,l_hand_pts,l_hand_pos,l_hand_pos,[tspan(end) tspan(end)]);
-kc5 = WorldCoMConstraint(r,[-inf;-inf;com_height],[inf;inf;com_height+0.5],tspan);
+kc5 = WorldCoMConstraint(r,1,[-inf;-inf;com_height],[inf;inf;com_height+0.5],tspan);
 ikoptions = IKoptions(r);
 cost = Point(r.getStateFrame,1);
 cost.base_x = 100;
@@ -50,8 +50,8 @@ cost.base_yaw = 100;
 cost = double(cost);
 Q = diag(cost(1:nq));
 ikoptions = ikoptions.setQ(Q);
-ikoptions = ikoptions.setQa(Q);
-ikoptions = ikoptions.setMajorIterationsLimit(2000);
+ikoptions = ikoptions.setQa(0.001*Q);
+ikoptions = ikoptions.setMajorIterationsLimit(10000);
 ikoptions = ikoptions.setIterationsLimit(100000);
 ikoptions = ikoptions.setSuperbasicsLimit(1000);
 ikmexoptions = ikoptions;
@@ -60,26 +60,26 @@ ikmexoptions = ikmexoptions.setDebug(true);
 nT = 5;
 % t = [tspan(1) tspan(1)+0.2*(tspan(end)-tspan(1)) tspan(1)+0.7*(tspan(end)-tspan(1)) tspan(end)];
 t = linspace(tspan(1),tspan(end),nT);
-q_nom = repmat(q0,1,nT-1);
-q_seed = repmat(q0,1,nT-1)+1e-1*randn(nq,nT-1);
+q_nom_traj = PPTrajectory(foh(t,repmat(q0,1,nT)));
+q_seed_traj = PPTrajectory(foh(t,repmat(q0,1,nT)+1e-1*randn(nq,nT)));
 
 display('Check IK traj');
-xtraj = test_IKtraj_userfun(r,q0,qdot0,t,q_seed,q_nom,kc1{:},kc2{:},kc3,kc4,kc5,ikoptions);
+xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,kc5,ikoptions);
 v = r.constructVisualizer();
 v.playback(xtraj,struct('slider',true));
 display('Check IK traj with quasi static constraint');
-qsc = QuasiStaticConstraint(r);
+qsc = QuasiStaticConstraint(r,1);
 qsc = qsc.addContact(r_foot,r_foot_contact_pts);
 qsc = qsc.addContact(l_foot,l_foot_contact_pts);
 qsc = qsc.setActive(true);
 qsc = qsc.setShrinkFactor(0.8);
-xtraj = test_IKtraj_userfun(r,q0,qdot0,t,q_seed,q_nom,kc1{:},qsc,kc2{:},kc3,kc4,kc5,ikoptions);
+xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},qsc,kc2{:},kc3,kc4,kc5,ikoptions);
 v = r.constructVisualizer();
 v.playback(xtraj,struct('slider',true));
 
 display('Check IK traj with infeasibility')
-kc_err = WorldCoMConstraint(r,[nan;nan;2],inf(3,1),tspan);
-[xtraj,info,infeasible_constraint] = inverseKinTraj(r,q0,qdot0,t,q_seed,q_nom,kc_err,kc2{:},kc3,kc4,kc5,qsc,ikmexoptions);
+kc_err = WorldCoMConstraint(r,1,[nan;nan;2],inf(3,1),tspan);
+[xtraj,info,infeasible_constraint] = inverseKinTraj(r,t,q_seed_traj,q_nom_traj,kc_err,kc2{:},kc3,kc4,kc5,qsc,ikmexoptions);
 if(info ~= 13)
   error('The problem should be infeasible');
 end
@@ -88,19 +88,23 @@ display('The infeasible constraints returned from IKtraj is');
 display(infeasible_constraint);
 
 display('Check IK with WorldFixedPositionConstraint');
-kc_fixedPos = WorldFixedPositionConstraint(r,head,[0;0;0],tspan);
-xtraj = test_IKtraj_userfun(r,q0,qdot0,t,q_seed,q_nom,kc1{:},kc2{:},kc3,kc4,kc5,kc_fixedPos,ikoptions);
+kc_fixedPosition = WorldFixedPositionConstraint(r,head,[0;0;0],tspan);
+xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,kc5,kc_fixedPosition,ikoptions);
 
 display('Check IK with WorldFixedOrientConstraint');
 kc_fixedOrient = WorldFixedOrientConstraint(r,head,tspan);
-xtraj = test_IKtraj_userfun(r,q0,qdot0,t,q_seed,q_nom,kc1{:},kc2{:},kc3,kc4,kc5,kc_fixedOrient,ikoptions);
+xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,kc5,kc_fixedOrient,ikoptions);
 
-display('Check IK with WorldFixedBodyPostureConstraint');
-kc_fixedPosture = WorldFixedBodyPostureConstraint(r,head,tspan);
-xtraj = test_IKtraj_userfun(r,q0,qdot0,t,q_seed,q_nom,kc1{:},kc2{:},kc3,kc4,kc5,kc_fixedPosture,ikoptions);
+display('Check IK with WorldFixedBodyPoseConstraint');
+kc_fixedPose = WorldFixedBodyPoseConstraint(r,head,tspan);
+xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,kc5,kc_fixedPose,ikoptions);
+
+display('Check IK with fixInitialState = false, the posture and velocity at the begining are also decision variables');
+ikoptions = ikoptions.setFixInitialState(false);
+xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,kc5,qsc,kc_fixedPose,ikoptions);
 end
 
-function xtraj = test_IKtraj_userfun(r,q0,qdot0,t,q_seed,q_nom,varargin)
+function xtraj = test_IKtraj_userfun(r,t,q_seed,q_nom,varargin)
 ikoptions = varargin{end};
 ikoptions = ikoptions.setMex(false);
 ikmexoptions = ikoptions;
@@ -108,14 +112,14 @@ ikmexoptions = ikmexoptions.setMex(true);
 ikoptions = ikoptions.setMex(false);
 display('IK mex start to solve the problem');
 tic
-[xtraj,info] = inverseKinTraj(r,q0,qdot0,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
+[xtraj,info] = inverseKinTraj(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 toc
 if(info>10)
   error('SNOPT info is %d, IK mex fails to solve the problem',info);
 end
 % display('IK matlab start to solve the problem');
 % tic
-% [xtraj,info,infeasible_constraint] = inverseKinTraj(r,q0,qdot0,t,q_seed,q_nom,varargin{1:end-1},ikoptions);
+% [xtraj,info,infeasible_constraint] = inverseKinTraj(r,t,q_seed,q_nom,varargin{1:end-1},ikoptions);
 % toc
 % if(info>10)
 %   error('SNOPT info is %d, IK fails to solve the problem',info);

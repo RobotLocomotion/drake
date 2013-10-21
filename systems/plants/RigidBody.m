@@ -101,10 +101,16 @@ classdef RigidBody
         end
       end
     end
+     
+    function body = replaceContactShapesWithCHull(body)
+      pts = body.contact_pts(:,unique(convhull(body.contact_pts')));
+      shape = struct('type',RigidBody.MESH,'T',eye(4),'params',pts);
+      body.contact_shapes = shape;
+    end
     
     function body = removeCollisionGroups(body,contact_groups)
       if isempty(body.contact_pts), return; end % nothing to do for this body
-      if ~iscell(contact_groups) contact_groups={contact_groups}; end
+      if ~iscell(contact_groups), contact_groups={contact_groups}; end
       for i=1:length(contact_groups)
         group_elements = strcmpi(contact_groups{i},body.collision_group_name);
         if ~isempty(group_elements)
@@ -161,13 +167,17 @@ classdef RigidBody
     end
 
     function body = makeBelongToCollisionFilterGroup(body,collision_fg_id)
-      body.collision_filter.belongs_to = ...
-        bitor(body.collision_filter.belongs_to,bitshift(1,collision_fg_id-1));
+      for id = reshape(collision_fg_id,1,[])
+        body.collision_filter.belongs_to = ...
+          bitor(body.collision_filter.belongs_to,bitshift(1,id-1));
+      end
     end
 
     function body = makeIgnoreCollisionFilterGroup(body,collision_fg_id)
-      body.collision_filter.collides_with = ...
-        bitand(body.collision_filter.collides_with,bitcmp(bitshift(uint16(1),collision_fg_id-1)));
+      for id = reshape(collision_fg_id,1,[])
+        body.collision_filter.collides_with = ...
+          bitand(body.collision_filter.collides_with,bitcmp(bitshift(uint16(1),id-1)));
+      end
     end
 
     function newbody = copy(body)
@@ -522,22 +532,26 @@ classdef RigidBody
             filename=char(thisNode.getAttribute('filename'));
             filename=RigidBody.parseMeshFilename(filename,options);
             [path,name,ext] = fileparts(filename);
+            wrlfile=[];
             if strcmpi(ext,'.stl')
               wrlfile = fullfile(tempdir,[name,'.wrl']);
               stl2vrml(fullfile(path,[name,ext]),tempdir);
+            elseif strcmpi(ext,'.wrl')
+              wrlfile = filename;
+            end
+            if ~isempty(wrlfile)
               txt=fileread(wrlfile);
 
-              ind=regexp(txt,'coordIndex \[([^\]]*)\]','tokens'); ind = ind{1}{1};
+              ind=regexp(txt,'coordIndex[\s\n]*\[([^\]]*)\]','tokens'); ind = ind{1}{1};
               ind=strread(ind,'%d','delimiter',' ,')+1; 
               
-              pts=regexp(txt,'point \[([^\]]*)\]','tokens'); pts = pts{1}{1};
+              pts=regexp(txt,'point[\s\n]*\[([^\]]*)\]','tokens'); pts = pts{1}{1};
               pts=strread(pts,'%f','delimiter',' ,');
               pts=reshape(pts,3,[]);
               pts=T(1:end-1,:)*[pts;ones(1,size(pts,2))];
               x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
             end
             shape = struct('type',RigidBody.MESH,'T',T,'params',pts);
-
            otherwise
             % intentionally blank
         end

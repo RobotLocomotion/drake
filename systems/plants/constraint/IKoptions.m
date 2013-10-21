@@ -1,21 +1,29 @@
 classdef IKoptions
-% Q                  --the cost matrix for posture deviation
-%                    -- use_mex, set to true if run with mex. default is
-%                       false
-% debug_mode         -- IK would query the name of each constraint
+% @param Q                  --the cost matrix for posture deviation
+% @param use_mex,           -- A boolean flat,set to true if run with mex. default is
+%                              false
+% @param debug_mode         -- IK would query the name of each constraint
 %
 % The following fields is used in inverseKinPointwise
-% sequentialSeedFlag -- A boolean variable, set to false if the seed of
-%                       inverseKinPointwise is q_seed. If set to true,
-%                       inverseKinPointwise would use the solution in the
-%                       previous time point as seed (if it is feasible).
+% @param sequentialSeedFlag -- A boolean variable, set to false if the seed of
+%                             inverseKinPointwise is q_seed. If set to true,
+%                             inverseKinPointwise would use the solution in the
+%                             previous time point as seed (if it is feasible).
+%
 % All subsequent fields will be used in inverseKinTraj only
-% Qa                 -- The cost matrix for acceleration
-% Qv                 -- The cost matrix for velocity
-% q0                 -- The initial posture
-% qd0                -- The initial velocity
-% qdf_ub             -- The upper bound of the final velocity
-% qdf_lb             -- The lower bound of the final velocity
+% @param Qa                 -- The cost matrix for acceleration
+% @param Qv                 -- The cost matrix for velocity
+% @param fixInitialState    -- A boolean flag, set to true if the posture q and
+%                              velocity qd at time t(1) is fixed. q(1) = q_seed_traj.eval(t(1))
+%                              qdot(1) = (ikpotions.qd0_lb+ikoptions.qd0_ub)/2
+% @param q0_lb              -- The initial posture upperbound. Would be used when
+%                              fixInitialState = false;
+% @param q0_ub              -- The initial posture lowerbound, Would be used when
+%                              fixInitialState = false;
+% @param qd0_ub             -- The upperbound of the initial velocity
+% @param qd0_lb             -- The lowerbound of the initial velocity
+% @param qdf_ub             -- The upper bound of the final velocity
+% @param qdf_lb             -- The lower bound of the final velocity
   properties(SetAccess=protected)
     robot
     nq
@@ -30,8 +38,11 @@ classdef IKoptions
     SNOPT_IterationsLimit
     SNOPT_SuperbasicsLimit
     SNOPT_MajorOptimalityTolerance
-    q0
-    qd0
+    fixInitialState
+    q0_lb
+    q0_ub
+    qd0_lb
+    qd0_ub
     qdf_ub
     qdf_lb
   end
@@ -40,7 +51,7 @@ classdef IKoptions
       obj.robot = robot;
       obj.nq = obj.robot.getNumDOF();
       obj.Q = eye(obj.nq);
-      obj.Qa = 5*eye(obj.nq);
+      obj.Qa = 0.1*eye(obj.nq);
       obj.Qv = zeros(obj.nq);
 %       obj.approximateFlag = false;
       obj.use_mex = true;
@@ -51,8 +62,10 @@ classdef IKoptions
       obj.SNOPT_IterationsLimit = 10000;
       obj.SNOPT_SuperbasicsLimit = 2000;
       obj.SNOPT_MajorOptimalityTolerance = 1e-4;
-      obj.q0 = [];
-      obj.qd0 = [];
+      obj.fixInitialState = true;
+      [obj.q0_lb,obj.q0_ub] = obj.robot.getJointLimits();
+      obj.qd0_ub = zeros(obj.nq,1);
+      obj.qd0_lb = zeros(obj.nq,1);
       obj.qdf_ub = zeros(obj.nq,1);
       obj.qdf_lb = zeros(obj.nq,1);
     end
@@ -165,19 +178,39 @@ classdef IKoptions
       obj.SNOPT_IterationsLimit = floor(limit);
     end
     
-    function obj = setq0(obj,q0)
-      typecheck(q0,'double');
-      sizecheck(q0,[obj.nq,1]);
-      [joint_limit_min,joint_limit_max] = obj.robot.getJointLimits();
-      q0 = min([q0 joint_limit_max],[],2);
-      q0 = max([q0 joint_limit_min],[],2);
-      obj.q0 = q0;
+    function obj = setFixInitialState(obj,flag)
+      sizecheck(flag,[1,1]);
+      if(isa(flag,'logical'))
+        obj.fixInitialState = flag;
+      elseif(isa(flag,'double'))
+        obj.fixInitialState = logical(flag);
+      else
+        error('IKoptions: Unsupported flag type');
+      end
+    end
+    function obj = setq0(obj,lb,ub)
+      typecheck(lb,'double');
+      typecheck(ub,'double');
+      sizecheck(lb,[obj.nq,1]);
+      sizecheck(ub,[obj.nq,1]);
+      if(any(lb>ub))
+        error('IKoptions:setq0: lb must be no larger than ub');
+      end
+      [lb_tmp,ub_tmp] = obj.robot.getJointLimits();
+      obj.q0_lb = max([lb lb_tmp],[],2);
+      obj.q0_ub = min([ub ub_tmp],[],2);
     end
     
-    function obj = setqd0(obj,qd0)
-      typecheck(qd0,'double');
-      sizecheck(qd0,[obj.nq,1]);
-      obj.qd0 = qd0;
+    function obj = setqd0(obj,lb,ub)
+      typecheck(lb,'double');
+      typecheck(ub,'double');
+      sizecheck(lb,[obj.nq,1]);
+      sizecheck(ub,[obj.nq,1]);
+      if(any(lb>ub))
+        error('IKoptions:setqd0: lb must be no larger than ub');
+      end
+      obj.qd0_lb = lb;
+      obj.qd0_ub = ub;
     end
     
     
@@ -186,8 +219,27 @@ classdef IKoptions
       typecheck(ub,'double');
       sizecheck(lb,[obj.nq,1]);
       sizecheck(ub,[obj.nq,1]);
+      if(any(lb>ub))
+        error('IKoptions:setqdf: lb must be no larger than ub');
+      end
       obj.qdf_lb = lb;
       obj.qdf_ub = ub;
+    end
+    
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      nq_cache = obj.nq;
+      obj.nq = obj.robot.getNumDOF();
+      if(obj.nq ~= nq_cache)
+        obj.Q = eye(obj.nq);
+        obj.Qa = 0.1*eye(obj.nq);
+        obj.Qv = zeros(obj.nq);
+        [obj.q0_lb,obj.q0_ub] = obj.robot.getJointLimits();
+        obj.qd0_ub = zeros(obj.nq,1);
+        obj.qd0_lb = zeros(obj.nq,1);
+        obj.qdf_ub = zeros(obj.nq,1);
+        obj.qdf_lb = zeros(obj.nq,1);
+      end
     end
   end
 end

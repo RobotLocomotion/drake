@@ -1,7 +1,7 @@
 classdef SingleTimeKinematicConstraint < Constraint
   % An abstract class. Its eval function take a single time as input, the
   % constraint is enforced at that time only
-  properties
+  properties(SetAccess = protected)
     tspan % a 1x2 vector
     num_constraint
     robot
@@ -16,6 +16,8 @@ classdef SingleTimeKinematicConstraint < Constraint
     WorldGazeOrientConstraint = 4;
     WorldGazeDirConstraint = 5;
     WorldGazeTargetConstraint = 6;
+    AllBodiesClosestDistanceConstraint = 7;
+    Point2PointDistanceConstraint = 8;
   end
   
   methods
@@ -63,6 +65,6 @@ classdef SingleTimeKinematicConstraint < Constraint
     [c,dc] = eval(obj,t,kinsol);
     [lb,ub] = bounds(obj,t)
     name_str = name(obj,t)
-    ptr = constructPtr(varargin);
+    obj = updateRobot(obj,r);
   end
 end

@@ -1,5 +1,5 @@
 classdef GazeDirConstraint < GazeConstraint
-  properties
+  properties(SetAccess = protected)
     dir % a 3x1 vector in the world frame, the deried gaze direction
   end
   

@@ -17,9 +17,7 @@ classdef RigidBodyManipulator < Manipulator
       % with elements that are all exactly the same type
     gravity=[0;0;-9.81];
     terrain;
-    %collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
-    collision_filter_groups;     
-      % map of CollisionFilterGroup objects
+    
   end
   
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
@@ -27,6 +25,9 @@ classdef RigidBodyManipulator < Manipulator
     B = [];
     mex_model_ptr = 0;
     dirty = true;
+    %collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
+    collision_filter_groups;     
+      % map of CollisionFilterGroup objects
   end
     
   methods
@@ -638,7 +639,7 @@ classdef RigidBodyManipulator < Manipulator
       % @ingroup Kinematic Tree
       if ischar(body_ind_or_joint_name)
         if nargin>2
-          body_ind_or_joint_name = findJointInd(model,body_ind_or_joint_name,robot)
+          body_ind_or_joint_name = findJointInd(model,body_ind_or_joint_name,robot);
         else
           body_ind_or_joint_name = findJointINd(model,body_ind_or_joint_name);
         end
@@ -711,6 +712,12 @@ classdef RigidBodyManipulator < Manipulator
         model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
       end
       model.dirty = true;
+    end
+    
+    function model = replaceContactShapesWithCHull(model,body_indices)
+      for body_idx = reshape(body_indices,1,[])
+        model.body(body_idx) = replaceContactShapesWithCHull(model.body(body_idx));
+      end
     end
     
     function drawKinematicTree(model)
@@ -1070,10 +1077,7 @@ classdef RigidBodyManipulator < Manipulator
 %      end
     end
     
-  end
-  
-  methods (Static)
-    function [linknames,robotnums] = processCFGroupArgs(linknames,robotnums)
+    function [linknames,robotnums] = processCFGroupArgs(model,linknames,robotnums)
       % @param linknames          Names of the links to be added to the
       %   collision filter group. Can be a string containing the name of a
       %   link, a cell-array containing the names of multiple links, or a
@@ -1104,6 +1108,10 @@ classdef RigidBodyManipulator < Manipulator
       end
       linknames = linknames(:);
     end
+    
+  end
+  
+  methods (Static)
     function d=surfaceTangents(normal)
       %% compute tangent vectors, according to the description in the last paragraph of Stewart96, p.2678
       t1=normal; % initialize size

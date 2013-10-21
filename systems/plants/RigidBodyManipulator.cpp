@@ -932,69 +932,85 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
 }
 
 template <typename Derived>
-void RigidBodyManipulator::getCOM(MatrixBase<Derived> &com)
+void RigidBodyManipulator::getCOM(MatrixBase<Derived> &com, const std::set<int> &robotnum)
 {
   double m = 0.0;
   double bm;
   com = Vector3d::Zero();
   
   for (int i=0; i<num_bodies; i++) {
-    bm = bodies[i].mass;
-    if (bm>0) {
-      forwardKin(i,bodies[i].com,0,bc);
-      com = (m*com + bm*bc)/(m+bm);
-      m = m+bm;
+    set<int>::iterator robotnum_it = robotnum.find(bodies[i].robotnum);
+    if(robotnum_it != robotnum.end())
+    {
+      bm = bodies[i].mass;
+      if (bm>0) {
+        forwardKin(i,bodies[i].com,0,bc);
+        com = (m*com + bm*bc)/(m+bm);
+        m = m+bm;
+      }
     }
   }
 }
 
 template <typename Derived>
-void RigidBodyManipulator::getCOMJac(MatrixBase<Derived> &Jcom)
+void RigidBodyManipulator::getCOMJac(MatrixBase<Derived> &Jcom, const std::set<int> &robotnum)
 {
   double m = 0.0;
   double bm;
   Jcom = MatrixXd::Zero(3,num_dof);
   
   for (int i=0; i<num_bodies; i++) {
-    bm = bodies[i].mass;
-    if (bm>0) {
-      forwardJac(i,bodies[i].com,0,bJ);
-      Jcom = (m*Jcom + bm*bJ)/(m+bm);
-      m = m+bm;
+    set<int>::iterator robotnum_it = robotnum.find(bodies[i].robotnum);
+    if(robotnum_it != robotnum.end())
+    {
+      bm = bodies[i].mass;
+      if (bm>0) {
+        forwardJac(i,bodies[i].com,0,bJ);
+        Jcom = (m*Jcom + bm*bJ)/(m+bm);
+        m = m+bm;
+      }
     }
   }
 }
 
 template <typename Derived>
-void RigidBodyManipulator::getCOMJacDot(MatrixBase<Derived> &Jcomdot)
+void RigidBodyManipulator::getCOMJacDot(MatrixBase<Derived> &Jcomdot, const std::set<int> &robotnum)
 {
   double m = 0.0;
   double bm;
   Jcomdot = MatrixXd::Zero(3,num_dof);
   
   for (int i=0; i<num_bodies; i++) {
-    bm = bodies[i].mass;
-    if (bm>0) {
-      forwardJacDot(i,bodies[i].com,bJ);
-      Jcomdot = (m*Jcomdot + bm*bJ)/(m+bm);
-      m = m+bm;
+    set<int>::iterator robotnum_it = robotnum.find(bodies[i].robotnum);
+    if(robotnum_it != robotnum.end())
+    {
+      bm = bodies[i].mass;
+      if (bm>0) {
+        forwardJacDot(i,bodies[i].com,bJ);
+        Jcomdot = (m*Jcomdot + bm*bJ)/(m+bm);
+        m = m+bm;
+      }
     }
   }
 }
 
 template <typename Derived>
-void RigidBodyManipulator::getCOMdJac(MatrixBase<Derived> &dJcom)
+void RigidBodyManipulator::getCOMdJac(MatrixBase<Derived> &dJcom, const std::set<int> &robotnum)
 {
   double m = 0.0;
   double bm;
   dJcom = MatrixXd::Zero(3,num_dof*num_dof);
   
   for (int i=0; i<num_bodies; i++) {
-    bm = bodies[i].mass;
-    if (bm>0) {
-      forwarddJac(i,bodies[i].com,bdJ);
-      dJcom = (m*dJcom + bm*bdJ)/(m+bm);
-      m = m+bm;
+    set<int>::iterator robotnum_it = robotnum.find(bodies[i].robotnum);
+    if(robotnum_it != robotnum.end())
+    {
+      bm = bodies[i].mass;
+      if (bm>0) {
+        forwarddJac(i,bodies[i].com,bdJ);
+        dJcom = (m*dJcom + bm*bdJ)/(m+bm);
+        m = m+bm;
+      }
     }
   }
 }
@@ -1461,16 +1477,16 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 // explicit instantiations (required for linking):
 template void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
-template void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &);
-template void RigidBodyManipulator::getCOM(MatrixBase< Map<MatrixXd> > &);
-template void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &);
-template void RigidBodyManipulator::getCOMdJac(MatrixBase< Map<MatrixXd> > &);
-template void RigidBodyManipulator::getCOMJacDot(MatrixBase< Map<MatrixXd> > &);
-template void RigidBodyManipulator::getCOM(MatrixBase< Vector3d > &);
-template void RigidBodyManipulator::getCOM(MatrixBase< MatrixXd > &);
-template void RigidBodyManipulator::getCOMJac(MatrixBase< MatrixXd > &);
-template void RigidBodyManipulator::getCOMdJac(MatrixBase< MatrixXd > &);
-template void RigidBodyManipulator::getCOMJacDot(MatrixBase< MatrixXd > &);
+template void RigidBodyManipulator::getCOM(MatrixBase< Map<Vector3d> > &,const set<int> &);
+template void RigidBodyManipulator::getCOM(MatrixBase< Map<MatrixXd> > &,const set<int> &);
+template void RigidBodyManipulator::getCOMJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
+template void RigidBodyManipulator::getCOMdJac(MatrixBase< Map<MatrixXd> > &,const set<int> &);
+template void RigidBodyManipulator::getCOMJacDot(MatrixBase< Map<MatrixXd> > &,const set<int> &);
+template void RigidBodyManipulator::getCOM(MatrixBase< Vector3d > &,const set<int> &);
+template void RigidBodyManipulator::getCOM(MatrixBase< MatrixXd > &,const set<int> &);
+template void RigidBodyManipulator::getCOMJac(MatrixBase< MatrixXd > &,const set<int> &);
+template void RigidBodyManipulator::getCOMdJac(MatrixBase< MatrixXd > &,const set<int> &);
+template void RigidBodyManipulator::getCOMJacDot(MatrixBase< MatrixXd > &,const set<int> &);
 
 template void RigidBodyManipulator::getContactPositions(MatrixBase <MatrixXd > &, const set<int> &);
 template void RigidBodyManipulator::getContactPositionsJac(MatrixBase <MatrixXd > &,const set<int> &);

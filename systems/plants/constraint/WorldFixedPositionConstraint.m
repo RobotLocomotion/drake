@@ -10,7 +10,7 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
   %                             of this constaint being active. Default is
   %                             [-inf inf]
   
-  properties
+  properties(SetAccess = protected)
     body
     body_name;
     pts
@@ -106,6 +106,11 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
       else
         name_str = {};
       end
+    end
+    
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      updatePtrWorldFixedPositionConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)

@@ -1,5 +1,7 @@
 function [q,info] = approximateIK(obj,q_seed,q_nom,varargin)
 % Please refer to the interface of inverseKin
+% The inputs are the same as inverseKin, except current implementation does
+% not accept QuasiStaticConstraint object.
 % @retval q          the IK solution posture
 % @retval info       0 on sucess, 1 on failure
 

@@ -48,5 +48,17 @@ switch type
     else
       obj = WorldGazeTargetConstraint(varargin{:});
     end
+  case SingleTimeKinematicConstraint.AllBodiesClosestDistanceConstraint
+    if(use_mex)
+      obj = constructPtrAllBodiesClosestDistanceConstraintmex(varargin{:});
+    else
+      obj = AllBodiesClosestDistanceConstraint(varargin{:});
+    end
+  case SingleTimeKinematicConstraint.Point2PointDistanceConstraint
+    if(use_mex)
+      obj = constructPtrPoint2PointDistanceConstraintmex(varargin{:});
+    else
+      obj = Point2PointDistanceConstraint(varargin{:});
+    end
 end
 end

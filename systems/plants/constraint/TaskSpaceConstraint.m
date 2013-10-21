@@ -1,6 +1,5 @@
 classdef TaskSpaceConstraint < SingleTimeKinematicConstraint
-  properties
-    robot
+  properties(SetAccess = protected)
     bodyA
     bodyB
     TA

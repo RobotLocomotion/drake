@@ -84,6 +84,11 @@ namespace DrakeCollision
                                                  const BulletElement& elemB, 
                                                  const ResultCollShPtr& c) 
   {
+    //DEBUG
+    //if ((bodyA_idx==5) && (bodyB_idx==19)) {
+      //cout << "BulletModel::findClosestPointsBtwElements: BAD!!!" << endl;
+    //}
+    //END_DEBUG
     btConvexShape* shapeA;
     btConvexShape* shapeB;
     btGjkPairDetector::ClosestPointInput input;
@@ -107,6 +112,12 @@ namespace DrakeCollision
           toVector3d(gjkOutput.m_normalOnBInWorld),(double) gjkOutput.m_distance);
     } else {
       cerr << "In BulletModel::findClosestPointsBtwElements: No closest point found!" << endl;
+      //DEBUG
+      //btVector3 originA(input.m_transformA.getOrigin());
+      //btVector3 originB(input.m_transformB.getOrigin());
+      //cerr << "body " << bodyA_idx << " origin: [" << originA.x() << ", " << originA.y() << ", " << originA.z() << "]" << endl;
+      //cerr <<" << bodyA_idx << "  "body " << bodyB_idx << " origin: [" << originB.x() << ", " << originB.y() << ", " << originB.z() << "]" << endl;
+      //END_DEBUG
       //throw exception();
     }
 

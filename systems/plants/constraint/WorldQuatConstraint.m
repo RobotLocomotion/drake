@@ -8,7 +8,7 @@ classdef WorldQuatConstraint < QuatConstraint
 %                         'angle' is the angle in the angle-axis
 %                         representation of the rotation from quat_des to
 %                         the actual orientation
-  properties
+  properties(SetAccess = protected)
     body
     quat_des
     body_name
@@ -58,6 +58,11 @@ classdef WorldQuatConstraint < QuatConstraint
       else
         name_str = [];
       end
+    end
+    
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      updatePtrWorldQuatConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)

@@ -1,7 +1,7 @@
 classdef MultipleTimeKinematicConstraint < Constraint
   % A abstract class, that its eval function takes multiple time points as
   % the input, instead of being evluated at a single time.
-  properties
+  properties(SetAccess = protected)
     tspan % a 1x2 vector
     robot
     mex_ptr
@@ -10,7 +10,7 @@ classdef MultipleTimeKinematicConstraint < Constraint
   properties(Constant)
     WorldFixedPositionConstraint = 1;
     WorldFixedOrientConstraint = 2;
-    WorldFixedBodyPostureConstraint = 3;
+    WorldFixedBodyPoseConstraint = 3;
   end
     
   methods

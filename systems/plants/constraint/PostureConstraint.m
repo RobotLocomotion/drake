@@ -1,9 +1,17 @@
 classdef PostureConstraint<Constraint
-  properties
+  % A bounding box constraint on robot posture
+  % @param robot                      -- A robot
+  % @param lb                         -- The lower bound of posture
+  % @param ub                         -- The upper bound of posture
+  % @param joint_limit_min0           -- The default lower bound of the
+  %                                      posture of the robot
+  % @param joint_limit_max0           -- The default upper bound of the
+  %                                      posture of the robot
+  properties(SetAccess = protected)
     robot
     tspan
-    joint_limit_min
-    joint_limit_max
+    lb
+    ub
     joint_limit_min0;
     joint_limit_max0;
     mex_ptr;
@@ -25,8 +33,8 @@ classdef PostureConstraint<Constraint
       obj.tspan = [tspan(1) tspan(end)];
       obj.robot = robot;
       [obj.joint_limit_min0,obj.joint_limit_max0] = robot.getJointLimits();
-      obj.joint_limit_min = obj.joint_limit_min0;
-      obj.joint_limit_max = obj.joint_limit_max0;
+      obj.lb = obj.joint_limit_min0;
+      obj.ub = obj.joint_limit_max0;
       obj.mex_ptr = ptr;
     end
     
@@ -56,17 +64,17 @@ classdef PostureConstraint<Constraint
       if(any(joint_min>joint_max+1e-5))
         error('Joint min must be no larger than joint max');
       end
-      obj.joint_limit_min(joint_ind) = max([obj.joint_limit_min0(joint_ind) joint_min],[],2);
-      obj.joint_limit_max(joint_ind) = min([obj.joint_limit_max0(joint_ind) joint_max],[],2);
+      obj.lb(joint_ind) = max([obj.joint_limit_min0(joint_ind) joint_min],[],2);
+      obj.ub(joint_ind) = min([obj.joint_limit_max0(joint_ind) joint_max],[],2);
     end
     
-    function [joint_min,joint_max] = bounds(obj,t)
+    function [lb,ub] = bounds(obj,t)
       if obj.isTimeValid(t)
-        joint_min = obj.joint_limit_min;
-        joint_max = obj.joint_limit_max;
+        lb = obj.lb;
+        ub = obj.ub;
       else
-        joint_min = obj.joint_limit_min0;
-        joint_max = obj.joint_limit_max0;
+        lb = obj.joint_limit_min0;
+        ub = obj.joint_limit_max0;
       end
     end
   end

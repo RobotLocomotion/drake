@@ -121,6 +121,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     mxGetString(pm,buf,100);
     model->bodies[i].jointname.assign(buf,strlen(buf));
 
+    pm = mxGetProperty(pBodies,i,"robotnum");
+    model->bodies[i].robotnum = (int) mxGetScalar(pm)-1;
+
     pm = mxGetProperty(pBodies,i,"mass");
     model->bodies[i].mass = (double) mxGetScalar(pm);
 

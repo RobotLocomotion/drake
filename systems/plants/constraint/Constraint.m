@@ -13,11 +13,11 @@ classdef Constraint
   methods
     function obj = Constraint(type)
       if(~isnumeric(type))
-        error('Drake:Constraint','Type has to be an integer');
+        error('Drake:Constraint:type has to be an integer');
       end
       type = floor(type);
       if(type>4||type<1)
-        error('Drake:Constraint','Currently type can only be within [1,3]');
+        error('Drake:Constraint: Currently type can only be within [1,3]');
       end
       obj.type = type;
     end

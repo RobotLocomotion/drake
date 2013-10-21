@@ -52,9 +52,17 @@ namespace DrakeCollision
         //DEBUG
         //std::cout << "BulletElement::BulletElement: Create MESH ..." << std::endl;
         //END_DEBUG
-        bt_shape = new btConvexHullShape( (btScalar*) params.data(), 
-                                          params.size()/3,
-                                          (int) 3*sizeof(double) );
+        //bt_shape = new btConvexHullShape( (btScalar*) params.data(), 
+                                          //params.size()/3,
+                                          //(int) 3*sizeof(double) );
+        bt_shape = new btConvexHullShape();
+        bt_shape->setMargin(0.01);
+        for (int i=0; i<params.size(); i+=3){
+          //DEBUG
+          //std::cout << "BulletElement::BulletElement: Adding point " << i/3 + 1 << std::endl;
+          //END_DEBUG
+          dynamic_cast<btConvexHullShape*>(bt_shape)->addPoint(btVector3(params[i],params[i+1],params[i+2]));
+        }
         //DEBUG
         //std::cout << "BulletElement::BulletElement: Created MESH ..." << std::endl;
         //END_DEBUG

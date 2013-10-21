@@ -1,5 +1,5 @@
 classdef GazeTargetConstraint < GazeConstraint
-  properties
+  properties(SetAccess = protected)
     target % a 3x1 vector, the target position in the world frame
     gaze_origin % a 3x1 vector, the origin of the gaze in the body frame
   end

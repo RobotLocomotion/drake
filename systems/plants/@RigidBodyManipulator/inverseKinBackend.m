@@ -21,7 +21,8 @@ function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 %                     seed at t[i]
 % @param q_nom        The nominal posture, a matrix, with column i representing
 %                     The nominal posture at t[i]
-% @param constraint   A Constraint class object, accept KinematicConstraint,
+% @param constraint   A Constraint class object, accept SingleTimeKinematicConstraint,
+%                     MultipleTimeKinematicConstraint,
 %                     QuasiStaticConstraint and PostureConstraint currently
 % @param ikoptions    An IKoptions object, please refer to IKoptions for detail
 
@@ -41,7 +42,7 @@ ikoptions = varargin{end};
 use_mex = ikoptions.use_mex;
 if(~use_mex)
 %   qsc = QuasiStaticConstraint(obj);
-  qsc = QuasiStaticConstraint(obj);
+  qsc = QuasiStaticConstraint(obj,1);
   qsc = qsc.setActive(false);
   [joint_min,joint_max] = obj.getJointLimits();
   joint_min = bsxfun(@times,joint_min,ones(1,nT));
@@ -157,8 +158,8 @@ else
       end
     end
     if(mode == 1)
-      wmin = joint_min;
-      wmax = joint_max;
+      xlow = joint_min;
+      xupp = joint_max;
       if(~ikoptions.sequentialSeedFlag)
         x0 = q_seed(:,i);
       else
@@ -173,11 +174,11 @@ else
         end
       end
       if(qscActiveFlag)
-        wmin = [wmin;zeros(qsc.num_pts,nT)];
-        wmax = [wmax;ones(qsc.num_pts,nT)];
+        xlow = [xlow;zeros(qsc.num_pts,nT)];
+        xupp = [xupp;ones(qsc.num_pts,nT)];
         x0 = [x0; 1/qsc.num_pts*ones(qsc.num_pts,1)];
       end
-      if(any(wmin>wmax))
+      if(any(xlow>xupp))
         error('Drake:inverseKinBackend: The lower bound of the decision variable is larger than the upper bound, possibly check the conflicting posture constraint');
       end
       SNOPT_USERFUN = @(w) IK_userfun(obj,w,ti,st_kc_cell,q_nom(:,i),Q,nq,nc_array(i),nG_array(i),qsc);
@@ -191,19 +192,19 @@ else
       jAvar = jAvar_cell{i};
       iGfun = [ones(nq,1);iCfun_cell{i}+1];
       jGvar = [(1:nq)';jCvar_cell{i}];
-      Fmin = [0;Cmin_cell{i}];
-      Fmax = [inf;Cmax_cell{i}];
-      [x_sol,F,info(i)] = snopt(x0,wmin(:,i),wmax(:,i),Fmin,Fmax,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
+      Flow = [0;Cmin_cell{i}];
+      Fupp = [inf;Cmax_cell{i}];
+      [x_sol,F,info(i)] = snopt(x0,xlow(:,i),xupp(:,i),Flow,Fupp,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);
       q(:,i) = x_sol(1:nq);
       if(debug_mode)
         Fname = [{'objective'};Cname_cell{i}];
       end
       
       if(info == 13)
-        ub_err = F-Fmax;
+        ub_err = F-Fupp;
         max_ub_error = max(ub_err);
         max_ub_error = max_ub_error*(max_ub_error>0);
-        lb_err = Fmin-F;
+        lb_err = Flow-F;
         max_lb_error = max(lb_err);
         max_lb_error = max_lb_error*(max_lb_error>0);
         if(max_ub_error+max_lb_error>1e-4)
@@ -230,59 +231,78 @@ else
     Qv = ikoptions.Qv;
     dt = diff(t);
     dt_ratio = dt(1:end-1)./dt(2:end);
-    q0 = ikoptions.q0;
-    qdot0 = ikoptions.qd0;
-    nSample = nT-1;
+    if(ikoptions.fixInitialState)
+      q0_fixed = q_seed(:,1);
+      qdot0_fixed = (ikoptions.qd0_lb+ikoptions.qd0_ub)/2;
+      qstart_idx = 2; % q(1) is not a decision variable
+      num_qfree = nT-1; % Number of q being decision variables
+      num_qdotfree = 1; % Number of qdot being decision variables
+    else
+      q0_fixed = [];
+      qdot0_fixed = [];
+      qstart_idx = 1;
+      num_qfree = nT; 
+      num_qdotfree = 2; 
+    end
     % Suppose the joint angles are interpolated using cubic splines, then the
+    %[qdot(2);qdot(3);...;qdot(nT-1)] = velocity_mat*[q(1);q(2);...;q(3)];
     velocity_mat1_diag1 = reshape([ones(nq,1) repmat(dt(1:end-1).*(2+2*dt_ratio),nq,1) ones(nq,1)],[],1);
     velocity_mat1_diag2 = reshape([zeros(nq,1) repmat(dt(1:end-1).*dt_ratio,nq,1)],[],1);
     velocity_mat1_diag3 = [reshape(repmat(dt(1:end-1),nq,1),[],1);zeros(nq,1)];
-    velocity_mat1 = sparse((1:nq*(nSample+1))',(1:nq*(nSample+1))',velocity_mat1_diag1)...
-        +sparse((1:nq*(nSample))',nq+(1:nq*nSample)',velocity_mat1_diag2,nq*(nSample+1),nq*(nSample+1))...
-        +sparse(nq+(1:nq*nSample)',(1:nq*nSample)',velocity_mat1_diag3,nq*(nSample+1),nq*(nSample+1));
+    velocity_mat1 = sparse((1:nq*nT)',(1:nq*nT)',velocity_mat1_diag1)...
+        +sparse((1:nq*(nT-1))',nq+(1:nq*(nT-1))',velocity_mat1_diag2,nq*nT,nq*nT)...
+        +sparse(nq+(1:nq*(nT-1))',(1:nq*(nT-1))',velocity_mat1_diag3,nq*nT,nq*nT);
 
 
-    velocity_mat2_diag1 = reshape([zeros(nq,1) bsxfun(@times,3*ones(1,nSample-1)-3*dt_ratio.^2,ones(nq,1)) zeros(nq,1)],[],1);
+    velocity_mat2_diag1 = reshape([zeros(nq,1) bsxfun(@times,3*ones(1,nT-2)-3*dt_ratio.^2,ones(nq,1)) zeros(nq,1)],[],1);
     velocity_mat2_diag2 = reshape([zeros(nq,1) bsxfun(@times,3*dt_ratio.^2,ones(nq,1))],[],1);
-    velocity_mat2_diag3 = [-3*ones(nq*(nSample-1),1);zeros(nq,1)];
-    velocity_mat2 = sparse((1:nq*(nSample+1))',(1:nq*(nSample+1))',velocity_mat2_diag1)...
-        +sparse((1:nq*nSample)',nq+(1:nq*nSample)',velocity_mat2_diag2,nq*(nSample+1),nq*(nSample+1))...
-        +sparse(nq+(1:nq*nSample)',(1:nq*nSample)',velocity_mat2_diag3,nq*(1+nSample),nq*(1+nSample));
+    velocity_mat2_diag3 = [-3*ones(nq*(nT-2),1);zeros(nq,1)];
+    velocity_mat2 = sparse((1:nq*nT)',(1:nq*nT)',velocity_mat2_diag1)...
+        +sparse((1:nq*(nT-1))',nq+(1:nq*(nT-1))',velocity_mat2_diag2,nq*nT,nq*nT)...
+        +sparse(nq+(1:nq*(nT-1))',(1:nq*(nT-1))',velocity_mat2_diag3,nq*nT,nq*nT);
     velocity_mat = velocity_mat1\velocity_mat2;
     velocity_mat = velocity_mat(nq+1:end-nq,:);
 
-    % [qddot(0);...qddot(k)] =
-    % accel_mat*[q(0);...;q(k)]+accel_mat_qdot0*qdot(0)+accel_mat_qdof*qdot(k)
+    % [qddot(1);...qddot(k)] =
+    % accel_mat*[q(1);...;q(nT)]+accel_mat_qdot0*qdot(1)+accel_mat_qdof*qdot(nT)
     accel_mat1_diag1 = reshape(bsxfun(@times,[-6./(dt.^2) -6/(dt(end)^2)],ones(nq,1)),[],1);
     accel_mat1_diag2 = reshape(bsxfun(@times,6./(dt.^2),ones(nq,1)),[],1);
     accel_mat1_diag3 = 6/(dt(end)^2)*ones(nq,1);
-    accel_mat1 = sparse((1:nq*(nSample+1))',(1:nq*(nSample+1))',accel_mat1_diag1)...
-        +sparse((1:nq*nSample)',nq+(1:nq*nSample)',accel_mat1_diag2,nq*(nSample+1),nq*(nSample+1))...
-        +sparse(nq*nSample+(1:nq)',nq*(nSample-1)+(1:nq)',accel_mat1_diag3,nq*(nSample+1),nq*(nSample+1));
+    accel_mat1 = sparse((1:nq*nT)',(1:nq*nT)',accel_mat1_diag1)...
+        +sparse((1:nq*(nT-1))',nq+(1:nq*(nT-1))',accel_mat1_diag2,nq*nT,nq*nT)...
+        +sparse(nq*(nT-1)+(1:nq)',nq*(nT-2)+(1:nq)',accel_mat1_diag3,nq*nT,nq*nT);
     accel_mat2_diag1 = reshape(bsxfun(@times,[-4./dt 5/dt(end)],ones(nq,1)),[],1);
     accel_mat2_diag2 = reshape(bsxfun(@times,-2./dt,ones(nq,1)),[],1);
     accel_mat2_diag3 = 4/dt(end)*ones(nq,1);
-    accel_mat2 = sparse((1:nq*(nSample+1))',(1:nq*(nSample+1))',accel_mat2_diag1)...
-        +sparse((1:nq*nSample)',nq+(1:nq*nSample)',accel_mat2_diag2,nq*(nSample+1),nq*(nSample+1))...
-        +sparse(nq*nSample+(1:nq)',nq*(nSample-1)+(1:nq)',accel_mat2_diag3,nq*(nSample+1),nq*(nSample+1));
+    accel_mat2 = sparse((1:nq*nT)',(1:nq*nT)',accel_mat2_diag1)...
+        +sparse((1:nq*(nT-1))',nq+(1:nq*(nT-1))',accel_mat2_diag2,nq*nT,nq*nT)...
+        +sparse(nq*(nT-1)+(1:nq)',nq*(nT-2)+(1:nq)',accel_mat2_diag3,nq*nT,nq*nT);
     accel_mat = accel_mat1+accel_mat2(:,nq+1:end-nq)*velocity_mat;
     accel_mat_qd0 = accel_mat2(:,1:nq);
     accel_mat_qdf = accel_mat2(:,end-nq+1:end);
     
     if(qscActiveFlag)
-      wmin = [reshape([joint_min(:,2:end);zeros(qsc.num_pts,nT-1)],[],1);ikoptions.qdf_lb];
-      wmax = [reshape([joint_max(:,2:end);ones(qsc.num_pts,nT-1)],[],1);ikoptions.qdf_ub];
+      xlow = reshape([joint_min(:,qstart_idx:end);zeros(qsc.num_pts,num_qfree)],[],1);
+      xupp = reshape([joint_max(:,qstart_idx:end);ones(qsc.num_pts,num_qfree)],[],1);
     else
-      wmin = [reshape(joint_min(:,2:end),[],1);ikoptions.qdf_lb];
-      wmax = [reshape(joint_max(:,2:end),[],1);ikoptions.qdf_ub];
+      xlow = reshape(joint_min(:,qstart_idx:end),[],1);
+      xupp = reshape(joint_max(:,qstart_idx:end),[],1);
     end
-    % parse the MultipleTimeKinematicConstraint
+    if(ikoptions.fixInitialState)
+      xlow = [xlow;ikoptions.qdf_lb];
+      xupp = [xupp;ikoptions.qdf_ub];
+    else
+      xlow = [xlow;ikoptions.qd0_lb;ikoptions.qdf_lb];
+      xupp = [xupp;ikoptions.qd0_ub;ikoptions.qdf_ub];
+    end
     
-    nF_total = sum(nc_array(2:end))+1;
-    nG_total = sum(nG_array(2:end))+nq*nT;
-    nA_total = sum(nA_array(2:end));
-    Fmin = zeros(nF_total,1);
-    Fmax = zeros(nF_total,1);
+
+    
+    nF_total = sum(nc_array(qstart_idx:end))+1;
+    nG_total = sum(nG_array(qstart_idx:end))+nq*(num_qfree+num_qdotfree);
+    nA_total = sum(nA_array(qstart_idx:end));
+    Flow = zeros(nF_total,1);
+    Fupp = zeros(nF_total,1);
     if(debug_mode)
       Fname = cell(nF_total,1);
       Fname{1} = 'objective';
@@ -292,27 +312,30 @@ else
     iAfun = zeros(nA_total,1);
     jAvar = zeros(nA_total,1);
     A = zeros(nA_total,1);
-    Fmin(1) = -inf;
-    Fmax(1) = inf;
-    iGfun(1:nq*nT) = ones(nq*nT,1);
+    Flow(1) = -inf;
+    Fupp(1) = inf;
+    iGfun(1:nq*(num_qfree+num_qdotfree)) = ones(nq*(num_qfree+num_qdotfree),1);
     if(qscActiveFlag)
-      q_idx = reshape(bsxfun(@plus,(1:nq)',(nq+qsc.num_pts)*(0:(nT-2))),[],1);
-      qsc_weights_idx = reshape(bsxfun(@plus,nq+(1:qsc.num_pts)',(nq+qsc.num_pts)*(0:(nT-2))),[],1);
-      qdotf_idx = (nq+qsc.num_pts)*(nT-1)+(1:nq);
+      qfree_idx = reshape(bsxfun(@plus,(1:nq)',(nq+qsc.num_pts)*(0:(num_qfree-1))),[],1);
+      qsc_weights_idx = reshape(bsxfun(@plus,nq+(1:qsc.num_pts)',(nq+qsc.num_pts)*(0:(num_qfree-1))),[],1);
+      qdotf_idx = (nq+qsc.num_pts)*num_qfree+(num_qdotfree-1)*nq+(1:nq);
+      qdot0_idx = (nq+qsc.num_pts)*num_qfree+(1:(num_qdotfree-1)*nq);
     else
-      q_idx = (1:nq*(nT-1))';
+      qfree_idx = (1:nq*num_qfree)';
       qsc_weights_idx = [];
-      qdotf_idx = nq*(nT-1)+(1:nq);
+      qdotf_idx = nq*num_qfree+(num_qdotfree-1)*nq+(1:nq);
+      qdot0_idx = nq*num_qfree+(1:(num_qdotfree-1)*nq);
     end
-    jGvar(1:nq*(nT-1)) = q_idx;
-    jGvar(nq*(nT-1)+(1:nq)) = qdotf_idx;
+    jGvar(1:nq*num_qfree) = qfree_idx;
+    jGvar(nq*num_qfree+(1:(num_qdotfree-1)*nq)) = qdot0_idx;
+    jGvar(nq*num_qfree+(num_qdotfree-1)*nq+(1:nq)) = qdotf_idx;
     nf_cum = 1;
-    nG_cum = nq*nT;
+    nG_cum = nq*(num_qfree+num_qdotfree);
     nA_cum = 0;
     x_start_idx = 0;
-    for i = 2:nT
-      Fmin(nf_cum+(1:nc_array(i))) = Cmin_cell{i};
-      Fmax(nf_cum+(1:nc_array(i))) = Cmax_cell{i};
+    for i = qstart_idx:nT
+      Flow(nf_cum+(1:nc_array(i))) = Cmin_cell{i};
+      Fupp(nf_cum+(1:nc_array(i))) = Cmax_cell{i};
       if(debug_mode)
         Fname(nf_cum+(1:nc_array(i))) = Cname_cell{i};
       end
@@ -331,16 +354,17 @@ else
       end
     end
     
+    % parse the MultipleTimeKinematicConstraint
     mtkc_nc = zeros(1,num_mt_kc);
     
     for j = 1:num_mt_kc
       kc = mt_kc_cell{j};
-      mtkc_nc(j) = kc.getNumConstraint(t(2:end));
+      mtkc_nc(j) = kc.getNumConstraint(t(qstart_idx:end));
     end
     total_mtkc_nc = sum(mtkc_nc);
-    total_mtkc_nG = total_mtkc_nc*(nq*(nT-1));
-    Fmin = [Fmin;zeros(total_mtkc_nc,1)];
-    Fmax = [Fmax;zeros(total_mtkc_nc,1)];
+    total_mtkc_nG = total_mtkc_nc*(nq*num_qfree);
+    Flow = [Flow;zeros(total_mtkc_nc,1)];
+    Fupp = [Fupp;zeros(total_mtkc_nc,1)];
     if(debug_mode)
       Fname = [Fname;cell(total_mtkc_nc,1)];
     end
@@ -348,42 +372,56 @@ else
     jGvar = [jGvar;zeros(total_mtkc_nG,1)];
     for j = 1:num_mt_kc
       kc = mt_kc_cell{j};
-      [Fmin(nf_cum+(1:mtkc_nc(j))),Fmax(nf_cum+(1:mtkc_nc(j)))] = kc.bounds(t(2:end));
+      [Flow(nf_cum+(1:mtkc_nc(j))),Fupp(nf_cum+(1:mtkc_nc(j)))] = kc.bounds(t(qstart_idx:end));
       if(debug_mode)
-        Fname(nf_cum+(1:mtkc_nc(j))) = kc.name(t(2:end));
+        Fname(nf_cum+(1:mtkc_nc(j))) = kc.name(t(qstart_idx:end));
       end
-      iGfun(nG_cum+(1:mtkc_nc(j)*(nq*(nT-1)))) = nf_cum+reshape(bsxfun(@times,(1:mtkc_nc(j))',ones(1,length(q_idx))),[],1);
-      jGvar(nG_cum+(1:mtkc_nc(j)*(nq*(nT-1)))) = reshape(bsxfun(@times,ones(mtkc_nc(j),1),q_idx),[],1);
+      iGfun(nG_cum+(1:mtkc_nc(j)*(nq*num_qfree))) = nf_cum+reshape(bsxfun(@times,(1:mtkc_nc(j))',ones(1,length(qfree_idx))),[],1);
+      jGvar(nG_cum+(1:mtkc_nc(j)*(nq*num_qfree))) = reshape(bsxfun(@times,ones(mtkc_nc(j),1),qfree_idx'),[],1);
       nf_cum = nf_cum+mtkc_nc(j);
-      nG_cum = nG_cum+mtkc_nc(j)*(nq*(nT-1));
+      nG_cum = nG_cum+mtkc_nc(j)*(nq*num_qfree);
     end
     
     if(qscActiveFlag)
-      w0 = [reshape([q_seed(:,2:end);1/qsc.num_pts*ones(qsc.num_pts,nT-1)],[],1);(ikoptions.qdf_ub+ikoptions.qdf_lb)/2];
+      w0 = reshape([q_seed(:,qstart_idx:end);1/qsc.num_pts*ones(qsc.num_pts,num_qfree)],[],1);
     else
-      w0 = [reshape(q_seed(:,2:end),[],1);(ikoptions.qdf_ub+ikoptions.qdf_lb)/2];
+      w0 = reshape(q_seed(:,qstart_idx:end),[],1);
     end
-    SNOPT_USERFUN = @(w) IKtraj_userfun(obj,w,q0,qdot0,t,st_kc_cell,mt_kc_cell,q_nom,Qa,Qv,Q,velocity_mat,accel_mat,accel_mat_qd0,accel_mat_qdf,nq,nT,nc_array,nG_array,nf_cum,nG_cum,q_idx,qsc_weights_idx,qdotf_idx,qsc);
+    if(ikoptions.fixInitialState)
+      w0 = [w0;(ikoptions.qdf_ub+ikoptions.qdf_lb)/2];
+    else
+      w0 = [w0;(ikoptions.qd0_lb+ikoptions.qd0_ub)/2;(ikoptions.qdf_ub+ikoptions.qdf_lb)/2];
+    end
+    SNOPT_USERFUN = @(w) IKtraj_userfun(obj,w,t,st_kc_cell,mt_kc_cell,q_nom,...
+      Qa,Qv,Q,velocity_mat,accel_mat,accel_mat_qd0,accel_mat_qdf,...
+      nq,nT,num_qfree,num_qdotfree,nc_array,nG_array,nf_cum,nG_cum,...
+      qfree_idx,qsc_weights_idx,qstart_idx,qdot0_idx,qdotf_idx,qsc,q0_fixed,qdot0_fixed,ikoptions.fixInitialState);
     snseti('Major iterations limit',ikoptions.SNOPT_MajorIterationsLimit);
     snseti('Iterations limit',ikoptions.SNOPT_IterationsLimit);
     snseti('Superbasics limit',ikoptions.SNOPT_SuperbasicsLimit);
     snsetr('Major optimality tolerance',ikoptions.SNOPT_MajorOptimalityTolerance);
     snsetr('Major feasibility tolerance',ikoptions.SNOPT_MajorFeasibilityTolerance);
 
-    [w_sol,F,info] = snopt(w0,wmin,wmax,Fmin,Fmax,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);  
-    q = w_sol(q_idx);
+    [w_sol,F,info] = snopt(w0,xlow,xupp,Flow,Fupp,'snoptUserfun',0,1,A,iAfun,jAvar,iGfun,jGvar);  
+    q = w_sol(qfree_idx);
     qdotf = w_sol(qdotf_idx);
-    qdot = [qdot0 reshape(velocity_mat*[q0;q(:)],nq,nSample-1) qdotf];
-    qddot = reshape(accel_mat*[q0;q(:)]+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf,nq,nT); 
-    q = [q0 reshape(q,nq,nSample)];
+    if(ikoptions.fixInitialState)
+      qdot0 = (ikoptions.qd0_lb+ikoptions.qd0_ub)/2;
+      q = [q_seed(:,1);q];
+    else
+      qdot0 = w_sol(qdot0_idx);
+    end
+    qdot = [qdot0 reshape(velocity_mat*q,nq,nT-2) qdotf];
+    qddot = reshape(accel_mat*q+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf,nq,nT); 
+    q = reshape(q,nq,nT);
     if(debug_mode)
       Fname = [{'objective'};Fname];
     end
     if(info == 13)
-      ub_err = F-Fmax;
+      ub_err = F-Fupp;
       max_ub_error = max(ub_err);
       max_ub_error = max_ub_error*(max_ub_error>0);
-      lb_err = Fmin-F;
+      lb_err = Flow-F;
       max_lb_error = max(lb_err);
       max_lb_error = max_lb_error*(max_lb_error>0);
       if(max_ub_error+max_lb_error>1e-4)
@@ -421,25 +459,37 @@ f = [J;c];
 G = [dJ;dc];
 end
 
-function [f,G] = IKtraj_userfun(obj,x,q0,qd0,t,st_kc_cell,mt_kc_cell,q_nom,Qa,Qv,Q,velocity_mat, accel_mat, accel_mat_qd0,accel_mat_qdf,nq,nT,nc_array,nG_array,nf_total,nG_total,q_idx,qsc_weights_idx,qdotf_idx,qsc)
+function [f,G] = IKtraj_userfun(obj,x,t,st_kc_cell,mt_kc_cell,q_nom,Qa,Qv,Q,velocity_mat, accel_mat, accel_mat_qd0,accel_mat_qdf,nq,nT,num_qfree,num_qdotfree,nc_array,nG_array,nf_total,nG_total,qfree_idx,qsc_weights_idx,qstart_idx,qdot0_idx,qdotf_idx,qsc,q0_fixed,qdot0_fixed,fixInitialState)
 f = zeros(nf_total,1);
 G = zeros(nG_total,1);
-q = reshape(x(q_idx),nq,nT-1); % q = [q(2), q(3),...,q(nT)];
-qsc_weights = reshape(x(qsc_weights_idx),qsc.num_pts,nT-1);
+q = reshape(x(qfree_idx),nq,num_qfree);
+qsc_weights = reshape(x(qsc_weights_idx),qsc.num_pts,num_qfree);
+if(fixInitialState)
+  q = [q0_fixed q];
+  qsc_weights = [zeros(qsc.num_pts,1) qsc_weights];
+end
+% q = [q(1) q(2) ... q(nT)]
+% qsc_weights = [qsc_weights(1) qsc_weights(2) ... qsc_weights(nT)]
+
 qdotf = x(qdotf_idx);
-[f(1),G(1:nq*nT)] = IKtraj_cost_fun(obj,q,qdotf,q0,qd0,q_nom,Qa,Qv,Q,velocity_mat,accel_mat,accel_mat_qd0,accel_mat_qdf,nq,nT);
+if(fixInitialState)
+  qdot0 = qdot0_fixed;
+else
+  qdot0 = x(qdot0_idx);
+end
+[f(1),G(1:nq*(num_qfree+num_qdotfree))] = IKtraj_cost_fun(obj,q,qdot0,qdotf,q_nom,Qa,Qv,Q,velocity_mat,accel_mat,accel_mat_qd0,accel_mat_qdf,nq,nT,num_qfree,num_qdotfree,qstart_idx,fixInitialState);
 nf_cum = 1;
-nG_cum = nq*nT;
-for i = 2:nT
-  [f(nf_cum+(1:nc_array(i))),G(nG_cum+(1:nG_array(i)))] = IK_constraint_fun(obj,q(:,i-1),t(i),st_kc_cell,nc_array(i),nG_array(i),qsc,qsc_weights(:,i-1));
+nG_cum = nq*(num_qfree+num_qdotfree);
+for i = qstart_idx:nT
+  [f(nf_cum+(1:nc_array(i))),G(nG_cum+(1:nG_array(i)))] = IK_constraint_fun(obj,q(:,i),t(i),st_kc_cell,nc_array(i),nG_array(i),qsc,qsc_weights(:,i));
   nf_cum = nf_cum+nc_array(i);
   nG_cum = nG_cum+nG_array(i);
 end
 for i = 1:length(mt_kc_cell)
-  mtkc_nc_i = mt_kc_cell{i}.getNumConstraint(t(2:end));
-  [f(nf_cum+(1:mtkc_nc_i)),G(nG_cum+(1:mtkc_nc_i*nq*(nT-1)))] = mt_kc_cell{i}.eval(t(2:end),q);
+  mtkc_nc_i = mt_kc_cell{i}.getNumConstraint(t(qstart_idx:end));
+  [f(nf_cum+(1:mtkc_nc_i)),G(nG_cum+(1:mtkc_nc_i*nq*num_qfree))] = mt_kc_cell{i}.eval(t(qstart_idx:end),q(:,qstart_idx:end));
   nf_cum =nf_cum+mtkc_nc_i;
-  nG_cum = nG_cum+mtkc_nc_i*nq*(nT-1);
+  nG_cum = nG_cum+mtkc_nc_i*nq*num_qfree;
 end
 end
 
@@ -449,19 +499,25 @@ J = q_err'*Q*q_err;
 dJ = 2*Q*q_err;
 end
 
-function [J,dJ] = IKtraj_cost_fun(obj,q,qdotf,q0,qdot0,q_nom,Qa,Qv,Q,velocity_mat,accel_mat,accel_mat_qd0,accel_mat_qdf,nq,nT)
-dJ = zeros(1,nq*nT);
-qdot = [reshape(velocity_mat*[q0;q(:)],nq,nT-2) qdotf]; %[qdot(1) qdot(2) ... qdot(nT)]
-qddot = reshape(accel_mat*[q0;q(:)]+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf,nq,nT); % [qddot(0) qddot(1) ... qddot(nT)]
-q_diff = q-q_nom(:,2:end);
-J = 0.5*sum(sum((Qv*qdot).*qdot))...
+function [J,dJ] = IKtraj_cost_fun(obj,q,qdot0,qdotf,q_nom,Qa,Qv,Q,velocity_mat,accel_mat,accel_mat_qd0,accel_mat_qdf,nq,nT,num_qfree,num_qdotfree,qstart_idx,fixInitialState)
+dJ = zeros(1,nq*(num_qfree+num_qdotfree));
+qdot = [qdot0 reshape(velocity_mat*q(:),nq,nT-2) qdotf]; %[qdot(1) qdot(2) ... qdot(nT)]
+qddot = reshape(accel_mat*q(:)+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf,nq,nT); % [qddot(1) qddot(1) ... qddot(nT)]
+q_diff = q(:,qstart_idx:end)-q_nom(:,qstart_idx:end);
+J = 0.5*sum(sum((Qv*qdot(:,qstart_idx:end)).*qdot(:,qstart_idx:end)))...
   +0.5*sum(sum((Q*q_diff).*q_diff))...
   +0.5*sum(sum((Qa*qddot).*qddot));
-dJ(1:nq*(nT-1)) = reshape(reshape(Qv*qdot(:,1:end-1),1,[])*velocity_mat(:,nq+1:end),[],1)...
+dJ(1:nq*num_qfree) = reshape(reshape(Qv*qdot(:,2:end-1),1,[])*velocity_mat(:,nq*(qstart_idx-1)+1:end),[],1)...
   +reshape(Q*q_diff,[],1)...
-  +reshape(reshape(Qa*qddot,1,[])*accel_mat(:,nq+1:end),[],1);
-dJ(nq*(nT-1)+(1:nq)) = reshape(reshape(Qa*qddot,1,[])*accel_mat_qdf,[],1)...
-  +reshape(qdotf'*Qv,[],1);
+  +reshape(reshape(Qa*qddot,1,[])*accel_mat(:,nq*(qstart_idx-1)+1:end),[],1);
+dJdqdotf = reshape(reshape(Qa*qddot,1,[])*accel_mat_qdf,[],1)+reshape(qdotf'*Qv,[],1);
+if(fixInitialState)
+  dJ(nq*num_qfree+(1:nq)) = dJdqdotf;
+else
+  dJdqdot0 = reshape(reshape(Qa*qddot,1,[])*accel_mat_qd0,[],1)+reshape(qdot0'*Qv,[],1);
+  dJ(nq*num_qfree+(1:nq)) = dJdqdot0;
+  dJ(nq*num_qfree+nq+(1:nq)) = dJdqdotf;
+end
 end
 
 function [c,G] = IK_constraint_fun(obj,q,t,st_kc_cell,nC,nG,qsc,weights)

@@ -1,9 +1,9 @@
-function Jdot = forwardJacDot(obj,kinsol,body_ind,pts)
+function Jdot = forwardJacDot(obj,kinsol,body_ind,pts,robotnum)
 
 % same input as [x,J] = forwardKin but returns Jdot
 % note: you must have called kinsol = doKinematics with qd passed in as the
 % last argument
-
+if nargin<5, robotnum=1; end
 if nargin<4, pts=[]; end
 
 % todo: zap this after the transition
@@ -16,8 +16,11 @@ if (kinsol.mex)
   if  ~isnumeric(pts)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not valid because it was computed via mex, and you are now asking for an evaluation with non-numeric pts.  If you intended to use something like TaylorVar, then you must call doKinematics with use_mex = false');
   end
-  
-  Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_ind,pts,false,true);
+  if(body_ind == 0)
+    Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,0,robotnum,true);
+  else
+    Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_ind,pts,false,true);
+  end
 else
   if (body_ind == 0) 
     nq=getNumDOF(obj);
@@ -27,12 +30,14 @@ else
     Jdot = zeros(3,nq);
     
     for i=1:length(obj.body)
-      bm = obj.body(i).mass;
-      if (bm>0)
-        bc = obj.body(i).com;
-        bJdot = forwardJacDot(obj,kinsol,i,bc);
-        Jdot = (m*Jdot + bm*bJdot)/(m+bm);
-        m = m + bm;
+      if(any(obj.body(i).robotnum == robotnum))
+        bm = obj.body(i).mass;
+        if (bm>0)
+          bc = obj.body(i).com;
+          bJdot = forwardJacDot(obj,kinsol,i,bc);
+          Jdot = (m*Jdot + bm*bJdot)/(m+bm);
+          m = m + bm;
+        end
       end
     end
   else

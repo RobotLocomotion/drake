@@ -1,5 +1,5 @@
 classdef RelativeGazeTargetConstraint < GazeTargetConstraint
-  properties
+  properties(SetAccess = protected)
     body_a = struct('idx',[],'name','');
     body_b = struct('idx',[],'name','');
   end

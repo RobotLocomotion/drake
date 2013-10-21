@@ -1,7 +1,7 @@
 classdef QuatConstraint <SingleTimeKinematicConstraint
   % Constrain the quaternion to satisfy the following conditions: 
   % (quat'*quat_des)^2 in [1-tol 1]
-  properties
+  properties(SetAccess = protected)
     tol
   end
   
