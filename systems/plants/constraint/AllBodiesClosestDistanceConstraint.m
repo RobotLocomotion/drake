@@ -1,17 +1,35 @@
 classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
-  properties
+  % Constraining the closest distance between all bodies to be within
+  % [lb,ub]
+  % @param lb      -- a scalar, the lower bound of the distance
+  % @param ub      -- a scalar, the upper bound of the distance
+  % @param tspan   -- a 1x2 vector, the time span of the constraint being
+  %                   active
+  properties(SetAccess = protected)
     ub
     lb
   end
+  
+  methods(Access=protected)
+    function obj = setNumConstraint(obj)
+      kinsol = doKinematics(obj.robot,zeros(obj.robot.getNumDOF(),1));
+      phi = closestDistanceAllBodies(obj.robot,kinsol);
+      obj.num_constraint = numel(phi);
+    end
+  end
   methods
     function obj = AllBodiesClosestDistanceConstraint(robot,lb,ub,tspan)
+      if(nargin == 3)
+        tspan = [-inf inf];
+      end
       sizecheck(lb,[1,1]);
       sizecheck(ub,[1,1]);
-
+      ptr = constructPtrAllBodiesClosestDistanceConstraintmex(robot.getMexModelPtr,lb,ub,tspan);
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
-      obj.lb = lb;
-      obj.ub = ub;
       obj = setNumConstraint(obj);
+      obj.lb = repmat(lb,obj.num_constraint,1);
+      obj.ub = repmat(ub,obj.num_constraint,1);
+      obj.mex_ptr = ptr;
     end
 
     function [c,dc] = eval(obj,t,kinsol)
@@ -33,17 +51,48 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       end
     end
 
-    function obj = setNumConstraint(obj)
-      kinsol = doKinematics(obj.robot,zeros(obj.robot.getNumDOF(),1));
-      phi = closestDistanceAllBodies(obj.robot,kinsol);
-      obj.num_constraint = numel(phi);
+    function [constraintSatisfyFlag,dist,ptsA,ptsB,idxA,idxB] = checkConstraint(obj,q)
+      % @retval constraintSatisfyFlag    - A boolean flag, true if the
+      %                                    closest distance if within [lb ub]
+      % @retval dist                     - if constraint is satisfied, dist = []
+      %                                    otherwise, return the dist violates the constraint
+      % @retval ptsA                     - if constraint is satisfied, ptsA = []
+      %                                    otherwise, return the pts on body A that
+      %                                    violate the constraint
+      % @retval ptsB                     - if constraint is satisfied, ptsB = []
+      %                                    otherwise, return the pts on body B that
+      %                                    violate the constraint
+      % @retval idxA                     - if constraint is satisfied, idxA = []
+      %                                    otherwise, return bodyA index that violate the
+      %                                    constraint
+      % @retval idxB                     - if constraint is satisfied, idxB = []
+      %                                    otherwise, return bodyB index that violate the
+      %                                    constraint
+      kinsol = doKinematics(obj.robot,q);
+      [ptsA,ptsB,~,dist,~,~,~,idxA,idxB] = closestPointsAllBodies(obj.robot,kinsol);
+      unsatisfy_idx = reshape((dist > obj.ub') | (dist < obj.lb'),1,[]);
+      if(~any(unsatisfy_idx))
+        constraintSatisfyFlag = true;
+        dist = [];
+        ptsA = [];
+        ptsB = [];
+        idxA = [];
+        idxB = [];
+      else
+        constraintSatisfyFlag = false;
+        dist = dist(unsatisfy_idx);
+        ptsA = ptsA(:,unsatisfy_idx);
+        ptsB = ptsB(:,unsatisfy_idx);
+        idxA = idxA(unsatisfy_idx);
+        idxB = idxB(unsatisfy_idx);
+      end
     end
 
     function drawConstraint(obj,q,lcmgl)
-      kinsol = doKinematics(obj.robot,q);
-      [ptsA,ptsB,~,dist,~,~,~,idxA,idxB] = closestPointsAllBodies(obj.robot,kinsol);
-      draw_idx = find(reshape((dist > obj.ub) | (dist < obj.lb),1,[]));
-      for i = draw_idx
+      [~,~,ptsA,ptsB,idxA,idxB] = obj.checkConstraint(q);
+      
+%       draw_idx = 1:size(ptsA,2);
+      for i = 1:size(ptsA,2);
         lcmgl.glColor3f(0,0,0); % black
 
         lcmgl.text(ptsA(:,i),obj.robot.getLinkName(idxA(i)),0,0);
@@ -73,8 +122,13 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       end
     end
 
-    function ptr = constructPtr(obj)
-      ptr = [];
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      updatePtrAllBodiesClosestDistanceConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+    end
+    
+    function ptr = constructPtr(varargin)
+      ptr = constructPtrAllBodiesClosestDistanceConstraintmex(varargin{:});
     end
   end
 end

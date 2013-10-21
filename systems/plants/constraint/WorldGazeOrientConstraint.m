@@ -13,7 +13,7 @@ classdef WorldGazeOrientConstraint < GazeOrientConstraint
 % the body axis would be if body orientation exactly matches quat_des;
 % The body can also rotate around that cone axis within range [-threshold
 % threshold]
-  properties
+  properties(SetAccess = protected)
     body
     body_name
   end
@@ -56,6 +56,11 @@ classdef WorldGazeOrientConstraint < GazeOrientConstraint
       else
         name_str = [];
       end
+    end
+    
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      updatePtrWorldGazeOrientConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)

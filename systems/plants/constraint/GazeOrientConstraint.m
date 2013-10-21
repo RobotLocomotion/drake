@@ -1,5 +1,5 @@
 classdef GazeOrientConstraint < GazeConstraint
-  properties
+  properties(SetAccess = protected)
     threshold % the angle in radians, indicating how much the body can rotate along the axis, default is pi
     quat_des % a 4x1 vector, indicating the desired transformation from the body frame to the world frame
   end

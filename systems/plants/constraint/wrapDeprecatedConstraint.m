@@ -23,6 +23,11 @@ if(isfield(options,'tspan'))
 else
   tspan = [-inf inf];
 end
+if(isfield(options,'robotnum'))
+  robotnum = options.robotnum;
+else
+  robotnum = 1;
+end
 if(isa(robot,'RigidBodyManipulator') || isa(robot,'TimeSteppingRigidBodyManipulator'))
   robot_ptr = robot.getMexModelPtr;
 elseif(isa(robot,'DrakeMexPointer'))
@@ -84,9 +89,9 @@ else
   rows = size(posmax,1);
   if(body == 0)
     if(options.use_mex)
-      kc_cell = {constructPtrWorldCoMConstraintmex(robot_ptr,posmin,posmax,tspan)};
+      kc_cell = {constructPtrWorldCoMConstraintmex(robot_ptr,robotnum,posmin,posmax,tspan)};
     else
-      kc_cell = {WorldCoMConstraint(robot,posmin,posmax,tspan)};
+      kc_cell = {WorldCoMConstraint(robot,robotnum,posmin,posmax,tspan)};
     end
   else
     if(ischar(pts))

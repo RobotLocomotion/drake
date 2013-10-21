@@ -1,21 +1,24 @@
 classdef QuasiStaticConstraint<Constraint
 % constrain the Center of Mass to lie inside the shrunk support polygon
-% robot             -- The robot
-% tspan             -- The time span of the constraint. An optional
-%                      argument. If it is not passed in the constructor,
-%                      then tspan defaults to [-inf inf];
-% active            -- A flag, true if the quasiStaticFlag would be active
-% num_bodies        -- An int, the total number of bodies that have active
-%                      ground contact points
-% bodies            -- An int array of size 1xnum_bodies. The index of each
-%                      ground contact body
-% num_body_pts      -- An int array of size 1xnum_bodies. The number of
-%                      active contact points in each body
-% body_pts          -- A cell array of size 1xnum_bodies. body_pts{i} is a
-%                      3xnum_body_pts(i) double array, which is the active
-%                      ground contact points in the body frame
+% @param robot             -- The robot
+% @param robotnum          -- The robotnum to compute CoM. Set to 1 if only intend to
+%                             compute the CoM of robot(1)
+% @param tspan             -- The time span of the constraint. An optional
+%                             argument. If it is not passed in the constructor,
+%                             then tspan defaults to [-inf inf];
+% @param active            -- A flag, true if the quasiStaticFlag would be active
+% @param num_bodies        -- An int, the total number of bodies that have active
+%                             ground contact points
+% @param bodies            -- An int array of size 1xnum_bodies. The index of each
+%                             ground contact body
+% @param num_body_pts      -- An int array of size 1xnum_bodies. The number of
+%                             active contact points in each body
+% @param body_pts          -- A cell array of size 1xnum_bodies. body_pts{i} is a
+%                             3xnum_body_pts(i) double array, which is the active
+%                             ground contact points in the body frame
   properties(SetAccess = protected)
     robot;
+    robotnum;
     tspan;
     nq;
     shrinkFactor
@@ -30,14 +33,18 @@ classdef QuasiStaticConstraint<Constraint
   end
   
   methods
-    function obj = QuasiStaticConstraint(robot,tspan)
-      if(nargin <2)
+    function obj = QuasiStaticConstraint(robot,robotnum,tspan)
+      if(nargin <3)
         tspan = [-inf,inf];
       end
       tspan = [tspan(1) tspan(end)];
-      ptr = constructPtrQuasiStaticConstraintmex(robot.getMexModelPtr,tspan);
+      ptr = constructPtrQuasiStaticConstraintmex(robot.getMexModelPtr,robotnum,tspan);
       obj = obj@Constraint(Constraint.QuasiStaticConstraintType);
       obj.robot = robot;
+      if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))
+        error('Drake:QuasiStaticConstraint: robotnum is not accepted');
+      end
+      obj.robotnum = robotnum;
       if(tspan(1)>tspan(end))
         error('Drake:QuasiStaticConstraint:tspan(1) must be no larger than tspan(end)');
       end
@@ -68,7 +75,7 @@ classdef QuasiStaticConstraint<Constraint
 
     function obj = setActive(obj,flag)
       obj.active = logical(flag);
-      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,obj.active)
+      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'active',obj.active)
     end
     
     function num_cnst = getNumConstraint(obj,t)
@@ -81,7 +88,7 @@ classdef QuasiStaticConstraint<Constraint
     
     function obj = addContact(obj,varargin)
       % obj.addContact(body1,body1_pts,body2,body2_pts,...,bodyN,bodyN_pts)
-      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,varargin{:});
+      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'contact',varargin{:});
       i = 1;
       while(i<length(varargin))
         body = varargin{i};
@@ -119,7 +126,7 @@ classdef QuasiStaticConstraint<Constraint
     end
     
     function obj = setShrinkFactor(obj,factor)
-      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,factor);
+      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'factor',factor);
       typecheck(factor,'double');
       sizecheck(factor,[1,1]);
       if(factor<0)
@@ -130,7 +137,7 @@ classdef QuasiStaticConstraint<Constraint
     
     function [c,dc] = eval(obj,t,kinsol,weights)
       if(obj.isTimeValid(t))
-        [com,dcom] = obj.robot.getCOM(kinsol);
+        [com,dcom] = obj.robot.getCOM(kinsol,obj.robotnum);
         contact_pos = zeros(3,obj.num_pts);
         dcontact_pos = zeros(3*obj.num_pts,obj.nq);
         num_accum_pts = 0;
@@ -173,5 +180,19 @@ classdef QuasiStaticConstraint<Constraint
         name_str = [];
       end
     end
+    
+    function obj = updateRobotnum(obj,robotnum)
+      if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))
+        error('Drake:QuasiStaticConstraint: robotnum is not accepted');
+      end
+      obj.robotnum = robotnum;
+      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'robotnum',robotnum);
+    end
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      obj.nq = obj.robot.getNumDOF();
+      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
+    end
+    
   end
 end

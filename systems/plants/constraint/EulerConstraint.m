@@ -1,7 +1,7 @@
 classdef EulerConstraint < SingleTimeKinematicConstraint
   % constraint the roll, pitch, yaw angles (in intrinsic z-y'-x'' order)
   % to be within the bounding box [lb ub];
-  properties
+  properties(SetAccess = protected)
     ub
     lb
     null_constraint_rows

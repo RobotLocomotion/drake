@@ -7,7 +7,7 @@ classdef WorldFixedOrientConstraint < MultipleTimeKinematicConstraint
   % @param tspan           -- Optional input, a 1x2 double array. The time
   %                           span of this constraint being active. Default
   %                           is [-inf inf];
-  properties
+  properties(SetAccess = protected)
     body
     body_name
   end
@@ -86,6 +86,11 @@ classdef WorldFixedOrientConstraint < MultipleTimeKinematicConstraint
       else
         name_str = {};
       end
+    end
+    
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      updatePtrWorldFixedOrientConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)

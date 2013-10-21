@@ -8,7 +8,7 @@ classdef WorldPositionConstraint < PositionConstraint
 %                         represents the bounding box for the 
 %                         position of pts(:,i) in the world frame
 % @param tspan            OPTIONAL argument. A 1x2 vector
-  properties
+  properties(SetAccess = protected)
     body
     body_name
   end
@@ -74,6 +74,10 @@ classdef WorldPositionConstraint < PositionConstraint
       end
     end
     
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      updatePtrWorldPositionConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+    end
     
     function ptr = constructPtr(varargin)
       ptr = constructPtrWorldPositionConstraintmex(varargin{:});

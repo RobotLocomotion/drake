@@ -19,14 +19,19 @@ for i=1:100
   body_ind = 3;
 
   % test gradients
-  [rpy,J] = geval(@myfun,q,options);
+  [rpy1,J] = geval(@myfun,q,options);
 
   % test gradients mex
-  [rpy,J] = geval(@myfun2,q,options);
+  [rpy2,J] = geval(@myfun2,q,options);
+  
+  valuecheck(rpy2rotmat(rpy1),rpy2rotmat(rpy2),1e-6);
   
   [quat1,J] = geval(@myfun3,q,options);
   
   [quat2,J] = geval(@myfun4,q,options);
+  
+  valuecheck(1-abs(quat1'*quat2),0,1e-6);
+  
   rpy = quat2rpy(quat1);
   % reconstruct R and test
   Rx = [1 0 0; 0 cos(rpy(1)) -sin(rpy(1)); 0 sin(rpy(1)) cos(rpy(1))];

@@ -1,5 +1,5 @@
 classdef GazeConstraint < SingleTimeKinematicConstraint
-  properties
+  properties(SetAccess = protected)
     axis % a 3x1 vector in the body frame, the gaze axis    
     conethreshold % the angle in radians, measures the angle intersected by actual gaze axis and the desired gaze axis, default is 0
   end

@@ -6,7 +6,7 @@ classdef WorldEulerConstraint <EulerConstraint
 % @param body             A scalar, the index of the body
 % @param lb ub            Both are 3x1 vectors.
 % @param tspan            OPTIONAL argument. A 1x2 vector
-  properties
+  properties(SetAccess = protected)
     body
     body_name
   end
@@ -69,6 +69,11 @@ classdef WorldEulerConstraint <EulerConstraint
       else
         name_str = [];
       end
+    end
+    
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      updatePtrWorldEulerConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)

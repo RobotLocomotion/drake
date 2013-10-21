@@ -24,6 +24,7 @@ function [q_seed,q_nom,constraint,ikoptions] = inverseKinWrapup(obj,q0,varargin)
 %                     optional
 %
 % This wraps up the old inverseKin interface to the new interface
+robotnum = 1;
 q_seed = q0;
 if(islogical(varargin{end}))
   use_mex_constraint = varargin{end};
@@ -70,22 +71,22 @@ while i < length(varargin)
   body_ind = varargin{i};
   if(body_ind == 0)
     pos = varargin{i+1};
-    kc_cell = wrapDeprecatedConstraint(obj,body_ind,[0;0;0],pos,struct('use_mex',use_mex_constraint));
+    kc_cell = wrapDeprecatedConstraint(obj,body_ind,[0;0;0],pos,struct('use_mex',use_mex_constraint,'robotnum',robotnum));
     constraint = [constraint,kc_cell];
     i = i+2;
   else
     pts = varargin{i+1};
     pos = varargin{i+2};
-    [kc_cell,qsc_pts] = wrapDeprecatedConstraint(obj,body_ind,pts,pos,struct('use_mex',use_mex_constraint));
+    [kc_cell,qsc_pts] = wrapDeprecatedConstraint(obj,body_ind,pts,pos,struct('use_mex',use_mex_constraint,'robotnum',robotnum));
     constraint = [constraint, kc_cell];
     if(~isempty(qsc_pts))
       if(isempty(qsc))
         if(use_mex_constraint)
-          qsc = constructPtrQuasiStaticConstraintmex(obj.getMexModelPtr);
+          qsc = constructPtrQuasiStaticConstraintmex(obj.getMexModelPtr,robotnum);
           updatePtrQuasiStaticConstraintmex(qsc,quasiStaticFlag);
           updatePtrQuasiStaticConstraintmex(qsc,shrinkFactor);
         else
-          qsc = QuasiStaticConstraint(obj);
+          qsc = QuasiStaticConstraint(obj,robotnum);
           qsc = qsc.setActive(quasiStaticFlag);
           qsc = qsc.setShrinkFactor(shrinkFactor);
         end

@@ -1,6 +1,7 @@
 #include <mex.h>
 #include <math.h>
 #include <float.h>
+#include <stdlib.h>
 
 #include <cstdio>
 #include <cstring>
@@ -35,8 +36,6 @@ MatrixXd q_sol;
 MatrixXd Q;
 MatrixXd Qa;
 MatrixXd Qv;
-VectorXd q0;
-VectorXd qdot0;
 bool quasiStaticFlag;
 double shrinkFactor;
 snopt::integer nx;
@@ -54,9 +53,17 @@ int num_mt_kc;
 int* mtkc_nc;
 int nT;
 int num_qsc_pts;
+bool fixInitialState;
 // The following variables are used in inverseKinSequence only
-int* q_idx;
+int* qfree_idx;
 int* qdotf_idx;
+int* qdot0_idx;
+
+VectorXd q0_fixed;
+VectorXd qdot0_fixed;
+int qstart_idx;
+int num_qfree;
+int num_qdotfree;
 
 MatrixXd velocity_mat;
 MatrixXd accel_mat;
@@ -163,27 +170,40 @@ int snoptIKfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal x[],
 
 void IKtraj_cost_fun(double* x,double &J,double* dJ)
 {
-  MatrixXd dJ_vec = MatrixXd::Zero(1,nq*nT);
+  MatrixXd dJ_vec = MatrixXd::Zero(1,nq*(num_qfree+num_qdotfree));
   VectorXd qdotf(nq);
+  VectorXd qdot0(nq);
+  MatrixXd q(nq*nT,1);
+  MatrixXd qdot(nq*nT,1);
+  MatrixXd qddot(nq*nT,1);
   for(int i = 0;i<nq;i++)
   {
     qdotf(i) = x[qdotf_idx[i]];
   }
-  MatrixXd q(nq*nT,1);
-  MatrixXd qdot(nq*(nT-1),1);
-  MatrixXd qddot(nq*nT,1);
-  memcpy(q.data(),q0.data(),sizeof(double)*nq);
-  for(int i = 0;i<nq*(nT-1);i++)
+  if(fixInitialState)
   {
-    q(nq+i) = x[q_idx[i]];
+    qdot0 = qdot0_fixed;
+    q.col(0) = q0_fixed;
   }
-  qdot.block(0,0,nq*(nT-2),1) = velocity_mat*q;
-  qdot.block(nq*(nT-2),0,nq,1) = qdotf;
+  else
+  {
+    for(int i = 0;i<nq;i++)
+    {
+      qdot0(i) = x[qdot0_idx[i]];
+    }
+  }
+  for(int i = 0;i<nq*num_qfree;i++)
+  {
+    q(nq*qstart_idx+i) = x[qfree_idx[i]];
+  }
+  qdot.block(0,0,nq,1) = qdot0;
+  qdot.block(nq,0,nq*(nT-2),1) = velocity_mat*q;
+  qdot.block(nq*(nT-1),0,nq,1) = qdotf;
   qddot = accel_mat*q+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf;
   q.resize(nq,nT);
-  qdot.resize(nq,nT-1);
+  qdot.resize(nq,nT);
   qddot.resize(nq,nT);
-  MatrixXd q_diff = q.block(0,1,nq,nT-1)-q_nom.block(0,1,nq,nT-1);
+  MatrixXd q_diff = q.block(0,qstart_idx,nq,num_qfree)-q_nom.block(0,qstart_idx,nq,num_qfree);
   MatrixXd tmp1 = 0.5*Qa*qddot;
   MatrixXd tmp2 = tmp1.cwiseProduct(qddot);
   J = tmp2.sum();
@@ -193,20 +213,31 @@ void IKtraj_cost_fun(double* x,double &J,double* dJ)
   MatrixXd tmp5 = 0.5*Q*q_diff;
   MatrixXd tmp6 = tmp5.cwiseProduct(q_diff);
   J += tmp6.sum();
-  MatrixXd dJdqd = 2*tmp3.block(0,0,nq,nT-2);
+  MatrixXd dJdqd = 2*tmp3.block(0,1,nq,nT-2);//[dJdqd(2) dJdqd(3) dJdqd(nT-1)]
   dJdqd.resize(1,nq*(nT-2));
-  dJ_vec.block(0,0,1,nq*(nT-1)) = dJdqd*velocity_mat.block(0,nq,(nT-2)*nq,nq*(nT-1));
+  dJ_vec.block(0,0,1,nq*num_qfree) = dJdqd*velocity_mat.block(0,nq*qstart_idx,(nT-2)*nq,nq*num_qfree);
   MatrixXd dJdqdiff = 2*tmp5;
-  dJdqdiff.resize(1,nq*(nT-1));
-  dJ_vec.block(0,0,1,nq*(nT-1)) += dJdqdiff;
+  dJdqdiff.resize(1,nq*num_qfree);
+  dJ_vec.block(0,0,1,nq*num_qfree) += dJdqdiff;
   MatrixXd dJdqdd = 2.0*tmp1;
   dJdqdd.resize(1,nq*nT);
-  dJ_vec.block(0,0,1,nq*(nT-1)) += dJdqdd*accel_mat.block(0,nq,nq*nT,nq*(nT-1));
+  dJ_vec.block(0,0,1,nq*num_qfree) += dJdqdd*accel_mat.block(0,nq*qstart_idx,nq*nT,nq*num_qfree);
   MatrixXd dJdqdotf;
   dJdqdotf = dJdqdd*accel_mat_qdf+Qv*qdotf;
   dJdqdotf.resize(1,nq);
-  dJ_vec.block(0,nq*(nT-1),1,nq) = dJdqdotf;
-  memcpy(dJ,dJ_vec.data(),sizeof(double)*nq*nT);
+  if(fixInitialState)
+  {
+    dJ_vec.block(0,nq*num_qfree,1,nq) = dJdqdotf;
+  }
+  else
+  {
+    MatrixXd dJdqdot0;
+    dJdqdot0 = dJdqdd*accel_mat_qd0+Qv*qdot0;
+    dJdqdot0.resize(1,nq);
+    dJ_vec.block(0,nq*num_qfree,1,nq) = dJdqdot0;
+    dJ_vec.block(0,nq*num_qfree+nq,1,nq) = dJdqdotf;
+  }
+  memcpy(dJ,dJ_vec.data(),sizeof(double)*nq*(num_qfree+num_qdotfree));
 }
 
 int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal x[],
@@ -218,35 +249,44 @@ int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal 
 {
   IKtraj_cost_fun(x,F[0],G);
   int nf_cum = 1;
-  int nG_cum = nq*nT;
-  MatrixXd q(nq,nT-1);
-  for(int i = 1;i<nT;i++)
+  int nG_cum = nq*(num_qfree+num_qdotfree);
+  MatrixXd q(nq,nT);
+  if(!fixInitialState)
+  {
+    memcpy(q.data(),x,sizeof(double)*nq);
+  }
+  else
+  {
+    q.col(0) = q0_fixed;
+  }
+  for(int i = qstart_idx;i<nT;i++)
   {
     double* qi;
     if(quasiStaticFlag)
     {
-      qi = x+(i-1)*(nq+num_qsc_pts);
+      qi = x+(i-qstart_idx)*(nq+num_qsc_pts);
     }
     else
     {
-      qi = x+(i-1)*nq;
+      qi = x+(i-qstart_idx)*nq;
     }
-    memcpy(q.data()+nq*(i-1),qi,sizeof(double)*nq);
+    memcpy(q.data()+nq*i,qi,sizeof(double)*nq);
     model->doKinematics(qi);
     ti = &t[i];
     IK_constraint_fun(qi,F+nf_cum,G+nG_cum);
     nf_cum += nc_array[i];
     nG_cum += nG_array[i];
   }
+  MatrixXd qfree = q.block(0,qstart_idx,nq,num_qfree);
   for(int i = 0;i<num_mt_kc;i++)
   {
     VectorXd mtkc_c(mtkc_nc[i]);
-    MatrixXd mtkc_dc(mtkc_nc[i],nq*(nT-1));
-    mt_kc_array[i]->eval(t+1,nT-1,q,mtkc_c,mtkc_dc);
+    MatrixXd mtkc_dc(mtkc_nc[i],nq*num_qfree);
+    mt_kc_array[i]->eval(t+qstart_idx,num_qfree,qfree,mtkc_c,mtkc_dc);
     memcpy(F+nf_cum,mtkc_c.data(),sizeof(double)*mtkc_nc[i]);
     memcpy(G+nG_cum,mtkc_dc.data(),sizeof(double)*mtkc_dc.size());
     nf_cum += mtkc_nc[i];
-    nG_cum += mtkc_nc[i]*nq*(nT-1);
+    nG_cum += mtkc_nc[i]*nq*num_qfree;
   }
   return 0;
 }
@@ -261,38 +301,19 @@ void snoptIKtraj_userfun(const VectorXd &x_vec, VectorXd &c_vec, VectorXd &G_vec
   }
   snopt::doublereal* F = new snopt::doublereal[nF_tmp];
   snopt::doublereal* G = new snopt::doublereal[nG_tmp];
-  IKtraj_cost_fun(x,F[0],G);
-  int nf_cum = 1;
-  int nG_cum = nq*nT;
-  MatrixXd q(nq,nT-1);
-  for(int i = 1;i<nT;i++)
-  {
-    double* qi;
-    if(quasiStaticFlag)
-    {
-      qi = x+(i-1)*(nq+num_qsc_pts);
-    }
-    else
-    {
-      qi = x+(i-1)*nq;
-    }
-    memcpy(q.data()+nq*(i-1),qi,sizeof(double)*nq);
-    model->doKinematics(qi);
-    ti = &t[i];
-    IK_constraint_fun(qi,F+nf_cum,G+nG_cum);
-    nf_cum += nc_array[i];
-    nG_cum += nG_array[i];
-  }
-  for(int i = 0;i<num_mt_kc;i++)
-  {
-    VectorXd mtkc_c(mtkc_nc[i]);
-    MatrixXd mtkc_dc(mtkc_nc[i],nq*(nT-1));
-    mt_kc_array[i]->eval(t+1,nT-1,q,mtkc_c,mtkc_dc);
-    memcpy(F+nf_cum,mtkc_c.data(),sizeof(double)*mtkc_nc[i]);
-    memcpy(G+nG_cum,mtkc_dc.data(),sizeof(double)*mtkc_dc.size());
-    nf_cum += mtkc_nc[i];
-    nG_cum += mtkc_nc[i]*nq*(nT-1);
-  }
+  snopt::integer Status = 0;
+  snopt::integer n = nx_tmp;
+  snopt::integer needF = 1;
+  snopt::integer neF = nF_tmp;
+  snopt::integer needG = 1;
+  snopt::integer neG = nG_tmp;
+  char *cu;
+  snopt::integer lencu = 0;
+  snopt::integer *iu;
+  snopt::integer leniu = 0;
+  snopt::doublereal *ru;
+  snopt::integer lenru = 0;
+  snoptIKtrajfun(&Status,&n,x,&needF, &neF, F, &needG, &neG, G, cu, &lencu, iu, &leniu, ru, &lenru);
   c_vec.resize(nF_tmp,1);
   for(int i = 0;i<nF_tmp;i++)
   {
@@ -695,8 +716,10 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       }
 
       snopt::integer minrw,miniw,mincw;
-      snopt::integer lenrw = 500000, leniw = 50000, lencw = 500;
-      snopt::doublereal rw[lenrw];
+      snopt::integer lenrw = 10000000, leniw = 500000, lencw = 500;
+      snopt::doublereal* rw;
+      rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
+      //doublereal rw[lenrw];
       snopt::integer iw[leniw];
       char cw[8*lencw];
 
@@ -938,12 +961,19 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(prhs[ikoptions_idx],0,"Qv");
     Qv.resize(nq,nq);
     memcpy(Qv.data(),mxGetPr(pm),sizeof(double)*nq*nq);
-    pm = mxGetProperty(prhs[ikoptions_idx],0,"q0");
-    q0.resize(nq);
-    memcpy(q0.data(),mxGetPr(pm),sizeof(double)*nq);
-    pm = mxGetProperty(prhs[ikoptions_idx],0,"qd0");
-    qdot0.resize(nq);
-    memcpy(qdot0.data(),mxGetPr(pm),sizeof(double)*nq);
+    pm = mxGetProperty(prhs[ikoptions_idx],0,"q0_lb");
+    VectorXd q0_lb(nq);
+    memcpy(q0_lb.data(),mxGetPr(pm),sizeof(double)*nq);
+    pm = mxGetProperty(prhs[ikoptions_idx],0,"q0_ub");
+    VectorXd q0_ub(nq);
+    memcpy(q0_ub.data(),mxGetPr(pm),sizeof(double)*nq);
+    VectorXd qd0_lb(nq);
+    VectorXd qd0_ub(nq);
+    pm = mxGetProperty(prhs[ikoptions_idx],0,"qd0_lb");
+    memcpy(qd0_lb.data(),mxGetPr(pm),sizeof(double)*nq);
+    pm = mxGetProperty(prhs[ikoptions_idx],0,"qd0_ub");
+    memcpy(qd0_ub.data(),mxGetPr(pm),sizeof(double)*nq);
+    VectorXd qd0_seed = (qd0_lb+qd0_ub)/2;
     VectorXd qdf_lb(nq);
     VectorXd qdf_ub(nq);
     pm = mxGetProperty(prhs[ikoptions_idx],0,"qdf_lb");
@@ -951,7 +981,27 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(prhs[ikoptions_idx],0,"qdf_ub");
     memcpy(qdf_ub.data(),mxGetPr(pm),sizeof(double)*nq);
     VectorXd qdf_seed = (qdf_lb+qdf_ub)/2;
-    int nSample = nT-1;
+    pm = mxGetProperty(prhs[ikoptions_idx],0,"fixInitialState");
+    bool* fixInitialState_ptr = mxGetLogicals(pm);
+    fixInitialState = *fixInitialState_ptr;
+    if(fixInitialState)
+    {
+      q0_fixed.resize(nq);
+      q0_fixed = q_seed.col(0); 
+      qdot0_fixed.resize(nq);
+      qdot0_fixed = (qd0_lb+qd0_ub)/2;
+      qstart_idx = 1;
+      num_qfree = nT-1;
+      num_qdotfree = 1;
+    }
+    else
+    {
+      q0_fixed.resize(0);
+      qdot0_fixed.resize(0);
+      qstart_idx = 0;
+      num_qfree = nT;
+      num_qdotfree = 2;
+    }
     // This part can be rewritten using the sparse matrix if efficiency becomes a concern
     MatrixXd velocity_mat1 = MatrixXd::Zero(nq*nT,nq*nT);
     MatrixXd velocity_mat2 = MatrixXd::Zero(nq*nT,nq*nT);
@@ -1010,72 +1060,91 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     accel_mat_qd0 = accel_mat2.block(0,0,nq*nT,nq);
     accel_mat_qdf.resize(nq*nT,nq);
     accel_mat_qdf = accel_mat2.block(0,(nT-1)*nq,nT*nq,nq);
-   
-    q_idx = new int[nq*(nT-1)];
+
+    qfree_idx = new int[nq*num_qfree];
     qdotf_idx = new int[nq];
-    if(quasiStaticFlag)
+    if(!fixInitialState)
     {
-      nx= nq*nT+num_qsc_pts*(nT-1);
-      for(int j = 0;j<nT-1;j++)
-      {
-        for(int k = 0;k<nq;k++)
-        {
-          q_idx[j*nq+k] = j*(nq+num_qsc_pts)+k;
-        }
-      }
-      for(int k = 0;k<nq;k++)
-      {
-        qdotf_idx[k] = (nT-1)*(nq+num_qsc_pts)+k;
-      } 
+      qdot0_idx = new int [nq];
     }
     else
     {
-      nx = nq*nT;
-      for(int j = 0;j<(nT-1)*nq;j++)
+      qdot0_idx = NULL; 
+    }
+    int qdot_idx_start = 0;
+    if(quasiStaticFlag)
+    {
+      nx= nq*(num_qfree+num_qdotfree)+num_qsc_pts*num_qfree;
+      for(int j = 0;j<num_qfree;j++)
       {
-        q_idx[j] = j;
+        for(int k = 0;k<nq;k++)
+        {
+          qfree_idx[j*nq+k] = j*(nq+num_qsc_pts)+k;
+        }
       }
+      qdot_idx_start = (nq+num_qsc_pts)*num_qfree;
+    }
+    else
+    {
+      nx = nq*(num_qfree+num_qdotfree);
+      for(int j = 0;j<num_qfree*nq;j++)
+      {
+        qfree_idx[j] = j;
+      }
+      qdot_idx_start = nq*num_qfree;
+    }
+    if(!fixInitialState)
+    {
       for(int j = 0;j<nq;j++)
       {
-        qdotf_idx[j] = (nT-1)*nq+j;
+        qdot0_idx[j] = qdot_idx_start+j;
+        qdotf_idx[j] = qdot_idx_start+nq+j;
       }
     }
-
+    else
+    {
+      for(int j = 0;j<nq;j++)
+      {
+        qdotf_idx[j] = qdot_idx_start+j;
+      }
+    }
     double* xlow = new double[nx];
     double* xupp = new double[nx];
-    for(int j = 1;j<nT;j++)
+    for(int j = 0;j<num_qfree;j++)
     {
       if(quasiStaticFlag)
       {
-        memcpy(xlow+(j-1)*(nq+num_qsc_pts),joint_limit_min.data()+j*nq,sizeof(double)*nq);
-        memcpy(xupp+(j-1)*(nq+num_qsc_pts),joint_limit_max.data()+j*nq,sizeof(double)*nq);
+        memcpy(xlow+j*(nq+num_qsc_pts),joint_limit_min.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
+        memcpy(xupp+j*(nq+num_qsc_pts),joint_limit_max.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
         for(int k = 0;k<num_qsc_pts;k++)
         {
-          xlow[(j-1)*(nq+num_qsc_pts)+nq+k] = 0.0;
-          xupp[(j-1)*(nq+num_qsc_pts)+nq+k] = 1.0;
+          xlow[j*(nq+num_qsc_pts)+nq+k] = 0.0;
+          xupp[j*(nq+num_qsc_pts)+nq+k] = 1.0;
         }
       }
       else
       {
-        memcpy(xlow+(j-1)*nq,joint_limit_min.col(j).data(),sizeof(double)*nq);
-        memcpy(xupp+(j-1)*nq,joint_limit_max.col(j).data(),sizeof(double)*nq);
+        memcpy(xlow+j*nq,joint_limit_min.col(j+qstart_idx).data(),sizeof(double)*nq);
+        memcpy(xupp+j*nq,joint_limit_max.col(j+qstart_idx).data(),sizeof(double)*nq);
       }
     }
-    if(quasiStaticFlag)
+    if(fixInitialState)
     {
-      memcpy(xlow+(nq+num_qsc_pts)*(nT-1),qdf_lb.data(),sizeof(double)*nq);
-      memcpy(xupp+(nq+num_qsc_pts)*(nT-1),qdf_ub.data(),sizeof(double)*nq);
+      memcpy(xlow+qdotf_idx[0],qdf_lb.data(),sizeof(double)*nq);
+      memcpy(xupp+qdotf_idx[0],qdf_ub.data(),sizeof(double)*nq);
     }
     else
     {
-      memcpy(xlow+nq*(nT-1), qdf_lb.data(),sizeof(double)*nq);
-      memcpy(xupp+nq*(nT-1), qdf_ub.data(),sizeof(double)*nq);
+      memcpy(xlow+qdot0_idx[0], qd0_lb.data(),sizeof(double)*nq);
+      memcpy(xupp+qdot0_idx[0], qd0_ub.data(),sizeof(double)*nq);
+      memcpy(xlow+qdotf_idx[0], qdf_lb.data(),sizeof(double)*nq);
+      memcpy(xupp+qdotf_idx[0], qdf_ub.data(),sizeof(double)*nq);
     }
     
     nF = 1;
-    nG = nq*nT;
+    nG = nq*(num_qfree+num_qdotfree);
     snopt::integer lenA = 0;
-    for(int j = 1;j<nT;j++)
+    for(int j = qstart_idx;j<nT;j++)
     {
       nF += nc_array[j]; 
       nG += nG_array[j];
@@ -1084,9 +1153,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     mtkc_nc = new int[num_mt_kc];
     for(int j = 0;j<num_mt_kc;j++)
     {
-      mtkc_nc[j] = mt_kc_array[j]->getNumConstraint(t+1,nT-1);
+      mtkc_nc[j] = mt_kc_array[j]->getNumConstraint(t+qstart_idx,num_qfree);
       nF += mtkc_nc[j];
-      nG += mtkc_nc[j]*nq*(nT-1);
+      nG += mtkc_nc[j]*nq*num_qfree;
     }
     double* Flow = new double[nF];
     double* Fupp = new double[nF];
@@ -1111,21 +1180,32 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     Flow[0] = -mxGetInf();
     Fupp[0] = mxGetInf();
     Fname[0] = string("Objective");
-    for(int j = 0;j<nq*(nT-1);j++)
+    for(int j = 0;j<nq*num_qfree;j++)
     {
       iGfun[j] = 1;
-      jGvar[j] = q_idx[j]+1;//C interface uses 1 index
+      jGvar[j] = qfree_idx[j]+1;//C interface uses 1 index
     }
     for(int j = 0;j<nq;j++)
     {
-      iGfun[j+(nT-1)*nq] = 1;
-      jGvar[j+(nT-1)*nq] = qdotf_idx[j]+1;//C interface uses 1 index
+      if(fixInitialState)
+      {
+        iGfun[j+nq*num_qfree] = 1;
+        jGvar[j+nq*num_qfree] = qdotf_idx[j]+1;//C interface uses 1 index
+      }
+      else
+      {
+        iGfun[j+nq*num_qfree] = 1;
+        jGvar[j+nq*num_qfree] = qdot0_idx[j]+1;
+        iGfun[j+nq+nq*num_qfree] = 1;
+        jGvar[j+nq+nq*num_qfree] = qdotf_idx[j]+1;
+      }
     }
+
     snopt::integer nf_cum = 1;
-    snopt::integer nG_cum = nq*nT;
+    snopt::integer nG_cum = nq*(num_qfree+num_qdotfree);
     snopt::integer nA_cum = 0;
     int x_start_idx = 0;
-    for(int j = 1;j<nT;j++)
+    for(int j = qstart_idx;j<nT;j++)
     {
       memcpy(Flow+nf_cum,Cmin_array[j].data(),sizeof(double)*nc_array[j]);
       memcpy(Fupp+nf_cum,Cmax_array[j].data(),sizeof(double)*nc_array[j]);
@@ -1161,48 +1241,56 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     {
       VectorXd mtkc_lb(mtkc_nc[j]);
       VectorXd mtkc_ub(mtkc_nc[j]);
-      mt_kc_array[j]->bounds(t+1,nT-1,mtkc_lb,mtkc_ub);
+      mt_kc_array[j]->bounds(t+qstart_idx,num_qfree,mtkc_lb,mtkc_ub);
       memcpy(Flow+nf_cum,mtkc_lb.data(),sizeof(double)*mtkc_nc[j]);
       memcpy(Fupp+nf_cum,mtkc_ub.data(),sizeof(double)*mtkc_nc[j]);
       vector<string> mtkc_name;
-      mt_kc_array[j]->name(t+1,nT-1,mtkc_name);
+      mt_kc_array[j]->name(t+qstart_idx,num_qfree,mtkc_name);
       for(int k = 0;k<mtkc_nc[j];k++)
       {
         Fname[nf_cum+k] = mtkc_name[k];
       }
-      for(int l = 0;l<nq*(nT-1);l++)
+      for(int l = 0;l<nq*num_qfree;l++)
       {
         for(int k = 0;k<mtkc_nc[j];k++)
         {
           iGfun[nG_cum+l*mtkc_nc[j]+k] = nf_cum+k+1;
-          jGvar[nG_cum+l*mtkc_nc[j]+k] = q_idx[l]+1;
+          jGvar[nG_cum+l*mtkc_nc[j]+k] = qfree_idx[l]+1;
         }
       }
       nf_cum += mtkc_nc[j];
-      nG_cum += mtkc_nc[j]*nq*(nT-1);
+      nG_cum += mtkc_nc[j]*nq*num_qfree;
     }
     double* x = new double[nx];
     if(quasiStaticFlag)
     {
-      for(int j = 1;j<nT;j++)
+      for(int j = 0;j<num_qfree;j++)
       {
-        memcpy(x+(j-1)*(nq+num_qsc_pts),q_seed.data()+j*nq,sizeof(double)*nq);
+        memcpy(x+j*(nq+num_qsc_pts),q_seed.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
         for(int k = 0;k<num_qsc_pts;k++)
         {
-          x[(j-1)*(nq+num_qsc_pts)+nq+k] = 1.0/num_qsc_pts;
+          x[j*(nq+num_qsc_pts)+nq+k] = 1.0/num_qsc_pts;
         }
       }
-      memcpy(x+(nq+num_qsc_pts)*(nT-1),qdf_seed.data(),sizeof(double)*nq);
     }
     else
     {
-      memcpy(x,q_seed.data()+nq,sizeof(double)*nq*(nT-1));
-      memcpy(x+nq*(nT-1), qdf_seed.data(),sizeof(double)*nq);
+      memcpy(x,q_seed.data()+nq*qstart_idx,sizeof(double)*nq*num_qfree);
     }
-    
+    if(fixInitialState)
+    {
+      memcpy(x+qdotf_idx[0],qdf_seed.data(),sizeof(double)*nq);
+    }
+    else
+    {
+      memcpy(x+qdot0_idx[0],qd0_seed.data(),sizeof(double)*nq);
+      memcpy(x+qdotf_idx[0],qdf_seed.data(),sizeof(double)*nq);
+    }
+
     snopt::integer minrw,miniw,mincw;
-    snopt::integer lenrw = 100000, leniw = 100000, lencw = 5000;
-    snopt::doublereal rw[lenrw];
+    snopt::integer lenrw = 20000000, leniw = 2000000, lencw = 5000;
+    snopt::doublereal* rw;
+    rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
     snopt::integer iw[leniw];
     char cw[8*lencw];
 
@@ -1324,7 +1412,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     mxSetCell(plhs[0],9,jAvar_ptr);
     mxSetCell(plhs[0],10,A_ptr);
     mexPrintf("got iAfun jAvar A\n");*/ 
-   
+
     snopt::snopta_
       ( &Cold, &nF, &nx, &nxname, &nFname,
         &ObjAdd, &ObjRow, Prob, snoptIKtrajfun,
@@ -1372,23 +1460,33 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       VectorXd G_vec2(nG_tmp);
       MatrixXd df_err2 = df_err.block(1,0,nF-1,nx);
       mexPrintf("The maximum gradient numerical error, except in the cost function, is %e\n",df_err2.maxCoeff());
-      /* mxArray* df_ptr = mxCreateDoubleMatrix(nF,nx,mxREAL);
-      memcpy(mxGetPr(df_ptr),df_userfun.data(),sizeof(double)*nF*nx);
-      mxSetCell(plhs[0],11,df_ptr);*/
     }
     MatrixXd q(nq*nT,1);
+    VectorXd qdot0(nq);
     VectorXd qdotf(nq);
-    q.block(0,0,nq,1) = q0;
-    //memcpy(q.data()+nq,x,sizeof(double)*nq*(nT-1));
-    for(int j = 0;j<nq*(nT-1);j++)
+    if(fixInitialState)
     {
-      q(j+nq) = x[q_idx[j]];
+      q.block(0,0,nq,1) = q0_fixed;
     }
-    //memcpy(qdotf.data(),x+nq*(nT-1),sizeof(double)*nq);
+    for(int j = 0;j<nq*num_qfree;j++)
+    {
+      q(j+nq*qstart_idx) = x[qfree_idx[j]];
+    }
     for(int j = 0;j<nq;j++)
     {
       qdotf(j) = x[qdotf_idx[j]];
     } 
+    if(!fixInitialState)
+    {
+      for(int j = 0;j<nq;j++)
+      {
+        qdot0(j) = x[qdot0_idx[j]];
+      }
+    }
+    else
+    {
+      qdot0 = qdot0_fixed;
+    }
     MatrixXd qdot(nq*nT,1);
     MatrixXd qddot(nq*nT,1);
     qdot.block(0,0,nq,1) = qdot0;
@@ -1465,9 +1563,14 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     memcpy(mxGetPr(info_ptr),INFO_tmp,sizeof(double));
     mxSetCell(plhs[0],3,info_ptr);
     mxSetCell(plhs[0],4,infeasible_constraint_cell);
+    delete rw;
     delete[] xmul; delete[] xstate; delete[] xnames; 
     delete[] F; delete[] Fmul; delete[] Fstate; delete[] Fnames;
     delete[] iGfun;  delete[] jGvar;
+    if(!fixInitialState)
+    {
+      delete[] qdot0_idx;
+    }
     if(lenA>0)
     {
       delete[] iAfun;  delete[] jAvar;  delete[] A;
@@ -1479,7 +1582,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   delete[] iAfun_array; delete[] jAvar_array; delete[] A_array;
   if(mode == 2)
   {
-    delete[] q_idx; delete[] qdotf_idx;
+    delete[] qfree_idx; delete[] qdotf_idx;
     delete[] mtkc_nc;
   }
   delete[] iCfun_array; delete[] jCvar_array; 

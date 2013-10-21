@@ -3,6 +3,9 @@
 
 using namespace std;
 
+const int defaultRobotNum[1] = {0};
+const set<int> RigidBody::defaultRobotNumSet(defaultRobotNum,defaultRobotNum+1);
+
 RigidBody::RigidBody(void)
 {
 	dofnum=0;

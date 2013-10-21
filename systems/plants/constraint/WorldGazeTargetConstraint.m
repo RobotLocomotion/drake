@@ -10,7 +10,7 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
 % The body has the orientation such that its axis is within a cone, the
 % aperture of the cone being 2xconethreshold, the axis of the cone being
 % the line connecting target and gaze_origin
-  properties
+  properties(SetAccess = protected)
     body
     body_name
   end
@@ -62,6 +62,11 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
       else
         name_str = [];
       end
+    end
+    
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      updatePtrWorldGazeTargetConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)

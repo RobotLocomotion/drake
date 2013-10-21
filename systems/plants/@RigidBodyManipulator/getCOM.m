@@ -1,7 +1,13 @@
-function [com,J,dJ] = getCOM(model,kinsol)
-
+function [com,J,dJ] = getCOM(model,kinsol,robotnum)
+% @param robotnum              -- An int array. Default is 1
+%                              - Not given, the COM of the whole model is computed. 
+%                              - Otherwise, the bodies that belong to robot(robotnum) is
+%                                computed
 % note: for Jdot, call forwardJacDot with body_ind = 0
 
+if(nargin == 2)
+  robotnum = 1;
+end
 if ~isstruct(kinsol)  
   % treat input as getCOM(model,q)
   kinsol = doKinematics(model,kinsol,nargout>2);
@@ -16,11 +22,11 @@ if (kinsol.mex)
   end
   
   if nargout > 2
-    [com,J,dJ] = forwardKinmex(model.mex_model_ptr,kinsol.q,0);
+    [com,J,dJ] = forwardKinmex(model.mex_model_ptr,kinsol.q,0,robotnum,false);
   elseif nargout > 1
-    [com,J] = forwardKinmex(model.mex_model_ptr,kinsol.q,0);
+    [com,J] = forwardKinmex(model.mex_model_ptr,kinsol.q,0,robotnum,false);
   else
-    com = forwardKinmex(model.mex_model_ptr,kinsol.q,0);
+    com = forwardKinmex(model.mex_model_ptr,kinsol.q,0,robotnum,false);
   end
 else
   nq=getNumDOF(model);
@@ -35,21 +41,23 @@ else
   
   dJ = zeros(d,nq^2);
   for i=1:length(model.body)
-    bm = model.body(i).mass;
-    if (bm>0)
-      bc = model.body(i).com;
-      if (nargout>2)
-        [bc,bJ,bdJ] = forwardKin(model,kinsol,i,bc);
-        J = (m*J + bm*bJ)/(m+bm);
-        dJ = (m*dJ + bm*bdJ)/(m+bm);
-      elseif (nargout>1)
-        [bc,bJ] = forwardKin(model,kinsol,i,bc);
-        J = (m*J + bm*bJ)/(m+bm);
-      else
-        bc = forwardKin(model,kinsol,i,bc);
+    if(any(model.body(i).robotnum == robotnum))
+      bm = model.body(i).mass;
+      if (bm>0)
+        bc = model.body(i).com;
+        if (nargout>2)
+          [bc,bJ,bdJ] = forwardKin(model,kinsol,i,bc);
+          J = (m*J + bm*bJ)/(m+bm);
+          dJ = (m*dJ + bm*bdJ)/(m+bm);
+        elseif (nargout>1)
+          [bc,bJ] = forwardKin(model,kinsol,i,bc);
+          J = (m*J + bm*bJ)/(m+bm);
+        else
+          bc = forwardKin(model,kinsol,i,bc);
+        end
+        com = (m*com + bm*bc)/(m+bm);
+        m = m + bm;
       end
-      com = (m*com + bm*bc)/(m+bm);
-      m = m + bm;
     end
   end
 end

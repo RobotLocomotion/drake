@@ -1,4 +1,4 @@
-classdef WorldFixedBodyPostureConstraint < MultipleTimeKinematicConstraint
+classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
   % Constrain the posture (position and orientation) of a body to be fixed
   % within a time interval
   % @param robot         -- A RigidBodyManipulator or a
@@ -8,21 +8,21 @@ classdef WorldFixedBodyPostureConstraint < MultipleTimeKinematicConstraint
   %                             of this constaint being active. Default is
   %                             [-inf inf]
   
-  properties
+  properties(SetAccess = protected)
     body 
     body_name
   end
   
   methods
-    function obj = WorldFixedBodyPostureConstraint(robot,body,tspan)
+    function obj = WorldFixedBodyPoseConstraint(robot,body,tspan)
       if(nargin == 2)
         tspan = [-inf inf];
       end
-      ptr = constructPtrWorldFixedBodyPostureConstraintmex(robot.getMexModelPtr,body,tspan);
+      ptr = constructPtrWorldFixedBodyPoseConstraintmex(robot.getMexModelPtr,body,tspan);
       obj = obj@MultipleTimeKinematicConstraint(robot,tspan);
       sizecheck(body,[1,1]);
       if(~isnumeric(body))
-        error('Drake:WorldFixedBodyPostureConstraint: body must be an integer');
+        error('Drake:WorldFixedBodyPoseConstraint: body must be an integer');
       end
       obj.body = floor(body);
       obj.body_name = obj.robot.getBody(obj.body).linkname;
@@ -91,15 +91,20 @@ classdef WorldFixedBodyPostureConstraint < MultipleTimeKinematicConstraint
     
     function name_str = name(obj,t)
       if(obj.isTimeValid(t))
-        name_str = {sprintf('World fixed body posture constraint for %s position',obj.body_name);...
-          sprintf('World fixed body posture constraint for %s orientation',obj.body_name)};
+        name_str = {sprintf('World fixed body pose constraint for %s position',obj.body_name);...
+          sprintf('World fixed body pose constraint for %s orientation',obj.body_name)};
       else
         name_str = {};
       end
     end
     
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      updatePtrWorldFixedBodyPoseConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+    end
+    
     function ptr = constructPtr(varargin)
-      ptr = constructPtrWorldFixedBodyPostureConstraint(varargin{:});
+      ptr = constructPtrWorldFixedBodyPoseConstraintmex(varargin{:});
     end
   end
 end

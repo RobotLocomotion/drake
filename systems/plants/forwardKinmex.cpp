@@ -18,8 +18,8 @@ using namespace std;
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
-  if (nrhs < 3) {
-    mexErrMsgIdAndTxt("Drake:forwardKinmex:NotEnoughInputs","Usage forwardKinmex(model_ptr,q_cache,0) for center of mass, or forwardKinmex(model_pts,q_cache,body_ind,pts,rotation_type,b_jacdot)");
+  if (nrhs < 5) {
+    mexErrMsgIdAndTxt("Drake:forwardKinmex:NotEnoughInputs","Usage forwardKinmex(model_ptr,q_cache,0,robotnum,b_jacdot) for center of mass, or forwardKinmex(model_pts,q_cache,body_ind,pts,rotation_type,b_jacdot)");
   }
 
   // first get the model_ptr back from matlab
@@ -33,31 +33,50 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   }
   
   int body_ind = ((int) mxGetScalar(prhs[2])) - 1;  // note: this is body_ind-1 (so 0 to num_bodies-1)
-  bool b_jacdot = nrhs>5 && (bool) mxGetScalar(prhs[5]);
+  bool b_jacdot;
+  if(body_ind != -1)
+  {
+    b_jacdot = nrhs>5 && (bool) mxGetScalar(prhs[5]);
+  }
+  else
+  {
+    b_jacdot = (bool) mxGetScalar(prhs[4]);
+  }
 
   if (body_ind==-1) {  // compute center of mass
+    int num_robot = mxGetNumberOfElements(prhs[3]);
+    int* robotnum = new int[num_robot];
+    double* robotnum_tmp = new double[num_robot];
+    memcpy(robotnum_tmp,mxGetPr(prhs[3]),sizeof(double)*num_robot);
+    for(int i = 0;i<num_robot;i++)
+    {
+      robotnum[i] = (int) robotnum_tmp[i]-1;
+    }
+    set<int> robotnum_set(robotnum,robotnum+num_robot);
+    delete[] robotnum;
+    delete[] robotnum_tmp;
     if (b_jacdot) {
       plhs[0] = mxCreateDoubleMatrix(3,model->num_dof,mxREAL);
       Map<MatrixXd> Jdot(mxGetPr(plhs[0]),3,model->num_dof);
-      model->getCOMJacDot(Jdot);
+      model->getCOMJacDot(Jdot,robotnum_set);
       return;
     }
     
     if (nlhs>0) {
       plhs[0] = mxCreateDoubleMatrix(3,1,mxREAL);
       Map<Vector3d> x(mxGetPr(plhs[0]));
-      model->getCOM(x);
+      model->getCOM(x,robotnum_set);
     }
     if (nlhs>1) {
       plhs[1] = mxCreateDoubleMatrix(3,model->num_dof,mxREAL);
       Map<MatrixXd> J(mxGetPr(plhs[1]),3,model->num_dof);
-      model->getCOMJac(J);
+      model->getCOMJac(J,robotnum_set);
     }
   
     if (nlhs>2) {
       plhs[2] = mxCreateDoubleMatrix(3,model->num_dof*model->num_dof,mxREAL);
       Map<MatrixXd> dJ(mxGetPr(plhs[2]),3,model->num_dof*model->num_dof);
-      model->getCOMdJac(dJ);
+      model->getCOMdJac(dJ,robotnum_set);
     }
     
     return;

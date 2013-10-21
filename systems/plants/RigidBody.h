@@ -31,6 +31,8 @@ public:
 public:
   std::string linkname;
   std::string jointname;
+  int robotnum; // uses 0-index. starts from 0
+  static const std::set<int> defaultRobotNumSet;
 // note: it's very ugly, but parent,dofnum,and pitch also exist currently (independently) at the rigidbodymanipulator level to represent the featherstone structure.  this version is for the kinematics.
   int parent;
   int dofnum;
@@ -55,6 +57,8 @@ public:
 
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);
 };
+
+
 
 
 #endif

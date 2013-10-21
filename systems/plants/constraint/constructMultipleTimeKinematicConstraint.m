@@ -18,11 +18,11 @@ switch type
     else
       obj = WorldFixedOrientConstraint(varargin{:});
     end
-  case MultipleTimeKinematicConstraint.WorldFixedBodyPostureConstraint
+  case MultipleTimeKinematicConstraint.WorldFixedBodyPoseConstraint
     if(use_mex)
-      obj = constructPtrWorldFixedBodyPostureConstraintmex(varargin{:});
+      obj = constructPtrWorldFixedBodyPoseConstraintmex(varargin{:});
     else
-      obj = WorldFixedBodyPostureConstraint(varargin{:});
+      obj = WorldFixedBodyPoseConstraint(varargin{:});
     end
 end
 end

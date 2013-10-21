@@ -30,16 +30,16 @@ public:
   void getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot);
 
   template <typename Derived>
-  void getCOM(MatrixBase<Derived> &com);
+  void getCOM(MatrixBase<Derived> &com,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename Derived>
-  void getCOMJac(MatrixBase<Derived> &J);
+  void getCOMJac(MatrixBase<Derived> &J,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename Derived>
-  void getCOMJacDot(MatrixBase<Derived> &Jdot);
+  void getCOMJacDot(MatrixBase<Derived> &Jdot,const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
 
   template <typename Derived>
-  void getCOMdJac(MatrixBase<Derived> &dJ);
+  void getCOMdJac(MatrixBase<Derived> &dJ, const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
 
   int getNumContacts(const std::set<int> &body_idx = emptyIntSet);
 
@@ -67,7 +67,6 @@ public:
   template <typename DerivedA, typename DerivedB>
   void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x);
 
-  void snoptIKfun( VectorXd q, VectorXd q0, VectorXd q_nom, MatrixXd Q, int narg, int* body_ind, VectorXd* pts, VectorXd* f, MatrixXd* G);
 
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL);

@@ -721,8 +721,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     
     function obj = removeCollisionGroupsExcept(obj,contact_groups)
       obj.manip = removeCollisionGroupsExcept(obj.manip,contact_groups);
-    end    
+    end  
     
+    function str = getLinkName(obj,body_ind)
+      str = obj.manip.getLinkName(body_ind);
+    end
+
     function link_names = getLinkNames(obj)
       link_names =  {obj.manip.body.linkname}';
     end
@@ -751,6 +755,18 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     
     function ptr = getMexModelPtr(obj)
       ptr = getMexModelPtr(obj.manip);
+    end
+    
+    function [ptsA,ptsB,normal,distance,JA,JB,Jd,idxA,idxB] = closestPointsAllBodies(obj,kinsol)
+      [ptsA,ptsB,normal,distance,JA,JB,Jd,idxA,idxB] = closestPointsAllBodies(obj.manip,kinsol);
+    end
+    
+    function [phi,Jphi] = closestDistanceAllBodies(obj,kinsol)
+      [phi,Jphi] = closestDistanceAllBodies(obj.manip,kinsol);
+    end
+    
+    function obj = addLinksToCollisionFilterGroup(obj,linknames,collision_fg_name,robotnums)
+      obj.manip = addLinksToCollisionFilterGroup(obj.manip,linknames,collision_fg_name,robotnums);
     end
     
   end
