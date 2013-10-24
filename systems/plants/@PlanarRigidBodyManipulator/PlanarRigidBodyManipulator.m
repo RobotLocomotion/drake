@@ -75,8 +75,8 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
     end
         
     function model = addRobotFromURDF(model,urdf_filename,xyz,rpy,options)
-      if nargin<3, xyz = zeros(3,1); end
-      if nargin<4, rpy = zeros(3,1); end
+      if nargin<3, xyz = zeros(3,1); elseif numel(xyz)==2, xyz = model.T_2D_to_3D*xyz; end
+      if nargin<4, rpy = zeros(3,1); elseif numel(rpy)==1, rpy = axis2rpy(model.view_axis,rpy); end
       if nargin<5, options=struct(); end
       
       if ~isfield(options,'visual_geometry') options.visual_geometry = true; end
