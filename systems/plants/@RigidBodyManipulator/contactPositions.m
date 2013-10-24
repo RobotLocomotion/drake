@@ -28,7 +28,7 @@ else
   end
 end
 
-d=length(obj.gravity);  % 2 for planar, 3 for 3D
+d=obj.dim;  % 2 for planar, 3 for 3D
 contact_pos = zeros(d,n_contact_pts)*kinsol.q(1);
 
 if (nargout>1) 

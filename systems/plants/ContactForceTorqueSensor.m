@@ -78,7 +78,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
       % z(nL+nP+(1:nC)) = cN
       obj.normal_ind = nL+nP+contact_ind_offset+(1:num_body_contacts);
       
-      mC = 2*length(manip.surfaceTangents(manip.gravity)); % get number of tangent vectors
+      mC = 2*length(manip.surfaceTangents([1;zeros(manip.dim-1,1)])); % get number of tangent vectors
 
       % z(nL+nP+nC+(1:mC*nC)) = [beta_1;...;beta_mC]
       for i=1:mC

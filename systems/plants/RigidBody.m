@@ -234,10 +234,13 @@ classdef RigidBody
       end
       inode = node.getElementsByTagName('inertia').item(0);
       if ~isempty(inode)
-        inertia = [ parseParamString(model,body.robotnum,char(inode.getAttribute('ixx'))), parseParamString(model,body.robotnum,char(inode.getAttribute('ixy'))), parseParamString(model,body.robotnum,char(inode.getAttribute('ixz'))); ...
-                    0, parseParamString(model,body.robotnum,char(inode.getAttribute('iyy'))), parseParamString(model,body.robotnum,char(inode.getAttribute('iyz'))); ...
-                    0, 0, parseParamString(model,body.robotnum,char(inode.getAttribute('izz'))) ];
-        inertia(2,1) = inertia(1,2); inertia(3,1) = inertia(1,3); inertia(3,2) = inertia(2,3);
+        if inode.hasAttribute('ixx'), ixx = parseParamString(model,body.robotnum,char(inode.getAttribute('ixx'))); else ixx=0; end
+        if inode.hasAttribute('ixy'), ixy = parseParamString(model,body.robotnum,char(inode.getAttribute('ixy'))); else ixy=0; end
+        if inode.hasAttribute('ixz'), ixz = parseParamString(model,body.robotnum,char(inode.getAttribute('ixz'))); else ixz=0; end
+        if inode.hasAttribute('iyy'), iyy = parseParamString(model,body.robotnum,char(inode.getAttribute('iyy'))); else iyy=0; end
+        if inode.hasAttribute('iyz'), iyz = parseParamString(model,body.robotnum,char(inode.getAttribute('iyz'))); else iyz=0; end
+        if inode.hasAttribute('izz'), izz = parseParamString(model,body.robotnum,char(inode.getAttribute('izz'))); else izz=0; end
+        inertia = [ixx, ixy, ixz; ixy, iyy, iyz; ixz, iyz, izz];
       end
       
       % randomly scale inertia
