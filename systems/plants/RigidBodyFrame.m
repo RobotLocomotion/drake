@@ -29,6 +29,14 @@ classdef RigidBodyFrame
       x = obj.Ti(1:3,:)*[x; 1 + 0*x(1,:)];
     end
     
+    function x = bodyToFrame(obj,pts)
+      x = obj.Ti(1:3,:)*[pts; 1 + 0*pts(1,:)];
+    end
+    
+    function x = frameToBody(obj,pts)
+      x = obj.T(1:3,:)*[pts; 1 + 0*pts(1,:)];
+    end
+    
     function obj = updateBodyIndices(obj,map_from_old_to_new)
       obj.body_ind = map_from_old_to_new(obj.body_ind);
     end    
