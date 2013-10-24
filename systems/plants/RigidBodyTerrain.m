@@ -1,4 +1,4 @@
-classdef RigidBodyTerrain
+classdef RigidBodyTerrain < RigidBodyElement
 % basic interface class for terrain
 %  (note that this class provides a default implementation with z=0
 %  everywhere)

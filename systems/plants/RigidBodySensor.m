@@ -1,4 +1,4 @@
-classdef RigidBodySensor 
+classdef RigidBodySensor < RigidBodyElement
 % this is an interface class for sensors that are composed to form the
 % output output of a RigidBodyManipulator
 %
