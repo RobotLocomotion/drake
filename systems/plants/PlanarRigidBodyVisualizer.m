@@ -28,12 +28,9 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       for i=1:length(obj.model.body)
         body = obj.model.body(i);
         for j=1:length(body.geometry)
-          s = size(body.geometry{j}.x); n=prod(s);
-          pts = forwardKin(obj.model,kinsol,i,[reshape(body.geometry{j}.x,1,n); reshape(body.geometry{j}.y,1,n)]);
-          xpts = reshape(pts(1,:),s); ypts = reshape(pts(2,:),s);
-          
           c = (1-obj.fade_percent)*body.geometry{j}.c + obj.fade_percent*obj.fade_color;
-          patch(xpts,ypts,c,'LineWidth',.01,'EdgeColor',obj.fade_percent*obj.fade_color); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
+          pts = obj.model.T_2D_to_3D'*forwardKin(obj.model,kinsol,i,body.geometry{j}.xyz);
+          patch(pts(1,:)',pts(2,:)',c,'LineWidth',.01,'EdgeColor',obj.fade_percent*obj.fade_color); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
           % patch(xpts,ypts,body.geometry{j}.c,'EdgeColor','none','FaceAlpha',1); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
 
           % for debugging:
@@ -53,7 +50,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
             line([origin(1),parent_origin(1)],[origin(2),parent_origin(2)],'Color','k');
           end
           if ~isempty(body.contact_pts)
-            pts = forwardKin(obj.model,kinsol,i,body.contact_pts);
+            pts = obj.model.T_2D_to_3D'*forwardKin(obj.model,kinsol,i,body.contact_pts);
             plot(pts(1,:),pts(2,:),'g*');
           end
         end

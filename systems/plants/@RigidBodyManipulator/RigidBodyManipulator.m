@@ -1109,11 +1109,8 @@ classdef RigidBodyManipulator < Manipulator
       end
       linknames = linknames(:);
     end
-    
-  end
-  
-  methods (Static)
-    function d=surfaceTangents(normal)
+
+    function d=surfaceTangents(obj,normal)
       %% compute tangent vectors, according to the description in the last paragraph of Stewart96, p.2678
       t1=normal; % initialize size
       
@@ -1134,9 +1131,10 @@ classdef RigidBodyManipulator < Manipulator
       for k=1:m
         d{k}=cos(theta(k))*t1 + sin(theta(k))*t2;
       end      
-      % NOTEST
     end
+  end
     
+  methods (Static)
     [c,options] = parseMaterial(node,options);
   end
   
@@ -1334,6 +1332,12 @@ classdef RigidBodyManipulator < Manipulator
           else
             parent.wrlgeometry = [ parent.wrlgeometry, '\nTransform {\n', body.wrljoint, '\n children [\n', body.wrlgeometry, '\n]\n}\n'];
           end
+        end
+        
+        for j=1:length(body.geometry)
+          g.xyz = body.Ttree(1:end-1,:)*[body.geometry{j}.xyz; ones(1,size(body.geometry{j}.xyz,2))];
+          g.c = body.geometry{j}.c;
+          parent.geometry = {parent.geometry{:},g};
         end
         
         if (~isempty(body.contact_pts))
