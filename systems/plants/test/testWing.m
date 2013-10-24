@@ -21,10 +21,9 @@ X0 = [x0 z0 pitch0 Vx0 Vz0 Vpitch0]';
 Xtraj = p.simulate([0 tf],X0);
 v = p.constructVisualizer();
 v.axis = [-6 1 -5.05 1.5];
-v.playback_speed = .25;
+v.playback_speed = .1;
 v.playback(Xtraj);
 xfPlanar=Xtraj.eval(tf);
-
 
 disp('Testing 3D wing now...');
 p = RigidBodyManipulator('TestWing.urdf', options);

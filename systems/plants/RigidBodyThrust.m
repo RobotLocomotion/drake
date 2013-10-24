@@ -48,4 +48,34 @@ classdef RigidBodyThrust < RigidBodyForceElement
     
   end
   
+  methods (Static)
+    function obj = parseURDFNode(model,robotnum,node,options)
+      elNode = node.getElementsByTagName('parent').item(0);
+      parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
+      
+      elnode = node.getElementsByTagName('origin').item(0);
+      orig = parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
+      
+      elnode = node.getElementsByTagName('direction').item(0);
+      dir = parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
+      
+      scaleFac = 1;
+      elnode = node.getElementsByTagName('scaleFactor').item(0);
+      if ~isempty(elnode)
+        scaleFac = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
+      end
+      
+      elnode = node.getElementsByTagName('limits').item(0);
+      if ~isempty(elnode)
+        limits = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
+      end
+      
+      if exist('limits')
+        obj = RigidBodyThrust(parent, orig, dir, scaleFac, limits);
+      else
+        obj = RigidBodyThrust(parent, orig, dir, scaleFac);
+      end
+    end
+  end
+  
 end

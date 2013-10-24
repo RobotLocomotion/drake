@@ -78,6 +78,22 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
     
   end
   
+  methods (Static)
+    function obj = parseURDFNode(model,robotnum,node,body_ind,options)
+      xyz = zeros(3,1); rpy = zeros(3,1);
+      origin = node.getElementsByTagName('pose').item(0);
+      if ~isempty(origin)
+        if origin.hasAttribute('xyz')
+          xyz = reshape(parseParamString(model,robotnum,char(origin.getAttribute('xyz'))),3,1);
+        end
+        if origin.hasAttribute('rpy')
+          rpy = reshape(parseParamString(model,robotnum,char(origin.getAttribute('rpy'))),3,1);
+        end
+      end
+      obj = RigidBodyInertialMeasurementUnit(model,body_ind,xyz,rpy);
+    end    
+  end
+  
   properties
     body
     xyz

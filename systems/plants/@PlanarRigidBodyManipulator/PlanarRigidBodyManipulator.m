@@ -82,7 +82,11 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       if ~isfield(options,'visual_geometry') options.visual_geometry = true; end
       model = addRobotFromURDF@RigidBodyManipulator(model,urdf_filename,xyz,rpy,options);
       
-      if ~isfield(options,'q_nominal') options.q_nominal = zeros(getNumDOF(model),1); end
+      if ~isfield(options,'q_nominal') 
+        options.q_nominal = zeros(getNumDOF(model),1); 
+      else
+        error('not quite implemented yet.  need removeFixedJoint logic to reason about the non-zero joint transform instead of just Ttree for propagating points to the parent'); 
+      end
       kinsol = doKinematics(model,options.q_nominal);
 
       for i=1:length(model.body)
