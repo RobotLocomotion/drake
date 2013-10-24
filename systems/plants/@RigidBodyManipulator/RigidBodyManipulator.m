@@ -1372,18 +1372,13 @@ classdef RigidBodyManipulator < Manipulator
             end
           end
         end
-        
+                
         for j=1:length(model.loop)
-          if (model.loop(j).body1 == i)
-            model.loop(j).pt1 = body.Ttree(1:end-1,:)*[model.loop(j).pt1;1];
-            model.loop(j).body1 = body.parent;
-          end
-          if (model.loop(j).body2 == i)
-            model.loop(j).pt2 = body.Ttree(1:end-1,:)*[model.loop(j).pt2;1];
-            model.loop(j).body2 = body.parent;
-          end
+          model.loop(j) = updateForRemovedLink(model.loop(j),model,i);
         end
-        
+        for j=1:length(model.sensor)
+          model.sensor{j} = updateForRemovedLink(model.sensor{j},model,i);
+        end
         for j=1:length(model.force)
           model.force{j} = updateForRemovedLink(model.force{j},model,i);
         end
@@ -1771,16 +1766,14 @@ classdef RigidBodyManipulator < Manipulator
       map = [0,map];
       mapfun = @(i) map(i+1);
       
-      % todo: can i vectorize these (obj array access)
       for i=1:length(model.body)  
-        model.body(i).parent = mapfun(model.body(i).parent);
+        model.body(i) = updateBodyIndices(model.body(i),mapfun);
       end
       for i=1:length(model.actuator)
-        model.actuator(i).joint = mapfun(model.actuator(i).joint);
+        model.actuator(i) = updateBodyIndices(model.actuator(i),mapfun);
       end
       for i=1:length(model.loop)
-        model.loop(i).body1 = mapfun(model.loop(i).body1);
-        model.loop(i).body2 = mapfun(model.loop(i).body2);
+        model.loop(i) = updateBodyIndices(model.loop(i),mapfun);
       end
       for i=1:length(model.sensor)
         model.sensor{i} = updateBodyIndices(model.sensor{i},mapfun);

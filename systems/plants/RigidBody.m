@@ -1,4 +1,4 @@
-classdef RigidBody
+classdef RigidBody < RigidBodyElement
   
   properties 
     robotnum = 0;  % this body is associated with a particular robot/object number, named in model.name{objnum} 
@@ -36,8 +36,6 @@ classdef RigidBody
     effort_limit=[];
     velocity_limit=[];
     has_position_sensor=false;
-    
-    param_bindings=struct();   % structure containing msspoly parameterized representations of some properties
   end
   
   properties (Constant)
@@ -193,6 +191,10 @@ classdef RigidBody
       end
     end
     
+    % Note: bindParams and updateParams are copies of the methods in 
+    % RigidBodyElement (yuck!) because the RigidBodyElement version does 
+    % not have permissions to do the reflection on the protected properties 
+    % in this class.
     function body=bindParams(body,model,pval)
       fr = getParamFrame(model);
       pn = properties(body);
@@ -602,4 +604,10 @@ classdef RigidBody
       'Expected ''%s'', found ''%s''',collides_with_ref,collides_with);
     end
   end
+  
+  methods    
+    function obj = updateBodyIndices(obj,map_from_old_to_new)
+      obj.parent = map_from_old_to_new(obj.parent);
+    end
+  end  
 end

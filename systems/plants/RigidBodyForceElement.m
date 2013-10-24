@@ -1,4 +1,4 @@
-classdef RigidBodyForceElement
+classdef RigidBodyForceElement < RigidBodyElement
   
   properties 
     name
@@ -13,16 +13,6 @@ classdef RigidBodyForceElement
     %      + B(q,qd)*u 
     % to the manipulator dynamics
     [f_ext,B] = computeSpatialForce(obj,manip,q,qd)
-  end
-  
-  methods    
-    function obj = updateBodyIndices(obj,map_from_old_to_new)
-      % intentionally do nothing. overload if necessary
-    end
-    
-    function obj = updateForRemovedLink(obj,model,body_ind)
-      % intentionally do nothing. overload if necessary
-    end
   end
   
   methods (Static=true)

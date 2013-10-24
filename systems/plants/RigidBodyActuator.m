@@ -1,4 +1,4 @@
-classdef RigidBodyActuator
+classdef RigidBodyActuator < RigidBodyElement
 % trivial definition of the actuators allows us to define the mapping from 
 % input to joint torques  
  
@@ -12,4 +12,9 @@ classdef RigidBodyActuator
     reduction=1
   end
 
+  methods    
+    function obj = updateBodyIndices(obj,map_from_old_to_new)
+      obj.joint = map_from_old_to_new(obj.joint);
+    end
+  end
 end
