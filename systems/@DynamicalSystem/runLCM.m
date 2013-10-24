@@ -9,6 +9,11 @@ function runLCM(obj,x0,options)
 %  time (e.g. by sleeping).  set to '' to have no timekeeper.  @default 'drake/realtime'
 %  @option realtime_factor @default 1  (only guaranteed to work for
 %  drake/realtime timekeeper)
+%  @option input_sample_time sets the sample time of all lcm inputs.  can
+%  be any valid simulink sample time (e.g. [-1 0] for inherited).  
+%  @default .005  
+%  @option output_sample_time sets the publishing rate of any lcm outputs.  
+%  can be any valid simulink sample time (e.g. set to [-1 0] for inherited.)  @default .005
 
 if (nargin<2) x0=[]; end
 if (nargin<3) options = struct(); end
@@ -23,7 +28,9 @@ checkDependency('lcm');
 fin = obj.getInputFrame;
 fout = obj.getOutputFrame;
 if obj.getNumOutputs>0 && typecheck(fout,'LCMPublisher');
-  if (~isfield(options,'outchannel')) options.outchannel = fout.defaultChannel(); end
+  if ~isfield(options,'outchannel'), options.outchannel = fout.defaultChannel(); end
+  if ~isfield(options,'input_sample_time'), options.input_sample_time = [.005,0]; end
+  if ~isfield(options,'output_sample_time'), options.output_sample_time = [.005,0]; end
 end
 
 if (obj.getNumInputs>0 && getNumStates(obj)<1 && isa(fin,'LCMSubscriber')) 
@@ -73,12 +80,12 @@ else % otherwise set up the LCM blocks and run simulink.
   
   load_system('drake');
   if getNumInputs(obj)>0
-    setupLCMInputs(fin,mdl,'system',1);
+    setupLCMInputs(fin,mdl,'system',1,options);
   end
   % note: if obj has inputs, but no lcminput is specified, then it will just have the default input behavior (e.g. zeros)
   
   if getNumOutputs(obj)>0 && typecheck(fout,'LCMPublisher')
-    setupLCMOutputs(fout,mdl,'system',1);
+    setupLCMOutputs(fout,mdl,'system',1,options);
   end
 
   % add realtime block

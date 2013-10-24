@@ -29,7 +29,7 @@ function setup(block)
   block.OutputPort(1).DatatypeID  = 0; % double
   block.OutputPort(1).Complexity  = 'Real';
   
-  block.SampleTimes = [block.DialogPrm(4).Data,0];
+  block.SampleTimes = block.DialogPrm(4).Data;
   
   block.SimStateCompliance = 'DefaultSimState';
 

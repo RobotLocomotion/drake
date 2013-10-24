@@ -28,7 +28,7 @@ function setup(block)
   block.InputPort(1).DatatypeID  = 0; % double
   block.InputPort(1).Complexity  = 'Real';
   
-  block.SampleTimes = [block.DialogPrm(4).Data,1];
+  block.SampleTimes = block.DialogPrm(4).Data;
   
   block.SimStateCompliance = 'DefaultSimState';
   
