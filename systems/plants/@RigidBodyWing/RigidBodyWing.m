@@ -187,7 +187,7 @@ classdef RigidBodyWing < RigidBodyForceElement
               runfilepath = fullfile(tempdir, 'URDF.run');
 
               commandstring = sprintf('%s %s %s < %s > %s', avlpath, avlfilepath, runfilepath, commandfilepath, fullfile(tempdir,'avlScreenOutput.txt'));
-              result = system(commandstring);
+              result = systemWCMakeEnv(commandstring);
               
             catch E
               disp('Error running AVL.  Switching to Flat Plate.  Results likely inaccurate')
@@ -248,7 +248,7 @@ classdef RigidBodyWing < RigidBodyForceElement
               
               %system(sprintf('LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.6 %s < xfoilcommands.txt > xfoilCMDoutput.txt', xfoilpath));
               commandstring = sprintf('%s < %s > %s', xfoilpath, fullfile(tempdir,'xfoilcommands.txt'), fullfile(tempdir,'xfoilCMDoutput.txt'));
-              result = system(commandstring);
+              result = systemWCMakeEnv(commandstring);
               
               disp('Processing Xfoil output')
               xfoilresult = fopen(fullfile(tempdir,'xfoilPolar.txt'));
@@ -397,16 +397,17 @@ classdef RigidBodyWing < RigidBodyForceElement
       %cross(wingXZvelocity, wingYunit) rotates it by 90 degrees
       lift_world = ppvalSafe(obj.fCl,aoa, false, false)*airspeed*cross(wingvel_world, wingYunit);
       drag_world = ppvalSafe(obj.fCd,aoa, false, false)*airspeed*(-wingvel_world);
-      torque = -ppvalSafe(obj.fCm,aoa, false, false)*airspeed*airspeed*wingYunit;
+      torque_world = -ppvalSafe(obj.fCm,aoa, false, false)*airspeed*airspeed*wingYunit;
 
       % convert torque to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
-      torque = manip.body(obj.kinframe.body_ind).X_joint_to_body'*[torque;0;0;0];
+      torque_body = bodyKin(manip,kinsol,obj.kinframe.body_ind,[torque_world,zeros(3,1)]); torque_body = torque_body(:,1)-torque_body(:,2);
+      torque_joint = manip.body(obj.kinframe.body_ind).X_joint_to_body'*[torque_body;0;0;0];
       
       %inputs of point (body coordinates), and force (world coordinates)
       %returns [torque; xforce; yforce] in the body coordinates
       %obj.body.dofnum should have 6 elements for
       %linkID = manip.findLinkInd(obj.body.linkname, 0);
-      force(:,obj.kinframe.body_ind) = torque + ...
+      force(:,obj.kinframe.body_ind) = torque_joint + ...
         cartesianForceToSpatialForce(manip, kinsol, obj.kinframe.body_ind, obj.kinframe.T(1:3,4),lift_world+drag_world);
     end
         
