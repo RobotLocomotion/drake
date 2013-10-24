@@ -479,6 +479,9 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 
     } else { // no joint, this link is attached directly to the floating base
     	string jointname="base";
+        for (auto p : jointname_to_jointnum) {
+          cout << p.first << endl;
+        }
       map<string, int>::const_iterator jn=findWithSuffix(jointname_to_jointnum,jointname);
       //DEBUG
       //if (jn == jointname_to_jointnum.end()) {
@@ -948,10 +951,16 @@ URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
     	return NULL;
     }
 
-    string pathname;
-    boost::filesystem::path mypath(urdf_filename);
-    if (!mypath.empty() && mypath.has_parent_path())		// note: if you see a segfault on has_parent_path(), then you probably tried to load the model without a parent path. (it shouldn't segfault, but a workaround is to load the model with a parent path, e.g. ./FallingBrick.urdf instead of FallingBrick.urdf)
-      pathname = mypath.parent_path().native();
+    string pathname="";
+//    boost::filesystem::path mypath(urdf_filename);
+//    if (!mypath.empty() && mypath.has_parent_path())		// note: if you see a segfault on has_parent_path(), then you probably tried to load the model without a parent path. (it shouldn't segfault, but a workaround is to load the model with a parent path, e.g. ./FallingBrick.urdf instead of FallingBrick.urdf)
+//      pathname = mypath.parent_path().string();
+    // I got too many segfaults with boost.  Doing it the old school way...
+    size_t found = urdf_filename.find_last_of("/\\");
+    if (found != string::npos) {
+      pathname = urdf_filename.substr(0,found);
+      cout << "pathname = " << pathname << endl;
+    }
     
     // parse URDF to get model
     model->addURDFfromXML(xml_string,pathname);
