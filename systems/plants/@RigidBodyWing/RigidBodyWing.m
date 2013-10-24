@@ -399,11 +399,14 @@ classdef RigidBodyWing < RigidBodyForceElement
       drag_world = ppvalSafe(obj.fCd,aoa, false, false)*airspeed*(-wingvel_world);
       torque = -ppvalSafe(obj.fCm,aoa, false, false)*airspeed*airspeed*wingYunit;
 
+      % convert torque to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
+      torque = manip.body(obj.kinframe.body_ind).X_joint_to_body'*[torque;0;0;0];
+      
       %inputs of point (body coordinates), and force (world coordinates)
       %returns [torque; xforce; yforce] in the body coordinates
       %obj.body.dofnum should have 6 elements for
       %linkID = manip.findLinkInd(obj.body.linkname, 0);
-      force(:,obj.kinframe.body_ind) = [torque;0;0;0] + ...
+      force(:,obj.kinframe.body_ind) = torque + ...
         cartesianForceToSpatialForce(manip, kinsol, obj.kinframe.body_ind, obj.kinframe.T(1:3,4),lift_world+drag_world);
     end
         
