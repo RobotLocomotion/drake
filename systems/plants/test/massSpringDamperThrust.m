@@ -1,15 +1,16 @@
 function massSpringDamperThrust
 x0 = [1e-6;0];%needed to avoid a singularity in the solution
 run_time = 5;
-p = PlanarRigidBodyManipulator('MassSpringDamperThrust.urdf');
+
 utraj = PPTrajectory(foh([0 10],[15 15]));
+
+p = PlanarRigidBodyManipulator('MassSpringDamperThrust.urdf');
 utraj = utraj.setOutputFrame(p.getInputFrame());
 c = cascade(utraj,p);
 xtrajp = simulate(c,[0 run_time],x0);
 vp = p.constructVisualizer();
 vp.axis = [-5 5 -5 5];
 vp.playback(xtrajp);
-
 
 r = RigidBodyManipulator('MassSpringDamperThrust.urdf');
 utraj = utraj.setOutputFrame(r.getInputFrame());
@@ -29,4 +30,3 @@ for t=0.01:.5:run_time
 end
 
 end
-% NORELEASE
