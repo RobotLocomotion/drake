@@ -405,53 +405,8 @@ classdef RigidBodyWing < RigidBodyForceElement
       %linkID = manip.findLinkInd(obj.body.linkname, 0);
       force(:,obj.kinframe.body_ind) = [torque;0;0;0] + ...
         cartesianForceToSpatialForce(manip, kinsol, obj.kinframe.body_ind, obj.kinframe.T(1:3,4),lift_world+drag_world);
-%      force = computeSpatialForceOld(obj,manip,q,qd);
     end
-    
-     function force = computeSpatialForceOld(obj,manip,q,qd)
-       kinsol = doKinematics(manip,q, false, false);
-       %origin = [x z theta] of the reference point
-       [x,J] = forwardKin(manip,kinsol,obj.bodyind,obj.origin, 1);
-       %Check Gradients
-       %[xnum, Jnum] = geval(@forwardKin, manip,kinsol,obj.body,obj.origin(1:2), true);
-       v = J*qd;
-       %velocity of the wing (flight path) in WORLD coordinates
-       wingvel = v(1:3);  % assume still air. Air flow over the wing
-       %project this onto the XZ plane of the wing (ignores sideslip)
-       kinsolT = kinsol.T{obj.bodyind};
-       wingXunit = kinsolT(1:3,1:3)*[1 0 0]';
-       wingYunit = kinsolT(1:3,1:3)*[0 1 0]';
-       sideslip = dot(wingvel,wingYunit);
-       wingXZvelocity = wingvel-(sideslip*wingYunit);
-       airspeed = norm(wingXZvelocity);
-       %need the angle of attack from the wing's XZ velocity.  This is done
-       %by computing the angle between the velocity and the wing's X unit
-       %(forward facing) vector, then using a the cross product of these two
-       %to determine which direction this angle should be in. (Everything
-       %should be in world coordinates)
-       angVelandZ = acosd(dot(wingXunit,wingXZvelocity)/(norm(wingXunit)*norm(wingXZvelocity)));
-       aoa = angVelandZ * sign(dot(cross(wingXunit, wingXZvelocity),wingYunit));
-       % mod 360 so -180<AoA<180 Shouldn't be necessary because of acosd
-       if aoa>180
-         aoa = aoa-360*fix((aoa+180)/360);
-       elseif aoa<-180
-         aoa = aoa-360*fix((aoa-180)/360);
-       end
-       force = sparse(6,getNumBodies(manip));
-       %lift and drag are the forces on the body in the world frame.
-       %cross(wingXZvelocity, wingYunit) rotates it by 90 degrees
-       lift_world = ppvalSafe(obj.fCl,aoa, false, false)*airspeed*cross(wingXZvelocity, wingYunit);
-       drag_world = ppvalSafe(obj.fCd,aoa, false, false)*airspeed*-wingXZvelocity;
-       torque = -ppvalSafe(obj.fCm,aoa, false, false)*airspeed*airspeed*wingYunit;
-       %inputs of point (body coordinates), and force (world coordinates)
-       %returns [torque; xforce; yforce] in the body coordinates
-       %obj.body.dofnum should have 6 elements for
-       %linkID = manip.findLinkInd(obj.body.linkname, 0);
-       force(:,obj.bodyind) = [torque;0;0;0] + ...
-         cartesianForceToSpatialForce(manip, kinsol, obj.bodyind, obj.origin,lift_world+drag_world);
-     end
-    
-    
+        
     function [CL CD CM] = coeffs(AoA)
       %returns dimensionalized coefficient of lift, drag, and pitch moment for a
       %given angle of attack
@@ -502,6 +457,10 @@ classdef RigidBodyWing < RigidBodyForceElement
       nominal_speed = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
       
       obj = RigidBodyWing(profile, xyz, rpy, chord, span, stall_angle, nominal_speed, parent);
+      
+      name = char(node.getAttribute('name'));
+      name = regexprep(name, '\.', '_', 'preservecase');
+      obj.name = name;
     end
   end
   

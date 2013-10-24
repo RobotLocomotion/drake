@@ -1205,8 +1205,8 @@ classdef RigidBodyManipulator < Manipulator
         inputnames = {model.actuator.name};
       end
       for i = 1:length(model.force)
-        if model.force{i}.direct_feedthrough_flag
-          inputparents = [inputparents model.body(model.force{i}.bodyind)];
+        if isa(model.force{i},'RigidBodyThrust')
+          inputparents = [inputparents model.body(model.force{i}.kinframe.body_ind)];
           inputnames{end+1} = model.force{i}.name;
         end
       end
@@ -1265,12 +1265,18 @@ classdef RigidBodyManipulator < Manipulator
           m.Xtree{n+3} = eye(6);       % yaw
           m.Xtree{n+4} = Xrotx(-pi/2);  % pitch
           m.Xtree{n+5} = Xroty(pi/2)*Xrotx(pi/2);  % roll
-          valuecheck(b.X_joint_to_body,eye(6));  % if this isn't true, then I probably need to handle it better on the line below
-          b.X_joint_to_body = Xroty(-pi/2);
+
+%          valuecheck(b.X_joint_to_body,eye(6))); % if this isn't true, then I probably need to handle it better on the line below
+          % but I can't leave the check in because it is also very ugly because this method gets run potentially
+          % multiple times, and will update b each time! (so the test will
+          % fail on the second pass)
+          
+          b.X_joint_to_body = Xroty(-pi/2); 
           % note: this is a strange and ugly case where I have to let the
           % X_joint_to_body get out of sync with the T_body_to_joint, since
           % the kinematics believes one thing and the featherstone dynamics
           % believes another.
+          
           for j=0:4, m.I{n+j} = zeros(6); end
           m.I{n+5} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
           m.f_ext_map_to = [m.f_ext_map_to,n+5];
@@ -1739,19 +1745,24 @@ classdef RigidBodyManipulator < Manipulator
       name = char(node.getAttribute('name'));
       name = regexprep(name, '\.', '_', 'preservecase');
       
-      type = char(node.getAttribute('type'));
-      switch (lower(type))
-        case 'linearspringdamper'
-          fe = RigidBodySpringDamper.parseURDFNode(model,robotnum,node,options);
-        case 'wing'
-          fe = RigidBodyWing.parseURDFNode(model,robotnum,node,options);
-        case 'thrust'
-          fe = RigidBodyThrust.parseURDFNode(model,robotnum,node,options);
-        otherwise
-          error(['force element type ',type,' not supported (yet?)']);
+      childNodes = node.getChildNodes();
+      elnode = node.getElementsByTagName('linear_spring_damper').item(0);
+      if ~isempty(elnode)
+        fe = RigidBodySpringDamper.parseURDFNode(model,robotnum,elnode,options);
       end
-      model.force{end+1} = fe;
+      
+      elnode = node.getElementsByTagName('wing').item(0);
+      if ~isempty(elnode)
+        fe = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
+      elnode = node.getElementsByTagName('thrust').item(0);
+      if ~isempty(elnode)
+        fe = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
       fe.name = name;
+      model.force{end+1} = fe;
     end
     
     

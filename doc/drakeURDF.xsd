@@ -109,7 +109,7 @@ of the spring/damper with an (optional) pose specified relative to the coordinat
             </xs:element>
         </xs:sequence>
         <xs:attribute default="0" name="rest_length" type="xs:double"/>
-        <xs:attribute default="0" name="stiffnes" type="xs:double">
+        <xs:attribute default="0" name="stiffness" type="xs:double">
             <xs:annotation>
                 <xs:documentation>in Newtons per meter
 </xs:documentation>
@@ -178,19 +178,19 @@ Reynolds number around which we design the aerodynamic coefficients.</xs:documen
         </xs:attribute>
     </xs:complexType>
     <xs:complexType name="thrust">
-        <xs:sequence>
-            <xs:element name="parent" type="link_reference">
+        <xs:choice>
+            <xs:element name="parent" type="link_reference_w_pose">
                 <xs:annotation>
                     <xs:documentation>String naming the link on
 which the force will be applied.</xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="origin" type="pose">
+            <xs:element name="axis" type="axis" minOccurs="0" maxOccurs="1">
                 <xs:annotation>
-                    <xs:documentation>Designates the point (in link coordinates) where the force will be applied and direction (along the z axis after the rotation) </xs:documentation>
+                    <xs:documentation>The joint axis specified in the joint frame. This is the axis of rotation for revolute joints, the axis of translation for prismatic joints, and the surface normal for planar joints. The axis is specified in the joint frame of reference. Fixed and floating joints do not use the axis field. </xs:documentation>
                 </xs:annotation>
             </xs:element>
-        </xs:sequence>
+        </xs:choice>
         <xs:attribute default="-INF" name="lower_limit" type="xs:double"/>
         <xs:attribute default="INF" name="upper_limit" type="xs:double"/>
         <xs:attribute default="1" name="scale_factor" type="xs:double">
@@ -360,10 +360,9 @@ input to Newtons of force.</xs:documentation>
     </xs:complexType>
 
     <xs:complexType name="link_reference_w_pose">
-        <xs:sequence>
-            <xs:element minOccurs="0" name="origin" type="pose"/>
-        </xs:sequence>
         <xs:attribute name="link" type="xs:string" use="required"/>
+        <xs:attribute default="0 0 0" name="xyz" type="matlab_parameter_expression"/>
+        <xs:attribute default="0 0 0" name="rpy" type="matlab_parameter_expression"/>
     </xs:complexType>
 
     <xs:complexType name="axis">

@@ -59,6 +59,21 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
   methods (Static)
     function obj = parseURDFNode(model,robotnum,node,options)
       obj = RigidBodySpringDamper();
+      
+      name = char(node.getAttribute('name'));
+      name = regexprep(name, '\.', '_', 'preservecase');
+      obj.name = name;
+      
+      if node.hasAttribute('rest_length')
+        obj.rest_length = parseParamString(model,robotnum,char(node.getAttribute('rest_length')));
+      end
+      if node.hasAttribute('stiffness')
+        obj.k = parseParamString(model,robotnum,char(node.getAttribute('stiffness')));
+      end
+      if node.hasAttribute('damping')
+        obj.b = parseParamString(model,robotnum,char(node.getAttribute('damping')));
+      end
+      
       linkNode = node.getElementsByTagName('link1').item(0);
       obj.body1 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
       if linkNode.hasAttribute('xyz')
@@ -68,19 +83,6 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
       obj.body2 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
       if linkNode.hasAttribute('xyz')
         obj.pos2 = reshape(parseParamString(model,robotnum,char(linkNode.getAttribute('xyz'))),3,1);
-      end
-      
-      elnode = node.getElementsByTagName('rest_length').item(0);
-      if ~isempty(elnode) && elnode.hasAttribute('value')
-        obj.rest_length = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-      end
-      elnode = node.getElementsByTagName('stiffness').item(0);
-      if ~isempty(elnode) && elnode.hasAttribute('value')
-        obj.k = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-      end
-      elnode = node.getElementsByTagName('damping').item(0);
-      if ~isempty(elnode) && elnode.hasAttribute('value')
-        obj.b = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
       end
     end
   end
