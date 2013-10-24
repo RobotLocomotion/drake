@@ -441,20 +441,11 @@ classdef RigidBodyWing < RigidBodyForceElement
         end
       end
       
-      elNode = node.getElementsByTagName('profile').item(0);
-      profile = char(elNode.getAttribute('value'));
-      
-      elnode = node.getElementsByTagName('chord').item(0);
-      chord = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-      
-      elnode = node.getElementsByTagName('span').item(0);
-      span = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-      
-      elnode = node.getElementsByTagName('stall_angle').item(0);
-      stall_angle = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-      
-      elnode = node.getElementsByTagName('nominal_speed').item(0);
-      nominal_speed = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
+      profile = char(node.getAttribute('profile'));
+      chord = parseParamString(model,robotnum,char(node.getAttribute('chord')));
+      span = parseParamString(model,robotnum,char(node.getAttribute('span')));
+      stall_angle = parseParamString(model,robotnum,char(node.getAttribute('stall_angle')));
+      nominal_speed = parseParamString(model,robotnum,char(node.getAttribute('nominal_speed')));
       
       obj = RigidBodyWing(profile, xyz, rpy, chord, span, stall_angle, nominal_speed, parent);
       

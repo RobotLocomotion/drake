@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 
-<robot name="DoublePendWBicepSpring">
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="DoublePendWBicepSpring">
   <material name="green">
     <color rgba=".3 .6 .4 1" />
   </material>
@@ -54,11 +56,10 @@
     <dynamics damping="0" />
   </joint>
 
-  <force_element name="bicept" type="LinearSpringDamper">
-    <link1 link="upper_arm" xyz="0 0 -.5"/>
-    <link2 link="lower_arm" xyz="0 0 -.5"/>
-    <stiffness value="15" />
-    <damping value="5" />
-    <rest_length value="0" />
+  <force_element name="bicept">
+    <linear_spring_damper stiffness="15" damping="5" rest_length="0">
+      <link1 link="upper_arm" xyz="0 0 -.5"/>
+      <link2 link="lower_arm" xyz="0 0 -.5"/>
+    </linear_spring_damper>
   </force_element>
 </robot>

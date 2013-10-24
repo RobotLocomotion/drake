@@ -1,5 +1,7 @@
 <?xml version="1.0"?>
-<robot name="FourBar">
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="FourBar">
   <link name="base_link">
     <inertial>
         <mass value="1"/>
@@ -68,7 +70,7 @@
     <parent link="base_link"/>
     <child link="link_1"/>
     <origin rpy="0 0 0" xyz="0 0 2"/>    
-    <limit effort="100" velocity="100"/>
+    <limit effort="100"/>
   </joint>
 
   <joint name="joint_1" type="continuous">
@@ -88,12 +90,8 @@
 
   <loop_joint name="joint_3" type="continuous">
     <axis xyz="0 1 0"/>
-    <link1 link="link_3">
-      <origin rpy="0 0 0" xyz="0 0 5"/>
-    </link1>
-    <link2 link="base_link">
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-    </link2>
+    <link1 link="link_3" rpy="0 0 0" xyz="0 0 5"/>
+    <link2 link="base_link" rpy="0 0 0" xyz="0 0 0"/>
   </loop_joint>
 
   <transmission type="SimpleTransmission" name="joint_0_trans">

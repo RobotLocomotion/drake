@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 
-<robot name="CompassGait" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd"
+ xmlns:xacro="http://ros.org/wiki/xacro" name="CompassGait">
 
   <xacro:property name="mh" value="10" />
   <xacro:property name="m" value="5" />

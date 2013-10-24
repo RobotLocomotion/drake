@@ -58,11 +58,14 @@ classdef RigidBodyThrust < RigidBodyForceElement
       parent = findLinkInd(model,char(elnode.getAttribute('link')),robotnum);
       
       xyz = zeros(3,1); rpy = zeros(3,1);
-      if elnode.hasAttribute('xyz')
-        xyz = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('xyz'))),3,1);
-      end
-      if elnode.hasAttribute('rpy')
-        rpy = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('rpy'))),3,1);
+      elnode = node.getElementsByTagName('origin').item(0);
+      if ~isempty(elnode)
+        if elnode.hasAttribute('xyz')
+          xyz = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('xyz'))),3,1);
+        end
+        if elnode.hasAttribute('rpy')
+          rpy = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('rpy'))),3,1);
+        end
       end
       
       axis = [1; 0; 0];

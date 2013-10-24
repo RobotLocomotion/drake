@@ -1,5 +1,6 @@
-<robot
-  name="Test_Wing">
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="Test_Wing">
   <link
     name="Wing">
     <inertial>
@@ -38,13 +39,10 @@
       </geometry>
     </collision>
   </link>
-  <force_element name="Wing_force" type="wing"> 
-  	<parent link="Wing"/>
-  	<profile value="ht23.dat"/> 
-  	<origin xyz=".1 0 0"/> 
-  	<chord value=".4"/> 
-  	<span value="1"/> 
-  	<nominal_speed value="10"/> 
-    <stall_angle value ="12"/>
+  <force_element name="Wing_force">
+    <wing chord=".4" span="1" nominal_speed="10" stall_angle="12" profile="ht23.dat"> 
+    	<parent link="Wing"/>
+    	<origin xyz=".1 0 0"/>
+    </wing>
   </force_element>
 </robot>
