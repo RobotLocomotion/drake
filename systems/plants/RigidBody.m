@@ -337,7 +337,7 @@ classdef RigidBody < RigidBodyElement
       if ~isempty(geomnode)
         wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(geomnode,wrl_appearance_str,model,body.robotnum,options)];
         if (options.visual_geometry)
-          [xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,model,options);
+          [xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,model,body.robotnum,options);
           g.xyz = unique([xpts(:), ypts(:), zpts(:)],'rows','stable')';
           g.c = c;
           body.geometry = {body.geometry{:},g};

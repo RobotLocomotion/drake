@@ -45,11 +45,11 @@ if (n==2)
   x = T_3D_to_2D * x;
   if (nargout>1)
     nq = size(J,2);
-    J = reshape(T_3D_to_2D * reshape(J,n,m*nq),2*m,nq);
+    J = reshape(T_3D_to_2D * reshape(J,3,m*nq),2*m,nq);
+    if nargout>2
+      dJ = reshape(T_3D_to_2D * reshape(dJ,3,m*nq^2),2*m,nq^2);
+    end
   end
-  if nargout>2
-    error('dJ pruning not implemented yet. but should be easy enough');
-  end    
 end
 
 end

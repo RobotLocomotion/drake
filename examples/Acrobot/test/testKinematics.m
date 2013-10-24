@@ -2,10 +2,10 @@ function testKinematics
 
 m = PlanarRigidBodyManipulator('../Acrobot.urdf');
 b = getBody(m,1);
-b.contact_pts = randn(2,4);
+b.contact_pts = randn(3,4);
 m = setBody(m,1,b);
 b = getBody(m,2);
-b.contact_pts = randn(2,4);
+b.contact_pts = randn(3,4);
 m = setBody(m,2,b);
 m = compile(m);
 options.grad_method = {'user','taylorvar'};
