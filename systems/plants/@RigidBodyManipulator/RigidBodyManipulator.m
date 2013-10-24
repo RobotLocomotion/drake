@@ -530,7 +530,7 @@ classdef RigidBodyManipulator < Manipulator
       model = createMexPointer(model);
       model.dirty = false;
       
-      H = manipulatorDynamics(model,zeros(model.num_q,1),zeros(model.num_q,1));
+%      H = manipulatorDynamics(model,zeros(model.num_q,1),zeros(model.num_q,1));
 %      if cond(H)>1e3
 %        warning('Drake:RigidBodyManipulator:SingularH','H appears to be singular (cond(H)=%f).  Are you sure you have a well-defined model?',cond(H));
 %      end
@@ -1221,7 +1221,7 @@ classdef RigidBodyManipulator < Manipulator
         
     function [model,dof] = extractFeatherstone(model)
       % @ingroup Kinematic Tree
-
+      
       %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
       dof=0;inds=[];
       for i=1:length(model.body)
@@ -1245,6 +1245,7 @@ classdef RigidBodyManipulator < Manipulator
       n=1;
       m.f_ext_map_from = inds;  % size is length(model.body) output is index into NB, or zero
       m.f_ext_map_to = [];
+
       for i=1:length(inds) % number of links with parents
         b=model.body(inds(i));
         if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
@@ -1264,7 +1265,12 @@ classdef RigidBodyManipulator < Manipulator
           m.Xtree{n+3} = eye(6);       % yaw
           m.Xtree{n+4} = Xrotx(-pi/2);  % pitch
           m.Xtree{n+5} = Xroty(pi/2)*Xrotx(pi/2);  % roll
+          valuecheck(b.X_joint_to_body,eye(6));  % if this isn't true, then I probably need to handle it better on the line below
           b.X_joint_to_body = Xroty(-pi/2);
+          % note: this is a strange and ugly case where I have to let the
+          % X_joint_to_body get out of sync with the T_body_to_joint, since
+          % the kinematics believes one thing and the featherstone dynamics
+          % believes another.
           for j=0:4, m.I{n+j} = zeros(6); end
           m.I{n+5} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
           m.f_ext_map_to = [m.f_ext_map_to,n+5];
@@ -1379,16 +1385,7 @@ classdef RigidBodyManipulator < Manipulator
         end
         
         for j=1:length(model.force)
-          if isa(model.force{j},'RigidBodySpringDamper')
-            if (model.force{j}.body1 == i)
-              model.force{j}.pos1 = body.Ttree(1:end-1,:)*[model.force{j}.pos1;1];
-              model.force{j}.body1 = body.parent;
-            end
-            if (model.force{j}.body2 == i)
-              model.force{j}.pos2 = body.Ttree(1:end-1,:)*[model.force{j}.pos2;1];
-              model.force{j}.body2 = body.parent;
-            end
-          end
+          model.force{j} = updateForRemovedLink(model.force{j},model,i);
         end
           
         % remove actuators
@@ -1486,17 +1483,9 @@ classdef RigidBodyManipulator < Manipulator
     function model = parseSensor(model,robotnum,node,body_ind,options)
       switch char(node.getAttribute('type'))
         case 'imu'
-          xyz = zeros(3,1); rpy = zeros(3,1);
-          origin = node.getElementsByTagName('pose').item(0);  
-          if ~isempty(origin)
-            if origin.hasAttribute('xyz')
-              xyz = reshape(parseParamString(model,robotnum,char(origin.getAttribute('xyz'))),3,1);
-            end
-            if origin.hasAttribute('rpy')
-              rpy = reshape(parseParamString(model,robotnum,char(origin.getAttribute('rpy'))),3,1);
-            end
-          end
-          model = addSensor(model,RigidBodyInertialMeasurementUnit(model,body_ind,xyz,rpy));
+          model = addSensor(model,RigidBodyInertialMeasurementUnit.parseURDFNode(model,robotnum,node,body_ind,options));
+        otherwise
+          error(['sensor element type ',type,' not supported (yet?)']);
       end
     end
     
@@ -1758,98 +1747,16 @@ classdef RigidBodyManipulator < Manipulator
       type = char(node.getAttribute('type'));
       switch (lower(type))
         case 'linearspringdamper'
-          fe = RigidBodySpringDamper();
-          fe.name = name;
-          linkNode = node.getElementsByTagName('link1').item(0);
-          fe.body1 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
-          if linkNode.hasAttribute('xyz')
-            fe.pos1 = reshape(parseParamString(model,robotnum,char(linkNode.getAttribute('xyz'))),3,1);
-          end
-          linkNode = node.getElementsByTagName('link2').item(0);
-          fe.body2 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
-          if linkNode.hasAttribute('xyz')
-            fe.pos2 = reshape(parseParamString(model,robotnum,char(linkNode.getAttribute('xyz'))),3,1);
-          end
-          
-          elnode = node.getElementsByTagName('rest_length').item(0);
-          if ~isempty(elnode) && elnode.hasAttribute('value')
-            fe.rest_length = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-          end
-          elnode = node.getElementsByTagName('stiffness').item(0);
-          if ~isempty(elnode) && elnode.hasAttribute('value')
-            fe.k = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-          end
-          elnode = node.getElementsByTagName('damping').item(0);
-          if ~isempty(elnode) && elnode.hasAttribute('value')
-            fe.b = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-          end
-          model.force{end+1} = fe;
-          
+          fe = RigidBodySpringDamper.parseURDFNode(model,robotnum,node,options);
         case 'wing'
-          elNode = node.getElementsByTagName('parent').item(0);
-          parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
-          
-          xyz=zeros(3,1); rpy=zeros(3,1);
-          elnode = node.getElementsByTagName('origin').item(0);
-          if ~isempty(elnode)
-            if elnode.hasAttribute('xyz')
-              xyz = parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
-            end
-            if elnode.hasAttribute('rpy')
-              rpy = parseParamString(model,robotnum,char(elnode.getAttribute('rpy')));
-            end
-          end
-          
-          elNode = node.getElementsByTagName('profile').item(0);
-          profile = char(elNode.getAttribute('value'));
-
-          elnode = node.getElementsByTagName('chord').item(0);
-          chord = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-          
-          elnode = node.getElementsByTagName('span').item(0);
-          span = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-          
-          elnode = node.getElementsByTagName('stall_angle').item(0);
-          stall_angle = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-
-          elnode = node.getElementsByTagName('nominal_speed').item(0);
-          nominal_speed = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-          
-          fe = RigidBodyWing(profile, xyz', chord, span, stall_angle, nominal_speed, parent);
-          fe.name = name;
-          model.force{end+1} = fe;
+          fe = RigidBodyWing.parseURDFNode(model,robotnum,node,options);
         case 'thrust'
-          elNode = node.getElementsByTagName('parent').item(0);
-          parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
-          
-          elnode = node.getElementsByTagName('origin').item(0);
-          orig = parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
-          
-          elnode = node.getElementsByTagName('direction').item(0);
-          dir = parseParamString(model,robotnum,char(elnode.getAttribute('xyz')));
-          
-          scaleFac = 1;
-          elnode = node.getElementsByTagName('scaleFactor').item(0);
-          if ~isempty(elnode)
-            scaleFac = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-          end
-          
-          elnode = node.getElementsByTagName('limits').item(0);
-          if ~isempty(elnode)
-            limits = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
-          end
-          
-          if exist('limits')
-            th = RigidBodyThrust(parent, orig, dir, scaleFac, limits);
-          else
-              th = RigidBodyThrust(parent, orig, dir, scaleFac);
-          end
-          th.name = name;
-          model.force{end+1} = th;
+          fe = RigidBodyThrust.parseURDFNode(model,robotnum,node,options);
         otherwise
-            
           error(['force element type ',type,' not supported (yet?)']);
       end
+      model.force{end+1} = fe;
+      fe.name = name;
     end
     
     

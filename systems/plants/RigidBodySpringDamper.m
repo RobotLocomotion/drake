@@ -43,6 +43,46 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
       obj.body1 = map_from_old_to_new(obj.body1);
       obj.body2 = map_from_old_to_new(obj.body2);
     end
+    
+    function obj = updateForRemovedLink(obj,model,body_ind)
+      if (obj.body1 == body_ind)
+        obj.pos1 = model.body(body_ind).Ttree(1:3,:)*[obj.pos1;1];
+        obj.body1 = model.body(body_ind).parent;
+      end
+      if (obj.body2 == body_ind)
+        obj.pos2 = model.body(body_ind).Ttree(1:3,:)*[obj.pos2;1];
+        obj.body2 = model.body(body_ind).parent;
+      end
+    end
+  end
+  
+  methods (Static)
+    function obj = parseURDFNode(model,robotnum,node,options)
+      obj = RigidBodySpringDamper();
+      linkNode = node.getElementsByTagName('link1').item(0);
+      obj.body1 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
+      if linkNode.hasAttribute('xyz')
+        obj.pos1 = reshape(parseParamString(model,robotnum,char(linkNode.getAttribute('xyz'))),3,1);
+      end
+      linkNode = node.getElementsByTagName('link2').item(0);
+      obj.body2 = findLinkInd(model,char(linkNode.getAttribute('link')),robotnum);
+      if linkNode.hasAttribute('xyz')
+        obj.pos2 = reshape(parseParamString(model,robotnum,char(linkNode.getAttribute('xyz'))),3,1);
+      end
+      
+      elnode = node.getElementsByTagName('rest_length').item(0);
+      if ~isempty(elnode) && elnode.hasAttribute('value')
+        obj.rest_length = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
+      end
+      elnode = node.getElementsByTagName('stiffness').item(0);
+      if ~isempty(elnode) && elnode.hasAttribute('value')
+        obj.k = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
+      end
+      elnode = node.getElementsByTagName('damping').item(0);
+      if ~isempty(elnode) && elnode.hasAttribute('value')
+        obj.b = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
+      end
+    end
   end
 end
 

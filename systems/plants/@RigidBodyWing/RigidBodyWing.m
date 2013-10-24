@@ -1,8 +1,7 @@
 classdef RigidBodyWing < RigidBodyForceElement
 
   properties
-    bodyind    % RigidBody index
-    origin;  %xyz of the quarter-chord of the wing. 2x1 for planar, 3x1 for 3D
+    kinframe;  % RigidBodyFrame 
     fCl  % splines representing the *dimensional* coefficients
     fCd  %  with fCl = 1/2 rho*S*Cl, etc. (S=area)
     fCm
@@ -12,7 +11,7 @@ classdef RigidBodyWing < RigidBodyForceElement
   end
   
   methods
-    function obj = RigidBodyWing(profile, aero_origin, chord, span, stallAngle, velocity, parent_body, threeD)
+    function obj = RigidBodyWing(profile, aero_origin, rpy, chord, span, stallAngle, velocity, parent_body)
 %{
       %TODO:
       % Implement some values for post-stall CMs
@@ -52,6 +51,8 @@ classdef RigidBodyWing < RigidBodyForceElement
       %         quarter-chord point for flat plates, symmetric
       %         airfoils, and when you're not exactly sure of what it
       %         should be.
+      % @param rpy - roll pitch yaw (extrinsic) orientation for the wing
+      %         relative to the body frame.
       % @param chord = the chord of the wing (meters)
       % @param span = the wing span (width) of the wing (meters)
       % @param stallAngle = user-defined angle at which the wing
@@ -63,19 +64,11 @@ classdef RigidBodyWing < RigidBodyForceElement
       %        to the numerical solvers to generate appropriate CL and CD
       %        splines.
  %}
-      if (nargin<8)
-          threeD = true;
-      end
       %Check that parent_body is a RigidBody object.
       if ~isa(parent_body, 'numeric');
         error('Drake:RigidBodyWing:InvalidParent','Force Type Wing does not have a proper RigidBody parent');
       end
-      if threeD
-        obj.origin = reshape(aero_origin, 3, 1);
-      else
-        obj.origin = reshape(aero_origin, 2, 1);
-      end
-      obj.bodyind = parent_body;
+      obj.kinframe = RigidBodyFrame(parent_body,aero_origin,rpy);
       linux = isunix();
       obj.area = chord*span;
       mach = velocity/341;
@@ -150,13 +143,9 @@ classdef RigidBodyWing < RigidBodyForceElement
           avlfile = regexprep(avlfile, '\$area', sprintf('%.1f',obj.area));
           avlfile = regexprep(avlfile, '\$mach', sprintf('%.4f',mach));
           avlfile = regexprep(avlfile, '\$yle', sprintf('%.2f',span/2));
-          avlfile = regexprep(avlfile, '\$Xorig', sprintf('%.2f',obj.origin(1)));
-          if threeD
-            avlfile = regexprep(avlfile, '\$Yorig', sprintf('%.2f',obj.origin(2)));
-          else
-            avlfile = regexprep(avlfile, '\$Yorig', sprintf('%.2f',0));
-          end
-          avlfile = regexprep(avlfile, '\$Zorig', sprintf('%.2f',obj.origin(end)));
+          avlfile = regexprep(avlfile, '\$Xorig', sprintf('%.2f',0));
+          avlfile = regexprep(avlfile, '\$Yorig', sprintf('%.2f',0));
+          avlfile = regexprep(avlfile, '\$Zorig', sprintf('%.2f',0));
           avlid = fopen(fullfile(tempdir,'URDF.avl'), 'w');
           fprintf(avlid, avlfile);
     end %prepAvlFile()
@@ -381,48 +370,88 @@ classdef RigidBodyWing < RigidBodyForceElement
     end %constructor
 
     function force = computeSpatialForce(obj,manip,q,qd)
-      kinsol = doKinematics(manip,q, false, false);
+      kinsol = doKinematics(manip,q);
       %origin = [x z theta] of the reference point
-      [x,J] = forwardKin(manip,kinsol,obj.bodyind,obj.origin, 1);
-      %Check Gradients
-      %[xnum, Jnum] = geval(@forwardKin, manip,kinsol,obj.body,obj.origin(1:2), true);
-      v = J*qd;
-      %velocity of the wing (flight path) in WORLD coordinates
-      wingvel = v(1:3);  % assume still air. Air flow over the wing
+      [~,J] = forwardKin(obj.kinframe,manip,kinsol,zeros(3,1));
+      wingvel_world = J*qd; % assume still air. Air flow over the wing
+
       %project this onto the XZ plane of the wing (ignores sideslip)
-      kinsolT = kinsol.T{obj.bodyind};
-      wingXunit = kinsolT(1:3,1:3)*[1 0 0]';
-      wingYunit = kinsolT(1:3,1:3)*[0 1 0]';
-      sideslip = dot(wingvel,wingYunit);
-      wingXZvelocity = wingvel-(sideslip*wingYunit);
-      airspeed = norm(wingXZvelocity);
-      %need the angle of attack from the wing's XZ velocity.  This is done
-      %by computing the angle between the velocity and the wing's X unit
-      %(forward facing) vector, then using a the cross product of these two
-      %to determine which direction this angle should be in. (Everything
-      %should be in world coordinates)
-      angVelandZ = acosd(dot(wingXunit,wingXZvelocity)/(norm(wingXunit)*norm(wingXZvelocity)));
-      aoa = angVelandZ * sign(dot(cross(wingXunit, wingXZvelocity),wingYunit));
+      wingYunit = forwardKin(obj.kinframe,manip,kinsol,[0 0; 1 0; 0 0]); wingYunit = wingYunit(:,1)-wingYunit(:,2);
+      sideslip = dot(wingvel_world,wingYunit);
+      wingvel_world = wingvel_world - sideslip*wingYunit;
+      
+      wingvel_rel = frameKin(obj.kinframe,manip,kinsol,[wingvel_world,zeros(3,1)]); wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
+      airspeed = norm(wingvel_world);
+      aoa = -(180/pi)*atan2(wingvel_rel(3),wingvel_rel(1));
+      
       % mod 360 so -180<AoA<180 Shouldn't be necessary because of acosd
       if aoa>180
         aoa = aoa-360*fix((aoa+180)/360);
       elseif aoa<-180
         aoa = aoa-360*fix((aoa-180)/360);
       end
+      
       force = sparse(6,getNumBodies(manip));
+      
       %lift and drag are the forces on the body in the world frame.
       %cross(wingXZvelocity, wingYunit) rotates it by 90 degrees
-      lift_world = ppvalSafe(obj.fCl,aoa, false, false)*airspeed*cross(wingXZvelocity, wingYunit);
-      drag_world = ppvalSafe(obj.fCd,aoa, false, false)*airspeed*-wingXZvelocity;
+      lift_world = ppvalSafe(obj.fCl,aoa, false, false)*airspeed*cross(wingvel_world, wingYunit);
+      drag_world = ppvalSafe(obj.fCd,aoa, false, false)*airspeed*(-wingvel_world);
       torque = -ppvalSafe(obj.fCm,aoa, false, false)*airspeed*airspeed*wingYunit;
+
       %inputs of point (body coordinates), and force (world coordinates)
       %returns [torque; xforce; yforce] in the body coordinates
       %obj.body.dofnum should have 6 elements for
       %linkID = manip.findLinkInd(obj.body.linkname, 0);
-      force(:,obj.bodyind) = [torque;0;0;0] + ...
-        cartesianForceToSpatialForce(manip, kinsol, obj.bodyind, obj.origin,lift_world+drag_world);
-      force;
+      force(:,obj.kinframe.body_ind) = [torque;0;0;0] + ...
+        cartesianForceToSpatialForce(manip, kinsol, obj.kinframe.body_ind, obj.kinframe.T(1:3,4),lift_world+drag_world);
+%      force = computeSpatialForceOld(obj,manip,q,qd);
     end
+    
+     function force = computeSpatialForceOld(obj,manip,q,qd)
+       kinsol = doKinematics(manip,q, false, false);
+       %origin = [x z theta] of the reference point
+       [x,J] = forwardKin(manip,kinsol,obj.bodyind,obj.origin, 1);
+       %Check Gradients
+       %[xnum, Jnum] = geval(@forwardKin, manip,kinsol,obj.body,obj.origin(1:2), true);
+       v = J*qd;
+       %velocity of the wing (flight path) in WORLD coordinates
+       wingvel = v(1:3);  % assume still air. Air flow over the wing
+       %project this onto the XZ plane of the wing (ignores sideslip)
+       kinsolT = kinsol.T{obj.bodyind};
+       wingXunit = kinsolT(1:3,1:3)*[1 0 0]';
+       wingYunit = kinsolT(1:3,1:3)*[0 1 0]';
+       sideslip = dot(wingvel,wingYunit);
+       wingXZvelocity = wingvel-(sideslip*wingYunit);
+       airspeed = norm(wingXZvelocity);
+       %need the angle of attack from the wing's XZ velocity.  This is done
+       %by computing the angle between the velocity and the wing's X unit
+       %(forward facing) vector, then using a the cross product of these two
+       %to determine which direction this angle should be in. (Everything
+       %should be in world coordinates)
+       angVelandZ = acosd(dot(wingXunit,wingXZvelocity)/(norm(wingXunit)*norm(wingXZvelocity)));
+       aoa = angVelandZ * sign(dot(cross(wingXunit, wingXZvelocity),wingYunit));
+       % mod 360 so -180<AoA<180 Shouldn't be necessary because of acosd
+       if aoa>180
+         aoa = aoa-360*fix((aoa+180)/360);
+       elseif aoa<-180
+         aoa = aoa-360*fix((aoa-180)/360);
+       end
+       force = sparse(6,getNumBodies(manip));
+       %lift and drag are the forces on the body in the world frame.
+       %cross(wingXZvelocity, wingYunit) rotates it by 90 degrees
+       lift_world = ppvalSafe(obj.fCl,aoa, false, false)*airspeed*cross(wingXZvelocity, wingYunit);
+       drag_world = ppvalSafe(obj.fCd,aoa, false, false)*airspeed*-wingXZvelocity;
+       torque = -ppvalSafe(obj.fCm,aoa, false, false)*airspeed*airspeed*wingYunit;
+       %inputs of point (body coordinates), and force (world coordinates)
+       %returns [torque; xforce; yforce] in the body coordinates
+       %obj.body.dofnum should have 6 elements for
+       %linkID = manip.findLinkInd(obj.body.linkname, 0);
+       force(:,obj.bodyind) = [torque;0;0;0] + ...
+         cartesianForceToSpatialForce(manip, kinsol, obj.bodyind, obj.origin,lift_world+drag_world);
+     end
+    
+    
     function [CL CD CM] = coeffs(AoA)
       %returns dimensionalized coefficient of lift, drag, and pitch moment for a
       %given angle of attack
@@ -430,10 +459,50 @@ classdef RigidBodyWing < RigidBodyForceElement
       CD = ppval(obj.fCd, AoA);
       CM = ppval(obj.fCm, AoA);
     end
+    
     function obj = updateBodyIndices(obj,map_from_old_to_new)
-      obj.bodyind = map_from_old_to_new(obj.bodyind);
+      obj.kinframe = updateBodyIndices(obj.kinframe,map_from_old_to_new);
     end
     
+    function obj = updateForRemovedLink(obj,model,body_ind)
+      obj.kinframe = updateForRemovedLink(obj.kinframe,model,body_ind);
+    end
+  end
+  
+  methods (Static)
+    function obj = parseURDFNode(model,robotnum,node,options)
+      elNode = node.getElementsByTagName('parent').item(0);
+      parent = findLinkInd(model,char(elNode.getAttribute('link')),robotnum);
+      
+      xyz=zeros(3,1); rpy=zeros(3,1);
+      elnode = node.getElementsByTagName('origin').item(0);
+      if ~isempty(elnode)
+        if elnode.hasAttribute('xyz')
+          xyz = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('xyz'))),3,1);
+        end
+        if elnode.hasAttribute('rpy')
+          rpy = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('rpy'))),3,1);
+          if any(rpy), error('rpy not implemented yet for wings'); end
+        end
+      end
+      
+      elNode = node.getElementsByTagName('profile').item(0);
+      profile = char(elNode.getAttribute('value'));
+      
+      elnode = node.getElementsByTagName('chord').item(0);
+      chord = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
+      
+      elnode = node.getElementsByTagName('span').item(0);
+      span = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
+      
+      elnode = node.getElementsByTagName('stall_angle').item(0);
+      stall_angle = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
+      
+      elnode = node.getElementsByTagName('nominal_speed').item(0);
+      nominal_speed = parseParamString(model,robotnum,char(elnode.getAttribute('value')));
+      
+      obj = RigidBodyWing(profile, xyz, rpy, chord, span, stall_angle, nominal_speed, parent);
+    end
   end
   
 end
