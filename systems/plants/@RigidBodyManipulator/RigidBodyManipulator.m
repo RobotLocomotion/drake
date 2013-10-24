@@ -1648,6 +1648,7 @@ classdef RigidBodyManipulator < Manipulator
           end
         end
         if ~options.ignore_friction && dynamics.hasAttribute('stiction')
+          warning('RigidBodyManipulator:  stiction is not supported yet.');
           static_friction = parseParamString(model,robotnum,char(dynamics.getAttribute('stiction')));
           if static_friction < 0
             error('RigidBodyManipulator: static_friction must be >= 0');
