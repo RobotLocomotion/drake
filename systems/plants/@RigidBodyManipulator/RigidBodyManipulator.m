@@ -1686,6 +1686,7 @@ classdef RigidBodyManipulator < Manipulator
           effort_limit = parseParamString(model,robotnum,char(limits.getAttribute('effort')));
         end
         if limits.hasAttribute('velocity');
+          warning('RigidBodyManipulator: velocity limits are not supported yet');
           velocity_limit = parseParamString(model,robotnum,char(limits.getAttribute('velocity')));
         end
       end
