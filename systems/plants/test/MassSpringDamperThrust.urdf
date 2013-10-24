@@ -40,7 +40,8 @@
   </force_element>
   <force_element name="external_force">
     <thrust lower_limit="0" upper_limit="50" scale_factor="1">
-      <parent link="mass" xyz="0 0 0"/>
+      <parent link="mass"/>
+      <origin xyz="0 0 0"/>
       <axis xyz="1 0 0"/>
     </thrust>
   </force_element>

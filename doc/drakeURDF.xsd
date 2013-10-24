@@ -37,7 +37,7 @@ or
         </xs:attribute>
     </xs:complexType>
     <xs:complexType name="loop_joint">
-        <xs:sequence>
+        <xs:all>
             <xs:element name="link1" type="link_reference_w_pose" maxOccurs="1" minOccurs="1">
                 <xs:annotation>
                     <xs:documentation>String naming the link on one side of
@@ -51,7 +51,7 @@ the joint.</xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element minOccurs="0" name="axis" type="axis" maxOccurs="1"/>
-        </xs:sequence>
+        </xs:all>
         <xs:attribute name="name" type="xs:string" use="required"/>
         <xs:attribute fixed="continuous" name="type" type="xs:string" use="optional">
             <xs:annotation>
@@ -94,7 +94,7 @@ feet of an Atlas robot to make Iron Man.</xs:documentation>
     </xs:complexType>
 
     <xs:complexType name="linear_spring_damper">
-        <xs:sequence>
+        <xs:all>
             <xs:element name="link1" type="link_reference_w_pose">
                 <xs:annotation>
                     <xs:documentation>String naming the link on one side
@@ -107,7 +107,7 @@ of the spring/damper with an (optional) pose specified relative to the coordinat
 of the spring/damper with an (optional) pose specified relative to the coordinate system on the link</xs:documentation>
                 </xs:annotation>
             </xs:element>
-        </xs:sequence>
+        </xs:all>
         <xs:attribute default="0" name="rest_length" type="xs:double"/>
         <xs:attribute default="0" name="stiffness" type="xs:double">
             <xs:annotation>
@@ -122,14 +122,14 @@ of the spring/damper with an (optional) pose specified relative to the coordinat
         </xs:attribute>
     </xs:complexType>
     <xs:complexType name="wing">
-        <xs:sequence>
+        <xs:all>
             <xs:element name="parent" type="link_reference">
                 <xs:annotation>
                     <xs:documentation>String naming the link on which
 this wing is attached.</xs:documentation>
                 </xs:annotation>
             </xs:element>
-            <xs:element name="origin" type="pose">
+            <xs:element name="origin" type="pose" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>This defines the position of
 the quarter-chord point of the airfoil, since that is the reference point
@@ -137,7 +137,7 @@ used for the moment coefficient. RPY support has been excluded, requiring
 the axes of the airfoil to line up with those of its parent body.</xs:documentation>
                 </xs:annotation>
             </xs:element>
-        </xs:sequence>
+        </xs:all>
         <xs:attribute name="profile" type="xs:string">
             <xs:annotation>
                 <xs:documentation>one of the following
@@ -178,8 +178,8 @@ Reynolds number around which we design the aerodynamic coefficients.</xs:documen
         </xs:attribute>
     </xs:complexType>
     <xs:complexType name="thrust">
-        <xs:choice>
-            <xs:element name="parent" type="link_reference_w_pose">
+        <xs:all>
+            <xs:element name="parent" type="link_reference">
                 <xs:annotation>
                     <xs:documentation>String naming the link on
 which the force will be applied.</xs:documentation>
@@ -190,7 +190,15 @@ which the force will be applied.</xs:documentation>
                     <xs:documentation>The joint axis specified in the joint frame. This is the axis of rotation for revolute joints, the axis of translation for prismatic joints, and the surface normal for planar joints. The axis is specified in the joint frame of reference. Fixed and floating joints do not use the axis field. </xs:documentation>
                 </xs:annotation>
             </xs:element>
-        </xs:choice>
+            <xs:element name="origin" type="pose" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>This defines the position of
+the quarter-chord point of the airfoil, since that is the reference point
+used for the moment coefficient. RPY support has been excluded, requiring
+the axes of the airfoil to line up with those of its parent body.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
         <xs:attribute default="-INF" name="lower_limit" type="xs:double"/>
         <xs:attribute default="INF" name="upper_limit" type="xs:double"/>
         <xs:attribute default="1" name="scale_factor" type="xs:double">
@@ -225,12 +233,12 @@ input to Newtons of force.</xs:documentation>
     </xs:complexType>
 
     <xs:complexType name="inertia">
-        <xs:attribute name="ixx" type="xs:double" default="0"/>
-        <xs:attribute name="ixy" type="xs:double" default="0"/>
-        <xs:attribute name="ixz" type="xs:double" default="0"/>
-        <xs:attribute name="iyy" type="xs:double" default="0"/>
-        <xs:attribute name="iyz" type="xs:double" default="0"/>
-        <xs:attribute name="izz" type="xs:double" default="0"/>
+        <xs:attribute name="ixx" type="matlab_parameter_expression" default="0"/>
+        <xs:attribute name="ixy" type="matlab_parameter_expression" default="0"/>
+        <xs:attribute name="ixz" type="matlab_parameter_expression" default="0"/>
+        <xs:attribute name="iyy" type="matlab_parameter_expression" default="0"/>
+        <xs:attribute name="iyz" type="matlab_parameter_expression" default="0"/>
+        <xs:attribute name="izz" type="matlab_parameter_expression" default="0"/>
     </xs:complexType>
 
     <xs:complexType name="inertial">
@@ -304,7 +312,7 @@ input to Newtons of force.</xs:documentation>
     </xs:complexType>
 
     <xs:complexType name="visual">
-        <xs:sequence>
+        <xs:all>
             <xs:element name="origin" type="pose" minOccurs="0" maxOccurs="1"/>
             <xs:element name="geometry" type="geometry" minOccurs="1" maxOccurs="1">
                 <xs:annotation>
@@ -316,15 +324,16 @@ input to Newtons of force.</xs:documentation>
                     <xs:documentation>The material of the visual element. It is allowed to specify a material element outside of the 'link' object, in the top level 'robot' element. From within a link element you can then reference the material by name. </xs:documentation>
                 </xs:annotation>
             </xs:element>
-        </xs:sequence>
+        </xs:all>
     </xs:complexType>
 
     <xs:complexType name="collision">
-        <xs:sequence>
+        <xs:all>
             <xs:element name="origin" type="pose" minOccurs="0" maxOccurs="1"/>
             <xs:element name="geometry" type="geometry" minOccurs="1" maxOccurs="1"/>
-        </xs:sequence>
+        </xs:all>
         <xs:attribute name="name" type="xs:string"/>
+        <xs:attribute name="group" type="xs:string"/>
     </xs:complexType>
 
     <xs:complexType name="link">
@@ -352,6 +361,11 @@ input to Newtons of force.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
 
+        <xs:attribute default="false" name="drake_ignore" type="xs:boolean">
+            <xs:annotation>
+                <xs:documentation>set to true to instruct the drake parser to skip this link</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
     </xs:complexType>
 
 
@@ -366,29 +380,32 @@ input to Newtons of force.</xs:documentation>
     </xs:complexType>
 
     <xs:complexType name="axis">
-        <xs:attribute name="xyz" type="xs:string" default="1 0 0"/>
+        <xs:attribute name="xyz" type="matlab_parameter_expression" default="1 0 0"/>
     </xs:complexType>
 
     <xs:complexType name="dynamics">
-        <xs:attribute name="damping" type="xs:double" default="0">
+        <xs:attribute name="damping" type="matlab_parameter_expression" default="0">
             <xs:annotation>
                 <xs:documentation>The physical damping value of the joint</xs:documentation>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="friction" type="matlab_parameter_expression"/>
+        <xs:attribute name="stiction" type="matlab_parameter_expression"/>
+        <xs:attribute name="coulomb_window" type="matlab_parameter_expression"/>
     </xs:complexType>
 
     <xs:complexType name="limit">
-        <xs:attribute name="lower" type="xs:double" default="0">
+        <xs:attribute name="lower" type="matlab_parameter_expression" default="0">
             <xs:annotation>
                 <xs:documentation>An attribute specifying the lower joint limit (radians for revolute joints, meters for prismatic joints). Omit if joint is continuous.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="upper" type="xs:double" default="0">
+        <xs:attribute name="upper" type="matlab_parameter_expression" default="0">
             <xs:annotation>
                 <xs:documentation>An attribute specifying the upper joint limit (radians for revolute joints, meters for prismatic joints). Omit if joint is continuous. </xs:documentation>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="effort" type="xs:double" default="0">
+        <xs:attribute name="effort" type="matlab_parameter_expression" default="0">
             <xs:annotation>
                 <xs:documentation>An attribute for enforcing the maximum joint effort</xs:documentation>
             </xs:annotation>
@@ -438,6 +455,11 @@ input to Newtons of force.</xs:documentation>
             </xs:annotation>
         </xs:attribute>
         <xs:attribute default="1" name="has_position_sensor" type="xs:boolean" use="optional"/>
+        <xs:attribute default="false" name="drake_ignore" type="xs:boolean">
+            <xs:annotation>
+                <xs:documentation>set to true to instruct the drake parser to skip this link</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
     </xs:complexType>
 
     <xs:complexType name="joint_reference">
@@ -544,13 +566,13 @@ yet. (see bug 921)</xs:documentation>
             <xs:documentation>Provides a means to exclude certain pairs of bodies from collision detec- tion and closest distance computations. A collision filter group can contain one or more links, and a link may belong to any number of collision filter groups. One collision filter group can ignore another, in which case pairs of bodies with one element from each group are skipped when performing the aforementioned computations.</xs:documentation>
         </xs:annotation>
         <xs:all>
-            <xs:element name="member" type="link_reference">
+            <xs:element name="member" type="link_reference" maxOccurs="unbounded" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>Specifies that a link belongs to this collision filter group.</xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element name="ignored_collision_filter_group"
-                type="collision_filter_group_reference">
+                type="collision_filter_group_reference" maxOccurs="unbounded" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>Specifies that collisions between members of this collision filter group and those of another collision filter group should be ignored.</xs:documentation>
                 </xs:annotation>

@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 
-<robot name="Acrobot">
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="Acrobot">
 
   <link name="base_link">
     <visual>
@@ -69,20 +71,20 @@
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
 
-  <force_element name="MyUpperThrust" type="thrust">
-    <parent link="upper_link"/>
-    <origin xyz="0 0 -1"/>
-    <direction xyz="-1 0 1"/>
-    <scaleFactor value ="1"/>
-    <limits value="0 255"/>
+  <force_element name="MyUpperThrust">
+    <thrust lower_limit="0" upper_limit="255" scale_factor="1">
+      <parent link="upper_link"/>
+      <origin xyz="0 0 -1"/>
+      <axis xyz="-1 0 1"/>
+    </thrust>
   </force_element>
 
-  <force_element name="MyLowerThrust" type="thrust">
-    <parent link="lower_link"/>
-    <origin xyz="0 0 -.5"/>
-    <direction xyz="0 0 -1"/>
-    <scaleFactor value ="1"/>
-    <limits value="0 255"/>
+  <force_element name="MyLowerThrust">
+    <thrust lower_limit="0" upper_limit="255" scale_factor="1">
+      <parent link="lower_link"/>
+      <origin xyz="0 0 -.5"/>
+      <axis xyz="0 0 -1"/>
+    </thrust>
   </force_element>
 
 </robot>

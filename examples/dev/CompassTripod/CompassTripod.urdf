@@ -1,6 +1,8 @@
 <?xml version="1.0" ?>
 
-<robot name="CompassTripod">
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="CompassTripod">
   <link name="ground" />
 
   <link name="oleg"> 
