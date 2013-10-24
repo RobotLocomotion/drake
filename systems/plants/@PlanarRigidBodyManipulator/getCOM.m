@@ -1,40 +1,19 @@
 function [com,J,dJ] = getCOM(model,kinsol)
 
-if ~isstruct(kinsol)  
-  % treat input as getCOM(model,q)
-  kinsol = doKinematics(model,kinsol,nargin<2);
+% see getCOM in RigidBodyManipulator for more info
+
+if nargout>2
+  [com,J,dJ] = getCOM@RigidBodyManipulator(model,kinsol);
+elseif nargout>1
+  [com,J] = getCOM@RigidBodyManipulator(model,kinsol);
+else
+  com = getCOM@RigidBodyManipulator(model,kinsol);
 end
 
-% todo: implement getCOM in mex (like in RigidBodyManipulator)
-
-nq=getNumDOF(model);
-
-% return center of mass for the entire model
-m=0;
-d = 2;
-com = zeros(d,1);
-if (nargout>1)
-  J = zeros(d,nq);
-end
-
-dJ = zeros(d,nq^2);
-for i=1:length(model.body)
-  bm = model.body(i).mass;
-  if (bm>0)
-    bc = model.body(i).com;
-    if (nargout>2)
-      [bc,bJ,bdJ] = forwardKin(model,kinsol,i,bc);
-      J = (m*J + bm*bJ)/(m+bm);
-      dJ = (m*dJ + bm*bdJ)/(m+bm);
-    elseif (nargout>1)
-      [bc,bJ] = forwardKin(model,kinsol,i,bc);
-      J = (m*J + bm*bJ)/(m+bm);
-    else
-      bc = forwardKin(model,kinsol,i,bc);
-    end
-    com = (m*com + bm*bc)/(m+bm);
-    m = m + bm;
+com = model.T_2D_to_3D'*com;
+if nargout>1
+  J = model.T_2D_to_3D'*J;
+  if nargout>2
+    error('need to implement dJ');
   end
-end
-
 end

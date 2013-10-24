@@ -79,21 +79,30 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       if nargin<4, rpy = zeros(3,1); end
       if nargin<5, options=struct(); end
       
+      if ~isfield(options,'visual_geometry') options.visual_geometry = true; end
       model = addRobotFromURDF@RigidBodyManipulator(model,urdf_filename,xyz,rpy,options);
       
       if ~isfield(options,'q_nominal') options.q_nominal = zeros(getNumDOF(model),1); end
       kinsol = doKinematics(model,options.q_nominal);
 
-      % weld all joints that are not aligned with the view axis
       for i=1:length(model.body)
-        b = model.body(i);
-        if ~b.parent, continue; end
-        assert(b.floating == 0,'Drake:PlanarRigidBodyManipulator','Shouldn''t get here.  Planar models should only have RPY floating bases, which are added as individual joints');
+        body = model.body(i);
         
-        view_axis_in_joint_frame = b.T_body_to_joint * [bodyKin(model,kinsol,i,[model.view_axis,zeros(3,1)]); 1,1];
+        %% cleanup 3D geometry for 2D
+        for j=1:length(body.geometry)
+          pts = model.T_2D_to_3D'*forwardKin(model,kinsol,i,body.geometry{j}.xyz);
+          ind = convhull(pts(1,:),pts(2,:));
+          model.body(i).geometry{j}.xyz = model.body(i).geometry{j}.xyz(:,ind);
+        end
+        
+        %% weld all joints that are not aligned with the view axis
+        if ~body.parent, continue; end
+        assert(body.floating == 0,'Drake:PlanarRigidBodyManipulator','Shouldn''t get here.  Planar models should only have RPY floating bases, which are added as individual joints');
+        
+        view_axis_in_joint_frame = body.T_body_to_joint * [bodyKin(model,kinsol,i,[model.view_axis,zeros(3,1)]); 1,1];
         view_axis_in_joint_frame = view_axis_in_joint_frame(1:3,1)-view_axis_in_joint_frame(1:3,2);
 
-        if isinf(b.pitch) % then it's a prismatic joint
+        if isinf(body.pitch) % then it's a prismatic joint
           if abs(dot(view_axis_in_joint_frame,[0;0;1]))>1e-6
             model.body(i).pitch = nan;  % weld joint
           end
@@ -128,11 +137,19 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       end
     end
     
-  end
-  
-  methods (Static)
-    function t=surfaceTangents(normal)
-      %% compute a tangent vector, t
+    function t=surfaceTangents(obj,normal)
+      % Follows surfaceTangents in RigidBodyManipulator, but produces only
+      % a single tangent for each normal (instead of m), and restricts this
+      % to the x-y plane.
+      
+      normal = obj.T_2D_to_3D'*normal;
+
+      % if the normal is [0;0] (because it was aligned with the viewing
+      % access), then just set it arbitrarily to [0;1] because I want to
+      % treat it as contact, but still avoid the singularity.
+      zeroind = sum(normal.^2,1)<1e-6;
+      normal(1,zeroind)=0; normal(2,zeroind)=1;
+      
       % for each n, it looks like:
       % if (abs(normal(2))>abs(normal(1))) t = [1,-n(1)/n(2)];
       % else t = [-n(2)/n(1),1]; end
@@ -142,7 +159,8 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       t(:,ind) = [ones(1,sum(ind));-normal(1,ind)./normal(2,ind)];
       ind=~ind;
       t(:,ind) = [-normal(2,ind)./normal(1,ind); ones(1,sum(ind))];
-      t = {t./repmat(sqrt(sum(t.^2,1)),2,1)}; % normalize
+      t = t./repmat(sqrt(sum(t.^2,1)),2,1); % normalize
+      t = {obj.T_2D_to_3D*t};
       
       % NOTEST
     end

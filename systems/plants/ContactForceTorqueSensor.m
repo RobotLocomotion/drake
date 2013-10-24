@@ -15,21 +15,19 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
     function obj = ContactForceTorqueSensor(tsmanip,body,xyz,rpy)
       typecheck(body,'double');  % must be a body index
       
+      if (nargin<3) xyz=zeros(3,1);
+      else sizecheck(xyz,[3,1]); end
+      if (nargin<4) rpy=zeros(3,1);
+      else sizecheck(rpy,[3,1]); end
+
       if tsmanip.twoD
-        if (nargin<3) xyz=zeros(2,1);
-        else sizecheck(xyz,[2,1]); end
-        if (nargin<4) rpy=0;
-        else sizecheck(rpy,1); end
-        T = inv([rotmat(rpy),xyz; 0,0,1]);
+        % todo: make sure things are aligned well to the model axes
         fr = CoordinateFrame('DefaultForceTorqueFrame',getNumStates(tsmanip)+3,'f');
       else
-        if (nargin<3) xyz=zeros(3,1);
-        else sizecheck(xyz,[3,1]); end
-        if (nargin<4) rpy=zeros(3,1);
-        else sizecheck(rpy,[3,1]); end
-        T = inv([rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]);
         fr = CoordinateFrame('DefaultForceTorqueFrame',getNumStates(tsmanip)+6,'f');
-      end      
+      end
+      
+      T = inv([rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]);
 
       obj = obj@Visualizer(fr);
       obj.body = body;
@@ -78,7 +76,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
       % z(nL+nP+(1:nC)) = cN
       obj.normal_ind = nL+nP+contact_ind_offset+(1:num_body_contacts);
       
-      mC = 2*length(manip.surfaceTangents([1;zeros(manip.dim-1,1)])); % get number of tangent vectors
+      mC = 2*length(manip.surfaceTangents(manip.gravity)); % get number of tangent vectors
 
       % z(nL+nP+nC+(1:mC*nC)) = [beta_1;...;beta_mC]
       for i=1:mC
@@ -141,7 +139,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor & Visualizer
       end
       y = sum(force,2);
 
-      if (d==2)
+      if (tsmanip.twoD)
         torque = sum(cross([pos;zeros(1,N)],[force;zeros(1,N)]),2);
         y(3) = obj.jsign*torque(3);
       else
