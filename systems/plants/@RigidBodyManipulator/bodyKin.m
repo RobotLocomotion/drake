@@ -3,7 +3,7 @@ function x = bodyKin(obj,kinsol,body_ind,pts)
 %
 % @param kinsol solution structure obtained from doKinematics
 % @param body_ind, an integer index for the body.  
-% @retval x the position of pts (given in the body frame) in the global frame
+% @retval x the position of pts (given in the global frame) in the body frame
 %% @retval J the Jacobian, dxdq
 %% @retval dJ the gradients of the Jacobian, dJdq
 %
@@ -27,11 +27,10 @@ if (kinsol.mex)
   x = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_ind,pts);
   
 else
-  d = length(obj.gravity);
   m = size(pts,2);
   pts = [pts;ones(1,m)];
   x = inv(kinsol.T{body_ind})*pts;
-  x = x(1:d,:);
+  x = x(1:3,:);
   
   % todo: implement jacobians
   % will almost certainly make use of d(inv(T))dqi = -inv(T)*dTdqi*inv(T)

@@ -16,6 +16,7 @@ classdef RigidBodyManipulator < Manipulator
       % a variety of derived classes), but can get away with [] for arrays
       % with elements that are all exactly the same type
     gravity=[0;0;-9.81];
+    dim=3;
     terrain;
     
   end

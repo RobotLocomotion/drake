@@ -96,20 +96,6 @@ if (eigen3_FOUND)
                                           # knows which symbols to load
   endif()
 
-  macro(add_planar_rbm_mex)
-    # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
-    #  add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
-    add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} drakeUtil)
-  endmacro()
-
-  add_subdirectory(@PlanarRigidBodyManipulator/private)
-  add_planar_rbm_mex(deleteModelpmex)
-  add_planar_rbm_mex(doKinematicspmex)
-  add_planar_rbm_mex(HandCpmex)
-  add_planar_rbm_mex(forwardKinpmex)
-  add_planar_rbm_mex(forwardKinVelpmex)
-
   add_subdirectory(test)
 
   pods_install_libraries(drakeRBM)
