@@ -317,7 +317,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
       add_line(mdl,[subsys,'/1'],[outsys,'/1']);
     end
     
-    function setupLCMInputs(obj,mdl,subsys,subsys_portnum)
+    function setupLCMInputs(obj,mdl,subsys,subsys_portnum,options)
       typecheck(mdl,'char');
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
@@ -332,12 +332,12 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end      
       add_block('simulink3/Signals & Systems/Mux',[mdl,'/mux',uid],'Inputs',num2str(length(obj.frame)));
       for i=1:length(obj.frame)
-        setupLCMInputs(obj.frame{i},mdl,['mux',uid],i);
+        setupLCMInputs(obj.frame{i},mdl,['mux',uid],i,options);
       end
       add_line(mdl,['mux',uid,'/1'],[subsys,'/',num2str(subsys_portnum)]);
     end
     
-    function setupLCMOutputs(obj,mdl,subsys,subsys_portnum)
+    function setupLCMOutputs(obj,mdl,subsys,subsys_portnum,options)
       typecheck(mdl,'char');
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
@@ -351,7 +351,7 @@ classdef MultiCoordinateFrame < CoordinateFrame
       end      
       add_block('simulink3/Signals & Systems/Demux',[mdl,'/demux',uid],'Outputs',mat2str([obj.frame{:}.dim]));
       for i=1:length(obj.frame)
-        setupLCMOutputs(obj.frame{i},mdl,['demux',uid],i);
+        setupLCMOutputs(obj.frame{i},mdl,['demux',uid],i,options);
       end
       add_line(mdl,[subsys,'/',num2str(subsys_portnum)],['demux',uid,'/1']);
     end    

@@ -393,7 +393,7 @@ classdef CoordinateFrame < handle
       outsys=subsys;
     end
     
-    function setupLCMInputs(obj,mdl,subsys,subsys_portnum)
+    function setupLCMInputs(obj,mdl,subsys,subsys_portnum,options)
       typecheck(mdl,'char');
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
@@ -403,7 +403,7 @@ classdef CoordinateFrame < handle
       add_line(mdl,['in',uid,'/1'],[subsys,'/',num2str(subsys_portnum)]);
     end
 
-    function setupLCMOutputs(obj,mdl,subsys,subsys_portnum)
+    function setupLCMOutputs(obj,mdl,subsys,subsys_portnum,options)
       typecheck(mdl,'char');
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');

@@ -83,25 +83,29 @@ classdef LCMCoordinateFrameWCoder < CoordinateFrame & LCMSubscriber & LCMPublish
       obj.monitor.markAsRead();
     end
 
-    function setupLCMInputs(obj,mdl,subsys,subsys_portnum)
+    function setupLCMInputs(obj,mdl,subsys,subsys_portnum,options)
+      if nargin<5, options=struct(); end
+      if ~isfield(options,'input_sample_time') options.input_sample_time = .005; end
       typecheck(mdl,'char');
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end
       typecheck(subsys_portnum,'double'); 
       assignin('base',[mdl,'_subscriber',uid],obj);
-      add_block('drake/lcmInput',[mdl,'/in',uid],'channel',['''',obj.channel,''''],'dim',num2str(obj.dim),'lcm_subscriber',[mdl,'_subscriber',uid]);
+      add_block('drake/lcmInput',[mdl,'/in',uid],'channel',['''',obj.channel,''''],'dim',num2str(obj.dim),'lcm_subscriber',[mdl,'_subscriber',uid],'sample_time',mat2str(options.input_sample_time));
       add_line(mdl,['in',uid,'/1'],[subsys,'/',num2str(subsys_portnum)]);
     end
     
-    function setupLCMOutputs(obj,mdl,subsys,subsys_portnum)
+    function setupLCMOutputs(obj,mdl,subsys,subsys_portnum,options)
+      if nargin<5, options=struct(); end
+      if ~isfield(options,'output_sample_time') options.output_sample_time = .005; end
       typecheck(mdl,'char');
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
       if (nargin<4) subsys_portnum=1; end
       typecheck(subsys_portnum,'double'); 
       assignin('base',[mdl,'_publisher',uid],obj);
-      add_block('drake/lcmOutput',[mdl,'/out',uid],'channel',['''',obj.channel,''''],'dim',num2str(obj.dim),'lcm_publisher',[mdl,'_publisher',uid]);
+      add_block('drake/lcmOutput',[mdl,'/out',uid],'channel',['''',obj.channel,''''],'dim',num2str(obj.dim),'lcm_publisher',[mdl,'_publisher',uid],,'sample_time',mat2str(options.output_sample_time));
       add_line(mdl,[subsys,'/',num2str(subsys_portnum)],['out',uid,'/1']);
     end
   end

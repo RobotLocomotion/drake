@@ -16,9 +16,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "russt"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Wed Jun 12 01:26:47 2013"
-  RTWModifiedTimeStamp	  292900869
-  ModelVersionFormat	  "1.%<AutoIncrement:25>"
+  LastModifiedDate	  "Sat Oct 19 02:02:00 2013"
+  RTWModifiedTimeStamp	  304048914
+  ModelVersionFormat	  "1.%<AutoIncrement:26>"
   ConfigurationManager	  "None"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -618,7 +618,7 @@ Library {
   }
   System {
     Name		    "drake"
-    Location		    [450, 367, 1030, 627]
+    Location		    [450, 368, 1030, 628]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -679,7 +679,7 @@ Library {
       MaskIconRotate	      "none"
       MaskPortRotate	      "default"
       MaskIconUnits	      "autoscale"
-      MaskValueString	      "'channel'|1|0|.005"
+      MaskValueString	      "'channel'|1|0|[.005,0]"
     }
     Block {
       BlockType		      M-S-Function
@@ -703,7 +703,7 @@ Library {
       MaskIconRotate	      "none"
       MaskPortRotate	      "default"
       MaskIconUnits	      "autoscale"
-      MaskValueString	      "'channel'|1|0|.005"
+      MaskValueString	      "'channel'|1|0|[.005,0]"
     }
     Block {
       BlockType		      M-S-Function
