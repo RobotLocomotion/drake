@@ -94,9 +94,11 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
         
         %% cleanup 3D geometry for 2D
         for j=1:length(body.geometry)
-          pts = model.T_2D_to_3D'*forwardKin(model,kinsol,i,body.geometry{j}.xyz);
-          ind = convhull(pts(1,:),pts(2,:));
-          model.body(i).geometry{j}.xyz = model.body(i).geometry{j}.xyz(:,ind);
+          if size(body.geometry{j}.xyz,2)>1
+            pts = model.T_2D_to_3D'*forwardKin(model,kinsol,i,body.geometry{j}.xyz);
+            ind = convhull(pts(1,:),pts(2,:));
+            model.body(i).geometry{j}.xyz = model.body(i).geometry{j}.xyz(:,ind);
+          end
         end
         
         %% weld all joints that are not aligned with the view axis
@@ -134,7 +136,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
     function v=constructVisualizer(obj,options)
       checkDirty(obj);
       if nargin<2, options=struct(); end
-      if ~isfield(options,'viewer') || strcmp(options.viewer('PlanarRigidBodyVisualizer')) 
+      if ~isfield(options,'viewer') || strcmp(options.viewer,'PlanarRigidBodyVisualizer') 
         v = PlanarRigidBodyVisualizer(obj);
       else
         v = constructVisualizer@RigidBodyManipulator(obj,options);
@@ -167,6 +169,11 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       t = {obj.T_2D_to_3D*t};
       
       % NOTEST
+    end
+    
+    function obj = setGravity(obj,grav)
+      if numel(grav)==2, grav = obj.T_2D_to_3D*grav; end
+      obj = setGravity@RigidBodyManipulator(obj,grav);
     end
     
   end

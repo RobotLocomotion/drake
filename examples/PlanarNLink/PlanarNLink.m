@@ -15,7 +15,7 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       model.name{1} = ['Planar',num2str(N),'Link'];
 
       % add the base
-      body=PlanarRigidBody();
+      body=RigidBody();
       body.linkname='base';
       body.robotnum=1;
       body.Ttree=[-1,0,0; 0,1,0; 0,0,1];
@@ -35,15 +35,16 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
   methods (Access=private)
     function model=addLink(model,mass,len,radius)
       
-      body=PlanarRigidBody();
+      body=RigidBody();
       ind=length(model.body)+1;
       
       % link properties
       body.linkname=['link',num2str(ind-1)];
       body.robotnum=1;
-      body = setInertial(body,mass,[0;-len/2],mass*len^2/12);  % solid rod w/ uniform mass
-      body.geometry{1}.x = radius*[-1 1 1 -1 -1];
-      body.geometry{1}.y = len*[0 0 -1 -1 0];
+      body = setInertial(body,mass,[0;0;-len/2],diag([1;mass*len^2/12;1]));  % solid rod w/ uniform mass
+      body.geometry{1}.xyz = [radius*[-1 1 1 -1 -1]; ...
+        len*[0 0 -1 -1 0]; ...
+        zeros(1,5)];
       h=figure(1035); set(h,'Visible','off');
       co = get(gca,'ColorOrder');
       close(h);
@@ -52,7 +53,7 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       
       % joint properties
       if (ind>2)
-        parentlen=-min(model.body(ind-1).geometry{1}.y);
+        parentlen=-min(model.body(ind-1).geometry{1}.xyz(2,:));
       else
         parentlen = 0;
       end
