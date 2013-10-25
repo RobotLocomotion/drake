@@ -479,9 +479,6 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 
     } else { // no joint, this link is attached directly to the floating base
     	string jointname="base";
-        for (auto p : jointname_to_jointnum) {
-          cout << p.first << endl;
-        }
       map<string, int>::const_iterator jn=findWithSuffix(jointname_to_jointnum,jointname);
       //DEBUG
       //if (jn == jointname_to_jointnum.end()) {
@@ -959,7 +956,6 @@ URDFRigidBodyManipulator* loadURDFfromFile(const string &urdf_filename)
     size_t found = urdf_filename.find_last_of("/\\");
     if (found != string::npos) {
       pathname = urdf_filename.substr(0,found);
-      cout << "pathname = " << pathname << endl;
     }
     
     // parse URDF to get model

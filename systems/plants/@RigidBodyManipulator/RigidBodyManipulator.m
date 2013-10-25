@@ -642,7 +642,7 @@ classdef RigidBodyManipulator < Manipulator
         if nargin>2
           body_ind_or_joint_name = findJointInd(model,body_ind_or_joint_name,robot);
         else
-          body_ind_or_joint_name = findJointINd(model,body_ind_or_joint_name);
+          body_ind_or_joint_name = findJointInd(model,body_ind_or_joint_name);
         end
       end
       
@@ -656,13 +656,21 @@ classdef RigidBodyManipulator < Manipulator
       % robot=0 means look at all robots
       % @ingroup Kinematic Tree
       if nargin<3 || isempty(robot), robot=0; end
+      jointname = lower(jointname);
       if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
-      ind = strmatch(lower(jointname),lower({model.body.jointname}),'exact');
+      items = strfind(lower({model.body.jointname}),jointname);
+      ind = find(~cellfun(@isempty,items));
       if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
       if (length(ind)~=1)
-        error(['couldn''t find unique joint ' ,jointname]);
+        if (nargin<4 || throw_error)
+          error(['couldn''t find unique joint ' ,jointname]);
+        else 
+          warning(['couldn''t find unique joint ' ,jointname]);
+          body_ind=0;
+        end
+      else
+        body_ind = ind;
       end
-      body_ind = ind;
     end
     
     function body = findJoint(model,jointname,robot)
