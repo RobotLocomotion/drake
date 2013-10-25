@@ -67,7 +67,7 @@ c = r.body(2).com;
 
 comf = r.forwardKin(kinsol,2,c);
 if (twod) 
-fprintf(1,'i:%d,j:%d,2D, c: %s, a: %s, v: %s, g: %s, s: %d, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(r.body(2).joint_axis), options.view, mat2str(r.gravity), r.body(2).jsign, num2str(xf(1)), mat2str(comf,1));
+fprintf(1,'i:%d,j:%d,2D, c: %s, a: %s, v: %s, g: %s, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(r.body(2).joint_axis), options.view, mat2str(r.gravity), num2str(xf(1)), mat2str(comf,1));
 else
 fprintf(1,'i:%d,j:%d,3D, c: %s, a: %s, g: %s, qf: %s, cf: %s.\n',i,j,mat2str(c),mat2str(r.body(2).joint_axis), mat2str(r.gravity), num2str(xf(1)), mat2str(comf,1));
 end

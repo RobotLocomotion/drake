@@ -1,5 +1,6 @@
-<robot
-  name="Glider">
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="Glider">
   <link
     name="fuselage">
     <inertial>
@@ -94,26 +95,19 @@
     <axis
       xyz="0 1 0" />
     <limit
-      effort="100"
-      velocity="10" />
+      effort="100" />
   </joint>
-  <force_element name="Wing_force" type="wing"> 
-  	<parent link="fuselage"/>
-  	<profile value="flat plate"/> 
+  <force_element name="Wing_force"> 
+    <wing chord=".08" nominal_speed="7" profile="flat plate" span=".48125" stall_angle="181">
+      <parent link="fuselage"/>
   	<origin xyz="0 0 0" rpy="0 0 0"/> 
-  	<chord value=".08"/> 
-  	<span value=".48125"/> 
-  	<nominal_speed value="7"/> 
-    <stall_angle value ="181"/>
+    </wing>
   </force_element>
-  <force_element name="Elevator_force" type="wing"> 
-  	<parent link="Elevator"/>
-  	<profile value="flat plate"/> 
-  	<origin xyz="-.022 0 0" rpy="0 0 0"/> 
-  	<chord value=".07"/> 
-  	<span value=".21"/> 
-  	<nominal_speed value="7"/> 
-    <stall_angle value ="181"/>
+  <force_element name="Elevator_force"> 
+    <wing profile="flat plate" stall_angle="181" span=".21" chord=".07" nominal_speed="7">
+      <parent link="Elevator"/>
+      <origin xyz="-.022 0 0" rpy="0 0 0"/> 
+    </wing>
   </force_element>
   <transmission name="ElevatorTorque" type="SimpleTransmission" >
     <joint name="ElevatorHinge" />

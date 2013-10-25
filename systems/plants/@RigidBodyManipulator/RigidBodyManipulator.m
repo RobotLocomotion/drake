@@ -142,7 +142,10 @@ classdef RigidBodyManipulator < Manipulator
 
     function f_friction = computeFrictionForce(model,qd)
       m = model.featherstone;
-      f_friction = min(1,max(-1,qd./m.coulomb_window')).*m.coulomb_friction' + m.damping'.*qd;
+      f_friction = m.damping'.*qd;
+      if (m.coulomb_friction)
+        f_friction = f_friction + min(1,max(-1,qd./m.coulomb_window')).*m.coulomb_friction';
+      end
     end
         
     function ptr = getMexModelPtr(obj)
@@ -1759,6 +1762,7 @@ classdef RigidBodyManipulator < Manipulator
       name = char(node.getAttribute('name'));
       name = regexprep(name, '\.', '_', 'preservecase');
       
+      fe = [];
       childNodes = node.getChildNodes();
       elnode = node.getElementsByTagName('linear_spring_damper').item(0);
       if ~isempty(elnode)
@@ -1775,8 +1779,10 @@ classdef RigidBodyManipulator < Manipulator
         fe = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
       end
       
-      fe.name = name;
-      model.force{end+1} = fe;
+      if ~isempty(fe)
+        fe.name = name;
+        model.force{end+1} = fe;
+      end
     end
     
     
