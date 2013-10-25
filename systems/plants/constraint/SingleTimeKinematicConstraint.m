@@ -18,6 +18,7 @@ classdef SingleTimeKinematicConstraint < Constraint
     WorldGazeTargetConstraint = 6;
     AllBodiesClosestDistanceConstraint = 7;
     Point2PointDistanceConstraint = 8;
+    WorldPositionInFrameConstraint = 9;
   end
   
   methods

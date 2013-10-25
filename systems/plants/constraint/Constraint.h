@@ -389,4 +389,18 @@ class AllBodiesClosestDistanceConstraint : public SingleTimeKinematicConstraint
     virtual void updateRobot(RigidBodyManipulator *robot);
     virtual ~AllBodiesClosestDistanceConstraint(){};
 };
+
+class WorldPositionInFrameConstraint: public WorldPositionConstraint
+{
+  protected:
+    Eigen::Matrix4d T_world_to_frame;
+    Eigen::Matrix4d T_frame_to_world;
+    virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J);
+  public:
+    WorldPositionInFrameConstraint(RigidBodyManipulator *model, int body, 
+        const Eigen::MatrixXd &pts, const Eigen::Matrix4d& T_world_to_frame, 
+        Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan);
+    //virtual void updateRobot(RigidBodyManipulator *robot);
+    virtual ~WorldPositionInFrameConstraint();
+};
 #endif

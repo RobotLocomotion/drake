@@ -110,6 +110,12 @@ rhand_pos = forwardKin(robot,kinsol,r_hand,rhand_pts,0);
 valuecheck(c',sum((lhand_pos-rhand_pos).*(lhand_pos-rhand_pos),1));
 testKinCnst_userfun(true,t,q,SingleTimeKinematicConstraint.Point2PointDistanceConstraint,robot,l_hand,r_hand,lhand_pts,rhand_pts,[0 0],[1 1],tspan0);
 testKinCnst_userfun(true,t,q,SingleTimeKinematicConstraint.Point2PointDistanceConstraint,robot,0,r_hand,rand(3,2),rhand_pts,[0 0],[1 1],tspan0);
+
+display('Check world position in frame constraint');
+rpy = 2*pi*rand(3,1) - pi;
+xyz = [0.2;0.2;0.2].*rand(3,1) + [0.5;0.0;0.5];
+T = [rpy2rotmat(rpy),xyz;zeros(1,3),1];
+testKinCnst_userfun(true,t,q,SingleTimeKinematicConstraint.WorldPositionInFrameConstraint,robot,l_foot,l_foot_pts,T,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
 end
 
 function testKinCnst_userfun(singleTimeFlag,t,q,kc_type,varargin)
@@ -119,6 +125,8 @@ if(singleTimeFlag)
   kc_mex = constructSingleTimeKinematicConstraint(kc_type,true,robot_ptr,varargin{2:end});
   kc = constructSingleTimeKinematicConstraint(kc_type,false,varargin{:});
   [num_cnst_mex,c_mex,dc_mex,cnst_name_mex,lb_mex,ub_mex] = testSingleTimeKinCnstmex(kc_mex,q,t);
+  [~,c_mex_ptr,~,~,~,~] = testSingleTimeKinCnstmex(kc.mex_ptr,q,t);
+  valuecheck(c_mex,c_mex_ptr,1e-5);
 else
   kc_mex = constructMultipleTimeKinematicConstraint(kc_type,true,robot_ptr,varargin{2:end});
   kc = constructMultipleTimeKinematicConstraint(kc_type,false,varargin{:});
@@ -149,4 +157,9 @@ if(singleTimeFlag)
 else
   [~,c,~,~,~,~] = testMultipleTimeKinCnstmex(constraint.mex_ptr,q,t);
 end
+end
+
+function c = eval_numerical_matlab(constraint,t,q)
+kinsol = doKinematics(constraint.robot,q,false,false);
+c = constraint.eval(t,kinsol);
 end

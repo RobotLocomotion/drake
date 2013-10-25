@@ -45,6 +45,12 @@ testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldPositionCons
 display('Check world position constraint with nan');
 testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldPositionConstraint,robot,robot_aff,l_foot,l_foot_pts,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan0);
 
+display('Check world position in frame constraint');
+rpy = [pi/10,pi/20,pi/10];
+xyz = [0.5;0.0;0.2];
+T = [rpy2rotmat(rpy),xyz;zeros(1,3),1];
+testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldPositionInFrameConstraint,robot,robot_aff,l_foot,l_foot_pts,T,[NaN(2,4);zeros(1,4)],[NaN(2,4);zeros(1,4)],tspan0);
+
 display('Check world quaternion constraint')
 testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldQuatConstraint,robot,robot_aff,r_foot,[1;0;0;0],0.01,tspan0);
 
@@ -111,6 +117,8 @@ if(singleTimeFlag)
     updatePtrWorldCoMConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
   elseif(kc_type == SingleTimeKinematicConstraint.WorldPositionConstraint)
     updatePtrWorldPositionConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
+  elseif(kc_type == SingleTimeKinematicConstraint.WorldPositionInFrameConstraint)
+    updatePtrWorldPositionInFrameConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
   elseif(kc_type == SingleTimeKinematicConstraint.WorldEulerConstraint)
     updatePtrWorldEulerConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
   elseif(kc_type == SingleTimeKinematicConstraint.WorldQuatConstraint)
