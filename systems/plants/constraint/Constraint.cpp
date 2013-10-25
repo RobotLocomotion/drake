@@ -1680,3 +1680,26 @@ void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyManipulator* robot
   this->robot = robot;
 }
 
+WorldPositionInFrameConstraint::WorldPositionInFrameConstraint(
+    RigidBodyManipulator *model, int body, const Eigen::MatrixXd &pts, 
+    const Eigen::Matrix4d& T_frame_to_world, 
+    Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan)
+  : WorldPositionConstraint(model,body,pts,lb,ub,tspan)
+{
+  this->T_frame_to_world = T_frame_to_world;
+  this->T_world_to_frame = T_frame_to_world.inverse();
+}
+
+void WorldPositionInFrameConstraint::evalPositions(MatrixXd &pos, MatrixXd &J)
+{
+  WorldPositionConstraint::evalPositions(pos, J);
+  MatrixXd pos_1(4,n_pts);
+  pos_1 << pos, MatrixXd::Ones(1,n_pts);
+  pos = (this->T_world_to_frame*pos_1).topRows(3);
+  auto J_reshaped = Map<MatrixXd>(J.data(),3,n_pts*J.cols());
+  J_reshaped = T_world_to_frame.topLeftCorner<3,3>()*J_reshaped;
+}
+
+WorldPositionInFrameConstraint::~WorldPositionInFrameConstraint()
+{
+}

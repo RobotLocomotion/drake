@@ -60,5 +60,14 @@ switch type
     else
       obj = Point2PointDistanceConstraint(varargin{:});
     end
+  case SingleTimeKinematicConstraint.WorldPositionInFrameConstraint
+    if(use_mex)
+      obj = constructPtrWorldPositionInFrameConstraintmex(varargin{:});
+    else
+      obj = WorldPositionInFrameConstraint(varargin{:});
+    end
+  otherwise
+    error('constructSingleTimeKinematicConstraint:bad_type', ...
+          'The specified constraint type is not supported by this function.');
 end
 end
