@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 2.8.6) # for UseJava.cmake
 set(POD_NAME drake)
 include(cmake/pods.cmake)
 
+option(BUILD_SHARED_LIBS "Build Drake with shared libraries." OFF)
 # set up Java, use a target of 1.6
 find_package(Java)
 include(UseJava)

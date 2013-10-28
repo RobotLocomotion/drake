@@ -32,9 +32,13 @@ endif()
 find_library(F2C_LIBRARY NAMES libf2c.a)  # Need to get static libf2c for snopt
 
 pods_find_pkg_config(bot2-vis)
-if (bot2-vis_FOUND)
-  add_definitions( -DBOT_VIS_SUPPORT )   
-endif()
+option(DRAKE_USE_BOT_VIS "Build Drake with bot2-vis support." ${bot2-vis_FOUND})
+if (DRAKE_USE_BOT_VIS)
+  if (NOT bot2-vis_FOUND)
+    message(SEND_ERROR "DRAKE_USE_BOT_VIS is ON but bot2-vis package was not found.")
+  endif()
+  add_definitions( -DBOT_VIS_SUPPORT )
+endif ()
 
 if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
@@ -49,7 +53,7 @@ if (eigen3_FOUND)
     add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
     target_link_libraries(URDFRigidBodyManipulator drakeRBM urdf_interface ${Boost_LIBRARIES})
 
-    if (bot2-vis_FOUND)
+    if (DRAKE_USE_BOT_VIS)
 	   pods_use_pkg_config_packages(URDFRigidBodyManipulator bot2-vis)
     endif()
 

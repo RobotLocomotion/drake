@@ -6,6 +6,7 @@
 #include <map>
 
 #include "URDFRigidBodyManipulator.h"
+#include "urdf_interface/model.h"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/filesystem.hpp>
@@ -16,39 +17,6 @@ using namespace std;
 #ifdef BOT_VIS_SUPPORT
 #include <bot_core/bot_core.h>
 #include <bot_vis/bot_vis.h>
-
-/*
- *   Works like m.find(str), except that a matching key can contain any number
- *   of digits before any underscores in `str` or at the end. Thus,
- *
- *      str="base"  matches  "base1"  or  "base2" etc.
- *      str="base_x" matches "base1_x" or "base2_x"  or "base_x1" etc.
- */
-map<string,int>::const_iterator findWithSuffix(const map<string,int> m, const string str)
-{
-   
-  auto first = m.begin();
-  auto last = m.end();
-  boost::regex delim("(_|$)");
-  /*
-   *So many '\' characters! Each std::string initialization eats one from each
-   *set.
-   */
-  boost::regex re(boost::regex_replace(str,delim,"\\\\d*\\1"));
-  auto flexibleNameMatch = 
-    [&](pair<string,int> p)->bool{return boost::regex_match(p.first,re);};
-  //DEBUG
-  //cout << "findWithSuffix: str = "<< str << endl;
-  //cout << "findWithSuffix: re.str() = "<< re.str() << endl;
-  //if (find_if(first,last,f)==last) {
-    //for (auto p : m){
-      //cout << "findWithSuffix: p.first = "<< p.first << endl;
-      //cout << "f(p) = " << f(p) << endl;
-    //}
-  //}
-  //END_DEBUG
-  return find_if(first,last,flexibleNameMatch);
-}
 
 class URDFRigidBodyManipulatorWBotVis : public URDFRigidBodyManipulator
 {
@@ -295,6 +263,40 @@ public:
 };
 
 #endif
+
+
+/*
+ *   Works like m.find(str), except that a matching key can contain any number
+ *   of digits before any underscores in `str` or at the end. Thus,
+ *
+ *      str="base"  matches  "base1"  or  "base2" etc.
+ *      str="base_x" matches "base1_x" or "base2_x"  or "base_x1" etc.
+ */
+map<string,int>::const_iterator findWithSuffix(const map<string,int> m, const string str)
+{
+   
+  auto first = m.begin();
+  auto last = m.end();
+  boost::regex delim("(_|$)");
+  /*
+   *So many '\' characters! Each std::string initialization eats one from each
+   *set.
+   */
+  boost::regex re(boost::regex_replace(str,delim,"\\\\d*\\1"));
+  auto flexibleNameMatch = 
+    [&](pair<string,int> p)->bool{return boost::regex_match(p.first,re);};
+  //DEBUG
+  //cout << "findWithSuffix: str = "<< str << endl;
+  //cout << "findWithSuffix: re.str() = "<< re.str() << endl;
+  //if (find_if(first,last,f)==last) {
+    //for (auto p : m){
+      //cout << "findWithSuffix: p.first = "<< p.first << endl;
+      //cout << "f(p) = " << f(p) << endl;
+    //}
+  //}
+  //END_DEBUG
+  return find_if(first,last,flexibleNameMatch);
+}
 
 
 // Defines a method to load a model directly from a URDF file

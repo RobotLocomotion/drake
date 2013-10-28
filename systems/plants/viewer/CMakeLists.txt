@@ -1,8 +1,8 @@
 
 include_directories ( .. )
 
-pods_find_pkg_config(bot2-vis)
-if (bot2-vis_FOUND) 
+
+if (DRAKE_USE_BOT_VIS)
 
   add_executable(drake_viewer main.cpp)
   pods_use_pkg_config_packages(drake_viewer bot2-lcmgl-renderer)
