@@ -1,12 +1,13 @@
 function contactSensorTest
 
 options.floating = true;
+if 0
 options.twoD = true;
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 
 p = addSensor(p,FullStateFeedbackSensor());
 body = findLinkInd(p,'brick');
-p = addSensor(p,ContactForceTorqueSensor(p,body,zeros(2,1),0));
+p = addSensor(p,ContactForceTorqueSensor(p,body,zeros(3,1),zeros(3,1)));
 p = compile(p);
 
 ytraj = simulate(p,[0 5]);
@@ -21,7 +22,7 @@ valuecheck(yf.torque,0);
 %v = p.constructVisualizer();
 %v.playback(ytraj);
 
-
+end
 
 options.twoD = false;
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
