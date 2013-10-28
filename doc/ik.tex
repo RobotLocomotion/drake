@@ -18,6 +18,8 @@ All \textsl{SingleTimeKinematicConstraint} objects share four methods: \text{get
 \item \textsl{WorldGazeTargetConstraint} Constraining the orientation of a given body that a given axis of the body must gaze at a target. Support `cone threshold'
 \item \textsl{WorldGazeDirConstraint} Constraining the orientation of a given body, that a given axis of the body must in a certain direction. Support `cone threshold'
 \item \textsl{WorldGazeOrientConstraint} Constraining the orientation of a given body. Refer to the documentation in the implementation. Support `threshold' and `cone threshold'
+\item \textsl{Point2PointDistanceConstraint} Constraining the distance between points on bodyA/world to points on bodyB/world to be within a range.
+\item \textsl{WorldPositionInFrameConstraint} Constraining the point on bodyA in within a bounding box in a given frame.
 \end{enumerate}
 \subsection{MultipleTimeKinematicConstraint}
 This is for kinematic constraint being evaluated at multiple time moments.
@@ -80,6 +82,8 @@ The problem it solves is
 \text{subject to}&\quad \text{constraint } k\text{ at }t(j) \quad j = 1,2,\hdots N
 \end{align}
 The assumption is that $q$ is a cubic polynomial, with the initial value $q_0$ and initial time derivative $qd0$ at time $t(1)$.
+
+Further samples can be added in between knot points to check if those samples satisfy the constraints. Check \textsl{setAddtionaltSamples} method in IKoptions.
 \subsection{Wrap deprecated IK}
 The method \textsl{inverseKinWrapup} would wrap the old IK input arguments to the new IK input arguments
 \begin{lstlisting}[language=MATLAB]

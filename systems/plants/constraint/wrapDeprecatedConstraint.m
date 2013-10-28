@@ -89,9 +89,9 @@ else
   rows = size(posmax,1);
   if(body == 0)
     if(options.use_mex)
-      kc_cell = {constructPtrWorldCoMConstraintmex(robot_ptr,robotnum,posmin,posmax,tspan)};
+      kc_cell = {constructPtrWorldCoMConstraintmex(robot_ptr,posmin,posmax,tspan,robotnum)};
     else
-      kc_cell = {WorldCoMConstraint(robot,robotnum,posmin,posmax,tspan)};
+      kc_cell = {WorldCoMConstraint(robot,posmin,posmax,tspan,robotnum)};
     end
   else
     if(ischar(pts))

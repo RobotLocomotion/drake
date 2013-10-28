@@ -82,11 +82,11 @@ while i < length(varargin)
     if(~isempty(qsc_pts))
       if(isempty(qsc))
         if(use_mex_constraint)
-          qsc = constructPtrQuasiStaticConstraintmex(obj.getMexModelPtr,robotnum);
+          qsc = constructPtrQuasiStaticConstraintmex(obj.getMexModelPtr);
           updatePtrQuasiStaticConstraintmex(qsc,quasiStaticFlag);
           updatePtrQuasiStaticConstraintmex(qsc,shrinkFactor);
         else
-          qsc = QuasiStaticConstraint(obj,robotnum);
+          qsc = QuasiStaticConstraint(obj);
           qsc = qsc.setActive(quasiStaticFlag);
           qsc = qsc.setShrinkFactor(shrinkFactor);
         end

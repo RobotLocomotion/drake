@@ -48,8 +48,9 @@ class QuasiStaticConstraint: public Constraint
     std::vector<int> bodies;
     std::vector<int> num_body_pts;
     std::vector<Eigen::MatrixXd> body_pts;
+    static const std::set<int> defaultRobotNumSet;
   public:
-    QuasiStaticConstraint(RigidBodyManipulator* robot,const std::set<int> &robotnumset, const Eigen::Vector2d &tspan); 
+    QuasiStaticConstraint(RigidBodyManipulator* robot, const Eigen::Vector2d &tspan,const std::set<int> &robotnumset = QuasiStaticConstraint::defaultRobotNumSet); 
     bool isTimeValid(double* t);
     int getNumConstraint(double* t);
     void eval(double* t,double* weights,Eigen::VectorXd &c, Eigen::MatrixXd &dc); 
@@ -104,13 +105,15 @@ class MultipleTimeKinematicConstraint : public Constraint
 {
   protected:
     RigidBodyManipulator *robot;
+    int numValidTime(double* t,int n_breaks);
   public:
     double tspan[2];
     MultipleTimeKinematicConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan);
-    bool isTimeValid(double* t,int n_breaks);
+    std::vector<bool> isTimeValid(double* t,int n_breaks);
     RigidBodyManipulator* getRobotPointer(){return robot;};
     virtual int getNumConstraint(double* t,int n_breaks) = 0;
-    virtual void eval(double* t, int n_breaks,const Eigen::MatrixXd &q,Eigen::VectorXd &c, Eigen::MatrixXd &dc) = 0;
+    void eval(double* t, int n_breaks,const Eigen::MatrixXd &q,Eigen::VectorXd &c, Eigen::MatrixXd &dc);
+    virtual void eval_valid(double* valid_t, int num_valid_t,const Eigen::MatrixXd &valid_q,Eigen::VectorXd &c, Eigen::MatrixXd &dc_valid) = 0;
     virtual void bounds(double* t, int n_breaks, Eigen::VectorXd &lb, Eigen::VectorXd &ub) = 0;
     virtual void name(double* t, int n_breaks, std::vector<std::string> &name_str) = 0;
     virtual void updateRobot(RigidBodyManipulator *robot) = 0;
@@ -154,8 +157,9 @@ class WorldCoMConstraint: public PositionConstraint
     int body;
     std::string body_name;
     virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J);
+    static const std::set<int> defaultRobotNumSet;
   public:
-    WorldCoMConstraint(RigidBodyManipulator *model, const std::set<int> &robotnum, Eigen::Vector3d lb, Eigen::Vector3d ub, const Eigen::Vector2d &tspan);
+    WorldCoMConstraint(RigidBodyManipulator *model, Eigen::Vector3d lb, Eigen::Vector3d ub, const Eigen::Vector2d &tspan, const std::set<int> &robotnum = WorldCoMConstraint::defaultRobotNumSet);
     virtual void name(double* t, std::vector<std::string> &name_str);
     virtual void updateRobot(RigidBodyManipulator *robot);
     void updateRobotnum(const std::set<int> &robotnum);
@@ -337,7 +341,7 @@ class WorldFixedPositionConstraint: public MultipleTimeKinematicConstraint
   public:
     WorldFixedPositionConstraint(RigidBodyManipulator* model, int body, const Eigen::MatrixXd &pts,const Eigen::Vector2d &tspan);
     virtual int getNumConstraint(double* q, int n_breaks);
-    virtual void eval(double* t, int n_breaks,const Eigen::MatrixXd &q,Eigen::VectorXd &c, Eigen::MatrixXd &dc);
+    virtual void eval_valid(double* valid_t, int num_valid_t,const Eigen::MatrixXd &valid_q,Eigen::VectorXd &c, Eigen::MatrixXd &dc_valid);
     virtual void bounds(double* t,int n_breaks, Eigen::VectorXd &lb, Eigen::VectorXd &ub);
     virtual void name(double* t, int n_breaks,std::vector<std::string> &name_str);
     virtual void updateRobot(RigidBodyManipulator *robot);
@@ -352,7 +356,7 @@ class WorldFixedOrientConstraint: public MultipleTimeKinematicConstraint
   public:
     WorldFixedOrientConstraint(RigidBodyManipulator* model, int body, const Eigen::Vector2d &tspan);
     virtual int getNumConstraint(double* q, int n_breaks);
-    virtual void eval(double* t, int n_breaks, const Eigen::MatrixXd &q, Eigen::VectorXd &c, Eigen::MatrixXd &dc);
+    virtual void eval_valid(double* valid_t, int num_valid_t,const Eigen::MatrixXd &valid_q,Eigen::VectorXd &c, Eigen::MatrixXd &dc_valid);
     virtual void bounds(double* t,int n_breaks, Eigen::VectorXd &lb, Eigen::VectorXd &ub);
     virtual void name(double* t, int n_breaks,std::vector<std::string> &name_str);
     virtual void updateRobot(RigidBodyManipulator *robot);
@@ -367,7 +371,7 @@ class WorldFixedBodyPoseConstraint: public MultipleTimeKinematicConstraint
   public:
     WorldFixedBodyPoseConstraint(RigidBodyManipulator* model, int body, const Eigen::Vector2d &tspan);
     virtual int getNumConstraint(double* q, int n_breaks);
-    virtual void eval(double* t, int n_breaks, const Eigen::MatrixXd &q, Eigen::VectorXd &c, Eigen::MatrixXd &dc);
+    virtual void eval_valid(double* valid_t, int num_valid_t,const Eigen::MatrixXd &valid_q,Eigen::VectorXd &c, Eigen::MatrixXd &dc_valid);
     virtual void bounds(double* t,int n_breaks, Eigen::VectorXd &lb, Eigen::VectorXd &ub);
     virtual void name(double* t, int n_breaks,std::vector<std::string> &name_str);
     virtual void updateRobot(RigidBodyManipulator *robot);

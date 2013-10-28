@@ -64,7 +64,9 @@ mxArray* createDrakeConstraintMexPointer(void* ptr, const char* deleteMethod, co
 }
 
 
-QuasiStaticConstraint::QuasiStaticConstraint(RigidBodyManipulator* robot,const std::set<int> &robotnumset, const Vector2d &tspan):Constraint(DrakeConstraintType::QuasiStaticConstraintType)
+const int QuasiStaticDefaultRobotNum[1] = {0};
+const std::set<int> QuasiStaticConstraint::defaultRobotNumSet(QuasiStaticDefaultRobotNum,QuasiStaticDefaultRobotNum+1);
+QuasiStaticConstraint::QuasiStaticConstraint(RigidBodyManipulator* robot, const Vector2d &tspan,const std::set<int> &robotnumset):Constraint(DrakeConstraintType::QuasiStaticConstraintType)
 {
   this->robot = robot;
   this->m_robotnumset = robotnumset;
@@ -344,14 +346,74 @@ MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(RigidBodyManipu
   this->robot = model;
 }
 
-bool MultipleTimeKinematicConstraint::isTimeValid(double* t,int n_breaks)
+void MultipleTimeKinematicConstraint::eval(double* t, int n_breaks, const MatrixXd &q, VectorXd &c, MatrixXd &dc)
 {
+  int num_valid_t = this->numValidTime(t,n_breaks);
+  if(num_valid_t>=2)
+  {
+    std::vector<bool> valid_time_flag = this->isTimeValid(t,n_breaks);
+    int nq = this->robot->num_dof;
+    double* valid_t = new double[num_valid_t];
+    MatrixXd valid_q(nq,num_valid_t);
+    int valid_idx = 0;
+    int* valid2tMap = new int[num_valid_t];
+    for(int i = 0;i<n_breaks;i++)
+    {
+      if(valid_time_flag[i])
+      {
+        valid_t[valid_idx] = t[i];
+        valid_q.col(valid_idx) = q.col(i);
+        valid2tMap[valid_idx] = i;
+        valid_idx++;
+      }
+    }
+    MatrixXd dc_valid;
+    this->eval_valid(valid_t,num_valid_t,valid_q,c,dc_valid);
+    int nc = this->getNumConstraint(t,n_breaks);
+    dc = MatrixXd::Zero(nc,nq*n_breaks);
+    for(int i = 0;i<num_valid_t;i++)
+    {
+      dc.block(0,valid2tMap[i]*nq,nc,nq) = dc_valid.block(0,i*nq,nc,nq);
+    }
+    delete[] valid_t;
+    delete[] valid2tMap;
+  }
+  else
+  {
+    c.resize(0);
+    dc.resize(0,0);
+  }
+}
+
+std::vector<bool> MultipleTimeKinematicConstraint::isTimeValid(double* t,int n_breaks)
+{
+  std::vector<bool> flag;
   for(int i = 0;i<n_breaks;i++)
   {
     if((t[i]>this->tspan[1]||t[i]<this->tspan[0]))
-      return false;
+    {
+      flag.push_back(false);
+    }
+    else
+    {
+      flag.push_back(true);
+    }
   }
-  return true;
+  return flag;
+}
+
+int MultipleTimeKinematicConstraint::numValidTime(double* t, int n_breaks)
+{
+  std::vector<bool> valid_flag = this->isTimeValid(t,n_breaks);
+  int num_valid_t = 0;
+  for(auto it=valid_flag.begin();it != valid_flag.end(); it++)
+  {
+    if(*it)
+    {
+      num_valid_t++;
+    }
+  }
+  return num_valid_t;
 }
 
 PositionConstraint::PositionConstraint(RigidBodyManipulator *model, const MatrixXd &pts, MatrixXd lb, MatrixXd ub, const Vector2d &tspan):SingleTimeKinematicConstraint(model,tspan)
@@ -542,7 +604,11 @@ WorldPositionConstraint::~WorldPositionConstraint()
 
 Vector4d com_pts(0.0,0.0,0.0,1.0);
 
-WorldCoMConstraint::WorldCoMConstraint(RigidBodyManipulator *model, const std::set<int> &robotnum, Vector3d lb, Vector3d ub, const Vector2d &tspan):PositionConstraint(model,com_pts,lb,ub,tspan)
+
+const int WorldCoMDefaultRobotNum[1] = {0};
+const std::set<int> WorldCoMConstraint::defaultRobotNumSet(WorldCoMDefaultRobotNum,WorldCoMDefaultRobotNum+1);
+
+WorldCoMConstraint::WorldCoMConstraint(RigidBodyManipulator *model, Vector3d lb, Vector3d ub, const Vector2d &tspan, const std::set<int> &robotnum):PositionConstraint(model,com_pts,lb,ub,tspan)
 {
   this->m_robotnum = robotnum;
   this->body = -1;
@@ -1306,7 +1372,8 @@ WorldFixedPositionConstraint::WorldFixedPositionConstraint(RigidBodyManipulator*
 
 int WorldFixedPositionConstraint::getNumConstraint(double* t, int n_breaks)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int num_valid_t = this->numValidTime(t,n_breaks);
+  if(num_valid_t>=2)
   {
     return this->pts.cols();
   }
@@ -1316,59 +1383,52 @@ int WorldFixedPositionConstraint::getNumConstraint(double* t, int n_breaks)
   }
 }
 
-void WorldFixedPositionConstraint::eval(double* t, int n_breaks, const MatrixXd &q, VectorXd &c, MatrixXd &dc)
+void WorldFixedPositionConstraint::eval_valid(double* valid_t, int num_valid_t, const MatrixXd &valid_q, VectorXd &c, MatrixXd &dc_valid)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int n_pts = this->pts.cols();
+  int nq = this->robot->num_dof;
+  MatrixXd *pos = new MatrixXd[num_valid_t];
+  MatrixXd *dpos = new MatrixXd[num_valid_t];
+  for(int i = 0;i<num_valid_t;i++)
   {
-    int n_pts = this->pts.cols();
-    int nq = this->robot->num_dof;
-    MatrixXd *pos = new MatrixXd[n_breaks];
-    MatrixXd *dpos = new MatrixXd[n_breaks];
-    for(int i = 0;i<n_breaks;i++)
-    {
-      this->robot->doKinematics((double*) q.data()+i*nq);
-      pos[i].resize(3,n_pts);
-      this->robot->forwardKin(this->body,this->pts,0,pos[i]);
-      dpos[i].resize(3*n_pts,nq);
-      this->robot->forwardJac(this->body,this->pts,0,dpos[i]);
-    }
-    int* next_idx = new int[n_breaks];
-    int* prev_idx = new int[n_breaks];
-    for(int i = 0;i<n_breaks;i++)
-    {
-      next_idx[i] = (i+1)%n_breaks;
-      prev_idx[i] = (i+n_breaks-1)%n_breaks;
-    }
-    c.resize(n_pts,1);
-    dc.resize(n_pts,nq*n_breaks);
-    for(int i = 0;i<n_breaks;i++)
-    {
-      MatrixXd tmp1(3,n_pts);
-      tmp1 = pos[i]-pos[next_idx[i]];
-      MatrixXd tmp2 = tmp1.cwiseProduct(tmp1);
-      VectorXd tmp3 = tmp2.colwise().sum();
-      c += tmp3.transpose();
-      for(int j = 0;j<n_pts;j++)
-      {
-        Vector3d tmp_vec = 4*pos[i].col(j)-2*pos[next_idx[i]].col(j)-2*pos[prev_idx[i]].col(j);
-        dc.block(j,i*nq,1,nq) = tmp_vec.transpose()*dpos[i].block(j*3,0,3,nq);
-      }
-    }
-    delete[] pos;
-    delete[] dpos;
-    delete[] next_idx;
-    delete[] prev_idx;
+    this->robot->doKinematics((double*) valid_q.data()+i*nq);
+    pos[i].resize(3,n_pts);
+    this->robot->forwardKin(this->body,this->pts,0,pos[i]);
+    dpos[i].resize(3*n_pts,nq);
+    this->robot->forwardJac(this->body,this->pts,0,dpos[i]);
   }
-  else
+  int* next_idx = new int[num_valid_t];
+  int* prev_idx = new int[num_valid_t];
+  for(int i = 0;i<num_valid_t;i++)
   {
-    c.resize(0);
-    dc.resize(0,0);
+    next_idx[i] = (i+1)%num_valid_t;
+    prev_idx[i] = (i+num_valid_t-1)%num_valid_t;
   }
+  c.resize(n_pts,1);
+  dc_valid = MatrixXd::Zero(n_pts,nq*num_valid_t);
+  for(int i = 0;i<num_valid_t;i++)
+  {
+    MatrixXd tmp1(3,n_pts);
+    tmp1 = pos[i]-pos[next_idx[i]];
+    MatrixXd tmp2 = tmp1.cwiseProduct(tmp1);
+    VectorXd tmp3 = tmp2.colwise().sum();
+    c += tmp3.transpose();
+    for(int j = 0;j<n_pts;j++)
+    {
+      Vector3d tmp_vec = 4*pos[i].col(j)-2*pos[next_idx[i]].col(j)-2*pos[prev_idx[i]].col(j);
+      dc_valid.block(j,i*nq,1,nq) = tmp_vec.transpose()*dpos[i].block(j*3,0,3,nq);
+    }
+  }
+  delete[] pos;
+  delete[] dpos;
+  delete[] next_idx;
+  delete[] prev_idx;
 }
 
 void WorldFixedPositionConstraint::bounds(double* t, int n_breaks, VectorXd &lb, VectorXd &ub)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int num_valid_t = this->numValidTime(t,n_breaks);
+  if(num_valid_t>=2)
   {
     int n_pts = this->pts.cols();
     lb.resize(n_pts,1);
@@ -1385,7 +1445,8 @@ void WorldFixedPositionConstraint::bounds(double* t, int n_breaks, VectorXd &lb,
 
 void WorldFixedPositionConstraint::name(double* t, int n_breaks,std::vector<std::string> &name_str)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int num_valid_t = this->numValidTime(t,n_breaks);
+  if(num_valid_t>=2)
   {
     int n_pts = this->pts.cols();
     for(int i = 0;i<n_pts;i++)
@@ -1411,70 +1472,63 @@ WorldFixedOrientConstraint::WorldFixedOrientConstraint(RigidBodyManipulator* rob
 
 int WorldFixedOrientConstraint::getNumConstraint(double* t, int n_breaks)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int num_valid_t = this->numValidTime(t,n_breaks);
+  if(num_valid_t>=2)
     return 1;
   else
     return 0;
 }
 
-void WorldFixedOrientConstraint::eval(double* t, int n_breaks, const MatrixXd &q, VectorXd &c, MatrixXd &dc)
+void WorldFixedOrientConstraint::eval_valid(double* valid_t, int num_valid_t, const MatrixXd &valid_q, VectorXd &c, MatrixXd &dc_valid)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int nq = this->robot->num_dof;
+  Vector4d* quat = new Vector4d[num_valid_t];
+  MatrixXd* dquat = new MatrixXd[num_valid_t];
+  Vector4d origin_pt;
+  origin_pt<<0.0,0.0,0.0,1.0;
+  for(int i = 0;i<num_valid_t;i++)
   {
-    int nq = this->robot->num_dof;
-    assert(q.rows() == nq && q.cols() == n_breaks);
-    Vector4d* quat = new Vector4d[n_breaks];
-    MatrixXd* dquat = new MatrixXd[n_breaks];
-    Vector4d origin_pt;
-    origin_pt<<0.0,0.0,0.0,1.0;
-    for(int i = 0;i<n_breaks;i++)
-    {
-      this->robot->doKinematics((double*) q.data()+i*nq);
-      Matrix<double,7,1> tmp_pos;
-      MatrixXd dtmp_pos(7,nq);
-      this->robot->forwardKin(this->body,origin_pt,2,tmp_pos);
-      this->robot->forwardJac(this->body,origin_pt,2,dtmp_pos);
-      quat[i] = tmp_pos.tail(4);
-      dquat[i].resize(4,nq);
-      dquat[i] = dtmp_pos.block(3,0,4,nq);
-    }
-    int* next_idx = new int[n_breaks];
-    int* prev_idx = new int[n_breaks];
-    for(int i = 0;i<n_breaks;i++)
-    {
-      next_idx[i] = (i+1)%n_breaks;
-      prev_idx[i] = (i+n_breaks-1)%n_breaks;
-    }
-    c(0) = 0.0;
-    dc = MatrixXd::Zero(1,nq*n_breaks);
-    for(int i = 0;i<n_breaks;i++)
-    {
+    this->robot->doKinematics((double*) valid_q.data()+i*nq);
+    Matrix<double,7,1> tmp_pos;
+    MatrixXd dtmp_pos(7,nq);
+    this->robot->forwardKin(this->body,origin_pt,2,tmp_pos);
+    this->robot->forwardJac(this->body,origin_pt,2,dtmp_pos);
+    quat[i] = tmp_pos.tail(4);
+    dquat[i].resize(4,nq);
+    dquat[i] = dtmp_pos.block(3,0,4,nq);
+  }
+  int* next_idx = new int[num_valid_t];
+  int* prev_idx = new int[num_valid_t];
+  for(int i = 0;i<num_valid_t;i++)
+  {
+    next_idx[i] = (i+1)%num_valid_t;
+    prev_idx[i] = (i+num_valid_t-1)%num_valid_t;
+  }
+  c(0) = 0.0;
+  dc_valid = MatrixXd::Zero(1,nq*num_valid_t);
+  for(int i = 0;i<num_valid_t;i++)
+  {
 
-      double tmp1 = quat[i].transpose()*quat[next_idx[i]];
-      double tmp2 = quat[i].transpose()*quat[prev_idx[i]];
-      c(0) += pow(tmp1,2);
-      dc.block(0,nq*i,1,nq) = (2*tmp1*quat[next_idx[i]].transpose() + 2*tmp2*quat[prev_idx[i]].transpose())*dquat[i];
-    }
-    delete[] quat;
-    delete[] dquat;
-    delete[] next_idx;
-    delete[] prev_idx;
+    double tmp1 = quat[i].transpose()*quat[next_idx[i]];
+    double tmp2 = quat[i].transpose()*quat[prev_idx[i]];
+    c(0) += pow(tmp1,2);
+    dc_valid.block(0,nq*i,1,nq) = (2*tmp1*quat[next_idx[i]].transpose() + 2*tmp2*quat[prev_idx[i]].transpose())*dquat[i];
   }
-  else
-  {
-    c.resize(0);
-    dc.resize(0,0);
-  }
+  delete[] quat;
+  delete[] dquat;
+  delete[] next_idx;
+  delete[] prev_idx;
 }
 
 void WorldFixedOrientConstraint::bounds(double* t,int n_breaks, VectorXd &lb, VectorXd &ub)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int num_valid_t = this->numValidTime(t,n_breaks);
+  if(num_valid_t>=2)
   {
     lb.resize(1);
     ub.resize(1);
-    lb(0) = (double) n_breaks;
-    ub(0) = (double) n_breaks;
+    lb(0) = (double) num_valid_t;
+    ub(0) = (double) num_valid_t;
   }
   else
   {
@@ -1485,7 +1539,8 @@ void WorldFixedOrientConstraint::bounds(double* t,int n_breaks, VectorXd &lb, Ve
 
 void WorldFixedOrientConstraint::name(double* t, int n_breaks, std::vector<std::string> &name_str)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int num_valid_t = this->numValidTime(t,n_breaks);
+  if(num_valid_t>=2);
   {
     char cnst_name_buffer[500];
     sprintf(cnst_name_buffer,"World fixed orientation constraint for %s",this->body_name.c_str());
@@ -1507,7 +1562,8 @@ WorldFixedBodyPoseConstraint::WorldFixedBodyPoseConstraint(RigidBodyManipulator 
 
 int WorldFixedBodyPoseConstraint::getNumConstraint(double* t, int n_breaks)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int num_valid_t = this->numValidTime(t,n_breaks);
+  if(num_valid_t>=2)
   {
     return 2;
   }
@@ -1517,76 +1573,67 @@ int WorldFixedBodyPoseConstraint::getNumConstraint(double* t, int n_breaks)
   }
 }
 
-void WorldFixedBodyPoseConstraint::eval(double* t, int n_breaks,const MatrixXd &q, VectorXd &c, MatrixXd &dc)
+void WorldFixedBodyPoseConstraint::eval_valid(double* valid_t, int num_valid_t,const MatrixXd &valid_q, VectorXd &c, MatrixXd &dc_valid)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int nq = this->robot->num_dof;
+  Vector3d *pos = new Vector3d[num_valid_t];
+  Vector4d *quat = new Vector4d[num_valid_t];
+  MatrixXd *dpos = new MatrixXd[num_valid_t];
+  MatrixXd *dquat = new MatrixXd[num_valid_t];
+  Vector4d origin_pt;
+  origin_pt<< 0.0,0.0,0.0,1.0;
+  for(int i = 0;i<num_valid_t;i++)
   {
-    int nq = this->robot->num_dof;
-    Vector3d *pos = new Vector3d[n_breaks];
-    Vector4d *quat = new Vector4d[n_breaks];
-    MatrixXd *dpos = new MatrixXd[n_breaks];
-    MatrixXd *dquat = new MatrixXd[n_breaks];
-    Vector4d origin_pt;
-    origin_pt<< 0.0,0.0,0.0,1.0;
-    for(int i = 0;i<n_breaks;i++)
-    {
-      this->robot->doKinematics((double*) q.data()+i*nq);
-      Matrix<double,7,1> pos_tmp;
-      this->robot->forwardKin(this->body,origin_pt,2,pos_tmp);
-      pos[i] = pos_tmp.head(3);
-      quat[i] = pos_tmp.tail(4);
-      MatrixXd J_tmp(7,nq);
-      this->robot->forwardJac(this->body,origin_pt,2,J_tmp);
-      dpos[i].resize(3,nq);
-      dpos[i] = J_tmp.block(0,0,3,nq);
-      dquat[i].resize(4,nq);
-      dquat[i] = J_tmp.block(3,0,4,nq);
-    }
-    int* next_idx = new int[n_breaks];
-    int* prev_idx = new int[n_breaks];
-    for(int i = 0;i<n_breaks;i++)
-    {
-      next_idx[i] = (i+1)%n_breaks;
-      prev_idx[i] = (i+n_breaks-1)%n_breaks;
-    }
-    c.resize(2,1);
-    dc.resize(2,nq*n_breaks);
-    c = Vector2d::Zero();
-    for(int i = 0;i<n_breaks;i++)
-    {
-      Vector3d tmp1;
-      tmp1 = pos[i]-pos[next_idx[i]];
-      c(0) += tmp1.transpose()*tmp1;
-      Vector3d tmp_vec = 4*pos[i]-2*pos[next_idx[i]]-2*pos[prev_idx[i]];
-      dc.block(0,i*nq,1,nq) = tmp_vec.transpose()*dpos[i];
-      double tmp2 = quat[i].transpose()*quat[next_idx[i]];
-      double tmp3 = quat[i].transpose()*quat[prev_idx[i]];
-      c(1) += pow(tmp2,2);
-      dc.block(1,nq*i,1,nq) = (2*tmp2*quat[next_idx[i]].transpose() + 2*tmp3*quat[prev_idx[i]].transpose())*dquat[i];
-    }
-    delete[] pos;
-    delete[] dpos;
-    delete[] quat;
-    delete[] dquat;
-    delete[] next_idx;
-    delete[] prev_idx;
+    this->robot->doKinematics((double*) valid_q.data()+i*nq);
+    Matrix<double,7,1> pos_tmp;
+    this->robot->forwardKin(this->body,origin_pt,2,pos_tmp);
+    pos[i] = pos_tmp.head(3);
+    quat[i] = pos_tmp.tail(4);
+    MatrixXd J_tmp(7,nq);
+    this->robot->forwardJac(this->body,origin_pt,2,J_tmp);
+    dpos[i].resize(3,nq);
+    dpos[i] = J_tmp.block(0,0,3,nq);
+    dquat[i].resize(4,nq);
+    dquat[i] = J_tmp.block(3,0,4,nq);
   }
-  else
+  int* next_idx = new int[num_valid_t];
+  int* prev_idx = new int[num_valid_t];
+  for(int i = 0;i<num_valid_t;i++)
   {
-    c.resize(0);
-    dc.resize(0,0);
+    next_idx[i] = (i+1)%num_valid_t;
+    prev_idx[i] = (i+num_valid_t-1)%num_valid_t;
   }
-
+  c = Vector2d::Zero();
+  dc_valid = MatrixXd::Zero(2,nq*num_valid_t);
+  for(int i = 0;i<num_valid_t;i++)
+  {
+    Vector3d tmp1;
+    tmp1 = pos[i]-pos[next_idx[i]];
+    c(0) += tmp1.transpose()*tmp1;
+    Vector3d tmp_vec = 4*pos[i]-2*pos[next_idx[i]]-2*pos[prev_idx[i]];
+    dc_valid.block(0,i*nq,1,nq) = tmp_vec.transpose()*dpos[i];
+    double tmp2 = quat[i].transpose()*quat[next_idx[i]];
+    double tmp3 = quat[i].transpose()*quat[prev_idx[i]];
+    c(1) += pow(tmp2,2);
+    dc_valid.block(1,nq*i,1,nq) = (2*tmp2*quat[next_idx[i]].transpose() + 2*tmp3*quat[prev_idx[i]].transpose())*dquat[i];
+  }
+  delete[] pos;
+  delete[] dpos;
+  delete[] quat;
+  delete[] dquat;
+  delete[] next_idx;
+  delete[] prev_idx;
 }
 
 void WorldFixedBodyPoseConstraint::bounds(double* t, int n_breaks, VectorXd &lb, VectorXd &ub)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int num_valid_t = this->numValidTime(t,n_breaks);
+  if(num_valid_t>=2)
   {
     lb.resize(2);
     ub.resize(2);
-    lb<<0.0,(double) n_breaks;
-    ub<<0.0,(double) n_breaks;
+    lb<<0.0,(double) num_valid_t;
+    ub<<0.0,(double) num_valid_t;
   }
   else
   {
@@ -1597,7 +1644,8 @@ void WorldFixedBodyPoseConstraint::bounds(double* t, int n_breaks, VectorXd &lb,
 
 void WorldFixedBodyPoseConstraint::name(double* t, int n_breaks, std::vector<std::string> &name_str)
 {
-  if(this->isTimeValid(t,n_breaks))
+  int num_valid_t = this->numValidTime(t,n_breaks);
+  if(num_valid_t>=2)
   {
     char cnst_name_buffer1[500];
     sprintf(cnst_name_buffer1,"World fixed body pose constraint for %s position",this->body_name.c_str());

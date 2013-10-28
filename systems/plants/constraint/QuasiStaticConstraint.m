@@ -1,8 +1,7 @@
 classdef QuasiStaticConstraint<Constraint
 % constrain the Center of Mass to lie inside the shrunk support polygon
 % @param robot             -- The robot
-% @param robotnum          -- The robotnum to compute CoM. Set to 1 if only intend to
-%                             compute the CoM of robot(1)
+
 % @param tspan             -- The time span of the constraint. An optional
 %                             argument. If it is not passed in the constructor,
 %                             then tspan defaults to [-inf inf];
@@ -16,6 +15,7 @@ classdef QuasiStaticConstraint<Constraint
 % @param body_pts          -- A cell array of size 1xnum_bodies. body_pts{i} is a
 %                             3xnum_body_pts(i) double array, which is the active
 %                             ground contact points in the body frame
+% @param robotnum          -- The robotnum to compute CoM. Default is 1
   properties(SetAccess = protected)
     robot;
     robotnum;
@@ -33,12 +33,15 @@ classdef QuasiStaticConstraint<Constraint
   end
   
   methods
-    function obj = QuasiStaticConstraint(robot,robotnum,tspan)
-      if(nargin <3)
+    function obj = QuasiStaticConstraint(robot,tspan,robotnum)
+      if(nargin<3)
+        robotnum = 1;
+      end
+      if(nargin <2)
         tspan = [-inf,inf];
       end
       tspan = [tspan(1) tspan(end)];
-      ptr = constructPtrQuasiStaticConstraintmex(robot.getMexModelPtr,robotnum,tspan);
+      ptr = constructPtrQuasiStaticConstraintmex(robot.getMexModelPtr,tspan,robotnum);
       obj = obj@Constraint(Constraint.QuasiStaticConstraintType);
       obj.robot = robot;
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))

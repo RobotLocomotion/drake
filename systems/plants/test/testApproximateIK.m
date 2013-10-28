@@ -36,7 +36,7 @@ r_hand_pos0 = forwardKin(r, kinsol, r_hand, r_hand_pts, 0);
 l_hand_pos0 = forwardKin(r, kinsol, l_hand, l_hand_pts, 0);
 comdes = com+2e-3*rand(3,1);
 q_seed = q0+1e-3*randn(nq,1);
-kc_com = WorldCoMConstraint(r,1,comdes,comdes);
+kc_com = WorldCoMConstraint(r,comdes,comdes);
 display('Check equality constraint only');
 q = test_approximateIK_userfun(r,q_seed,q0,kc_com,ikoption);
 
