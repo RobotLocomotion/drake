@@ -13,6 +13,8 @@ classdef IKoptions
 % All subsequent fields will be used in inverseKinTraj only
 % @param Qa                 -- The cost matrix for acceleration
 % @param Qv                 -- The cost matrix for velocity
+% @param additional_tSamples  -- Additional time samples (apart from knot points) in inverseKinTraj to check
+%                                constraints
 % @param fixInitialState    -- A boolean flag, set to true if the posture q and
 %                              velocity qd at time t(1) is fixed. q(1) = q_seed_traj.eval(t(1))
 %                              qdot(1) = (ikpotions.qd0_lb+ikoptions.qd0_ub)/2
@@ -38,6 +40,7 @@ classdef IKoptions
     SNOPT_IterationsLimit
     SNOPT_SuperbasicsLimit
     SNOPT_MajorOptimalityTolerance
+    additional_tSamples
     fixInitialState
     q0_lb
     q0_ub
@@ -62,6 +65,7 @@ classdef IKoptions
       obj.SNOPT_IterationsLimit = 10000;
       obj.SNOPT_SuperbasicsLimit = 2000;
       obj.SNOPT_MajorOptimalityTolerance = 1e-4;
+      obj.additional_tSamples = [];
       obj.fixInitialState = true;
       [obj.q0_lb,obj.q0_ub] = obj.robot.getJointLimits();
       obj.qd0_ub = zeros(obj.nq,1);
@@ -225,7 +229,17 @@ classdef IKoptions
       obj.qdf_lb = lb;
       obj.qdf_ub = ub;
     end
-    
+
+    function obj = setAdditionaltSamples(obj,t_samples)
+      typecheck(t_samples,'double');
+      if(~isempty(t_samples))
+        sizecheck(t_samples,[1,nan]);
+        obj.additional_tSamples = unique(t_samples);
+      else
+        obj.additional_tSamples = [];
+      end
+    end
+
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
       nq_cache = obj.nq;

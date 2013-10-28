@@ -1,11 +1,11 @@
 classdef WorldCoMConstraint < PositionConstraint
 % @param robot            A RigidBodyManipulator, or a
-%                         TimeSteppingRigidBodyManipulator
-% @param robotnum         The indices of the robot whose CoM is computed as a whole. 
+%                         TimeSteppingRigidBodyManipulator 
 % @param lb, ub           Both are 3x1 vectors. [lb, ub]
 %                         represents the bounding box for the 
 %                         position of Center of Mass in the world frame
 % @param tspan            OPTIONAL argument. A 1x2 vector
+% @param robotnum         The indices of the robot whose CoM is computed as a whole,default is 1.
   properties(SetAccess = protected)
     robotnum
     body
@@ -19,11 +19,14 @@ classdef WorldCoMConstraint < PositionConstraint
   end
   
   methods
-    function obj = WorldCoMConstraint(robot,robotnum,lb,ub,tspan)
-      if(nargin == 4)
+    function obj = WorldCoMConstraint(robot,lb,ub,tspan,robotnum)
+      if(nargin<=4)
+        robotnum = 1;
+      end
+      if(nargin <= 3)
         tspan = [-inf inf];
       end
-      ptr = constructPtrWorldCoMConstraintmex(robot.getMexModelPtr,robotnum,lb,ub,tspan);
+      ptr = constructPtrWorldCoMConstraintmex(robot.getMexModelPtr,lb,ub,tspan,robotnum);
       obj = obj@PositionConstraint(robot,[0;0;0],lb,ub,tspan);
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))
         error('Drake:WorldCoMConstraint: robotnum is not accepted');

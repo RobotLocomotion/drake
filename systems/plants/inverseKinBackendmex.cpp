@@ -36,7 +36,7 @@ MatrixXd q_sol;
 MatrixXd Q;
 MatrixXd Qa;
 MatrixXd Qv;
-bool quasiStaticFlag;
+bool qscActiveFlag;
 double shrinkFactor;
 snopt::integer nx;
 snopt::integer nF;
@@ -47,6 +47,7 @@ snopt::integer* nG_array;
 snopt::integer* nA_array;
 int nq;
 double *t = NULL;
+double *t_samples = NULL; 
 double* ti = NULL;
 int num_st_kc;
 int num_mt_kc;
@@ -66,10 +67,18 @@ int num_qfree;
 int num_qdotfree;
 
 MatrixXd velocity_mat;
+MatrixXd velocity_mat_qd0;
+MatrixXd velocity_mat_qdf;
 MatrixXd accel_mat;
 MatrixXd accel_mat_qd0;
 MatrixXd accel_mat_qdf;
 
+VectorXd* t_inbetween;
+int num_inbetween_tSamples;
+MatrixXd* dqInbetweendqknot;
+MatrixXd* dqInbetweendqd0;
+MatrixXd* dqInbetweendqdf;
+int* qknot_qsamples_idx;
 
 /* Remeber to delete this*/
 snopt::integer nF_tmp;
@@ -112,7 +121,7 @@ void gevalNumerical(void (*func_ptr)(const VectorXd &, VectorXd &),const VectorX
 void IK_constraint_fun(double* x,double* c, double* G)
 {
   double* qsc_weights;
-  if(quasiStaticFlag)
+  if(qscActiveFlag)
   {
     qsc_weights = x+nq;
   }
@@ -130,7 +139,7 @@ void IK_constraint_fun(double* x,double* c, double* G)
     nc_accum += nc;
     ng_accum += nc*nq;
   }
-  if(quasiStaticFlag)
+  if(qscActiveFlag)
   {
     int num_qsc_cnst = qsc_ptr->getNumConstraint(ti);
     VectorXd cnst(num_qsc_cnst-1);
@@ -168,36 +177,14 @@ int snoptIKfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal x[],
   return 0;
 }
 
-void IKtraj_cost_fun(double* x,double &J,double* dJ)
+void IKtraj_cost_fun(MatrixXd q,const VectorXd &qdot0,const VectorXd &qdotf,double &J,double* dJ)
 {
   MatrixXd dJ_vec = MatrixXd::Zero(1,nq*(num_qfree+num_qdotfree));
-  VectorXd qdotf(nq);
-  VectorXd qdot0(nq);
-  MatrixXd q(nq*nT,1);
   MatrixXd qdot(nq*nT,1);
   MatrixXd qddot(nq*nT,1);
-  for(int i = 0;i<nq;i++)
-  {
-    qdotf(i) = x[qdotf_idx[i]];
-  }
-  if(fixInitialState)
-  {
-    qdot0 = qdot0_fixed;
-    q.col(0) = q0_fixed;
-  }
-  else
-  {
-    for(int i = 0;i<nq;i++)
-    {
-      qdot0(i) = x[qdot0_idx[i]];
-    }
-  }
-  for(int i = 0;i<nq*num_qfree;i++)
-  {
-    q(nq*qstart_idx+i) = x[qfree_idx[i]];
-  }
+  q.resize(nq*nT,1);
   qdot.block(0,0,nq,1) = qdot0;
-  qdot.block(nq,0,nq*(nT-2),1) = velocity_mat*q;
+  qdot.block(nq,0,nq*(nT-2),1) = velocity_mat*q+velocity_mat_qd0*qdot0+velocity_mat_qdf*qdotf;
   qdot.block(nq*(nT-1),0,nq,1) = qdotf;
   qddot = accel_mat*q+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf;
   q.resize(nq,nT);
@@ -223,7 +210,7 @@ void IKtraj_cost_fun(double* x,double &J,double* dJ)
   dJdqdd.resize(1,nq*nT);
   dJ_vec.block(0,0,1,nq*num_qfree) += dJdqdd*accel_mat.block(0,nq*qstart_idx,nq*nT,nq*num_qfree);
   MatrixXd dJdqdotf;
-  dJdqdotf = dJdqdd*accel_mat_qdf+Qv*qdotf;
+  dJdqdotf = dJdqdd*accel_mat_qdf+Qv*qdotf+dJdqd*velocity_mat_qdf;
   dJdqdotf.resize(1,nq);
   if(fixInitialState)
   {
@@ -232,7 +219,7 @@ void IKtraj_cost_fun(double* x,double &J,double* dJ)
   else
   {
     MatrixXd dJdqdot0;
-    dJdqdot0 = dJdqdd*accel_mat_qd0+Qv*qdot0;
+    dJdqdot0 = dJdqdd*accel_mat_qd0+Qv*qdot0+dJdqd*velocity_mat_qd0;
     dJdqdot0.resize(1,nq);
     dJ_vec.block(0,nq*num_qfree,1,nq) = dJdqdot0;
     dJ_vec.block(0,nq*num_qfree+nq,1,nq) = dJdqdotf;
@@ -247,22 +234,37 @@ int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal 
     snopt::integer iu[], snopt::integer *leniu,
     snopt::doublereal ru[], snopt::integer *lenru)
 {
-  IKtraj_cost_fun(x,F[0],G);
-  int nf_cum = 1;
-  int nG_cum = nq*(num_qfree+num_qdotfree);
+  VectorXd qdotf = VectorXd::Zero(nq);
+  VectorXd qdot0 = VectorXd::Zero(nq);
   MatrixXd q(nq,nT);
-  if(!fixInitialState)
+  for(int i = 0;i<nq;i++)
   {
-    memcpy(q.data(),x,sizeof(double)*nq);
+    qdotf(i) = x[qdotf_idx[i]];
+  }
+  if(fixInitialState)
+  {
+    qdot0 = qdot0_fixed;
+    q.col(0) = q0_fixed;
   }
   else
   {
-    q.col(0) = q0_fixed;
+    for(int i = 0;i<nq;i++)
+    {
+      qdot0(i) = x[qdot0_idx[i]];
+    }
   }
+  for(int i = 0;i<nq*num_qfree;i++)
+  {
+    q(nq*qstart_idx+i) = x[qfree_idx[i]];
+  }
+
+  IKtraj_cost_fun(q,qdot0,qdotf,F[0],G);
+  int nf_cum = 1;
+  int nG_cum = nq*(num_qfree+num_qdotfree);
   for(int i = qstart_idx;i<nT;i++)
   {
     double* qi;
-    if(quasiStaticFlag)
+    if(qscActiveFlag)
     {
       qi = x+(i-qstart_idx)*(nq+num_qsc_pts);
     }
@@ -270,23 +272,88 @@ int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal 
     {
       qi = x+(i-qstart_idx)*nq;
     }
-    memcpy(q.data()+nq*i,qi,sizeof(double)*nq);
     model->doKinematics(qi);
     ti = &t[i];
     IK_constraint_fun(qi,F+nf_cum,G+nG_cum);
     nf_cum += nc_array[i];
     nG_cum += nG_array[i];
   }
-  MatrixXd qfree = q.block(0,qstart_idx,nq,num_qfree);
+  MatrixXd q_inbetween = MatrixXd::Zero(nq,num_inbetween_tSamples);
+  MatrixXd q_samples = MatrixXd::Zero(nq,num_inbetween_tSamples+nT);
+  int inbetween_idx = 0;
+  
+  for(int i = 0;i<nT-1;i++)
+  {
+    q.resize(nq*nT,1);
+    MatrixXd q_inbetween_block_tmp = dqInbetweendqknot[i]*q+dqInbetweendqd0[i]*qdot0+dqInbetweendqdf[i]*qdotf;
+    q_inbetween_block_tmp.resize(nq,t_inbetween[i].size());  
+    q_inbetween.block(0,inbetween_idx,nq,t_inbetween[i].size()) = q_inbetween_block_tmp; 
+    q.resize(nq,nT);
+    for(int j = 0;j<t_inbetween[i].size();j++)
+    {
+      double t_j = t_inbetween[i](j)+t[i];
+      double* qi = q_inbetween.data()+(inbetween_idx+j)*nq;
+      model->doKinematics(qi);
+      for(int k = 0;k<num_st_kc;k++)
+      {
+        if(st_kc_array[k]->isTimeValid(&t_j))
+        {
+          int nc = st_kc_array[k]->getNumConstraint(&t_j);
+          VectorXd c_k(nc);
+          MatrixXd dc_k(nc,nq);
+          st_kc_array[k]->eval(&t_j,c_k,dc_k);
+          memcpy(F+nf_cum,c_k.data(),sizeof(double)*nc);
+          MatrixXd dc_kdx = MatrixXd::Zero(nc,nq*(num_qfree+num_qdotfree));
+          dc_kdx.block(0,0,nc,nq*num_qfree) = dc_k*dqInbetweendqknot[i].block(nq*j,nq*qstart_idx,nq,nq*num_qfree);
+          if(!fixInitialState)
+          {
+            dc_kdx.block(0,nq*num_qfree,nc,nq) = dc_k*dqInbetweendqd0[i].block(nq*j,0,nq,nq);
+            dc_kdx.block(0,nq*num_qfree+nq,nc,nq) = dc_k*dqInbetweendqdf[i].block(nq*j,0,nq,nq);
+          }
+          else
+          {
+            dc_kdx.block(0,nq*num_qfree,nc,nq) = dc_k*dqInbetweendqdf[i].block(nq*j,0,nq,nq);
+          }
+          memcpy(G+nG_cum,dc_kdx.data(),sizeof(double)*dc_kdx.size());
+          nf_cum += nc;
+          nG_cum += nc*nq*(num_qfree+num_qdotfree);
+        }
+      }
+    }
+    q_samples.col(inbetween_idx+i) = q.col(i);
+    q_samples.block(0,inbetween_idx+i+1,nq,t_inbetween[i].size()) = q_inbetween.block(0,inbetween_idx,nq,t_inbetween[i].size());
+    inbetween_idx += t_inbetween[i].size();
+  }
+  q_samples.col(nT+num_inbetween_tSamples-1) = q.col(nT-1);
+
   for(int i = 0;i<num_mt_kc;i++)
   {
     VectorXd mtkc_c(mtkc_nc[i]);
-    MatrixXd mtkc_dc(mtkc_nc[i],nq*num_qfree);
-    mt_kc_array[i]->eval(t+qstart_idx,num_qfree,qfree,mtkc_c,mtkc_dc);
+    MatrixXd mtkc_dc(mtkc_nc[i],nq*(num_qfree+num_inbetween_tSamples));
+    mt_kc_array[i]->eval(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples,q_samples.block(0,qstart_idx,nq,num_qfree+num_inbetween_tSamples),mtkc_c,mtkc_dc);
     memcpy(F+nf_cum,mtkc_c.data(),sizeof(double)*mtkc_nc[i]);
-    memcpy(G+nG_cum,mtkc_dc.data(),sizeof(double)*mtkc_dc.size());
+    MatrixXd mtkc_dc_dx = MatrixXd::Zero(mtkc_nc[i],nq*(num_qfree+num_qdotfree));
+    for(int j = qstart_idx;j<nT;j++)
+    {
+      mtkc_dc_dx.block(0,(j-qstart_idx)*nq,mtkc_nc[i],nq) = mtkc_dc.block(0,(qknot_qsamples_idx[j]-qstart_idx)*nq,mtkc_nc[i],nq);
+    }
+    for(int j = 0;j<nT-1;j++)
+    {
+      MatrixXd dc_ij = mtkc_dc.block(0,nq*(qknot_qsamples_idx[j]+1-qstart_idx),mtkc_nc[i],nq*t_inbetween[j].size());
+      mtkc_dc_dx.block(0,0,mtkc_nc[i],nq*num_qfree) += dc_ij*dqInbetweendqknot[j].block(0,qstart_idx*nq,nq*t_inbetween[j].size(),nq*num_qfree);
+      if(fixInitialState)
+      {
+        mtkc_dc_dx.block(0,nq*num_qfree,mtkc_nc[i],nq) += dc_ij*dqInbetweendqdf[j];
+      }
+      else
+      {
+        mtkc_dc_dx.block(0,nq*num_qfree,mtkc_nc[i],nq) += dc_ij*dqInbetweendqd0[j];
+        mtkc_dc_dx.block(0,nq*num_qfree+nq,mtkc_nc[i],nq) += dc_ij*dqInbetweendqdf[j];
+      }
+    }
+    memcpy(G+nG_cum,mtkc_dc_dx.data(),sizeof(double)*mtkc_dc_dx.size());
     nf_cum += mtkc_nc[i];
-    nG_cum += mtkc_nc[i]*nq*num_qfree;
+    nG_cum += mtkc_nc[i]*nq*(num_qfree+num_qdotfree);
   }
   return 0;
 }
@@ -421,12 +488,12 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   }
   if(qsc_ptr == NULL)
   {
-    quasiStaticFlag = false;
+    qscActiveFlag = false;
     num_qsc_pts = 0;
   }
   else
   {
-    quasiStaticFlag = qsc_ptr->isActive(); 
+    qscActiveFlag = qsc_ptr->isActive(); 
     num_qsc_pts = qsc_ptr->getNumWeights();
   }
   mxArray* pm;
@@ -486,8 +553,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   }
   q_sol.resize(nq,nT);
   memcpy(q_sol.data(),mxGetPr(prhs[3]),sizeof(double)*nq*nT);
-  VectorXd* iCfun_array = new VectorXd[nT];
-  VectorXd* jCvar_array = new VectorXd[nT];
+  VectorXi* iCfun_array = new VectorXi[nT];
+  VectorXi* jCvar_array = new VectorXi[nT];
   nc_array = new snopt::integer[nT];
   nG_array = new snopt::integer[nT];
   nA_array = new snopt::integer[nT];
@@ -498,8 +565,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     nA_array[i] = 0;
   }
   VectorXd* A_array = new VectorXd[nT];
-  VectorXd* iAfun_array = new VectorXd[nT];
-  VectorXd* jAvar_array = new VectorXd[nT];
+  VectorXi* iAfun_array = new VectorXi[nT];
+  VectorXi* jAvar_array = new VectorXi[nT];
   VectorXd* Cmin_array = new VectorXd[nT];
   VectorXd* Cmax_array = new VectorXd[nT]; 
   vector<string>* Cname_array = new vector<string>[nT];
@@ -530,8 +597,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         Cmax_array[i].tail(nc) = ub;
         iCfun_array[i].conservativeResize(iCfun_array[i].size()+nc*nq);
         jCvar_array[i].conservativeResize(jCvar_array[i].size()+nc*nq);
-        VectorXd iCfun_append(nc);
-        VectorXd jCvar_append(nc);
+        VectorXi iCfun_append(nc);
+        VectorXi jCvar_append(nc);
         for(int k = 0;k<nc;k++)
         {
           iCfun_append(k) = nc_array[i]+k+1;
@@ -539,7 +606,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         for(int k = 0;k<nq;k++)
         {
           iCfun_array[i].segment(nG_array[i]+k*nc,nc) = iCfun_append;
-          jCvar_append = VectorXd::Constant(nc,k+1);
+          jCvar_append = VectorXi::Constant(nc,k+1);
           jCvar_array[i].segment(nG_array[i]+k*nc,nc) = jCvar_append;
         }
         nc_array[i] = nc_array[i]+nc;
@@ -548,14 +615,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         {
           vector<string> constraint_name;
           st_kc_array[j]->name(&t[i],constraint_name);
-          for(int l = 0;l<nc;l++)
-          {
-            Cname_array[i].push_back(constraint_name[l]);
-          }
+          Cname_array[i].insert(Cname_array[i].end(),constraint_name.begin(),constraint_name.end());
         }
       }
     }
-    if(quasiStaticFlag)
+    if(qscActiveFlag)
     {
       int num_qsc_cnst = qsc_ptr->getNumConstraint(&t[i]);
       iCfun_array[i].conservativeResize(iCfun_array[i].size()+(num_qsc_cnst-1)*(nq+num_qsc_pts));
@@ -571,7 +635,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         jCvar_array[i](nG_array[i]+(num_qsc_cnst-1)*k+l) = k+1;
         }
       }
-      iAfun_array[i].tail(num_qsc_pts) = VectorXd::Constant(num_qsc_pts,nc_array[i]+num_qsc_cnst);
+      iAfun_array[i].tail(num_qsc_pts) = VectorXi::Constant(num_qsc_pts,nc_array[i]+num_qsc_cnst);
       for(int k = 0;k<num_qsc_pts;k++)
       {
         jAvar_array[i](nA_array[i]+k) = nq+k+1;
@@ -619,7 +683,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     }
     if(mode == 1)
     {
-      if(!quasiStaticFlag)
+      if(!qscActiveFlag)
       {
         nx = nq;
       }
@@ -668,7 +732,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       double* xupp = new double[nx];
       memcpy(xlow,joint_limit_min.col(i).data(),sizeof(double)*nq);
       memcpy(xupp,joint_limit_max.col(i).data(),sizeof(double)*nq);
-      if(quasiStaticFlag)
+      if(qscActiveFlag)
       {
         for(int k = 0;k<num_qsc_pts;k++)
         {
@@ -707,7 +771,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
           }
         }
       }
-      if(quasiStaticFlag)
+      if(qscActiveFlag)
       {
         for(int j = 0;j<num_qsc_pts;j++)
         {
@@ -1027,6 +1091,10 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     velocity_mat.resize(nq*(nT-2),nq*nT);
     velocity_mat = velocity_mat1.inverse().block(nq,0,nq*(nT-2),nq*nT)*velocity_mat2;
 
+    MatrixXd velocity_mat1_middle_inv = (velocity_mat1.block(nq,nq,nq*(nT-2),nq*(nT-2))).inverse();
+    velocity_mat_qd0 = -velocity_mat1_middle_inv*velocity_mat1.block(nq,0,nq*(nT-2),nq);
+    velocity_mat_qdf = -velocity_mat1_middle_inv*velocity_mat1.block(nq,nq*(nT-1),nq*(nT-2),nq);
+
     MatrixXd accel_mat1 = MatrixXd::Zero(nq*nT,nq*nT);
     MatrixXd accel_mat2 = MatrixXd::Zero(nq*nT,nq*nT);
     for(int j = 0;j<nT-1;j++)
@@ -1047,8 +1115,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     {
       double val_tmp1 = 6.0/(dt[nT-2]*dt[nT-2]);
       double val_tmp2 = -val_tmp1;
-      double val_tmp3 = 4.0/dt[nT-2];
-      double val_tmp4 = 5.0/dt[nT-2];
+      double val_tmp3 = 2.0/dt[nT-2];
+      double val_tmp4 = 4.0/dt[nT-2];
       accel_mat1((nT-1)*nq+k,(nT-2)*nq+k) = val_tmp1;
       accel_mat1((nT-1)*nq+k,(nT-1)*nq+k) = val_tmp2;
       accel_mat2((nT-1)*nq+k,(nT-2)*nq+k) = val_tmp3;
@@ -1057,9 +1125,9 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     accel_mat.resize(nq*nT,nq*nT);
     accel_mat = accel_mat1+accel_mat2.block(0,nq,nq*nT,nq*(nT-2))*velocity_mat;
     accel_mat_qd0.resize(nq*nT,nq);
-    accel_mat_qd0 = accel_mat2.block(0,0,nq*nT,nq);
+    accel_mat_qd0 = accel_mat2.block(0,0,nq*nT,nq)+accel_mat2.block(0,nq,nq*nT,nq*(nT-2))*velocity_mat_qd0;
     accel_mat_qdf.resize(nq*nT,nq);
-    accel_mat_qdf = accel_mat2.block(0,(nT-1)*nq,nT*nq,nq);
+    accel_mat_qdf = accel_mat2.block(0,(nT-1)*nq,nT*nq,nq)+accel_mat2.block(0,nq,nq*nT,nq*(nT-2))*velocity_mat_qdf;
 
     qfree_idx = new int[nq*num_qfree];
     qdotf_idx = new int[nq];
@@ -1072,7 +1140,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       qdot0_idx = NULL; 
     }
     int qdot_idx_start = 0;
-    if(quasiStaticFlag)
+    if(qscActiveFlag)
     {
       nx= nq*(num_qfree+num_qdotfree)+num_qsc_pts*num_qfree;
       for(int j = 0;j<num_qfree;j++)
@@ -1112,7 +1180,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     double* xupp = new double[nx];
     for(int j = 0;j<num_qfree;j++)
     {
-      if(quasiStaticFlag)
+      if(qscActiveFlag)
       {
         memcpy(xlow+j*(nq+num_qsc_pts),joint_limit_min.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
         memcpy(xupp+j*(nq+num_qsc_pts),joint_limit_max.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
@@ -1141,6 +1209,189 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       memcpy(xupp+qdotf_idx[0], qdf_ub.data(),sizeof(double)*nq);
     }
     
+    pm = mxGetProperty(prhs[ikoptions_idx],0,"additional_tSamples");
+    set<double> t_set(t,t+nT);
+    VectorXd inbetween_tSamples;
+    inbetween_tSamples.resize(0);
+    t_inbetween = new VectorXd[nT-1];
+    for(int i = 0;i<nT-1;i++)
+    {
+      t_inbetween[i].resize(0);
+    }
+    {
+      int num_inbetween_tSamples_tmp = mxGetNumberOfElements(pm);
+      double* inbetween_tSamples_tmp = new double[num_inbetween_tSamples_tmp];
+      memcpy(inbetween_tSamples_tmp,mxGetPr(pm),sizeof(double)*num_inbetween_tSamples_tmp);
+      int knot_idx = 0;
+      for(int i = 0;i<num_inbetween_tSamples_tmp;i++)
+      {
+        if(inbetween_tSamples_tmp[i]>t[0] && inbetween_tSamples_tmp[i]<t[nT-1] && t_set.find(inbetween_tSamples_tmp[i])==t_set.end())
+        {
+          inbetween_tSamples.conservativeResize(inbetween_tSamples.size()+1);
+          inbetween_tSamples(inbetween_tSamples.size()-1) = (inbetween_tSamples_tmp[i]);
+          {
+            while(t[knot_idx+1]<inbetween_tSamples_tmp[i])
+            {
+              knot_idx++;
+            }
+            t_inbetween[knot_idx].conservativeResize(t_inbetween[knot_idx].size()+1);
+            t_inbetween[knot_idx](t_inbetween[knot_idx].size()-1) = (inbetween_tSamples_tmp[i]-t[knot_idx]);
+          }
+        }
+      }
+      delete[] inbetween_tSamples_tmp;
+    }
+    num_inbetween_tSamples = inbetween_tSamples.size();
+    qknot_qsamples_idx = new int[nT];
+    t_samples = new double[nT+num_inbetween_tSamples];
+    {
+      int t_samples_idx = 0;
+      for(int i = 0;i<nT-1;i++)
+      {
+        qknot_qsamples_idx[i] = t_samples_idx;
+        t_samples[t_samples_idx] = t[i];
+        for(int j = 0;j<t_inbetween[i].size();j++)
+        {
+          t_samples[t_samples_idx+1+j] = t_inbetween[i](j)+t[i];
+        }
+        t_samples_idx += 1+t_inbetween[i].size();
+      }
+      qknot_qsamples_idx[nT-1] = nT+num_inbetween_tSamples-1;
+      t_samples[nT+num_inbetween_tSamples-1] = t[nT-1];
+    }
+
+    dqInbetweendqknot = new MatrixXd[nT-1];
+    dqInbetweendqd0 = new MatrixXd[nT-1];
+    dqInbetweendqdf = new MatrixXd[nT-1];
+
+    for(int i = 0;i<nT-1;i++)
+    {
+      VectorXd dt_ratio_inbetween_i = t_inbetween[i]/dt[i];
+      int nt_sample_inbetween_i = t_inbetween[i].size();
+      dqInbetweendqknot[i] = MatrixXd::Zero(nt_sample_inbetween_i*nq,nq*nT);
+      dqInbetweendqdf[i] = MatrixXd::Zero(nt_sample_inbetween_i*nq,nq);
+      dqInbetweendqdf[i] = MatrixXd::Zero(nt_sample_inbetween_i*nq,nq);
+      MatrixXd dq_idqdknot_i = MatrixXd::Zero(nt_sample_inbetween_i*nq,nq);
+      MatrixXd dq_idqdknot_ip1 = MatrixXd::Zero(nt_sample_inbetween_i*nq,nq);
+      for(int j = 0;j<nt_sample_inbetween_i;j++)
+      {
+        double val1 = 1.0-3.0*pow(dt_ratio_inbetween_i[j],2)+2.0*pow(dt_ratio_inbetween_i[j],3);
+        double val2 = 3.0*pow(dt_ratio_inbetween_i[j],2)-2.0*pow(dt_ratio_inbetween_i[j],3);
+        double val3 = (1.0-2.0*dt_ratio_inbetween_i[j]+pow(dt_ratio_inbetween_i[j],2))*t_inbetween[i](j);
+        double val4 = (pow(dt_ratio_inbetween_i[j],2)-dt_ratio_inbetween_i[j])*t_inbetween[i](j);
+        for(int k = 0;k<nq;k++)
+        {
+          dqInbetweendqknot[i](j*nq+k,i*nq+k) = val1;
+          dqInbetweendqknot[i](j*nq+k,(i+1)*nq+k) = val2;
+          dq_idqdknot_i(j*nq+k,k) = val3;
+          dq_idqdknot_ip1(j*nq+k,k) = val4;
+        }
+      }
+      if(i>=1 && i<=nT-3)
+      {
+        dqInbetweendqknot[i] += dq_idqdknot_i*velocity_mat.block((i-1)*nq,0,nq,nq*nT)+dq_idqdknot_ip1*velocity_mat.block(i*nq,0,nq,nq*nT);
+        dqInbetweendqd0[i] = dq_idqdknot_i*velocity_mat_qd0.block((i-1)*nq,0,nq,nq)+dq_idqdknot_ip1*velocity_mat_qd0.block(i*nq,0,nq,nq);
+        dqInbetweendqdf[i] = dq_idqdknot_i*velocity_mat_qdf.block((i-1)*nq,0,nq,nq)+dq_idqdknot_ip1*velocity_mat_qdf.block(i*nq,0,nq,nq);
+      }
+      else if(i == 0)
+      {
+        dqInbetweendqknot[i] += dq_idqdknot_ip1*velocity_mat.block(i*nq,0,nq,nq*nT);
+        dqInbetweendqd0[i] = dq_idqdknot_i+dq_idqdknot_ip1*velocity_mat_qd0.block(i*nq,0,nq,nq);
+        dqInbetweendqdf[i] = dq_idqdknot_ip1*velocity_mat_qdf.block(i*nq,0,nq,nq);
+      }
+      else if(i == nT-2)
+      {
+        dqInbetweendqknot[i] += dq_idqdknot_i*velocity_mat.block((i-1)*nq,0,nq,nq*nT);
+        dqInbetweendqd0[i] = dq_idqdknot_i*velocity_mat_qd0.block((i-1)*nq,0,nq,nq);
+        dqInbetweendqdf[i] = dq_idqdknot_i*velocity_mat_qdf.block((i-1)*nq,0,nq,nq)+dq_idqdknot_ip1;
+      }
+      
+    }
+
+    snopt::integer* nc_inbetween_array = new snopt::integer[num_inbetween_tSamples];
+    snopt::integer* nG_inbetween_array = new snopt::integer[num_inbetween_tSamples];
+    VectorXd* Cmin_inbetween_array = new VectorXd[num_inbetween_tSamples];
+    VectorXd* Cmax_inbetween_array = new VectorXd[num_inbetween_tSamples];
+    VectorXi* iCfun_inbetween_array = new VectorXi[num_inbetween_tSamples];
+    VectorXi* jCvar_inbetween_array = new VectorXi[num_inbetween_tSamples];
+    vector<string>* Cname_inbetween_array = new vector<string>[num_inbetween_tSamples];
+    for(int i = 0;i<num_inbetween_tSamples;i++)
+    {
+      nc_inbetween_array[i] = 0;
+      nG_inbetween_array[i] = 0;
+      Cmin_inbetween_array[i].resize(0);
+      Cmax_inbetween_array[i].resize(0);
+      iCfun_inbetween_array[i].resize(0);
+      jCvar_inbetween_array[i].resize(0);
+      for(int j = 0;j<num_st_kc;j++)
+      {
+        double* t_inbetween_ptr = inbetween_tSamples.data()+i;
+        int nc = st_kc_array[j]->getNumConstraint(t_inbetween_ptr);
+        VectorXd lb(nc,1);
+        VectorXd ub(nc,1);
+        st_kc_array[j]->bounds(t_inbetween_ptr,lb,ub);
+        Cmin_inbetween_array[i].conservativeResize(Cmin_inbetween_array[i].size()+nc);
+        Cmin_inbetween_array[i].tail(nc) = lb;
+        Cmax_inbetween_array[i].conservativeResize(Cmax_inbetween_array[i].size()+nc);
+        Cmax_inbetween_array[i].tail(nc) = ub;
+        iCfun_inbetween_array[i].conservativeResize(iCfun_inbetween_array[i].size()+nc*nq*(num_qfree+num_qdotfree));
+        jCvar_inbetween_array[i].conservativeResize(jCvar_inbetween_array[i].size()+nc*nq*(num_qfree+num_qdotfree));
+        VectorXi iCfun_append = VectorXi::Zero(nc*nq*(num_qfree+num_qdotfree));
+        VectorXi jCvar_append = VectorXi::Zero(nc*nq*(num_qfree+num_qdotfree));
+        for(int k = 0;k<nq*(num_qfree+num_qdotfree);k++)
+        {
+          for(int l = 0;l<nc;l++)
+          {
+            iCfun_append(k*nc+l) = nc_inbetween_array[i]+l;            
+          }
+        }
+        iCfun_inbetween_array[i].tail(nc*nq*(num_qfree+num_qdotfree)) = iCfun_append;
+        for(int k = 0;k<nq*num_qfree;k++)
+        {
+          for(int l = 0;l<nc;l++)
+          {
+            jCvar_append(k*nc+l) = qfree_idx[k];
+          }
+        }
+        if(fixInitialState)
+        {
+          for(int k = nq*num_qfree;k<nq*num_qfree+nq;k++)
+          {
+            for(int l = 0;l<nc;l++)
+            {
+              jCvar_append(k*nc+l) = qdotf_idx[k-nq*num_qfree];
+            }
+          }
+        }
+        else
+        {
+          for(int k = nq*num_qfree;k<nq*num_qfree+nq;k++)
+          {
+            for(int l = 0;l<nc;l++)
+            {
+              jCvar_append(k*nc+l) = qdot0_idx[k-nq*num_qfree];
+            }
+          }
+          for(int k = nq*num_qfree+nq;k<nq*num_qfree+2*nq;k++)
+          {
+            for(int l = 0;l<nc;l++)
+            {
+              jCvar_append(k*nc+l) = qdotf_idx[k-nq*num_qfree-nq];
+            }
+          }
+        }
+        jCvar_inbetween_array[i].tail(nc*nq*(num_qfree+num_qdotfree)) = jCvar_append;
+        nc_inbetween_array[i] += nc;
+        nG_inbetween_array[i] += nc*nq*(num_qfree+num_qdotfree);
+        if(debug_mode)
+        {
+          vector<string> constraint_name;
+          st_kc_array[j]->name(t_inbetween_ptr,constraint_name);
+          Cname_inbetween_array[i].insert(Cname_inbetween_array[i].end(),constraint_name.begin(),constraint_name.end());
+        }
+      }
+    }
+
     nF = 1;
     nG = nq*(num_qfree+num_qdotfree);
     snopt::integer lenA = 0;
@@ -1150,12 +1401,17 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       nG += nG_array[j];
       lenA += nA_array[j];
     } 
+    for(int j = 0;j<num_inbetween_tSamples;j++)
+    {
+      nF += nc_inbetween_array[j];
+      nG += nG_inbetween_array[j];
+    }
     mtkc_nc = new int[num_mt_kc];
     for(int j = 0;j<num_mt_kc;j++)
     {
-      mtkc_nc[j] = mt_kc_array[j]->getNumConstraint(t+qstart_idx,num_qfree);
+      mtkc_nc[j] = mt_kc_array[j]->getNumConstraint(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples);
       nF += mtkc_nc[j];
-      nG += mtkc_nc[j]*nq*num_qfree;
+      nG += mtkc_nc[j]*nq*(num_qfree+num_qdotfree);
     }
     double* Flow = new double[nF];
     double* Fupp = new double[nF];
@@ -1179,7 +1435,10 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     }
     Flow[0] = -mxGetInf();
     Fupp[0] = mxGetInf();
-    Fname[0] = string("Objective");
+    if(debug_mode)
+    {
+      Fname[0] = string("Objective");
+    }
     for(int j = 0;j<nq*num_qfree;j++)
     {
       iGfun[j] = 1;
@@ -1209,9 +1468,12 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     {
       memcpy(Flow+nf_cum,Cmin_array[j].data(),sizeof(double)*nc_array[j]);
       memcpy(Fupp+nf_cum,Cmax_array[j].data(),sizeof(double)*nc_array[j]);
-      for(int k = 0;k<Cname_array[j].size();k++)
+      if(debug_mode)
       {
-        Fname[nf_cum+k] = Cname_array[j][k];
+        for(int k = 0;k<Cname_array[j].size();k++)
+        {
+          Fname[nf_cum+k] = Cname_array[j][k];
+        }
       }
       for(int k = 0;k<nG_array[j];k++)
       {
@@ -1227,7 +1489,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       nf_cum += nc_array[j];
       nG_cum += nG_array[j];
       nA_cum += nA_array[j];
-      if(quasiStaticFlag)
+      if(qscActiveFlag)
       {
         x_start_idx += nq+num_qsc_pts;
       }
@@ -1236,33 +1498,91 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         x_start_idx += nq;
       }
     }
-
+    // parse the inbetween samples constraints
+    //
+    for(int j = 0;j<num_inbetween_tSamples;j++)
+    {
+      memcpy(Flow+nf_cum,Cmin_inbetween_array[j].data(),sizeof(double)*nc_inbetween_array[j]);
+      memcpy(Fupp+nf_cum,Cmax_inbetween_array[j].data(),sizeof(double)*nc_inbetween_array[j]);
+      if(debug_mode)
+      {
+        for(int k = 0;k<nc_inbetween_array[j];k++)
+        {
+          Fname[nf_cum+k] = Cname_inbetween_array[j][k];
+        }
+      }
+      for(int k = 0;k<nG_inbetween_array[j];k++)
+      {
+        iGfun[nG_cum+k] = nf_cum+iCfun_inbetween_array[j][k]+1;
+        jGvar[nG_cum+k] = jCvar_inbetween_array[j][k]+1;
+      }
+      nf_cum += nc_inbetween_array[j];
+      nG_cum += nG_inbetween_array[j];
+    }
+    //
+    // Parse MultipleTimeKinematicConstraint.
     for(int j = 0;j<num_mt_kc;j++)
     {
       VectorXd mtkc_lb(mtkc_nc[j]);
       VectorXd mtkc_ub(mtkc_nc[j]);
-      mt_kc_array[j]->bounds(t+qstart_idx,num_qfree,mtkc_lb,mtkc_ub);
+      mt_kc_array[j]->bounds(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples,mtkc_lb,mtkc_ub);
       memcpy(Flow+nf_cum,mtkc_lb.data(),sizeof(double)*mtkc_nc[j]);
       memcpy(Fupp+nf_cum,mtkc_ub.data(),sizeof(double)*mtkc_nc[j]);
       vector<string> mtkc_name;
-      mt_kc_array[j]->name(t+qstart_idx,num_qfree,mtkc_name);
-      for(int k = 0;k<mtkc_nc[j];k++)
+      mt_kc_array[j]->name(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples,mtkc_name);
+      if(debug_mode)
       {
-        Fname[nf_cum+k] = mtkc_name[k];
+        for(int k = 0;k<mtkc_nc[j];k++)
+        {
+          Fname[nf_cum+k] = mtkc_name[k];
+        }
+      }
+      for(int l = 0;l<nq*(num_qfree+num_qdotfree);l++)
+      {
+        for(int k = 0;k<mtkc_nc[j];k++)
+        {
+          iGfun[nG_cum+l*mtkc_nc[j]+k] = nf_cum+k+1;
+        }
       }
       for(int l = 0;l<nq*num_qfree;l++)
       {
         for(int k = 0;k<mtkc_nc[j];k++)
         {
-          iGfun[nG_cum+l*mtkc_nc[j]+k] = nf_cum+k+1;
           jGvar[nG_cum+l*mtkc_nc[j]+k] = qfree_idx[l]+1;
         }
       }
+      if(fixInitialState)
+      {
+        for(int l = nq*num_qfree;l<nq*num_qfree+nq;l++)
+        {
+          for(int k = 0;k<mtkc_nc[j];k++)
+          {
+            jGvar[nG_cum+l*mtkc_nc[j]+k] = qdotf_idx[l-nq*num_qfree]+1;
+          }
+        }
+      }
+      else
+      {
+        for(int l=nq*num_qfree;l<nq*num_qfree+nq;l++)
+        {
+          for(int k = 0;k<mtkc_nc[j];k++)
+          {
+            jGvar[nG_cum+l*mtkc_nc[j]+k] = qdot0_idx[l-nq*num_qfree]+1;
+          }
+        }
+        for(int l = nq*num_qfree+nq;l<nq*num_qfree+2*nq;l++)
+        {
+          for(int k = 0;k<mtkc_nc[j];k++)
+          {
+            jGvar[nG_cum+l*mtkc_nc[j]+k] = qdotf_idx[l-nq*num_qfree-nq]+1;
+          }
+        }
+      }
       nf_cum += mtkc_nc[j];
-      nG_cum += mtkc_nc[j]*nq*num_qfree;
+      nG_cum += mtkc_nc[j]*nq*(num_qfree+num_qdotfree);
     }
     double* x = new double[nx];
-    if(quasiStaticFlag)
+    if(qscActiveFlag)
     {
       for(int j = 0;j<num_qfree;j++)
       {
@@ -1411,7 +1731,75 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     mxSetCell(plhs[0],8,iAfun_ptr);
     mxSetCell(plhs[0],9,jAvar_ptr);
     mxSetCell(plhs[0],10,A_ptr);
-    mexPrintf("got iAfun jAvar A\n");*/ 
+    mexPrintf("got iAfun jAvar A\n"); 
+    mxArray* velocity_mat_ptr = mxCreateDoubleMatrix(nq*(nT-2),nq*nT,mxREAL);
+    memcpy(mxGetPr(velocity_mat_ptr),velocity_mat.data(),sizeof(double)*nq*(nT-2)*nq*nT);
+    mxSetCell(plhs[0],11,velocity_mat_ptr);
+    mxArray* velocity_mat_qd0_ptr = mxCreateDoubleMatrix(nq*(nT-2),nq,mxREAL);
+    memcpy(mxGetPr(velocity_mat_qd0_ptr),velocity_mat_qd0.data(),sizeof(double)*velocity_mat_qd0.size());
+    mxSetCell(plhs[0],12,velocity_mat_qd0_ptr);
+    mxArray* velocity_mat_qdf_ptr = mxCreateDoubleMatrix(nq*(nT-2),nq,mxREAL);
+    memcpy(mxGetPr(velocity_mat_qdf_ptr),velocity_mat_qdf.data(),sizeof(double)*velocity_mat_qdf.size());
+    mxSetCell(plhs[0],13,velocity_mat_qdf_ptr);
+    mxArray* accel_mat_ptr = mxCreateDoubleMatrix(nq*nT,nq*nT,mxREAL);
+    memcpy(mxGetPr(accel_mat_ptr),accel_mat.data(),sizeof(double)*accel_mat.size());
+    mxSetCell(plhs[0],14,accel_mat_ptr);
+    mxArray* accel_mat_qd0_ptr = mxCreateDoubleMatrix(nq*nT,nq,mxREAL);
+    memcpy(mxGetPr(accel_mat_qd0_ptr),accel_mat_qd0.data(),sizeof(double)*accel_mat_qd0.size());
+    mxSetCell(plhs[0],15,accel_mat_qd0_ptr);
+    mxArray* accel_mat_qdf_ptr = mxCreateDoubleMatrix(nq*nT,nq,mxREAL);
+    memcpy(mxGetPr(accel_mat_qdf_ptr),accel_mat_qdf.data(),sizeof(double)*accel_mat_qdf.size());
+    mxSetCell(plhs[0],16,accel_mat_qdf_ptr);
+    mxArray** dqInbetweendqknot_ptr = new mxArray*[nT-1];
+    mxArray** dqInbetweendqd0_ptr = new mxArray*[nT-1];
+    mxArray** dqInbetweendqdf_ptr = new mxArray*[nT-1];
+    mwSize cell_dim[1] = {nT-1};
+    mxArray* dqInbetweendqknot_cell = mxCreateCellArray(1,cell_dim);
+    mxArray* dqInbetweendqd0_cell = mxCreateCellArray(1,cell_dim);
+    mxArray* dqInbetweendqdf_cell = mxCreateCellArray(1,cell_dim);
+    for(int i = 0;i<nT-1;i++)
+    {
+      dqInbetweendqknot_ptr[i] = mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq*nT,mxREAL); 
+      dqInbetweendqd0_ptr[i] = mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq,mxREAL); 
+      dqInbetweendqdf_ptr[i] = mxCreateDoubleMatrix(nq*t_inbetween[i].size(),nq,mxREAL); 
+      memcpy(mxGetPr(dqInbetweendqknot_ptr[i]),dqInbetweendqknot[i].data(),sizeof(double)*dqInbetweendqknot[i].size());
+      memcpy(mxGetPr(dqInbetweendqd0_ptr[i]),dqInbetweendqd0[i].data(),sizeof(double)*dqInbetweendqd0[i].size());
+      memcpy(mxGetPr(dqInbetweendqdf_ptr[i]),dqInbetweendqdf[i].data(),sizeof(double)*dqInbetweendqdf[i].size());
+      mxSetCell(dqInbetweendqknot_cell,i,dqInbetweendqknot_ptr[i]);
+      mxSetCell(dqInbetweendqd0_cell,i,dqInbetweendqd0_ptr[i]);
+      mxSetCell(dqInbetweendqdf_cell,i,dqInbetweendqdf_ptr[i]);
+    }
+    mxSetCell(plhs[0],17,dqInbetweendqknot_cell);
+    mxSetCell(plhs[0],18,dqInbetweendqd0_cell);
+    mxSetCell(plhs[0],19,dqInbetweendqdf_cell);
+    delete[] dqInbetweendqknot_ptr; delete[] dqInbetweendqd0_ptr; delete[] dqInbetweendqdf_ptr;
+    mexPrintf("get dqInbetweendqknot\n");
+    mxArray** iCfun_inbetween_ptr = new mxArray*[num_inbetween_tSamples];
+    mxArray** jCvar_inbetween_ptr = new mxArray*[num_inbetween_tSamples];
+    cell_dim[0] = num_inbetween_tSamples;
+    mxArray* iCfun_inbetween_cell = mxCreateCellArray(1,cell_dim);
+    mxArray* jCvar_inbetween_cell = mxCreateCellArray(1,cell_dim);
+    for(int i = 0;i<num_inbetween_tSamples;i++)
+    {
+      iCfun_inbetween_ptr[i] = mxCreateDoubleMatrix(nG_inbetween_array[i],1,mxREAL); 
+      jCvar_inbetween_ptr[i] = mxCreateDoubleMatrix(nG_inbetween_array[i],1,mxREAL); 
+      double* iCfun_inbetween_i_double = new double[nG_inbetween_array[i]];
+      double* jCvar_inbetween_i_double = new double[nG_inbetween_array[i]];
+      for(int j = 0;j<nG_inbetween_array[i];j++)
+      {
+        iCfun_inbetween_i_double[j] = (double) iCfun_inbetween_array[i](j)+1;
+        jCvar_inbetween_i_double[j] = (double) jCvar_inbetween_array[i](j)+1;
+      }
+      memcpy(mxGetPr(iCfun_inbetween_ptr[i]),iCfun_inbetween_i_double,sizeof(double)*nG_inbetween_array[i]);
+      memcpy(mxGetPr(jCvar_inbetween_ptr[i]),jCvar_inbetween_i_double,sizeof(double)*nG_inbetween_array[i]);
+      mxSetCell(iCfun_inbetween_cell,i,iCfun_inbetween_ptr[i]);
+      mxSetCell(jCvar_inbetween_cell,i,jCvar_inbetween_ptr[i]);
+      delete[] iCfun_inbetween_i_double; delete[] jCvar_inbetween_i_double;
+    }
+    mxSetCell(plhs[0],20,iCfun_inbetween_cell);
+    mxSetCell(plhs[0],21,jCvar_inbetween_cell);
+    delete[] iCfun_inbetween_ptr; delete[] jCvar_inbetween_ptr; 
+    mexPrintf("get iCfun_inbetween\n");*/
 
     snopt::snopta_
       ( &Cold, &nF, &nx, &nxname, &nFname,
@@ -1576,7 +1964,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       delete[] iAfun;  delete[] jAvar;  delete[] A;
     }
     delete[] x; delete[] xlow; delete[] xupp; delete[] Flow; delete[] Fupp; delete[] Fname;
-    delete[] dt; delete[] dt_ratio;
+    delete[] dt; delete[] dt_ratio;  
+    delete[] t_inbetween; delete[] t_samples; delete[] dqInbetweendqknot; delete[] dqInbetweendqd0; delete[] dqInbetweendqdf;
+    delete[] nc_inbetween_array; delete[] nG_inbetween_array; delete[] Cmin_inbetween_array; delete[] Cmax_inbetween_array;
+    delete[] iCfun_inbetween_array; delete[] jCvar_inbetween_array;
+    delete[] qknot_qsamples_idx;
   } 
   delete[] INFO; delete[] INFO_tmp;
   delete[] iAfun_array; delete[] jAvar_array; delete[] A_array;

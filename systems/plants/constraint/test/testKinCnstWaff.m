@@ -33,11 +33,11 @@ l_foot_pos = forwardKin(robot, kinsol, l_foot, l_foot_pts, 2);
 q_aff = [q;randn(length(robot_aff.getStateFrame.frame{2}.coordinates)/2,1)];
 
 display('Check world CoM constraint');
-testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldCoMConstraint,robot,robot_aff,1,[0;0;0.9],[0;0;1],tspan0);
+testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldCoMConstraint,robot,robot_aff,[0;0;0.9],[0;0;1],tspan0,1);
 display('Check world CoM constraint with empty tspan');
-testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldCoMConstraint,robot,robot_aff,1,[0;0;0.9],[0;0;1]);
+testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldCoMConstraint,robot,robot_aff,[0;0;0.9],[0;0;1]);
 display('Check world CoM constraint with nan');
-testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldCoMConstraint,robot,robot_aff,1,[nan;nan;0.9],[nan;nan;0.92],tspan0/2);
+testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldCoMConstraint,robot,robot_aff,[nan;nan;0.9],[nan;nan;0.92],tspan0/2,1);
 
 display('Check world position constraint');
 testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldPositionConstraint,robot,robot_aff,l_foot,l_foot_pts,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);

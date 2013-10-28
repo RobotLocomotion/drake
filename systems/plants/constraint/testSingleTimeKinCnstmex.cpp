@@ -4,8 +4,8 @@
 #include "../RigidBodyManipulator.h"
 #include <cstring>
 /* 
- * [num_constraint,constraint_val,dconstraint_val,constraint_name,lower_bound,upper_bound] = testKinCnstmex(kinCnst_ptr,q,t)
- * @param kinCnst_ptr           A pointer to a KinematicConstraint object
+ * [num_constraint,constraint_val,dconstraint_val,constraint_name,lower_bound,upper_bound] = testSingleTimeKinCnstmex(kinCnst_ptr,q,t)
+ * @param kinCnst_ptr           A pointer to a SingleTimeKinematicConstraint object
  * @param q                     A nqx1 double vector
  * @param t                     A double scalar, the time to evaluate constraint value, bounds and name. This is optional.
  * @retval num_constraint       The number of constraint active at time t
@@ -20,7 +20,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   char str[200];
   if((nrhs!=3&&nrhs != 2)||nlhs != 6)
   {
-    mexErrMsgIdAndTxt("Drake:testKinCnstmex:BadInputs","Usage [num_cnst,cnst_val,dcnst_val,cnst_name,lb,ub] = testKinCnstmex(kinCnst,q,t)");
+    mexErrMsgIdAndTxt("Drake:testSingleTimeKinCnstmex:BadInputs","Usage [num_cnst,cnst_val,dcnst_val,cnst_name,lb,ub] = testSingleTimeKinKinCnstmex(kinCnst,q,t)");
   }
   SingleTimeKinematicConstraint* cnst = (SingleTimeKinematicConstraint*) getDrakeMexPointer(prhs[0]);
   double* t_ptr;
@@ -41,7 +41,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
     }
     if(num_t>1)
     {
-      mexErrMsgIdAndTxt("Drake:testKinCnstmex:BadInputs","t must be either empty or a single number");
+      mexErrMsgIdAndTxt("Drake:testSingleTimeKinCnstmex:BadInputs","t must be either empty or a single number");
     }
   }
   int num_cnst = cnst->getNumConstraint(t_ptr);

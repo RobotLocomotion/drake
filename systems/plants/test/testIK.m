@@ -29,8 +29,8 @@ ikoptions = ikoptions.setMex(false);
 ikmexoptions = ikoptions;
 ikmexoptions = ikmexoptions.setMex(true);
 
-kc1 = WorldCoMConstraint(robot,1,[0;0;0.9],[0;0;1],tspan);
-kc1prime = WorldCoMConstraint(robot,1,[nan;nan;0.9],[nan;nan;0.92],tspan/2);
+kc1 = WorldCoMConstraint(robot,[0;0;0.9],[0;0;1],tspan,1);
+kc1prime = WorldCoMConstraint(robot,[nan;nan;0.9],[nan;nan;0.92],tspan/2,1);
 display('Check a single CoM constraint')
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,ikoptions);
 kinsol = doKinematics(robot,q);
@@ -157,7 +157,7 @@ end
 
 
 display('Check the infeasible case')
-kc_err = WorldCoMConstraint(robot,1,[0;0;2],[0;0;inf],tspan);
+kc_err = WorldCoMConstraint(robot,[0;0;2],[0;0;inf],tspan);
 [q,info,infeasible_constraint] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikoptions);
 [qmex,info_mex,infeasible_constraint_mex] = inverseKin(robot,q_seed,q_nom,kc_err,kc2l,kc2r,ikmexoptions);
 valuecheck(info_mex,info);
@@ -260,7 +260,7 @@ display('Check IK pointwise with all-to-all closest distance constraint')
 q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
 
 display('Check quasi static constraint')
-qsc = QuasiStaticConstraint(robot,1);
+qsc = QuasiStaticConstraint(robot);
 qsc = qsc.addContact(r_foot,r_foot_pts);
 qsc = qsc.addContact(l_foot,l_foot_pts);
 qsc = qsc.setActive(true);

@@ -14,6 +14,10 @@ void drakeKinCnstParseTspan(const mxArray* pm,Eigen::Vector2d &tspan)
     mexErrMsgIdAndTxt("Drake:drakeKinCnstParseTspan:BadInputs","tspan is a 1x2 vector");
   }
   int num_tspan = mxGetNumberOfElements(pm);
+  if(num_tspan == 1)
+  {
+    mexErrMsgIdAndTxt("DRake:drakeKinCnstParseTspan:BadInputs","tspan is a 1x2 vector");
+  }
   if(num_tspan == 0)
   {
     tspan<<-mxGetInf(),mxGetInf();
