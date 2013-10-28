@@ -3,8 +3,14 @@
 #define URDF_H
 
 #include "RigidBodyManipulator.h"
-#include "urdf_interface/model.h"
+#include <boost/shared_ptr.hpp>
 #include <string>
+#include <map>
+
+namespace urdf
+{
+  class ModelInterface;
+}
 
 void ROS_ERROR(const char* format, ...);
 
@@ -31,5 +37,7 @@ URDFRigidBodyManipulator* loadURDFfromXML(const std::string &xml_string, const s
 URDFRigidBodyManipulator* loadURDFfromFile(const std::string &urdf_filename);
 
 std::string rospack(std::string package);
+
+std::map<std::string,int>::const_iterator findWithSuffix(const std::map<std::string,int> m, const std::string str);
 
 #endif

@@ -14,3 +14,6 @@ add_subdirectory(test)
 
 add_mex(test/testQuatmex test/testQuatmex.cpp)
 target_link_libraries(test/testQuatmex drakeQuatUtil)
+
+pods_install_libraries(drakeUtil)
+pods_install_libraries(drakeQuatUtil)
