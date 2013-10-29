@@ -1293,19 +1293,23 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         dqInbetweendqd0[i] = dq_idqdknot_i*velocity_mat_qd0.block((i-1)*nq,0,nq,nq)+dq_idqdknot_ip1*velocity_mat_qd0.block(i*nq,0,nq,nq);
         dqInbetweendqdf[i] = dq_idqdknot_i*velocity_mat_qdf.block((i-1)*nq,0,nq,nq)+dq_idqdknot_ip1*velocity_mat_qdf.block(i*nq,0,nq,nq);
       }
-      else if(i == 0)
+      else if(i == 0 && i != nT-2)
       {
         dqInbetweendqknot[i] += dq_idqdknot_ip1*velocity_mat.block(i*nq,0,nq,nq*nT);
         dqInbetweendqd0[i] = dq_idqdknot_i+dq_idqdknot_ip1*velocity_mat_qd0.block(i*nq,0,nq,nq);
         dqInbetweendqdf[i] = dq_idqdknot_ip1*velocity_mat_qdf.block(i*nq,0,nq,nq);
       }
-      else if(i == nT-2)
+      else if(i == nT-2&& i != 0)
       {
         dqInbetweendqknot[i] += dq_idqdknot_i*velocity_mat.block((i-1)*nq,0,nq,nq*nT);
         dqInbetweendqd0[i] = dq_idqdknot_i*velocity_mat_qd0.block((i-1)*nq,0,nq,nq);
         dqInbetweendqdf[i] = dq_idqdknot_i*velocity_mat_qdf.block((i-1)*nq,0,nq,nq)+dq_idqdknot_ip1;
       }
-      
+      else if(i == 0 && i == nT-2)
+      {
+        dqInbetweendqd0[i] = dq_idqdknot_i;
+        dqInbetweendqdf[i] = dq_idqdknot_ip1;
+      }
     }
 
     snopt::integer* nc_inbetween_array = new snopt::integer[num_inbetween_tSamples];
