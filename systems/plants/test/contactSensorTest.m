@@ -1,7 +1,6 @@
 function contactSensorTest
 
 options.floating = true;
-if 0
 options.twoD = true;
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 
@@ -21,8 +20,6 @@ valuecheck(yf.torque,0);
 
 %v = p.constructVisualizer();
 %v.playback(ytraj);
-
-end
 
 options.twoD = false;
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
