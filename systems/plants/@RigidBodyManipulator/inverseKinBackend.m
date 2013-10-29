@@ -342,18 +342,25 @@ else
         dqd_idqdf = velocity_mat_qdf((i-2)*nq+(1:nq),:);
         dqd_ip1dqd0 = velocity_mat_qd0((i-1)*nq+(1:nq),:);
         dqd_ip1dqdf = velocity_mat_qdf((i-1)*nq+(1:nq),:);
-      elseif(i == 1)
+      elseif(i == 1&& i~=nT-1)
         dqd_idqknot = sparse(nq,nq*nT);
         dqd_ip1dqknot = velocity_mat(1:nq,:);
         dqd_idqd0 = speye(nq,nq);
         dqd_idqdf = sparse(nq,nq);
         dqd_ip1dqd0 = velocity_mat_qd0(1:nq,:);
         dqd_ip1dqdf = velocity_mat_qdf(1:nq,:);
-      elseif(i == nT-1)
+      elseif(i == nT-1&& i~= 1)
         dqd_idqknot = velocity_mat((i-2)*nq+(1:nq),:);
         dqd_ip1dqknot = sparse(nq,nq*nT);
         dqd_idqd0 = velocity_mat_qd0((i-2)*nq+(1:nq),:);
         dqd_idqdf = velocity_mat_qdf((i-2)*nq+(1:nq),:);
+        dqd_ip1dqd0 = sparse(nq,nq);
+        dqd_ip1dqdf = speye(nq,nq);
+      elseif(i == 1 && i == nT-1)
+        dqd_idqknot = sparse(nq,nT*nq);
+        dqd_ip1dqknot = sparse(nq,nT*nq);
+        dqd_idqd0 = speye(nq,nq);
+        dqd_idqdf = sparse(nq,nq);
         dqd_ip1dqd0 = sparse(nq,nq);
         dqd_ip1dqdf = speye(nq,nq);
       end
