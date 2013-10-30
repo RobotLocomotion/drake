@@ -84,10 +84,6 @@ function(mex_setup)
 
 #  note: skipping LDCXX (and just always use LD)
 
-  if (NOT EXISTS /tmp/dummy.c)
-    execute_process(COMMAND touch /tmp/dummy.c)
-  endif()
-
 endfunction()
 
 function(add_mex)
@@ -146,7 +142,10 @@ function(add_mex)
   if (isshared EQUAL -1)
     # note: on ubuntu, gcc did not like the MEX_CLIBS coming along with LINK_FLAGS (it only works if they appear after the input files).  this is a nasty trick that I found online
     if (NOT TARGET last) 
-      add_library(last STATIC /tmp/dummy.c)
+      set(dummy_c_file ${CMAKE_CURRENT_BINARY_DIR}/dummy.c)
+      add_custom_command(COMMAND ${CMAKE_COMMAND} -E touch ${dummy_c_file}
+                         OUTPUT ${dummy_c_file})
+      add_library(last STATIC ${dummy_c_file})
       target_link_libraries(last ${MEX_CLIBS})
     endif()
 
