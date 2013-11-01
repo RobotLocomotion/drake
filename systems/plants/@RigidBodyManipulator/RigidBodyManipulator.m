@@ -545,6 +545,8 @@ classdef RigidBodyManipulator < Manipulator
       % @ingroup Kinematic Tree
       if nargin<3 || isempty(robot), robot=0; end
       linkname = lower(linkname);
+      linkname=regexprep(linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
+      
       if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
       items = strfind(lower({model.body.linkname}),linkname);
       ind = find(~cellfun(@isempty,items));
@@ -1459,7 +1461,7 @@ classdef RigidBodyManipulator < Manipulator
       body.robotnum = robotnum;
       
       body.linkname=char(node.getAttribute('name'));
-      body.linkname=regexprep(body.linkname, '\.', '_', 'preservecase');
+      body.linkname=regexprep(body.linkname, '[\[\]\\\/\.]+', '_', 'preservecase');
       
       if (options.inertial && node.getElementsByTagName('inertial').getLength()>0)
         body = parseInertial(body,node.getElementsByTagName('inertial').item(0),model,options);
