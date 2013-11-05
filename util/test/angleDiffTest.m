@@ -1,8 +1,8 @@
 function angleDiffTest()
 
   for j = 1:1000
-    phi1 = random('unif', -3*pi, 3*pi,3,1);
-    theta = random('unif', -pi, pi,3,1);
+    phi1 = -3*pi + 6*pi*rand(3,1);;
+    theta = -pi + 2*pi*rand(3,1);
     phi2 = phi1 + theta;
     d = angleDiff(phi1, phi2);
     uw = unwrap([phi1, phi2],[],2);
