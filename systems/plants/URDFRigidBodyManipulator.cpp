@@ -277,12 +277,26 @@ map<string,int>::const_iterator findWithSuffix(const map<string,int>& m, const s
    
   auto first = m.begin();
   auto last = m.end();
+
+  // We're building a regex from the given input string, so we must use a
+  // quoting escape in case the input string contains regex special characters.
+  // Quoting escape sequences begin with \Q and end with \E.
+  std::string quotedStr = "\\Q" + str;
+
+  // Now we want to insert a regex expression to match any number of digits
+  // preceding an underscore or the end of the string ($).  So, for example,
+  // we will replace "_" with "\d*_".  Since we have prefixed the string with
+  // a quoating escape, we must terminate the quoting escape before inserting
+  // the \d*, then continue the quoting escape sequence.  So, our final
+  // replacement looks like:   _  ==>  \E\d*\Q_
+
   boost::regex delim("(_|$)");
   /*
    *So many '\' characters! Each std::string initialization eats one from each
    *set.
    */
-  boost::regex re(boost::regex_replace(str,delim,"\\\\d*\\1"));
+  boost::regex re(boost::regex_replace(quotedStr, delim, "\\\\E\\\\d*\\\\Q\\1"));
+
   auto flexibleNameMatch = 
     [&](pair<string,int> p)->bool{return boost::regex_match(p.first,re);};
   //DEBUG
