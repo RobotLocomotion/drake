@@ -66,7 +66,8 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
     end
     
     function a=clean(a,tol)
-      a.p=clean(a.p,tol);
+      if nargin<2, a.p = clean(a.p);
+      else a.p=clean(a.p,tol); end
     end
     
     function a=sin(a)
