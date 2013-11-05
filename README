@@ -24,10 +24,23 @@ Optional Dependencies:
 	      cplex
 
 	      
-MATLAB Dependencies:
-       	      Spline Toolbox
-	      Image Processing Toolbox (should be able to remove this one)
-	      % todo: finish this list
+MATLAB Toolbox Dependencies:  
+% from running codeCheck(struct('dependency_report',true)) and then cleaning up the results using findDependencySource and the dependency report tool
+    'Control System Toolbox'
+    'Curve Fitting Toolbox'
+    'Image Processing Toolbox'
+    'MATLAB'
+    'Mapping Toolbox'
+    'Optimization Toolbox'
+    'Parallel Computing Toolbox'
+    'Robust Control Toolbox'
+    'Simulink'
+    'Simulink 3D Animation'
+    'Simulink Coder'   (appears in 2012a, but not in 2013b)
+    'Simulink Control Design'
+    'Statistics Toolbox'
+    'Symbolic Math Toolbox'
+    'System Identification Toolbox'
 
 Prerequisites for MacPorts:
 	      port install wget gsed graphviz 
