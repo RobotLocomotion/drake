@@ -23,36 +23,41 @@ Optional Dependencies:
 	      sedumi
 	      cplex
 
-	      
-MATLAB Toolbox Dependencies:  
-% from running codeCheck(struct('dependency_report',true)) and then cleaning up the results using findDependencySource and the dependency report tool
-    'Control System Toolbox'
-    'Curve Fitting Toolbox'
-    'Image Processing Toolbox'
-    'MATLAB'
-    'Mapping Toolbox'
-    'Optimization Toolbox'
-    'Parallel Computing Toolbox'
-    'Robust Control Toolbox'
-    'Simulink'
-    'Simulink 3D Animation'
-    'Simulink Coder'   (appears in 2012a, but not in 2013b)
-    'Simulink Control Design'
-    'Statistics Toolbox'
-    'Symbolic Math Toolbox'
-    'System Identification Toolbox'
+MATLAB Toolbox Dependencies:  % from running unitTest(struct('dependency',true))
+  Communications System Toolbox
+  Control System Toolbox
+  Curve Fitting Toolbox
+  Parallel Computing Toolbox
+  DSP System Toolbox
+  Fixed-Point Toolbox
+  HDL Coder
+  System Identification Toolbox
+  Image Processing Toolbox
+  MATLAB
+  Optimization Toolbox
+  Simulink Report Generator
+  SimEvents
+  Simulink
+  Simulink 3D Animation
+  Simulink Control Design
+  Simulink Design Optimization
+  Simulink Verification and Validation
+  Stateflow
+  Statistics Toolbox
+  Symbolic Math Toolbox
+  Computer Vision System Toolbox
 
-Prerequisites for MacPorts:
-	      port install wget gsed graphviz 
-	      % todo: finish this list
+My best guess at the "real" dependencies:
+  Control System Toolbox
+  Curve Fitting Toolbox
+  Parallel Computing Toolbox
+  System Identification Toolbox  (for only a few examples)
+  MATLAB
+  Optimization Toolbox
+  Simulink
+  Simulink 3D Animation 
+  Symbolic Math Toolbox
 
-Prerequisites for Homebrew:
-	      brew install wget gnu-sed graphviz
-	      % todo: finish this list
-
-Prerequisites for Ubuntu:
-	      apt-get install 
-	      % todo: finish this list
 
 License:      BSD  (http://drake.mit.edu/license)
 
