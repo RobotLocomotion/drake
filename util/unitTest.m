@@ -41,6 +41,8 @@ function gui_tree_or_command_line_data =unitTest(options)
 % @option cdash file name for writing the cdash test xml output
 % @option test_list_file file name to list all of the tests that will be run
 % @option warnings_are_errors boolean @default false
+% @option coverage boolean which enables code coverage using the profiler (warning: this will slow everything down) @default false
+%
 %
 % All unit tests should always be run (and all tests should pass) before 
 % anything is committed back into the Drake repository.
@@ -61,6 +63,8 @@ if ~isfield(options,'test_dirs_only') options.test_dirs_only = false; end
 if ~isfield(options,'warnings_are_errors') options.warnings_are_errors = false; end
 if ~isempty(options.logfile) options.logfileptr = fopen(options.logfile,'w');
 else options.logfileptr = -1; end
+if ~isfield(options,'coverage') options.coverage = false; end
+if options.coverage, options.autorun = true; options.gui = false; end
 if isfield(options,'cdash')
   options.cdashNode = com.mathworks.xml.XMLUtils.createDocument('Testing')
   cdashRootNode = options.cdashNode.getDocumentElement;
@@ -96,6 +100,11 @@ else
   root = [];
 end
 
+if options.coverage
+  profile('clear');
+  profile('on');
+end
+
 crawlDir('.',root,options.test_dirs_only,options);
 
 if (options.gui)
@@ -127,6 +136,49 @@ else
   gui_tree_or_command_line_data = command_line_data;
 end
 
+if options.coverage
+  profile('off');
+  stats = profile('info');
+
+  [~,filestr] = system('find . -iname "*.m" | grep -v /dev/');
+  files = strread(filestr,'%s\n');
+%  files = cellfun(@(a) [pwd,a(2:end)],files,'UniformOutput',false); 
+  cp = pwd;
+
+  disp('======= Code Coverage Report =======');
+  for i=1:length(files)
+    cf = [cp,files{i}(2:end)];
+    inds = find(strcmp(cf,{stats.FunctionTable.FileName}));
+    if isempty(inds)
+      disp([' No unit test touched ' files{i}]);
+    else
+      executed_lines = vertcat(stats.FunctionTable(inds).ExecutedLines);
+      executed_lines = executed_lines(:,1);
+      
+      if isempty(executed_lines)
+        disp([' The file ',files{i},' was called but did not execute (presumably do to parse errors)']);
+      else
+        executable_lines = callstats('file_lines',cf)';
+        missed_lines = setdiff(executable_lines,executed_lines);
+        if ~isempty(missed_lines)
+          disp(['  No unit test touched the following executable lines of ', files{i}]);
+          fptr = fopen(cf,'r');
+          tline = fgetl(fptr);
+          linenum = 1;
+          while ischar(tline)
+            if ismember(linenum,missed_lines)
+              fprintf('%4d: %s\n',linenum,tline);
+            end
+            linenum=linenum+1;
+            tline = fgetl(fptr);
+          end
+          fclose(fptr);
+        end
+      end
+    end
+  end
+  disp('======= End of Code Coverage Report =======');
+end
 
 if options.logfileptr>=0
   fclose(options.logfileptr);
