@@ -3,6 +3,8 @@ function codeCheck(options)
 % run mlint and a series of style checks on all available m files 
 % in the current directory tree
 %
+% @option dependency_report run dependency report for all files and exit (no
+% mlint)
 % @option mlint_ignore_id cell array of mlint IDs to safely ignore @default {}
 %
 % see
@@ -18,6 +20,11 @@ if nargin<1, options=struct(); end
 
 [~,filestr] = system('find . -iname "*.m" | grep -v /dev/');
 files = strread(filestr,'%s\n');
+
+if isfield(options,'dependency_report') && options.dependency_report
+  toolboxes = dependencies.toolboxDependencyAnalysis(files)'
+  return
+end
 
 printInstructions;
 
