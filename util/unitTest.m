@@ -187,13 +187,13 @@ function codeCoverageReport(stats)
         executable_lines = callstats('file_lines',cf)';
         missed_lines = setdiff(executable_lines,executed_lines);
         if ~isempty(missed_lines)
-          disp(['  No unit test touched the following executable lines of ', files{i}]);
+          fprintf('  Untouched lines in <a href="matlab:edit(''%s'')">%s</a> :\n', files{i},files{i});
           fptr = fopen(cf,'r');
           tline = fgetl(fptr);
           linenum = 1;
           while ischar(tline)
-            if ismember(linenum,missed_lines)
-              fprintf('%4d: %s\n',linenum,tline);
+            if ismember(linenum,missed_lines) && isempty(keywordfind(tline,'classdef'))
+              fprintf('<a href="matlab:opentoline(''%s'',%d)">%4d</a>: %s\n',files{i},linenum,linenum,tline);
             end
             linenum=linenum+1;
             tline = fgetl(fptr);
