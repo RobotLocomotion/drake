@@ -38,6 +38,6 @@ URDFRigidBodyManipulator* loadURDFfromFile(const std::string &urdf_filename);
 
 std::string rospack(std::string package);
 
-std::map<std::string,int>::const_iterator findWithSuffix(const std::map<std::string,int> m, const std::string str);
+std::map<std::string,int>::const_iterator findWithSuffix(const std::map<std::string,int>& m, const std::string& str);
 
 #endif

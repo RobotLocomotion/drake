@@ -272,7 +272,7 @@ public:
  *      str="base"  matches  "base1"  or  "base2" etc.
  *      str="base_x" matches "base1_x" or "base2_x"  or "base_x1" etc.
  */
-map<string,int>::const_iterator findWithSuffix(const map<string,int> m, const string str)
+map<string,int>::const_iterator findWithSuffix(const map<string,int>& m, const string& str)
 {
    
   auto first = m.begin();
