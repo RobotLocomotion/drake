@@ -42,7 +42,8 @@ function gui_tree_or_command_line_data =unitTest(options)
 % @option test_list_file file name to list all of the tests that will be run
 % @option warnings_are_errors boolean @default false
 % @option coverage boolean which enables code coverage using the profiler (warning: this will slow everything down) @default false
-%
+% @option dependency boolean which enables a toolbox dependency report
+% @default false
 %
 % All unit tests should always be run (and all tests should pass) before 
 % anything is committed back into the Drake repository.
@@ -64,7 +65,8 @@ if ~isfield(options,'warnings_are_errors') options.warnings_are_errors = false; 
 if ~isempty(options.logfile) options.logfileptr = fopen(options.logfile,'w');
 else options.logfileptr = -1; end
 if ~isfield(options,'coverage') options.coverage = false; end
-if options.coverage, options.autorun = true; options.gui = false; end
+if ~isfield(options,'dependency') options.dependency = false; end
+if options.coverage || options.dependency, options.autorun = true; options.gui = false; end
 if isfield(options,'cdash')
   options.cdashNode = com.mathworks.xml.XMLUtils.createDocument('Testing')
   cdashRootNode = options.cdashNode.getDocumentElement;
@@ -100,7 +102,7 @@ else
   root = [];
 end
 
-if options.coverage
+if options.coverage || options.dependency
   profile('clear');
   profile('on');
 end
@@ -136,8 +138,32 @@ else
   gui_tree_or_command_line_data = command_line_data;
 end
 
-if options.coverage
+if options.coverage || options.dependency
   profile('off');
+  if options.coverage, codeCoverageReport(); end
+  if options.dependency, dependencyReport(); end
+end
+
+if options.logfileptr>=0
+  fclose(options.logfileptr);
+end
+if options.test_list_file>=0
+  fclose(options.test_list_file);
+end
+
+if ~isempty(options.cdashNode)
+  appendTextNode(options.cdashNode,cdashRootNode,'EndDateTime',datestr(now));
+  appendTextNode(options.cdashNode,cdashRootNode,'EndTestTime',now);
+  appendTextNode(options.cdashNode,cdashRootNode,'ElapsedMinutes',toc(cdashTic)/60);
+  xmlFileName = options.cdash;
+  xmlwrite(options.cdash,options.cdashNode);
+%  edit(xmlFileName);
+end
+
+end
+
+
+function codeCoverageReport(stats)
   stats = profile('info');
 
   [~,filestr] = system('find . -iname "*.m" | grep -v /dev/');
@@ -180,24 +206,23 @@ if options.coverage
   disp('======= End of Code Coverage Report =======');
 end
 
-if options.logfileptr>=0
-  fclose(options.logfileptr);
+function dependencyReport()
+  stats = profile('info');
+  
+  ind = find( ~cellfun(@isempty,strfind({stats.FunctionTable.FileName},[filesep,'toolbox',filesep])));
+  toolboxes = regexp({stats.FunctionTable(ind).FileName},'/toolbox/(\w*)','tokens');
+  [toolboxes,ia] = unique(cellfun(@(a) a{1},toolboxes));
+  disp('======= Toolbox Dependency Report ======= ');
+  for i=1:length(toolboxes)
+    t = ver(toolboxes{i});
+    if ~isempty(t)
+      fprintf('  <a href="matlab:profview(''%s'')">%s</a>\n',stats.FunctionTable(ind(ia(i))).FunctionName,t.Name);
+    end
+  end
+  disp('Click on the link above to see the first call to the toolbox');
+  disp('Call profile(''viewer'') to see more information');
+  disp('======= End of Toolbox Dependency Report ======= ');
 end
-if options.test_list_file>=0
-  fclose(options.test_list_file);
-end
-
-if ~isempty(options.cdashNode)
-  appendTextNode(options.cdashNode,cdashRootNode,'EndDateTime',datestr(now));
-  appendTextNode(options.cdashNode,cdashRootNode,'EndTestTime',now);
-  appendTextNode(options.cdashNode,cdashRootNode,'ElapsedMinutes',toc(cdashTic)/60);
-  xmlFileName = options.cdash;
-  xmlwrite(options.cdash,options.cdashNode);
-%  edit(xmlFileName);
-end
-
-end
-
 
 function dock(h,env)
 
