@@ -26,6 +26,7 @@ function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,use
   problem.solver = 'fmincon';
   problem.options=optimset('GradConstr','on','Algorithm','interior-point','Display','iter','TolX',1e-14,'TolCon',1e-9,'MaxFunEvals',5000);
   problem.options=optimset(problem.options,'TolFun',1e3);
+  problem.options=optimset(problem.options,'Display','off');
   problem.options=optimset(problem.options,user_options);
 
   for i = 1:n

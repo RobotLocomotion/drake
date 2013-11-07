@@ -17,11 +17,11 @@ classdef BotVisualizer < Visualizer
     function obj = BotVisualizer(manip)
       
       if ispc
-        error('botvis doesn''t support windows yet');
+        error('Drake:BotVisualizer:Windows','botvis doesn''t support windows yet');
       end
       
       if ~exist(fullfile(pods_get_bin_path,'drake_viewer'),'file')
-        error('can''t find drake_viewer executable.  you might need to run make (from the shell).  note: BotVisualizer is not supported on windows yet');
+        error('Drake:BotVisualizer:MissingViewer','can''t find drake_viewer executable.  you might need to run make (from the shell).  note: BotVisualizer is not supported on windows yet');
       end
       typecheck(manip,'RigidBodyManipulator');
       
