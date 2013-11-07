@@ -154,6 +154,14 @@ end
 
 if(exist('vrinstall','file'))
   conf.vrml_enabled = logical(vrinstall('-check'));% && usejava('awt');  % usejava('awt') return 0 if running with no display
+  if ismac
+    [~,osx] = system('sw_vers -productVersion');
+    if str2num(osx)>=10.9 && verLessThan('matlab','8.1')
+      % per my support ticket to matlab, who sent a perfunctory response
+      % pointing to this: http://www.mathworks.com/support/sysreq/release2012a/macintosh.html
+      conf.vrml_enabled = false;
+    end
+  end
 else
   conf.vrml_enabled=0;
 end
