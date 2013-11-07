@@ -79,7 +79,7 @@ install_prereqs_macports :
 	port install graphviz
 
 install_prereqs_homebrew :
-	brew install graphviz
+	brew install boost graphviz
 
 install_prereqs_ubuntu :
 	apt-get install graphviz
