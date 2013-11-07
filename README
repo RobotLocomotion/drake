@@ -23,7 +23,18 @@ Optional Dependencies:
 	      sedumi
 	      cplex
 
-MATLAB Toolbox Dependencies:  % from running unitTest(struct('dependency',true))
+MATLAB Toolbox Dependencies:  
+  Control System Toolbox
+  Curve Fitting Toolbox
+  Parallel Computing Toolbox
+  System Identification Toolbox  (for only a few examples)
+  MATLAB
+  Optimization Toolbox
+  Simulink
+  Simulink 3D Animation 
+  Symbolic Math Toolbox
+
+% current exhaustive list from running unitTest(struct('dependency',true))
   Communications System Toolbox
   Control System Toolbox
   Curve Fitting Toolbox
@@ -43,21 +54,8 @@ MATLAB Toolbox Dependencies:  % from running unitTest(struct('dependency',true))
   Simulink Design Optimization
   Simulink Verification and Validation
   Stateflow
-  Statistics Toolbox
   Symbolic Math Toolbox
   Computer Vision System Toolbox
-
-My best guess at the "real" dependencies:
-  Control System Toolbox
-  Curve Fitting Toolbox
-  Parallel Computing Toolbox
-  System Identification Toolbox  (for only a few examples)
-  MATLAB
-  Optimization Toolbox
-  Simulink
-  Simulink 3D Animation 
-  Symbolic Math Toolbox
-
 
 License:      BSD  (http://drake.mit.edu/license)
 
