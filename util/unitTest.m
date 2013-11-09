@@ -176,29 +176,18 @@ function codeCoverageReport(stats)
     cf = [cp,files{i}(2:end)];
     inds = find(strcmp(cf,{stats.FunctionTable.FileName}));
     if isempty(inds)
-      disp([' No unit test touched ' files{i}]);
+      fprintf(' Untouched file: <a href="matlab:edit(''%s'')">%s</a>\n',files{i},files{i});
     else
       executed_lines = vertcat(stats.FunctionTable(inds).ExecutedLines);
       executed_lines = executed_lines(:,1);
       
       if isempty(executed_lines)
-        disp([' The file ',files{i},' was called but did not execute (presumably do to parse errors)']);
+        fprintf(' The file <a href="matlab:edit(''%s'')">%s</a> was called but did not execute (presumably do to parse errors)',files{i},files{i});
       else
         executable_lines = callstats('file_lines',cf)';
         missed_lines = setdiff(executable_lines,executed_lines);
         if ~isempty(missed_lines)
-          fprintf('  Untouched lines in <a href="matlab:edit(''%s'')">%s</a> :\n', files{i},files{i});
-          fptr = fopen(cf,'r');
-          tline = fgetl(fptr);
-          linenum = 1;
-          while ischar(tline)
-            if ismember(linenum,missed_lines) && isempty(keywordfind(tline,'classdef'))
-              fprintf('<a href="matlab:opentoline(''%s'',%d)">%4d</a>: %s\n',files{i},linenum,linenum,tline);
-            end
-            linenum=linenum+1;
-            tline = fgetl(fptr);
-          end
-          fclose(fptr);
+          fprintf('  Untouched lines in <a href="matlab:profview(''%s'')">%s</a>\n',stats.FunctionTable(inds(1)).FunctionName,files{i});
         end
       end
     end
