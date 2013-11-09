@@ -72,7 +72,7 @@ mlint	:
 
 test	: all 
 	cmake/add_matlab_unit_tests.pl
-	@cd pod-build && ctest --output-on-failure
+	@cd pod-build && ctest --output-on-failure --timeout 300
 
 .PHONY: install_prereqs_macports install_prereqs_homebrew install_prereqs_ubuntu
 install_prereqs_macports :
