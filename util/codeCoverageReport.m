@@ -32,7 +32,8 @@ function codeCoverageReport()
             function_table_index = function_table_indices(strcmp(function_info.name,executed_function_names));
             
             if isempty(function_table_index)
-              fprintf('  Untouched method <a href="matlab:matlab.desktop.editor.openAndGoToFunction(''%s'',''%s'')">%s>%s</a>\n',current_filename,function_info.name,files{file_index}(3:end),function_info.name);
+              [path,file,ext] = fileparts(files{file_index});
+              fprintf('  Untouched method <a href="matlab:matlab.desktop.editor.openAndGoToFunction(''%s'',''%s'');">%s>%s</a>\n',current_filename,function_info.name,file,function_info.name);
             else
               executable_lines_in_function = executable_lines(executable_lines>=function_info.firstline & executable_lines<=function_info.lastline);
               executed_lines_in_function = stats.FunctionTable(function_table_index).ExecutedLines;
@@ -40,7 +41,7 @@ function codeCoverageReport()
               missed_lines_in_function = setdiff(executable_lines_in_function,executed_lines_in_function);
               if ~isempty(missed_lines_in_function)
                 fprintf('  Untouched lines in <a href="matlab:profview(''%s'')">%s</a>\n',stats.FunctionTable(function_table_index).FunctionName,stats.FunctionTable(function_table_index).FunctionName);
-                disp(missed_lines_in_function')
+%                disp(missed_lines_in_function')
               end
             end
           end
