@@ -1,10 +1,16 @@
 function codeCoverageReport()
 
-% run this after running the profiler...
+  % run this after running the profiler.  displays a list of 
+  % files, methods, and lines in the current directory (+ subdirectories,
+  % skipping /dev/ and /test/ subdirectories) that we not touched by any
+  % method during the most recent invocationo of the profiler.
+  %
+  % the most common way to run this is running unitTest with the 'coverage'
+  % option set to true
 
   stats = profile('info');
 
-  [~,filestr] = system('find . -iname "*.m" | grep -v /dev/');
+  [~,filestr] = system('find . -iname "*.m" | grep -v /dev/ | grep -v /test/');
   files = strread(filestr,'%s\n');
 %  files = cellfun(@(a) [pwd,a(2:end)],files,'UniformOutput',false); 
   current_path = pwd;
@@ -26,7 +32,7 @@ function codeCoverageReport()
         missed_lines = setdiff(executable_lines,executed_lines);
         if ~isempty(missed_lines)
           call_info = getcallinfo(current_filename,'-v7.8');
-          executed_function_names = cellfun(@(a) regexp(a,'(\w+)$','tokens','once'), {stats.FunctionTable(function_table_indices).FunctionName});
+          executed_function_names = cellfun(@(a) regexp(a,'(\w+)$','tokens','once'), {stats.FunctionTable(function_table_indices).FunctionName},'UniformOutput',false);
           
           for function_info = call_info
             function_table_index = function_table_indices(strcmp(function_info.name,executed_function_names));
