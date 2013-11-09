@@ -163,55 +163,6 @@ end
 end
 
 
-function codeCoverageReport(stats)
-  stats = profile('info');
-
-  [~,filestr] = system('find . -iname "*.m" | grep -v /dev/');
-  files = strread(filestr,'%s\n');
-%  files = cellfun(@(a) [pwd,a(2:end)],files,'UniformOutput',false); 
-  cp = pwd;
-
-  disp('======= Code Coverage Report =======');
-  for i=1:length(files)
-    cf = [cp,files{i}(2:end)];
-    inds = find(strcmp(cf,{stats.FunctionTable.FileName}));
-    if isempty(inds)
-      fprintf(' Untouched file: <a href="matlab:edit(''%s'')">%s</a>\n',files{i},files{i});
-    else
-      executed_lines = vertcat(stats.FunctionTable(inds).ExecutedLines);
-      executed_lines = executed_lines(:,1);
-      
-      if isempty(executed_lines)
-        fprintf(' The file <a href="matlab:edit(''%s'')">%s</a> was called but did not execute (presumably do to parse errors)',files{i},files{i});
-      else
-        executable_lines = callstats('file_lines',cf)';
-        missed_lines = setdiff(executable_lines,executed_lines);
-        if ~isempty(missed_lines)
-          fprintf('  Untouched lines in <a href="matlab:profview(''%s'')">%s</a>\n',stats.FunctionTable(inds(1)).FunctionName,files{i});
-        end
-      end
-    end
-  end
-  disp('======= End of Code Coverage Report =======');
-end
-
-function dependencyReport()
-  stats = profile('info');
-  
-  ind = find( ~cellfun(@isempty,strfind({stats.FunctionTable.FileName},[filesep,'toolbox',filesep])));
-  toolboxes = regexp({stats.FunctionTable(ind).FileName},'/toolbox/(\w*)','tokens');
-  [toolboxes,ia] = unique(cellfun(@(a) a{1},toolboxes));
-  disp('======= Toolbox Dependency Report ======= ');
-  for i=1:length(toolboxes)
-    t = ver(toolboxes{i});
-    if ~isempty(t)
-      fprintf('  <a href="matlab:profview(''%s'')">%s</a>\n',stats.FunctionTable(ind(ia(i))).FunctionName,t.Name);
-    end
-  end
-  disp('Click on the link above to see the first call to the toolbox');
-  disp('Call profile(''viewer'') to see more information');
-  disp('======= End of Toolbox Dependency Report ======= ');
-end
 
 function dock(h,env)
 
