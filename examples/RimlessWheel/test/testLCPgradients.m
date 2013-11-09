@@ -1,7 +1,10 @@
 function testLCPgradients
 
 options.floating = true;
+w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
+warning('off','Drake:TimeSteppingRigidBodyManipulator:GradientWarning');
 m = PlanarRigidBodyManipulator('../RimlessWheel.urdf',options);
+warning(w);
 
 p = TimeSteppingRigidBodyManipulator(m,.01);
 x0 = double(p.resolveConstraints([0;0;randn;5*rand;randn;5*rand]));
