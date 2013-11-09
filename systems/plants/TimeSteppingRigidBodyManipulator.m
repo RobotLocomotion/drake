@@ -159,7 +159,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       xdn = [qn;qdn];
       
       if (nargout>1)  % compute gradients
-        warning('timestepping gradients don''t work for all cases.. see bug 1155');
+        warning('Drake:TimeSteppingRigidBodyManipulator:GradientWarning','timestepping gradients don''t work for all cases.. see bug 1155');
         
         if isempty(z)
           dqdn = dwqdn;
