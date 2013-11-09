@@ -14,10 +14,7 @@ classdef RimlessWheelPlant < HybridDrakeSystem
   methods 
     function obj = RimlessWheelPlant()
       obj = obj@HybridDrakeSystem(0,3);
-      sys = RimlessWheelStancePlant();
-      sys.m = obj.m;
-      sys.l = obj.l;
-      sys.g = obj.g;
+      sys = RimlessWheelStancePlant(obj.m,obj.g,obj.l);
       obj = setInputFrame(obj,sys.getInputFrame);
       obj = setOutputFrame(obj,sys.getOutputFrame);
       obj = addMode(obj,sys);

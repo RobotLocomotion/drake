@@ -1,6 +1,6 @@
 classdef RimlessWheelStancePlant < DrakeSystem 
 
-  properties
+  properties (SetAccess=private)
     m, l, g
   end
   

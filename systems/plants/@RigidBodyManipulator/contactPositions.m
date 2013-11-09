@@ -32,7 +32,7 @@ d=3; %obj.dim;  % 2 for planar, 3 for 3D
 contact_pos = zeros(d,n_contact_pts)*kinsol.q(1);
 
 if (nargout>1) 
-  J = zeros(n_contact_pts*d,obj.num_q); 
+  J = zeros(n_contact_pts*d,obj.num_q)*kinsol.q(1); 
 end
 if (nargout>2)
   dJ = sparse(n_contact_pts*d,obj.num_q^2);
