@@ -29,8 +29,6 @@ if (Boost_FOUND)
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif()
 
-#find_library(F2C_LIBRARY NAMES libf2c.a)  # Need to get static libf2c for snopt
-
 pods_find_pkg_config(bot2-vis)
 option(DRAKE_USE_BOT_VIS "Build Drake with bot2-vis support." ${bot2-vis_FOUND})
 if (DRAKE_USE_BOT_VIS)
@@ -95,9 +93,6 @@ if (eigen3_FOUND)
     add_mex(inverseKinBackendmex inverseKinBackendmex.cpp)
     target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeConstraint)
     pods_use_pkg_config_packages(inverseKinBackendmex snopt_cpp)
-   target_link_libraries(inverseKinBackendmex f2c) #${F2C_LIBRARY}) # f2c needs to
-                                          # come after snopt_cpp so the linker
-                                          # knows which symbols to load
   endif()
 
   add_subdirectory(test)
