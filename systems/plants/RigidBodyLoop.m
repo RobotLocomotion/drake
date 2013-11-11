@@ -6,6 +6,7 @@ classdef RigidBodyLoop < RigidBodyElement
     pt1=[0;0;0]
     body2
     pt2=[0;0;0]
+    axis=[1;0;0]
   end
   
   methods    
