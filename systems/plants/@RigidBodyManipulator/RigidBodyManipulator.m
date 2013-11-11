@@ -1435,18 +1435,26 @@ classdef RigidBodyManipulator < Manipulator
 
       phi=[];dphi=[];ddphi=[];
 
-      kinsol = doKinematics(obj,q,true);
+      kinsol = doKinematics(obj,q,nargout>2);
       
       for i=1:length(obj.loop)
         % for each loop, add the constraints that the pt1 on body1 is in
         % the same location as pt2 on body2
         
-        [pt1,J1,dJ1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-        [pt2,J2,dJ2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-        
+        if (nargout>2)
+          [pt1,J1,dJ1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
+          [pt2,J2,dJ2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
+          ddphi = [ddphi; dJ1-dJ2];
+          dphi = [dphi; J1-J2];
+        elseif nargout>1
+          [pt1,J1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
+          [pt2,J2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
+          dphi = [dphi; J1-J2];
+        else
+          pt1 = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
+          pt2 = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
+        end
         phi = [phi; pt1-pt2];
-        dphi = [dphi; J1-J2];
-        ddphi = [ddphi; dJ1-dJ2];
       end
     end      
     
@@ -1748,11 +1756,12 @@ classdef RigidBodyManipulator < Manipulator
           axis = axis/(norm(axis)+eps); % normalize
         end
       end
+      loop.axis = axis;
       
       type = char(node.getAttribute('type'));
       switch (lower(type))
         case {'continuous'}
-          warning('3D loop joints do not properly enforce the joint axis constraint.  (they perform more like a ball joint).  See bug 1389');
+          warning('Drake:RigidBodyManipulator:ThreeDLoopJoints','3D loop joints do not properly enforce the joint axis constraint.  (they perform more like a ball joint).  See bug 1389');
         otherwise
           error(['joint type ',type,' not supported (yet?)']);
       end

@@ -1,6 +1,8 @@
 function runLQR
 
+w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 r = PlanarRigidBodyManipulator('FourBar2.urdf');
+warning(w);
 v = r.constructVisualizer();
 
 %x0 = [2.861691;.811224;-3.528619;0;0;0]; u0 = 0;
@@ -15,8 +17,10 @@ c = tilqr(r,x0,u0,Q,R);
 sys = feedback(r,c);
 
 x0 = resolveConstraints(r,double(x0)+.2*randn(6,1));
+w = warning('off','Drake:DrakeSystem:ConstraintsNotEnforced');
 xtraj = simulate(sys,[0 10],x0);
 xtrajopenloop = simulate(cascade(setOutputFrame(ConstantTrajectory(u0),getInputFrame(r)),r),[0 10],x0);
+warning(w);
 
 vopenloop = v;
 vopenloop.fade_percent = .5;
