@@ -773,6 +773,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       obj.manip = addLinksToCollisionFilterGroup(obj.manip,linknames,collision_fg_name,robotnums);
     end
     
+    function out = name(obj)
+      out = obj.manip.name;
+    end
+    
   end
   
   
