@@ -6,7 +6,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
   if(nrhs != 5)
   {
-    mexErrMsgIdAndTxt("Drake:testQuatmex:BadInputs","Usage [r,dr,e,ed,quat,dquat] = testQuatmex(q1,q2,axis,u,v)");
+    mexErrMsgIdAndTxt("Drake:testQuatmex:BadInputs","Usage [r,dr,e,ed,quat,dquat,q3,dq3,w,dw] = testQuatmex(q1,q2,axis,u,v)");
   }
   Vector4d q1;
   Vector4d q2;
@@ -39,4 +39,20 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   plhs[5] = mxCreateDoubleMatrix(4,6,mxREAL);
   memcpy(mxGetPr(plhs[4]),quat.data(),sizeof(double)*4);
   memcpy(mxGetPr(plhs[5]),dquat.data(),sizeof(double)*4*6);
+
+  Vector4d q3;
+  Matrix<double,4,8> dq3;
+  quatProduct(q1,q2,q3,dq3);
+  plhs[6] = mxCreateDoubleMatrix(4,1,mxREAL);
+  plhs[7] = mxCreateDoubleMatrix(4,8,mxREAL);
+  memcpy(mxGetPr(plhs[6]),q3.data(),sizeof(double)*4);
+  memcpy(mxGetPr(plhs[7]),dq3.data(),sizeof(double)*4*8);
+
+  Vector3d w;
+  Matrix<double,3,7> dw;
+  quatRotateVec(q1,u,w,dw);
+  plhs[8] = mxCreateDoubleMatrix(3,1,mxREAL);
+  plhs[9] = mxCreateDoubleMatrix(3,7,mxREAL);
+  memcpy(mxGetPr(plhs[8]),w.data(),sizeof(double)*3);
+  memcpy(mxGetPr(plhs[9]),dw.data(),sizeof(double)*3*7);
 }

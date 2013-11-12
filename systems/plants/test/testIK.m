@@ -267,33 +267,35 @@ qsc = qsc.setActive(true);
 ikoptions = ikoptions.setMex(false);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
 kinsol = doKinematics(robot,q);
-com = getCOM(robot,kinsol);
-rfoot_pos = forwardKin(robot,kinsol,r_foot,r_foot_pts,0);
-lfoot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pts,0);
-shrinkFactor = qsc.shrinkFactor+1e-4;
-center_pos = mean([lfoot_pos(1:2,:) rfoot_pos(1:2,:)],2);
-shrink_vertices = [lfoot_pos(1:2,:) rfoot_pos(1:2,:)]*shrinkFactor+repmat(center_pos*(1-shrinkFactor),1,size(l_foot_pts,2)+size(r_foot_pts,2));
-num_vertices = size(shrink_vertices,2);
-quadoptions = optimset('Algorithm','interior-point-convex');
-[~,~,exit_flag] = quadprog(eye(num_vertices),rand(num_vertices,1),[],[],[shrink_vertices;ones(1,num_vertices)],...
-  [com(1:2);1],zeros(num_vertices,1),ones(num_vertices,1),1/num_vertices*ones(num_vertices,1),quadoptions);
-valuecheck(exit_flag,1);
+valuecheck(qsc.checkConstraint(kinsol),true);
+%com = getCOM(robot,kinsol);
+%rfoot_pos = forwardKin(robot,kinsol,r_foot,r_foot_pts,0);
+%lfoot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pts,0);
+%shrinkFactor = qsc.shrinkFactor+1e-4;
+%center_pos = mean([lfoot_pos(1:2,:) rfoot_pos(1:2,:)],2);
+%shrink_vertices = [lfoot_pos(1:2,:) rfoot_pos(1:2,:)]*shrinkFactor+repmat(center_pos*(1-shrinkFactor),1,size(l_foot_pts,2)+size(r_foot_pts,2));
+%num_vertices = size(shrink_vertices,2);
+%quadoptions = optimset('Algorithm','interior-point-convex');
+%[~,~,exit_flag] = quadprog(eye(num_vertices),rand(num_vertices,1),[],[],[shrink_vertices;ones(1,num_vertices)],...
+  %[com(1:2);1],zeros(num_vertices,1),ones(num_vertices,1),1/num_vertices*ones(num_vertices,1),quadoptions);
+%valuecheck(exit_flag,1);
 
 display('Check quasi static constraint for pointwise');
 q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
-  com = getCOM(robot,kinsol);
-  rfoot_pos = forwardKin(robot,kinsol,r_foot,r_foot_pts,0);
-  lfoot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pts,0);
-  shrinkFactor = qsc.shrinkFactor+1e-4;
-  center_pos = mean([lfoot_pos(1:2,:) rfoot_pos(1:2,:)],2);
-  shrink_vertices = [lfoot_pos(1:2,:) rfoot_pos(1:2,:)]*shrinkFactor+repmat(center_pos*(1-shrinkFactor),1,size(l_foot_pts,2)+size(r_foot_pts,2));
-  num_vertices = size(shrink_vertices,2);
-  quadoptions = optimset('Algorithm','interior-point-convex');
-  [~,~,exit_flag] = quadprog(eye(num_vertices),rand(num_vertices,1),[],[],[shrink_vertices;ones(1,num_vertices)],...
-    [com(1:2);1],zeros(num_vertices,1),ones(num_vertices,1),1/num_vertices*ones(num_vertices,1),quadoptions);
-  valuecheck(exit_flag,1);
+  valuecheck(qsc.checkConstraint(kinsol),true);
+  %com = getCOM(robot,kinsol);
+  %rfoot_pos = forwardKin(robot,kinsol,r_foot,r_foot_pts,0);
+  %lfoot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pts,0);
+  %shrinkFactor = qsc.shrinkFactor+1e-4;
+  %center_pos = mean([lfoot_pos(1:2,:) rfoot_pos(1:2,:)],2);
+  %shrink_vertices = [lfoot_pos(1:2,:) rfoot_pos(1:2,:)]*shrinkFactor+repmat(center_pos*(1-shrinkFactor),1,size(l_foot_pts,2)+size(r_foot_pts,2));
+  %num_vertices = size(shrink_vertices,2);
+  %quadoptions = optimset('Algorithm','interior-point-convex');
+  %[~,~,exit_flag] = quadprog(eye(num_vertices),rand(num_vertices,1),[],[],[shrink_vertices;ones(1,num_vertices)],...
+    %[com(1:2);1],zeros(num_vertices,1),ones(num_vertices,1),1/num_vertices*ones(num_vertices,1),quadoptions);
+  %valuecheck(exit_flag,1);
 end
 
 display('Check point to point distance constraint')

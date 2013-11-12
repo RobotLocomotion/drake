@@ -68,11 +68,7 @@ classdef QuasiStaticConstraint<Constraint
       if(isempty(t))
         flag = true;
       else
-        if(t>=obj.tspan(1)&&t<=obj.tspan(end))
-          flag = true;
-        else
-          flag = false;
-        end
+        flag = t>=obj.tspan(1) & t<=obj.tspan(end);
       end
     end
 
@@ -161,6 +157,30 @@ classdef QuasiStaticConstraint<Constraint
         c = [];
         dc = [];
       end
+    end
+    
+    function flag = checkConstraint(obj,kinsol)
+      com = obj.robot.getCOM(kinsol);
+      contact_pos = zeros(3,obj.num_pts);
+      num_accum_pts = 0;
+      for i = 1:obj.num_bodies
+        contact_pos(:,num_accum_pts+(1:obj.num_body_pts(i))) = forwardKin(obj.robot,kinsol,obj.bodies(i),obj.body_pts{i},0);
+        num_accum_pts = num_accum_pts+obj.num_body_pts(i);
+      end
+      center_pos = mean(contact_pos,2);
+      shrinkFactor = obj.shrinkFactor+1e-4;
+      shrink_vertices = contact_pos*shrinkFactor+repmat(center_pos*(1-shrinkFactor),1,num_accum_pts);
+      problem.d = com(1:2);
+      problem.C = shrink_vertices(1:2,:);
+      problem.x0 = 1/obj.num_pts*ones(obj.num_pts,1);
+      problem.Aeq = ones(1,obj.num_pts);
+      problem.beq = 1;
+      problem.lb = zeros(1,obj.num_pts);
+      problem.ub = ones(1,obj.num_pts);
+      problem.solver = 'lsqlin';
+      problem.options = optimset('LargeScale','off','Display','off');
+      [weights,resnorm,~,exitflag] = lsqlin(problem);
+      flag = resnorm<1e-6;
     end
     
     function [lb,ub] = bounds(obj,t)
