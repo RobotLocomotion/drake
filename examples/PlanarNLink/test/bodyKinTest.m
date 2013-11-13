@@ -1,17 +1,16 @@
 function bodyKinTest
 
-oldpath=addpath('..');
+oldpath=addpath(fullfile(pwd,'..'));
 
 N = 1+ceil(rand);
 r = PlanarNLink(N);
 
-pts = randn(2,20);
+kinsol = doKinematics(r,randn(r.getNumDOF,1));
 
-use_mex = false;
-kinsol = doKinematics(r,randn(r.getNumDOF,1),true,use_mex);
+pts = randn(2,20);
 x = forwardKin(r,kinsol,N,pts);
 pts2 = bodyKin(r,kinsol,N,x);
-valuecheck(pts,pts2);
+valuecheck(pts2,pts);
 
 path(oldpath);
 
