@@ -1,4 +1,6 @@
-<robot name="Plane">
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../doc/drakeURDF.xsd" name="Plane">
   <link
     name="Fuselage">
     <inertial>
@@ -266,49 +268,37 @@
       velocity="18" />
   </joint>
 <!--FORCE ELEMENTS ADDED MANUALLY AFTER SOLIDWORKS EXPORT-->
-  <force_element name="LeftWing_force" type="wing"> 
-  	<parent link="LeftWing"/>
-  	<profile value="ht23.dat"/> 
-  	<origin xyz="-.01 .18 0" rpy="0 0 0"/> 
-  	<chord value=".228"/> 
-  	<span value=".28"/> 
-  	<nominal_speed value="10"/> 
-    <stall_angle value ="10"/>
+  <force_element name="LeftWing_force">
+    <wing profile="ht23.dat" chord=".228" span=".28" nominal_speed="10" stall_angle="10">
+    	<parent link="LeftWing"/>
+    	<origin xyz="-.01 .18 0" rpy="0 0 0"/> 
+    </wing>
   </force_element>
-  <force_element name="RightWing_force" type="wing"> 
-  	<parent link="RightWing"/>
-  	<profile value="ht23.dat"/> 
-  	<origin xyz="-.01 -.18 0" rpy="0 0 0"/> 
-  	<chord value=".228"/> 
-  	<span value=".28"/> 
-  	<nominal_speed value="10"/> 
-    <stall_angle value ="10"/>
+  <force_element name="RightWing_force"> 
+    <wing profile="ht23.dat" chord=".228" span=".28" nominal_speed="10" stall_angle="10">
+    	<parent link="RightWing"/>
+    	<origin xyz="-.01 -.18 0" rpy="0 0 0"/> 
+    </wing>
   </force_element>
-  <force_element name="Elevator_force" type="wing"> 
-  	<parent link="Elevator"/>
-  	<profile value="flat plate"/> 
-  	<origin xyz="-.0105 0 0" rpy="0 0 0"/> 
-  	<chord value="0.10"/> 
-  	<span value=".254"/> 
-  	<nominal_speed value="10"/> 
-    <stall_angle value ="12"/>
+  <force_element name="Elevator_force">
+    <wing chord="0.10" nominal_speed="10" profile="flat plate" span=".254" stall_angle="12"> 
+    	<parent link="Elevator"/>
+    	<origin xyz="-.0105 0 0" rpy="0 0 0"/> 
+    </wing>
   </force_element>
-  <force_element name="Rudder_force" type="wing"> 
-  	<parent link="Rudder"/>
-  	<profile value="flat plate"/> 
-  	<origin xyz="-.022 0 0" rpy="0 0 0"/> 
-  	<chord value=".07"/> 
-  	<span value=".23"/> 
-  	<nominal_speed value="10"/> 
-    <stall_angle value ="12"/>
+  <force_element name="Rudder_force">
+    <wing profile="flat plate" chord=".07" span=".23" nominal_speed="10" stall_angle="12"> 
+    	<parent link="Rudder"/>
+    	<origin xyz="-.022 0 0" rpy="0 0 0"/> 
+    </wing>
   </force_element>
-  <force_element name="Propellers" type="thrust">
-    <parent link="Fuselage"/>
-    <origin xyz=".2 0 0"/>
-    <direction xyz="1 0 0"/>
-    <!--full throttle (255 value) is about .57 kg of thrust -->
-    <scaleFactor value =".00223"/>
-    <limits value="0 300"/>
+  <force_element name="Propellers">
+    <thrust lower_limit="0" upper_limit="300" scale_factor=".00223">
+      <!--full throttle (255 value) is about .57 kg of thrust -->
+      <parent link="Fuselage"/>
+      <origin xyz=".2 0 0"/>
+      <axis xyz="1 0 0"/>
+    </thrust>
   </force_element>
 <!--Even though transmissions come in after Thrust in the URDF,
 	They come in as inputs 1-4 in the Drake model -->

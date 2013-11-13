@@ -23,7 +23,11 @@ function [ sol,exitflag ] = findTrim(X0)
 %   constraints to the problem.
 
 options.floating = true;
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 p = RigidBodyManipulator('Plane.URDF', options);
+warning(w);
 if nargin<1
     %              [X  Y  Z Rx  Ry   Rz WL WR EL Rd Vx   Vy Vz Vr Vp Vy Velev
     %These were an initial state tuned by hand
@@ -36,6 +40,7 @@ if nargin<1
     X0 = [initialState;u0];
 end
 options.MaxFunEvals = 10000;
+options.Algorithm = 'active-set';
 A = zeros(25);
 b = zeros(25,1);
 tol = 1E-2;
