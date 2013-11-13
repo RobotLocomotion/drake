@@ -18,7 +18,7 @@ cd ..
 %disp('constructing a Planar glider')
 options.floating = true;
 %p = TimeSteppingRigidBodyManipulator('Glider.URDF',.001, options);
-p = PlanarRigidBodyManipulator('GliderBalanced.URDF', options);
+p = PlanarRigidBodyManipulator('GliderBalanced.urdf', options);
 %    [X Z Pitch El Vx Vz PitDot Velev]
 for i = 1:100
     u0 = rand(1)-.5;

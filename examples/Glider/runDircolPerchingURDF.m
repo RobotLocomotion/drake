@@ -4,7 +4,7 @@ tf0 = 1;
 N=4; %=21;
 if (nargin<1)
   options.floating = true;
-  p = PlanarRigidBodyManipulator('GliderBalanced.URDF', options);
+  p = PlanarRigidBodyManipulator('GliderBalanced.urdf', options);
 end
 if (nargin<2)
     utraj0 = PPTrajectory(foh(linspace(0,tf0,N),0*randn(1,N)));
