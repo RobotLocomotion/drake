@@ -373,6 +373,13 @@ public class BotLCMGLClient {
     glPopMatrix();
   }
 
+  public synchronized void line3(double x_start, double y_start, double z_start, double x_end, double y_end, double z_end) {
+    glBegin(LCMGL_LINES);
+    glVertex3d(x_start, y_start, z_start);
+    glVertex3d(x_end, y_end, z_end);
+    glEnd();
+  }
+
   public synchronized void rect(double[] xyz, double[] size, int filled) {
      try {
       _outs.writeByte(LCMGL_RECT); 
