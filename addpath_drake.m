@@ -156,7 +156,7 @@ if(exist('vrinstall','file'))
   conf.vrml_enabled = logical(vrinstall('-check'));% && usejava('awt');  % usejava('awt') return 0 if running with no display
   if ismac
     [~,osx] = system('sw_vers -productVersion');
-    if str2num(osx)>=10.9 && verLessThan('matlab','8.1')
+    if ~verStringLessThan(osx,'10.9') && verLessThan('matlab','8.1')
       % per my support ticket to matlab, who sent a perfunctory response
       % pointing to this: http://www.mathworks.com/support/sysreq/release2012a/macintosh.html
       conf.vrml_enabled = false;
@@ -297,4 +297,18 @@ function val = getCMakeParam(param)
 [~,val] = system(['cmake -L -N pod-build | grep ', param,' | cut -d "=" -f2']);
 val = strtrim(val);
 
+end
+
+function tf = verStringLessThan(a,b)
+  % checks if the version string a is less than the version string b
+
+  pa = getParts(a); pb = getParts(b);
+  tf = pa(1)<pb(1) || pa(2)<pb(2) || pa(3)<pb(3);
+  
+  function parts = getParts(V)
+    parts = sscanf(V, '%d.%d.%d')';
+    if length(parts) < 3
+      parts(3) = 0; % zero-fills to 3 elements
+    end
+  end
 end
