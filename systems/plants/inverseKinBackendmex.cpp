@@ -401,6 +401,7 @@ void snoptIKtraj_fevalfun(const VectorXd &x, VectorXd &c)
   VectorXd G;
   snoptIKtraj_userfun(x,c,G);
 }
+
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
 {
   if(nrhs<7)
@@ -728,10 +729,15 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
           jAvar[k] = jAvar_array[i](k);
         }
       }
-      double* xlow = new double[nx];
-      double* xupp = new double[nx];
-      memcpy(xlow,joint_limit_min.col(i).data(),sizeof(double)*nq);
-      memcpy(xupp,joint_limit_max.col(i).data(),sizeof(double)*nq);
+      snopt::doublereal* xlow = new snopt::doublereal[nx];
+      snopt::doublereal* xupp = new snopt::doublereal[nx];
+      for(int k = 0;k<nq;k++)
+      {
+        xlow[k] = joint_limit_min(k,i);
+        xupp[k] = joint_limit_max(k,i);
+      }
+      //memcpy(xlow,joint_limit_min.col(i).data(),sizeof(double)*nq);
+      //memcpy(xupp,joint_limit_max.col(i).data(),sizeof(double)*nq);
       if(qscActiveFlag)
       {
         for(int k = 0;k<num_qsc_pts;k++)
@@ -740,34 +746,55 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
           xupp[nq+k] = 1.0;
         }
       }
-      double* Flow = new double[nF];
-      double* Fupp = new double[nF];
+      snopt::doublereal* Flow = new snopt::doublereal[nF];
+      snopt::doublereal* Fupp = new snopt::doublereal[nF];
       Flow[0] = -mxGetInf();
       Fupp[0] = mxGetInf();
-      memcpy(&Flow[1],Cmin_array[i].data(),sizeof(double)*nc_array[i]);
-      memcpy(&Fupp[1],Cmax_array[i].data(),sizeof(double)*nc_array[i]);
+      for(int k = 0;k<nc_array[i];k++)
+      {
+        Flow[1+k] = Cmin_array[i](k);
+        Fupp[1+k] = Cmax_array[i](k);
+      }
+      //memcpy(&Flow[1],Cmin_array[i].data(),sizeof(double)*nc_array[i]);
+      //memcpy(&Fupp[1],Cmax_array[i].data(),sizeof(double)*nc_array[i]);
       ti = &t[i];
       q_nom_i = q_nom.col(i);
-      double* x = new double[nx];
+      snopt::doublereal* x = new snopt::doublereal[nx];
       if(!sequentialSeedFlag)
       {
-        memcpy(x,q_seed.col(i).data(),sizeof(double)*nq);
+        for(int k=0;k<nq;k++)
+        {
+          x[k] = q_seed(k,i);
+        }
+        //memcpy(x,q_seed.col(i).data(),sizeof(double)*nq);
       }
       else
       {
         if(i == 0)
         {
-          memcpy(x,q_seed.col(i).data(),sizeof(double)*nq);
+          for(int k = 0;k<nq;k++)
+          {
+            x[k] = q_seed(k,i);
+          }
+          //memcpy(x,q_seed.col(i).data(),sizeof(double)*nq);
         }
         else 
         {
           if(INFO[i-1]>10)
           {
-            memcpy(x,q_seed.col(i).data(),sizeof(double)*nq);
+            for(int k = 0;k<nq;k++)
+            {
+              x[k] = q_seed(k,i);
+            }
+            //memcpy(x,q_seed.col(i).data(),sizeof(double)*nq);
           }
           else
           {
-            memcpy(x,q_sol.col(i-1).data(),sizeof(double)*nq);
+            for(int k = 0;k<nq;k++)
+            {
+              x[k] = q_sol(k,i-1);
+            }
+            //memcpy(x,q_sol.col(i-1).data(),sizeof(double)*nq);
           }
         }
       }
@@ -784,7 +811,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       snopt::doublereal* rw;
       rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
       //doublereal rw[lenrw];
-      snopt::integer iw[leniw];
+      snopt::integer* iw;
+      iw = (snopt::integer*) std::calloc(lenrw,sizeof(snopt::integer));
       char cw[8*lencw];
 
       snopt::integer Cold = 0, Basis = 1, Warm = 2;
@@ -1176,14 +1204,19 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         qdotf_idx[j] = qdot_idx_start+j;
       }
     }
-    double* xlow = new double[nx];
-    double* xupp = new double[nx];
+    snopt::doublereal* xlow = new snopt::doublereal[nx];
+    snopt::doublereal* xupp = new snopt::doublereal[nx];
     for(int j = 0;j<num_qfree;j++)
     {
       if(qscActiveFlag)
       {
-        memcpy(xlow+j*(nq+num_qsc_pts),joint_limit_min.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
-        memcpy(xupp+j*(nq+num_qsc_pts),joint_limit_max.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
+        for(int k = 0;k<nq;k++)
+        {
+          xlow[j*(nq+num_qsc_pts)+k] = joint_limit_min((j+qstart_idx)*nq+k);
+          xupp[j*(nq+num_qsc_pts)+k] = joint_limit_max((j+qstart_idx)*nq+k);
+        }
+        //memcpy(xlow+j*(nq+num_qsc_pts),joint_limit_min.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
+        //memcpy(xupp+j*(nq+num_qsc_pts),joint_limit_max.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
         for(int k = 0;k<num_qsc_pts;k++)
         {
           xlow[j*(nq+num_qsc_pts)+nq+k] = 0.0;
@@ -1192,23 +1225,39 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       }
       else
       {
-        memcpy(xlow+j*nq,joint_limit_min.col(j+qstart_idx).data(),sizeof(double)*nq);
-        memcpy(xupp+j*nq,joint_limit_max.col(j+qstart_idx).data(),sizeof(double)*nq);
+        for(int k = 0;k<nq;k++)
+        {
+          xlow[j*nq+k] = joint_limit_min(k,j+qstart_idx);
+          xupp[j*nq+k] = joint_limit_max(k,j+qstart_idx);
+        }
+        //memcpy(xlow+j*nq,joint_limit_min.col(j+qstart_idx).data(),sizeof(double)*nq);
+        //memcpy(xupp+j*nq,joint_limit_max.col(j+qstart_idx).data(),sizeof(double)*nq);
       }
     }
     if(fixInitialState)
     {
-      memcpy(xlow+qdotf_idx[0],qdf_lb.data(),sizeof(double)*nq);
-      memcpy(xupp+qdotf_idx[0],qdf_ub.data(),sizeof(double)*nq);
+      for(int k = 0; k<nq; k++)
+      {
+        xlow[qdotf_idx[0]+k] = qdf_lb(k);
+        xupp[qdotf_idx[0]+k] = qdf_ub(k);
+      }
+      //memcpy(xlow+qdotf_idx[0],qdf_lb.data(),sizeof(double)*nq);
+      //memcpy(xupp+qdotf_idx[0],qdf_ub.data(),sizeof(double)*nq);
     }
     else
     {
-      memcpy(xlow+qdot0_idx[0], qd0_lb.data(),sizeof(double)*nq);
-      memcpy(xupp+qdot0_idx[0], qd0_ub.data(),sizeof(double)*nq);
-      memcpy(xlow+qdotf_idx[0], qdf_lb.data(),sizeof(double)*nq);
-      memcpy(xupp+qdotf_idx[0], qdf_ub.data(),sizeof(double)*nq);
+      for(int k = 0;k<nq;k++)
+      {
+        xlow[qdot0_idx[0]+k] = qd0_lb(k);
+        xupp[qdot0_idx[0]+k] = qd0_ub(k);
+        xlow[qdotf_idx[0]+k] = qdf_lb(k);
+        xupp[qdotf_idx[0]+k] = qdf_ub(k);
+      }
+      //memcpy(xlow+qdot0_idx[0], qd0_lb.data(),sizeof(double)*nq);
+      //memcpy(xupp+qdot0_idx[0], qd0_ub.data(),sizeof(double)*nq);
+      //memcpy(xlow+qdotf_idx[0], qdf_lb.data(),sizeof(double)*nq);
+      //memcpy(xupp+qdotf_idx[0], qdf_ub.data(),sizeof(double)*nq);
     }
-    
     pm = mxGetProperty(prhs[ikoptions_idx],0,"additional_tSamples");
     set<double> t_set(t,t+nT);
     VectorXd inbetween_tSamples;
@@ -1600,12 +1649,16 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       nf_cum += mtkc_nc[j];
       nG_cum += mtkc_nc[j]*nq*(num_qfree+num_qdotfree);
     }
-    double* x = new double[nx];
+    snopt::doublereal* x = new snopt::doublereal[nx];
     if(qscActiveFlag)
     {
       for(int j = 0;j<num_qfree;j++)
       {
-        memcpy(x+j*(nq+num_qsc_pts),q_seed.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
+        for(int k = 0;k<nq;k++)
+        {
+          x[j*(nq+num_qsc_pts)+k] = q_seed((j+qstart_idx)*nq+k);
+        }
+        //memcpy(x+j*(nq+num_qsc_pts),q_seed.data()+(j+qstart_idx)*nq,sizeof(double)*nq);
         for(int k = 0;k<num_qsc_pts;k++)
         {
           x[j*(nq+num_qsc_pts)+nq+k] = 1.0/num_qsc_pts;
@@ -1614,23 +1667,36 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     }
     else
     {
-      memcpy(x,q_seed.data()+nq*qstart_idx,sizeof(double)*nq*num_qfree);
+      for(int j = 0;j<nq*num_qfree;j++)
+      {
+        x[j] = q_seed(nq*qstart_idx+j);
+      }
+      //memcpy(x,q_seed.data()+nq*qstart_idx,sizeof(double)*nq*num_qfree);
     }
     if(fixInitialState)
     {
-      memcpy(x+qdotf_idx[0],qdf_seed.data(),sizeof(double)*nq);
+      for(int j = 0;j<nq;j++)
+      {
+        x[qdotf_idx[0]+j] = qdf_seed(j);
+      }
+      //memcpy(x+qdotf_idx[0],qdf_seed.data(),sizeof(double)*nq);
     }
     else
     {
-      memcpy(x+qdot0_idx[0],qd0_seed.data(),sizeof(double)*nq);
-      memcpy(x+qdotf_idx[0],qdf_seed.data(),sizeof(double)*nq);
+      for(int j = 0;j<nq;j++)
+      {
+        x[qdot0_idx[0]+j] = qd0_seed(j);
+        x[qdotf_idx[0]+j] = qdf_seed(j);
+      }
+      //memcpy(x+qdot0_idx[0],qd0_seed.data(),sizeof(double)*nq);
+      //memcpy(x+qdotf_idx[0],qdf_seed.data(),sizeof(double)*nq);
     }
-
     snopt::integer minrw,miniw,mincw;
     snopt::integer lenrw = 20000000, leniw = 2000000, lencw = 5000;
     snopt::doublereal* rw;
     rw = (snopt::doublereal*) std::calloc(lenrw,sizeof(snopt::doublereal));
-    snopt::integer iw[leniw];
+    snopt::integer* iw;
+    iw = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
     char cw[8*lencw];
 
     snopt::integer Cold = 0, Basis = 1, Warm = 2;
@@ -1820,6 +1886,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     delete[] iCfun_inbetween_ptr; delete[] jCvar_inbetween_ptr; 
     mexPrintf("get iCfun_inbetween\n");*/
 
+   
     snopt::snopta_
       ( &Cold, &nF, &nx, &nxname, &nFname,
         &ObjAdd, &ObjRow, Prob, snoptIKtrajfun,
