@@ -388,7 +388,8 @@ macro(pods_use_pkg_config_packages target)
     string(STRIP ${_pods_pkg_ldflags} _pods_pkg_ldflags)
     #    message("ldflags: ${_pods_pkg_ldflags}")
     include_directories(${_pods_pkg_include_flags})
-    target_link_libraries(${target} ${_pods_pkg_ldflags})
+    string(REPLACE " " ";" TMP ${_pods_pkg_ldflags}) # convert white-space delimited list to a semi-colon delimited list
+    target_link_libraries(${target} ${TMP})
     
     # make the target depend on libraries that are cmake targets
     if (_pods_pkg_ldflags)
