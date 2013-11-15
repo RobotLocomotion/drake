@@ -56,15 +56,15 @@ int nT;
 int num_qsc_pts;
 bool fixInitialState;
 // The following variables are used in inverseKinSequence only
-int* qfree_idx;
-int* qdotf_idx;
-int* qdot0_idx;
+snopt::integer* qfree_idx;
+snopt::integer* qdotf_idx;
+snopt::integer* qdot0_idx;
 
 VectorXd q0_fixed;
 VectorXd qdot0_fixed;
-int qstart_idx;
-int num_qfree;
-int num_qdotfree;
+snopt::integer qstart_idx;
+snopt::integer num_qfree;
+snopt::integer num_qdotfree;
 
 MatrixXd velocity_mat;
 MatrixXd velocity_mat_qd0;
@@ -74,11 +74,11 @@ MatrixXd accel_mat_qd0;
 MatrixXd accel_mat_qdf;
 
 VectorXd* t_inbetween;
-int num_inbetween_tSamples;
+snopt::integer num_inbetween_tSamples;
 MatrixXd* dqInbetweendqknot;
 MatrixXd* dqInbetweendqd0;
 MatrixXd* dqInbetweendqdf;
-int* qknot_qsamples_idx;
+snopt::integer* qknot_qsamples_idx;
 
 /* Remeber to delete this*/
 snopt::integer nF_tmp;
@@ -478,7 +478,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
           joint_limit_max(k,j) = (joint_limit_max(k,j)<joint_max[k]? joint_limit_max(k,j):joint_max[k]);
           if(joint_limit_min(k,j)>joint_limit_max(k,j))
           {
-            mexErrMsgIdAndTxt("Drake:inverseKinBackendmex:BadInputs","Posture constraint has lower bound larger than upper bound");
+            mexErrMsgIdAndTxt("Drake:inverseKinBackendmex:BadInputs","Some posture constraint has lower bound larger than the upper bound of other posture constraint for joint %d at time %4.2f\n",k+1,&t[j]==NULL?0.0:t[j]);
           }
         }
       }
@@ -1129,11 +1129,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     accel_mat_qdf.resize(nq*nT,nq);
     accel_mat_qdf = accel_mat2.block(0,(nT-1)*nq,nT*nq,nq)+accel_mat2.block(0,nq,nq*nT,nq*(nT-2))*velocity_mat_qdf;
 
-    qfree_idx = new int[nq*num_qfree];
-    qdotf_idx = new int[nq];
+    qfree_idx = new snopt::integer[nq*num_qfree];
+    qdotf_idx = new snopt::integer[nq];
     if(!fixInitialState)
     {
-      qdot0_idx = new int [nq];
+      qdot0_idx = new snopt::integer [nq];
     }
     else
     {
@@ -1242,7 +1242,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       delete[] inbetween_tSamples_tmp;
     }
     num_inbetween_tSamples = inbetween_tSamples.size();
-    qknot_qsamples_idx = new int[nT];
+    qknot_qsamples_idx = new snopt::integer[nT];
     t_samples = new double[nT+num_inbetween_tSamples];
     {
       int t_samples_idx = 0;
@@ -1417,8 +1417,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       nF += mtkc_nc[j];
       nG += mtkc_nc[j]*nq*(num_qfree+num_qdotfree);
     }
-    double* Flow = new double[nF];
-    double* Fupp = new double[nF];
+    snopt::doublereal* Flow = new snopt::doublereal[nF];
+    snopt::doublereal* Fupp = new snopt::doublereal[nF];
     string* Fname = new string[nF];
     snopt::integer* iGfun = new snopt::integer[nG];
     snopt::integer* jGvar = new snopt::integer[nG];
@@ -1470,8 +1470,13 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     int x_start_idx = 0;
     for(int j = qstart_idx;j<nT;j++)
     {
-      memcpy(Flow+nf_cum,Cmin_array[j].data(),sizeof(double)*nc_array[j]);
-      memcpy(Fupp+nf_cum,Cmax_array[j].data(),sizeof(double)*nc_array[j]);
+      for(int k = 0;k<nc_array[j];k++)
+      {
+        Flow[nf_cum+k] = Cmin_array[j](k);
+        Fupp[nf_cum+k] = Cmax_array[j](k);
+      }
+      //memcpy(Flow+nf_cum,Cmin_array[j].data(),sizeof(double)*nc_array[j]);
+      //memcpy(Fupp+nf_cum,Cmax_array[j].data(),sizeof(double)*nc_array[j]);
       if(debug_mode)
       {
         for(int k = 0;k<Cname_array[j].size();k++)
@@ -1506,8 +1511,13 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     //
     for(int j = 0;j<num_inbetween_tSamples;j++)
     {
-      memcpy(Flow+nf_cum,Cmin_inbetween_array[j].data(),sizeof(double)*nc_inbetween_array[j]);
-      memcpy(Fupp+nf_cum,Cmax_inbetween_array[j].data(),sizeof(double)*nc_inbetween_array[j]);
+      for(int k = 0;k<nc_inbetween_array[j];k++)
+      {
+        Flow[nf_cum+k] = Cmin_inbetween_array[j](k);
+        Fupp[nf_cum+k] = Cmax_inbetween_array[j](k);
+      }
+      //memcpy(Flow+nf_cum,Cmin_inbetween_array[j].data(),sizeof(double)*nc_inbetween_array[j]);
+      //memcpy(Fupp+nf_cum,Cmax_inbetween_array[j].data(),sizeof(double)*nc_inbetween_array[j]);
       if(debug_mode)
       {
         for(int k = 0;k<nc_inbetween_array[j];k++)
@@ -1530,8 +1540,13 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       VectorXd mtkc_lb(mtkc_nc[j]);
       VectorXd mtkc_ub(mtkc_nc[j]);
       mt_kc_array[j]->bounds(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples,mtkc_lb,mtkc_ub);
-      memcpy(Flow+nf_cum,mtkc_lb.data(),sizeof(double)*mtkc_nc[j]);
-      memcpy(Fupp+nf_cum,mtkc_ub.data(),sizeof(double)*mtkc_nc[j]);
+      for(int k = 0;k<mtkc_nc[j];k++)
+      {
+        Flow[nf_cum+k] = mtkc_lb(k);
+        Fupp[nf_cum+k] = mtkc_ub(k);
+      }
+      //memcpy(Flow+nf_cum,mtkc_lb.data(),sizeof(double)*mtkc_nc[j]);
+      //memcpy(Fupp+nf_cum,mtkc_ub.data(),sizeof(double)*mtkc_nc[j]);
       vector<string> mtkc_name;
       mt_kc_array[j]->name(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples,mtkc_name);
       if(debug_mode)
