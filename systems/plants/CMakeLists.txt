@@ -50,6 +50,7 @@ if (eigen3_FOUND)
   if (Boost_FOUND)
     add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
     target_link_libraries(URDFRigidBodyManipulator drakeRBM urdf_interface ${Boost_LIBRARIES})
+    set_target_properties(URDFRigidBodyManipulator PROPERTIES COMPILE_FLAGS -fPIC )
 
     if (DRAKE_USE_BOT_VIS)
 	   pods_use_pkg_config_packages(URDFRigidBodyManipulator bot2-vis)

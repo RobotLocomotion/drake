@@ -1166,9 +1166,8 @@ void RigidBodyManipulator::forwardKin(const int body_ind, const MatrixBase<Deriv
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x)
 {
-  int dim=3, n_pts = pts.cols();
   MatrixXd Tinv = bodies[body_ind].T.inverse();
-  x = Tinv.topLeftCorner(dim,dim+1)*pts;
+  x = Tinv.topLeftCorner(3,4)*pts;
 }
 
 template <typename DerivedA, typename DerivedB>
