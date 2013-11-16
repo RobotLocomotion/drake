@@ -2,7 +2,8 @@
 # libraries.
 #
 # The primary macro is:
-#     lcmtypes_build([C_AGGREGATE_HEADER header_fname] 
+#     lcmtypes_build([LCM_TYPES relative_lcm_filenames] # currently the files MUST be located in the ${PROJECT_SOURCE_DIR}/lcmtypes directory
+#      		           [C_AGGREGATE_HEADER header_fname] 
 #                    [C_LIBNAME lib_name]
 #                    [JAVA_DEST_DIR dir_name]
 #                    [PY_DEST_DIR dir_name]
@@ -80,7 +81,7 @@
 # File: lcmtypes.cmake
 # Distributed with pods version: 12.09.21
 
-cmake_minimum_required(VERSION 2.6.0)
+cmake_minimum_required(VERSION 2.8.3) # so I can use the CMakeParseArguments macro - Russ
 
 # Policy settings to prevent warnings on 2.6 but ensure proper operation on
 # 2.4.
@@ -97,17 +98,29 @@ if(COMMAND cmake_policy)
     endif(POLICY CMP0011)
 endif()
 
-macro(lcmtypes_get_types msgvar)
+function(lcmtypes_get_types msgvar)
+  cmake_parse_arguments("" "" "" "LCM_TYPES" ${ARGN})
+  set(${msgvar} "")
+
+  if (_LCM_TYPES)
+    foreach(_msg ${_LCM_TYPES})
+      list(APPEND ${msgvar} ${PROJECT_SOURCE_DIR}/lcmtypes/${_msg})
+    endforeach()  
+  else()
+    message(STATUS "Searching for LCM Types in ${PROJECT_SOURCE_DIR}/lcmtypes/")
+
     # get a list of all LCM types
-    file(GLOB __tmplcmtypes "${PROJECT_SOURCE_DIR}/lcmtypes/*.lcm")
-    set(${msgvar} "")
-    foreach(_msg ${__tmplcmtypes})
-        # Try to filter out temporary and backup files
-        if(${_msg} MATCHES "^[^\\.].*\\.lcm$")
-            list(APPEND ${msgvar} ${_msg})
-        endif(${_msg} MATCHES "^[^\\.].*\\.lcm$")
-    endforeach(_msg)
-endmacro()
+	  file(GLOB __tmplcmtypes "${PROJECT_SOURCE_DIR}/lcmtypes/*.lcm")
+	  foreach(_msg ${__tmplcmtypes})
+      # Try to filter out temporary and backup files
+	  	if(${_msg} MATCHES "^[^\\.].*\\.lcm$")
+		    list(APPEND ${msgvar} ${_msg})
+			endif(${_msg} MATCHES "^[^\\.].*\\.lcm$")
+		endforeach(_msg)
+  endif()
+  
+  set(${msgvar} ${${msgvar}} PARENT_SCOPE)
+endfunction()
 
 function(lcmgen)
     execute_process(COMMAND ${LCM_GEN_EXECUTABLE} ${ARGV} RESULT_VARIABLE lcmgen_result)
@@ -123,7 +136,7 @@ function(lcmtypes_add_clean_dir clean_dir)
 endfunction()
 
 function(lcmtypes_build_c)
-    lcmtypes_get_types(_lcmtypes)
+    lcmtypes_get_types(_lcmtypes ${ARGV})
     list(LENGTH _lcmtypes _num_lcmtypes)
     if(_num_lcmtypes EQUAL 0)
         return()
@@ -235,7 +248,7 @@ function(lcmtypes_build_c)
 endfunction()
 
 function(lcmtypes_build_cpp)
-    lcmtypes_get_types(_lcmtypes)
+    lcmtypes_get_types(_lcmtypes ${ARGV})
     list(LENGTH _lcmtypes _num_lcmtypes)
     if(_num_lcmtypes EQUAL 0)
         return()
@@ -304,7 +317,7 @@ function(lcmtypes_build_cpp)
 endfunction()
 
 function(lcmtypes_build_java)
-    lcmtypes_get_types(_lcmtypes)
+    lcmtypes_get_types(_lcmtypes ${ARGV})
     list(LENGTH _lcmtypes _num_lcmtypes)
     if(_num_lcmtypes EQUAL 0)
         return()
@@ -411,7 +424,7 @@ function(lcmtypes_build_java)
 endfunction()
 
 function(lcmtypes_build_python)
-    lcmtypes_get_types(_lcmtypes)
+    lcmtypes_get_types(_lcmtypes ${ARGV})
     list(LENGTH _lcmtypes _num_lcmtypes)
     if(_num_lcmtypes EQUAL 0)
         return()
@@ -462,7 +475,7 @@ function(lcmtypes_build_python)
 endfunction()
 
 function(lcmtypes_install_types)
-    lcmtypes_get_types(_lcmtypes)
+    lcmtypes_get_types(_lcmtypes ${ARGV})
     list(LENGTH _lcmtypes _num_lcmtypes)
     if(_num_lcmtypes EQUAL 0)
         return()
@@ -487,5 +500,5 @@ macro(lcmtypes_build)
 
     lcmtypes_build_java(${ARGV})
     lcmtypes_build_python(${ARGV})
-    lcmtypes_install_types()
+    lcmtypes_install_types(${ARGV})
 endmacro()

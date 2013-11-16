@@ -14,7 +14,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-v
 
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
-lcmtypes_build()  
+add_subdirectory(lcmtypes)
 
 # set up matlab build
 include(cmake/mex.cmake)
