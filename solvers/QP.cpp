@@ -23,7 +23,6 @@ using namespace std;
 int fastQPThatTakesQinv(vector< MatrixXd* > QinvblkDiag, const VectorXd& f, const MatrixXd& Aeq, const VectorXd& beq, const MatrixXd& Ain, const VectorXd& bin, set<int>& active, VectorXd& x)
 {
   int i,d;
-  int fail = 0;
   int iterCnt = 0;
   
   int M_in = bin.size();
@@ -203,7 +202,7 @@ int fastQP(vector< MatrixXd* > QblkDiag, const VectorXd& f, const MatrixXd& Aeq,
 
 	#define REG 1e-13
   // calculate a bunch of stuff that is constant during each iteration
-  int d,startrow=0;
+  int startrow=0;
   //typedef typename vector< MatrixBase<tA> >::iterator Qiterator;
 
   int i=0;
