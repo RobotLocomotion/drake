@@ -78,7 +78,7 @@
 #
 # ----
 # File: lcmtypes.cmake
-# Distributed with pods version: 12.01.11
+# Distributed with pods version: 12.09.21
 
 cmake_minimum_required(VERSION 2.6.0)
 
@@ -107,8 +107,6 @@ macro(lcmtypes_get_types msgvar)
             list(APPEND ${msgvar} ${_msg})
         endif(${_msg} MATCHES "^[^\\.].*\\.lcm$")
     endforeach(_msg)
-#    message(STATUS "__tmplcmtypes = ${__tmplcmtypes}")
-#    message(STATUS "lcmtypes = ${${msgvar}}")
 endmacro()
 
 function(lcmgen)
@@ -170,7 +168,7 @@ function(lcmtypes_build_c)
     # run lcm-gen at compile time
     add_custom_target(lcmgen_c ALL 
         COMMAND sh -c '[ -d ${_lcmtypes_c_dir} ] || mkdir -p ${_lcmtypes_c_dir}'
-        COMMAND sh -c '${LCM_GEN_EXECUTABLE} --lazy -c ${_lcmtypes} --c-cpath ${_lcmtypes_c_dir} --c-hpath ${_lcmtypes_c_dir}')
+        COMMAND sh -c '${LCM_GEN_EXECUTABLE} --lazy -c --c-cpath ${_lcmtypes_c_dir} --c-hpath ${_lcmtypes_c_dir} --cinclude lcmtypes  ${_lcmtypes}')
 
     # get a list of all generated .c and .h files
     file(GLOB _lcmtypes_c_files ${_lcmtypes_c_dir}/*.c)
@@ -276,7 +274,7 @@ function(lcmtypes_build_cpp)
     # run lcm-gen at compile time
     add_custom_target(lcmgen_cpp ALL 
         COMMAND sh -c '[ -d ${_lcmtypes_cpp_dir} ] || mkdir -p ${_lcmtypes_cpp_dir}'
-        COMMAND sh -c '${LCM_GEN_EXECUTABLE} --lazy --cpp ${_lcmtypes} --cpp-hpath ${_lcmtypes_cpp_dir}')
+        COMMAND sh -c '${LCM_GEN_EXECUTABLE} --lazy --cpp  --cpp-hpath ${_lcmtypes_cpp_dir} --cpp-include lcmtypes ${_lcmtypes}')
 
     # get a list of all generated .hpp files
     file(GLOB_RECURSE _lcmtypes_hpp_files  ${_lcmtypes_cpp_dir}/*.hpp)
@@ -371,7 +369,7 @@ function(lcmtypes_build_java)
 
     # search for lcmtypes_*.jar files in well-known places and add them to the
     # classpath
-    foreach(pfx /usr /usr/local ${CMAKE_INSTALL_PREFIX})
+    foreach(pfx ${CMAKE_INSTALL_PREFIX} /usr /usr/local)
         file(GLOB_RECURSE jarfiles ${pfx}/share/java/lcmtypes_*.jar)
         foreach(jarfile ${jarfiles})
             set(java_classpath ${java_classpath}:${jarfile})
