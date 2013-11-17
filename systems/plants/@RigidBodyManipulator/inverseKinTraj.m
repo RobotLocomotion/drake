@@ -1,5 +1,6 @@
 function [xtraj,info,infeasible_constraint]= inverseKinTraj(obj,t,q_seed_traj,q_nom_traj,varargin)
 % inverseKinSequence(obj,t,q_seed_traj,q_nom_traj,constraint1,constraint2,constraint3,...,options)
+%
 % If options.fixInitialState = true
 % solve IK
 %   min_q sum_i qdd(:,i)'*Qa*qdd(:,i)+qd(:,i)'*Qv*qd(:,i)+(q(:,i)-q_nom(:,i))'*Q*(q(:,i)-q_nom(:,i))]
@@ -10,6 +11,7 @@ function [xtraj,info,infeasible_constraint]= inverseKinTraj(obj,t,q_seed_traj,q_
 %          constraint(k)   at [t_samples(2) t_samples(3) ... t_samples(nT)]
 %          constraint(k+1) at [t_samples(2) t_samples(3) ... t_samples(nT)]
 %   ....
+%
 % using q_seed_traj as the initial guess. q(1) would be fixed to
 % q_seed_traj.eval(t(1))
 % t_samples = unique([t,options.additional_tSamples]);
@@ -24,7 +26,7 @@ function [xtraj,info,infeasible_constraint]= inverseKinTraj(obj,t,q_seed_traj,q_
 % @param t             the knot time, a row vector
 % @param q_seed_traj   the seed guess, a Trajectory object
 % @param q_nom_traj    the nominal posture, a Trajectory object
-% @param constraint    A Constraint object, can be a SingleTimeKinematicConstraint object,
+% @param constraint    A RigidBodyConstraint object, can be a SingleTimeKinematicConstraint object,
 %                      A MultipleTimeKinematicConstraint, A QuasiStaticConstraint, or a
 %                      PostureConstraint object
 % @param options       an IKoptions object
@@ -59,7 +61,7 @@ q_nom = q_nom_traj.eval(t);
 % keyboard;
 if(nargout == 3)
   [q,qdot,qddot,info,infeasible_constraint] = inverseKinBackend(obj,2,t,q_seed,q_nom,kc{:},ikoptions);
-elseif(nargout == 2)
+elseif(nargout <= 2)
   [q,qdot,qddot,info] = inverseKinBackend(obj,2,t,q_seed,q_nom,kc{:},ikoptions);
 end
 xtraj = PPTrajectory(pchipDeriv(t,[q;qdot],[qdot;qddot]));

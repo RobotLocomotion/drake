@@ -1,4 +1,15 @@
 classdef RelativeGazeTargetConstraint < GazeTargetConstraint
+  % This constrains that a camera on body_a can gaze at a point on body_b
+  % @param robot
+  % @param body_a_idx             -- A scalar, the index of body_a
+  % @param body_b_idx             -- A scalar, the index of body_b
+  % @param axis                   -- A 3x1 unit vector, the gaze axis on body_a frame
+  % @param target                 -- A 3x1 vector, the gaze target on body_b frame
+  % @param gaze_origin            -- A 3x1 vector, the gaze origin on body_a frame
+  % @param conethreshold          -- A double scalar, the angle of the gaze cone, default
+  %                                  is 0
+  % @param tspan                  -- A 1x2 vector, the time span of the constraint,
+  %                                  default is [-inf inf]
   properties(SetAccess = protected)
     body_a = struct('idx',[],'name','');
     body_b = struct('idx',[],'name','');
@@ -6,12 +17,19 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
   methods
     function obj = RelativeGazeTargetConstraint(robot,body_a_idx, ...
         body_b_idx,axis,target,gaze_origin,conethreshold,tspan)
+      if(nargin < 8)
+        tspan = [-inf inf];
+      end
+      if(nargin<7)
+        conethreshold = 0;
+      end
+      ptr = constructPtrRelativeGazeTargetConstraintmex(robot.getMexModelPtr,body_a_idx,body_b_idx,axis,target,gaze_origin,conethreshold,tspan);
       obj = obj@GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan);
       obj.body_a.idx = body_a_idx;
       obj.body_a.name = getLinkName(obj.robot, obj.body_a.idx);
       obj.body_b.idx = body_b_idx;
       obj.body_b.name = getLinkName(obj.robot, obj.body_b.idx);
-      obj.num_constraint = 1;
+      obj.mex_ptr = ptr;
     end
 
     function [c,dc] = eval(obj,t,kinsol)
@@ -33,7 +51,7 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
     end
     
     function name_str = name(obj,t)
-      if(t>=obj.tspan(1)&&t<=obj.tspan(end))||isempty(t)
+      if(obj.isTimeValid(t))
         name_str = {sprintf('%s relative to %s conic gaze constraint at time %10.4f', ...
                         obj.body_a.name,obj.body_b.name,t)};
       else
@@ -42,9 +60,13 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
     end
 
     function ptr = constructPtr(varargin)
-      ptr = [];
+      ptr = constructPtrRelativeGazeTargetConstraintmex(varargin{:});
     end
 
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      updatePtrRelativeGazeTargetConstraintmex(obj.mex_ptr,'robot',robot);
+    end
     function drawConstraint(obj,q,lcmgl)
       norm_axis = obj.axis/norm(obj.axis);
 
@@ -60,41 +82,41 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
       ang_ax_cone = quat2axis(quatTransform([0;0;1],norm_axis));
 
       % Draw in Frame B
-      bot_lcmgl_translated(lcmgl,wTb(1,4),wTb(2,4),wTb(3,4));
-      bot_lcmgl_rotated(lcmgl,ang_ax_b(4)*180/pi,ang_ax_b(1),ang_ax_b(2),ang_ax_b(3));
-      bot_lcmgl_draw_axes(lcmgl);
+      lcmgl.glTranslated(wTb(1,4),wTb(2,4),wTb(3,4));
+      lcmgl.glRotated(ang_ax_b(4)*180/pi,ang_ax_b(1),ang_ax_b(2),ang_ax_b(3));
+      lcmgl.glDrawAxes();
 
       % Draw target
-      bot_lcmgl_color3f(lcmgl, 1, 0, 0);
-      bot_lcmgl_sphere(lcmgl,obj.target,0.05,24,24);
+      lcmgl.glColor3f(1, 0, 0);
+      lcmgl.sphere(obj.target,0.05,24,24);
 
       % Rotate and translate back to world frame
-      bot_lcmgl_rotated(lcmgl,-ang_ax_b(4)*180/pi,ang_ax_b(1),ang_ax_b(2),ang_ax_b(3));
-      bot_lcmgl_translated(lcmgl,-wTb(1,4),-wTb(2,4),-wTb(3,4));
+      lcmgl.glRotated(-ang_ax_b(4)*180/pi,ang_ax_b(1),ang_ax_b(2),ang_ax_b(3));
+      lcmgl.glTranslated(-wTb(1,4),-wTb(2,4),-wTb(3,4));
 
       % Draw line: gaze origin --> target
-      bot_lcmgl_begin(lcmgl, lcmgl.LCMGL_LINES);
-      bot_lcmgl_color3f(lcmgl, 0, 1, 1);
-      bot_lcmgl_vertex3f(lcmgl, r_gaze_origin(1), r_gaze_origin(2), r_gaze_origin(3));
-      bot_lcmgl_vertex3f(lcmgl, r_target(1), r_target(2), r_target(3));
-      bot_lcmgl_end(lcmgl);
+      lcmgl.glBegin( lcmgl.LCMGL_LINES);
+      lcmgl.glColor3f( 0, 1, 1);
+      lcmgl.glVertex3f(r_gaze_origin(1), r_gaze_origin(2), r_gaze_origin(3));
+      lcmgl.glVertex3f( r_target(1), r_target(2), r_target(3));
+      lcmgl.glEnd();
 
       % Draw in Frame A
-      bot_lcmgl_translated(lcmgl,wPa(1),wPa(2),wPa(3));
-      bot_lcmgl_rotated(lcmgl,ang_ax_a(4)*180/pi,ang_ax_a(1),ang_ax_a(2),ang_ax_a(3));
-      bot_lcmgl_draw_axes(lcmgl);
+      lcmgl.glTranslated(wPa(1),wPa(2),wPa(3));
+      lcmgl.glRotated(ang_ax_a(4)*180/pi,ang_ax_a(1),ang_ax_a(2),ang_ax_a(3));
+      lcmgl.glDrawAxes();
 
 
       %% Draw cone
-      bot_lcmgl_translated(lcmgl,obj.gaze_origin(1),obj.gaze_origin(2),obj.gaze_origin(3));
-      bot_lcmgl_rotated(lcmgl,ang_ax_cone(4)*180/pi,ang_ax_cone(1),ang_ax_cone(2),ang_ax_cone(3));
-      bot_lcmgl_color4f(lcmgl, 0, 1, 0,0.5);
+      lcmgl.glTranslated(obj.gaze_origin(1),obj.gaze_origin(2),obj.gaze_origin(3));
+      lcmgl.glRotated(ang_ax_cone(4)*180/pi,ang_ax_cone(1),ang_ax_cone(2),ang_ax_cone(3));
+      lcmgl.glColor4f( 0, 1, 0,0.5);
       base_radius = 0.01;
       height = 0.5;
       top_radius = base_radius+height*tan(obj.conethreshold);
-      bot_lcmgl_cylinder(lcmgl,[0;0;0],base_radius,top_radius,height,24,24);
+      lcmgl.cylinder([0;0;0],base_radius,top_radius,height,24,24);
 
-      bot_lcmgl_switch_buffer(lcmgl);
+      lcmgl.switchBuffers();
     end
   end
 end

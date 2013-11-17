@@ -82,7 +82,7 @@ end
 
 function [c,ceq,GC,GCeq] = mycon(r,q,con,lb,ub)
   ceq=[]; GCeq=[];
-  kinsol = doKinematics(r,q,false,true);
+  kinsol = doKinematics(r,q,false,false);
   [c,GC] = eval(con,0,kinsol);
   c = max([lb-c;c-ub],-1);
   GC = [-GC',GC'];

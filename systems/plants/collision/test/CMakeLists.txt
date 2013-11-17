@@ -9,8 +9,11 @@ if (NOT (APPLE AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
   # on the mac yet... - Russ
 
   add_executable( body_test BodyTest.cpp)
+  add_executable( primitive_distance_test primitiveTest.cpp)
   target_link_libraries(body_test drakeCollision ${Boost_LIBRARIES})
+  target_link_libraries(primitive_distance_test drakeCollision ${Boost_LIBRARIES})
   add_test(body_test_test body_test)
+  add_test(primitive_distance_test_test body_test)
 endif()
 
 endif()

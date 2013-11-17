@@ -18,10 +18,10 @@ if(use_mex)
   for i = 1:num_constraint
     if(isa(varargin{i},'DrakeConstraintMexPointer'))
       constraint_ptr_cell{i} = varargin{i};
-    elseif(isa(varargin{i},'Constraint'))
+    elseif(isa(varargin{i},'RigidBodyConstraint'))
       constraint_ptr_cell{i} = varargin{i}.mex_ptr;
     else
-      error('The input has to be a constraint object');
+      error('The input has to be a RigidBodyConstraint object');
     end
   end
   [q,info] = approximateIKmex(obj.mex_model_ptr,q_seed,q_nom,constraint_ptr_cell{:},ikoptions);

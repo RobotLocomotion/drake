@@ -2,9 +2,9 @@
 #include <iostream>
 #include "drakeUtil.h"
 #include <Eigen/Dense>
-#include "Constraint.h"
+#include "RigidBodyConstraint.h"
 #include "RigidBodyManipulator.h"
-#include "constructPtrKinematicConstraint.h"
+#include "constructPtrDrakeConstraint.h"
 #include <cstdio>
 
 using namespace Eigen;
@@ -35,6 +35,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double conethreshold = drakeKinCnstParseGazeConethreshold(prhs[4]);
   double threshold = drakeKinCnstParseGazeThreshold(prhs[5]);
   cnst = new WorldGazeOrientConstraint(model,body,axis,quat_des,conethreshold,threshold,tspan);
-  plhs[0] = createDrakeConstraintMexPointer((void*)cnst, "deleteConstraintmex","WorldGazeOrientConstraint");
+  plhs[0] = createDrakeConstraintMexPointer((void*)cnst, "deleteRigidBodyConstraintmex","WorldGazeOrientConstraint");
 }
 

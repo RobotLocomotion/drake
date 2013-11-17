@@ -1,5 +1,4 @@
 function RelativeGazeTargetConstraintTest(varargin)
-% NOTEST
 % Andres would update the RelativeGazeTargetConstraint
   r = RigidBodyManipulator(strcat(getDrakePath(),'/examples/PR2/pr2.urdf'));
   q_nom = zeros(r.getNumDOF(),1);

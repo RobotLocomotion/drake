@@ -1,4 +1,4 @@
-classdef SingleTimeKinematicConstraint < Constraint
+classdef SingleTimeKinematicConstraint < RigidBodyConstraint
   % An abstract class. Its eval function take a single time as input, the
   % constraint is enforced at that time only
   properties(SetAccess = protected)
@@ -19,11 +19,13 @@ classdef SingleTimeKinematicConstraint < Constraint
     AllBodiesClosestDistanceConstraint = 7;
     Point2PointDistanceConstraint = 8;
     WorldPositionInFrameConstraint = 9;
+    Point2LineSegDistConstraint = 10;
+    RelativeGazeTargetConstraint = 11;
   end
   
   methods
     function obj = SingleTimeKinematicConstraint(robot,tspan)
-      obj = obj@Constraint(Constraint.SingleTimeKinematicConstraintType);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeKinematicConstraintType);
       if(nargin<2)
         tspan = [-inf,inf];
       end

@@ -2,9 +2,9 @@
 #include <iostream>
 #include "drakeUtil.h"
 #include <Eigen/Dense>
-#include "Constraint.h"
+#include "RigidBodyConstraint.h"
 #include "RigidBodyManipulator.h"
-#include "constructPtrKinematicConstraint.h"
+#include "constructPtrDrakeConstraint.h"
 #include <cstdio>
 
 using namespace Eigen;
@@ -36,7 +36,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("Drake:constructPtrWorldQuatConstraintmex:BadInputs","tol must be within [0 1]");
   }
   cnst = new WorldQuatConstraint(model,body,quat_des,tol,tspan);
-  plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteConstraintmex","WorldQuatConstraint");
+  plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","WorldQuatConstraint");
 }
   
   

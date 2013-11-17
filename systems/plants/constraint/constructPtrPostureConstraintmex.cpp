@@ -2,9 +2,9 @@
 #include <iostream>
 #include "drakeUtil.h"
 #include <Eigen/Dense>
-#include "Constraint.h"
+#include "RigidBodyConstraint.h"
 #include "RigidBodyManipulator.h"
-#include "constructPtrKinematicConstraint.h"
+#include "constructPtrDrakeConstraint.h"
 #include <cstdio>
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
@@ -26,7 +26,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
     PostureConstraint* cnst = new PostureConstraint(robot,tspan);
-    plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteConstraintmex","PostureConstraint");
+    plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","PostureConstraint");
   }
   else if(nrhs == 4)
   { // setJointLimits(pc,joint_idx,lb,ub)

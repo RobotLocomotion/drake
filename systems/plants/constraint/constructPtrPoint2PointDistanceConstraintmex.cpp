@@ -2,9 +2,9 @@
 #include <iostream>
 #include "drakeUtil.h"
 #include <Eigen/Dense>
-#include "Constraint.h"
+#include "RigidBodyConstraint.h"
 #include "RigidBodyManipulator.h"
-#include "constructPtrKinematicConstraint.h"
+#include "constructPtrDrakeConstraint.h"
 #include <cstdio>
 
 using namespace Eigen;
@@ -14,7 +14,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   if(nrhs != 7 && nrhs != 8)
   {
-    mexErrMsgIdAndTxt("Drake:constructPtrPoint2PointDistanceConstraintmex:BadInputs","Usage ptr = constructPtrPoint2PointConstraintmex(obj.robot.mex_model_ptr,bodyA,bodyB,ptA,ptB,lb,ub,tspan");
+    mexErrMsgIdAndTxt("Drake:constructPtrPoint2PointDistanceConstraintmex:BadInputs","Usage ptr = constructPtrPoint2PointConstraintmex(obj.robot.mex_model_ptr,bodyA,bodyB,ptA,ptB,dist_lb,dist_ub,tspan");
   }
   RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   Vector2d tspan;
@@ -69,19 +69,19 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   ptB.row(3) = MatrixXd::Ones(1,npts);
   if(!mxIsNumeric(prhs[5]) || !mxIsNumeric(prhs[6]) || mxGetM(prhs[5]) != 1 || mxGetM(prhs[6]) != 1 || mxGetN(prhs[5]) != npts || mxGetN(prhs[6]) != npts)
   {
-    mexErrMsgIdAndTxt("Drake:constructPtrPoint2PointDistanceConstraintmex:BadInputs","lb and ub must be 1 x npts numeric");
+    mexErrMsgIdAndTxt("Drake:constructPtrPoint2PointDistanceConstraintmex:BadInputs","dist_lb and dist_ub must be 1 x npts numeric");
   }
-  VectorXd lb(npts);
-  VectorXd ub(npts);
-  memcpy(lb.data(),mxGetPr(prhs[5]),sizeof(double)*npts);
-  memcpy(ub.data(),mxGetPr(prhs[6]),sizeof(double)*npts);
+  VectorXd dist_lb(npts);
+  VectorXd dist_ub(npts);
+  memcpy(dist_lb.data(),mxGetPr(prhs[5]),sizeof(double)*npts);
+  memcpy(dist_ub.data(),mxGetPr(prhs[6]),sizeof(double)*npts);
   for(int i = 0;i<npts;i++)
   {
-    if(lb(i)>ub(i))
+    if(dist_lb(i)>dist_ub(i))
     {
-      mexErrMsgIdAndTxt("Drake:constructPtrPoint2PointDistanceConstraintmex:BadInputs","lb must be no larger than ub");
+      mexErrMsgIdAndTxt("Drake:constructPtrPoint2PointDistanceConstraintmex:BadInputs","dist_lb must be no larger than dist_ub");
     }
   }
-  Point2PointDistanceConstraint* cnst = new Point2PointDistanceConstraint(model,bodyA,bodyB,ptA,ptB,lb,ub,tspan);
-  plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteConstraintmex","Point2PointDistanceConstraint");
+  Point2PointDistanceConstraint* cnst = new Point2PointDistanceConstraint(model,bodyA,bodyB,ptA,ptB,dist_lb,dist_ub,tspan);
+  plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","Point2PointDistanceConstraint");
 }

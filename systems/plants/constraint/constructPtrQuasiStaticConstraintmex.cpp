@@ -2,9 +2,9 @@
 #include <iostream>
 #include "drakeUtil.h"
 #include <Eigen/Dense>
-#include "Constraint.h"
+#include "RigidBodyConstraint.h"
 #include "RigidBodyManipulator.h"
-#include "constructPtrKinematicConstraint.h"
+#include "constructPtrDrakeConstraint.h"
 #include <cstdio>
 
 using namespace Eigen;
@@ -48,6 +48,6 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   set<int> robotnumset(robotnum,robotnum+num_robot);
   QuasiStaticConstraint* cnst = new QuasiStaticConstraint(model,tspan,robotnumset);
-  plhs[0] = createDrakeConstraintMexPointer((void*) cnst,"deleteConstraintmex","QuasiStaticConstraint");
+  plhs[0] = createDrakeConstraintMexPointer((void*) cnst,"deleteRigidBodyConstraintmex","QuasiStaticConstraint");
   delete[] robotnum;
 }

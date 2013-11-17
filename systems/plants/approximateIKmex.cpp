@@ -10,7 +10,7 @@
 #include <gurobi_c++.h>
 #include <drakeUtil.h>
 #include "RigidBodyManipulator.h"
-#include "constraint/Constraint.h"
+#include "constraint/RigidBodyConstraint.h"
 
 #define CHECK_GUROBI_ERRORS
 
@@ -51,7 +51,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   memcpy(joint_limit_max,model->joint_limit_max,sizeof(double)*nq);
   for(int i = 0;i<num_constraint;i++)
   {
-    Constraint* constraint = (Constraint*) getDrakeMexPointer(prhs[3+i]);
+    RigidBodyConstraint* constraint = (RigidBodyConstraint*) getDrakeMexPointer(prhs[3+i]);
     DrakeConstraintType constraint_type = constraint->getType();
     if(constraint_type == DrakeConstraintType::SingleTimeKinematicConstraintType)
     {
