@@ -81,7 +81,7 @@ if (eigen3_FOUND)
 
   macro(add_constraint_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} drakeRBM drakeUtil drakeConstraint)
+    target_link_libraries(${ARGV} drakeRBM drakeUtil drakeRigidBodyConstraint)
   endmacro()
 
   if (gurobi_FOUND)
@@ -92,7 +92,7 @@ if (eigen3_FOUND)
   pods_find_pkg_config(snopt_cpp)
   if (snopt_cpp_FOUND)
     add_mex(inverseKinBackendmex inverseKinBackendmex.cpp)
-    target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeConstraint)
+    target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeRigidBodyConstraint)
     pods_use_pkg_config_packages(inverseKinBackendmex snopt_cpp)
   endif()
 

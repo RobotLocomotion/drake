@@ -1,5 +1,5 @@
 #include "mex.h"
-#include "Constraint.h"
+#include "RigidBodyConstraint.h"
 #include "drakeUtil.h"
 #include "../RigidBodyManipulator.h"
 #include <cstring>

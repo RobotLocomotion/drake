@@ -43,7 +43,7 @@ testKinCnst_userfun(true,t,q,SingleTimeKinematicConstraint.WorldCoMConstraint,ro
 display('Check world CoM constraint with empty tspan');
 testKinCnst_userfun(true,t,q,SingleTimeKinematicConstraint.WorldCoMConstraint,robot,[0;0;0.9],[0;0;1]);
 display('Check world CoM constraint with nan');
-testKinCnst_userfun(true,t,q,SingleTimeKinematicConstraint.WorldCoMConstraint,robot,[nan;nan;0.9],[nan;nan;0.92],tspan0/2);
+testKinCnst_userfun(true,t,q,SingleTimeKinematicConstraint.WorldCoMConstraint,robot,[-inf;nan;0.9],[nan;inf;0.92],tspan0/2);
 display('Check world CoM constraint with multiple robots');
 testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldCoMConstraint,robot_aff,[0;0;0.9],[0;0;1],tspan0,[1,2]);
 
@@ -143,6 +143,12 @@ rpy = 2*pi*rand(3,1) - pi;
 xyz = [0.2;0.2;0.2].*rand(3,1) + [0.5;0.0;0.5];
 T = [rpy2rotmat(rpy),xyz;zeros(1,3),1];
 testKinCnst_userfun(true,t,q,SingleTimeKinematicConstraint.WorldPositionInFrameConstraint,robot,l_foot,l_foot_pts,T,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
+
+display('Check point to line segment distance constraint');
+testKinCnst_userfun(true,t,q,SingleTimeKinematicConstraint.Point2LineSegDistConstraint,robot,l_hand,[0;0;0],r_foot,r_foot_pts(:,1:2),0.1,1,tspan0);
+
+display('Check Relative gaze target constraint');
+testKinCnst_userfun(true,t,q,SingleTimeKinematicConstraint.RelativeGazeTargetConstraint,robot,head,r_hand,[1;0;0],[0;0;0],[0;0;0],pi/30,tspan0);
 end
 
 function testKinCnst_userfun(singleTimeFlag,t,q,kc_type,varargin)

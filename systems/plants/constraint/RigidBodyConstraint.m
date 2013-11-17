@@ -1,4 +1,4 @@
-classdef Constraint
+classdef RigidBodyConstraint
   properties
     type
   end
@@ -8,16 +8,17 @@ classdef Constraint
     MultipleTimeKinematicConstraintType = 2;
     QuasiStaticConstraintType = 3;
     PostureConstraintType = 4;
+    MultipleTimeLinearPostureConstraint = 5;
   end
   
   methods
-    function obj = Constraint(type)
+    function obj = RigidBodyConstraint(type)
       if(~isnumeric(type))
         error('Drake:Constraint:type has to be an integer');
       end
       type = floor(type);
-      if(type>4||type<1)
-        error('Drake:Constraint: Currently type can only be within [1,3]');
+      if(type>5||type<1)
+        error('Drake:Constraint: Currently type can only be within [1,5]');
       end
       obj.type = type;
     end

@@ -1,4 +1,4 @@
-classdef QuasiStaticConstraint<Constraint
+classdef QuasiStaticConstraint<RigidBodyConstraint
 % constrain the Center of Mass to lie inside the shrunk support polygon
 % @param robot             -- The robot
 
@@ -42,7 +42,7 @@ classdef QuasiStaticConstraint<Constraint
       end
       tspan = [tspan(1) tspan(end)];
       ptr = constructPtrQuasiStaticConstraintmex(robot.getMexModelPtr,tspan,robotnum);
-      obj = obj@Constraint(Constraint.QuasiStaticConstraintType);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintType);
       obj.robot = robot;
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))
         error('Drake:QuasiStaticConstraint: robotnum is not accepted');

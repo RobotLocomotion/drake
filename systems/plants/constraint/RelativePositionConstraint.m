@@ -1,7 +1,21 @@
 classdef RelativePositionConstraint < PositionConstraint
+  % Constraining points in bodyA to be within a bounding box in B' frame on bodyB
+  % @param robot
+  % @param bodyA_idx             -- An int scalar, the bodyA index
+  % @param bodyB_idx             -- An int scalar, the bodyB index
+  % @param pts                   -- A 3xnpts double matrix, points in bodyA frame
+  % @param lb                    -- A 3xnpts double matrix, the lower bound of the
+  % position
+  % @param ub                    -- A 3xnpts double matrix, the upper bound of the
+  % position
+  % @param bTbp                  -- A 4x4 homogeneous transformation matrix, the
+  % transformation from B' frame to bodyB frame
   properties(SetAccess = protected)
-    bodyA = struct('idx',[],'name','');
-    bodyB = struct('idx',[],'name','','bpTb',[]);
+    bodyA_idx
+    bodyB_idx
+    bodyA_name
+    bodyB_name
+    bodyB_bpTb
   end
   
   methods(Access = protected)
@@ -13,16 +27,16 @@ classdef RelativePositionConstraint < PositionConstraint
         %[pts_world, J_world] = forwardKin(obj.robot,kinsol,obj.body,obj.pts,0);
         pts = [obj.pts;ones(1,obj.n_pts)];
 
-        [bTw,d_bTw_dq_ht] = invHT(kinsol.T{obj.bodyB.idx}, ...
-          kinsol.dTdq{obj.bodyB.idx});
-        wTa = kinsol.T{obj.bodyA.idx};
-        d_wTa_dq_ht = kinsol.dTdq{obj.bodyA.idx};
+        [bTw,d_bTw_dq_ht] = invHT(kinsol.T{obj.bodyB_idx}, ...
+          kinsol.dTdq{obj.bodyB_idx});
+        wTa = kinsol.T{obj.bodyA_idx};
+        d_wTa_dq_ht = kinsol.dTdq{obj.bodyA_idx};
 
         d_bTa_dq_std = matGradMultMat(bTw, wTa, ...
           jacHt2Std(d_bTw_dq_ht), jacHt2Std(d_wTa_dq_ht));
 
-        pos = obj.bodyB.bpTb*bTw*wTa*pts;
-        J  = reshape(obj.bodyB.bpTb*reshape(matGradMult(d_bTa_dq_std, pts),4,nq*obj.n_pts),4*obj.n_pts,nq);
+        pos = obj.bodyB_bpTb*bTw*wTa*pts;
+        J  = reshape(obj.bodyB_bpTb*reshape(matGradMult(d_bTa_dq_std, pts),4,nq*obj.n_pts),4*obj.n_pts,nq);
 
         pos = pos(1:3,:);
         J(4:4:end,:) = [];
@@ -38,11 +52,11 @@ classdef RelativePositionConstraint < PositionConstraint
       isHT(bTbp);
 
       obj = obj@PositionConstraint(robot, pts, lb, ub,tspan);
-      obj.bodyA.idx = bodyA_idx;
-      obj.bodyA.name = getLinkName(obj.robot, obj.bodyA.idx);
-      obj.bodyB.idx = bodyB_idx;
-      obj.bodyB.name = getLinkName(obj.robot, obj.bodyB.idx);
-      obj.bodyB.bpTb = invHT(bTbp);
+      obj.bodyA_idx = bodyA_idx;
+      obj.bodyA_name = getLinkName(obj.robot, obj.bodyA_idx);
+      obj.bodyB_idx = bodyB_idx;
+      obj.bodyB_name = getLinkName(obj.robot, obj.bodyB_idx);
+      obj.bodyB_bpTb = invHT(bTbp);
     end
 
     
@@ -50,7 +64,7 @@ classdef RelativePositionConstraint < PositionConstraint
     function name_str = name(obj,t)
       if(t>=obj.tspan(1)&&t<=obj.tspan(end))||isempty(t)
         name_str = repmat({sprintf('%s relative to %s position constraint at time %10.4f', ...
-                                obj.bodyA.name,obj.bodyB.name,t)},obj.getNumConstraint(),1);
+                                obj.bodyA_name,obj.bodyB_name,t)},obj.getNumConstraint(),1);
       else
         name_str = [];
       end
@@ -63,7 +77,7 @@ classdef RelativePositionConstraint < PositionConstraint
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
       pts_w = forwardKin(obj.robot,kinsol,1,obj.pts);
-      wTbp = kinsol.T{obj.bodyB.idx}*invHT(obj.bodyB.bpTb);
+      wTbp = kinsol.T{obj.bodyB_idx}*invHT(obj.bodyB_bpTb);
       wPbp = wTbp(1:3,4);
       bot_lcmgl_draw_axes(lcmgl);
       for pt = pts_w

@@ -1,5 +1,5 @@
 function [x_norm, dx_norm] = normalizeVec(x)
-  sizecheck(x,[NaN,1])
+  sizecheck(x,[NaN,1]);
   xdotx = dot(x,x);
   norm_x = sqrt(xdotx);
   %x_norm = bsxfun(@rdivide,x,norm_x);
