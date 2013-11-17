@@ -120,7 +120,7 @@ void gevalNumerical(void (*func_ptr)(const VectorXd &, VectorXd &),const VectorX
 
 void IK_constraint_fun(double* x,double* c, double* G)
 {
-  double* qsc_weights;
+  double* qsc_weights=NULL;
   if(qscActiveFlag)
   {
     qsc_weights = x+nq;
@@ -518,8 +518,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   pm = mxGetProperty(prhs[ikoptions_idx],0,"sequentialSeedFlag");
   bool* sequentialSeedFlag_ptr = mxGetLogicals(pm);
   bool sequentialSeedFlag = *sequentialSeedFlag_ptr;
-  snopt::integer* INFO;
-  double* INFO_tmp;
+  snopt::integer* INFO=NULL;
+  double* INFO_tmp=NULL;
   mxArray* infeasible_constraint_cell;
   vector<string> infeasible_constraint_vec;
   if(mode == 1)
@@ -2056,7 +2056,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     delete[] iCfun_inbetween_array; delete[] jCvar_inbetween_array;
     delete[] qknot_qsamples_idx;
   } 
-  delete[] INFO; delete[] INFO_tmp;
+  if (INFO) delete[] INFO; 
+  if (INFO_tmp) delete[] INFO_tmp;
   delete[] iAfun_array; delete[] jAvar_array; delete[] A_array;
   if(mode == 2)
   {
