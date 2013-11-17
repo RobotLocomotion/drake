@@ -46,20 +46,16 @@ classdef PolygonalObstacle2D < Obstacle
             
             
         end
-        
+
         function [phi,dphi] = polyconstraint(obj, x, y)
-            
-            % note: could make this much cleaner using point to a line 
-          
             firstRunFlag = 1;
           
             % first find the distance to the closest edge of the obstacle
             minDist = inf;
             dminDist = zeros(1,2);
+            xy = [x;y];
             
             for (i=1:length(obj.xvector))
-              
-              
                 if (i ~= length(obj.xvector))
                   iPlusOne = i+1;
                 else
@@ -67,113 +63,62 @@ classdef PolygonalObstacle2D < Obstacle
                 end
               
                 % for each line in the polygon...
-                
                 % compute the distance to that line
 
-                
-                % check for a vertical line
-                if (obj.xvector(iPlusOne) == obj.xvector(i))
-                    % vertical line
-                    
-                    % check to see if we're going to land on the line
-                    % segment
-                    
-                    delta1 = y - obj.yvector(i);
-                    delta2 = y - obj.yvector(iPlusOne);
-                    
-                    if (sign(delta1) == sign(delta2))
-                        % not on the line segment
-                        
-                        % distance is the distance to the closest edge point
-                        dist1 = (x-obj.xvector(i))^2 + (y-obj.yvector(i))^2;
-                        dist2 = (x-obj.xvector(iPlusOne))^2 + (y - obj.yvector(iPlusOne))^2;
+                % find the direction vector of the line
+                pt1 = [obj.xvector(i); obj.yvector(i)];
+                pt2 = [obj.xvector(iPlusOne); obj.yvector(iPlusOne)];
+                u = pt2 - pt1;
+                u = u / norm(u);
 
-%                        distance = min(dist1, dist2);
-                        if (dist1<dist2) 
-                          distance = dist1;
-                          ddistance = [2*(x-obj.xvector(i)), 2*(y-obj.yvector(i))];
-                        else
-                          distance = dist2;
-                          ddistance = [2*(x-obj.xvector(iPlusOne)), 2*(y-obj.yvector(iPlusOne))];
-                        end
-%                        distance = sqrt(distance);
-% note: moved all sqrts to the end (so I have less gradients to write!) -Russ
-                        
-                        
-                    else
-                        % on the line segment
-                        
-                        % distance is simply the distance in the x
-                        % direction
-                        
-%                        distance = abs(x - obj.xvector(i));
-                        distance = (x-obj.xvector(i))^2;
-                        ddistance = 2*(x-obj.xvector(i));
-                    end
-                    
-                else % not a vertical line
-                    
+                if all(pt2 == pt1) % special case for edges of zero length
+                  distance = sum(([x;y] - pt1).^2);
+                  ddistance = 2*([x;y]-pt1);
+                else
+                  % find a and b such that a' * xy = b describes the line
+                  a = [-u(2); u(1)];
+                  b = a' * pt1;
 
-                    % compute slope of the line
-                    m = (obj.yvector(iPlusOne) - obj.yvector(i)) / (obj.xvector(iPlusOne) - obj.xvector(i));
+                  % find distance g such that the point (xy - g*a) is on the line:
+                  % a'*(xy - g*a) = b
+                  % a'*xy - g*a'*a = b
+                  % g = (a'*xy - b) / (a'*a) = (a'*xy - b) since a is unit vector by construction
+                  g = (a' * xy - b);
 
-                    b = obj.yvector(i) - m*obj.xvector(i);
-
-                    % compute y-intercept of orthognal line through the point
-                    % in question
-
-                    c = y + 1/m*x;
-
-                    % compute where the two lines intersect
-                    xIntersect = (c - b) / (m + 1/m);
-
-
-                    % check to see if the intersection is on the line segment
-                    delta1 = xIntersect - obj.xvector(iPlusOne);
-                    delta2 = xIntersect - obj.xvector(i);
-
-                    if (sign(delta1) == sign(delta2))
-                        % not on the line segment
-
-                        % distance is the distance to the closest edge point
-                        dist1 = (x-obj.xvector(i))^2 + (y-obj.yvector(i))^2;
-                        dist2 = (x-obj.xvector(iPlusOne))^2 + (y - obj.yvector(iPlusOne))^2;
-
-%                        distance = min(dist1, dist2);
-                        if (dist1<dist2) 
-                          distance = dist1;
-                          ddistance = [2*(x-obj.xvector(i)), 2*(y-obj.yvector(i))];
-                        else
-                          distance = dist2;
-                          ddistance = [2*(x-obj.xvector(iPlusOne)), 2*(y-obj.yvector(iPlusOne))];
-                        end
-%                        distance = sqrt(distance);
-
-                    else
-                        % on the line segment
-
-                        % distance is the distance from the point on the line
-                        % segment to the point in question
-
-                        yIntersect = m * xIntersect + b;
-
-%                        distance = sqrt( (yIntersect - y)^2 + (xIntersect - x)^2 );
-                        distance = (yIntersect - y)^2 + (xIntersect - x)^2 ;
-                        ddistance = [-2*(xIntersect - x), -2*(yIntersect - y)];
-
-                    end
+                  % Check if the intersection is on the line
+                  delta1 = u' * xy - u' * pt1;
+                  delta2 = u' * xy - u' * pt2;
+                  if sign(delta1) == sign(delta2)
+                      % not on the line segment
+                      % distance is the distance to the closest edge point
+                      if delta2 > 0
+                          distance = sum((xy - pt2).^2);
+                          ddistance = 2*(xy - pt2)';
+                      else
+                          distance = sum((xy - pt1).^2);
+                          ddistance = 2*(xy - pt1)';
+                      end
+                  else
+                      % on the line segment
+                      % distance is the distance from the point on the line
+                      % segment to the point in question
+                      distance = g^2;
+                      if g >= 0
+                          ddistance = a';
+                      else
+                          ddistance = -a';
+                      end
+                  end
                 end
+
                 if (distance < minDist || firstRunFlag == 1)
                     minDist = distance;
                     dminDist = ddistance;
                     firstRunFlag = 0;
                 end
             end
-            
-            
+
             insidePoly = inpolygon(x, y, obj.xvector, obj.yvector);
-            %distance = (x - obj.centroid(1)) ^2 + (y - obj.centroid(2))^2;
-            
             
             if (insidePoly == 1)
                 signInside = 1;
@@ -186,7 +131,6 @@ classdef PolygonalObstacle2D < Obstacle
 
             phi = tanh(signInside * minDist);
             dphi = (1-tanh(signInside * minDist)^2)*signInside*dminDist;
-            
         end
         
         function [startArray endArray] = GetLineSegments(obj)
