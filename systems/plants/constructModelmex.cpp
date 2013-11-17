@@ -51,8 +51,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   int num_bodies = mxGetNumberOfElements(pBodies);
 
   // set up the model
-  int dim=3;
-  
   pm = mxGetField(featherstone,0,"NB");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.NB.  Are you passing in the correct structure?");
   model = new RigidBodyManipulator((int) mxGetScalar(pm), (int) mxGetScalar(pm), num_bodies);
@@ -202,9 +200,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       model->setCollisionFilter(i,*group,*mask);
     }
   }
-  
-  double *min = mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min"));
-  double *max = mxGetPr(mxGetProperty(prhs[0], 0, "joint_limit_max"));
   
   memcpy(model->joint_limit_min, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min")), sizeof(double)*model->num_dof);
   memcpy(model->joint_limit_max, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_max")), sizeof(double)*model->num_dof);

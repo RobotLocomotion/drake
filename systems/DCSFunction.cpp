@@ -231,7 +231,7 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   int num_xc = ssGetNumContStates(S);
   int num_w = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
   bool sds = num_w>0;
-  int num_u = ssGetNumInputPorts(S)-sds ? ssGetInputPortWidth(S,0) : 0;
+  int num_u = (ssGetNumInputPorts(S)-sds) ? ssGetInputPortWidth(S,0) : 0;
   int num_y = ssGetNumOutputPorts(S) ? ssGetOutputPortWidth(S,0) : 0;
   
   setScopeEnable(S);
@@ -325,7 +325,7 @@ static void mdlZeroCrossings(SimStruct *S)
   int num_xc = ssGetNumContStates(S);
   int num_w = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
   bool sds = num_w>0;
-  int num_u = ssGetNumInputPorts(S)-sds ? ssGetInputPortWidth(S,0) : 0;
+  int num_u = (ssGetNumInputPorts(S)-sds) ? ssGetInputPortWidth(S,0) : 0;
   int num_zcs = ssGetNumNonsampledZCs(S);
 
   mxArray *psys = const_cast<mxArray*>(ssGetSFcnParam(S, 0));
@@ -375,7 +375,7 @@ static void mdlDerivatives(SimStruct *S)
   int num_xd = ssGetNumDiscStates(S);
   int num_w = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
   bool sds = num_w>0;
-  int num_u = ssGetNumInputPorts(S)-sds ? ssGetInputPortWidth(S,0) : 0;
+  int num_u = (ssGetNumInputPorts(S)-sds) ? ssGetInputPortWidth(S,0) : 0;
 
   setScopeEnable(S);
 
@@ -434,7 +434,7 @@ static void mdlUpdate(SimStruct *S, int_T tid)
   int num_xc = ssGetNumContStates(S);
   int num_w = ssGetIWorkValue(S,IS_STOCHASTIC_IDX);
   bool sds = num_w>0;
-  int num_u = ssGetNumInputPorts(S)-sds ? ssGetInputPortWidth(S,0) : 0;
+  int num_u = (ssGetNumInputPorts(S)-sds) ? ssGetInputPortWidth(S,0) : 0;
   
   setScopeEnable(S);
 

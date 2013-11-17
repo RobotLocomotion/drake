@@ -17,7 +17,6 @@
  * */
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  char str[200];
   if((nrhs!=3&&nrhs != 2)||nlhs != 6)
   {
     mexErrMsgIdAndTxt("Drake:testSingleTimeKinCnstmex:BadInputs","Usage [num_cnst,cnst_val,dcnst_val,cnst_name,lb,ub] = testSingleTimeKinKinCnstmex(kinCnst,q,t)");

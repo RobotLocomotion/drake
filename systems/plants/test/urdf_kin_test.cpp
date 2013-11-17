@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
   
   // run kinematics with second derivatives 100 times
   VectorXd q = VectorXd::Zero(model->num_dof);
-  int i,j;
+  int i;
 
   if (argc>=2+model->num_dof) {
   	for (i=0; i<model->num_dof; i++)
