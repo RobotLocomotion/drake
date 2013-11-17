@@ -374,11 +374,11 @@ void snoptIKtraj_userfun(const VectorXd &x_vec, VectorXd &c_vec, VectorXd &G_vec
   snopt::integer neF = nF_tmp;
   snopt::integer needG = 1;
   snopt::integer neG = nG_tmp;
-  char *cu;
+  char *cu = NULL;
   snopt::integer lencu = 0;
-  snopt::integer *iu;
+  snopt::integer *iu = NULL;
   snopt::integer leniu = 0;
-  snopt::doublereal *ru;
+  snopt::doublereal *ru = NULL;
   snopt::integer lenru = 0;
   snoptIKtrajfun(&Status,&n,x,&needF, &neF, F, &needG, &neG, G, cu, &lencu, iu, &leniu, ru, &lenru);
   c_vec.resize(nF_tmp,1);
@@ -815,7 +815,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       iw = (snopt::integer*) std::calloc(lenrw,sizeof(snopt::integer));
       char cw[8*lencw];
 
-      snopt::integer Cold = 0, Basis = 1, Warm = 2;
+      snopt::integer Cold = 0; //, Basis = 1, Warm = 2;
       snopt::doublereal *xmul = new snopt::doublereal[nx];
       snopt::integer    *xstate = new snopt::integer[nx];
       for(int j = 0;j<nx;j++)
@@ -833,16 +833,16 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
 
       snopt::integer ObjRow = 1;
       
-      snopt::integer   nxname = 1, nFname = 1, npname;
+      snopt::integer   nxname = 1, nFname = 1, npname = 0;
       char* xnames = new char[nxname*8];
       char* Fnames = new char[nFname*8];
       char Prob[200];
-      char printname[200];
-      char specname[200];
+//      char printname[200];
+//      char specname[200];
 
-      snopt::integer iSpecs = -1, spec_len;
+//      snopt::integer iSpecs = -1, spec_len;
       snopt::integer iSumm  = -1;
-      snopt::integer iPrint = -1, prnt_len;
+      snopt::integer iPrint = -1; //, prnt_len;
 
       snopt::integer nS, nInf;
       snopt::doublereal sInf;
@@ -1482,7 +1482,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     }
     else
     {
-      snopt::integer* iAfun = NULL;
+      iAfun = NULL;
       jAvar = NULL;
       A = NULL;
     }
@@ -1699,7 +1699,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     iw = (snopt::integer*) std::calloc(leniw,sizeof(snopt::integer));
     char cw[8*lencw];
 
-    snopt::integer Cold = 0, Basis = 1, Warm = 2;
+    snopt::integer Cold = 0; //, Basis = 1; //, Warm = 2;
     snopt::doublereal *xmul = new snopt::doublereal[nx];
     snopt::integer    *xstate = new snopt::integer[nx];
     for(int j = 0;j<nx;j++)
@@ -1719,14 +1719,14 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
 
     snopt::integer ObjRow = 1;
     
-    snopt::integer   nxname = 1, nFname = 1, npname;
+    snopt::integer   nxname = 1, nFname = 1, npname = 0;
     char* xnames = new char[nxname*8];
     char* Fnames = new char[nFname*8];
     char Prob[200];
 
-    snopt::integer iSpecs = -1, spec_len;
+//    snopt::integer iSpecs = -1, spec_len;
     snopt::integer iSumm = -1;
-    snopt::integer iPrint = -1, prnt_len;
+    snopt::integer iPrint = -1; //, prnt_len;
 
 
     snopt::integer nS, nInf;
@@ -1926,7 +1926,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       MatrixXd df_numerical2;
       gevalNumerical(&snoptIKtraj_fevalfun,x_vec,c_vec,df_numerical2,1);
       mexPrintf("1st order numerical gradient is %e\n",df_numerical2(max_err_row,max_err_col));
-      double err = 1e-10;
+//      double err = 1e-10;
       VectorXd x_vec_err(nx_tmp);
       x_vec_err = VectorXd::Zero(nx_tmp);
       x_vec_err(max_err_col) = 1e-10;
