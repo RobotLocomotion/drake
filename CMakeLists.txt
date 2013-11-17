@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 2.8.6) # for UseJava.cmake
-#cmake_minimum_required(VERSION 2.8.8)  # need the object library
 
 # set up pods
 set(POD_NAME drake)
@@ -7,7 +6,7 @@ include(cmake/pods.cmake)
 
 option(BUILD_SHARED_LIBS "Build Drake with shared libraries." OFF)
 # set up Java, use a target of 1.6
-find_package(Java)
+find_package(Java REQUIRED)
 include(UseJava)
 set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wreturn-type -Wuninitialized -Wunused-variable")
