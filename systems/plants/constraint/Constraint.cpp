@@ -283,7 +283,6 @@ PostureConstraint::PostureConstraint(RigidBodyManipulator* model, const Eigen::V
 
 void PostureConstraint::setJointLimits(int num_idx,const int* joint_idx, const double* lb, const double* ub)
 {
-  int nq = this->robot->num_dof;
   for(int i = 0;i<num_idx;i++)
   {
     this->joint_limit_min[joint_idx[i]] = (this->robot->joint_limit_min[joint_idx[i]]<lb[i]? lb[i]:this->robot->joint_limit_min[joint_idx[i]]);
@@ -1540,7 +1539,7 @@ void WorldFixedOrientConstraint::bounds(double* t,int n_breaks, VectorXd &lb, Ve
 void WorldFixedOrientConstraint::name(double* t, int n_breaks, std::vector<std::string> &name_str)
 {
   int num_valid_t = this->numValidTime(t,n_breaks);
-  if(num_valid_t>=2);
+  if(num_valid_t>=2)
   {
     char cnst_name_buffer[500];
     sprintf(cnst_name_buffer,"World fixed orientation constraint for %s",this->body_name.c_str());

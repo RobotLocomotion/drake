@@ -10,7 +10,7 @@ option(BUILD_SHARED_LIBS "Build Drake with shared libraries." OFF)
 find_package(Java)
 include(UseJava)
 set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wreturn-type -Wuninitialized -Wunused-variable")
 
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
