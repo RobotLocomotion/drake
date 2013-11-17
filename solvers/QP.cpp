@@ -293,7 +293,7 @@ int boundToIneq(const VectorXd& uB,const VectorXd& lB, MatrixXd& Ain, VectorXd& 
 template <typename DerivedA,typename DerivedB>
 int myGRBaddconstrs(GRBmodel *model, MatrixBase<DerivedA> const & A, MatrixBase<DerivedB> const & b, char sense, double sparseness_threshold = 1e-14)
 {
-  int i,j,nnz,error;
+  int i,j,nnz,error=0;
 /*
   // todo: it seems like I should just be able to do something like this:
   SparseMatrix<double,RowMajor> sparseAeq(Aeq.sparseView());

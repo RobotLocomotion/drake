@@ -154,7 +154,7 @@ namespace DrakeCollision
                                                MatrixXd& normal, 
                                                VectorXd& distance)
       {
-        bool has_result;
+        bool has_result=false;
         //DEBUG
         //try {
         //END_DEBUG
