@@ -74,14 +74,17 @@ test	: all
 	cmake/add_matlab_unit_tests.pl
 	@cd pod-build && ctest --output-on-failure --timeout 600
 
-.PHONY: install_prereqs_macports install_prereqs_homebrew install_prereqs_ubuntu
-install_prereqs_macports :
+.PHONY: check_prereqs install_prereqs_macports install_prereqs_homebrew install_prereqs_ubuntu
+check_prereqs: 
+	if javac -source 1.6 -version > /dev/null 2> /dev/null; then exit 0; else echo "ERROR: Java 6 (or greater) sdk is required."; exit 1; fi  # test for javac >= 1.6
+
+install_prereqs_macports : check_prereqs
 	port install graphviz
 
-install_prereqs_homebrew :
+install_prereqs_homebrew : check_prereqs
 	brew install boost graphviz
 
-install_prereqs_ubuntu :
+install_prereqs_ubuntu : check_prereqs
 	apt-get install graphviz
 
 clean:
