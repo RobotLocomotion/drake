@@ -66,6 +66,18 @@ switch type
     else
       obj = WorldPositionInFrameConstraint(varargin{:});
     end
+  case SingleTimeKinematicConstraint.Point2LineSegDistConstraint
+    if(use_mex)
+      obj = constructPtrPoint2LineSegDistConstraintmex(varargin{:});
+    else
+      obj = Point2LineSegDistConstraint(varargin{:});
+    end
+  case SingleTimeKinematicConstraint.RelativeGazeTargetConstraint
+    if(use_mex)
+      obj = constructPtrRelativeGazeTargetConstraintmex(varargin{:});
+    else
+      obj = RelativeGazeTargetConstraint(varargin{:});
+    end
   otherwise
     error('constructSingleTimeKinematicConstraint:bad_type', ...
           'The specified constraint type is not supported by this function.');

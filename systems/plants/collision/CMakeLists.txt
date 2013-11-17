@@ -1,6 +1,8 @@
 include_directories ( .. )
 
-set(drakeCollision_SRC_FILES Model.cpp GenericModel.cpp Element.cpp PointPair.cpp DrakeCollision.cpp ResultCollector.cpp MinDistResultCollector.cpp)
+set(drakeCollision_SRC_FILES Model.cpp GenericModel.cpp Element.cpp
+  PointPair.cpp DrakeCollision.cpp ResultCollector.cpp
+  MinDistResultCollector.cpp simpleClosestPointFunctions.cpp)
 pods_find_pkg_config(bullet)
 
 if (bullet_FOUND)
@@ -18,5 +20,5 @@ enable_testing()
 add_subdirectory(test)
 
 pods_install_libraries(drakeCollision)
-pods_install_headers(Model.h DESTINATION drake/collision)
+pods_install_headers(Model.h simpleClosestPointFunctions.h DESTINATION drake/collision)
   

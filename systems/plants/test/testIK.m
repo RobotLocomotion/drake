@@ -253,11 +253,11 @@ for i = 1:size(q,2)
   end
 end
 
-display('Check all-to-all closest distance constraint')
-abcdc = AllBodiesClosestDistanceConstraint(robot,0.05,1e3,tspan);
-q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
-display('Check IK pointwise with all-to-all closest distance constraint')
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
+% display('Check all-to-all closest distance constraint')
+% abcdc = AllBodiesClosestDistanceConstraint(robot,0.05,1e3,tspan);
+% q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
+% display('Check IK pointwise with all-to-all closest distance constraint')
+% q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
 
 display('Check quasi static constraint')
 qsc = QuasiStaticConstraint(robot);
@@ -329,6 +329,16 @@ head_world_dist = head_pos-world_pts;
 head_world_dist = sqrt(sum(head_world_dist.*head_world_dist,1));
 if(any(head_world_dist>1.9+1e-5) || any(head_world_dist<1.6-1e-5))
   error('point to point distance constraint is not satisfied');
+end
+
+display('Check point to line segment distance constraint')
+vertical_line = [[0;0;0] [0;0;1]];
+hand_line_dist_cnst = Point2LineSegDistConstraint(robot,l_hand,[0;0;0],1,vertical_line,0.1,0.2,tspan);
+q = test_IK_userfun(robot,q_seed,q_nom,qsc,kc2l,kc2r,hand_line_dist_cnst,ikoptions);
+kinsol = doKinematics(robot,q);
+l_hand_pos = forwardKin(robot,kinsol,l_hand,[0;0;0],0);
+if(l_hand_pos(3)>1+1e-5 || l_hand_pos(3)<0-1e-5 || norm(l_hand_pos(1:2))>0.2+1e-5 || norm(l_hand_pos(1:2))<0.1-1e-5)
+  error('point to line segment constraint is not satisfied')
 end
 
 

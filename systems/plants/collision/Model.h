@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <vector>
 
+#include "simpleClosestPointFunctions.h"
 using namespace Eigen;
 
 namespace DrakeCollision

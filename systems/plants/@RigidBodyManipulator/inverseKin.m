@@ -1,5 +1,6 @@
 function [q,info,infeasible_constraint] = inverseKin(obj,q_seed,q_nom,varargin)
 % inverseKin(obj,q_seed,q_nom,constraint1,constraint2,constraint3,...,options)
+%
 % solve IK 
 %   min_q (q-q_nom)'*Q*(q-q_nom)
 %   subject to
@@ -10,7 +11,7 @@ function [q,info,infeasible_constraint] = inverseKin(obj,q_seed,q_nom,varargin)
 % 
 % @param q_seed       The seed guess, a column vector
 % @param q_nom        The nominal posture, a column vector
-% @param constraint   A Constraint class object, currently support SingleTimeKinematicConstraint,
+% @param constraint   A RigidBodyConstraint class object, currently support SingleTimeKinematicConstraint,
 %                     PostureConstraint and QuasiStaticConstraint. There
 %                     can be at most 1 QuasiStaticConstraint
 % @param ikoptions    An IKoptions object, please refer to IKoptions for detail

@@ -23,7 +23,8 @@ function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 %                     The nominal posture at t[i]
 % @param constraint   A Constraint class object, accept SingleTimeKinematicConstraint,
 %                     MultipleTimeKinematicConstraint,
-%                     QuasiStaticConstraint and PostureConstraint currently
+%                     QuasiStaticConstraint, PostureConstraint and MultipleTimeLinearPostureConstraint 
+%                     currently
 % @param ikoptions    An IKoptions object, please refer to IKoptions for detail
 
 % note: keeping typecheck/sizecheck to a minimum because this might have to
@@ -58,10 +59,12 @@ end
 constraint_ptr_cell = cell(1,length(varargin)-1);
 st_kc_cell = cell(1,length(varargin)-1); % SingleTimeKinematicConstraint
 mt_kc_cell = cell(1,length(varargin)-1); % MultipleTimeKinematicConstraint
+mtlpc_cell = cell(1,length(varargin)-1); % MultipleTimeLinearPostureConstraint
 num_st_kc = 0;
 num_mt_kc = 0;
+num_mtlpc = 0;
 for j = 1:length(varargin)-1
-  if(isa(varargin{j},'Constraint'))
+  if(isa(varargin{j},'RigidBodyConstraint'))
     constraint_ptr_cell{j} = varargin{j}.mex_ptr;
     if(~use_mex)
       if(isa(varargin{j},'PostureConstraint'))
@@ -81,6 +84,9 @@ for j = 1:length(varargin)-1
         mt_kc_cell{num_mt_kc} = varargin{j};
       elseif(isa(varargin{j},'QuasiStaticConstraint'))
         qsc = varargin{j};
+      elseif(isa(varargin{j},'MultipleTimeLinearPostureConstraint'))
+        num_mtlpc = num_mtlpc+1;
+        mtlpc_cell{num_mtlpc} = varargin{j};
       end
     end
   elseif(isa(varargin{j},'DrakeConstraintMexPointer'))
@@ -93,6 +99,7 @@ if(use_mex)
 else
   st_kc_cell = st_kc_cell(1:num_st_kc);
   mt_kc_cell = mt_kc_cell(1:num_mt_kc);
+  mtlpc_cell = mtlpc_cell(1:num_mtlpc);
   Q = ikoptions.Q;
   debug_mode = ikoptions.debug_mode;
   if(isempty(qsc))
@@ -416,9 +423,44 @@ else
     end
     
     
-    nF_total = sum(nc_array(qstart_idx:end))+sum(nc_inbetween_array)+1;
+    % parse the constraint for MultipleTimeLinearPostureConstraint at time t_knot
+    mtlpc_nc = zeros(1,num_mtlpc);
+    mtlpc_nA = zeros(1,num_mtlpc);
+    mtlpc_iAfun = cell(1,num_mtlpc);
+    mtlpc_jAvar = cell(1,num_mtlpc);
+    mtlpc_A = cell(1,num_mtlpc);
+    mtlpc_lb = cell(1,num_mtlpc);
+    mtlpc_ub = cell(1,num_mtlpc);
+    for j = 1:num_mtlpc
+      mtlpc = mtlpc_cell{j};
+      mtlpc_nc(j) = mtlpc.getNumConstraint(t);
+      [mtlpc_iAfun_j,mtlpc_jAvar_j,mtlpc_A_j] = mtlpc.geval(t);
+      [mtlpc_lb_j,mtlpc_ub_j] = mtlpc.bounds(t);
+      mtlpc_valid_t_flag = mtlpc.isTimeValid(t);
+      if(ikoptions.fixInitialState && mtlpc_valid_t_flag(1))
+        % Take out the entries in the sparsity matrix that corresponds to gradient with q0
+        mtlpc_A_q0idx = mtlpc_jAvar_j<=nq;
+        mtlpc_iAfun{j} = mtlpc_iAfun_j(~mtlpc_A_q0idx);
+        mtlpc_jAvar{j} = qfree_idx(mtlpc_jAvar_j(~mtlpc_A_q0idx)-nq);
+        mtlpc_A{j} = mtlpc_A_j(~mtlpc_A_q0idx);
+        mtlpc_q0_gradmat = sparse(mtlpc_iAfun_j(mtlpc_A_q0idx),mtlpc_jAvar_j(mtlpc_A_q0idx),mtlpc_A_j(mtlpc_A_q0idx),mtlpc_nc(j),nq);
+        mtlpc_ub{j} = mtlpc_ub_j-mtlpc_q0_gradmat*q0_fixed;
+        mtlpc_lb{j} = mtlpc_lb_j-mtlpc_q0_gradmat*q0_fixed;
+        mtlpc_nA(j) = sum(~mtlpc_A_q0idx);
+      else
+        mtlpc_A{j} = mtlpc_A_j;
+        mtlpc_iAfun{j} = mtlpc_iAfun_j;
+        mtlpc_jAvar{j} = qfree_idx(mtlpc_jAvar_j-nq*(qstart_idx-1));
+        mtlpc_ub{j} = mtlpc_ub_j;
+        mtlpc_lb{j} = mtlpc_lb_j;
+        mtlpc_nA(j) = length(mtlpc_A_j);
+      end
+    end
+    
+    
+    nF_total = sum(nc_array(qstart_idx:end))+sum(nc_inbetween_array)+sum(mtlpc_nc)+1;
     nG_total = sum(nG_array(qstart_idx:end))+sum(nG_inbetweenl_array)+nq*(num_qfree+num_qdotfree);
-    nA_total = sum(nA_array(qstart_idx:end));
+    nA_total = sum(nA_array(qstart_idx:end))+sum(mtlpc_nA);
     Flow = zeros(nF_total,1);
     Fupp = zeros(nF_total,1);
     if(debug_mode)
@@ -504,6 +546,17 @@ else
       end
       nf_cum = nf_cum+mtkc_nc(j);
       nG_cum = nG_cum+mtkc_nc(j)*(nq*(num_qfree+num_qdotfree));
+    end
+    
+    % parse the MultipleTimeLinearPostureConstraint for t
+    for j = 1:num_mtlpc
+      iAfun(nA_cum+(1:mtlpc_nA(j))) = nf_cum+mtlpc_iAfun{j};
+      jAvar(nA_cum+(1:mtlpc_nA(j))) = mtlpc_jAvar{j};
+      A(nA_cum+(1:mtlpc_nA(j))) = mtlpc_A{j};
+      Fupp(nf_cum+(1:mtlpc_nc(j))) = mtlpc_ub{j};
+      Flow(nf_cum+(1:mtlpc_nc(j))) = mtlpc_lb{j};
+      nf_cum = nf_cum+mtlpc_nc(j);
+      nA_cum = nA_cum+mtlpc_nA(j);
     end
     
     if(qscActiveFlag)

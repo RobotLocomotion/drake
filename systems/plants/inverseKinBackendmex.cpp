@@ -17,7 +17,7 @@ namespace snopt {
 #undef min
 
 #include "RigidBodyManipulator.h"
-#include "constraint/Constraint.h"
+#include "constraint/RigidBodyConstraint.h"
 #include "drakeUtil.h"
 #include <Eigen/LU>
 
@@ -437,8 +437,10 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   int num_constraint = nrhs-6;
   num_st_kc = 0;
   num_mt_kc = 0;
+  int num_mt_lpc = 0;
   st_kc_array = new SingleTimeKinematicConstraint*[num_constraint];
   mt_kc_array = new MultipleTimeKinematicConstraint*[num_constraint];
+  MultipleTimeLinearPostureConstraint** mt_lpc_array = new MultipleTimeLinearPostureConstraint*[num_constraint];
   qsc_ptr = NULL;
   MatrixXd joint_limit_min(nq,nT);
   MatrixXd joint_limit_max(nq,nT);
@@ -449,7 +451,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   }
   for(int i = 0;i<num_constraint;i++)
   {
-    Constraint* constraint = (Constraint*) getDrakeMexPointer(prhs[i+5]);
+    RigidBodyConstraint* constraint = (RigidBodyConstraint*) getDrakeMexPointer(prhs[i+5]);
     DrakeConstraintType constraint_type = constraint->getType();
     if(constraint_type == DrakeConstraintType::SingleTimeKinematicConstraintType)
     {
@@ -485,6 +487,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       }
       delete[] joint_min;
       delete[] joint_max;
+    }
+    else if(constraint_type == DrakeConstraintType::MultipleTimeLinearPostureConstraintType)
+    {
+      mt_lpc_array[num_mt_lpc] = (MultipleTimeLinearPostureConstraint*) constraint;
+      num_mt_lpc++;
     }
   }
   if(qsc_ptr == NULL)
@@ -1445,6 +1452,78 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       }
     }
 
+    // parse the constraint for MultipleTimeLinearPostureConstraint at time t
+    
+    int* mtlpc_nc = new int[num_mt_lpc];
+    int* mtlpc_nA = new int[num_mt_lpc];
+    VectorXi* mtlpc_iAfun = new VectorXi[num_mt_lpc];
+    VectorXi* mtlpc_jAvar = new VectorXi[num_mt_lpc];
+    VectorXd* mtlpc_A = new VectorXd[num_mt_lpc];
+    VectorXd* mtlpc_lb = new VectorXd[num_mt_lpc];
+    VectorXd* mtlpc_ub = new VectorXd[num_mt_lpc];
+    for(int j = 0;j<num_mt_lpc;j++)
+    {
+      mtlpc_nc[j] = mt_lpc_array[j]->getNumConstraint(t,nT);
+      VectorXi mtlpc_iAfun_j;
+      VectorXi mtlpc_jAvar_j;
+      VectorXd mtlpc_A_j;
+      mt_lpc_array[j]->geval(t,nT,mtlpc_iAfun_j,mtlpc_jAvar_j,mtlpc_A_j);
+      VectorXd mtlpc_lb_j;
+      VectorXd mtlpc_ub_j;
+      mt_lpc_array[j]->bounds(t,nT,mtlpc_lb_j,mtlpc_ub_j);
+      vector<bool> valid_t_flag = mt_lpc_array[j]->isTimeValid(t,nT);
+      if(fixInitialState && valid_t_flag.at(0))
+      {
+        int num_mtlpc_q0idx = 0;
+        for(int k = 0;k<mtlpc_A_j.size();k++)
+        {
+          if(mtlpc_jAvar_j(k)<nq)
+          {
+            num_mtlpc_q0idx++;
+          }
+        }
+        mtlpc_iAfun[j].resize(mtlpc_A_j.size()-num_mtlpc_q0idx);
+        mtlpc_jAvar[j].resize(mtlpc_A_j.size()-num_mtlpc_q0idx);
+        mtlpc_A[j].resize(mtlpc_A_j.size()-num_mtlpc_q0idx);
+        SparseMatrix<double> mtlpc_q0_gradmat;
+        mtlpc_q0_gradmat.resize(mtlpc_nc[j],nq);
+        mtlpc_q0_gradmat.reserve(num_mtlpc_q0idx);
+        int mtlpc_A_j_ind = 0;
+        for(int k = 0;k<mtlpc_A_j.size();k++)
+        {
+          if(mtlpc_jAvar_j(k)>=nq)
+          {
+            mtlpc_iAfun[j](mtlpc_A_j_ind) = mtlpc_iAfun_j(k);
+            mtlpc_jAvar[j](mtlpc_A_j_ind) = qfree_idx[mtlpc_jAvar_j(k)-nq];
+            mtlpc_A[j](mtlpc_A_j_ind) = mtlpc_A_j(k);
+            mtlpc_A_j_ind++;
+          }
+          else
+          {
+            mtlpc_q0_gradmat.insert(mtlpc_iAfun_j(k),mtlpc_jAvar_j(k)) = mtlpc_A_j(k);
+          }
+        }
+        mtlpc_ub[j] = mtlpc_ub_j-mtlpc_q0_gradmat*q0_fixed;
+        mtlpc_lb[j] = mtlpc_lb_j-mtlpc_q0_gradmat*q0_fixed;
+        mtlpc_nA[j] = mtlpc_A_j.size()-num_mtlpc_q0idx;
+      }
+      else
+      {
+        mtlpc_A[j] = mtlpc_A_j;
+        mtlpc_iAfun[j] = mtlpc_iAfun_j;
+        mtlpc_jAvar[j].resize(mtlpc_A_j.size());
+        for(int k = 0;k<mtlpc_A_j.size();k++)
+        {
+          mtlpc_jAvar[j](k) = qfree_idx[mtlpc_jAvar_j(k)-nq*qstart_idx];
+        }
+        mtlpc_ub[j] = mtlpc_ub_j;
+        mtlpc_lb[j] = mtlpc_lb_j;
+        mtlpc_nA[j] = mtlpc_A_j.size();
+      }
+    }
+
+
+
     nF = 1;
     nG = nq*(num_qfree+num_qdotfree);
     snopt::integer lenA = 0;
@@ -1465,6 +1544,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       mtkc_nc[j] = mt_kc_array[j]->getNumConstraint(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples);
       nF += mtkc_nc[j];
       nG += mtkc_nc[j]*nq*(num_qfree+num_qdotfree);
+    }
+    for(int j = 0;j<num_mt_lpc;j++)
+    {
+      nF += mtlpc_nc[j];
+      lenA += mtlpc_nA[j];
     }
     snopt::doublereal* Flow = new snopt::doublereal[nF];
     snopt::doublereal* Fupp = new snopt::doublereal[nF];
@@ -1649,6 +1733,26 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       nf_cum += mtkc_nc[j];
       nG_cum += mtkc_nc[j]*nq*(num_qfree+num_qdotfree);
     }
+
+    // parse MultipleTimeLinearPostureConstraint for t
+    for(int j = 0;j<num_mt_lpc;j++)
+    {
+      for(int k = 0;k<mtlpc_nA[j];k++)
+      {
+        iAfun[nA_cum+k] = nf_cum+mtlpc_iAfun[j](k)+1;
+        jAvar[nA_cum+k] = mtlpc_jAvar[j](k)+1;
+        A[nA_cum+k] = mtlpc_A[j](k);
+      }
+      for(int k = 0;k<mtlpc_nc[j];k++)
+      {
+        Fupp[nf_cum+k] = mtlpc_ub[j](k);
+        Flow[nf_cum+k] = mtlpc_lb[j](k);
+      }
+      nf_cum += mtlpc_nc[j];
+      nA_cum += mtlpc_nA[j];
+    }
+
+
     snopt::doublereal* x = new snopt::doublereal[nx];
     if(qscActiveFlag)
     {
@@ -2055,6 +2159,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     delete[] nc_inbetween_array; delete[] nG_inbetween_array; delete[] Cmin_inbetween_array; delete[] Cmax_inbetween_array;
     delete[] iCfun_inbetween_array; delete[] jCvar_inbetween_array;
     delete[] qknot_qsamples_idx;
+    delete[] mtlpc_nc; delete[] mtlpc_nA; delete[] mtlpc_iAfun; delete[] mtlpc_jAvar; delete[] mtlpc_A; delete[] mtlpc_lb; delete[] mtlpc_ub;
   } 
   if (INFO) delete[] INFO; 
   if (INFO_tmp) delete[] INFO_tmp;

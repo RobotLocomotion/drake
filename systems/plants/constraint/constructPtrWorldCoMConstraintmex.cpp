@@ -2,9 +2,9 @@
 #include <iostream>
 #include "drakeUtil.h"
 #include <Eigen/Dense>
-#include "Constraint.h"
+#include "RigidBodyConstraint.h"
 #include "RigidBodyManipulator.h"
-#include "constructPtrKinematicConstraint.h"
+#include "constructPtrDrakeConstraint.h"
 #include <cstdio>
 
 using namespace Eigen;
@@ -64,7 +64,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   memcpy(lb.data(),mxGetPr(prhs[1]),sizeof(double)*3);
   memcpy(ub.data(),mxGetPr(prhs[2]),sizeof(double)*3);
   cnst = new WorldCoMConstraint(model,lb,ub,tspan,robotnumset);
-  plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteConstraintmex","WorldCoMConstraint");
+  plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","WorldCoMConstraint");
   delete[] robotnum;
 }
 

@@ -7,8 +7,8 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
   % @param bodyB          -- A scalar, the index of bodyB. If it is the world, set bodyB=0
   % @param ptA            -- A 3xnpts vector. The location of ptA in bodyA frame
   % @param ptB            -- A 3xnpts vector. The location of ptB in bodyB frame
-  % @param lb_square      -- A 1xnpts nonnegative vector. the square of lower bound of the distance
-  % @param ub_square      -- A 1xnpts nonnegative vector. the square of upper bound of the distance
+  % @param dist_lb        -- A 1xnpts nonnegative vector. the lower bound of the distance
+  % @param dist_ub        -- A 1xnpts nonnegative vector. the upper bound of the distance
   % @param tspan          -- A 1x2 array, the time span of the constraint. Optional
   %                          argument, default is [-inf inf]
   properties(SetAccess = protected)
@@ -16,16 +16,18 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
     bodyB
     ptA
     ptB
-    lb_square
-    ub_square
+    dist_lb
+    dist_ub
+    bodyA_name;
+    bodyB_name;
   end
   
   methods
-    function obj = Point2PointDistanceConstraint(robot,bodyA,bodyB,ptA,ptB,lb,ub,tspan)
+    function obj = Point2PointDistanceConstraint(robot,bodyA,bodyB,ptA,ptB,dist_lb,dist_ub,tspan)
       if(nargin == 7)
         tspan = [-inf inf];
       end
-      mex_ptr = constructPtrPoint2PointDistanceConstraintmex(robot.getMexModelPtr,bodyA,bodyB,ptA,ptB,lb,ub,tspan);
+      mex_ptr = constructPtrPoint2PointDistanceConstraintmex(robot.getMexModelPtr,bodyA,bodyB,ptA,ptB,dist_lb,dist_ub,tspan);
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       if(~isnumeric(bodyA))
         error('Point2PointDistanceConstraint: bodyA should be numeric');
@@ -46,6 +48,16 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
       end
       obj.bodyA = floor(bodyA);
       obj.bodyB = floor(bodyB);
+      if(obj.bodyA ~= 0)
+        obj.bodyA_name = obj.robot.getBody(obj.bodyA).linkname;
+      else
+        obj.bodyA_name = 'World';
+      end
+      if(obj.bodyB ~= 0)
+        obj.bodyB_name = obj.robot.getBody(obj.bodyB).linkname;
+      else
+        obj.bodyB_name = 'World';
+      end
       if(~isnumeric(ptA))
         error('Point2PointDistanceConstraint: ptA should be numeric');
       end
@@ -58,19 +70,19 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
       obj.ptA = ptA;
       obj.ptB = ptB;
       obj.num_constraint = npts;
-      if(~isnumeric(lb))
+      if(~isnumeric(dist_lb))
         error('Point2PointDistanceConstraint: lb should be numeric');
       end
-      if(~isnumeric(ub))
+      if(~isnumeric(dist_ub))
         error('Point2PointDistanceConstraint: ub should be numeric');
       end
-      sizecheck(lb,[1,npts]);
-      sizecheck(ub,[1,npts]);
-      if(any(lb>ub))
+      sizecheck(dist_lb,[1,npts]);
+      sizecheck(dist_ub,[1,npts]);
+      if(any(dist_lb>dist_ub))
         error('Point2PointDistanceConstraint: lb must be no larger than ub');
       end
-      obj.lb_square = (lb.*lb)';
-      obj.ub_square = (ub.*ub)';
+      obj.dist_lb = dist_lb;
+      obj.dist_ub = dist_ub;
       obj.mex_ptr = mex_ptr;
     end
     
@@ -102,8 +114,8 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
     
     function [lb,ub] = bounds(obj,t)
       if(obj.isTimeValid(t))
-        lb = obj.lb_square;
-        ub = obj.ub_square;
+        lb = reshape(obj.dist_lb.*obj.dist_lb,[],1);
+        ub = reshape(obj.dist_ub.*obj.dist_ub,[],1);
       else
         lb = [];
         ub = [];
@@ -114,17 +126,7 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
       if(obj.isTimeValid(t))
         name_str = cell(obj.num_constraint,1);
         for i = 1:obj.num_constraint
-          if(obj.bodyA ~= 0)
-            bodyA_name = obj.robot.getBody(obj.bodyA).linkname;
-          else
-            bodyA_name = 'World';
-          end
-          if(obj.bodyB ~= 0)
-            bodyB_name = obj.robot.getBody(obj.bodyB).linkname;
-          else
-            bodyB_name = 'World';
-          end
-          name_str{i} = sprintf('distance between %s pt %d to %s pt %d',bodyA_name,i,bodyB_name,i);
+          name_str{i} = sprintf('distance between %s pt %d to %s pt %d',obj.bodyA_name,i,obj.bodyB_name,i);
         end
       else
         name_str = {};

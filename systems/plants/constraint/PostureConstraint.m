@@ -1,4 +1,4 @@
-classdef PostureConstraint<Constraint
+classdef PostureConstraint<RigidBodyConstraint
   % A bounding box constraint on robot posture
   % @param robot                      -- A robot
   % @param lb                         -- The lower bound of posture
@@ -23,10 +23,7 @@ classdef PostureConstraint<Constraint
         tspan = [-inf inf];
       end
       ptr = constructPtrPostureConstraintmex(robot.getMexModelPtr,tspan);
-      obj = obj@Constraint(Constraint.PostureConstraintType);
-      if(isempty(tspan))
-        tspan = [-inf,inf];
-      end
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.PostureConstraintType);
       if(tspan(end)<tspan(1))
         error('tspan(end) should be no smaller than tspan(1)')
       end
@@ -61,11 +58,14 @@ classdef PostureConstraint<Constraint
       if(any(size(joint_ind)~=size(joint_min))||any(size(joint_ind)~=size(joint_max)))
         error('The size of input arguments do not match');
       end
-      if(any(joint_min>joint_max+1e-5))
+      if(any(joint_min>joint_max))
         error('Joint min must be no larger than joint max');
       end
       obj.lb(joint_ind) = max([obj.joint_limit_min0(joint_ind) joint_min],[],2);
       obj.ub(joint_ind) = min([obj.joint_limit_max0(joint_ind) joint_max],[],2);
+      if(any(obj.lb>obj.ub))
+        error('Either the joint_max is smaller than the robot default joint min, or the joint min is larger than the robot default joint max');
+      end
     end
     
     function [lb,ub] = bounds(obj,t)

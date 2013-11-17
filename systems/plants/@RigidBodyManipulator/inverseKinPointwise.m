@@ -1,5 +1,6 @@
 function [q,info,infeasible_constraint] = inverseKinPointwise(obj,t,q_seed,q_nom,varargin)
 % inverseKin(obj,t,q_seed,q_nom,constraint1,constraint2,constraint3,...,options)
+%
 % solve IK at each sample time t(i) seperately
 %   min_q(:,i) (q(:,i)-q_nom(:,i))'*Q*(q(:,i)-q_nom(:,i))
 %   subject to
@@ -11,7 +12,7 @@ function [q,info,infeasible_constraint] = inverseKinPointwise(obj,t,q_seed,q_nom
 % @param t           The sample time, a row vector
 % @param q_seed      The seed guess, a column vector
 % @param q_nom       The nominal posture, a column vector
-% @param constraint  A Constraint object, an object of SingleTimeKinematicConstraint class,
+% @param constraint  A RigidBodyConstraint object, an object of SingleTimeKinematicConstraint class,
 %                    A QuasiStaticConstraint, or a PostureConstraint, 
 % @param ikoptions   an IKoptions object, please refer to IKoptions for detail
 % @retval q          the IK solution posture

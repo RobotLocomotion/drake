@@ -15,4 +15,11 @@ pc = pc.setJointLimits([l_leg_kny;r_leg_kny],[0.2;0.2],inf(2,1));
 [lbmex,ubmex] = testPostureConstraintmex(pc.mex_ptr,t);
 valuecheck(lb,lbmex);
 valuecheck(ub,ubmex);
+
+
+pc = pc.setJointLimits([l_leg_kny;r_leg_kny],[-1;0.2],[1;inf]);
+[lb,ub] = pc.bounds(t);
+[lbmex,ubmex] = testPostureConstraintmex(pc.mex_ptr,t);
+valuecheck(lb,lbmex);
+valuecheck(ub,ubmex);
 end

@@ -19,7 +19,7 @@
 #include <iostream>
 #include "drakeUtil.h"
 #include <Eigen/Dense>
-#include "Constraint.h"
+#include "RigidBodyConstraint.h"
 #include "RigidBodyManipulator.h"
 #include <cstdio>
 
@@ -32,7 +32,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   {
     mexErrMsgIdAndTxt("Drake:constraintTypemex:BadInputs","Usage constraint_type = constraintTypemex(constraint_ptr)");
   }
-  Constraint* cnst = (Constraint*) getDrakeMexPointer(prhs[0]);
+  RigidBodyConstraint* cnst = (RigidBodyConstraint*) getDrakeMexPointer(prhs[0]);
   DrakeConstraintType type = cnst->getType();
   switch(type)
   {
@@ -47,6 +47,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       break;
     case DrakeConstraintType::PostureConstraintType:
       plhs[0] = mxCreateString("PostureConstraint");
+      break;
+    case DrakeConstraintType::MultipleTimeLinearPostureConstraintType:
+      plhs[0] = mxCreateString("MultipleTimeLinearPostureConstraint");
       break;
   }
 }
