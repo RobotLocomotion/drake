@@ -57,10 +57,10 @@ ikoptions = IKoptions(obj);
 ikoptions = ikoptions.setQ(Q);
 qsc = [];
 if(use_mex_constraint)
-  pc = constructPtrPostureConstraintmex(obj.getMexModelPtr,[]);
+  pc = constructPtrPostureConstraintmex(obj.getMexModelPtr);
   constructPtrPostureConstraintmex(pc,(1:nq)',options.jointLimitMin,options.jointLimitMax);
 else
-  pc = PostureConstraint(obj,[]);
+  pc = PostureConstraint(obj);
   pc = pc.setJointLimits((1:nq)',options.jointLimitMin,options.jointLimitMax);
 end
 constraint = {pc};
