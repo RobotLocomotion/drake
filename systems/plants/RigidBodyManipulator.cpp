@@ -595,12 +595,12 @@ bool RigidBodyManipulator::closestPointsAllBodies(vector<int>& bodyA_idx,
     //cout << "Body A: " << bodyA_idx.at(i) << endl;
     //END_DEBUG
     forwardJac(bodyA_idx.at(i),ptA_on_body,0,JA_i);
-    JA.block(3,num_dof,i*3,0) = JA_i;
+    JA.block(i*3,0,3,num_dof) = JA_i;
     //DEBUG
     //cout << "Body B: " << bodyB_idx.at(i) << endl;
     //END_DEBUG
     forwardJac(bodyB_idx.at(i),ptB_on_body,0,JB_i);
-    JB.block(3,num_dof,i*3,0) = JB_i;
+    JB.block(i*3,0,3,num_dof) = JB_i;
     Jd.row(i) = normal.col(i).transpose()*(JA_i-JB_i);
   }
   return true;
