@@ -98,7 +98,7 @@ qdiff = quatDiff(head_con3.gaze_orientation,xhead(4:7));
 Rhead = quat2rotmat(qdiff);
 
 head_err = head_con3.gaze_axis'*Rhead*head_con3.gaze_axis;
-valuecheck(head_err,1,1e-5);
+valuecheck(head_err,1,1e-4);
 
 rangecheck(qdiff(1),cos(head_con3.gaze_threshold/2) - 1e5, 1 + 1e5);
 v.draw(1,[q;0*q]); drawnow;
