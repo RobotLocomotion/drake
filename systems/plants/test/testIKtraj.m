@@ -169,6 +169,26 @@ if(any(xbreaks(l_knee_idx,2:end)-xbreaks(l_knee_idx,1)>0.05+1e-10) || any(xbreak
  error('PostureChangeConstraint is not satisfied');
 end
 
+display('Compare using MultipleTimeLinearPostureConstraint and MultipleTimeKinematicConstraint');
+lower_joints = cellfun(@(s) ~isempty(strfind(s,'leg')),coords);
+joint_idx = (1:nq)';
+lower_joints = joint_idx(lower_joints);
+pc_change = PostureChangeConstraint(r,[(1:6)';lower_joints],zeros(6+length(lower_joints),1),zeros(6+length(lower_joints),1));
+lfoot_onground = WorldPositionConstraint(r,l_foot,l_foot_contact_pts,[nan(2,size(l_foot_contact_pts,2));zeros(1,size(l_foot_contact_pts,2))],[nan(2,size(l_foot_contact_pts,2));zeros(1,size(l_foot_contact_pts,2))]);
+rfoot_onground = WorldPositionConstraint(r,r_foot,r_foot_contact_pts,[nan(2,size(l_foot_contact_pts,2));zeros(1,size(r_foot_contact_pts,2))],[nan(2,size(r_foot_contact_pts,2));zeros(1,size(r_foot_contact_pts,2))]);
+lhand_cnst = WorldPositionConstraint(r,l_hand,l_hand_pts,[1;2;1],[1;2;2]);
+ikoptions = ikoptions.setFixInitialState(false);
+xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,lfoot_onground,rfoot_onground,lhand_cnst,pc_change,qsc,ikoptions);
+xbreaks = xtraj.eval(t);
+if(any(any(abs(diff(xbreaks([(1:6)';lower_joints],:),[],2))>1e-4)))
+  error('PostureChangeConstraint is not satisfied');
+end
+lfoot_fixed = WorldFixedBodyPoseConstraint(r,l_foot);
+rfoot_fixed = WorldFixedBodyPoseConstraint(r,r_foot);
+pelvis_fixed = WorldFixedBodyPoseConstraint(r,pelvis);
+xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,lfoot_fixed,rfoot_fixed,pelvis_fixed,lhand_cnst,qsc,ikoptions);
+xbreaks = xtraj.eval(t);
+
 end
 
 function xtraj = test_IKtraj_userfun(r,t,q_seed,q_nom,varargin)
