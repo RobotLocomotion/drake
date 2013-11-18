@@ -1,25 +1,4 @@
 
-if (CMAKE_COMPILER_IS_GNUCC)
-   execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-                OUTPUT_VARIABLE GCC_VERSION)
-   if (NOT (GCC_VERSION VERSION_GREATER 4.3 OR GCC_VERSION VERSION_EQUAL 4.3))
-        message(FATAL_ERROR "requires gcc version >= 4.3")  # to support the c++0x flag below
-   elseif(GCC_VERSION VERSION_LESS 4.7)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-   else()
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-   endif()
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
- if (APPLE)  # this was a step towards getting things to work with
-#   clang on mac, but ultimately we didn't get there...   (but I would
-#   be worried about sharing pointers between objects compiled against
-#   different c++ libs, so removing it)
-#    # http://stackoverflow.com/questions/13445742/apple-and-shared-ptr
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")  
-  endif()
-endif()
-
 find_package( Boost COMPONENTS filesystem system regex)
 
 include_directories (${CMAKE_SOURCE_DIR}/util )
@@ -48,7 +27,7 @@ if (eigen3_FOUND)
   add_subdirectory(constraint)
 
   if (Boost_FOUND)
-    add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp tinyxml/tinyxml.cpp tinyxml/tinyxmlparser.cpp tinyxml/tinyxmlerror.cpp)
+    add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp)
     target_link_libraries(URDFRigidBodyManipulator drakeRBM urdf_interface ${Boost_LIBRARIES})
     set_target_properties(URDFRigidBodyManipulator PROPERTIES COMPILE_FLAGS -fPIC )
 
