@@ -88,7 +88,7 @@ classdef WorldFixedOrientConstraint < MultipleTimeKinematicConstraint
     
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
-      updatePtrWorldFixedOrientConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+      obj.mex_ptr = updatePtrWorldFixedOrientConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)

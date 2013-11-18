@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include "RigidBodyConstraint.h"
 #include "RigidBodyManipulator.h"
+#include "constructPtrDrakeConstraint.h"
 #include <cstdio>
 
 using namespace Eigen;
@@ -23,7 +24,9 @@ void mexFunction(int nlhs,mxArray *plhs[],int nrhs, const mxArray *prhs[])
       mexErrMsgIdAndTxt("Drake:updatePtrQuasiStaticConstraintmex:BadInputs","flag must be a single boolean");
     }
     bool* flag = mxGetLogicals(prhs[2]);
-    cnst->setActive(*flag);
+    QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
+    cnst_new->setActive(*flag);
+    plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","QuasiStaticConstraint");
   }
   else if(field_str=="factor")
   {// setShrinkFactor(qsc_ptr,factor)
@@ -36,7 +39,9 @@ void mexFunction(int nlhs,mxArray *plhs[],int nrhs, const mxArray *prhs[])
     {
       mexErrMsgIdAndTxt("Drake:updatePtrQuasiStaticConstraintmex:BadInputs","shrink factor should be a positive scalar");
     }
-    cnst->setShrinkFactor(factor);
+    QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
+    cnst_new->setShrinkFactor(factor);
+    plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","QuasiStaticConstraint");
   }
   else if(field_str=="contact")
   {
@@ -54,14 +59,18 @@ void mexFunction(int nlhs,mxArray *plhs[],int nrhs, const mxArray *prhs[])
       new_body_pts[idx].block(0,0,3,npts) = new_body_pts_tmp;
       new_body_pts[idx].row(3) = MatrixXd::Ones(1,npts);
     }
-    cnst->addContact(num_new_bodies,new_bodies,new_body_pts);
+    QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
+    cnst_new->addContact(num_new_bodies,new_bodies,new_body_pts);
+    plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","QuasiStaticConstraint");
     delete[] new_bodies;
     delete[] new_body_pts;
   }
   else if(field_str=="robot")
   {
     RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
-    cnst->updateRobot(robot);
+    QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
+    cnst_new->updateRobot(robot);
+    plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","QuasiStaticConstraint");
   }
   else if(field_str=="robotnum")
   {
@@ -74,7 +83,9 @@ void mexFunction(int nlhs,mxArray *plhs[],int nrhs, const mxArray *prhs[])
       robotnum[i] = (int) robotnum_tmp[i]-1;
     }
     set<int> robotnumset(robotnum,robotnum+num_robot);
-    cnst->updateRobotnum(robotnumset);
+    QuasiStaticConstraint* cnst_new = new QuasiStaticConstraint(*cnst);
+    cnst_new->updateRobotnum(robotnumset);
+    plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","QuasiStaticConstraint");
     delete[] robotnum_tmp;
     delete[] robotnum;
   }

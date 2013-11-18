@@ -135,7 +135,7 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
     
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
-      updatePtrPoint2PointDistanceConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+      obj.mex_ptr = updatePtrPoint2PointDistanceConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)

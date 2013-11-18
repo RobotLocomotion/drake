@@ -59,6 +59,13 @@ QuasiStaticConstraint::QuasiStaticConstraint(RigidBodyManipulator* robot, const 
   this->num_pts = 0;
 }
 
+QuasiStaticConstraint::QuasiStaticConstraint(const QuasiStaticConstraint &rhs):RigidBodyConstraint(rhs),m_robotnumset(rhs.m_robotnumset),shrinkFactor(rhs.shrinkFactor),active(rhs.active),num_bodies(rhs.num_bodies),num_pts(rhs.num_pts),bodies(rhs.bodies),num_body_pts(rhs.num_body_pts),body_pts(rhs.body_pts)
+{
+  this->robot = rhs.robot;
+  this->tspan[0] = rhs.tspan[0];
+  this->tspan[1] = rhs.tspan[1];
+}
+
 QuasiStaticConstraint::~QuasiStaticConstraint()
 {
 }
@@ -236,11 +243,6 @@ void QuasiStaticConstraint::setShrinkFactor(double factor)
   assert(factor>0.0);
   this->shrinkFactor = factor;
 }
-bool PostureConstraint::isTimeValid(double* t)
-{
-  if(t == NULL) return true;
-  return (*t)>=this->tspan[0]&&(*t)<=this->tspan[1];
-}
 
 void QuasiStaticConstraint::updateRobotnum(std::set<int> &robotnumset)
 {
@@ -260,6 +262,26 @@ PostureConstraint::PostureConstraint(RigidBodyManipulator* model, const Eigen::V
   memcpy(this->ub,this->robot->joint_limit_max,sizeof(double)*nq);
 }
 
+PostureConstraint::PostureConstraint(const PostureConstraint& rhs):RigidBodyConstraint(rhs)
+{
+  this->tspan[0] = rhs.tspan[0];
+  this->tspan[1] = rhs.tspan[1];
+  this->robot = rhs.robot;
+  int nq = this->robot->num_dof;
+  this->lb = new double[nq];
+  this->ub = new double[nq];
+  for(int i = 0;i<nq;i++)
+  {
+    this->lb[i] = rhs.lb[i];
+    this->ub[i] = rhs.ub[i];
+  }
+}
+
+bool PostureConstraint::isTimeValid(double* t)
+{
+  if(t == NULL) return true;
+  return (*t)>=this->tspan[0]&&(*t)<=this->tspan[1];
+}
 
 void PostureConstraint::setJointLimits(int num_idx,const int* joint_idx, const double* lb, const double* ub)
 {
@@ -319,6 +341,13 @@ MultipleTimeLinearPostureConstraint::MultipleTimeLinearPostureConstraint(RigidBo
   this->tspan[0] = tspan(0);
   this->tspan[1] = tspan(1);
   this->robot = model;
+}
+
+MultipleTimeLinearPostureConstraint::MultipleTimeLinearPostureConstraint(const MultipleTimeLinearPostureConstraint &rhs):RigidBodyConstraint(rhs)
+{
+  this->robot = rhs.robot;
+  this->tspan[0] = rhs.tspan[0];
+  this->tspan[1] = rhs.tspan[1];
 }
 
 std::vector<bool> MultipleTimeLinearPostureConstraint::isTimeValid(double* t, int n_breaks)
@@ -398,6 +427,13 @@ SingleTimeKinematicConstraint::SingleTimeKinematicConstraint(RigidBodyManipulato
   this->num_constraint = 0;
 }
 
+SingleTimeKinematicConstraint::SingleTimeKinematicConstraint(const SingleTimeKinematicConstraint &rhs):RigidBodyConstraint(rhs)
+{
+  this->robot = rhs.robot;
+  this->num_constraint = rhs.num_constraint;
+  this->tspan[0] = rhs.tspan[0];
+  this->tspan[1] = rhs.tspan[1];
+}
 bool SingleTimeKinematicConstraint::isTimeValid(double* t)
 {
    if(t == NULL) return true;
@@ -424,6 +460,13 @@ MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(RigidBodyManipu
   this->tspan[0] = tspan(0);
   this->tspan[1] = tspan(1);
   this->robot = model;
+}
+
+MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(const MultipleTimeKinematicConstraint &rhs):RigidBodyConstraint(rhs)
+{
+  this->robot = rhs.robot;
+  this->tspan[0] = rhs.tspan[0];
+  this->tspan[1] = rhs.tspan[1];
 }
 
 void MultipleTimeKinematicConstraint::eval(double* t, int n_breaks, const MatrixXd &q, VectorXd &c, MatrixXd &dc)
@@ -559,6 +602,18 @@ PositionConstraint::PositionConstraint(RigidBodyManipulator *model, const Matrix
       valid_col_idx++;
     }
   }
+}
+
+PositionConstraint::PositionConstraint(const PositionConstraint &rhs):SingleTimeKinematicConstraint(rhs)
+{
+  this->n_pts = rhs.n_pts;
+  this->pts = rhs.pts;
+  this->lb = new double[this->num_constraint];
+  this->ub = new double[this->num_constraint];
+  this->null_constraint_rows = new bool[3*this->n_pts];
+  memcpy(this->lb,rhs.lb,sizeof(double)*this->num_constraint);
+  memcpy(this->ub,rhs.ub,sizeof(double)*this->num_constraint);
+  memcpy(this->null_constraint_rows,rhs.null_constraint_rows,sizeof(bool)*3*this->n_pts);
 }
 
 void PositionConstraint::eval(double* t, VectorXd &c, MatrixXd &dc)
@@ -919,11 +974,24 @@ EulerConstraint::EulerConstraint(RigidBodyManipulator *model, Vector3d lb, Vecto
       valid_row_idx++;
     }
   }
-  this->avg_rpy = new double[num_constraint];
-  for(int i = 0;i<num_constraint;i++)
+  this->avg_rpy = new double[this->num_constraint];
+  for(int i = 0;i<this->num_constraint;i++)
   {
     this->avg_rpy[i] = (this->lb[i]+this->ub[i])/2.0;
   }
+}
+
+EulerConstraint::EulerConstraint(const EulerConstraint &rhs):SingleTimeKinematicConstraint(rhs)
+{
+  this->null_constraint_rows[0] = rhs.null_constraint_rows[0];
+  this->null_constraint_rows[1] = rhs.null_constraint_rows[1];
+  this->null_constraint_rows[2] = rhs.null_constraint_rows[2];
+  this->ub = new double[this->num_constraint];
+  this->lb = new double[this->num_constraint];
+  this->avg_rpy = new double[this->num_constraint];
+  memcpy(this->lb,rhs.lb,sizeof(double)*this->num_constraint);
+  memcpy(this->ub,rhs.ub,sizeof(double)*this->num_constraint);
+  memcpy(this->avg_rpy,rhs.avg_rpy,sizeof(double)*this->num_constraint);
 }
 
 void EulerConstraint::eval(double* t, VectorXd &c, MatrixXd &dc)

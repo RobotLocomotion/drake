@@ -66,4 +66,29 @@ valuecheck(c_mex2,c2,1e-10);
 valuecheck(dc_mex2,dc2,1e-10);
 valuecheck(lb_mex2,[0;0]);
 valuecheck(ub_mex2,[0;0]);
+
+display('Check if the mex_ptr and MATLAB object are consistent after making changes to the MATLAB object');
+[active_mex_cache,num_weights_mex_cache,c_mex_cache,dc_mex_cache,lb_mex_cache,ub_mex_cache] = testQuasiStaticConstraintmex(qsc.mex_ptr,q,weights,t);
+qsc2 = qsc;
+qsc2 = qsc2.setActive(~qsc.active);
+qsc2 = qsc2.addContact(l_foot,mean(l_foot_pts,2));
+qsc2 = qsc2.setShrinkFactor(0.7*qsc.shrinkFactor);
+weights2 = [weights;0];
+[active2_mex,num_weights2_mex,c2_mex,dc2_mex,lb2_mex,ub2_mex] = testQuasiStaticConstraintmex(qsc2.mex_ptr,q,weights2,t);
+valuecheck(qsc2.active,active2_mex);
+valuecheck(num_weights2_mex,qsc2.num_pts);
+kinsol = r.doKinematics(q);
+[c2,dc2] = qsc2.eval(t,kinsol,weights2);
+valuecheck(c2,c2_mex,1e-10);
+valuecheck(dc2,dc2_mex,1e-10);
+valuecheck(lb2_mex,[0;0]);
+valuecheck(ub2_mex,[0;0]);
+
+[active_mex,num_weights_mex,c_mex,dc_mex,lb_mex,ub_mex] = testQuasiStaticConstraintmex(qsc.mex_ptr,q,weights,t);
+valuecheck(active_mex_cache,active_mex);
+valuecheck(num_weights_mex_cache,num_weights_mex);
+valuecheck(c_mex_cache,c_mex);
+valuecheck(dc_mex_cache,dc_mex);
+valuecheck(lb_mex_cache,lb_mex);
+valuecheck(ub_mex_cache,ub_mex);
 end

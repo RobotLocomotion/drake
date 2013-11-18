@@ -76,7 +76,7 @@ classdef WorldPositionConstraint < PositionConstraint
     
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
-      updatePtrWorldPositionConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+      obj.mex_ptr = updatePtrWorldPositionConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)
