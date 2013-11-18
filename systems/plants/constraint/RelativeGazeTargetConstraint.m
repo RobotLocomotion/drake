@@ -67,7 +67,7 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
       obj.robot = robot;
       obj.mex_ptr = updatePtrRelativeGazeTargetConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
-    
+
     function drawConstraint(obj,q,lcmgl)
       norm_axis = obj.axis/norm(obj.axis);
 
