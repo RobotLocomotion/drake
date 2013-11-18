@@ -62,7 +62,7 @@ classdef WorldQuatConstraint < QuatConstraint
     
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
-      updatePtrWorldQuatConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+      obj.mex_ptr = updatePtrWorldQuatConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)

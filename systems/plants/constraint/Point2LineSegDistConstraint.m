@@ -128,7 +128,7 @@ classdef Point2LineSegDistConstraint < SingleTimeKinematicConstraint
     
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
-      updatePtrPoint2LineSegDistConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+      obj.mex_ptr = updatePtrPoint2LineSegDistConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
     function ptr = constructPtr(varargin)

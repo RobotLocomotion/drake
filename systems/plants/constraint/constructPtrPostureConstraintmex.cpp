@@ -47,7 +47,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double* ub = new double[num_idx];
     memcpy(lb,mxGetPr(prhs[2]),sizeof(double)*num_idx);
     memcpy(ub,mxGetPr(prhs[3]),sizeof(double)*num_idx);
-    pc->setJointLimits(num_idx,joint_idx,lb,ub);
+    PostureConstraint* pc_new = new PostureConstraint(*pc);
+    pc_new->setJointLimits(num_idx,joint_idx,lb,ub);
     delete[] joint_idx_tmp; delete[] joint_idx; delete[] lb; delete[] ub;
+    plhs[0] = createDrakeConstraintMexPointer((void*)pc_new,"deleteRigidBodyConstraintmex","PostureConstraint");
   }
 }

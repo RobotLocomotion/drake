@@ -51,6 +51,7 @@ class QuasiStaticConstraint: public RigidBodyConstraint
     static const std::set<int> defaultRobotNumSet;
   public:
     QuasiStaticConstraint(RigidBodyManipulator* robot, const Eigen::Vector2d &tspan,const std::set<int> &robotnumset = QuasiStaticConstraint::defaultRobotNumSet); 
+    QuasiStaticConstraint(const QuasiStaticConstraint &rhs);
     bool isTimeValid(double* t);
     int getNumConstraint(double* t);
     void eval(double* t,double* weights,Eigen::VectorXd &c, Eigen::MatrixXd &dc); 
@@ -76,6 +77,7 @@ class PostureConstraint: public RigidBodyConstraint
     RigidBodyManipulator *robot;
   public:
     PostureConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan);
+    PostureConstraint(const PostureConstraint& rhs);
     bool isTimeValid(double* t);
     void setJointLimits(int num_idx, const int* joint_idx, const double* lb, const double* ub);
     void bounds(double* t,double* joint_min, double* joint_max);
@@ -86,12 +88,13 @@ class PostureConstraint: public RigidBodyConstraint
 class MultipleTimeLinearPostureConstraint: public RigidBodyConstraint
 {
   protected:
-    double tspan[2];
     RigidBodyManipulator* robot;
     int numValidTime(const std::vector<bool> &valid_flag);
     void validTimeInd(const std::vector<bool> &valid_flag, Eigen::VectorXi &valid_t_ind);
   public:
+    double tspan[2];
     MultipleTimeLinearPostureConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan);
+    MultipleTimeLinearPostureConstraint(const MultipleTimeLinearPostureConstraint& rhs);
     std::vector<bool> isTimeValid(double* t, int n_breaks);
     RigidBodyManipulator* getRobotPointer(){return robot;};
     void eval(double* t, int n_breaks, const Eigen::MatrixXd &q, Eigen::VectorXd &c,Eigen::SparseMatrix<double> &dc);
@@ -111,6 +114,7 @@ class SingleTimeKinematicConstraint: public RigidBodyConstraint
   public:
     double tspan[2];
     SingleTimeKinematicConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan);
+    SingleTimeKinematicConstraint(const SingleTimeKinematicConstraint &rhs);
     bool isTimeValid(double* t);
     int getNumConstraint(double* t);
     RigidBodyManipulator* getRobotPointer(){return robot;};
@@ -129,6 +133,7 @@ class MultipleTimeKinematicConstraint : public RigidBodyConstraint
   public:
     double tspan[2];
     MultipleTimeKinematicConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan);
+    MultipleTimeKinematicConstraint(const MultipleTimeKinematicConstraint &rhs);
     std::vector<bool> isTimeValid(double* t,int n_breaks);
     RigidBodyManipulator* getRobotPointer(){return robot;};
     virtual int getNumConstraint(double* t,int n_breaks) = 0;
@@ -151,6 +156,7 @@ class PositionConstraint : public SingleTimeKinematicConstraint
     virtual void evalPositions(Eigen::MatrixXd &pos,Eigen::MatrixXd &J) = 0;
   public:
     PositionConstraint(RigidBodyManipulator *model, const Eigen::MatrixXd &pts,Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan);
+    PositionConstraint(const PositionConstraint& rhs);
     virtual void eval(double* t,Eigen::VectorXd &c, Eigen::MatrixXd &dc);
     virtual void bounds(double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub);
     virtual ~PositionConstraint();
@@ -233,6 +239,7 @@ class EulerConstraint: public SingleTimeKinematicConstraint
     virtual void evalrpy(Eigen::Vector3d &rpy, Eigen::MatrixXd &J) = 0;
   public:
     EulerConstraint(RigidBodyManipulator *model, Vector3d lb, Vector3d ub, Eigen::Vector2d tspan);
+    EulerConstraint(const EulerConstraint &rhs);
     virtual void eval(double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc);
     virtual void bounds(double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub);
     virtual ~EulerConstraint();

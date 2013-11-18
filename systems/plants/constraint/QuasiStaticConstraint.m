@@ -74,7 +74,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
 
     function obj = setActive(obj,flag)
       obj.active = logical(flag);
-      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'active',obj.active)
+      obj.mex_ptr = updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'active',obj.active);
     end
     
     function num_cnst = getNumConstraint(obj,t)
@@ -87,7 +87,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     
     function obj = addContact(obj,varargin)
       % obj.addContact(body1,body1_pts,body2,body2_pts,...,bodyN,bodyN_pts)
-      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'contact',varargin{:});
+      obj.mex_ptr = updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'contact',varargin{:});
       i = 1;
       while(i<length(varargin))
         body = varargin{i};
@@ -125,7 +125,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     end
     
     function obj = setShrinkFactor(obj,factor)
-      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'factor',factor);
+      obj.mex_ptr = updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'factor',factor);
       typecheck(factor,'double');
       sizecheck(factor,[1,1]);
       if(factor<0)
@@ -209,12 +209,13 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
         error('Drake:QuasiStaticConstraint: robotnum is not accepted');
       end
       obj.robotnum = robotnum;
-      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'robotnum',robotnum);
+      obj.mex_ptr = updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'robotnum',robotnum);
     end
+    
     function obj = updateRobot(obj,robot)
       obj.robot = robot;
       obj.nq = obj.robot.getNumDOF();
-      updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
+      obj.mex_ptr = updatePtrQuasiStaticConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
     end
     
   end

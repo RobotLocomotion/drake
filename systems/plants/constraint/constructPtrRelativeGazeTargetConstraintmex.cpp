@@ -66,7 +66,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   {
     if(!mxIsNumeric(prhs[6]) || mxGetNumberOfElements(prhs[6]) != 1)
     {
-      mexErrMsgIdAndTxt("Drake:constructPtrRelativeGazeTargetConstraintmex:BadInputs","conethreshold should be a double scalar");
+      if(mxGetNumberOfElements(prhs[6]) == 0)
+      {
+        conethreshold = 0.0;
+      }
+      else
+      {
+        mexErrMsgIdAndTxt("Drake:constructPtrRelativeGazeTargetConstraintmex:BadInputs","conethreshold should be a double scalar");
+      }
     }
     conethreshold = mxGetScalar(prhs[6]);
     if(conethreshold<0)

@@ -78,6 +78,14 @@ testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldGazeTargetCo
 display('Check world gaze target constraint with empty threshold');
 testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.WorldGazeTargetConstraint,robot,robot_aff,head,[1;0;0],[20;10;1],[0.3;0.1;0.2],[],tspan0);
 
+display('Check relative gaze target constraint with empty threshold');
+testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.RelativeGazeTargetConstraint,robot,robot_aff,head,l_hand,[1;0;0],[20;10;1],[0.3;0.1;0.2],[],tspan0);
+
+display('Check point to point distance constraint');
+testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.Point2PointDistanceConstraint,robot,robot_aff,head,l_hand,[1;0;0],[0;0;0],0.1,0.2,tspan0);
+
+display('Check point to line segment distance constraint');
+testKinCnst_userfun(true,t,q_aff,SingleTimeKinematicConstraint.Point2LineSegDistConstraint,robot,robot_aff,head,[1;0;0],l_hand,[[0;0;0] [0;0;1]],0.1,0.2,tspan0);
 t2 = [0 0.5 1];
 q2 = randn(nq_aff,3);
 display('Check world fixed position constraint')
@@ -105,43 +113,18 @@ testKinCnst_userfun(false,t2,q3,MultipleTimeKinematicConstraint.WorldFixedBodyPo
 end
 
 function testKinCnst_userfun(singleTimeFlag,t,q,kc_type,robot,robot_aff,varargin)
-robot_ptr = robot.getMexModelPtr;
 
 if(singleTimeFlag)
-  kc_mex = constructSingleTimeKinematicConstraint(kc_type,true,robot_ptr,varargin{:});
   kc = constructSingleTimeKinematicConstraint(kc_type,false,robot,varargin{:});
   
   kc = kc.updateRobot(robot_aff);
-  
-  if(kc_type == SingleTimeKinematicConstraint.WorldCoMConstraint)
-    updatePtrWorldCoMConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
-  elseif(kc_type == SingleTimeKinematicConstraint.WorldPositionConstraint)
-    updatePtrWorldPositionConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
-  elseif(kc_type == SingleTimeKinematicConstraint.WorldPositionInFrameConstraint)
-    updatePtrWorldPositionInFrameConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
-  elseif(kc_type == SingleTimeKinematicConstraint.WorldEulerConstraint)
-    updatePtrWorldEulerConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
-  elseif(kc_type == SingleTimeKinematicConstraint.WorldQuatConstraint)
-    updatePtrWorldQuatConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
-  elseif(kc_type == SingleTimeKinematicConstraint.WorldGazeOrientConstraint)
-    updatePtrWorldGazeOrientConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
-  elseif(kc_type == SingleTimeKinematicConstraint.WorldGazeDirConstraint)
-    updatePtrWorldGazeDirConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
-  elseif(kc_type == SingleTimeKinematicConstraint.WorldGazeTargetConstraint)
-    updatePtrWorldGazeTargetConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
-  end
+  kc_mex = kc.mex_ptr;  
+
   [num_cnst_mex,c_mex,dc_mex,cnst_name_mex,lb_mex,ub_mex] = testSingleTimeKinCnstmex(kc_mex,q,t);
 else
-  kc_mex = constructMultipleTimeKinematicConstraint(kc_type,true,robot_ptr,varargin{:});
   kc = constructMultipleTimeKinematicConstraint(kc_type,false,robot,varargin{:});
   kc = kc.updateRobot(robot_aff);
-  if(kc_type == MultipleTimeKinematicConstraint.WorldFixedPositionConstraint)
-    updatePtrWorldFixedPositionConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
-  elseif(kc_type == MultipleTimeKinematicConstraint.WorldFixedOrientConstraint)
-    updatePtrWorldFixedOrientConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);
-  elseif(kc_type == MultipleTimeKinematicConstraint.WorldFixedBodyPoseConstraint)
-    updatePtrWorldFixedBodyPoseConstraintmex(kc_mex,'robot',robot_aff.getMexModelPtr);  
-  end
+  kc_mex = kc.mex_ptr;
   [num_cnst_mex,c_mex,dc_mex,cnst_name_mex,lb_mex,ub_mex] = testMultipleTimeKinCnstmex(kc_mex,q,t);
 end
 num_cnst = kc.getNumConstraint(t);

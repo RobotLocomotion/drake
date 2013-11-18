@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include "RigidBodyConstraint.h"
 #include "RigidBodyManipulator.h"
+#include "constructPtrDrakeConstraint.h"
 #include <cstdio>
 
 using namespace Eigen;
@@ -19,7 +20,9 @@ void mexFunction(int nlhs,mxArray *plhs[],int nrhs, const mxArray *prhs[])
   if(field_str=="robot")
   {
     RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
-    cnst->updateRobot(robot);
+    WorldCoMConstraint* cnst_new = new WorldCoMConstraint(*cnst);
+    cnst_new->updateRobot(robot);
+    plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldCoMConstraint");
   }
   else if(field_str=="robotnum")
   {
@@ -32,7 +35,9 @@ void mexFunction(int nlhs,mxArray *plhs[],int nrhs, const mxArray *prhs[])
       robotnum[i] = (int) robotnum_tmp[i]-1;
     }
     set<int> robotnumset(robotnum,robotnum+num_robot);
-    cnst->updateRobotnum(robotnumset);
+    WorldCoMConstraint* cnst_new = new WorldCoMConstraint(*cnst);
+    cnst_new->updateRobotnum(robotnumset);
+    plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","WorldCoMConstraint");
     delete[] robotnum_tmp;
     delete[] robotnum;
   }
