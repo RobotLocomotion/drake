@@ -54,10 +54,6 @@ classdef RelativeQuatConstraint < QuatConstraint
       ptr = [];
     end
 
-    function obj = updateRobot(obj,robot)
-      obj.robot = robot;
-      obj.mex_ptr = updatePtrRelativeGazeTargetConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
-    end
     
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
