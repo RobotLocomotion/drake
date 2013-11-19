@@ -207,7 +207,7 @@ else
         Fname = [{'objective'};Cname_cell{i}];
       end
       
-      if(info == 13)
+      if(info(i) == 13 || info(i) == 31 || info(i) == 32)
         ub_err = F-Fupp;
         max_ub_error = max(ub_err);
         max_ub_error = max_ub_error*(max_ub_error>0);
@@ -215,13 +215,16 @@ else
         max_lb_error = max(lb_err);
         max_lb_error = max_lb_error*(max_lb_error>0);
         if(max_ub_error+max_lb_error>1e-4)
-            info = 13;
-            infeasible_constraint_idx = (ub_err>5e-5)|(lb_err>5e-5);
-            if(debug_mode)
-              infeasible_constraint = [infeasible_constraint Fname(infeasible_constraint_idx)];
-            end
-        else
-            info = 4;
+          infeasible_constraint_idx = (ub_err>5e-5)|(lb_err>5e-5);
+          if(debug_mode)
+            infeasible_constraint = [infeasible_constraint Fname(infeasible_constraint_idx)];
+          end
+        elseif(info(i) == 13)
+          info(i) = 4;
+        elseif(info(i) == 31)
+          info(i) = 5;
+        elseif(info(i) == 32)
+          info(i) = 6;
         end
       end
     end
@@ -595,7 +598,7 @@ else
     if(debug_mode)
       Fname = [{'objective'};Fname];
     end
-    if(info == 13)
+    if(info == 13 || info == 32 || info == 31)
       ub_err = F-Fupp;
       max_ub_error = max(ub_err);
       max_ub_error = max_ub_error*(max_ub_error>0);
@@ -603,13 +606,16 @@ else
       max_lb_error = max(lb_err);
       max_lb_error = max_lb_error*(max_lb_error>0);
       if(max_ub_error+max_lb_error>1e-4)
-        info = 13;
         infeasible_constraint_idx = (ub_err>5e-5)|(lb_err>5e-5);
         if(debug_mode)
           infeasible_constraint = Fname(infeasible_constraint_idx);
         end
-      else
+      elseif(info == 13)
         info = 4;
+      elseif(info == 31)
+        info = 5;
+      elseif(info == 32)
+        info = 6;
       end
     end
     varargout{1} = q;

@@ -967,7 +967,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         vector<string>::iterator it = Fname.begin();
         Fname.insert(it,objective_name);
       }
-      if(INFO[i] == 13)
+      if(INFO[i] == 13 || INFO[i] == 31 || INFO[i] == 32)
       {
         double *ub_err = new double[nF];
         double *lb_err = new double[nF];
@@ -991,7 +991,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         max_lb_err = (max_lb_err>0.0? max_lb_err: 0.0);
         if(max_ub_err+max_lb_err>1e-4)
         {
-          INFO[i] = 13;
           if(debug_mode)
           {
             for(int j = 1;j<nF;j++)
@@ -1003,9 +1002,17 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
             }
           }
         }
-        else
+        else if(INFO[i] == 13)
         {
           INFO[i] = 4;
+        }
+        else if(INFO[i] == 31)
+        {
+          INFO[i] = 5;
+        }
+        else if(INFO[i] == 32)
+        {
+          INFO[i] = 6;
         }
         delete[] ub_err;
         delete[] lb_err;
@@ -2075,7 +2082,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     qdot.resize(nq,nT);
     qddot.resize(nq,nT);
 
-    if(*INFO == 13)
+    if(*INFO == 13 || *INFO == 31 || *INFO == 32)
     {
       double *ub_err = new double[nF];
       double *lb_err = new double[nF];
@@ -2099,7 +2106,6 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       max_lb_err = (max_lb_err>0.0? max_lb_err: 0.0);
       if(max_ub_err+max_lb_err>1e-4)
       {
-        *INFO = 13;
         if(debug_mode)
         {
           for(int j = 1;j<nF;j++)
@@ -2111,9 +2117,17 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
           }
         }
       }
-      else
+      else if(*INFO == 13)
       {
         *INFO = 4;
+      }
+      else if(*INFO == 31)
+      {
+        *INFO = 5;
+      }
+      else if(*INFO == 32)
+      {
+        *INFO = 6;
       }
       delete[] ub_err;
       delete[] lb_err;

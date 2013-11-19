@@ -1412,7 +1412,6 @@ util/quatDiff.m -text
 util/quatDiffAxisInvar.m -text
 util/quatProduct.m -text
 util/quatRotateVec.m -text
-util/quatTransform.m -text
 util/rangecheck.m -text
 util/realtime.cpp -text
 util/rospack.m -text

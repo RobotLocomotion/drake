@@ -38,18 +38,16 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
     
     function [c,dc] = eval(obj,t,kinsol)
       if(obj.isTimeValid(t))
-        [x,J] = forwardKin(obj.robot,kinsol,obj.body,obj.gaze_origin,2);
-        gaze_vec = obj.target-x(1:3);
-        len_gaze_vec = norm(gaze_vec);
-        dlen_gaze_vec = -gaze_vec'/len_gaze_vec*J(1:3,:);
-        dgaze_vec = (-J(1:3,:)*len_gaze_vec-gaze_vec*dlen_gaze_vec)/len_gaze_vec^2;
-        gaze_vec = gaze_vec/len_gaze_vec;
-        [quat_des,dquat_des] = quatTransform(gaze_vec,obj.axis);
-        dquat_des_dq = dquat_des(:,1:3)*dgaze_vec;
-        [axis_err,daxis_err] = quatDiffAxisInvar(x(4:7),quat_des,obj.axis);
-        daxis_err_dq = daxis_err(1:4)*J(4:7,:)+daxis_err(5:8)*dquat_des_dq;
-        c = axis_err;
-        dc = daxis_err_dq;
+        [axis_ends,daxis_ends] = forwardKin(obj.robot,kinsol,obj.body,[obj.gaze_origin obj.gaze_origin+obj.axis],0);
+        world_axis = axis_ends(:,2)-axis_ends(:,1);
+        dworld_axis = daxis_ends(4:6,:)-daxis_ends(1:3,:);
+        dir = obj.target-axis_ends(:,1);
+        ddir = -daxis_ends(1:3,:);
+        dir_norm = norm(dir);
+        dir_normalized = dir/dir_norm;
+        ddir_normalized = (eye(3)*dir_norm^2-dir*dir')/(dir_norm^3)*ddir;
+        c = world_axis'*dir_normalized-1;
+        dc = dir_normalized'*dworld_axis+world_axis'*ddir_normalized;
       else
         c = [];
         dc = [];

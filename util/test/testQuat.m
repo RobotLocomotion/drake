@@ -1,6 +1,6 @@
 function testQuat
 % Checks if the cpp and matlab computation are consistent for quatDiff,
-% quatDiffInvAxis, quatTransform, quatProduct, and quatRotateVector
+% quatDiffInvAxis, quatProduct, and quatRotateVector
 
 for i = 1:100
   q1 = randn(4,1);
@@ -15,16 +15,13 @@ for i = 1:100
   v = v/norm(v);
   [r,dr] = quatDiff(q1,q2);
   [e,de] = quatDiffAxisInvar(q1,q2,axis);
-  [quat,dquat] = quatTransform(u,v);
   [q3,dq3] = quatProduct(q1,q2);
   [w,dw] = quatRotateVec(q1,u);
-  [r_mex,dr_mex,e_mex,de_mex,quat_mex,dquat_mex,q3_mex,dq3_mex,w_mex,dw_mex] = testQuatmex(q1,q2,axis,u,v);
+  [r_mex,dr_mex,e_mex,de_mex,q3_mex,dq3_mex,w_mex,dw_mex] = testQuatmex(q1,q2,axis,u,v);
   valuecheck(r,r_mex,1e-8);
   valuecheck(dr,dr_mex,1e-8);
   valuecheck(e,e_mex,1e-8);
   valuecheck(de,de_mex,1e-8);
-  valuecheck(quat,quat_mex,1e-8);
-  valuecheck(dquat,dquat_mex,1e-8);
   valuecheck(q3,q3_mex,1e-8);
   valuecheck(dq3,dq3_mex,1e-8);
   valuecheck(w,w_mex,1e-8);
