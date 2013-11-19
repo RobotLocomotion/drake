@@ -296,10 +296,8 @@ class GazeDirConstraint: public GazeConstraint
 {
   protected:
     Eigen::Vector3d dir;
-    virtual void evalOrientation(Eigen::Vector4d &quat, Eigen::MatrixXd &dquat_dq) = 0;
   public:
     GazeDirConstraint(RigidBodyManipulator* model, Eigen::Vector3d axis, Eigen::Vector3d dir,double conethreshold, Eigen::Vector2d tspan);
-    virtual void eval(double*t, Eigen::VectorXd &c, Eigen::MatrixXd &dc);
     virtual void bounds(double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub);
     virtual ~GazeDirConstraint(void){};
 };
@@ -309,9 +307,9 @@ class WorldGazeDirConstraint: public GazeDirConstraint
   protected:
     int body;
     std::string body_name;
-    virtual void evalOrientation(Eigen::Vector4d &quat, Eigen::MatrixXd &dquat_dq);
   public:
     WorldGazeDirConstraint(RigidBodyManipulator* model, int body,Eigen::Vector3d axis, Eigen::Vector3d dir, double conethreshold, Eigen::Vector2d tspan);
+    virtual void eval(double *t, Eigen::VectorXd &c, Eigen::MatrixXd &dc);
     virtual void name(double* t, std::vector<std::string> &name_str);
     virtual ~WorldGazeDirConstraint(void){};
 };

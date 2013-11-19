@@ -1237,31 +1237,6 @@ GazeDirConstraint::GazeDirConstraint(RigidBodyManipulator* model, Vector3d axis,
   this->num_constraint = 1;
 }
 
-void GazeDirConstraint::eval(double* t, VectorXd &c, MatrixXd &dc)
-{
-  int num_constraint = this->getNumConstraint(t);
-  c.resize(num_constraint);
-  dc.resize(num_constraint,this->robot->num_dof);
-  if(this->isTimeValid(t))
-  {
-    Vector4d quat;
-    int nq = this->robot->num_dof;
-    MatrixXd dquat(4,nq);
-    this->evalOrientation(quat,dquat);
-    Vector4d quat_des;
-    quatTransform(this->axis,this->dir,quat_des);
-    double axis_err;
-    Matrix<double,1,11> daxis_err;
-    quatDiffAxisInvar(quat,quat_des,this->axis,axis_err,daxis_err);
-    c[0] = axis_err;
-    dc.row(0) = daxis_err.head(4)*dquat;
-  }
-  else
-  {
-    c.resize(0);
-    dc.resize(0,0);
-  }
-}
 
 void GazeDirConstraint::bounds(double* t, VectorXd &lb, VectorXd &ub)
 {
@@ -1281,18 +1256,32 @@ WorldGazeDirConstraint::WorldGazeDirConstraint(RigidBodyManipulator *model, int 
   this->body_name = this->robot->bodies[this->body].linkname;
 }
 
-void WorldGazeDirConstraint::evalOrientation(Vector4d &quat, MatrixXd &dquat_dq)
-{
-  Matrix<double,7,1> x;
-  MatrixXd J(7,this->robot->num_dof);
-  Vector4d pts;
-  pts<< 0.0, 0.0, 0.0, 1.0;
-  this->robot->forwardKin(this->body,pts,2,x);
-  this->robot->forwardJac(this->body,pts,2,J);
-  quat = x.tail(4);
-  dquat_dq = J.block(3,0,4,this->robot->num_dof);
-}
 
+void WorldGazeDirConstraint::eval(double* t, VectorXd &c, MatrixXd &dc)
+{
+  if(this->isTimeValid(t))
+  {
+    MatrixXd body_axis_ends(4,2);
+    body_axis_ends.block(0,0,3,1) = MatrixXd::Zero(3,1);
+    body_axis_ends.block(0,1,3,1) = this->axis;
+    body_axis_ends.block(3,0,1,2) = MatrixXd::Ones(1,2);
+    int nq = this->robot->num_dof;
+    MatrixXd axis_pos(3,2);
+    MatrixXd daxis_pos(6,nq);
+    this->robot->forwardKin(this->body,body_axis_ends,0,axis_pos);
+    this->robot->forwardJac(this->body,body_axis_ends,0,daxis_pos);
+    Vector3d axis_world = axis_pos.col(1)-axis_pos.col(0);
+    MatrixXd daxis_world = daxis_pos.block(3,0,3,nq)-daxis_pos.block(0,0,3,nq);
+    c.resize(1);
+    c(0) = axis_world.dot(this->dir)-1.0;
+    dc = this->dir.transpose()*daxis_world;
+  }
+  else
+  {
+    c.resize(0);
+    dc.resize(0,0);
+  }
+}
 void WorldGazeDirConstraint::name(double* t, std::vector<std::string> &name_str)
 {
   if(this->isTimeValid(t))
@@ -1345,29 +1334,24 @@ void WorldGazeTargetConstraint::eval(double* t,VectorXd &c, MatrixXd &dc)
   dc.resize(num_constraint,nq);
   if(this->isTimeValid(t))
   {
-    Matrix<double,7,1> x;
-    MatrixXd J(7,nq);
-    this->robot->forwardKin(this->body,this->gaze_origin,2,x);
-    this->robot->forwardJac(this->body,this->gaze_origin,2,J);
-    Vector3d gaze_vec = this->target-x.head(3);
-    double len_gaze_vec = gaze_vec.norm();
-    MatrixXd dlen_gaze_vec(1,nq);
-    dlen_gaze_vec = -gaze_vec.transpose()*J.block(0,0,3,nq)/len_gaze_vec;
-    MatrixXd dgaze_vec(3,nq);
-    dgaze_vec = (-J.block(0,0,3,nq)*len_gaze_vec-gaze_vec*dlen_gaze_vec)/(len_gaze_vec*len_gaze_vec);
-    gaze_vec = gaze_vec/len_gaze_vec;
-    Vector4d quat_des;
-    Matrix<double,4,6> dquat_des;
-    quatTransform(gaze_vec,this->axis,quat_des,dquat_des);
-    MatrixXd dquat_des_dq(4,nq);
-    dquat_des_dq = dquat_des.block(0,0,4,3)*dgaze_vec;
-    double axis_err;
-    Matrix<double,1,11> daxis_err;
-    quatDiffAxisInvar(x.tail(4),quat_des,this->axis,axis_err,daxis_err);
-    MatrixXd daxis_err_dq(1,nq);
-    daxis_err_dq = daxis_err.head(4)*J.block(3,0,4,nq)+daxis_err.segment(4,4)*dquat_des_dq;
-    c(0) = axis_err;
-    dc.row(0) = daxis_err_dq;
+    MatrixXd body_axis_ends(4,2);
+    body_axis_ends.block(0,0,3,1) = this->gaze_origin;
+    body_axis_ends.block(0,1,3,1) = this->gaze_origin.block(0,0,3,1)+this->axis;
+    body_axis_ends.block(3,0,1,2) = MatrixXd::Ones(1,2);
+    int nq = this->robot->num_dof;
+    MatrixXd axis_ends(3,2);
+    MatrixXd daxis_ends(6,nq);
+    this->robot->forwardKin(this->body, body_axis_ends, 0, axis_ends);
+    this->robot->forwardJac(this->body, body_axis_ends, 0, daxis_ends);
+    Vector3d world_axis = axis_ends.col(1)-axis_ends.col(0);
+    MatrixXd dworld_axis = daxis_ends.block(3,0,3,nq)-daxis_ends.block(0,0,3,nq);
+    Vector3d dir = this->target-axis_ends.col(0);
+    MatrixXd ddir = -daxis_ends.block(0,0,3,nq);
+    double dir_norm = dir.norm();
+    Vector3d dir_normalized = dir/dir_norm;
+    MatrixXd ddir_normalized = (MatrixXd::Identity(3,3)*dir_norm*dir_norm-dir*dir.transpose())/(std::pow(dir_norm,3))*ddir;
+    c(0) = dir_normalized.dot(world_axis)-1.0;
+    dc = dir_normalized.transpose()*dworld_axis+world_axis.transpose()*ddir_normalized;
   }
   else
   {
