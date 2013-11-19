@@ -386,11 +386,13 @@ macro(pods_use_pkg_config_packages target)
         ${PKG_CONFIG_EXECUTABLE} --libs ${ARGN}
         OUTPUT_VARIABLE _pods_pkg_ldflags)
     string(STRIP ${_pods_pkg_ldflags} _pods_pkg_ldflags)
+    include_directories(${_pods_pkg_include_flags})
     
     # make the target depend on libraries that are cmake targets
     if (_pods_pkg_ldflags)
         string(REPLACE " " ";" _split_ldflags ${_pods_pkg_ldflags})
-	target_link_libraries(${target} ${_split_ld_flags})
+	target_link_libraries(${target} ${_split_ldflags})
+
         foreach(__ldflag ${_split_ldflags})
                 string(REGEX REPLACE "^-l" "" __depend_target_name ${__ldflag})
                 get_target_property(IS_TARGET ${__depend_target_name} LOCATION)
