@@ -12,7 +12,9 @@ if (DRAKE_USE_BOT_VIS)
   pods_use_pkg_config_packages(lcmgl_test bot2-lcmgl-client)
 
   add_library(drake_urdf_renderer drake_urdf_renderer.cpp)
-  target_link_libraries(drake_viewer drake_urdf_renderer lcmtypes_drake URDFRigidBodyManipulator)
+  target_link_libraries(drake_urdf_renderer drake_urdf_renderer lcmtypes_drake URDFRigidBodyManipulator)
+  pods_use_pkg_config_packages(drake_urdf_renderer bot2-lcmgl-renderer)
   pods_install_libraries(drake_urdf_renderer)
   
+  target_link_libraries(drake_viewer drake_urdf_renderer)
 endif()
