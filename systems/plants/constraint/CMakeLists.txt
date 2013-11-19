@@ -59,7 +59,7 @@ if(eigen3_FOUND)
   add_constraint_mex(constraintTypemex)
   if (Boost_FOUND)
       add_executable(testConstraintConstructor test/testConstraintConstructor.cpp)
-      target_link_libraries(testConstraintConstructor drakeRBM drakeUtil drakeRigidBodyConstraint URDFRigidBodyManipulator urdf_interface)
+      target_link_libraries(testConstraintConstructor drakeRBM drakeUtil drakeRigidBodyConstraint drakeRBMurdf drakeURDFinterface)
   endif()
           
 endif()

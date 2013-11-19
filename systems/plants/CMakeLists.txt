@@ -27,13 +27,15 @@ if (eigen3_FOUND)
   add_subdirectory(constraint)
 
   if (Boost_FOUND)
-    add_library(URDFRigidBodyManipulator URDFRigidBodyManipulator.cpp)
-    target_link_libraries(URDFRigidBodyManipulator drakeRBM urdf_interface ${Boost_LIBRARIES})
-    set_target_properties(URDFRigidBodyManipulator PROPERTIES COMPILE_FLAGS -fPIC )
+    add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
+    target_link_libraries(drakeRBMurdf drakeRBM drakeURDFinterface ${Boost_LIBRARIES})
+    set_target_properties(drakeRBMurdf PROPERTIES COMPILE_FLAGS -fPIC )
 
     if (DRAKE_USE_BOT_VIS)
-	   pods_use_pkg_config_packages(URDFRigidBodyManipulator bot2-vis)
+	   pods_use_pkg_config_packages(drakeRBMurdf bot2-vis)
     endif()
+
+    pods_install_libraries(drakeRBMurdf)
 
     add_subdirectory(urdf_interface)
     add_subdirectory(viewer)

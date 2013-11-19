@@ -4,7 +4,7 @@ fr1 = CoordinateFrame('frame1',2,'a');
 fr2 = CoordinateFrame('frame2',2,'b');
 fr3 = CoordinateFrame('frame3',1,'c');
 
-sys1 = LinearSystem([],[],[],[],[],[eye(3);zeros(2,3)]);
+sys1 = LinearSystem(eye(3),eye(3),[],[],[eye(3);zeros(2,3)],[zeros(5,3)]);
 sys1 = setInputFrame(sys1,MultiCoordinateFrame({fr1,fr3}));
 sys1 = setOutputFrame(sys1,MultiCoordinateFrame({fr1,fr2,fr3}));
 
