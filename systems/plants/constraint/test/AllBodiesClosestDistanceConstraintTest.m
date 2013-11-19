@@ -9,6 +9,7 @@ function AllBodiesClosestDistanceConstraintTest(n,draw_pause)
   w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');  
+  warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
   r = RigidBodyManipulator('model_simple_visuals.urdf',options);
   warning(w);
 
