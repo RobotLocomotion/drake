@@ -36,7 +36,9 @@ endif()
 
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
+
 add_subdirectory(lcmtypes)
+
 
 # set up matlab build
 include(cmake/mex.cmake)
