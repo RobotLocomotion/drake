@@ -14,6 +14,8 @@
 #             LCMTYPES_LIBS
 #             LCMTYPES_JAR
 #
+#     lcmtypes_build()  # this must be called to finish
+#
 #     add_lcmtype(lcmfile)
 #          which generates build rules for C,CPP, Java (if java is available), and 
 #	   Python (if python is available) by calling the methods below
@@ -70,6 +72,9 @@
 
 cmake_minimum_required(VERSION 2.8.3) # for the CMakeParseArguments macro 
 
+find_package(Java REQUIRED)
+include(UseJava)
+
 macro(lcmtypes_setup)
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(LCM REQUIRED lcm)
@@ -90,21 +95,45 @@ macro(lcmtypes_setup)
   if (NOT LCMTYPES_C_AGGREGATE_HEADER)
     set(LCMTYPES_C_AGGREGATE_HEADER "${__sanitized_project_name}.h")
   endif()
+  if (NOT LCMTYPES_C_LIBNAME)
+    set(LCMTYPES_C_LIBNAME "${__sanitized_project_name}_lcmtypes")
+  endif()
   if (NOT LCMTYPES_CPP_AGGREGATE_HEADER)
     set(LCMTYPES_C_AGGREGATE_HEADER "${__sanitized_project_name}.hpp")
   endif()
   if (NOT LCMTYPES_JARNAME)
-    set(LCMTYPES_JARNAME "${__sanitized_project_name}.jar")
+    set(LCMTYPES_JARNAME "${__sanitized_project_name}")
   endif()
 
   set(LCMTYPES_DIR ${CMAKE_CURRENT_BINARY_DIR}/lcmtypes)
+  execute_process(COMMAND mkdir -p ${LCMTYPES_DIR})
+
+  set(LCMTYPES_C_SOURCEFILES)
+
+endmacro()
+
+macro(lcmtypes_build)
 
 #  add_custom_target(${LCMTYPES_DIR}/${LCMTYPES_C_AGGREGATE_HEADER})
-#  add_library(${LCMTYPES_DIR}/${LCMTYPES_C_LIBNAME})
-#  add_custom_target(${LCMTYPES_DIR}/${LCMTYPES_CPP_AGGREGATE_HEADER})
-#  add_jar(${LCMTYPES_DIR}/${LCMTYPES_JARNAME})
+   
+  if (LCMTYPES_C_SOURCEFILES)
+    add_library(${LCMTYPES_C_LIBNAME} ${LCMTYPES_C_SOURCEFILES})
+
+    # todo: write aggregate header
+  endif()
+
+  if (LCMTYPES_CPP_HEADERFILES)
+    # todo: write aggregate header
+  endif()
+
+  if (LCMTYPES_JAVA_SOURCEFILES)
+    add_jar(${LCMTYPES_JARNAME} ${LCMTYPES_JAVA_SOURCEFILES})
+  endif()
+
+#  todo: handle python
 
 #  todo: add install rules
+
 endmacro()
 
 function(lcmgen)
@@ -114,375 +143,75 @@ function(lcmgen)
   endif()
 endfunction()
 
+macro(get_package_name lcmtype)
+  # extract package name from lcm file.  
+  # creates variable ${_package_name}
+  # todo: make this more robust
+
+  execute_process(COMMAND sed -n -e "s/^.*package *\\(.*\\); *$/\\1/p" ${CMAKE_CURRENT_SOURCE_DIR}/${lcmtype} OUTPUT_VARIABLE _package_name OUTPUT_STRIP_TRAILING_WHITESPACE)
+endmacro()
+
 function(add_c_lcmtype lcmtype)
   get_filename_component(lcmtype_we ${lcmtype} NAME_WE)
+  get_package_name(${lcmtype})
+  if (_package_name)
+    string(REPLACE "." "_" package_prefix "${_package_name}")
+    set(package_prefix "${package_prefix}_")
+  endif()
+  set(lcmtype_w_package "${package_prefix}${lcmtype_we}")
 
-  add_custom_command(TARGET "${LCMTYPES_DIR}/${lcmtype_we}.c" PRE_BUILD
-  		     COMMAND "${LCM_GEN_EXECUTABLE} --c --c-cpath ${LCMTYPES_DIR} -c-hpath ${LCMTYPES_DIR}"
-		     DEPENDS ${lcmtype})
+  add_custom_command(OUTPUT "${LCMTYPES_DIR}/${lcmtype_w_package}.c" PRE_LINK
+  		     COMMAND "${LCM_GEN_EXECUTABLE}" --c "${CMAKE_CURRENT_SOURCE_DIR}/${lcmtype}"
+		     DEPENDS ${lcmtype}
+		     WORKING_DIRECTORY ${LCMTYPES_DIR})
+  set(LCMTYPES_C_SOURCEFILES ${LCMTYPES_C_SOURCEFILES} "${LCMTYPES_DIR}/${lcmtype_w_package}.c" PARENT_SCOPE)
+
+endfunction()
+
+function(add_cpp_lcmtype lcmtype)
+  get_filename_component(lcmtype_we ${lcmtype} NAME_WE)
+  get_package_name(${lcmtype})
+  if (_package_name)
+    string(REPLACE "." "/" package_prefix "${_package_name}")
+    set(package_prefix "${package_prefix}/")
+  endif()
+  set(lcmtype_w_package "${package_prefix}${lcmtype_we}")
+
+  add_custom_command(OUTPUT "${LCMTYPES_DIR}/${lcmtype_w_package}.hpp" PRE_LINK
+  		     COMMAND "${LCM_GEN_EXECUTABLE}" --cpp "${CMAKE_CURRENT_SOURCE_DIR}/${lcmtype}"
+		     DEPENDS ${lcmtype}
+		     WORKING_DIRECTORY ${LCMTYPES_DIR})
+  set(LCMTYPES_CPP_HEADERFILES ${LCMTYPES_CPP_HEADERFILES} "${LCMTYPES_DIR}/${lcmtype_w_package}.hpp" PARENT_SCOPE)
+
+endfunction()
+
+function(add_java_lcmtype lcmtype)
+  get_filename_component(lcmtype_we ${lcmtype} NAME_WE)
+  get_package_name(${lcmtype})
+  if (_package_name)
+    string(REPLACE "." "/" package_prefix "${_package_name}")
+    set(package_prefix "${package_prefix}/")
+  endif()
+  set(lcmtype_w_package "${package_prefix}${lcmtype_we}")
+
+  add_custom_command(OUTPUT "${LCMTYPES_DIR}/${lcmtype_w_package}.java" PRE_LINK
+  		     COMMAND "${LCM_GEN_EXECUTABLE}" --java "${CMAKE_CURRENT_SOURCE_DIR}/${lcmtype}"
+		     DEPENDS ${lcmtype}
+		     WORKING_DIRECTORY ${LCMTYPES_DIR})
+  set(LCMTYPES_JAVA_SOURCEFILES ${LCMTYPES_JAVA_SOURCEFILES} "${LCMTYPES_DIR}/${lcmtype_w_package}.java" PARENT_SCOPE)
+
 endfunction()
 
 function(add_lcmtype)
   add_c_lcmtype(${ARGV})
-#  add_cpp_lcmtype(${ARGV})
-#  add_java_lcmtype(${ARGV})
+  set(LCMTYPES_C_SOURCEFILES ${LCMTYPES_C_SOURCEFILES} PARENT_SCOPE)
+
+  add_cpp_lcmtype(${ARGV})
+  set(LCMTYPES_CPP_HEADERFILES ${LCMTYPES_CPP_HEADERFILES} PARENT_SCOPE)
+  
+  add_java_lcmtype(${ARGV})
+  set(LCMTYPES_JAVA_SOURCEFILES ${LCMTYPES_JAVA_SOURCEFILES} PARENT_SCOPE)
+
 #  add_python_lcmtype(${ARGV})
 endfunction()
 
-function(lcmtypes_build_c)
-    lcmtypes_get_types(_lcmtypes ${ARGV})
-    list(LENGTH _lcmtypes _num_lcmtypes)
-    if(_num_lcmtypes EQUAL 0)
-        return()
-    endif()
-
-    string(REGEX REPLACE "[^a-zA-Z0-9]" "_" __sanitized_project_name "${PROJECT_NAME}")
-
-    # set some defaults
-
-    # library name
-    set(libname "lcmtypes_${PROJECT_NAME}")
-
-    # header file that includes all other generated header files
-    set(agg_h_bname "${__sanitized_project_name}.h")
-
-    # allow defaults to be overriden by function parameters
-    set(modewords C_LIBNAME C_AGGREGATE_HEADER)
-    set(curmode "")
-    foreach(word ${ARGV})
-        list(FIND modewords ${word} mode_index)
-        if(${mode_index} GREATER -1)
-            set(curmode ${word})
-        elseif(curmode STREQUAL C_AGGREGATE_HEADER)
-            set(agg_h_bname "${word}")
-            set(curmode "")
-        elseif(curmode STREQUAL C_LIBNAME)
-            set(libname "${word}")
-            set(curmode "")
-        endif()
-    endforeach()
-
-    # generate C bindings for LCM types
-    set(_lcmtypes_c_dir ${PROJECT_SOURCE_DIR}/lcmtypes/c/lcmtypes)
-
-    # blow away any existing auto-generated files.
-    file(REMOVE_RECURSE ${_lcmtypes_c_dir})
-
-    # run lcm-gen now
-    execute_process(COMMAND mkdir -p ${_lcmtypes_c_dir})
-    lcmgen(--lazy -c --c-cpath ${_lcmtypes_c_dir} --c-hpath ${_lcmtypes_c_dir} --cinclude lcmtypes ${_lcmtypes})
-
-    # run lcm-gen at compile time
-    add_custom_target(lcmgen_c ALL 
-        COMMAND sh -c '[ -d ${_lcmtypes_c_dir} ] || mkdir -p ${_lcmtypes_c_dir}'
-        COMMAND sh -c '${LCM_GEN_EXECUTABLE} --lazy -c --c-cpath ${_lcmtypes_c_dir} --c-hpath ${_lcmtypes_c_dir} --cinclude lcmtypes  ${_lcmtypes}')
-
-    # get a list of all generated .c and .h files
-    file(GLOB _lcmtypes_c_files ${_lcmtypes_c_dir}/*.c)
-    file(GLOB _lcmtypes_h_files ${_lcmtypes_c_dir}/*.h)
-
-    include_directories(BEFORE ${PROJECT_SOURCE_DIR}/lcmtypes/c) #TODO: don't think this is necessary
-    include_directories(${LCM_INCLUDE_DIRS})
-
-    # aggregate into a static library
-    add_library(${libname} STATIC ${_lcmtypes_c_files})
-    set_source_files_properties(${_lcmtypes_c_files} PROPERTIES COMPILE_FLAGS "-fPIC")
-    #    set_target_properties("${libname}-static" PROPERTIES OUTPUT_NAME "${libname}")
-    set_target_properties(${libname} PROPERTIES PREFIX "lib")
-    set_target_properties(${libname} PROPERTIES CLEAN_DIRECT_OUTPUT 1)
-    add_dependencies(${libname} lcmgen_c)
-
-    #    add_library("${libname}-static" STATIC ${_lcmtypes_c_files})
-    #    set_source_files_properties(${_lcmtypes_c_files} PROPERTIES COMPILE_FLAGS "-I${PROJECT_SOURCE_DIR}/lcmtypes/c")
-    #    set_target_properties("${libname}-static" PROPERTIES OUTPUT_NAME "${libname}")
-    #    set_target_properties("${libname}-static" PROPERTIES PREFIX "lib")
-    #    set_target_properties("${libname}-static" PROPERTIES CLEAN_DIRECT_OUTPUT 1)
-    #    add_dependencies("${libname}-static" lcmgen_c)
-
-    # XXX don't build a shared library, as it makes using 3rd-party/external
-    # LCM types awkward (linker will try to link external symbols at library link time, 
-    # rather than executable link time)
-
-    #    # aggregate into a shared library
-    #    add_library(${libname} SHARED ${_lcmtypes_c_files})
-    #    set_target_properties("${libname}" PROPERTIES CLEAN_DIRECT_OUTPUT 1)
-    #    add_dependencies("${libname}" lcmgen_c)
-    #    target_link_libraries(${libname} ${LCM_LDFLAGS})
-
-    # create a header file aggregating all of the autogenerated .h files
-    set(__agg_h_fname "${_lcmtypes_c_dir}/${agg_h_bname}")
-    file(WRITE ${__agg_h_fname}
-        "#ifndef __lcmtypes_${__sanitized_project_name}_h__\n"
-        "#define __lcmtypes_${__sanitized_project_name}_h__\n\n")
-    foreach(h_file ${_lcmtypes_h_files})
-        file(RELATIVE_PATH __tmp_path ${_lcmtypes_c_dir} ${h_file})
-        file(APPEND ${__agg_h_fname} "#include \"${__tmp_path}\"\n")
-    endforeach()
-    file(APPEND ${__agg_h_fname} "\n#endif\n")
-    list(APPEND _lcmtypes_h_files ${__agg_h_fname})
-    unset(__sanitized_project_name)
-    unset(__agg_h_fname)
-
-    # make header files and libraries public
-    pods_install_libraries(${libname})
-    pods_install_headers(${_lcmtypes_h_files} DESTINATION lcmtypes)
-
-    # set some compilation variables
-    set(LCMTYPES_LIBS ${libname} PARENT_SCOPE)
-
-    # create a pkg-config file
-  	pods_install_pkg_config_file(${libname}
-    	CFLAGS
-    	DESCRIPTION "LCM types for ${PROJECT_NAME}"
-        LIBS -l${libname}
-    	REQUIRES lcm
-    	VERSION 0.0.0)
-  
-    lcmtypes_add_clean_dir("${PROJECT_SOURCE_DIR}/lcmtypes/c")
-endfunction()
-
-function(lcmtypes_build_cpp)
-    lcmtypes_get_types(_lcmtypes ${ARGV})
-    list(LENGTH _lcmtypes _num_lcmtypes)
-    if(_num_lcmtypes EQUAL 0)
-        return()
-    endif()
-
-    string(REGEX REPLACE "[^a-zA-Z0-9]" "_" __sanitized_project_name "${PROJECT_NAME}")
-
-    # set some defaults
-
-    # header file that includes all other generated header files
-    set(agg_hpp_bname "${__sanitized_project_name}.hpp")
-
-    # allow defaults to be overriden by function parameters
-    set(modewords CPP_AGGREGATE_HEADER)
-    set(curmode "")
-    foreach(word ${ARGV})
-        list(FIND modewords ${word} mode_index)
-        if(${mode_index} GREATER -1)
-            set(curmode ${word})
-        elseif(curmode STREQUAL CPP_AGGREGATE_HEADER)
-            set(agg_hpp_bname "${word}")
-            set(curmode "")
-        endif()
-    endforeach()
-
-    # generate CPP bindings for LCM types
-    set(_lcmtypes_cpp_dir ${PROJECT_SOURCE_DIR}/lcmtypes/cpp/lcmtypes)
-
-    # blow away any existing auto-generated files.
-    file(REMOVE_RECURSE ${_lcmtypes_cpp_dir})
-
-    # run lcm-gen now
-    execute_process(COMMAND mkdir -p ${_lcmtypes_cpp_dir})
-    lcmgen(--lazy --cpp --cpp-hpath ${_lcmtypes_cpp_dir} --cpp-include lcmtypes ${_lcmtypes})
-
-    # run lcm-gen at compile time
-    add_custom_target(lcmgen_cpp ALL 
-        COMMAND sh -c '[ -d ${_lcmtypes_cpp_dir} ] || mkdir -p ${_lcmtypes_cpp_dir}'
-        COMMAND sh -c '${LCM_GEN_EXECUTABLE} --lazy --cpp  --cpp-hpath ${_lcmtypes_cpp_dir} --cpp-include lcmtypes ${_lcmtypes}')
-
-    # get a list of all generated .hpp files
-    file(GLOB_RECURSE _lcmtypes_hpp_files  ${_lcmtypes_cpp_dir}/*.hpp)
-    
-    include_directories(BEFORE ${PROJECT_SOURCE_DIR}/lcmtypes/cpp) #TODO: don't think this is necessary
-    include_directories(${LCM_INCLUDE_DIRS})
-
-    # create a header file aggregating all of the autogenerated .hpp files
-    set(__agg_hpp_fname "${_lcmtypes_cpp_dir}/${agg_hpp_bname}")
-    file(WRITE ${__agg_hpp_fname}
-        "#ifndef __lcmtypes_${__sanitized_project_name}_hpp__\n"
-        "#define __lcmtypes_${__sanitized_project_name}_hpp__\n\n")
-    foreach(hpp_file ${_lcmtypes_hpp_files})
-        file(RELATIVE_PATH __tmp_path ${_lcmtypes_cpp_dir} ${hpp_file})
-        file(APPEND ${__agg_hpp_fname} "#include \"${__tmp_path}\"\n")
-        get_filename_component(__tmp_dir ${__tmp_path} PATH)
-        pods_install_headers(${hpp_file} DESTINATION lcmtypes/${__tmp_dir})
-    endforeach()
-    file(APPEND ${__agg_hpp_fname} "\n#endif\n")
-    pods_install_headers(${__agg_hpp_fname} DESTINATION lcmtypes)
-    unset(__sanitized_project_name)
-    unset(__agg_hpp_fname)
-
- 
-
-    lcmtypes_add_clean_dir("${PROJECT_SOURCE_DIR}/lcmtypes/cpp")
-endfunction()
-
-function(lcmtypes_build_java)
-    lcmtypes_get_types(_lcmtypes ${ARGV})
-    list(LENGTH _lcmtypes _num_lcmtypes)
-    if(_num_lcmtypes EQUAL 0)
-        return()
-    endif()
-
-    # do we have Java?
-    find_package(Java)
-    if(JAVA_COMPILE STREQUAL JAVA_COMPILE-NOTFOUND OR
-       JAVA_ARCHIVE STREQUAL JAVA_ARCHIVE-NOTFOUND)
-        message(STATUS "Not building Java LCM type bindings (Can't find Java)")
-        return()
-    endif()
-
-    # do we have LCM java bindings?  where is lcm.jar?
-    execute_process(COMMAND pkg-config --variable=classpath lcm-java OUTPUT_VARIABLE LCM_JAR_FILE)
-    if(NOT LCM_JAR_FILE)
-        message(STATUS "Not building Java LCM type bindings (Can't find lcm.jar)")
-        return()
-    endif()
-    string(STRIP ${LCM_JAR_FILE} LCM_JAR_FILE)
-    set(LCMTYPES_JAR ${CMAKE_CURRENT_BINARY_DIR}/lcmtypes_${PROJECT_NAME}.jar)
-
-    # generate Java bindings for LCM types
-    set(_lcmtypes_java_dir ${PROJECT_SOURCE_DIR}/lcmtypes/java)
-    set(auto_manage_files YES)
-
-    set(modewords JAVA_DEST_DIR)
-    set(curmode "")
-    foreach(word ${ARGV})
-        list(FIND modewords ${word} mode_index)
-        if(${mode_index} GREATER -1)
-            set(curmode ${word})
-        elseif(curmode STREQUAL JAVA_DEST_DIR)
-            set(_lcmtypes_java_dir "${word}")
-            set(auto_manage_files NO)
-            set(curmode "")
-        endif()
-    endforeach()
-
-    # blow away any existing auto-generated files?
-    if(auto_manage_files)
-        file(REMOVE_RECURSE ${_lcmtypes_java_dir})
-    endif()
-
-    # run lcm-gen now
-    execute_process(COMMAND mkdir -p ${_lcmtypes_java_dir})
-    lcmgen(--lazy -j ${_lcmtypes} --jpath ${_lcmtypes_java_dir})
-
-    # run lcm-gen at compile time
-    add_custom_target(lcmgen_java ALL
-        COMMAND sh -c '[ -d ${_lcmtypes_java_dir} ] || mkdir -p ${_lcmtypes_java_dir}'
-        COMMAND sh -c '${LCM_GEN_EXECUTABLE} --lazy -j ${_lcmtypes} --jpath ${_lcmtypes_java_dir}')
-
-    if(NOT auto_manage_files)
-        return()
-    endif()
-
-    # get a list of all generated .java files
-    file(GLOB_RECURSE _lcmtypes_java_files ${_lcmtypes_java_dir}/*.java)
-
-    set(java_classpath ${_lcmtypes_java_dir}:${LCM_JAR_FILE})
-
-    # search for lcmtypes_*.jar files in well-known places and add them to the
-    # classpath
-    foreach(pfx ${CMAKE_INSTALL_PREFIX} /usr /usr/local)
-        file(GLOB_RECURSE jarfiles ${pfx}/share/java/lcmtypes_*.jar)
-        foreach(jarfile ${jarfiles})
-            set(java_classpath ${java_classpath}:${jarfile})
-            #            message("found ${jarfile}")
-        endforeach()
-    endforeach()
-
-    # convert the list of .java filenames to a list of .class filenames
-    foreach(javafile ${_lcmtypes_java_files})
-        string(REPLACE .java .class __tmp_class_fname ${javafile})
-        #        add_custom_command(OUTPUT ${__tmp_class_fname} COMMAND
-        #            ${JAVA_COMPILE} -source 6 -target 6 -cp ${_lcmtypes_java_dir}:${lcm_jar} ${javafile} VERBATIM DEPENDS ${javafile})
-        list(APPEND _lcmtypes_class_files ${__tmp_class_fname})
-        unset(__tmp_class_fname)
-    endforeach()
-
-    # add a rule to build the .class files from from the .java files
-    add_custom_command(OUTPUT ${_lcmtypes_class_files} COMMAND 
-        ${JAVA_COMPILE} -source 6 -target 6 -cp ${java_classpath} ${_lcmtypes_java_files} 
-        DEPENDS ${_lcmtypes_java_files} VERBATIM)
-
-    # add a rule to build a .jar file from the .class files
-    add_custom_command(OUTPUT lcmtypes_${PROJECT_NAME}.jar COMMAND
-        ${JAVA_ARCHIVE} cf ${LCMTYPES_JAR} -C ${_lcmtypes_java_dir} . DEPENDS ${_lcmtypes_class_files} VERBATIM)
-    add_custom_target(lcmtypes_${PROJECT_NAME}_jar ALL DEPENDS ${LCMTYPES_JAR})
-
-    add_dependencies(lcmtypes_${PROJECT_NAME}_jar lcmgen_java)
-
-    install(FILES ${LCMTYPES_JAR} DESTINATION share/java)
-    set(LCMTYPES_JAR ${LCMTYPES_JAR} PARENT_SCOPE)
-
-    pods_install_pkg_config_file(lcmtypes_${PROJECT_NAME}-java
-    	CLASSPATH lcmtypes_${PROJECT_NAME}
-    	DESCRIPTION "LCM type java bindings for ${PROJECT_NAME}"
-    	REQUIRES lcm-java
-    	VERSION 0.0.0)
-
-    lcmtypes_add_clean_dir(${_lcmtypes_java_dir})
-endfunction()
-
-function(lcmtypes_build_python)
-    lcmtypes_get_types(_lcmtypes ${ARGV})
-    list(LENGTH _lcmtypes _num_lcmtypes)
-    if(_num_lcmtypes EQUAL 0)
-        return()
-    endif()
-
-    find_package(PythonInterp)
-    if(NOT PYTHONINTERP_FOUND)
-        message(STATUS "Not building Python LCM type bindings (Can't find Python)")
-        return()
-    endif()
-
-    set(_lcmtypes_python_dir ${PROJECT_SOURCE_DIR}/lcmtypes/python)
-    set(auto_manage_files YES)
-
-    set(modewords PY_DEST_DIR)
-    set(curmode "")
-    foreach(word ${ARGV})
-        list(FIND modewords ${word} mode_index)
-        if(${mode_index} GREATER -1)
-            set(curmode ${word})
-        elseif(curmode STREQUAL PY_DEST_DIR)
-            set(_lcmtypes_python_dir "${word}")
-            set(auto_manage_files NO)
-            set(curmode "")
-        endif()
-    endforeach()
-
-    # purge existing files?
-    if(auto_manage_files)
-        file(REMOVE_RECURSE ${_lcmtypes_python_dir})
-    endif()
-
-    # generate Python bindings for LCM types
-    execute_process(COMMAND mkdir -p ${_lcmtypes_python_dir})
-    execute_process(COMMAND ${LCM_GEN_EXECUTABLE} --lazy -p ${_lcmtypes} --ppath ${_lcmtypes_python_dir})
-
-    # run lcm-gen at compile time
-    add_custom_target(lcmgen_python ALL
-        COMMAND sh -c '${LCM_GEN_EXECUTABLE} --lazy -p ${_lcmtypes} --ppath ${_lcmtypes_python_dir}')
-
-    if(NOT auto_manage_files)
-        return()
-    endif()
-    
-    pods_install_python_packages(${_lcmtypes_python_dir})
-
-    lcmtypes_add_clean_dir(${_lcmtypes_python_dir})
-endfunction()
-
-function(lcmtypes_install_types)
-    lcmtypes_get_types(_lcmtypes ${ARGV})
-    list(LENGTH _lcmtypes _num_lcmtypes)
-    if(_num_lcmtypes EQUAL 0)
-        return()
-    endif()
-
-    install(FILES ${_lcmtypes} DESTINATION share/lcmtypes)
-endfunction()
-
-macro(lcmtypes_build)
-    lcmtypes_build_c(${ARGV})
-    lcmtypes_build_cpp(${ARGV})
-
-    lcmtypes_build_java(${ARGV})
-    lcmtypes_build_python(${ARGV})
-    lcmtypes_install_types(${ARGV})
-endmacro()
