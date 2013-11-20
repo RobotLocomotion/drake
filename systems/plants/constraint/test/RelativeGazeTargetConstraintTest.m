@@ -1,8 +1,8 @@
-function RelativeGazeTargetConstraintTest(varargin)
+function RelativeGazeTargetConstraintTest()
 % Andres would update the RelativeGazeTargetConstraint
   r = RigidBodyManipulator(strcat(getDrakePath(),'/examples/PR2/pr2.urdf'));
   q_nom = zeros(r.getNumDOF(),1);
-  constraintTester('RelativeGazeTargetConstraintTest', r, @makeCon, @(r) q_nom, @(r) q_nom, varargin{:});
+  constraintTester('RelativeGazeTargetConstraintTest', r, @makeCon, @(r) q_nom, @(r) q_nom, [],[],[],[],false);
 end
 
 function con = makeCon(r)
