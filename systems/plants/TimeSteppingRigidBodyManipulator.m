@@ -13,6 +13,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     timestep
     twoD=false
     position_control=false;
+    name={};        % names of the objects in the rigid body system
   end
   
   methods
@@ -98,6 +99,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end        
       model.manip = model.manip.compile();
       warning(S);
+      model.name = model.manip.name;
       
       model = setNumDiscStates(model,model.manip.getNumContStates());
       model = setNumInputs(model,model.manip.getNumInputs());

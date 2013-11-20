@@ -25,7 +25,7 @@ classdef WorldPositionInFrameConstraint < WorldPositionConstraint
   
   methods
     function obj = WorldPositionInFrameConstraint(robot,body,pts,o_T_f,lb,ub,tspan)
-      if(nargin == 5)
+      if(nargin < 7)
         tspan = [-inf,inf];
       end
       ptr = constructPtrWorldPositionInFrameConstraintmex(robot.getMexModelPtr,body,pts,o_T_f,lb,ub,tspan);

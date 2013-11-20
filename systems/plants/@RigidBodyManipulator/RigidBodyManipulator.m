@@ -750,6 +750,22 @@ classdef RigidBodyManipulator < Manipulator
       drawGraph(A,node_names);
     end
     
+    function drawLCMGLAxes(model,lcmgl,q,body_indices)
+      if nargin < 4
+        body_indices = 1:model.getNumBodies();
+      end
+      kinsol = doKinematics(model,q,false,false);
+      for i=body_indices
+        applyTransform(lcmgl,kinsol.T{i});
+        lcmgl.glDrawAxes();
+        applyTransform(lcmgl,inv(kinsol.T{i}));
+      end
+      function applyTransform(lcmgl,T)
+        a = rotmat2axis(T(1:3,1:3));
+        lcmgl.glTranslated(T(1,4),T(2,4),T(3,4));
+        lcmgl.glRotated(a(4)*180/pi,a(1),a(2),a(3));
+      end
+    end
         
     function m = getMass(model)
       % todo: write total_mass to class and simply return it instead of
