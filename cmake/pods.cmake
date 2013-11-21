@@ -55,10 +55,9 @@ function(pods_install_headers)
     foreach(header ${ARGV})
         get_filename_component(_header_name ${header} NAME)
         configure_file(${header} ${INCLUDE_OUTPUT_PATH}/${dest_dir}/${_header_name} COPYONLY)
-	endforeach(header)
-	#mark them to be installed
-	install(FILES ${ARGV} DESTINATION include/${dest_dir})
-
+    endforeach(header)
+    #mark them to be installed
+    install(FILES ${ARGV} DESTINATION include/${dest_dir})
 
 endfunction(pods_install_headers)
 
