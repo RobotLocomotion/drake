@@ -61,4 +61,12 @@ for i = 1:1000
 end
 disp('axis to rotmat is correct');
 
+
+% test quaternion gradient
+rpy = randn(3,1);
+rotmat = rpy2rotmat(rpy);
+options.grad_method = {'user','numerical'};
+options.tol = 1e-6;
+[q,dq] = geval(@rotmat2quat,rotmat,options);
+display('rotmat to quaternion gradient is corrent');
 end

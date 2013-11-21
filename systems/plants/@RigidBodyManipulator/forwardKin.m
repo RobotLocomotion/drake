@@ -133,13 +133,15 @@ else
         idx = sub2ind(size(kinsol.dTdq{body_ind}),(3-1)*nq+(1:nq),3*ones(1,nq));
         dR33_dq = kinsol.dTdq{body_ind}(idx);
         
-        dqwdq = (dR11_dq+dR22_dq+dR33_dq)/(4*sqrt(1+R(1,1)+R(2,2)+R(3,3)));
-        qw = x(4,1); 
-        wsquare4 = 4*qw^2;
-        dqxdq = ((dR32_dq-dR23_dq)*qw-(R(3,2)-R(2,3))*dqwdq)/wsquare4;
-        dqydq = ((dR13_dq-dR31_dq)*qw-(R(1,3)-R(3,1))*dqwdq)/wsquare4;
-        dqzdq = ((dR21_dq-dR12_dq)*qw-(R(2,1)-R(1,2))*dqwdq)/wsquare4;
-        Jq = [dqwdq;dqxdq;dqydq;dqzdq];
+        [~,dquatdR] = rotmat2quat(kinsol.T{body_ind}(1:3,1:3));
+        Jq = dquatdR*[dR11_dq;dR21_dq;dR31_dq;dR12_dq;dR22_dq;dR32_dq;dR13_dq;dR23_dq;dR33_dq];
+%         dqwdq = (dR11_dq+dR22_dq+dR33_dq)/(4*sqrt(1+R(1,1)+R(2,2)+R(3,3)));
+%         qw = x(4,1); 
+%         wsquare4 = 4*qw^2;
+%         dqxdq = ((dR32_dq-dR23_dq)*qw-(R(3,2)-R(2,3))*dqwdq)/wsquare4;
+%         dqydq = ((dR13_dq-dR31_dq)*qw-(R(1,3)-R(3,1))*dqwdq)/wsquare4;
+%         dqzdq = ((dR21_dq-dR12_dq)*qw-(R(2,1)-R(1,2))*dqwdq)/wsquare4;
+%         Jq = [dqwdq;dqxdq;dqydq;dqzdq];
         
         Jtmp = [Jx;Jq];
         Jrow_ind = reshape([reshape(1:3*m,3,m);bsxfun(@times,3*m+(1:4)',ones(1,m))],[],1);
