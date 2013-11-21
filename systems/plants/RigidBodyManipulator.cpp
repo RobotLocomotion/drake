@@ -1258,17 +1258,17 @@ void RigidBodyManipulator::forwardJac(const int body_ind, const MatrixBase<Deriv
 		    double s = 2*sqrt(1+R(1,1)-R(0,0)-R(2,2));
 		    VectorXd dsdq = (dR11_dq-dR00_dq-dR22_dq)/(s/2);
 		    Jq.block(0,0,1,num_dof) = (((dR02_dq-dR20_dq)*s-(R(0,2)-R(2,0))*dsdq).transpose())/(s*s);
-		    Jq.block(1,0,1,num_dof) = (((dR01_dq+dR10_dq)*s-(R(0,1)-R(1,0))*dsdq).transpose())/(s*s);
+		    Jq.block(1,0,1,num_dof) = (((dR01_dq+dR10_dq)*s-(R(0,1)+R(1,0))*dsdq).transpose())/(s*s);
 		    Jq.block(2,0,1,num_dof) = 0.25*dsdq.transpose();
-		    Jq.block(3,0,1,num_dof) = (((dR12_dq+dR21_dq)*s-(R(1,2)-R(2,1))*dsdq).transpose())/(s*s);
+		    Jq.block(3,0,1,num_dof) = (((dR12_dq+dR21_dq)*s-(R(1,2)+R(2,1))*dsdq).transpose())/(s*s);
 	    }
 	    else
 	    {
 		    double s = 2*sqrt(1+R(2,2)-R(0,0)-R(1,1));
 		    VectorXd dsdq = (dR22_dq-dR00_dq-dR11_dq)/(s/2);
-		    Jq.block(0,0,1,num_dof) = (((dR21_dq-dR12_dq)*s-(R(2,1)-R(1,2))*dsdq).transpose())/(s*s);
-		    Jq.block(1,0,1,num_dof) = (((dR02_dq+dR20_dq)*s-(R(0,2)-R(2,0))*dsdq).transpose())/(s*s);
-		    Jq.block(2,0,1,num_dof) = (((dR12_dq+dR21_dq)*s-(R(1,2)-R(2,1))*dsdq).transpose())/(s*s);
+		    Jq.block(0,0,1,num_dof) = (((dR10_dq-dR01_dq)*s-(R(1,0)-R(0,1))*dsdq).transpose())/(s*s);
+		    Jq.block(1,0,1,num_dof) = (((dR02_dq+dR20_dq)*s-(R(0,2)+R(2,0))*dsdq).transpose())/(s*s);
+		    Jq.block(2,0,1,num_dof) = (((dR12_dq+dR21_dq)*s-(R(1,2)+R(2,1))*dsdq).transpose())/(s*s);
 		    Jq.block(3,0,1,num_dof) = 0.25*dsdq.transpose();
 	    }
 		
