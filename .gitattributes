@@ -28,6 +28,7 @@ cmake/add_matlab_unit_tests.pl -text
 cmake/lcmtypes.cmake -text
 cmake/matlab_pods.cmake -text
 cmake/mex.cmake -text
+cmake/new_lcmtypes.cmake -text
 cmake/pods.cmake -text
 /configure.m -text
 doc/Doxyfile -text

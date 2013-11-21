@@ -1,4 +1,4 @@
-function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,user_options,objFun)
+function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,user_options,objFun,use_mex_kinematics)
 % @param testName   string
 % @param r          RigidBodyManipulator object 
 % @param makeCon    Function handle of the form con = makeCon(r), where con
@@ -7,6 +7,9 @@ function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,use
 % @param makeQseed  Function handle of the form q_seed = makeQseed(r)
 % @param n          Number of test iterations @default 10
 
+  if (nargin < 10) || isempty(use_mex_kinematics)
+    use_mex_kinematics = true;
+  end
   if (nargin < 9) || isempty(objFun)
     objFun = @defaultObjFun;
   end
@@ -40,7 +43,7 @@ function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,use
     % We set TolFun to a large value below so that
     % we aren't really trying for optimality.
     
-    problem.nonlcon = @(q) mycon(r,q,con,lb,ub);
+    problem.nonlcon = @(q) mycon(r,q,con,lb,ub,use_mex_kinematics);
     %c = problem.nonlcon(randn(r.getNumDOF(),1));  % call it once to make sure it doesn't crash
 
     problem.options = optimset(problem.options,'OutputFcn', ...
@@ -80,9 +83,9 @@ function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,use
 
 end
 
-function [c,ceq,GC,GCeq] = mycon(r,q,con,lb,ub)
+function [c,ceq,GC,GCeq] = mycon(r,q,con,lb,ub,use_mex_kinematics)
   ceq=[]; GCeq=[];
-  kinsol = doKinematics(r,q);
+  kinsol = doKinematics(r,q,false,use_mex_kinematics);
   [c,GC] = eval(con,0,kinsol);
   c = max([lb-c;c-ub],-1);
   GC = [-GC',GC'];
