@@ -140,17 +140,15 @@ macro(lcmtypes_build_java)
     find_package(Java REQUIRED)
     include(UseJava)
 
-    execute_process(COMMAND pkg-config --variable=classpath lcm-java OUTPUT_VARIABLE LCM_JAR_FILE OUTPUT_STRIP_TRAILING_WHITESPACE)
-    if(NOT LCM_JAR_FILE)
-        message(STATUS "Not building Java LCM type bindings (Can't find lcm.jar)")
-        return()
-    endif()
-    set(CMAKE_JAVA_INCLUDE_PATH ${LCM_JAR_FILE})
+    pods_use_pkg_config_classpath(lcm-java)
 
     add_jar(${LCMTYPES_JARNAME} ${LCMTYPES_JAVA_SOURCEFILES})
 
-    #  todo: add install rules
-
+    pods_install_pkg_config_file(lcmtypes_${PROJECT_NAME}-java
+    	CLASSPATH ${LCMTYPES_JARNAME}
+    	DESCRIPTION "LCM type java bindings for ${PROJECT_NAME}"
+    	REQUIRES lcm-java
+    	VERSION 0.0.0)
   endif()
 endmacro()
 
