@@ -3,19 +3,6 @@
 #
 # Defines the following macros/functions:
 #
-#     lcmtypes_setup([C_AGGREGATE_HEADER header_fname] 
-#                    [C_LIBNAME lib_name]
-#		     [CPP_AGGREGATE_HEADER header_fname]
-#                    [JARNAME jar_name]
-#                    )
-#
-#          After invoking this macro, the following variables will be set:
-#             LCMTYPES_INCLUDE_DIR
-#             LCMTYPES_LIBS
-#             LCMTYPES_JAR
-#
-#     lcmtypes_build()  # this must be called to finish
-#
 #     add_lcmtype(lcmfile)
 #          which generates build rules for C,CPP, Java (if java is available), and 
 #	   Python (if python is available) by calling the methods below
@@ -24,6 +11,24 @@
 #     add_cpp_lcmtype(lcmfile)
 #     add_java_lcmtype(lcmfile)
 #     add_python_lcmtype(lcmfile)
+#
+#  The following should be called AFTER all add_lcmtype calls:
+#
+#     lcmtypes_build([C_AGGREGATE_HEADER header_fname] 
+#                    [C_LIBNAME lib_name]
+#		     [CPP_AGGREGATE_HEADER header_fname]
+#                    [JARNAME jar_name])
+#
+#          In addition to any files added via add_lcm calls, this function will 
+#          search the variable ${LCMTYPES_SEARCHDIR} and automatically call
+#          add_lcm() for all .lcm files in that directory.  For backwards 
+#          compatibility, the default value is 
+#             LCMTYPES_SEARCHDIR=CMAKE_SOURCE_DIR/lcmtypes
+#
+#          After invoking this macro, the following variables will be set:
+#             LCMTYPES_INCLUDE_DIR
+#             LCMTYPES_LIBS
+#             LCMTYPES_JAR
 #    
 # C
 # ==
@@ -72,67 +77,93 @@
 
 cmake_minimum_required(VERSION 2.8.3) # for the CMakeParseArguments macro 
 
-find_package(Java REQUIRED)
-include(UseJava)
-
-macro(lcmtypes_setup)
-  find_package(PkgConfig REQUIRED)
-  pkg_check_modules(LCM REQUIRED lcm)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LCM REQUIRED lcm)
     
-  #find lcm-gen (it may be in the install path)
-  find_program(LCM_GEN_EXECUTABLE lcm-gen ${EXECUTABLE_OUTPUT_PATH} ${EXECUTABLE_INSTALL_PATH})
+#find lcm-gen (it may be in the install path)
+find_program(LCM_GEN_EXECUTABLE lcm-gen ${EXECUTABLE_OUTPUT_PATH} ${EXECUTABLE_INSTALL_PATH})
   
-  if (NOT LCM_GEN_EXECUTABLE)
-    message(FATAL_ERROR "lcm-gen not found!\n")
-    return()
-  endif()
+if (NOT LCM_GEN_EXECUTABLE)
+  message(FATAL_ERROR "lcm-gen not found!\n")
+  return()
+endif()
 
-  cmake_parse_arguments("LCMTYPES" "" "C_AGGREGATE_HEADER;C_LIBNAME;CPP_AGGREGATE_HEADER;JARNAME" "" ${ARGV})
+set(LCMTYPES_DIR ${CMAKE_CURRENT_BINARY_DIR}/lcmtypes)
+execute_process(COMMAND mkdir -p ${LCMTYPES_DIR})
 
+set(LCMTYPES_SEARCHDIR ${CMAKE_SOURCE_DIR}/lcmtypes)
+
+macro(lcmtypes_build_c)
+  cmake_parse_arguments("LCMTYPES" "" "C_AGGREGATE_HEADER;C_LIBNAME" "" ${ARGV})
   string(REGEX REPLACE "[^a-zA-Z0-9]" "_" __sanitized_project_name "${PROJECT_NAME}")
 
-  # default values
   if (NOT LCMTYPES_C_AGGREGATE_HEADER)
     set(LCMTYPES_C_AGGREGATE_HEADER "${__sanitized_project_name}.h")
   endif()
   if (NOT LCMTYPES_C_LIBNAME)
     set(LCMTYPES_C_LIBNAME "${__sanitized_project_name}_lcmtypes")
   endif()
-  if (NOT LCMTYPES_CPP_AGGREGATE_HEADER)
-    set(LCMTYPES_C_AGGREGATE_HEADER "${__sanitized_project_name}.hpp")
-  endif()
-  if (NOT LCMTYPES_JARNAME)
-    set(LCMTYPES_JARNAME "${__sanitized_project_name}")
-  endif()
 
-  set(LCMTYPES_DIR ${CMAKE_CURRENT_BINARY_DIR}/lcmtypes)
-  execute_process(COMMAND mkdir -p ${LCMTYPES_DIR})
-
-  set(LCMTYPES_C_SOURCEFILES)
-
-endmacro()
-
-macro(lcmtypes_build)
-
-#  add_custom_target(${LCMTYPES_DIR}/${LCMTYPES_C_AGGREGATE_HEADER})
-   
   if (LCMTYPES_C_SOURCEFILES)
     add_library(${LCMTYPES_C_LIBNAME} ${LCMTYPES_C_SOURCEFILES})
 
     # todo: write aggregate header
+
+    #  todo: add install rules
+  endif()
+endmacro()
+
+macro(lcmtypes_build_cpp)
+  cmake_parse_arguments("LCMTYPES" "" "CPP_AGGREGATE_HEADER" "" ${ARGV})
+  string(REGEX REPLACE "[^a-zA-Z0-9]" "_" __sanitized_project_name "${PROJECT_NAME}")
+
+  if (NOT LCMTYPES_CPP_AGGREGATE_HEADER)
+    set(LCMTYPES_C_AGGREGATE_HEADER "${__sanitized_project_name}.hpp")
   endif()
 
   if (LCMTYPES_CPP_HEADERFILES)
     # todo: write aggregate header
+
+    #  todo: add install rules
+  endif()
+endmacro()
+
+macro(lcmtypes_build_java)
+  cmake_parse_arguments("LCMTYPES" "" "JARNAME" "" ${ARGV})
+  string(REGEX REPLACE "[^a-zA-Z0-9]" "_" __sanitized_project_name "${PROJECT_NAME}")
+
+  if (NOT LCMTYPES_JARNAME)
+    set(LCMTYPES_JARNAME "lcmtypes_${__sanitized_project_name}")
   endif()
 
   if (LCMTYPES_JAVA_SOURCEFILES)
+    find_package(Java REQUIRED)
+    include(UseJava)
+
+    execute_process(COMMAND pkg-config --variable=classpath lcm-java OUTPUT_VARIABLE LCM_JAR_FILE OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(NOT LCM_JAR_FILE)
+        message(STATUS "Not building Java LCM type bindings (Can't find lcm.jar)")
+        return()
+    endif()
+    set(CMAKE_JAVA_INCLUDE_PATH ${LCM_JAR_FILE})
+
     add_jar(${LCMTYPES_JARNAME} ${LCMTYPES_JAVA_SOURCEFILES})
+
+    #  todo: add install rules
+
   endif()
+endmacro()
+
+
+macro(lcmtypes_build)
+
+  lcmtypes_build_c(${ARGV})
+
+  lcmtypes_build_cpp(${ARGV})
+
+  lcmtypes_build_java(${ARGV})
 
 #  todo: handle python
-
-#  todo: add install rules
 
 endmacro()
 
