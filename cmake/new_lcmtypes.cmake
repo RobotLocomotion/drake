@@ -30,10 +30,12 @@
 #             unset(LCMTYPES_SEARCHDIR)
 #          after include(lcmtypes.cmake) and before lcmtypes_build.
 #
-#          After invoking this macro, the following variables will be set:
-#             LCMTYPES_INCLUDE_DIR
-#             LCMTYPES_LIBS
-#             LCMTYPES_JAR
+#          After invoking this macro, the lcmtypes include directory will 
+#          automatically be added, and the target variables will be set:
+#             LCMTYPES_C_TARGET
+#             LCMTYPES_C_LIBRARY
+#             LCMTYPES_CPP_TARGET
+#             LCMTYPES_JAVA_TARGET
 #    
 # C
 # ==
@@ -161,6 +163,9 @@ macro(lcmtypes_build_c)
     unset(__agg_h_fname)
 
   endif()
+
+  set(LCMTYPES_C_TARGET lcmtype_agg_h ${LCMTYPES_C_LIBNAME})
+  set(LCMTYPES_C_LIBRARY ${LCMTYPES_C_LIBNAME})
 endmacro()
 
 macro(lcmtypes_build_cpp)
@@ -203,7 +208,10 @@ macro(lcmtypes_build_cpp)
     install(FILES ${__agg_hpp_fname} DESTINATION lcmtypes)
     unset(__hpp_str)
     unset(__agg_hpp_fname)
+
   endif()
+
+  set(LCMTYPES_CPP_TARGET lcmtype_agg_hpp)
 endmacro()
 
 macro(lcmtypes_build_java)
@@ -235,6 +243,8 @@ macro(lcmtypes_build_java)
     	REQUIRES lcm-java
     	VERSION 0.0.0)
   endif()
+
+  set(LCMTYPES_JAVA_TARGET ${LCMTYPES_JARNAME})
 endmacro()
 
 
