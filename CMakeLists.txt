@@ -35,10 +35,9 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 # set up and build lcm types
-include(cmake/lcmtypes.cmake)
-
-add_subdirectory(lcmtypes)
-
+include(cmake/new_lcmtypes.cmake)
+#add_subdirectory(lcmtypes)
+lcmtypes_build()
 
 # set up matlab build
 include(cmake/mex.cmake)
