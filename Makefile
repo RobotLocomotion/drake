@@ -25,12 +25,11 @@ endif
 
 # force cmake configure if the BUILD_PREFIX doesn't match the cmake cache
 CMAKE_INSTALL_PREFIX=$(shell cd pod-build 2> /dev/null && cmake -L 2> /dev/null | grep CMAKE_INSTALL_PREFIX | cut -d "=" -f2 | tr -d '[:space:]')
+ifneq "$(BUILD_PREFIX)" "$(CMAKE_INSTALL_PREFIX)"
+	OUT:=$(shell echo "\nBUILD_PREFIX $(BUILD_PREFIX) does not match CMAKE cache $(CMAKE_INSTALL_PREFIX).  Forcing configure\n\n"; touch CMakeLists.txt)
+endif
 
 all: pod-build/Makefile
-ifneq "$(BUILD_PREFIX)" "$(CMAKE_INSTALL_PREFIX)"
-	@echo "\nBUILD_PREFIX $(BUILD_PREFIX) does not match CMAKE cache $(CMAKE_INSTALL_PREFIX).  Re-running configure\n\n"
-	$(MAKE) configure
-endif
 	$(MAKE) -C pod-build all install
 
 pod-build/Makefile:
