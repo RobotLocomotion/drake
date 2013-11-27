@@ -71,7 +71,7 @@ mlint	:
 
 test	: all 
 	cmake/add_matlab_unit_tests.pl
-	@cd pod-build && ctest --output-on-failure --timeout 600
+	@cd pod-build && ctest -D ExperimentalTest --output-on-failure --timeout 600
 
 .PHONY: check_prereqs install_prereqs_macports install_prereqs_homebrew install_prereqs_ubuntu
 check_prereqs: 

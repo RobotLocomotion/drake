@@ -82,6 +82,22 @@
 
 cmake_minimum_required(VERSION 2.8.3) # for the CMakeParseArguments macro 
 
+# Policy settings to prevent warnings on 2.6 but ensure proper operation on
+# 2.4.
+if(COMMAND cmake_policy)
+    # Logical target names must be globally unique.
+    cmake_policy(SET CMP0002 OLD)
+    # Libraries linked via full path no longer produce linker search paths.
+    cmake_policy(SET CMP0003 OLD)
+    # Preprocessor definition values are now escaped automatically.
+    cmake_policy(SET CMP0005 OLD)
+    if(POLICY CMP0011)
+        # Included scripts do automatic cmake_policy PUSH and POP.
+        cmake_policy(SET CMP0011 OLD)
+    endif(POLICY CMP0011)
+endif()
+
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(LCM REQUIRED lcm)
     
