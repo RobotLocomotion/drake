@@ -131,5 +131,6 @@ endif()
 
 #set(CMAKE_CTEST_COMMAND "${CMAKE_CTEST_COMMAND} --output-on-failure") # not working
 enable_testing()
+include(CTest)
 
 # Note: use cmake/add_matlab_unit_tests.pl to write ctest scripts (but i advise doing it at test time, not configure time).  - Russ
