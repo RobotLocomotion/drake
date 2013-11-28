@@ -5,7 +5,7 @@
 #include <cstring>
 /* 
  * [num_constraint,constraint_val,dconstraint_val,constraint_name,lower_bound,upper_bound] = testSingleKinCnstmex(kinCnst_ptr,q,t)
- * @param kinCnst_ptr           A pointer to a KinematicConstraint object
+ * @param kinCnst_ptr           A pointer to a SingleTimeKinematicConstraint object
  * @param q                     A nqx1 double vector
  * @param t                     A double array, the time moments to evaluate constraint value, bounds and name. 
  * @retval num_constraint       The number of constraint active at time t
@@ -42,8 +42,17 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   cnst->bounds(t_ptr,n_breaks,lb,ub);
   std::vector<std::string> cnst_names;
   cnst->name(t_ptr,n_breaks,cnst_names);
+  int retvec_size;
+  if(num_cnst == 0)
+  {
+    retvec_size = 0;
+  }
+  else
+  {
+    retvec_size = 1;
+  }
   plhs[0] = mxCreateDoubleScalar((double) num_cnst);
-  plhs[1] = mxCreateDoubleMatrix(num_cnst,1,mxREAL);
+  plhs[1] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
   memcpy(mxGetPr(plhs[1]),c.data(),sizeof(double)*num_cnst);
   plhs[2] = mxCreateDoubleMatrix(num_cnst,nq*n_breaks,mxREAL);
   memcpy(mxGetPr(plhs[2]),dc.data(),sizeof(double)*num_cnst*nq*n_breaks);
@@ -56,8 +65,8 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
     name_ptr = mxCreateString(cnst_names[i].c_str());
     mxSetCell(plhs[3],i,name_ptr);
   }
-  plhs[4] = mxCreateDoubleMatrix(num_cnst,1,mxREAL);
-  plhs[5] = mxCreateDoubleMatrix(num_cnst,1,mxREAL);
+  plhs[4] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
+  plhs[5] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
   memcpy(mxGetPr(plhs[4]),lb.data(),sizeof(double)*num_cnst);
   memcpy(mxGetPr(plhs[5]),ub.data(),sizeof(double)*num_cnst);
   delete[] t_ptr;
