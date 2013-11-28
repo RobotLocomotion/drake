@@ -452,22 +452,22 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   for(int i = 0;i<num_constraint;i++)
   {
     RigidBodyConstraint* constraint = (RigidBodyConstraint*) getDrakeMexPointer(prhs[i+5]);
-    DrakeConstraintType constraint_type = constraint->getType();
-    if(constraint_type == DrakeConstraintType::SingleTimeKinematicConstraintType)
+    DrakeRigidBodyConstraint::Type constraint_type = constraint->getType();
+    if(constraint_type == DrakeRigidBodyConstraint::Type::SingleTimeKinematicConstraintType)
     {
       st_kc_array[num_st_kc] = (SingleTimeKinematicConstraint*) constraint;
       num_st_kc++;
     }
-    else if(constraint_type == DrakeConstraintType::MultipleTimeKinematicConstraintType)
+    else if(constraint_type == DrakeRigidBodyConstraint::Type::MultipleTimeKinematicConstraintType)
     {
       mt_kc_array[num_mt_kc] = (MultipleTimeKinematicConstraint*) constraint;
       num_mt_kc++;
     }
-    else if(constraint_type == DrakeConstraintType::QuasiStaticConstraintType)
+    else if(constraint_type == DrakeRigidBodyConstraint::Type::QuasiStaticConstraintType)
     {
       qsc_ptr = (QuasiStaticConstraint*) constraint;
     }
-    else if(constraint_type == DrakeConstraintType::PostureConstraintType)
+    else if(constraint_type == DrakeRigidBodyConstraint::Type::PostureConstraintType)
     {
       double* joint_min = new double[nq];
       double* joint_max = new double[nq];
@@ -488,7 +488,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       delete[] joint_min;
       delete[] joint_max;
     }
-    else if(constraint_type == DrakeConstraintType::MultipleTimeLinearPostureConstraintType)
+    else if(constraint_type == DrakeRigidBodyConstraint::Type::MultipleTimeLinearPostureConstraintType)
     {
       mt_lpc_array[num_mt_lpc] = (MultipleTimeLinearPostureConstraint*) constraint;
       num_mt_lpc++;
