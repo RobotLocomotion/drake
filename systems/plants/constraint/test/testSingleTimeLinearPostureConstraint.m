@@ -34,6 +34,15 @@ t = [];
 num_cnst = stlpc.getNumConstraint(t);
 valuecheck(num_cnst,4);
 testSingleTimeLinearPostureConstraint_userfun(stlpc,q,t);
+display('Check constraint value');
+q(l_leg_kny) = q(r_leg_kny);
+q(l_leg_hpy) = q(r_leg_hpy);
+q(l_leg_aky) = q(r_leg_aky);
+q(l_leg_hpz) = q(r_leg_hpz)+0.05*pi;
+c_val = stlpc.feval(t,q);
+if(any(c_val>ub+1e-10) || any(c_val<lb-1e-10))
+  error('constraint value is incorrect');
+end
 end
 
 function testSingleTimeLinearPostureConstraint_userfun(stlpc,q,t)
