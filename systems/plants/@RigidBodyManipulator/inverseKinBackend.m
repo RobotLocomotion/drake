@@ -153,17 +153,18 @@ else
         Cname_cell{i} = [Cname_cell{i};stkc.name(ti)];
       end
     end
+    stlpc_nc = zeros(1,num_stlpc);
     for j = 1:length(stlpc_cell)
       stlpc = stlpc_cell{j};
       [lb,ub] = stlpc.bounds(ti);
       Cmin_cell{i} = [Cmin_cell{i};lb];
       Cmax_cell{i} = [Cmax_cell{i};ub];
-      nc = stlpc.getNumConstraint(ti);
+      stlpc_nc(j) = stlpc.getNumConstraint(ti);
       [iAfun,jAvar,A] = stlpc.geval(ti);
       iAfun_cell{i} = [iAfun_cell{i};nc_array(i)+iAfun];
       jAvar_cell{i} = [jAvar_cell{i};jAvar];
       A_cell{i} = [A_cell{i};A];
-      nc_array(i) = nc_array(i)+nc;
+      nc_array(i) = nc_array(i)+stlpc_nc(j);
       nA_array(i) = nA_array(i)+length(A);
       if(debug_mode)
         Cname_cell{i} = [Cname_cell{i};stlpc.name(ti)];
@@ -210,7 +211,7 @@ else
       if(any(xlow>xupp))
         error('Drake:inverseKinBackend: The lower bound of the decision variable is larger than the upper bound, possibly check the conflicting posture constraint');
       end
-      SNOPT_USERFUN = @(w) IK_userfun(obj,w,ti,st_kc_cell,stlpc_cell,q_nom(:,i),Q,nq,nc_array(i),nG_array(i),qsc);
+      SNOPT_USERFUN = @(w) IK_userfun(obj,w,ti,st_kc_cell,stlpc_nc,q_nom(:,i),Q,nq,nc_array(i),nG_array(i),qsc);
       snseti('Major iterations limit',ikoptions.SNOPT_MajorIterationsLimit);
       snseti('Iterations limit',ikoptions.SNOPT_IterationsLimit);
       snseti('Superbasics limit',ikoptions.SNOPT_SuperbasicsLimit);
@@ -594,10 +595,11 @@ else
     else
       w0 = [w0;(ikoptions.qd0_lb+ikoptions.qd0_ub)/2;(ikoptions.qdf_ub+ikoptions.qdf_lb)/2];
     end
-    SNOPT_USERFUN = @(w) IKtraj_userfun(obj,w,t,t_inbetween,t_samples,st_kc_cell,stlpc_cell,mt_kc_cell,q_nom,...
+    SNOPT_USERFUN = @(w) IKtraj_userfun(obj,w,t,t_inbetween,t_samples,st_kc_cell,mt_kc_cell,q_nom,...
       Qa,Qv,Q,velocity_mat,velocity_mat_qd0,velocity_mat_qdf, accel_mat,accel_mat_qd0,accel_mat_qdf,...
       dqInbetweendqknot,dqInbetweendqd0,dqInbetweendqdf,...
       nq,nT,num_inbetween_tSamples,num_qfree,num_qdotfree,nc_array,nG_array,nf_cum,nG_cum,...
+      stlpc_nc,mtlpc_nc,...
       qfree_idx,qsc_weights_idx,qstart_idx,qdot0_idx,qdotf_idx,qsc,q0_fixed,qdot0_fixed,ikoptions.fixInitialState);
     snseti('Major iterations limit',ikoptions.SNOPT_MajorIterationsLimit);
     snseti('Iterations limit',ikoptions.SNOPT_IterationsLimit);
@@ -665,9 +667,10 @@ f = [J;c];
 G = [dJ;dc];
 end
 
-function [f,G] = IKtraj_userfun(obj,x,t,t_inbetween,t_samples,st_kc_cell,stlpc_cell,mt_kc_cell,q_nom,Qa,Qv,Q,velocity_mat, velocity_mat_qd0,velocity_mat_qdf,...
+function [f,G] = IKtraj_userfun(obj,x,t,t_inbetween,t_samples,st_kc_cell,mt_kc_cell,q_nom,Qa,Qv,Q,velocity_mat, velocity_mat_qd0,velocity_mat_qdf,...
   accel_mat, accel_mat_qd0,accel_mat_qdf,dqInbetweendqknot,dqInbetweendqd0,dqInbetweendqdf,nq,nT,num_inbetween_tSamples,...
   num_qfree,num_qdotfree,nc_array,nG_array,nf_total,nG_total, ...
+  stlpc_nc,mtlpc_nc,...
   qfree_idx,qsc_weights_idx,qstart_idx,qdot0_idx,qdotf_idx,qsc,q0_fixed,qdot0_fixed,fixInitialState)
 f = zeros(nf_total,1);
 G = zeros(nG_total,1);
@@ -691,7 +694,7 @@ end
 nf_cum = 1;
 nG_cum = nq*(num_qfree+num_qdotfree);
 for i = qstart_idx:nT
-  [f(nf_cum+(1:nc_array(i))),G(nG_cum+(1:nG_array(i)))] = IK_constraint_fun(obj,q(:,i),t(i),st_kc_cell,stlpc_cell,nc_array(i),nG_array(i),qsc,qsc_weights(:,i));
+  [f(nf_cum+(1:nc_array(i))),G(nG_cum+(1:nG_array(i)))] = IK_constraint_fun(obj,q(:,i),t(i),st_kc_cell,stlpc_nc,nc_array(i),nG_array(i),qsc,qsc_weights(:,i));
   nf_cum = nf_cum+nc_array(i);
   nG_cum = nG_cum+nG_array(i);
 end
@@ -751,6 +754,9 @@ for i = 1:length(mt_kc_cell)
   nf_cum =nf_cum+mtkc_nc_i;
   nG_cum = nG_cum+mtkc_nc_i*nq*(num_qfree+num_qdotfree);
 end
+
+% Add the zero-valued linear constraint;
+nf_cum = nf_cum+sum(mtlpc_nc);
 end
 
 function [J,dJ] = IK_cost_fun(obj,q,q_nom,Q)
@@ -781,7 +787,7 @@ else
 end
 end
 
-function [c,G] = IK_constraint_fun(obj,q,t,st_kc_cell,stlpc_cell,nC,nG,qsc,weights)
+function [c,G] = IK_constraint_fun(obj,q,t,st_kc_cell,stlpc_nc,nC,nG,qsc,weights)
 c = zeros(nC,1);
 G = zeros(nG,1);
 kinsol = doKinematics(obj,q,false,false);
@@ -796,11 +802,9 @@ for i = 1:length(st_kc_cell)
   nc = nc+ncnst;
   ng = ng+ndcnst;
 end
-for i = 1:length(stlpc_cell)
-  ncnst = stlpc_cell{i}.getNumConstraint(t);
-  c(nc+(1:ncnst)) = zeros(ncnst,1);
-  nc = nc+ncnst;
-end
+
+nc = nc+sum(stlpc_nc);
+
 if(qsc.active)
   num_qsc_cnst = qsc.getNumConstraint(t);
   [cnst,dcnst] = qsc.eval(t,kinsol,weights);
