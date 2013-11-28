@@ -24,6 +24,17 @@ l_foot_pts = robot.getBody(l_foot).contact_pts;
 r_foot_pts = robot.getBody(r_foot).contact_pts;
 l_hand_pts = [0;0;0];
 r_hand_pts = [0;0;0];
+
+coords = robot.getStateFrame.coordinates(1:robot.getNumDOF);
+l_leg_kny = find(strcmp(coords,'l_leg_kny'));
+r_leg_kny = find(strcmp(coords,'r_leg_kny'));
+l_leg_hpy = find(strcmp(coords,'l_leg_hpy'));
+r_leg_hpy = find(strcmp(coords,'r_leg_hpy'));
+l_leg_aky = find(strcmp(coords,'l_leg_aky'));
+r_leg_aky = find(strcmp(coords,'r_leg_aky'));
+l_leg_hpz = find(strcmp(coords,'l_leg_hpz'));
+r_leg_hpz = find(strcmp(coords,'r_leg_hpz'));
+
 tspan = [0,1];
 nom_data = load('../../../examples/Atlas/data/atlas_fp.mat');
 q_nom = nom_data.xstar(1:nq);
@@ -116,6 +127,16 @@ valuecheck(com(1:2),[0;0],1e-5);
 if(com(3)>1+1e-5 ||com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied');
 end
+
+display('Check SingleTimeLinearPostureConstraint');
+iAfun = [1;1;2;2;3;3;4;4];
+jAvar = [l_leg_kny;r_leg_kny;l_leg_hpy;r_leg_hpy;l_leg_aky;r_leg_aky;l_leg_hpz;r_leg_hpz];
+A = [1;-1;1;-1;1;-1;1;-1];
+lb = [0;0;0;-0.1*pi];
+ub = [0;0;0;0.1*pi];
+stlpc = SingleTimeLinearPostureConstraint(robot,iAfun,jAvar,A,lb,ub,tspan);
+[q,info,infeasible_constraint] = inverseKin(robot,q_seed,q_nom,kc1,pc_knee,stlpc,ikoptions);
+keyboard;
 
 display('Check a body position constraint')
 kc2l = WorldPositionConstraint(robot,l_foot,l_foot_pts,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan);
@@ -389,6 +410,7 @@ q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1);q_seed_
 % q = test_IK_userfun(r,q_seed,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
 % display('Check sequentialSeedFlag for pointwise');
 % q = test_IKpointwise_userfun(r,[0,1],[q_seed q_seed],[q_nom q_nom],kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
+
 end
 
 function qmex = test_IK_userfun(r,q_seed,q_nom,varargin)
