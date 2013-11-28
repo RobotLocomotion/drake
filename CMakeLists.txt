@@ -35,7 +35,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 endif()
 
 # set up and build lcm types
-include(cmake/new_lcmtypes.cmake)
+include(cmake/lcmtypes.cmake)
 #add_subdirectory(lcmtypes)
 lcmtypes_build()
 
