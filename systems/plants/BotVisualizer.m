@@ -16,6 +16,11 @@ classdef BotVisualizer < Visualizer
 %    lcmglwrappers
     function obj = BotVisualizer(manip)
       
+      global g_disable_botvis;
+      if g_disable_botvis % evaluates to false if empty
+        error('Drake:BotVisualizer:Disabled','botvis is disabled with g_disable_botvis');
+      end
+      
       if ispc
         error('Drake:BotVisualizer:Windows','botvis doesn''t support windows yet');
       end

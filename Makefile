@@ -69,9 +69,13 @@ htmldoc: doxygen
 mlint	:
 	matlab -nodisplay -r "addpath(fullfile(pwd,'thirdParty','runmlint')); runmlint('.mlintopts'); exit"
 
-test	: all 
+test	:  all
+	@cd pod-build && ctest -D ExperimentalStart 
+	@cd pod-build && ctest -D ExperimentalConfigure
+	@cd pod-build && ctest -D ExperimentalBuild
 	cmake/add_matlab_unit_tests.pl
-	@cd pod-build && ctest --output-on-failure --timeout 600
+	-cd pod-build && ctest -D ExperimentalTest --output-on-failure --timeout 7200
+	@cd pod-build && ctest -D ExperimentalSubmit
 
 .PHONY: check_prereqs install_prereqs_macports install_prereqs_homebrew install_prereqs_ubuntu
 check_prereqs: 

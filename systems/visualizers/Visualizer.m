@@ -66,11 +66,6 @@ classdef Visualizer < DrakeSystem
       %   @param options visualizer configuration:
       %                     slider: create playback slider to control time and speed
       
-      global g_disable_playback;
-      if g_disable_playback % evaluates to false if empty
-        return;
-      end
-      
       typecheck(xtraj,'Trajectory');
       if (xtraj.getOutputFrame()~=obj.getInputFrame)
         xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
