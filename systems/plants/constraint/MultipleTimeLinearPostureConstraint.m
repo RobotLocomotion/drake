@@ -1,6 +1,6 @@
 classdef MultipleTimeLinearPostureConstraint < RigidBodyConstraint
   % A linear constraint on the robot posture for multiple times
-  properties
+  properties(SetAccess = protected)
     robot
     tspan
     mex_ptr

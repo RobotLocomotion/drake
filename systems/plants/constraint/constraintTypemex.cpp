@@ -33,23 +33,29 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     mexErrMsgIdAndTxt("Drake:constraintTypemex:BadInputs","Usage constraint_type = constraintTypemex(constraint_ptr)");
   }
   RigidBodyConstraint* cnst = (RigidBodyConstraint*) getDrakeMexPointer(prhs[0]);
-  DrakeConstraintType type = cnst->getType();
+  DrakeRigidBodyConstraint::Type type = cnst->getType();
   switch(type)
   {
-    case DrakeConstraintType::SingleTimeKinematicConstraintType:
+    case DrakeRigidBodyConstraint::Type::SingleTimeKinematicConstraintType:
       plhs[0] = mxCreateString("SingleTimeKinematicConstraint");
       break;
-    case DrakeConstraintType::MultipleTimeKinematicConstraintType:
+    case DrakeRigidBodyConstraint::Type::MultipleTimeKinematicConstraintType:
       plhs[0] = mxCreateString("MultipleTimeKinematicConstraint");
       break;
-    case DrakeConstraintType::QuasiStaticConstraintType:
+    case DrakeRigidBodyConstraint::Type::QuasiStaticConstraintType:
       plhs[0] = mxCreateString("QuasiStaticConstraint");
       break;
-    case DrakeConstraintType::PostureConstraintType:
+    case DrakeRigidBodyConstraint::Type::PostureConstraintType:
       plhs[0] = mxCreateString("PostureConstraint");
       break;
-    case DrakeConstraintType::MultipleTimeLinearPostureConstraintType:
+    case DrakeRigidBodyConstraint::Type::MultipleTimeLinearPostureConstraintType:
       plhs[0] = mxCreateString("MultipleTimeLinearPostureConstraint");
+      break;
+    case DrakeRigidBodyConstraint::Type::SingleTimeLinearPostureConstraintType:
+      plhs[0] = mxCreateString("SingleTimeLinearPostureConstraint");
+      break;
+    default:
+      mexErrMsgIdAndTxt("Drake:constraintTypemex:BadInputs","The constraint type is not supported");
       break;
   }
 }
