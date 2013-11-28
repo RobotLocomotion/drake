@@ -69,7 +69,7 @@ htmldoc: doxygen
 mlint	:
 	matlab -nodisplay -r "addpath(fullfile(pwd,'thirdParty','runmlint')); runmlint('.mlintopts'); exit"
 
-test	:  
+test	:  all
 	@cd pod-build && ctest -D ExperimentalStart 
 	@cd pod-build && ctest -D ExperimentalConfigure
 	@cd pod-build && ctest -D ExperimentalBuild
