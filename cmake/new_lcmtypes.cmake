@@ -261,8 +261,38 @@ macro(lcmtypes_build_python)
     add_custom_target(lcmtypes_py ALL
       DEPENDS ${LCMTYPES_PYTHON_FILES})
 
-    # todo: install python files (but the below will fail because the files don't exist yet!)
-    #pods_install_python_packages(${LCMTYPES_DIR})
+    # install python files (would use pods_install_python_packages(${LCMTYPES_DIR}), but it would fail because the files don't exist yet)
+
+    find_package(PythonInterp REQUIRED)
+
+    # which python version?
+    execute_process(COMMAND 
+        ${PYTHON_EXECUTABLE} -c "import sys; sys.stdout.write(sys.version[:3])"
+        OUTPUT_VARIABLE pyversion)
+
+    # where do we install .py files to?
+    set(python_install_dir 
+        ${CMAKE_INSTALL_PREFIX}/lib/python${pyversion}/dist-packages)
+
+    foreach(py_file ${LCMTYPES_PYTHON_FILES})
+      get_filename_component(py_src_dir ${py_file} PATH)
+      get_filename_component(py_src_abs_dir ${py_src_dir} ABSOLUTE)
+      file(RELATIVE_PATH __tmp_dir ${LCMTYPES_DIR} ${py_file})
+      get_filename_component(py_module_name ${__tmp_dir} PATH)
+    
+      if (py_module_name)  # only install files which specify a package
+        # note: might be adding multiple install rules for a single __init__.py, but cmake should resolve it
+      	install(FILES "${py_src_abs_dir}/__init__.py" DESTINATION "${python_install_dir}/${py_module_name}")
+	get_filename_component(parent_module ${py_module_name} PATH)
+	while (parent_module)
+	  install(FILES "${LCMTYPES_DIR}/${parent_module}/__init__.py" DESTINATION "${python_install_dir}/${parent_module}")
+  	  get_filename_component(parent_module ${parent_module} PATH)
+	endwhile()
+
+	install(FILES ${py_file} DESTINATION "${python_install_dir}/${py_module_name}")
+      endif()
+
+    endforeach()
   endif()
 
 endmacro()
@@ -276,7 +306,7 @@ macro(lcmtypes_build)
 
   lcmtypes_build_java(${ARGV})
 
-#  lcmtypes_build_python(${ARGV})
+  lcmtypes_build_python(${ARGV})
 
 endmacro()
 
