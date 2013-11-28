@@ -6,6 +6,7 @@
 .settings/org.eclipse.cdt.codan.core.prefs -text
 .settings/org.eclipse.cdt.core.prefs -text
 /CMakeLists.txt -text
+/CTestConfig.cmake -text
 /Contents.m -text
 /LICENSE.TXT -text
 /Makefile -text
@@ -26,9 +27,9 @@ admin/dashboard-scripts/run_ctest_with_drake_environment.sh -text
 admin/deploy.sh -text
 cmake/add_matlab_unit_tests.pl -text
 cmake/lcmtypes.cmake -text
+cmake/matlab_clean.pl -text
 cmake/matlab_pods.cmake -text
 cmake/mex.cmake -text
-cmake/new_lcmtypes.cmake -text
 cmake/pods.cmake -text
 /configure.m -text
 doc/Doxyfile -text
