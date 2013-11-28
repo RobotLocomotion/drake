@@ -237,6 +237,7 @@ macro(lcmtypes_build_java)
 
     add_jar(${LCMTYPES_JARNAME} ${LCMTYPES_JAVA_SOURCEFILES})
 
+    install_jar(${LCMTYPES_JARNAME} share/java)
     pods_install_pkg_config_file(lcmtypes_${PROJECT_NAME}-java
     	CLASSPATH ${LCMTYPES_JARNAME}
     	DESCRIPTION "LCM type java bindings for ${PROJECT_NAME}"
