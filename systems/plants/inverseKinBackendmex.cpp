@@ -51,8 +51,10 @@ double *t_samples = NULL;
 double* ti = NULL;
 int num_st_kc;
 int num_mt_kc;
+int num_st_lpc;
 int num_mt_lpc;
-int* mtkc_nc;
+int* mt_kc_nc;
+int* st_lpc_nc;
 int* mt_lpc_nc;
 int nT;
 int num_qsc_pts;
@@ -140,6 +142,10 @@ void IK_constraint_fun(double* x,double* c, double* G)
     memcpy(&G[ng_accum],dcnst.data(),sizeof(double)*nc*nq);
     nc_accum += nc;
     ng_accum += nc*nq;
+  }
+  for(int i = 0;i<num_st_lpc;i++)
+  {
+    nc_accum += st_lpc_nc[i];
   }
   if(qscActiveFlag)
   {
@@ -330,32 +336,32 @@ int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doublereal 
 
   for(int i = 0;i<num_mt_kc;i++)
   {
-    VectorXd mtkc_c(mtkc_nc[i]);
-    MatrixXd mtkc_dc(mtkc_nc[i],nq*(num_qfree+num_inbetween_tSamples));
+    VectorXd mtkc_c(mt_kc_nc[i]);
+    MatrixXd mtkc_dc(mt_kc_nc[i],nq*(num_qfree+num_inbetween_tSamples));
     mt_kc_array[i]->eval(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples,q_samples.block(0,qstart_idx,nq,num_qfree+num_inbetween_tSamples),mtkc_c,mtkc_dc);
-    memcpy(F+nf_cum,mtkc_c.data(),sizeof(double)*mtkc_nc[i]);
-    MatrixXd mtkc_dc_dx = MatrixXd::Zero(mtkc_nc[i],nq*(num_qfree+num_qdotfree));
+    memcpy(F+nf_cum,mtkc_c.data(),sizeof(double)*mt_kc_nc[i]);
+    MatrixXd mtkc_dc_dx = MatrixXd::Zero(mt_kc_nc[i],nq*(num_qfree+num_qdotfree));
     for(int j = qstart_idx;j<nT;j++)
     {
-      mtkc_dc_dx.block(0,(j-qstart_idx)*nq,mtkc_nc[i],nq) = mtkc_dc.block(0,(qknot_qsamples_idx[j]-qstart_idx)*nq,mtkc_nc[i],nq);
+      mtkc_dc_dx.block(0,(j-qstart_idx)*nq,mt_kc_nc[i],nq) = mtkc_dc.block(0,(qknot_qsamples_idx[j]-qstart_idx)*nq,mt_kc_nc[i],nq);
     }
     for(int j = 0;j<nT-1;j++)
     {
-      MatrixXd dc_ij = mtkc_dc.block(0,nq*(qknot_qsamples_idx[j]+1-qstart_idx),mtkc_nc[i],nq*t_inbetween[j].size());
-      mtkc_dc_dx.block(0,0,mtkc_nc[i],nq*num_qfree) += dc_ij*dqInbetweendqknot[j].block(0,qstart_idx*nq,nq*t_inbetween[j].size(),nq*num_qfree);
+      MatrixXd dc_ij = mtkc_dc.block(0,nq*(qknot_qsamples_idx[j]+1-qstart_idx),mt_kc_nc[i],nq*t_inbetween[j].size());
+      mtkc_dc_dx.block(0,0,mt_kc_nc[i],nq*num_qfree) += dc_ij*dqInbetweendqknot[j].block(0,qstart_idx*nq,nq*t_inbetween[j].size(),nq*num_qfree);
       if(fixInitialState)
       {
-        mtkc_dc_dx.block(0,nq*num_qfree,mtkc_nc[i],nq) += dc_ij*dqInbetweendqdf[j];
+        mtkc_dc_dx.block(0,nq*num_qfree,mt_kc_nc[i],nq) += dc_ij*dqInbetweendqdf[j];
       }
       else
       {
-        mtkc_dc_dx.block(0,nq*num_qfree,mtkc_nc[i],nq) += dc_ij*dqInbetweendqd0[j];
-        mtkc_dc_dx.block(0,nq*num_qfree+nq,mtkc_nc[i],nq) += dc_ij*dqInbetweendqdf[j];
+        mtkc_dc_dx.block(0,nq*num_qfree,mt_kc_nc[i],nq) += dc_ij*dqInbetweendqd0[j];
+        mtkc_dc_dx.block(0,nq*num_qfree+nq,mt_kc_nc[i],nq) += dc_ij*dqInbetweendqdf[j];
       }
     }
     memcpy(G+nG_cum,mtkc_dc_dx.data(),sizeof(double)*mtkc_dc_dx.size());
-    nf_cum += mtkc_nc[i];
-    nG_cum += mtkc_nc[i]*nq*(num_qfree+num_qdotfree);
+    nf_cum += mt_kc_nc[i];
+    nG_cum += mt_kc_nc[i]*nq*(num_qfree+num_qdotfree);
   }
   for(int i = 0;i<num_mt_lpc;i++)
   {
@@ -443,9 +449,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   int num_constraint = nrhs-6;
   num_st_kc = 0;
   num_mt_kc = 0;
+  num_st_lpc = 0;
   num_mt_lpc = 0;
   st_kc_array = new SingleTimeKinematicConstraint*[num_constraint];
   mt_kc_array = new MultipleTimeKinematicConstraint*[num_constraint];
+  SingleTimeLinearPostureConstraint** st_lpc_array = new SingleTimeLinearPostureConstraint*[num_constraint];
   MultipleTimeLinearPostureConstraint** mt_lpc_array = new MultipleTimeLinearPostureConstraint*[num_constraint];
   qsc_ptr = NULL;
   MatrixXd joint_limit_min(nq,nT);
@@ -498,6 +506,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     {
       mt_lpc_array[num_mt_lpc] = (MultipleTimeLinearPostureConstraint*) constraint;
       num_mt_lpc++;
+    }
+    else if(constraint_type == DrakeRigidBodyConstraint::Type::SingleTimeLinearPostureConstraintType)
+    {
+      st_lpc_array[num_st_lpc] = (SingleTimeLinearPostureConstraint*) constraint;
+      num_st_lpc++;
     }
   }
   if(qsc_ptr == NULL)
@@ -615,12 +628,12 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
         VectorXi jCvar_append(nc);
         for(int k = 0;k<nc;k++)
         {
-          iCfun_append(k) = nc_array[i]+k+1;
+          iCfun_append(k) = nc_array[i]+k+1; //use 1-index;
         }
         for(int k = 0;k<nq;k++)
         {
           iCfun_array[i].segment(nG_array[i]+k*nc,nc) = iCfun_append;
-          jCvar_append = VectorXi::Constant(nc,k+1);
+          jCvar_append = VectorXi::Constant(nc,k+1); // use 1-index
           jCvar_array[i].segment(nG_array[i]+k*nc,nc) = jCvar_append;
         }
         nc_array[i] = nc_array[i]+nc;
@@ -631,6 +644,35 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
           st_kc_array[j]->name(&t[i],constraint_name);
           Cname_array[i].insert(Cname_array[i].end(),constraint_name.begin(),constraint_name.end());
         }
+      }
+    }
+    st_lpc_nc = new int[num_st_lpc];
+    for(int j = 0;j<num_st_lpc;j++)
+    {
+      st_lpc_nc[j] = st_lpc_array[j]->getNumConstraint(&t[i]);
+      VectorXd lb(st_lpc_nc[j]);
+      VectorXd ub(st_lpc_nc[j]);
+      st_lpc_array[j]->bounds(&t[i],lb,ub);
+      Cmin_array[i].conservativeResize(Cmin_array[i].size()+st_lpc_nc[j]);
+      Cmin_array[i].tail(st_lpc_nc[j]) = lb;
+      Cmax_array[i].conservativeResize(Cmax_array[i].size()+st_lpc_nc[j]);
+      Cmax_array[i].tail(st_lpc_nc[j]) = ub;
+      VectorXi iAfun,jAvar;
+      VectorXd A;
+      st_lpc_array[j]->geval(&t[i],iAfun,jAvar,A);
+      iAfun_array[i].conservativeResize(iAfun_array[i].size()+iAfun.size());
+      iAfun_array[i].tail(iAfun.size()) = iAfun+VectorXi::Constant(iAfun.size(),nc_array[i]+1); //use 1-indx
+      jAvar_array[i].conservativeResize(jAvar_array[i].size()+jAvar.size());
+      jAvar_array[i].tail(jAvar.size()) = jAvar+VectorXi::Ones(jAvar.size());// use 1-indx
+      A_array[i].conservativeResize(A_array[i].size()+A.size());
+      A_array[i].tail(A.size()) = A;
+      nc_array[i] += st_lpc_nc[j];
+      nA_array[i] += A.size();
+      if(debug_mode)
+      {
+        vector<string> constraint_name;
+        st_lpc_array[j]->name(&t[i],constraint_name);
+        Cname_array[i].insert(Cname_array[i].end(),constraint_name.begin(),constraint_name.end());
       }
     }
     if(qscActiveFlag)
@@ -761,7 +803,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       }
       snopt::doublereal* Flow = new snopt::doublereal[nF];
       snopt::doublereal* Fupp = new snopt::doublereal[nF];
-      Flow[0] = -mxGetInf();
+      Flow[0] = 0;
       Fupp[0] = mxGetInf();
       for(int k = 0;k<nc_array[i];k++)
       {
@@ -903,6 +945,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       memcpy(mxGetPr(G_ptr),G,sizeof(double)*(nG));
       mxSetCell(plhs[0],0,f_ptr);
       mxSetCell(plhs[0],1,G_ptr);
+      printf("get f,G\n");
 
       double* iGfun_tmp = new double[nG];
       double* jGvar_tmp = new double[nG];
@@ -917,6 +960,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       memcpy(mxGetPr(jGvar_ptr),jGvar_tmp,sizeof(double)*nG);
       mxSetCell(plhs[0],2,iGfun_ptr);
       mxSetCell(plhs[0],3,jGvar_ptr);
+      printf("get iGfun jGvar\n");
 
       mxArray* Fupp_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
       mxArray* Flow_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
@@ -924,6 +968,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       memcpy(mxGetPr(Flow_ptr),Flow,sizeof(double)*nF);
       mxSetCell(plhs[0],4,Fupp_ptr);
       mxSetCell(plhs[0],5,Flow_ptr);
+      printf("get Fupp Flow\n");
 
       mxArray* xupp_ptr = mxCreateDoubleMatrix(nx,1,mxREAL);
       mxArray* xlow_ptr = mxCreateDoubleMatrix(nx,1,mxREAL);
@@ -931,6 +976,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       memcpy(mxGetPr(xlow_ptr),xlow,sizeof(double)*nx);
       mxSetCell(plhs[0],6,xupp_ptr);
       mxSetCell(plhs[0],7,xlow_ptr);
+      printf("get xupp xlow\n");
 
       mxArray* iAfun_ptr = mxCreateDoubleMatrix(lenA,1,mxREAL);
       mxArray* jAvar_ptr = mxCreateDoubleMatrix(lenA,1,mxREAL);
@@ -948,9 +994,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       mxSetCell(plhs[0],8,iAfun_ptr);
       mxSetCell(plhs[0],9,jAvar_ptr);
       mxSetCell(plhs[0],10,A_ptr);
+      printf("get iAfun jAvar A\n");
       
       mxArray* nF_ptr = mxCreateDoubleScalar((double) nF);
       mxSetCell(plhs[0],11,nF_ptr);*/
+      
       snopt::snopta_
         ( &Cold, &nF, &nx, &nxname, &nFname,
           &ObjAdd, &ObjRow, Prob, snoptIKfun,
@@ -1039,6 +1087,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
 
     }
   }
+  
   if(mode == 1)
   {
     memcpy(mxGetPr(q_sol_ptr),q_sol.data(),sizeof(double)*nq*nT);
@@ -1551,12 +1600,12 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       nF += nc_inbetween_array[j];
       nG += nG_inbetween_array[j];
     }
-    mtkc_nc = new int[num_mt_kc];
+    mt_kc_nc = new int[num_mt_kc];
     for(int j = 0;j<num_mt_kc;j++)
     {
-      mtkc_nc[j] = mt_kc_array[j]->getNumConstraint(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples);
-      nF += mtkc_nc[j];
-      nG += mtkc_nc[j]*nq*(num_qfree+num_qdotfree);
+      mt_kc_nc[j] = mt_kc_array[j]->getNumConstraint(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples);
+      nF += mt_kc_nc[j];
+      nG += mt_kc_nc[j]*nq*(num_qfree+num_qdotfree);
     }
     for(int j = 0;j<num_mt_lpc;j++)
     {
@@ -1683,46 +1732,46 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     // Parse MultipleTimeKinematicConstraint.
     for(int j = 0;j<num_mt_kc;j++)
     {
-      VectorXd mtkc_lb(mtkc_nc[j]);
-      VectorXd mtkc_ub(mtkc_nc[j]);
+      VectorXd mtkc_lb(mt_kc_nc[j]);
+      VectorXd mtkc_ub(mt_kc_nc[j]);
       mt_kc_array[j]->bounds(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples,mtkc_lb,mtkc_ub);
-      for(int k = 0;k<mtkc_nc[j];k++)
+      for(int k = 0;k<mt_kc_nc[j];k++)
       {
         Flow[nf_cum+k] = mtkc_lb(k);
         Fupp[nf_cum+k] = mtkc_ub(k);
       }
-      //memcpy(Flow+nf_cum,mtkc_lb.data(),sizeof(double)*mtkc_nc[j]);
-      //memcpy(Fupp+nf_cum,mtkc_ub.data(),sizeof(double)*mtkc_nc[j]);
+      //memcpy(Flow+nf_cum,mtkc_lb.data(),sizeof(double)*mt_kc_nc[j]);
+      //memcpy(Fupp+nf_cum,mtkc_ub.data(),sizeof(double)*mt_kc_nc[j]);
       vector<string> mtkc_name;
       mt_kc_array[j]->name(t_samples+qstart_idx,num_qfree+num_inbetween_tSamples,mtkc_name);
       if(debug_mode)
       {
-        for(int k = 0;k<mtkc_nc[j];k++)
+        for(int k = 0;k<mt_kc_nc[j];k++)
         {
           Fname[nf_cum+k] = mtkc_name[k];
         }
       }
       for(int l = 0;l<nq*(num_qfree+num_qdotfree);l++)
       {
-        for(int k = 0;k<mtkc_nc[j];k++)
+        for(int k = 0;k<mt_kc_nc[j];k++)
         {
-          iGfun[nG_cum+l*mtkc_nc[j]+k] = nf_cum+k+1;
+          iGfun[nG_cum+l*mt_kc_nc[j]+k] = nf_cum+k+1;
         }
       }
       for(int l = 0;l<nq*num_qfree;l++)
       {
-        for(int k = 0;k<mtkc_nc[j];k++)
+        for(int k = 0;k<mt_kc_nc[j];k++)
         {
-          jGvar[nG_cum+l*mtkc_nc[j]+k] = qfree_idx[l]+1;
+          jGvar[nG_cum+l*mt_kc_nc[j]+k] = qfree_idx[l]+1;
         }
       }
       if(fixInitialState)
       {
         for(int l = nq*num_qfree;l<nq*num_qfree+nq;l++)
         {
-          for(int k = 0;k<mtkc_nc[j];k++)
+          for(int k = 0;k<mt_kc_nc[j];k++)
           {
-            jGvar[nG_cum+l*mtkc_nc[j]+k] = qdotf_idx[l-nq*num_qfree]+1;
+            jGvar[nG_cum+l*mt_kc_nc[j]+k] = qdotf_idx[l-nq*num_qfree]+1;
           }
         }
       }
@@ -1730,21 +1779,21 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       {
         for(int l=nq*num_qfree;l<nq*num_qfree+nq;l++)
         {
-          for(int k = 0;k<mtkc_nc[j];k++)
+          for(int k = 0;k<mt_kc_nc[j];k++)
           {
-            jGvar[nG_cum+l*mtkc_nc[j]+k] = qdot0_idx[l-nq*num_qfree]+1;
+            jGvar[nG_cum+l*mt_kc_nc[j]+k] = qdot0_idx[l-nq*num_qfree]+1;
           }
         }
         for(int l = nq*num_qfree+nq;l<nq*num_qfree+2*nq;l++)
         {
-          for(int k = 0;k<mtkc_nc[j];k++)
+          for(int k = 0;k<mt_kc_nc[j];k++)
           {
-            jGvar[nG_cum+l*mtkc_nc[j]+k] = qdotf_idx[l-nq*num_qfree-nq]+1;
+            jGvar[nG_cum+l*mt_kc_nc[j]+k] = qdotf_idx[l-nq*num_qfree-nq]+1;
           }
         }
       }
-      nf_cum += mtkc_nc[j];
-      nG_cum += mtkc_nc[j]*nq*(num_qfree+num_qdotfree);
+      nf_cum += mt_kc_nc[j];
+      nG_cum += mt_kc_nc[j]*nq*(num_qfree+num_qdotfree);
     }
 
     // parse MultipleTimeLinearPostureConstraint for t
@@ -2187,17 +2236,20 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   if(mode == 2)
   {
     delete[] qfree_idx; delete[] qdotf_idx;
-    delete[] mtkc_nc;
+    delete[] mt_kc_nc;
   }
   delete[] iCfun_array; delete[] jCvar_array; 
   delete[] Cmin_array; delete[] Cmax_array; delete[] Cname_array;
   delete[] nc_array; delete[] nG_array; delete[] nA_array;
+  delete[] st_lpc_nc;
   if(t!=NULL)
   {
     delete[] t;
   }
   delete[] st_kc_array;
   delete[] mt_kc_array;
+  delete[] st_lpc_array;
+  delete[] mt_lpc_array;
 }
 
 
