@@ -1,6 +1,10 @@
 #!/usr/bin/perl -w
 
-# Note: this must be run from the root directory of the pod
+# Note: this must be run from the root directory of the pod, or the root must be passed in as the first argument
+if ($#ARGV>-1) {
+  print("changing directory to $ARGV[0]\n");
+  chdir($ARGV[0]);
+}
 
 $CMAKE_INSTALL_PREFIX = `cmake pod-build -L | grep CMAKE_INSTALL_PREFIX | cut -d "=" -f2 | tr -d '[:space:]'`;
 $CMAKE_SOURCE_DIR = `pwd | tr -d '[:space:]'`;
