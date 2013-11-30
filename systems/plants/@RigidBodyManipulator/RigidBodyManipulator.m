@@ -511,11 +511,11 @@ classdef RigidBodyManipulator < Manipulator
       model.joint_limit_max = [model.body.joint_limit_max]';
      
       if (any(model.joint_limit_min~=-inf) || any(model.joint_limit_max~=inf))
-        warning('Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
+        warning('Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
       model.num_contacts = size([model.body.contact_pts],2);
       if (model.num_contacts>0)
-        warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by this class.  Consider using HybridPlanarRigidBodyManipulator');
+        warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
       
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));

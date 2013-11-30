@@ -2,7 +2,12 @@ function testIKtraj()
 options.floating = true;
 options.dt = 0.001;
 r = RigidBodyManipulator();
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
+warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 r = r.addRobotFromURDF('../../../examples/Atlas/urdf/atlas_minimal_contact.urdf',[],[],options);
+warning(w);
 nom_data = load('../../../examples/Atlas/data/atlas_fp.mat');
 v = r.constructVisualizer();
 
