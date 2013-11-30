@@ -4,7 +4,10 @@ urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 aff_urdf = [getDrakePath,'/systems/plants/constraint/test/valve_task_wall.urdf'];
 
 options.floating = true;
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 robot = RigidBodyManipulator(urdf,options);
+warning(w);
 nq = robot.getNumDOF();
 robot_aff = robot.addRobotFromURDF(aff_urdf,[0;0;0],[pi/2;0;0],struct('floating',false));
 nq_aff = robot_aff.getNumDOF();
