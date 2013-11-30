@@ -8,6 +8,9 @@
 # This appears to be a necessary evil to get clean matlab output to ctest:  
 #  http://www.mail-archive.com/cmake@cmake.org/msg02175.html
 
+#use lib "./Text-Unidecode-0.04/lib";
+#use Text::Unidecode;
+
 my $cmd = 'matlab';
 foreach my $a(@ARGV) {
   $cmd .= " \"$a\"";
@@ -18,14 +21,8 @@ my $matlab_output = `$cmd`;
 my $retval = $? >> 8;
 
 $matlab_output =~ s/.*exclude an item from Time Machine.*\n//g;
+#$matlab_output = unidecode($matlab_output);  # didn't seem to help
 $matlab_output =~ s/[^\x{0009}\x{000a}\x{000d}\x{0020}-\x{D7FF}\x{E000}-\x{FFFD}]+//g;
-
-#$matlab_output =~ s/\"/&quot;/g;
-#$matlab_output =~ s/\'/&apos;/g;
-#$matlab_output =~ s/</&lt;/g;
-#$matlab_output =~ s/>/&gt;/g;
-#$matlab_output =~ s/&/&amp;/g;
-#$matlab_output =~ s/[\"\'<>&]//g;
 
 print($matlab_output);
 exit($retval);
