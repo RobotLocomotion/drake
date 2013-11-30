@@ -61,6 +61,5 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
     [c,dc] = eval_valid(obj,valid_t,valid_q);
     [lb,ub] = bounds(obj,t)
     name_str = name(obj,t)
-    ptr = constructPtr(varargin);
   end
 end

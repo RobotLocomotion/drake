@@ -55,6 +55,5 @@ classdef MultipleTimeLinearPostureConstraint < RigidBodyConstraint
     % sparse(iAfun,jAvar,A,num_constraint,numel(q)) is the gradient of c w.r.t q
     [lb,ub] = bounds(obj,t);
     name_str = name(obj,t);
-    ptr = constructPtr(varargin);
   end
 end
