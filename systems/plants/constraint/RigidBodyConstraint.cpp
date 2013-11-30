@@ -46,7 +46,7 @@ namespace DrakeRigidBodyConstraint{
   Vector2d default_tspan(-1.0/0.0,1.0/0.0);
 }
 
-
+RigidBodyConstraint::RigidBodyConstraint(const RigidBodyConstraint &rhs):category(rhs.category),type(rhs.type){};
 RigidBodyConstraint::~RigidBodyConstraint(void){};
 
 
@@ -493,6 +493,13 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(RigidBodyMa
   this->tspan[0] = tspan(0);
   this->tspan[1] = tspan(1);
   this->type = RigidBodyConstraint::SingleTimeLinearPostureConstraintType;
+}
+
+SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(const SingleTimeLinearPostureConstraint &rhs):RigidBodyConstraint(rhs),iAfun(rhs.iAfun),jAvar(rhs.jAvar),A(rhs.A),lb(rhs.lb),ub(rhs.ub),num_constraint(rhs.num_constraint),A_mat(rhs.A_mat)
+{
+  this->robot = rhs.robot;
+  this->tspan[0] = rhs.tspan[0];
+  this->tspan[1] = rhs.tspan[1];
 }
 
 bool SingleTimeLinearPostureConstraint::isTimeValid(const double* t)

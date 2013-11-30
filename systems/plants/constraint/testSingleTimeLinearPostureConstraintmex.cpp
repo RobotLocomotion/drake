@@ -4,10 +4,11 @@
 #include "../RigidBodyManipulator.h"
 #include <cstring>
 /* 
- * [num_constraint,constraint_val,iAfun,jAvar,A,constraint_name,lower_bound,upper_bound] = testSingleTimeLinearPostureConstraintmex(stlpc_ptr,q,t)
+ * [type, num_constraint,constraint_val,iAfun,jAvar,A,constraint_name,lower_bound,upper_bound] = testSingleTimeLinearPostureConstraintmex(stlpc_ptr,q,t)
  * @param stlpc_ptr             A pointer to a SingleTimeLinearPostureConstraint object
  * @param q                     A nqx1 double vector
  * @param t                     A double array, the time moments to evaluate constraint value, bounds and name. 
+ * @retval type                 The type of the constraint
  * @retval num_constraint       The number of constraint active at time t
  * @retval iAfun                The row index of non-zero element in the sparse linear constraint 
  * @retval jAvar                The column index of the non-zero element in the sparse linear constraint
@@ -22,9 +23,9 @@ using namespace Eigen;
 
 void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
 {
-  if(nrhs!=3 || nlhs != 8)
+  if(nrhs!=3 || nlhs != 9)
   {
-    mexErrMsgIdAndTxt("Drake:testSingleTimeLinearPostureConstraintmex:BadInputs","Usage [num_cnst,cnst_val,iAfun,jAvar,A,cnst_name,lb,ub] = testSingleTimeLinearPostureConstraintmex(stlpc_ptr,q,t)");
+    mexErrMsgIdAndTxt("Drake:testSingleTimeLinearPostureConstraintmex:BadInputs","Usage [type,num_cnst,cnst_val,iAfun,jAvar,A,cnst_name,lb,ub] = testSingleTimeLinearPostureConstraintmex(stlpc_ptr,q,t)");
   }
   SingleTimeLinearPostureConstraint* stlpc = (SingleTimeLinearPostureConstraint*) getDrakeMexPointer(prhs[0]);
   int nq = stlpc->getRobotPointer()->num_dof;
@@ -43,6 +44,7 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   {
     t_ptr = mxGetPr(prhs[2]);
   }
+  int type = stlpc->getType();
   int num_cnst = stlpc->getNumConstraint(t_ptr);
   VectorXd c(num_cnst);
   stlpc->feval(t_ptr,q,c);
@@ -53,7 +55,8 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   stlpc->name(t_ptr,cnst_names);
   VectorXd lb,ub;
   stlpc->bounds(t_ptr,lb,ub);
-  plhs[0] = mxCreateDoubleScalar((double) num_cnst);
+  plhs[0] = mxCreateDoubleScalar((double) type);
+  plhs[1] = mxCreateDoubleScalar((double) num_cnst);
   int retvec_size;
   if(num_cnst == 0)
   {
@@ -63,28 +66,28 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   {
     retvec_size = 1;
   }
-  plhs[1] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
-  memcpy(mxGetPr(plhs[1]),c.data(),sizeof(double)*num_cnst);
-  plhs[2] = mxCreateDoubleMatrix(iAfun.size(),retvec_size,mxREAL);
-  plhs[3] = mxCreateDoubleMatrix(jAvar.size(),retvec_size,mxREAL);
-  plhs[4] = mxCreateDoubleMatrix(A.size(),retvec_size,mxREAL);
+  plhs[2] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
+  memcpy(mxGetPr(plhs[2]),c.data(),sizeof(double)*num_cnst);
+  plhs[3] = mxCreateDoubleMatrix(iAfun.size(),retvec_size,mxREAL);
+  plhs[4] = mxCreateDoubleMatrix(jAvar.size(),retvec_size,mxREAL);
+  plhs[5] = mxCreateDoubleMatrix(A.size(),retvec_size,mxREAL);
   for(int i = 0;i<iAfun.size();i++)
   {
-    *(mxGetPr(plhs[2])+i) = (double) iAfun(i)+1;
-    *(mxGetPr(plhs[3])+i) = (double) jAvar(i)+1;
-    *(mxGetPr(plhs[4])+i) = A(i);
+    *(mxGetPr(plhs[3])+i) = (double) iAfun(i)+1;
+    *(mxGetPr(plhs[4])+i) = (double) jAvar(i)+1;
+    *(mxGetPr(plhs[5])+i) = A(i);
   }
   int name_ndim = 1;
   mwSize name_dims[] = {(mwSize) num_cnst};
-  plhs[5] = mxCreateCellArray(name_ndim,name_dims);
+  plhs[6] = mxCreateCellArray(name_ndim,name_dims);
   mxArray* name_ptr;
   for(int i = 0;i<num_cnst;i++)
   {
     name_ptr = mxCreateString(cnst_names[i].c_str());
-    mxSetCell(plhs[5],i,name_ptr);
+    mxSetCell(plhs[6],i,name_ptr);
   }
-  plhs[6] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
   plhs[7] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
-  memcpy(mxGetPr(plhs[6]),lb.data(),sizeof(double)*num_cnst);
-  memcpy(mxGetPr(plhs[7]),ub.data(),sizeof(double)*num_cnst);
+  plhs[8] = mxCreateDoubleMatrix(num_cnst,retvec_size,mxREAL);
+  memcpy(mxGetPr(plhs[7]),lb.data(),sizeof(double)*num_cnst);
+  memcpy(mxGetPr(plhs[8]),ub.data(),sizeof(double)*num_cnst);
 }

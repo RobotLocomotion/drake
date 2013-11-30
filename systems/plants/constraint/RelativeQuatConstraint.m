@@ -50,9 +50,6 @@ classdef RelativeQuatConstraint < QuatConstraint
       end
     end
 
-    function ptr = constructPtr(varargin)
-      ptr = [];
-    end
 
     
     function drawConstraint(obj,q,lcmgl)

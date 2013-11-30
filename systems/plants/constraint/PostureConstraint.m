@@ -49,7 +49,7 @@ classdef PostureConstraint<RigidBodyConstraint
     end
     
     function obj = setJointLimits(obj,joint_ind,joint_min,joint_max)
-      obj.mex_ptr = constructPtrPostureConstraintmex(obj.mex_ptr,joint_ind,joint_min,joint_max);
+      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'bounds',joint_ind,joint_min,joint_max);
       if(any(~isnumeric(joint_ind)))
         error('The joint index should all be numerical')
       end

@@ -29,6 +29,7 @@ class RigidBodyConstraint
     int type;
   public:
     RigidBodyConstraint(int category):category(category),type(0){};
+    RigidBodyConstraint(const RigidBodyConstraint &rhs);
     int getType() {return this->type;};
     int getCategory() {return this->category;};
     virtual ~RigidBodyConstraint(void) = 0;
@@ -148,6 +149,7 @@ class SingleTimeLinearPostureConstraint: public RigidBodyConstraint
     double tspan[2];
   public:
     SingleTimeLinearPostureConstraint(RigidBodyManipulator* robot, const VectorXi &iAfun, const VectorXi &jAvar, const VectorXd &A, const VectorXd &lb, const VectorXd &ub, const Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
+    SingleTimeLinearPostureConstraint(const SingleTimeLinearPostureConstraint& rhs);
     bool isTimeValid(const double* t);
     int getNumConstraint(const double* t);
     RigidBodyManipulator* getRobotPointer(){return robot;};
