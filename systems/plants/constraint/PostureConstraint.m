@@ -22,8 +22,8 @@ classdef PostureConstraint<RigidBodyConstraint
       if(nargin == 1)
         tspan = [-inf inf];
       end
-      ptr = constructPtrPostureConstraintmex(robot.getMexModelPtr,tspan);
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.PostureConstraintType);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureConstraintType,robot.getMexModelPtr,tspan);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.PostureConstraintCategory);
       if(tspan(end)<tspan(1))
         error('tspan(end) should be no smaller than tspan(1)')
       end
@@ -32,6 +32,7 @@ classdef PostureConstraint<RigidBodyConstraint
       [obj.joint_limit_min0,obj.joint_limit_max0] = robot.getJointLimits();
       obj.lb = obj.joint_limit_min0;
       obj.ub = obj.joint_limit_max0;
+      obj.type = RigidBodyConstraint.PostureConstraintType;
       obj.mex_ptr = ptr;
     end
     

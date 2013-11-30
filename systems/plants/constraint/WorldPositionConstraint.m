@@ -24,7 +24,7 @@ classdef WorldPositionConstraint < PositionConstraint
       if(nargin == 5)
         tspan = [-inf,inf];
       end
-      ptr = constructPtrWorldPositionConstraintmex(robot.getMexModelPtr,body,pts,lb,ub,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionConstraintType,robot.getMexModelPtr,body,pts,lb,ub,tspan);
       obj = obj@PositionConstraint(robot,pts,lb,ub,tspan);
       if(isnumeric(body))
         sizecheck(body,[1,1]);
@@ -37,6 +37,7 @@ classdef WorldPositionConstraint < PositionConstraint
         error('Drake:WorldPositionConstraint:Body must be either the link name or the link index');
       end
       obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.type = RigidBodyConstraint.WorldPositionConstraintType;
       obj.mex_ptr = ptr;
     end
     
@@ -79,8 +80,5 @@ classdef WorldPositionConstraint < PositionConstraint
       obj.mex_ptr = updatePtrWorldPositionConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrWorldPositionConstraintmex(varargin{:});
-    end
   end
 end

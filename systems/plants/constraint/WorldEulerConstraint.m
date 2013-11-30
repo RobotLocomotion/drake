@@ -24,7 +24,7 @@ classdef WorldEulerConstraint <EulerConstraint
       if(nargin ==4)
         tspan = [-inf inf];
       end
-      ptr = constructPtrWorldEulerConstraintmex(robot.getMexModelPtr,body,lb,ub,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldEulerConstraintType,robot.getMexModelPtr,body,lb,ub,tspan);
       obj = obj@EulerConstraint(robot,lb,ub,tspan);
       if(isnumeric(body))
         sizecheck(body,[1,1]);
@@ -37,6 +37,7 @@ classdef WorldEulerConstraint <EulerConstraint
         error('Drake:WorldEulerConstraint:Body must be either the link name or the link index');
       end
       obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.type = RigidBodyConstraint.WorldEulerConstraintType;
       obj.mex_ptr = ptr;
     end
     
@@ -76,8 +77,5 @@ classdef WorldEulerConstraint <EulerConstraint
       obj.mex_ptr = updatePtrWorldEulerConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrWorldEulerConstraintmex(varargin{:});
-    end
   end
 end

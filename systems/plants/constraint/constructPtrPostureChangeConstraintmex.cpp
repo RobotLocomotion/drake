@@ -18,7 +18,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   Vector2d tspan;
-  if(nrhs < 4)
+  if(nrhs < 5)
   {
     tspan<<-mxGetInf(),mxGetInf();
   }

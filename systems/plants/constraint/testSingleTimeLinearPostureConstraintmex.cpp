@@ -34,7 +34,7 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray * prhs[])
   }
   VectorXd q(nq);
   memcpy(q.data(),mxGetPr(prhs[1]),sizeof(double)*nq);
-  double* t_ptr;
+  double* t_ptr = NULL;
   if(mxGetNumberOfElements(prhs[2]) == 0)
   {
     t_ptr = NULL;

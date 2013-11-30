@@ -15,7 +15,7 @@ classdef MultipleTimeLinearPostureConstraint < RigidBodyConstraint
       if(nargin<2)
         tspan = [-inf inf];
       end
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeLinearPostureConstraint);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeLinearPostureConstraintCategory);
       obj.robot = robot;
       if(~isnumeric(tspan))
         error('Drake:MultipeTimeLinearPostureConstraint: tspan should be numeric');

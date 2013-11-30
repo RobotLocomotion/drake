@@ -27,7 +27,7 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
       if(nargin == 7)
         tspan = [-inf inf];
       end
-      mex_ptr = constructPtrPoint2PointDistanceConstraintmex(robot.getMexModelPtr,bodyA,bodyB,ptA,ptB,dist_lb,dist_ub,tspan);
+      mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.Point2PointDistanceConstraintType,robot.getMexModelPtr,bodyA,bodyB,ptA,ptB,dist_lb,dist_ub,tspan);
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       if(~isnumeric(bodyA))
         error('Point2PointDistanceConstraint: bodyA should be numeric');
@@ -83,6 +83,7 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
       end
       obj.dist_lb = dist_lb;
       obj.dist_ub = dist_ub;
+      obj.type = RigidBodyConstraint.Point2PointDistanceConstraintType;
       obj.mex_ptr = mex_ptr;
     end
     

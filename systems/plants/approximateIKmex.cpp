@@ -52,13 +52,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   for(int i = 0;i<num_constraint;i++)
   {
     RigidBodyConstraint* constraint = (RigidBodyConstraint*) getDrakeMexPointer(prhs[3+i]);
-    DrakeRigidBodyConstraint::Type constraint_type = constraint->getType();
-    if(constraint_type == DrakeRigidBodyConstraint::Type::SingleTimeKinematicConstraintType)
+    int constraint_category = constraint->getCategory();
+    if(constraint_category == RigidBodyConstraint::SingleTimeKinematicConstraintCategory)
     {
       kc_array[num_kc] = (SingleTimeKinematicConstraint*) constraint;
       num_kc++;
     }
-    else if(constraint_type == DrakeRigidBodyConstraint::Type::PostureConstraintType)
+    else if(constraint_category == RigidBodyConstraint::PostureConstraintCategory)
     {
       double* joint_min = new double[nq];
       double* joint_max = new double[nq];

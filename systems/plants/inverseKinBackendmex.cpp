@@ -466,22 +466,22 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   for(int i = 0;i<num_constraint;i++)
   {
     RigidBodyConstraint* constraint = (RigidBodyConstraint*) getDrakeMexPointer(prhs[i+5]);
-    DrakeRigidBodyConstraint::Type constraint_type = constraint->getType();
-    if(constraint_type == DrakeRigidBodyConstraint::Type::SingleTimeKinematicConstraintType)
+    int constraint_category = constraint->getCategory();
+    if(constraint_category == RigidBodyConstraint::SingleTimeKinematicConstraintCategory)
     {
       st_kc_array[num_st_kc] = (SingleTimeKinematicConstraint*) constraint;
       num_st_kc++;
     }
-    else if(constraint_type == DrakeRigidBodyConstraint::Type::MultipleTimeKinematicConstraintType)
+    else if(constraint_category == RigidBodyConstraint::MultipleTimeKinematicConstraintCategory)
     {
       mt_kc_array[num_mt_kc] = (MultipleTimeKinematicConstraint*) constraint;
       num_mt_kc++;
     }
-    else if(constraint_type == DrakeRigidBodyConstraint::Type::QuasiStaticConstraintType)
+    else if(constraint_category == RigidBodyConstraint::QuasiStaticConstraintCategory)
     {
       qsc_ptr = (QuasiStaticConstraint*) constraint;
     }
-    else if(constraint_type == DrakeRigidBodyConstraint::Type::PostureConstraintType)
+    else if(constraint_category == RigidBodyConstraint::PostureConstraintCategory)
     {
       double* joint_min = new double[nq];
       double* joint_max = new double[nq];
@@ -502,12 +502,12 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
       delete[] joint_min;
       delete[] joint_max;
     }
-    else if(constraint_type == DrakeRigidBodyConstraint::Type::MultipleTimeLinearPostureConstraintType)
+    else if(constraint_category == RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory)
     {
       mt_lpc_array[num_mt_lpc] = (MultipleTimeLinearPostureConstraint*) constraint;
       num_mt_lpc++;
     }
-    else if(constraint_type == DrakeRigidBodyConstraint::Type::SingleTimeLinearPostureConstraintType)
+    else if(constraint_category == RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory)
     {
       st_lpc_array[num_st_lpc] = (SingleTimeLinearPostureConstraint*) constraint;
       num_st_lpc++;

@@ -19,7 +19,7 @@ classdef WorldGazeDirConstraint < GazeDirConstraint
       if(nargin == 5)
         tspan = [-inf inf];
       end
-      ptr = constructPtrWorldGazeDirConstraintmex(robot.getMexModelPtr,body,axis,dir,conethreshold,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldGazeDirConstraintType,robot.getMexModelPtr,body,axis,dir,conethreshold,tspan);
       obj = obj@GazeDirConstraint(robot,axis,dir,conethreshold,tspan);
       if(isnumeric(body))
         sizecheck(body,[1,1]);
@@ -32,6 +32,7 @@ classdef WorldGazeDirConstraint < GazeDirConstraint
         error('Drake:WorldPositionConstraint:Body must be either the link name or the link index');
       end
       obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.type = RigidBodyConstraint.WorldGazeDirConstraintType;
       obj.mex_ptr = ptr;
     end
     
@@ -61,9 +62,6 @@ classdef WorldGazeDirConstraint < GazeDirConstraint
       obj.robot = robot;
       obj.mex_ptr = updatePtrWorldGazeDirConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
-    
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrWorldGazeTargetConstraintmex(varargin{:});
-    end
+
   end
 end
