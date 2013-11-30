@@ -6,10 +6,12 @@ for urdf = {'FallingBrick.urdf',...
 
 urdf=urdf{1};  
 options.floating = 'rpy';
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 m_rpy = TimeSteppingRigidBodyManipulator(urdf,.01,options);
 options.floating = 'YPR';
 options.namesuffix = 'ypr_rel'; % floating base uses YPR (with relative/intrinsic angles)
 m_ypr_rel = TimeSteppingRigidBodyManipulator(urdf,.01,options);
+warning(w);
 
 % the kinematics and dynamics should actually match, when the order of the indices is
 % flopped
@@ -23,7 +25,7 @@ x02 = resolveConstraints(m_ypr_rel,Point(getStateFrame(m_ypr_rel)));
 valuecheck(x0,x02(xind),1e-4);
 
 for i=1:100
-  q = randn(nq,1); qd = randn(nq,1); u = randn(getNumInputs(m_rpy),1);
+  q = .1*randn(nq,1); qd = randn(nq,1); u = randn(getNumInputs(m_rpy),1);
 
   kinsol = doKinematics(m_rpy,q,true,false,qd);
   [pt,J,Jdot] = contactPositionsJdot(m_rpy,kinsol);
