@@ -18,7 +18,14 @@ my $matlab_output = `$cmd`;
 my $retval = $? >> 8;
 
 $matlab_output =~ s/.*exclude an item from Time Machine.*\n//g;
-$matlab_output =~ s/<>&//g;
+$matlab_output =~ s/[^\x{0009}\x{000a}\x{000d}\x{0020}-\x{D7FF}\x{E000}-\x{FFFD}]+//g;
+
+#$matlab_output =~ s/\"/&quot;/g;
+#$matlab_output =~ s/\'/&apos;/g;
+#$matlab_output =~ s/</&lt;/g;
+#$matlab_output =~ s/>/&gt;/g;
+#$matlab_output =~ s/&/&amp;/g;
+#$matlab_output =~ s/[\"\'<>&]//g;
 
 print($matlab_output);
 exit($retval);
