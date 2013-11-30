@@ -19,6 +19,7 @@ classdef SimulinkModel < DynamicalSystem
       sys = feval(mdl,[],[],[],'sizes');
       obj.num_xc = sys(1);
       obj.num_xd = sys(2);
+      obj.num_x = obj.num_xc+obj.num_xd;
       obj.num_y = sys(3);
       if (nargin<2)
         obj.num_u = sys(4);
@@ -117,7 +118,11 @@ classdef SimulinkModel < DynamicalSystem
 %      feval(obj.mdl,[],[],[],'all');   % can't see this in the documentation.. don't know where I got it from?
 
       y = feval(obj.mdl,t,x,u,'outputs');
-
+      
+      if ~isnumeric(y) % why is y sometimes numeric, and sometimes a struct?
+        y = y.signals.values(:);
+      end
+      
       if (nargout>1)
         [A,B,C,D] = linearize(obj,t,x,u);  % should it ever be dlinearize?
         dy = [zeros(obj.num_y,1), C, D];
