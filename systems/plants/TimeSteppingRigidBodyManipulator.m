@@ -420,7 +420,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         missed = (M(inactive,inactive)*z(inactive)+w(inactive) < 0);
         if ~any(missed), break; end
         % otherwise add the missed indices to the active set and repeat
-        disp(['t=',num2str(t),': missed ',num2str(sum(missed)),' constraints.  resolving lcp.']);
+        warning('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP',['t=',num2str(t),': missed ',num2str(sum(missed)),' constraints.  resolving lcp.']);
         ind = find(inactive);
         inactive(ind(missed)) = false;
         % add back in the related contact terms:
