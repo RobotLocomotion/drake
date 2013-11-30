@@ -41,6 +41,7 @@ configure:
 
 	# create the temporary build directory if needed
 	@mkdir -p pod-build
+	@cd pod-build && ln -sF ../CTestCustom.cmake  # actually has to live in the build path
 
 	# run CMake to generate and configure the build scripts
 	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
@@ -69,13 +70,11 @@ htmldoc: doxygen
 mlint	:
 	matlab -nodisplay -r "addpath(fullfile(pwd,'thirdParty','runmlint')); runmlint('.mlintopts'); exit"
 
-test	:  all
-	@cd pod-build && ctest -D ExperimentalStart 
-	@cd pod-build && ctest -D ExperimentalConfigure
-	@cd pod-build && ctest -D ExperimentalBuild
-	cmake/add_matlab_unit_tests.pl
-	-cd pod-build && ctest -D ExperimentalTest --output-on-failure --timeout 7200
-	@cd pod-build && ctest -D ExperimentalSubmit
+test	:  configure
+	-@cd pod-build && ctest -D Experimental --output-on-failure --timeout 7200
+
+test_continuous : configure
+	while true; do $(MAKE) Continuous; sleep 300; done
 
 .PHONY: check_prereqs install_prereqs_macports install_prereqs_homebrew install_prereqs_ubuntu
 check_prereqs: 

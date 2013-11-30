@@ -7,6 +7,7 @@
 .settings/org.eclipse.cdt.core.prefs -text
 /CMakeLists.txt -text
 /CTestConfig.cmake -text
+/CTestCustom.cmake -text
 /Contents.m -text
 /LICENSE.TXT -text
 /Makefile -text
