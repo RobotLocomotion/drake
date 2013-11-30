@@ -6,16 +6,10 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
     robot
     mex_ptr
   end
-  
-  properties(Constant)
-    WorldFixedPositionConstraint = 1;
-    WorldFixedOrientConstraint = 2;
-    WorldFixedBodyPoseConstraint = 3;
-  end
     
   methods
     function obj = MultipleTimeKinematicConstraint(robot,tspan)
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeKinematicConstraintType);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeKinematicConstraintCategory);
       if(nargin<2)
         tspan = [-inf,inf];
       end

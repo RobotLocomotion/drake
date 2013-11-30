@@ -21,7 +21,7 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
       if nargin == 3
         tspan = [-inf inf];
       end
-      mex_ptr = constructPtrWorldFixedPositionConstraintmex(robot.getMexModelPtr,body,pts,tspan);
+      mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldFixedPositionConstraintType,robot.getMexModelPtr,body,pts,tspan);
       obj = obj@MultipleTimeKinematicConstraint(robot,tspan);
       sizecheck(body,[1,1]);
       if(~isnumeric(body))
@@ -40,6 +40,7 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
         warning('Drake:WordFixedPositionConstraint: you have more than 3 points in fixed positions, consider to use WorldFixedBodyPostureConstraint, which is more efficient');
       end
       obj.pts = pts;
+      obj.type = RigidBodyConstraint.WorldFixedPositionConstraintType;
       obj.mex_ptr = mex_ptr;
     end
     
@@ -112,8 +113,5 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
       obj.mex_ptr = updatePtrWorldFixedPositionConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrWorldFixedPositionConstraintmex(varargin{:});
-    end
   end
 end

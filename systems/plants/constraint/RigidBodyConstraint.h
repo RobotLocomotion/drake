@@ -14,14 +14,6 @@
 
 
 namespace DrakeRigidBodyConstraint{
-  enum Type{
-    SingleTimeKinematicConstraintType = 1,
-    MultipleTimeKinematicConstraintType = 2,
-    QuasiStaticConstraintType = 3,
-    PostureConstraintType = 4,
-    MultipleTimeLinearPostureConstraintType = 5,
-    SingleTimeLinearPostureConstraintType = 6
-  };
   extern Eigen::Vector4d com_pts;
   extern const int WorldCoMDefaultRobotNum[1];
   extern Eigen::Vector2d default_tspan;
@@ -33,12 +25,42 @@ void drakePrintMatrix(const Eigen::MatrixXd &mat);
 class RigidBodyConstraint
 {
   protected:
-    DrakeRigidBodyConstraint::Type type;
+    int category;
+    int type;
   public:
-    RigidBodyConstraint(DrakeRigidBodyConstraint::Type type){this->type = type;};
-    DrakeRigidBodyConstraint::Type getType() {return type;};
+    RigidBodyConstraint(int category):category(category),type(0){};
+    int getType() {return this->type;};
+    int getCategory() {return this->category;};
     virtual ~RigidBodyConstraint(void) = 0;
+    /* In each category, constraint class share the same function interface, this value needs to be in consistent with that in MATLAB*/
+    static const int SingleTimeKinematicConstraintCategory       = -1;
+    static const int MultipleTimeKinematicConstraintCategory     = -2;
+    static const int QuasiStaticConstraintCategory               = -3;
+    static const int PostureConstraintCategory                   = -4;
+    static const int MultipleTimeLinearPostureConstraintCategory = -5;
+    static const int SingleTimeLinearPostureConstraintCategory   = -6;
+    /* Each non-abstrac RigidBodyConstraint class has a unique type. Please stay in consistent with the value in MATLAB*/
+    static const int QuasiStaticConstraintType                  = 1;
+    static const int PostureConstraintType                      = 2;
+    static const int SingleTimeLinearPostureConstraintType      = 3;
+    static const int AllBodiesClosestDistanceConstraintType     = 4;
+    static const int WorldEulerConstraintType                   = 5;
+    static const int WorldGazeDirConstraintType                 = 6;
+    static const int WorldGazeOrientConstraintType              = 7;
+    static const int WorldGazeTargetConstraintType              = 8;
+    static const int RelativeGazeTargetConstraintType           = 9;
+    static const int WorldCoMConstraintType                     = 10;
+    static const int WorldPositionConstraintType                = 11;
+    static const int WorldPositionInFrameConstraintType         = 12;
+    static const int WorldQuatConstraintType                    = 13;
+    static const int Point2PointDistanceConstraintType          = 14;
+    static const int Point2LineSegDistConstraintType            = 15;
+    static const int WorldFixedPositionConstraintType           = 16;
+    static const int WorldFixedOrientConstraintType             = 17;
+    static const int WorldFixedBodyPoseConstraintType           = 18;
+    static const int PostureChangeConstraintType                = 19;
 };
+
 
 
 class QuasiStaticConstraint: public RigidBodyConstraint
@@ -293,7 +315,7 @@ class GazeConstraint : public SingleTimeKinematicConstraint
     Eigen::Vector3d axis;
     double conethreshold;
   public:
-    GazeConstraint(RigidBodyManipulator *model, Eigen::Vector3d axis, double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    GazeConstraint(RigidBodyManipulator *model, Eigen::Vector3d axis, double conethreshold = 0.0, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual ~GazeConstraint(void){};
 };
 

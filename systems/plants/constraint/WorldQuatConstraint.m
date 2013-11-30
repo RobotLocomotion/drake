@@ -29,7 +29,7 @@ classdef WorldQuatConstraint < QuatConstraint
       if(nargin == 4)
         tspan = [-inf,inf];
       end
-      ptr = constructPtrWorldQuatConstraintmex(robot.getMexModelPtr,body,quat_des,tol,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldQuatConstraintType,robot.getMexModelPtr,body,quat_des,tol,tspan);
       obj = obj@QuatConstraint(robot,tol,tspan);
       sizecheck(quat_des,[4,1]);
       if(any(isinf(quat_des)|isnan(quat_des)))
@@ -47,6 +47,7 @@ classdef WorldQuatConstraint < QuatConstraint
         error('Drake:WorldQuatConstraint:Body must be either the link name or the link index');
       end
       obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.type = RigidBodyConstraint.WorldQuatConstraintType;
       obj.mex_ptr = ptr;
     end
     
@@ -65,8 +66,5 @@ classdef WorldQuatConstraint < QuatConstraint
       obj.mex_ptr = updatePtrWorldQuatConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrWorldQuatConstraintmex(varargin{:});
-    end
   end
 end

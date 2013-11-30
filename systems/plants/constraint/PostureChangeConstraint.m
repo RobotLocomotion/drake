@@ -43,9 +43,10 @@ classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
       if(nargin<5)
         tspan = [-inf inf];
       end
-      ptr = constructPtrPostureChangeConstraintmex(robot.getMexModelPtr,joint_ind,lb_change,ub_change,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureChangeConstraintType,robot.getMexModelPtr,joint_ind,lb_change,ub_change,tspan);
       obj = obj@MultipleTimeLinearPostureConstraint(robot,tspan);
       obj = obj.setJointChangeBounds(joint_ind,lb_change,ub_change);
+      obj.type = RigidBodyConstraint.PostureChangeConstraintType;
       obj.mex_ptr = ptr;
     end
     
@@ -121,10 +122,6 @@ classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
           end
         end
       end
-    end
-    
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrPostureChangeConstraintmex(varargin{:});
     end
     
   end

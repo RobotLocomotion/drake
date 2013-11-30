@@ -28,10 +28,11 @@ classdef WorldPositionInFrameConstraint < WorldPositionConstraint
       if(nargin < 7)
         tspan = [-inf,inf];
       end
-      ptr = constructPtrWorldPositionInFrameConstraintmex(robot.getMexModelPtr,body,pts,o_T_f,lb,ub,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionInFrameConstraintType,robot.getMexModelPtr,body,pts,o_T_f,lb,ub,tspan);
       obj = obj@WorldPositionConstraint(robot,body,pts,lb,ub,tspan);
       obj.o_T_f = o_T_f;
       obj.f_T_o = invHT(o_T_f);
+      obj.type = RigidBodyConstraint.WorldPositionInFrameConstraintType;
       obj.mex_ptr = ptr;
     end
     
@@ -40,9 +41,6 @@ classdef WorldPositionInFrameConstraint < WorldPositionConstraint
       obj.mex_ptr = updatePtrWorldPositionInFrameConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrWorldPositionInFrameConstraintmex(varargin{:});
-    end
 
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);

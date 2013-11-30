@@ -26,8 +26,8 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
       if(nargin<7)
         tspan = [-inf,inf];
       end
-      ptr = constructPtrSingleTimeLinearPostureConstraintmex(robot.getMexModelPtr,iAfun,jAvar,A,lb,ub,tspan);
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeLinearPostureConstraint);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.SingleTimeLinearPostureConstraintType,robot.getMexModelPtr,iAfun,jAvar,A,lb,ub,tspan);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeLinearPostureConstraintCategory);
       obj.robot = robot;
       nq = obj.robot.getNumDOF;
       if(~isnumeric(lb))
@@ -87,6 +87,7 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
         error('Drake;SingleTimeLinearPostureConstraint: tspan(2) should be no less than tspan(1)');
       end
       obj.tspan = tspan;
+      obj.type = RigidBodyConstraint.SingleTimeLinearPostureConstraintType;
       obj.mex_ptr = ptr;
     end
     
@@ -166,8 +167,5 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
       end
     end
     
-    function ptr = constructPtr(varargin)
-      ptr = constructSingleTimeKinematicConstraint(varargin{:});
-    end
   end
 end

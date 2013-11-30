@@ -23,12 +23,13 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
       if(nargin<7)
         conethreshold = 0;
       end
-      ptr = constructPtrRelativeGazeTargetConstraintmex(robot.getMexModelPtr,body_a_idx,body_b_idx,axis,target,gaze_origin,conethreshold,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeGazeTargetConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,axis,target,gaze_origin,conethreshold,tspan);
       obj = obj@GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan);
       obj.body_a.idx = body_a_idx;
       obj.body_a.name = getLinkName(obj.robot, obj.body_a.idx);
       obj.body_b.idx = body_b_idx;
       obj.body_b.name = getLinkName(obj.robot, obj.body_b.idx);
+      obj.type = RigidBodyConstraint.RelativeGazeTargetConstraintType;
       obj.mex_ptr = ptr;
     end
 
@@ -59,9 +60,6 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
       end
     end
 
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrRelativeGazeTargetConstraintmex(varargin{:});
-    end
 
     function obj = updateRobot(obj,robot)
       obj.robot = robot;

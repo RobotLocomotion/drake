@@ -41,8 +41,8 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
         tspan = [-inf,inf];
       end
       tspan = [tspan(1) tspan(end)];
-      ptr = constructPtrQuasiStaticConstraintmex(robot.getMexModelPtr,tspan,robotnum);
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintType);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.QuasiStaticConstraintType,robot.getMexModelPtr,tspan,robotnum);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintCategory);
       obj.robot = robot;
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))
         error('Drake:QuasiStaticConstraint: robotnum is not accepted');
@@ -61,6 +61,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       obj.num_body_pts = [];
       obj.body_pts = {};
       obj.plane_row_idx;
+      obj.type = RigidBodyConstraint.QuasiStaticConstraintType;
       obj.mex_ptr = ptr;
     end
     
