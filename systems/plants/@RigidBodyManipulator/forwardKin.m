@@ -133,12 +133,43 @@ else
         idx = sub2ind(size(kinsol.dTdq{body_ind}),(3-1)*nq+(1:nq),3*ones(1,nq));
         dR33_dq = kinsol.dTdq{body_ind}(idx);
         
-        dqwdq = (dR11_dq+dR22_dq+dR33_dq)/(4*sqrt(1+R(1,1)+R(2,2)+R(3,3)));
-        qw = x(4,1); 
-        wsquare4 = 4*qw^2;
-        dqxdq = ((dR32_dq-dR23_dq)*qw-(R(3,2)-R(2,3))*dqwdq)/wsquare4;
-        dqydq = ((dR13_dq-dR31_dq)*qw-(R(1,3)-R(3,1))*dqwdq)/wsquare4;
-        dqzdq = ((dR21_dq-dR12_dq)*qw-(R(2,1)-R(1,2))*dqwdq)/wsquare4;
+        % now take gradients of rotmat2quat 
+        [val,ind] = max([1 1 1; 1 -1 -1; -1 1 -1; -1 -1 1]*diag(R));
+        switch(ind)
+          case 1  % val = trace(M)
+            dvaldq = dR11_dq + dR22_dq + dR33_dq;
+            dqwdq = dvaldq/(4*sqrt(1+val));
+            qw = x(4,1);
+            wsquare4 = 4*qw^2;
+            dqxdq = ((dR32_dq-dR23_dq)*qw-(R(3,2)-R(2,3))*dqwdq)/wsquare4;
+            dqydq = ((dR13_dq-dR31_dq)*qw-(R(1,3)-R(3,1))*dqwdq)/wsquare4;
+            dqzdq = ((dR21_dq-dR12_dq)*qw-(R(2,1)-R(1,2))*dqwdq)/wsquare4;
+          case 2 % val = M(1,1) - M(2,2) - M(3,3)
+            dvaldq = dR11_dq - dR22_dq - dR33_dq;
+            s = 2*sqrt(1+val); ssquare = s^2;
+            dsdq = dvaldq/sqrt(1+val);
+            dqwdq = ((dR32_dq-dR23_dq)*s - (R(3,2)-R(2,3))*dsdq)/ssquare; % qw = (M(3,2)-M(2,3))/s;
+            dqxdq = .25*dsdq; % qx = 0.25*s;
+            dqydq = ((dR12_dq+dR21_dq)*s - (R(1,2)+R(2,1))*dsdq)/ssquare; % qy = (M(1,2)+M(2,1))/s;
+            dqzdq = ((dR13_dq+dR31_dq)*s - (R(1,3)+R(3,1))*dsdq)/ssquare; % qz = (M(1,3)+M(3,1))/s;
+          case 3 % val = M(2,2) - M(1,1) - M(3,3)
+            dvaldq = - dR11_dq + dR22_dq - dR33_dq;
+            s = 2*(sqrt(1+val)); ssquare = s^2;
+            dsdq = dvaldq/sqrt(1+val);
+            dqwdq = ((dR13_dq-dR31_dq)*s - (R(1,3)-R(3,1))*dsdq)/ssquare; % w = (M(1,3)-M(3,1))/s;
+            dqxdq = ((dR12_dq+dR21_dq)*s - (R(1,2)+R(2,1))*dsdq)/ssquare; % x = (M(1,2)+M(2,1))/s;
+            dqydq = .25*dsdq; % y = 0.25*s;
+            dqzdq = ((dR23_dq+dR32_dq)*s - (R(2,3)+R(3,2))*dsdq)/ssquare; % z = (M(2,3)+M(3,2))/s;
+          otherwise % val = M(3,3) - M(2,2) - M(1,1)
+            dvaldq = - dR11_dq - dR22_dq + dR33_dq;
+            s = 2*(sqrt(1+val)); ssquare = s^2;
+            dsdq = dvaldq/sqrt(1+val);
+            dqwdq = ((dR21_dq-dR12_dq)*s - (R(2,1)-R(1,2))*dsdq)/ssquare; % w = (M(2,1)-M(1,2))/s;
+            dqxdq = ((dR13_dq+dR31_dq)*s - (R(1,3)+R(3,1))*dsdq)/ssquare; % x = (M(1,3)+M(3,1))/s;
+            dqydq = ((dR23_dq+dR32_dq)*s - (R(2,3)+R(3,2))*dsdq)/ssquare; % y = (M(2,3)+M(3,2))/s;
+            dqzdq = .25*dsdq; % z = 0.25*s;
+        end
+        
         Jq = [dqwdq;dqxdq;dqydq;dqzdq];
         
         Jtmp = [Jx;Jq];
