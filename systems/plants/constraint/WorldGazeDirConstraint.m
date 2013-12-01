@@ -58,10 +58,5 @@ classdef WorldGazeDirConstraint < GazeDirConstraint
       end
     end
     
-    function obj = updateRobot(obj,robot)
-      obj.robot = robot;
-      obj.mex_ptr = updatePtrWorldGazeDirConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
-    end
-
   end
 end

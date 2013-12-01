@@ -121,7 +121,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         memcpy(lb.data(),mxGetPr(prhs[5]),sizeof(double)*num_constraint);
         memcpy(ub.data(),mxGetPr(prhs[6]),sizeof(double)*num_constraint);
         SingleTimeLinearPostureConstraint* cnst = new SingleTimeLinearPostureConstraint(model,iAfun,jAvar,A,lb,ub,tspan);
-        plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","SingleTimeKinematicConstraint");
+        plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","SingleTimeLinearPostureConstraint");
       }
       break;
       // AllBodiesClosestDistanceConstraint
@@ -519,7 +519,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
         cnst = new WorldPositionInFrameConstraint(model,body,pts,T_world_to_frame,
                                                   lb,ub,tspan);
-        plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","WorldPositionConstraint");
+        plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","WorldPositionInFrameConstraint");
       }
       break;
       // WorldQuatConstraint

@@ -72,10 +72,5 @@ classdef WorldEulerConstraint <EulerConstraint
       end
     end
     
-    function obj = updateRobot(obj,robot)
-      obj.robot = robot;
-      obj.mex_ptr = updatePtrWorldEulerConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
-    end
-    
   end
 end

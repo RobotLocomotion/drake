@@ -52,7 +52,11 @@ c = stlpc.feval(t,q);
 [iAfun,jAvar,A] = stlpc.geval(t);
 cnst_name = stlpc.name(t);
 [lb,ub] = stlpc.bounds(t);
-[num_cnst_mex,c_mex,iAfun_mex,jAvar_mex,A_mex,cnst_name_mex,lb_mex,ub_mex] = testSingleTimeLinearPostureConstraintmex(stlpc_ptr,q,t);
+[type,num_cnst_mex,c_mex,iAfun_mex,jAvar_mex,A_mex,cnst_name_mex,lb_mex,ub_mex] = testSingleTimeLinearPostureConstraintmex(stlpc_ptr,q,t);
+valuecheck(type,stlpc.type);
+if(~strcmp(constraintTypemex(stlpc.mex_ptr),stlpc.mex_ptr.name))
+  error('constraint type do not match');
+end
 valuecheck(num_cnst,num_cnst_mex);
 valuecheck(c,c_mex,1e-10);
 valuecheck(iAfun,iAfun_mex);

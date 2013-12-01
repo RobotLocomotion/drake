@@ -123,10 +123,5 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       end
     end
 
-    function obj = updateRobot(obj,robot)
-      obj.robot = robot;
-      obj.mex_ptr = updatePtrAllBodiesClosestDistanceConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
-    end
-    
   end
 end
