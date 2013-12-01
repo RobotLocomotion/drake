@@ -113,6 +113,7 @@ else
       J = reshape(kinsol.dTdq{body_ind}*pts,nq,[])';
     elseif(rotation_type == 2)
         Jx = reshape(kinsol.dTdq{body_ind}(1:3*nq,:)*pts,nq,[])';
+        
         idx = sub2ind(size(kinsol.dTdq{body_ind}),(1-1)*nq+(1:nq),ones(1,nq));
         dR11_dq = kinsol.dTdq{body_ind}(idx);
         idx = sub2ind(size(kinsol.dTdq{body_ind}),(1-1)*nq+(1:nq),2*ones(1,nq));
