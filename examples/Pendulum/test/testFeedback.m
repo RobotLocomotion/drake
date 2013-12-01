@@ -29,13 +29,8 @@ try
   
   for i=1:40
     t=rand; x=randn(2,1); u=randn;
+    valuecheck(output(sys1,t,x,u),output(sys2,t,x,u));
     valuecheck(dynamics(sys1,t,x,u),dynamics(sys2,t,x,u));
-    
-    if (i<5)  % these are slower
-      y1=simulate(sys1,[0 1],x);
-      y2=simulate(sys2,[0 1],x);
-      valuecheck(y1.eval(1),y2.eval(1),1e-4);
-    end
   end
 
   % polynomial feedback 
@@ -54,22 +49,8 @@ try
   
   for i=1:40
     t=rand; x=randn(2,1); u=randn;
-    if any(abs(dynamics(sys1,t,x,u) - dynamics(sys2,t,x,u))>1e-10)
-      i
-      x
-      u
-      xdot_polysys=dynamics(sys1,t,x,u)
-      xdot_simulinkmodel=dynamics(sys2,t,x,u)
-      error('dynamics should match');
-    end
-    
-    if (i<5)  % these are slower
-      y1=simulate(sys1,[0 1],x);
-      y2=simulate(sys2,[0 1],x);
-      if (any(abs(y1.eval(1)-y2.eval(1))>1e-10))
-        error('simulations should match');
-      end
-    end
+    valuecheck(output(sys1,t,x,u),output(sys2,t,x,u));
+    valuecheck(dynamics(sys1,t,x,u),dynamics(sys2,t,x,u));
   end
   
 catch ex

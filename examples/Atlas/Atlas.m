@@ -17,7 +17,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
       
       addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
   
+      w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
+      warning(w);
       
       if options.floating
         % could also do fixed point search here

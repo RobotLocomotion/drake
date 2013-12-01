@@ -9,6 +9,8 @@ urdf_collision = [getDrakePath,'/systems/plants/constraint/test/model_simple_vis
 aff_urdf = [getDrakePath,'/systems/plants/constraint/test/valve_task_wall.urdf'];
 
 options.floating = true;
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 robot = RigidBodyManipulator(urdf,options);
 nq = robot.getNumDOF();
 
@@ -16,6 +18,7 @@ robot_aff = robot.addRobotFromURDF(aff_urdf,[0;0;0],[pi/2;0;0],struct('floating'
 nq_aff = robot_aff.getNumDOF();
 
 r_collision = RigidBodyManipulator(urdf_collision,options);
+warning(w);
 ignored_bodies = {'ltorso','mtorso','r_talus','l_talus'};
 r_collision = addLinksToCollisionFilterGroup(r_collision,ignored_bodies,'no_collision',1);
 r_collision = r_collision.compile();
