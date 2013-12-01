@@ -43,8 +43,8 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       body.robotnum=1;
       body = setInertial(body,mass,[0;0;-len/2],diag([1;mass*len^2/12;1]));  % solid rod w/ uniform mass
       body.geometry{1}.xyz = [radius*[-1 1 1 -1 -1]; ...
-        len*[0 0 -1 -1 0]; ...
-        zeros(1,5)];
+        zeros(1,5);
+        len*[0 0 -1 -1 0]];
       h=figure(1035); set(h,'Visible','off');
       co = get(gca,'ColorOrder');
       close(h);
@@ -53,7 +53,7 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       
       % joint properties
       if (ind>2)
-        parentlen=-min(model.body(ind-1).geometry{1}.xyz(2,:));
+        parentlen=-min(model.body(ind-1).geometry{1}.xyz(3,:));
       else
         parentlen = 0;
       end
