@@ -57,7 +57,11 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       else
         parentlen = 0;
       end
-      model = addJoint(model,['joint',num2str(ind-1)],'revolute',ind-1,ind,[0;0;-parentlen],zeros(3,1),model.view_axis,.1);
+      limits.joint_limit_min = -Inf;
+      limits.joint_limit_max = Inf;
+      limits.effort_limit = 50;
+      limits.velocity_limit = Inf;
+      model = addJoint(model,['joint',num2str(ind-1)],'revolute',ind-1,ind,[0;0;-parentlen],zeros(3,1),model.view_axis,.1,[],[],[],limits);
       
       if (ind>2)  % leave the first joint as passive
         actuator = RigidBodyActuator();

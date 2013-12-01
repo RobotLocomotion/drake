@@ -179,9 +179,9 @@ classdef RigidBodyManipulator < Manipulator
       if (nargin<7) rpy=zeros(3,1); end
       if (nargin<8) axis=[1;0;0]; end
       if (nargin<9) damping=0; end
-      if (nargin<10) coulomb_friction=0; end
-      if (nargin<11) static_friction=0; end
-      if (nargin<12) coulomb_window=eps; end
+      if (nargin<10 || isempty(coulomb_friction)) coulomb_friction=0; end
+      if (nargin<11 || isempty(static_friction)) static_friction=0; end
+      if (nargin<12 || isempty(coulomb_window)) coulomb_window=eps; end
       if (nargin<13)
         limits = struct();
         limits.joint_limit_min = -Inf;
