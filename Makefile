@@ -41,7 +41,7 @@ configure:
 
 	# create the temporary build directory if needed
 	@mkdir -p pod-build
-	@cd pod-build && ln -sF ../CTestCustom.cmake  # actually has to live in the build path
+	@cd pod-build && ln -sf ../CTestCustom.cmake  # actually has to live in the build path
 
 	# run CMake to generate and configure the build scripts
 	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
