@@ -107,11 +107,6 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
         name_str = {};
       end
     end
-    
-    function obj = updateRobot(obj,robot)
-      obj.robot = robot;
-      obj.mex_ptr = updatePtrWorldFixedPositionConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
-    end
-    
+
   end
 end

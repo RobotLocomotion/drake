@@ -279,6 +279,7 @@ PostureConstraint::PostureConstraint(RigidBodyManipulator* model, const Eigen::V
   this->ub = new double[nq];
   memcpy(this->lb,this->robot->joint_limit_min,sizeof(double)*nq);
   memcpy(this->ub,this->robot->joint_limit_max,sizeof(double)*nq);
+  this->type = RigidBodyConstraint::PostureConstraintType;
 }
 
 PostureConstraint::PostureConstraint(const PostureConstraint& rhs):RigidBodyConstraint(rhs)

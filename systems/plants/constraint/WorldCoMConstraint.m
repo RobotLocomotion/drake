@@ -74,12 +74,8 @@ classdef WorldCoMConstraint < PositionConstraint
         error('Drake:WorldCoMConstraint: robotnum is not accepted');
       end
       obj.robotnum = robotnum;
-      obj.mex_ptr = updatePtrWorldCoMConstraintmex(obj.mex_ptr,'robotnum',robotnum);
+      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robotnum',robotnum);
     end
     
-    function obj = updateRobot(obj,r)
-      obj.robot = r;
-      obj.mex_ptr = updatePtrWorldCoMConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
-    end
   end
 end

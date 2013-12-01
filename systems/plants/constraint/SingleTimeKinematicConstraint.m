@@ -48,11 +48,15 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
       end
     end
     
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+    end
+    
   end
   methods(Abstract)
     [c,dc] = eval(obj,t,kinsol);
     [lb,ub] = bounds(obj,t)
     name_str = name(obj,t)
-    obj = updateRobot(obj,r);
   end
 end
