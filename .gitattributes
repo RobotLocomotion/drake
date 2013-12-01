@@ -95,6 +95,7 @@ examples/Acrobot/runDircol.m -text
 examples/Acrobot/runLQR.m -text
 examples/Acrobot/runMaxROA.m -text
 examples/Acrobot/runPassive.m -text
+examples/Acrobot/runPassiveURDF.m -text
 examples/Acrobot/runPassiveWRL.m -text
 examples/Acrobot/runSwingUp.m -text
 examples/Acrobot/runTrigLQR.m -text
