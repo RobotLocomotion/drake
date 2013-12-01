@@ -27,7 +27,9 @@ for i=1:100
   valuecheck(rpy2rotmat(rpy1),rpy2rotmat(rpy2),1e-6);
   
   [quat1,J] = geval(@myfun3,q,options);
-  
+
+  quat2 = myfun4(q);
+  valuecheck(quat1,quat2);
   [quat2,J] = geval(@myfun4,q,options);
   
   valuecheck(1-abs(quat1'*quat2),0,1e-6);
@@ -63,7 +65,7 @@ end
 
   function [quat,J] = myfun3(q)
     kinsol = p.doKinematics(q,false,false);
-    [x,J] = p.forwardKin(kinsol,body_ind,[0;0;0],2); 
+    [x,J] = p.forwardKin(kinsol,body_ind,[0;1;0],2); 
     quat = x(4:7);
     J = J(4:7,:);
   end
