@@ -252,7 +252,7 @@ classdef RigidBody < RigidBodyElement
       inertia = eta*inertia;  
       
       if isnumeric(inertia) && ~all(eig(inertia)>0)
-        warning('RigidBody: inertia matrix not positive definite!');
+        warning('Drake:RigidBodyManipulator:NonPSDInertia','RigidBody: inertia matrix not positive definite!');
       end
       if any(rpy)
         error([body.linkname,': rpy in inertia block not implemented yet (but would be easy)']);

@@ -80,7 +80,9 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       if nargin<5, options=struct(); end
       
       if ~isfield(options,'visual_geometry') options.visual_geometry = true; end
+      w = warning('off','Drake:RigidBodyManipulator:NonPSDInertia');  % should I check for positive in the projected coordinates?
       model = addRobotFromURDF@RigidBodyManipulator(model,urdf_filename,xyz,rpy,options);
+      warning(w);
       
       if ~isfield(options,'q_nominal') 
         options.q_nominal = zeros(getNumDOF(model),1); 
