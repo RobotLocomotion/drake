@@ -1462,7 +1462,6 @@ util/test/taylorVarScalarMatrixMultTest.m -text
 util/test/testDcross.m -text
 util/test/testOrientation.m -text
 util/test/testQuat.m -text
-util/test/testQuat.m.rej -text
 util/test/testQuatConjugate.m -text
 util/test/testQuatProduct.m -text
 util/test/testQuatRotateVec.m -text
