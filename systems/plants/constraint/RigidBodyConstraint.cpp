@@ -40,6 +40,13 @@ void drakePrintMatrix(const MatrixXd &mat)
   }
 };
 
+static void checkBodyInd(int body, int num_bodies)
+{
+  if(body<0 || body>=num_bodies)
+  {
+    std::cerr<<"body should be within [0 robot.num_bodies-1]"<<std::endl;
+  }
+}
 namespace DrakeRigidBodyConstraint{
   Vector4d com_pts(0.0,0.0,0.0,1.0);
   const int WorldCoMDefaultRobotNum[1] = {0};
@@ -194,7 +201,7 @@ void QuasiStaticConstraint::name(const double* t,std::vector<std::string> &name_
   }
 }
 
-bool compare3Dvector(const Vector3d& a, const Vector3d& b)
+static bool compare3Dvector(const Vector3d& a, const Vector3d& b)
 {
   if(a(0)<b(0)) return true;
   if(a(0)>b(0)) return false;
@@ -208,6 +215,7 @@ void QuasiStaticConstraint::addContact(int num_new_bodies,const int* new_bodies,
   for(int i = 0;i<num_new_bodies;i++)
   {
     bool findDuplicateBody = false;
+    checkBodyInd(new_bodies[i],this->robot->num_bodies);
     if(new_body_pts[i].rows() != 4)
     {
       std::cerr<<"new_body_pts must all have 4 rows"<<std::endl;
