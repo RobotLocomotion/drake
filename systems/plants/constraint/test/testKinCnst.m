@@ -1,9 +1,6 @@
 function testKinCnst
-warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
-warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
-warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 urdf_collision = [getDrakePath,'/systems/plants/constraint/test/model_simple_visuals.urdf'];
 aff_urdf = [getDrakePath,'/systems/plants/constraint/test/valve_task_wall.urdf'];

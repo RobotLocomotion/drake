@@ -1,4 +1,4 @@
-function [q,dq]=rotmat2quat(M)
+function q=rotmat2quat(M)
 % convert rotation matrix to quaternion, based on 
 % http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
 % Pay close attention that there are two quaternions for the same rotation
