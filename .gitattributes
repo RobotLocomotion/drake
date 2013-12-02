@@ -977,7 +977,6 @@ systems/plants/constraint/GazeConstraint.m -text
 systems/plants/constraint/GazeDirConstraint.m -text
 systems/plants/constraint/GazeOrientConstraint.m -text
 systems/plants/constraint/GazeTargetConstraint.m -text
-systems/plants/constraint/IKoptions.m -text
 systems/plants/constraint/MultipleTimeKinematicConstraint.m -text
 systems/plants/constraint/MultipleTimeLinearPostureConstraint.m -text
 systems/plants/constraint/Point2LineSegDistConstraint.m -text

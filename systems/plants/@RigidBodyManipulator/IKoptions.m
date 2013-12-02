@@ -58,7 +58,7 @@ classdef IKoptions
       obj.Qv = zeros(obj.nq);
 %       obj.approximateFlag = false;
       obj.use_mex = true;
-      obj.debug_mode = false;
+      obj.debug_mode = true;
       obj.sequentialSeedFlag = false;
       obj.SNOPT_MajorFeasibilityTolerance = 1e-6;
       obj.SNOPT_MajorIterationsLimit = 200;
@@ -78,7 +78,7 @@ classdef IKoptions
       typecheck(Q,'double');
       sizecheck(Q,[obj.nq,obj.nq]);
       Q = (Q+Q')/2;
-      if(any(abs(eig(Q))<-1e-10))
+      if(any(abs(eig(Q))<0))
         error('IKoptions:Q must be positive semidefinite');
       end
       obj.Q = Q;
@@ -88,7 +88,7 @@ classdef IKoptions
       typecheck(Qa,'double');
       sizecheck(Qa,[obj.nq,obj.nq]);
       Qa = (Qa+Qa')/2;
-      if(any(abs(eig(Qa))<-1e-10))
+      if(any(abs(eig(Qa))<0))
         error('IKoptions:Qa must be positive semidefinite');
       end
       obj.Qa = Qa;
@@ -98,7 +98,7 @@ classdef IKoptions
       typecheck(Qv,'double');
       sizecheck(Qv,[obj.nq,obj.nq]);
       Qv = (Qv+Qv')/2;
-      if(any(abs(eig(Qv))<-1e-10))
+      if(any(abs(eig(Qv))<0))
         error('IKoptions:Qv must be positive semidefinite');
       end
       obj.Qv = Qv;
