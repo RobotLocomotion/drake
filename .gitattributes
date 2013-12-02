@@ -1379,6 +1379,7 @@ util/isHT.m -text
 util/isPositiveDefinite.m -text
 util/jacHt2std.m -text
 util/jacStd2ht.m -text
+util/knownIssue.m -text
 util/lagrangePoly.m -text
 util/lagrangePolyVal.m -text
 util/lcmInput.m -text
