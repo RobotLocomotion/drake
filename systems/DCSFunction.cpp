@@ -39,7 +39,13 @@ bool mexCallMATLABsafe(SimStruct* S, int nlhs, mxArray* plhs[], int nrhs, mxArra
     mexPrintf(errmsg);
     mxFree(errmsg);
     mxDestroyArray(report);
-    ssSetErrorStatus(S, "\n\nDrakeSystem S-Function: error in MATLAB callback.\nSee additional debugging information above");
+    mxArray *identifier = mxGetProperty(ex,0,"identifier");
+    char buffer[200];
+    errmsg = mxArrayToString(identifier);
+    sprintf(buffer,"\n\nDrakeSystem S-Function: error %s in MATLAB callback.\nSee additional debugging information above",errmsg);
+    ssSetErrorStatus(S, buffer);
+    mxFree(errmsg);
+//    mxFree(identifier);  // it appears I'm not supposed to free this
     mxDestroyArray(ex);
     return true;
   }

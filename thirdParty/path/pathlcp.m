@@ -42,7 +42,7 @@ function [z,mu] = pathlcp(M,q,l,u,z,A,b,t,mu)
 Big = 1e20;
 
 if (nargin < 2)
-  error('two input arguments required for lcp(M, q)');
+  error('PathLCP:BadInputs','two input arguments required for lcp(M, q)');
 end
 
 if (~issparse(M))
@@ -54,11 +54,11 @@ q = full(q(:)); 	% Make sure q is a column vector
 n = length(q);
 
 if (mm ~= mn | mm ~= n) 
-  error('dimensions of M and q must match');
+  error('PathLCP:BadInputs','dimensions of M and q must match');
 end
 
 if (n == 0)
-  error('empty model');
+  error('PathLCP:BadInputs','empty model');
 end
 
 if (nargin < 3 | isempty(l))
@@ -75,7 +75,7 @@ end
 
 z = full(z(:)); l = full(l(:)); u = full(u(:));
 if (length(z) ~= n | length(l) ~= n | length(u) ~= n)
-  error('Input arguments are of incompatible sizes');
+  error('PathLCP:BadInputs','Input arguments are of incompatible sizes');
 end
 
 l = max(l,-Big*ones(n,1));
@@ -85,7 +85,7 @@ z = min(max(z,l),u);
 m = 0;
 if (nargin > 5)
   if (nargin < 7)
-    error('Polyhedral constraints require A and b');
+    error('PathLCP:BadConstraints','Polyhedral constraints require A and b');
   end
 
   if (~issparse(A))
@@ -100,7 +100,7 @@ if (nargin > 5)
     [am, an] = size(A);
 
     if (am ~= m | an ~= n)
-      error('Polyhedral constraints of incompatible sizes');
+      error('PathLCP:BadConstraints','Polyhedral constraints of incompatible sizes');
     end
 
     if (nargin < 8 | isempty(t))
@@ -113,7 +113,7 @@ if (nargin > 5)
 
     t = full(t(:)); mu = full(mu(:));
     if (length(t) ~= m | length(mu) ~= m)
-      error('Polyhedral input arguments are of incompatible sizes');
+      error('PathLCP:BadConstraints','Polyhedral input arguments are of incompatible sizes');
     end
 
     l_p = -Big*ones(m,1);
@@ -139,18 +139,18 @@ if (nargin > 5)
     u = [u; u_p];
   else
     if (nargin >= 9 & ~isempty(mu))
-      error('No polyhedral constraints -- multipliers set.');
+      error('PathLCP:BadConstraints','No polyhedral constraints -- multipliers set.');
     end
 
     if (nargin >= 8 & ~isempty(t))
-      error('No polyhedral constraints -- equation types set.');
+      error('PathLCP:BadConstraints','No polyhedral constraints -- equation types set.');
     end
   end
 end
 
 idx = find(l > u);
 if length(idx) > 0
-  error('Bounds infeasible.');
+  error('PathLCP:BadConstraints','Bounds infeasible.');
 end
 
 nnzJ = nnz(M);
@@ -159,7 +159,7 @@ nnzJ = nnz(M);
 
 if (status ~= 1) 
   status,
-  error('Path fails to solve problem');
+  error('PathLCP:FailedToSolve','Path fails to solve problem');
 end
 
 mu = [];

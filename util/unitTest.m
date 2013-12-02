@@ -687,6 +687,7 @@ else
         sprintf('*******************************************************\n') ];
       
       fprintf(1,'\n\n%s',msg);
+      knownIssue(fullfile(regexprep(runpath,[getDrakePath,filesep],''),test),ex);
       
       % strip the html tags out of the logfile (which are irrelevant outside of matlab and make it difficult to read):
       msg = regexprep(msg,'''[^'']*''','');
