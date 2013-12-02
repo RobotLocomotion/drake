@@ -267,6 +267,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       
       %% Bilateral position constraints 
       if nP > 0
+        % write as 
+        %   phiP + h*JP*qdn >= 0 && -phiP - h*JP*qdn >= 0
         if (nargout<4)
           [phiP,JP] = geval(@positionConstraints,obj.manip,q);
           %        [phiP,JP] = obj.manip.positionConstraints(q);
@@ -275,7 +277,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           dJP(nL+(1:nP),:) = [dJP; -dJP];
         end
         phiP = [phiP;-phiP];
-        JP = [JP; -JP];
+        JP = [JP; -JP]; 
         J(nL+(1:nP),:) = JP; 
       end
       
@@ -612,6 +614,16 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function varargout = stateConstraints(obj,varargin)
       varargout = cell(1,nargout);
       [varargout{:}] = stateConstraints(obj.manip,varargin{:});
+    end
+    
+    function varargout = positionConstraints(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = positionConstraints(obj.manip,varargin{:});
+    end
+    
+    function varargout = velocityConstraints(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = velocityConstraints(obj.manip,varargin{:});
     end
     
     function varargout = manipulatorDynamics(obj,varargin)
