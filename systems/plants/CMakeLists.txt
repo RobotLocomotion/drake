@@ -20,8 +20,11 @@ endif ()
 if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
 
-  add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp IKoptions.cpp)
+  add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
   target_link_libraries(drakeRBM drakeCollision)
+
+  add_library(drakeIKoptions SHARED IKoptions.cpp)
+  target_link_libraries(drakeIKoptions)
 
   add_subdirectory(collision)
   add_subdirectory(constraint)
@@ -46,7 +49,7 @@ if (eigen3_FOUND)
 #    add_mex(${ARGV} ${ARGV}.cpp $<TARGET_OBJECTS:drakeUtil>)
 #    target_link_libraries(${ARGV} drakeRBM)
     add_mex(${ARGV} ${ARGV}.cpp)
-    target_link_libraries(${ARGV} drakeRBM drakeUtil)
+    target_link_libraries(${ARGV} drakeRBM drakeUtil drakeIKoptions)
   endmacro()
 
   add_rbm_mex(constructModelmex)
@@ -57,6 +60,10 @@ if (eigen3_FOUND)
   add_rbm_mex(bodyKinmex)
   add_rbm_mex(collisionmex)
   add_rbm_mex(getCMMmex)
+  add_rbm_mex(constructPtrIKoptionsmex)
+  add_rbm_mex(deletePtrIKoptionsmex)
+  add_rbm_mex(updatePtrIKoptionsmex)
+  add_rbm_mex(testIKoptionsmex)
 
   pods_find_pkg_config(gurobi)
 

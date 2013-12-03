@@ -48,9 +48,11 @@ classdef IKoptions
     qd0_ub
     qdf_ub
     qdf_lb
+    mex_ptr;
   end
   methods
     function obj = IKoptions(robot)
+      ptr = constructPtrIKoptionsmex(robot.getMexModelPtr);
       obj.robot = robot;
       obj.nq = obj.robot.getNumDOF();
       obj.Q = eye(obj.nq);
@@ -72,9 +74,11 @@ classdef IKoptions
       obj.qd0_lb = zeros(obj.nq,1);
       obj.qdf_ub = zeros(obj.nq,1);
       obj.qdf_lb = zeros(obj.nq,1);
+      obj.mex_ptr = ptr;
     end
     
     function obj = setQ(obj,Q)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'Q',Q);
       typecheck(Q,'double');
       sizecheck(Q,[obj.nq,obj.nq]);
       Q = (Q+Q')/2;
@@ -85,6 +89,7 @@ classdef IKoptions
     end
     
     function obj = setQa(obj,Qa)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'Qa',Qa);
       typecheck(Qa,'double');
       sizecheck(Qa,[obj.nq,obj.nq]);
       Qa = (Qa+Qa')/2;
@@ -95,6 +100,7 @@ classdef IKoptions
     end
     
     function obj = setQv(obj,Qv)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'Qv',Qv);
       typecheck(Qv,'double');
       sizecheck(Qv,[obj.nq,obj.nq]);
       Qv = (Qv+Qv')/2;
