@@ -14,8 +14,8 @@ class IKoptions
     bool debug_mode;
     bool sequentialSeedFlag;
     double SNOPT_MajorFeasibilityTolerance;
-    long int SNOPT_MajorIterationsLimit;
-    long int SNOPT_IterationsLimit;
+    int SNOPT_MajorIterationsLimit;
+    int SNOPT_IterationsLimit;
     int SNOPT_SuperbasicsLimit;
     double SNOPT_MajorOptimalityTolerance;
     RowVectorXd additional_tSamples;
@@ -30,6 +30,7 @@ class IKoptions
     IKoptions(RigidBodyManipulator* robot);
     IKoptions(const IKoptions &rhs);
     ~IKoptions(void);
+    RigidBodyManipulator* getRobotPtr();
     void setQ(const MatrixXd &Q);
     void setQa(const MatrixXd &Qa);
     void setQv(const MatrixXd &Qv);
@@ -38,8 +39,8 @@ class IKoptions
     void setMajorOptimalityTolerance(double tol);
     void setMajorFeasibilityTolerance(double tol);
     void setSuperbasicsLimit(int limit);
-    void setMajorIterationsLimit(long int limit);
-    void setIterationsLimit(long int limit);
+    void setMajorIterationsLimit(int limit);
+    void setIterationsLimit(int limit);
     void setFixInitialState(bool flag);
     void setq0(const VectorXd &lb, const VectorXd &ub);
     void setqd0(const VectorXd &lb, const VectorXd &ub);
@@ -50,11 +51,12 @@ class IKoptions
     void getQa(MatrixXd &Qa);
     void getQv(MatrixXd &Qv);
     bool getDebug();
+    bool getSequentialSeedFlag();
     double getMajorOptimalityTolerance();
     double getMajorFeasibilityTolerance();
     int getSuperbasicsLimit();
-    long int getMajorIterationsLimit();
-    long int getIterationsLimit();
+    int getMajorIterationsLimit();
+    int getIterationsLimit();
     void getAdditionaltSamples(RowVectorXd &additional_tSamples);
     bool getFixInitialState();
     void getq0(VectorXd &lb, VectorXd &ub);

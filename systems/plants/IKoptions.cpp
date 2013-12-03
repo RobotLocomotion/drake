@@ -9,6 +9,7 @@ IKoptions::IKoptions(RigidBodyManipulator* robot)
   this->nq = this->robot->num_dof;
   this->Q = MatrixXd::Identity(this->nq,this->nq);
   this->Qa = 0.1*MatrixXd::Identity(this->nq,this->nq);
+  this->Qv = MatrixXd::Zero(this->nq,this->nq);
   this->debug_mode = true;
   this->sequentialSeedFlag = false;
   this->SNOPT_MajorFeasibilityTolerance = 1E-6;
@@ -18,6 +19,8 @@ IKoptions::IKoptions(RigidBodyManipulator* robot)
   this->SNOPT_MajorOptimalityTolerance = 1E-4;
   this->additional_tSamples.resize(0);
   this->fixInitialState = true;
+  this->q0_lb.resize(nq);
+  this->q0_ub.resize(nq);
   memcpy(this->q0_lb.data(), this->robot->joint_limit_min,sizeof(double)*this->nq);
   memcpy(this->q0_ub.data(), this->robot->joint_limit_max,sizeof(double)*this->nq);
   this->qd0_ub = VectorXd::Zero(this->nq);
@@ -53,6 +56,11 @@ IKoptions::~IKoptions()
 {
 }
 
+RigidBodyManipulator* IKoptions::getRobotPtr()
+{
+  return this->robot;
+}
+
 void IKoptions::setQ(const MatrixXd &Q)
 {
   if(Q.rows() != this->nq || Q.cols() != this->nq)
@@ -73,9 +81,9 @@ void IKoptions::setQ(const MatrixXd &Q)
 
 void IKoptions::setQa(const MatrixXd &Qa)
 {
-  if(Q.rows() != this->nq || Q.cols() != this->nq)
+  if(Qa.rows() != this->nq || Qa.cols() != this->nq)
   {
-    cerr<<"Q should be nq x nq matrix"<<endl;
+    cerr<<"Qa should be nq x nq matrix"<<endl;
   }
   this->Qa = (Qa+Qa.transpose())/2;
   SelfAdjointEigenSolver<MatrixXd> eigensolver(this->Qa);
@@ -91,11 +99,11 @@ void IKoptions::setQa(const MatrixXd &Qa)
 
 void IKoptions::setQv(const MatrixXd &Qv)
 {
-  if(Q.rows() != this->nq || Q.cols() != this->nq)
+  if(Qv.rows() != this->nq || Qv.cols() != this->nq)
   {
-    cerr<<"Q should be nq x nq matrix"<<endl;
+    cerr<<"Qv should be nq x nq matrix"<<endl;
   }
-  this->Qa = (Qv+Qv.transpose())/2;
+  this->Qv = (Qv+Qv.transpose())/2;
   SelfAdjointEigenSolver<MatrixXd> eigensolver(this->Qv);
   VectorXd ev= eigensolver.eigenvalues();
   for(int i = 0;i<this->nq;i++)
@@ -129,6 +137,11 @@ void IKoptions::setDebug(bool flag)
 bool IKoptions::getDebug()
 {
   return this->debug_mode;
+}
+
+bool IKoptions::getSequentialSeedFlag()
+{
+  return this->sequentialSeedFlag;
 }
 
 void IKoptions::setMajorOptimalityTolerance(double tol)
@@ -173,7 +186,7 @@ int IKoptions::getSuperbasicsLimit()
   return this->SNOPT_SuperbasicsLimit;
 }
 
-void IKoptions::setMajorIterationsLimit(long int limit)
+void IKoptions::setMajorIterationsLimit(int limit)
 {
   if(limit<=0)
   {
@@ -182,12 +195,12 @@ void IKoptions::setMajorIterationsLimit(long int limit)
   this->SNOPT_MajorIterationsLimit = limit;
 }
 
-long int IKoptions::getMajorIterationsLimit()
+int IKoptions::getMajorIterationsLimit()
 {
   return this->SNOPT_MajorIterationsLimit;
 }
 
-void IKoptions::setIterationsLimit(long int limit)
+void IKoptions::setIterationsLimit(int limit)
 {
   if(limit<=0)
   {
@@ -196,7 +209,7 @@ void IKoptions::setIterationsLimit(long int limit)
   this->SNOPT_IterationsLimit = limit;
 }
 
-long int IKoptions::getIterationsLimit()
+int IKoptions::getIterationsLimit()
 {
   return this->SNOPT_IterationsLimit;
 }
