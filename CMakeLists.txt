@@ -129,8 +129,11 @@ else()
   set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "$ENV{LD_LIBRARY_PATH}" )
 endif()
 
-#set(CMAKE_CTEST_COMMAND "${CMAKE_CTEST_COMMAND} --output-on-failure") # not working
 enable_testing()
 include(CTest)
 
-# Note: use cmake/add_matlab_unit_tests.pl to write ctest scripts (but i advise doing it at test time, not configure time).  - Russ
+add_test(NAME "RigidBodyManipulatorMemoryTest"
+	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/examples/Acrobot"
+	COMMAND "matlab" #"${CMAKE_SOURCE_DIR}/cmake/matlab_clean.pl" 
+	"-nosplash" "-nodisplay" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); knownIssue('$testname',ex); force_close_system; exit(1); end; force_close_system; exit(0)")
+
