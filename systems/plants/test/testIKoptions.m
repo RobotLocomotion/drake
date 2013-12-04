@@ -38,6 +38,72 @@ ikoptions = ikoptions.setQa(Qa);
 valuecheck(ikoptions.Qa,Qa,1e-10);
 checkIKoptions(ikoptions);
 display('setQa pass');
+
+% Check setDebug
+ikoptions = ikoptions.setDebug(~ikoptions.debug_mode);
+checkIKoptions(ikoptions);
+display('setDebug pass');
+
+% Check sequentialSeedFlag
+ikoptions = ikoptions.setSequentialSeedFlag(~ikoptions.sequentialSeedFlag);
+checkIKoptions(ikoptions);
+display('setSequentialSeedFlag pass');
+
+% Check setMajorOptimalityTolerance
+ikoptions = ikoptions.setMajorOptimalityTolerance(0.1*ikoptions.SNOPT_MajorOptimalityTolerance);
+checkIKoptions(ikoptions);
+display('setMajorOptimalityTolerance pass');
+
+% Check setSuperbasicsLimit
+ikoptions = ikoptions.setSuperbasicsLimit(2*ikoptions.SNOPT_SuperbasicsLimit);
+checkIKoptions(ikoptions);
+display('setSuperbasicsLimit pass');
+
+% Check setMajorIterationsLimit
+ikoptions = ikoptions.setMajorIterationsLimit(100*ikoptions.SNOPT_MajorIterationsLimit);
+checkIKoptions(ikoptions);
+display('setMajorIterationsLimit pass');
+
+% Check setIterationsLimit
+ikoptions = ikoptions.setIterationsLimit(100*ikoptions.SNOPT_IterationsLimit);
+checkIKoptions(ikoptions);
+display('setIterationsLimit pass');
+
+% Check setFixInitialState
+ikoptions = ikoptions.setFixInitialState(~ikoptions.fixInitialState);
+checkIKoptions(ikoptions);
+display('setFixInitialState pass');
+
+% Check setq0
+ikoptions = ikoptions.setq0(-rand(nq,1),rand(nq,1));
+checkIKoptions(ikoptions);
+display('setq0 pass');
+
+% Check setqd0
+ikoptions = ikoptions.setqd0(-rand(nq,1),rand(nq,1));
+checkIKoptions(ikoptions);
+display('setqd0 pass');
+
+% Check setqdf
+ikoptions = ikoptions.setqdf(-rand(nq,1),rand(nq,1));
+checkIKoptions(ikoptions);
+display('setqdf pass');
+
+% Check setAdditionaltSamples
+ikoptions = ikoptions.setAdditionaltSamples([]);
+checkIKoptions(ikoptions);
+valuecheck(ikoptions.additional_tSamples,[]);
+ikoptions = ikoptions.setAdditionaltSamples([-1 -1 -2 0 1]);
+checkIKoptions(ikoptions);
+valuecheck(ikoptions.additional_tSamples,[-2 -1 0 1]);
+display('setAdditionaltSamples pass');
+
+% Check updateRobot
+urdf_new = [getDrakePath,'/examples/PR2/pr2.urdf'];
+robot_new = RigidBodyManipulator(urdf_new,struct('floating',true));
+ikoptions = ikoptions.updateRobot(robot_new);
+checkIKoptions(ikoptions);
+display('updateRobot pass');
 end
 
 function checkIKoptions(ikoptions)

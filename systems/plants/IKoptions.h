@@ -26,6 +26,8 @@ class IKoptions
     VectorXd qd0_ub;
     VectorXd qdf_lb;
     VectorXd qdf_ub;
+  protected:
+    void setDefaultParams(RigidBodyManipulator* robot);
   public:
     IKoptions(RigidBodyManipulator* robot);
     IKoptions(const IKoptions &rhs);
@@ -62,6 +64,7 @@ class IKoptions
     void getq0(VectorXd &lb, VectorXd &ub);
     void getqd0(VectorXd &lb, VectorXd &ub);
     void getqdf(VectorXd &lb, VectorXd &ub);
+    void updateRobot(RigidBodyManipulator* new_robot);
 };
 #endif
 
