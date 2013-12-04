@@ -6,10 +6,10 @@
 #include <boost/shared_ptr.hpp>
 
 #include "URDFRigidBodyManipulator.h"
-
 #include "lcmtypes/drake.h"
-
 #include "drake_urdf_renderer.h"
+
+#define UNUSED(x) (void)(x);
 
 using namespace std;
 
@@ -30,6 +30,7 @@ static void my_free( BotRenderer *renderer )
 
 static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 {
+  UNUSED(viewer);
   RendererData *self = (RendererData*) renderer->user;
   if (!self->model) return;  
 

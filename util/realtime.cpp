@@ -2,6 +2,7 @@
 #define S_FUNCTION_LEVEL 2
 #include "simstruc.h"
 
+#define UNUSED(x) (void)(x)
 
 #if defined(_WIN32) || defined(_WIN64)
 
@@ -164,6 +165,7 @@ static void mdlInitializeSampleTimes(SimStruct *S)
 #if defined(MDL_CHECK_PARAMETERS) && defined(MATLAB_MEX_FILE)
 static void mdlCheckParameters(SimStruct *S)
 {
+  UNUSED(S);
 	// todo: verify dialog parameters here
 }
 #endif /* MDL_CHECK_PARAMETERS */
@@ -202,6 +204,7 @@ static void mdlStart(SimStruct *S)
 #define MDL_UPDATE
 static void mdlUpdate(SimStruct *S, int_T tid)
 {
+  UNUSED(tid);
   struct timeval tv,tv_diff;
   gettimeofday(&tv, NULL);
   double wall_t = timevalToDouble(tv),
@@ -227,11 +230,16 @@ static void mdlUpdate(SimStruct *S, int_T tid)
 
 
 #define MDL_OUTPUTS
-static void mdlOutputs(SimStruct *S, int_T tid) {}
+static void mdlOutputs(SimStruct *S, int_T tid) 
+{
+  UNUSED(S);
+  UNUSED(tid);
+}
 
 
 static void mdlTerminate(SimStruct *S) 
 {
+  UNUSED(S);
 }
 
 #ifdef MATLAB_MEX_FILE    /* Is this file being compiled as a 

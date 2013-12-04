@@ -1,9 +1,13 @@
 
 #include <bot_lcmgl_client/lcmgl.h>
 
+#define UNUSED(x) (void)(x)
 
 int main(int argc, char* argv[])
 {
+  UNUSED(argc);
+  UNUSED(argv);
+
   lcm_t * lcm;
   lcm = lcm_create(NULL);
 
