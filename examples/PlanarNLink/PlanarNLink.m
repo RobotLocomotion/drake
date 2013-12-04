@@ -59,7 +59,7 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       end
       limits.joint_limit_min = -Inf;
       limits.joint_limit_max = Inf;
-      limits.effort_limit = 50;
+      limits.effort_limit = 10;
       limits.velocity_limit = Inf;
       model = addJoint(model,['joint',num2str(ind-1)],'revolute',ind-1,ind,[0;0;-parentlen],zeros(3,1),model.view_axis,.1,[],[],[],limits);
       
