@@ -5,28 +5,7 @@ using namespace Eigen;
 IKoptions::IKoptions(RigidBodyManipulator* robot)
 {
   // It is important to make sure these default values are consistent with the MATLAB IKoptions
-  this->robot = robot;
-  this->nq = this->robot->num_dof;
-  this->Q = MatrixXd::Identity(this->nq,this->nq);
-  this->Qa = 0.1*MatrixXd::Identity(this->nq,this->nq);
-  this->Qv = MatrixXd::Zero(this->nq,this->nq);
-  this->debug_mode = true;
-  this->sequentialSeedFlag = false;
-  this->SNOPT_MajorFeasibilityTolerance = 1E-6;
-  this->SNOPT_MajorIterationsLimit = 200;
-  this->SNOPT_IterationsLimit = 10000;
-  this->SNOPT_SuperbasicsLimit = 2000;
-  this->SNOPT_MajorOptimalityTolerance = 1E-4;
-  this->additional_tSamples.resize(0);
-  this->fixInitialState = true;
-  this->q0_lb.resize(nq);
-  this->q0_ub.resize(nq);
-  memcpy(this->q0_lb.data(), this->robot->joint_limit_min,sizeof(double)*this->nq);
-  memcpy(this->q0_ub.data(), this->robot->joint_limit_max,sizeof(double)*this->nq);
-  this->qd0_ub = VectorXd::Zero(this->nq);
-  this->qd0_lb = VectorXd::Zero(this->nq);
-  this->qdf_ub = VectorXd::Zero(this->nq);
-  this->qdf_lb = VectorXd::Zero(this->nq);
+  this->setDefaultParams(robot);
 }
 
 IKoptions::IKoptions(const IKoptions &rhs)
@@ -54,6 +33,32 @@ IKoptions::IKoptions(const IKoptions &rhs)
 }
 IKoptions::~IKoptions()
 {
+}
+
+void IKoptions::setDefaultParams(RigidBodyManipulator* robot)
+{
+  this->robot = robot;
+  this->nq = this->robot->num_dof;
+  this->Q = MatrixXd::Identity(this->nq,this->nq);
+  this->Qa = 0.1*MatrixXd::Identity(this->nq,this->nq);
+  this->Qv = MatrixXd::Zero(this->nq,this->nq);
+  this->debug_mode = true;
+  this->sequentialSeedFlag = false;
+  this->SNOPT_MajorFeasibilityTolerance = 1E-6;
+  this->SNOPT_MajorIterationsLimit = 200;
+  this->SNOPT_IterationsLimit = 10000;
+  this->SNOPT_SuperbasicsLimit = 2000;
+  this->SNOPT_MajorOptimalityTolerance = 1E-4;
+  this->additional_tSamples.resize(0);
+  this->fixInitialState = true;
+  this->q0_lb.resize(nq);
+  this->q0_ub.resize(nq);
+  memcpy(this->q0_lb.data(), this->robot->joint_limit_min,sizeof(double)*this->nq);
+  memcpy(this->q0_ub.data(), this->robot->joint_limit_max,sizeof(double)*this->nq);
+  this->qd0_ub = VectorXd::Zero(this->nq);
+  this->qd0_lb = VectorXd::Zero(this->nq);
+  this->qdf_ub = VectorXd::Zero(this->nq);
+  this->qdf_lb = VectorXd::Zero(this->nq);
 }
 
 RigidBodyManipulator* IKoptions::getRobotPtr()
@@ -137,6 +142,11 @@ void IKoptions::setDebug(bool flag)
 bool IKoptions::getDebug()
 {
   return this->debug_mode;
+}
+
+void IKoptions::setSequentialSeedFlag(bool flag)
+{
+  this->sequentialSeedFlag = flag;
 }
 
 bool IKoptions::getSequentialSeedFlag()
@@ -317,4 +327,15 @@ void IKoptions::setAdditionaltSamples(const RowVectorXd &t_samples)
 void IKoptions::getAdditionaltSamples(RowVectorXd &t_samples)
 {
   t_samples = this->additional_tSamples;
+}
+
+void IKoptions::updateRobot(RigidBodyManipulator* new_robot)
+{
+  this->robot = new_robot;
+  int nq_cache = this->nq;
+  this->nq = this->robot->num_dof;
+  if(nq_cache != nq)
+  {
+    this->setDefaultParams(new_robot);
+  }
 }

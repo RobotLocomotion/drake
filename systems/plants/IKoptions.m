@@ -50,15 +50,14 @@ classdef IKoptions
     qdf_lb
     mex_ptr;
   end
-  methods
-    function obj = IKoptions(robot)
-      ptr = constructPtrIKoptionsmex(robot.getMexModelPtr);
+  
+  methods(Access = protected)
+    function obj = setDefaultParams(obj,robot)
       obj.robot = robot;
       obj.nq = obj.robot.getNumDOF();
       obj.Q = eye(obj.nq);
       obj.Qa = 0.1*eye(obj.nq);
       obj.Qv = zeros(obj.nq);
-%       obj.approximateFlag = false;
       obj.use_mex = true;
       obj.debug_mode = true;
       obj.sequentialSeedFlag = false;
@@ -74,6 +73,13 @@ classdef IKoptions
       obj.qd0_lb = zeros(obj.nq,1);
       obj.qdf_ub = zeros(obj.nq,1);
       obj.qdf_lb = zeros(obj.nq,1);
+    end
+  end
+  
+  methods
+    function obj = IKoptions(robot)
+      ptr = constructPtrIKoptionsmex(robot.getMexModelPtr);
+      obj = setDefaultParams(obj,robot);
       obj.mex_ptr = ptr;
     end
     
@@ -122,6 +128,7 @@ classdef IKoptions
     end
     
     function obj = setDebug(obj,flag)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'debug',flag);
       sizecheck(flag,[1,1]);
       if(isa(flag,'logical'))
         obj.debug_mode = flag;
@@ -133,6 +140,7 @@ classdef IKoptions
     end
     
     function obj = setSequentialSeedFlag(obj,flag)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'sequentialSeedFlag',flag);
       sizecheck(flag,[1,1]);
       if(isa(flag,'logical'))
         obj.sequentialSeedFlag = flag;
@@ -144,6 +152,7 @@ classdef IKoptions
     end
     
     function obj = setMajorOptimalityTolerance(obj,tol)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'majorOptimalityTolerance',tol);
       sizecheck(tol,[1,1]);
       typecheck(tol,'double');
       if(tol<=0)
@@ -153,6 +162,7 @@ classdef IKoptions
     end
     
     function obj = setMajorFeasibilityTolerance(obj,tol)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'majorFeasibilityTolerance',tol);
       sizecheck(tol,[1,1]);
       typecheck(tol,'double');
       if(tol<=0)
@@ -162,6 +172,7 @@ classdef IKoptions
     end
     
     function obj = setSuperbasicsLimit(obj,limit)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'superbasicsLimit',limit);
       sizecheck(limit,[1,1]);
       typecheck(limit,'double');
       if(limit<1)
@@ -171,6 +182,7 @@ classdef IKoptions
     end
     
     function obj = setMajorIterationsLimit(obj,limit)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'majorIterationsLimit',limit);
       sizecheck(limit,[1,1]);
       typecheck(limit,'double');
       if(limit<1)
@@ -180,6 +192,7 @@ classdef IKoptions
     end
     
     function obj = setIterationsLimit(obj,limit)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'iterationsLimit',limit);
       sizecheck(limit,[1,1]);
       typecheck(limit,'double');
       if(limit<1)
@@ -189,6 +202,7 @@ classdef IKoptions
     end
     
     function obj = setFixInitialState(obj,flag)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'fixInitialState',flag);
       sizecheck(flag,[1,1]);
       if(isa(flag,'logical'))
         obj.fixInitialState = flag;
@@ -199,6 +213,7 @@ classdef IKoptions
       end
     end
     function obj = setq0(obj,lb,ub)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'q0',lb,ub);
       typecheck(lb,'double');
       typecheck(ub,'double');
       sizecheck(lb,[obj.nq,1]);
@@ -212,6 +227,7 @@ classdef IKoptions
     end
     
     function obj = setqd0(obj,lb,ub)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'qd0',lb,ub);
       typecheck(lb,'double');
       typecheck(ub,'double');
       sizecheck(lb,[obj.nq,1]);
@@ -225,6 +241,7 @@ classdef IKoptions
     
     
     function obj = setqdf(obj,lb,ub)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'qdf',lb,ub);
       typecheck(lb,'double');
       typecheck(ub,'double');
       sizecheck(lb,[obj.nq,1]);
@@ -237,6 +254,7 @@ classdef IKoptions
     end
 
     function obj = setAdditionaltSamples(obj,t_samples)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'additionaltSamples',t_samples);
       typecheck(t_samples,'double');
       if(~isempty(t_samples))
         sizecheck(t_samples,[1,nan]);
@@ -247,18 +265,12 @@ classdef IKoptions
     end
 
     function obj = updateRobot(obj,robot)
+      obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
       obj.robot = robot;
       nq_cache = obj.nq;
       obj.nq = obj.robot.getNumDOF();
       if(obj.nq ~= nq_cache)
-        obj.Q = eye(obj.nq);
-        obj.Qa = 0.1*eye(obj.nq);
-        obj.Qv = zeros(obj.nq);
-        [obj.q0_lb,obj.q0_ub] = obj.robot.getJointLimits();
-        obj.qd0_ub = zeros(obj.nq,1);
-        obj.qd0_lb = zeros(obj.nq,1);
-        obj.qdf_ub = zeros(obj.nq,1);
-        obj.qdf_lb = zeros(obj.nq,1);
+        obj = setDefaultParams(obj,robot);
       end
     end
   end
