@@ -12,8 +12,7 @@
 #define INF -2147483648
 using namespace Eigen;
 
-
-const std::set<int> emptyIntSet;
+extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
 class RigidBodyManipulator 
 {
