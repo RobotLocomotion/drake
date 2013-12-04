@@ -16,6 +16,8 @@ tp2 = extractTrigPolySystem(p2,options);
 
 w = warning('off','Drake:DrakeSystem:ConstraintsNotEnforced');
 
+tf = findTransform(tp1.getStateFrame,p1.getStateFrame);
+
 % test numerically, because f and e are different (one has the inertial
 % matrix in f, the other has it in e)
 for i=1:25
@@ -25,18 +27,21 @@ for i=1:25
   u = randn;
 
   xdot = p1.dynamics(0,x,u);
-  xdotp = tp1.dynamics(0,xp,u);
+  xpdot = tp1.dynamics(0,xp,u);
   valuecheck(xdot,p2.dynamics(0,x,u));
-  valuecheck(xdotp,tp2.dynamics(0,xp,u));
+  valuecheck(xpdot,tp2.dynamics(0,xp,u));
   
-  dt = .1;
-  xn = x+dt*xdot;
-  xnp = Point(tp1.getStateFrame,xp+dt*xdotp);
-  xnp = double(xnp.inFrame(p1.getStateFrame));
-
-  xnp(1:2) = mod(xnp(1:2),2*pi);
-  xn(1:2) = mod(xn(1:2),2*pi);
-  valuecheck(xn,xnp,1e-2);
+  [xpx,dxdxp] = geval(@tf.output,[],[],xp);
+  valuecheck(x,xpx);
+  valuecheck(xdot,dxdxp*xpdot);
 end
 
 warning(w);
+
+
+function xnp = euler(dt)
+  xnp = Point(tp1.getStateFrame,xp+dt*xpdot);
+  xnp = double(xnp.inFrame(p1.getStateFrame));
+end
+
+end
