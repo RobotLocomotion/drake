@@ -8,7 +8,7 @@ function megaclear()
     force_close_system();
     
 %    while ~isempty(vrgcf), close(vrgcf); end
-    vrclear;
+    if usejava('awt'), vrclear; end
     
     evalin('base', 'h=findobj; delete(h(2:end));');  % delete dangling handles first
     evalin('base', 'clearvars -global');    % clear globals before
