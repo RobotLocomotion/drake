@@ -127,6 +127,11 @@ for i=0:(gazebos.getLength()-1)
   model = parseGazebo(model,robotnum,gazebos.item(i),options);
 end
 
+frames = node.getElementsByTagName('frame');
+for i=0:(frames.getLength()-1)
+  model = parseFrame(model,robotnum,frames.item(i),options);
+end
+
 % weld the root link of this robot to the world link
 ind = find([model.body.parent]<1);
 rootlink = ind([model.body(ind).robotnum]==robotnum);
@@ -182,6 +187,22 @@ if ~isempty(ref)
   %        end
 end
 
+end
+
+function model = parseFrame(model,robotnum,node,options)
+  name = char(node.getAttribute('name'));    % mandatory
+  link = findLinkInd(model,char(node.getAttribute('link')),robotnum);
+  xyz=zeros(3,1); rpy=zeros(3,1);
+  if node.hasAttribute('xyz')
+    xyz = reshape(parseParamString(model,robotnum,char(node.getAttribute('xyz'))),3,1);
+  end
+  if node.hasAttribute('rpy')
+    rpy = reshape(parseParamString(model,robotnum,char(node.getAttribute('rpy'))),3,1);
+  end
+  
+  % todo: make sure frame names are unique?
+  
+  model.frame = vertcat(model.frame,RigidBodyFrame(link,xyz,rpy,name));
 end
 
 
