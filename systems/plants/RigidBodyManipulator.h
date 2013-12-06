@@ -8,13 +8,12 @@
 #include "collision/Model.h"
 
 #include "RigidBody.h"
-//#include "constraint/RigidBodyConstraint.h"
 #include "IKoptions.h"
 #define INF -2147483648
 using namespace Eigen;
 
 class RigidBodyConstraint;
-const std::set<int> emptyIntSet;
+extern std::set<int> emptyIntSet;
 
 class RigidBodyManipulator 
 {
