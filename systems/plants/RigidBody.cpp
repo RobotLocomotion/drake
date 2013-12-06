@@ -1,6 +1,6 @@
 
+#include "RigidBody.h"
 #include "RigidBodyManipulator.h"
-
 using namespace std;
 
 const int defaultRobotNum[1] = {0};

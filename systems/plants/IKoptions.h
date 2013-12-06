@@ -1,8 +1,10 @@
 #ifndef __IKOPTIONS_H__
 #define __IKOPTIONS_H__
-#include "RigidBodyManipulator.h"
+//#include "RigidBodyManipulator.h"
 #include <Eigen/Dense>
 using namespace Eigen;
+
+class RigidBodyManipulator;
 class IKoptions
 {
   private:

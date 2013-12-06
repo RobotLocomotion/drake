@@ -53,27 +53,15 @@ if(isstruct(pos)&&isfield(pos,'type'))
       else
         quat_des = pos.gaze_orientation/norm(pos.gaze_orientation);
       end
-      if(options.use_mex)
-        kc_cell = {constructPtrWorldGazeOrientConstraintmex(robot_ptr,body,axis,quat_des,conethreshold,threshold,tspan)};
-      else
-        kc_cell = {WorldGazeOrientConstraint(robot,body,axis,quat_des,conethreshold,threshold,tspan)};
-      end
+      kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldGazeOrientConstraintType,options.use_mex,robot,body,axis,quat_des,conethreshold,threshold,tspan)};
     end
     if(isfield(pos,'gaze_target'))
       gaze_target = pos.gaze_target;
-      if(options.use_mex)
-        kc_cell = {constructPtrWorldGazeTargetConstraintmex(robot_ptr,body,axis,gaze_target,[0;0;0],conethreshold,tspan)};
-      else
-        kc_cell = {WorldGazeTargetConstraint(robot,body,axis,gaze_target,[0;0;0],conethreshold,tspan)};
-      end
+      kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldGazeTargetConstraintType,options.use_mex,robot,body,axis,gaze_target,[0;0;0],conethreshold,tspan)};
     end
     if(isfield(pos,'gaze_dir'))
       gaze_dir = pos.gaze_dir./norm(pos.gaze_dir);
-      if(options.use_mex)
-        kc_cell = {constructPtrWorldGazeDirConstraintmex(robot_ptr,body,axis,gaze_dir,conethreshold,tspan)};
-      else
-        kc_cell = {WorldGazeDirConstraint(robot,body,axis,gaze_dir,conethreshold,tspan)};
-      end
+      kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldGazeDirConstraintType,options.use_mex,robot,body,axis,gaze_dir,conethreshold,tspan)};
     end
   end
 else
@@ -88,20 +76,12 @@ else
   posmin(isnan(posmin)) = -inf;
   rows = size(posmax,1);
   if(body == 0)
-    if(options.use_mex)
-      kc_cell = {constructPtrWorldCoMConstraintmex(robot_ptr,posmin,posmax,tspan,robotnum)};
-    else
-      kc_cell = {WorldCoMConstraint(robot,posmin,posmax,tspan,robotnum)};
-    end
+    kc_cell = {constructRigidBodyConstraint(RigidBodyConstraint.WorldCoMConstraintType,options.use_mex,robot,posmin,posmax,tspan,robotnum)};
   else
     if(ischar(pts))
       pts = robot.getBody(body).getContactPoints(pts);
     end
-    if(options.use_mex)
-      kc1 = constructPtrWorldPositionConstraintmex(robot_ptr,body,pts,posmin(1:3,:),posmax(1:3,:),tspan);
-    else
-      kc1 = WorldPositionConstraint(robot,body,pts,posmin(1:3,:),posmax(1:3,:),tspan);
-    end
+    kc1 = constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,options.use_mex,robot,body,pts,posmin(1:3,:),posmax(1:3,:),tspan);
     qsc_pts_idx = false(1,size(pts,2));
     if(isfield(pos,'contact_state'))
       if(iscell(pos.contact_state))
@@ -119,11 +99,7 @@ else
     elseif(rows == 6)
       rpymax = posmax(4:6);
       rpymin = posmin(4:6);
-      if(options.use_mex)
-        kc2 = constructPtrWorldEulerConstraintmex(robot_ptr,body,rpymin,rpymax,tspan);
-      else
-        kc2 = WorldEulerConstraint(robot,body,rpymin,rpymax,tspan);
-      end
+      kc2 = constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,options.use_mex,robot,body,rpymin,rpymax,tspan);
       kc_cell = {kc1,kc2};
     elseif(rows == 7)
       if(any(isinf(posmax(4:7,1))|isinf(posmin(4:7,1))))
@@ -139,11 +115,7 @@ else
           quat_des = 0.5*(quatmin+quatmax);
           tol = max([1-(quatmin'*quat_des)^2 1-(quatmax'*quat_des)^2]);
         end
-        if(options.use_mex)
-          kc2 = constructPtrWorldQuatConstraintmex(robot_ptr,body,quat_des,tol,tspan);
-        else
-          kc2 = WorldQuatConstraint(robot,body,quat_des,tol,tspan);
-        end
+        kc2 = constructRigidBodyConstraint(RigidBodyConstraint.WorldQuatConstraintType,options.use_mex,robot,body,quat_des,tol,tspan);
         kc_cell = {kc1,kc2};
       end
     end

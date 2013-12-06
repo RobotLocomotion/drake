@@ -1,4 +1,5 @@
 #include "RigidBodyConstraint.h"
+#include "../RigidBodyManipulator.h"
 using namespace Eigen;
 
 
@@ -109,7 +110,7 @@ void QuasiStaticConstraint::updateRobot(RigidBodyManipulator* robot)
 {
   this->robot = robot;
 }
-void QuasiStaticConstraint::eval(const double* t,double* weights, VectorXd &c, MatrixXd &dc)
+void QuasiStaticConstraint::eval(const double* t, const double* weights, VectorXd &c, MatrixXd &dc)
 {
   if(this->isTimeValid(t))
   {

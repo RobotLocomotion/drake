@@ -8,11 +8,13 @@
 #include "collision/Model.h"
 
 #include "RigidBody.h"
-
+//#include "constraint/RigidBodyConstraint.h"
+#include "IKoptions.h"
 #define INF -2147483648
 using namespace Eigen;
 
-extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
+class RigidBodyConstraint;
+const std::set<int> emptyIntSet;
 
 class RigidBodyManipulator 
 {
@@ -96,6 +98,8 @@ public:
                                    MatrixXd& Jd);
 
   bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
+
+  void inverseKin(const VectorXd &q_seed, const VectorXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, VectorXd &q_sol, int &INFO, std::vector<std::string> &infeasible_constraint, const IKoptions &ikoptions);
 public:
   std::vector<std::string> robot_name;
 
