@@ -18,7 +18,7 @@ classdef RigidBodyManipulator < Manipulator
     gravity=[0;0;-9.81];
     dim=3;
     terrain;
-    
+    frame = [];     % array of RigidBodyFrame objects
   end
   
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
@@ -593,7 +593,18 @@ classdef RigidBodyManipulator < Manipulator
         is_valid = idx >= 1 & idx <= obj.getNumBodies() & mod(idx,1) == 0;
       end
     end
-    
+
+    function frame = findFrame(model,name,robotnum)
+      % @param name is the string name to search for
+      % @param robotnum if specified restricts the search to a particular
+      % robot
+      if nargin<3, robotnum=0; end
+      items = strfind(lower({model.frame.name}),name);
+      ind = find(~cellfun(@isempty,items));
+      if (robotnum~=0), ind = ind([model.body(model.frame(ind).body_ind).robotnum]==robotnum); end
+      frame = model.frame(ind);
+    end
+        
     function body = getBody(model,body_ind)
       % @ingroup Kinematic Tree
       body = model.body(body_ind);
@@ -1416,6 +1427,9 @@ classdef RigidBodyManipulator < Manipulator
         end
         for j=1:length(model.force)
           model.force{j} = updateForRemovedLink(model.force{j},model,i);
+        end
+        for j=1:length(model.frame)
+          model.frame(j) = updateForRemovedLink(model.frame(j),model,i);
         end
           
         % remove actuators
