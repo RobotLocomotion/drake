@@ -1051,9 +1051,9 @@ void evalPositions(MatrixXd &pos, MatrixXd &J)
 
 QuatConstraint::QuatConstraint(RigidBodyManipulator *model, double tol, Vector2d tspan):SingleTimeKinematicConstraint(model,tspan)
 {
-  if(tol<0.0 || tol>1.0)
+  if(tol<0.0 || tol>M_PI)
   {
-    std::cerr<<"tol must be within [0 1]"<<std::endl;
+    std::cerr<<"tol must be within [0 PI]"<<std::endl;
   }
   this->tol = tol;
   this->num_constraint = 1;
@@ -1069,8 +1069,8 @@ void QuatConstraint::eval(const double* t, VectorXd &c, MatrixXd &dc)
     double prod;
     MatrixXd dprod(1,this->robot->num_dof);
     this->evalOrientationProduct(prod,dprod);
-    c(0) = prod*prod;
-    dc = 2.0*prod*dprod;
+    c(0) = 2.0*prod*prod-1.0;
+    dc = 4.0*prod*dprod;
   }
   else
   {
@@ -1085,7 +1085,7 @@ void QuatConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub)
   ub.resize(this->getNumConstraint(t));
   if(this->isTimeValid(t))
   {
-    lb[0] = 1.0-this->tol;
+    lb[0] = cos(this->tol);
     ub[0] = 1.0;
   }
 }

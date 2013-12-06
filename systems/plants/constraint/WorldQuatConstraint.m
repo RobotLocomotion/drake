@@ -4,10 +4,8 @@ classdef WorldQuatConstraint < QuatConstraint
 %                         TimeSteppingRigidBodyManipulator
 % @param body             A scalar. The index of the body
 % @param quat_des         A quaternion. The desired body orientation 
-% @param tol              A nonnegative scalar. tol = sin(angle)^2 where
-%                         'angle' is the angle in the angle-axis
-%                         representation of the rotation from quat_des to
-%                         the actual orientation
+% @param tol              A nonnegative scalar between [0 pi]. tol is the maximum angle of
+%                         the allowable rotation that would rotate actual quaternion to quat_des
   properties(SetAccess = protected)
     body
     quat_des
