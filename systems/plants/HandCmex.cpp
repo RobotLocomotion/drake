@@ -30,7 +30,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   
   double *q,*qd;
   Map<MatrixXd> *f_ext=NULL;
-  if (mxGetNumberOfElements(prhs[1])!=model->num_dof || mxGetNumberOfElements(prhs[2])!=model->num_dof)
+  if (static_cast<int>(mxGetNumberOfElements(prhs[1]))!=model->num_dof || static_cast<int>(mxGetNumberOfElements(prhs[2]))!=model->num_dof)
     mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","q and qd must be size %d x 1",model->num_dof);
   q = mxGetPr(prhs[1]);
   qd = mxGetPr(prhs[2]);
