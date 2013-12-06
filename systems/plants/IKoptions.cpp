@@ -62,7 +62,7 @@ void IKoptions::setDefaultParams(RigidBodyManipulator* robot)
   this->qdf_lb = VectorXd::Zero(this->nq);
 }
 
-RigidBodyManipulator* IKoptions::getRobotPtr()
+RigidBodyManipulator* IKoptions::getRobotPtr() const
 {
   return this->robot;
 }
@@ -120,17 +120,17 @@ void IKoptions::setQv(const MatrixXd &Qv)
     }
   }
 }
-void IKoptions::getQ(MatrixXd &Q)
+void IKoptions::getQ(MatrixXd &Q) const
 {
   Q = this->Q;
 }
 
-void IKoptions::getQa(MatrixXd &Qa)
+void IKoptions::getQa(MatrixXd &Qa) const
 {
   Qa = this->Qa;
 }
 
-void IKoptions::getQv(MatrixXd &Qv)
+void IKoptions::getQv(MatrixXd &Qv) const
 {
   Qv = this->Qv;
 }
@@ -140,7 +140,7 @@ void IKoptions::setDebug(bool flag)
   this->debug_mode = flag;
 }
 
-bool IKoptions::getDebug()
+bool IKoptions::getDebug() const
 {
   return this->debug_mode;
 }
@@ -150,7 +150,7 @@ void IKoptions::setSequentialSeedFlag(bool flag)
   this->sequentialSeedFlag = flag;
 }
 
-bool IKoptions::getSequentialSeedFlag()
+bool IKoptions::getSequentialSeedFlag() const
 {
   return this->sequentialSeedFlag;
 }
@@ -164,7 +164,7 @@ void IKoptions::setMajorOptimalityTolerance(double tol)
   this->SNOPT_MajorOptimalityTolerance = tol;
 }
 
-double IKoptions::getMajorOptimalityTolerance()
+double IKoptions::getMajorOptimalityTolerance() const
 {
   return this->SNOPT_MajorOptimalityTolerance;
 }
@@ -178,7 +178,7 @@ void IKoptions::setMajorFeasibilityTolerance(double tol)
   this->SNOPT_MajorFeasibilityTolerance = tol;
 }
 
-double IKoptions::getMajorFeasibilityTolerance()
+double IKoptions::getMajorFeasibilityTolerance() const
 {
   return this->SNOPT_MajorFeasibilityTolerance;
 }
@@ -192,7 +192,7 @@ void IKoptions::setSuperbasicsLimit(int limit)
   this->SNOPT_SuperbasicsLimit = limit;
 }
 
-int IKoptions::getSuperbasicsLimit()
+int IKoptions::getSuperbasicsLimit() const
 {
   return this->SNOPT_SuperbasicsLimit;
 }
@@ -206,7 +206,7 @@ void IKoptions::setMajorIterationsLimit(int limit)
   this->SNOPT_MajorIterationsLimit = limit;
 }
 
-int IKoptions::getMajorIterationsLimit()
+int IKoptions::getMajorIterationsLimit() const
 {
   return this->SNOPT_MajorIterationsLimit;
 }
@@ -220,7 +220,7 @@ void IKoptions::setIterationsLimit(int limit)
   this->SNOPT_IterationsLimit = limit;
 }
 
-int IKoptions::getIterationsLimit()
+int IKoptions::getIterationsLimit() const
 {
   return this->SNOPT_IterationsLimit;
 }
@@ -230,7 +230,7 @@ void IKoptions::setFixInitialState(bool flag)
   this->fixInitialState = flag;
 }
 
-bool IKoptions::getFixInitialState()
+bool IKoptions::getFixInitialState() const
 {
   return this->fixInitialState;
 }
@@ -254,7 +254,7 @@ void IKoptions::setq0(const VectorXd &lb, const VectorXd& ub)
   }
 }
 
-void IKoptions::getq0(VectorXd &lb, VectorXd &ub)
+void IKoptions::getq0(VectorXd &lb, VectorXd &ub) const
 {
   lb = this->q0_lb;
   ub = this->q0_ub;
@@ -277,7 +277,7 @@ void IKoptions::setqd0(const VectorXd &lb, const VectorXd& ub)
   this->qd0_ub = ub;
 }
 
-void IKoptions::getqd0(VectorXd &lb, VectorXd &ub)
+void IKoptions::getqd0(VectorXd &lb, VectorXd &ub) const
 {
   lb = this->qd0_lb;
   ub = this->qd0_ub;
@@ -300,7 +300,7 @@ void IKoptions::setqdf(const VectorXd &lb, const VectorXd& ub)
   this->qdf_ub = ub;
 }
 
-void IKoptions::getqdf(VectorXd &lb, VectorXd &ub)
+void IKoptions::getqdf(VectorXd &lb, VectorXd &ub) const
 {
   lb = this->qdf_lb;
   ub = this->qdf_ub;
@@ -325,7 +325,7 @@ void IKoptions::setAdditionaltSamples(const RowVectorXd &t_samples)
   }
 }
 
-void IKoptions::getAdditionaltSamples(RowVectorXd &t_samples)
+void IKoptions::getAdditionaltSamples(RowVectorXd &t_samples) const
 {
   t_samples = this->additional_tSamples;
 }

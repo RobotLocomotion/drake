@@ -100,6 +100,7 @@ public:
   bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
 
   void inverseKin(const VectorXd &q_seed, const VectorXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, VectorXd &q_sol, int &INFO, std::vector<std::string> &infeasible_constraint, const IKoptions &ikoptions);
+  void inverseKinPointwise(const MatrixXd &q_seed, const MatrixXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, MatrixXd &q_sol, int* INFO, std::vector<std::string> &infeasible_constraint, const IKoptions &ikoptions);
 public:
   std::vector<std::string> robot_name;
 
