@@ -197,6 +197,7 @@ if(any(xbreaks(l_leg_kny,2:end)-xbreaks(l_leg_kny,1)>0.05+1e-10) || any(xbreaks(
 end
 
 display('Compare using MultipleTimeLinearPostureConstraint and MultipleTimeKinematicConstraint');
+ikoptions = ikoptions.setAdditionaltSamples([]);
 lower_joints = cellfun(@(s) ~isempty(strfind(s,'leg')),coords);
 joint_idx = (1:nq)';
 lower_joints = joint_idx(lower_joints);

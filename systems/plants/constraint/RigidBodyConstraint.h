@@ -508,7 +508,6 @@ class WorldPositionInFrameConstraint: public WorldPositionConstraint
     WorldPositionInFrameConstraint(RigidBodyManipulator *model, int body, 
         const Eigen::MatrixXd &pts, const Eigen::Matrix4d& T_world_to_frame, 
         Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
-    //virtual void updateRobot(RigidBodyManipulator *robot);
     virtual ~WorldPositionInFrameConstraint();
 };
 
