@@ -3,9 +3,11 @@
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
 #include "collision/Model.h"
+#include "constraint/RigidBodyConstraint.h"
 //DEBUG
 //#include <stdexcept>
 //END_DEBUG
+
 
 using namespace std;
 
