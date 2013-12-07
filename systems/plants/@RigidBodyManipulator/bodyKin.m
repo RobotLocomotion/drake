@@ -2,7 +2,7 @@ function x = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 % computes the position of pts (given in the global frame) in the body frame
 %
 % @param kinsol solution structure obtained from doKinematics
-% @param body_ind, an integer ID for a RigidBody or RigidBodyFrame
+% @param body_or_frame_ind, an integer ID for a RigidBody or RigidBodyFrame
 % (obtained via e.g., findLinkInd or findFrameInd)
 % @retval x the position of pts (given in the global frame) in the body frame
 %% @retval J the Jacobian, dxdq
