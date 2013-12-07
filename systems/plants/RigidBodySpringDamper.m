@@ -57,7 +57,7 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
   end
   
   methods (Static)
-    function obj = parseURDFNode(model,robotnum,node,options)
+    function [model,obj] = parseURDFNode(model,robotnum,node,options)
       obj = RigidBodySpringDamper();
       
       name = char(node.getAttribute('name'));
