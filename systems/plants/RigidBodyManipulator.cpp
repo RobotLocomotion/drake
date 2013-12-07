@@ -1469,6 +1469,39 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 
 }
 
+void RigidBodyManipulator::inverseKin(const VectorXd &q_seed, const VectorXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, VectorXd &q_sol, int &INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
+{
+  this->inverseKinBackend(1,NULL,0,q_seed,q_nom,num_constraints, const RigidBodyConstraint** const constraint_array, q_sol, &INFO,infeasible_constraint,ikoptions);
+}
+
+void RigidBodyManipulator::inverseKinPointwise(const double* const t, int nT,const MatrixXd &q_seed, const MatrixXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, MatrixXd &q_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
+{
+  this->inverseKinBackend(1,t,nT, q_seed,q_nom, num_constraints, constraint_array, q_sol, INFO, infeasible_constraint, ikoptions)
+}
+
+void RigidBodyManipulator::approximateIK(const VectorXd &q_seed, const VectorXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, VectorXd &q_sol, int &INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
+{
+  int num_kc = 0;
+  SingleTimeKinematicConstraint** kc_array = new SingleTimeKinematicConstraint*[num_constraints];
+  double* joint_lb= new double[this->num_dof];
+  double* joint_ub= new double[this->num_dof];
+  memcpy(joint_lb,this->joint_limit_min,sizeof(double)*this->num_dof);
+  memcpy(joint_ub,this->joint_limit_max,sizeof(double)*this->num_dof);
+  for(int i = 0;i<num_constraint;i++)
+  {
+    int constraint_category = constraint_array[i]->getCategory();
+    if(constraint_category == RigidBodyConstraint::SingleTimeKinematicConstraintCategory)
+    {
+      kc_array[num_kc] = (SingleTimeKinematicConstraint*) constraint;
+      num_kc++;
+    }
+    else if(constraint_category == RigidBodyConstraint::PostureConstraintCategory)
+    {
+    }
+  }
+}
+
+
 
 // explicit instantiations (required for linking):
 template void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
