@@ -65,13 +65,15 @@ else
   pts = [pts;ones(1,m)];
   T = kinsol.T{body_ind}*Tframe;
   
-  x(1:3,:) = T(1:3,:)*pts;
-  if (rotation_type == 1)
-    R = T(1:3,1:3);
-    x(4:6,:) = repmat(rotmat2rpy(R),1,m);
-  elseif(rotation_type == 2)
-    R = T(1:3,1:3);
-    x(4:7,:) = bsxfun(@times,rotmat2quat(R),ones(1,m));
+  switch (rotation_type)
+    case 0
+      x = T(1:3,:)*pts;
+    case 1
+      R = T(1:3,1:3);
+      x = [T(1:3,:)*pts; repmat(rotmat2rpy(R),1,m)];
+    case 2
+      R = T(1:3,1:3);
+      x = [T(1:3,:)*pts; bsxfun(@times,rotmat2quat(R),ones(1,m))];
   end
   
   if (nargout>1)
