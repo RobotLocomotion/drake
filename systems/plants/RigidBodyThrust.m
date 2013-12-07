@@ -7,13 +7,11 @@ classdef RigidBodyThrust < RigidBodyForceElement
   end
   
   methods
-    function obj = RigidBodyThrust(parent_body, xyz, rpy, axis, scaleFac, limits)
-      if ~isa(parent_body, 'numeric');
-        error('Drake:RigidBodyThrust:InvalidParent','Force Type Thrust does not have a proper RigidBody parent');
-      end
+    function obj = RigidBodyThrust(frame, axis, scaleFac, limits)
       
+      typecheck(frame,RigidBodyFrame);
+      obj.kinframe = frame;
       obj.axis = axis/norm(axis);      
-      obj.kinframe = RigidBodyFrame(parent_body,xyz,rpy);
       
       obj.direct_feedthrough_flag = true;
       obj.input_num = 0;
@@ -42,18 +40,13 @@ classdef RigidBodyThrust < RigidBodyForceElement
       B_mod(:,obj.input_num) = obj.scaleFactor*J'*axis_world;
     end
     
-    function obj = updateBodyIndices(obj,map_from_old_to_new)
-      obj.kinframe = updateBodyIndices(obj.kinframe,map_from_old_to_new);
-    end
-    
-    function obj = updateForRemovedLink(obj,model,body_ind)
-      obj.kinframe = updateForRemovedLink(obj.kinframe,model,body_ind);
-    end
-    
   end
   
   methods (Static)
-    function obj = parseURDFNode(model,robotnum,node,options)
+    function [model,obj] = parseURDFNode(model,robotnum,node,options)
+      name = char(node.getAttribute('name'));
+      name = regexprep(name, '\.', '_', 'preservecase');
+      
       elnode = node.getElementsByTagName('parent').item(0);
       parent = findLinkInd(model,char(elnode.getAttribute('link')),robotnum);
       
@@ -67,6 +60,7 @@ classdef RigidBodyThrust < RigidBodyForceElement
           rpy = reshape(parseParamString(model,robotnum,char(elnode.getAttribute('rpy'))),3,1);
         end
       end
+      [model,frame_id] = addFrame(model,RigidBodyFrame(parent,xyz,rpy,[name,'_frame']));
       
       axis = [1; 0; 0];
       elnode = node.getElementsByTagName('axis').item(0);
@@ -87,7 +81,8 @@ classdef RigidBodyThrust < RigidBodyForceElement
         limits(2) = parseParamString(model,robotnum,char(node.getAttribute('upper_limit')));
       end
       
-      obj = RigidBodyThrust(parent, xyz, rpy, axis, scaleFac, limits);
+      obj = RigidBodyThrust(frame_id, axis, scaleFac, limits);
+      obj.name = name;
     end
   end
   

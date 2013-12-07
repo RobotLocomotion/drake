@@ -619,6 +619,27 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
     
+    function [model,frame_id] = addFrame(model,frame)
+      % @ingroup Kinematic Tree
+      typecheck(frame,'RigidBodyFrame');
+      model.frame = vertcat(model.frame,frame);
+      frame_id = -(numel(model.frame));
+      model.dirty = true;
+    end
+    
+    function frame = getFrame(model,frame_id)
+      % @ingroup Kinematic Tree
+      frame = model.frame(-frame_id);
+    end
+    
+    function model = setFrame(model,frame_id,frame)
+      % @ingroup Kinematic Tree
+      typecheck(frame_id,'numeric');
+      typecheck(frame,'RigidBodyFrame');
+      model.frame(-frame_id) = frame;
+      model.dirty = true;
+    end
+    
     function model = setParams(model,p)
       fr = getParamFrame(model);
       if isa(p,'Point')
@@ -1801,24 +1822,21 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function model = parseForceElement(model,robotnum,node,options)
-      name = char(node.getAttribute('name'));
-      name = regexprep(name, '\.', '_', 'preservecase');
-      
       fe = [];
       childNodes = node.getChildNodes();
       elnode = node.getElementsByTagName('linear_spring_damper').item(0);
       if ~isempty(elnode)
-        fe = RigidBodySpringDamper.parseURDFNode(model,robotnum,elnode,options);
+        [model,fe] = RigidBodySpringDamper.parseURDFNode(model,robotnum,elnode,options);
       end
       
       elnode = node.getElementsByTagName('wing').item(0);
       if ~isempty(elnode)
-        fe = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
+        [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
       end
       
       elnode = node.getElementsByTagName('thrust').item(0);
       if ~isempty(elnode)
-        fe = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
+        [model,fe] = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
       end
       
       if ~isempty(fe)

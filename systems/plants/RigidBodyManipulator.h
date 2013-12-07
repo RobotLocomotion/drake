@@ -8,7 +8,8 @@
 #include "collision/Model.h"
 
 #include "RigidBody.h"
-#include "IKoptions.h"
+#include "RigidBodyFrame.h"
+
 #define INF -2147483648
 using namespace Eigen;
 
@@ -18,10 +19,10 @@ extern std::set<int> emptyIntSet;
 class RigidBodyManipulator 
 {
 public:
-  RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1);
+  RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
   ~RigidBodyManipulator(void);
   
-  void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1);
+  void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
   void doKinematics(double* q, bool b_compute_second_derivatives=false, double* qd=NULL);
@@ -53,7 +54,7 @@ public:
   void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx = emptyIntSet);
 
   template <typename DerivedA, typename DerivedB>
-  void forwardKin(const int body_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x);
+  void forwardKin(const int body_or_frame_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x);
 
   template <typename DerivedA, typename DerivedB>
   void forwardJacDot(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &Jdot);
@@ -110,6 +111,10 @@ public:
   int num_bodies;  // rigid body objects
   RigidBody* bodies;
 
+  // Rigid body frames
+  int num_frames;
+  RigidBodyFrame* frames;
+
   // featherstone data structure
   int NB;  // featherstone bodies
   int *pitch;
@@ -130,6 +135,8 @@ public:
 
 
 private:
+  int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d& Tframe);
+
   // variables for featherstone dynamics
   VectorXd* S;
   MatrixXd* Xup;
