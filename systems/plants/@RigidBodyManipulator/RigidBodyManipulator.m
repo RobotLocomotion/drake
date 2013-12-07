@@ -594,7 +594,7 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function frame = findFrame(model,name,robotnum)
+    function frame_ind = findFrameInd(model,name,robotnum)
       % @param name is the string name to search for
       % @param robotnum if specified restricts the search to a particular
       % robot
@@ -602,7 +602,8 @@ classdef RigidBodyManipulator < Manipulator
       items = strfind(lower({model.frame.name}),name);
       ind = find(~cellfun(@isempty,items));
       if (robotnum~=0), ind = ind([model.body(model.frame(ind).body_ind).robotnum]==robotnum); end
-      frame = model.frame(ind);
+      if numel(ind)~=1, error('Drake:RigidBodyManipulator:UniqueFrameNotFound',['Cannot find unique frame named ', name, ' on robot number ',num2str(robotnum)]); end
+      frame_ind = -ind;  % keep frame_ind distinct from body_ind
     end
         
     function body = getBody(model,body_ind)
@@ -1852,6 +1853,9 @@ classdef RigidBodyManipulator < Manipulator
       end
       for i=1:length(model.force)
         model.force{i} = updateBodyIndices(model.force{i},mapfun);
+      end
+      for i=1:length(model.frame)
+        model.frame(i) = updateBodyIndices(model.frame(i),mapfun);
       end
     end
     
