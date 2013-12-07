@@ -50,10 +50,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   if (!pBodies) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the body array is invalid");
   int num_bodies = mxGetNumberOfElements(pBodies);
 
+  const mxArray* pFrames = mxGetProperty(prhs[0],0,"frame");
+  if (!pFrames) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the frame array is invalid");
+  int num_frames = mxGetNumberOfElements(pFrames);
+
   // set up the model
   pm = mxGetField(featherstone,0,"NB");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.NB.  Are you passing in the correct structure?");
-  model = new RigidBodyManipulator((int) mxGetScalar(pm), (int) mxGetScalar(pm), num_bodies);
+  model = new RigidBodyManipulator((int) mxGetScalar(pm), (int) mxGetScalar(pm), num_bodies, num_frames);
   
   pm = mxGetField(featherstone,0,"parent");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.parent.");
@@ -200,7 +204,19 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       model->setCollisionFilter(i,*group,*mask);
     }
   }
-  
+
+  for (int i=0; i<model->num_frames; i++) {
+    pm = mxGetProperty(pFrames,i,"name");
+    mxGetString(pm,buf,100);
+    model->frames[i].name.assign(buf,strlen(buf));
+
+    pm = mxGetProperty(pFrames,i,"body_ind");
+    model->frames[i].body_ind = (int) mxGetScalar(pm)-1;
+
+    pm = mxGetProperty(pFrames,i,"T");
+    memcpy(model->frames[i].T.data(),mxGetPr(pm),sizeof(double)*4*4);
+  }
+
   memcpy(model->joint_limit_min, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min")), sizeof(double)*model->num_dof);
   memcpy(model->joint_limit_max, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_max")), sizeof(double)*model->num_dof);
   

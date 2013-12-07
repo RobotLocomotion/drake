@@ -9,7 +9,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
  end
 
  methods
-   function obj = ContactForceTorqueSensor(tsmanip,body_ind,xyz,rpy)
+   function obj = ContactForceTorqueSensor(tsmanip,frame)
      % default frame to initialize visualizer
 %      if tsmanip.twoD
 %        fr = CoordinateFrame('DefaultForceTorqueFrame',getNumStates(tsmanip)+3,'f');
@@ -18,7 +18,8 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
 %      end
 %      obj = obj@Visualizer(fr);
 
-     obj.kinframe = RigidBodyFrame(body_ind,xyz,rpy);
+     typecheck(frame,RigidBodyFrame);
+     obj.kinframe = frame;
      body = getBody(tsmanip,body_ind);
      obj.name = [body.linkname,'ForceTorque'];
    end
@@ -30,7 +31,8 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
    function obj = compile(obj,tsmanip,manip)
      if (tsmanip.position_control) error('need to update this method for this case'); end
 
-     body = getBody(manip,obj.kinframe.body_ind);
+     frame = getFrame(manip,obj.kinframe);
+     body = getBody(manip,frame.body_ind);
 
      if isempty(body.contact_pts)
        error('Drake:ContactForceTorqueSensor:NoContactPts','There are no contact points associated with body %s',body.linkname);
@@ -44,7 +46,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
      nV = manip.num_velocity_constraints;  
 
      num_body_contacts = size(body.contact_pts,2);
-     contact_ind_offset = size([manip.body(1:obj.kinframe.body_ind-1).contact_pts],2);
+     contact_ind_offset = size([manip.body(1:frame.body_ind-1).contact_pts],2);
 
      % z(nL+nP+(1:nC)) = cN
      obj.normal_ind = nL+nP+contact_ind_offset+(1:num_body_contacts);
@@ -133,10 +135,6 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
        coords{6}='torque_z';
        fr = CoordinateFrame(obj.name,6,'f',coords);
      end
-   end
-
-   function obj = updateBodyIndices(obj,map_from_old_to_new)
-     obj.body = map_from_old_to_new(obj.body);
    end
 
  end
