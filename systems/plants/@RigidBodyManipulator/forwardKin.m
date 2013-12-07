@@ -1,9 +1,9 @@
-function [x,J,dJ] = forwardKin(obj,kinsol,body_ind,pts,rotation_type)
+function [x,J,dJ] = forwardKin(obj,kinsol,body_or_frame_ind,pts,rotation_type)
 % computes the position of pts (given in the body frame) in the global frame
 %
 % @param kinsol solution structure obtained from doKinematics
-% @param body_ind, an integer index for the body.  if body_ind is a
-% RigidBody object, then this method will look up the index for you.
+% @param body_ind, an integer ID for a RigidBody or RigidBodyFrame
+% (obtained via e.g., findLinkInd or findFrameInd)
 % @param rotation_type integer flag indicated whether rotations and
 % derivatives should be computed (0 - no rotations, 1 - rpy, 2 - quat)
 % @retval x the position of pts (given in the body frame) in the global
@@ -33,7 +33,7 @@ if nargin<5
 end
 
 % todo: zap this after the transition
-if isa(body_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
+if isa(body_or_frame_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
 
 if (kinsol.mex)
   if (obj.mex_model_ptr==0)
@@ -44,59 +44,64 @@ if (kinsol.mex)
   end
   
   if nargout > 2
-    [x,J,dJ] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_ind,pts,rotation_type);
+    [x,J,dJ] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,rotation_type);
   elseif nargout > 1
-    [x,J] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_ind,pts,rotation_type);
+    [x,J] = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,rotation_type);
   else
-    x = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_ind,pts,rotation_type);
+    x = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,rotation_type);
   end
   
 else
+  if (body_or_frame_ind < 0)
+    frame = obj.frame(-body_or_frame_ind);
+    body_ind = frame.body_ind;
+    Tframe = frame.T;
+  else
+    body_ind = body_or_frame_ind;
+    Tframe=eye(4);
+  end
+  
   m = size(pts,2);
   pts = [pts;ones(1,m)];
+  T = kinsol.T{body_ind}*Tframe;
   
+  x(1:3,:) = T(1:3,:)*pts;
   if (rotation_type == 1)
-    R = kinsol.T{body_ind}(1:3,1:3);
-    x = zeros(6,m);
-    x(1:3,:) = kinsol.T{body_ind}(1:3,:)*pts;
-
+    R = T(1:3,1:3);
     x(4:6,:) = repmat(rotmat2rpy(R),1,m);
-  elseif(rotation_type == 0)
-    x = kinsol.T{body_ind}(1:3,:)*pts;
   elseif(rotation_type == 2)
-      R = kinsol.T{body_ind}(1:3,1:3);
-      x = zeros(7,m);
-      x(1:3,:) = kinsol.T{body_ind}(1:3,:)*pts;
-      x(4:7,:) = bsxfun(@times,rotmat2quat(R),ones(1,m));
+    R = T(1:3,1:3);
+    x(4:7,:) = bsxfun(@times,rotmat2quat(R),ones(1,m));
   end
   
   if (nargout>1)
     nq = obj.num_q;
+    dTdq = kinsol.dTdq{body_ind}*Tframe;
     if (rotation_type == 1)
-      Jx = reshape(kinsol.dTdq{body_ind}*pts,nq,[])';
+      Jx = reshape(dTdq*pts,nq,[])';
 
       Jr = zeros(3,nq);
       % note the unusual format of dTdq 
       % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
     
       % droll_dq
-      idx = sub2ind(size(kinsol.dTdq{body_ind}),(3-1)*nq+(1:nq),2*ones(1,nq));
-      dR32_dq = kinsol.dTdq{body_ind}(idx);
-      idx = sub2ind(size(kinsol.dTdq{body_ind}),(3-1)*nq+(1:nq),3*ones(1,nq));
-      dR33_dq = kinsol.dTdq{body_ind}(idx);
+      idx = sub2ind(size(dTdq),(3-1)*nq+(1:nq),2*ones(1,nq));
+      dR32_dq = dTdq(idx);
+      idx = sub2ind(size(dTdq),(3-1)*nq+(1:nq),3*ones(1,nq));
+      dR33_dq = dTdq(idx);
       sqterm = R(3,2)^2 + R(3,3)^2;
       Jr(1,:) = (R(3,3)*dR32_dq - R(3,2)*dR33_dq)/sqterm;
 
       % dpitch_dq
-      idx = sub2ind(size(kinsol.dTdq{body_ind}),(3-1)*nq+(1:nq),ones(1,nq));
-      dR31_dq = kinsol.dTdq{body_ind}(idx);
+      idx = sub2ind(size(dTdq),(3-1)*nq+(1:nq),ones(1,nq));
+      dR31_dq = dTdq(idx);
       Jr(2,:) = (-sqrt(sqterm)*dR31_dq + R(3,1)/sqrt(sqterm)*(R(3,2)*dR32_dq + R(3,3)*dR33_dq) )/(R(3,1)^2 + R(3,2)^2 + R(3,3)^2);
 
       % dyaw_dq
-      idx = sub2ind(size(kinsol.dTdq{body_ind}),(1-1)*nq+(1:nq),ones(1,nq));
-      dR11_dq = kinsol.dTdq{body_ind}(idx);
-      idx = sub2ind(size(kinsol.dTdq{body_ind}),(2-1)*nq+(1:nq),ones(1,nq));
-      dR21_dq = kinsol.dTdq{body_ind}(idx);
+      idx = sub2ind(size(dTdq),(1-1)*nq+(1:nq),ones(1,nq));
+      dR11_dq = dTdq(idx);
+      idx = sub2ind(size(dTdq),(2-1)*nq+(1:nq),ones(1,nq));
+      dR21_dq = dTdq(idx);
       sqterm = R(1,1)^2 + R(2,1)^2;
       Jr(3,:) = (R(1,1)*dR21_dq - R(2,1)*dR11_dq)/sqterm;
 
@@ -110,28 +115,28 @@ else
       Jrow_ind = reshape([reshape(1:3*m,3,m);bsxfun(@times,3*m+(1:3)',ones(1,m))],[],1);
       J = Jtmp(Jrow_ind,:);
     elseif(rotation_type == 0)
-      J = reshape(kinsol.dTdq{body_ind}*pts,nq,[])';
+      J = reshape(dTdq*pts,nq,[])';
     elseif(rotation_type == 2)
-        Jx = reshape(kinsol.dTdq{body_ind}(1:3*nq,:)*pts,nq,[])';
+        Jx = reshape(dTdq(1:3*nq,:)*pts,nq,[])';
         
-        idx = sub2ind(size(kinsol.dTdq{body_ind}),(1-1)*nq+(1:nq),ones(1,nq));
-        dR11_dq = kinsol.dTdq{body_ind}(idx);
-        idx = sub2ind(size(kinsol.dTdq{body_ind}),(1-1)*nq+(1:nq),2*ones(1,nq));
-        dR12_dq = kinsol.dTdq{body_ind}(idx);
-        idx = sub2ind(size(kinsol.dTdq{body_ind}),(1-1)*nq+(1:nq),3*ones(1,nq));
-        dR13_dq = kinsol.dTdq{body_ind}(idx);
-        idx = sub2ind(size(kinsol.dTdq{body_ind}),(2-1)*nq+(1:nq),ones(1,nq));
-        dR21_dq = kinsol.dTdq{body_ind}(idx);
-        idx = sub2ind(size(kinsol.dTdq{body_ind}),(2-1)*nq+(1:nq),2*ones(1,nq));
-        dR22_dq = kinsol.dTdq{body_ind}(idx);
-        idx = sub2ind(size(kinsol.dTdq{body_ind}),(2-1)*nq+(1:nq),3*ones(1,nq));
-        dR23_dq = kinsol.dTdq{body_ind}(idx);
-        idx = sub2ind(size(kinsol.dTdq{body_ind}),(3-1)*nq+(1:nq),ones(1,nq));
-        dR31_dq = kinsol.dTdq{body_ind}(idx);
-        idx = sub2ind(size(kinsol.dTdq{body_ind}),(3-1)*nq+(1:nq),2*ones(1,nq));
-        dR32_dq = kinsol.dTdq{body_ind}(idx);
-        idx = sub2ind(size(kinsol.dTdq{body_ind}),(3-1)*nq+(1:nq),3*ones(1,nq));
-        dR33_dq = kinsol.dTdq{body_ind}(idx);
+        idx = sub2ind(size(dTdq),(1-1)*nq+(1:nq),ones(1,nq));
+        dR11_dq = dTdq(idx);
+        idx = sub2ind(size(dTdq),(1-1)*nq+(1:nq),2*ones(1,nq));
+        dR12_dq = dTdq(idx);
+        idx = sub2ind(size(dTdq),(1-1)*nq+(1:nq),3*ones(1,nq));
+        dR13_dq = dTdq(idx);
+        idx = sub2ind(size(dTdq),(2-1)*nq+(1:nq),ones(1,nq));
+        dR21_dq = dTdq(idx);
+        idx = sub2ind(size(dTdq),(2-1)*nq+(1:nq),2*ones(1,nq));
+        dR22_dq = dTdq(idx);
+        idx = sub2ind(size(dTdq),(2-1)*nq+(1:nq),3*ones(1,nq));
+        dR23_dq = dTdq(idx);
+        idx = sub2ind(size(dTdq),(3-1)*nq+(1:nq),ones(1,nq));
+        dR31_dq = dTdq(idx);
+        idx = sub2ind(size(dTdq),(3-1)*nq+(1:nq),2*ones(1,nq));
+        dR32_dq = dTdq(idx);
+        idx = sub2ind(size(dTdq),(3-1)*nq+(1:nq),3*ones(1,nq));
+        dR33_dq = dTdq(idx);
         
         % now take gradients of rotmat2quat 
         [val,ind] = max([1 1 1; 1 -1 -1; -1 1 -1; -1 -1 1]*diag(R));
@@ -185,7 +190,7 @@ else
         error('you must call doKinematics with the second derivative option enabled');
       end
       ind = repmat(1:3*nq,nq,1)+repmat((0:3*nq:3*nq*(nq-1))',1,3*nq);
-      dJ = reshape(kinsol.ddTdqdq{body_ind}(ind,:)*pts,nq^2,[])';
+      dJ = reshape(kinsol.ddTdqdq{body_ind}(ind,:)*Tframe*pts,nq^2,[])';
     end
   end
 end

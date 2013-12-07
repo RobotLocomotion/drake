@@ -1,8 +1,9 @@
-function x = bodyKin(obj,kinsol,body_ind,pts)
+function x = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 % computes the position of pts (given in the global frame) in the body frame
 %
 % @param kinsol solution structure obtained from doKinematics
-% @param body_ind, an integer index for the body.  
+% @param body_ind, an integer ID for a RigidBody or RigidBodyFrame
+% (obtained via e.g., findLinkInd or findFrameInd)
 % @retval x the position of pts (given in the global frame) in the body frame
 %% @retval J the Jacobian, dxdq
 %% @retval dJ the gradients of the Jacobian, dJdq
@@ -14,7 +15,7 @@ function x = bodyKin(obj,kinsol,body_ind,pts)
 checkDirty(obj);
 
 % todo: zap this after the transition
-if isa(body_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
+if isa(body_or_frame_ind,'RigidBody'), error('support for passing in RigidBody objects has been removed.  please pass in the body index'); end
   
 if (kinsol.mex)
   if (obj.mex_model_ptr==0)
@@ -24,12 +25,20 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not valid because it was computed via mex, and you are now asking for an evaluation with non-numeric pts.  If you intended to use something like TaylorVar, then you must call doKinematics with use_mex = false');
   end
   
-  x = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_ind,pts);
+  x = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts);
   
 else
+  if (body_or_frame_ind < 0)
+    frame = obj.frame(-body_or_frame_ind);
+    body_ind = frame.body_ind;
+    Tframe = frame.T;
+  else
+    Tframe=eye(4);
+  end
+  
   m = size(pts,2);
   pts = [pts;ones(1,m)];
-  x = inv(kinsol.T{body_ind})*pts;
+  x = inv(kinsol.T{body_ind}*Tframe)*pts;
   x = x(1:3,:);
   
   % todo: implement jacobians
