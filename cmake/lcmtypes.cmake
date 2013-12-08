@@ -99,21 +99,27 @@ endif()
 
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(LCM REQUIRED lcm)
+pkg_check_modules(LCM lcm)
     
-#find lcm-gen (it may be in the install path)
-find_program(LCM_GEN_EXECUTABLE lcm-gen ${EXECUTABLE_OUTPUT_PATH} ${EXECUTABLE_INSTALL_PATH})
-  
-if (NOT LCM_GEN_EXECUTABLE)
-  message(FATAL_ERROR "lcm-gen not found!\n")
-  return()
+if (LCM_FOUND)
+   #find lcm-gen (it may be in the install path)
+   find_program(LCM_GEN_EXECUTABLE lcm-gen ${EXECUTABLE_OUTPUT_PATH} ${EXECUTABLE_INSTALL_PATH})
+     
+   if (NOT LCM_GEN_EXECUTABLE)
+     message(WARNING "lcm-gen not found")
+     unset(LCM_FOUND)
+   endif()
 endif()
 
-set(LCMTYPES_DIR ${CMAKE_CURRENT_BINARY_DIR}/lcmgen/lcmtypes)
-execute_process(COMMAND mkdir -p ${LCMTYPES_DIR})
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/lcmgen/)  # so people include with e.g. <lcmtypes/pod.h>
+if (LCM_FOUND)
+  set(LCMTYPES_DIR ${CMAKE_CURRENT_BINARY_DIR}/lcmgen/lcmtypes)
+  execute_process(COMMAND mkdir -p ${LCMTYPES_DIR})
+  include_directories(${CMAKE_CURRENT_BINARY_DIR}/lcmgen/)  # so people include with e.g. <lcmty  pes/pod.h>
 
-set(LCMTYPES_SEARCHDIR ${CMAKE_SOURCE_DIR}/lcmtypes)
+  set(LCMTYPES_SEARCHDIR ${CMAKE_SOURCE_DIR}/lcmtypes)
+else()
+  message(WARNING "disabling LCM.  lcm types will not be built.\n")
+endif()
 
 function(find_lcmtypes msgvar)
   # get a list of all LCM types and store it in msgvar
@@ -128,7 +134,11 @@ function(find_lcmtypes msgvar)
   set(${msgvar} ${${msgvar}} PARENT_SCOPE)
 endfunction()
 
-macro(lcmtypes_build_c)
+function(lcmtypes_build_c)
+  if (NOT LCM_FOUND)
+    return()
+  endif()
+
   find_lcmtypes(_msgs)
   foreach(_msg ${_msgs})
     add_c_lcmtype(${_msg})
@@ -172,10 +182,14 @@ macro(lcmtypes_build_c)
     unset(__agg_h_fname)
   endif()
 
-  set(LCMTYPES_C_LIBRARY ${LCMTYPES_C_LIBNAME})
-endmacro()
+  set(LCMTYPES_C_LIBRARY ${LCMTYPES_C_LIBNAME} PARENT_SCOPE)
+endfunction()
 
-macro(lcmtypes_build_cpp)
+function(lcmtypes_build_cpp)
+  if (NOT LCM_GEN_EXECUTABLE)
+    return()
+  endif()
+
   find_lcmtypes(_msgs)
   foreach(_msg ${_msgs})
     add_cpp_lcmtype(${_msg})
@@ -212,9 +226,13 @@ macro(lcmtypes_build_cpp)
     unset(__agg_hpp_fname)
   endif()
 
-endmacro()
+endfunction()
 
-macro(lcmtypes_build_java)
+function(lcmtypes_build_java)
+  if (NOT LCM_GEN_EXECUTABLE)
+    return()
+  endif()
+
   find_lcmtypes(_msgs)
   foreach(_msg ${_msgs})
     add_java_lcmtype(${_msg})
@@ -245,10 +263,14 @@ macro(lcmtypes_build_java)
     	VERSION 0.0.0)
   endif()
 
-  set(LCMTYPES_JAR ${LCMTYPES_JARNAME})
-endmacro()
+  set(LCMTYPES_JAR ${LCMTYPES_JARNAME} PARENT_SCOPE)
+endfunction()
 
-macro(lcmtypes_build_python)
+function(lcmtypes_build_python)
+  if (NOT LCM_GEN_EXECUTABLE)
+    return()
+  endif()
+
   find_lcmtypes(_msgs)
   foreach(_msg ${_msgs})
     add_python_lcmtype(${_msg})
@@ -295,7 +317,7 @@ macro(lcmtypes_build_python)
     endforeach()
   endif()
 
-endmacro()
+endfunction()
 
 
 macro(lcmtypes_build)
@@ -327,6 +349,10 @@ macro(get_package_name lcmtype)
 endmacro()
 
 function(add_c_lcmtype lcmtype)
+  if (NOT LCM_FOUND)
+    return()
+  endif()
+
   get_filename_component(lcmtype ${lcmtype} ABSOLUTE)
   get_filename_component(lcmtype_we ${lcmtype} NAME_WE)
   get_package_name(${lcmtype})
@@ -345,6 +371,10 @@ function(add_c_lcmtype lcmtype)
 endfunction()
 
 function(add_cpp_lcmtype lcmtype)
+  if (NOT LCM_FOUND)
+    return()
+  endif()
+
   get_filename_component(lcmtype ${lcmtype} ABSOLUTE)
   get_filename_component(lcmtype_we ${lcmtype} NAME_WE)
   get_package_name(${lcmtype})
@@ -363,6 +393,10 @@ function(add_cpp_lcmtype lcmtype)
 endfunction()
 
 function(add_java_lcmtype lcmtype)
+  if (NOT LCM_FOUND)
+    return()
+  endif()
+
   get_filename_component(lcmtype ${lcmtype} ABSOLUTE)
   get_filename_component(lcmtype_we ${lcmtype} NAME_WE)
   get_package_name(${lcmtype})
@@ -383,6 +417,10 @@ function(add_java_lcmtype lcmtype)
 endfunction()
 
 function(add_python_lcmtype lcmtype)
+  if (NOT LCM_FOUND)
+    return()
+  endif()
+
   get_filename_component(lcmtype ${lcmtype} ABSOLUTE)
   get_filename_component(lcmtype_we ${lcmtype} NAME_WE)
   get_package_name(${lcmtype})
@@ -401,18 +439,13 @@ function(add_python_lcmtype lcmtype)
 endfunction()
 
 
-
-function(add_lcmtype)
+macro(add_lcmtype)
   add_c_lcmtype(${ARGV})
-  set(LCMTYPES_C_SOURCEFILES ${LCMTYPES_C_SOURCEFILES} PARENT_SCOPE)
 
   add_cpp_lcmtype(${ARGV})
-  set(LCMTYPES_CPP_HEADERFILES ${LCMTYPES_CPP_HEADERFILES} PARENT_SCOPE)
   
   add_java_lcmtype(${ARGV})
-  set(LCMTYPES_JAVA_SOURCEFILES ${LCMTYPES_JAVA_SOURCEFILES} PARENT_SCOPE)
 
   add_python_lcmtype(${ARGV})
-  set(LCMTYPES_PYTHON_FILES ${LCMTYPES_PYTHON_FILES} PARENT_SCOPE)
-endfunction()
+endmacro()
 
