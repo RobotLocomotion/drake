@@ -64,14 +64,14 @@ if (LCM_FOUND)
   endif()
   set(CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE})
 
-  append(drake_jar_javafiles 
+  list(APPEND drake_jar_javafiles 
         util/MyLCMTypeDatabase.java
 	util/MessageMonitor.java
 	util/CoordinateFrameData.java
 	util/LCMCoder.java
  	util/BotLCMGLClient.java
 	)
-  append(drake_jar_requires lcm-java lcmtypes_drake-java)
+  list(APPEND drake_jar_requires lcm-java lcmtypes_drake-java)
 endif()
 
 add_jar(drake ${drake_jar_javafiles})
