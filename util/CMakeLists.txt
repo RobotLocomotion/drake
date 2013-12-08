@@ -6,14 +6,18 @@ add_mex(realtime realtime.cpp)
 #add_mex(deleteMexPointer deleteMexPointer.cpp $<TARGET_OBJECTS:drakeUtil>)
 
 add_mex(drakeUtil SHARED drakeUtil.cpp)
+pods_install_libraries(drakeUtil)
 
 add_mex(drakeDebugMex SHARED drakeDebugMex.cpp)
 
-add_mex(drakeQuatUtil SHARED drakeQuatUtil.cpp)
+if (eigen3_FOUND)
+  add_mex(drakeQuatUtil SHARED drakeQuatUtil.cpp)
+  add_mex(test/testQuatmex test/testQuatmex.cpp) 
+  target_link_libraries(test/testQuatmex drakeQuatUtil)
+  pods_install_libraries(drakeQuatUtil)
+endif()
+
 add_subdirectory(test)
 
-add_mex(test/testQuatmex test/testQuatmex.cpp)
-target_link_libraries(test/testQuatmex drakeQuatUtil)
 
-pods_install_libraries(drakeUtil)
-pods_install_libraries(drakeQuatUtil)
+
