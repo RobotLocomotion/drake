@@ -1,0 +1,14 @@
+
+Name:         spotless
+Summary:      SPOTless: Conic and Polynomial Programming Toolbox
+Maintainers:  Mark Tobenkin <mmt@mit.edu>, Frank Permenter <fperment@mit.edu>
+	      (wrapper POD by Russ Tedrake <russt@mit.edu>)
+
+====
+
+This software is constructed according to the Pods software policies and
+templates.  The policies and templates can be found at:
+
+  http://sourceforge.net/projects/pods
+
+
