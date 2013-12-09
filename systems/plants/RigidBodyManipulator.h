@@ -103,7 +103,7 @@ public:
 
   void inverseKinPointwise(const double* const t, int nT,const MatrixXd &q_seed, const MatrixXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, MatrixXd &q_sol, int* INFO, std::vector<std::string> &infeasible_constraint, const IKoptions &ikoptions);
 
-  void approximateIK(const VectorXd &q_seed, const VectorXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, VectorXd &q_sol, int &INFO, std::vector<std::string> &infeasible_constraint, const IKoptions &ikoptions);
+  void approximateIK(const VectorXd &q_seed, const VectorXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, VectorXd &q_sol, int &INFO, const IKoptions &ikoptions);
 
   void inverseKinTraj(const double* const t, int nT, const MatrixXd &q_seed, const MatrixXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array,MatrixXd &q_sol, MatrixXd &qdot_sol, MatrixXd qddot_sol, int &INFO, std::vector<std::string> infeasible_constraint, const IKoptions &ikoptions); 
 
