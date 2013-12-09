@@ -18,7 +18,7 @@ classdef RigidBodyManipulator < Manipulator
     gravity=[0;0;-9.81];
     dim=3;
     terrain;
-    
+    frame = [];     % array of RigidBodyFrame objects
   end
   
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
@@ -593,7 +593,19 @@ classdef RigidBodyManipulator < Manipulator
         is_valid = idx >= 1 & idx <= obj.getNumBodies() & mod(idx,1) == 0;
       end
     end
-    
+
+    function frame_id = findFrameId(model,name,robotnum)
+      % @param name is the string name to search for
+      % @param robotnum if specified restricts the search to a particular
+      % robot
+      if nargin<3, robotnum=0; end
+      items = strfind(lower({model.frame.name}),name);
+      ind = find(~cellfun(@isempty,items));
+      if (robotnum~=0), ind = ind([model.body(model.frame(ind).body_ind).robotnum]==robotnum); end
+      if numel(ind)~=1, error('Drake:RigidBodyManipulator:UniqueFrameNotFound',['Cannot find unique frame named ', name, ' on robot number ',num2str(robotnum)]); end
+      frame_id = -ind;  % keep frame_ind distinct from body_ind
+    end
+        
     function body = getBody(model,body_ind)
       % @ingroup Kinematic Tree
       body = model.body(body_ind);
@@ -604,6 +616,27 @@ classdef RigidBodyManipulator < Manipulator
       typecheck(body_ind,'numeric');
       typecheck(body,'RigidBody');
       model.body(body_ind) = body;
+      model.dirty = true;
+    end
+    
+    function [model,frame_id] = addFrame(model,frame)
+      % @ingroup Kinematic Tree
+      typecheck(frame,'RigidBodyFrame');
+      model.frame = vertcat(model.frame,frame);
+      frame_id = -(numel(model.frame));
+      model.dirty = true;
+    end
+    
+    function frame = getFrame(model,frame_id)
+      % @ingroup Kinematic Tree
+      frame = model.frame(-frame_id);
+    end
+    
+    function model = setFrame(model,frame_id,frame)
+      % @ingroup Kinematic Tree
+      typecheck(frame_id,'numeric');
+      typecheck(frame,'RigidBodyFrame');
+      model.frame(-frame_id) = frame;
       model.dirty = true;
     end
     
@@ -1417,6 +1450,9 @@ classdef RigidBodyManipulator < Manipulator
         for j=1:length(model.force)
           model.force{j} = updateForRemovedLink(model.force{j},model,i);
         end
+        for j=1:length(model.frame)
+          model.frame(j) = updateForRemovedLink(model.frame(j),model,i);
+        end
           
         % remove actuators
         if (~isempty(model.actuator) && any([model.actuator.joint] == i))
@@ -1786,24 +1822,21 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function model = parseForceElement(model,robotnum,node,options)
-      name = char(node.getAttribute('name'));
-      name = regexprep(name, '\.', '_', 'preservecase');
-      
       fe = [];
       childNodes = node.getChildNodes();
       elnode = node.getElementsByTagName('linear_spring_damper').item(0);
       if ~isempty(elnode)
-        fe = RigidBodySpringDamper.parseURDFNode(model,robotnum,elnode,options);
+        [model,fe] = RigidBodySpringDamper.parseURDFNode(model,robotnum,elnode,options);
       end
       
       elnode = node.getElementsByTagName('wing').item(0);
       if ~isempty(elnode)
-        fe = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
+        [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);
       end
       
       elnode = node.getElementsByTagName('thrust').item(0);
       if ~isempty(elnode)
-        fe = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
+        [model,fe] = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
       end
       
       if ~isempty(fe)
@@ -1838,6 +1871,9 @@ classdef RigidBodyManipulator < Manipulator
       end
       for i=1:length(model.force)
         model.force{i} = updateBodyIndices(model.force{i},mapfun);
+      end
+      for i=1:length(model.frame)
+        model.frame(i) = updateBodyIndices(model.frame(i),mapfun);
       end
     end
     

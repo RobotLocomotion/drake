@@ -80,8 +80,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     }
     
     return;
-  } else if (body_ind<0 || body_ind>=model->num_bodies) {
-      mexErrMsgIdAndTxt("Drake:forwardKinmex:BadInputs","body_ind must be -1 (for com) or between 0 and num_bodies-1");
+  } else if (body_ind<-(model->num_frames+1) || body_ind>=model->num_bodies) {
+      mexErrMsgIdAndTxt("Drake:forwardKinmex:BadInputs","body_ind must be -1 (for com) or between -num_frames-1 and num_bodies-1");
   }
 
   if (nrhs != 5 &&nrhs !=6) {

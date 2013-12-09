@@ -87,7 +87,9 @@ end
 
 % require spotless 
 if ~logical(exist('msspoly','class')) 
-  pod_pkg_config('spotless');
+  if ~pod_pkg_config('spotless')
+    error('Drake:SpotlessRequired','Missing required dependency "spotless".  Please include the spotless pod in your pods collection or install spotless directly from <a href="https://github.com/mmt/spotless">https://github.com/mmt/spotless</a>');
+  end
 end
 
 conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));

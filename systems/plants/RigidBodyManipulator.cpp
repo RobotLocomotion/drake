@@ -258,12 +258,12 @@ void rotz(double theta, Matrix3d &M, Matrix3d &dM, Matrix3d &ddM)
 
 
 
-RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects) 
+RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
   :  collision_model(DrakeCollision::newModel())
 {
-  num_dof=0; NB=0; num_bodies=0;
+  num_dof=0; NB=0; num_bodies=0; num_frames=0;
   a_grav = VectorXd::Zero(6);
-  resize(ndof,num_featherstone_bodies,num_rigid_body_objects);
+  resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
 }
 
 template <typename T>
@@ -283,9 +283,9 @@ void myrealloc(T* &ptr, int old_size, int new_size)
   ptr = newptr;
 }
 
-void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects)
+void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
 {
-  int last_num_dof = num_dof, last_NB = NB, last_num_bodies = num_bodies;
+  int last_num_dof = num_dof, last_NB = NB, last_num_bodies = num_bodies, last_num_frames = num_frames;
   
   num_dof = ndof;
   if (num_dof != last_num_dof) {
@@ -342,6 +342,11 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
     collision_model->resize(num_bodies);
   }
   
+  num_frames = num_rigid_body_frames;
+  if (num_frames != last_num_frames) {
+  	myrealloc(frames,last_num_frames,num_frames);
+  }
+
   //Variable allocation for gradient calculations
   if (last_NB>0) {
     delete[] dXupdq;
@@ -486,6 +491,9 @@ RigidBodyManipulator::~RigidBodyManipulator() {
   if (num_bodies>0)
     delete[] bodies;
   
+  if (num_frames>0)
+  	delete[] frames;
+
   if (num_dof>0) {
     delete[] cached_q;
     delete[] cached_qd;
@@ -1102,6 +1110,20 @@ void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase<Derived> &Jdot, 
   }
 }
 
+/* [body_ind,Tframe] = parseBodyOrFrameID(body_or_frame_id) */
+int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4d& Tframe)
+{
+	int body_ind;
+  if (body_or_frame_id<0) {
+    int frame_ind = -body_or_frame_id-2;
+    body_ind = frames[frame_ind].body_ind;
+    Tframe = frames[frame_ind].T;
+  } else {
+    body_ind = body_or_frame_id;
+    Tframe = Matrix4d::Identity();
+  }
+  return body_ind;
+}
 
 /*
  * rotation_type  0, no rotation
@@ -1110,10 +1132,13 @@ void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase<Derived> &Jdot, 
  */
 
 template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::forwardKin(const int body_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x)
+void RigidBodyManipulator::forwardKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x)
 {
-  int dim=3, n_pts = pts.cols();
-  MatrixXd T = bodies[body_ind].T.topLeftCorner(dim,dim+1);
+  int n_pts = pts.cols(); Matrix4d Tframe;
+  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
+  
+  MatrixXd T = bodies[body_ind].T.topLeftCorner(3,4)*Tframe;
+  
   if (rotation_type == 0) {
     x = T*pts;
   } else if (rotation_type == 1) {
@@ -1121,71 +1146,77 @@ void RigidBodyManipulator::forwardKin(const int body_ind, const MatrixBase<Deriv
     rpy << atan2(T(2,1),T(2,2)), atan2(-T(2,0),sqrt(T(2,1)*T(2,1) + T(2,2)*T(2,2))), atan2(T(1,0),T(0,0));
     // NOTE: we're assuming an X-Y-Z convention was used to construct T
     
-    x = MatrixXd::Zero(2*dim,n_pts);
+    x = MatrixXd::Zero(6,n_pts);
     x.block(0,0,3,n_pts) = T*pts;
     x.block(3,0,3,n_pts) = rpy.replicate(1,n_pts);
   } 
   else if(rotation_type == 2)
   {
-	Vector4d quat, case_check;
-	case_check << T(0,0)+T(1,1)+T(2,2), T(0,0)-T(1,1)-T(2,2), -T(0,0)+T(1,1)-T(2,2), -T(0,0)-T(1,1)+T(2,2);
-	int ind; double val = case_check.maxCoeff(&ind);
+    Vector4d quat, case_check;
+    case_check << T(0,0)+T(1,1)+T(2,2), T(0,0)-T(1,1)-T(2,2), -T(0,0)+T(1,1)-T(2,2), -T(0,0)-T(1,1)+T(2,2);
+    int ind; double val = case_check.maxCoeff(&ind);
 
-	switch(ind) {
-	case 0: { // val = trace(M)
-    	double w = sqrt(1+val)/2.0;
-    	double w4 = w*4;
-    	quat << w,
-    			(T(2,1)-T(1,2))/w4,
-    			(T(0,2)-T(2,0))/w4,
-    			(T(1,0)-T(0,1))/w4;
-		} break;
-  case 1: { // val = M(1,1) - M(2,2) - M(3,3)
-    	double s = 2*sqrt(1+val);
-    	quat << (T(2,1)-T(1,2))/s,
-    			0.25*s,
-    			(T(0,1)+T(1,0))/s,
-    			(T(0,2)+T(2,0))/s;
-  	} break;
-  case 2: { // val = M(2,2) - M(1,1) - M(3,3)
-    	double s = 2*(sqrt(1+val));
-    	quat << (T(0,2)-T(2,0))/s,
-    			(T(0,1)+T(1,0))/s,
-    			0.25*s,
-    			(T(1,2)+T(2,1))/s;
-  	} break;
-  default: { // val = M(3,3) - M(2,2) - M(1,1)
-  		double s = 2*(sqrt(1+val));
-    	quat << (T(1,0)-T(0,1))/s,
-    			(T(0,2)+T(2,0))/s,
-    			(T(1,2)+T(2,1))/s,
-    			0.25*s;
-  	} break;
-	}
+    switch(ind) {
+      case 0: { // val = trace(M)
+        double w = sqrt(1+val)/2.0;
+        double w4 = w*4;
+        quat << w,
+                (T(2,1)-T(1,2))/w4,
+                (T(0,2)-T(2,0))/w4,
+                (T(1,0)-T(0,1))/w4;
+      } break;
+      case 1: { // val = M(1,1) - M(2,2) - M(3,3)
+        double s = 2*sqrt(1+val);
+        quat << (T(2,1)-T(1,2))/s,
+                0.25*s,
+                (T(0,1)+T(1,0))/s,
+                (T(0,2)+T(2,0))/s;
+      } break;
+      case 2: { // val = M(2,2) - M(1,1) - M(3,3)
+        double s = 2*(sqrt(1+val));
+        quat << (T(0,2)-T(2,0))/s,
+                (T(0,1)+T(1,0))/s,
+                0.25*s,
+                (T(1,2)+T(2,1))/s;
+      } break;
+      default: { // val = M(3,3) - M(2,2) - M(1,1)
+        double s = 2*(sqrt(1+val));
+        quat << (T(1,0)-T(0,1))/s,
+                (T(0,2)+T(2,0))/s,
+                (T(1,2)+T(2,1))/s,
+                0.25*s;
+      } break;
+    }
 
-	x = MatrixXd::Zero(7,n_pts);
-	x.block(0,0,3,n_pts) = T*pts;
-	x.block(3,0,4,n_pts) = quat.replicate(1,n_pts);
+    x = MatrixXd::Zero(7,n_pts);
+    x.block(0,0,3,n_pts) = T*pts;
+    x.block(3,0,4,n_pts) = quat.replicate(1,n_pts);
   }
 }
 
 template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x)
+void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x)
 {
-  MatrixXd Tinv = bodies[body_ind].T.inverse();
+  Matrix4d Tframe;
+  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
+
+  MatrixXd Tinv = (bodies[body_ind].T*Tframe).inverse();
   x = Tinv.topLeftCorner(3,4)*pts;
 }
 
 template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::forwardJac(const int body_ind, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
+void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
 {
-  int dim = 3, n_pts = pts.cols();
-  MatrixXd tmp = bodies[body_ind].dTdq.topLeftCorner(dim*num_dof,dim+1)*pts;
-  MatrixXd Jt = Map<MatrixXd>(tmp.data(),num_dof,dim*n_pts);
-  J.topLeftCorner(dim*n_pts,num_dof) = Jt.transpose();
+  int n_pts = pts.cols(); Matrix4d Tframe;
+  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
+
+  MatrixXd dTdq =  bodies[body_ind].dTdq.topLeftCorner(3*num_dof,4)*Tframe;
+  MatrixXd tmp =dTdq*pts;
+  MatrixXd Jt = Map<MatrixXd>(tmp.data(),num_dof,3*n_pts);
+  J.topLeftCorner(3*n_pts,num_dof) = Jt.transpose();
   
   if (rotation_type == 1) {
-    MatrixXd R = bodies[body_ind].T.topLeftCorner(dim,dim);
+    Matrix3d R = (bodies[body_ind].T*Tframe).topLeftCorner(3,3);
     /*
      * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
      * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
@@ -1193,11 +1224,11 @@ void RigidBodyManipulator::forwardJac(const int body_ind, const MatrixBase<Deriv
     
     VectorXd dR21_dq(num_dof),dR22_dq(num_dof),dR20_dq(num_dof),dR00_dq(num_dof),dR10_dq(num_dof);
     for (int i=0; i<num_dof; i++) {
-      dR21_dq(i) = bodies[body_ind].dTdq(2*num_dof+i,1);
-      dR22_dq(i) = bodies[body_ind].dTdq(2*num_dof+i,2);
-      dR20_dq(i) = bodies[body_ind].dTdq(2*num_dof+i,0);
-      dR00_dq(i) = bodies[body_ind].dTdq(i,0);
-      dR10_dq(i) = bodies[body_ind].dTdq(num_dof+i,0);
+      dR21_dq(i) = dTdq(2*num_dof+i,1);
+      dR22_dq(i) = dTdq(2*num_dof+i,2);
+      dR20_dq(i) = dTdq(2*num_dof+i,0);
+      dR00_dq(i) = dTdq(i,0);
+      dR10_dq(i) = dTdq(num_dof+i,0);
     }
     double sqterm1 = R(2,1)*R(2,1) + R(2,2)*R(2,2);
     double sqterm2 = R(0,0)*R(0,0) + R(1,0)*R(1,0);
@@ -1208,26 +1239,26 @@ void RigidBodyManipulator::forwardJac(const int body_ind, const MatrixBase<Deriv
     Jr.block(1,0,1,num_dof) = ((-sqrt(sqterm1)*dR20_dq + R(2,0)/sqrt(sqterm1)*(R(2,1)*dR21_dq + R(2,2)*dR22_dq) )/(R(2,0)*R(2,0) + R(2,1)*R(2,1) + R(2,2)*R(2,2))).transpose();
     Jr.block(2,0,1,num_dof)= ((R(0,0)*dR10_dq - R(1,0)*dR00_dq)/sqterm2).transpose();
     
-    MatrixXd Jfull = MatrixXd::Zero(2*dim*n_pts,num_dof);
+    MatrixXd Jfull = MatrixXd::Zero(2*3*n_pts,num_dof);
     for (int i=0; i<n_pts; i++) {
       Jfull.block(i*6,0,3,num_dof) = J.block(i*3,0,3,num_dof);
       Jfull.block(i*6+3,0,3,num_dof) = Jr;
     }
     J=Jfull;
   } else if(rotation_type == 2) {
-    Matrix3d R = bodies[body_ind].T.topLeftCorner(3,3);
+    Matrix3d R = (bodies[body_ind].T*Tframe).topLeftCorner(3,3);
     
     VectorXd dR21_dq(num_dof),dR22_dq(num_dof),dR20_dq(num_dof),dR00_dq(num_dof),dR10_dq(num_dof),dR01_dq(num_dof),dR02_dq(num_dof),dR11_dq(num_dof),dR12_dq(num_dof);
     for (int i=0; i<num_dof; i++) {
-      dR21_dq(i) = bodies[body_ind].dTdq(2*num_dof+i,1);
-      dR22_dq(i) = bodies[body_ind].dTdq(2*num_dof+i,2);
-      dR20_dq(i) = bodies[body_ind].dTdq(2*num_dof+i,0);
-      dR00_dq(i) = bodies[body_ind].dTdq(i,0);
-      dR10_dq(i) = bodies[body_ind].dTdq(num_dof+i,0);
-      dR01_dq(i) = bodies[body_ind].dTdq(i,1);
-      dR02_dq(i) = bodies[body_ind].dTdq(i,2);
-      dR11_dq(i) = bodies[body_ind].dTdq(num_dof+i,1);
-      dR12_dq(i) = bodies[body_ind].dTdq(num_dof+i,2);
+      dR21_dq(i) = dTdq(2*num_dof+i,1);
+      dR22_dq(i) = dTdq(2*num_dof+i,2);
+      dR20_dq(i) = dTdq(2*num_dof+i,0);
+      dR00_dq(i) = dTdq(i,0);
+      dR10_dq(i) = dTdq(num_dof+i,0);
+      dR01_dq(i) = dTdq(i,1);
+      dR02_dq(i) = dTdq(i,2);
+      dR11_dq(i) = dTdq(num_dof+i,1);
+      dR12_dq(i) = dTdq(num_dof+i,2);
     }
     
   	Vector4d case_check;
@@ -1282,30 +1313,33 @@ void RigidBodyManipulator::forwardJac(const int body_ind, const MatrixBase<Deriv
 }
 
 template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::forwardJacDot(const int body_ind, const MatrixBase<DerivedA> &pts, MatrixBase<DerivedB>& Jdot)
+void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, MatrixBase<DerivedB>& Jdot)
 {
-  int dim = 3, n_pts = pts.cols();
-  MatrixXd tmp = bodies[body_ind].dTdqdot*pts;
-  MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_dof,dim*n_pts);
+  int n_pts = pts.cols(); Matrix4d Tframe;
+  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
+
+  MatrixXd tmp = bodies[body_ind].dTdqdot*Tframe*pts;
+  MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_dof,3*n_pts);
   Jdot = Jdott.transpose();
 }
 
 template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::forwarddJac(const int body_ind, const MatrixBase<DerivedA> &pts, MatrixBase<DerivedB>& dJ)
+void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, MatrixBase<DerivedB>& dJ)
 {
-  int dim=3, n_pts=pts.cols();
+  int n_pts = pts.cols(); Matrix4d Tframe;
+  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
   
   int i,j;
-  MatrixXd dJ_reshaped = MatrixXd(num_dof, dim*n_pts*num_dof);
-  MatrixXd tmp = MatrixXd(dim*num_dof,n_pts);
+  MatrixXd dJ_reshaped = MatrixXd(num_dof, 3*n_pts*num_dof);
+  MatrixXd tmp = MatrixXd(3*num_dof,n_pts);
   for (i = 0; i < num_dof; i++) {
-    tmp = bodies[body_ind].ddTdqdq.block(i*num_dof*dim,0,dim*num_dof,dim+1)*pts;  //dim*num_dof x n_pts
+    tmp = bodies[body_ind].ddTdqdq.block(i*num_dof*3,0,3*num_dof,4)*Tframe*pts;  //dim*num_dof x n_pts
     for (j = 0; j < n_pts; j++) {
-      dJ_reshaped.block(i,j*dim*num_dof,1,dim*num_dof) = tmp.col(j).transpose();
+      dJ_reshaped.block(i,j*3*num_dof,1,3*num_dof) = tmp.col(j).transpose();
     }
     //       dJ_reshaped.row(i) << tmp.col(0).transpose(), tmp.col(1).transpose();
   }
-  MatrixXd dJ_t = Map<MatrixXd>(dJ_reshaped.data(), num_dof*num_dof, dim*n_pts);
+  MatrixXd dJ_t = Map<MatrixXd>(dJ_reshaped.data(), num_dof*num_dof, 3*n_pts);
   dJ = dJ_t.transpose();
 }
 

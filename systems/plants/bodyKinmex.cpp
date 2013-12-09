@@ -34,8 +34,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   
   int body_ind = ((int) mxGetScalar(prhs[2])) - 1;  // note: this is body_ind-1 (so 0 to num_bodies-1)
 
-  if (body_ind<0 || body_ind>=model->num_bodies) {
-      mexErrMsgIdAndTxt("Drake:forwardKinmex:BadInputs","body_ind must be -1 (for com) or between 0 and num_bodies-1");
+  if (body_ind<-(model->num_frames+1) || body_ind>=model->num_bodies) {
+      mexErrMsgIdAndTxt("Drake:forwardKinmex:BadInputs","body_ind must be -1 (for com) or between -num_frames-1 and num_bodies-1");
   }
 
   int n_pts = mxGetN(prhs[3]);

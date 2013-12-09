@@ -337,7 +337,7 @@ input to Newtons of force.</xs:documentation>
     </xs:complexType>
 
     <xs:complexType name="link">
-        <xs:all>
+        <xs:sequence>
             <xs:element name="inertial" type="inertial" minOccurs="0" maxOccurs="1">
                 <xs:annotation>
                     <xs:documentation>The inertial properties of the link. </xs:documentation>
@@ -354,7 +354,7 @@ input to Newtons of force.</xs:documentation>
                 </xs:annotation>
             </xs:element>
             <xs:element maxOccurs="unbounded" minOccurs="0" name="sensor" type="sensor"/>
-        </xs:all>
+        </xs:sequence>
         <xs:attribute name="name" type="xs:string" use="required">
             <xs:annotation>
                 <xs:documentation>The name of the link itself </xs:documentation>
@@ -491,9 +491,9 @@ f_friction = min(1,max(-1,qd./m.coulomb_window')).*m.coulomb_friction' + m.dampi
         <xs:attribute name="type" type="sensor_type"/>
     </xs:complexType>
     <xs:complexType name="gazebo">
-        <xs:all>
+        <xs:sequence>
             <xs:element maxOccurs="unbounded" minOccurs="0" name="sensor" type="gazebo_sensor"/>
-        </xs:all>
+        </xs:sequence>
         <xs:attribute name="reference" type="xs:string"/>
     </xs:complexType>
     <xs:complexType name="sensor">
@@ -570,6 +570,15 @@ yet. (see bug 921)</xs:documentation>
                 </xs:element>
                 <xs:element maxOccurs="unbounded" minOccurs="0" name="collision_filter_group"
                     type="collision_filter_group"/>
+                <xs:element maxOccurs="unbounded" minOccurs="0" name="frame">
+                    <xs:complexType>
+                        <xs:complexContent>
+                            <xs:extension base="link_reference_w_pose">
+                                <xs:attribute name="name"/>
+                            </xs:extension>
+                        </xs:complexContent>
+                    </xs:complexType>
+                </xs:element>
             </xs:sequence>
             <xs:attribute name="name" type="xs:string" use="required"/>
 
@@ -583,7 +592,7 @@ yet. (see bug 921)</xs:documentation>
         <xs:annotation>
             <xs:documentation>Provides a means to exclude certain pairs of bodies from collision detec- tion and closest distance computations. A collision filter group can contain one or more links, and a link may belong to any number of collision filter groups. One collision filter group can ignore another, in which case pairs of bodies with one element from each group are skipped when performing the aforementioned computations.</xs:documentation>
         </xs:annotation>
-        <xs:all>
+        <xs:sequence>
             <xs:element name="member" type="link_reference" maxOccurs="unbounded" minOccurs="0">
                 <xs:annotation>
                     <xs:documentation>Specifies that a link belongs to this collision filter group.</xs:documentation>
@@ -595,7 +604,7 @@ yet. (see bug 921)</xs:documentation>
                     <xs:documentation>Specifies that collisions between members of this collision filter group and those of another collision filter group should be ignored.</xs:documentation>
                 </xs:annotation>
             </xs:element>
-        </xs:all>
+        </xs:sequence>
         <xs:attribute form="unqualified" name="name" type="xs:string" use="required"/>
     </xs:complexType>
 </xs:schema>

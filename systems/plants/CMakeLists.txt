@@ -87,7 +87,7 @@ if (eigen3_FOUND)
   add_subdirectory(test)
 
   pods_install_libraries(drakeRBM)
-  pods_install_headers(RigidBodyManipulator.h RigidBody.h DESTINATION drake)
+  pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h DESTINATION drake)
   pods_install_pkg_config_file(drake-rbm
     LIBS -ldrakeRBM
     REQUIRES  
