@@ -24,7 +24,7 @@ if(use_mex)
       error('The input has to be a RigidBodyConstraint object');
     end
   end
-  [q,info] = approximateIKmex(obj.mex_model_ptr,q_seed,q_nom,constraint_ptr_cell{:},ikoptions);
+  [q,info] = approximateIKmex(obj.mex_model_ptr,q_seed,q_nom,constraint_ptr_cell{:},ikoptions.mex_ptr);
 else
 t = [];
 kc_cell = {};
