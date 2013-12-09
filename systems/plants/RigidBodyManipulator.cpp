@@ -8,6 +8,7 @@
 //#include <stdexcept>
 //END_DEBUG
 
+#include <gurobi_c++.h>
 
 using namespace std;
 
@@ -1471,15 +1472,15 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 
 void RigidBodyManipulator::inverseKin(const VectorXd &q_seed, const VectorXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, VectorXd &q_sol, int &INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
 {
-  this->inverseKinBackend(1,NULL,0,q_seed,q_nom,num_constraints, const RigidBodyConstraint** const constraint_array, q_sol, &INFO,infeasible_constraint,ikoptions);
+  //this->inverseKinBackend(1,NULL,0,q_seed,q_nom,num_constraints, constraint_array, q_sol, &INFO,infeasible_constraint,ikoptions);
 }
 
 void RigidBodyManipulator::inverseKinPointwise(const double* const t, int nT,const MatrixXd &q_seed, const MatrixXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, MatrixXd &q_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
 {
-  this->inverseKinBackend(1,t,nT, q_seed,q_nom, num_constraints, constraint_array, q_sol, INFO, infeasible_constraint, ikoptions)
+  //this->inverseKinBackend(1,t,nT, q_seed,q_nom, num_constraints, constraint_array, q_sol, INFO, infeasible_constraint, ikoptions);
 }
 
-void RigidBodyManipulator::approximateIK(const VectorXd &q_seed, const VectorXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, VectorXd &q_sol, int &INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
+void RigidBodyManipulator::approximateIK(const VectorXd &q_seed, const VectorXd &q_nom, const int num_constraints, const RigidBodyConstraint** const constraint_array, VectorXd &q_sol, int &INFO, const IKoptions &ikoptions)
 {
   int num_kc = 0;
   SingleTimeKinematicConstraint** kc_array = new SingleTimeKinematicConstraint*[num_constraints];
@@ -1487,18 +1488,192 @@ void RigidBodyManipulator::approximateIK(const VectorXd &q_seed, const VectorXd 
   double* joint_ub= new double[this->num_dof];
   memcpy(joint_lb,this->joint_limit_min,sizeof(double)*this->num_dof);
   memcpy(joint_ub,this->joint_limit_max,sizeof(double)*this->num_dof);
-  for(int i = 0;i<num_constraint;i++)
+  for(int i = 0;i<num_constraints;i++)
   {
     int constraint_category = constraint_array[i]->getCategory();
     if(constraint_category == RigidBodyConstraint::SingleTimeKinematicConstraintCategory)
     {
-      kc_array[num_kc] = (SingleTimeKinematicConstraint*) constraint;
+      kc_array[num_kc] = (SingleTimeKinematicConstraint*) constraint_array[i];
       num_kc++;
     }
     else if(constraint_category == RigidBodyConstraint::PostureConstraintCategory)
     {
+      double* joint_min = new double[this->num_dof];
+      double* joint_max = new double[this->num_dof];
+      PostureConstraint* pc = (PostureConstraint*) constraint_array[i];
+      pc->bounds(NULL,joint_min,joint_max);
+      for(int j = 0;j<this->num_dof;j++)
+      {
+        joint_lb[j] = (joint_lb[j]<joint_min[j]? joint_min[j]:joint_lb[j]);
+        joint_ub[j] = (joint_ub[j]>joint_max[j]? joint_max[j]:joint_ub[j]);
+        if(joint_lb[j]>joint_ub[j])
+        {
+          cerr<<"approximateIK:posture constraint has lower bound larger than upper bound"<<endl;
+        }
+      }
+      delete[] joint_min;
+      delete[] joint_max;
     }
   }
+  MatrixXd Q;
+  ikoptions.getQ(Q);
+  int error;
+  GRBenv *grb_env = NULL;
+  GRBmodel *grb_model = NULL;
+  this->qtmp = -2*Q*q_nom;
+  {
+    // create gurobi environment
+    error = GRBloadenv(&grb_env,NULL);
+
+    // set solver params (http://www.gurobi.com/documentation/5.5/reference-manual/node798#sec:Parameters)
+    error = GRBsetintparam(grb_env,"outputflag",0);
+    /*error = GRBsetintparam(grb_env,"method",2);
+    error = GRBsetintparam(grb_env,"presolve",0);
+    error = GRBsetintparam(grb_env,"bariterlimit",20);
+    error = GRBsetintparam(grb_env,"barhomogenous",0);
+    error = GRBsetdblparam(grb_env,"barconvtol",1e-4);*/
+    error = GRBnewmodel(grb_env,&grb_model,"ApproximateIK",this->num_dof,this->qtmp.data(),joint_lb,joint_ub,NULL,NULL);
+  }
+  // set up cost function
+  //cost: (q-q_nom)'*Q*(q-q_nom)
+  error = GRBsetdblattrarray(grb_model,"Obj",0,this->num_dof,this->qtmp.data());
+  for(int i = 0;i<this->num_dof;i++)
+  {
+    for(int j = 0;j<this->num_dof;j++)
+    {
+      if(abs(Q(i,j))>1e-5)
+      {
+        error = GRBaddqpterms(grb_model,1,&i,&j,&Q(i,j));
+      }
+    }
+  }
+  int* allIndsData = new int[this->num_dof];
+  for(int j = 0;j<this->num_dof;j++)
+  {
+    allIndsData[j] = j;
+  }  
+  this->doKinematics(const_cast<double*>(q_seed.data()));
+  int kc_idx,c_idx;
+  for(kc_idx = 0;kc_idx<num_kc;kc_idx++)
+  {
+    int nc = kc_array[kc_idx]->getNumConstraint(NULL);
+    VectorXd lb(nc);
+    VectorXd ub(nc);
+    VectorXd c(nc);
+    MatrixXd dc(nc,this->num_dof);
+    kc_array[kc_idx]->bounds(NULL,lb,ub);
+    kc_array[kc_idx]->eval(NULL,c,dc);
+    for(c_idx = 0; c_idx < nc; c_idx++)
+    {
+      VectorXd rowVec = dc.row(c_idx);
+      double *Jrow = rowVec.data();
+      double c_seed= c(c_idx)-dc.row(c_idx)*q_seed;
+      double rhs_row;
+      if(std::isinf(-lb(c_idx)))
+      {
+        rhs_row = ub(c_idx)-c_seed;
+        int gerror = GRBaddconstr(grb_model,this->num_dof,allIndsData,Jrow,GRB_LESS_EQUAL,rhs_row,NULL);
+        if(gerror)
+        {
+          printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
+        }
+      }
+      else if(std::isinf(ub(c_idx)))
+      {
+        if(std::isinf(lb(c_idx)))
+        {
+          cerr<<"Drake:approximateIKmex: lb and ub cannot be both infinity, check the getConstraintBnds output of the KinematicConstraint"<<endl;
+        }
+        rhs_row = lb(c_idx)-c_seed;
+        error = GRBaddconstr(grb_model,this->num_dof,allIndsData,Jrow,GRB_GREATER_EQUAL,rhs_row,NULL);
+        if(error)
+        {
+        printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
+        }
+      }
+      else if(ub(c_idx)-lb(c_idx)< 1e-10)
+      {
+        rhs_row = lb(c_idx)-c_seed;
+        error = GRBaddconstr(grb_model, this->num_dof, allIndsData, Jrow, GRB_EQUAL, rhs_row, NULL);
+        if(error)
+        {
+          printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
+        }
+      }
+      else
+      {
+        double rhs_row1 = ub(c_idx)-c_seed;
+        error = GRBaddconstr(grb_model,this->num_dof,allIndsData,Jrow,GRB_LESS_EQUAL,rhs_row1,NULL);
+        if(error)
+        {
+          printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
+        }
+        double rhs_row2 = lb(c_idx)-c_seed;
+        error = GRBaddconstr(grb_model,this->num_dof,allIndsData,Jrow,GRB_GREATER_EQUAL,rhs_row2,NULL);
+        if(error)
+        {
+          printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
+        }
+      }
+    } 
+  }
+  error = GRBupdatemodel(grb_model);
+  if(error)
+  {
+    printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
+  }
+  
+  error = GRBoptimize(grb_model);
+  if(error)
+  {
+    printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
+  }
+
+  error = GRBgetdblattrarray(grb_model, GRB_DBL_ATTR_X, 0, this->num_dof,q_sol.data());
+
+  error = GRBgetintattr(grb_model, GRB_INT_ATTR_STATUS, &INFO);
+  if(INFO == 2)
+  {
+    INFO = 0;
+  }
+  else
+  {
+    INFO = 1;
+  }
+  //debug only
+  /*GRBwrite(grb_model,"gurobi_approximateIK.lp");
+  int num_gurobi_cnst;
+  GRBgetintattr(grb_model,GRB_INT_ATTR_NUMCONSTRS,&num_gurobi_cnst);
+  MatrixXd J(num_gurobi_cnst,this->num_dof);
+  VectorXd rhs(num_gurobi_cnst);
+  for(int i = 0;i<num_gurobi_cnst;i++)
+  {
+    for(int j = 0;j<this->num_dof;j++)
+    {
+      GRBgetcoeff(grb_model,i,j,&J(i,j));
+    }
+    GRBgetdblattrarray(grb_model,GRB_DBL_ATTR_RHS,0,num_gurobi_cnst,rhs.data());
+  }
+  plhs[2] = mxCreateDoubleMatrix(num_gurobi_cnst,this->num_dof,mxREAL);
+  memcpy(mxGetPr(plhs[2]),J.data(),sizeof(double)*num_gurobi_cnst*this->num_dof);
+  plhs[3] = mxCreateDoubleMatrix(num_gurobi_cnst,1,mxREAL);
+  memcpy(mxGetPr(plhs[3]),rhs.data(),sizeof(double)*num_gurobi_cnst);
+  plhs[4] = mxCreateDoubleMatrix(this->num_dof,1,mxREAL);
+  GRBgetdblattrarray(grb_model,GRB_DBL_ATTR_LB,0,this->num_dof,mxGetPr(plhs[4]));
+  plhs[5] = mxCreateDoubleMatrix(this->num_dof,1,mxREAL);
+  GRBgetdblattrarray(grb_model,GRB_DBL_ATTR_UB,0,this->num_dof,mxGetPr(plhs[5]));
+  char* sense = new char[num_gurobi_cnst];
+  GRBgetcharattrarray(grb_model,GRB_CHAR_ATTR_SENSE,0,num_gurobi_cnst,sense);
+  plhs[6] = mxCreateString(sense);*/
+
+  GRBfreemodel(grb_model);
+  GRBfreeenv(grb_env);
+  delete[] joint_limit_min;
+  delete[] joint_limit_max;
+  delete[] allIndsData;
+  delete[] kc_array;
+  return;
+  
 }
 
 
