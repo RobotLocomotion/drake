@@ -17,21 +17,24 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int nq = model->num_dof;
   Map<VectorXd> q_seed(mxGetPr(prhs[1]),nq);
   Map<VectorXd> q_nom(mxGetPr(prhs[2]),nq);
-  mexPrintf("get q_seed,q_nom\n");
+  //VectorXd q_seed(nq);
+  //memcpy(q_seed.data(),mxGetPr(prhs[1]),sizeof(double)*nq);
+  //VectorXd q_nom(nq);
+  //memcpy(q_nom.data(),mxGetPr(prhs[2]),sizeof(double)*nq);
   int num_constraints = nrhs-4;
   RigidBodyConstraint** constraint_array = new RigidBodyConstraint*[num_constraints];
   for(int i = 0;i<num_constraints;i++)
   {
     constraint_array[i] = (RigidBodyConstraint*) getDrakeMexPointer(prhs[3+i]);
   }
-  mexPrintf("get constraint\n");
   IKoptions* ikoptions = (IKoptions*) getDrakeMexPointer(prhs[nrhs-1]);
-  mexPrintf("get ikoptions\n");
   plhs[0] = mxCreateDoubleMatrix(nq,1,mxREAL);
   Map<VectorXd> q_sol(mxGetPr(plhs[0]),nq);
   int info;
+  //VectorXd q_sol(nq);
   approximateIK(model,q_seed,q_nom,num_constraints,constraint_array,q_sol,info,*ikoptions);
-  mexPrintf("finish approximateIK\n"); 
+  //plhs[0] = mxCreateDoubleMatrix(nq,1,mxREAL);
+  //memcpy(mxGetPr(plhs[0]),q_sol.data(),sizeof(double)*nq);
   if (nlhs>1) 
   {
     plhs[1] = mxCreateDoubleScalar((double) info);

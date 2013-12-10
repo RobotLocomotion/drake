@@ -11,6 +11,20 @@ using namespace Eigen;
 int main()
 {
   URDFRigidBodyManipulator* model = loadURDFfromFile("../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
+  printf("lb ");
+  for(int i = 0;i<model->num_dof;i++)
+  {
+    printf("%5.3f ",model->joint_limit_min[i]);
+    model->joint_limit_min[i] = 0.0;
+  }
+  printf("\n");
+  printf("ub ");
+  for(int i = 0;i<model->num_dof;i++)
+  {
+    printf("%5.3f ",model->joint_limit_max[i]);
+    model->joint_limit_max[i] = 0.0;
+  }
+  printf("\n");
   if(!model)
   {
     cerr<<"ERROR: Failed to load model"<<endl;

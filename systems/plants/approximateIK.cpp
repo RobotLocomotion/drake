@@ -12,7 +12,6 @@ using namespace Eigen;
 template <typename DerivedA, typename DerivedB, typename DerivedC>
 void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_seed, const MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<DerivedC> &q_sol, int &INFO, const IKoptions &ikoptions)
 {
-  printf("call approximateIK\n");
   int num_kc = 0;
   int nq = model->num_dof;
   SingleTimeKinematicConstraint** kc_array = new SingleTimeKinematicConstraint*[num_constraints];
@@ -20,7 +19,6 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
   double* joint_ub= new double[nq];
   memcpy(joint_lb,model->joint_limit_min,sizeof(double)*nq);
   memcpy(joint_ub,model->joint_limit_max,sizeof(double)*nq);
-  printf("get joint bounds\n");
   for(int i = 0;i<num_constraints;i++)
   {
     int constraint_category = constraint_array[i]->getCategory();
@@ -47,52 +45,71 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
       delete[] joint_min;
       delete[] joint_max;
     }
+    else
+    {
+      cerr<<"Drake:approximateIK: The constraint category is not supported yet"<<endl;
+    }
   }
-  printf("get constraints\n");
-  MatrixXd Q(nq,nq);
+  MatrixXd Q;
   ikoptions.getQ(Q);
   int error;
   GRBenv *grb_env = NULL;
-  GRBmodel *grb_model = NULL;
+  GRBmodel *grb_model = NULL;  
+  
   VectorXd qtmp = -2*Q*q_nom;
+  
+  // create gurobi environment
+  error = GRBloadenv(&grb_env,NULL);
+  if(error)
   {
-    // create gurobi environment
-    error = GRBloadenv(&grb_env,NULL);
-
-    // set solver params (http://www.gurobi.com/documentation/5.5/reference-manual/node798#sec:Parameters)
-    error = GRBsetintparam(grb_env,"outputflag",0);
-    /*error = GRBsetintparam(grb_env,"method",2);
-    error = GRBsetintparam(grb_env,"presolve",0);
-    error = GRBsetintparam(grb_env,"bariterlimit",20);
-    error = GRBsetintparam(grb_env,"barhomogenous",0);
-    error = GRBsetdblparam(grb_env,"barconvtol",1e-4);*/
-    error = GRBnewmodel(grb_env,&grb_model,"ApproximateIK",nq,qtmp.data(),joint_lb,joint_ub,NULL,NULL);
+    printf("Load Gurobi environment error %s\n",GRBgeterrormsg(grb_env));
   }
+
+  // set solver params (http://www.gurobi.com/documentation/5.5/reference-manual/node798#sec:Parameters)
+  error = GRBsetintparam(grb_env,"outputflag",0);
+  if(error)
+  {
+    printf("Set Gurobi outputflag error %s\n",GRBgeterrormsg(grb_env));
+  }
+  /*error = GRBsetintparam(grb_env,"method",2);
+  error = GRBsetintparam(grb_env,"presolve",0);
+  error = GRBsetintparam(grb_env,"bariterlimit",20);
+  error = GRBsetintparam(grb_env,"barhomogenous",0);
+  error = GRBsetdblparam(grb_env,"barconvtol",1e-4);*/
+  error = GRBnewmodel(grb_env,&grb_model,"ApproximateIK",nq,qtmp.data(),joint_lb,joint_ub,NULL,NULL);
+  if(error)
+  {
+    printf("Create Gurobi model error %s\n",GRBgeterrormsg(grb_env));
+  }
+  
   // set up cost function
   //cost: (q-q_nom)'*Q*(q-q_nom)
   error = GRBsetdblattrarray(grb_model,"Obj",0,nq,qtmp.data());
-  printf("set up cost\n");
+  if(error)
+  {
+    printf("Set Gurobi obj error %s\n",GRBgeterrormsg(grb_env));
+  }
   for(int i = 0;i<nq;i++)
   {
     for(int j = 0;j<nq;j++)
     {
-      if(abs(Q(i,j))>1e-5)
+      if(abs(Q(i,j))>1e-10)
       {
         error = GRBaddqpterms(grb_model,1,&i,&j,Q.data()+i+j*nq);
-        printf("Q(i,j)=%4.1f\n",i,j,Q(i,j));
+        if(error)
+        {
+          printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
+        }
       }
     }
   }
-  printf("set up Q\n");
   int* allIndsData = new int[nq];
   for(int j = 0;j<nq;j++)
   {
     allIndsData[j] = j;
   }  
-  printf("get allIndsData\n");
   VectorXd q_seed_data(q_seed);
   model->doKinematics(const_cast<double*>(q_seed_data.data()));
-  printf("doKinematics\n");
   int kc_idx,c_idx;
   for(kc_idx = 0;kc_idx<num_kc;kc_idx++)
   {
@@ -163,15 +180,13 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
     printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
   }
   
-  printf("start optimization\n");
   error = GRBoptimize(grb_model);
-  printf("finish optimization\n");
   if(error)
   {
     printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
   }
 
-  VectorXd q_sol_data;
+  VectorXd q_sol_data(nq);
   error = GRBgetdblattrarray(grb_model, GRB_DBL_ATTR_X, 0, nq,q_sol_data.data());
   q_sol = q_sol_data;
 
