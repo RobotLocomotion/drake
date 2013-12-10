@@ -1840,7 +1840,6 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       if ~isempty(fe)
-        fe.name = name;
         model.force{end+1} = fe;
       end
     end
