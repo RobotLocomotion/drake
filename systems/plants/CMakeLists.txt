@@ -93,6 +93,7 @@ if (eigen3_FOUND)
   pods_use_pkg_config_packages(drakeIK ${drakeIK_PODS_PKG})
   set_target_properties(drakeIK PROPERTIES COMPILE_FLAGS -fPIC)
   pods_install_libraries(drakeIK)
+  pods_install_headers(RigidBodyIK.h DESTINATION drake)
 
   if (gurobi_FOUND)
     add_mex(approximateIKmex approximateIKmex.cpp)

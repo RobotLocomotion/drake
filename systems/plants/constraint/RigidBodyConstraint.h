@@ -1,3 +1,7 @@
+//-----------------------------------------
+/**
+ * @class RigidBodyConstraint       The abstract base class. All the constraints used in the inverse kinematics problem are inherited from RigidBodyConstraint. There are 6 main categories of the RigidBodyConstraint, each category has its own interface
+ */
 #ifndef __RIGIDBODYCONSTRAINT_H__
 #define __RIGIDBODYCONSTRAINT_H__
 #include <iostream>
@@ -63,7 +67,29 @@ class RigidBodyConstraint
     static const int PostureChangeConstraintType                = 19;
 };
 
-
+/**
+ * @class QuasiStaticConstraint       -- Constrain the Center of Mass (CoM) is within the support polygon. The support polygon is a shrunk area of the contact polygon
+ * @param robot     
+ * @param tspan           -- The time span of this constraint being active
+ * @param robotnumset     -- The set of the robots in the RigidBodyManipulator for which the CoM is computed
+ * @param shrinkFactor    -- The factor to shrink the contact polygon. The shrunk area is the support polygon.
+ * @param active          -- Whether the constraint is on/off. If active = false, even the time t is within tspan, the constraint is still inactive
+ * @param num_bodies      -- The total number of ground contact bodies/frames
+ * @param num_pts         -- The total number of ground contact points
+ * @param bodies          -- The index of ground contact bodies/frames
+ * @param num_body_pts    -- The number of contact points on each contact body/frame
+ * @param body_pts        -- The contact points on each contact body/frame
+ * Function:
+ *  eval     --evaluate the constraint
+ *  @param t       --the time to evaluate the constraint
+ *  @param weights --the weight associate with each ground contact point
+ *  @param c       -- c = CoM-weights'*support_vertex
+ *  @param dc      -- dc = [dcdq dcdweiths]
+ *  addContact  -- add contact body and points
+ *  @param num_new_bodies      -- number of new contact bodies
+ *  @param body                -- the index of new contact bodies/frames
+ *  @param body_pts            -- body_pts[i] are the contact points on body[i]
+ */
 
 class QuasiStaticConstraint: public RigidBodyConstraint
 {
@@ -98,6 +124,12 @@ class QuasiStaticConstraint: public RigidBodyConstraint
     void updateRobotnum(std::set<int> &robotnumset);
 };
 
+/*
+ * @class PostureConstraint   constrain the joint limits
+ * @param tspan          -- The time span of the constraint being valid
+ * @param lb             -- The lower bound of the joints
+ * @param ub             -- The upper bound of the joints
+ */
 class PostureConstraint: public RigidBodyConstraint
 {
   protected:
