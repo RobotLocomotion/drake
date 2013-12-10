@@ -357,6 +357,18 @@ classdef RigidBodyWing < RigidBodyForceElement
       [~,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
       wingvel_world = J*qd; % assume still air. Air flow over the wing
 
+      % Implementation note: for homogenous transforms, I could do the following 
+      % vector transforms more efficiently.  forwardKin is adding a 1 on 
+      % the end of every pt for the homogenous coordinates.  it would be 
+      % equivalent, cleaner, and more efficient, to just add a zero on the
+      % end instead of the 1...  because for homogeneous transform matrix 
+      % T we have:
+      %   T * [x;1] - T * [0;1] = T * [x;0]
+      % but I made this change everywhere and decided it was more important
+      % to keep the interface to the forwardKin method clean instead of
+      % polluting it (and bodyKin, and the mex files, ...) with an extra
+      % input/option for "vectors_not_points".
+      
       %project this onto the XZ plane of the wing (ignores sideslip)
       wingYunit = forwardKin(manip,kinsol,obj.kinframe,[0 0; 1 0; 0 0]); wingYunit = wingYunit(:,1)-wingYunit(:,2);
       sideslip = dot(wingvel_world,wingYunit);
