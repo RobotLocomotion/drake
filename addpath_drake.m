@@ -204,15 +204,23 @@ if (~conf.gurobi_enabled)
   disp(' ');
 end
 
-conf.cplex_enabled = logical(exist('cplexlp','file'));
-if (~conf.cplex_enabled)
-  disp(' CPLEX not found.  CPLEX support will be disabled.  To re-enable, install CPLEX and add the matlab subdirectory to your matlab path, then rerun addpath_drake');
+conf.bertini_enabled = logical(exist('bertini','file'));
+if (~conf.bertini_enabled)
+  conf.bertini_enabled = pod_pkg_config('bertini');
 end
+% todo: add warning if no bertini (once we have examples/tests which use
+% it)
 
-conf.yalmip_enabled = logical(exist('sdpvar','file'));
-if (~conf.yalmip_enabled)
-  disp(' YALMIP not found.  YALMIP support will be disabled.  To re-enable, install YALMIP and rerun addpath_drake.'); 
-end
+
+%conf.cplex_enabled = logical(exist('cplexlp','file'));
+%if (~conf.cplex_enabled)
+%  disp(' CPLEX not found.  CPLEX support will be disabled.  To re-enable, install CPLEX and add the matlab subdirectory to your matlab path, then rerun addpath_drake');
+%end
+
+%conf.yalmip_enabled = logical(exist('sdpvar','file'));
+%if (~conf.yalmip_enabled)
+%  disp(' YALMIP not found.  YALMIP support will be disabled.  To re-enable, install YALMIP and rerun addpath_drake.'); 
+%end
 
 setenv('PATH_LICENSE_STRING','2069810742&Courtesy_License&&&USR&2013&14_12_2011&1000&PATH&GEN&31_12_2013&0_0_0&0&0_0');
 conf.pathlcp_enabled = true;
