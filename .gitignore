@@ -92,3 +92,6 @@ unitTest.log
 mlint_output.html
 doc/DoxygenMatlab/latex
 doc/urdf
+doc/ik.log
+doc/ik.pdf
+doc/rigidbody.tex
