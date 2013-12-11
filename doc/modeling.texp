@@ -24,15 +24,17 @@ vector $y$.
 \end{tikzpicture}
 \end{center}
 
-As we will see, dynamical systems in \drake can be instantiated in a number of different ways.  A system can be described by a block of C code (see for instance section~\ref{s:simulinksystem}), but many of the algorithms implemented in \drake operate symbolically on the governing equations of the dynamical systems.  For this reason, the preferred approach is to use the Drake URDF interface (for rigid body dynamics) or alternatively to describe your dynamics in \matlab code by deriving from the \mcode{DrakeSystem} interface class.
-
-\subsection{Universal Robot Description Format (URDF)}
-
-Coming soon.  
+As we will see, dynamical systems in \drake can be instantiated in a
+number of different ways.  A system can be described by a block of C
+code (see for instance section~\ref{s:simulinksystem}), but many of
+the algorithms implemented in \drake operate symbolically on the
+governing equations of the dynamical systems.  For this reason, the
+preferred approach is to use the Drake URDF interface (for rigid body
+dynamics, see Chapter~\ref{c:rigidbody}) or alternatively to describe your dynamics in \matlab code by deriving from the \mcode{DrakeSystem} interface class.
 
 \subsection{Writing your own dynamics}
 
-Not every system of interest can be described by the URDF interface.  For example, for some simple model systems, it makes more sense to type in the few lines of \matlab code to describe the system.  In other cases, such as modeling a aircraft, there may be terms required in the dynamics (such as aerodynamic forces) that are not programmed into the rigid-body URDF interface.  Similarly, if you need to write your own control system or state estimator, you will need to write your own code.   In this section, we will describe how you can write your own dynamics class by deriving from the \mcode{DrakeSystem} interface class. 
+In this section, we will describe how you can write your own dynamics class by deriving from the \mcode{DrakeSystem} interface class. 
 
 \subsubsection{Continuous-Time Systems}
 
@@ -363,7 +365,14 @@ but it wouldn't be hard.}
   described above (especially blocks with different sample times,
   hybrid systems, etc)}
 
-\subsection{Coordinate frames}  Must match to allow combination.  Hybrid modes automatically inherit the input and output coordinate
+\subsection{Coordinate frames}  
+
+Every dynamical system in Drake has a number of coordinate frames
+associated with it, including frames which describe the inputs, states,
+and outputs of the system.  These coordinate frames provide extra
+information about the vector signals, including a name for each
+element.  
+Must match to allow combination.  Hybrid modes automatically inherit the input and output coordinate
 frame of the hybrid system; the hybrid system does not have a
 coordinate frame for the state.
 
