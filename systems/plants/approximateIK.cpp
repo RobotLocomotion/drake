@@ -24,14 +24,14 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
     int constraint_category = constraint_array[i]->getCategory();
     if(constraint_category == RigidBodyConstraint::SingleTimeKinematicConstraintCategory)
     {
-      kc_array[num_kc] = (SingleTimeKinematicConstraint*) constraint_array[i];
+      kc_array[num_kc] = static_cast<SingleTimeKinematicConstraint*>(constraint_array[i]);
       num_kc++;
     }
     else if(constraint_category == RigidBodyConstraint::PostureConstraintCategory)
     {
       double* joint_min = new double[nq];
       double* joint_max = new double[nq];
-      PostureConstraint* pc = (PostureConstraint*) constraint_array[i];
+      PostureConstraint* pc = static_cast<PostureConstraint*>(constraint_array[i]);
       pc->bounds(NULL,joint_min,joint_max);
       for(int j = 0;j<nq;j++)
       {

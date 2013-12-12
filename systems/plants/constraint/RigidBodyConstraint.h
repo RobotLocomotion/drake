@@ -45,7 +45,7 @@ class RigidBodyConstraint
     static const int PostureConstraintCategory                   = -4;
     static const int MultipleTimeLinearPostureConstraintCategory = -5;
     static const int SingleTimeLinearPostureConstraintCategory   = -6;
-    /* Each non-abstrac RigidBodyConstraint class has a unique type. Please stay in consistent with the value in MATLAB*/
+    /* Each non-abstrac RigidBodyConstraint class has a unique type. Make sure this value stays in consistent with the value in MATLAB*/
     static const int QuasiStaticConstraintType                  = 1;
     static const int PostureConstraintType                      = 2;
     static const int SingleTimeLinearPostureConstraintType      = 3;
@@ -79,16 +79,17 @@ class RigidBodyConstraint
  * @param bodies          -- The index of ground contact bodies/frames
  * @param num_body_pts    -- The number of contact points on each contact body/frame
  * @param body_pts        -- The contact points on each contact body/frame
+ *
  * Function:
- *  eval     --evaluate the constraint
- *  @param t       --the time to evaluate the constraint
- *  @param weights --the weight associate with each ground contact point
- *  @param c       -- c = CoM-weights'*support_vertex
- *  @param dc      -- dc = [dcdq dcdweiths]
- *  addContact  -- add contact body and points
- *  @param num_new_bodies      -- number of new contact bodies
- *  @param body                -- the index of new contact bodies/frames
- *  @param body_pts            -- body_pts[i] are the contact points on body[i]
+ *  @function eval     --evaluate the constraint
+ *    @param t       --the time to evaluate the constraint
+ *    @param weights --the weight associate with each ground contact point
+ *    @param c       -- c = CoM-weights'*support_vertex
+ *    @param dc      -- dc = [dcdq dcdweiths]
+ *  @function addContact  -- add contact body and points
+ *    @param num_new_bodies      -- number of new contact bodies
+ *    @param body                -- the index of new contact bodies/frames
+ *    @param body_pts            -- body_pts[i] are the contact points on body[i]
  */
 
 class QuasiStaticConstraint: public RigidBodyConstraint
@@ -129,6 +130,12 @@ class QuasiStaticConstraint: public RigidBodyConstraint
  * @param tspan          -- The time span of the constraint being valid
  * @param lb             -- The lower bound of the joints
  * @param ub             -- The upper bound of the joints
+ * 
+ * @function setJointLimits   set the limit of some joints
+ *   @param num_idx    The number of joints whose limits are going to be set
+ *   @param joint_idx  joint_idx[i] is the index of the i'th joint whose limits are going to be set
+ *   @param lb         lb[i] is the lower bound of the joint joint_idx[i]
+ *   @param ub         ub[i] is the upper bound of the joint joint_idx[i]
  */
 class PostureConstraint: public RigidBodyConstraint
 {
@@ -147,6 +154,23 @@ class PostureConstraint: public RigidBodyConstraint
     virtual ~PostureConstraint(void);
 };
 
+/*
+ * @class MultipleTimeLinearPostureConstraint constrain the posture such that lb(t(1),t(2),...,t(n))<=A_mat(t(1),t(2),t(n))*[q(t(1));q(t(2));...;q(t(n))]<=ub(t(1),t(2),...,t(n)) where A_mat is a sparse matrix that only depends on t(1),t(2),...,t(n)
+ *
+ * @function eval return the value and gradient of the constraint
+ *   @param t      array of time
+ *   @param n_breaks   the length of array t
+ *   @param q     q.col(i) is the posture at t[i]
+ *   @param c    the value of the constraint
+ *   @param dc   the gradient of the constraint w.r.t. q
+ *
+ * @function feval returns the value of the constraint
+ *
+ * @function geval returns the gradient of the constraint, written in the sprase matrix form
+ *   @return iAfun    The row index of the non-zero entries in the gradient matrix
+ *   @return jAvar    The column index of the non-zero entries in the gradient matrix
+ *   @return A        The value of the non-zero entries in the gradient matrix
+ */
 class MultipleTimeLinearPostureConstraint: public RigidBodyConstraint
 {
   protected:
