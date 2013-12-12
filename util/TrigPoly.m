@@ -53,6 +53,18 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       p=obj.p;
     end
     
+    function p=getsym(obj)
+      qs = sym('q',[length(obj.q),1]); 
+      ss = sym('s',[length(obj.s),1]); 
+      cs = sym('c',[length(obj.c),1]);
+      
+      qs = sym(qs,'real'); 
+      ss = sym(ss,'real');
+      cs = sym(cs,'real');
+      
+      p = msspoly2sym([obj.q;obj.s;obj.c],[qs;ss;cs],obj.p);
+    end
+    
     function b=isTrigOrPoly(a)
       % returns true if the TrigPoly object a has
       % contributions from q(i) OR s(i),c(i), but not both.

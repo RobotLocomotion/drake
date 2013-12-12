@@ -1,0 +1,11 @@
+\chapter{Rigid Body Systems} \label{c:rigidbody}
+
+Overview of specific methods for kinematic chains.
+
+\section{Forward Kinematics}
+
+\section{Inverse Kinematics}
+
+\section{Kinematic Planners}
+
+\section{Contact Dynamics}
