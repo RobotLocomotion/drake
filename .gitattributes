@@ -76,6 +76,7 @@ doc/modeling.texp -text
 doc/oxygen_export_settings_html.xml -text
 doc/oxygen_export_settings_pdf.xml -text
 doc/planning.texp -text
+doc/rigidbody.texp -text
 doc/sw2urdf.tex -text
 examples/Acrobot/Acrobot.urdf -text
 examples/Acrobot/AcrobotPlant.m -text
@@ -102,6 +103,7 @@ examples/Acrobot/runTrigLQR.m -text
 examples/Acrobot/runWProcessNoise.m -text
 examples/Acrobot/test/AcrobotWParams.urdf -text
 examples/Acrobot/test/ConstrainedAcrobotPlant.m -text
+examples/Acrobot/test/bertiniIK.m -text
 examples/Acrobot/test/dynamicsGradients.mat -text
 examples/Acrobot/test/dynamicsGradientsTest.m -text
 examples/Acrobot/test/lqrTest.m -text
@@ -1397,6 +1399,7 @@ util/matrixODE.m -text
 util/megaclear.m -text
 util/mexMakeRule.m -text
 util/msspoly2sdpvar.m -text
+util/msspoly2sym.m -text
 util/mysedumi.m -text
 util/normalizeVec.m -text
 util/objext.m -text
