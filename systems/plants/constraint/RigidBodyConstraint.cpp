@@ -316,26 +316,17 @@ void PostureConstraint::setJointLimits(int num_idx,const int* joint_idx, const d
 {
   for(int i = 0;i<num_idx;i++)
   {
-    try{
-      if(lb[i]>this->robot->joint_limit_max[joint_idx[i]])
-      {
-        throw 1;
-      }
-      if(ub[i]<this->robot->joint_limit_min[joint_idx[i]])
-      {
-        throw 2;
-      }
-    }
-    catch(int exception)
+    if(joint_idx[i]>=this->robot->num_dof || joint_idx[i]<0)
     {
-      if(exception==1)
-      {
-        printf("joint lb is greater than the robot default joint maximum\n");
-      }
-      if(exception == 2)
-      {
-        printf("joint ub is greater than the robot default joint minimum\n");
-      }
+      std::cerr<<"joint_idx["<<i<<"] is should be within [0 nq-1]"<<std::endl;
+    }
+    if(lb[i]>this->robot->joint_limit_max[joint_idx[i]])
+    {
+      std::cerr<<"joint lb is greater than the robot default joint maximum"<<std::endl;
+    }
+    if(ub[i]<this->robot->joint_limit_min[joint_idx[i]])
+    {
+      std::cerr<<"joint ub is greater than the robot default joint minimum"<<std::endl;
     }
     this->lb[joint_idx[i]] = (this->robot->joint_limit_min[joint_idx[i]]<lb[i]? lb[i]:this->robot->joint_limit_min[joint_idx[i]]);
     this->ub[joint_idx[i]] = (this->robot->joint_limit_max[joint_idx[i]]>ub[i]? ub[i]:this->robot->joint_limit_max[joint_idx[i]]);

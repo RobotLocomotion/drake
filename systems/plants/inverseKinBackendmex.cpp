@@ -446,15 +446,15 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
   }
   memcpy(q_seed.data(),mxGetPr(prhs[3]),sizeof(double)*nq*nT);
   memcpy(q_nom.data(),mxGetPr(prhs[4]),sizeof(double)*nq*nT);
-  int num_constraint = nrhs-6;
+  int num_constraints = nrhs-6;
   num_st_kc = 0;
   num_mt_kc = 0;
   num_st_lpc = 0;
   num_mt_lpc = 0;
-  st_kc_array = new SingleTimeKinematicConstraint*[num_constraint];
-  mt_kc_array = new MultipleTimeKinematicConstraint*[num_constraint];
-  SingleTimeLinearPostureConstraint** st_lpc_array = new SingleTimeLinearPostureConstraint*[num_constraint];
-  MultipleTimeLinearPostureConstraint** mt_lpc_array = new MultipleTimeLinearPostureConstraint*[num_constraint];
+  st_kc_array = new SingleTimeKinematicConstraint*[num_constraints];
+  mt_kc_array = new MultipleTimeKinematicConstraint*[num_constraints];
+  SingleTimeLinearPostureConstraint** st_lpc_array = new SingleTimeLinearPostureConstraint*[num_constraints];
+  MultipleTimeLinearPostureConstraint** mt_lpc_array = new MultipleTimeLinearPostureConstraint*[num_constraints];
   qsc_ptr = NULL;
   MatrixXd joint_limit_min(nq,nT);
   MatrixXd joint_limit_max(nq,nT);
@@ -463,7 +463,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] )
     memcpy(joint_limit_min.data()+i*nq,model->joint_limit_min,sizeof(double)*nq);
     memcpy(joint_limit_max.data()+i*nq,model->joint_limit_max,sizeof(double)*nq);
   }
-  for(int i = 0;i<num_constraint;i++)
+  for(int i = 0;i<num_constraints;i++)
   {
     RigidBodyConstraint* constraint = (RigidBodyConstraint*) getDrakeMexPointer(prhs[i+5]);
     int constraint_category = constraint->getCategory();
