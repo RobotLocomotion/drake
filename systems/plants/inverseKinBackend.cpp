@@ -61,7 +61,7 @@ static int* mt_lpc_nc;
 static int nT;
 static int num_qsc_pts;
 static bool fixInitialState;
-static // The following variables are used in inverseKinSequence only
+static // The following variables are used in inverseKinTraj only
 static snopt::integer* qfree_idx;
 static snopt::integer* qdotf_idx;
 static snopt::integer* qdot0_idx;
