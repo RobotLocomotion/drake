@@ -102,9 +102,9 @@ if (eigen3_FOUND)
   endif()
 
   if (snopt_cpp_FOUND)
-    add_mex(inverseKinBackendmex inverseKinBackendmex.cpp)
-    target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeRigidBodyConstraint)
-    pods_use_pkg_config_packages(inverseKinBackendmex snopt_cpp)
+    #add_mex(inverseKinBackendmex inverseKinBackendmex.cpp)
+    #target_link_libraries(inverseKinBackendmex drakeRBM drakeUtil drakeRigidBodyConstraint)
+    #pods_use_pkg_config_packages(inverseKinBackendmex snopt_cpp)
   endif()
 
   add_subdirectory(test)

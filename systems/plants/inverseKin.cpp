@@ -13,8 +13,8 @@ void inverseKin(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_seed,
   VectorXd qdot_dummy(model->num_dof);
   VectorXd qddot_dummy(model->num_dof);
   double* t = NULL;
-  inverseKinBackend(model, 1,0,t,q_seed,q_nom,num_constraints,constraint_array,q_sol,qdot_dummy,qddot_dummy,&INFO, infeasible_constraint, ikoptions);
+  inverseKinBackend(model, 1,1,t,q_seed,q_nom,num_constraints,constraint_array,q_sol,qdot_dummy,qddot_dummy,&INFO, infeasible_constraint, ikoptions);
 }
 
-template void inverseKin(RigidBodyManipulator*, const MatrixBase<Map<VectorXd>> &, const MatrixBase<Map<VectorXd>> &, const int, RigidBodyConstraint** const, MatrixBase<Map<VectorXd>> &, int &, vector<string> &, const IKoptions&);
-template void inverseKin(RigidBodyManipulator*, const MatrixBase<VectorXd> &, const MatrixBase<VectorXd> &, const int, RigidBodyConstraint** const, MatrixBase<VectorXd> &, int &, vector<string> &, const IKoptions&);
+//template void inverseKin(RigidBodyManipulator*, const MatrixBase<Map<VectorXd>> &, const MatrixBase<Map<VectorXd>> &, const int, RigidBodyConstraint** const, MatrixBase<Map<VectorXd>> &, int &, vector<string> &, const IKoptions&);
+//template void inverseKin(RigidBodyManipulator*, const MatrixBase<VectorXd> &, const MatrixBase<VectorXd> &, const int, RigidBodyConstraint** const, MatrixBase<VectorXd> &, int &, vector<string> &, const IKoptions&);
