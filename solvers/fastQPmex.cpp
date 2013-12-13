@@ -63,16 +63,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   Map<MatrixXd> Ain(NULL,0,N);
   Map<VectorXd> bin(NULL,0);
 
-  if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&Aeq) Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]));
-  arg++;
-
-  if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&beq) Map<VectorXd>(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg]));
-  arg++;
-
   if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&Ain) Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]));
   arg++;
 
   if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&bin) Map<VectorXd>(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg]));
+  arg++;
+
+  if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&Aeq) Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]));
+  arg++;
+
+  if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&beq) Map<VectorXd>(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg]));
   arg++;
 
   set<int> active;

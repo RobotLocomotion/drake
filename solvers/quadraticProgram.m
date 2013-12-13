@@ -12,7 +12,16 @@ function [x,fval,info,active] = quadraticProgram(Q,f,Ain,bin,Aeq,beq,lb,ub,activ
 %
 % @option solver can be one of 'gurobi','fastQP','gurobi_mex'
 % (coming soon: 'quadprog','cplex','mosek','snopt')
-% @option x0 initial guess at solution
+% @retval x the optimal solution
+% @retval fval the objective value at the optimal solution
+% @retval info depends on the solver.  todo: make this consistent
+% @retval active active set at termination of the algorithm
+%
+
+% todo: implement the following features:
+% @option x0 initial guess at solution (allowed for some methods) 
+% verbose output (especially for info ~= 1)
+% custom options to pass through to solver
 %
 
 n = length(f);
@@ -33,26 +42,31 @@ end
 switch lower(options.solver)
   case 'quadprog'
     [x,fval,info] = quadprog(Q,f,Ain,bin,Aeq,beq,lb,ub);
-    active=[];
-    if (nargout>3) warning('active not implemented yet for quadprog (but should be trivial)'); end
+    if (nargout>3) 
+      active=[];
+      warning('active not implemented yet for quadprog (but should be trivial)'); 
+    end
       
   case 'gurobi'
-    [x,info,active] = mygurobi(Q,f,Ain,bin,Aeq,beq,lb,ub,active);
-    fval = nan;  % todo: implement this
+    [x,fval,info,active] = mygurobi(Q,f,Ain,bin,Aeq,beq,lb,ub,active);
     
   case 'gurobi_mex'
     checkDependency('gurobi');
-    [x,info,active] = gurobiQPmex(Q,f,Aeq,beq,Ain,bin,lb,ub,active);
-    fval = nan;  % todo: implement this
-
+    [x,info,active] = gurobiQPmex(Q,f,Ain,bin,Aeq,beq,lb,ub,active);
+    if (nargout>1)
+      fval = .5*x'*Q*x + f'*x;  % todo: push this into mex?
+    end
+    
   case 'fastqp'
     if isempty(lb), lb=-inf + 0*f; end
     if isempty(ub), ub=inf + 0*f; end
     Ain_b = [Ain; -eye(length(lb)); eye(length(ub))];
     bin_b = [bin; -lb; ub];
 
-    [x,info,active] = fastQPmex(Q,f,Aeq,beq,Ain_b,bin_b,active);
-    fval = nan;  % todo: implement this
+    [x,info,active] = fastQPmex(Q,f,Ain_b,bin_b,Aeq,beq,active);
+    if (nargout>1)
+      fval = .5*x'*Q*x + f'*x;  % todo: push this into mex?
+    end
     
   otherwise
     error('Drake:QuadraticProgram:UnknownSolver',['The requested solver, ',options.solver,' is not known, or not currently supported']);
@@ -62,7 +76,7 @@ end
 
 
 
-function [x,info,active] = mygurobi(Q,f,Ain,bin,Aeq,beq,lb,ub,active)
+function [x,fval,info,active] = mygurobi(Q,f,Ain,bin,Aeq,beq,lb,ub,active)
 
 checkDependency('gurobi');
 
@@ -96,24 +110,17 @@ else
 end
 
 if ~isempty(model.A) && params.method==2 
-  model.obj = 2*model.obj;   
+  model.Q = .5*model.Q;   
   % according to the documentation, I should always need this ...
   % (they claim to optimize x'Qx + f'x), but it seems that they are off by
   % a factor of 2 when there are no constraints.
 end
-
 
 result = gurobi(model,params);
 
-info = result.status;
+info = strcmp(result.status,'OPTIMAL');
 x = result.x;
-
-if isempty(model.A) && params.method==2
-  x = x/2;   
-  % according to the documentation, I should always need this ...
-  % (they claim to optimize x'Qx + f'x), but it seems that they are off by
-  % a factor of 2 when there are no constraints.
-end
+fval = result.objval;
 
 if (size(Ain,1)>0 || ~isempty(lb) || ~isempty(ub))
   % note: result.slack(for Ain indices) = bin-Ain*x
