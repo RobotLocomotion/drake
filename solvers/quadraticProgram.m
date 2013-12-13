@@ -1,4 +1,4 @@
-function [x,fval,info,active] = quadraticProgram(Q,f,Ain,bin,Aeq,beq,lb,ub,active,options)
+function [x,fval,exitflag,active] = quadraticProgram(Q,f,Ain,bin,Aeq,beq,lb,ub,active,options)
 
 % Quadratic Program attempts to provide a common interface to
 % the wealth of QP solvers that we have kicking around.  It 
@@ -41,18 +41,18 @@ end
 
 switch lower(options.solver)
   case 'quadprog'
-    [x,fval,info] = quadprog(Q,f,Ain,bin,Aeq,beq,lb,ub);
+    [x,fval,exitflag] = quadprog(Q,f,Ain,bin,Aeq,beq,lb,ub);
     if (nargout>3) 
       active=[];
       warning('active not implemented yet for quadprog (but should be trivial)'); 
     end
       
   case 'gurobi'
-    [x,fval,info,active] = mygurobi(Q,f,Ain,bin,Aeq,beq,lb,ub,active);
+    [x,fval,exitflag,active] = mygurobi(Q,f,Ain,bin,Aeq,beq,lb,ub,active);
     
   case 'gurobi_mex'
     checkDependency('gurobi');
-    [x,info,active] = gurobiQPmex(Q,f,Ain,bin,Aeq,beq,lb,ub,active);
+    [x,exitflag,active] = gurobiQPmex(Q,f,Ain,bin,Aeq,beq,lb,ub,active);
     if (nargout>1)
       fval = .5*x'*Q*x + f'*x;  % todo: push this into mex?
     end
@@ -63,7 +63,7 @@ switch lower(options.solver)
     Ain_b = [Ain; -eye(length(lb)); eye(length(ub))];
     bin_b = [bin; -lb; ub];
 
-    [x,info,active] = fastQPmex(Q,f,Ain_b,bin_b,Aeq,beq,active);
+    [x,exitflag,active] = fastQPmex(Q,f,Ain_b,bin_b,Aeq,beq,active);
     if (nargout>1)
       fval = .5*x'*Q*x + f'*x;  % todo: push this into mex?
     end
