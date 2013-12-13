@@ -9,8 +9,8 @@ classdef NonlinearProgram
   
   properties 
     num_decision_vars
-    num_nonlinear_equality_constraints
     num_nonlinear_inequality_constraints
+    num_nonlinear_equality_constraints
     Aeq,beq
     Ain,bin
     lb,ub
@@ -29,10 +29,10 @@ classdef NonlinearProgram
   end
   
   methods
-    function obj = NonlinearProgram(num_vars,num_neq,num_nin)
+    function obj = NonlinearProgram(num_vars,num_nin,num_neq)
       obj.num_decision_vars = num_vars;
-      obj.num_nonlinear_equality_constraints = num_neq;
       obj.num_nonlinear_inequality_constraints = num_nin;
+      obj.num_nonlinear_equality_constraints = num_neq;
       obj.lb = -inf(num_vars,1);
       obj.ub = inf(num_vars,1);
       
@@ -51,7 +51,7 @@ classdef NonlinearProgram
       end
     end
     
-    function compareSolvers(obj,x0,solvers)
+    function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
       if nargin<3
         solvers={'snopt','fmincon'};
       end
