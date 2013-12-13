@@ -760,8 +760,10 @@ solvers/fastQP.m -text
 solvers/fastQPmex.cpp -text
 solvers/gurobiQP.h -text
 solvers/gurobiQPmex.cpp -text
-solvers/test/compareSolvers.m -text
-solvers/test/mygurobi.m -text
+solvers/polynomialOptimization.m -text
+solvers/quadraticProgram.m -text
+solvers/test/compareQPSolvers.m -text
+solvers/test/sixHumpCamel.m -text
 solvers/test/testQP.m -text
 systems/@DrakeSystem/DrakeSystem.m -text
 systems/@DrakeSystem/dev/dirtranSNOPTtranscription.m -text
@@ -878,6 +880,7 @@ systems/plants/@RigidBodyManipulator/findAncestorBodies.m -text
 systems/plants/@RigidBodyManipulator/findKinematicPath.m -text
 systems/plants/@RigidBodyManipulator/forwardJacDot.m -text
 systems/plants/@RigidBodyManipulator/forwardKin.m -text
+systems/plants/@RigidBodyManipulator/geometricJacobian.m -text
 systems/plants/@RigidBodyManipulator/getCMM.m -text
 systems/plants/@RigidBodyManipulator/getCOM.m -text
 systems/plants/@RigidBodyManipulator/inverseKin.m -text
@@ -1095,6 +1098,7 @@ systems/plants/test/testCOM.m -text
 systems/plants/test/testFloatingBaseDynamics.m -text
 systems/plants/test/testForwardJacDot.m -text
 systems/plants/test/testForwardKinRot.m -text
+systems/plants/test/testGeometricJacobian.m -text
 systems/plants/test/testGradients.m -text
 systems/plants/test/testIK.m -text
 systems/plants/test/testIKtraj.m -text
@@ -1440,4 +1444,5 @@ util/transposeBlocks.m -text
 util/typecheck.m -text
 util/unitTest.m -text
 util/valuecheck.m -text
+util/vectorToSkewSymmetric.m -text
 util/zoh.m -text
