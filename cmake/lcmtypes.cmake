@@ -251,6 +251,10 @@ function(lcmtypes_build_java)
     find_package(Java REQUIRED)
     include(UseJava)
 
+    pods_find_pkg_config(lcm-java)
+    if (NOT lcm-java_FOUND)
+      message(FATAL_ERROR "Couldn't find lcm-java.pc.  Are you sure that LCM was compiled/installed with JAVA support enabled?")
+    endif()
     pods_use_pkg_config_classpath(lcm-java)
 
     add_jar(${LCMTYPES_JARNAME} ${LCMTYPES_JAVA_SOURCEFILES})

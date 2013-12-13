@@ -10,7 +10,7 @@ using namespace std;
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   
   if (nrhs < 2) {
-    mexErrMsgIdAndTxt("Drake:gurobiQP:NotEnoughInputs", "Usage [x,status,active] = gurobiQP(Q,f[,Aeq,beq,Ain,bin,lb,ub,active])");
+    mexErrMsgIdAndTxt("Drake:gurobiQP:NotEnoughInputs", "Usage [x,status,active] = gurobiQP(Q,f[,Ain,bin,Aeq,beq,lb,ub,active])");
   }
   if (nlhs<1) return;
 
@@ -76,16 +76,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
   VectorXd lb(nparams);
   VectorXd ub(nparams);
 
-  if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&Aeq) Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]));
-  arg++;
-
-  if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&beq) Map<VectorXd>(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg]));
-  arg++;
-
   if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&Ain) Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]));
   arg++;
 
   if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&bin) Map<VectorXd>(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg]));
+  arg++;
+
+  if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&Aeq) Map<MatrixXd>(mxGetPr(prhs[arg]),mxGetM(prhs[arg]),mxGetN(prhs[arg]));
+  arg++;
+
+  if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) new (&beq) Map<VectorXd>(mxGetPr(prhs[arg]),mxGetNumberOfElements(prhs[arg]));
   arg++;
 
   if (nrhs>arg && mxGetNumberOfElements(prhs[arg])>0) {
