@@ -8,7 +8,7 @@ classdef PolynomialProgram < NonlinearProgram
 %   minimize_x objective(x)
 %   subject to 
 %         equality_constraints(x) = 0 
-%         inequality_constraint(x) >= 0
+%         inequality_constraint(x) <= 0
 %
 % @option solver can be 'gloptipoly','snopt' (more coming soon)
 % @option x0 initial guess
@@ -79,6 +79,39 @@ classdef PolynomialProgram < NonlinearProgram
       
       f = double(subs(poly_f,obj.decision_variables,x));
       G = double(subs(poly_G,obj.decision_variables,x));
+    end
+    
+    function [x,objval,exitflag] = solveBERTINI(obj)
+      % solve for KKT stationary and complementarity 
+      % conditions (+ primal feasibility of the 
+      % equality constraints) and return solutions
+      % w/ dual feasibility (and primal feasibility 
+      % of inequality constraints).
+      %  http://en.wikipedia.org/wiki/Karush%E2%80%93Kuhn%E2%80%93Tucker_conditions
+
+      checkDependency('bertini');
+      
+      mu = msspoly('mu',length(obj.inequality_constraints));
+      lambda = msspoly('lambda',length(obj.equality_constraints));
+      
+      eq = [ diff(obj.objective, obj.decision_vars) + ...
+        mu'*diff(obj.inequality_constraints, obj.decision_vars) + ...
+        lambda'*diff(obj.equality_constraints, obj.decision_vars); ... % stationarity
+        obj.equality_constraints; ...  % primal feasibility
+        mu.*obj.inequality_constraints]; % complementarity
+      vars = [obj.decision_vars; mu; lambda];
+      
+      % convert to syms.  wish i didn't have to do this.  :)
+      symbolic_vars = sym('v',size(vars));
+%      symbolic_vars = sym(symbolic_vars,'real');
+      symbolic_eq = msspoly2sym(vars,symbolic_vars,eq);
+      
+      % todo: extract homogenous variable classes?
+      
+      options.parameter = symbolic_eq;
+      bertini_job = bertini(symbolic_eq,options);
+      
+      sol = solve(bertini_job);
     end
   end
   

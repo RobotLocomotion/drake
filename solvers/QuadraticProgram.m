@@ -38,7 +38,7 @@ methods
     if nargin<7, lb=[]; end
     if nargin<8, ub=[]; end
 
-    obj = obj@NonlinearProgram(size(Q,1),size(Ain,1),size(Aeq,1));
+    obj = obj@NonlinearProgram(size(Q,1),0,0);
     obj.Q = Q;
     obj.f = f;
     obj.Ain = Ain;
@@ -66,7 +66,7 @@ methods
         end
         
       case 'gurobi'
-        [x,objval,exitflag,active] = solveWGUROBI(obj,active);
+        [x,objval,exitflag,active] = solveGUROBI(obj,active);
     
       case 'gurobi_mex'
         checkDependency('gurobi');
@@ -92,8 +92,8 @@ methods
   end
 
   function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
-    if nargin<2, x0 = randn(obj.num_decision_vars); end
-    if nargin<3, solvers = {'quadprog','gurobi','gurobi_mex','fastqp'}; end
+    if nargin<2, x0 = randn(obj.num_decision_vars,1); end
+    if nargin<3, solvers = {'quadprog','gurobi','gurobi_mex','fastqp','snopt'}; end
     [x,objval,exitflag,execution_time] = compareSolvers@NonlinearProgram(obj,x0,solvers);
   end  
   
@@ -102,7 +102,7 @@ methods
     df = x'*obj.Q + obj.f';
   end
   
-  function [x,objval,info,active] = solveWGUROBI(obj,active)
+  function [x,objval,info,active] = solveGUROBI(obj,active)
 
     checkDependency('gurobi');
     
