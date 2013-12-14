@@ -2,12 +2,22 @@ function testQP
 
 w = warning('off','optim:quadprog:SwitchToMedScale');
 
-prog = QuadraticProgram(eye(2),zeros(2,1));
+fprintf('****************************************\n');
+fprintf(' min_x (.5*x''*A*x + x)\n');
+fprintf('****************************************\n');
+a = randn(2); 
+prog = QuadraticProgram(a'*a,randn(2,1));
 testSolvers(prog)
 
+fprintf('****************************************\n');
+fprintf(' min_x (.5*x^2 + x), subj to 5<=x<=10\n');
+fprintf('****************************************\n');
 prog = QuadraticProgram(1,1,1,50,[],[],-10,10);
 testSolvers(prog);
 
+fprintf('****************************************\n');
+fprintf(' min_x (.5*x^2 + x), subj to 5<=x<=10\n');
+fprintf('****************************************\n');
 prog = QuadraticProgram(1,1,[],[],[],[],5,10);
 testSolvers(prog);
 
@@ -22,7 +32,7 @@ function testSolvers(prog)
   fprintf('\n\n');
   
   for i=2:length(x)
-    valuecheck(x{1},x{i});
-    valuecheck(objval{1},objval{i});
+    valuecheck(x{1},x{i},1e-4);
+    valuecheck(objval{1},objval{i},1e-4);
   end
 end

@@ -25,6 +25,7 @@ classdef QuadraticProgram < NonlinearProgram
 
 properties
   Q,f
+  quadprog_options
 end
 
 methods
@@ -49,7 +50,7 @@ methods
     
   % todo: check dependencies here and pick my favorite that is also installed
     obj.solver = 'gurobi';
-    
+    obj.quadprog_options = optimset('Display','off');
   end
 
   function [x,objval,exitflag,active] = solve(obj,x0,active)
@@ -58,7 +59,7 @@ methods
     
     switch lower(obj.solver)
       case 'quadprog'
-        [x,objval,exitflag] = quadprog(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub);
+        [x,objval,exitflag] = quadprog(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub,[],obj.quadprog_options);
         if (nargout>3)
           active=[];
           warning('active not implemented yet for quadprog (but should be trivial)');
@@ -134,11 +135,11 @@ methods
       model.ub = obj.ub;
     end
     
-    if ~isempty(model.A) && params.method==2
+    if params.method==2
       model.Q = .5*model.Q;
       % according to the documentation, I should always need this ...
       % (they claim to optimize x'Qx + f'x), but it seems that they are off by
-      % a factor of 2 when there are no constraints.
+      % a factor of 2 %% when there are no constraints.
     end
     
     result = gurobi(model,params);

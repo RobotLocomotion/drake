@@ -331,6 +331,8 @@ GRBmodel* gurobiQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd& f, const
 
   GRBmodel *model = NULL;
 
+  int method;  GRBgetintparam(env,"method",&method);
+
   int i,j,nparams = f.rows(),Qi,Qj;
   double *lbdata = NULL, *ubdata=NULL;
   if (lb.rows()==nparams) lbdata = lb.data();
@@ -340,6 +342,12 @@ GRBmodel* gurobiQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd& f, const
   int startrow=0,d;
   for (vector< MatrixXd* >::iterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
   	MatrixXd* Q=*iterQ;
+    
+    // WARNING:  If there are no constraints, then gurobi clearly solves a different problem: min 1/2 x'Qx + f'x
+    //  				 This is very strange; see the solveWGUROBI method in QuadraticProgram
+    if (method==2) //&& (Aeq.rows()+Ain.rows()>0))
+      *Q = .5* (*Q);
+    
   	if (Q->rows() == 1 || Q->cols() == 1) {  // it's a vector
   		d = Q->rows()*Q->cols();
   	  for (i=0; i<d; i++) {
@@ -367,14 +375,6 @@ GRBmodel* gurobiQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd& f, const
   	}
   }
 
-  int method;  GRBgetintparam(env,"method",&method);
-
-  if (method==2)
-  // Scale f by 2 because gurobi solves min x'Qx + f'x
-  if (Aeq.rows()+Ain.rows()>0) f = 2*f;
-	// WARNING:  If there are no constraints, then gurobi clearly solves a different problem: min 1/2 x'Qx + f'x
-	//  				 This is very strange, and appears to be related to the bug Michael found in gurobi.
-
   CGE (GRBsetdblattrarray(model,"Obj",0,nparams,f.data()), env);
 
   if (Aeq.rows()>0) CGE (myGRBaddconstrs(model,Aeq,beq,GRB_EQUAL, 1e-18), env);
@@ -384,8 +384,6 @@ GRBmodel* gurobiQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd& f, const
   CGE (GRBoptimize(model), env);
 
   CGE (GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, nparams, x.data()), env);
-
-  if (Aeq.rows()+Ain.rows()==0) x /= 2.0;  // this is absolutely unbelievable.  see drake/solvers/test/mygurobi.m
 
   VectorXd slack(Ain.rows());
   CGE (GRBgetdblattrarray(model, "Slack", Aeq.rows(), Ain.rows(), slack.data()), env);
