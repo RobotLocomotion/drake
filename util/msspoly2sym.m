@@ -1,4 +1,4 @@
-function ps = msspoly2sdpvar(xm,xs,pm)
+function ps = msspoly2sym(xm,xs,pm)
 
 % SPOT to symbolic matlab converter
 % flips an msspoly polynomial, pm, which depends on variables xm, and
