@@ -16,6 +16,7 @@ classdef NonlinearProgram
     lb,ub
     iGfun,jGvar  % sparsity pattern in objective and nonlinear constraints
     solver
+    fmincon_options
     snopt_options
     grad_method
   end
@@ -38,6 +39,7 @@ classdef NonlinearProgram
       
       % todo : check dependencies and then go through the list
       obj.solver = 'snopt';
+      obj.fmincon_options = optimset('Display','off');
     end
     
     function [x,objval,exitflag] = solve(obj,x0)
@@ -55,15 +57,15 @@ classdef NonlinearProgram
       if nargin<3
         solvers={'snopt','fmincon'};
       end
-      
-      fprintf('   solver       objval       exitflag   execution time\n----------------------------------------------------------------\n')
+       
+      fprintf('    solver        objval        exitflag   execution time\n-------------------------------------------------------------\n')
       typecheck(solvers,'cell');
       for i=1:length(solvers)
         obj.solver = solvers{i};
         tic;
         [x{i},objval{i},exitflag{i}] = solve(obj,x0);
         execution_time{i} = toc;
-        fprintf('%12s%12f%12d%12f\n',solvers{i},objval{i},exitflag{i},execution_time{i});
+        fprintf('%12s%12.3f%12d%17.4f\n',solvers{i},objval{i},exitflag{i},execution_time{i});
       end
     end
     
@@ -134,7 +136,7 @@ classdef NonlinearProgram
       if (obj.num_nonlinear_equality_constraints || obj.num_nonlinear_inequality_constraints)
         error('not implemented yet');
       end
-      [x,objval,exitflag] = fmincon(@obj.objectiveAndNonlinearConstraints,x0,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub);
+      [x,objval,exitflag] = fmincon(@obj.objectiveAndNonlinearConstraints,x0,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub,[],obj.fmincon_options);
     end
   end
   

@@ -15,6 +15,8 @@ xlabel('x1'); ylabel('x2');
 prog = PolynomialProgram(x,f);
 [xstar,fval] = solve(prog,randn(2,1))
 
+[xstar,fval] = solveBERTINI(prog)
+
 hold on;
 plot3(xstar(1),xstar(2),fval,'r*','MarkerSize',10,'LineWidth',3);
 hold off;
