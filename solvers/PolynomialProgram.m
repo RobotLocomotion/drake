@@ -18,17 +18,17 @@ classdef PolynomialProgram < NonlinearProgram
 %   ... my pcpo idea?  
   
   properties
-    decision_variables     % simple msspoly description of x
+    decision_vars     % simple msspoly description of x
     objective              % msspoly
     equality_constraints   % msspoly
     inequality_constraints % msspoly
   end
 
   methods
-    function obj = PolynomialProgram(decision_variables,objective,equality_constraints,inequality_constraints)
-      typecheck(decision_variables,'msspoly');
-      if ~issimple(decision_variables),
-        error('decision_variables must be a simple msspoly');
+    function obj = PolynomialProgram(decision_vars,objective,equality_constraints,inequality_constraints)
+      typecheck(decision_vars,'msspoly');
+      if ~issimple(decision_vars),
+        error('decision_vars must be a simple msspoly');
       end
       typecheck(objective,'msspoly');
       if length(objective)~=1
@@ -43,24 +43,24 @@ classdef PolynomialProgram < NonlinearProgram
         options.solver = 'snopt';
       end
       
-      if ~isfunction(objective,decision_variables)
+      if ~isfunction(objective,decision_vars)
         error('objective function must only depend on the decision variables');
       end
       if ~isempty(equality_constraints)
         sizecheck(equality_constraints,'colvec');
-        if ~isfunction(equality_constraints,decision_variables)
+        if ~isfunction(equality_constraints,decision_vars)
           error('equality constraints must only depend on the decision variables');
         end
       end
       if ~isempty(inequality_constraints)
         sizecheck(inequality_constraints,'colvec');
-        if ~isfunction(inequality_constraints,decision_variables)
+        if ~isfunction(inequality_constraints,decision_vars)
           error('equality constraints must only depend on the decision variables');
         end
       end
 
-      obj = obj@NonlinearProgram(length(decision_variables),length(equality_constraints),length(inequality_constraints));
-      obj.decision_variables = decision_variables;
+      obj = obj@NonlinearProgram(length(decision_vars),length(equality_constraints),length(inequality_constraints));
+      obj.decision_vars = decision_vars;
       obj.objective = objective;
       obj.equality_constraints = equality_constraints;
       obj.inequality_constraints = inequality_constraints;
@@ -75,10 +75,10 @@ classdef PolynomialProgram < NonlinearProgram
 
     function [f,G] = objectiveAndNonlinearConstraints(obj,x)
       poly_f = [obj.objective; obj.equality_constraints; obj.inequality_constraints];
-      poly_G = diff(poly_f,obj.decision_variables); % note: i could do this just once
+      poly_G = diff(poly_f,obj.decision_vars); % note: i could do this just once
       
-      f = double(subs(poly_f,obj.decision_variables,x));
-      G = double(subs(poly_G,obj.decision_variables,x));
+      f = double(subs(poly_f,obj.decision_vars,x));
+      G = double(subs(poly_G,obj.decision_vars,x));
     end
     
     function [x,objval,exitflag] = solveBERTINI(obj)
@@ -90,28 +90,49 @@ classdef PolynomialProgram < NonlinearProgram
       %  http://en.wikipedia.org/wiki/Karush%E2%80%93Kuhn%E2%80%93Tucker_conditions
 
       checkDependency('bertini');
+
+      eq = diff(obj.objective, obj.decision_vars); % stationarity
+      vars = obj.decision_vars;
       
-      mu = msspoly('mu',length(obj.inequality_constraints));
-      lambda = msspoly('lambda',length(obj.equality_constraints));
-      
-      eq = [ diff(obj.objective, obj.decision_vars) + ...
-        mu'*diff(obj.inequality_constraints, obj.decision_vars) + ...
-        lambda'*diff(obj.equality_constraints, obj.decision_vars); ... % stationarity
-        obj.equality_constraints; ...  % primal feasibility
-        mu.*obj.inequality_constraints]; % complementarity
-      vars = [obj.decision_vars; mu; lambda];
+      if ~isempty(obj.equality_constraints)
+        lambda = msspoly('l',length(obj.equality_constraints));
+        eq(1) = eq(1) + lambda'*diff(obj.equality_constraints, obj.decision_vars);
+        eq = vertcat(eq, obj.equality_constraints); % primal feasibility
+        vars = vertcat(vars, lambda);
+      end        
+
+      if ~isempty(obj.inequality_constraints)
+        mu = msspoly('u',length(obj.inequality_constraints));
+        eq(1) = eq(1) + mu'*diff(obj.inequality_constraints, obj.decision_vars);
+        eq = vertcat(eq,mu.*obj.inequality_constraints); % complementarity
+        mu_indices = length(vars) + 1:length(obj.inequality_constraints);
+        vars = vertcat(vars, mu);
+      end
       
       % convert to syms.  wish i didn't have to do this.  :)
       symbolic_vars = sym('v',size(vars));
-%      symbolic_vars = sym(symbolic_vars,'real');
+      symbolic_vars = sym(symbolic_vars,'real');
       symbolic_eq = msspoly2sym(vars,symbolic_vars,eq);
       
       % todo: extract homogenous variable classes?
       
-      options.parameter = symbolic_eq;
+      options.parameter = [];
       bertini_job = bertini(symbolic_eq,options);
       
       sol = solve(bertini_job);
+      sol = get_real(bertini_job,sol);
+      
+      if ~isempty(obj.inequality_constraints)
+        sol = sol(:,all(sol(mu_indices,:)>=0)); % dual feasibility
+        
+        nonlinear_constraint_vals = double(msubs(obj.inequality_constraints,obj.decision_vars,sol));
+        sol = sol(:,all(nonlinear_constraint_vals<=0)); % primal feasibility
+      end
+      
+      vals = double(msubs(obj.objective,obj.decision_vars,sol));
+      [objval,optimal_solution_index] = min(vals); objval=full(objval);
+      x = sol(:,optimal_solution_index);
+      exitflag = 1;  % todo: do this better
     end
   end
   
