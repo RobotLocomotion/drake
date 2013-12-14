@@ -6,7 +6,7 @@ fprintf('****************************************\n');
 fprintf(' min_x (.5*x''*A*x + x)\n');
 fprintf('****************************************\n');
 a = randn(2); 
-prog = QuadraticProgram(a'*a,randn(2,1));
+prog = QuadraticProgram(a'*a+eye(2),randn(2,1));
 testSolvers(prog)
 
 fprintf('****************************************\n');
