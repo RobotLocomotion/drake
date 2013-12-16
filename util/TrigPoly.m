@@ -77,6 +77,35 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       end
     end
     
+    function v=getTrigPolyBasis(a)
+      v = a; v.p=[];
+      for i=1:length(a.q)
+        if (deg(a.p,a.s(i))+deg(a.p,a.c(i)))>0
+          v.p = vertcat(v.p,[v.s(i);v.c(i)]); 
+          if (deg(a.p,a.q(i))>0)
+            v.p = vertcat(v.p,v.q(i));
+            warning('Drake:TrigPoly:ElementHasBothTrigANDPoly',['Element ',num2str(i),' has both trig and poly elements']);
+          end          
+        else
+          v.p = vertcat(v.p,v.q(i));  % add q if there is nothing else
+        end
+      end
+    end
+    
+    function val=eval(a,q0)
+      % evaluate the trig poly at q=q0
+      val = msubs(a.p,[a.q;a.s;a.c],[q0;sin(q0);cos(q0)]);
+    end
+    
+    function con = getUnitCircleConstraints(a)
+      con = [];
+      for i=1:length(a.q)
+        if (deg(a.p,a.s(i))+deg(a.p,a.c(i)))>0
+          con = vertcat(con,[a.s(i)^2+a.c(i)^2 - 1]); 
+        end
+      end      
+    end
+    
     function a=clean(a,tol)
       if nargin<2, a.p = clean(a.p);
       else a.p=clean(a.p,tol); end
