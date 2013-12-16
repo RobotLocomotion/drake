@@ -40,7 +40,7 @@ classdef PolynomialProgram < NonlinearProgram
       if nargin<5, options=struct(); end
       if ~isfield(options,'solver'),
         % todo: check dependencies here and pick my favorite that is also installed
-        options.solver = 'snopt';
+        options.solver = 'bertini';
       end
       
       if ~isfunction(objective,decision_vars)
@@ -68,11 +68,19 @@ classdef PolynomialProgram < NonlinearProgram
     
     function [x,objval,exitflag] = solve(obj,x0)
       switch lower(obj.solver)
+        case 'bertini'
+          [x,objval,exitflag] = solveBERTINI(obj);
         otherwise 
           [x,objval,exitflag] = solve@NonlinearProgram(obj,x0);
       end
     end
 
+    function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
+      if nargin<2, x0 = randn(obj.num_decision_vars,1); end
+      if nargin<3, solvers = {'bertini','snopt','fmincon'}; end
+      [x,objval,exitflag,execution_time] = compareSolvers@NonlinearProgram(obj,x0,solvers);
+    end
+    
     function [f,G] = objectiveAndNonlinearConstraints(obj,x)
       poly_f = [obj.objective; obj.equality_constraints; obj.inequality_constraints];
       poly_G = diff(poly_f,obj.decision_vars); % note: i could do this just once
