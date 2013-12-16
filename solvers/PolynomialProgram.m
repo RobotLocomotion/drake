@@ -69,7 +69,7 @@ classdef PolynomialProgram < NonlinearProgram
     function [x,objval,exitflag] = solve(obj,x0)
       switch lower(obj.solver)
         case 'bertini'
-          [x,objval,exitflag] = solveBERTINI(obj);
+          [x,objval,exitflag] = bertini(obj);
         otherwise 
           [x,objval,exitflag] = solve@NonlinearProgram(obj,x0);
       end
@@ -89,7 +89,7 @@ classdef PolynomialProgram < NonlinearProgram
       G = double(subs(poly_G,obj.decision_vars,x));
     end
     
-    function [x,objval,exitflag] = solveBERTINI(obj)
+    function [x,objval,exitflag] = bertini(obj,options)
       % solve for KKT stationary and complementarity 
       % conditions (+ primal feasibility of the 
       % equality constraints) and return solutions
