@@ -19,9 +19,9 @@ classdef PolynomialProgram < NonlinearProgram
   
   properties
     decision_vars     % simple msspoly description of x
-    objective              % msspoly
-    equality_constraints   % msspoly
-    inequality_constraints % msspoly
+    poly_objective              % msspoly
+    poly_equality_constraints   % msspoly
+    poly_inequality_constraints % msspoly
   end
 
   methods
@@ -61,9 +61,9 @@ classdef PolynomialProgram < NonlinearProgram
 
       obj = obj@NonlinearProgram(length(decision_vars),length(equality_constraints),length(inequality_constraints));
       obj.decision_vars = decision_vars;
-      obj.objective = objective;
-      obj.equality_constraints = equality_constraints;
-      obj.inequality_constraints = inequality_constraints;
+      obj.poly_objective = objective;
+      obj.poly_equality_constraints = equality_constraints;
+      obj.poly_inequality_constraints = inequality_constraints;
     end
     
     function [x,objval,exitflag] = solve(obj,x0)
@@ -81,12 +81,22 @@ classdef PolynomialProgram < NonlinearProgram
       [x,objval,exitflag,execution_time] = compareSolvers@NonlinearProgram(obj,x0,solvers);
     end
     
-    function [f,G] = objectiveAndNonlinearConstraints(obj,x)
-      poly_f = [obj.objective; obj.equality_constraints; obj.inequality_constraints];
-      poly_G = diff(poly_f,obj.decision_vars); % note: i could do this just once
-      
-      f = double(subs(poly_f,obj.decision_vars,x));
-      G = double(subs(poly_G,obj.decision_vars,x));
+    function [f,df] = objective(obj,x)
+      f = double(msubs(obj.poly_objective,obj.decision_vars,x));
+
+      if (nargout>1)
+        df = double(subs(diff(obj.poly_objective,obj.decision_vars),obj.decision_vars,x));
+      end
+    end
+    
+    function [g,h,dg,dh] = nonlinearConstraints(obj,x)
+      g = double(msubs(obj.poly_inequality_constraints,obj.decision_vars,x));
+      h = double(msubs(obj.poly_equality_constraints,obj.decision_vars,x));
+
+      if (nargout>2)
+        dg = double(subs(diff(obj.poly_inequality_constraints,obj.decision_vars),obj.decision_vars,x));
+        dh = double(subs(diff(obj.poly_equality_constraints,obj.decision_vars),obj.decision_vars,x));
+      end
     end
     
     function [x,objval,exitflag] = bertini(obj,options)
@@ -99,21 +109,21 @@ classdef PolynomialProgram < NonlinearProgram
 
       checkDependency('bertini');
 
-      eq = diff(obj.objective, obj.decision_vars); % stationarity
+      eq = diff(obj.poly_objective, obj.decision_vars); % stationarity
       vars = obj.decision_vars;
       
-      if ~isempty(obj.equality_constraints)
-        lambda = msspoly('l',length(obj.equality_constraints));
-        eq(1) = eq(1) + lambda'*diff(obj.equality_constraints, obj.decision_vars);
-        eq = vertcat(eq, obj.equality_constraints); % primal feasibility
+      if ~isempty(obj.poly_equality_constraints)
+        lambda = msspoly('l',length(obj.poly_equality_constraints));
+        eq(1) = eq(1) + lambda'*diff(obj.poly_equality_constraints, obj.decision_vars);
+        eq = vertcat(eq, obj.poly_equality_constraints); % primal feasibility
         vars = vertcat(vars, lambda);
       end        
 
-      if ~isempty(obj.inequality_constraints)
-        mu = msspoly('u',length(obj.inequality_constraints));
-        eq(1) = eq(1) + mu'*diff(obj.inequality_constraints, obj.decision_vars);
-        eq = vertcat(eq,mu.*obj.inequality_constraints); % complementarity
-        mu_indices = length(vars) + 1:length(obj.inequality_constraints);
+      if ~isempty(obj.poly_inequality_constraints)
+        mu = msspoly('u',length(obj.poly_inequality_constraints));
+        eq(1) = eq(1) + mu'*diff(obj.poly_inequality_constraints, obj.decision_vars);
+        eq = vertcat(eq,mu.*obj.poly_inequality_constraints); % complementarity
+        mu_indices = length(vars) + 1:length(obj.poly_inequality_constraints);
         vars = vertcat(vars, mu);
       end
       
@@ -130,14 +140,14 @@ classdef PolynomialProgram < NonlinearProgram
       sol = solve(bertini_job);
       sol = get_real(bertini_job,sol);
       
-      if ~isempty(obj.inequality_constraints)
+      if ~isempty(obj.poly_inequality_constraints)
         sol = sol(:,all(sol(mu_indices,:)>=0)); % dual feasibility
         
-        nonlinear_constraint_vals = double(msubs(obj.inequality_constraints,obj.decision_vars,sol));
+        nonlinear_constraint_vals = double(msubs(obj.poly_inequality_constraints,obj.decision_vars,sol));
         sol = sol(:,all(nonlinear_constraint_vals<=0)); % primal feasibility
       end
       
-      vals = double(msubs(obj.objective,obj.decision_vars,sol));
+      vals = double(msubs(obj.poly_objective,obj.decision_vars,sol));
       [objval,optimal_solution_index] = min(vals); objval=full(objval);
       x = sol(:,optimal_solution_index);
       exitflag = 1;  % todo: do this better
