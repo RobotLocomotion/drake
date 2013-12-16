@@ -10,7 +10,7 @@ prog = QuadraticProgram(a'*a+eye(2),randn(2,1));
 testSolvers(prog)
 
 fprintf('****************************************\n');
-fprintf(' min_x (.5*x^2 + x), subj to 5<=x<=10\n');
+fprintf(' min_x (.5*x^2 + x), subj to -10<=x<=10\n');
 fprintf('****************************************\n');
 prog = QuadraticProgram(1,1,1,50,[],[],-10,10);
 testSolvers(prog);
