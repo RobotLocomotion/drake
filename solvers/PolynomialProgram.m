@@ -20,12 +20,12 @@ classdef PolynomialProgram < NonlinearProgram
   properties
     decision_vars     % simple msspoly description of x
     poly_objective              % msspoly
-    poly_equality_constraints   % msspoly
     poly_inequality_constraints % msspoly
+    poly_equality_constraints   % msspoly
   end
 
   methods
-    function obj = PolynomialProgram(decision_vars,objective,equality_constraints,inequality_constraints)
+    function obj = PolynomialProgram(decision_vars,objective,inequality_constraints,equality_constraints)
       typecheck(decision_vars,'msspoly');
       if ~issimple(decision_vars),
         error('decision_vars must be a simple msspoly');
@@ -35,8 +35,8 @@ classdef PolynomialProgram < NonlinearProgram
         error('objective must be a scalar msspoly');
       end
       
-      if nargin<3, equality_constraints = []; end
-      if nargin<4, inequality_constraints = []; end
+      if nargin<3, inequality_constraints = []; end
+      if nargin<4, equality_constraints = []; end
       if nargin<5, options=struct(); end
       if ~isfield(options,'solver'),
         % todo: check dependencies here and pick my favorite that is also installed
@@ -46,15 +46,15 @@ classdef PolynomialProgram < NonlinearProgram
       if ~isfunction(objective,decision_vars)
         error('objective function must only depend on the decision variables');
       end
-      if ~isempty(equality_constraints)
-        sizecheck(equality_constraints,'colvec');
-        if ~isfunction(equality_constraints,decision_vars)
-          error('equality constraints must only depend on the decision variables');
-        end
-      end
       if ~isempty(inequality_constraints)
         sizecheck(inequality_constraints,'colvec');
         if ~isfunction(inequality_constraints,decision_vars)
+          error('equality constraints must only depend on the decision variables');
+        end
+      end
+      if ~isempty(equality_constraints)
+        sizecheck(equality_constraints,'colvec');
+        if ~isfunction(equality_constraints,decision_vars)
           error('equality constraints must only depend on the decision variables');
         end
       end
@@ -62,8 +62,8 @@ classdef PolynomialProgram < NonlinearProgram
       obj = obj@NonlinearProgram(length(decision_vars),length(equality_constraints),length(inequality_constraints));
       obj.decision_vars = decision_vars;
       obj.poly_objective = objective;
-      obj.poly_equality_constraints = equality_constraints;
       obj.poly_inequality_constraints = inequality_constraints;
+      obj.poly_equality_constraints = equality_constraints;
     end
     
     function [x,objval,exitflag] = solve(obj,x0)
@@ -109,19 +109,19 @@ classdef PolynomialProgram < NonlinearProgram
 
       checkDependency('bertini');
 
-      eq = diff(obj.poly_objective, obj.decision_vars); % stationarity
+      eq = diff(obj.poly_objective, obj.decision_vars)'; % stationarity
       vars = obj.decision_vars;
       
       if ~isempty(obj.poly_equality_constraints)
         lambda = msspoly('l',length(obj.poly_equality_constraints));
-        eq(1) = eq(1) + lambda'*diff(obj.poly_equality_constraints, obj.decision_vars);
+        eq(1:obj.num_decision_vars) = eq(1:obj.num_decision_vars) + (lambda'*diff(obj.poly_equality_constraints, obj.decision_vars))';
         eq = vertcat(eq, obj.poly_equality_constraints); % primal feasibility
         vars = vertcat(vars, lambda);
       end        
 
       if ~isempty(obj.poly_inequality_constraints)
         mu = msspoly('u',length(obj.poly_inequality_constraints));
-        eq(1) = eq(1) + mu'*diff(obj.poly_inequality_constraints, obj.decision_vars);
+        eq(1:obj.num_decision_vars) = eq(1:obj.num_decision_vars) + (mu'*diff(obj.poly_inequality_constraints, obj.decision_vars))';
         eq = vertcat(eq,mu.*obj.poly_inequality_constraints); % complementarity
         mu_indices = length(vars) + 1:length(obj.poly_inequality_constraints);
         vars = vertcat(vars, mu);
