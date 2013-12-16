@@ -16,8 +16,7 @@ classdef NonlinearProgram
     lb,ub
     iGfun,jGvar  % sparsity pattern in objective and nonlinear constraints
     solver
-    fmincon_options
-    snopt_options
+    default_options
     grad_method
   end
 
@@ -39,15 +38,16 @@ classdef NonlinearProgram
       
       % todo : check dependencies and then go through the list
       obj.solver = 'snopt';
-      obj.fmincon_options = optimset('Display','off');
+      obj.default_options.fmincon = optimset('Display','off');
+      obj.default_options.snopt = struct();
     end
     
     function [x,objval,exitflag] = solve(obj,x0)
       switch lower(obj.solver)
         case 'snopt'
-          [x,objval,exitflag] = solveSNOPT(obj,x0);
+          [x,objval,exitflag] = snopt(obj,x0);
         case 'fmincon'
-          [x,objval,exitflag] = solveFMINCON(obj,x0);
+          [x,objval,exitflag] = fmincon(obj,x0);
         otherwise
           error('Drake:NonlinearProgram:UnknownSolver',['The requested solver, ',options.solver,' is not known, or not currently supported']);
       end
@@ -69,7 +69,7 @@ classdef NonlinearProgram
       end
     end
     
-    function [x,objval,exitflag] = solveSNOPT(obj,x0)
+    function [x,objval,exitflag] = snopt(obj,x0,options)
       checkDependency('snopt');
 
       global SNOPT_USERFUN;
@@ -82,8 +82,8 @@ classdef NonlinearProgram
 
       function setSNOPTParam(paramstring,default)
         str=paramstring(~isspace(paramstring));
-        if (isfield(obj.snopt_options,str))
-          snset([paramstring,'=',num2str(getfield(obj.snopt_options,str))]);
+        if (isfield(obj.default_options.snopt,str))
+          snset([paramstring,'=',num2str(getfield(obj.default_options.snopt,str))]);
         else
           snset([paramstring,'=',num2str(default)]);
         end
@@ -132,11 +132,11 @@ classdef NonlinearProgram
       if exitflag~=1, disp(snoptInfo(exitflag)); end
     end
     
-    function [x,objval,exitflag] = solveFMINCON(obj,x0)
+    function [x,objval,exitflag] = fmincon(obj,x0,options)
       if (obj.num_nonlinear_equality_constraints || obj.num_nonlinear_inequality_constraints)
         error('not implemented yet');
       end
-      [x,objval,exitflag] = fmincon(@obj.objectiveAndNonlinearConstraints,x0,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub,[],obj.fmincon_options);
+      [x,objval,exitflag] = fmincon(@obj.objectiveAndNonlinearConstraints,x0,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub,[],obj.default_options.fmincon);
     end
   end
   

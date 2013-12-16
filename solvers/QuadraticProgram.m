@@ -25,7 +25,6 @@ classdef QuadraticProgram < NonlinearProgram
 
 properties
   Q,f
-  quadprog_options
 end
 
 methods
@@ -50,7 +49,7 @@ methods
     
   % todo: check dependencies here and pick my favorite that is also installed
     obj.solver = 'gurobi';
-    obj.quadprog_options = optimset('Display','off');
+    obj.default_options.quadprog = optimset('Display','off');
   end
 
   function [x,objval,exitflag,active] = solve(obj,x0,active)
@@ -59,14 +58,14 @@ methods
     
     switch lower(obj.solver)
       case 'quadprog'
-        [x,objval,exitflag] = quadprog(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub,[],obj.quadprog_options);
+        [x,objval,exitflag] = quadprog(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub,[],obj.default_options.quadprog);
         if (nargout>3)
           active=[];
           warning('active not implemented yet for quadprog (but should be trivial)');
         end
         
       case 'gurobi'
-        [x,objval,exitflag,active] = solveGUROBI(obj,active);
+        [x,objval,exitflag,active] = gurobi(obj,active);
     
       case 'gurobi_mex'
         checkDependency('gurobi');
@@ -102,7 +101,7 @@ methods
     df = x'*obj.Q + obj.f';
   end
   
-  function [x,objval,info,active] = solveGUROBI(obj,active)
+  function [x,objval,info,active] = gurobi(obj,active)
 
     checkDependency('gurobi');
     
