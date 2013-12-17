@@ -127,6 +127,7 @@ classdef PolynomialProgram < NonlinearProgram
         vars = vertcat(vars, mu);
       end
       
+      eq = clean(eq);
       % convert to syms.  wish i didn't have to do this.  :)
       symbolic_vars = sym('v',size(vars));
       symbolic_vars = sym(symbolic_vars,'real');
