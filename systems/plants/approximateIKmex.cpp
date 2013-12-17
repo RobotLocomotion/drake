@@ -2,6 +2,7 @@
 #include <mex.h>
 #include "RigidBodyManipulator.h"
 #include "constraint/RigidBodyConstraint.h"
+#include "IKoptions.h"
 #include "drakeUtil.h"
 
 using namespace std;

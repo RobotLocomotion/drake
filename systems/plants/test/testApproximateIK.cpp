@@ -31,7 +31,6 @@ int main()
   }
   Vector2d tspan;
   tspan<<0,1;
-  printf("nq=%d\n",model->num_dof);
   VectorXd q0(model->num_dof);
   q0 = VectorXd::Zero(model->num_dof);
   Vector3d com_des = Vector3d::Zero();
