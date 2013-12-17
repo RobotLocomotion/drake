@@ -130,16 +130,19 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
           if (isempty(zeroind)) % just sin(q(ind))
             a.p(i)=sign(onecoef)*a.s(ind);   % sin(-q) = -sin(q)
           else 
-            a.p(i)=R(zeroind);
-            a(i)=sign(onecoef)*a.s(ind)*cos(a(i))+a.c(ind)*sin(a(i));
+            remainder = a; remainder.p = R(zeroind);
+            a.p(i) = getmsspoly(sign(onecoef)*a.s(ind)*cos(remainder)+a.c(ind)*sin(remainder));
           end
         elseif (onecoef-floor(onecoef))==0  % sin(c*q(ind)+..)   do sin(sign(c)*q(ind) + (c-sign(c))*q(ind)+...)
+          remainder = a; 
           if (isempty(zeroind))
-            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind);
+            remainder.p=(R(oneind)-sign(onecoef))*a.q(ind);
           else
-            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
+            remainder.p=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
           end          
-          a(i)=sign(onecoef)*a.s(ind)*cos(a(i)) + a.c(ind)*sin(a(i));
+          a.p(i)=getmsspoly(sign(onecoef)*a.s(ind)*cos(remainder) + a.c(ind)*sin(remainder));
+        else
+          error('not supported yet');
         end
       end      
     end
@@ -160,19 +163,22 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
         oneind = find(p==1);  % must be a scalar coefficient (since deg==1)
         onecoef=double(R(oneind)); 
         if (abs(onecoef)==1)
-          if (isempty(zeroind)) % just sin(q(ind))
+          if (isempty(zeroind)) % just cos(q(ind))
             a.p(i)=a.c(ind); 
           else 
-            a.p(i)=R(zeroind);
-            a(i)=a.c(ind)*cos(a(i)) - sign(onecoef)*a.s(ind)*sin(a(i));
+            remainder = a; remainder.p = R(zeroind);
+            a.p(i)=getmsspoly(a.c(ind)*cos(remainder) - sign(onecoef)*a.s(ind)*sin(remainder));
           end
         elseif (onecoef-floor(onecoef))==0  % sin(c*q(ind)+..)   do sin(q(ind) + (c-1)*q(ind)+...) 
+          remainder = a; 
           if (isempty(zeroind))
-            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind);
+            remainder.p=(R(oneind)-sign(onecoef))*a.q(ind);
           else
-            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
+            remainder.p=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
           end
-          a(i)=a.c(ind)*cos(a(i)) - sign(onecoef)*a.s(ind)*sin(a(i));
+          a.p(i)=getmsspoly(a.c(ind)*cos(remainder) - sign(onecoef)*a.s(ind)*sin(remainder));
+        else
+          error('not supported yet');
         end
       end      
     end
