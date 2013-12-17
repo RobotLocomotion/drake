@@ -12,5 +12,11 @@ fval = reshape(msubs(f,x,[X1(:)';X2(:)']),size(X1));
 mesh(X1,X2,fval);
 xlabel('x1'); ylabel('x2');
 
+prog = PolynomialProgram(x,f);
+[xstar,fval] = solve(prog,randn(2,1))
 
-[xstar,fval] = polynomialOptimization(x,f)
+hold on;
+plot3(xstar(1),xstar(2),fval,'r*','MarkerSize',10,'LineWidth',3);
+hold off;
+
+compareSolvers(prog,randn(2,1))
