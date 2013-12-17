@@ -1026,7 +1026,6 @@ systems/plants/constraint/test/constraintTester.m -text
 systems/plants/constraint/test/model_simple_visuals.urdf -text
 systems/plants/constraint/test/testConstraintConstructor.cpp -text
 systems/plants/constraint/test/testKinCnst.m -text
-systems/plants/constraint/test/testKinCnstWaff.m -text
 systems/plants/constraint/test/testMultipleTimeLinearPostureConstraint.m -text
 systems/plants/constraint/test/testPostureConstraint.m -text
 systems/plants/constraint/test/testQuasiStaticConstraint.m -text
