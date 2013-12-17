@@ -12,15 +12,21 @@ kinsol = doKinematics(r,q);
 x = forwardKin(r,kinsol,hand,zeros(2,1));
 
 q0 = [0;.5];  
-% note: general case needs to be more careful about only
-% doing this for the trig variables:
-qerr = sin((q-q0)/2);  
-objective = qerr'*qerr;
+
+% desired objective function:
+% qerr = sin((q-q0)/2);  objective = qerr'*qerr;
+% but sin(q/2) is ugly
+% (see http://mathworld.wolfram.com/Half-AngleFormulas.html)
+% fortunately, sin^2(q/2) is not...
+%   sin^2(q/2) = .5*(1-cos(q))
+% so instead, I'll write the objective as 
+objective = getmsspoly(sum(.5*(1-cos(q-q0))));
+% note: general case also needs to be more careful about 
+% only doing it for the trig variables.
 
 v = getTrigPolyBasis([x;objective]);
 
 decision_vars = getmsspoly(v);
-objective = (decision_vars-v0)'*(decision_vars-v0);
 equality_constraints = [getmsspoly(x); getUnitCircleConstraints(x)];
 
 prog = PolynomialProgram(decision_vars,objective,[],equality_constraints);
