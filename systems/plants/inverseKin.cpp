@@ -12,7 +12,7 @@ void inverseKin(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_seed,
 {
   VectorXd qdot_dummy(model->num_dof);
   VectorXd qddot_dummy(model->num_dof);
-  double* t = NULL;
+  double* t = nullptr;
   inverseKinBackend(model, 1,1,t,q_seed,q_nom,num_constraints,constraint_array,q_sol,qdot_dummy,qddot_dummy,&INFO, infeasible_constraint, ikoptions);
 }
 

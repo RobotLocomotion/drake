@@ -26,14 +26,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   double* t_ptr;
   if(nrhs == 2)
   {
-    t_ptr = NULL;
+    t_ptr = nullptr;
   }
   else
   {
     int num_t = mxGetNumberOfElements(prhs[2]);
     if(num_t == 0)
     {
-      t_ptr = NULL;
+      t_ptr = nullptr;
     }
     if(num_t == 1)
     {

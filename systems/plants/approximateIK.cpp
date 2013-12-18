@@ -32,7 +32,7 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
       double* joint_min = new double[nq];
       double* joint_max = new double[nq];
       PostureConstraint* pc = static_cast<PostureConstraint*>(constraint_array[i]);
-      pc->bounds(NULL,joint_min,joint_max);
+      pc->bounds(nullptr,joint_min,joint_max);
       for(int j = 0;j<nq;j++)
       {
         joint_lb[j] = (joint_lb[j]<joint_min[j]? joint_min[j]:joint_lb[j]);
@@ -53,13 +53,13 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
   MatrixXd Q;
   ikoptions.getQ(Q);
   int error;
-  GRBenv *grb_env = NULL;
-  GRBmodel *grb_model = NULL;  
+  GRBenv *grb_env = nullptr;
+  GRBmodel *grb_model = nullptr;  
   
   VectorXd qtmp = -2*Q*q_nom;
   
   // create gurobi environment
-  error = GRBloadenv(&grb_env,NULL);
+  error = GRBloadenv(&grb_env,nullptr);
   if(error)
   {
     printf("Load Gurobi environment error %s\n",GRBgeterrormsg(grb_env));
@@ -76,7 +76,7 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
   error = GRBsetintparam(grb_env,"bariterlimit",20);
   error = GRBsetintparam(grb_env,"barhomogenous",0);
   error = GRBsetdblparam(grb_env,"barconvtol",1e-4);*/
-  error = GRBnewmodel(grb_env,&grb_model,"ApproximateIK",nq,qtmp.data(),joint_lb,joint_ub,NULL,NULL);
+  error = GRBnewmodel(grb_env,&grb_model,"ApproximateIK",nq,qtmp.data(),joint_lb,joint_ub,nullptr,nullptr);
   if(error)
   {
     printf("Create Gurobi model error %s\n",GRBgeterrormsg(grb_env));
@@ -113,13 +113,13 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
   int kc_idx,c_idx;
   for(kc_idx = 0;kc_idx<num_kc;kc_idx++)
   {
-    int nc = kc_array[kc_idx]->getNumConstraint(NULL);
+    int nc = kc_array[kc_idx]->getNumConstraint(nullptr);
     VectorXd lb(nc);
     VectorXd ub(nc);
     VectorXd c(nc);
     MatrixXd dc(nc,nq);
-    kc_array[kc_idx]->bounds(NULL,lb,ub);
-    kc_array[kc_idx]->eval(NULL,c,dc);
+    kc_array[kc_idx]->bounds(nullptr,lb,ub);
+    kc_array[kc_idx]->eval(nullptr,c,dc);
     for(c_idx = 0; c_idx < nc; c_idx++)
     {
       VectorXd rowVec = dc.row(c_idx);
@@ -129,7 +129,7 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
       if(std::isinf(-lb(c_idx)))
       {
         rhs_row = ub(c_idx)-c_seed;
-        int gerror = GRBaddconstr(grb_model,nq,allIndsData,Jrow,GRB_LESS_EQUAL,rhs_row,NULL);
+        int gerror = GRBaddconstr(grb_model,nq,allIndsData,Jrow,GRB_LESS_EQUAL,rhs_row,nullptr);
         if(gerror)
         {
           printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
@@ -142,7 +142,7 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
           cerr<<"Drake:approximateIK: lb and ub cannot be both infinity, check the getConstraintBnds output of the KinematicConstraint"<<endl;
         }
         rhs_row = lb(c_idx)-c_seed;
-        error = GRBaddconstr(grb_model,nq,allIndsData,Jrow,GRB_GREATER_EQUAL,rhs_row,NULL);
+        error = GRBaddconstr(grb_model,nq,allIndsData,Jrow,GRB_GREATER_EQUAL,rhs_row,nullptr);
         if(error)
         {
         printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
@@ -151,7 +151,7 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
       else if(ub(c_idx)-lb(c_idx)< 1e-10)
       {
         rhs_row = lb(c_idx)-c_seed;
-        error = GRBaddconstr(grb_model, nq, allIndsData, Jrow, GRB_EQUAL, rhs_row, NULL);
+        error = GRBaddconstr(grb_model, nq, allIndsData, Jrow, GRB_EQUAL, rhs_row, nullptr);
         if(error)
         {
           printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
@@ -160,13 +160,13 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
       else
       {
         double rhs_row1 = ub(c_idx)-c_seed;
-        error = GRBaddconstr(grb_model,nq,allIndsData,Jrow,GRB_LESS_EQUAL,rhs_row1,NULL);
+        error = GRBaddconstr(grb_model,nq,allIndsData,Jrow,GRB_LESS_EQUAL,rhs_row1,nullptr);
         if(error)
         {
           printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
         }
         double rhs_row2 = lb(c_idx)-c_seed;
-        error = GRBaddconstr(grb_model,nq,allIndsData,Jrow,GRB_GREATER_EQUAL,rhs_row2,NULL);
+        error = GRBaddconstr(grb_model,nq,allIndsData,Jrow,GRB_GREATER_EQUAL,rhs_row2,nullptr);
         if(error)
         {
           printf("Gurobi error %s\n",GRBgeterrormsg(grb_env));
