@@ -130,16 +130,19 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
           if (isempty(zeroind)) % just sin(q(ind))
             a.p(i)=sign(onecoef)*a.s(ind);   % sin(-q) = -sin(q)
           else 
-            a.p(i)=R(zeroind);
-            a(i)=sign(onecoef)*a.s(ind)*cos(a(i))+a.c(ind)*sin(a(i));
+            remainder = a; remainder.p = R(zeroind);
+            a.p(i) = getmsspoly(sign(onecoef)*a.s(ind)*cos(remainder)+a.c(ind)*sin(remainder));
           end
         elseif (onecoef-floor(onecoef))==0  % sin(c*q(ind)+..)   do sin(sign(c)*q(ind) + (c-sign(c))*q(ind)+...)
+          remainder = a; 
           if (isempty(zeroind))
-            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind);
+            remainder.p=(R(oneind)-sign(onecoef))*a.q(ind);
           else
-            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
+            remainder.p=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
           end          
-          a(i)=sign(onecoef)*a.s(ind)*cos(a(i)) + a.c(ind)*sin(a(i));
+          a.p(i)=getmsspoly(sign(onecoef)*a.s(ind)*cos(remainder) + a.c(ind)*sin(remainder));
+        else
+          error('Drake:TrigPoly:Unsupported',['sin(',num2str(onecoef),'q + ...) is not supported (yet?)']);
         end
       end      
     end
@@ -160,19 +163,22 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
         oneind = find(p==1);  % must be a scalar coefficient (since deg==1)
         onecoef=double(R(oneind)); 
         if (abs(onecoef)==1)
-          if (isempty(zeroind)) % just sin(q(ind))
+          if (isempty(zeroind)) % just cos(q(ind))
             a.p(i)=a.c(ind); 
           else 
-            a.p(i)=R(zeroind);
-            a(i)=a.c(ind)*cos(a(i)) - sign(onecoef)*a.s(ind)*sin(a(i));
+            remainder = a; remainder.p = R(zeroind);
+            a.p(i)=getmsspoly(a.c(ind)*cos(remainder) - sign(onecoef)*a.s(ind)*sin(remainder));
           end
         elseif (onecoef-floor(onecoef))==0  % sin(c*q(ind)+..)   do sin(q(ind) + (c-1)*q(ind)+...) 
+          remainder = a; 
           if (isempty(zeroind))
-            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind);
+            remainder.p=(R(oneind)-sign(onecoef))*a.q(ind);
           else
-            a.p(i)=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
+            remainder.p=(R(oneind)-sign(onecoef))*a.q(ind)+R(zeroind);
           end
-          a(i)=a.c(ind)*cos(a(i)) - sign(onecoef)*a.s(ind)*sin(a(i));
+          a.p(i)=getmsspoly(a.c(ind)*cos(remainder) - sign(onecoef)*a.s(ind)*sin(remainder));
+        else
+          error('Drake:TrigPoly:Unsupported',['cos(',num2str(onecoef),'q + ...) is not supported (yet?)']);
         end
       end      
     end
@@ -332,16 +338,11 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       end
     end
     
-    function a=sum(a,b)
-      if (isa(a,'TrigPoly'))
-        if (isa(b,'TrigPoly'))
-          a.p=sum(a.p,b.p);
-        else
-          a.p=sum(a.p,b);
-        end
-      else % only b is a TrigPoly
-        b.p=sum(a,b.p);
-        a=b;
+    function a=sum(a,dim)
+      if nargin<2 
+        a.p = sum(a.p); 
+      else
+        a.p=sum(a.p,dim); 
       end
     end
     

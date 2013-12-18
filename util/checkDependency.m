@@ -174,6 +174,18 @@ if ~ok
         disp(' ');
       end
       
+    case 'gloptipoly3'
+      conf.gloptipoly3_enabled = logical(exist('gloptipolyversion','file'));
+      if (~conf.gloptipoly3_enabled)
+        conf.gloptipoly3_enabled = pod_pkg_conf('gloptipoly3');
+      end
+      
+      if (~conf.gloptipoly3_enabled)
+        disp(' ');
+        disp(' Gloptipoly3 not found.');
+        disp(' ');
+      end      
+      
     case 'cplex'
       conf.cplex_enabled = logical(exist('cplexlp','file'));
       if (~conf.cplex_enabled)
@@ -229,9 +241,9 @@ if ~ok
     otherwise
       
       % todo: call ver(dep) here? 
+      % and/or addpath_dep?
       
-      error(['Drake:UnknownDependency:',dep],[conf_var, ' was not set in the addpath_drake script']);
-      
+      error(['Drake:UnknownDependency:',dep],['Don''t know how to add dependency: ', dep]);
   end
   
   save([conf.root,'/util/drake_config.mat'],'conf');

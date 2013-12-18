@@ -16,7 +16,8 @@ typecheck(pm,'msspoly');
 perm = mss_match(xmn,xn); % compute permutation.
 xs = xs(perm);
 
-% want to use this (from decomp), but yalmip doesn't have prod(x,dim):
+% M = vpa(M,3);   warning('dramatically reducing precision here as a test of numerics');
+
 ps=reshape(M*prod(repmat(xs',size(p,1),1).^p,2),size(pm));
 
 

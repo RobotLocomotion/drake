@@ -7,7 +7,7 @@ classdef NonlinearProgram
   %            Ain*x <= bin
   %            lb <= x <= ub
   
-  properties 
+  properties (SetAccess=protected)
     num_decision_vars
     num_nonlinear_inequality_constraints
     num_nonlinear_equality_constraints
@@ -124,6 +124,56 @@ classdef NonlinearProgram
       obj.default_options.snopt = struct();
     end
     
+    function obj = addLinearInequalityConstraints(obj,Ain,bin)
+      [m,n] = size(Ain);
+      assert(n == obj.num_decision_vars);
+      sizecheck(bin,[m,1]);
+      obj.Ain = vertcat(obj.Ain,Ain);
+      obj.bin = vertcat(obj.bin,bin);
+    end
+    
+    function obj = addLinearEqualityConstraints(obj,Aeq,beq)
+      [m,n] = size(Aeq);
+      assert(n == obj.num_decision_vars);
+      sizecheck(beq,[m,1]);
+      obj.Ain = vertcat(obj.Ain,Aeq);
+      obj.bin = vertcat(obj.bin,beq);
+    end
+
+    function obj = setBounds(obj,lb,ub)
+      sizecheck(lb,[obj.num_decision_vars,1]);
+      sizecheck(ub,[obj.num_decision_vars,1]);
+      obj.lb = lb;
+      obj.ub = ub;
+    end
+    
+    function obj = setObjectiveGradientSparsity(obj,jGvar)
+      error('todo: finish this');
+    end
+    
+    function obj = setNonlinearInequalityConstraintsGradientSparsity(obj,iGfun,jGvar)
+      error('todo: finish this');
+    end
+    
+    function obj = setNonlinearEqualityConstraintsGradientSparsity(obj,iGfun,jGvar)
+      error('todo: finish this');
+    end
+    
+    function obj = setSolver(obj,solver)
+      typecheck(solver,'char');
+      obj.solver = solver;
+    end
+    
+    function obj = setSolverOptions(obj,solver,options)
+      error('todo: finish this');
+    end
+    
+    function obj = setSolverOption(obj,solver,optionname,optionval)
+      error('todo: finish this');
+    end
+    
+    % function setGradMethod?
+    
     function [x,objval,exitflag] = solve(obj,x0)
       switch lower(obj.solver)
         case 'snopt'
@@ -131,7 +181,7 @@ classdef NonlinearProgram
         case 'fmincon'
           [x,objval,exitflag] = fmincon(obj,x0);
         otherwise
-          error('Drake:NonlinearProgram:UnknownSolver',['The requested solver, ',options.solver,' is not known, or not currently supported']);
+          error('Drake:NonlinearProgram:UnknownSolver',['The requested solver, ',obj.solver,' is not known, or not currently supported']);
       end
     end
     
