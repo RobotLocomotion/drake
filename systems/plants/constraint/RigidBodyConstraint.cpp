@@ -90,7 +90,7 @@ QuasiStaticConstraint::~QuasiStaticConstraint()
 
 bool QuasiStaticConstraint::isTimeValid(const double* t) const
 {
-  if(t == NULL) return true;
+  if(t == nullptr) return true;
   return (*t)>=this->tspan[0]&&(*t)<=this->tspan[1];
 }
 
@@ -180,7 +180,7 @@ void QuasiStaticConstraint::bounds(const double* t,VectorXd &lb, VectorXd &ub) c
 
 void QuasiStaticConstraint::name(const double* t,std::vector<std::string> &name_str) const
 {
-  if(t == NULL)
+  if(t == nullptr)
   {
     char cnst_name_str_buffer[500]; 
     sprintf(cnst_name_str_buffer,"QuasiStaticConstraint x");
@@ -308,7 +308,7 @@ PostureConstraint::PostureConstraint(const PostureConstraint& rhs):RigidBodyCons
 
 bool PostureConstraint::isTimeValid(const double* t) const
 {
-  if(t == NULL) return true;
+  if(t == nullptr) return true;
   return (*t)>=this->tspan[0]&&(*t)<=this->tspan[1];
 }
 
@@ -504,7 +504,7 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(const Singl
 
 bool SingleTimeLinearPostureConstraint::isTimeValid(const double* t) const
 {
-  if(t == NULL)
+  if(t == nullptr)
   {
     return true;
   }
@@ -591,7 +591,7 @@ void SingleTimeLinearPostureConstraint::name(const double* t, std::vector<std::s
     char cnst_name_buffer[100];
     for(int i = 0;i<this->num_constraint;i++)
     {
-      if(t == NULL)
+      if(t == nullptr)
       {
         sprintf(cnst_name_buffer,"SingleTimeLinearPostureConstraint row %d\n",i);
       }
@@ -627,7 +627,7 @@ SingleTimeKinematicConstraint::SingleTimeKinematicConstraint(const SingleTimeKin
 }
 bool SingleTimeKinematicConstraint::isTimeValid(const double* t) const
 {
-   if(t == NULL) return true;
+   if(t == nullptr) return true;
    return (*t)>=this->tspan[0]&&(*t)<=this->tspan[1];
 }
 
@@ -890,7 +890,7 @@ void WorldPositionConstraint::name(const double* t, std::vector<std::string>& na
     {
       if(!this->null_constraint_rows[3*i+0])
       {
-        if(t == NULL)
+        if(t == nullptr)
         {
           sprintf(cnst_name_str_buffer,"%s pts(:,%d) x",this->body_name.c_str(),i+1);
         }
@@ -904,7 +904,7 @@ void WorldPositionConstraint::name(const double* t, std::vector<std::string>& na
       }
       if(!this->null_constraint_rows[3*i+1])
       {
-        if(t == NULL)
+        if(t == nullptr)
         {
           sprintf(cnst_name_str_buffer,"%s pts(:,%d) y",this->body_name.c_str(),i+1);
         }
@@ -918,7 +918,7 @@ void WorldPositionConstraint::name(const double* t, std::vector<std::string>& na
       }
       if(!this->null_constraint_rows[3*i+2])
       {
-        if(t == NULL)
+        if(t == nullptr)
         {
           sprintf(cnst_name_str_buffer,"%s pts(:,%d) z",this->body_name.c_str(),i+1);
         }
@@ -966,7 +966,7 @@ void WorldCoMConstraint::name(const double* t, std::vector<std::string> &name_st
     int constraint_idx = 0;
     if(!this->null_constraint_rows[0])
     {
-      if(t == NULL)
+      if(t == nullptr)
       {
         sprintf(cnst_name_str_buffer,"CoM x");
       }
@@ -980,7 +980,7 @@ void WorldCoMConstraint::name(const double* t, std::vector<std::string> &name_st
     }
     if(!this->null_constraint_rows[1])
     {
-      if(t == NULL)
+      if(t == nullptr)
       {
         sprintf(cnst_name_str_buffer,"CoM y");
       }
@@ -994,7 +994,7 @@ void WorldCoMConstraint::name(const double* t, std::vector<std::string> &name_st
     }
     if(!this->null_constraint_rows[2])
     {
-      if(t == NULL)
+      if(t == nullptr)
       {
         sprintf(cnst_name_str_buffer,"CoM z");
       }
@@ -1115,7 +1115,7 @@ void WorldQuatConstraint::name(const double* t, std::vector<std::string> &name_s
   if(this->isTimeValid(t))
   {
     char cnst_name_str_buffer[500]; 
-    if(t == NULL)
+    if(t == nullptr)
     {
       sprintf(cnst_name_str_buffer,"%s quaternion constraint",this->body_name.c_str());
     }
@@ -1280,7 +1280,7 @@ void WorldEulerConstraint::name(const double* t, std::vector<std::string> &name_
     int constraint_idx = 0;
     if(!this->null_constraint_rows[0])
     {
-      if(t == NULL)
+      if(t == nullptr)
       {
         sprintf(cnst_name_str_buffer,"%s roll",this->body_name.c_str());
       }
@@ -1294,7 +1294,7 @@ void WorldEulerConstraint::name(const double* t, std::vector<std::string> &name_
     }
     if(!this->null_constraint_rows[1])
     {
-      if(t == NULL)
+      if(t == nullptr)
       {
         sprintf(cnst_name_str_buffer,"%s pitch",this->body_name.c_str());
       }
@@ -1308,7 +1308,7 @@ void WorldEulerConstraint::name(const double* t, std::vector<std::string> &name_
     }
     if(!this->null_constraint_rows[2])
     {
-      if(t == NULL)
+      if(t == nullptr)
       {
         sprintf(cnst_name_str_buffer,"%s yaw",this->body_name.c_str());
       }
@@ -1428,7 +1428,7 @@ void WorldGazeOrientConstraint::name(const double* t, std::vector<std::string> &
   {
     char cnst_name_str_buffer[500]; 
     std::string cnst_name_str;
-    if(t == NULL)
+    if(t == nullptr)
     {
       sprintf(cnst_name_str_buffer,"%s conic gaze orientation constraint",this->body_name.c_str());
       cnst_name_str = std::string(cnst_name_str_buffer);
@@ -1512,7 +1512,7 @@ void WorldGazeDirConstraint::name(const double* t, std::vector<std::string> &nam
   if(this->isTimeValid(t))
   {
     char cnst_name_str_buffer[500]; 
-    if(t == NULL)
+    if(t == nullptr)
     {
       sprintf(cnst_name_str_buffer,"%s conic gaze direction constraint",this->body_name.c_str());
     }
@@ -1591,7 +1591,7 @@ void WorldGazeTargetConstraint::name(const double* t, std::vector<std::string> &
   if(this->isTimeValid(t))
   {
     char cnst_name_str_buffer[500]; 
-    if(t == NULL)
+    if(t == nullptr)
     {
       sprintf(cnst_name_str_buffer,"%s conic gaze target constraint",this->body_name.c_str());
     }
@@ -1657,7 +1657,7 @@ void RelativeGazeTargetConstraint::name(const double* t, std::vector<std::string
   if(this->isTimeValid(t))
   {
     char cnst_name_str_buffer[1000];
-    if(t == NULL)
+    if(t == nullptr)
     {
       sprintf(cnst_name_str_buffer,"%s relative to %s conic gaze constraint",this->bodyA_name.c_str(),this->bodyB_name.c_str());
     }
@@ -2201,7 +2201,7 @@ void AllBodiesClosestDistanceConstraint::name(const double* t, std::vector<std::
   if(this->isTimeValid(t))
   {
     char cnst_name_buffer[100]; 
-    if(t == NULL)
+    if(t == nullptr)
     {
       sprintf(cnst_name_buffer,"All-to-all closest distance constraint");
     }

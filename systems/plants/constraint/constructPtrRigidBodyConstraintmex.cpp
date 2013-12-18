@@ -165,7 +165,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::WorldEulerConstraintType,robot.mex_model_ptr,body,lb,ub,tspan)");
         }
         RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        WorldEulerConstraint* cnst = NULL;
+        WorldEulerConstraint* cnst = nullptr;
         Vector2d tspan;
         if(nrhs == 5)
         {
@@ -201,7 +201,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::WorldGazeDirConstraintType,robot.mex_model_ptr,body,axis,dir,conethreshold,tspan)");
         }
         RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        WorldGazeDirConstraint* cnst = NULL;
+        WorldGazeDirConstraint* cnst = nullptr;
         Vector2d tspan;
         if(nrhs == 6)
         {
@@ -233,7 +233,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::WorldGazeOrientConstraintType, robot.mex_model_ptr,body,axis,quat_des,conethreshold,threshold,tspan)");
         }
         RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        WorldGazeOrientConstraint* cnst = NULL;
+        WorldGazeOrientConstraint* cnst = nullptr;
         Vector2d tspan;
         if(nrhs == 7)
         {
@@ -266,7 +266,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::WorldGazeTargetConstraintType,robot.mex_model_ptr,body,axis,target,gaze_origin,conethreshold,tspan)");
         }
         RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        WorldGazeTargetConstraint* cnst = NULL;
+        WorldGazeTargetConstraint* cnst = nullptr;
         Vector2d tspan;
         if(nrhs == 7)
         {
@@ -383,7 +383,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::WorldCoMConstraintType,robot.mex_model_ptr,lb,ub,tspan,robotnum)");
         }
         RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        WorldCoMConstraint* cnst = NULL;
+        WorldCoMConstraint* cnst = nullptr;
         Vector2d tspan;
         int* robotnum;
         int num_robot;
@@ -436,7 +436,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::WorldPositionConstraintType, robot.mex_model_ptr,body,pts,lb,ub,tspan)");
         }
         RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        WorldPositionConstraint* cnst = NULL;
+        WorldPositionConstraint* cnst = nullptr;
         Vector2d tspan;
         if(nrhs <= 6)
         {
@@ -482,7 +482,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::WorldPositionInFrameConstraint, robot.mex_model_ptr,body,pts,lb,ub,tspan)");
         }
         RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        WorldPositionInFrameConstraint* cnst = NULL;
+        WorldPositionInFrameConstraint* cnst = nullptr;
         Vector2d tspan;
         if(nrhs <= 7)
         {
@@ -533,7 +533,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::WorldQuatConstraintType,robot.mex_model_ptr,body,quat_des,tol,tspan)");
         }
         RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        WorldQuatConstraint* cnst = NULL;
+        WorldQuatConstraint* cnst = nullptr;
         Vector2d tspan;
         if(nrhs <= 5)
         {
@@ -701,7 +701,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs", "Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::WorldFixedPositionConstraintType, robot.mex_model_ptr,body,pts,tspan)");
         }
         RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        WorldFixedPositionConstraint* cnst = NULL;
+        WorldFixedPositionConstraint* cnst = nullptr;
         Vector2d tspan;
         if(nrhs <= 4)
         {
@@ -735,7 +735,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs", "Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::WorldFixedOrientConstraintType,robot.mex_model_ptr,body,tspan)");
         }
         RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        WorldFixedOrientConstraint* cnst = NULL;
+        WorldFixedOrientConstraint* cnst = nullptr;
         Vector2d tspan;
         if(nrhs <= 3)
         {
@@ -759,7 +759,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs", "Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::WorldFixedBodyPoseConstraintType,robot.mex_model_ptr,body,tspan)");
         }
         RigidBodyManipulator *model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
-        WorldFixedBodyPoseConstraint* cnst = NULL;
+        WorldFixedBodyPoseConstraint* cnst = nullptr;
         Vector2d tspan;
         if(nrhs <= 3)
         {
