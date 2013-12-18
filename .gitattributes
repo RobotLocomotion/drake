@@ -103,12 +103,12 @@ examples/Acrobot/runTrigLQR.m -text
 examples/Acrobot/runWProcessNoise.m -text
 examples/Acrobot/test/AcrobotWParams.urdf -text
 examples/Acrobot/test/ConstrainedAcrobotPlant.m -text
-examples/Acrobot/test/bertiniIK.m -text
 examples/Acrobot/test/dynamicsGradients.mat -text
 examples/Acrobot/test/dynamicsGradientsTest.m -text
 examples/Acrobot/test/lqrTest.m -text
 examples/Acrobot/test/paramEstSyntheticData.m -text
 examples/Acrobot/test/paramExtractFromURDF.m -text
+examples/Acrobot/test/polyIK.m -text
 examples/Acrobot/test/testJointLimits.m -text
 examples/Acrobot/test/testKinematics.m -text
 examples/Acrobot/test/testMass.m -text
@@ -628,6 +628,7 @@ examples/PlanarNLink/PlanarNLink.m -text
 examples/PlanarNLink/runLQR.m -text
 examples/PlanarNLink/runPassive.m -text
 examples/PlanarNLink/test/bodyKinTest.m -text
+examples/PlanarNLink/test/polyIK.m -text
 examples/Quadrotor2D/PlanarQuadPlant.m -text
 examples/Quadrotor2D/PlanarQuadVisualizer.m -text
 examples/Quadrotor2D/runLQR.m -text
@@ -753,9 +754,11 @@ lcmtypes/lcmt_viewer_command.lcm -text
 /mergeTrunk -text
 /rmpath_drake.m -text
 /runAllTests.m -text
+solvers/@PolynomialProgram/PolynomialProgram.m -text
+solvers/@PolynomialProgram/bertini.m -text
+solvers/@PolynomialProgram/gloptipoly.m -text
 solvers/CMakeLists.txt -text
 solvers/NonlinearProgram.m -text
-solvers/PolynomialProgram.m -text
 solvers/QP.cpp -text
 solvers/QuadraticProgram.m -text
 solvers/fastQP.h -text
@@ -763,6 +766,7 @@ solvers/fastQP.m -text
 solvers/fastQPmex.cpp -text
 solvers/gurobiQP.h -text
 solvers/gurobiQPmex.cpp -text
+solvers/test/gloptipoly_constrained_test.m -text
 solvers/test/sixHumpCamel.m -text
 solvers/test/testQP.m -text
 systems/@DrakeSystem/DrakeSystem.m -text
