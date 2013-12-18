@@ -26,6 +26,10 @@ if ~isempty(obj.poly_inequality_constraints)
   vars = vertcat(vars, mu);
 end
 
+if ~isempty(obj.Ain) || ~isempty(obj.Aeq) || any(~isinf(obj.lb)) || any(~isinf(obj.ub))
+  error('forgot to implement these on the first pass (but will be trivial)');
+end
+
 eq = clean(eq);
 % convert to syms.  wish i didn't have to do this.  :)
 symbolic_vars = sym('v',size(vars));

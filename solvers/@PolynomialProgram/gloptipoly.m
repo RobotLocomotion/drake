@@ -5,18 +5,45 @@ checkDependency('sedumi');
 
 vars = obj.decision_vars;
 mpol('v',length(vars));
-objective = msspoly2mpol(vars,v,obj.poly_objective);
+objective = msspoly2mpol(vars,v,clean(obj.poly_objective));
 
-if ~isempty(obj.poly_equality_constraints)
-  error('not implemented yet, but should be easy');
-end
+constraints=[];
 if ~isempty(obj.poly_inequality_constraints)
-  error('not implemented yet, but should be easy');
+  ineq = msspoly2mpol(vars,v,clean(obj.poly_inequality_constraints));
+  constraints = vertcat(constraints,ineq<=0);
+end
+if ~isempty(obj.poly_equality_constraints)
+  eq = msspoly2mpol(vars,v,clean(obj.poly_equality_constraints));
+  constraints = vertcat(constraints,eq==0);
+end
+if ~isempty(obj.Ain)
+  constraints = vertcat(constraints,Ain*v <= bin);
+end
+if ~isempty(obj.Aeq)
+  constraints = vertcat(constraints,Aeq*v == beq);
+end
+if any(~isinf(obj.lb))
+  ind = ~isinf(obj.lb);
+  constraints = vertcat(constraints,v(ind) >= obj.lb(ind));
+end
+if any(~isinf(obj.ub))
+  ind = ~isinf(obj.ub);
+  constraints = vertcat(constraints,v(ind) <= obj.ub(ind));
 end
 
-prog = msdp(min(objective));
-[exitflag,objval] = msol(prog);
-x = double(v);
+exitflag = 0;
+relaxation_order = 1;  % todo: make this an option
+while (exitflag == 0)
+  prog = msdp(min(objective),constraints,relaxation_order);
+  [exitflag,objval] = msol(prog);
+  relaxation_order = relaxation_order+1;
+  % todo: make it an option whether we want to loop til convergence
+end
+if (exitflag<1)
+  x = nan(obj.num_decision_vars,1);
+else
+  x = double(v);  % note: this appears to return all solutions.  should I just take the first?
+end
 
 end
 

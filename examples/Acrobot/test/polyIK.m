@@ -1,5 +1,4 @@
-function polynomialIKtest
-
+function polyIK
 
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 r = PlanarRigidBodyManipulator('../Acrobot.urdf');
@@ -27,8 +26,13 @@ objective = getmsspoly(sum(.5*(1-cos(q-q0))));
 v = getTrigPolyBasis([x;objective]);
 
 decision_vars = getmsspoly(v);
-equality_constraints = [getmsspoly(x); getUnitCircleConstraints(x)];
+equality_constraints = [getmsspoly(x) - [1.5;0]; getUnitCircleConstraints(x)];
 
 prog = PolynomialProgram(decision_vars,objective,[],equality_constraints);
 
-[x,objval,exitflag] = bertini(prog)
+[x,objval,exitflag] = gloptipoly(prog)
+q = atan2(x(1:2:end),x(2:2:end)); 
+
+v = constructVisualizer(r);
+clf;
+draw(v,0,q);
