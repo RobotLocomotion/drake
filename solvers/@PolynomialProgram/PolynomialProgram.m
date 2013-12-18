@@ -9,14 +9,15 @@ classdef PolynomialProgram < NonlinearProgram
 %   subject to 
 %         equality_constraints(x) = 0 
 %         inequality_constraint(x) <= 0
+%         Ain*x <= bin
+%         Aeq*x <= beq
+%         lb <= x <= ub
 %
 % @option solver can be 'gloptipoly','snopt' (more coming soon)
 % @option x0 initial guess
 
-% todo: implement other solution techniques:
-%   bertini (via kkt)
-%   ... my pcpo idea?  
-  
+% todo: implement all of the techniques from http://arxiv.org/pdf/math/0103170.pdf
+
   properties
     decision_vars     % simple msspoly description of x
     poly_objective              % msspoly

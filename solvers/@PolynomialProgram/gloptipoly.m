@@ -31,12 +31,22 @@ if any(~isinf(obj.ub))
   constraints = vertcat(constraints,v(ind) <= obj.ub(ind));
 end
 
+global MMM; MMM.verbose = false;  % disable gloptipoly debug spews
+
 exitflag = 0;
 relaxation_order = 1;  % todo: make this an option
 while (exitflag == 0)
-  prog = msdp(min(objective),constraints,relaxation_order);
+  try 
+    prog = msdp(min(objective),constraints,relaxation_order);
+  catch ex
+    if strcmp(ex.message,'Increase relaxation order')
+      relaxation_order = relaxation_order+1
+      continue;
+    end
+  end
+    
   [exitflag,objval] = msol(prog);
-  relaxation_order = relaxation_order+1;
+  relaxation_order = relaxation_order+1
   % todo: make it an option whether we want to loop til convergence
 end
 if (exitflag<1)
