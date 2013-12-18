@@ -514,7 +514,6 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   bool debug_mode = ikoptions.getDebug();
   bool sequentialSeedFlag = ikoptions.getSequentialSeedFlag();
   snopt::integer* INFO_snopt = nullptr;
-  vector<string> infeasible_constraint_vec;
   if(mode == 1)
   {
     INFO_snopt= new snopt::integer[nT];
@@ -1002,7 +1001,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
             {
               if(infeasible_constraint_idx[j])
               {
-                infeasible_constraint_vec.push_back(Fname[j]);
+                infeasible_constraint.push_back(Fname[j]);
               }
             }
           }
@@ -2082,7 +2081,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
           {
             if(infeasible_constraint_idx[j])
             {
-              infeasible_constraint_vec.push_back(Fname[j]);
+              infeasible_constraint.push_back(Fname[j]);
             }
           }
         }
