@@ -18,7 +18,6 @@ xs = xs(perm);
 
 % M = vpa(M,3);   warning('dramatically reducing precision here as a test of numerics');
 
-% want to use this (from decomp), but yalmip doesn't have prod(x,dim):
 ps=reshape(M*prod(repmat(xs',size(p,1),1).^p,2),size(pm));
 
 
