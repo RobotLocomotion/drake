@@ -42,28 +42,10 @@ while testNumber < nTests
         HBodyDot = kinsol.Tdot{endEffector};
 
         HBodyToBase = HBase \ HBody;
-        transformDot = toTildeForm(twist) * HBodyToBase;
-        transformDotForwardKin = computeHdotRelative(HBase, HBody, HBaseDot, HBodyDot);
+        transformDot = twistToTildeForm(twist) * HBodyToBase;
+        transformDotForwardKin = relativeTdot(HBase, HBody, HBaseDot, HBodyDot);
         valuecheck(transformDot, transformDotForwardKin, 1e-12);
         testNumber = testNumber + 1;
     end
 end
-end
-
-function ret = toTildeForm(twist)
-omega = twist(1 : 3);
-v = twist(4 : 6);
-ret = [vectorToSkewSymmetric(omega), v;
-       zeros(1, 4)];
-end
-
-function HdotRelative = computeHdotRelative(HBase, HBody, HBaseDot, HBodyDot)
-% HRelative = inv(HBase) * HBody
-% d/dt(HRelative) = d/dt(inv(HBase) * HBody) + inv(HBase) * HBodyDot
-% d/dt(inv(Hbase) = -inv(HBase) * HBaseDot * inv(Hbase)
-
-invHBase = inv(HBase);
-invHBasedot = -invHBase * HBaseDot * invHBase;
-HdotRelative = invHBasedot * HBody + invHBase * HBodyDot;
-
 end
