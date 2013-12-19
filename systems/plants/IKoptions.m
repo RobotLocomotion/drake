@@ -212,6 +212,7 @@ classdef IKoptions
         error('IKoptions: Unsupported flag type');
       end
     end
+    
     function obj = setq0(obj,lb,ub)
       obj.mex_ptr = updatePtrIKoptionsmex(obj.mex_ptr,'q0',lb,ub);
       typecheck(lb,'double');
