@@ -49,21 +49,50 @@ function [xtraj,info,infeasible_constraint]= inverseKinTraj(obj,t,q_seed_traj,q_
 % @retval infeasible_constraint
 %                    Optional return argument. A cell of constraint names
 %                    that are infeasible
-ikoptions = varargin{end};
-kc = varargin(1:end-1);
+use_mex = false;
+if(isa(varargin{end},'IKoptions'))
+  ikoptions = varargin{end};
+  ikoptions_mex = ikoptions.mex_ptr;
+  varargin = varargin(1:end-1);
+elseif(isa(varargin{end},'DrakeMexPointer'))
+  if(strcmp(varargin{end}.name,'IKoptions'))
+    ikoptions_mex = varargin{end};
+    varargin = varargin(1:end-1);
+    use_mex = true;
+  end
+else
+  ikoptions = IKoptions(obj);
+  ikoptions_mex = ikoptions.mex_ptr;
+end
+constraint_mex = cell(1,length(varargin));
+for i = 1:length(varargin)
+  if(isa(varargin{i},'RigidBodyConstraint'))
+    constraint_mex{i} = varargin{i}.mex_ptr;
+  elseif(isa(varargin{i},'DrakeConstraintMexPointer'))
+    constraint_mex{i} = varargin{i};
+    use_mex = true;
+  else
+    error('Drake:inverseKin: The input should be a RigidBodyConstraint or a pointer to RigidBodyConstraint');
+  end
+end
 q_seed = q_seed_traj.eval(t);
 q_nom = q_nom_traj.eval(t);
+qdot0_seed = q_seed_traj.deriv(t(1));
+if(use_mex || ikoptions.use_mex )
+  [q,qdot,qddot,info,infeasible_constraint] = inverseKinTrajmex(obj.getMexModelPtr,t,qdot0_seed,q_seed,q_nom,constraint_mex{:},ikoptions_mex);
+else
+  if(ikoptions.fixInitialState)
+    ikoptions = ikoptions.setqd0(qdot0_seed,qdot0_seed);
+  end
+  [q,qdot,qddot,info,infeasible_constraint]= inverseKinBackend(obj,2,t,q_seed,q_nom,varargin{:},ikoptions);
+end
+
 % [f,G,iGfun,jGvar,Fupp,Flow,xupp,xlow,iAfun,jAvar,A,velocity_mat,velocity_mat_qd0,velocity_mat_qdf,...
 %   accel_mat,accel_mat_qd0,accel_mat_qdf,dqInbetweendqknot,dqInbetweendqd0,dqInbetweendqdf,iCfun_inbetween_cell,jCvar_inbetween_cell] = ...
 % inverseKinBackend(obj,2,t,q_seed,q_nom,kc{:},ikoptions);
 % save('mexdata.mat','f','G','iGfun','jGvar','Fupp','Flow','xupp','xlow','iAfun','jAvar','A','dqInbetweendqknot','dqInbetweendqd0','dqInbetweendqdf','iCfun_inbetween_cell','jCvar_inbetween_cell');
 % ikoptions = ikoptions.setMex(false);
 % keyboard;
-if(nargout == 3)
-  [q,qdot,qddot,info,infeasible_constraint] = inverseKinBackend(obj,2,t,q_seed,q_nom,kc{:},ikoptions);
-elseif(nargout <= 2)
-  [q,qdot,qddot,info] = inverseKinBackend(obj,2,t,q_seed,q_nom,kc{:},ikoptions);
-end
 xtraj = PPTrajectory(pchipDeriv(t,[q;qdot],[qdot;qddot]));
 xtraj = xtraj.setOutputFrame(obj.getStateFrame());
 end
