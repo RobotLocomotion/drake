@@ -1,24 +1,24 @@
 function testGeometricJacobian
 
-robot = RigidBodyManipulator('../../../examples/FurutaPendulum/FurutaPendulum.urdf');
+testAtlas('rpy');
+% testAtlas('quat'); % TODO: generating robot currently results in an error.
 
-if (0) % need to resolve floating base issue
-options.floating = true;
+end
+
+function testAtlas(floatingJointType)
+
+options.floating = floatingJointType;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 robot = RigidBodyManipulator(fullfile('../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'),options);
 warning(w);
-end
 
 nq = robot.getNumStates() / 2; % TODO
 nv = robot.getNumStates() / 2; % TODO
 
 nBodies = length(robot.body);
 
-% currently need to start at 2 (i.e. exclude the 6-DoF joint), because the rotational 
-% part of itsvelocity is parameterized as (yawd, pitchd, rolld) or 
-% quatd, whereas geometricJacobian expects omega
 bodyRange = [1, nBodies];
 
 nTests = 50;
@@ -48,7 +48,6 @@ while testNumber < nTests
         testNumber = testNumber + 1;
     end
 end
-
 end
 
 function ret = toTildeForm(twist)
