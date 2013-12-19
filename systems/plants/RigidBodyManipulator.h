@@ -97,7 +97,6 @@ public:
                                    MatrixXd& Jd);
 
   bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
-
 public:
   std::vector<std::string> robot_name;
 

@@ -1,0 +1,39 @@
+\documentclass{article}
+\usepackage{amsmath,verbatim}
+\begin{document}
+Suppose we are doing trajectory optimization for the robot with floating base model
+\begin{align}
+\min_{q,\dot{q},\ddot{q},u,\lambda} \int^T_0 u^TRu\\
+\text{s.t } \begin{bmatrix} H_f\\H_n\end{bmatrix}\ddot{q}+\begin{bmatrix}C_f\\C_n\end{bmatrix}=\begin{bmatrix}0\\I\end{bmatrix}u+\begin{bmatrix}J_f^T\\J_n^T\end{bmatrix}\lambda
+\end{align}
+where the subscript $f,n$ denote \textsl{floating base} and \textsl{non-floating base} respectively.
+
+We notice that for the non-floating base part, there is always a feasible control $u$ for any $\ddot{q},\dot{q},q,\lambda$ if we ignore the joint limits. So we can consider to drop that part of the constraint, and only focus on the floating base part.
+\begin{align}
+\min_{q,\dot{q},\ddot{q},u,\lambda} \int^T_0 u^TRu\\
+\text{s.t } H_f\ddot{q}+C_f=J_f^T\lambda
+\end{align}
+We notice that $u=H_n\ddot{q}+C_n-J_n^T\lambda$. So the quadratic term in the objective function $u^TRu$ is just a quadratic function of $\ddot{q},\dot{q},q,\lambda$
+\begin{align}
+\min_{q,\dot{q},\ddot{q},\lambda} \int^T_0 |H_n\ddot{q}+C_n-J_n^T\lambda|^2_R\\
+\text{s.t } H_f\ddot{q}+C_f=J_f^T\lambda
+\end{align}
+Still we have $\ddot{q}$ in the decision variable. But we notice that the equality constraint is affine in $\ddot{q}$ and the cost is quadratic in $\ddot{q}$. So the optimal value can be represented as a function of other decision variables $\dot{q},q,\lambda$ only.
+\begin{align}
+\min_{q,\dot{q},\lambda} \int^T_0 \begin{bmatrix}q\\\dot{q}\\\lambda\end{bmatrix}^TM(q,\dot{q},\lambda)\begin{bmatrix}q\\\dot{q}\\\lambda\end{bmatrix}+N(q,\dot{q},\lambda)^T\begin{bmatrix}q\\\dot{q}\\\lambda\end{bmatrix}\\
+\text{s.t } H_f\ddot{q}+C_f=J_f^T\lambda
+\end{align}
+Where $M,N$ are matrices depends on $q,\dot{q},\lambda$
+
+To transcribe the differential dynamics constraint to algebraic constraint, we consider
+\begin{equation}
+H_f\ddot{q}=\frac{dH_f\dot{q}}{dt}-\dot{H}_f\dot{q}
+\end{equation}
+And thus
+\begin{equation}
+\frac{dH_f\dot{q}}{dt}=J_f^T\lambda-C_f-\dot{H}_f\dot{q}
+\end{equation}
+We can then assume the term $H_f\dot{q}$ is a cubic Hermite polynomial, and transcribe it to an algebraic constraint that only depends on $q,\dot{q},\lambda$.
+
+So we end up with an optimization problem with only $q,\dot{q},\lambda$ as decision variables, and 6 constraints only.
+\end{document}

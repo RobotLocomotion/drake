@@ -570,9 +570,9 @@ classdef RigidBodyManipulator < Manipulator
       end
       if (length(ind)~=1)
         if (nargin<4 || throw_error)
-          error('Drake:RigidBodyManipulator:NoUniqueLink',['couldn''t find unique link ' ,linkname]);
+          error(['couldn''t find unique link ' ,linkname]);
         else 
-          warning('Drake:RigidBodyManipulator:NoUniqueLink',['couldn''t find unique link ' ,linkname]);
+          warning(['couldn''t find unique link ' ,linkname]);
           body_ind=0;
         end
       else
