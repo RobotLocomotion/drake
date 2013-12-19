@@ -7,7 +7,6 @@
 //#include <stdexcept>
 //END_DEBUG
 
-
 using namespace std;
 
 std::set<int> emptyIntSet;
@@ -1498,8 +1497,6 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 
 
 }
-
-
 
 
 // explicit instantiations (required for linking):

@@ -1055,7 +1055,6 @@ systems/plants/doKinematicsmex.cpp -text
 systems/plants/eiquadprog.hpp -text
 systems/plants/forwardKinmex.cpp -text
 systems/plants/getCMMmex.cpp -text
-systems/plants/inverseKinBackendmex.cpp -text
 systems/plants/test/CMakeLists.txt -text
 systems/plants/test/DoublePendWBiceptSpring.urdf -text
 systems/plants/test/FallingBrick.urdf -text
