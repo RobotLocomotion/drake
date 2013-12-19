@@ -27,7 +27,7 @@ for j = 1 : nTests
   
   for i = 1 : nBodies
     TdotFromTwist = kinsol.T{i} * twistToTildeForm(kinsol.twist{i});
-    valuecheck(TdotFromTwist, kinsol.Tdot{i}, 1e-6);
+    valuecheck(TdotFromTwist, kinsol.Tdot{i}, 1e-12);
   end
 end
 
