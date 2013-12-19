@@ -97,7 +97,7 @@ nT = 5;
 % t = [tspan(1) tspan(1)+0.2*(tspan(end)-tspan(1)) tspan(1)+0.7*(tspan(end)-tspan(1)) tspan(end)];
 t = linspace(tspan(1),tspan(end),nT);
 q_nom_traj = PPTrajectory(foh(t,repmat(q0,1,nT)));
-q_seed_traj = PPTrajectory(foh(t,repmat(q0,1,nT)+[zeros(nq,1) 1e-1*randn(nq,nT-1)]));
+q_seed_traj = PPTrajectory(foh(t,repmat(q0,1,nT)+[zeros(nq,1) 1e-3*randn(nq,nT-1)]));
 
 display('Check IK traj');
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,kc5,pc_knee,ikoptions);
@@ -227,7 +227,7 @@ ikmexoptions = ikmexoptions.setMex(true);
 ikoptions = ikoptions.setMex(false);
 display('IK mex start to solve the problem');
 tic
-[xtraj,info] = inverseKinTraj(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
+[xtraj,info,infeasible_constraint] = inverseKinTraj(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 toc
 if(info>10)
   error('SNOPT info is %d, IK mex fails to solve the problem',info);

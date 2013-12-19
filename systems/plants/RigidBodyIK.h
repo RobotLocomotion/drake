@@ -65,7 +65,7 @@ void inverseKinPointwise(RigidBodyManipulator* model, const int nT, const double
  *                    if ikoptions.sequentialSeedFlag = false, then q_seed.col(i) would always be used as the seed at t[i]
  */
 template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
-void inverseKinTraj(RigidBodyManipulator* model, const int nT, const double* t, const Eigen::MatrixBase<DerivedA> qdot0_seed, const Eigen::MatrixBase<DerivedB> &q_seed, const Eigen::MatrixBase<DerivedC> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedD> &q_sol, Eigen::MatrixBase<DerivedE> &qdot_sol, Eigen::MatrixBase<DerivedF> &qddot_sol, int &INFO, std::vector<std::string> &infeasible_constraint, const IKoptions &ikoptions); 
+void inverseKinTraj(RigidBodyManipulator* model, const int nT, const double* t, const Eigen::MatrixBase<DerivedA> &qdot0_seed, const Eigen::MatrixBase<DerivedB> &q_seed, const Eigen::MatrixBase<DerivedC> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, Eigen::MatrixBase<DerivedD> &q_sol, Eigen::MatrixBase<DerivedE> &qdot_sol, Eigen::MatrixBase<DerivedF> &qddot_sol, int &INFO, std::vector<std::string> &infeasible_constraint, IKoptions &ikoptions); 
 /*
  * inverseKinTraj  solves the inverse kinematics problem at all time together. Try to generate a smooth trajectory by assuming cubic spline for the posture, and minimize the acceleration of the interpolated trajectory
  * min_(q,qdot,qddot) sum(q(t(i))-q_nom(t(i)))'*Q*(q(t(i))-q_nom(t(i)))+qdot(t(i))'*Qv*qdot(t(i))+qddot(t(i))'*Qa*qddot(t(i))

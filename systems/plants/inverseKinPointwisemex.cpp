@@ -13,7 +13,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   if(nrhs < 6)
   {
-    mexErrMsgIdAndTxt("Drake:inverseKinmex:NotEnoughInputs","Usage inverseKinPointwisemex(model_ptr,t,q_seed,q_nom,constraint1,constraint2,...,ikoptions");
+    mexErrMsgIdAndTxt("Drake:inverseKinPointwisemex:NotEnoughInputs","Usage inverseKinPointwisemex(model_ptr,t,q_seed,q_nom,constraint1,constraint2,...,ikoptions");
   }
   RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   int nq = model->num_dof;

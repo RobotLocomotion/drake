@@ -31,10 +31,8 @@ static RigidBodyManipulator* model = nullptr;
 static SingleTimeKinematicConstraint** st_kc_array = nullptr;
 static MultipleTimeKinematicConstraint** mt_kc_array = nullptr;
 static QuasiStaticConstraint* qsc_ptr = nullptr;
-static MatrixXd q_seed;
 static MatrixXd q_nom;
 static VectorXd q_nom_i;
-static MatrixXd q_sol;
 static MatrixXd Q;
 static MatrixXd Qa;
 static MatrixXd Qv;
@@ -265,7 +263,6 @@ static int snoptIKtrajfun(snopt::integer *Status, snopt::integer *n, snopt::doub
   {
     q(nq*qstart_idx+i) = x[qfree_idx[i]];
   }
-
   IKtraj_cost_fun(q,qdot0,qdotf,F[0],G);
   int nf_cum = 1;
   int nG_cum = nq*(num_qfree+num_qdotfree);
@@ -415,10 +412,13 @@ static void snoptIKtraj_fevalfun(const VectorXd &x, VectorXd &c)
 }
 
 template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
-void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const int nT, const double* t, const MatrixBase<DerivedA> &q_seed, const MatrixBase<DerivedB> &q_nom, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<DerivedC> &q_sol, MatrixBase<DerivedD> &qdot_sol, MatrixBase<DerivedE> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
+void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const int nT_input, const double* t_input, const MatrixBase<DerivedA> &q_seed, const MatrixBase<DerivedB> &q_nom_input, const int num_constraints, RigidBodyConstraint** const constraint_array, MatrixBase<DerivedC> &q_sol, MatrixBase<DerivedD> &qdot_sol, MatrixBase<DerivedE> &qddot_sol, int* INFO, vector<string> &infeasible_constraint, const IKoptions &ikoptions)
 {
   model = model_input;
+  nT = nT_input;
+  t = const_cast<double*>(t_input);
   nq = model->num_dof;
+  q_nom = q_nom_input;
   if(q_seed.rows() != nq || q_seed.cols() != nT || q_nom.rows() != nq || q_nom.cols() != nT)
   {
     cerr<<"Drake:inverseKinBackend: q_seed and q_nom must be of size nq x nT"<<endl;
@@ -948,7 +948,6 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       
       mxArray* nF_ptr = mxCreateDoubleScalar((double) nF);
       mxSetCell(plhs[0],11,nF_ptr);*/
-
       snopt::snopta_
         ( &Cold, &nF, &nx, &nxname, &nFname,
           &ObjAdd, &ObjRow, Prob, snoptIKfun,
@@ -1771,6 +1770,13 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       //memcpy(x+qdot0_idx[0],qd0_seed.data(),sizeof(double)*nq);
       //memcpy(x+qdotf_idx[0],qdf_seed.data(),sizeof(double)*nq);
     }
+    for(int i = 0;i<nx;i++)
+    {
+      if(std::isnan(x[i]))
+      {
+        x[i] = 0.0;
+      }
+    }
     snopt::integer minrw,miniw,mincw;
     snopt::integer lenrw = 20000000, leniw = 2000000, lencw = 5000;
     snopt::doublereal* rw;
@@ -1966,7 +1972,6 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     delete[] iCfun_inbetween_ptr; delete[] jCvar_inbetween_ptr; 
     printf("get iCfun_inbetween\n");*/
 
-   
     snopt::snopta_
       ( &Cold, &nF, &nx, &nxname, &nFname,
         &ObjAdd, &ObjRow, Prob, snoptIKtrajfun,
@@ -2098,11 +2103,11 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       {
         *INFO_snopt = 6;
       }
-      *INFO = static_cast<int>(*INFO_snopt);
       delete[] ub_err;
       delete[] lb_err;
       delete[] infeasible_constraint_idx;
     }
+    *INFO = static_cast<int>(*INFO_snopt);
 
     delete rw;
     delete[] xmul; delete[] xstate; delete[] xnames; 
@@ -2135,10 +2140,6 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   delete[] Cmin_array; delete[] Cmax_array; delete[] Cname_array;
   delete[] nc_array; delete[] nG_array; delete[] nA_array;
   delete[] st_lpc_nc;
-  if(t!=nullptr)
-  {
-    delete[] t;
-  }
   delete[] st_kc_array;
   delete[] mt_kc_array;
   delete[] st_lpc_array;
