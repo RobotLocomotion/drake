@@ -71,11 +71,11 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
   {
     printf("Set Gurobi outputflag error %s\n",GRBgeterrormsg(grb_env));
   }
-  /*error = GRBsetintparam(grb_env,"method",2);
+  error = GRBsetintparam(grb_env,"method",2);
   error = GRBsetintparam(grb_env,"presolve",0);
   error = GRBsetintparam(grb_env,"bariterlimit",20);
   error = GRBsetintparam(grb_env,"barhomogenous",0);
-  error = GRBsetdblparam(grb_env,"barconvtol",1e-4);*/
+  error = GRBsetdblparam(grb_env,"barconvtol",0.005);
   error = GRBnewmodel(grb_env,&grb_model,"ApproximateIK",nq,qtmp.data(),joint_lb,joint_ub,nullptr,nullptr);
   if(error)
   {

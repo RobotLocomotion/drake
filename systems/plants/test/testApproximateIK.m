@@ -129,6 +129,8 @@ ikoption = varargin{end};
 ikoption = ikoption.setMex(true);
 ikmexoption = ikoption;
 ikmexoption = ikmexoption.setMex(true);
+ikmatlaboption = ikoption;
+ikmatlaboption = ikmatlaboption.setMex(false);
 ikappoption = ikoption;
 ikappoption = ikappoption.setMajorIterationsLimit(3);
 ikappoption = ikappoption.setMajorOptimalityTolerance(1);
@@ -152,10 +154,10 @@ valuecheck(q_app_mex,q,2e-1);
 
 % display('Approximate IK');
 % tic
-% [q_app,info] = approximateIK(r,t,q_seed,q_nom,varargin{1:end-1},ikoption);
+% [q_app,info] = approximateIK(r,q_seed,q_nom,varargin{1:end-1},ikmatlaboption);
 % toc
 % if(info~=0)
 %   error('approximateIK fails');
 % end
-% valuecheck(q_app,q_app_mex,2e-1);
+% valuecheck(q_app,q_app_mex,1e-4);
 end

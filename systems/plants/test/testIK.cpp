@@ -5,6 +5,7 @@
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
+#include "mat.h"
 
 using namespace std;
 using namespace Eigen;
@@ -18,9 +19,23 @@ int main()
   Vector2d tspan;
   tspan<<0,1;
   VectorXd q0;
-  q0 = VectorXd::Zero(model->num_dof);
+  MATFile *pmat;
+  pmat = matOpen("../../examples/Atlas/data/atlas_fp.mat","r");
+  if(pmat == NULL)
+  {
+    printf("Error reading mat file\n");
+    return(EXIT_FAILURE);
+  }
+  mxArray* pxstar = matGetVariable(pmat,"xstar");
+  if(pxstar == NULL)
+  {
+    printf("no xstar in mat file\n");
+    return(EXIT_FAILURE);
+  }
+  q0 = VectorXd(model->num_dof);
+  memcpy(q0.data(),mxGetPr(pxstar),sizeof(double)*model->num_dof);
   Vector3d com_des = Vector3d::Zero();
-  com_des(2) = 0;
+  com_des(2) = nan("");
   WorldCoMConstraint* com_kc = new WorldCoMConstraint(model,com_des,com_des);
   int num_constraints = 1;
   RigidBodyConstraint** constraint_array = new RigidBodyConstraint*[num_constraints];
@@ -31,9 +46,9 @@ int main()
   vector<string> infeasible_constraint;
   inverseKin(model,q0,q0,num_constraints,constraint_array,q_sol,info,infeasible_constraint,ikoptions);
   printf("INFO = %d\n",info);
-  model->doKinematics(q_sol.data());
   delete com_kc;
   delete[] constraint_array;
+  matClose(pmat);
   return 0;
 }
   
