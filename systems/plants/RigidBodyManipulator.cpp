@@ -3,12 +3,10 @@
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
 #include "collision/Model.h"
-#include "constraint/RigidBodyConstraint.h"
 //DEBUG
 //#include <stdexcept>
 //END_DEBUG
 
-#include <gurobi_c++.h>
 
 using namespace std;
 

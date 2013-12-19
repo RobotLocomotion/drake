@@ -1,5 +1,4 @@
 
-#include "RigidBody.h"
 #include "RigidBodyManipulator.h"
 using namespace std;
 
