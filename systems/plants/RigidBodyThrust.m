@@ -9,7 +9,7 @@ classdef RigidBodyThrust < RigidBodyForceElement
   methods
     function obj = RigidBodyThrust(frame, axis, scaleFac, limits)
       
-      typecheck(frame,RigidBodyFrame);
+      typecheck(frame,'RigidBodyFrame');
       obj.kinframe = frame;
       obj.axis = axis/norm(axis);      
       

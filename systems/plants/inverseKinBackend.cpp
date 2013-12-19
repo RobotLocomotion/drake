@@ -24,6 +24,10 @@ namespace snopt {
 
 #include <Eigen/LU>
 
+//Only for debugging purpose
+//#include "mat.h"
+
+
 using namespace Eigen;
 using namespace std;
 
@@ -1838,7 +1842,13 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     strOpt_len = strlen(strOpt6);
     snopt::snseti_(strOpt6,&SNOPT_IterationsLimit,&iPrint,&iSumm,INFO_snopt,cw,&lencw,iw,&leniw,rw,&lenrw,strOpt_len,8*500);
     //debug only
-    /*nx_tmp = nx;
+    /*MATFile *pmat;
+    pmat = matOpen("inverseKinBackend_cpp.mat","w");
+    if(pmat == NULL)
+    {
+      printf("Error creating mat file\n");
+    }
+    nx_tmp = nx;
     nG_tmp = nG;
     nF_tmp = nF;
     printf("start to debug\n"); 
@@ -1854,8 +1864,8 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     mxArray* G_ptr = mxCreateDoubleMatrix(nG,1,mxREAL); 
     memcpy(mxGetPr(f_ptr),f_vec.data(),sizeof(double)*(nF));
     memcpy(mxGetPr(G_ptr),G_vec.data(),sizeof(double)*(nG));
-    mxSetCell(plhs[0],0,f_ptr);
-    mxSetCell(plhs[0],1,G_ptr);
+    matPutVariable(pmat,"f",f_ptr);
+    matPutVariable(pmat,"G",G_ptr);
     printf("got f,G\n");
     
     double* iGfun_tmp = new double[nG];
@@ -1869,23 +1879,29 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     } 
     memcpy(mxGetPr(iGfun_ptr),iGfun_tmp,sizeof(double)*nG);
     memcpy(mxGetPr(jGvar_ptr),jGvar_tmp,sizeof(double)*nG);
-    mxSetCell(plhs[0],2,iGfun_ptr);
-    mxSetCell(plhs[0],3,jGvar_ptr);
+    matPutVariable(pmat,"iGfun",iGfun_ptr);
+    matPutVariable(pmat,"jGvar",jGvar_ptr);
     printf("got iGfun jGar\n");
     mxArray* Fupp_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
     memcpy(mxGetPr(Fupp_ptr),Fupp,sizeof(double)*nF);
-    mxSetCell(plhs[0],4,Fupp_ptr);
+    matPutVariable(pmat,"Fupp",Fupp_ptr);
     mxArray* Flow_ptr = mxCreateDoubleMatrix(nF,1,mxREAL);
     memcpy(mxGetPr(Flow_ptr),Flow,sizeof(double)*nF);
-    mxSetCell(plhs[0],5,Flow_ptr);
+    matPutVariable(pmat,"Flow",Flow_ptr);
     printf("got Fupp Flow\n");
     mxArray* xupp_ptr = mxCreateDoubleMatrix(nx,1,mxREAL);
     mxArray* xlow_ptr = mxCreateDoubleMatrix(nx,1,mxREAL);
     memcpy(mxGetPr(xupp_ptr),xupp,sizeof(double)*nx);
     memcpy(mxGetPr(xlow_ptr),xlow,sizeof(double)*nx);
-    mxSetCell(plhs[0],6,xupp_ptr);
-    mxSetCell(plhs[0],7,xlow_ptr);
+    matPutVariable(pmat,"xupp",xupp_ptr);
+    matPutVariable(pmat,"xlow",xlow_ptr);
     printf("got xupp xlow\n");
+    mxArray* qd0_lb_ptr = mxCreateDoubleMatrix(nq,1,mxREAL);
+    mxArray* qd0_ub_ptr = mxCreateDoubleMatrix(nq,1,mxREAL);
+    memcpy(mxGetPr(qd0_lb_ptr),qd0_lb.data(),sizeof(double)*nq);
+    memcpy(mxGetPr(qd0_ub_ptr),qd0_ub.data(),sizeof(double)*nq);
+    matPutVariable(pmat,"qd0_lb",qd0_lb_ptr);
+    matPutVariable(pmat,"qd0_ub",qd0_ub_ptr);
     mxArray* iAfun_ptr = mxCreateDoubleMatrix(lenA,1,mxREAL);
     mxArray* jAvar_ptr = mxCreateDoubleMatrix(lenA,1,mxREAL);
     mxArray* A_ptr = mxCreateDoubleMatrix(lenA,1,mxREAL);
@@ -1899,28 +1915,28 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     memcpy(mxGetPr(iAfun_ptr),iAfun_tmp,sizeof(double)*lenA);
     memcpy(mxGetPr(jAvar_ptr),jAvar_tmp,sizeof(double)*lenA);
     memcpy(mxGetPr(A_ptr),A,sizeof(double)*lenA);
-    mxSetCell(plhs[0],8,iAfun_ptr);
-    mxSetCell(plhs[0],9,jAvar_ptr);
-    mxSetCell(plhs[0],10,A_ptr);
+    matPutVariable(pmat,"iAfun",iAfun_ptr);
+    matPutVariable(pmat,"jAvar",jAvar_ptr);
+    matPutVariable(pmat,"A",A_ptr);
     printf("got iAfun jAvar A\n"); 
     mxArray* velocity_mat_ptr = mxCreateDoubleMatrix(nq*(nT-2),nq*nT,mxREAL);
     memcpy(mxGetPr(velocity_mat_ptr),velocity_mat.data(),sizeof(double)*nq*(nT-2)*nq*nT);
-    mxSetCell(plhs[0],11,velocity_mat_ptr);
+    matPutVariable(pmat,"velocity_mat",velocity_mat_ptr);
     mxArray* velocity_mat_qd0_ptr = mxCreateDoubleMatrix(nq*(nT-2),nq,mxREAL);
     memcpy(mxGetPr(velocity_mat_qd0_ptr),velocity_mat_qd0.data(),sizeof(double)*velocity_mat_qd0.size());
-    mxSetCell(plhs[0],12,velocity_mat_qd0_ptr);
+    matPutVariable(pmat,"velocity_mat_qd0",velocity_mat_qd0_ptr);
     mxArray* velocity_mat_qdf_ptr = mxCreateDoubleMatrix(nq*(nT-2),nq,mxREAL);
     memcpy(mxGetPr(velocity_mat_qdf_ptr),velocity_mat_qdf.data(),sizeof(double)*velocity_mat_qdf.size());
-    mxSetCell(plhs[0],13,velocity_mat_qdf_ptr);
+    matPutVariable(pmat,"velocity_mat_qdf",velocity_mat_qdf_ptr);
     mxArray* accel_mat_ptr = mxCreateDoubleMatrix(nq*nT,nq*nT,mxREAL);
     memcpy(mxGetPr(accel_mat_ptr),accel_mat.data(),sizeof(double)*accel_mat.size());
-    mxSetCell(plhs[0],14,accel_mat_ptr);
+    matPutVariable(pmat,"accel_mat",accel_mat_ptr);
     mxArray* accel_mat_qd0_ptr = mxCreateDoubleMatrix(nq*nT,nq,mxREAL);
     memcpy(mxGetPr(accel_mat_qd0_ptr),accel_mat_qd0.data(),sizeof(double)*accel_mat_qd0.size());
-    mxSetCell(plhs[0],15,accel_mat_qd0_ptr);
+    matPutVariable(pmat,"accel_mat_qd0",accel_mat_qd0_ptr);
     mxArray* accel_mat_qdf_ptr = mxCreateDoubleMatrix(nq*nT,nq,mxREAL);
     memcpy(mxGetPr(accel_mat_qdf_ptr),accel_mat_qdf.data(),sizeof(double)*accel_mat_qdf.size());
-    mxSetCell(plhs[0],16,accel_mat_qdf_ptr);
+    matPutVariable(pmat,"accel_mat_qdf",accel_mat_qdf_ptr);
     mxArray** dqInbetweendqknot_ptr = new mxArray*[nT-1];
     mxArray** dqInbetweendqd0_ptr = new mxArray*[nT-1];
     mxArray** dqInbetweendqdf_ptr = new mxArray*[nT-1];
@@ -1940,9 +1956,9 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       mxSetCell(dqInbetweendqd0_cell,i,dqInbetweendqd0_ptr[i]);
       mxSetCell(dqInbetweendqdf_cell,i,dqInbetweendqdf_ptr[i]);
     }
-    mxSetCell(plhs[0],17,dqInbetweendqknot_cell);
-    mxSetCell(plhs[0],18,dqInbetweendqd0_cell);
-    mxSetCell(plhs[0],19,dqInbetweendqdf_cell);
+    matPutVariable(pmat,"dqInbetweendqknot",dqInbetweendqknot_cell);
+    matPutVariable(pmat,"dqInbetweendqd0",dqInbetweendqd0_cell);
+    matPutVariable(pmat,"dqInbetweendqdf",dqInbetweendqdf_cell);
     delete[] dqInbetweendqknot_ptr; delete[] dqInbetweendqd0_ptr; delete[] dqInbetweendqdf_ptr;
     printf("get dqInbetweendqknot\n");
     mxArray** iCfun_inbetween_ptr = new mxArray*[num_inbetween_tSamples];
@@ -1967,10 +1983,13 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       mxSetCell(jCvar_inbetween_cell,i,jCvar_inbetween_ptr[i]);
       delete[] iCfun_inbetween_i_double; delete[] jCvar_inbetween_i_double;
     }
-    mxSetCell(plhs[0],20,iCfun_inbetween_cell);
-    mxSetCell(plhs[0],21,jCvar_inbetween_cell);
+    matPutVariable(pmat,"iCfun_inbetween",iCfun_inbetween_cell);
+    matPutVariable(pmat,"jCvar_inbetween",jCvar_inbetween_cell);
     delete[] iCfun_inbetween_ptr; delete[] jCvar_inbetween_ptr; 
-    printf("get iCfun_inbetween\n");*/
+    printf("get iCfun_inbetween\n");
+    matClose(pmat);
+    // end of debugging
+    */
 
     snopt::snopta_
       ( &Cold, &nF, &nx, &nxname, &nFname,
@@ -2020,16 +2039,16 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       MatrixXd df_err2 = df_err.block(1,0,nF-1,nx);
       printf("The maximum gradient numerical error, except in the cost function, is %e\n",df_err2.maxCoeff());
     }
-    MatrixXd q(nq*nT,1);
+    q_sol.resize(nq,nT);
     VectorXd qdot0(nq);
     VectorXd qdotf(nq);
     if(fixInitialState)
     {
-      q.block(0,0,nq,1) = q0_fixed;
+      q_sol.block(0,0,nq,1) = q0_fixed;
     }
     for(int j = 0;j<nq*num_qfree;j++)
     {
-      q(j+nq*qstart_idx) = x[qfree_idx[j]];
+      q_sol(j+nq*qstart_idx) = x[qfree_idx[j]];
     }
     for(int j = 0;j<nq;j++)
     {
@@ -2046,15 +2065,13 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     {
       qdot0 = qdot0_fixed;
     }
-    MatrixXd qdot(nq*nT,1);
-    MatrixXd qddot(nq*nT,1);
-    qdot.block(0,0,nq,1) = qdot0;
-    qdot.block(nq*(nT-1),0,nq,1) = qdotf;
-    qdot.block(nq,0,nq*(nT-2),1) = velocity_mat*q;
-    qddot = accel_mat*q+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf;
-    q.resize(nq,nT);
-    qdot.resize(nq,nT);
-    qddot.resize(nq,nT);
+    qdot_sol.block(0,0,nq,1) = qdot0;
+    qdot_sol.block(nq*(nT-1),0,nq,1) = qdotf;
+    qdot_sol.block(nq,0,nq*(nT-2),1) = velocity_mat*q_sol;
+    qddot_sol = accel_mat*q_sol+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf;
+    q_sol.resize(nq,nT);
+    qdot_sol.resize(nq,nT);
+    qddot_sol.resize(nq,nT);
 
     if(*INFO_snopt == 13 || *INFO_snopt == 31 || *INFO_snopt == 32)
     {
