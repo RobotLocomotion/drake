@@ -71,7 +71,7 @@ params.method = 2;
 params.presolve = 0;
 params.bariterlimit = 20;
 params.barhomogeneous = 0;
-params.barconvtol = 1e-4;
+params.barconvtol = 0.005;
 
 result = gurobi(model,params);
 info = ~strcmp(result.status,'OPTIMAL');

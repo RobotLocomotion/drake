@@ -5,35 +5,37 @@
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
+#include "mat.h"
 
 using namespace std;
 using namespace Eigen;
 int main()
 {
   URDFRigidBodyManipulator* model = loadURDFfromFile("../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
-  printf("lb ");
-  for(int i = 0;i<model->num_dof;i++)
-  {
-    printf("%5.3f ",model->joint_limit_min[i]);
-    model->joint_limit_min[i] = 0.0;
-  }
-  printf("\n");
-  printf("ub ");
-  for(int i = 0;i<model->num_dof;i++)
-  {
-    printf("%5.3f ",model->joint_limit_max[i]);
-    model->joint_limit_max[i] = 0.0;
-  }
-  printf("\n");
   if(!model)
   {
     cerr<<"ERROR: Failed to load model"<<endl;
   }
   Vector2d tspan;
   tspan<<0,1;
-  VectorXd q0(model->num_dof);
-  q0 = VectorXd::Zero(model->num_dof);
+  VectorXd q0;
+  MATFile *pmat;
+  pmat = matOpen("../../examples/Atlas/data/atlas_fp.mat","r");
+  if(pmat == NULL)
+  {
+    printf("Error reading mat file\n");
+    return(EXIT_FAILURE);
+  }
+  mxArray* pxstar = matGetVariable(pmat,"xstar");
+  if(pxstar == NULL)
+  {
+    printf("no xstar in mat file\n");
+    return(EXIT_FAILURE);
+  }
+  q0 = VectorXd(model->num_dof);
+  memcpy(q0.data(),mxGetPr(pxstar),sizeof(double)*model->num_dof);
   Vector3d com_des = Vector3d::Zero();
+  com_des(2) = nan("");
   WorldCoMConstraint* com_kc = new WorldCoMConstraint(model,com_des,com_des);
   int num_constraints = 1;
   RigidBodyConstraint** constraint_array = new RigidBodyConstraint*[num_constraints];
@@ -42,7 +44,9 @@ int main()
   VectorXd q_sol(model->num_dof);
   int info;
   approximateIK(model,q0,q0,num_constraints,constraint_array,q_sol,info,ikoptions);
+  printf("INFO = %d\n",info);
   delete com_kc;
   delete[] constraint_array;
+  matClose(pmat);
   return 0;
 }
