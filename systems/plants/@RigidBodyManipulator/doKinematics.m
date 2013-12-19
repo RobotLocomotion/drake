@@ -167,6 +167,7 @@ else
   end
   
   kinsol.twist = computeTwists(model.body, kinsol.T, q, qd);
+  kinsol.Tdot = computeTdots(kinsol.T, kinsol.twist);
 end
 
 end
@@ -186,5 +187,12 @@ for i = 1 : nb
     twistSize = 6;
     twists{i} = zeros(twistSize, 1);
   end
+end
+end
+
+function Tdot = computeTdots(T, twist)
+Tdot = cell(length(T), 1);
+for i = 1 : length(T)
+  Tdot{i} = T{i} * twistToTildeForm(twist{i});
 end
 end
