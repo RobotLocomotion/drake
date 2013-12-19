@@ -100,6 +100,7 @@ else
       if isempty(qd)
         kinsol.Tdot{i} = [];
         kinsol.dTdqdot{i} = [];
+        kinsol.twist{i} = [];
       else
         qdi = qd(body.dofnum);
         TJdot = zeros(4);
@@ -164,6 +165,26 @@ else
       end
     end
   end
+  
+  kinsol.twist = computeTwists(model.body, kinsol.T, q, qd);
 end
 
+end
+
+function twists = computeTwists(bodies, T, q, qd)
+nb = length(bodies);
+twists = cell(1, nb);
+for i = 1 : nb
+  body = bodies(i);
+  if body.parent > 0 && ~isempty(qd)
+    parentTwist = twists{body.parent};
+    qBody = q(body.dofnum);
+    vBody = qd(body.dofnum);
+    jointTwist = motionSubspace(body, qBody) * vBody;
+    twists{i} = transformTwists(T{i} \ T{body.parent}, parentTwist) + jointTwist;
+  else
+    twistSize = 6;
+    twists{i} = zeros(twistSize, 1);
+  end
+end
 end
