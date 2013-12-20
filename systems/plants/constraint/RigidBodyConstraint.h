@@ -192,6 +192,31 @@ class MultipleTimeLinearPostureConstraint: public RigidBodyConstraint
     virtual ~MultipleTimeLinearPostureConstraint(){};
 };
 
+/*
+ * @class SingleTimeLinearPostureConstraint constrain the posture satisfies lb<= A_mat*q <=ub at any time, where A_mat is a sparse matrix
+ *
+ * @function SingleTimeLinearPostureConstraint
+ *   @param robot
+ *   @param iAfun    The row indices of non zero entries
+ *   @param jAvar    The column indices of non zero entries
+ *   @param A        The values of non zero entries
+ *   @param lb       The lower bound of the constraint, a column vector.
+ *   @param ub       The upper bound of the constraint, a column vector.
+ *   @param tspan    The time span [tspan[0] tspan[1]] is the time span of the constraint being active
+ * @function eval return the value and gradient of the constraint
+ *   @param t      array of time
+ *   @param n_breaks   the length of array t
+ *   @param q     q.col(i) is the posture at t[i]
+ *   @param c    the value of the constraint
+ *   @param dc   the gradient of the constraint w.r.t. q
+ *
+ * @function feval returns the value of the constraint
+ *
+ * @function geval returns the gradient of the constraint, written in the sprase matrix form
+ *   @return iAfun    The row index of the non-zero entries in the gradient matrix
+ *   @return jAvar    The column index of the non-zero entries in the gradient matrix
+ *   @return A        The value of the non-zero entries in the gradient matrix
+ */
 class SingleTimeLinearPostureConstraint: public RigidBodyConstraint
 {
   protected:
@@ -217,6 +242,9 @@ class SingleTimeLinearPostureConstraint: public RigidBodyConstraint
     void name(const double* t, std::vector<std::string> &name_str) const;
 };
 
+/*
+ * class SingleTimeKinematicConstraint   An abstract class that constrain the kinematics of the robot at individual time. Need to call doKinematics first for the robot and then evaulate this constraint.
+ */
 class SingleTimeKinematicConstraint: public RigidBodyConstraint
 {
   protected:
