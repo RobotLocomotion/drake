@@ -37,7 +37,6 @@ else
       kinsol.dTdq{i} = sparse(3*nq,4);
       if ~isempty(qd)
         kinsol.Tdot{i} = zeros(4);
-        kinsol.dTdqdot{i} = sparse(3*nq,4);
       end
       if (b_compute_second_derivatives)
         kinsol.ddTdqdq{i} = sparse(3*nq*nq,4);
@@ -114,12 +113,8 @@ else
           TJdot = TJdot+dTJ{j}*qdi(j);
         end
         
-        kinsol.Tdot{i} = kinsol.Tdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
-        kinsol.dTdqdot{i} = kinsol.dTdqdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
-        for j=1:6
-          this_dof_ind = body.dofnum(j)+0:nq:3*nq;
-          kinsol.dTdqdot{i}(this_dof_ind,:) = kinsol.dTdqdot{i}(this_dof_ind,:) + kinsol.Tdot{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot{j}*body.T_body_to_joint;
-        end
+        kinsol.Tdot{i} = kinsol.Tdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;        
+        
       end
     elseif body.floating==2
       qi = q(body.dofnum);  % qi is 7x1
@@ -154,20 +149,12 @@ else
        ind = 3*nq*(body.dofnum-1) + this_dof_ind;  % ddTdqidqi
        kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ*body.T_body_to_joint;  % body.jsign^2 is there, but unnecessary (since it's always 1)
       end
-      
-      if ~isempty(qd)
-        qdi = qd(body.dofnum);
-        TJdot = dTJ*qdi;
-        dTJdot = ddTjcalc(body.pitch,qi)*qdi;
-        kinsol.Tdot{i} = kinsol.Tdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
-        kinsol.dTdqdot{i} = kinsol.dTdqdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
-        kinsol.dTdqdot{i}(this_dof_ind,:) = kinsol.dTdqdot{i}(this_dof_ind,:) + kinsol.Tdot{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot*body.T_body_to_joint;
-      end
     end
   end
   
   kinsol.twist = computeTwists(model.body, kinsol.T, q, qd);
   kinsol.Tdot = computeTdots(kinsol.T, kinsol.twist);
+  kinsol.dTdqdot = computeDTdqdots(model, kinsol.T, kinsol.dTdq, kinsol.Tdot, q, qd);
 end
 
 end
@@ -195,4 +182,68 @@ Tdot = cell(length(T), 1);
 for i = 1 : length(T)
   Tdot{i} = T{i} * twistToTildeForm(twist{i});
 end
+end
+
+function dTdqdot = computeDTdqdots(model, T, dTdq, Tdot, q, qd)
+nb = length(model.body);
+dTdqdot = cell(nb);
+nq = getNumDOF(model);
+
+for i = 1 : nb
+  body = model.body(i);
+  if body.parent<1
+    if ~isempty(qd)
+      dTdqdot{i} = sparse(3*nq,4);
+    end
+  elseif body.floating==1
+    if isempty(qd)
+      dTdqdot{i} = [];
+    else
+      qi = q(body.dofnum); % qi is 6x1
+      qdi = qd(body.dofnum);
+      
+      [rx,drx,ddrx] = rotx(qi(4)); [ry,dry,ddry] = roty(qi(5)); [rz,drz,ddrz] = rotz(qi(6));
+      TJ = [rz*ry*rx,qi(1:3);zeros(1,3),1];
+      dTJ{1} = sparse(1,4,1,4,4);
+      dTJ{2} = sparse(2,4,1,4,4);
+      dTJ{3} = sparse(3,4,1,4,4);
+      dTJ{4} = [rz*ry*drx,zeros(3,1); zeros(1,4)];
+      dTJ{5} = [rz*dry*rx,zeros(3,1); zeros(1,4)];
+      dTJ{6} = [drz*ry*rx,zeros(3,1); zeros(1,4)];
+      
+      TJdot = zeros(4);
+      dTJdot{1} = zeros(4);
+      dTJdot{2} = zeros(4);
+      dTJdot{3} = zeros(4);
+      dTJdot{4} = [(drz*qdi(6))*ry*drx + rz*(dry*qdi(5))*drx + rz*ry*(ddrx*qdi(4)),zeros(3,1); zeros(1,4)];
+      dTJdot{5} = [(drz*qdi(6))*dry*rx + rz*(ddry*qdi(5))*rx + rz*dry*(drx*qdi(4)),zeros(3,1); zeros(1,4)];
+      dTJdot{6} = [(ddrz*qdi(6))*ry*rx + drz*(dry*qdi(5))*rx + drz*ry*(drx*qdi(4)),zeros(3,1); zeros(1,4)];
+      for j=1:6
+        TJdot = TJdot+dTJ{j}*qdi(j);
+      end
+      
+      dTdqdot{i} = dTdqdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
+      for j=1:6
+        this_dof_ind = body.dofnum(j)+0:nq:3*nq;
+        dTdqdot{i}(this_dof_ind,:) = dTdqdot{i}(this_dof_ind,:) + Tdot{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint + T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot{j}*body.T_body_to_joint;
+      end
+    end
+  elseif body.floating==2
+    warning('first derivatives of quaternion floating base not implemented yet');
+  else
+    if ~isempty(qd)
+      qi = q(body.dofnum);
+      qdi = qd(body.dofnum);
+      TJ = Tjcalc(body.pitch,qi);
+      dTJ = dTjcalc(body.pitch,qi);
+      TJdot = dTJ*qdi;
+      dTJdot = ddTjcalc(body.pitch,qi)*qdi;
+      this_dof_ind = body.dofnum+0:nq:3*nq;
+      dTdqdot{i} = dTdqdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
+      dTdqdot{i}(this_dof_ind,:) = dTdqdot{i}(this_dof_ind,:) + Tdot{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint + T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot*body.T_body_to_joint;
+    end
+  end
+end
+
+
 end
