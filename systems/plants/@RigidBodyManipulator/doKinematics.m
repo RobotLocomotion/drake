@@ -27,7 +27,6 @@ else
   nb = length(model.body);
   kinsol.T = cell(1,nb);
   kinsol.dTdq = cell(1,nb);
-  kinsol.dTdqdot = cell(1,nb);
   kinsol.ddTdqdq = cell(1,nb);
   for i=1:length(model.body)
     body = model.body(i);
@@ -92,10 +91,7 @@ else
         kinsol.ddTdqdq{i} = [];
       end
       
-      if isempty(qd)
-        kinsol.dTdqdot{i} = [];
-        kinsol.twist{i} = [];
-      else
+      if ~isempty(qd)
         qdi = qd(body.dofnum);
         TJdot = zeros(4);
         dTJdot{1} = zeros(4);
