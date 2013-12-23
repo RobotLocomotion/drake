@@ -27,7 +27,6 @@ else
   nb = length(model.body);
   kinsol.T = cell(1,nb);
   kinsol.dTdq = cell(1,nb);
-  kinsol.Tdot = cell(1,nb);
   kinsol.dTdqdot = cell(1,nb);
   kinsol.ddTdqdq = cell(1,nb);
   for i=1:length(model.body)
@@ -35,9 +34,6 @@ else
     if body.parent<1
       kinsol.T{i} = body.Ttree;
       kinsol.dTdq{i} = sparse(3*nq,4);
-      if ~isempty(qd)
-        kinsol.Tdot{i} = zeros(4);
-      end
       if (b_compute_second_derivatives)
         kinsol.ddTdqdq{i} = sparse(3*nq*nq,4);
       end
@@ -97,7 +93,6 @@ else
       end
       
       if isempty(qd)
-        kinsol.Tdot{i} = [];
         kinsol.dTdqdot{i} = [];
         kinsol.twist{i} = [];
       else
@@ -112,8 +107,6 @@ else
         for j=1:6
           TJdot = TJdot+dTJ{j}*qdi(j);
         end
-        
-        kinsol.Tdot{i} = kinsol.Tdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;        
         
       end
     elseif body.floating==2
