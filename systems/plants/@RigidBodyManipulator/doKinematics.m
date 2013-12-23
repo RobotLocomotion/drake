@@ -162,18 +162,14 @@ end
 function dTdqdot = computeDTdqdots(model, T, dTdq, Tdot, q, qd)
 nb = length(model.body);
 dTdqdot = cell(nb);
-nq = getNumDOF(model);
 
-for i = 1 : nb
-  body = model.body(i);
-  if body.parent<1
-    if ~isempty(qd)
+if ~isempty(qd)
+  nq = getNumDOF(model);
+  for i = 1 : nb
+    body = model.body(i);
+    if body.parent<1
       dTdqdot{i} = sparse(3*nq,4);
-    end
-  elseif body.floating==1
-    if isempty(qd)
-      dTdqdot{i} = [];
-    else
+    elseif body.floating==1
       qi = q(body.dofnum); % qi is 6x1
       qdi = qd(body.dofnum);
       
@@ -202,11 +198,9 @@ for i = 1 : nb
         this_dof_ind = body.dofnum(j)+0:nq:3*nq;
         dTdqdot{i}(this_dof_ind,:) = dTdqdot{i}(this_dof_ind,:) + Tdot{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint + T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot{j}*body.T_body_to_joint;
       end
-    end
-  elseif body.floating==2
-    warning('first derivatives of quaternion floating base not implemented yet');
-  else
-    if ~isempty(qd)
+    elseif body.floating==2
+      warning('first derivatives of quaternion floating base not implemented yet');
+    else
       qi = q(body.dofnum);
       qdi = qd(body.dofnum);
       TJ = Tjcalc(body.pitch,qi);
@@ -219,6 +213,5 @@ for i = 1 : nb
     end
   end
 end
-
 
 end
