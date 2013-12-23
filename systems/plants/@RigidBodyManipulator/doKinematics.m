@@ -90,21 +90,7 @@ else
       else
         kinsol.ddTdqdq{i} = [];
       end
-      
-      if ~isempty(qd)
-        qdi = qd(body.dofnum);
-        TJdot = zeros(4);
-        dTJdot{1} = zeros(4);
-        dTJdot{2} = zeros(4);
-        dTJdot{3} = zeros(4);
-        dTJdot{4} = [(drz*qdi(6))*ry*drx + rz*(dry*qdi(5))*drx + rz*ry*(ddrx*qdi(4)),zeros(3,1); zeros(1,4)];
-        dTJdot{5} = [(drz*qdi(6))*dry*rx + rz*(ddry*qdi(5))*rx + rz*dry*(drx*qdi(4)),zeros(3,1); zeros(1,4)];
-        dTJdot{6} = [(ddrz*qdi(6))*ry*rx + drz*(dry*qdi(5))*rx + drz*ry*(drx*qdi(4)),zeros(3,1); zeros(1,4)];
-        for j=1:6
-          TJdot = TJdot+dTJ{j}*qdi(j);
-        end
-        
-      end
+
     elseif body.floating==2
       qi = q(body.dofnum);  % qi is 7x1
       TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(1,3),1];
