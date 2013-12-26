@@ -2,7 +2,7 @@ function bodyKinTest
 
 oldpath=addpath(fullfile(pwd,'..'));
 
-N = 1+ceil(randn);
+N = 1+randi(10);
 r = PlanarNLink(N);
 
 kinsol = doKinematics(r,randn(r.getNumDOF,1));
