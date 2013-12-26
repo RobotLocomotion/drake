@@ -301,6 +301,20 @@ input to Newtons of force.</xs:documentation>
                     <xs:documentation>A trimesh element specified by a filename, and an optional scale that scales the mesh's axis-aligned-bounding-box. The recommended format for best texture and color support is Collada .dae files, though .stl files are also supported. The mesh file is not transferred between machines referencing the same model. It must be a local file. </xs:documentation>
                 </xs:annotation>
             </xs:element>
+            <xs:element name="superellipsoid">
+                <xs:complexType>
+                    <xs:attribute default="1 1 1" name="size" type="xs:string">
+                        <xs:annotation>
+                            <xs:documentation>3 element double semi-diameter of the ellipse in x,y, and z</xs:documentation>
+                        </xs:annotation>
+                    </xs:attribute>
+                    <xs:attribute default="1 1" name="shape" type="xs:string">
+                        <xs:annotation>
+                            <xs:documentation>2 element double "squareness" of the ellipsoid in the xy-plane and then the z-plane http://paulbourke.net/geometry/superellipse/ </xs:documentation>
+                        </xs:annotation>
+                    </xs:attribute>
+                </xs:complexType>
+            </xs:element>
         </xs:choice>
     </xs:complexType>
 
