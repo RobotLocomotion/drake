@@ -3,6 +3,8 @@
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
 #include "collision/Model.h"
+#include <algorithm>
+#include <regex>
 //DEBUG
 //#include <stdexcept>
 //END_DEBUG
@@ -1496,6 +1498,11 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
   }
 
 
+}
+
+int RigidBodyManipulator::findLinkInd(string linkname, int robot)
+{
+  std::transform(linkname.begin(),linkname.end(),linkname.begin(), ::tolower);
 }
 
 
