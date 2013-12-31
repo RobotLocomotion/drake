@@ -39,10 +39,13 @@ symbolic_eq = msspoly2sym(vars,symbolic_vars,eq);
 % todo: extract homogenous variable classes?
 
 options.parameter = [];
+options.useRegen = 1;
 bertini_job = bertini(symbolic_eq,options);
 
 sol = solve(bertini_job);
+sol = get_values(bertini_job,sol,symbolic_vars);
 sol = get_real(bertini_job,sol);
+sol = sol(1:length(obj.decision_vars),:);
 
 if ~isempty(obj.poly_inequality_constraints)
   sol = sol(:,all(sol(mu_indices,:)>=0)); % dual feasibility
