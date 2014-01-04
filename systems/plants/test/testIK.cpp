@@ -33,27 +33,12 @@ int main()
     printf("no xstar in mat file\n");
     return(EXIT_FAILURE);
   }
-  for(int i = 0;i<model->num_bodies;i++)
-  {
-    printf("%d %s %5.2f\n",i,model->bodies[i].linkname.c_str(),model->bodies[i].mass);
-  }
+  // for(int i = 0;i<model->num_bodies;i++)
+  // {
+  //   printf("%d %s %5.2f\n",i,model->bodies[i].linkname.c_str(),model->bodies[i].mass);
+  // }
   q0 = VectorXd(model->num_dof);
   memcpy(q0.data(),mxGetPr(pxstar),sizeof(double)*model->num_dof);
-  model->doKinematics(q0.data());
-  int l_hand = model->findLinkInd("l_hand");
-  Vector3d lhand_pos;
-  Vector4d lhand_pt;
-  lhand_pt<<0.0,0.0,0.0,1.0;
-  model->forwardKin(l_hand,lhand_pt,0,lhand_pos);
-  printf("%4.2f %4.2f %4.2f\n",lhand_pos(0),lhand_pos(1),lhand_pos(2));
-  int pelvis = model->findLinkInd("pelvis");
-  Vector3d pelvis_pos;
-  Vector4d pelvis_pt;
-  pelvis_pt<<0.0,0.0,0.0,1.0;
-  model->forwardKin(pelvis,pelvis_pt,0,pelvis_pos);
-  printf("%4.2f %4.2f %4.2f\n",pelvis_pos(0),pelvis_pos(1),pelvis_pos(2));
-  Vector3d com0;
-  model->getCOM(com0);
   Vector3d com_lb = Vector3d::Zero(); 
   Vector3d com_ub = Vector3d::Zero(); 
   com_lb(2) = 0.9;
@@ -68,12 +53,12 @@ int main()
   vector<string> infeasible_constraint;
   inverseKin(model,q0,q0,num_constraints,constraint_array,q_sol,info,infeasible_constraint,ikoptions);
   printf("INFO = %d\n",info);
-  MATFile *presultmat;
+  /*MATFile *presultmat;
   presultmat = matOpen("q_sol.mat","w");
   mxArray* pqsol = mxCreateDoubleMatrix(model->num_dof,1,mxREAL);
   memcpy(mxGetPr(pqsol),q_sol.data(),sizeof(double)*model->num_dof);
   matPutVariable(presultmat,"q_sol",pqsol);
-  matClose(presultmat);
+  matClose(presultmat);*/
   delete com_kc;
   delete[] constraint_array;
   matClose(pnommat);
