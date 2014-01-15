@@ -107,12 +107,6 @@ else
       sqterm = R(1,1)^2 + R(2,1)^2;
       Jr(3,:) = (R(1,1)*dR21_dq - R(2,1)*dR11_dq)/sqterm;
 
-%       Mr = repmat([zeros(3); eye(3)],m,1);
-%       J = Mr*Jr;
-%       for j=1:m
-%         % there must be a better way to write this --sk
-%         J((j-1)*6+(1:3),:) = Jx((j-1)*3+(1:3),:);
-%       end
       Jtmp = [Jx;Jr];
       Jrow_ind = reshape([reshape(1:3*m,3,m);bsxfun(@times,3*m+(1:3)',ones(1,m))],[],1);
       J = Jtmp(Jrow_ind,:);
