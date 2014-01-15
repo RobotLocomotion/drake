@@ -18,10 +18,9 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
 %      end
 %      obj = obj@Visualizer(fr);
 
-     typecheck(frame,RigidBodyFrame);
+     typecheck(frame,'RigidBodyFrame');
      obj.kinframe = frame;
-     body = getBody(tsmanip,body_ind);
-     obj.name = [body.linkname,'ForceTorque'];
+     obj.name = [obj.kinframe.name,'ForceTorque'];
    end
 
    function tf = isDirectFeedthrough(obj)
@@ -31,8 +30,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
    function obj = compile(obj,tsmanip,manip)
      if (tsmanip.position_control) error('need to update this method for this case'); end
 
-     frame = getFrame(manip,obj.kinframe);
-     body = getBody(manip,frame.body_ind);
+     body = getBody(manip,obj.kinframe.body_ind);
 
      if isempty(body.contact_pts)
        error('Drake:ContactForceTorqueSensor:NoContactPts','There are no contact points associated with body %s',body.linkname);
@@ -46,7 +44,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
      nV = manip.num_velocity_constraints;  
 
      num_body_contacts = size(body.contact_pts,2);
-     contact_ind_offset = size([manip.body(1:frame.body_ind-1).contact_pts],2);
+     contact_ind_offset = size([manip.body(1:obj.kinframe.body_ind-1).contact_pts],2);
 
      % z(nL+nP+(1:nC)) = cN
      obj.normal_ind = nL+nP+contact_ind_offset+(1:num_body_contacts);
@@ -95,9 +93,9 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
      [pos,~,normal] = collisionDetect(manip,contact_pos);
 
      % flip to sensor coordinates
-     pos = frameKin(obj.kinframe,manip,kinsol,pos);
-     sensor_pos = forwardKin(obj.kinframe,manip,kinsol,zeros(3,1));
-     normal = frameKin(obj.kinframe,manip,kinsol,repmat(sensor_pos,1,N)+normal);
+     pos = bodyKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),pos);
+     sensor_pos = forwardKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),zeros(3,1));
+     normal = forwardKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),repmat(sensor_pos,1,N)+normal);
      tangent = manip.surfaceTangents(normal);
 
      % compute all individual contact forces in sensor coordinates
