@@ -1,7 +1,5 @@
 # Default pod makefile distributed with pods version: 12.11.14
 
-default_target: all
-
 # Default to a less-verbose build.  If you want all the gory compiler output,
 # run "make VERBOSE=1"
 $(VERBOSE).SILENT:
