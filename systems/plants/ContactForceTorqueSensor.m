@@ -30,6 +30,17 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
    function obj = compile(obj,tsmanip,manip)
      if (tsmanip.position_control) error('need to update this method for this case'); end
 
+     try
+       manip.findFrameId(obj.kinframe.name);
+     catch ex
+       if strcmp(ex.identifier,'Drake:RigidBodyManipulator:UniqueFrameNotFound')
+         error('Drake:ContactForceTorqueSensor:FrameNotFound', ...
+           ['The frame for this sensor (%s) could not be found on ',...
+            'the manipulator'],obj.kinframe.name);
+       else
+         rethrow(ex)
+       end
+     end
      body = getBody(manip,obj.kinframe.body_ind);
 
      if isempty(body.contact_pts)
