@@ -106,7 +106,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
      % flip to sensor coordinates
      pos = bodyKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),pos);
      sensor_pos = forwardKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),zeros(3,1));
-     normal = forwardKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),repmat(sensor_pos,1,N)+normal);
+     normal = bodyKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),repmat(sensor_pos,1,N)+normal);
      tangent = manip.surfaceTangents(normal);
 
      % compute all individual contact forces in sensor coordinates
