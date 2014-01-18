@@ -483,6 +483,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
     end
     
+    function [obj,frame_id] = addFrame(obj,frame)
+      [obj.manip,frame_id] = obj.manip.addFrame(frame);
+    end
+      
+    
 
     function varargout = pdcontrol(sys,Kp,Kd,index)
       if nargin<4, index=[]; end
