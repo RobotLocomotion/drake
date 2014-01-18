@@ -21,6 +21,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
      typecheck(frame,'RigidBodyFrame');
      obj.kinframe = frame;
      obj.name = [obj.kinframe.name,'ForceTorque'];
+     has_state = true;
    end
 
    function tf = isDirectFeedthrough(obj)
