@@ -116,15 +116,24 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if length(model.sensor)>0
         feedthrough = model.manip.isDirectFeedthrough;
         outframe{1} = getOutputFrame(model.manip);
+        stateframe{1} = getStateFrame(model.manip);
         for i=1:length(model.sensor)
           model.sensor{i} = model.sensor{i}.compile(model,model.manip);
           outframe{i+1} = model.sensor{i}.constructFrame(model);
+          if model.sensor{i}.has_state
+            stateframe = [stateframe, {model.sensor{i}.constructFrame(model)}];
+          end
           feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
         end
         fr = MultiCoordinateFrame.constructFrame(outframe);
+        state_fr = MultiCoordinateFrame.constructFrame(stateframe);
         if ~isequal_modulo_transforms(fr,getOutputFrame(model))
           model = setNumOutputs(model,fr.dim);
           model = setOutputFrame(model,fr);
+        end
+        if ~isequal_modulo_transforms(fr,getStateFrame(model))
+          model = setNumStates(model,fr.dim);
+          model = setStateFrame(model,fr);
         end
         model = setDirectFeedthrough(model,feedthrough);
       else
