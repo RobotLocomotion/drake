@@ -182,6 +182,16 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         end
         df = [ [zeros(num_q,1), eye(num_q), zeros(num_q,num_q+obj.num_u)]+h*dqdn; dqdn ]; 
       end
+      
+      for i=1:length(obj.sensor)
+        if obj.sensor{i}.has_state
+          [xdn_sensor,df_sensor] = update(obj.sensor{i},obj,t,x,u);
+          xdn = [xdn;xdn_sensor];
+          if (nargout>1)
+            df = [df; df_sensor];
+          end
+        end
+      end
     end
     
     function [z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
@@ -190,7 +200,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       % todo: implement some basic caching here
       
       num_q = obj.manip.num_q;
-      q=x(1:num_q); qd=x((num_q+1):end);
+      q=x(1:num_q); qd=x(num_q+(1:num_q));
       h = obj.timestep;
 
       if (nargout<4)
