@@ -74,7 +74,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       
       y = obj.manip.output(t,x,u);
       for i=1:length(obj.sensor)
-        y = [y; obj.sensor{i}.output(obj,obj.manip,t,x,u)];
+        y = [y; obj.sensor{i}.output(obj,i,t,x,u)];
       end
     end
 
@@ -185,7 +185,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       
       for i=1:length(obj.sensor)
         if obj.sensor{i}.has_state
-          [xdn_sensor,df_sensor] = update(obj.sensor{i},obj,t,x,u);
+          if (nargout>1)
+            [xdn_sensor,df_sensor] = update(obj.sensor{i},obj,t,x,u);
+          else
+            xdn_sensor = update(obj.sensor{i},obj,t,x,u);
+          end
           xdn = [xdn;xdn_sensor];
           if (nargout>1)
             df = [df; df_sensor];
