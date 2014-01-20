@@ -120,7 +120,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         for i=1:length(model.sensor)
           model.sensor{i} = model.sensor{i}.compile(model,model.manip);
           outframe{i+1} = model.sensor{i}.constructFrame(model);
-          if model.sensor{i}.has_state
+          if isa(model.sensor{i},'TimeSteppingRigidBodySensorWithState')
             stateframe = [stateframe, {model.sensor{i}.constructStateFrame(model)}];
           end
           feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
@@ -147,7 +147,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function x0 = getInitialState(obj)
       x0 = obj.manip.getInitialState();
       for i=1:length(obj.sensor)
-        if obj.sensor{i}.has_state
+        if isa(obj.sensor{i},'TimeSteppingRigidBodySensorWithState')
           x0 = [x0; obj.sensor{i}.getInitialState(obj)];
         end
       end
@@ -184,7 +184,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
       
       for i=1:length(obj.sensor)
-        if obj.sensor{i}.has_state
+        if isa(obj.sensor{i},'TimeSteppingRigidBodySensorWithState')
           if (nargout>1)
             [xdn_sensor,df_sensor] = update(obj.sensor{i},obj,t,x,u);
           else
