@@ -37,12 +37,17 @@ exitflag = 0;
 relaxation_order = 1;  % todo: make this an option
 while (exitflag == 0)
   try 
-    prog = msdp(min(objective),constraints,relaxation_order);
+    if isempty(constraints)
+      prog = msdp(min(objective),relaxation_order);
+    else
+      prog = msdp(min(objective),constraints,relaxation_order);
+    end
   catch ex
     if strcmp(ex.message,'Increase relaxation order')
       relaxation_order = relaxation_order+1
       continue;
     end
+    rethrow(ex);
   end
     
   [exitflag,objval] = msol(prog);
