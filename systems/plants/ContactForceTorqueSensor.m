@@ -89,14 +89,28 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
 %      axisAnnotation('arrow',world_pts(1,:),world_pts(2,:),'Color','r','LineWidth',2);
 %    end
 
-   function y = output(obj,tsmanip,manip,t,x,u)
+   function y = output(obj,tsmanip,frame_idx,t,x,u)
+     cv = tsmanip.getStateFrame().splitCoordinates(x);
+     y = cv{frame_idx};
+   end
+
+   function [xdn,df] = update(obj,tsmanip,t,x,u)
+     if (nargout>1)
+       error('ContactForceTorqueSensor:NoGradients',...
+         'Gradients not yet supported for ContactForceTorqueSensor/update');
+     end
+     
      z = tsmanip.solveLCP(t,x,u)/tsmanip.timestep;
 
      % todo: could do this more efficiently by only computing everything
      % below for indices where the normal forces are non-zero
 
-     body = manip.body(obj.kinframe.body_ind);
+     body = tsmanip.getBody(obj.kinframe.body_ind);
 
+     % todo: Remove this copy of the TimeSteppingRigidBodyManipulator's
+     % internal RigidBodyManipulator
+     manip = tsmanip.getManipulator();
+     
      kinsol = doKinematics(manip,x(1:manip.getNumDOF));
      contact_pos = forwardKin(manip,kinsol,obj.kinframe.body_ind,body.contact_pts);
 
@@ -116,7 +130,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
        force = force + repmat(z(obj.tangent_ind{i})',d,1).*tangent{i} ...
          - repmat(z(obj.tangent_ind{i+mC})',d,1).*tangent{i}; 
      end
-     y = [ sum(force,2); sum(cross(pos,force),2) ];
+     xdn = [ sum(force,2); sum(cross(pos,force),2) ];
 
      if tsmanip.twoD
        % y(1) = dot(force,x_axis)
@@ -124,14 +138,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
        % y(3) = dot(torque,view_axis)
        % note: need to think / test whether this is correct torque for nontrivial
        % orientations of the sensor
-       y = [[manip.x_axis'; manip.y_axis'],zeros(2,3); zeros(1,3),manip.view_axis']*y;
-     end
-   end
-
-   function [xdn,df] = update(obj,tsmanip,t,x,u)
-     if (nargout>1)
-       error('ContactForceTorqueSensor:NoGradients',...
-         'Gradients not yet supported for ContactForceTorqueSensor/update');
+       xdn = [[manip.x_axis'; manip.y_axis'],zeros(2,3); zeros(1,3),manip.view_axis']*xdn;
      end
    end
    
