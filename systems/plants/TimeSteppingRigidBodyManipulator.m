@@ -710,13 +710,23 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function [body_path, joint_path, signs] = findKinematicPath(obj, start_body, end_body)
       [body_path, joint_path, signs] = obj.manip.findKinematicPath(start_body, end_body);
     end
-    
+
+    function obj = weldJoint(obj,body_ind_or_joint_name,robot)
+      if nargin>2
+        obj.manip = weldJoint(obj.manip,body_ind_or_joint_name,robot);
+      else
+        obj.manip = weldJoint(obj.manip,body_ind_or_joint_name);
+      end
+      obj.dirty = true;
+    end
+
     function body = getBody(model,varargin)
       body = getBody(model.manip,varargin{:});
     end
         
     function model = setBody(model,varargin)
-      model = setBody(model.manip,varargin{:});
+      model.manip = setBody(model.manip,varargin{:});
+      model.dirty = true;
     end
     
     function v = constructVisualizer(obj,varargin)

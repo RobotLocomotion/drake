@@ -40,6 +40,15 @@
 #include "exceptions.h"
 #include "joint.h"
 
+void ROS_ERROR(const char* format, ...) {
+  va_list vl;
+  va_start(vl, format);
+  vprintf(format, vl);
+  va_end(vl);
+  printf("\n");
+  exit(1);
+}
+
 
 namespace urdf{
 
@@ -61,7 +70,7 @@ bool JointDynamics::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("damping value (%s) is not a float",damping_str);
+      ROS_ERROR("damping value (%s) is not a float",damping_str);
       return false;
     }
   }
@@ -80,14 +89,14 @@ bool JointDynamics::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("friction value (%s) is not a float",friction_str);
+      ROS_ERROR("friction value (%s) is not a float",friction_str);
       return false;
     }
   }
 
   if (damping_str == NULL && friction_str == NULL)
   {
-    //ROS_ERROR("joint dynamics element specified with no damping and no friction");
+    ROS_ERROR("joint dynamics element specified with no damping and no friction");
     return false;
   }
   else{
@@ -114,7 +123,7 @@ bool JointLimits::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("lower value (%s) is not a float",lower_str);
+      ROS_ERROR("lower value (%s) is not a float",lower_str);
       return false;
     }
   }
@@ -133,7 +142,7 @@ bool JointLimits::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("upper value (%s) is not a float",upper_str);
+      ROS_ERROR("upper value (%s) is not a float",upper_str);
       return false;
     }
   }
@@ -141,7 +150,7 @@ bool JointLimits::initXml(TiXmlElement* config)
   // Get joint effort limit
   const char* effort_str = config->Attribute("effort");
   if (effort_str == NULL){
-    //ROS_ERROR("joint limit: no effort");
+    ROS_ERROR("joint limit: no effort");
     return false;
   }
   else
@@ -160,7 +169,7 @@ bool JointLimits::initXml(TiXmlElement* config)
   // Get joint velocity limit
   const char* velocity_str = config->Attribute("velocity");
   if (velocity_str == NULL){
-    //ROS_ERROR("joint limit: no velocity");
+    ROS_ERROR("joint limit: no velocity");
     return false;
   }
   else
@@ -171,7 +180,7 @@ bool JointLimits::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("velocity value (%s) is not a float",velocity_str);
+      ROS_ERROR("velocity value (%s) is not a float",velocity_str);
       return false;
     }
   }
@@ -198,7 +207,7 @@ bool JointSafety::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("soft_lower_limit value (%s) is not a float",soft_lower_limit_str);
+      ROS_ERROR("soft_lower_limit value (%s) is not a float",soft_lower_limit_str);
       return false;
     }
   }
@@ -218,7 +227,7 @@ bool JointSafety::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("soft_upper_limit value (%s) is not a float",soft_upper_limit_str);
+      ROS_ERROR("soft_upper_limit value (%s) is not a float",soft_upper_limit_str);
       return false;
     }
   }
@@ -238,7 +247,7 @@ bool JointSafety::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("k_position value (%s) is not a float",k_position_str);
+      ROS_ERROR("k_position value (%s) is not a float",k_position_str);
       return false;
     }
   }
@@ -246,7 +255,7 @@ bool JointSafety::initXml(TiXmlElement* config)
   const char* k_velocity_str = config->Attribute("k_velocity");
   if (k_velocity_str == NULL)
   {
-    //ROS_ERROR("joint safety: no k_velocity");
+    ROS_ERROR("joint safety: no k_velocity");
     return false;
   }
   else
@@ -257,7 +266,7 @@ bool JointSafety::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("k_velocity value (%s) is not a float",k_velocity_str);
+      ROS_ERROR("k_velocity value (%s) is not a float",k_velocity_str);
       return false;
     }
   }
@@ -284,7 +293,7 @@ bool JointCalibration::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("risingvalue (%s) is not a float",rising_position_str);
+      ROS_ERROR("risingvalue (%s) is not a float",rising_position_str);
       return false;
     }
   }
@@ -304,7 +313,7 @@ bool JointCalibration::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("fallingvalue (%s) is not a float",falling_position_str);
+      ROS_ERROR("fallingvalue (%s) is not a float",falling_position_str);
       return false;
     }
   }
@@ -343,7 +352,7 @@ bool JointMimic::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("multiplier value (%s) is not a float",multiplier_str);
+      ROS_ERROR("multiplier value (%s) is not a float",multiplier_str);
       return false;
     }
   }
@@ -364,7 +373,7 @@ bool JointMimic::initXml(TiXmlElement* config)
     }
     catch (boost::bad_lexical_cast &e)
     {
-      //ROS_ERROR("offset value (%s) is not a float",offset_str);
+      ROS_ERROR("offset value (%s) is not a float",offset_str);
       return false;
     }
   }
@@ -380,7 +389,7 @@ bool Joint::initXml(TiXmlElement* config)
   const char *name = config->Attribute("name");
   if (!name)
   {
-    //ROS_ERROR("unnamed joint found");
+    ROS_ERROR("unnamed joint found");
     return false;
   }
   this->name = name;
@@ -441,7 +450,7 @@ bool Joint::initXml(TiXmlElement* config)
   const char* type_char = config->Attribute("type");
   if (!type_char)
   {
-    //ROS_ERROR("joint '%s' has no type, check to see if it's a reference.", this->name.c_str());
+    ROS_ERROR("joint '%s' has no type, check to see if it's a reference.", this->name.c_str());
     return false;
   }
   std::string type_str = type_char;
@@ -465,7 +474,7 @@ bool Joint::initXml(TiXmlElement* config)
     type = FIXED;
   else
   {
-    //ROS_ERROR("Joint '%s' has no known type '%s'", this->name.c_str(), type_str.c_str());
+    ROS_ERROR("Joint '%s' has no known type '%s'", this->name.c_str(), type_str.c_str());
     return false;
   }
 
@@ -500,14 +509,14 @@ bool Joint::initXml(TiXmlElement* config)
     limits.reset(new JointLimits);
     if (!limits->initXml(limit_xml))
     {
-      //ROS_ERROR("Could not parse limit element for joint '%s'", this->name.c_str());
+      ROS_ERROR("Could not parse limit element for joint '%s'", this->name.c_str());
       limits.reset();
       return false;
     }
   }
   else if (this->type == REVOLUTE)
   {
-    //ROS_ERROR("Joint '%s' is of type REVOLUTE but it does not specify limits", this->name.c_str());
+    ROS_ERROR("Joint '%s' is of type REVOLUTE but it does not specify limits", this->name.c_str());
     return false;
   }
   else if (this->type == PRISMATIC)
@@ -523,7 +532,7 @@ bool Joint::initXml(TiXmlElement* config)
     safety.reset(new JointSafety);
     if (!safety->initXml(safety_xml))
     {
-      //ROS_ERROR("Could not parse safety element for joint '%s'", this->name.c_str());
+      ROS_ERROR("Could not parse safety element for joint '%s'", this->name.c_str());
       safety.reset();
       return false;
     }
@@ -536,7 +545,7 @@ bool Joint::initXml(TiXmlElement* config)
     calibration.reset(new JointCalibration);
     if (!calibration->initXml(calibration_xml))
     {
-      //ROS_ERROR("Could not parse calibration element for joint  '%s'", this->name.c_str());
+      ROS_ERROR("Could not parse calibration element for joint  '%s'", this->name.c_str());
       calibration.reset();
       return false;
     }
@@ -549,7 +558,7 @@ bool Joint::initXml(TiXmlElement* config)
     mimic.reset(new JointMimic);
     if (!mimic->initXml(mimic_xml))
     {
-      //ROS_ERROR("Could not parse mimic element for joint  '%s'", this->name.c_str());
+      ROS_ERROR("Could not parse mimic element for joint  '%s'", this->name.c_str());
       mimic.reset();
       return false;
     }
@@ -562,7 +571,7 @@ bool Joint::initXml(TiXmlElement* config)
     dynamics.reset(new JointDynamics);
     if (!dynamics->initXml(prop_xml))
     {
-      //ROS_ERROR("Could not parse joint_dynamics element for joint '%s'", this->name.c_str());
+      ROS_ERROR("Could not parse joint_dynamics element for joint '%s'", this->name.c_str());
       dynamics.reset();
       return false;
     }
