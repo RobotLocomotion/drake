@@ -1,4 +1,4 @@
-classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
+classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visualizer
 
  properties
    normal_ind=[];
@@ -21,7 +21,6 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
      typecheck(frame,'RigidBodyFrame');
      obj.kinframe = frame;
      obj.name = [obj.kinframe.name,'ForceTorque'];
-     has_state = true;
    end
 
    function tf = isDirectFeedthrough(obj)
@@ -145,8 +144,19 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
        coords{6}='torque_z';
        fr = CoordinateFrame(obj.name,6,'f',coords);
      end
+   end%
+   
+   function fr = constructStateFrame(obj,tsmanip)
+     fr = constructFrame(obj,tsmanip);
    end
-
+   
+   function x0 = getInitialState(obj,tsmanip)
+     if tsmanip.twoD
+       x0 = zeros(3,1);
+     else
+       x0 = zeros(6,1);
+     end
+   end
  end
 
 end

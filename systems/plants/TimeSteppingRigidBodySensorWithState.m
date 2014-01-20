@@ -1,0 +1,15 @@
+classdef TimeSteppingRigidBodySensorWithState < TimeSteppingRigidBodySensor
+  % Sensors that have internal dynamics we want to model, or sensors that
+  % need to be prevented from being direct feedthrough.
+  
+  methods (Abstract=true)
+    fr = constructStateFrame(obj,tsmanip);
+    x0 = getInitialState(obj,tsmanip);
+  end
+  
+  methods
+    function obj = TimeSteppingRigidBodySensorWithState()
+      obj.has_state = true;
+    end
+  end
+end
