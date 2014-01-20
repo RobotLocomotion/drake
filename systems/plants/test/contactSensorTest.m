@@ -1,12 +1,14 @@
 function contactSensorTest
-
+S = warning('OFF','Drake:RigidBodyManipulator:WeldedLinkInd');
 options.floating = true;
 options.twoD = true;
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 
 p = addSensor(p,FullStateFeedbackSensor());
 body = findLinkInd(p,'brick');
-p = addSensor(p,ContactForceTorqueSensor(p,body,zeros(3,1),zeros(3,1)));
+frame = RigidBodyFrame(body,zeros(3,1),zeros(3,1),'FT_frame');
+p = addFrame(p,frame);
+p = addSensor(p,ContactForceTorqueSensor(p,frame));
 p = compile(p);
 
 ytraj = simulate(p,[0 5]);
@@ -26,7 +28,9 @@ p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 
 p = addSensor(p,FullStateFeedbackSensor);
 body = findLinkInd(p,'brick');
-p = addSensor(p,ContactForceTorqueSensor(p,body,zeros(3,1),zeros(3,1)));
+frame = RigidBodyFrame(body,zeros(3,1),zeros(3,1),'FT_frame');
+p = addFrame(p,frame);
+p = addSensor(p,ContactForceTorqueSensor(p,frame));
 p = compile(p);
 
 ytraj = simulate(p,[0 5]);
@@ -40,6 +44,7 @@ valuecheck(yf.force_z,getMass(p)*norm(getGravity(p)));
 valuecheck(yf.torque_x,0);
 valuecheck(yf.torque_y,0);
 valuecheck(yf.torque_z,0);
+warning(S);
 
 %v = p.constructVisualizer();
 %v.playback(ytraj);
