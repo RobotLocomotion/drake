@@ -1,7 +1,5 @@
 # Basic collection makefile distributed with pods version: 12.11.14
 
-default_target: all
-
 # get a list of subdirs to build by reading tobuild.txt
 SUBDIRS:=$(shell grep -v "^\#" tobuild.txt)
 TESTDIRS:=$(shell grep -v "^\#" totest.txt)
