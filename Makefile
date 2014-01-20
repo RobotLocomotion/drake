@@ -57,3 +57,21 @@ clean:
 		$(MAKE) -C $$subdir $@; \
 	done
 	@# Place additional commands here if you have any
+
+install_prereqs_homebrew:
+	brew install cmake 
+	@for subdir in $(SUBDIRS); do \
+		$(MAKE) -C $$subdir $@; \
+	done
+
+install_prereqs_macports:
+	port install cmake
+	@for subdir in $(SUBDIRS); do \
+		$(MAKE) -C $$subdir $@; \
+	done
+
+install_prereqs_ubuntu:
+	apt-get install cmake 
+	@for subdir in $(SUBDIRS); do \
+		$(MAKE) -C $$subdir $@; \
+	done
