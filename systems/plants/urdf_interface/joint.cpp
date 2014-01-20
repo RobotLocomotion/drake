@@ -34,6 +34,8 @@
 
 /* Author: John Hsu */
 
+#include <stdio.h>
+#include <stdarg.h>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 
