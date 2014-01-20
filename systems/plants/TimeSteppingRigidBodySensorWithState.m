@@ -5,6 +5,7 @@ classdef TimeSteppingRigidBodySensorWithState < TimeSteppingRigidBodySensor
   methods (Abstract=true)
     fr = constructStateFrame(obj,tsmanip);
     x0 = getInitialState(obj,tsmanip);
+    [xdn,df] = update(obj,tsmanip,t,x,u);
   end
   
   methods

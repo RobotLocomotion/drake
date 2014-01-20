@@ -128,6 +128,13 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
      end
    end
 
+   function [xdn,df] = update(obj,tsmanip,t,x,u)
+     if (nargout>1)
+       error('ContactForceTorqueSensor:NoGradients',...
+         'Gradients not yet supported for ContactForceTorqueSensor/update');
+     end
+   end
+   
    function fr = constructFrame(obj,tsmanip)
      if tsmanip.twoD
        manip = getManipulator(tsmanip);
