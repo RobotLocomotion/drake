@@ -4,10 +4,14 @@
 ## deployable PUBLIC bundle of Drake.
 
 ## configure this script by setting the following variables:
-repository_location=https://svn.csail.mit.edu/locomotion/collections/drake-minimal
-release_name=drake-minimal
+collection=drake-minimal
+version=4.3.0
 
 ## start by pulling a fresh copy from svn over to us
+repository_location=https://svn.csail.mit.edu/locomotion/collections/$collection
+release_name=$collection-$version
+
+
 echo "I am about to create a directory here called workspace and check Drake out into it."
 echo "Checking out HEAD from Drake..."
 mkdir workspace
