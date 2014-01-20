@@ -102,9 +102,14 @@ save([conf.root,'/util/drake_config.mat'],'conf');
 
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
 
-% require spotless 
-checkDependency('spotless');
+checkDependency('spotless'); % require spotless 
 
+if (~checkDependency('lcm'))
+  disp(' ');
+  disp(' LCMGL not found.  LCMGL support will be disabled.');
+  disp(' To re-enable, add bot2-lcmgl.jar to your matlab classpath using javaaddpath.');
+  disp(' ');
+end
 
 end
 
