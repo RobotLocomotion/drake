@@ -177,7 +177,7 @@ if ~ok
     case 'gloptipoly3'
       conf.gloptipoly3_enabled = logical(exist('gloptipolyversion','file'));
       if (~conf.gloptipoly3_enabled)
-        conf.gloptipoly3_enabled = pod_pkg_conf('gloptipoly3');
+        conf.gloptipoly3_enabled = pod_pkg_config('gloptipoly3');
       end
       
       if (~conf.gloptipoly3_enabled)
