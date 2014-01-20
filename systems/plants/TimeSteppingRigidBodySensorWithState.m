@@ -7,10 +7,4 @@ classdef TimeSteppingRigidBodySensorWithState < TimeSteppingRigidBodySensor
     x0 = getInitialState(obj,tsmanip);
     [xdn,df] = update(obj,tsmanip,t,x,u);
   end
-  
-  methods
-    function obj = TimeSteppingRigidBodySensorWithState()
-      obj.has_state = true;
-    end
-  end
 end
