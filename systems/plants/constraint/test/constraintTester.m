@@ -22,7 +22,8 @@ function constraintTester(testName,r,makeCon,makeQnom,makeQseed,n,draw_pause,use
   if (nargin < 6) || isempty(n)
     n = 10;
   end
-
+  
+  checkDependency('lcmgl');
   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),testName);
   v = r.constructVisualizer();
 

@@ -74,7 +74,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       
       y = obj.manip.output(t,x,u);
       for i=1:length(obj.sensor)
-        y = [y; obj.sensor{i}.output(obj,obj.manip,t,x,u)];
+        y = [y; obj.sensor{i}.output(obj,i,t,x,u)];
       end
     end
 
@@ -116,15 +116,24 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if length(model.sensor)>0
         feedthrough = model.manip.isDirectFeedthrough;
         outframe{1} = getOutputFrame(model.manip);
+        stateframe{1} = getStateFrame(model.manip);
         for i=1:length(model.sensor)
           model.sensor{i} = model.sensor{i}.compile(model,model.manip);
           outframe{i+1} = model.sensor{i}.constructFrame(model);
+          if model.sensor{i}.has_state
+            stateframe = [stateframe, {model.sensor{i}.constructStateFrame(model)}];
+          end
           feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
         end
         fr = MultiCoordinateFrame.constructFrame(outframe);
+        state_fr = MultiCoordinateFrame.constructFrame(stateframe);
         if ~isequal_modulo_transforms(fr,getOutputFrame(model))
           model = setNumOutputs(model,fr.dim);
           model = setOutputFrame(model,fr);
+        end
+        if ~isequal_modulo_transforms(state_fr,getStateFrame(model))
+          model = setNumDiscStates(model,state_fr.dim);
+          model = setStateFrame(model,state_fr);
         end
         model = setDirectFeedthrough(model,feedthrough);
       else
@@ -137,6 +146,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     
     function x0 = getInitialState(obj)
       x0 = obj.manip.getInitialState();
+      for i=1:length(obj.sensor)
+        if obj.sensor{i}.has_state
+          x0 = [x0; obj.sensor{i}.getInitialState(obj)];
+        end
+      end
     end
     
     function [xdn,df] = update(obj,t,x,u)
@@ -168,6 +182,20 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         end
         df = [ [zeros(num_q,1), eye(num_q), zeros(num_q,num_q+obj.num_u)]+h*dqdn; dqdn ]; 
       end
+      
+      for i=1:length(obj.sensor)
+        if obj.sensor{i}.has_state
+          if (nargout>1)
+            [xdn_sensor,df_sensor] = update(obj.sensor{i},obj,t,x,u);
+          else
+            xdn_sensor = update(obj.sensor{i},obj,t,x,u);
+          end
+          xdn = [xdn;xdn_sensor];
+          if (nargout>1)
+            df = [df; df_sensor];
+          end
+        end
+      end
     end
     
     function [z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
@@ -176,7 +204,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       % todo: implement some basic caching here
       
       num_q = obj.manip.num_q;
-      q=x(1:num_q); qd=x((num_q+1):end);
+      q=x(1:num_q); qd=x(num_q+(1:num_q));
       h = obj.timestep;
 
       if (nargout<4)
@@ -483,6 +511,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
     end
     
+    function [obj,frame_id] = addFrame(obj,frame)
+      [obj.manip,frame_id] = obj.manip.addFrame(frame);
+    end
+      
+    
 
     function varargout = pdcontrol(sys,Kp,Kd,index)
       if nargin<4, index=[]; end
@@ -705,13 +738,23 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function [body_path, joint_path, signs] = findKinematicPath(obj, start_body, end_body)
       [body_path, joint_path, signs] = obj.manip.findKinematicPath(start_body, end_body);
     end
-    
+
+    function obj = weldJoint(obj,body_ind_or_joint_name,robot)
+      if nargin>2
+        obj.manip = weldJoint(obj.manip,body_ind_or_joint_name,robot);
+      else
+        obj.manip = weldJoint(obj.manip,body_ind_or_joint_name);
+      end
+      obj.dirty = true;
+    end
+
     function body = getBody(model,varargin)
       body = getBody(model.manip,varargin{:});
     end
         
     function model = setBody(model,varargin)
-      model = setBody(model.manip,varargin{:});
+      model.manip = setBody(model.manip,varargin{:});
+      model.dirty = true;
     end
     
     function v = constructVisualizer(obj,varargin)

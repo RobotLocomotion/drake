@@ -1,4 +1,4 @@
-classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
+classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visualizer
 
  properties
    normal_ind=[];
@@ -18,10 +18,9 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
 %      end
 %      obj = obj@Visualizer(fr);
 
-     typecheck(frame,RigidBodyFrame);
+     typecheck(frame,'RigidBodyFrame');
      obj.kinframe = frame;
-     body = getBody(tsmanip,body_ind);
-     obj.name = [body.linkname,'ForceTorque'];
+     obj.name = [obj.kinframe.name,'ForceTorque'];
    end
 
    function tf = isDirectFeedthrough(obj)
@@ -31,8 +30,18 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
    function obj = compile(obj,tsmanip,manip)
      if (tsmanip.position_control) error('need to update this method for this case'); end
 
-     frame = getFrame(manip,obj.kinframe);
-     body = getBody(manip,frame.body_ind);
+     try
+       manip.findFrameId(obj.kinframe.name);
+     catch ex
+       if strcmp(ex.identifier,'Drake:RigidBodyManipulator:UniqueFrameNotFound')
+         error('Drake:ContactForceTorqueSensor:FrameNotFound', ...
+           ['The frame for this sensor (%s) could not be found on ',...
+            'the manipulator'],obj.kinframe.name);
+       else
+         rethrow(ex)
+       end
+     end
+     body = getBody(manip,obj.kinframe.body_ind);
 
      if isempty(body.contact_pts)
        error('Drake:ContactForceTorqueSensor:NoContactPts','There are no contact points associated with body %s',body.linkname);
@@ -46,7 +55,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
      nV = manip.num_velocity_constraints;  
 
      num_body_contacts = size(body.contact_pts,2);
-     contact_ind_offset = size([manip.body(1:frame.body_ind-1).contact_pts],2);
+     contact_ind_offset = size([manip.body(1:obj.kinframe.body_ind-1).contact_pts],2);
 
      % z(nL+nP+(1:nC)) = cN
      obj.normal_ind = nL+nP+contact_ind_offset+(1:num_body_contacts);
@@ -80,14 +89,28 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
 %      axisAnnotation('arrow',world_pts(1,:),world_pts(2,:),'Color','r','LineWidth',2);
 %    end
 
-   function y = output(obj,tsmanip,manip,t,x,u)
+   function y = output(obj,tsmanip,frame_idx,t,x,u)
+     cv = tsmanip.getStateFrame().splitCoordinates(x);
+     y = cv{frame_idx};
+   end
+
+   function [xdn,df] = update(obj,tsmanip,t,x,u)
+     if (nargout>1)
+       error('ContactForceTorqueSensor:NoGradients',...
+         'Gradients not yet supported for ContactForceTorqueSensor/update');
+     end
+     
      z = tsmanip.solveLCP(t,x,u)/tsmanip.timestep;
 
      % todo: could do this more efficiently by only computing everything
      % below for indices where the normal forces are non-zero
 
-     body = manip.body(obj.kinframe.body_ind);
+     body = tsmanip.getBody(obj.kinframe.body_ind);
 
+     % todo: Remove this copy of the TimeSteppingRigidBodyManipulator's
+     % internal RigidBodyManipulator
+     manip = tsmanip.getManipulator();
+     
      kinsol = doKinematics(manip,x(1:manip.getNumDOF));
      contact_pos = forwardKin(manip,kinsol,obj.kinframe.body_ind,body.contact_pts);
 
@@ -95,9 +118,9 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
      [pos,~,normal] = collisionDetect(manip,contact_pos);
 
      % flip to sensor coordinates
-     pos = frameKin(obj.kinframe,manip,kinsol,pos);
-     sensor_pos = forwardKin(obj.kinframe,manip,kinsol,zeros(3,1));
-     normal = frameKin(obj.kinframe,manip,kinsol,repmat(sensor_pos,1,N)+normal);
+     pos = bodyKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),pos);
+     sensor_pos = forwardKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),zeros(3,1));
+     normal = bodyKin(manip,kinsol,findFrameId(manip,obj.kinframe.name),repmat(sensor_pos,1,N)+normal);
      tangent = manip.surfaceTangents(normal);
 
      % compute all individual contact forces in sensor coordinates
@@ -107,7 +130,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
        force = force + repmat(z(obj.tangent_ind{i})',d,1).*tangent{i} ...
          - repmat(z(obj.tangent_ind{i+mC})',d,1).*tangent{i}; 
      end
-     y = [ sum(force,2); sum(cross(pos,force),2) ];
+     xdn = [ sum(force,2); sum(cross(pos,force),2) ];
 
      if tsmanip.twoD
        % y(1) = dot(force,x_axis)
@@ -115,10 +138,10 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
        % y(3) = dot(torque,view_axis)
        % note: need to think / test whether this is correct torque for nontrivial
        % orientations of the sensor
-       y = [[manip.x_axis'; manip.y_axis'],zeros(2,3); zeros(1,3),manip.view_axis']*y;
+       xdn = [[manip.x_axis'; manip.y_axis'],zeros(2,3); zeros(1,3),manip.view_axis']*xdn;
      end
    end
-
+   
    function fr = constructFrame(obj,tsmanip)
      if tsmanip.twoD
        manip = getManipulator(tsmanip);
@@ -135,8 +158,19 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensor %& Visualizer
        coords{6}='torque_z';
        fr = CoordinateFrame(obj.name,6,'f',coords);
      end
+   end%
+   
+   function fr = constructStateFrame(obj,tsmanip)
+     fr = constructFrame(obj,tsmanip);
    end
-
+   
+   function x0 = getInitialState(obj,tsmanip)
+     if tsmanip.twoD
+       x0 = zeros(3,1);
+     else
+       x0 = zeros(6,1);
+     end
+   end
  end
 
 end

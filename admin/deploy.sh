@@ -3,14 +3,21 @@
 ## deploy.sh - a bash script that generates a 
 ## deployable PUBLIC bundle of Drake.
 
-## start by getting trunk merged over to us
+## configure this script by setting the following variables:
+collection=drake-minimal
+version=4.3.0
+
+## start by pulling a fresh copy from svn over to us
+repository_location=https://svn.csail.mit.edu/locomotion/collections/$collection
+release_name=$collection-$version
+
+
 echo "I am about to create a directory here called workspace and check Drake out into it."
 echo "Checking out HEAD from Drake..."
 mkdir workspace
 cd workspace
-svn co https://svn.csail.mit.edu/locomotion/robotlib/trunk
-mv trunk drake
-cd drake
+svn co $repository_location $release_name
+cd $release_name
 echo "Done."
 
 ## Remove .svn directories.
@@ -42,25 +49,19 @@ do grep -q NORELEASE $file && rm $file
 done
 echo "Done."
 
-## Remove SNOPT7 we provide
-echo "Removing the SNOPT7 we provide for internal users..."
-rm -rf thirdParty/snopt7
-echo "Done."
-
-
 echo "All done."
 echo "Release stripping is complete."
 
 echo "Making a .tar.gz now..."
 cd ../
-tar cvf drake.tar drake && gzip drake.tar
+tar cvf $release_name.tar $release_name && gzip $release_name.tar
 echo "Done."
-echo "The tar.gz is now at drake.tar.gz."
+echo "The tar.gz is now at $release_name.tar.gz."
 
 echo "Making a .zip file now..."
-zip -r drake.zip drake
+zip -r $release_name.zip $release_name
 echo "Done."
-echo "The zipfile is now at drake.zip."
+echo "The zipfile is now at $release_name.zip."
 
 echo "=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-="
 echo "           All packaging is complete. Enjoy!"

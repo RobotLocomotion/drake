@@ -562,7 +562,7 @@ classdef RigidBodyManipulator < Manipulator
               ind(i)=[]; % not actually a match
               i=i-1;
             elseif subind>1
-              warning(['found ', linkname,' but it has been welded to it''s parent link (and the link''s coordinate frame may have changed).']);
+              warning('Drake:RigidBodyManipulator:WeldedLinkInd',['found ', linkname,' but it has been welded to it''s parent link (and the link''s coordinate frame may have changed).']);
             end
           end
           i=i+1;
@@ -599,9 +599,13 @@ classdef RigidBodyManipulator < Manipulator
       % @param robotnum if specified restricts the search to a particular
       % robot
       if nargin<3, robotnum=0; end
-      items = strfind(lower({model.frame.name}),name);
-      ind = find(~cellfun(@isempty,items));
-      if (robotnum~=0), ind = ind([model.body(model.frame(ind).body_ind).robotnum]==robotnum); end
+      if ~isempty(model.frame)
+        items = strfind(lower({model.frame.name}),lower(name));
+        ind = find(~cellfun(@isempty,items));
+        if (robotnum~=0), ind = ind([model.body(model.frame(ind).body_ind).robotnum]==robotnum); end
+      else
+        ind = [];
+      end
       if numel(ind)~=1, error('Drake:RigidBodyManipulator:UniqueFrameNotFound',['Cannot find unique frame named ', name, ' on robot number ',num2str(robotnum)]); end
       frame_id = -ind;  % keep frame_ind distinct from body_ind
     end

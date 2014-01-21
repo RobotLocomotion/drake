@@ -938,6 +938,7 @@ systems/plants/RigidBodyThrust.m -text
 systems/plants/RigidBodyWRLVisualizer.m -text
 systems/plants/TimeSteppingRigidBodyManipulator.m -text
 systems/plants/TimeSteppingRigidBodySensor.m -text
+systems/plants/TimeSteppingRigidBodySensorWithState.m -text
 systems/plants/URDFRigidBodyManipulator.cpp -text
 systems/plants/URDFRigidBodyManipulator.h -text
 systems/plants/affordance/ContactAffordance.m -text

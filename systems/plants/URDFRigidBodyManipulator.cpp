@@ -315,15 +315,6 @@ map<string,int>::const_iterator findWithSuffix(const map<string,int>& m, const s
 
 // Defines a method to load a model directly from a URDF file
 
-void ROS_ERROR(const char* format, ...) {
-  va_list vl;
-  va_start(vl, format);
-  vprintf(format, vl);
-  va_end(vl);  
-  printf("\n");
-  exit(1);
-}
-
 void mexErrMsgIdandTxt(const char *errorid, const char *errormsg, ...)
 {
   va_list vl;
