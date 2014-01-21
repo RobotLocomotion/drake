@@ -24,7 +24,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
    end
 
    function tf = isDirectFeedthrough(obj)
-     tf = true;
+     tf = false;
    end
 
    function obj = compile(obj,tsmanip,manip)
