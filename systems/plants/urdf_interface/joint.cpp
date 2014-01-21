@@ -34,8 +34,6 @@
 
 /* Author: John Hsu */
 
-#include <stdio.h>
-#include <stdarg.h>
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 
@@ -50,7 +48,6 @@ void ROS_ERROR(const char* format, ...) {
   printf("\n");
   exit(1);
 }
-
 
 namespace urdf{
 
