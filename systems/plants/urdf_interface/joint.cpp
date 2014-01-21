@@ -51,7 +51,6 @@ void ROS_ERROR(const char* format, ...) {
   exit(1);
 }
 
-
 namespace urdf{
 
 bool JointDynamics::initXml(TiXmlElement* config)

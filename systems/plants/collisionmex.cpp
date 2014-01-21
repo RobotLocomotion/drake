@@ -161,7 +161,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       }
 
       vector<int> bodyA_idx, bodyB_idx;
-       MatrixXd ptsA, ptsB, normals, JA, JB, Jd;
+    	MatrixXd ptsA, ptsB, normals, JA, JB, Jd;
       VectorXd dist;
       model->closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB,normals,
                                          dist, JA, JB,Jd);

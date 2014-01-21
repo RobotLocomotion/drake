@@ -16,5 +16,6 @@ classdef TimeSteppingRigidBodySensor
   
   properties
     name;
+    has_state = false;
   end
 end

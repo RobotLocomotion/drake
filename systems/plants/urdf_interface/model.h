@@ -42,6 +42,7 @@
 #include <boost/function.hpp>
 #include "link.h"
 
+extern void ROS_ERROR(const char* format, ...); // in joint.cpp
 
 namespace urdf {
 

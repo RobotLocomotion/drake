@@ -648,7 +648,7 @@ close all;
 clearvars -global -except runNode_mutex command_line_data;
 clear Singleton;
 
-s=dbstatus; oldpath=path();
+s=dbstatus; %oldpath=path();
 mytic = tic;
 
 % useful for debugging: if 'dbstop if error' is on, then don't use try catch.
@@ -704,13 +704,14 @@ else
         appendTextNode(options.cdashNode,cdashMeasurement,'Value',msg);
       end
       lasterr(ex.message,ex.identifier);
-      path(oldpath);
+%      path(oldpath);  
       return;
     end
   end
 end
 elapsed_time = toc(mytic);
-path(oldpath);
+%path(oldpath);% disabling this, because it plays badly with
+%      dynamic loading of dependencies.
 
 a=warning;
 if (~strcmp(a(1).state,'on'))
