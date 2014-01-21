@@ -22,7 +22,7 @@ for i = 1 : nBodies
     
     predecessor = body.parent;
     
-    predecessorAccel = spatialAccelerationChangeFrame(obj, ret{predecessor}, kinsol, world, predecessor, predecessor, i);
+    predecessorAccel = transformSpatialAcceleration(obj, ret{predecessor}, kinsol, world, predecessor, predecessor, i);
     jointAccel = motionSubspace(body, qBody) * vdBody; % + motionSubspaceDot(body, qBody, vBody) * vBody;
     ret{i} = predecessorAccel + jointAccel;
   end
@@ -30,37 +30,37 @@ end
 
 end
 
-function spatialAccel = spatialAccelerationChangeFrame(obj, spatialAccel, kinsol, base, body, oldExpressedIn, newExpressedIn)
+function spatialAccel = transformSpatialAcceleration(obj, spatialAccel, kinsol, base, body, oldExpressedIn, newExpressedIn)
 
 twistOfBodyWrtBase = obj.relativeTwist(kinsol, base, body, oldExpressedIn);
 twistOfOldWrtNew = obj.relativeTwist(kinsol, newExpressedIn, oldExpressedIn, oldExpressedIn);
 transformFromOldToNew = kinsol.T{newExpressedIn} \ kinsol.T{oldExpressedIn};
 
-spatialAccel = transformAdjoint(transformFromOldToNew) * (twistAdjoint(twistOfOldWrtNew) * twistOfBodyWrtBase + spatialAccel);
-
+% spatialAccel = transformAdjoint(transformFromOldToNew) * (twistAdjoint(twistOfOldWrtNew) * twistOfBodyWrtBase + spatialAccel);
+% function adT = twistAdjoint(twist)
+% omega = twist(1 : 3);
+% v = twist(4 : 6);
+% adT = [vectorToSkewSymmetric(omega), zeros(3, 3);
+%        vectorToSkewSymmetric(v), vectorToSkewSymmetric(omega)];
+% end
+%
 % this should be faster:
-% omegaOfBodyWrtBase = twistOfBodyWrtBase(1 : 3);
-% vOfBodyWrtBase = twistOfBodyWrtBase(4 : 6);
-% 
-% omegaOfOldWrtNew = twistOfOldWrtNew(1 : 3);
-% vOfOldWrtNew = twistOfOldWrtNew(4 : 6);
-% 
-% omegadot = spatialAccel(1 : 3);
-% vdot = spatialAccel(4 : 6);
-% 
-% oldToNewR = transformFromOldToNew(1 : 3, 1 : 3);
-% oldToNewp = transformFromOldToNew(1 : 3, 4);
-% 
-% omegadotNew = oldToNewR * (cross(omegaOfOldWrtNew, omegaOfBodyWrtBase) + omegadot);
-% vdotNew = cross(oldToNewp, omegadotNew) + oldToNewR * (cross(vOfOldWrtNew, omegaOfBodyWrtBase) + cross(omegaOfOldWrtNew, vOfBodyWrtBase) + vdot);
-% 
-% spatialAccel = [omegadotNew; vdotNew];
+omegaOfBodyWrtBase = twistOfBodyWrtBase(1 : 3);
+vOfBodyWrtBase = twistOfBodyWrtBase(4 : 6);
+
+omegaOfOldWrtNew = twistOfOldWrtNew(1 : 3);
+vOfOldWrtNew = twistOfOldWrtNew(4 : 6);
+
+omegadot = spatialAccel(1 : 3);
+vdot = spatialAccel(4 : 6);
+
+oldToNewR = transformFromOldToNew(1 : 3, 1 : 3);
+oldToNewp = transformFromOldToNew(1 : 3, 4);
+
+omegadotNew = oldToNewR * (cross(omegaOfOldWrtNew, omegaOfBodyWrtBase) + omegadot);
+vdotNew = cross(oldToNewp, omegadotNew) + oldToNewR * (cross(vOfOldWrtNew, omegaOfBodyWrtBase) + cross(omegaOfOldWrtNew, vOfBodyWrtBase) + vdot);
+
+spatialAccel = [omegadotNew; vdotNew];
 
 end
 
-function adT = twistAdjoint(twist)
-omega = twist(1 : 3);
-v = twist(4 : 6);
-adT = [vectorToSkewSymmetric(omega), zeros(3, 3);
-       vectorToSkewSymmetric(v), vectorToSkewSymmetric(omega)];
-end
