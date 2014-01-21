@@ -307,7 +307,7 @@ if(abs(q(l_leg_hpz)-q(r_leg_hpz))>0.1*pi+1e-8)
   error('SingleTimeLinearPostureConstraint is not satisfied');
 end
 display('Check SingleTimeLinearPostureConstraint for pointwise');
-q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,stlpc,qsc,ikoptions);
+q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,stlpc,ikoptions);
 valuecheck(q([l_leg_kny;l_leg_hpy;l_leg_aky],:),q([r_leg_kny;r_leg_hpy;r_leg_aky],:),1e-10);
 if(any(abs(q(l_leg_hpz,:)-q(r_leg_hpz,:))>0.1*pi+1e-8))
   error('SingleTimeLinearPostureConstraint is not satisfied');
@@ -422,7 +422,7 @@ toc
 if(info_mex>10)
   error('SNOPT info is %d, IK mex fails to solve the problem',info_mex);
 end
-valuecheck(q,qmex,1e-2);
+valuecheck(q,qmex,5e-2);
 end
 
 function qmex = test_IKpointwise_userfun(r,t,q_seed,q_nom,varargin)
@@ -442,5 +442,5 @@ toc
 if(info>10)
   error('SNOPT info is %d, IK pointwise mex fails to solve the problem',info);
 end
-valuecheck(q,qmex,1e-2);
+valuecheck(q,qmex,5e-2);
 end
