@@ -754,10 +754,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = contactPositionsJdot(obj.manip,varargin{:});
     end
     
-    function varargout = resolveConstraints(obj,varargin)
+    function varargout = resolveConstraints(obj,x0,varargin)
       varargout=cell(1,nargout);
-      [varargout{:}] = resolveConstraints(obj.manip,varargin{:});
-      varargout{1} = Point(obj.getStateFrame,double(varargout{1}));
+      if isnumeric(x0)
+        x0 = Point(obj.getStateFrame(),x0);
+      end
+      [varargout{:}] = resolveConstraints(obj.manip,x0,varargin{:});
+      varargout{1} = varargout{1}.inFrame(obj.getStateFrame());
     end
     
     function varargout = getMass(obj,varargin)
