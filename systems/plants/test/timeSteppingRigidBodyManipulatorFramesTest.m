@@ -4,22 +4,19 @@ function timeSteppingRigidBodyManipulatorFramesTest
 % RigidBodyManipulator state.
 
 S = warning('OFF','Drake:RigidBodyManipulator:WeldedLinkInd');
-options.floating = true;
-options.twoD = true;
-p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
+urdf = [getDrakePath() '/systems/plants/test/ActuatedPendulum.urdf'];
+p = TimeSteppingRigidBodyManipulator(urdf,.01);
 
 p = addSensor(p,FullStateFeedbackSensor());
-body = findLinkInd(p,'brick');
-frame = RigidBodyFrame(body,zeros(3,1),zeros(3,1),'FT_frame');
-p = addFrame(p,frame);
+frame = p.getFrame(p.findFrameId('tip'));
 p = addSensor(p,ContactForceTorqueSensor(p,frame));
 p = compile(p);
 
-% Check simulation
-[ytraj,xtraj] = simulate(p,[0 5]);
-
 % Check construction of visualizer
 v = p.constructVisualizer();
+
+% Check simulation
+[~,xtraj] = simulate(p,[0 5]);
 
 % Check playback
 v.playback(xtraj)
@@ -27,5 +24,17 @@ v.playback(xtraj)
 % Check constraint resolution
 [xstar,success] = p.resolveConstraints(zeros(p.getNumStates(),1));
 v.draw(0,xstar)
+
+% Check pd-controller creation
+Kp = 10;
+Kd = 1;
+sys_pd = pdcontrol(p,Kp,Kd);
+
+% Check pd-controller simulation
+q_des = pi/4*(2*rand(1) - 1);
+q_des_traj = ConstantTrajectory(Point(sys_pd.getInputFrame,q_des));
+sys = cascade(q_des_traj,sys_pd);
+[~,xtraj] = simulate(sys,[0,5],xstar);
+v.playback(xtraj);
 
 warning(S);

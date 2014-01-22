@@ -794,6 +794,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       body = findLink(model.manip,varargin{:});
     end
     
+    function frame_id = findFrameId(model,varargin)
+      frame_id = findFrameId(model.manip,varargin{:});
+    end
+    
     function ancestor_bodies = findAncestorBodies(obj, body_index)
       ancestor_bodies = obj.manip.findAncestorBodies(body_index);
     end
@@ -813,6 +817,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function body = getBody(model,varargin)
       body = getBody(model.manip,varargin{:});
+    end
+    
+    function frame = getFrame(model,varargin)
+      frame = getFrame(model.manip,varargin{:});
     end
         
     function model = setBody(model,varargin)
