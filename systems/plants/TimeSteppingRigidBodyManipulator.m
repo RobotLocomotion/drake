@@ -614,10 +614,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if ~isempty(obj.manip) % this also gets called on the initial constructor
         mfr = getStateFrame(obj.manip);
         if isempty(findTransform(fr,mfr))
-          addTransform(fr,AffineTransform(fr,mfr,eye(obj.num_x),zeros(obj.num_x,1)));
+          addTransform(fr,AffineTransform(fr,mfr,eye(obj.manip.num_x,obj.num_x),zeros(obj.manip.num_x,1)));
         end
         if isempty(findTransform(mfr,fr))
-          addTransform(mfr,AffineTransform(mfr,fr,eye(obj.num_x),zeros(obj.num_x,1)));
+          addTransform(mfr,AffineTransform(mfr,fr,eye(obj.num_x,obj.manip.num_x),zeros(obj.num_x,1)));
         end
       end
     end
