@@ -74,10 +74,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if ~isDirectFeedthrough(obj)
         u=[];
       end
-      
-      y = obj.manip.output(t,x,u);
+      cv = obj.getStateFrame().splitCoordinates(x);
+      y = obj.manip.output(t,cv{1},u);
       for i=1:length(obj.sensor)
-        y = [y; obj.sensor{i}.output(obj,i,t,x,u)];
+        y = [y; obj.sensor{i}.output(obj,i+1,t,x,u)];
       end
     end
 
