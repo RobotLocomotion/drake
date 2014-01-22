@@ -561,18 +561,36 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function varargout = pdcontrol(sys,Kp,Kd,index)
       if nargin<4, index=[]; end
-      [pdff,pdfb] = pdcontrol(sys.manip,Kp,Kd,index);
-      pdfb = setInputFrame(pdfb,sys.getStateFrame());
-      pdfb = setOutputFrame(pdfb,sys.getInputFrame());
-      pdff = setOutputFrame(pdff,sys.getInputFrame());
-      if nargout>1
-        varargout{1} = pdff;
-        varargout{2} = pdfb;
+      sys_output_frame = sys.getOutputFrame();
+      try
+        sys_state_frame_num = sys_output_frame.getFrameNum(sys.manip.getStateFrame());
+      catch ex
+        if strcmp(ex.identifier,'Drake:CoordinateFrame:NoFrame')
+          sys_state_frame_num = [];
+        else
+          throw(ex);
+        end
+      end
+      if ~isempty(sys_state_frame_num)
+        [pdff,pdfb] = pdcontrol(sys.manip,Kp,Kd,index);
+        pdfb_input_frame = sys_output_frame.getFrameByNum(sys_state_frame_num);
+        pdfb = setInputFrame(pdfb,pdfb_input_frame);
+        pdfb = setOutputFrame(pdfb,sys.getInputFrame());
+        pdff = setOutputFrame(pdff,sys.getInputFrame());
+        if nargout>1
+          varargout{1} = pdff;
+          varargout{2} = pdfb;
+        else
+          % note: design the PD controller with the (non time-stepping
+          % manipulator), but build the closed loop system with the
+          % time-stepping manipulator:
+          varargout{1} = cascade(pdff,feedback(sys,pdfb));
+        end
       else
-        % note: design the PD controller with the (non time-stepping
-        % manipulator), but build the closed loop system with the
-        % time-stepping manipulator:
-        varargout{1} = cascade(pdff,feedback(sys,pdfb));
+        error('Drake:TimeSteppingRigidBodyManipulator:pdcontrol:OutputFrame', ...
+              ['Cannot find ''%s'' in the output frame of this manipulator. ', ...
+               'Consider adding a state estimator or a full-state sensor'], ...
+              sys.manip.getStateFrame().name);
       end
     end
     
