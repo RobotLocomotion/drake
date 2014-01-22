@@ -382,7 +382,7 @@ classdef CoordinateFrame < handle
     
     function id = getFrameNum(obj,fr)
       if (fr==obj) id=1; 
-      else error('can''t find frame %s',fr.name); end
+      else error('Drake:CoordinateFrame:NoFrame', 'can''t find frame %s',fr.name); end
     end
 
     function insys=setupMultiInput(obj,mdl,subsys)
