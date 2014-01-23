@@ -694,9 +694,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         [varargout{:}] = inverseKinWrapup(obj.manip,varargin{:});
     end
     
-    function varargout = findFixedPoint(obj,varargin)
-      varargout = cell(1,nargout);
-      [varargout{:}]=findFixedPoint(obj.manip,varargin{:});
+    function varargout = findFixedPoint(obj,x0,varargin)
+      varargout=cell(1,nargout);
+      if isnumeric(x0)
+        x0 = Point(obj.getStateFrame(),x0);
+      end
+      [varargout{:}]=findFixedPoint(obj.manip,x0,varargin{:});
+      varargout{1} = varargout{1}.inFrame(obj.getStateFrame());
     end
     
     function varargout = collisionDetect(obj,varargin)
