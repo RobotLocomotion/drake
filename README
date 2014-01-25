@@ -1,9 +1,3 @@
-This software is constructed according to the Pods software policies and
-templates.  The policies and templates can be found at:
-
-  http://sourceforge.net/projects/pods
-
-====
 
 Name:         drake
 Maintainers:  Russ Tedrake <russt@mit.edu>
@@ -12,7 +6,7 @@ Description:  http://drake.mit.edu
 
 
 Requirements: 
-	      spotless
+	      spotless			https://github.com/mmt/spotless
 
 Strongly Recommended Dependencies:
 	      eigen3
@@ -22,6 +16,7 @@ Optional Dependencies:
 	      snopt7
 	      sedumi
 	      cplex
+	      ...
 
 MATLAB Toolbox Dependencies:  
   Control System Toolbox
@@ -58,4 +53,11 @@ MATLAB Toolbox Dependencies:
   Computer Vision System Toolbox
 
 License:      BSD  (http://drake.mit.edu/license)
+
+====
+
+This software is constructed according to the Pods software policies and
+templates.  The policies and templates can be found at:
+
+  http://sourceforge.net/projects/pods
 
