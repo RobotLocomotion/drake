@@ -1,0 +1,6 @@
+[submodule "spotless"]
+	path = spotless
+	url = git://github.com/RobotLocomotion/spotless-pod.git
+[submodule "drake"]
+	path = drake
+	url = git@github.mit.edu:locomotion/drake.git
