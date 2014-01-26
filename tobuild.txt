@@ -5,6 +5,7 @@ lcm
 eigen
 bullet
 avl
+xfoil
 spotless
 drake
 

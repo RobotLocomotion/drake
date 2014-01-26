@@ -16,3 +16,6 @@
 [submodule "eigen"]
 	path = eigen
 	url = https://github.com/RobotLocomotion/eigen-pod.git
+[submodule "xfoil"]
+	path = xfoil
+	url = https://github.com/RobotLocomotion/xfoil.git
