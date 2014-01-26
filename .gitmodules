@@ -10,3 +10,6 @@
 [submodule "bullet"]
 	path = bullet
 	url = https://github.com/RobotLocomotion/bullet-pod.git
+[submodule "avl"]
+	path = avl
+	url = https://github.com/RobotLocomotion/avl

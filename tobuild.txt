@@ -3,6 +3,7 @@
 
 lcm
 bullet
+avl
 spotless
 drake
 
