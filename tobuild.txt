@@ -2,6 +2,7 @@
 # and lines starting with '#' are ignored
 
 lcm
+bullet
 spotless
 drake
 

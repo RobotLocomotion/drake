@@ -7,3 +7,6 @@
 [submodule "lcm"]
 	path = lcm
 	url = https://github.com/RobotLocomotion/lcm-pod.git
+[submodule "bullet"]
+	path = bullet
+	url = https://github.com/RobotLocomotion/bullet-pod.git
