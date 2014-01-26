@@ -4,3 +4,6 @@
 [submodule "drake"]
 	path = drake
 	url = https://github.com/RobotLocomotion/drake.git
+[submodule "lcm"]
+	path = lcm
+	url = https://github.com/RobotLocomotion/lcm-pod.git
