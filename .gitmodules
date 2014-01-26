@@ -13,3 +13,6 @@
 [submodule "avl"]
 	path = avl
 	url = https://github.com/RobotLocomotion/avl
+[submodule "eigen"]
+	path = eigen
+	url = https://github.com/RobotLocomotion/eigen-pod.git
