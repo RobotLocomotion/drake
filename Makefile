@@ -47,7 +47,6 @@ clean:
 	done
 	@# Place additional commands here if you have any
 
-
 # other (custom) targets are passed through to the cmake-generated Makefile 
 %::
 	@for subdir in $(SUBDIRS); do \
@@ -59,13 +58,13 @@ clean:
 	@# Place additional commands here if you have any
 
 install_prereqs_homebrew:
-	brew install cmake 
+	brew install cmake gtk+
 	@for subdir in $(SUBDIRS); do \
 		$(MAKE) -C $$subdir $@; \
 	done
 
 install_prereqs_macports:
-	port install cmake
+	port install cmake gtk2
 	@for subdir in $(SUBDIRS); do \
 		$(MAKE) -C $$subdir $@; \
 	done
