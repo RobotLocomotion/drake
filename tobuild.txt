@@ -5,6 +5,7 @@ lcm
 libbot
 eigen
 bullet
+snopt
 avl
 xfoil
 spotless

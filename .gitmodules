@@ -22,3 +22,6 @@
 [submodule "libbot"]
 	path = libbot
 	url = https://github.com/RobotLocomotion/libbot.git
+[submodule "snopt"]
+	path = snopt
+	url = https://github.com/RussTedrake/snopt.git
