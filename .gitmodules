@@ -19,3 +19,6 @@
 [submodule "xfoil"]
 	path = xfoil
 	url = https://github.com/RobotLocomotion/xfoil.git
+[submodule "libbot"]
+	path = libbot
+	url = https://github.com/RobotLocomotion/libbot.git
