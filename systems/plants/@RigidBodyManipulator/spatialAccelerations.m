@@ -1,6 +1,6 @@
 function ret = spatialAccelerations(obj, kinsol, q, v, vd)
 % SPATIALACCELERATIONS Computes the spatial accelerations (time derivatives
-% of twists) of all bodies in the RigidBodyManipulator
+% of twists) of all bodies in the RigidBodyManipulator.
 % @param kinsol solution structure obtained from doKinematics
 % @retval twistdot cell array containing spatial accelerations of all rigid
 % bodies with respect to the world
