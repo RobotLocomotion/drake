@@ -10,22 +10,24 @@ function jDotV = geometricJacobianDotV(obj, kinsol, base, endEffector, expressed
 
 % Implementation makes use of the fact that
 % d/dt(twist) = J * vdot + Jdot * v
-% if we set vdot to zero, then Jdot * v can be found using any method to
-% find the relative spatial acceleration between base and endEffector,
-% expressed in expressedIn
+% If we set vdot to zero, then Jdot * v can be found using any algorithm
+% that computes the relative spatial acceleration between base and
+% endEffector, expressed in expressedIn.
 % The relative spatial acceleration is the sum of the spatial accelerations
 % across the individual joints (with vdot set to zero), transformed to
 % expressedIn frame before addition.
 
-[bodyPath, ~, ~] = obj.findKinematicPath(base, endEffector);
+[~, jointPath, signs] = obj.findKinematicPath(base, endEffector);
 
 jDotV = zeros(6, 1);
-for i = 2 : length(bodyPath)
-  predecessor = bodyPath(i - 1);
-  successor = bodyPath(i);
-  vBody = kinsol.qd(obj.body(successor).dofnum);
-  zeroJointAccel = zeros(6, 1); %motionSubspaceDot(body, qBody, vBody) * vBody; % spatial acceleration across joint when vdot across the joint is zero
-  jDotV = jDotV + obj.transformSpatialAcceleration(zeroJointAccel, kinsol, predecessor, successor, predecessor, expressedIn);
+for i = 1 : length(jointPath)
+  successor = jointPath(i);
+  successorBody = obj.body(successor);
+  predecessor = successorBody.parent;
+  qBody = kinsol.q(successorBody.dofnum);
+  vBody = kinsol.qd(successorBody.dofnum);
+  zeroJointAccel = motionSubspaceDotV(successorBody, qBody, vBody); % spatial acceleration across joint when vdot across the joint is zero
+  jDotV = jDotV + signs(i) * obj.transformSpatialAcceleration(zeroJointAccel, kinsol, predecessor, successor, successor, expressedIn);
 end
 
 end

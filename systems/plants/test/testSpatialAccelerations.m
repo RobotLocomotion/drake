@@ -3,7 +3,7 @@ testAtlas();
 end
 
 function testAtlas()
-robot = createAtlas(''); % TODO: need to test 6-DoF joints, but roll/pitch/yaw parameterization has time-variant motion subspace
+robot = createAtlas('rpy');
 testVersusNumericalDifferentiation(robot);
 end
 

@@ -23,7 +23,7 @@ for i = 1 : nBodies
     predecessor = body.parent;
     
     predecessorAccel = obj.transformSpatialAcceleration(ret{predecessor}, kinsol, world, predecessor, predecessor, i);
-    jointAccel = motionSubspace(body, qBody) * vdBody; % + motionSubspaceDot(body, qBody, vBody) * vBody;
+    jointAccel = motionSubspace(body, qBody) * vdBody + motionSubspaceDotV(body, qBody, vBody);
     ret{i} = predecessorAccel + jointAccel;
   end
 end

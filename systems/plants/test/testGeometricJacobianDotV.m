@@ -43,7 +43,7 @@ while testNumber <= nTests
     % compute JDotV through numerical differentiation
     JDotVNumerical = (J1 - J0) / dt * v(vIndices);
     
-    disp(testNumber);
+%     disp(testNumber);
     % check
     [same, errstr] = valuecheck(JDotV, JDotVNumerical, 1e-5);
     
