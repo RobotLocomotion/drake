@@ -8,15 +8,16 @@ function [J, vIndices] = geometricJacobian(obj, kinsol, base, endEffector, expre
 [~, jointPath, signs] = obj.findKinematicPath(base, endEffector);
 vIndices = velocityVectorIndices(obj.body, jointPath);
 
-% motionSubspaces = arrayfun(@motionSubspace, obj.body(jointPath), jointpath, 'UniformOutput', false);
 motionSubspaces = cell(1, length(jointPath));
 for i = 1 : length(jointPath)
   body = obj.body(jointPath(i));
   motionSubspaces{i} = motionSubspace(body, kinsol.q(body.dofnum));
 end
 
-transformedMotionSubspaces = cellfun(@transformMotionSubspace, kinsol.T(jointPath), motionSubspaces, num2cell(signs'), 'UniformOutput', false);
-J = cell2mat(transformedMotionSubspaces); % change frame from body to world
+transformedMotionSubspaces = cellfun(@transformMotionSubspace, ...
+  kinsol.T(jointPath), motionSubspaces, num2cell(signs'), 'UniformOutput', ...
+  false); % change frame from body to world
+J = cell2mat(transformedMotionSubspaces); 
 J = transformTwists(inv(kinsol.T{expressedIn}), J); % change frame from world to expressedIn
 end
 
