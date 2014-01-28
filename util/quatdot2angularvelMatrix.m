@@ -1,6 +1,6 @@
 function ret = quatdot2angularvelMatrix(q)
-%*   Compute matrix that maps quaternion derivative to angular velocity in
-%    base frame
+% Computes matrix that maps quaternion derivative to angular velocity in
+% base frame
 % 
 % from Schwab, Arend L. "Quaternions, finite rotation and euler
 % parameters." (self-published)
