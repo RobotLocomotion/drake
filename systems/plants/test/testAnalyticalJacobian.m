@@ -24,7 +24,10 @@ nBodies = length(robot.body);
 
 bodyRange = [1, nBodies];
 
-nTests = 50;
+analyticalJacobianTime = 0;
+forwardKinTime = 0;
+
+nTests = 200;
 testNumber = 1;
 while testNumber < nTests
   q = randn(nq, 1);
@@ -37,11 +40,25 @@ while testNumber < nTests
     nPoints = randi([1, 10]);
     points = randn(3, nPoints);
     
+    tic
     J = robot.analyticalJacobian(kinsol, base, endEffector, points, rotationType);
+    analyticalJacobianTime = analyticalJacobianTime + toc * 1e3;
+    
+    tic
     [~, JForwardKin] = robot.forwardKin(kinsol, endEffector, points, rotationType);
+    forwardKinTime = forwardKinTime + toc * 1e3;
     
     valuecheck(J, JForwardKin, 1e-8);
     testNumber = testNumber + 1;
   end
+end
+analyticalJacobianTime = analyticalJacobianTime / nTests;
+forwardKinTime = forwardKinTime / nTests;
+
+displayComputationTime = true;
+if displayComputationTime
+  fprintf('analyticalJacobianTime: %0.8f\n', analyticalJacobianTime);
+  fprintf('forwardKinTime: %0.8f\n', forwardKinTime);
+  fprintf('\n');
 end
 end
