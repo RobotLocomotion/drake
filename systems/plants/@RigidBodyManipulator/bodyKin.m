@@ -30,7 +30,7 @@ if (kinsol.mex)
 else
   if (body_or_frame_ind < 0)
     frame = obj.frame(-body_or_frame_ind);
-    body_ind = frame.body_ind;
+    body_or_frame_ind = frame.body_ind;
     Tframe = frame.T;
   else
     Tframe=eye(4);
@@ -38,7 +38,7 @@ else
   
   m = size(pts,2);
   pts = [pts;ones(1,m)];
-  x = inv(kinsol.T{body_ind}*Tframe)*pts;
+  x = inv(kinsol.T{body_or_frame_ind}*Tframe)*pts;
   x = x(1:3,:);
   
   % todo: implement jacobians
