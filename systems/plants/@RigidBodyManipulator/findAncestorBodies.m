@@ -12,14 +12,14 @@ end
 ancestor_bodies = nan(obj.getNumBodies(), 1); % conservative vector size
 ancestor_index = 0;
 
-body = obj.getBody(body_index);
+body = obj.body(body_index);
 
 while hasParent(body)
   parent_index = body.parent;
   ancestor_index = ancestor_index + 1;
   ancestor_bodies(ancestor_index) = parent_index;
   
-  body = obj.getBody(parent_index);
+  body = obj.body(parent_index);
 end
 
 ancestor_bodies = ancestor_bodies(1 : ancestor_index);
