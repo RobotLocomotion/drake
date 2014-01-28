@@ -37,4 +37,10 @@ sys = cascade(q_des_traj,sys_pd);
 [~,xtraj] = simulate(sys,[0,5],xstar);
 v.playback(xtraj);
 
+% Check fixed-point computation
+x0 = rand(p.getNumStates(),1);
+u0 = rand(p.getNumInputs(),1);
+[xstar,ustar,success] = findFixedPoint(p,x0,u0,struct('active_collision_groups','','visualize',true));
+v.draw(0,xstar)
+
 warning(S);

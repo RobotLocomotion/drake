@@ -1010,8 +1010,8 @@ classdef RigidBodyManipulator < Manipulator
 
       [quz_sol,~,exitflag] = fmincon(problem);
       success=(exitflag==1);
-      xstar = [quz_sol(1:nq); zeros(nq,1)];
-      ustar = quz_sol(nq+(1:nu));
+      xstar = Point(obj.getStateFrame(), [quz_sol(1:nq); zeros(nq,1)]);
+      ustar = Point(obj.getInputFrame(), quz_sol(nq+(1:nu)));
       zstar = quz_sol(nq+nu+(1:nz));
       if (~success)
         error('failed to find fixed point');
