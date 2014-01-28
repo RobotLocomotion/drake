@@ -1,8 +1,9 @@
 function ret = transformTwists(H, twists)
 % more efficient implementation of transformAdjoint(H) * twists
 
-% sizecheck(twists, [6, nan]);
-% 
+ret = transformAdjoint(H) * twists;
+
+% SLOWER:
 % R = H(1 : 3, 1 : 3);
 % p = H(1 : 3, 4);
 % angularPart = R * twists(1 : 3, :);
@@ -10,7 +11,13 @@ function ret = transformTwists(H, twists)
 % linearPart = pHat * angularPart + R * twists(4 : 6, :);
 % ret = [angularPart; linearPart];
 
-ret = transformAdjoint(H) * twists;
+% SLOWER:
+% R = H(1 : 3, 1 : 3);
+% p = H(1 : 3, 4);
+% 
+% angularPart = R * twists(1 : 3, :);
+% linearPart = cross(repmat(p, 1, size(angularPart, 2)), angularPart) + R * twists(4 : 6, :);
+% ret = [angularPart; linearPart];
 
 end
 

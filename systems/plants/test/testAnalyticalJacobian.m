@@ -57,8 +57,8 @@ forwardKinTime = forwardKinTime / nTests;
 
 displayComputationTime = true;
 if displayComputationTime
-  fprintf('analyticalJacobianTime: %0.8f\n', analyticalJacobianTime);
-  fprintf('forwardKinTime: %0.8f\n', forwardKinTime);
+  fprintf('analyticalJacobianTime: %0.3f\n', analyticalJacobianTime);
+  fprintf('forwardKinTime: %0.3f\n', forwardKinTime);
   fprintf('\n');
 end
 end

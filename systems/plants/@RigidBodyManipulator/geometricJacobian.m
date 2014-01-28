@@ -26,6 +26,5 @@ ret = sign * transformTwists(H, S);
 end
 
 function vIndices = velocityVectorIndices(bodies, jointIndices)
-allVIndices = arrayfun(@(x) x.dofnum, bodies, 'UniformOutput', false)';
-vIndices = cell2mat(allVIndices(jointIndices));
+vIndices = vertcat(bodies(jointIndices).dofnum);
 end
