@@ -1,6 +1,7 @@
 *.autosave
 *.mex*
 *.o
+*~
 util/drake_config.mat
 doc/derivations/rigidBodyDynamicsWConstraints.aux
 doc/derivations/rigidBodyDynamicsWConstraints.log
