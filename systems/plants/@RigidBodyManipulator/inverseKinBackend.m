@@ -608,9 +608,7 @@ if(mode == 2)
   qdot = [qdot0 reshape(velocity_mat*q,nq,nT-2) qdotf];
   qddot = reshape(accel_mat*q+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf,nq,nT); 
   q = reshape(q,nq,nT);
-  if(debug_mode)
-    Fname = [{'objective'};Fname];
-  end
+
   if(info == 13 || info == 32 || info == 31)
     ub_err = F-Fupp;
     max_ub_error = max(ub_err);
