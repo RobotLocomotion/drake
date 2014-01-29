@@ -7,6 +7,9 @@ S = warning('OFF','Drake:RigidBodyManipulator:WeldedLinkInd');
 urdf = [getDrakePath() '/systems/plants/test/ActuatedPendulum.urdf'];
 p = TimeSteppingRigidBodyManipulator(urdf,.01);
 
+% Check simulation w/out sensors
+[~,xtraj] = simulate(p,[0 5]);
+
 p = addSensor(p,FullStateFeedbackSensor());
 frame = p.getFrame(p.findFrameId('tip'));
 p = addSensor(p,ContactForceTorqueSensor(p,frame));
