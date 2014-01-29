@@ -1,5 +1,4 @@
-
-Name:         drake
+Name:         drake 
 Maintainers:  Russ Tedrake <russt@mit.edu>
 Summary:      A planning, control, and analysis toolbox for nonlinear dynamical systems
 Description:  http://drake.mit.edu
