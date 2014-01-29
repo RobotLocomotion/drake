@@ -1,3 +1,4 @@
+%NOTEST
 function robot = createAtlas(floatingJointType)
 options.floating = floatingJointType;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
