@@ -1,6 +1,6 @@
 function JAnalytical = analyticalJacobian(obj, kinsol, base, endEffector, points, rotationType)
 
-[JGeometric, vIndices] = obj.geometricJacobian(kinsol, base, endEffector, base);
+[JGeometric, vIndices] = geometricJacobian(obj, kinsol, base, endEffector, base);
 JOmega = JGeometric(1 : 3, :);
 JV = JGeometric(4 : 6, :);
 

@@ -5,7 +5,7 @@ function [J, vIndices] = geometricJacobian(obj, kinsol, base, endEffector, expre
 %   v, the twist of endEffector with respect to base, expressed in
 %   expressedIn, can be computed as J * (v(vIndices)).
 
-[~, jointPath, signs] = obj.findKinematicPath(base, endEffector);
+[~, jointPath, signs] = findKinematicPath(obj, base, endEffector);
 vIndices = velocityVectorIndices(obj.body, jointPath);
 
 motionSubspaces = cell(1, length(jointPath));

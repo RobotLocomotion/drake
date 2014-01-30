@@ -17,8 +17,8 @@ function [body_path, joint_path, signs] = findKinematicPath(obj, start_body, end
 
 
 
-ancestors1 = [start_body; obj.findAncestorBodies(start_body)];
-ancestors2 = [end_body; obj.findAncestorBodies(end_body)];
+ancestors1 = [start_body; findAncestorBodies(obj, start_body)];
+ancestors2 = [end_body; findAncestorBodies(obj, end_body)];
 
 commonSize = min(size(ancestors1, 1), size(ancestors2, 1));
 
