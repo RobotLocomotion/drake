@@ -7,10 +7,9 @@ classdef RigidBodyThrust < RigidBodyForceElement
   end
   
   methods
-    function obj = RigidBodyThrust(frame, axis, scaleFac, limits)
+    function obj = RigidBodyThrust(frame_id, axis, scaleFac, limits)
       
-      typecheck(frame,RigidBodyFrame);
-      obj.kinframe = frame;
+      obj.kinframe = frame_id;
       obj.axis = axis/norm(axis);      
       
       obj.direct_feedthrough_flag = true;
@@ -28,10 +27,10 @@ classdef RigidBodyThrust < RigidBodyForceElement
       %B_mod maps the input to generalized forces.
       kinsol = doKinematics(manip,q);
       
-      [x,J] = forwardKin(obj.kinframe,manip,kinsol,zeros(3,1));
+      [x,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
       B_mod = manip.B*0; %initialize B_mod
       
-      axis_world = forwardKin(obj.kinframe,manip,kinsol,obj.axis);
+      axis_world = forwardKin(manip,kinsol,obj.kinframe,obj.axis);
       axis_world = axis_world-x;
       
       force = sparse(6,getNumBodies(manip));
