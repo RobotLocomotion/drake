@@ -1272,7 +1272,8 @@ classdef RigidBodyManipulator < Manipulator
       end
       for i = 1:length(model.force)
         if isa(model.force{i},'RigidBodyThrust')
-          inputparents = [inputparents model.body(model.force{i}.kinframe.body_ind)];
+          frame = model.frame(-model.force{i}.kinframe);
+          inputparents = [inputparents model.body(frame.body_ind)];
           inputnames{end+1} = model.force{i}.name;
         end
       end
