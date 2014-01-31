@@ -2,8 +2,8 @@ classdef RigidBodyWing < RigidBodyForceElement
 
   properties
     kinframe;  % index to RigidBodyFrame 
-    fCl  % splines representing the *dimensional* coefficients
-    fCd  %  with fCl = 1/2 rho*S*Cl, etc. (S=area)
+    fCl  % PPTrajectories (splines) representing the *dimensional* coefficients
+    fCd  % with fCl = 1/2 rho*S*Cl, etc. (S=area)
     fCm
     area
     %Air density for 20 degC dry air, at sea level
@@ -348,6 +348,13 @@ classdef RigidBodyWing < RigidBodyForceElement
           setenv('GFORTRAN_STDOUT_UNIT', '-1') 
           setenv('GFORTRAN_STDERR_UNIT', '-1')
       end %revertEnvVars()
+      
+      % convert the splines to PPTrajectory, allowing
+      % for fasteval improving performance a lot
+      obj.fCm = PPTrajectory(obj.fCm);
+      obj.fCl = PPTrajectory(obj.fCl);
+      obj.fCd = PPTrajectory(obj.fCd);
+      
     end %constructor
 
     function force = computeSpatialForce(obj,manip,q,qd)
@@ -389,9 +396,10 @@ classdef RigidBodyWing < RigidBodyForceElement
       
       %lift and drag are the forces on the body in the world frame.
       %cross(wingXZvelocity, wingYunit) rotates it by 90 degrees
-      lift_world = ppvalSafe(obj.fCl,aoa, false, false)*airspeed*cross(wingvel_world, wingYunit);
-      drag_world = ppvalSafe(obj.fCd,aoa, false, false)*airspeed*(-wingvel_world);
-      torque_world = -ppvalSafe(obj.fCm,aoa, false, false)*airspeed*airspeed*wingYunit;
+      [CL, CD, CM] = obj.coeffs(aoa);
+      lift_world = CL*airspeed*cross(wingvel_world, wingYunit);
+      drag_world = CD*airspeed*(-wingvel_world);
+      torque_world = -CM*airspeed*airspeed*wingYunit;
 
       % convert torque to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
       torque_body = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]); torque_body = torque_body(:,1)-torque_body(:,2);
@@ -405,12 +413,12 @@ classdef RigidBodyWing < RigidBodyForceElement
         cartesianForceToSpatialForce(manip, kinsol, frame.body_ind, frame.T(1:3,4),lift_world+drag_world);
     end
         
-    function [CL CD CM] = coeffs(AoA)
+    function [CL, CD, CM] = coeffs(obj, aoa)
       %returns dimensionalized coefficient of lift, drag, and pitch moment for a
       %given angle of attack
-      CL = ppval(obj.fCl, AoA);
-      CD = ppval(obj.fCd, AoA);
-      CM = ppval(obj.fCm, AoA);
+      CL = obj.fCl.fasteval(aoa);
+      CD = obj.fCd.fasteval(aoa);
+      CM = obj.fCm.fasteval(aoa);
     end
     
   end
