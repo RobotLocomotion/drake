@@ -8,8 +8,8 @@ add_mex(realtime realtime.cpp)
 add_mex(drakeUtil SHARED drakeUtil.cpp)
 pods_install_libraries(drakeUtil)
 
-add_mex(drakeDebugMex SHARED drakeDebugMex.cpp)
-add_mex(debugMex EXECUTABLE debugMex.cpp)
+add_mex(debugMex SHARED debugMexLib.cpp)
+add_mex(drakeDebugMex EXECUTABLE drakeDebugMex.cpp)
 
 if (eigen3_FOUND)
   add_mex(drakeQuatUtil SHARED drakeQuatUtil.cpp)
