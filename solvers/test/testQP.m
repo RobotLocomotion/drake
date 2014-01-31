@@ -32,6 +32,7 @@ function testSolvers(prog)
   fprintf('\n\n');
   
   for i=2:length(x)
+    if isempty(x{i}), continue; end
     valuecheck(x{1},x{i},1e-4);
     valuecheck(objval{1},objval{i},1e-4);
   end
