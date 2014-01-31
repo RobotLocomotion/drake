@@ -1,8 +1,10 @@
-function jDotV = geometricJacobianDotV(obj, kinsol, base, endEffector, expressedIn)
+function jDotV = geometricJacobianDotV(obj, kinsol, twists, base, endEffector, expressedIn)
 % GEOMETRICJACOBIANDOTV computes the 'convective term' d/dt(J) * v, where J
 % is a geometric Jacobian and v is the vector of joint velocities across
 % the same joints that the geometric Jacobian spans
 % @param kinsol solution structure obtained from doKinematics
+% @param twists twists of all links with respect to base, expressed in body
+% frame
 % @param base base frame of the geometric Jacobian
 % @param endEffector end effector frame of the geometric Jacobian
 % @param expressedIn frame in which the geometric Jacobian is expressed
@@ -27,7 +29,7 @@ for i = 1 : length(jointPath)
   qBody = kinsol.q(successorBody.dofnum);
   vBody = kinsol.qd(successorBody.dofnum);
   zeroJointAccel = motionSubspaceDotV(successorBody, qBody, vBody); % spatial acceleration across joint when vdot across the joint is zero
-  jDotV = jDotV + signs(i) * obj.transformSpatialAcceleration(zeroJointAccel, kinsol, predecessor, successor, successor, expressedIn);
+  jDotV = jDotV + signs(i) * transformSpatialAcceleration(zeroJointAccel, kinsol.T, twists, predecessor, successor, successor, expressedIn);
 end
 
 end

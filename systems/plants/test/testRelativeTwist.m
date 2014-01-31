@@ -19,12 +19,13 @@ while testNumber < nTests
   q = randn(nq, 1);
   v = randn(nv, 1);
   kinsol = robot.doKinematics(q,false,false, v);
+  twists = robot.twists(kinsol.T, q, v);
   base = randi(bodyRange);
   endEffector = randi(bodyRange);
   expressedIn = randi(bodyRange);
   
   if base ~= endEffector
-    twist = robot.relativeTwist(kinsol, base, endEffector, expressedIn);
+    twist = relativeTwist(kinsol.T, twists, base, endEffector, expressedIn);
     [jacobian, vIndices] = robot.geometricJacobian(kinsol, base, endEffector, expressedIn);
     twistViaJacobian = jacobian * (v(vIndices));
     valuecheck(twistViaJacobian, twist, 1e-12);

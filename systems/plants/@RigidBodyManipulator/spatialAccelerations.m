@@ -1,7 +1,9 @@
-function ret = spatialAccelerations(obj, kinsol, q, v, vd)
+function ret = spatialAccelerations(obj, transforms, twists, q, v, vd)
 % SPATIALACCELERATIONS Computes the spatial accelerations (time derivatives
 % of twists) of all bodies in the RigidBodyManipulator.
-% @param kinsol solution structure obtained from doKinematics
+% @param transforms homogeneous transforms from link to world (usually
+% obtained from doKinematics as kinsol.T)
+% @param twists twists of links with respect to world
 % @retval twistdot cell array containing spatial accelerations of all rigid
 % bodies with respect to the world
 
@@ -22,7 +24,7 @@ for i = 1 : nBodies
     
     predecessor = body.parent;
     
-    predecessorAccel = obj.transformSpatialAcceleration(ret{predecessor}, kinsol, world, predecessor, predecessor, i);
+    predecessorAccel = transformSpatialAcceleration(ret{predecessor}, transforms, twists, world, predecessor, predecessor, i);
     jointAccel = motionSubspace(body, qBody) * vdBody + motionSubspaceDotV(body, qBody, vBody);
     ret{i} = predecessorAccel + jointAccel;
   end
