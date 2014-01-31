@@ -77,8 +77,12 @@ end
 function s = obj2struct(obj)
 
 if isobject(obj)
-  for i=1:numel(obj)  % support obj arrays
-    s(i) = struct(obj(i));
+  if numel(obj)>1
+    for i=1:numel(obj)  % support obj arrays
+      s(i) = struct(obj(i));
+    end
+  else
+    s = struct(obj);  % obj(i) doesn't work for everything (e.g. container.Map objects)
   end
   if isfield(s,'debug_mex_classname')
     error('i assumed that you didn''t use this as a property name');
