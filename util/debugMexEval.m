@@ -5,13 +5,15 @@ function varargout = debugMexEval(fun,varargin)
 %
 % Note: on mac, I needed to do the following to run debugMex from the
 % command line:
-%  export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/Applications/MATLAB_R2012a.app/bin/maci64
+%  export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/Applications/MATLAB_R2014a.app/bin/maci64
 %  export DYLD_FORCE_FLAT_NAMESPACE=1
-%  export DYLD_INSERT_LIBRARIES=PATH_TO_DRAKE/bin/libDrakeDebugMex.dylib 
+%  export DYLD_INSERT_LIBRARIES=PATH_TO_DRAKE/pod-build/lib/libdrakeDebugMex.dylib 
+% I've put these into debugMex.sh (use "source debugMex.sh" at the command
+% line)
 %
 % on another platform, you presumably need to:
-%  export LD_PRELOAD=libDrakeDebugMex.so
-%  export LD_LIBRARY_PATH=PATH_TO_DRAKE/bin/:$LD_LIBRARY_PATH%  
+%  export LD_PRELOAD=libdrakeDebugMex.so
+%  export LD_LIBRARY_PATH=PATH_TO_DRAKE/pod-build/lib/:$LD_LIBRARY_PATH%  
 % but this is untested (so far)
 
 % note: adding the -DMX_COMPAT_32 changed my symbol from _mxGetProperty_730
