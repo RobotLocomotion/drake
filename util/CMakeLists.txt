@@ -9,7 +9,7 @@ add_mex(drakeUtil SHARED drakeUtil.cpp)
 pods_install_libraries(drakeUtil)
 
 add_mex(debugMex SHARED debugMexLib.cpp)
-add_mex(drakeDebugMex EXECUTABLE drakeDebugMex.cpp)
+add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
 
 if (eigen3_FOUND)
   add_mex(drakeQuatUtil SHARED drakeQuatUtil.cpp)
