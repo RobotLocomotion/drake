@@ -33,6 +33,9 @@ function varargout = debugMexEval(fun,varargin)
 % sigh.  
 
 typecheck(fun,'char');
+if exist(fun)~=3,
+  error('the first argument should be a mex function');
+end
 
 % logic to keep track of individual function calls
 persistent count;
