@@ -162,6 +162,15 @@ if ~ok
         disp(' ');
       end
 
+    case 'gurobi_mex'
+      conf.gurobi_mex_enabled = logical(exist('gurobiQPmex'));
+      if (~conf.gurobi_mex_enabled)
+	disp(' ');
+        disp(' GUROBI MEX not found.  GUROBI MEX support will be disabled.');  
+        disp('    To enable, install the GUROBI pod in your pod collection, and rerun make config; make in drake');
+        disp(' ');
+      end
+
     case 'bertini'
       conf.bertini_enabled = logical(exist('bertini','file'));
       if (~conf.bertini_enabled)

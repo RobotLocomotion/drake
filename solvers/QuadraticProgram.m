@@ -65,16 +65,18 @@ methods
         end
         
       case 'gurobi'
+        checkDependency('gurobi');
         [x,objval,exitflag,active] = gurobi(obj,active);
     
       case 'gurobi_mex'
-        checkDependency('gurobi');
+        checkDependency('gurobi_mex');
         [x,exitflag,active] = gurobiQPmex(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub,active);
         if (nargout>1)
           objval = .5*x'*obj.Q*x + obj.f'*x;  % todo: push this into mex?
         end
     
       case 'fastqp'
+        checkDependency('gurobi_mex');
         if isempty(obj.lb), obj.lb=-inf + 0*obj.f; end
         if isempty(obj.ub), obj.ub=inf + 0*obj.f; end
         Ain_b = [obj.Ain; -eye(length(obj.lb)); eye(length(obj.ub))];
