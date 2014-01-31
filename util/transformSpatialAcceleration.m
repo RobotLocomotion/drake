@@ -1,11 +1,13 @@
-function spatialAccel = transformSpatialAcceleration(obj, spatialAccel, kinsol, base, body, oldExpressedIn, newExpressedIn)
+function spatialAccel = transformSpatialAcceleration(spatialAccel, transforms, twists, base, body, oldExpressedIn, newExpressedIn)
 % TRANSFORMSPATIALACCELERATION Transforms a spatial acceleration vector
 % (derivative of a twist) to a different reference frame. 
 % The formula for changing the frame in which a spatial acceleration vector
 % is expressed is derived by differentiating the transformation formula for
 % twists.
 % @param spatialAccel a spatial acceleration vector
-% @param kinsol solution structure obtained from doKinematics
+% @param transforms homogeneous transforms from link to world (usually
+% obtained from doKinematics as kinsol.T)
+% @param twists twists of links with respect to world
 % @param base index of body with respect to which spatialAccel expresses
 % acceleration
 % @param body index of body of which spatialAccel expresses the
@@ -17,9 +19,9 @@ function spatialAccel = transformSpatialAcceleration(obj, spatialAccel, kinsol, 
 % @retval spatialAccel, transformed from oldExpressedIn to newExpressedIn
 % frame
 
-twistOfBodyWrtBase = obj.relativeTwist(kinsol, base, body, oldExpressedIn);
-twistOfOldWrtNew = obj.relativeTwist(kinsol, newExpressedIn, oldExpressedIn, oldExpressedIn);
-transformFromOldToNew = kinsol.T{newExpressedIn} \ kinsol.T{oldExpressedIn};
+twistOfBodyWrtBase = relativeTwist(transforms, twists, base, body, oldExpressedIn);
+twistOfOldWrtNew = relativeTwist(transforms, twists, newExpressedIn, oldExpressedIn, oldExpressedIn);
+transformFromOldToNew = transforms{newExpressedIn} \ transforms{oldExpressedIn};
 
 % spatialAccel = transformAdjoint(transformFromOldToNew) * (twistAdjoint(twistOfOldWrtNew) * twistOfBodyWrtBase + spatialAccel);
 % function adT = twistAdjoint(twist)
