@@ -18,5 +18,4 @@ mxArray* createDrakeMexPointer(void* ptr, const char* deleteMethod="", const cha
 void* getDrakeMexPointer(const mxArray* mx);
 
 
-
 #endif /* DRAKE_UTIL_H_ */
