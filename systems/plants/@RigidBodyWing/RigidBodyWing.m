@@ -419,9 +419,9 @@ classdef RigidBodyWing < RigidBodyForceElement
       if (nargout>0)
         [CL, CD, CM] = obj.coeffs(aoa);
         % gradients will need to be implemented
-        dCL = zeros(1,size(q,1));
-        dCD = zeros(1,size(q,1));
-        dCM = zeros(1,size(q,1));
+        dCL = 0;
+        dCD = 0;
+        dCM = 0;
       else
         [CL, CD, CM] = obj.coeffs(aoa);
       end
@@ -472,7 +472,7 @@ classdef RigidBodyWing < RigidBodyForceElement
         daoadq = -(180/pi)*(wingvel_rel(1)*dwingvel_reldq(3,:)-wingvel_rel(3)*dwingvel_reldq(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
         daoadqd = -(180/pi)*(wingvel_rel(1)*dwingvel_reldqd(3,:)-wingvel_rel(3)*dwingvel_reldqd(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
         dforce = sparse(6,getNumBodies(manip)*2*nq);
-        dlift_worlddq = dCL*airspeed*(x_wingvel_world_wingYunit*daoadq) + CL*(x_wingvel_world_wingYunit*dairspeeddq) + Cl*airspeed*(cross(dwingvel_worlddq, repmat(wingYunit,1,nq), 1)+cross(repmat(wingvel_world,1,nq), dwingYunitdq, 1));
+        dlift_worlddq = dCL*airspeed*(x_wingvel_world_wingYunit*daoadq) + CL*(x_wingvel_world_wingYunit*dairspeeddq) + CL*airspeed*(cross(dwingvel_worlddq, repmat(wingYunit,1,nq), 1)+cross(repmat(wingvel_world,1,nq), dwingYunitdq, 1));
         dlift_worlddqd = dCL*airspeed*(x_wingvel_world_wingYunit*daoadqd) + CL*(x_wingvel_world_wingYunit*dairspeeddqd) + CL*airspeed*(cross(dwingvel_worlddqd, repmat(wingYunit,1,nq), 1));
         ddrag_worlddq = dCD*airspeed*(-wingvel_world*daoadq) + CD*(-wingvel_world*dairspeeddq) + CD*airspeed*-dwingvel_worlddq;
         ddrag_worlddqd = dCD*airspeed*(-wingvel_world*daoadqd) + CD*(-wingvel_world*dairspeeddqd) + CD*airspeed*-dwingvel_worlddqd;
