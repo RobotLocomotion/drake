@@ -9,6 +9,7 @@ add_mex(drakeUtil SHARED drakeUtil.cpp)
 pods_install_libraries(drakeUtil)
 
 add_mex(debugMex SHARED debugMexLib.cpp)
+#set_property( SOURCE debugMexLib.cpp PROPERTY COMPILE_FLAGS -DMX_COMPAT_32 )
 add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
 
 if (eigen3_FOUND)
