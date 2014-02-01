@@ -22,6 +22,11 @@
 
 using namespace std;
 
+void cleanupDrakeMexPointers(void)
+{
+  // intentionally left blank; overloaded in debugMexLib.cpp using a DYLD_INSERT_LIBRARIES
+}
+
 int mexPrintf(const char* message)  // todo: handle the variable arguments case
 {
   return printf("%s", message);  
@@ -118,6 +123,8 @@ int main(int argc, char* argv[])  // todo: take the mex function and dynamically
   }
   
   // cleanup          
+  cleanupDrakeMexPointers();
+
   for (iter=mexfiles.begin(); iter!=mexfiles.end(); iter++)
   	dlclose(iter->second.handle);
 
