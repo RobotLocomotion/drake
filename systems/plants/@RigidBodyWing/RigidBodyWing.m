@@ -417,10 +417,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       %lift and drag are the forces on the body in the world frame.
       %cross(wingXZvelocity, wingYunit) rotates it by 90 degrees
       if (nargout>1)
-        [CL, CD, CM] = obj.coeffs(aoa);
-        dCL = 0;
-        dCD = 0;
-        dCM = 0;
+        [CL, CD, CM, dCL, dCD, dCM] = obj.coeffs(aoa);
       else
         [CL, CD, CM] = obj.coeffs(aoa);
       end
@@ -496,12 +493,19 @@ classdef RigidBodyWing < RigidBodyForceElement
     
     end
         
-    function [CL, CD, CM] = coeffs(obj, aoa)
+    function [CL, CD, CM, dCL, dCD, dCM] = coeffs(obj, aoa)
       %returns dimensionalized coefficient of lift, drag, and pitch moment for a
       %given angle of attack
-      CL = obj.fCl.fasteval(aoa);
-      CD = obj.fCd.fasteval(aoa);
-      CM = obj.fCm.fasteval(aoa);
+      if (nargout>3)
+        options.grad_method = 'numerical';
+        [CL, dCL] = geval(@fasteval,obj.fCl,aoa,options);
+        [CD, dCD] = geval(@fasteval,obj.fCd,aoa,options);
+        [CM, dCM] = geval(@fasteval,obj.fCm,aoa,options);
+      else
+        CL = obj.fCl.fasteval(aoa);
+        CD = obj.fCd.fasteval(aoa);
+        CM = obj.fCm.fasteval(aoa);
+      end
     end
     
   end

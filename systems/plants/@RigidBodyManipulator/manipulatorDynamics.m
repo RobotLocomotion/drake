@@ -20,12 +20,12 @@ if length(obj.force)>0
       force = computeSpatialForce(obj.force{i},obj,q,qd);
       
       % Comparing the wing force gradients
-      options.grad_method = 'numerical';
-      [~, dforcenum] = geval(@computeSpatialForce,obj.force{i},obj,q,qd,options);
-      options.grad_method = 'user';
-      [~, dforceuser] = geval(@computeSpatialForce,obj.force{i},obj,q,qd,options);
-      err = max(max(abs(full(dforcenum-dforceuser))));
-      sprintf('Maximum error: %d', err)
+%       options.grad_method = 'numerical';
+%       [~, dforcenum] = geval(@computeSpatialForce,obj.force{i},obj,q,qd,options);
+%       options.grad_method = 'user';
+%       [~, dforceuser] = geval(@computeSpatialForce,obj.force{i},obj,q,qd,options);
+%       err = max(max(abs(full(dforcenum-dforceuser))));
+%       fprintf('Maximum error: %d\n', err)
       
     end
     f_ext(:,m.f_ext_map_to) = f_ext(:,m.f_ext_map_to)+force(:,m.f_ext_map_from);
