@@ -1,4 +1,5 @@
 #include <iostream>
+#include <map>
 
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
@@ -1210,27 +1211,22 @@ void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<
   MatrixXd Tinv = (bodies[body_ind].T*Tframe).inverse();
   x = Tinv.topLeftCorner(3,4)*pts;
 
-  /* std::map<int, MatrixXd> tmp;
   int i;
-  int j;
+  MatrixXd dTdq =  bodies[body_ind].dTdq.topLeftCorner(3*num_dof,4)*Tframe;
+  MatrixXd dTinvdq = dTdq*Tinv;
   for (i=0;i<num_dof;i++) {
-    tmp[i]=Matrix4d::Zero();
+    MatrixXd dTinvdqi = MatrixXd::Zero(4,4);
+    dTinvdqi.row(0) = dTinvdq.row(i);
+    dTinvdqi.row(1) = dTinvdq.row(num_dof+i);
+    dTinvdqi.row(2) = dTinvdq.row(2*num_dof+i);
+    dTinvdqi = -Tinv*dTinvdqi;
+    MatrixXd dxdqi = dTinvdqi.topLeftCorner(3,4)*pts;
+    dxdqi.resize(dxdqi.rows()*dxdqi.cols(),1);
+    J.col(i) = dxdqi;
   }
-  for (i=0;i<3;i++){
-    for (j=0;j<num_dof;j++){
-      tmp[j].row(i) = bodies[body_ind].dTdq.row(i*num_dof+j);
-    }
+  for (i=0;i<pts.cols();i++) {
+    P.block(i*3,i*3,3,3) = Tinv.topLeftCorner(3,3);
   }
-  for (i=0;i<num_dof;i++) {
-    tmp[i] = tmp[i]*Tframe;
-    tmp[i] = -Tinv*tmp[i]*Tinv;
-    tmp[i] = tmp[i].topLeftCorner(3,4)*pts;
-    tmp[i] = Map<MatrixXd>(tmp[i].data(),tmp[i].rows()*tmp[i].cols(),1);
-  }
-  J = MatrixXd::Zero(tmp[0].rows(),num_dof);
-  */
-  J = MatrixXd::Zero(3*pts.cols(),num_dof);
-  P = MatrixXd::Zero(J.rows(),J.rows());
 
 }
 

@@ -359,7 +359,7 @@ classdef RigidBodyWing < RigidBodyForceElement
 
     function [force, dforce] = computeSpatialForce(obj,manip,q,qd)
       frame = getFrame(manip,obj.kinframe);
-      if (nargout>0)
+      if (nargout>1)
         % enable second order gradients
         kinsol = doKinematics(manip,q,true,true);
         [~,J,dJ] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
@@ -386,7 +386,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       sideslip = dot(wingvel_world,wingYunit);
       wingvel_world = wingvel_world - sideslip*wingYunit;
       
-      if (nargout>0)
+      if (nargout>1)
         [wingYunit,dwingYunitdq] = forwardKin(manip,kinsol,obj.kinframe,[0 0; 1 0; 0 0]);
       else
         wingYunit = forwardKin(manip,kinsol,obj.kinframe,[0 0; 1 0; 0 0]);
@@ -395,7 +395,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       sideslip = dot(wingvel_world,wingYunit);
       wingvel_world = wingvel_world - sideslip*wingYunit;
       
-      if (nargout>0) 
+      if (nargout>1) 
         [wingvel_rel,wingvel_relJ,wingvel_relP] = bodyKin(manip,kinsol,obj.kinframe,[wingvel_world,zeros(3,1)]);
       else
         wingvel_rel = bodyKin(manip,kinsol,obj.kinframe,[wingvel_world,zeros(3,1)]);
@@ -416,9 +416,8 @@ classdef RigidBodyWing < RigidBodyForceElement
       
       %lift and drag are the forces on the body in the world frame.
       %cross(wingXZvelocity, wingYunit) rotates it by 90 degrees
-      if (nargout>0)
+      if (nargout>1)
         [CL, CD, CM] = obj.coeffs(aoa);
-        % gradients will need to be implemented
         dCL = 0;
         dCD = 0;
         dCM = 0;
@@ -432,7 +431,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       torque_world = -CM*airspeed*airspeed*wingYunit;
 
       % convert torque to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
-      if (nargout>0)  
+      if (nargout>1)  
         [torque_body, torque_bodyJ, torque_bodyP] = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
       else
         torque_body = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
@@ -445,7 +444,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       %returns [torque; xforce; yforce] in the body coordinates
       %obj.body.dofnum should have 6 elements for
       %linkID = manip.findLinkInd(obj.body.linkname, 0);
-      if (nargout>0)
+      if (nargout>1)
         [f,fJ,fP] = cartesianForceToSpatialForce(manip, kinsol, frame.body_ind, frame.T(1:3,4),lift_world+drag_world);
       else
         f = cartesianForceToSpatialForce(manip, kinsol, frame.body_ind, frame.T(1:3,4),lift_world+drag_world);
@@ -453,7 +452,7 @@ classdef RigidBodyWing < RigidBodyForceElement
 
       force(:,frame.body_ind) = torque_joint + f;
         
-      if (nargout>0)
+      if (nargout>1)
         nq = size(q,1);
         dwingvel_worlddq = reshape(reshape(dJ,[],nq)*qd,[],nq);
         dwingvel_worlddqd = J;

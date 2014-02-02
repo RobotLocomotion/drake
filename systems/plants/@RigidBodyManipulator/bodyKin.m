@@ -73,7 +73,7 @@ else
     end
 
     P = zeros(3*m,3*m);
-    for i=1:nq
+    for i=1:size(pts,2)
       P((i-1)*3+1:i*3,(i-1)*3+1:i*3)=invT(1:3,1:3);
     end
   end
