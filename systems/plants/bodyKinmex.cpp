@@ -47,12 +47,26 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   Map<MatrixXd> pts_tmp(mxGetPr(prhs[3]),dim,n_pts);
   MatrixXd pts(dim+1,n_pts);
   pts << pts_tmp, MatrixXd::Ones(1,n_pts);
-
+  
   if (nlhs>0) {
-  	plhs[0] = mxCreateDoubleMatrix(dim,n_pts,mxREAL);
-  	if (n_pts>0) {
-  		Map<MatrixXd> x(mxGetPr(plhs[0]),dim,n_pts);
-  		model->bodyKin(body_ind,pts,x);
-  	}
+    if (nlhs==3) {
+      // Gradients are requested
+      plhs[0] = mxCreateDoubleMatrix(dim,n_pts,mxREAL);
+      plhs[1] = mxCreateDoubleMatrix(dim*n_pts,model->num_dof,mxREAL);
+      plhs[2] = mxCreateDoubleMatrix(dim*n_pts,dim*n_pts,mxREAL);
+      if (n_pts>0) {
+        Map<MatrixXd> x(mxGetPr(plhs[0]),dim,n_pts);
+        Map<MatrixXd> J(mxGetPr(plhs[1]),dim*n_pts,model->num_dof);
+        Map<MatrixXd> P(mxGetPr(plhs[2]),dim*n_pts,dim*n_pts);
+        model->bodyKin(body_ind,pts,x,J,P);
+      }
+    } else {
+      plhs[0] = mxCreateDoubleMatrix(dim,n_pts,mxREAL);
+      if (n_pts>0) {
+	Map<MatrixXd> x(mxGetPr(plhs[0]),dim,n_pts);
+	model->bodyKin(body_ind,pts,x);
+      }
+    }
   }
+
 }

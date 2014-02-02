@@ -67,6 +67,9 @@ public:
   template <typename DerivedA, typename DerivedB>
   void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x);
 
+  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
+  void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> &J, MatrixBase<DerivedD> &P);
+
 
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL);

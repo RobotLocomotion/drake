@@ -360,8 +360,8 @@ classdef RigidBodyWing < RigidBodyForceElement
     function [force, dforce] = computeSpatialForce(obj,manip,q,qd)
       frame = getFrame(manip,obj.kinframe);
       if (nargout>0)
-        % enable second order gradients, disable mex
-        kinsol = doKinematics(manip,q,true,false);
+        % enable second order gradients
+        kinsol = doKinematics(manip,q,true,true);
         [~,J,dJ] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
       else
         kinsol = doKinematics(manip,q);

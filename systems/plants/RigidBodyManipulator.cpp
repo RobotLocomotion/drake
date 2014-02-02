@@ -1201,6 +1201,39 @@ void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<
   x = Tinv.topLeftCorner(3,4)*pts;
 }
 
+template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
+void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> &J, MatrixBase<DerivedD> &P)
+{
+  Matrix4d Tframe;
+  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
+
+  MatrixXd Tinv = (bodies[body_ind].T*Tframe).inverse();
+  x = Tinv.topLeftCorner(3,4)*pts;
+
+  /* std::map<int, MatrixXd> tmp;
+  int i;
+  int j;
+  for (i=0;i<num_dof;i++) {
+    tmp[i]=Matrix4d::Zero();
+  }
+  for (i=0;i<3;i++){
+    for (j=0;j<num_dof;j++){
+      tmp[j].row(i) = bodies[body_ind].dTdq.row(i*num_dof+j);
+    }
+  }
+  for (i=0;i<num_dof;i++) {
+    tmp[i] = tmp[i]*Tframe;
+    tmp[i] = -Tinv*tmp[i]*Tinv;
+    tmp[i] = tmp[i].topLeftCorner(3,4)*pts;
+    tmp[i] = Map<MatrixXd>(tmp[i].data(),tmp[i].rows()*tmp[i].cols(),1);
+  }
+  J = MatrixXd::Zero(tmp[0].rows(),num_dof);
+  */
+  J = MatrixXd::Zero(3*pts.cols(),num_dof);
+  P = MatrixXd::Zero(J.rows(),J.rows());
+
+}
+
 template <typename DerivedA, typename DerivedB>
 void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB> &J)
 {
@@ -1591,6 +1624,7 @@ template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vect
 //template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
 //template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
 template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &);
+template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
 
 template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
 template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
