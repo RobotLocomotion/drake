@@ -5,6 +5,9 @@ classdef RigidBodyWing < RigidBodyForceElement
     fCl  % PPTrajectories (splines) representing the *dimensional* coefficients
     fCd  % with fCl = 1/2 rho*S*Cl, etc. (S=area)
     fCm
+    dfCl
+    dfCd
+    dfCm
     area
     %Air density for 20 degC dry air, at sea level
     rho = 1.204;
@@ -354,6 +357,9 @@ classdef RigidBodyWing < RigidBodyForceElement
       obj.fCm = PPTrajectory(obj.fCm);
       obj.fCl = PPTrajectory(obj.fCl);
       obj.fCd = PPTrajectory(obj.fCd);
+      obj.dfCm = obj.fCm.fnder(1);
+      obj.dfCl = obj.fCl.fnder(1);
+      obj.dfCd = obj.fCd.fnder(1);
       
     end %constructor
 
@@ -496,15 +502,13 @@ classdef RigidBodyWing < RigidBodyForceElement
     function [CL, CD, CM, dCL, dCD, dCM] = coeffs(obj, aoa)
       %returns dimensionalized coefficient of lift, drag, and pitch moment for a
       %given angle of attack
+      CL = obj.fCl.fasteval(aoa);
+      CD = obj.fCd.fasteval(aoa);
+      CM = obj.fCm.fasteval(aoa);
       if (nargout>3)
-        options.grad_method = 'numerical';
-        [CL, dCL] = geval(@fasteval,obj.fCl,aoa,options);
-        [CD, dCD] = geval(@fasteval,obj.fCd,aoa,options);
-        [CM, dCM] = geval(@fasteval,obj.fCm,aoa,options);
-      else
-        CL = obj.fCl.fasteval(aoa);
-        CD = obj.fCd.fasteval(aoa);
-        CM = obj.fCm.fasteval(aoa);
+        dCL = obj.dfCl.fasteval(aoa);
+        dCD = obj.dfCd.fasteval(aoa);
+        dCM = obj.dfCm.fasteval(aoa);
       end
     end
     
