@@ -8,6 +8,7 @@
 #include <iostream>
 #include <vector>
 
+#include <string.h>
 #include <matrix.h>
 #include <mat.h>
 
