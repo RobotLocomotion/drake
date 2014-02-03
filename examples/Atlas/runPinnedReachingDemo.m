@@ -100,7 +100,7 @@ sys = mimoFeedback(sys,rhand_gen,sys_to_rhg,rhg_to_sys,ins,outs);
 clear ins;
 
 x0 = r.getInitialState();
-qgen = ConstOrPassthroughSystem(x0(1:r.getNumStates()/2));
+qgen = ConstOrPassthroughSystem(x0(1:r.getNumDOF()));
 qgen = qgen.setOutputFrame(sys.getInputFrame());
 sys = cascade(qgen,sys);
 
