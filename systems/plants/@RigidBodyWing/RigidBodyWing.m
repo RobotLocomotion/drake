@@ -367,7 +367,7 @@ classdef RigidBodyWing < RigidBodyForceElement
       frame = getFrame(manip,obj.kinframe);
       if (nargout>1)
         % enable second order gradients
-        kinsol = doKinematics(manip,q,true,true);
+        kinsol = doKinematics(manip,q,true);
         [~,J,dJ] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
       else
         kinsol = doKinematics(manip,q);

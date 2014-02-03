@@ -49,6 +49,16 @@ classdef Manipulator < SecondOrderSystem
         end
       else
         [H,C,B] = manipulatorDynamics(obj,q,qd);
+        
+        options.grad_method = 'numerical';
+        [Hn,Cn,Bn,dHn,dCn,dBn] = geval(3,@manipulatorDynamics,obj,q,qd,false,options);
+        [Hu,Cu,Bu,dHu,dCu,dBu] = manipulatorDynamics(obj,q,qd,false);
+        terr = sum(sum(abs(dCu-dCn)));
+        fprintf('manipulatorDynamics total error: %d\n', terr);
+        merr = max(max(abs(dCu-dCn)));
+        fprintf('manipulatorDynamics maxiumum error: %d\n', merr);
+        plot(1:prod(size(dCn)),reshape(dCn,1,[]),'ro',1:prod(size(dCu)),reshape(dCu,1,[]),'b*');
+        
         Hinv = inv(H);
         if (obj.num_u>0) tau=B*u - C; else tau=-C; end
         tau = tau + computeConstraintForce(obj,q,qd,H,tau,Hinv);
