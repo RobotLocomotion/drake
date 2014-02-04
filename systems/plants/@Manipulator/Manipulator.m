@@ -51,8 +51,8 @@ classdef Manipulator < SecondOrderSystem
         [H,C,B] = manipulatorDynamics(obj,q,qd);
         
         options.grad_method = 'numerical';
-        [Hn,Cn,Bn,dHn,dCn,dBn] = geval(3,@manipulatorDynamics,obj,q,qd,false,options);
-        [Hu,Cu,Bu,dHu,dCu,dBu] = manipulatorDynamics(obj,q,qd,false);
+        [Hn,Cn,Bn,dHn,dCn,dBn] = geval(3,@manipulatorDynamics,obj,q,qd,options);
+        [Hu,Cu,Bu,dHu,dCu,dBu] = manipulatorDynamics(obj,q,qd);
         terr = sum(sum(abs(dCu-dCn)));
         fprintf('manipulatorDynamics total error: %d\n', terr);
         merr = max(max(abs(dCu-dCn)));

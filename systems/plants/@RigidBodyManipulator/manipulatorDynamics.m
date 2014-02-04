@@ -52,7 +52,7 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   if (nargout>3)
     df_ext = full(df_ext);
     fprintf('calling mex manipulatorDynamics gradients\n');
-    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd,f_ext);
+    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd,f_ext,df_ext);
     dH = [dH, zeros(m.NB*m.NB,m.NB)];
     dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
