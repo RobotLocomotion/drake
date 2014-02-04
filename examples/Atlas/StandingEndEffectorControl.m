@@ -35,7 +35,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
 
       x0 = r.getInitialState();
       B = r.getB();
-      obj = setInitialState(obj,B' * x0(1:r.getNumStates()/2));
+      obj = setInitialState(obj,B' * x0(1:r.getNumDOF()));
       
       % set max commanded positions to joint limits
       [obj.q_d_min,obj.q_d_max] = obj.manip.getJointLimits();
@@ -69,7 +69,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
       q_nom = varargin{num_ee+3};
       x = varargin{num_ee+4};
 
-      nq = obj.manip.getNumStates()/2;
+      nq = obj.manip.getNumDOF();
       q = x(1:nq);
       st = obj.getSampleTime();
       dt = st(1);
@@ -81,7 +81,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
         error('No supporting bodies --> not standing!');
       end
       count=0;
-      Jc = zeros(size(obj.manip.getBodyContacts(active_supports),2)*3,obj.manip.getNumStates()/2);
+      Jc = zeros(size(obj.manip.getBodyContacts(active_supports),2)*3,obj.manip.getNumDOF());
       for i=1:length(active_supports)
         nC = size(obj.manip.getBodyContacts(active_supports(i)),2);
         if nC>0
