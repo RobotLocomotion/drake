@@ -2,7 +2,7 @@ function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd,use_mex)
 
 checkDirty(obj);
 
-if (nargin<4) use_mex = true; end
+if (nargin<4) use_mex = false; end % the gradients don't look quite right in C yet
 
 m = obj.featherstone;
 B = obj.B;
@@ -51,7 +51,7 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
   if (nargout>3)
     df_ext = full(df_ext);
-    fprintf('calling mex manipulatorDynamics gradients\n');
+    %fprintf('calling mex manipulatorDynamics gradients\n');
     [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd,f_ext,df_ext);
     dH = [dH, zeros(m.NB*m.NB,m.NB)];
     dB = zeros(m.NB*obj.num_u,2*m.NB);
@@ -60,6 +60,7 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   end
 else  
   if (nargout>3)
+    %fprintf('using Matlab manipulatorDynamics gradients\n');
     % featherstone's HandC with analytic gradients
     a_grav = [0;0;0;obj.gravity];
     

@@ -241,6 +241,17 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         
         if (nargout<5)
           [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
+%           options.grad_method = 'numerical';
+%           [Hn,Cn,Bn,dHn,dCn,dBn] = geval(3,@manipulatorDynamics,obj.manip,q,qd,false,options);
+%           [Hnc,Cnc,Bnc,dHnc,dCnc,dBnc] = geval(3,@manipulatorDynamics,obj.manip,q,qd,options);
+%           [Hu,Cu,Bu,dHu,dCu,dBu] = manipulatorDynamics(obj.manip,q,qd,false);
+%           [Huc,Cuc,Buc,dHuc,dCuc,dBuc] = manipulatorDynamics(obj.manip,q,qd);
+%           %terr = sum(sum(abs(dCu-dCn)));
+%           %fprintf('manipulatorDynamics total error: %d\n', terr);
+%           %merr = max(max(abs(dCu-dCn)));
+%           %fprintf('manipulatorDynamics maxiumum error: %d\n', merr);
+%           plot(1:prod(size(dCn)),reshape(dCn,1,[]),'bo',1:prod(size(dCnc)),reshape(dCnc,1,[]),'ro',1:prod(size(dCu)),reshape(dCu,1,[]),'b*',1:prod(size(dCuc)),reshape(dCuc,1,[]),'r*');
+%           legend('Numerical matlab', 'Numerical C', 'User matlab', 'UserC');
           if (obj.num_u>0 && ~obj.position_control) tau = B*u - C; else tau = -C; end
         else
           [H,C,B,dH,dC,dB] = manipulatorDynamics(obj.manip,q,qd);

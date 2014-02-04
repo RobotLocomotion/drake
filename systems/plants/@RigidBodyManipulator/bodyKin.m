@@ -30,12 +30,14 @@ if (kinsol.mex)
   end
   
   if (nargout>1)
+    %fprintf('calling mex bodyKin gradients\n');
     [x,J,P] = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts);
   else
     x = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts);
   end
     
 else
+  %fprintf('using Matlab bodyKin gradients\n');    
   if (body_or_frame_ind < 0)
     frame = obj.frame(-body_or_frame_ind);
     body_ind = frame.body_ind;
