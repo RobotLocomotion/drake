@@ -416,7 +416,9 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
   robot_name.push_back(_urdf_model->getName());
   resize(num_dof + (int)dofname_to_dofnum.size(),-1,num_bodies + (int)jointname_to_jointnum.size());
   for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=_urdf_model->joints_.begin(); j!=_urdf_model->joints_.end(); j++)
+  {
     setJointLimits(_urdf_model,j->second,dofname_to_dofnum,this->joint_limit_min,this->joint_limit_max);
+  }
   this->joint_limit_min[dofname_to_dofnum.at("base_x")] = -1.0/0.0;
   this->joint_limit_max[dofname_to_dofnum.at("base_x")] = 1.0/0.0;
   this->joint_limit_min[dofname_to_dofnum.at("base_y")] = -1.0/0.0;
