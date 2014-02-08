@@ -193,7 +193,7 @@ classdef RigidBodyManipulator < Manipulator
       child = model.body(child_ind);
       
       if child.parent>0
-        error('there is already a joint connecting this child to a parent');
+        error(['there is already a joint connecting this child (' child.linkname ') to a parent (' model.body(parent_ind).linkname ') on joint ' name ]);
       end
       
       jointname = regexprep(name, '\.', '_', 'preservecase');
