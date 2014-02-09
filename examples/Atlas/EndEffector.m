@@ -31,7 +31,7 @@ classdef EndEffector
 %        obj.frame.setDefaultChannel(channel_name);
       end
       
-      obj.P_mask = eye(r.getNumStates()/2);
+      obj.P_mask = eye(r.getNumDOF());
     end
     
     function [x,J] = doKin(obj,q)
@@ -40,7 +40,7 @@ classdef EndEffector
     end
     
     function obj = setMask(obj,mask)
-      sizecheck(mask,obj.manip.getNumStates()/2);
+      sizecheck(mask,obj.manip.getNumDOF());
       obj.P_mask = diag(mask);
     end
     

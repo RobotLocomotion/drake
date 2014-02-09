@@ -71,7 +71,7 @@ clear ins outs;
 
 % nominal position goal
 x0 = r.getInitialState();
-qgen = ConstOrPassthroughSystem(x0(7:r.getNumStates()/2));
+qgen = ConstOrPassthroughSystem(x0(7:r.getNumDOF()));
 qgen = qgen.setOutputFrame(sys.getInputFrame());
 sys = cascade(qgen,sys);
 
