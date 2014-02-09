@@ -148,15 +148,15 @@ function(add_mex)
 
   if (isexe GREATER -1)
     # see note below
-    if (NOT TARGET last) 
+    if (NOT TARGET exelast) 
       set(dummy_c_file ${CMAKE_CURRENT_BINARY_DIR}/dummy.c)
       add_custom_command(COMMAND ${CMAKE_COMMAND} -E touch ${dummy_c_file}
                          OUTPUT ${dummy_c_file})
-      add_library(last STATIC ${dummy_c_file})
-      target_link_libraries(last ${MEX_CLIBS})
+      add_library(exelast STATIC ${dummy_c_file})
+      target_link_libraries(exelast "${MEX_CLIBS} -ldl")  # note: the -ldl here might be overkill?  so far only needed it for drake_debug_mex.  (but it has to come later in the compiler arguments, too, in order to work.
     endif()
 
-    target_link_libraries(${target} last)
+    target_link_libraries(${target} exelast)
   elseif (isshared GREATER -1)
     set_target_properties(${target} PROPERTIES
       LINK_FLAGS "${MEX_CLIBS}"

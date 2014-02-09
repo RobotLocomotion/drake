@@ -11,7 +11,6 @@ pods_install_libraries(drakeUtil)
 add_mex(debugMex SHARED debugMexLib.cpp)
 #set_property( SOURCE debugMexLib.cpp PROPERTY COMPILE_FLAGS -DMX_COMPAT_32 )
 add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
-set_target_properties(drake_debug_mex PROPERTIES LINK_FLAGS -ldl )
 
 if (eigen3_FOUND)
   add_mex(drakeQuatUtil SHARED drakeQuatUtil.cpp)
