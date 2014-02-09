@@ -12,7 +12,7 @@
 	url = https://github.com/RobotLocomotion/bullet-pod.git
 [submodule "avl"]
 	path = avl
-	url = https://github.com/RobotLocomotion/avl
+	url = https://github.com/RobotLocomotion/avl.git
 [submodule "eigen"]
 	path = eigen
 	url = https://github.com/RobotLocomotion/eigen-pod.git
@@ -24,4 +24,4 @@
 	url = https://github.com/RobotLocomotion/libbot.git
 [submodule "snopt"]
 	path = snopt
-	url = https://github.com/RussTedrake/snopt.git
+	url = https://github.com/RobotLocomotion/snopt.git
