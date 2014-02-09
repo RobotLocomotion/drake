@@ -28,7 +28,7 @@ classdef PinnedEndEffectorControl < MIMODrakeSystem
       
       x0 = r.getInitialState();
       B = r.getB();
-      obj = setInitialState(obj,B' * x0(1:r.getNumStates()/2));
+      obj = setInitialState(obj,B' * x0(1:r.getNumDOF()));
       
       % set max commanded positions to joint limits
       [obj.q_d_min,obj.q_d_max] = obj.manip.getJointLimits();
@@ -57,7 +57,7 @@ classdef PinnedEndEffectorControl < MIMODrakeSystem
       q_nom = varargin{length(obj.end_effectors)+1};
       x = varargin{length(obj.end_effectors)+2};
 
-      nq = obj.manip.getNumStates()/2;
+      nq = obj.manip.getNumDOF();
       q = x(1:nq);
       st = obj.getSampleTime();
       dt = st(1);
