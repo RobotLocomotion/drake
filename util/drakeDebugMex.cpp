@@ -1,12 +1,6 @@
 
 /* 
- * To debug mex files as standalone executable (which you can interrogate with gdb, valgrind, etc):
- *   (1) in matlab: use debugMexEval() to write the inputs to file (type 'help debugMexEval' in matlab for details)
- *       This will run as normal, but write all of the inputs to a _mexdebug.mat file.
- *   (2) at the linux terminal: debugMex
- *       This will dynamically load your mexfile, open the .mat file, and start calling your mex file with the same inputs. 
- *
- *
+ * Read the documentation in debugMexEval.m for instructions.
  * Happy bugfinding!  - Russ
  */
 
