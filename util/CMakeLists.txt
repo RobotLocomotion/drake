@@ -54,6 +54,7 @@ if (APPLE)
       )
 else()
   file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
+       "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${MATLAB_ROOT}/bin/${MATLAB_CPU}\n"
        "export LD_PRELOAD=${CMAKE_BINARY_DIR}/lib/libdebugMex.so\n"
       )
 endif()
