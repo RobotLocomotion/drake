@@ -52,9 +52,10 @@ if (APPLE)
        "export DYLD_FORCE_FLAT_NAMESPACE=1\n"
        "export DYLD_INSERT_LIBRARIES=${CMAKE_BINARY_DIR}/lib/libdebugMex.dylib\n"
       )
-
 else()
-  message(WARNING "drake_debug_mex.sh not implemented yet on this platform")
+  file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
+       "export LD_PRELOAD=${CMAKE_BINARY_DIR}/lib/libdebugMex.so\n"
+      )
 endif()
 
 file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
