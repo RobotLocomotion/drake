@@ -914,6 +914,7 @@ systems/plants/RigidBodyActuator.m -text
 systems/plants/RigidBodyContactVisualizer.m -text
 systems/plants/RigidBodyElement.m -text
 systems/plants/RigidBodyForceElement.m -text
+systems/plants/RigidBodyFrame.h -text
 systems/plants/RigidBodyFrame.m -text
 systems/plants/RigidBodyHeightMapTerrain.m -text
 systems/plants/RigidBodyInertialMeasurementUnit.m -text

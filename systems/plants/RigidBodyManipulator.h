@@ -8,13 +8,14 @@
 #include "collision/Model.h"
 
 #include "RigidBody.h"
+#include "IKoptions.h"
 #include "RigidBodyFrame.h"
 
 #define INF -2147483648
 using namespace Eigen;
 
 class RigidBodyConstraint;
-extern std::set<int> emptyIntSet;
+extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
 class RigidBodyManipulator 
 {
