@@ -11,7 +11,6 @@ rmpath(fullfile(conf.root,'systems'));
 rmpath(fullfile(conf.root,'systems','plants'));
 rmpath(fullfile(conf.root,'systems','plants','affordance'));
 rmpath(fullfile(conf.root,'systems','plants','collision'));
-rmpath(fullfile(conf.root,'systems','plants','constraint'));
 rmpath(fullfile(conf.root,'systems','controllers'));
 rmpath(fullfile(conf.root,'systems','trajectories'));
 rmpath(fullfile(conf.root,'systems','frames'));

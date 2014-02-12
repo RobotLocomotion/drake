@@ -33,6 +33,7 @@ else
     body_ind = frame.body_ind;
     Tframe = frame.T;
   else
+    body_ind = body_or_frame_ind;
     Tframe=eye(4);
   end
   

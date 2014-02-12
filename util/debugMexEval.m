@@ -3,25 +3,18 @@ function varargout = debugMexEval(fun,varargin)
 % .mat file, which can be loaded and run from a standalone application to
 % help debug mex files. 
 %
-% Note: on mac, I needed to do the following to run debugMex from the
-% command line:
-%  export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/Applications/MATLAB_R2012a.app/bin/maci64
-%  export DYLD_FORCE_FLAT_NAMESPACE=1
-%  export DYLD_INSERT_LIBRARIES=PATH_TO_DRAKE/bin/libDrakeDebugMex.dylib 
+% to run it from the command line, run drake_debug_mex.sh (in the build/bin
+% directory). 
 %
-% on another platform, you presumably need to:
-%  export LD_PRELOAD=libDrakeDebugMex.so
-%  export LD_LIBRARY_PATH=PATH_TO_DRAKE/bin/:$LD_LIBRARY_PATH%  
-% but this is untested (so far)
 
 % note: adding the -DMX_COMPAT_32 changed my symbol from _mxGetProperty_730
 % to _mxGetProperty_700, which is what I needed
 
-% debugMex executable needs to keep a global table and fills in the right
-% pointer.  will need to handle the case that this pointer does not exists,
-% and give a useful warning so that people put a debugMexEval around the
-% function that creates that pointer, as well. 
-%
+% note: debugMex executable keeps a global table of DrakeMexPointers and 
+% fills in the right pointer.  will need to handle the case that this
+% pointer does not exists, and give a useful warning so that people put a 
+% debugMexEval around the function that creates that pointer, as well. 
+
 % note: it appears that the matrix library cannot load matlab class objects
 % with the matlab engine disconnected.  The work-around is that I write out the 
 % class objects passed in here as structures, and the debugMex executable 
@@ -31,6 +24,9 @@ function varargout = debugMexEval(fun,varargin)
 % sigh.  
 
 typecheck(fun,'char');
+if exist(fun)~=3,
+  error('the first argument should be a mex function');
+end
 
 % logic to keep track of individual function calls
 persistent count;
@@ -72,8 +68,12 @@ end
 function s = obj2struct(obj)
 
 if isobject(obj)
-  for i=1:numel(obj)  % support obj arrays
-    s(i) = struct(obj(i));
+  if numel(obj)>1
+    for i=1:numel(obj)  % support obj arrays
+      s(i) = struct(obj(i));
+    end
+  else
+    s = struct(obj);  % obj(i) doesn't work for everything (e.g. container.Map objects)
   end
   if isfield(s,'debug_mex_classname')
     error('i assumed that you didn''t use this as a property name');

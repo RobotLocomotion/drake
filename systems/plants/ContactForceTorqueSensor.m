@@ -24,7 +24,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
    end
 
    function tf = isDirectFeedthrough(obj)
-     tf = true;
+     tf = false;
    end
 
    function obj = compile(obj,tsmanip,manip)
@@ -94,13 +94,14 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
      y = cv{frame_idx};
    end
 
-   function [xdn,df] = update(obj,tsmanip,t,x,u)
-     if (nargout>1)
+   function [tsmanip,xdn,df] = update(obj,tsmanip,t,x,u)
+     if (nargout>2)
        error('ContactForceTorqueSensor:NoGradients',...
          'Gradients not yet supported for ContactForceTorqueSensor/update');
      end
      
-     z = tsmanip.solveLCP(t,x,u)/tsmanip.timestep;
+     [tsmanip,z] = tsmanip.solveLCP(t,x,u);
+     z = z/tsmanip.timestep;
 
      % todo: could do this more efficiently by only computing everything
      % below for indices where the normal forces are non-zero

@@ -7,6 +7,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     manip  % the CT manipulator
     sensor % additional TimeSteppingRigidBodySensors (beyond the sensors attached to manip)
     dirty=true;
+    LCP_cache = struct('t',[],'x',[],'u',[],'nargout',[], ...
+                       'z',[],'Mqdn',[],'wqdn',[], ...
+                       'dz',[],'dMqdn',[],'dwqdn',[]);
   end
 
   properties (SetAccess=protected)
@@ -71,10 +74,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if ~isDirectFeedthrough(obj)
         u=[];
       end
-      
-      y = obj.manip.output(t,x,u);
+      if isa(obj.getStateFrame(),'MultiCoordinateFrame')
+        cv = obj.getStateFrame().splitCoordinates(x);
+        x_manip = cv{1};
+      else
+        x_manip = x;
+      end
+      y = obj.manip.output(t,x_manip,u);
       for i=1:length(obj.sensor)
-        y = [y; obj.sensor{i}.output(obj,i,t,x,u)];
+        y = [y; obj.sensor{i}.output(obj,i+1,t,x,u)];
       end
     end
 
@@ -120,7 +128,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         for i=1:length(model.sensor)
           model.sensor{i} = model.sensor{i}.compile(model,model.manip);
           outframe{i+1} = model.sensor{i}.constructFrame(model);
-          if model.sensor{i}.has_state
+          if isa(model.sensor{i},'TimeSteppingRigidBodySensorWithState')
             stateframe = [stateframe, {model.sensor{i}.constructStateFrame(model)}];
           end
           feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
@@ -141,13 +149,17 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         model = setOutputFrame(model,getOutputFrame(model.manip));
         model = setDirectFeedthrough(model,model.manip.isDirectFeedthrough);
       end
+      model.LCP_cache.t = NaN;
+      model.LCP_cache.x = NaN(model.getNumStates(),1);
+      model.LCP_cache.u = NaN(model.getNumInputs(),1);
+      model.LCP_cache.nargout = NaN;
       model.dirty = false;
     end
     
     function x0 = getInitialState(obj)
       x0 = obj.manip.getInitialState();
       for i=1:length(obj.sensor)
-        if obj.sensor{i}.has_state
+        if isa(obj.sensor{i},'TimeSteppingRigidBodySensorWithState')
           x0 = [x0; obj.sensor{i}.getInitialState(obj)];
         end
       end
@@ -155,9 +167,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     
     function [xdn,df] = update(obj,t,x,u)
       if (nargout>1)
-        [z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
+        [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u);
       else
-        [z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
+        [obj,z,Mqdn,wqdn] = solveLCP(obj,t,x,u);
       end
       
       num_q = obj.manip.num_q;
@@ -184,11 +196,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
       
       for i=1:length(obj.sensor)
-        if obj.sensor{i}.has_state
+        if isa(obj.sensor{i},'TimeSteppingRigidBodySensorWithState')
           if (nargout>1)
-            [xdn_sensor,df_sensor] = update(obj.sensor{i},obj,t,x,u);
+            [obj,xdn_sensor,df_sensor] = update(obj.sensor{i},obj,t,x,u);
           else
-            xdn_sensor = update(obj.sensor{i},obj,t,x,u);
+            [obj,xdn_sensor] = update(obj.sensor{i},obj,t,x,u);
           end
           xdn = [xdn;xdn_sensor];
           if (nargout>1)
@@ -198,308 +210,343 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       end
     end
     
-    function [z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
+    function hit = cacheHit(obj,t,x,u,num_args_out)
+      hit = (t==obj.LCP_cache.t && all(x==obj.LCP_cache.x) && ...
+             all(u==obj.LCP_cache.u) && num_args_out <= obj.LCP_cache.nargout);
+    end
+    
+    function [obj,z,Mqdn,wqdn,dz,dMqdn,dwqdn] = solveLCP(obj,t,x,u)
       % do LCP time-stepping
       
       % todo: implement some basic caching here
-      
-      num_q = obj.manip.num_q;
-      q=x(1:num_q); qd=x(num_q+(1:num_q));
-      h = obj.timestep;
-
-      if (nargout<4)
-        [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
-        if (obj.num_u>0 && ~obj.position_control) tau = B*u - C; else tau = -C; end
-      else
-        [H,C,B,dH,dC,dB] = manipulatorDynamics(obj.manip,q,qd);
-        if (obj.num_u>0 && ~obj.position_control) 
-          tau = B*u - C;  
-          dtau = [zeros(num_q,1), matGradMult(dB,u) - dC, B];
-        else
-          tau = -C; 
-          dtau = [zeros(num_q,1), -dC];
+      if cacheHit(obj,t,x,u,nargout)
+        z = obj.LCP_cache.z;
+        Mqdn = obj.LCP_cache.Mqdn;
+        wqdn = obj.LCP_cache.wqdn;
+        if nargout > 4
+          dz = obj.LCP_cache.dz;
+          dMqdn = obj.LCP_cache.dMqdn;
+          dwqdn = obj.LCP_cache.dwqdn;
         end
-      end
-      
-      if (obj.position_control)
-        pos_control_index = getActuatedJoints(obj.manip);
-        nL = 2*length(pos_control_index);
       else
-        nL = sum([obj.manip.joint_limit_min~=-inf;obj.manip.joint_limit_max~=inf]); % number of joint limits
-      end
-      nC = obj.manip.num_contacts;
-      nP = 2*obj.manip.num_position_constraints;  % number of position constraints
-      nV = obj.manip.num_velocity_constraints;  
-      
-      if (nC+nL+nP+nV==0)
-        z = [];
-        Mqdn = [];
-        wqdn = qd + h*(H\tau);
-        if (nargout>3) error('need to implement this case'); end
-        return;
-      end      
-      
-      % Set up the LCP:
-      % z >= 0, Mz + w >= 0, z'*(Mz + w) = 0
-      % for documentation below, use slack vars: s = Mz + w >= 0
-      %
-      % use qn = q + h*qdn
-      % where H(q)*(qdn - qd)/h = B*u - C(q) + J(q)'*z
-      %  or qdn = qd + H\(h*tau + J'*z)
-      %  with z = [h*cL; h*cP; h*cN; h*beta{1}; ...; h*beta{mC}; lambda]
-      %
-      % and implement equation (7) from Anitescu97, by collecting
-      %   J = [JL; JP; n; D{1}; ...; D{mC}; zeros(nC,num_q)]
-
-      if (nC > 0)
-        if (nargout>3)
-          [phiC,n,D,mu,dn,dD] = obj.manip.contactConstraints(q);  % this is what I want eventually.
-          mC = length(D);
-          dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
-          dJ(nL+nP+(1:nC),:) = reshape(dn,nC,[]);
-          dD = cellfun(@(A)reshape(A,size(D{1},1),size(D{1},2)*size(dD{1},2)),dD,'UniformOutput',false);
-          dD = vertcat(dD{:});
-          dJ(nL+nP+nC+(1:mC*nC),:) = dD;
+        
+        obj.LCP_cache.t = t;
+        obj.LCP_cache.x = x;
+        obj.LCP_cache.u = u;
+        obj.LCP_cache.nargout = nargout;
+        
+        num_q = obj.manip.num_q;
+        q=x(1:num_q); qd=x(num_q+(1:num_q));
+        h = obj.timestep;
+        
+        if (nargout<5)
+          [H,C,B] = manipulatorDynamics(obj.manip,q,qd);
+          if (obj.num_u>0 && ~obj.position_control) tau = B*u - C; else tau = -C; end
         else
-          [phiC,n,D,mu] = obj.manip.contactConstraints(q);
-          mC = length(D);
-        end
-        J = zeros(nL + nP + (mC+2)*nC,num_q)*q(1); % *q(1) is for taylorvar
-        D = vertcat(D{:});
-        J(nL+nP+(1:nC),:) = n;
-        J(nL+nP+nC+(1:mC*nC),:) = D;
-      else
-        mC=0;
-        J = zeros(nL+nP,num_q);
-        if (nargout>3)
-          dJ = sparse(nL+nP,num_q^2);
-        end
-      end
-      
-      if (nL > 0)
-        if (obj.position_control)
-          phiL = q(pos_control_index) - u; 
-          JL = sparse(1:obj.manip.num_u,pos_control_index,1,obj.manip.num_u,obj.manip.num_q);
-          phiL = [phiL;-phiL]; JL = [JL;-JL];
-          % dJ = 0 by default, which is correct here
-        else
-          if (nargout<4)
-            [phiL,JL] = obj.manip.jointLimitConstraints(q);
+          [H,C,B,dH,dC,dB] = manipulatorDynamics(obj.manip,q,qd);
+          if (obj.num_u>0 && ~obj.position_control)
+            tau = B*u - C;
+            dtau = [zeros(num_q,1), matGradMult(dB,u) - dC, B];
           else
-            [phiL,JL,dJL] = obj.manip.jointLimitConstraints(q);
-            dJ(1:nL,:) = dJL;
+            tau = -C;
+            dtau = [zeros(num_q,1), -dC];
           end
         end
-        J(1:nL,:) = JL;
-      end
-      
-      %% Bilateral position constraints 
-      if nP > 0
-        % write as 
-        %   phiP + h*JP*qdn >= 0 && -phiP - h*JP*qdn >= 0
-        if (nargout<4)
-          [phiP,JP] = geval(@positionConstraints,obj.manip,q);
-          %        [phiP,JP] = obj.manip.positionConstraints(q);
+        
+        if (obj.position_control)
+          pos_control_index = getActuatedJoints(obj.manip);
+          nL = 2*length(pos_control_index);
         else
-          [phiP,JP,dJP] = geval(@positionConstraints,obj.manip,q);
-          dJP(nL+(1:nP),:) = [dJP; -dJP];
+          nL = sum([obj.manip.joint_limit_min~=-inf;obj.manip.joint_limit_max~=inf]); % number of joint limits
         end
-        phiP = [phiP;-phiP];
-        JP = [JP; -JP]; 
-        J(nL+(1:nP),:) = JP; 
-      end
-      
-      %% Bilateral velocity constraints
-      if nV > 0
-        error('not implemented yet');  % but shouldn't be hard
-      end
-      
-      M = zeros(nL+nP+(mC+2)*nC)*q(1);
-      w = zeros(nL+nP+(mC+2)*nC,1)*q(1);
-      active = true(nL+nP+(mC+2)*nC,1);
-      active_tol = .01;
-      
-      Hinv = inv(H);
-      wqdn = qd + h*Hinv*tau;
-      Mqdn = Hinv*J';
-
-      if (nargout>3)
-        dM = zeros(size(M,1),size(M,2),1+2*num_q+obj.num_u);
-        dw = zeros(size(w,1),1+2*num_q+obj.num_u);
-        dwqdn = [zeros(num_q,1+num_q),eye(num_q),zeros(num_q,obj.num_u)] + ...
-          h*Hinv*dtau - [zeros(num_q,1),h*Hinv*matGradMult(dH(:,1:num_q),Hinv*tau),zeros(num_q,num_q),zeros(num_q,obj.num_u)];
-        dJtranspose = reshape(permute(reshape(dJ,size(J,1),size(J,2),[]),[2,1,3]),prod(size(J)),[]);
-        dMqdn = [zeros(numel(Mqdn),1),reshape(Hinv*reshape(dJtranspose - matGradMult(dH(:,1:num_q),Hinv*J'),num_q,[]),numel(Mqdn),[]),zeros(numel(Mqdn),num_q+obj.num_u)];
-      end
-      
-      % check gradients
-%      xdn = Mqdn;
-%      if (nargout>1)
-%        df = dMqdn;
-%        df = [zeros(prod(size(xdn)),1),reshape(dJ,prod(size(xdn)),[]),zeros(prod(size(xdn)),num_q+obj.num_u)];
-%      end
-%      return;
-      
-      %% Joint Limits:
-      % phiL(qn) is distance from each limit (in joint space)
-      % phiL_i(qn) >= 0, cL_i >=0, phiL_i(qn) * cL_I = 0
-      % z(1:nL) = cL (nL includes min AND max; 0<=nL<=2*num_q)
-      % s(1:nL) = phiL(qn) approx phiL + h*JL*qdn
-      if (nL > 0)
-        w(1:nL) = phiL + h*JL*wqdn;
-        M(1:nL,:) = h*JL*Mqdn;
-        active(1:nL) = (phiL + h*JL*qd) < active_tol;
-        if (nargout>3)
-          dJL = [zeros(prod(size(JL)),1),reshape(dJL,numel(JL),[]),zeros(numel(JL),num_q+obj.num_u)];
-          dw(1:nL,:) = [zeros(size(JL,1),1),JL,zeros(size(JL,1),num_q+obj.num_u)] + h*matGradMultMat(JL,wqdn,dJL,dwqdn);
-          dM(1:nL,1:size(Mqdn,2),:) = reshape(h*matGradMultMat(JL,Mqdn,dJL,dMqdn),nL,size(Mqdn,2),[]);  
-        end
-      end
-      
-      %% Bilateral Position Constraints:
-      % enforcing eq7, line 2
-      if (nP > 0)
-        w(nL+(1:nP)) = phiP + h*JP*wqdn;
-        M(nL+(1:nP),:) = h*JP*Mqdn;
-        active(nL+(1:nP)) = true;
-        if (nargout>3)
-          dJP = [zeros(numel(JP),1),reshape(dJP,numel(JP),[]),zeros(numel(JP),num_q+obj.num_u)];
-          dw(nL+(1:nP),:) = [zeros(size(JP,1),1),JP,zeros(size(JP,1),num_q+obj.num_u)] + h*matGradMultMat(JP,wqdn,dJP,dwqdn);
-          dM(nL+(1:nP),1:size(Mqdn,2),:) = reshape(h*matGradMultMat(JP,Mqdn,dJP,qMqdn),nP,size(Mqdn,2),[]);
-        end
-      end
-      
-      %% Contact Forces:
-      % s(nL+nP+(1:nC)) = phiC+h*n*qdn  (modified (fixed?) from eq7, line 3)
-      % z(nL+nP+(1:nC)) = cN
-      % s(nL+nP+nC+(1:mC*nC)) = repmat(lambda,mC,1) + D*qdn  (eq7, line 4)
-      % z(nL+nP+nC+(1:mC*nC)) = [beta_1;...;beta_mC]
-      % s(nL+nP+(mC+1)*nC+(1:nC)) = mu*cn - sum_mC beta_mC (eq7, line 5)
-      % z(nL+nP+(mC+1)*nC+(1:nC)) = lambda
-      %
-      % The second set of conditions gives:
-      %   lambda_i >= the largest projection of the velocity vector
-      %   onto the d vectors (since lambda_i >= -(D*qdn)_i for all i, 
-      % and by construction of d always having the mirror vectors,
-      %   lambda_i >= (D_qdn)_i
-      %
-      % The last eqs give
-      %  lambda_i > 0 iff (sum beta)_i = mu_i*cn_i  
-      % where i is for the ith contact.
-      % Assume for a moment that mu_i*cn_i = 1, then (sum_beta)_i = 1
-      % is like a constraint ensuring that sum_beta_j D_j is like a convex
-      % combination of the D vectors (since beta_j is also > 0)
-      % So lambda_i >0 if forces for the ith contact are on the boundary of
-      % the friction cone (lambda_i could also be > 0 if some of the beta_j
-      % D_j's are internally canceling each other out)
-      %
-      % So one solution is 
-      %  v_i = 0, 
-      %  beta_i >= 0
-      %  lambda_i = 0, 
-      %  sum_d beta_i < mu*cn_i
-      % and another solution is
-      %  v_i > 0  (sliding) 
-      %  lambda_i = max_d (v_i)
-      %  beta_i = mu*cn_i only in the direction of the largest negative velocity
-      %  beta_i = 0 otherwise
-      % By virtue of the eqs of motion connecting v_i and beta_i, only one
-      % of these two can exist. (the first is actually many solutions, with
-      % beta_i in opposite directions canceling each other out).
-      if (nC > 0)
-        w(nL+nP+(1:nC)) = phiC+h*n*wqdn;
-        M(nL+nP+(1:nC),:) = h*n*Mqdn;
+        nC = obj.manip.num_contacts;
+        nP = 2*obj.manip.num_position_constraints;  % number of position constraints
+        nV = obj.manip.num_velocity_constraints;
         
-        w(nL+nP+nC+(1:mC*nC)) = D*wqdn;
-        M(nL+nP+nC+(1:mC*nC),:) = D*Mqdn; 
-        M(nL+nP+nC+(1:mC*nC),nL+nP+(1+mC)*nC+(1:nC)) = repmat(eye(nC),mC,1);
-
-        M(nL+nP+(mC+1)*nC+(1:nC),nL+nP+(1:(mC+1)*nC)) = [diag(mu), repmat(-eye(nC),1,mC)];
-
-        if (nargout>3)
-          % n, dn, and dD were only w/ respect to q.  filled them out for [t,x,u]
-          dn = [zeros(size(dn,1),1),dn,zeros(size(dn,1),num_q+obj.num_u)];
-          dD = [zeros(numel(D),1),reshape(dD,numel(D),[]),zeros(numel(D),num_q+obj.num_u)];
+        if (nC+nL+nP+nV==0)
+          z = [];
+          Mqdn = [];
+          wqdn = qd + h*(H\tau);
+          if (nargout>4) error('need to implement this case'); end
+          return;
+        end
+        
+        % Set up the LCP:
+        % z >= 0, Mz + w >= 0, z'*(Mz + w) = 0
+        % for documentation below, use slack vars: s = Mz + w >= 0
+        %
+        % use qn = q + h*qdn
+        % where H(q)*(qdn - qd)/h = B*u - C(q) + J(q)'*z
+        %  or qdn = qd + H\(h*tau + J'*z)
+        %  with z = [h*cL; h*cP; h*cN; h*beta{1}; ...; h*beta{mC}; lambda]
+        %
+        % and implement equation (7) from Anitescu97, by collecting
+        %   J = [JL; JP; n; D{1}; ...; D{mC}; zeros(nC,num_q)]
+        
+        if (nC > 0)
+          if (nargout>4)
+            [phiC,n,D,mu,dn,dD] = obj.manip.contactConstraints(q);  % this is what I want eventually.
+            mC = length(D);
+            dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
+            dJ(nL+nP+(1:nC),:) = reshape(dn,nC,[]);
+            dD = cellfun(@(A)reshape(A,size(D{1},1),size(D{1},2)*size(dD{1},2)),dD,'UniformOutput',false);
+            dD = vertcat(dD{:});
+            dJ(nL+nP+nC+(1:mC*nC),:) = dD;
+          else
+            [phiC,n,D,mu] = obj.manip.contactConstraints(q);
+            mC = length(D);
+          end
+          J = zeros(nL + nP + (mC+2)*nC,num_q)*q(1); % *q(1) is for taylorvar
+          D = vertcat(D{:});
+          J(nL+nP+(1:nC),:) = n;
+          J(nL+nP+nC+(1:mC*nC),:) = D;
+        else
+          mC=0;
+          J = zeros(nL+nP,num_q);
+          if (nargout>4)
+            dJ = sparse(nL+nP,num_q^2);
+          end
+        end
+        
+        if (nL > 0)
+          if (obj.position_control)
+            phiL = q(pos_control_index) - u;
+            JL = sparse(1:obj.manip.num_u,pos_control_index,1,obj.manip.num_u,obj.manip.num_q);
+            phiL = [phiL;-phiL]; JL = [JL;-JL];
+            % dJ = 0 by default, which is correct here
+          else
+            if (nargout<5)
+              [phiL,JL] = obj.manip.jointLimitConstraints(q);
+            else
+              [phiL,JL,dJL] = obj.manip.jointLimitConstraints(q);
+              dJ(1:nL,:) = dJL;
+            end
+          end
+          J(1:nL,:) = JL;
+        end
+        
+        %% Bilateral position constraints
+        if nP > 0
+          % write as
+          %   phiP + h*JP*qdn >= 0 && -phiP - h*JP*qdn >= 0
+          if (nargout<5)
+            [phiP,JP] = geval(@positionConstraints,obj.manip,q);
+            %        [phiP,JP] = obj.manip.positionConstraints(q);
+          else
+            [phiP,JP,dJP] = geval(@positionConstraints,obj.manip,q);
+            dJP(nL+(1:nP),:) = [dJP; -dJP];
+          end
+          phiP = [phiP;-phiP];
+          JP = [JP; -JP];
+          J(nL+(1:nP),:) = JP;
+        end
+        
+        %% Bilateral velocity constraints
+        if nV > 0
+          error('not implemented yet');  % but shouldn't be hard
+        end
+        
+        M = zeros(nL+nP+(mC+2)*nC)*q(1);
+        w = zeros(nL+nP+(mC+2)*nC,1)*q(1);
+        active = true(nL+nP+(mC+2)*nC,1);
+        active_tol = .01;
+        
+        Hinv = inv(H);
+        wqdn = qd + h*Hinv*tau;
+        Mqdn = Hinv*J';
+        
+        if (nargout>4)
+          dM = zeros(size(M,1),size(M,2),1+2*num_q+obj.num_u);
+          dw = zeros(size(w,1),1+2*num_q+obj.num_u);
+          dwqdn = [zeros(num_q,1+num_q),eye(num_q),zeros(num_q,obj.num_u)] + ...
+            h*Hinv*dtau - [zeros(num_q,1),h*Hinv*matGradMult(dH(:,1:num_q),Hinv*tau),zeros(num_q,num_q),zeros(num_q,obj.num_u)];
+          dJtranspose = reshape(permute(reshape(dJ,size(J,1),size(J,2),[]),[2,1,3]),prod(size(J)),[]);
+          dMqdn = [zeros(numel(Mqdn),1),reshape(Hinv*reshape(dJtranspose - matGradMult(dH(:,1:num_q),Hinv*J'),num_q,[]),numel(Mqdn),[]),zeros(numel(Mqdn),num_q+obj.num_u)];
+        end
+        
+        % check gradients
+        %      xdn = Mqdn;
+        %      if (nargout>1)
+        %        df = dMqdn;
+        %        df = [zeros(prod(size(xdn)),1),reshape(dJ,prod(size(xdn)),[]),zeros(prod(size(xdn)),num_q+obj.num_u)];
+        %      end
+        %      return;
+        
+        %% Joint Limits:
+        % phiL(qn) is distance from each limit (in joint space)
+        % phiL_i(qn) >= 0, cL_i >=0, phiL_i(qn) * cL_I = 0
+        % z(1:nL) = cL (nL includes min AND max; 0<=nL<=2*num_q)
+        % s(1:nL) = phiL(qn) approx phiL + h*JL*qdn
+        if (nL > 0)
+          w(1:nL) = phiL + h*JL*wqdn;
+          M(1:nL,:) = h*JL*Mqdn;
+          active(1:nL) = (phiL + h*JL*qd) < active_tol;
+          if (nargout>4)
+            dJL = [zeros(prod(size(JL)),1),reshape(dJL,numel(JL),[]),zeros(numel(JL),num_q+obj.num_u)];
+            dw(1:nL,:) = [zeros(size(JL,1),1),JL,zeros(size(JL,1),num_q+obj.num_u)] + h*matGradMultMat(JL,wqdn,dJL,dwqdn);
+            dM(1:nL,1:size(Mqdn,2),:) = reshape(h*matGradMultMat(JL,Mqdn,dJL,dMqdn),nL,size(Mqdn,2),[]);
+          end
+        end
+        
+        %% Bilateral Position Constraints:
+        % enforcing eq7, line 2
+        if (nP > 0)
+          w(nL+(1:nP)) = phiP + h*JP*wqdn;
+          M(nL+(1:nP),:) = h*JP*Mqdn;
+          active(nL+(1:nP)) = true;
+          if (nargout>4)
+            dJP = [zeros(numel(JP),1),reshape(dJP,numel(JP),[]),zeros(numel(JP),num_q+obj.num_u)];
+            dw(nL+(1:nP),:) = [zeros(size(JP,1),1),JP,zeros(size(JP,1),num_q+obj.num_u)] + h*matGradMultMat(JP,wqdn,dJP,dwqdn);
+            dM(nL+(1:nP),1:size(Mqdn,2),:) = reshape(h*matGradMultMat(JP,Mqdn,dJP,qMqdn),nP,size(Mqdn,2),[]);
+          end
+        end
+        
+        %% Contact Forces:
+        % s(nL+nP+(1:nC)) = phiC+h*n*qdn  (modified (fixed?) from eq7, line 3)
+        % z(nL+nP+(1:nC)) = cN
+        % s(nL+nP+nC+(1:mC*nC)) = repmat(lambda,mC,1) + D*qdn  (eq7, line 4)
+        % z(nL+nP+nC+(1:mC*nC)) = [beta_1;...;beta_mC]
+        % s(nL+nP+(mC+1)*nC+(1:nC)) = mu*cn - sum_mC beta_mC (eq7, line 5)
+        % z(nL+nP+(mC+1)*nC+(1:nC)) = lambda
+        %
+        % The second set of conditions gives:
+        %   lambda_i >= the largest projection of the velocity vector
+        %   onto the d vectors (since lambda_i >= -(D*qdn)_i for all i,
+        % and by construction of d always having the mirror vectors,
+        %   lambda_i >= (D_qdn)_i
+        %
+        % The last eqs give
+        %  lambda_i > 0 iff (sum beta)_i = mu_i*cn_i
+        % where i is for the ith contact.
+        % Assume for a moment that mu_i*cn_i = 1, then (sum_beta)_i = 1
+        % is like a constraint ensuring that sum_beta_j D_j is like a convex
+        % combination of the D vectors (since beta_j is also > 0)
+        % So lambda_i >0 if forces for the ith contact are on the boundary of
+        % the friction cone (lambda_i could also be > 0 if some of the beta_j
+        % D_j's are internally canceling each other out)
+        %
+        % So one solution is
+        %  v_i = 0,
+        %  beta_i >= 0
+        %  lambda_i = 0,
+        %  sum_d beta_i < mu*cn_i
+        % and another solution is
+        %  v_i > 0  (sliding)
+        %  lambda_i = max_d (v_i)
+        %  beta_i = mu*cn_i only in the direction of the largest negative velocity
+        %  beta_i = 0 otherwise
+        % By virtue of the eqs of motion connecting v_i and beta_i, only one
+        % of these two can exist. (the first is actually many solutions, with
+        % beta_i in opposite directions canceling each other out).
+        if (nC > 0)
+          w(nL+nP+(1:nC)) = phiC+h*n*wqdn;
+          M(nL+nP+(1:nC),:) = h*n*Mqdn;
           
-          dw(nL+nP+(1:nC),:) = [zeros(size(n,1),1),n,zeros(size(n,1),num_q+obj.num_u)]+h*matGradMultMat(n,wqdn,dn,dwqdn);
-          dM(nL+nP+(1:nC),1:size(Mqdn,2),:) = reshape(h*matGradMultMat(n,Mqdn,dn,dMqdn),nC,size(Mqdn,2),[]);
+          w(nL+nP+nC+(1:mC*nC)) = D*wqdn;
+          M(nL+nP+nC+(1:mC*nC),:) = D*Mqdn;
+          M(nL+nP+nC+(1:mC*nC),nL+nP+(1+mC)*nC+(1:nC)) = repmat(eye(nC),mC,1);
           
-          dw(nL+nP+nC+(1:mC*nC),:) = matGradMultMat(D,wqdn,dD,dwqdn);
-          dM(nL+nP+nC+(1:mC*nC),1:size(Mqdn,2),:) = reshape(matGradMultMat(D,Mqdn,dD,dMqdn),mC*nC,size(Mqdn,2),[]);
+          M(nL+nP+(mC+1)*nC+(1:nC),nL+nP+(1:(mC+1)*nC)) = [diag(mu), repmat(-eye(nC),1,mC)];
+          
+          if (nargout>4)
+            % n, dn, and dD were only w/ respect to q.  filled them out for [t,x,u]
+            dn = [zeros(size(dn,1),1),dn,zeros(size(dn,1),num_q+obj.num_u)];
+            dD = [zeros(numel(D),1),reshape(dD,numel(D),[]),zeros(numel(D),num_q+obj.num_u)];
+            
+            dw(nL+nP+(1:nC),:) = [zeros(size(n,1),1),n,zeros(size(n,1),num_q+obj.num_u)]+h*matGradMultMat(n,wqdn,dn,dwqdn);
+            dM(nL+nP+(1:nC),1:size(Mqdn,2),:) = reshape(h*matGradMultMat(n,Mqdn,dn,dMqdn),nC,size(Mqdn,2),[]);
+            
+            dw(nL+nP+nC+(1:mC*nC),:) = matGradMultMat(D,wqdn,dD,dwqdn);
+            dM(nL+nP+nC+(1:mC*nC),1:size(Mqdn,2),:) = reshape(matGradMultMat(D,Mqdn,dD,dMqdn),mC*nC,size(Mqdn,2),[]);
+          end
+          
+          a = (phiC+h*n*qd) < active_tol;
+          active(nL+nP+(1:(mC+2)*nC),:) = repmat(a,mC+2,1);
         end
         
-        a = (phiC+h*n*qd) < active_tol;
-        active(nL+nP+(1:(mC+2)*nC),:) = repmat(a,mC+2,1);
+        % check gradients
+        %      xdn = M;
+        %      if (nargout>1)
+        %        df = reshape(dM,prod(size(M)),[]);
+        %      end
+        %      return;
+        
+        
+        while (1)
+        
+        obj.LCP_cache.t = t;
+        obj.LCP_cache.x = x;
+        obj.LCP_cache.u = u;
+        obj.LCP_cache.nargout = nargout;
+          z = zeros(nL+nP+(mC+2)*nC,1);
+          if any(active)
+            z(active) = pathlcp(M(active,active),w(active));
+          end
+          
+          inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
+          missed = (M(inactive,inactive)*z(inactive)+w(inactive) < 0);
+          if ~any(missed), break; end
+          % otherwise add the missed indices to the active set and repeat
+          warning('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP',['t=',num2str(t),': missed ',num2str(sum(missed)),' constraints.  resolving lcp.']);
+          ind = find(inactive);
+          inactive(ind(missed)) = false;
+          % add back in the related contact terms:
+          inactive = [inactive; repmat(inactive(nL+nP+(1:nC)),mC+1,1)];
+          active = ~inactive;
+        end
+        
+        % for debugging
+        %cN = z(nL+nP+(1:nC))
+        %beta1 = z(nL+nP+nC+(1:nC))
+        %beta2 = z(nL+nP+2*nC+(1:nC))
+        %lambda = z(nL+nP+3*nC+(1:nC))
+        % end debugging
+        
+        obj.LCP_cache.z = z;
+        obj.LCP_cache.Mqdn = Mqdn;
+        obj.LCP_cache.wqdn = wqdn;
+        if (nargout>4)
+          % Quick derivation:
+          % The LCP solves for z given that:
+          % M(a)*z + q(a) >= 0
+          % z >= 0
+          % z'*(M(a)*z + q(a)) = 0
+          % where the vector inequalities are element-wise, and 'a' is a vector of  parameters (here the state x and control input u).
+          %
+          % Our goal is to solve for the gradients dz/da.
+          %
+          % First we solve the LCP to obtain z.
+          %
+          % Then, for all i where z_i = 0, then dz_i / da = 0.
+          % Call the remaining active constraints (where z_i >0)  Mbar(a), zbar, and  qbar(a).  then we have
+          % Mbar(a) * zbar + qbar(a) = 0
+          %
+          % and the remaining gradients are given by
+          % for all j, dMbar/da_j * zbar + Mbar * dzbar / da_j + dqbar / da_j = 0
+          % or
+          %
+          % dzbar / da_j =  - inv(Mbar)*(dMbar/da_j * zbar + dqbar / da_j)
+          %
+          % I'm pretty sure that Mbar will always be invertible when the LCP is solvable.
+          
+          dz = zeros(size(z,1),1+obj.num_x+obj.num_u);
+          zposind = find(z>0);
+          if ~isempty(zposind)
+            Mbar = M(zposind,zposind);
+            dMbar = reshape(dM(zposind,zposind,:),numel(Mbar),[]);
+            zbar = z(zposind);
+            dwbar = dw(zposind,:);
+            dz(zposind,:) = -Mbar\(matGradMult(dMbar,zbar) + dwbar);
+          end
+          obj.LCP_cache.dz = dz;
+          obj.LCP_cache.dMqdn = dMqdn;
+          obj.LCP_cache.dwqdn = dwqdn;
+        else
+          obj.LCP_cache.dz = [];
+          obj.LCP_cache.dMqdn = [];
+          obj.LCP_cache.dwqdn = [];
+        end
       end
-      
-      % check gradients
-%      xdn = M;
-%      if (nargout>1)
-%        df = reshape(dM,prod(size(M)),[]);
-%      end
-%      return;
-      
-      
-      while (1)
-        z = zeros(nL+nP+(mC+2)*nC,1);
-        if any(active)
-          z(active) = pathlcp(M(active,active),w(active));
-        end
-        
-        inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
-        missed = (M(inactive,inactive)*z(inactive)+w(inactive) < 0);
-        if ~any(missed), break; end
-        % otherwise add the missed indices to the active set and repeat
-        warning('Drake:TimeSteppingRigidBodyManipulator:ResolvingLCP',['t=',num2str(t),': missed ',num2str(sum(missed)),' constraints.  resolving lcp.']);
-        ind = find(inactive);
-        inactive(ind(missed)) = false;
-        % add back in the related contact terms:
-        inactive = [inactive; repmat(inactive(nL+nP+(1:nC)),mC+1,1)];
-        active = ~inactive;
-      end 
-      
-      % for debugging
-      %cN = z(nL+nP+(1:nC))
-      %beta1 = z(nL+nP+nC+(1:nC))
-      %beta2 = z(nL+nP+2*nC+(1:nC))
-      %lambda = z(nL+nP+3*nC+(1:nC))
-      % end debugging
-      
-      if (nargout>3)
-        % Quick derivation:
-        % The LCP solves for z given that:
-        % M(a)*z + q(a) >= 0
-        % z >= 0
-        % z'*(M(a)*z + q(a)) = 0
-        % where the vector inequalities are element-wise, and 'a' is a vector of  parameters (here the state x and control input u).
-        %
-        % Our goal is to solve for the gradients dz/da.
-        %
-        % First we solve the LCP to obtain z.
-        %
-        % Then, for all i where z_i = 0, then dz_i / da = 0.
-        % Call the remaining active constraints (where z_i >0)  Mbar(a), zbar, and  qbar(a).  then we have
-        % Mbar(a) * zbar + qbar(a) = 0
-        %
-        % and the remaining gradients are given by
-        % for all j, dMbar/da_j * zbar + Mbar * dzbar / da_j + dqbar / da_j = 0
-        % or
-        %
-        % dzbar / da_j =  - inv(Mbar)*(dMbar/da_j * zbar + dqbar / da_j)
-        %
-        % I'm pretty sure that Mbar will always be invertible when the LCP is solvable.
-        
-        dz = zeros(size(z,1),1+obj.num_x+obj.num_u);
-        zposind = find(z>0);
-        if ~isempty(zposind)
-          Mbar = M(zposind,zposind);
-          dMbar = reshape(dM(zposind,zposind,:),numel(Mbar),[]);
-          zbar = z(zposind);
-          dwbar = dw(zposind,:);
-          dz(zposind,:) = -Mbar\(matGradMult(dMbar,zbar) + dwbar);
-        end
-      end      
-      
     end
 
     function obj = addSensor(obj,sensor)
@@ -519,18 +566,36 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function varargout = pdcontrol(sys,Kp,Kd,index)
       if nargin<4, index=[]; end
-      [pdff,pdfb] = pdcontrol(sys.manip,Kp,Kd,index);
-      pdfb = setInputFrame(pdfb,sys.getStateFrame());
-      pdfb = setOutputFrame(pdfb,sys.getInputFrame());
-      pdff = setOutputFrame(pdff,sys.getInputFrame());
-      if nargout>1
-        varargout{1} = pdff;
-        varargout{2} = pdfb;
+      sys_output_frame = sys.getOutputFrame();
+      try
+        sys_state_frame_num = sys_output_frame.getFrameNum(sys.manip.getStateFrame());
+      catch ex
+        if strcmp(ex.identifier,'Drake:CoordinateFrame:NoFrame')
+          sys_state_frame_num = [];
+        else
+          throw(ex);
+        end
+      end
+      if ~isempty(sys_state_frame_num)
+        [pdff,pdfb] = pdcontrol(sys.manip,Kp,Kd,index);
+        pdfb_input_frame = sys_output_frame.getFrameByNum(sys_state_frame_num);
+        pdfb = setInputFrame(pdfb,pdfb_input_frame);
+        pdfb = setOutputFrame(pdfb,sys.getInputFrame());
+        pdff = setOutputFrame(pdff,sys.getInputFrame());
+        if nargout>1
+          varargout{1} = pdff;
+          varargout{2} = pdfb;
+        else
+          % note: design the PD controller with the (non time-stepping
+          % manipulator), but build the closed loop system with the
+          % time-stepping manipulator:
+          varargout{1} = cascade(pdff,feedback(sys,pdfb));
+        end
       else
-        % note: design the PD controller with the (non time-stepping
-        % manipulator), but build the closed loop system with the
-        % time-stepping manipulator:
-        varargout{1} = cascade(pdff,feedback(sys,pdfb));
+        error('Drake:TimeSteppingRigidBodyManipulator:pdcontrol:OutputFrame', ...
+              ['Cannot find ''%s'' in the output frame of this manipulator. ', ...
+               'Consider adding a state estimator or a full-state sensor'], ...
+              sys.manip.getStateFrame().name);
       end
     end
     
@@ -554,10 +619,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       if ~isempty(obj.manip) % this also gets called on the initial constructor
         mfr = getStateFrame(obj.manip);
         if isempty(findTransform(fr,mfr))
-          addTransform(fr,AffineTransform(fr,mfr,eye(obj.num_x),zeros(obj.num_x,1)));
+          addTransform(fr,AffineTransform(fr,mfr,eye(obj.manip.num_x,obj.num_x),zeros(obj.manip.num_x,1)));
         end
         if isempty(findTransform(mfr,fr))
-          addTransform(mfr,AffineTransform(mfr,fr,eye(obj.num_x),zeros(obj.num_x,1)));
+          addTransform(mfr,AffineTransform(mfr,fr,eye(obj.num_x,obj.manip.num_x),zeros(obj.num_x,1)));
         end
       end
     end
@@ -634,9 +699,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         [varargout{:}] = inverseKinWrapup(obj.manip,varargin{:});
     end
     
-    function varargout = findFixedPoint(obj,varargin)
-      varargout = cell(1,nargout);
-      [varargout{:}]=findFixedPoint(obj.manip,varargin{:});
+    function varargout = findFixedPoint(obj,x0,varargin)
+      varargout=cell(1,nargout);
+      if isnumeric(x0)
+        x0 = Point(obj.getStateFrame(),x0);
+      end
+      [varargout{:}]=findFixedPoint(obj.manip,x0,varargin{:});
+      varargout{1} = varargout{1}.inFrame(obj.getStateFrame());
     end
     
     function varargout = collisionDetect(obj,varargin)
@@ -694,10 +763,13 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = contactPositionsJdot(obj.manip,varargin{:});
     end
     
-    function varargout = resolveConstraints(obj,varargin)
+    function varargout = resolveConstraints(obj,x0,varargin)
       varargout=cell(1,nargout);
-      [varargout{:}] = resolveConstraints(obj.manip,varargin{:});
-      varargout{1} = Point(obj.getStateFrame,double(varargout{1}));
+      if isnumeric(x0)
+        x0 = Point(obj.getStateFrame(),x0);
+      end
+      [varargout{:}] = resolveConstraints(obj.manip,x0,varargin{:});
+      varargout{1} = varargout{1}.inFrame(obj.getStateFrame());
     end
     
     function varargout = getMass(obj,varargin)
@@ -731,6 +803,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       body = findLink(model.manip,varargin{:});
     end
     
+    function frame_id = findFrameId(model,varargin)
+      frame_id = findFrameId(model.manip,varargin{:});
+    end
+    
     function ancestor_bodies = findAncestorBodies(obj, body_index)
       ancestor_bodies = obj.manip.findAncestorBodies(body_index);
     end
@@ -751,6 +827,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function body = getBody(model,varargin)
       body = getBody(model.manip,varargin{:});
     end
+    
+    function frame = getFrame(model,varargin)
+      frame = getFrame(model.manip,varargin{:});
+    end
         
     function model = setBody(model,varargin)
       model.manip = setBody(model.manip,varargin{:});
@@ -759,6 +839,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     
     function v = constructVisualizer(obj,varargin)
       v = constructVisualizer(obj.manip,varargin{:});
+      v = v.setNumInputs(obj.getNumStates());
       v = setInputFrame(v,obj.getStateFrame());
     end
     

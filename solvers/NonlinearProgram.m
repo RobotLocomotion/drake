@@ -194,9 +194,18 @@ classdef NonlinearProgram
       typecheck(solvers,'cell');
       for i=1:length(solvers)
         obj.solver = solvers{i};
-        tic;
-        [x{i},objval{i},exitflag{i}] = solve(obj,x0);
-        execution_time{i} = toc;
+        try 
+          tic;
+          [x{i},objval{i},exitflag{i}] = solve(obj,x0);
+          execution_time{i} = toc;
+        catch ex
+          if ((strncmp(ex.identifier,'Drake:MissingDependency',23)))
+            continue;
+          else
+            rethrow(ex);
+          end
+    	end
+        
         fprintf('%12s%12.3f%12d%17.4f\n',solvers{i},objval{i},exitflag{i},execution_time{i});
       end
     end

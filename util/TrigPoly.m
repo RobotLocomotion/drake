@@ -65,6 +65,18 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       p = msspoly2sym([obj.q;obj.s;obj.c],[qs;ss;cs],obj.p);
     end
     
+    function q = getVar(obj)
+      q = obj.q;
+    end
+    
+    function s = getSin(obj)
+      s = obj.s;
+    end
+    
+    function c = getCos(obj)
+      c = obj.c;
+    end
+    
     function b=isTrigOrPoly(a)
       % returns true if the TrigPoly object a has
       % contributions from q(i) OR s(i),c(i), but not both.
@@ -183,6 +195,18 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       end      
     end
     
+    function a=diff(a,z)
+      a_mss = getmsspoly(a);
+      if isa(z,'TrigPoly'), z = getmsspoly(z); end;
+      %a_mss = a;
+      dads = diff(a_mss,a.s);
+      dadc = diff(a_mss,a.c);
+      dsdq = diag(a.c);
+      dcdq = diag(-a.s);
+      dqdz = diff(a.q,z);
+      a = (dads*dsdq + dadc*dcdq)*dqdz;
+    end
+
     function i=end(a,k,n)
       % I don't think I should have to overload this, but it's not working
       % like (size(x,k)) should be.  see 'doc end'
@@ -261,7 +285,7 @@ classdef (InferiorClasses = {?msspoly}) TrigPoly
       if ~isnumeric(n) || any(size(n) ~= 1)
         error('Power only supports constant exponents')
       end
-      a.p=mpower(a,n);
+      a.p=power(a.p,n);
     end
     
     function a=mrdivide(a,b)

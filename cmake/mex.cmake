@@ -87,9 +87,10 @@ function(mex_setup)
 endfunction()
 
 function(add_mex)
-  # useage:  add_mex(target source1 source2 [OBJECT]) 
-  # if OBJECT is passed in, then it doesn't expect a mexFunction symbol to be defined, and compiles it to e.g., libtarget.so, for eventual linking against another mex file
+  # useage:  add_mex(target source1 source2 [SHARED,EXECUTABLE]) 
   # note: builds the mex file inplace (not into some build directory)
+  # if SHARED is passed in, then it doesn't expect a mexFunction symbol to be defined, and compiles it to e.g., libtarget.so, for eventual linking against another mex file
+  # if EXECUTABLE is passed in, then it adds an executable target, which is linked against the appropriate matlab libraries.
 
   list(GET ARGV 0 target)
   list(REMOVE_AT ARGV 0)
@@ -122,8 +123,14 @@ function(add_mex)
   set (CMAKE_CXX_FLAGS_RELEASE ${MEX_CXXFLAGS} ${MEX_CXXOPTIMFLAGS} ${MEX_CXX_ARGUMENTS})
 
   list(FIND ARGV SHARED isshared)
+  list(FIND ARGV EXECUTABLE isexe)
   if (isshared EQUAL -1)
-    add_library(${target} MODULE ${ARGV})
+    if (isexe EQUAL -1)
+        add_library(${target} MODULE ${ARGV})
+    else()
+	list(REMOVE_ITEM ARGV EXECUTABLE)
+	add_executable(${target} ${ARGV})
+    endif()
   else()
     add_library(${target} ${ARGV})
   endif()
@@ -139,7 +146,22 @@ function(add_mex)
     COMPILE_FLAGS "-DMATLAB_MEX_FILE" 
     )
 
-  if (isshared EQUAL -1)
+  if (isexe GREATER -1)
+    # see note below
+    if (NOT TARGET exelast) 
+      set(dummy_c_file ${CMAKE_CURRENT_BINARY_DIR}/dummy.c)
+      add_custom_command(COMMAND ${CMAKE_COMMAND} -E touch ${dummy_c_file}
+                         OUTPUT ${dummy_c_file})
+      add_library(exelast STATIC ${dummy_c_file})
+      target_link_libraries(exelast "${MEX_CLIBS} -ldl")  # note: the -ldl here might be overkill?  so far only needed it for drake_debug_mex.  (but it has to come later in the compiler arguments, too, in order to work.
+    endif()
+
+    target_link_libraries(${target} exelast)
+  elseif (isshared GREATER -1)
+    set_target_properties(${target} PROPERTIES
+      LINK_FLAGS "${MEX_CLIBS}"
+      )
+  else()
     # note: on ubuntu, gcc did not like the MEX_CLIBS coming along with LINK_FLAGS (it only works if they appear after the input files).  this is a nasty trick that I found online
     if (NOT TARGET last) 
       set(dummy_c_file ${CMAKE_CURRENT_BINARY_DIR}/dummy.c)
@@ -159,10 +181,6 @@ function(add_mex)
       LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"   
       )
     target_link_libraries(${target} last)
-  else()
-    set_target_properties(${target} PROPERTIES
-      LINK_FLAGS "${MEX_CLIBS}"
-      )
   endif()
 
   # todo: add CLIBS or CXXLIBS to LINK_FLAGS selectively based in if it's a c or cxx target (always added CXX above)

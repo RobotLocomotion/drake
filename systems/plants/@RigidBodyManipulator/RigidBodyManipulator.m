@@ -193,7 +193,7 @@ classdef RigidBodyManipulator < Manipulator
       child = model.body(child_ind);
       
       if child.parent>0
-        error('there is already a joint connecting this child to a parent');
+        error(['there is already a joint connecting this child (' child.linkname ') to a parent (' model.body(parent_ind).linkname ') on joint ' name ]);
       end
       
       jointname = regexprep(name, '\.', '_', 'preservecase');
@@ -1010,8 +1010,8 @@ classdef RigidBodyManipulator < Manipulator
 
       [quz_sol,~,exitflag] = fmincon(problem);
       success=(exitflag==1);
-      xstar = [quz_sol(1:nq); zeros(nq,1)];
-      ustar = quz_sol(nq+(1:nu));
+      xstar = Point(obj.getStateFrame(), [quz_sol(1:nq); zeros(nq,1)]);
+      ustar = Point(obj.getInputFrame(), quz_sol(nq+(1:nu)));
       zstar = quz_sol(nq+nu+(1:nz));
       if (~success)
         error('failed to find fixed point');
@@ -1272,7 +1272,8 @@ classdef RigidBodyManipulator < Manipulator
       end
       for i = 1:length(model.force)
         if isa(model.force{i},'RigidBodyThrust')
-          inputparents = [inputparents model.body(model.force{i}.kinframe.body_ind)];
+          frame = model.frame(-model.force{i}.kinframe);
+          inputparents = [inputparents model.body(frame.body_ind)];
           inputnames{end+1} = model.force{i}.name;
         end
       end

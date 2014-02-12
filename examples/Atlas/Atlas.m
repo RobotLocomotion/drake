@@ -35,12 +35,22 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
     function obj = compile(obj)
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
 
-      state_frame = AtlasState(obj);
+      atlas_state_frame = AtlasState(obj);
+      tsmanip_state_frame = obj.getStateFrame();
+      if isa(tsmanip_state_frame,'MultiCoordinateFrame')
+        tsmanip_state_frame.frame{1} = atlas_state_frame;
+        state_frame = tsmanip_state_frame;
+      else
+        state_frame = atlas_state_frame;
+      end
+      obj.manip = obj.manip.setStateFrame(atlas_state_frame);
+      obj.manip = obj.manip.setOutputFrame(atlas_state_frame);
       obj = obj.setStateFrame(state_frame);
       obj = obj.setOutputFrame(state_frame);
     
       input_frame = AtlasInput(obj);
       obj = obj.setInputFrame(input_frame);
+      obj.manip = obj.manip.setInputFrame(input_frame);
     end
 
     function obj = setInitialState(obj,x0)
