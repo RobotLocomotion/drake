@@ -399,11 +399,29 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(void)
 	bodies[0].parent = -1;
 }
 
+void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, double* joint_limit_min, double* joint_limit_max);
+
 bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string & root_dir)
 {
   robot_map.insert(make_pair(_urdf_model->getName(),(int)robot_name.size()));
   robot_name.push_back(_urdf_model->getName());
   resize(num_dof + (int)dofname_to_dofnum.size(),-1,num_bodies + (int)jointname_to_jointnum.size());
+  for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=_urdf_model->joints_.begin(); j!=_urdf_model->joints_.end(); j++)
+  {
+    setJointLimits(_urdf_model,j->second,dofname_to_dofnum,this->joint_limit_min,this->joint_limit_max);
+  }
+  this->joint_limit_min[dofname_to_dofnum.at("base_x")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_x")] = 1.0/0.0;
+  this->joint_limit_min[dofname_to_dofnum.at("base_y")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_y")] = 1.0/0.0;
+  this->joint_limit_min[dofname_to_dofnum.at("base_z")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_z")] = 1.0/0.0;
+  this->joint_limit_min[dofname_to_dofnum.at("base_roll")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_roll")] = 1.0/0.0;
+  this->joint_limit_min[dofname_to_dofnum.at("base_pitch")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_pitch")] = 1.0/0.0;
+  this->joint_limit_min[dofname_to_dofnum.at("base_yaw")] = -1.0/0.0;
+  this->joint_limit_max[dofname_to_dofnum.at("base_yaw")] = 1.0/0.0;
   joint_map.push_back(jointname_to_jointnum);
   dof_map.push_back(dofname_to_dofnum);
   urdf_model.push_back(_urdf_model);
@@ -421,6 +439,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 
     	bodies[index].linkname = l->first;
     	bodies[index].jointname = j->name;
+        bodies[index].mass = l->second->inertial->mass;
 //    	cout << "body[" << index << "] linkname: " << bodies[index].linkname << ", jointname: " << bodies[index].jointname << endl;
 
 
@@ -859,6 +878,26 @@ void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shar
   }
 }
 
+void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, double* joint_limit_min, double* joint_limit_max)
+{
+  switch (j->type) {
+    case urdf::Joint::REVOLUTE:
+    case urdf::Joint::CONTINUOUS:
+    case urdf::Joint::PRISMATIC:
+    case urdf::Joint::FIXED:
+      joint_limit_min[dofname_to_dofnum.at(j->name)] = j->limits->lower;
+      joint_limit_max[dofname_to_dofnum.at(j->name)] = j->limits->upper;
+      break;
+    case urdf::Joint::FLOATING:
+      joint_limit_min[dofname_to_dofnum.at(j->name)] = -1.0/0.0;
+      joint_limit_max[dofname_to_dofnum.at(j->name)] = 1.0/0.0;
+      break;
+    default:
+      ROS_ERROR("unsupported joint type %d for joint %s.", j->type, j->name.c_str());
+      break;
+  }
+}
+
 bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const string &root_dir)
 {
   // call ROS urdf parsing
@@ -902,6 +941,7 @@ bool URDFRigidBodyManipulator::addURDFfromXML(const string &xml_string, const st
     
     for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=_urdf_model->joints_.begin(); j!=_urdf_model->joints_.end(); j++)
       setJointNum(_urdf_model,j->second,jointname_to_jointnum,dofname_to_dofnum,joint_name_set,jointnum,dofnum);
+    
 
     //for (map<string, int>::iterator j=jointname_to_jointnum.begin(); j!=jointname_to_jointnum.end(); j++)
     //printf("%s : %d\n",j->first.c_str(),j->second);

@@ -75,11 +75,11 @@ r_foot = r.findLinkInd('r_foot');
 kinsol = doKinematics(r, q_rot0);
 r_foot_pts = [0;0;0];
 r_foot_pos = forwardKin(r, kinsol, r_foot, r_foot_pts, 1);
-kc1 = constructSingleTimeKinematicConstraint(SingleTimeKinematicConstraint.WorldCoMConstraint,true,r,[0;0;nan],[0;0;nan]);
-kc2 = constructSingleTimeKinematicConstraint(SingleTimeKinematicConstraint.WorldPositionConstraint,true,r,l_foot,l_foot_pts,l_foot_pos(1:3,:),l_foot_pos(1:3,:));
-kc3 = constructSingleTimeKinematicConstraint(SingleTimeKinematicConstraint.WorldEulerConstraint,true,r,l_foot,l_foot_pos(4:6,1),l_foot_pos(4:6,1));
-kc4 = constructSingleTimeKinematicConstraint(SingleTimeKinematicConstraint.WorldPositionConstraint,true,r,r_foot,r_foot_pts,r_foot_pos(1:3,:),r_foot_pos(1:3,:));
-kc5 = constructSingleTimeKinematicConstraint(SingleTimeKinematicConstraint.WorldEulerConstraint,true,r,r_foot,r_foot_pos(4:6,1),r_foot_pos(4:6,1));
+kc1 = constructRigidBodyConstraint(RigidBodyConstraint.WorldCoMConstraintType,true,r,[0;0;nan],[0;0;nan]);
+kc2 = constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,r,l_foot,l_foot_pts,l_foot_pos(1:3,:),l_foot_pos(1:3,:));
+kc3 = constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,true,r,l_foot,l_foot_pos(4:6,1),l_foot_pos(4:6,1));
+kc4 = constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,r,r_foot,r_foot_pts,r_foot_pos(1:3,:),r_foot_pos(1:3,:));
+kc5 = constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,true,r,r_foot,r_foot_pos(4:6,1),r_foot_pos(4:6,1));
 q = test_approximateIK_userfun(r,q_rot1,q_rot1,kc1,kc2,kc3,kc4,kc5,ikoption);
 v.draw(1,[q;0*q]); drawnow;
 kinsol = doKinematics(r, q);
@@ -107,11 +107,11 @@ r_foot = r.findLinkInd('r_foot');
 kinsol = doKinematics(r, q_rot0);
 r_foot_pts = [0;0;0];
 r_foot_pos = forwardKin(r, kinsol, r_foot, r_foot_pts, 1);
-kc1 = constructSingleTimeKinematicConstraint(SingleTimeKinematicConstraint.WorldCoMConstraint,true,r,[0;0;nan],[0;0;nan]);
-kc2 = constructSingleTimeKinematicConstraint(SingleTimeKinematicConstraint.WorldPositionConstraint,true,r,l_foot,l_foot_pts,l_foot_pos(1:3,:),l_foot_pos(1:3,:));
-kc3 = constructSingleTimeKinematicConstraint(SingleTimeKinematicConstraint.WorldEulerConstraint,true,r,l_foot,l_foot_pos(4:6,1),l_foot_pos(4:6,1));
-kc4 = constructSingleTimeKinematicConstraint(SingleTimeKinematicConstraint.WorldPositionConstraint,true,r,r_foot,r_foot_pts,r_foot_pos(1:3,:),r_foot_pos(1:3,:));
-kc5 = constructSingleTimeKinematicConstraint(SingleTimeKinematicConstraint.WorldEulerConstraint,true,r,r_foot,r_foot_pos(4:6,1),r_foot_pos(4:6,1));
+kc1 = constructRigidBodyConstraint(RigidBodyConstraint.WorldCoMConstraintType,true,r,[0;0;nan],[0;0;nan]);
+kc2 = constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,r,l_foot,l_foot_pts,l_foot_pos(1:3,:),l_foot_pos(1:3,:));
+kc3 = constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,true,r,l_foot,l_foot_pos(4:6,1),l_foot_pos(4:6,1));
+kc4 = constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,r,r_foot,r_foot_pts,r_foot_pos(1:3,:),r_foot_pos(1:3,:));
+kc5 = constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,true,r,r_foot,r_foot_pos(4:6,1),r_foot_pos(4:6,1));
 q = test_approximateIK_userfun(r,q_rot1,q_rot1,kc1,kc2,kc3,kc4,kc5,ikoption);
 v.draw(1,[q;0*q]); drawnow;
 kinsol = doKinematics(r, q);
@@ -129,6 +129,8 @@ ikoption = varargin{end};
 ikoption = ikoption.setMex(true);
 ikmexoption = ikoption;
 ikmexoption = ikmexoption.setMex(true);
+ikmatlaboption = ikoption;
+ikmatlaboption = ikmatlaboption.setMex(false);
 ikappoption = ikoption;
 ikappoption = ikappoption.setMajorIterationsLimit(3);
 ikappoption = ikappoption.setMajorOptimalityTolerance(1);
@@ -152,10 +154,10 @@ valuecheck(q_app_mex,q,2e-1);
 
 % display('Approximate IK');
 % tic
-% [q_app,info] = approximateIK(r,t,q_seed,q_nom,varargin{1:end-1},ikoption);
+% [q_app,info] = approximateIK(r,q_seed,q_nom,varargin{1:end-1},ikmatlaboption);
 % toc
 % if(info~=0)
 %   error('approximateIK fails');
 % end
-% valuecheck(q_app,q_app_mex,2e-1);
+% valuecheck(q_app,q_app_mex,1e-4);
 end

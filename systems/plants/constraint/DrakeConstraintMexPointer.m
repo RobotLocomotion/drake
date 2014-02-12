@@ -1,5 +1,5 @@
 classdef DrakeConstraintMexPointer < DrakeMexPointer
-% This would be used to determine if a mex pointer refers to a Constraint
+% This would be used to determine if a mex pointer refers to a RigidBodyConstraint
 % object
     
   methods 
