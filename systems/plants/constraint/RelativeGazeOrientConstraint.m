@@ -148,8 +148,5 @@ classdef RelativeGazeOrientConstraint < GazeOrientConstraint
       end
     end
 
-    function ptr = constructPtr(varargin)
-      ptr = [];
-    end
   end
 end

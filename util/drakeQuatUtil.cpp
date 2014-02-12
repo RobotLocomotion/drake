@@ -102,23 +102,4 @@ void quatDiffAxisInvar(const Vector4d &q1, const Vector4d &q2, const Vector3d &u
   de << 4*r(0)*dr.row(0)+4*u.transpose()*r.tail(3)*u.transpose()*dr.block(1,0,3,8),4*u.transpose()*r.tail(3)*r.tail(3).transpose();
 }
 
-void quatTransform(const Vector3d &u, const Vector3d &v, Vector4d &quat)
-{
-  Vector3d quat_axis = u+v;
-  double len_quat_axis = quat_axis.norm();
-  quat << 0,quat_axis/len_quat_axis;
-}
-
-void quatTransform(const Vector3d &u, const Vector3d &v, Vector4d &quat, Matrix<double,4,6> &dquat)
-{
-  Vector3d quat_axis = u+v;
-  double len_quat_axis = quat_axis.norm();
-  quat << 0,quat_axis/len_quat_axis;
-  Matrix<double,3,6> dquat_axis;
-  dquat_axis<< Matrix3d::Identity(), Matrix3d::Identity();
-  Matrix<double,1,6> dlen_quat_axis;
-  dlen_quat_axis = quat_axis.transpose()*dquat_axis/len_quat_axis;
-  dquat.row(0) = Matrix<double,1,6>::Zero();
-  dquat.block(1,0,3,6) = (dquat_axis*len_quat_axis-quat_axis*dlen_quat_axis)/(len_quat_axis*len_quat_axis);
-}
 
