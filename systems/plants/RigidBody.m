@@ -103,8 +103,8 @@ classdef RigidBody < RigidBodyElement
     function body = replaceContactShapesWithCHull(body,scale_factor)
       pts = body.contact_pts(:,unique(convhull(body.contact_pts')));
       if nargin > 1
-        centroid = mean(pts,2);
-        pts = bsxfun(@plus,scale_factor*bsxfun(@minus,pts,centroid),centroid);
+        mean_of_pts = mean(pts,2);
+        pts = bsxfun(@plus,scale_factor*bsxfun(@minus,pts,mean_of_pts),mean_of_pts);
       end
       body.contact_pts = pts;
       shape = struct('type',RigidBody.MESH,'T',eye(4),'params',pts);
