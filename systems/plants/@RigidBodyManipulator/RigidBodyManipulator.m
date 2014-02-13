@@ -765,9 +765,9 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
     
-    function model = replaceContactShapesWithCHull(model,body_indices)
+    function model = replaceContactShapesWithCHull(model,body_indices,varargin)
       for body_idx = reshape(body_indices,1,[])
-        model.body(body_idx) = replaceContactShapesWithCHull(model.body(body_idx));
+        model.body(body_idx) = replaceContactShapesWithCHull(model.body(body_idx),varargin{:});
       end
     end
     
