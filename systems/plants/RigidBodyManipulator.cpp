@@ -3,6 +3,9 @@
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
 #include "collision/Model.h"
+#include <boost/algorithm/string.hpp>
+#include <string>
+#include <regex>
 //DEBUG
 //#include <stdexcept>
 //END_DEBUG
@@ -427,9 +430,6 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   dXidq = MatrixXd::Zero(6,6);
   s = VectorXd::Zero(6);
   
-  // other prealloc
-  qtmp = VectorXd::Zero(num_dof);
-
   initialized = false;
   kinematicsInit = false;
   if (last_num_dof>0) {
@@ -1499,6 +1499,59 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
   }
 
 
+}
+
+int RigidBodyManipulator::findLinkInd(string linkname, int robot)
+{
+  boost::algorithm::to_lower(linkname);
+  //std::regex linkname_connector("[abc]");
+  //cout<<"get linkname_connector"<<endl;
+  //linkname = std::regex_replace(linkname,linkname_connector,string("_"));
+  bool* name_match = new bool[this->num_bodies];
+  for(int i = 0;i<this->num_bodies;i++)
+  {
+    string lower_linkname = this->bodies[i].linkname;
+    boost::algorithm::to_lower(lower_linkname);
+    if(lower_linkname.find(linkname) != string::npos)
+    {
+      name_match[i] = true;
+    }
+    else
+    {
+      name_match[i] = false;
+    }
+  }
+  if(robot != -1)
+  {
+    for(int i = 0;i<this->num_bodies;i++)
+    {
+      if(name_match[i])
+      {
+        name_match[i] = this->bodies[i].robotnum == robot;
+      }
+    }
+  }
+  // Unlike the MATLAB implementation, I am not handling the fixed joints
+  int num_match = 0;
+  int ind_match = -1;
+  for(int i = 0;i<this->num_bodies;i++)
+  {
+    if(name_match[i])
+    {
+      num_match++;
+      ind_match = i;
+    }
+  }
+  if(num_match != 1)
+  {
+    cerr<<"couldn't find unique link "<<linkname<<endl;
+    return(EXIT_FAILURE);
+  }
+  else
+  {
+    return ind_match;
+  }
+  delete[] name_match;
 }
 
 

@@ -4,10 +4,8 @@ classdef WorldQuatConstraint < QuatConstraint
 %                         TimeSteppingRigidBodyManipulator
 % @param body             A scalar. The index of the body
 % @param quat_des         A quaternion. The desired body orientation 
-% @param tol              A nonnegative scalar. tol = sin(angle)^2 where
-%                         'angle' is the angle in the angle-axis
-%                         representation of the rotation from quat_des to
-%                         the actual orientation
+% @param tol              A nonnegative scalar between [0 pi]. tol is the maximum angle of
+%                         the allowable rotation that would rotate actual quaternion to quat_des
   properties(SetAccess = protected)
     body
     quat_des
@@ -29,7 +27,7 @@ classdef WorldQuatConstraint < QuatConstraint
       if(nargin == 4)
         tspan = [-inf,inf];
       end
-      ptr = constructPtrWorldQuatConstraintmex(robot.getMexModelPtr,body,quat_des,tol,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldQuatConstraintType,robot.getMexModelPtr,body,quat_des,tol,tspan);
       obj = obj@QuatConstraint(robot,tol,tspan);
       sizecheck(quat_des,[4,1]);
       if(any(isinf(quat_des)|isnan(quat_des)))
@@ -47,6 +45,7 @@ classdef WorldQuatConstraint < QuatConstraint
         error('Drake:WorldQuatConstraint:Body must be either the link name or the link index');
       end
       obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.type = RigidBodyConstraint.WorldQuatConstraintType;
       obj.mex_ptr = ptr;
     end
     
@@ -60,13 +59,5 @@ classdef WorldQuatConstraint < QuatConstraint
       end
     end
     
-    function obj = updateRobot(obj,robot)
-      obj.robot = robot;
-      updatePtrWorldQuatConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
-    end
-    
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrWorldQuatConstraintmex(varargin{:});
-    end
   end
 end

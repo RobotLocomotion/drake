@@ -20,7 +20,7 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
       if(nargin == 6)
         tspan = [-inf inf];
       end
-      ptr = constructPtrWorldGazeTargetConstraintmex(robot.getMexModelPtr,body,axis,target,gaze_origin,conethreshold,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldGazeTargetConstraintType,robot.getMexModelPtr,body,axis,target,gaze_origin,conethreshold,tspan);
       obj = obj@GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan);
       if(isnumeric(body))
         sizecheck(body,[1,1]);
@@ -33,23 +33,22 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
         error('Drake:WorldGazeTargetConstraint:Body must be either the link name or the link index');
       end
       obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.type = RigidBodyConstraint.WorldGazeTargetConstraintType;
       obj.mex_ptr = ptr;
     end
     
     function [c,dc] = eval(obj,t,kinsol)
       if(obj.isTimeValid(t))
-        [x,J] = forwardKin(obj.robot,kinsol,obj.body,obj.gaze_origin,2);
-        gaze_vec = obj.target-x(1:3);
-        len_gaze_vec = norm(gaze_vec);
-        dlen_gaze_vec = -gaze_vec'/len_gaze_vec*J(1:3,:);
-        dgaze_vec = (-J(1:3,:)*len_gaze_vec-gaze_vec*dlen_gaze_vec)/len_gaze_vec^2;
-        gaze_vec = gaze_vec/len_gaze_vec;
-        [quat_des,dquat_des] = quatTransform(gaze_vec,obj.axis);
-        dquat_des_dq = dquat_des(:,1:3)*dgaze_vec;
-        [axis_err,daxis_err] = quatDiffAxisInvar(x(4:7),quat_des,obj.axis);
-        daxis_err_dq = daxis_err(1:4)*J(4:7,:)+daxis_err(5:8)*dquat_des_dq;
-        c = axis_err;
-        dc = daxis_err_dq;
+        [axis_ends,daxis_ends] = forwardKin(obj.robot,kinsol,obj.body,[obj.gaze_origin obj.gaze_origin+obj.axis],0);
+        world_axis = axis_ends(:,2)-axis_ends(:,1);
+        dworld_axis = daxis_ends(4:6,:)-daxis_ends(1:3,:);
+        dir = obj.target-axis_ends(:,1);
+        ddir = -daxis_ends(1:3,:);
+        dir_norm = norm(dir);
+        dir_normalized = dir/dir_norm;
+        ddir_normalized = (eye(3)*dir_norm^2-dir*dir')/(dir_norm^3)*ddir;
+        c = world_axis'*dir_normalized-1;
+        dc = dir_normalized'*dworld_axis+world_axis'*ddir_normalized;
       else
         c = [];
         dc = [];
@@ -64,13 +63,5 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
       end
     end
     
-    function obj = updateRobot(obj,robot)
-      obj.robot = robot;
-      updatePtrWorldGazeTargetConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
-    end
-    
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrWorldGazeTargetConstraintmex(varargin{:});
-    end
   end
 end

@@ -1,4 +1,9 @@
 function testIK
+warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
+warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
+warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 urdf_collision = [getDrakePath,'/systems/plants/constraint/test/model_simple_visuals.urdf'];
 options.floating = true;
@@ -19,6 +24,17 @@ l_foot_pts = robot.getBody(l_foot).contact_pts;
 r_foot_pts = robot.getBody(r_foot).contact_pts;
 l_hand_pts = [0;0;0];
 r_hand_pts = [0;0;0];
+
+coords = robot.getStateFrame.coordinates(1:robot.getNumDOF);
+l_leg_kny = find(strcmp(coords,'l_leg_kny'));
+r_leg_kny = find(strcmp(coords,'r_leg_kny'));
+l_leg_hpy = find(strcmp(coords,'l_leg_hpy'));
+r_leg_hpy = find(strcmp(coords,'r_leg_hpy'));
+l_leg_aky = find(strcmp(coords,'l_leg_aky'));
+r_leg_aky = find(strcmp(coords,'r_leg_aky'));
+l_leg_hpz = find(strcmp(coords,'l_leg_hpz'));
+r_leg_hpz = find(strcmp(coords,'r_leg_hpz'));
+
 tspan = [0,1];
 nom_data = load('../../../examples/Atlas/data/atlas_fp.mat');
 q_nom = nom_data.xstar(1:nq);
@@ -111,6 +127,8 @@ valuecheck(com(1:2),[0;0],1e-5);
 if(com(3)>1+1e-5 ||com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied');
 end
+
+
 
 display('Check a body position constraint')
 kc2l = WorldPositionConstraint(robot,l_foot,l_foot_pts,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan);
@@ -268,35 +286,33 @@ ikoptions = ikoptions.setMex(false);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
 kinsol = doKinematics(robot,q);
 valuecheck(qsc.checkConstraint(kinsol),true);
-%com = getCOM(robot,kinsol);
-%rfoot_pos = forwardKin(robot,kinsol,r_foot,r_foot_pts,0);
-%lfoot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pts,0);
-%shrinkFactor = qsc.shrinkFactor+1e-4;
-%center_pos = mean([lfoot_pos(1:2,:) rfoot_pos(1:2,:)],2);
-%shrink_vertices = [lfoot_pos(1:2,:) rfoot_pos(1:2,:)]*shrinkFactor+repmat(center_pos*(1-shrinkFactor),1,size(l_foot_pts,2)+size(r_foot_pts,2));
-%num_vertices = size(shrink_vertices,2);
-%quadoptions = optimset('Algorithm','interior-point-convex');
-%[~,~,exit_flag] = quadprog(eye(num_vertices),rand(num_vertices,1),[],[],[shrink_vertices;ones(1,num_vertices)],...
-  %[com(1:2);1],zeros(num_vertices,1),ones(num_vertices,1),1/num_vertices*ones(num_vertices,1),quadoptions);
-%valuecheck(exit_flag,1);
 
 display('Check quasi static constraint for pointwise');
 q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
   valuecheck(qsc.checkConstraint(kinsol),true);
-  %com = getCOM(robot,kinsol);
-  %rfoot_pos = forwardKin(robot,kinsol,r_foot,r_foot_pts,0);
-  %lfoot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pts,0);
-  %shrinkFactor = qsc.shrinkFactor+1e-4;
-  %center_pos = mean([lfoot_pos(1:2,:) rfoot_pos(1:2,:)],2);
-  %shrink_vertices = [lfoot_pos(1:2,:) rfoot_pos(1:2,:)]*shrinkFactor+repmat(center_pos*(1-shrinkFactor),1,size(l_foot_pts,2)+size(r_foot_pts,2));
-  %num_vertices = size(shrink_vertices,2);
-  %quadoptions = optimset('Algorithm','interior-point-convex');
-  %[~,~,exit_flag] = quadprog(eye(num_vertices),rand(num_vertices,1),[],[],[shrink_vertices;ones(1,num_vertices)],...
-    %[com(1:2);1],zeros(num_vertices,1),ones(num_vertices,1),1/num_vertices*ones(num_vertices,1),quadoptions);
-  %valuecheck(exit_flag,1);
 end
+
+display('Check SingleTimeLinearPostureConstraint');
+iAfun = [1;1;2;2;3;3;4;4];
+jAvar = [l_leg_kny;r_leg_kny;l_leg_hpy;r_leg_hpy;l_leg_aky;r_leg_aky;l_leg_hpz;r_leg_hpz];
+A = [1;-1;1;-1;1;-1;1;-1];
+lb = [0;0;0;-0.1*pi];
+ub = [0;0;0;0.1*pi];
+stlpc = SingleTimeLinearPostureConstraint(robot,iAfun,jAvar,A,lb,ub,tspan);
+q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,pc_knee,stlpc,qsc,ikoptions);
+valuecheck(q([l_leg_kny;l_leg_hpy;l_leg_aky]),q([r_leg_kny;r_leg_hpy;r_leg_aky]),1e-10);
+if(abs(q(l_leg_hpz)-q(r_leg_hpz))>0.1*pi+1e-8)
+  error('SingleTimeLinearPostureConstraint is not satisfied');
+end
+display('Check SingleTimeLinearPostureConstraint for pointwise');
+q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,stlpc,ikoptions);
+valuecheck(q([l_leg_kny;l_leg_hpy;l_leg_aky],:),q([r_leg_kny;r_leg_hpy;r_leg_aky],:),1e-10);
+if(any(abs(q(l_leg_hpz,:)-q(r_leg_hpz,:))>0.1*pi+1e-8))
+  error('SingleTimeLinearPostureConstraint is not satisfied');
+end
+
 
 display('Check point to point distance constraint')
 hands_distance_cnst = Point2PointDistanceConstraint(robot,l_hand,r_hand,[0;0;0],[0;0;0],0.5,1,tspan);
@@ -384,6 +400,7 @@ q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1);q_seed_
 % q = test_IK_userfun(r,q_seed,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
 % display('Check sequentialSeedFlag for pointwise');
 % q = test_IKpointwise_userfun(r,[0,1],[q_seed q_seed],[q_nom q_nom],kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
+
 end
 
 function qmex = test_IK_userfun(r,q_seed,q_nom,varargin)
@@ -405,7 +422,7 @@ toc
 if(info_mex>10)
   error('SNOPT info is %d, IK mex fails to solve the problem',info_mex);
 end
-valuecheck(q,qmex,1e-2);
+valuecheck(q,qmex,5e-2);
 end
 
 function qmex = test_IKpointwise_userfun(r,t,q_seed,q_nom,varargin)
@@ -425,5 +442,5 @@ toc
 if(info>10)
   error('SNOPT info is %d, IK pointwise mex fails to solve the problem',info);
 end
-valuecheck(q,qmex,1e-2);
+valuecheck(q,qmex,5e-2);
 end

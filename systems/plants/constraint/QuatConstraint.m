@@ -1,6 +1,6 @@
 classdef QuatConstraint <SingleTimeKinematicConstraint
   % Constrain the quaternion to satisfy the following conditions: 
-  % (quat'*quat_des)^2 in [1-tol 1]
+  % 2*(quat'*quat_des)^2-1 in [cos(tol) 1]
   properties(SetAccess = protected)
     tol
   end
@@ -13,8 +13,8 @@ classdef QuatConstraint <SingleTimeKinematicConstraint
     function obj = QuatConstraint(robot,tol,tspan)
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       sizecheck(tol,[1,1]);
-      if(tol<0||tol>1)
-        error('Drake:QuatConstraint:Tol must be within the range [0 1]');
+      if(tol<0||tol>pi)
+        error('Drake:QuatConstraint:Tol must be within the range [0 pi]');
       end
       obj.tol = tol;
       obj.num_constraint = 1;
@@ -23,8 +23,8 @@ classdef QuatConstraint <SingleTimeKinematicConstraint
     function [c,dc] = eval(obj,t,kinsol)
       if(obj.isTimeValid(t))
         [orient_prod, dorient_prod] = evalOrientationProduct(obj,kinsol);
-        c = orient_prod^2;
-        dc = 2*(orient_prod)*dorient_prod;
+        c = 2*orient_prod^2-1;
+        dc = 4*(orient_prod)*dorient_prod;
       else
         c = [];
         dc = [];
@@ -33,7 +33,7 @@ classdef QuatConstraint <SingleTimeKinematicConstraint
     
     function [lb,ub] = bounds(obj,t)
       if(obj.isTimeValid(t))
-        lb = 1-obj.tol;
+        lb = cos(obj.tol);
         ub = 1;
       else
         lb = [];

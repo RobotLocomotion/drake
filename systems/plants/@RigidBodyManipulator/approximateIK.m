@@ -24,7 +24,7 @@ if(use_mex)
       error('The input has to be a RigidBodyConstraint object');
     end
   end
-  [q,info] = approximateIKmex(obj.mex_model_ptr,q_seed,q_nom,constraint_ptr_cell{:},ikoptions);
+  [q,info] = approximateIKmex(obj.mex_model_ptr,q_seed,q_nom,constraint_ptr_cell{:},ikoptions.mex_ptr);
 else
 t = [];
 kc_cell = {};
@@ -71,7 +71,7 @@ params.method = 2;
 params.presolve = 0;
 params.bariterlimit = 20;
 params.barhomogeneous = 0;
-params.barconvtol = 1e-4;
+params.barconvtol = 0.005;
 
 result = gurobi(model,params);
 info = ~strcmp(result.status,'OPTIMAL');
