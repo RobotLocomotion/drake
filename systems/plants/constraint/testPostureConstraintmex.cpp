@@ -20,7 +20,7 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray *prhs[])
   double* t_ptr;
   if(nrhs == 1)
   {
-    t_ptr = NULL;
+    t_ptr = nullptr;
   }
   else
   {

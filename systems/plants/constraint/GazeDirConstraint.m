@@ -3,9 +3,6 @@ classdef GazeDirConstraint < GazeConstraint
     dir % a 3x1 vector in the world frame, the deried gaze direction
   end
   
-  methods(Access = protected)
-    [quat,dquat_dq] = evalOrientation(obj,kinsol);
-  end
   
   methods
     function obj = GazeDirConstraint(robot,axis,dir,conethreshold,tspan)
@@ -26,19 +23,6 @@ classdef GazeDirConstraint < GazeConstraint
       obj.num_constraint = 1;
     end
     
-    function [c,dc] = eval(obj,t,kinsol)
-      if(obj.isTimeValid(t))
-        [quat,dquat] = evalOrientation(obj,kinsol);
-        quat_des = quatTransform(obj.axis,obj.dir);
-        [axis_err,daxis_err] = quatDiffAxisInvar(quat,quat_des,obj.axis);
-        daxis_err_dq = daxis_err(1:4)*dquat;
-        c = axis_err;
-        dc = daxis_err_dq;
-      else
-        c = [];
-        dc = [];
-      end
-    end
     
     function [lb,ub] = bounds(obj,t)
       if(obj.isTimeValid(t))

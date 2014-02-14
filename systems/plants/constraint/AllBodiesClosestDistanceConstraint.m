@@ -24,11 +24,12 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       end
       sizecheck(lb,[1,1]);
       sizecheck(ub,[1,1]);
-      ptr = constructPtrAllBodiesClosestDistanceConstraintmex(robot.getMexModelPtr,lb,ub,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot.getMexModelPtr,lb,ub,tspan);
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       obj = setNumConstraint(obj);
       obj.lb = repmat(lb,obj.num_constraint,1);
       obj.ub = repmat(ub,obj.num_constraint,1);
+      obj.type = RigidBodyConstraint.AllBodiesClosestDistanceConstraintType;
       obj.mex_ptr = ptr;
     end
 
@@ -122,13 +123,5 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       end
     end
 
-    function obj = updateRobot(obj,robot)
-      obj.robot = robot;
-      updatePtrAllBodiesClosestDistanceConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
-    end
-    
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrAllBodiesClosestDistanceConstraintmex(varargin{:});
-    end
   end
 end
