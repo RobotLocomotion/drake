@@ -26,7 +26,7 @@ classdef WorldCoMConstraint < PositionConstraint
       if(nargin <= 3)
         tspan = [-inf inf];
       end
-      ptr = constructPtrWorldCoMConstraintmex(robot.getMexModelPtr,lb,ub,tspan,robotnum);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldCoMConstraintType,robot.getMexModelPtr,lb,ub,tspan,robotnum);
       obj = obj@PositionConstraint(robot,[0;0;0],lb,ub,tspan);
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))
         error('Drake:WorldCoMConstraint: robotnum is not accepted');
@@ -34,6 +34,7 @@ classdef WorldCoMConstraint < PositionConstraint
       obj.robotnum = robotnum;
       obj.body_name = 'CoM';
       obj.body = 0;
+      obj.type = RigidBodyConstraint.WorldCoMConstraintType;
       obj.mex_ptr = ptr;
     end
     
@@ -73,10 +74,8 @@ classdef WorldCoMConstraint < PositionConstraint
         error('Drake:WorldCoMConstraint: robotnum is not accepted');
       end
       obj.robotnum = robotnum;
+      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robotnum',robotnum);
     end
-    function obj = updateRobot(obj,r)
-      obj.robot = r;
-      updatePtrWorldCoMConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
-    end
+    
   end
 end

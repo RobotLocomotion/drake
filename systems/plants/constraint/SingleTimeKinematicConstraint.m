@@ -8,24 +8,9 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
     mex_ptr
   end
   
-  properties(Constant)
-    WorldCoMConstraint = 0;
-    WorldPositionConstraint = 1;
-    WorldQuatConstraint = 2;
-    WorldEulerConstraint = 3;
-    WorldGazeOrientConstraint = 4;
-    WorldGazeDirConstraint = 5;
-    WorldGazeTargetConstraint = 6;
-    AllBodiesClosestDistanceConstraint = 7;
-    Point2PointDistanceConstraint = 8;
-    WorldPositionInFrameConstraint = 9;
-    Point2LineSegDistConstraint = 10;
-    RelativeGazeTargetConstraint = 11;
-  end
-  
   methods
     function obj = SingleTimeKinematicConstraint(robot,tspan)
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeKinematicConstraintType);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeKinematicConstraintCategory);
       if(nargin<2)
         tspan = [-inf,inf];
       end
@@ -63,11 +48,15 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
       end
     end
     
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+    end
+    
   end
   methods(Abstract)
     [c,dc] = eval(obj,t,kinsol);
     [lb,ub] = bounds(obj,t)
     name_str = name(obj,t)
-    obj = updateRobot(obj,r);
   end
 end

@@ -525,6 +525,12 @@ bool Joint::initXml(TiXmlElement* config)
     //ROS_INFO("Joint '%s' is of type PRISMATIC without limits", this->name.c_str());
     limits.reset();
   }
+  else if (this->type == CONTINUOUS)
+  {
+    limits.reset(new JointLimits);
+    limits->lower = -1.0/0.0;
+    limits->upper = 1.0/0.0;
+  }
 
   // Get safety
   TiXmlElement *safety_xml = config->FirstChildElement("safety_controller");

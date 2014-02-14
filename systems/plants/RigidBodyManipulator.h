@@ -97,6 +97,9 @@ public:
                                    MatrixXd& Jd);
 
   bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
+  
+  int findLinkInd(std::string linkname, int robot = -1);
+  //@param robot   the index of the robot. robot = -1 means to look at all the robots
 public:
   std::vector<std::string> robot_name;
 
@@ -126,9 +129,6 @@ public:
   VectorXd a_grav;
 
   double *cached_q, *cached_qd;  // these should be private
-
-  // preallocate for approximateIK
-  VectorXd qtmp;
 
 
 private:
