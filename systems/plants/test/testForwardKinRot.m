@@ -19,18 +19,18 @@ for i=1:100
   body_ind = 3;
 
   % test gradients
-  [rpy1,J] = geval(@myfun,q,options);
+  [rpy1,J] = geval(@(q) myfun(p,q,body_ind),q,options);
 
   % test gradients mex
-  [rpy2,J] = geval(@myfun2,q,options);
+  [rpy2,J] = geval(@(q) myfun2(p,q,body_ind),q,options);
   
   valuecheck(rpy2rotmat(rpy1),rpy2rotmat(rpy2),1e-6);
-  
-  [quat1,J] = geval(@myfun3,q,options);
 
-  quat2 = myfun4(q);
+  [quat1,J] = geval(@(q) myfun3(p,q,body_ind),q,options);
+
+  quat2 = myfun4(p,q,body_ind);
   valuecheck(quat1,quat2);
-  [quat2,J] = geval(@myfun4,q,options);
+  [quat2,J] = geval(@(q) myfun4(p,q,body_ind),q,options);
   
   valuecheck(1-abs(quat1'*quat2),0,1e-6);
   
@@ -44,43 +44,42 @@ for i=1:100
   kinsol = p.doKinematics(q,false,false);
   valuecheck(R,kinsol.T{body_ind}(1:3,1:3),1e-6);
   
-  [~,J] = myfun5(q);
-  [~,J2] = geval(@myfun5,q,struct('grad_method','numerical'));
+  [~,J] = myfun5(p,q,lower_link);
+  [~,J2] = geval(@(q) myfun5(p,q,lower_link),q,struct('grad_method','numerical'));
   valuecheck(J,J2,1e-6);
 end
 
-  function [rpy,J] = myfun(q)
-    kinsol = p.doKinematics(q,false,false);
-    [x,J] = p.forwardKin(kinsol,body_ind,[0;0;0],1); 
-    rpy = x(4:6);
-    J = J(4:6,:);
-  end
+end
 
-  function [rpy,J] = myfun2(q)
-    kinsol = p.doKinematics(q,false,true);
-    [x,J] = p.forwardKin(kinsol,body_ind,[0;0;0],1); 
-    rpy = x(4:6);
-    J = J(4:6,:);
-  end
+function [rpy,J] = myfun(p,q,body_ind)
+kinsol = p.doKinematics(q,false,false);
+[x,J] = p.forwardKin(kinsol,body_ind,[0;0;0],1); 
+rpy = x(4:6);
+J = J(4:6,:);
+end
+function [rpy,J] = myfun2(p,q,body_ind)
+  kinsol = p.doKinematics(q,false,true);
+  [x,J] = p.forwardKin(kinsol,body_ind,[0;0;0],1); 
+  rpy = x(4:6);
+  J = J(4:6,:);
+end
 
-  function [quat,J] = myfun3(q)
-    kinsol = p.doKinematics(q,false,false);
-    [x,J] = p.forwardKin(kinsol,body_ind,[0;1;0],2); 
-    quat = x(4:7);
-    J = J(4:7,:);
-  end
+function [quat,J] = myfun3(p,q,body_ind)
+  kinsol = p.doKinematics(q,false,false);
+  [x,J] = p.forwardKin(kinsol,body_ind,[0;1;0],2); 
+  quat = x(4:7);
+  J = J(4:7,:);
+end
 
-  function [quat,J] = myfun4(q)
-    kinsol = p.doKinematics(q,false,true);
-    [x,J] = p.forwardKin(kinsol,body_ind,[0;1;0],2); 
-    quat = x(4:7);
-    J = J(4:7,:);
-  end
+function [quat,J] = myfun4(p,q,body_ind)
+  kinsol = p.doKinematics(q,false,true);
+  [x,J] = p.forwardKin(kinsol,body_ind,[0;1;0],2); 
+  quat = x(4:7);
+  J = J(4:7,:);
+end
 
-  function [x,J] = myfun5(q)
-    kinsol = p.doKinematics(q,false,true);
-    [x,J] = p.forwardKin(kinsol,lower_link,[[0;1;0] [1;0;0.5]],1);
-    x = x(:);
-  end
-
+function [x,J] = myfun5(p,q,lower_link)
+  kinsol = p.doKinematics(q,false,true);
+  [x,J] = p.forwardKin(kinsol,lower_link,[[0;1;0] [1;0;0.5]],1);
+  x = x(:);
 end

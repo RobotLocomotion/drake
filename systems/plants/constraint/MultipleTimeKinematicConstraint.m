@@ -6,16 +6,10 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
     robot
     mex_ptr
   end
-  
-  properties(Constant)
-    WorldFixedPositionConstraint = 1;
-    WorldFixedOrientConstraint = 2;
-    WorldFixedBodyPoseConstraint = 3;
-  end
     
   methods
     function obj = MultipleTimeKinematicConstraint(robot,tspan)
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeKinematicConstraintType);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeKinematicConstraintCategory);
       if(nargin<2)
         tspan = [-inf,inf];
       end
@@ -59,6 +53,11 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
         dc = [];
       end
     end
+    
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
+    end
   end
   
   methods(Abstract)
@@ -67,6 +66,5 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
     [c,dc] = eval_valid(obj,valid_t,valid_q);
     [lb,ub] = bounds(obj,t)
     name_str = name(obj,t)
-    ptr = constructPtr(varargin);
   end
 end

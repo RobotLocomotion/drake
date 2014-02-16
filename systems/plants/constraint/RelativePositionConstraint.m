@@ -70,9 +70,6 @@ classdef RelativePositionConstraint < PositionConstraint
       end
     end
 
-    function ptr = constructPtr(varargin)
-      ptr = [];
-    end
 
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);

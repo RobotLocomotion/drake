@@ -23,12 +23,13 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
       if(nargin<7)
         conethreshold = 0;
       end
-      ptr = constructPtrRelativeGazeTargetConstraintmex(robot.getMexModelPtr,body_a_idx,body_b_idx,axis,target,gaze_origin,conethreshold,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeGazeTargetConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,axis,target,gaze_origin,conethreshold,tspan);
       obj = obj@GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan);
       obj.body_a.idx = body_a_idx;
       obj.body_a.name = getLinkName(obj.robot, obj.body_a.idx);
       obj.body_b.idx = body_b_idx;
       obj.body_b.name = getLinkName(obj.robot, obj.body_b.idx);
+      obj.type = RigidBodyConstraint.RelativeGazeTargetConstraintType;
       obj.mex_ptr = ptr;
     end
 
@@ -59,14 +60,7 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
       end
     end
 
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrRelativeGazeTargetConstraintmex(varargin{:});
-    end
 
-    function obj = updateRobot(obj,robot)
-      obj.robot = robot;
-      updatePtrRelativeGazeTargetConstraintmex(obj.mex_ptr,'robot',robot);
-    end
     function drawConstraint(obj,q,lcmgl)
       norm_axis = obj.axis/norm(obj.axis);
 
@@ -79,7 +73,8 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
       r_gaze_origin = forwardKin(obj.robot,kinsol,obj.body_a.idx,obj.gaze_origin,0);
       r_target = forwardKin(obj.robot,kinsol,obj.body_b.idx,obj.target,0);
 
-      ang_ax_cone = quat2axis(quatTransform([0;0;1],norm_axis));
+      ang_ax_ax = cross([0;0;1],norm_axis);
+      ang_ax_ang = acos([0;0;1]'*norm_axis);
 
       % Draw in Frame B
       lcmgl.glTranslated(wTb(1,4),wTb(2,4),wTb(3,4));
@@ -109,7 +104,7 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
 
       %% Draw cone
       lcmgl.glTranslated(obj.gaze_origin(1),obj.gaze_origin(2),obj.gaze_origin(3));
-      lcmgl.glRotated(ang_ax_cone(4)*180/pi,ang_ax_cone(1),ang_ax_cone(2),ang_ax_cone(3));
+      lcmgl.glRotated(ang_ax_ang*180/pi,ang_ax_ax(1),ang_ax_ax(2),ang_ax_ax(3));
       lcmgl.glColor4f( 0, 1, 0,0.5);
       base_radius = 0.01;
       height = 0.5;

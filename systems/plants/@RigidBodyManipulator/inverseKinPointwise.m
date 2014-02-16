@@ -37,5 +37,35 @@ function [q,info,infeasible_constraint] = inverseKinPointwise(obj,t,q_seed,q_nom
 
 % note: keeping typecheck/sizecheck to a minimum because this might have to
 % run inside a dynamical system (so should be fast)
-[q,info,infeasible_constraint] = inverseKinBackend(obj,1,t,q_seed,q_nom,varargin{:});
+use_mex = false;
+if(isa(varargin{end},'IKoptions'))
+  ikoptions = varargin{end};
+  ikoptions_mex = ikoptions.mex_ptr;
+  varargin = varargin(1:end-1);
+elseif(isa(varargin{end},'DrakeMexPointer'))
+  if(strcmp(varargin{end}.name,'IKoptions'))
+    ikoptions_mex = varargin{end};
+    varargin = varargin(1:end-1);
+    use_mex = true;
+  end
+else
+  ikoptions = IKoptions(obj);
+  ikoptions_mex = ikoptions.mex_ptr;
+end
+constraint_mex = cell(1,length(varargin));
+for i = 1:length(varargin)
+  if(isa(varargin{i},'RigidBodyConstraint'))
+    constraint_mex{i} = varargin{i}.mex_ptr;
+  elseif(isa(varargin{i},'DrakeConstraintMexPointer'))
+    constraint_mex{i} = varargin{i};
+    use_mex = true;
+  else
+    error('Drake:inverseKinPointwise: The input should be a RigidBodyConstraint or a pointer to RigidBodyConstraint');
+  end
+end
+if(use_mex || ikoptions.use_mex )
+  [q,info,infeasible_constraint] = inverseKinPointwisemex(obj.getMexModelPtr,t,q_seed,q_nom,constraint_mex{:},ikoptions_mex);
+else
+  [q,info,infeasible_constraint] = inverseKinBackend(obj,1,t,q_seed,q_nom,varargin{:});
+end
 end
