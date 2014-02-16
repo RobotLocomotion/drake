@@ -1,26 +1,56 @@
 classdef RigidBodyConstraint
-  properties
+  % @param category      -- All constraints in the same category share the same function
+  %                         interface. Please use negative number for this category
+  % @param type          -- Only for non-abstract constraint. Each non-abstract constraint
+  %                         class has a unique type. Please use positive number for
+  %                         this category.
+  properties(SetAccess = protected)
+    category
     type
   end
   
   properties(Constant)
-    SingleTimeKinematicConstraintType = 1;
-    MultipleTimeKinematicConstraintType = 2;
-    QuasiStaticConstraintType = 3;
-    PostureConstraintType = 4;
-    MultipleTimeLinearPostureConstraint = 5;
+    SingleTimeKinematicConstraintCategory = -1;
+    MultipleTimeKinematicConstraintCategory = -2;
+    QuasiStaticConstraintCategory = -3;
+    PostureConstraintCategory = -4;
+    MultipleTimeLinearPostureConstraintCategory = -5;
+    SingleTimeLinearPostureConstraintCategory = -6;
+  end
+  
+  properties(Constant)
+    QuasiStaticConstraintType = 1;
+    PostureConstraintType = 2;
+    SingleTimeLinearPostureConstraintType = 3;
+    AllBodiesClosestDistanceConstraintType = 4;
+    WorldEulerConstraintType = 5;
+    WorldGazeDirConstraintType = 6;
+    WorldGazeOrientConstraintType = 7;
+    WorldGazeTargetConstraintType = 8;
+    RelativeGazeTargetConstraintType = 9;
+    WorldCoMConstraintType = 10;
+    WorldPositionConstraintType = 11;
+    WorldPositionInFrameConstraintType = 12;
+    WorldQuatConstraintType = 13;
+    Point2PointDistanceConstraintType = 14;
+    Point2LineSegDistConstraintType = 15;
+    WorldFixedPositionConstraintType = 16;
+    WorldFixedOrientConstraintType = 17;
+    WorldFixedBodyPoseConstraintType = 18;
+    PostureChangeConstraintType = 19;
   end
   
   methods
-    function obj = RigidBodyConstraint(type)
-      if(~isnumeric(type))
+    function obj = RigidBodyConstraint(category)
+      if(~isnumeric(category))
         error('Drake:Constraint:type has to be an integer');
       end
-      type = floor(type);
-      if(type>5||type<1)
-        error('Drake:Constraint: Currently type can only be within [1,5]');
+      category = floor(category);
+      if(category<-6||category>-1)
+        error('Drake:Constraint: Currently type can only be within [-6 -1]');
       end
-      obj.type = type;
+      obj.category = category;
+      obj.type = 0;
     end
   end
 end

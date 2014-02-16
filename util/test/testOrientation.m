@@ -21,6 +21,29 @@ for i = 1:1000
 end
 disp('quat to rotmat and rotmat to quat is consistent');
 
+% Check the corner case of rotmat2quat
+quat = [1;0;0;0];
+mat = quat2rotmat(quat);
+quat1 = rotmat2quat(mat);
+valuecheck((quat'*quat1)^2,1);
+quat = [0;1;0;0];
+mat = quat2rotmat(quat);
+quat1 = rotmat2quat(mat);
+valuecheck((quat'*quat1)^2,1);
+quat = [0;0;1;0];
+mat = quat2rotmat(quat);
+quat1 = rotmat2quat(mat);
+valuecheck((quat'*quat1)^2,1);
+quat = [0;0;0;1];
+mat = quat2rotmat(quat);
+quat1 = rotmat2quat(mat);
+valuecheck((quat'*quat1)^2,1);
+quat = [0;randn(3,1)];
+quat = quat./norm(quat);
+mat = quat2rotmat(quat);
+quat1 = rotmat2quat(mat);
+valuecheck((quat'*quat1)^2,1);
+disp('quat to rotmat and rotmat to quat is consistent for the corner case');
 for i = 1:1000
     rpy = 2*pi*(rand(3,1)-0.5);
     quat = rpy2quat(rpy);
@@ -61,4 +84,3 @@ for i = 1:1000
 end
 disp('axis to rotmat is correct');
 
-end

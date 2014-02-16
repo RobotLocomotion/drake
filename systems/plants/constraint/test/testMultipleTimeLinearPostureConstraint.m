@@ -12,15 +12,15 @@ t = [-1 0 0.2 0.4 0.7 1 2];
 q = randn(nq,length(t));
 
 display('Check posture change constraint');
-testMTLPC_userfun(t,q,MultipleTimeLinearPostureConstraint.PostureChangeConstraint,r,[l_leg_kny;r_leg_kny],[-0.1;-0.2],[0.2;0],tspan0);
+testMTLPC_userfun(t,q,RigidBodyConstraint.PostureChangeConstraintType,r,[l_leg_kny;r_leg_kny],[-0.1;-0.2],[0.2;0],tspan0);
 
 end
 
 function testMTLPC_userfun(t,q,mtlpc_type,varargin)
 robot = varargin{1};
 robot_ptr = robot.getMexModelPtr;
-mtlpc_mex = constructMultipleTimeLinearPostureConstraint(mtlpc_type,true,robot_ptr,varargin{2:end});
-mtlpc = constructMultipleTimeLinearPostureConstraint(mtlpc_type,false,robot,varargin{2:end});
+mtlpc_mex = constructRigidBodyConstraint(mtlpc_type,true,robot_ptr,varargin{2:end});
+mtlpc = constructRigidBodyConstraint(mtlpc_type,false,robot,varargin{2:end});
 [num_cnst_mex,c_mex,iAfun_mex,jAvar_mex,A_mex,cnst_name_mex,lb_mex,ub_mex] = testMultipleTimeLinearPostureConstraintmex(mtlpc_mex,q,t);
 valuecheck(c_mex,sparse(iAfun_mex,jAvar_mex,A_mex,num_cnst_mex,numel(q))*q(:),1e-10);
 num_cnst = mtlpc.getNumConstraint(t);

@@ -50,10 +50,8 @@ classdef RelativeQuatConstraint < QuatConstraint
       end
     end
 
-    function ptr = constructPtr(varargin)
-      ptr = [];
-    end
 
+    
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
       wTa = kinsol.T{obj.bodyA.idx};

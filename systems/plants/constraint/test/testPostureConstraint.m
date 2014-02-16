@@ -16,10 +16,30 @@ pc = pc.setJointLimits([l_leg_kny;r_leg_kny],[0.2;0.2],inf(2,1));
 valuecheck(lb,lbmex);
 valuecheck(ub,ubmex);
 
-
+display('Check setJointLimits when input is outside of the robot default joint limit');
 pc = pc.setJointLimits([l_leg_kny;r_leg_kny],[-1;0.2],[1;inf]);
 [lb,ub] = pc.bounds(t);
 [lbmex,ubmex] = testPostureConstraintmex(pc.mex_ptr,t);
 valuecheck(lb,lbmex);
 valuecheck(ub,ubmex);
+
+display('Check if the mex pointer and MATLAB object are consistent after copy by value');
+pc2 = pc;
+[lb2,ub2] = pc2.bounds(t);
+[lb2_mex,ub2_mex] = testPostureConstraintmex(pc2.mex_ptr,t);
+valuecheck(lb2,lb2_mex);
+valuecheck(ub2,ub2_mex);
+pc2 = pc2.setJointLimits(1,0,0);
+[lb2,ub2] = pc2.bounds(t);
+valuecheck(lb2(1),0);
+valuecheck(ub2(1),0);
+[lb2_mex,ub2_mex] = testPostureConstraintmex(pc2.mex_ptr,t);
+valuecheck(lb2_mex(1),0);
+valuecheck(ub2_mex(1),0);
+[lb,ub] = pc.bounds(t);
+valuecheck(lb(1),-inf);
+valuecheck(ub(1),inf);
+[lb_mex,ub_mex] = testPostureConstraintmex(pc.mex_ptr,t);
+valuecheck(lb_mex(1),-inf);
+valuecheck(ub_mex(1),inf);
 end

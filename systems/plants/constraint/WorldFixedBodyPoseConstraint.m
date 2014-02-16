@@ -18,7 +18,7 @@ classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
       if(nargin == 2)
         tspan = [-inf inf];
       end
-      ptr = constructPtrWorldFixedBodyPoseConstraintmex(robot.getMexModelPtr,body,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot.getMexModelPtr,body,tspan);
       obj = obj@MultipleTimeKinematicConstraint(robot,tspan);
       sizecheck(body,[1,1]);
       if(~isnumeric(body))
@@ -26,6 +26,7 @@ classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
       end
       obj.body = floor(body);
       obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.type = RigidBodyConstraint.WorldFixedBodyPoseConstraintType;
       obj.mex_ptr = ptr;
     end
     
@@ -96,13 +97,5 @@ classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
       end
     end
     
-    function obj = updateRobot(obj,robot)
-      obj.robot = robot;
-      updatePtrWorldFixedBodyPoseConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
-    end
-    
-    function ptr = constructPtr(varargin)
-      ptr = constructPtrWorldFixedBodyPoseConstraintmex(varargin{:});
-    end
   end
 end
