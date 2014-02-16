@@ -1,6 +1,6 @@
 classdef MultipleTimeLinearPostureConstraint < RigidBodyConstraint
   % A linear constraint on the robot posture for multiple times
-  properties
+  properties(SetAccess = protected)
     robot
     tspan
     mex_ptr
@@ -15,7 +15,7 @@ classdef MultipleTimeLinearPostureConstraint < RigidBodyConstraint
       if(nargin<2)
         tspan = [-inf inf];
       end
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeLinearPostureConstraint);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeLinearPostureConstraintCategory);
       obj.robot = robot;
       if(~isnumeric(tspan))
         error('Drake:MultipeTimeLinearPostureConstraint: tspan should be numeric');
@@ -55,6 +55,5 @@ classdef MultipleTimeLinearPostureConstraint < RigidBodyConstraint
     % sparse(iAfun,jAvar,A,num_constraint,numel(q)) is the gradient of c w.r.t q
     [lb,ub] = bounds(obj,t);
     name_str = name(obj,t);
-    ptr = constructPtr(varargin);
   end
 end

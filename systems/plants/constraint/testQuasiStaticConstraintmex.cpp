@@ -34,7 +34,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   else
   {
-    t_ptr = NULL;
+    t_ptr = nullptr;
   }
   QuasiStaticConstraint* qsc = (QuasiStaticConstraint*) getDrakeMexPointer(prhs[0]);
   bool active = qsc->isActive();
