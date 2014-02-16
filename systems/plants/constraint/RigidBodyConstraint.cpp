@@ -1,5 +1,6 @@
 #include "RigidBodyConstraint.h"
 #include "../RigidBodyManipulator.h"
+#include "../../../util/drakeQuatUtil.h"
 using namespace Eigen;
 
 
@@ -860,6 +861,22 @@ void PositionConstraint::bounds(const double* t,VectorXd &lb, VectorXd &ub) cons
   }
 }
 
+void PositionConstraint::name(const double* t, std::vector<std::string> &name_str) const
+{
+  if(this->isTimeValid(t))
+  {
+    std::vector<std::string> cnst_names;
+    this->evalNames(t,cnst_names);
+    for(int i = 0;i<3*this->n_pts;i++)
+    {
+      if(!this->null_constraint_rows[i])
+      {
+        name_str.push_back(cnst_names.at(i));
+      }
+    }
+  }
+}
+
 PositionConstraint::~PositionConstraint()
 {
   delete[] this->lb;
@@ -880,57 +897,24 @@ void WorldPositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
   this->robot->forwardJac(this->body, this->pts,0,J);
 }
 
-void WorldPositionConstraint::name(const double* t, std::vector<std::string>& name_str) const
+void WorldPositionConstraint::evalNames(const double* t, std::vector<std::string>& cnst_names) const
 {
-  if(this->isTimeValid(t))
+  std::string time_str;
+  if(t!=nullptr)
   {
-    char cnst_name_str_buffer[500]; 
-    int constraint_idx = 0;
-    for(int i = 0;i<this->n_pts;i++)
-    {
-      if(!this->null_constraint_rows[3*i+0])
-      {
-        if(t == nullptr)
-        {
-          sprintf(cnst_name_str_buffer,"%s pts(:,%d) x",this->body_name.c_str(),i+1);
-        }
-        else
-        {
-          sprintf(cnst_name_str_buffer,"%s pts(:,%d) x at time %10.4f",this->body_name.c_str(),i+1,*t);
-        }
-        std::string cnst_name_str(cnst_name_str_buffer);
-        name_str.push_back(cnst_name_str);
-        constraint_idx++;
-      }
-      if(!this->null_constraint_rows[3*i+1])
-      {
-        if(t == nullptr)
-        {
-          sprintf(cnst_name_str_buffer,"%s pts(:,%d) y",this->body_name.c_str(),i+1);
-        }
-        else
-        {
-          sprintf(cnst_name_str_buffer,"%s pts(:,%d) y at time %10.4f",this->body_name.c_str(),i+1,*t);
-        }
-        std::string cnst_name_str(cnst_name_str_buffer);
-        name_str.push_back(cnst_name_str);
-        constraint_idx++;
-      }
-      if(!this->null_constraint_rows[3*i+2])
-      {
-        if(t == nullptr)
-        {
-          sprintf(cnst_name_str_buffer,"%s pts(:,%d) z",this->body_name.c_str(),i+1);
-        }
-        else
-        {
-          sprintf(cnst_name_str_buffer,"%s pts(:,%d) z at time %10.4f",this->body_name.c_str(),i+1,*t);
-        }
-        std::string cnst_name_str(cnst_name_str_buffer);
-        name_str.push_back(cnst_name_str);
-        constraint_idx++;
-      }
-    }
+    char time_str_buffer[20];
+    sprintf(time_str_buffer,"at time %5.2f",*t);
+    time_str+=std::string(time_str_buffer);
+  }
+  char cnst_name_str_buffer[500];
+  for(int i = 0;i<this->n_pts;i++)
+  {
+    sprintf(cnst_name_str_buffer,"%s pts(:,%d) x %s",this->body_name.c_str(),i+1,time_str.c_str());
+    cnst_names.push_back(std::string(cnst_name_str_buffer));
+    sprintf(cnst_name_str_buffer,"%s pts(:,%d) y %s",this->body_name.c_str(),i+1,time_str.c_str());
+    cnst_names.push_back(std::string(cnst_name_str_buffer));
+    sprintf(cnst_name_str_buffer,"%s pts(:,%d) z %s",this->body_name.c_str(),i+1,time_str.c_str());
+    cnst_names.push_back(std::string(cnst_name_str_buffer));
   }
 }
 
@@ -958,55 +942,22 @@ void WorldCoMConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
 }
 
 
-void WorldCoMConstraint::name(const double* t, std::vector<std::string> &name_str) const
+void WorldCoMConstraint::evalNames(const double* t, std::vector<std::string> &cnst_names) const
 {
-  if(this->isTimeValid(t))
+  std::string time_str;
+  if(t!=nullptr)
   {
-    char cnst_name_str_buffer[100]; 
-    int constraint_idx = 0;
-    if(!this->null_constraint_rows[0])
-    {
-      if(t == nullptr)
-      {
-        sprintf(cnst_name_str_buffer,"CoM x");
-      }
-      else
-      {
-        sprintf(cnst_name_str_buffer,"CoM x at time %10.4f",*t);
-      }
-      std::string cnst_name_str(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
-      constraint_idx++;
-    }
-    if(!this->null_constraint_rows[1])
-    {
-      if(t == nullptr)
-      {
-        sprintf(cnst_name_str_buffer,"CoM y");
-      }
-      else
-      {
-        sprintf(cnst_name_str_buffer,"CoM y at time %10.4f",*t);
-      }
-      std::string cnst_name_str(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
-      constraint_idx++;
-    }
-    if(!this->null_constraint_rows[2])
-    {
-      if(t == nullptr)
-      {
-        sprintf(cnst_name_str_buffer,"CoM z");
-      }
-      else
-      {
-        sprintf(cnst_name_str_buffer,"CoM z at time %10.4f",*t);
-      }
-      std::string cnst_name_str(cnst_name_str_buffer);
-      name_str.push_back(cnst_name_str);
-      constraint_idx++;
-    }
+    char time_str_buffer[20];
+    sprintf(time_str_buffer,"at time %5.2f",*t);
+    time_str+=std::string(time_str_buffer);
   }
+  char cnst_name_str_buffer[500];
+  sprintf(cnst_name_str_buffer,"CoM x %s",time_str.c_str());
+  cnst_names.push_back(std::string(cnst_name_str_buffer));
+  sprintf(cnst_name_str_buffer,"CoM y %s",time_str.c_str());
+  cnst_names.push_back(std::string(cnst_name_str_buffer));
+  sprintf(cnst_name_str_buffer,"CoM z %s",time_str.c_str());
+  cnst_names.push_back(std::string(cnst_name_str_buffer));
 }
 
 
@@ -1019,7 +970,7 @@ WorldCoMConstraint::~WorldCoMConstraint()
 {
 }
 
-RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* model, const MatrixXd &pts, const MatrlxXd &lb, const MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Vector<double,7> &bTbp, const Vector2d &tspan):PositionConstraint(model,pts,lb,ub,tspan)
+RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* model, const MatrixXd &pts, const MatrixXd &lb, const MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Matrix<double,7,1> &bTbp, const Vector2d &tspan):PositionConstraint(model,pts,lb,ub,tspan)
 {
   this->bTbp = bTbp;
   this->bodyA_idx = bodyA_idx;
@@ -1035,12 +986,12 @@ RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* mod
 
 void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
 {
-  int nq = this->robot->getNumDOF();
+  int nq = this->robot->num_dof;
   MatrixXd bodyA_pos(3,this->n_pts);
   MatrixXd JA(3*this->n_pts,nq);
   this->robot->forwardKin(this->bodyA_idx,this->pts,0,bodyA_pos);
   this->robot->forwardJac(this->bodyA_idx,this->pts,0,JA);
-  Vector<double,7> wTb;
+  Matrix<double,7,1> wTb;
   MatrixXd dwTb(7,nq);
   Vector4d origin_pt;
   origin_pt << 0,0,0,1.0;
@@ -1054,11 +1005,55 @@ void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
   Matrix<double,3,7> dbTw_trans;
   quatRotateVec(bTw_quat,-wTb.block(0,0,3,1),bTw_trans,dbTw_trans);
   MatrixXd dbTw_transdq(4,nq);
-  dbTw_transdq = dbTw_trans.block(0,0,4,4)*dbTw_quatdq-dbTw_trans.block(0,4,4,3)*dwTb(0,0,3,nq);
+  dbTw_transdq = dbTw_trans.block(0,0,4,4)*dbTw_quatdq-dbTw_trans.block(0,4,4,3)*dwTb.block(0,0,3,nq);
 
   Vector3d bpTw_trans1;
   Matrix<double,3,7> dbpTw_trans1;
-  
+  quatRotateVec(this->bpTb.block(3,0,4,1),bTw_trans,bpTw_trans1,dbpTw_trans1);
+  MatrixXd dbpTw_trans1dq = dbpTw_trans1.block(0,4,3,3)*dbTw_transdq; 
+  Vector3d bpTw_trans = bpTw_trans1+this->bpTb.block(0,0,3,1);
+  MatrixXd dbpTw_transdq = dbpTw_trans1dq;
+  Vector4d bpTw_quat;
+  Matrix<double,4,8> dbpTw_quat;
+  quatProduct(this->bpTb.block(3,0,4,1),bTw_quat,bpTw_quat,dbpTw_quat);
+  MatrixXd dbpTw_quatdq = dbpTw_quat.block(0,4,4,4)*dbTw_quatdq;
+
+  pos.resize(3,this->n_pts);
+  J.resize(3*this->n_pts,nq);
+  for(int i = 0;i<this->n_pts;i++)
+  {
+    Vector3d bp_bodyA_pos1;
+    Matrix<double,3,7> dbp_bodyA_pos1;
+    quatRotateVec(bpTw_quat,bodyA_pos.col(i),bp_bodyA_pos1,dbp_bodyA_pos1);
+    MatrixXd dbp_bodyA_pos1dq = dbp_bodyA_pos1.block(0,0,3,4)*dbpTw_quatdq+dbp_bodyA_pos1.block(0,3,3,4)*JA.block(3*i,0,3,nq);
+    pos.col(i) = bp_bodyA_pos1+bpTw_trans;
+    J.block(3*i,0,3,nq) = dbp_bodyA_pos1dq+dbpTw_transdq;
+  }
+}
+
+void RelativePositionConstraint::evalNames(const double* t, std::vector<std::string> &cnst_names) const
+{
+  std::string time_str;
+  if(t!=nullptr)
+  {
+    char time_str_buffer[20];
+    sprintf(time_str_buffer,"at time %5.2f",*t);
+    time_str+=std::string(time_str_buffer);
+  }
+  char cnst_name_str_buffer[500];
+  for(int i = 0;i<this->n_pts;i++)
+  {
+    sprintf(cnst_name_str_buffer,"%s pts(:,%d) in %s x %s",this->bodyA_name.c_str(),i+1,this->bodyB_name.c_str(),time_str.c_str());
+    cnst_names.push_back(std::string(cnst_name_str_buffer));
+    sprintf(cnst_name_str_buffer,"%s pts(:,%d) in %s y %s",this->bodyA_name.c_str(),i+1,this->bodyB_name.c_str(),time_str.c_str());
+    cnst_names.push_back(std::string(cnst_name_str_buffer));
+    sprintf(cnst_name_str_buffer,"%s pts(:,%d) in %s z %s",this->bodyA_name.c_str(),i+1,this->bodyB_name.c_str(),time_str.c_str());
+    cnst_names.push_back(std::string(cnst_name_str_buffer));
+  }
+}
+
+RelativePositionConstraint::~RelativePositionConstraint()
+{
 }
 
 QuatConstraint::QuatConstraint(RigidBodyManipulator *model, double tol, Vector2d tspan):SingleTimeKinematicConstraint(model,tspan)
@@ -2265,6 +2260,27 @@ void WorldPositionInFrameConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) c
   pos = (this->T_world_to_frame*pos_1).topRows(3);
   auto J_reshaped = Map<MatrixXd>(J.data(),3,n_pts*J.cols());
   J_reshaped = T_world_to_frame.topLeftCorner<3,3>()*J_reshaped;
+}
+
+void WorldPositionInFrameConstraint::evalNames(const double* t, std::vector<std::string>& cnst_names) const
+{
+  std::string time_str;
+  if(t!=nullptr)
+  {
+    char time_str_buffer[20];
+    sprintf(time_str_buffer,"at time %5.2f",*t);
+    time_str+=std::string(time_str_buffer);
+  }
+  char cnst_name_str_buffer[500];
+  for(int i = 0;i<this->n_pts;i++)
+  {
+    sprintf(cnst_name_str_buffer,"%s pts(:,%d) x in frame %s",this->body_name.c_str(),i+1,time_str.c_str());
+    cnst_names.push_back(std::string(cnst_name_str_buffer));
+    sprintf(cnst_name_str_buffer,"%s pts(:,%d) y in frame %s",this->body_name.c_str(),i+1,time_str.c_str());
+    cnst_names.push_back(std::string(cnst_name_str_buffer));
+    sprintf(cnst_name_str_buffer,"%s pts(:,%d) z in frame %s",this->body_name.c_str(),i+1,time_str.c_str());
+    cnst_names.push_back(std::string(cnst_name_str_buffer));
+  }
 }
 
 WorldPositionInFrameConstraint::~WorldPositionInFrameConstraint()

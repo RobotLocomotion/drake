@@ -40,33 +40,16 @@ classdef WorldCoMConstraint < PositionConstraint
     
     
     
-    function name_str = name(obj,t)
-      if(obj.isTimeValid(t))
-        name_str = cell(obj.num_constraint,1);
-        constraint_idx = 1;
-        if(~obj.null_constraint_rows(1))
-          name_str{constraint_idx} = sprintf('CoM x');
-          if(~isempty(t))
-            name_str{constraint_idx} = sprintf('%s at time %10.4f',name_str{constraint_idx},t);
-          end
-          constraint_idx = constraint_idx+1;
-        end
-        if(~obj.null_constraint_rows(2))
-          name_str{constraint_idx} = sprintf('CoM y');
-          if(~isempty(t))
-            name_str{constraint_idx} = sprintf('%s at time %10.4f',name_str{constraint_idx},t);
-          end
-          constraint_idx = constraint_idx+1;
-        end
-        if(~obj.null_constraint_rows(3))
-          name_str{constraint_idx} = sprintf('CoM z');
-          if(~isempty(t))
-            name_str{constraint_idx} = sprintf('%s at time %10.4f',name_str{constraint_idx},t);
-          end
-        end
+    function cnst_names = evalNames(obj,t)
+      cnst_names = cell(3,1);
+      if(isempty(t))
+        time_str = '';
       else
-        name_str = [];
+        time_str = sprintf('at time %5.2f',t);
       end
+        cnst_names{1} = sprintf('CoM x %s',time_str);
+        cnst_names{2} = sprintf('CoM y %s',time_str);
+        cnst_names{3} = sprintf('CoM z %s',time_str);
     end
     
     function obj = updateRobotnum(obj,robotnum)
