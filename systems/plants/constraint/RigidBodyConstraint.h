@@ -65,6 +65,7 @@ class RigidBodyConstraint
     static const int WorldFixedOrientConstraintType             = 17;
     static const int WorldFixedBodyPoseConstraintType           = 18;
     static const int PostureChangeConstraintType                = 19;
+    static const int RelativePositionConstraintType             = 20;
 };
 
 /**
@@ -327,7 +328,7 @@ class WorldCoMConstraint: public PositionConstraint
     void updateRobotnum(const std::set<int> &robotnum);
     virtual ~WorldCoMConstraint(); 
 };
-/*
+
 class RelativePositionConstraint: public PositionConstraint
 {
   protected:
@@ -335,13 +336,14 @@ class RelativePositionConstraint: public PositionConstraint
     int bodyB_idx;
     std::string bodyA_name;
     std::string bodyB_name;
-    Matrix<double,4,4> bodyB_bpTb;
+    Vector<double,7> bpTb;
+    Vector<double,7> bTbp;
     virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J);
   public:
-    RelativePositionConstraint(RigidBodyManipulator *model, const Eigen::MatrixXd &pts, const Eigen::MatrixXd &lb, const Eigen::MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Matrix<double,4,4> &bTbp, const Vector2d &tspan);
-    virtual void name(const double* t, std::vector<std::string> &name-str);
+    RelativePositionConstraint(RigidBodyManipulator *model, const Eigen::MatrixXd &pts, const Eigen::MatrixXd &lb, const Eigen::MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Vector<double,7> &bTbp, const Vector2d &tspan);
+    virtual void name(const double* t, std::vector<std::string> &name-str) const;
     virtual ~RelativePositionConstraint();
-};*/
+};
 
 class QuatConstraint: public SingleTimeKinematicConstraint
 {

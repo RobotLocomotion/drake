@@ -1,68 +1,98 @@
 classdef RelativePositionConstraint < PositionConstraint
   % Constraining points in bodyA to be within a bounding box in B' frame on bodyB
-  % @param robot
-  % @param bodyA_idx             -- An int scalar, the bodyA index
-  % @param bodyB_idx             -- An int scalar, the bodyB index
-  % @param pts                   -- A 3xnpts double matrix, points in bodyA frame
-  % @param lb                    -- A 3xnpts double matrix, the lower bound of the
-  % position
-  % @param ub                    -- A 3xnpts double matrix, the upper bound of the
-  % position
-  % @param bTbp                  -- A 4x4 homogeneous transformation matrix, the
-  % transformation from B' frame to bodyB frame
+  
   properties(SetAccess = protected)
     bodyA_idx
     bodyB_idx
     bodyA_name
     bodyB_name
-    bodyB_bpTb
+    bTbp
   end
   
+  properties(SetAccess = protected,GetAccess = protected)
+    bpTb
+  end
   methods(Access = protected)
     function [pos,J] = evalPositions(obj,kinsol)
       if kinsol.mex
         error('The mex version of RelativePositionConstraint is not yet implemented');
       else
-        nq = obj.robot.num_q;
+        % nq = obj.robot.getNumDOF();
         %[pts_world, J_world] = forwardKin(obj.robot,kinsol,obj.body,obj.pts,0);
-        pts = [obj.pts;ones(1,obj.n_pts)];
+        [bodyA_pos,JA] = forwardKin(obj.robot,kinsol,obj.bodyA_idx,obj.pts,0);
+        [wTb,dwTb] = forwardKin(obj.robot,kinsol,obj.bodyB_idx,[0;0;0],2);
+        [bTw_quat,dbTw_quat] = quatConjugate(wTb(4:7));
+        dbTw_quat = dbTw_quat*dwTb(4:7,:);
+        [bTw_trans,dbTw_trans] = quatRotateVec(bTw_quat,wTb(1:3));
+        bTw_trans = -bTw_trans;
+        dbTw_trans = -dbTw_trans*[dbTw_quat;dwTb(1:3,:)];
+        
+        [bpTw_trans1,dbpTw_trans1] = quatRotateVec(obj.bpTb(4:7),bTw_trans);
+        dbpTw_trans1 = dbpTw_trans1(:,5:7)*dbTw_trans;
+        bpTw_trans = bpTw_trans1+obj.bpTb(1:3);
+        dbpTw_trans = dbpTw_trans1;
+        [bpTw_quat,dbpTw_quat] = quatProduct(obj.bpTb(4:7),bTw_quat);
+        dbpTw_quat = dbpTw_quat(:,5:8)*dbTw_quat;
+        
+        pos = zeros(3,obj.n_pts);
+        J = zeros(3*obj.n_pts,obj.robot.getNumDOF());
+        for i = 1:obj.n_pts
+          [bp_bodyA_pos1,dbp_bodyA_pos1] = quatRotateVec(bpTw_quat,bodyA_pos(:,i));
+          dbp_bodyA_pos1 = dbp_bodyA_pos1*[dbpTw_quat;JA(3*(i-1)+(1:3),:)];
+          pos(:,i) = bp_bodyA_pos1+bpTw_trans;
+          J(3*(i-1)+(1:3),:) = dbp_bodyA_pos1+dbpTw_trans;
+        end
 
-        [bTw,d_bTw_dq_ht] = invHT(kinsol.T{obj.bodyB_idx}, ...
-          kinsol.dTdq{obj.bodyB_idx});
-        wTa = kinsol.T{obj.bodyA_idx};
-        d_wTa_dq_ht = kinsol.dTdq{obj.bodyA_idx};
-
-        d_bTa_dq_std = matGradMultMat(bTw, wTa, ...
-          jacHt2Std(d_bTw_dq_ht), jacHt2Std(d_wTa_dq_ht));
-
-        pos = obj.bodyB_bpTb*bTw*wTa*pts;
-        J  = reshape(obj.bodyB_bpTb*reshape(matGradMult(d_bTa_dq_std, pts),4,nq*obj.n_pts),4*obj.n_pts,nq);
-
-        pos = pos(1:3,:);
-        J(4:4:end,:) = [];
       end
     end
   end
   
   methods
-    function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
+function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
                       bodyA_idx,bodyB_idx,bTbp,tspan)
+    % @param robot
+    % @param bodyA_idx -- An int scalar, the bodyA index
+    % @param bodyB_idx -- An int scalar, the bodyB index
+    % @param pts -- A 3xnpts double matrix, points in bodyA frame
+    % @param lb -- A 3xnpts double matrix, the lower bound of the
+    % position
+    % @param ub -- A 3xnpts double matrix, the upper bound of the
+    % position
+    % @param bTbp -- A 7x1 vector representating the transformation from frame B' to the body B.
+    % bTbp = [bTbp_translation;bTbp_quaternion]
+    % bTbp_translation if the vector from
+    % origin of body B to B'.
+    % bTbp_quaternion is the quaternion
+    % representation of rotation.
+      if(nargin < 8)
+        tspan = [-inf,inf];
+      end
+      % ptr = constructRigidBodyConstraintmex(robot.getMexModelPtr,pts,lb,ub,bodyA_idx,bodyB_idx,bTbp,tspan);
       typecheck(bodyA_idx,'double');
       typecheck(bodyB_idx,'double');
-      isHT(bTbp);
+      sizecheck(bodyA_idx,[1,1]);
+      sizecheck(bodyB_idx,[1,1]);
+      typecheck(bTbp,'double');
+      sizecheck(bTbp,[7,1]);
+      quat_norm = norm(bTbp(4:7));
+      if(abs(quat_norm-1)>1e-5)
+        error('Drake:RelativePositionConstraint:bTbp(4;7) is not a quaternion');
+      end
+      bTbp(4:7) = bTbp(4:7)/quat_norm;
 
       obj = obj@PositionConstraint(robot, pts, lb, ub,tspan);
       obj.bodyA_idx = bodyA_idx;
-      obj.bodyA_name = getLinkName(obj.robot, obj.bodyA_idx);
+      obj.bodyA_name = obj.robot.getBody(obj.bodyA_idx).linkname;
       obj.bodyB_idx = bodyB_idx;
-      obj.bodyB_name = getLinkName(obj.robot, obj.bodyB_idx);
-      obj.bodyB_bpTb = invHT(bTbp);
+      obj.bodyB_name = obj.robot.getBody(obj.bodyB_idx).linkname;
+      obj.bTbp = bTbp;
+      bpTb_quat = quatConjugate(bTbp(4:7));
+      obj.bpTb = [-quatRotateVec(bpTb_quat,bTbp(1:3));bpTb_quat];
+      % obj.mex_ptr = ptr;
     end
 
-    
-
     function name_str = name(obj,t)
-      if(t>=obj.tspan(1)&&t<=obj.tspan(end))||isempty(t)
+      if(obj.isTimeValid(t))
         name_str = repmat({sprintf('%s relative to %s position constraint at time %10.4f', ...
                                 obj.bodyA_name,obj.bodyB_name,t)},obj.getNumConstraint(),1);
       else
@@ -70,7 +100,13 @@ classdef RelativePositionConstraint < PositionConstraint
       end
     end
 
+    function ptr = constructPtr(varargin)
+      ptr = [];
+    end
 
+    function obj = updateRobot(varargin)
+      obj = [];
+    end
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
       pts_w = forwardKin(obj.robot,kinsol,1,obj.pts);

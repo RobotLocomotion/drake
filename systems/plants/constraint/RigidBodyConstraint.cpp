@@ -1018,25 +1018,48 @@ void WorldCoMConstraint::updateRobotnum(const std::set<int> &robotnum)
 WorldCoMConstraint::~WorldCoMConstraint()
 {
 }
-/*
-RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* model, const MatrixXd &pts, const MatrlxXd &lb, const MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Matrix<double,4,4> &bTbp, const Vector2d &tspan):PositionConstraint(model,pts,lb,ub,tspan)
+
+RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* model, const MatrixXd &pts, const MatrlxXd &lb, const MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Vector<double,7> &bTbp, const Vector2d &tspan):PositionConstraint(model,pts,lb,ub,tspan)
 {
   this->bTbp = bTbp;
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
   this->bodyA_name = this->robot->bodies[this->bodyA_idx].linkname;
   this->bodyB_name = this->robot->bodies[this->bodyB_idx].linkname;
+  Vector4d bpTb_quat;
+  quatConjugate(bTbp.block(3,0,4,1),bpTb_quat);
+  Vector3d bpTb_trans;
+  quatRotateVec(bpTb_quat,-bTbp.block(0,0,3,1),bpTb_trans);
+  this->bpTb << bpTb_trans, bpTb_quat; 
 }
 
-void evalPositions(MatrixXd &pos, MatrixXd &J)
+void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
 {
-  int nq = this->robot->num_dof;
-  Matrix<double,4,4> wTb = this->robot->bodies[bodyB_idx].T;
-  Matrix<double,4,4> wTa = this->robot->bodies[bodyA_idx].T;
-  pos = this->bodyB_bpTb*wTb.inverse()*wTa*this->pts;
-  MatrixXd dptsdq(this->pts.cols()*3,nq);
-  this->robot->forwardJac(this->bodyA,this->pts,0,dptsdq);
-}*/
+  int nq = this->robot->getNumDOF();
+  MatrixXd bodyA_pos(3,this->n_pts);
+  MatrixXd JA(3*this->n_pts,nq);
+  this->robot->forwardKin(this->bodyA_idx,this->pts,0,bodyA_pos);
+  this->robot->forwardJac(this->bodyA_idx,this->pts,0,JA);
+  Vector<double,7> wTb;
+  MatrixXd dwTb(7,nq);
+  Vector4d origin_pt;
+  origin_pt << 0,0,0,1.0;
+  this->robot->forwardKin(this->bodyB_idx,origin_pt,2,wTb);
+  this->robot->forwardJac(this->bodyB_idx,origin_pt,2,dwTb);
+  Vector4d bTw_quat;
+  Matrix4d dbTw_quat;
+  quatConjugate(wTb.block(3,0,4,1),bTw_quat,dbTw_quat);
+  MatrixXd dbTw_quatdq = dbTw_quat*dwTb.block(3,0,4,nq); 
+  Vector3d bTw_trans;
+  Matrix<double,3,7> dbTw_trans;
+  quatRotateVec(bTw_quat,-wTb.block(0,0,3,1),bTw_trans,dbTw_trans);
+  MatrixXd dbTw_transdq(4,nq);
+  dbTw_transdq = dbTw_trans.block(0,0,4,4)*dbTw_quatdq-dbTw_trans.block(0,4,4,3)*dwTb(0,0,3,nq);
+
+  Vector3d bpTw_trans1;
+  Matrix<double,3,7> dbpTw_trans1;
+  
+}
 
 QuatConstraint::QuatConstraint(RigidBodyManipulator *model, double tol, Vector2d tspan):SingleTimeKinematicConstraint(model,tspan)
 {
