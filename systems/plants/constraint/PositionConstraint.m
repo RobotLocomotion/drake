@@ -9,6 +9,7 @@ classdef PositionConstraint < SingleTimeKinematicConstraint
 
   methods(Abstract,Access = protected)
     [pos,J] = evalPositions(obj,kinsol)
+    cnst_names = evalNames(obj,t)
   end
 
   methods(Access = protected)
@@ -58,6 +59,7 @@ classdef PositionConstraint < SingleTimeKinematicConstraint
         dc = [];
       end
     end
+    
 
     function [lb,ub] = bounds(obj,t)
       if(obj.isTimeValid(t))
@@ -69,7 +71,14 @@ classdef PositionConstraint < SingleTimeKinematicConstraint
       end
     end
 
-    
+    function name_str = name(obj,t)
+      if(obj.isTimeValid(t))
+        cnst_names = evalNames(obj,t);
+        name_str = cnst_names(~obj.null_constraint_rows);
+      else
+        name_str = [];
+      end
+    end
   end
 end
 
