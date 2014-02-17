@@ -1,6 +1,5 @@
-classdef SingleTimeKinematicConstraint < RigidBodyConstraint
-  % An abstract class. Its eval function take a single time as input, the
-  % constraint is enforced at that time only
+classdef ContactWrenchConstraint < RigidBodyConstraint
+  % constrain the contact forces
   properties(SetAccess = protected)
     tspan % a 1x2 vector
     num_constraint
@@ -9,8 +8,8 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
   end
   
   methods
-    function obj = SingleTimeKinematicConstraint(robot,tspan)
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeKinematicConstraintCategory);
+    function obj = ContactWrenchConstraint(robot,tspan)
+      obj = RigidBodyConstraint(RigidBodyConstraint.ContactWrenchConstraintCategory);
       if(nargin<2)
         tspan = [-inf,inf];
       end
@@ -18,7 +17,7 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
         tspan = [-inf,inf];
       end
       if(tspan(1)>tspan(end))
-        error('Drake:SingleTimeKinematicConstraint:tspan(1) should be no larger than tspan(end)')
+        error('Drake:ContactWrenchConstraint:tspan(1) should be no larger than tspan(end)')
       end
       obj.tspan = [tspan(1) tspan(end)];
       obj.robot = robot;
@@ -48,15 +47,13 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
       end
     end
     
-    function obj = updateRobot(obj,robot)
-      obj.robot = robot;
-      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
-    end
-    
   end
+  
   methods(Abstract)
-    [c,dc] = eval(obj,t,kinsol);
-    [lb,ub] = bounds(obj,t)
-    name_str = name(obj,t)
+    [c,dc] = eval(obj,t,F);
+    [w,dw] = wrench(obj,t,kinsol,F); % This function computes the wrench of the contact force
+    flag = checkForceSize(obj,F);
+    [lb,ub] = bounds(obj,t);
+    name_str = name(obj,t);
   end
 end
