@@ -9,7 +9,7 @@ endif()
 macro(add_ik_cpp)
   add_mex(${ARGV} EXECUTABLE ${ARGV}.cpp)
   include_directories( .. )
-  target_link_libraries(${ARGV} drakeRBMurdf drakeURDFinterface drakeRigidBodyConstraint drakeIK)
+  target_link_libraries(${ARGV} drakeRBMurdf drakeURDFinterface drakeRigidBodyConstraint drakeIK ${MATLAB_ROOT}/bin/glnxa64/libmat.so ${MATLAB_ROOT}/bin/glnxa64/libmx.so)
 endmacro()
 
 if (gurobi_FOUND)
