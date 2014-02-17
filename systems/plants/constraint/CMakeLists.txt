@@ -17,7 +17,7 @@ if(eigen3_FOUND)
   pods_install_libraries(drakeRigidBodyConstraint)
   pods_install_headers(RigidBodyConstraint.h DESTINATION drake)
 
-  add_mex(drakeConstructRigidBodyConstraint SHARED constructPtrRigidBodyConstraint.cpp)
+  add_library(drakeConstructRigidBodyConstraint SHARED constructPtrRigidBodyConstraint.cpp)
   target_link_libraries(drakeConstructRigidBodyConstraint drakeRigidBodyConstraint drakeRBM drakeUtil drakeQuatUtil)
   add_constraint_mex(deleteRigidBodyConstraintmex)
   add_constraint_mex(testSingleTimeKinCnstmex)
