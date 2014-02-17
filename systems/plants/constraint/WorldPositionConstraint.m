@@ -17,6 +17,20 @@ classdef WorldPositionConstraint < PositionConstraint
     function [pos,J] = evalPositions(obj,kinsol)
       [pos,J] = forwardKin(obj.robot,kinsol,obj.body,obj.pts,0);
     end
+    
+    function cnst_names = evalNames(obj,t)
+      cnst_names = cell(3*obj.n_pts,1);
+      if(isempty(t))
+        time_str = '';
+      else
+        time_str = sprintf('at time %5.2f',t);
+      end
+      for i = 1:obj.n_pts
+        cnst_names{3*(i-1)+1} = sprintf('%s pts(:,%d) x %s',obj.body_name,i,time_str);
+        cnst_names{3*(i-1)+2} = sprintf('%s pts(:,%d) y %s',obj.body_name,i,time_str);
+        cnst_names{3*(i-1)+3} = sprintf('%s pts(:,%d) z %s',obj.body_name,i,time_str);
+      end
+    end
   end
   
   methods
@@ -41,21 +55,6 @@ classdef WorldPositionConstraint < PositionConstraint
       obj.mex_ptr = ptr;
     end
     
-    
-    
-    function cnst_names = evalNames(obj,t)
-      cnst_names = cell(3*obj.n_pts,1);
-      if(isempty(t))
-        time_str = '';
-      else
-        time_str = sprintf('at time %5.2f',t);
-      end
-      for i = 1:obj.n_pts
-        cnst_names{3*(i-1)+1} = sprintf('%s pt(:,%d) x %s',obj.body_name,i,time_str);
-        cnst_names{3*(i-1)+2} = sprintf('%s pt(:,%d) y %s',obj.body_name,i,time_str);
-        cnst_names{3*(i-1)+3} = sprintf('%s pt(:,%d) z %s',obj.body_name,i,time_str);
-      end
-    end
     
   end
 end

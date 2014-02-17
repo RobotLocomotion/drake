@@ -16,6 +16,18 @@ classdef WorldCoMConstraint < PositionConstraint
     function [pos,J] = evalPositions(obj,kinsol)
       [pos,J] = getCOM(obj.robot,kinsol,obj.robotnum);
     end
+    
+    function cnst_names = evalNames(obj,t)
+      cnst_names = cell(3,1);
+      if(isempty(t))
+        time_str = '';
+      else
+        time_str = sprintf('at time %5.2f',t);
+      end
+        cnst_names{1} = sprintf('CoM x %s',time_str);
+        cnst_names{2} = sprintf('CoM y %s',time_str);
+        cnst_names{3} = sprintf('CoM z %s',time_str);
+    end
   end
   
   methods
@@ -39,18 +51,6 @@ classdef WorldCoMConstraint < PositionConstraint
     end
     
     
-    
-    function cnst_names = evalNames(obj,t)
-      cnst_names = cell(3,1);
-      if(isempty(t))
-        time_str = '';
-      else
-        time_str = sprintf('at time %5.2f',t);
-      end
-        cnst_names{1} = sprintf('CoM x %s',time_str);
-        cnst_names{2} = sprintf('CoM y %s',time_str);
-        cnst_names{3} = sprintf('CoM z %s',time_str);
-    end
     
     function obj = updateRobotnum(obj,robotnum)
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))

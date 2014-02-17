@@ -982,6 +982,7 @@ RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* mod
   Vector3d bpTb_trans;
   quatRotateVec(bpTb_quat,-bTbp.block(0,0,3,1),bpTb_trans);
   this->bpTb << bpTb_trans, bpTb_quat; 
+  this->type = RigidBodyConstraint::RelativePositionConstraintType;
 }
 
 void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
@@ -1025,7 +1026,7 @@ void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
     Vector3d bp_bodyA_pos1;
     Matrix<double,3,7> dbp_bodyA_pos1;
     quatRotateVec(bpTw_quat,bodyA_pos.col(i),bp_bodyA_pos1,dbp_bodyA_pos1);
-    MatrixXd dbp_bodyA_pos1dq = dbp_bodyA_pos1.block(0,0,3,4)*dbpTw_quatdq+dbp_bodyA_pos1.block(0,3,3,4)*JA.block(3*i,0,3,nq);
+    MatrixXd dbp_bodyA_pos1dq = dbp_bodyA_pos1.block(0,0,3,4)*dbpTw_quatdq+dbp_bodyA_pos1.block(0,4,3,3)*JA.block(3*i,0,3,nq);
     pos.col(i) = bp_bodyA_pos1+bpTw_trans;
     J.block(3*i,0,3,nq) = dbp_bodyA_pos1dq+dbpTw_transdq;
   }
