@@ -45,6 +45,20 @@ classdef RelativePositionConstraint < PositionConstraint
 
       end
     end
+    
+    function cnst_names = evalNames(obj,t)
+      cnst_names = cell(3*obj.n_pts,1);
+      if(isempty(t))
+        time_str = '';
+      else
+        time_str = sprintf('at time %5.2f',t);
+      end
+      for i = 1:obj.n_pts
+        cnst_names{3*(i-1)+1} = sprintf('%s pts(:,%d) in %s x %s',obj.bodyA_name,i,obj.bodyB_name,time_str);
+        cnst_names{3*(i-1)+2} = sprintf('%s pts(:,%d) in %s y %s',obj.bodyA_name,i,obj.bodyB_name,time_str);
+        cnst_names{3*(i-1)+3} = sprintf('%s pts(:,%d) in %s z %s',obj.bodyA_name,i,obj.bodyB_name,time_str);
+      end
+    end
   end
   
   methods
@@ -67,7 +81,8 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
       if(nargin < 8)
         tspan = [-inf,inf];
       end
-      % ptr = constructRigidBodyConstraintmex(robot.getMexModelPtr,pts,lb,ub,bodyA_idx,bodyB_idx,bTbp,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativePositionConstraintType,...
+        robot.getMexModelPtr,pts,lb,ub,bodyA_idx,bodyB_idx,bTbp,tspan);
       typecheck(bodyA_idx,'double');
       typecheck(bodyB_idx,'double');
       sizecheck(bodyA_idx,[1,1]);
@@ -88,29 +103,14 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
       obj.bTbp = bTbp;
       bpTb_quat = quatConjugate(bTbp(4:7));
       obj.bpTb = [-quatRotateVec(bpTb_quat,bTbp(1:3));bpTb_quat];
-      % obj.mex_ptr = ptr;
+      obj.mex_ptr = ptr;
+      obj.type = RigidBodyConstraint.RelativePositionConstraintType;
     end
 
-    function name_str = name(obj,t)
-      if(obj.isTimeValid(t))
-        name_str = repmat({sprintf('%s relative to %s position constraint at time %10.4f', ...
-                                obj.bodyA_name,obj.bodyB_name,t)},obj.getNumConstraint(),1);
-      else
-        name_str = [];
-      end
-    end
-
-    function ptr = constructPtr(varargin)
-      ptr = [];
-    end
-
-    function obj = updateRobot(varargin)
-      obj = [];
-    end
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
       pts_w = forwardKin(obj.robot,kinsol,1,obj.pts);
-      wTbp = kinsol.T{obj.bodyB_idx}*invHT(obj.bodyB_bpTb);
+      wTbp = kinsol.T{obj.bodyB_idx}*invHT([quat2rotmat(obj.bpTb(4:7)) obj.bpTb(1:3);0 0 0 1]);
       wPbp = wTbp(1:3,4);
       bot_lcmgl_draw_axes(lcmgl);
       for pt = pts_w
