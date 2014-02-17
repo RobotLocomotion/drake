@@ -439,7 +439,14 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 
     	bodies[index].linkname = l->first;
     	bodies[index].jointname = j->name;
-        bodies[index].mass = l->second->inertial->mass;
+        if(l->second->inertial == nullptr)
+        {
+          bodies[index].mass = 0.0;
+        }
+        else
+        {
+          bodies[index].mass = l->second->inertial->mass;
+        }
 //    	cout << "body[" << index << "] linkname: " << bodies[index].linkname << ", jointname: " << bodies[index].jointname << endl;
 
 
