@@ -16,6 +16,7 @@ classdef RigidBodyConstraint
     PostureConstraintCategory = -4;
     MultipleTimeLinearPostureConstraintCategory = -5;
     SingleTimeLinearPostureConstraintCategory = -6;
+    ContactWrenchConstraintCategory = -7;
   end
   
   properties(Constant)
