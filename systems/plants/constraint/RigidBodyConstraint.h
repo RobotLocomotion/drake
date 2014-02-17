@@ -12,7 +12,6 @@
 #include <cstdlib>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include "../../../util/drakeQuatUtil.h"
 #include <sstream>
 
 
@@ -65,6 +64,7 @@ class RigidBodyConstraint
     static const int WorldFixedOrientConstraintType             = 17;
     static const int WorldFixedBodyPoseConstraintType           = 18;
     static const int PostureChangeConstraintType                = 19;
+    static const int RelativePositionConstraintType             = 20;
 };
 
 /**
@@ -293,11 +293,13 @@ class PositionConstraint : public SingleTimeKinematicConstraint
     Eigen::MatrixXd pts; 
     int n_pts;
     virtual void evalPositions(Eigen::MatrixXd &pos,Eigen::MatrixXd &J) const = 0;
+    virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const = 0;
   public:
     PositionConstraint(RigidBodyManipulator *model, const Eigen::MatrixXd &pts,Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     PositionConstraint(const PositionConstraint& rhs);
     virtual void eval(const double* t,Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
+    virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~PositionConstraint();
 };
 
@@ -307,9 +309,9 @@ class WorldPositionConstraint: public PositionConstraint
     int body;
     std::string body_name;
     virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J) const;
+    virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const;
   public:
     WorldPositionConstraint(RigidBodyManipulator *model, int body, const Eigen::MatrixXd &pts, Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
-    virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~WorldPositionConstraint();
 };
 
@@ -320,14 +322,14 @@ class WorldCoMConstraint: public PositionConstraint
     int body;
     std::string body_name;
     virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J) const;
+    virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const;
     static const std::set<int> defaultRobotNumSet;
   public:
     WorldCoMConstraint(RigidBodyManipulator *model, Eigen::Vector3d lb, Eigen::Vector3d ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan, const std::set<int> &robotnum = WorldCoMConstraint::defaultRobotNumSet);
-    virtual void name(const double* t, std::vector<std::string> &name_str) const;
     void updateRobotnum(const std::set<int> &robotnum);
     virtual ~WorldCoMConstraint(); 
 };
-/*
+
 class RelativePositionConstraint: public PositionConstraint
 {
   protected:
@@ -335,13 +337,14 @@ class RelativePositionConstraint: public PositionConstraint
     int bodyB_idx;
     std::string bodyA_name;
     std::string bodyB_name;
-    Matrix<double,4,4> bodyB_bpTb;
-    virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J);
+    Eigen::Matrix<double,7,1> bpTb;
+    Eigen::Matrix<double,7,1> bTbp;
+    virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J) const;
+    virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const;
   public:
-    RelativePositionConstraint(RigidBodyManipulator *model, const Eigen::MatrixXd &pts, const Eigen::MatrixXd &lb, const Eigen::MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Matrix<double,4,4> &bTbp, const Vector2d &tspan);
-    virtual void name(const double* t, std::vector<std::string> &name-str);
+    RelativePositionConstraint(RigidBodyManipulator *model, const Eigen::MatrixXd &pts, const Eigen::MatrixXd &lb, const Eigen::MatrixXd &ub, int bodyA_idx, int bodyB_idx, const Eigen::Matrix<double,7,1> &bTbp, const Eigen::Vector2d &tspan);
     virtual ~RelativePositionConstraint();
-};*/
+};
 
 class QuatConstraint: public SingleTimeKinematicConstraint
 {
@@ -588,6 +591,7 @@ class WorldPositionInFrameConstraint: public WorldPositionConstraint
     Eigen::Matrix4d T_world_to_frame;
     Eigen::Matrix4d T_frame_to_world;
     virtual void evalPositions(Eigen::MatrixXd &pos, Eigen::MatrixXd &J) const;
+    virtual void evalNames(const double* t,std::vector<std::string> &cnst_names) const;
   public:
     WorldPositionInFrameConstraint(RigidBodyManipulator *model, int body, 
         const Eigen::MatrixXd &pts, const Eigen::Matrix4d& T_world_to_frame, 

@@ -387,6 +387,22 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         }
       }
       break;
+    case RigidBodyConstraint::RelativePositionConstraintType:
+      {
+        RelativePositionConstraint* cnst = static_cast<RelativePositionConstraint*>(constraint);
+        if(field_str == "robot")
+        {
+            RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
+            RelativePositionConstraint* cnst_new = new RelativePositionConstraint(*cnst);
+            cnst_new->updateRobot(robot);
+            plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","RelativePositionConstraint");
+        }
+        else
+        {
+          mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","RelativePositionConstraint:argument 2 is not accepted");
+        }
+      }
+      break;
     default:
       mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","Unsupported constraint type");
       break;

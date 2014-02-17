@@ -21,6 +21,20 @@ classdef WorldPositionInFrameConstraint < WorldPositionConstraint
       pos = homogTransMult(obj.f_T_o,pos);
       J = reshape(obj.f_T_o(1:3,1:3)*reshape(J,3,[]),3*obj.n_pts,[]);
     end
+    
+    function cnst_names = evalNames(obj,t)
+      cnst_names = cell(3*obj.n_pts,1);
+      if(isempty(t))
+        time_str = '';
+      else
+        time_str = sprintf('at time %5.2f',t);
+      end
+      for i = 1:obj.n_pts
+        cnst_names{3*(i-1)+1} = sprintf('%s pt(:,%d) x in frame %s',obj.body_name,i,time_str);
+        cnst_names{3*(i-1)+2} = sprintf('%s pt(:,%d) y in frame %s',obj.body_name,i,time_str);
+        cnst_names{3*(i-1)+3} = sprintf('%s pt(:,%d) z in frame %s',obj.body_name,i,time_str);
+      end
+    end
   end
   
   methods
@@ -35,6 +49,8 @@ classdef WorldPositionInFrameConstraint < WorldPositionConstraint
       obj.type = RigidBodyConstraint.WorldPositionInFrameConstraintType;
       obj.mex_ptr = ptr;
     end
+    
+    
     
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);

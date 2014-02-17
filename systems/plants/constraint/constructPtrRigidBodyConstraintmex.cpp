@@ -446,7 +446,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         {
           rigidBodyConstraintParseTspan(prhs[6],tspan);
         }
-        if(!mxIsNumeric(prhs[2]))
+        if(!mxIsNumeric(prhs[2]) || mxGetM(prhs[2])!= 1 || mxGetN(prhs[2]) != 1)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","body must be numeric");
         }
@@ -829,6 +829,65 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         PostureChangeConstraint* cnst = new PostureChangeConstraint(model,joint_ind,lb_change,ub_change,tspan);
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","PostureChangeConstraint");
+      }
+      break;
+    case RigidBodyConstraint::RelativePositionConstraintType:
+      {
+        if(nrhs != 9 && nrhs != 8)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::RelativePositionConstraintType,robot.mex_model_ptr,pts,lb,ub,bodyA_idx,bodyB_idx,bTbp,tspan");
+        }
+        RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
+        Vector2d tspan;
+        if(nrhs <= 8)
+        {
+          tspan<<-mxGetInf(),mxGetInf();
+        }
+        else
+        {
+          rigidBodyConstraintParseTspan(prhs[8],tspan);
+        }
+        if(!mxIsNumeric(prhs[2])|| mxGetM(prhs[2]) != 3)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Argument 3 (pts) should be a double matrix with 3 rows");
+        }
+        int n_pts = mxGetN(prhs[3]);
+        MatrixXd pts_tmp(3,n_pts);
+        memcpy(pts_tmp.data(),mxGetPr(prhs[2]),sizeof(double)*3*n_pts);
+        MatrixXd pts(4,n_pts);
+        pts.block(0,0,3,n_pts) = pts_tmp;
+        pts.block(3,0,1,n_pts) = MatrixXd::Ones(1,n_pts);
+
+        MatrixXd lb(3,n_pts);
+        MatrixXd ub(3,n_pts);
+        if(!mxIsNumeric(prhs[3]) || mxGetM(prhs[3]) != 3 || mxGetN(prhs[3]) != n_pts || !mxIsNumeric(prhs[4]) || mxGetM(prhs[4]) != 3 || mxGetN(prhs[4]) != n_pts)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","lb and ub should both be 3xn_pts double matrix");
+        }
+        memcpy(lb.data(),mxGetPr(prhs[3]),sizeof(double)*3*n_pts);
+        memcpy(ub.data(),mxGetPr(prhs[4]),sizeof(double)*3*n_pts);
+        
+        if(!mxIsNumeric(prhs[5]) || mxGetM(prhs[5]) != 1 || mxGetN(prhs[5]) != 1 || !mxIsNumeric(prhs[6]) || mxGetM(prhs[6]) != 1 || mxGetN(prhs[6]) != 1)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","bodyA_idx and bodyB_idx should be numeric scalars");
+        }
+        int bodyA_idx = static_cast<int>(mxGetScalar(prhs[5])-1);
+        int bodyB_idx = static_cast<int>(mxGetScalar(prhs[6])-1);
+
+        Matrix<double,7,1> bTbp;
+        if(!mxIsNumeric(prhs[7]) || mxGetM(prhs[7]) != 7 || mxGetN(prhs[7]) != 1)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","bTbp should be 7x1 numeric vector");
+        }
+        memcpy(bTbp.data(),mxGetPr(prhs[7]),sizeof(double)*7);
+        double quat_norm = bTbp.block(3,0,4,1).norm();
+        if(abs(quat_norm-1)>1e-5)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","bTbp(4:7) should be a unit quaternion");
+        }
+        bTbp.block(3,0,4,1) /= quat_norm;
+        RelativePositionConstraint* cnst = new RelativePositionConstraint(model,pts,lb,ub,bodyA_idx,bodyB_idx,bTbp,tspan);
+        plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","RelativePositionConstraint");
       }
       break;
     default:

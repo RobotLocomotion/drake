@@ -164,6 +164,11 @@ testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.Point2LineSegDistConstrai
 
 display('Check Relative gaze target constraint');
 testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.RelativeGazeTargetConstraintType,robot,robot_aff,head,r_hand,[1;0;0],[0;0;0],[0;0;0],pi/30,tspan0);
+
+display('Check Relative position constraint');
+testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.RelativePositionConstraintType,robot,robot_aff,...
+  [[0;0;0],[0;1;0.2]],[[nan;-0.1;-0.2],[-0.2;nan;-0.4]],[[nan;0.1;0.2],[0.3;nan;0]],...
+  r_hand,head,[[0;0.1;0.2];rpy2quat(randn(3,1))],tspan0);
 end
 
 function testKinCnst_userfun(singleTimeFlag,t,q,q_aff,cnst_type,robot,robot_aff,varargin)

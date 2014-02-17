@@ -38,6 +38,7 @@ classdef RigidBodyConstraint
     WorldFixedOrientConstraintType = 17;
     WorldFixedBodyPoseConstraintType = 18;
     PostureChangeConstraintType = 19;
+    RelativePositionConstraintType = 20;
   end
   
   methods
