@@ -11,7 +11,7 @@ endmacro()
 
 pods_find_pkg_config(eigen3)
 if(eigen3_FOUND)
-  add_mex(drakeRigidBodyConstraint SHARED ${drakeRigidBodyConstraint_SRC_FILES})
+  add_library(drakeRigidBodyConstraint SHARED ${drakeRigidBodyConstraint_SRC_FILES})
   target_link_libraries(drakeRigidBodyConstraint drakeRBM drakeQuatUtil)
   set_target_properties(drakeRigidBodyConstraint PROPERTIES COMPILE_FLAGS -fPIC )
   pods_install_libraries(drakeRigidBodyConstraint)
