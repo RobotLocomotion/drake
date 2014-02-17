@@ -406,8 +406,6 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
   robot_map.insert(make_pair(_urdf_model->getName(),(int)robot_name.size()));
   robot_name.push_back(_urdf_model->getName());
   resize(num_dof + (int)dofname_to_dofnum.size(),-1,num_bodies + (int)jointname_to_jointnum.size());
-  this->joint_limit_min = new double[this->num_dof];
-  this->joint_limit_max = new double[this->num_dof];
   for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=_urdf_model->joints_.begin(); j!=_urdf_model->joints_.end(); j++)
   {
     setJointLimits(_urdf_model,j->second,dofname_to_dofnum,this->joint_limit_min,this->joint_limit_max);
