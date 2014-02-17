@@ -408,7 +408,6 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
   resize(num_dof + (int)dofname_to_dofnum.size(),-1,num_bodies + (int)jointname_to_jointnum.size());
   this->joint_limit_min = new double[this->num_dof];
   this->joint_limit_max = new double[this->num_dof];
-  printf("num_dof = %d\n",this->num_dof);
   for (map<string, boost::shared_ptr<urdf::Joint> >::iterator j=_urdf_model->joints_.begin(); j!=_urdf_model->joints_.end(); j++)
   {
     setJointLimits(_urdf_model,j->second,dofname_to_dofnum,this->joint_limit_min,this->joint_limit_max);
@@ -442,7 +441,14 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
 
     	bodies[index].linkname = l->first;
     	bodies[index].jointname = j->name;
-        bodies[index].mass = l->second->inertial->mass;
+        if(l->second->inertial == nullptr)
+        {
+          bodies[index].mass = 0.0;
+        }
+        else
+        {
+          bodies[index].mass = l->second->inertial->mass;
+        }
 //    	cout << "body[" << index << "] linkname: " << bodies[index].linkname << ", jointname: " << bodies[index].jointname << endl;
 
 
