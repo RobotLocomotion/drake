@@ -64,9 +64,9 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
   
   methods(Abstract)
     [c,dc] = eval(obj,t,F);
-    [tau,dtau] = torque(obj,t,kinsol,F); % This function computes the torque of the contact force
-    [iFfun,jFvar,m,n] = force(obj,F);
+    [tau,dtau] = torque(obj,t,kinsol,F); % This function computes the total torque of the contact force
+    A = force(obj,t);% We suppose that the total force is a linear combination of F. This function returns such a (sparse) linear transformation A
     [lb,ub] = bounds(obj,t);
-    name_str = name(obj,t);
+    name_str = name(obj,t);% returns the name of each constraint returned by eval function
   end
 end

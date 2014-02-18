@@ -1,6 +1,7 @@
 classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
   % constrain the friction force to be within a friction cone.
   % @param body       -- The index of contact body on the robot
+  % @param body_name  -- The name of the body.
   % @param body_pts   -- A 3 x num_pts double matrix, each column represents the coordinate
   % of the contact point on the body frame.
   % @param num_pts    -- The number of contact points
@@ -10,6 +11,7 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
   % friction cone at the contact point body_pts(:,i). FC_axis(:,i) is in the world frame
   properties(SetAccess = protected)
     body
+    body_name
     body_pts
     num_pts
     FC_mu
@@ -39,6 +41,7 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
         error('Drake:FrictionConeWrenchConstraint: body should be a numeric scalar');
       end
       obj.body = body;
+      obj.body_name = obj.robot.getBody(obj.body).linkname;
       body_pts_size = size(body_pts);
       if(~isnumeric(body_pts) || length(body_pts_size) ~= 2 || body_pts_size(1) ~= 3)
         error('Drake:FrictionConeWrenchConstraint: body_pts should be 3 x num_pts double matrix');
@@ -138,16 +141,14 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       end
     end
     
-    function [w,dw_val] = wrenchSparse(obj,t,kinsol,F)
-      % Compute the wrench from contact position and contact force
-      % The gradient of wrench w.r.t q and F is sparse.
+    function [tau,dtau] = torque(obj,t,kinsol,F)
+      % Compute the total torque from contact position and contact force, together with
+      % its gradient
       % @param F     -- a 3 x num_pts double matrix. F(:,i) is the contact force at
       % i'th contact point
-      % @retval w    -- a 6 x num_pts double matrix. w(:,i) is the wrench ([force;torque])
-      % i'th contact point
-      % @retval dw_val   -- a 3*num_pts*nq+3*num_pts*3+3*num_pts x 1 double vector.
-      % The non-zero entries of the gradient of wrench w
-      % w.r.t joint angles q and contact force F
+      % @retval tau    -- a 3 x 1 double vector, the total torque around origin.
+      % @retval dtau   -- a 3 x (nq+3*obj.num_pts) double matrix. The gradient of tau
+      % w.r.t q and F
       if(obj.isTimeValid(t))
         valid_F = checkForceSize(obj,F);
         if(~valid_F)
@@ -155,38 +156,54 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
         end
         nq = obj.robot.getNumDOF();
         [body_pos,dbody_pos] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
-        tau = cross(body_pos,F,1);
-        w = [F;tau];
-        dtau = zeros(obj.num_pts*3,6);
-        dtaudq = zeros(obj.num_pts*3,nq);
+        tau = sum(cross(body_pos,F,1),2);
+        dtau = zeros(3,nq+3*obj.num_pts);
         for i = 1:obj.num_pts
-          dtau((i-1)*3+(1:3),:) = dcross(body_pos(:,i),F(:,i));
-          dtaudq((i-1)*3+(1:3),:) = dtau((i-1)*3+(1:3),1:3)*dbody_pos((i-1)*3+(1:3),:);
+          dtau_tmp = dcross(body_pos(:,i),F(:,i));
+          dtau(:,1:nq) = dtau(:,1:nq)+dtau_tmp(:,1:3)*dbody_pos((i-1)*3+(1:3),:);
+          dtau(:,nq+(i-1)*3+(1:3)) = dtau_tmp(:,4:6);
         end
-        dtaudF = dtau(:,4:6);
-        dw_val = [dtaudq(:);dtaudF(:);ones(3*obj.num_pts,1)];
       else
-        w = [];
-        dw_val = [];
+        tau = [];
+        dtau = [];
       end
     end
     
-    function [iWfun,jWvar,m,n] = wrenchSparseStructure(obj,t)
-      % returns the sparsity structure of the gradient of wrench w.r.t q and F
-      % @retval
-      if(obj.isTimeValit(t))
+    
+    function A = force(obj,t)
+      % Compute total force from all the contact force parameters F. The total force is a
+      % linear transformation from F. total_force = A*F(:)
+      % @param t    -- A double scalar. The time to evaluate force
+      % @param F    -- A 3 x obj.num_pts double matrix. F(:,i) is the force parameter at
+      % i'th contact point.
+      % @param A    -- A 3 x 3*obj.num_pts double matrix.
+      if(obj.isTimeValid(t))
+        A = sparse(reshape(bsxfun(@times,(1:3)',ones(1,obj.num_pts)),[],1),...
+          (1:3*obj.num_pts)',ones(3*obj.num_pts,1),3,3*obj.num_pts,3*obj.num_pts);
       else
-        iWfun = [];
-        jWvar = [];
-        m = 0;
-        n = 0;
+        A = sparse(0,0);
       end
     end
     
-    function [w,dw] = wrench(obj,t,kinsol,F)
-      
+    function name_str = name(obj,t)
+      % Returns the name of each constraint in eval function
+      % @param t         -- A double scalar, the time to evaluate constraint.
+      % @retval name_str -- A obj.num_constraint x 1 cell. name_str{i} is the i'th
+      % constraint name
+      if(obj.isTimeValid(t))
+        if(isempty(t))
+          time_str = '';
+        else
+          time_str = sprintf('at time %5.2f',t);
+        end
+        name_str = cell(obj.num_constraint,1);
+        for i = 1:obj.num_constraint
+          name_str{i} = sprintf('Friction cone constraint for pts(:,%d) on %s %s',i,obj.body_name,time_str); 
+        end
+      else
+        name_str = {};
+      end
     end
-    
   end
   
 end
