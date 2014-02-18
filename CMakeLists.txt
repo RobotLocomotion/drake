@@ -37,6 +37,8 @@ endif()
 # set up matlab build
 include(cmake/mex.cmake)
 
+enable_testing()
+include(CTest)
 
 # set up and build lcm types
 include(cmake/lcmtypes.cmake)
@@ -139,9 +141,6 @@ if (APPLE)
 else()
   set(LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}" CACHE STRING "$ENV{LD_LIBRARY_PATH}" )
 endif()
-
-enable_testing()
-include(CTest)
 
 add_test(NAME "RigidBodyManipulatorMemoryTest"
 	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/examples/Acrobot"
