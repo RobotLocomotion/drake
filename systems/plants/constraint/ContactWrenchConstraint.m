@@ -53,6 +53,19 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       end
     end
     
+    function [w,dw] = wrench(obj,t,kinsol,F)
+      % computes the total wrench and its gradient w.r.t q and F
+      % @param t      -- A double scalar to evaluate the wrench
+      % @param kinsol -- The kinematics tree, returned from doKinematics
+      % @param F      -- A matrix of size obj.force_size. The force parameter
+      % @retval w     -- A 6 x 1 double vector. The total wrench 
+      % @retal dw     -- A 6 x (nq+prod(obj.force_size)) matrix. The gradient of w w.r.t q
+      % and F
+      A = obj.force(t);
+      [tau,dtau] = obj.torque(t,kinsol,F);
+      w = [A*F(:);tau];
+      dw = [zeros(3,nq) A;dtau];
+    end
   end
   
   methods(Access = protected)
