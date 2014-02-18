@@ -531,6 +531,12 @@ bool Joint::initXml(TiXmlElement* config)
     limits->lower = -1.0/0.0;
     limits->upper = 1.0/0.0;
   }
+  else if (this->type == FIXED)
+  {
+    limits.reset(new JointLimits);
+    limits->lower = -1.0/0.0;
+    limits->upper = 1.0/0.0;
+  }
 
   // Get safety
   TiXmlElement *safety_xml = config->FirstChildElement("safety_controller");
