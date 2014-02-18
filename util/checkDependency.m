@@ -212,7 +212,7 @@ if ~ok
       end
       
     case 'bullet'
-      conf.bullet_enabled = ~isempty(getCMakeParam('bullet'),conf);
+      conf.bullet_enabled = ~isempty(getCMakeParam('bullet',conf));
       if (~conf.bullet_enabled)
         disp(' ');
         disp(' Bullet not found.  To resolve this you will have to rerun make (from the shell)');
