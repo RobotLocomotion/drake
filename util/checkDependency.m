@@ -38,7 +38,7 @@ if ~ok
     case 'lcm'
       conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
       if (~conf.lcm_enabled)
-        lcm_java_classpath = getCMakeParam('lcm_java_classpath');
+        lcm_java_classpath = getCMakeParam('lcm_java_classpath',conf);
         if ~isempty(lcm_java_classpath)
           javaaddpath(lcm_java_classpath);
           disp(' Added the lcm jar to your javaclasspath (found via cmake)');
@@ -212,7 +212,7 @@ if ~ok
       end
       
     case 'bullet'
-      conf.bullet_enabled = ~isempty(getCMakeParam('bullet'));
+      conf.bullet_enabled = ~isempty(getCMakeParam('bullet'),conf);
       if (~conf.bullet_enabled)
         disp(' ');
         disp(' Bullet not found.  To resolve this you will have to rerun make (from the shell)');
@@ -221,7 +221,7 @@ if ~ok
       
     case 'avl'
       if ~isfield(conf,'avl') || isempty(conf.avl)
-        path_to_avl = getCMakeParam('avl');
+        path_to_avl = getCMakeParam('avl',conf);
         if isempty(path_to_avl) || strcmp(path_to_avl,'avl-NOTFOUND')
           disp(' ');
           disp(' AVL support is disabled.  To enable it, install AVL from here: http://web.mit.edu/drela/Public/web/avl/, then add it to the matlab path or set the path to the avl executable explicitly using editDrakeConfig(''avl'',path_to_avl_executable) and rerun make');
@@ -235,7 +235,7 @@ if ~ok
 
     case 'xfoil'
       if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
-        path_to_xfoil = getCMakeParam('xfoil');
+        path_to_xfoil = getCMakeParam('xfoil',conf);
         if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'xfoil-NOTFOUND')
           disp(' ');
           disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun addpath_drake');
@@ -284,11 +284,11 @@ function success=pod_pkg_config(podname)
 end
 
 
-function val = getCMakeParam(param)
+function val = getCMakeParam(param,conf)
 % note: takes precedence over the function by the same name in util, since
 % that one requires getDrakePath to be set first.
 
-[~,val] = system(['cmake -L -N pod-build | grep ', param,' | cut -d "=" -f2']);
+[~,val] = system(['cmake -L -N ' conf.root '/pod-build | grep ', param,' | cut -d "=" -f2']);
 val = strtrim(val);
 
 end
