@@ -66,6 +66,17 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       w = [A*F(:);tau];
       dw = [zeros(3,obj.robot.getNumDOF()) A;dtau];
     end
+    
+    function [c,dc] = eval(obj,t,F)
+      % computes the constraint and its gradient.
+      % @param t       -- A scalar. The time to evaluate the constraint
+      % @param F       -- A double matrix of obj.force_size. The contact forces parameters
+      % @retval c      -- A obj.num_constraint x 1 vector, the constraint value.
+      % @retval dc     -- A obj.num_constraint x prod(obj.force_size) matrix. The gradient of c w.r.t F.
+      [c,dc_val] = obj.evalSparse(t,F);
+      [iCfun,jCvar,m,n,nnz] = obj.evalSparseStructure(t);
+      dc = sparse(iCfun,jCvar,dc_val,m,n,nnz);
+    end
   end
   
   methods(Access = protected)
@@ -76,7 +87,8 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
   end
   
   methods(Abstract)
-    [c,dc] = eval(obj,t,F);
+    [c,dc_val] = evalSparse(obj,t,F);
+    [iCfun,jCvar,m,n,nnz] = evalSparseStructure(obj,t);
     [tau,dtau] = torque(obj,t,kinsol,F); % This function computes the total torque of the contact force
     A = force(obj,t);% We suppose that the total force is a linear combination of F. This function returns such a (sparse) linear transformation A
     [lb,ub] = bounds(obj,t);
