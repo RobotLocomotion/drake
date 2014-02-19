@@ -62,7 +62,7 @@ for i = 1 : 100
   vBodyTest = [randn(3, 1); quatd];
 
   SdotV = motionSubspaceDotV(body, qBodyTest, vBodyTest);
-  SdotVCheck = eval(subs(SdotVSym, num2cell([qBody; vBody]'), num2cell([qBodyTest; vBodyTest]')));
+  SdotVCheck = double(subs(SdotVSym, num2cell([qBody; vBody]'), num2cell([qBodyTest; vBodyTest]')));
   valuecheck(SdotV, SdotVCheck, 1e-8);
 end
 
