@@ -1,6 +1,7 @@
 function bullet_collision_closest_distance_test(varargin)
 
 checkDependency('bullet');
+checkDependency('lcmgl');
 
 if (nargin > 0)
   typecheck(varargin{1},'double');

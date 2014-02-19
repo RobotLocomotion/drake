@@ -12,7 +12,7 @@ if(~isa(varargin{end},'IKoptions'))
 else
   ikoptions = varargin{end};
 end
-if(use_mex)
+if(use_mex && checkDependency('gurobi_mex'))
   num_constraint = length(varargin)-1;
   constraint_ptr_cell = cell(1,num_constraint);
   for i = 1:num_constraint
@@ -26,6 +26,7 @@ if(use_mex)
   end
   [q,info] = approximateIKmex(obj.mex_model_ptr,q_seed,q_nom,constraint_ptr_cell{:},ikoptions.mex_ptr);
 else
+checkDependency('gurobi');
 t = [];
 kc_cell = {};
 [joint_min,joint_max] = obj.getJointLimits();
