@@ -15,7 +15,7 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
   
   methods
     function obj = ContactWrenchConstraint(robot,tspan)
-      obj = RigidBodyConstraint(RigidBodyConstraint.ContactWrenchConstraintCategory);
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.ContactWrenchConstraintCategory);
       if(nargin<2)
         tspan = [-inf,inf];
       end
@@ -64,7 +64,7 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       A = obj.force(t);
       [tau,dtau] = obj.torque(t,kinsol,F);
       w = [A*F(:);tau];
-      dw = [zeros(3,nq) A;dtau];
+      dw = [zeros(3,obj.robot.getNumDOF()) A;dtau];
     end
   end
   
