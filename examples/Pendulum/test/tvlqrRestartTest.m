@@ -1,6 +1,6 @@
 function tvlqrRestartTest
 
-oldpath = addpath('..');
+oldpath = addpath(fullfile(pwd,'..'));
 
 p = PendulumPlant();
 p = setInputLimits(p,-inf,inf);

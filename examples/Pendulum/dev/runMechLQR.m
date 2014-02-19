@@ -1,6 +1,6 @@
 function runMechLQR
 
-oldpath = addpath('..');
+oldpath = addpath(fullfile(pwd,'..'));
 
 p = SimulinkModel('mech');
 v = PendulumVisualizer();

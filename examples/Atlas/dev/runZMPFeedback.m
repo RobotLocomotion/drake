@@ -1,6 +1,6 @@
 function runZMPFeedback
 
-addpath('..');
+addpath(fullfile(pwd,'..'));
 
 options.floating = true;
 options.dt = 0.001;

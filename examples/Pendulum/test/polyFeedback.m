@@ -3,8 +3,7 @@ function polyFeedback
 % to LQR or feedback with LQR then do taylorApprox.  Sanity check for the
 % feedback codes (especially in PolynomialSystem).
 
-oldpath = path();
-addpath('..');
+oldpath = addpath(fullfile(pwd,'..'));
 
 try 
   pd = PendulumPlant;

@@ -1,6 +1,6 @@
 function trajectoryClosestPointTest
 
-p = addpath('..');
+p = addpath(fullfile(pwd,'..'));
 
 r = PendulumPlant;
 [utraj,xtraj] = swingUpTrajectory(r);

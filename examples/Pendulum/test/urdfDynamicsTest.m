@@ -1,6 +1,6 @@
 function urdfDynamicsTest
 
-oldpath=addpath('..');
+oldpath=addpath(fullfile(pwd,'..'));
 p_orig = PendulumPlant;
 p_urdf_2D = PlanarRigidBodyManipulator('../Pendulum.urdf');
 p_urdf_3D = RigidBodyManipulator('../Pendulum.urdf');

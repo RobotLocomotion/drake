@@ -1,7 +1,6 @@
 function simpleCTtest
 
-oldpath = path;
-addpath('..');
+oldpath = addpath(fullfile(pwd,'..'));
 
 try 
 

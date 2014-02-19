@@ -4,7 +4,7 @@ function polySatFeedback
 % feedback codes (especially in PolynomialSystem).
 
 oldpath = path();
-addpath('..');
+addpath(fullfile(pwd,'..'));
 
 try 
   pd = PendulumPlant;

@@ -1,6 +1,6 @@
 function tvlqrTest
 
-oldpath = addpath('..');
+oldpath = addpath(fullfile(pwd,'..'));
 
 try 
   p = PendulumPlant();

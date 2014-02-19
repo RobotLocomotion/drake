@@ -1,6 +1,6 @@
 function urdfDynamicsTest(xtest,utest)
 
-oldpath=addpath('..');
+oldpath=addpath(fullfile(pwd,'..'));
 p_orig = AcrobotPlant;
 p_urdf_2D = PlanarRigidBodyManipulator('../Acrobot.urdf');
 p_urdf_3D = RigidBodyManipulator('../Acrobot.urdf');
