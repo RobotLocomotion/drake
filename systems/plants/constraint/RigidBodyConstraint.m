@@ -41,6 +41,7 @@ classdef RigidBodyConstraint
     PostureChangeConstraintType = 19;
     RelativePositionConstraintType = 20;
     FrictionConeWrenchConstraintType = 21;
+    LinearFrictionConeWrenchConstraintType = 22;
   end
   
   methods
