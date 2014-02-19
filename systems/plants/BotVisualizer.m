@@ -1,4 +1,4 @@
-classdef BotVisualizer < Visualizer
+classdef BotVisualizer < RigidBodyVisualizer
   % Wraps the visualizer functionality around the drake libbot visualizer
   % (externally compiled program).  
   % Note: unlike other visualizers, only one BotVisualizer window can be
@@ -54,7 +54,7 @@ classdef BotVisualizer < Visualizer
         end
       end
 
-      obj = obj@Visualizer(getStateFrame(manip));
+      obj = obj@RigidBodyVisualizer(manip);
 
       %      obj = addRobotFromURDF(obj,urdf_filename);
       vc = drake.lcmt_viewer_command();
