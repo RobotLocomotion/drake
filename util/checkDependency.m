@@ -288,7 +288,7 @@ function val = getCMakeParam(param,conf)
 % note: takes precedence over the function by the same name in util, since
 % that one requires getDrakePath to be set first.
 
-[~,val] = system(['cmake -L -N ' conf.root '/pod-build | grep ', param,' | cut -d "=" -f2']);
+[~,val] = system(['cmake -L -N ', fullfile(conf.root,'pod-build'),' | grep ', param,' | cut -d "=" -f2']);
 val = strtrim(val);
 
 end
