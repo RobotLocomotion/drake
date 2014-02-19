@@ -98,37 +98,29 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       end
     end
     
-    function [iCfun,jCvar,m,n] = evalSparseStructure(obj,t)
+    function [iCfun,jCvar,m,n,nnz] = evalSparseStructure(obj,t)
       % This function returns the sparsity structure of the constraint gradient.
-      % sparse(iCfun,jCvar,dc,m,n) is the actual gradient matrix
+      % sparse(iCfun,jCvar,dc,m,n,nnz) is the actual gradient matrix
       % @retval iCfun   -- A num_pts x 1 double vector. The row index of the nonzero entries
       % @retval jCvar   -- A num_pts x 1 double vector. The column index of the nonzero entries
       % @retval m       -- A scalar. The total rows of the gradient matrix
       % @retval n       -- A scalar. The total columns of the gradient matrix
+      % @retval nnz     -- A scalar. The maximum non-zero entries in the sparse matrix.
       if(obj.isTimeValid(t))
         iCfun = reshape(bsxfun(@times,ones(3,1),(1:obj.num_pts)),[],1);
         jCvar = (1:3*obj.num_pts)';
         m = obj.num_pts;
         n = obj.num_pts*3;
+        nnz = 3*obj.num_pts;
       else
         iCfun = [];
         jCvar = [];
         m = 0;
         n = 0;
+        nnz = 0;
       end
     end
-    
-    function [c,dc] = eval(obj,t,F)
-      % computes the friction cone constraint and its gradient.
-      % @param t       -- A scalar. The time to evaluate the constraint
-      % @param F       -- A 3 x num_pts double matrix. The contact forces
-      % @retval c      -- A num_pts x 1 double vector. The constraint value
-      % @retval dc     -- A num_pts x 3*num_pts double matrix. The gradient of c w.r.t F.
-      [c,dc_val] = obj.evalSparse(t,F);
-      [iCfun,jCvar,m,n] = obj.evalSparseStructure(t);
-      dc = sparse(iCfun,jCvar,dc_val,m,n);
-    end
-    
+       
     function [lb,ub] = bounds(obj,t)
       % The bounds of the friction cone constraint
       % @param t    -- A double scalar, the time to evaluate the friction cone constraint
