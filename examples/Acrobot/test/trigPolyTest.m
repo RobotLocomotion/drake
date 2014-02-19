@@ -10,7 +10,6 @@ tp1 = extractTrigPolySystem(p1,options);
 
 oldpath=addpath(fullfile(pwd,'..'));
 p2 = AcrobotPlant();
-path(oldpath);
 
 tp2 = extractTrigPolySystem(p2,options);
 
@@ -37,6 +36,7 @@ for i=1:25
 end
 
 warning(w);
+path(oldpath);
 
 
 function xnp = euler(dt)
