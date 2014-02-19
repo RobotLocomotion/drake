@@ -21,6 +21,8 @@ v = r.constructVisualizer();
 
 T = 3.0;
 xtraj = r.simulate([0 T],x0);
+
+checkDependency('lcmgl');
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'qp-control-block-debug');
 
 body = getBody(r,2); % get ball

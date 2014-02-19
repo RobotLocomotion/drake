@@ -28,5 +28,3 @@ mv = MultiVisualizer({vopenloop,v});
 
 mv.playback(vertcat(xtrajopenloop,xtraj));
 
-
-% NORELEASE 
