@@ -29,6 +29,8 @@ function varargout = inverseKinBackend(obj,mode,t,q_seed,q_nom,varargin)
 
 % note: keeping typecheck/sizecheck to a minimum because this might have to
 % run inside a dynamical system (so should be fast)
+checkDependency('snopt');
+
 global SNOPT_USERFUN;
 nq = obj.getNumDOF();
 if(isempty(t))
