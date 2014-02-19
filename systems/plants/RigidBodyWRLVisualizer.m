@@ -1,4 +1,4 @@
-classdef RigidBodyWRLVisualizer < Visualizer 
+classdef RigidBodyWRLVisualizer < RigidBodyVisualizer 
   % Loads a URDF file and implements the draw function.  
   % You could think of this as a very limited version of ROS' RViz. 
   % 
@@ -14,8 +14,7 @@ classdef RigidBodyWRLVisualizer < Visualizer
         error('Drake:MissingDependency:awt','VRML visualizer will not work without a display');
       end
       
-      obj=obj@Visualizer(manip.getStateFrame());
-      obj.model = manip;
+      obj = obj@RigidBodyVisualizer(manip);
       
       if nargin<2
         options = struct();
@@ -76,20 +75,6 @@ classdef RigidBodyWRLVisualizer < Visualizer
         xlabel('x'); ylabel('y'); zlabel('z');
         axis equal; xlim([-2.5,2.5]); ylim([-2.5,2.5]); zlim([-2.5;2.5]); view(0,20);
       end
-    end
-    
-    function inspector(obj,x0, state_dims,minrange,maxrange)
-      if (nargin<2) x0 = getInitialState(obj.model); end
-      if (nargin<3) state_dims = 1:getNumDOF(obj.model); end
-      if any(state_dims)>getNumDOF(obj.model)
-        error('can''t draw velocities');
-      end
-      [jlmin,jlmax] = getJointLimits(obj.model);
-      jlmin(isinf(jlmin))=-pi; jlmax(isinf(jlmax))=pi;
-      if (nargin<4) minrange = jlmin(state_dims); end
-      if (nargin<5) maxrange = jlmax(state_dims); end
-      
-      inspector@Visualizer(obj,x0,state_dims,minrange,maxrange);
     end
     
     function playbackAVI(obj,xtraj,filename)
@@ -158,7 +143,6 @@ classdef RigidBodyWRLVisualizer < Visualizer
   end
 
   properties (Access=protected)
-    model;
     wrl;
   end
 end
