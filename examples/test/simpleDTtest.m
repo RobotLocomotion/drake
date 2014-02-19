@@ -1,6 +1,6 @@
 function simpleDTtest
 
-oldpath = addpath('..');
+oldpath = addpath(fullfile(pwd,'..'));
 
 try 
   sys = SimpleDTExample();

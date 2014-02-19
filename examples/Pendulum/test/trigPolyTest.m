@@ -9,7 +9,7 @@ warning(w);
 
 tp1 = extractTrigPolySystem(p1,options);
 
-oldpath=addpath('..');
+oldpath=addpath(fullfile(pwd,'..'));
 p2 = PendulumPlant();
 path(oldpath);
 

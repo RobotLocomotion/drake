@@ -1,6 +1,6 @@
 function runFunnel
 
-oldpath = addpath('..');
+oldpath = addpath(fullfile(pwd,'..'));
 
 p = GliderPlant();
 p = setInputLimits(p,-inf,inf);

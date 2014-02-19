@@ -1,6 +1,6 @@
 function simpleMixedCTDTtest
 
-oldpath = addpath('..');
+oldpath = addpath(fullfile(pwd,'..'));
 
 try 
   sys = SimpleMixedCTDTExample();

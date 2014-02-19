@@ -1,7 +1,7 @@
 % NOTEST
 function testReachability
 
-p = addpath('..');
+p = addpath(fullfile(pwd,'..'));
 
 % Run airplane example
 Vsall = runReachability;

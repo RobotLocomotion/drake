@@ -2,8 +2,7 @@ function satFeedback
 % test to make sure that the dynamics are the same if do the saturated
 % feedback combination via simulink or via the feedback (polytopic) forms.
 
-oldpath = path();
-addpath('..');
+oldpath = addpath(fullfile(pwd,'..'));
 
 try 
   pd = PendulumPlant;

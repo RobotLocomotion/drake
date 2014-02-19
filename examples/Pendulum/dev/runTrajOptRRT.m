@@ -1,6 +1,6 @@
 function runTrajOptRRT
 
-%addpath('..');
+%addpath(fullfile(pwd,'..'));
 %p = PendulumPlant();
 
 p = PlanarRigidBodyManipulator('../Pendulum.urdf');
