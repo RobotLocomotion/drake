@@ -10,8 +10,9 @@ end
 switch testname
   case {'systems/plants/test/fallingBrickLCP', ...
       'systems/plants/test/multiRobotTest', ...
+      'systems/plants/test/momentumTest', ...
       'systems/plants/test/terrainTest', ...
-      'systems/plants/test/floatingBaseDynamics'}
+      'systems/plants/test/testFloatingBaseDynamics'}
     if strcmp(err_id,'PathLCP:FailedToSolve')
       bugzilla(1095); return;
     end
@@ -29,4 +30,9 @@ end
       
 function bugzilla(bug_id)
   fprintf('\nThis is a known issue.  See <a href="http://groups.csail.mit.edu/locomotion/bugs/show_bug.cgi?id=%d">Bugzilla bug %d</a> for more information.\n\n',bug_id,bug_id);
+end
+
+function github(issue_id)
+  error('need to insert the right url in here');
+  fprintf('\nThis is a known issue.  See <a href="http://github.com/RobotLocomotion/drake/issues?id=%d">Drake issue %d</a> for more information.\n\n',bug_id,bug_id);
 end
