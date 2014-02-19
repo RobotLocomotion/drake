@@ -32,6 +32,8 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       % of the friction cone at contact point body_pts(:,i)
       % @param FC_axis    -- A 3 x num_pts double matrix, FC_axis(:,i) is the axis of the
       % friction cone at the contact point body_pts(:,i). FC_axis(:,i) is in the world frame
+      % @param tspan      -- A 1 x 2 double vector. The time span of the constraint being
+      % active
       if(nargin<6)
         tspan = [-inf inf];
       end
