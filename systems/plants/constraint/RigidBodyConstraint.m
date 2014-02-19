@@ -49,7 +49,7 @@ classdef RigidBodyConstraint
         error('Drake:Constraint:type has to be an integer');
       end
       category = floor(category);
-      if(category<-6||category>-1)
+      if(category<-7||category>-1)
         error('Drake:Constraint: Currently type can only be within [-6 -1]');
       end
       obj.category = category;

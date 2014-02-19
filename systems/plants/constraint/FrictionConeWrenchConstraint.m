@@ -51,6 +51,7 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       mu_size = size(FC_mu);
       if(length(mu_size) == 2 && mu_size(1) == 1 && mu_size(2) == 1)
         FC_mu = FC_mu*ones(1,obj.num_pts);
+        mu_size = size(FC_mu);
       end
       if(~isnumeric(FC_mu) || any(FC_mu<0) || length(mu_size) ~= 2 || mu_size(1) ~= 1 || mu_size(2) ~= obj.num_pts)
         error('Drake:FrictionConeWrenchConstraint: FC_mu should be a non-negative 1 x num_pts array');
@@ -59,15 +60,16 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       axis_size = size(FC_axis);
       if(length(axis_size) == 2 && axis_size(1) == 3 && axis_size(2) == 1)
         FC_axis = bsxfun(@times,FC_axis,ones(1,obj.num_pts));
+        axis_size = size(FC_axis);
       end
-      if(~isnumeric(FC_axis) || length(axis_size) ~= 2 || axis_size(1) ~= 1 || axis_size(2) ~= obj.num_pts)
+      if(~isnumeric(FC_axis) || length(axis_size) ~= 2 || axis_size(1) ~= 3 || axis_size(2) ~= obj.num_pts)
         error('Drake:FrictionConeWrenchConstraint: FC_axis should be a 3 x num_pts array');
       end
       FC_axis_norm = sqrt(sum(FC_axis.^2,1));
       obj.FC_axis = FC_axis./(bsxfun(@times,FC_axis_norm,ones(3,1)));
-      obj.type = RigidBodyConstraint.FrictionConeWrenchConstraint;
-      obj.FC_lb = ones(1,obj.num_pts)./sqrt(obj.FC_mu.^2+ones(1,obj.num_pts));
-      obj.FC_ub = ones(1,obj.num_pts);
+      obj.type = RigidBodyConstraint.FrictionConeWrenchConstraintType;
+      obj.FC_lb = reshape(ones(1,obj.num_pts)./sqrt(obj.FC_mu.^2+ones(1,obj.num_pts)),[],1);
+      obj.FC_ub = ones(obj.num_pts,1);
       obj.num_constraint = obj.num_pts;
       obj.force_size = [3,obj.num_pts];
       obj.type = RigidBodyConstraint.FrictionConeWrenchConstraintType;
@@ -87,8 +89,8 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
         end
         F_norm = sqrt(sum(F.^2,1));
         c = reshape(sum(F.*obj.FC_axis,1)./F_norm,[],1);
-        dc_entry = (obj.FC_axis'.*bsxfun(@times,F_norm.^2,ones(1,3))-...
-          bsxfun(@times,sum(F'.*obj.FC_aixs',2),ones(1,3)).*F')./bsxfun(@times,F_norm.^3,ones(1,3));
+        dc_entry = (obj.FC_axis'.*bsxfun(@times,(F_norm').^2,ones(1,3))-...
+          bsxfun(@times,sum(F'.*obj.FC_axis',2),ones(1,3)).*F')./bsxfun(@times,(F_norm').^3,ones(1,3));
         dc_val = reshape(dc_entry',[],1);
       else
         c = [];
