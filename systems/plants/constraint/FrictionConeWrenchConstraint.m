@@ -75,10 +75,11 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       obj.type = RigidBodyConstraint.FrictionConeWrenchConstraintType;
     end
     
-    function [c,dc_val] = evalSparse(obj,t,F)
+    function [c,dc_val] = evalSparse(obj,t,kinsol,F)
       % This function comes with the function evalSparseStructure. It evaluates the
       % constraint c, and supposes that the constraint gradient is a sparse matrix.
       % @param t       - A scalar, the time to evaluate friction cone constraint
+      % @param kinsol  - kinematics tree returned from doKinematics function
       % @param F       - A 3 x num_pts double matrix. The contact forces
       % @retval c      - A num_pts x 1 double vector, the constraint value
       % @retval dc_val - A 3*obj.num_pts x 1 double vector. The nonzero entries of constraint gradient w.r.t F
@@ -107,10 +108,11 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       % @retval n       -- A scalar. The total columns of the gradient matrix
       % @retval nnz     -- A scalar. The maximum non-zero entries in the sparse matrix.
       if(obj.isTimeValid(t))
+        nq = obj.robot.getNumDOF;
         iCfun = reshape(bsxfun(@times,ones(3,1),(1:obj.num_pts)),[],1);
-        jCvar = (1:3*obj.num_pts)';
+        jCvar = nq+(1:3*obj.num_pts)';
         m = obj.num_pts;
-        n = obj.num_pts*3;
+        n = obj.num_pts*3+nq;
         nnz = 3*obj.num_pts;
       else
         iCfun = [];

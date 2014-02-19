@@ -3,6 +3,7 @@ robot = RigidBodyManipulator([getDrakePath,'/examples/Atlas/urdf/atlas_minimal_c
 nomdata = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
 nq = robot.getNumDOF();
 qstar = nomdata.xstar(1:robot.getNumDOF());
+kinsol = robot.doKinematics(qstar);
 l_foot = robot.findLinkInd('l_foot');
 l_foot_pt = robot.getBody(l_foot).getContactPoints();
 num_pts = size(l_foot_pt,2);
@@ -21,15 +22,15 @@ display('Check if the friction cone constraint is consistent with valid contact 
 for i = 1:100
 F = 10*randn(3,num_pts);
 cone_angle = acos(sum(F.*fc_cnst.FC_axis,1)./sqrt(sum(F.^2,1)));
-[c,dc] = fc_cnst.eval(t,F);
+[c,dc] = fc_cnst.eval(t,kinsol,F);
 inCone = c>=lb & c<= ub;
 valuecheck(inCone',cone_angle<=alpha);
 end
 display('Check eval gradient');
 for i = 1:10
 F = 10*randn(3,num_pts);
-[~,dc] = fc_cnst.eval(t,F);
-[~,dc_numeric] = geval(@(F) fc_cnst.eval(t,F),F,struct('grad_method','numerical'));
+[~,dc] = fc_cnst.eval(t,kinsol,F);
+[~,dc_numeric] = geval(@(x) evalConstraint(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),3,num_pts)),[qstar;F(:)],struct('grad_method','numerical'));
 valuecheck(dc,dc_numeric,1e-5);
 end
 
@@ -56,6 +57,11 @@ valuecheck(w,evalWrench(robot,l_foot,l_foot_pt,qstar,F),1e-10);
 [~,dw_numeric] = geval(@(x) evalWrench(robot,l_foot,l_foot_pt,x(1:nq),reshape(x(nq+1:end),3,num_pts)),...
   [qstar;F(:)],struct('grad_method','numerical'));
 valuecheck(dw,dw_numeric,1e-4);
+end
+
+function c = evalConstraint(fc_cnst,t,q,F)
+kinsol = fc_cnst.robot.doKinematics(q);
+c = fc_cnst.eval(t,kinsol,F);
 end
 
 function tau = evalTorque(robot,body,body_pt,q,F)
