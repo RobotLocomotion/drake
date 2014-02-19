@@ -5,12 +5,18 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
   % @param num_constraint   - A scalar. The number of constraints. 
   % @param mex_ptr          - A DrakeConstraintMexPointer
   % @param force_size       - A 1 x 2 matrix. The size of the force matrix.
+  % @param force_lb         - A double matrix of size force_size. The lower bound on the
+  % force
+  % @param force_ub         - A double matrix of size force_size. The upper bound on the
+  % force
   properties(SetAccess = protected)
     tspan % a 1x2 vector
     num_constraint;
     robot
     mex_ptr
     force_size;
+    force_lb;
+    force_ub
   end
   
   methods
@@ -59,7 +65,7 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       % @param kinsol -- The kinematics tree, returned from doKinematics
       % @param F      -- A matrix of size obj.force_size. The force parameter
       % @retval w     -- A 6 x 1 double vector. The total wrench 
-      % @retal dw     -- A 6 x (nq+prod(obj.force_size)) matrix. The gradient of w w.r.t q
+      % @retval dw     -- A 6 x (nq+prod(obj.force_size)) matrix. The gradient of w w.r.t q
       % and F
       A = obj.force(t);
       [tau,dtau] = obj.torque(t,kinsol,F);
@@ -89,10 +95,16 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
   
   methods(Abstract)
     [c,dc_val] = evalSparse(obj,t,kinsol,F);
+    % returns the constraint and the non-zero entries in its sparse gradient matrix
     [iCfun,jCvar,m,n,nnz] = evalSparseStructure(obj,t);
-    [tau,dtau] = torque(obj,t,kinsol,F); % This function computes the total torque of the contact force
-    A = force(obj,t);% We suppose that the total force is a linear combination of F. This function returns such a (sparse) linear transformation A
+    % returns the sparsity pattern of the constraint gradient
+    [tau,dtau] = torque(obj,t,kinsol,F);
+    % This function computes the total torque of the contact force
+    A = force(obj,t);
+    % We suppose that the total force is a linear combination of F. This function returns such a (sparse) linear transformation A
     [lb,ub] = bounds(obj,t);
-    name_str = name(obj,t);% returns the name of each constraint returned by eval function
+    % Returns the lower and upper bound of the constraint returned by eval function
+    name_str = name(obj,t);
+    % returns the name of each constraint returned by eval function
   end
 end
