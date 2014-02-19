@@ -73,11 +73,13 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       obj.num_constraint = obj.num_pts;
       obj.force_size = [3,obj.num_pts];
       obj.type = RigidBodyConstraint.FrictionConeWrenchConstraintType;
+      obj.force_lb = -inf(obj.force_size);
+      obj.force_ub = inf(obj.force_size);
     end
     
     function [c,dc_val] = evalSparse(obj,t,kinsol,F)
-      % This function comes with the function evalSparseStructure. It evaluates the
-      % constraint c, and supposes that the constraint gradient is a sparse matrix.
+      % This function evaluates the constraint and its non-zero entries in the sparse
+      % gradient matrix.
       % @param t       - A scalar, the time to evaluate friction cone constraint
       % @param kinsol  - kinematics tree returned from doKinematics function
       % @param F       - A 3 x num_pts double matrix. The contact forces
