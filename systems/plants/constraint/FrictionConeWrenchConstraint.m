@@ -204,6 +204,21 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
         name_str = {};
       end
     end
+    
+    function [pos,J] = contactPosition(obj,t,kinsol)
+      % Returns the contact positions and its gradient w.r.t q
+      % @param t        -- A double scalar, the time to evaluate the contact position
+      % @param kinsol   -- The kinematics tree
+      % @retval pos     -- A matrix with 3 rows. pos(:,i) is the i'th contact position
+      % @retval J       -- A matrix of size prod(size(pos)) x nq. The gradient of pos
+      % w.r.t q
+      if(obj.isTimeValid(t))
+        [pos,J] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
+      else
+        pos = [];
+        J = [];
+      end
+    end
   end
   
 end

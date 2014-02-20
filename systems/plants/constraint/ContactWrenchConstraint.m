@@ -133,5 +133,12 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       % @param t         -- A double scalar, the time to evaluate constraint.
       % @retval name_str -- A obj.num_constraint x 1 cell. name_str{i} is the i'th
       % constraint name
+    [pos,J] = contactPosition(obj,t,kinsol)
+      % Compute the contact position and its gradient w.r.t q
+      % @param t        -- A double scalar, the time to evaluate the contact position
+      % @param kinsol   -- The kinematics tree
+      % @retval pos     -- A matrix with 3 rows. pos(:,i) is the i'th contact position
+      % @retval J       -- A matrix of size prod(size(pos)) x nq. The gradient of pos
+      % w.r.t q
   end
 end
