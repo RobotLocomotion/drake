@@ -95,16 +95,43 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
   
   methods(Abstract)
     [c,dc_val] = evalSparse(obj,t,kinsol,F);
-    % returns the constraint and the non-zero entries in its sparse gradient matrix
+      % This function evaluates the constraint and its non-zero entries in the sparse
+      % gradient matrix.
+      % @param t       - A scalar, the time to evaluate constraint
+      % @param kinsol  - kinematics tree returned from doKinematics function
+      % @param F       - A double matrix of obj.force_size. The contact forces parameter
+      % @retval c      - A double column vector, the constraint value. The size of the
+      % vector is obj.getNumConstraint(t) x 1
+      % @retval dc_val - A double column vector. The nonzero entries of constraint gradient w.r.t F
     [iCfun,jCvar,m,n,nnz] = evalSparseStructure(obj,t);
-    % returns the sparsity pattern of the constraint gradient
+      % This function returns the sparsity structure of the constraint gradient.
+      % sparse(iCfun,jCvar,dc,m,n,nnz) is the actual gradient matrix
+      % @retval iCfun   -- A num_pts x 1 double vector. The row index of the nonzero entries
+      % @retval jCvar   -- A num_pts x 1 double vector. The column index of the nonzero entries
+      % @retval m       -- A scalar. The total rows of the gradient matrix
+      % @retval n       -- A scalar. The total columns of the gradient matrix
+      % @retval nnz     -- A scalar. The maximum non-zero entries in the sparse matrix.
     [tau,dtau] = torque(obj,t,kinsol,F);
-    % This function computes the total torque of the contact force
+      % Compute the total torque from contact position and contact force, together with
+      % its gradient
+      % @param F       -- a matrix. The contact force parameter 
+      % @retval tau    -- a 3 x 1 double vector, the total torque around origin.
+      % @retval dtau   -- a 3 x (nq+prod(obj.force_size)) double matrix. The gradient of tau
     A = force(obj,t);
-    % We suppose that the total force is a linear combination of F. This function returns such a (sparse) linear transformation A
+     % Compute total force from all the contact force parameters F. The total force is a
+      % linear (sparse) transformation from F. total_force = A*F(:)
+      % @param t    -- A double scalar. The time to evaluate force
+      % @param F    -- A double matrix of obj.force_size. F is the force paramter
+      % @param A    -- A 3 x prod(obj.force_size) double matrix.
     [lb,ub] = bounds(obj,t);
-    % Returns the lower and upper bound of the constraint returned by eval function
+      % The bounds of the constraint returned by eval function
+      % @param t    -- A double scalar, the time to evaluate the friction cone constraint
+      % @retval lb  -- A double column vector. The lower bound of the constraint
+      % @retval ub  -- A double column vector. The upper bound of the constraint
     name_str = name(obj,t);
-    % returns the name of each constraint returned by eval function
+      % Returns the name of each constraint in eval function
+      % @param t         -- A double scalar, the time to evaluate constraint.
+      % @retval name_str -- A obj.num_constraint x 1 cell. name_str{i} is the i'th
+      % constraint name
   end
 end

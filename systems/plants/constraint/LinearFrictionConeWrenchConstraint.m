@@ -11,7 +11,7 @@ classdef LinearFrictionConeWrenchConstraint < ContactWrenchConstraint
   % @param num_pts    -- A scalar. The number of contact points
   % @param num_edges  -- A scalar. The number of edges in one linearized friction cone
   % @param FC_edge    -- A 3 x num_edge double matrix. FC_edge(:,i) is the i'th edge of
-  % the linearized friction cone
+  % the linearized friction cone in the world frame.
   properties(SetAccess = protected)
     body 
     body_name
@@ -51,10 +51,47 @@ classdef LinearFrictionConeWrenchConstraint < ContactWrenchConstraint
       if(~isnumeric(FC_axis) || length(FC_edge_size) ~= 2 || FC_edge_size(1) ~= 3)
         error('Drake:LinearFrictionConeWrenchConstraint: FC_edge should be a 3 x num_edges numeric matrix');
       end
-      num_edges = FC_edge_size(2);
-      % Find the convex edge of the linearized friction cone 
-      K = convhull([0 FC_edge(1,:)]',[0 FC_edge(2,:)]',[0 FC_edge(3,:)]');
-      
+      obj.num_edges = FC_edge_size(2);
+      obj.FC_edge = FC_edge;
+      obj.force_size = [obj.num_edges obj.num_pts];
+      obj.type = RigidBodyConstraint.LinearFrictionConeWrenchConstraintType;
+    end
+    
+    function [c,dc_val] = evalSparse(obj,t,kinsol,F)
+      % return the constraint. There is no nonlinear constraint on the force paramter
+      c = [];
+      dc_val = [];
+    end
+    
+    function [iCfun,jCvar,m,n,nnz] = evalSparseStructure(obj,t)
+      % return the sparse structure of the nonlinear constraint gradient. In this case the
+      % gradient matrix is empty.
+      iCfun = [];
+      jCvar = [];
+      m = 0;
+      n = 0;
+      nnz = 0;
+    end
+    
+    function [lb,ub] = bounds(obj,t)
+      % The lower and upper bound of the nonlinear constraint returned from eval. Here
+      % they are empty
+      lb = [];
+      ub = [];
+    end
+    
+    function [tau,dtau] = torque(obj,t,kinsol,F)
+      % Compute the total torque and its gradient
+      if(obj.isTimeValid(t))
+        valid_F = checkForceSize(obj,F);
+        if(~valid_F)
+          error('Drake:LinearFrictionConeWrenchConstraint:friction force should be num_edges x n_pts matrix');
+        end
+        [body_pos,dbody_pos] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
+        force = obj.FC_edge*F;
+        tau = sum(cross(body_pos,force,1),2);
+      else
+      end
     end
   end
 end
