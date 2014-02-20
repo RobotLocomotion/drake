@@ -9,12 +9,13 @@ classdef RelativeQuatConstraint < QuatConstraint
     bodyB_idx
     bodyA_name
     bodyB_name
+    quat_des
   end
   
   methods(Access = protected)
     function [orient_prod, dorient_prod] = evalOrientationProduct(obj,kinsol)
-      [pos_a,J_a] = forwardKin(obj.robot,kinsol,obj.bodyA.idx,[0;0;0],2);
-      [pos_b,J_b] = forwardKin(obj.robot,kinsol,obj.bodyB.idx,[0;0;0],2);
+      [pos_a,J_a] = forwardKin(obj.robot,kinsol,obj.bodyA_idx,[0;0;0],2);
+      [pos_b,J_b] = forwardKin(obj.robot,kinsol,obj.bodyB_idx,[0;0;0],2);
       quat_a2w = pos_a(4:7,1);
       dquat_a2w = J_a(4:7,:);
       quat_b2w = pos_b(4:7,1);
@@ -25,8 +26,8 @@ classdef RelativeQuatConstraint < QuatConstraint
       [quat_a2b,dquat_a2b] = quatProduct(quat_w2b,quat_a2w);
       dquat_a2bdq = dquat_a2b*[dquat_w2b;dquat_a2w];
 
-      orient_prod = 2*(quat_a2b'*obj.quat_des)^2-1;
-      dorient_prod = 4*(quat_a2b'*obj.quat_des)*obj.quat_des'*dquat_a2bdq;
+      orient_prod = quat_a2b'*obj.quat_des;
+      dorient_prod = obj.quat_des'*dquat_a2bdq;
     end
   end
   
@@ -42,6 +43,8 @@ classdef RelativeQuatConstraint < QuatConstraint
       if(nargin<6)
         tspan = [-inf,inf];
       end
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeQuatConstraintType,...
+        robot.getMexModelPtr,bodyA_idx,bodyB_idx,quat_des,tol,tspan);
       obj = obj@QuatConstraint(robot, tol,tspan);
       typecheck(bodyA_idx,'double');
       sizecheck(bodyA_idx,[1,1]);
@@ -59,6 +62,7 @@ classdef RelativeQuatConstraint < QuatConstraint
       end
       obj.quat_des = quat_des/quat_norm;
       obj.type = RigidBodyConstraint.RelativeQuatConstraintType;
+      obj.mex_ptr = ptr;
     end
 
     
@@ -72,7 +76,7 @@ classdef RelativeQuatConstraint < QuatConstraint
         end
           
         name_str = {sprintf('%s relative to %s orientation constraint %s', ...
-                        obj.bodyA.name,obj.bodyB.name,time_str)};
+                        obj.bodyA_name,obj.bodyB_name,time_str)};
       else
         name_str = [];
       end
@@ -82,25 +86,25 @@ classdef RelativeQuatConstraint < QuatConstraint
     
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
-      wTa = kinsol.T{obj.bodyA.idx};
-      wTb = kinsol.T{obj.bodyB.idx};
-      bTbp = [quat2rotmat(obj.bodyB.q_bp2b),zeros(3,1); zeros(1,3),1];
+      wTa = kinsol.T{obj.bodyA_idx};
+      wTb = kinsol.T{obj.bodyB_idx};
+      bTbp = [quat2rotmat(obj.quat_des),zeros(3,1); zeros(1,3),1];
       wTbp = wTb*bTbp;
       ang_ax_a = rotmat2axis(wTa(1:3,1:3));
       ang_ax_bp = rotmat2axis(wTbp(1:3,1:3));
 
-      bot_lcmgl_translated(lcmgl,wTa(1,4),wTa(2,4),wTa(3,4));
-      bot_lcmgl_rotated(lcmgl,ang_ax_a(4)*180/pi,ang_ax_a(1),ang_ax_a(2),ang_ax_a(3));
-      bot_lcmgl_draw_axes(lcmgl);
+      lcmgl.glTranslated(wTa(1,4),wTa(2,4),wTa(3,4));
+      lcmgl.glRotated(ang_ax_a(4)*180/pi,ang_ax_a(1),ang_ax_a(2),ang_ax_a(3));
+      lcmgl.glDrawAxes();
 
-      bot_lcmgl_rotated(lcmgl,-ang_ax_a(4)*180/pi,ang_ax_a(1),ang_ax_a(2),ang_ax_a(3));
-      bot_lcmgl_translated(lcmgl,-wTa(1,4),-wTa(2,4),-wTa(3,4));
+      lcmgl.glRotated(-ang_ax_a(4)*180/pi,ang_ax_a(1),ang_ax_a(2),ang_ax_a(3));
+      lcmgl.glTranslated(-wTa(1,4),-wTa(2,4),-wTa(3,4));
 
-      bot_lcmgl_translated(lcmgl,wTbp(1,4),wTbp(2,4),wTbp(3,4));
-      bot_lcmgl_rotated(lcmgl,ang_ax_bp(4)*180/pi,ang_ax_bp(1),ang_ax_bp(2),ang_ax_bp(3));
-      bot_lcmgl_draw_axes(lcmgl);
+      lcmgl.glTranslated(wTbp(1,4),wTbp(2,4),wTbp(3,4));
+      lcmgl.glRotated(ang_ax_bp(4)*180/pi,ang_ax_bp(1),ang_ax_bp(2),ang_ax_bp(3));
+      lcmgl.glDrawAxes();
 
-      bot_lcmgl_switch_buffer(lcmgl);
+      lcmgl.switchBuffers();
     end
   end
 end

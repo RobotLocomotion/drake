@@ -1094,14 +1094,14 @@ void WorldQuatConstraint::name(const double* t, std::vector<std::string> &name_s
   if(this->isTimeValid(t))
   {
     char cnst_name_str_buffer[500]; 
-    if(t == nullptr)
+    std::string time_str;
+    char time_str_buffer[30];
+    if(t != nullptr)
     {
-      sprintf(cnst_name_str_buffer,"%s quaternion constraint",this->body_name.c_str());
+      sprintf(time_str_buffer,"at time %5.2f",*t);
+      time_str+= std::string(time_str_buffer);
     }
-    else
-    {
-      sprintf(cnst_name_str_buffer,"%s quaternion constraint at time %10.4f",this->body_name.c_str(),*t);
-    }
+    sprintf(cnst_name_str_buffer,"%s quaternion constraint %s",this->body_name.c_str(),time_str.c_str());
     std::string cnst_name_str(cnst_name_str_buffer);
     for(int i = 0;i<this->num_constraint;i++)
     {
@@ -1112,6 +1112,74 @@ void WorldQuatConstraint::name(const double* t, std::vector<std::string> &name_s
 
 
 WorldQuatConstraint::~WorldQuatConstraint()
+{
+}
+
+RelativeQuatConstraint::RelativeQuatConstraint(RigidBodyManipulator* model, int bodyA_idx, int bodyB_idx, Vector4d &quat_des, double tol, Vector2d tspan):QuatConstraint(model,tol,tspan)
+{
+  this->bodyA_idx = bodyA_idx;
+  this->bodyB_idx = bodyB_idx;
+  this->bodyA_name = this->robot->bodies[bodyA_idx].linkname;
+  this->bodyB_name = this->robot->bodies[bodyB_idx].linkname;
+  double quat_norm = quat_des.norm();
+  this->quat_des = quat_des/quat_norm;
+  this->type = RigidBodyConstraint::RelativeQuatConstraintType;
+}
+
+void RelativeQuatConstraint::evalOrientationProduct(double &prod, MatrixXd &dprod) const
+{
+  int nq = this->robot->num_dof;
+  Vector4d origin_pt;
+  origin_pt << 0.0,0.0,0.0,1.0;
+  Matrix<double,7,1> pos_a;
+  MatrixXd J_a(7,nq);
+  Matrix<double,7,1> pos_b;
+  MatrixXd J_b(7,nq);
+  this->robot->forwardKin(this->bodyA_idx,origin_pt,2,pos_a);
+  this->robot->forwardJac(this->bodyA_idx,origin_pt,2,J_a);
+  this->robot->forwardKin(this->bodyB_idx,origin_pt,2,pos_b);
+  this->robot->forwardJac(this->bodyB_idx,origin_pt,2,J_b);
+  Vector4d quat_a2w = pos_a.block(3,0,4,1);
+  MatrixXd dquat_a2w = J_a.block(3,0,4,nq);
+  Vector4d quat_b2w = pos_b.block(3,0,4,1);
+  MatrixXd dquat_b2w = J_b.block(3,0,4,nq);
+  Vector4d quat_w2b;
+  Matrix<double,4,4> dquat_w2b;
+  quatConjugate(quat_b2w,quat_w2b,dquat_w2b);
+  MatrixXd dquat_w2bdq = dquat_w2b*dquat_b2w;
+  
+  Vector4d quat_a2b;
+  Matrix<double,4,8> dquat_a2b;
+  quatProduct(quat_w2b,quat_a2w,quat_a2b,dquat_a2b);
+  MatrixXd dquat_a2bdq = dquat_a2b.block(0,0,4,4)*dquat_w2bdq+dquat_a2b.block(0,4,4,4)*dquat_a2w;
+
+  prod = quat_a2b.dot(this->quat_des);
+  dprod = this->quat_des.transpose()*dquat_a2bdq;
+}
+
+void RelativeQuatConstraint::name(const double* t, std::vector<std::string> &name_str) const
+{
+  if(this->isTimeValid(t))
+  {
+    char cnst_name_str_buffer[500]; 
+    std::string time_str;
+    char time_str_buffer[30];
+    if(t != nullptr)
+    {
+      sprintf(time_str_buffer,"at time %5.2f",*t);
+      time_str+= std::string(time_str_buffer);
+    }
+    sprintf(cnst_name_str_buffer,"%s relative to %s quaternion constraint %s",this->bodyA_name.c_str(),this->bodyB_name.c_str(),time_str.c_str());
+    std::string cnst_name_str(cnst_name_str_buffer);
+    for(int i = 0;i<this->num_constraint;i++)
+    {
+      name_str.push_back(cnst_name_str);
+    }
+  }
+
+}
+
+RelativeQuatConstraint::~RelativeQuatConstraint()
 {
 }
 
