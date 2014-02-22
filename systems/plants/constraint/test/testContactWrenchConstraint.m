@@ -62,10 +62,10 @@ A = fc_cnst.force(t);
 valuecheck(A*F(:),sum(fc_cnst.FC_edge*F,2));
 kinsol = fc_cnst.robot.doKinematics(q);
 [~,dtau] = fc_cnst.torque(t,kinsol,F);
-[~,dtau_numeric] = geval(@(x) evalTorque(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.force_size(1),fc_cnst.force_size(2))),[q;F(:)],struct('grad_method','numerical'));
+[~,dtau_numeric] = geval(@(x) evalTorque(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dtau,dtau_numeric,1e-4);
 [~,dw] = fc_cnst.wrench(t,kinsol,F);
-[~,dw_numeric] = geval(@(x) evalWrench(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.force_size(1),fc_cnst.force_size(2))),[q;F(:)],struct('grad_method','numerical'));
+[~,dw_numeric] = geval(@(x) evalWrench(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dw,dw_numeric,1e-4);
 end
 
@@ -74,14 +74,14 @@ function testContactWrenchConstraint_userfun(fc_cnst,t,q,F)
 nq = fc_cnst.robot.getNumDOF();
 kinsol = fc_cnst.robot.doKinematics(q);
 [~,dc] = fc_cnst.eval(t,kinsol,F);
-[~,dc_numeric] = geval(@(x) evalConstraint(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.force_size(1),fc_cnst.force_size(2))),[q;F(:)],struct('grad_method','numerical'));
+[~,dc_numeric] = geval(@(x) evalConstraint(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dc,dc_numeric,1e-5);
 kinsol = fc_cnst.robot.doKinematics(q);
 [~,dtau] = fc_cnst.torque(t,kinsol,F);
-[~,dtau_numeric] = geval(@(x) evalTorque(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.force_size(1),fc_cnst.force_size(2))),[q;F(:)],struct('grad_method','numerical'));
+[~,dtau_numeric] = geval(@(x) evalTorque(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dtau,dtau_numeric,1e-4);
 [~,dw] = fc_cnst.wrench(t,kinsol,F);
-[~,dw_numeric] = geval(@(x) evalWrench(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.force_size(1),fc_cnst.force_size(2))),[q;F(:)],struct('grad_method','numerical'));
+[~,dw_numeric] = geval(@(x) evalWrench(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dw,dw_numeric,1e-4);
 end
 

@@ -4,19 +4,19 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
   % @param robot   - A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
   % @param num_constraint   - A scalar. The number of constraints. 
   % @param mex_ptr          - A DrakeConstraintMexPointer
-  % @param force_size       - A 1 x 2 matrix. The size of the force matrix.
-  % @param force_lb         - A double matrix of size force_size. The lower bound on the
-  % force
-  % @param force_ub         - A double matrix of size force_size. The upper bound on the
-  % force
+  % @param F_size       - A 1 x 2 matrix. The size of the force parameter matrix.
+  % @param F_lb         - A double matrix of size F_size. The lower bound on the
+  % force parameters
+  % @param F_ub         - A double matrix of size F_size. The upper bound on the
+  % force parameters
   properties(SetAccess = protected)
     tspan % a 1x2 vector
     num_constraint;
     robot
     mex_ptr
-    force_size;
-    force_lb;
-    force_ub
+    F_size;
+    F_lb;
+    F_ub
   end
   
   methods
@@ -63,9 +63,9 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       % computes the total wrench and its gradient w.r.t q and F
       % @param t      -- A double scalar to evaluate the wrench
       % @param kinsol -- The kinematics tree, returned from doKinematics
-      % @param F      -- A matrix of size obj.force_size. The force parameter
+      % @param F      -- A matrix of size obj.F_size. The force parameter
       % @retval w     -- A 6 x 1 double vector. The total wrench 
-      % @retval dw     -- A 6 x (nq+prod(obj.force_size)) matrix. The gradient of w w.r.t q
+      % @retval dw     -- A 6 x (nq+prod(obj.F_size)) matrix. The gradient of w w.r.t q
       % and F
       A = obj.force(t);
       [tau,dtau] = obj.torque(t,kinsol,F);
@@ -77,9 +77,9 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       % computes the constraint and its gradient.
       % @param t       -- A scalar. The time to evaluate the constraint
       % @param kinsol  -- kinematics tree returned from doKinematics function.
-      % @param F       -- A double matrix of obj.force_size. The contact forces parameters
+      % @param F       -- A double matrix of obj.F_size. The contact forces parameters
       % @retval c      -- A obj.num_constraint x 1 vector, the constraint value.
-      % @retval dc     -- A obj.num_constraint x prod(obj.force_size) matrix. The gradient of c w.r.t F.
+      % @retval dc     -- A obj.num_constraint x prod(obj.F_size) matrix. The gradient of c w.r.t F.
       [c,dc_val] = obj.evalSparse(t,kinsol,F);
       [iCfun,jCvar,m,n,nnz] = obj.evalSparseStructure(t);
       dc = sparse(iCfun,jCvar,dc_val,m,n,nnz);
@@ -88,8 +88,8 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
   
   methods(Access = protected)
     function flag = checkForceSize(obj,F)
-       F_size = size(F);
-       flag = isnumeric(F) && length(F_size) == 2 && F_size(1) == obj.force_size(1) && F_size(2) == obj.force_size(2);
+       F_size_tmp = size(F);
+       flag = isnumeric(F) && length(F_size_tmp) == 2 && F_size_tmp(1) == obj.F_size(1) && F_size_tmp(2) == obj.F_size(2);
     end
   end
   
@@ -99,7 +99,7 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       % gradient matrix.
       % @param t       - A scalar, the time to evaluate constraint
       % @param kinsol  - kinematics tree returned from doKinematics function
-      % @param F       - A double matrix of obj.force_size. The contact forces parameter
+      % @param F       - A double matrix of obj.F_size. The contact forces parameter
       % @retval c      - A double column vector, the constraint value. The size of the
       % vector is obj.getNumConstraint(t) x 1
       % @retval dc_val - A double column vector. The nonzero entries of constraint gradient w.r.t F
@@ -116,13 +116,13 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       % its gradient
       % @param F       -- a matrix. The contact force parameter 
       % @retval tau    -- a 3 x 1 double vector, the total torque around origin.
-      % @retval dtau   -- a 3 x (nq+prod(obj.force_size)) double matrix. The gradient of tau
+      % @retval dtau   -- a 3 x (nq+prod(obj.F_size)) double matrix. The gradient of tau
     A = force(obj,t);
      % Compute total force from all the contact force parameters F. The total force is a
       % linear (sparse) transformation from F. total_force = A*F(:)
       % @param t    -- A double scalar. The time to evaluate force
-      % @param F    -- A double matrix of obj.force_size. F is the force paramter
-      % @param A    -- A 3 x prod(obj.force_size) double matrix.
+      % @param F    -- A double matrix of obj.F_size. F is the force paramter
+      % @param A    -- A 3 x prod(obj.F_size) double matrix.
     [lb,ub] = bounds(obj,t);
       % The bounds of the constraint returned by eval function
       % @param t    -- A double scalar, the time to evaluate the friction cone constraint

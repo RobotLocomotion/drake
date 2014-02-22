@@ -73,10 +73,10 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       obj.FC_lb = reshape(ones(1,obj.num_pts)./sqrt(obj.FC_mu.^2+ones(1,obj.num_pts)),[],1);
       obj.FC_ub = ones(obj.num_pts,1);
       obj.num_constraint = obj.num_pts;
-      obj.force_size = [3,obj.num_pts];
+      obj.F_size = [3,obj.num_pts];
       obj.type = RigidBodyConstraint.FrictionConeWrenchConstraintType;
-      obj.force_lb = -inf(obj.force_size);
-      obj.force_ub = inf(obj.force_size);
+      obj.F_lb = -inf(obj.F_size);
+      obj.F_ub = inf(obj.F_size);
     end
     
     function [c,dc_val] = evalSparse(obj,t,kinsol,F)

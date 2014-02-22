@@ -42,6 +42,7 @@ classdef RigidBodyConstraint
     RelativePositionConstraintType = 20;
     FrictionConeWrenchConstraintType = 21;
     LinearFrictionConeWrenchConstraintType = 22;
+    RailGraspWrenchConstraintType = 23;
   end
   
   methods
