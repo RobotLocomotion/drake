@@ -20,19 +20,3 @@ This can actually kill your runtime as sparse(DAt.q > 0.2) will almost always ev
 
 ******
 
-
-To SPOT:
-
-In @mssprog/sedumi, change
-
-[x,y,info]=sedumi(A,B,optimize*C,K,pars);
- 
-to
-
-[L,U]=lu(A);
-A2=U; B2=L\B;
- 
-[x,y,info]=sedumi(A2,B2,optimize*C,K,pars);
-
-
-*******
