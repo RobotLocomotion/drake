@@ -41,24 +41,19 @@ configure:
 	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
 		   -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
-
-.PHONY: doc pdfdoc htmldoc
-doc:	doxygen
+.PHONY: doc doxygen 
+doc:	doxygen doc/drake.pdf doc/urdf/drakeURDF.html
 
 doxygen :
 	doxygen doc/Doxyfile
 
-pdfdoc: 
+doc/drake.pdf :
 	# apologies for hard-coding this for my mac for now... - Russ
-	# todo: fix then enable doxygen pdf output
 	cd doc && make -f ~/code/latex/makefile_tex drake.pdf
-	cd doc && /Applications/oxygen/schemaDocumentationMac.sh drakeURDF.xsd -cfg:oxygen_export_settings_pdf.xml   
-	cp doc/urdf/drakeURDF.pdf doc/drakeURDF.pdf
 
-htmldoc: doxygen
+doc/urdf/drakeURDF.html : doc/drakeURDF.xsd
 	# apologies for hard-coding this for my mac for now... - Russ
 	cd doc && /Applications/oxygen/schemaDocumentationMac.sh drakeURDF.xsd -cfg:oxygen_export_settings_html.xml
-#	cd doc && maketex html   # need to fix this
 
 .PHONY: mlint
 mlint	:
