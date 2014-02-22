@@ -53,9 +53,9 @@ classdef LinearFrictionConeWrenchConstraint < ContactWrenchConstraint
       end
       obj.num_edges = FC_edge_size(2);
       obj.FC_edge = FC_edge;
-      obj.force_size = [obj.num_edges obj.num_pts];
-      obj.force_lb = zeros(obj.force_size);
-      obj.force_ub = inf(obj.force_size);
+      obj.F_size = [obj.num_edges obj.num_pts];
+      obj.F_lb = zeros(obj.F_size);
+      obj.F_ub = inf(obj.F_size);
       obj.num_constraint = 0;
       obj.type = RigidBodyConstraint.LinearFrictionConeWrenchConstraintType;
     end
