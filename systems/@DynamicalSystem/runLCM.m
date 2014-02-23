@@ -38,7 +38,7 @@ if (obj.getNumInputs>0 && getNumStates(obj)<1 && isa(fin,'LCMSubscriber'))
   % (one channel) lcm input, then just trigger on that input
   
   if (~isfield(options,'inchannel')) options.inchannel = fin.defaultChannel(); end
-  fin = subscribe(fin,options.inchannel);
+  subscribe(fin,options.inchannel);
   b_lcm_output = isa(fout,'LCMPublisher');
   
   global g_scope_enable; g_scope_enable = true;

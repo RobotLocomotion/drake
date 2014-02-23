@@ -7,6 +7,7 @@ classdef LCMCoder
   methods (Abstract)
     d = dim();
     str = timestampName();
+    names = coordinateNames();
     [x,t] = decode(obj,data);
     msg = encode(obj,t,x);
   end
