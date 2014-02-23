@@ -1,0 +1,10 @@
+<package>
+    <name>drake</name>
+    <version>1.0.0</version>
+    <description>A planning, control, and analysis toolbox for nonlinear dynamical systems</description>
+    <maintainer email="russt@mit.edu">Russ Tedrake</maintainer>
+    <license>BSD</license>
+    <url type="website">http://drake.mit.edu</url>
+    <url type="bugtracker">https://github.com/RobotLocomotion/drake/issues</url>
+</package>
+
