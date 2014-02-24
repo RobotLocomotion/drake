@@ -1,23 +1,34 @@
 classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
   
   methods
-    function obj=LCMCoordinateFrame(name,lcmcoder_or_lcmtype,prefix)
+    function obj=LCMCoordinateFrame(name,lcmcoder_or_lcmtype_or_dim,prefix)
       typecheck(name,'char');
       typecheck(prefix,'char');
       sizecheck(prefix,1);
       
-      if isa(lcmcoder_or_lcmtype,'LCMCoder')
-        lcmcoder = lcmcoder_or_lcmtype;
+      if isnumeric(lcmcoder_or_lcmtype_or_dim)
+        % then the lcmcoder will be set at some other time
+        lcmcoder = [];
+        d = lcmcoder_or_lcmtype_or_dim;
+      elseif isa(lcmcoder_or_lcmtype_or_dim,'LCMCoder')
+        lcmcoder = lcmcoder_or_lcmtype_or_dim;
+        d = lcmcoder.dim();
       else
-        lcmcoder = LCMCoderFromType(lcmcoder_or_lcmtype);
+        lcmcoder = LCMCoderFromType(lcmcoder_or_lcmtype_or_dim);
+        d = lcmcoder.dim();
       end
       
-      obj = obj@CoordinateFrame(name,lcmcoder.dim(),prefix);
+      obj = obj@CoordinateFrame(name,d,prefix);
       obj.channel = name;
       obj.lc = lcm.lcm.LCM.getSingleton();
+      
+      % add a little extra logic to handle singleton frames (a 
+      % relatively common occurence).  specifically, want to avoid
+      % multiple subscriptions.
       if ~isequal(obj.lcmcoder,lcmcoder)
-        % if the coordinate frame is a singleton (a relatively common
-        % occurence), then avoid multiple subscriptions for the same coder.
+        if ~isempty(obj.lcmcoder) % then it must be a singleton
+          warning('Drake:LCMCoordinateFrame:OverwritingCoder','You are overwriting an existing lcm coder (on what must be a singleton coordinate frame).  Are you sure you''re using singletons correctly?');
+        end
         setLCMCoder(obj,lcmcoder);
       end
     end
