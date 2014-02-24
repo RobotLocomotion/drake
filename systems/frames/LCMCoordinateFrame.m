@@ -13,10 +13,13 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
       end
       
       obj = obj@CoordinateFrame(name,lcmcoder.dim(),prefix);
-      obj.lc = lcm.lcm.LCM.getSingleton();
       obj.channel = name;
-      setLCMCoder(obj,lcmcoder);
-      setCoordinateNames(obj,lcmcoder.coordinateNames());
+      obj.lc = lcm.lcm.LCM.getSingleton();
+      if ~isequal(obj.lcmcoder,lcmcoder)
+        % if the coordinate frame is a singleton (a relatively common
+        % occurence), then avoid multiple subscriptions for the same coder.
+        setLCMCoder(obj,lcmcoder);
+      end
     end
   
     function setLCMCoder(obj,lcmcoder)
@@ -24,6 +27,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
       obj.lcmcoder = lcmcoder;
       msg = obj.lcmcoder.encode(0,zeros(obj.dim,1));
       obj.monitor = drake.util.MessageMonitor(msg,obj.lcmcoder.timestampName());
+      setCoordinateNames(obj,lcmcoder.coordinateNames());
     end
     
     function subscribe(obj,channel)
