@@ -67,6 +67,25 @@ valuecheck(dtau,dtau_numeric,1e-4);
 [~,dw] = fc_cnst.wrench(t,kinsol,F);
 [~,dw_numeric] = geval(@(x) evalWrench(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dw,dw_numeric,1e-4);
+
+%%%%%%
+display('Check RailGraspWrenchConstraint')
+r_hand = robot.findLinkInd('r_hand');
+rail_axis = randn(3,1);
+rail_radius = 0.03;
+rail_fc_mu = 0.7;
+force_max = 50;
+rg_cnst = RailGraspWrenchConstraint(robot,r_hand,[0;0;0],0.1,rail_axis,rail_radius,rail_fc_mu,force_max,tspan);
+valuecheck(rg_cnst.num_pts,1);
+valuecheck(rg_cnst.F_size,[6,1]);
+F = rand(6,1);
+kinsol = rg_cnst.robot.doKinematics(q);
+A = rg_cnst.force(t);
+valuecheck(A*F(:),F(1:3),1e-8);
+tau = rg_cnst.torque(t,kinsol,F);
+grasp_pos = robot.forwardKin(kinsol,r_hand,[0;0;0],0);
+valuecheck(tau,cross(grasp_pos,F(1:3))+F(4:6),1e-8);
+testContactWrenchConstraint_userfun(rg_cnst,t,q,F);
 end
 
 function testContactWrenchConstraint_userfun(fc_cnst,t,q,F)

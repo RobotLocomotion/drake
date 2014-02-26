@@ -103,26 +103,20 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       end
     end
     
-    function [iCfun,jCvar,m,n,nnz] = evalSparseStructure(obj,t)
+    function [iCfun,jCvar,nnz] = evalSparseStructure(obj,t)
       % This function returns the sparsity structure of the constraint gradient.
       % sparse(iCfun,jCvar,dc,m,n,nnz) is the actual gradient matrix
       % @retval iCfun   -- A num_pts x 1 double vector. The row index of the nonzero entries
       % @retval jCvar   -- A num_pts x 1 double vector. The column index of the nonzero entries
-      % @retval m       -- A scalar. The total rows of the gradient matrix
-      % @retval n       -- A scalar. The total columns of the gradient matrix
       % @retval nnz     -- A scalar. The maximum non-zero entries in the sparse matrix.
       if(obj.isTimeValid(t))
         nq = obj.robot.getNumDOF;
         iCfun = reshape(bsxfun(@times,ones(3,1),(1:obj.num_pts)),[],1);
         jCvar = nq+(1:3*obj.num_pts)';
-        m = obj.num_pts;
-        n = obj.num_pts*3+nq;
         nnz = 3*obj.num_pts;
       else
         iCfun = [];
         jCvar = [];
-        m = 0;
-        n = 0;
         nnz = 0;
       end
     end
@@ -174,8 +168,6 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       % Compute total force from all the contact force parameters F. The total force is a
       % linear transformation from F. total_force = A*F(:)
       % @param t    -- A double scalar. The time to evaluate force
-      % @param F    -- A 3 x obj.num_pts double matrix. F(:,i) is the force parameter at
-      % i'th contact point.
       % @param A    -- A 3 x 3*obj.num_pts double matrix.
       if(obj.isTimeValid(t))
         A = sparse(reshape(bsxfun(@times,(1:3)',ones(1,obj.num_pts)),[],1),...

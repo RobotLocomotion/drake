@@ -66,13 +66,11 @@ classdef LinearFrictionConeWrenchConstraint < ContactWrenchConstraint
       dc_val = [];
     end
     
-    function [iCfun,jCvar,m,n,nnz] = evalSparseStructure(obj,t)
+    function [iCfun,jCvar,nnz] = evalSparseStructure(obj,t)
       % return the sparse structure of the nonlinear constraint gradient. In this case the
       % gradient matrix is empty.
       iCfun = [];
       jCvar = [];
-      m = 0;
-      n = 0;
       nnz = 0;
     end
     
