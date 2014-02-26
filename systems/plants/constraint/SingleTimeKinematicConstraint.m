@@ -1,27 +1,16 @@
 classdef SingleTimeKinematicConstraint < RigidBodyConstraint
   % An abstract class. Its eval function take a single time as input, the
   % constraint is enforced at that time only
+  % @param num_nlcon    -- An int scalar. The number of nonlinear constraints
+  % @param mex_ptr      -- A DrakeConstraintMexPointer. The mex pointer of the
+  % SingleTimeKinematicConstraint;
   properties(SetAccess = protected)
-    tspan % a 1x2 vector
-    num_constraint
-    robot
-    mex_ptr
+    num_nlcon
   end
   
   methods
     function obj = SingleTimeKinematicConstraint(robot,tspan)
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeKinematicConstraintCategory);
-      if(nargin<2)
-        tspan = [-inf,inf];
-      end
-      if(isempty(tspan))
-        tspan = [-inf,inf];
-      end
-      if(tspan(1)>tspan(end))
-        error('Drake:SingleTimeKinematicConstraint:tspan(1) should be no larger than tspan(end)')
-      end
-      obj.tspan = [tspan(1) tspan(end)];
-      obj.robot = robot;
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeKinematicConstraintCategory,robot,tspan);
     end
     
     function tspan = getTspan(obj)
@@ -42,7 +31,7 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
     
     function n = getNumConstraint(obj,t)
       if(obj.isTimeValid(t))
-        n = obj.num_constraint;
+        n = obj.num_nlcon;
       else
         n = 0;
       end
