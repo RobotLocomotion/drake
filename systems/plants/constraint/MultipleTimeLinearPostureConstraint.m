@@ -1,30 +1,12 @@
 classdef MultipleTimeLinearPostureConstraint < RigidBodyConstraint
   % A linear constraint on the robot posture for multiple times
-  properties(SetAccess = protected)
-    robot
-    tspan
-    mex_ptr
-  end
-  
-  properties(Constant)
-    PostureChangeConstraint = 1;
-  end
   
   methods
     function obj = MultipleTimeLinearPostureConstraint(robot,tspan)
       if(nargin<2)
         tspan = [-inf inf];
       end
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeLinearPostureConstraintCategory);
-      obj.robot = robot;
-      if(~isnumeric(tspan))
-        error('Drake:MultipeTimeLinearPostureConstraint: tspan should be numeric');
-      end
-      sizecheck(tspan,[1,2]);
-      if(tspan(1)>tspan(2))
-        error('Drake:MultipleTimeLinearPostureConstraint: tspan(1) should be no larger than tspan(2)');
-      end
-      obj.tspan = tspan;
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeLinearPostureConstraintCategory,robot,tspan);
     end
     
     function flag = isTimeValid(obj,t)

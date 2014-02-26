@@ -4,9 +4,13 @@ classdef RigidBodyConstraint
   % @param type          -- Only for non-abstract constraint. Each non-abstract constraint
   %                         class has a unique type. Please use positive number for
   %                         this category.
+  % @param robot         -- A RigidBodyManipulator or TimeSteppingRigidBodyManipulator
+  % @param tspan         -- A 1 x 2 double vector. The time span 
   properties(SetAccess = protected)
     category
     type
+    robot
+    tspan
   end
   
   properties(Constant)
@@ -46,16 +50,26 @@ classdef RigidBodyConstraint
   end
   
   methods
-    function obj = RigidBodyConstraint(category)
+    function obj = RigidBodyConstraint(category,robot,tspan)
       if(~isnumeric(category))
-        error('Drake:Constraint:type has to be an integer');
+        error('Drake:RigidBodyConstraint:BadInput','category has to be an integer');
       end
       category = floor(category);
       if(category<-7||category>-1)
-        error('Drake:Constraint: Currently type can only be within [-6 -1]');
+        error('Drake:RigidBodyConstraint:BadInput','Unsupported constraint category');
       end
       obj.category = category;
       obj.type = 0;
+      if(~isa(robot,'RigidBodyManipulator') && ~isa(robot,'TimeSteppingRigidBodyManipulator'))
+        error('Drake:RigidBodyConstraint:BadInput','robot has to be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
+      end
+      if(narargin<3)
+        tspan = [-inf,inf];
+      end
+      tspan_size = size(tspan);
+      if(~isnumeric(tspan) || length(tspan_size) ~= 2 || tspan_size(1) ~= 1 || tspan_size(2) ~= 2 || tspan(1)>tspan(2))
+        error('Drake:RigidBodyConstraint:BadInput','tspan should be a 1 x 2 vector, and tspan(1) <= tspan(2)');
+      end
     end
   end
 end

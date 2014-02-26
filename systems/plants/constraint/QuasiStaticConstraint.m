@@ -17,9 +17,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
 %                             ground contact points in the body frame
 % @param robotnum          -- The robotnum to compute CoM. Default is 1
   properties(SetAccess = protected)
-    robot;
     robotnum;
-    tspan;
     nq;
     shrinkFactor
     active;
@@ -29,7 +27,6 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     num_body_pts; 
     body_pts;
     plane_row_idx;
-    mex_ptr;
   end
   
   methods
@@ -40,18 +37,12 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       if(nargin <2)
         tspan = [-inf,inf];
       end
-      tspan = [tspan(1) tspan(end)];
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.QuasiStaticConstraintType,robot.getMexModelPtr,tspan,robotnum);
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintCategory);
-      obj.robot = robot;
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintCategory,robot,tspan);
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))
         error('Drake:QuasiStaticConstraint: robotnum is not accepted');
       end
       obj.robotnum = robotnum;
-      if(tspan(1)>tspan(end))
-        error('Drake:QuasiStaticConstraint:tspan(1) must be no larger than tspan(end)');
-      end
-      obj.tspan = tspan;
       obj.nq = robot.getNumDOF;
       obj.shrinkFactor = 0.9;
       obj.active = false;
@@ -71,11 +62,6 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       else
         flag = t>=obj.tspan(1) & t<=obj.tspan(end);
       end
-    end
-
-    function obj = setActive(obj,flag)
-      obj.active = logical(flag);
-      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'active',obj.active);
     end
     
     function num_cnst = getNumConstraint(obj,t)

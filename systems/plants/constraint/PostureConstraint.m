@@ -8,13 +8,10 @@ classdef PostureConstraint<RigidBodyConstraint
   % @param joint_limit_max0           -- The default upper bound of the
   %                                      posture of the robot
   properties(SetAccess = protected)
-    robot
-    tspan
     lb
     ub
     joint_limit_min0;
     joint_limit_max0;
-    mex_ptr;
   end
   
   methods
@@ -23,12 +20,7 @@ classdef PostureConstraint<RigidBodyConstraint
         tspan = [-inf inf];
       end
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureConstraintType,robot.getMexModelPtr,tspan);
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.PostureConstraintCategory);
-      if(tspan(end)<tspan(1))
-        error('tspan(end) should be no smaller than tspan(1)')
-      end
-      obj.tspan = [tspan(1) tspan(end)];
-      obj.robot = robot;
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.PostureConstraintCategory,robot,tspan);
       [obj.joint_limit_min0,obj.joint_limit_max0] = robot.getJointLimits();
       obj.lb = obj.joint_limit_min0;
       obj.ub = obj.joint_limit_max0;
