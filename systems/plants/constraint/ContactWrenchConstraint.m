@@ -80,9 +80,16 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       % @param F       -- A double matrix of obj.F_size. The contact forces parameters
       % @retval c      -- A obj.num_constraint x 1 vector, the constraint value.
       % @retval dc     -- A obj.num_constraint x prod(obj.F_size) matrix. The gradient of c w.r.t F.
-      [c,dc_val] = obj.evalSparse(t,kinsol,F);
-      [iCfun,jCvar,m,n,nnz] = obj.evalSparseStructure(t);
-      dc = sparse(iCfun,jCvar,dc_val,m,n,nnz);
+      if(obj.isTimeValid(t))
+        [c,dc_val] = obj.evalSparse(t,kinsol,F);
+        [iCfun,jCvar,nnz] = obj.evalSparseStructure(t);
+        m = obj.getNumConstraint(t);
+        n = obj.robot.getNumDOF+prod(obj.F_size);
+        dc = sparse(iCfun,jCvar,dc_val,m,n,nnz);
+      else
+        c = [];
+        dc = [];
+      end
     end
   end
   
@@ -103,13 +110,11 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       % @retval c      - A double column vector, the constraint value. The size of the
       % vector is obj.getNumConstraint(t) x 1
       % @retval dc_val - A double column vector. The nonzero entries of constraint gradient w.r.t F
-    [iCfun,jCvar,m,n,nnz] = evalSparseStructure(obj,t);
+    [iCfun,jCvar,nnz] = evalSparseStructure(obj,t);
       % This function returns the sparsity structure of the constraint gradient.
       % sparse(iCfun,jCvar,dc,m,n,nnz) is the actual gradient matrix
       % @retval iCfun   -- A num_pts x 1 double vector. The row index of the nonzero entries
       % @retval jCvar   -- A num_pts x 1 double vector. The column index of the nonzero entries
-      % @retval m       -- A scalar. The total rows of the gradient matrix
-      % @retval n       -- A scalar. The total columns of the gradient matrix
       % @retval nnz     -- A scalar. The maximum non-zero entries in the sparse matrix.
     [tau,dtau] = torque(obj,t,kinsol,F);
       % Compute the total torque from contact position and contact force, together with
