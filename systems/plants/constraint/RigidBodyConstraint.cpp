@@ -54,35 +54,45 @@ namespace DrakeRigidBodyConstraint{
   const int WorldCoMDefaultRobotNum[1] = {0};
   Vector2d default_tspan(-1.0/0.0,1.0/0.0);
 }
+RigidBodyConstraint::RigidBodyConstraint(int category, RigidBodyManipulator* robot, const Vector2d &tspan)
+{
+  if(category>=0 || category <=-7)
+  {
+    std::cerr<<"Drake:RigidBodyConstraint:Unsupported constraint category"<<std::endl; 
+  }
+  this->category = category;
+  this->type = 0;
+  this->robot = robot;
+  if(tspan(0)>tspan(1))
+  {
+    std::cerr<<"Drake:RigidBodyConstraint:tspan(0) should be no larger than tspan(1)"<<std::endl;
+  }
+  this->tspan[0] = tspan(0);
+  this->tspan[1] = tspan(1);
+}
 
-RigidBodyConstraint::RigidBodyConstraint(const RigidBodyConstraint &rhs):category(rhs.category),type(rhs.type){};
+RigidBodyConstraint::RigidBodyConstraint(const RigidBodyConstraint &rhs):category(rhs.category),type(rhs.type),robot(rhs.robot)
+{
+  this->tspan[0] = rhs.tspan[0];
+  this->tspan[1] = rhs.tspan[1];
+}
+
 RigidBodyConstraint::~RigidBodyConstraint(void){};
 
 
 const int QuasiStaticDefaultRobotNum[1] = {0};
 const std::set<int> QuasiStaticConstraint::defaultRobotNumSet(QuasiStaticDefaultRobotNum,QuasiStaticDefaultRobotNum+1);
-QuasiStaticConstraint::QuasiStaticConstraint(RigidBodyManipulator* robot, const Vector2d &tspan,const std::set<int> &robotnumset):RigidBodyConstraint(RigidBodyConstraint::QuasiStaticConstraintCategory)
+QuasiStaticConstraint::QuasiStaticConstraint(RigidBodyManipulator* robot, const Vector2d &tspan,const std::set<int> &robotnumset):RigidBodyConstraint(RigidBodyConstraint::QuasiStaticConstraintCategory,robot,tspan)
 {
-  this->robot = robot;
   this->m_robotnumset = robotnumset;
-  if(tspan(0)>tspan(1))
-  {
-    std::cerr<<"tspan(0) should be no larger than tspan(1)"<<std::endl;
-  }
-  this->tspan[0] = tspan(0);
-  this->tspan[1] = tspan(1);
   this->shrinkFactor = 0.9;
-  this->active = false;
   this->num_bodies = 0;
   this->num_pts = 0;
   this->type = RigidBodyConstraint::QuasiStaticConstraintType;
 }
 
-QuasiStaticConstraint::QuasiStaticConstraint(const QuasiStaticConstraint &rhs):RigidBodyConstraint(rhs),m_robotnumset(rhs.m_robotnumset),shrinkFactor(rhs.shrinkFactor),active(rhs.active),num_bodies(rhs.num_bodies),num_pts(rhs.num_pts),bodies(rhs.bodies),num_body_pts(rhs.num_body_pts),body_pts(rhs.body_pts)
+QuasiStaticConstraint::QuasiStaticConstraint(const QuasiStaticConstraint &rhs):RigidBodyConstraint(rhs),m_robotnumset(rhs.m_robotnumset),shrinkFactor(rhs.shrinkFactor),num_bodies(rhs.num_bodies),num_pts(rhs.num_pts),bodies(rhs.bodies),num_body_pts(rhs.num_body_pts),body_pts(rhs.body_pts)
 {
-  this->robot = rhs.robot;
-  this->tspan[0] = rhs.tspan[0];
-  this->tspan[1] = rhs.tspan[1];
 }
 
 QuasiStaticConstraint::~QuasiStaticConstraint()
@@ -274,15 +284,8 @@ void QuasiStaticConstraint::updateRobotnum(std::set<int> &robotnumset)
   this->m_robotnumset = robotnumset;
 }
 
-PostureConstraint::PostureConstraint(RigidBodyManipulator* model, const Eigen::Vector2d &tspan):RigidBodyConstraint(RigidBodyConstraint::PostureConstraintCategory)
+PostureConstraint::PostureConstraint(RigidBodyManipulator* robot, const Eigen::Vector2d &tspan):RigidBodyConstraint(RigidBodyConstraint::PostureConstraintCategory,robot,tspan)
 {
-  if(tspan(1)<tspan(0))
-  {
-    std::cerr<<"tspan(1) should be no less than tspan(0)"<<std::endl;
-  }
-  this->tspan[0] = tspan(0);
-  this->tspan[1] = tspan(1);
-  this->robot = model;
   int nq = this->robot->num_dof;
   this->lb = new double[nq];
   this->ub = new double[nq];
@@ -293,9 +296,6 @@ PostureConstraint::PostureConstraint(RigidBodyManipulator* model, const Eigen::V
 
 PostureConstraint::PostureConstraint(const PostureConstraint& rhs):RigidBodyConstraint(rhs)
 {
-  this->tspan[0] = rhs.tspan[0];
-  this->tspan[1] = rhs.tspan[1];
-  this->robot = rhs.robot;
   int nq = this->robot->num_dof;
   this->lb = new double[nq];
   this->ub = new double[nq];
@@ -304,7 +304,6 @@ PostureConstraint::PostureConstraint(const PostureConstraint& rhs):RigidBodyCons
     this->lb[i] = rhs.lb[i];
     this->ub[i] = rhs.ub[i];
   }
-  this->type = RigidBodyConstraint::PostureConstraintType;
 }
 
 bool PostureConstraint::isTimeValid(const double* t) const
@@ -356,22 +355,12 @@ PostureConstraint::~PostureConstraint()
   delete[] this->ub;
 }
 
-MultipleTimeLinearPostureConstraint::MultipleTimeLinearPostureConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan):RigidBodyConstraint(RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory)
+MultipleTimeLinearPostureConstraint::MultipleTimeLinearPostureConstraint(RigidBodyManipulator *robot, const Eigen::Vector2d &tspan):RigidBodyConstraint(RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory,robot,tspan)
 {
-  if(tspan(1)<tspan(0))
-  {
-    std::cerr<<"tspan(1) should be no less than tspan(0)"<<std::endl;
-  }
-  this->tspan[0] = tspan(0);
-  this->tspan[1] = tspan(1);
-  this->robot = model;
 }
 
 MultipleTimeLinearPostureConstraint::MultipleTimeLinearPostureConstraint(const MultipleTimeLinearPostureConstraint &rhs):RigidBodyConstraint(rhs)
 {
-  this->robot = rhs.robot;
-  this->tspan[0] = rhs.tspan[0];
-  this->tspan[1] = rhs.tspan[1];
 }
 
 std::vector<bool> MultipleTimeLinearPostureConstraint::isTimeValid(const double* t, int n_breaks) const
@@ -440,9 +429,8 @@ void MultipleTimeLinearPostureConstraint::eval(const double* t, int n_breaks, co
   }
 }
 
-SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(RigidBodyManipulator* robot, const VectorXi &iAfun, const VectorXi &jAvar, const VectorXd &A, const VectorXd &lb, const VectorXd &ub, const Vector2d &tspan):RigidBodyConstraint(RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory)
+SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(RigidBodyManipulator* robot, const VectorXi &iAfun, const VectorXi &jAvar, const VectorXd &A, const VectorXd &lb, const VectorXd &ub, const Vector2d &tspan):RigidBodyConstraint(RigidBodyConstraint::SingleTimeLinearPostureConstraintCategory,robot,tspan)
 {
-  this->robot = robot;
   this->lb = lb;
   this->ub = ub;
   this->num_constraint = this->lb.size();
@@ -487,20 +475,11 @@ SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(RigidBodyMa
   {
     A_mat.insert(iAfun(i),jAvar(i)) = A(i);
   }
-  if(tspan(1)<tspan(0))
-  {
-    std::cerr<<"Drake:RigidBodyConstraint:SingleTimeLinearPostureConstraint: tspan(1) should be no less than tspan(0)"<<std::endl;
-  }
-  this->tspan[0] = tspan(0);
-  this->tspan[1] = tspan(1);
   this->type = RigidBodyConstraint::SingleTimeLinearPostureConstraintType;
 }
 
 SingleTimeLinearPostureConstraint::SingleTimeLinearPostureConstraint(const SingleTimeLinearPostureConstraint &rhs):RigidBodyConstraint(rhs),iAfun(rhs.iAfun),jAvar(rhs.jAvar),A(rhs.A),lb(rhs.lb),ub(rhs.ub),num_constraint(rhs.num_constraint),A_mat(rhs.A_mat)
 {
-  this->robot = rhs.robot;
-  this->tspan[0] = rhs.tspan[0];
-  this->tspan[1] = rhs.tspan[1];
 }
 
 bool SingleTimeLinearPostureConstraint::isTimeValid(const double* t) const
@@ -607,24 +586,14 @@ void SingleTimeLinearPostureConstraint::name(const double* t, std::vector<std::s
 }
  
 
-SingleTimeKinematicConstraint::SingleTimeKinematicConstraint(RigidBodyManipulator *model, const Vector2d &tspan): RigidBodyConstraint(RigidBodyConstraint::SingleTimeKinematicConstraintCategory)
+SingleTimeKinematicConstraint::SingleTimeKinematicConstraint(RigidBodyManipulator *robot, const Vector2d &tspan): RigidBodyConstraint(RigidBodyConstraint::SingleTimeKinematicConstraintCategory,robot,tspan)
 {
-  if(tspan(1)<tspan(0))
-  {
-    std::cerr<<"tspan(1) should be no less than tspan(0)"<<std::endl;
-  }
-  this->tspan[0] = tspan(0);
-  this->tspan[1] = tspan(1);
-  this->robot = model;
   this->num_constraint = 0;
 }
 
 SingleTimeKinematicConstraint::SingleTimeKinematicConstraint(const SingleTimeKinematicConstraint &rhs):RigidBodyConstraint(rhs)
 {
-  this->robot = rhs.robot;
   this->num_constraint = rhs.num_constraint;
-  this->tspan[0] = rhs.tspan[0];
-  this->tspan[1] = rhs.tspan[1];
 }
 bool SingleTimeKinematicConstraint::isTimeValid(const double* t) const
 {
@@ -646,22 +615,12 @@ void SingleTimeKinematicConstraint::updateRobot(RigidBodyManipulator* robot)
   this->robot = robot;
 }
 
-MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(RigidBodyManipulator *model, const Vector2d &tspan): RigidBodyConstraint(RigidBodyConstraint::MultipleTimeKinematicConstraintCategory)
+MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(RigidBodyManipulator *robot, const Vector2d &tspan): RigidBodyConstraint(RigidBodyConstraint::MultipleTimeKinematicConstraintCategory,robot,tspan)
 {
-  if(tspan(1)<tspan(0))
-  {
-    std::cerr<<"tspan(1) should be no less than tspan(0)"<<std::endl;
-  }
-  this->tspan[0] = tspan(0);
-  this->tspan[1] = tspan(1);
-  this->robot = model;
 }
 
 MultipleTimeKinematicConstraint::MultipleTimeKinematicConstraint(const MultipleTimeKinematicConstraint &rhs):RigidBodyConstraint(rhs)
 {
-  this->robot = rhs.robot;
-  this->tspan[0] = rhs.tspan[0];
-  this->tspan[1] = rhs.tspan[1];
 }
 
 void MultipleTimeKinematicConstraint::eval(const double* t, int n_breaks, const MatrixXd &q, VectorXd &c, MatrixXd &dc) const

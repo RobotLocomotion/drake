@@ -6,11 +6,14 @@ classdef RigidBodyConstraint
   %                         this category.
   % @param robot         -- A RigidBodyManipulator or TimeSteppingRigidBodyManipulator
   % @param tspan         -- A 1 x 2 double vector. The time span 
+  % @param mex_ptr       -- A DrakeConstraintMexPointer. The mex pointer of the
+  % RigidBodyConstraint
   properties(SetAccess = protected)
     category
     type
     robot
     tspan
+    mex_ptr
   end
   
   properties(Constant)
@@ -63,13 +66,18 @@ classdef RigidBodyConstraint
       if(~isa(robot,'RigidBodyManipulator') && ~isa(robot,'TimeSteppingRigidBodyManipulator'))
         error('Drake:RigidBodyConstraint:BadInput','robot has to be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
-      if(narargin<3)
+      obj.robot = robot;
+      if(nargin<3)
+        tspan = [-inf,inf];
+      end
+      if(isempty(tspan));
         tspan = [-inf,inf];
       end
       tspan_size = size(tspan);
       if(~isnumeric(tspan) || length(tspan_size) ~= 2 || tspan_size(1) ~= 1 || tspan_size(2) ~= 2 || tspan(1)>tspan(2))
         error('Drake:RigidBodyConstraint:BadInput','tspan should be a 1 x 2 vector, and tspan(1) <= tspan(2)');
       end
+      obj.tspan = tspan;
     end
   end
 end

@@ -1,11 +1,9 @@
 classdef SingleTimeKinematicConstraint < RigidBodyConstraint
   % An abstract class. Its eval function take a single time as input, the
   % constraint is enforced at that time only
-  % @param num_nlcon    -- An int scalar. The number of nonlinear constraints
-  % @param mex_ptr      -- A DrakeConstraintMexPointer. The mex pointer of the
-  % SingleTimeKinematicConstraint;
-  properties(SetAccess = protected)
-    num_nlcon
+  % @param num_constraint    -- An int scalar. The number of nonlinear constraints
+  properties(SetAccess = protected,GetAccess = protected)
+    num_constraint
   end
   
   methods
@@ -31,7 +29,7 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
     
     function n = getNumConstraint(obj,t)
       if(obj.isTimeValid(t))
-        n = obj.num_nlcon;
+        n = obj.num_constraint;
       else
         n = 0;
       end

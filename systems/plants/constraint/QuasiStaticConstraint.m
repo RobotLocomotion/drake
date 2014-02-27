@@ -1,10 +1,5 @@
 classdef QuasiStaticConstraint<RigidBodyConstraint
 % constrain the Center of Mass to lie inside the shrunk support polygon
-% @param robot             -- The robot
-
-% @param tspan             -- The time span of the constraint. An optional
-%                             argument. If it is not passed in the constructor,
-%                             then tspan defaults to [-inf inf];
 % @param active            -- A flag, true if the quasiStaticFlag would be active
 % @param num_bodies        -- An int, the total number of bodies that have active
 %                             ground contact points
@@ -18,17 +13,19 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
 % @param robotnum          -- The robotnum to compute CoM. Default is 1
   properties(SetAccess = protected)
     robotnum;
-    nq;
     shrinkFactor
     active;
-    num_bodies;
     num_pts 
     bodies;
-    num_body_pts; 
     body_pts;
-    plane_row_idx;
   end
   
+  properties(SetAccess = protected, GetAccess = protected)
+    nq;
+    num_bodies;
+    num_body_pts;
+    plane_row_idx;
+  end
   methods
     function obj = QuasiStaticConstraint(robot,tspan,robotnum)
       if(nargin<3)
@@ -62,6 +59,11 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       else
         flag = t>=obj.tspan(1) & t<=obj.tspan(end);
       end
+    end
+    
+    function obj = setActive(obj,flag)
+      obj.active = logical(flag);
+      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'active',obj.active);
     end
     
     function num_cnst = getNumConstraint(obj,t)

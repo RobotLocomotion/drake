@@ -13,7 +13,7 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
     A
     lb
     ub
-    num_lcon
+    num_constraint
     A_mat
   end
   
@@ -92,7 +92,7 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
     
     function n = getNumConstraint(obj,t)
       if(obj.isTimeValid(t))
-        n = obj.num_lcon;
+        n = obj.num_constraint;
       else
         n = 0;
       end
