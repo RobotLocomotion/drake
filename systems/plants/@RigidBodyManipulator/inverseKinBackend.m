@@ -43,7 +43,7 @@ if(~isa(varargin{end},'IKoptions'))
 end
 ikoptions = varargin{end};
 %   qsc = QuasiStaticConstraint(obj);
-qsc = QuasiStaticConstraint(obj,1);
+qsc = QuasiStaticConstraint(obj,[-inf,inf],1);
 qsc = qsc.setActive(false);
 [joint_min,joint_max] = obj.getJointLimits();
 joint_min = bsxfun(@times,joint_min,ones(1,nT));

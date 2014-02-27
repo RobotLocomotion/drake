@@ -86,12 +86,13 @@ QuasiStaticConstraint::QuasiStaticConstraint(RigidBodyManipulator* robot, const 
 {
   this->m_robotnumset = robotnumset;
   this->shrinkFactor = 0.9;
+  this->active = false;
   this->num_bodies = 0;
   this->num_pts = 0;
   this->type = RigidBodyConstraint::QuasiStaticConstraintType;
 }
 
-QuasiStaticConstraint::QuasiStaticConstraint(const QuasiStaticConstraint &rhs):RigidBodyConstraint(rhs),m_robotnumset(rhs.m_robotnumset),shrinkFactor(rhs.shrinkFactor),num_bodies(rhs.num_bodies),num_pts(rhs.num_pts),bodies(rhs.bodies),num_body_pts(rhs.num_body_pts),body_pts(rhs.body_pts)
+QuasiStaticConstraint::QuasiStaticConstraint(const QuasiStaticConstraint &rhs):RigidBodyConstraint(rhs),m_robotnumset(rhs.m_robotnumset),shrinkFactor(rhs.shrinkFactor),active(rhs.active),num_bodies(rhs.num_bodies),num_pts(rhs.num_pts),bodies(rhs.bodies),num_body_pts(rhs.num_body_pts),body_pts(rhs.body_pts)
 {
 }
 
