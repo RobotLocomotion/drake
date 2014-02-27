@@ -1,19 +1,13 @@
 classdef ContactWrenchConstraint < RigidBodyConstraint
   % constrain the contact forces
-  % @param tspan   - A 1 x 2 vector. The time span of the constraint being active
-  % @param robot   - A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
   % @param num_constraint   - A scalar. The number of constraints. 
-  % @param mex_ptr          - A DrakeConstraintMexPointer
   % @param F_size       - A 1 x 2 matrix. The size of the force parameter matrix.
   % @param F_lb         - A double matrix of size F_size. The lower bound on the
   % force parameters
   % @param F_ub         - A double matrix of size F_size. The upper bound on the
   % force parameters
   properties(SetAccess = protected)
-    tspan % a 1x2 vector
     num_constraint;
-    robot
-    mex_ptr
     F_size;
     F_lb;
     F_ub
@@ -21,18 +15,7 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
   
   methods
     function obj = ContactWrenchConstraint(robot,tspan)
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.ContactWrenchConstraintCategory);
-      if(nargin<2)
-        tspan = [-inf,inf];
-      end
-      if(isempty(tspan))
-        tspan = [-inf,inf];
-      end
-      if(tspan(1)>tspan(end))
-        error('Drake:ContactWrenchConstraint:tspan(1) should be no larger than tspan(end)')
-      end
-      obj.tspan = [tspan(1) tspan(end)];
-      obj.robot = robot;
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.ContactWrenchConstraintCategory,robot,tspan);
     end
     
     function tspan = getTspan(obj)

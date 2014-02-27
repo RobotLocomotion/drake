@@ -26,17 +26,19 @@ namespace DrakeRigidBodyConstraint{
 
 void drakePrintMatrix(const Eigen::MatrixXd &mat);
 
-
 class RigidBodyConstraint
 {
   protected:
     int category;
     int type;
+    RigidBodyManipulator* robot;
+    double tspan[2];
   public:
-    RigidBodyConstraint(int category):category(category),type(0){};
+    RigidBodyConstraint(int category,RigidBodyManipulator* robot, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     RigidBodyConstraint(const RigidBodyConstraint &rhs);
     int getType() const {return this->type;};
     int getCategory() const {return this->category;};
+    RigidBodyManipulator* getRobotPointer() const {return this->robot;} ;
     virtual ~RigidBodyConstraint(void) = 0;
     /* In each category, constraint class share the same function interface, this value needs to be in consistent with that in MATLAB*/
     static const int SingleTimeKinematicConstraintCategory       = -1;
@@ -96,9 +98,7 @@ class RigidBodyConstraint
 class QuasiStaticConstraint: public RigidBodyConstraint
 {
   protected:
-    RigidBodyManipulator* robot;
     std::set<int> m_robotnumset;
-    double tspan[2];
     double shrinkFactor;
     bool active;
     int num_bodies;
@@ -117,7 +117,6 @@ class QuasiStaticConstraint: public RigidBodyConstraint
     void name(const double* t,std::vector<std::string> &name_str) const;
     virtual ~QuasiStaticConstraint(void);
     bool isActive() const {return this->active;};
-    RigidBodyManipulator* getRobotPointer() const{return robot;};
     int getNumWeights()  const{return this->num_pts;};
     void addContact(int num_new_bodies, const int* body, const Eigen::MatrixXd* body_pts);
     void setShrinkFactor(double factor);
@@ -141,17 +140,14 @@ class QuasiStaticConstraint: public RigidBodyConstraint
 class PostureConstraint: public RigidBodyConstraint
 {
   protected:
-    double tspan[2];
     double* lb;
     double* ub;
-    RigidBodyManipulator *robot;
   public:
     PostureConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     PostureConstraint(const PostureConstraint& rhs);
     bool isTimeValid(const double* t) const;
     void setJointLimits(int num_idx, const int* joint_idx, const double* lb, const double* ub);
     void bounds(const double* t,double* joint_min, double* joint_max) const;
-    RigidBodyManipulator* getRobotPointer() const {return robot;} ;
     virtual ~PostureConstraint(void);
 };
 
@@ -175,15 +171,12 @@ class PostureConstraint: public RigidBodyConstraint
 class MultipleTimeLinearPostureConstraint: public RigidBodyConstraint
 {
   protected:
-    RigidBodyManipulator* robot;
     int numValidTime(const std::vector<bool> &valid_flag) const;
     void validTimeInd(const std::vector<bool> &valid_flag, Eigen::VectorXi &valid_t_ind) const;
   public:
-    double tspan[2];
     MultipleTimeLinearPostureConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     MultipleTimeLinearPostureConstraint(const MultipleTimeLinearPostureConstraint& rhs);
     std::vector<bool> isTimeValid(const double* t, int n_breaks) const;
-    RigidBodyManipulator* getRobotPointer() const {return robot;};
     void eval(const double* t, int n_breaks, const Eigen::MatrixXd &q, Eigen::VectorXd &c,Eigen::SparseMatrix<double> &dc) const;
     virtual int getNumConstraint(const double* t, int n_breaks) const = 0;
     virtual void feval(const double* t, int n_breaks, const Eigen::MatrixXd &q, Eigen::VectorXd &c) const = 0;
@@ -221,7 +214,6 @@ class MultipleTimeLinearPostureConstraint: public RigidBodyConstraint
 class SingleTimeLinearPostureConstraint: public RigidBodyConstraint
 {
   protected:
-    RigidBodyManipulator* robot;
     Eigen::VectorXi iAfun;
     Eigen::VectorXi jAvar;
     Eigen::VectorXd A;
@@ -229,13 +221,11 @@ class SingleTimeLinearPostureConstraint: public RigidBodyConstraint
     Eigen::VectorXd ub;
     int num_constraint;
     Eigen::SparseMatrix<double> A_mat;
-    double tspan[2];
   public:
     SingleTimeLinearPostureConstraint(RigidBodyManipulator* robot, const Eigen::VectorXi &iAfun, const Eigen::VectorXi &jAvar, const Eigen::VectorXd &A, const Eigen::VectorXd &lb, const Eigen::VectorXd &ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     SingleTimeLinearPostureConstraint(const SingleTimeLinearPostureConstraint& rhs);
     bool isTimeValid(const double* t) const;
     int getNumConstraint(const double* t) const;
-    RigidBodyManipulator* getRobotPointer() const{return robot;};
     void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     void feval(const double* t, const Eigen::VectorXd &q, Eigen::VectorXd &c) const;
     void geval(const double* t, Eigen::VectorXi &iAfun, Eigen::VectorXi &jAvar, Eigen::VectorXd &A) const;
@@ -249,15 +239,12 @@ class SingleTimeLinearPostureConstraint: public RigidBodyConstraint
 class SingleTimeKinematicConstraint: public RigidBodyConstraint
 {
   protected:
-    RigidBodyManipulator *robot;
     int num_constraint;
   public:
-    double tspan[2];
     SingleTimeKinematicConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     SingleTimeKinematicConstraint(const SingleTimeKinematicConstraint &rhs);
     bool isTimeValid(const double* t) const;
     int getNumConstraint(const double* t) const;
-    RigidBodyManipulator* getRobotPointer() const{return robot;};
     virtual void eval(const double* t,Eigen::VectorXd &c, Eigen::MatrixXd &dc) const = 0;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const = 0;
     virtual void name(const double* t, std::vector<std::string> &name_str) const = 0;
@@ -268,14 +255,11 @@ class SingleTimeKinematicConstraint: public RigidBodyConstraint
 class MultipleTimeKinematicConstraint : public RigidBodyConstraint
 {
   protected:
-    RigidBodyManipulator *robot;
     int numValidTime(const double* t,int n_breaks) const;
   public:
-    double tspan[2];
     MultipleTimeKinematicConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     MultipleTimeKinematicConstraint(const MultipleTimeKinematicConstraint &rhs);
     std::vector<bool> isTimeValid(const double* t,int n_breaks) const;
-    RigidBodyManipulator* getRobotPointer() const{return robot;};
     virtual int getNumConstraint(const double* t,int n_breaks) const = 0;
     void eval(const double* t, int n_breaks,const Eigen::MatrixXd &q,Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void eval_valid(const double* valid_t, int num_valid_t,const Eigen::MatrixXd &valid_q,Eigen::VectorXd &c, Eigen::MatrixXd &dc_valid) const = 0;
