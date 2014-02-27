@@ -20,7 +20,7 @@ if (kinsol.mex)
   if(body_or_frame_ind == 0)
     Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,0,robotnum,true);
   else
-    Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,false,true);
+    Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,rotation_type,true);
   end
 else
   if (body_or_frame_ind == 0) 
@@ -67,32 +67,32 @@ else
       % note the unusual format of dTdq 
       % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
     
-      % droll_dq
+      % droll_dqdot
       idx = sub2ind(size(dTdqdot),(3-1)*nq+(1:nq),2*ones(1,nq));
-      dR32_dq = dTdqdot(idx);
+      dR32_dqdot = dTdqdot(idx);
       idx = sub2ind(size(dTdqdot),(3-1)*nq+(1:nq),3*ones(1,nq));
-      dR33_dq = dTdqdot(idx);
+      dR33_dqdot = dTdqdot(idx);
       sqterm = R(3,2)^2 + R(3,3)^2;
-      Jr(1,:) = (R(3,3)*dR32_dq - R(3,2)*dR33_dq)/sqterm;
+      Jr(1,:) = (R(3,3)*dR32_dqdot - R(3,2)*dR33_dqdot)/sqterm;
 
-      % dpitch_dq
+      % dpitch_dqdot
       idx = sub2ind(size(dTdqdot),(3-1)*nq+(1:nq),ones(1,nq));
-      dR31_dq = dTdqdot(idx);
-      Jr(2,:) = (-sqrt(sqterm)*dR31_dq + R(3,1)/sqrt(sqterm)*(R(3,2)*dR32_dq + R(3,3)*dR33_dq) )/(R(3,1)^2 + R(3,2)^2 + R(3,3)^2);
+      dR31_dqdot = dTdqdot(idx);
+      Jr(2,:) = (-sqrt(sqterm)*dR31_dqdot + R(3,1)/sqrt(sqterm)*(R(3,2)*dR32_dqdot + R(3,3)*dR33_dqdot) )/(R(3,1)^2 + R(3,2)^2 + R(3,3)^2);
 
-      % dyaw_dq
+      % dyaw_dqdot
       idx = sub2ind(size(dTdqdot),(1-1)*nq+(1:nq),ones(1,nq));
-      dR11_dq = dTdqdot(idx);
+      dR11_dqdot = dTdqdot(idx);
       idx = sub2ind(size(dTdqdot),(2-1)*nq+(1:nq),ones(1,nq));
-      dR21_dq = dTdqdot(idx);
+      dR21_dqdot = dTdqdot(idx);
       sqterm = R(1,1)^2 + R(2,1)^2;
-      Jr(3,:) = (R(1,1)*dR21_dq - R(2,1)*dR11_dq)/sqterm;
+      Jr(3,:) = (R(1,1)*dR21_dqdot - R(2,1)*dR11_dqdot)/sqterm;
 
       Jtmp = [Jx;Jr];
       Jrow_ind = reshape([reshape(1:3*m,3,m);bsxfun(@times,3*m+(1:3)',ones(1,m))],[],1);
       Jdot = Jtmp(Jrow_ind,:);
     elseif rotation_type==2
-      error('quaternions not supported');
+      error('forwardJacDot: quaternions not yet supported');
     end
   end
   
