@@ -21,7 +21,7 @@ macro(get_mex_arguments afterstring)
 endmacro()
 
 function(mex_setup)
-  # sets the variables: MATLAB_ROOT, MATLAB_CPU, MEX, MEX_EXT
+  # sets the variables: MATLAB_ROOT, MEX, MEX_EXT
   #    as well as all of the mexopts
 
   find_program(matlab matlab)
@@ -34,22 +34,13 @@ function(mex_setup)
   endif()
   string(STRIP ${_matlab_root} MATLAB_ROOT)
 
-  execute_process(COMMAND ${matlab} -n COMMAND grep "ARCH" COMMAND cut -d "=" -f2 OUTPUT_VARIABLE _matlab_cpu)
-  if (NOT _matlab_cpu)
-    message(FATAL_ERROR "Failed to extract MATLAB_CPU from running matlab -n")
-  endif()
-  string(STRIP ${_matlab_cpu} MATLAB_CPU)
-
   execute_process(COMMAND ${MATLAB_ROOT}/bin/mexext OUTPUT_VARIABLE MEX_EXT OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-  if (NOT MATLAB_ROOT OR NOT MATLAB_CPU OR NOT MEX_EXT)
+  if (NOT MATLAB_ROOT OR NOT MEX_EXT)
      message(FATAL_ERROR "could not find MATLAB root")
   endif()
 
-#  set(MATLAB_BIN ${MATLAB_ROOT}/bin/${MATLAB_CPU})
-
   set(MATLAB_ROOT ${MATLAB_ROOT} PARENT_SCOPE)
-  set(MATLAB_CPU ${MATLAB_CPU} PARENT_SCOPE)
   set(MEX ${MATLAB_ROOT}/bin/mex PARENT_SCOPE)
   set(MEX_EXT ${MEX_EXT} PARENT_SCOPE)
 
@@ -95,8 +86,8 @@ function(add_mex)
   list(GET ARGV 0 target)
   list(REMOVE_AT ARGV 0)
 
-  if (NOT MATLAB_ROOT OR NOT MATLAB_CPU OR NOT MEX_EXT)
-     message(FATAL_ERROR "MATLAB not found (or MATLAB_ROOT/MATLAB_CPU not properly parsed)")
+  if (NOT MATLAB_ROOT OR NOT MEX_EXT)
+     message(FATAL_ERROR "MATLAB not found (or MATLAB_ROOT not properly parsed)")
   endif()
 
   include_directories( ${MATLAB_ROOT}/extern/include ${MATLAB_ROOT}/simulink/include )
