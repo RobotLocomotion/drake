@@ -415,7 +415,6 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   }
   
   P = MatrixXd::Identity(6*NB,6*NB); // spatial incidence matrix
-  Pinv = MatrixXd::Identity(6*NB,6*NB);
   Phi = MatrixXd::Zero(6*NB,num_dof); // joint axis matrix
   Js = MatrixXd::Zero(6*NB,num_dof);
   Jdot = MatrixXd::Zero(6*NB,num_dof);
@@ -891,8 +890,6 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 }
 
 
-
-
 template <typename Derived>
 void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot) 
 {
@@ -900,11 +897,6 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
   // 
   // h = A*qd, where h(4:6) is the total linear momentum and h(1:3) is the 
   // total angular momentum in the centroid frame (world fram translated to COM).
-
-  std::clock_t start;
-  double duration;
-
-  start = std::clock();
 
   Vector3d com; getCOM(com);
   Xtrans(-com,&Xcom); 
@@ -920,11 +912,6 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
   dXcom(4,0) = 1*com_dot(2);
   dXcom(3,1) = -1*com_dot(2);
   
-  duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-  std::cout<<"COM computations: "<< duration <<'\n';
-
-  start = std::clock();
-
   for (int i=0; i < NB; i++) {
     int n = dofnum[i];
     jcalc(pitch[i],q[n],&Xi,&s);
@@ -950,11 +937,6 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
     Xg.block(i*6,0,6,6) = Xworld[i] * Xcom; // spatial transform from centroid to body
     dXg.block(i*6,0,6,6) = dXworld[i] * Xcom + Xworld[i] * dXcom; 
   }
-  
-  duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-  std::cout<<"loop time: "<< duration <<'\n';
-
-  start = std::clock();
 
   Eigen::FullPivLU<MatrixXd> luOfP(P);
   Js = luOfP.solve(Phi);
@@ -962,10 +944,6 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
   Jdot = -Pinv_dP * Js;
   A = Xg.transpose()*Is*Js; //centroidal momentum matrix (eq 27)
   Adot = Xg.transpose()*Is*Jdot + dXg.transpose()*Is*Js;
-
-  duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-  std::cout<<"matrix computations: "<< duration <<'\n';
-
 }
 
 
