@@ -422,6 +422,7 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   Is = MatrixXd::Zero(6*NB,6*NB); // system inertia matrix
   Xg = MatrixXd::Zero(6*NB,6); // spatial centroidal projection matrix
   dP = MatrixXd::Zero(6*NB,6*NB); // dP_dq * qd 
+  Pinv_dP = MatrixXd::Zero(6*NB,6*NB); // Pinv * dP
   dXg = MatrixXd::Zero(6*NB,6);  // dXg_dq * qd
   Xcom = MatrixXd::Zero(6,6); // spatial transform from centroid to world
   Jcom = MatrixXd::Zero(3,num_dof); 
@@ -900,6 +901,11 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
   // h = A*qd, where h(4:6) is the total linear momentum and h(1:3) is the 
   // total angular momentum in the centroid frame (world fram translated to COM).
 
+  std::clock_t start;
+  double duration;
+
+  start = std::clock();
+
   Vector3d com; getCOM(com);
   Xtrans(-com,&Xcom); 
 
@@ -914,6 +920,11 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
   dXcom(4,0) = 1*com_dot(2);
   dXcom(3,1) = -1*com_dot(2);
   
+  duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+  std::cout<<"COM computations: "<< duration <<'\n';
+
+  start = std::clock();
+
   for (int i=0; i < NB; i++) {
     int n = dofnum[i];
     jcalc(pitch[i],q[n],&Xi,&s);
@@ -940,12 +951,23 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
     dXg.block(i*6,0,6,6) = dXworld[i] * Xcom + Xworld[i] * dXcom; 
   }
   
-  Pinv = P.inverse(); // potentially suboptimal
-  Js = Pinv * Phi;
-  Jdot = -Pinv * dP * Pinv * Phi;
+  duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+  std::cout<<"loop time: "<< duration <<'\n';
+
+  start = std::clock();
+
+  Eigen::FullPivLU<MatrixXd> luOfP(P);
+  Js = luOfP.solve(Phi);
+  Pinv_dP = luOfP.solve(dP);
+  Jdot = -Pinv_dP * Js;
   A = Xg.transpose()*Is*Js; //centroidal momentum matrix (eq 27)
   Adot = Xg.transpose()*Is*Jdot + dXg.transpose()*Is*Js;
+
+  duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+  std::cout<<"matrix computations: "<< duration <<'\n';
+
 }
+
 
 template <typename Derived>
 void RigidBodyManipulator::getCOM(MatrixBase<Derived> &com, const std::set<int> &robotnum)

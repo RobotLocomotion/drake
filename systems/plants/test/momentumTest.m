@@ -22,8 +22,8 @@ v = r.constructVisualizer();
 T = 3.0;
 xtraj = r.simulate([0 T],x0);
 
-checkDependency('lcmgl');
-lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'qp-control-block-debug');
+% checkDependency('lcmgl');
+% lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'qp-control-block-debug');
 
 body = getBody(r,2); % get ball
 
@@ -63,32 +63,32 @@ for t=0:0.05:T
   xcom = getCOM(r,kinsol);
 
   % plot centroidal linear momentum
-  lcmgl.glPushMatrix();
-  lcmgl.glTranslated(xcom(1),xcom(2),xcom(3));
+%   lcmgl.glPushMatrix();
+%   lcmgl.glTranslated(xcom(1),xcom(2),xcom(3));
 
-  lcmgl.glPushMatrix();
-  axis_rot = rpy2axis(xyzrpy(4:6));
-  lcmgl.glRotated(axis_rot(4)*180/pi,axis_rot(1),axis_rot(2),axis_rot(3));
-  lcmgl.glLineWidth(1);
-  lcmgl.glDrawAxes();
-  lcmgl.glPopMatrix();
+%   lcmgl.glPushMatrix();
+%   axis_rot = rpy2axis(xyzrpy(4:6));
+%   lcmgl.glRotated(axis_rot(4)*180/pi,axis_rot(1),axis_rot(2),axis_rot(3));
+%   lcmgl.glLineWidth(1);
+%   lcmgl.glDrawAxes();
+%   lcmgl.glPopMatrix();
 
   % draw linear momentum vector
-  lcmgl.glLineWidth(3);
-  lcmgl.glBegin(lcmgl.LCMGL_LINES);
-  lcmgl.glColor3f(1, 1, 0);
-  lcmgl.glVertex3f(0, 0, 0);
-  lcmgl.glVertex3f(0.1*h(4), 0.1*h(5), 0.1*h(6)); % scale for drawing
-  lcmgl.glEnd();
+%   lcmgl.glLineWidth(3);
+%   lcmgl.glBegin(lcmgl.LCMGL_LINES);
+%   lcmgl.glColor3f(1, 1, 0);
+%   lcmgl.glVertex3f(0, 0, 0);
+%   lcmgl.glVertex3f(0.1*h(4), 0.1*h(5), 0.1*h(6)); % scale for drawing
+%   lcmgl.glEnd();
 
   % draw angular momentum vector
-  aa_h = rpy2axis(h(1:3));
-  lcmgl.glLineWidth(3);
-  lcmgl.glBegin(lcmgl.LCMGL_LINES);
-  lcmgl.glColor3f(0, 1, 1);
-  lcmgl.glVertex3f(0, 0, 0);
-  lcmgl.glVertex3f(aa_h(1), aa_h(2), aa_h(3));
-  lcmgl.glEnd();
+%   aa_h = rpy2axis(h(1:3));
+%   lcmgl.glLineWidth(3);
+%   lcmgl.glBegin(lcmgl.LCMGL_LINES);
+%   lcmgl.glColor3f(0, 1, 1);
+%   lcmgl.glVertex3f(0, 0, 0);
+%   lcmgl.glVertex3f(aa_h(1), aa_h(2), aa_h(3));
+%   lcmgl.glEnd();
 
 %   % draw angular momentum vector
 %   aa_m = rpy2axis(am(1:3));
@@ -99,12 +99,12 @@ for t=0:0.05:T
 %   lcmgl.glVertex3f(aa_m(1), aa_m(2), aa_m(3));
 %   lcmgl.glEnd();
 
-  lcmgl.glPopMatrix();
+%   lcmgl.glPopMatrix();
   
-  lcmgl.glLineWidth(1);
-  lcmgl.glColor3f(.2, 0, 0);
-  lcmgl.switchBuffers();
-  pause(0.1);
+%   lcmgl.glLineWidth(1);
+%   lcmgl.glColor3f(.2, 0, 0);
+%   lcmgl.switchBuffers();
+%   pause(0.1);
 end
 
 clear r;
@@ -147,32 +147,32 @@ for t=0:0.05:T
   xcom = getCOM(r,kinsol);
 
   % plot centroidal linear momentum
-  lcmgl.glPushMatrix();
-  lcmgl.glTranslated(xcom(1),xcom(2),xcom(3));
+%   lcmgl.glPushMatrix();
+%   lcmgl.glTranslated(xcom(1),xcom(2),xcom(3));
 
-  lcmgl.glPushMatrix();
-  axis_rot = rpy2axis(xyzrpy(4:6));
-  lcmgl.glRotated(axis_rot(4)*180/pi,axis_rot(1),axis_rot(2),axis_rot(3));
-  lcmgl.glLineWidth(1);
-  lcmgl.glDrawAxes();
-  lcmgl.glPopMatrix();
+%   lcmgl.glPushMatrix();
+%   axis_rot = rpy2axis(xyzrpy(4:6));
+%   lcmgl.glRotated(axis_rot(4)*180/pi,axis_rot(1),axis_rot(2),axis_rot(3));
+%   lcmgl.glLineWidth(1);
+%   lcmgl.glDrawAxes();
+%   lcmgl.glPopMatrix();
 
   % draw linear momentum vector
-  lcmgl.glLineWidth(3);
-  lcmgl.glBegin(lcmgl.LCMGL_LINES);
-  lcmgl.glColor3f(1, 1, 0);
-  lcmgl.glVertex3f(0, 0, 0);
-  lcmgl.glVertex3f(0.1*h(4), 0.1*h(5), 0.1*h(6)); % scale for drawing
-  lcmgl.glEnd();
+%   lcmgl.glLineWidth(3);
+%   lcmgl.glBegin(lcmgl.LCMGL_LINES);
+%   lcmgl.glColor3f(1, 1, 0);
+%   lcmgl.glVertex3f(0, 0, 0);
+%   lcmgl.glVertex3f(0.1*h(4), 0.1*h(5), 0.1*h(6)); % scale for drawing
+%   lcmgl.glEnd();
 
   % draw angular momentum vector
-  aa_h = rpy2axis(h(1:3));
-  lcmgl.glLineWidth(3);
-  lcmgl.glBegin(lcmgl.LCMGL_LINES);
-  lcmgl.glColor3f(0, 1, 1);
-  lcmgl.glVertex3f(0, 0, 0);
-  lcmgl.glVertex3f(aa_h(1), aa_h(2), aa_h(3));
-  lcmgl.glEnd();
+%   aa_h = rpy2axis(h(1:3));
+% %   lcmgl.glLineWidth(3);
+%   lcmgl.glBegin(lcmgl.LCMGL_LINES);
+%   lcmgl.glColor3f(0, 1, 1);
+%   lcmgl.glVertex3f(0, 0, 0);
+%   lcmgl.glVertex3f(aa_h(1), aa_h(2), aa_h(3));
+%   lcmgl.glEnd();
 
 %   % draw angular momentum vector
 %   aa_m = rpy2axis(am(1:3));
@@ -183,12 +183,12 @@ for t=0:0.05:T
 %   lcmgl.glVertex3f(aa_m(1), aa_m(2), aa_m(3));
 %   lcmgl.glEnd();
 
-  lcmgl.glPopMatrix();
+%   lcmgl.glPopMatrix();
   
-  lcmgl.glLineWidth(1);
-  lcmgl.glColor3f(.2, 0, 0);
-  lcmgl.switchBuffers();
-  pause(0.1);
+%   lcmgl.glLineWidth(1);
+%   lcmgl.glColor3f(.2, 0, 0);
+%   lcmgl.switchBuffers();
+%   pause(0.1);
 end
 
 end

@@ -21,10 +21,16 @@ if (kinsol.mex)
   end
   
   if nargout > 1
+% 		disp('Adot');
+		dertic = tic;
     [A,Adot] = getCMMmex(model.mex_model_ptr,kinsol.q,qd);
-  else
-    A = getCMMmex(model.mex_model_ptr,kinsol.q);
-  end
+		toc(dertic);
+	else
+% 		disp('A');
+		tic;
+		A = getCMMmex(model.mex_model_ptr,kinsol.q);
+		toc;
+	end
   
 else
   q = kinsol.q;
