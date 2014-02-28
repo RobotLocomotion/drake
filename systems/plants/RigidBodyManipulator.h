@@ -165,7 +165,6 @@ private:
   // preallocate for CMM function
   MatrixXd P; // spatial incidence matrix 
   MatrixXd dP; // dP_dq * qd 
-  MatrixXd Pinv;
   MatrixXd Pinv_dP; // Pinv * dP
   MatrixXd Phi; // joint axis matrix
   MatrixXd Is; // system inertia matrix
