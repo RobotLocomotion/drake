@@ -2,6 +2,7 @@
 #define __RigidBodyManipulator_H__
 
 #include <Eigen/Dense>
+#include <Eigen/LU>
 #include <set>
 #include <vector>
 
@@ -165,6 +166,7 @@ private:
   MatrixXd P; // spatial incidence matrix 
   MatrixXd dP; // dP_dq * qd 
   MatrixXd Pinv;
+  MatrixXd Pinv_dP; // Pinv * dP
   MatrixXd Phi; // joint axis matrix
   MatrixXd Is; // system inertia matrix
   MatrixXd Xg; // spatial centroidal projection matrix
