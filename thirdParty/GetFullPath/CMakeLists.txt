@@ -1,4 +1,4 @@
 
-if (WIN32)
+if ( CYGWIN )
    add_mex(GetFullPath GetFullPath.c)
 endif()
