@@ -19,7 +19,7 @@ add_subdirectory(test)
 
 
 # Mex debugging tools:
-
+if (NOT WIN32)
 add_mex(debugMex SHARED debugMexLib.cpp)
 #set_property( SOURCE debugMexLib.cpp PROPERTY COMPILE_FLAGS -DMX_COMPAT_32 )
 add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
@@ -67,3 +67,4 @@ file(APPEND ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
 install(FILES ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
         DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
         PERMISSIONS OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+endif(NOT WIN32)
