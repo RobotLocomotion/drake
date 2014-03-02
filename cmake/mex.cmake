@@ -190,6 +190,9 @@ function(add_mex)
   elseif (isshared GREATER -1)
     set_target_properties(${target} PROPERTIES
       LINK_FLAGS "${MEX_CLIBS}"
+#      LINK_FLAGS "${MEX_LDFLAGS} ${MEX_LD_ARGUMENTS}" # -Wl,-rpath ${CMAKE_INSTALL_PREFIX}/lib"  
+#      LINK_FLAGS_DEBUG	"${MEX_LDDEBUGFLAGS}"
+#      LINK_FLAGS_RELEASE	"${MEX_LDOPTIMFLAGS}"
       )
   else()
     # note: on ubuntu, gcc did not like the MEX_CLIBS coming along with LINK_FLAGS (it only works if they appear after the input files).  this is a nasty trick that I found online
