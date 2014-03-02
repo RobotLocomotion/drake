@@ -404,31 +404,29 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
     delete[] dXup;
   }
   if (NB>0) {
+    Ic = new MatrixXd[NB]; // body spatial inertias
+    dIc = new MatrixXd[NB]; // derivative of body spatial inertias
+    phi = new VectorXd[NB]; // joint axis vectors
     Xworld = new MatrixXd[NB]; // spatial transforms from world to each body
     dXworld = new MatrixXd[NB]; // dXworld_dq * qd
     dXup = new MatrixXd[NB]; // dXup_dq * qd
     for(int i=0; i < NB; i++) {
+      Ic[i] = MatrixXd::Zero(6,6);
+      dIc[i] = MatrixXd::Zero(6,6);
+      phi[i] = VectorXd::Zero(6);
       Xworld[i] = MatrixXd::Zero(6,6);
       dXworld[i] = MatrixXd::Zero(6,6);
       dXup[i] = MatrixXd::Zero(6,6);
     }
   }
   
-  P = MatrixXd::Identity(6*NB,6*NB); // spatial incidence matrix
-  Phi = MatrixXd::Zero(6*NB,num_dof); // joint axis matrix
-  Js = MatrixXd::Zero(6*NB,num_dof);
-  Jdot = MatrixXd::Zero(6*NB,num_dof);
-  Is = MatrixXd::Zero(6*NB,6*NB); // system inertia matrix
-  Xg = MatrixXd::Zero(6*NB,6); // spatial centroidal projection matrix
-  dP = MatrixXd::Zero(6*NB,6*NB); // dP_dq * qd 
-  Pinv_dP = MatrixXd::Zero(6*NB,6*NB); // Pinv * dP
-  dXg = MatrixXd::Zero(6*NB,6);  // dXg_dq * qd
+  Xg = MatrixXd::Zero(6,6); // spatial centroidal projection matrix for a single body
+  dXg = MatrixXd::Zero(6,6);  // dXg_dq * qd
   Xcom = MatrixXd::Zero(6,6); // spatial transform from centroid to world
   Jcom = MatrixXd::Zero(3,num_dof); 
   dXcom = MatrixXd::Zero(6,6);
   Xi = MatrixXd::Zero(6,6);
   dXidq = MatrixXd::Zero(6,6);
-  s = VectorXd::Zero(6);
   
   initialized = false;
   kinematicsInit = false;
@@ -911,20 +909,34 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
   dXcom(3,2) = 1*com_dot(1);
   dXcom(4,0) = 1*com_dot(2);
   dXcom(3,1) = -1*com_dot(2);
-  
+
+  A = MatrixXd::Zero(6,num_dof);
+  Adot = MatrixXd::Zero(6,num_dof);
+
   for (int i=0; i < NB; i++) {
-    int n = dofnum[i];
-    jcalc(pitch[i],q[n],&Xi,&s);
-    Xup[i] = Xi * Xtree[i];
+    Ic[i] = I[i];
+    dIc[i] = MatrixXd::Zero(6,6);
+  }
   
+  int n;
+  for (int i=NB-1; i >= 0; i--) {
+    n = dofnum[i];
+    jcalc(pitch[i],q[n],&Xi,&phi[i]);
+    Xup[i] = Xi * Xtree[i];
+ 
     djcalc(pitch[i], q[n], &dXidq);
     dXup[i] = dXidq * Xtree[i] * qd[n];
- 
+     
     if (parent[i] >= 0) {
-      P.block(i*6,parent[i]*6,6,6) = -Xup[i];
-      Xworld[i] = Xup[i] * Xworld[parent[i]];
+      Ic[parent[i]] += Xup[i].transpose()*Ic[i]*Xup[i];
+      dIc[parent[i]] += (dXup[i].transpose()*Ic[i] + Xup[i].transpose()*dIc[i])*Xup[i] + Xup[i].transpose()*Ic[i]*dXup[i];
+    }
+  }
 
-      dP.block(i*6,parent[i]*6,6,6) = -dXup[i];
+
+  for (int i=0; i < NB; i++) {
+    if (parent[i] >= 0) {
+      Xworld[i] = Xup[i] * Xworld[parent[i]];
       dXworld[i] = dXup[i]*Xworld[parent[i]] + Xup[i]*dXworld[parent[i]];
     }
     else {
@@ -932,18 +944,13 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
       dXworld[i] = dXup[i];
     }
  
-    Phi.block(i*6,n,6,1) = s;
-    Is.block(i*6,i*6,6,6) = I[i];
-    Xg.block(i*6,0,6,6) = Xworld[i] * Xcom; // spatial transform from centroid to body
-    dXg.block(i*6,0,6,6) = dXworld[i] * Xcom + Xworld[i] * dXcom; 
-  }
+    Xg = Xworld[i] * Xcom; // spatial transform from centroid to body
+    dXg = dXworld[i] * Xcom + Xworld[i] * dXcom; 
 
-  Eigen::FullPivLU<MatrixXd> luOfP(P);
-  Js = luOfP.solve(Phi);
-  Pinv_dP = luOfP.solve(dP);
-  Jdot = -Pinv_dP * Js;
-  A = Xg.transpose()*Is*Js; //centroidal momentum matrix (eq 27)
-  Adot = Xg.transpose()*Is*Jdot + dXg.transpose()*Is*Js;
+    n = dofnum[i];
+    A.col(n) = Xg.transpose()*Ic[i]*phi[i];
+    Adot.col(n) = dXg.transpose()*Ic[i]*phi[i] + Xg.transpose()*dIc[i]*phi[i];
+  }
 }
 
 

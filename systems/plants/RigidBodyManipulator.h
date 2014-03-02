@@ -163,24 +163,19 @@ private:
   MatrixXd bdJ;
 
   // preallocate for CMM function
-  MatrixXd P; // spatial incidence matrix 
-  MatrixXd dP; // dP_dq * qd 
-  MatrixXd Pinv_dP; // Pinv * dP
-  MatrixXd Phi; // joint axis matrix
-  MatrixXd Is; // system inertia matrix
   MatrixXd Xg; // spatial centroidal projection matrix
+  MatrixXd dXg;  // dXg_dq * qd  
+  MatrixXd *Ic; // body spatial inertias
+  MatrixXd *dIc; // derivative of body spatial inertias
+  VectorXd *phi; // joint axis vectors
   MatrixXd *Xworld; // spatial transforms from world to each body
-  MatrixXd dXg;  // dXg_dq * qd
   MatrixXd *dXworld; // dXworld_dq * qd
-  MatrixXd *dXup; // dXup_dq * qd
+  MatrixXd *dXup; // dXup_dq * qd 
   MatrixXd Xcom; // spatial transform from centroid to world
   MatrixXd Jcom; 
   MatrixXd dXcom;
   MatrixXd Xi;
   MatrixXd dXidq;
-  VectorXd s;
-  MatrixXd Js;
-  MatrixXd Jdot;
 
   int num_contact_pts;
   bool initialized;
