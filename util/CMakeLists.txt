@@ -5,8 +5,10 @@ add_mex(realtime realtime.cpp)
 #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 #add_mex(deleteMexPointer deleteMexPointer.cpp $<TARGET_OBJECTS:drakeUtil>)
 
+if (NOT WIN32) # todo: fix this
 add_mex(drakeUtil SHARED drakeUtil.cpp)
 pods_install_libraries(drakeUtil)
+endif(NOT WIN32)
 
 if (eigen3_FOUND)
   add_mex(drakeQuatUtil SHARED drakeQuatUtil.cpp)
