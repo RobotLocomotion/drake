@@ -10,7 +10,7 @@ TESTDIRS:=$(shell grep -v "^\#" totest.txt)
 #   Otherwise, use ./build.
 ifeq "$(BUILD_PREFIX)" ""
 BUILD_PREFIX=$(shell for pfx in ./ .. ../.. ../../..; do d=`pwd`/$$pfx/build; \
-               if [ -d $$d ]; then echo $$d; exit 0; fi; done; echo `pwd`/build)
+               if [ -d "$$d" ]; then echo $$d; exit 0; fi; done; echo `pwd`/build)
 endif
 
 export BUILD_PREFIX
@@ -19,7 +19,7 @@ export BUILD_PREFIX
 $(VERBOSE).SILENT:
 
 all: 
-	@[ -d $(BUILD_PREFIX) ] || mkdir -p $(BUILD_PREFIX) || exit 1
+	@[ -d "$(BUILD_PREFIX)" ] || mkdir -p "$(BUILD_PREFIX)" || exit 1
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
 		echo "-- $$subdir"; \
@@ -29,7 +29,7 @@ all:
 	@# Place additional commands here if you have any
 
 test: all
-	@[ -d $(BUILD_PREFIX) ] || mkdir -p $(BUILD_PREFIX) || exit 1
+	@[ -d "$(BUILD_PREFIX)" ] || mkdir -p "$(BUILD_PREFIX)" || exit 1
 	@for subdir in $(TESTDIRS); do \
 		echo "\n-------------------------------------------"; \
 		echo "-- $$subdir"; \
