@@ -4,12 +4,24 @@
 #cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
 macro(get_mex_option option)
-  # writes MEX_${option} 
-
+  # usage: get_mex_option(option [, option_name])
+  # writes MEX_${option_name} 
+  if ( ${ARGC} GREATER 1 )
+    set(option_name ${ARGV1})
+  else()
+    set(option_name ${option})     
+  endif()
+  
   # todo: do the string parsing using CMAKE commands to make it less platform dependent
   execute_process(COMMAND ${mex} -v COMMAND grep ${option} COMMAND head -n 1 COMMAND cut -d "=" -f2 OUTPUT_VARIABLE value ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-  string(STRIP ${value} svalue)
-  set(MEX_${option} ${svalue} PARENT_SCOPE)
+  if ( NOT value )
+    message(WARNING "Could not find MEX_${option_name} using mex -v")
+  else()
+    string(STRIP ${value} svalue)
+    set(MEX_${option_name} ${svalue} PARENT_SCOPE)
+  endif()
+
+  message(STATUS "MEX_${option_name} = ${svalue}")
 endmacro()
 
 macro(get_mex_arguments afterstring)
@@ -28,28 +40,24 @@ function(mex_setup)
   if ( NOT matlab )
      message(FATAL_ERROR "Could not find matlab executable")
   endif()
-  if ( CYGWIN )
+  if ( WIN32 )
     # matlab -n is not supported on windows (asked matlab for a work-around)
     get_filename_component(_matlab_root ${matlab} PATH)  
     get_filename_component(_matlab_root ${_matlab_root} PATH)  
-#  elseif ( WIN32 )
-#    execute_process(COMMAND ${matlab} -nosplash -nojvm -r "h=fopen('.matlabroot','w'); fprintf(h,'MATLAB = %s\\n',matlabroot); fclose(h); exit" WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
-#    execute_process(COMMAND grep -e "MATLAB \\+=" ${CMAKE_BINARY_DIR}/.matlabroot COMMAND cut -d "=" -f2 OUTPUT_VARIABLE _matlab_root) 
   else()
     execute_process(COMMAND ${matlab} -n COMMAND grep -e "MATLAB \\+=" COMMAND cut -d "=" -f2 OUTPUT_VARIABLE _matlab_root)
   endif()
   if (NOT _matlab_root)
-    message(FATAL_ERROR "Failed to extract MATLAB_ROOT from running matlab -n")
+    message(FATAL_ERROR "Failed to extract MATLAB_ROOT")
   endif()
   string(STRIP ${_matlab_root} MATLAB_ROOT)
 
-  if ( CYGWIN )
-    find_program(mexext mexext.bat PATHS ${MATLAB_ROOT}/bin)
-    find_program(mex mex.bat PATHS ${MATLAB_ROOT}/bin)
-  else ()
-    find_program(mexext mexext PATHS ${MATLAB_ROOT}/bin)
-    find_program(mex mex PATHS ${MATLAB_ROOT}/bin)
+  find_program(mex NAMES mex mex.bat HINTS ${MATLAB_ROOT}/bin)
+  if (NOT mex)
+     message(FATAL_ERROR "Failed to find mex executable")
   endif()
+
+  find_program(mexext NAMES mexext mexext.bat HINTS ${MATLAB_ROOT}/bin)
   execute_process(COMMAND ${mexext} OUTPUT_VARIABLE MEX_EXT OUTPUT_STRIP_TRAILING_WHITESPACE)
   if (NOT MEX_EXT)
      message(FATAL_ERROR "Failed to extract MEX_EXT")
@@ -59,19 +67,23 @@ function(mex_setup)
   set(mex ${mex} PARENT_SCOPE)
   set(MEX_EXT ${MEX_EXT} PARENT_SCOPE)
 
-  get_mex_option(CC)
-
-  get_mex_option(CFLAGS)
-  get_mex_option(CDEBUGFLAGS)
-  get_mex_option(COPTIMFLAGS)
-  get_mex_option(CLIBS)
-  get_mex_arguments(CC)
+  if ( WIN32 )
+    get_mex_option(COMPILER CC)
+    get_mex_option(COMPILER CXX)
+  else()
+    get_mex_option(CC)
+ 
+    get_mex_option(CFLAGS)
+    get_mex_option(CDEBUGFLAGS)
+    get_mex_option(COPTIMFLAGS)
+    get_mex_option(CLIBS)
+    get_mex_arguments(CC)
   
-  get_mex_option(CXX)
-  get_mex_option(CXXDEBUGFLAGS)
-  get_mex_option(CXXOPTIMFLAGS)
-  get_mex_option(CXXLIBS)
-  get_mex_arguments(CXX)
+    get_mex_option(CXX)
+    get_mex_option(CXXDEBUGFLAGS)
+    get_mex_option(CXXOPTIMFLAGS)
+    get_mex_option(CXXLIBS)
+    get_mex_arguments(CXX)
 
 #  not supporting fortran yet below, so might as well comment these out
 #  get_mex_option(FC)
@@ -81,14 +93,15 @@ function(mex_setup)
 #  get_mex_option(FLIBS)
 #  get_mex_arguments(FC)
 
-  get_mex_option(LD)
-  get_mex_option(LDFLAGS)
-  get_mex_option(LDDEBUGFLAGS)
-  get_mex_option(LDOPTIMFLAGS)
-  get_mex_option(LDEXTENSION)
-  get_mex_arguments(LD)
+    get_mex_option(LD)
+    get_mex_option(LDFLAGS)
+    get_mex_option(LDDEBUGFLAGS)
+    get_mex_option(LDOPTIMFLAGS)
+    get_mex_option(LDEXTENSION)
+    get_mex_arguments(LD)
 
 #  note: skipping LDCXX (and just always use LD)
+  endif()
 
 endfunction()
 
@@ -193,6 +206,18 @@ function(add_mex)
 
 endfunction()
 
+function(get_compiler_version outvar compiler)
+  if ( MSVC )
+    execute_process(COMMAND ${compiler} ERROR_VARIABLE ver ERROR_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE junk)
+  else()
+    separate_arguments(c_args UNIX_COMMAND ${compiler}) 
+    list(APPEND c_args "-dumpversion")
+    execute_process(COMMAND ${c_args} OUTPUT_VARIABLE ver OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif()
+  set(${outvar} ${ver} PARENT_SCOPE) 
+   
+endfunction()
+
 ## calls compilers with --version option and checks the output 
 # calls compilers with -dumpversion and checks the output
 # (because it appears that ccache messes with the --version output)
@@ -201,13 +226,8 @@ endfunction()
 # this seems to be a more robust and less complex method than trying to call xcrun -find, readlink to follow symlinks, etc.
 function(compare_compilers outvar compiler1 compiler2)
 
-  separate_arguments(c1_args UNIX_COMMAND ${compiler1}) 
-  list(APPEND c1_args "-dumpversion")
-  execute_process(COMMAND ${c1_args} OUTPUT_VARIABLE c1_ver OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-  separate_arguments(c2_args UNIX_COMMAND ${compiler2})
-  list(APPEND c2_args "-dumpversion")
-  execute_process(COMMAND ${c2_args} OUTPUT_VARIABLE c2_ver OUTPUT_STRIP_TRAILING_WHITESPACE)
+  get_compiler_version(c1_ver ${compiler1})
+  get_compiler_version(c2_ver ${compiler2})
 
   if (c1_ver AND c2_ver AND "${c1_ver}" STREQUAL "${c2_ver}")
     set(${outvar} TRUE PARENT_SCOPE)
@@ -222,14 +242,14 @@ endfunction()
 
 mex_setup()
 
-compare_compilers(compilers_match "${MEX_CC}" "${CMAKE_C_COMPILER}")
+compare_compilers(compilers_match "${CMAKE_C_COMPILER}" "${MEX_CC}")
 if (NOT compilers_match)
-   message(FATAL_ERROR "Your cmake C compiler is: ${CMAKE_C_COMPILER} but your mex options use: ${MEX_CC} .  Consider rerunning 'mex -setup' in  Matlab.")
+   message(FATAL_ERROR "Your cmake C compiler is: ${CMAKE_C_COMPILER} but your mex options use: ${MEX_CC} .  You must use the same compilers.  You can either:\n  a) reconfigure the mex compiler by running 'mex -setup' in  MATLAB, or\n  b) Set the default compiler for cmake by setting the CC environment variable in your terminal.\n")
 endif()
 
-compare_compilers(compilers_match ${MEX_CXX} ${CMAKE_CXX_COMPILER})
+compare_compilers(compilers_match "${CMAKE_CXX_COMPILER}" "${MEX_CXX}")
 if (NOT compilers_match)
-   message(FATAL_ERROR "Your cmake CXX compiler is: ${CMAKE_CXX_COMPILER} but your mex options end up pointing to: ${MEX_CXX} .  Consider rerunning 'mex -setup' in Matlab.")
+   message(FATAL_ERROR "Your cmake CXX compiler is: ${CMAKE_CXX_COMPILER} but your mex options end up pointing to: ${MEX_CXX} .  You must use the same compilers.  You can either:\n  a) Configure the mex compiler by running 'mex -setup' in  MATLAB, or \n  b) Set the default compiler for cmake by setting the CC environment variable in your terminal.")
 endif()
 
 # NOTE:  would like to check LD also, but it appears to be difficult with cmake  (there is not explicit linker executable variable, only the make rule), and  even my mex code assumes that LD==LDCXX for simplicity.
