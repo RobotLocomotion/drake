@@ -38,7 +38,7 @@ configure:
 	@cd pod-build && ln -sf ../CTestCustom.cmake  # actually has to live in the build path
 
 	# run CMake to generate and configure the build scripts
-	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
+	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX="$(BUILD_PREFIX)" \
 		   -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
 .PHONY: doc doxygen 
