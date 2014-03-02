@@ -70,6 +70,17 @@ function(mex_setup)
   if ( WIN32 )
     get_mex_option(COMPILER CC)
     get_mex_option(COMPILER CXX)
+    
+    get_mex_option(COMPFLAGS CFLAGS)
+    get_mex_option(COMPFLAGS CXXFLAGS)
+    get_mex_option(OPTIMFLAGS COPTIMFLAGS)
+    get_mex_option(OPTIMFLAGS CXXOPTIMFLAGS)
+    get_mex_option(DEBUGFLAGS CDEBUGFLAGS)
+    get_mex_option(DEBUGFLAGS CXXDEBUGFLAGS)
+
+    get_mex_option(LINKER LD)
+    get_mex_option(LINKFLAGS LDFLAGS)
+    get_mex_option(LINKDEBUGFLAGS LDDEBUGFLAGS)
   else()
     get_mex_option(CC)
  
@@ -172,7 +183,7 @@ function(add_mex)
       add_custom_command(COMMAND ${CMAKE_COMMAND} -E touch ${dummy_c_file}
                          OUTPUT ${dummy_c_file})
       add_library(exelast STATIC ${dummy_c_file})
-      target_link_libraries(exelast "${MEX_CLIBS} -ldl")  # note: the -ldl here might be overkill?  so far only needed it for drake_debug_mex.  (but it has to come later in the compiler arguments, too, in order to work.
+      target_link_libraries(exelast ${MEX_CLIBS} -ldl)  # note: the -ldl here might be overkill?  so far only needed it for drake_debug_mex.  (but it has to come later in the compiler arguments, too, in order to work.
     endif()
 
     target_link_libraries(${target} exelast)
