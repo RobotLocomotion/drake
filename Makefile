@@ -75,3 +75,9 @@ install_prereqs_ubuntu:
 		$(MAKE) -C $$subdir $@; \
 	done
 
+install_prereqs_cygwin:
+	cygwin-setup -q -P pkg-config
+	@for subdir in $(SUBDIRS); do \
+		$(MAKE) -C $$subdir $@; \
+	done
+
