@@ -82,3 +82,8 @@ install_prereqs_cygwin:
 		$(MAKE) -C $$subdir $@; \
 	done
 
+release_filelist:
+	find * -maxdepth 0 -type f 
+	@for subdir in $(SUBDIRS); do \
+		$(MAKE) -C $$subdir $@ | sed -e "s/^/$$subdir\//" || true; \
+	done
