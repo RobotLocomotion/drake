@@ -243,6 +243,9 @@ for i = 1:nT
   end
 end
 if(mode == 1)
+  success_idx = info<10;
+  q(:,success_idx) = reshape(max([reshape(q(:,success_idx),[],1) reshape(joint_min(:,success_idx),[],1)],[],2),nq,[]);
+  q(:,success_idx) = reshape(min([reshape(q(:,success_idx),[],1) reshape(joint_max(:,success_idx),[],1)],[],2),nq,[]);
   varargout{1} = q;
   varargout{2} = info;
   if(nargout == 3)
@@ -630,6 +633,11 @@ if(mode == 2)
     elseif(info == 32)
       info = 6;
     end
+  end
+  % Truncate the posture to be within the joint limit
+  if(info <10)
+    q = reshape(max([q(:) joint_min(:)],[],2),nq,nT);
+    q = reshape(min([q(:) joint_max(:)],[],2),nq,nT);
   end
   varargout{1} = q;
   varargout{2} = qdot;
