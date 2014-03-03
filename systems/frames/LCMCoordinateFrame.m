@@ -1,122 +1,110 @@
-classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & Singleton
+classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher
   
   methods
-    function obj = LCMCoordinateFrame(name,lcmtype,prefix)
+    function obj=LCMCoordinateFrame(name,lcmcoder_or_lcmtype_or_dim,prefix)
       typecheck(name,'char');
       typecheck(prefix,'char');
-      sizecheck(prefix,[1 1]);
-      if (ischar(lcmtype))
-        lcmtype = eval(lcmtype);
-      end
-      if (~any(strcmp('getClass',methods(lcmtype))))
-        error('lcmtype should be a valid java lcm object, or the string describing it');
-      end
-      lcmtype=lcmtype.getClass();
+      sizecheck(prefix,1);
       
-      has_timestamp=false;
-      names={};
-      f = lcmtype.getFields;
-      for i=1:length(f)
-        fname = char(f(i).getName());
-        if strncmp(fname,'LCM_FINGERPRINT',15), continue; end
-        if strcmp(fname,'timestamp'), 
-          if ~strcmp(f(i).getGenericType.getName,'long')
-            error('by convention, the timestamp field should be type int64_t');
-          end
-          has_timestamp=true; 
-          continue; 
-        end
-        
-        names{end+1}=fname;
-      end
-      if ~has_timestamp
-        error('by convention, all lcm types should have a timestamp field of type int64_t');
+      if isnumeric(lcmcoder_or_lcmtype_or_dim)
+        % then the lcmcoder will be set at some other time
+        lcmcoder = [];
+        d = lcmcoder_or_lcmtype_or_dim;
+      elseif isa(lcmcoder_or_lcmtype_or_dim,'LCMCoder')
+        lcmcoder = lcmcoder_or_lcmtype_or_dim;
+        d = lcmcoder.dim();
+      else
+        lcmcoder = LCMCoderFromType(lcmcoder_or_lcmtype_or_dim);
+        d = lcmcoder.dim();
       end
       
-      obj = obj@CoordinateFrame(name,length(names),prefix);
-%      obj = obj@Singleton(char(lcmtype.getName));  
-%      commented out because it doesn't make sense to
-%      check anything other than the classname here, since I can't return a
-%      different class type from this constructor.
-      obj.lcmtype = lcmtype;
+      obj = obj@CoordinateFrame(name,d,prefix);
       obj.channel = name;
+      obj.lc = lcm.lcm.LCM.getSingleton();
       
-      constructors = lcmtype.getConstructors();
-      for i=1:length(constructors)
-        f = constructors(i).getParameterTypes;
-        if ~isempty(f) && strncmp('[B',char(f(1).getName),2)
-          obj.lcmtype_constructor = constructors(i);
+      % add a little extra logic to handle singleton frames (a 
+      % relatively common occurence).  specifically, want to avoid
+      % multiple subscriptions.
+      if ~isequal(obj.lcmcoder,lcmcoder)
+        if ~isempty(obj.lcmcoder) % then it must be a singleton
+          warning('Drake:LCMCoordinateFrame:OverwritingCoder','You are overwriting an existing lcm coder (on what must be a singleton coordinate frame).  Are you sure you''re using singletons correctly?');
         end
+        setLCMCoder(obj,lcmcoder);
       end
-      if isempty(obj.lcmtype_constructor)
-        error('didn''t find a constructor for this lcmtype');
-      end
-      setCoordinateNames(obj,names);
+    end
+  
+    function setLCMCoder(obj,lcmcoder)
+      typecheck(lcmcoder,'LCMCoder');
+      obj.lcmcoder = lcmcoder;
+      msg = obj.lcmcoder.encode(0,zeros(obj.dim,1));
+      obj.monitor = drake.util.MessageMonitor(msg,obj.lcmcoder.timestampName());
+      setCoordinateNames(obj,lcmcoder.coordinateNames());
     end
     
-    function obj = subscribe(obj,channel)
-      lc = lcm.lcm.LCM.getSingleton(); %('udpm://239.255.76.67:7667?ttl=1');
-      obj.monitor = drake.util.MessageMonitor(obj.lcmtype,'timestamp');
-      lc.subscribe(channel,obj.monitor);
+    function subscribe(obj,channel)
+      assert(~isempty(obj.lcmcoder),'You must set the lcm coder first');
+      chash = java.lang.String(channel).hashCode();
+      if ~any(chash==obj.subscriptions)  % don't subscribe multiple times to the same channel
+        obj.lc.subscribe(channel,obj.monitor);
+        obj.subscriptions(end+1)=chash;
+      end
     end
     
-    function [x,t] = getNextMessage(obj,timeout)
-      if isempty(obj.monitor)
-        error('Drake:LCMCoordinateFrame:NoMonitor','You must subscribe to a channel first'); 
-      end
-      data = getNextMessage(obj.monitor,timeout);
+    function [x,t] = getNextMessage(obj,timeout)   % x=t=[] if timeout
+      data = obj.monitor.getNextMessage(timeout);
       if isempty(data)
         x=[];
         t=[];
       else
-        msg = obj.lcmtype_constructor.newInstance(data);
-        x=zeros(obj.dim,1);
-        for i=1:obj.dim
-          eval(['x(',num2str(i),') = msg.',CoordinateFrame.stripSpecialChars(obj.coordinates{i}),';']);
-        end
-        t = msg.timestamp/1000;
-        obj.last_x = x;
-        obj.last_t = t;
+        [x,t] = obj.lcmcoder.decode(data);
+      end
+    end
+    
+    function [x,t] = getMessage(obj)
+      data = obj.monitor.getMessage();
+      if isempty(data)
+        x=[];
+        t=[];
+      else
+        [x,t] = obj.lcmcoder.decode(data);
       end
     end
     
     function [x,t] = getCurrentValue(obj)
-      [x,t]=getNextMessage(obj,0);
-      if isempty(t) 
-        if (obj.last_x)
-          x = obj.last_x;
-          t = obj.last_t;
-        else
-          x = zeros(obj.dim,1);
-          t = 0;
-        end
+      data = obj.monitor.getMessage();
+      if isempty(data)
+        x=[];
+        t=[];
+      else
+        [x,t] = obj.lcmcoder.decode(data);
       end
     end
     
-    function publish(obj,t,x,channel)
-      sizecheck(t,1);
-      sizecheck(x,[obj.dim,1]);
-      msg = obj.lcmtype.newInstance();
-      msg.timestamp = t*1000;
-      for i=1:obj.dim
-        eval(['msg.',CoordinateFrame.stripSpecialChars(obj.coordinates{i}),' = x(',num2str(i),');']);
-      end
-      lc = lcm.lcm.LCM.getSingleton();
-      lc.publish(channel,msg);
+    function t = getLastTimestamp(obj)
+      t = obj.monitor.getLastTimestamp();
     end
     
+    function publish(obj,t,x,channel,varargin)
+      msg = obj.lcmcoder.encode(t,x,varargin{:});
+      obj.lc.publish(channel,msg);
+    end
+
     function setDefaultChannel(obj,channel)
       typecheck(channel,'char');
       obj.channel = channel;
     end
-    
+
     function channel = defaultChannel(obj)
       channel = obj.channel;
     end
     
+    function markAsRead(obj)
+      obj.monitor.markAsRead();
+    end
+
     function setupLCMInputs(obj,mdl,subsys,subsys_portnum,options)
       if nargin<5, options=struct(); end
-      if ~isfield(options,'input_sample_time') options.input_sample_time = [.005,0]; end
+      if ~isfield(options,'input_sample_time') options.input_sample_time = .005; end
       typecheck(mdl,'char');
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
@@ -129,7 +117,7 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
     
     function setupLCMOutputs(obj,mdl,subsys,subsys_portnum,options)
       if nargin<5, options=struct(); end
-      if ~isfield(options,'output_sample_time') options.output_sample_time = [.005,0]; end
+      if ~isfield(options,'output_sample_time') options.output_sample_time = .005; end
       typecheck(mdl,'char');
       typecheck(subsys,'char');
       uid = datestr(now,'MMSSFFF');
@@ -142,12 +130,10 @@ classdef LCMCoordinateFrame < CoordinateFrame & LCMSubscriber & LCMPublisher & S
   end
   
   properties
-    lcmtype
+    lc;
+    lcmcoder=[];
     monitor=[];
-    last_x;
-    last_t;
-    lcmtype_constructor;
     channel;
+    subscriptions;
   end
-  
 end

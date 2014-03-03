@@ -1,0 +1,47 @@
+\chapter{External Interfaces}
+
+This chapter explains the most common ways that we interface Drake
+with real robots - using simple network protocols.  Typically one or
+more instances of (desktop) MATLAB are up running methods/systems in Drake as
+nodes in a planning/estimation/control network.
+
+\section{Lightweight Communications and Marshalling (LCM)}
+
+LCM is a simple, elegant, and efficient network protocol developed at
+MIT during the DARPA Urban Challenge
+(\url{https://code.google.com/p/lcm/}) \cite{Huang10}.  For Drake, we
+primarily interact with LCM via the MATLAB/Java interface and
+lcm-java.  For some high-performance applications, we do replace it
+with custom C mex implementations.
+
+\subsection{LCM Coders}
+
+LCM passes messages defined in an lcmtype file which can describe an
+almost arbitrary data structure.  Drake traffics primarily in signals,
+which are (timestamped) vectors of doubles.  To convert between the two, we define
+an \mcode{LCMCoder} class which defines how to \mcode{encode} a double
+as the rich data structure and \mcode{decode} the data structure back
+into a double.
+
+You can implement your \mcode{LCMCoder} directly in matlab or in java.
+The \mcode{LCMCoderFromType} class can also construct one
+automatically using java reflection -- it simply concatenates the
+elements of the structure into a double vector in the order that they
+appear in the lcmtype file.  
+ 
+\subsection{LCM Coordinate Frames}
+
+Any coordinate frame can be associated with an \mcode{LCMCoder} by deriving
+from the \mcode{LCMCoordinateFrame} class. 
+
+In order to use any \mcode{DynamicalSystem} as a node in the LCM
+network, simply call \mcode{runLCM(sys,...)} instead of
+\mcode{simulate(sys,...)} -- this will automatically attach LCM input blocks
+and LCM output blocks on any input/output frames of the system that
+are of type \mcode{LCMCoordinateFrame}, and then simulate the system.
+The \mcode{runLCM} method takes a number of optional arguments
+allowing you to refine this interaction.
+
+\section{Robot Operating System (ROS)}
+
+Coming soon...
