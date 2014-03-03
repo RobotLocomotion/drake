@@ -1,26 +1,10 @@
 classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
   % A abstract class, that its eval function takes multiple time points as
   % the input, instead of being evluated at a single time.
-  properties(SetAccess = protected)
-    tspan % a 1x2 vector
-    robot
-    mex_ptr
-  end
     
   methods
     function obj = MultipleTimeKinematicConstraint(robot,tspan)
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeKinematicConstraintCategory);
-      if(nargin<2)
-        tspan = [-inf,inf];
-      end
-      if(isempty(tspan))
-        tspan = [-inf,inf];
-      end
-      if(tspan(1)>tspan(end))
-        error('tspan(1) should be no larger than tspan(end)')
-      end
-      obj.tspan = [tspan(1) tspan(end)];
-      obj.robot = robot;
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.MultipleTimeKinematicConstraintCategory,robot,tspan);
     end
     
     function flag = isTimeValid(obj,t)

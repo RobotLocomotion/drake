@@ -1,15 +1,13 @@
 classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
   % A linear constraint on the robot posture for a single time 
   % lb<=sparse(iAfun,jAvar,A,max(jAvar),robot.nq)*q<=ub
-  % @param robot  
   % @param iAfun      -- The row index of the sparse linear matrix
   % @param jAvar      -- The column index of the sparse linear matrix
   % @param A          -- The non-zero value of the sparse linear matrix
   % @param lb         -- The lower bound of the constraint
   % @param ub         -- The upper bound of the constraint
-  % @param tspan      -- The time span. optional argument, default is [-inf inf]
+  % @param num_lcon   -- An integer. The number of linear constraints
   properties(SetAccess = protected)
-    robot
     iAfun
     jAvar
     A
@@ -17,8 +15,6 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
     ub
     num_constraint
     A_mat
-    tspan
-    mex_ptr
   end
   
   methods
@@ -27,8 +23,7 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
         tspan = [-inf,inf];
       end
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.SingleTimeLinearPostureConstraintType,robot.getMexModelPtr,iAfun,jAvar,A,lb,ub,tspan);
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeLinearPostureConstraintCategory);
-      obj.robot = robot;
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeLinearPostureConstraintCategory,robot,tspan);
       nq = obj.robot.getNumDOF;
       if(~isnumeric(lb))
         error('Drake:SingleTimeLinearPostureConstraint:lb must be numeric');
@@ -79,14 +74,6 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
       obj.jAvar = jAvar;
       obj.A = A;
       obj.A_mat = sparse(iAfun,jAvar,A,obj.num_constraint,nq);
-      if(~isnumeric(tspan))
-        error('Drake:SingleTimeLinearPostureConstraint: tspan should be numeric');
-      end
-      sizecheck(tspan,[1,2]);
-      if(tspan(2)<tspan(1))
-        error('Drake;SingleTimeLinearPostureConstraint: tspan(2) should be no less than tspan(1)');
-      end
-      obj.tspan = tspan;
       obj.type = RigidBodyConstraint.SingleTimeLinearPostureConstraintType;
       obj.mex_ptr = ptr;
     end

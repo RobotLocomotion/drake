@@ -1,10 +1,5 @@
 classdef QuasiStaticConstraint<RigidBodyConstraint
 % constrain the Center of Mass to lie inside the shrunk support polygon
-% @param robot             -- The robot
-
-% @param tspan             -- The time span of the constraint. An optional
-%                             argument. If it is not passed in the constructor,
-%                             then tspan defaults to [-inf inf];
 % @param active            -- A flag, true if the quasiStaticFlag would be active
 % @param num_bodies        -- An int, the total number of bodies that have active
 %                             ground contact points
@@ -17,21 +12,20 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
 %                             ground contact points in the body frame
 % @param robotnum          -- The robotnum to compute CoM. Default is 1
   properties(SetAccess = protected)
-    robot;
     robotnum;
-    tspan;
-    nq;
     shrinkFactor
     active;
-    num_bodies;
     num_pts 
     bodies;
-    num_body_pts; 
     body_pts;
-    plane_row_idx;
-    mex_ptr;
   end
   
+  properties(SetAccess = protected, GetAccess = protected)
+    nq;
+    num_bodies;
+    num_body_pts;
+    plane_row_idx;
+  end
   methods
     function obj = QuasiStaticConstraint(robot,tspan,robotnum)
       if(nargin<3)
@@ -40,18 +34,12 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       if(nargin <2)
         tspan = [-inf,inf];
       end
-      tspan = [tspan(1) tspan(end)];
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.QuasiStaticConstraintType,robot.getMexModelPtr,tspan,robotnum);
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintCategory);
-      obj.robot = robot;
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintCategory,robot,tspan);
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))
         error('Drake:QuasiStaticConstraint: robotnum is not accepted');
       end
       obj.robotnum = robotnum;
-      if(tspan(1)>tspan(end))
-        error('Drake:QuasiStaticConstraint:tspan(1) must be no larger than tspan(end)');
-      end
-      obj.tspan = tspan;
       obj.nq = robot.getNumDOF;
       obj.shrinkFactor = 0.9;
       obj.active = false;
@@ -72,7 +60,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
         flag = t>=obj.tspan(1) & t<=obj.tspan(end);
       end
     end
-
+    
     function obj = setActive(obj,flag)
       obj.active = logical(flag);
       obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'active',obj.active);

@@ -1,27 +1,14 @@
 classdef SingleTimeKinematicConstraint < RigidBodyConstraint
   % An abstract class. Its eval function take a single time as input, the
   % constraint is enforced at that time only
-  properties(SetAccess = protected)
-    tspan % a 1x2 vector
+  % @param num_constraint    -- An int scalar. The number of nonlinear constraints
+  properties(SetAccess = protected,GetAccess = protected)
     num_constraint
-    robot
-    mex_ptr
   end
   
   methods
     function obj = SingleTimeKinematicConstraint(robot,tspan)
-      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeKinematicConstraintCategory);
-      if(nargin<2)
-        tspan = [-inf,inf];
-      end
-      if(isempty(tspan))
-        tspan = [-inf,inf];
-      end
-      if(tspan(1)>tspan(end))
-        error('tspan(1) should be no larger than tspan(end)')
-      end
-      obj.tspan = [tspan(1) tspan(end)];
-      obj.robot = robot;
+      obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeKinematicConstraintCategory,robot,tspan);
     end
     
     function tspan = getTspan(obj)
