@@ -13,8 +13,8 @@ classdef JLCMCoder < LCMCoder
       str = obj.jcoder.timestampName();
     end
     
-    function str = coordinateNames(obj);
-      str = obj.jcoder.coordinateNames();
+    function str = coordinateNames(obj)
+      str = cell(obj.jcoder.coordinateNames());
     end
     
     function [x,t] = decode(obj,data)
