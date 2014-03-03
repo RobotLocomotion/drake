@@ -1,3 +1,6 @@
 [submodule "doc/wiki"]
 	path = doc/wiki
 	url = https://github.com/RobotLocomotion/drake.wiki.git
+[submodule "cmake"]
+	path = cmake
+	url = https://github.com/RobotLocomotion/cmake.git
