@@ -1,6 +1,6 @@
 classdef NonlinearConstraint < Constraint
   % Nonlinear constraint. Support computing the non-zero entries in the first order
-  % gradient. The default sparsity pattern is the the gradient matrix is dense. Use
+  % gradient. The default sparsity pattern is the the gradient matrix being dense. Use
   % 'setSparsityStructure' to set the sparsity pattern.
   % @param num_cnstr      -- An int scalar. The number of constraints
   % @param xdim           -- An int scalar. The decision variable is an xdim x 1 double
@@ -19,6 +19,7 @@ classdef NonlinearConstraint < Constraint
     jCvar
     nnz
   end
+  
   methods
     function obj = NonlinearConstraint(c_lb,c_ub,x_lb,x_ub,eval_handle)
       % @param c_lb    -- The lower bound of the constraint
@@ -53,7 +54,7 @@ classdef NonlinearConstraint < Constraint
         error('Drake:NonlinearConstraint:BadInputs','NonlinearConstraint x_lb and x_ub should have the same number of elements');
       end
       if(any(obj.x_lb>obj.x_ub))
-        error('Drake:NonlinearCONSTRAINT:BadInputs','NonlinearConstraint x_lb shoulde be no larger than x_ub');
+        error('Drake:NonlinearConstraint:BadInputs','NonlinearConstraint x_lb shoulde be no larger than x_ub');
       end
       obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
       obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
