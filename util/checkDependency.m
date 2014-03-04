@@ -57,6 +57,7 @@ if ~ok
       end
       
       if (conf.lcm_enabled)
+        javaaddpath(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
         [retval,info] = system('util/check_multicast_is_loopback.sh');
         if (retval)
           info = strrep(info,'ERROR: ','');
