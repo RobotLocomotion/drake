@@ -66,7 +66,6 @@ addpath(fullfile(conf.root,'thirdParty','cprintf'));
 addpath(fullfile(conf.root,'thirdParty','GetFullPath'));
 
 javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
-javaaddpath(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
 
 % check for all dependencies
 
@@ -103,13 +102,7 @@ save([conf.root,'/util/drake_config.mat'],'conf');
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
 
 checkDependency('spotless'); % require spotless 
-
-if (~checkDependency('lcm'))
-  disp(' ');
-  disp(' LCMGL not found.  LCMGL support will be disabled.');
-  disp(' To re-enable, add bot2-lcmgl.jar to your matlab classpath using javaaddpath.');
-  disp(' ');
-end
+tf = checkDependency('lcm'); % optional dependency on lcm, but load it now 
 
 end
 
