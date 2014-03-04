@@ -113,17 +113,21 @@ add_subdirectory(thirdParty/GetFullPath)
 include(cmake/matlab_pods.cmake)
 pods_configure_matlab_paths()
 
+get_relative_path("${CMAKE_INSTALL_PREFIX}/matlab" "${CMAKE_CURRENT_SOURCE_DIR}" relpath)
+
 message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab") 
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
 	   "function addpath_drake()\n"
-	   "  wd = cd('${CMAKE_CURRENT_SOURCE_DIR}');\n"
+	   "  mfiledir = fileparts(which(mfilename));\n"
+	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
 	   "  addpath_drake();\n"
 	   "  cd(wd);\n"
     )
 
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
 	   "function rmpath_drake()\n"
-	   "  wd = cd('${CMAKE_CURRENT_SOURCE_DIR}');\n"
+	   "  mfiledir = fileparts(which(mfilename));\n"
+	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
 	   "  rmpath_drake();\n"
 	   "  cd(wd);\n"
     )
