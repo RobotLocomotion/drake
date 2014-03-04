@@ -291,7 +291,7 @@ function val = getCMakeParam(param,conf)
 
 [status,val] = system(['cmake -L -N ', ...
       fullfile(conf.root,'pod-build'),' | grep ', param,' | cut -d "=" -f2']);
-if (status==0)
+if (status)
   val=[];
 else
   val = strtrim(val);
