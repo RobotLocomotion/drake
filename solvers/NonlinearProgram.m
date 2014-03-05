@@ -1,19 +1,20 @@
 classdef NonlinearProgram
   % minimize_x objective(x)
   % subject to
-  %            nonlinear_equality_constraints(x) = 0
-  %            nonlinear_inequality_constraints(x) <= 0
+  %            nonlinear_equality_constraints(x) = ceq
+  %            cin_lb<=nonlinear_inequality_constraints(x) <= cin_ub
   %            Aeq*x = beq
-  %            Ain*x <= bin
-  %            lb <= x <= ub
+  %            bin_lb<= Ain*x <= bin_ub
+  %            x_lb <= x <= x_ub
   
   properties (SetAccess=protected)
     num_decision_vars
     num_nonlinear_inequality_constraints
     num_nonlinear_equality_constraints
-    Ain,bin
+    Ain,bin_ub,bin_lb
     Aeq,beq
-    lb,ub
+    ceq,cin_lb,cin_ub
+    x_lb,x_ub
     iGfun,jGvar  % sparsity pattern in objective and nonlinear constraints
     solver
     default_options
@@ -24,6 +25,13 @@ classdef NonlinearProgram
     objcon_logic = false;
   end
 
+  properties(Access = protected)
+    nlcon_ineq_idx % row index of nonlinear inequality constraint
+    nlcon_eq_idx % row index of nonlinear equality constraint
+    lcon_ineq_idx % row index of linear inequality constraint
+    lcon_eq_idx % row index of linear equality constraint
+  end
+  
   methods % A subset of these MUST be overloaded
     
     % PLEASE READ THIS
@@ -68,13 +76,13 @@ classdef NonlinearProgram
       obj.objcon_logic = true;
       if nargout>2
         [fgh,dfgh] = objectiveAndNonlinearConstraints(obj,x);
-        dg = dfgh(1 + (1:obj.num_nonlinear_inequality_constraints),:);
-        dh = dfgh(1+obj.num_nonlinear_inequality_constraints + (1:obj.num_nonlinear_equality_constraints),:);
+        dg = dfgh(obj.nlcon_ineq_idx+1,:);
+        dh = dfgh(obj.nlcon_eq_idx+1,:);
       else
         fgh = objectiveAndNonlinearConstraints(obj,x);
       end
-      g = fgh(1 + (1:obj.num_nonlinear_inequality_constraints));
-      h = fgh(1+obj.num_nonlinear_inequality_constraints + (1:obj.num_nonlinear_equality_constraints));
+      g = fgh(obj.nlcon_ineq_idx+1);
+      h = fgh(obj.nlcon_eq_idx+1);
     end
     
     function [fgh,dfgh] = objectiveAndNonlinearConstraints(obj,x)
@@ -111,12 +119,19 @@ classdef NonlinearProgram
   end
   
   methods
-    function obj = NonlinearProgram(num_vars,num_nin,num_neq)
+    function obj = NonlinearProgram(num_vars,nlcon_ineq_idx,nlcon_eq_idx)
+      % @param num_vars          -- Number of decision variables
+      % @param nlcon_ineq_idx    -- A column int vector. The row index of nonlinear
+      % inequality constraint among all the constraints
+      % @param nlcon_eq_idx      -- A column int vector. The row index of nonlinear
+      % equality constraint among all the constraints
       obj.num_decision_vars = num_vars;
-      obj.num_nonlinear_inequality_constraints = num_nin;
-      obj.num_nonlinear_equality_constraints = num_neq;
-      obj.lb = -inf(num_vars,1);
-      obj.ub = inf(num_vars,1);
+      obj.nlcon_ineq_idx = nlcon_ineq_idx;
+      obj.num_nonlinear_inequality_constraints = length(obj.nlcon_ineq_idx);
+      obj.nlcon_eq_idx = nlcon_eq_idx;
+      obj.num_nonlinear_equality_constraints = length(obj.nlcon_eq_idx);
+      obj.x_lb = -inf(num_vars,1);
+      obj.x_ub = inf(num_vars,1);
       
       % todo : check dependencies and then go through the list
       obj.solver = 'snopt';

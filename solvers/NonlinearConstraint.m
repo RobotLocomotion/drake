@@ -11,13 +11,16 @@ classdef NonlinearConstraint < Constraint
   % the gradient matrix
   % @param nnz            -- An int scalar. The maximal number of non-zero entries in the
   % gradient matrix
-  
+  % @param ceq_idx        -- The row index of the equality constraint
+  % @param cin_idx        -- The row index of the inequality constraint
   properties(SetAccess = protected)
     num_cnstr
     xdim
     iCfun
     jCvar
     nnz
+    ceq_idx
+    cin_idx
   end
   
   methods
@@ -44,6 +47,9 @@ classdef NonlinearConstraint < Constraint
       if(any(obj.c_lb>obj.c_ub))
         error('Drake:NonlinearConstraint:BadInputs','NonlinearConstraint c_lb should be no larger than c_ub');
       end
+      c_idx = (1:obj.num_cnstr)';
+      obj.ceq_idx = c_idx(obj.relation == Constraint.equal);
+      obj.cin_idx = c_idx(obj.relation == Constraint.ineq);
       if(~isnumeric(obj.x_lb) || ~isnumeric(obj.x_ub))
         error('Drake:NonlinearConstraint:BadInputs','NonlinearConstraint x_lb and x_ub should be numeric');
       end
@@ -67,11 +73,11 @@ classdef NonlinearConstraint < Constraint
       % gradient matrix
       % @param jCvar          -- An int vector. The column index of the non-zero entries of
       % the gradient matrix
-      % @param nnz            -- An int scalar. The maximal number of non-zero entries in the
+      % @param nnz            -- An int scalar. The number of non-zero entries in the
       % gradient matrix
       iCfun = iCfun(:);
       jCvar = jCvar(:);
-      if(numel(iCfun) ~= numel(jCvar) || numel(iCfun) > nnz)
+      if(numel(iCfun) ~= numel(jCvar) || numel(iCfun) ~= nnz)
         error('Drake:NonlinearConstraint:WrongSparseStructure','NonlinearConstraint iCfun and jCvar should have the same number of elements');
       end
       if(any(iCfun<1) || any(iCfun>obj.num_cnstr) || any(jCvar<1) || any(jCvar>obj.xdim))
