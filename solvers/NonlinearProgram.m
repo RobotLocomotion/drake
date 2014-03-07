@@ -139,20 +139,22 @@ classdef NonlinearProgram
       obj.default_options.snopt = struct();
     end
     
-    function obj = addLinearInequalityConstraints(obj,Ain,bin)
+    function obj = addLinearInequalityConstraints(obj,Ain,bin_lb,bin_ub)
       [m,n] = size(Ain);
       assert(n == obj.num_decision_vars);
-      sizecheck(bin,[m,1]);
+      sizecheck(bin_lb,[m,1]);
+      sizecheck(bin_ub,[m,1]);
       obj.Ain = vertcat(obj.Ain,Ain);
-      obj.bin = vertcat(obj.bin,bin);
+      obj.bin_lb = vertcat(obj.bin_lb,bin_lb);
+      obj.bin_ub = vertcat(obj.bin_ub,bin_ub);
     end
     
     function obj = addLinearEqualityConstraints(obj,Aeq,beq)
       [m,n] = size(Aeq);
       assert(n == obj.num_decision_vars);
       sizecheck(beq,[m,1]);
-      obj.Ain = vertcat(obj.Ain,Aeq);
-      obj.bin = vertcat(obj.bin,beq);
+      obj.Aeq = vertcat(obj.Aeq,Aeq);
+      obj.beq = vertcat(obj.beq,beq);
     end
 
     function obj = setBounds(obj,lb,ub)
