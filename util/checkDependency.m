@@ -106,7 +106,7 @@ if ~ok
       
     case 'vrml'
       if(exist('vrinstall','file'))
-        conf.vrml_enabled = logical(vrinstall('-check'));% && usejava('awt');  % usejava('awt') return 0 if running with no display
+        conf.vrml_enabled = logical(vrinstall('-check','-viewer'));% && usejava('awt');  % usejava('awt') return 0 if running with no display
         if ismac
           [~,osx] = system('sw_vers -productVersion');
           if ~verStringLessThan(osx,'10.9') && verLessThan('matlab','8.1')
@@ -121,7 +121,7 @@ if ~ok
       
       if (~conf.vrml_enabled)
         disp(' ');
-        disp(' Simulink 3D Animation Toolbox not found.');
+        disp(' Simulink 3D Animation Toolbox not found.  Have you run ''vrinstall -install viewer''?');
         disp(' ');
       end
       
