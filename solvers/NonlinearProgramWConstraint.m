@@ -30,7 +30,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
     end
     
     function obj = addNonlinearConstraint(obj,cnstr,xind)
-      % add a nonlinear constraint to the object, change the constraint evalation of the
+      % add a NonlinearConstraint to the object, change the constraint evalation of the
       % program. 
       % @param cnstr     -- A NonlinearConstraint object
       % @param xind      -- Optional argument. The x(xind) is the decision variables used
@@ -77,5 +77,30 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       dh = dc(obj.nlcon_eq_idx,:);
     end
     
+    function obj = addLinearConstraint(obj,cnstr,xind)
+      % add a LinearConstraint to the program
+      % @param cnstr     -- A LinearConstraint object
+      % @param xind      -- Optional argument. x(xind) is the decision variables used in
+      % evaluating the constraint. Default value is (1:obj.num_vars)
+      if(nargin<3)
+        xind = (1:obj.num_decision_vars);
+      end
+      xind = xind(:);
+      if(~isa(cnstr,'LinearConstraint'))
+        error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addLinearConstraint expects a LinearConstraint object');
+      end
+      
+      obj.x_lb(xind) = max([obj.x_lb(xind) cnstr.x_lb],[],2);
+      obj.x_ub(xind) = min([obj.x_ub(xind) cnstr.x_ub],[],2);
+      
+      cnstr_A = sparse(cnstr.iAfun,xind(cnstr.jAvar),cnstr.A_val,cnstr.num_cnstr,obj.num_decision_vars,cnstr.nnz);
+      cnstr_beq = (cnstr.c_lb(cnstr.ceq_idx)+cnstr.c_ub(cnstr.ceq_idx))/2;
+      cnstr_Aeq = cnstr_A(cnstr.ceq_idx,:);
+      cnstr_Ain = cnstr_A(cnstr.cin_idx,:);
+      cnstr_bin_lb = cnstr.c_lb(cnstr.cin_idx);
+      cnstr_bin_ub = cnstr.c_ub(cnstr.cin_idx);
+      obj = obj.addLinearInequalityConstraints(cnstr_Ain,cnstr_bin_lb,cnstr_bin_ub);
+      obj = obj.addLinearEqualityConstraints(cnstr_Aeq,cnstr_beq);
+    end
   end
 end

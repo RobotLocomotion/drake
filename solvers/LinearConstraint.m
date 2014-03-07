@@ -13,6 +13,8 @@ classdef LinearConstraint < Constraint
   % gradient matrix
   % @param A              -- A matrix of size num_cnstr x xdim. The linear constraint
   % matrix
+  % @param ceq_idx        -- The row index of the equality constraint
+  % @param cin_idx        -- The row index of the inequality constraint
   properties(SetAccess = protected)
     num_cnstr
     xdim
@@ -21,7 +23,10 @@ classdef LinearConstraint < Constraint
     jAvar
     A_val
     nnz
+    ceq_idx
+    cin_idx
   end
+  
   
   methods
     function obj = LinearConstraint(c_lb,c_ub,x_lb,x_ub,A)
@@ -43,6 +48,9 @@ classdef LinearConstraint < Constraint
       if(any(obj.c_lb>obj.c_ub))
         error('Drake:LinearConstraint:BadInputs','LinearConstraint c_lb should be no larger than c_ub');
       end
+      c_idx = (1:obj.num_cnstr)';
+      obj.ceq_idx = c_idx(obj.relation == Constraint.equal);
+      obj.cin_idx = c_idx(obj.relation == Constraint.ineq);
       if(~isnumeric(obj.x_lb) || ~isnumeric(obj.x_ub))
         error('Drake:LinearConstraint:BadInputs','LinearConstraint x_lb and x_ub should be numeric');
       end
