@@ -28,8 +28,6 @@ classdef NonlinearProgram
   properties(Access = protected)
     nlcon_ineq_idx % row index of nonlinear inequality constraint
     nlcon_eq_idx % row index of nonlinear equality constraint
-    lcon_ineq_idx % row index of linear inequality constraint
-    lcon_eq_idx % row index of linear equality constraint
   end
   
   methods % A subset of these MUST be overloaded
@@ -157,11 +155,12 @@ classdef NonlinearProgram
       obj.beq = vertcat(obj.beq,beq);
     end
 
-    function obj = setBounds(obj,lb,ub)
-      sizecheck(lb,[obj.num_decision_vars,1]);
-      sizecheck(ub,[obj.num_decision_vars,1]);
-      obj.lb = lb;
-      obj.ub = ub;
+    function obj = setVarBounds(obj,x_lb,x_ub)
+      % set the lower and upper bounds of the decision variables
+      sizecheck(x_lb,[obj.num_decision_vars,1]);
+      sizecheck(x_ub,[obj.num_decision_vars,1]);
+      obj.x_lb = x_lb;
+      obj.x_ub = x_ub;
     end
     
     function obj = setObjectiveGradientSparsity(obj,jGvar)
@@ -234,9 +233,10 @@ classdef NonlinearProgram
       SNOPT_USERFUN = @snopt_userfun;
       
       A = [obj.Ain;obj.Aeq];
-      b = [obj.bin;obj.beq];
-      if isempty(obj.lb) obj.lb = -inf(obj.num_decision_vars,1); end
-      if isempty(obj.ub) obj.ub = inf(obj.num_decision_vars,1); end
+      b_lb = [obj.bin_lb;obj.beq];
+      b_ub = [obj.bin_ub;obj.beq];
+      if isempty(obj.x_lb) obj.x_lb = -inf(obj.num_decision_vars,1); end
+      if isempty(obj.x_ub) obj.x_ub = inf(obj.num_decision_vars,1); end
 
       function setSNOPTParam(paramstring,default)
         str=paramstring(~isspace(paramstring));
@@ -259,7 +259,7 @@ classdef NonlinearProgram
 
       function [f,G] = snopt_userfun(x)
         [f,G] = geval(@obj.objectiveAndNonlinearConstraints,x);
-        f = [f;0*b];
+        f = [f;0*b_lb];
         
         if ~isempty(obj.iGfun) && ~isempty(obj.jGvar)
           G = G(sub2ind(size(G),obj.iGfun,obj.jGvar));
@@ -270,8 +270,8 @@ classdef NonlinearProgram
 
       if isempty(A)
         [x,objval,exitflag] = snopt(x0, ...
-          obj.lb,obj.ub, ...
-          [-inf;-inf(obj.num_nonlinear_inequality_constraints,1);zeros(obj.num_nonlinear_equality_constraints,1);-inf(size(obj.bin));obj.beq],[inf;zeros(obj.num_nonlinear_inequality_constraints+obj.num_nonlinear_equality_constraints,1);obj.bin;obj.beq],...
+          obj.x_lb,obj.x_ub, ...
+          [-inf;obj.cin_lb;obj.ceq;obj.bin_lb;obj.beq],[inf;obj.cin_ub;obj.ceq;obj.bin_ub;obj.beq],...
           'snoptUserfun');
       else
         [iAfun,jAvar,Avals] = find(A);
@@ -286,8 +286,8 @@ classdef NonlinearProgram
         end
           
         [x,objval,exitflag] = snopt(x0, ...
-          obj.lb,obj.ub, ...
-          [-inf;-inf(obj.num_nonlinear_inequality_constraints,1);zeros(obj.num_nonlinear_equality_constraints,1);-inf(size(obj.bin));obj.beq],[inf;zeros(obj.num_nonlinear_inequality_constraints+obj.num_nonlinear_equality_constraints,1);obj.bin;obj.beq],...
+          obj.x_lb,obj.x_ub, ...
+          [-inf;obj.cin_lb;obj.ceq;obj.bin_lb;obj.beq],[inf;obj.cin_ub;obj.ceq;obj.bin_ub;obj.beq],...
           'snoptUserfun',...
           0,1,...
           Avals,iAfun,jAvar,...
@@ -299,15 +299,24 @@ classdef NonlinearProgram
     end
     
     function [x,objval,exitflag] = fmincon(obj,x0,options)
-      if (obj.num_nonlinear_equality_constraints || obj.num_nonlinear_inequality_constraints)
-        error('not implemented yet');
+%       if (obj.num_nonlinear_inequality_constraints + obj.num_nonlinear_equality_constraints)
+%         nonlinearConstraints = @obj.nonlinearConstraint;
+%       else
+%         nonlinearConstraints = [];
+%       end
+      ub_inf_idx = isinf(obj.cin_ub);
+      lb_inf_idx = isinf(obj.cin_lb);
+      function [c,ceq,dc,dceq] = fmincon_userfun(x)
+        [g,h,dg,dh] = obj.nonlinearConstraints(x);
+        ceq = h - obj.ceq;
+        c = [g(~ub_inf_idx)-obj.cin_ub(~ub_inf_idx);obj.cin_lb(~lb_inf_idx)-g(~lb_inf_idx)];
+        dc = [dg(~ub_inf_idx,:);-dg(~lb_inf_idx)];
+        dceq = dh;
       end
-      if (obj.num_nonlinear_inequality_constraints + obj.num_nonlinear_equality_constraints)
-        nonlinearConstraints = @obj.nonlinearConstraint;
-      else
-        nonlinearConstraints = [];
-      end
-      [x,objval,exitflag] = fmincon(@obj.objective,x0,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub,nonlinearConstraints,obj.default_options.fmincon);
+      bin_lb_inf_idx = isinf(obj.bin_lb);
+      bin_ub_inf_idx = isinf(obj.bin_ub);
+      [x,objval,exitflag] = fmincon(@obj.objective,x0,[obj.Ain(~bin_ub_inf_idx,:);-obj.Ain(~bin_lb_inf_idx,:)],...
+        [obj.bin_ub(~bin_ub_inf_idx);-obj.bin_lb(~bin_lb_inf_idx)],obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.default_options.fmincon);
       objval = full(objval);
     end
   end
