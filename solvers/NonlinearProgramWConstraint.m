@@ -19,7 +19,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
   methods
     function obj = NonlinearProgramWConstraint(num_vars)
       % @param num_vars     -- The number of decision variables
-      obj = obj@NonlinearProgram(num_vars,0,0);
+      obj = obj@NonlinearProgram(num_vars,[],[]);
       obj.nlcon = {};
       obj.lcon = {};
       obj.num_nlcon = 0;
@@ -101,6 +101,11 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       cnstr_bin_ub = cnstr.c_ub(cnstr.cin_idx);
       obj = obj.addLinearInequalityConstraints(cnstr_Ain,cnstr_bin_lb,cnstr_bin_ub);
       obj = obj.addLinearEqualityConstraints(cnstr_Aeq,cnstr_beq);
+    end
+    
+    function [f,df] = objective(obj,x)
+      f = 0;
+      df = zeros(1,obj.num_decision_vars);
     end
   end
 end
