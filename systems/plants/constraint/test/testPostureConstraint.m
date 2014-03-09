@@ -1,4 +1,7 @@
 function testPostureConstraint
+
+checkDependency('rigidbodyconstraint_mex');
+
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
 r = RigidBodyManipulator(urdf,options);

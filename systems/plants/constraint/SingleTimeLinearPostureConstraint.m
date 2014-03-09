@@ -26,6 +26,7 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
       if(nargin<7)
         tspan = [-inf,inf];
       end
+      checkDependency('rigidbodyconstraint_mex');
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.SingleTimeLinearPostureConstraintType,robot.getMexModelPtr,iAfun,jAvar,A,lb,ub,tspan);
       obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeLinearPostureConstraintCategory);
       obj.robot = robot;

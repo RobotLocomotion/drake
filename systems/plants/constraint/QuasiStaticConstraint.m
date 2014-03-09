@@ -41,6 +41,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
         tspan = [-inf,inf];
       end
       tspan = [tspan(1) tspan(end)];
+      checkDependency('rigidbodyconstraint_mex')
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.QuasiStaticConstraintType,robot.getMexModelPtr,tspan,robotnum);
       obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintCategory);
       obj.robot = robot;
