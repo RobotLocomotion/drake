@@ -1,4 +1,5 @@
 function testQuasiStaticConstraint
+
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
 r = RigidBodyManipulator(urdf,options);
@@ -43,6 +44,11 @@ while(exit_flag ~= 1)
 end
 [c,dc] = qsc.eval(t,kinsol,weights);
 valuecheck(c,[0;0]);
+
+% todo: move this farther down, so that more tests are included when this
+% dependency is not satisfied...
+checkDependency('rigidbodyconstraint_mex')
+
 [active_mex,num_weights_mex,c_mex,dc_mex,lb_mex,ub_mex] = testQuasiStaticConstraintmex(qsc.mex_ptr,q,weights,t);
 valuecheck(qsc.active,active_mex);
 valuecheck(num_weights_mex,qsc.num_pts);

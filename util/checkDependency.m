@@ -212,6 +212,14 @@ if ~ok
         disp(' ');
       end
       
+    case 'rigidbodyconstraint_mex'
+      conf.rigidbodyconstraint_mex_enabled = (exist('constructPtrRigidBodyConstraintmex','file')==3);
+      if (~conf.rigidbodyconstraint_mex_enabled)
+        disp(' ');
+        disp(' The RigidBodyManipulatorConstraint classes were not built (because some of the dependencies where missing when cmake was run)');
+        disp(' ');
+      end
+      
     case 'bullet'
       conf.bullet_enabled = ~isempty(getCMakeParam('bullet',conf));
       if (~conf.bullet_enabled)
