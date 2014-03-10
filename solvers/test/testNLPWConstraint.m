@@ -4,9 +4,10 @@ nlp1 = NonlinearProgramWConstraint(3);
 % x1^2+4*x2^2<=4
 % (x1-2)^2+x2^2<=5
 % x1 >= 0
-cnstr1 = NonlinearConstraint(-inf(2,1),[4;5],[0;-inf],inf(2,1),@cnstr1_userfun);
+cnstr1 = NonlinearConstraint(-inf(2,1),[4;5],2,@cnstr1_userfun);
 xind1 = [1;2];
 nlp1 = nlp1.addNonlinearConstraint(cnstr1,xind1);
+nlp1 = nlp1.addBoundingBoxConstraint(BoundingBoxConstraint(0,inf),1);
 x1 = [1;2;1];
 [g1,h1,dg1,dh1] = nlp1.nonlinearConstraints(x1);
 [g1_user,dg1_user] = cnstr1_userfun(x1(xind1));
@@ -19,12 +20,12 @@ end
 % x1^2+4*x2^2<=4
 % (x1-2)^2+x2^2<=5
 % x1 >= 0
-% 0<=x1+2*x3 <=1
+% 0<=x1+2*x3 <=10
 % x1+3*x3 = 0
 A = [1 0 2;1 0 3];
-nlp1 = nlp1.addLinearConstraint(LinearConstraint([0;0],[1;0],-inf(2,1),inf(2,1),[1 2;1 3]),[1;3]);
+nlp1 = nlp1.addLinearConstraint(LinearConstraint([0;0],[10;0],[1 2;1 3]),[1;3]);
 valuecheck(nlp1.bin_lb,0);
-valuecheck(nlp1.bin_ub,1);
+valuecheck(nlp1.bin_ub,10);
 valuecheck(nlp1.beq,0);
 valuecheck(nlp1.Aeq,[1 0 3]);
 valuecheck(nlp1.Ain,[1 0 2]);
@@ -62,12 +63,11 @@ end
 % x1^2+4*x2^2<=4
 % (x1-2)^2+x2^2<=5
 % x1 >= 0
-% 0<=x1+2*x3 <=1
+% 0<=x1+2*x3 <=10
 % x1+3*x3 = 0
-nlp1 = nlp1.addCost(NonlinearConstraint(-inf,inf,-inf,inf,@cost1_userfun),2);
-nlp1 = nlp1.addCost(NonlinearConstraint(-inf,inf,-inf(2,1),inf(2,1),@cost2_userfun),[1;3]);
-nlp1 = nlp1.addCost(LinearConstraint(-inf,inf,-inf,inf,1),3);
-valuecheck(sparse(nlp1.iGfun,nlp1.jGvar,ones(size(nlp1.iGfun))),[1 1 1;1 1 0;1 1 0]);
+nlp1 = nlp1.addCost(NonlinearConstraint(-inf,inf,1,@cost1_userfun),2);
+nlp1 = nlp1.addCost(NonlinearConstraint(-inf,inf,2,@cost2_userfun),[1;3]);
+nlp1 = nlp1.addCost(LinearConstraint(-inf,inf,1),3);
 [x2,F,info] = nlp1.solve(x0);
 if(info>10)
   error('SNOPT fails');
@@ -88,6 +88,20 @@ valuecheck(F,f2);
 nlp2 = nlp1.setSolver('fmincon');
 [x2_fmincon,F,info] = nlp2.solve(x0);
 valuecheck(x2,x2_fmincon,1e-4);
+
+%%%%%%%%%%%%%%%%%%%%%
+% min x2^2+x1*x3+x3
+% x1^2+4*x2^2<=4
+% (x1-2)^2+x2^2<=5
+% x1 >= 0
+% 0<=x1+2*x3 <=10
+% x1+3*x3 = 0
+% x1*x2*x3 = 4;
+% -10<=x2^2+x2*x3+2*x3^2<=30
+nc2 = NonlinearConstraint([4;-10],[4;30],3,@cnstr2_userfun);
+nc2 = nc2.setSparseStructure([1;1;1;2;2],[1;2;3;2;3]);
+nlp1 = nlp1.addNonlinearConstraint(nc2);
+keyboard
 end
 
 function [c,dc] = cnstr1_userfun(x)
@@ -103,4 +117,9 @@ end
 function [c,dc] = cost2_userfun(x)
 c = x(1)*x(2);
 dc = [x(2) x(1)];
+end
+
+function [c,dc] = cnstr2_userfun(x)
+c = [x(1)*x(2)*x(3);x(2)^2+x(2)*x(3)+2*x(3)^2];
+dc = [x(2)*x(3) x(1)*x(3) x(1)*x(2); 0 2*x(2)+x(3) x(2)+4*x(3)];
 end

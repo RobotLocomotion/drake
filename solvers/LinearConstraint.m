@@ -29,43 +29,30 @@ classdef LinearConstraint < Constraint
   
   
   methods
-    function obj = LinearConstraint(c_lb,c_ub,x_lb,x_ub,A)
-      % @param c_lb    -- The lower bound of the constraint
-      % @param c_ub    -- The upper bound of the constraint
-      % @param x_lb    -- The lower bound of the decision variables
-      % @param x_ub    -- The upper bound of the decision variables
-      % @param A       -- A matrix of size num_cnstr x xdim. The linear constraint matrix
-      obj = obj@Constraint(c_lb,c_ub,x_lb,x_ub);
-      if(~isnumeric(c_lb) || ~isnumeric(c_ub))
-        error('Drake:LinearConstraint:BadInputs','LinearConstraint c_lb and c_ub should be numeric')
+    function obj = LinearConstraint(lb,ub,A)
+      % @param lb    -- The lower bound of the constraint
+      % @param ub    -- The upper bound of the constraint
+      % @param A     -- A matrix of size num_cnstr x xdim. The linear constraint matrix
+      obj = obj@Constraint(lb,ub);
+      if(~isnumeric(lb) || ~isnumeric(ub))
+        error('Drake:LinearConstraint:BadInputs','LinearConstraint lb and ub should be numeric')
       end
-      obj.c_lb = obj.c_lb(:);
-      obj.c_ub = obj.c_ub(:);
-      obj.num_cnstr = numel(obj.c_lb);
-      if(obj.num_cnstr ~= numel(obj.c_ub))
-        error('Drake:LinearConstraint:BadInputs','LinearConstraint c_lb and c_ub should have same number of elements');
+      obj.lb = obj.lb(:);
+      obj.ub = obj.ub(:);
+      obj.num_cnstr = numel(obj.lb);
+      if(obj.num_cnstr ~= numel(obj.ub))
+        error('Drake:LinearConstraint:BadInputs','LinearConstraint lb and ub should have same number of elements');
       end
-      if(any(obj.c_lb>obj.c_ub))
-        error('Drake:LinearConstraint:BadInputs','LinearConstraint c_lb should be no larger than c_ub');
+      if(any(obj.lb>obj.ub))
+        error('Drake:LinearConstraint:BadInputs','LinearConstraint lb should be no larger than ub');
       end
       c_idx = (1:obj.num_cnstr)';
-      obj.ceq_idx = c_idx(obj.relation == Constraint.equal);
-      obj.cin_idx = c_idx(obj.relation == Constraint.ineq);
-      if(~isnumeric(obj.x_lb) || ~isnumeric(obj.x_ub))
-        error('Drake:LinearConstraint:BadInputs','LinearConstraint x_lb and x_ub should be numeric');
-      end
-      obj.xdim = numel(obj.x_lb);
-      obj.x_lb = obj.x_lb(:);
-      obj.x_ub = obj.x_ub(:);
-      if(obj.xdim ~= numel(obj.x_ub))
-        error('Drake:LinearConstraint:BadInputs','LinearConstraint x_lb and x_ub should have the same number of elements');
-      end
-      if(any(obj.x_lb>obj.x_ub))
-        error('Drake:LinearConstraint:BadInputs','LinearConstraint x_lb shoulde be no larger than x_ub');
-      end
+      obj.ceq_idx = c_idx(obj.lb == obj.ub);
+      obj.cin_idx = c_idx(obj.lb ~= obj.ub);
       if(~isnumeric(A))
         error('Drake:LinearConstraint:BadInputs','LinearConstraint A should be numeric');
       end
+      obj.xdim = size(A,2);
       sizecheck(A,[obj.num_cnstr,obj.xdim]);
       obj.A = A;
       [obj.iAfun,obj.jAvar,obj.A_val] = find(obj.A);
