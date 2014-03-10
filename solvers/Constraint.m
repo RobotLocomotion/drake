@@ -2,44 +2,28 @@ classdef Constraint
   % Constraint that will be used for Drake solvers
   % @param lb    -- The lower bound of the constraint
   % @param ub    -- The upper bound of the constraint
-  % @param relation   -- A vector of with the same size as lb or ub. The relationship of
-  % the constraint. The supported relationships are in the 'Constant' properties
   properties(SetAccess = protected)
-    c_lb
-    c_ub
-    x_lb
-    x_ub
-    relation
+    lb
+    ub
   end
   
   properties(SetAccess = protected,GetAccess = protected)
     eval_handle   % Function handle to evaluate constraint.
   end
   
-  properties(Constant)
-    equal = 1
-    ineq = 2
-  end
   
   methods
-    function obj = Constraint(c_lb,c_ub,x_lb,x_ub,eval_handle)
+    function obj = Constraint(lb,ub,eval_handle)
       % Constraint(lb,ub) or Constraint(lb,ub,eval_handle)
-      % @param c_lb    -- The lower bound of the constraint
-      % @param c_ub    -- The upper bound of the constraint
-      % @param x_lb    -- The lower bound of the decision variables
-      % @param x_ub    -- The upper bound of the decision variables
+      % @param lb    -- The lower bound of the constraint
+      % @param ub    -- The upper bound of the constraint
       % @param eval_handle   -- The function handle to evaluate constraint. An optional
       % argument.
-      if(nargin<5)
+      if(nargin<3)
         eval_handle = [];
       end
-      obj.c_lb = c_lb;
-      obj.c_ub = c_ub;
-      obj.x_lb = x_lb;
-      obj.x_ub = x_ub;
-      obj.relation = zeros(size(obj.c_lb));
-      obj.relation(obj.c_lb<obj.c_ub) = Constraint.ineq;
-      obj.relation(obj.c_lb == obj.c_ub) = Constraint.equal;
+      obj.lb = lb;
+      obj.ub = ub;
       obj.eval_handle = eval_handle;
     end
     
@@ -63,12 +47,6 @@ classdef Constraint
     end
     
     
-    
-    function [c_lb,c_ub] = bounds(obj)
-      % Return the bounds on the constraints
-      c_lb = obj.c_lb;
-      c_ub = obj.c_ub;
-    end
   end
   
 end

@@ -6,16 +6,26 @@ classdef NonlinearProgram
   %            Aeq*x = beq
   %            bin_lb<= Ain*x <= bin_ub
   %            x_lb <= x <= x_ub
-  
+  % @param num_vars     An integer. The number of decision variables
+  % @param num_cin      An integer. The number of nonlinear inequality constraints
+  % @param num_ceq      An integer. The number of nonlinear equality constraints
+  % @param Ain          A double matrix. 
+  % @param bin_ub       A double vector
+  % @param bin_lb       A double vector
+  % @param Aeq          A double matrix
+  % @param beq          A double vector
+  % @param ceq          A double vector
+  % @param cin_lb       A double vector
+  % @param cin_ub       A double vector
   properties (SetAccess=protected)
-    num_decision_vars
-    num_nonlinear_inequality_constraints
-    num_nonlinear_equality_constraints
+    num_vars
+    num_cin
+    num_ceq
     Ain,bin_ub,bin_lb
     Aeq,beq
     ceq,cin_lb,cin_ub
     x_lb,x_ub
-    iGfun,jGvar  % sparsity pattern in objective and nonlinear constraints
+    
     solver
     default_options
     grad_method
@@ -25,9 +35,8 @@ classdef NonlinearProgram
     objcon_logic = false;
   end
 
-  properties(Access = protected)
-    nlcon_ineq_idx % row index of nonlinear inequality constraint
-    nlcon_eq_idx % row index of nonlinear equality constraint
+  properties (Access = protected)
+    iGfun,jGvar  % sparsity pattern in objective and nonlinear constraints
   end
   
   methods % A subset of these MUST be overloaded
@@ -74,13 +83,13 @@ classdef NonlinearProgram
       obj.objcon_logic = true;
       if nargout>2
         [fgh,dfgh] = objectiveAndNonlinearConstraints(obj,x);
-        dg = dfgh(obj.nlcon_ineq_idx+1,:);
-        dh = dfgh(obj.nlcon_eq_idx+1,:);
+        dg = dfgh(1+(1:obj.num_cin),:);
+        dh = dfgh(1+obj.num_cin+(1:obj.num_equality_constraints),:);
       else
         fgh = objectiveAndNonlinearConstraints(obj,x);
       end
-      g = fgh(obj.nlcon_ineq_idx+1);
-      h = fgh(obj.nlcon_eq_idx+1);
+      g = fgh(1+(1:obj.num_cin));
+      h = fgh(1+obj.num_cin+(1:obj.num_ceq));
     end
     
     function [fgh,dfgh] = objectiveAndNonlinearConstraints(obj,x)
@@ -96,7 +105,7 @@ classdef NonlinearProgram
       obj.objcon_logic = true;
       if nargout>1
         [f,df] = objective(obj,x);
-        if (obj.num_nonlinear_inequality_constraints + obj.num_nonlinear_equality_constraints)
+        if (obj.num_cin + obj.num_ceq)
           [g,h,dg,dh] = nonlinearConstraints(obj,x);
           fgh = [f;g;h];
           dfgh = [df;dg;dh];
@@ -106,7 +115,7 @@ classdef NonlinearProgram
         end
       else
         f = objective(obj,x);
-        if (obj.num_nonlinear_inequality_constraints + obj.num_nonlinear_equality_constraints)
+        if (obj.num_cin + obj.num_ceq)
           [g,h] = nonlinearConstraints(obj,x);
           fgh = [f;g;h];
         else
@@ -117,17 +126,18 @@ classdef NonlinearProgram
   end
   
   methods
-    function obj = NonlinearProgram(num_vars,nlcon_ineq_idx,nlcon_eq_idx)
+    function obj = NonlinearProgram(num_vars,num_nin,num_neq)
       % @param num_vars          -- Number of decision variables
-      % @param nlcon_ineq_idx    -- A column int vector. The row index of nonlinear
-      % inequality constraint among all the constraints
-      % @param nlcon_eq_idx      -- A column int vector. The row index of nonlinear
-      % equality constraint among all the constraints
-      obj.num_decision_vars = num_vars;
-      obj.nlcon_ineq_idx = nlcon_ineq_idx;
-      obj.num_nonlinear_inequality_constraints = length(obj.nlcon_ineq_idx);
-      obj.nlcon_eq_idx = nlcon_eq_idx;
-      obj.num_nonlinear_equality_constraints = length(obj.nlcon_eq_idx);
+      % @param num_nin           -- An int scalar. The number of nonlinear inequality
+      % constraints
+      % @param num_neq           -- An int scalar. The number of nonlinear equality
+      % constraints
+      sizecheck(num_vars,[1,1]);
+      sizecheck(num_nin,[1,1]);
+      sizecheck(num_neq,[1,1]);
+      obj.num_vars = num_vars;
+      obj.num_cin = num_nin;
+      obj.num_ceq = num_neq;
       obj.x_lb = -inf(num_vars,1);
       obj.x_ub = inf(num_vars,1);
       
@@ -139,7 +149,7 @@ classdef NonlinearProgram
     
     function obj = addLinearInequalityConstraints(obj,Ain,bin_lb,bin_ub)
       [m,n] = size(Ain);
-      assert(n == obj.num_decision_vars);
+      assert(n == obj.num_vars);
       sizecheck(bin_lb,[m,1]);
       sizecheck(bin_ub,[m,1]);
       obj.Ain = vertcat(obj.Ain,Ain);
@@ -149,7 +159,7 @@ classdef NonlinearProgram
     
     function obj = addLinearEqualityConstraints(obj,Aeq,beq)
       [m,n] = size(Aeq);
-      assert(n == obj.num_decision_vars);
+      assert(n == obj.num_vars);
       sizecheck(beq,[m,1]);
       obj.Aeq = vertcat(obj.Aeq,Aeq);
       obj.beq = vertcat(obj.beq,beq);
@@ -157,8 +167,8 @@ classdef NonlinearProgram
 
     function obj = setVarBounds(obj,x_lb,x_ub)
       % set the lower and upper bounds of the decision variables
-      sizecheck(x_lb,[obj.num_decision_vars,1]);
-      sizecheck(x_ub,[obj.num_decision_vars,1]);
+      sizecheck(x_lb,[obj.num_vars,1]);
+      sizecheck(x_ub,[obj.num_vars,1]);
       obj.x_lb = x_lb;
       obj.x_ub = x_ub;
     end
@@ -190,12 +200,15 @@ classdef NonlinearProgram
     
     % function setGradMethod?
     
-    function [x,objval,exitflag] = solve(obj,x0)
+    function [x,objval,exitflag] = solve(obj,x0,options)
+      if(nargin<3)
+        options = struct();
+      end
       switch lower(obj.solver)
         case 'snopt'
-          [x,objval,exitflag] = snopt(obj,x0);
+          [x,objval,exitflag] = snopt(obj,x0,options);
         case 'fmincon'
-          [x,objval,exitflag] = fmincon(obj,x0);
+          [x,objval,exitflag] = fmincon(obj,x0,options);
         otherwise
           error('Drake:NonlinearProgram:UnknownSolver',['The requested solver, ',obj.solver,' is not known, or not currently supported']);
       end
@@ -227,6 +240,13 @@ classdef NonlinearProgram
     end
     
     function [x,objval,exitflag] = snopt(obj,x0,options)
+      % options.check_grad = true     Then check the gradient of the snopt_userfun
+      if(nargin<3)
+        options = struct();
+      end
+      if(~isfield(options,'check_grad'))
+        options.check_grad = false;
+      end
       checkDependency('snopt');
 
       global SNOPT_USERFUN;
@@ -235,8 +255,8 @@ classdef NonlinearProgram
       A = [obj.Ain;obj.Aeq];
       b_lb = [obj.bin_lb;obj.beq];
       b_ub = [obj.bin_ub;obj.beq];
-      if isempty(obj.x_lb) obj.x_lb = -inf(obj.num_decision_vars,1); end
-      if isempty(obj.x_ub) obj.x_ub = inf(obj.num_decision_vars,1); end
+      if isempty(obj.x_lb) obj.x_lb = -inf(obj.num_vars,1); end
+      if isempty(obj.x_ub) obj.x_ub = inf(obj.num_vars,1); end
 
       function setSNOPTParam(paramstring,default)
         str=paramstring(~isspace(paramstring));
@@ -275,16 +295,30 @@ classdef NonlinearProgram
           'snoptUserfun');
       else
         [iAfun,jAvar,Avals] = find(A);
-        iAfun = iAfun + 1 + obj.num_nonlinear_inequality_constraints + obj.num_nonlinear_equality_constraints;
+        iAfun = iAfun + 1 + obj.num_cin + obj.num_ceq;
         
         if isempty(obj.iGfun) || isempty(obj.jGvar)
-          s = [1+obj.num_nonlinear_inequality_constraints+obj.num_nonlinear_equality_constraints,obj.num_decision_vars];
+          s = [1+obj.num_cin+obj.num_ceq,obj.num_vars];
           [iGfun,jGvar] = ind2sub(s,1:prod(s));
         else
           iGfun = obj.iGfun;
           jGvar = obj.jGvar;
         end
           
+        if(options.check_grad)
+          num_rows_G = 1+obj.num_ceq+obj.num_cin+length(obj.beq)+length(obj.bin_ub);
+          [f,G] = snopt_userfun(x0);
+          [~,G_numerical] = geval(@snopt_userfun,x0,struct('grad_method','numerical'));
+          G_user = full(sparse(iGfun,jGvar,G,num_rows_G,obj.num_vars));
+          G_err = G_user-G_numerical;
+          x = x0;
+          objval = f;
+          exitflag = 1;
+          [max_err,max_err_idx] = max(abs(G_err(:)));
+          [max_err_row,max_err_col] = ind2sub([num_rows_G,obj.num_vars],max_err_idx);
+          display(sprintf('maximum gradient error is in row %d for x[%d], with error %f\nuser gradient %f, numerical gradient %f',...
+            max_err_row,max_err_col,max_err,G_user(max_err_row,max_err_col),G_numerical(max_err_row,max_err_col)));
+        end
         [x,objval,exitflag] = snopt(x0, ...
           obj.x_lb,obj.x_ub, ...
           [-inf;obj.cin_lb;obj.ceq;obj.bin_lb;obj.beq],[inf;obj.cin_ub;obj.ceq;obj.bin_ub;obj.beq],...
@@ -292,6 +326,7 @@ classdef NonlinearProgram
           0,1,...
           Avals,iAfun,jAvar,...
           iGfun,jGvar);
+        
       end
       
       objval = objval(1);
@@ -299,7 +334,7 @@ classdef NonlinearProgram
     end
     
     function [x,objval,exitflag] = fmincon(obj,x0,options)
-%       if (obj.num_nonlinear_inequality_constraints + obj.num_nonlinear_equality_constraints)
+%       if (obj.num_cin + obj.num_ceq)
 %         nonlinearConstraints = @obj.nonlinearConstraint;
 %       else
 %         nonlinearConstraints = [];
@@ -310,7 +345,7 @@ classdef NonlinearProgram
         [g,h,dg,dh] = obj.nonlinearConstraints(x);
         ceq = h - obj.ceq;
         c = [g(~ub_inf_idx)-obj.cin_ub(~ub_inf_idx);obj.cin_lb(~lb_inf_idx)-g(~lb_inf_idx)];
-        dc = [dg(~ub_inf_idx,:);-dg(~lb_inf_idx)];
+        dc = [dg(~ub_inf_idx,:);-dg(~lb_inf_idx,:)];
         dceq = dh;
       end
       bin_lb_inf_idx = isinf(obj.bin_lb);
