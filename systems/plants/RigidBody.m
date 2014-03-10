@@ -290,6 +290,12 @@ classdef RigidBody < RigidBodyElement
       end    
     end    
     
+    function body = setOnlyInertial(body,I)
+       % sets only the spatial inertial matrix I , without affecting mass, com, or inertia
+       % this is necessary for unsteady fluid phenomena
+        body.I = I;
+    end
+    
     function body = parseVisual(body,node,model,options)
       c = .7*[1 1 1];
       

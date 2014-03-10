@@ -1848,6 +1848,16 @@ classdef RigidBodyManipulator < Manipulator
         [model,fe] = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
       end
       
+      elnode = node.getElementsByTagName('added_mass').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyAddedMass.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
+      elnode = node.getElementsByTagName('buoyancy').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyBuoyant.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
       if ~isempty(fe)
         model.force{end+1} = fe;
       end
