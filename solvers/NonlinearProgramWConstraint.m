@@ -73,7 +73,6 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       end
       obj.nlcon = [obj.nlcon,{cnstr}];
       
-      obj.ceq = [obj.ceq;(cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2];
       obj.cin_ub = [obj.cin_ub;cnstr.ub(cnstr.cin_idx)];
       obj.cin_lb = [obj.cin_lb;cnstr.lb(cnstr.cin_idx)];
       obj.nlcon_ineq_idx = [obj.nlcon_ineq_idx;obj.num_nlcon+cnstr.cin_idx];
@@ -180,6 +179,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       for i = 1:length(obj.nlcon)
         [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
           obj.nlcon{i}.eval(x(obj.nlcon_xind{i}));
+        f(f_count+obj.nlcon{i}.ceq_idx) = f(f_count+obj.nlcon{i}.ceq_idx)-obj.nlcon{i}.ub(obj.nlcon{i}.ceq_idx);
         f_count = f_count+obj.nlcon{i}.num_cnstr;
       end
       g = f(obj.nlcon_ineq_idx);
@@ -211,6 +211,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       for i = 1:length(obj.nlcon)
         [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
           obj.nlcon{i}.eval(x(obj.nlcon_xind{i}));
+        f(f_count+obj.nlcon{i}.ceq_idx) = f(f_count+obj.nlcon{i}.ceq_idx)-obj.nlcon{i}.ub(obj.nlcon{i}.ceq_idx);
         f_count = f_count+obj.nlcon{i}.num_cnstr;
       end
       f = [f(1);f(1+obj.nlcon_ineq_idx);f(1+obj.nlcon_eq_idx)];
