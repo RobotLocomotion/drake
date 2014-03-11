@@ -79,12 +79,5 @@ classdef NonlinearConstraint < Constraint
       obj.nnz = numel(iCfun);
     end
     
-    function [c,dc_val] = evalSparse(obj,varargin)
-      % return the constraint value and the non-zero entries of its first order gradient
-      % @retval c      -- An obj.num_cnstr x 1 double vector. The constraint value
-      % @retval dc_val -- A column vector. The non-zero values of the 1st order gradient.
-      [c,dc] = obj.eval(varargin{:});
-      dc_val = dc(sub2ind([obj.num_cnstr,obj.xdim],obj.iCfun,obj.jCvar));
-    end
   end
 end

@@ -24,11 +24,10 @@ end
 % x1+3*x3 = 0
 A = [1 0 2;1 0 3];
 nlp1 = nlp1.addLinearConstraint(LinearConstraint([0;0],[10;0],[1 2;1 3]),[1;3]);
-valuecheck(nlp1.bin_lb,0);
-valuecheck(nlp1.bin_ub,10);
 valuecheck(nlp1.beq,0);
 valuecheck(nlp1.Aeq,[1 0 3]);
-valuecheck(nlp1.Ain,[1 0 2]);
+valuecheck(nlp1.Ain,[A(1,:);-A(1,:)]);
+valuecheck(nlp1.bin,[10;0]);
 x0 = [1;2;4];
 [x1,F,info] = nlp1.solve(x0);
 if(info>10)
@@ -96,11 +95,12 @@ valuecheck(x2,x2_fmincon,1e-4);
 % x1 >= 0
 % 0<=x1+2*x3 <=10
 % x1+3*x3 = 0
-% x1*x2*x3 = 4;
+% x1*x2*x3 = 2/3;
 % -10<=x2^2+x2*x3+2*x3^2<=30
-nc2 = NonlinearConstraint([4;-10],[4;30],3,@cnstr2_userfun);
+nc2 = NonlinearConstraint([1/6;-10],[1/6;30],3,@cnstr2_userfun);
 nc2 = nc2.setSparseStructure([1;1;1;2;2],[1;2;3;2;3]);
 nlp1 = nlp1.addNonlinearConstraint(nc2);
+[x,F,info] = nlp1.solve(randn(3,1),struct('check_grad',true));
 keyboard
 end
 
