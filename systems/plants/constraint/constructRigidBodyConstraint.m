@@ -1,7 +1,7 @@
 function obj = constructRigidBodyConstraint(type,use_mex,varargin)
 % @param type     -- The type of the non-abstract RigidBodyConstraint. See
 %                    RigidBodyConstraint for more details
-% @param use_mex  -- A boolean varaible. True if only C++ object is constructed. False if
+% @param use_mex  -- A boolean variable. True if only C++ object is constructed. False if
 %                    the user wants to construct both MATLAB and C++ objects
 sizecheck(use_mex,[1,1]);
 use_mex = logical(use_mex);

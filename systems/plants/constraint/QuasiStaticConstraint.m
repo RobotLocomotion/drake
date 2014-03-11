@@ -34,6 +34,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       if(nargin <2)
         tspan = [-inf,inf];
       end
+      checkDependency('rigidbodyconstraint_mex')
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.QuasiStaticConstraintType,robot.getMexModelPtr,tspan,robotnum);
       obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintCategory,robot,tspan);
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))

@@ -6,10 +6,10 @@
 #   Otherwise, use ./build.
 ifeq "$(BUILD_PREFIX)" ""
 BUILD_PREFIX:=$(shell for pfx in ./ .. ../.. ../../.. ../../../..; do d=`pwd`/$$pfx/build;\
-               if [ -d $$d ]; then echo $$d; exit 0; fi; done; echo `pwd`/build)
+               if [ -d "$$d" ]; then echo $$d; exit 0; fi; done; echo `pwd`/build)
 endif
 # create the build directory if needed, and normalize its path name
-BUILD_PREFIX:=$(shell mkdir -p $(BUILD_PREFIX) && cd $(BUILD_PREFIX) && echo `pwd`)
+BUILD_PREFIX := $(shell mkdir -p "$(BUILD_PREFIX)" && cd "$(BUILD_PREFIX)" && echo `pwd`)
 
 # Default to a release build.  If you want to enable debugging flags, run
 # "make BUILD_TYPE=Debug"
@@ -23,8 +23,11 @@ ifneq "$(BUILD_PREFIX)" "$(CMAKE_INSTALL_PREFIX)"
 	OUT:=$(shell echo "\nBUILD_PREFIX $(BUILD_PREFIX) does not match CMAKE cache $(CMAKE_INSTALL_PREFIX).  Forcing configure\n\n"; touch CMakeLists.txt)
 endif
 
+# note: this is evaluated at run time, so must be in the pod-build directory
+CMAKE_MAKE_PROGRAM="`cmake -LA -N | grep CMAKE_MAKE_PROGRAM | cut -d "=" -f2`"
+
 all: pod-build/Makefile
-	$(MAKE) -C pod-build all install
+	cd pod-build && $(CMAKE_MAKE_PROGRAM) all install 
 
 pod-build/Makefile:
 	$(MAKE) configure
@@ -38,7 +41,7 @@ configure:
 	@cd pod-build && ln -sf ../CTestCustom.cmake  # actually has to live in the build path
 
 	# run CMake to generate and configure the build scripts
-	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX=$(BUILD_PREFIX) \
+	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX="$(BUILD_PREFIX)" \
 		   -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
 .PHONY: doc doxygen 
@@ -78,13 +81,18 @@ install_prereqs_homebrew : check_prereqs
 install_prereqs_ubuntu : check_prereqs
 	apt-get install graphviz
 
+release_filelist:
+	echo ".UNITTEST"
+	echo ".mlintopts"
+	find * -type f | grep -v "pod-build" | grep -v "\.valgrind" | grep -v "\.viewer-prefs" | grep -v "\.out" | grep -v "\.autosave" | grep -v "\.git" | grep -v "\.tmp" | grep -v "drake_config\.mat" | grep -v "DoxygenMatlab" | grep -v "\.aux" | grep -v "\.d" | grep -v "\.log" | grep -v "\.bib"
+
 clean:
 	-if [ -e pod-build/install_manifest.txt ]; then rm -f `cat pod-build/install_manifest.txt`; fi
 	-if [ -d pod-build ]; then $(MAKE) -C pod-build clean; rm -rf pod-build; fi
 
 # other (custom) targets are passed through to the cmake-generated Makefile 
 %::
-	$(MAKE) -C pod-build $@
+	cd pod-build && $(CMAKE_MAKE_PROGRAM) $@
 
 # Default to a less-verbose build.  If you want all the gory compiler output,
 # run "make VERBOSE=1"

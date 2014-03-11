@@ -11,9 +11,10 @@ option(BUILD_SHARED_LIBS "Build Drake with shared libraries." ON)
 find_package(Java REQUIRED)
 include(UseJava)
 set(CMAKE_JAVA_COMPILE_FLAGS ${CMAKE_JAVA_COMPILE_FLAGS} -source 6 -target 6)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
 
 if (CMAKE_COMPILER_IS_GNUCC)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
+
    execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
                 OUTPUT_VARIABLE GCC_VERSION)
    if (NOT (GCC_VERSION VERSION_GREATER 4.3 OR GCC_VERSION VERSION_EQUAL 4.3))
@@ -24,6 +25,8 @@ if (CMAKE_COMPILER_IS_GNUCC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
    endif()
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wuninitialized -Wunused-variable") # -Wunused-parameter")
+
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
  if (APPLE)  # this was a step towards getting things to work with
 #   clang on mac, but ultimately we didn't get there...   (but I would
@@ -110,17 +113,21 @@ add_subdirectory(thirdParty/GetFullPath)
 include(cmake/matlab_pods.cmake)
 pods_configure_matlab_paths()
 
+get_relative_path("${CMAKE_INSTALL_PREFIX}/matlab" "${CMAKE_CURRENT_SOURCE_DIR}" relpath)
+
 message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab") 
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
 	   "function addpath_drake()\n"
-	   "  wd = cd('${CMAKE_CURRENT_SOURCE_DIR}');\n"
+	   "  mfiledir = fileparts(which(mfilename));\n"
+	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
 	   "  addpath_drake();\n"
 	   "  cd(wd);\n"
     )
 
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
 	   "function rmpath_drake()\n"
-	   "  wd = cd('${CMAKE_CURRENT_SOURCE_DIR}');\n"
+	   "  mfiledir = fileparts(which(mfilename));\n"
+	   "  wd = cd(fullfile(mfiledir,'${relpath}'));\n"
 	   "  rmpath_drake();\n"
 	   "  cd(wd);\n"
     )
