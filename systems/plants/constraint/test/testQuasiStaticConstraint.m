@@ -26,6 +26,11 @@ qsc = qsc.setActive(true);
 qsc = qsc.setShrinkFactor(shrinkFactor);
 qsc = qsc.addContact(l_foot,l_foot_pts,r_foot,r_foot_pts);
 
+category_name_mex = constraintCategorymex(qsc.mex_ptr);
+if(~strcmp(category_name_mex,qsc.categoryString()))
+  error('category name string do not match')
+end
+
 kinsol = doKinematics(r,q,false,false);
 l_foot_pos = forwardKin(r,kinsol,l_foot,l_foot_pts,0);
 r_foot_pos = forwardKin(r,kinsol,r_foot,r_foot_pts,0);
