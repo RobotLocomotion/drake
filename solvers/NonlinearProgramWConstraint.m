@@ -217,5 +217,21 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       f = [f(1);f(1+obj.nlcon_ineq_idx);f(1+obj.nlcon_eq_idx)];
       G = [G(1,:);G(1+obj.nlcon_ineq_idx,:);G(1+obj.nlcon_eq_idx,:)];
     end
+    
+    function obj = setVarBounds(obj,x_lb,x_ub)
+      error('Call addBoundingBoxConstraint instead');
+    end
+    
+    function obj = setObjectiveGradientSparsity(obj,jGvar)
+      error('Call addCost instead, it encodes the sparsity');
+    end
+    
+    function obj = setNonlinearInequalityConstraintsGradientSparsity(obj,iGfun,jGvar)
+      error('addNonlinearConstraint encodes the sparsity already');
+    end
+    
+    function obj = setNonlinearEqualityConstraintsGradientSparsity(obj,iGfun,jGvar)
+      error('addNonlinearConstraint encodes the sparsity already');
+    end
   end
 end

@@ -10,8 +10,8 @@ classdef NonlinearProgram
   % @param num_cin      An integer. The number of nonlinear inequality constraints
   % @param num_ceq      An integer. The number of nonlinear equality constraints
   % @param Ain          A double matrix. 
-  % @param bin_ub       A double vector
-  % @param bin_lb       A double vector
+  % @param bin          A double vector. The upper bound for the linear equality
+  % constraint
   % @param Aeq          A double matrix
   % @param beq          A double vector
   % @param cin_lb       A double vector, the lower bounds on the nonlinear inequality
