@@ -120,7 +120,10 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       cnstr_Ain = cnstr_A(cnstr.cin_idx,:);
       cnstr_bin_lb = cnstr.lb(cnstr.cin_idx);
       cnstr_bin_ub = cnstr.ub(cnstr.cin_idx);
-      obj = obj.addLinearInequalityConstraints(cnstr_Ain,cnstr_bin_lb,cnstr_bin_ub);
+      bin_ub_inf_idx = ~isinf(cnstr_bin_ub);
+      bin_lb_inf_idx = ~isinf(cnstr_bin_lb);
+      obj = obj.addLinearInequalityConstraints([cnstr_Ain(bin_ub_inf_idx,:);-cnstr_Ain(bin_lb_inf_idx,:)],...
+        [cnstr_bin_ub(bin_ub_inf_idx);-cnstr_bin_lb(bin_lb_inf_idx)]);
       obj = obj.addLinearEqualityConstraints(cnstr_Aeq,cnstr_beq);
     end
     
@@ -171,22 +174,20 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
     end
     
     function [g,h,dg,dh] = nonlinearConstraints(obj,x)
-      c = zeros(obj.num_nlcon,1);
-      dc_val = zeros(length(obj.iCfun),1);
-      nlcon_count = 0;
-      dc_count = 0;
+      f = zeros(obj.num_nlcon,1);
+      G = zeros(obj.num_nlcon,obj.num_vars);
+      f_count = 0;
       for i = 1:length(obj.nlcon)
-        [c(nlcon_count+(1:obj.nlcon{i}.num_cnstr)),dc_val(dc_count+(1:obj.nlcon{i}.nnz))]...
-          = obj.nlcon{i}.evalSparse(x(obj.nlcon_xind{i}));
-        nlcon_count = nlcon_count+obj.nlcon{i}.num_cnstr;
-        dc_count = dc_count+obj.nlcon{i}.nnz;
+        [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
+          obj.nlcon{i}.eval(x(obj.nlcon_xind{i}));
+        f_count = f_count+obj.nlcon{i}.num_cnstr;
       end
-      dc = sparse(obj.iCfun,obj.jCvar,dc_val,obj.num_nlcon,obj.num_vars);
-      g = c(obj.nlcon_ineq_idx);
-      h = c(obj.nlcon_eq_idx);
-      dg = dc(obj.nlcon_ineq_idx,:);
-      dh = dc(obj.nlcon_eq_idx,:);
+      g = f(obj.nlcon_ineq_idx);
+      h = f(obj.nlcon_eq_idx);
+      dg = G(obj.nlcon_ineq_idx,:);
+      dh = G(obj.nlcon_eq_idx,:);
     end
+    
     
     function [f,df] = objective(obj,x)
       f = 0;

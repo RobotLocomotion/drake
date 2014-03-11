@@ -1,10 +1,10 @@
 classdef NonlinearProgram
   % minimize_x objective(x)
   % subject to
-  %            nonlinear_equality_constraints(x) = ceq
+  %            nonlinear_equality_constraints(x) = 0
   %            cin_lb<=nonlinear_inequality_constraints(x) <= cin_ub
   %            Aeq*x = beq
-  %            bin_lb<= Ain*x <= bin_ub
+  %            Ain*x <= bin
   %            x_lb <= x <= x_ub
   % @param num_vars     An integer. The number of decision variables
   % @param num_cin      An integer. The number of nonlinear inequality constraints
@@ -14,18 +14,19 @@ classdef NonlinearProgram
   % @param bin_lb       A double vector
   % @param Aeq          A double matrix
   % @param beq          A double vector
-  % @param ceq          A double vector
-  % @param cin_lb       A double vector
-  % @param cin_ub       A double vector
+  % @param cin_lb       A double vector, the lower bounds on the nonlinear inequality
+  % constraints
+  % @param cin_ub       A double vector, the upper bounds on the nonlinear inequality
+  % constraints
   properties (SetAccess=protected)
     num_vars
     num_cin
     num_ceq
-    Ain,bin_ub,bin_lb
+    Ain,bin
     Aeq,beq
-    ceq,cin_lb,cin_ub
+    cin_lb,cin_ub
     x_lb,x_ub
-    
+    ceq
     solver
     default_options
     grad_method
@@ -147,14 +148,13 @@ classdef NonlinearProgram
       obj.default_options.snopt = struct();
     end
     
-    function obj = addLinearInequalityConstraints(obj,Ain,bin_lb,bin_ub)
+    function obj = addLinearInequalityConstraints(obj,Ain,bin)
+      % add linear inequality constraint Ain*x<=bin
       [m,n] = size(Ain);
       assert(n == obj.num_vars);
-      sizecheck(bin_lb,[m,1]);
-      sizecheck(bin_ub,[m,1]);
+      sizecheck(bin,[m,1]);
       obj.Ain = vertcat(obj.Ain,Ain);
-      obj.bin_lb = vertcat(obj.bin_lb,bin_lb);
-      obj.bin_ub = vertcat(obj.bin_ub,bin_ub);
+      obj.bin = vertcat(obj.bin,bin);
     end
     
     function obj = addLinearEqualityConstraints(obj,Aeq,beq)
@@ -253,8 +253,8 @@ classdef NonlinearProgram
       SNOPT_USERFUN = @snopt_userfun;
       
       A = [obj.Ain;obj.Aeq];
-      b_lb = [obj.bin_lb;obj.beq];
-      b_ub = [obj.bin_ub;obj.beq];
+      b_lb = [-inf(length(obj.bin),1);obj.beq];
+      b_ub = [obj.bin;obj.beq];
       if isempty(obj.x_lb) obj.x_lb = -inf(obj.num_vars,1); end
       if isempty(obj.x_ub) obj.x_ub = inf(obj.num_vars,1); end
 
@@ -288,10 +288,22 @@ classdef NonlinearProgram
         end
       end      
 
+      function checkGradient(x)
+        num_rows_G = 1+obj.num_ceq+obj.num_cin+length(obj.beq)+length(obj.bin);
+          [f,G] = snopt_userfun(x);
+          [~,G_numerical] = geval(@snopt_userfun,x,struct('grad_method','numerical'));
+          G_user = full(sparse(iGfun,jGvar,G,num_rows_G,obj.num_vars));
+          G_err = G_user-G_numerical;
+          [max_err,max_err_idx] = max(abs(G_err(:)));
+          [max_err_row,max_err_col] = ind2sub([num_rows_G,obj.num_vars],max_err_idx);
+          display(sprintf('maximum gradient error is in row %d for x[%d], with error %f\nuser gradient %f, numerical gradient %f',...
+            max_err_row,max_err_col,max_err,G_user(max_err_row,max_err_col),G_numerical(max_err_row,max_err_col)));
+      end
+      
       if isempty(A)
         [x,objval,exitflag] = snopt(x0, ...
           obj.x_lb,obj.x_ub, ...
-          [-inf;obj.cin_lb;obj.ceq;obj.bin_lb;obj.beq],[inf;obj.cin_ub;obj.ceq;obj.bin_ub;obj.beq],...
+          [-inf;obj.cin_lb;obj.ceq;b_lb],[inf;obj.cin_ub;obj.ceq;b_ub],...
           'snoptUserfun');
       else
         [iAfun,jAvar,Avals] = find(A);
@@ -306,27 +318,18 @@ classdef NonlinearProgram
         end
           
         if(options.check_grad)
-          num_rows_G = 1+obj.num_ceq+obj.num_cin+length(obj.beq)+length(obj.bin_ub);
-          [f,G] = snopt_userfun(x0);
-          [~,G_numerical] = geval(@snopt_userfun,x0,struct('grad_method','numerical'));
-          G_user = full(sparse(iGfun,jGvar,G,num_rows_G,obj.num_vars));
-          G_err = G_user-G_numerical;
-          x = x0;
-          objval = f;
-          exitflag = 1;
-          [max_err,max_err_idx] = max(abs(G_err(:)));
-          [max_err_row,max_err_col] = ind2sub([num_rows_G,obj.num_vars],max_err_idx);
-          display(sprintf('maximum gradient error is in row %d for x[%d], with error %f\nuser gradient %f, numerical gradient %f',...
-            max_err_row,max_err_col,max_err,G_user(max_err_row,max_err_col),G_numerical(max_err_row,max_err_col)));
+          checkGradient(x0);
         end
         [x,objval,exitflag] = snopt(x0, ...
           obj.x_lb,obj.x_ub, ...
-          [-inf;obj.cin_lb;obj.ceq;obj.bin_lb;obj.beq],[inf;obj.cin_ub;obj.ceq;obj.bin_ub;obj.beq],...
+          [-inf;obj.cin_lb;obj.ceq;b_lb],[inf;obj.cin_ub;obj.ceq;b_ub],...
           'snoptUserfun',...
           0,1,...
           Avals,iAfun,jAvar,...
           iGfun,jGvar);
-        
+        if(options.check_grad)
+          checkGradient(x);
+        end
       end
       
       objval = objval(1);
@@ -348,10 +351,9 @@ classdef NonlinearProgram
         dc = [dg(~ub_inf_idx,:);-dg(~lb_inf_idx,:)];
         dceq = dh;
       end
-      bin_lb_inf_idx = isinf(obj.bin_lb);
-      bin_ub_inf_idx = isinf(obj.bin_ub);
-      [x,objval,exitflag] = fmincon(@obj.objective,x0,[obj.Ain(~bin_ub_inf_idx,:);-obj.Ain(~bin_lb_inf_idx,:)],...
-        [obj.bin_ub(~bin_ub_inf_idx);-obj.bin_lb(~bin_lb_inf_idx)],obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.default_options.fmincon);
+      
+      [x,objval,exitflag] = fmincon(@obj.objective,x0,obj.Ain,...
+        obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.default_options.fmincon);
       objval = full(objval);
     end
   end
