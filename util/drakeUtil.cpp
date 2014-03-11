@@ -19,7 +19,7 @@ bool isa(const mxArray* mxa, const char* class_str)
   prhs[0] = const_cast<mxArray*>(mxa);
   prhs[1] = mxCreateString(class_str);
   mexCallMATLAB(1,&plhs,2,prhs,"isa");
-  bool tf = (bool) mxGetScalar(plhs);
+  bool tf = (mxGetScalar(plhs)==0.0);
   mxDestroyArray(plhs);
   mxDestroyArray(prhs[1]);
   return tf;
@@ -63,7 +63,7 @@ mxArray* createDrakeMexPointer(void* ptr, const char* deleteMethod, const char* 
 	else if (sizeof(ptr)==8) cid = mxUINT64_CLASS;
   else mexErrMsgIdAndTxt("Drake:constructDrakeMexPointer:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
 
-	int nrhs=3;
+	const int nrhs=3;
 	mxArray *prhs[nrhs], *plhs[1];
 
 	prhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);

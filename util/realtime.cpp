@@ -10,11 +10,12 @@
   #include <time.h>
   #include <windows.h>
   #include <time.h>
-        
+
 struct timespec {
     long tv_sec;
     long tv_nsec;
 };
+typedef long suseconds_t;
 
 const unsigned int BILLION = 1000000000;
 #define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL

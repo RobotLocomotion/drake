@@ -1,4 +1,7 @@
 function testKinCnst
+
+checkDependency('rigidbodyconstraint_mex');
+
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
