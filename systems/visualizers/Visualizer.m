@@ -40,7 +40,7 @@ classdef Visualizer < DrakeSystem
       end
     end
     
-    function drawWrapper(obj,t,y);
+    function drawWrapper(obj,t,y)
       sfigure(obj.fignum);
       clf; hold on;
       draw(obj,t,y);

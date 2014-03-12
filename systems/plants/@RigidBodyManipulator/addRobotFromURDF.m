@@ -166,7 +166,7 @@ end
 function model = parseGazebo(model,robotnum,node,options)
 ref = char(node.getAttribute('reference'));
 if ~isempty(ref)
-  body_ind = findLinkInd(model,ref,robotnum,false);
+  body_ind = findLinkInd(model,ref,robotnum,-1);
   if body_ind>0
     grav = node.getElementsByTagName('turnGravityOff').item(0);
     if ~isempty(grav)

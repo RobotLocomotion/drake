@@ -539,9 +539,10 @@ classdef RigidBodyManipulator < Manipulator
 %      end
     end
     
-    function body_ind = findLinkInd(model,linkname,robot,throw_error)
+    function body_ind = findLinkInd(model,linkname,robot,error_level)
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
+      % @param error_level >0 for throw error, 0 for throw warning, <0 for do nothing. @default throw error 
       % @ingroup Kinematic Tree
       if nargin<3 || isempty(robot), robot=0; end
       linkname = lower(linkname);
@@ -569,11 +570,13 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
       if (length(ind)~=1)
-        if (nargin<4 || throw_error)
+        if (nargin<4 || error_level>0)
           error(['couldn''t find unique link ' ,linkname]);
         else 
-          warning(['couldn''t find unique link ' ,linkname]);
           body_ind=0;
+          if (error_level==0)
+            warning(['couldn''t find unique link ' ,linkname]);
+          end
         end
       else
         body_ind = ind;
