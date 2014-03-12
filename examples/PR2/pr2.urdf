@@ -1378,12 +1378,6 @@
     <material value="Gazebo/White"/>
     <turnGravityOff value="true"/>
   </gazebo>
-  <gazebo reference="double_stereo_double_stereo_link">
-    <material value="PR2/Blue"/>
-  </gazebo>
-  <gazebo reference="sensor_mount_sensor_link">
-    <material value="PR2/Blue"/>
-  </gazebo>
   <joint name="laser_tilt_mount_joint" type="revolute">
     <axis xyz="0 1 0"/>
     <limit effort="0.65" lower="-0.7854" upper="1.48353" velocity="10.0"/>

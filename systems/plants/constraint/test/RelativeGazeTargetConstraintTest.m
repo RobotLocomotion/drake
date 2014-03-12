@@ -1,6 +1,10 @@
 function RelativeGazeTargetConstraintTest()
 % Andres would update the RelativeGazeTargetConstraint
-  r = RigidBodyManipulator(strcat(getDrakePath(),'/examples/PR2/pr2.urdf'));
+  w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
+  warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+  warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
+  r = RigidBodyManipulator(fullfile(getDrakePath(),'examples','PR2','pr2.urdf'));
+  warning(w);
   q_nom = zeros(r.getNumDOF(),1);
   constraintTester('RelativeGazeTargetConstraintTest', r, @makeCon, @(r) q_nom, @(r) q_nom, [],[],[],[],false);
 end

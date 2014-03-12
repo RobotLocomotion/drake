@@ -84,7 +84,7 @@ if (LCM_FOUND)
 
 endif()
 
-add_jar(drake ${drake_jar_javafiles})
+add_jar(drake SOURCES ${drake_jar_javafiles})
 install_jar(drake share/java)
 pods_install_pkg_config_file(drake-java
     CLASSPATH drake

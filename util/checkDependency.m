@@ -105,6 +105,7 @@ if ~ok
       end
       
     case 'vrml'
+      unsupported = false;
       if(exist('vrinstall','file'))
         conf.vrml_enabled = logical(vrinstall('-check','-viewer'));% && usejava('awt');  % usejava('awt') return 0 if running with no display
         if ismac
@@ -113,13 +114,17 @@ if ~ok
             % per my support ticket to matlab, who sent a perfunctory response
             % pointing to this: http://www.mathworks.com/support/sysreq/release2012a/macintosh.html
             conf.vrml_enabled = false;
+            disp(' ');
+            disp(' Found Simulink 3D Animation Toolbox, but is not supported in this version of MATLAB.  See http://www.mathworks.com/support/sysreq/release2012a/macintosh.html ');
+            disp(' ');
+            unsupported = true;
           end
         end
       else
         conf.vrml_enabled=false;
       end
       
-      if (~conf.vrml_enabled)
+      if (~conf.vrml_enabled && ~unsupported)
         disp(' ');
         disp(' Simulink 3D Animation Toolbox not found.  Have you run ''vrinstall -install viewer''?');
         disp(' ');

@@ -10,6 +10,15 @@ classdef NullVisualizer < Visualizer
     function status = draw(obj,t,x,flag)
       status = 0;
     end
+    
+    function drawWrapper(obj,t,y)
+      % intentionally blank
+    end
+    
+    function playback(obj,xtraj,options)
+      % intentionally blank
+    end
+    
   end
 end
   
