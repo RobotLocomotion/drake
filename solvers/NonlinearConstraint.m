@@ -79,5 +79,15 @@ classdef NonlinearConstraint < Constraint
       obj.nnz = numel(iCfun);
     end
     
+    function checkGradient(obj,tol,varargin)
+      % Check the accuracy and sparsity pattern of the gradient
+      % @param tol    -- A double scalar. The tolerance of the user gradient, compared with
+      % numerical gradient
+      % @param varargin  -- The argument passed to eval function
+      [~,dc] = obj.eval(varargin{:});
+      [~,dc_numeric] = geval(@obj.eval,varargin{:},struct('grad_method','numerical'));
+      valuecheck(dc,dc_numeric,tol);
+      valuecheck(dc,sparse(obj.iCfun,obj.jCvar,dc(sub2ind([obj.num_cnstr,obj.xdim],obj.iCfun,obj.jCvar)),obj.num_cnstr,obj.xdim,obj.nnz));
+    end
   end
 end
