@@ -27,12 +27,11 @@ cnstr4 = NonlinearConstraint([0;0],[0;1],3,@cnstr_userfun4);
 valuecheck(cnstr4.ceq_idx,1);
 valuecheck(cnstr4.cin_idx,2);
 [c4,dc4] = cnstr4.eval([1;2;0]);
-[~,dc4_val] = cnstr4.evalSparse([1;2;0]);
-valuecheck(dc4,sparse(cnstr4.iCfun,cnstr4.jCvar,dc4_val,cnstr4.num_cnstr,cnstr4.xdim,cnstr4.nnz));
+cnstr4.checkGradient(1e-4,randn(3,1));
 cnstr4 = cnstr4.setSparseStructure([1;1;2;2],[1;2;2;3]);
-[c4_val,dc4_val] = cnstr4.evalSparse([1;2;0]);
-valuecheck(dc4,sparse(cnstr4.iCfun,cnstr4.jCvar,dc4_val,cnstr4.num_cnstr,cnstr4.xdim,cnstr4.nnz));
+c4_val = cnstr4.eval([1;2;0]);
 valuecheck(c4,c4_val);
+cnstr4.checkGradient(1e-4,randn(3,1));
 
 display('Check LinearConstraint')
 A = sparse([1;1;2;3;3;3],[1;4;2;1;2;3],randn(6,1));
