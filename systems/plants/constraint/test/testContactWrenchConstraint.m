@@ -112,6 +112,8 @@ valuecheck(c,c_cnstr);
 valuecheck(dc,dc_cnstr);
 valuecheck(sparse(cnstr{1}.iCfun,cnstr{1}.jCvar,dc_cnstr(sub2ind([cnstr{1}.num_cnstr,cnstr{1}.xdim],cnstr{1}.iCfun,cnstr{1}.jCvar)),...
 cnstr{1}.num_cnstr,cnstr{1}.xdim),dc_cnstr);
+valuecheck(cnstr{2}.lb,fc_cnst.F_lb(:));
+valuecheck(cnstr{2}.ub,fc_cnst.F_ub(:));
 end
 
 function c = evalConstraint(fc_cnst,t,q,F)
