@@ -43,4 +43,10 @@ valuecheck(A_mex,A,1e-10);
 valuecheck(lb_mex,lb,1e-10);
 valuecheck(ub_mex,ub,1e-10);
 strcmp(cnst_name_mex,cnst_name);
+cnstr = mtlpc.generateConstraint(t);
+sizecheck(cnstr,[1,1]);
+valuecheck(cnstr{1}.lb,lb);
+valuecheck(cnstr{1}.ub,ub);
+A_mat = sparse(iAfun,jAvar,A,num_cnst,mtlpc.robot.getNumDOF*length(t));
+valuecheck(cnstr{1}.A,A_mat);
 end
