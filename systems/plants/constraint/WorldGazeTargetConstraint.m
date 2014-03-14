@@ -15,6 +15,21 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
     body_name
   end
   
+  methods(Access = protected)
+    function [c,dc] = evalValidTime(obj,kinsol)
+      [axis_ends,daxis_ends] = forwardKin(obj.robot,kinsol,obj.body,[obj.gaze_origin obj.gaze_origin+obj.axis],0);
+      world_axis = axis_ends(:,2)-axis_ends(:,1);
+      dworld_axis = daxis_ends(4:6,:)-daxis_ends(1:3,:);
+      dir = obj.target-axis_ends(:,1);
+      ddir = -daxis_ends(1:3,:);
+      dir_norm = norm(dir);
+      dir_normalized = dir/dir_norm;
+      ddir_normalized = (eye(3)*dir_norm^2-dir*dir')/(dir_norm^3)*ddir;
+      c = world_axis'*dir_normalized-1;
+      dc = dir_normalized'*dworld_axis+world_axis'*ddir_normalized;
+    end
+  end
+  
   methods
     function obj = WorldGazeTargetConstraint(robot,body,axis,target,gaze_origin,conethreshold,tspan)
       if(nargin == 6)
@@ -35,24 +50,6 @@ classdef WorldGazeTargetConstraint < GazeTargetConstraint
       obj.body_name = obj.robot.getBody(obj.body).linkname;
       obj.type = RigidBodyConstraint.WorldGazeTargetConstraintType;
       obj.mex_ptr = ptr;
-    end
-    
-    function [c,dc] = eval(obj,t,kinsol)
-      if(obj.isTimeValid(t))
-        [axis_ends,daxis_ends] = forwardKin(obj.robot,kinsol,obj.body,[obj.gaze_origin obj.gaze_origin+obj.axis],0);
-        world_axis = axis_ends(:,2)-axis_ends(:,1);
-        dworld_axis = daxis_ends(4:6,:)-daxis_ends(1:3,:);
-        dir = obj.target-axis_ends(:,1);
-        ddir = -daxis_ends(1:3,:);
-        dir_norm = norm(dir);
-        dir_normalized = dir/dir_norm;
-        ddir_normalized = (eye(3)*dir_norm^2-dir*dir')/(dir_norm^3)*ddir;
-        c = world_axis'*dir_normalized-1;
-        dc = dir_normalized'*dworld_axis+world_axis'*ddir_normalized;
-      else
-        c = [];
-        dc = [];
-      end
     end
     
     function name_str = name(obj,t)

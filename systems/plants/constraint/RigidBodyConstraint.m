@@ -98,5 +98,12 @@ classdef RigidBodyConstraint
         error('Drake:RigidBody:UnsupportedCategory','The constraint category is not supported');
       end
     end
+    
+  end
+  
+  methods(Abstract)
+    cnstr = generateConstraint(obj,t)
+    % Given the time, this method would generate a cell of Constraint objects, that encode
+    % the numerical constraint at the given time
   end
 end
