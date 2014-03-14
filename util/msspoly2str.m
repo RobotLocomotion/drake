@@ -4,7 +4,8 @@ function str = msspoly2str(p)
 % but with sprintf instead of fprintf. Unfortunately, due to the way MATLAB
 % treats subsref inside and outside of class definitions, and the particular
 % way in which msspoly/subsref is written, several changes needed to be made to
-% make this function work from drake/util. 
+% make this function work from drake/util. The code that should be
+% REPLACED/REMOVED when moving the function into spotless is indicated below. 
 %
 
 if isempty(p)
