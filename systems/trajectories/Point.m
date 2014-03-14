@@ -11,7 +11,7 @@ classdef Point
       if (nargin<2)
         p = zeros(frame.dim,1);
       else
-        typecheck(p,'double');
+        typecheck(p,{'double','msspoly'});
         if isscalar(p), p = repmat(p,frame.dim,1); end
         sizecheck(p,[frame.dim,1]);
       end
@@ -24,7 +24,11 @@ classdef Point
     end
     
     function p = double(obj)
-      p = obj.p;
+      if isnumeric(obj.p)
+        p = obj.p;
+      elseif isa(obj.p,'msspoly')
+        p = double(obj.p);
+      end
     end
     
     function s = size(obj,varargin)
@@ -40,8 +44,14 @@ classdef Point
     end
     
     function display(obj)
-      for i=1:length(obj.p)
-        fprintf(1,'%20s = %f\n',obj.frame.coordinates{i},obj.p(i));
+      if isnumeric(obj.p)
+        for i=1:length(obj.p)
+          fprintf(1,'%20s = %f\n',obj.frame.coordinates{i},obj.p(i));
+        end
+      elseif isa(obj.p,'msspoly')
+        for i=1:length(obj.p)
+          fprintf(1,'%20s = %s\n',obj.frame.coordinates{i},msspoly2str(obj.p(i)));
+        end
       end
     end
     
