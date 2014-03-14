@@ -22,6 +22,29 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
     bodyB_name;
   end
   
+  methods(Access = protected)
+    function [c,dc] = evalValidTime(obj,kinsol)      
+      nq = obj.robot.getNumDOF();
+      if(obj.bodyA ~= 0)
+        [posA,dposA] = forwardKin(obj.robot,kinsol,obj.bodyA,obj.ptA,0);
+      else
+        posA = obj.ptA;
+        dposA = zeros(3*obj.num_constraint,nq);
+      end
+      if(obj.bodyB ~= 0)
+        [posB,dposB] = forwardKin(obj.robot,kinsol,obj.bodyB,obj.ptB,0);
+      else
+        posB = obj.ptB;
+        dposB = zeros(3*obj.num_constraint,nq);
+      end
+      d = posA-posB;
+      dd = dposA-dposB;
+      c = sum(d.*d,1)';
+      dc = 2*sparse(reshape(bsxfun(@times,1:obj.num_constraint,ones(3,1)),[],1),...
+        (1:3*obj.num_constraint)',reshape(d,[],1))*dd;
+    end
+  end
+  
   methods
     function obj = Point2PointDistanceConstraint(robot,bodyA,bodyB,ptA,ptB,dist_lb,dist_ub,tspan)
       if(nargin == 7)
@@ -85,32 +108,6 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
       obj.dist_ub = dist_ub;
       obj.type = RigidBodyConstraint.Point2PointDistanceConstraintType;
       obj.mex_ptr = mex_ptr;
-    end
-    
-    function [c,dc] = eval(obj,t,kinsol)
-      if(obj.isTimeValid(t))
-        nq = obj.robot.getNumDOF();
-        if(obj.bodyA ~= 0)
-          [posA,dposA] = forwardKin(obj.robot,kinsol,obj.bodyA,obj.ptA,0);
-        else
-          posA = obj.ptA;
-          dposA = zeros(3*obj.num_constraint,nq);
-        end
-        if(obj.bodyB ~= 0)
-          [posB,dposB] = forwardKin(obj.robot,kinsol,obj.bodyB,obj.ptB,0);
-        else
-          posB = obj.ptB;
-          dposB = zeros(3*obj.num_constraint,nq);
-        end
-        d = posA-posB;
-        dd = dposA-dposB;
-        c = sum(d.*d,1)';
-        dc = 2*sparse(reshape(bsxfun(@times,1:obj.num_constraint,ones(3,1)),[],1),...
-          (1:3*obj.num_constraint)',reshape(d,[],1))*dd;
-      else
-        c = [];
-        dc = [];
-      end
     end
     
     function [lb,ub] = bounds(obj,t)

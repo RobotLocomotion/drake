@@ -11,7 +11,15 @@ classdef PositionConstraint < SingleTimeKinematicConstraint
     [pos,J] = evalPositions(obj,kinsol)
     cnst_names = evalNames(obj,t)
   end
-
+  
+  methods(Access = protected)
+    function [c,dc] = evalValidTime(obj,kinsol)
+      [pos,J] = evalPositions(obj,kinsol); 
+      c = pos(~obj.null_constraint_rows);
+      dc = J(~obj.null_constraint_rows,:);
+    end
+  end
+  
   methods(Access = protected)
     function obj = setConstraintBounds(obj, lb, ub)
       rows = size(lb,1);
@@ -48,19 +56,7 @@ classdef PositionConstraint < SingleTimeKinematicConstraint
       obj.n_pts = size(obj.pts,2);
       obj = setConstraintBounds(obj,lb,ub);
     end
-
-    function [c,dc] = eval(obj,t,kinsol)
-      if(obj.isTimeValid(t))
-        [pos,J] = evalPositions(obj,kinsol); 
-        c = pos(~obj.null_constraint_rows);
-        dc = J(~obj.null_constraint_rows,:);
-      else
-        c = [];
-        dc = [];
-      end
-    end
     
-
     function [lb,ub] = bounds(obj,t)
       if(obj.isTimeValid(t))
         lb = obj.lb;

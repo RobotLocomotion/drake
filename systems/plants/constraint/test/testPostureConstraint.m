@@ -49,4 +49,9 @@ valuecheck(ub(1),inf);
 [lb_mex,ub_mex] = testPostureConstraintmex(pc.mex_ptr,t);
 valuecheck(lb_mex(1),-inf);
 valuecheck(ub_mex(1),inf);
+
+display('Check generateConstraint function')
+pc_bbcnstr = pc2.generateConstraint(t);
+valuecheck(pc_bbcnstr{1}.lb,lb2);
+valuecheck(pc_bbcnstr{1}.ub,ub2);
 end
