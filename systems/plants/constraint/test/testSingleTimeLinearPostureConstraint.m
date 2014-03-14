@@ -47,6 +47,12 @@ c_val = stlpc.feval(t,q);
 if(any(c_val>ub+1e-10) || any(c_val<lb-1e-10))
   error('constraint value is incorrect');
 end
+
+cnstr = stlpc.generateConstraint(t);
+sizecheck(cnstr,[1,1]);
+valuecheck(cnstr{1}.lb,stlpc.lb);
+valuecheck(cnstr{1}.ub,stlpc.ub);
+valuecheck(cnstr{1}.A,stlpc.A_mat);
 end
 
 function testSingleTimeLinearPostureConstraint_userfun(stlpc,q,t)
