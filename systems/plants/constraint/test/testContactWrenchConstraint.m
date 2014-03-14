@@ -92,7 +92,7 @@ function testContactWrenchConstraint_userfun(fc_cnst,t,q,F)
 % check constraint gradient
 nq = fc_cnst.robot.getNumDOF();
 kinsol = fc_cnst.robot.doKinematics(q);
-[~,dc] = fc_cnst.eval(t,kinsol,F);
+[c,dc] = fc_cnst.eval(t,kinsol,F);
 [~,dc_numeric] = geval(@(x) evalConstraint(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dc,dc_numeric,1e-5);
 kinsol = fc_cnst.robot.doKinematics(q);
@@ -102,6 +102,16 @@ valuecheck(dtau,dtau_numeric,1e-4);
 [~,dw] = fc_cnst.wrench(t,kinsol,F);
 [~,dw_numeric] = geval(@(x) evalWrench(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dw,dw_numeric,1e-4);
+[lb,ub] = fc_cnst.bounds(t);
+cnstr = fc_cnst.generateConstraint(t);
+sizecheck(cnstr,[1,2]);
+valuecheck(cnstr{1}.lb,lb);
+valuecheck(cnstr{1}.ub,ub);
+[c_cnstr,dc_cnstr] = cnstr{1}.eval(kinsol,F);
+valuecheck(c,c_cnstr);
+valuecheck(dc,dc_cnstr);
+valuecheck(sparse(cnstr{1}.iCfun,cnstr{1}.jCvar,dc_cnstr(sub2ind([cnstr{1}.num_cnstr,cnstr{1}.xdim],cnstr{1}.iCfun,cnstr{1}.jCvar)),...
+cnstr{1}.num_cnstr,cnstr{1}.xdim),dc_cnstr);
 end
 
 function c = evalConstraint(fc_cnst,t,q,F)
