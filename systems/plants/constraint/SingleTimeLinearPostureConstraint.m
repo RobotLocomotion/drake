@@ -155,5 +155,13 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
       end
     end
     
+    function cnstr = generateConstraint(obj,t)
+      % generate a LinearConstraint
+      if(obj.isTimeValid(t))
+        cnstr = {LinearConstraint(obj.lb,obj.ub,obj.A_mat)};
+      else
+        cnstr = {};
+      end
+    end
   end
 end
