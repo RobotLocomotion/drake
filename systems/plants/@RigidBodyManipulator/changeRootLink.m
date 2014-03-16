@@ -1,4 +1,4 @@
-function new_rbm = changeRootLink(rbm, link, xzy, rpy, options)
+function new_rbm = changeRootLink(rbm, link, xyz, rpy, options)
 % Changes the root link of the kinematic tree. Note that the root link 
 % is static in the world.
 %
@@ -46,14 +46,13 @@ while (true)
   %% update body
   current_body.parent = parent_ind
   
-  % todo: update wrl geometry
-  % todo: update geometry
-  % todo: update contact pts
   if (parent_ind == 0) 
+    current_body.robotnum = 0;
     current_body.jointname = ''; 
     current_body.pitch = 0;
     current_body.floating = 0;
-    current_body.robotnum = 0;
+    current_body.Xtree = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
+    current_body.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]; 
   else
     old_child_new_parent_body = getBody(rbm,parent_ind);
     current_body.robotnum = old_child_new_parent_body.robotnum;
@@ -61,13 +60,16 @@ while (true)
     current_body.pitch = old_child_new_parent_body.pitch;
     current_body.floating = old_child_new_parent_body.floating;
     
-    T_old_child_to_current_body = eye(4);  % todo: finish this
-    X_old_child_to_current_body = eye(4);  % todo: finish this
+    current_body.Xtree = inv(old_child_new_parent_body.Xtree);
+    current_body.Ttree = inv(old_child_new_parent_body.Ttree);  
     
-    current_body.joint_axis = T_old_child_to_current_body(1:3,:) * [old_child_new_parent_body.joint_axis;1];
+    current_body.X_joint_to_body = current_body.Xtree * old_child_new_parent_body.X_joint_to_body;
+    current_body.T_body_to_joint = old_child_new_parent_body.T_body_to_joint*current_body.Ttree;
+    
+    % note: flip joint axis here to keep the joint direction the same (and
+    % avoid flipping joint limits, etc)
+    current_body.joint_axis = current_body.Ttree(1:3,:) * [-old_child_new_parent_body.joint_axis;1];
 
-    % todo: finish kinematic transformation here
-    
     current_body.damping = old_child_new_parent_body.damping; 
     current_body.coulomb_friction = old_child_new_parent_body.coulomb_friction; 
     current_body.static_friction = old_child_new_parent_body.static_friction;
@@ -78,7 +80,7 @@ while (true)
     current_body.velocity_limit = old_child_new_parent_body.velocity_limit;
     current_body.has_position_sensor = old_child_new_parent_body.has_position_sensor;
   end
-  
+    
   new_rbm = setBody(new_rbm,current_body_ind,current_body);
   
   if (next_body_ind<1) break; end
