@@ -44,7 +44,7 @@ while (true)
   next_body_ind = current_body.parent;
   
   %% update body
-  current_body.parent = parent_ind
+  current_body.parent = parent_ind;
   
   if (parent_ind == 0) 
     current_body.robotnum = 0;
@@ -63,12 +63,12 @@ while (true)
     current_body.Xtree = inv(old_child_new_parent_body.Xtree);
     current_body.Ttree = inv(old_child_new_parent_body.Ttree);  
     
-    current_body.X_joint_to_body = current_body.Xtree * old_child_new_parent_body.X_joint_to_body;
+    current_body.X_joint_to_body = old_child_new_parent_body.X_joint_to_body*current_body.Xtree;
     current_body.T_body_to_joint = old_child_new_parent_body.T_body_to_joint*current_body.Ttree;
-    
+
     % note: flip joint axis here to keep the joint direction the same (and
     % avoid flipping joint limits, etc)
-    current_body.joint_axis = current_body.Ttree(1:3,:) * [-old_child_new_parent_body.joint_axis;1];
+    current_body.joint_axis = current_body.Ttree(1:3,1:3) * [-old_child_new_parent_body.joint_axis];
 
     current_body.damping = old_child_new_parent_body.damping; 
     current_body.coulomb_friction = old_child_new_parent_body.coulomb_friction; 
@@ -91,6 +91,8 @@ while (true)
 end
 
 new_rbm = compile(new_rbm);
+
+warning('Drake:RigidBodyManipulator:ChangeRootUnsupportedWRL','Haven''t updated the WRL geometry yet.  This model will not visualize properly in the Simulink 3d animation tool (yet)');
 
 % add coordinate transforms to go back and forth between the old and new
 % frames
