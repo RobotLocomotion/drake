@@ -2,12 +2,17 @@
 p = RigidBodyManipulator('AcrobotSymmetric1.urdf');
 N = p.num_q; 
 
-% Construct visualizer
-v = p.constructVisualizer;
+figure(1);
+subplot(1,2,1);
+drawKinematicTree(p);
 
 % Now, get new plant with root changed
 pnew = changeRootLink(p, 'end_link', [0;0;0], [0;0;0], []);
 % pnew = RigidBodyManipulator('AcrobotSymmetric2.urdf');
+
+figure(1);
+subplot(1,2,2);
+drawKinematicTree(pnew);
 
 % Get plant with root changed manually
 % pnew_true = RigidBodyManipulator('AcrobotSymmetric2.urdf');

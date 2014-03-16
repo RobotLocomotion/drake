@@ -17,8 +17,8 @@ classdef RigidBody < RigidBodyElement
     contact_shape_group={}; % contact_shape_group{i} is a list of indices into contact_shapes which belong to collision_group_name{i}
     
     % joint properties
-    jointname='';
     parent=0;       % index (starting at 1) for rigid body parent.  0 means no parent
+    jointname='';
     pitch=0;        % for featherstone 3D models
     floating=0; % 0 = not floating base, 1 = rpy floating base, 2 = quaternion floating base
     joint_axis=[1;0;0]; 

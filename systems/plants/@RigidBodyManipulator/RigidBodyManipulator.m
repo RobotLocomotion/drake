@@ -1309,6 +1309,8 @@ classdef RigidBodyManipulator < Manipulator
             model.body(i).dofnum=dof;
             inds = [inds,i];
           end
+        else
+          model.body(i).dofnum=0;
         end
       end
       m.NB= dof;  
