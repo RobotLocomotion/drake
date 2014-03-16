@@ -14,39 +14,43 @@ figure(1);
 subplot(1,2,2);
 drawKinematicTree(pnew);
 
+kinsol = doKinematics(p,zeros(3,1));
+xb = forwardKin(p,kinsol,findLinkInd(p,'base_link'),zeros(3,1));
+xe = forwardKin(p,kinsol,findLinkInd(p,'end_link'),zeros(3,1));
+
+kinsol_new = doKinematics(pnew,zeros(3,1));
+xbnew = forwardKin(pnew,kinsol,findLinkInd(pnew,'base_link'),zeros(3,1));
+xenew = forwardKin(pnew,kinsol,findLinkInd(pnew,'end_link'),zeros(3,1));
+valuecheck(xb-xe,xbnew-xenew);
+
+
 % Get plant with root changed manually
-% pnew_true = RigidBodyManipulator('AcrobotSymmetric2.urdf');
+%pnew_true = RigidBodyManipulator('AcrobotSymmetric2.urdf');
 
 % First make sure origin is still fixed point
 if (norm(pnew.dynamics(0,zeros(2*N,1),0)) > eps)
     error('Origin not a fixed point any more.');
 end
 
-% Now, compare dynamics at a bunch of points with no actuation
-numTest = 100;
+% Compare dynamics at a bunch of points with no actuation, then with
+% actuation
+numTest = 200;
 for k = 1:numTest
-    x0 = randn(6,1);
-   
-    xdot = pnew.dynamics(0,x0,0);
-    xdot_true = p.dynamics(0,[pi;0;0;0;0;0]+x0,0);
+    x0 = Point(getStateFrame(p),randn(6,1));
+    x0new = x0.inFrame(getStateFrame(pnew));
     
-    if norm(xdot - xdot_true) > 1e-10
-        error('Dynamics did not match');
+    % note: don't have to worry about the input frames in this case, only 
+    % because there is just one input for this robot
+    if (k<=100) 
+      u0 = 0; 
+    else
+      u0 = randn(1);
     end
-end
-
-% Now, with actuation
-numTest = 100;
-for k = 1:numTest
-    x0 = randn(6,1);
-    u0 = randn(1,1);
    
-    xdot = pnew.dynamics(0,x0,u0);
-    xdot_true = p.dynamics(0,[pi;0;0;0;0;0]+x0,u0);
+    xdot = Point(getStateFrame(pnew),pnew.dynamics(0,double(x0new),u0));
+    xdot_true = Point(getStateFrame(p),p.dynamics(0,[pi;0;0;0;0;0]+double(x0),u0));
     
-    if norm(xdot - xdot_true) > 1e-10
-        error('Dynamics did not match');
-    end
+    valuecheck(xdot,xdot_true);
 end
 
 disp('Tests passed!');

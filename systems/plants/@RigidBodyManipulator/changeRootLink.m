@@ -91,3 +91,20 @@ while (true)
 end
 
 new_rbm = compile(new_rbm);
+
+% add coordinate transforms to go back and forth between the old and new
+% frames
+if isempty(findTransform(getStateFrame(rbm),getStateFrame(new_rbm)))
+  addProjectionTransformByCoordinateNames(getStateFrame(rbm),getStateFrame(new_rbm));
+  addProjectionTransformByCoordinateNames(getStateFrame(new_rbm),getStateFrame(rbm));
+end
+
+if isempty(findTransform(getInputFrame(rbm),getInputFrame(new_rbm)))
+  addProjectionTransformByCoordinateNames(getInputFrame(rbm),getInputFrame(new_rbm));
+  addProjectionTransformByCoordinateNames(getInputFrame(new_rbm),getInputFrame(rbm));
+end
+
+if isempty(findTransform(getOutputFrame(rbm),getOutputFrame(new_rbm)))
+  addProjectionTransformByCoordinateNames(getOutputFrame(rbm),getOutputFrame(new_rbm));
+  addProjectionTransformByCoordinateNames(getOutputFrame(new_rbm),getOutputFrame(rbm));
+end
