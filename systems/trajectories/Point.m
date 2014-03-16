@@ -90,6 +90,9 @@ classdef Point
     end
     
     function varargout = valuecheck(val,desired_val,varargin)
+      if isa(desired_val,'Point')
+        val = val.inFrame(desired_val.frame);
+      end
       val = double(val);
       desired_val = double(desired_val);
       if nargout>0
