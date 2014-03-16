@@ -23,6 +23,13 @@ if (eigen3_FOUND)
   add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
   target_link_libraries(drakeRBM drakeCollision)
 
+  pods_install_libraries(drakeRBM)
+  pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h DESTINATION drake)
+  pods_install_pkg_config_file(drake-rbm
+    LIBS -ldrakeRBM
+    REQUIRES  
+    VERSION 0.0.1)
+
   add_subdirectory(collision)
   add_subdirectory(constraint)
 
@@ -114,13 +121,6 @@ if (eigen3_FOUND)
   endif()
 
   add_subdirectory(test)
-
-  pods_install_libraries(drakeRBM)
-  pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h DESTINATION drake)
-  pods_install_pkg_config_file(drake-rbm
-    LIBS -ldrakeRBM
-    REQUIRES  
-    VERSION 0.0.1)
 
 endif(eigen3_FOUND)
 
