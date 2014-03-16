@@ -2,27 +2,39 @@
 p = RigidBodyManipulator('AcrobotSymmetric1.urdf');
 N = p.num_q; 
 
-figure(1);
-subplot(1,2,1);
-drawKinematicTree(p);
 
 % Now, get new plant with root changed
 pnew = changeRootLink(p, 'end_link', [0;0;0], [0;0;0], []);
 % pnew = RigidBodyManipulator('AcrobotSymmetric2.urdf');
 
-figure(1);
-subplot(1,2,2);
-drawKinematicTree(pnew);
+%figure(1);
+%subplot(1,2,1);
+%drawKinematicTree(p);
+%subplot(1,2,2);
+%drawKinematicTree(pnew);
 
-kinsol = doKinematics(p,zeros(3,1));
-xb = forwardKin(p,kinsol,findLinkInd(p,'base_link'),zeros(3,1));
-xe = forwardKin(p,kinsol,findLinkInd(p,'end_link'),zeros(3,1));
+%v = constructVisualizer(pnew);
+%v.inspector
+%keyboard;
 
-kinsol_new = doKinematics(pnew,zeros(3,1));
-xbnew = forwardKin(pnew,kinsol,findLinkInd(pnew,'base_link'),zeros(3,1));
-xenew = forwardKin(pnew,kinsol,findLinkInd(pnew,'end_link'),zeros(3,1));
-valuecheck(xb-xe,xbnew-xenew);
+for k=1:100
+  if k<=1, 
+    q0 = zeros(3,1);
+  else
+    q0 = randn(3,1);
+  end
+  
+  link_ind = 4;
+  b = getBody(p,link_ind);
+  kinsol = doKinematics(p,q0);
+  pt = forwardKin(p,kinsol,link_ind,b.com);
 
+  b = getBody(pnew,link_ind);
+  kinsol_new = doKinematics(pnew,[pi;0;0]+q0);
+  pt_new = forwardKin(pnew,kinsol_new,link_ind,b.com);
+  
+  valuecheck(pt_new,pt);
+end
 
 % Get plant with root changed manually
 %pnew_true = RigidBodyManipulator('AcrobotSymmetric2.urdf');
@@ -36,19 +48,18 @@ end
 % actuation
 numTest = 200;
 for k = 1:numTest
-    x0 = Point(getStateFrame(p),randn(6,1));
-    x0new = x0.inFrame(getStateFrame(pnew));
+    % note: we're actually intentionally abusing the frames here, because
+    % the system is symmetric
+    x0 = randn(6,1);
     
-    % note: don't have to worry about the input frames in this case, only 
-    % because there is just one input for this robot
     if (k<=100) 
       u0 = 0; 
     else
       u0 = randn(1);
     end
    
-    xdot = Point(getStateFrame(pnew),pnew.dynamics(0,double(x0new),u0));
-    xdot_true = Point(getStateFrame(p),p.dynamics(0,[pi;0;0;0;0;0]+double(x0),u0));
+    xdot = pnew.dynamics(0,x0,u0);
+    xdot_true = p.dynamics(0,[pi;0;0;0;0;0]+x0,u0);
     
     valuecheck(xdot,xdot_true);
 end
