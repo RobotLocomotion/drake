@@ -37,6 +37,7 @@ end
 % instead of making a proper todo_list
 
 parent_ind = 0;
+grandparent_ind = 0;
 current_body_ind = root;
 
 while (true)
@@ -51,8 +52,11 @@ while (true)
     current_body.jointname = ''; 
     current_body.pitch = 0;
     current_body.floating = 0;
-    current_body.Xtree = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
-    current_body.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]; 
+    current_body.Xtree = eye(6); 
+    current_body.Ttree = eye(4); 
+    
+    X_old_body_to_new_body = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
+    T_new_body_to_old_body = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];
   else
     old_child_new_parent_body = getBody(rbm,parent_ind);
     current_body.robotnum = old_child_new_parent_body.robotnum;
@@ -60,16 +64,37 @@ while (true)
     current_body.pitch = old_child_new_parent_body.pitch;
     current_body.floating = old_child_new_parent_body.floating;
     
-    current_body.Xtree = inv(old_child_new_parent_body.Xtree);
-    current_body.Ttree = inv(old_child_new_parent_body.Ttree);  
+    X_old_body_to_new_body = old_child_new_parent_body.Xtree;
+    T_new_body_to_old_body = old_child_new_parent_body.Ttree; 
+    if (grandparent_ind == 0) % then my parent is the root
+      current_body.Xtree = inv(Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz));
+      current_body.Ttree = inv([rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1]); 
+    else
+      grandparent_old_body = getBody(rbm,grandparent_ind);
+      current_body.Xtree = inv(grandparent_old_body.Xtree);
+      current_body.Ttree = inv(grandparent_old_body.Ttree);
+    end
     
-    current_body.X_joint_to_body = old_child_new_parent_body.X_joint_to_body*current_body.Xtree;
-    current_body.T_body_to_joint = old_child_new_parent_body.T_body_to_joint*current_body.Ttree;
-
     % note: flip joint axis here to keep the joint direction the same (and
     % avoid flipping joint limits, etc)
     current_body.joint_axis = current_body.Ttree(1:3,1:3) * [-old_child_new_parent_body.joint_axis];
-
+    
+    if dot(current_body.joint_axis,[0;0;1])<1-1e-4
+      % see RigidBodyManipulator/addJoint
+      axis_angle = [cross(current_body.joint_axis,[0;0;1]); acos(dot(current_body.joint_axis,[0;0;1]))]; % both are already normalized
+      if all(abs(axis_angle(1:3))<1e-4)
+        % then it's a scaling of the z axis.
+        valuecheck(sin(axis_angle(4)),0,1e-4);
+        axis_angle(1:3)=[0;1;0];
+      end
+      jointrpy = quat2rpy(axis2quat(axis_angle));
+      child.X_joint_to_body=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
+      child.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
+ 
+      valuecheck(inv(child.X_joint_to_body)*[current_body.joint_axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
+      valuecheck(child.T_body_to_joint*[current_body.joint_axis;1],[0;0;1;1],1e-6);
+    end
+    
     current_body.damping = old_child_new_parent_body.damping; 
     current_body.coulomb_friction = old_child_new_parent_body.coulomb_friction; 
     current_body.static_friction = old_child_new_parent_body.static_friction;
@@ -81,11 +106,15 @@ while (true)
     current_body.has_position_sensor = old_child_new_parent_body.has_position_sensor;
   end
     
+  % note: i think I must have X_old_body_to_new_body backwards?
+  current_body = setInertial(current_body,inv(X_old_body_to_new_body)'*current_body.I*X_old_body_to_new_body);
+
   new_rbm = setBody(new_rbm,current_body_ind,current_body);
   
   if (next_body_ind<1) break; end
   
   %% update indices for next iteration
+  grandparent_ind = parent_ind;
   parent_ind = current_body_ind;
   current_body_ind = next_body_ind;
 end
