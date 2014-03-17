@@ -55,7 +55,7 @@ for k = 1:numTest
     if (k<=100) 
       u0 = 0; 
     else
-      u0 = randn(1)
+      u0 = randn(1);
     end
    
     xdot = pnew.dynamics(0,x0,u0);
