@@ -15,9 +15,11 @@ classdef NonlinearProgram
   % @param Aeq          A double matrix
   % @param beq          A double vector
   % @param cin_lb       A double vector, the lower bounds on the nonlinear inequality
-  % constraints
+  % constraints. The default value is 0
   % @param cin_ub       A double vector, the upper bounds on the nonlinear inequality
-  % constraints
+  % constraints. The default value is -inf
+  % @param check_grad   A boolean. True if the user gradient will be checked against
+  % numerical gradient at the begining and end of the nonlinear optimization
   properties (SetAccess=protected)
     num_vars
     num_cin
@@ -29,6 +31,7 @@ classdef NonlinearProgram
     solver
     default_options
     grad_method
+    check_grad
   end
   
   properties (Access=private)
@@ -37,6 +40,9 @@ classdef NonlinearProgram
 
   properties (Access = protected)
     iGfun,jGvar  % sparsity pattern in objective and nonlinear constraints
+    iFfun,jFvar  % sparsity pattern in the objective function
+    iCinfun,jCinvar  % sparsity pattern in the nonlinear inequality constraints
+    iCeqfun,jCeqvar  % sparsity pattern in the nonlinear equality constraints
   end
   
   methods % A subset of these MUST be overloaded
@@ -84,7 +90,7 @@ classdef NonlinearProgram
       if nargout>2
         [fgh,dfgh] = objectiveAndNonlinearConstraints(obj,x);
         dg = dfgh(1+(1:obj.num_cin),:);
-        dh = dfgh(1+obj.num_cin+(1:obj.num_equality_constraints),:);
+        dh = dfgh(1+obj.num_cin+(1:obj.num_ceq),:);
       else
         fgh = objectiveAndNonlinearConstraints(obj,x);
       end
@@ -126,25 +132,35 @@ classdef NonlinearProgram
   end
   
   methods
-    function obj = NonlinearProgram(num_vars,num_nin,num_neq)
+    function obj = NonlinearProgram(num_vars,num_nonlinear_inequality_constraints,num_nonlinear_equality_constraints)
       % @param num_vars          -- Number of decision variables
-      % @param num_nin           -- An int scalar. The number of nonlinear inequality
+      % @param num_nonlinear_inequality_constraints   -- An int scalar. The number of nonlinear inequality
       % constraints
-      % @param num_neq           -- An int scalar. The number of nonlinear equality
+      % @param num_nonlinear_equality_constraints     -- An int scalar. The number of nonlinear equality
       % constraints
       sizecheck(num_vars,[1,1]);
-      sizecheck(num_nin,[1,1]);
-      sizecheck(num_neq,[1,1]);
+      sizecheck(num_nonlinear_inequality_constraints,[1,1]);
+      sizecheck(num_nonlinear_equality_constraints,[1,1]);
       obj.num_vars = num_vars;
-      obj.num_cin = num_nin;
-      obj.num_ceq = num_neq;
+      obj.num_cin = num_nonlinear_inequality_constraints;
+      obj.num_ceq = num_nonlinear_equality_constraints;
       obj.x_lb = -inf(num_vars,1);
       obj.x_ub = inf(num_vars,1);
+      obj.cin_ub = zeros(obj.num_cin,1);
+      obj.cin_lb = -inf(obj.num_cin,1);
+      obj.iFfun = ones(obj.num_vars,1);
+      obj.jFvar = (1:obj.num_vars)';
+      obj.iCinfun = reshape(bsxfun(@times,(1:obj.num_cin)',ones(1,obj.num_vars)),[],1);
+      obj.jCinvar = reshape(bsxfun(@times,ones(obj.num_cin,1),(1:obj.num_vars)),[],1);
+      obj.iCeqfun = reshape(bsxfun(@times,(1:obj.num_ceq)',ones(1,obj.num_vars)),[],1);
+      obj.jCeqvar = reshape(bsxfun(@times,ones(obj.num_ceq,1),(1:obj.num_vars)),[],1);
+      obj = obj.setNonlinearGradientSparsity();
       
       % todo : check dependencies and then go through the list
       obj.solver = 'snopt';
       obj.default_options.fmincon = optimset('Display','off');
       obj.default_options.snopt = struct();
+      obj.check_grad = false;
     end
     
     function obj = addLinearInequalityConstraints(obj,Ain,bin)
@@ -172,16 +188,49 @@ classdef NonlinearProgram
       obj.x_ub = x_ub;
     end
     
-    function obj = setObjectiveGradientSparsity(obj,jGvar)
-      error('todo: finish this');
+    function obj = setObjectiveGradientSparsity(obj,jFvar)
+      % set the sparsity pattern in the objective function
+      % @param jFvar     -- A column integer vector. The indices of the non-zero entries
+      % in the objective gradient
+      if(any(jFvar>obj.num_vars) || any(jFvar<1))
+        error('Drake:NonlinearProgram:setObjectiveGradientSparsity:jGvar out of bounds');
+      end
+      obj.iFfun = ones(length(jFvar),1);
+      obj.jFvar = jFvar;
+      obj = obj.setNonlinearGradientSparsity();
     end
     
-    function obj = setNonlinearInequalityConstraintsGradientSparsity(obj,iGfun,jGvar)
-      error('todo: finish this');
+    function obj = setNonlinearInequalityConstraintsGradientSparsity(obj,iCinfun,jCinvar)
+      % set the sparsity patten in the nonlinear inequality constraints, so
+      % dg(iCinfun,jCinvar) are the nonzero entries in the gradient matrix dg.
+      nnz = numel(iCinfun);
+      sizecheck(iCinfun,[nnz,1]);
+      sizecheck(jCinvar,[nnz,1]);
+      if(any(iCinfun<1 | iCinfun>obj.num_cin) || any(jCinvar<1 | jCinvar>obj.num_vars))
+        error('Drake:NonlinearProgram:setNonlinearInequalityCOnstraintsGradientSparsity:iCinfun or jCinvar is out of bounds');
+      end
+      obj.iCinfun = iCinfun;
+      obj.jCinvar = jCinvar;
+      obj = obj.setNonlinearGradientSparsity();
     end
     
-    function obj = setNonlinearEqualityConstraintsGradientSparsity(obj,iGfun,jGvar)
-      error('todo: finish this');
+    function obj = setNonlinearEqualityConstraintsGradientSparsity(obj,iCeqfun,jCeqvar)
+      % set the sparsity patten in the nonlinear equality constraints, so
+      % dh(iCeqfun,jCeqvar) are the nonzero entries in the gradient matrix dh.
+      nnz = numel(iCeqfun);
+      sizecheck(iCeqfun,[nnz,1]);
+      sizecheck(jCeqvar,[nnz,1]);
+      if(any(iCeqfun<1 | iCeqfun>obj.num_cin) || any(jCeqvar<1 | jCeqvar>obj.num_vars))
+        error('Drake:NonlinearProgram:setNonlinearInequalityCOnstraintsGradientSparsity:iCinfun or jCinvar is out of bounds');
+      end
+      obj.iCeqfun = iCeqfun;
+      obj.jCeqvar = jCeqvar;
+      obj = obj.setNonlinearGradientSparsity();
+    end
+    
+    function obj = setCheckGrad(obj,check_grad)
+      sizecheck(check_grad,[1,1]);
+      obj.check_grad = logical(check_grad);
     end
     
     function obj = setSolver(obj,solver)
@@ -197,17 +246,39 @@ classdef NonlinearProgram
       error('todo: finish this');
     end
     
+    function obj = setNonlinearInequalityBounds(obj,cin_lb,cin_ub,cin_idx)
+      % change the value of the nonlinear constraints lower and upper bounds
+      % @param cin_lb    -- A double column vector. The lower bound of the nonlinear
+      % inequality constraints
+      % @param cin_ub    -- A double column vector. The upper bound of the nonlinear
+      % inequality constraints
+      % @param cin_idx   -- A integer column vector. The indices of the nonlinear
+      % constraints whose upper and lower bounds are reset through the function. The
+      % default value is (1:obj.num_cin)'
+      if(nargin<4)
+        cin_idx = (1:obj.num_cin)';
+      end
+      if(any(cin_idx>obj.num_cin) || any(cin_idx<1))
+        error('Drake:NonlinearProgram:setNonlinearInequalityBounds:cin_idx is incorrect');
+      end
+      cin_idx = cin_idx(:);
+      num_cin_set = numel(cin_idx);
+      sizecheck(cin_ub,[num_cin_set,1]);
+      sizecheck(cin_lb,[num_cin_set,1]);
+      if(any(cin_ub<cin_lb))
+        error('Drake:NonlinearProgram:setNonlinearInequalityBounds:cin_ub cannot be smaller than cin_lb');
+      end
+      obj.cin_ub(cin_idx) = cin_ub;
+      obj.cin_lb(cin_idx) = cin_lb;
+    end
     % function setGradMethod?
     
-    function [x,objval,exitflag] = solve(obj,x0,options)
-      if(nargin<3)
-        options = struct();
-      end
+    function [x,objval,exitflag] = solve(obj,x0)
       switch lower(obj.solver)
         case 'snopt'
-          [x,objval,exitflag] = snopt(obj,x0,options);
+          [x,objval,exitflag] = snopt(obj,x0);
         case 'fmincon'
-          [x,objval,exitflag] = fmincon(obj,x0,options);
+          [x,objval,exitflag] = fmincon(obj,x0);
         otherwise
           error('Drake:NonlinearProgram:UnknownSolver',['The requested solver, ',obj.solver,' is not known, or not currently supported']);
       end
@@ -238,14 +309,7 @@ classdef NonlinearProgram
       end
     end
     
-    function [x,objval,exitflag] = snopt(obj,x0,options)
-      % options.check_grad = true     Then check the gradient of the snopt_userfun
-      if(nargin<3)
-        options = struct();
-      end
-      if(~isfield(options,'check_grad'))
-        options.check_grad = false;
-      end
+    function [x,objval,exitflag] = snopt(obj,x0)
       checkDependency('snopt');
 
       global SNOPT_USERFUN;
@@ -300,23 +364,25 @@ classdef NonlinearProgram
       end
       
       if isempty(A)
-        [x,objval,exitflag] = snopt(x0, ...
-          obj.x_lb,obj.x_ub, ...
-          [-inf;obj.cin_lb;zeros(obj.num_ceq,1);b_lb],[inf;obj.cin_ub;zeros(obj.num_ceq,1);b_ub],...
-          'snoptUserfun');
+        Avals = [];
+        iAfun = [];
+        jAvar = [];
       else
         [iAfun,jAvar,Avals] = find(A);
         iAfun = iAfun + 1 + obj.num_cin + obj.num_ceq;
+      end
         
         if isempty(obj.iGfun) || isempty(obj.jGvar)
           s = [1+obj.num_cin+obj.num_ceq,obj.num_vars];
           [iGfun,jGvar] = ind2sub(s,1:prod(s));
+          iGfun = iGfun(:);
+          jGvar = jGvar(:);
         else
           iGfun = obj.iGfun;
           jGvar = obj.jGvar;
         end
           
-        if(options.check_grad)
+        if(obj.check_grad)
           checkGradient(x0);
         end
         [x,objval,exitflag] = snopt(x0, ...
@@ -326,16 +392,15 @@ classdef NonlinearProgram
           0,1,...
           Avals,iAfun,jAvar,...
           iGfun,jGvar);
-        if(options.check_grad)
+        if(obj.check_grad)
           checkGradient(x);
         end
-      end
       
       objval = objval(1);
       if exitflag~=1, disp(snoptInfo(exitflag)); end
     end
     
-    function [x,objval,exitflag] = fmincon(obj,x0,options)
+    function [x,objval,exitflag] = fmincon(obj,x0)
 %       if (obj.num_cin + obj.num_ceq)
 %         nonlinearConstraints = @obj.nonlinearConstraint;
 %       else
@@ -357,4 +422,13 @@ classdef NonlinearProgram
     end
   end
   
+  methods(Access = protected)
+    function obj = setNonlinearGradientSparsity(obj)
+      % This function sets the nonlinear sparsity vector iGfun and jGvar based on the
+      % nonlinear sparsity of the objective, nonlinear inequality constraints and
+      % nonlinear equality constraints
+      obj.iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
+      obj.jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
+    end
+  end
 end
