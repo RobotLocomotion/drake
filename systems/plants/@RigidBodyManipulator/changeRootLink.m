@@ -113,7 +113,7 @@ while (true)
 
   % if there was an actuator attached to my (new) parent, it now needs to
   % be attached to me.
-  new_rbm.actuator.joint([new_rbm.actuator.joint==parent_ind])=current_body_ind;
+  new_rbm.actuator.joint([rbm.actuator.joint==parent_ind])=current_body_ind;
   
   new_rbm = setBody(new_rbm,current_body_ind,current_body);
   
