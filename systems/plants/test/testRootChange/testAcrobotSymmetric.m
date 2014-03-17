@@ -30,7 +30,7 @@ for k=1:100
   pt = forwardKin(p,kinsol,link_ind,b.com);
 
   b = getBody(pnew,link_ind);
-  kinsol_new = doKinematics(pnew,[pi;0;0]+q0);
+  kinsol_new = doKinematics(pnew,[pi;0;0]+q0,false,false);
   pt_new = forwardKin(pnew,kinsol_new,link_ind,b.com);
   
   valuecheck(pt_new,pt);
