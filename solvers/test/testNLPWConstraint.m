@@ -1,5 +1,6 @@
 function testNLPWConstraint
 nlp1 = NonlinearProgramWConstraint(3);
+nlp1 = nlp1.setCheckGrad(true);
 %%%%%%%%%%%
 % x1^2+4*x2^2<=4
 % (x1-2)^2+x2^2<=5
@@ -101,7 +102,7 @@ nc2 = NonlinearConstraint([1/6;-10],[1/6;30],3,@cnstr2_userfun);
 nc2 = nc2.setSparseStructure([1;1;1;2;2],[1;2;3;2;3]);
 nlp1 = nlp1.addNonlinearConstraint(nc2);
 x0 = [1;2;3];
-[x,F,info] = nlp1.solve(x0,struct('check_grad',true));
+[x,F,info] = nlp1.solve(x0);
 c2 = cnstr2_userfun(x);
 valuecheck(c2(1),1/6,1e-5);
 if(info>10)
@@ -126,7 +127,7 @@ valuecheck(nlp1.bin,[10;0;10]);
 valuecheck(nlp1.beq,[0;0.1]);
 valuecheck(nlp1.Ain,[A(1,:);-A(1,:);0 1 1]);
 valuecheck(nlp1.Aeq,[1 0 3;0 -1 1]);
-[x,F,info] = nlp1.solve(x0,struct('check_grad',true));
+[x,F,info] = nlp1.solve(x0);
 if(info>10)
   error('SNOPT fails');
 end

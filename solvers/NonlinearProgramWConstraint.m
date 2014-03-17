@@ -15,17 +15,6 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
     cost
   end
   
-  properties(Access = private)
-    iCinfun; % The row index of the non-zero entries in the nonlinear inequality constraints gradients
-    jCinvar; % The column index of the non-zero entries in the nonlinear inequality constraitns gradient
-    iCeqfun; % The row index of the non-zero entries in the nonlinear equality constraints gradients
-    jCeqvar; % The column index of the non-zero entries in the nonlinear inequality constraints gradients
-    iCfun; % The row index of the non-zero entries in the nonlinear constraints gradients
-    jCvar; % The column index of the non-zero entries in the nonlinear constraints gradients
-    iFfun; % The row index of the non-zero entries in the objective
-    jFvar; % The column index of non-zero entries in the objective
-  end
-  
   properties(Access = protected)
     nlcon_xind % A cell array, nlcon_xind{i} is an int vector recording the indices of x that is used in evaluation the i'th NonlinearConstraint
     cost_xind_cell % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
@@ -46,14 +35,6 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       obj.nlcon_xind = {};
       obj.nlcon_ineq_idx = [];
       obj.nlcon_eq_idx = [];
-      obj.iCinfun = [];
-      obj.jCinvar = [];
-      obj.iCeqfun = [];
-      obj.jCeqvar = [];
-      obj.iCfun = [];
-      obj.jCvar = [];
-      obj.iFfun = [];
-      obj.jFvar = [];
       obj.cost = {};
       obj.cost_xind_cell = {};
     end
@@ -83,17 +64,15 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       inv_ceq_idx(cnstr.ceq_idx) = (1:length(cnstr.ceq_idx))';
       inv_cin_idx = zeros(cnstr.num_cnstr,1);
       inv_cin_idx(cnstr.cin_idx) = (1:length(cnstr.cin_idx))';
-      obj.iCeqfun = [obj.iCeqfun;obj.num_ceq+inv_ceq_idx(cnstr.iCfun(Geq_idx))];
-      obj.jCeqvar = [obj.jCeqvar;xind(cnstr.jCvar(Geq_idx))];
       obj.iCinfun = [obj.iCinfun;obj.num_cin+inv_cin_idx(cnstr.iCfun(Gin_idx))];
       obj.jCinvar = [obj.jCinvar;xind(cnstr.jCvar(Gin_idx))];
-      obj.iCfun = [obj.iCinfun;obj.iCeqfun];
-      obj.jCvar = [obj.jCinvar;obj.jCeqvar];
+      obj.iCeqfun = [obj.iCeqfun;obj.num_ceq+inv_ceq_idx(cnstr.iCfun(Geq_idx))];
+      obj.jCeqvar = [obj.jCeqvar;xind(cnstr.jCvar(Geq_idx))];
       obj.num_cin = obj.num_cin + length(cnstr.cin_idx);
       obj.num_ceq = obj.num_ceq + length(cnstr.ceq_idx);
       obj.num_nlcon = obj.num_nlcon + cnstr.num_cnstr;
       obj.nlcon_xind = [obj.nlcon_xind,{xind}];
-      obj.iGfun = [obj.iFfun;1+obj.iCinfun;1+obj.num_cin+obj.iCeqfun]; 
+      obj.iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
       obj.jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
     end
     
@@ -159,6 +138,9 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
         obj.cost = [obj.cost,{cnstr}];
         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jAvar)}];
         obj.jFvar = unique([obj.jFvar;xind(cnstr.jAvar)]);
+        obj.iFfun = ones(length(obj.jFvar),1);
+        obj.iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
+        obj.jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
       elseif(isa(cnstr,'NonlinearConstraint'))
         if(cnstr.num_cnstr ~= 1)
           error('Drake:NonlinearProgramWConstraint:WrongCost','addCost only accept scalar function');
@@ -166,10 +148,10 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
         obj.cost = [obj.cost,{cnstr}];
         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jCvar)}];
         obj.jFvar = unique([obj.jFvar;xind(cnstr.jCvar)]);
+        obj.iFfun = ones(length(obj.jFvar),1);
+        obj.iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
+        obj.jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
       end
-      obj.iFfun = ones(length(obj.jFvar),1);
-      obj.iGfun = [obj.iFfun;1+obj.iCfun];
-      obj.jGvar = [obj.jFvar;obj.jCvar];
     end
     
     function [g,h,dg,dh] = nonlinearConstraints(obj,x)
@@ -216,6 +198,15 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       end
       f = [f(1);f(1+obj.nlcon_ineq_idx);f(1+obj.nlcon_eq_idx)];
       G = [G(1,:);G(1+obj.nlcon_ineq_idx,:);G(1+obj.nlcon_eq_idx,:)];
+    end
+    
+    function obj = addDecisionVariable(obj,num_new_vars)
+      % appending new decision variables to the end of the current decision variables
+      % @param num_new_vars      -- An integer. The newly added decision variable is an
+      % num_new_vars x 1 double vector.
+      obj.num_vars = obj.num_vars+num_new_vars;
+      obj.x_lb = [obj.x_lb;-inf(num_new_vars,1)];
+      obj.x_ub = [obj.x_ub;inf(num_new_vars,1)];
     end
     
     function obj = setVarBounds(obj,x_lb,x_ub)
