@@ -40,10 +40,32 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
       obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
+    function [c,dc] = eval(obj,t,kinsol)
+      if(obj.isTimeValid(t))
+        [c,dc] = obj.evalValidTime(kinsol);
+      else
+        c = [];
+        dc = [];
+      end
+    end
+    
+    function cnstr = generateConstraint(obj,t)
+      % generate a NonlinearConstraint object if time is valid
+      if(obj.isTimeValid(t))
+        [lb,ub] = obj.bounds(t);
+        cnstr = {NonlinearConstraint(lb,ub,obj.robot.getNumDOF,@(kinsol) obj.eval(t,kinsol))};
+      else
+        cnstr = {};
+      end
+    end
   end
+  
   methods(Abstract)
-    [c,dc] = eval(obj,t,kinsol);
     [lb,ub] = bounds(obj,t)
     name_str = name(obj,t)
+  end
+  
+  methods(Abstract,Access = protected)
+    [c,dc] = evalValidTime(obj,kinsol);
   end
 end

@@ -31,7 +31,7 @@ function varargout = geval(fun,varargin)
 %
 %</pre>
 %
-% @option grad_method {'user_then_taylorvar','user','taylorvar','numerical','symbolic'}
+% @option grad_method {'user_then_taylorvar','user','taylorvar','numerical','symbolic','user_then_numerical'}
 %         @default user_then_taylorvar
 %    grad_method can also be a cell array of the strings above, in which
 %    case geval will run both methods and compare the output.

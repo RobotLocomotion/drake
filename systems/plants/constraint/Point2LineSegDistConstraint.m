@@ -27,6 +27,30 @@ classdef Point2LineSegDistConstraint < SingleTimeKinematicConstraint
     line_body_name;
   end
   
+  methods(Access = protected)
+    function [c,dc] = evalValidTime(obj,kinsol)
+      [pt_pos,J_pt] = forwardKin(obj.robot,kinsol,obj.pt_body,obj.pt,0);
+      [line_pos,J_line] = forwardKin(obj.robot,kinsol,obj.line_body,obj.line_ends,0);
+      x0 = pt_pos;
+      x1 = line_pos(:,1);
+      x2 = line_pos(:,2);
+      x21 = x2-x1;
+      J21 = J_line(4:6,:)-J_line(1:3,:);
+      x10 = x1-x0;
+      J10 = J_line(1:3,:)-J_pt;
+      t = -(x10'*x21/(x21'*x21));
+      dtdx10 = -x21'/(x21'*x21);
+      dtdx21 = -(x10'*(x21'*x21)-x10'*x21*2*x21')/(x21'*x21)^2;
+      dtdq = dtdx10*J10+dtdx21*J21;
+      h = x0-(x1+x21*t);
+      dhdq = J_pt-(J_line(1:3,:)+J21*t+x21*dtdq);
+      d = h'*h;
+      dddq = 2*h'*dhdq;
+      c = [d;t];
+      dc = [dddq;dtdq];
+    end
+  end
+  
   methods
     function obj = Point2LineSegDistConstraint(robot,pt_body,pt,line_body,line_ends,dist_lb,dist_ub,tspan)
       if(nargin == 7)
@@ -78,33 +102,6 @@ classdef Point2LineSegDistConstraint < SingleTimeKinematicConstraint
       obj.line_body_name = obj.robot.getBody(obj.line_body).linkname;
       obj.type = RigidBodyConstraint.Point2LineSegDistConstraintType;
       obj.mex_ptr = ptr;
-    end
-    
-    function [c,dc] = eval(obj,t,kinsol)
-      if(obj.isTimeValid(t))
-        [pt_pos,J_pt] = forwardKin(obj.robot,kinsol,obj.pt_body,obj.pt,0);
-        [line_pos,J_line] = forwardKin(obj.robot,kinsol,obj.line_body,obj.line_ends,0);
-        x0 = pt_pos;
-        x1 = line_pos(:,1);
-        x2 = line_pos(:,2);
-        x21 = x2-x1;
-        J21 = J_line(4:6,:)-J_line(1:3,:);
-        x10 = x1-x0;
-        J10 = J_line(1:3,:)-J_pt;
-        t = -(x10'*x21/(x21'*x21));
-        dtdx10 = -x21'/(x21'*x21);
-        dtdx21 = -(x10'*(x21'*x21)-x10'*x21*2*x21')/(x21'*x21)^2;
-        dtdq = dtdx10*J10+dtdx21*J21;
-        h = x0-(x1+x21*t);
-        dhdq = J_pt-(J_line(1:3,:)+J21*t+x21*dtdq);
-        d = h'*h;
-        dddq = 2*h'*dhdq;
-        c = [d;t];
-        dc = [dddq;dtdq];
-      else
-        c = [];
-        dc = [];
-      end
     end
     
     function [lb,ub] = bounds(obj,t)
