@@ -24,13 +24,13 @@ for k=1:100
     q0 = randn(3,1);
   end
   
-  link_ind = 4;
+  link_ind = randi(4);
   b = getBody(p,link_ind);
   kinsol = doKinematics(p,q0);
   pt = forwardKin(p,kinsol,link_ind,b.com);
 
   b = getBody(pnew,link_ind);
-  kinsol_new = doKinematics(pnew,[pi;0;0]+q0,false,false);
+  kinsol_new = doKinematics(pnew,[pi;0;0]-q0);%,false,false);
   pt_new = forwardKin(pnew,kinsol_new,link_ind,b.com);
   
   valuecheck(pt_new,pt);
@@ -55,11 +55,11 @@ for k = 1:numTest
     if (k<=100) 
       u0 = 0; 
     else
-      u0 = randn(1);
+      u0 = randn(1)
     end
    
     xdot = pnew.dynamics(0,x0,u0);
-    xdot_true = p.dynamics(0,[pi;0;0;0;0;0]+x0,u0);
+    xdot_true = -p.dynamics(0,[pi;0;0;0;0;0]-x0,-u0);
     
     valuecheck(xdot,xdot_true);
 end
