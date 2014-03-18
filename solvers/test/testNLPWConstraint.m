@@ -1,6 +1,8 @@
 function testNLPWConstraint
 nlp1 = NonlinearProgramWConstraint(3);
 nlp1 = nlp1.setCheckGrad(true);
+warning('Off','optimlib:fmincon:WillRunDiffAlg');
+warning('Off','optimlib:fmincon:SwitchingToMediumScale');
 %%%%%%%%%%%
 % x1^2+4*x2^2<=4
 % (x1-2)^2+x2^2<=5
@@ -138,6 +140,10 @@ end
 nlp2 = nlp1.setSolver('fmincon');
 [x_fmincon,F,info] = nlp2.solve(x0);
 valuecheck(x,x_fmincon,1e-4);
+
+display('test addDecisionVar');
+nlp1 = nlp1.addDecisionVariable(2);
+[x,F,info] = nlp1.compareSolvers([x0;randn(2,1)]);
 end
 
 function [c,dc] = cnstr1_userfun(x)
