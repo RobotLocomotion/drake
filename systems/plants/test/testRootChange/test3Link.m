@@ -4,32 +4,40 @@ N = p.num_q;
 
 % Construct visualizer
 v = p.constructVisualizer;
-x0 = [0;pi/3;-pi/3;0;0;0];
+x0 = [0;2*pi/3;-2*pi/3;0;0;0];
 v.draw(0,x0);
 
 % Now, get new plants with roots changed
-pnew1 = changeRootLink(p, 'link2', [0;0;1], [0;0;0], []);
-pnew2 = changeRootLink(p, 'link3', [0;0;1], [0;0;0], []);
+pnew1 = changeRootLink(p, 'link2', [0;0;-1], [0;0;0], []);
+pnew2 = changeRootLink(p, 'link3', [0;0;-1], [0;0;0], []);
+
+% permutation matrix
+P = diag([-1 -1 1]);  xP = diag([diag(P);diag(P)]);
 
 % Now, compare dynamics at a bunch of points
 numTest = 100;
 for k = 1:numTest
-    x0 = randn(6,1);
-    u0 = randn(1,1);
+  x0 = randn(6,1);
+  u0 = 0*randn(1,1);
+  
+  kinsol = doKinematics(p,x0(1:3));
+  kinsol_new1 = doKinematics(pnew1,P*x0(1:3));
+  kinsol_new2 = doKinematics(pnew2,P*x0(1:3));
+
+  for link = 3:4
+    pt = forwardKin(p,kinsol,link,[0;0;-1]);
+    ptnew1 = forwardKin(pnew1,kinsol_new1,link,[0;0;-1]);
+    ptnew2 = forwardKin(pnew2,kinsol_new2,link,[0;0;-1]);
+    valuecheck(pt,ptnew1);
+    valuecheck(pt,ptnew2);
+  end
+  
+  xdot_orig = p.dynamics(0,x0,u0*ones(3,1));
+  xdotnew1 = xP*pnew1.dynamics(0,xP*x0,P*u0*ones(3,1));
+  xdotnew2 = xP*pnew2.dynamics(0,xP*x0,P*u0*ones(3,1));
     
-    xdot_orig = p.dynamics(0,x0,u0*ones(3,1));
-    xdotnew1 = pnew1.dynamics(0,x0,u0*ones(3,1));
-    xdotnew2 = pnew2.dynamics(0,x0,u0*ones(3,1));
-    
-    
-    if norm(xdot_orig - xdotnew1) > 1e-10
-        error('Dynamics did not match');
-    end
-    
-    if norm(xdot_orig - xdotnew2) > 1e-10
-        error('Dynamics did not match');
-    end
-    
+  valuecheck(xdot_orig,xdotnew1);
+  valuecheck(xdot_orig,xdotnew2);
 end
 
 disp('Tests passed!');
