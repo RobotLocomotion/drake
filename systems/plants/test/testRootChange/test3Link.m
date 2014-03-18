@@ -1,11 +1,11 @@
 % Create plant from urdf
-p = RigidBodyManipulator('3LinkThing.urdf');
+p = PlanarRigidBodyManipulator('3LinkThing.urdf');
 N = p.num_q; 
 
 % Construct visualizer
 v = p.constructVisualizer;
 x0 = [0;2*pi/3;-2*pi/3;0;0;0];
-v.draw(0,x0);
+clf; v.draw(0,x0);
 
 % Now, get new plants with roots changed
 pnew1 = changeRootLink(p, 'link2', [0;0;-1], [0;0;0], []);
@@ -13,6 +13,14 @@ pnew2 = changeRootLink(p, 'link3', [0;0;-1], [0;0;0], []);
 
 % permutation matrix
 P = diag([-1 -1 1]);  xP = diag([diag(P);diag(P)]);
+
+%pause; 
+%vnew1 = pnew1.constructVisualizer;
+%clf; vnew1.draw(0,xP*x0);
+%pause; 
+%vnew2 = pnew2.constructVisualizer;
+%clf; vnew2.draw(0,xP*x0);
+
 
 % Now, compare dynamics at a bunch of points
 numTest = 100;
