@@ -39,7 +39,7 @@ classdef NonlinearProgram
   end
 
   properties (Access = protected)
-    iGfun,jGvar  % sparsity pattern in objective and nonlinear constraints
+%     iGfun,jGvar  % sparsity pattern in objective and nonlinear constraints
     iFfun,jFvar  % sparsity pattern in the objective function
     iCinfun,jCinvar  % sparsity pattern in the nonlinear inequality constraints
     iCeqfun,jCeqvar  % sparsity pattern in the nonlinear equality constraints
@@ -154,7 +154,6 @@ classdef NonlinearProgram
       obj.jCinvar = reshape(bsxfun(@times,ones(obj.num_cin,1),(1:obj.num_vars)),[],1);
       obj.iCeqfun = reshape(bsxfun(@times,(1:obj.num_ceq)',ones(1,obj.num_vars)),[],1);
       obj.jCeqvar = reshape(bsxfun(@times,ones(obj.num_ceq,1),(1:obj.num_vars)),[],1);
-      obj = obj.setNonlinearGradientSparsity();
       
       % todo : check dependencies and then go through the list
       obj.solver = 'snopt';
@@ -197,7 +196,6 @@ classdef NonlinearProgram
       end
       obj.iFfun = ones(length(jFvar),1);
       obj.jFvar = jFvar;
-      obj = obj.setNonlinearGradientSparsity();
     end
     
     function obj = setNonlinearInequalityConstraintsGradientSparsity(obj,iCinfun,jCinvar)
@@ -211,7 +209,6 @@ classdef NonlinearProgram
       end
       obj.iCinfun = iCinfun;
       obj.jCinvar = jCinvar;
-      obj = obj.setNonlinearGradientSparsity();
     end
     
     function obj = setNonlinearEqualityConstraintsGradientSparsity(obj,iCeqfun,jCeqvar)
@@ -225,7 +222,6 @@ classdef NonlinearProgram
       end
       obj.iCeqfun = iCeqfun;
       obj.jCeqvar = jCeqvar;
-      obj = obj.setNonlinearGradientSparsity();
     end
     
     function obj = setCheckGrad(obj,check_grad)
@@ -344,11 +340,7 @@ classdef NonlinearProgram
         [f,G] = geval(@obj.objectiveAndNonlinearConstraints,x);
         f = [f;0*b_lb];
         
-        if ~isempty(obj.iGfun) && ~isempty(obj.jGvar)
-          G = G(sub2ind(size(G),obj.iGfun,obj.jGvar));
-        else
-          G = G(:);
-        end
+        G = G(sub2ind(size(G),iGfun,jGvar));
       end      
 
       function checkGradient(x)
@@ -372,15 +364,7 @@ classdef NonlinearProgram
         iAfun = iAfun + 1 + obj.num_cin + obj.num_ceq;
       end
         
-        if isempty(obj.iGfun) || isempty(obj.jGvar)
-          s = [1+obj.num_cin+obj.num_ceq,obj.num_vars];
-          [iGfun,jGvar] = ind2sub(s,1:prod(s));
-          iGfun = iGfun(:);
-          jGvar = jGvar(:);
-        else
-          iGfun = obj.iGfun;
-          jGvar = obj.jGvar;
-        end
+        [iGfun,jGvar] = obj.setNonlinearGradientSparsity();
           
         if(obj.check_grad)
           checkGradient(x0);
@@ -423,12 +407,14 @@ classdef NonlinearProgram
   end
   
   methods(Access = protected)
-    function obj = setNonlinearGradientSparsity(obj)
+    function [iGfun,jGvar] = setNonlinearGradientSparsity(obj)
       % This function sets the nonlinear sparsity vector iGfun and jGvar based on the
       % nonlinear sparsity of the objective, nonlinear inequality constraints and
       % nonlinear equality constraints
-      obj.iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
-      obj.jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
+      % @param iGfun,jGvar. G(iGfun,jGvar) are the non-zero entries in the matrix G, which
+      % is the gradient of return value f in the objectiveAndNonlinearConstraints function
+      iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
+      jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
     end
   end
 end

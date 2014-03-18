@@ -72,8 +72,6 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       obj.num_ceq = obj.num_ceq + length(cnstr.ceq_idx);
       obj.num_nlcon = obj.num_nlcon + cnstr.num_cnstr;
       obj.nlcon_xind = [obj.nlcon_xind,{xind}];
-      obj.iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
-      obj.jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
     end
     
     
@@ -139,8 +137,6 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jAvar)}];
         obj.jFvar = unique([obj.jFvar;xind(cnstr.jAvar)]);
         obj.iFfun = ones(length(obj.jFvar),1);
-        obj.iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
-        obj.jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
       elseif(isa(cnstr,'NonlinearConstraint'))
         if(cnstr.num_cnstr ~= 1)
           error('Drake:NonlinearProgramWConstraint:WrongCost','addCost only accept scalar function');
@@ -149,8 +145,6 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jCvar)}];
         obj.jFvar = unique([obj.jFvar;xind(cnstr.jCvar)]);
         obj.iFfun = ones(length(obj.jFvar),1);
-        obj.iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
-        obj.jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
       end
     end
     
@@ -207,6 +201,8 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       obj.num_vars = obj.num_vars+num_new_vars;
       obj.x_lb = [obj.x_lb;-inf(num_new_vars,1)];
       obj.x_ub = [obj.x_ub;inf(num_new_vars,1)];
+      obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
+      obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
     end
     
     function obj = setVarBounds(obj,x_lb,x_ub)
