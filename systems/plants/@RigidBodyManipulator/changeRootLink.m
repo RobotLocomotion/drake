@@ -108,9 +108,18 @@ while (true)
     current_body.has_position_sensor = old_child_new_parent_body.has_position_sensor;
   end
     
-  % note: i think I must have X_old_body_to_new_body backwards?
   current_body = setInertial(current_body,X_old_body_to_new_body'*current_body.I*X_old_body_to_new_body);
 
+  for i=1:length(current_body.geometry)
+    current_body.geometry{i}.xyz = homogTransMult(T_old_body_to_new_body,current_body.geometry{i}.xyz);
+  end
+  if ~isempty(current_body.contact_pts)
+    current_body.contact_pts = homogTransMult(T_old_body_to_new_body,current_body.contact_pts);
+  end
+  for i=1:length(current_body.contact_shapes)
+    current_body.contact_shapes(i).T = current_body.contact_shapes(i).T*inv(T_old_body_to_new_body);
+  end
+    
   if (getNumInputs(new_rbm))
     % if there was an actuator attached to my (new) parent, it now needs to
     % be attached to me.
