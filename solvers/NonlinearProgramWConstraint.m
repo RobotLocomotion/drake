@@ -46,7 +46,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       % @param xind      -- Optional argument. The x(xind) is the decision variables used
       % in evaluating the cnstr. Default value is (1:obj.num_vars)
       if(nargin<3)
-        xind = (1:obj.num_vars);
+        xind = (1:obj.num_vars)';
       end
       xind = xind(:);
       if(~isa(cnstr,'NonlinearConstraint'))
@@ -82,7 +82,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       % @param xind      -- Optional argument. x(xind) is the decision variables used in
       % evaluating the constraint. Default value is (1:obj.num_vars)
       if(nargin<3)
-        xind = (1:obj.num_vars);
+        xind = (1:obj.num_vars)';
       end
       xind = xind(:);
       if(~isa(cnstr,'LinearConstraint'))
@@ -109,7 +109,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       % @param xind       -- Optional argument. x(xind) is the decision variables to be
       % set bounds
       if(nargin < 3)
-        xind = (1:obj.num_vars);
+        xind = (1:obj.num_vars)';
       end
       if(~isa(cnstr,'BoundingBoxConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addBoundingBoxConstraint expects a BoundingBoxConstraint object');
@@ -124,8 +124,9 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       % @param xind      -- Optional argument. x(xind) is the decision variables used in
       % evaluating the cost. Default value is (1:obj.num_vars)
       if(nargin<3)
-        xind = (1:obj.num_vars);
+        xind = (1:obj.num_vars)';
       end
+      xind = xind(:);
       if(~isa(cnstr,'LinearConstraint') && ~isa(cnstr,'NonlinearConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addCost expects a LinearConstraint or NonlinearConstraint object');
       end
@@ -203,6 +204,35 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       obj.x_ub = [obj.x_ub;inf(num_new_vars,1)];
       obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
       obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
+    end
+    
+    function obj = replaceCost(obj,cost,cost_idx,xind)
+      % replace the cost_idx'th cost in the original problem with a new cost
+      % @param cost     -- A Constraint object, currently accepts NonlinearConstraint and
+      % LinearConstraint
+      % @param cost_idx -- The index of the original cost to be replaced
+      % @param xind     -- Optional argument. x(xind) is the decision variables used in
+      % evaluating the cost. Default value is (1:obj.num_vars)
+      if(nargin<4)
+        xind = (1:obj.num_vars)';
+      end
+      xind = xind(:);
+      obj.iFfun = [];
+      obj.jFvar = [];
+      num_cost = length(obj.cost);
+      sizecheck(cost_idx,[1,1]);
+      if(cost_idx>num_cost || cost_idx<1)
+        error('Drake:NonlinearProgramWConstraint:replaceCost:cost_idx is out of range');
+      end
+      cost_tmp = obj.cost;
+      cost_tmp{cost_idx} = cost;
+      cost_xind_tmp = obj.cost_xind_cell;
+      cost_xind_tmp{cost_idx} = xind;
+      obj.cost = {};
+      obj.cost_xind_cell = {};
+      for i = 1:num_cost
+        obj = obj.addCost(cost_tmp{i},cost_xind_tmp{i});
+      end
     end
     
     function obj = setVarBounds(obj,x_lb,x_ub)
