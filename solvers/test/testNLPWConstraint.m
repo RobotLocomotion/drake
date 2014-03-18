@@ -144,6 +144,24 @@ valuecheck(x,x_fmincon,1e-4);
 display('test addDecisionVar');
 nlp1 = nlp1.addDecisionVariable(2);
 [x,F,info] = nlp1.compareSolvers([x0;randn(2,1)]);
+
+display('test replaceCost');
+% min x2^2+x1^2+x1x2+x1*x3+x3
+% x1^2+4*x2^2<=4
+% (x1-2)^2+x2^2<=5
+% x1 >= 0
+% 0<=x1+2*x3 <=10
+% x1+3*x3 = 0
+% x1*x2*x3 = 1/6;
+% -10<=x2^2+x2*x3+2*x3^2<=30
+% x2+x3<=10
+% -x2+x3 = 0.1;
+qc1 = QuadraticConstraint(-inf,inf,[1 0.5;0.5 1],zeros(2,1));
+nlp1 = nlp1.replaceCost(qc1,1,[1;2]);
+[x,F,info] = nlp1.compareSolvers([x0;randn(2,1)]);
+F_obj = qc1.eval(x{1}(1:2));
+F_obj = F_obj+cost2_userfun(x{1}([1;3]))+x{1}(3);
+valuecheck(F{1},F_obj,1e-5);
 end
 
 function [c,dc] = cnstr1_userfun(x)
