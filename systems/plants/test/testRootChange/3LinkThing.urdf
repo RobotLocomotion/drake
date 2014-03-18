@@ -37,12 +37,12 @@
 
   <link name="link2">
     <inertial>
-      <origin xyz="0 0 .5" rpy="0 0 0" />
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
       <mass value="1" />
       <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
     </inertial>
     <visual>
-      <origin xyz="0 0 .5" rpy="0 0 0" />
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
       <geometry>
          <cylinder length="1" radius=".05" />
       </geometry>
@@ -54,12 +54,12 @@
 
   <link name="link3">
     <inertial>
-      <origin xyz="0 0 .5" rpy="0 0 0" />
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
       <mass value="1" />
       <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1" />
     </inertial>
     <visual>
-      <origin xyz="0 0 .5" rpy="0 0 0" />
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
       <geometry>
          <cylinder length="1" radius=".05" />
       </geometry>

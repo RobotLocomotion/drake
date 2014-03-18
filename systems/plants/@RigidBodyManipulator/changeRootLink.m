@@ -111,9 +111,14 @@ while (true)
   % note: i think I must have X_old_body_to_new_body backwards?
   current_body = setInertial(current_body,X_old_body_to_new_body'*current_body.I*X_old_body_to_new_body);
 
-  % if there was an actuator attached to my (new) parent, it now needs to
-  % be attached to me.
-  new_rbm.actuator.joint([rbm.actuator.joint==parent_ind])=current_body_ind;
+  if (getNumInputs(new_rbm))
+    % if there was an actuator attached to my (new) parent, it now needs to
+    % be attached to me.
+    actuator_inds = [rbm.actuator.joint]==parent_ind;
+    for a=find(actuator_inds)
+      new_rbm.actuator(a).joint=current_body_ind;
+    end
+  end
   
   new_rbm = setBody(new_rbm,current_body_ind,current_body);
   
