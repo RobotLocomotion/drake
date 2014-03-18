@@ -18,7 +18,7 @@ P = diag([-1 -1 1]);  xP = diag([diag(P);diag(P)]);
 numTest = 100;
 for k = 1:numTest
   x0 = randn(6,1);
-  u0 = 0*randn(1,1);
+  u0 = randn(1,1);
   
   kinsol = doKinematics(p,x0(1:3));
   kinsol_new1 = doKinematics(pnew1,P*x0(1:3));
@@ -34,7 +34,7 @@ for k = 1:numTest
   
   xdot_orig = p.dynamics(0,x0,u0*ones(3,1));
   xdotnew1 = xP*pnew1.dynamics(0,xP*x0,P*u0*ones(3,1));
-  xdotnew2 = xP*pnew2.dynamics(0,xP*x0,P*u0*ones(3,1));
+  xdotnew2 = xP*pnew2.dynamics(0,xP*x0,diag([-1 1 -1])*u0*ones(3,1));
     
   valuecheck(xdot_orig,xdotnew1);
   valuecheck(xdot_orig,xdotnew2);
