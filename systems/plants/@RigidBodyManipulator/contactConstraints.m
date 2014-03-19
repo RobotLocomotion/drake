@@ -41,8 +41,7 @@ end
 [pos,vel,normal,mu] = collisionDetect(obj,contact_pos);
 
 relpos = contact_pos - pos;
-s = sign(sum(relpos.*normal,1));
-phi = (sqrt(sum(relpos.^2,1)).*s)';
+phi = sum(relpos.*normal,1)';
 if (nargout>1)
   % recall that dphidx = normal'; n = dphidq = dphidx * dxdq
   % for a single contact, we'd have
