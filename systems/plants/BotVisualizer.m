@@ -106,25 +106,18 @@ classdef BotVisualizer < RigidBodyVisualizer
         error('Drake:BotVisualizer:LoadRobotFailed','Did not receive ack from viewer');
       else
         msg = drake.lcmt_viewer_command(ack.data);
-        if ~strcmp(vc.command_data,msg.command_data)
-          error('Drake:BotVisualizer:LoadURDFFailed','ack from viewer contained different data');
-        end
+%        if ~strcmp(vr.command_data,msg.command_data)
+%          error('Drake:BotVisualizer:LoadURDFFailed','ack from viewer contained different data');
+%        end
       end
 
       nq = getNumDOF(manip);
-      obj.state_msg = drake.lcmt_robot_state();
-      obj.state_msg.num_robots = length(manip.name);
-      obj.state_msg.robot_name = manip.name;
-      obj.state_msg.num_joints = nq;
-      for i=1:length(manip.body)
-        b = manip.body(i);
-        if (b.dofnum>0)
-          obj.state_msg.joint_robot(b.dofnum) = b.robotnum-1;
-        end
-      end
-      obj.state_msg.joint_name = manip.getStateFrame.coordinates(1:nq);
-      obj.state_msg.joint_position = single(zeros(nq,1));
-      obj.state_msg.joint_velocity = single(zeros(nq,1));
+      obj.draw_msg = drake.lcmt_viewer_draw();
+      nb = getNumBodies(manip);
+      obj.draw_msg.num_links = nb
+      obj.draw_msg.link_name = {manip.body.linkname};
+      obj.draw_msg.position = single(zeros(nb,3));
+      obj.draw_msg.quaternion = single(zeros(nb,4));
     end
     
     function drawWrapper(obj,t,y)
@@ -132,10 +125,17 @@ classdef BotVisualizer < RigidBodyVisualizer
     end
     
     function draw(obj,t,y)
-      obj.state_msg.timestamp = int64(t*1000000);
-      obj.state_msg.joint_position = single(y(1:obj.state_msg.num_joints));
+      obj.draw_msg.timestamp = int64(t*1000000);
+      
+      kinsol = doKinematics(obj.model,y(1:getNumDOF(obj.model)));
+      for i=1:getNumBodies(obj.model)
+        pt = forwardKin(obj.model,kinsol,i,zeros(3,1),2);
+        obj.draw_msg.position(i,:) = pt(1:3);
+        obj.draw_msg.quaternion(i,:) = pt(4:7);
+      end
+      
       lc = lcm.lcm.LCM.getSingleton();
-      lc.publish('DRAKE_VIEWER_STATE',obj.state_msg);
+      lc.publish('DRAKE_VIEWER_DRAW',obj.draw_msg);
     end
     
     function obj = loadRenderer(obj,renderer_dynobj_path)
@@ -151,6 +151,6 @@ classdef BotVisualizer < RigidBodyVisualizer
   
   properties 
     viewer_id;
-    state_msg;
+    draw_msg;
   end
 end
