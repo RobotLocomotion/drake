@@ -11,18 +11,27 @@ classdef RigidBodyAddedMass < RigidBodyForceElement
     end
     
     methods
-        function obj = RigidBodyAddedMass(frame_id, MaOrigin, MaBody)
+        function obj = RigidBodyAddedMass(frame_id, MaOrigin)
             % creates a force element that adds buoyancy at new frame location
             % @param frame_id = RigidBodyFrame specifying the location added mass
             % coefficients have been located
-            % @param Ma = added mass matrix (in Featherstone's spatial form
-            % for consistency, not 123456 as is literature norm)
+            % @param MaOrigin = added mass matrix as seen by origin of 
+            % added mass frame (in Featherstone's spatial form 
+            % for consistency, not 123456 as is literature norm)  
             
             typecheck(frame_id,'numeric');
             obj.kinframe = frame_id;
             obj.MaOrigin = MaOrigin;
-            obj.MaBody = MaBody;
             
+        end
+        function obj = translateAddedMass(obj,manip)
+            % Translates the added mass matrix to be about the parent body
+            % coordinates
+            frame = getFrame(manip,obj.kinframe);
+            xyz = frame.T(1:3,4);
+            
+            %Include xyz offset into added mass matrix
+            obj.MaBody = moveSpatialMassMatrix(xyz,obj.MaOrigin);
         end
         function obj = pullParentInertia(obj,manip)
             % Pulls original mass properties of the parent body
@@ -111,14 +120,16 @@ classdef RigidBodyAddedMass < RigidBodyForceElement
             
             % Reverse coordinates so that in Featherstone's spatial form
             MaOrigin = MaOrigin([4:6 1:3],[4:6 1:3]);
-            
-            %Include xyz offset into added mass matrix
-            MaBody = moveSpatialMassMatrix(xyz,MaOrigin);
-            
+                       
             %Declare object
-            obj = RigidBodyAddedMass(frame_id, MaOrigin, MaBody);
-            obj = pullParentInertia(obj,model);
+            obj = RigidBodyAddedMass(frame_id, MaOrigin);
             obj.name = name;
+            
+            %Modify the added mass to be about body coordinates
+            obj = translateAddedMass(obj,model);
+            
+            %Pull parameters from parent, save into object
+            obj = pullParentInertia(obj,model);
             
             % Sets the inertia of the parent node to include the added mass
             model = augmentParentInertia(obj,model);
