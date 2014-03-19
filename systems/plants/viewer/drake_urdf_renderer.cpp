@@ -311,8 +311,9 @@ static void handle_lcm_viewer_draw(const lcm_recv_buf_t *rbuf, const char * chan
     map<string,boost::shared_ptr<Link>>::iterator iter = self->links.find(msg->link_name[i]);
     if (iter == self->links.end())
       cerr << "failed to find link: " << msg->link_name[i] << endl;
-    else
+    else {
       iter->second->update(msg->position[i],msg->quaternion[i]);
+    }
   }
 
   bot_viewer_request_redraw(self->viewer);
