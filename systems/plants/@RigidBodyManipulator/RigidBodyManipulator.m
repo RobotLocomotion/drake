@@ -864,6 +864,7 @@ classdef RigidBodyManipulator < Manipulator
           try
             v = feval(type,arg);
           catch ex
+            getReport(ex,'extended')
             warning(ex.identifier,ex.message);
           end
         end
