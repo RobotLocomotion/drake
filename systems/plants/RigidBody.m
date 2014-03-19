@@ -564,7 +564,7 @@ classdef RigidBody < RigidBodyElement
               pts=T(1:end-1,:)*[pts;ones(1,size(pts,2))];
               x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
             end
-            shape = struct('type',RigidBody.MESH,'T',T,'params',filename);
+            shape = struct('type',RigidBody.MESH,'T',T,'params',GetFullPath(filename));
            otherwise
             % intentionally blank
         end
