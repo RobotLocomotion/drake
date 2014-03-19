@@ -9,6 +9,8 @@ classdef RigidBody < RigidBodyElement
     geometry={}  % geometry (compatible w/ patch).  see parseVisual below.
     dofnum=0     % the index in the state vector corresponding to this joint
     gravity_off=false;
+    
+    visual_shapes=[]; %struct('type',[],'T',[],'c',[],'params',[]);  with params as used by URDF 
 
     contact_pts=[];  % a 3xn matrix with [x;y;z] positions of contact points
     collision_group_name={};  % string names of the groups
@@ -341,11 +343,13 @@ classdef RigidBody < RigidBodyElement
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(geomnode,wrl_appearance_str,model,body.robotnum,options)];
-        if (options.visual_geometry)
-          [xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,model,body.robotnum,options);
+        if (options.visual || options.visual_geometry)
+          [xpts,ypts,zpts,shape] = RigidBody.parseGeometry(geomnode,xyz,rpy,model,body.robotnum,options);
           g.xyz = unique([xpts(:), ypts(:), zpts(:)],'rows','stable')';
           g.c = c;
           body.geometry = {body.geometry{:},g};
+          shape.c = c;
+          body.visual_shapes = horzcat(body.visual_shapes,shape);
         end
       end        
       
@@ -560,7 +564,7 @@ classdef RigidBody < RigidBodyElement
               pts=T(1:end-1,:)*[pts;ones(1,size(pts,2))];
               x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
             end
-            shape = struct('type',RigidBody.MESH,'T',T,'params',pts);
+            shape = struct('type',RigidBody.MESH,'T',T,'params',filename);
            otherwise
             % intentionally blank
         end

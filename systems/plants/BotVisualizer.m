@@ -56,15 +56,54 @@ classdef BotVisualizer < RigidBodyVisualizer
 
       obj = obj@RigidBodyVisualizer(manip);
 
-      %      obj = addRobotFromURDF(obj,urdf_filename);
-      vc = drake.lcmt_viewer_command();
-      vc.command_type = vc.LOAD_URDF;
-      vc.command_data = [sprintf('%s:',manip.urdf{1:end-1}),manip.urdf{end}];
-      lc.publish('DRAKE_VIEWER_COMMAND',vc);
+      vr = drake.lcmt_viewer_load_robot();
+      vr.num_links = getNumBodies(manip);
+      vr.link = javaArray('drake.lcmt_viewer_link_data',vr.num_links);
+      for i=1:vr.num_links
+        b = getBody(manip,i);
+        link = drake.lcmt_viewer_link_data();
+        link.name = b.linkname;
+        link.num_geom = length(b.visual_shapes);
+        if (link.num_geom>0)
+          link.geom = javaArray('drake.lcmt_viewer_geometry_data',link.num_geom);
+        end
+        for j=1:link.num_geom
+          s = b.visual_shapes(j);
+          shape = drake.lcmt_viewer_geometry_data();
+          shape.type = s.type;
+          switch(s.type)
+            case b.BOX
+              shape.string_data = '';
+              shape.num_float_data = 3;
+              shape.float_data = s.params;
+            case b.SPHERE
+              shape.string_data = '';
+              shape.num_float_data = 1;
+              shape.float_data = s.params;
+            case b.CYLINDER
+              shape.string_data = '';
+              shape.num_float_data = 2;
+              shape.float_data = s.params;
+            case b.MESH
+              shape.string_data = s.params;
+              shape.num_float_data = 1;
+              shape.float_data = 1.0;  % scale
+            otherwise
+              error('unknown shape type');
+          end
+          shape.position = s.T(1:3,4);
+          shape.quaternion = rotmat2quat(s.T(1:3,1:3));
+          shape.color = [s.c(:);1.0];
+          link.geom(j)= shape;
+        end
+        vr.link(i) = link;
+      end
+      
+      lc.publish('DRAKE_VIEWER_LOAD_ROBOT',vr);
       % listen for acknowledgement
       ack = agg.getNextMessage(5000);
       if isempty(ack)
-        error('Drake:BotVisualizer:LoadURDFFailed','Did not receive ack from viewer');
+        error('Drake:BotVisualizer:LoadRobotFailed','Did not receive ack from viewer');
       else
         msg = drake.lcmt_viewer_command(ack.data);
         if ~strcmp(vc.command_data,msg.command_data)
