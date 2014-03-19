@@ -8,6 +8,8 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/pointer_cast.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "URDFRigidBodyManipulator.h"
 #include "lcmtypes/drake.h"
@@ -73,9 +75,25 @@ public:
 
 class Mesh : public Geometry {
 public:
-  Mesh(string filename, float scale=1.0) {
+  Mesh(string fname, float scale=1.0) {
     scale_x = scale_y = scale_z = scale;
-    pmesh = bot_wavefront_model_create(filename.c_str());
+
+    boost::filesystem::path mypath(fname);
+    string ext = mypath.extension().native();
+    boost::to_lower(ext);
+	      
+    if (ext.compare(".obj")==0) {
+      //      cout << "Loading mesh from " << fname << endl;
+      pmesh = bot_wavefront_model_create(fname.c_str());
+    } else if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
+      // try changing the extension to obj and loading
+      //      cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
+      pmesh = bot_wavefront_model_create(mypath.replace_extension(".obj").native().c_str());
+    }      
+
+    if (!pmesh) {
+      cerr << "Warning: Mesh " << fname << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
+    }
   }
   virtual ~Mesh(void) {
     bot_wavefront_model_destroy(pmesh);
@@ -250,8 +268,7 @@ static void handle_lcm_viewer_load_robot(const lcm_recv_buf_t *rbuf, const char 
   cout << "zapping " << self->links.size() << " old links" << endl;
   self->links.clear();
 
-  cout << "loading new robot..." << endl;
-
+  cout << "loading new robot with " << msg->num_links << " links" << endl;
 
   // parse new links
   for (int i=0; i<msg->num_links; i++) {
