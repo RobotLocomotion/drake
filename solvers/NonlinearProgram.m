@@ -29,7 +29,7 @@ classdef NonlinearProgram
     cin_lb,cin_ub
     x_lb,x_ub
     solver
-    default_options
+    solver_options
     grad_method
     check_grad
   end
@@ -157,8 +157,17 @@ classdef NonlinearProgram
       
       % todo : check dependencies and then go through the list
       obj.solver = 'snopt';
-      obj.default_options.fmincon = optimset('Display','off');
-      obj.default_options.snopt = struct();
+      obj.solver_options.fmincon = optimset('Display','off');
+      obj.solver_options.snopt = struct();
+      obj.solver_options.snopt.MajorIterationsLimit = 1000;
+      obj.solver_options.snopt.MinorIterationsLimit = 500;
+      obj.solver_options.snopt.IterationsLimit = 10000;
+      obj.solver_options.snopt.MajorOptimalityTolerance = 1e-6;
+      obj.solver_options.snopt.MajorFeasibilityTolerance = 1e-6;
+      obj.solver_options.snopt.MinorFeasibilityTolerance = 1e-6;
+      obj.solver_options.snopt.SuperbasicsLimit = 300;
+      obj.solver_options.snopt.VerifyLevel = 0;
+      obj.solver_options.snopt.DerivativeOption = 1;
       obj.check_grad = false;
     end
     
@@ -205,7 +214,7 @@ classdef NonlinearProgram
       sizecheck(iCinfun,[nnz,1]);
       sizecheck(jCinvar,[nnz,1]);
       if(any(iCinfun<1 | iCinfun>obj.num_cin) || any(jCinvar<1 | jCinvar>obj.num_vars))
-        error('Drake:NonlinearProgram:setNonlinearInequalityCOnstraintsGradientSparsity:iCinfun or jCinvar is out of bounds');
+        error('Drake:NonlinearProgram:setNonlinearInequalityConstraintsGradientSparsity:iCinfun or jCinvar is out of bounds');
       end
       obj.iCinfun = iCinfun;
       obj.jCinvar = jCinvar;
@@ -234,12 +243,77 @@ classdef NonlinearProgram
       obj.solver = solver;
     end
     
-    function obj = setSolverOptions(obj,solver,options)
-      error('todo: finish this');
-    end
+%     function obj = setSolverOptions(obj,solver,options)
+%       if(strcmp(lower(solver),'snopt'))
+%         
+%       end
+%     end
     
-    function obj = setSolverOption(obj,solver,optionname,optionval)
-      error('todo: finish this');
+    function obj = setSolverOptions(obj,solver,optionname,optionval)
+      % @param solver   - string name of the solver
+      % @param optionname    -- string name of the option field
+      % @param optionval     -- option value
+      if(strcmpi(solver,'snopt'))
+        if(strcmpi(optionname(~isspace(optionname)),'majorfeasibilitytolerance'))
+          sizecheck(optionval,[1,1]);
+          if(optionval<=0)
+            error('Drake:NonlinearProgram:setSolverOptionField:MajorFeasibilityTolerance should be positive');
+          end
+          obj.solver_options.snopt.MajorFeasibilityTolerance = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'minorfeasibilitytolerance'))
+          sizecheck(optionval,[1,1]);
+          if(optionval<=0)
+            error('Drake:NonlinearProgram:setSolverOptionField:MinorFeasibilityTolerance should be positive');
+          end
+          obj.solver_options.snopt.MinorFeasibilityTolerance = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'majoroptimalitytolerance'))
+          sizecheck(optionval,[1,1]);
+          if(optionval<=0)
+            error('Drake:NonlinearProgram:setSolverOptionField:MajorOptimalityTolerance should be positive');
+          end
+          obj.solver_options.snopt.MajorOptimalityTolerance = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'majoriterationslimit'))
+          sizecheck(optionval,[1,1]);
+          if(optionval<1)
+            error('Drake:NonlinearProgram:setSolverOptionField:MajorIterationsLimit should be positive integers');
+          end
+          obj.solver_options.snopt.MajorIterationsLimit = floor(optionval);
+        elseif(strcmpi(optionname(~isspace(optionname)),'minoriterationslimit'))
+          sizecheck(optionval,[1,1]);
+          if(optionval<1)
+            error('Drake:NonlinearProgram:setSolverOptionField:MinorIterationsLimit should be positive integers');
+          end
+          obj.solver_options.snopt.MinorIterationsLimit = floor(optionval);
+        elseif(strcmpi(optionname(~isspace(optionname)),'iterationslimit'))
+          sizecheck(optionval,[1,1]);
+          if(optionval<1)
+            error('Drake:NonlinearProgram:setSolverOptionField:IterationsLimit should be positive integers');
+          end
+          obj.solver_options.snopt.IterationsLimit = floor(optionval);
+        elseif(strcmpi(optionname(~isspace(optionname)),'superbasicslimit'))
+          sizecheck(optionval,[1,1]);
+          if(optionval<1)
+            error('Drake:NonlinearProgram:setSolverOptionField:SuperbasicsLimit should be positive integers');
+          end
+          obj.solver_options.snopt.superbasicsLimit = floor(optionval);
+        elseif(strcmpi(optionname(~isspace(optionname)),'derivativeoption'))
+          sizecheck(optionval,[1,1]);
+          if(optionval ~= 0  && optionval ~= 1)
+            error('Drake:NonlinearProgram:setSolverOptionField:DerivativeOption can be either 0 or 1');
+          end
+          obj.solver_options.snopt.superbasicsLimit = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'verifylevel'))
+          sizecheck(optionval,[1,1]);
+          if(optionval ~= 0  && optionval ~= 1 && optionval ~= 2 && optionval ~= 3 && optionval ~= -1)
+            error('Drake:NonlinearProgram:setSolverOptionField:VerifyLevel can be either 0,1,2,3 or -1');
+          end
+          obj.solver_options.snopt.superbasicsLimit = optionval;
+        end
+      elseif(strcmpi((solver),'fmincon'))
+        error('Not implemented yet');
+      else
+        error('solver %s not supported yet',solver);
+      end
     end
     
     function obj = setNonlinearInequalityBounds(obj,cin_lb,cin_ub,cin_idx)
@@ -317,24 +391,24 @@ classdef NonlinearProgram
       if isempty(obj.x_lb) obj.x_lb = -inf(obj.num_vars,1); end
       if isempty(obj.x_ub) obj.x_ub = inf(obj.num_vars,1); end
 
-      function setSNOPTParam(paramstring,default)
-        str=paramstring(~isspace(paramstring));
-        if (isfield(obj.default_options.snopt,str))
-          snset([paramstring,'=',num2str(getfield(obj.default_options.snopt,str))]);
-        else
-          snset([paramstring,'=',num2str(default)]);
-        end
-      end
+%       function setSNOPTParam(paramstring,default)
+%         str=paramstring(~isspace(paramstring));
+%         if (isfield(obj.default_options.snopt,str))
+%           snset([paramstring,'=',num2str(getfield(obj.default_options.snopt,str))]);
+%         else
+%           snset([paramstring,'=',num2str(default)]);
+%         end
+%       end
       
-      setSNOPTParam('Major Iterations Limit',1000);
-      setSNOPTParam('Minor Iterations Limit',500);
-      setSNOPTParam('Major Optimality Tolerance',1e-6);
-      setSNOPTParam('Major Feasibility Tolerance',1e-6);
-      setSNOPTParam('Minor Feasibility Tolerance',1e-6);
-      setSNOPTParam('Superbasics Limit',200);
-      setSNOPTParam('Derivative Option',0);
-      setSNOPTParam('Verify Level',0);
-      setSNOPTParam('Iterations Limit',10000);
+      snseti('Major Iterations Limit',obj.solver_options.snopt.MajorIterationsLimit);
+      snseti('Minor Iterations Limit',obj.solver_options.snopt.MinorIterationsLimit);
+      snsetr('Major Optimality Tolerance',obj.solver_options.snopt.MajorOptimalityTolerance);
+      snsetr('Major Feasibility Tolerance',obj.solver_options.snopt.MajorFeasibilityTolerance);
+      snsetr('Minor Feasibility Tolerance',obj.solver_options.snopt.MinorFeasibilityTolerance);
+      snseti('Superbasics Limit',obj.solver_options.snopt.SuperbasicsLimit);
+      snseti('Derivative Option',obj.solver_options.snopt.DerivativeOption);
+      snseti('Verify Level',obj.solver_options.snopt.VerifyLevel);
+      snseti('Iterations Limit',obj.solver_options.snopt.IterationsLimit);
 
       function [f,G] = snopt_userfun(x)
         [f,G] = geval(@obj.objectiveAndNonlinearConstraints,x);

@@ -45,8 +45,7 @@ classdef Constraint
         error('Drake:Constraint:UnsupportedEval','Only support 2nd order gradient at most');
       end
     end
-    
-    
+        
   end
   
 end
