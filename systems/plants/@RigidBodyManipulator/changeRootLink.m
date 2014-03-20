@@ -113,6 +113,9 @@ while (true)
   for i=1:length(current_body.geometry)
     current_body.geometry{i}.xyz = homogTransMult(T_old_body_to_new_body,current_body.geometry{i}.xyz);
   end
+  for i=1:length(current_body.visual_shapes)
+    current_body.visual_shapes(i).T = current_body.visual_shapes(i).T*inv(T_old_body_to_new_body);
+  end
   if ~isempty(current_body.contact_pts)
     current_body.contact_pts = homogTransMult(T_old_body_to_new_body,current_body.contact_pts);
   end
