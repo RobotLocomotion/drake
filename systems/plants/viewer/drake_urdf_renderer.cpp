@@ -154,7 +154,7 @@ class LinkGeometry {
     
     for (int i=0; i<3; i++) pos[i] = geometry_data->position[i];
     double q[4];
-    for (int i=0; i<3; i++) q[i] = geometry_data->quaternion[i];
+    for (int i=0; i<4; i++) q[i] = geometry_data->quaternion[i];
     bot_quat_to_angle_axis(q, &theta, axis);
     for (int i=0; i<4; i++) color[i] = geometry_data->color[i];
   }
@@ -200,7 +200,7 @@ public:
   {
     for (int i=0; i<3; i++) pos[i] = position[i];
     double q[4];
-    for (int i=0; i<3; i++) q[i] = quaternion[i];
+    for (int i=0; i<4; i++) q[i] = quaternion[i];
     bot_quat_to_angle_axis(q, &theta, axis);
   }
 };
