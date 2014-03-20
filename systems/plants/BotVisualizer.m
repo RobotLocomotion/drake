@@ -118,6 +118,8 @@ classdef BotVisualizer < RigidBodyVisualizer
       obj.draw_msg.link_name = {manip.body.linkname};
       obj.draw_msg.position = single(zeros(nb,3));
       obj.draw_msg.quaternion = single(zeros(nb,4));
+      
+      draw(obj,0,zeros(getNumStates(manip),1));
     end
     
     function drawWrapper(obj,t,y)
