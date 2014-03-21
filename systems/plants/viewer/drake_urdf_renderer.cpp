@@ -205,13 +205,14 @@ public:
   }
 };
 
+typedef std::pair<int,string> link_index;  // robot num and link name
 
 typedef struct _RendererData {
   BotRenderer renderer;
   BotViewer   *viewer;
   lcm_t       *lcm;
   //  map<string, BotWavefrontModel*> meshes;
-  map<string, boost::shared_ptr<Link>> links; 
+  map<link_index, boost::shared_ptr<Link> > links; 
 } RendererData;
 
 static void my_free( BotRenderer *renderer )
@@ -255,7 +256,7 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
   glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
   glEnable (GL_COLOR_MATERIAL);
 
-  for (map<string,boost::shared_ptr<Link>>::iterator l=self->links.begin(); l!=self->links.end(); ++l) {
+  for (map<link_index,boost::shared_ptr<Link>>::iterator l=self->links.begin(); l!=self->links.end(); ++l) {
     l->second->draw();
   }
 }
@@ -264,29 +265,26 @@ static void handle_lcm_viewer_load_robot(const lcm_recv_buf_t *rbuf, const char 
         const drake_lcmt_viewer_load_robot * msg, void * user)
 {
   RendererData *self = (RendererData*) user;
-
-  cout << "zapping " << self->links.size() << " old links" << endl;
   self->links.clear();
 
   cout << "loading new robot with " << msg->num_links << " links" << endl;
 
   // parse new links
   for (int i=0; i<msg->num_links; i++) {
+    if (msg->link[i].robot_num < 0) {
+      cerr << "illegal robot_num" << endl;
+      continue;
+    }
     boost::shared_ptr<Link> l(new Link(&(msg->link[i])));
-    self->links[msg->link[i].name] = l;
+    self->links.insert(make_pair(make_pair(msg->link[i].robot_num,msg->link[i].name),l));
   }
 
-  // send ack
-  if (self->links.size()>0) {
-    // send ack that model was successfully loaded
-    drake_lcmt_viewer_command status_message;
-    status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
-    status_message.command_data = (char*) "successfully loaded robot";
-    drake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
-    cout << "successfully loaded " << self->links.size() << " links" << endl;
-  } else {
-    cout << "failed to load model." << endl;
-  }
+  // send ack that model was successfully loaded
+  drake_lcmt_viewer_command status_message;
+  status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
+  status_message.command_data = (char*) "successfully loaded robot";
+  drake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
+  cout << "successfully loaded model" << endl;
 
   bot_viewer_request_redraw(self->viewer);
 }
@@ -325,7 +323,7 @@ static void handle_lcm_viewer_draw(const lcm_recv_buf_t *rbuf, const char * chan
   if (self->links.size()<1) return;
   
   for (int i=0; i<msg->num_links; i++) {
-    map<string,boost::shared_ptr<Link>>::iterator iter = self->links.find(msg->link_name[i]);
+    map<link_index,boost::shared_ptr<Link>>::iterator iter = self->links.find(make_pair(msg->robot_num[i],msg->link_name[i]));
     if (iter == self->links.end())
       cerr << "failed to find link: " << msg->link_name[i] << endl;
     else {
