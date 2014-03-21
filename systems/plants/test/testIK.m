@@ -184,6 +184,8 @@ if(info_mex ~= 13)
 end
 display('The infeasible constraints are');
 disp(infeasible_constraint_mex);
+ikproblem = InverseKin(robot,q_nom,kc_err,kc2l,kc2r);
+[qik,F,info,infeasible_constraint_ik] = ikproblem.solve(q_seed);
 [qmex,info_mex,infeasible_constraint_mex] = inverseKinPointwise(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc_err,kc2l,kc2r,ikmexoptions);
 display('The infeasible constraints are');
 disp(infeasible_constraint_mex);
@@ -403,7 +405,7 @@ q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1);q_seed_
 
 end
 
-function qmex = test_IK_userfun(r,q_seed,q_nom,varargin)
+function qik = test_IK_userfun(r,q_seed,q_nom,varargin)
 ikoptions = varargin{end};
 ikoptions = ikoptions.setMex(false);
 ikmexoptions = ikoptions;
@@ -419,7 +421,7 @@ end
 tic
 ikproblem = InverseKin(r,q_nom,varargin{1:end-1});
 ikproblem = ikproblem.setQ(ikoptions.Q);
-[qik,F,info] = ikproblem.solve(q_seed);
+[qik,F,info,infeasible_cnstr_ik] = ikproblem.solve(q_seed);
 toc
 % valuecheck(qik,q,1e-3);
 tic

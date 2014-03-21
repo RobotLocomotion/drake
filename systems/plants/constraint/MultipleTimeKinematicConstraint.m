@@ -58,6 +58,8 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
         iCfun = reshape(bsxfun(@times,(1:num_cnstr)',ones(1,nq*num_valid_t)),[],1);
         jCvar = reshape(bsxfun(@times,ones(num_cnstr,1),reshape(bsxfun(@plus,nq*(valid_t_idx-1),(1:nq)'),1,[])),[],1);
         cnstr{1} = cnstr{1}.setSparseStructure(iCfun,jCvar);
+        name_str = obj.name(t);
+        cnstr{1} = cnstr{1}.setName(name_str);
       else
         cnstr = {};
       end

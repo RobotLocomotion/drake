@@ -218,9 +218,16 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       % witht the weighted sum of the shrunk vertices; A LinearConstraint on the weighted
       % sum only, and a BoundingBoxConstraint on the weighted sum only
       if(obj.isTimeValid(t))
+        name_str = obj.name(t);
         cnstr = {NonlinearConstraint([0;0],[0;0],obj.nq+obj.num_pts,@obj.evalValidTime),...
           LinearConstraint(1,1,ones(1,obj.num_pts)),...
           BoundingBoxConstraint(zeros(obj.num_pts,1),ones(obj.num_pts,1))};
+        cnstr{1} = cnstr{1}.setName(name_str(1:2));
+        t_str = '';
+        if(~isempty(t))
+          t_str = sprintf('at time %5.2f',t);
+        end
+        cnstr{2} = cnstr{2}.setName({sprintf('QuasiStaticConstraint sum of weights %s',t_str)});
       else
         cnstr = {};
       end
