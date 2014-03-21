@@ -8,14 +8,6 @@ if (Boost_FOUND)
   link_directories( ${Boost_LIBRARY_DIRS} )
 endif()
 
-pods_find_pkg_config(bot2-vis)
-option(DRAKE_USE_BOT_VIS "Build Drake with bot2-vis support." ${bot2-vis_FOUND})
-if (DRAKE_USE_BOT_VIS)
-  if (NOT bot2-vis_FOUND)
-    message(SEND_ERROR "DRAKE_USE_BOT_VIS is ON but bot2-vis package was not found.")
-  endif()
-  add_definitions( -DBOT_VIS_SUPPORT )
-endif ()
 
 if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
@@ -37,10 +29,6 @@ if (eigen3_FOUND)
     add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
     target_link_libraries(drakeRBMurdf drakeRBM drakeURDFinterface ${Boost_LIBRARIES})
     set_target_properties(drakeRBMurdf PROPERTIES COMPILE_FLAGS -fPIC )
-
-    if (DRAKE_USE_BOT_VIS)
-	   pods_use_pkg_config_packages(drakeRBMurdf bot2-vis)
-    endif()
 
     pods_install_libraries(drakeRBMurdf)
 
