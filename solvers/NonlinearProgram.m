@@ -392,8 +392,6 @@ classdef NonlinearProgram
       A = [obj.Ain;obj.Aeq];
       b_lb = [-inf(length(obj.bin),1);obj.beq];
       b_ub = [obj.bin;obj.beq];
-      if isempty(obj.x_lb) obj.x_lb = -inf(obj.num_vars,1); end
-      if isempty(obj.x_ub) obj.x_ub = inf(obj.num_vars,1); end
 
 %       function setSNOPTParam(paramstring,default)
 %         str=paramstring(~isspace(paramstring));
@@ -445,21 +443,21 @@ classdef NonlinearProgram
         iAfun = iAfun + 1 + obj.num_cin + obj.num_ceq;
       end
         
-        [iGfun,jGvar] = obj.setNonlinearGradientSparsity();
-          
-        if(obj.check_grad)
-          checkGradient(x0);
-        end
-        [x,objval,exitflag] = snopt(x0, ...
-          obj.x_lb,obj.x_ub, ...
-          [-inf;obj.cin_lb;zeros(obj.num_ceq,1);b_lb],[inf;obj.cin_ub;zeros(obj.num_ceq,1);b_ub],...
-          'snoptUserfun',...
-          0,1,...
-          Avals,iAfun,jAvar,...
-          iGfun,jGvar);
-        if(obj.check_grad)
-          checkGradient(x);
-        end
+      [iGfun,jGvar] = obj.setNonlinearGradientSparsity();
+      [lb,ub] = obj.bounds();
+      if(obj.check_grad)
+        checkGradient(x0);
+      end
+      [x,objval,exitflag] = snopt(x0, ...
+        obj.x_lb,obj.x_ub, ...
+        lb,ub,...
+        'snoptUserfun',...
+        0,1,...
+        Avals,iAfun,jAvar,...
+        iGfun,jGvar);
+      if(obj.check_grad)
+        checkGradient(x);
+      end
       
       objval = objval(1);
       if exitflag~=1, disp(snoptInfo(exitflag)); end
@@ -482,7 +480,7 @@ classdef NonlinearProgram
       end
       
       [x,objval,exitflag] = fmincon(@obj.objective,x0,obj.Ain,...
-        obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.default_options.fmincon);
+        obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
       objval = full(objval);
     end
   end
@@ -496,6 +494,13 @@ classdef NonlinearProgram
       % is the gradient of return value f in the objectiveAndNonlinearConstraints function
       iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
       jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
+    end
+    
+    function [lb,ub] = bounds(obj)
+      % return the bounds for all the objective function, nonlinear constraints and linear
+      % constraints
+      lb = [-inf;obj.cin_lb;zeros(obj.num_ceq,1);-inf(length(obj.bin),1);obj.beq];
+      ub = [inf;obj.cin_ub;zeros(obj.num_ceq,1);zeros(length(obj.bin),1);obj.beq];
     end
   end
 end

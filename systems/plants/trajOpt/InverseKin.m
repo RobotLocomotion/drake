@@ -149,7 +149,7 @@ classdef InverseKin < NonlinearProgramWConstraint
       G = [G(1,:);G(1+obj.nlcon_ineq_idx,:);G(1+obj.nlcon_eq_idx,:)]; 
     end
     
-    function [q,F,info] = solve(obj,q_seed)
+    function [q,F,info,infeasible_constraint] = solve(obj,q_seed)
       x0 = zeros(obj.num_vars,1);
       x0(obj.q_idx) = q_seed;
       if(~isempty(obj.qsc_weight_idx))
@@ -157,6 +157,28 @@ classdef InverseKin < NonlinearProgramWConstraint
       end
       [x,F,info] = solve@NonlinearProgramWConstraint(obj,x0);
       q = x(obj.q_idx);
+      infeasible_constraint = {};
+      if(strcmp(obj.solver,'snopt')&&info>10)
+        fval = obj.objectiveAndNonlinearConstraints(x);
+        [lb,ub] = obj.bounds();
+        ub_err = fval(2:end)-ub(2:end);
+        max_ub_err = max(ub_err);
+        max_ub_err = max_ub_err*(max_ub_err>0);
+        lb_err = lb(2:end)-fval(2:end);
+        max_lb_err = max(lb_err);
+        max_lb_err = max_lb_err*(max_lb_err>0);
+        cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];
+        if(max_ub_err+max_lb_err>1e-4)
+          infeasible_constraint_idx = (ub_err>5e-5) | (lb_err>5e-5);
+          infeasible_constraint = cnstr_name(infeasible_constraint_idx);
+        elseif(info == 13)
+          info = 4;
+        elseif(info == 31)
+          info = 5;
+        elseif(info == 32)
+          info = 6;
+        end
+      end
     end
   end
 end

@@ -58,6 +58,7 @@ classdef NonlinearConstraint < Constraint
       obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
       obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
       obj.nnz = obj.num_cnstr*obj.xdim;
+      obj.name = repmat({''},obj.num_cnstr,1);
     end
     
     function obj = setSparseStructure(obj,iCfun,jCvar)
@@ -88,6 +89,18 @@ classdef NonlinearConstraint < Constraint
       [~,dc_numeric] = geval(@obj.eval,varargin{:},struct('grad_method','numerical'));
       valuecheck(dc,dc_numeric,tol);
       valuecheck(dc,sparse(obj.iCfun,obj.jCvar,dc(sub2ind([obj.num_cnstr,obj.xdim],obj.iCfun,obj.jCvar)),obj.num_cnstr,obj.xdim,obj.nnz));
+    end
+    
+    function obj = setName(obj,name)
+      % @param name   -- A cell array, name{i} is the name string of i'th constraint
+      if(~iscell(name))
+        error('Drake:NonlinearConstraint:name should be a cell array');
+      end
+      sizecheck(name,[obj.num_cnstr,1]);
+      if(~all(cellfun(@ischar,name)))
+        error('Drake:NonlinearConstraint:name should be a cell array of strings');
+      end
+      obj.name = name;
     end
   end
 end

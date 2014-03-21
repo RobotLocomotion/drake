@@ -58,6 +58,7 @@ classdef LinearConstraint < Constraint
       [obj.iAfun,obj.jAvar,obj.A_val] = find(obj.A);
       obj.nnz = length(obj.A_val); 
       obj.A = sparse(obj.iAfun,obj.jAvar,obj.A_val,obj.num_cnstr,obj.xdim,obj.nnz);
+      obj.name = repmat({''},obj.num_cnstr,1);
     end
     
     function varargout = eval(obj,x)
@@ -73,5 +74,16 @@ classdef LinearConstraint < Constraint
       end
     end
     
+    function obj = setName(obj,name)
+      % @param name   -- A cell array, name{i} is the name string of i'th constraint
+      if(~iscell(name))
+        error('Drake:LinearConstraint:name should be a cell array');
+      end
+      sizecheck(name,[obj.num_cnstr,1]);
+      if(~all(cellfun(@ischar,name)))
+        error('Drake:LinearConstraint:name should be a cell array of strings');
+      end
+      obj.name = name;
+    end
   end
 end

@@ -2,15 +2,16 @@ classdef Constraint
   % Constraint that will be used for Drake solvers
   % @param lb    -- The lower bound of the constraint
   % @param ub    -- The upper bound of the constraint
+  % @param name  -- The name of the constraint. If not specified, it is an empty string
   properties(SetAccess = protected)
     lb
     ub
+    name
   end
   
   properties(SetAccess = protected,GetAccess = protected)
     eval_handle   % Function handle to evaluate constraint.
   end
-  
   
   methods
     function obj = Constraint(lb,ub,eval_handle)
@@ -25,6 +26,7 @@ classdef Constraint
       obj.lb = lb;
       obj.ub = ub;
       obj.eval_handle = eval_handle;
+      obj.name = {''};
     end
     
     function varargout = eval(obj,varargin)
@@ -45,7 +47,11 @@ classdef Constraint
         error('Drake:Constraint:UnsupportedEval','Only support 2nd order gradient at most');
       end
     end
-        
+       
+    function obj = setName(obj,name)
+      % set the name of the constraint
+      obj.name = name;
+    end
   end
   
 end

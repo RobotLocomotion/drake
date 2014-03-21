@@ -44,6 +44,7 @@ valuecheck(lb_mex,lb,1e-10);
 valuecheck(ub_mex,ub,1e-10);
 strcmp(cnst_name_mex,cnst_name);
 cnstr = mtlpc.generateConstraint(t);
+valuecheck(strcmp(cnst_name,cnstr{1}.name),1);
 sizecheck(cnstr,[1,1]);
 valuecheck(cnstr{1}.lb,lb);
 valuecheck(cnstr{1}.ub,ub);

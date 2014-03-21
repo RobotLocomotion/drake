@@ -242,6 +242,7 @@ else
 end
 [lb,ub] = kc.bounds(t);
 cnst_name = kc.name(t);
+valuecheck(strcmp(cnst_name,cnstr{1}.name),1);
 % strcmp(cnst_name_mex,cnst_name);
 valuecheck(num_cnst_mex,num_cnst);
 valuecheck(c_mex,c,1e-8);

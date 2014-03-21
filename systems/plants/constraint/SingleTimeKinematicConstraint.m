@@ -54,6 +54,8 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
       if(obj.isTimeValid(t))
         [lb,ub] = obj.bounds(t);
         cnstr = {NonlinearConstraint(lb,ub,obj.robot.getNumDOF,@(kinsol) obj.eval(t,kinsol))};
+        name_str = obj.name(t);
+        cnstr{1} = cnstr{1}.setName(name_str);
       else
         cnstr = {};
       end

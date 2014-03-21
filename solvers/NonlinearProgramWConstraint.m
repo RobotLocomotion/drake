@@ -6,13 +6,13 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
   % @param num_nlcon -- The total number of nonlinear constraints
   % @param num_lcon  -- The total number of linear constraints
   % @param cost      -- A cell array of NonlinearConstraint or LinearConstraint.
-  
   properties(SetAccess = protected)
     nlcon
     lcon
     num_nlcon
     num_lcon
     cost
+    name_str
   end
   
   properties(Access = protected)
@@ -21,7 +21,11 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
 
     nlcon_ineq_idx % row index of nonlinear inequality constraint
     nlcon_eq_idx % row index of nonlinear equality constraint
-  
+    
+    cin_name % A cell array of strings. cin_name{i} is the name of i'th nonlinear inequality constraint
+    ceq_name % A cell array of strings. ceq_name{i} is the name of i'th nonlinear equality constraint
+    Ain_name % A cell array of strings. Ain_name{i} is the name of i'th linear inequality constraint
+    Aeq_name % A cell array of strings. Aeq_name{i} is the name of i'th linear equality constraint
   end
   
   methods
@@ -37,6 +41,10 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       obj.nlcon_eq_idx = [];
       obj.cost = {};
       obj.cost_xind_cell = {};
+      obj.cin_name = {};
+      obj.ceq_name = {};
+      obj.Ain_name = {};
+      obj.Aeq_name = {};
     end
     
     function obj = addNonlinearConstraint(obj,cnstr,xind)
@@ -68,6 +76,8 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       obj.jCinvar = [obj.jCinvar;xind(cnstr.jCvar(Gin_idx))];
       obj.iCeqfun = [obj.iCeqfun;obj.num_ceq+inv_ceq_idx(cnstr.iCfun(Geq_idx))];
       obj.jCeqvar = [obj.jCeqvar;xind(cnstr.jCvar(Geq_idx))];
+      obj.cin_name = [obj.cin_name;cnstr.name(cnstr.cin_idx)];
+      obj.ceq_name = [obj.ceq_name;cnstr.name(cnstr.ceq_idx)];
       obj.num_cin = obj.num_cin + length(cnstr.cin_idx);
       obj.num_ceq = obj.num_ceq + length(cnstr.ceq_idx);
       obj.num_nlcon = obj.num_nlcon + cnstr.num_cnstr;
@@ -102,6 +112,8 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
         obj = obj.addLinearInequalityConstraints([cnstr_Ain(bin_ub_inf_idx,:);-cnstr_Ain(bin_lb_inf_idx,:)],...
           [cnstr_bin_ub(bin_ub_inf_idx);-cnstr_bin_lb(bin_lb_inf_idx)]);
       end
+      obj.Ain_name = [obj.Ain_name;cnstr.name(cnstr.cin_idx)];
+      obj.Aeq_name = [obj.Aeq_name;cnstr.name(cnstr.ceq_idx)];
       obj = obj.addLinearEqualityConstraints(cnstr_Aeq,cnstr_beq);
     end
     
