@@ -186,8 +186,13 @@ classdef RigidBodyManipulator < Manipulator
         limits = struct();
         limits.joint_limit_min = -Inf;
         limits.joint_limit_max = Inf;
-        limits.effort_limit = Inf;
+        limits.effort_min = -Inf;
+        limits.effort_max = Inf;
         limits.velocity_limit = Inf;
+      end
+      
+      if limits.effort_min > limits.effort_max
+        error('minimum effort is greater than maximum effort');
       end
       
       child = model.body(child_ind);
@@ -271,7 +276,8 @@ classdef RigidBodyManipulator < Manipulator
           child.floating = 1;
           limits.joint_limit_min = repmat(limits.joint_limit_min,1,6);
           limits.joint_limit_max = repmat(limits.joint_limit_max,1,6);
-          limits.effort_limit = repmat(limits.effort_limit,1,6);
+          limits.effort_min = repmat(limits.effort_min,1,6);
+          limits.effort_max = repmat(limits.effort_max,1,6);
           limits.velocity_limit = repmat(limits.velocity_limit,1,6);
           
         case 'floating_quat'
@@ -279,7 +285,8 @@ classdef RigidBodyManipulator < Manipulator
           child.floating = 2;
           limits.joint_limit_min = repmat(limits.joint_limit_min,1,7);
           limits.joint_limit_max = repmat(limits.joint_limit_max,1,7);
-          limits.effort_limit = repmat(limits.effort_limit,1,7);
+          limits.effort_min = repmat(limits.effort_min,1,7);
+          limits.effort_max = repmat(limits.effort_max,1,7);
           limits.velocity_limit = repmat(limits.velocity_limit,1,7);
           
         otherwise
@@ -288,7 +295,8 @@ classdef RigidBodyManipulator < Manipulator
       child.joint_axis = axis;
       child.joint_limit_min = limits.joint_limit_min;
       child.joint_limit_max = limits.joint_limit_max;
-      child.effort_limit = limits.effort_limit;
+      child.effort_min = limits.effort_min;
+      child.effort_max = limits.effort_max;
       child.velocity_limit = limits.velocity_limit;
       
       model.body(child_ind) = child;
@@ -432,23 +440,22 @@ classdef RigidBodyManipulator < Manipulator
       if (num_dof<1) error('This model has no DOF!'); end
 
       u_limit = repmat(inf,length(model.actuator),1);
+      u_limit = [-u_limit u_limit]; % lower/upper limits
 
       %% extract B matrix
       B = sparse(num_dof,0);
       for i=1:length(model.actuator)
         joint = model.body(model.actuator(i).joint);
         B(joint.dofnum,i) = model.actuator(i).reduction;
-        if ~isinf(joint.effort_limit)
-          u_limit(i) = abs(joint.effort_limit/model.actuator(i).reduction);
+        if ~isinf(joint.effort_min) || ~isinf(joint.effort_max)
+          u_limit(i,1) = joint.effort_min/model.actuator(i).reduction;
+          u_limit(i,2) = joint.effort_max/model.actuator(i).reduction;
           if sum(B(joint.dofnum,:)~=0)>1
             warning('Drake:RigidBodyManipulator:UnsupportedJointEffortLimit','The specified joint effort limit cannot be expressed as simple input limits; the offending limits will be ignored');
-            u_limit(B(joint.dofnum,:)~=0)=inf;
+            u_limit(B(joint.dofnum,:)~=0)=[-inf inf];
           end
         end
       end
-      %Copy first column of u_limit to be the low limits, and the second
-      %column is the high limit.
-      u_limit = [-u_limit u_limit];
       for i=1:length(model.force)
         if model.force{i}.direct_feedthrough_flag
           input_num = size(B,2)+1;
@@ -1753,7 +1760,8 @@ classdef RigidBodyManipulator < Manipulator
 
       joint_limit_min=-inf;
       joint_limit_max=inf;
-      effort_limit=inf;
+      effort_min=-inf;
+      effort_max=inf;
       velocity_limit=inf;
       limits = node.getElementsByTagName('limit').item(0);
       if ~isempty(limits)
@@ -1764,7 +1772,15 @@ classdef RigidBodyManipulator < Manipulator
           joint_limit_max = parseParamString(model,robotnum,char(limits.getAttribute('upper')));
         end
         if limits.hasAttribute('effort');
-          effort_limit = parseParamString(model,robotnum,char(limits.getAttribute('effort')));
+          effort = parseParamString(model,robotnum,char(limits.getAttribute('effort')));
+          effort_min = min(-effort,effort); % just in case someone puts the min effort in the URDF
+          effort_max = max(-effort,effort);
+        end
+        if limits.hasAttribute('effort_min');
+          effort_min = parseParamString(model,robotnum,char(limits.getAttribute('effort_min')));
+        end
+        if limits.hasAttribute('effort_max');
+          effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
         end
         if limits.hasAttribute('velocity');
           warning('Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
@@ -1775,7 +1791,8 @@ classdef RigidBodyManipulator < Manipulator
       limits = struct();
       limits.joint_limit_min = joint_limit_min;
       limits.joint_limit_max = joint_limit_max;
-      limits.effort_limit = effort_limit;
+      limits.effort_min = effort_min;
+      limits.effort_max = effort_max;
       limits.velocity_limit = velocity_limit;
       
       name=regexprep(name, '\.', '_', 'preservecase');
