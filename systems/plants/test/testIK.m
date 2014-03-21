@@ -417,18 +417,18 @@ if(info>10)
   error('SNOPT info is %d, IK fails to solve the problem',info);
 end
 tic
+ikproblem = InverseKin(r,q_nom,varargin{1:end-1});
+ikproblem = ikproblem.setQ(ikoptions.Q);
+[qik,F,info] = ikproblem.solve(q_seed);
+toc
+% valuecheck(qik,q,1e-3);
+tic
 [qmex,info_mex] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 toc
 if(info_mex>10)
   error('SNOPT info is %d, IK mex fails to solve the problem',info_mex);
 end
 valuecheck(q,qmex,5e-2);
-tic
-ikproblem = InverseKin(r,q_nom,varargin{1:end-1});
-ikproblem = ikproblem.setQ(ikoptions.Q);
-[qik,F,info] = ikproblem.solve(q_seed);
-toc
-valuecheck(qik,q,1e-3);
 end
 
 function qmex = test_IKpointwise_userfun(r,t,q_seed,q_nom,varargin)

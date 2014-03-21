@@ -98,8 +98,10 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       cnstr_bin_ub = cnstr.ub(cnstr.cin_idx);
       bin_ub_inf_idx = ~isinf(cnstr_bin_ub);
       bin_lb_inf_idx = ~isinf(cnstr_bin_lb);
-      obj = obj.addLinearInequalityConstraints([cnstr_Ain(bin_ub_inf_idx,:);-cnstr_Ain(bin_lb_inf_idx,:)],...
-        [cnstr_bin_ub(bin_ub_inf_idx);-cnstr_bin_lb(bin_lb_inf_idx)]);
+      if(sum(bin_ub_inf_idx | bin_lb_inf_idx)>0)
+        obj = obj.addLinearInequalityConstraints([cnstr_Ain(bin_ub_inf_idx,:);-cnstr_Ain(bin_lb_inf_idx,:)],...
+          [cnstr_bin_ub(bin_ub_inf_idx);-cnstr_bin_lb(bin_lb_inf_idx)]);
+      end
       obj = obj.addLinearEqualityConstraints(cnstr_Aeq,cnstr_beq);
     end
     
@@ -202,8 +204,12 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       obj.num_vars = obj.num_vars+num_new_vars;
       obj.x_lb = [obj.x_lb;-inf(num_new_vars,1)];
       obj.x_ub = [obj.x_ub;inf(num_new_vars,1)];
-      obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
-      obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
+      if(~isempty(obj.Aeq))
+        obj.Aeq = [obj.Aeq zeros(length(obj.beq),num_new_vars)];
+      end
+      if(~isempty(obj.Ain))
+        obj.Ain = [obj.Ain zeros(length(obj.bin),num_new_vars)];
+      end
     end
     
     function obj = replaceCost(obj,cost,cost_idx,xind)

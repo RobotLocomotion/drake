@@ -76,13 +76,16 @@ classdef InverseKin < NonlinearProgramWConstraint
           for j = 1:varargin{i}.num_pts
             obj.x_name{obj.num_vars+j} = sprintf('qsc_weight%d',j);
           end
-          obj = obj.addDecisionVars(varargin{i}.num_pts);
+          obj = obj.addDecisionVariable(varargin{i}.num_pts);
           cnstr = varargin{i}.generateConstraint(t);
           obj = obj.addNonlinearConstraint(cnstr{1},[obj.q_idx;obj.qsc_weight_idx]);
           obj.nlcon_call_kinsol = [obj.nlcon_call_kinsol;true];
           obj.nlcon_call_qsc_weight = [obj.nlcon_call_qsc_weight;true];
-          obj = obj.addLinearConstraint(cnstr{2}.obj.qsc_weight_idx);
+          obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_idx);
           obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_idx);
+        elseif(isa(varargin{i},'SingleTimeLinearPostureConstraint'))
+          cnstr = varargin{i}.generateConstraint(t);
+          obj = obj.addLinearConstraint(cnstr{1},obj.q_idx);
         else
           error('Drake:InverseKin:the input RigidBodyConstraint is not accepted');
         end

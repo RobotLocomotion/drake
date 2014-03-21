@@ -111,7 +111,7 @@ classdef NonlinearProgram
       obj.objcon_logic = true;
       if nargout>1
         [f,df] = objective(obj,x);
-        if (obj.num_cin + obj.num_ceq)
+        if (obj.num_cin + obj.num_ceq>0)
           [g,h,dg,dh] = nonlinearConstraints(obj,x);
           fgh = [f;g;h];
           dfgh = [df;dg;dh];
@@ -361,6 +361,10 @@ classdef NonlinearProgram
        
       fprintf('    solver        objval        exitflag   execution time\n-------------------------------------------------------------\n')
       typecheck(solvers,'cell');
+      x = cell(1,length(solvers));
+      objval = cell(1,length(solvers));
+      exitflag = cell(1,length(solvers));
+      execution_time = cell(1,length(solvers));
       for i=1:length(solvers)
         obj.solver = solvers{i};
         try 
@@ -373,7 +377,7 @@ classdef NonlinearProgram
           else
             rethrow(ex);
           end
-    	end
+        end
         
         fprintf('%12s%12.3f%12d%17.4f\n',solvers{i},objval{i},exitflag{i},execution_time{i});
       end
@@ -419,14 +423,14 @@ classdef NonlinearProgram
 
       function checkGradient(x)
         num_rows_G = 1+obj.num_ceq+obj.num_cin+length(obj.beq)+length(obj.bin);
-          [f,G] = snopt_userfun(x);
-          [~,G_numerical] = geval(@snopt_userfun,x,struct('grad_method','numerical'));
-          G_user = full(sparse(iGfun,jGvar,G,num_rows_G,obj.num_vars));
-          G_err = G_user-G_numerical;
-          [max_err,max_err_idx] = max(abs(G_err(:)));
-          [max_err_row,max_err_col] = ind2sub([num_rows_G,obj.num_vars],max_err_idx);
-          display(sprintf('maximum gradient error is in row %d for x[%d], with error %f\nuser gradient %f, numerical gradient %f',...
-            max_err_row,max_err_col,max_err,G_user(max_err_row,max_err_col),G_numerical(max_err_row,max_err_col)));
+        [f,G] = snopt_userfun(x);
+        [~,G_numerical] = geval(@snopt_userfun,x,struct('grad_method','numerical'));
+        G_user = full(sparse(iGfun,jGvar,G,num_rows_G,obj.num_vars));
+        G_err = G_user-G_numerical;
+        [max_err,max_err_idx] = max(abs(G_err(:)));
+        [max_err_row,max_err_col] = ind2sub([num_rows_G,obj.num_vars],max_err_idx);
+        display(sprintf('maximum gradient error is in row %d for x[%d], with error %f\nuser gradient %f, numerical gradient %f',...
+          max_err_row,max_err_col,max_err,G_user(max_err_row,max_err_col),G_numerical(max_err_row,max_err_col)));
       end
       
       if isempty(A)
@@ -435,6 +439,9 @@ classdef NonlinearProgram
         jAvar = [];
       else
         [iAfun,jAvar,Avals] = find(A);
+        iAfun = iAfun(:);
+        jAvar = jAvar(:);
+        Avals = Avals(:);
         iAfun = iAfun + 1 + obj.num_cin + obj.num_ceq;
       end
         
