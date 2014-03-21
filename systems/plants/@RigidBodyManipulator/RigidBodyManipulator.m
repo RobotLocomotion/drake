@@ -191,10 +191,6 @@ classdef RigidBodyManipulator < Manipulator
         limits.velocity_limit = Inf;
       end
       
-      if limits.effort_min > limits.effort_max
-        error('minimum effort is greater than maximum effort');
-      end
-      
       child = model.body(child_ind);
       
       if child.parent>0
