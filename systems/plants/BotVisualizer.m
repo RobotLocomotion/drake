@@ -63,6 +63,7 @@ classdef BotVisualizer < RigidBodyVisualizer
         b = getBody(manip,i);
         link = drake.lcmt_viewer_link_data();
         link.name = b.linkname;
+        link.robot_num = b.robotnum;
         link.num_geom = length(b.visual_shapes);
         if (link.num_geom>0)
           link.geom = javaArray('drake.lcmt_viewer_geometry_data',link.num_geom);
@@ -116,6 +117,7 @@ classdef BotVisualizer < RigidBodyVisualizer
       nb = getNumBodies(manip);
       obj.draw_msg.num_links = nb
       obj.draw_msg.link_name = {manip.body.linkname};
+      obj.draw_msg.robot_num = [manip.body.robotnum];
       obj.draw_msg.position = single(zeros(nb,3));
       obj.draw_msg.quaternion = single(zeros(nb,4));
       

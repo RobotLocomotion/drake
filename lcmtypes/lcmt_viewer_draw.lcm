@@ -6,6 +6,7 @@ struct lcmt_viewer_draw
 
   int32_t num_links;
   string link_name[num_links];
+  int32_t robot_num[num_links];
   float position[num_links][3];
   float quaternion[num_links][4];
 }
