@@ -1418,13 +1418,7 @@ classdef RigidBodyManipulator < Manipulator
             parent.wrlgeometry = [ parent.wrlgeometry, '\nTransform {\n', body.wrljoint, '\n children [\n', body.wrlgeometry, '\n]\n}\n'];
           end
         end
-        
-        for j=1:length(body.geometry)
-          g.xyz = body.Ttree(1:end-1,:)*[body.geometry{j}.xyz; ones(1,size(body.geometry{j}.xyz,2))];
-          g.c = body.geometry{j}.c;
-          parent.geometry = {parent.geometry{:},g};
-        end
-        
+                
         for j=1:length(body.visual_shapes)
           body.visual_shapes(j).T = body.Ttree*body.visual_shapes(j).T;
         end

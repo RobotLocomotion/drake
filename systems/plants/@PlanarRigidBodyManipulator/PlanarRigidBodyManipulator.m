@@ -93,16 +93,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
 
       for i=1:length(model.body)
         body = model.body(i);
-        
-        %% cleanup 3D geometry for 2D
-        for j=1:length(body.geometry)
-          if size(body.geometry{j}.xyz,2)>1
-            pts = model.T_2D_to_3D'*forwardKin(model,kinsol,i,body.geometry{j}.xyz);
-            ind = convhull(pts(1,:),pts(2,:));
-            model.body(i).geometry{j}.xyz = model.body(i).geometry{j}.xyz(:,ind);
-          end
-        end
-        
+                
         %% weld all joints that are not aligned with the view axis
         if ~body.parent, continue; end
         assert(body.floating == 0,'Drake:PlanarRigidBodyManipulator','Shouldn''t get here.  Planar models should only have RPY floating bases, which are added as individual joints');
