@@ -37,9 +37,11 @@ classdef BotVisualizer < RigidBodyVisualizer
 %        error('Drake:BotVisualizer:UnsupportedModel','I don''t actually support robots with multiple urdfs yet, but it will be easy enough');
 %      end
 
+      obj = obj@RigidBodyVisualizer(manip);
+
       lc = lcm.lcm.LCM.getSingleton();
-      agg = lcm.lcm.MessageAggregator();
-      lc.subscribe('DRAKE_VIEWER_STATUS',agg);
+      obj.status_agg = lcm.lcm.MessageAggregator();
+      lc.subscribe('DRAKE_VIEWER_STATUS',obj.status_agg);
 
       % check if there is an instance of drake_viewer already running
       [~,ck] = system('ps ax 2> /dev/null | grep -i drake_viewer | grep -c -v grep');
@@ -49,12 +51,10 @@ classdef BotVisualizer < RigidBodyVisualizer
         retval = systemWCMakeEnv([fullfile(pods_get_bin_path,'drake_viewer'),' &> drake_viewer.out &']);
         
         % listen for ready message
-        if isempty(agg.getNextMessage(5000)) % wait for viewer to come up
+        if isempty(obj.status_agg.getNextMessage(5000)) % wait for viewer to come up
           error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer');
         end
       end
-
-      obj = obj@RigidBodyVisualizer(manip);
 
       vr = drake.lcmt_viewer_load_robot();
       vr.num_links = getNumBodies(manip);
@@ -102,7 +102,7 @@ classdef BotVisualizer < RigidBodyVisualizer
       
       lc.publish('DRAKE_VIEWER_LOAD_ROBOT',vr);
       % listen for acknowledgement
-      ack = agg.getNextMessage(5000);
+      ack = obj.status_agg.getNextMessage(5000);
       if isempty(ack)
         error('Drake:BotVisualizer:LoadRobotFailed','Did not receive ack from viewer');
       else
@@ -144,17 +144,72 @@ classdef BotVisualizer < RigidBodyVisualizer
     
     function obj = loadRenderer(obj,renderer_dynobj_path)
       % dynamically load a libbot renderer
-      vc = drake.systems.plants.viewer.lcmt_viewer_command();
+      vc = drake.lcmt_viewer_command();
       vc.command_type = vc.LOAD_RENDERER;
       vc.command_data = renderer_dynobj_path;
       lc = lcm.lcm.LCM.getSingleton();
       lc.publish('DRAKE_VIEWER_COMMAND',vc);
     end
+    
+    function playbackMovie(obj,xtraj,filename)
+      ffmpeg = getCMakeParam('ffmpeg');
+      if isempty(ffmpeg)
+        error('need ffmpeg.  rerun make configure from the prompt to help find it');
+      end
+      
+      if (nargin<2)
+        [filename,pathname] = uiputfile('*','Save playback to movie');
+        if isequal(filename,0) || isequal(pathname,0)
+          return;
+        end
+        filename = fullfile(pathname,filename);
+      end
+      
+      [path,name,ext] = fileparts(filename);
+      if isempty(ext), ext = '.mp4'; end  % set a default
+      
+      vc = drake.lcmt_viewer_command();
+      vc.command_type = vc.START_RECORDING;
+      vc.command_data = '';
+      lc = lcm.lcm.LCM.getSingleton();
+      lc.publish('DRAKE_VIEWER_COMMAND',vc);
 
+      playback(obj,xtraj);
+      
+      vc.command_type = vc.STOP_RECORDING;
+      lc.publish('DRAKE_VIEWER_COMMAND',vc);
+      
+      ppmsgz_filename='';
+      while isempty(ppmsgz_filename)
+        msg = obj.status_agg.getNextMessage(5000);
+        if isempty(msg) % wait for ack
+          error('Drake:BotVisualizer:RecordingFailed','Never received recording OK ack from viewer');
+        end
+        ppmsgz_filename=char(drake.lcmt_viewer_command(msg.data).command_data);
+        % todo: make this more robust (so I don't get a different status
+        % message)
+      end
+      
+      system(['gzip -d ',ppmsgz_filename]);
+      [p,n,e] = fileparts(ppmsgz_filename);  % remove .gz from filename
+      ppms_filename = fullfile(p,n);
+
+      vcodec = '';
+      switch(ext)
+        case '.mp4'
+          vcodec = '-vcodec mpeg4'
+        otherwise
+          warning('haven''t handled this file extension yet.  you might need to add a -vcodec arg here to help ffmpeg decide');
+      end
+      system([ffmpeg,' -r 30 -y -vcodec ppm -f image2pipe -i ', ppms_filename,' ',vcodec,' ', filename]);
+      delete(ppms_filename);
+    end
+    
   end
   
   properties 
     viewer_id;
     draw_msg;
+    status_agg;
   end
 end
