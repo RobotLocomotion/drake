@@ -5,16 +5,15 @@ classdef RigidBody < RigidBodyElement
     
     % link properties
     linkname=''  % name of the associated link
-    wrlgeometry=''; % geometry (compatible w/ wrl).  see parseVisual below.
     dofnum=0     % the index in the state vector corresponding to this joint
     gravity_off=false;
     
-    visual_shapes=[]; %struct('type',[],'T',[],'c',[],'params',[]);  with params as used by URDF 
+    visual_shapes={}; % objects of type RigidBodyGeometry
+    contact_shapes={}; % objects of type RigidBodyGeometry
 
     contact_pts=[];  % a 3xn matrix with [x;y;z] positions of contact points
     collision_group_name={};  % string names of the groups
     collision_group={};       % collision_group{i} is a list of indices into contact_pts which belong to collision_group_name{i}
-    contact_shapes=[]; %struct('type',[],'T',[],'params',[]);  with params as used by URDF (not necessarily by Bullet)
     contact_shape_group={}; % contact_shape_group{i} is a list of indices into contact_shapes which belong to collision_group_name{i}
     
     % joint properties
@@ -39,13 +38,6 @@ classdef RigidBody < RigidBodyElement
     has_position_sensor=false;
   end
   
-  properties (Constant)
-    BOX=1;
-    SPHERE=2;
-    CYLINDER=3;
-    MESH=4;
-  end
-
   properties (SetAccess=protected, GetAccess=public)    
     % mass, com, inertia properties
     I=zeros(6);  % spatial mass/inertia
@@ -94,9 +86,9 @@ classdef RigidBody < RigidBodyElement
           collision_group = find(strcmpi(collision_group,body.collision_group_name));
         end
         if (nargin < 2)
-          shapes = body.contact_shapes(:,body.contact_shape_group{collision_group});
+          shapes = body.contact_shapes{body.contact_shape_group{collision_group}};
         else
-          shapes = body.contact_shapes(:,body.contact_shape_group{collision_group}(collision_ind));
+          shapes = body.contact_shapes{body.contact_shape_group{collision_group}(collision_ind)};
         end
       end
     end
@@ -108,8 +100,7 @@ classdef RigidBody < RigidBodyElement
         pts = bsxfun(@plus,scale_factor*bsxfun(@minus,pts,mean_of_pts),mean_of_pts);
       end
       body.contact_pts = pts;
-      shape = struct('type',RigidBody.MESH,'T',eye(4),'params',pts);
-      body.contact_shapes = shape;
+      body.contact_shapes = { RigidBodyMeshPts(pts) };
     end
     
     function body = removeCollisionGroups(body,contact_groups)
@@ -301,10 +292,6 @@ classdef RigidBody < RigidBodyElement
     function body = parseVisual(body,node,model,options)
       c = .7*[1 1 1];
       
-      wrl_transform_str = '';
-      wrl_shape_str='';
-      wrl_appearance_str='';
-      
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
@@ -315,45 +302,20 @@ classdef RigidBody < RigidBodyElement
           rpy = reshape(parseParamString(model,body.robotnum,char(origin.getAttribute('rpy'))),3,1);
         end
       end
-      if any(xyz)
-        wrl_transform_str = [wrl_transform_str,'\ttranslation',sprintf(' %f %f %f\n',xyz)];
-      end
-      if any(rpy)
-        wrl_transform_str = [wrl_transform_str,'\trotation',sprintf(' %f %f %f %f\n',rpy2axis(rpy))];
-      end        
         
       matnode = node.getElementsByTagName('material').item(0);
       if ~isempty(matnode)
         c = RigidBodyManipulator.parseMaterial(matnode,options);
       end
-      wrl_appearance_str = sprintf('appearance Appearance { material Material { diffuseColor %f %f %f } }\n',c(1),c(2),c(3));
-      
-      if ~isempty(wrl_transform_str)
-        if isempty(body.linkname)
-          wrl_transform_str = ['Transform {\n',wrl_transform_str];
-        else
-            % get rid of dots in link name
-            body.linkname = regexprep(body.linkname, '\.', '_', 'preservecase');
-            wrl_transform_str = [sprintf('DEF %s Transform {\n',body.linkname),wrl_transform_str];
-        end
-        wrl_transform_str = [wrl_transform_str,'\tchildren [\n'];
-      end
       
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
-        wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(geomnode,wrl_appearance_str,model,body.robotnum,options)];
         if (options.visual || options.visual_geometry)
-          shape = RigidBody.parseGeometry(geomnode,xyz,rpy,model,body.robotnum,options);
+          shape = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
           shape.c = c;
-          body.visual_shapes = horzcat(body.visual_shapes,shape);
+          body.visual_shapes = {body.visual_shapes{:},shape};
         end
       end        
-      
-      if isempty(wrl_transform_str)
-        body.wrlgeometry = [body.wrlgeometry,wrl_shape_str];
-      else
-        body.wrlgeometry = [body.wrlgeometry,wrl_transform_str,wrl_shape_str,'\t]\n}'];
-      end
     end
     
     function body = parseCollision(body,node,model,options)
@@ -371,15 +333,12 @@ classdef RigidBody < RigidBodyElement
       npts=size(body.contact_pts,2);
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
-        [shape,xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,model,body.robotnum,options);
-        if (shape.type == RigidBody.MESH)
-          shape.params = [xpts';ypts';zpts'];  % maintain old functionality for contacts
-          % todo: load the geometry farther down the bullet pipeline instead
-        end
-        npts_additional = numel(xpts);
-        [body.contact_pts,ind_old,ind_new]=unique([body.contact_pts';xpts(:), ypts(:), zpts(:)],'rows','stable');
+        shape = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
+        pts = getPoints(shape);
+        npts_additional = size(pts,2);
+        [body.contact_pts,ind_old,ind_new]=unique([body.contact_pts';pts'],'rows','stable');
         body.contact_pts = body.contact_pts';
-        body.contact_shapes = horzcat(body.contact_shapes,shape);
+        body.contact_shapes = {body.contact_shapes{:},shape};
       end
       if (node.hasAttribute('group'))
         name=char(node.getAttribute('group'));
@@ -397,187 +356,9 @@ classdef RigidBody < RigidBodyElement
         body.contact_shape_group{ind} = [body.contact_shape_group{ind},length(body.contact_shapes)];
       end
     end
-          
-    function writeWRLJoint(body,fp)
-      if isempty(body.jointname)
-        fprintf(fp,'Transform {\n');
-      else
-        % get rid of dots in joint name
-        body.jointname = regexprep(body.jointname, '\.', '_', 'preservecase');
-
-        fprintf(fp,'DEF %s Transform {\n',body.jointname); 
-      end
-      if (body.floating)
-        fprintf(fp,'translation 0 0 0\n');
-        fprintf(fp,'rotation 0 1 0 0\n'); 
-      elseif (body.pitch==0) % then it's a pin joint
-        fprintf(fp,'rotation 0 1 0 0\n'); 
-      elseif isinf(body.pitch) % then it's a slider
-        fprintf(fp,'translation 0 0 0\n');
-      end
-    end
-    
-    function td=writeWRLBody(body,fp,td)
-      t=''; 
-      for i=1:td, t=[t,'\t']; end
-      s = regexprep(body.wrlgeometry,'\n',['\n',t]);
-      fprintf(fp,[t,s,'\n']);
-    end
   end
   
   methods (Static)
-    function filename=parseMeshFilename(filename,options)
-      if ~isempty(strfind(filename,'package://'))
-        filename=strrep(filename,'package://','');
-        [package,filename]=strtok(filename,filesep);
-        filename=[rospack(package),filename];
-      else
-        [path,name,ext] = fileparts(filename);
-        if (path(1)~=filesep)  % the it's a relative path
-          path = fullfile(options.urdfpath,path);
-        end
-        filename = fullfile(path,[name,ext]);
-      end
-    end
-    
-    function wrlstr = parseWRLGeometry(node,wrl_appearance_str,model,robotnum,options)
-      % param node DOM node for the geometry block
-      % param X coordinate transform for the current body
-      if (nargin<3) options=struct(); end
-      if ~isfield(options,'urdfpath') options.urdfpath=[]; end
-      
-      wrlstr='';
-      childNodes = node.getChildNodes();
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        switch (lower(char(thisNode.getNodeName())))
-          case 'box'
-            s = parseParamString(model,robotnum,char(thisNode.getAttribute('size')));
-            wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry Box { size %f %f %f }\n\t%s}\n',s(1),s(2),s(3),wrl_appearance_str)];
-            
-          case 'cylinder'
-            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
-            l = parseParamString(model,robotnum,char(thisNode.getAttribute('length')));
-            
-            % default axis for cylinder in urdf is the z-axis, but
-            % the default in vrml is the y-axis. 
-            wrlstr=[wrlstr,sprintf('Transform {\n\trotation 1 0 0 1.5708\n\tchildren Shape {\n\t\tgeometry Cylinder {\n\t\t\theight %f\n\t\t\tradius %f\n\t\t}\n\t\t%s\n\t}\n}\n',l,r,wrl_appearance_str)];
-            
-          case 'sphere'
-            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
-            wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry Sphere { radius %f }\n\t%s}\n',r,wrl_appearance_str)];
-
-          case 'mesh'
-            filename=char(thisNode.getAttribute('filename'));
-            filename=RigidBody.parseMeshFilename(filename,options);
-            [path,name,ext] = fileparts(filename);
-            if strcmpi(ext,'.stl')
-              wrlfile = fullfile(tempdir,[name,'.wrl']);
-              stl2vrml(fullfile(path,[name,ext]),tempdir);
-              txt=fileread(wrlfile);
-              txt = regexprep(txt,'#.*\n','','dotexceptnewline');
-              wrlstr=[wrlstr,sprintf('Shape {\n\tgeometry %s\n\t%s}\n',txt,wrl_appearance_str)];
-%              wrlstr=[wrlstr,sprintf('Inline { url "%s" }\n',wrlfile)];
-            elseif strcmpi(ext,'.wrl')
-              txt = fileread(filename);
-              txt = regexprep(txt,'#.*\n','','dotexceptnewline');
-              wrlstr=[wrlstr,txt];
-%              wrlstr=[wrlstr,sprintf('Inline { url "%s" }\n',filename)];
-            end
-            
-          case {'#text','#comment'}
-            % intentionally blank
-          otherwise
-            warning([char(thisNode.getNodeName()),' is not a supported element of robot/link/visual/material.']);
-        end
-      end
-      
-    end
-
-    function [shape,x,y,z] = parseGeometry(node,x0,rpy,model,robotnum,options)
-      % param node DOM node for the geometry block
-      % param X coordinate transform for the current body
-      % option twoD true implies that I can safely ignore y.
-      x=[];y=[];z=[];
-      T= [quat2rotmat(rpy2quat(rpy)),x0; 0 0 0 1];
-      
-      childNodes = node.getChildNodes();
-      for i=1:childNodes.getLength()
-        thisNode = childNodes.item(i-1);
-        cx=[]; cy=[]; cz=[];
-        switch (lower(char(thisNode.getNodeName())))
-          case 'box'
-            s = parseParamString(model,robotnum,char(thisNode.getAttribute('size')));
-            shape = struct('type',RigidBody.BOX,'T',T,'params',s);  % s/2
-            
-            if nargout>1
-              cx = s(1)/2*[-1 1 1 -1 -1 1 1 -1];
-              cy = s(2)/2*[1 1 1 1 -1 -1 -1 -1];
-              cz = s(3)/2*[1 1 -1 -1 -1 -1 1 1];
-              
-              pts = T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
-              x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
-            end
-            
-          case 'cylinder'
-            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
-            l = parseParamString(model,robotnum,char(thisNode.getAttribute('length')));
-            shape = struct('type',RigidBody.CYLINDER,'T',T,'params',[r,l]);  % l/2
-            
-            if nargout>1
-              % treat it as a box, for collisions
-              warning('Drake:RigidBody:SimplifiedCollisionGeometry','for efficiency, cylinder geometry will be treated like a box for 3D collisions');
-              cx = r*[-1 1 1 -1 -1 1 1 -1];
-              cy = r*[1 1 1 1 -1 -1 -1 -1];
-              cz = l/2*[1 1 -1 -1 -1 -1 1 1];
-              
-              pts = T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
-              x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
-            end
-            
-          case 'sphere'
-            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
-            shape = struct('type',RigidBody.SPHERE,'T',T,'params',r);
-            if nargout>1
-              if (r~=0)
-                warning('Drake:RigidBody:SimplifiedCollisionGeometry','for efficiency, 3D sphere geometry will be treated like a point (at the center of the sphere)');
-              end
-              cx=0; cy=0; cz=0;
-              pts = T(1:end-1,:)*[0;0;0;1];
-              x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
-            end
-            
-          case 'mesh'
-            filename=char(thisNode.getAttribute('filename'));
-            filename=RigidBody.parseMeshFilename(filename,options);
-            shape = struct('type',RigidBody.MESH,'T',T,'params',GetFullPath(filename));
-
-            if nargout>1
-              [path,name,ext] = fileparts(filename);
-              wrlfile=[];
-              if strcmpi(ext,'.stl')
-                wrlfile = fullfile(tempdir,[name,'.wrl']);
-                stl2vrml(fullfile(path,[name,ext]),tempdir);
-              elseif strcmpi(ext,'.wrl')
-                wrlfile = filename;
-              end
-              if ~isempty(wrlfile)
-                txt=fileread(wrlfile);
-                
-                ind=regexp(txt,'coordIndex[\s\n]*\[([^\]]*)\]','tokens'); ind = ind{1}{1};
-                ind=strread(ind,'%d','delimiter',' ,')+1;
-                
-                pts=regexp(txt,'point[\s\n]*\[([^\]]*)\]','tokens'); pts = pts{1}{1};
-                pts=strread(pts,'%f','delimiter',' ,');
-                pts=reshape(pts,3,[]);
-                pts=T(1:end-1,:)*[pts;ones(1,size(pts,2))];
-                x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
-              end
-            end
-        end
-      end
-    end
-
     function testMakeBelongToCollisionFilterGroup
       body = RigidBody();
       collision_fg_id = uint16(3);

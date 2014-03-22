@@ -111,13 +111,13 @@ while (true)
   current_body = setInertial(current_body,X_old_body_to_new_body'*current_body.I*X_old_body_to_new_body);
 
   for i=1:length(current_body.visual_shapes)
-    current_body.visual_shapes(i).T = current_body.visual_shapes(i).T*T_old_body_to_new_body;
+    current_body.visual_shapes{i}.T = current_body.visual_shapes{i}.T*T_old_body_to_new_body;
   end
   if ~isempty(current_body.contact_pts)
     current_body.contact_pts = homogTransMult(T_old_body_to_new_body,current_body.contact_pts);
   end
   for i=1:length(current_body.contact_shapes)
-    current_body.contact_shapes(i).T = current_body.contact_shapes(i).T*T_old_body_to_new_body;
+    current_body.contact_shapes{i}.T = current_body.contact_shapes{i}.T*T_old_body_to_new_body;
   end
     
   if (getNumInputs(new_rbm))
@@ -140,8 +140,6 @@ while (true)
 end
 
 new_rbm = compile(new_rbm);
-
-warning('Drake:RigidBodyManipulator:ChangeRootUnsupportedWRL','Haven''t updated the WRL geometry yet.  This model will not visualize properly in the Simulink 3d animation tool (yet)');
 
 % add coordinate transforms to go back and forth between the old and new
 % frames

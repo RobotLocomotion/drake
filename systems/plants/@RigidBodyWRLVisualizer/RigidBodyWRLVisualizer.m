@@ -22,7 +22,7 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       if ~isfield(options,'ground') options.ground = manip.num_contacts>0; end
       
       wrlfile = fullfile(tempdir,[obj.model.name{1},'.wrl']);
-      obj.model.writeWRL(wrlfile,options);
+      writeWRL(obj,wrlfile,options);
       obj.wrl = vrworld(wrlfile);
       if ~strcmpi(get(obj.wrl,'Open'),'on')
         open(obj.wrl);
@@ -33,6 +33,10 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
         view(obj.wrl);
       end
       obj.display_time=false;
+    end
+    
+    function writeWRL(obj,wrlfile,options)
+      
     end
     
     function delete(obj)

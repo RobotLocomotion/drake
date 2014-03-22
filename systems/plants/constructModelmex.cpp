@@ -173,7 +173,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //END_DEBUG
     pm = mxGetProperty(pBodies,i,"contact_shapes");
     Matrix4d T;
-    if(!mxIsEmpty(pm)){
+    if(0) { //!mxIsEmpty(pm)){
       for (int j=0; j<mxGetNumberOfElements(pm); j++) {
         //DEBUG
         //cout << "constructModelmex: Body " << i << ", Element " << j << endl;

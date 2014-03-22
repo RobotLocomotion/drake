@@ -13,100 +13,16 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       obj=obj@RigidBodyVisualizer(manip);
       
       Tview = [manip.x_axis, manip.y_axis, manip.view_axis]';
-      valuecheck(svd(Tview),[1;1;1]);  % assert that it's orthonormal
       
+      w = warning('off','Drake:RigidBodyGeometry:SimplifiedCollisionGeometry');
       for i=1:length(obj.model.body)
         b = obj.model.body(i);
         for j=1:length(b.visual_shapes)
-          s = b.visual_shapes(j);
-          obj.body(i).c{j} = s.c;
-          
-          switch(s.type)
-            case RigidBody.BOX
-              cx = s.params(1)/2*[-1 1 1 -1 -1 1 1 -1];
-              cy = s.params(2)/2*[1 1 1 1 -1 -1 -1 -1];
-              cz = s.params(3)/2*[1 1 -1 -1 -1 -1 1 1];
-            
-              pts = Tview*s.T(1:3,:)*[cx;cy;cz;ones(1,8)];
-              ind = convhull(pts(1,:),pts(2,:));
-              z = max(pts(3,:));
-              obj.body(i).xyz{j} = Tview'*[pts(1:2,ind); repmat(z,1,length(ind))];
-
-            case RigidBody.SPHERE
-              r = s.params;
-              if (r==0)
-                obj.body(i).xyz{j} = s.T(1:3,4);
-              else
-                theta = 0:0.1:2*pi;
-                obj.body(i).xyz{j} = Tview'*r*[cos(theta); sin(theta); 0*theta] + repmat(s.T(1:3,4),1,length(theta));
-              end
-              
-            case RigidBody.CYLINDER
-              r = s.params(1);
-              l = s.params(2);
-              if (abs(obj.model.view_axis'*s.T(1:3,3)) < 1e-4) % then it just looks like a box or
-                cx = r*[-1 1 1 -1 -1 1 1 -1];
-                cy = r*[1 1 1 1 -1 -1 -1 -1];
-                cz = l/2*[1 1 -1 -1 -1 -1 1 1];
-              
-                pts = Tview*s.T(1:3,:)*[cx;cy;cz;ones(1,8)];
-                ind = convhull(pts(1,:),pts(2,:));
-                z = max(pts(3,:));
-                obj.body(i).xyz{j} = Tview'*[pts(1:2,ind); repmat(z,1,length(ind))];
-              
-              elseif (abs(options.view_axis'*s.T(1:3,3)) > (1-1e-4)) % then it just looks like a circle
-                theta = 0:0.1:2*pi;
-                obj.body(i).xyz{j} = Tview'*r*[cos(theta); sin(theta); 0*theta] + repmat(s.T(1:3,4),1,length(theta));
-                
-              else  % full cylinder geometry
-                error('full cylinder geometry not implemented yet');  % but wouldn't be hard
-              end
-              
-            case RigidBody.MESH
-              filename = s.params;
-              [path,name,ext] = fileparts(filename);
-              switch(ext)
-                case '.stl'
-                  wrlfile = fullfile(tempdir,[name,'.wrl']);
-                  stl2vrml(fullfile(path,[name,ext]),tempdir);
-                  txt=fileread(wrlfile);
-
-                  ind=regexp(txt,'coordIndex \[([^\]]*)\]','tokens'); ind = ind{1}{1};
-                  ind=strread(ind,'%d','delimiter',' ,')+1;
-                  
-                  pts=regexp(txt,'point \[([^\]]*)\]','tokens'); pts = pts{1}{1};
-                  pts=strread(pts,'%f','delimiter',' ,');
-                  pts=reshape(pts,3,[]);
-                case '.wrl'
-                  txt=fileread(filename);
-                
-                  ind=regexp(txt,'coordIndex\s+\n*\s*\[([^\]]*)\]','tokens'); ind = ind{1}{1};
-                  ind=strread(ind,'%d','delimiter',' ,')+1;
-                
-                  pts=regexp(txt,'point\s+\n*\s*\[([^\]]*)\]','tokens'); pts = pts{1}{1};
-                  pts=strread(pts,'%f','delimiter',' ,');
-                  pts=reshape(pts,3,[]);
-                otherwise
-                  error('unsupported file extension');
-              end
-              
-              pts=Tview*s.T(1:3,:)*[pts(1:3,:);ones(1,size(pts,2))];
-              
-              n=max(diff(find(ind==0)));
-              if (min(diff(find(ind==0)))~=n), error('need to handle this case'); end
-              ind = reshape(ind,n,[]); ind(end,:)=[];
-              pts = pts(:,ind);
-              
-              %% remove repeated indices (from 3D to 2D conversion)
-              %              [pts,ipts,iind]=unique(pts','rows'); pts=pts';
-              %              ind = iind(ind);
-
-              ind = convhull(pts(1,:),pts(2,:));
-              z = max(pts(3,:));
-              obj.body(i).xyz{j} = Tview'*[pts(1:2,ind); repmat(z,1,length(ind))];
-          end
+          obj.body(i).xyz{j} = getPlanarPoints(b.visual_shapes{j},manip.x_axis,manip.y_axis, manip.view_axis);
+          obj.body(i).c{j} = b.visual_shapes{j}.c;
         end
       end
+      warning(w);
       obj.Tview = Tview;
     end
     
