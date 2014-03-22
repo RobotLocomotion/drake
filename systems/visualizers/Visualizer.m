@@ -227,6 +227,37 @@ classdef Visualizer < DrakeSystem
       end      
     end
     
+    function playbackMovie(obj,xtraj,filename)
+      if (nargin<2)
+        [filename,pathname] = uiputfile('*','Save playback to movie');
+        if isequal(filename,0) || isequal(pathname,0)
+          return;
+        end
+        filename = fullfile(pathname,filename);
+      end
+
+      [path,name,ext] = fileparts(filename);
+      ext = tolower(ext)
+      switch ext
+        case '.avi'
+          playbackAVI(obj,xtraj,filename);
+        case '.swf'
+          playbackSWF(obj,xtraj,filename);
+        otherwise
+          disp(' Please select an output format: ');
+          disp(' 1) AVI');
+          disp(' 2) SWF');
+          choice = input('Select a format (1-2): ');
+          switch choice
+            case 1
+              ext = '.avi';
+            case 2
+              ext = '.swf';
+          end
+          playbackMovie(obj,xtraj,fullfile(path,[name,ext]));
+      end
+    end
+    
     function playbackAVI(obj,xtraj,filename)
       % Plays back a trajectory and creates an avi file.
       %   The filename argument is optional; if not specified, a gui will prompt
@@ -285,6 +316,7 @@ classdef Visualizer < DrakeSystem
       % so will scale losslessly.
       %
       % @param xtraj a Trajectory object that will be played back
+      %
       % @param swf either the filename of the swf file to write, or an
       % instance of the SWFWriter class.  If swf is empty, then you will be
       % prompted for a filename (with the gui).

@@ -134,7 +134,7 @@ file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/rmpath_drake.m
 
 find_program(avl avl PATHS ${CMAKE_INSTALL_DIR}/bin )
 find_program(xfoil xfoil PATHS ${CMAKE_INSTALL_DIR}/bin )
-
+find_program(ffmpeg ffmpeg)
 
 # todo: build doxygen here (and remove it from the Makefile)
 # http://majewsky.wordpress.com/2010/08/14/tip-of-the-day-cmake-and-doxygen/

@@ -213,6 +213,7 @@ typedef struct _RendererData {
   lcm_t       *lcm;
   //  map<string, BotWavefrontModel*> meshes;
   map<link_index, boost::shared_ptr<Link> > links; 
+  string  movie_path;
 } RendererData;
 
 static void my_free( BotRenderer *renderer )
@@ -295,21 +296,38 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
   RendererData *self = (RendererData*) user;
   
   switch(msg->command_type) {
-    case DRAKE_LCMT_VIEWER_COMMAND_LOAD_TERRAIN:
-      {
-      	cerr << "Terrain loading from file not implemented yet" << endl;
-      }
-    	break;
+  case DRAKE_LCMT_VIEWER_COMMAND_START_RECORDING:
+    {
+      bot_viewer_start_recording(self->viewer);
+      string movie_path(self->viewer->movie_path);
+      self->movie_path = movie_path;
+    }
+    break;
+  case DRAKE_LCMT_VIEWER_COMMAND_STOP_RECORDING:
+    {
+      bot_viewer_stop_recording(self->viewer);
 
-    case DRAKE_LCMT_VIEWER_COMMAND_SET_TERRAIN_TRANSFORM:
-			{
-      	cerr << "Setting the terrain transform is not implemented yet" << endl;
-			}
-    	break;
-
-    default:
-      cerr << "viewer command " << msg->command_type << " not implemented yet" << endl;
-      break;
+      drake_lcmt_viewer_command status_message;
+      status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
+      status_message.command_data = const_cast<char*>(self->movie_path.c_str());
+      drake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
+    }
+    break;
+  case DRAKE_LCMT_VIEWER_COMMAND_LOAD_TERRAIN:
+    {
+      cerr << "Terrain loading from file not implemented yet" << endl;
+    }
+    break;
+    
+  case DRAKE_LCMT_VIEWER_COMMAND_SET_TERRAIN_TRANSFORM:
+    {
+      cerr << "Setting the terrain transform is not implemented yet" << endl;
+    }
+    break;
+    
+  default:
+    cerr << "viewer command " << msg->command_type << " not implemented yet" << endl;
+    break;
   }
 
   bot_viewer_request_redraw(self->viewer);
