@@ -6,7 +6,6 @@ classdef RigidBody < RigidBodyElement
     % link properties
     linkname=''  % name of the associated link
     wrlgeometry=''; % geometry (compatible w/ wrl).  see parseVisual below.
-    geometry={}  % geometry (compatible w/ patch).  see parseVisual below.
     dofnum=0     % the index in the state vector corresponding to this joint
     gravity_off=false;
     
@@ -344,10 +343,7 @@ classdef RigidBody < RigidBodyElement
       if ~isempty(geomnode)
         wrl_shape_str = [wrl_shape_str,RigidBody.parseWRLGeometry(geomnode,wrl_appearance_str,model,body.robotnum,options)];
         if (options.visual || options.visual_geometry)
-          [xpts,ypts,zpts,shape] = RigidBody.parseGeometry(geomnode,xyz,rpy,model,body.robotnum,options);
-          g.xyz = unique([xpts(:), ypts(:), zpts(:)],'rows','stable')';
-          g.c = c;
-          body.geometry = {body.geometry{:},g};
+          shape = RigidBody.parseGeometry(geomnode,xyz,rpy,model,body.robotnum,options);
           shape.c = c;
           body.visual_shapes = horzcat(body.visual_shapes,shape);
         end
@@ -375,7 +371,11 @@ classdef RigidBody < RigidBodyElement
       npts=size(body.contact_pts,2);
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
-        [xpts,ypts,zpts,shape] = RigidBody.parseGeometry(geomnode,xyz,rpy,model,body.robotnum,options);
+        [shape,xpts,ypts,zpts] = RigidBody.parseGeometry(geomnode,xyz,rpy,model,body.robotnum,options);
+        if (shape.type == RigidBody.MESH)
+          shape.params = [xpts';ypts';zpts'];  % maintain old functionality for contacts
+          % todo: load the geometry farther down the bullet pipeline instead
+        end
         npts_additional = numel(xpts);
         [body.contact_pts,ind_old,ind_new]=unique([body.contact_pts';xpts(:), ypts(:), zpts(:)],'rows','stable');
         body.contact_pts = body.contact_pts';
@@ -494,7 +494,7 @@ classdef RigidBody < RigidBodyElement
       
     end
 
-    function [x,y,z,shape] = parseGeometry(node,x0,rpy,model,robotnum,options)
+    function [shape,x,y,z] = parseGeometry(node,x0,rpy,model,robotnum,options)
       % param node DOM node for the geometry block
       % param X coordinate transform for the current body
       % option twoD true implies that I can safely ignore y.
@@ -510,63 +510,70 @@ classdef RigidBody < RigidBodyElement
             s = parseParamString(model,robotnum,char(thisNode.getAttribute('size')));
             shape = struct('type',RigidBody.BOX,'T',T,'params',s);  % s/2
             
-            cx = s(1)/2*[-1 1 1 -1 -1 1 1 -1];
-            cy = s(2)/2*[1 1 1 1 -1 -1 -1 -1];
-            cz = s(3)/2*[1 1 -1 -1 -1 -1 1 1];
-            
-            pts = T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
-            x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
+            if nargout>1
+              cx = s(1)/2*[-1 1 1 -1 -1 1 1 -1];
+              cy = s(2)/2*[1 1 1 1 -1 -1 -1 -1];
+              cz = s(3)/2*[1 1 -1 -1 -1 -1 1 1];
+              
+              pts = T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
+              x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
+            end
             
           case 'cylinder'
             r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
             l = parseParamString(model,robotnum,char(thisNode.getAttribute('length')));
             shape = struct('type',RigidBody.CYLINDER,'T',T,'params',[r,l]);  % l/2
             
-            % treat it as a box, for collisions
-            warning('Drake:RigidBody:SimplifiedCollisionGeometry','for efficiency, cylinder geometry will be treated like a box for 3D collisions'); 
-            cx = r*[-1 1 1 -1 -1 1 1 -1];
-            cy = r*[1 1 1 1 -1 -1 -1 -1];
-            cz = l/2*[1 1 -1 -1 -1 -1 1 1];
+            if nargout>1
+              % treat it as a box, for collisions
+              warning('Drake:RigidBody:SimplifiedCollisionGeometry','for efficiency, cylinder geometry will be treated like a box for 3D collisions');
+              cx = r*[-1 1 1 -1 -1 1 1 -1];
+              cy = r*[1 1 1 1 -1 -1 -1 -1];
+              cz = l/2*[1 1 -1 -1 -1 -1 1 1];
               
-            pts = T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
-            x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
-              
+              pts = T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
+              x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
+            end
+            
           case 'sphere'
             r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
             shape = struct('type',RigidBody.SPHERE,'T',T,'params',r);
-            if (r~=0)
-              warning('Drake:RigidBody:SimplifiedCollisionGeometry','for efficiency, 3D sphere geometry will be treated like a point (at the center of the sphere)');
+            if nargout>1
+              if (r~=0)
+                warning('Drake:RigidBody:SimplifiedCollisionGeometry','for efficiency, 3D sphere geometry will be treated like a point (at the center of the sphere)');
+              end
+              cx=0; cy=0; cz=0;
+              pts = T(1:end-1,:)*[0;0;0;1];
+              x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
             end
-            cx=0; cy=0; cz=0;
-            pts = T(1:end-1,:)*[0;0;0;1];
-            x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
-
+            
           case 'mesh'
             filename=char(thisNode.getAttribute('filename'));
             filename=RigidBody.parseMeshFilename(filename,options);
-            [path,name,ext] = fileparts(filename);
-            wrlfile=[];
-            if strcmpi(ext,'.stl')
-              wrlfile = fullfile(tempdir,[name,'.wrl']);
-              stl2vrml(fullfile(path,[name,ext]),tempdir);
-            elseif strcmpi(ext,'.wrl')
-              wrlfile = filename;
-            end
-            if ~isempty(wrlfile)
-              txt=fileread(wrlfile);
-
-              ind=regexp(txt,'coordIndex[\s\n]*\[([^\]]*)\]','tokens'); ind = ind{1}{1};
-              ind=strread(ind,'%d','delimiter',' ,')+1; 
-              
-              pts=regexp(txt,'point[\s\n]*\[([^\]]*)\]','tokens'); pts = pts{1}{1};
-              pts=strread(pts,'%f','delimiter',' ,');
-              pts=reshape(pts,3,[]);
-              pts=T(1:end-1,:)*[pts;ones(1,size(pts,2))];
-              x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
-            end
             shape = struct('type',RigidBody.MESH,'T',T,'params',GetFullPath(filename));
-           otherwise
-            % intentionally blank
+
+            if nargout>1
+              [path,name,ext] = fileparts(filename);
+              wrlfile=[];
+              if strcmpi(ext,'.stl')
+                wrlfile = fullfile(tempdir,[name,'.wrl']);
+                stl2vrml(fullfile(path,[name,ext]),tempdir);
+              elseif strcmpi(ext,'.wrl')
+                wrlfile = filename;
+              end
+              if ~isempty(wrlfile)
+                txt=fileread(wrlfile);
+                
+                ind=regexp(txt,'coordIndex[\s\n]*\[([^\]]*)\]','tokens'); ind = ind{1}{1};
+                ind=strread(ind,'%d','delimiter',' ,')+1;
+                
+                pts=regexp(txt,'point[\s\n]*\[([^\]]*)\]','tokens'); pts = pts{1}{1};
+                pts=strread(pts,'%f','delimiter',' ,');
+                pts=reshape(pts,3,[]);
+                pts=T(1:end-1,:)*[pts;ones(1,size(pts,2))];
+                x=pts(1,:)';y=pts(2,:)'; z=pts(3,:)';
+              end
+            end
         end
       end
     end

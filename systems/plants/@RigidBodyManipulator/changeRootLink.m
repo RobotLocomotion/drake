@@ -110,9 +110,6 @@ while (true)
     
   current_body = setInertial(current_body,X_old_body_to_new_body'*current_body.I*X_old_body_to_new_body);
 
-  for i=1:length(current_body.geometry)
-    current_body.geometry{i}.xyz = homogTransMult(T_old_body_to_new_body,current_body.geometry{i}.xyz);
-  end
   for i=1:length(current_body.visual_shapes)
     current_body.visual_shapes(i).T = current_body.visual_shapes(i).T*T_old_body_to_new_body;
   end
