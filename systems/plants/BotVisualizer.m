@@ -69,33 +69,7 @@ classdef BotVisualizer < RigidBodyVisualizer
           link.geom = javaArray('drake.lcmt_viewer_geometry_data',link.num_geom);
         end
         for j=1:link.num_geom
-          s = b.visual_shapes(j);
-          shape = drake.lcmt_viewer_geometry_data();
-          shape.type = s.type;
-          switch(s.type)
-            case b.BOX
-              shape.string_data = '';
-              shape.num_float_data = 3;
-              shape.float_data = s.params;
-            case b.SPHERE
-              shape.string_data = '';
-              shape.num_float_data = 1;
-              shape.float_data = s.params;
-            case b.CYLINDER
-              shape.string_data = '';
-              shape.num_float_data = 2;
-              shape.float_data = s.params;
-            case b.MESH
-              shape.string_data = s.params;
-              shape.num_float_data = 1;
-              shape.float_data = 1.0;  % scale
-            otherwise
-              error('unknown shape type');
-          end
-          shape.position = s.T(1:3,4);
-          shape.quaternion = rotmat2quat(s.T(1:3,1:3));
-          shape.color = [s.c(:);1.0];
-          link.geom(j)= shape;
+          link.geom(j) = serializeToLCM(b.visual_shapes{j});
         end
         vr.link(i) = link;
       end
