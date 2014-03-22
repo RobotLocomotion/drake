@@ -1,27 +1,36 @@
 [submodule "spotless"]
 	path = spotless
 	url = https://github.com/RobotLocomotion/spotless-pod.git
+	branch = master
 [submodule "drake"]
 	path = drake
 	url = https://github.com/RobotLocomotion/drake.git
+	branch = master
 [submodule "lcm"]
 	path = lcm
 	url = https://github.com/RobotLocomotion/lcm-pod.git
+	branch = master
 [submodule "bullet"]
 	path = bullet
 	url = https://github.com/RobotLocomotion/bullet-pod.git
+	branch = master
 [submodule "avl"]
 	path = avl
 	url = https://github.com/RobotLocomotion/avl.git
+	branch = master
 [submodule "eigen"]
 	path = eigen
 	url = https://github.com/RobotLocomotion/eigen-pod.git
+	branch = master
 [submodule "xfoil"]
 	path = xfoil
 	url = https://github.com/RobotLocomotion/xfoil.git
+	branch = master
 [submodule "libbot"]
 	path = libbot
 	url = https://github.com/RobotLocomotion/libbot.git
+	branch = master
 [submodule "snopt"]
 	path = snopt
 	url = https://github.com/RobotLocomotion/snopt.git
+	branch = master
