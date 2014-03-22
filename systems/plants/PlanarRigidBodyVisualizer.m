@@ -1,4 +1,4 @@
-classdef PlanarRigidBodyVisualizer < Visualizer
+classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
   % Loads a URDF file and implements the draw function.  
   % You could think of this as a very limited version of ROS' RViz. 
   % 
@@ -10,8 +10,104 @@ classdef PlanarRigidBodyVisualizer < Visualizer
   methods
     function obj = PlanarRigidBodyVisualizer(manip,options)
       typecheck(manip,'PlanarRigidBodyManipulator');
-      obj=obj@Visualizer(manip.getStateFrame);
-      obj.model = manip;
+      obj=obj@RigidBodyVisualizer(manip);
+      
+      Tview = [manip.x_axis, manip.y_axis, manip.view_axis]';
+      valuecheck(svd(Tview),[1;1;1]);  % assert that it's orthonormal
+      
+      for i=1:length(obj.model.body)
+        b = obj.model.body(i);
+        for j=1:length(b.visual_shapes)
+          s = b.visual_shapes(j);
+          obj.body(i).c{j} = s.c;
+          
+          switch(s.type)
+            case RigidBody.BOX
+              cx = s.params(1)/2*[-1 1 1 -1 -1 1 1 -1];
+              cy = s.params(2)/2*[1 1 1 1 -1 -1 -1 -1];
+              cz = s.params(3)/2*[1 1 -1 -1 -1 -1 1 1];
+            
+              pts = Tview*s.T(1:3,:)*[cx;cy;cz;ones(1,8)];
+              ind = convhull(pts(1,:),pts(2,:));
+              z = max(pts(3,:));
+              obj.body(i).xyz{j} = Tview'*[pts(1:2,ind); repmat(z,1,length(ind))];
+
+            case RigidBody.SPHERE
+              r = s.params;
+              if (r==0)
+                obj.body(i).xyz{j} = s.T(1:3,4);
+              else
+                theta = 0:0.1:2*pi;
+                obj.body(i).xyz{j} = Tview'*r*[cos(theta); sin(theta); 0*theta] + repmat(s.T(1:3,4),1,length(theta));
+              end
+              
+            case RigidBody.CYLINDER
+              r = s.params(1);
+              l = s.params(2);
+              if (abs(obj.model.view_axis'*s.T(1:3,3)) < 1e-4) % then it just looks like a box or
+                cx = r*[-1 1 1 -1 -1 1 1 -1];
+                cy = r*[1 1 1 1 -1 -1 -1 -1];
+                cz = l/2*[1 1 -1 -1 -1 -1 1 1];
+              
+                pts = Tview*s.T(1:3,:)*[cx;cy;cz;ones(1,8)];
+                ind = convhull(pts(1,:),pts(2,:));
+                z = max(pts(3,:));
+                obj.body(i).xyz{j} = Tview'*[pts(1:2,ind); repmat(z,1,length(ind))];
+              
+              elseif (abs(options.view_axis'*s.T(1:3,3)) > (1-1e-4)) % then it just looks like a circle
+                theta = 0:0.1:2*pi;
+                obj.body(i).xyz{j} = Tview'*r*[cos(theta); sin(theta); 0*theta] + repmat(s.T(1:3,4),1,length(theta));
+                
+              else  % full cylinder geometry
+                error('full cylinder geometry not implemented yet');  % but wouldn't be hard
+              end
+              
+            case RigidBody.MESH
+              filename = s.params;
+              [path,name,ext] = fileparts(filename);
+              switch(ext)
+                case '.stl'
+                  wrlfile = fullfile(tempdir,[name,'.wrl']);
+                  stl2vrml(fullfile(path,[name,ext]),tempdir);
+                  txt=fileread(wrlfile);
+
+                  ind=regexp(txt,'coordIndex \[([^\]]*)\]','tokens'); ind = ind{1}{1};
+                  ind=strread(ind,'%d','delimiter',' ,')+1;
+                  
+                  pts=regexp(txt,'point \[([^\]]*)\]','tokens'); pts = pts{1}{1};
+                  pts=strread(pts,'%f','delimiter',' ,');
+                  pts=reshape(pts,3,[]);
+                case '.wrl'
+                  txt=fileread(filename);
+                
+                  ind=regexp(txt,'coordIndex\s+\n*\s*\[([^\]]*)\]','tokens'); ind = ind{1}{1};
+                  ind=strread(ind,'%d','delimiter',' ,')+1;
+                
+                  pts=regexp(txt,'point\s+\n*\s*\[([^\]]*)\]','tokens'); pts = pts{1}{1};
+                  pts=strread(pts,'%f','delimiter',' ,');
+                  pts=reshape(pts,3,[]);
+                otherwise
+                  error('unsupported file extension');
+              end
+              
+              pts=Tview*s.T(1:3,:)*[pts(1:3,:);ones(1,size(pts,2))];
+              
+              n=max(diff(find(ind==0)));
+              if (min(diff(find(ind==0)))~=n), error('need to handle this case'); end
+              ind = reshape(ind,n,[]); ind(end,:)=[];
+              pts = pts(:,ind);
+              
+              %% remove repeated indices (from 3D to 2D conversion)
+              %              [pts,ipts,iind]=unique(pts','rows'); pts=pts';
+              %              ind = iind(ind);
+
+              ind = convhull(pts(1,:),pts(2,:));
+              z = max(pts(3,:));
+              obj.body(i).xyz{j} = Tview'*[pts(1:2,ind); repmat(z,1,length(ind))];
+          end
+        end
+      end
+      obj.Tview = Tview;
     end
     
     function draw(obj,t,x)
@@ -26,11 +122,10 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       % end debugging
 
       for i=1:length(obj.model.body)
-        body = obj.model.body(i);
-        for j=1:length(body.geometry)
-          c = (1-obj.fade_percent)*body.geometry{j}.c + obj.fade_percent*obj.fade_color;
-          pts = obj.model.T_2D_to_3D'*forwardKin(obj.model,kinsol,i,body.geometry{j}.xyz);
-          patch(pts(1,:)',pts(2,:)',c,'LineWidth',.01,'EdgeColor',obj.fade_percent*obj.fade_color); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
+        for j=1:length(obj.body(i).xyz)
+          c = (1-obj.fade_percent)*obj.body(i).c{j} + obj.fade_percent*obj.fade_color;
+          pts = obj.Tview*forwardKin(obj.model,kinsol,i,obj.body(i).xyz{j});
+          patch(pts(1,:)',pts(2,:)',pts(3,:)',c,'LineWidth',.01,'EdgeColor',obj.fade_percent*obj.fade_color); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
           % patch(xpts,ypts,body.geometry{j}.c,'EdgeColor','none','FaceAlpha',1); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
 
           % for debugging:
@@ -91,7 +186,8 @@ classdef PlanarRigidBodyVisualizer < Visualizer
   end
 
   properties (Access=protected)
-    model;
+    body;  % body(i).xyz{j} and body(i).c{j} describe the geometry of the jth patch on body i
+    Tview;
   end
   
   properties

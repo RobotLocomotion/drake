@@ -15,7 +15,7 @@ options.namesuffix = 'rotated';
 
 r = addRobotFromURDF(r,s,[1;0;0],[0;0;0],options);
 
-options.viewer = 'BotVisualizer';
+%options.viewer = 'BotVisualizer';
 v = r.constructVisualizer(options);
 v.display_dt = 0.02;
 
