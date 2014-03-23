@@ -112,11 +112,15 @@ class LinkGeometry {
  public:
 
   boost::shared_ptr<Geometry> pGeometry;
-  double pos[3] = {0.0, 0.0, 0.0}, theta = 0.0, axis[3] = {0.0, 0.0, 0.0};
-  float color[4] = { .7f, .7f, .7f, 1.0f };  // todo: pick better defaults
+  double pos[3], theta, axis[3];
+  float color[4];
 
-  LinkGeometry(const drake_lcmt_viewer_geometry_data * geometry_data)
+  LinkGeometry(const drake_lcmt_viewer_geometry_data * geometry_data) : theta(0.0)
   {
+    pos[0] = pos[1] = pos[2] = 0.0;
+    axis[0] = axis[1] = axis[2] = 0.0;
+    color[0] = color[1] = color[2] = .7f; color[3] = 1.0f;  // todo: pick better defaults
+
     switch (geometry_data->type) {
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_SPHERE:
       {
@@ -173,11 +177,13 @@ class LinkGeometry {
 
 class Link {
 public:
-  double pos[3] = {0.0, 0.0, 0.0}, theta = 0.0, axis[3] = {0.0, 0.0, 0.0};
+  double pos[3], theta, axis[3];
   list<boost::shared_ptr<LinkGeometry>> geometry;
 
-  Link(const drake_lcmt_viewer_link_data* link_data)
+  Link(const drake_lcmt_viewer_link_data* link_data) : theta(0.0)
   {
+    pos[0] = pos[1] = pos[2] = 0.0;
+    axis[0] = axis[1] = axis[2] = 0.0;
     for (int i=0; i<link_data->num_geom; i++) {
       boost::shared_ptr<LinkGeometry> g(new LinkGeometry(&(link_data->geom[i])));
       geometry.push_back(g);
