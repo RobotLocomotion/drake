@@ -138,9 +138,11 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
     end
     
     function playbackVRML(obj,xtraj,filename)
+      set(obj.wrl,'Record3D','on');
       set(obj.wrl,'Record3DFileName',filename);
-      set(obj.wrl,'RecordMode','manual');
-      set(obj.wrl,'Recording','on');
+      set(obj.wrl,'RecordMode','scheduled');
+      set(obj.wrl,'RecordInterval',[xtraj.tspan(1),xtraj.tspan(end)]);
+%      set(obj.wrl,'Recording','on');
       
       playback(obj,xtraj);
       
