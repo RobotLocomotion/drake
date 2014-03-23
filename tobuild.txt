@@ -6,6 +6,10 @@ libbot
 eigen
 bullet
 snopt
+gurobi
+gloptipoly3
+bertini
+sedumi
 avl
 xfoil
 spotless

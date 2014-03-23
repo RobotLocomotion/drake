@@ -34,3 +34,23 @@
 	path = snopt
 	url = https://github.com/RobotLocomotion/snopt.git
 	branch = master
+[submodule "bertini"]
+	path = bertini
+	url = https://github.com/RobotLocomotion/bertini.git
+	branch = master
+[submodule "gloptipoly3"]
+	path = gloptipoly3
+	url = https://github.com/RobotLocomotion/gloptipoly3.git
+	branch = master
+[submodule "gurobi"]
+	path = gurobi
+	url = https://github.com/RobotLocomotion/gurobi.git
+	branch = master
+[submodule "mosek"]
+	path = mosek
+	url = https://github.com/RobotLocomotion/mosek.git
+	branch = master
+[submodule "sedumi"]
+	path = sedumi
+	url = https://github.com/RobotLocomotion/sedumi.git
+	branch = master
