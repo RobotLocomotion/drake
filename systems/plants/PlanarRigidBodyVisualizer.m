@@ -49,6 +49,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
           % end debugging
         end
         if (obj.debug) % draw extra debugging info
+          body = obj.model.body(i);
           origin = forwardKin(obj.model,kinsol,i,[0;0]);
           plot(origin(1),origin(2),'k+');
           if (body.mass~=0)
