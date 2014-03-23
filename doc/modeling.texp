@@ -477,3 +477,16 @@ Use ball bouncing as an example.
 Cascading.   Use the realtime block.
 
 \subsection{Outputing to a movie format}
+
+There are a number of options for creating a movie file from your simulation,
+depending on which Visualizer you used.  Given a trajectory, \mcode{traj}, 
+and a Visualizer object, \mcode{v}, use 
+\begin{lstlisting}
+>> playbackMovie(v,traj);
+\end{lstlisting}
+
+If you specify an extension in your filename when you are prompted,
+then playbackMovie will attempt to write in the specified format.  If you 
+specify a filename with no extension, then you will be prompted with the 
+output formats supported by your current visualizer.
+ 

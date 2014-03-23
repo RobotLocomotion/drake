@@ -148,6 +148,37 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       
       set(obj.wrl,'Recording','off');
     end
+    
+    function playbackMovie(obj,xtraj,filename)
+      if (nargin<2)
+        [filename,pathname] = uiputfile('*','Save playback to movie');
+        if isequal(filename,0) || isequal(pathname,0)
+          return;
+        end
+        filename = fullfile(pathname,filename);
+      end
+
+      [path,name,ext] = fileparts(filename);
+      ext = tolower(ext)
+      switch ext
+        case '.avi'
+          playbackAVI(obj,xtraj,filename);
+        case '.wrl'
+          playbackVRML(obj,xtraj,filename);
+        otherwise
+          disp(' Please select an output format: ');
+          disp(' 1) AVI');
+          disp(' 2) VRML');
+          choice = input('Select a format (1-2): ');
+          switch choice
+            case 1
+              ext = '.avi';
+            case 2
+              ext = '.wrl';
+          end
+          playbackMovie(obj,xtraj,fullfile(path,[name,ext]));
+      end
+    end    
   end
 
   properties (Access=protected)
