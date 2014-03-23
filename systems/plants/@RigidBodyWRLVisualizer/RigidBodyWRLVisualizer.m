@@ -137,8 +137,14 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       error('SWF playback not available for VRML visualizers.  The vector graphics equivalent is playbackVRML.');
     end
     
-    function playbackVRML(varargin)
-      error('not implemented yet, but should be possible to record the sequence to a VRML movie');
+    function playbackVRML(obj,xtraj,filename)
+      set(obj.wrl,'Record3DFileName',filename);
+      set(obj.wrl,'RecordMode','manual');
+      set(obj.wrl,'Recording','on');
+      
+      playback(obj,xtraj);
+      
+      set(obj.wrl,'Recording','off');
     end
   end
 
