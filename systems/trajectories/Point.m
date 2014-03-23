@@ -57,7 +57,7 @@ classdef Point
         end
       end
       % otherwise, call the builting subsasgn
-      varargout = builtin('subsasgn',obj.p,s,val);
+      varargout = {builtin('subsasgn',obj.p,s,val)};
     end
     
     function varargout = subsref(obj,s)
