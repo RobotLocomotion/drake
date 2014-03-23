@@ -380,6 +380,14 @@ public class BotLCMGLClient {
     glEnd();
   }
 
+  public synchronized void plot3(double[] x, double[] y, double[] z) {
+    glBegin(LCMGL_LINES);
+    for (int i=0; i<x.length; i++) { 
+	glVertex3d(x[i], y[i], z[i]);
+    }
+    glEnd();    
+  }
+
   public synchronized void rect(double[] xyz, double[] size, int filled) {
      try {
       _outs.writeByte(LCMGL_RECT); 
