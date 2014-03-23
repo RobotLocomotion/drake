@@ -56,66 +56,54 @@ end
 end
 
 function writeWRLBodyAndChildren(model,body_ind,fp,td)
-if (nargin<4) td=0; end % tab depth
-  function tabprintf(varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
+  if (nargin<4) td=0; end % tab depth
+  function tabprintf(fp,varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
 
-body = model.body(body_ind);
-if ~isempty(body.wrljoint)
-  fprintf(fp,'Transform {\n%s\n\tchildren [\n',body.wrljoint);
-end
+  body = model.body(body_ind);
 
-% if there is a a joint between the parent and the body, add it here
-if body.parent>0
-  writeWRLJoint(body,fp);
-  tabprintf('children [\n'); td=td+1;
-end
-td = writeWRLBody(body,fp,td);
-for i=1:length(model.body)
-  if (model.body(i).parent == body_ind)
-    writeWRLBodyAndChildren(model,i,fp,td);
-  end
-end
-if body.parent>0
-  td=td-1; tabprintf(']\n');
-  td=td-1; tabprintf('}\n'); % end Transform {
-end
-
-if ~isempty(body.wrljoint)
-  % close brackets that were added during removal of fixed joints
-  brac=body.wrljoint(body.wrljoint=='{'|body.wrljoint=='[');
-  brac=regexprep(brac(end:-1:1),'[',']');
-  brac=regexprep(brac,'{','}');
+  tabprintf(fp,'Transform {\n'); td=td+1;
+  tabprintf(fp,'translation %f %f %f\n',body.Ttree(1:3,4));
+  tabprintf(fp,'rotation %f %f %f %f\n',rotmat2axis(body.Ttree(1:3,1:3)));
+  tabprintf(fp,'children [\n'); td=td+1;
   
-  fprintf(fp,']\n%s\n}\n',brac); % end wrljoint transform
-end
-end
-
-    function writeWRLJoint(body,fp)
-      if isempty(body.jointname)
-        fprintf(fp,'Transform {\n');
-      else
-        % get rid of dots in joint name
-        body.jointname = regexprep(body.jointname, '\.', '_', 'preservecase');
-
-        fprintf(fp,'DEF %s Transform {\n',body.jointname); 
-      end
-      if (body.floating)
-        fprintf(fp,'translation 0 0 0\n');
-        fprintf(fp,'rotation 0 1 0 0\n'); 
-      elseif (body.pitch==0) % then it's a pin joint
-        fprintf(fp,'rotation 0 1 0 0\n'); 
-      elseif isinf(body.pitch) % then it's a slider
-        fprintf(fp,'translation 0 0 0\n');
-      end
+  % if there is a a joint between the parent and the body, add it here
+  if body.parent>0
+    if isempty(body.jointname)
+      tabprintf(fp,'Transform {\n'); td=td+1;
+    else
+      tabprintf(fp,'DEF %s Transform {\n',body.jointname); td=td+1;
     end
+    if (body.floating)
+      tabprintf(fp,'translation 0 0 0\n');
+      tabprintf(fp,'rotation 0 1 0 0\n');
+    elseif (body.pitch==0) % then it's a pin joint
+      tabprintf(fp,'rotation 0 1 0 0\n');
+    elseif isinf(body.pitch) % then it's a slider
+      tabprintf(fp,'translation 0 0 0\n');
+    end
+
+    tabprintf(fp,'children [\n'); td=td+1;
+  end
+  
+  for i=1:length(body.visual_shapes)
+    writeWRLShape(body.visual_shapes{i},fp,td);
+  end
+  
+  for i=1:length(model.body)
+    if (model.body(i).parent == body_ind)
+      writeWRLBodyAndChildren(model,i,fp,td);
+    end
+  end
     
-    function td=writeWRLBody(body,fp,td)
-      t=''; 
-      for i=1:td, t=[t,'\t']; end
-      s = regexprep(body.wrlgeometry,'\n',['\n',t]);
-      fprintf(fp,[t,s,'\n']);
-    end
-
+  if body.parent>0
+    td=td-1; tabprintf(fp,']\n'); % end children [
+    td=td-1; tabprintf(fp,'}\n'); % end Transform {
+  end
+  
+  td=td-1; tabprintf(fp,']\n'); % end children [
+  td=td-1; tabprintf(fp,'}\n'); % end Transform {
+end
+    
     function wrlstr = parseWRLGeometry(node,wrl_appearance_str,model,robotnum,options)
       % param node DOM node for the geometry block
       % param X coordinate transform for the current body

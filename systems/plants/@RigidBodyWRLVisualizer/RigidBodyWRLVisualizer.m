@@ -35,10 +35,6 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       obj.display_time=false;
     end
     
-    function writeWRL(obj,wrlfile,options)
-      
-    end
-    
     function delete(obj)
       close(obj.wrl);
       delete(obj.wrl);

@@ -30,6 +30,22 @@ classdef RigidBodyCylinder < RigidBodyGeometry
       shape.color = [obj.c(:);1.0];
     end
 
+    function writeWRLShape(obj,fp,td)
+      function tabprintf(fp,varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
+
+      % default axis for cylinder in urdf is the z-axis, but
+      % the default in vrml is the y-axis.
+      T = obj.T*[1 0 0 0; 0 0 -1 0; 0 1 0 0; 0 0 0 1];
+      tabprintf(fp,'Transform {\n'); td=td+1;
+      tabprintf(fp,'translation %f %f %f\n',T(1:3,4));
+      tabprintf(fp,'rotation %f %f %f %f\n',rotmat2axis(T(1:3,1:3)));
+
+      tabprintf(fp,'children Shape {\n'); td=td+1;
+      tabprintf(fp,'geometry Cylinder { height %f\t radius %f }\n',obj.len,obj.radius);
+      tabprintf(fp,'appearance Appearance { material Material { diffuseColor %f %f %f } }\n',obj.c(1),obj.c(2),obj.c(3));
+      td=td-1; tabprintf(fp,'}\n');  % end Shape {
+      td=td-1; tabprintf(fp,'}\n'); % end Transform {
+    end
   end
   
   properties

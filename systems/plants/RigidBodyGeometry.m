@@ -3,7 +3,6 @@ classdef RigidBodyGeometry
   methods % to be implemented in derived classes
     pts = getPoints(obj);  % returned in body coordinates
     lcmt_viewer_geometry_data = serializeToLCM(obj);
-%    writeWRL(obj);
   end
   
   methods
@@ -26,6 +25,26 @@ classdef RigidBodyGeometry
       
       % take it back out of view coordinates
       pts = Tview'*[pts(1:2,ind); repmat(z,1,length(ind))];
+    end
+    
+    function writeWRLShape(obj,fp,td)
+      function tabprintf(fp,varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
+
+      tabprintf(fp,'Transform {\n'); td=td+1;
+      wrlT = obj.T;
+      if isa(obj,'RigidBodyCylinder')  
+        % default axis for cylinder in urdf is the z-axis, but
+        % the default in vrml is the y-axis.
+        wrlT = wrlT*[1 0 0 0; 0 0 -1 0; 0 1 0 0; 0 0 0 1]; 
+      end
+      tabprintf(fp,'translation %f %f %f\n',wrlT(1:3,4));
+      tabprintf(fp,'rotation %f %f %f %f\n',rotmat2axis(wrlT(1:3,1:3)));
+
+      tabprintf(fp,'children Shape {\n'); td=td+1;
+      tabprintf(fp,'%s\n',wrlGeometryStr(obj));
+      tabprintf(fp,'appearance Appearance { material Material { diffuseColor %f %f %f } }\n',obj.c(1),obj.c(2),obj.c(3));
+      td=td-1; tabprintf(fp,'}\n');  % end Shape {
+      td=td-1; tabprintf(fp,'}\n'); % end Transform {
     end
   end
   
