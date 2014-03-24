@@ -15,7 +15,8 @@ options.namesuffix = 'rotated';
 
 r = addRobotFromURDF(r,s,[1;0;0],[0;0;0],options);
 
-v = r.constructVisualizer;
+%options.viewer = 'BotVisualizer';
+v = r.constructVisualizer(options);
 v.display_dt = 0.02;
 
 % Run simulation, then play it back at realtime speed

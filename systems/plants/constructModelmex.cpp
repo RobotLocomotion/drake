@@ -173,19 +173,50 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //END_DEBUG
     pm = mxGetProperty(pBodies,i,"contact_shapes");
     Matrix4d T;
-    if(!mxIsEmpty(pm)){
+    if (!mxIsEmpty(pm)){
       for (int j=0; j<mxGetNumberOfElements(pm); j++) {
         //DEBUG
         //cout << "constructModelmex: Body " << i << ", Element " << j << endl;
         //END_DEBUG
-        auto shape = (DrakeCollision::Shape)mxGetScalar(mxGetField(pm,j,"type"));
+        mxArray* pShape = mxGetCell(pm,j);
+        auto shape = (DrakeCollision::Shape)mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id"));
         vector<double> params_vec;
-        double* params = mxGetPr(mxGetField(pm,j,"params"));
-        int n_params = (int) mxGetNumberOfElements(mxGetField(pm,j,"params"));
-        for (int k=0; k<n_params; k++) {
-          params_vec.push_back(params[k]);
+        switch (shape) {
+          case DrakeCollision::BOX:
+          {
+            double* params = mxGetPr(mxGetProperty(pShape,0,"size"));
+            params_vec.push_back(params[0]);
+            params_vec.push_back(params[1]);
+            params_vec.push_back(params[2]);
+          }
+            break;
+          case DrakeCollision::SPHERE:
+          {
+            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+          }
+            break;
+          case DrakeCollision::CYLINDER:
+          {
+            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"len")));
+          }
+            break;
+          case DrakeCollision::MESH:
+          {
+            mxArray* pPoints;
+            mexCallMATLAB(1,&pPoints,1,&pShape,"getPoints");
+            double* params = mxGetPr(pPoints);
+            int n_params = (int) mxGetNumberOfElements(pPoints);
+            for (int k=0; k<n_params; k++) 
+              params_vec.push_back(params[k]);
+            mxDestroyArray(pPoints);
+          }
+            break;
+          default:
+            // intentionally do nothing.. 
+            break;
         }
-        memcpy(T.data(), mxGetPr(mxGetField(pm,j,"T")), sizeof(double)*4*4);
+        memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
         model->addCollisionElement(i,T,shape,params_vec);
         if (model->bodies[i].parent<0) {
           model->updateCollisionElements(i);  // update static objects only once - right here on load

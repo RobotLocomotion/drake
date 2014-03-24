@@ -1,4 +1,4 @@
-classdef PlanarRigidBodyVisualizer < Visualizer
+classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
   % Loads a URDF file and implements the draw function.  
   % You could think of this as a very limited version of ROS' RViz. 
   % 
@@ -10,8 +10,20 @@ classdef PlanarRigidBodyVisualizer < Visualizer
   methods
     function obj = PlanarRigidBodyVisualizer(manip,options)
       typecheck(manip,'PlanarRigidBodyManipulator');
-      obj=obj@Visualizer(manip.getStateFrame);
-      obj.model = manip;
+      obj=obj@RigidBodyVisualizer(manip);
+      
+      Tview = [manip.x_axis, manip.y_axis, manip.view_axis]';
+      
+      w = warning('off','Drake:RigidBodyGeometry:SimplifiedCollisionGeometry');
+      for i=1:length(obj.model.body)
+        b = obj.model.body(i);
+        for j=1:length(b.visual_shapes)
+          obj.body(i).xyz{j} = getPlanarPoints(b.visual_shapes{j},manip.x_axis,manip.y_axis, manip.view_axis);
+          obj.body(i).c{j} = b.visual_shapes{j}.c;
+        end
+      end
+      warning(w);
+      obj.Tview = Tview;
     end
     
     function draw(obj,t,x)
@@ -26,11 +38,10 @@ classdef PlanarRigidBodyVisualizer < Visualizer
       % end debugging
 
       for i=1:length(obj.model.body)
-        body = obj.model.body(i);
-        for j=1:length(body.geometry)
-          c = (1-obj.fade_percent)*body.geometry{j}.c + obj.fade_percent*obj.fade_color;
-          pts = obj.model.T_2D_to_3D'*forwardKin(obj.model,kinsol,i,body.geometry{j}.xyz);
-          patch(pts(1,:)',pts(2,:)',c,'LineWidth',.01,'EdgeColor',obj.fade_percent*obj.fade_color); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
+        for j=1:length(obj.body(i).xyz)
+          c = (1-obj.fade_percent)*obj.body(i).c{j} + obj.fade_percent*obj.fade_color;
+          pts = obj.Tview*forwardKin(obj.model,kinsol,i,obj.body(i).xyz{j});
+          patch(pts(1,:)',pts(2,:)',pts(3,:)',c,'LineWidth',.01,'EdgeColor',obj.fade_percent*obj.fade_color); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
           % patch(xpts,ypts,body.geometry{j}.c,'EdgeColor','none','FaceAlpha',1); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
 
           % for debugging:
@@ -38,6 +49,7 @@ classdef PlanarRigidBodyVisualizer < Visualizer
           % end debugging
         end
         if (obj.debug) % draw extra debugging info
+          body = obj.model.body(i);
           origin = forwardKin(obj.model,kinsol,i,[0;0]);
           plot(origin(1),origin(2),'k+');
           if (body.mass~=0)
@@ -91,7 +103,8 @@ classdef PlanarRigidBodyVisualizer < Visualizer
   end
 
   properties (Access=protected)
-    model;
+    body;  % body(i).xyz{j} and body(i).c{j} describe the geometry of the jth patch on body i
+    Tview;
   end
   
   properties

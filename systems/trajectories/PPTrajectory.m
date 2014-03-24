@@ -8,6 +8,12 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
   
   methods
     function obj = PPTrajectory(ppform)
+      if isnumeric(ppform)
+        ppform = ConstantTrajectory(ppform);
+      end
+      if isa(ppform,'ConstantTrajectory')
+        ppform = mkpp([-inf,inf],eval(ppform,0),ppform.dim);
+      end
       obj = obj@Trajectory(ppform.dim);
       obj.pp = PPTrajectory.minimalOrder(ppform);
       obj.tspan = [min(obj.pp.breaks) max(obj.pp.breaks)];
@@ -496,6 +502,16 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       % @retval newtraj new PPTrajectory object that is the combination of
       % both trajectories
       
+      if ~isa(obj,'PPTrajectory')
+        obj = PPTrajectory(obj);
+        obj.tspan = [-10^8,trajAtEnd.tspan(1)];
+        obj.pp.breaks = obj.tspan;
+      end
+      if ~isa(trajAtEnd,'PPTrajectory')
+        trajAtEnd = PPTrajectory(trajAtEnd);
+        trajAtEnd.tspan = [obj.tspan(2),10^8];
+        obj.pp.breaks = obj.tspan;
+      end      
       
       % check for time condition
       firstEnd = obj.pp.breaks(end);
@@ -535,27 +551,20 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       end
       
       % check for the same order
-      if (obj.pp.order ~= trajAtEnd.pp.order)
-        error(strcat('Cannot append trajectories with different order.', ...
-          'First trajectory has pp.order = ', num2str(obj.pp.order), ...
-          ' but the second trajectory has pp.order = ', num2str(trajAtEnd.pp.order)));
+      if (obj.pp.order < trajAtEnd.pp.order)
+        [breaks,coefs,l,k,d] = unmkpp(obj.pp);
+        coefs = reshape(coefs,prod(d)*l,k);
+        coefs = [zeros(prod(d)*l,trajAtEnd.pp.order-k),coefs];  % pad with zeros
+        k=trajAtEnd.pp.order;
+        obj.pp = mkpp(obj.pp.breaks,reshape(coefs,[d,l,k]),d);
+      elseif (obj.pp.order > trajAtEnd.pp.order)
+        [breaks,coefs,l,k,d] = unmkpp(trajAtEnd.pp);
+        coefs = reshape(coefs,prod(d)*l,k);
+        coefs = [zeros(prod(d)*l,obj.pp.order-k),coefs];  % pad with zeros
+        k=obj.pp.order;
+        trajAtEnd.pp = mkpp(trajAtEnd.pp.breaks,reshape(coefs,[d,l,k]),d);
       end
-      
-      
-      % check for same umin / umax
-      if (obj.umax ~= trajAtEnd.umax)
-        error(strcat('Cannot append trajectories with different umax.', ...
-          'First trajectory has umax = ', num2str(obj.umax), ...
-          ' but the second trajectory has umax = ', num2str(trajAtEnd.umax)));
-      end
-      
-      if (obj.umin ~= trajAtEnd.umin)
-        error(strcat('Cannot append trajectories with different umin.', ...
-          'First trajectory has umin = ', num2str(obj.umin), ...
-          ' but the second trajectory has umin = ', num2str(trajAtEnd.umin)));
-      end
-      
-      
+        
       newtraj = obj;
       
       newtraj.pp.dim = obj.pp.dim;
@@ -574,8 +583,6 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       newtraj.dim = obj.dim;
       
       newtraj.tspan = [min(obj.pp.breaks) max(trajAtEnd.pp.breaks)];
-      
-      newtraj = setInputLimits(newtraj, obj.umin, obj.umax);
     end % append
     
     % should getParameters and setParameters include the breaks? or just
