@@ -46,7 +46,7 @@ classdef InverseKin < NonlinearProgramWConstraint
       end
       sizecheck(q_nom,[obj.nq,1]);
       obj.q_nom = q_nom;
-      num_rgcnstr = nargin-2;
+      num_rbcnstr = nargin-2;
       t = [];
       obj.q_idx = (1:obj.nq)';
       obj.qsc_weight_idx = [];
@@ -58,7 +58,7 @@ classdef InverseKin < NonlinearProgramWConstraint
       for i = 1:obj.nq
         obj.x_name{i} = sprintf('q%d',i);
       end
-      for i = 1:num_rgcnstr
+      for i = 1:num_rbcnstr
         if(~isa(varargin{i},'RigidBodyConstraint'))
           error('Drake:InverseKin:the input should be a RigidBodyConstraint');
         end

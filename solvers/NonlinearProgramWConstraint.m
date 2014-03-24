@@ -1,24 +1,18 @@
 classdef NonlinearProgramWConstraint < NonlinearProgram
   % The constraint of this nonlinear program is specified using 'Constraint' class in
   % drake
-  % @param nlcon     -- A cell array of NonlinearConstraint
-  % @param lcon      -- A cell array of LinearConstraint
-  % @param num_nlcon -- The total number of nonlinear constraints
-  % @param num_lcon  -- The total number of linear constraints
-  % @param cost      -- A cell array of NonlinearConstraint or LinearConstraint.
-  properties(SetAccess = protected)
-    nlcon
-    lcon
-    num_nlcon
-    num_lcon
-    cost
-    name_str
-  end
   
-  properties(Access = protected)
+  properties(Access = private)
+    nlcon % A cell array of NonlinearConstraint
+    lcon % A cell array of LinearConstraint
+    bbcon % A cell array of BoundingBoxConstraint
     nlcon_xind % A cell array, nlcon_xind{i} is an int vector recording the indices of x that is used in evaluation the i'th NonlinearConstraint
     cost_xind_cell % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
-
+    bbcon_xind % A cell array, bbcon_xind{i} is an int vector recording the indices of x used in i'th BoundingBoxConstraint
+    cost % A cell array of NonlinearConstraint or LinearConstraint.
+    num_nlcon % number of nonlinear constraints
+    num_lcon % number of linear constraints
+    
     nlcon_ineq_idx % row index of nonlinear inequality constraint
     nlcon_eq_idx % row index of nonlinear equality constraint
     
@@ -34,6 +28,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       obj = obj@NonlinearProgram(num_vars,0,0);
       obj.nlcon = {};
       obj.lcon = {};
+      obj.bbcon = {};
       obj.num_nlcon = 0;
       obj.num_lcon = 0;
       obj.nlcon_xind = {};
@@ -98,7 +93,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       if(~isa(cnstr,'LinearConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addLinearConstraint expects a LinearConstraint object');
       end
-      
+      obj.lcon = [obj.lcon,{cnstr}];
       
       cnstr_A = sparse(cnstr.iAfun,xind(cnstr.jAvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr.nnz);
       cnstr_beq = (cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2;
@@ -128,6 +123,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       if(~isa(cnstr,'BoundingBoxConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addBoundingBoxConstraint expects a BoundingBoxConstraint object');
       end
+      obj.bbcon = [obj.bbcon,{cnstr}];
       obj.x_lb(xind) = max([cnstr.lb obj.x_lb(xind)],[],2);
       obj.x_ub(xind) = min([cnstr.ub obj.x_ub(xind)],[],2);
     end
@@ -250,6 +246,35 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       obj.cost_xind_cell = {};
       for i = 1:num_cost
         obj = obj.addCost(cost_tmp{i},cost_xind_tmp{i});
+      end
+    end
+    
+    function obj = replaceBoundingBoxConstraint(obj,cnstr,cnstr_idx,xind)
+      % replace the cnstr_idx'th BoundingBoxConstraint in obj.bb_cnstr with the new cnstr.
+      % @param cnstr    -- A BoundingBoxConstraint object
+      % @param cnstr_idx  -- THe index of the replaced BoundingBoxConstraint in the
+      % obj.bb_cnstr cell
+      % @param xind      Optional argument. x(xind) is the decision variables used in
+      % evaluating the constraint. Default value is (1:obj.num_vars) 
+      if(nargin < 4)
+        xind = (1:obj.num_vars)';
+      end
+      xind = xind(:);
+      obj.x_lb = -inf(obj.num_vars,1);
+      obj.x_ub = inf(obj.num_vars,1);
+      num_bbcon = length(obj.bbcon);
+      sizecheck(cnstr_idx,[1,1]);
+      if(cnstr_idx>num_bbcon || cnstr_idx <1)
+        error('Drake:NonlinearProgramWConstraint:replaceBoundingBoxConstraint:cnstr_idx is out of range');
+      end
+      bbcon_tmp = obj.bbcon;
+      bbcon_xind_tmp = obj.bbcon_xind;
+      bbcon_tmp{cnstr_idx} = cnstr;
+      bbcon_xind_tmp{cnstr_idx} = xind;
+      obj.bbcon = {};
+      obj.bbcon_xind_tmp = {};
+      for i = 1:length(obj.bbcon)
+        obj = obj.addBoundingBoxConstraint(bbcon_tmp{i},bbcon_xind_tmp{i});
       end
     end
     
