@@ -23,6 +23,10 @@ classdef RigidBodySensor < RigidBodyElement
     function obj = updateBodyIndices(obj,map_from_old_to_new)
       % intentionally do nothing
     end
+    
+    function obj = updateBodyCoordinates(obj,body_ind,T_old_body_to_new_body)
+      error('probably need to implement this (see changeRootLink)');
+    end
   end
   
   properties

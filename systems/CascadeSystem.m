@@ -52,8 +52,8 @@ classdef CascadeSystem < DrakeSystem
       x2=x(obj.sys2ind);
     end
     function x = encodeX(obj,x1,x2)
-      x(obj.sys2ind)=x2;  % x2 first so it only allocates once
-      x(obj.sys1ind)=x1;
+      x(obj.sys2ind,1)=x2;  % x2 first so it only allocates once
+      x(obj.sys1ind,1)=x1;
     end
     
     function xdn = update(obj,t,x,u)

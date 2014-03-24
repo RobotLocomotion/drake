@@ -14,11 +14,11 @@ function model=addRobotFromURDF(model,urdf_filename,xyz,rpy,options)
 % Useful for extracting the 2D geometries later.  @default false
 % @ingroup URDF Parsing
 
-if (nargin<3 || isempty(xyz)) xyz = zeros(3,1); end
-if (nargin<4 || isempty(rpy)) rpy = zeros(3,1); end
+if (nargin<3 || isempty(xyz)), xyz = zeros(3,1); end
+if (nargin<4 || isempty(rpy)), rpy = zeros(3,1); end
 
-if (nargin<5) options = struct(); end
-if (~isfield(options,'floating')) options.floating = ''; end  % no floating base
+if (nargin<5), options = struct(); end
+if (~isfield(options,'floating')), options.floating = ''; end  % no floating base
 if isnumeric(options.floating) || islogical(options.floating) 
   if (options.floating)
     options.floating = 'rpy';
@@ -26,15 +26,15 @@ if isnumeric(options.floating) || islogical(options.floating)
     options.floating = '';
   end
 end
-if (~isfield(options,'inertial')) options.inertial = true; end
-if (~isfield(options,'visual')) options.visual = true; end
-if (~isfield(options,'collision')) options.collision = true; end
-if (~isfield(options,'sensors')) options.sensors = false; end
-if (~isfield(options,'visual_geometry')) options.visual_geometry = false; end
-if (~isfield(options,'namesuffix')) options.namesuffix = ''; end
-if (~isfield(options,'inertia_error')) options.inertia_error = 0.0; end
-if (~isfield(options,'damping_error')) options.damping_error = 0.0; end
-if (~isfield(options,'ignore_friction')) options.ignore_friction = false; end
+if (~isfield(options,'inertial')), options.inertial = true; end
+if (~isfield(options,'visual')), options.visual = true; end
+if (~isfield(options,'collision')), options.collision = true; end
+if (~isfield(options,'sensors')), options.sensors = false; end
+if (~isfield(options,'visual_geometry')), options.visual_geometry = false; end
+if (~isfield(options,'namesuffix')), options.namesuffix = ''; end
+if (~isfield(options,'inertia_error')), options.inertia_error = 0.0; end
+if (~isfield(options,'damping_error')), options.damping_error = 0.0; end
+if (~isfield(options,'ignore_friction')), options.ignore_friction = false; end
 
 %disp(['Parsing ', urdf_filename]);
 [options.urdfpath,name,ext] = fileparts(urdf_filename);
@@ -69,7 +69,7 @@ robotname = char(node.getAttribute('name'));
 robotname = regexprep(robotname, '\.', '_', 'preservecase');
 robotname = [robotname,options.namesuffix];
 
-model.name = {model.name{:},robotname};
+model.name = [model.name, {robotname}];
 robotnum = length(model.name);
 
 materials = node.getElementsByTagName('material');
@@ -233,7 +233,7 @@ for i=1:childNodes.getLength()
   end
 end
 
-if (isempty(actuator.joint)) error('transmission elements must specify a joint name'); end
+if (isempty(actuator.joint)), error('transmission elements must specify a joint name'); end
 
 model.actuator=[model.actuator,actuator];
 end    

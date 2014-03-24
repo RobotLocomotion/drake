@@ -57,7 +57,7 @@ classdef Point
         end
       end
       % otherwise, call the builting subsasgn
-      varargout = builtin('subsasgn',obj.p,s,val);
+      varargout = {builtin('subsasgn',obj.p,s,val)};
     end
     
     function varargout = subsref(obj,s)
@@ -90,6 +90,9 @@ classdef Point
     end
     
     function varargout = valuecheck(val,desired_val,varargin)
+      if isa(desired_val,'Point')
+        val = val.inFrame(desired_val.frame);
+      end
       val = double(val);
       desired_val = double(desired_val);
       if nargout>0

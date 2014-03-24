@@ -1,9 +1,15 @@
+#include <map>
+#include <list>
+
 #include <lcm/lcm.h>
 
 #include <bot_core/bot_core.h>
 #include <bot_vis/bot_vis.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/pointer_cast.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "URDFRigidBodyManipulator.h"
 #include "lcmtypes/drake.h"
@@ -13,18 +19,213 @@
 
 using namespace std;
 
+class Geometry {
+public:
+  virtual ~Geometry(void) {};
+  virtual void draw(void) = 0;
+};
+
+class Sphere : public Geometry {
+public:
+  Sphere(float r) : radius(r) {};
+
+  double radius;
+  virtual void draw(void) {
+    glutSolidSphere(radius,36,36);
+  }
+};
+
+class Box : public Geometry {
+public:
+  Box(float x, float y, float z) : dim_x(x), dim_y(y), dim_z(z) {};
+
+  float dim_x, dim_y, dim_z;
+
+  virtual void draw(void) {
+    glScalef(dim_x,dim_y,dim_z);
+    // glutSolidCube(1.0);
+    bot_gl_draw_cube();
+  }
+};
+
+class Cylinder : public Geometry {
+public:
+  Cylinder(float r, float l) : radius(r), length(l) {};
+
+  double radius, length;
+
+  virtual void draw(void) {
+    // transform to center of cylinder
+    glTranslatef(0.0,0.0,-length/2.0);
+    
+    GLUquadricObj* quadric = gluNewQuadric();
+    gluQuadricDrawStyle(quadric, GLU_FILL);
+    gluQuadricNormals(quadric, GLU_SMOOTH);
+    gluQuadricOrientation(quadric, GLU_OUTSIDE);
+    gluCylinder(quadric,
+		radius,
+		radius,
+		length,
+		36,
+		1);
+    gluDeleteQuadric(quadric);
+  }
+
+};
+
+class Mesh : public Geometry {
+public:
+  Mesh(string fname, float scale=1.0) {
+    scale_x = scale_y = scale_z = scale;
+
+    boost::filesystem::path mypath(fname);
+    string ext = mypath.extension().native();
+    boost::to_lower(ext);
+	      
+    if (ext.compare(".obj")==0) {
+      //      cout << "Loading mesh from " << fname << endl;
+      pmesh = bot_wavefront_model_create(fname.c_str());
+    } else if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
+      // try changing the extension to obj and loading
+      //      cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
+      pmesh = bot_wavefront_model_create(mypath.replace_extension(".obj").native().c_str());
+    }      
+
+    if (!pmesh) {
+      cerr << "Warning: Mesh " << fname << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
+    }
+  }
+  virtual ~Mesh(void) {
+    bot_wavefront_model_destroy(pmesh);
+  }
+
+  virtual void draw(void) {
+    glScalef(scale_x,scale_y,scale_z);
+    bot_wavefront_model_gl_draw(pmesh);
+  }  
+
+  float scale_x, scale_y, scale_z; 
+  BotWavefrontModel* pmesh;
+};
+
+class LinkGeometry {
+ public:
+
+  boost::shared_ptr<Geometry> pGeometry;
+  double pos[3], theta, axis[3];
+  float color[4];
+
+  LinkGeometry(const drake_lcmt_viewer_geometry_data * geometry_data) : theta(0.0)
+  {
+    pos[0] = pos[1] = pos[2] = 0.0;
+    axis[0] = axis[1] = axis[2] = 0.0;
+    color[0] = color[1] = color[2] = .7f; color[3] = 1.0f;  // todo: pick better defaults
+
+    switch (geometry_data->type) {
+    case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_SPHERE:
+      {
+	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Sphere(geometry_data->float_data[0])));
+	pGeometry = g;
+      }
+      break;
+    case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_BOX:
+      {
+	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Box(geometry_data->float_data[0], geometry_data->float_data[1], geometry_data->float_data[2])));
+	pGeometry = g;
+      }
+      break;
+    case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_CYLINDER:
+      {
+	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Cylinder(geometry_data->float_data[0], geometry_data->float_data[1])));
+	pGeometry = g;
+      }
+      break;
+    case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_MESH:
+      {
+	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Mesh(geometry_data->string_data, geometry_data->float_data[0])));
+	pGeometry = g;
+      }
+      break;
+    default:
+      cerr << "unknown geometry type" << endl;
+      break;
+    }
+
+    if (!pGeometry) {
+      cerr << "failed to construct link geometry" << endl;
+      return;
+    }
+    
+    for (int i=0; i<3; i++) pos[i] = geometry_data->position[i];
+    double q[4];
+    for (int i=0; i<4; i++) q[i] = geometry_data->quaternion[i];
+    bot_quat_to_angle_axis(q, &theta, axis);
+    for (int i=0; i<4; i++) color[i] = geometry_data->color[i];
+  }
+  
+  void draw(void) {
+    glPushMatrix();
+    glTranslatef(pos[0],pos[1],pos[2]);
+    glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
+
+    glColor4f(color[0],color[1],color[2],color[3]);
+    pGeometry->draw();
+
+    glPopMatrix();
+  }
+};
+
+class Link {
+public:
+  double pos[3], theta, axis[3];
+  list<boost::shared_ptr<LinkGeometry>> geometry;
+
+  Link(const drake_lcmt_viewer_link_data* link_data) : theta(0.0)
+  {
+    pos[0] = pos[1] = pos[2] = 0.0;
+    axis[0] = axis[1] = axis[2] = 0.0;
+    for (int i=0; i<link_data->num_geom; i++) {
+      boost::shared_ptr<LinkGeometry> g(new LinkGeometry(&(link_data->geom[i])));
+      geometry.push_back(g);
+    }
+  }
+
+  void draw(void) {
+    glPushMatrix();
+    glTranslatef(pos[0],pos[1],pos[2]);
+    glRotatef(theta * 180/3.141592654, axis[0], axis[1], axis[2]);
+
+    for (list<boost::shared_ptr<LinkGeometry>>::iterator g=geometry.begin(); g!=geometry.end(); ++g) {
+      (*g)->draw();
+    }
+
+    glPopMatrix();
+  }
+
+  void update(float position[3], float quaternion[4])
+  {
+    for (int i=0; i<3; i++) pos[i] = position[i];
+    double q[4];
+    for (int i=0; i<4; i++) q[i] = quaternion[i];
+    bot_quat_to_angle_axis(q, &theta, axis);
+  }
+};
+
+typedef std::pair<int,string> link_index;  // robot num and link name
+
 typedef struct _RendererData {
   BotRenderer renderer;
   BotViewer   *viewer;
   lcm_t       *lcm;
-  URDFRigidBodyManipulator  *model;
+  //  map<string, BotWavefrontModel*> meshes;
+  map<link_index, boost::shared_ptr<Link> > links; 
+  string  movie_path;
 } RendererData;
 
 static void my_free( BotRenderer *renderer )
 {
   RendererData *self = (RendererData*) renderer->user;
   
-  free( self->model );
   free( self );
 }
 
@@ -32,11 +233,68 @@ static void my_draw( BotViewer *viewer, BotRenderer *renderer )
 {
   UNUSED(viewer);
   RendererData *self = (RendererData*) renderer->user;
-  if (!self->model) return;  
+  if (self->links.size() < 1) return;  
 
-  self->model->draw();
+  // todo: move these to setup?
+  glDisable (GL_BLEND);
+  glDisable (GL_CULL_FACE);
+  glEnable (GL_DEPTH_TEST);
+  glEnable (GL_RESCALE_NORMAL);
+  //  glEnable (GL_CULL_FACE);
+  //  glCullFace (GL_BACK);
+  //  glFrontFace (GL_CCW);
+  //  glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  //  glShadeModel (GL_SMOOTH);
+  
+  glMatrixMode (GL_MODELVIEW);
+  
+  /* give the ambient light a blue tint to match the blue sky */
+  float light0_amb[] = { 0.4, 0.4, .5, 1 };
+  float light0_dif[] = { 1, 1, 1, 1 };
+  float light0_spe[] = { .5, .5, .5, 1 };
+  float light0_pos[] = { 100, 100, 100, 0 };
+  glLightfv (GL_LIGHT0, GL_AMBIENT, light0_amb);
+  glLightfv (GL_LIGHT0, GL_DIFFUSE, light0_dif);
+  glLightfv (GL_LIGHT0, GL_SPECULAR, light0_spe);
+  glLightfv (GL_LIGHT0, GL_POSITION, light0_pos);
+  glEnable (GL_LIGHT0);
+  
+  glEnable (GL_LIGHTING);
+  glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+  glEnable (GL_COLOR_MATERIAL);
+
+  for (map<link_index,boost::shared_ptr<Link>>::iterator l=self->links.begin(); l!=self->links.end(); ++l) {
+    l->second->draw();
+  }
 }
 
+static void handle_lcm_viewer_load_robot(const lcm_recv_buf_t *rbuf, const char * channel, 
+        const drake_lcmt_viewer_load_robot * msg, void * user)
+{
+  RendererData *self = (RendererData*) user;
+  self->links.clear();
+
+  cout << "loading new robot with " << msg->num_links << " links" << endl;
+
+  // parse new links
+  for (int i=0; i<msg->num_links; i++) {
+    if (msg->link[i].robot_num < 0) {
+      cerr << "illegal robot_num" << endl;
+      continue;
+    }
+    boost::shared_ptr<Link> l(new Link(&(msg->link[i])));
+    self->links.insert(make_pair(make_pair(msg->link[i].robot_num,msg->link[i].name),l));
+  }
+
+  // send ack that model was successfully loaded
+  drake_lcmt_viewer_command status_message;
+  status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
+  status_message.command_data = (char*) "successfully loaded robot";
+  drake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
+  cout << "successfully loaded model" << endl;
+
+  bot_viewer_request_redraw(self->viewer);
+}
 
 static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * channel, 
         const drake_lcmt_viewer_command * msg, void * user)
@@ -44,114 +302,60 @@ static void handle_lcm_viewer_command(const lcm_recv_buf_t *rbuf, const char * c
   RendererData *self = (RendererData*) user;
   
   switch(msg->command_type) {
-    case DRAKE_LCMT_VIEWER_COMMAND_LOAD_URDF:
-      {
-        if (self->model) delete self->model;
-        cout << "loading urdf: " << msg->command_data << endl;
-        self->model = loadURDFfromFile(msg->command_data);
-        if (self->model) {
-        	MatrixXd q0 = MatrixXd::Zero(self->model->num_dof,1);
-        	self->model->doKinematics(q0.data());
+  case DRAKE_LCMT_VIEWER_COMMAND_START_RECORDING:
+    {
+      bot_viewer_start_recording(self->viewer);
+      string movie_path(self->viewer->movie_path);
+      self->movie_path = movie_path;
+    }
+    break;
+  case DRAKE_LCMT_VIEWER_COMMAND_STOP_RECORDING:
+    {
+      bot_viewer_stop_recording(self->viewer);
 
-        	// send ack that model was successfully loaded
-        	drake_lcmt_viewer_command status_message;
-          status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
-          status_message.command_data = msg->command_data;
-          drake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
-        } else {
-        	cout << "failed to load urdf." << endl;
-        }
-      }
-      break;
-
-    case DRAKE_LCMT_VIEWER_COMMAND_LOAD_TERRAIN:
-      {
-      	cerr << "Terrain loading from file not implemented yet" << endl;
-      }
-    	break;
-
-    case DRAKE_LCMT_VIEWER_COMMAND_SET_TERRAIN_TRANSFORM:
-			{
-      	cerr << "Setting the terrain transform is not implemented yet" << endl;
-			}
-    	break;
-
-    default:
-      cerr << "viewer command " << msg->command_type << " not implemented yet" << endl;
-      break;
+      drake_lcmt_viewer_command status_message;
+      status_message.command_type = DRAKE_LCMT_VIEWER_COMMAND_STATUS;
+      status_message.command_data = const_cast<char*>(self->movie_path.c_str());
+      drake_lcmt_viewer_command_publish(self->lcm, "DRAKE_VIEWER_STATUS", &status_message);
+    }
+    break;
+  case DRAKE_LCMT_VIEWER_COMMAND_LOAD_TERRAIN:
+    {
+      cerr << "Terrain loading from file not implemented yet" << endl;
+    }
+    break;
+    
+  case DRAKE_LCMT_VIEWER_COMMAND_SET_TERRAIN_TRANSFORM:
+    {
+      cerr << "Setting the terrain transform is not implemented yet" << endl;
+    }
+    break;
+    
+  default:
+    cerr << "viewer command " << msg->command_type << " not implemented yet" << endl;
+    break;
   }
 
   bot_viewer_request_redraw(self->viewer);
 }
 
-static void handle_lcm_robot_state(const lcm_recv_buf_t *rbuf, const char * channel, 
-        const drake_lcmt_robot_state * msg, void * user)
+static void handle_lcm_viewer_draw(const lcm_recv_buf_t *rbuf, const char * channel, 
+        const drake_lcmt_viewer_draw * msg, void * user)
 {
   RendererData *self = (RendererData*) user;
   
-  if (!self->model) return;
+  if (self->links.size()<1) return;
   
-  MatrixXd q = MatrixXd::Zero(self->model->num_dof,1);
-
-/*
-  int* robot_map = new int[msg->num_robots];
-  for (int i=0; i<msg->num_robots; i++)
-  {
-    map<string, int>::iterator iter = self->model->robot_map.find(msg->robot_name[i]);
-    if (iter==self->model->robot_map.end()) {
-    	cerr << "couldn't find robot name " << msg->robot_name[i] << endl;
-    	robot_map[i] = -1;
-    } else {
-    	robot_map[i]=iter->second;
+  for (int i=0; i<msg->num_links; i++) {
+    map<link_index,boost::shared_ptr<Link>>::iterator iter = self->links.find(make_pair(msg->robot_num[i],msg->link_name[i]));
+    if (iter == self->links.end())
+      cerr << "failed to find link: " << msg->link_name[i] << endl;
+    else {
+      iter->second->update(msg->position[i],msg->quaternion[i]);
     }
   }
-*/
 
-  for (int i=0; i<msg->num_joints; i++)
-  {
-//  	int robot = robot_map[msg->joint_robot[i]];
-//  	if (robot<0) continue;
-  	int robot = msg->joint_robot[i];
-
-    map<string, int>::iterator iter = self->model->dof_map[robot].find(msg->joint_name[i]);
-    //DEBUG
-    //for (auto p : self->model->dof_map[robot]) {
-      //cout << "drake_urdf_renderer: p.first = " << p.first << endl;
-    //}
-    //END_DEBUG
-    if (iter==self->model->dof_map[robot].end()) {
-      cerr << "couldn't find dof named " << msg->joint_name[i] << endl;
-    } else {
-      q(iter->second) = (double) msg->joint_position[i];
-      //DEBUG
-      //cout << endl;
-      //cout << "drake_urdf_renderer: msg->joint_name[i] = " << msg->joint_name[i] << endl;
-      //cout << "drake_urdf_renderer: iter->first = " << iter->first << endl;
-      //cout << "drake_urdf_renderer: iter->second = " << iter->second << endl;
-      //cout << endl;
-      //END_DEBUG
-//      cout << self->model->bodies[iter->second+1].jointname << " = " << q(iter->second) << ", " << iter->second << "=" << self->model->bodies[iter->second+1].dofnum << endl;
-    }
-    //DEBUG
-    //cout << "drake_urdf_renderer: q = " << endl;
-    //cout << q << endl;
-    //END_DEBUG
-  }
-  
-  self->model->doKinematics(q.data());
-  
-/*
-  // some debugging info
-  cout << "q = " << q.transpose() << endl;
-  const Vector4d zero(0,0,0,1);
-  Vector3d pos;
-  for (int i=0; i<self->model->num_bodies; i++) {
-    self->model->forwardKin(i,zero,0,pos);
-    cout << "forward kin: " << self->model->bodies[i].linkname << " is at " << pos.transpose() << ", joint:" << self->model->bodies[i].jointname << endl;
-  } 
-*/  
   bot_viewer_request_redraw(self->viewer);
-//  delete[] robot_map;
 }
 
 
@@ -166,7 +370,6 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
     
   self->lcm = lcm;
   self->viewer = viewer;
-  self->model = NULL;
   
   renderer->draw = my_draw;
   renderer->destroy = my_free;
@@ -176,7 +379,9 @@ drake_urdf_add_renderer_to_viewer(BotViewer* viewer, lcm_t* lcm, int priority)
   renderer->user = self;
   
   drake_lcmt_viewer_command_subscribe(lcm,"DRAKE_VIEWER_COMMAND",&handle_lcm_viewer_command,self);
-  drake_lcmt_robot_state_subscribe(lcm,"DRAKE_VIEWER_STATE",&handle_lcm_robot_state,self);
+  //  drake_lcmt_robot_state_subscribe(lcm,"DRAKE_VIEWER_STATE",&handle_lcm_robot_state,self);
+  drake_lcmt_viewer_load_robot_subscribe(lcm,"DRAKE_VIEWER_LOAD_ROBOT",&handle_lcm_viewer_load_robot,self);
+  drake_lcmt_viewer_draw_subscribe(lcm,"DRAKE_VIEWER_DRAW",&handle_lcm_viewer_draw,self);
   
   bot_viewer_add_renderer(viewer, renderer, priority);
 

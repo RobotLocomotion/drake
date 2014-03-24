@@ -35,7 +35,7 @@ v = r.constructVisualizer();
 v.display_dt = .05;
 v.draw(0,xstar);
 
-if (0)
+if (1)
   [Kp,Kd] = getPDGains(r);
   sys = pdcontrol(r,Kp,Kd);
   poscontrolsys = sys;
@@ -72,8 +72,8 @@ fnplt(comtraj(2));
 %% compute joint positions with inverse kinematics
 
 ind = getActuatedJoints(r);
-rfoot_body = r.findLink('r_foot');
-lfoot_body = r.findLink('l_foot');
+rfoot_body = r.findLinkInd('r_foot');
+lfoot_body = r.findLinkInd('l_foot');
 
 cost = Point(r.getStateFrame,1);
 cost.base_x = 0;

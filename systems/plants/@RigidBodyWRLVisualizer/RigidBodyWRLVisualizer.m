@@ -19,10 +19,10 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       if nargin<2
         options = struct();
       end
-      if ~isfield(options,'ground') options.ground = manip.num_contacts>0; end
+      if ~isfield(options,'ground'), options.ground = manip.num_contacts>0; end
       
       wrlfile = fullfile(tempdir,[obj.model.name{1},'.wrl']);
-      obj.model.writeWRL(wrlfile,options);
+      writeWRL(obj,wrlfile,options);
       obj.wrl = vrworld(wrlfile);
       if ~strcmpi(get(obj.wrl,'Open'),'on')
         open(obj.wrl);
@@ -111,13 +111,13 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
         mov.FrameRate = obj.playback_speed/(ts(1)*interval);
       else
         if (obj.display_dt==0)
-          if (ishandle(obj)) error('i assumed it wasn''t a handle'); end
+          if (ishandle(obj)), error('i assumed it wasn''t a handle'); end
           obj.display_dt = 1/30;  % just for the remainder of this file.
         end
         
         breaks = getBreaks(xtraj);
         tspan = breaks(1):obj.display_dt:breaks(end);
-        if (breaks(end)-tspan(end)>eps) tspan=[tspan,breaks(end)]; end
+        if (breaks(end)-tspan(end)>eps), tspan=[tspan,breaks(end)]; end
       
         mov.FrameRate = obj.playback_speed/obj.display_dt;
       end
@@ -137,9 +137,48 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       error('SWF playback not available for VRML visualizers.  The vector graphics equivalent is playbackVRML.');
     end
     
-    function playbackVRML(varargin)
-      error('not implemented yet, but should be possible to record the sequence to a VRML movie');
+    function playbackVRML(obj,xtraj,filename)
+      set(obj.wrl,'Record3D','on');
+      set(obj.wrl,'Record3DFileName',filename);
+      set(obj.wrl,'RecordMode','scheduled');
+      set(obj.wrl,'RecordInterval',[xtraj.tspan(1),xtraj.tspan(end)]);
+%      set(obj.wrl,'Recording','on');
+      
+      playback(obj,xtraj);
+      
+      set(obj.wrl,'Recording','off');
     end
+    
+    function playbackMovie(obj,xtraj,filename)
+      if (nargin<2)
+        [filename,pathname] = uiputfile('*','Save playback to movie');
+        if isequal(filename,0) || isequal(pathname,0)
+          return;
+        end
+        filename = fullfile(pathname,filename);
+      end
+
+      [path,name,ext] = fileparts(filename);
+      ext = tolower(ext);
+      switch ext
+        case '.avi'
+          playbackAVI(obj,xtraj,filename);
+        case '.wrl'
+          playbackVRML(obj,xtraj,filename);
+        otherwise
+          disp(' Please select an output format: ');
+          disp(' 1) AVI');
+          disp(' 2) VRML');
+          choice = input('Select a format (1-2): ');
+          switch choice
+            case 1
+              ext = '.avi';
+            case 2
+              ext = '.wrl';
+          end
+          playbackMovie(obj,xtraj,fullfile(path,[name,ext]));
+      end
+    end    
   end
 
   properties (Access=protected)

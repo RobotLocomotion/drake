@@ -35,5 +35,9 @@ classdef RigidBodyElement
     function obj = updateForRemovedLink(obj,model,body_ind)
       % intentionally do nothing. overload if necessary
     end
+    
+    function obj = updateBodyCoordinates(obj,body_ind,T_old_body_to_new_body)
+      % intentionally do nothing. overload if necessary
+    end
   end
 end

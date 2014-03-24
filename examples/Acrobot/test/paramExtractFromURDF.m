@@ -4,6 +4,7 @@ oldpath = addpath(fullfile(pwd,'..'));
 
 r1 = RigidBodyManipulator('AcrobotWParams.urdf');
 r2 = AcrobotPlant;
+addProjectionTransformByCoordinateNames(getParamFrame(r1),getParamFrame(r2));
 
 p1 = getParams(r1);
 p2 = getParams(r2);

@@ -864,6 +864,7 @@ classdef RigidBodyManipulator < Manipulator
           try
             v = feval(type,arg);
           catch ex
+            getReport(ex,'extended')
             warning(ex.identifier,ex.message);
           end
         end
@@ -1309,6 +1310,8 @@ classdef RigidBodyManipulator < Manipulator
             model.body(i).dofnum=dof;
             inds = [inds,i];
           end
+        else
+          model.body(i).dofnum=0;
         end
       end
       m.NB= dof;  
@@ -1407,30 +1410,21 @@ classdef RigidBodyManipulator < Manipulator
           parent = setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
         end
         
-        % add wrl geometry into parent
-        if ~isempty(body.wrlgeometry)
-          if isempty(body.wrljoint)
-            parent.wrlgeometry = [ parent.wrlgeometry, '\n', body.wrlgeometry ];
-          else
-            parent.wrlgeometry = [ parent.wrlgeometry, '\nTransform {\n', body.wrljoint, '\n children [\n', body.wrlgeometry, '\n]\n}\n'];
-          end
+        for j=1:length(body.visual_shapes)
+          body.visual_shapes{j}.T = body.Ttree*body.visual_shapes{j}.T;
         end
-        
-        for j=1:length(body.geometry)
-          g.xyz = body.Ttree(1:end-1,:)*[body.geometry{j}.xyz; ones(1,size(body.geometry{j}.xyz,2))];
-          g.c = body.geometry{j}.c;
-          parent.geometry = {parent.geometry{:},g};
-        end
+        parent.visual_shapes = horzcat(parent.visual_shapes,body.visual_shapes);
         
         if (~isempty(body.contact_pts))
           npts = size(parent.contact_pts,2);
           parent.contact_pts = [parent.contact_pts, body.Ttree(1:end-1,:)*[body.contact_pts;ones(1,size(body.contact_pts,2))]];
           % todo: finish this!
           for j=1:length(body.contact_shapes)
-            body.contact_shapes(j).T = body.Ttree*body.contact_shapes(j).T;
+            body.contact_shapes{j}.T = body.Ttree*body.contact_shapes{j}.T;
           end
           nshapes = length(parent.contact_shapes);
-          parent.contact_shapes = horzcat(parent.contact_shapes,body.contact_shapes);
+          parent.contact_shapes = {parent.contact_shapes{:},body.contact_shapes{:}};
+
           if ~isempty(body.collision_group_name)
             ngroups=length(parent.collision_group_name);
             [parent.collision_group_name,ia,ic]=unique(horzcat(parent.collision_group_name,body.collision_group_name),'stable');
