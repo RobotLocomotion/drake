@@ -500,7 +500,7 @@ classdef NonlinearProgram
       % return the bounds for all the objective function, nonlinear constraints and linear
       % constraints
       lb = [-inf;obj.cin_lb;zeros(obj.num_ceq,1);-inf(length(obj.bin),1);obj.beq];
-      ub = [inf;obj.cin_ub;zeros(obj.num_ceq,1);zeros(length(obj.bin),1);obj.beq];
+      ub = [inf;obj.cin_ub;zeros(obj.num_ceq,1);obj.bin;obj.beq];
     end
   end
 end
