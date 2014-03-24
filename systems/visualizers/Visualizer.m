@@ -237,7 +237,7 @@ classdef Visualizer < DrakeSystem
       end
 
       [path,name,ext] = fileparts(filename);
-      ext = tolower(ext)
+      ext = tolower(ext);
       switch ext
         case '.avi'
           playbackAVI(obj,xtraj,filename);

@@ -146,7 +146,7 @@ while (true)
   
   new_rbm = setBody(new_rbm,current_body_ind,current_body);
   
-  if (next_body_ind<1) break; end
+  if (next_body_ind<1), break; end
   
   %% update indices for next iteration
   grandparent_ind = parent_ind;
