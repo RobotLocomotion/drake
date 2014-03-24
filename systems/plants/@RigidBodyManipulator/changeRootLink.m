@@ -79,7 +79,7 @@ while (true)
     
     % note: flip joint axis here to keep the joint direction the same (and
     % avoid flipping joint limits, etc)
-    current_body.joint_axis = T_old_body_to_new_body(1:3,1:3) * [-old_child_new_parent_body.joint_axis];
+    current_body.joint_axis = T_old_body_to_new_body(1:3,1:3) * (-old_child_new_parent_body.joint_axis);
     
     if dot(current_body.joint_axis,[0;0;1])<1-1e-4
       % see RigidBodyManipulator/addJoint
@@ -89,7 +89,7 @@ while (true)
         valuecheck(sin(axis_angle(4)),0,1e-4);
         axis_angle(1:3)=[0;1;0];
       end
-      jointrpy = quat2rpy(axis2quat(axis_angle));
+      jointrpy = axis2rpy(axis_angle);
       current_body.X_joint_to_body=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
       current_body.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
  
@@ -108,6 +108,8 @@ while (true)
     current_body.has_position_sensor = old_child_new_parent_body.has_position_sensor;
   end
     
+  % todo: consider moving these into RigidBody.updateTransform, but only if
+  % it gets *everything* correct
   current_body = setInertial(current_body,X_old_body_to_new_body'*current_body.I*X_old_body_to_new_body);
 
   for i=1:length(current_body.visual_shapes)
@@ -119,7 +121,20 @@ while (true)
   for i=1:length(current_body.contact_shapes)
     current_body.contact_shapes{i}.T = current_body.contact_shapes{i}.T*T_old_body_to_new_body;
   end
-    
+
+  for j=1:length(rbm.loop)
+    new_rbm.loop(j) = updateBodyCoordinates(rbm.loop(j),current_body_ind,T_old_body_to_new_body);
+  end
+  for j=1:length(rbm.sensor)
+    new_rbm.sensor{j} = updateBodyCoordinates(rbm.sensor{j},current_body_ind,T_old_body_to_new_body);
+  end
+  for j=1:length(rbm.force)
+    new_rbm.force{j} = updateBodyCoordinates(rbm.force{j},current_body_ind,T_old_body_to_new_body);
+  end
+  for j=1:length(rbm.frame)
+    new_rbm.frame(j) = updateBodyCoordinates(rbm.frame(j),current_body_ind,T_old_body_to_new_body);
+  end
+  
   if (getNumInputs(new_rbm))
     % if there was an actuator attached to my (new) parent, it now needs to
     % be attached to me.

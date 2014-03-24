@@ -406,5 +406,5 @@ classdef RigidBody < RigidBodyElement
     function obj = updateBodyIndices(obj,map_from_old_to_new)
       obj.parent = map_from_old_to_new(obj.parent);
     end
-  end  
+  end
 end

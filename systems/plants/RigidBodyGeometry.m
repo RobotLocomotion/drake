@@ -31,7 +31,7 @@ classdef RigidBodyGeometry
   
   methods (Static)
     function obj = parseURDFNode(node,x0,rpy,model,robotnum,options)
-      T= [quat2rotmat(rpy2quat(rpy)),x0; 0 0 0 1];
+      T= [rpy2rotmat(rpy),x0; 0 0 0 1];
       
       childNodes = node.getChildNodes();
       for i=1:childNodes.getLength()
