@@ -26,6 +26,13 @@ classdef RigidBodyFrame
         obj.body_ind = model.body(body_ind).parent;
       end
     end
+    
+    function obj = updateBodyCoordinates(obj,body_ind,T_old_body_to_new_body)
+      if (obj.body_ind == body_ind)
+        obj.T = obj.T*T_old_body_to_new_body;
+      end
+    end
+    
   end
 
   properties

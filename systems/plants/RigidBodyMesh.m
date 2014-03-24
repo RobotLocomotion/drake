@@ -81,10 +81,6 @@ classdef RigidBodyMesh < RigidBodyGeometry
       td=td-1; tabprintf(fp,'}\n'); % end Transform {
     end
     
-    function str = wrlGeometryStr(obj)
-
-    end
-    
   end
   
   properties

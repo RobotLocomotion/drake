@@ -25,6 +25,11 @@ classdef RigidBodyLoop < RigidBodyElement
         obj.body2 = model.body(body_ind).parent;
       end
     end
+    
+    function obj = updateBodyCoordinates(obj,body_ind,T_old_body_to_new_body)
+      error('need to implement this.  (see changeRootLink)');
+    end
+    
   end
   
 end
