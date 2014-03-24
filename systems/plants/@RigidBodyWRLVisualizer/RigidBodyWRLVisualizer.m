@@ -19,7 +19,7 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       if nargin<2
         options = struct();
       end
-      if ~isfield(options,'ground') options.ground = manip.num_contacts>0; end
+      if ~isfield(options,'ground'), options.ground = manip.num_contacts>0; end
       
       wrlfile = fullfile(tempdir,[obj.model.name{1},'.wrl']);
       writeWRL(obj,wrlfile,options);
@@ -111,13 +111,13 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
         mov.FrameRate = obj.playback_speed/(ts(1)*interval);
       else
         if (obj.display_dt==0)
-          if (ishandle(obj)) error('i assumed it wasn''t a handle'); end
+          if (ishandle(obj)), error('i assumed it wasn''t a handle'); end
           obj.display_dt = 1/30;  % just for the remainder of this file.
         end
         
         breaks = getBreaks(xtraj);
         tspan = breaks(1):obj.display_dt:breaks(end);
-        if (breaks(end)-tspan(end)>eps) tspan=[tspan,breaks(end)]; end
+        if (breaks(end)-tspan(end)>eps), tspan=[tspan,breaks(end)]; end
       
         mov.FrameRate = obj.playback_speed/obj.display_dt;
       end
