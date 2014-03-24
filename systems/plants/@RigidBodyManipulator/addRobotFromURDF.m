@@ -69,7 +69,7 @@ robotname = char(node.getAttribute('name'));
 robotname = regexprep(robotname, '\.', '_', 'preservecase');
 robotname = [robotname,options.namesuffix];
 
-model.name = {model.name{:},robotname};
+model.name = [model.name, {robotname}];
 robotnum = length(model.name);
 
 materials = node.getElementsByTagName('material');
