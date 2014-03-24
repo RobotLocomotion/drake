@@ -6,6 +6,10 @@ classdef RigidBodyGeometry
   end
   
   methods
+    function obj = RigidBodyGeometry(bullet_shape_id)
+      obj.bullet_shape_id = bullet_shape_id;
+    end
+    
     function pts = getPlanarPoints(obj,x_axis,y_axis,view_axis)
       % output is compatible with patch for 2D viewing
       % still returns a 3xn, but the z-axis is constant (just meant for
@@ -69,8 +73,9 @@ classdef RigidBodyGeometry
     end
   end
   
-  properties
+  properties  % note: constructModelmex currently depends on these being public
     T = eye(4);  % coordinate transform (from geometry to link coordinates)
     c = [.7 .7 .7];  % 3x1 color
+    bullet_shape_id = 0;  % UNKNOWN
   end
 end

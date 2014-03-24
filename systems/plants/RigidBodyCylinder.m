@@ -2,6 +2,7 @@ classdef RigidBodyCylinder < RigidBodyGeometry
   
   methods 
     function obj = RigidBodyCylinder(radius,len)
+      obj = obj@RigidBodyGeometry(3);
       sizecheck(radius,1);
       sizecheck(len,1);
       obj.radius = radius;

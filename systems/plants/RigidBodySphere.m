@@ -2,6 +2,7 @@ classdef RigidBodySphere < RigidBodyGeometry
   
   methods 
     function obj = RigidBodySphere(radius)
+      obj = obj@RigidBodyGeometry(2);
       sizecheck(radius,1);
       obj.radius = radius;
     end

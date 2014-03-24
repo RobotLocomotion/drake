@@ -2,6 +2,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
   
   methods 
     function obj = RigidBodyMesh(filename)
+      obj = obj@RigidBodyGeometry(4);
       typecheck(filename,'char');
       obj.filename = filename;
     end
