@@ -2,6 +2,7 @@ classdef RigidBodyBox < RigidBodyGeometry
   
   methods 
     function obj = RigidBodyBox(size)
+      obj = obj@RigidBodyGeometry(1);
       sizecheck(size,3);
       obj.size = size(:);
     end
