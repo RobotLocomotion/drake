@@ -2,8 +2,9 @@ classdef Manipulator < DrakeSystem
 % An abstract class that wraps H(q)vdot + C(q,v,f_ext) = B(q)u.
 
   methods
-    function obj = Manipulator(num_q, num_v, num_u)
-      % Constructor
+    function obj = Manipulator(num_q, num_u, num_v)
+      if nargin<3, num_v = num_q; end
+      
       obj = obj@DrakeSystem(num_q+num_v,0,num_u,num_q+num_v,false,true);
       obj.num_positions = num_q;
       obj.num_velocities = num_v;
@@ -20,6 +21,9 @@ classdef Manipulator < DrakeSystem
     function [xdot,dxdot] = dynamics(obj,t,x,u)
     % Provides the DrakeSystem interface to the manipulatorDynamics.
 
+      q = x(1:obj.num_positions);
+      v = x(obj.num_positions+1:end);
+    
       if (nargout>1)
         if (obj.num_xcon>0)
           % by naming this 'MATLAB:TooManyOutputs', geval will catch the
@@ -46,17 +50,24 @@ classdef Manipulator < DrakeSystem
             -Hinv*dC(:,1+obj.num_q:end)];
         end
       else
-        [H,C,B] = manipulatorDynamics(obj,q,qd);
+        [H,C,B] = manipulatorDynamics(obj,q,v);
         Hinv = inv(H);
         if (obj.num_u>0) tau=B*u - C; else tau=-C; end
-        tau = tau + computeConstraintForce(obj,q,qd,H,tau,Hinv);
+        tau = tau + computeConstraintForce(obj,q,v,H,tau,Hinv);
       
-        qdd = Hinv*tau;
+        vdot = Hinv*tau;
         % note that I used to do this (instead of calling inv(H)):
-        %   qdd = H\tau
+        %   vdot = H\tau
         % but I already have and use Hinv, so use it again here
+        
+        xdot = [positionDerivative(obj,q,v); vdot];
       end      
       
+    end
+    
+    function qdot = positionDerivative(obj,q,v)
+      % default relationship is that v = qdot
+      qdot = v;
     end
     
     function y = output(obj,t,x,u)
