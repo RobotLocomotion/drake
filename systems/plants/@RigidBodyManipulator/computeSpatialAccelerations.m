@@ -1,6 +1,6 @@
-function ret = spatialAccelerations(obj, transforms, twists, q, v, vd)
-% SPATIALACCELERATIONS Computes the spatial accelerations (time derivatives
-% of twists) of all bodies in the RigidBodyManipulator.
+function ret = computeSpatialAccelerations(obj, transforms, twists, q, v, vd)
+% COMPUTESPATIALACCELERATIONS Computes the spatial accelerations (time 
+% derivatives of twists) of all bodies in the RigidBodyManipulator.
 % @param transforms homogeneous transforms from link to world (usually
 % obtained from doKinematics as kinsol.T)
 % @param twists twists of links with respect to world

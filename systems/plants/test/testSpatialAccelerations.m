@@ -22,7 +22,7 @@ for i = 1 : nTests
   twists = kinsol.twists;
   
   vd = randn(nv, 1);
-  twistdot = spatialAccelerations(robot, kinsol.T, twists, q, v, vd);
+  twistdot = computeSpatialAccelerations(robot, kinsol.T, twists, q, v, vd);
 
   q = q + v * dt;
   v = v + vd * dt;
