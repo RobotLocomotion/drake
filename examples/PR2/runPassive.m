@@ -1,7 +1,11 @@
 function runPassive
 
-
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+warning('off','Drake:RigidBodyGeometry:SimplifiedCollisionGeometry');
+warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
+warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 r = RigidBodyManipulator('pr2.urdf');
+warning(w);
 r = setSimulinkParam(r,'MinStep','0.001');
 x0 = Point(r.getStateFrame);
 

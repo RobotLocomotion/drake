@@ -467,7 +467,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dM(nL+nP+nC+(1:mC*nC),1:size(Mvn,2),:) = reshape(matGradMultMat(D,Mvn,dD,dMvn),mC*nC,size(Mvn,2),[]);
           end
           
-          a = (phiC+h*n*qd) < active_tol;
+          a = (phiC+h*n*v) < active_tol;
           active(nL+nP+(1:(mC+2)*nC),:) = repmat(a,mC+2,1);
         end
         
