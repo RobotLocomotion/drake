@@ -1337,7 +1337,7 @@ classdef RigidBodyManipulator < Manipulator
           m.coulomb_friction(n+(0:5)) = 0;
           m.static_friction(n+(0:5)) = 0;
           m.coulomb_window(n+(0:5)) = eps;
-          m.parent(n+(0:5)) = [model.body(b.parent).dofnum,n+(0:4)];  % rel ypr
+          m.parent(n+(0:5)) = [model.body(b.parent).position_num,n+(0:4)];  % rel ypr
           m.Xtree{n} = Xroty(pi/2);   % x
           m.Xtree{n+1} = Xrotx(-pi/2)*Xroty(-pi/2); % y (note these are relative changes, x was up, now I'm rotating so y will be up)
           m.Xtree{n+2} = Xrotx(pi/2); % z
