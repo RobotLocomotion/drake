@@ -9,15 +9,16 @@ function testAtlas(floatingJointType)
 
 robot = createAtlas(floatingJointType);
 
-compareToForwardKin(robot, 0);
-compareToForwardKin(robot, 1);
-compareToForwardKin(robot, 2);
+compareToNumerical(robot, 0);
+compareToNumerical(robot, 1);
+compareToNumerical(robot, 2);
 
 end
 
-function compareToForwardKin(robot, rotationType)
+function compareToNumerical(robot, rotationType)
 
 nq = robot.getNumPositions();
+nv = robot.getNumVelocities();
 
 nBodies = length(robot.body);
 
@@ -31,7 +32,8 @@ delta = 1e-10;
 epsilon = 1e-3;
 while testNumber < nTests
   q = randn(nq, 1);
-  kinsol = robot.doKinematics(q, false, false);
+  v = randn(nv, 1);
+  kinsol = robot.doKinematics(q, true, false, v);
   
   base = 1;
   endEffector = randi(bodyRange);
@@ -40,17 +42,23 @@ while testNumber < nTests
     points = randn(3, nPoints);
     
     tic
-    [x, J] = robot.forwardKin(kinsol, base, endEffector, points, rotationType);
+    [x, J, JdotV] = robot.forwardKin(kinsol, endEffector, points, rotationType, base);
     computationTime = computationTime + toc * 1e3;
     
     for col = 1 : length(q)
       qDelta = q;
       qDelta(col) = qDelta(col) + delta;
       kinsol = robot.doKinematics(qDelta, false, false);
-      xDelta = robot.forwardKin(kinsol, base, endEffector, points, rotationType);
-      dxdq = (xDelta - x) / delta;
-      valuecheck(J(:, col), dxdq(:), epsilon);
+      xDelta = robot.forwardKin(kinsol, endEffector, points, rotationType, base);
+      dxdqNumerical = (xDelta - x) / delta;
+      valuecheck(J(:, col), dxdqNumerical(:), epsilon);
     end
+    
+    qDelta = q + delta * v;
+    kinsol = robot.doKinematics(qDelta, false, false);
+    [~, JDelta] = robot.forwardKin(kinsol, endEffector, points, rotationType, base);
+    JdotNumerical = (JDelta - J) / delta;
+    valuecheck(JdotV, JdotNumerical * v, epsilon);
     
     testNumber = testNumber + 1;
   end

@@ -1,4 +1,4 @@
-function [Phi, Phid] = angularvel2rpydotMatrix(rpy, rpyd)
+function [Phi, Phid] = angularvel2rpydotMatrix(rpy, omega)
 
 % computes the matrix that transforms the angular velocity vector to the
 % time derivatives of rpy (rolldot, pitchdot, yawdot).
@@ -23,6 +23,8 @@ if nargout > 1
   if nargin < 2
     error('need to pass in rpyd to compute Phid')
   end
+  
+  rpyd = Phi * omega;
   
   pd = rpyd(2);
   yd = rpyd(3);
