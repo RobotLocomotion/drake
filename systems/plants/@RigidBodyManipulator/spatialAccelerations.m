@@ -18,9 +18,9 @@ for i = 1 : nBodies
   else
     body = obj.body(i);
     
-    qBody = q(body.dofnum);
-    vBody = v(body.dofnum);
-    vdBody = vd(body.dofnum);
+    qBody = q(body.position_num);
+    vBody = v(body.velocity_num);
+    vdBody = vd(body.velocity_num);
     
     predecessor = body.parent;
     
