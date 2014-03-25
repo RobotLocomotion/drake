@@ -35,20 +35,24 @@ classdef Manipulator < DrakeSystem
         % If it fails, then it will raise the same exception that I would
         % want to raise for this method, stating that not all outputs were
         % assigned.  (since I can't write dxdot anymore)
-        [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,qd);
+        [H,C,B,dH,dC,dB] = obj.manipulatorDynamics(q,v);
         Hinv = inv(H);
         
         if (obj.num_u>0) 
-          qdd = Hinv*(B*u-C); 
-          dqdd = [zeros(obj.num_q,1),...
-            -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) - Hinv*dC(:,1:obj.num_q),...
-            -Hinv*dC(:,1+obj.num_q:end), Hinv*B];
+          vdot = Hinv*(B*u-C); 
+          dvdot = [zeros(obj.num_velocities,1),...
+            Hinv*(matGradMult(dB(:,1:obj.num_positions),u) - matGradMult(dH(:,1:obj.num_positions),vdot) - dC(:,1:obj.num_positions)),...
+            Hinv*(matGradMult(dB(:,obj.num_positions+1:end),u) - dC(:,obj.num_positions+1:end)), Hinv*B];
         else
-          qdd = Hinv*(-C);
-          dqdd = [zeros(obj.num_q,1),...
-            -Hinv*matGradMult(dH(:,1:obj.num_q),qdd) - Hinv*dC(:,1:obj.num_q),...
-            -Hinv*dC(:,1+obj.num_q:end)];
+          vdot = -Hinv*C; 
+          dvdot = [zeros(obj.num_velocities,1),...
+            Hinv*(-matGradMult(dH(:,1:obj.num_positions),vdot) - dC(:,1:obj.num_positions)),...
+            Hinv*(-dC(:,obj.num_positions+1:end))];
         end
+        
+        [qdot,dqdot] = positionDerivative(obj,q,v);
+        xdot = [qdot;vdot];
+        dxdot = [dqdot;dvdot];
       else
         [H,C,B] = manipulatorDynamics(obj,q,v);
         Hinv = inv(H);
@@ -65,9 +69,13 @@ classdef Manipulator < DrakeSystem
       
     end
     
-    function qdot = positionDerivative(obj,q,v)
+    function [qdot,dqdot] = positionDerivative(obj,q,v)
       % default relationship is that v = qdot
+      assert(obj.num_positions==obj.num_velocities);
       qdot = v;
+      if nargout>1
+        dqdot = [zeros(obj.num_positions),eye(obj.num_positions)];
+      end
     end
     
     function y = output(obj,t,x,u)
@@ -281,21 +289,21 @@ classdef Manipulator < DrakeSystem
       if (obj.num_xcon>0) error('not implemented yet.  may not be possible.'); end
       
       function rhs = dynamics_rhs(obj,t,x,u)
-        q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
-        [H,C,B] = manipulatorDynamics(obj,q,qd);
-        if (obj.num_u>0) tau=B*u; else tau=zeros(obj.num_q,1); end
-        rhs = [qd;tau - C];
+        q=x(1:obj.num_positions); v=x((obj.num_positions+1):end);
+        [~,C,B] = manipulatorDynamics(obj,q,v);
+        if (obj.num_u>0) tau=B*u; else tau=zeros(obj.num_u,1); end
+        rhs = [positionDerivative(obj,q,v);tau - C];
       end
       function lhs = dynamics_lhs(obj,x)
-        q=x(1:obj.num_q); qd=x((obj.num_q+1):end);
-        H = manipulatorDynamics(obj,q,qd);  % just get H
-        lhs = blkdiag(eye(obj.num_q),H);
+        q=x(1:obj.num_positions); v=x((obj.num_positions+1):end);
+        H = manipulatorDynamics(obj,q,v);  % just get H
+        lhs = blkdiag(eye(obj.num_positions),H);
       end        
       
       options.rational_dynamics_numerator=@(t,x,u)dynamics_rhs(obj,t,x,u);
       options.rational_dynamics_denominator=@(x)dynamics_lhs(obj,x);
       
-      polysys = extractTrigPolySystem@SecondOrderSystem(obj,options);
+      polysys = extractTrigPolySystem@DrakeSystem(obj,options);
     end
 
     function varargout = pdcontrol(sys,Kp,Kd,index)
