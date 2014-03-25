@@ -18,7 +18,7 @@ classdef AcrobotPlant < Manipulator
   
   methods
     function obj = AcrobotPlant
-      obj = obj@Manipulator(2,2,1);
+      obj = obj@Manipulator(2,1);
       obj = setInputLimits(obj,-10,10);
 
       obj = setInputFrame(obj,CoordinateFrame('AcrobotInput',1,'u',{'tau'}));
