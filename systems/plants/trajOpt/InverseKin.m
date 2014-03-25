@@ -159,11 +159,11 @@ classdef InverseKin < NonlinearProgramWConstraint
       end
       [x,F,info] = solve@NonlinearProgramWConstraint(obj,x0);
       q = x(obj.q_idx);
+      q = max([obj.x_lb(obj.q_idx) q],[],2);
+      q = min([obj.x_ub(obj.q_idx) q],[],2);
       [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
     end
-  end
-  
-  methods (Access = {?InverseKinTraj})
+
     function [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info)
       % return the name of the infeasible nonlinear constraint
       % @retval info     -- change the return info from nonlinear solver based on how much
@@ -173,7 +173,10 @@ classdef InverseKin < NonlinearProgramWConstraint
       if(strcmp(obj.solver,'snopt'))
         if(info>10)
           fval = obj.objectiveAndNonlinearConstraints(x);
-          fval = [fval;[obj.Ain;obj.Aeq]*x];
+          A = [obj.Ain;obj.Aeq];
+          if(~isempty(A))
+            fval = [fval;A*x];
+          end
           [lb,ub] = obj.bounds();
           ub_err = fval(2:end)-ub(2:end);
           max_ub_err = max(ub_err);

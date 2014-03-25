@@ -51,14 +51,18 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
   end
   
   methods
-    function obj = InverseKinTraj(robot,t,q_nom_traj,varargin)
+    function obj = InverseKinTraj(robot,t,q_nom_traj,fix_initial_state,x0,varargin)
       % obj =
       % InverseKinTraj(robot,t,q_nom_traj,RigidBodyConstraint1,RigidBodyConstraint2,...,RigidBodyConstraintN)
       % @param robot    -- A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
       % @param t   -- A 1 x nT double vector. t(i) is the time of the i'th knot
       % point
       % @param q_nom_traj    -- The nominal posture trajectory
-      % @param RigidBodyConstraint_i    % A RigidBodyConstraint object
+      % @param fix_initial_state    -- A boolean flag, true if the [q(:,1);qdot(:,q)] is
+      % fixed to x0, and thus not a decision variable
+      % @param x0                 -- A 2*obj.nq x 1 vector. If fix_initial_state = true,
+      % then the initial state if fixed to x0, otherwise it is not used.
+      % @param RigidBodyConstraint_i    -- A RigidBodyConstraint object
       if(~isa(robot,'RigidBodyManipulator') && ~isa(robot,'TimeSteppingRigidBodyManipulator'))
         error('Drake:InverseKinTraj:robot should be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
@@ -76,8 +80,10 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       obj.q_idx = reshape((1:obj.nq*obj.nT),obj.nq,obj.nT);
       obj.qd0_idx = obj.nq*obj.nT+(1:obj.nq)';
       obj.qdf_idx = obj.nq*(obj.nT+1)+(1:obj.nq)';
+      sizecheck(fix_initial_state,[1,1]);
+      obj = obj.setFixInitialState(fix_initial_state,x0);
       obj.qsc_weight_idx = cell(1,obj.nT);
-      num_rbcnstr = nargin-3;
+      num_rbcnstr = nargin-5;
       obj.t_kinsol = false(1,obj.nT);
       obj.cost_kinsol_idx = {};
       obj.nlcon_kinsol_idx = {};
@@ -87,17 +93,20 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
           obj.x_name{i} = sprintf('q%d[%d]',j,i);
         end
       end
-      obj.fix_initial_state = false;
-      obj = obj.addBoudingBoxConstraint(BoundingBoxConstraint(-inf(2*obj.nq,1),inf(2*obj.nq,1)),[obj.q_idx(:,1);obj.qd0_idx]);
       [q_lb,q_ub] = obj.robot.getJointLimits();
       obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(reshape(bsxfun(@times,q_lb,ones(1,obj.nT)),[],1),...
-        reshape(bsxfun(@times,q_ub,ones(1,obj.nT)),[],1)),obj.q_idx);
+        reshape(bsxfun(@times,q_ub,ones(1,obj.nT)),[],1)),obj.q_idx(:));
+      if(obj.fix_initial_state)
+        t_start = 2;
+      else
+        t_start = 1;
+      end
       for i = 1:num_rbcnstr
         if(~isa(varargin{i},'RigidBodyConstraint'))
           error('Drake:InverseKinTraj:the input should be a RigidBodyConstraint');
         end
         if(isa(varargin{i},'SingleTimeKinematicConstraint'))
-          for j = 1:obj.nT
+          for j = t_start:obj.nT
             if(varargin{i}.isTimeValid(obj.t_knot(j)))
               cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
               obj = obj.addNonlinearConstraint(cnstr{1},obj.q_idx(:,j));
@@ -106,29 +115,31 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
             end
           end
         elseif(isa(varargin{i},'PostureConstraint'))
-          for j = 1:obj.nT
+          for j = t_start:obj.nT
             if(varargin{i}.isTimeValid(obj.t_knot(j)))
               cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
               obj = obj.addBoundingBoxConstraint(cnstr{1},obj.q_idx(:,j));
             end
           end
         elseif(isa(varargin{i},'SingleTimeLinearPostureConstraint'))
-          for j = 1:obj.nT
+          for j = t_start:obj.nT
             if(varargin{i}.isTimeValid(obj.t_knot(j)))
               cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
               obj = obj.addLinearConstraint(cnstr{1},obj.q_idx(:,j));
             end
           end
         elseif(isa(varargin{i},'MultipleTimeKinematicConstraint'))
-          valid_t_flag = varargin{i}.isTimeValid(obj.t_knot);
-          cnstr = varargin{i}.generateConstraint(obj.t_knot(valid_t_flag));
-          obj = obj.addNonlinearConstraint(cnstr{1},reshape(obj.q_idx(:,valid_t_flag),[],1));
-          t_idx = (1:obj.nT);
-          obj.nlcon_kinsol_idx = [obj.nlcon_kinsol_idx,{t_idx(valid_t_flag)}];
+          valid_t_flag = varargin{i}.isTimeValid(obj.t_knot(t_start:end));
+          t_idx = (t_start:obj.nT);
+          valid_t_idx = t_idx(valid_t_flag);
+          cnstr = varargin{i}.generateConstraint(valid_t_idx);
+          obj = obj.addNonlinearConstraint(cnstr{1},reshape(obj.q_idx(:,valid_t_idx),[],1));
+          
+          obj.nlcon_kinsol_idx = [obj.nlcon_kinsol_idx,{valid_t_idx}];
           obj.t_kinsol(valid_t_flag) = true;
         elseif(isa(varargin{i},'MultipleTimeLinearPostureConstraint'))
-          cnstr = varargin{i}.generateConstraint(obj.t_knot);
-          obj = obj.addLinearConstraint(cnstr{1},obj.q_idx);
+          cnstr = varargin{i}.generateConstraint(obj.t_knot(t_start:end));
+          obj = obj.addLinearConstraint(cnstr{1},reshape(obj.q_idx(:,t_start:end),[],1));
         end
       end
       obj.Q = eye(obj.nq);
@@ -162,9 +173,17 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       % @param x0   A 2*obj.nq x 1 double vector. x0 = [q0;qdot0]. The initial state
       sizecheck(flag,[1,1]);
       flag = logical(flag);
-      if(obj.fixInitialState ~= flag)
-        obj.fixInitialState = flag;
-        if(obj.fixInitialState)
+      if(isempty(obj.bbcon))
+        obj.fix_initial_state = flag;
+        if(obj.fix_initial_state)
+          obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(x0,x0),[obj.q_idx(:,1);obj.qd0_idx]);
+        else
+          obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(-inf(2*obj.nq,1),inf(2*obj.nq,1)),[obj.q_idx(:,1);obj.qd0_idx]);
+        end
+      end
+      if(obj.fix_initial_state ~= flag)
+        obj.fix_initial_state = flag;
+        if(obj.fix_initial_state)
           obj = obj.replaceBoundingBoxConstraint(BoundingBoxConstraint(x0,x0),1,[obj.q_idx(:,1);obj.qd0_idx]);
         else
           obj = obj.replaceBoundingBoxConstraint(BoundingBoxConstraint(-inf(2*obj.nq,1),inf(2*obj.nq,1)),1,[obj.q_idx(:,1);obj.qd0_idx]);
@@ -220,10 +239,47 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       x0(obj.q_idx(:)) = q_seed(:);
       x0(obj.qd0_idx) = (obj.x_lb(obj.qd0_idx)+obj.x_ub(obj.qd0_idx))/2;
       x0(obj.qdf_idx) = (obj.x_lb(obj.qdf_idx)+obj.x_ub(obj.qdf_idx))/2;
-      [x,F,info] = obj.solve(x0);
+      [x,F,info] = solve@NonlinearProgramWConstraint(obj,x0);
       [q,qdot,qddot] = obj.cpe.cubicSpline(x([obj.q_idx(:);obj.qd0_idx;obj.qdf_idx]));
       xtraj = PPTrajectory(pchipDeriv(obj.t_knot,[q;qdot],[qdot;qddot]));
-      [info,infeasible_constraint] = obj.infeasibleConstraintName(x,info);
+      [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
+    end
+    
+     function [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info)
+      % return the name of the infeasible nonlinear constraint
+      % @retval info     -- change the return info from nonlinear solver based on how much
+      % the solution violate the constraint
+      % @retval infeasible_constraint  -- A cell of strings.
+      infeasible_constraint = {};
+      if(strcmp(obj.solver,'snopt'))
+        if(info>10)
+          fval = obj.objectiveAndNonlinearConstraints(x);
+          A = [obj.Ain;obj.Aeq];
+          if(~isempty(A))
+            fval = [fval;A*x];
+          end
+          [lb,ub] = obj.bounds();
+          ub_err = fval(2:end)-ub(2:end);
+          max_ub_err = max(ub_err);
+          max_ub_err = max_ub_err*(max_ub_err>0);
+          lb_err = lb(2:end)-fval(2:end);
+          max_lb_err = max(lb_err);
+          max_lb_err = max_lb_err*(max_lb_err>0);
+          cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];
+          if(max_ub_err+max_lb_err>1e-4)
+            infeasible_constraint_idx = (ub_err>5e-5) | (lb_err>5e-5);
+            infeasible_constraint = cnstr_name(infeasible_constraint_idx);
+          elseif(info == 13)
+            info = 4;
+          elseif(info == 31)
+            info = 5;
+          elseif(info == 32)
+            info = 6;
+          end
+        end
+      else
+        error('not implemented yet');
+      end
     end
   end
 end

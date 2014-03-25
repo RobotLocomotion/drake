@@ -229,6 +229,10 @@ display('IK mex start to solve the problem');
 tic
 [xtraj,info,infeasible_constraint] = inverseKinTraj(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 toc
+x0 = [q_seed.eval(t(1));q_seed.deriv(t(1))];
+ikproblem = InverseKinTraj(r,t,q_nom,ikoptions.fixInitialState,x0,varargin{1:end-1});
+ikproblem = ikproblem.setCheckGrad(true);
+[xtraj,F,info,infeasible_constraint] = ikproblem.solve(q_seed);
 if(info>10)
   error('SNOPT info is %d, IK mex fails to solve the problem',info);
 end
