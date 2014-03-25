@@ -10,25 +10,25 @@ classdef RigidBodyJointSensor < RigidBodySensor
     end
     
     function y = output(obj,manip,t,x,u)
-      y=x(obj.dof_mask);
+      y=x(obj.state_mask);
     end
     function fr = constructFrame(obj,manip)
       state_frame = manip.getStateFrame;
       c = getCoordinateNames(state_frame);
-      fr = CoordinateFrame([manip.name{obj.robotnum},'JointPosition'],numel(obj.dof_mask),'p',c(obj.dof_mask));
+      fr = CoordinateFrame([manip.name{obj.robotnum},'JointPosition'],numel(obj.state_mask),'p',c(obj.state_mask));
     end
     function tf = isDirectFeedthrough(obj)
       tf=false;
     end
     
     function obj = compile(obj,manip)
-      obj.dof_mask = [manip.body([manip.body.has_position_sensor] & [manip.body.robotnum]==obj.robotnum).dofnum];
+      obj.state_mask = [manip.body([manip.body.has_position_sensor] & [manip.body.robotnum]==obj.robotnum).position_num];
     end
         
   end
   
   properties
     robotnum;
-    dof_mask;
+    state_mask;
   end
 end

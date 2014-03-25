@@ -31,7 +31,8 @@ if (getOutputFrame(obj)~=getStateFrame(obj))
   error('Only full-state feedback is implemented so far');
 end
 
-nq = obj.num_q;
+nq = obj.num_positions;
+nv = obj.num_velocities;
 nu = obj.num_u;
 p_orig = double(getParams(obj));  % probably only for testing
 
@@ -41,15 +42,15 @@ q=msspoly('q',nq);
 s=msspoly('s',nq);
 c=msspoly('c',nq);
 qt=TrigPoly(q,s,c);
-qd=msspoly('qd',nq);
-qdd=msspoly('qdd',nq);
+v=msspoly('v',nv);
+vdot=msspoly('vdot',nv);
 u=msspoly('u',nu);
 p=obj.getParamFrame.poly;
 pobj = setParams(obj,p);
-[H,C,B] = manipulatorDynamics(pobj,qt,qd);
-err = H*qdd + C - B*u;
+[H,C,B] = manipulatorDynamics(pobj,qt,v);
+err = H*vdot + C - B*u;
 
-[a,b,M]=decomp(getmsspoly(err),[q;s;c;qd;qdd;u]);
+[a,b,M]=decomp(getmsspoly(err),[q;s;c;v;vdot;u]);
 coeff = msspoly(ones(size(b,1),1));
 deg_zero_ind=-1;
 for i=1:size(b,1)
@@ -87,34 +88,34 @@ if (nargin>1)
   t_data = get(data,'SamplingInstants')';
   x_data = get(data,'OutputData')';
   q_data = x_data(1:nq,:);
-  qd_data = x_data(nq+(1:nq),:);
+  v_data = x_data(nq+(1:nv),:);
   u_data = get(data,'InputData')';
   
-  qdd_data = diff(qd_data,1,2)/Ts;
+  vdot_data = diff(v_data,1,2)/Ts;
   t_data = t_data(:,1:end-1);
   q_data = q_data(:,1:end-1);
-  qd_data = qd_data(:,1:end-1);
+  v_data = v_data(:,1:end-1);
   u_data = u_data(:,1:end-1);
 else  % temporary... just for debugging
   n = 1000;
   t_data = .01*(0:n-1);
   q_data = randn(nq,n);
-  qd_data = randn(nq,n);
+  v_data = randn(nq,n);
   u_data = randn(nu,n);
 end
 
 % just for debugging
 for i=1:length(t_data)
-  [H,C,B] = manipulatorDynamics(obj,q_data(:,i),qd_data(:,i));
-  qdd_data(:,i) = (H\(B*u_data(:,i) - C)) + .01*randn(nq,1);
+  [H,C,B] = manipulatorDynamics(obj,q_data(:,i),v_data(:,i));
+  vdot_data(:,i) = (H\(B*u_data(:,i) - C)) + .01*randn(nq,1);
 end
 
 s_data = sin(q_data);
 c_data = cos(q_data);
 
 ndata = length(t_data);
-M_data = reshape(msubs(M(:),[q;s;c;qd;qdd;u],[q_data;s_data;c_data;qd_data;qdd_data;u_data])',nq*ndata,nlp);
-Mb_data = reshape(msubs(Mb,[q;s;c;qd;qdd;u],[q_data;s_data;c_data;qd_data;qdd_data;u_data])',nq*ndata,1);
+M_data = reshape(msubs(M(:),[q;s;c;v;vdot;u],[q_data;s_data;c_data;v_data;vdot_data;u_data])',nv*ndata,nlp);
+Mb_data = reshape(msubs(Mb,[q;s;c;v;vdot;u],[q_data;s_data;c_data;v_data;vdot_data;u_data])',nv*ndata,1);
 
 lp_est = -M_data\Mb_data;
 err_orig = M_data*lp_orig + Mb_data;
