@@ -235,12 +235,12 @@ classdef Manipulator < DrakeSystem
       error('getNumContacts is no longer supported, in anticipation of alowing multiple contacts per body pair. Use getNumContactPairs for cases where the number of contacts is fixed');
     end
     
-    function [x,success] = resolveConstraints(obj,x0,v)
+    function [x,success] = resolveConstraints(obj,x0,visualizer)
       % attempts to find a x which satisfies the constraints,
       % using x0 as the initial guess.
       %
       % @param x0 initial guess for state satisfying constraints
-      % @param v (optional) a visualizer that should be called while the
+      % @param visualizer (optional) a visualizer that should be called while the
       % solver is doing it's thing
 
       if isa(x0,'Point')
@@ -248,8 +248,8 @@ classdef Manipulator < DrakeSystem
       end
       
       if (all(obj.joint_limit_min==-inf) && all(obj.joint_limit_max==inf) && obj.getNumUnilateralConstraints==0)
-        if (nargin<3) v=[]; end
-        [x,success] = resolveConstraints@DrakeSystem(obj,x0,v);
+        if (nargin<3) visualizer=[]; end
+        [x,success] = resolveConstraints@DrakeSystem(obj,x0,visualizer);
         return;
       end
       
@@ -267,9 +267,9 @@ classdef Manipulator < DrakeSystem
 
       function stop=drawme(x,optimValues,state)
         stop=false;
-        v.draw(0,x);
+        visualizer.draw(0,x);
       end
-      if (nargin>2 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
+      if (nargin>2 && ~isempty(visualizer))  % useful for debugging (only but only works for URDF manipulators)
         problem.options=optimset('Algorithm','active-set','Display','iter','OutputFcn',@drawme,'TolX',1e-9);
       else
         problem.options=optimset('Algorithm','active-set','Display','off');
