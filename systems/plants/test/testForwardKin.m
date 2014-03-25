@@ -1,4 +1,4 @@
-function testAnalyticalJacobian
+function testForwardKin
 
 testAtlas('rpy');
 % testAtlas('quat'); % TODO: generating robot currently results in an error.
@@ -40,14 +40,14 @@ while testNumber < nTests
     points = randn(3, nPoints);
     
     tic
-    [x, J] = robot.analyticalJacobian(kinsol, base, endEffector, points, rotationType);
+    [x, J] = robot.forwardKin(kinsol, base, endEffector, points, rotationType);
     computationTime = computationTime + toc * 1e3;
     
     for col = 1 : length(q)
       qDelta = q;
       qDelta(col) = qDelta(col) + delta;
       kinsol = robot.doKinematics(qDelta, false, false);
-      xDelta = robot.analyticalJacobian(kinsol, base, endEffector, points, rotationType);
+      xDelta = robot.forwardKin(kinsol, base, endEffector, points, rotationType);
       dxdq = (xDelta - x) / delta;
       valuecheck(J(:, col), dxdq(:), epsilon);
     end
