@@ -273,27 +273,7 @@ classdef Manipulator < DrakeSystem
       end
       x = Point(obj.getStateFrame,x);
     end
-    
-    function sys = feedback(sys1,sys2)
-      % Attempt to produce a new manipulator system if possible
-      
-      if (isa(sys2,'Manipulator'))
-        % todo: implement this (or decide that it doesn't ever make sense)
-        warning('feedback combinations of manipulators not handled explicitly yet. kicking out to a combination of SecondOrderSystems');
-      end
-      sys = feedback@SecondOrderSystem(sys1,sys2);
-    end
-    
-    function sys = cascade(sys1,sys2)
-      % Attempt to produce a new manipulator system if possible
-
-      if (isa(sys2,'Manipulator'))
-        % todo: implement this (or decide that it doesn't ever make sense)
-        warning('cascade combinations of manipulators not handled explicitly yet. kicking out to a combination of SecondOrderSystems');
-      end
-      sys = cascade@SecondOrderSystem(sys1,sys2);
-    end
-    
+        
     function polysys = extractTrigPolySystem(obj,options)
       % Creates a (rational) polynomial system representation of the
       % dynamics
