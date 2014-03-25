@@ -28,7 +28,7 @@ end
 
 [~,~,xA,xB,idxA,idxB] = obj.collisionDetect(kinsol,varargin{:});
 
-nq = obj.getNumPositions;
+nq = obj.num_positions;
 nC = length(idxA);
 body_idx = [idxA';idxB'];
 x_body = [xA xB];
