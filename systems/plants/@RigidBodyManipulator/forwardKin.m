@@ -1,4 +1,4 @@
-function [x, J, JdotV] = analyticalJacobian(obj, kinsol, base, endEffector, points, rotationType)
+function [x, J, JdotV] = forwardKin(obj, kinsol, base, endEffector, points, rotationType)
 
 if nargout > 2
   error('JdotV computation not yet implemented')
