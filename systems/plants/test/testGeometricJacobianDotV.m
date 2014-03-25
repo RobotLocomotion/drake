@@ -31,7 +31,7 @@ while testNumber <= nTests
     % compute Jacobian, JDotV
     kinsol = robot.doKinematics(q, true, false, v);
     [J0, vIndices] = robot.geometricJacobian(kinsol, base, endEffector, expressedIn);
-    JDotV = robot.geometricJacobianDotV(kinsol, kinsol.twists, base, endEffector, expressedIn);
+    JDotV = robot.geometricJacobianDotV(kinsol, base, endEffector, expressedIn);
     
     % integrate
     q = q + v * dt;
