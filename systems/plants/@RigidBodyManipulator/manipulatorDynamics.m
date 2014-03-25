@@ -1,4 +1,4 @@
-function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,v,use_mex)
+function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd,use_mex)
 
 checkDirty(obj);
 
@@ -14,10 +14,10 @@ if length(obj.force)>0
     % compute spatial force should return something that is the same length
     % as the number of bodies in the manipulator
     if (obj.force{i}.direct_feedthrough_flag)
-      [force,B_force] = computeSpatialForce(obj.force{i},obj,q,v);
+      [force,B_force] = computeSpatialForce(obj.force{i},obj,q,qd);
       B = B+B_force;
     else
-      force = computeSpatialForce(obj.force{i},obj,q,v);
+      force = computeSpatialForce(obj.force{i},obj,q,qd);
     end
     f_ext(:,m.f_ext_map_to) = f_ext(:,m.f_ext_map_to)+force(:,m.f_ext_map_from);
   end
@@ -29,11 +29,11 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
   if (nargout>3)
     if ~isempty(f_ext) error('not implemented yet'); end
-    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,v,f_ext);
+    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd,f_ext);
     dH = [dH, zeros(m.NB*m.NB,m.NB)];
     dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
-    [H,C] = HandCmex(obj.mex_model_ptr,q,v,f_ext);
+    [H,C] = HandCmex(obj.mex_model_ptr,q,qd,f_ext);
   end
 else  
   if (nargout>3)
