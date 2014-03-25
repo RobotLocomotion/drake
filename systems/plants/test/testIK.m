@@ -423,7 +423,7 @@ ikproblem = InverseKin(r,q_nom,varargin{1:end-1});
 ikproblem = ikproblem.setQ(ikoptions.Q);
 [qik,F,info,infeasible_cnstr_ik] = ikproblem.solve(q_seed);
 toc
-% valuecheck(qik,q,1e-3);
+valuecheck(qik,q,1e-3);
 tic
 [qmex,info_mex] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 toc

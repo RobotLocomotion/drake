@@ -217,7 +217,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       % @retval cnstr  -- A NonlinearConstraint enforcing the CoM on xy-plane matches
       % witht the weighted sum of the shrunk vertices; A LinearConstraint on the weighted
       % sum only, and a BoundingBoxConstraint on the weighted sum only
-      if(obj.isTimeValid(t))
+      if(obj.isTimeValid(t) && obj.active)
         name_str = obj.name(t);
         cnstr = {NonlinearConstraint([0;0],[0;0],obj.nq+obj.num_pts,@obj.evalValidTime),...
           LinearConstraint(1,1,ones(1,obj.num_pts)),...

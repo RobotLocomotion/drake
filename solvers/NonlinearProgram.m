@@ -1,10 +1,10 @@
 classdef NonlinearProgram
   % minimize_x objective(x)
   % subject to
-  %            nonlinear_equality_constraints(x) = 0
   %            cin_lb<=nonlinear_inequality_constraints(x) <= cin_ub
-  %            Aeq*x = beq
+  %            nonlinear_equality_constraints(x) = 0  
   %            Ain*x <= bin
+  %            Aeq*x = beq
   %            x_lb <= x <= x_ub
   % @param num_vars     An integer. The number of decision variables
   % @param num_cin      An integer. The number of nonlinear inequality constraints

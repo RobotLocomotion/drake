@@ -58,6 +58,8 @@ classdef InverseKin < NonlinearProgramWConstraint
       for i = 1:obj.nq
         obj.x_name{i} = sprintf('q%d',i);
       end
+      [q_lb,q_ub] = obj.robot.getJointLimits();
+      obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(q_lb,q_ub),obj.q_idx);
       for i = 1:num_rbcnstr
         if(~isa(varargin{i},'RigidBodyConstraint'))
           error('Drake:InverseKin:the input should be a RigidBodyConstraint');
@@ -157,27 +159,42 @@ classdef InverseKin < NonlinearProgramWConstraint
       end
       [x,F,info] = solve@NonlinearProgramWConstraint(obj,x0);
       q = x(obj.q_idx);
+      [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
+    end
+  end
+  
+  methods (Access = {?InverseKinTraj})
+    function [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info)
+      % return the name of the infeasible nonlinear constraint
+      % @retval info     -- change the return info from nonlinear solver based on how much
+      % the solution violate the constraint
+      % @retval infeasible_constraint  -- A cell of strings.
       infeasible_constraint = {};
-      if(strcmp(obj.solver,'snopt')&&info>10)
-        fval = obj.objectiveAndNonlinearConstraints(x);
-        [lb,ub] = obj.bounds();
-        ub_err = fval(2:end)-ub(2:end);
-        max_ub_err = max(ub_err);
-        max_ub_err = max_ub_err*(max_ub_err>0);
-        lb_err = lb(2:end)-fval(2:end);
-        max_lb_err = max(lb_err);
-        max_lb_err = max_lb_err*(max_lb_err>0);
-        cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];
-        if(max_ub_err+max_lb_err>1e-4)
-          infeasible_constraint_idx = (ub_err>5e-5) | (lb_err>5e-5);
-          infeasible_constraint = cnstr_name(infeasible_constraint_idx);
-        elseif(info == 13)
-          info = 4;
-        elseif(info == 31)
-          info = 5;
-        elseif(info == 32)
-          info = 6;
+      if(strcmp(obj.solver,'snopt'))
+        if(info>10)
+          fval = obj.objectiveAndNonlinearConstraints(x);
+          fval = [fval;[obj.Ain;obj.Aeq]*x];
+          [lb,ub] = obj.bounds();
+          ub_err = fval(2:end)-ub(2:end);
+          max_ub_err = max(ub_err);
+          max_ub_err = max_ub_err*(max_ub_err>0);
+          lb_err = lb(2:end)-fval(2:end);
+          max_lb_err = max(lb_err);
+          max_lb_err = max_lb_err*(max_lb_err>0);
+          cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];
+          if(max_ub_err+max_lb_err>1e-4)
+            infeasible_constraint_idx = (ub_err>5e-5) | (lb_err>5e-5);
+            infeasible_constraint = cnstr_name(infeasible_constraint_idx);
+          elseif(info == 13)
+            info = 4;
+          elseif(info == 31)
+            info = 5;
+          elseif(info == 32)
+            info = 6;
+          end
         end
+      else
+        error('not implemented yet');
       end
     end
   end
