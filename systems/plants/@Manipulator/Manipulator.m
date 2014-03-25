@@ -197,18 +197,18 @@ classdef Manipulator < DrakeSystem
       % method.  note that each position constraint (phi=0) also imposes an implicit
       % velocity constraint on the system (phidot=0).
 
-      q=x(1:obj.num_q); qd=x(obj.num_q+1:end);
+      q=x(1:obj.num_positions); v=x(obj.num_positions+1:end);
       if (obj.num_position_constraints>0)
         [phi,J] = geval(@obj.positionConstraints,q);
       else
-        phi=[]; J=zeros(0,obj.num_q);
+        phi=[]; J=zeros(0,obj.num_positions);
       end
       if (obj.num_velocity_constraints>0)
-        psi = obj.velocityConstraints(q,qd);
+        psi = obj.velocityConstraints(q,v);
       else
         psi=[];
       end
-      con = [phi; J*qd; psi];  % phi=0, phidot=0, psi=0
+      con = [phi; J*positionDerivative(obj,q,v); psi];  % phi=0, phidot=0, psi=0
     end
     
     function n = getNumJointLimitConstraints(obj)
@@ -220,10 +220,10 @@ classdef Manipulator < DrakeSystem
       % constraint function (with derivatives) to implement unilateral
       % constraints imposed by joint limits
       phi = [q-obj.joint_limit_min; obj.joint_limit_max-q]; phi=phi(~isinf(phi));
-      J = [eye(obj.num_q); -eye(obj.num_q)];  
+      J = [eye(obj.num_positions); -eye(obj.num_positions)];  
       J([obj.joint_limit_min==-inf;obj.joint_limit_max==inf],:)=[]; 
       if (nargout>2)
-        dJ = sparse(length(phi),obj.num_q^2);
+        dJ = sparse(length(phi),obj.num_positions^2);
       end
     end
     
@@ -257,7 +257,7 @@ classdef Manipulator < DrakeSystem
       problem.x0 = x0;
       
       function [c,ceq] = mycon(x)
-        q = x(1:obj.num_q); qd = x(obj.num_q + (1:obj.num_q));
+        q = x(1:obj.num_positions);
         phi = obj.unilateralConstraints(x);
         c = -[jointLimitConstraints(obj,q); phi];
         ceq = stateConstraints(obj,x);
