@@ -241,7 +241,7 @@ classdef Manipulator < DrakeSystem
       
       if (all(obj.joint_limit_min==-inf) && all(obj.joint_limit_max==inf) && obj.getNumUnilateralConstraints==0)
         if (nargin<3) v=[]; end
-        [x,success] = resolveConstraints@SecondOrderSystem(obj,x0,v);
+        [x,success] = resolveConstraints@DrakeSystem(obj,x0,v);
         return;
       end
       

@@ -80,7 +80,7 @@ classdef RigidBodyManipulator < Manipulator
         contact_options.ignore_self_collisions = options.ignore_self_collisions;
       else
         contact_options.ignore_self_collisions = false;
-      end
+  end
       if isfield(options,'replace_cylinders_with_capsules')
         typecheck(options.replace_cylinders_with_capsules,'logical');
         contact_options.replace_cylinders_with_capsules = ...
@@ -120,7 +120,7 @@ classdef RigidBodyManipulator < Manipulator
       % @param terrain a RigidBodyTerrain object
       
       if ~isempty(terrain)
-        typecheck(terrain,'RigidBodyTerrain');
+      typecheck(terrain,'RigidBodyTerrain');
       end
       obj = removeTerrainGeometries(obj);
       obj.terrain = terrain;
@@ -184,14 +184,6 @@ classdef RigidBodyManipulator < Manipulator
       
     end
     
-    function n = getNumPositions(obj)
-      n = obj.num_q; %placeholder waiting for Russ' changes
-    end
-    
-    function n = getNumDOF(obj)
-      n = obj.num_q;
-    end
-    
     function n = getNumBodies(obj)
       % @ingroup Kinematic Tree
       n = length(obj.body);
@@ -214,8 +206,8 @@ classdef RigidBodyManipulator < Manipulator
       if numel(body_ind) > 1
         str = {obj.body(body_ind).linkname};
       else
-        str = obj.body(body_ind).linkname;
-      end
+      str = obj.body(body_ind).linkname;
+    end
     end
 
     function obj = setGravity(obj,grav)
@@ -515,21 +507,22 @@ classdef RigidBodyManipulator < Manipulator
       end
             
       %% extract featherstone model structure
-      [model,num_dof] = extractFeatherstone(model);
+      [model,num_q,num_v] = extractFeatherstone(model);
       
-      if (num_dof<1) error('This model has no DOF!'); end
+      if (num_q<1) error('This model has no DOF!'); end
 
       u_limit = repmat(inf,length(model.actuator),1);
       u_limit = [-u_limit u_limit]; % lower/upper limits
 
       %% extract B matrix
-      B = sparse(num_dof,0);
+      B = sparse(num_v,0);
       for i=1:length(model.actuator)
         joint = model.body(model.actuator(i).joint);
-        B(joint.dofnum,i) = model.actuator(i).reduction;
+        B(joint.velocity_num,i) = model.actuator(i).reduction;
         u_limit(i,1) = joint.effort_min;
         u_limit(i,2) = joint.effort_max;
       end
+      
       for i=1:length(model.force)
         if model.force{i}.direct_feedthrough_flag
           input_num = size(B,2)+1;
@@ -541,8 +534,9 @@ classdef RigidBodyManipulator < Manipulator
       model.B = full(B);
 
       model = setNumInputs(model,size(model.B,2));
-      model = setNumDOF(model,num_dof);
-      model = setNumOutputs(model,2*num_dof);
+      model = setNumPositions(model,num_q);
+      model = setNumVelocities(model,num_v);
+      model = setNumOutputs(model,num_q+num_v);
 
       [model,paramframe,~,pmin,pmax] = constructParamFrame(model);
       if ~isequal_modulo_transforms(paramframe,getParamFrame(model)) % let the previous handle stay valid if possible
@@ -606,8 +600,8 @@ classdef RigidBodyManipulator < Manipulator
       end
 
       model = adjustContactShapes(model);
-      model = setupCollisionFiltering(model);      
-            
+      model = setupCollisionFiltering(model);
+      
       model.dirty = false;
       
       model = createMexPointer(model);
@@ -929,7 +923,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       if any(body_indices==1)
         model = addTerrainGeometries(model);
-      end
+    end
       model.dirty = true;
     end
     
@@ -965,7 +959,7 @@ classdef RigidBodyManipulator < Manipulator
         lcmgl.glRotated(a(4)*180/pi,a(1),a(2),a(3));
       end
     end
-
+        
     function drawLCMGLClosestPoints(model,lcmgl,kinsol,varargin)
       if ~isstruct(kinsol)
         kinsol = model.doKinematics(kinsol);
@@ -1148,16 +1142,16 @@ classdef RigidBodyManipulator < Manipulator
       
       nq = obj.getNumPositions();
       nu = obj.getNumInputs();
-      
+
       active_collision_options = struct();
       if isfield(options,'active_collision_groups') 
         active_collision_options.collision_groups = options.active_collision_groups;
       end
 
-      if isfield(options,'active_collision_bodies') 
+        if isfield(options,'active_collision_bodies')
         active_collision_options.body_idx = options.active_collision_bodies;
-      end
-      
+        end
+
       % Compute number of contacts by evaluating at x0
       [phi0,~,~,~,~,~,~,~,~,D0] = obj.contactConstraints(x0(1:nq),false,active_collision_options);
       
@@ -1213,12 +1207,12 @@ classdef RigidBodyManipulator < Manipulator
         
         if obj.getNumContactPairs > 0,
           [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q,false,active_collision_options);
-          
+        
           % construct J such that J'*z is the contact force vector in joint
           J = [n;cell2mat(D')];
           % similarly, construct dJz
           dJz = matGradMult([dn;cell2mat(dD')],z,true);
-          
+        
           ceq = [C-B*u-J'*z; phiC];
           GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[n'; zeros(nu+nz,length(phiC))]];
         else
@@ -1379,7 +1373,7 @@ classdef RigidBodyManipulator < Manipulator
     
     function n=getNumContactPairs(obj)
       n = obj.num_contact_pairs;
-    end
+  end
     
     function [phi,dphi] = unilateralConstraints(obj,x)
       q = x(1:obj.getNumPositions);
@@ -1406,7 +1400,7 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function obj = createMexPointer(obj)
-      if (exist('constructModelmex')==3)
+      if (0)%exist('constructModelmex')==3)
 %        obj.mex_model_ptr = debugMexEval('constructModelmex',obj);
         obj.mex_model_ptr = constructModelmex(obj);
       end
@@ -1415,25 +1409,29 @@ classdef RigidBodyManipulator < Manipulator
     function fr = constructStateFrame(model)
       frame_dims=[];
       for i=1:length(model.name)
-        joints={};
+        positions={};
+        velocities={};
         for j=1:length(model.body)
           b = model.body(j);
           if b.parent>0 && b.robotnum==i
             if (b.floating==1)
-              joints = vertcat(joints,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_roll'];[b.jointname,'_pitch'];[b.jointname,'_yaw']});
+              newpos = {[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_roll'];[b.jointname,'_pitch'];[b.jointname,'_yaw']};
+              positions = vertcat(positions,newpos);
+              velocities = vertcat(velocities,cellfun(@(a) [a,'dot'],positions,'UniformOutput',false));
             elseif (b.floating==2)
-              joints = vertcat(joints,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_qw'];[b.jointname,'_qx'];[b.jointname,'_qy'];[b.jointname,'_qz']});
+              positions = vertcat(positions,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_qw'];[b.jointname,'_qx'];[b.jointname,'_qy'];[b.jointname,'_qz']});
+              velocities = vertcat(velocities,{[b.jointname,'_xdot'];[b.jointname,'_ydot'];[b.jointname,'_zdot'];[b.jointname,'_wx'];[b.jointname,'_wy'];[b.jointname,'_wz']});
             else
-              joints = vertcat(joints,{b.jointname});
+              positions = vertcat(positions,{b.jointname});
+              velocities = vertcat(velocities,{[b.jointname,'dot']});
             end
-            frame_dims(b.dofnum)=i;
+            frame_dims(b.position_num)=i;
+            frame_dims(b.velocity_num)=i;
           end
         end
-        coordinates = vertcat(joints,cellfun(@(a) [a,'dot'],joints,'UniformOutput',false));
+        coordinates = vertcat(positions,cellfun(@(a) [a,'dot'],positions,'UniformOutput',false));
         fr{i} = CoordinateFrame([model.name{i},'State'],length(coordinates),'x',coordinates);
       end
-%      frame_dims=[model.body(arrayfun(@(a) ~isempty(a.parent),model.body)).robotnum];
-      frame_dims=[frame_dims,frame_dims];
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
 
@@ -1479,41 +1477,46 @@ classdef RigidBodyManipulator < Manipulator
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
         
-    function [model,dof] = extractFeatherstone(model)
+    function [model,num_q,num_v] = extractFeatherstone(model)
       % @ingroup Kinematic Tree
       
       %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
-      dof=0;inds=[];
+      num_q=0;num_v=0;inds=[];
       for i=1:length(model.body)
         if model.body(i).parent>0
           if (model.body(i).floating==1)
-            model.body(i).dofnum=dof+(1:6)';
-            dof=dof+6;
+            model.body(i).position_num=num_q+(1:6)';
+            num_q=num_q+6;
+            model.body(i).velocity_num=num_v+(1:6)';
+            num_v=num_v+6;
             inds = [inds,i];
           elseif (model.body(i).floating==2)
-            model.body(i).dofnum=dof+(1:7)';
-            dof=dof+7;
+            model.body(i).position_num=num_q+(1:7)';
+            num_q=num_q+7;
+            model.body(i).velocity_num=num_v+(1:6)';
+            num_v=num_v+6;
             inds = [inds,i];
           else
-            dof=dof+1;
-            model.body(i).dofnum=dof;
+            num_q=num_q+1;
+            model.body(i).position_num=num_q;
+            num_v=num_v+1;
+            model.body(i).velocity_num=num_v;
             inds = [inds,i];
           end
         else
-          model.body(i).dofnum=0;
+          model.body(i).position_num=0;
+          model.body(i).velocity_num=0;
         end
       end
-      m.NB= dof;  
+      m.NB= length(inds); % number of links with parents   
       n=1;
-      m.f_ext_map_from = inds;  % size is length(model.body) output is index into NB, or zero
+      m.f_ext_map_from = inds;  % index into NB
       m.f_ext_map_to = [];
 
       for i=1:length(inds) % number of links with parents
+        model.body(i).velocity_num = model.body(i).velocity_num + num_q;
         b=model.body(inds(i));
         if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
-          % todo:  remove this and handle the floating joint directly in
-          % HandC.  this is really just a short term hack.
-          m.dofnum(n+(0:5)) = b.dofnum([1;2;3;6;5;4]);
           m.pitch(n+(0:2)) = inf;  % prismatic
           m.pitch(n+(3:5)) = 0;    % revolute
           m.damping(n+(0:5)) = 0;
@@ -1546,8 +1549,7 @@ classdef RigidBodyManipulator < Manipulator
         elseif (b.floating==2)
           error('dynamics for quaternion floating base not implemented yet');
         else
-          m.parent(n) = max(model.body(b.parent).dofnum);
-          m.dofnum(n) = b.dofnum;  % note: only need this for my floating hack above (remove it when gone)
+          m.parent(n) = max(model.body(b.parent).position_num);
           m.pitch(n) = b.pitch;
           m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*model.body(b.parent).X_joint_to_body;
           m.I{n} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
@@ -1601,7 +1603,7 @@ classdef RigidBodyManipulator < Manipulator
               error('Adding inertia to parent with added-mass coefficients is not supported yet');
           end
             
-          % same as the composite inertia calculation in HandC.m          
+          % same as the composite inertia calculation in HandC.m
           parent = setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
         end
         
@@ -1751,7 +1753,7 @@ classdef RigidBodyManipulator < Manipulator
           error(['sensor element type ',type,' not supported (yet?)']);
       end
     end
-
+    
     function model = adjustContactShapes(model)
       % model = adjustContactShapes(model) returns the model with
       % adjusted contact geometries, according to the setings in

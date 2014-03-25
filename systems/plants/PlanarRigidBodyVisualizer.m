@@ -27,7 +27,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
     
     function draw(obj,t,x)
 
-      n = obj.model.num_q;
+      n = obj.model.num_positions;
       q = x(1:n); %qd=x(n+(1:n));
       kinsol = obj.model.doKinematics(q);
       
