@@ -19,17 +19,7 @@ function jDotV = geometricJacobianDotV(obj, kinsol, twists, base, endEffector, e
 % across the individual joints (with vdot set to zero), transformed to
 % expressedIn frame before addition.
 
-[~, jointPath, signs] = obj.findKinematicPath(base, endEffector);
-
-jDotV = zeros(6, 1);
-for i = 1 : length(jointPath)
-  successor = jointPath(i);
-  successorBody = obj.body(successor);
-  predecessor = successorBody.parent;
-  qBody = kinsol.q(successorBody.dofnum);
-  vBody = kinsol.qd(successorBody.dofnum);
-  zeroJointAccel = motionSubspaceDotV(successorBody, qBody, vBody); % spatial acceleration across joint when vdot across the joint is zero
-  jDotV = jDotV + signs(i) * transformSpatialAcceleration(zeroJointAccel, kinsol.T, twists, predecessor, successor, successor, expressedIn);
-end
+jDotV = kinsol.JdotV{endEffector} - kinsol.JdotV{base};
+jDotV = transformSpatialAcceleration(jDotV, kinsol.T, twists, base, endEffector, 1, expressedIn);
 
 end

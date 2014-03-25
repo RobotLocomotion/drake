@@ -6,25 +6,11 @@ function [J, vIndices] = geometricJacobian(obj, kinsol, base, endEffector, expre
 %   expressedIn, can be computed as J * (v(vIndices)).
 
 [~, jointPath, signs] = findKinematicPath(obj, base, endEffector);
-vIndices = velocityVectorIndices(obj.body, jointPath);
+vIndices = vertcat(obj.body(jointPath).velocity_num);
 
-motionSubspaces = cell(1, length(jointPath));
-for i = 1 : length(jointPath)
-  body = obj.body(jointPath(i));
-  motionSubspaces{i} = motionSubspace(body, kinsol.q(body.dofnum));
+J = cell2mat(cellfun(@times, kinsol.J(jointPath), num2cell(signs'), 'UniformOutput', false));
+
+if expressedIn ~= 1
+  J = transformTwists(inv(kinsol.T{expressedIn}), J); % change frame from world to expressedIn
 end
-
-transformedMotionSubspaces = cellfun(@transformMotionSubspace, ...
-  kinsol.T(jointPath), motionSubspaces, num2cell(signs'), 'UniformOutput', ...
-  false); % change frame from body to world
-J = cell2mat(transformedMotionSubspaces); 
-J = transformTwists(inv(kinsol.T{expressedIn}), J); % change frame from world to expressedIn
-end
-
-function ret = transformMotionSubspace(H, S, sign)
-ret = sign * transformTwists(H, S);
-end
-
-function vIndices = velocityVectorIndices(bodies, jointIndices)
-vIndices = vertcat(bodies(jointIndices).dofnum);
 end
