@@ -272,7 +272,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
       bbcon_tmp{cnstr_idx} = cnstr;
       bbcon_xind_tmp{cnstr_idx} = xind;
       obj.bbcon = {};
-      obj.bbcon_xind_tmp = {};
+      obj.bbcon_xind = {};
       for i = 1:length(obj.bbcon)
         obj = obj.addBoundingBoxConstraint(bbcon_tmp{i},bbcon_xind_tmp{i});
       end
