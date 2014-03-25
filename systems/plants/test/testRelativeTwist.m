@@ -6,8 +6,8 @@ end
 function testAtlas(floatingJointType)
 robot = createAtlas(floatingJointType);
 
-nq = robot.getNumStates() / 2; % TODO
-nv = robot.getNumStates() / 2; % TODO
+nq = robot.getNumPositions();
+nv = robot.getNumVelocities();
 
 nBodies = length(robot.body);
 
