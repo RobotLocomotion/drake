@@ -1,17 +1,18 @@
-classdef Manipulator < SecondOrderSystem
-% An abstract class that wraps H(q)qddot + C(q,qdot,f_ext) = B(q)u.
-% Coming soon:  will also support bilateral constraints of the form: phi(q)=0.
+classdef Manipulator < DrakeSystem
+% An abstract class that wraps H(q)vdot + C(q,v,f_ext) = B(q)u.
 
   methods
-    function obj = Manipulator(num_q, num_u)
+    function obj = Manipulator(num_q, num_v, num_u)
       % Constructor
-      obj = obj@SecondOrderSystem(num_q,num_u,true);
+      obj = obj@DrakeSystem(num_q+num_v,0,num_u,num_q+num_v,false,true);
+      obj.num_positions = num_q;
+      obj.num_velocities = num_v;
     end
   end
   
   methods (Abstract=true)
-    %  H(q)qddot + C(q,qdot,f_ext) = Bu
-    [H,C,B] = manipulatorDynamics(obj,q,qd);
+    %  H(q)vdot + C(q,v,f_ext) = Bu
+    [H,C,B] = manipulatorDynamics(obj,q,v);
   end
 
   methods (Sealed = true)
@@ -19,8 +20,8 @@ classdef Manipulator < SecondOrderSystem
     % problem: http://www.mathworks.com/help/matlab/matlab_oop/subclassing-multiple-classes.html
     [phat,estimated_delay] = parameterEstimation(obj,data,options)
       
-    function [qdd,dqdd] = sodynamics(obj,t,q,qd,u)
-    % Provides the SecondOrderDynamics interface to the manipulatorDynamics.
+    function [xdot,dxdot] = dynamics(obj,t,q,v,u)
+    % Provides the DrakeSystem interface to the manipulatorDynamics.
 
       if (nargout>1)
         if (obj.num_xcon>0)
@@ -64,7 +65,7 @@ classdef Manipulator < SecondOrderSystem
   end
   
   methods (Access=private)
-    function constraint_force = computeConstraintForce(obj,q,qd,H,tau,Hinv)
+    function constraint_force = computeConstraintForce(obj,q,v,H,tau,Hinv)
       % Helper function to compute the internal forces required to enforce 
       % equality constraints
       
@@ -129,12 +130,41 @@ classdef Manipulator < SecondOrderSystem
   end
   
   methods
+    function obj = setNumDOF(obj,num)
+      error('setNumDOF is deprecated.  Use setNumPositions and setNumVelocities instead.');
+    end
+    function n = getNumDOF(obj)
+      error('getNumDOF is deprecated.  In order to fully support quaternion floating base dynamics, we had to change the interface to allow a different number position and velocity elements in the state vector.  Use getNumPositions() and getNumVelocities() instead.');
+    end
+    
+    function obj = setNumPositions(obj,num_q)
+    % Guards the num_positions variable to make sure it stays consistent 
+    % with num_x.
+      obj.num_positions = num_q;
+      obj = setNumContStates(obj,num_q+obj.num_velocities);
+    end
+    
+    function n = getNumPositions(obj)
+      n = obj.num_positions;
+    end
+    
+    function obj = setNumVelocities(obj,num_v)
+    % Guards the num_velocities variable to make sure it stays consistent 
+    % with num_x.
+      obj.num_velocities = num_v;
+      obj = setNumContStates(obj,num_v+obj.num_positions);
+    end
+    
+    function n = getNumVelocities(obj);
+      n = obj.num_velocities;
+    end
+    
     function phi = positionConstraints(obj,q)
       % Implements position constraints of the form phi(q) = 0
       error('manipulators with position constraints must overload this function');
     end
     
-    function psi = velocityConstraints(obj,q,qd)
+    function psi = velocityConstraints(obj,q,v)
       % Implements velocity constraints of the form psi(q,qdot) = 0
       % Note: dphidqdot must not be zero. constraints which depend 
       % only on q should be implemented instead as positionConstraints.
@@ -356,6 +386,8 @@ classdef Manipulator < SecondOrderSystem
   end  
   
   properties (SetAccess = protected, GetAccess = public)
+    num_positions=0;
+    num_velocities=0;
     num_position_constraints = 0  % the number of position constraints of the form phi(q)=0
     num_velocity_constraints = 0  % the number of velocity constraints of the form psi(q,qd)=0
     joint_limit_min = -inf;       % vector of length num_q with lower limits
