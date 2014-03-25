@@ -11,8 +11,8 @@ replaceMatFile = false;
 rng(23415, 'twister');
 robot = createAtlas('rpy');
 
-nq = robot.getNumStates() / 2;
-nv = robot.getNumStates() / 2;
+nq = robot.getNumPositions();
+nv = robot.getNumVelocities();
 
 nTests = 5;
 kinsols = cell(nTests, 1);
@@ -36,16 +36,6 @@ else
 
     for index = 1 : length(robot.body)
       if norm(kinsols{i}.Tdot{index} - kinsolsFromMat{i}.Tdot{index}, Inf) > 1e-13
-        error('kinsols not equal')
-      end
-    end
-  
-    if ~isequal(kinsols{i}.dTdq, kinsolsFromMat{i}.dTdq);
-      error('kinsols not equal')
-    end
-    
-    for index = 1 : length(robot.body)
-      if norm(kinsols{i}.dTdqdot{index} - kinsolsFromMat{i}.dTdqdot{index}, Inf) > 1e-12
         error('kinsols not equal')
       end
     end
