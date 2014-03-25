@@ -13,14 +13,11 @@ classdef Manipulator < DrakeSystem
   methods (Abstract=true)
     %  H(q)vdot + C(q,v,f_ext) = Bu
     [H,C,B] = manipulatorDynamics(obj,q,v);
+%    [phat,estimated_delay] = parameterEstimation(obj,data,options)
   end
 
-  methods (Sealed = true)
-    % list this as Sealed to overcome the multiple inheritance diamond
-    % problem: http://www.mathworks.com/help/matlab/matlab_oop/subclassing-multiple-classes.html
-    [phat,estimated_delay] = parameterEstimation(obj,data,options)
-      
-    function [xdot,dxdot] = dynamics(obj,t,q,v,u)
+  methods 
+    function [xdot,dxdot] = dynamics(obj,t,x,u)
     % Provides the DrakeSystem interface to the manipulatorDynamics.
 
       if (nargout>1)
@@ -62,6 +59,11 @@ classdef Manipulator < DrakeSystem
       
     end
     
+    function y = output(obj,t,x,u)
+      % default output is the full state
+      y = x;
+    end
+        
   end
   
   methods (Access=private)
