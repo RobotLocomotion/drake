@@ -21,7 +21,9 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
 % @param Qa       -- The matrix that penalizes the acceleration
 % @param rgc      -- A cell of RigidBodyConstraint
 % @param x_name   -- A string cell, x_name{i} is the name of the i'th decision variable
-%
+% @param fix_initial_state   -- A boolean flag. Set to true if the initial q(:,1) is hold
+% constant at q_seed_traj.eval(t_knot(1)) and qdot(:,1) =
+% q_seed_traj.fnder(1).eval(t_knot(1)). Otherwise the initial state is free to change. The default value is false.
   properties(SetAccess = protected)
     robot
     t_knot
@@ -31,6 +33,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
     Qa
     rgc
     x_name
+    fix_initial_state
   end
   
   properties(Access = protected)
@@ -84,6 +87,11 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
           obj.x_name{i} = sprintf('q%d[%d]',j,i);
         end
       end
+      obj.fix_initial_state = false;
+      obj = obj.addBoudingBoxConstraint(BoundingBoxConstraint(-inf(2*obj.nq,1),inf(2*obj.nq,1)),[obj.q_idx(:,1);obj.qd0_idx]);
+      [q_lb,q_ub] = obj.robot.getJointLimits();
+      obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(reshape(bsxfun(@times,q_lb,ones(1,obj.nT)),[],1),...
+        reshape(bsxfun(@times,q_ub,ones(1,obj.nT)),[],1)),obj.q_idx);
       for i = 1:num_rbcnstr
         if(~isa(varargin{i},'RigidBodyConstraint'))
           error('Drake:InverseKinTraj:the input should be a RigidBodyConstraint');
@@ -119,7 +127,8 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
           obj.nlcon_kinsol_idx = [obj.nlcon_kinsol_idx,{t_idx(valid_t_flag)}];
           obj.t_kinsol(valid_t_flag) = true;
         elseif(isa(varargin{i},'MultipleTimeLinearPostureConstraint'))
-          
+          cnstr = varargin{i}.generateConstraint(obj.t_knot);
+          obj = obj.addLinearConstraint(cnstr{1},obj.q_idx);
         end
       end
       obj.Q = eye(obj.nq);
@@ -145,6 +154,21 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       else
         obj = obj.replaceCost(obj.cpe,1,[obj.q_idx(:);obj.qd0_idx;obj.qdf_idx]);
         obj.cost_kinsol_idx{1} = [];
+      end
+    end
+    
+    function obj = setFixInitialState(obj,flag,x0)
+      % set obj.fix_initial_state = flag. If flag = true, then fix the initial state to x0
+      % @param x0   A 2*obj.nq x 1 double vector. x0 = [q0;qdot0]. The initial state
+      sizecheck(flag,[1,1]);
+      flag = logical(flag);
+      if(obj.fixInitialState ~= flag)
+        obj.fixInitialState = flag;
+        if(obj.fixInitialState)
+          obj = obj.replaceBoundingBoxConstraint(BoundingBoxConstraint(x0,x0),1,[obj.q_idx(:,1);obj.qd0_idx]);
+        else
+          obj = obj.replaceBoundingBoxConstraint(BoundingBoxConstraint(-inf(2*obj.nq,1),inf(2*obj.nq,1)),1,[obj.q_idx(:,1);obj.qd0_idx]);
+        end
       end
     end
     
@@ -187,6 +211,19 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       G = [G(1,:);G(1+obj.nlcon_ineq_idx,:);G(1+obj.nlcon_eq_idx,:)];
     end
     
-    
+    function [xtraj,F,info,infeasible_constraint] = solve(obj,qtraj_seed)
+      % @param qtraj_seed.   A Trajectory object. The initial guess of posture trajectory.
+      % @retval xtraj.       A Cubic spline trajectory. The solution of state trajectory,
+      % x = [q;qdot]
+      q_seed = qtraj_seed.eval(obj.t_knot);
+      x0 = zeros(obj.num_vars,1);
+      x0(obj.q_idx(:)) = q_seed(:);
+      x0(obj.qd0_idx) = (obj.x_lb(obj.qd0_idx)+obj.x_ub(obj.qd0_idx))/2;
+      x0(obj.qdf_idx) = (obj.x_lb(obj.qdf_idx)+obj.x_ub(obj.qdf_idx))/2;
+      [x,F,info] = obj.solve(x0);
+      [q,qdot,qddot] = obj.cpe.cubicSpline(x([obj.q_idx(:);obj.qd0_idx;obj.qdf_idx]));
+      xtraj = PPTrajectory(pchipDeriv(obj.t_knot,[q;qdot],[qdot;qddot]));
+      [info,infeasible_constraint] = obj.infeasibleConstraintName(x,info);
+    end
   end
 end

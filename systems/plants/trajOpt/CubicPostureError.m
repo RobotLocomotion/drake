@@ -121,5 +121,14 @@ classdef CubicPostureError < NonlinearConstraint
       dc(obj.nq*obj.nT+obj.nq+(1:obj.nq)) = reshape(2*Qqdot(:,2:obj.nT-1),1,[])*obj.velocity_mat_qdf+reshape(2*Qqdot(:,obj.nT),1,[])+reshape(2*Qqddot,1,[])*obj.accel_mat_qdf;
     end
     
+    function [q,qdot,qddot] = cubicSpline(obj,x)
+      % return the cubic spline at knot point
+      q = x(1:obj.nq*obj.nT);
+      qdot0 = x(obj.nq*obj.nT+(1:obj.nq));
+      qdotf = x(obj.nq*obj.nT+obj.nq+(1:obj.nq));
+      qdot = [qdot0 reshape(obj.velocity_mat*q+obj.velocity_mat_qd0*qdot0+obj.velocity_mat_qdf*qdotf,obj.nq,obj.nT-2) qdotf];
+      qddot = reshape(obj.accel_mat*q+obj.accel_mat_qd0*qdot0+obj.accel_mat_qdf*qdotf,obj.nq,obj.nT);
+      q = reshape(q,obj.nq,obj.nT);
+    end
   end
 end

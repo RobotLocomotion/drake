@@ -2,17 +2,17 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
   % The constraint of this nonlinear program is specified using 'Constraint' class in
   % drake
   
-  properties(Access = private)
+  properties(SetAccess = private, GetAccess = protected)
     nlcon % A cell array of NonlinearConstraint
     lcon % A cell array of LinearConstraint
     bbcon % A cell array of BoundingBoxConstraint
-    nlcon_xind % A cell array, nlcon_xind{i} is an int vector recording the indices of x that is used in evaluation the i'th NonlinearConstraint
-    cost_xind_cell % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
-    bbcon_xind % A cell array, bbcon_xind{i} is an int vector recording the indices of x used in i'th BoundingBoxConstraint
     cost % A cell array of NonlinearConstraint or LinearConstraint.
     num_nlcon % number of nonlinear constraints
     num_lcon % number of linear constraints
     
+    nlcon_xind % A cell array, nlcon_xind{i} is an int vector recording the indices of x that is used in evaluation the i'th NonlinearConstraint
+    cost_xind_cell % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
+    bbcon_xind % A cell array, bbcon_xind{i} is an int vector recording the indices of x used in i'th BoundingBoxConstraint
     nlcon_ineq_idx % row index of nonlinear inequality constraint
     nlcon_eq_idx % row index of nonlinear equality constraint
     
