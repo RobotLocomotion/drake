@@ -77,7 +77,7 @@ else
   end
   
   if (nargout>1)
-    nq = obj.num_q;
+    nq = obj.num_positions;
     dTdq = kinsol.dTdq{body_ind}*Tframe;
     if (rotation_type == 1)
       Jx = reshape(dTdq*pts,nq,[])';

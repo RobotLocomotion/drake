@@ -42,7 +42,6 @@ else
         kinsol.dTdqdot{i} = sparse(3*nq,4);
       end
       if (b_compute_second_derivatives)
-        error('switching to twist-based kinematics');
         kinsol.ddTdqdq{i} = sparse(3*nq*nq,4);
       end
     elseif body.floating==1
@@ -146,14 +145,14 @@ else
         % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
        kinsol.ddTdqdq{i} = kinsol.ddTdqdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
         
-       ind = 3*nq*(body.dofnum-1) + (1:3*nq);  %ddTdqdqi
+       ind = 3*nq*(body.position_num-1) + (1:3*nq);  %ddTdqdqi
        kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
         
-       ind = reshape(reshape(body.dofnum+0:nq:3*nq*nq,3,[])',[],1); % ddTdqidq
+       ind = reshape(reshape(body.position_num+0:nq:3*nq*nq,3,[])',[],1); % ddTdqidq
        kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
         
        ddTJ = ddTjcalc(body.pitch,qi);
-       ind = 3*nq*(body.dofnum-1) + this_pos_ind;  % ddTdqidqi
+       ind = 3*nq*(body.position_num-1) + this_pos_ind;  % ddTdqidqi
        kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ*body.T_body_to_joint;  % body.jsign^2 is there, but unnecessary (since it's always 1)
       end
       
