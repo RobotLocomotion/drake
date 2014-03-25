@@ -52,7 +52,7 @@ classdef Manipulator < DrakeSystem
         
         [qdot,dqdot] = positionDerivative(obj,q,v);
         xdot = [qdot;vdot];
-        dxdot = [dqdot;dvdot];
+        dxdot = [zeros(obj.num_positions,1),dqdot,zeros(obj.num_positions,obj.num_u);dvdot];
       else
         [H,C,B] = manipulatorDynamics(obj,q,v);
         Hinv = inv(H);
