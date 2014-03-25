@@ -23,7 +23,8 @@ if (use_mex && model.mex_model_ptr~=0 && isnumeric(q))
 else
   kinsol.mex = false;
   
-  nq = getNumDOF(model);
+  nq = getNumPositions(model);
+  nv = getNumVelocities(model);
   nb = length(model.body);
   kinsol.T = cell(1,nb);
   kinsol.dTdq = cell(1,nb);
@@ -36,14 +37,16 @@ else
       kinsol.T{i} = body.Ttree;
       kinsol.dTdq{i} = sparse(3*nq,4);
       if ~isempty(qd)
+        error('switching to twist-based kinematics');
         kinsol.Tdot{i} = zeros(4);
         kinsol.dTdqdot{i} = sparse(3*nq,4);
       end
       if (b_compute_second_derivatives)
+        error('switching to twist-based kinematics');
         kinsol.ddTdqdq{i} = sparse(3*nq*nq,4);
       end
     elseif body.floating==1
-      qi = q(body.dofnum); % qi is 6x1
+      qi = q(body.position_num); % qi is 6x1
       [rx,drx,ddrx] = rotx(qi(4)); [ry,dry,ddry] = roty(qi(5)); [rz,drz,ddrz] = rotz(qi(6));
       TJ = [rz*ry*rx,qi(1:3);zeros(1,3),1];
       kinsol.T{i}=kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
@@ -59,8 +62,8 @@ else
       dTJ{6} = [drz*ry*rx,zeros(3,1); zeros(1,4)];
       
       for j=1:6
-        this_dof_ind = body.dofnum(j)+0:nq:3*nq;
-        kinsol.dTdq{i}(this_dof_ind,:) = kinsol.dTdq{i}(this_dof_ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
+        this_pos_ind = body.position_num(j)+0:nq:3*nq;
+        kinsol.dTdq{i}(this_pos_ind,:) = kinsol.dTdq{i}(this_pos_ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint;
       end
       
       if (b_compute_second_derivatives)
@@ -116,18 +119,18 @@ else
         kinsol.Tdot{i} = kinsol.Tdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
         kinsol.dTdqdot{i} = kinsol.dTdqdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
         for j=1:6
-          this_dof_ind = body.dofnum(j)+0:nq:3*nq;
-          kinsol.dTdqdot{i}(this_dof_ind,:) = kinsol.dTdqdot{i}(this_dof_ind,:) + kinsol.Tdot{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot{j}*body.T_body_to_joint;
+          this_pos_ind = body.dofnum(j)+0:nq:3*nq;
+          kinsol.dTdqdot{i}(this_pos_ind,:) = kinsol.dTdqdot{i}(this_pos_ind,:) + kinsol.Tdot{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ{j}*body.T_body_to_joint + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot{j}*body.T_body_to_joint;
         end
       end
     elseif body.floating==2
-      qi = q(body.dofnum);  % qi is 7x1
+      qi = q(body.position_num);  % qi is 7x1
       TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(1,3),1];
       kinsol.T{i}=kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
       
       warning('first derivatives of quaternion floating base not implemented yet');
     else
-      qi = q(body.dofnum);
+      qi = q(body.position_num);
       
       TJ = Tjcalc(body.pitch,qi);
       kinsol.T{i}=kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
@@ -136,8 +139,8 @@ else
       % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,:),dq1 ...]
       dTJ = dTjcalc(body.pitch,qi);
       kinsol.dTdq{i} = kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-      this_dof_ind = body.dofnum+0:nq:3*nq;
-      kinsol.dTdq{i}(this_dof_ind,:) = kinsol.dTdq{i}(this_dof_ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
+      this_pos_ind = body.position_num+0:nq:3*nq;
+      kinsol.dTdq{i}(this_pos_ind,:) = kinsol.dTdq{i}(this_pos_ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
       
       if (b_compute_second_derivatives)
         % ddTdqdq = [d(dTdq)dq1; d(dTdq)dq2; ...]
@@ -150,7 +153,7 @@ else
        kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint;
         
        ddTJ = ddTjcalc(body.pitch,qi);
-       ind = 3*nq*(body.dofnum-1) + this_dof_ind;  % ddTdqidqi
+       ind = 3*nq*(body.dofnum-1) + this_pos_ind;  % ddTdqidqi
        kinsol.ddTdqdq{i}(ind,:) = kinsol.ddTdqdq{i}(ind,:) + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*ddTJ*body.T_body_to_joint;  % body.jsign^2 is there, but unnecessary (since it's always 1)
       end
       
@@ -160,7 +163,7 @@ else
         dTJdot = ddTjcalc(body.pitch,qi)*qdi;
         kinsol.Tdot{i} = kinsol.Tdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
         kinsol.dTdqdot{i} = kinsol.dTdqdot{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint + kinsol.dTdq{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJdot*body.T_body_to_joint;
-        kinsol.dTdqdot{i}(this_dof_ind,:) = kinsol.dTdqdot{i}(this_dof_ind,:) + kinsol.Tdot{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot*body.T_body_to_joint;
+        kinsol.dTdqdot{i}(this_pos_ind,:) = kinsol.dTdqdot{i}(this_pos_ind,:) + kinsol.Tdot{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJ*body.T_body_to_joint + kinsol.T{body.parent}(1:3,:)*body.Ttree*inv(body.T_body_to_joint)*dTJdot*body.T_body_to_joint;
       end
     end
   end

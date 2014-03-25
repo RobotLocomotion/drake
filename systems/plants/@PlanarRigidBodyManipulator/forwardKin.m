@@ -22,7 +22,7 @@ function [x,J,dJ] = forwardKin(obj,kinsol,body_ind,pts,rotation_type)
 
 if nargin<5, rotation_type = 0; end
 
-[n,m] = size(pts); nq = getNumDOF(obj);
+[n,m] = size(pts); nq = getNumPositions(obj);
 if (n==2) 
   pts = obj.T_2D_to_3D * pts; 
   T_3D_to_2D = obj.T_2D_to_3D';
