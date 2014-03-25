@@ -1514,7 +1514,7 @@ classdef RigidBodyManipulator < Manipulator
       m.f_ext_map_to = [];
 
       for i=1:length(inds) % number of links with parents
-        model.body(i).velocity_num = model.body(i).velocity_num + num_q;
+%         model.body(i).velocity_num = model.body(i).velocity_num + num_q;
         b=model.body(inds(i));
         if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
           m.pitch(n+(0:2)) = inf;  % prismatic

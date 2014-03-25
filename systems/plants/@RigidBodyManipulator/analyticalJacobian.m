@@ -1,4 +1,4 @@
-function JAnalytical = analyticalJacobian(obj, kinsol, base, endEffector, points, rotationType)
+function [x, JAnalytical] = analyticalJacobian(obj, kinsol, base, endEffector, points, rotationType)
 
 [JGeometric, vIndices] = geometricJacobian(obj, kinsol, base, endEffector, base);
 JOmega = JGeometric(1 : 3, :);
@@ -18,19 +18,22 @@ for i = 1 : nPoints
 end
 
 JX = -xHats * JOmega + repmat(JV, nPoints, 1);
-vSize = obj.num_q; % TODO: should be num_v once it exists
+vSize = obj.num_velocities;
 
 switch (rotationType)
   case 0 % no rotation included
     JRot = zeros(0, size(JOmega, 2));
+    x = points;
   case 1 % output Euler angle
     R = transform(1:3, 1:3);
     rpy = rotmat2rpy(R);
     JRot = angularvel2rpydotMatrix(rpy) * JOmega;
+    x = [points; repmat(rpy, 1, nPoints)];
   case 2 % output quaternion
     R = transform(1:3, 1:3);
     quat = rotmat2quat(R);
     JRot = angularvel2quatdotMatrix(quat) * JOmega;
+    x = [points; repmat(quat, 1, nPoints)];
   otherwise
     error('rotationType not recognized')
 end

@@ -17,22 +17,21 @@ end
 
 function compareToForwardKin(robot, rotationType)
 
-nq = robot.getNumStates() / 2; % TODO
-nv = robot.getNumStates() / 2; % TODO
+nq = robot.getNumPositions();
 
 nBodies = length(robot.body);
 
 bodyRange = [1, nBodies];
 
-analyticalJacobianTime = 0;
-forwardKinTime = 0;
+computationTime = 0;
 
-nTests = 200;
+nTests = 10;
 testNumber = 1;
+delta = 1e-10;
+epsilon = 1e-3;
 while testNumber < nTests
   q = randn(nq, 1);
-  v = randn(nv, 1);
-  kinsol = robot.doKinematics(q,false,false, v);
+  kinsol = robot.doKinematics(q, false, false);
   
   base = 1;
   endEffector = randi(bodyRange);
@@ -41,24 +40,25 @@ while testNumber < nTests
     points = randn(3, nPoints);
     
     tic
-    J = robot.analyticalJacobian(kinsol, base, endEffector, points, rotationType);
-    analyticalJacobianTime = analyticalJacobianTime + toc * 1e3;
+    [x, J] = robot.analyticalJacobian(kinsol, base, endEffector, points, rotationType);
+    computationTime = computationTime + toc * 1e3;
     
-    tic
-    [~, JForwardKin] = robot.forwardKin(kinsol, endEffector, points, rotationType);
-    forwardKinTime = forwardKinTime + toc * 1e3;
+    for col = 1 : length(q)
+      qDelta = q;
+      qDelta(col) = qDelta(col) + delta;
+      kinsol = robot.doKinematics(qDelta, false, false);
+      xDelta = robot.analyticalJacobian(kinsol, base, endEffector, points, rotationType);
+      dxdq = (xDelta - x) / delta;
+      valuecheck(J(:, col), dxdq(:), epsilon);
+    end
     
-    valuecheck(J, JForwardKin, 1e-8);
     testNumber = testNumber + 1;
   end
 end
-analyticalJacobianTime = analyticalJacobianTime / nTests;
-forwardKinTime = forwardKinTime / nTests;
 
-displayComputationTime = true;
+displayComputationTime = false;
 if displayComputationTime
-  fprintf('analyticalJacobianTime: %0.3f\n', analyticalJacobianTime);
-  fprintf('forwardKinTime: %0.3f\n', forwardKinTime);
+  fprintf('computation time per call: %0.3f ms\n', computationTime / nTests);
   fprintf('\n');
 end
 end
