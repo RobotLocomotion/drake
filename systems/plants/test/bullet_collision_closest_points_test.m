@@ -1,4 +1,4 @@
-function bullet_collision_closest_distance_test(varargin)
+function bullet_collision_closest_points_test(varargin)
 
 checkDependency('bullet');
 checkDependency('lcmgl');

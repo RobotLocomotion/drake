@@ -1,4 +1,4 @@
-function [ptsA,ptsB,normal,distance,JA,JB,Jd,idxA,idxB] = closestPointsAllBodies(obj,kinsol)
+function [ptsA,ptsB,normal,distance,idxA,idxB,JA,JB] = closestPointsAllBodies(obj,kinsol)
 
 % Uses bullet to find the points of closest approach between ALL PAIRS of
 % bodies in the manipulator, with the following exceptions:
@@ -8,9 +8,9 @@ function [ptsA,ptsB,normal,distance,JA,JB,Jd,idxA,idxB] = closestPointsAllBodies
 %
 % @param kinsol  the output from doKinematics()
 %
-% @retval ptsA the i-th column contains the point (in world coordinates) 
+% @retval ptsA the i-th column contains the point (in body coordinates) 
 %   on body idxA(i) (body A) that is closest to body idxB(i) (body B).
-% @retval ptsB the i-th column contains the point (in world coordinates) 
+% @retval ptsB the i-th column contains the point (in body coordinates) 
 %   on body idxB(i) (body B) that is closest to body idxA(i) (body A).
 % @retval normal the i-th column contains the contact normal vectors on body
 %   idxB(i) in world coordinates
@@ -26,7 +26,7 @@ function [ptsA,ptsB,normal,distance,JA,JB,Jd,idxA,idxB] = closestPointsAllBodies
 % @ingroup Collision
 
 if ~isstruct(kinsol)  
-  % treat input as contactPositions(obj,q)
+  % treat input as closestPointsAllBodies(obj,q)
   kinsol = doKinematics(obj,kinsol,nargout>5);
 end
 
@@ -36,4 +36,9 @@ if (kinsol.mex ~= true)
     'Calling doKinematics using mex before proceeding');
 end
 
-[ptsA,ptsB,normal,distance,idxA,idxB,JA,JB,Jd] = collisionmex(obj.mex_model_ptr,5);
+[ptsA,ptsB,normal,distance,idxA,idxB] = collisionmex(obj.mex_model_ptr);
+
+if nargout > 6
+  error('RigidBodyManipulator:closestPointsAllBodies:Jacobians', ...
+    'Jacobians temporarily disabled.');
+end

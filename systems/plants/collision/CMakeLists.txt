@@ -17,7 +17,7 @@ if (bullet_FOUND)
 endif()
 
 enable_testing()
-add_subdirectory(test)
+#add_subdirectory(test)
 
 pods_install_libraries(drakeCollision)
 pods_install_headers(Model.h simpleClosestPointFunctions.h DESTINATION drake/collision)

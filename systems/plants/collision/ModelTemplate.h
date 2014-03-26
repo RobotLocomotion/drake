@@ -188,6 +188,16 @@ namespace DrakeCollision
             }
           }
           c.getResults(bodyA_idx, bodyB_idx, ptsA, ptsB,normal,distance);
+          
+        //DEBUG
+          std::cout << "ModelTemplate:closestPointsAllBodies:" << std::endl;
+          std::cout << "ptsA:" << std::endl;
+          std::cout << ptsA.transpose() << std::endl;
+          std::cout << "ptsB:" << std::endl;
+          std::cout << ptsB.transpose() << std::endl;
+          std::cout << "normal:" << std::endl;
+          std::cout << normal.transpose() << std::endl;
+        //END_DEBUG
         //DEBUG
         //} catch (const std::out_of_range& oor) {
           //std::string msg("In ModelTemplate::closestPointsAllBodies:\n");
