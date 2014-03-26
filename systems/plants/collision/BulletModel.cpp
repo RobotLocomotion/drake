@@ -1,3 +1,5 @@
+#define BT_USE_DOUBLE_PRECISION
+
 #include "BulletModel.h"
 #include "BulletElement.h"
 #include "BulletResultCollector.h"
@@ -97,6 +99,9 @@ namespace DrakeCollision
     shapeA = (btConvexShape*) elemA.bt_obj->getCollisionShape();
     shapeB = (btConvexShape*) elemB.bt_obj->getCollisionShape();
 
+    btGjkEpaPenetrationDepthSolver epa;
+    btVoronoiSimplexSolver sGjkSimplexSolver;
+
     btGjkPairDetector	convexConvex(shapeA,shapeB,&sGjkSimplexSolver,&epa);
 
     input.m_transformA = elemA.bt_obj->getWorldTransform();
@@ -109,11 +114,27 @@ namespace DrakeCollision
 
     btVector3 pointOnA = input.m_transformA.invXform(pointOnAinWorld);
     btVector3 pointOnB = input.m_transformB.invXform(gjkOutput.m_pointInWorld);
-    btVector3 normalOnB = input.m_transformB.invXform(gjkOutput.m_normalOnBInWorld);
+    btVector3 normalOnB = input.m_transformB.invXform(gjkOutput.m_normalOnBInWorld+gjkOutput.m_pointInWorld);
+
+    //DEBUG
+    cerr << "In BulletModel::findClosestPointsBtwElements:" << endl;
+    std::cout << "ptsA:" << std::endl;
+    cout << pointOnA.getX() << ' ' 
+         << pointOnA.getY() << ' ' 
+         << pointOnA.getZ() << endl;
+    std::cout << "ptsB:" << std::endl;
+    cout << pointOnB.getX() << ' ' 
+         << pointOnB.getY() << ' ' 
+         << pointOnB.getZ() << endl;
+    std::cout << "normal:" << std::endl;
+    cout << gjkOutput.m_normalOnBInWorld.getX() << ' ' 
+         << gjkOutput.m_normalOnBInWorld.getY() << ' ' 
+         << gjkOutput.m_normalOnBInWorld.getZ() << endl;
+    //END_DEBUG
 
     if (gjkOutput.m_hasResult) {
       static_pointer_cast<MinDistResultCollector>(c)->addSingleResult(bodyA_idx,bodyB_idx,toVector3d(pointOnA),toVector3d(pointOnB),
-          toVector3d(normalOnB),(double) gjkOutput.m_distance);
+          toVector3d(gjkOutput.m_normalOnBInWorld),(double) gjkOutput.m_distance);
     } else {
       cerr << "In BulletModel::findClosestPointsBtwElements: No closest point found!" << endl;
       //DEBUG

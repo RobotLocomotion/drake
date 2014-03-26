@@ -1,3 +1,5 @@
+#define BT_USE_DOUBLE_PRECISION
+
 #include "BulletElement.h"
 #include "BulletModel.h"
 
@@ -19,6 +21,7 @@ namespace DrakeCollision
         //std::cout << "BulletElement::BulletElement: Create BOX ..." << std::endl;
         //END_DEBUG
         bt_shape = new btBoxShape( btVector3(params[0]/2,params[1]/2,params[2]/2) );
+        bt_shape->setMargin(0.1);
         //DEBUG
         //std::cout << "BulletElement::BulletElement: Created BOX" << std::endl;
         //END_DEBUG

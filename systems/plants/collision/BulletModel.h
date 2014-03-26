@@ -1,6 +1,8 @@
 #ifndef __DrakeCollisionBulletModel_H__
 #define __DrakeCollisionBulletModel_H__
 
+#define BT_USE_DOUBLE_PRECISION
+
 #include <btBulletCollisionCommon.h>
 #include <BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h>
 #include <BulletCollision/NarrowPhaseCollision/btGjkPairDetector.h>
@@ -60,8 +62,8 @@ namespace DrakeCollision
       btDbvtBroadphase bt_collision_broadphase;
 
       // For getClosestPoints
-      btGjkEpaPenetrationDepthSolver epa;
-      btVoronoiSimplexSolver sGjkSimplexSolver;
+      //btGjkEpaPenetrationDepthSolver epa;
+      //btVoronoiSimplexSolver sGjkSimplexSolver;
       //TestbtCollisionWorld test;
   };
 }

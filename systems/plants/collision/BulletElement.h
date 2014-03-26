@@ -1,6 +1,8 @@
 #ifndef __DrakeCollisionBulletElement_H__
 #define __DrakeCollisionBulletElement_H__
 
+#define BT_USE_DOUBLE_PRECISION
+
 #include <btBulletCollisionCommon.h>
 
 #include "DrakeCollision.h"
