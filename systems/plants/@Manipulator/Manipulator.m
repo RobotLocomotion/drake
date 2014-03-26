@@ -50,7 +50,7 @@ classdef Manipulator < DrakeSystem
             Hinv*(-dC(:,obj.num_positions+1:end))];
         end
         
-        [qdot,dqdot] = positionDerivative(obj,q,v);
+        [qdot,dqdot] = positionDerivative(obj,q,v); % TODO: change this to use vToqdot
         xdot = [qdot;vdot];
         dxdot = [zeros(obj.num_positions,1),dqdot,zeros(obj.num_positions,obj.num_u);dvdot];
       else
@@ -69,13 +69,25 @@ classdef Manipulator < DrakeSystem
       
     end
     
-    function [qdot,dqdot] = positionDerivative(obj,q,v)
+    function [qdot,dqdot] = positionDerivative(obj,q,v) % TODO: get rid of this
       % default relationship is that v = qdot
       assert(obj.num_positions==obj.num_velocities);
       qdot = v;
       if nargout>1
         dqdot = [zeros(obj.num_positions),eye(obj.num_positions)];
       end
+    end
+    
+    function Vq = qdotTov(obj, q)
+      % default relationship is that v = qdot
+      assert(obj.num_positions==obj.num_velocities);
+      Vq = eye(length(q));
+    end
+    
+    function VqInv = vToqdot(obj, q)
+      % default relationship is that v = qdot
+      assert(obj.num_positions==obj.num_velocities);
+      VqInv = eye(length(q));
     end
     
     function y = output(obj,t,x,u)

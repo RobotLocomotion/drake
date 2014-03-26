@@ -27,7 +27,8 @@ else
   kinsol.T = computeTransforms(bodies, q);
   S = computeMotionSubspaces(bodies, q);
   kinsol.J = computeJ(kinsol.T, S);
-  kinsol.Vq = computeVq(bodies, q, model.num_positions, model.num_velocities);
+  kinsol.qdotToV = qdotToV(model, q);
+  kinsol.vToqdot = vToqdot(model, q);
   
   if ~isempty(v)
     kinsol.twists = computeTwistsInBaseFrame(bodies, kinsol.T, S, v);
@@ -85,30 +86,6 @@ J = cell(1, nb);
 for i = 2 : nb
   H = transforms{i};
   J{i} = transformTwists(H, S{i});
-end
-end
-
-function Vq = computeVq(bodies, q, num_pos, num_vel)
-% mapping from qdot to v
-% todo: make this be a sparse matrix
-nb = length(bodies);
-Vq = zeros(num_vel, num_pos);
-for i = 2 : nb
-  body = bodies(i);
-  if body.floating == 1
-    VqJoint = eye(6);
-  elseif body.floating == 2
-    qBody = q(body.position_num);
-    quat = qBody(4 : 7);
-    R = quat2rotmat(quat);
-    VqJoint = [zeros(3, 3), R' * quatdot2angularvelMatrix(quat);
-      R', zeros(3, 4)];
-  elseif body.floating ~= 0
-    error('');
-  else
-    VqJoint = 1;
-  end
-  Vq(body.velocity_num, body.position_num) = VqJoint;
 end
 end
 

@@ -1,4 +1,4 @@
-function testForwardKin
+function testForwardKinV
 
 testAtlas('rpy');
 % testAtlas('quat'); % TODO: generating robot currently results in an error.
@@ -35,30 +35,30 @@ while testNumber < nTests
   v = randn(nv, 1);
   kinsol = robot.doKinematics(q, true, false, v);
   
-  base = 1;
+  base = randi(bodyRange);
   endEffector = randi(bodyRange);
   if base ~= endEffector
     nPoints = randi([1, 10]);
     points = randn(3, nPoints);
     
     tic
-    [x, J, JdotV] = robot.forwardKin(kinsol, endEffector, points, rotationType, base);
+    [x, J, Jvdot_times_v] = robot.forwardKinV(kinsol, endEffector, points, rotationType, base);
     computationTime = computationTime + toc * 1e3;
     
     for col = 1 : length(q)
       qDelta = q;
       qDelta(col) = qDelta(col) + delta;
       kinsol = robot.doKinematics(qDelta, false, false);
-      xDelta = robot.forwardKin(kinsol, endEffector, points, rotationType, base);
+      xDelta = robot.forwardKinV(kinsol, endEffector, points, rotationType, base);
       dxdqNumerical = (xDelta - x) / delta;
       valuecheck(J(:, col), dxdqNumerical(:), epsilon);
     end
     
     qDelta = q + delta * v;
     kinsol = robot.doKinematics(qDelta, false, false);
-    [~, JDelta] = robot.forwardKin(kinsol, endEffector, points, rotationType, base);
+    [~, JDelta] = robot.forwardKinV(kinsol, endEffector, points, rotationType, base);
     JdotNumerical = (JDelta - J) / delta;
-    valuecheck(JdotV, JdotNumerical * v, epsilon);
+    valuecheck(Jvdot_times_v, JdotNumerical * v, epsilon);
     
     testNumber = testNumber + 1;
   end

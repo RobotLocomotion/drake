@@ -93,6 +93,52 @@ classdef RigidBodyManipulator < Manipulator
   end
   
   methods
+    function Vq = qdotToV(obj, q)
+      bodies = obj.body;
+      nb = length(bodies);
+      Vq = zeros(obj.num_velocities, obj.num_positions);
+      for i = 2 : nb
+        bodyI = bodies(i);
+        if bodyI.floating == 1
+          VqJoint = eye(6);
+        elseif bodyI.floating == 2
+          qBody = q(bodyI.position_num);
+          quat = qBody(4 : 7);
+          R = quat2rotmat(quat);
+          VqJoint = [zeros(3, 3), R' * quatdot2angularvelMatrix(quat);
+            R', zeros(3, 4)];
+        elseif bodyI.floating ~= 0
+          error('case not handled');
+        else
+          VqJoint = 1;
+        end
+        Vq(bodyI.velocity_num, bodyI.position_num) = VqJoint;
+      end
+    end
+    
+    function VqInv = vToqdot(obj, q)
+      bodies = obj.body;
+      nb = length(bodies);
+      VqInv = zeros(obj.num_positions, obj.num_velocities);
+      for i = 2 : nb
+        bodyI = bodies(i);
+        if bodyI.floating == 1
+          VqInvJoint = eye(6);
+        elseif bodyI.floating == 2
+           qBody = q(bodyI.position_num);
+            quat = qBody(4 : 7);
+            R = quat2rotmat(quat);
+            VqInvJoint = [zeros(3, 3), R;
+              angularvel2quatdotMatrix(quat) * R, zeros(4, 3)];
+        elseif bodyI.floating ~= 0
+          error('case not handled');
+        else
+          VqInvJoint = 1;
+        end
+        VqInv(bodyI.position_num, bodyI.velocity_num) = VqInvJoint;
+      end
+    end
+    
     function y = output(obj,t,x,u)
       % The outputs of this dynamical system are concatenated from each of
       % the sensors.  If no sensor has been added to the system, then the
