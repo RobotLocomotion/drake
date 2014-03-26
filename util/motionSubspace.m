@@ -21,7 +21,7 @@ elseif body.floating == 2
 %   R = quat2rotmat(quat);
 %   S = [zeros(3, 3), R' * quatdot2angularvelMatrix(quat);
 %        R', zeros(3, 4)];
-  warning('Drake:RigidBodyManipulator:NotTested','Motion subspace not tested for case of quaternion floating joint.');
+%   warning('Drake:RigidBodyManipulator:NotTested','Motion subspace not tested for case of quaternion floating joint.');
 elseif body.floating ~= 0
   error('Drake:RigidBodyManipulator:NotImplemented','Motion subspace not implemented for this type of floating joint.');
 else
