@@ -1,4 +1,4 @@
-function [x, J, JdotV] = forwardKin(obj, kinsol, body_or_frame_ind, points, rotationType, base)
+function [x, J, JdotV] = forwardKin(obj, kinsol, body_or_frame_ind, points, rotationType, base_ind)
 % computes the position of pts (given in the body frame) in the global frame
 %
 % @param kinsol solution structure obtained from doKinematics
@@ -6,6 +6,7 @@ function [x, J, JdotV] = forwardKin(obj, kinsol, body_or_frame_ind, points, rota
 % (obtained via e.g., findLinkInd or findFrameInd)
 % @param rotation_type integer flag indicated whether rotations and
 % derivatives should be computed (0 - no rotations, 1 - rpy, 2 - quat)
+% @param base_ind index of the base rigid body. Default is 1 (world).
 % @retval x the position of pts (given in the body frame) in the global
 % frame. If rotation_type, x is 6-by-num_pts where the final 3
 % components are the roll/pitch/yaw of the body frame (same for all points 
@@ -29,8 +30,9 @@ function [x, J, JdotV] = forwardKin(obj, kinsol, body_or_frame_ind, points, rota
 % a ((7xm)*(q)) matrix with [J1;J2;....;Jm] where Ji = dxidq
 
 if nargout < 6
-  base = 1;
+  base_ind = 1;
 end
+base = base_ind;
 endEffector = body_or_frame_ind;
 expressedIn = base; % todo: pass this in as an argument
 
