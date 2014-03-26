@@ -97,6 +97,7 @@ rotRowIndices = repeatVectorIndices(pointSize + 1 : xSize, xSize, nPoints);
 J = zeros(length(posRowIndices) + length(rotRowIndices), vSize);
 J(posRowIndices, vIndices) = JX;
 J(rotRowIndices, vIndices) = repmat(JRot, nPoints, 1);
+J = J * kinsol.Vq; % to map from qdot to v
 
 if computeJdotV
   JRotdotv = Phid * twist(1 : 3) + Phi * JGeometricdotV(1 : 3);
