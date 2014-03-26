@@ -34,8 +34,8 @@ methods
     if nargin<4, bin=[]; end
     if nargin<5 || isempty(Aeq), Aeq=zeros(0,n); end
     if nargin<6, beq=[]; end
-    if nargin<7, x_lb=[]; end
-    if nargin<8, x_ub=[]; end
+    if nargin<7, x_lb=-inf(n,1); end
+    if nargin<8, x_ub=inf(n,1); end
 
     obj = obj@NonlinearProgram(size(Q,1),0,0);
     obj.Q = Q;
@@ -70,15 +70,15 @@ methods
     
       case 'gurobi_mex'
         checkDependency('gurobi_mex');
-        [x,exitflag,active] = gurobiQPmex(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub,active);
+        [x,exitflag,active] = gurobiQPmex(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,active);
         if (nargout>1)
           objval = .5*x'*obj.Q*x + obj.f'*x;  % todo: push this into mex?
         end
     
       case 'fastqp'
         checkDependency('gurobi_mex');
-        if isempty(obj.lb), obj.lb=-inf + 0*obj.f; end
-        if isempty(obj.ub), obj.ub=inf + 0*obj.f; end
+        if isempty(obj.x_lb), obj.x_lb=-inf + 0*obj.f; end
+        if isempty(obj.x_ub), obj.x_ub=inf + 0*obj.f; end
         Ain_b = [obj.Ain; -eye(length(obj.x_lb)); eye(length(obj.x_ub))];
         bin_b = [obj.bin; -obj.x_lb; obj.x_ub];
 
@@ -149,7 +149,7 @@ methods
     x = result.x;
     objval = result.objval;
     
-    if (size(obj.Ain,1)>0 || ~isempty(obj.lb) || ~isempty(obj.ub))
+    if (size(obj.Ain,1)>0 || ~isempty(obj.x_lb) || ~isempty(obj.x_ub))
       % note: result.slack(for Ain indices) = bin-Ain*x
       active = find([result.slack(size(obj.Aeq,1)+1:end); x-model.lb; model.ub-x]<1e-4);
     else
