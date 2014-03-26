@@ -30,7 +30,7 @@ else
   kinsol.Vq = computeVq(bodies, q, model.num_positions, model.num_velocities);
   
   if ~isempty(v)
-    kinsol.twists = computeTwistsInBodyFrame(bodies, kinsol.T, S, v);
+    kinsol.twists = computeTwistsInBaseFrame(bodies, kinsol.T, S, v);
     % TODO: remove once there are no more references to this:
     kinsol.Tdot = computeTdots(kinsol.T, kinsol.twists);
     
@@ -112,17 +112,17 @@ for i = 2 : nb
 end
 end
 
-function twists = computeTwistsInBodyFrame(bodies, transforms, S, v)
+function twists = computeTwistsInBaseFrame(bodies, transforms, S, v)
 nb = length(bodies);
 twists = cell(1, nb);
 
 for i = 1 : nb
   body = bodies(i);
-  if body.parent > 0 && ~isempty(v)
+  if body.parent > 0
     parentTwist = twists{body.parent};
     vBody = v(body.velocity_num);
     jointTwist = S{i} * vBody;
-    twists{i} = transformTwists(transforms{i} \ transforms{body.parent}, parentTwist) + jointTwist;
+    twists{i} = parentTwist + transformTwists(transforms{i}, jointTwist);
   else
     twistSize = 6;
     twists{i} = zeros(twistSize, 1);
@@ -133,7 +133,7 @@ end
 function Tdot = computeTdots(T, twist)
 Tdot = cell(length(T), 1);
 for i = 1 : length(T)
-  Tdot{i} = T{i} * twistToTildeForm(twist{i});
+  Tdot{i} = twistToTildeForm(twist{i}) * T{i};
 end
 end
 
