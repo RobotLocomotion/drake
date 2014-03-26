@@ -229,13 +229,16 @@ display('IK mex start to solve the problem');
 tic
 [xtraj,info,infeasible_constraint] = inverseKinTraj(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 toc
+tic
 x0 = [q_seed.eval(t(1));q_seed.deriv(t(1))];
 ikproblem = InverseKinTraj(r,t,q_nom,ikoptions.fixInitialState,x0,varargin{1:end-1});
-ikproblem = ikproblem.setCheckGrad(true);
+ikproblem = ikproblem.addBoundingBoxConstraint(BoundingBoxConstraint(ikoptions.qdf_lb,ikoptions.qdf_ub),ikproblem.qdf_idx);
+ikproblem = ikproblem.setSolverOptions('snopt','MajorIterationsLimit',ikoptions.SNOPT_MajorIterationsLimit);
 [xtraj,F,info,infeasible_constraint] = ikproblem.solve(q_seed);
 if(info>10)
   error('SNOPT info is %d, IK mex fails to solve the problem',info);
 end
+toc
 % display('IK matlab start to solve the problem');
 % tic
 % [xtraj,info,infeasible_constraint] = inverseKinTraj(r,t,q_seed,q_nom,varargin{1:end-1},ikoptions);

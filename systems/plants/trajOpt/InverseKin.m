@@ -73,18 +73,20 @@ classdef InverseKin < NonlinearProgramWConstraint
           cnstr = varargin{i}.generateConstraint(t);
           obj = obj.addBoundingBoxConstraint(cnstr{1},obj.q_idx);
         elseif(isa(varargin{i},'QuasiStaticConstraint'))
-          obj.x_name = [obj.x_name;cell(varargin{i}.num_pts,1)];
-          obj.qsc_weight_idx = obj.num_vars+(1:varargin{i}.num_pts)';
-          for j = 1:varargin{i}.num_pts
-            obj.x_name{obj.num_vars+j} = sprintf('qsc_weight%d',j);
+          if(varargin{i}.active)
+            obj.x_name = [obj.x_name;cell(varargin{i}.num_pts,1)];
+            obj.qsc_weight_idx = obj.num_vars+(1:varargin{i}.num_pts)';
+            for j = 1:varargin{i}.num_pts
+              obj.x_name{obj.num_vars+j} = sprintf('qsc_weight%d',j);
+            end
+            obj = obj.addDecisionVariable(varargin{i}.num_pts);
+            cnstr = varargin{i}.generateConstraint(t);
+            obj = obj.addNonlinearConstraint(cnstr{1},[obj.q_idx;obj.qsc_weight_idx]);
+            obj.nlcon_call_kinsol = [obj.nlcon_call_kinsol;true];
+            obj.nlcon_call_qsc_weight = [obj.nlcon_call_qsc_weight;true];
+            obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_idx);
+            obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_idx);
           end
-          obj = obj.addDecisionVariable(varargin{i}.num_pts);
-          cnstr = varargin{i}.generateConstraint(t);
-          obj = obj.addNonlinearConstraint(cnstr{1},[obj.q_idx;obj.qsc_weight_idx]);
-          obj.nlcon_call_kinsol = [obj.nlcon_call_kinsol;true];
-          obj.nlcon_call_qsc_weight = [obj.nlcon_call_qsc_weight;true];
-          obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_idx);
-          obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_idx);
         elseif(isa(varargin{i},'SingleTimeLinearPostureConstraint'))
           cnstr = varargin{i}.generateConstraint(t);
           obj = obj.addLinearConstraint(cnstr{1},obj.q_idx);

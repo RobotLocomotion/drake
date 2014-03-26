@@ -24,6 +24,10 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
 % @param fix_initial_state   -- A boolean flag. Set to true if the initial q(:,1) is hold
 % constant at q_seed_traj.eval(t_knot(1)) and qdot(:,1) =
 % q_seed_traj.fnder(1).eval(t_knot(1)). Otherwise the initial state is free to change. The default value is false.
+% @param q_idx    -- a nq x nT matrix. q(:,i) = x(q_idx(:,i))
+% @param qd0_idx  -- a nq x 1 matrix. qdot0 = x(qd0_idx);
+% @param qdf_idx  -- a nq x 1 matrix. qdotf = x(qdf_idx);
+% @param qsc_weight_idx  -- a cell of vectors. x(qsc_weight_idx{i}) are the weights of the QuasiStaticConstraint at time t(i)
   properties(SetAccess = protected)
     robot
     t_knot
@@ -34,20 +38,23 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
     rgc
     x_name
     fix_initial_state
+    q_idx   
+    qd0_idx  
+    qdf_idx  
+    qsc_weight_idx
   end
   
   properties(Access = protected)
     nq
     nT
     q_nom   % a nq x nT matrix. q_nom = q_nom_traj.eval(t)
-    q_idx   % a nq x nT matrix. q(:,i) = x(q_idx(:,i))
-    qd0_idx  % a nq x 1 matrix. qdot0 = x(qd0_idx);
-    qdf_idx  % a nq x 1 matrix. qdotf = x(qdf_idx);
-    qsc_weight_idx    % a cell of vectors.x(qsc_weight_idx{i}) are the weights of the QuasiStaticConstraint at time t(i)
+    
     cpe   % A CubicPostureError object.
     t_kinsol   % A 1 x nT boolean array. t_kinsol(i) is true if doKinematics should be called at time t_knot(i)
     cost_kinsol_idx % A cell. cost_kinsol_idx{i} is the indices of kinsol used for evaluating cost{i}
+    cost_nonkinsol_idx % A cell. cost_nonkinsol_idx{i} is the indices of decision variables, aprat from kinsol, that are used in evaluating cost{i}
     nlcon_kinsol_idx % A cell. nlcon_kinsol_idx{i} is the indices of kinsol used for evaluating nlcon{i}
+    nlcon_nonkinsol_idx  % A cell. nlcon_nonkinsol_idx{i] is the indices of decision variables, apart from kinsol, that are used in evaluating nlcon{i}
   end
   
   methods
@@ -86,7 +93,9 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       num_rbcnstr = nargin-5;
       obj.t_kinsol = false(1,obj.nT);
       obj.cost_kinsol_idx = {};
+      obj.cost_nonkinsol_idx = {};
       obj.nlcon_kinsol_idx = {};
+      obj.nlcon_nonkinsol_idx = {};
       obj.x_name = cell(obj.nq*obj.nT,1);
       for i = 1:obj.nT
         for j = 1:obj.nq
@@ -111,6 +120,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
               cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
               obj = obj.addNonlinearConstraint(cnstr{1},obj.q_idx(:,j));
               obj.nlcon_kinsol_idx = [obj.nlcon_kinsol_idx,{j}];
+              obj.nlcon_nonkinsol_idx = [obj.nlcon_nonkinsol_idx,{[]}];
               obj.t_kinsol(j) = true;
             end
           end
@@ -119,6 +129,24 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
             if(varargin{i}.isTimeValid(obj.t_knot(j)))
               cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
               obj = obj.addBoundingBoxConstraint(cnstr{1},obj.q_idx(:,j));
+            end
+          end
+        elseif(isa(varargin{i},'QuasiStaticConstraint'))
+          for j = t_start:obj.nT
+            if(varargin{i}.isTimeValid(obj.t_knot(j)) && varargin{i}.active)
+              if(~isempty(obj.qsc_weight_idx{j}))
+                error('Drake:InverseKinTraj:currently only support at most one QuasiStaticConstraint at an individual time');
+              end
+              cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
+              obj.x_name = [obj.x_name;cell(varargin{i}.num_pts,1)];
+              for k = 1:varargin{i}.num_pts
+                obj.x_name{obj.num_vars+k} = sprintf('qsc_weight%d[%d]',k,j);
+              end
+              obj.qsc_weight_idx{j} = obj.num_vars+(1:varargin{i}.num_pts)';
+              obj = obj.addDecisionVariable(varargin{i}.num_pts);
+              obj = obj.addNonlinearConstraint(cnstr{1},[obj.q_idx(:,j);obj.qsc_weight_idx{j}]);
+              obj.nlcon_kinsol_idx = [obj.nlcon_kinsol_idx,{j}];
+              obj.nlcon_nonkinsol_idx = [obj.nlcon_nonkinsol_idx,obj.qsc_weight_idx(j)];
             end
           end
         elseif(isa(varargin{i},'SingleTimeLinearPostureConstraint'))
@@ -132,10 +160,11 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
           valid_t_flag = varargin{i}.isTimeValid(obj.t_knot(t_start:end));
           t_idx = (t_start:obj.nT);
           valid_t_idx = t_idx(valid_t_flag);
-          cnstr = varargin{i}.generateConstraint(valid_t_idx);
+          cnstr = varargin{i}.generateConstraint(obj.t_knot(valid_t_idx));
           obj = obj.addNonlinearConstraint(cnstr{1},reshape(obj.q_idx(:,valid_t_idx),[],1));
           
           obj.nlcon_kinsol_idx = [obj.nlcon_kinsol_idx,{valid_t_idx}];
+          obj.nlcon_nonkinsol_idx = [obj.nlcon_nonkinsol_idx,{[]}];
           obj.t_kinsol(valid_t_flag) = true;
         elseif(isa(varargin{i},'MultipleTimeLinearPostureConstraint'))
           cnstr = varargin{i}.generateConstraint(obj.t_knot(t_start:end));
@@ -160,11 +189,15 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       obj.Qa = (Qa+Qa')/2;
       obj.cpe = CubicPostureError(obj.t_knot,obj.Q,obj.q_nom,obj.Qv,obj.Qa);
       if(isempty(obj.cost))
-        obj = obj.addCost(obj.cpe,[obj.q_idx(:);obj.qd0_idx;obj.qdf_idx]);
+        xind = [obj.q_idx(:);obj.qd0_idx;obj.qdf_idx];
+        obj = obj.addCost(obj.cpe,xind);
         obj.cost_kinsol_idx = {[]};
+        obj.cost_nonkinsol_idx{1} = xind;
       else
-        obj = obj.replaceCost(obj.cpe,1,[obj.q_idx(:);obj.qd0_idx;obj.qdf_idx]);
+        xind = [obj.q_idx(:);obj.qd0_idx;obj.qdf_idx];
+        obj = obj.replaceCost(obj.cpe,1,xind);
         obj.cost_kinsol_idx{1} = [];
+        obj.cost_nonkinsol_idx{1} = xind;
       end
     end
     
@@ -180,8 +213,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
         else
           obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(-inf(2*obj.nq,1),inf(2*obj.nq,1)),[obj.q_idx(:,1);obj.qd0_idx]);
         end
-      end
-      if(obj.fix_initial_state ~= flag)
+      elseif(obj.fix_initial_state ~= flag)
         obj.fix_initial_state = flag;
         if(obj.fix_initial_state)
           obj = obj.replaceBoundingBoxConstraint(BoundingBoxConstraint(x0,x0),1,[obj.q_idx(:,1);obj.qd0_idx]);
@@ -202,7 +234,19 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       G = zeros(1+obj.num_nlcon,obj.num_vars);
       for i = 1:length(obj.cost)
         if(~isempty(obj.cost_kinsol_idx{i}))
-          [fi,dfi] = obj.cost{i}.eval(kinsol_cell(obj.cost_kinsol_idx));
+          if(length(obj.cost_kinsol_idx{i}) == 1)
+            if(isempty(obj.cost_nonkinsol_idx{i}))
+              [fi,dfi] = obj.cost{i}.eval(kinsol_cell{obj.cost_kinsol_idx{i}});
+            else
+              [fi,dfi] = obj.cost{i}.eval(kinsol_cell{obj.cost_kinsol_idx{i}},x(obj.cost_nonkinsol_idx{i}));
+            end
+          else
+            if(isempty(obj.cost_nonkinsol_idx{i}))
+              [fi,dfi] = obj.cost{i}.eval(kinsol_cell(obj.cost_kinsol_idx{i}));
+            else
+              [fi,dfi] = obj.cost{i}.eval(kinsol_cell(obj.cost_kinsol_idx{i}),x(obj.cost_nonkinsol_idx{i}));
+            end
+          end
         else
           [fi,dfi] = obj.cost{i}.eval(x(obj.cost_xind_cell{i}));
         end
@@ -213,11 +257,21 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       for i = 1:length(obj.nlcon)
         if(~isempty(obj.nlcon_kinsol_idx{i}))
           if(length(obj.nlcon_kinsol_idx{i}) == 1)
-            [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
-              obj.nlcon{i}.eval(kinsol_cell{obj.nlcon_kinsol_idx{i}});
+            if(isempty(obj.nlcon_nonkinsol_idx{i}))
+              [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
+                obj.nlcon{i}.eval(kinsol_cell{obj.nlcon_kinsol_idx{i}});
+            else
+              [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
+                obj.nlcon{i}.eval(kinsol_cell{obj.nlcon_kinsol_idx{i}},x(obj.nlcon_nonkinsol_idx{i}));
+            end
           else
-            [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
-              obj.nlcon{i}.eval(kinsol_cell(obj.nlcon_kinsol_idx{i}));
+            if(isempty(obj.nlcon_nonkinsol_idx{i}))
+              [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
+                obj.nlcon{i}.eval(kinsol_cell(obj.nlcon_kinsol_idx{i}));
+            else
+              [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
+                obj.nlcon{i}.eval(kinsol_cell(obj.nlcon_kinsol_idx{i}),x(obj.nlcon_nonkinsol_idx{i}));
+            end
           end
         else
           [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
@@ -242,6 +296,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       [x,F,info] = solve@NonlinearProgramWConstraint(obj,x0);
       [q,qdot,qddot] = obj.cpe.cubicSpline(x([obj.q_idx(:);obj.qd0_idx;obj.qdf_idx]));
       xtraj = PPTrajectory(pchipDeriv(obj.t_knot,[q;qdot],[qdot;qddot]));
+      xtraj = xtraj.setOutputFrame(obj.robot.getStateFrame);
       [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
     end
     
