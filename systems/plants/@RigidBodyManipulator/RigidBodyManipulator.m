@@ -1116,10 +1116,11 @@ classdef RigidBodyManipulator < Manipulator
       [varargout{:}] = pdcontrol@SecondOrderSystem(sys,Kp,Kd,index);
     end    
     
-    function [phi,dphi,ddphi] = positionConstraints(obj,q)
+    function [phi,varargout] = positionConstraints(obj,q)
       checkDirty(obj);
       % so far, only loop constraints are implemented
-      [phi,dphi,ddphi]=loopConstraints(obj,q);
+      varargout = cell(1,nargout-1);
+      [phi,varargout{:}]=loopConstraints(obj,q);
     end
     
     function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,options)

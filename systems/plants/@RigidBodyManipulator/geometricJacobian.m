@@ -8,6 +8,11 @@ function [J, vIndices] = geometricJacobian(obj, kinsol, base, endEffector, expre
 [~, jointPath, signs] = findKinematicPath(obj, base, endEffector);
 vIndices = vertcat(obj.body(jointPath).velocity_num);
 
+if isempty(jointPath)
+  J = zeros(6,0);
+  return;
+end
+
 J = cell2mat(cellfun(@times, kinsol.J(jointPath), num2cell(signs'), 'UniformOutput', false));
 
 if expressedIn ~= 1
