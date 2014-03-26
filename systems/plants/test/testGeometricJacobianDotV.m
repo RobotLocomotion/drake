@@ -12,8 +12,8 @@ end
 
 function testVersusNumericalDifferentiation(robot)
 dt = 1e-8;
-nq = robot.getNumStates() / 2; % TODO
-nv = robot.getNumStates() / 2; % TODO
+nq = robot.getNumPositions(); % TODO
+nv = robot.getNumVelocities(); % TODO
 
 nTests = 50;
 nBodies = length(robot.body);
