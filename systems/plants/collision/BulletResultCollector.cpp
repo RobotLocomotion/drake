@@ -37,11 +37,11 @@ namespace DrakeCollision
     vec(1) = (double) bt_vec.getY();
     vec(2) = (double) bt_vec.getZ();
     //DEBUG
-    cout << "BulletResultCollector:toVector3d:" << endl;
-    cout << "btVector3:" << endl;
-    cout << bt_vec.getX() << ' ' << bt_vec.getY() << ' ' << bt_vec.getZ() << endl;
-    cout << "Vector3d:" << endl;
-    cout << vec.transpose() << endl;
+    //cout << "BulletResultCollector:toVector3d:" << endl;
+    //cout << "btVector3:" << endl;
+    //cout << bt_vec.getX() << ' ' << bt_vec.getY() << ' ' << bt_vec.getZ() << endl;
+    //cout << "Vector3d:" << endl;
+    //cout << vec.transpose() << endl;
     //END_DEBUG
     return vec;
   }
