@@ -50,9 +50,9 @@ classdef Manipulator < DrakeSystem
             Hinv*(-dC(:,obj.num_positions+1:end))];
         end
         
-        [qdot,dqdot] = positionDerivative(obj,q,v); % TODO: change this to use vToqdot
-        xdot = [qdot;vdot];
-        dxdot = [zeros(obj.num_positions,1),dqdot,zeros(obj.num_positions,obj.num_u);dvdot];
+        [VqInv,dVqInv] = vToqdot(obj,q);
+        xdot = [VqInv*v;vdot];
+        dxdot = [zeros(obj.num_positions,1),dVqInv*v,VqInv,zeros(obj.num_positions,obj.num_u);dvdot];
       else
         [H,C,B] = manipulatorDynamics(obj,q,v);
         Hinv = inv(H);
@@ -64,30 +64,25 @@ classdef Manipulator < DrakeSystem
         %   vdot = H\tau
         % but I already have and use Hinv, so use it again here
         
-        xdot = [positionDerivative(obj,q,v); vdot];
+        xdot = [vToqdot(obj,q)*v; vdot];
       end      
       
     end
-    
-    function [qdot,dqdot] = positionDerivative(obj,q,v) % TODO: get rid of this
-      % default relationship is that v = qdot
-      assert(obj.num_positions==obj.num_velocities);
-      qdot = v;
-      if nargout>1
-        dqdot = [zeros(obj.num_positions),eye(obj.num_positions)];
-      end
-    end
-    
-    function Vq = qdotTov(obj, q)
+        
+    function [Vq,dVq] = qdotTov(obj, q)
+      % defines the linear map v = Vq * qdot
       % default relationship is that v = qdot
       assert(obj.num_positions==obj.num_velocities);
       Vq = eye(length(q));
+      dVq = zeros(length(q));
     end
     
-    function VqInv = vToqdot(obj, q)
+    function [VqInv,dVqInv] = vToqdot(obj, q)
+      % defines the linear map qdot = Vqinv * v
       % default relationship is that v = qdot
       assert(obj.num_positions==obj.num_velocities);
       VqInv = eye(length(q));
+      dVq = zeros(length(q));
     end
     
     function y = output(obj,t,x,u)
@@ -205,7 +200,7 @@ classdef Manipulator < DrakeSystem
     end
     
     function con = stateConstraints(obj,x)
-      % wraps up the position and velocity constraints into the general constriant
+      % wraps up the position and velocity constraints into the general constraint
       % method.  note that each position constraint (phi=0) also imposes an implicit
       % velocity constraint on the system (phidot=0).
 
@@ -220,7 +215,7 @@ classdef Manipulator < DrakeSystem
       else
         psi=[];
       end
-      con = [phi; J*positionDerivative(obj,q,v); psi];  % phi=0, phidot=0, psi=0
+      con = [phi; J*vToqdot(obj,q)*v; psi];  % phi=0, phidot=0, psi=0
     end
     
     function n = getNumJointLimitConstraints(obj)
@@ -306,7 +301,7 @@ classdef Manipulator < DrakeSystem
         q=x(1:obj.num_positions); v=x((obj.num_positions+1):end);
         [~,C,B] = manipulatorDynamics(obj,q,v);
         if (obj.num_u>0) tau=B*u; else tau=zeros(obj.num_u,1); end
-        rhs = [positionDerivative(obj,q,v);tau - C];
+        rhs = [vToqdot(obj,q)*v;tau - C];
       end
       function lhs = dynamics_lhs(obj,x)
         q=x(1:obj.num_positions); v=x((obj.num_positions+1):end);
