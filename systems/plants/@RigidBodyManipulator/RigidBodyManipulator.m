@@ -18,6 +18,7 @@ classdef RigidBodyManipulator < Manipulator
     gravity=[0;0;-9.81];
     dim=3;
     terrain;
+    num_contact_pairs;
     frame = [];     % array of RigidBodyFrame objects
   end
   
@@ -513,9 +514,11 @@ classdef RigidBodyManipulator < Manipulator
       if (any(model.joint_limit_min~=-inf) || any(model.joint_limit_max~=inf))
         warning('Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
-      model.num_contacts = size([model.body.contact_pts],2);
-      if (model.num_contacts>0)
-        warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
+      
+      %TODO: compile this correctly
+      model.num_contact_pairs = size([model.body.contact_pts],2);
+      if (model.num_contact_pairs>0)
+        warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end
       
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
@@ -1201,6 +1204,21 @@ classdef RigidBodyManipulator < Manipulator
       for k=1:m
         d{k}=cos(theta(k))*t1 + sin(theta(k))*t2;
       end      
+    end
+    
+    function n=getNumContactPairs(obj)
+      n = obj.num_contact_pairs;
+    end
+    
+    function [phi,dphi] = unilateralConstraints(obj,x)
+      q = x(1:obj.getNumPositions);
+      [phi,~,~,~,~,~,~,dphi] = obj.contactConstraints(q);
+    end
+    
+    function n = getNumUnilateralConstraints(obj)
+      % Returns the number of unilateral constraints, currently only
+      % contains the contact pairs
+      n = obj.getNumContactPairs();
     end
   end
     
