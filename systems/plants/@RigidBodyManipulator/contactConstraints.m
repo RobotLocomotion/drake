@@ -1,4 +1,4 @@
-function [phi,normal,xA,xB,idxA,idxB,mu,n,D,dn,dD] = contactConstraints(obj,kinsol,allow_multiple_contacts,body_idx)
+function [phi,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = contactConstraints(obj,kinsol,allow_multiple_contacts,active_collision_options)
 % function [phi,xA,xB,idxA,idxB,n,D,mu,dn,dD] = contactConstraints(obj,kinsol,body_idx)
 % Compute the contact constraints for a manipulator, and relevent bases.
 % The contact frame always points from body B to body A.
@@ -7,10 +7,11 @@ function [phi,normal,xA,xB,idxA,idxB,mu,n,D,dn,dD] = contactConstraints(obj,kins
 % @param kinsol
 % @param allow_multiple_contacts Allow multiple contacts per body pair.
 %      Optional, defaults to false.
-% @param body_idx Subset of body indices to use for collision detection.
-%      Optional argument, defaults to all bodies.
+% @param active_collision_options A optional struct to determine which
+%    bodies and collision groups are checked. See collisionDetect.
 % @retval phi (m x 1) Vector of gap function values (typically contact distance), for m possible contacts
 % @retval normal (3 x m) Contact normal vector in world coordinates, points from B to A
+% @retval d {k} (3 x m) Contact friction basis vectors in world coordinates, points from B to A
 % @retval xA (3 x m) The closest point on body A to contact with body B, relative to body A origin and in body A frame
 % @retval xB (3 x m) The closest point on body B to contact with body A, relative to body B origin and in body B frame
 % @retval idxA (m x 1) The index of body A. 0 is the special case for the environment/terrain
@@ -21,11 +22,15 @@ function [phi,normal,xA,xB,idxA,idxB,mu,n,D,dn,dD] = contactConstraints(obj,kins
 % @retval dn (mn x n) dn/dq derivative
 % @retval dD {k}(mn x n) dD/dq derivative
 
-compute_first_derivative = nargout > 7;
-compute_second_derivative = nargout > 9;
+compute_first_derivative = nargout > 8;
+compute_second_derivative = nargout > 10;
 
 if nargin<3,
-  body_idx = 1:length(obj.body);
+  allow_multiple_contacts = false;
+end
+
+if nargin<4,
+  active_collision_options = struct();
 end
 
 if ~isstruct(kinsol)  
@@ -33,7 +38,7 @@ if ~isstruct(kinsol)
   kinsol = doKinematics(obj,kinsol,compute_second_derivative);
 end
 
-[phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,allow_multiple_contacts,body_idx);
+[phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,allow_multiple_contacts,active_collision_options);
 nC = length(phi);
 
 % For now, all coefficients of friction are 1
