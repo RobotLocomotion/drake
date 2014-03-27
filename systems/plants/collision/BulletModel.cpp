@@ -112,24 +112,38 @@ namespace DrakeCollision
     btVector3 pointOnAinWorld = gjkOutput.m_pointInWorld +
       gjkOutput.m_normalOnBInWorld*gjkOutput.m_distance;
 
-    btVector3 pointOnA = input.m_transformA.invXform(pointOnAinWorld);
-    btVector3 pointOnB = input.m_transformB.invXform(gjkOutput.m_pointInWorld);
-    btVector3 normalOnB = input.m_transformB.invXform(gjkOutput.m_normalOnBInWorld+gjkOutput.m_pointInWorld);
+    btVector3 pointOnElemA = input.m_transformA.invXform(pointOnAinWorld);
+    btVector3 pointOnElemB = input.m_transformB.invXform(gjkOutput.m_pointInWorld);
+    btVector3 normalOnElemB = input.m_transformB.invXform(gjkOutput.m_normalOnBInWorld+gjkOutput.m_pointInWorld);
 
+    VectorXd pointOnA_1(4);
+    VectorXd pointOnB_1(4);
+    VectorXd normalOnB_1(4);
+    pointOnA_1 << toVector3d(pointOnElemA), 1;
+    pointOnB_1 << toVector3d(pointOnElemB), 1;
+    normalOnB_1  << toVector3d(normalOnElemB), 1;
+
+    Vector3d pointOnA;
+    Vector3d pointOnB;
+    Vector3d normalOnB;
+    pointOnA << elemA.getLinkTransform().topRows(3)*pointOnA_1;
+    pointOnB << elemB.getLinkTransform().topRows(3)*pointOnB_1;
+    normalOnB << elemB.getLinkTransform().topRows(3)*normalOnB_1;
+    
     //DEBUG
-    cerr << "In BulletModel::findClosestPointsBtwElements:" << endl;
-    std::cout << "ptsA:" << std::endl;
-    cout << pointOnA.getX() << ' ' 
-         << pointOnA.getY() << ' ' 
-         << pointOnA.getZ() << endl;
-    std::cout << "ptsB:" << std::endl;
-    cout << pointOnB.getX() << ' ' 
-         << pointOnB.getY() << ' ' 
-         << pointOnB.getZ() << endl;
-    std::cout << "normal:" << std::endl;
-    cout << gjkOutput.m_normalOnBInWorld.getX() << ' ' 
-         << gjkOutput.m_normalOnBInWorld.getY() << ' ' 
-         << gjkOutput.m_normalOnBInWorld.getZ() << endl;
+    //cerr << "In BulletModel::findClosestPointsBtwElements:" << endl;
+    //std::cout << "ptsA:" << std::endl;
+    //cout << pointOnA.getX() << ' ' 
+         //<< pointOnA.getY() << ' ' 
+         //<< pointOnA.getZ() << endl;
+    //std::cout << "ptsB:" << std::endl;
+    //cout << pointOnB.getX() << ' ' 
+         //<< pointOnB.getY() << ' ' 
+         //<< pointOnB.getZ() << endl;
+    //std::cout << "normal:" << std::endl;
+    //cout << gjkOutput.m_normalOnBInWorld.getX() << ' ' 
+         //<< gjkOutput.m_normalOnBInWorld.getY() << ' ' 
+         //<< gjkOutput.m_normalOnBInWorld.getZ() << endl;
     //END_DEBUG
 
     if (gjkOutput.m_hasResult) {
