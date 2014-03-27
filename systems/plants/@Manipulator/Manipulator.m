@@ -214,16 +214,16 @@ classdef Manipulator < DrakeSystem
 
       q=x(1:obj.num_positions); v=x(obj.num_positions+1:end);
       if (obj.num_position_constraints>0)
-        [phi,J] = geval(@obj.positionConstraints,q);
+        [phi,Jv] = positionConstraintsV(obj,q,v);
       else
-        phi=[]; J=zeros(0,obj.num_positions);
+        phi=[]; Jv=zeros(0,obj.num_positions);
       end
       if (obj.num_velocity_constraints>0)
         psi = obj.velocityConstraints(q,v);
       else
         psi=[];
       end
-      con = [phi; J*vToqdot(obj,q)*v; psi];  % phi=0, phidot=0, psi=0
+      con = [phi; Jv*v; psi];  % phi=0, phidot=0, psi=0
     end
     
     function n = getNumJointLimitConstraints(obj)

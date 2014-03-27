@@ -1,4 +1,4 @@
-function [x, Jv, Jvdot_times_v] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotationType, base_ind)
+function [x, Jv, Jvdot_times_v] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind)
 % computes the position of pts (given in the body frame) in the global
 % frame, as well as the Jacobian Jv that maps the joint velocity vector v
 % to xdot, and d/dt(Jv) * v.
@@ -31,9 +31,9 @@ function [x, Jv, Jvdot_times_v] = forwardKinV(obj, kinsol, body_or_frame_ind, po
 % x will be a 7xm matrix and (following out gradient convention) J will be
 % a ((7xm)*(q)) matrix with [J1;J2;....;Jm] where Ji = dxidq
 
-if nargin < 6
-  base_ind = 1;
-end
+if nargin < 5, rotation_type = 0; end
+if nargin < 6, base_ind = 1; end
+
 base = base_ind;
 endEffector = body_or_frame_ind;
 expressedIn = base; % todo: pass this in as an argument
@@ -64,7 +64,7 @@ end
 JX = -rHats * JOmega + repmat(JV, nPoints, 1);
 vSize = obj.num_velocities;
 
-switch (rotationType)
+switch (rotation_type)
   case 0 % no rotation included
     x = points;
     Phi = zeros(0, 3);
