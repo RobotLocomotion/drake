@@ -2,6 +2,7 @@
 #define __RigidBodyManipulator_H__
 
 #include <Eigen/Dense>
+#include <Eigen/LU>
 #include <set>
 #include <vector>
 
@@ -56,7 +57,7 @@ public:
   void forwardKin(const int body_or_frame_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x);
 
   template <typename DerivedA, typename DerivedB>
-  void forwardJacDot(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &Jdot);
+  void forwardJacDot(const int body_ind, const MatrixBase<DerivedA>& pts, const int, MatrixBase<DerivedB> &Jdot);
 
   template <typename DerivedA, typename DerivedB>
   void forwardJac(const int body_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &J);
@@ -162,24 +163,19 @@ private:
   MatrixXd bdJ;
 
   // preallocate for CMM function
-  MatrixXd P; // spatial incidence matrix 
-  MatrixXd dP; // dP_dq * qd 
-  MatrixXd Pinv;
-  MatrixXd Phi; // joint axis matrix
-  MatrixXd Is; // system inertia matrix
   MatrixXd Xg; // spatial centroidal projection matrix
+  MatrixXd dXg;  // dXg_dq * qd  
+  MatrixXd *Ic; // body spatial inertias
+  MatrixXd *dIc; // derivative of body spatial inertias
+  VectorXd *phi; // joint axis vectors
   MatrixXd *Xworld; // spatial transforms from world to each body
-  MatrixXd dXg;  // dXg_dq * qd
   MatrixXd *dXworld; // dXworld_dq * qd
-  MatrixXd *dXup; // dXup_dq * qd
+  MatrixXd *dXup; // dXup_dq * qd 
   MatrixXd Xcom; // spatial transform from centroid to world
   MatrixXd Jcom; 
   MatrixXd dXcom;
   MatrixXd Xi;
   MatrixXd dXidq;
-  VectorXd s;
-  MatrixXd Js;
-  MatrixXd Jdot;
 
   int num_contact_pts;
   bool initialized;
