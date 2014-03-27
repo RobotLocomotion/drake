@@ -102,28 +102,28 @@ classdef Manipulator < DrakeSystem
     
       phi=[]; psi=[];
       if (obj.num_position_constraints>0 && obj.num_velocity_constraints>0)
-        [phi,J,dJ] = geval(@obj.positionConstraints,q);
-        Jdotqd = dJ*reshape(qd*qd',obj.num_q^2,1);
+        [phi,Jv,Jvdot_times_v] = positionConstraintsV(obj,q,v);
+        A = vToqdot(q);
 
-        [psi,dpsi] = geval(@obj.velocityConstraints,q,qd);
-        dpsidq = dpsi(:,1:obj.num_q);
-        dpsidqd = dpsi(:,obj.num_q+1:end);
+        [psi,dpsi] = geval(@obj.velocityConstraints,q,v);
+        dpsidq = dpsi(:,1:obj.num_positions);
+        dpsidv = dpsi(:,obj.num_positions+1:end);
         
-        term1=Hinv*[J;dpsidqd]';
+        term1=Hinv*[Jv;dpsidv]';
         term2=Hinv*tau;
         
-        constraint_force = -[J;dpsidqd]'*pinv([J*term1;dpsidqd*term1])*[J*term2 + Jdotqd + alpha*J*qd; dpsidqd*term2 + dpsidq*qd + beta*psi];
+        constraint_force = -[Jv;dpsidv]'*pinv([Jv*term1;dpsidv*term1])*[Jv*term2 + Jvdot_times_v + alpha*Jv*v; dpsidv*term2 + dpsidq*A*v + beta*psi];
       elseif (obj.num_position_constraints>0)  % note: it didn't work to just have dpsidq,etc=[], so it seems like the best solution is to handle each case...
-        [phi,J,dJ] = geval(@obj.positionConstraints,q);
-        Jdotqd = dJ*reshape(qd*qd',obj.num_q^2,1);
+        [phi,Jv,Jvdot_times_v] = positionConstraintsV(obj,q,v);
 
-        constraint_force = -J'*pinv(J*Hinv*J')*(J*Hinv*tau + Jdotqd + alpha*J*qd);
+        constraint_force = -Jv'*pinv(Jv*Hinv*Jv')*(Jv*Hinv*tau + Jvdot_times_v + alpha*Jv*v);
       elseif (obj.num_velocity_constraints>0)
-        [psi,J] = geval(@obj.velocityConstraints,q,qd);
-        dpsidq = J(:,1:obj.num_q);
-        dpsidqd = J(:,obj.num_q+1:end);
+        [psi,Jv] = geval(@obj.velocityConstraints,q,v);
+        A = vToqdot(q);
+        dpsidq = J(:,1:obj.num_positions);
+        dpsidv = J(:,obj.num_positions+1:end);
         
-        constraint_force = -dpsidqd'*pinv(dpsidqd*Hinv*dpsidqd')*(dpsidq*qd + dpsidqd*Hinv*tau+beta*psi);
+        constraint_force = -dpsidv'*pinv(dpsidv*Hinv*dpsidv')*(dpsidq*A*v + dpsidv*Hinv*tau + beta*psi);
       else
         constraint_force = 0*q;
       end
@@ -192,13 +192,21 @@ classdef Manipulator < DrakeSystem
       error('manipulators with position constraints must overload this function');
     end
     
+    function [phi,Jv,Jvdot_times_v] = positionConstraintsV(obj,q,v)
+      [phi,J,dJ] = geval(@obj.positionConstraints,q);
+      A = vToqdot(q);
+      qd = vToqdot(q)*v;
+      Jv = J*A;
+      Jv_times_v = dJ*reshape(qd*qd',obj.num_q^2,1);
+    end
+    
     function psi = velocityConstraints(obj,q,v)
       % Implements velocity constraints of the form psi(q,qdot) = 0
       % Note: dphidqdot must not be zero. constraints which depend 
       % only on q should be implemented instead as positionConstraints.
       error('manipulators with velocity constraints must overload this function'); 
     end
-    
+        
     function con = stateConstraints(obj,x)
       % wraps up the position and velocity constraints into the general constraint
       % method.  note that each position constraint (phi=0) also imposes an implicit
