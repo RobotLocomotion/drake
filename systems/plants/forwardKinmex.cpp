@@ -105,11 +105,12 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   pts << pts_tmp, MatrixXd::Ones(1,n_pts);
 
   if (b_jacdot) {
-    if (rotation_type>0) mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Jacobian dot of rotations are not implemented yet");
-    plhs[0] = mxCreateDoubleMatrix(dim*n_pts,model->num_dof,mxREAL);  
-    Map<MatrixXd> Jdot(mxGetPr(plhs[0]),dim*n_pts,model->num_dof);
-    model->forwardJacDot(body_ind,pts,Jdot);
-    return;
+    if (rotation_type>1) mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Jacobian dot of quaternions are not implemented yet");
+
+		plhs[0] = mxCreateDoubleMatrix(dim_with_rot*n_pts,model->num_dof,mxREAL); 
+    Map<MatrixXd> Jdot(mxGetPr(plhs[0]),dim_with_rot*n_pts,model->num_dof);
+    model->forwardJacDot(body_ind,pts,rotation_type,Jdot);
+		return;
   } else {
     if (nlhs>0) {
       plhs[0] = mxCreateDoubleMatrix(dim_with_rot,n_pts,mxREAL);
