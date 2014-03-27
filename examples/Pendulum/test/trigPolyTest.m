@@ -20,6 +20,7 @@ tf = findTransform(tp1.getStateFrame,p1.getStateFrame);
 % matrix in f, the other has it in e)
 for i=1:25
   x = Point(p1.getStateFrame,randn(2,1));
+  x(1) = mod(x(1),2*pi);
   xp = x.inFrame(tp1.getStateFrame);
   x = double(x); xp=double(xp);
   u = randn;
@@ -30,6 +31,7 @@ for i=1:25
   valuecheck(xpdot,tp2.dynamics(0,xp,u));
   
   [xpx,dxdxp] = geval(@tf.output,[],[],xp);
+  xpx(1) = mod(xpx(1),2*pi);
   valuecheck(x,xpx);
   valuecheck(xdot,dxdxp*xpdot);
 end
