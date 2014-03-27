@@ -172,6 +172,10 @@ display('Check Relative position constraint');
 testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.RelativePositionConstraintType,robot,robot_aff,...
   [[0;0;0],[0;1;0.2]],[[nan;-0.1;-0.2],[-0.2;nan;-0.4]],[[nan;0.1;0.2],[0.3;nan;0]],...
   r_hand,head,[[0;0.1;0.2];rpy2quat(randn(3,1))],tspan0);
+
+display('Check Relative quaternion constraint');
+testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.RelativeQuatConstraintType,robot,robot_aff,...
+  r_hand,l_hand,rpy2quat(randn(3,1)),5/180*pi,tspan0);
 end
 
 function testKinCnst_userfun(singleTimeFlag,t,q,q_aff,cnst_type,robot,robot_aff,varargin)
