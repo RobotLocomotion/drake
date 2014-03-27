@@ -17,6 +17,11 @@ namespace DrakeCollision
     return T_elem_to_world;
   }
 
+  const Matrix4d& Element::getLinkTransform() const
+  {
+    return T_elem_to_link;
+  }
+
   void Element::updateWorldTransform(const Matrix4d& T_link_to_world)
   {
     setWorldTransform(T_link_to_world*(this->T_elem_to_link));

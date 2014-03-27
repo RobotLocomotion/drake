@@ -16,6 +16,8 @@ namespace DrakeCollision
 
       const Matrix4d& getWorldTransform() const; 
 
+      const Matrix4d& getLinkTransform() const; 
+
     protected:
       virtual void setWorldTransform(const Matrix4d& T_elem_to_world);
 
