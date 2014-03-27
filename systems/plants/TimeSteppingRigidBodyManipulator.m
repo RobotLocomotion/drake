@@ -259,11 +259,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         else
           nL = sum([obj.manip.joint_limit_min~=-inf;obj.manip.joint_limit_max~=inf]); % number of joint limits
         end
-        nC = obj.manip.num_contacts;
+        nContactPairs = obj.manip.getNumContactPairs;
         nP = 2*obj.manip.num_position_constraints;  % number of position constraints
         nV = obj.manip.num_velocity_constraints;
         
-        if (nC+nL+nP+nV==0)
+        if (nContactPairs+nL+nP+nV==0)
           z = [];
           Mqdn = [];
           wqdn = qd + h*(H\tau);
@@ -283,8 +283,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         % and implement equation (7) from Anitescu97, by collecting
         %   J = [JL; JP; n; D{1}; ...; D{mC}; zeros(nC,num_q)]
         
-        if (nC > 0)
+        if (nContactPairs > 0)
           if (nargout>4)
+            [phiC,~,~,~,~,~,mu,n,D,dn,dD] = obj.manip.contactConstraints(q,true)
             [phiC,n,D,mu,dn,dD] = obj.manip.contactConstraints(q);  % this is what I want eventually.
             mC = length(D);
             dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
