@@ -285,8 +285,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         
         if (nContactPairs > 0)
           if (nargout>4)
-            [phiC,~,~,~,~,~,mu,n,D,dn,dD] = obj.manip.contactConstraints(q,true)
-            [phiC,n,D,mu,dn,dD] = obj.manip.contactConstraints(q);  % this is what I want eventually.
+            [phiC,~,~,~,~,~,mu,n,D,dn,dD] = obj.manip.contactConstraints(q,true);
+            nC = length(phiC);
             mC = length(D);
             dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
             dJ(nL+nP+(1:nC),:) = reshape(dn,nC,[]);
@@ -303,6 +303,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           J(nL+nP+nC+(1:mC*nC),:) = D;
         else
           mC=0;
+          nC=0;
           J = zeros(nL+nP,num_q);
           if (nargout>4)
             dJ = sparse(nL+nP,num_q^2);
