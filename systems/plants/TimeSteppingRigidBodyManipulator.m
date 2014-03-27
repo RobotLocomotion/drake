@@ -181,7 +181,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       else
         vn = Mvn*z + wvn;
       end
-      qn = q + h*positionDerivative(obj.manip,q,vn);
+      qn = q + h*vToqdot(obj.manip,q)*vn;
       xdn = [qn;vn];
       
       if (nargout>1)  % compute gradients
@@ -283,7 +283,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         % for documentation below, use slack vars: s = Mz + w >= 0
         %
         % use qn = q + h*vn
-        % where H(q)*(vn - qd)/h = B*u - C(q) + J(q)'*z
+        % where H(q)*(vn - v)/h = B*u - C(q) + J(q)'*z
         %  or vn = qd + H\(h*tau + J'*z)
         %  with z = [h*cL; h*cP; h*cN; h*beta{1}; ...; h*beta{mC}; lambda]
         %
@@ -303,14 +303,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             [phiC,n,D,mu] = obj.manip.contactConstraints(q);
             mC = length(D);
           end
-          J = zeros(nL + nP + (mC+2)*nC,num_q)*q(1); % *q(1) is for taylorvar
+          J = zeros(nL + nP + (mC+2)*nC,num_v)*q(1); % *q(1) is for taylorvar
           D = vertcat(D{:});
           J(nL+nP+(1:nC),:) = n;
           J(nL+nP+nC+(1:mC*nC),:) = D;
         else
           mC=0;
-          J = zeros(nL+nP,num_q);
+          J = zeros(nL+nP,num_v);
           if (nargout>4)
+            error('not reimplemented yet');
             dJ = sparse(nL+nP,num_q^2);
           end
         end
@@ -337,9 +338,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           % write as
           %   phiP + h*JP*vn >= 0 && -phiP - h*JP*vn >= 0
           if (nargout<5)
-            [phiP,JP] = geval(@positionConstraints,obj.manip,q);
+            [phiP,JP] = positionConstraintsV(obj.manip,q);
             %        [phiP,JP] = obj.manip.positionConstraints(q);
           else
+            error('not reimplemented yet');
             [phiP,JP,dJP] = geval(@positionConstraints,obj.manip,q);
             dJP(nL+(1:nP),:) = [dJP; -dJP];
           end
@@ -614,8 +616,16 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       B = getB(obj.manip);
     end
     
-    function num_q = getNumDOF(obj)
-      num_q = obj.manip.num_q;
+    function n = getNumDOF(obj)
+      error('getNumDOF is deprecated.  In order to fully support quaternion floating base dynamics, we had to change the interface to allow a different number position and velocity elements in the state vector.  Use getNumPositions() and getNumVelocities() instead.');
+    end
+    
+    function n = getNumPositions(obj)
+      n = obj.manip.num_positions;
+    end
+    
+    function n = getNumVelocities(obj);
+      n = obj.manip.num_velocities;
     end
     
     function obj = setStateFrame(obj,fr)

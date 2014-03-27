@@ -26,7 +26,11 @@ function [x, J] = forwardKin(obj, kinsol, body_or_frame_ind, points, rotation_ty
 
 if (nargin<5), rotation_type=0; end
 
-[x, Jv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, 1);
-J = Jv * kinsol.qdotToV;
+if (nargout>1)
+  [x, Jv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, 1);
+  J = Jv * kinsol.qdotToV;
+else
+  x = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, 1);
+end
 
 end

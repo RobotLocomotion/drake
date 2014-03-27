@@ -981,11 +981,16 @@ classdef RigidBodyManipulator < Manipulator
       [varargout{:}] = pdcontrol@SecondOrderSystem(sys,Kp,Kd,index);
     end    
     
-    function [phi,varargout] = positionConstraints(obj,q)
+    function phi = positionConstraints(obj,q) 
+      phi = positionConstraintsV(obj,q);
+    end
+    
+    function [phi,varargout] = positionConstraintsV(obj,q,v)
       checkDirty(obj);
+      if (nargin<3), v=[]; end
       % so far, only loop constraints are implemented
       varargout = cell(1,nargout-1);
-      [phi,varargout{:}]=loopConstraints(obj,q);
+      [phi,varargout{:}]=loopConstraintsV(obj,q,v);
     end
     
     function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,options)
@@ -1006,8 +1011,9 @@ classdef RigidBodyManipulator < Manipulator
       
       if ~isfield(options,'visualize'), options.visualize=false; end
       
-      nq = obj.getNumDOF();
-      nu = obj.getNumInputs();
+      nq = getNumPositions(obj);
+      nv = getNumVelocities(obj);
+      nu = getNumInputs(obj);
 
       if isfield(options,'active_collision_groups') 
         nz=0; npts=0; active_contacts=[];
@@ -1051,7 +1057,7 @@ classdef RigidBodyManipulator < Manipulator
       lb_z(3:3:end) = 0; % normal forces must be >=0
       ub_z = 1e6*ones(nz,1);
     
-      [jl_min,jl_max] = obj.getJointLimits();
+      [jl_min,jl_max] = getJointLimits(obj);
       % force search to be close to starting position
       problem.lb = [jl_min; obj.umin; lb_z];
       problem.ub = [jl_max; obj.umax; ub_z];
@@ -1067,7 +1073,7 @@ classdef RigidBodyManipulator < Manipulator
 
       function stop=drawme(quz,optimValues,state)
         stop=false;
-        v.draw(0,[quz(1:nq); zeros(nq,1)]);
+        v.draw(0,[quz(1:nq); zeros(nv,1)]);
       end
 
       function [c,ceq,GC,GCeq] = mycon(quz)
@@ -1075,7 +1081,7 @@ classdef RigidBodyManipulator < Manipulator
         u=quz(nq+(1:nu));
         z=quz(nq+nu+(1:nz));
 
-        [~,C,B,~,dC,~] = obj.manipulatorDynamics(q,zeros(nq,1));
+        [~,C,B,~,dC,~] = obj.manipulatorDynamics(q,zeros(nv,1));
         [phiC,JC] = obj.contactConstraints(q);
         [~,J,dJ] = obj.contactPositions(q);
         
@@ -1101,7 +1107,7 @@ classdef RigidBodyManipulator < Manipulator
         GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[JC'; zeros(nu+nz,length(phiC))]]; 
         
         if (obj.num_xcon>0)
-          [phi,dphi] = geval(@obj.stateConstraints,[q;0*q]);
+          [phi,dphi] = geval(@obj.stateConstraints,[q;zeros(nv,1)]);
           ceq = [ceq; phi];
           GCeq = [GCeq, [dphi(:,1:nq),zeros(obj.num_xcon,nu+nz)]'];
         end
@@ -1536,29 +1542,29 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
     
-    function [phi,dphi,ddphi] = loopConstraints(obj,q)
+    function [phi,Jv,Jvdot_times_v] = loopConstraintsV(obj,q,v)
       % handle kinematic loops
 
-      phi=[];dphi=[];ddphi=[];
+      phi=[];Jv=[];Jvdot_times_v=[];
 
-      kinsol = doKinematics(obj,q,nargout>2);
+      kinsol = doKinematics(obj,q,nargout>2,true,v);
       
       for i=1:length(obj.loop)
         % for each loop, add the constraints that the pt1 on body1 is in
         % the same location as pt2 on body2
         
         if (nargout>2)
-          [pt1,J1,dJ1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          [pt2,J2,dJ2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-          ddphi = [ddphi; dJ1-dJ2];
-          dphi = [dphi; J1-J2];
+          [pt1,Jv1,Jv1dot_times_v] = obj.forwardKinV(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
+          [pt2,Jv2,Jv2dot_times_v] = obj.forwardKinV(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
+          Jvdot_times_v = [Jvdot_times_v; Jv1dot_times_v - Jv2dot_times_v];
+          Jv = [Jv; Jv1-Jv2];
         elseif nargout>1
-          [pt1,J1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          [pt2,J2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-          dphi = [dphi; J1-J2];
+          [pt1,Jv1] = obj.forwardKinV(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
+          [pt2,Jv2] = obj.forwardKinV(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
+          Jv = [Jv; Jv1-Jv2];
         else
-          pt1 = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          pt2 = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
+          pt1 = obj.forwardKinV(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
+          pt2 = obj.forwardKinV(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
         end
         phi = [phi; pt1-pt2];
       end
