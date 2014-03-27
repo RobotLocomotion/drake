@@ -20,9 +20,9 @@ tf = findTransform(tp1.getStateFrame,p1.getStateFrame);
 % matrix in f, the other has it in e)
 for i=1:25
   x = Point(p1.getStateFrame,randn(2,1));
-  x(1) = mod(x(1),2*pi);
   xp = x.inFrame(tp1.getStateFrame);
   x = double(x); xp=double(xp);
+  x(1) = mod(x(1),2*pi);
   u = randn;
 
   xdot = p1.dynamics(0,x,u);
