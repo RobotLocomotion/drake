@@ -180,6 +180,7 @@ switch (method)
     o = nargout-p;
     ind=1;
     
+    if ~isfield(options,'diff_type'), options.diff_type = 'forward'; end; 
     if isfield(options,'da') 
       da = options.da;
     else
@@ -194,8 +195,12 @@ switch (method)
           varargin{i}(j)=varargin{i}(j)-2*da;
           [df_m{:}]=feval(fun,varargin{:});
           for k=1:o
-            %varargout{p+k}(:,ind) = (df_p{k}-df_m{k})/(2*da);
-            varargout{p+k}(:,ind) = (df_p{k}-varargout{k})/da;
+            switch options.diff_type
+              case 'forward'
+                varargout{p+k}(:,ind) = (df_p{k}-varargout{k})/da;
+              case 'central'
+                varargout{p+k}(:,ind) = (df_p{k}-df_m{k})/(2*da);
+            end
           end
           varargin{i}(j)=varargin{i}(j)+da;
           ind=ind+1;
