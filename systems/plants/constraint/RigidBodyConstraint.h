@@ -68,7 +68,7 @@ class RigidBodyConstraint
     static const int WorldFixedBodyPoseConstraintType           = 18;
     static const int PostureChangeConstraintType                = 19;
     static const int RelativePositionConstraintType             = 20;
-    static const int RelativeQuatConstraintType                 = 21;
+    static const int RelativeQuatConstraintType                 = 24;
 };
 
 /**
