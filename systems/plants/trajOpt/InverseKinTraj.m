@@ -118,10 +118,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
           for j = t_start:obj.nT
             if(varargin{i}.isTimeValid(obj.t_knot(j)))
               cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
-              obj = obj.addNonlinearConstraint(cnstr{1},obj.q_idx(:,j));
-              obj.nlcon_kinsol_idx = [obj.nlcon_kinsol_idx,{j}];
-              obj.nlcon_nonkinsol_idx = [obj.nlcon_nonkinsol_idx,{[]}];
-              obj.t_kinsol(j) = true;
+              obj = obj.addNonlinearConstraint(cnstr{1},j,[],obj.q_idx(:,j));
             end
           end
         elseif(isa(varargin{i},'PostureConstraint'))
@@ -138,15 +135,13 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
                 error('Drake:InverseKinTraj:currently only support at most one QuasiStaticConstraint at an individual time');
               end
               cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
-              obj.x_name = [obj.x_name;cell(varargin{i}.num_pts,1)];
+              qsc_weight_names = cell(varargin{i}.num_pts,1);
               for k = 1:varargin{i}.num_pts
-                obj.x_name{obj.num_vars+k} = sprintf('qsc_weight%d[%d]',k,j);
+                qsc_weight_names{k} = sprintf('qsc_weight%d',k);
               end
               obj.qsc_weight_idx{j} = obj.num_vars+(1:varargin{i}.num_pts)';
-              obj = obj.addDecisionVariable(varargin{i}.num_pts);
-              obj = obj.addNonlinearConstraint(cnstr{1},[obj.q_idx(:,j);obj.qsc_weight_idx{j}]);
-              obj.nlcon_kinsol_idx = [obj.nlcon_kinsol_idx,{j}];
-              obj.nlcon_nonkinsol_idx = [obj.nlcon_nonkinsol_idx,obj.qsc_weight_idx(j)];
+              obj = obj.addDecisionVariable(varargin{i}.num_pts,qsc_weight_names);
+              obj = obj.addNonlinearConstraint(cnstr{1},j,obj.qsc_weight_idx{j},[obj.q_idx(:,j);obj.qsc_weight_idx{j}]);
             end
           end
         elseif(isa(varargin{i},'SingleTimeLinearPostureConstraint'))
@@ -161,11 +156,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
           t_idx = (t_start:obj.nT);
           valid_t_idx = t_idx(valid_t_flag);
           cnstr = varargin{i}.generateConstraint(obj.t_knot(valid_t_idx));
-          obj = obj.addNonlinearConstraint(cnstr{1},reshape(obj.q_idx(:,valid_t_idx),[],1));
-          
-          obj.nlcon_kinsol_idx = [obj.nlcon_kinsol_idx,{valid_t_idx}];
-          obj.nlcon_nonkinsol_idx = [obj.nlcon_nonkinsol_idx,{[]}];
-          obj.t_kinsol(valid_t_flag) = true;
+          obj = obj.addNonlinearConstraint(cnstr{1},valid_t_idx,[],reshape(obj.q_idx(:,valid_t_idx),[],1));
         elseif(isa(varargin{i},'MultipleTimeLinearPostureConstraint'))
           cnstr = varargin{i}.generateConstraint(obj.t_knot(t_start:end));
           obj = obj.addLinearConstraint(cnstr{1},reshape(obj.q_idx(:,t_start:end),[],1));
@@ -190,14 +181,10 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       obj.cpe = CubicPostureError(obj.t_knot,obj.Q,obj.q_nom,obj.Qv,obj.Qa);
       if(isempty(obj.cost))
         xind = [obj.q_idx(:);obj.qd0_idx;obj.qdf_idx];
-        obj = obj.addCost(obj.cpe,xind);
-        obj.cost_kinsol_idx = {[]};
-        obj.cost_nonkinsol_idx{1} = xind;
+        obj = obj.addCost(obj.cpe,[],xind,xind);
       else
         xind = [obj.q_idx(:);obj.qd0_idx;obj.qdf_idx];
-        obj = obj.replaceCost(obj.cpe,1,xind);
-        obj.cost_kinsol_idx{1} = [];
-        obj.cost_nonkinsol_idx{1} = xind;
+        obj = obj.replaceCost(obj.cpe,1,[],xind,xind);
       end
     end
     
@@ -291,8 +278,17 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       q_seed = qtraj_seed.eval(obj.t_knot);
       x0 = zeros(obj.num_vars,1);
       x0(obj.q_idx(:)) = q_seed(:);
-      x0(obj.qd0_idx) = (obj.x_lb(obj.qd0_idx)+obj.x_ub(obj.qd0_idx))/2;
-      x0(obj.qdf_idx) = (obj.x_lb(obj.qdf_idx)+obj.x_ub(obj.qdf_idx))/2;
+      qd0 = (obj.x_lb(obj.qd0_idx)+obj.x_ub(obj.qd0_idx))/2;
+      qd0(isnan(qd0)) = 0;
+      x0(obj.qd0_idx) = qd0;
+      qdf = (obj.x_lb(obj.qdf_idx)+obj.x_ub(obj.qdf_idx))/2;
+      qdf(isnan(qdf)) = 0;
+      x0(obj.qdf_idx) = qdf;
+      for i = 1:length(obj.qsc_weight_idx)
+        if(~isempty(obj.qsc_weight_idx{i}))
+          x0(obj.qsc_weight_idx{i}) = 1/length(obj.qsc_weight_idx{i});
+        end
+      end
       [x,F,info] = solve@NonlinearProgramWConstraint(obj,x0);
       [q,qdot,qddot] = obj.cpe.cubicSpline(x([obj.q_idx(:);obj.qd0_idx;obj.qdf_idx]));
       xtraj = PPTrajectory(pchipDeriv(obj.t_knot,[q;qdot],[qdot;qddot]));
@@ -335,6 +331,120 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       else
         error('not implemented yet');
       end
+    end
+    
+    function obj = addNonlinearConstraint(obj,cnstr,kinsol_idx,non_kinsol_idx,xind)
+      % @param cnstr     -- A NonlinearConstraint object
+      % @param xind      -- Optional argument. The x(xind) is the decision variables used
+      % in evaluating the cnstr. Default value is (1:obj.num_vars)
+      % @param kinsol_idx  -- If the constraint calls kinsol, then q(:,kinsol_idx) are the
+      % postures whose kinsol needs to be evaluated for the new constraint. If the new
+      % constraint does not need kinsol for evaluation, then kinsol_idx = [];
+      % @param non_kinsol_idx    -- A vector. The indices of decision variables, apart from kinsol,
+      % that are used for evaluating the constraint. If only kinsol is used, then
+      % non_kinsol_idx = [];
+      if(nargin<5)
+        xind = (1:obj.num_vars)';
+      end
+      obj = addNonlinearConstraint@NonlinearProgramWConstraint(obj,cnstr,xind);
+      kinsol_idx = floor(kinsol_idx(:));
+      obj.nlcon_kinsol_idx = [obj.nlcon_kinsol_idx,{kinsol_idx}];
+      if(~isnumeric(non_kinsol_idx))
+        error('Drake:InverseKinTraj:addNonlinearConstraint:non_kinsol_idx should be numeric');
+      end
+      non_kinsol_idx = floor(non_kinsol_idx(:));
+      if(any(non_kinsol_idx<1 | non_kinsol_idx>obj.num_vars))
+        error('Drake:InverseKin:addNonlinearConstraintTraj:non_kinsol_idx out of range');
+      end
+      obj.nlcon_nonkinsol_idx = [obj.nlcon_nonkinsol_idx,{non_kinsol_idx}];
+      obj.t_kinsol(kinsol_idx) = true;
+    end
+    
+    function obj = addCost(obj,cost,kinsol_idx,non_kinsol_idx,xind)
+      % @param cnstr   -- A NonlinearConstraint or a LinearConstraint
+      % @param xind      -- Optional argument. x(xind) is the decision variables used in
+      % evaluating the cost. Default value is (1:obj.num_vars)
+      % @param kinsol_idx  -- If the cost calls kinsol, then q(:,kinsol_idx) are the
+      % postures whose kinsol needs to be evaluated for the new cost. If the new
+      % cost does not need kinsol for evaluation, then kinsol_idx = [];
+      % @param non_kinsol_idx    -- A vector. The indices of decision variables, apart from kinsol,
+      % that are used for evaluating the cost. If only kinsol is used, then
+      % non_kinsol_idx = [];
+      if(nargin<5)
+        xind = (1:obj.num_vars)';
+      end
+      obj = addCost@NonlinearProgramWConstraint(obj,cost,xind);
+      kinsol_idx = floor(kinsol_idx(:));
+      obj.cost_kinsol_idx = [obj.cost_kinsol_idx,{kinsol_idx}];
+      if(~isnumeric(non_kinsol_idx))
+        error('Drake:InverseKinTraj:addCost:non_kinsol_idx should be numeric');
+      end
+      non_kinsol_idx = floor(non_kinsol_idx(:));
+      if(any(non_kinsol_idx<1 | non_kinsol_idx>obj.num_vars))
+        error('Drake:InverseKinTraj:addCost:non_kinsol_idx out of range');
+      end
+      obj.cost_nonkinsol_idx = [obj.cost_nonkinsol_idx,{non_kinsol_idx}];
+      obj.t_kinsol(kinsol_idx) = true;
+    end
+    
+    function obj = replaceCost(obj,cost,cost_idx,kinsol_idx,non_kinsol_idx,xind)
+      % @param cost     -- A Constraint object, currently accepts NonlinearConstraint and
+      % LinearConstraint
+      % @param cost_idx -- The index of the original cost to be replaced
+      % @param xind     -- Optional argument. x(xind) is the decision variables used in
+      % evaluating the cost. Default value is (1:obj.num_vars)
+      % @param kinsol_idx  -- If the cost calls kinsol, then q(:,kinsol_idx) are the
+      % postures whose kinsol needs to be evaluated for the new cost. If the new
+      % cost does not need kinsol for evaluation, then kinsol_idx = [];
+      % @param non_kinsol_idx    -- A vector. The indices of decision variables, apart from kinsol,
+      % that are used for evaluating the cost. If only kinsol is used, then
+      % non_kinsol_idx = [];
+      if(nargin<6)
+        xind = (1:obj.num_vars)';
+      end
+      xind = xind(:);
+      obj.iFfun = [];
+      obj.jFvar = [];
+      num_cost = length(obj.cost);
+      sizecheck(cost_idx,[1,1]);
+      if(cost_idx>num_cost || cost_idx<1)
+        error('Drake:InverseKinTraj:replaceCost:cost_idx is out of range');
+      end
+      cost_tmp = obj.cost;
+      cost_tmp{cost_idx} = cost;
+      cost_xind_tmp = obj.cost_xind_cell;
+      cost_xind_tmp{cost_idx} = xind;
+      cost_kinsol_idx_tmp = obj.cost_kinsol_idx;
+      cost_kinsol_idx_tmp(cost_idx) = kinsol_idx;
+      cost_nonkinsol_idx_tmp = obj.cost_nonkinsol_idx;
+      cost_nonkinsol_idx_tmp{cost_idx} = non_kinsol_idx;
+      obj.cost = {};
+      obj.cost_xind_cell = {};
+      obj.cost_call_kinsol = [];
+      obj.cost_nonkinsol_idx = {};
+      for i = 1:num_cost
+        obj = obj.addCost(cost_tmp{i},cost_kinsol_idx_tmp(i),cost_nonkinsol_idx_tmp{i},cost_xind_tmp{i});
+      end      
+    end
+    
+    function obj = addDecisionVariable(obj,num_new_vars,var_names)
+      % appending new decision variables to the end of the current decision variables
+      % @param num_new_vars      -- An integer. The newly added decision variable is an
+      % num_new_vars x 1 double vector.
+      % @param var_names         -- A cell of strings. var_names{i} is the name of the
+      % i'th new decision variable
+      if(nargin<3)
+        var_names = cell(num_new_vars,1);
+        for i = 1:num_new_vars
+          var_names{i} = sprintf('x%d',obj.num_vars+i);
+        end
+      else
+        if(~iscellstr(var_names))
+          error('Drake:InverseKinTraj:addDecisionVariable:var_names should be a cell of strings');
+        end
+      end
+      obj = addDecisionVariable@NonlinearProgramWConstraint(obj,num_new_vars);
+      obj.x_name = [obj.x_name;var_names];
     end
   end
 end

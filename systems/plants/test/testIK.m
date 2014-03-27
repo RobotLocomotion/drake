@@ -289,6 +289,15 @@ q = test_IK_userfun(robot,q_seed,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptio
 kinsol = doKinematics(robot,q);
 valuecheck(qsc.checkConstraint(kinsol),true);
 
+% check addCost in InverseKin, minimizing the largest QuasiStaticWeight
+ikproblem = InverseKin(robot,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6);
+ikproblem = ikproblem.setQ(ikoptions.Q);
+ikproblem = ikproblem.addDecisionVariable(1);
+ikproblem = ikproblem.addLinearConstraint(LinearConstraint(zeros(qsc.num_pts,1),inf(qsc.num_pts,1),[ones(qsc.num_pts,1) -eye(qsc.num_pts)]),...
+  [ikproblem.num_vars;ikproblem.qsc_weight_idx]);
+ikproblem = ikproblem.addCost(LinearConstraint(-inf,inf,1),false,[],ikproblem.num_vars);
+[q,F,info,infeasible_constraint] = ikproblem.solve(q_seed);
+
 display('Check quasi static constraint for pointwise');
 q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
 for i = 1:size(q,2)

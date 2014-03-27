@@ -2,7 +2,14 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
   % The constraint of this nonlinear program is specified using 'Constraint' class in
   % drake
   
-  properties(SetAccess = private, GetAccess = protected)
+  properties(SetAccess = protected)
+    cin_name % A cell array of strings. cin_name{i} is the name of i'th nonlinear inequality constraint
+    ceq_name % A cell array of strings. ceq_name{i} is the name of i'th nonlinear equality constraint
+    Ain_name % A cell array of strings. Ain_name{i} is the name of i'th linear inequality constraint
+    Aeq_name % A cell array of strings. Aeq_name{i} is the name of i'th linear equality constraint
+  end
+  
+  properties(Access = protected)
     nlcon % A cell array of NonlinearConstraint
     lcon % A cell array of LinearConstraint
     bbcon % A cell array of BoundingBoxConstraint
@@ -15,11 +22,6 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
     bbcon_xind % A cell array, bbcon_xind{i} is an int vector recording the indices of x used in i'th BoundingBoxConstraint
     nlcon_ineq_idx % row index of nonlinear inequality constraint
     nlcon_eq_idx % row index of nonlinear equality constraint
-    
-    cin_name % A cell array of strings. cin_name{i} is the name of i'th nonlinear inequality constraint
-    ceq_name % A cell array of strings. ceq_name{i} is the name of i'th nonlinear equality constraint
-    Ain_name % A cell array of strings. Ain_name{i} is the name of i'th linear inequality constraint
-    Aeq_name % A cell array of strings. Aeq_name{i} is the name of i'th linear equality constraint
   end
   
   methods

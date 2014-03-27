@@ -168,6 +168,7 @@ classdef NonlinearProgram
       obj.solver_options.snopt.SuperbasicsLimit = 300;
       obj.solver_options.snopt.VerifyLevel = 0;
       obj.solver_options.snopt.DerivativeOption = 1;
+      obj.solver_options.snopt.print = '';
       obj.check_grad = false;
     end
     
@@ -257,57 +258,62 @@ classdef NonlinearProgram
         if(strcmpi(optionname(~isspace(optionname)),'majorfeasibilitytolerance'))
           sizecheck(optionval,[1,1]);
           if(optionval<=0)
-            error('Drake:NonlinearProgram:setSolverOptionField:MajorFeasibilityTolerance should be positive');
+            error('Drake:NonlinearProgram:setSolverOptions:MajorFeasibilityTolerance should be positive');
           end
           obj.solver_options.snopt.MajorFeasibilityTolerance = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'minorfeasibilitytolerance'))
           sizecheck(optionval,[1,1]);
           if(optionval<=0)
-            error('Drake:NonlinearProgram:setSolverOptionField:MinorFeasibilityTolerance should be positive');
+            error('Drake:NonlinearProgram:setSolverOptions:MinorFeasibilityTolerance should be positive');
           end
           obj.solver_options.snopt.MinorFeasibilityTolerance = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'majoroptimalitytolerance'))
           sizecheck(optionval,[1,1]);
           if(optionval<=0)
-            error('Drake:NonlinearProgram:setSolverOptionField:MajorOptimalityTolerance should be positive');
+            error('Drake:NonlinearProgram:setSolverOptions:MajorOptimalityTolerance should be positive');
           end
           obj.solver_options.snopt.MajorOptimalityTolerance = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'majoriterationslimit'))
           sizecheck(optionval,[1,1]);
           if(optionval<1)
-            error('Drake:NonlinearProgram:setSolverOptionField:MajorIterationsLimit should be positive integers');
+            error('Drake:NonlinearProgram:setSolverOptions:MajorIterationsLimit should be positive integers');
           end
           obj.solver_options.snopt.MajorIterationsLimit = floor(optionval);
         elseif(strcmpi(optionname(~isspace(optionname)),'minoriterationslimit'))
           sizecheck(optionval,[1,1]);
           if(optionval<1)
-            error('Drake:NonlinearProgram:setSolverOptionField:MinorIterationsLimit should be positive integers');
+            error('Drake:NonlinearProgram:setSolverOptions:MinorIterationsLimit should be positive integers');
           end
           obj.solver_options.snopt.MinorIterationsLimit = floor(optionval);
         elseif(strcmpi(optionname(~isspace(optionname)),'iterationslimit'))
           sizecheck(optionval,[1,1]);
           if(optionval<1)
-            error('Drake:NonlinearProgram:setSolverOptionField:IterationsLimit should be positive integers');
+            error('Drake:NonlinearProgram:setSolverOptions:IterationsLimit should be positive integers');
           end
           obj.solver_options.snopt.IterationsLimit = floor(optionval);
         elseif(strcmpi(optionname(~isspace(optionname)),'superbasicslimit'))
           sizecheck(optionval,[1,1]);
           if(optionval<1)
-            error('Drake:NonlinearProgram:setSolverOptionField:SuperbasicsLimit should be positive integers');
+            error('Drake:NonlinearProgram:setSolverOptions:SuperbasicsLimit should be positive integers');
           end
-          obj.solver_options.snopt.superbasicsLimit = floor(optionval);
+          obj.solver_options.snopt.SuperbasicsLimit = floor(optionval);
         elseif(strcmpi(optionname(~isspace(optionname)),'derivativeoption'))
           sizecheck(optionval,[1,1]);
           if(optionval ~= 0  && optionval ~= 1)
-            error('Drake:NonlinearProgram:setSolverOptionField:DerivativeOption can be either 0 or 1');
+            error('Drake:NonlinearProgram:setSolverOptions:DerivativeOption can be either 0 or 1');
           end
-          obj.solver_options.snopt.superbasicsLimit = optionval;
+          obj.solver_options.snopt.DerivativeOption = optionval;
         elseif(strcmpi(optionname(~isspace(optionname)),'verifylevel'))
           sizecheck(optionval,[1,1]);
           if(optionval ~= 0  && optionval ~= 1 && optionval ~= 2 && optionval ~= 3 && optionval ~= -1)
-            error('Drake:NonlinearProgram:setSolverOptionField:VerifyLevel can be either 0,1,2,3 or -1');
+            error('Drake:NonlinearProgram:setSolverOptions:VerifyLevel can be either 0,1,2,3 or -1');
           end
-          obj.solver_options.snopt.superbasicsLimit = optionval;
+          obj.solver_options.snopt.VerifyLevel = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'print'))
+          if(~ischar(optionval))
+            error('Drake:NonlinearProgram:setSolverOptions:print should be the file name string');
+          end
+          obj.solver_options.snopt.print = optionval;
         end
       elseif(strcmpi((solver),'fmincon'))
         error('Not implemented yet');
@@ -342,6 +348,23 @@ classdef NonlinearProgram
       obj.cin_lb(cin_idx) = cin_lb;
     end
     % function setGradMethod?
+    
+    function [iGfun,jGvar] = getNonlinearGradientSparsity(obj)
+      % This function sets the nonlinear sparsity vector iGfun and jGvar based on the
+      % nonlinear sparsity of the objective, nonlinear inequality constraints and
+      % nonlinear equality constraints
+      % @param iGfun,jGvar. G(iGfun,jGvar) are the non-zero entries in the matrix G, which
+      % is the gradient of return value f in the objectiveAndNonlinearConstraints function
+      iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
+      jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
+    end
+    
+    function [lb,ub] = bounds(obj)
+      % return the bounds for all the objective function, nonlinear constraints and linear
+      % constraints
+      lb = [-inf;obj.cin_lb;zeros(obj.num_ceq,1);-inf(length(obj.bin),1);obj.beq];
+      ub = [inf;obj.cin_ub;zeros(obj.num_ceq,1);obj.bin;obj.beq];
+    end
     
     function [x,objval,exitflag] = solve(obj,x0)
       switch lower(obj.solver)
@@ -409,7 +432,7 @@ classdef NonlinearProgram
       snsetr('Minor Feasibility Tolerance',obj.solver_options.snopt.MinorFeasibilityTolerance);
       snseti('Superbasics Limit',obj.solver_options.snopt.SuperbasicsLimit);
       snseti('Derivative Option',obj.solver_options.snopt.DerivativeOption);
-      snseti('Verify Level',obj.solver_options.snopt.VerifyLevel);
+      snseti('Verify level',obj.solver_options.snopt.VerifyLevel);
       snseti('Iterations Limit',obj.solver_options.snopt.IterationsLimit);
 
       function [f,G] = snopt_userfun(x)
@@ -443,10 +466,14 @@ classdef NonlinearProgram
         iAfun = iAfun + 1 + obj.num_cin + obj.num_ceq;
       end
         
-      [iGfun,jGvar] = obj.setNonlinearGradientSparsity();
+      [iGfun,jGvar] = obj.getNonlinearGradientSparsity();
       [lb,ub] = obj.bounds();
       if(obj.check_grad)
         checkGradient(x0);
+      end
+      
+      if(~isempty(obj.solver_options.snopt.print))
+        snprint(obj.solver_options.snopt.print);
       end
       [x,objval,exitflag] = snopt(x0, ...
         obj.x_lb,obj.x_ub, ...
@@ -485,22 +512,4 @@ classdef NonlinearProgram
     end
   end
   
-  methods(Access = protected)
-    function [iGfun,jGvar] = setNonlinearGradientSparsity(obj)
-      % This function sets the nonlinear sparsity vector iGfun and jGvar based on the
-      % nonlinear sparsity of the objective, nonlinear inequality constraints and
-      % nonlinear equality constraints
-      % @param iGfun,jGvar. G(iGfun,jGvar) are the non-zero entries in the matrix G, which
-      % is the gradient of return value f in the objectiveAndNonlinearConstraints function
-      iGfun = [obj.iFfun;obj.iCinfun+1;obj.iCeqfun+1+obj.num_cin];
-      jGvar = [obj.jFvar;obj.jCinvar;obj.jCeqvar];
-    end
-    
-    function [lb,ub] = bounds(obj)
-      % return the bounds for all the objective function, nonlinear constraints and linear
-      % constraints
-      lb = [-inf;obj.cin_lb;zeros(obj.num_ceq,1);-inf(length(obj.bin),1);obj.beq];
-      ub = [inf;obj.cin_ub;zeros(obj.num_ceq,1);obj.bin;obj.beq];
-    end
-  end
 end

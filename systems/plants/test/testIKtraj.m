@@ -150,7 +150,11 @@ xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,qsc
 t_samples = sort([t t_inbetween]);
 x_samples = xtraj.eval(t_samples);
 q_samples = x_samples(1:nq,:);
-c_fixedPose = kc_fixedPose.eval(t_samples,q_samples);
+kinsol_samples = cell(1,size(q_samples,2));
+for i = 1:size(q_samples,2)
+  kinsol_samples{i} = r.doKinematics(q_samples(:,i),false,false);
+end
+c_fixedPose = kc_fixedPose.eval(t_samples,kinsol_samples);
 [lb_fixedPose,ub_fixedPose] = kc_fixedPose.bounds(t_samples);
 if(any(c_fixedPose-ub_fixedPose>1e-3) || any(c_fixedPose-lb_fixedPose<-1e-3))
   error('The fixed pose constraint is not satisfied');
@@ -166,8 +170,8 @@ pc_change = PostureChangeConstraint(r,[l_leg_kny;r_leg_kny],[-0.1;-0.03],[0.05;0
 ikoptions = ikoptions.setFixInitialState(true);
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,qsc,pc_change,ikoptions);
 xbreaks = xtraj.eval(t);
-if(any(xbreaks(l_leg_kny,2:end)-xbreaks(l_leg_kny,1)>0.05+1e-10) || any(xbreaks(l_leg_kny,2:end)-xbreaks(l_leg_kny,1)<-0.1-1e-10)||...
-   any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)>0.02+1e-10) || any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)<-0.03-1e-10))
+if(any(xbreaks(l_leg_kny,3:end)-xbreaks(l_leg_kny,2)>0.05+1e-10) || any(xbreaks(l_leg_kny,3:end)-xbreaks(l_leg_kny,2)<-0.1-1e-10)||...
+   any(xbreaks(r_leg_kny,3:end)-xbreaks(r_leg_kny,2)>0.02+1e-10) || any(xbreaks(r_leg_kny,3:end)-xbreaks(r_leg_kny,2)<-0.03-1e-10))
  error('PostureChangeConstraint is not satisfied');
 end
 
@@ -228,15 +232,19 @@ ikoptions = ikoptions.setMex(false);
 display('IK mex start to solve the problem');
 tic
 [xtraj,info,infeasible_constraint] = inverseKinTraj(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
+if(info>10)
+  error('SNOPT info is %d, inverseKinTraj mex fails to solve the problem',info);
+end
 toc
 tic
 x0 = [q_seed.eval(t(1));q_seed.deriv(t(1))];
 ikproblem = InverseKinTraj(r,t,q_nom,ikoptions.fixInitialState,x0,varargin{1:end-1});
 ikproblem = ikproblem.addBoundingBoxConstraint(BoundingBoxConstraint(ikoptions.qdf_lb,ikoptions.qdf_ub),ikproblem.qdf_idx);
 ikproblem = ikproblem.setSolverOptions('snopt','MajorIterationsLimit',ikoptions.SNOPT_MajorIterationsLimit);
+% ikproblem = ikproblem.setSolverOptions('snopt','print','iktraj.out');
 [xtraj,F,info,infeasible_constraint] = ikproblem.solve(q_seed);
 if(info>10)
-  error('SNOPT info is %d, IK mex fails to solve the problem',info);
+  error('SNOPT info is %d, InverseKinTraj fails to solve the problem',info);
 end
 toc
 % display('IK matlab start to solve the problem');
