@@ -1,4 +1,4 @@
-function [x, Jv, Jvdot_times_v] = forwardKinv(obj, kinsol, body_or_frame_ind, points, rotationType, base_ind)
+function [x, Jv, Jvdot_times_v] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotationType, base_ind)
 % computes the position of pts (given in the body frame) in the global
 % frame, as well as the Jacobian Jv that maps the joint velocity vector v
 % to xdot, and d/dt(Jv) * v.
