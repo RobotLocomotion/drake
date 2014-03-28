@@ -12,17 +12,39 @@ function [phi,Jphi] = closestDistanceAllBodies(obj,kinsol)
 % @retval Jphi the kinematic jacobian of phi
 % @ingroup Collision
 
-if (nargout>1)
-  [~,~,~,distance,~,~,Jphi] = closestPointsAllBodies(obj,kinsol);
-else
-  [~,~,~,distance] = closestPointsAllBodies(obj,kinsol);
+if ~isstruct(kinsol)  
+  % treat input as closestPointsAllBodies(obj,q)
+  kinsol = doKinematics(obj,kinsol,nargout>5);
 end
+
+if (kinsol.mex ~= true) 
+  doKinematics(obj,kinsol.q);
+  warning('RigidBodyManipulator:closestPointsAllBodies:doKinematicsMex', ...
+    'Calling doKinematics using mex before proceeding');
+end
+
+[ptsA,ptsB,normal,distance,idxA,idxB] = closestPointsAllBodies(obj,kinsol);
+
+n_pairs = numel(idxA);
 
 if isempty(distance)
   error('RigidBodyManipulator:closestDistanceAllBodies','''distance'' should not be empty');
-else
-  phi = distance';
 end
+
+%if nargout > 1
+  phi = zeros(size(distance'))*kinsol.q(1);
+
+  Jphi = zeros(n_pairs,obj.getNumDOF());
+  for i = 1:n_pairs
+    [ptA_in_world,JA] = forwardKin(obj,kinsol,idxA(i),ptsA(:,i),0);
+    [ptB_in_world,JB] = forwardKin(obj,kinsol,idxB(i),ptsB(:,i),0);
+    bodyB_origin = forwardKin(obj,kinsol,idxB(i),zeros(3,1),0);
+    normal_in_world = normal(:,i);
+    %phi(i) = norm(ptA_in_world-ptB_in_world);
+    phi(i) = normal_in_world'*(ptA_in_world-ptB_in_world);
+    Jphi(i,:) = normal_in_world'*(JA-JB);
+  end
+%end
 
 end
 

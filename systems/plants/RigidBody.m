@@ -94,13 +94,20 @@ classdef RigidBody < RigidBodyElement
     end
      
     function body = replaceContactShapesWithCHull(body,scale_factor)
-      pts = body.contact_pts(:,unique(convhull(body.contact_pts')));
-      if nargin > 1
-        mean_of_pts = mean(pts,2);
-        pts = bsxfun(@plus,scale_factor*bsxfun(@minus,pts,mean_of_pts),mean_of_pts);
+      %pts = body.contact_pts(:,unique(convhull(body.contact_pts')));
+      pts = [];
+      for i = 1:length(body.contact_shapes)
+        pts = [pts, body.contact_shapes{i}.getPoints()];
       end
-      body.contact_pts = pts;
-      body.contact_shapes = { RigidBodyMeshPts(pts) };
+      if ~isempty(pts)
+        pts =pts(:,unique(convhull(pts')));
+        if nargin > 1
+          mean_of_pts = mean(pts,2);
+          pts = bsxfun(@plus,scale_factor*bsxfun(@minus,pts,mean_of_pts),mean_of_pts);
+        end
+        body.contact_pts = pts;
+        body.contact_shapes = { RigidBodyMeshPts(pts) };
+      end
     end
     
     function body = removeCollisionGroups(body,contact_groups)
