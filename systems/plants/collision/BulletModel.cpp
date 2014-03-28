@@ -113,9 +113,20 @@ namespace DrakeCollision
     //cout << "Margin A: " << shapeA->getMargin() << endl;
     //cout << "Margin B: " << shapeB->getMargin() << endl;
     //END_DEBUG
-    btVector3 pointOnAinWorld = gjkOutput.m_pointInWorld +
-      gjkOutput.m_normalOnBInWorld*(gjkOutput.m_distance+shapeA->getMargin());
-    btVector3 pointOnBinWorld = gjkOutput.m_pointInWorld - gjkOutput.m_normalOnBInWorld*shapeB->getMargin();
+    btVector3 pointOnAinWorld;
+    btVector3 pointOnBinWorld;
+    if (elemA.getShape() == MESH) {
+      pointOnAinWorld = gjkOutput.m_pointInWorld +
+        gjkOutput.m_normalOnBInWorld*(gjkOutput.m_distance+shapeA->getMargin());
+    } else {
+      pointOnAinWorld = gjkOutput.m_pointInWorld +
+        gjkOutput.m_normalOnBInWorld*gjkOutput.m_distance;
+    }
+    if (elemB.getShape() == MESH) {
+      pointOnBinWorld = gjkOutput.m_pointInWorld - gjkOutput.m_normalOnBInWorld*shapeB->getMargin();
+    } else {
+      pointOnBinWorld = gjkOutput.m_pointInWorld;
+    }
 
     btVector3 pointOnElemA = input.m_transformA.invXform(pointOnAinWorld);
     btVector3 pointOnElemB = input.m_transformB.invXform(pointOnBinWorld);
