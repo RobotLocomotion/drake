@@ -42,8 +42,6 @@ if nargin < 3
   allow_multiple_contacts = false;
 end
 
-assert(~allow_multiple_contacts,['Multiple contacts between a single'...
-  'pair of collision elements are not yet supported.']);
 [xA,xB,normal,distance,idxA,idxB] = collisionmex(obj.mex_model_ptr);
 m = numel(idxA);
 
