@@ -131,5 +131,15 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
       end
     end
     
+    function joint_idx = kinematicsPathJoints(obj)
+      if(obj.bodyA == 0)
+        [~,joint_path] = obj.robot.findKinematicPath(1,obj.bodyB);
+      elseif(obj.bodyB == 0)
+        [~,joint_path] = obj.robot.findKinematicPath(obj.bodyA,1);
+      else
+        [~,joint_path] = obj.robot.findKinematicPath(obj.bodyA,obj.bodyB);
+      end
+      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+    end
   end
 end
