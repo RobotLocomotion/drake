@@ -1,5 +1,5 @@
 function testNLPWConstraint
-nlp1 = NonlinearProgramWConstraint(3);
+nlp1 = NonlinearProgramWConstraintObjects(3);
 nlp1 = nlp1.setCheckGrad(true);
 warning('Off','optimlib:fmincon:WillRunDiffAlg');
 warning('Off','optimlib:fmincon:SwitchingToMediumScale');

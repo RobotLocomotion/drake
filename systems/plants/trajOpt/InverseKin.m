@@ -1,4 +1,4 @@
-classdef InverseKin < NonlinearProgramWConstraint
+classdef InverseKin < NonlinearProgramWConstraintObjects
   % solve the inverse kinematics problem
   % min_q 0.5*(q-qnom)'Q(q-qnom)+cost1(q)+cost2(q)+...
   % s.t    lb<= kc(q) <=ub
@@ -38,7 +38,7 @@ classdef InverseKin < NonlinearProgramWConstraint
       if(~isa(robot,'RigidBodyManipulator') && ~isa(robot,'TimeSteppingRigidBodyManipulator'))
         error('Drake:InverseKin:robot should be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
-      obj = obj@NonlinearProgramWConstraint(robot.getNumDOF);
+      obj = obj@NonlinearProgramWConstraintObjects(robot.getNumDOF);
       obj.robot = robot;
       obj.nq = obj.robot.getNumDOF;
       if(~isnumeric(q_nom))
@@ -155,7 +155,7 @@ classdef InverseKin < NonlinearProgramWConstraint
       if(~isempty(obj.qsc_weight_idx))
         x0(obj.qsc_weight_idx) = 1/length(obj.qsc_weight_idx);
       end
-      [x,F,info] = solve@NonlinearProgramWConstraint(obj,x0);
+      [x,F,info] = solve@NonlinearProgramWConstraintObjects(obj,x0);
       q = x(obj.q_idx);
       q = max([obj.x_lb(obj.q_idx) q],[],2);
       q = min([obj.x_ub(obj.q_idx) q],[],2);
@@ -211,7 +211,7 @@ classdef InverseKin < NonlinearProgramWConstraint
       if(nargin<5)
         xind = (1:obj.num_vars)';
       end
-      obj = addNonlinearConstraint@NonlinearProgramWConstraint(obj,cnstr,xind);
+      obj = addNonlinearConstraint@NonlinearProgramWConstraintObjects(obj,cnstr,xind);
       sizecheck(call_kinsol,[1,1]);
       obj.nlcon_call_kinsol = [obj.nlcon_call_kinsol;logical(call_kinsol)];
       if(~isnumeric(non_kinsol_idx))
@@ -236,7 +236,7 @@ classdef InverseKin < NonlinearProgramWConstraint
       if(nargin<5)
         xind = (1:obj.num_vars)';
       end
-      obj = addCost@NonlinearProgramWConstraint(obj,cost,xind);
+      obj = addCost@NonlinearProgramWConstraintObjects(obj,cost,xind);
       sizecheck(call_kinsol,[1,1]);
       obj.cost_call_kinsol = [obj.cost_call_kinsol;logical(call_kinsol)];
       if(~isnumeric(non_kinsol_idx))
@@ -304,7 +304,7 @@ classdef InverseKin < NonlinearProgramWConstraint
           error('Drake:InverseKin:addDecisionVariable:var_names should be a cell of strings');
         end
       end
-      obj = addDecisionVariable@NonlinearProgramWConstraint(obj,num_new_vars);
+      obj = addDecisionVariable@NonlinearProgramWConstraintObjects(obj,num_new_vars);
       obj.x_name = [obj.x_name;var_names];
     end
   end
