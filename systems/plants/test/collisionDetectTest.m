@@ -1,9 +1,10 @@
-function collisionDetectCHullTest(varargin)
+function collisionDetectTest(urdf_filename,varargin)
+  %NOTEST
 
 checkDependency('bullet');
 checkDependency('lcmgl');
 
-if (nargin > 0)
+if (nargin > 1)
   typecheck(varargin{1},'double');
   draw_pause = varargin{1};
 else
@@ -14,10 +15,8 @@ r = RigidBodyManipulator();
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
 
 for i=1:2
-  r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),struct('floating',true));
+  r = addRobotFromURDF(r,urdf_filename,zeros(3,1),zeros(3,1),struct('floating',true));
 end
-r = r.replaceContactShapesWithCHull(1:r.getNumBodies());
-r = r.compile();
 
 v = r.constructVisualizer();
 
@@ -109,3 +108,4 @@ function debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol)
     pause(draw_pause);
 end
 end %bullet_collision_closest_distance_jac_test
+
