@@ -444,8 +444,13 @@ classdef RigidBodyManipulator < Manipulator
         joint = model.body(model.actuator(i).joint);
         B(joint.dofnum,i) = model.actuator(i).reduction;
         if ~isinf(joint.effort_min) || ~isinf(joint.effort_max)
-          u_limit(i,1) = joint.effort_min/model.actuator(i).reduction;
-          u_limit(i,2) = joint.effort_max/model.actuator(i).reduction;
+          if (model.actuator(i).reduction>=0)
+            u_limit(i,1) = joint.effort_min/model.actuator(i).reduction;
+            u_limit(i,2) = joint.effort_max/model.actuator(i).reduction;
+          else
+            u_limit(i,2) = joint.effort_min/model.actuator(i).reduction;
+            u_limit(i,1) = joint.effort_max/model.actuator(i).reduction;
+          end
           if sum(B(joint.dofnum,:)~=0)>1
             warning('Drake:RigidBodyManipulator:UnsupportedJointEffortLimit','The specified joint effort limit cannot be expressed as simple input limits; the offending limits will be ignored');
             u_limit(B(joint.dofnum,:)~=0)=[-inf inf];
