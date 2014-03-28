@@ -158,13 +158,14 @@ namespace DrakeCollision
         //DEBUG
         //try {
         //END_DEBUG
-          ResultCollector c;
+          //ResultCollector c;
+          ResultCollShPtr c = std::make_shared<ResultCollector>();
           for (auto itA=bodies.begin(); itA!=bodies.end(); ++itA) {
             for (typename std::map<int,Body<ElementT>>::iterator itB=itA; itB!=bodies.end(); ++itB) {
             //for (auto itB=bodies.begin(); itB!=bodies.end(); ++itB) {
               Body<ElementT>& bodyA(itA->second);
               Body<ElementT>& bodyB(itB->second);
-              ResultCollShPtr c_min_dist = std::make_shared<MinDistResultCollector>();
+              //ResultCollShPtr c_min_dist = std::make_shared<MinDistResultCollector>();
               if ( (itA!=itB) && bodyA.collidesWith(bodyB) && 
                    ( (bodyA.getBodyIdx()==0) || (bodyB.getBodyIdx()==0) || 
                      !bodyA.adjacentTo(bodyB)) ) {
@@ -174,20 +175,20 @@ namespace DrakeCollision
                 //END_DEBUG
                 has_result = findClosestPointsBtwBodies(bodyA.getBodyIdx(),
                                            bodyB.getBodyIdx(),
-                                           c_min_dist);
-                if (has_result) {
-                  c.addPointPairResult(c_min_dist->pts.front());
-                } else {
-                  c.addPointPairResult(PointPair(bodyA.getBodyIdx(), 
-                        bodyB.getBodyIdx(), 
-                        Vector3d::Zero(), 
-                        Vector3d::Zero(),
-                        Vector3d::Zero(),1.0));
-                }               
+                                           c);
+                //if (has_result) {
+                  //c.addPointPairResult(c_min_dist->pts.front());
+                //} else {
+                  //c.addPointPairResult(PointPair(bodyA.getBodyIdx(), 
+                        //bodyB.getBodyIdx(), 
+                        //Vector3d::Zero(), 
+                        //Vector3d::Zero(),
+                        //Vector3d::Zero(),1.0));
+                //}               
               }
             }
           }
-          c.getResults(bodyA_idx, bodyB_idx, ptsA, ptsB,normal,distance);
+          c->getResults(bodyA_idx, bodyB_idx, ptsA, ptsB,normal,distance);
           
         //DEBUG
           //std::cout << "ModelTemplate:closestPointsAllBodies:" << std::endl;
