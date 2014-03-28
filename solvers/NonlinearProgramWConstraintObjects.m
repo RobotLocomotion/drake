@@ -1,4 +1,4 @@
-classdef NonlinearProgramWConstraint < NonlinearProgram
+classdef NonlinearProgramWConstraintObjects < NonlinearProgram
   % The constraint of this nonlinear program is specified using 'Constraint' class in
   % drake
   
@@ -25,7 +25,7 @@ classdef NonlinearProgramWConstraint < NonlinearProgram
   end
   
   methods
-    function obj = NonlinearProgramWConstraint(num_vars)
+    function obj = NonlinearProgramWConstraintObjects(num_vars)
       % @param num_vars     -- The number of decision variables
       obj = obj@NonlinearProgram(num_vars,0,0);
       obj.nlcon = {};

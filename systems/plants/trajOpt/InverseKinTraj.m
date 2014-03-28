@@ -1,4 +1,4 @@
-classdef InverseKinTraj < NonlinearProgramWConstraint
+classdef InverseKinTraj < NonlinearProgramWConstraintObjects
 % solve IK
 %   min_q sum_i
 %   qdd(:,i)'*Qa*qdd(:,i)+qd(:,i)'*Qv*qd(:,i)+(q(:,i)-q_nom(:,i))'*Q*(q(:,i)-q_nom(:,i))]+additional_cost1+additional_cost2+...
@@ -74,7 +74,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
         error('Drake:InverseKinTraj:robot should be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
       t = unique(t(:)');
-      obj = obj@NonlinearProgramWConstraint(robot.getNumDOF*(length(t)+2));
+      obj = obj@NonlinearProgramWConstraintObjects(robot.getNumDOF*(length(t)+2));
       obj.robot = robot;
       obj.nq = obj.robot.getNumDOF();
       obj.nT = length(t);
@@ -289,7 +289,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
           x0(obj.qsc_weight_idx{i}) = 1/length(obj.qsc_weight_idx{i});
         end
       end
-      [x,F,info] = solve@NonlinearProgramWConstraint(obj,x0);
+      [x,F,info] = solve@NonlinearProgramWConstraintObjects(obj,x0);
       [q,qdot,qddot] = obj.cpe.cubicSpline(x([obj.q_idx(:);obj.qd0_idx;obj.qdf_idx]));
       xtraj = PPTrajectory(pchipDeriv(obj.t_knot,[q;qdot],[qdot;qddot]));
       xtraj = xtraj.setOutputFrame(obj.robot.getStateFrame);
@@ -346,7 +346,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       if(nargin<5)
         xind = (1:obj.num_vars)';
       end
-      obj = addNonlinearConstraint@NonlinearProgramWConstraint(obj,cnstr,xind);
+      obj = addNonlinearConstraint@NonlinearProgramWConstraintObjects(obj,cnstr,xind);
       kinsol_idx = floor(kinsol_idx(:));
       obj.nlcon_kinsol_idx = [obj.nlcon_kinsol_idx,{kinsol_idx}];
       if(~isnumeric(non_kinsol_idx))
@@ -373,7 +373,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
       if(nargin<5)
         xind = (1:obj.num_vars)';
       end
-      obj = addCost@NonlinearProgramWConstraint(obj,cost,xind);
+      obj = addCost@NonlinearProgramWConstraintObjects(obj,cost,xind);
       kinsol_idx = floor(kinsol_idx(:));
       obj.cost_kinsol_idx = [obj.cost_kinsol_idx,{kinsol_idx}];
       if(~isnumeric(non_kinsol_idx))
@@ -443,7 +443,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraint
           error('Drake:InverseKinTraj:addDecisionVariable:var_names should be a cell of strings');
         end
       end
-      obj = addDecisionVariable@NonlinearProgramWConstraint(obj,num_new_vars);
+      obj = addDecisionVariable@NonlinearProgramWConstraintObjects(obj,num_new_vars);
       obj.x_name = [obj.x_name;var_names];
     end
   end

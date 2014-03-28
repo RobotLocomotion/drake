@@ -93,13 +93,10 @@ classdef NonlinearConstraint < Constraint
     
     function obj = setName(obj,name)
       % @param name   -- A cell array, name{i} is the name string of i'th constraint
-      if(~iscell(name))
-        error('Drake:NonlinearConstraint:name should be a cell array');
+      if(~iscellstr(name))
+        error('Drake:NonlinearConstraint:name should be a cell array of string');
       end
       sizecheck(name,[obj.num_cnstr,1]);
-      if(~all(cellfun(@ischar,name)))
-        error('Drake:NonlinearConstraint:name should be a cell array of strings');
-      end
       obj.name = name;
     end
   end

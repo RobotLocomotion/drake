@@ -1,6 +1,7 @@
 function testConstraint
 display('Check constructing constraint with anonymous function handle without gradient');
 cnstr1 = Constraint(0,1,@(x) x+1);
+cnstr1.grad_method = 'numerical';
 [c1,dc1] = cnstr1.eval(1);
 valuecheck(c1,2);
 valuecheck(dc1,1);

@@ -413,17 +413,6 @@ classdef NonlinearProgram
       SNOPT_USERFUN = @snopt_userfun;
       
       A = [obj.Ain;obj.Aeq];
-      b_lb = [-inf(length(obj.bin),1);obj.beq];
-      b_ub = [obj.bin;obj.beq];
-
-%       function setSNOPTParam(paramstring,default)
-%         str=paramstring(~isspace(paramstring));
-%         if (isfield(obj.default_options.snopt,str))
-%           snset([paramstring,'=',num2str(getfield(obj.default_options.snopt,str))]);
-%         else
-%           snset([paramstring,'=',num2str(default)]);
-%         end
-%       end
       
       snseti('Major Iterations Limit',obj.solver_options.snopt.MajorIterationsLimit);
       snseti('Minor Iterations Limit',obj.solver_options.snopt.MinorIterationsLimit);
@@ -437,7 +426,7 @@ classdef NonlinearProgram
 
       function [f,G] = snopt_userfun(x)
         [f,G] = geval(@obj.objectiveAndNonlinearConstraints,x);
-        f = [f;0*b_lb];
+        f = [f;zeros(length(obj.bin)+length(obj.beq),1)];
         
         G = G(sub2ind(size(G),iGfun,jGvar));
       end      
