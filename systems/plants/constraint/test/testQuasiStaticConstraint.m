@@ -104,6 +104,12 @@ valuecheck(lb_mex_cache,lb_mex);
 valuecheck(ub_mex_cache,ub_mex);
 
 display('Check generateConstraint');
+qsc2 = qsc2.setActive(false);
+qsc_cnstr = qsc2.generateConstraint(t);
+if(~isempty(qsc_cnstr))
+  error('QuasiStaticConstraint is not active, no constraint should be generated');
+end
+qsc2 = qsc2.setActive(true);
 qsc_cnstr = qsc2.generateConstraint(t);
 valuecheck(qsc_cnstr{1}.lb,[0;0]);
 valuecheck(qsc_cnstr{1}.ub,[0;0]);
