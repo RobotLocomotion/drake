@@ -10,6 +10,12 @@ if (nargin > 1)
 else
   draw_pause = 0.05;
 end
+
+if nargin > 2
+  throw_error = varargin{2};
+else
+  throw_error = true;
+end
     
 r = RigidBodyManipulator();
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
@@ -43,7 +49,9 @@ for x=linspace(-2*(bnd.xmax-bnd.xmin),2*(bnd.xmax-bnd.xmin),50);
   dist_ref = max(abs(x) - (bnd.xmax-bnd.xmin),bnd.ymin-bnd.ymax);
   debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol);
 
-  valuecheck(phi, dist_ref,tol);
+  if throw_error
+    valuecheck(phi, dist_ref,tol);
+  end
 end
 
 q = zeros(getNumDOF(r),1);
@@ -57,7 +65,9 @@ for y=linspace(-2*(bnd.ymax-bnd.ymin),2*(bnd.ymax-bnd.ymin),50);
   dist_ref = max(abs(y) - (bnd.ymax-bnd.ymin),bnd.zmin-bnd.zmax);
   debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol);
 
-  valuecheck(phi, dist_ref,tol);
+  if throw_error
+    valuecheck(phi, dist_ref,tol);
+  end
 end
 
 q = zeros(getNumDOF(r),1);
@@ -71,7 +81,9 @@ for z=linspace(-2*(bnd.zmax-bnd.zmin),2*(bnd.zmax-bnd.zmin),50);
   dist_ref = max(abs(z) - (bnd.zmax-bnd.zmin),bnd.ymin-bnd.ymax);
   debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol);
 
-  valuecheck(phi, dist_ref,tol);
+  if throw_error
+    valuecheck(phi, dist_ref,tol);
+  end
 end
 
 function debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol)
