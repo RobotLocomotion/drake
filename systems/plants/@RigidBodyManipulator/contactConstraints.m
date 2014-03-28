@@ -51,13 +51,14 @@ if compute_first_derivative
   
   J = zeros(3*nC,nq);
   if compute_second_derivative,
-    dJ = zeros(3*nC*nq,nq);
+    dJ = zeros(3*nC,nq*nq);
   end
   
   
   for i=1:nC,
     I = (1:3) + (i-1)*3;
-    IdJ = (1:3*nq) + (i-1)*3*nq;
+%     IdJ = (1:3*nq) + (i-1)*3*nq;
+    IdJ = I;
     
     % For each of the two bodies, if it is a real body (i.e. idx != 0),
     % then add compute the relevent jacobians in joint coordinates
@@ -99,8 +100,8 @@ if compute_first_derivative
     end
   end
   
-  if nargout > 9
-    dn = reshape(sparse(indmat,1:3*n_contact_pts,normal(:))*dJ,numel(n),[]);
+  if compute_second_derivative
+    dn = reshape(sparse(indmat,1:3*nC,normal(:))*dJ,numel(n),[]);
   end
 end
 end

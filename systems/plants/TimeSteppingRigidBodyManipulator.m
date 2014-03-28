@@ -285,7 +285,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         
         if (nContactPairs > 0)
           if (nargout>4)
-            [phiC,~,~,~,~,~,mu,n,D,dn,dD] = obj.manip.contactConstraints(q,true);
+            [phiC,~,~,~,~,~,~,mu,n,D,dn,dD] = obj.manip.contactConstraints(q,true);
             nC = length(phiC);
             mC = length(D);
             dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
@@ -294,11 +294,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dD = vertcat(dD{:});
             dJ(nL+nP+nC+(1:mC*nC),:) = dD;
           else
-            [phiC,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(q);
+            [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(q);
             nC = length(phiC);
             mC = length(D);
-            D = {D}; % I don't see why we need to do this. It looks like it
-                     % should allready be a cell array
           end
           J = zeros(nL + nP + (mC+2)*nC,num_q)*q(1); % *q(1) is for taylorvar
           D = vertcat(D{:});
