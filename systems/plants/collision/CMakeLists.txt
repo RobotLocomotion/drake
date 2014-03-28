@@ -6,7 +6,7 @@ set(drakeCollision_SRC_FILES Model.cpp GenericModel.cpp Element.cpp
 pods_find_pkg_config(bullet)
 
 if (bullet_FOUND)
-  add_definitions( -DBULLET_COLLISION )   
+  add_definitions( -DBULLET_COLLISION -DBT_USE_DOUBLE_PRECISION )   
   set( drakeCollision_SRC_FILES ${drakeCollision_SRC_FILES} BulletModel.cpp BulletElement.cpp BulletResultCollector.cpp )   
   set(bullet "yes" CACHE STRING "yes" )
 endif()
@@ -17,7 +17,7 @@ if (bullet_FOUND)
 endif()
 
 enable_testing()
-add_subdirectory(test)
+#add_subdirectory(test)
 
 pods_install_libraries(drakeCollision)
 pods_install_headers(Model.h simpleClosestPointFunctions.h DESTINATION drake/collision)

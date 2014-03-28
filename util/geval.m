@@ -175,21 +175,34 @@ switch (method)
     if (order>1) error('higher order numerical gradients not implemented yet'); end
     
     [varargout{1:p}]=feval(fun,varargin{:});
-    df = cell(1,p);
+    df_p = cell(1,p);
+    df_m = cell(1,p);
     o = nargout-p;
     ind=1;
     
-    da = 1e-7;
+    if ~isfield(options,'diff_type'), options.diff_type = 'forward'; end; 
+    if isfield(options,'da') 
+      da = options.da;
+    else
+      da = 1e-7;
+    end
     for i=1:length(varargin)
       if (isa(varargin{i},'double'))  %only handle doubles so far
         n=prod(size(varargin{i}));
         for j=1:n
           varargin{i}(j)=varargin{i}(j)+da;
-          [df{:}]=feval(fun,varargin{:});
+          [df_p{:}]=feval(fun,varargin{:});
+          varargin{i}(j)=varargin{i}(j)-2*da;
+          [df_m{:}]=feval(fun,varargin{:});
           for k=1:o
-            varargout{p+k}(:,ind) = (df{k}-varargout{k})/da;
+            switch options.diff_type
+              case 'forward'
+                varargout{p+k}(:,ind) = (df_p{k}-varargout{k})/da;
+              case 'central'
+                varargout{p+k}(:,ind) = (df_p{k}-df_m{k})/(2*da);
+            end
           end
-          varargin{i}(j)=varargin{i}(j)-da;
+          varargin{i}(j)=varargin{i}(j)+da;
           ind=ind+1;
         end
       elseif ~isobject(varargin{i})

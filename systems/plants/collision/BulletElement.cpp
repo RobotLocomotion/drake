@@ -1,3 +1,5 @@
+#define BT_USE_DOUBLE_PRECISION
+
 #include "BulletElement.h"
 #include "BulletModel.h"
 
@@ -19,6 +21,7 @@ namespace DrakeCollision
         //std::cout << "BulletElement::BulletElement: Create BOX ..." << std::endl;
         //END_DEBUG
         bt_shape = new btBoxShape( btVector3(params[0]/2,params[1]/2,params[2]/2) );
+        bt_shape->setMargin(0.0);
         //DEBUG
         //std::cout << "BulletElement::BulletElement: Created BOX" << std::endl;
         //END_DEBUG
@@ -43,7 +46,13 @@ namespace DrakeCollision
         //DEBUG
         //std::cout << "BulletElement::BulletElement: Create CYLINDER ..." << std::endl;
         //END_DEBUG
-        bt_shape = new btCylinderShapeZ( btVector3(params[0],params[0],params[1]/2) );
+        //bt_shape = new btCapsuleShapeZ(params[0],params[1]);
+        bt_shape = new btConvexHullShape();
+        dynamic_cast<btConvexHullShape*>(bt_shape)->addPoint(btVector3(0,0,-params[1]/2));
+        dynamic_cast<btConvexHullShape*>(bt_shape)->addPoint(btVector3(0,0,params[1]/2));
+        bt_shape->setMargin(params[0]);
+        //bt_shape = new btCylinderShapeZ( btVector3(params[0],params[0],params[1]/2) );
+        //bt_shape->setMargin(0.01);
         //DEBUG
         //std::cout << "BulletElement::BulletElement: Created CYLINDER ..." << std::endl;
         //END_DEBUG
@@ -56,7 +65,7 @@ namespace DrakeCollision
                                           //params.size()/3,
                                           //(int) 3*sizeof(double) );
         bt_shape = new btConvexHullShape();
-        bt_shape->setMargin(0.01);
+        bt_shape->setMargin(0.05);
         for (int i=0; i<params.size(); i+=3){
           //DEBUG
           //std::cout << "BulletElement::BulletElement: Adding point " << i/3 + 1 << std::endl;
