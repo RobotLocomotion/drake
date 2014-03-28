@@ -109,11 +109,16 @@ namespace DrakeCollision
 
     convexConvex.getClosestPoints(input ,gjkOutput,0);
 
+    //DEBUG
+    //cout << "Margin A: " << shapeA->getMargin() << endl;
+    //cout << "Margin B: " << shapeB->getMargin() << endl;
+    //END_DEBUG
     btVector3 pointOnAinWorld = gjkOutput.m_pointInWorld +
-      gjkOutput.m_normalOnBInWorld*gjkOutput.m_distance;
+      gjkOutput.m_normalOnBInWorld*(gjkOutput.m_distance+shapeA->getMargin());
+    btVector3 pointOnBinWorld = gjkOutput.m_pointInWorld - gjkOutput.m_normalOnBInWorld*shapeB->getMargin();
 
     btVector3 pointOnElemA = input.m_transformA.invXform(pointOnAinWorld);
-    btVector3 pointOnElemB = input.m_transformB.invXform(gjkOutput.m_pointInWorld);
+    btVector3 pointOnElemB = input.m_transformB.invXform(pointOnBinWorld);
     btVector3 normalOnElemB = input.m_transformB.invXform(gjkOutput.m_normalOnBInWorld+gjkOutput.m_pointInWorld);
 
     VectorXd pointOnA_1(4);
@@ -129,6 +134,8 @@ namespace DrakeCollision
     pointOnA << elemA.getLinkTransform().topRows(3)*pointOnA_1;
     pointOnB << elemB.getLinkTransform().topRows(3)*pointOnB_1;
     normalOnB << elemB.getLinkTransform().topRows(3)*normalOnB_1;
+
+    btScalar distance = gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld-pointOnBinWorld);
     
     //DEBUG
     //cerr << "In BulletModel::findClosestPointsBtwElements:" << endl;
