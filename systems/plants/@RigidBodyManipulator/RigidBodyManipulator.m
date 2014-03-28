@@ -1176,7 +1176,12 @@ classdef RigidBodyManipulator < Manipulator
       % handle the normal = [0;0;1] case
       ind=(1-normal(3,:))<10e-8;  % since it's a unit normal, i can just check the z component
       t1(:,ind) = [ones(1,sum(ind)); zeros(2,sum(ind))];
-      ind=~ind;
+      
+      % handle the normal = [0;0;-1] case
+      indneg=(1+normal(3,:))<10e-8;  % since it's a unit normal, i can just check the z component
+      t1(:,indneg) = [-ones(1,sum(indneg)); zeros(2,sum(indneg))];
+      
+      ind=~(ind | indneg);
       
       % now the general case
       t1(:,ind) = [normal(2,ind);-normal(1,ind);zeros(1,sum(ind))]; % cross(normal,[0;0;1]) normalized

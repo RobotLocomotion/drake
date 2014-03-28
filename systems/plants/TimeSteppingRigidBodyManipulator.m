@@ -485,7 +485,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           if any(active)
             z(active) = pathlcp(M(active,active),w(active));
           end
-          
+
           inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
           missed = (M(inactive,inactive)*z(inactive)+w(inactive) < 0);
           if ~any(missed), break; end
@@ -847,7 +847,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
     
     function num_c = getNumContacts(obj)
-      num_c = obj.manip.num_contacts;
+      error('getNumContacts is no longer supported, in anticipation of alowing multiple contacts per body pair. Use getNumContactPairs for cases where the number of contacts is fixed');
+    end
+    
+    function n=getNumContactPairs(obj)
+      n = obj.manip.getNumContactPairs;
     end
 
     function c = getBodyContacts(obj,body_idx)
