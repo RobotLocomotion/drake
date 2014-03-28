@@ -44,9 +44,9 @@ nC = length(phi);
 % For now, all coefficients of friction are 1
 mu = ones(nC,1);
 
+d = obj.surfaceTangents(normal);
 if compute_first_derivative
   nq = obj.getNumPositions;  
-  d = obj.surfaceTangents(normal);
   nk = length(d);
   
   J = zeros(3*nC,nq);
