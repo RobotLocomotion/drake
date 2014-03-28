@@ -531,14 +531,17 @@ classdef RigidBodyManipulator < Manipulator
 
       model = setupCollisionFiltering(model);      
             
+      model.dirty = false;
+      
+      model = createMexPointer(model);
+
+      % collisionDetect may require the mex version of the manipulator,
+      % so it should go after createMexPointer
       phi = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end
-      
-      model = createMexPointer(model);
-      model.dirty = false;
       
 %      H = manipulatorDynamics(model,zeros(model.num_q,1),zeros(model.num_q,1));
 %      if cond(H)>1e3
