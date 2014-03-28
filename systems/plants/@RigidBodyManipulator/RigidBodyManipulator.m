@@ -1424,10 +1424,9 @@ classdef RigidBodyManipulator < Manipulator
         end
         parent.visual_shapes = horzcat(parent.visual_shapes,body.visual_shapes);
         
-        if (~isempty(body.contact_pts))
+        if (~isempty(body.contact_shapes))
           npts = size(parent.contact_pts,2);
-          parent.contact_pts = [parent.contact_pts, body.Ttree(1:end-1,:)*[body.contact_pts;ones(1,size(body.contact_pts,2))]];
-          % todo: finish this!
+
           for j=1:length(body.contact_shapes)
             body.contact_shapes{j}.T = body.Ttree*body.contact_shapes{j}.T;
           end
@@ -1438,15 +1437,10 @@ classdef RigidBodyManipulator < Manipulator
             ngroups=length(parent.collision_group_name);
             [parent.collision_group_name,ia,ic]=unique(horzcat(parent.collision_group_name,body.collision_group_name),'stable');
             % note: passing 'stable' to unique (above) ensures that
-            % parent.collision_group is still valid, so just add to it here
-            if length(parent.collision_group)<length(parent.collision_group_name)
-              parent.collision_group{length(parent.collision_group_name)}=[];
-            end
             if length(parent.contact_shape_group)<length(parent.collision_group_name)
               parent.contact_shape_group{length(parent.collision_group_name)}=[];
             end
-            for j=1:length(body.collision_group)
-              parent.collision_group{ic(ngroups+j)} = [parent.collision_group{ic(ngroups+j)},npts+body.collision_group{j}];
+            for j=1:length(body.contact_shape_group)
               parent.contact_shape_group{ic(ngroups+j)} = [parent.contact_shape_group{ic(ngroups+j)},nshapes+body.contact_shape_group{j}];
             end
           end
