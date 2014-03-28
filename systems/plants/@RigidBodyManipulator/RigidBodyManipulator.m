@@ -18,6 +18,7 @@ classdef RigidBodyManipulator < Manipulator
     gravity=[0;0;-9.81];
     dim=3;
     terrain;
+    num_contact_pairs;
     frame = [];     % array of RigidBodyFrame objects
   end
   
@@ -118,6 +119,10 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
       
+    end
+    
+    function n = getNumPositions(obj)
+      n = obj.num_q; %placeholder waiting for Russ' changes
     end
     
     function n = getNumDOF(obj)
@@ -513,10 +518,6 @@ classdef RigidBodyManipulator < Manipulator
       if (any(model.joint_limit_min~=-inf) || any(model.joint_limit_max~=inf))
         warning('Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
-      model.num_contacts = size([model.body.contact_pts],2);
-      if (model.num_contacts>0)
-        warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
-      end
       
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
       
@@ -528,7 +529,13 @@ classdef RigidBodyManipulator < Manipulator
         valuecheck(model.body(i).T_body_to_joint(end,end),1);
       end
 
-      model = setupCollisionFiltering(model);
+      model = setupCollisionFiltering(model);      
+            
+      phi = model.collisionDetect(zeros(model.getNumPositions,1));
+      model.num_contact_pairs = length(phi);
+      if (model.num_contact_pairs>0)
+        warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
+      end
       
       model = createMexPointer(model);
       model.dirty = false;
@@ -962,30 +969,23 @@ classdef RigidBodyManipulator < Manipulator
       
       if ~isfield(options,'visualize'), options.visualize=false; end
       
-      nq = obj.getNumDOF();
+      nq = obj.getNumPositions();
       nu = obj.getNumInputs();
-
+      
+      active_collision_options = struct();
       if isfield(options,'active_collision_groups') 
-        nz=0; npts=0; active_contacts=[];
-        if isfield(options,'active_collision_bodies')
-          bodies=obj.body(active_collision_bodies);
-        else
-          bodies=obj.body;
-        end
-        for i=1:length(bodies)
-          b=bodies(i);
-          for j=1:length(b.collision_group_name)
-            if any(strcmpi(b.collision_group_name{j},options.active_collision_groups))
-              nz=nz+length(b.collision_group{j})*3;
-              active_contacts=[active_contacts,npts+b.collision_group{j}];
-            end
-          end
-          npts=npts+size(b.contact_pts,2);
-        end
-      else
-        active_contacts = 1:getNumContacts(obj);
-        nz = getNumContacts(obj)*3;
-      end      
+        active_collision_options.collision_groups = options.active_collision_groups;
+      end
+
+      if isfield(options,'active_collision_bodies') 
+        active_collision_options.collision_bodies = options.active_collision_bodies;
+      end
+      
+      % Compute number of contacts by evaluating at x0
+      [phi0,~,d0] = obj.contactConstraints(x0(1:nq),false,active_collision_options)
+      
+      % total number of contact forces (normal + frictional)
+      nz = length(phi0) + size(cell2mat(d0),2);
 
       z0 = zeros(nz,1);
       q0 = x0(1:nq);
@@ -1004,8 +1004,8 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       lb_z = -1e6*ones(nz,1);
-      lb_z(3:3:end) = 0; % normal forces must be >=0
       ub_z = 1e6*ones(nz,1);
+      lb_z(1:length(phi0)) = 0; % normal forces must be positive
     
       [jl_min,jl_max] = obj.getJointLimits();
       % force search to be close to starting position
@@ -1032,29 +1032,15 @@ classdef RigidBodyManipulator < Manipulator
         z=quz(nq+nu+(1:nz));
 
         [~,C,B,~,dC,~] = obj.manipulatorDynamics(q,zeros(nq,1));
-        [phiC,JC] = obj.contactConstraints(q);
-        [~,J,dJ] = obj.contactPositions(q);
+        [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q,false,active_collision_options);
         
-        % note: it would be more elegant to handle collision groups in
-        % contactConstraints and contactPositions
-        phiC=phiC(active_contacts);
-        JC = JC(active_contacts,:);
-        ind = [active_contacts*3 - 2; active_contacts*3 - 1; active_contacts*3];
-        ind = ind(:);
-        J = J(ind,:);
-        dJ = dJ(ind,:);
-        
-        % ignore friction constraints for now
-        c = 0;
-        GC = zeros(nq+nu+nz,1); 
-        
-        dJz = zeros(nq,nq);
-        for i=1:nq
-            dJz(:,i) = dJ(:,(i-1)*nq+1:i*nq)'*z;
-        end
-        
+        % construct J such that J'*z is the contact force vector in joint
+        J = [n;cell2mat(D')];
+        % similarly, construct dJz
+        dJz = matGradMult([dn;cell2mat(dD')],z,true);
+
         ceq = [C-B*u-J'*z; phiC];
-        GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[JC'; zeros(nu+nz,length(phiC))]]; 
+        GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[J'; zeros(nu+nz,length(phiC))]]; 
         
         if (obj.num_xcon>0)
           [phi,dphi] = geval(@obj.stateConstraints,[q;0*q]);
@@ -1201,6 +1187,21 @@ classdef RigidBodyManipulator < Manipulator
       for k=1:m
         d{k}=cos(theta(k))*t1 + sin(theta(k))*t2;
       end      
+    end
+    
+    function n=getNumContactPairs(obj)
+      n = obj.num_contact_pairs;
+    end
+    
+    function [phi,dphi] = unilateralConstraints(obj,x)
+      q = x(1:obj.getNumPositions);
+      [phi,~,~,~,~,~,~,dphi] = obj.contactConstraints(q);
+    end
+    
+    function n = getNumUnilateralConstraints(obj)
+      % Returns the number of unilateral constraints, currently only
+      % contains the contact pairs
+      n = obj.getNumContactPairs();
     end
   end
     
