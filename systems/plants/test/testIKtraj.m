@@ -127,6 +127,16 @@ display('The user should check that the infeasible constraints are the CoM z');
 display('The infeasible constraints returned from IKtraj is');
 display(infeasible_constraint);
 
+x0 = [q_seed_traj.eval(t(1));q_seed_traj.deriv(t(1))];
+ikproblem = InverseKinTraj(r,t,q_nom_traj,ikoptions.fixInitialState,x0,kc_err,kc2{:},kc3,kc4,kc5,pc_knee,qsc);
+ikproblem = ikproblem.addBoundingBoxConstraint(BoundingBoxConstraint(ikoptions.qdf_lb,ikoptions.qdf_ub),ikproblem.qdf_idx);
+ikproblem = ikproblem.setSolverOptions('snopt','MajorIterationsLimit',ikoptions.SNOPT_MajorIterationsLimit);
+% ikproblem = ikproblem.setSolverOptions('snopt','print','iktraj.out');
+[xtraj,F,info,infeasible_constraint] = ikproblem.solve(q_seed_traj);
+if(info ~= 13)
+  error('The problem should be infeasible');
+end
+
 display('Check IK with WorldFixedPositionConstraint');
 kc_fixedPosition = WorldFixedPositionConstraint(r,pelvis,[0;0;0],tspan);
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,qsc,kc_fixedPosition,stlpc,ikoptions);
