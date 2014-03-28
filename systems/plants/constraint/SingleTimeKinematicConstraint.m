@@ -56,9 +56,18 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
         cnstr = {NonlinearConstraint(lb,ub,obj.robot.getNumDOF,@(kinsol) obj.eval(t,kinsol))};
         name_str = obj.name(t);
         cnstr{1} = cnstr{1}.setName(name_str);
+        joint_idx = obj.kinematicsPathJoints();
+        cnstr{1} = cnstr{1}.setSparseStructure(reshape(bsxfun(@times,(1:obj.num_constraint)',ones(1,length(joint_idx))),[],1),...
+          reshape(bsxfun(@times,ones(obj.num_constraint,1),joint_idx),[],1));
       else
         cnstr = {};
       end
+    end
+    
+    function joint_idx = kinematicsPathJoints(obj)
+      % return the indices of the joints used to evaluate the constraint. The default
+      % value is (1:obj.robot.getNumDOF);
+      joint_idx = (1:obj.robot.getNumDOF);
     end
   end
   

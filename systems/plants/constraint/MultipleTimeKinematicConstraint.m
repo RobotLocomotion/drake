@@ -55,14 +55,21 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
         nq = obj.robot.getNumDOF;
         cnstr = {NonlinearConstraint(lb,ub,length(t)*nq,@(kinsol_cell) obj.eval(t,kinsol_cell))};
         num_cnstr = obj.getNumConstraint(t);
-        iCfun = reshape(bsxfun(@times,(1:num_cnstr)',ones(1,nq*num_valid_t)),[],1);
-        jCvar = reshape(bsxfun(@times,ones(num_cnstr,1),reshape(bsxfun(@plus,nq*(valid_t_idx-1),(1:nq)'),1,[])),[],1);
+        joint_idx = obj.kinematicPathJoints();
+        iCfun = reshape(bsxfun(@times,(1:num_cnstr)',ones(1,length(joint_idx)*num_valid_t)),[],1);
+        jCvar = reshape(bsxfun(@times,ones(num_cnstr,1),reshape(bsxfun(@plus,nq*(valid_t_idx-1),joint_idx'),1,[])),[],1);
         cnstr{1} = cnstr{1}.setSparseStructure(iCfun,jCvar);
         name_str = obj.name(t);
         cnstr{1} = cnstr{1}.setName(name_str);
       else
         cnstr = {};
       end
+    end
+    
+    function joint_idx = kinematicPathJoints(obj)
+      % return the indices of the joints used to evaluate the constraint. The default
+      % value is (1:obj.robot.getNumDOF);
+      joint_idx = (1:obj.robot.getNumDOF);
     end
   end
   
