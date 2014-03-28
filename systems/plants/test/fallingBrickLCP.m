@@ -2,6 +2,7 @@ function fallingBrickLCP
 
 options.floating = true;
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
+p = p.addRobotFromURDF('ground_plane.urdf');
 x0 = p.resolveConstraints([0;1+rand;randn(10,1)]);
 
 if 0 
