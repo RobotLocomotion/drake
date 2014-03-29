@@ -2,9 +2,12 @@ classdef RigidBodyWing < RigidBodyForceElement
 
   properties
     kinframe;  % index to RigidBodyFrame 
-    fCl  % splines representing the *dimensional* coefficients
-    fCd  %  with fCl = 1/2 rho*S*Cl, etc. (S=area)
+    fCl  % PPTrajectories (splines) representing the *dimensional* coefficients
+    fCd  % with fCl = 1/2 rho*S*Cl, etc. (S=area)
     fCm
+    dfCl
+    dfCd
+    dfCm
     area
     %Air density for 20 degC dry air, at sea level
     rho = 1.204;
@@ -348,13 +351,28 @@ classdef RigidBodyWing < RigidBodyForceElement
           setenv('GFORTRAN_STDOUT_UNIT', '-1') 
           setenv('GFORTRAN_STDERR_UNIT', '-1')
       end %revertEnvVars()
+      
+      % convert the splines to PPTrajectory, allowing
+      % for fasteval improving performance a lot
+      obj.fCm = PPTrajectory(obj.fCm);
+      obj.fCl = PPTrajectory(obj.fCl);
+      obj.fCd = PPTrajectory(obj.fCd);
+      obj.dfCm = obj.fCm.fnder(1);
+      obj.dfCl = obj.fCl.fnder(1);
+      obj.dfCd = obj.fCd.fnder(1);
+      
     end %constructor
 
-    function force = computeSpatialForce(obj,manip,q,qd)
+    function [force, dforce] = computeSpatialForce(obj,manip,q,qd)
       frame = getFrame(manip,obj.kinframe);
-      kinsol = doKinematics(manip,q);
-      %origin = [x z theta] of the reference point
-      [~,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
+      if (nargout>1)
+        % enable second order gradients
+        kinsol = doKinematics(manip,q,true);
+        [~,J,dJ] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
+      else
+        kinsol = doKinematics(manip,q);
+        [~,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
+      end
       wingvel_world = J*qd; % assume still air. Air flow over the wing
 
       % Implementation note: for homogenous transforms, I could do the following 
@@ -374,7 +392,22 @@ classdef RigidBodyWing < RigidBodyForceElement
       sideslip = dot(wingvel_world,wingYunit);
       wingvel_world = wingvel_world - sideslip*wingYunit;
       
-      wingvel_rel = bodyKin(manip,kinsol,obj.kinframe,[wingvel_world,zeros(3,1)]); wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
+      if (nargout>1)
+        [wingYunit,dwingYunitdq] = forwardKin(manip,kinsol,obj.kinframe,[0 0; 1 0; 0 0]);
+      else
+        wingYunit = forwardKin(manip,kinsol,obj.kinframe,[0 0; 1 0; 0 0]);
+      end
+      wingYunit = wingYunit(:,1)-wingYunit(:,2);
+      sideslip = dot(wingvel_world,wingYunit);
+      wingvel_world = wingvel_world - sideslip*wingYunit;
+      
+      if (nargout>1) 
+        [wingvel_rel,wingvel_relJ,wingvel_relP] = bodyKin(manip,kinsol,obj.kinframe,[wingvel_world,zeros(3,1)]);
+      else
+        wingvel_rel = bodyKin(manip,kinsol,obj.kinframe,[wingvel_world,zeros(3,1)]);
+      end
+      wingvel_rel = wingvel_rel(:,1)-wingvel_rel(:,2);
+      
       airspeed = norm(wingvel_world);
       aoa = -(180/pi)*atan2(wingvel_rel(3),wingvel_rel(1));
       
@@ -389,28 +422,94 @@ classdef RigidBodyWing < RigidBodyForceElement
       
       %lift and drag are the forces on the body in the world frame.
       %cross(wingXZvelocity, wingYunit) rotates it by 90 degrees
-      lift_world = ppvalSafe(obj.fCl,aoa, false, false)*airspeed*cross(wingvel_world, wingYunit);
-      drag_world = ppvalSafe(obj.fCd,aoa, false, false)*airspeed*(-wingvel_world);
-      torque_world = -ppvalSafe(obj.fCm,aoa, false, false)*airspeed*airspeed*wingYunit;
+      if (nargout>1)
+        [CL, CD, CM, dCL, dCD, dCM] = obj.coeffs(aoa);
+      else
+        [CL, CD, CM] = obj.coeffs(aoa);
+      end
+      % cross is a rather expensive operation, store it for gradients
+      x_wingvel_world_wingYunit = cross(wingvel_world, wingYunit);
+      lift_world = CL*airspeed*x_wingvel_world_wingYunit;
+      drag_world = CD*airspeed*(-wingvel_world);
+      torque_world = -CM*airspeed*airspeed*wingYunit;
 
       % convert torque to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
-      torque_body = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]); torque_body = torque_body(:,1)-torque_body(:,2);
+      if (nargout>1)  
+        [torque_body, torque_bodyJ, torque_bodyP] = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
+      else
+        torque_body = bodyKin(manip,kinsol,frame.body_ind,[torque_world,zeros(3,1)]);
+      end
+      torque_body = torque_body(:,1)-torque_body(:,2);
+      
       torque_joint = manip.body(frame.body_ind).X_joint_to_body'*[torque_body;0;0;0];
       
       %inputs of point (body coordinates), and force (world coordinates)
       %returns [torque; xforce; yforce] in the body coordinates
       %obj.body.dofnum should have 6 elements for
       %linkID = manip.findLinkInd(obj.body.linkname, 0);
-      force(:,frame.body_ind) = torque_joint + ...
-        cartesianForceToSpatialForce(manip, kinsol, frame.body_ind, frame.T(1:3,4),lift_world+drag_world);
+      if (nargout>1)
+        [f,fJ,fP] = cartesianForceToSpatialForce(manip, kinsol, frame.body_ind, frame.T(1:3,4),lift_world+drag_world);
+      else
+        f = cartesianForceToSpatialForce(manip, kinsol, frame.body_ind, frame.T(1:3,4),lift_world+drag_world);
+      end 
+
+      force(:,frame.body_ind) = torque_joint + f;
+        
+      if (nargout>1)
+        nq = size(q,1);
+        dwingvel_worlddq = reshape(reshape(dJ,[],nq)*qd,[],nq);
+        dwingvel_worlddqd = J;
+        dwingYunitdq = dwingYunitdq(1:3,:)-dwingYunitdq(4:6,:); 
+        dwingYunitdqd = zeros(3,nq);
+        dsideslipdq = dot(dwingvel_worlddq,repmat(wingYunit,1,nq),1)+dot(repmat(wingvel_world,1,nq),dwingYunitdq,1);
+        dsideslipdqd = dot(dwingvel_worlddqd,repmat(wingYunit,1,nq),1)+dot(repmat(wingvel_world,1,nq),dwingYunitdqd,1);
+        dwingvel_worlddq = dwingvel_worlddq - wingYunit*dsideslipdq - sideslip*dwingYunitdq;
+        dwingvel_worlddqd = dwingvel_worlddqd - wingYunit*dsideslipdqd - sideslip*dwingYunitdqd;
+        wingvel_relJ = wingvel_relJ(1:3,:)-wingvel_relJ(4:6,:);
+        wingvel_relP = wingvel_relP(1:3,:)-wingvel_relP(4:6,:);
+        dwingvel_reldq = wingvel_relJ+wingvel_relP(:,1:3)*dwingvel_worlddq;
+        dwingvel_reldqd = wingvel_relP(:,1:3)*dwingvel_worlddqd;
+        dairspeeddq = (dwingvel_worlddq'*wingvel_world)'/norm(wingvel_world);
+        dairspeeddqd = (dwingvel_worlddqd'*wingvel_world)'/norm(wingvel_world);
+        daoadq = -(180/pi)*(wingvel_rel(1)*dwingvel_reldq(3,:)-wingvel_rel(3)*dwingvel_reldq(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
+        daoadqd = -(180/pi)*(wingvel_rel(1)*dwingvel_reldqd(3,:)-wingvel_rel(3)*dwingvel_reldqd(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
+        dforce = sparse(6,getNumBodies(manip)*2*nq);
+        dlift_worlddq = dCL*airspeed*(x_wingvel_world_wingYunit*daoadq) + CL*(x_wingvel_world_wingYunit*dairspeeddq) + CL*airspeed*(cross(dwingvel_worlddq, repmat(wingYunit,1,nq), 1)+cross(repmat(wingvel_world,1,nq), dwingYunitdq, 1));
+        dlift_worlddqd = dCL*airspeed*(x_wingvel_world_wingYunit*daoadqd) + CL*(x_wingvel_world_wingYunit*dairspeeddqd) + CL*airspeed*(cross(dwingvel_worlddqd, repmat(wingYunit,1,nq), 1));
+        ddrag_worlddq = dCD*airspeed*(-wingvel_world*daoadq) + CD*(-wingvel_world*dairspeeddq) + CD*airspeed*-dwingvel_worlddq;
+        ddrag_worlddqd = dCD*airspeed*(-wingvel_world*daoadqd) + CD*(-wingvel_world*dairspeeddqd) + CD*airspeed*-dwingvel_worlddqd;
+        dtorque_worlddq = -dCM*airspeed*airspeed*(wingYunit*daoadq) + -CM*2*airspeed*(wingYunit*dairspeeddq) + -CM*airspeed*airspeed*dwingYunitdq;
+        dtorque_worlddqd = -dCM*airspeed*airspeed*(wingYunit*daoadqd) + -CM*2*airspeed*(wingYunit*dairspeeddqd);
+        torque_bodyJ = torque_bodyJ(1:3,:)-torque_bodyJ(4:6,:);
+        torque_bodyP = torque_bodyP(1:3,:)-torque_bodyP(4:6,:);
+        dtorque_bodydq = torque_bodyJ+torque_bodyP(1:3,1:3)*dtorque_worlddq;
+        dtorque_bodydqd = torque_bodyP(1:3,1:3)*dtorque_worlddqd;
+        dtorque_jointdq = manip.body(frame.body_ind).X_joint_to_body'*[dtorque_bodydq;zeros(3,nq)];
+        dtorque_jointdqd = manip.body(frame.body_ind).X_joint_to_body'*[dtorque_bodydqd;zeros(3,nq)];
+        dfdq = fJ+fP(1:6,1:6)*[(dlift_worlddq+ddrag_worlddq);zeros(3,nq)];
+        dfdqd = fP(1:6,1:6)*[(dlift_worlddqd+ddrag_worlddqd);zeros(3,nq)];
+        dforce_bodydq = dtorque_jointdq + dfdq;
+        dforce_bodydqd = dtorque_jointdqd + dfdqd;
+        dforcebody = [dforce_bodydq, dforce_bodydqd];
+        numbodies = getNumBodies(manip);
+        for i=1:2*nq
+          dforce(:,(i-1)*numbodies+frame.body_ind) = dforcebody(:,i);
+        end
+      end
+    
     end
         
-    function [CL CD CM] = coeffs(AoA)
+    function [CL, CD, CM, dCL, dCD, dCM] = coeffs(obj, aoa)
       %returns dimensionalized coefficient of lift, drag, and pitch moment for a
       %given angle of attack
-      CL = ppval(obj.fCl, AoA);
-      CD = ppval(obj.fCd, AoA);
-      CM = ppval(obj.fCm, AoA);
+      CL = obj.fCl.fasteval(aoa);
+      CD = obj.fCd.fasteval(aoa);
+      CM = obj.fCm.fasteval(aoa);
+      if (nargout>3)
+        dCL = obj.dfCl.fasteval(aoa);
+        dCD = obj.dfCd.fasteval(aoa);
+        dCM = obj.dfCm.fasteval(aoa);
+      end
     end
     
   end

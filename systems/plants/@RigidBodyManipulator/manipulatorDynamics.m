@@ -2,14 +2,16 @@ function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd,use_mex)
 
 checkDirty(obj);
 
-if (nargin<4) use_mex = true; end
+if (nargin<4) use_mex = false; end % the gradients don't look quite right in C yet
 
 m = obj.featherstone;
 B = obj.B;
 
 if length(obj.force)>0
-  if (nargout>3) error('derivatives not implemented yet for force elements'); end
   f_ext = sparse(6,m.NB);
+  if (nargout>3)
+      df_ext = sparse(6*m.NB,size(q,1)+size(qd,1));
+  end
   for i=1:length(obj.force)
     % compute spatial force should return something that is the same length
     % as the number of bodies in the manipulator
@@ -17,19 +19,34 @@ if length(obj.force)>0
       [force,B_force] = computeSpatialForce(obj.force{i},obj,q,qd);
       B = B+B_force;
     else
-      force = computeSpatialForce(obj.force{i},obj,q,qd);
+      if (nargout>3)
+          [force,dforce] = computeSpatialForce(obj.force{i},obj,q,qd);
+          dforce = reshape(dforce,numel(force),[]);
+      else
+          force = computeSpatialForce(obj.force{i},obj,q,qd);
+      end
+      % Comparing the wing force gradients
     end
     f_ext(:,m.f_ext_map_to) = f_ext(:,m.f_ext_map_to)+force(:,m.f_ext_map_from);
+    if (nargout>3)
+      for j=1:size(m.f_ext_map_to,2)
+        df_ext((m.f_ext_map_to(j)-1)*size(f_ext,1):m.f_ext_map_to(j)*size(f_ext,1),:) = df_ext((m.f_ext_map_to(j)-1)*size(f_ext,1):m.f_ext_map_to(j)*size(f_ext,1),:) + dforce((m.f_ext_map_from(j)-1)*size(force,1):m.f_ext_map_from(j)*size(force,1),:);
+      end
+    end
   end
 else
   f_ext=[];
+  if (nargout>3)
+    df_ext=[]; 
+  end
 end
 
 if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
   if (nargout>3)
-    if ~isempty(f_ext) error('not implemented yet'); end
-    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd,f_ext);
+    df_ext = full(df_ext);
+    %fprintf('calling mex manipulatorDynamics gradients\n');
+    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd,f_ext,df_ext);
     dH = [dH, zeros(m.NB*m.NB,m.NB)];
     dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
@@ -37,6 +54,7 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   end
 else  
   if (nargout>3)
+    %fprintf('using Matlab manipulatorDynamics gradients\n');
     % featherstone's HandC with analytic gradients
     a_grav = [0;0;0;obj.gravity];
     
@@ -112,7 +130,8 @@ else
       
       if ~isempty(f_ext)
         fvp{i} = fvp{i} - f_ext(:,i);
-        error('need to implement f_ext gradients here');
+        dfvpdq{i} = dfvpdq{i} - df_ext((i-1)*size(f_ext,1)+1:i*size(f_ext,1),1:size(q,1));
+        dfvpdqd{i} = dfvpdqd{i} - df_ext((i-1)*size(f_ext,1)+1:i*size(f_ext,1),size(q,1)+1:end);
       end
       
     end
@@ -187,7 +206,8 @@ else
     [H,C] = HandC(m,q,qd,f_ext,obj.gravity);
   end
   
-  C=C + computeFrictionForce(obj,qd);  
+  C=C + computeFrictionForce(obj,qd); 
+    
 end
 
 end
