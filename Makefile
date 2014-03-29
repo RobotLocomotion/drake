@@ -58,7 +58,7 @@ clean:
 	@# Place additional commands here if you have any
 
 install_prereqs_homebrew:
-	brew install cmake gtk+
+	brew install cmake pkg-config gtk+
 	@for subdir in $(SUBDIRS); do \
 		$(MAKE) -C $$subdir $@; \
 	done
