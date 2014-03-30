@@ -13,6 +13,15 @@ classdef WorldGazeDirConstraint < GazeDirConstraint
     body_name;
   end
   
+  methods(Access = protected)
+    function [c,dc] = evalValidTime(obj,kinsol)
+      [axis_pos,daxis_pos] = forwardKin(obj.robot,kinsol,obj.body,[zeros(3,1) obj.axis],0);
+      axis_world = axis_pos(:,2)-axis_pos(:,1);
+      daxis_world = daxis_pos(4:6,:)-daxis_pos(1:3,:);
+      c = axis_world'*obj.dir-1;
+      dc = obj.dir'*daxis_world;
+    end
+  end
   
   methods  
     function obj = WorldGazeDirConstraint(robot,body,axis,dir,conethreshold,tspan)
@@ -36,20 +45,6 @@ classdef WorldGazeDirConstraint < GazeDirConstraint
       obj.mex_ptr = ptr;
     end
     
-    
-
-    function [c,dc] = eval(obj,t,kinsol)
-      if(obj.isTimeValid(t))
-        [axis_pos,daxis_pos] = forwardKin(obj.robot,kinsol,obj.body,[zeros(3,1) obj.axis],0);
-        axis_world = axis_pos(:,2)-axis_pos(:,1);
-        daxis_world = daxis_pos(4:6,:)-daxis_pos(1:3,:);
-        c = axis_world'*obj.dir-1;
-        dc = obj.dir'*daxis_world;
-      else
-        c = [];
-        dc = [];
-      end
-    end
     function name_str = name(obj,t)
       if(obj.isTimeValid(t))
         name_str = {sprintf('%s conic gaze direction constraint at time %10.4f',obj.body_name,t)};
@@ -58,5 +53,9 @@ classdef WorldGazeDirConstraint < GazeDirConstraint
       end
     end
     
+    function joint_idx = kinematicsPathJoints(obj)
+      [~,joint_path] = obj.robot.findKinematicPath(1,obj.body);
+      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+    end
   end
 end

@@ -106,6 +106,11 @@ classdef RelativeQuatConstraint < QuatConstraint
 
       lcmgl.switchBuffers();
     end
+    
+    function joint_idx = kinematicsPathJoints(obj)
+      [~,joint_path] = obj.robot.findKinematicPath(obj.bodyA_idx,obj.bodyB_idx);
+      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+    end
   end
 end
 

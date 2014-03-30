@@ -79,7 +79,7 @@ classdef PolynomialProgram < NonlinearProgram
     end
 
     function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
-      if nargin<2, x0 = randn(obj.num_decision_vars,1); end
+      if nargin<2, x0 = randn(obj.num_vars,1); end
       if nargin<3, solvers = {'gloptipoly','bertini','snopt','fmincon'}; end
       [x,objval,exitflag,execution_time] = compareSolvers@NonlinearProgram(obj,x0,solvers);
     end

@@ -7,7 +7,7 @@ classdef QuadraticProgram < NonlinearProgram
 %  subject to
 %              Ain x <= bin
 %              Aeq x = beq
-%              lb<=x<=ub
+%              x_lb<=x<=x_ub
 %
 % @option solver can be one of 'gurobi','fastQP','gurobi_mex'
 % (coming soon: 'quadprog','cplex','mosek','snopt')
@@ -28,14 +28,14 @@ properties
 end
 
 methods
-  function obj = QuadraticProgram(Q,f,Ain,bin,Aeq,beq,lb,ub)
+  function obj = QuadraticProgram(Q,f,Ain,bin,Aeq,beq,x_lb,x_ub)
     n = length(f);
     if nargin<3 || isempty(Ain), Ain=zeros(0,n); end
     if nargin<4, bin=[]; end
     if nargin<5 || isempty(Aeq), Aeq=zeros(0,n); end
     if nargin<6, beq=[]; end
-    if nargin<7, lb=[]; end
-    if nargin<8, ub=[]; end
+    if nargin<7, x_lb=-inf(n,1); end
+    if nargin<8, x_ub=inf(n,1); end
 
     obj = obj@NonlinearProgram(size(Q,1),0,0);
     obj.Q = Q;
@@ -44,21 +44,21 @@ methods
     obj.bin = bin;
     obj.Aeq = Aeq;
     obj.beq = beq;
-    obj.lb = lb;
-    obj.ub = ub;
+    obj.x_lb = x_lb;
+    obj.x_ub = x_ub;
     
   % todo: check dependencies here and pick my favorite that is also installed
     obj.solver = 'gurobi';
-    obj.default_options.quadprog = optimset('Display','off');
+    obj.solver_options.quadprog = optimset('Display','off');
   end
 
   function [x,objval,exitflag,active] = solve(obj,x0,active)
-    if (nargin<2) x0 = randn(obj.num_decision_vars,1); end
+    if (nargin<2) x0 = randn(obj.num_vars,1); end
     if (nargin<3) active=[]; end
     
     switch lower(obj.solver)
       case 'quadprog'
-        [x,objval,exitflag] = quadprog(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub,[],obj.default_options.quadprog);
+        [x,objval,exitflag] = quadprog(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,[],obj.solver_options.quadprog);
         if (nargout>3)
           active=[];
           warning('active not implemented yet for quadprog (but should be trivial)');
@@ -70,17 +70,17 @@ methods
     
       case 'gurobi_mex'
         checkDependency('gurobi_mex');
-        [x,exitflag,active] = gurobiQPmex(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.lb,obj.ub,active);
+        [x,exitflag,active] = gurobiQPmex(obj.Q,obj.f,obj.Ain,obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,active);
         if (nargout>1)
           objval = .5*x'*obj.Q*x + obj.f'*x;  % todo: push this into mex?
         end
     
       case 'fastqp'
         checkDependency('gurobi_mex');
-        if isempty(obj.lb), obj.lb=-inf + 0*obj.f; end
-        if isempty(obj.ub), obj.ub=inf + 0*obj.f; end
-        Ain_b = [obj.Ain; -eye(length(obj.lb)); eye(length(obj.ub))];
-        bin_b = [obj.bin; -obj.lb; obj.ub];
+        if isempty(obj.x_lb), obj.x_lb=-inf + 0*obj.f; end
+        if isempty(obj.x_ub), obj.x_ub=inf + 0*obj.f; end
+        Ain_b = [obj.Ain; -eye(length(obj.x_lb)); eye(length(obj.x_ub))];
+        bin_b = [obj.bin; -obj.x_lb; obj.x_ub];
 
         [x,exitflag,active] = fastQPmex(obj.Q,obj.f,Ain_b,bin_b,obj.Aeq,obj.beq,active);
         if (nargout>1)
@@ -93,7 +93,7 @@ methods
   end
 
   function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
-    if nargin<2, x0 = randn(obj.num_decision_vars,1); end
+    if nargin<2, x0 = randn(obj.num_vars,1); end
     if nargin<3, solvers = {'quadprog','gurobi','gurobi_mex','fastqp','snopt'}; end
     [x,objval,exitflag,execution_time] = compareSolvers@NonlinearProgram(obj,x0,solvers);
   end  
@@ -125,15 +125,15 @@ methods
     model.A = sparse([obj.Aeq;obj.Ain]);
     model.rhs = [obj.beq,obj.bin];
     model.sense = char([repmat('=',length(obj.beq),1); repmat('<',length(obj.bin),1)]);
-    if isempty(obj.lb)
+    if isempty(obj.x_lb)
       model.lb = -inf + 0*obj.f;
     else
-      model.lb = obj.lb;
+      model.lb = obj.x_lb;
     end
-    if isempty(obj.ub)
+    if isempty(obj.x_ub)
       model.ub = inf + 0*obj.f;
     else
-      model.ub = obj.ub;
+      model.ub = obj.x_ub;
     end
     
     if params.method==2
@@ -149,7 +149,7 @@ methods
     x = result.x;
     objval = result.objval;
     
-    if (size(obj.Ain,1)>0 || ~isempty(obj.lb) || ~isempty(obj.ub))
+    if (size(obj.Ain,1)>0 || ~isempty(obj.x_lb) || ~isempty(obj.x_ub))
       % note: result.slack(for Ain indices) = bin-Ain*x
       active = find([result.slack(size(obj.Aeq,1)+1:end); x-model.lb; model.ub-x]<1e-4);
     else

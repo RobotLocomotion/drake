@@ -107,36 +107,60 @@ q31_aff = [q31;repmat(randn(length(robot_aff.getStateFrame.frame{2}.coordinates)
 display('Check world fixed position constraint')
 testKinCnst_userfun(false,t2,q21,q21_aff,RigidBodyConstraint.WorldFixedPositionConstraintType,robot,robot_aff,l_hand,[[0;0;1] [1;0;1]],tspan0);
 kc = WorldFixedPositionConstraint(robot,l_hand,[[0;0;1] [1;0;1]],tspan0);
-[c,dc] = kc.eval(t2,q22);
+kinsol_cell = cell(1,size(q22,2));
+for i = 1:size(q22,2)
+  kinsol_cell{i} = kc.robot.doKinematics(q22(:,i),false,false);
+end
+[c,dc] = kc.eval(t2,kinsol_cell);
 valuecheck(c,[0;0]);
 testKinCnst_userfun(false,t2,q22,q22_aff,RigidBodyConstraint.WorldFixedPositionConstraintType,robot,robot_aff,l_hand,[[0;0;1] [1;0;1]],tspan0);
 
 kc = WorldFixedPositionConstraint(robot,l_hand,[[0;0;1] [1;0;1]],tspan2);
-[c,dc] = kc.eval(t3,q31);
+kinsol_cell = cell(1,size(q31,2));
+for i = 1:size(q31,2)
+  kinsol_cell{i} = kc.robot.doKinematics(q31(:,i),false,false);
+end
+[c,dc] = kc.eval(t3,kinsol_cell);
 valuecheck(c,[0;0]);
 testKinCnst_userfun(false,t3,q31,q31_aff,RigidBodyConstraint.WorldFixedPositionConstraintType,robot,robot_aff,l_hand,[[0;0;1] [1;0;1]],tspan2);
 
 display('Check world fixed orientation constraint')
 testKinCnst_userfun(false,t2,q21,q21_aff,RigidBodyConstraint.WorldFixedOrientConstraintType,robot,robot_aff,l_hand,tspan0);
 kc = WorldFixedOrientConstraint(robot,l_hand,tspan0);
-[c,dc] = kc.eval(t2,q22);
+kinsol_cell = cell(1,size(q22,2));
+for i = 1:size(q22,2)
+  kinsol_cell{i} = kc.robot.doKinematics(q22(:,i),false,false);
+end
+[c,dc] = kc.eval(t2,kinsol_cell);
 valuecheck(c,length(t2));
 testKinCnst_userfun(false,t2,q22,q22_aff,RigidBodyConstraint.WorldFixedOrientConstraintType,robot,robot_aff,l_hand,tspan0);
 
 kc = WorldFixedOrientConstraint(robot,l_hand,tspan2);
-[c,dc] = kc.eval(t3,q31);
+kinsol_cell = cell(1,size(q31,2));
+for i = 1:size(q31,2)
+  kinsol_cell{i} = kc.robot.doKinematics(q31(:,i),false,false);
+end
+[c,dc] = kc.eval(t3,kinsol_cell);
 valuecheck(c,sum(kc.isTimeValid(t3)));
 testKinCnst_userfun(false,t3,q31,q31_aff,RigidBodyConstraint.WorldFixedOrientConstraintType,robot,robot_aff,l_hand,tspan2);
 
 display('Check world fixed body pose constraint')
 testKinCnst_userfun(false,t2,q21,q21_aff,RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot,robot_aff,l_hand,tspan0);
 kc = WorldFixedBodyPoseConstraint(robot,l_hand,tspan0);
-[c,dc] = kc.eval(t2,q22);
+kinsol_cell = cell(1,size(q22,2));
+for i = 1:size(q22,2)
+  kinsol_cell{i} = kc.robot.doKinematics(q22(:,i),false,false);
+end
+[c,dc] = kc.eval(t2,kinsol_cell);
 valuecheck(c,[0;length(t2)]);
 testKinCnst_userfun(false,t2,q22,q22_aff,RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot,robot_aff,l_hand,tspan0);
 
 kc = WorldFixedBodyPoseConstraint(robot,l_hand,tspan2);
-[c,dc] = kc.eval(t3,q31);
+kinsol_cell = cell(1,size(q31,2));
+for i = 1:size(q31,2)
+  kinsol_cell{i} = kc.robot.doKinematics(q31(:,i),false,false);
+end
+[c,dc] = kc.eval(t3,kinsol_cell);
 valuecheck(c,[0;sum(kc.isTimeValid(t3))]);
 testKinCnst_userfun(false,t3,q31,q31_aff,RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot,robot_aff,l_hand,tspan2);
 
@@ -204,18 +228,36 @@ num_cnst = kc.getNumConstraint(t);
 if(singleTimeFlag)
   kinsol = kc.robot.doKinematics(q,false,false);
   [c,dc] = kc.eval(t,kinsol);
+  cnstr = kc.generateConstraint(t);
+  kinsol = kc.robot.doKinematics(q,false,false);
+  [c_cnstr,dc_cnstr] = cnstr{1}.eval(kinsol);
 else
-  [c,dc] = kc.eval(t,q);
+  kinsol_cell = cell(1,length(t));
+  for i = 1:length(t)
+    kinsol_cell{i} = doKinematics(robot,q(:,i),false,false);
+  end
+  [c,dc] = kc.eval(t,kinsol_cell);
+  cnstr = kc.generateConstraint(t);
+  [c_cnstr,dc_cnstr] = cnstr{1}.eval(kinsol_cell);
 end
 [lb,ub] = kc.bounds(t);
 cnst_name = kc.name(t);
+valuecheck(strcmp(cnst_name,cnstr{1}.name),1);
 % strcmp(cnst_name_mex,cnst_name);
 valuecheck(num_cnst_mex,num_cnst);
 valuecheck(c_mex,c,1e-8);
 valuecheck(dc_mex,dc,1e-8);
 valuecheck(lb_mex,lb,1e-8);
 valuecheck(ub_mex,ub,1e-8);
+valuecheck(c,c_cnstr);
+valuecheck(dc,dc_cnstr);
+valuecheck(sparse(cnstr{1}.iCfun,cnstr{1}.jCvar,dc_cnstr(sub2ind([cnstr{1}.num_cnstr,cnstr{1}.xdim],cnstr{1}.iCfun,cnstr{1}.jCvar)),...
+cnstr{1}.num_cnstr,cnstr{1}.xdim),dc_cnstr);
+valuecheck(lb,cnstr{1}.lb);
+valuecheck(ub,cnstr{1}.ub);
 
+
+%%%% Check Kinematics Constraint after adding robot
 kc = kc.updateRobot(robot_aff);
 kc_mex = kc.mex_ptr;
 if(singleTimeFlag)
@@ -227,7 +269,11 @@ if(singleTimeFlag)
   kinsol = kc.robot.doKinematics(q_aff,false,false);
   [c,dc] = kc.eval(t,kinsol);
 else
-  [c,dc] = kc.eval(t,q_aff);
+  kinsol_cell = cell(1,length(t));
+  for i = 1:length(t)
+    kinsol_cell{i} = kc.robot.doKinematics(q_aff(:,i),false,false);
+  end
+  [c,dc] = kc.eval(t,kinsol_cell);
 end
 [~,dc_numerical] = geval(@(q) eval_numerical(singleTimeFlag,kc,t,q),q_aff,struct('grad_method','numerical'));
 valuecheck(dc_mex,dc_numerical,1e-3);
