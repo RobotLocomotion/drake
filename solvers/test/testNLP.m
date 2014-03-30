@@ -7,7 +7,7 @@ valuecheck(x,[0;-1],1e-5);
 nlp2 = NLPtest2();
 nlp2 = nlp2.setCheckGrad(true);
 [x,F,info] = nlp2.solve([1;2]);
-valuecheck(x,[sqrt(2);sqrt(2)/2],1e-4);
+valuecheck(x,[sqrt(2);sqrt(2)/2],1e-3);
 [x,F,info] = nlp2.compareSolvers([1;2]);
 
 nlp3 = NLPtest3();
