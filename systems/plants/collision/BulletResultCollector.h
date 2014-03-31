@@ -1,8 +1,6 @@
 #ifndef __DrakeCollisionBullletResultCollector_H__
 #define __DrakeCollisionBullletResultCollector_H__
 
-#define BT_USE_DOUBLE_PRECISION
-
 #include "DrakeCollision.h"
 #include "ResultCollector.h"
 
