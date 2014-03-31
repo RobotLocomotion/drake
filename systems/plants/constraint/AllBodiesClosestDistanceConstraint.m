@@ -18,7 +18,7 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
     end
     
    function [c,dc] = evalValidTime(obj,kinsol)
-      [c,~,~,~,~,~,~,~,dc] = contactConstraints(obj.robot,kinsol);
+      [c,dc] = closestDistance(obj.robot,kinsol);
     end
   end
   methods

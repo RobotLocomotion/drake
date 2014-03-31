@@ -75,7 +75,7 @@ end
 function [c,ceq,GC,GCeq] = mycon(q,r,dist_min,dist_max)
   ceq=[]; GCeq=[];
   kinsol = doKinematics(r,q);
-  [c,GC] = closestDistanceAllBodies(r,kinsol);
+  [c,GC] = closestDistance(r,kinsol);
   c = [dist_min-c;c-dist_max];
   GC = [-GC',GC'];
 end
