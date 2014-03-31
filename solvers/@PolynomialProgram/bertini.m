@@ -13,20 +13,20 @@ vars = obj.decision_vars;
 
 if ~isempty(obj.poly_equality_constraints)
   lambda = msspoly('l',length(obj.poly_equality_constraints));
-  eq(1:obj.num_decision_vars) = eq(1:obj.num_decision_vars) + (lambda'*diff(obj.poly_equality_constraints, obj.decision_vars))';
+  eq(1:obj.num_vars) = eq(1:obj.num_vars) + (lambda'*diff(obj.poly_equality_constraints, obj.decision_vars))';
   eq = vertcat(eq, obj.poly_equality_constraints); % primal feasibility
   vars = vertcat(vars, lambda);
 end
 
 if ~isempty(obj.poly_inequality_constraints)
   mu = msspoly('u',length(obj.poly_inequality_constraints));
-  eq(1:obj.num_decision_vars) = eq(1:obj.num_decision_vars) + (mu'*diff(obj.poly_inequality_constraints, obj.decision_vars))';
+  eq(1:obj.num_vars) = eq(1:obj.num_vars) + (mu'*diff(obj.poly_inequality_constraints, obj.decision_vars))';
   eq = vertcat(eq,mu.*obj.poly_inequality_constraints); % complementarity
   mu_indices = length(vars) + 1:length(obj.poly_inequality_constraints);
   vars = vertcat(vars, mu);
 end
 
-if ~isempty(obj.Ain) || ~isempty(obj.Aeq) || any(~isinf(obj.lb)) || any(~isinf(obj.ub))
+if ~isempty(obj.Ain) || ~isempty(obj.Aeq) || any(~isinf(obj.x_lb)) || any(~isinf(obj.x_ub))
   error('forgot to implement these on the first pass (but will be trivial)');
 end
 

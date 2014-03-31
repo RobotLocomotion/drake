@@ -1,5 +1,3 @@
-#define BT_USE_DOUBLE_PRECISION
-
 #include "BulletModel.h"
 #include "BulletElement.h"
 #include "BulletResultCollector.h"

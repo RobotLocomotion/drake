@@ -12,6 +12,36 @@ classdef WorldFixedOrientConstraint < MultipleTimeKinematicConstraint
     body_name
   end
   
+  methods(Access = protected)
+    function [c,dc_valid] = evalValidTime(obj,valid_kinsol_cell)
+      num_valid_t = length(valid_kinsol_cell);
+      nq = obj.robot.getNumDOF();
+      quat = zeros(4,num_valid_t);
+      if(nargout == 2)
+        J = zeros(4*num_valid_t,nq);
+      end
+      for i = 1:num_valid_t
+        kinsol = valid_kinsol_cell{i};
+        if(nargout == 1)
+          pos_tmp = forwardKin(obj.robot,kinsol,obj.body,[0;0;0],2);
+        elseif(nargout == 2)
+          [pos_tmp,J_tmp] = forwardKin(obj.robot,kinsol,obj.body,[0;0;0],2);
+          J((i-1)*4+(1:4),:) = J_tmp(4:7,:);
+        end
+        quat(:,i) = pos_tmp(4:7);
+      end
+      quat2 = [quat(:,2:end) quat(:,1)];
+      c1 = sum(quat.*quat2,1);
+      c = sum(c1.^2);
+      if(nargout == 2)
+        % [dcdquat1' dcdquat2' ...dcdquat_n_breaks'];
+        dcdquat = (bsxfun(@times,ones(4,1),2*c1).*quat2+bsxfun(@times,ones(4,1),2*[c1(end) c1(1:end-1)]).*[quat(:,end) quat(:,1:end-1)]);
+        dc_valid = sum(reshape(permute(reshape((bsxfun(@times,ones(1,nq),reshape(dcdquat,[],1)).*J)',nq,4,num_valid_t),[2,1,3]),4,nq*num_valid_t),1);
+      end
+    end
+  end
+  
+  
   methods
     function obj = WorldFixedOrientConstraint(robot,body,tspan)
       if(nargin == 2)
@@ -38,33 +68,6 @@ classdef WorldFixedOrientConstraint < MultipleTimeKinematicConstraint
       end
     end
     
-    function [c,dc_valid] = eval_valid(obj,valid_t,valid_q)
-      num_valid_t = size(valid_t,2);
-      nq = obj.robot.getNumDOF();
-      sizecheck(valid_q,[nq,num_valid_t]);
-      quat = zeros(4,num_valid_t);
-      if(nargout == 2)
-        J = zeros(4*num_valid_t,nq);
-      end
-      for i = 1:num_valid_t
-        kinsol = doKinematics(obj.robot,valid_q(:,i),false,false);
-        if(nargout == 1)
-          pos_tmp = forwardKin(obj.robot,kinsol,obj.body,[0;0;0],2);
-        elseif(nargout == 2)
-          [pos_tmp,J_tmp] = forwardKin(obj.robot,kinsol,obj.body,[0;0;0],2);
-          J((i-1)*4+(1:4),:) = J_tmp(4:7,:);
-        end
-        quat(:,i) = pos_tmp(4:7);
-      end
-      quat2 = [quat(:,2:end) quat(:,1)];
-      c1 = sum(quat.*quat2,1);
-      c = sum(c1.^2);
-      if(nargout == 2)
-        % [dcdquat1' dcdquat2' ...dcdquat_n_breaks'];
-        dcdquat = (bsxfun(@times,ones(4,1),2*c1).*quat2+bsxfun(@times,ones(4,1),2*[c1(end) c1(1:end-1)]).*[quat(:,end) quat(:,1:end-1)]);
-        dc_valid = sum(reshape(permute(reshape((bsxfun(@times,ones(1,nq),reshape(dcdquat,[],1)).*J)',nq,4,num_valid_t),[2,1,3]),4,nq*num_valid_t),1);
-      end
-    end
     
     function [lb,ub] = bounds(obj,t)
       valid_t = t(obj.isTimeValid(t));
@@ -87,5 +90,9 @@ classdef WorldFixedOrientConstraint < MultipleTimeKinematicConstraint
       end
     end
     
+    function joint_idx = kinematicPathJoints(obj)
+      [~,joint_path] = obj.robot.findKinematicPath(1,obj.body);
+      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+    end
   end
 end

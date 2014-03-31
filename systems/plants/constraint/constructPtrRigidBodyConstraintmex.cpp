@@ -890,6 +890,48 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","RelativePositionConstraint");
       }
       break;
+    case RigidBodyConstraint::RelativeQuatConstraintType:
+      {
+        if(nrhs != 7 && nrhs != 6)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::RelativeQuatConstraintType,robot.mex_model_ptr,bodyA_idx,bodyB_idx,quat_des,tol,tspan");
+        }
+        RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
+        Vector2d tspan;
+        if(nrhs <= 6)
+        {
+          tspan<<-mxGetInf(),mxGetInf();
+        }
+        else
+        {
+          rigidBodyConstraintParseTspan(prhs[6],tspan);
+        }
+        if(!mxIsNumeric(prhs[2])|| mxGetM(prhs[2]) != 1 || mxGetN(prhs[2]) != 1 || !mxIsNumeric(prhs[3])|| mxGetM(prhs[3]) != 1 || mxGetN(prhs[3]) != 1)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Argument 3 (bodyA_idx) and 4 (bodyB_idx) should be both scalars");
+        }
+        int bodyA_idx = static_cast<int>(mxGetScalar(prhs[2]))-1;
+        int bodyB_idx = static_cast<int>(mxGetScalar(prhs[3]))-1;
+        if(!mxIsNumeric(prhs[4]) || mxGetM(prhs[4]) != 4 || mxGetN(prhs[4]) != 1)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Argument 5 (quat_des) should be 4 x 1 double vector");
+        }
+        Vector4d quat_des;
+        memcpy(quat_des.data(),mxGetPr(prhs[4]),sizeof(double)*4);
+        double quat_norm = quat_des.norm();
+        if(abs(quat_norm-1.0)>1e-5)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Argument 5 should be a quaternion with unit length");
+        }
+        if(!mxIsNumeric(prhs[5]) || mxGetM(prhs[5]) != 1 || mxGetN(prhs[5]) != 1)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Argument 6 (tol) should be a double scalar");
+        }
+        double tol = mxGetScalar(prhs[5]);
+        RelativeQuatConstraint* cnst = new RelativeQuatConstraint(model,bodyA_idx,bodyB_idx,quat_des,tol,tspan);
+        plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","RelativeQuatConstraint");
+      }
+      break;
     default:
       mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Unsupported constraint type");
       break;

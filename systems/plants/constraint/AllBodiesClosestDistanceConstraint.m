@@ -16,6 +16,10 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       phi = closestDistanceAllBodies(obj.robot,kinsol);
       obj.num_constraint = numel(phi);
     end
+    
+    function [c,dc] = evalValidTime(obj,kinsol)
+      [c,dc] = closestDistanceAllBodies(obj.robot,kinsol);
+    end
   end
   methods
     function obj = AllBodiesClosestDistanceConstraint(robot,lb,ub,tspan)
@@ -31,15 +35,6 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       obj.ub = repmat(ub,obj.num_constraint,1);
       obj.type = RigidBodyConstraint.AllBodiesClosestDistanceConstraintType;
       obj.mex_ptr = ptr;
-    end
-
-    function [c,dc] = eval(obj,t,kinsol)
-      if(obj.isTimeValid(t))
-        [c,dc] = closestDistanceAllBodies(obj.robot,kinsol);
-      else
-        c = [];
-        dc = [];
-      end
     end
 
     function [lb,ub] = bounds(obj,t)

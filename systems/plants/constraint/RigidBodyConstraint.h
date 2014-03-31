@@ -68,6 +68,7 @@ class RigidBodyConstraint
     static const int WorldFixedBodyPoseConstraintType           = 18;
     static const int PostureChangeConstraintType                = 19;
     static const int RelativePositionConstraintType             = 20;
+    static const int RelativeQuatConstraintType                 = 24;
 };
 
 /**
@@ -354,6 +355,21 @@ class WorldQuatConstraint: public QuatConstraint
     WorldQuatConstraint(RigidBodyManipulator *model, int body, Eigen::Vector4d quat_des, double tol, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~WorldQuatConstraint();
+};
+
+class RelativeQuatConstraint: public QuatConstraint
+{
+  protected:
+    int bodyA_idx;
+    int bodyB_idx;
+    std::string bodyA_name;
+    std::string bodyB_name;
+    Eigen::Vector4d quat_des;
+    virtual void evalOrientationProduct(double &prod, Eigen::MatrixXd &dprod) const;
+  public:
+    RelativeQuatConstraint(RigidBodyManipulator *model, int bodyA_idx, int bodyB_idx, Eigen::Vector4d &quat_des, double tol, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    virtual void name(const double* t, std::vector<std::string> &name_str) const;
+    virtual ~RelativeQuatConstraint();
 };
 
 class EulerConstraint: public SingleTimeKinematicConstraint

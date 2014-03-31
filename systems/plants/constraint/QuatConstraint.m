@@ -9,6 +9,14 @@ classdef QuatConstraint <SingleTimeKinematicConstraint
     [orient_prod,dorient_prod] = evalOrientationProduct(obj,kinsol)
   end
   
+  methods(Access = protected)
+    function [c,dc] = evalValidTime(obj,kinsol)
+      [orient_prod, dorient_prod] = evalOrientationProduct(obj,kinsol);
+      c = 2*orient_prod^2-1;
+      dc = 4*(orient_prod)*dorient_prod;
+    end
+  end
+  
   methods
     function obj = QuatConstraint(robot,tol,tspan)
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
@@ -18,17 +26,6 @@ classdef QuatConstraint <SingleTimeKinematicConstraint
       end
       obj.tol = tol;
       obj.num_constraint = 1;
-    end
-    
-    function [c,dc] = eval(obj,t,kinsol)
-      if(obj.isTimeValid(t))
-        [orient_prod, dorient_prod] = evalOrientationProduct(obj,kinsol);
-        c = 2*orient_prod^2-1;
-        dc = 4*(orient_prod)*dorient_prod;
-      else
-        c = [];
-        dc = [];
-      end
     end
     
     function [lb,ub] = bounds(obj,t)
