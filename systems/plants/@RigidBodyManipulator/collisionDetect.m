@@ -48,7 +48,9 @@ end
 
 if nargin < 3, allow_multiple_contacts = false; end
 if nargin < 4, active_collision_options = struct(); end
-
+if isfield(active_collision_options,'body_idx')
+  active_collision_options.body_idx = int32(active_collision_options.body_idx);
+end
 [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr,allow_multiple_contacts,active_collision_options);
 %m = numel(idxA);
 

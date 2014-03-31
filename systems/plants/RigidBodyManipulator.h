@@ -95,7 +95,8 @@ public:
   bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
                         MatrixXd& xA, MatrixXd& xB, 
                         std::vector<int>& bodyA_idx, 
-                        std::vector<int>& bodyB_idx);
+                        std::vector<int>& bodyB_idx,
+                        std::vector<int>& bodies_idx);
 
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
   

@@ -814,6 +814,30 @@ classdef RigidBodyManipulator < Manipulator
         lcmgl.glRotated(a(4)*180/pi,a(1),a(2),a(3));
       end
     end
+
+    function drawLCMGLClosestPoints(model,lcmgl,kinsol,varargin)
+      if ~isstruct(kinsol)
+        kinsol = model.doKinematics(kinsol);
+      end
+      [~,~,xA,xB,idxA,idxB] = model.closestPoints(kinsol,varargin{:});
+      for i = 1:length(idxA)
+        xA_in_world = forwardKin(model,kinsol,idxA(i),xA(:,i));
+        xB_in_world = forwardKin(model,kinsol,idxB(i),xB(:,i));
+
+        lcmgl.glColor3f(0,0,0); % black
+
+        lcmgl.glBegin( lcmgl.LCMGL_LINES);
+        lcmgl.glVertex3f(xA_in_world(1), xA_in_world(2), xA_in_world(3));
+        lcmgl.glVertex3f(xB_in_world(1), xB_in_world(2), xB_in_world(3));
+        lcmgl.glEnd();
+
+        lcmgl.glColor3f(1,0,0); % red
+
+        lcmgl.sphere(xA_in_world,.01,20,20);
+        lcmgl.sphere(xB_in_world,.01,20,20);
+      end
+      lcmgl.glColor3f(.7,.7,.7); % gray
+    end
         
     function m = getMass(model)
       % todo: write total_mass to class and simply return it instead of

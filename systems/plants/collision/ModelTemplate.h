@@ -152,7 +152,8 @@ namespace DrakeCollision
                                                std::vector<int>& bodyB_idx, 
                                                MatrixXd& ptsA, MatrixXd& ptsB,
                                                MatrixXd& normal, 
-                                               VectorXd& distance)
+                                               VectorXd& distance,
+                                               std::vector<int>& bodies_idx)
       {
         bool has_result=false;
         //DEBUG
@@ -160,33 +161,62 @@ namespace DrakeCollision
         //END_DEBUG
           //ResultCollector c;
           ResultCollShPtr c = std::make_shared<ResultCollector>();
-          for (auto itA=bodies.begin(); itA!=bodies.end(); ++itA) {
-            for (typename std::map<int,Body<ElementT>>::iterator itB=itA; itB!=bodies.end(); ++itB) {
-            //for (auto itB=bodies.begin(); itB!=bodies.end(); ++itB) {
-              Body<ElementT>& bodyA(itA->second);
-              Body<ElementT>& bodyB(itB->second);
-              //ResultCollShPtr c_min_dist = std::make_shared<MinDistResultCollector>();
-              if ( (itA!=itB) && bodyA.collidesWith(bodyB) && 
-                   ( (bodyA.getBodyIdx()==0) || (bodyB.getBodyIdx()==0) || 
-                     !bodyA.adjacentTo(bodyB)) ) {
-                //DEBUG
-                //std::cout << "ModelTemplate::closestPointsAllBodies: Body A: " << bodyA.getBodyIdx() << std::endl;
-                //std::cout << "ModelTemplate::closestPointsAllBodies: Body B: " << bodyB.getBodyIdx() << std::endl;
-                //END_DEBUG
-                has_result = findClosestPointsBtwBodies(bodyA.getBodyIdx(),
-                                           bodyB.getBodyIdx(),
-                                           c);
-                //if (has_result) {
-                  //c.addPointPairResult(c_min_dist->pts.front());
-                //} else {
-                  //c.addPointPairResult(PointPair(bodyA.getBodyIdx(), 
-                        //bodyB.getBodyIdx(), 
-                        //Vector3d::Zero(), 
-                        //Vector3d::Zero(),
-                        //Vector3d::Zero(),1.0));
-                //}               
-              }
+          if (bodies_idx.size() == 0) {
+            for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+              bodies_idx.push_back(it->first);
             }
+          }
+          //DEBUG
+          //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
+          //std::cout << "Num active bodies: " << bodies_idx.size() << std::endl;
+          //END_DEBUG
+          //for (auto itA=bodies.begin(); itA!=bodies.end(); ++itA) {
+          for (typename std::vector<int>::const_iterator itA=bodies_idx.begin(); itA!=bodies_idx.end(); ++itA) {
+            if (bodies.count(*itA-1) > 0) {
+              //DEBUG
+              //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
+              //std::cout << "Body A found" << std::endl;
+              //END_DEBUG
+              //for (typename std::map<int,Body<ElementT>>::iterator itB=itA; itB!=bodies.end(); ++itB) {
+              for (typename std::vector<int>::const_iterator itB=itA; itB!=bodies_idx.end(); ++itB) {
+                //for (auto itB=bodies.begin(); itB!=bodies.end(); ++itB) {
+                if (bodies.count(*itB-1) > 0) {
+                  //DEBUG
+                  //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
+                  //std::cout << "Body B found" << std::endl;
+                  //END_DEBUG
+                  Body<ElementT>& bodyA(bodies[*itA-1]);
+                  Body<ElementT>& bodyB(bodies[*itB-1]);
+                  //DEBUG
+                  //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
+                  //std::cout << "Body A idx:" << bodyA.getBodyIdx() << std::endl;
+                  //std::cout << "Body B idx:" << bodyB.getBodyIdx() << std::endl;
+                  //END_DEBUG
+                  //ResultCollShPtr c_min_dist = std::make_shared<MinDistResultCollector>();
+                  if ( (bodyA.getBodyIdx() != bodyB.getBodyIdx()) && 
+                       bodyA.collidesWith(bodyB) && 
+                       ( (bodyA.getBodyIdx()==0) || (bodyB.getBodyIdx()==0) || 
+                         !bodyA.adjacentTo(bodyB)) ) {
+                    //DEBUG
+                    //std::cout << "ModelTemplate::closestPointsAllBodies: Body A: " << bodyA.getBodyIdx() << std::endl;
+                    //std::cout << "ModelTemplate::closestPointsAllBodies: Body B: " << bodyB.getBodyIdx() << std::endl;
+                    //END_DEBUG
+                    has_result = findClosestPointsBtwBodies(bodyA.getBodyIdx(),
+                        bodyB.getBodyIdx(),
+                        c);
+                    //if (has_result) {
+                    //c.addPointPairResult(c_min_dist->pts.front());
+                    //} else {
+                    //c.addPointPairResult(PointPair(bodyA.getBodyIdx(), 
+                    //bodyB.getBodyIdx(), 
+                    //Vector3d::Zero(), 
+                    //Vector3d::Zero(),
+                    //Vector3d::Zero(),1.0));
+                    //}               
+                  }
+                }
+              }
+            } 
           }
           c->getResults(bodyA_idx, bodyB_idx, ptsA, ptsB,normal,distance);
           
