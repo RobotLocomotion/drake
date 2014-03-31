@@ -403,6 +403,22 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         }
       }
       break;
+    case RigidBodyConstraint::RelativeQuatConstraintType:
+      {
+        RelativeQuatConstraint* cnst = static_cast<RelativeQuatConstraint*>(constraint);
+        if(field_str == "robot")
+        {
+            RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
+            RelativeQuatConstraint* cnst_new = new RelativeQuatConstraint(*cnst);
+            cnst_new->updateRobot(robot);
+            plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","RelativeQuatConstraint");
+        }
+        else
+        {
+          mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","RelativeQuatConstraint:argument 2 is not accepted");
+        }
+      }
+      break;
     default:
       mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","Unsupported constraint type");
       break;

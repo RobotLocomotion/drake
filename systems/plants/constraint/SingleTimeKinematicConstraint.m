@@ -40,10 +40,43 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
       obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
     
+    function [c,dc] = eval(obj,t,kinsol)
+      if(obj.isTimeValid(t))
+        [c,dc] = obj.evalValidTime(kinsol);
+      else
+        c = [];
+        dc = [];
+      end
+    end
+    
+    function cnstr = generateConstraint(obj,t)
+      % generate a NonlinearConstraint object if time is valid
+      if(obj.isTimeValid(t))
+        [lb,ub] = obj.bounds(t);
+        cnstr = {NonlinearConstraint(lb,ub,obj.robot.getNumDOF,@(kinsol) obj.eval(t,kinsol))};
+        name_str = obj.name(t);
+        cnstr{1} = cnstr{1}.setName(name_str);
+        joint_idx = obj.kinematicsPathJoints();
+        cnstr{1} = cnstr{1}.setSparseStructure(reshape(bsxfun(@times,(1:obj.num_constraint)',ones(1,length(joint_idx))),[],1),...
+          reshape(bsxfun(@times,ones(obj.num_constraint,1),joint_idx),[],1));
+      else
+        cnstr = {};
+      end
+    end
+    
+    function joint_idx = kinematicsPathJoints(obj)
+      % return the indices of the joints used to evaluate the constraint. The default
+      % value is (1:obj.robot.getNumDOF);
+      joint_idx = (1:obj.robot.getNumDOF);
+    end
   end
+  
   methods(Abstract)
-    [c,dc] = eval(obj,t,kinsol);
     [lb,ub] = bounds(obj,t)
     name_str = name(obj,t)
+  end
+  
+  methods(Abstract,Access = protected)
+    [c,dc] = evalValidTime(obj,kinsol);
   end
 end

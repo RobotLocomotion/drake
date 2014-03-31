@@ -31,7 +31,8 @@ classdef RigidBody < RigidBodyElement
     coulomb_window=eps; % the threshold around zero velocity used for the PWL friction model (See Khalil and Dombre, Fig. 9.2(d))
     joint_limit_min=[];
     joint_limit_max=[];
-    effort_limit=[];
+    effort_min=[];
+    effort_max=[];
     velocity_limit=[];
     has_position_sensor=false;
   end

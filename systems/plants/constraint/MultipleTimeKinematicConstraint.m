@@ -19,14 +19,14 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
       tspan = obj.tspan;
     end
     
-    function [c,dc] = eval(obj,t,q)
+    function [c,dc] = eval(obj,t,kinsol_cell)
       valid_t_idx = obj.isTimeValid(t);
       valid_t = t(valid_t_idx);
-      valid_q = q(:,valid_t_idx);
+      valid_kinsol_cell = kinsol_cell(valid_t_idx);
       nq = obj.robot.getNumDOF();
       if(length(valid_t)>=2)
         num_valid_t = size(valid_t,2);
-        [c,dc_valid] = eval_valid(obj,valid_t,valid_q);
+        [c,dc_valid] = evalValidTime(obj,valid_kinsol_cell);
         nc = obj.getNumConstraint(t);
         dc = zeros(nc,nq,length(t));
         dc_valid = reshape(dc_valid,nc,nq,num_valid_t);
@@ -42,13 +42,45 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
       obj.robot = robot;
       obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
+    
+    function cnstr = generateConstraint(obj,t)
+      % generate a NonlinearConstraint for postures at all time t
+      t = t(:)';
+      valid_t_idx = obj.isTimeValid(t);
+      t_idx = (1:length(t));
+      valid_t_idx = t_idx(valid_t_idx);
+      num_valid_t = length(valid_t_idx);
+      if(num_valid_t >= 2)
+        [lb,ub] = obj.bounds(t);
+        nq = obj.robot.getNumDOF;
+        cnstr = {NonlinearConstraint(lb,ub,length(t)*nq,@(kinsol_cell) obj.eval(t,kinsol_cell))};
+        num_cnstr = obj.getNumConstraint(t);
+        joint_idx = obj.kinematicPathJoints();
+        iCfun = reshape(bsxfun(@times,(1:num_cnstr)',ones(1,length(joint_idx)*num_valid_t)),[],1);
+        jCvar = reshape(bsxfun(@times,ones(num_cnstr,1),reshape(bsxfun(@plus,nq*(valid_t_idx-1),joint_idx'),1,[])),[],1);
+        cnstr{1} = cnstr{1}.setSparseStructure(iCfun,jCvar);
+        name_str = obj.name(t);
+        cnstr{1} = cnstr{1}.setName(name_str);
+      else
+        cnstr = {};
+      end
+    end
+    
+    function joint_idx = kinematicPathJoints(obj)
+      % return the indices of the joints used to evaluate the constraint. The default
+      % value is (1:obj.robot.getNumDOF);
+      joint_idx = (1:obj.robot.getNumDOF);
+    end
   end
   
   methods(Abstract)
     % t is an array instead of a scalar
     num = getNumConstraint(obj,t);
-    [c,dc] = eval_valid(obj,valid_t,valid_q);
     [lb,ub] = bounds(obj,t)
     name_str = name(obj,t)
+  end
+  
+  methods(Abstract,Access = protected)
+    [c,dc] = evalValidTime(obj,valid_kinsol_cell);
   end
 end

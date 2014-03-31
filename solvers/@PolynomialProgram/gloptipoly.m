@@ -22,13 +22,13 @@ end
 if ~isempty(obj.Aeq)
   constraints = vertcat(constraints,Aeq*v == beq);
 end
-if any(~isinf(obj.lb))
-  ind = ~isinf(obj.lb);
-  constraints = vertcat(constraints,v(ind) >= obj.lb(ind));
+if any(~isinf(obj.x_lb))
+  ind = ~isinf(obj.x_lb);
+  constraints = vertcat(constraints,v(ind) >= obj.x_lb(ind));
 end
-if any(~isinf(obj.ub))
-  ind = ~isinf(obj.ub);
-  constraints = vertcat(constraints,v(ind) <= obj.ub(ind));
+if any(~isinf(obj.x_ub))
+  ind = ~isinf(obj.x_ub);
+  constraints = vertcat(constraints,v(ind) <= obj.x_ub(ind));
 end
 
 global MMM; MMM.verbose = false;  % disable gloptipoly debug spews
@@ -55,7 +55,7 @@ while (exitflag == 0)
   % todo: make it an option whether we want to loop til convergence
 end
 if (exitflag<1)
-  x = nan(obj.num_decision_vars,1);
+  x = nan(obj.num_vars,1);
 else
   x = double(v);  % note: this appears to return all solutions.  should I just take the first?
 end

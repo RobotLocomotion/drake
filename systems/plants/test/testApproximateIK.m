@@ -154,7 +154,7 @@ toc
 if(info~=0)
   error('approximateIKmex fails');
 end
-valuecheck(q_app_mex,q,2e-1);
+valuecheck(q_app_mex,q,3e-1);
 
 % display('Approximate IK');
 % tic

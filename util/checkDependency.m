@@ -158,9 +158,24 @@ if ~ok
         conf.gurobi_enabled = pod_pkg_config('gurobi'); %&& ~isempty(getenv('GUROBI_HOME'));
       end
 
+      if (conf.gurobi_enabled)
+        % gurobi.mex* is loaded, now test for license issues
+        model.obj = 1;
+        model.A  = sparse(1,1);
+        model.rhs = 0;
+        model.sense = '=';
+        params.outputflag = false;
+        try 
+          result = gurobi(model, params);
+        catch ex;
+          conf.gurobi_enabled = false;
+          disp(getReport(ex,'extended'));
+        end
+      end
+      
       if (~conf.gurobi_enabled)
         disp(' ');
-        disp(' GUROBI not found. GUROBI support will be disabled.');
+        disp(' GUROBI not found or not working. GUROBI support will be disabled.');
         disp('    To enable, install GUROBI and a free academic license from');
         disp('    <a href="http://www.gurobi.com/download/licenses/free-academic">http://www.gurobi.com/download/licenses/free-academic</a> .');
         disp(' Then, you will need to set several environment variables.');
@@ -170,6 +185,8 @@ if ~ok
 
     case 'gurobi_mex'
       conf.gurobi_mex_enabled = logical(exist('gurobiQPmex'));
+      
+      
       if (~conf.gurobi_mex_enabled)
 	disp(' ');
         disp(' GUROBI MEX not found.  GUROBI MEX support will be disabled.');  
@@ -287,8 +304,8 @@ function success=pod_pkg_config(podname)
     try 
       eval(cmd);
       success=true;
-    catch
-      % intentionally left blank
+    catch ex
+      disp(getReport(ex,'extended'))
     end
   end
     

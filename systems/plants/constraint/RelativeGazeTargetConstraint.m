@@ -14,6 +14,22 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
     body_a = struct('idx',[],'name','');
     body_b = struct('idx',[],'name','');
   end
+  
+  methods(Access = protected)
+    function [c,dc] = evalValidTime(obj,kinsol)
+      u_ga = kinsol.T{obj.body_a.idx}(1:3,1:3)*obj.axis;
+      du_ga_dq = reshape(kinsol.dTdq{obj.body_a.idx}(:,1:3)*obj.axis,[obj.robot.getNumDOF,3])';
+      [r_go,dr_go_dq] = forwardKin(obj.robot,kinsol,obj.body_a.idx,obj.gaze_origin,0);
+      [r_gt,dr_gt_dq] = forwardKin(obj.robot,kinsol,obj.body_b.idx,obj.target,0);
+      r_gv = r_gt - r_go;
+      dr_gv_dq = dr_gt_dq - dr_go_dq;
+      [u_gv,du_gv] = normalizeVec(r_gv);
+      du_gv_dq = du_gv*dr_gv_dq;
+      c = dot(u_ga,u_gv) - 1;
+      dc = u_gv'*du_ga_dq + u_ga'*du_gv_dq;
+    end
+  end
+  
   methods
     function obj = RelativeGazeTargetConstraint(robot,body_a_idx, ...
         body_b_idx,axis,target,gaze_origin,conethreshold,tspan)
@@ -31,24 +47,6 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
       obj.body_b.name = getLinkName(obj.robot, obj.body_b.idx);
       obj.type = RigidBodyConstraint.RelativeGazeTargetConstraintType;
       obj.mex_ptr = ptr;
-    end
-
-    function [c,dc] = eval(obj,t,kinsol)
-      if(obj.isTimeValid(t))
-        u_ga = kinsol.T{obj.body_a.idx}(1:3,1:3)*obj.axis;
-        du_ga_dq = reshape(kinsol.dTdq{obj.body_a.idx}(:,1:3)*obj.axis,[obj.robot.getNumDOF,3])';
-        [r_go,dr_go_dq] = forwardKin(obj.robot,kinsol,obj.body_a.idx,obj.gaze_origin,0);
-        [r_gt,dr_gt_dq] = forwardKin(obj.robot,kinsol,obj.body_b.idx,obj.target,0);
-        r_gv = r_gt - r_go;
-        dr_gv_dq = dr_gt_dq - dr_go_dq;
-        [u_gv,du_gv] = normalizeVec(r_gv);
-        du_gv_dq = du_gv*dr_gv_dq;
-        c = dot(u_ga,u_gv) - 1;
-        dc = u_gv'*du_ga_dq + u_ga'*du_gv_dq;
-      else
-        c = [];
-        dc = [];
-      end
     end
     
     function name_str = name(obj,t)
@@ -112,6 +110,11 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
       lcmgl.cylinder([0;0;0],base_radius,top_radius,height,24,24);
 
       lcmgl.switchBuffers();
+    end
+    
+    function joint_idx = kinematicsPathJoints(obj)
+      [~,joint_path] = obj.robot.findKinematicPath(obj.body_a.idx,obj.body_b.idx);
+      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
     end
   end
 end

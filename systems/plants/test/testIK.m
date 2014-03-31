@@ -184,6 +184,8 @@ if(info_mex ~= 13)
 end
 display('The infeasible constraints are');
 disp(infeasible_constraint_mex);
+ikproblem = InverseKin(robot,q_nom,kc_err,kc2l,kc2r);
+[qik,F,info,infeasible_constraint_ik] = ikproblem.solve(q_seed);
 [qmex,info_mex,infeasible_constraint_mex] = inverseKinPointwise(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc_err,kc2l,kc2r,ikmexoptions);
 display('The infeasible constraints are');
 disp(infeasible_constraint_mex);
@@ -286,6 +288,15 @@ ikoptions = ikoptions.setMex(false);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
 kinsol = doKinematics(robot,q);
 valuecheck(qsc.checkConstraint(kinsol),true);
+
+% check addCost in InverseKin, minimizing the largest QuasiStaticWeight
+ikproblem = InverseKin(robot,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6);
+ikproblem = ikproblem.setQ(ikoptions.Q);
+ikproblem = ikproblem.addDecisionVariable(1);
+ikproblem = ikproblem.addLinearConstraint(LinearConstraint(zeros(qsc.num_pts,1),inf(qsc.num_pts,1),[ones(qsc.num_pts,1) -eye(qsc.num_pts)]),...
+  [ikproblem.num_vars;ikproblem.qsc_weight_idx]);
+ikproblem = ikproblem.addCost(LinearConstraint(-inf,inf,1),false,[],ikproblem.num_vars);
+[q,F,info,infeasible_constraint] = ikproblem.solve(q_seed);
 
 display('Check quasi static constraint for pointwise');
 q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
@@ -403,7 +414,7 @@ q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1);q_seed_
 
 end
 
-function qmex = test_IK_userfun(r,q_seed,q_nom,varargin)
+function qik = test_IK_userfun(r,q_seed,q_nom,varargin)
 ikoptions = varargin{end};
 ikoptions = ikoptions.setMex(false);
 ikmexoptions = ikoptions;
@@ -416,6 +427,12 @@ toc
 if(info>10)
   error('SNOPT info is %d, IK fails to solve the problem',info);
 end
+tic
+ikproblem = InverseKin(r,q_nom,varargin{1:end-1});
+ikproblem = ikproblem.setQ(ikoptions.Q);
+[qik,F,info,infeasible_cnstr_ik] = ikproblem.solve(q_seed);
+toc
+valuecheck(qik,q,1e-3);
 tic
 [qmex,info_mex] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 toc

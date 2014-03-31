@@ -35,7 +35,7 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
       kinsol = doKinematics(manip,q,false,qd);
       
       [x,J] = forwardKin(manip,kinsol,obj.body,obj.xyz,1);   % ask for rpy (because I want to output omega in rpy)
-      Jdot = forwardJacDot(manip,kinsol,obj.body,obj.xyz,0);
+      Jdot = forwardJacDot(manip,kinsol,obj.body,obj.xyz,0,0);
       
       % x = f(q)
       % xdot = dfdq*dqdt = J*qd

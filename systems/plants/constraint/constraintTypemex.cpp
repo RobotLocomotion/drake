@@ -96,6 +96,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     case RigidBodyConstraint::RelativePositionConstraintType:
       plhs[0] = mxCreateString("RelativePositionConstraint");
       break;
+    case RigidBodyConstraint::RelativeQuatConstraintType:
+      plhs[0] = mxCreateString("RelativeQuatConstraint");
+      break;
     default:
       mexErrMsgIdAndTxt("Drake:constraintTypemex:BadInputs","The constraint type is not supported");
       break;

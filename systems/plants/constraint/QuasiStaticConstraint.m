@@ -34,7 +34,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       if(nargin <2)
         tspan = [-inf,inf];
       end
-      checkDependency('rigidbodyconstraint_mex')
+      checkDependency('rigidbodyconstraint_mex');
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.QuasiStaticConstraintType,robot.getMexModelPtr,tspan,robotnum);
       obj = obj@RigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintCategory,robot,tspan);
       if(~isempty(setdiff(robotnum,1:length(obj.robot.name))))
@@ -126,27 +126,31 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     
     function [c,dc] = eval(obj,t,kinsol,weights)
       if(obj.isTimeValid(t))
-        [com,dcom] = obj.robot.getCOM(kinsol,obj.robotnum);
-        contact_pos = zeros(3,obj.num_pts);
-        dcontact_pos = zeros(3*obj.num_pts,obj.nq);
-        num_accum_pts = 0;
-        for i = 1:obj.num_bodies
-          [contact_pos(:,num_accum_pts+(1:obj.num_body_pts(i))),...
-            dcontact_pos(3*num_accum_pts+(1:3*obj.num_body_pts(i)),:)] = forwardKin(obj.robot,kinsol,obj.bodies(i),obj.body_pts{i},0);
-          num_accum_pts = num_accum_pts+obj.num_body_pts(i);
-        end
-        plane_contact_pos = contact_pos(1:2,:);
-        dplane_contact_pos = dcontact_pos(obj.plane_row_idx,:);
-        center_pos = mean(plane_contact_pos,2);
-        dcenter_pos = [mean(dplane_contact_pos(1:2:end,:),1);mean(dplane_contact_pos(2:2:end,:),1)];
-        support_pos = plane_contact_pos*obj.shrinkFactor+bsxfun(@times,center_pos*(1-obj.shrinkFactor),ones(1,obj.num_pts));
-        dsupport_pos = dplane_contact_pos*obj.shrinkFactor+repmat(dcenter_pos*(1-obj.shrinkFactor),obj.num_pts,1);
-        c = com(1:2,:)-support_pos*weights;
-        dc = [dcom(1:2,:)-[weights'*dsupport_pos(1:2:end,:);weights'*dsupport_pos(2:2:end,:)] -support_pos];
+        [c,dc] = obj.evalValidTime(kinsol,weights);
       else
         c = [];
         dc = [];
       end
+    end
+    
+    function [c,dc] = evalValidTime(obj,kinsol,weights)
+      [com,dcom] = obj.robot.getCOM(kinsol,obj.robotnum);
+      contact_pos = zeros(3,obj.num_pts);
+      dcontact_pos = zeros(3*obj.num_pts,obj.nq);
+      num_accum_pts = 0;
+      for i = 1:obj.num_bodies
+        [contact_pos(:,num_accum_pts+(1:obj.num_body_pts(i))),...
+          dcontact_pos(3*num_accum_pts+(1:3*obj.num_body_pts(i)),:)] = forwardKin(obj.robot,kinsol,obj.bodies(i),obj.body_pts{i},0);
+        num_accum_pts = num_accum_pts+obj.num_body_pts(i);
+      end
+      plane_contact_pos = contact_pos(1:2,:);
+      dplane_contact_pos = dcontact_pos(obj.plane_row_idx,:);
+      center_pos = mean(plane_contact_pos,2);
+      dcenter_pos = [mean(dplane_contact_pos(1:2:end,:),1);mean(dplane_contact_pos(2:2:end,:),1)];
+      support_pos = plane_contact_pos*obj.shrinkFactor+bsxfun(@times,center_pos*(1-obj.shrinkFactor),ones(1,obj.num_pts));
+      dsupport_pos = dplane_contact_pos*obj.shrinkFactor+repmat(dcenter_pos*(1-obj.shrinkFactor),obj.num_pts,1);
+      c = com(1:2,:)-support_pos*weights;
+      dc = [dcom(1:2,:)-[weights'*dsupport_pos(1:2:end,:);weights'*dsupport_pos(2:2:end,:)] -support_pos];
     end
     
     function flag = checkConstraint(obj,kinsol)
@@ -208,5 +212,27 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',obj.robot.getMexModelPtr);
     end
     
+    function cnstr = generateConstraint(obj,t)
+      % generate a NonlinearConstraint, a LinearConstraint and a BoundingBoxConstraint if the time is valid
+      % @retval cnstr  -- A NonlinearConstraint enforcing the CoM on xy-plane matches
+      % witht the weighted sum of the shrunk vertices; A LinearConstraint on the weighted
+      % sum only, and a BoundingBoxConstraint on the weighted sum only
+      if(obj.isTimeValid(t) && obj.active)
+        name_str = obj.name(t);
+        cnstr = {NonlinearConstraint([0;0],[0;0],obj.nq+obj.num_pts,@obj.evalValidTime),...
+          LinearConstraint(1,1,ones(1,obj.num_pts)),...
+          BoundingBoxConstraint(zeros(obj.num_pts,1),ones(obj.num_pts,1))};
+        cnstr{1} = cnstr{1}.setName(name_str(1:2));
+        t_str = '';
+        if(~isempty(t))
+          t_str = sprintf('at time %5.2f',t);
+        end
+        cnstr{2} = cnstr{2}.setName({sprintf('QuasiStaticConstraint sum of weights %s',t_str)});
+      else
+        cnstr = {};
+      end
+    end
+    
   end
+ 
 end
