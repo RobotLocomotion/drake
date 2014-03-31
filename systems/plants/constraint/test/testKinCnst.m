@@ -5,24 +5,34 @@ checkDependency('rigidbodyconstraint_mex');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
-urdf_collision = [getDrakePath,'/systems/plants/constraint/test/model_simple_visuals.urdf'];
+urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_chull.urdf'];
 aff_urdf = [getDrakePath,'/systems/plants/constraint/test/valve_task_wall.urdf'];
 
 options.floating = true;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
+warning('off','Drake:RigidBodyManipulator:NonPSDInertia');
 robot = RigidBodyManipulator(urdf,options);
 nq = robot.getNumDOF();
 
 robot_aff = robot.addRobotFromURDF(aff_urdf,[0;0;0],[pi/2;0;0],struct('floating',false));
 nq_aff = robot_aff.getNumDOF();
 
-r_collision = RigidBodyManipulator(urdf_collision,options);
+robot_collision = RigidBodyManipulator(urdf_collision,options);
 warning(w);
 ignored_bodies = {'ltorso','mtorso','r_talus','l_talus'};
-r_collision = addLinksToCollisionFilterGroup(r_collision,ignored_bodies,'no_collision',1);
-r_collision = r_collision.compile();
+robot_collision = addLinksToCollisionFilterGroup(robot_collision,ignored_bodies,'no_collision',1);
+robot_collision = robot_collision.compile();
 robot_aff = robot.addRobotFromURDF(aff_urdf,[0;0;0],[pi/2;0;0],struct('floating',false));
+robot_collision_aff = robot_collision.addRobotFromURDF(aff_urdf,[0;0;0],[pi/2;0;0],struct('floating',false));
+robot_collision_aff.collision_filter_groups('aff') = CollisionFilterGroup();
+%aff_link_indices = find([robot_collision_aff.body.robotnum]==2);
+aff_link_indices = [robot_collision_aff.body.robotnum]==2;
+linknames = {robot_collision_aff.body.linkname};
+robot_collision_aff = robot_collision_aff.addLinksToCollisionFilterGroup(linknames(aff_link_indices),'aff',2);
+robot_collision_aff = robot_collision_aff.addToIgnoredListOfCollisionFilterGroup('aff','aff');
+robot_collision_aff = robot_collision_aff.compile();
+
 nq_aff = robot_aff.getNumDOF();
 
 l_foot = robot.findLinkInd('l_foot');
@@ -165,8 +175,8 @@ valuecheck(c,[0;sum(kc.isTimeValid(t3))]);
 testKinCnst_userfun(false,t3,q31,q31_aff,RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot,robot_aff,l_hand,tspan2);
 
 
-% display('Check all-to-all closest-distance constraint');
-% testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.AllBodiesClosestDistanceConstraint,r_collision,0.05,1e1,tspan0);
+ display('Check all-to-all closest-distance constraint');
+ testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,robot_collision_aff,0.05,1e1,tspan0);
 
 display('Check point to point distance constraint');
 lhand_pts = rand(3,2);
@@ -260,6 +270,7 @@ valuecheck(ub,cnstr{1}.ub);
 %%%% Check Kinematics Constraint after adding robot
 kc = kc.updateRobot(robot_aff);
 kc_mex = kc.mex_ptr;
+num_cnst = kc.getNumConstraint(t);
 if(singleTimeFlag)
   [type_mex,num_cnst_mex,c_mex,dc_mex,cnst_name_mex,lb_mex,ub_mex] = testSingleTimeKinCnstmex(kc_mex,q_aff,t);
 else
