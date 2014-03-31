@@ -1,4 +1,3 @@
-#define BT_USE_DOUBLE_PRECISION
 #include <btBulletCollisionCommon.h>
 
 #include "BulletResultCollector.h"
