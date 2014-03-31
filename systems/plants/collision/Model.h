@@ -62,7 +62,8 @@ namespace DrakeCollision
                                                std::vector<int>& bodyB_idx, 
                                                MatrixXd& ptsA, MatrixXd& ptsB,
                                                MatrixXd& normal, 
-                                               VectorXd& distance)=0;
+                                               VectorXd& distance,
+                                               std::vector<int>& bodies_idx)=0;
   };
 
   std::shared_ptr<Model> newModel();

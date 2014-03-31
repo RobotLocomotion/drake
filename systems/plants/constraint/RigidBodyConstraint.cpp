@@ -2252,8 +2252,9 @@ AllBodiesClosestDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd&
   MatrixXd xA, xB, normal;
   std::vector<int> idxA; 
   std::vector<int> idxB;
+  std::vector<int> bodies_idx; // empty vector -> all bodies
 
-  robot->collisionDetect(c,normal,xA,xB,idxA,idxB);
+  robot->collisionDetect(c,normal,xA,xB,idxA,idxB,bodies_idx);
 
   int num_pts = xA.cols();
   dc = MatrixXd::Zero(num_pts,robot->num_dof);

@@ -74,8 +74,7 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       %                                    constraint
       kinsol = doKinematics(obj.robot,q);
       [dist,normal,d,xA,xB,idxA,idxB] = contactConstraints(obj.robot,kinsol);
-      %unsatisfy_idx = reshape((dist > obj.ub) | (dist < obj.lb),1,[]);
-      unsatisfy_idx = reshape(true(size(dist)),1,[]);
+      unsatisfy_idx = reshape((dist > obj.ub) | (dist < obj.lb),1,[]);
       if(~any(unsatisfy_idx))
         constraintSatisfyFlag = true;
         dist = [];
@@ -102,7 +101,6 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
     function drawConstraint(obj,q,lcmgl)
       [~,~,ptsA,ptsB,idxA,idxB] = obj.checkConstraint(q);
       
-%       draw_idx = 1:size(ptsA,2);
       for i = 1:size(ptsA,2);
         lcmgl.glColor3f(0,0,0); % black
 
