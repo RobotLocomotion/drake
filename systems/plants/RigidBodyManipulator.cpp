@@ -497,10 +497,7 @@ RigidBodyManipulator::~RigidBodyManipulator() {
 
 void RigidBodyManipulator::compile(void) 
 {
-  num_contact_pts = 0;
-  for (int i=0; i<num_bodies; i++) {
-    num_contact_pts += bodies[i].contact_pts.cols();
-            
+  for (int i=0; i<num_bodies; i++) {           
     // precompute sparsity pattern for each rigid body
     bodies[i].computeAncestorDOFs(this);
   }  

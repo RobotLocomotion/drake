@@ -1423,8 +1423,6 @@ classdef RigidBodyManipulator < Manipulator
         parent.visual_shapes = horzcat(parent.visual_shapes,body.visual_shapes);
         
         if (~isempty(body.contact_shapes))
-          npts = size(parent.contact_pts,2);
-
           for j=1:length(body.contact_shapes)
             body.contact_shapes{j}.T = body.Ttree*body.contact_shapes{j}.T;
           end
