@@ -25,7 +25,7 @@ kinsol = robot.doKinematics(q);
 [ptsA,ptsB,normal,dist,idxA,idxB,JA,JB,Jd,vertsA,vertsB] = collisionmex(robot.getMexModelPtr,5);
 
 % Check the atlas case  
-robot = RigidBodyManipulator([getDrakePath,'/systems/plants/constraint/test/model_simple_visuals.urdf'],struct('floating',true));
+robot = RigidBodyManipulator([getDrakePath,'/examples/Atlas/urdf/atlas_chull.urdf'],struct('floating',true));
 nomdata = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
 nq = robot.getNumDOF();
 q = nomdata.xstar(1:nq)+1e-2*randn(nq,1);
