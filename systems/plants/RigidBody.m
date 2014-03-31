@@ -322,14 +322,9 @@ classdef RigidBody < RigidBodyElement
         end
       end
       
-      npts=size(body.contact_pts,2);
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         shape = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-        pts = getPoints(shape);
-        npts_additional = size(pts,2);
-        [body.contact_pts,ind_old,ind_new]=unique([body.contact_pts';pts'],'rows','stable');
-        body.contact_pts = body.contact_pts';
         body.contact_shapes = {body.contact_shapes{:},shape};
       end
       if (node.hasAttribute('group'))
@@ -341,10 +336,8 @@ classdef RigidBody < RigidBodyElement
       if isempty(ind)
         body.collision_group_name=horzcat(body.collision_group_name,name);
         ind=length(body.collision_group_name);
-        body.collision_group{ind}=ind_new(npts+(1:npts_additional))';
         body.contact_shape_group{ind} = length(body.contact_shapes);
       else
-        body.collision_group{ind}=[body.collision_group{ind},ind_new(npts+(1:npts_additional))'];
         body.contact_shape_group{ind} = [body.contact_shape_group{ind},length(body.contact_shapes)];
       end
     end
