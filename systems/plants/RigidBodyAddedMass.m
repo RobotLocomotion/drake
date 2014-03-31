@@ -1,20 +1,18 @@
 classdef RigidBodyAddedMass < RigidBodyForceElement
     
     properties
-        kinframe;  %index of parent node
-        MaOrigin; %added mass of body, as seen at xyz origin
-        MaBody; %added mass, as seen by the parent body coordinates
-        I; %mass matrix of body about joint
-        inertia; %inertia of parent body about com
-        com; %com of parent body
-        mass; %mass of parent body
+        kinframe  %index of frame location
+        MaOrigin = zeros(6,6); %added mass of body, as seen at xyz origin
+        MaBody = zeros(6,6); %added mass, as seen by the parent body coordinates
     end
     
     methods
-        function obj = RigidBodyAddedMass(frame_id, MaOrigin)
-            % creates a force element that adds buoyancy at new frame location
-            % @param frame_id = RigidBodyFrame specifying the location added mass
+        function obj = RigidBodyAddedMass(frame_id, manip, MaOrigin)
+            % creates a force element that adds added-mass at new frame location
+            % @param frame_id = RigidBodyFrame index specifying the location added mass
             % coefficients have been located
+            % @param manip = RigidBodyManipulator that the frame_id
+            % references
             % @param MaOrigin = added mass matrix as seen by origin of 
             % added mass frame (in Featherstone's spatial form 
             % for consistency, not 123456 as is literature norm)  
@@ -23,36 +21,23 @@ classdef RigidBodyAddedMass < RigidBodyForceElement
             obj.kinframe = frame_id;
             obj.MaOrigin = MaOrigin;
             
-        end
-        function obj = translateAddedMass(obj,manip)
-            % Translates the added mass matrix to be about the parent body
-            % coordinates
             frame = getFrame(manip,obj.kinframe);
             xyz = frame.T(1:3,4);
             
             %Include xyz offset into added mass matrix
             obj.MaBody = moveSpatialMassMatrix(xyz,obj.MaOrigin);
-        end
-        function obj = pullParentInertia(obj,manip)
-            % Pulls original mass properties of the parent body
-            frame = getFrame(manip,obj.kinframe);
             
-            obj.mass = manip.body(frame.body_ind).mass;
-            obj.com = manip.body(frame.body_ind).com;
-            obj.inertia = manip.body(frame.body_ind).inertia;
-            obj.I = manip.body(frame.body_ind).I;
         end
         function manip = augmentParentInertia(obj,manip)
-            % augments the inertia of the parent link to include added mass
-            % This is the sketchy part, perhaps a better way to implement?
+            %Augments the inertia of the parent link to include added mass
             frame = getFrame(manip,obj.kinframe);
             body_ind = frame.body_ind;
             
-            %Find the spatial inertia matrix
-            Imass = mcI(obj.mass,obj.com,obj.inertia);
+            %Find the spatial inertia matrix, only including mass
+            Imass = manip.body(frame.body_ind).Imass;
             
             %Augment spatial inertia with added mass
-            manip = manip.setBody(body_ind,manip.body(body_ind).setOnlyInertial(Imass+obj.MaBody));
+            manip = manip.setBody(body_ind,manip.body(body_ind).setInertial(Imass,obj.MaBody));
         end
         function force = computeSpatialForce(obj,manip,q,qd)
             % Adds the gravity correction from added mass
@@ -71,7 +56,7 @@ classdef RigidBodyAddedMass < RigidBodyForceElement
             %Determine gravitation acceleration in local body frame
             gravAccLocal = bodyKin(manip,kinsol,body_ind,[manip.gravity,zeros(3,1)]); 
             gravAccLocal = gravAccLocal(:,1)-gravAccLocal(:,2);
-            gravAccLocal = [zeros(3,1);gravAccLocal]; %Augment so that is force is [torques;forces]
+            gravAccLocal = [zeros(3,1);gravAccLocal]; %Augment so that the force is [torques;forces]
             
             %Correction force (-Ma*g) to mitigate the acceleration of the base
             forceLocal = -obj.MaBody*gravAccLocal;
@@ -122,21 +107,35 @@ classdef RigidBodyAddedMass < RigidBodyForceElement
             MaOrigin = MaOrigin([4:6 1:3],[4:6 1:3]);
                        
             %Declare object
-            obj = RigidBodyAddedMass(frame_id, MaOrigin);
+            obj = RigidBodyAddedMass(frame_id, model, MaOrigin);
             obj.name = name;
-            
-            %Modify the added mass to be about body coordinates
-            obj = translateAddedMass(obj,model);
-            
-            %Pull parameters from parent, save into object
-            obj = pullParentInertia(obj,model);
             
             % Sets the inertia of the parent node to include the added mass
             model = augmentParentInertia(obj,model);
             
         end
-        
-        
+        function I_new = moveSpatialMassMatrix(c,I_old)
+            % Moves an added mass matrix (or spatial mass matrix) by c.
+            % Equivalent to mcI(m,c,Icm) but works for non-scalar m and
+            % allows for inertias to not be about center of mass
+            % @param I_old is spatial mass matrix in [angular;velo] form as
+            % consistent with Featherstone's notation
+            % @param c [3x1] is the vector from the NEW origin to the OLD origin
+            % algebra tested with test/moveSpatialMassMatrixTest
+            
+            M11 = I_old(1:3,1:3); M12 = I_old(1:3,4:6);
+            M21 = I_old(4:6,1:3); M22 = I_old(4:6,4:6);
+            C = [  0,    -c(3),  c(2);
+                c(3),  0,    -c(1);
+                -c(2),  c(1),  0 ];
+            
+            % Version in usual [velo,angular] coordinates
+            %I_new = [M11 -M11*C+M12; C*M11+M21 M22-C*M11*C-M21*C+C*M12];
+            
+            % Version in Featherstone's notation: swaps M11 for M22 and M12 for M21,
+            % and order of elements
+            I_new = [M11-C*M22*C-M12*C+C*M21 C*M22+M12; -M22*C+M21 M22];
+        end
     end
     
 end

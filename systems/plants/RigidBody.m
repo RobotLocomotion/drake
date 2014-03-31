@@ -41,7 +41,9 @@ classdef RigidBody < RigidBodyElement
   
   properties (SetAccess=protected, GetAccess=public)    
     % mass, com, inertia properties
-    I=zeros(6);  % spatial mass/inertia
+    I=zeros(6);  % total spatial mass matrix, sum of mass, inertia, (and added mass for submerged bodies)
+    Imass=zeros(6);  % spatial mass/inertia
+    Iaddedmass = zeros(6); % added mass spatial matrix
     mass = 0;
     com = [];
     inertia = [];
@@ -259,8 +261,9 @@ classdef RigidBody < RigidBodyElement
     end
     
     function body = setInertial(body,varargin)
-      % setInertial(body,mass,com,inertia) or setInertial(body,spatialI)
+      % setInertial(body,mass,com,inertia [,addedmass]) or setInertial(body,spatialI [,addedmass])
       % this guards against things getting out of sync
+      % Updated 4/5/2014 to allow for added mass effects (for submerged bodies)
       
       function v = skew(A)
         v = 0.5 * [ A(3,2) - A(2,3);
@@ -268,33 +271,47 @@ classdef RigidBody < RigidBodyElement
           A(2,1) - A(1,2) ];
       end
       
-      if nargin==2
+      if nargin==2 || nargin==3
         sizecheck(varargin{1},[6 6]);
         % extract mass, center of mass, and inertia information from the
         % spatial I matrix
-        body.I = varargin{1};
+        body.Imass = varargin{1};
         body.mass = body.I(6,6);
         mC = body.I(1:3,4:6);
         body.com = skew(mC)/body.mass;
         body.inertia = body.I(1:3,1:3) - mC*mC'/body.mass;
-      elseif nargin==4
+        if nargin==3
+            % Set added mass matrix
+            sizecheck(varargin{2},[6 6]);
+            body.Iaddedmass = varargin{2};
+        end
+        
+      elseif nargin==4 || nargin==5
+          % Set mass, center of mass, and inertia directly
         sizecheck(varargin{1},1);
         sizecheck(varargin{2},[3 1]);
         sizecheck(varargin{3},[3 3]);
         body.mass = varargin{1};
         body.com = varargin{2};
         body.inertia = varargin{3};
-        body.I = mcI(body.mass,body.com,body.inertia);
+        body.Imass = mcI(body.mass,body.com,body.inertia);
+        if nargin==5
+            % Set added mass matrix
+            sizecheck(varargin{4},[6 6]);
+            body.Iaddedmass = varargin{4};
+        end
+        
       else
         error('wrong number of arguments');
-      end    
+      end
+      body.I = body.Imass+body.Iaddedmass;
+      
+      try
+      valuecheck(body.I'-body.I,zeros(6)); %Check symmetry of matrix
+      catch
+          warning('Spatial mass matrix is not symmetric, this is non-physical');
+      end
     end    
-    
-    function body = setOnlyInertial(body,I)
-       % sets only the spatial inertial matrix I , without affecting mass, com, or inertia
-       % this is necessary for unsteady fluid phenomena
-        body.I = I;
-    end
     
     function body = parseVisual(body,node,model,options)
       c = .7*[1 1 1];
