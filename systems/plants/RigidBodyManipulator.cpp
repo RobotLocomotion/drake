@@ -575,15 +575,14 @@ bool RigidBodyManipulator::getPairwiseClosestPoint(const int body_indA, const in
   return collision_model->getClosestPoints(body_indA,body_indB,ptA,ptB,normal,distance);
 };
 
-bool RigidBodyManipulator::closestPointsAllBodies( MatrixXd& ptsA, 
-                                                   MatrixXd& ptsB,
-                                                   MatrixXd& normal, 
-                                                   VectorXd& distance,
-                                                   vector<int>& bodyA_idx, 
-                                                   vector<int>& bodyB_idx)
+bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
+                                            MatrixXd& normal, 
+                                            MatrixXd& xA, 
+                                            MatrixXd& xB,
+                                            vector<int>& bodyA_idx, 
+                                            vector<int>& bodyB_idx)
 {
-  collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,
-                                                      ptsB,normal,distance);
+  collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,normal,phi);
   return true;
 };
 
