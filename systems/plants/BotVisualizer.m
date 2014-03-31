@@ -14,7 +14,8 @@ classdef BotVisualizer < RigidBodyVisualizer
 %    draw
 %    playbackMovie
 %    lcmglwrappers
-    function obj = BotVisualizer(manip)
+    function obj = BotVisualizer(manip,use_contact_shapes)
+      if nargin < 2, use_contact_shapes = false; end
       
       global g_disable_botvis;
       if g_disable_botvis % evaluates to false if empty
@@ -64,12 +65,20 @@ classdef BotVisualizer < RigidBodyVisualizer
         link = drake.lcmt_viewer_link_data();
         link.name = b.linkname;
         link.robot_num = b.robotnum;
-        link.num_geom = length(b.visual_shapes);
+        if use_contact_shapes
+          link.num_geom = length(b.contact_shapes);
+        else
+          link.num_geom = length(b.visual_shapes);
+        end
         if (link.num_geom>0)
           link.geom = javaArray('drake.lcmt_viewer_geometry_data',link.num_geom);
         end
         for j=1:link.num_geom
-          link.geom(j) = serializeToLCM(b.visual_shapes{j});
+          if use_contact_shapes
+            link.geom(j) = serializeToLCM(b.contact_shapes{j});
+          else
+            link.geom(j) = serializeToLCM(b.visual_shapes{j});
+          end
         end
         vr.link(i) = link;
       end

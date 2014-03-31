@@ -853,24 +853,25 @@ classdef RigidBodyManipulator < Manipulator
     function v = constructVisualizer(obj,options)
       checkDirty(obj);
       if nargin<2, options=struct(); end 
-      if ~isfield(options,'viewer') options.viewer = {'BotVisualizer','RigidBodyWRLVisualizer','NullVisualizer'};
-      elseif ~iscell(options.viewer) options.viewer = {options.viewer}; end
+      if ~isfield(options,'use_contact_shapes'), options.use_contact_shapes = false; end;
+      if ~isfield(options,'viewer'), options.viewer = {'BotVisualizer','RigidBodyWRLVisualizer','NullVisualizer'};
+      elseif ~iscell(options.viewer), options.viewer = {options.viewer}; end
       
       v=[]; i=1;
       while isempty(v)
         type = options.viewer{i};
         
         if strcmp(type,'NullVisualizer')
-          arg = getOutputFrame(obj);
+          arg = {getOutputFrame(obj)};
         else
-          arg = obj;
+          arg = {obj,options.use_contact_shapes};
         end
 
         if (i==length(options.viewer))  % then it's the last one
-          v = feval(type,arg);
+          v = feval(type,arg{:});
         else
           try
-            v = feval(type,arg);
+            v = feval(type,arg{:});
           catch ex
             getReport(ex,'extended')
             warning(ex.identifier,ex.message);
