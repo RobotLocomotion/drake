@@ -25,7 +25,7 @@ classdef RigidBodyAddedMass < RigidBodyForceElement
             xyz = frame.T(1:3,4);
             
             %Include xyz offset into added mass matrix
-            obj.MaBody = moveSpatialMassMatrix(xyz,obj.MaOrigin);
+            obj.MaBody = RigidBodyAddedMass.moveSpatialMassMatrix(xyz,obj.MaOrigin);
             
         end
         function manip = augmentParentInertia(obj,manip)
