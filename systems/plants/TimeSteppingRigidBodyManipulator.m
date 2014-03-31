@@ -912,10 +912,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       ptr = getMexModelPtr(obj.manip);
     end
     
-    function [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,varargin)
-      [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj.manip,varargin{:});
-    end
-    
     function [phi,Jphi] = closestDistance(obj,varargin)
       [phi,Jphi] = closestDistance(obj.manip,varargin{:});
     end
