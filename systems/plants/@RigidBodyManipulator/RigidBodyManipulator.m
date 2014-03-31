@@ -1403,7 +1403,15 @@ classdef RigidBodyManipulator < Manipulator
         
         % add inertia into parent
         if (any(any(body.I))) 
-          % same as the composite inertia calculation in HandC.m
+            %Check before running setInertial() that the body doesn't have added-mass
+            %coefficients (I haven't written up the welding support for that yet - JSI)
+          try 
+              valuecheck(body.Iaddedmass,zeros(6,6));
+          catch
+              error('Adding inertia to parent with added-mass coefficients is not supported yet');
+          end
+            
+          % same as the composite inertia calculation in HandC.m          
           parent = setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
         end
         
