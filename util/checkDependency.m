@@ -78,7 +78,9 @@ if ~ok
   
       if (~conf.lcmgl_enabled)
         try % try to add bot2-lcmgl.jar
-          javaaddpath(fullfile(pods_get_base_path,'share','java','bot2-lcmgl.jar'));
+          lcm_java_classpath = getCMakeParam('LCMGL_JAR_FILE',conf);
+          javaaddpath(lcm_java_classpath);
+          disp(' Added the lcmgl jar to your javaclasspath (found via cmake)');
         catch
         end
         conf.lcmgl_enabled = exist('bot_lcmgl.data_t','class');
