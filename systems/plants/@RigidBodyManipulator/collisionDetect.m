@@ -42,7 +42,7 @@ if nargin < 3
   allow_multiple_contacts = false;
 end
 
-[xA,xB,normal,distance,idxA,idxB] = collisionmex(obj.mex_model_ptr);
+[xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr);
 m = numel(idxA);
 
 %xA_in_world = zeros(size(xA));
