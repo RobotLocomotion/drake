@@ -2223,6 +2223,29 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
   this->type = RigidBodyConstraint::AllBodiesClosestDistanceConstraintType;
 };
 
+//AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(const AllBodiesClosestDistanceConstraint &rhs)
+  //: SingleTimeKinematicConstraint(rhs)
+//{
+  //DEBUG
+  //std::cout << "ABCDC::ABCDC: Copy constructor" << std::endl;
+  //END_DEBUG
+  //double t = 0;
+  //VectorXd c;
+  //MatrixXd dc;
+  //eval(&t,c,dc);
+  //num_constraint = c.size();
+//}
+
+void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyManipulator* robot)
+{
+  this->robot = robot;
+  double t = 0;
+  VectorXd c;
+  MatrixXd dc;
+  this->eval(&t,c,dc);
+  this->num_constraint = c.size();
+}
+
 void 
 AllBodiesClosestDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
 {
