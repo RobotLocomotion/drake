@@ -276,10 +276,10 @@ classdef RigidBody < RigidBodyElement
         % extract mass, center of mass, and inertia information from the
         % spatial I matrix
         body.Imass = varargin{1};
-        body.mass = body.I(6,6);
-        mC = body.I(1:3,4:6);
+        body.mass = body.Imass(6,6);
+        mC = body.Imass(1:3,4:6);
         body.com = skew(mC)/body.mass;
-        body.inertia = body.I(1:3,1:3) - mC*mC'/body.mass;
+        body.inertia = body.Imass(1:3,1:3) - mC*mC'/body.mass;
         if nargin==3
             % Set added mass matrix
             sizecheck(varargin{2},[6 6]);
