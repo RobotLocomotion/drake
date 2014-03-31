@@ -22,6 +22,7 @@ for i=1:25
   x = Point(p1.getStateFrame,randn(2,1));
   xp = x.inFrame(tp1.getStateFrame);
   x = double(x); xp=double(xp);
+  x(1) = mod(x(1),2*pi);
   u = randn;
 
   xdot = p1.dynamics(0,x,u);
@@ -30,6 +31,7 @@ for i=1:25
   valuecheck(xpdot,tp2.dynamics(0,xp,u));
   
   [xpx,dxdxp] = geval(@tf.output,[],[],xp);
+  xpx(1) = mod(xpx(1),2*pi);
   valuecheck(x,xpx);
   valuecheck(xdot,dxdxp*xpdot);
 end

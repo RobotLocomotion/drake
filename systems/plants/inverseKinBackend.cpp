@@ -1027,7 +1027,15 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       }
       memcpy(q_sol.col(i).data(),x,sizeof(double)*nq);
       INFO[i] = static_cast<int>(INFO_snopt[i]);
-       
+      if(INFO[i]<10)
+      {
+        for(int j = 0;j<nq;j++)
+        {
+          q_sol(j,i) = q_sol(j,i)>joint_limit_min(j,i)?q_sol(j,i):joint_limit_min(j,i);
+          q_sol(j,i) = q_sol(j,i)<joint_limit_max(j,i)?q_sol(j,i):joint_limit_max(j,i);
+        }
+      }
+      
       
       delete[] xmul; delete[] xstate; delete[] xnames;
       delete[] F; delete[] Fmul; delete[] Fstate; delete[] Fnames;
@@ -2125,6 +2133,17 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       delete[] infeasible_constraint_idx;
     }
     *INFO = static_cast<int>(*INFO_snopt);
+    if(*INFO<10)
+    {
+      for(int i=0; i<nT;i++)
+      {
+        for(int j = 0;j<nq;j++)
+        {
+          q_sol(j,i) = q_sol(j,i)>joint_limit_max(j,i)?q_sol(j,i):joint_limit_max(j,i);
+          q_sol(j,i) = q_sol(j,i)<joint_limit_min(j,i)?q_sol(j,i):joint_limit_min(j,i);
+        }
+      }
+    }
 
     delete rw;
     delete[] xmul; delete[] xstate; delete[] xnames; 

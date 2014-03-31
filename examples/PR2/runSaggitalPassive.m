@@ -1,6 +1,8 @@
 function runSaggitalPassive
 
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 r = PlanarRigidBodyManipulator('pr2.urdf');
+warning(w);
 r = setSimulinkParam(r,'MinStep','0.001');
 v = r.constructVisualizer;
 v.display_dt = .05;

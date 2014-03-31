@@ -112,13 +112,14 @@ classdef PostureChangeConstraint < MultipleTimeLinearPostureConstraint
       valid_flag = obj.isTimeValid(t);
       num_valid_t = sum(valid_flag);
       if(num_valid_t>=2)
+        valid_t = t(valid_flag);
         nc = obj.getNumConstraint(t);
         name_str = cell(nc,1);
-        for i = 1:length(t)
+        cnstr_idx = 1;
+        for i = 2:num_valid_t
           for j = 1:length(obj.joint_ind)
-            if(valid_flag(i))
-              name_str{i} = sprintf('Posture change for joint %d at time %5.3f',obj.joint_ind(j),t(i));
-            end
+            name_str{cnstr_idx} = sprintf('Posture change for joint %d at time %5.3f',obj.joint_ind(j),valid_t(i));
+            cnstr_idx = cnstr_idx+1;
           end
         end
       end

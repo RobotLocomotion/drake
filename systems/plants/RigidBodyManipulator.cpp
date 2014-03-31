@@ -404,31 +404,29 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
     delete[] dXup;
   }
   if (NB>0) {
+    Ic = new MatrixXd[NB]; // body spatial inertias
+    dIc = new MatrixXd[NB]; // derivative of body spatial inertias
+    phi = new VectorXd[NB]; // joint axis vectors
     Xworld = new MatrixXd[NB]; // spatial transforms from world to each body
     dXworld = new MatrixXd[NB]; // dXworld_dq * qd
     dXup = new MatrixXd[NB]; // dXup_dq * qd
     for(int i=0; i < NB; i++) {
+      Ic[i] = MatrixXd::Zero(6,6);
+      dIc[i] = MatrixXd::Zero(6,6);
+      phi[i] = VectorXd::Zero(6);
       Xworld[i] = MatrixXd::Zero(6,6);
       dXworld[i] = MatrixXd::Zero(6,6);
       dXup[i] = MatrixXd::Zero(6,6);
     }
   }
   
-  P = MatrixXd::Identity(6*NB,6*NB); // spatial incidence matrix
-  Pinv = MatrixXd::Identity(6*NB,6*NB);
-  Phi = MatrixXd::Zero(6*NB,num_dof); // joint axis matrix
-  Js = MatrixXd::Zero(6*NB,num_dof);
-  Jdot = MatrixXd::Zero(6*NB,num_dof);
-  Is = MatrixXd::Zero(6*NB,6*NB); // system inertia matrix
-  Xg = MatrixXd::Zero(6*NB,6); // spatial centroidal projection matrix
-  dP = MatrixXd::Zero(6*NB,6*NB); // dP_dq * qd 
-  dXg = MatrixXd::Zero(6*NB,6);  // dXg_dq * qd
+  Xg = MatrixXd::Zero(6,6); // spatial centroidal projection matrix for a single body
+  dXg = MatrixXd::Zero(6,6);  // dXg_dq * qd
   Xcom = MatrixXd::Zero(6,6); // spatial transform from centroid to world
   Jcom = MatrixXd::Zero(3,num_dof); 
   dXcom = MatrixXd::Zero(6,6);
   Xi = MatrixXd::Zero(6,6);
   dXidq = MatrixXd::Zero(6,6);
-  s = VectorXd::Zero(6);
   
   initialized = false;
   kinematicsInit = false;
@@ -857,8 +855,6 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
 }
 
 
-
-
 template <typename Derived>
 void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<Derived> &A, MatrixBase<Derived> &Adot) 
 {
@@ -880,20 +876,34 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
   dXcom(3,2) = 1*com_dot(1);
   dXcom(4,0) = 1*com_dot(2);
   dXcom(3,1) = -1*com_dot(2);
-  
+
+  A = MatrixXd::Zero(6,num_dof);
+  Adot = MatrixXd::Zero(6,num_dof);
+
   for (int i=0; i < NB; i++) {
-    int n = dofnum[i];
-    jcalc(pitch[i],q[n],&Xi,&s);
-    Xup[i] = Xi * Xtree[i];
+    Ic[i] = I[i];
+    dIc[i] = MatrixXd::Zero(6,6);
+  }
   
+  int n;
+  for (int i=NB-1; i >= 0; i--) {
+    n = dofnum[i];
+    jcalc(pitch[i],q[n],&Xi,&phi[i]);
+    Xup[i] = Xi * Xtree[i];
+ 
     djcalc(pitch[i], q[n], &dXidq);
     dXup[i] = dXidq * Xtree[i] * qd[n];
- 
+     
     if (parent[i] >= 0) {
-      P.block(i*6,parent[i]*6,6,6) = -Xup[i];
-      Xworld[i] = Xup[i] * Xworld[parent[i]];
+      Ic[parent[i]] += Xup[i].transpose()*Ic[i]*Xup[i];
+      dIc[parent[i]] += (dXup[i].transpose()*Ic[i] + Xup[i].transpose()*dIc[i])*Xup[i] + Xup[i].transpose()*Ic[i]*dXup[i];
+    }
+  }
 
-      dP.block(i*6,parent[i]*6,6,6) = -dXup[i];
+
+  for (int i=0; i < NB; i++) {
+    if (parent[i] >= 0) {
+      Xworld[i] = Xup[i] * Xworld[parent[i]];
       dXworld[i] = dXup[i]*Xworld[parent[i]] + Xup[i]*dXworld[parent[i]];
     }
     else {
@@ -901,18 +911,15 @@ void RigidBodyManipulator::getCMM(double* const q, double* const qd, MatrixBase<
       dXworld[i] = dXup[i];
     }
  
-    Phi.block(i*6,n,6,1) = s;
-    Is.block(i*6,i*6,6,6) = I[i];
-    Xg.block(i*6,0,6,6) = Xworld[i] * Xcom; // spatial transform from centroid to body
-    dXg.block(i*6,0,6,6) = dXworld[i] * Xcom + Xworld[i] * dXcom; 
+    Xg = Xworld[i] * Xcom; // spatial transform from centroid to body
+    dXg = dXworld[i] * Xcom + Xworld[i] * dXcom; 
+
+    n = dofnum[i];
+    A.col(n) = Xg.transpose()*Ic[i]*phi[i];
+    Adot.col(n) = dXg.transpose()*Ic[i]*phi[i] + Xg.transpose()*dIc[i]*phi[i];
   }
-  
-  Pinv = P.inverse(); // potentially suboptimal
-  Js = Pinv * Phi;
-  Jdot = -Pinv * dP * Pinv * Phi;
-  A = Xg.transpose()*Is*Js; //centroidal momentum matrix (eq 27)
-  Adot = Xg.transpose()*Is*Jdot + dXg.transpose()*Is*Js;
 }
+
 
 template <typename Derived>
 void RigidBodyManipulator::getCOM(MatrixBase<Derived> &com, const std::set<int> &robotnum)
@@ -969,7 +976,7 @@ void RigidBodyManipulator::getCOMJacDot(MatrixBase<Derived> &Jcomdot, const std:
     {
       bm = bodies[i].mass;
       if (bm>0) {
-        forwardJacDot(i,bodies[i].com,bJ);
+        forwardJacDot(i,bodies[i].com,0,bJ);
         Jcomdot = (m*Jcomdot + bm*bJ)/(m+bm);
         m = m+bm;
       }
@@ -1067,7 +1074,7 @@ void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase<Derived> &Jdot, 
     nc = bodies[bi].contact_pts.cols();
     if (nc>0) {
       p.resize(3*nc,num_dof);
-      forwardJacDot(bi,bodies[bi].contact_pts,p);
+      forwardJacDot(bi,bodies[bi].contact_pts,0,p);
       Jdot.block(3*n,0,3*nc,num_dof) = p;
       n += nc;
     }
@@ -1277,14 +1284,48 @@ void RigidBodyManipulator::forwardJac(const int body_or_frame_id, const MatrixBa
 }
 
 template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, MatrixBase<DerivedB>& Jdot)
+void RigidBodyManipulator::forwardJacDot(const int body_or_frame_id, const MatrixBase<DerivedA> &pts, const int rotation_type, MatrixBase<DerivedB>& Jdot)
 {
   int n_pts = pts.cols(); Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
+	
+	MatrixXd tmp = bodies[body_ind].dTdqdot*Tframe*pts;
+	MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_dof,3*n_pts);
+	Jdot = Jdott.transpose();
 
-  MatrixXd tmp = bodies[body_ind].dTdqdot*Tframe*pts;
-  MatrixXd Jdott = Map<MatrixXd>(tmp.data(),num_dof,3*n_pts);
-  Jdot = Jdott.transpose();
+	if (rotation_type==1) {
+		
+		MatrixXd dTdqdot =  bodies[body_ind].dTdqdot*Tframe;
+		Matrix3d R = (bodies[body_ind].T*Tframe).topLeftCorner(3,3);
+		/*
+		 * note the unusual format of dTdq(chosen for efficiently calculating jacobians from many pts)
+		 * dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
+		 */
+
+		VectorXd dR21_dq(num_dof),dR22_dq(num_dof),dR20_dq(num_dof),dR00_dq(num_dof),dR10_dq(num_dof);
+		for (int i=0; i<num_dof; i++) {
+			dR21_dq(i) = dTdqdot(2*num_dof+i,1);
+			dR22_dq(i) = dTdqdot(2*num_dof+i,2);
+			dR20_dq(i) = dTdqdot(2*num_dof+i,0);
+			dR00_dq(i) = dTdqdot(i,0);
+			dR10_dq(i) = dTdqdot(num_dof+i,0);
+		}
+		double sqterm1 = R(2,1)*R(2,1) + R(2,2)*R(2,2);
+		double sqterm2 = R(0,0)*R(0,0) + R(1,0)*R(1,0);
+
+		MatrixXd Jr = MatrixXd::Zero(3,num_dof);
+
+		Jr.block(0,0,1,num_dof) = ((R(2,2)*dR21_dq - R(2,1)*dR22_dq)/sqterm1).transpose();
+		Jr.block(1,0,1,num_dof) = ((-sqrt(sqterm1)*dR20_dq + R(2,0)/sqrt(sqterm1)*(R(2,1)*dR21_dq + R(2,2)*dR22_dq) )/(R(2,0)*R(2,0) + R(2,1)*R(2,1) + R(2,2)*R(2,2))).transpose();
+		Jr.block(2,0,1,num_dof)= ((R(0,0)*dR10_dq - R(1,0)*dR00_dq)/sqterm2).transpose();
+
+		MatrixXd Jfull = MatrixXd::Zero(2*3*n_pts,num_dof);
+		for (int i=0; i<n_pts; i++) {
+			Jfull.block(i*6,0,3,num_dof) = Jdot.block(i*3,0,3,num_dof);
+			Jfull.block(i*6+3,0,3,num_dof) = Jr;
+		}
+		Jdot=Jfull;
+	}
 }
 
 template <typename DerivedA, typename DerivedB>
@@ -1542,11 +1583,11 @@ template void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase <Matrix
 
 template void RigidBodyManipulator::forwardKin(const int, const MatrixBase< MatrixXd >&, const int, MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< Map<MatrixXd> > &);
-template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< MatrixXd > &, MatrixBase< Map<MatrixXd> >&);
 template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< MatrixXd > &, MatrixBase< Map<MatrixXd> >&);
 template void RigidBodyManipulator::forwardKin(const int, const MatrixBase< MatrixXd >&, const int, MatrixBase< MatrixXd > &);
 template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< MatrixXd > &);
-template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd >&);
+template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< Map<MatrixXd> >&);
+template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< MatrixXd > &, const int, MatrixBase< MatrixXd >&);
 template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd >&);
 template void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d > const&, const int, MatrixBase< Vector3d > &);
 template void RigidBodyManipulator::forwardKin(const int, MatrixBase< Vector4d > const&, const int, MatrixBase< Matrix<double,6,1> > &);

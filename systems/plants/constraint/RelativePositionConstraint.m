@@ -14,35 +14,30 @@ classdef RelativePositionConstraint < PositionConstraint
   end
   methods(Access = protected)
     function [pos,J] = evalPositions(obj,kinsol)
-      if kinsol.mex
-        error('The mex version of RelativePositionConstraint is not yet implemented');
-      else
-        % nq = obj.robot.getNumDOF();
-        %[pts_world, J_world] = forwardKin(obj.robot,kinsol,obj.body,obj.pts,0);
-        [bodyA_pos,JA] = forwardKin(obj.robot,kinsol,obj.bodyA_idx,obj.pts,0);
-        [wTb,dwTb] = forwardKin(obj.robot,kinsol,obj.bodyB_idx,[0;0;0],2);
-        [bTw_quat,dbTw_quat] = quatConjugate(wTb(4:7));
-        dbTw_quat = dbTw_quat*dwTb(4:7,:);
-        [bTw_trans,dbTw_trans] = quatRotateVec(bTw_quat,wTb(1:3));
-        bTw_trans = -bTw_trans;
-        dbTw_trans = -dbTw_trans*[dbTw_quat;dwTb(1:3,:)];
-        
-        [bpTw_trans1,dbpTw_trans1] = quatRotateVec(obj.bpTb(4:7),bTw_trans);
-        dbpTw_trans1 = dbpTw_trans1(:,5:7)*dbTw_trans;
-        bpTw_trans = bpTw_trans1+obj.bpTb(1:3);
-        dbpTw_trans = dbpTw_trans1;
-        [bpTw_quat,dbpTw_quat] = quatProduct(obj.bpTb(4:7),bTw_quat);
-        dbpTw_quat = dbpTw_quat(:,5:8)*dbTw_quat;
-        
-        pos = zeros(3,obj.n_pts);
-        J = zeros(3*obj.n_pts,obj.robot.getNumDOF());
-        for i = 1:obj.n_pts
-          [bp_bodyA_pos1,dbp_bodyA_pos1] = quatRotateVec(bpTw_quat,bodyA_pos(:,i));
-          dbp_bodyA_pos1 = dbp_bodyA_pos1*[dbpTw_quat;JA(3*(i-1)+(1:3),:)];
-          pos(:,i) = bp_bodyA_pos1+bpTw_trans;
-          J(3*(i-1)+(1:3),:) = dbp_bodyA_pos1+dbpTw_trans;
-        end
+      % nq = obj.robot.getNumDOF();
+      %[pts_world, J_world] = forwardKin(obj.robot,kinsol,obj.body,obj.pts,0);
+      [bodyA_pos,JA] = forwardKin(obj.robot,kinsol,obj.bodyA_idx,obj.pts,0);
+      [wTb,dwTb] = forwardKin(obj.robot,kinsol,obj.bodyB_idx,[0;0;0],2);
+      [bTw_quat,dbTw_quat] = quatConjugate(wTb(4:7));
+      dbTw_quat = dbTw_quat*dwTb(4:7,:);
+      [bTw_trans,dbTw_trans] = quatRotateVec(bTw_quat,wTb(1:3));
+      bTw_trans = -bTw_trans;
+      dbTw_trans = -dbTw_trans*[dbTw_quat;dwTb(1:3,:)];
 
+      [bpTw_trans1,dbpTw_trans1] = quatRotateVec(obj.bpTb(4:7),bTw_trans);
+      dbpTw_trans1 = dbpTw_trans1(:,5:7)*dbTw_trans;
+      bpTw_trans = bpTw_trans1+obj.bpTb(1:3);
+      dbpTw_trans = dbpTw_trans1;
+      [bpTw_quat,dbpTw_quat] = quatProduct(obj.bpTb(4:7),bTw_quat);
+      dbpTw_quat = dbpTw_quat(:,5:8)*dbTw_quat;
+
+      pos = zeros(3,obj.n_pts);
+      J = zeros(3*obj.n_pts,obj.robot.getNumDOF());
+      for i = 1:obj.n_pts
+        [bp_bodyA_pos1,dbp_bodyA_pos1] = quatRotateVec(bpTw_quat,bodyA_pos(:,i));
+        dbp_bodyA_pos1 = dbp_bodyA_pos1*[dbpTw_quat;JA(3*(i-1)+(1:3),:)];
+        pos(:,i) = bp_bodyA_pos1+bpTw_trans;
+        J(3*(i-1)+(1:3),:) = dbp_bodyA_pos1+dbpTw_trans;
       end
     end
     
@@ -112,18 +107,23 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
       pts_w = forwardKin(obj.robot,kinsol,1,obj.pts);
       wTbp = kinsol.T{obj.bodyB_idx}*invHT([quat2rotmat(obj.bpTb(4:7)) obj.bpTb(1:3);0 0 0 1]);
       wPbp = wTbp(1:3,4);
-      bot_lcmgl_draw_axes(lcmgl);
+      lcmgl.glDrawAxes();
       for pt = pts_w
-        bot_lcmgl_color3f(lcmgl,0.25,0.25,0.25);
-        bot_lcmgl_sphere(lcmgl, pt, 0.02, 36, 36);
+        lcmgl.glColor3f(0.25,0.25,0.25);
+        lcmgl.sphere(pt, 0.02, 36, 36);
       end
       a = rotmat2axis(wTbp(1:3,1:3));
-      bot_lcmgl_translated(lcmgl,wPbp(1),wPbp(2),wPbp(3));
-      bot_lcmgl_rotated(lcmgl,a(4)*180/pi,a(1),a(2),a(3));
-      bot_lcmgl_draw_axes(lcmgl);
-      bot_lcmgl_color4f(lcmgl,0,1,0,0.5);
-      bot_lcmgl_box(lcmgl,(obj.lb+obj.ub)/2,obj.ub-obj.lb);
-      bot_lcmgl_switch_buffer(lcmgl);
+      lcmgl.glTranslated(wPbp(1),wPbp(2),wPbp(3));
+      lcmgl.glRotated(a(4)*180/pi,a(1),a(2),a(3));
+      lcmgl.glDrawAxes();
+      lcmgl.glColor4f(0,1,0,0.5);
+      lcmgl.box((obj.lb+obj.ub)/2,obj.ub-obj.lb);
+      lcmgl.switchBuffers();
+    end
+    
+    function joint_idx = kinematicsPathJoints(obj)
+      [~,joint_path] = obj.robot.findKinematicPath(obj.bodyA_idx,obj.bodyB_idx);
+      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
     end
   end
 end

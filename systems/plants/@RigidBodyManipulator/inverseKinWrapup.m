@@ -57,8 +57,8 @@ ikoptions = IKoptions(obj);
 ikoptions = ikoptions.setQ(Q);
 qsc = [];
 if(use_mex_constraint)
-  pc = constructPtrPostureConstraintmex(obj.getMexModelPtr);
-  constructPtrPostureConstraintmex(pc,(1:nq)',options.jointLimitMin,options.jointLimitMax);
+  pc = constructRigidBodyConstraint(RigidBodyConstraint.PostureConstraintType,true,obj.getMexModelPtr);
+  pc = updatePtrRigidBodyConstraintmex(pc,'bounds',(1:nq)',options.jointLimitMin,options.jointLimitMax);
 else
   pc = PostureConstraint(obj);
   pc = pc.setJointLimits((1:nq)',options.jointLimitMin,options.jointLimitMax);
@@ -82,9 +82,9 @@ while i < length(varargin)
     if(~isempty(qsc_pts))
       if(isempty(qsc))
         if(use_mex_constraint)
-          qsc = constructPtrQuasiStaticConstraintmex(obj.getMexModelPtr);
-          updatePtrQuasiStaticConstraintmex(qsc,quasiStaticFlag);
-          updatePtrQuasiStaticConstraintmex(qsc,shrinkFactor);
+          qsc = constructRigidBodyConstraint(RigidBodyConstraint.QuasiStaticConstraintType,true,obj.getMexModelPtr);
+          updatePtrRigidBodyConstraintmex(qsc,'active',quasiStaticFlag);
+          updatePtrRigidBodyConstraintmex(qsc,'factor',shrinkFactor);
         else
           qsc = QuasiStaticConstraint(obj);
           qsc = qsc.setActive(quasiStaticFlag);
@@ -92,7 +92,7 @@ while i < length(varargin)
         end
       end
       if(use_mex_constraint)
-        updatePtrQuasiStaticConstraintmex(qsc,body_ind,qsc_pts);
+        updatePtrRigidBodyConstraintmex(qsc,'contact',body_ind,qsc_pts);
       else
         qsc = qsc.addContact(body_ind,qsc_pts);
       end

@@ -19,6 +19,10 @@ ub = [0;0;0;0.1*pi];
 tspan = [0 1];
 q = randn(robot.getNumDOF,1);
 stlpc = SingleTimeLinearPostureConstraint(robot,iAfun,jAvar,A,lb,ub,tspan);
+category_name_mex = constraintCategorymex(stlpc.mex_ptr);
+if(~strcmp(category_name_mex,stlpc.categoryString()))
+  error('category name string do not match')
+end
 display('Check t within tspan');
 t = 0;
 num_cnst = stlpc.getNumConstraint(t);
@@ -43,6 +47,12 @@ c_val = stlpc.feval(t,q);
 if(any(c_val>ub+1e-10) || any(c_val<lb-1e-10))
   error('constraint value is incorrect');
 end
+
+cnstr = stlpc.generateConstraint(t);
+sizecheck(cnstr,[1,1]);
+valuecheck(cnstr{1}.lb,stlpc.lb);
+valuecheck(cnstr{1}.ub,stlpc.ub);
+valuecheck(cnstr{1}.A,stlpc.A_mat);
 end
 
 function testSingleTimeLinearPostureConstraint_userfun(stlpc,q,t)

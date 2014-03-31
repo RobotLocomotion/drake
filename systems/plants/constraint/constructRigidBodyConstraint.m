@@ -54,6 +54,8 @@ else
       obj = PostureChangeConstraint(varargin{:});
     case RigidBodyConstraint.RelativePositionConstraintType
       obj = RelativePositionConstraint(varargin{:});
+    case RigidBodyConstraint.RelativeQuatConstraintType
+      obj = RelativeQuatConstraint(varargin{:});
     otherwise
       error('Drake:constructRigidBodyConstraint:UnsupportedConstraintType','The constraint type is not supported yet');
   end

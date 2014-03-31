@@ -1,6 +1,4 @@
 function RelativePositionConstraintTest(varargin)
-% NOTEST
-% Andres would update RelativePositionConstraint
   r = RigidBodyManipulator(strcat(getDrakePath(),'/examples/PR2/pr2.urdf'));
   q_nom = zeros(r.getNumDOF(),1);
   constraintTester('RelativePositionConstraintTest', r, @makeCon, @(r) q_nom, @(r) q_nom, 10, varargin{:});
@@ -18,7 +16,8 @@ function con = makeCon(r)
   %pts = 0.8*[[0;1;1],[0;-1;1],[0;-1;-1],[0;1;-1]].*repmat((ub-lb)/2,1,4);
   pts = 0.4*rand(3,1) - 0.2;
 
-  T = [rpy2rotmat(rpy),xyz;zeros(1,3),1];
+  T = [xyz;rpy2quat(rpy)];
+%   T = [rpy2rotmat(rpy),xyz;zeros(1,3),1];
 
-  con = RelativePositionConstraint(r,pts,lb,ub,bodyA_idx,bodyB_idx,T,[0 1])
+  con = RelativePositionConstraint(r,pts,lb,ub,bodyA_idx,bodyB_idx,T,[0 1]);
 end

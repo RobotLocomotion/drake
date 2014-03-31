@@ -104,8 +104,12 @@ classdef LinearInvertedPendulum < LinearSystem
         dZMP = dZMP.inFrame(desiredZMP);
         
         zmp_tf = dZMP.eval(dZMP.tspan(end));
+        if ~isfield(options,'Qy')
+          options.Qy = diag([0 0 0 0 1 1]);
+        end
+
         if(isTI(obj))
-          [c,V] = lqr(obj,zmp_tf);
+          [c,V] = lqr(obj,zmp_tf,options.Qy);
         else
           % note: i've merged this in from hongkai (it's a time crunch!), but i don't agree with
           % it. it's bad form to assume that the tv system is somehow stationary after D.tspan(end).
@@ -117,9 +121,6 @@ classdef LinearInvertedPendulum < LinearSystem
           ti_obj = setInputFrame(ti_obj,obj.getInputFrame());
           ti_obj = setOutputFrame(ti_obj,obj.getOutputFrame());
           Q = zeros(4);
-          if ~isfield(options,'Qy')
-            options.Qy = diag([0 0 0 0 1 1]);
-          end
           [c,V] = tilqr(ti_obj,Point(ti_obj.getStateFrame,[zmp_tf;0*zmp_tf]),Point(ti_obj.getInputFrame),Q,zeros(2),options);
         end
         
@@ -140,9 +141,6 @@ classdef LinearInvertedPendulum < LinearSystem
         % frames)
         x0traj = setOutputFrame(ConstantTrajectory([zmp_tf;0;0]),obj.getStateFrame);
         u0traj = setOutputFrame(ConstantTrajectory([0;0]),obj.getInputFrame);
-        if ~isfield(options,'Qy')
-          options.Qy = diag([0 0 0 0 1 1]);
-        end
         options.ydtraj = [x0traj;dZMP];
         WS = warning('off','Drake:TVLQR:NegativeS');  % i expect to have some zero eigenvalues, which numerically fluctuate below 0
         [ct,Vt] = tvlqr(obj,x0traj,u0traj,Q,zeros(2),V,options);
