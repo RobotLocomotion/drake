@@ -8,6 +8,18 @@ classdef GazeOrientConstraint < GazeConstraint
       [quat, dquat_dq] = evalOrientation(obj,kinsol);
   end
 
+  methods(Access = protected)
+    function [c,dc] = evalValidTime(obj,kinsol)      
+      [quat, dquat] = evalOrientation(obj,kinsol);
+      [axis_err,daxis_err] = quatDiffAxisInvar(quat,obj.quat_des,obj.axis);
+      daxis_err_dq = daxis_err(1:4)*dquat;
+      [q_diff,dq_diff] = quatDiff(quat,obj.quat_des);
+      dq_diff_dq = dq_diff(:,1:4)*dquat;
+      c = [axis_err;q_diff(1)];
+      dc = [daxis_err_dq;dq_diff_dq(1,:)];
+    end
+  end
+  
   methods
     function obj = GazeOrientConstraint(robot,axis,quat_des,conethreshold,threshold,tspan)
       if(nargin  == 5)
@@ -33,21 +45,6 @@ classdef GazeOrientConstraint < GazeConstraint
       end
       obj.threshold = threshold;
       obj.num_constraint = 2;
-    end
-
-    function [c,dc] = eval(obj,t,kinsol)
-      if(obj.isTimeValid(t))
-        [quat, dquat] = evalOrientation(obj,kinsol);
-        [axis_err,daxis_err] = quatDiffAxisInvar(quat,obj.quat_des,obj.axis);
-        daxis_err_dq = daxis_err(1:4)*dquat;
-        [q_diff,dq_diff] = quatDiff(quat,obj.quat_des);
-        dq_diff_dq = dq_diff(:,1:4)*dquat;
-        c = [axis_err;q_diff(1)];
-        dc = [daxis_err_dq;dq_diff_dq(1,:)];
-      else
-        c = [];
-        dc = [];
-      end
     end
     
     function [lb,ub] = bounds(obj,t)

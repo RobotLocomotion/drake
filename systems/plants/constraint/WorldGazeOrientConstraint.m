@@ -47,8 +47,6 @@ classdef WorldGazeOrientConstraint < GazeOrientConstraint
       obj.type = RigidBodyConstraint.WorldGazeOrientConstraintType;
       obj.mex_ptr = ptr;
     end
-    
-    
 
     function name_str = name(obj,t)
       if(obj.isTimeValid(t))
@@ -59,5 +57,9 @@ classdef WorldGazeOrientConstraint < GazeOrientConstraint
       end
     end
     
+    function joint_idx = kinematicsPathJoints(obj)
+      [~,joint_path] = obj.robot.findKinematicPath(1,obj.body);
+      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+    end
   end
 end

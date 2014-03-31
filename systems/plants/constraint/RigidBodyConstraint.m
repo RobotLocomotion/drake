@@ -50,6 +50,7 @@ classdef RigidBodyConstraint
     FrictionConeWrenchConstraintType = 21;
     LinearFrictionConeWrenchConstraintType = 22;
     RailGraspWrenchConstraintType = 23;
+    RelativeQuatConstraintType = 24;
   end
   
   methods
@@ -79,5 +80,30 @@ classdef RigidBodyConstraint
       end
       obj.tspan = tspan;
     end
+    
+    function cat_str = categoryString(obj)
+      if(obj.category == RigidBodyConstraint.SingleTimeKinematicConstraintCategory)
+        cat_str = 'SingleTimeKinematicConstraint';
+      elseif(obj.category == RigidBodyConstraint.MultipleTimeKinematicConstraintCategory)
+        cat_str = 'MultipleTimeKinematicConstraint';
+      elseif(obj.category == RigidBodyConstraint.QuasiStaticConstraintCategory)
+        cat_str = 'QuasiStaticConstraint';
+      elseif(obj.category == RigidBodyConstraint.PostureConstraintCategory)
+        cat_str = 'PostureConstraint';
+      elseif(obj.category == RigidBodyConstraint.MultipleTimeLinearPostureConstraintCategory)
+        cat_str = 'MultipleTimeLinearPostureConstraint';
+      elseif(obj.category == RigidBodyConstraint.SingleTimeLinearPostureConstraintCategory)
+        cat_str = 'SingleTimeLinearPostureConstraint';
+      else
+        error('Drake:RigidBody:UnsupportedCategory','The constraint category is not supported');
+      end
+    end
+    
+  end
+  
+  methods(Abstract)
+    cnstr = generateConstraint(obj,t)
+    % Given the time, this method would generate a cell of Constraint objects, that encode
+    % the numerical constraint at the given time
   end
 end
