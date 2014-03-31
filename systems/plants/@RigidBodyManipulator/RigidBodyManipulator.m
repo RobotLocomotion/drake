@@ -782,6 +782,7 @@ classdef RigidBodyManipulator < Manipulator
       for body_idx = reshape(body_indices,1,[])
         model.body(body_idx) = replaceContactShapesWithCHull(model.body(body_idx),varargin{:});
       end
+      model.dirty = true;
     end
     
     function drawKinematicTree(model)
