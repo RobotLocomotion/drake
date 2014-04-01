@@ -1405,9 +1405,7 @@ classdef RigidBodyManipulator < Manipulator
         if (any(any(body.I))) 
             %Check before running setInertial() that the body doesn't have added-mass
             %coefficients (I haven't written up the welding support for that yet - JSI)
-          try 
-              valuecheck(body.Iaddedmass,zeros(6,6));
-          catch
+          if ~valuecheck(body.Iaddedmass,zeros(6,6));
               error('Adding inertia to parent with added-mass coefficients is not supported yet');
           end
             

@@ -110,12 +110,9 @@ while (true)
     
   %Check before running setInertial() that the body doesn't have added-mass
   %coefficients (I haven't written up the welding support for that yet - JSI)
-          try 
-              valuecheck(current_body.Iaddedmass,zeros(6,6));
-          catch
-              error('Welding with added-mass coefficients is not supported yet');
-          end
-  
+  if ~valuecheck(current_body.Iaddedmass,zeros(6,6));
+      error('Welding with added-mass coefficients is not supported yet');
+  end
   
   % todo: consider moving these into RigidBody.updateTransform, but only if
   % it gets *everything* correct
