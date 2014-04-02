@@ -1008,7 +1008,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       % Compute number of contacts by evaluating at x0
-      [phi0,~,d0] = obj.contactConstraints(x0(1:nq),false,active_collision_options)
+      [phi0,~,d0] = obj.contactConstraints(x0(1:nq),false,active_collision_options);
       
       % total number of contact forces (normal + frictional)
       nz = length(phi0) + size(cell2mat(d0),2);
@@ -1056,18 +1056,24 @@ classdef RigidBodyManipulator < Manipulator
         q=quz(1:nq);
         u=quz(nq+(1:nu));
         z=quz(nq+nu+(1:nz));
-
+        c = [];
+        GC = [];
         [~,C,B,~,dC,~] = obj.manipulatorDynamics(q,zeros(nq,1));
-        [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q,false,active_collision_options);
         
-        % construct J such that J'*z is the contact force vector in joint
-        J = [n;cell2mat(D')];
-        % similarly, construct dJz
-        dJz = matGradMult([dn;cell2mat(dD')],z,true);
-
-        ceq = [C-B*u-J'*z; phiC];
-        GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[J'; zeros(nu+nz,length(phiC))]]; 
-        
+        if obj.getNumContactPairs > 0,
+          [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q,false,active_collision_options);
+          
+          % construct J such that J'*z is the contact force vector in joint
+          J = [n;cell2mat(D')];
+          % similarly, construct dJz
+          dJz = matGradMult([dn;cell2mat(dD')],z,true);
+          
+          ceq = [C-B*u-J'*z; phiC];
+          GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[J'; zeros(nu+nz,length(phiC))]];
+        else
+          ceq = [C-B*u];
+          GCeq = [dC(1:nq,1:nq),-B]';
+        end
         if (obj.num_xcon>0)
           [phi,dphi] = geval(@obj.stateConstraints,[q;0*q]);
           ceq = [ceq; phi];

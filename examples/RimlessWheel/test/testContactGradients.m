@@ -19,7 +19,7 @@ end
 
 function [n,D,dn,dD] = contactConstraintsWrapper(manip,q)
   if (nargout>2)
-    [phi,n,D,mu,dn,dD] = contactConstraints(manip,q);
+    [phi,~,~,~,~,~,~,mu,n,D,dn,dD] = contactConstraints(manip,q);
     dD = cellfun(@(A)reshape(full(A),size(D{1},1),size(D{1},2),size(dD{1},2)),dD,'UniformOutput',false);
     dD = reshape(vertcat(dD{:}),length(dD)*size(dn,1),size(dn,2));
   else
