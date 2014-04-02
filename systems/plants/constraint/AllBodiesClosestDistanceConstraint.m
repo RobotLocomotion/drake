@@ -13,12 +13,12 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
   methods(Access=protected)
     function obj = setNumConstraint(obj)
       kinsol = doKinematics(obj.robot,zeros(obj.robot.getNumDOF(),1));
-      phi = closestDistanceAllBodies(obj.robot,kinsol);
+      phi = evalValidTime(obj,kinsol);
       obj.num_constraint = numel(phi);
     end
     
-    function [c,dc] = evalValidTime(obj,kinsol)
-      [c,dc] = closestDistanceAllBodies(obj.robot,kinsol);
+   function [c,dc] = evalValidTime(obj,kinsol)
+      [c,dc] = closestDistance(obj.robot,kinsol);
     end
   end
   methods
@@ -35,6 +35,14 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       obj.ub = repmat(ub,obj.num_constraint,1);
       obj.type = RigidBodyConstraint.AllBodiesClosestDistanceConstraintType;
       obj.mex_ptr = ptr;
+    end
+
+    function obj = updateRobot(obj,robot)
+      obj.robot = robot;
+      obj = setNumConstraint(obj);
+      obj.lb = repmat(obj.lb(end),obj.num_constraint,1);
+      obj.ub = repmat(obj.ub(end),obj.num_constraint,1);
+      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'robot',robot.getMexModelPtr);
     end
 
     function [lb,ub] = bounds(obj,t)
@@ -65,8 +73,8 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       %                                    otherwise, return bodyB index that violate the
       %                                    constraint
       kinsol = doKinematics(obj.robot,q);
-      [ptsA,ptsB,~,dist,~,~,~,idxA,idxB] = closestPointsAllBodies(obj.robot,kinsol);
-      unsatisfy_idx = reshape((dist > obj.ub') | (dist < obj.lb'),1,[]);
+      [dist,normal,d,xA,xB,idxA,idxB] = contactConstraints(obj.robot,kinsol);
+      unsatisfy_idx = reshape((dist > obj.ub) | (dist < obj.lb),1,[]);
       if(~any(unsatisfy_idx))
         constraintSatisfyFlag = true;
         dist = [];
@@ -77,8 +85,14 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       else
         constraintSatisfyFlag = false;
         dist = dist(unsatisfy_idx);
-        ptsA = ptsA(:,unsatisfy_idx);
-        ptsB = ptsB(:,unsatisfy_idx);
+        ptsA = zeros(3,sum(unsatisfy_idx));
+        ptsB = zeros(3,sum(unsatisfy_idx));
+        i = 1;
+        for idx = find(unsatisfy_idx)
+          ptsA(:,i) = forwardKin(obj.robot,kinsol,idxA(idx),xA(:,idx));
+          ptsB(:,i) = forwardKin(obj.robot,kinsol,idxB(idx),xB(:,idx));
+          i = i+1;
+        end
         idxA = idxA(unsatisfy_idx);
         idxB = idxB(unsatisfy_idx);
       end
@@ -87,7 +101,6 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
     function drawConstraint(obj,q,lcmgl)
       [~,~,ptsA,ptsB,idxA,idxB] = obj.checkConstraint(q);
       
-%       draw_idx = 1:size(ptsA,2);
       for i = 1:size(ptsA,2);
         lcmgl.glColor3f(0,0,0); % black
 

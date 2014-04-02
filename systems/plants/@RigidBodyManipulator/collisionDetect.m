@@ -1,6 +1,14 @@
 function [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol, ...
                                           allow_multiple_contacts, ...
                                           active_collision_options)
+% function [distance,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,active_collision_options)
+%
+% Uses bullet to find the points of closest approach between all pairs of
+% collision elements in the subset of the manipulator's collision elements
+% specified by the user, with the following exceptions: 
+%   * any body and it's % parent in the kinematic tree
+%   * body A and body B, where body A belongs to collision filter groups that
+%     ignore all of the collision filter groups to which body B belongs
 % @param obj
 % @param kinsol
 % @param allow_multiple_contacts - Logical indicating whether or not the
@@ -28,7 +36,7 @@ function [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol, ...
 % @retval idxB - (m x 1) The index of body B.
 
 if ~isstruct(kinsol)  
-  % treat input as closestPointsAllBodies(obj,q)
+  % treat input as collisionDetect(obj,q)
   kinsol = doKinematics(obj,kinsol);
 end
 
@@ -38,12 +46,13 @@ if (kinsol.mex ~= true)
     'Calling doKinematics using mex before proceeding');
 end
 
-if nargin < 3
-  allow_multiple_contacts = false;
+if nargin < 3, allow_multiple_contacts = false; end
+if nargin < 4, active_collision_options = struct(); end
+if isfield(active_collision_options,'body_idx')
+  active_collision_options.body_idx = int32(active_collision_options.body_idx);
 end
-
-[xA,xB,normal,distance,idxA,idxB] = collisionmex(obj.mex_model_ptr);
-m = numel(idxA);
+[xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr,allow_multiple_contacts,active_collision_options);
+%m = numel(idxA);
 
 %xA_in_world = zeros(size(xA));
 %xB_in_world = zeros(size(xB));

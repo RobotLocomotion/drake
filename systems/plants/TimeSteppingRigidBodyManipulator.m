@@ -912,12 +912,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       ptr = getMexModelPtr(obj.manip);
     end
     
-    function [ptsA,ptsB,normal,distance,JA,JB,Jd,idxA,idxB] = closestPointsAllBodies(obj,kinsol)
-      [ptsA,ptsB,normal,distance,JA,JB,Jd,idxA,idxB] = closestPointsAllBodies(obj.manip,kinsol);
-    end
-    
-    function [phi,Jphi] = closestDistanceAllBodies(obj,kinsol)
-      [phi,Jphi] = closestDistanceAllBodies(obj.manip,kinsol);
+    function [phi,Jphi] = closestDistance(obj,varargin)
+      [phi,Jphi] = closestDistance(obj.manip,varargin{:});
     end
     
     function obj = addLinksToCollisionFilterGroup(obj,linknames,collision_fg_name,robotnums)

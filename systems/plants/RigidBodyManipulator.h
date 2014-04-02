@@ -87,12 +87,18 @@ public:
 
   bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance);
 
-  bool closestPointsAllBodies( MatrixXd& ptsA, MatrixXd& ptsB,
-                               MatrixXd& normal, VectorXd& distance,
-                               std::vector<int>& bodyA_idx, 
-                               std::vector<int>& bodyB_idx);
+  //bool closestPointsAllBodies( MatrixXd& ptsA, MatrixXd& ptsB,
+                               //MatrixXd& normal, VectorXd& distance,
+                               //std::vector<int>& bodyA_idx, 
+                               //std::vector<int>& bodyB_idx);
 
-  bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
+                        MatrixXd& xA, MatrixXd& xB, 
+                        std::vector<int>& bodyA_idx, 
+                        std::vector<int>& bodyB_idx,
+                        std::vector<int>& bodies_idx);
+
+  //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
   
   int findLinkInd(std::string linkname, int robot = -1);
   //@param robot   the index of the robot. robot = -1 means to look at all the robots
