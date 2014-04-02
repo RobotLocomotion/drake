@@ -855,7 +855,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
 
     function c = getBodyContacts(obj,body_idx)
-      c = obj.manip.body(body_idx).contact_pts;
+      c = obj.manip.body(body_idx).contact_shapes;
     end
     
     function obj = replaceContactShapesWithCHull(obj,body_indices,varargin)

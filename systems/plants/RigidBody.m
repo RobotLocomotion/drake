@@ -11,9 +11,7 @@ classdef RigidBody < RigidBodyElement
     visual_shapes={}; % objects of type RigidBodyGeometry
     contact_shapes={}; % objects of type RigidBodyGeometry
 
-    contact_pts=[];  % a 3xn matrix with [x;y;z] positions of contact points
     collision_group_name={};  % string names of the groups
-    collision_group={};       % collision_group{i} is a list of indices into contact_pts which belong to collision_group_name{i}
     contact_shape_group={}; % contact_shape_group{i} is a list of indices into contact_shapes which belong to collision_group_name{i}
     
     % joint properties
@@ -52,29 +50,16 @@ classdef RigidBody < RigidBodyElement
   end
   
   methods    
+    function contact_pts(body)
+      error('contact_pts has been replaced by contact_shapes');
+    end
     
     function varargout = forwardKin(varargin)
       error('forwardKin(body,...) has been replaced by forwardKin(model,body_num,...), because it has a mex version.  please update your kinematics calls');
     end
     
     function [pts,inds] = getContactPoints(body,collision_group)
-      % @param collision_group (optional) return only the points in that
-      % group.  can be an integer index or a string.
-      if (nargin<2) 
-        pts = body.contact_pts;
-        inds = 1:length(body.contact_pts);
-      else
-        if isa(collision_group,'char')
-          collision_group_ind = find(strcmpi(collision_group,body.collision_group_name));
-          if isempty(collision_group_ind)
-            error(['cannot find collision group ',collision_group]);
-          end
-        else
-          collision_group_ind = collision_group;
-        end
-        inds = body.collision_group{collision_group_ind};
-        pts = body.contact_pts(:,inds);
-      end
+      error('contact points have been replaced by contact shapes');
     end
 
     function shapes = getContactShapes(body,collision_group,collision_ind)
@@ -95,7 +80,6 @@ classdef RigidBody < RigidBodyElement
     end
      
     function body = replaceContactShapesWithCHull(body,scale_factor)
-      %pts = body.contact_pts(:,unique(convhull(body.contact_pts')));
       pts = [];
       for i = 1:length(body.contact_shapes)
         pts = [pts, body.contact_shapes{i}.getPoints()];
@@ -106,12 +90,12 @@ classdef RigidBody < RigidBodyElement
           mean_of_pts = mean(pts,2);
           pts = bsxfun(@plus,scale_factor*bsxfun(@minus,pts,mean_of_pts),mean_of_pts);
         end
-        body.contact_pts = pts;
         body.contact_shapes = { RigidBodyMeshPts(pts) };
       end
     end
     
     function body = removeCollisionGroups(body,contact_groups)
+      error('This needs to be updated work now that contact points are gone')
       if isempty(body.contact_pts), return; end % nothing to do for this body
       if ~iscell(contact_groups), contact_groups={contact_groups}; end
       for i=1:length(contact_groups)
@@ -136,6 +120,7 @@ classdef RigidBody < RigidBodyElement
     end
     
     function body = removeCollisionGroupsExcept(body,contact_groups)
+      error('This needs to be updated work now that contact points are gone')
       if isempty(body.contact_pts), return; end % nothing to do for this body
       if ~iscell(contact_groups) contact_groups={contact_groups}; end
       i=1;
@@ -338,14 +323,9 @@ classdef RigidBody < RigidBodyElement
         end
       end
       
-      npts=size(body.contact_pts,2);
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         shape = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-        pts = getPoints(shape);
-        npts_additional = size(pts,2);
-        [body.contact_pts,ind_old,ind_new]=unique([body.contact_pts';pts'],'rows','stable');
-        body.contact_pts = body.contact_pts';
         body.contact_shapes = {body.contact_shapes{:},shape};
       end
       if (node.hasAttribute('group'))
@@ -357,10 +337,8 @@ classdef RigidBody < RigidBodyElement
       if isempty(ind)
         body.collision_group_name=horzcat(body.collision_group_name,name);
         ind=length(body.collision_group_name);
-        body.collision_group{ind}=ind_new(npts+(1:npts_additional))';
         body.contact_shape_group{ind} = length(body.contact_shapes);
       else
-        body.collision_group{ind}=[body.collision_group{ind},ind_new(npts+(1:npts_additional))'];
         body.contact_shape_group{ind} = [body.contact_shape_group{ind},length(body.contact_shapes)];
       end
     end
