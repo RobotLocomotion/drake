@@ -1,4 +1,4 @@
-function [phi,Jphi] = closestDistance(obj,kinsol,active_collision_options)
+function [phi,Jphi] = closestDistance(obj,kinsol,varargin)
 % function [phi,Jphi] = closestDistance(obj,kinsol,active_collision_options)
 %
 % Uses bullet to find the minimum distance between all pairs of collision
@@ -20,23 +20,10 @@ function [phi,Jphi] = closestDistance(obj,kinsol,active_collision_options)
 % @retval Jphi the kinematic jacobian of phi
 % @ingroup Collision
 
-if nargin < 3, active_collision_options = struct(); end;
-
-[phi,normal,xA,xB,idxA,idxB] = closestPoints(obj,kinsol,active_collision_options);
-
-n_pairs = numel(idxA);
-
-if isempty(phi)
-  error('RigidBodyManipulator:closestDistance','''phi'' should not be empty');
-end
-
 if nargout > 1
-  Jphi = zeros(n_pairs,obj.getNumDOF());
-  for i = 1:n_pairs
-    [~,JA] = forwardKin(obj,kinsol,idxA(i),xA(:,i),0);
-    [~,JB] = forwardKin(obj,kinsol,idxB(i),xB(:,i),0);
-    Jphi(i,:) = normal(:,i)'*(JA-JB);
-  end
+  [phi,~,~,~,~,~,~,~,Jphi] = contactConstraints(obj,kinsol,false,varargin);
+else
+  phi = contactConstraints(obj,kinsol,false,varargin);
 end
 
 end
