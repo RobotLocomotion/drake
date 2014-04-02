@@ -2139,8 +2139,8 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       {
         for(int j = 0;j<nq;j++)
         {
-          q_sol(j,i) = q_sol(j,i)>joint_limit_max(j,i)?q_sol(j,i):joint_limit_max(j,i);
-          q_sol(j,i) = q_sol(j,i)<joint_limit_min(j,i)?q_sol(j,i):joint_limit_min(j,i);
+          q_sol(j,i) = q_sol(j,i)>joint_limit_min(j,i)?q_sol(j,i):joint_limit_min(j,i);
+          q_sol(j,i) = q_sol(j,i)<joint_limit_max(j,i)?q_sol(j,i):joint_limit_max(j,i);
         }
       }
     }
