@@ -814,6 +814,30 @@ classdef RigidBodyManipulator < Manipulator
         lcmgl.glRotated(a(4)*180/pi,a(1),a(2),a(3));
       end
     end
+
+    function drawLCMGLClosestPoints(model,lcmgl,kinsol,varargin)
+      if ~isstruct(kinsol)
+        kinsol = model.doKinematics(kinsol);
+      end
+      [~,~,xA,xB,idxA,idxB] = model.closestPoints(kinsol,varargin{:});
+      for i = 1:length(idxA)
+        xA_in_world = forwardKin(model,kinsol,idxA(i),xA(:,i));
+        xB_in_world = forwardKin(model,kinsol,idxB(i),xB(:,i));
+
+        lcmgl.glColor3f(0,0,0); % black
+
+        lcmgl.glBegin( lcmgl.LCMGL_LINES);
+        lcmgl.glVertex3f(xA_in_world(1), xA_in_world(2), xA_in_world(3));
+        lcmgl.glVertex3f(xB_in_world(1), xB_in_world(2), xB_in_world(3));
+        lcmgl.glEnd();
+
+        lcmgl.glColor3f(1,0,0); % red
+
+        lcmgl.sphere(xA_in_world,.01,20,20);
+        lcmgl.sphere(xB_in_world,.01,20,20);
+      end
+      lcmgl.glColor3f(.7,.7,.7); % gray
+    end
         
     function m = getMass(model)
       % todo: write total_mass to class and simply return it instead of
@@ -853,24 +877,25 @@ classdef RigidBodyManipulator < Manipulator
     function v = constructVisualizer(obj,options)
       checkDirty(obj);
       if nargin<2, options=struct(); end 
-      if ~isfield(options,'viewer') options.viewer = {'BotVisualizer','RigidBodyWRLVisualizer','NullVisualizer'};
-      elseif ~iscell(options.viewer) options.viewer = {options.viewer}; end
+      if ~isfield(options,'use_contact_shapes'), options.use_contact_shapes = false; end;
+      if ~isfield(options,'viewer'), options.viewer = {'BotVisualizer','RigidBodyWRLVisualizer','NullVisualizer'};
+      elseif ~iscell(options.viewer), options.viewer = {options.viewer}; end
       
       v=[]; i=1;
       while isempty(v)
         type = options.viewer{i};
         
         if strcmp(type,'NullVisualizer')
-          arg = getOutputFrame(obj);
+          arg = {getOutputFrame(obj)};
         else
-          arg = obj;
+          arg = {obj,options.use_contact_shapes};
         end
 
         if (i==length(options.viewer))  % then it's the last one
-          v = feval(type,arg);
+          v = feval(type,arg{:});
         else
           try
-            v = feval(type,arg);
+            v = feval(type,arg{:});
           catch ex
             getReport(ex,'extended')
             warning(ex.identifier,ex.message);

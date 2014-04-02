@@ -23,7 +23,7 @@ function collisionDetectGradTest(visualize,n_debris)
   end
   nq = getNumPositions(r);
   load([getDrakePath(), '/examples/Atlas/data/atlas_fp.mat']);
-  for j = 1:1e2
+  for j = 1:1e1
     q0 = xstar(1:nq)+5e-1*(2*rand(nq,1)-1);
     q0(1:3) = 2*(2*rand(3,1)-1);
     [f_user,df_user] = geval(@(q)contactConstraintsTest(r,q),q0,struct('grad_method','user'));
