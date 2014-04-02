@@ -2,8 +2,8 @@
 p = TimeSteppingRigidBodyManipulator('snake.urdf',.01);
 p = p.addRobotFromURDF('ground_plane.urdf');
 p = p.addRobotFromURDF('snake.urdf',[.4*randn(2,1);0],0*randn(3,1));
-p = p.addRobotFromURDF('snake.urdf',[.4*randn(2,1);0],0*randn(3,1));
-p = p.addRobotFromURDF('snake.urdf',[.4*randn(2,1);0],0*randn(3,1));
+% p = p.addRobotFromURDF('snake.urdf',[.4*randn(2,1);0],0*randn(3,1));
+% p = p.addRobotFromURDF('snake.urdf',[.4*randn(2,1);0],0*randn(3,1));
 % p = p.addRobotFromURDF('snake.urdf',.4*randn(3,1),randn(3,1));
 % p = p.addRobotFromURDF('snake.urdf',.5*randn(3,1),randn(3,1));
 x0 = 2*randn(p.getNumDiscStates,1);
