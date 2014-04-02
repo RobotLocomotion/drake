@@ -79,7 +79,7 @@ install_prereqs_homebrew : check_prereqs
 	brew install boost graphviz
 
 install_prereqs_ubuntu : check_prereqs
-	apt-get install graphviz
+	apt-get install graphviz libboost-dev libboost-filesystem-dev libboost-system-dev libboost-regex-dev
 
 release_filelist:
 	echo ".UNITTEST"
