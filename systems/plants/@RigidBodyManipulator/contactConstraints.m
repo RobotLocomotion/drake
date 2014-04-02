@@ -39,6 +39,8 @@ if ~isstruct(kinsol)
 end
 
 [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,allow_multiple_contacts,active_collision_options);
+idxA = idxA';
+idxB = idxB';
 nC = length(phi);
 
 % For now, all coefficients of friction are 1
@@ -54,33 +56,65 @@ if compute_first_derivative
     dJ = zeros(3*nC,nq*nq);
   end
   
+%   assert(isequal(idxA,sort(idxA)))
   
-  for i=1:nC,
-    I = (1:3) + (i-1)*3;
-%     IdJ = (1:3*nq) + (i-1)*3*nq;
-    IdJ = I;
+  body_inds = unique([idxA(idxA>1);idxB(idxB>1)]);
+  
+  % Cache the results of a kron and repmat, since this was taking a ton of
+  % time
+  tmp_vec = repmat([-2;-1;0],nC,1);
+  tmp_kron = kron(eye(nC),3*ones(3,1));
+  
+  
+  % loop over the bodies with contact points, instead of number of contacts
+  % reduces the calls to forwardKin from n^2 to n
+  for i=1:length(body_inds),
+    % The contact indices related to this body, on idxA and idxB
+    cindA = find(idxA == body_inds(i));
+    cindB = find(idxB == body_inds(i));
     
-    % For each of the two bodies, if it is a real body (i.e. idx != 0),
-    % then add compute the relevent jacobians in joint coordinates
-    if idxA(i) ~= 0,
-      if compute_second_derivative,
-        [~,J(I,:),dJ(IdJ,:)] = obj.forwardKin(kinsol,idxA(i),xA(:,i));
-      else
-        [~,J(I,:)] = obj.forwardKin(kinsol,idxA(i),xA(:,i));
-      end
+    % Vectorized calculation of Jacobian indices related to this contact
+    % for contact i, this is (1:3) + (i-1)*3
+    JindA = tmp_kron(1:3*length(cindA),1:length(cindA))*cindA + tmp_vec(1:3*length(cindA));
+    JindB = tmp_kron(1:3*length(cindB),1:length(cindB))*cindB + tmp_vec(1:3*length(cindB));
+
+    if compute_second_derivative,
+      [~,J_tmp,dJ_tmp] = obj.forwardKin(kinsol,body_inds(i),[xA(:,cindA) xB(:,cindB)]);
+      dJ(JindA,:) = dJ(JindA,:) + dJ_tmp(1:3*length(cindA),:);
+      dJ(JindB,:) = dJ(JindB,:) - dJ_tmp(3*length(cindA)+1:end,:);
+    else
+      [~,J_tmp] = obj.forwardKin(kinsol,body_inds(i),[xA(:,cindA) xB(:,cindB)]);
     end
-    
-    if idxB(i) ~= 0,
-      if compute_second_derivative,
-        [~,Jtmp,dJtmp] = obj.forwardKin(kinsol,idxB(i),xB(:,i));
-        J(I,:) = J(I,:) - Jtmp;
-        dJ(IdJ,:) = dJ(IdJ,:) - dJtmp;
-      else
-        [~,Jtmp] = obj.forwardKin(kinsol,idxB(i),xB(:,i));
-        J(I,:) = J(I,:) - Jtmp;
-      end
-    end
+    J(JindA,:) = J(JindA,:) + J_tmp(1:3*length(cindA),:);
+    J(JindB,:) = J(JindB,:) - J_tmp(3*length(cindA)+1:end,:);
   end
+  
+%   for i=1:nC,
+% %     imax = find(idxA == idxA(i),1,'last');
+%     I = (1:3) + (i-1)*3;
+% %     I = (i-1)*3 + 1: 3*imax;
+%     
+%     % For each of the two bodies, if it is a real body (i.e. idx != 0),
+%     % then add compute the relevent jacobians in joint coordinates
+%     if idxA(i) ~= 1,
+%       if compute_second_derivative,
+%         [~,J(I,:),dJ(I,:)] = obj.forwardKin(kinsol,idxA(i),xA(:,i));
+%       else
+%         [~,J(I,:)] = obj.forwardKin(kinsol,idxA(i),xA(:,i));
+%       end
+%     end
+%     
+%     if idxB(i) ~= 1,
+%       if compute_second_derivative,
+%         [~,Jtmp,dJtmp] = obj.forwardKin(kinsol,idxB(i),xB(:,i));
+%         J(I,:) = J(I,:) - Jtmp;
+%         dJ(I,:) = dJ(I,:) - dJtmp;
+%       else
+%         [~,Jtmp] = obj.forwardKin(kinsol,idxB(i),xB(:,i));
+%         J(I,:) = J(I,:) - Jtmp;
+%       end
+%     end
+%   end
   
   indmat = repmat(1:nC,3,1);
   n = sparse(indmat,1:3*nC,normal(:))*J;
