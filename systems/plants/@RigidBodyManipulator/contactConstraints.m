@@ -124,7 +124,7 @@ if compute_first_derivative
     D{k} = sparse(indmat,1:3*nC,d{k}(:))*J;
     if compute_second_derivative
       % note: this temporarily assumes that the normal does not change with contact_pos
-      dD{k} = reshape(sparse(indmat,1:3*nC,d{k}(:))*dJ,numel(n),[]);
+      dD{k} = reshape(sparse(indmat,1:3*nC,d{k}(:))*dJ,numel(n),nq);
     end
   end
   for k=(nk+1):2*nk
@@ -135,7 +135,7 @@ if compute_first_derivative
   end
   
   if compute_second_derivative
-    dn = reshape(sparse(indmat,1:3*nC,normal(:))*dJ,numel(n),[]);
+    dn = reshape(sparse(indmat,1:3*nC,normal(:))*dJ,numel(n),nq);
   end
 end
 end
