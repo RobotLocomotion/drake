@@ -1296,7 +1296,7 @@ classdef RigidBodyManipulator < Manipulator
             frame_dims(b.velocity_num)=i;
           end
         end
-        coordinates = vertcat(positions,cellfun(@(a) [a,'dot'],positions,'UniformOutput',false));
+        coordinates = [positions; velocities];
         fr{i} = CoordinateFrame([model.name{i},'State'],length(coordinates),'x',coordinates);
       end
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
