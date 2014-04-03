@@ -75,9 +75,16 @@ if compute_first_derivative
     
     % Vectorized calculation of Jacobian indices related to this contact
     % for contact i, this is (1:3) + (i-1)*3
-    JindA = tmp_kron(1:3*length(cindA),1:length(cindA))*cindA + tmp_vec(1:3*length(cindA));
-    JindB = tmp_kron(1:3*length(cindB),1:length(cindB))*cindB + tmp_vec(1:3*length(cindB));
-
+    if ~isempty(cindA)
+      JindA = tmp_kron(1:3*length(cindA),1:length(cindA))*cindA + tmp_vec(1:3*length(cindA));
+    else
+      JindA = [];
+    end
+    if ~isempty(cindB)
+      JindB = tmp_kron(1:3*length(cindB),1:length(cindB))*cindB + tmp_vec(1:3*length(cindB));
+    else
+      JindB = [];
+    end
     if compute_second_derivative,
       [~,J_tmp,dJ_tmp] = obj.forwardKin(kinsol,body_inds(i),[xA(:,cindA) xB(:,cindB)]);
       dJ(JindA,:) = dJ(JindA,:) + dJ_tmp(1:3*length(cindA),:);
