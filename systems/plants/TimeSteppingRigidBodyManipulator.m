@@ -75,8 +75,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         u=[];
       end
       if isa(obj.getStateFrame(),'MultiCoordinateFrame')
-        cv = obj.getStateFrame().splitCoordinates(x);
-        x_manip = cv{1};
+        x_manip = double(Point(obj.getStateFrame(),x).inFrame(obj.manip.getStateFrame()));
       else
         x_manip = x;
       end
