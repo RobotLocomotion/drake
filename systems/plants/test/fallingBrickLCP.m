@@ -12,8 +12,9 @@ if 0
   return;
 end
 
-xtraj = p.simulate([0 4],x0);
 v = p.constructVisualizer();
+v.drawWrapper(0,x0);
+xtraj = p.simulate([0 4],x0);
 v.playback(xtraj);
 
 for t=xtraj.getBreaks()

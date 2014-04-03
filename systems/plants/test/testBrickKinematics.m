@@ -14,7 +14,7 @@ for fb = {'rpy','RPY'};%,'quat'};
     [x,J,dJ] = geval(1,@contactPositions,m,q,options);
     kinsol = doKinematics(m,q,false,false,qd);
     [~,~,Jdot] = contactPositionsJdot(m,kinsol);
-    valuecheck(Jdot,matGradMult(reshape(dJ,3*getNumContacts(m)*nq,nq),qd));
+    valuecheck(Jdot,matGradMult(reshape(dJ,3*getNumContactPairs(m)*nq,nq),qd));
   end
 end
 
