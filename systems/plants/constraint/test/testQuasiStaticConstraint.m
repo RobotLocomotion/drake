@@ -26,6 +26,11 @@ qsc = qsc.setActive(true);
 qsc = qsc.setShrinkFactor(shrinkFactor);
 qsc = qsc.addContact(l_foot,l_foot_pts,r_foot,r_foot_pts);
 
+category_name_mex = constraintCategorymex(qsc.mex_ptr);
+if(~strcmp(category_name_mex,qsc.categoryString()))
+  error('category name string do not match')
+end
+
 kinsol = doKinematics(r,q,false,false);
 l_foot_pos = forwardKin(r,kinsol,l_foot,l_foot_pts,0);
 r_foot_pos = forwardKin(r,kinsol,r_foot,r_foot_pts,0);
@@ -97,4 +102,25 @@ valuecheck(c_mex_cache,c_mex);
 valuecheck(dc_mex_cache,dc_mex);
 valuecheck(lb_mex_cache,lb_mex);
 valuecheck(ub_mex_cache,ub_mex);
+
+display('Check generateConstraint');
+qsc2 = qsc2.setActive(false);
+qsc_cnstr = qsc2.generateConstraint(t);
+if(~isempty(qsc_cnstr))
+  error('QuasiStaticConstraint is not active, no constraint should be generated');
+end
+qsc2 = qsc2.setActive(true);
+qsc_cnstr = qsc2.generateConstraint(t);
+valuecheck(qsc_cnstr{1}.lb,[0;0]);
+valuecheck(qsc_cnstr{1}.ub,[0;0]);
+[c_cnstr,dc_cnstr] = qsc_cnstr{1}.eval(kinsol,weights2);
+valuecheck(c_cnstr,c2);
+valuecheck(dc_cnstr,dc2);
+valuecheck(sparse(qsc_cnstr{1}.iCfun,qsc_cnstr{1}.jCvar,dc2(sub2ind([qsc_cnstr{1}.num_cnstr,qsc_cnstr{1}.xdim],qsc_cnstr{1}.iCfun,qsc_cnstr{1}.jCvar)),...
+  qsc_cnstr{1}.num_cnstr,qsc_cnstr{1}.xdim),dc_cnstr);
+valuecheck(qsc_cnstr{2}.lb,1);
+valuecheck(qsc_cnstr{2}.lb,1);
+valuecheck(qsc_cnstr{2}.A, ones(1,qsc2.num_pts));
+valuecheck(qsc_cnstr{3}.lb,zeros(qsc2.num_pts,1));
+valuecheck(qsc_cnstr{3}.ub,ones(qsc2.num_pts,1));
 end

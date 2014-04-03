@@ -162,7 +162,21 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
    end%
    
    function fr = constructStateFrame(obj,tsmanip)
-     fr = constructFrame(obj,tsmanip);
+     if tsmanip.twoD
+       manip = getManipulator(tsmanip);
+       coords{1}=['force_',manip.x_axis_label];
+       coords{2}=['force_',manip.y_axis_label];
+       coords{3}='torque';
+       fr = CoordinateFrame([obj.name '_state'],3,'f',coords);
+     else
+       coords{1}='force_x';
+       coords{2}='force_y';
+       coords{3}='force_z';
+       coords{4}='torque_x';
+       coords{5}='torque_y';
+       coords{6}='torque_z';
+       fr = CoordinateFrame([obj.name '_state'],6,'f',coords);
+     end
    end
    
    function x0 = getInitialState(obj,tsmanip)

@@ -79,7 +79,7 @@ classdef PolynomialProgram < NonlinearProgram
     end
 
     function [x,objval,exitflag,execution_time] = compareSolvers(obj,x0,solvers)
-      if nargin<2, x0 = randn(obj.num_decision_vars,1); end
+      if nargin<2, x0 = randn(obj.num_vars,1); end
       if nargin<3, solvers = {'gloptipoly','bertini','snopt','fmincon'}; end
       [x,objval,exitflag,execution_time] = compareSolvers@NonlinearProgram(obj,x0,solvers);
     end
@@ -93,12 +93,29 @@ classdef PolynomialProgram < NonlinearProgram
     end
     
     function [g,h,dg,dh] = nonlinearConstraints(obj,x)
-      g = double(msubs(obj.poly_inequality_constraints,obj.decision_vars,x));
-      h = double(msubs(obj.poly_equality_constraints,obj.decision_vars,x));
-
+      if isempty(obj.poly_inequality_constraints) 
+        g=[];
+      else
+        g = double(msubs(obj.poly_inequality_constraints,obj.decision_vars,x));
+      end
+      if isempty(obj.poly_equality_constraints)
+        h=[];
+      else
+        h = double(msubs(obj.poly_equality_constraints,obj.decision_vars,x));
+      end
+      
       if (nargout>2)
-        dg = double(subs(diff(obj.poly_inequality_constraints,obj.decision_vars),obj.decision_vars,x));
-        dh = double(subs(diff(obj.poly_equality_constraints,obj.decision_vars),obj.decision_vars,x));
+        if isempty(obj.poly_inequality_constraints)
+          dg=[];
+        else
+          dg = double(subs(diff(obj.poly_inequality_constraints,obj.decision_vars),obj.decision_vars,x));
+        end
+        
+        if isempty(obj.poly_equality_constraints)
+          dh=[];
+        else
+          dh = double(subs(diff(obj.poly_equality_constraints,obj.decision_vars),obj.decision_vars,x));
+        end
       end
     end
 

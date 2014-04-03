@@ -14,6 +14,10 @@ tspan0 = [0,1];
 t = 0.5;
 pc = PostureConstraint(r,tspan0);
 pc = pc.setJointLimits([l_leg_kny;r_leg_kny],[0.2;0.2],inf(2,1));
+category_name_mex = constraintCategorymex(pc.mex_ptr);
+if(~strcmp(category_name_mex,pc.categoryString()))
+  error('category name string do not match')
+end
 [lb,ub] = pc.bounds(t);
 [lbmex,ubmex] = testPostureConstraintmex(pc.mex_ptr,t);
 valuecheck(lb,lbmex);
@@ -45,4 +49,9 @@ valuecheck(ub(1),inf);
 [lb_mex,ub_mex] = testPostureConstraintmex(pc.mex_ptr,t);
 valuecheck(lb_mex(1),-inf);
 valuecheck(ub_mex(1),inf);
+
+display('Check generateConstraint function')
+pc_bbcnstr = pc2.generateConstraint(t);
+valuecheck(pc_bbcnstr{1}.lb,lb2);
+valuecheck(pc_bbcnstr{1}.ub,ub2);
 end

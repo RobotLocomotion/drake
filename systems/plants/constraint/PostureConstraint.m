@@ -70,5 +70,14 @@ classdef PostureConstraint<RigidBodyConstraint
         ub = obj.joint_limit_max0;
       end
     end
+    
+    function cnstr = generateConstraint(obj,t)
+      % generate a BoundingBoxConstraint on the robot posture if t is a valid time
+      if(obj.isTimeValid(t))
+        cnstr = {BoundingBoxConstraint(obj.lb,obj.ub)};
+      else
+        cnstr = {};
+      end
+    end
   end
 end

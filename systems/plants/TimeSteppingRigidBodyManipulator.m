@@ -129,7 +129,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           model.sensor{i} = model.sensor{i}.compile(model,model.manip);
           outframe{i+1} = model.sensor{i}.constructFrame(model);
           if isa(model.sensor{i},'TimeSteppingRigidBodySensorWithState')
-            stateframe = [stateframe, {model.sensor{i}.constructStateFrame(model)}];
+            stateframe{i+1} = model.sensor{i}.constructStateFrame(model);
           end
           feedthrough = feedthrough || model.sensor{i}.isDirectFeedthrough;
         end
