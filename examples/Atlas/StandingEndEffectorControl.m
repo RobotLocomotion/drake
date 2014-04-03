@@ -81,7 +81,7 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
         error('No supporting bodies --> not standing!');
       end
       count=0;
-      Jc = zeros(size(obj.manip.getBodyContacts(active_supports),2)*3,obj.manip.getNumDOF());
+      Jc = zeros(length(obj.manip.getBodyContacts(active_supports))*3,obj.manip.getNumDOF());
       for i=1:length(active_supports)
         nC = size(obj.manip.getBodyContacts(active_supports(i)),2);
         if nC>0

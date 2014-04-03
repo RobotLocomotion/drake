@@ -18,12 +18,24 @@ l_hand = r.findLinkInd('l_hand');
 head = r.findLinkInd('head');
 pelvis = r.findLinkInd('pelvis');
 
-r_foot_contact_pts = getContactPoints(getBody(r,r_foot));
-r_foot_pts = r_foot_contact_pts(:,1);
-l_foot_contact_pts = getContactPoints(getBody(r,l_foot));
-l_foot_pts = l_foot_contact_pts(:,1);
-r_hand_pts = mean(getContactPoints(getBody(r,r_hand)),2);
-l_hand_pts = mean(getContactPoints(getBody(r,l_hand)),2);
+l_hand_shapes = r.getBody(l_hand).getContactShapes;
+r_hand_shapes = r.getBody(r_hand).getContactShapes;
+l_hand_pts = [];
+r_hand_pts = [];
+for i=1:length(l_hand_shapes),
+  l_hand_pts = [l_hand_pts r.getBody(l_hand).getContactShapes{i}.getPoints];
+end
+for i=1:length(r_hand_shapes),
+  r_hand_pts = [r_hand_pts r.getBody(r_hand).getContactShapes{i}.getPoints];
+end
+
+r_foot_contact_pts = r_hand_pts(:,1);
+l_foot_contact_pts = l_hand_pts(:,1);
+
+r_foot_contact_pts = r.getBody(r_foot).getContactShapes{1}.getPoints;
+l_foot_contact_pts = r.getBody(l_foot).getContactShapes{1}.getPoints;
+r_hand_pts = mean(r_hand_pts,2);
+l_hand_pts = mean(l_hand_pts,2);
 
 
 
@@ -41,18 +53,18 @@ r_leg_hpz = find(strcmp(coords,'r_leg_hpz'));
 q0 = nom_data.xstar(1:nq);
 qdot0 = zeros(nq,1);
 kinsol0 = doKinematics(r,q0,false,false);
-r_foot_pos = forwardKin(r,kinsol0,r_foot,r_foot_pts,2);
+r_foot_pos = forwardKin(r,kinsol0,r_foot,r_hand_pts,2);
 r_foot_pos(3,:) = 0;
-l_foot_pos = forwardKin(r,kinsol0,l_foot,l_foot_pts,2);
+l_foot_pos = forwardKin(r,kinsol0,l_foot,l_hand_pts,2);
 l_foot_pos(3,:) = 0;
 r_hand_pos = forwardKin(r,kinsol0,r_hand,r_hand_pts,0);
 l_hand_pos = forwardKin(r,kinsol0,l_hand,l_hand_pts,0);
 com_pos0 = getCOM(r,kinsol0,1);
 com_height = com_pos0(3);
 tspan = [0,1];
-kc1 = {WorldPositionConstraint(r,r_foot,r_foot_pts,r_foot_pos(1:3),r_foot_pos(1:3),tspan),...
+kc1 = {WorldPositionConstraint(r,r_foot,r_hand_pts,r_foot_pos(1:3),r_foot_pos(1:3),tspan),...
   WorldQuatConstraint(r,r_foot,r_foot_pos(4:7),0,tspan)};
-kc2 = {WorldPositionConstraint(r,l_foot,l_foot_pts,l_foot_pos(1:3),l_foot_pos(1:3),tspan),...
+kc2 = {WorldPositionConstraint(r,l_foot,l_hand_pts,l_foot_pos(1:3),l_foot_pos(1:3),tspan),...
   WorldQuatConstraint(r,l_foot,l_foot_pos(4:7),0,tspan)};
 kc3 = WorldPositionConstraint(r,r_hand,r_hand_pts,r_hand_pos+[0.1;0.05;0.75],r_hand_pos+[0.1;0.05;1],[tspan(end) tspan(end)]);
 kc4 = WorldPositionConstraint(r,l_hand,l_hand_pts,l_hand_pos,l_hand_pos,[tspan(end) tspan(end)]);
