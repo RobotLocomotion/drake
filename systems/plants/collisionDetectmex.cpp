@@ -45,6 +45,8 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     //END_DEBUG
     active_bodies_idx.resize(n_active_bodies);
     memcpy(active_bodies_idx.data(),(int*) mxGetData(body_idx),sizeof(int)*n_active_bodies);
+    transform(active_bodies_idx.begin(),active_bodies_idx.end(),active_bodies_idx.begin(),
+        [](int i){return --i;});
   }
 
   vector<int> bodyA_idx, bodyB_idx;
