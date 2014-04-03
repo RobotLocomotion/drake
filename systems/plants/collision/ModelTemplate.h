@@ -172,7 +172,7 @@ namespace DrakeCollision
           //END_DEBUG
           //for (auto itA=bodies.begin(); itA!=bodies.end(); ++itA) {
           for (typename std::vector<int>::const_iterator itA=bodies_idx.begin(); itA!=bodies_idx.end(); ++itA) {
-            if (bodies.count(*itA-1) > 0) {
+            if (bodies.count(*itA) > 0) {
               //DEBUG
               //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
               //std::cout << "Body A found" << std::endl;
@@ -180,13 +180,13 @@ namespace DrakeCollision
               //for (typename std::map<int,Body<ElementT>>::iterator itB=itA; itB!=bodies.end(); ++itB) {
               for (typename std::vector<int>::const_iterator itB=itA; itB!=bodies_idx.end(); ++itB) {
                 //for (auto itB=bodies.begin(); itB!=bodies.end(); ++itB) {
-                if (bodies.count(*itB-1) > 0) {
+                if (bodies.count(*itB) > 0) {
                   //DEBUG
                   //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
                   //std::cout << "Body B found" << std::endl;
                   //END_DEBUG
-                  Body<ElementT>& bodyA(bodies[*itA-1]);
-                  Body<ElementT>& bodyB(bodies[*itB-1]);
+                  Body<ElementT>& bodyA(bodies[*itA]);
+                  Body<ElementT>& bodyB(bodies[*itB]);
                   //DEBUG
                   //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
                   //std::cout << "Body A idx:" << bodyA.getBodyIdx() << std::endl;
