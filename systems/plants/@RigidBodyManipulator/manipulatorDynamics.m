@@ -184,7 +184,7 @@ else
     dC(:,m.NB+1:end) = dC(:,m.NB+1:end)+ diag(fc_drv);
     dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
-    [H,C] = HandC(m,q,qd,f_ext,obj.gravity);
+    [H,C] = HandC(obj,q,qd,f_ext,obj.gravity);
   end
   
   C=C + computeFrictionForce(obj,qd);  

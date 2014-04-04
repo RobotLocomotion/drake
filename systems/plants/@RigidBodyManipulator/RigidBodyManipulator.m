@@ -1381,7 +1381,6 @@ classdef RigidBodyManipulator < Manipulator
       m.f_ext_map_to = [];
 
       for i=1:length(inds) % number of links with parents
-%         model.body(i).velocity_num = model.body(i).velocity_num + num_q;
         b=model.body(inds(i));
         if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
           m.pitch(n+(0:2)) = inf;  % prismatic
@@ -1414,7 +1413,17 @@ classdef RigidBodyManipulator < Manipulator
           m.f_ext_map_to = [m.f_ext_map_to,n+5];
           n=n+6;
         elseif (b.floating==2)
-          error('dynamics for quaternion floating base not implemented yet');
+          % for now, to get tests to run
+          m.pitch(n) = 0;
+          m.damping(n) = 0;
+          m.coulomb_friction(n) = 0;
+          m.static_friction(n) = 0;
+          m.coulomb_window(n) = eps;
+          m.parent(n) = [model.body(b.parent).position_num];
+          m.Xtree{n} = eye(6);
+          m.I{n} = b.I;
+          m.f_ext_map_to = [m.f_ext_map_to,n]; % TODO: check
+          n = n + 6;
         else
           m.parent(n) = max(model.body(b.parent).position_num);
           m.pitch(n) = b.pitch;
