@@ -39,13 +39,15 @@ classdef RigidBodyManipulator < Manipulator
       % urdf (see documentation for addRobotFromURDF for details on the
       % inputs).
       
+      if (nargin<2), options = struct(); end
+      if ~isfield(options,'terrain'), options.terrain = RigidBodyTerrain(); end;
+
       obj = obj@Manipulator(0,0);
       obj.body = newBody(obj);
       obj.body.linkname = 'world';
-      obj = setTerrain(obj,RigidBodyTerrain);
+      obj = setTerrain(obj,options.terrain);
       
       if (nargin>0 && ~isempty(urdf_filename))
-        if (nargin<2) options = struct(); end
         obj = addRobotFromURDF(obj,urdf_filename,zeros(3,1),zeros(3,1),options);
       end
     end
