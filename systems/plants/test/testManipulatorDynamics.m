@@ -3,6 +3,7 @@ function testManipulatorDynamics
 testBrickQuaternion();
 testActuatedPendulum();
 regressionTestAtlasRPY();
+testAtlasQuat();
 
 end
 
@@ -33,9 +34,7 @@ axis = body.joint_axis;
 I = body.I;
 H_expected = axis' * I(1:3, 1:3) * axis;
 valuecheck(H_expected, H, 1e-12);
-mass = m.body(2).mass;
-gravity = m.gravity(3);
-% valuecheck(C, mass * gravity * cos(q));
+% TODO: check C
 valuecheck(1, B);
 end
 
@@ -74,6 +73,39 @@ end
 
 end
 
+function testAtlasQuat()
+r = createAtlas('quat');
+nq = r.getNumPositions();
+nv = r.getNumVelocities();
+
+nTests = 5;
+for i = 1 : nTests
+  q = randn(nq, 1);
+  v = randn(nv, 1);
+  [H, C, B] = manipulatorDynamics(r, q, v, false);
+  kinetic_energy = v' * H * v;
+  
+  kinsol = r.doKinematics(q, false, false, v);
+  kinetic_energy_via_kinsol = compute_kinetic_energy(r, kinsol);
+  valuecheck(kinetic_energy_via_kinsol, kinetic_energy, 1e-10);
+end
+
+end
+
 function out = varname(~)
 out = inputname(1);
+end
+
+function ret = compute_kinetic_energy(manipulator, kinsol)
+NB = manipulator.getNumBodies();
+twists = kinsol.twists;
+transforms = kinsol.T;
+ret = 0;
+
+for i = 2 : NB
+  twistInBody = relativeTwist(transforms, twists, 1, i, i);
+  I = manipulator.body(i).I;
+  ret = ret + twistInBody' * I * twistInBody;
+end
+
 end
