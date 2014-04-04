@@ -60,6 +60,7 @@ classdef RigidBodyTerrain < RigidBodyElement
       box_depth = 10;
       geom = RigidBodyBox([box_width;box_width;box_depth]);
       geom.T(3,4) = -box_depth/2;
+      geom.c = [0.5,0.5,0.5];
     end
   end
 
