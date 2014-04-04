@@ -47,7 +47,7 @@ classdef RigidBodyManipulator < Manipulator
         if (nargin<2) options = struct(); end
         obj = addRobotFromURDF(obj,urdf_filename,zeros(3,1),zeros(3,1),options);
       end
-      obj.terrain = RigidBodyTerrain;
+      obj = setTerrain(obj,RigidBodyTerrain);
     end
   end
   
@@ -87,7 +87,31 @@ classdef RigidBodyManipulator < Manipulator
       % @param terrain a RigidBodyTerrain object
       
       typecheck(terrain,'RigidBodyTerrain');
+      obj = removeTerrainGeometries(obj);
       obj.terrain = terrain;
+      obj = addTerrainGeometries(obj);
+    end
+
+    function obj = addTerrainGeometries(obj)
+      if ~isempty(obj.terrain)
+        geom = obj.terrain.getRigidBodyGeometry();
+        if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
+          obj.body(1).contact_shapes{end+1} = geom;
+        end
+        if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
+          obj.body(1).visual_shapes{end+1} = geom;
+        end
+      end
+    end
+
+    function obj = removeTerrainGeometries(obj)
+      if ~isempty(obj.terrain)
+        geom = obj.terrain.getRigidBodyGeometry();
+        geom_contact_idx = cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes);
+        obj.body(1).contact_shapes(geom_contact_idx) = [];
+        geom_visual_idx = cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes);
+        obj.body(1).visual_shapes(geom_visual_idx) = [];
+      end
     end
 
     function [z,normal] = getTerrainHeight(obj,contact_pos)

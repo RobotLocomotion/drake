@@ -4,6 +4,10 @@ classdef RigidBodyTerrain < RigidBodyElement
 %  everywhere)
   
   methods 
+    function obj = RigidBodyTerrain()
+      obj.geom = constructRigidBodyGeometry(obj);
+    end
+
     function [z,normal] = getHeight(obj,xy)
       [m n] = size(xy);
       z = repmat(0,1,n);
@@ -46,6 +50,21 @@ classdef RigidBodyTerrain < RigidBodyElement
       fprintf(fptr,'] }\n');
       fprintf(fptr,'}\n}\n]\n}\n\n');
     end
+
+    function geom = getRigidBodyGeometry(obj)
+      geom = obj.geom;
+    end
+
+    function geom = constructRigidBodyGeometry(obj)
+      box_width = 1000;
+      box_depth = 10;
+      geom = RigidBodyBox([box_width;box_width;box_depth]);
+      geom.T(3,4) = -box_depth/2;
+    end
+  end
+
+  properties (Access = protected)
+    geom % RigidBodyGeometry object
   end
   
 end
