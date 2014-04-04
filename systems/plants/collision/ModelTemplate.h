@@ -193,10 +193,7 @@ namespace DrakeCollision
                   //std::cout << "Body B idx:" << bodyB.getBodyIdx() << std::endl;
                   //END_DEBUG
                   //ResultCollShPtr c_min_dist = std::make_shared<MinDistResultCollector>();
-                  if ( (bodyA.getBodyIdx() != bodyB.getBodyIdx()) && 
-                       bodyA.collidesWith(bodyB) && 
-                       ( (bodyA.getBodyIdx()==0) || (bodyB.getBodyIdx()==0) || 
-                         !bodyA.adjacentTo(bodyB)) ) {
+                  if ( bodyA.collidesWith(bodyB) ) {
                     //DEBUG
                     //std::cout << "ModelTemplate::closestPointsAllBodies: Body A: " << bodyA.getBodyIdx() << std::endl;
                     //std::cout << "ModelTemplate::closestPointsAllBodies: Body B: " << bodyB.getBodyIdx() << std::endl;
