@@ -24,13 +24,6 @@ twistOfOldWrtNew = relativeTwist(transforms, twists, newExpressedIn, oldExpresse
 transformFromOldToNew = transforms{newExpressedIn} \ transforms{oldExpressedIn};
 
 % spatialAccel = transformAdjoint(transformFromOldToNew) * (twistAdjoint(twistOfOldWrtNew) * twistOfBodyWrtBase + spatialAccel);
-% function adT = twistAdjoint(twist)
-% omega = twist(1 : 3);
-% v = twist(4 : 6);
-% adT = [vectorToSkewSymmetric(omega), zeros(3, 3);
-%        vectorToSkewSymmetric(v), vectorToSkewSymmetric(omega)];
-% end
-%
 % this should be faster:
 omegaOfBodyWrtBase = twistOfBodyWrtBase(1 : 3);
 vOfBodyWrtBase = twistOfBodyWrtBase(4 : 6);

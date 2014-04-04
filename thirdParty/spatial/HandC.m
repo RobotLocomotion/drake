@@ -73,29 +73,10 @@ for i = 2 : NB
     H(i_indices, j_indices) = Hji';
   end
 end
-
-% old body frame implementation
-% % minor adjustment to make TaylorVar work better.
-% H=zeros(NB)*q(1);
-% 
-% for i = 1:NB
-%   n = i;  % note to twan: this was n = model.position_num(i);
-%   fh = IC{i} * S{i};
-%   H(n,n) = S{i}' * fh;
-%   j = i;
-%   while featherstone.parent(j) > 0
-%     fh = Xup{j}' * fh;
-%     j = featherstone.parent(j);
-%     np = j; % note to twan: this was np = model.position_num(j);
-%     H(n,np) = S{j}' * fh;
-%     H(np,n) = H(n,np);
-%   end
-% end
 end
 
 function ret = computeCompositeRigidBodyInertias(manipulator, inertias_world)
 % computes composite rigid body inertias expressed in world frame
-
 NB = length(inertias_world);
 ret = inertias_world;
 for i = NB : -1 : 2
@@ -113,9 +94,12 @@ NB = length(manipulator.body);
 net_wrenches = cell(NB, 1);
 net_wrenches{1} = zeros(6, 1);
 for i = 2 : NB
+  twist = kinsol.twists{i};
   spatial_accel = root_accel + JdotV{i};
   external_wrench = external_forces(:, i); % TODO: check if external_forces are expressed in body frame or world frame
-  net_wrenches{i} = inertias_world{i} * spatial_accel - external_wrench;
+  I = inertias_world{i};
+  
+  net_wrenches{i} = I * spatial_accel - twistAdjoint(twist)' * I * twist - external_wrench;
 end
 
 C = zeros(nv, 1);
@@ -126,38 +110,5 @@ for i = NB : -1 : 2
   C(body.velocity_num) = tau;
   net_wrenches{body.parent} = net_wrenches{body.parent} + joint_wrench;
 end
-
-
-% old body frame implementation
-% for i = 1:NB
-%   body = manipulator.body(i + 1);
-%   [ XJ, S{i} ] = jcalc(body, q(body.position_num) );
-%   vJ = S{i}*v(body.velocity_num);
-%   Xup{i} = XJ * featherstone.Xtree{i};
-%   if featherstone.parent(i) == 0
-%     v{i} = vJ;
-%     avp{i} = Xup{i} * -gravitational_accel;
-%   else
-%     v{i} = Xup{i}*v{featherstone.parent(i)} + vJ;
-%     avp{i} = Xup{i}*avp{featherstone.parent(i)} + crm(v{i})*vJ;
-%   end
-%   fvp{i} = featherstone.I{i}*avp{i} + crf(v{i})*featherstone.I{i}*v{i};
-%   if external_force
-%     fvp{i} = fvp{i} - f_ext(:,i);
-%   end
-% end
-% 
-% IC = featherstone.I;				% composite inertia calculation
-% 
-% C = zeros(NB,1)*q(1);
-% 
-% for i = NB:-1:1
-%   n = i;  % note to twan: this was n = model.position_num(i);
-%   C(n,1) = S{i}' * fvp{i};
-%   if featherstone.parent(i) ~= 0
-%     fvp{featherstone.parent(i)} = fvp{featherstone.parent(i)} + Xup{i}'*fvp{i};
-%     IC{featherstone.parent(i)} = IC{featherstone.parent(i)} + Xup{i}'*IC{i}*Xup{i};
-%   end
-% end
 
 end
