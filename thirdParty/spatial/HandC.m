@@ -1,9 +1,9 @@
-function  [H,C] = HandC( model, q, qd, f_ext, grav_accn )
+function  [H,C] = HandC(manipulator, q, v, f_ext, grav_accn )
 
 % HandC  Calculate coefficients of equation of motion.
-% [H,C]=HandC(model,q,qd,f_ext,grav_accn) calculates the coefficients of
-% the joint-space equation of motion, tau=H(q)qdd+C(d,qd,f_ext), where q,
-% qd and qdd are the joint position, velocity and acceleration vectors, H
+% [H,C]=HandC(model,q,v,f_ext,grav_accn) calculates the coefficients of
+% the joint-space equation of motion, tau=H(q)vd+C(d,v,f_ext), where q,
+% v and vd are the joint position, velocity and acceleration vectors, H
 % is the joint-space inertia matrix, C is the vector of gravity,
 % external-force and velocity-product terms, and tau is the joint force
 % vector.  Algorithm: recursive Newton-Euler for C, and
@@ -18,7 +18,6 @@ function  [H,C] = HandC( model, q, qd, f_ext, grav_accn )
 %
 % UPDATED by russt:  f_ext is an empty or (sparse) 6 x model.NB matrix
 
-
 if nargin < 5
   a_grav = [0;0;0;0;0;-9.81];
 else
@@ -27,51 +26,122 @@ end
 
 external_force = ( nargin > 3 && length(f_ext) > 0 );
 
-for i = 1:model.NB
-  n = i;  % note to twan: this was n = model.position_num(i);
-  [ XJ, S{i} ] = jcalc( model.pitch(i), q(n) );
-  vJ = S{i}*qd(n);
-  Xup{i} = XJ * model.Xtree{i};
-  if model.parent(i) == 0
-    v{i} = vJ;
-    avp{i} = Xup{i} * -a_grav;
-  else
-    v{i} = Xup{i}*v{model.parent(i)} + vJ;
-    avp{i} = Xup{i}*avp{model.parent(i)} + crm(v{i})*vJ;
-  end
-  fvp{i} = model.I{i}*avp{i} + crf(v{i})*model.I{i}*v{i};
-  if external_force
-    fvp{i} = fvp{i} - f_ext(:,i);
-  end
+kinsol = doKinematics(manipulator, q, true, false, v);
+inertias_world = computeInertiasInWorld(manipulator, kinsol);
+H = computeMassMatrix(manipulator, kinsol, inertias_world);
+C = computeBiasTerm(manipulator, kinsol, f_ext, a_grav);
+
 end
 
-IC = model.I;				% composite inertia calculation
+function H = computeMassMatrix(manipulator, kinsol, inertias_world)
+% world frame implementation
+NB = length(manipulator.body);
+nv = length(kinsol.v);
+H = zeros(nv, nv) * kinsol.q(1); % minor adjustment to make TaylorVar work better.
+composite_inertias = computeCompositeRigidBodyInertias(manipulator, inertias_world);
 
-C = zeros(model.NB,1)*q(1);
-
-for i = model.NB:-1:1
-  n = i;  % note to twan: this was n = model.position_num(i);
-  C(n,1) = S{i}' * fvp{i};
-  if model.parent(i) ~= 0
-    fvp{model.parent(i)} = fvp{model.parent(i)} + Xup{i}'*fvp{i};
-    IC{model.parent(i)} = IC{model.parent(i)} + Xup{i}'*IC{i}*Xup{i};
-  end
-end
-
-% minor adjustment to make TaylorVar work better.
-%H = zeros(model.NB);
-H=zeros(model.NB)*q(1);
-
-for i = 1:model.NB
-  n = i;  % note to twan: this was n = model.position_num(i);
-  fh = IC{i} * S{i};
-  H(n,n) = S{i}' * fh;
+for i = 2 : NB
+  Ic = composite_inertias{i};
+  Si = kinsol.J{i};
+  i_indices = manipulator.body(i).velocity_num;
+  F = Ic * Si;
+  H(i_indices, i_indices) = Si' * F;
+  
   j = i;
-  while model.parent(j) > 0
-    fh = Xup{j}' * fh;
-    j = model.parent(j);
-    np = j; % note to twan: this was np = model.position_num(j);
-    H(n,np) = S{j}' * fh;
-    H(np,n) = H(n,np);
+  while j ~= 2
+    body_j = manipulator.body(j);
+    j = manipulator.body(j).parent;
+    j_indices = body_j.velocity_num;
+    Sj = kinsol.J{j};
+    Hji = Sj' * F;
+    H(j_indices, i_indices) = Hji;
+    H(i_indices, j_indices) = Hji';
   end
+end
+
+% old body frame implementation
+% % minor adjustment to make TaylorVar work better.
+% H=zeros(NB)*q(1);
+% 
+% for i = 1:NB
+%   n = i;  % note to twan: this was n = model.position_num(i);
+%   fh = IC{i} * S{i};
+%   H(n,n) = S{i}' * fh;
+%   j = i;
+%   while featherstone.parent(j) > 0
+%     fh = Xup{j}' * fh;
+%     j = featherstone.parent(j);
+%     np = j; % note to twan: this was np = model.position_num(j);
+%     H(n,np) = S{j}' * fh;
+%     H(np,n) = H(n,np);
+%   end
+% end
+end
+
+function ret = computeInertiasInWorld(manipulator, kinsol)
+NB = length(manipulator.body);
+ret = cell(NB, 1);
+ret{1} = zeros(6, 6);
+for i = 2 : NB
+  body = manipulator.body(i);
+  bodyToWorld = kinsol.T{i};
+  worldToBody = homogTransInv(bodyToWorld);
+  AdWorldToBody = transformAdjoint(worldToBody);
+  ret{i} = AdWorldToBody' * body.I * AdWorldToBody;
+end
+end
+
+function ret = computeCompositeRigidBodyInertias(manipulator, inertias_world)
+% computes composite rigid body inertias expressed in world frame
+
+NB = length(inertias_world);
+ret = cell(NB, 1);
+ret{1} = zeros(6, 6);
+for i = 2 : NB
+  body = manipulator.body(i);
+  IWorld = inertias_world{i};
+  ret{i} = IWorld + ret{body.parent};
+end
+
+end
+
+function C = computeBiasTerm(manipulator, kinsol, external_forces, gravitational_accel)
+nv = length(kinsol.v);
+root_accel = -gravitational_accel; % as if we're standing in an elevator that's accelerating upwards
+spatial_accels = computeSpatialAccelerations(manipulator, kinsol.T, kinsol.twists, kinsol.q, kinsol.v, zeros(nv, 1), root_accel);
+
+C = 0;
+
+% old body frame implementation
+% for i = 1:NB
+%   body = manipulator.body(i + 1);
+%   [ XJ, S{i} ] = jcalc(body, q(body.position_num) );
+%   vJ = S{i}*v(body.velocity_num);
+%   Xup{i} = XJ * featherstone.Xtree{i};
+%   if featherstone.parent(i) == 0
+%     v{i} = vJ;
+%     avp{i} = Xup{i} * -gravitational_accel;
+%   else
+%     v{i} = Xup{i}*v{featherstone.parent(i)} + vJ;
+%     avp{i} = Xup{i}*avp{featherstone.parent(i)} + crm(v{i})*vJ;
+%   end
+%   fvp{i} = featherstone.I{i}*avp{i} + crf(v{i})*featherstone.I{i}*v{i};
+%   if external_force
+%     fvp{i} = fvp{i} - f_ext(:,i);
+%   end
+% end
+% 
+% IC = featherstone.I;				% composite inertia calculation
+% 
+% C = zeros(NB,1)*q(1);
+% 
+% for i = NB:-1:1
+%   n = i;  % note to twan: this was n = model.position_num(i);
+%   C(n,1) = S{i}' * fvp{i};
+%   if featherstone.parent(i) ~= 0
+%     fvp{featherstone.parent(i)} = fvp{featherstone.parent(i)} + Xup{i}'*fvp{i};
+%     IC{featherstone.parent(i)} = IC{featherstone.parent(i)} + Xup{i}'*IC{i}*Xup{i};
+%   end
+% end
+
 end
