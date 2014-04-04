@@ -17,11 +17,14 @@ else
   throw_error = true;
 end
     
-r = RigidBodyManipulator([],struct('terrain',[]));
+options.floating = true;
+options.terrain = [];
+
+r = RigidBodyManipulator([],options);
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
 
 for i=1:2
-  r = addRobotFromURDF(r,urdf_filename,zeros(3,1),zeros(3,1),struct('floating',true));
+  r = addRobotFromURDF(r,urdf_filename,zeros(3,1),zeros(3,1),options);
 end
 
 v = r.constructVisualizer();
@@ -45,6 +48,7 @@ for x=linspace(-2*(bnd.xmax-bnd.xmin),2*(bnd.xmax-bnd.xmin),50);
   kinsol = doKinematics(r,q);
   
   [phi,normal,xA,xB,idxA,idxB] = collisionDetect(r,kinsol);
+  sizecheck(xA,[3,1]);
 
   dist_ref = max(abs(x) - (bnd.xmax-bnd.xmin),bnd.ymin-bnd.ymax);
   debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol);
