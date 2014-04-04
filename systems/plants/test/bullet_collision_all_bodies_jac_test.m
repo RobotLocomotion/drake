@@ -18,11 +18,14 @@ else
 end
 
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_all_bodies_jac_test');
-r = RigidBodyManipulator();
+
+options.floating = true;
+options.terrain = [];
+r = RigidBodyManipulator([],options);
 
 for i=1:n_bricks
   fprintf('Adding brick no. %d ...\n',i);
-  r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),struct('floating',true));
+  r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),options);
   %r = addRobotFromURDF(r,'ball.urdf',zeros(3,1),zeros(3,1),struct('floating',true));
 end
 v = r.constructVisualizer();
@@ -47,11 +50,12 @@ problem.options=optimset('GradObj',     'on', ...
 
 tic;
 for i=1:10
-  theta = linspace(0,2*pi,n_bricks+1); theta(end) = [];
+  %theta = linspace(0,2*pi,n_bricks+1); theta(end) = [];
+  %q0 = rand(r.getNumDOF(),1);
+  %q0(1:6:end) = 5*cos(theta);
+  %q0(2:6:end) = 5*sin(theta);
+  %q0(3:6:end) = 0;
   q0 = rand(r.getNumDOF(),1);
-  q0(1:6:end) = 5*cos(theta);
-  q0(2:6:end) = 5*sin(theta);
-  q0(3:6:end) = 0;
   v.draw(0,[q0;0*q0]);
   problem.x0 = q0;
 
