@@ -31,12 +31,13 @@ function collisionDetectGradTest(visualize,n_debris)
     rows_bad = find(any(abs(df_user-df_num)>1e-6,2));
     if visualize
       v.draw(0,[q0;0*q0]);
-      [ptsA_in_world,ptsB_in_world,ptsA,ptsB,idxA,idxB] = closestPoints(r,q0,v,lcmgl);
+      drawClosestPoints(r,q0,v,lcmgl);
       lcmgl.glColor3f(0,0,0);
       lcmgl.text(zeros(3,1),sprintf('Min. signed distance: %6.4f\nMax.  difference between user and numerical gradients: %6.4e',min(f_user),max(abs(df_user(:)-df_num(:)))),0,0);
       lcmgl.switchBuffers();
     end
     if ~isempty(rows_bad)
+      [~,~,~,~,idxA,idxB] = collisionDetect(r,kinsol);
       for i = 1:length(rows_bad);
         fprintf('Gradient mismatch for %s and %s\n',r.getLinkName(idxA(rows_bad(i))),r.getLinkName(idxB(rows_bad(i))));
       end
@@ -50,7 +51,7 @@ function n_pos = getNumPositions(r)
   n_pos = r.getNumDOF();
 end
 
-function [ptsA_in_world, ptsB_in_world, ptsA, ptsB, idxA, idxB] = closestPoints(r,q,v,lcmgl)
+function [ptsA_in_world, ptsB_in_world, ptsA, ptsB, idxA, idxB] = drawClosestPoints(r,q,v,lcmgl)
   kinsol = doKinematics(r,q);
   [~,~,ptsA,ptsB,idxA,idxB] = collisionDetect(r,kinsol);
   ptsA_in_world = ptsA;
