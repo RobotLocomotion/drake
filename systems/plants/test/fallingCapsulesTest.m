@@ -6,7 +6,7 @@ for i=2:N,
   options.namesuffix = num2str(N);
   p = p.addRobotFromURDF('ball.urdf',[],[],options);
 end
-p = p.addRobotFromURDF('ground_plane.urdf');
+% p = p.addRobotFromURDF('ground_plane.urdf');
 
 x0 = .2*randn(p.getNumDiscStates,1);
 x0(3:6:end) = x0(3:6:end) + .5;
