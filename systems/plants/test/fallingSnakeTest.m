@@ -1,6 +1,5 @@
 % clear all
 p = TimeSteppingRigidBodyManipulator('snake.urdf',.0001);
-p = p.addRobotFromURDF('ground_plane.urdf');
 p = p.addRobotFromURDF('snake.urdf',[.4*randn(2,1);0],0*randn(3,1));
 % p = p.addRobotFromURDF('snake.urdf',[.4*randn(2,1);0],0*randn(3,1));
 % p = p.addRobotFromURDF('snake.urdf',[.4*randn(2,1);0],0*randn(3,1));
