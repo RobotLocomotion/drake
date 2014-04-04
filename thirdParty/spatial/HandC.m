@@ -24,13 +24,28 @@ else
   a_grav = [0;0;0;grav_accn(1);grav_accn(2);grav_accn(3)];
 end
 
-external_force = ( nargin > 3 && length(f_ext) > 0 );
+if nargin < 4 || isempty(f_ext)
+  f_ext = sparse(6, length(manipulator.body));
+end
 
 kinsol = doKinematics(manipulator, q, true, false, v);
 inertias_world = computeInertiasInWorld(manipulator, kinsol);
 H = computeMassMatrix(manipulator, kinsol, inertias_world);
-C = computeBiasTerm(manipulator, kinsol, f_ext, a_grav);
+C = computeBiasTerm(manipulator, kinsol, inertias_world, f_ext, a_grav);
 
+end
+
+function ret = computeInertiasInWorld(manipulator, kinsol) % TODO: consider moving to kinsol; is also useful for CMM
+NB = length(manipulator.body);
+ret = cell(NB, 1);
+ret{1} = zeros(6, 6);
+for i = 2 : NB
+  body = manipulator.body(i);
+  bodyToWorld = kinsol.T{i};
+  worldToBody = homogTransInv(bodyToWorld);
+  AdWorldToBody = transformAdjoint(worldToBody);
+  ret{i} = AdWorldToBody' * body.I * AdWorldToBody;
+end
 end
 
 function H = computeMassMatrix(manipulator, kinsol, inertias_world)
@@ -78,19 +93,6 @@ end
 % end
 end
 
-function ret = computeInertiasInWorld(manipulator, kinsol)
-NB = length(manipulator.body);
-ret = cell(NB, 1);
-ret{1} = zeros(6, 6);
-for i = 2 : NB
-  body = manipulator.body(i);
-  bodyToWorld = kinsol.T{i};
-  worldToBody = homogTransInv(bodyToWorld);
-  AdWorldToBody = transformAdjoint(worldToBody);
-  ret{i} = AdWorldToBody' * body.I * AdWorldToBody;
-end
-end
-
 function ret = computeCompositeRigidBodyInertias(manipulator, inertias_world)
 % computes composite rigid body inertias expressed in world frame
 
@@ -100,15 +102,31 @@ for i = NB : -1 : 2
   body = manipulator.body(i);
   ret{body.parent} = ret{body.parent} + ret{i};
 end
-
 end
 
-function C = computeBiasTerm(manipulator, kinsol, external_forces, gravitational_accel)
+function C = computeBiasTerm(manipulator, kinsol, inertias_world, external_forces, gravitational_accel)
 nv = length(kinsol.v);
 root_accel = -gravitational_accel; % as if we're standing in an elevator that's accelerating upwards
-spatial_accels = computeSpatialAccelerations(manipulator, kinsol.T, kinsol.twists, kinsol.q, kinsol.v, zeros(nv, 1), root_accel);
+JdotV = kinsol.JdotV;
 
-C = 0;
+NB = length(manipulator.body);
+net_wrenches = cell(NB, 1);
+net_wrenches{1} = zeros(6, 1);
+for i = 2 : NB
+  spatial_accel = root_accel + JdotV{i};
+  external_wrench = external_forces(:, i); % TODO: check if external_forces are expressed in body frame or world frame
+  net_wrenches{i} = inertias_world{i} * spatial_accel - external_wrench;
+end
+
+C = zeros(nv, 1);
+for i = NB : -1 : 2
+  body = manipulator.body(i);
+  joint_wrench = net_wrenches{i};
+  tau = kinsol.J{i}' * joint_wrench;
+  C(body.velocity_num) = tau;
+  net_wrenches{body.parent} = net_wrenches{body.parent} + joint_wrench;
+end
+
 
 % old body frame implementation
 % for i = 1:NB
