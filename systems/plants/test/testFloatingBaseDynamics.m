@@ -6,6 +6,7 @@ for urdf = {'FallingBrick.urdf',...
 
 urdf=urdf{1};  
 options.floating = 'rpy';
+options.terrain = [];
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 m_rpy = TimeSteppingRigidBodyManipulator(urdf,.01,options);
 options.floating = 'YPR';
@@ -44,7 +45,7 @@ for i=1:100
   valuecheck(Jdot,Jdot2(:,ind));
   valuecheck(full(dJ),full(dJ2(:,dJind))); 
   
-  kinsol = doKinematics(m_rpy,q,false,true,qd);
+  kinsol = doKinematics(m_rpy,q,true,true,qd);
   [pt2,J2,Jdot2] = contactPositionsJdot(m_rpy,kinsol);
   phi2 = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol)];
 
@@ -53,7 +54,7 @@ for i=1:100
   valuecheck(Jdot,Jdot2);
   valuecheck(phi,phi2);
   
-  kinsol2 = doKinematics(m_ypr_rel,q(ind),false,true,qd(ind));
+  kinsol2 = doKinematics(m_ypr_rel,q(ind),true,true,qd(ind));
   [pt2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2);
 
   valuecheck(pt,pt2);
