@@ -26,7 +26,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       %  parseURDF)
       
       
-      obj = obj@RigidBodyManipulator();
+      obj = obj@RigidBodyManipulator([],options);
       obj.dim = 2;
       
       if (nargin<1) urdf_filename=''; end
