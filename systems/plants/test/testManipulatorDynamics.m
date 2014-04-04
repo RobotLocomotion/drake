@@ -2,6 +2,7 @@ function testManipulatorDynamics
 
 testBrickQuaternion();
 testActuatedPendulum();
+regressionTestAtlasRPY();
 
 end
 
@@ -36,4 +37,43 @@ mass = m.body(2).mass;
 gravity = m.gravity(3);
 % valuecheck(C, mass * gravity * cos(q));
 valuecheck(1, B);
+end
+
+function regressionTestAtlasRPY()
+replaceMatFile = false;
+
+rng(23415, 'twister');
+
+r = createAtlas('rpy');
+nq = r.getNumPositions();
+nv = r.getNumVelocities();
+
+nTests = 5;
+Hs = cell(nTests, 1);
+Cs = cell(nTests, 1);
+
+for i = 1 : nTests
+  q = zeros(nq, 1); %randn(nq, 1);
+  v = randn(nv, 1);
+  [H, C, B] = manipulatorDynamics(r, q, v, false);
+  Hs{i} = H;
+  Cs{i} = C;
+end
+
+filename = 'regressionTestAtlasManipulatorDynamics.mat';
+if replaceMatFile
+  save(filename, varname(Hs), varname(Cs), varname(B));
+else
+  data = load(filename);
+  for i = 1 : nTests
+    valuecheck(data.Hs{i}, Hs{i});
+%     valuecheck(data.Cs{i}, Cs{i})
+  end
+  valuecheck(data.B, B);
+end
+
+end
+
+function out = varname(~)
+out = inputname(1);
 end

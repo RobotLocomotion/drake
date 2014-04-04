@@ -49,8 +49,8 @@ for i = 2 : NB
   
   j = i;
   while j ~= 2
-    body_j = manipulator.body(j);
     j = manipulator.body(j).parent;
+    body_j = manipulator.body(j);
     j_indices = body_j.velocity_num;
     Sj = kinsol.J{j};
     Hji = Sj' * F;
@@ -95,12 +95,10 @@ function ret = computeCompositeRigidBodyInertias(manipulator, inertias_world)
 % computes composite rigid body inertias expressed in world frame
 
 NB = length(inertias_world);
-ret = cell(NB, 1);
-ret{1} = zeros(6, 6);
-for i = 2 : NB
+ret = inertias_world;
+for i = NB : -1 : 2
   body = manipulator.body(i);
-  IWorld = inertias_world{i};
-  ret{i} = IWorld + ret{body.parent};
+  ret{body.parent} = ret{body.parent} + ret{i};
 end
 
 end
