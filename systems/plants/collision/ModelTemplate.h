@@ -201,15 +201,6 @@ namespace DrakeCollision
                     has_result = findClosestPointsBtwBodies(bodyA.getBodyIdx(),
                         bodyB.getBodyIdx(),
                         c);
-                    //if (has_result) {
-                    //c.addPointPairResult(c_min_dist->pts.front());
-                    //} else {
-                    //c.addPointPairResult(PointPair(bodyA.getBodyIdx(), 
-                    //bodyB.getBodyIdx(), 
-                    //Vector3d::Zero(), 
-                    //Vector3d::Zero(),
-                    //Vector3d::Zero(),1.0));
-                    //}               
                   }
                 }
               }

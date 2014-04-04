@@ -10,11 +10,13 @@ else
   draw_pause = 0.05;
 end
     
-r = RigidBodyManipulator([],struct('terrain',[]));
+options.floating = true;
+options.terrain = [];
+r = RigidBodyManipulator([],options);
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
 
 for i=1:2
-  r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),struct('floating',true));
+  r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),options);
 end
 r = r.replaceContactShapesWithCHull(1:r.getNumBodies());
 r = r.compile();
