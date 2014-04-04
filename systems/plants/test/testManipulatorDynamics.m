@@ -53,7 +53,7 @@ Hs = cell(nTests, 1);
 Cs = cell(nTests, 1);
 
 for i = 1 : nTests
-  q = zeros(nq, 1); %randn(nq, 1);
+  q = randn(nq, 1);
   v = randn(nv, 1);
   [H, C, B] = manipulatorDynamics(r, q, v, false);
   Hs{i} = H;
@@ -66,8 +66,8 @@ if replaceMatFile
 else
   data = load(filename);
   for i = 1 : nTests
-    valuecheck(data.Hs{i}, Hs{i});
-%     valuecheck(data.Cs{i}, Cs{i})
+    valuecheck(data.Hs{i}, Hs{i}, 1e-10);
+    valuecheck(data.Cs{i}, Cs{i}, 1e-10);
   end
   valuecheck(data.B, B);
 end
