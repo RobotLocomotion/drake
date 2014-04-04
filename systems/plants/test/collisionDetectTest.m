@@ -17,7 +17,7 @@ else
   throw_error = true;
 end
     
-r = RigidBodyManipulator();
+r = RigidBodyManipulator([],struct('terrain',[]));
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
 
 for i=1:2

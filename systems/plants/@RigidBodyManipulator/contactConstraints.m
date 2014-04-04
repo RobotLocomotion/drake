@@ -51,9 +51,9 @@ if compute_first_derivative
   nq = obj.getNumPositions;  
   nk = length(d);
   
-  J = zeros(3*nC,nq);
+  J = zeros(3*nC,nq)*kinsol.q(1);
   if compute_second_derivative,
-    dJ = zeros(3*nC,nq*nq);
+    dJ = zeros(3*nC,nq*nq)*kinsol.q(1);;
   end
   
 %   assert(isequal(idxA,sort(idxA)))
