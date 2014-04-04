@@ -14,9 +14,8 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
   end
   
   methods
-    function obj = PlanarRigidBodyManipulator(varargin)
+    function obj = PlanarRigidBodyManipulator(urdf_filename,options)
       % Constructs a PlanarRigidBodyManipulator
-      % obj = PlanarRigidBodyManipulator(urdf_filename,options)
       % 
       % @param urdf_filename string path+filename for a .urdf file to parse
       % @option view is a string which must be one of 'right','front', or
@@ -26,22 +25,18 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       %  (the options for this function call are passed through to
       %  parseURDF)
       
-      obj = obj@RigidBodyManipulator([],varargin{2:end});
+      if nargin > 1
+        rbm_args = {[],options};
+      else
+        rbm_args = {};
+      end
         
+      
+      obj = obj@RigidBodyManipulator(rbm_args{:});
       obj.dim = 2;
       
-      if (nargin<1) 
-        urdf_filename=''; 
-      else
-        urdf_filename = varargin{1};
-      end
-      
-      if (nargin<2) 
-        options = struct(); 
-      else
-        options = varargin{2};
-      end
-      
+      if (nargin<1) urdf_filename=''; end
+      if (nargin<2) options = struct(); end
       if (~isfield(options,'view')) 
         options.view = 'right';
       else
