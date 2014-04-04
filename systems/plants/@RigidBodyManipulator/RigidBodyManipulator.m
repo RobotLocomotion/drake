@@ -806,8 +806,14 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function model = replaceContactShapesWithCHull(model,body_indices,varargin)
+      if any(body_indices==1)
+        model = removeTerrainGeometries(model);
+      end
       for body_idx = reshape(body_indices,1,[])
         model.body(body_idx) = replaceContactShapesWithCHull(model.body(body_idx),varargin{:});
+      end
+      if any(body_indices==1)
+        model = addTerrainGeometries(model);
       end
       model.dirty = true;
     end
