@@ -53,6 +53,10 @@ classdef RigidBodyGeometry
             obj = RigidBodyCylinder(r,l);  % l/2
           case 'mesh'
             filename=char(thisNode.getAttribute('filename'));
+            scale = 1;
+            if thisNode.hasAttribute('scale')
+              scale = parseParamString(model,robotnum,char(thisNode.getAttribute('scale')));
+            end
             
             if ~isempty(strfind(filename,'package://'))
               filename=strrep(filename,'package://','');
@@ -60,13 +64,13 @@ classdef RigidBodyGeometry
               filename=[rospack(package),filename];
             else
               [path,name,ext] = fileparts(filename);
-              if (path(1)~=filesep)  % the it's a relative path
+              if (isempty(path) || path(1)~=filesep)  % the it's a relative path
                 path = fullfile(options.urdfpath,path);
               end
               filename = fullfile(path,[name,ext]);
             end
             
-            obj = RigidBodyMesh(GetFullPath(filename));
+            obj = RigidBodyMesh(GetFullPath(filename),scale);
         end
         obj.T = T;
       end
