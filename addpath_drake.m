@@ -5,11 +5,6 @@ function addpath_drake
 % directing you to their location.
 %
 
-try
-  load drake_config.mat; 
-catch
-  conf=struct();
-end
 conf.root = pwd;
 
 if ~exist('pods_get_base_path','file')
