@@ -40,7 +40,7 @@ classdef RigidBodyManipulator < Manipulator
       % inputs).
       
       if (nargin<2), options = struct(); end
-      if ~isfield(options,'terrain'), options.terrain = RigidBodyTerrain(); end;
+      if ~isfield(options,'terrain'), options.terrain = RigidBodyFlatTerrain(); end;
 
       obj = obj@Manipulator(0,0);
       obj.body = newBody(obj);
@@ -99,14 +99,16 @@ classdef RigidBodyManipulator < Manipulator
     function obj = addTerrainGeometries(obj)
       if ~isempty(obj.terrain)
         geom = obj.terrain.getRigidBodyGeometry();
-        if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
-          obj.body(1).contact_shapes{end+1} = geom;
-        end
-        if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
-          obj.body(1).visual_shapes{end+1} = geom;
+        if ~isempty(geom)
+          if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
+            obj.body(1).contact_shapes{end+1} = geom;
+          end
+          if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
+            obj.body(1).visual_shapes{end+1} = geom;
+          end
+          obj.dirty = true;
         end
       end
-      obj.dirty = true;
     end
 
     function obj = removeTerrainGeometries(obj)
@@ -116,8 +118,8 @@ classdef RigidBodyManipulator < Manipulator
         obj.body(1).contact_shapes(geom_contact_idx) = [];
         geom_visual_idx = cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes);
         obj.body(1).visual_shapes(geom_visual_idx) = [];
+        obj.dirty = true;
       end
-      obj.dirty = true;
     end
 
     function [z,normal] = getTerrainHeight(obj,contact_pos)
