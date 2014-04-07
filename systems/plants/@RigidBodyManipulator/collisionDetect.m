@@ -41,7 +41,7 @@ if ~isstruct(kinsol)
 end
 
 if (kinsol.mex ~= true) 
-  doKinematics(obj,kinsol.q);
+  doKinematics(obj,double(kinsol.q));
   warning('RigidBodyManipulator:collisionDetect:doKinematicsMex', ...
     'Calling doKinematics using mex before proceeding');
 end
