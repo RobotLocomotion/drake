@@ -19,6 +19,7 @@ end
     
 options.floating = true;
 options.terrain = [];
+tol = 1e-6;
 
 r = RigidBodyManipulator([],options);
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
@@ -30,6 +31,7 @@ end
 v = r.constructVisualizer();
 
 q = zeros(getNumDOF(r),1);
+q(1:3) = q(1:3) + tol*(rand(3,1)-0.5);
 
 kinsol = doKinematics(r,q);
 pts = r.body(2).contact_shapes{1}.getPoints();
@@ -39,7 +41,6 @@ bnd.ymin=min(pts(2,:));
 bnd.ymax=max(pts(2,:));
 bnd.zmin=min(pts(3,:));
 bnd.zmax=max(pts(3,:));
-tol = 1e-6;
 %q(2) = bnd.ymin;
 %q(3) = bnd.zmax;
 for x=linspace(-2*(bnd.xmax-bnd.xmin),2*(bnd.xmax-bnd.xmin),50);
@@ -59,6 +60,7 @@ for x=linspace(-2*(bnd.xmax-bnd.xmin),2*(bnd.xmax-bnd.xmin),50);
 end
 
 q = zeros(getNumDOF(r),1);
+q(1:3) = q(1:3) + tol*(rand(3,1)-0.5);
 for y=linspace(-2*(bnd.ymax-bnd.ymin),2*(bnd.ymax-bnd.ymin),50);
   q(2)=y;
   
@@ -75,6 +77,7 @@ for y=linspace(-2*(bnd.ymax-bnd.ymin),2*(bnd.ymax-bnd.ymin),50);
 end
 
 q = zeros(getNumDOF(r),1);
+q(1:3) = q(1:3) + tol*(rand(3,1)-0.5);
 for z=linspace(-2*(bnd.zmax-bnd.zmin),2*(bnd.zmax-bnd.zmin),50);
   q(3)=z;
   

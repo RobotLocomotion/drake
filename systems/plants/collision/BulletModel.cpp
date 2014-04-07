@@ -99,6 +99,7 @@ namespace DrakeCollision
 
     btGjkEpaPenetrationDepthSolver epa;
     btVoronoiSimplexSolver sGjkSimplexSolver;
+    sGjkSimplexSolver.setEqualVertexThreshold(0.f);
 
     btGjkPairDetector	convexConvex(shapeA,shapeB,&sGjkSimplexSolver,&epa);
 
