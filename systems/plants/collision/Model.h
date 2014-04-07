@@ -15,7 +15,8 @@ namespace DrakeCollision
     BOX,
     SPHERE,
     CYLINDER,
-    MESH
+    MESH,
+    CAPSULE
   };
 
   enum ModelType {
