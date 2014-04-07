@@ -14,6 +14,10 @@ classdef RigidBodyBox < RigidBodyGeometry
       
       pts = obj.T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
     end
+
+    function pts = getBoundingBoxPoints(obj)
+      pts = getPoints(obj);
+    end
     
     function shape = serializeToLCM(obj)
       shape = drake.lcmt_viewer_geometry_data();
