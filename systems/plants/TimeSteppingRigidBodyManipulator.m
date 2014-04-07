@@ -293,7 +293,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dD = vertcat(dD{:});
             dJ(nL+nP+nC+(1:mC*nC),:) = dD;
           else
-            [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(q);
+            [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(q,true);
             nC = length(phiC);
             mC = length(D);
           end

@@ -32,9 +32,7 @@ r_hand = r.findLinkInd('r_hand');
 d = load('../data/atlas_fp.mat');
  
 q0 = d.xstar(1:r.getNumDOF);
- 
-r_foot_pts = r.getBody(r_foot).getContactPoints();
-l_foot_pts = r.getBody(l_foot).getContactPoints();
+
 l_hand_pts = [[0;0;0] [1;0.1;0.2]];
 r_hand_pts = [[0;0;0] [1;0.1;0.2]];
 
@@ -264,8 +262,18 @@ toc
 display('IK for nan passed');
 tic
 options.quasiStaticFlag = true;
-rfoot_contact_pts = r.getBody(r_foot).getContactPoints();
-lfoot_contact_pts = r.getBody(l_foot).getContactPoints();
+
+nLPts = length(r.getBody(l_foot).getContactShapes);
+lfoot_contact_pts = zeros(3,nLPts);
+for i=1:nLPts,
+  lfoot_contact_pts(:,i) = r.getBody(l_foot).getContactShapes{i}.getPoints;
+end
+nRPts = length(r.getBody(r_foot).getContactShapes);
+rfoot_contact_pts = zeros(3,nRPts);
+for i=1:nRPts,
+  rfoot_contact_pts(:,i) = r.getBody(r_foot).getContactShapes{i}.getPoints;
+end
+
 kinsol = doKinematics(r,q0);
 rfoot_contact_pos = forwardKin(r,kinsol,r_foot,rfoot_contact_pts,0);
 lfoot_contact_pos = forwardKin(r,kinsol,r_foot,lfoot_contact_pts,0);
