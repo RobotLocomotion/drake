@@ -67,6 +67,10 @@ classdef RigidBodyGeometry
             end
             
             obj = RigidBodyMesh(GetFullPath(filename));
+          case 'capsule'
+            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
+            l = parseParamString(model,robotnum,char(thisNode.getAttribute('length')));
+            obj = RigidBodyCapsule(r,l);  % l/2
         end
         obj.T = T;
       end

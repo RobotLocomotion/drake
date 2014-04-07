@@ -205,6 +205,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             mxDestroyArray(pPoints);
           }
             break;
+          case DrakeCollision::CAPSULE:
+          {
+            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"len")));
+          }
+            break;
           default:
             // intentionally do nothing.. 
             break;
