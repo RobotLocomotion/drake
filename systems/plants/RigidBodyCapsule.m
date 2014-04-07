@@ -10,21 +10,22 @@ classdef RigidBodyCapsule < RigidBodyGeometry
     end
     
     function pts = getPoints(obj)
-      warning('Drake:RigidBodyGeometry:SimplifiedCollisionGeometry', ...
-              'This method returns the vertices of the capsule''s bounding-box.');
+      % Return segment end-points
+      %warning('Drake:RigidBodyGeometry:SimplifiedCollisionGeometry', ...
+        %'This method returns the end points of the line segment that defines the capsule');
+      cx = zeros(1,2);
+      cy = zeros(1,2);
+      cz = obj.len/2*[1 -1];
+      
+      pts = obj.T(1:end-1,:)*[cx;cy;cz;ones(1,2)];
+    end
+
+    function pts = getBoundingBoxPoints(obj)
       cx = obj.radius*[-1 1 1 -1 -1 1 1 -1];
       cy = obj.radius*[1 1 1 1 -1 -1 -1 -1];
       cz = (obj.len/2+obj.radius)*[1 1 -1 -1 -1 -1 1 1];
       
       pts = obj.T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
-      % Return segment end-points
-      %warning('Drake:RigidBodyGeometry:SimplifiedCollisionGeometry', ...
-        %'This method returns the end points of the line segment that defines the capsule');
-      %cx = zeros(1,2);
-      %cy = zeros(1,2);
-      %cz = obj.len/2*[1 -1];
-      
-      %pts = obj.T(1:end-1,:)*[cx;cy;cz;ones(1,2)];
     end
 
     function shape = serializeToLCM(obj)

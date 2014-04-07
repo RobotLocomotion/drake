@@ -13,6 +13,15 @@ classdef RigidBodySphere < RigidBodyGeometry
       end
       pts = obj.T(1:3,4);
     end
+
+    function pts = getBoundingBoxPoints(obj)
+      % Return axis-aligned bounding-box vertices
+      cx = obj.radius*[-1 1 1 -1 -1 1 1 -1];
+      cy = obj.radius*[1 1 1 1 -1 -1 -1 -1];
+      cz = obj.radius*[1 1 -1 -1 -1 -1 1 1];
+      
+      pts = obj.T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
+    end
     
     function pts = getPlanarPoints(obj,x_axis,y_axis,view_axis)
       Tview = [x_axis, y_axis, view_axis]';
