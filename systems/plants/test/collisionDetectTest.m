@@ -64,7 +64,7 @@ q = zeros(getNumDOF(r),1);
 q(1:3) = q(1:3) + tol*(rand(3,1)-0.5);
 
 kinsol = doKinematics(r,q);
-pts = r.body(2).contact_shapes{1}.getPoints();
+pts = r.body(2).contact_shapes{1}.getBoundingBoxPoints();
 bnd.xmin=min(pts(1,:));
 bnd.xmax=max(pts(1,:));
 bnd.ymin=min(pts(2,:));
