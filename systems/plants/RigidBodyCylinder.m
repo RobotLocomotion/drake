@@ -15,15 +15,6 @@ classdef RigidBodyCylinder < RigidBodyGeometry
       pts = getBoundingBoxPoints(obj);
     end
 
-    function pts = getPoints(obj)
-      % Return axis-aligned bounding-box vertices
-      cx = obj.radius*[-1 1 1 -1 -1 1 1 -1];
-      cy = obj.radius*[1 1 1 1 -1 -1 -1 -1];
-      cz = obj.len/2*[1 1 -1 -1 -1 -1 1 1];
-      
-      pts = obj.T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
-    end
-
     function shape = serializeToLCM(obj)
       shape = drake.lcmt_viewer_geometry_data();
       shape.type = shape.CYLINDER;
