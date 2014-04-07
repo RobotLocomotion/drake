@@ -4,16 +4,7 @@ function terrainInterpTest
 [X,Y] = meshgrid(linspace(-9,9,31),linspace(-9,9,31));
 options.floating = true;
 options.terrain = RigidBodyHeightMapTerrain(.2*[0 0; 0 1],[1 0 0 -.5; 0 1 0 .5; 0 0 1 0; 0 0 0 .05]);
-rbm = RigidBodyManipulator('FallingBrick.urdf',options);
-brick = rbm.getBody(2);
-vertices = getPoints(brick.contact_shapes{1});
-for vertex = vertices
-  pt = RigidBodySphere(0);
-  pt.T(1:3,4) = vertex;
-  brick.contact_shapes{end+1} = pt;
-end
-rbm = rbm.setBody(2,brick);
-r = TimeSteppingRigidBodyManipulator(rbm,.01,options);
+r = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 
 
 v = r.constructVisualizer();

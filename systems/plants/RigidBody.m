@@ -59,8 +59,7 @@ classdef RigidBody < RigidBodyElement
     end
 
     function pts = getContactShapePoints(body)
-      idx = cellfun(@(shape) isa(shape,'RigidBodySphere') && shape.radius == 0, ...
-                    body.contact_shapes);
+      idx = cellfun(@hasTerrainContactPoints, body.contact_shapes);
       pts = cell2mat(cellfun(@(shape) shape.getPoints(), ...
                              body.contact_shapes(idx), ...
                              'UniformOutput',false));

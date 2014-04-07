@@ -75,6 +75,10 @@ classdef RigidBodyGeometry
         obj.T = T;
       end
     end
+
+    function has_terrain_contact_points = hasTerrainContactPoints(obj)
+      has_terrain_contact_points = false;
+    end
   end
   
   properties  % note: constructModelmex currently depends on these being public
