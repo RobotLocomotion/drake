@@ -44,13 +44,7 @@ namespace DrakeCollision
         //DEBUG
         //std::cout << "BulletElement::BulletElement: Create CYLINDER ..." << std::endl;
         //END_DEBUG
-        //bt_shape = new btCapsuleShapeZ(params[0],params[1]);
-        bt_shape = new btConvexHullShape();
-        dynamic_cast<btConvexHullShape*>(bt_shape)->addPoint(btVector3(0,0,-params[1]/2));
-        dynamic_cast<btConvexHullShape*>(bt_shape)->addPoint(btVector3(0,0,params[1]/2));
-        bt_shape->setMargin(params[0]);
-        //bt_shape = new btCylinderShapeZ( btVector3(params[0],params[0],params[1]/2) );
-        //bt_shape->setMargin(0.01);
+        bt_shape = new btCylinderShapeZ( btVector3(params[0],params[0],params[1]/2) );
         //DEBUG
         //std::cout << "BulletElement::BulletElement: Created CYLINDER ..." << std::endl;
         //END_DEBUG
