@@ -2,13 +2,24 @@ function terrainInterpTest
 
 
 [X,Y] = meshgrid(linspace(-9,9,31),linspace(-9,9,31));
-r = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,struct('floating',true));
+options.floating = true;
+options.terrain = RigidBodyHeightMapTerrain(.2*[0 0; 0 1],[1 0 0 -.5; 0 1 0 .5; 0 0 1 0; 0 0 0 .05]);
+rbm = RigidBodyManipulator('FallingBrick.urdf',options);
+brick = rbm.getBody(2);
+vertices = getPoints(brick.contact_shapes{1});
+for vertex = vertices
+  pt = RigidBodySphere(0);
+  pt.T(1:3,4) = vertex;
+  brick.contact_shapes{end+1} = pt;
+end
+rbm = rbm.setBody(2,brick);
+r = TimeSteppingRigidBodyManipulator(rbm,.01,options);
 
-r = setTerrain(r,RigidBodyHeightMapTerrain(.2*[0 0; 0 1],[1 0 0 -.5; 0 1 0 .5; 0 0 1 0; 0 0 0 .05]));
+
 v = r.constructVisualizer();
 x0 = .1*randn(12,1)+[5;-5;4;zeros(9,1)];
 v.draw(0,x0);
-[pos,~,normal]=collisionDetect(r,[X(:),Y(:),0*X(:)]');  
+[~,normal,pos]=collisionDetectTerrain(r,[X(:),Y(:),0*X(:)]');  
 valuecheck(X,reshape(pos(1,:),size(X)));
 valuecheck(Y,reshape(pos(2,:),size(Y)));
 %mesh(reshape(pos(1,:),size(X)),reshape(pos(2,:),size(X)),reshape(pos(3,:),size(X)));
