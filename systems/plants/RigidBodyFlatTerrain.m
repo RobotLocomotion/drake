@@ -45,9 +45,4 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
       geom.c = [0.5,0.5,0.5];
     end
   end
-
-  properties (Access = protected)
-    geom % RigidBodyGeometry object
-  end
-  
 end
