@@ -74,6 +74,12 @@ namespace DrakeCollision
         //std::cout << "BulletElement::BulletElement: Created MESH ..." << std::endl;
         //END_DEBUG
         break;
+      case CAPSULE:
+        bt_shape = new btConvexHullShape();
+        dynamic_cast<btConvexHullShape*>(bt_shape)->addPoint(btVector3(0,0,-params[1]/2));
+        dynamic_cast<btConvexHullShape*>(bt_shape)->addPoint(btVector3(0,0,params[1]/2));
+        bt_shape->setMargin(params[0]);
+        break;
       default:
         cerr << "Warning: Collision element has an unknown type " << shape << endl;
         //DEBUG

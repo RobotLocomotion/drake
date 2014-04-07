@@ -279,6 +279,11 @@ input to Newtons of force.</xs:documentation>
         <xs:attribute name="scale" type="xs:string" default="1 1 1"/>
     </xs:complexType>
 
+    <xs:complexType name="capsule">
+        <xs:attribute name="radius" type="xs:double" use="required"/>
+        <xs:attribute name="length" type="xs:double" use="required"/>
+    </xs:complexType>
+
     <xs:complexType name="geometry">
         <xs:choice>
             <xs:element name="box" type="box">

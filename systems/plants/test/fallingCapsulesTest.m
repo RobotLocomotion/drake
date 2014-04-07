@@ -1,10 +1,10 @@
 options.floating = true;
 N = 4;
 % p = TimeSteppingRigidBodyManipulator('Cylinder.urdf',.01,options);
-p = TimeSteppingRigidBodyManipulator('ball.urdf',.01,options);
+p = TimeSteppingRigidBodyManipulator('Capsule.urdf',.01,options);
 for i=2:N,
   options.namesuffix = num2str(N);
-  p = p.addRobotFromURDF('ball.urdf',[],[],options);
+  p = p.addRobotFromURDF('Capsule.urdf',[],[],options);
 end
 % p = p.addRobotFromURDF('ground_plane.urdf');
 
@@ -16,7 +16,7 @@ x0 = p.resolveConstraints(x0);
 v = p.constructVisualizer();
 v.drawWrapper(0,x0);
 
-traj = simulate(p,[0 1],x0);
+traj = simulate(p,[0 2],x0);
 v.playback(traj)
 % function collisionDetectGradTest(visualize,n_debris)
 %   if nargin < 1
