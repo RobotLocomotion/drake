@@ -52,8 +52,12 @@ classdef RigidBodySphere < RigidBodyGeometry
       td=td-1; tabprintf(fp,'}\n');  % end Shape {
       td=td-1; tabprintf(fp,'}\n'); % end Transform {
     end
-  end
+
+    function has_terrain_contact_points = hasTerrainContactPoints(obj)
+      has_terrain_contact_points = shape.radius == 0;
+    end
   
+  end
   properties
     radius;
   end

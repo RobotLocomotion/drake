@@ -40,6 +40,10 @@ classdef RigidBodyBox < RigidBodyGeometry
       td=td-1; tabprintf(fp,'}\n');  % end Shape {
       td=td-1; tabprintf(fp,'}\n'); % end Transform {
     end
+
+    function has_terrain_contact_points = hasTerrainContactPoints(obj)
+      has_terrain_contact_points = true;
+    end
   end
   
   properties
