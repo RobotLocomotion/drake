@@ -1,4 +1,5 @@
 function collisionDetectGradTest(visualize,n_debris)
+  checkDependency('lcmgl');
   if nargin < 1
     visualize = false;
   end
@@ -14,7 +15,7 @@ function collisionDetectGradTest(visualize,n_debris)
   for i = 1:n_debris
     r = r.addRobotFromURDF('FallingBrick.urdf',3*(2*rand(3,1)-1),2*pi*rand(3,1));
     r = r.addRobotFromURDF('ball.urdf',3*(2*rand(3,1)-1),2*pi*rand(3,1));
-    r = r.addRobotFromURDF('Cylinder.urdf',3*(2*rand(3,1)-1),2*pi*rand(3,1));
+    r = r.addRobotFromURDF('Capsule.urdf',3*(2*rand(3,1)-1),2*pi*rand(3,1));
   end
   warning(S);
 
