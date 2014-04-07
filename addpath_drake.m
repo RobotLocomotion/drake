@@ -81,7 +81,7 @@ else
   conf.simulink_enabled = true;
 end
 
-setenv('PATH_LICENSE_STRING','2069810742&Courtesy_License&&&USR&2013&14_12_2011&1000&PATH&GEN&31_12_2013&0_0_0&0&0_0');
+setenv('PATH_LICENSE_STRING', '1926793586&Courtesy&&&USR&54782&7_1_2014&1000&PATH&GEN&31_12_2015&0_0_0&5000&0_0');
 conf.pathlcp_enabled = true;
 
 %conf.pathlcp_enabled = ~isempty(getenv('PATH_LICENSE_STRING'));
