@@ -784,6 +784,15 @@ classdef RigidBodyManipulator < Manipulator
       b = leastCommonAncestor(model,body1.parent,body2);
     end
     
+    function contact_shape_points = getContactShapePoints(obj)
+      contact_shape_points = struct('pts',{},'idx',{});
+      for i = 1:obj.getNumBodies()
+        pts = getContactShapePoints(obj.body(i));
+        if ~isempty(pts)
+          contact_shape_points(end+1) = struct('pts',pts,'idx',i);
+        end
+      end
+    end
     
     function groups = getContactGroups(model)
       groups = {};
