@@ -1,34 +1,64 @@
 function collisionDetectTest(urdf_filename,varargin)
+  % collisionDetectTest(urdf_filename,[tol,visualize,draw_pause,throw_error])
+  % @param urdf_filename - Filename of urdf to test. The urdf should contain a
+  %                        single link.
+  % @param tol - Tolerance for checking closest distance/penetration results.
+  %   OPTIONAL @default 1e-6
+  % @param visualize - Logical indicating whether or not to visualize the test
+  %   OPTIONAL @default false
+  % @param draw_pause - Double indicating how long to pause between
+  %   visualization frames.
+  %   OPTIONAL @default 0.05
+  % @param throw_error - Logical indicating whether or not throw an error if
+  %   the test fails. This is useful for visualizing the full test even when it
+  %   fails.
+  %   OPTIONAL @default true
   %NOTEST
 
 checkDependency('bullet');
 checkDependency('lcmgl');
 
-if (nargin > 1)
-  typecheck(varargin{1},'double');
-  draw_pause = varargin{1};
+if (nargin < 2)
+  tol = 1e-6;
 else
-  draw_pause = 0.05;
+  typecheck(varargin{1},'double');
+  tol = varargin{1};
 end
 
-if nargin > 2
-  throw_error = varargin{2};
+if nargin < 3
+  visualize = false;
 else
+  typecheck(varargin{2},'logical');
+  visualize = varargin{2};
+end
+
+if (nargin < 4)
+  draw_pause = 0.05;
+else
+  typecheck(varargin{3},'double');
+  draw_pause = varargin{3};
+end
+
+if nargin < 5
   throw_error = true;
+else
+  typecheck(varargin{4},'logical');
+  throw_error = varargin{4};
 end
     
 options.floating = true;
 options.terrain = [];
-tol = 1e-6;
 
+S = warning('OFF','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 r = RigidBodyManipulator([],options);
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
 
 for i=1:2
   r = addRobotFromURDF(r,urdf_filename,zeros(3,1),zeros(3,1),options);
 end
+warning(S);
 
-v = r.constructVisualizer();
+if visualize, v = r.constructVisualizer(); end;
 
 q = zeros(getNumDOF(r),1);
 q(1:3) = q(1:3) + tol*(rand(3,1)-0.5);
@@ -52,7 +82,9 @@ for x=linspace(-2*(bnd.xmax-bnd.xmin),2*(bnd.xmax-bnd.xmin),50);
   sizecheck(xA,[3,1]);
 
   dist_ref = max(abs(x) - (bnd.xmax-bnd.xmin),bnd.ymin-bnd.ymax);
-  debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol);
+  if visualize
+    debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol);
+  end
 
   if throw_error
     valuecheck(phi, dist_ref,tol);
@@ -69,7 +101,9 @@ for y=linspace(-2*(bnd.ymax-bnd.ymin),2*(bnd.ymax-bnd.ymin),50);
   [phi,normal,xA,xB,idxA,idxB] = collisionDetect(r,kinsol);
 
   dist_ref = max(abs(y) - (bnd.ymax-bnd.ymin),bnd.zmin-bnd.zmax);
-  debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol);
+  if visualize
+    debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol);
+  end
 
   if throw_error
     valuecheck(phi, dist_ref,tol);
@@ -86,7 +120,9 @@ for z=linspace(-2*(bnd.zmax-bnd.zmin),2*(bnd.zmax-bnd.zmin),50);
   [phi,normal,xA,xB,idxA,idxB] = collisionDetect(r,kinsol);
 
   dist_ref = max(abs(z) - (bnd.zmax-bnd.zmin),bnd.ymin-bnd.ymax);
-  debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol);
+  if visualize
+    debugLCMGL(r,v,kinsol,phi,normal,xA,xB,idxA,idxB,dist_ref,tol);
+  end
 
   if throw_error
     valuecheck(phi, dist_ref,tol);
