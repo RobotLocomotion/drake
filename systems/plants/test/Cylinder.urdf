@@ -5,24 +5,12 @@
   <link name="cylinder">
     <visual>
       <geometry>
-        <cylinder radius="0.3" length=".5"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.3"/>
-        <origin xyz = "0 0 .25" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.3"/>
-        <origin xyz = "0 0 -.25" rpy = "0 0 0"/>
+        <cylinder radius="0.3" length="1.0"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.3" length=".5"/>
+        <cylinder radius="0.3" length="1.0"/>
       </geometry>
       <origin xyz="0 0 0"/>
     </collision>
