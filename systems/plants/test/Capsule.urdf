@@ -5,21 +5,9 @@
   <link name="capsule">
     <visual>
       <geometry>
-        <capsule radius="0.3" length="1"/>
+        <capsule radius="0.3" length="0.5"/>
       </geometry>
     </visual>
-    <!--<visual>-->
-      <!--<geometry>-->
-        <!--<sphere radius="0.3"/>-->
-        <!--<origin xyz = "0 0 .25" rpy = "0 0 0"/>-->
-      <!--</geometry>-->
-    <!--</visual>-->
-    <!--<visual>-->
-      <!--<geometry>-->
-        <!--<sphere radius="0.3"/>-->
-        <!--<origin xyz = "0 0 -.25" rpy = "0 0 0"/>-->
-      <!--</geometry>-->
-    <!--</visual>-->
     <collision>
       <geometry>
         <capsule radius="0.3" length=".5"/>
