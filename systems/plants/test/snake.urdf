@@ -6,25 +6,13 @@
   <link name="link1">
     <visual>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
         <origin xyz = "0 0 .35" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .1" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .6" rpy = "0 0 0"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
       </geometry>
       <origin xyz="0 0 .35"/>
     </collision>
@@ -37,25 +25,13 @@
   <link name="link2">
     <visual>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
         <origin xyz = "0 0 .35" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .1" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .6" rpy = "0 0 0"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
       </geometry>
       <origin xyz="0 0 .35"/>
     </collision>
@@ -68,25 +44,13 @@
   <link name="link3">
     <visual>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
         <origin xyz = "0 0 .35" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .1" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .6" rpy = "0 0 0"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
       </geometry>
       <origin xyz="0 0 .35"/>
     </collision>
@@ -99,25 +63,13 @@
   <link name="link4">
     <visual>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
         <origin xyz = "0 0 .35" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .1" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .6" rpy = "0 0 0"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
       </geometry>
       <origin xyz="0 0 .35"/>
     </collision>
@@ -130,25 +82,13 @@
   <link name="link5">
     <visual>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
         <origin xyz = "0 0 .35" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .1" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .6" rpy = "0 0 0"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
       </geometry>
       <origin xyz="0 0 .35"/>
     </collision>
@@ -161,25 +101,13 @@
   <link name="link6">
     <visual>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
         <origin xyz = "0 0 .35" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .1" rpy = "0 0 0"/>
-      </geometry>
-    </visual>
-    <visual>
-      <geometry>
-        <sphere radius="0.1"/>
-        <origin xyz = "0 0 .6" rpy = "0 0 0"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <cylinder radius="0.1" length=".5"/>
+        <capsule radius="0.1" length=".5"/>
       </geometry>
       <origin xyz="0 0 .35"/>
     </collision>
