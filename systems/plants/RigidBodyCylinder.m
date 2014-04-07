@@ -10,9 +10,13 @@ classdef RigidBodyCylinder < RigidBodyGeometry
     end
     
     function pts = getPoints(obj)
-      % Return axis-aligned bounding-box vertices
       warning('Drake:RigidBodyGeometry:SimplifiedCollisionGeometry', ...
               'This method returns the vertices of the cylinder''s bounding-box.');
+      pts = getBoundingBoxPoints(obj);
+    end
+
+    function pts = getPoints(obj)
+      % Return axis-aligned bounding-box vertices
       cx = obj.radius*[-1 1 1 -1 -1 1 1 -1];
       cy = obj.radius*[1 1 1 1 -1 -1 -1 -1];
       cz = obj.len/2*[1 1 -1 -1 -1 -1 1 1];
