@@ -62,8 +62,15 @@ classdef RigidBodySphere < RigidBodyGeometry
       td=td-1; tabprintf(fp,'}\n'); % end Transform {
     end
 
-    function has_terrain_contact_points = hasTerrainContactPoints(obj)
-      has_terrain_contact_points = shape.radius == 0;
+    function pts = getTerrainContactPoints(obj)
+      % pts = getTerrainContactPoints(obj)
+      %
+      % @param  obj - RigidBodySphere object
+      % @retval pts - 3xm array of points on this geometry (in link frame) that
+      %               can collide with the world.
+      if shape.radius == 0
+        pts = getPoints(obj);
+      end
     end
   
   end
