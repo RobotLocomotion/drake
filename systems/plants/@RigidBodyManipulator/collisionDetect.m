@@ -66,20 +66,19 @@ end
 phi = distance';
 
 if ~isempty(obj.terrain) && ~isa(obj.terrain,'RigidBodyFlatTerrain')
-  % for each zero-radius sphere, find the closest point in the world
-  % geometry, and it's (absolute) position and velocity, (unit) surface
-  % normal, and coefficent of friction.
-  contact_shape_points = getContactShapePoints(obj);
+  % For each point on the manipulator that can collide with non-flat terrain,
+  % find the closest point on the terrain geometry
+  terrain_contact_point_struct = getTerrainContactPoints(obj);
 
-  if ~isempty(contact_shape_points)
-    xA_new = [contact_shape_points.pts];
+  if ~isempty(terrain_contact_point_struct)
+    xA_new = [terrain_contact_point_struct.pts];
     idxA_new = cell2mat(arrayfun(@(x)repmat(x.idx,1,size(x.pts,2)), ...
-                                 contact_shape_points, ...
+                                 terrain_contact_point_struct, ...
                                  'UniformOutput',false));
 
     xA_new_in_world = ...
       cell2mat(arrayfun(@(x)forwardKin(obj,kinsol,x.idx,x.pts), ...
-      contact_shape_points, 'UniformOutput',false));
+      terrain_contact_point_struct, 'UniformOutput',false));
 
     % Note: only implements collisions with the obj.terrain so far
     [phi_new,normal_new,xB_new,idxB_new] = ...

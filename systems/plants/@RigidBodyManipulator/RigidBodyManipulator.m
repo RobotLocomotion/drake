@@ -784,12 +784,21 @@ classdef RigidBodyManipulator < Manipulator
       b = leastCommonAncestor(model,body1.parent,body2);
     end
     
-    function contact_shape_points = getContactShapePoints(obj)
-      contact_shape_points = struct('pts',{},'idx',{});
+    function terrain_contact_point_struct = getTerrainContactPoints(obj)
+      % terrain_contact_point_struct = getTerrainContactPoints(obj)
+      %
+      % @param obj - RigidBodyManipulator object
+      % @retval terrain_contact_point_struct - nx1 structure array, where n is
+      %   the number of bodies with points that can collide with non-flat
+      %   terrain. Each element has the following fields
+      %     * idx - Index of a body in the RigidBodyManipulator
+      %     * pts - 3xm array containing points on the body specified by idx
+      %             that can collide with non-flat terrain.
+      terrain_contact_point_struct = struct('pts',{},'idx',{});
       for i = 1:obj.getNumBodies()
-        pts = getContactShapePoints(obj.body(i));
+        pts = getTerrainContactPoints(obj.body(i));
         if ~isempty(pts)
-          contact_shape_points(end+1) = struct('pts',pts,'idx',i);
+          terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
         end
       end
     end
