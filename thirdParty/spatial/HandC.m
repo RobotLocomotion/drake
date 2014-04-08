@@ -85,7 +85,7 @@ for i = NB : -1 : 2
 end
 end
 
-function C = computeBiasTerm(manipulator, kinsol, inertias_world, external_forces, gravitational_accel)
+function C = computeBiasTerm(manipulator, kinsol, inertias_world, external_wrenches, gravitational_accel)
 nv = length(kinsol.v);
 root_accel = -gravitational_accel; % as if we're standing in an elevator that's accelerating upwards
 JdotV = kinsol.JdotV;
@@ -96,9 +96,13 @@ net_wrenches{1} = zeros(6, 1);
 for i = 2 : NB
   twist = kinsol.twists{i};
   spatial_accel = root_accel + JdotV{i};
-  external_wrench = external_forces(:, i); % TODO: check if external_forces are expressed in body frame or world frame
+  external_wrench = external_wrenches(:, i);
+  if any(external_wrench)
+    % transform from body to world
+    H_world_to_i = homogTransInv(kinsol.T{i});
+    external_wrench = transformAdjoint(H_world_to_i)' * external_wrenches(:, i);
+  end
   I = inertias_world{i};
-  
   net_wrenches{i} = I * spatial_accel - twistAdjoint(twist)' * I * twist - external_wrench;
 end
 
