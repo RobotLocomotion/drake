@@ -31,6 +31,15 @@ classdef RigidBodyGeometry
       % take it back out of view coordinates
       pts = Tview'*[pts(1:2,ind); repmat(z,1,length(ind))];
     end
+
+    function pts = getTerrainContactPoints(obj)
+      % pts = getTerrainContactPoints(obj)
+      %
+      % @param  obj - RigidBodyGeometry object
+      % @retval pts - 3xm array of points on this geometry (in link frame) that
+      %               can collide with the world.
+      pts = [];
+    end
     
   end
   
@@ -76,6 +85,7 @@ classdef RigidBodyGeometry
         obj.T = T;
       end
     end
+
   end
   
   properties  % note: constructModelmex currently depends on these being public

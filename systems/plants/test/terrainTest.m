@@ -1,8 +1,8 @@
 function terrainTest
 
-
-r = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,struct('floating',true));
-r = setTerrain(r,RigidBodyHeightMapTerrain('terrainTest.png',[-10;10;0],[40,40,10]));
+options.floating = true;
+options.terrain = RigidBodyHeightMapTerrain('terrainTest.png',[-10;10;0],[40,40,10]);
+r = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 
 v = r.constructVisualizer();
 x0 = .6*randn(12,1)+[0;0;20;zeros(9,1)];

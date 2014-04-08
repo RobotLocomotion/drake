@@ -40,7 +40,7 @@ classdef RigidBodyManipulator < Manipulator
       % inputs).
       
       if (nargin<2), options = struct(); end
-      if ~isfield(options,'terrain'), options.terrain = RigidBodyTerrain(); end;
+      if ~isfield(options,'terrain'), options.terrain = RigidBodyFlatTerrain(); end;
 
       obj = obj@Manipulator(0,0);
       obj.body = newBody(obj);
@@ -99,14 +99,16 @@ classdef RigidBodyManipulator < Manipulator
     function obj = addTerrainGeometries(obj)
       if ~isempty(obj.terrain)
         geom = obj.terrain.getRigidBodyGeometry();
-        if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
-          obj.body(1).contact_shapes{end+1} = geom;
-        end
-        if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
-          obj.body(1).visual_shapes{end+1} = geom;
+        if ~isempty(geom)
+          if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
+            obj.body(1).contact_shapes{end+1} = geom;
+          end
+          if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
+            obj.body(1).visual_shapes{end+1} = geom;
+          end
+          obj.dirty = true;
         end
       end
-      obj.dirty = true;
     end
 
     function obj = removeTerrainGeometries(obj)
@@ -116,8 +118,8 @@ classdef RigidBodyManipulator < Manipulator
         obj.body(1).contact_shapes(geom_contact_idx) = [];
         geom_visual_idx = cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes);
         obj.body(1).visual_shapes(geom_visual_idx) = [];
+        obj.dirty = true;
       end
-      obj.dirty = true;
     end
 
     function [z,normal] = getTerrainHeight(obj,contact_pos)
@@ -782,6 +784,24 @@ classdef RigidBodyManipulator < Manipulator
       b = leastCommonAncestor(model,body1.parent,body2);
     end
     
+    function terrain_contact_point_struct = getTerrainContactPoints(obj)
+      % terrain_contact_point_struct = getTerrainContactPoints(obj)
+      %
+      % @param obj - RigidBodyManipulator object
+      % @retval terrain_contact_point_struct - nx1 structure array, where n is
+      %   the number of bodies with points that can collide with non-flat
+      %   terrain. Each element has the following fields
+      %     * idx - Index of a body in the RigidBodyManipulator
+      %     * pts - 3xm array containing points on the body specified by idx
+      %             that can collide with non-flat terrain.
+      terrain_contact_point_struct = struct('pts',{},'idx',{});
+      for i = 1:obj.getNumBodies()
+        pts = getTerrainContactPoints(obj.body(i));
+        if ~isempty(pts)
+          terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
+        end
+      end
+    end
     
     function groups = getContactGroups(model)
       groups = {};
