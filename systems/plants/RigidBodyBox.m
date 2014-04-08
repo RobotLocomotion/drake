@@ -19,6 +19,15 @@ classdef RigidBodyBox < RigidBodyGeometry
       pts = getPoints(obj);
     end
     
+    function pts = getTerrainContactPoints(obj)
+      % pts = getTerrainContactPoints(obj)
+      %
+      % @param  obj - RigidBodySphere object
+      % @retval pts - 3xm array of points on this geometry (in link frame) that
+      %               can collide with the world.
+      pts = getPoints(obj);
+    end
+    
     function shape = serializeToLCM(obj)
       shape = drake.lcmt_viewer_geometry_data();
       shape.type = shape.BOX;
@@ -44,6 +53,7 @@ classdef RigidBodyBox < RigidBodyGeometry
       td=td-1; tabprintf(fp,'}\n');  % end Shape {
       td=td-1; tabprintf(fp,'}\n'); % end Transform {
     end
+
   end
   
   properties

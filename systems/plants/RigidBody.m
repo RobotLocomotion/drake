@@ -57,6 +57,16 @@ classdef RigidBody < RigidBodyElement
     function varargout = forwardKin(varargin)
       error('forwardKin(body,...) has been replaced by forwardKin(model,body_num,...), because it has a mex version.  please update your kinematics calls');
     end
+
+    function pts = getTerrainContactPoints(body)
+      % pts = getTerrainContactPoints(body)
+      % @param body - A RigidBody object
+      % @retval pts - A 3xm array of points on body (in body frame) that can collide with
+      %               non-flat terrain
+      pts = cell2mat(cellfun(@(shape) shape.getTerrainContactPoints(), ...
+                             body.contact_shapes, ...
+                             'UniformOutput',false));
+    end
     
     function [pts,inds] = getContactPoints(body,collision_group)
       error('contact points have been replaced by contact shapes');

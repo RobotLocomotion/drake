@@ -714,6 +714,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       varargout = cell(1,nargout);
       [varargout{:}]=collisionDetect(obj.manip,varargin{:});
     end
+
+    function varargout = collisionDetectTerrain(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}]=collisionDetectTerrain(obj.manip,varargin{:});
+    end
     
     function varargout = stateConstraints(obj,varargin)
       varargout = cell(1,nargout);
