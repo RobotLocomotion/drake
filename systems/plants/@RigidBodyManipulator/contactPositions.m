@@ -19,7 +19,11 @@ function [contact_pos,J,dJ, body_idx] = contactPositions(obj,kinsol,varargin)
 
 if ~isstruct(kinsol)  
   % treat input as contactPositions(obj,q)
-  kinsol = doKinematics(obj,kinsol);
+  if nargout > 2
+    kinsol = doKinematics(obj,kinsol,true);
+  else
+    kinsol = doKinematics(obj,kinsol);
+  end
 end
 
 [~,~,xA,xB,idxA,idxB] = obj.collisionDetect(kinsol,varargin{:});
@@ -28,13 +32,13 @@ nq = obj.getNumPositions;
 nC = length(idxA);
 body_idx = [idxA;idxB];
 x_body = [xA xB];
-contact_pos = zeros(3,2*nC);
+contact_pos = zeros(3,2*nC)*kinsol.q(1);
 
 if nargout > 1,
-  J = zeros(6*nC,nq);
+  J = zeros(6*nC,nq)*kinsol.q(1);
 end
 if nargout > 2,
-  dJ = zeros(6*nC,nq^2);
+  dJ = zeros(6*nC,nq^2)*kinsol.q(1);
 end
 
 for i=1:2*nC,

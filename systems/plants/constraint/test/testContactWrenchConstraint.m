@@ -8,7 +8,11 @@ kinsol = robot.doKinematics(qstar);
 
 display('Check FrictionConeWrenchConstraint');
 l_foot = robot.findLinkInd('l_foot');
-l_foot_pt = robot.getBody(l_foot).getContactPoints();
+nLPts = length(robot.getBody(l_foot).getContactShapes);
+l_foot_pt = zeros(3,nLPts);
+for i=1:nLPts,
+  l_foot_pt(:,i) = robot.getBody(l_foot).getContactShapes{i}.getPoints;
+end
 num_pts = size(l_foot_pt,2);
 mu = 0.7;
 FC_axis = rpy2rotmat(0.02*rand(3,1))*[0;0;2];

@@ -85,7 +85,11 @@ classdef StandingEndEffectorControl < MIMODrakeSystem
       for i=1:length(active_supports)
         nC = size(obj.manip.getBodyContacts(active_supports(i)),2);
         if nC>0
-          [~,Jc(3*count+(1:3*nC),:)] = obj.manip.forwardKin(kinsol,active_supports(i),obj.manip.getBodyContacts(active_supports(i)));
+          body_points = zeros(3,nC);
+          for j=1:nC,
+            body_points(:,i) = obj.manip.getBody(active_supports(i)).getContactShapes{j}.getPoints;
+          end
+          [~,Jc(3*count+(1:3*nC),:)] = obj.manip.forwardKin(kinsol,active_supports(i),body_points);
           count = count + nC;
         end
       end

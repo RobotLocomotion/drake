@@ -40,8 +40,16 @@ r_foot = robot.findLinkInd('r_foot');
 l_hand = robot.findLinkInd('l_hand');
 r_hand = robot.findLinkInd('r_hand');
 head = robot.findLinkInd('head');
-l_foot_pts = robot.getBody(l_foot).contact_pts;
-r_foot_pts = robot.getBody(r_foot).contact_pts;
+nLPts = length(robot.getBody(l_foot).getContactShapes);
+l_foot_pts = zeros(3,nLPts);
+for i=1:nLPts,
+  l_foot_pts(:,i) = robot.getBody(l_foot).getContactShapes{i}.getPoints;
+end
+nRPts = length(robot.getBody(r_foot).getContactShapes);
+r_foot_pts = zeros(3,nRPts);
+for i=1:nRPts,
+  r_foot_pts(:,i) = robot.getBody(r_foot).getContactShapes{i}.getPoints;
+end
 l_hand_pts = [0;0;0];
 r_hand_pts = [0;0;0];
 
