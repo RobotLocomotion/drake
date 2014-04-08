@@ -1051,14 +1051,14 @@ classdef RigidBodyManipulator < Manipulator
       end
 
       if isfield(options,'active_collision_bodies') 
-        active_collision_options.collision_bodies = options.active_collision_bodies;
+        active_collision_options.body_idx = options.active_collision_bodies;
       end
       
       % Compute number of contacts by evaluating at x0
-      [phi0,~,d0] = obj.contactConstraints(x0(1:nq),false,active_collision_options);
+      [phi0,~,~,~,~,~,~,~,~,D0] = obj.contactConstraints(x0(1:nq),false,active_collision_options);
       
       % total number of contact forces (normal + frictional)
-      nz = length(phi0) + size(cell2mat(d0),2);
+      nz = length(phi0) + size(cell2mat(D0'),1);
 
       z0 = zeros(nz,1);
       q0 = x0(1:nq);
@@ -1116,7 +1116,7 @@ classdef RigidBodyManipulator < Manipulator
           dJz = matGradMult([dn;cell2mat(dD')],z,true);
           
           ceq = [C-B*u-J'*z; phiC];
-          GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[J'; zeros(nu+nz,length(phiC))]];
+          GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[n'; zeros(nu+nz,length(phiC))]];
         else
           ceq = [C-B*u];
           GCeq = [dC(1:nq,1:nq),-B]';

@@ -13,6 +13,7 @@
     <color rgba="0 0 1 1" />
   </material>
 
+
   <link name="world">
     <inertial> <!-- drc-viewer needs this to have inertia to parse properly.  remove it when that bug is fixed -->
       <origin xyz="0 0 0" />
@@ -33,12 +34,6 @@
       </geometry> 
       <material name="green" />
     </visual>
-    <collision>
-      <origin xyz="0 0 .015" />
-      <geometry>
-        <sphere radius=".015" />
-      </geometry>
-    </collision>
   </link>
   <joint name="base_weld" type="fixed">
     <parent link="world" />
@@ -95,6 +90,7 @@
     <parent link="arm" />
     <child link="arm_com" />
   </joint>
+
   <transmission type="SimpleTransmission" name="elbow_trans">
     <actuator name="tau" />
     <joint name="theta" />

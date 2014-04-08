@@ -33,12 +33,6 @@
       </geometry> 
       <material name="green" />
     </visual>
-    <collision>
-      <origin xyz="0 0 .015" />
-      <geometry>
-        <sphere radius=".015" />
-      </geometry>
-    </collision>
   </link>
   <joint name="base_weld" type="fixed">
     <parent link="world" />
