@@ -19,6 +19,7 @@ classdef RigidBodyManipulator < Manipulator
     dim=3;
     terrain;
     num_contact_pairs;
+    contact_options; % struct containing options for contact/collision handling
     frame = [];     % array of RigidBodyFrame objects
   end
   
@@ -41,11 +42,15 @@ classdef RigidBodyManipulator < Manipulator
       
       if (nargin<2), options = struct(); end
       if ~isfield(options,'terrain'), options.terrain = RigidBodyFlatTerrain(); end;
+      if ~isfield(options,'ignore_self_collisions')
+        options.ignore_self_collisions = false;
+      end
 
       obj = obj@Manipulator(0,0);
       obj.body = newBody(obj);
       obj.body.linkname = 'world';
       obj = setTerrain(obj,options.terrain);
+      obj.contact_options.ignore_self_collisions = options.ignore_self_collisions;
       
       if (nargin>0 && ~isempty(urdf_filename))
         obj = addRobotFromURDF(obj,urdf_filename,zeros(3,1),zeros(3,1),options);
@@ -1748,6 +1753,15 @@ classdef RigidBodyManipulator < Manipulator
       if isempty(model.collision_filter_groups) 
         model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
         model.collision_filter_groups('no_collision') = CollisionFilterGroup();
+      end
+      if model.contact_options.ignore_self_collisions
+        body_indices = 1:model.getNumBodies();
+        for i = 1:length(model.name)
+          robot_i_body_indices = body_indices([model.body.robotnum] == i);
+          model.collision_filter_groups(model.name{i}) = CollisionFilterGroup();
+          model = model.addLinksToCollisionFilterGroup(robot_i_body_indices,model.name{i},i);
+          model = model.addToIgnoredListOfCollisionFilterGroup(model.name{i},model.name{i});
+        end
       end
       % The DEFAULT_COLLISION_FILTER_GROUP is reserved for bodies that don't belong to any
       % other collision collision_filter_groups.
