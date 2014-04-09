@@ -1,8 +1,26 @@
 classdef RigidBodyMesh < RigidBodyGeometry
   
   methods 
-    function obj = RigidBodyMesh(filename)
-      obj = obj@RigidBodyGeometry(4);
+    function obj = RigidBodyMesh(filename,varargin)
+      % obj = RigidBodyMesh(filename) constructs a RigidBodyMesh object with
+      % the geometry-to-body transform set to identity.
+      %
+      % obj = RigidBodyMesh(filename,T) constructs a RigidBodyMesh object with
+      % the geometry-to-body transform T.
+      % 
+      % obj = RigidBodyMesh(filename,xyz,rpy) constructs a RigidBodyMesh
+      % object with the geometry-to-body transform specified by the
+      % position, xyz, and Euler angles, rpy.
+      %
+      % @param filename - string containing the full path to a .stl or
+      %   .wrl file describing the mesh
+      % @param T - 4x4 homogenous transform from geometry-frame to
+      %   body-frame
+      % @param xyz - 3-element vector specifying the position of the
+      %   geometry in the body-frame
+      % @param rpy - 3-element vector of Euler angles specifying the
+      %   orientation of the geometry in the body-frame
+      obj = obj@RigidBodyGeometry(4,varargin{:});
       typecheck(filename,'char');
       obj.filename = filename;
     end

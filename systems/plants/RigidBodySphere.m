@@ -1,8 +1,25 @@
 classdef RigidBodySphere < RigidBodyGeometry
   
   methods 
-    function obj = RigidBodySphere(radius)
-      obj = obj@RigidBodyGeometry(2);
+    function obj = RigidBodySphere(radius,varargin)
+      % obj = RigidBodySphere(radius) constructs a RigidBodySphere
+      % object with the geometry-to-body transform set to identity.
+      %
+      % obj = RigidBodySphere(radius,T) constructs a RigidBodySphere
+      % object with the geometry-to-body transform T.
+      % 
+      % obj = RigidBodySphere(radius,xyz,rpy) constructs a
+      % RigidBodySphere object with the geometry-to-body transform
+      % specified by the position, xyz, and Euler angles, rpy.
+      %
+      % @param radius - radius of the sphere
+      % @param T - 4x4 homogenous transform from geometry-frame to
+      %   body-frame
+      % @param xyz - 3-element vector specifying the position of the
+      %   geometry in the body-frame
+      % @param rpy - 3-element vector of Euler angles specifying the
+      %   orientation of the geometry in the body-frame
+      obj = obj@RigidBodyGeometry(2,varargin{:});
       sizecheck(radius,1);
       obj.radius = radius;
     end

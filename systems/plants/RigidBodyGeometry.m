@@ -7,8 +7,42 @@ classdef RigidBodyGeometry
   end
   
   methods
-    function obj = RigidBodyGeometry(bullet_shape_id)
+    function obj = RigidBodyGeometry(bullet_shape_id,varargin)
+      % obj = RigidBodyGeometry(bullet_shape_id) constructs a
+      % RigidBodyGeometry object with the geometry-to-body transform set to
+      % identity.
+      %
+      % obj = RigidBodyGeometry(bullet_shape_id,T) constructs a
+      % RigidBodyGeometry object with the geometry-to-body transform T.
+      % 
+      % obj = RigidBodyGeometry(bullet_shape_id,xyz,rpy) constructs a
+      % RigidBodyGeometry object with the geometry-to-body transform specified
+      % by the position, xyz, and Euler angles, rpy.
+      %
+      % @param bullet_shape_id - Integer that tells the DrakeCollision library
+      % what type of geometry this is.
+      % @param T - 4x4 homogenous transform from geometry-frame to body-frame
+      % @param xyz - 3-element vector specifying the position of the geometry
+      % in the body-frame
+      % @param rpy - 3-element vector of Euler angles specifying the orientation of the
+      % geometry in the body-frame
+      if nargin < 2
+        T_geometry_to_body = eye(4);
+      elseif nargin < 3
+        typecheck(varargin{1},'numeric');
+        sizecheck(varargin{1},[4, 4]);
+        T_geometry_to_body = varargin{1};
+      else
+        typecheck(varargin{1},'numeric');
+        typecheck(varargin{2},'numeric');
+        sizecheck(varargin{1},3);
+        sizecheck(varargin{2},3);
+        xyz = reshape(varargin{1},3,1);
+        rpy = reshape(varargin{2},3,1);
+        T_geometry_to_body = [rpy2rotmat(rpy), xyz; zeros(1,3),1];
+      end
       obj.bullet_shape_id = bullet_shape_id;
+      obj.T = T_geometry_to_body;
     end
     
     function pts = getPlanarPoints(obj,x_axis,y_axis,view_axis)
