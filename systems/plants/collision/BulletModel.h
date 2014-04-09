@@ -54,6 +54,7 @@ namespace DrakeCollision
                                       Vector3d &ptA, Vector3d &ptB, 
                                       Vector3d &normal);
 
+      double collisionRaycast(const Vector3d &origin, const Vector3d &ray_endpoint);
 
       btDefaultCollisionConfiguration bt_collision_configuration;
       btCollisionDispatcher* bt_collision_dispatcher;

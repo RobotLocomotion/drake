@@ -209,5 +209,33 @@ namespace DrakeCollision
 
     return (c->pts.size() > 0);
   };
+  
+  double BulletModel::collisionRaycast(const Vector3d &origin, const Vector3d &ray_endpoint)
+  {
+      
+    btVector3 ray_from_world(origin(0), origin(1), origin(2));
+    btVector3 ray_to_world(ray_endpoint(0), ray_endpoint(1), ray_endpoint(2));
+    
+    btCollisionWorld::ClosestRayResultCallback ray_callback(ray_from_world, ray_to_world);
+    
+    bt_collision_world->rayTest(ray_from_world, ray_to_world, ray_callback);
+    
+    if (ray_callback.hasHit()) {
+        
+        // compute distance to hit
+        
+        btVector3 end = ray_callback.m_hitPointWorld;
+        
+        Vector3d end_eigen(end.getX(), end.getY(), end.getZ());
+        
+        return (end_eigen - origin).norm();
+        
+        
+    } else {
+        return -1;
+    }
+    
+    
+  } 
 
 }

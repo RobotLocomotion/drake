@@ -80,6 +80,20 @@ classdef RigidBodyGeometry
   
   properties  % note: constructModelmex currently depends on these being public
     T = eye(4);  % coordinate transform (from geometry to link coordinates)
+                 % look like:
+                 % [    R         x  ]
+                 % [ zeros(1,3)   1  ]
+                 %
+                 % where R is a 3x3 rotation matrix
+                 % and x is a 3x1 vector denoting position
+                 %
+                 % if, for example, you want to set the position, you
+                 % would do
+                 % obstacle1 = RigidBodyCylinder(1, 10);
+                 % obstacle1.T(1:3, 4) = [ 10; 0; 0 ];
+                 
+                 
+                 
     c = [.7 .7 .7];  % 3x1 color
     bullet_shape_id = 0;  % UNKNOWN
   end
