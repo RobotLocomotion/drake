@@ -825,6 +825,51 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
     
+    function body_idx = parseBodyID(obj,body_id)
+      % body_idx = parseBodyID(obj,body_id)
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      %
+      % @retval body_idx - Body index
+      typecheck(body_id,{'numeric','char'});
+      if isnumeric(body_id)
+        body_idx = body_id;
+      else % then it's a string
+        body_idx = findLinkInd(obj,body_id);
+      end
+    end
+
+    function obj = addContactShapeToBody(obj,body_id,shape)
+      % obj = addContactShapeToBody(obj,body_id,shape)
+      %
+      % obj must be re-compiled after calling this method
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      % @param shape - RigidBodyGeometry (or child class) object 
+      obj.body(parseBodyID(body_id)).contact_shapes{end+1} = shape;
+      obj.dirty = true;
+    end
+
+    function obj = addVisualShapeToBody(obj,body_id,shape)
+      % obj = addContactShapeToBody(obj,body_id,shape)
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      % @param shape - RigidBodyGeometry (or child class) object 
+      obj.body(parseBodyID(body_id)).visual_shapes{end+1} = shape;
+    end
+
+    function obj = addShapeToBody(obj,body_id,shape)
+      % obj = addShapeToBody(obj,body_id,shape)
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      % @param shape - RigidBodyGeometry (or child class) object 
+      obj = obj.addVisualShapeToBody(body_id,shape);
+      obj = obj.addContactShapeToBody(body_id,shape);
+    end
+
     function model = replaceContactShapesWithCHull(model,body_indices,varargin)
       if any(body_indices==1)
         model = removeTerrainGeometries(model);
