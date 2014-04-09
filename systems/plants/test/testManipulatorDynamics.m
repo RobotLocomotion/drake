@@ -75,12 +75,11 @@ end
 
 function testAtlasQuat()
 r = createAtlas('quat');
-nq = r.getNumPositions();
 nv = r.getNumVelocities();
 
 nTests = 5;
 for i = 1 : nTests
-  q = randn(nq, 1);
+  q = getRandomConfiguration(r);
   v = randn(nv, 1);
   [H, C, B] = manipulatorDynamics(r, q, v, false);
   kinetic_energy = v' * H * v;

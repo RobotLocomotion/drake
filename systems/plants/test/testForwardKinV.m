@@ -17,7 +17,6 @@ end
 
 function compareToNumerical(robot, rotationType)
 
-nq = robot.getNumPositions();
 nv = robot.getNumVelocities();
 
 nBodies = length(robot.body);
@@ -31,7 +30,7 @@ testNumber = 1;
 delta = 1e-10;
 epsilon = 1e-3;
 while testNumber < nTests
-  q = randn(nq, 1);
+  q = getRandomConfiguration(robot);
   v = randn(nv, 1);
   kinsol = robot.doKinematics(q, true, false, v);
   

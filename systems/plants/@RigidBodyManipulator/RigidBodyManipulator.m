@@ -125,11 +125,11 @@ classdef RigidBodyManipulator < Manipulator
         if bodyI.floating == 1
           VqInvJoint = eye(6);
         elseif bodyI.floating == 2
-           qBody = q(bodyI.position_num);
-            quat = qBody(4 : 7);
-            R = quat2rotmat(quat);
-            VqInvJoint = [zeros(3, 3), R;
-              angularvel2quatdotMatrix(quat) * R, zeros(4, 3)];
+          qBody = q(bodyI.position_num);
+          quat = qBody(4 : 7);
+          R = quat2rotmat(quat);
+          VqInvJoint = [zeros(3, 3), R;
+            angularvel2quatdotMatrix(quat) * R, zeros(4, 3)];
         elseif bodyI.floating ~= 0
           error('case not handled');
         else
