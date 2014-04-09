@@ -847,7 +847,8 @@ classdef RigidBodyManipulator < Manipulator
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
       % @param shape - RigidBodyGeometry (or child class) object 
-      obj.body(parseBodyID(body_id)).contact_shapes{end+1} = shape;
+      body_idx = obj.parseBodyID(body_id);
+      obj.body(body_idx).contact_shapes{end+1} = shape;
       obj.dirty = true;
     end
 
@@ -857,7 +858,8 @@ classdef RigidBodyManipulator < Manipulator
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
       % @param shape - RigidBodyGeometry (or child class) object 
-      obj.body(parseBodyID(body_id)).visual_shapes{end+1} = shape;
+      body_idx = obj.parseBodyID(body_id);
+      obj.body(body_idx).visual_shapes{end+1} = shape;
     end
 
     function obj = addShapeToBody(obj,body_id,shape)
