@@ -11,8 +11,11 @@ p = TimeSteppingRigidBodyManipulator(urdf,.01);
 [~,xtraj] = simulate(p,[0 5]);
 
 p = addSensor(p,FullStateFeedbackSensor());
-frame = p.getFrame(p.findFrameId('tip'));
-p = addSensor(p,ContactForceTorqueSensor(p,frame));
+
+% Commented out pending re-write of ContactForceTorqueSensor
+%frame = p.getFrame(p.findFrameId('tip'));
+%p = addSensor(p,ContactForceTorqueSensor(p,frame));
+
 p = compile(p);
 
 % Check construction of visualizer

@@ -30,7 +30,7 @@ end
 
 nq = obj.getNumPositions;
 nC = length(idxA);
-body_idx = [idxA;idxB];
+body_idx = [idxA';idxB'];
 x_body = [xA xB];
 contact_pos = zeros(3,2*nC)*kinsol.q(1);
 

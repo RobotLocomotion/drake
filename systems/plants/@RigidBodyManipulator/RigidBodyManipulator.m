@@ -19,6 +19,7 @@ classdef RigidBodyManipulator < Manipulator
     dim=3;
     terrain;
     num_contact_pairs;
+    contact_options; % struct containing options for contact/collision handling
     frame = [];     % array of RigidBodyFrame objects
   end
   
@@ -40,12 +41,16 @@ classdef RigidBodyManipulator < Manipulator
       % inputs).
       
       if (nargin<2), options = struct(); end
-      if ~isfield(options,'terrain'), options.terrain = RigidBodyTerrain(); end;
+      if ~isfield(options,'terrain'), options.terrain = RigidBodyFlatTerrain(); end;
+      if ~isfield(options,'ignore_self_collisions')
+        options.ignore_self_collisions = false;
+      end
 
       obj = obj@Manipulator(0,0);
       obj.body = newBody(obj);
       obj.body.linkname = 'world';
       obj = setTerrain(obj,options.terrain);
+      obj.contact_options.ignore_self_collisions = options.ignore_self_collisions;
       
       if (nargin>0 && ~isempty(urdf_filename))
         obj = addRobotFromURDF(obj,urdf_filename,zeros(3,1),zeros(3,1),options);
@@ -99,14 +104,16 @@ classdef RigidBodyManipulator < Manipulator
     function obj = addTerrainGeometries(obj)
       if ~isempty(obj.terrain)
         geom = obj.terrain.getRigidBodyGeometry();
-        if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
-          obj.body(1).contact_shapes{end+1} = geom;
-        end
-        if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
-          obj.body(1).visual_shapes{end+1} = geom;
+        if ~isempty(geom)
+          if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
+            obj.body(1).contact_shapes{end+1} = geom;
+          end
+          if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
+            obj.body(1).visual_shapes{end+1} = geom;
+          end
+          obj.dirty = true;
         end
       end
-      obj.dirty = true;
     end
 
     function obj = removeTerrainGeometries(obj)
@@ -116,8 +123,8 @@ classdef RigidBodyManipulator < Manipulator
         obj.body(1).contact_shapes(geom_contact_idx) = [];
         geom_visual_idx = cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes);
         obj.body(1).visual_shapes(geom_visual_idx) = [];
+        obj.dirty = true;
       end
-      obj.dirty = true;
     end
 
     function [z,normal] = getTerrainHeight(obj,contact_pos)
@@ -782,6 +789,24 @@ classdef RigidBodyManipulator < Manipulator
       b = leastCommonAncestor(model,body1.parent,body2);
     end
     
+    function terrain_contact_point_struct = getTerrainContactPoints(obj)
+      % terrain_contact_point_struct = getTerrainContactPoints(obj)
+      %
+      % @param obj - RigidBodyManipulator object
+      % @retval terrain_contact_point_struct - nx1 structure array, where n is
+      %   the number of bodies with points that can collide with non-flat
+      %   terrain. Each element has the following fields
+      %     * idx - Index of a body in the RigidBodyManipulator
+      %     * pts - 3xm array containing points on the body specified by idx
+      %             that can collide with non-flat terrain.
+      terrain_contact_point_struct = struct('pts',{},'idx',{});
+      for i = 1:obj.getNumBodies()
+        pts = getTerrainContactPoints(obj.body(i));
+        if ~isempty(pts)
+          terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
+        end
+      end
+    end
     
     function groups = getContactGroups(model)
       groups = {};
@@ -805,6 +830,53 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
     
+    function body_idx = parseBodyID(obj,body_id)
+      % body_idx = parseBodyID(obj,body_id)
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      %
+      % @retval body_idx - Body index
+      typecheck(body_id,{'numeric','char'});
+      if isnumeric(body_id)
+        body_idx = body_id;
+      else % then it's a string
+        body_idx = findLinkInd(obj,body_id);
+      end
+    end
+
+    function obj = addContactShapeToBody(obj,body_id,shape)
+      % obj = addContactShapeToBody(obj,body_id,shape)
+      %
+      % obj must be re-compiled after calling this method
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      % @param shape - RigidBodyGeometry (or child class) object 
+      body_idx = obj.parseBodyID(body_id);
+      obj.body(body_idx).contact_shapes{end+1} = shape;
+      obj.dirty = true;
+    end
+
+    function obj = addVisualShapeToBody(obj,body_id,shape)
+      % obj = addContactShapeToBody(obj,body_id,shape)
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      % @param shape - RigidBodyGeometry (or child class) object 
+      body_idx = obj.parseBodyID(body_id);
+      obj.body(body_idx).visual_shapes{end+1} = shape;
+    end
+
+    function obj = addShapeToBody(obj,body_id,shape)
+      % obj = addShapeToBody(obj,body_id,shape)
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      % @param shape - RigidBodyGeometry (or child class) object 
+      obj = obj.addVisualShapeToBody(body_id,shape);
+      obj = obj.addContactShapeToBody(body_id,shape);
+    end
+
     function model = replaceContactShapesWithCHull(model,body_indices,varargin)
       if any(body_indices==1)
         model = removeTerrainGeometries(model);
@@ -1681,6 +1753,15 @@ classdef RigidBodyManipulator < Manipulator
       if isempty(model.collision_filter_groups) 
         model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
         model.collision_filter_groups('no_collision') = CollisionFilterGroup();
+      end
+      if model.contact_options.ignore_self_collisions
+        body_indices = 1:model.getNumBodies();
+        for i = 1:length(model.name)
+          robot_i_body_indices = body_indices([model.body.robotnum] == i);
+          model.collision_filter_groups(model.name{i}) = CollisionFilterGroup();
+          model = model.addLinksToCollisionFilterGroup(robot_i_body_indices,model.name{i},i);
+          model = model.addToIgnoredListOfCollisionFilterGroup(model.name{i},model.name{i});
+        end
       end
       % The DEFAULT_COLLISION_FILTER_GROUP is reserved for bodies that don't belong to any
       % other collision collision_filter_groups.

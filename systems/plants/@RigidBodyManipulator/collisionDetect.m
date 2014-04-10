@@ -35,6 +35,7 @@ function [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol, ...
 %   A, relative to body B origin and in body B frame
 % @retval idxA - (m x 1) The index of body A.
 % @retval idxB - (m x 1) The index of body B.
+% @ingroup Collision
 
 if ~isstruct(kinsol)  
   % treat input as collisionDetect(obj,q)
@@ -64,3 +65,32 @@ end
 
 %phi = dot(normal, xA_in_world-xB_in_world);
 phi = distance';
+
+if ~isempty(obj.terrain) && ~isa(obj.terrain,'RigidBodyFlatTerrain')
+  % For each point on the manipulator that can collide with non-flat terrain,
+  % find the closest point on the terrain geometry
+  terrain_contact_point_struct = getTerrainContactPoints(obj);
+
+  if ~isempty(terrain_contact_point_struct)
+    xA_new = [terrain_contact_point_struct.pts];
+    idxA_new = cell2mat(arrayfun(@(x)repmat(x.idx,1,size(x.pts,2)), ...
+                                 terrain_contact_point_struct, ...
+                                 'UniformOutput',false));
+
+    xA_new_in_world = ...
+      cell2mat(arrayfun(@(x)forwardKin(obj,kinsol,x.idx,x.pts), ...
+      terrain_contact_point_struct, 'UniformOutput',false));
+
+    % Note: only implements collisions with the obj.terrain so far
+    [phi_new,normal_new,xB_new,idxB_new] = ...
+      collisionDetectTerrain(obj,xA_new_in_world);
+
+    phi = [phi;phi_new];
+    normal = [normal,normal_new];
+    xA = [xA,xA_new];
+    idxA = [idxA,idxA_new];
+    xB = [xB,xB_new];
+    idxB = [idxB,idxB_new];
+  end
+end
+

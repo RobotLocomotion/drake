@@ -1,8 +1,27 @@
 classdef RigidBodyCylinder < RigidBodyGeometry
   
   methods 
-    function obj = RigidBodyCylinder(radius,len)
-      obj = obj@RigidBodyGeometry(3);
+    function obj = RigidBodyCylinder(radius,len,varargin)
+      % obj = RigidBodyCylinder(radius,len) constructs a
+      % RigidBodyCylinder object with the geometry-to-body transform set
+      % to identity.
+      %
+      % obj = RigidBodyCylinder(radius,len,T) constructs a
+      % RigidBodyCylinder object with the geometry-to-body transform T.
+      % 
+      % obj = RigidBodyCylinder(radius,len,xyz,rpy) constructs a
+      % RigidBodyCylinder object with the geometry-to-body transform
+      % specified by the position, xyz, and Euler angles, rpy.
+      %
+      % @param radius - radius of the cylinder
+      % @param len - length of the cylinder
+      % @param T - 4x4 homogenous transform from geometry-frame to
+      %   body-frame
+      % @param xyz - 3-element vector specifying the position of the
+      %   geometry in the body-frame
+      % @param rpy - 3-element vector of Euler angles specifying the
+      %   orientation of the geometry in the body-frame
+      obj = obj@RigidBodyGeometry(3,varargin{:});
       sizecheck(radius,1);
       sizecheck(len,1);
       obj.radius = radius;
