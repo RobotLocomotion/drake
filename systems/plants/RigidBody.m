@@ -102,7 +102,7 @@ classdef RigidBody < RigidBodyElement
       %
       cylinder_idx = cellfun(@(shape) isa(shape,'RigidBodyCylinder'), ...
                              body.contact_shapes);
-      if isempty(cylinder_idx)
+      if ~any(cylinder_idx)
         body_changed = false;
       else
         body.contact_shapes(cylinder_idx) = ...
