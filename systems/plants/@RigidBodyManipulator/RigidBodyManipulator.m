@@ -198,8 +198,24 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function str = getLinkName(obj,body_ind)
+      % str = getLinkName(obj,body_ind) returns a string containing the
+      % link name the specified body if body_ind is a scalar. If body
+      % ind is a vector, it returns a cell array containing the names of
+      % the bodies specified by the elements of body_ind.
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_ind - Body index or vector of body indices
+      %
+      % @retval str - String (cell array of strings) containing the
+      % requested linkname(s)
+      %
       % @ingroup Kinematic Tree
-      str = obj.body(body_ind).linkname;
+
+      if numel(body_ind) > 1
+        str = {obj.body(body_ind).linkname};
+      else
+        str = obj.body(body_ind).linkname;
+      end
     end
 
     function obj = setGravity(obj,grav)
