@@ -77,7 +77,7 @@ classdef RigidBodyManipulator < Manipulator
       contact_options = struct();
       if isfield(options,'ignore_self_collisions')
         typecheck(options.ignore_self_collisions,'logical');
-        contact_options = options.ignore_self_collisions;
+        contact_options.ignore_self_collisions = options.ignore_self_collisions;
       else
         contact_options.ignore_self_collisions = false;
       end
