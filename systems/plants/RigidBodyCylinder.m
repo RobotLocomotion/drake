@@ -71,6 +71,20 @@ classdef RigidBodyCylinder < RigidBodyGeometry
       td=td-1; tabprintf(fp,'}\n');  % end Shape {
       td=td-1; tabprintf(fp,'}\n'); % end Transform {
     end
+
+    function capsule = toCapsule(obj)
+      % capsule = toCapsule(obj) returns a RigidBodyCapsule object with
+      % the same properties (radius, length, geometry-to-body transform)
+      % as obj. Note that the total length of a capsule is 2*radius
+      % longer than that of a coresponding cylinder. See the constructor
+      % of RigidBodyCapsule for more information.
+      %
+      % @param obj - RigidBodyCylinder object
+      % 
+      % @retvval capsule - RigidBodyCapsule object
+      
+      capsule = RigidBodyCapsule(obj.radius,obj.len,obj.T);
+    end
   end
   
   properties
