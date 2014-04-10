@@ -57,6 +57,16 @@ classdef RigidBody < RigidBodyElement
     function varargout = forwardKin(varargin)
       error('forwardKin(body,...) has been replaced by forwardKin(model,body_num,...), because it has a mex version.  please update your kinematics calls');
     end
+
+    function pts = getTerrainContactPoints(body)
+      % pts = getTerrainContactPoints(body)
+      % @param body - A RigidBody object
+      % @retval pts - A 3xm array of points on body (in body frame) that can collide with
+      %               non-flat terrain
+      pts = cell2mat(cellfun(@(shape) shape.getTerrainContactPoints(), ...
+                             body.contact_shapes, ...
+                             'UniformOutput',false));
+    end
     
     function [pts,inds] = getContactPoints(body,collision_group)
       error('contact points have been replaced by contact shapes');
@@ -95,51 +105,71 @@ classdef RigidBody < RigidBodyElement
     end
     
     function body = removeCollisionGroups(body,contact_groups)
-      error('This needs to be updated work now that contact points are gone')
-      if isempty(body.contact_pts), return; end % nothing to do for this body
-      if ~iscell(contact_groups), contact_groups={contact_groups}; end
+      if isempty(body.contact_shapes), 
+        return; 
+      end % nothing to do for this body
+      if ~iscell(contact_groups), 
+        contact_groups={contact_groups}; 
+      end
       for i=1:length(contact_groups)
+        % boolean identifying if this contact_shape_group is being removed
         group_elements = strcmpi(contact_groups{i},body.collision_group_name);
         if ~isempty(group_elements)
-          pt_inds = [body.collision_group{group_elements}];
-          if ~isempty(pt_inds)
-            [keep_pts,ipts] = setdiff(1:size(body.contact_pts,2),pt_inds);
-            ripts = repmat(nan,1,size(body.contact_pts));  % reverse index
-            ripts(ipts) = 1:length(ipts);
-            for j=1:length(body.collision_group)
-              body.collision_group{j}=ripts(body.collision_group{j});
+          % indices of the body.contact_shapes that are being removed
+          contact_inds = [body.contact_shape_group{group_elements}];
+          
+          if ~isempty(contact_inds)
+            % indices of contact shapes that are *not* being removed
+            keep_inds = setdiff(1:length(body.contact_shapes),contact_inds);
+            
+            % for each contact_shape_group, need to re-assign contact shape
+            % indices, since some are being removed
+            ripts = nan(1,length(body.contact_shapes));  % reverse index
+            ripts(keep_inds) = 1:length(keep_inds);
+            for j=1:length(body.contact_shape_group)
+              body.contact_shape_group{j}=ripts(body.contact_shape_group{j});
             end
-            body.contact_pts(:,pt_inds) = [];
+            % remove contact shapes
+            body.contact_shapes(:,contact_inds) = [];
           end
-          body.collision_group(group_elements) = [];
+          % remove contact_shape_groups and names
+          body.contact_shape_group(group_elements) = [];          
           body.collision_group_name(group_elements) = [];
-          % todo: should actually remove the contact shapes, too
-          body.contact_shape_group(group_elements) = [];
         end
       end
     end
-    
+        
     function body = removeCollisionGroupsExcept(body,contact_groups)
-      error('This needs to be updated work now that contact points are gone')
-      if isempty(body.contact_pts), return; end % nothing to do for this body
-      if ~iscell(contact_groups) contact_groups={contact_groups}; end
+      if isempty(body.contact_shapes), 
+        return; 
+      end % nothing to do for this body
+      if ~iscell(contact_groups), 
+        contact_groups={contact_groups}; 
+      end
       i=1;
-      while i<=length(body.collision_group)
+      while i<=length(body.contact_shape_group)
+        %check of body.collision_group_name should not be kept
         if ~ismember(body.collision_group_name{i},contact_groups)
-          pt_inds = [body.collision_group{i}];
-          if ~isempty(pt_inds)
-            [keep_pts,ipts] = setdiff(1:size(body.contact_pts,2),pt_inds);
-            ripts = repmat(nan,1,size(body.contact_pts));  % reverse index
-            ripts(ipts) = 1:length(ipts);
-            for j=1:length(body.collision_group)
-              body.collision_group{j}=ripts(body.collision_group{j});
+          % indices of the body.contact_shapes that are being removed
+          contact_inds = [body.contact_shape_group{i}];
+          
+          if ~isempty(contact_inds)
+            % indices of contact shapes that are *not* being removed
+            keep_inds = setdiff(1:length(body.contact_shapes),contact_inds);
+            
+            % for each contact_shape_group, need to re-assign contact shape
+            % indices, since some are being removed
+            ripts = nan(1,length(body.contact_shapes));  % reverse index
+            ripts(keep_inds) = 1:length(keep_inds);
+            for j=1:length(body.contact_shape_group)
+              body.contact_shape_group{j}=ripts(body.contact_shape_group{j});
             end
-            body.contact_pts(:,pt_inds) = [];
+            % remove contact shapes
+            body.contact_shapes(:,contact_inds) = [];
           end
-          body.collision_group(i) = [];
+          % remove contact_shape_groups and names
+          body.contact_shape_group(i) = [];          
           body.collision_group_name(i) = [];
-          % todo: should actually remove the contact shapes, too
-          body.contact_shape_group(i) = [];
         else
           i=i+1;
         end
@@ -345,6 +375,43 @@ classdef RigidBody < RigidBodyElement
   end
   
   methods (Static)
+    function testRemoveCollisionGroups
+      body = RigidBody();
+      shape1 = RigidBodySphere(1);
+      shape2 = RigidBodySphere(2);
+      shape3 = RigidBodySphere(3);
+      shape4 = RigidBodySphere(3);
+      shape5 = RigidBodySphere(3);
+      body.contact_shapes = {shape1, shape2, shape3, shape4, shape5};
+      body.collision_group_name = {'group1','group2','group3'};
+      body.contact_shape_group = {[1 4],2,[3 5]};
+      body2 = body.removeCollisionGroups('group1');
+      body3 = body.removeCollisionGroups('group2');
+      body4 = body.removeCollisionGroups('group2adfs');
+      
+      assert(isequal(body2.contact_shapes,{shape2, shape3, shape5}));
+      assert(isequal(body2.collision_group_name,{'group2','group3'}));
+      assert(isequal(body2.contact_shape_group,{[1], [2 3]}));
+      
+      assert(isequal(body3.contact_shapes,{shape1, shape3, shape4, shape5}));
+      assert(isequal(body3.collision_group_name,{'group1','group3'}));
+      assert(isequal(body3.contact_shape_group,{[1 3], [2 4]}));
+      
+      assert(isequal(body,body4));
+      
+      body5 = body.removeCollisionGroupsExcept({'group2','group3'});
+      body6 = body.removeCollisionGroupsExcept({'group1','group3'});
+      body7 = body.removeCollisionGroupsExcept({'group1'});
+      
+      assert(isequal(body7.contact_shapes,{shape1, shape4}));
+      assert(isequal(body7.collision_group_name,{'group1'}));
+      assert(isequal(body7.contact_shape_group,{[1 2]}));
+      
+      assert(isequal(body2,body5));
+      assert(isequal(body3,body6));
+      
+    end
+    
     function testMakeBelongToCollisionFilterGroup
       body = RigidBody();
       collision_fg_id = uint16(3);

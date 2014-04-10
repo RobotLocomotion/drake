@@ -1,16 +1,21 @@
 function runSaggitalPassive
 
+options.ignore_self_collisions = true;
+options.floating = true;
+options.twoD = true;
+
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-r = PlanarRigidBodyManipulator('pr2.urdf');
+r = TimeSteppingRigidBodyManipulator('pr2.urdf',0.01,options);
 warning(w);
 r = setSimulinkParam(r,'MinStep','0.001');
 v = r.constructVisualizer;
 v.display_dt = .05;
+v.axis = [-1.5,1.5,-1,2];
 
 x0 = Point(r.getStateFrame);
 v.draw(0,double(x0));
 
-if (1)
+if (0)
   % Run animation while it is simulating (as fast as possible, but probably
   % slower than realtime)
   s = warning('off','Drake:DrakeSystem:UnsupportedSampleTime');  % we are knowingly breaking out to a simulink model with the cascade on the following line.

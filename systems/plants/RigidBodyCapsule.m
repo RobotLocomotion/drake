@@ -1,8 +1,28 @@
 classdef RigidBodyCapsule < RigidBodyGeometry
   
   methods 
-    function obj = RigidBodyCapsule(radius,len)
-      obj = obj@RigidBodyGeometry(5);
+    function obj = RigidBodyCapsule(radius,len,varargin)
+      % obj = RigidBodyCapsule(size) constructs a RigidBodyCapsule
+      % object with the geometry-to-body transform set to identity.
+      %
+      % obj = RigidBodyCapsule(size,T) constructs a RigidBodyCapsule
+      % object with the geometry-to-body transform T.
+      % 
+      % obj = RigidBodyCapsule(size,xyz,rpy) constructs a
+      % RigidBodyCapsule object with the geometry-to-body transform
+      % specified by the position, xyz, and Euler angles, rpy.
+      %
+      % @param radius - radius of the capsule
+      % @param len - length of the line-segment defining the capsule.
+      %   Note that because of the spherical end-caps the total length of
+      %   the capsule will be len + 2*radius
+      % @param T - 4x4 homogenous transform from geometry-frame to
+      %   body-frame
+      % @param xyz - 3-element vector specifying the position of the
+      %   geometry in the body-frame
+      % @param rpy - 3-element vector of Euler angles specifying the
+      %   orientation of the geometry in the body-frame
+      obj = obj@RigidBodyGeometry(5,varargin{:});
       sizecheck(radius,1);
       sizecheck(len,1);
       obj.radius = radius;
