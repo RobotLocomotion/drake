@@ -42,12 +42,28 @@ sub preprocess
     my $lastWasBlank = 0;
     my $functionReturnVals = "";
     my $functionDefsReturns = 0;
+    
+    my $ellipseRollover = "";
 
     while (<$in>) {
       # default varable ($_) reads a line at a time
       
       #print "line: ".$_;
       
+      $_ = $ellipseRollover . $_;
+      $ellipseRollover = "";
+      
+      #print "postline: " . $_;
+      
+      if ($_ =~ m/[^%\.]*\.\.\./) {
+          # we've matched an ellipse, so this line should be the beginning of the next line
+          #print "MATCH";
+          $_ =~ s/\.\.\.//;
+          $_ =~ s/\n// . " ";
+          $ellipseRollover = $_;
+      } else {
+          #print "no match";
+  
       if ($incommentblock == 1) {
 	# check to see if this line defines return values
 	if ((/\@retval/)) {
@@ -312,6 +328,7 @@ sub preprocess
 	}
       }
     }
+}
     close($in);
     
     #print "--------------\n";
@@ -323,6 +340,7 @@ sub preprocess
     close(MYFILE);
     
     return $fileoutname;
+    
   }
 
 1;
