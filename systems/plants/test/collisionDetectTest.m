@@ -54,14 +54,14 @@ r = RigidBodyManipulator([],options);
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
 
 for i=1:2
-  r = addRobotFromURDF(r,urdf_filename,zeros(3,1),zeros(3,1),options);
+  r = addRobotFromURDF(r,urdf_filename,zeros(6,1),zeros(6,1),options);
 end
 warning(S);
 
 if visualize, v = r.constructVisualizer(); end;
 
 q = zeros(getNumDOF(r),1);
-q(1:3) = q(1:3) + tol*(rand(3,1)-0.5);
+q(1:6) = q(1:6) + 1e-1*tol*(rand(6,1)-0.5);
 
 kinsol = doKinematics(r,q);
 pts = r.body(2).contact_shapes{1}.getBoundingBoxPoints();
@@ -92,7 +92,7 @@ for x=linspace(-2*(bnd.xmax-bnd.xmin),2*(bnd.xmax-bnd.xmin),50);
 end
 
 q = zeros(getNumDOF(r),1);
-q(1:3) = q(1:3) + tol*(rand(3,1)-0.5);
+q(1:6) = q(1:6) + 1e-1*tol*(rand(6,1)-0.5);
 for y=linspace(-2*(bnd.ymax-bnd.ymin),2*(bnd.ymax-bnd.ymin),50);
   q(2)=y;
   
@@ -111,7 +111,7 @@ for y=linspace(-2*(bnd.ymax-bnd.ymin),2*(bnd.ymax-bnd.ymin),50);
 end
 
 q = zeros(getNumDOF(r),1);
-q(1:3) = q(1:3) + tol*(rand(3,1)-0.5);
+q(1:6) = q(1:6) + 1e-1*tol*(rand(6,1)-0.5);
 for z=linspace(-2*(bnd.zmax-bnd.zmin),2*(bnd.zmax-bnd.zmin),50);
   q(3)=z;
   
