@@ -60,6 +60,7 @@ namespace DrakeCollision
                                                 const int bodyB_idx, 
                                                 const BulletElement& elemA, 
                                                 const BulletElement& elemB, 
+                                                const std::set<std::string>& active_element_groups,
                                                 const ResultCollShPtr& c);
 
       virtual bool findCollisionPointsBtwElements(const int bodyA_idx,
@@ -96,7 +97,8 @@ namespace DrakeCollision
                                                Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB,
                                                Eigen::MatrixXd& normal, 
                                                Eigen::VectorXd& distance,
-                                               std::vector<int>& bodies_idx);
+                                               const std::vector<int>& bodies_idx,
+                                               const std::set<std::string>& active_element_groups);
       // END Required member functions
 
       virtual const Body& getBody(int body_idx) const
@@ -133,10 +135,15 @@ namespace DrakeCollision
                                         const int bodyB_idx,
                                         const BulletElement& elemA, 
                                         const ElementVec& elem_vecB, 
+                                        const std::set<std::string> active_element_groups,
                                         const ResultCollShPtr c)
       {
         for (BulletElement elemB : elem_vecB) {
-          findClosestPointsBtwElements(bodyA_idx, bodyB_idx, elemA,elemB,c);
+          if ( active_element_groups.empty() || 
+              ( (active_element_groups.find(elemA.getGroupName()) != active_element_groups.end()) &&
+                (active_element_groups.find(elemB.getGroupName()) != active_element_groups.end()) ) ) {
+            findClosestPointsBtwElements(bodyA_idx, bodyB_idx, elemA,elemB, active_element_groups,c);
+          }
         }
         return (c->pts.size() > 0);
       }
@@ -145,16 +152,18 @@ namespace DrakeCollision
                                          const int bodyB_idx,
                                          const ElementVec& elem_vecA, 
                                          const ElementVec& elem_vecB, 
+                                         const std::set<std::string> active_element_groups,
                                          const ResultCollShPtr& c)
       {
         for (BulletElement elemA : elem_vecA) {
-          findClosestPointsBtwElements(bodyA_idx,bodyB_idx,elemA, elem_vecB,c);
+          findClosestPointsBtwElements(bodyA_idx,bodyB_idx,elemA, elem_vecB, active_element_groups, c);
         }
         return (c->pts.size() > 0);
       }
 
        bool findClosestPointsBtwBodies(const int bodyA_idx, 
           const int bodyB_idx, 
+          const std::set<std::string> active_element_groups,
           const ResultCollShPtr& c)
       {
         bool result;
@@ -163,7 +172,8 @@ namespace DrakeCollision
         //END_DEBUG
         result = findClosestPointsBtwElements(bodyA_idx,bodyB_idx,
                                             bodies[bodyA_idx].getElements(),
-                                            bodies[bodyB_idx].getElements(),c);
+                                            bodies[bodyB_idx].getElements(),
+                                            active_element_groups, c);
         //DEBUG
         //} catch (std::exception& ex) {
           //std::cerr << "In ModelTemplate::findClosetPointsBtwBodies" << std::endl;
@@ -214,6 +224,9 @@ namespace DrakeCollision
       btDbvtBroadphase bt_collision_broadphase;
       OverlapFilterCallback filter_callback;
       std::vector< std::unique_ptr< ElementData > > element_data;
+
+    protected:
+      virtual const std::vector<int> bodyIndices() const;
   };
 }
 #endif
