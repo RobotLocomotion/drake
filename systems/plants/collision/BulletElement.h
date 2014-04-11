@@ -19,6 +19,10 @@ namespace DrakeCollision
 
       const Shape& getShape() const;
 
+      const std::string& getGroupName() const;
+
+      void setGroupName(const std::string&);
+
     protected:
       virtual void setWorldTransform(const Eigen::Matrix4d& T_elem_to_world);
 
@@ -27,6 +31,7 @@ namespace DrakeCollision
       Shape shape;
 
       std::shared_ptr<btCollisionObject> bt_obj;
+      std::string group_name;
 
     public:
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW

@@ -139,4 +139,14 @@ namespace DrakeCollision
 
     bt_obj->setWorldTransform(btT);
   }
+
+  const string& BulletElement::getGroupName() const
+  {
+    return group_name;
+  }
+
+  void BulletElement::setGroupName(const string& group_name)
+  {
+    this->group_name = group_name;
+  }
 }

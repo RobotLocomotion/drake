@@ -2,6 +2,7 @@
 #define __DrakeCollision_H__
 
 #include <memory>
+#include <set>
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
@@ -63,7 +64,28 @@ namespace DrakeCollision
 					Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB,
 					Eigen::MatrixXd& normal, 
 					Eigen::VectorXd& distance,
-					std::vector<int>& bodies_idx) { return false; };
+					const std::vector<int>& bodies_idx,
+          const std::set<std::string>& active_element_groups) { return false; };
+
+    bool closestPointsAllBodies(std::vector<int>& bodyA_idx, 
+        std::vector<int>& bodyB_idx, 
+        Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB,
+        Eigen::MatrixXd& normal, 
+        Eigen::VectorXd& distance,
+        const std::set<std::string>& active_element_groups);
+
+    bool closestPointsAllBodies(std::vector<int>& bodyA_idx, 
+        std::vector<int>& bodyB_idx, 
+        Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB,
+        Eigen::MatrixXd& normal, 
+        Eigen::VectorXd& distance,
+        const std::vector<int>& bodies_idx);
+
+    bool closestPointsAllBodies(std::vector<int>& bodyA_idx, 
+        std::vector<int>& bodyB_idx, 
+        Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB,
+        Eigen::MatrixXd& normal, 
+        Eigen::VectorXd& distance);
 
     virtual bool allCollisions(std::vector<int>& bodyA_idx, 
 			       std::vector<int>& bodyB_idx, 
@@ -77,6 +99,10 @@ namespace DrakeCollision
     // @param distance to the first collision, or -1 on no collision
     //
     virtual bool collisionRaycast(const Eigen::Matrix3Xd &origin, const Eigen::Matrix3Xd &ray_endpoint, Eigen::VectorXd &distances) { return false; };
+
+    protected:
+      virtual const std::vector<int> bodyIndices() const;
+      virtual const std::set<std::string> elementGroupNames() const;
   };
 
   std::shared_ptr<Model> newModel();
