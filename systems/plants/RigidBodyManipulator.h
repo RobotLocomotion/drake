@@ -98,7 +98,25 @@ public:
                         MatrixXd& xA, MatrixXd& xB, 
                         std::vector<int>& bodyA_idx, 
                         std::vector<int>& bodyB_idx,
-                        std::vector<int>& bodies_idx);
+                        const std::vector<int>& bodies_idx,
+                        const std::set<std::string>& active_element_groups);
+
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
+                        MatrixXd& xA, MatrixXd& xB, 
+                        std::vector<int>& bodyA_idx, 
+                        std::vector<int>& bodyB_idx,
+                        const std::vector<int>& bodies_idx);
+
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
+                        MatrixXd& xA, MatrixXd& xB, 
+                        std::vector<int>& bodyA_idx, 
+                        std::vector<int>& bodyB_idx,
+                        const std::set<std::string>& active_element_groups);
+
+  bool collisionDetect( VectorXd& phi, MatrixXd& normal, 
+                        MatrixXd& xA, MatrixXd& xB, 
+                        std::vector<int>& bodyA_idx, 
+                        std::vector<int>& bodyB_idx);
 
 
   bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx, 
