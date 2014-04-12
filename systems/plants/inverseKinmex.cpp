@@ -32,7 +32,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   vector<string> infeasible_constraint;
   inverseKin(model,q_seed,q_nom,num_constraints,constraint_array,q_sol,info,infeasible_constraint,*ikoptions);
   plhs[1] = mxCreateDoubleScalar((double) info);
-  mwSize name_dim[1] = {infeasible_constraint.size()};
+  mwSize name_dim[1] = {static_cast<mwSize>(infeasible_constraint.size())};
   plhs[2] = mxCreateCellArray(1,name_dim);
   for(int i = 0;i<infeasible_constraint.size();i++)
   {
