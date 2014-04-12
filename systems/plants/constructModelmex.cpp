@@ -129,13 +129,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(pBodies,i,"mass");
     model->bodies[i].mass = (double) mxGetScalar(pm);
 
-    pm = mxGetProperty(pBodies,i,"contact_pts");
-    if (!mxIsEmpty(pm)) {
-      Map<MatrixXd> pts_tmp(mxGetPr(pm),mxGetM(pm),mxGetN(pm));
-      model->bodies[i].contact_pts.resize(4,mxGetN(pm));
-      model->bodies[i].contact_pts << pts_tmp, MatrixXd::Ones(1,mxGetN(pm));
-    }
-    
     pm = mxGetProperty(pBodies,i,"com");
     if (!mxIsEmpty(pm)) memcpy(model->bodies[i].com.data(),mxGetPr(pm),sizeof(double)*3);
 
@@ -210,6 +203,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             for (int k=0; k<n_params; k++) 
               params_vec.push_back(params[k]);
             mxDestroyArray(pPoints);
+          }
+            break;
+          case DrakeCollision::CAPSULE:
+          {
+            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"radius")));
+            params_vec.push_back(*mxGetPr(mxGetProperty(pShape,0,"len")));
           }
             break;
           default:

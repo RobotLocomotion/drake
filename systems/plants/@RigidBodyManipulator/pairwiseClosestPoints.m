@@ -3,11 +3,11 @@ function [ptA,ptB,normal,distance,JA,JB,dJA,dJB] = pairwiseClosestPoints(obj,kin
 % Uses bullet to find the points of closest approach between bodies A and B
 %
 % @param kinsol  the output from doKinematics()
-% @param bodyA_idx  numerical index of rigid body A or 
+% @param bodyA_idx  numerical index of rigid body A or
 %     (less efficient:) a rigidbody object
 % @param bodyB_idx  numerical index of rigid body B (or the rigidbody object)
 %     if bodyB_idx is -1, compute collisions with entire world
-% 
+%
 % @retval ptA the points (in world coordinates) on bodyA that are in
 % collision
 % @retval ptB the point (in world coordinates) on bodyB that are in
@@ -17,39 +17,38 @@ function [ptA,ptB,normal,distance,JA,JB,dJA,dJB] = pairwiseClosestPoints(obj,kin
 % @retval JB the jacobian of ptB
 % @ingroup Collision
 
-if ~isstruct(kinsol)  
-  % treat input as contactPositions(obj,q)
-  kinsol = doKinematics(obj,kinsol,nargout>5);
+if ~isstruct(kinsol)
+  % treat input as q
+  kinsol = doKinematics(obj,kinsol,compute_second_derivative);
 end
 
-if (kinsol.mex ~= true) 
-  error('need to call doKinematics using mex first');
-end
+active_collision_options.body_idx = [bodyA_idx; bodyB_idx];
+[distance,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,false,active_collision_options);
 
-if (isa(bodyA_idx,'RigidBody')) bodyA_idx = find(obj.body==bodyA_idx,1); end
-if (isa(bodyB_idx,'RigidBody')) bodyB_idx = find(obj.body==bodyB_idx,1); end
-
-[ptA,ptB,normal,distance] = collisionmex(obj.mex_model_ptr,4,bodyA_idx,bodyB_idx);
-
-if isempty(ptA)
-  JA=[]; JB=[];
-  error('ptA should not be empty');
-  return;
-end
-
-if (nargout>3)
-  x = bodyKin(obj,kinsol,bodyA_idx,ptA);
-  if (nargout>5)
-    [~,JA,dJA] = forwardKin(obj,kinsol,bodyA_idx,x);
+if isempty(distance)
+  ptA = [];
+  ptB = [];
+  JA =[];
+  JB = [];
+  dJA = [];
+  dJB = [];
+else
+  if idxA ~= bodyA_idx,
+    % then everything is swapped
+    normal = -normal;
+    tmp = xA;
+    xA = xB;
+    xB = tmp;
+  end
+  if nargout > 6,
+    [ptA,JA,dJA] = forwardKin(obj,kinsol,bodyA_idx,xA);
+    [ptB,JB,dJB] = forwardKin(obj,kinsol,bodyB_idx,xB);
+  elseif nargout > 4,
+    [ptA,JA] = forwardKin(obj,kinsol,bodyA_idx,xA);
+    [ptB,JB] = forwardKin(obj,kinsol,bodyB_idx,xB);
   else
-    [~,JA] = forwardKin(obj,kinsol,bodyA_idx,x);
+    ptA = forwardKin(obj,kinsol,bodyA_idx,xA);
+    ptB = forwardKin(obj,kinsol,bodyB_idx,xB);
   end
 end
-if (nargout>4)
-  x = bodyKin(obj,kinsol,bodyB_idx,ptB);
-  if (nargout>6)
-    [~,JB,dJB] = forwardKin(obj,kinsol,bodyB_idx,x);
-  else
-    [~,JB] = forwardKin(obj,kinsol,bodyB_idx,x);
-  end
 end

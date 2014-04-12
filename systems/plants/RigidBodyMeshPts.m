@@ -1,8 +1,8 @@
-classdef RigidBodyMeshPts < RigidBodyGeometry
+classdef RigidBodyMeshPts < RigidBodyMesh
   
   methods
-    function obj = RigidBodyMeshPoints(pts)
-      obj = RigidBodyMesh('');
+    function obj = RigidBodyMeshPts(pts)
+      obj = obj@RigidBodyMesh('');
       obj.pts = pts;
     end
     

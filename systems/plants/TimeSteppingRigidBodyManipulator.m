@@ -75,8 +75,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         u=[];
       end
       if isa(obj.getStateFrame(),'MultiCoordinateFrame')
-        cv = obj.getStateFrame().splitCoordinates(x);
-        x_manip = cv{1};
+        x_manip = double(Point(obj.getStateFrame(),x).inFrame(obj.manip.getStateFrame()));
       else
         x_manip = x;
       end
@@ -259,11 +258,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         else
           nL = sum([obj.manip.joint_limit_min~=-inf;obj.manip.joint_limit_max~=inf]); % number of joint limits
         end
-        nC = obj.manip.num_contacts;
+        nContactPairs = obj.manip.getNumContactPairs;
         nP = 2*obj.manip.num_position_constraints;  % number of position constraints
         nV = obj.manip.num_velocity_constraints;
         
-        if (nC+nL+nP+nV==0)
+        if (nContactPairs+nL+nP+nV==0)
           z = [];
           Mqdn = [];
           wqdn = qd + h*(H\tau);
@@ -283,9 +282,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         % and implement equation (7) from Anitescu97, by collecting
         %   J = [JL; JP; n; D{1}; ...; D{mC}; zeros(nC,num_q)]
         
-        if (nC > 0)
+        if (nContactPairs > 0)
           if (nargout>4)
-            [phiC,n,D,mu,dn,dD] = obj.manip.contactConstraints(q);  % this is what I want eventually.
+            [phiC,~,~,~,~,~,~,mu,n,D,dn,dD] = obj.manip.contactConstraints(q,true);
+            nC = length(phiC);
             mC = length(D);
             dJ = zeros(nL+nP+(mC+2)*nC,num_q^2);  % was sparse, but reshape trick for the transpose below didn't work
             dJ(nL+nP+(1:nC),:) = reshape(dn,nC,[]);
@@ -293,7 +293,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dD = vertcat(dD{:});
             dJ(nL+nP+nC+(1:mC*nC),:) = dD;
           else
-            [phiC,n,D,mu] = obj.manip.contactConstraints(q);
+            [phiC,~,~,~,~,~,~,mu,n,D] = obj.manip.contactConstraints(q,true);
+            nC = length(phiC);
             mC = length(D);
           end
           J = zeros(nL + nP + (mC+2)*nC,num_q)*q(1); % *q(1) is for taylorvar
@@ -302,6 +303,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           J(nL+nP+nC+(1:mC*nC),:) = D;
         else
           mC=0;
+          nC=0;
           J = zeros(nL+nP,num_q);
           if (nargout>4)
             dJ = sparse(nL+nP,num_q^2);
@@ -482,7 +484,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           if any(active)
             z(active) = pathlcp(M(active,active),w(active));
           end
-          
+
           inactive = ~active(1:(nL+nP+nC));  % only worry about the constraints that really matter.
           missed = (M(inactive,inactive)*z(inactive)+w(inactive) < 0);
           if ~any(missed), break; end
@@ -712,6 +714,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       varargout = cell(1,nargout);
       [varargout{:}]=collisionDetect(obj.manip,varargin{:});
     end
+
+    function varargout = collisionDetectTerrain(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}]=collisionDetectTerrain(obj.manip,varargin{:});
+    end
     
     function varargout = stateConstraints(obj,varargin)
       varargout = cell(1,nargout);
@@ -844,11 +851,27 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
     
     function num_c = getNumContacts(obj)
-      num_c = obj.manip.num_contacts;
+      error('getNumContacts is no longer supported, in anticipation of alowing multiple contacts per body pair. Use getNumContactPairs for cases where the number of contacts is fixed');
+    end
+    
+    function n=getNumContactPairs(obj)
+      n = obj.manip.getNumContactPairs;
     end
 
     function c = getBodyContacts(obj,body_idx)
-      c = obj.manip.body(body_idx).contact_pts;
+      c = obj.manip.body(body_idx).contact_shapes;
+    end
+
+    function obj = addContactShapeToBody(obj,varargin)
+      obj.manip = addContactShapeToBody(obj.manip,varargin{:});
+    end
+
+    function obj = addVisualShapeToBody(obj,varargin)
+      obj.manip = addVisualShapeToBody(obj.manip,varargin{:});
+    end
+
+    function obj = addShapeToBody(obj,varargin)
+      obj.manip = addShapeToBody(obj.manip,varargin{:});
     end
     
     function obj = replaceContactShapesWithCHull(obj,body_indices,varargin)
@@ -905,12 +928,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       ptr = getMexModelPtr(obj.manip);
     end
     
-    function [ptsA,ptsB,normal,distance,JA,JB,Jd,idxA,idxB] = closestPointsAllBodies(obj,kinsol)
-      [ptsA,ptsB,normal,distance,JA,JB,Jd,idxA,idxB] = closestPointsAllBodies(obj.manip,kinsol);
-    end
-    
-    function [phi,Jphi] = closestDistanceAllBodies(obj,kinsol)
-      [phi,Jphi] = closestDistanceAllBodies(obj.manip,kinsol);
+    function [phi,Jphi] = closestDistance(obj,varargin)
+      [phi,Jphi] = closestDistance(obj.manip,varargin{:});
     end
     
     function obj = addLinksToCollisionFilterGroup(obj,linknames,collision_fg_name,robotnums)

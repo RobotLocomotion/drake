@@ -1,13 +1,48 @@
 classdef RigidBodyGeometry
 
   methods % to be implemented in derived classes
-    pts = getPoints(obj);  % returned in body coordinates
+    pts = getPoints(obj);             % returned in body coordinates
+    pts = getBoundingBoxPoints(obj);  % returned in body coordinates
     lcmt_viewer_geometry_data = serializeToLCM(obj);
   end
   
   methods
-    function obj = RigidBodyGeometry(bullet_shape_id)
+    function obj = RigidBodyGeometry(bullet_shape_id,varargin)
+      % obj = RigidBodyGeometry(bullet_shape_id) constructs a
+      % RigidBodyGeometry object with the geometry-to-body transform set to
+      % identity.
+      %
+      % obj = RigidBodyGeometry(bullet_shape_id,T) constructs a
+      % RigidBodyGeometry object with the geometry-to-body transform T.
+      % 
+      % obj = RigidBodyGeometry(bullet_shape_id,xyz,rpy) constructs a
+      % RigidBodyGeometry object with the geometry-to-body transform specified
+      % by the position, xyz, and Euler angles, rpy.
+      %
+      % @param bullet_shape_id - Integer that tells the DrakeCollision library
+      % what type of geometry this is.
+      % @param T - 4x4 homogenous transform from geometry-frame to body-frame
+      % @param xyz - 3-element vector specifying the position of the geometry
+      % in the body-frame
+      % @param rpy - 3-element vector of Euler angles specifying the orientation of the
+      % geometry in the body-frame
+      if nargin < 2
+        T_geometry_to_body = eye(4);
+      elseif nargin < 3
+        typecheck(varargin{1},'numeric');
+        sizecheck(varargin{1},[4, 4]);
+        T_geometry_to_body = varargin{1};
+      else
+        typecheck(varargin{1},'numeric');
+        typecheck(varargin{2},'numeric');
+        sizecheck(varargin{1},3);
+        sizecheck(varargin{2},3);
+        xyz = reshape(varargin{1},3,1);
+        rpy = reshape(varargin{2},3,1);
+        T_geometry_to_body = [rpy2rotmat(rpy), xyz; zeros(1,3),1];
+      end
       obj.bullet_shape_id = bullet_shape_id;
+      obj.T = T_geometry_to_body;
     end
     
     function [x,y,z,c] = getPatchData(obj,x_axis,y_axis,view_axis)
@@ -33,6 +68,15 @@ classdef RigidBodyGeometry
       y = pts(2,:)';
       z = pts(3,:)';
       c = obj.c;
+    end
+
+    function pts = getTerrainContactPoints(obj)
+      % pts = getTerrainContactPoints(obj)
+      %
+      % @param  obj - RigidBodyGeometry object
+      % @retval pts - 3xm array of points on this geometry (in link frame) that
+      %               can collide with the world.
+      pts = [];
     end
     
   end
@@ -71,10 +115,15 @@ classdef RigidBodyGeometry
             end
             
             obj = RigidBodyMesh(GetFullPath(filename));
+          case 'capsule'
+            r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
+            l = parseParamString(model,robotnum,char(thisNode.getAttribute('length')));
+            obj = RigidBodyCapsule(r,l);  % l/2
         end
         obj.T = T;
       end
     end
+
   end
   
   properties  % note: constructModelmex currently depends on these being public

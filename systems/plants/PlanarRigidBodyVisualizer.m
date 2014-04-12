@@ -63,10 +63,6 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
             parent_origin = forwardKin(obj.model,kinsol,body.parent,[0;0]);
             line([origin(1),parent_origin(1)],[origin(2),parent_origin(2)],'Color','k');
           end
-          if ~isempty(body.contact_pts)
-            pts = obj.model.T_2D_to_3D'*forwardKin(obj.model,kinsol,i,body.contact_pts);
-            plot(pts(1,:),pts(2,:),'g*');
-          end
         end
       end
 
@@ -95,7 +91,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       xlabel(obj.model.x_axis_label);
       ylabel(obj.model.y_axis_label);
       
-      if (~isempty([obj.model.body.contact_pts]))
+      if obj.model.getNumContactPairs > 0
         v=axis;
         line([v(1)-.1*(v(2)-v(1)),v(2)+.1*(v(2)-v(1))],[0 0],'Color','k');
       end
