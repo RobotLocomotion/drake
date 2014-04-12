@@ -10,25 +10,29 @@ classdef RigidBodyGeometry
       obj.bullet_shape_id = bullet_shape_id;
     end
     
-    function pts = getPlanarPoints(obj,x_axis,y_axis,view_axis)
+    function [x,y,z,c] = getPatchData(obj,x_axis,y_axis,view_axis)
       % output is compatible with patch for 2D viewing
       % still returns a 3xn, but the z-axis is constant (just meant for
       % depth ordering in the 2d figure)
       
-      Tview = [x_axis, y_axis, view_axis]';
-      valuecheck(svd(Tview),[1;1;1]);  % assert that it's orthonormal
+      Rview = [x_axis, y_axis, view_axis]';
+      valuecheck(svd(Rview),[1;1;1]);  % assert that it's orthonormal
       
       pts = getPoints(obj);
       
       % project it into 2D frame
-      pts = Tview*pts;
+      pts = Rview*pts;
       
       % keep only convex hull (todo: do better here)
       ind = convhull(pts(1,:),pts(2,:));
       z = max(pts(3,:));
       
       % take it back out of view coordinates
-      pts = Tview'*[pts(1:2,ind); repmat(z,1,length(ind))];
+      pts = Rview'*[pts(1:2,ind); repmat(z,1,length(ind))];
+      x = pts(1,:)';
+      y = pts(2,:)';
+      z = pts(3,:)';
+      c = obj.c;
     end
     
   end
