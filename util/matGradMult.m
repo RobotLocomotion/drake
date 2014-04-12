@@ -18,7 +18,7 @@ if nargin>2 && transposeA
   n = length(b);
   m = size(A,2);
   k = size(A,1)/n;
-  y = zeros(m,n);
+  y = zeros(k,m);
   for i=1:m,
     y(:,i) = reshape(A(:,i),n,k)'*b;
   end

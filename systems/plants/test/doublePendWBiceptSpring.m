@@ -1,6 +1,6 @@
 function doublePendWBiceptSpring
 
-r = RigidBodyManipulator('DoublePendWBiceptSpring.urdf');
+r = RigidBodyManipulator('DoublePendWBiceptSpring.urdf',struct('terrain',[]));
 x0 = [0;pi;0;0]+.1*randn(4,1);
 run_time = 10;
 xtraj = simulate(r,[0 run_time],x0);

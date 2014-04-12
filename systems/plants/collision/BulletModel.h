@@ -60,8 +60,8 @@ namespace DrakeCollision
       btDbvtBroadphase bt_collision_broadphase;
 
       // For getClosestPoints
-      btGjkEpaPenetrationDepthSolver epa;
-      btVoronoiSimplexSolver sGjkSimplexSolver;
+      //btGjkEpaPenetrationDepthSolver epa;
+      //btVoronoiSimplexSolver sGjkSimplexSolver;
       //TestbtCollisionWorld test;
   };
 }

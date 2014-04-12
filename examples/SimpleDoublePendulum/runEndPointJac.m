@@ -1,6 +1,6 @@
 function runEndPointJac
 
-r = PlanarRigidBodyManipulator('SimpleDoublePendulum.urdf');
+r = PlanarRigidBodyManipulator('SimpleDoublePendulum.urdf',struct('terrain',[]));
 v = r.constructVisualizer();
 v.axis = [-2 2 -2 2];
 

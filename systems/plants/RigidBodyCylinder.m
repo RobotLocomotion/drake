@@ -1,8 +1,27 @@
 classdef RigidBodyCylinder < RigidBodyGeometry
   
   methods 
-    function obj = RigidBodyCylinder(radius,len)
-      obj = obj@RigidBodyGeometry(3);
+    function obj = RigidBodyCylinder(radius,len,varargin)
+      % obj = RigidBodyCylinder(radius,len) constructs a
+      % RigidBodyCylinder object with the geometry-to-body transform set
+      % to identity.
+      %
+      % obj = RigidBodyCylinder(radius,len,T) constructs a
+      % RigidBodyCylinder object with the geometry-to-body transform T.
+      % 
+      % obj = RigidBodyCylinder(radius,len,xyz,rpy) constructs a
+      % RigidBodyCylinder object with the geometry-to-body transform
+      % specified by the position, xyz, and Euler angles, rpy.
+      %
+      % @param radius - radius of the cylinder
+      % @param len - length of the cylinder
+      % @param T - 4x4 homogenous transform from geometry-frame to
+      %   body-frame
+      % @param xyz - 3-element vector specifying the position of the
+      %   geometry in the body-frame
+      % @param rpy - 3-element vector of Euler angles specifying the
+      %   orientation of the geometry in the body-frame
+      obj = obj@RigidBodyGeometry(3,varargin{:});
       sizecheck(radius,1);
       sizecheck(len,1);
       obj.radius = radius;
@@ -10,8 +29,13 @@ classdef RigidBodyCylinder < RigidBodyGeometry
     end
     
     function pts = getPoints(obj)
-      % treat it as a box, for collisions
-      warning('Drake:RigidBodyGeometry:SimplifiedCollisionGeometry','for efficiency, cylinder geometry will be treated like a box for 3D collisions');
+      warning('Drake:RigidBodyGeometry:SimplifiedCollisionGeometry', ...
+              'This method returns the vertices of the cylinder''s bounding-box.');
+      pts = getBoundingBoxPoints(obj);
+    end
+
+    function pts = getBoundingBoxPoints(obj)
+      % Return axis-aligned bounding-box vertices
       cx = obj.radius*[-1 1 1 -1 -1 1 1 -1];
       cy = obj.radius*[1 1 1 1 -1 -1 -1 -1];
       cz = obj.len/2*[1 1 -1 -1 -1 -1 1 1];
@@ -64,6 +88,20 @@ classdef RigidBodyCylinder < RigidBodyGeometry
       tabprintf(fp,'appearance Appearance { material Material { diffuseColor %f %f %f } }\n',obj.c(1),obj.c(2),obj.c(3));
       td=td-1; tabprintf(fp,'}\n');  % end Shape {
       td=td-1; tabprintf(fp,'}\n'); % end Transform {
+    end
+
+    function capsule = toCapsule(obj)
+      % capsule = toCapsule(obj) returns a RigidBodyCapsule object with
+      % the same properties (radius, length, geometry-to-body transform)
+      % as obj. Note that the total length of a capsule is 2*radius
+      % longer than that of a coresponding cylinder. See the constructor
+      % of RigidBodyCapsule for more information.
+      %
+      % @param obj - RigidBodyCylinder object
+      % 
+      % @retvval capsule - RigidBodyCapsule object
+      
+      capsule = RigidBodyCapsule(obj.radius,obj.len,obj.T);
     end
   end
   

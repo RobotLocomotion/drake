@@ -1,8 +1,26 @@
 classdef RigidBodyMesh < RigidBodyGeometry
   
   methods 
-    function obj = RigidBodyMesh(filename)
-      obj = obj@RigidBodyGeometry(4);
+    function obj = RigidBodyMesh(filename,varargin)
+      % obj = RigidBodyMesh(filename) constructs a RigidBodyMesh object with
+      % the geometry-to-body transform set to identity.
+      %
+      % obj = RigidBodyMesh(filename,T) constructs a RigidBodyMesh object with
+      % the geometry-to-body transform T.
+      % 
+      % obj = RigidBodyMesh(filename,xyz,rpy) constructs a RigidBodyMesh
+      % object with the geometry-to-body transform specified by the
+      % position, xyz, and Euler angles, rpy.
+      %
+      % @param filename - string containing the full path to a .stl or
+      %   .wrl file describing the mesh
+      % @param T - 4x4 homogenous transform from geometry-frame to
+      %   body-frame
+      % @param xyz - 3-element vector specifying the position of the
+      %   geometry in the body-frame
+      % @param rpy - 3-element vector of Euler angles specifying the
+      %   orientation of the geometry in the body-frame
+      obj = obj@RigidBodyGeometry(4,varargin{:});
       typecheck(filename,'char');
       obj.filename = filename;
     end
@@ -37,6 +55,20 @@ classdef RigidBodyMesh < RigidBodyGeometry
         normals=obj.T(1:3,1:3)*reshape(normals,3,[]);
       end
       
+    end
+
+    function pts = getBoundingBoxPoints(obj)
+      % Return axis-aligned bounding-box vertices
+      vertices = getPoints(obj);
+      max_vals = repmat(max(vertices,[],2),1,8);
+      min_vals = repmat(min(vertices,[],2),1,8);
+      min_idx = logical([ 0 1 1 0 0 1 1 0;
+                          1 1 1 1 0 0 0 0;
+                          1 1 0 0 0 0 1 1]);
+      pts = zeros(3,8);
+      pts(min_idx) = min_vals(min_idx);
+      pts(~min_idx) = max_vals(~min_idx);
+      pts = obj.T(1:end-1,:)*[pts;ones(1,8)];
     end
     
     function pts = getPoints(obj)

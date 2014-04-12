@@ -18,6 +18,8 @@ classdef RigidBodyManipulator < Manipulator
     gravity=[0;0;-9.81];
     dim=3;
     terrain;
+    num_contact_pairs;
+    contact_options; % struct containing options for contact/collision handling
     frame = [];     % array of RigidBodyFrame objects
   end
   
@@ -38,15 +40,18 @@ classdef RigidBodyManipulator < Manipulator
       % urdf (see documentation for addRobotFromURDF for details on the
       % inputs).
       
+      if (nargin<2), options = struct(); end
+      if ~isfield(options,'terrain'), options.terrain = RigidBodyFlatTerrain(); end;
+
       obj = obj@Manipulator(0,0);
       obj.body = newBody(obj);
       obj.body.linkname = 'world';
+      obj = setTerrain(obj,options.terrain);
+      obj.contact_options = obj.parseContactOptions(options);
       
       if (nargin>0 && ~isempty(urdf_filename))
-        if (nargin<2) options = struct(); end
         obj = addRobotFromURDF(obj,urdf_filename,zeros(3,1),zeros(3,1),options);
       end
-      obj.terrain = RigidBodyTerrain;
     end
   end
   
@@ -54,6 +59,35 @@ classdef RigidBodyManipulator < Manipulator
     function obj = loadobj(obj)
       obj.mex_model_ptr = 0;
       obj = compile(obj);
+      % NOTEST
+    end
+    function contact_options = parseContactOptions(options)
+      % contact_options = parseContactOptions(options) returns a struct
+      % containing settings for contact/collision detection. If no value
+      % is given for a particular setting, a default value is used.
+      % 
+      % @param options - Structure that may have fields specifying 
+      %                  values for contact options.
+      %
+      % @retval contact_options - Struct with the following fields:
+      %     * ignore_self_collisions          @default false
+      %     * replace_cylinders_with_capsules @default true
+      %   If a corresponding field exists in `options`, its value will
+      %   be used.
+      contact_options = struct();
+      if isfield(options,'ignore_self_collisions')
+        typecheck(options.ignore_self_collisions,'logical');
+        contact_options.ignore_self_collisions = options.ignore_self_collisions;
+      else
+        contact_options.ignore_self_collisions = false;
+      end
+      if isfield(options,'replace_cylinders_with_capsules')
+        typecheck(options.replace_cylinders_with_capsules,'logical');
+        contact_options.replace_cylinders_with_capsules = ...
+          options.replace_cylinders_with_capsules;
+      else
+        contact_options.replace_cylinders_with_capsules = true;
+      end
       % NOTEST
     end
   end
@@ -85,8 +119,38 @@ classdef RigidBodyManipulator < Manipulator
       %
       % @param terrain a RigidBodyTerrain object
       
-      typecheck(terrain,'RigidBodyTerrain');
+      if ~isempty(terrain)
+        typecheck(terrain,'RigidBodyTerrain');
+      end
+      obj = removeTerrainGeometries(obj);
       obj.terrain = terrain;
+      obj = addTerrainGeometries(obj);
+    end
+
+    function obj = addTerrainGeometries(obj)
+      if ~isempty(obj.terrain)
+        geom = obj.terrain.getRigidBodyGeometry();
+        if ~isempty(geom)
+          if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
+            obj.body(1).contact_shapes{end+1} = geom;
+          end
+          if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
+            obj.body(1).visual_shapes{end+1} = geom;
+          end
+          obj.dirty = true;
+        end
+      end
+    end
+
+    function obj = removeTerrainGeometries(obj)
+      if ~isempty(obj.terrain)
+        geom = obj.terrain.getRigidBodyGeometry();
+        geom_contact_idx = cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes);
+        obj.body(1).contact_shapes(geom_contact_idx) = [];
+        geom_visual_idx = cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes);
+        obj.body(1).visual_shapes(geom_visual_idx) = [];
+        obj.dirty = true;
+      end
     end
 
     function [z,normal] = getTerrainHeight(obj,contact_pos)
@@ -120,6 +184,10 @@ classdef RigidBodyManipulator < Manipulator
       
     end
     
+    function n = getNumPositions(obj)
+      n = obj.num_q; %placeholder waiting for Russ' changes
+    end
+    
     function n = getNumDOF(obj)
       n = obj.num_q;
     end
@@ -130,8 +198,24 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function str = getLinkName(obj,body_ind)
+      % str = getLinkName(obj,body_ind) returns a string containing the
+      % link name the specified body if body_ind is a scalar. If body
+      % ind is a vector, it returns a cell array containing the names of
+      % the bodies specified by the elements of body_ind.
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_ind - Body index or vector of body indices
+      %
+      % @retval str - String (cell array of strings) containing the
+      % requested linkname(s)
+      %
       % @ingroup Kinematic Tree
-      str = obj.body(body_ind).linkname;
+
+      if numel(body_ind) > 1
+        str = {obj.body(body_ind).linkname};
+      else
+        str = obj.body(body_ind).linkname;
+      end
     end
 
     function obj = setGravity(obj,grav)
@@ -510,10 +594,6 @@ classdef RigidBodyManipulator < Manipulator
       if (any(model.joint_limit_min~=-inf) || any(model.joint_limit_max~=inf))
         warning('Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
-      model.num_contacts = size([model.body.contact_pts],2);
-      if (model.num_contacts>0)
-        warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
-      end
       
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
       
@@ -525,10 +605,20 @@ classdef RigidBodyManipulator < Manipulator
         valuecheck(model.body(i).T_body_to_joint(end,end),1);
       end
 
-      model = setupCollisionFiltering(model);
+      model = adjustContactShapes(model);
+      model = setupCollisionFiltering(model);      
+            
+      model.dirty = false;
       
       model = createMexPointer(model);
-      model.dirty = false;
+
+      % collisionDetect may require the mex version of the manipulator,
+      % so it should go after createMexPointer
+      phi = model.collisionDetect(zeros(model.getNumPositions,1));
+      model.num_contact_pairs = length(phi);
+      if (model.num_contact_pairs>0)
+        warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
+      end
       
 %      H = manipulatorDynamics(model,zeros(model.num_q,1),zeros(model.num_q,1));
 %      if cond(H)>1e3
@@ -742,6 +832,24 @@ classdef RigidBodyManipulator < Manipulator
       b = leastCommonAncestor(model,body1.parent,body2);
     end
     
+    function terrain_contact_point_struct = getTerrainContactPoints(obj)
+      % terrain_contact_point_struct = getTerrainContactPoints(obj)
+      %
+      % @param obj - RigidBodyManipulator object
+      % @retval terrain_contact_point_struct - nx1 structure array, where n is
+      %   the number of bodies with points that can collide with non-flat
+      %   terrain. Each element has the following fields
+      %     * idx - Index of a body in the RigidBodyManipulator
+      %     * pts - 3xm array containing points on the body specified by idx
+      %             that can collide with non-flat terrain.
+      terrain_contact_point_struct = struct('pts',{},'idx',{});
+      for i = 1:obj.getNumBodies()
+        pts = getTerrainContactPoints(obj.body(i));
+        if ~isempty(pts)
+          terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
+        end
+      end
+    end
     
     function groups = getContactGroups(model)
       groups = {};
@@ -765,10 +873,64 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
     
+    function body_idx = parseBodyID(obj,body_id)
+      % body_idx = parseBodyID(obj,body_id)
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      %
+      % @retval body_idx - Body index
+      typecheck(body_id,{'numeric','char'});
+      if isnumeric(body_id)
+        body_idx = body_id;
+      else % then it's a string
+        body_idx = findLinkInd(obj,body_id);
+      end
+    end
+
+    function obj = addContactShapeToBody(obj,body_id,shape)
+      % obj = addContactShapeToBody(obj,body_id,shape)
+      %
+      % obj must be re-compiled after calling this method
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      % @param shape - RigidBodyGeometry (or child class) object 
+      body_idx = obj.parseBodyID(body_id);
+      obj.body(body_idx).contact_shapes{end+1} = shape;
+      obj.dirty = true;
+    end
+
+    function obj = addVisualShapeToBody(obj,body_id,shape)
+      % obj = addContactShapeToBody(obj,body_id,shape)
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      % @param shape - RigidBodyGeometry (or child class) object 
+      body_idx = obj.parseBodyID(body_id);
+      obj.body(body_idx).visual_shapes{end+1} = shape;
+    end
+
+    function obj = addShapeToBody(obj,body_id,shape)
+      % obj = addShapeToBody(obj,body_id,shape)
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_id - Body index or body name
+      % @param shape - RigidBodyGeometry (or child class) object 
+      obj = obj.addVisualShapeToBody(body_id,shape);
+      obj = obj.addContactShapeToBody(body_id,shape);
+    end
+
     function model = replaceContactShapesWithCHull(model,body_indices,varargin)
+      if any(body_indices==1)
+        model = removeTerrainGeometries(model);
+      end
       for body_idx = reshape(body_indices,1,[])
         model.body(body_idx) = replaceContactShapesWithCHull(model.body(body_idx),varargin{:});
       end
+      if any(body_indices==1)
+        model = addTerrainGeometries(model);
+      end
+      model.dirty = true;
     end
     
     function drawKinematicTree(model)
@@ -802,6 +964,30 @@ classdef RigidBodyManipulator < Manipulator
         lcmgl.glTranslated(T(1,4),T(2,4),T(3,4));
         lcmgl.glRotated(a(4)*180/pi,a(1),a(2),a(3));
       end
+    end
+
+    function drawLCMGLClosestPoints(model,lcmgl,kinsol,varargin)
+      if ~isstruct(kinsol)
+        kinsol = model.doKinematics(kinsol);
+      end
+      [~,~,xA,xB,idxA,idxB] = model.closestPoints(kinsol,varargin{:});
+      for i = 1:length(idxA)
+        xA_in_world = forwardKin(model,kinsol,idxA(i),xA(:,i));
+        xB_in_world = forwardKin(model,kinsol,idxB(i),xB(:,i));
+
+        lcmgl.glColor3f(0,0,0); % black
+
+        lcmgl.glBegin( lcmgl.LCMGL_LINES);
+        lcmgl.glVertex3f(xA_in_world(1), xA_in_world(2), xA_in_world(3));
+        lcmgl.glVertex3f(xB_in_world(1), xB_in_world(2), xB_in_world(3));
+        lcmgl.glEnd();
+
+        lcmgl.glColor3f(1,0,0); % red
+
+        lcmgl.sphere(xA_in_world,.01,20,20);
+        lcmgl.sphere(xB_in_world,.01,20,20);
+      end
+      lcmgl.glColor3f(.7,.7,.7); % gray
     end
         
     function m = getMass(model)
@@ -842,24 +1028,25 @@ classdef RigidBodyManipulator < Manipulator
     function v = constructVisualizer(obj,options)
       checkDirty(obj);
       if nargin<2, options=struct(); end 
-      if ~isfield(options,'viewer') options.viewer = {'BotVisualizer','RigidBodyWRLVisualizer','NullVisualizer'};
-      elseif ~iscell(options.viewer) options.viewer = {options.viewer}; end
+      if ~isfield(options,'use_contact_shapes'), options.use_contact_shapes = false; end;
+      if ~isfield(options,'viewer'), options.viewer = {'BotVisualizer','RigidBodyWRLVisualizer','NullVisualizer'};
+      elseif ~iscell(options.viewer), options.viewer = {options.viewer}; end
       
       v=[]; i=1;
       while isempty(v)
         type = options.viewer{i};
         
         if strcmp(type,'NullVisualizer')
-          arg = getOutputFrame(obj);
+          arg = {getOutputFrame(obj)};
         else
-          arg = obj;
+          arg = {obj,options.use_contact_shapes};
         end
 
         if (i==length(options.viewer))  % then it's the last one
-          v = feval(type,arg);
+          v = feval(type,arg{:});
         else
           try
-            v = feval(type,arg);
+            v = feval(type,arg{:});
           catch ex
             getReport(ex,'extended')
             warning(ex.identifier,ex.message);
@@ -959,30 +1146,23 @@ classdef RigidBodyManipulator < Manipulator
       
       if ~isfield(options,'visualize'), options.visualize=false; end
       
-      nq = obj.getNumDOF();
+      nq = obj.getNumPositions();
       nu = obj.getNumInputs();
-
+      
+      active_collision_options = struct();
       if isfield(options,'active_collision_groups') 
-        nz=0; npts=0; active_contacts=[];
-        if isfield(options,'active_collision_bodies')
-          bodies=obj.body(active_collision_bodies);
-        else
-          bodies=obj.body;
-        end
-        for i=1:length(bodies)
-          b=bodies(i);
-          for j=1:length(b.collision_group_name)
-            if any(strcmpi(b.collision_group_name{j},options.active_collision_groups))
-              nz=nz+length(b.collision_group{j})*3;
-              active_contacts=[active_contacts,npts+b.collision_group{j}];
-            end
-          end
-          npts=npts+size(b.contact_pts,2);
-        end
-      else
-        active_contacts = 1:getNumContacts(obj);
-        nz = getNumContacts(obj)*3;
-      end      
+        active_collision_options.collision_groups = options.active_collision_groups;
+      end
+
+      if isfield(options,'active_collision_bodies') 
+        active_collision_options.body_idx = options.active_collision_bodies;
+      end
+      
+      % Compute number of contacts by evaluating at x0
+      [phi0,~,~,~,~,~,~,~,~,D0] = obj.contactConstraints(x0(1:nq),false,active_collision_options);
+      
+      % total number of contact forces (normal + frictional)
+      nz = length(phi0) + size(cell2mat(D0'),1);
 
       z0 = zeros(nz,1);
       q0 = x0(1:nq);
@@ -1001,8 +1181,8 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       lb_z = -1e6*ones(nz,1);
-      lb_z(3:3:end) = 0; % normal forces must be >=0
       ub_z = 1e6*ones(nz,1);
+      lb_z(1:length(phi0)) = 0; % normal forces must be positive
     
       [jl_min,jl_max] = obj.getJointLimits();
       % force search to be close to starting position
@@ -1027,32 +1207,24 @@ classdef RigidBodyManipulator < Manipulator
         q=quz(1:nq);
         u=quz(nq+(1:nu));
         z=quz(nq+nu+(1:nz));
-
+        c = [];
+        GC = [];
         [~,C,B,~,dC,~] = obj.manipulatorDynamics(q,zeros(nq,1));
-        [phiC,JC] = obj.contactConstraints(q);
-        [~,J,dJ] = obj.contactPositions(q);
         
-        % note: it would be more elegant to handle collision groups in
-        % contactConstraints and contactPositions
-        phiC=phiC(active_contacts);
-        JC = JC(active_contacts,:);
-        ind = [active_contacts*3 - 2; active_contacts*3 - 1; active_contacts*3];
-        ind = ind(:);
-        J = J(ind,:);
-        dJ = dJ(ind,:);
-        
-        % ignore friction constraints for now
-        c = 0;
-        GC = zeros(nq+nu+nz,1); 
-        
-        dJz = zeros(nq,nq);
-        for i=1:nq
-            dJz(:,i) = dJ(:,(i-1)*nq+1:i*nq)'*z;
+        if obj.getNumContactPairs > 0,
+          [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q,false,active_collision_options);
+          
+          % construct J such that J'*z is the contact force vector in joint
+          J = [n;cell2mat(D')];
+          % similarly, construct dJz
+          dJz = matGradMult([dn;cell2mat(dD')],z,true);
+          
+          ceq = [C-B*u-J'*z; phiC];
+          GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[n'; zeros(nu+nz,length(phiC))]];
+        else
+          ceq = [C-B*u];
+          GCeq = [dC(1:nq,1:nq),-B]';
         end
-        
-        ceq = [C-B*u-J'*z; phiC];
-        GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[JC'; zeros(nu+nz,length(phiC))]]; 
-        
         if (obj.num_xcon>0)
           [phi,dphi] = geval(@obj.stateConstraints,[q;0*q]);
           ceq = [ceq; phi];
@@ -1184,7 +1356,12 @@ classdef RigidBodyManipulator < Manipulator
       % handle the normal = [0;0;1] case
       ind=(1-normal(3,:))<10e-8;  % since it's a unit normal, i can just check the z component
       t1(:,ind) = [ones(1,sum(ind)); zeros(2,sum(ind))];
-      ind=~ind;
+      
+      % handle the normal = [0;0;-1] case
+      indneg=(1+normal(3,:))<10e-8;  % since it's a unit normal, i can just check the z component
+      t1(:,indneg) = [-ones(1,sum(indneg)); zeros(2,sum(indneg))];
+      
+      ind=~(ind | indneg);
       
       % now the general case
       t1(:,ind) = [normal(2,ind);-normal(1,ind);zeros(1,sum(ind))]; % cross(normal,[0;0;1]) normalized
@@ -1198,6 +1375,21 @@ classdef RigidBodyManipulator < Manipulator
       for k=1:m
         d{k}=cos(theta(k))*t1 + sin(theta(k))*t2;
       end      
+    end
+    
+    function n=getNumContactPairs(obj)
+      n = obj.num_contact_pairs;
+    end
+    
+    function [phi,dphi] = unilateralConstraints(obj,x)
+      q = x(1:obj.getNumPositions);
+      [phi,~,~,~,~,~,~,dphi] = obj.contactConstraints(q);
+    end
+    
+    function n = getNumUnilateralConstraints(obj)
+      % Returns the number of unilateral constraints, currently only
+      % contains the contact pairs
+      n = obj.getNumContactPairs();
     end
   end
     
@@ -1412,10 +1604,7 @@ classdef RigidBodyManipulator < Manipulator
         end
         parent.visual_shapes = horzcat(parent.visual_shapes,body.visual_shapes);
         
-        if (~isempty(body.contact_pts))
-          npts = size(parent.contact_pts,2);
-          parent.contact_pts = [parent.contact_pts, body.Ttree(1:end-1,:)*[body.contact_pts;ones(1,size(body.contact_pts,2))]];
-          % todo: finish this!
+        if (~isempty(body.contact_shapes))
           for j=1:length(body.contact_shapes)
             body.contact_shapes{j}.T = body.Ttree*body.contact_shapes{j}.T;
           end
@@ -1426,15 +1615,10 @@ classdef RigidBodyManipulator < Manipulator
             ngroups=length(parent.collision_group_name);
             [parent.collision_group_name,ia,ic]=unique(horzcat(parent.collision_group_name,body.collision_group_name),'stable');
             % note: passing 'stable' to unique (above) ensures that
-            % parent.collision_group is still valid, so just add to it here
-            if length(parent.collision_group)<length(parent.collision_group_name)
-              parent.collision_group{length(parent.collision_group_name)}=[];
-            end
             if length(parent.contact_shape_group)<length(parent.collision_group_name)
               parent.contact_shape_group{length(parent.collision_group_name)}=[];
             end
-            for j=1:length(body.collision_group)
-              parent.collision_group{ic(ngroups+j)} = [parent.collision_group{ic(ngroups+j)},npts+body.collision_group{j}];
+            for j=1:length(body.contact_shape_group)
               parent.contact_shape_group{ic(ngroups+j)} = [parent.contact_shape_group{ic(ngroups+j)},nshapes+body.contact_shape_group{j}];
             end
           end
@@ -1561,6 +1745,52 @@ classdef RigidBodyManipulator < Manipulator
           error(['sensor element type ',type,' not supported (yet?)']);
       end
     end
+
+    function model = adjustContactShapes(model)
+      % model = adjustContactShapes(model) returns the model with
+      % adjusted contact geometries, according to the setings in
+      % model.contact_options. These are
+      %   * Replace cylinders with capsules
+      %
+      % @param model - RigidBodyManipulator object
+      %
+      % @retval model - RigidBodyManipulator object
+
+      if model.contact_options.replace_cylinders_with_capsules
+        message_id = 'Drake:RigidBodyManipulator:ReplacedCylinder';
+        body_changed = false(model.getNumBodies(),1);
+        for i = 1:model.getNumBodies()
+          [model.body(i),body_changed(i)] = replaceCylindersWithCapsules(model.body(i));
+        end
+        if any(body_changed)
+          changed_body_idx_and_names =  ...
+            [num2cell(find(body_changed))';getLinkName(model,body_changed)];
+          warning(message_id, ...
+            ['The bodies listed below each contained at least one ' ...
+            'RigidBodyCylinder as a contact shape:' ...
+            '\n\n' ...
+            '\tBody Idx\tBody Name\n' ...
+            repmat('\t%d:\t\t%s\n',1,sum(body_changed)) ...
+            '\n\n' ...
+            'These contact shapes were replaced by ' ...
+            'RigidBodyCapsule objects, as the cylinder contact geometry ' ...
+            'is less robust.\n\nTo prevent this replacement, ' ...
+            'construct your manipulator with: ' ...
+            '\n\n' ...
+            '    >> options.replace_cylinders_with_capsules = false;\n' ...
+            '    >> r = %s(...,options);' ...
+            '\n\n' ...
+            'To silence this warning, construct your manipulator ' ...
+            'with: ' ...
+            '\n\n' ...
+            '    >> w = warning(''OFF'',%s);\n' ...
+            '    >> r = %s(...);\n' ...
+            '    >> warning(w)' ...
+            '\n\n'],changed_body_idx_and_names{:},class(model), ...
+            message_id,class(model));
+        end
+      end
+    end
     
     function model = parseCollisionFilterGroup(model,robotnum,node,options)
       ignore = char(node.getAttribute('drakeIgnore'));
@@ -1612,6 +1842,15 @@ classdef RigidBodyManipulator < Manipulator
       if isempty(model.collision_filter_groups) 
         model.collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
         model.collision_filter_groups('no_collision') = CollisionFilterGroup();
+      end
+      if model.contact_options.ignore_self_collisions
+        body_indices = 1:model.getNumBodies();
+        for i = 1:length(model.name)
+          robot_i_body_indices = body_indices([model.body.robotnum] == i);
+          model.collision_filter_groups(model.name{i}) = CollisionFilterGroup();
+          model = model.addLinksToCollisionFilterGroup(robot_i_body_indices,model.name{i},i);
+          model = model.addToIgnoredListOfCollisionFilterGroup(model.name{i},model.name{i});
+        end
       end
       % The DEFAULT_COLLISION_FILTER_GROUP is reserved for bodies that don't belong to any
       % other collision collision_filter_groups.

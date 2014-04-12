@@ -1,6 +1,7 @@
 function runPassiveLCP
 
 options.twoD = true;
+options.terrain = [];
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 p = TimeSteppingRigidBodyManipulator('FourBar.urdf',.01,options);
 warning(w);
