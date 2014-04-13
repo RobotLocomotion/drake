@@ -18,8 +18,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       for i=1:length(obj.model.body)
         b = obj.model.body(i);
         for j=1:length(b.visual_shapes)
-          obj.body(i).xyz{j} = getPlanarPoints(b.visual_shapes{j},manip.x_axis,manip.y_axis, manip.view_axis);
-          obj.body(i).c{j} = b.visual_shapes{j}.c;
+          [obj.body(i).x{j},obj.body(i).y{j},obj.body(i).z{j},obj.body(i).c{j}] = getPatchData(b.visual_shapes{j},manip.x_axis,manip.y_axis, manip.view_axis);
         end
       end
       warning(w);
@@ -38,10 +37,13 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       % end debugging
 
       for i=1:length(obj.model.body)
-        for j=1:length(obj.body(i).xyz)
+        for j=1:length(obj.body(i).x)
           c = (1-obj.fade_percent)*obj.body(i).c{j} + obj.fade_percent*obj.fade_color;
-          pts = obj.Tview*forwardKin(obj.model,kinsol,i,obj.body(i).xyz{j});
-          patch(pts(1,:)',pts(2,:)',pts(3,:)',c,'LineWidth',.01,'EdgeColor',obj.fade_percent*obj.fade_color); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
+          pts = obj.Tview*forwardKin(obj.model,kinsol,i,[obj.body(i).x{j}(:),obj.body(i).y{j}(:),obj.body(i).z{j}(:)]');
+          x = reshape(pts(1,:),size(obj.body(i).x{j}));
+          y = reshape(pts(2,:),size(obj.body(i).y{j}));
+          z = reshape(pts(3,:),size(obj.body(i).z{j}));
+          patch(x,y,z,c,'LineWidth',.01,'EdgeColor',obj.fade_percent*obj.fade_color); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
           % patch(xpts,ypts,body.geometry{j}.c,'EdgeColor','none','FaceAlpha',1); %0*xpts,'FaceColor','flat','FaceVertexCData',body.geometry.c);
 
           % for debugging:
@@ -60,10 +62,6 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
           if body.parent>0
             parent_origin = forwardKin(obj.model,kinsol,body.parent,[0;0]);
             line([origin(1),parent_origin(1)],[origin(2),parent_origin(2)],'Color','k');
-          end
-          if ~isempty(body.contact_pts)
-            pts = obj.model.T_2D_to_3D'*forwardKin(obj.model,kinsol,i,body.contact_pts);
-            plot(pts(1,:),pts(2,:),'g*');
           end
         end
       end
@@ -93,7 +91,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       xlabel(obj.model.x_axis_label);
       ylabel(obj.model.y_axis_label);
       
-      if (~isempty([obj.model.body.contact_pts]))
+      if obj.model.getNumContactPairs > 0
         v=axis;
         line([v(1)-.1*(v(2)-v(1)),v(2)+.1*(v(2)-v(1))],[0 0],'Color','k');
       end
@@ -108,8 +106,8 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
   end
   
   properties
-    xlim=[]
-    ylim=[];
+    xlim=[-1,1]
+    ylim=[-.1,1.9];
     debug = false;  % if true, draws extras, like the coordinate frames and COMs for each link
     fade_percent = 0;     % 0 to 1 
     fade_color = [1 1 1];

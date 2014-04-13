@@ -1,4 +1,0 @@
-
-Run it with, e.g.,:
-python xacro.py RimlessWheel.xacro > RimlessWheel.urdf
-

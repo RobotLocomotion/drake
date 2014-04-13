@@ -83,7 +83,7 @@ public:
     boost::to_lower(ext);
 	      
     if (ext.compare(".obj")==0) {
-      //      cout << "Loading mesh from " << fname << endl;
+      // cout << "Loading mesh from " << fname << " (scale = " << scale << ")" << endl;
       pmesh = bot_wavefront_model_create(fname.c_str());
     } else if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
       // try changing the extension to obj and loading
@@ -106,6 +106,34 @@ public:
 
   float scale_x, scale_y, scale_z; 
   BotWavefrontModel* pmesh;
+};
+
+class Capsule : public Geometry {
+public:
+  Capsule(float r, float l) : radius(r), length(l) {};
+
+  double radius, length;
+
+  virtual void draw(void) {
+    // transform to center of capsule
+    glTranslatef(0.0,0.0,-length/2.0);
+    glutSolidSphere(radius,36,36);
+    
+    GLUquadricObj* quadric = gluNewQuadric();
+    gluQuadricDrawStyle(quadric, GLU_FILL);
+    gluQuadricNormals(quadric, GLU_SMOOTH);
+    gluQuadricOrientation(quadric, GLU_OUTSIDE);
+    gluCylinder(quadric,
+		radius,
+		radius,
+		length,
+		36,
+		1);
+    gluDeleteQuadric(quadric);
+    glTranslatef(0.0,0.0,length);
+    glutSolidSphere(radius,36,36);
+  }
+
 };
 
 class LinkGeometry {
@@ -143,6 +171,12 @@ class LinkGeometry {
     case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_MESH:
       {
 	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Mesh(geometry_data->string_data, geometry_data->float_data[0])));
+	pGeometry = g;
+      }
+      break;
+    case DRAKE_LCMT_VIEWER_GEOMETRY_DATA_CAPSULE:
+      {
+	boost::shared_ptr<Geometry> g(boost::static_pointer_cast<Geometry>(new Capsule(geometry_data->float_data[0], geometry_data->float_data[1])));
 	pGeometry = g;
       }
       break;

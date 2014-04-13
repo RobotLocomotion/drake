@@ -38,7 +38,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   {
     *(mxGetPr(plhs[1])+i) = (double) info[i];
   }
-  mwSize name_dim[1] = {infeasible_constraint.size()};
+  mwSize name_dim[1] = {static_cast<mwSize>(infeasible_constraint.size())};
   plhs[2] = mxCreateCellArray(1,name_dim);
   for(int i = 0;i<infeasible_constraint.size();i++)
   {

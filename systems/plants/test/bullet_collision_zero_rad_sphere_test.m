@@ -17,8 +17,7 @@ else
 end
 
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_all_bodies_jac_test');
-r = RigidBodyManipulator();
-
+r = RigidBodyManipulator([],struct('terrain',[]));
 for i=1:n_points
   fprintf('Adding point no. %d ...\n',i);
   r = addRobotFromURDF(r,'PointMass.urdf',zeros(3,1),zeros(3,1),struct('floating',true));
@@ -47,7 +46,7 @@ dist_max = 0.0;
   function [c,ceq,GC,GCeq] = mycon(q)
     ceq=[]; GCeq=[];
     kinsol = doKinematics(r,q);
-    [c,GC] = closestDistanceAllBodies(r,kinsol);
+    [c,GC] = closestDistance(r,kinsol);
     c = [dist_min-c;c-dist_max];
     GC = [-GC',GC'];
   end
@@ -73,7 +72,7 @@ for i=1:10
   success=(exitflag==1 || exitflag==2);
 
   xyz_idx = bsxfun(@plus,0:6:6*(n_points-1),(1:3)');
-  err = bsxfun(@minus,abs(qsol(xyz_idx)),[r.body(1).contact_shapes{:}.size]/2);
+  err = bsxfun(@minus,abs(qsol(xyz_idx)),[r.body(1).contact_shapes{1}.size]/2);
   if ~all(any(abs(err)<0.01,1))
     error('Points not on brick!');
   end

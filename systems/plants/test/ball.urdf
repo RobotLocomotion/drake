@@ -9,6 +9,12 @@
       </geometry>
       <origin xyz="0 0 0"/>
     </visual>
+    <visual>
+      <geometry>
+        <sphere radius="0.02"/>
+      </geometry>
+      <origin xyz="0 .1 0"/>
+    </visual>
     <collision>
       <geometry>
         <sphere radius="0.1"/>

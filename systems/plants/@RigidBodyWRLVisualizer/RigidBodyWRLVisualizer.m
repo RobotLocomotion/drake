@@ -19,7 +19,7 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       if nargin<2
         options = struct();
       end
-      if ~isfield(options,'ground'), options.ground = manip.num_contacts>0; end
+      if ~isfield(options,'ground'), options.ground = manip.getNumContactPairs>0; end
       
       wrlfile = fullfile(tempdir,[obj.model.name{1},'.wrl']);
       writeWRL(obj,wrlfile,options);
