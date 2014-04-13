@@ -83,7 +83,7 @@ public:
     boost::to_lower(ext);
 	      
     if (ext.compare(".obj")==0) {
-      //      cout << "Loading mesh from " << fname << endl;
+      // cout << "Loading mesh from " << fname << " (scale = " << scale << ")" << endl;
       pmesh = bot_wavefront_model_create(fname.c_str());
     } else if ( boost::filesystem::exists( mypath.replace_extension(".obj") ) ) {
       // try changing the extension to obj and loading

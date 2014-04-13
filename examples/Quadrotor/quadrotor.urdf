@@ -1,0 +1,21 @@
+<?xml version="1.0" ?>
+
+<!-- adapted from https://github.com/ktossell/hector_quadrotor/tree/hydro-devel/hector_quadrotor_description/urdf -->
+
+<robot name="quadrotor">
+  <link name="base_link">
+    <inertial>
+      <mass value="1.477"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0.01152" ixy="0.0" ixz="0.0" iyy="0.01152" iyz="0.0" izz="0.0218"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="quadrotor_base.obj" scale=".1"/>
+      </geometry>
+    </visual>
+    <!-- note: the original hector quadrotor urdf had a (simplified, but still complex) collision mesh, too -->
+  </link>
+</robot>
+
