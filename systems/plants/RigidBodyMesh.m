@@ -23,11 +23,6 @@ classdef RigidBodyMesh < RigidBodyGeometry
       obj = obj@RigidBodyGeometry(4,varargin{:});
       typecheck(filename,'char');
       obj.filename = filename;
-      if nargin<2
-        obj.scale = 1;
-      else
-        obj.scale = scale;
-      end
     end
     
     function [pts,ind,normals] = loadFile(obj)
@@ -135,7 +130,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
   
   properties
     filename;
-    scale;
+    scale=1;
   end
   
 end
