@@ -28,19 +28,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       sizecheck(timestep,1);
       
       if isempty(manipulator_or_urdf_filename) || ischar(manipulator_or_urdf_filename)
+        % then make the corresponding manipulator
+        S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+        warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
         if options.twoD
-          S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
-          warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
-          warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
           manip = PlanarRigidBodyManipulator(manipulator_or_urdf_filename,options);
-          warning(S);
         else
-          % then make the corresponding manipulator
-          S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
-          warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
           manip = RigidBodyManipulator(manipulator_or_urdf_filename,options);
-          warning(S);
         end
+        warning(S);
       else
         manip = manipulator_or_urdf_filename;
       end
@@ -95,14 +91,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     end
     
     function model = compile(model)
-      if model.twoD
-        S = warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedJointLimits');
-        warning('off','Drake:PlanarRigidBodyManipulator:UnsupportedContactPoints');
-        warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-      else
-        S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
-        warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-      end        
+      S = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+      warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
       model.manip = model.manip.compile();
       warning(S);
       
