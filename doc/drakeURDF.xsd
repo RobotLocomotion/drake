@@ -77,6 +77,18 @@ produced by a propeller on an airplane, or thrusters on the hands and
 feet of an Atlas robot to make Iron Man.</xs:documentation>
                 </xs:annotation>
             </xs:element>
+<xs:element name="added_mass" type="added_mass">
+                <xs:annotation>
+                    <xs:documentation> Places added-mass coefficients on a point on the parent body. Added-mass forces act like a 'drag' that is proportional to the acceleration of the body, rather than the velocity. Important when the body is comparable in mass to the surrounding fluid, or if rapid motions are needed. 
+
+These forces are represented by a 6x6 matrix 'Ma' similar to a mass matrix, where the force is F=-Ma*a (+coriolis terms). Each matrix element is refered as 'mij', where 'i' and 'j' are the rows and columns of the matrix. As is standard in the oceanographic literature, rows 123 are the linear accelerations, and 456 are the angular accelerations [note this is opposite of Featherstone's notation] </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+<xs:element name="buoyancy" type="buoyancy">
+                <xs:annotation>
+                    <xs:documentation> Adds a buoyancy force to the parent body, placed at a defined center of buoyancy. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
         </xs:choice>
         <xs:attribute name="name" type="xs:string"/>
     </xs:complexType>
@@ -205,6 +217,84 @@ the axes of the airfoil to line up with those of its parent body.</xs:documentat
             <xs:annotation>
                 <xs:documentation>scales the dimensionless
 input to Newtons of force.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+<xs:complexType name="added_mass">
+        <xs:all>
+            <xs:element name="parent" type="link_reference">
+                <xs:annotation>
+                    <xs:documentation>String naming the link on which
+this added-mass is attached.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="origin" type="pose" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>This defines the position where the added-mass matrix is defined, acting similar to a center-of-mass offset from the parent joint location. RPY is not supported. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="m11" type="xs:double" default="0"/>
+	<xs:attribute name="m12" type="xs:double" default="0"/>
+	<xs:attribute name="m13" type="xs:double" default="0"/>
+	<xs:attribute name="m14" type="xs:double" default="0"/>
+	<xs:attribute name="m15" type="xs:double" default="0"/>
+	<xs:attribute name="m16" type="xs:double" default="0"/>
+	<xs:attribute name="m21" type="xs:double" default="0"/>
+	<xs:attribute name="m22" type="xs:double" default="0"/>
+	<xs:attribute name="m23" type="xs:double" default="0"/>
+	<xs:attribute name="m24" type="xs:double" default="0"/>
+	<xs:attribute name="m25" type="xs:double" default="0"/>
+	<xs:attribute name="m26" type="xs:double" default="0"/>
+	<xs:attribute name="m31" type="xs:double" default="0"/>
+	<xs:attribute name="m32" type="xs:double" default="0"/>
+	<xs:attribute name="m33" type="xs:double" default="0"/>
+	<xs:attribute name="m34" type="xs:double" default="0"/>
+	<xs:attribute name="m35" type="xs:double" default="0"/>
+	<xs:attribute name="m36" type="xs:double" default="0"/>
+        <xs:attribute name="m41" type="xs:double" default="0"/>
+	<xs:attribute name="m42" type="xs:double" default="0"/>
+	<xs:attribute name="m43" type="xs:double" default="0"/>
+	<xs:attribute name="m44" type="xs:double" default="0"/>
+	<xs:attribute name="m45" type="xs:double" default="0"/>
+	<xs:attribute name="m46" type="xs:double" default="0"/>
+	<xs:attribute name="m51" type="xs:double" default="0"/>
+	<xs:attribute name="m52" type="xs:double" default="0"/>
+	<xs:attribute name="m53" type="xs:double" default="0"/>
+	<xs:attribute name="m54" type="xs:double" default="0"/>
+	<xs:attribute name="m55" type="xs:double" default="0"/>
+	<xs:attribute name="m56" type="xs:double" default="0"/>
+	<xs:attribute name="m61" type="xs:double" default="0"/>
+	<xs:attribute name="m62" type="xs:double" default="0"/>
+	<xs:attribute name="m63" type="xs:double" default="0"/>
+	<xs:attribute name="m64" type="xs:double" default="0"/>
+	<xs:attribute name="m65" type="xs:double" default="0"/>
+	<xs:attribute name="m66" type="xs:double" default="0"/>
+    </xs:complexType>
+
+<xs:complexType name="buoyancy">
+        <xs:all>
+            <xs:element name="parent" type="link_reference">
+                <xs:annotation>
+                    <xs:documentation>String naming the link on which
+this buoyancy is attached.</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="origin" type="pose" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>This defines the position of the center of buoyancy. RPY is not supported. </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute name="volume" type="xs:double" default="0">
+            <xs:annotation>
+                <xs:documentation>Volume of the body</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+	<xs:attribute name="rho" type="xs:double" default="1">
+            <xs:annotation>
+                <xs:documentation>Density of the fluid</xs:documentation>
             </xs:annotation>
         </xs:attribute>
     </xs:complexType>
