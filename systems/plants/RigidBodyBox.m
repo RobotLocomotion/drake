@@ -1,8 +1,25 @@
 classdef RigidBodyBox < RigidBodyGeometry
   
   methods 
-    function obj = RigidBodyBox(size)
-      obj = obj@RigidBodyGeometry(1);
+    function obj = RigidBodyBox(size,varargin)
+      % obj = RigidBodyBox(size) constructs a RigidBodyBox object with
+      % the geometry-to-body transform set to identity.
+      %
+      % obj = RigidBodyBox(size,T) constructs a RigidBodyBox object with
+      % the geometry-to-body transform T.
+      % 
+      % obj = RigidBodyBox(size,xyz,rpy) constructs a RigidBodyBox
+      % object with the geometry-to-body transform specified by the
+      % position, xyz, and Euler angles, rpy.
+      %
+      % @param size - 3-element vector containing the box dimensions.
+      % @param T - 4x4 homogenous transform from geometry-frame to
+      %   body-frame
+      % @param xyz - 3-element vector specifying the position of the
+      %   geometry in the body-frame
+      % @param rpy - 3-element vector of Euler angles specifying the
+      %   orientation of the geometry in the body-frame
+      obj = obj@RigidBodyGeometry(1,varargin{:});
       sizecheck(size,3);
       obj.size = size(:);
     end
@@ -13,6 +30,19 @@ classdef RigidBodyBox < RigidBodyGeometry
       cz = obj.size(3)/2*[1 1 -1 -1 -1 -1 1 1];
       
       pts = obj.T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
+    end
+
+    function pts = getBoundingBoxPoints(obj)
+      pts = getPoints(obj);
+    end
+    
+    function pts = getTerrainContactPoints(obj)
+      % pts = getTerrainContactPoints(obj)
+      %
+      % @param  obj - RigidBodySphere object
+      % @retval pts - 3xm array of points on this geometry (in link frame) that
+      %               can collide with the world.
+      pts = getPoints(obj);
     end
     
     function shape = serializeToLCM(obj)
@@ -40,6 +70,7 @@ classdef RigidBodyBox < RigidBodyGeometry
       td=td-1; tabprintf(fp,'}\n');  % end Shape {
       td=td-1; tabprintf(fp,'}\n'); % end Transform {
     end
+
   end
   
   properties

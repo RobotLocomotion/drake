@@ -1,8 +1,25 @@
 classdef RigidBodySphere < RigidBodyGeometry
   
   methods 
-    function obj = RigidBodySphere(radius)
-      obj = obj@RigidBodyGeometry(2);
+    function obj = RigidBodySphere(radius,varargin)
+      % obj = RigidBodySphere(radius) constructs a RigidBodySphere
+      % object with the geometry-to-body transform set to identity.
+      %
+      % obj = RigidBodySphere(radius,T) constructs a RigidBodySphere
+      % object with the geometry-to-body transform T.
+      % 
+      % obj = RigidBodySphere(radius,xyz,rpy) constructs a
+      % RigidBodySphere object with the geometry-to-body transform
+      % specified by the position, xyz, and Euler angles, rpy.
+      %
+      % @param radius - radius of the sphere
+      % @param T - 4x4 homogenous transform from geometry-frame to
+      %   body-frame
+      % @param xyz - 3-element vector specifying the position of the
+      %   geometry in the body-frame
+      % @param rpy - 3-element vector of Euler angles specifying the
+      %   orientation of the geometry in the body-frame
+      obj = obj@RigidBodyGeometry(2,varargin{:});
       sizecheck(radius,1);
       obj.radius = radius;
     end
@@ -13,8 +30,17 @@ classdef RigidBodySphere < RigidBodyGeometry
       end
       pts = obj.T(1:3,4);
     end
+
+    function pts = getBoundingBoxPoints(obj)
+      % Return axis-aligned bounding-box vertices
+      cx = obj.radius*[-1 1 1 -1 -1 1 1 -1];
+      cy = obj.radius*[1 1 1 1 -1 -1 -1 -1];
+      cz = obj.radius*[1 1 -1 -1 -1 -1 1 1];
+      
+      pts = obj.T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
+    end
     
-    function pts = getPlanarPoints(obj,x_axis,y_axis,view_axis)
+    function [x,y,z,c] = getPatchData(obj,x_axis,y_axis,view_axis)
       Tview = [x_axis, y_axis, view_axis]';
       valuecheck(svd(Tview),[1;1;1]);  % assert that it's orthonormal
       
@@ -25,6 +51,10 @@ classdef RigidBodySphere < RigidBodyGeometry
         theta = 0:0.1:2*pi;
         pts = Tview'*obj.radius*[cos(theta); sin(theta); 0*theta] + repmat(obj.T(1:3,4),1,length(theta));
       end
+      x = pts(1,:)';
+      y = pts(2,:)';
+      z = pts(3,:)';
+      c = obj.c;
     end
     
     function shape = serializeToLCM(obj)
@@ -52,8 +82,19 @@ classdef RigidBodySphere < RigidBodyGeometry
       td=td-1; tabprintf(fp,'}\n');  % end Shape {
       td=td-1; tabprintf(fp,'}\n'); % end Transform {
     end
-  end
+
+    function pts = getTerrainContactPoints(obj)
+      % pts = getTerrainContactPoints(obj)
+      %
+      % @param  obj - RigidBodySphere object
+      % @retval pts - 3xm array of points on this geometry (in link frame) that
+      %               can collide with the world.
+      if obj.radius == 0
+        pts = getPoints(obj);
+      end
+    end
   
+  end
   properties
     radius;
   end

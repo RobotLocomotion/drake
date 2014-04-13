@@ -1,4 +1,5 @@
 function kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
+% kinsol=doKinematics(model,q,b_compute_second_derivatives,use_mex,qd)
 % Computes the (forward) kinematics of the manipulator.
 %
 % @retval kinsol a certificate containing the solution (or information

@@ -81,10 +81,13 @@ if (runsim)
 end
 
 function [xstar,ustar,zstar] = computeFixedPoint(r,x0,u0,v)
+  l_foot = r.findLinkInd('l_foot');
+  r_foot = r.findLinkInd('r_foot');
+  
   nx = r.getNumStates();
   nq = nx/2;
   nu = r.getNumInputs();
-  nz = r.getNumContacts()*dim;
+  nz = (length(r.getBodyContacts(l_foot)) + length(r.getBodyContacts(r_foot)))*dim;
   z0 = zeros(nz,1);
   q0 = x0(1:nq);
     
@@ -99,13 +102,16 @@ function [xstar,ustar,zstar] = computeFixedPoint(r,x0,u0,v)
   problem.options=optimset('GradObj','on','GradConstr','on','Algorithm','interior-point','Display','iter','OutputFcn',@drawme,'TolX',1e-6,'MaxFunEvals',1000);
   %problem.options=optimset('Algorithm','interior-point','Display','iter','OutputFcn',@drawme,'TolX',1e-6,'MaxFunEvals',2500);
       
+  %(mposa) fixing this unit test, but these indices were all wrong
+  %added 5 to fix it, but getJointNames and then strfind cannot be the
+  %right way to do this.
   joint_names = r.getJointNames();
   joint_names = joint_names(2:end); % get rid of null string at beginning..
-  r_idx = find(~cellfun(@isempty,strfind(joint_names,'r_leg')));
-  l_idx = find(~cellfun(@isempty,strfind(joint_names,'l_leg')));
-  x_idx = find(~cellfun(@isempty,strfind(joint_names,'x')));
-  y_idx = find(~cellfun(@isempty,strfind(joint_names,'y')));
-  z_idx = find(~cellfun(@isempty,strfind(joint_names,'z')));
+  r_idx = find(~cellfun(@isempty,strfind(joint_names,'r_leg'))) + 5;
+  l_idx = find(~cellfun(@isempty,strfind(joint_names,'l_leg'))) + 5;
+  x_idx = find(~cellfun(@isempty,strfind(joint_names,'x'))) + 5;
+  y_idx = find(~cellfun(@isempty,strfind(joint_names,'y'))) + 5;
+  z_idx = find(~cellfun(@isempty,strfind(joint_names,'z'))) + 5;
   
   ry = intersect(r_idx,y_idx);
   ly = intersect(l_idx,y_idx);
@@ -130,7 +136,14 @@ function [xstar,ustar,zstar] = computeFixedPoint(r,x0,u0,v)
   problem.ub(dim) = 1.2; % above the ground
     
   % fix foot starting position
-  foot_pos = r.contactPositions(x0(1:nq));
+  l_foot_points = r.getBody(l_foot).getTerrainContactPoints();
+  r_foot_points = r.getBody(r_foot).getTerrainContactPoints();
+  kinsol = r.doKinematics(x0(1:nq));
+  l_foot_pos = r.forwardKin(kinsol,l_foot,l_foot_points);
+  r_foot_pos = r.forwardKin(kinsol,r_foot,r_foot_points);
+  foot_pos = [l_foot_pos r_foot_pos];
+
+%   foot_pos = r.contactPositions(x0(1:nq));
   foot_pos(end,:) = 0; % we want the feet to be on the ground
   min_xf = min(foot_pos(1,:));
   max_xf = max(foot_pos(1,:));
@@ -177,7 +190,13 @@ function [xstar,ustar,zstar] = computeFixedPoint(r,x0,u0,v)
     z=quz(nq+nu+(1:nz));
 
     [~,C,B,~,dC,~] = r.manipulatorDynamics(q,zeros(nq,1));
-    [cpos,J,dJ] = r.contactPositions(q);
+    kinsol_con = r.doKinematics(q,true);
+    [c_pos_left, J_left, dJ_left] = r.forwardKin(kinsol_con,l_foot,l_foot_points);
+    [c_pos_right, J_right, dJ_right] = r.forwardKin(kinsol_con,r_foot,r_foot_points);
+    cpos = [c_pos_left c_pos_right];
+    J = [J_left;J_right];
+    dJ = [dJ_left;dJ_right];
+    
     cpos = reshape(cpos,nz,1);
 
     % ignore friction constraints for now

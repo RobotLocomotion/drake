@@ -138,7 +138,9 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         if(field_str=="robot")
         {
           RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
-          cnst->updateRobot(robot);
+          AllBodiesClosestDistanceConstraint* cnst_new = new AllBodiesClosestDistanceConstraint(*cnst);
+          cnst_new->updateRobot(robot);
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","AllBodiesClosestDistanceConstraint");
         }
         else
         {

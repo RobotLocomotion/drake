@@ -11,10 +11,12 @@ else
 end
 
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_distance_test');
-r = RigidBodyManipulator();
+options.floating = true;
+options.terrain = [];
+r = RigidBodyManipulator([],options);
 
 for i=1:2
-  r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),struct('floating',true));
+  r = addRobotFromURDF(r,'FallingBrick.urdf',zeros(3,1),zeros(3,1),options);
 end
 v = r.constructVisualizer();
 

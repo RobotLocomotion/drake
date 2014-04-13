@@ -398,6 +398,16 @@ classdef DynamicalSystem
       error('Drake:DynamicalSystem:AbstractMethod','systems with state constraints must implement the constraints method');
     end
     
+    function con = unilateralConstraints(obj,x)
+      % defines state unilateral constraints in the form phi(x)>=0
+      error('Drake:DynamicalSystem:AbstractMethod','systems with unilateral constraints must implement the constraints method');
+    end
+    
+    function n = getNumUnilateralConstraints(obj)
+      % Returns the scalar number of state constraints (of the form phi(x)>=0)
+      n = 0;  % default behavior is n=0
+    end
+    
     function obj = setSimulinkParam(obj,varargin)
       % Sets parameters of the simulink model
       % Syntax

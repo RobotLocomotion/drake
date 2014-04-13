@@ -580,6 +580,8 @@ class AllBodiesClosestDistanceConstraint : public SingleTimeKinematicConstraint
     AllBodiesClosestDistanceConstraint(RigidBodyManipulator* model, 
                                        double lb, double ub,
                                        Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    //AllBodiesClosestDistanceConstraint(const AllBodiesClosestDistanceConstraint& rhs);
+    virtual void updateRobot(RigidBodyManipulator *robot);
     virtual void eval(const double* t,Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;
     virtual void name(const double* t, std::vector<std::string> &name) const;
     virtual void bounds(const double* t, Eigen::VectorXd& lb, Eigen::VectorXd& ub) const;

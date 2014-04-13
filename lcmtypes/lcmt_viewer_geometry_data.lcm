@@ -9,6 +9,7 @@ struct lcmt_viewer_geometry_data
   const int8_t SPHERE       = 2;
   const int8_t CYLINDER     = 3;
   const int8_t MESH         = 4;
+  const int8_t CAPSULE      = 5;
 
 
   float position[3];
