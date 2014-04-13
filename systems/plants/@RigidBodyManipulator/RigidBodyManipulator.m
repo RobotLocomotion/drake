@@ -1595,7 +1595,13 @@ classdef RigidBodyManipulator < Manipulator
         
         % add inertia into parent
         if (any(any(body.I))) 
-          % same as the composite inertia calculation in HandC.m
+            %Check before running setInertial() that the body doesn't have added-mass
+            %coefficients (I haven't written up the welding support for that yet - JSI)
+          if ~valuecheck(body.Iaddedmass,zeros(6,6));
+              error('Adding inertia to parent with added-mass coefficients is not supported yet');
+          end
+            
+          % same as the composite inertia calculation in HandC.m          
           parent = setInertial(parent,parent.I + body.Xtree' * body.I * body.Xtree);
         end
         
@@ -2085,6 +2091,16 @@ classdef RigidBodyManipulator < Manipulator
       elnode = node.getElementsByTagName('thrust').item(0);
       if ~isempty(elnode)
         [model,fe] = RigidBodyThrust.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
+      elnode = node.getElementsByTagName('added_mass').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyAddedMass.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
+      elnode = node.getElementsByTagName('buoyancy').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyBuoyant.parseURDFNode(model,robotnum,elnode,options);
       end
       
       if ~isempty(fe)
