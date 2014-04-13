@@ -16,11 +16,16 @@ namespace DrakeCollision
 
       const Matrix4d& getWorldTransform() const; 
 
+      const Matrix4d& getLinkTransform() const; 
+
+      const Shape& getShape() const;
+
     protected:
       virtual void setWorldTransform(const Matrix4d& T_elem_to_world);
 
       Matrix4d T_elem_to_link;
       Matrix4d T_elem_to_world;
+      Shape shape;
   };
 }
 #endif

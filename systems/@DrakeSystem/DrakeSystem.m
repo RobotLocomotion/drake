@@ -342,6 +342,12 @@ classdef DrakeSystem < DynamicalSystem
           ceq = [ceq; phi];
           GCeq = [GCeq, [dphi,zeros(obj.num_xcon,obj.num_u)]'];
         end
+        
+        if (obj.getNumUnilateralConstraints > 0)
+          [phi,dphi] = geval(@obj.unilateralConstraints,x);
+          c = [c;phi];
+          GC = [GC, [dphi,zeros(obj.getNumUnilateralConstraints,obj.num_u)]'];
+        end
       end
       problem.nonlcon = @mycon;
       problem.solver = 'fmincon';

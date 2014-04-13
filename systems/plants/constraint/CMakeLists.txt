@@ -33,6 +33,8 @@ if(eigen3_FOUND)
   # temporarily comment out these lines since there is linking problem
   if (Boost_FOUND)
       add_executable(testConstraintConstructor test/testConstraintConstructor.cpp)
+      set_target_properties(testConstraintConstructor PROPERTIES
+	COMPILE_FLAGS "-fPIC") 
       target_link_libraries(testConstraintConstructor drakeRBM drakeRigidBodyConstraint drakeRBMurdf drakeURDFinterface)
   endif()
           

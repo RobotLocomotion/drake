@@ -97,6 +97,10 @@ namespace DrakeCollision
     shapeA = (btConvexShape*) elemA.bt_obj->getCollisionShape();
     shapeB = (btConvexShape*) elemB.bt_obj->getCollisionShape();
 
+    btGjkEpaPenetrationDepthSolver epa;
+    btVoronoiSimplexSolver sGjkSimplexSolver;
+    sGjkSimplexSolver.setEqualVertexThreshold(0.f);
+
     btGjkPairDetector	convexConvex(shapeA,shapeB,&sGjkSimplexSolver,&epa);
 
     input.m_transformA = elemA.bt_obj->getWorldTransform();
@@ -104,13 +108,65 @@ namespace DrakeCollision
 
     convexConvex.getClosestPoints(input ,gjkOutput,0);
 
-    btVector3 pointOnAinWorld = gjkOutput.m_pointInWorld +
-      gjkOutput.m_normalOnBInWorld*gjkOutput.m_distance;
+    //DEBUG
+    //cout << "Margin A: " << shapeA->getMargin() << endl;
+    //cout << "Margin B: " << shapeB->getMargin() << endl;
+    //END_DEBUG
+    btVector3 pointOnAinWorld;
+    btVector3 pointOnBinWorld;
+    if (elemA.getShape() == MESH) {
+      pointOnAinWorld = gjkOutput.m_pointInWorld +
+        gjkOutput.m_normalOnBInWorld*(gjkOutput.m_distance+shapeA->getMargin());
+    } else {
+      pointOnAinWorld = gjkOutput.m_pointInWorld +
+        gjkOutput.m_normalOnBInWorld*gjkOutput.m_distance;
+    }
+    if (elemB.getShape() == MESH) {
+      pointOnBinWorld = gjkOutput.m_pointInWorld - gjkOutput.m_normalOnBInWorld*shapeB->getMargin();
+    } else {
+      pointOnBinWorld = gjkOutput.m_pointInWorld;
+    }
+
+    btVector3 pointOnElemA = input.m_transformA.invXform(pointOnAinWorld);
+    btVector3 pointOnElemB = input.m_transformB.invXform(pointOnBinWorld);
+
+    VectorXd pointOnA_1(4);
+    VectorXd pointOnB_1(4);
+    pointOnA_1 << toVector3d(pointOnElemA), 1;
+    pointOnB_1 << toVector3d(pointOnElemB), 1;
+
+    Vector3d pointOnA;
+    Vector3d pointOnB;
+    pointOnA << elemA.getLinkTransform().topRows(3)*pointOnA_1;
+    pointOnB << elemB.getLinkTransform().topRows(3)*pointOnB_1;
+
+    btScalar distance = gjkOutput.m_normalOnBInWorld.dot(pointOnAinWorld-pointOnBinWorld);
+    
+    //DEBUG
+    //cerr << "In BulletModel::findClosestPointsBtwElements:" << endl;
+    //std::cout << "ptsA:" << std::endl;
+    //cout << pointOnA.getX() << ' ' 
+         //<< pointOnA.getY() << ' ' 
+         //<< pointOnA.getZ() << endl;
+    //std::cout << "ptsB:" << std::endl;
+    //cout << pointOnB.getX() << ' ' 
+         //<< pointOnB.getY() << ' ' 
+         //<< pointOnB.getZ() << endl;
+    //std::cout << "normal:" << std::endl;
+    //cout << gjkOutput.m_normalOnBInWorld.getX() << ' ' 
+         //<< gjkOutput.m_normalOnBInWorld.getY() << ' ' 
+         //<< gjkOutput.m_normalOnBInWorld.getZ() << endl;
+    //END_DEBUG
 
     if (gjkOutput.m_hasResult) {
-      static_pointer_cast<MinDistResultCollector>(c)->addSingleResult(bodyA_idx,bodyB_idx,toVector3d(pointOnAinWorld),toVector3d(gjkOutput.m_pointInWorld),
-          toVector3d(gjkOutput.m_normalOnBInWorld),(double) gjkOutput.m_distance);
+      static_pointer_cast<MinDistResultCollector>(c)->addSingleResult(bodyA_idx,bodyB_idx,toVector3d(pointOnA),toVector3d(pointOnB),
+          toVector3d(gjkOutput.m_normalOnBInWorld),(double) distance);
     } else {
+      c->addPointPairResult(PointPair(bodyA_idx, 
+            bodyB_idx, 
+            Vector3d::Zero(), 
+            Vector3d::Zero(),
+            Vector3d::Zero(),1.0));
       cerr << "In BulletModel::findClosestPointsBtwElements: No closest point found!" << endl;
       //DEBUG
       //btVector3 originA(input.m_transformA.getOrigin());

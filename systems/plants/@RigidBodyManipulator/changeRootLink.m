@@ -108,15 +108,18 @@ while (true)
     current_body.has_position_sensor = old_child_new_parent_body.has_position_sensor;
   end
     
+  %Check before running setInertial() that the body doesn't have added-mass
+  %coefficients (I haven't written up the welding support for that yet - JSI)
+  if ~valuecheck(current_body.Iaddedmass,zeros(6,6));
+      error('Welding with added-mass coefficients is not supported yet');
+  end
+  
   % todo: consider moving these into RigidBody.updateTransform, but only if
   % it gets *everything* correct
   current_body = setInertial(current_body,X_old_body_to_new_body'*current_body.I*X_old_body_to_new_body);
 
   for i=1:length(current_body.visual_shapes)
     current_body.visual_shapes{i}.T = current_body.visual_shapes{i}.T*T_old_body_to_new_body;
-  end
-  if ~isempty(current_body.contact_pts)
-    current_body.contact_pts = homogTransMult(T_old_body_to_new_body,current_body.contact_pts);
   end
   for i=1:length(current_body.contact_shapes)
     current_body.contact_shapes{i}.T = current_body.contact_shapes{i}.T*T_old_body_to_new_body;
