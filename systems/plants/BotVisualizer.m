@@ -84,17 +84,21 @@ classdef BotVisualizer < RigidBodyVisualizer
       end
       
       lc.publish('DRAKE_VIEWER_LOAD_ROBOT',vr);
-      % listen for acknowledgement
-      ack = obj.status_agg.getNextMessage(5000);
-      if isempty(ack)
-        error('Drake:BotVisualizer:LoadRobotFailed','Did not receive ack from viewer');
-      else
-        msg = drake.lcmt_viewer_command(ack.data);
-%        if ~strcmp(vr.command_data,msg.command_data)
-%          error('Drake:BotVisualizer:LoadURDFFailed','ack from viewer contained different data');
-%        end
+      
+      if (false) % the message aggregator is missing valid acks
+        % listen for acknowledgement
+        ack = obj.status_agg.getNextMessage(5000);
+        obj.status_agg.numMessagesAvailable()
+        if isempty(ack)
+          error('Drake:BotVisualizer:LoadRobotFailed','Did not receive ack from viewer');
+        else
+          msg = drake.lcmt_viewer_command(ack.data);
+          %        if ~strcmp(vr.command_data,msg.command_data)
+          %          error('Drake:BotVisualizer:LoadURDFFailed','ack from viewer contained different data');
+          %        end
+        end
       end
-
+      
       nq = getNumDOF(manip);
       obj.draw_msg = drake.lcmt_viewer_draw();
       nb = getNumBodies(manip);

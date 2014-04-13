@@ -41,9 +41,9 @@ methods
     obj.Q = Q;
     obj.f = f;
     obj.Ain = Ain;
-    obj.bin = bin;
+    obj.bin = bin(:);
     obj.Aeq = Aeq;
-    obj.beq = beq;
+    obj.beq = beq(:);
     obj.x_lb = x_lb;
     obj.x_ub = x_ub;
     
@@ -121,9 +121,9 @@ methods
       obj.Q = blkdiag(obj.Q{:});
     elseif isvector(obj.Q), obj.Q = diag(obj.Q); end
     model.Q = sparse(obj.Q);
-    model.obj = obj.f;
+    model.obj = full(obj.f);
     model.A = sparse([obj.Aeq;obj.Ain]);
-    model.rhs = [obj.beq,obj.bin];
+    model.rhs = full([obj.beq;obj.bin]);
     model.sense = char([repmat('=',length(obj.beq),1); repmat('<',length(obj.bin),1)]);
     if isempty(obj.x_lb)
       model.lb = -inf + 0*obj.f;
