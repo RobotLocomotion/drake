@@ -25,8 +25,14 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       %  (the options for this function call are passed through to
       %  parseURDF)
       
+      if nargin > 1
+        rbm_args = {[],options};
+      else
+        rbm_args = {};
+      end
+        
       
-      obj = obj@RigidBodyManipulator();
+      obj = obj@RigidBodyManipulator(rbm_args{:});
       obj.dim = 2;
       
       if (nargin<1) urdf_filename=''; end

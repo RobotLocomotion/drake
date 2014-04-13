@@ -106,7 +106,10 @@ namespace DrakeCollision
 
       bool collidesWith(const Body<ElementT>& other) const
       {
-        return (group & other.mask).any() && (other.group & mask).any();
+        return  ( !adjacentTo(other) || (body_idx == 0) || (other.getBodyIdx() == 0) ) &&
+                (body_idx != other.getBodyIdx()) && 
+                (group & other.mask).any() && 
+                (other.group & mask).any();
       };
 
     private:

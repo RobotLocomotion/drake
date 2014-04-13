@@ -1,69 +1,54 @@
-function [phi,B,JB,mu] = contactConstraintsBV(obj,kinsol,body_idx,body_contacts)
-% returns signed contact distance and a slightly different representation of
-% the friction cone approx--basis vectors along the edges of the polyhedron, 
-% positive combinations of which lie within the friction cone.
+function [phi,B,JB,mu,normal] = contactConstraintsBV(obj,varargin)
+% function [phi,B,JB,mu] = contactConstraintsBV(obj,kinsol,allow_multiple_contacts,active_collision_options)
+% a variation on the contactConstraints function that uses a different
+% representation of the friction cone--basis vectors are the extreme rays
+% of the cone (no basis for the normal force)
 %
-% @param body_idx is an array of body indexes
-% @param body_contacts is a cell array of vectors containing contact point indices
-% 
-% @retval phi phi(i,1) is the signed distance from the contact
-% point on the robot to the closes object in the world.
-% @retval B friction polyhedron basis vectors
-% @retval JB parameterization of the polyhedral approximation of the
+% @retval phi (m x 1) Vector of gap function values (typically contact distance), for m possible contacts
+% @retval B {m}(3 x 2k) friction polyhedron basis vectors
+% @retval JB {m}{2k x n} parameterization of the polyhedral approximation of the
 %    friction cone, in joint coordinates
 %    JB{k}(i,:) is the ith direction vector for the kth contact (of nC)
-% @retval mu mu(i,1) is the coefficient of friction for the ith contact
-% @ingroup Collision
+% @retval mu (m x 1) Coefficients of friction
+% @retval normal (3 x m) Contact normal vector in world coordinates, points from B to A
+% @param See contactConstraints for argument list description
 
-if nargin<3, body_idx = 1:length(obj.body); end
-if nargin<4
-  n_contact_pts = size([obj.body(body_idx).contact_pts],2);
-  varargin = {kinsol,body_idx};
+if nargout > 2,
+  [phi,normal,d,~,~,~,~,mu,n,D] = contactConstraints(obj,varargin);
 else
-  if isa(body_contacts,'cell')
-    n_contact_pts = sum(cellfun('length',body_contacts));
-  else
-    n_contact_pts = length(body_contacts);
-    body_contacts = {body_contacts};
-  end
-  varargin = {kinsol,body_idx,body_contacts};
+  [phi,normal,d] = contactConstraints(obj,varargin);
 end
 
-if (nargout>2)
-  [contact_pos,J] = contactPositions(obj,varargin{:});
-else
-  contact_pos = contactPositions(obj,varargin{:});
-end
-
-[pos,~,normal,mu] = collisionDetect(obj,contact_pos);
-
-relpos = contact_pos - pos;
-s = sign(sum(relpos.*normal,1));
-phi = (sqrt(sum(relpos.^2,1)).*s)';
-if (nargout>1)
-  d=obj.surfaceTangents(normal);
-  m=length(d);
-  B = cell(n_contact_pts,1);
-  JB = cell(n_contact_pts,1);
-  Bi = zeros(3,2*m);
-  Ji = zeros(2*m,obj.num_q);
+if nargout > 1,
+  nk = length(D);
+  nC = length(phi);
+  nq = obj.getNumPositions;
   
-  for i=1:n_contact_pts
-    norm = sqrt(1+mu(i)^2);% because normal and d are orthogonal, the norm has a simple form
-    for k=1:m
-      % todo: vectorize
-      Bi(:,k) = (normal(:,i)+mu(i)*d{k}(:,i)) / norm; 
-      Bi(:,m+k) = (normal(:,i)-mu(i)*d{k}(:,i)) / norm;
-      if (nargout>2)
-        Ji(k,:) = Bi(:,k)' * J((i-1)*3+(1:3),:);
-        Ji(m+k,:) = Bi(:,m+k)' * J((i-1)*3+(1:3),:);
-      end
+  % normalize vectors
+  normalize_mat = diag(1./sqrt(1 + mu.^2));
+  
+  B_mat = zeros(3,2*nk*nC);
+  
+  if nargout > 2
+    JB_mat = zeros(2*nk,nq*nC);
+  end
+  
+  % Awkwardly reshaping everything because the old contactConstraintsBV had
+  % a different output format than contactConstraints, maintaining
+  % backwards compatability.
+  for k=1:nk,
+    I = k - 1 + (1:2*nk:2*nk*nC);
+    B_mat(:,I) = (normal + d{k}*diag(mu))*normalize_mat;
+    B_mat(:,I+nk) = (normal - d{k}*diag(mu))*normalize_mat;
+    
+    if nargout > 2
+      JB_mat(k,:) = reshape((n' + D{k}'*diag(mu))*normalize_mat,1,[]);
+      JB_mat(k+nk,:) = reshape((n' - D{k}'*diag(mu))*normalize_mat,1,[]);
     end
-    B{i} = Bi;
-    if (nargout>2)
-      JB{i} = Ji';
-    end
+  end
+  B = mat2cell(B_mat,3,2*nk*ones(nC,1));  
+  if nargout > 2
+    JB = mat2cell(JB_mat,2*nk,nq*ones(nC,1));
   end
 end
 end
-

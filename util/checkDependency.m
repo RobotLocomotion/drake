@@ -92,6 +92,23 @@ if ~ok
         disp(' ');
       end
       
+    case 'ros'
+      conf.ros_enabled = logical(exist('rosmatlab.node','class'));
+      if (~conf.ros_enabled)
+        if exist(fullfile(matlabroot, 'toolbox', 'psp', 'rosmatlab'), 'dir')
+          addpath(fullfile(matlabroot, 'toolbox', 'psp', 'rosmatlab'));
+          conf.ros_enabled = logical(exist('rosmatlab.node','class'));
+        end
+      end
+        
+      if (~conf.ros_enabled)
+        disp(' ');
+        disp(' ROS not found.  ROS support will be disabled.');
+        disp(' To re-enable, install MATLAB''s ROS support from');
+        disp(' <a href="http://www.mathworks.com/ros">http://www.mathworks.com/hardware-support/ros</a>');
+        disp(' ');
+      end
+      
     case 'snopt'
       conf.snopt_enabled = logical(exist('snopt','file'));
       if (~conf.snopt_enabled)

@@ -5,7 +5,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
-urdf_collision = [getDrakePath,'/systems/plants/constraint/test/model_simple_visuals.urdf'];
+urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_chull.urdf'];
 options.floating = true;
 robot = RigidBodyManipulator(urdf,options);
 nq = robot.getNumDOF();
@@ -20,8 +20,16 @@ r_foot = robot.findLinkInd('r_foot');
 l_hand = robot.findLinkInd('l_hand');
 r_hand = robot.findLinkInd('r_hand');
 head = robot.findLinkInd('head');
-l_foot_pts = robot.getBody(l_foot).contact_pts;
-r_foot_pts = robot.getBody(r_foot).contact_pts;
+l_foot_shapes = robot.getBody(l_foot).getContactShapes;
+r_foot_shapes = robot.getBody(r_foot).getContactShapes;
+l_foot_pts = [];
+r_foot_pts = [];
+for i=1:length(l_foot_shapes),
+  l_foot_pts = [l_foot_pts robot.getBody(l_foot).getContactShapes{i}.getPoints];
+end
+for i=1:length(r_foot_shapes),
+  r_foot_pts = [r_foot_pts robot.getBody(r_foot).getContactShapes{i}.getPoints];
+end
 l_hand_pts = [0;0;0];
 r_hand_pts = [0;0;0];
 

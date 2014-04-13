@@ -22,8 +22,7 @@
         xyz="-.135 0 0"
         rpy="0 0 0" />
       <geometry>
-        <!--<mesh filename="meshes/GliderFuselage.obj" />-->
-        <box size =".3 .1 .03"/>
+        <mesh filename="meshes/GliderFuselage.STL" />
       </geometry>
       <material
         name="">
@@ -36,8 +35,8 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="meshes/GliderFuselage.STL" />
+        <!-- <mesh filename="meshes/GliderFuselage.STL" /> -->
+        <box size =".3 .1 .03"/>
       </geometry>
     </collision>
   </link>
@@ -65,8 +64,7 @@
         xyz="-.02 0 0"
         rpy="0 0 0" />
       <geometry>
-        <!--<mesh filename="meshes/GliderElevator.obj" />-->
-        <box size=".08 .1 .01"/>
+        <mesh filename="meshes/GliderElevator.STL" />
       </geometry>
       <material
         name="">
@@ -79,8 +77,8 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="meshes/GliderElevator.STL" />
+        <box size=".08 .1 .01"/>
+<!--        <mesh filename="meshes/GliderElevator.STL" /> -->
       </geometry>
     </collision>
   </link>
