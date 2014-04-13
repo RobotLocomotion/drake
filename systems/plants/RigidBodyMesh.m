@@ -72,7 +72,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
     end
     
     function pts = getPoints(obj)
-      assert(obj.scale == 1); % todo: handle this case
+      assert(all(obj.scale == 1)); % todo: handle this case
       pts = loadFile(obj);
     end
 
