@@ -3,6 +3,7 @@ function runDoubleAtlas
 
 options.view = 'right';
 options.twoD = true;
+options.terrain = RigidBodyFlatTerrain();
 
 dt = 0.005;
 r = TimeSteppingRigidBodyManipulator([],dt,options);
