@@ -6,7 +6,9 @@ else
   typecheck(display,'logical');
 end
 
-r = TimeSteppingRigidBodyManipulator('ball.urdf',0.005,struct('floating',true));
+options.floating = true;
+options.terrain = RigidBodyFlatTerrain();
+r = TimeSteppingRigidBodyManipulator('ball.urdf',0.005,options);
 if display
   v = r.constructVisualizer();
   checkDependency('lcmgl');
@@ -118,7 +120,7 @@ for t=0:0.05:T
 end
 
 clear r;
-r = TimeSteppingRigidBodyManipulator('brick1.urdf',0.005,struct('floating',true));
+r = TimeSteppingRigidBodyManipulator('brick1.urdf',0.005,options);
 if display
   v = r.constructVisualizer();
 end

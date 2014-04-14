@@ -1,6 +1,5 @@
 function runPassive
 
-options.terrain = [];
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 p = PlanarRigidBodyManipulator('FourBar.urdf',options);
 warning(w);

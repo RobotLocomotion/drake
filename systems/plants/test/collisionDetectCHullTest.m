@@ -11,7 +11,6 @@ else
 end
     
 options.floating = true;
-options.terrain = [];
 r = RigidBodyManipulator([],options);
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_points_test');
 
