@@ -3,6 +3,7 @@ function runSaggitalPassive
 options.ignore_self_collisions = true;
 options.floating = true;
 options.twoD = true;
+options.terrain = RigidBodyFlatTerrain();
 
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 r = TimeSteppingRigidBodyManipulator('pr2.urdf',0.01,options);
