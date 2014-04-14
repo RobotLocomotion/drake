@@ -39,7 +39,7 @@ function collisionDetectGradTest(visualize,n_debris)
       lcmgl.switchBuffers();
     end
     if ~isempty(rows_bad)
-      [~,~,~,~,idxA,idxB] = collisionDetect(r,kinsol);
+      [~,~,~,~,idxA,idxB] = collisionDetect(r,q0);
       for i = 1:length(rows_bad);
         fprintf('Gradient mismatch for %s and %s\n',r.getLinkName(idxA(rows_bad(i))),r.getLinkName(idxB(rows_bad(i))));
       end
