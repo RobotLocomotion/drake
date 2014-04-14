@@ -22,14 +22,14 @@ classdef NonlinearProgramWKinsol < NonlinearProgramWConstraintObjects
       end
       obj = obj@NonlinearProgramWConstraintObjects(robot.getNumDOF*nT);
       obj.robot = robot;
+      obj.nq = robot.getNumDOF;
+      obj.nT = nT;
       obj.x_name = cell(obj.nq*obj.nT,1);
       for i = 1:obj.nT
         for j = 1:obj.nq
-          obj.x_name{i} = sprintf('q%d[%d]',j,i);
+          obj.x_name{(i-1)*obj.nq+j} = sprintf('q%d[%d]',j,i);
         end
       end
-      obj.nq = robot.getNumDOF;
-      obj.nT = nT;
       obj.t_kinsol = false(1,obj.nT);
       obj.cost_kinsol_idx = {};
       obj.cost_nonkinsol_idx = {};
