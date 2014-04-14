@@ -6,7 +6,6 @@ for urdf = {'FallingBrick.urdf',...
 
 urdf=urdf{1};  
 options.floating = 'rpy';
-options.terrain = [];
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 m_rpy = TimeSteppingRigidBodyManipulator(urdf,.01,options);
 options.floating = 'YPR';

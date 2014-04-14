@@ -20,7 +20,6 @@ end
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_all_bodies_jac_test');
 
 options.floating = true;
-options.terrain = [];
 r = RigidBodyManipulator([],options);
 
 for i=1:n_bricks
