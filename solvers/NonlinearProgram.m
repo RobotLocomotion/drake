@@ -458,6 +458,7 @@ classdef NonlinearProgram
       [iGfun,jGvar] = obj.getNonlinearGradientSparsity();
       [lb,ub] = obj.bounds();
       if(obj.check_grad)
+        display('check the gradient for the initial guess');
         checkGradient(x0);
       end
       
@@ -472,6 +473,7 @@ classdef NonlinearProgram
         Avals,iAfun,jAvar,...
         iGfun,jGvar);
       if(obj.check_grad)
+        display('check the gradient for the SNOPT solution');
         checkGradient(x);
       end
       
