@@ -1,5 +1,6 @@
 % clear all
-p = TimeSteppingRigidBodyManipulator('snake.urdf',.01);
+options.terrain = RigidBodyFlatTerrain();
+p = TimeSteppingRigidBodyManipulator('snake.urdf',.01,options);
 p = p.addRobotFromURDF('snake.urdf',[.4*randn(2,1);0],0*randn(3,1));
 % p = p.addRobotFromURDF('snake.urdf',[.4*randn(2,1);0],0*randn(3,1));
 % p = p.addRobotFromURDF('snake.urdf',[.4*randn(2,1);0],0*randn(3,1));
