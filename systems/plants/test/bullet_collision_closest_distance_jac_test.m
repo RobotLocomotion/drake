@@ -12,7 +12,6 @@ end
 
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_closest_distance_test');
 options.floating = true;
-options.terrain = [];
 r = RigidBodyManipulator([],options);
 
 for i=1:2
