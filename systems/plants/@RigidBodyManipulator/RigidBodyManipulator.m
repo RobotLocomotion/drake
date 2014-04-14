@@ -41,7 +41,7 @@ classdef RigidBodyManipulator < Manipulator
       % inputs).
       
       if (nargin<2), options = struct(); end
-      if ~isfield(options,'terrain'), options.terrain = RigidBodyFlatTerrain(); end;
+      if ~isfield(options,'terrain'), options.terrain = []; end;
 
       obj = obj@Manipulator(0,0);
       obj.body = newBody(obj);
