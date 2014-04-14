@@ -510,7 +510,7 @@ for i = 1:nargin-3
   elseif(isa(varargin{i},'SingleTimeLinearPostureConstraint'))
     if(varargin{i}.isTimeValid(t))
       [lb,ub] = varargin{i}.bounds(t);
-      c = varargin{i}.feval([],q_sol);
+      c = varargin{i}.feval(t,q_sol);
       if(any(c-ub>1e-3) || any(c-lb < -1e-3))
         error('solution does not satisfy the SingleTimeLinearPostureConstraint');
       end

@@ -34,6 +34,8 @@ l_foot_contact_pts = r.getBody(l_foot).getContactShapes{1}.getPoints;
 r_hand_pts = mean(r_hand_pts,2);
 l_hand_pts = mean(l_hand_pts,2);
 
+r_foot_pts = [0;0;0];
+l_foot_pts = [0;0;0];
 
 
 nq = r.getNumDOF();
@@ -50,18 +52,16 @@ r_leg_hpz = find(strcmp(coords,'r_leg_hpz'));
 q0 = nom_data.xstar(1:nq);
 qdot0 = zeros(nq,1);
 kinsol0 = doKinematics(r,q0,false,false);
-r_foot_pos = forwardKin(r,kinsol0,r_foot,r_hand_pts,2);
-r_foot_pos(3,:) = 0;
-l_foot_pos = forwardKin(r,kinsol0,l_foot,l_hand_pts,2);
-l_foot_pos(3,:) = 0;
+r_foot_pos = forwardKin(r,kinsol0,r_foot,r_foot_pts,2);
+l_foot_pos = forwardKin(r,kinsol0,l_foot,l_foot_pts,2);
 r_hand_pos = forwardKin(r,kinsol0,r_hand,r_hand_pts,0);
 l_hand_pos = forwardKin(r,kinsol0,l_hand,l_hand_pts,0);
 com_pos0 = getCOM(r,kinsol0,1);
 com_height = com_pos0(3);
 tspan = [0,1];
-kc1 = {WorldPositionConstraint(r,r_foot,r_hand_pts,r_foot_pos(1:3),r_foot_pos(1:3),tspan),...
+kc1 = {WorldPositionConstraint(r,r_foot,r_foot_pts,r_foot_pos(1:3),r_foot_pos(1:3),tspan),...
   WorldQuatConstraint(r,r_foot,r_foot_pos(4:7),0,tspan)};
-kc2 = {WorldPositionConstraint(r,l_foot,l_hand_pts,l_foot_pos(1:3),l_foot_pos(1:3),tspan),...
+kc2 = {WorldPositionConstraint(r,l_foot,l_foot_pts,l_foot_pos(1:3),l_foot_pos(1:3),tspan),...
   WorldQuatConstraint(r,l_foot,l_foot_pos(4:7),0,tspan)};
 kc3 = WorldPositionConstraint(r,r_hand,r_hand_pts,r_hand_pos+[0.1;0.05;0.75],r_hand_pos+[0.1;0.05;1],[tspan(end) tspan(end)]);
 kc4 = WorldPositionConstraint(r,l_hand,l_hand_pts,l_hand_pos,l_hand_pos,[tspan(end) tspan(end)]);
@@ -195,12 +195,12 @@ kc_fixedPose = WorldFixedBodyPoseConstraint(r,pelvis,tspan2);
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,qsc,pc_knee,kc_fixedPose,ikoptions);
 
 display('Check MultipleTimeLinearPostureConstraint');
-pc_change = PostureChangeConstraint(r,[l_leg_kny;r_leg_kny],[-0.1;-0.03],[0.05;0.02],tspan);
+pc_change = PostureChangeConstraint(r,[l_leg_kny;r_leg_kny],[-0.1;-0.1],[0.05;0.05],tspan);
 ikoptions = ikoptions.setFixInitialState(true);
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,qsc,pc_change,ikoptions);
 xbreaks = xtraj.eval(t);
 if(any(xbreaks(l_leg_kny,3:end)-xbreaks(l_leg_kny,2)>0.05+1e-10) || any(xbreaks(l_leg_kny,3:end)-xbreaks(l_leg_kny,2)<-0.1-1e-10)||...
-   any(xbreaks(r_leg_kny,3:end)-xbreaks(r_leg_kny,2)>0.02+1e-10) || any(xbreaks(r_leg_kny,3:end)-xbreaks(r_leg_kny,2)<-0.03-1e-10))
+   any(xbreaks(r_leg_kny,3:end)-xbreaks(r_leg_kny,2)>0.05+1e-10) || any(xbreaks(r_leg_kny,3:end)-xbreaks(r_leg_kny,2)<-0.1-1e-10))
  error('PostureChangeConstraint is not satisfied');
 end
 
@@ -208,24 +208,24 @@ ikoptions = ikoptions.setFixInitialState(false);
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,qsc,pc_change,ikoptions);
 xbreaks = xtraj.eval(t);
 if(any(xbreaks(l_leg_kny,2:end)-xbreaks(l_leg_kny,1)>0.05+1e-10) || any(xbreaks(l_leg_kny,2:end)-xbreaks(l_leg_kny,1)<-0.1-1e-10)||...
-   any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)>0.02+1e-10) || any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)<-0.03-1e-10))
+   any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)>0.05+1e-10) || any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)<-0.1-1e-10))
  error('PostureChangeConstraint is not satisfied');
 end
 
 display('Check MultipleTimeLinearPostureConstraint for time span being only part of the t_breaks');
-pc_change2 = PostureChangeConstraint(r,[l_leg_kny;r_leg_kny],[-0.1;-0.03],[0.05;0.02],[t(2) t(end)]);
+pc_change2 = PostureChangeConstraint(r,[l_leg_kny;r_leg_kny],[-0.1;-0.1],[0.05;0.05],[t(2) t(end)]);
 ikoptions = ikoptions.setFixInitialState(true);
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,qsc,pc_change2,ikoptions);
 xbreaks = xtraj.eval(t(2:end));
 if(any(xbreaks(l_leg_kny,2:end)-xbreaks(l_leg_kny,1)>0.05+1e-10) || any(xbreaks(l_leg_kny,2:end)-xbreaks(l_leg_kny,1)<-0.1-1e-10)||...
-   any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)>0.02+1e-10) || any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)<-0.03-1e-10))
+   any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)>0.05+1e-10) || any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)<-0.1-1e-10))
  error('PostureChangeConstraint is not satisfied');
 end
 ikoptions = ikoptions.setFixInitialState(false);
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,qsc,pc_change2,ikoptions);
 xbreaks = xtraj.eval(t(2:end));
 if(any(xbreaks(l_leg_kny,2:end)-xbreaks(l_leg_kny,1)>0.05+1e-10) || any(xbreaks(l_leg_kny,2:end)-xbreaks(l_leg_kny,1)<-0.1-1e-10)||...
-   any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)>0.02+1e-10) || any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)<-0.03-1e-10))
+   any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)>0.05+1e-10) || any(xbreaks(r_leg_kny,2:end)-xbreaks(r_leg_kny,1)<-0.1-1e-10))
  error('PostureChangeConstraint is not satisfied');
 end
 
@@ -265,6 +265,9 @@ if(info>10)
   error('SNOPT info is %d, inverseKinTraj mex fails to solve the problem',info);
 end
 toc
+x_sol = xtraj.eval(t);
+q_sol = x_sol(1:r.getNumDOF,:);
+testConstraint(r,t,q_sol,ikoptions.fixInitialState,varargin{1:end-1});
 tic
 x0 = [q_seed.eval(t(1));q_seed.deriv(t(1))];
 ikproblem = InverseKinTraj(r,t,q_nom,ikoptions.fixInitialState,x0,varargin{1:end-1});
@@ -276,6 +279,9 @@ if(info>10)
   error('SNOPT info is %d, InverseKinTraj fails to solve the problem',info);
 end
 toc
+x_sol = xtraj.eval(t);
+q_sol = x_sol(1:r.getNumDOF,:);
+testConstraint(r,t,q_sol,ikoptions.fixInitialState,varargin{1:end-1});
 % display('IK matlab start to solve the problem');
 % tic
 % [xtraj,info,infeasible_constraint] = inverseKinTraj(r,t,q_seed,q_nom,varargin{1:end-1},ikoptions);
@@ -283,4 +289,83 @@ toc
 % if(info>10)
 %   error('SNOPT info is %d, IK fails to solve the problem',info);
 % end
+end
+
+function testConstraint(robot,t,q_sol,fix_initial_state,varargin)
+nT = length(t);
+if(fix_initial_state)
+  t_start_idx = 2;
+  nT_free = nT-1;
+else
+  t_start_idx = 1;
+  nT_free = nT;
+end
+
+kinsol = cell(1,nT);
+for i = t_start_idx:length(t)
+  kinsol{i} = robot.doKinematics(q_sol(:,i),false,false);
+end
+[q_lb,q_ub] = robot.getJointLimits();
+% The interpolation seems to change the value of q at the final knot point by epsilon
+if(any(any(q_sol(:,t_start_idx:end-1)>bsxfun(@times,q_ub,ones(1,nT_free-1))))...
+    || any(any(q_sol(:,t_start_idx:end-1)<bsxfun(@times,q_lb,ones(1,nT_free-1)))))
+  error('solution must be within the robot default joint limits');
+end
+if(any(q_sol(:,end)-q_ub>3*eps) || any(q_sol(:,end)-q_lb<-3*eps))
+  error('solution must be within the robot default joint limits');
+end
+for i = 1:nargin-4
+  if(isa(varargin{i},'SingleTimeKinematicConstraint'))
+    for j = t_start_idx:nT
+      if(varargin{i}.isTimeValid(t(j)))
+        [lb,ub] = varargin{i}.bounds(t(j));
+        c = varargin{i}.eval(t(j),kinsol{j});
+        if(any(c-ub>1e-3) || any(c-lb<-1e-3))
+          error('solution does not satisfy the SingleTimeKinematicConstraint');
+        end
+      end
+    end
+  elseif(isa(varargin{i},'PostureConstraint'))
+    for j = t_start_idx:nT
+      if(varargin{i}.isTimeValid(t(j)))
+        [lb,ub] = varargin{i}.bounds(t(j));
+        if(any(q_sol(:,j)>ub) || any(q_sol(:,j)<lb))
+          error('solution does not satisfy the PostureConstraint');
+        end
+      end
+    end
+  elseif(isa(varargin{i},'QuasiStaticConstraint'))
+    for j = t_start_idx:nT
+      if(varargin{i}.isTimeValid(t(j)) && varargin{i}.active)
+        if(~varargin{i}.checkConstraint(kinsol{j}))
+          error('solution does not satisfy the QuasiStaticConstraint');
+        end
+      end
+    end
+  elseif(isa(varargin{i},'SingleTimeLinearPostureConstraint'))
+    for j = t_start_idx:nT
+      if(varargin{i}.isTimeValid(t(j)))
+        [lb,ub] = varargin{i}.bounds(t(j));
+        c = varargin{i}.feval(t(j),q_sol(:,j));
+        if(any(c-ub>1e-3) || any(c-lb < -1e-3))
+          error('solution does not satisfy the SingleTimeLinearPostureConstraint');
+        end
+      end
+    end
+  elseif(isa(varargin{i},'MultipleTimeKinematicConstraint'))
+    [lb,ub] = varargin{i}.bounds(t(t_start_idx:end));
+    c = varargin{i}.eval(t(t_start_idx:end),kinsol(t_start_idx:end));
+    if(any(c-ub>1e-3) || any(c-lb < -1e-3))
+      error('solution does not satisfy the MultipleTimeKinematicConstraint');
+    end
+  elseif(isa(varargin{i},'MultipleTimeLinearPostureConstraint'))
+    [lb,ub] = varargin{i}.bounds(t(t_start_idx:end));
+    c = varargin{i}.feval(t(t_start_idx:end),q_sol(:,t_start_idx:end));
+    if(any(c-ub>1e-3) || any(c-lb < -1e-3))
+      error('solution does not satisfy the MultipleTimeLinearPostureConstraint');
+    end
+  else
+    error('The constraint is not supported');
+  end
+end
 end
