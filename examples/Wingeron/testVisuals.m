@@ -7,8 +7,8 @@ p=p.addRobotFromURDF('Forest.xml');
 v = p.constructVisualizer();
 %    [x y z r p y Lw Rw  El Rd 
 x0 = [-.5 0 0 0 0 0 .1 -.1 .4 -.1  0 0 0 0 0 0 0 0 0 0]';
-q = x0(1:10);
-kinsol = doKinematics(p,q);
+%q = x0(1:10);
+%kinsol = doKinematics(p,q);
 %x0 = [x0;x0];
 %x0(1) = 1;
 v.draw(0,x0);
