@@ -189,6 +189,7 @@ if(any(c_fixedPose-ub_fixedPose>1e-3) || any(c_fixedPose-lb_fixedPose<-1e-3))
   error('The fixed pose constraint is not satisfied');
 end
 
+ikoptions = ikoptions.setAdditionaltSamples([]);
 display('Check MultipleKinematicConstraint with tspan being only part of the t_breaks');
 tspan2 = [0.2 0.7];
 kc_fixedPose = WorldFixedBodyPoseConstraint(r,pelvis,tspan2);
