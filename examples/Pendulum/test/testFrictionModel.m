@@ -1,7 +1,7 @@
 function testFrictionModel()
 % runs the passive system
-
-r = RigidBodyManipulator('PendulumWithFriction.urdf');
+options.terrain = [];
+r = RigidBodyManipulator('PendulumWithFriction.urdf',options);
 %v = constructVisualizer(r);
 
 traj = simulate(r,[0 5],[pi/2; 0]);

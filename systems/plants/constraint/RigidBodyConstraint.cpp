@@ -2223,13 +2223,52 @@ AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
   this->type = RigidBodyConstraint::AllBodiesClosestDistanceConstraintType;
 };
 
+//AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(const AllBodiesClosestDistanceConstraint &rhs)
+  //: SingleTimeKinematicConstraint(rhs)
+//{
+  //DEBUG
+  //std::cout << "ABCDC::ABCDC: Copy constructor" << std::endl;
+  //END_DEBUG
+  //double t = 0;
+  //VectorXd c;
+  //MatrixXd dc;
+  //eval(&t,c,dc);
+  //num_constraint = c.size();
+//}
+
+void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyManipulator* robot)
+{
+  this->robot = robot;
+  double t = 0;
+  VectorXd c;
+  MatrixXd dc;
+  this->eval(&t,c,dc);
+  this->num_constraint = c.size();
+}
+
 void 
 AllBodiesClosestDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
 {
-  robot->closestDistanceAllBodies(c,dc);
-  //DEBUG
-  //std::cout << "ABCDC::eval: c.size() = " << c.size() << std::endl;
-  //END_DEBUG
+  MatrixXd xA, xB, normal;
+  std::vector<int> idxA; 
+  std::vector<int> idxB;
+  std::vector<int> bodies_idx; // empty vector -> all bodies
+
+  robot->collisionDetect(c,normal,xA,xB,idxA,idxB,bodies_idx);
+
+  int num_pts = xA.cols();
+  dc = MatrixXd::Zero(num_pts,robot->num_dof);
+  MatrixXd JA = MatrixXd::Zero(3,robot->num_dof);     
+  MatrixXd JB = MatrixXd::Zero(3,robot->num_dof);     
+  for (int i = 0; i < num_pts; ++i) {
+    Vector4d xA_1; 
+    Vector4d xB_1; 
+    xA_1 << xA.col(i), 1;
+    xB_1 << xB.col(i), 1;
+    robot->forwardJac(idxA.at(i),xA_1,0,JA);
+    robot->forwardJac(idxB.at(i),xB_1,0,JB);
+    dc.row(i) = normal.col(i).transpose()*(JA-JB);
+  }
 };
 
 void AllBodiesClosestDistanceConstraint::bounds(const double* t, VectorXd& lb, VectorXd& ub) const

@@ -1,52 +1,50 @@
-function [contact_pos,J,Jdot] = contactPositionsJdot(obj,kinsol,body_idx,body_contacts)
-% @retval p(:,i)=[px;py;pz] is the position of the ith contact point 
-% @retval J is dpdq
-% @retval Jdot is d(dpdq)dt
-% @ingroup Collision
-      
-typecheck(kinsol,'struct');
+function [contact_pos,J,Jdot] = contactPositionsJdot(obj,kinsol,varargin)
+% function [contact_pos,J,dJ] = contactPositionsJdot(obj,kinsol,body_idx,body_contacts)
+% Compute the contact positions and Jacobians, if interested in the
+% inertial frame positions of these points. Most applications should see
+% the contactConstraints function instead.
+%
+% @param obj
+% @param kinsol
+% @param allow_multiple_contacts Allow multiple contacts per body pair.
+%      Optional, defaults to false.
+% @param active_collision_options A optional struct to determine which
+%    bodies and collision groups are checked. See collisionDetect.
+% 
+% @retval contact_pos (3 x 2m) is the set of inertial positions of the
+% contacts (nearest point on a body to another body)
+% @retval J (6m x n) = d/dq contact_pos
+% @retval dJ (6m x n^2) = dd/dqdq contact_pos
+% @retval body_idx (2m x 1) body indices
 
-if nargin<3
-  body_idx = 1:length(obj.body);
+if ~isstruct(kinsol)  
+  % treat input as contactPositions(obj,q)
+  kinsol = doKinematics(obj,kinsol);
 end
 
-if nargin<4
-  n_contact_pts = size([obj.body(body_idx).contact_pts],2);
-  body_contacts = [];
-else
-  n_contact_pts = sum(cellfun('length',body_contacts));
+[~,~,xA,xB,idxA,idxB] = obj.collisionDetect(kinsol,varargin{:});
+
+nq = obj.getNumPositions;
+nC = length(idxA);
+body_idx = [idxA;idxB];
+x_body = [xA xB];
+contact_pos = zeros(3,2*nC);
+
+if nargout > 1,
+  J = zeros(6*nC,nq);
+end
+if nargout > 2,
+  Jdot = zeros(6*nC,nq);
 end
 
-d=length(obj.gravity);  % 2 for planar, 3 for 3D
-contact_pos = zeros(d,n_contact_pts)*kinsol.q(1);
-
-if (nargout>1) 
-  J = zeros(n_contact_pts*d,obj.num_q); 
-end
-if (nargout>2)
-  Jdot = zeros(n_contact_pts*d,obj.num_q); 
-end
-
-count=0;
-for i=1:length(body_idx)
-  if isempty(body_contacts)
-    nC = size(obj.body(body_idx(i)).contact_pts,2);
-    pts_idx = 1:nC;
+for i=1:2*nC,
+  if (nargout>2)
+    [contact_pos(:,i),J((1:3) + 3*(i-1),:)] = obj.forwardKin(kinsol,body_idx(i),x_body(:,i));
+    Jdot((1:3) + 3*(i-1),:) = forwardJacDot(obj,kinsol,body_idx(i),x_body(:,i));
+  elseif (nargout>1)
+    [contact_pos(:,i),J((1:3) + 3*(i-1),:)] = obj.forwardKin(kinsol,body_idx(i),x_body(:,i));
   else
-    pts_idx = body_contacts{i};
-    nC = length(pts_idx);
-  end
-  if nC>0
-    if (nargout>2)
-      [contact_pos(:,count+(1:nC)),J(d*count+(1:d*nC),:)] = forwardKin(obj,kinsol,body_idx(i),obj.body(body_idx(i)).contact_pts(:,pts_idx));
-      Jdot(d*count+(1:d*nC),:) = forwardJacDot(obj,kinsol,body_idx(i),obj.body(body_idx(i)).contact_pts(:,pts_idx));
-    elseif (nargout>1)
-      [contact_pos(:,count+(1:nC)),J(d*count+(1:d*nC),:)] = forwardKin(obj,kinsol,body_idx(i),obj.body(body_idx(i)).contact_pts(:,pts_idx));
-    else
-      contact_pos(:,count+(1:nC)) = forwardKin(obj,kinsol,body_idx(i),obj.body(body_idx(i)).contact_pts(:,pts_idx));
-    end
-    count = count + nC;
+    contact_pos(:,i) = obj.forwardKin(kinsol,body_idx(i),x_body(:,i));
   end
 end
-
 end

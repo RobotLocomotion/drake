@@ -8,19 +8,19 @@ For the wingeron (which is ~.71 meters wide), this should require a roll in orde
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-         <box size = ".2 .2 20"/>
+         <cylinder radius=".05" length="20"/>
       </geometry>
       <material name="blue">
-	<color rgba="0 0 1 1" />
+        <color rgba="0.8 0.8 1 1" />
       </material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-         <box size = ".2 .2 20"/>
+         <cylinder radius=".05" length="20"/>
       </geometry>
       <material name="blue">
-	<color rgba="0 0 1 1" />
+        <color rgba="0.8 0.8 1 1" />
       </material>
     </collision>
   </link>
@@ -28,30 +28,30 @@ For the wingeron (which is ~.71 meters wide), this should require a roll in orde
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-         <box size = ".2 .2 20"/>
+         <cylinder radius=".05" length="20"/>
       </geometry>
       <material name="blue">
-	<color rgba="0 0 1 1" />
+        <color rgba="0.8 0.8 1 1" />
       </material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-         <box size = ".2 .2 20"/>
+         <cylinder radius=".05" length="20"/>
       </geometry>
       <material name="blue">
-	<color rgba="0 0 1 1" />
+        <color rgba="0.8 0.8 1 1" />
       </material>
     </collision>
   </link>
   <joint name="LeftTreeJoint" type="fixed">
     <parent link="world" />
     <child link="LeftTree" />
-    <origin xyz="0 .45 0" rpy="0 0 0"/>
+    <origin xyz="0 .3 0" rpy="0 0 0"/>
   </joint>
   <joint name="RightTreeJoint" type="fixed">
     <parent link="world" />
     <child link="RightTree" />
-    <origin xyz="0 -.45 0" rpy="0 0 0"/>
+    <origin xyz="0 -.3 0" rpy="0 0 0"/>
   </joint>
 </robot>

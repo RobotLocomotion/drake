@@ -50,7 +50,7 @@ if (eigen3_FOUND)
   add_rbm_mex(doKinematicsmex)
   add_rbm_mex(forwardKinmex)
   add_rbm_mex(bodyKinmex)
-  add_rbm_mex(collisionmex)
+  add_rbm_mex(collisionDetectmex)
   add_rbm_mex(getCMMmex)
 
   add_library(drakeIKoptions SHARED IKoptions.cpp)
