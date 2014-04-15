@@ -14,7 +14,8 @@ classdef BotVisualizer < RigidBodyVisualizer
 %    draw
 %    playbackMovie
 %    lcmglwrappers
-    function obj = BotVisualizer(manip)
+    function obj = BotVisualizer(manip,use_contact_shapes)
+      if nargin < 2, use_contact_shapes = false; end
       
       global g_disable_botvis;
       if g_disable_botvis % evaluates to false if empty
@@ -30,7 +31,7 @@ classdef BotVisualizer < RigidBodyVisualizer
       end
       typecheck(manip,'RigidBodyManipulator');
       
-      if ~strcmp(class(manip.terrain),'RigidBodyTerrain')
+      if ~isempty(manip.terrain) && ~isa(manip.terrain,'RigidBodyFlatTerrain')
         error('Drake:BotVisualizer:UnsupportedModel','This model has (non-zero) terrain.  Not supported (yet)');
       end
 %      if numel(manip.urdf)~=1
@@ -64,28 +65,40 @@ classdef BotVisualizer < RigidBodyVisualizer
         link = drake.lcmt_viewer_link_data();
         link.name = b.linkname;
         link.robot_num = b.robotnum;
-        link.num_geom = length(b.visual_shapes);
+        if use_contact_shapes
+          link.num_geom = length(b.contact_shapes);
+        else
+          link.num_geom = length(b.visual_shapes);
+        end
         if (link.num_geom>0)
           link.geom = javaArray('drake.lcmt_viewer_geometry_data',link.num_geom);
         end
         for j=1:link.num_geom
-          link.geom(j) = serializeToLCM(b.visual_shapes{j});
+          if use_contact_shapes
+            link.geom(j) = serializeToLCM(b.contact_shapes{j});
+          else
+            link.geom(j) = serializeToLCM(b.visual_shapes{j});
+          end
         end
         vr.link(i) = link;
       end
       
       lc.publish('DRAKE_VIEWER_LOAD_ROBOT',vr);
-      % listen for acknowledgement
-      ack = obj.status_agg.getNextMessage(5000);
-      if isempty(ack)
-        error('Drake:BotVisualizer:LoadRobotFailed','Did not receive ack from viewer');
-      else
-        msg = drake.lcmt_viewer_command(ack.data);
-%        if ~strcmp(vr.command_data,msg.command_data)
-%          error('Drake:BotVisualizer:LoadURDFFailed','ack from viewer contained different data');
-%        end
+      
+      if (false) % the message aggregator is missing valid acks
+        % listen for acknowledgement
+        ack = obj.status_agg.getNextMessage(5000);
+        obj.status_agg.numMessagesAvailable()
+        if isempty(ack)
+          error('Drake:BotVisualizer:LoadRobotFailed','Did not receive ack from viewer');
+        else
+          msg = drake.lcmt_viewer_command(ack.data);
+          %        if ~strcmp(vr.command_data,msg.command_data)
+          %          error('Drake:BotVisualizer:LoadURDFFailed','ack from viewer contained different data');
+          %        end
+        end
       end
-
+      
       nq = getNumDOF(manip);
       obj.draw_msg = drake.lcmt_viewer_draw();
       nb = getNumBodies(manip);

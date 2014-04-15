@@ -1,0 +1,162 @@
+<?xml version="1.0"?>
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../doc/drakeURDF.xsd" name="snake">
+  <link name="base"/>
+  <link name="link1">
+    <visual>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+        <origin xyz = "0 0 .35" rpy = "0 0 0"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+      </geometry>
+      <origin xyz="0 0 .35"/>
+    </collision>
+    <inertial>
+      <mass value="10"/>
+      <inertia ixx="0.04" ixy="0.0" ixz="0.0" iyy="0.04" iyz="0.0" izz="0.04"/>
+      <origin xyz="0 0 .35"/>
+    </inertial>
+  </link>
+  <link name="link2">
+    <visual>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+        <origin xyz = "0 0 .35" rpy = "0 0 0"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+      </geometry>
+      <origin xyz="0 0 .35"/>
+    </collision>
+    <inertial>
+      <mass value="10"/>
+      <inertia ixx="0.04" ixy="0.0" ixz="0.0" iyy="0.04" iyz="0.0" izz="0.04"/>
+      <origin xyz="0 0 .35"/>
+    </inertial>
+  </link>
+  <link name="link3">
+    <visual>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+        <origin xyz = "0 0 .35" rpy = "0 0 0"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+      </geometry>
+      <origin xyz="0 0 .35"/>
+    </collision>
+    <inertial>
+      <mass value="10"/>
+      <inertia ixx="0.04" ixy="0.0" ixz="0.0" iyy="0.04" iyz="0.0" izz="0.04"/>
+      <origin xyz="0 0 .35"/>
+    </inertial>
+  </link>
+  <link name="link4">
+    <visual>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+        <origin xyz = "0 0 .35" rpy = "0 0 0"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+      </geometry>
+      <origin xyz="0 0 .35"/>
+    </collision>
+    <inertial>
+      <mass value="10"/>
+      <inertia ixx="0.04" ixy="0.0" ixz="0.0" iyy="0.04" iyz="0.0" izz="0.04"/>
+      <origin xyz="0 0 .35"/>
+    </inertial>
+  </link>
+  <link name="link5">
+    <visual>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+        <origin xyz = "0 0 .35" rpy = "0 0 0"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+      </geometry>
+      <origin xyz="0 0 .35"/>
+    </collision>
+    <inertial>
+      <mass value="10"/>
+      <inertia ixx="0.04" ixy="0.0" ixz="0.0" iyy="0.04" iyz="0.0" izz="0.04"/>
+      <origin xyz="0 0 .35"/>
+    </inertial>
+  </link>
+  <link name="link6">
+    <visual>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+        <origin xyz = "0 0 .35" rpy = "0 0 0"/>
+      </geometry>
+    </visual>
+    <collision>
+      <geometry>
+        <capsule radius="0.1" length=".5"/>
+      </geometry>
+      <origin xyz="0 0 .35"/>
+    </collision>
+    <inertial>
+      <mass value="10"/>
+      <inertia ixx="0.04" ixy="0.0" ixz="0.0" iyy="0.04" iyz="0.0" izz="0.04"/>
+      <origin xyz="0 0 .35"/>
+    </inertial>
+  </link>  
+  <joint name="j1" type="continuous">
+    <parent link="base" />
+    <child link="link1" />
+    <origin xyz="0 0 1"/>
+    <axis xyz="0 1 0" />
+    <dynamics damping="0" />
+  </joint>
+  <joint name="j2" type="continuous">
+    <parent link="link1" />
+    <child link="link2" />
+    <origin xyz="0 0 .8"/>
+    <axis xyz="0 0 1" />
+    <dynamics damping="0" />
+  </joint>
+  <joint name="j3" type="continuous">
+    <parent link="link2" />
+    <child link="link3" />
+    <origin xyz="0 0 .8"/>
+    <axis xyz="1 0 0" />
+    <dynamics damping="0" />
+  </joint>
+  <joint name="j4" type="continuous">
+    <parent link="link3" />
+    <child link="link4" />
+    <origin xyz="0 0 .8"/>
+    <axis xyz="0 1 0" />
+    <dynamics damping="0" />
+  </joint>
+  <joint name="j5" type="continuous">
+    <parent link="link4" />
+    <child link="link5" />
+    <origin xyz="0 0 .8"/>
+    <axis xyz="0 0 1" />
+    <dynamics damping="0" />
+  </joint>
+  <joint name="j6" type="continuous">
+    <parent link="link5" />
+    <child link="link6" />
+    <origin xyz="0 0 .8"/>
+    <axis xyz="1 0 0" />
+    <dynamics damping="0" />
+  </joint>
+</robot>

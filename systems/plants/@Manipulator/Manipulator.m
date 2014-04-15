@@ -176,15 +176,12 @@ classdef Manipulator < SecondOrderSystem
       end
     end
     
-    function n = getNumContacts(obj)
-      % returns the number of contact points
-      n = obj.num_contacts;
+    function num_contacts(obj)
+      error('num_contacts parameter is no longer supported, in anticipation of alowing multiple contacts per body pair. Use getNumContactPairs for cases where the number of contacts is fixed');
     end
     
-    function [phi,n,D,mu] = contactConstraints(obj,q,dq)
-      % default method (intended to be overloaded) to implement unilater
-      % constraints imposed by contact
-      phi=[]; n=zeros(0,obj.num_q); D=cell(); mu=[];
+    function n = getNumContacts(obj)
+      error('getNumContacts is no longer supported, in anticipation of alowing multiple contacts per body pair. Use getNumContactPairs for cases where the number of contacts is fixed');
     end
     
     function [x,success] = resolveConstraints(obj,x0,v)
@@ -199,7 +196,7 @@ classdef Manipulator < SecondOrderSystem
         x0 = double(x0.inFrame(obj.getStateFrame));
       end
       
-      if (all(obj.joint_limit_min==-inf) && all(obj.joint_limit_max==inf) && obj.num_contacts==0)
+      if (all(obj.joint_limit_min==-inf) && all(obj.joint_limit_max==inf) && obj.getNumUnilateralConstraints==0)
         if (nargin<3) v=[]; end
         [x,success] = resolveConstraints@SecondOrderSystem(obj,x0,v);
         return;
@@ -210,7 +207,8 @@ classdef Manipulator < SecondOrderSystem
       
       function [c,ceq] = mycon(x)
         q = x(1:obj.num_q); qd = x(obj.num_q + (1:obj.num_q));
-        c = -[jointLimitConstraints(obj,q); contactConstraints(obj,q)];
+        phi = obj.unilateralConstraints(x);
+        c = -[jointLimitConstraints(obj,q); phi];
         ceq = stateConstraints(obj,x);
       end
       problem.nonlcon = @mycon;
@@ -362,6 +360,5 @@ classdef Manipulator < SecondOrderSystem
     num_velocity_constraints = 0  % the number of velocity constraints of the form psi(q,qd)=0
     joint_limit_min = -inf;       % vector of length num_q with lower limits
     joint_limit_max = inf;        % vector of length num_q with upper limits
-    num_contacts = 0;             % number of contact points
   end
 end

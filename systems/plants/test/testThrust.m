@@ -2,6 +2,7 @@ function [p,v,x0,xtraj] = testThrust()
 % Thrust testing function
 run_time = 3;
 options.floating = false;
+options.terrain = [];
 p = PlanarRigidBodyManipulator('testThrust.urdf', options);
 %v = p.constructVisualizer();
 g = 9.81;
