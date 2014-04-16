@@ -98,6 +98,7 @@ classdef BotVisualizer < RigidBodyVisualizer
           %        end
         end
       end
+      
       obj.draw_msg = drake.lcmt_viewer_draw();
       nb = getNumBodies(manip);
       obj.draw_msg.num_links = nb;

@@ -1254,16 +1254,9 @@ classdef RigidBodyManipulator < Manipulator
         q=quz(1:nq);
         u=quz(nq+(1:nu));
         z=quz(nq+nu+(1:nz));
-<<<<<<< HEAD
         c = [];
         GC = [];
-        [~,C,B,~,dC,~] = obj.manipulatorDynamics(q,zeros(nq,1));
-=======
-
         [~,C,B,~,dC,~] = obj.manipulatorDynamics(q,zeros(nv,1));
-        [phiC,JC] = obj.contactConstraints(q);
-        [~,J,dJ] = obj.contactPositions(q);
->>>>>>> simple four bar example works for simulation
         
         if obj.getNumContactPairs > 0,
           [phiC,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = obj.contactConstraints(q,false,active_collision_options);
