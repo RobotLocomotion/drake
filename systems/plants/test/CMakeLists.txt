@@ -1,9 +1,16 @@
 cmake_minimum_required (VERSION 2.6)
 
+pods_find_pkg_config(bullet)
+
 if (eigen3_FOUND AND Boost_FOUND)
   add_executable(urdf_kin_test urdf_kin_test.cpp)
   include_directories( .. )
   target_link_libraries(urdf_kin_test drakeRBMurdf drakeURDFinterface)
+  if (bullet_FOUND)
+    add_executable(urdf_collision_test urdf_collision_test.cpp)
+    include_directories( .. )
+    target_link_libraries(urdf_collision_test drakeRBMurdf drakeURDFinterface)
+  endif()
 endif()
 
 macro(add_ik_cpp)
