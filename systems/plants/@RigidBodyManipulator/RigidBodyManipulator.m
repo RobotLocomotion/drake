@@ -1436,8 +1436,12 @@ classdef RigidBodyManipulator < Manipulator
   end
     
     function [phi,dphi] = unilateralConstraints(obj,x)
-      q = x(1:obj.getNumPositions);
-      [phi,~,~,~,~,~,~,dphi] = obj.contactConstraints(q);
+      if (obj.num_contact_pairs>0)
+        q = x(1:obj.getNumPositions);
+        [phi,~,~,~,~,~,~,dphi] = obj.contactConstraints(q);
+      else
+        phi=[]; dphi=[];
+      end
     end
     
     function n = getNumUnilateralConstraints(obj)

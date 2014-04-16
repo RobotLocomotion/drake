@@ -23,7 +23,6 @@ function [phi,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = contactConstraints(obj,ki
 % @retval dD {k}(mn x n) dD/dq derivative
 
 compute_first_derivative = nargout > 8;
-compute_second_derivative = nargout > 10;
 
 if nargin<3,
   allow_multiple_contacts = false;
@@ -35,7 +34,7 @@ end
 
 if ~isstruct(kinsol)  
   % treat input as contactPositions(obj,q)
-  kinsol = doKinematics(obj,kinsol,compute_second_derivative);
+  kinsol = doKinematics(obj,kinsol);
 end
 
 [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,allow_multiple_contacts,active_collision_options);
