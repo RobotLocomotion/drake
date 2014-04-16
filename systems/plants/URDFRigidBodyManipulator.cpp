@@ -14,6 +14,39 @@
 
 using namespace std;
 
+void readObjFile(boost::filesystem::path fpath, vector<double>& vertex_coordinates)
+{
+  string ext = fpath.extension().native();
+  boost::to_lower(ext);
+
+  ifstream file;
+  if (ext.compare(".obj")==0) {
+    // cout << "Loading mesh from " << fname << " (scale = " << scale << ")" << endl;
+    file.open(fpath.c_str(),ifstream::in);
+
+  } else if ( boost::filesystem::exists( fpath.replace_extension(".obj") ) ) {
+    // try changing the extension to obj and loading
+    //      cout << "Loading mesh from " << mypath.replace_extension(".obj").native() << endl;
+    file.open(fpath.replace_extension(".obj").native().c_str(),ifstream::in);
+  }      
+
+  if (!file.is_open()) {
+    cerr << "Warning: Mesh " << fpath.string() << " ignored because it does not have extension .obj (nor can I find a juxtaposed file with a .obj extension)" << endl;
+  }
+
+  string line;
+  double d;
+  while (getline(file,line)) {
+    istringstream iss(line);
+    char type;
+    if (iss >> type && type == 'v') {
+      while (iss >> d) {
+        vertex_coordinates.push_back(d);
+      }
+    }
+  }
+}
+
 /*
  *   Works like m.find(str), except that a matching key can contain any number
  *   of digits before any underscores in `str` or at the end. Thus,
@@ -293,10 +326,11 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
       dofnum[index-1] = _dofnum;
     }
 
-    if (l->second->collision) { // then at least one collision element exists
-      // todo: iterate over all collision groups (not just "default")
-      map<string, boost::shared_ptr<vector<boost::shared_ptr<urdf::Collision> > > >::iterator c_grp_it = l->second->collision_groups.find("default");
-      for (size_t ic = 0;ic < c_grp_it->second->size();ic++)
+    if (!l->second->collision_groups.empty()) { // then at least one collision element exists
+      // todo: keep track of which collision elements belong to which groups
+      for ( auto c_grp_it = l->second->collision_groups.begin()
+          ; c_grp_it != l->second->collision_groups.end()
+          ; ++c_grp_it)
       {
         vector<boost::shared_ptr<urdf::Collision> > *collisions = c_grp_it->second.get();
         for (vector<boost::shared_ptr<urdf::Collision> >::iterator citer = collisions->begin(); citer!=collisions->end(); citer++)
@@ -337,18 +371,18 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
         		break;
         	case urdf::Geometry::MESH:
           	{
-                  shape = DrakeCollision::Shape::MESH;
-                  cerr << "Warning: mesh collision elements are not supported in URDFRigidBodyManipulator yet." << endl;
-//              boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
+              boost::shared_ptr<urdf::Mesh> mesh(boost::dynamic_pointer_cast<urdf::Mesh>(cptr->geometry));
+              boost::filesystem::path mesh_filename(root_dir);
+              mesh_filename /= mesh->filename;
+              readObjFile(mesh_filename,params);
+              shape = DrakeCollision::Shape::MESH;
           	}
         		break;
         	default:
         		cerr << "Link " << l->first << " has a collision element with an unknown type " << type << endl;
         		break;
-        	}
-                if (shape != DrakeCollision::Shape::MESH){
-                  addCollisionElement(index,T,shape,params);
-                }
+          }
+          addCollisionElement(index,T,shape,params);
         }
       }
       if (bodies[index].parent<0) {
