@@ -376,8 +376,6 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
               mesh_filename /= mesh->filename;
               readObjFile(mesh_filename,params);
               shape = DrakeCollision::Shape::MESH;
-              //cout << "size(params) = " << params.size() << endl;
-              //cerr << "Warning: mesh collision elements are not supported in URDFRigidBodyManipulator yet." << endl;
           	}
         		break;
         	default:
