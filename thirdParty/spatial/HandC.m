@@ -106,7 +106,7 @@ for i = 2 : NB
   net_wrenches{i} = I * spatial_accel - twistAdjoint(twist)' * I * twist - external_wrench;
 end
 
-C = zeros(nv, 1);
+C = zeros(nv, 1)*kinsol.q(1);
 for i = NB : -1 : 2
   body = manipulator.body(i);
   joint_wrench = net_wrenches{i};

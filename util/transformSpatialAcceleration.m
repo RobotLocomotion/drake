@@ -21,7 +21,7 @@ function spatialAccel = transformSpatialAcceleration(spatialAccel, transforms, t
 
 twistOfBodyWrtBase = relativeTwist(transforms, twists, base, body, oldExpressedIn);
 twistOfOldWrtNew = relativeTwist(transforms, twists, newExpressedIn, oldExpressedIn, oldExpressedIn);
-transformFromOldToNew = transforms{newExpressedIn} \ transforms{oldExpressedIn};
+transformFromOldToNew = homogTransInv(transforms{newExpressedIn}) * transforms{oldExpressedIn};
 
 % spatialAccel = transformAdjoint(transformFromOldToNew) * (twistAdjoint(twistOfOldWrtNew) * twistOfBodyWrtBase + spatialAccel);
 % this should be faster:
