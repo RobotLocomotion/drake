@@ -36,15 +36,22 @@ function [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol, ...
 % @retval idxB - (m x 1) The index of body B.
 % @ingroup Collision
 
+if isempty(obj.mex_model_ptr)
+  % handle this gracefully here (a warning is thrown during compile())
+  phi=[];
+  normal=[];
+  xA = [];
+  xB = [];
+  idxA = [];
+  idxB = [];
+end
+
 if ~isstruct(kinsol)  
   % treat input as collisionDetect(obj,q)
   kinsol = doKinematics(obj,kinsol);
 end
-
 if (kinsol.mex ~= true) 
-  doKinematics(obj,double(kinsol.q));
-  warning('Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex', ...
-    'Calling doKinematics using mex before proceeding');
+  error('You must call doKinematics using mex to use collisionDetect');
 end
 
 if nargin < 3, allow_multiple_contacts = false; end

@@ -652,14 +652,21 @@ classdef RigidBodyManipulator < Manipulator
       
       model = createMexPointer(model);
 
-      % collisionDetect may require the mex version of the manipulator,
-      % so it should go after createMexPointer
-      phi = model.collisionDetect(zeros(model.getNumPositions,1));
-      model.num_contact_pairs = length(phi);
-      if (model.num_contact_pairs>0)
-        warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
+      if (model.mex_model_ptr)
+        % collisionDetect may require the mex version of the manipulator,
+        % so it should go after createMexPointer
+        kinsol = doKinematics(model,zeros(model.num_positions,1));
+        phi = collisionDetect(model,kinsol);
+        model.num_contact_pairs = length(phi);
+        if (model.num_contact_pairs>0)
+          warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
+        end
+      else
+        if ~isempty([model.body.contact_shapes])
+          warning('DrakeRigidBodyManipulator:UnsupportedContactPoints','You do not appear to have the RigidBodyManipulator mex classes compiled.  Contact will be disabled');
+        end
+        model.num_contact_pairs = 0;
       end
-      
 %      H = manipulatorDynamics(model,zeros(model.num_q,1),zeros(model.num_q,1));
 %      if cond(H)>1e3
 %        warning('Drake:RigidBodyManipulator:SingularH','H appears to be singular (cond(H)=%f).  Are you sure you have a well-defined model?',cond(H));
