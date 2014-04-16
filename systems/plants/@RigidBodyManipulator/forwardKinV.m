@@ -35,7 +35,15 @@ if nargin < 5, rotation_type = 0; end
 if nargin < 6, base_ind = 1; end
 
 base = base_ind;
-endEffector = body_or_frame_ind;
+if (body_or_frame_ind < 0)
+  frame = obj.frame(-body_or_frame_ind);
+  endEffector = frame.body_ind;
+  Tframe = frame.T;
+else
+  endEffector = body_or_frame_ind;
+  Tframe=eye(4);
+end
+
 expressedIn = base; % todo: pass this in as an argument
 
 computeJvdot_times_v = nargout > 2;
@@ -47,7 +55,7 @@ pointSize = size(points, 1);
 nPoints = size(points, 2);
 
 % transform points from end effector frame to base frame
-transform = kinsol.T{base} \ kinsol.T{endEffector};
+transform = kinsol.T{base} \ kinsol.T{endEffector} * Tframe;
 R = transform(1:3, 1:3);
 points = homogTransMult(transform, points);
 if computeJvdot_times_v
