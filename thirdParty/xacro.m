@@ -12,7 +12,7 @@ if nargin<2
   end
   [p,n,ext] = fileparts(urdf_filename);
   if ~strcmpi(ext,'.urdf');
-    urdf_filename = fullfile(p,n,[ext,'.urdf']);
+    urdf_filename = fullfile(p,[n,ext,'.urdf']);
   end
 end
 
