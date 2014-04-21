@@ -12,9 +12,7 @@ if (@ARGV > 0) {
     $MEXOPTS_FILE = $ARGV[0];
 } else {
     # recover it automatically
-    $MEX = `which mex.bat`; chomp($MEX);
-    $MEX = `cygpath -w "$MEX"`;  chomp($MEX); $MEX = "cmd.exe /c \"$MEX\"";  # seems to be more robust (otherwise, doesn't work in .bashrc during ssh login)
-    $MEXOPTS_FILE = `$MEX -v | grep "Options file"`;
+    $MEXOPTS_FILE = `mex.bat -v | grep "Options file"`;
     $MEXOPTS_FILE =~ s/[^=]*=\s*//; chomp($MEXOPTS_FILE);
     #print "$MEXOPTS_FILE\n";
     die "Can't find your mex options file. Make sure mex.bat is in your path (MEX = $MEX).  MATLAB >= R2014a is not supported by this script yet.\n" if ($MEXOPTS_FILE eq "");
