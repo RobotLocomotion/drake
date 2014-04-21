@@ -43,7 +43,7 @@ end
 
 if (kinsol.mex ~= true) 
   doKinematics(obj,double(kinsol.q));
-  warning('RigidBodyManipulator:collisionDetect:doKinematicsMex', ...
+  warning('Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex', ...
     'Calling doKinematics using mex before proceeding');
 end
 

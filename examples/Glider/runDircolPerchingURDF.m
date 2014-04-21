@@ -4,7 +4,6 @@ tf0 = 1;
 N=4; %=21;
 if (nargin<1)
   options.floating = true;
-  options.terrain = [];
   p = PlanarRigidBodyManipulator('GliderBalanced.urdf', options);
 end
 if (nargin<2)

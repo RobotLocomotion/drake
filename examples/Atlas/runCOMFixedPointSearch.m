@@ -6,6 +6,7 @@ runsim = false; % run 1s sim with constant input after search
 s = 'urdf/atlas_minimal_contact.urdf';
 
 options.floating = true;
+options.terrain = RigidBodyFlatTerrain();
 if (planar)
     options.view = 'right';
     options.twoD = true;

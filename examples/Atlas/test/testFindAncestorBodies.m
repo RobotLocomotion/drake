@@ -1,6 +1,7 @@
 function testFindAncestorBodies()
 
 options.floating = true;
+options.terrain = RigidBodyFlatTerrain();
 robot = TimeSteppingRigidBodyManipulator(fullfile('../urdf/atlas_minimal_contact.urdf'),0.001,options);
 
 num_bodies = robot.getNumBodies();
