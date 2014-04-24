@@ -1,7 +1,7 @@
 function testGeometricJacobian
 
 testAtlas('rpy');
-% testAtlas('quat'); % TODO: generating robot currently results in an error.
+testAtlas('quat');
 
 end
 
@@ -9,8 +9,8 @@ function testAtlas(floatingJointType)
 
 robot = createAtlas(floatingJointType);
 
-nq = robot.getNumStates() / 2; % TODO
-nv = robot.getNumStates() / 2; % TODO
+nq = robot.getNumPositions();
+nv = robot.getNumVelocities();
 
 nBodies = length(robot.body);
 
