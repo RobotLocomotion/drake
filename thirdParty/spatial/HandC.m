@@ -29,31 +29,17 @@ if nargin < 4 || isempty(f_ext)
 end
 
 kinsol = doKinematics(manipulator, q, true, false, v);
-inertias_world = computeInertiasInWorld(manipulator, kinsol);
-H = computeMassMatrix(manipulator, kinsol, inertias_world);
+[inertias_world, composite_inertias] = computeInertiasInWorld(manipulator, kinsol);
+H = computeMassMatrix(manipulator, kinsol, composite_inertias);
 C = computeBiasTerm(manipulator, kinsol, inertias_world, f_ext, a_grav);
 
 end
 
-function ret = computeInertiasInWorld(manipulator, kinsol) % TODO: consider moving to kinsol; is also useful for CMM
-NB = length(manipulator.body);
-ret = cell(NB, 1);
-ret{1} = zeros(6, 6);
-for i = 2 : NB
-  body = manipulator.body(i);
-  bodyToWorld = kinsol.T{i};
-  worldToBody = homogTransInv(bodyToWorld);
-  AdWorldToBody = transformAdjoint(worldToBody);
-  ret{i} = AdWorldToBody' * body.I * AdWorldToBody;
-end
-end
-
-function H = computeMassMatrix(manipulator, kinsol, inertias_world)
+function H = computeMassMatrix(manipulator, kinsol, composite_inertias)
 % world frame implementation
 NB = length(manipulator.body);
 nv = length(kinsol.v);
 H = zeros(nv, nv) * kinsol.q(1); % minor adjustment to make TaylorVar work better.
-composite_inertias = computeCompositeRigidBodyInertias(manipulator, inertias_world);
 
 for i = 2 : NB
   Ic = composite_inertias{i};
@@ -72,16 +58,6 @@ for i = 2 : NB
     H(j_indices, i_indices) = Hji;
     H(i_indices, j_indices) = Hji';
   end
-end
-end
-
-function ret = computeCompositeRigidBodyInertias(manipulator, inertias_world)
-% computes composite rigid body inertias expressed in world frame
-NB = length(inertias_world);
-ret = inertias_world;
-for i = NB : -1 : 2
-  body = manipulator.body(i);
-  ret{body.parent} = ret{body.parent} + ret{i};
 end
 end
 

@@ -29,7 +29,7 @@ if (kinsol.mex)
     com = forwardKinmex(model.mex_model_ptr,kinsol.q,0,robotnum,false);
   end
 else
-  nq=getNumDOF(model);
+  nq=getNumPositions(model);
 
   % return center of mass for the entire model
   m=0;
