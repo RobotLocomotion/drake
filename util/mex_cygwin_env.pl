@@ -19,8 +19,13 @@ if ($MEXOPTS =~ m/Set PATH/) { # Then it's the new mex interface, MATLAB version
 	$var =~ s/[^a-zA-Z]//g;
 	$val =~ s/^\s//g;
 	$val =~ s/[^a-zA-Z0-9\\\/ \(\).:;-]//g;  # only let these characters through (had some issue with special characters)
-	$ENV{$var} = "$val";
-#	system("echo $var = \$$var\n");
+	if ($var =~ m/^PATH/) {
+	    $newpath = $val;
+#	    print("PATH = $newpath\n");
+        } else { 
+	    $ENV{$var} = "$val";
+#            system("echo $var = \$$var\n");
+	}
     }
 } else {
     @lines = split(/\n/,$MEXOPTS);
@@ -39,8 +44,12 @@ if ($MEXOPTS =~ m/Set PATH/) { # Then it's the new mex interface, MATLAB version
 	    $val =~ s/\"/\\\"/g;            # " -> \"
 	    $val = `echo "$val"`;           # use the shell to evaluate environment variables in the string
 	    $val =~ s/[^a-zA-Z0-9\\\/ \(\).:;-]//g;  # only let these characters through (had some issue with special characters)
-	    $ENV{$var} = "$val";            # set the environment variable (only for this process and children) for future references to that var
-#	system("echo $var = \$$var\n");
+	if ($var =~ m/^PATH/) {
+	    $newpath = $val;
+        } else { 
+	    $ENV{$var} = "$val";  # set the environment variable (only for this process and children) for future references to that var
+#            system("echo $var = \$$var\n");
+	}
 	}
     }
 
@@ -50,9 +59,16 @@ if ($MEXOPTS =~ m/Set PATH/) { # Then it's the new mex interface, MATLAB version
 @vars_to_export_with_cygpath = ('PATH');
 @vars_to_export_with_original_path = ('INCLUDE','LIB','LIBPATH');
 foreach $var (@vars_to_export_with_cygpath) {
-    @values = split(/;/,$ENV{$var});
     $valuelist = "";
+    if ($var =~ m/PATH/) {
+#	print("PATH = $newpath\n");
+	@values = split(/;/,$newpath);
+#	$valuelist = "\$PATH";
+    } else {
+	@values = split(/;/,$ENV{$var});
+    }
     foreach $val (@values) {
+#        system("echo cygpath \"$val\"");
 	$val = `cygpath \"$val\"`;
         chomp $val;
 	if ($valuelist eq "") {
