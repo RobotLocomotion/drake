@@ -13,7 +13,9 @@ if isempty(jointPath)
   return;
 end
 
-J = cell2mat(cellfun(@times, kinsol.J(jointPath), num2cell(signs'), 'UniformOutput', false));
+JBlocks = cellfun(@times, kinsol.J(jointPath), num2cell(signs'), 'UniformOutput', false);
+J = [JBlocks{:}];
+% J = cell2mat(JBlocks); % doesn't work with TaylorVar
 
 if expressedIn ~= 1
   J = transformTwists(inv(kinsol.T{expressedIn}), J); % change frame from world to expressedIn

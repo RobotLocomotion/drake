@@ -1,6 +1,8 @@
 function [A, Adot_times_v] = getCMM(robot, kinsol)
 [inertias_world, crbs_world] = computeInertiasInWorld(robot, kinsol);
-A = cell2mat(cellfun(@mtimes, crbs_world(2:end), kinsol.J(2:end), 'UniformOutput', false)); % world momentum matrix
+ABlocks = cellfun(@mtimes, crbs_world(2:end), kinsol.J(2:end), 'UniformOutput', false);
+A = [ABlocks{:}]; % world momentum matrix
+% A = cell2mat(ABlocks); % doesn't work with TaylorVar
 
 com = robot.getCOM(kinsol.q);
 transform_com_to_world = eye(4);
