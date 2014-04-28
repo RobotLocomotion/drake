@@ -99,14 +99,15 @@ namespace DrakeCollision
 
       bool adjacentTo(const Body& other) const
       {
-        return (body_idx == other.getParentIdx()) || 
-               (parent_idx == other.getBodyIdx());
+        return  (body_idx != -1) && (other.getBodyIdx() != -1) &&
+                ( (body_idx == other.getParentIdx()) || 
+                  (parent_idx == other.getBodyIdx()) ) ;
       };
 
       bool collidesWith(const Body& other) const
       {
         return  ( !adjacentTo(other) || (body_idx == 0) || (other.getBodyIdx() == 0) ) &&
-                (body_idx != other.getBodyIdx()) && 
+                ( (body_idx == -1) || (other.getBodyIdx() == -1) || body_idx != other.getBodyIdx()) && 
                 (group & other.mask).any() && 
                 (other.group & mask).any();
       };
