@@ -584,6 +584,14 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
   return true;
 };
 
+bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx, 
+                                         vector<int>& bodyB_idx, 
+                                         MatrixXd& ptsA, MatrixXd& ptsB)
+{
+  collision_model->allCollisions(bodyA_idx, bodyB_idx, ptsA, ptsB);
+}
+
+
 //bool RigidBodyManipulator::closestDistanceAllBodies(VectorXd& distance,
                                                         //MatrixXd& Jd)
 //{
