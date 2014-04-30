@@ -69,6 +69,7 @@ class RigidBodyConstraint
     static const int PostureChangeConstraintType                = 19;
     static const int RelativePositionConstraintType             = 20;
     static const int RelativeQuatConstraintType                 = 24;
+    static const int RelativeGazeDirConstraintType                 = 25;
 };
 
 /**
@@ -492,6 +493,20 @@ class RelativeGazeTargetConstraint: public GazeTargetConstraint
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~RelativeGazeTargetConstraint(void){};
+};
+
+class RelativeGazeDirConstraint: public GazeDirConstraint
+{
+  protected:
+    int bodyA_idx;
+    int bodyB_idx;
+    std::string bodyA_name;
+    std::string bodyB_name;
+  public:
+    RelativeGazeDirConstraint(RigidBodyManipulator* model, int bodyA_idx, int bodyB_idx, const Eigen::Vector3d &axis, const Eigen::Vector3d &dir, double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
+    virtual void name(const double* t, std::vector<std::string> &name_str) const;
+    virtual ~RelativeGazeDirConstraint(void){};
 };
 
 class Point2PointDistanceConstraint: public SingleTimeKinematicConstraint

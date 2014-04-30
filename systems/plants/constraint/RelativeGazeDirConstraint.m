@@ -59,6 +59,7 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
 
     function drawConstraint(obj,q,lcmgl)
       norm_dir = obj.dir/norm(obj.dir);
+      norm_axis = obj.axis/norm(obj.axis);
 
       kinsol = doKinematics(obj.robot,q,false,false);
       wTa = kinsol.T{obj.body_a.idx};
@@ -66,9 +67,6 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
       wPa = wTa(1:3,4);
       ang_ax_a = rotmat2axis(wTa(1:3,1:3));
       ang_ax_b = rotmat2axis(wTb(1:3,1:3));
-      r_axis = forwardKin(obj.robot,kinsol,obj.body_a.idx,obj.axis,0);
-      %r_dir = forwardKin(obj.robot,kinsol,obj.body_b.idx,[zeros(3,1),obj.dir],0);
-      %r_dir = r_dir(:,2) - r_dir(:,1);
 
       ang_dir_ax = cross([0;0;1],norm_dir);
       ang_dir_ang = acos([0;0;1]'*norm_dir);
@@ -93,8 +91,9 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
       lcmgl.cylinder([0;0;0],base_radius,top_radius,height,24,24);
 
       % Rotate and translate back to world frame
+      lcmgl.glRotated(-ang_dir_ang*180/pi,ang_dir_ax(1),ang_dir_ax(2),ang_dir_ax(3));
       lcmgl.glRotated(-ang_ax_b(4)*180/pi,ang_ax_b(1),ang_ax_b(2),ang_ax_b(3));
-      lcmgl.glTranslated(-wTb(1,4),-wTb(2,4),-wTb(3,4));
+      lcmgl.glTranslated(-wPa(1),-wPa(2),-wPa(3));
 
 
       % Draw in Frame A
@@ -106,8 +105,10 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
       % Draw gaze axis
       lcmgl.glBegin( lcmgl.LCMGL_LINES);
       lcmgl.glColor3f( 0, 1, 1);
-      lcmgl.glVertex3f(wPa(1),wPa(2),wPa(3));
-      lcmgl.glVertex3f( r_axis(1), r_axis(2), r_axis(3));
+      %lcmgl.glVertex3f(wPa(1),wPa(2),wPa(3));
+      %lcmgl.glVertex3f( r_axis(1), r_axis(2), r_axis(3));
+      lcmgl.glVertex3f(0, 0, 0);
+      lcmgl.glVertex3f( norm_axis(1), norm_axis(2), norm_axis(3));
       lcmgl.glEnd();
 
       lcmgl.switchBuffers();
