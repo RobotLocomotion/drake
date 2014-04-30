@@ -1718,6 +1718,74 @@ void RelativeGazeTargetConstraint::name(const double* t, std::vector<std::string
 }
 
 
+RelativeGazeDirConstraint::
+RelativeGazeDirConstraint(RigidBodyManipulator *robot, int bodyA_idx, 
+    int bodyB_idx, const Vector3d &axis, const Vector3d &dir, 
+    double conethreshold, Eigen::Vector2d tspan) 
+: GazeDirConstraint(robot,axis,dir,conethreshold,tspan),
+  bodyA_idx(bodyA_idx), bodyB_idx(bodyB_idx)
+{
+  this->bodyA_name = this->robot->bodies[this->bodyA_idx].linkname;
+  this->bodyB_name = this->robot->bodies[this->bodyB_idx].linkname;
+  this->type = RigidBodyConstraint::RelativeGazeDirConstraintType;
+}
+
+void RelativeGazeDirConstraint::eval(const double* t, VectorXd &c, MatrixXd &dc) const
+{
+  if(this->isTimeValid(t))
+  {
+    MatrixXd body_axis_ends(4,2);
+    body_axis_ends.block(0,0,3,1) = MatrixXd::Zero(3,1);
+    body_axis_ends.block(0,1,3,1) = this->axis;
+    body_axis_ends.block(3,0,1,2) = MatrixXd::Ones(1,2);
+    MatrixXd body_dir_ends(4,2);
+    body_dir_ends.block(0,0,3,1) = MatrixXd::Zero(3,1);
+    body_dir_ends.block(0,1,3,1) = this->dir;
+    body_dir_ends.block(3,0,1,2) = MatrixXd::Ones(1,2);
+    int nq = this->robot->num_dof;
+    MatrixXd axis_pos(3,2);
+    MatrixXd daxis_pos(6,nq);
+    MatrixXd dir_pos(3,2);
+    MatrixXd ddir_pos(6,nq);
+    this->robot->forwardKin(this->bodyA_idx,body_axis_ends,0,axis_pos);
+    this->robot->forwardJac(this->bodyA_idx,body_axis_ends,0,daxis_pos);
+    this->robot->forwardKin(this->bodyB_idx,body_dir_ends,0,dir_pos);
+    this->robot->forwardJac(this->bodyB_idx,body_dir_ends,0,ddir_pos);
+    Vector3d axis_world = axis_pos.col(1)-axis_pos.col(0);
+    MatrixXd daxis_world = daxis_pos.block(3,0,3,nq)-daxis_pos.block(0,0,3,nq);
+    Vector3d dir_world = dir_pos.col(1)-dir_pos.col(0);
+    MatrixXd ddir_world = ddir_pos.block(3,0,3,nq)-ddir_pos.block(0,0,3,nq);
+    c.resize(1);
+    c(0) = axis_world.dot(dir_world)-1.0;
+    dc = dir_world.transpose()*daxis_world + axis_world.transpose()*ddir_world;
+  }
+  else
+  {
+    c.resize(0);
+    dc.resize(0,0);
+  }
+}
+
+void RelativeGazeDirConstraint::name(const double* t, std::vector<std::string> &name_str) const
+{
+  if(this->isTimeValid(t))
+  {
+    char cnst_name_str_buffer[1000];
+    if(t == nullptr)
+    {
+      sprintf(cnst_name_str_buffer,"%s relative to %s conic gaze constraint",this->bodyA_name.c_str(),this->bodyB_name.c_str());
+    }
+    else
+    {
+      sprintf(cnst_name_str_buffer,"%s relative to %s conic gaze constraint at time %10.4f",this->bodyA_name.c_str(),this->bodyB_name.c_str(),*t);
+    }
+    std::string cnst_name_str(cnst_name_str_buffer);
+    name_str.push_back(cnst_name_str);
+  }
+}
+
+
+
 Point2PointDistanceConstraint::Point2PointDistanceConstraint(RigidBodyManipulator *robot, int bodyA, int bodyB, const MatrixXd &ptA, const MatrixXd &ptB, const VectorXd &dist_lb, const VectorXd &dist_ub, const Vector2d &tspan): SingleTimeKinematicConstraint(robot,tspan)
 {
   this->bodyA = bodyA;
