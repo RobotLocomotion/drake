@@ -228,6 +228,22 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         }
       }
       break;
+    case RigidBodyConstraint::RelativeGazeDirConstraintType:
+      {
+        RelativeGazeDirConstraint* cnst = (RelativeGazeDirConstraint*) constraint;
+        if(field_str=="robot")
+        {
+          RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
+          RelativeGazeDirConstraint* cnst_new = new RelativeGazeDirConstraint(*cnst);
+          cnst_new->updateRobot(robot);
+          plhs[0] = createDrakeConstraintMexPointer((void*)cnst_new,"deleteRigidBodyConstraintmex","RelativeGazeDirConstraint");
+        }
+        else
+        {
+          mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","RelativeGazeDirConstraint:argument 2 is not accepted");
+        }
+      }
+      break;
     case RigidBodyConstraint::WorldCoMConstraintType:
       {
         WorldCoMConstraint* cnst = (WorldCoMConstraint*) constraint;
