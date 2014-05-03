@@ -5,10 +5,10 @@ function [ptsA,ptsB,idxA,idxB] = allCollisions(obj,kinsol)
   % following exceptions:
   %
   %   - any body and its parent in the kinematic tree (unless its parent
-  %   is the world)
-  %   - body A and body B, where body A belongs to collision filter groups
-  %   that ignore all of the collision filter groups to which body B
-  %   belongs and vice versa
+  %     is the world)
+  %   - body A and body B, where body A belongs to collision filter
+  %     groups that ignore all of the collision filter groups to which
+  %     body B belongs and vice versa
   %
   % One probably shouldn't use this inside any optimization routines -
   % it returns a variable number of points and has not been checked for
