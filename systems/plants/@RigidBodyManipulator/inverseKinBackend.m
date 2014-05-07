@@ -67,6 +67,11 @@ for j = 1:length(varargin)-1
   if(isa(varargin{j},'RigidBodyConstraint'))
     if(isa(varargin{j},'PostureConstraint'))
       for i = 1:nT
+        if(isempty(t))
+          ti = [];
+        else
+          ti = t(i);
+        end
         [lb,ub] = varargin{j}.bounds(ti);
         joint_min(:,i) = max([joint_min(:,i) lb],[],2);
         joint_max(:,i) = min([joint_max(:,i) ub],[],2);
