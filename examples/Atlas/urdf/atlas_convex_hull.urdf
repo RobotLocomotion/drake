@@ -60,6 +60,56 @@
         <mesh filename="meshes/l_foot_chull.wrl" scale="1 1 1"/>
       </geometry>
     </collision>
+
+
+   <collision group="heel">
+      <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="heel">
+      <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="toe">
+      <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="toe">
+      <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
     <!--<visual>-->
     <!--<origin xyz="0.048 0 -0.056119" rpy="0 0 0"/>-->
     <!--<geometry>-->
@@ -99,6 +149,18 @@
       <origin rpy="0 -0 0" xyz="0 0 0"/>
       <geometry>
         <mesh filename="meshes/l_hand_chull.wrl" scale="1 1 1"/>
+      </geometry>
+    </collision>
+    <visual group="l_hand_extra">
+      <origin rpy="-1.57079 -1.57079 0" xyz="0 0.29016 0.0112"/>
+      <geometry>
+        <mesh filename="meshes/GRIPPER_OPEN_chull.wrl" scale="1 1 1"/>
+      </geometry>
+    </visual>
+    <collision group="l_hand_extra">
+      <origin rpy="-1.57079 -1.57079 0" xyz="0 0.29016 0.0112"/>
+      <geometry>
+        <mesh filename="meshes/GRIPPER_OPEN_chull.wrl" scale="1 1 1"/>
       </geometry>
     </collision>
   </link>
@@ -336,6 +398,57 @@
         <mesh filename="meshes/r_foot_chull.wrl" scale="1 1 1"/>
       </geometry>
     </collision>
+
+   <collision group="heel">
+      <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.082 0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="heel">
+      <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.082 -0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="toe">
+      <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.178 0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+    <collision group="toe">
+      <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.178 -0.0624435 -0.081119"/>
+      <geometry>
+        <sphere radius="0.01"/>
+      </geometry>
+    </visual>
+
+
     <!--<visual>-->
     <!--<origin xyz="0.048 0 -0.056119" rpy="0 0 0"/>-->
     <!--<geometry>-->
@@ -377,6 +490,20 @@
         <mesh filename="meshes/r_hand_chull.wrl" scale="1 1 1"/>
       </geometry>
     </collision>
+
+    <visual group="r_hand_extra">
+      <origin rpy="-1.57079 -1.57079 3.142" xyz="0 -0.29016 0.0112"/>
+      <geometry>
+        <mesh filename="meshes/GRIPPER_OPEN_chull.wrl" scale="1 1 1"/>
+      </geometry>
+    </visual>
+    <collision group="r_hand_extra">
+      <origin rpy="-1.57079 -1.57079 3.142" xyz="0 -0.29016 0.0112"/>
+      <geometry>
+        <mesh filename="meshes/GRIPPER_OPEN_chull.wrl" scale="1 1 1"/>
+      </geometry>
+    </collision>
+
   </link>
   <link name="r_larm">
     <inertial>
@@ -675,6 +802,15 @@
     <limit effort="55" lower="-1.1781" upper="1.1781" velocity="12"/>
     <safety_controller k_position="100" k_velocity="100" soft_lower_limit="-11.1781" soft_upper_limit="11.1781"/>
   </joint>
+
+
+
+
+
+
+
+
+
   <joint name="l_arm_uwy" type="revolute">
     <origin rpy="0 -0 0" xyz="0 0.187 -0.00921"/>
     <axis xyz="0 1 0"/>
