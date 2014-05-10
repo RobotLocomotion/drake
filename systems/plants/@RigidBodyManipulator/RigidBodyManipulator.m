@@ -239,13 +239,17 @@ classdef RigidBodyManipulator < Manipulator
       ptr = obj.mex_model_ptr;
     end
     
-    function f = cartesianForceToSpatialForce(obj,kinsol,body_ind,point,force)  
+    function [f,dfdq,dfdforce] = cartesianForceToSpatialForce(obj,kinsol,body_ind,point,force)  
       % @param body_ind is an index of the body
       % @param point is a point on the rigid body (in body coords)
       % @param force is a cartesion force (in world coords)
       
       % convert force to body coordinates
-      ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
+      if (nargout>1)
+        [ftmp,ftmpJ,ftmpP]=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);                                                                                                   
+      else
+        ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
+      end
       
       % try to do it the Xtree way
       force = ftmp(:,1)-ftmp(:,2);
@@ -253,6 +257,15 @@ classdef RigidBodyManipulator < Manipulator
       
       % convert to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
       f = obj.body(body_ind).X_joint_to_body'*f_body;
+      
+      if (nargout>1)
+        dforcedq = ftmpJ(1:3,:)-ftmpJ(4:6,:);                                                                                                                                 
+        dforcedforce = ftmpP(1:3,1:3)-ftmpP(4:6,1:3);
+        df_bodydq = [ cross(repmat(point,1,size(dforcedq,2)),dforcedq); dforcedq ];                                                                                           
+        df_bodydforce = [ cross(repmat(point,1,size(dforcedforce,2)),dforcedforce); dforcedforce];
+        dfdq = obj.body(body_ind).X_joint_to_body'*df_bodydq;                                                                                                                 
+        dfdforce = obj.body(body_ind).X_joint_to_body'*df_bodydforce;
+      end
     end
     
     function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits)
