@@ -20,13 +20,15 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
       
       if (obj.b~=0)
         if (nargout>1)
-            [x1,J1,dJ1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
+            [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
+            J1dot = forwardJacDot(manip,kinsol,obj.body1,obj.pos1);
             v1 = J1*qd;
-            dv1dq = dJ1*qd;
+            dv1dq = J1dot;
             dv1dqd = J1;
-            [x2,J2,dJ2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+            [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+            J2dot = forwardJacDot(manip,kinsol,obj.body2,obj.pos2);
             v2 = J2*qd;
-            dv2dq = dJ2*qd;
+            dv2dq = J2dot;
             dv2dqd = J2;
             % r = x1-x2; l=sqrt(r'r); ldot=(r'rdot)/sqrt(r'r); 
             length = norm(x1-x2);

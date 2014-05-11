@@ -260,7 +260,7 @@ classdef RigidBodyManipulator < Manipulator
       
       if (nargout>1)
         dforcedq = ftmpJ(1:3,:)-ftmpJ(4:6,:);                                                                                                                                 
-        dforcedforce = ftmpP(1:3,1:3)-ftmpP(4:6,1:3);
+        dforcedforce = ftmpP(1:3,1:size(force,1))-ftmpP(4:6,1:size(force,1));
         df_bodydq = [ cross(repmat(point,1,size(dforcedq,2)),dforcedq); dforcedq ];                                                                                           
         df_bodydforce = [ cross(repmat(point,1,size(dforcedforce,2)),dforcedforce); dforcedforce];
         dfdq = obj.body(body_ind).X_joint_to_body'*df_bodydq;                                                                                                                 

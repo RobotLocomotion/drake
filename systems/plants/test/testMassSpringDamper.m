@@ -1,6 +1,4 @@
-function massSpringDamper  
-
-oldpath = addpath(fullfile(pwd,'..'));
+function testMassSpringDamper 
 
 r = RigidBodyManipulator('MassSpringDamper.urdf');
 x0 = [5;0];%randn(2,1);
@@ -24,8 +22,6 @@ for t=0:run_time
     result = xtraj.eval(t);
     valuecheck(result, expected, 0.01);
 end
-
-path(oldpath);
 
 end
 

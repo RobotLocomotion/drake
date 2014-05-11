@@ -368,7 +368,8 @@ classdef RigidBodyWing < RigidBodyForceElement
       if (nargout>1)
         % enable second order gradients
         kinsol = doKinematics(manip,q,true);
-        [~,J,dJ] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
+        [~,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
+        Jdot = forwardJacDot(manip,kinsol,obj.kinframe,zeros(3,1));
       else
         kinsol = doKinematics(manip,q);
         [~,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
@@ -453,12 +454,12 @@ classdef RigidBodyWing < RigidBodyForceElement
         
       if (nargout>1)
         nq = size(q,1);
-        dwingvel_worlddq = reshape(blockwiseTranspose(dJ,size(J))*qd,[],nq);
+        dwingvel_worlddq = Jdot;
         dwingvel_worlddqd = J;
         dwingYunitdq = dwingYunitdq(1:3,:)-dwingYunitdq(4:6,:); 
         dwingYunitdqd = zeros(3,nq);
-        dsideslipdq = dot(dwingvel_worlddq,repmat(wingYunit,1,nq),1)+dot(repmat(wingvel_world,1,nq),dwingYunitdq,1);
-        dsideslipdqd = dot(dwingvel_worlddqd,repmat(wingYunit,1,nq),1)+dot(repmat(wingvel_world,1,nq),dwingYunitdqd,1);
+        dsideslipdq = (dwingvel_worlddq'*wingYunit)'+(dwingYunitdq'*wingYunit)';
+        dsideslipdqd = (dwingvel_worlddqd'*wingYunit)'+(dwingYunitdqd'*wingvel_world)';
         dwingvel_worlddq = dwingvel_worlddq - wingYunit*dsideslipdq - sideslip*dwingYunitdq;
         dwingvel_worlddqd = dwingvel_worlddqd - wingYunit*dsideslipdqd - sideslip*dwingYunitdqd;
         wingvel_relJ = wingvel_relJ(1:3,:)-wingvel_relJ(4:6,:);
@@ -482,8 +483,8 @@ classdef RigidBodyWing < RigidBodyForceElement
         dtorque_bodydqd = torque_bodyP(1:3,1:3)*dtorque_worlddqd;
         dtorque_jointdq = manip.body(frame.body_ind).X_joint_to_body'*[dtorque_bodydq;zeros(3,nq)];
         dtorque_jointdqd = manip.body(frame.body_ind).X_joint_to_body'*[dtorque_bodydqd;zeros(3,nq)];
-        dfdq = fJ+fP(1:6,1:6)*[(dlift_worlddq+ddrag_worlddq);zeros(3,nq)];
-        dfdqd = fP(1:6,1:6)*[(dlift_worlddqd+ddrag_worlddqd);zeros(3,nq)];
+        dfdq = fJ+fP*(dlift_worlddq+ddrag_worlddq);
+        dfdqd = fP*(dlift_worlddqd+ddrag_worlddqd);
         dforce_bodydq = dtorque_jointdq + dfdq;
         dforce_bodydqd = dtorque_jointdqd + dfdqd;
         dforcebody = [dforce_bodydq, dforce_bodydqd];
