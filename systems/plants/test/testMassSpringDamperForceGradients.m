@@ -1,31 +1,28 @@
-function springGradientsTest()
+function testMassSpringDamperForceGradients()
 % Tests user gradients vs numerical gradients for consistency
-
-oldpath=addpath(fullfile(pwd,'..'));
 
 p = RigidBodyManipulator('MassSpringDamper.urdf');
 fun = @(q,qd)vectorComputeSpatialForce(p,q,qd);
 
 % some random states to test
-q = rand(1,10);
-qd = rand(1,10);
+q = 100*rand(1,10);
+qd = 100*rand(1,10);
 
-for i=1:numel(q)
+for i=1:size(q,2)
   f1=cell(1,2);
   [f1{:}]=geval(1,fun,q(i),qd(i),struct('grad_method','user'));
 
   f2=cell(1,2);
   [f2{:}]=geval(1,fun,q(i),qd(i),struct('grad_method','numerical'));
-
-  for j=1:2
-    if (any(abs(f1{j}-f2{j})>1e-5))
-      path(oldpath);
-      error('gradients don''t match!');
-    end
+  
+  if (any(abs(f1{1}-f2{1})>1e-5))
+    error('forces when computing gradients don''t match!');
   end
+  if (any(abs(f1{2}-f2{2})>1e-5))
+    error('computing gradients don''t match!');
+  end
+  
 end
-
-path(oldpath);
 
 end
 

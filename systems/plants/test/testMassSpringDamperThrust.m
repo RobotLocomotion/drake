@@ -1,6 +1,4 @@
-function massSpringDamperThrust
-
-oldpath = addpath(fullfile(pwd,'..'));
+function testMassSpringDamperThrust
 
 x0 = [1e-6;0];%needed to avoid a singularity in the solution
 run_time = 5;
@@ -31,7 +29,5 @@ for t=0.01:.5:run_time
     valuecheck(result_r, expected, 0.003);
     valuecheck(result_p, expected, 0.003);
 end
-
-path(oldpath);
 
 end

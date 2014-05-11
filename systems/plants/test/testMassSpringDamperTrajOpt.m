@@ -1,5 +1,8 @@
-function [ xtraj,utraj,info ] = runTrajOpt( x0,xf,tf0 )
-% NOTEST
+function [ xtraj,utraj,info ] = testMassSpringDamperTrajOpt( )
+
+x0 = [1 1]';
+xf = [0 0]';
+tf0 = 3;
 
 p = RigidBodyManipulator('MassSpringDamper.urdf');
 
@@ -20,9 +23,14 @@ while (info~=1)
   toc
 end
 
-if (nargout<1)
-  v = p.constructVisualizer();
-  v.playback(xtraj, struct('slider',true));
+% if (nargout<1)
+%   v = p.constructVisualizer();
+%   v.playback(xtraj, struct('slider',true));
+% end
+
+if info~=1
+  path(oldpath);
+  error('SNOPT did not find a solution!');
 end
 
 end
