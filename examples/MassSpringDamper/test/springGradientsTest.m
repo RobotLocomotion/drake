@@ -7,8 +7,8 @@ p = RigidBodyManipulator('MassSpringDamper.urdf');
 fun = @(q,qd)vectorComputeSpatialForce(p,q,qd);
 
 % some random states to test
-q = [1,2,-5,-7,10,15,-100,1,0,23];
-qd = [2,-1,5,200,1,0,1,4,5,6];
+q = rand(1,10);
+qd = rand(1,10);
 
 for i=1:numel(q)
   f1=cell(1,2);
