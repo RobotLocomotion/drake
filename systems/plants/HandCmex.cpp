@@ -22,7 +22,11 @@ using namespace std;
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs<1) {
-    mexErrMsgIdAndTxt("Drake:HandCmex:NotEnoughInputs","Usage [H,C] = HandCmex(model_ptr,q,qd[,f_ext]).");
+    mexErrMsgIdAndTxt("Drake:HandCmex:NotEnoughInputs","Usage [H,C,dH,dC] = HandCmex(model_ptr,q,qd[,f_ext,df_ext]).");
+  }
+
+  if (nrhs==4 && nlhs>2) {
+    mexErrMsgIdAndTxt("Drake:HandCmex:NotEnoughInputs","You need to provide df_ext if you request dH or dC while supplying f_ext");
   }
 
   // first get the model_ptr back from matlab
