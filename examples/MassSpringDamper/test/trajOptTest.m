@@ -6,10 +6,9 @@ oldpath = addpath(fullfile(pwd,'..'));
 
 x0 = [1 1]';
 xf = [0 0]';
-tf = 3;
-dt = .1;
+tf0 = 3;
 
-[xtraj,utraj,exitflag] = runTrajOpt(x0,xf,tf,dt);
+[xtraj,utraj,exitflag] = runTrajOpt(x0,xf,tf0);
 
 if exitflag~=1
   path(oldpath);
