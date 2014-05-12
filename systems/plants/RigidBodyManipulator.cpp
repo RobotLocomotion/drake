@@ -1374,8 +1374,8 @@ void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixB
   dJ = dJ_t.transpose();
 }
 
-template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
-void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC)
+template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
+void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC, MatrixBase<DerivedF> * const df_ext)
 {
   H = MatrixXd::Zero(num_dof,num_dof);
   if (dH) *dH = MatrixXd::Zero(num_dof*num_dof,num_dof);
@@ -1442,6 +1442,10 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
       dfvpdq[i] = I[i]*davpdq[i] + dcross;
       dcrf(v[i],I[i]*v[i],dvdqd[i],I[i]*dvdqd[i],&(dcross));
       dfvpdqd[i] = I[i]*davpdqd[i] + dcross;
+      if (df_ext) {
+	dfvpdq[i] = dfvpdq[i] - df_ext->block(i*6,0,6,num_dof);
+	dfvpdqd[i] = dfvpdqd[i] - df_ext->block(i*6,num_dof,6,num_dof);
+      }
       
     }
   }
@@ -1531,169 +1535,6 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
       }
     }
   }
-}
-
-template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
-void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC, MatrixBase<DerivedF> * const df_ext)
-{
-  H = MatrixXd::Zero(num_dof,num_dof);
-  if (dH) *dH = MatrixXd::Zero(num_dof*num_dof,num_dof);
-  // C gets overwritten completely in the algorithm below
-
-  VectorXd vJ(6), fh(6), dfh(6), dvJdqd(6);
-  MatrixXd XJ(6,6), dXJdq(6,6);
-  int i,j,k,n,np;
-  
-  for (i=0; i<NB; i++) {
-    n = dofnum[i];
-    jcalc(pitch[i],q[n],&XJ,&(S[i]));
-    vJ = S[i] * qd[n];
-    Xup[i] = XJ * Xtree[i];
-    
-    if (parent[i] < 0) {
-      v[i] = vJ;
-      avp[i] = Xup[i] * (-a_grav);
-    } else {
-      v[i] = Xup[i]*v[parent[i]] + vJ;
-      avp[i] = Xup[i]*avp[parent[i]] + crm(v[i])*vJ;
-    }
-    fvp[i] = I[i]*avp[i] + crf(v[i])*I[i]*v[i];
-    if (f_ext) {
-      fvp[i] = fvp[i] - f_ext->col(i);
-      dfvpdq[i] = dfvpdq[i] - df_ext->block(i*6,0,6,num_dof);
-      dfvpdqd[i] = dfvpdqd[i] - df_ext->block(i*6,num_dof,6,num_dof);
-    }
-    IC[i] = I[i];
-    
-    //Calculate gradient information if it is requested
-    if (dH || dC) {
-      djcalc(pitch[i], q[n], &dXJdq);
-      dXupdq[i] = dXJdq * Xtree[i];
-      
-      for (j=0; j<NB; j++) {
-        dIC[i][j] = MatrixXd::Zero(6,6);
-      }
-    }
-    
-    if (dC) {
-      dvJdqd = S[i];
-      if (parent[i] < 0) {
-        dvdqd[i].col(n) = dvJdqd;
-        davpdq[i].col(n) = dXupdq[i] * (-a_grav);
-      } else {
-        j = parent[i];
-        dvdq[i] = Xup[i]*dvdq[j];
-        dvdq[i].col(n) += dXupdq[i]*v[j];
-        dvdqd[i] = Xup[i]*dvdqd[j];
-        dvdqd[i].col(n) += dvJdqd;
-        
-        davpdq[i] = Xup[i]*davpdq[j];
-        davpdq[i].col(n) += dXupdq[i]*avp[j];
-        for (k=0; k < NB; k++) {
-          dcrm(v[i],vJ,dvdq[i].col(k),VectorXd::Zero(6),&(dcross));
-          davpdq[i].col(k) += dcross;
-        }
-        
-        dvJdqd_mat = MatrixXd::Zero(6,NB);
-        dvJdqd_mat.col(n) = dvJdqd;
-        dcrm(v[i],vJ,dvdqd[i],dvJdqd_mat,&(dcross));
-        davpdqd[i] = Xup[i]*davpdqd[j] + dcross;
-      }
-      
-      dcrf(v[i],I[i]*v[i],dvdq[i],I[i]*dvdq[i],&(dcross));
-      dfvpdq[i] = I[i]*davpdq[i] + dcross;
-      dcrf(v[i],I[i]*v[i],dvdqd[i],I[i]*dvdqd[i],&(dcross));
-      dfvpdqd[i] = I[i]*davpdqd[i] + dcross;
-      
-    }
-  }
-  
-  for (i=(NB-1); i>=0; i--) {
-    n = dofnum[i];
-    C(n) = (S[i]).transpose() * fvp[i] + damping[i]*qd[n];
-    
-    if (qd[n] >= coulomb_window[i]) {
-      C(n) += coulomb_friction[i];
-    } 
-    else if (qd[n] <= -coulomb_window[i]) {
-      C(n) -= coulomb_friction[i];
-    } 
-    else {
-      C(n) += qd[n]/coulomb_window[i] * coulomb_friction[i];
-    } 
-
-    if (dC) {
-      (*dC).block(n,0,1,NB) = S[i].transpose()*dfvpdq[i];
-      (*dC).block(n,NB,1,NB) = S[i].transpose()*dfvpdqd[i];
-      (*dC)(n,NB+n) += damping[i];
-      
-      if (qd[n]<0 && qd[n]>-coulomb_window[i]) {
-        (*dC)(n,NB+n) -= 1/coulomb_window[i] * coulomb_friction[i];
-      } 
-      else if (qd[n]>=0 && qd[n]<coulomb_window[i]) {
-        (*dC)(n,NB+n) += 1/coulomb_window[i] * coulomb_friction[i];
-      } 
-    }
-    
-    if (parent[i] >= 0) {
-      fvp[parent[i]] += (Xup[i]).transpose()*fvp[i];
-      IC[parent[i]] += (Xup[i]).transpose()*IC[i]*Xup[i];
-      
-      if (dH) {
-        for (k=0; k < NB; k++) {
-          dIC[parent[i]][k] += Xup[i].transpose()*dIC[i][k]*Xup[i];
-        }
-        dIC[parent[i]][i] += dXupdq[i].transpose()*IC[i]*Xup[i] + Xup[i].transpose()*IC[i]*dXupdq[i];
-      }
-      
-      if (dC) {
-        dfvpdq[parent[i]] += Xup[i].transpose()*dfvpdq[i];
-        dfvpdq[parent[i]].col(n) += dXupdq[i].transpose()*fvp[i];
-        dfvpdqd[parent[i]] += Xup[i].transpose()*dfvpdqd[i];
-      }
-    }
-  }
-  
-  for (i=0; i<NB; i++) {
-    n = dofnum[i];
-    fh = IC[i] * S[i];
-    H(n,n) = (S[i]).transpose() * fh;
-    j=i;
-    while (parent[j] >= 0) {
-      fh = (Xup[j]).transpose() * fh;
-      j = parent[j];
-      np = dofnum[j];
-      
-      H(n,np) = (S[j]).transpose() * fh;
-      H(np,n) = H(n,np);
-    }
-  }
-
-  if (dH) {
-    for (k=0; k < NB; k++) {
-      for (i=0; i < NB; i++) {
-        n = dofnum[i];
-        fh = IC[i] * S[i];
-        dfh = dIC[i][k] * S[i]; //dfh/dqk
-        (*dH)(n + n*NB,k) = S[i].transpose() * dfh;
-        j = i; np=n;
-        while (parent[j] >= 0) {
-          if (j==k) {
-            dfh = Xup[j].transpose() * dfh + dXupdq[k].transpose() * fh;
-          } else {
-            dfh = Xup[j].transpose() * dfh;
-          }
-          fh = Xup[j].transpose() * fh;
-          
-          j = parent[j];
-          np = dofnum[j];
-          (*dH)(n + (np)*NB,k) = S[j].transpose() * dfh;
-          (*dH)(np + (n)*NB,k) = (*dH)(n + np*NB,k);
-        }
-      }
-    }
-  }
-
 }
 
 int RigidBodyManipulator::findLinkInd(string linkname, int robot)
@@ -1788,8 +1629,5 @@ template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vect
 template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &);
 template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
 
-template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
-template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
-
-template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &,MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > * const);
-template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > * const);
+template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
+template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
