@@ -22,3 +22,7 @@ Usage:
 
 	>> meshutil.iris_contact_patch
 
+
+![](https://rdeits.github.io/meshutil/img/bunny_patch_1.png)
+
+![](https://rdeits.github.io/meshutil/img/bunny_patch_2.png)
