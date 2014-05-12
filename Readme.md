@@ -12,6 +12,12 @@ Example usage:
 	>> [vertices, faces] = meshutil.toolbox_graph.read_mesh('/home/rdeits/drc/software/drake/examples/Glider/meshes/GliderFuselage.obj');
 	>> meshutil.sketch_mesh(vertices, faces);
 
+Original:
+
+![](https://rdeits.github.io/meshutil/img/glider_orig.png)
+
+Sketch:
+
 ![](https://rdeits.github.io/meshutil/img/glider_sketch.png)
 
 iris_contact_patch:

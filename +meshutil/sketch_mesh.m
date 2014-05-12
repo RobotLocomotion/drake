@@ -33,7 +33,10 @@ end
 
 figure(4)
 clf
-plot_mesh(vertices, faces);
+meshutil.plot_mesh(vertices, faces);
+axis equal
+view(40, 32)
+title('original')
 
 figure(3);
 clf;
@@ -41,5 +44,8 @@ hold on
 for j = 1:length(lines)
   plot3(lines{j}([1,4]), lines{j}([2,5]), lines{j}([3,6]), 'k-')
 end
+axis equal
+view(40, 32)
+title('sketch')
 
       
