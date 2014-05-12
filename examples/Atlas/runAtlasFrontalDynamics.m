@@ -4,6 +4,7 @@ function runAtlasFrontalDynamics
 options.view = 'front';
 options.twoD = true;
 options.floating = true;
+options.terrain = RigidBodyFlatTerrain();
 % s = 'urdf/simple_atlas_minimal_contact.urdf';
 s = 'urdf/atlas_minimal_contact.urdf';
 dt = 0.005;

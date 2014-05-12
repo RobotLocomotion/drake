@@ -7,7 +7,6 @@ function collisionDetectGradTest(visualize,n_debris)
     n_debris = 5;
   end
   options.floating = true;
-  options.terrain = [];
   S = warning('OFF','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   warning('OFF','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
   warning('OFF','Drake:RigidBodyManipulator:UnsupportedJointLimits');

@@ -46,7 +46,7 @@ r_leg_hpz = find(strcmp(coords,'r_leg_hpz'));
 tspan = [0,1];
 nom_data = load('../../../examples/Atlas/data/atlas_fp.mat');
 q_nom = nom_data.xstar(1:nq);
-q_seed = q_nom+0.1*randn(nq,1);
+q_seed = q_nom+1e-2*randn(nq,1);
 ikoptions = IKoptions(robot);
 ikoptions = ikoptions.setDebug(true);
 ikoptions = ikoptions.setMex(false);
@@ -300,10 +300,10 @@ valuecheck(qsc.checkConstraint(kinsol),true);
 % check addCost in InverseKin, minimizing the largest QuasiStaticWeight
 ikproblem = InverseKin(robot,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6);
 ikproblem = ikproblem.setQ(ikoptions.Q);
-ikproblem = ikproblem.addDecisionVariable(1);
+ikproblem = ikproblem.addDecisionVariable(1,{'max_weight'});
 ikproblem = ikproblem.addLinearConstraint(LinearConstraint(zeros(qsc.num_pts,1),inf(qsc.num_pts,1),[ones(qsc.num_pts,1) -eye(qsc.num_pts)]),...
   [ikproblem.num_vars;ikproblem.qsc_weight_idx]);
-ikproblem = ikproblem.addCost(LinearConstraint(-inf,inf,1),false,[],ikproblem.num_vars);
+ikproblem = ikproblem.addCost(LinearConstraint(-inf,inf,1),[],[],ikproblem.num_vars);
 [q,F,info,infeasible_constraint] = ikproblem.solve(q_seed);
 
 display('Check quasi static constraint for pointwise');
@@ -435,19 +435,22 @@ toc
 if(info>10)
   error('SNOPT info is %d, IK fails to solve the problem',info);
 end
+testConstraint(r,[],q,varargin{1:end-1});
 tic
 ikproblem = InverseKin(r,q_nom,varargin{1:end-1});
 ikproblem = ikproblem.setQ(ikoptions.Q);
 [qik,F,info,infeasible_cnstr_ik] = ikproblem.solve(q_seed);
 toc
-valuecheck(qik,q,1e-3);
+% valuecheck(qik,q,1e-6);
+testConstraint(r,[],qik,varargin{1:end-1});
 tic
 [qmex,info_mex] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 toc
 if(info_mex>10)
   error('SNOPT info is %d, IK mex fails to solve the problem',info_mex);
 end
-valuecheck(q,qmex,5e-2);
+% valuecheck(q,qmex,5e-2);
+testConstraint(r,[],qmex,varargin{1:end-1});
 end
 
 function qmex = test_IKpointwise_userfun(r,t,q_seed,q_nom,varargin)
@@ -461,11 +464,59 @@ toc
 if(info>10)
   error('SNOPT info is %d, IK pointwisefails to solve the problem',info);
 end
+for i = 1:length(t)
+  testConstraint(r,t(i),q(:,i),varargin{1:end-1});
+end
 tic
 [qmex,info] = inverseKinPointwise(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 toc
 if(info>10)
   error('SNOPT info is %d, IK pointwise mex fails to solve the problem',info);
 end
-valuecheck(q,qmex,5e-2);
+for i = 1:length(t)
+  testConstraint(r,t(i),q(:,i),varargin{1:end-1});
+end
+% valuecheck(q,qmex,5e-2);
+end
+
+function testConstraint(robot,t,q_sol,varargin)
+kinsol = robot.doKinematics(q_sol,false,false);
+[q_lb,q_ub] = robot.getJointLimits();
+if(any(q_sol>q_ub) || any(q_sol<q_lb))
+  error('solution must be within the robot default joint limits');
+end
+for i = 1:nargin-3
+  if(isa(varargin{i},'SingleTimeKinematicConstraint'))
+    if(varargin{i}.isTimeValid(t))
+      [lb,ub] = varargin{i}.bounds(t);
+      c = varargin{i}.eval(t,kinsol);
+      if(any(c-ub>1e-3) || any(c-lb<-1e-3))
+        error('solution does not satisfy the SingleTimeKinematicConstraint');
+      end
+    end
+  elseif(isa(varargin{i},'PostureConstraint'))
+    if(varargin{i}.isTimeValid(t))
+      [lb,ub] = varargin{i}.bounds(t);
+      if(any(q_sol>ub) || any(q_sol<lb))
+        error('solution does not satisfy the PostureConstraint');
+      end
+    end
+  elseif(isa(varargin{i},'QuasiStaticConstraint'))
+    if(varargin{i}.isTimeValid(t) && varargin{i}.active)
+      if(~varargin{i}.checkConstraint(kinsol))
+        error('solution does not satisfy the QuasiStaticConstraint');
+      end
+    end
+  elseif(isa(varargin{i},'SingleTimeLinearPostureConstraint'))
+    if(varargin{i}.isTimeValid(t))
+      [lb,ub] = varargin{i}.bounds(t);
+      c = varargin{i}.feval(t,q_sol);
+      if(any(c-ub>1e-3) || any(c-lb < -1e-3))
+        error('solution does not satisfy the SingleTimeLinearPostureConstraint');
+      end
+    end
+  else
+    error('The constraint is not supported');
+  end
+end
 end

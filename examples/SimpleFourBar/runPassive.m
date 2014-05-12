@@ -1,8 +1,7 @@
 function runPassive
 
-options.terrain = [];
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
-p = PlanarRigidBodyManipulator('FourBar.urdf',options);
+p = PlanarRigidBodyManipulator('FourBar.urdf');
 warning(w);
 v = p.constructVisualizer();
 v.xlim = [-8 8]; v.ylim = [-4 10];

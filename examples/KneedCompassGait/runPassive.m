@@ -1,5 +1,6 @@
 options = [];
 options.floating = true;
+options.terrain = RigidBodyFlatTerrain();
 m = PlanarRigidBodyManipulator('KneedCompassGait.urdf', options);
 r = TimeSteppingRigidBodyManipulator(m,.001);
 %q = zeros(3,1);

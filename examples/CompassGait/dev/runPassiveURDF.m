@@ -2,6 +2,7 @@
 % runs the passive dynamics with the rigid body backend (from URDF)
 
 options.twoD = true;
+options.terrain = RigidBodyFlatTerrain();
 p = TimeSteppingRigidBodyManipulator('CompassGait.urdf', 0.01, options);
 % p = CompassGaitPlant()
 % p.getInitialState()

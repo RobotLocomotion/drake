@@ -2,7 +2,7 @@ classdef CartTable < TimeSteppingRigidBodyManipulator
 
   methods
     function obj = CartTable()
-      obj = obj@TimeSteppingRigidBodyManipulator('CartTable.urdf',0.005,struct('floating',true));
+      obj = obj@TimeSteppingRigidBodyManipulator('CartTable.urdf',0.005,struct('floating',true,'terrain',RigidBodyFlatTerrain()));
       
 %      obj = addSensor(obj,FullStateFeedbackSensor());
 %      obj = addSensor(obj,ContactForceTorqueSensor(obj,'base',[0;0],0);
