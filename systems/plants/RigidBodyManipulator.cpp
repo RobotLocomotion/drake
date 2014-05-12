@@ -1,4 +1,5 @@
 #include <iostream>
+#include <map>
 
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
@@ -1162,14 +1163,37 @@ void RigidBodyManipulator::forwardKin(const int body_or_frame_id, const MatrixBa
   }
 }
 
-template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x)
+template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
+void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J, MatrixBase<DerivedD> *P)
 {
   Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
 
   MatrixXd Tinv = (bodies[body_ind].T*Tframe).inverse();
   x = Tinv.topLeftCorner(3,4)*pts;
+
+  if (J) {
+    int i;
+    MatrixXd dTdq =  bodies[body_ind].dTdq.topLeftCorner(3*num_dof,4)*Tframe;
+    MatrixXd dTinvdq = dTdq*Tinv;
+    for (i=0;i<num_dof;i++) {
+      MatrixXd dTinvdqi = MatrixXd::Zero(4,4);
+      dTinvdqi.row(0) = dTinvdq.row(i);
+      dTinvdqi.row(1) = dTinvdq.row(num_dof+i);
+      dTinvdqi.row(2) = dTinvdq.row(2*num_dof+i);
+      dTinvdqi = -Tinv*dTinvdqi;
+      MatrixXd dxdqi = dTinvdqi.topLeftCorner(3,4)*pts;
+      dxdqi.resize(dxdqi.rows()*dxdqi.cols(),1);
+      J->col(i) = dxdqi;
+    }
+  }
+  if (P) {
+    int i;
+    for (i=0;i<pts.cols();i++) {
+      P->block(i*3,i*3,3,3) = Tinv.topLeftCorner(3,3);
+    }
+  }
+
 }
 
 template <typename DerivedA, typename DerivedB>
@@ -1345,8 +1369,8 @@ void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixB
   dJ = dJ_t.transpose();
 }
 
-template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
-void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC)
+template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
+void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC, MatrixBase<DerivedF> * const df_ext)
 {
   H = MatrixXd::Zero(num_dof,num_dof);
   if (dH) *dH = MatrixXd::Zero(num_dof*num_dof,num_dof);
@@ -1413,6 +1437,10 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
       dfvpdq[i] = I[i]*davpdq[i] + dcross;
       dcrf(v[i],I[i]*v[i],dvdqd[i],I[i]*dvdqd[i],&(dcross));
       dfvpdqd[i] = I[i]*davpdqd[i] + dcross;
+      if (df_ext) {
+	dfvpdq[i] = dfvpdq[i] - df_ext->block(i*6,0,6,num_dof);
+	dfvpdqd[i] = dfvpdqd[i] - df_ext->block(i*6,num_dof,6,num_dof);
+      }
       
     }
   }
@@ -1502,8 +1530,6 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
       }
     }
   }
-
-
 }
 
 int RigidBodyManipulator::findLinkInd(string linkname, int robot)
@@ -1595,7 +1621,8 @@ template void RigidBodyManipulator::forwardJac(const int, MatrixBase< Map<Matrix
 template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vector4d > &, const int, MatrixBase< MatrixXd > &);
 //template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
 //template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
-template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &);
+template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
+template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
 
-template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
-template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
+template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
+template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);

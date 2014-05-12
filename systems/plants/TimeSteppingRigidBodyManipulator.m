@@ -306,6 +306,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             JL = sparse(1:obj.manip.num_u,pos_control_index,1,obj.manip.num_u,obj.manip.num_q);
             phiL = [phiL;-phiL]; JL = [JL;-JL];
             % dJ = 0 by default, which is correct here
+            dJL = zeros(length(phiL),num_q^2);
           else
             if (nargout<5)
               [phiL,JL] = obj.manip.jointLimitConstraints(q);
