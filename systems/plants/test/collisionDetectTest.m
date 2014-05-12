@@ -47,7 +47,6 @@ else
 end
     
 options.floating = true;
-options.terrain = [];
 
 S = warning('OFF','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 r = RigidBodyManipulator([],options);

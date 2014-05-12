@@ -63,6 +63,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     case RigidBodyConstraint::RelativeGazeTargetConstraintType:
       plhs[0] = mxCreateString("RelativeGazeTargetConstraint");
       break;
+    case RigidBodyConstraint::RelativeGazeDirConstraintType:
+      plhs[0] = mxCreateString("RelativeGazeDirConstraint");
+      break;
     case RigidBodyConstraint::WorldCoMConstraintType:
       plhs[0] = mxCreateString("WorldCoMConstraint");
       break;

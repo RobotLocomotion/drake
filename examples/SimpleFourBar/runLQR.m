@@ -1,7 +1,6 @@
 function runLQR
-options.terrain = [];
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
-r = PlanarRigidBodyManipulator('FourBar2.urdf',options);
+r = PlanarRigidBodyManipulator('FourBar2.urdf');
 warning(w);
 v = r.constructVisualizer();
 

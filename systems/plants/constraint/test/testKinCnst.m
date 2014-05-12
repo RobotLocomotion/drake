@@ -210,6 +210,9 @@ testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.Point2LineSegDistConstrai
 display('Check Relative gaze target constraint');
 testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.RelativeGazeTargetConstraintType,robot,robot_aff,head,r_hand,[1;0;0],[0;0;0],[0;0;0],pi/30,tspan0);
 
+display('Check relative gaze direction constraint')
+testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.RelativeGazeDirConstraintType,robot,robot_aff,head,l_hand,[1;0;0],[0.5;0.3;0.4],0.3*pi,tspan0);
+
 display('Check Relative position constraint');
 testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.RelativePositionConstraintType,robot,robot_aff,...
   [[0;0;0],[0;1;0.2]],[[nan;-0.1;-0.2],[-0.2;nan;-0.4]],[[nan;0.1;0.2],[0.3;nan;0]],...

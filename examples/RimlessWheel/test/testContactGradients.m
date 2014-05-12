@@ -2,11 +2,14 @@ function testContactGradients
 
 options.floating = true;
 options.twoD = true;
+options.terrain = RigidBodyFlatTerrain();
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 p = TimeSteppingRigidBodyManipulator('../RimlessWheel.urdf',.01,options);
 warning(w);
 x0 = p.resolveConstraints([0;1+rand;randn;5*rand;randn;5*rand]);
 
+w = warning('off','Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex');
+warning('off','Drake:TaylorVar:DoubleConversion');
 options.grad_method = {'user','taylorvar'};
 [n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p,x0(1:p.getNumDOF()),options);
 
@@ -14,6 +17,8 @@ for i=1:100
   q = randn(p.getNumDOF,1); 
   [n,D,dn,dD] = geval(2,@contactConstraintsWrapper,p,q,options);
 end
+
+warning(w);
 
 
 

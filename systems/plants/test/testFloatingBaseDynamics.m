@@ -6,7 +6,7 @@ for urdf = {'FallingBrick.urdf',...
 
 urdf=urdf{1};  
 options.floating = 'rpy';
-options.terrain = [];
+options.terrain = RigidBodyFlatTerrain();
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 m_rpy = TimeSteppingRigidBodyManipulator(urdf,.01,options);
 options.floating = 'YPR';
@@ -25,6 +25,7 @@ x0 = resolveConstraints(m_rpy,Point(getStateFrame(m_rpy)));
 x02 = resolveConstraints(m_ypr_rel,Point(getStateFrame(m_ypr_rel)));
 valuecheck(x0,x02(xind),1e-4);
 
+w = warning('off','Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex');
 for i=1:100
   q = .1*randn(nq,1); qd = randn(nq,1); u = randn(getNumInputs(m_rpy),1);
 
@@ -85,6 +86,7 @@ for i=1:100
   
   valuecheck(xdn,xdn2([ind;nq+ind]),1e-4);
 end
+warning(w);
 
 end
 

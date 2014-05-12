@@ -7,6 +7,7 @@ for i=1:4
   options.view = 'right';
   options.twoD = true;
   options.floating = true;
+  options.terrain = RigidBodyFlatTerrain();
   r = TimeSteppingRigidBodyManipulator(['brick',num2str(i),'.urdf'],.01,options);
   
   %x0 = Point(r.getStateFrame);
