@@ -1,4 +1,4 @@
-function [x,J,P,dJ] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
+function [x,J,P] = bodyKin(obj,kinsol,body_or_frame_ind,pts)
 % computes the position of pts (given in the global frame) in the body frame
 %
 % @param kinsol solution structure obtained from doKinematics
@@ -29,8 +29,10 @@ if (kinsol.mex)
     error('Drake:RigidBodyManipulator:InvalidKinematics','This kinsol is not valid because it was computed via mex, and you are now asking for an evaluation with non-numeric pts.  If you intended to use something like TaylorVar, then you must call doKinematics with use_mex = false');
   end
   
-  if (nargout>1)
+  if (nargout>2)
     [x,J,P] = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts);
+  elseif (nargout>1)
+    [x,J] = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts);
   else
     x = bodyKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts);
   end
@@ -52,10 +54,14 @@ else
   x = x(1:3,:);
   
   % Jacobians make use of d(inv(T))dqi = -inv(T)*dTdqi*inv(T)
-  if (nargout>1)
+  if (nargout>2)
+    P = zeros(3*m,3*m);
+    for i=1:size(pts,2)
+      P((i-1)*3+1:i*3,(i-1)*3+1:i*3)=invT(1:3,1:3);
+    end
+  elseif (nargout>1)
     nq = size(kinsol.q,1);
     invT = inv(kinsol.T{body_ind}*Tframe);
-
     dTdq = cell(1,nq);
     for i=1:nq
       dTdq{i} = [kinsol.dTdq{body_ind}(i:nq:end,:);zeros(1,size(kinsol.dTdq{body_ind},2))];
@@ -70,11 +76,6 @@ else
       grad = dinvTdq{i}*pts;
       grad = grad(1:3,:);
       J(:,i) = reshape(grad,[],1);
-    end
-
-    P = zeros(3*m,3*m);
-    for i=1:size(pts,2)
-      P((i-1)*3+1:i*3,(i-1)*3+1:i*3)=invT(1:3,1:3);
     end
   end
   

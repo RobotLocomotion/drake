@@ -1163,18 +1163,8 @@ void RigidBodyManipulator::forwardKin(const int body_or_frame_id, const MatrixBa
   }
 }
 
-template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x)
-{
-  Matrix4d Tframe;
-  int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
-
-  MatrixXd Tinv = (bodies[body_ind].T*Tframe).inverse();
-  x = Tinv.topLeftCorner(3,4)*pts;
-}
-
 template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
-void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> &J, MatrixBase<DerivedD> &P)
+void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J, MatrixBase<DerivedD> *P)
 {
   Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
@@ -1182,21 +1172,26 @@ void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<
   MatrixXd Tinv = (bodies[body_ind].T*Tframe).inverse();
   x = Tinv.topLeftCorner(3,4)*pts;
 
-  int i;
-  MatrixXd dTdq =  bodies[body_ind].dTdq.topLeftCorner(3*num_dof,4)*Tframe;
-  MatrixXd dTinvdq = dTdq*Tinv;
-  for (i=0;i<num_dof;i++) {
-    MatrixXd dTinvdqi = MatrixXd::Zero(4,4);
-    dTinvdqi.row(0) = dTinvdq.row(i);
-    dTinvdqi.row(1) = dTinvdq.row(num_dof+i);
-    dTinvdqi.row(2) = dTinvdq.row(2*num_dof+i);
-    dTinvdqi = -Tinv*dTinvdqi;
-    MatrixXd dxdqi = dTinvdqi.topLeftCorner(3,4)*pts;
-    dxdqi.resize(dxdqi.rows()*dxdqi.cols(),1);
-    J.col(i) = dxdqi;
+  if (J) {
+    int i;
+    MatrixXd dTdq =  bodies[body_ind].dTdq.topLeftCorner(3*num_dof,4)*Tframe;
+    MatrixXd dTinvdq = dTdq*Tinv;
+    for (i=0;i<num_dof;i++) {
+      MatrixXd dTinvdqi = MatrixXd::Zero(4,4);
+      dTinvdqi.row(0) = dTinvdq.row(i);
+      dTinvdqi.row(1) = dTinvdq.row(num_dof+i);
+      dTinvdqi.row(2) = dTinvdq.row(2*num_dof+i);
+      dTinvdqi = -Tinv*dTinvdqi;
+      MatrixXd dxdqi = dTinvdqi.topLeftCorner(3,4)*pts;
+      dxdqi.resize(dxdqi.rows()*dxdqi.cols(),1);
+      J->col(i) = dxdqi;
+    }
   }
-  for (i=0;i<pts.cols();i++) {
-    P.block(i*3,i*3,3,3) = Tinv.topLeftCorner(3,3);
+  if (P) {
+    int i;
+    for (i=0;i<pts.cols();i++) {
+      P->block(i*3,i*3,3,3) = Tinv.topLeftCorner(3,3);
+    }
   }
 
 }
@@ -1626,8 +1621,8 @@ template void RigidBodyManipulator::forwardJac(const int, MatrixBase< Map<Matrix
 template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vector4d > &, const int, MatrixBase< MatrixXd > &);
 //template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
 //template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
-template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &);
-template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
+template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
+template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
 
 template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
 template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
