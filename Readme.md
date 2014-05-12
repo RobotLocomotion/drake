@@ -10,4 +10,4 @@ Example usage:
 	>> [vertices, faces] = meshutil.toolbox_graph.read_mesh('/home/rdeits/drc/software/drake/examples/Glider/meshes/GliderFuselage.obj');
 	>> meshutil.sketch_mesh(vertices, faces);
 
-![](https://rdeits.github.io/meshutil/fig/glider_sketch.png)
+![](https://rdeits.github.io/meshutil/img/glider_sketch.png)
