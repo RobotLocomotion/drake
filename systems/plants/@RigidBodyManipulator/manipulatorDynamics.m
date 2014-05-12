@@ -2,7 +2,7 @@ function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd,use_mex)
 
 checkDirty(obj);
 
-if (nargin<4) use_mex = false; end
+if (nargin<4) use_mex = true; end
 
 m = obj.featherstone;
 B = obj.B;

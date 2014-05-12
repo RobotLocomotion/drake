@@ -67,11 +67,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     dC = new Map<MatrixXd>(mxGetPr(plhs[3]),model->num_dof,2*model->num_dof);
   }  
   
-  if (nrhs>4) {
-    model->HandC(q,qd,f_ext,H,C,dH,dC,df_ext);  
-  } else {
-    model->HandC(q,qd,f_ext,H,C,dH,dC);
-  }   
+  model->HandC(q,qd,f_ext,H,C,dH,dC,df_ext);
   
   // destroy dynamically allocated Map<MatrixXd> (but not the underlying data!)
   if (f_ext) delete f_ext;
