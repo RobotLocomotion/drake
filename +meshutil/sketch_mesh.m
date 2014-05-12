@@ -1,7 +1,18 @@
-function sketch_mesh(vertices, faces, threshold)
+function lines = sketch_mesh(vertices, faces, ang_threshold)
+% Compute a sketch of a mesh by reducing the mesh to the edges between
+% faces whose relative normal angle is greater than a given threshold (in
+% radians).
+% @param vertices the xyz vertex coordinates of the mesh, as a [3 x nvert] matrix
+% @param faces the vertex indices of each face, as a [3 x nfaces] matrix
+% @param ang_threshold the angular threshold in radians [optional]
+%
+% @retval lines the lines to draw, as a cell array. Each cell element is an
+%         [x1 y1 z1 x2 y2 z2] vector. 
 
 if nargin < 3
   threshold = cos(30 * pi/180);
+else
+  threshold = cos(ang_threshold);
 end
 
 normals = meshutil.mesh_normals(vertices, faces);
@@ -20,7 +31,9 @@ for j = 1:size(neighbors, 2)
   end
 end
 
-% lines = cell2mat(lines);
+figure(4)
+clf
+plot_mesh(vertices, faces);
 
 figure(3);
 clf;
