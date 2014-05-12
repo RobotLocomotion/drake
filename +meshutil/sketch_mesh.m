@@ -8,6 +8,10 @@ function lines = sketch_mesh(vertices, faces, ang_threshold)
 %
 % @retval lines the lines to draw, as a cell array. Each cell element is an
 %         [x1 y1 z1 x2 y2 z2] vector. 
+% 
+% Usage: 
+% >> [vertices, faces] = meshutil.toolbox_graph.read_obj('/home/rdeits/drc/software/drake/examples/Glider/meshes/GliderFuselage.obj');
+% >> lines = meshutil.sketch_mesh(vertices, faces, 15*pi/180);
 
 if nargin < 3
   threshold = cos(30 * pi/180);
