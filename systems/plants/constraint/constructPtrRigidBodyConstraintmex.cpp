@@ -1001,6 +1001,31 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex","RelativeQuatConstraint");
       }
       break;
+    case RigidBodyConstraint::MinDistanceConstraintType:
+      {
+        if(nrhs != 3 && nrhs != 4)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs",
+              "Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::MinDistanceConstraintType, robot.mex_model_ptr,min_distance,tspan)");
+        }
+        RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
+        Vector2d tspan;
+        if(nrhs == 3)
+        {
+          tspan<< -mxGetInf(), mxGetInf();
+        }
+        else
+        {
+          rigidBodyConstraintParseTspan(prhs[3],tspan);
+        }
+
+        double min_distance = (double) mxGetScalar(prhs[2]);
+
+        auto cnst = new MinDistanceConstraint(model,min_distance,tspan);
+        plhs[0] = createDrakeConstraintMexPointer((void*)cnst,"deleteRigidBodyConstraintmex",
+                                        "MinDistanceConstraint");
+      }
+      break;
     default:
       mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Unsupported constraint type");
       break;
