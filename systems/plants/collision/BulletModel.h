@@ -13,6 +13,23 @@
 
 namespace DrakeCollision
 {
+  struct OverlapFilterCallback : public btOverlapFilterCallback
+  {
+    // return true when pairs need collision
+    virtual bool  needBroadphaseCollision(btBroadphaseProxy* proxy0,
+        btBroadphaseProxy* proxy1) const;
+
+    BulletModel* parent_model;
+  };
+
+  struct ElementData 
+  {
+    int body_idx;
+    Shape shape;
+    
+    ElementData(int body_idx, Shape shape) : body_idx(body_idx), shape(shape) {};
+  };
+
   class BulletModel 
     : public ModelTemplate<BulletElement>
   {
@@ -54,10 +71,15 @@ namespace DrakeCollision
                                       Vector3d &ptA, Vector3d &ptB, 
                                       Vector3d &normal);
 
+      virtual bool allCollisions(std::vector<int>& bodyA_idx, 
+          std::vector<int>& bodyB_idx, 
+          MatrixXd& ptsA, MatrixXd& ptsB);
 
       btDefaultCollisionConfiguration bt_collision_configuration;
       btCollisionDispatcher* bt_collision_dispatcher;
       btDbvtBroadphase bt_collision_broadphase;
+      OverlapFilterCallback filter_callback;
+      std::vector< std::unique_ptr< ElementData > > element_data;
 
       // For getClosestPoints
       //btGjkEpaPenetrationDepthSolver epa;

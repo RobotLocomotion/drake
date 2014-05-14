@@ -99,6 +99,10 @@ public:
                         std::vector<int>& bodyB_idx,
                         std::vector<int>& bodies_idx);
 
+
+  bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx, 
+                     MatrixXd& ptsA, MatrixXd& ptsB);
+
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
   
   int findLinkInd(std::string linkname, int robot = -1);
