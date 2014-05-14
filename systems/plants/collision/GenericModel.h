@@ -25,6 +25,10 @@ namespace DrakeCollision
                                                   const Element& elemA, 
                                                   const Element& elemB, 
                                                   const ResultCollShPtr& c);
+
+      virtual bool allCollisions(std::vector<int>& bodyA_idx, 
+                                 std::vector<int>& bodyB_idx, 
+                                 MatrixXd& ptsA, MatrixXd& ptsB);
       // END Required member functions
   };
 }
