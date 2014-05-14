@@ -52,6 +52,7 @@ classdef RigidBodyConstraint
     RailGraspWrenchConstraintType = 23;
     RelativeQuatConstraintType = 24;
     RelativeGazeDirConstraintType = 25;
+    MinDistanceConstraintType = 26;
   end
   
   methods

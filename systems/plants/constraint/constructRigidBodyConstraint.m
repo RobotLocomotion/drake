@@ -58,6 +58,8 @@ else
       obj = RelativePositionConstraint(varargin{:});
     case RigidBodyConstraint.RelativeQuatConstraintType
       obj = RelativeQuatConstraint(varargin{:});
+    case RigidBodyConstraint.MinDistanceConstraintType
+      obj = MinDistanceConstraint(varargin{:});
     otherwise
       error('Drake:constructRigidBodyConstraint:UnsupportedConstraintType','The constraint type is not supported yet');
   end
