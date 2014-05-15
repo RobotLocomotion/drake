@@ -12,7 +12,7 @@ function [vertex,face,normal, uv, sphparam] = read_mesh(file)
 %
 %   Copyright (c) 2007 Gabriel Peyre
 
-import meshutil.toolbox_graph.*;
+import toolbox_graph.*;
 
 switch file
     case {'triangle' 'square' 'square1' 'L' 'L1' 'tetra' 'oct' 'ico' 'rand'}
