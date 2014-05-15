@@ -90,7 +90,12 @@ if ~isempty(obj.terrain) && ...
     (force_collisionDetectTerrain || ~isa(obj.terrain,'RigidBodyFlatTerrain'))
   % For each point on the manipulator that can collide with terrain,
   % find the closest point on the terrain geometry
-  terrain_contact_point_struct = getTerrainContactPoints(obj);
+  if isfield(active_collision_options,'body_idx')
+    terrain_contact_point_struct = ...
+      getTerrainContactPoints(obj,active_collision_options.body_idx);
+  else
+    terrain_contact_point_struct = getTerrainContactPoints(obj);
+  end
 
   if ~isempty(terrain_contact_point_struct)
     xA_new = [terrain_contact_point_struct.pts];
