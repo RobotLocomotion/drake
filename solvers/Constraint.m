@@ -42,7 +42,8 @@ classdef Constraint
         c = feval(obj.eval_handle,varargin{:});
         varargout{1} = c;
       elseif(nargout == 2)
-        [c,dc] = geval(obj.eval_handle,varargin{:},struct('grad_method',obj.grad_method));
+        [c,dc] = obj.eval_handle(varargin{:});
+%         [c,dc] = geval(obj.eval_handle,varargin{:},struct('grad_method',obj.grad_method));
         varargout{1} = c;
         varargout{2} = dc;
       elseif(nargout == 3)
@@ -58,6 +59,10 @@ classdef Constraint
     function obj = setName(obj,name)
       % set the name of the constraint
       obj.name = name;
+    end
+    
+    function handle = getHandle(obj)
+      handle = obj.eval_handle;
     end
   end
   
