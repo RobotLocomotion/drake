@@ -876,10 +876,11 @@ classdef RigidBodyManipulator < Manipulator
             obj.cached_terrain_contact_point_struct;
           return;
         end
-        body_idx = 1:obj.getNumBodies();
+        body_idx = 2:obj.getNumBodies(); % World-fixed objects can't collide
+                                         % with terrain
       end
       terrain_contact_point_struct = struct('pts',{},'idx',{});
-      for i = body_idx
+      for i = setdiff(body_idx,1)
         pts = getTerrainContactPoints(obj.body(i));
         if ~isempty(pts)
           terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
