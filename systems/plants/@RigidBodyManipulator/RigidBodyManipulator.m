@@ -21,12 +21,9 @@ classdef RigidBodyManipulator < Manipulator
     num_contact_pairs;
     contact_options; % struct containing options for contact/collision handling
     frame = [];     % array of RigidBodyFrame objects
-  end
-
-  properties (Access=protected)
     cached_terrain_contact_point_struct = [];
   end
-  
+
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
     featherstone = [];  
     B = [];
