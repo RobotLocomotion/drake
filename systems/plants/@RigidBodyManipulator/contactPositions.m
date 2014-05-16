@@ -1,4 +1,4 @@
-function [contact_pos,J,dJ, body_idx] = contactPositions(obj,kinsol,varargin)
+function [xA_in_world,xB_in_world,idxA,idxB,J,dJ] = contactPositions(obj,kinsol,varargin)
 % function [contact_pos,J,dJ] = contactPositions(obj,kinsol,allow_multiple_contacts,active_collision_options)
 % Compute the contact positions and Jacobians, if interested in the
 % inertial frame positions of these points. Most applications should see
@@ -17,16 +17,22 @@ function [contact_pos,J,dJ, body_idx] = contactPositions(obj,kinsol,varargin)
 % @retval dJ (6m x n^2) = dd/dqdq contact_pos
 % @retval body_idx (2m x 1) body indices
 
+compute_second_derivative = nargout > 2;
+
 if ~isstruct(kinsol)  
   % treat input as contactPositions(obj,q)
-  if nargout > 2
-    kinsol = doKinematics(obj,kinsol,true);
-  else
-    kinsol = doKinematics(obj,kinsol);
-  end
+  kinsol = doKinematics(obj,kinsol,compute_second_derivative);
 end
 
 [~,~,xA,xB,idxA,idxB] = obj.collisionDetect(kinsol,varargin{:});
+
+if compute_second_derivative
+  [xA_in_world,xB_in_world,J,dJ] = ...
+    contactPositionsFromCollisionData(obj,kinsol,xA,xB,idxA,idxB);
+else
+  [xA_in_world,xB_in_world,J] = ...
+    contactPositionsFromCollisionData(obj,kinsol,xA,xB,idxA,idxB);
+end
 
 nq = obj.getNumPositions;
 nC = length(idxA);
