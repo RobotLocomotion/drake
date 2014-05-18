@@ -66,6 +66,10 @@ namespace DrakeCollision
                                                MatrixXd& normal, 
                                                VectorXd& distance,
                                                std::vector<int>& bodies_idx)=0;
+
+      virtual bool allCollisions(std::vector<int>& bodyA_idx, 
+                                  std::vector<int>& bodyB_idx, 
+                                  MatrixXd& ptsA, MatrixXd& ptsB)=0;
   };
 
   std::shared_ptr<Model> newModel();

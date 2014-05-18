@@ -8,28 +8,46 @@ m = obj.featherstone;
 B = obj.B;
 
 if length(obj.force)>0
-  if (nargout>3) error('derivatives not implemented yet for force elements'); end
-  f_ext = sparse(6,m.NB);
+  f_ext = zeros(6,m.NB);
+  if (nargout>3)
+      df_ext = zeros(6*m.NB,size(q,1)+size(qd,1));
+  end
   for i=1:length(obj.force)
     % compute spatial force should return something that is the same length
     % as the number of bodies in the manipulator
     if (obj.force{i}.direct_feedthrough_flag)
       [force,B_force] = computeSpatialForce(obj.force{i},obj,q,qd);
+      dforce = zeros(numel(force),size(q,1)+size(qd,1));
       B = B+B_force;
     else
-      force = computeSpatialForce(obj.force{i},obj,q,qd);
+      if (nargout>3)
+          [force,dforce] = computeSpatialForce(obj.force{i},obj,q,qd);
+          dforce = reshape(dforce,numel(force),[]);
+      else
+          force = computeSpatialForce(obj.force{i},obj,q,qd);
+      end
     end
     f_ext(:,m.f_ext_map_to) = f_ext(:,m.f_ext_map_to)+force(:,m.f_ext_map_from);
+    if (nargout>3)
+      for j=1:m.NB
+        i_from = m.f_ext_map_from(j);
+        i_to = m.f_ext_map_to(j);
+        df_ext((i_to-1)*size(f_ext,1)+1:i_to*size(f_ext,1),1:size(q,1)+size(qd,1)) = df_ext((i_to-1)*size(f_ext,1)+1:i_to*size(f_ext,1),1:size(q,1)+size(qd,1)) + dforce((i_from-1)*size(force,1)+1:i_from*size(force,1),1:size(q,1)+size(qd,1));
+      end
+    end
   end
 else
   f_ext=[];
+  if (nargout>3)
+    df_ext=[]; 
+  end
 end
 
 if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
   f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
   if (nargout>3)
-    if ~isempty(f_ext) error('not implemented yet'); end
-    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd,f_ext);
+    df_ext = full(df_ext);
+    [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd,f_ext,df_ext);
     dH = [dH, zeros(m.NB*m.NB,m.NB)];
     dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
@@ -112,7 +130,8 @@ else
       
       if ~isempty(f_ext)
         fvp{i} = fvp{i} - f_ext(:,i);
-        error('need to implement f_ext gradients here');
+        dfvpdq{i} = dfvpdq{i} - df_ext((i-1)*size(f_ext,1)+1:i*size(f_ext,1),1:size(q,1));
+        dfvpdqd{i} = dfvpdqd{i} - df_ext((i-1)*size(f_ext,1)+1:i*size(f_ext,1),size(q,1)+1:end);
       end
       
     end
