@@ -37,4 +37,13 @@ namespace DrakeCollision
     cout << "\tRe-compile with Bullet to use this function." << endl;
     return false;
   };
+
+  bool GenericModel::allCollisions(vector<int>& bodyA_idx, 
+      vector<int>& bodyB_idx, 
+      MatrixXd& ptsA, MatrixXd& ptsB)
+  {
+    cout << "DrakeCollision::GenericModel::allCollisions:" << endl;
+    cout << "\tRe-compile with Bullet to use this function." << endl;
+    return false;
+  };
 };
