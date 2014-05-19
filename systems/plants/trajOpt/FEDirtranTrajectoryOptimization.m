@@ -1,4 +1,7 @@
 classdef FEDirtranTrajectoryOptimization < TrajectoryOptimization
+  % Forwardss-Euler integration
+  %  dynamics constraints are: x(k+1) = x(k) + h(k)*f(x(k),u(k))
+  %  integrated cost is sum of g(h(k),x(k),u(k))
   
   properties
   end
@@ -22,7 +25,7 @@ classdef FEDirtranTrajectoryOptimization < TrajectoryOptimization
       cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,cfun);
       
       for i=1:obj.N-1,        
-        dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i+1)];
+        dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i)];
         constraints{i} = cnstr;
       end
       
@@ -40,9 +43,9 @@ classdef FEDirtranTrajectoryOptimization < TrajectoryOptimization
       end
       
       if ~isempty(running_cost)
-        for i=2:obj.N,
-          h_ind = obj.h_inds(i-1);
-          x_ind = obj.x_inds(:,i-1);
+        for i=1:obj.N-1,
+          h_ind = obj.h_inds(i);
+          x_ind = obj.x_inds(:,i);
           u_ind = obj.u_inds(:,i);
           
           obj = obj.addCost(running_cost,[h_ind;x_ind;u_ind]);

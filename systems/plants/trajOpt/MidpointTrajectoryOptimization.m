@@ -1,4 +1,7 @@
 classdef MidpointTrajectoryOptimization < TrajectoryOptimization
+  % Midpoint method integration
+  %  dynamics constraints are: x(k+1) = x(k) + h(k)*f(.5*x(k)+.5*x(k+1),.5*u(k)+.5*u(k+1))
+  %  integrated cost is sum of g(h(k),.5*x(k)+.5*x(k+1),.5*u(k)+.5*u(k+1))
   
   properties
   end

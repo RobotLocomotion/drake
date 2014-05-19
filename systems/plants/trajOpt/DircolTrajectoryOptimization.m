@@ -1,5 +1,16 @@
 classdef DircolTrajectoryOptimization < TrajectoryOptimization
-  
+  % Direct colocation approach
+  % Over each interval, f(x(k),u(k)) and f(x(k+1),u(k+1)) are evaluated to
+  % determine d/dt x(k) and d/dt x(k+1). A cubic spline is fit over the
+  % interval x and d/dt x at the end points.
+  % x(k+.5) and d/dt x(k+.5) are determined based on this spline.
+  % Then, the dynamics constraint is:
+  % d/dt x(k+.5) = f(x(k+.5),.5*u(k) + .5*u(k+1))
+  %
+  %  integrated cost is: .5*h(1)*g(x(1),u(1)) + .5*h(N-1)*g(x(N),u(N)) +
+  %                   sum((.5*h(i)+.5*h(i-1))*g(x(i),u(i))
+  %  more simply stated, integrated as a zoh with half of each time
+  %  interval on either side of the knot point
   properties
   end
   

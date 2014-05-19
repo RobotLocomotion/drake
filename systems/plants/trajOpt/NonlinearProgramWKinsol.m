@@ -10,7 +10,7 @@ classdef NonlinearProgramWKinsol < NonlinearProgramWConstraintObjects
     nT
     t_kinsol % A 1 x nT boolean array. t_kinsol(i) is true if doKinematics should be called at time t_knot(i)
     cost_kinsol_idx % A cell. cost_kinsol_idx{i} is the indices of kinsol used for evaluating cost{i}
-    cost_nonkinsol_idx % A cell. cost_nonkinsol_idx{i} is the indices of decision variables, aprat from kinsol, that are used in evaluating cost{i}
+    cost_nonkinsol_idx % A cell. cost_nonkinsol_idx{i} is the indices of decision variables, apart from kinsol, that are used in evaluating cost{i}
     nlcon_kinsol_idx % A cell. nlcon_kinsol_idx{i} is the indices of kinsol used for evaluating nlcon{i}
     nlcon_nonkinsol_idx % A cell. nlcon_nonkinsol_idx{i] is the indices of decision variables, apart from kinsol, that are used in evaluating nlcon{i}
   end
