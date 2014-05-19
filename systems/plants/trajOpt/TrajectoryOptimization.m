@@ -1,31 +1,52 @@
 classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
-  %TRAJECTORYOPTIMIZATION Summary of this class goes here
-  %   Detailed explanation goes here
+  %TRAJECTORYOPTIMIZATION An abstract class for direct method approaches to
+  % trajectory optimization.
+  % 
+  % Generally considers cost functions of the form:
+  % e(x0) + int(f(x(t),u(t)) + g(T,xf)
+  %
+  % Subclasses must implement the two abstract methods:
+  %  obj = setupCostFunction(obj,initial_cost,running_cost,final_cost);
+  % and  
+  %  [constraints,dyn_inds] = createDynamicConstraints(obj);
+  % which each determine how the dynamic constraints are evaluated and how
+  % the cost function is integrated.
+  %
+  % This class assumes that there are a fixed number (N) time steps, and
+  % that the trajectory is discreteized into timesteps h (N-1), state x
+  % (N), and control input u (N)
+  %
+  % To maintain nominal sparsity in the optimization programs, this
+  % implementation assumes that all constraints and costs are
+  % time-invariant.
+  %
+  % See Hargraves87 and Enright91
   
   properties (Access = public)
-    N
-    options
-    z0
-    plant
-    h_inds
-    x_inds
-    u_inds
+    N       % number of timesteps
+    options % options, yup
+    z0      % initial optimization paramters, extracted from trajectories
+    plant   % the plant
+    h_inds  % (N-1) x 1 indices for timesteps h so that z(h_inds(i)) = h(i)
+    x_inds  % N x n indices for state
+    u_inds  % N x m indices for time
   end
   
   methods
-    % assumes constraints and cost are time-invariant
-    % h(i:N-1) - timestep
-    % t(i:N) - time
-    % x(i:N) - state
-    % u(i:N) - control input
+    % function obj =
+    % TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,...
+    % t_init,traj_init,T_span,constraints, options)
+    % Trajectory optimization constructor 
+    
     %
-    % initial_cost is a NonlinearConstraint eval(x(1))
-    % running_cost is a NonlinearConstraint eval([h(i);x(i);u(i)]), summed
-    % final_cost is a NonlinearConstraint eval([h(1:end),x])
+    % initial_cost is a NonlinearConstraint to be evaluated at x(1)
+    % running_cost is a NonlinearConstraint to be evaluated at a given h,x,u
+    % final_cost is a NonlinearConstraint to be evaluated at eval(T,x])
     % t_init (Nx1) vector of initial times
-    % traj_init.x x trajectory
-    % traj_init.u u trajectory
-    % constraints are each a struct
+    % traj_init is a struct, where
+    %  traj_init.x x trajectory
+    %  traj_init.u u trajectory
+    % constraints is a cell-array of structs
     %  constraint.mgr is a ConstraintManager
     %  constraint.i is a cell array of time indices
     %   ex1., i = {1, 2, 3} means the constraint is applied
@@ -33,22 +54,16 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     %   ex2,. i = {[1 2], [3 4]} means the constraint is applied to knot
     %   points 1 and 2 together (taking the combined state as an argument)
     %   and 3 and 4 together.
+    % 
     
-    function obj = TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,varargin)
+    function obj = TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,constraints,options)
       N = length(t_init);
-      if ~isempty(varargin)
-        options = varargin{1}{end}; %#ok<*PROP>
-        constraints = varargin{1}(1:end-1);
-      else
-        options = struct();
-        constraints = {};
-      end
       
       if ~isfield(options,'time_option')
         options.time_option = 1;
       end
       
-      [num_vars,h_inds,x_inds,u_inds] = TrajectoryOptimization.getVarInfo(plant,N,options);
+      [num_vars,h_inds,x_inds,u_inds] = TrajectoryOptimization.getVarInfo(plant,N,options); %#ok<*PROP>
       
       obj = obj@NonlinearProgramWConstraintObjects(num_vars);
       obj.N = N;
@@ -59,7 +74,7 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       obj.u_inds = u_inds;
       obj.z0 = obj.getInitialVars(t_init,traj_init);
       
-      % Construct time constraint
+      % Construct total time linear constraint
       switch options.time_option
         case 1
           A_time = [ones(1,N-1);[eye(N-2) zeros(N-2,1)] - [zeros(N-2,1) eye(N-2)]];
@@ -68,13 +83,14 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       end
       
       
-      
+      % create constraints for dynamics and add them
       [dynamic_constraints,dyn_inds] = obj.createDynamicConstraints();
       
       for i=1:length(dynamic_constraints),
         obj = obj.addNonlinearConstraint(dynamic_constraints{i}, dyn_inds{i});
       end
       
+      % loop over additional constraints
       for i=1:length(constraints),
         mgr = constraints{i}.mgr;
         time_index = constraints{i}.i;
@@ -102,10 +118,12 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
         end
       end
       
+      % setup the cost function
       obj = obj.setupCostFunction(initial_cost,running_cost,final_cost);
     end
 
     
+    % Solve the nonlinear program and return resulting trajectory
     function [xtraj,utraj,z,F,info] = solveTraj(obj)
       [z,F,info] = obj.solve(obj.z0);
       t = [0; cumsum(z(obj.h_inds))];
@@ -116,6 +134,9 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
     end
     
+    % evaluates the initial trajectories at the sampled times and
+    % constructs the nominal z0. Overwrite to implement in a different
+    % manner
     function z0 = getInitialVars(obj,t_init,traj_init)
       z0 = zeros(obj.num_vars,1);
       z0(obj.h_inds) = diff(t_init);
@@ -127,9 +148,15 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     end
   end
   
-  methods(Abstract)    
+  methods(Abstract)
+    % Add the initial, running, and final costs to the program
+    % this is abstract since the running cost involves numerical
+    % integration, which will vary depending on the particular direct
+    % method used
     obj = setupCostFunction(obj,initial_cost,running_cost,final_cost);
     
+    % Create a cell array of constraints and a cell array of indices that
+    % represent the dynamics constraints
     [constraints,dyn_inds] = createDynamicConstraints(obj);
   end
   
@@ -140,6 +167,15 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     % N corresponding state variables
     % and N-1 corresponding input variables
     % Overwrite to change
+    %
+    % @param plant
+    % @param N number of knot points
+    % @param options
+    %
+    % @return num_vars total number of decision variables
+    % @return h_inds (N-1) x 1 indices for timesteps h so that z(h_inds(i)) = h(i)
+    % @return x_inds N x n indices for state
+    % @return u_inds N x m indices for time
     function [num_vars,h_inds,x_inds,u_inds] = getVarInfo(plant,N,options)
       nH = N-1;
       nX = plant.getNumStates();
