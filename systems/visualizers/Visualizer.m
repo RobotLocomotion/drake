@@ -271,6 +271,7 @@ classdef Visualizer < DrakeSystem
       if (xtraj.getOutputFrame()~=obj.getInputFrame)
         xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
       end
+      ts = getSampleTime(xtraj); 
       
       if (nargin<3)
         [filename,pathname] = uiputfile('*.avi','Save playback to AVI');
@@ -292,7 +293,9 @@ classdef Visualizer < DrakeSystem
       
       width=[]; height=[];
       for i=1:length(tspan)
-        obj.drawWrapper(tspan(i),eval(xtraj,tspan(i)));
+        t = tspan(i);
+        if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
+        obj.drawWrapper(t,eval(xtraj,t));
         if (obj.draw_axes)
           f=gcf;
         else
@@ -345,6 +348,7 @@ classdef Visualizer < DrakeSystem
       if (xtraj.getOutputFrame()~=obj.getInputFrame)
         xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
       end
+      ts = getSampleTime(xtraj); 
       
       bCloseAtEnd = true;
       if (nargin<3 || isempty(swf))
@@ -373,7 +377,9 @@ classdef Visualizer < DrakeSystem
       if (breaks(end)-tspan(end)>eps) tspan=[tspan,breaks(end)]; end
             
       for i=1:length(tspan)
-        obj.drawWrapper(tspan(i),eval(xtraj,tspan(i)));
+        t = tspan(i);
+        if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
+        obj.drawWrapper(t,eval(xtraj,t));
         if (~obj.draw_axes) axis off; end
         swf.addFrame();
       end
