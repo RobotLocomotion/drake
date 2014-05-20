@@ -91,7 +91,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       xlabel(obj.model.x_axis_label);
       ylabel(obj.model.y_axis_label);
       
-      if obj.model.getNumContactPairs > 0
+      if isa(obj.model.terrain,'RigidBodyFlatTerrain')
         v=axis;
         line([v(1)-.1*(v(2)-v(1)),v(2)+.1*(v(2)-v(1))],[0 0],'Color','k');
       end
