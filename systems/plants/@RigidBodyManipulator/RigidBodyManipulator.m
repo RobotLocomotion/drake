@@ -42,15 +42,12 @@ classdef RigidBodyManipulator < Manipulator
       
       if (nargin<2), options = struct(); end
       if ~isfield(options,'terrain'), options.terrain = RigidBodyFlatTerrain(); end;
-      if ~isfield(options,'ignore_self_collisions')
-        options.ignore_self_collisions = false;
-      end
 
       obj = obj@Manipulator(0,0);
       obj.body = newBody(obj);
       obj.body.linkname = 'world';
       obj = setTerrain(obj,options.terrain);
-      obj.contact_options.ignore_self_collisions = options.ignore_self_collisions;
+      obj.contact_options = obj.parseContactOptions(options);
       
       if (nargin>0 && ~isempty(urdf_filename))
         obj = addRobotFromURDF(obj,urdf_filename,zeros(3,1),zeros(3,1),options);
@@ -62,6 +59,35 @@ classdef RigidBodyManipulator < Manipulator
     function obj = loadobj(obj)
       obj.mex_model_ptr = 0;
       obj = compile(obj);
+      % NOTEST
+    end
+    function contact_options = parseContactOptions(options)
+      % contact_options = parseContactOptions(options) returns a struct
+      % containing settings for contact/collision detection. If no value
+      % is given for a particular setting, a default value is used.
+      % 
+      % @param options - Structure that may have fields specifying 
+      %                  values for contact options.
+      %
+      % @retval contact_options - Struct with the following fields:
+      %     * ignore_self_collisions          @default false
+      %     * replace_cylinders_with_capsules @default true
+      %   If a corresponding field exists in `options`, its value will
+      %   be used.
+      contact_options = struct();
+      if isfield(options,'ignore_self_collisions')
+        typecheck(options.ignore_self_collisions,'logical');
+        contact_options.ignore_self_collisions = options.ignore_self_collisions;
+      else
+        contact_options.ignore_self_collisions = false;
+      end
+      if isfield(options,'replace_cylinders_with_capsules')
+        typecheck(options.replace_cylinders_with_capsules,'logical');
+        contact_options.replace_cylinders_with_capsules = ...
+          options.replace_cylinders_with_capsules;
+      else
+        contact_options.replace_cylinders_with_capsules = true;
+      end
       % NOTEST
     end
   end
@@ -172,8 +198,24 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function str = getLinkName(obj,body_ind)
+      % str = getLinkName(obj,body_ind) returns a string containing the
+      % link name the specified body if body_ind is a scalar. If body
+      % ind is a vector, it returns a cell array containing the names of
+      % the bodies specified by the elements of body_ind.
+      %
+      % @param obj - RigidBodyManipulator object
+      % @param body_ind - Body index or vector of body indices
+      %
+      % @retval str - String (cell array of strings) containing the
+      % requested linkname(s)
+      %
       % @ingroup Kinematic Tree
-      str = obj.body(body_ind).linkname;
+
+      if numel(body_ind) > 1
+        str = {obj.body(body_ind).linkname};
+      else
+        str = obj.body(body_ind).linkname;
+      end
     end
 
     function obj = setGravity(obj,grav)
@@ -563,6 +605,7 @@ classdef RigidBodyManipulator < Manipulator
         valuecheck(model.body(i).T_body_to_joint(end,end),1);
       end
 
+      model = adjustContactShapes(model);
       model = setupCollisionFiltering(model);      
             
       model.dirty = false;
@@ -1700,6 +1743,52 @@ classdef RigidBodyManipulator < Manipulator
           model = addSensor(model,RigidBodyInertialMeasurementUnit.parseURDFNode(model,robotnum,node,body_ind,options));
         otherwise
           error(['sensor element type ',type,' not supported (yet?)']);
+      end
+    end
+
+    function model = adjustContactShapes(model)
+      % model = adjustContactShapes(model) returns the model with
+      % adjusted contact geometries, according to the setings in
+      % model.contact_options. These are
+      %   * Replace cylinders with capsules
+      %
+      % @param model - RigidBodyManipulator object
+      %
+      % @retval model - RigidBodyManipulator object
+
+      if model.contact_options.replace_cylinders_with_capsules
+        message_id = 'Drake:RigidBodyManipulator:ReplacedCylinder';
+        body_changed = false(model.getNumBodies(),1);
+        for i = 1:model.getNumBodies()
+          [model.body(i),body_changed(i)] = replaceCylindersWithCapsules(model.body(i));
+        end
+        if any(body_changed)
+          changed_body_idx_and_names =  ...
+            [num2cell(find(body_changed))';getLinkName(model,body_changed)];
+          warning(message_id, ...
+            ['The bodies listed below each contained at least one ' ...
+            'RigidBodyCylinder as a contact shape:' ...
+            '\n\n' ...
+            '\tBody Idx\tBody Name\n' ...
+            repmat('\t%d:\t\t%s\n',1,sum(body_changed)) ...
+            '\n\n' ...
+            'These contact shapes were replaced by ' ...
+            'RigidBodyCapsule objects, as the cylinder contact geometry ' ...
+            'is less robust.\n\nTo prevent this replacement, ' ...
+            'construct your manipulator with: ' ...
+            '\n\n' ...
+            '    >> options.replace_cylinders_with_capsules = false;\n' ...
+            '    >> r = %s(...,options);' ...
+            '\n\n' ...
+            'To silence this warning, construct your manipulator ' ...
+            'with: ' ...
+            '\n\n' ...
+            '    >> w = warning(''OFF'',%s);\n' ...
+            '    >> r = %s(...);\n' ...
+            '    >> warning(w)' ...
+            '\n\n'],changed_body_idx_and_names{:},class(model), ...
+            message_id,class(model));
+        end
       end
     end
     
