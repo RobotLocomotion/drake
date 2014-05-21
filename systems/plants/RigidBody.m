@@ -88,6 +88,30 @@ classdef RigidBody < RigidBodyElement
         end
       end
     end
+
+    function [body,body_changed] = replaceCylindersWithCapsules(body)
+      % [body,body_changed] = replaceCylindersWithCapsules(body) returns
+      % the body with all RigidBodyCylinders in contact_shapes replaced
+      % by RigidBodyCapsules of the same dimensions.
+      %
+      % @param body - RigidBody object
+      %
+      % @retval body - RigidBody object
+      % @retval body_changed - Logical indicating whether any
+      %                        replacements were made.
+      %
+      cylinder_idx = cellfun(@(shape) isa(shape,'RigidBodyCylinder'), ...
+                             body.contact_shapes);
+      if ~any(cylinder_idx)
+        body_changed = false;
+      else
+        body.contact_shapes(cylinder_idx) = ...
+          cellfun(@(shape) shape.toCapsule(), ...
+                  body.contact_shapes(cylinder_idx), ...
+                  'UniformOutput',false);
+        body_changed = true;
+      end
+    end
      
     function body = replaceContactShapesWithCHull(body,scale_factor)
       pts = [];
