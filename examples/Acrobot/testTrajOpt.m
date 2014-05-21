@@ -1,4 +1,4 @@
-function [p,xtraj,utraj,z,F,info] = testTrajOpt(xtraj,utraj)
+function [p,xtraj,utraj,z,F,info,traj_opt] = testTrajOpt(xtraj,utraj)
 p = PlanarRigidBodyManipulator('Acrobot.urdf');
 % p = AcrobotPlant();
 
@@ -33,10 +33,10 @@ final_constraint.mgr = ConstraintManager(LinearConstraint(xf,xf,[eye(4)]));
 final_constraint.i = {N};
 
 constraints = {initial_constraint, final_constraint};
-% traj_opt = DircolTrajectoryOptimization(p,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,constraints,struct());
+traj_opt = DircolTrajectoryOptimization(p,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,constraints,struct());
 % traj_opt = MidpointTrajectoryOptimization(p,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,constraints,struct());
 % traj_opt = FEDirtranTrajectoryOptimization(p,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,constraints,struct());
-traj_opt = BEDirtranTrajectoryOptimization(p,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,constraints,struct());
+% traj_opt = BEDirtranTrajectoryOptimization(p,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,constraints,struct());
 % traj_opt = traj_opt.setCheckGrad(true);
 snprint('snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);

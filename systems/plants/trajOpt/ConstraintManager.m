@@ -1,6 +1,12 @@
 classdef ConstraintManager
-  %TRAJOPTCONSTRAINTGENERATOR Summary of this class goes here
-  %   Detailed explanation goes here
+  %CONSTRAINTMANAGER
+  % This is a container class for a set of general constraints (linear,
+  % nonlinear, bounding box constraints) as well as slack variables.
+  %
+  % The idea is that some intuitive constraints are best formatted as a
+  % related set of constraints (and, that there may be multiple ways to
+  % describe these, which the user may wish to switch back and forth
+  % between)
   
   properties (SetAccess = protected)
     lincon = {}
