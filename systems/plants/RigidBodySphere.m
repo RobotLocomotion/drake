@@ -40,7 +40,7 @@ classdef RigidBodySphere < RigidBodyGeometry
       pts = obj.T(1:end-1,:)*[cx;cy;cz;ones(1,8)];
     end
     
-    function pts = getPlanarPoints(obj,x_axis,y_axis,view_axis)
+    function [x,y,z,c] = getPatchData(obj,x_axis,y_axis,view_axis)
       Tview = [x_axis, y_axis, view_axis]';
       valuecheck(svd(Tview),[1;1;1]);  % assert that it's orthonormal
       
@@ -51,6 +51,10 @@ classdef RigidBodySphere < RigidBodyGeometry
         theta = 0:0.1:2*pi;
         pts = Tview'*obj.radius*[cos(theta); sin(theta); 0*theta] + repmat(obj.T(1:3,4),1,length(theta));
       end
+      x = pts(1,:)';
+      y = pts(2,:)';
+      z = pts(3,:)';
+      c = obj.c;
     end
     
     function shape = serializeToLCM(obj)

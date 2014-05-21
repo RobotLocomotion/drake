@@ -25,7 +25,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
       obj.filename = filename;
     end
     
-    function pts = getPoints(obj)
+    function [pts,ind,normals] = loadFile(obj)
       [path,name,ext] = fileparts(obj.filename);
       wrlfile=[];
       if strcmpi(ext,'.stl')
@@ -39,18 +39,22 @@ classdef RigidBodyMesh < RigidBodyGeometry
       
       txt=fileread(wrlfile);
         
-      ind=regexp(txt,'coordIndex[\s\n]*\[([^\]]*)\]','tokens'); ind = ind{1}{1};
-      ind=strread(ind,'%d','delimiter',' ,')+1;
-      
       pts=regexp(txt,'point[\s\n]*\[([^\]]*)\]','tokens'); pts = pts{1}{1};
       pts=strread(pts,'%f','delimiter',' ,');
       pts=reshape(pts,3,[]);
-      pts=obj.T(1:end-1,:)*[pts;ones(1,size(pts,2))];
+      pts=obj.T(1:3,:)*[pts;ones(1,size(pts,2))];
+
+      if (nargout>1)
+        ind=regexp(txt,'coordIndex[\s\n]*\[([^\]]*)\]','tokens'); ind = ind{1}{1};
+        ind=strread(ind,'%d','delimiter',' ,')+1;
+      end      
       
-      n=max(diff(find(ind==0)));
-      if (min(diff(find(ind==0)))~=n), error('need to handle this case'); end
-      ind = reshape(ind,n,[]); ind(end,:)=[];
-      pts = pts(:,ind);
+      if (nargout>2)
+        normals=regexp(txt,'vector[\s\n]*\[([^\]]*)\]','tokens'); normals = normals{1}{1};
+        normals=strread(normals,'%f','delimiter',' ,');
+        normals=obj.T(1:3,1:3)*reshape(normals,3,[]);
+      end
+      
     end
 
     function pts = getBoundingBoxPoints(obj)
@@ -66,6 +70,11 @@ classdef RigidBodyMesh < RigidBodyGeometry
       pts(~min_idx) = max_vals(~min_idx);
       pts = obj.T(1:end-1,:)*[pts;ones(1,8)];
     end
+    
+    function pts = getPoints(obj)
+      pts = loadFile(obj);
+    end
+
     
     function shape = serializeToLCM(obj)
       shape = drake.lcmt_viewer_geometry_data();

@@ -1,6 +1,7 @@
 #ifndef __DrakeCollisionModel_H__
 #define __DrakeCollisionModel_H__
 
+#include <stdint.h>
 #include <memory>
 #include <Eigen/Dense>
 #include <vector>

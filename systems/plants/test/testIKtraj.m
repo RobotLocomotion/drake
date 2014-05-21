@@ -114,6 +114,15 @@ q_seed_traj = PPTrajectory(zoh(t,repmat(q0,1,nT)+[zeros(nq,1) 1e-3*randn(nq,nT-1
 display('Check IK traj');
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},kc2{:},kc3,kc4,kc5,pc_knee,ikoptions);
 v = r.constructVisualizer();
+x_sol = xtraj.eval(t);
+q_sol = x_sol(1:nq,:);
+[robot_lb,robot_ub] = r.getJointLimits();
+if(any(any(q_sol>bsxfun(@times,robot_ub,ones(1,nT)))) || any(any(q_sol<bsxfun(@times,robot_lb,ones(1,nT)))))
+  error('posture solution is not within the joint limits');
+end
+if(any(any(isinf(x_sol))) || any(any(isnan(q_sol))))
+  error('solution cannot be nan');
+end
 v.playback(xtraj,struct('slider',true));
 display('Check IK traj with quasi static constraint');
 xtraj = test_IKtraj_userfun(r,t,q_seed_traj,q_nom_traj,kc1{:},qsc,kc2{:},kc3,kc4,kc5,pc_knee,ikoptions);
