@@ -30,6 +30,8 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     h_inds  % (N-1) x 1 indices for timesteps h so that z(h_inds(i)) = h(i)
     x_inds  % N x n indices for state
     u_inds  % N x m indices for time
+    dynamic_constraints
+    constraints
   end
   
   methods
@@ -97,7 +99,8 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       
       % create constraints for dynamics and add them
       [dynamic_constraints,dyn_inds] = obj.createDynamicConstraints();
-      
+      obj.dynamic_constraints.nlcon = dynamic_constraints;
+      obj.dynamic_constraints.var_inds = dyn_inds;
       for i=1:length(dynamic_constraints),
         obj = obj.addNonlinearConstraint(dynamic_constraints{i}, dyn_inds{i});
       end
@@ -117,23 +120,28 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
             cstr_inds = [cstr_inds;x_inds(:,ind_k)]; %#ok<AGROW>
           end
           
+          constraints{i}.var_inds{j} = cstr_inds;
+          
           lincon = mgr.getLinearConstraints();
+          constraints{i}.lincon = lincon;          
           for k=1:length(lincon),
             obj = obj.addLinearConstraint(lincon{k},cstr_inds);
           end
           
           nlncon = mgr.getNonlinearConstraints();
+          constraints{i}.nlncon = nlncon;
           for k=1:length(nlncon),
             obj = obj.addNonlinearConstraint(nlncon{k},cstr_inds);
           end
           
           bcon = mgr.getBoundingBoxConstraints();
+          constraints{i}.bcon = bcon;
           for k=1:length(bcon),
             obj = obj.addBoundingBoxConstraint(bcon{k},cstr_inds);
           end
         end
       end
-      
+      obj.constraints = constraints;
       % setup the cost function
       obj = obj.setupCostFunction(initial_cost,running_cost,final_cost);
     end
