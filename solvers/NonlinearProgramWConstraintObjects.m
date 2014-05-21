@@ -9,7 +9,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     Aeq_name % A cell array of strings. Aeq_name{i} is the name of i'th linear equality constraint
   end
   
-  properties(Access = protected)
+  properties(SetAccess = protected)
     nlcon % A cell array of NonlinearConstraint
     lcon % A cell array of LinearConstraint
     bbcon % A cell array of BoundingBoxConstraint

@@ -38,7 +38,7 @@ classdef Constraint
     
     function varargout = eval(obj,varargin)
       % evaluate the constraint. Can be overloaded
-      if(nargout == 1)
+      if(nargout <= 1)
         c = feval(obj.eval_handle,varargin{:});
         varargout{1} = c;
       elseif(nargout == 2)
