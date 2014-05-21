@@ -57,6 +57,14 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     % 
     
     function obj = TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,constraints,options)
+      if nargin < 8
+        constraints = {};
+      end
+      
+      if nargin < 9
+        options = struct();
+      end
+      
       N = length(t_init);
       
       if ~isfield(options,'time_option')
@@ -76,9 +84,13 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       
       % Construct total time linear constraint
       switch options.time_option
-        case 1
+        case 1 % all timesteps are constant
           A_time = [ones(1,N-1);[eye(N-2) zeros(N-2,1)] - [zeros(N-2,1) eye(N-2)]];
           time_constraint = LinearConstraint([T_span(1);zeros(N-2,1)],[T_span(2);zeros(N-2,1)],A_time);
+          obj = obj.addLinearConstraint(time_constraint,h_inds);
+        case 2 % all timesteps independent
+          A_time = ones(1,N-1);
+          time_constraint = LinearConstraint(T_span(1),T_span(2),A_time);
           obj = obj.addLinearConstraint(time_constraint,h_inds);
       end
       
@@ -89,6 +101,10 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       for i=1:length(dynamic_constraints),
         obj = obj.addNonlinearConstraint(dynamic_constraints{i}, dyn_inds{i});
       end
+      
+      % add control inputs as bounding box constraints
+      control_limit = BoundingBoxConstraint(repmat(plant.umin,N,1),repmat(plant.umax,N,1));
+      obj = obj.addBoundingBoxConstraint(control_limit,obj.u_inds(:));
       
       % loop over additional constraints
       for i=1:length(constraints),
@@ -121,8 +137,7 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       % setup the cost function
       obj = obj.setupCostFunction(initial_cost,running_cost,final_cost);
     end
-
-    
+        
     % Solve the nonlinear program and return resulting trajectory
     function [xtraj,utraj,z,F,info] = solveTraj(obj)
       [z,F,info] = obj.solve(obj.z0);
@@ -182,7 +197,7 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       nU = plant.getNumInputs();
       
       num_vars = nH + N*(nX+nU);
-      h_inds = 1:nH;
+      h_inds = (1:nH)';
       x_inds = reshape(nH + (1:nX*N),nX,N);
       u_inds = reshape(nH + nX*N + (1:nU*N),nU,N);
     end
