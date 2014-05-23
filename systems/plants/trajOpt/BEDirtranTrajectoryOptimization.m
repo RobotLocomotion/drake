@@ -6,8 +6,8 @@ classdef BEDirtranTrajectoryOptimization < TrajectoryOptimization
   end
   
   methods
-    function obj = BEDirtranTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,varargin)
-      obj = obj@TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,varargin{:});
+    function obj = BEDirtranTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,varargin)
+      obj = obj@TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,varargin{:});
     end
     
     function [constraints,dyn_inds] = createDynamicConstraints(obj)

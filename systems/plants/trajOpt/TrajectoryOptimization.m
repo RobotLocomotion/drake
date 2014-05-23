@@ -22,10 +22,9 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
   %
   % See Hargraves87 and Enright91
   
-  properties (Access = public)
+  properties (SetAccess = protected)
     N       % number of timesteps
     options % options, yup
-    z0      % initial optimization paramters, extracted from trajectories
     plant   % the plant
     h_inds  % (N-1) x 1 indices for timesteps h so that z(h_inds(i)) = h(i)
     x_inds  % N x n indices for state
@@ -58,7 +57,8 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     %   and 3 and 4 together.
     % 
     
-    function obj = TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,constraints,options)
+    function obj = TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,constraints,options)
+      %#ok<*PROP>
       if nargin < 8
         constraints = {};
       end
@@ -67,13 +67,11 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
         options = struct();
       end
       
-      N = length(t_init);
-      
       if ~isfield(options,'time_option')
         options.time_option = 1;
       end
       
-      [num_vars,h_inds,x_inds,u_inds] = TrajectoryOptimization.getVarInfo(plant,N,options); %#ok<*PROP>
+      [num_vars,h_inds,x_inds,u_inds] = TrajectoryOptimization.getVarInfo(plant,N,options); 
       
       obj = obj@NonlinearProgramWConstraintObjects(num_vars);
       obj.N = N;
@@ -82,7 +80,7 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       obj.h_inds = h_inds;
       obj.x_inds = x_inds;
       obj.u_inds = u_inds;
-      obj.z0 = obj.getInitialVars(t_init,traj_init);
+      
       
       % Construct total time linear constraint
       switch options.time_option
@@ -147,8 +145,9 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     end
         
     % Solve the nonlinear program and return resulting trajectory
-    function [xtraj,utraj,z,F,info] = solveTraj(obj)
-      [z,F,info] = obj.solve(obj.z0);
+    function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
+      z0 = obj.getInitialVars(t_init,traj_init);
+      [z,F,info] = obj.solve(z0);
       t = [0; cumsum(z(obj.h_inds))];
       xtraj = PPTrajectory(foh(t,reshape(z(obj.x_inds),[],obj.N)));
       utraj = PPTrajectory(foh(t,reshape(z(obj.u_inds),[],obj.N)));
@@ -161,6 +160,9 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     % constructs the nominal z0. Overwrite to implement in a different
     % manner
     function z0 = getInitialVars(obj,t_init,traj_init)
+      if length(t_init) ~= obj.N
+        error('The initial sample times must have the same length as property N')
+      end
       z0 = zeros(obj.num_vars,1);
       z0(obj.h_inds) = diff(t_init);
       

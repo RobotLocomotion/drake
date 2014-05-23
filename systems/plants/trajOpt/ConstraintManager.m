@@ -8,7 +8,7 @@ classdef ConstraintManager
   % describe these, which the user may wish to switch back and forth
   % between)
   
-  properties (SetAccess = protected)
+  properties (Access = protected)
     lincon = {}
     nlcon = {}
     bcon = {}
@@ -36,7 +36,7 @@ classdef ConstraintManager
         obj.bcon = bcon;
       end
       if nargin > 3
-        obj.n = n;
+        obj.n_slack = n;
       end
     end
     function lincon = getLinearConstraints(obj)
@@ -51,7 +51,9 @@ classdef ConstraintManager
       bcon = obj.bcon;
     end
     
-    n = getNumSlackVariables(obj)
+    function n = getNumSlackVariables(obj)
+      n = obj.n_slack;
+    end
   end
   
 end

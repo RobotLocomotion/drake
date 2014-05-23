@@ -15,7 +15,7 @@ classdef Constraint
     grad_method
   end
   
-  properties(SetAccess = protected,GetAccess = protected)
+  properties(SetAccess = protected,GetAccess = public)
     eval_handle   % Function handle to evaluate constraint.
   end
   
@@ -59,10 +59,6 @@ classdef Constraint
     function obj = setName(obj,name)
       % set the name of the constraint
       obj.name = name;
-    end
-    
-    function handle = getHandle(obj)
-      handle = obj.eval_handle;
     end
   end
   
