@@ -7,8 +7,8 @@ classdef MidpointTrajectoryOptimization < TrajectoryOptimization
   end
   
   methods
-    function obj = MidpointTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,varargin)
-      obj = obj@TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,t_init,traj_init,T_span,varargin{:});
+    function obj = MidpointTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,varargin)
+      obj = obj@TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,varargin{:});
     end
     
     function [constraints,dyn_inds] = createDynamicConstraints(obj)
@@ -45,7 +45,7 @@ classdef MidpointTrajectoryOptimization < TrajectoryOptimization
         obj = obj.addCost(initial_cost,obj.x_inds(:,1));
       end
       
-      running_handle = running_cost.getHandle();
+      running_handle = running_cost.eval_handle;
       running_handle_i = @(z) running_fun(running_handle,z(1),z(2:1+nX), z(2+nX:1+2*nX),z(2+2*nX:1+2*nX+nU),z(2+2*nX+nU:1+2*nX+2*nU)); 
       running_cost_i = NonlinearConstraint(running_cost.lb,running_cost.ub,1+2*nX+2*nU,running_handle_i);
       
