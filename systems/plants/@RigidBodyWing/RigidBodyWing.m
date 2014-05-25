@@ -89,7 +89,7 @@ classdef RigidBodyWing < RigidBodyForceElement
           % yuck.
           [~,filename,fileext] = fileparts(profile);
           copyfile(which(profile),fullfile(tempdir,[filename,fileext]));
-          profile = fullfile(tempdir,[filename,fileext])
+          profile = fullfile(tempdir,[filename,fileext]);
 
           avlprofile = strcat('AFILE', '\n', profile);
           xfoilprofile = strcat('LOAD', '\n', profile);
@@ -159,10 +159,10 @@ classdef RigidBodyWing < RigidBodyForceElement
             fclose(avlcommandfile);
             fclose(runid);
             if exist(fullfile(tempdir,'avlresults.txt'), 'file');
-                disp('clearing old AVL results file');
+%                disp('clearing old AVL results file');
                 delete(fullfile(tempdir,'avlresults.txt'));
             end
-            disp('AVL Config file written--running AVL...');
+            disp('Running AVL...');
             % runs AVL.  This generates results.txt, which CL, Cm, and part of CD is
             % extracted from.
             try
@@ -183,7 +183,7 @@ classdef RigidBodyWing < RigidBodyForceElement
               flatplate()
               return
             end
-            disp('Processing AVL output...')
+%            disp('Processing AVL output...')
             avlresult = fileread(fullfile(tempdir,'avlresults.txt'));
             AoAindices = strfind(avlresult, 'Alpha =');
             AoAindices = AoAindices + 8;
@@ -223,10 +223,10 @@ classdef RigidBodyWing < RigidBodyForceElement
             fprintf(xfoilid, xfoilfile);
             fclose(xfoilid);
             %runs Xfoil.
-            disp('Xfoil Commands written. Running XFOIL...')
+            disp('Running XFOIL...')
             try
               if exist(fullfile(tempdir,'xfoilPolar.txt'), 'file');
-                disp('Clearing old Xfoil results');
+%                disp('Clearing old Xfoil results');
                 delete(fullfile(tempdir,'xfoilPolar.txt'));
               end
               
@@ -234,7 +234,7 @@ classdef RigidBodyWing < RigidBodyForceElement
               commandstring = sprintf('%s < %s > %s', xfoilpath, fullfile(tempdir,'xfoilcommands.txt'), fullfile(tempdir,'xfoilCMDoutput.txt'));
               result = systemWCMakeEnv(commandstring);
               
-              disp('Processing Xfoil output')
+%              disp('Processing Xfoil output')
               xfoilresult = fopen(fullfile(tempdir,'xfoilPolar.txt'));
               xfoillines = textscan(xfoilresult, '%[^\r\n]');
               fclose(xfoilresult);
