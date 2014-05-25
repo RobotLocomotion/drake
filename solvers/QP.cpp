@@ -432,6 +432,8 @@ GRBmodel* gurobiActiveSetQP(GRBenv *env, vector< MatrixXd* > QblkDiag, VectorXd&
   for (vector< MatrixXd* >::iterator iterQ=QblkDiag.begin(); iterQ!=QblkDiag.end(); iterQ++) {
     MatrixXd* Q=*iterQ;
     
+	*Q = .5* (*Q);
+    
     if (Q->rows() == 1 || Q->cols() == 1) {  // it's a vector
       d = Q->rows()*Q->cols();
       for (i=0; i<d; i++) {
