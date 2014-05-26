@@ -41,7 +41,7 @@ options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u,[1 2]);  % for debuggin
 tic
 %options.grad_test = true;
 [utraj,xtraj,info] = trajectoryOptimization(p,@(t,x,u)cost(t,x,u,field),@finalcost,x0,utraj0,con,options);
-if (info~=1) error('failed to find a trajectory'); end
+if (info~=1) error(['Airplane2D:SNOPT:INFO',num2str(info)],'failed to find a trajectory'); end
 toc
 
 % upsample
@@ -49,7 +49,7 @@ ts = linspace(utraj.tspan(1),utraj.tspan(2),41);
 options.xtape0='simulate';
 utraj0 = PPTrajectory(foh(ts,utraj.eval(ts))); utraj0 = setOutputFrame(utraj0,utraj.getOutputFrame);
 [utraj,xtraj,info] = trajectoryOptimization(p,@(t,x,u)cost(t,x,u,field),@finalcost,x0,utraj0,con,options);
-if (info~=1) error('failed to improve the trajectory'); end
+if (info~=1) error(['Airplane2D:SNOPT:INFO',num2str(info)],'failed to improve the trajectory'); end
 
 hold off;
 
