@@ -627,8 +627,16 @@ classdef RigidBodyManipulator < Manipulator
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
-      phi = model.collisionDetect(zeros(model.getNumPositions,1));
-      model.num_contact_pairs = length(phi);
+      if (model.mex_model_ptr~=0 && checkDependency('bullet'))
+        phi = model.collisionDetect(zeros(model.getNumPositions,1));
+        model.num_contact_pairs = length(phi);
+      else
+        if ~isempty([model.body.contact_shapes])
+          warning('Drake:RigidBodyManipulator:ContactGeometryButNoBullet','Your model has contact geometry, but you do not have bullet support.  Contacts will simply be ignored.');
+        end
+        model.num_contact_pairs = 0;
+      end
+      
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end

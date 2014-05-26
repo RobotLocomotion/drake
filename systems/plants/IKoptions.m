@@ -58,7 +58,7 @@ classdef IKoptions
       obj.Q = eye(obj.nq);
       obj.Qa = 0.1*eye(obj.nq);
       obj.Qv = zeros(obj.nq);
-      obj.use_mex = true;
+      obj.use_mex = logical(exist('inverseKinmex','file'));
       obj.debug_mode = true;
       obj.sequentialSeedFlag = false;
       obj.SNOPT_MajorFeasibilityTolerance = 1e-6;
