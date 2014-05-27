@@ -1,6 +1,4 @@
-function ret = dAdH_times_X(H, dHdq, X, dXdq)
-nx = size(X, 2);
-
+function ret = dAdH_times_X(H, X, dHdq, dXdq)
 R = H(1:3, 1:3);
 p = H(1:3, 4);
 pHat = vectorToSkewSymmetric(p);
@@ -29,10 +27,8 @@ dXvdq = dXdq(Xv_selector(:), :);
 Xomega = X(1:3, :);
 Xv = X(4:6, :);
 
-dRXomegadq = kron(eye(nx), R) * dXomegadq + kron(Xomega', eye(3)) * dRdq;
-dRXvdq = kron(eye(nx), R) * dXvdq + kron(Xv', eye(3)) * dRdq;
-dpHatRXomegadq = kron(eye(nx), pHat) * dRXomegadq + kron((R * Xomega)', eye(3)) * dpHatdq;
-
-% ret = [dRXomegadq; dpHatRXomegadq + dRXvdq]; % TODO: only works for nx = 1, need to do row swap thing
+dRXomegadq = matGradMultMat(R, Xomega, dRdq, dXomegadq);
+dRXvdq = matGradMultMat(R, Xv, dRdq, dXvdq);
+dpHatRXomegadq = matGradMultMat(pHat, R * Xomega, dpHatdq, dRXomegadq);
 ret = interleaveRows([3 3], {dRXomegadq, dpHatRXomegadq + dRXvdq});
 end
