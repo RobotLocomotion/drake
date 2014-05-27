@@ -1,4 +1,4 @@
-function testDHdq()
+function testdHdq()
 testFallingBrick('rpy');
 testFallingBrick('quat');
 end
