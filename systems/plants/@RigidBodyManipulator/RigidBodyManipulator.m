@@ -622,6 +622,7 @@ classdef RigidBodyManipulator < Manipulator
       model = adjustContactShapes(model);
       model = setupCollisionFiltering(model);      
 
+      model.cached_terrain_contact_point_struct = [];
       model.cached_terrain_contact_point_struct = ...
         model.getTerrainContactPoints();
             
