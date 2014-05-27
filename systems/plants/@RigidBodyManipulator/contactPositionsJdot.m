@@ -22,8 +22,6 @@ if ~isstruct(kinsol)
   kinsol = doKinematics(obj,kinsol);
 end
 
-if nargin > 2 
-
 [~,~,xA,xB,idxA,idxB] = obj.collisionDetect(kinsol,varargin{:});
 
 [xA_in_world,xB_in_world,J,Jdot] = ...
