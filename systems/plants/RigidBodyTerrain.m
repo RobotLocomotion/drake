@@ -3,7 +3,6 @@ classdef RigidBodyTerrain < RigidBodyElement
   
   methods (Abstract)
     [z,normal] = getHeight(obj,xy)
-    writeWRL(obj,fptr)
   end
   methods 
     function obj = RigidBodyTerrain()
@@ -25,6 +24,9 @@ classdef RigidBodyTerrain < RigidBodyElement
 
     function geom = constructRigidBodyGeometry(obj)
       geom = [];
+    end
+    
+    function writeWRL(obj,fptr)
     end
   end
 
