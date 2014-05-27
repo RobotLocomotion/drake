@@ -52,6 +52,16 @@ force_collisionDetectTerrain = false;
 
 if (obj.mex_model_ptr ~= 0 && kinsol.mex)
   [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr,allow_multiple_contacts,active_collision_options);
+  if isempty(idxA)
+    idxA = [];
+    idxB = [];
+    xA = [];
+    xB = [];
+    distance = [];
+  else
+    idxA = double(idxA);
+    idxB = double(idxB);
+  end
   phi = distance';
 else
   force_collisionDetectTerrain = true;
