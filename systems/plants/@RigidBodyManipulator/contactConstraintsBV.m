@@ -14,13 +14,13 @@ function [phi,B,JB,mu,normal] = contactConstraintsBV(obj,varargin)
 % @param See contactConstraints for argument list description
 
 if nargout > 2,
-  [phi,normal,d,~,~,~,~,mu,n,D] = contactConstraints(obj,varargin);
+  [phi,normal,d,~,~,~,~,mu,n,D] = contactConstraints(obj,varargin{:});
 else
-  [phi,normal,d] = contactConstraints(obj,varargin);
+  [phi,normal,d] = contactConstraints(obj,varargin{:});
 end
 
 if nargout > 1,
-  nk = length(D);
+  nk = length(d);
   nC = length(phi);
   nq = obj.getNumPositions;
   

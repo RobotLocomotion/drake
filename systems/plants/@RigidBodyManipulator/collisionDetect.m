@@ -41,32 +41,39 @@ if ~isstruct(kinsol)
   kinsol = doKinematics(obj,kinsol);
 end
 
-if (kinsol.mex ~= true) 
-  doKinematics(obj,double(kinsol.q));
-  warning('Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex', ...
-    'Calling doKinematics using mex before proceeding');
-end
-
 if nargin < 3, allow_multiple_contacts = false; end
 if nargin < 4, active_collision_options = struct(); end
 if isfield(active_collision_options,'body_idx')
   active_collision_options.body_idx = int32(active_collision_options.body_idx);
 end
-[xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr,allow_multiple_contacts,active_collision_options);
-%m = numel(idxA);
 
-%xA_in_world = zeros(size(xA));
-%xB_in_world = zeros(size(xB));
-%for i = 1:obj.getNumBodies()
-  %xA_in_world(:,idxA==i) = forwardKin(obj,kinsol,i,xA(:,idxA==i),0);
-  %xB_in_world(:,idxB==i) = forwardKin(obj,kinsol,i,xB(:,idxB==i),0);
-%end
+force_collisionDetectTerrain = false;
 
-%phi = dot(normal, xA_in_world-xB_in_world);
-phi = distance';
+if (obj.mex_model_ptr ~= 0 && kinsol.mex)
+  [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr,allow_multiple_contacts,active_collision_options);
+  phi = distance';
+else
+  force_collisionDetectTerrain = true;
+  if ~kinsol.mex
+    warning('Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex', ...
+      ['kinsol was generated with use_mex = false. Only checking collisions ' ...
+      'between terrain contact points and terrain']);
+  else % obj.mex_model_ptr == 0
+    warning('Drake:RigidBodyManipulator:collisionDetect:noMexPtr', ...
+      ['This model has no mex pointer. Only checking collisions between ' ...
+      'terrain contact points and terrain']);
+  end
+  phi = [];
+  normal = [];
+  xA = [];
+  idxA = [];
+  xB = [];
+  idxB = [];
+end
 
-if ~isempty(obj.terrain) && ~isa(obj.terrain,'RigidBodyFlatTerrain')
-  % For each point on the manipulator that can collide with non-flat terrain,
+if ~isempty(obj.terrain) && ...
+    (force_collisionDetectTerrain || ~isa(obj.terrain,'RigidBodyFlatTerrain'))
+  % For each point on the manipulator that can collide with terrain,
   % find the closest point on the terrain geometry
   terrain_contact_point_struct = getTerrainContactPoints(obj);
 
