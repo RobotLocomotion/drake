@@ -91,6 +91,8 @@ classdef RigidBodySphere < RigidBodyGeometry
       %               can collide with the world.
       if obj.radius == 0
         pts = getPoints(obj);
+      else
+        pts = [];
       end
     end
   
