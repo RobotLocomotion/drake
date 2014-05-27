@@ -12,6 +12,13 @@ m_rpy = TimeSteppingRigidBodyManipulator(urdf,.01,options);
 options.floating = 'YPR';
 options.namesuffix = 'ypr_rel'; % floating base uses YPR (with relative/intrinsic angles)
 m_ypr_rel = TimeSteppingRigidBodyManipulator(urdf,.01,options);
+collision_options.terrain_only = true;
+if regexp(urdf,'atlas')
+  m_rpy = m_rpy.removeCollisionGroupsExcept({'toe','heel'});
+  m_rpy = compile(m_rpy);
+  m_ypr_rel = m_ypr_rel.removeCollisionGroupsExcept({'toe','heel'});
+  m_ypr_rel = compile(m_ypr_rel);
+end
 warning(w);
 
 % the kinematics and dynamics should actually match, when the order of the indices is
@@ -30,35 +37,49 @@ for i=1:100
   q = .1*randn(nq,1); qd = randn(nq,1); u = randn(getNumInputs(m_rpy),1);
 
   kinsol = doKinematics(m_rpy,q,true,false,qd);
-  [pt,J,Jdot] = contactPositionsJdot(m_rpy,kinsol);
-  [~,~,dJ] = contactPositions(m_rpy,kinsol);
-  phi = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol)];
+  [xA_in_world,xB_in_world,idxA,idxB,J,Jdot] = contactPositionsJdot(m_rpy,kinsol,false,collision_options);
+  [~,~,~,~,~,dJ] = contactPositions(m_rpy,kinsol,false,collision_options);
+  phi = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol,false,collision_options)];
   
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,false,qd(ind));
-  [pt2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2);
-  [~,~,dJ2] = contactPositions(m_ypr_rel,kinsol2);
+  [xA_in_world2,xB_in_world2,idxA2,idxB2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2,false,collision_options);
+  [~,~,~,~,~,dJ2] = contactPositions(m_ypr_rel,kinsol2,false,collision_options);
   
   dJind = reshape(1:nq*nq,[nq,nq]);  
   dJind = reshape(dJind(ind,ind),nq*nq,1); 
   
-  valuecheck(pt,pt2);
+  % Commenting these out, since the ypr_rel version includes bodies for the
+  % floating-base joints
+  %valuecheck(idxA,idxA2);
+  %valuecheck(idxB,idxB2);
+  
+  valuecheck(xA_in_world,xA_in_world2);
+  valuecheck(xB_in_world,xB_in_world2);
   valuecheck(J,J2(:,ind));
   valuecheck(Jdot,Jdot2(:,ind));
   valuecheck(full(dJ),full(dJ2(:,dJind))); 
   
   kinsol = doKinematics(m_rpy,q,true,true,qd);
-  [pt2,J2,Jdot2] = contactPositionsJdot(m_rpy,kinsol);
-  phi2 = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol)];
+  [xA_in_world2,xB_in_world2,idxA2,idxB2,J2,Jdot2] = contactPositionsJdot(m_rpy,kinsol,false,collision_options);
+  phi2 = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol,false,collision_options)];
 
-  valuecheck(pt,pt2);
+  valuecheck(idxA,idxA2);
+  valuecheck(idxB,idxB2);
+  valuecheck(xA_in_world,xA_in_world2);
+  valuecheck(xB_in_world,xB_in_world2);
   valuecheck(J,J2);
   valuecheck(Jdot,Jdot2);
   valuecheck(phi,phi2);
   
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,true,qd(ind));
-  [pt2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2);
+  [xA_in_world2,xB_in_world2,idxA2,idxB2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2,false,collision_options);
 
-  valuecheck(pt,pt2);
+  % Commenting these out, since the ypr_rel version includes bodies for the
+  % floating-base joints
+  %valuecheck(idxA,idxA2);
+  %valuecheck(idxB,idxB2);
+  valuecheck(xA_in_world,xA_in_world2);
+  valuecheck(xB_in_world,xB_in_world2);
   valuecheck(J,J2(:,ind));
   valuecheck(Jdot,Jdot2(:,ind));
   
