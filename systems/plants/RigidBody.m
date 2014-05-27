@@ -60,14 +60,21 @@ classdef RigidBody < RigidBodyElement
       error('forwardKin(body,...) has been replaced by forwardKin(model,body_num,...), because it has a mex version.  please update your kinematics calls');
     end
 
-    function pts = getTerrainContactPoints(body)
+    function pts = getTerrainContactPoints(body,collision_group)
       % pts = getTerrainContactPoints(body)
       % @param body - A RigidBody object
       % @retval pts - A 3xm array of points on body (in body frame) that can collide with
       %               non-flat terrain
-      pts = cell2mat(cellfun(@(shape) shape.getTerrainContactPoints(), ...
-                             body.contact_shapes, ...
-                             'UniformOutput',false));
+      if nargin < 2
+        pts = cell2mat(cellfun(@(shape) shape.getTerrainContactPoints(), ...
+                               body.contact_shapes, ...
+                               'UniformOutput',false));
+      else
+        typecheck(collision_group,{'char','cell'});
+        pts = cell2mat(cellfun(@(shape) shape.getTerrainContactPoints(), ...
+          body.getContactShapes(collision_group), ...
+          'UniformOutput',false));
+      end
     end
     
     function [pts,inds] = getContactPoints(body,collision_group)
@@ -80,13 +87,14 @@ classdef RigidBody < RigidBodyElement
       if (nargin<2) 
         shapes = body.contact_shapes;
       else
-        if isa(collision_group,'char')
+        if ~isnumeric(collision_group)
+          typecheck(collision_group,{'char','cell'});
           collision_group = find(strcmpi(collision_group,body.collision_group_name));
         end
-        if (nargin < 2)
-          shapes = body.contact_shapes{body.contact_shape_group{collision_group}};
+        if (nargin < 3)
+          shapes = body.contact_shapes([body.contact_shape_group{collision_group}]);
         else
-          shapes = body.contact_shapes{body.contact_shape_group{collision_group}(collision_ind)};
+          shapes = body.contact_shapes(body.contact_shape_group{collision_group}(collision_ind));
         end
       end
     end
