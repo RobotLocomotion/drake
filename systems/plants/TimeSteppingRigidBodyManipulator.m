@@ -943,9 +943,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       terrain_contact_point_struct = getTerrainContactPoints(obj.manip,varargin{:});
     end
 
-    function varargout = terrainContactPointsInWorld(obj,varargin)
+    function varargout = terrainContactPositions(obj,varargin)
       varargout = cell(1,nargout);
-      [varargout{:}] = terrainContactPointsInWorld(obj.manip,varargin{:});
+      [varargout{:}] = terrainContactPositions(obj.manip,varargin{:});
     end
     
   end
