@@ -28,7 +28,7 @@ if nargin < 4 || isempty(f_ext)
   f_ext = sparse(6, length(manipulator.body));
 end
 
-kinsol = doKinematics(manipulator, q, true, false, v);
+kinsol = doKinematics(manipulator, q, false, false, v, true);
 [inertias_world, composite_inertias] = computeInertiasInWorld(manipulator, kinsol);
 H = computeMassMatrix(manipulator, kinsol, composite_inertias);
 C = computeBiasTerm(manipulator, kinsol, inertias_world, f_ext, a_grav);

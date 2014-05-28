@@ -11,7 +11,7 @@ q = getRandomConfiguration(m);
 kinsol = doKinematics(m, q, false, false);
 
 H = kinsol.T{2};
-S = kinsol.J{2};
+S = motionSubspace(m.body(2), q);
 qdotToV = kinsol.qdotToV; % special case where qdotToV for joint is qdotToV for whole robot
 dHdqVec = dHdq(H, S, qdotToV);
 X = randn(6, 4);
