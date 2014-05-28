@@ -1,10 +1,9 @@
 function bullet_raycast_test
 % tests raycasting in bullet
 
-warn_state = warning('query', 'Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off', 'Drake:RigidBodyManipulator:UnsupportedContactPoints');
+checkDependency('bullet');
 
-use_visualizer = 0;
+use_visualizer = 1;
 
 if (use_visualizer == 1)
     checkDependency('lcmgl');
@@ -25,13 +24,13 @@ world = rb.getBody(1);
 
 % add obstacles to the world
 
-obstacle1 = RigidBodyCylinder(1, 10);
+obstacle1 = RigidBodyCapsule(1, 10);
 obstacle1.T(1:3, 4) = [ 10; 0; 0 ];
 
 world.contact_shapes{end+1} = obstacle1;
 world.visual_shapes{end+1} = obstacle1;
 
-obstacle2 = RigidBodyCylinder(1, 10);
+obstacle2 = RigidBodyCapsule(1, 10);
 obstacle2.T(1:3, 4) = [ -10; 0; 0 ];
 
 world.contact_shapes{end+1} = obstacle2;
@@ -39,7 +38,15 @@ world.visual_shapes{end+1} = obstacle2;
 
 % put the new world back into the rb
 rb = rb.setBody(1, world);
+
+% we're about to throw a warning, so supress it but immediately restore it
+warn_state = warning('query', 'Drake:RigidBodyManipulator:UnsupportedContactPoints');
+warning('off', 'Drake:RigidBodyManipulator:UnsupportedContactPoints');
+
 rb = compile(rb);
+
+% reset warning state
+warning(warn_state.state, 'Drake:RigidBodyManipulator:UnsupportedContactPoints');
 
 % test raycasting
 
@@ -123,5 +130,4 @@ end
 
 valuecheck(hit_num, 41); % we should get 41 hits on the poles
 
-% reset warning state
-warning(warn_state.state, 'Drake:RigidBodyManipulator:UnsupportedContactPoints');
+
