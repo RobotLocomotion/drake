@@ -1,27 +1,27 @@
-function [x_in_world, J, dJ_or_Jdot] = terrainContactPointsInWorld(obj, ...
+function [x_in_world, J, dJ_or_Jdot] = terrainContactPositions(obj, ...
     kinsol,varargin)
-  % x_in_world = getTerrainContactPointsInWorld(obj,kinsol) returns the
+  % x_in_world = terrainContactPositions(obj,kinsol) returns the
   %   world-frame position of all terrain contact points on the
   %   manipulator.
   %
-  % [x_in_world,J] = getTerrainContactPointsInWorld(obj,kinsol) also
+  % [x_in_world,J] = terrainContactPositions(obj,kinsol) also
   %   returns the derivative of those positions w.r.t the manipulator's
   %   position variables.
   %
-  % [x_in_world,J,dJ] = getTerrainContactPointsInWorld(obj,kinsol) also
+  % [x_in_world,J,dJ] = terrainContactPositions(obj,kinsol) also
   %   returns the second derivative of those positions w.r.t the
   %   manipulator's position variables.
   %   
-  % [...] = getTerrainContactPointsInWorld(obj,kinsol,body_idx)
+  % [...] = terrainContactPositions(obj,kinsol,body_idx)
   %   considers only the bodies indicated by body_idx.
   %
-  % [...] = getTerrainContactPointsInWorld(obj,kinsol, ...
+  % [...] = terrainContactPositions(obj,kinsol, ...
   %   terrain_contact_point_struct) considers the body-frame points
   %   specified by terrain_contact_point_struct.  See
   %   RigidBodyManipulator/getTerrainContactPoints for a description of
   %   terrain_contact_point_struct.
   %
-  % [...] = getTerrainContactPointsInWorld(obj,kinsol,...,compute_Jdot_instead_of_dJ)
+  % [...] = terrainContactPositions(obj,kinsol,...,compute_Jdot_instead_of_dJ)
   %   returns the time derivative of J rather than dJ when second
   %   derivatives are requested.
   %
