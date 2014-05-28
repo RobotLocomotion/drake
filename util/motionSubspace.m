@@ -21,13 +21,13 @@ if body.floating == 1
     
 %     Generated using:
 %     body.floating = 1;
-%     syms r p y real;
+%     syms roll pitch yaw real;
 %     syms x y z real;
-%     qBody = [x; y; z; r; p; y];
+%     qBody = [x; y; z; roll; pitch; yaw];
 %     S = motionSubspace(body, qBody);
 %     dSdq = jacobian(S(:), qBody);
-%     matlabFunction(dSdq)
-    dSdq = reshape([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-cp*sy,-cr*cy-sp*sr*sy,cy*sr-cr*sp*sy,0,0,0,cp*cy,-cr*sy+cy*sp*sr,sr*sy+cr*cy*sp,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,sr*sy+cr*cy*sp,cr*sy-cy*sp*sr,0,0,0,0,-cy*sr+cr*sp*sy,-cr*cy-sp*sr*sy,0,0,0,0,cp*cr,-cp*sr,0,cp*cy*(sr*sy+cr*cy*sp)-cp*sy*(cy*sr-cr*sp*sy)-cp*cr*sp,cp*cy*(cr*sy-cy*sp*sr)-cp*sy*(cr*cy+sp*sr*sy)+cp*sp*sr,0,0,0,0,-cy*(cy*sr-cr*sp*sy)-sy*(sr*sy+cr*cy*sp),-cy*(cr*cy+sp*sr*sy)-sy*(cr*sy-cy*sp*sr),0,0,0,0,cp*cr,-cp*sr,0,0,0,0,0,0,-cy*sp,cp*cy*sr,cp*cr*cy,0,0,0,-sp*sy,cp*sr*sy,cp*cr*sy,0,0,0,-cp,-sp*sr,-cr*sp,cp*sp*2.0-cp*cy.^2*sp*2.0-cp*sp*sy.^2*2.0,-cp.^2*sr+sp.^2*sr+cy*sp*(cr*sy-cy*sp*sr)+cp.^2*cy.^2*sr-sp*sy*(cr*cy+sp*sr*sy)+cp.^2*sr*sy.^2,-cp.^2*cr+cr*sp.^2+cp.^2*cr*cy.^2-cy*sp*(sr*sy+cr*cy*sp)+cp.^2*cr*sy.^2+sp*sy*(cy*sr-cr*sp*sy),0,0,0,0,0,0,0,0,0,-cp,-sp*sr,-cr*sp,0,0,0,0,0,0,-cp*sy,-cr*cy-sp*sr*sy,cy*sr-cr*sp*sy,0,0,0,cp*cy,-cr*sy+cy*sp*sr,sr*sy+cr*cy*sp,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[36,6]);
+%     matlabFunction(simple(dSdq))
+    dSdq = reshape([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,sr.*sy+cr.*cy.*sp,cr.*sy-cy.*sp.*sr,0,0,0,0,-cy.*sr+cr.*sp.*sy,-cr.*cy-sp.*sr.*sy,0,0,0,0,cp.*cr,-cp.*sr,0,0,0,0,0,0,0,-sr,-cr,0,0,0,0,cp.*cr,-cp.*sr,0,0,0,0,0,0,-cy.*sp,cp.*cy.*sr,cp.*cr.*cy,0,0,0,-sp.*sy,cp.*sr.*sy,cp.*cr.*sy,0,0,0,-cp,-sp.*sr,-cr.*sp,0,0,0,0,0,0,0,0,0,0,0,0,-cp,-sp.*sr,-cr.*sp,0,0,0,0,0,0,-cp.*sy,-cr.*cy-sp.*sr.*sy,cy.*sr-cr.*sp.*sy,0,0,0,cp.*cy,-cr.*sy+cy.*sp.*sr,sr.*sy+cr.*cy.*sp,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],[36,6]);
   end
 
 elseif body.floating == 2
@@ -53,12 +53,12 @@ elseif body.floating ~= 0
 else
   % one dof joint
   
-  pitch = body.pitch;
+  p = body.pitch;
   axis = body.joint_axis;
-  if isinf(pitch) % prismatic joint
+  if isinf(p) % prismatic joint
     S = [zeros(3, 1); axis];
   else % helical or revolute joint
-    S = [axis; pitch * axis];
+    S = [axis; p * axis];
   end
   
   if nargout > 1

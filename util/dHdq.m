@@ -9,24 +9,34 @@ function ret = dHdq(H, S, qdotToV)
 % @param qdotToV matrix describing the mapping from the derivative of the
 % coordinate vector, qdot to the velocity vector, v.
 
-L = [0     0     0     0     0     0;
-     0     0     1     0     0     0;
-     0    -1     0     0     0     0;
-     0     0     0     0     0     0;
-     0     0    -1     0     0     0;
-     0     0     0     0     0     0;
-     1     0     0     0     0     0;
-     0     0     0     0     0     0;
-     0     1     0     0     0     0;
-    -1     0     0     0     0     0;
-     0     0     0     0     0     0;
-     0     0     0     0     0     0;
-     0     0     0     1     0     0;
-     0     0     0     0     1     0;
-     0     0     0     0     0     1;
-     0     0     0     0     0     0];
+% L = [0     0     0     0     0     0;
+%      0     0     1     0     0     0;
+%      0    -1     0     0     0     0;
+%      0     0     0     0     0     0;
+%      0     0    -1     0     0     0;
+%      0     0     0     0     0     0;
+%      1     0     0     0     0     0;
+%      0     0     0     0     0     0;
+%      0     1     0     0     0     0;
+%     -1     0     0     0     0     0;
+%      0     0     0     0     0     0;
+%      0     0     0     0     0     0;
+%      0     0     0     1     0     0;
+%      0     0     0     0     1     0;
+%      0     0     0     0     0     1;
+%      0     0     0     0     0     0];
+
 % S in body frame:
-ret = kron(eye(4), H) * L * S * qdotToV;
+% ret = kron(eye(4), H) * L * S * qdotToV;
+% Equivalently:
+zero = zeros(4, 1);
+RTilde = [H(1:3, 1:3); zeros(1, 3)];
+[Rx, Ry, Rz] = deal(RTilde(:, 1), RTilde(:, 2), RTilde(:, 3));
+M1 = [zero, -Rz, Ry;
+      Rz, zero, -Rx;
+     -Ry, Rx, zero];
+M = blkdiag(M1, RTilde);
+ret = M * S * qdotToV;
 
 % S in world frame:
 % ret = kron(H', eye(4)) * L * S * qdotToV;

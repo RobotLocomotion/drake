@@ -1,23 +1,24 @@
-function testGradientsAtlas()
+function testRigidBodyManipulatorGradients()
 testFallingBrick('rpy');
+testFallingBrick('quat');
 testAtlas('rpy');
-
+testAtlas('quat');
 end
 
 function testFallingBrick(floatingType)
 options.floating = floatingType;
 r = RigidBodyManipulator('FallingBrick.urdf',options);
-testKinsolGradients(r, 'T', 'dTdq');
-% testKinsolGradients(r, 'J', 'dJdq');
+checkKinsolGradients(r, 'T', 'dTdq');
+checkKinsolGradients(r, 'J', 'dJdq');
 end
 
 function testAtlas(floatingType)
 r = createAtlas(floatingType);
-testKinsolGradients(r, 'T', 'dTdq');
-% testKinsolGradients(r, 'J', 'dJdq');
+checkKinsolGradients(r, 'T', 'dTdq');
+checkKinsolGradients(r, 'J', 'dJdq');
 end
 
-function testKinsolGradients(r, name, gradient_name)
+function checkKinsolGradients(r, name, gradient_name)
 nq = r.getNumPositions();
 nb = r.getNumBodies();
 
@@ -36,7 +37,7 @@ for i = 1 : nq
   dXdqiNumerical = cellfun(@(x, y) (x - y) / delta, X_delta, X, 'UniformOutput', false);
   
   for j = 2 : nb
-    valuecheck(dXdq{j}(:, i), dXdqiNumerical{j}(:), 1e-5);
+    valuecheck(dXdqiNumerical{j}(:), dXdq{j}(:, i), 1e-5);
   end
 end
 
