@@ -4,33 +4,33 @@ tf0 = 1;
 N=4; %=21;
 if (nargin<1)
   options.floating = true;
-  p = RigidBodyManipulator('GliderBalanced.urdf', options);
+  p = PlanarRigidBodyManipulator('GliderBalanced.urdf', options);
 end
 if (nargin<2)
     utraj0 = PPTrajectory(foh(linspace(0,tf0,N),0*randn(1,N)));
 end
 %for the URDF, a negative pitch is pitched up.
-%    [X  Y  Z  Roll Pitch Yaw El
-x0 = [-3.3 0 .4 0 0 0 0  7 0 0 0 0 0 0]';
-xf = [0 0 0 0 -pi/4 0 0  0 0 -1 0 0 0 0]';
-el_lo_limit = -.9473;
-el_up_limit = .4463;
+%    [X    Z  Theta Phi Xdot Zdot
+x0 = [-3.3 .4 0     0   7.0    0    0 0]';
+xf = [0    0  -pi/4 0   0    -1   0 0]';
+phi_lo_limit = -.9473;
+phi_up_limit = .4463;
 
 con.u.lb = p.umin;
 con.u.ub = p.umax;
-con.x.lb = [-inf,-inf,-inf,-inf,-pi/2,-inf,el_lo_limit, -inf,-inf,-inf,-inf,-inf,-inf,-inf]';
-con.x.ub = [inf,inf,inf,inf,pi/2,inf,el_up_limit, inf,inf,inf,inf,inf,inf,inf]';
+con.x.lb = [-inf,-inf,-pi/2,phi_lo_limit,-inf,-inf,-inf, -inf]';
+con.x.ub = [inf,inf,pi/2,phi_up_limit,inf,inf,inf,inf]';
 con.x0.lb = x0;
 con.x0.ub = x0;
-con.xf.lb = xf-[0.03,0.03,0.03,inf,pi/2,inf,inf, inf,inf,inf,inf,inf,inf,inf]';
-con.xf.ub = xf+[0.03,0.03,0.03,inf,pi/2,inf,inf, inf,inf,inf,inf,inf,inf,inf]';
+con.xf.lb = xf-[ 0.03, 0.03, pi/2, inf, inf, inf, inf, inf]';
+con.xf.ub = xf+[ 0.03, 0.03, pi/2, inf, inf, inf, inf, inf]';
 con.T.lb = .45;   
 con.T.ub = 1.5;
 
 options.MajorOptimalityTolerance=.03;
 options.MinorOptimalityTolerance=.03;
 options.method='dircol';
-options.grad_method={'user'};
+options.grad_method={'numerical'};%'user'};
 options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u);  % for debugging
 tic
 %options.grad_test = true;
@@ -42,7 +42,7 @@ toc
 v = p.constructVisualizer();
 v.axis= [-4 .5 -.5 1];
 v.playback_speed = .2;
-v.playback(xtraj, struct('slider',true));
+v.playback(xtraj);
 
 end
 
@@ -57,7 +57,7 @@ end
       function [h,dh] = finalcost(t,x,xd)
         xerr = x-xd;
 
-        Qf = diag([10 10 10 0 20 0 0 1 1 1 0 1 0 0]);
+        Qf = diag([10 10 20 0 1 1 1 0]);
         h = sum((Qf*xerr).*xerr,1);
         
         if (nargout>1)

@@ -1,4 +1,4 @@
-function x = bodyKin(obj,kinsol,body_ind,pts)
+function [x,J,P] = bodyKin(obj,kinsol,body_ind,pts)
 % computes the position of pts (given in the global frame) in the body frame
 % (see documentation for bodyKin in RigidBodyManipulator)
 %
@@ -9,6 +9,12 @@ function x = bodyKin(obj,kinsol,body_ind,pts)
 [n,m] = size(pts); 
 if (n==2) pts = obj.T_2D_to_3D * pts; end
 
-x = bodyKin@RigidBodyManipulator(obj,kinsol,body_ind,pts);
+if (nargout>2)
+  [x,J,P] = bodyKin@RigidBodyManipulator(obj,kinsol,body_ind,pts);
+elseif (nargout>1)
+  [x,J] = bodyKin@RigidBodyManipulator(obj,kinsol,body_ind,pts);
+else
+  x = bodyKin@RigidBodyManipulator(obj,kinsol,body_ind,pts);
+end
 
 if (n==2) x = obj.T_2D_to_3D'*x; end
