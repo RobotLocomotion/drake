@@ -3,7 +3,7 @@ function bullet_raycast_test
 
 checkDependency('bullet');
 
-use_visualizer = 1;
+use_visualizer = 0;
 
 if (use_visualizer == 1)
     checkDependency('lcmgl');
