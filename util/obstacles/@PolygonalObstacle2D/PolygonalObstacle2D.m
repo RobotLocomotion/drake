@@ -111,9 +111,9 @@ classdef PolygonalObstacle2D < Obstacle
                       % segment to the point in question
                       distance = g^2;
                       if g >= 0
-                          ddistance = a';
+                          ddistance = 2*a';
                       else
-                          ddistance = -a';
+                          ddistance = -2*a';
                       end
                   end
                 end
@@ -168,12 +168,11 @@ classdef PolygonalObstacle2D < Obstacle
             phi_verts = tanh(signInside * minDist);
             dphi_verts = (1-tanh(signInside * minDist)^2)*signInside*dminDist;
             minDist_verts = minDist;
-                       
-            
-            if minDist_edges < minDist_verts % generic
+                   
+            if minDist_edges < minDist_verts 
                 phi = phi_edges;
                 dphi = dphi_edges;
-            else
+            else % generic
                 phi = phi_verts;
                 dphi = dphi_verts;
             end
