@@ -29,7 +29,7 @@ if length(obj.force)>0
     end
     f_ext(:,m.f_ext_map_to) = f_ext(:,m.f_ext_map_to)+force(:,m.f_ext_map_from);
     if (nargout>3)
-      for j=1:m.NB
+      for j=1:size(m.f_ext_map_from,2)
         i_from = m.f_ext_map_from(j);
         i_to = m.f_ext_map_to(j);
         df_ext((i_to-1)*size(f_ext,1)+1:i_to*size(f_ext,1),1:size(q,1)+size(qd,1)) = df_ext((i_to-1)*size(f_ext,1)+1:i_to*size(f_ext,1),1:size(q,1)+size(qd,1)) + dforce((i_from-1)*size(force,1)+1:i_from*size(force,1),1:size(q,1)+size(qd,1));
