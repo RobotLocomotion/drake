@@ -106,8 +106,12 @@ classdef RigidBodyGeometry
               scale = parseParamString(model,robotnum,char(thisNode.getAttribute('scale')));
             end
             
-            if ~isempty(strfind(filename,'package://'))
-              filename=strrep(filename,'package://','');
+            % parse strings with forward and backward slashes
+            filename = strrep(filename,'/',filesep);
+            filename = strrep(filename,'\',filesep);
+
+            if ~isempty(strfind(filename,['package:',filesep,filesep]))
+              filename=strrep(filename,['package:',filesep,filesep],'');
               [package,filename]=strtok(filename,filesep);
               filename=[rospack(package),filename];
             else
