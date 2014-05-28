@@ -4,21 +4,38 @@ function [x_in_world, J, dJ_or_Jdot] = terrainContactPointsInWorld(obj, ...
   %   world-frame position of all terrain contact points on the
   %   manipulator.
   %
-  % x_in_world = getTerrainContactPointsInWorld(obj,kinsol,body_idx)
-  %   returns the world-frame position of all terrain contact points on
-  %   the bodies indicated by body_idx.
+  % [x_in_world,J] = getTerrainContactPointsInWorld(obj,kinsol) also
+  %   returns the derivative of those positions w.r.t the manipulator's
+  %   position variables.
   %
-  % x_in_world = getTerrainContactPointsInWorld(obj,kinsol, ...
-  %   terrain_contact_point_struct) returns the world-frame position of
-  %   the body-frame points specified by terrain_contact_point_struct.
-  %   See RigidBodyManipulator/getTerrainContactPoints for a description
-  %   of terrain_contact_point_struct.
+  % [x_in_world,J,dJ] = getTerrainContactPointsInWorld(obj,kinsol) also
+  %   returns the second derivative of those positions w.r.t the
+  %   manipulator's position variables.
+  %   
+  % [...] = getTerrainContactPointsInWorld(obj,kinsol,body_idx)
+  %   considers only the bodies indicated by body_idx.
+  %
+  % [...] = getTerrainContactPointsInWorld(obj,kinsol, ...
+  %   terrain_contact_point_struct) considers the body-frame points
+  %   specified by terrain_contact_point_struct.  See
+  %   RigidBodyManipulator/getTerrainContactPoints for a description of
+  %   terrain_contact_point_struct.
+  %
+  % [...] = getTerrainContactPointsInWorld(obj,kinsol,...,compute_Jdot_instead_of_dJ)
+  %   returns the time derivative of J rather than dJ when second
+  %   derivatives are requested.
   %
   % @param obj - RigidBodyManipulator object
   % @param kinsol - Structure returned by doKinematics
   % @param body_idx - vector of body indices @default <All bodies>
   % @param terrain_contact_point_struct - See description in
   %   RigidBodyManipulator/getTerrainContactPoints
+  %
+  % @retval x_in_world - world-frame position of the terrain contact
+  %                      points
+  % @retval J - dx_in_world/dq
+  % @retval dJ - d^2x_in_world/dq^2
+  % @retval Jdot - d(dx_in_world/dq)/dt
   
   if numel(varargin) > 2
     compute_Jdot_instead_of_dJ = varargin{3};
