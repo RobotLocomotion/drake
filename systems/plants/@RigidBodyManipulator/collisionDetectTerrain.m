@@ -22,14 +22,8 @@ function [phi,normal,xB,idxB] = collisionDetectTerrain(obj, varargin)
   elseif nargin == 3
     kinsol = varargin{1};
     terrain_contact_point_struct = varargin{2};
-    n_pts = arrayfun(@(x) size(x.pts,2),terrain_contact_point_struct);
-    cumsum_n_pts = cumsum([0,n_pts]);
-    xA_in_world = zeros(3,cumsum_n_pts(end));
-    for i = 1:numel(terrain_contact_point_struct)
-      xA_in_world(:,cumsum_n_pts(i)+(1:n_pts(i))) = ...
-        forwardKin(obj,kinsol,terrain_contact_point_struct(i).idx, ...
-                   terrain_contact_point_struct(i).pts);
-    end
+    xA_in_world = terrainContactPointsInWorld(obj,kinsol, ...
+                    terrain_contact_point_struct);
   else
     error('Drake:RigidBodyManipulator:collisionDetectTerrain:nargin', ...
           ['Invalid number of input arguments. See help for ' ...
