@@ -1,6 +1,8 @@
 classdef RigidBodyFlatTerrainNoGeometry < RigidBodyTerrain
 %  This class provides an implementation of RigidBodyTerrain with z=0
-%  everywhere
+%  everywhere. In contrast to `RigidBodyFlatTerrain`, this class does
+%  not add `RigidBodyGeometry` objects to the manipulator. It is
+%  therefore useful for testing the plumbing for non-flat terrain types.
   
   methods 
     function [z,normal] = getHeight(obj,xy)
