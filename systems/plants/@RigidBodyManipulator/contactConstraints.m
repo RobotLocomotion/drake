@@ -41,19 +41,26 @@ end
 [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,allow_multiple_contacts,active_collision_options);
 idxA = idxA';
 idxB = idxB';
-nC = length(phi);
+nC = numel(phi);
+
+% If there are no potential collisions, return empty
+if nC == 0
+  d = [];
+  mu = [];
+  n = [];
+  D = [];
+  dn = [];
+  dD = [];
+  return;
+end
 
 % For now, all coefficients of friction are 1
 mu = ones(nC,1);
 
-if nC == 0
-  d = zeros(3,nC);
-else
-  d = obj.surfaceTangents(normal);
-end
+d = obj.surfaceTangents(normal);
 if compute_first_derivative
   nq = obj.getNumPositions;  
-  nk = length(d);
+  nk = size(d,2);
   
   J = zeros(3*nC,nq)*kinsol.q(1);
   if compute_second_derivative,
