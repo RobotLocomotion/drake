@@ -853,16 +853,22 @@ classdef RigidBodyManipulator < Manipulator
       b = leastCommonAncestor(model,body1.parent,body2);
     end
     
-    function terrain_contact_point_struct = getTerrainContactPoints(obj)
-      % terrain_contact_point_struct = getTerrainContactPoints(obj)
+    function terrain_contact_point_struct = getTerrainContactPoints(obj,body_idx)
+      % terrain_contact_point_struct = getTerrainContactPoints(obj,body_idx)
       %
       % @param obj - RigidBodyManipulator object
+      % @param body_idx - vector of body-indices indicating the bodies for
+      %                   which terrain contact points should be found
       % @retval terrain_contact_point_struct - nx1 structure array, where n is
       %   the number of bodies with points that can collide with non-flat
       %   terrain. Each element has the following fields
       %     * idx - Index of a body in the RigidBodyManipulator
       %     * pts - 3xm array containing points on the body specified by idx
       %             that can collide with non-flat terrain.
+      if nargin < 2
+        body_idx = 2:obj.getNumBodies(); % World-fixed objects can't collide
+                                         % with the terrain
+      end
       terrain_contact_point_struct = struct('pts',{},'idx',{});
       for i = 1:obj.getNumBodies()
         pts = getTerrainContactPoints(obj.body(i));
