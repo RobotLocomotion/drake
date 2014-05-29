@@ -1,4 +1,4 @@
-function ret = dAdH_times_X(H, X, dHdq, dXdq)
+function ret = dAdHTimesX(H, X, dHdq, dXdq)
 R = H(1:3, 1:3);
 p = H(1:3, 4);
 pHat = vectorToSkewSymmetric(p);

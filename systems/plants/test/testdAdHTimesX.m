@@ -1,4 +1,4 @@
-function testdAdH_times_X()
+function testdAdHTimesX()
 testFallingBrick('rpy');
 testFallingBrick('quat');
 end
@@ -16,7 +16,7 @@ qdotToV = kinsol.qdotToV; % special case where qdotToV for joint is qdotToV for 
 dHdqVec = dHdq(H, S, qdotToV);
 X = randn(6, 4);
 dXdq = zeros(numel(X), nq);
-dAdH_times_X_1 = dAdH_times_X(H, X, dHdqVec, dXdq);
+dAdH_times_X_1 = dAdHTimesX(H, X, dHdqVec, dXdq);
 
 delta = 1e-7;
 for i = 1 : nq

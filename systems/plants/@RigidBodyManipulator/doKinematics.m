@@ -134,7 +134,7 @@ for i = 2 : nb
   Si = S{i};
   dSdqi = zeros(numel(Si), nq);
   dSdqi(:, body.position_num) = dSdq{i};
-  ret{i} = dAdH_times_X(H{i}, Si, dHdq{i}, dSdqi);
+  ret{i} = dAdHTimesX(H{i}, Si, dHdq{i}, dSdqi);
 end
 end
 

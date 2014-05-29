@@ -31,7 +31,7 @@ if expressedIn ~= 1
   TInv = inv(T);
   if compute_gradient
     dTInvdq = dinvT(T, kinsol.dTdq{expressedIn});
-    dJdq = dAdH_times_X(TInv, J, dTInvdq, dJdq);
+    dJdq = dAdHTimesX(TInv, J, dTInvdq, dJdq);
   end
   J = transformTwists(TInv, J);
 end
