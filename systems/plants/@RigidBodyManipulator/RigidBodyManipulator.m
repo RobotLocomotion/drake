@@ -870,10 +870,12 @@ classdef RigidBodyManipulator < Manipulator
                                          % with the terrain
       end
       terrain_contact_point_struct = struct('pts',{},'idx',{});
-      for i = 1:obj.getNumBodies()
-        pts = getTerrainContactPoints(obj.body(i));
-        if ~isempty(pts)
-          terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
+      for i = body_idx
+        if i ~= 1
+          pts = getTerrainContactPoints(obj.body(i));
+          if ~isempty(pts)
+            terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
+          end
         end
       end
     end
