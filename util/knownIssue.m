@@ -34,4 +34,5 @@ end
 
 function github(issue_id)
   fprintf('\nThis is a known issue.  See <a href="https://github.com/RobotLocomotion/drake/issues/%d">Drake issue %d</a> for more information.\n\n',issue_id,issue_id);
+fprintf('\n<DartMeasurement name="GitHubIssue" type="link/url">https://github.com/RobotLocomotion/drake/issues/%d</DartMeasurement>\n\n',issue_id);
 end
