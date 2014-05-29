@@ -51,7 +51,7 @@ namespace DrakeCollision
                                        //const bitmask&  mask);
 
       btCollisionWorld* bt_collision_world;
-
+      
     protected:
 
       virtual bool findClosestPointsBtwElements(const int bodyA_idx,
@@ -74,6 +74,8 @@ namespace DrakeCollision
       virtual bool allCollisions(std::vector<int>& bodyA_idx, 
           std::vector<int>& bodyB_idx, 
           MatrixXd& ptsA, MatrixXd& ptsB);
+          
+      double collisionRaycast(const Vector3d &origin, const Vector3d &ray_endpoint);
 
       btDefaultCollisionConfiguration bt_collision_configuration;
       btCollisionDispatcher* bt_collision_dispatcher;
