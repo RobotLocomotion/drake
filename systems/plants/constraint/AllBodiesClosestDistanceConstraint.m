@@ -18,6 +18,9 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
     end
     
    function [c,dc] = evalValidTime(obj,kinsol)
+      % Re-run doKinematics to update the cpp RBM if there is one. This
+      % lets us compare results with the cpp constraint class.
+      kinsol = doKinematics(obj.robot,kinsol.q);
       [c,dc] = closestDistance(obj.robot,kinsol);
     end
   end
