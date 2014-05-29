@@ -1372,8 +1372,9 @@ classdef RigidBodyManipulator < Manipulator
 
     function d=surfaceTangents(obj,normal)
       %% compute tangent vectors, according to the description in the last paragraph of Stewart96, p.2678
-      % Handle the trivial case of empty normals
-      if isempty(normal), d = []; return; end
+      assert(~isempty(normal), ...
+        'Drake:RigidBodyManipulator:surfaceTangents:emptyNormals', ...
+        '''normal'' must be a non-empty array')
 
       t1=normal; % initialize size
       
