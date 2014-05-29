@@ -36,13 +36,15 @@ xtraj = r.simulate([0 T],x0);
 body = getBody(r,2); % get ball
 
 nq = getNumPositions(r);
+nv = getNumVelocities(r);
 for t=0:0.05:T
   x = xtraj.eval(t);
   if display
     draw(v,t,x);
   end
   q = x(1:nq);
-  qd = x(nq+(1:nq));
+  v = x(nq+1:end);
+  qd = r.getManipulator.vToqdot(q) * v;
   
   % test derivative
   [A,dAdq] = geval(@myfun,q);
@@ -51,18 +53,18 @@ for t=0:0.05:T
     Adot_geval = Adot_geval + reshape(dAdq(:,jj),size(A)) * qd(jj);
   end
   
-  kinsol = doKinematics(r,q,false,false,qd,true);
+  kinsol = doKinematics(r,q,false,false,v,true);
   [A,Adot_times_v] = getCMM(r,kinsol);
-  valuecheck(Adot_times_v,Adot_geval * qd);
+  valuecheck(Adot_times_v,Adot_geval * v);
 
   % test mex
-  kinsol_mex = doKinematics(r,q,false,true,qd,true);
+  kinsol_mex = doKinematics(r,q,false,true,v,true);
   [A_mex,Adot_times_v_mex] = getCMM(r,kinsol_mex);
   valuecheck(A,A_mex);
   valuecheck(Adot_times_v,Adot_times_v_mex);
   
   % test physics
-  h = A*qd;
+  h = A*v;
   omega = rpydot2angularvel(q(4:6),qd(4:6));
   am = body.inertia * omega;
 
@@ -147,7 +149,8 @@ for t=0:0.05:T
     draw(v,t,x);
   end
   q = x(1:nq);
-  qd = x(nq+(1:nq));
+  v = x(nq+1:end);
+  qd = r.getManipulator.vToqdot(q) * v;
   kinsol = doKinematics(r,q,false,true);
   
   A = getCMM(r,kinsol);
