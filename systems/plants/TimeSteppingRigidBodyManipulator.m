@@ -751,16 +751,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = pairwiseContactConstraintsBV(obj.manip,varargin{:});
     end
 
-    function varargout = contactPositions(obj,varargin)
-      varargout=cell(1,nargout);
-      [varargout{:}] = contactPositions(obj.manip,varargin{:});
-    end
-    
-    function varargout = contactPositionsJdot(obj,varargin)
-      varargout=cell(1,nargout);
-      [varargout{:}] = contactPositionsJdot(obj.manip,varargin{:});
-    end
-    
     function varargout = resolveConstraints(obj,x0,varargin)
       varargout=cell(1,nargout);
       if isnumeric(x0)
@@ -937,6 +927,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function model = setParams(model,p)
       model.manip = setParams(model.manip,p);
+    end
+
+    function terrain_contact_point_struct = getTerrainContactPoints(obj,varargin)
+      terrain_contact_point_struct = getTerrainContactPoints(obj.manip,varargin{:});
+    end
+
+    function varargout = terrainContactPositions(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = terrainContactPositions(obj.manip,varargin{:});
     end
     
   end
