@@ -12,6 +12,13 @@ m_rpy = TimeSteppingRigidBodyManipulator(urdf,.01,options);
 options.floating = 'YPR';
 options.namesuffix = 'ypr_rel'; % floating base uses YPR (with relative/intrinsic angles)
 m_ypr_rel = TimeSteppingRigidBodyManipulator(urdf,.01,options);
+collision_options.terrain_only = true;
+if regexp(urdf,'atlas')
+  m_rpy = m_rpy.removeCollisionGroupsExcept({'toe','heel'});
+  m_rpy = compile(m_rpy);
+  m_ypr_rel = m_ypr_rel.removeCollisionGroupsExcept({'toe','heel'});
+  m_ypr_rel = compile(m_ypr_rel);
+end
 warning(w);
 
 % the kinematics and dynamics should actually match, when the order of the indices is
@@ -32,7 +39,7 @@ for i=1:100
   kinsol = doKinematics(m_rpy,q,true,false,qd);
   [pt,J,Jdot] = contactPositionsJdot(m_rpy,kinsol);
   [~,~,dJ] = contactPositions(m_rpy,kinsol);
-  phi = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol)];
+  phi = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol,false,collision_options)];
   
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,false,qd(ind));
   [pt2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2);
@@ -48,7 +55,7 @@ for i=1:100
   
   kinsol = doKinematics(m_rpy,q,true,true,qd);
   [pt2,J2,Jdot2] = contactPositionsJdot(m_rpy,kinsol);
-  phi2 = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol)];
+  phi2 = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol,false,collision_options)];
 
   valuecheck(pt,pt2);
   valuecheck(J,J2);
