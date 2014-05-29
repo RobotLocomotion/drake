@@ -53,8 +53,7 @@ nPoints = size(points, 2);
 
 % transform points from end effector frame to base frame
 transform = kinsol.T{base} \ kinsol.T{endEffector} * Tframe;
-R = transform(1:3, 1:3);
-points = homogTransMult(transform, points);
+points = transform(1:3, :) * [points; ones(1, size(points, 2))];
 if computeJvdot_times_v
   twist = relativeTwist(kinsol.T, kinsol.twists, base, endEffector, expressedIn);
   JGeometricdotV = geometricJacobianDotV(obj, kinsol, base, endEffector, expressedIn);
@@ -77,6 +76,7 @@ switch (rotation_type)
       Phid = zeros(0, 3);
     end
   case 1 % output rpy
+    R = transform(1:3, 1:3);
     rpy = rotmat2rpy(R);
     x = [points; repmat(rpy, 1, nPoints)];
     if computeJvdot_times_v
@@ -85,6 +85,7 @@ switch (rotation_type)
       Phi = angularvel2rpydotMatrix(rpy);
     end
   case 2 % output quaternion
+    R = transform(1:3, 1:3);
     quat = rotmat2quat(R);
     x = [points; repmat(quat, 1, nPoints)];
     Phi = angularvel2quatdotMatrix(quat);

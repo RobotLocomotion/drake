@@ -46,20 +46,20 @@ for t=0:0.05:T
   
   % test derivative
   [A,dAdq] = geval(@myfun,q);
-  Adot_tv = 0*A;
+  Adot_geval = 0*A;
   for jj=1:nq
-    Adot_tv = Adot_tv + reshape(dAdq(:,jj),size(A)) * qd(jj);
+    Adot_geval = Adot_geval + reshape(dAdq(:,jj),size(A)) * qd(jj);
   end
   
-  kinsol = doKinematics(r,q,false,true);
-  [A,Adot] = getCMM(r,kinsol,qd);
-  valuecheck(Adot,Adot_tv);
+  kinsol = doKinematics(r,q,false,false,qd,true);
+  [A,Adot_times_v] = getCMM(r,kinsol);
+  valuecheck(Adot_times_v,Adot_geval * qd);
 
   % test mex
-  kinsol_matlab = doKinematics(r,q,false,false);
-  [A_mat,Adot_mat] = getCMM(r,kinsol_matlab,qd);
-  valuecheck(A,A_mat);
-  valuecheck(Adot,Adot_mat);
+  kinsol_mex = doKinematics(r,q,false,true,qd,true);
+  [A_mex,Adot_times_v_mex] = getCMM(r,kinsol_mex);
+  valuecheck(A,A_mex);
+  valuecheck(Adot_times_v,Adot_times_v_mex);
   
   % test physics
   h = A*qd;
@@ -140,7 +140,7 @@ xtraj = r.simulate([0 T],x0);
 
 body = getBody(r,2); % get brick
 
-nq = getNumDOF(r);
+nq = getNumPositions(r);
 for t=0:0.05:T
   x = xtraj.eval(t);
   if display
@@ -150,7 +150,7 @@ for t=0:0.05:T
   qd = x(nq+(1:nq));
   kinsol = doKinematics(r,q,false,true);
   
-  A = getCMM(r,q);
+  A = getCMM(r,kinsol);
   h = A*qd;
   
   omega = rpydot2angularvel(q(4:6),qd(4:6));
