@@ -8,34 +8,38 @@ function [x_in_world, J, dJ_or_Jdot] = terrainContactPositions(obj, ...
   %   returns the derivative of those positions w.r.t the manipulator's
   %   position variables.
   %
-  % [x_in_world,J,dJ] = terrainContactPositions(obj,kinsol) also
-  %   returns the second derivative of those positions w.r.t the
-  %   manipulator's position variables.
+  % [x_in_world,J,dJ_or_Jdot] = ...
+  %   terrainContactPositions(obj,kinsol,[compute_Jdot_instead_of_dJ]) 
+  %   also returns the second derivative of those positions w.r.t the
+  %   manipulator's position variables OR the time derivative of J, as
+  %   specified by compute_Jdot_instead_of_dJ.
   %   
-  % [...] = terrainContactPositions(obj,kinsol,body_idx)
-  %   considers only the bodies indicated by body_idx.
+  % [...] = terrainContactPositions(obj,kinsol,body_idx, ...
+  %   [compute_Jdot_instead_of_dJ]) considers only the bodies indicated
+  %   by body_idx.
   %
   % [...] = terrainContactPositions(obj,kinsol, ...
-  %   terrain_contact_point_struct) considers the body-frame points
-  %   specified by terrain_contact_point_struct.  See
-  %   RigidBodyManipulator/getTerrainContactPoints for a description of
-  %   terrain_contact_point_struct.
+  %   terrain_contact_point_struct,[compute_Jdot_instead_of_dJ])
+  %   considers the body-frame points specified by
+  %   terrain_contact_point_struct.  See
   %
-  % [...] = terrainContactPositions(obj,kinsol,...,compute_Jdot_instead_of_dJ)
-  %   returns the time derivative of J rather than dJ when second
-  %   derivatives are requested.
+  %   RigidBodyManipulator/getTerrainContactPoints 
+  %
+  %   for a description of terrain_contact_point_struct.
   %
   % @param obj - RigidBodyManipulator object
   % @param kinsol - Structure returned by doKinematics
   % @param body_idx - vector of body indices @default <All bodies>
   % @param terrain_contact_point_struct - See description in
   %   RigidBodyManipulator/getTerrainContactPoints
+  % @param compute_Jdot_instead_of_dJ - Logical scalar indicating
+  %   whether to compute Jdot
+  %   @default false
   %
   % @retval x_in_world - world-frame position of the terrain contact
   %                      points
   % @retval J - dx_in_world/dq
-  % @retval dJ - d^2x_in_world/dq^2
-  % @retval Jdot - d(dx_in_world/dq)/dt
+  % @retval dJ_or_Jdot - d^2x_in_world/dq^2 OR d(dx_in_world/dq)/dt
   
   if numel(varargin) > 2
     compute_Jdot_instead_of_dJ = varargin{3};
