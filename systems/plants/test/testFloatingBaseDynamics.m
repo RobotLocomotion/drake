@@ -37,49 +37,35 @@ for i=1:100
   q = .1*randn(nq,1); qd = randn(nq,1); u = randn(getNumInputs(m_rpy),1);
 
   kinsol = doKinematics(m_rpy,q,true,false,qd);
-  [xA_in_world,xB_in_world,idxA,idxB,J,Jdot] = contactPositionsJdot(m_rpy,kinsol,false,collision_options);
-  [~,~,~,~,~,dJ] = contactPositions(m_rpy,kinsol,false,collision_options);
+  [pt,J,Jdot] = terrainContactPositions(m_rpy,kinsol,true);
+  [~,~,dJ] = terrainContactPositions(m_rpy,kinsol);
   phi = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol,false,collision_options)];
   
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,false,qd(ind));
-  [xA_in_world2,xB_in_world2,idxA2,idxB2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2,false,collision_options);
-  [~,~,~,~,~,dJ2] = contactPositions(m_ypr_rel,kinsol2,false,collision_options);
+  [pt2,J2,Jdot2] = terrainContactPositions(m_ypr_rel,kinsol2,true);
+  [~,~,dJ2] = terrainContactPositions(m_ypr_rel,kinsol2);
   
   dJind = reshape(1:nq*nq,[nq,nq]);  
   dJind = reshape(dJind(ind,ind),nq*nq,1); 
   
-  % Commenting these out, since the ypr_rel version includes bodies for the
-  % floating-base joints
-  %valuecheck(idxA,idxA2);
-  %valuecheck(idxB,idxB2);
-  
-  valuecheck(xA_in_world,xA_in_world2);
-  valuecheck(xB_in_world,xB_in_world2);
+  valuecheck(pt,pt2);
   valuecheck(J,J2(:,ind));
   valuecheck(Jdot,Jdot2(:,ind));
   valuecheck(full(dJ),full(dJ2(:,dJind))); 
   
   kinsol = doKinematics(m_rpy,q,true,true,qd);
-  [xA_in_world2,xB_in_world2,idxA2,idxB2,J2,Jdot2] = contactPositionsJdot(m_rpy,kinsol,false,collision_options);
+  [pt2,J2,Jdot2] = terrainContactPositions(m_rpy,kinsol,true);
   phi2 = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol,false,collision_options)];
 
-  valuecheck(idxA,idxA2);
-  valuecheck(idxB,idxB2);
-  valuecheck(xA_in_world,xA_in_world2);
-  valuecheck(xB_in_world,xB_in_world2);
+  valuecheck(pt,pt2);
   valuecheck(J,J2);
   valuecheck(Jdot,Jdot2);
   valuecheck(phi,phi2);
   
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,true,qd(ind));
-  [xA_in_world2,xB_in_world2,idxA2,idxB2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2,false,collision_options);
+  [pt2,J2,Jdot2] = terrainContactPositions(m_ypr_rel,kinsol2,true);
 
-  % Commenting these out, since the ypr_rel version includes bodies for the
-  % floating-base joints
-  %valuecheck(idxA,idxA2);
-  %valuecheck(idxB,idxB2);
-  valuecheck(xA_in_world,xA_in_world2);
-  valuecheck(xB_in_world,xB_in_world2);
+  valuecheck(pt,pt2);
   valuecheck(J,J2(:,ind));
   valuecheck(Jdot,Jdot2(:,ind));
   
