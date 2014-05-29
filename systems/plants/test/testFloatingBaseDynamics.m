@@ -37,13 +37,13 @@ for i=1:100
   q = .1*randn(nq,1); qd = randn(nq,1); u = randn(getNumInputs(m_rpy),1);
 
   kinsol = doKinematics(m_rpy,q,true,false,qd);
-  [pt,J,Jdot] = contactPositionsJdot(m_rpy,kinsol);
-  [~,~,dJ] = contactPositions(m_rpy,kinsol);
+  [pt,J,Jdot] = terrainContactPositions(m_rpy,kinsol,true);
+  [~,~,dJ] = terrainContactPositions(m_rpy,kinsol);
   phi = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol,false,collision_options)];
   
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,false,qd(ind));
-  [pt2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2);
-  [~,~,dJ2] = contactPositions(m_ypr_rel,kinsol2);
+  [pt2,J2,Jdot2] = terrainContactPositions(m_ypr_rel,kinsol2,true);
+  [~,~,dJ2] = terrainContactPositions(m_ypr_rel,kinsol2);
   
   dJind = reshape(1:nq*nq,[nq,nq]);  
   dJind = reshape(dJind(ind,ind),nq*nq,1); 
@@ -54,7 +54,7 @@ for i=1:100
   valuecheck(full(dJ),full(dJ2(:,dJind))); 
   
   kinsol = doKinematics(m_rpy,q,true,true,qd);
-  [pt2,J2,Jdot2] = contactPositionsJdot(m_rpy,kinsol);
+  [pt2,J2,Jdot2] = terrainContactPositions(m_rpy,kinsol,true);
   phi2 = [jointLimitConstraints(m_rpy,q); contactConstraints(m_rpy,kinsol,false,collision_options)];
 
   valuecheck(pt,pt2);
@@ -63,7 +63,7 @@ for i=1:100
   valuecheck(phi,phi2);
   
   kinsol2 = doKinematics(m_ypr_rel,q(ind),true,true,qd(ind));
-  [pt2,J2,Jdot2] = contactPositionsJdot(m_ypr_rel,kinsol2);
+  [pt2,J2,Jdot2] = terrainContactPositions(m_ypr_rel,kinsol2,true);
 
   valuecheck(pt,pt2);
   valuecheck(J,J2(:,ind));
