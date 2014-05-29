@@ -31,7 +31,7 @@ classdef BotVisualizer < RigidBodyVisualizer
       end
       typecheck(manip,'RigidBodyManipulator');
       
-      if ~isempty(manip.terrain) && ~isa(manip.terrain,'RigidBodyFlatTerrain')
+      if ~isempty(manip.terrain) && ~any(cellfun(@(str)isa(manip.terrain,str),{'RigidBodyFlatTerrain','RigidBodyFlatTerrainNoGeometry'}))
         error('Drake:BotVisualizer:UnsupportedModel','This model has (non-zero) terrain.  Not supported (yet)');
       end
 %      if numel(manip.urdf)~=1

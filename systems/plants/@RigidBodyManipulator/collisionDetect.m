@@ -47,11 +47,25 @@ if nargin < 4, active_collision_options = struct(); end
 if isfield(active_collision_options,'body_idx')
   active_collision_options.body_idx = int32(active_collision_options.body_idx);
 end
+if ~isfield(active_collision_options,'terrain_only')
+  active_collision_options.terrain_only = false;
+end
 
 force_collisionDetectTerrain = false;
 
-if (obj.mex_model_ptr ~= 0 && kinsol.mex)
+if (~active_collision_options.terrain_only && obj.mex_model_ptr ~= 0 ...
+    && (kinsol.mex || isa(kinsol.q,'TaylorVar')))
   [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr,allow_multiple_contacts,active_collision_options);
+  if isempty(idxA)
+    idxA = [];
+    idxB = [];
+    xA = [];
+    xB = [];
+    distance = [];
+  else
+    idxA = double(idxA);
+    idxB = double(idxB);
+  end
   phi = distance';
 else
   force_collisionDetectTerrain = true;
@@ -59,7 +73,7 @@ else
     warning('Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex', ...
       ['kinsol was generated with use_mex = false. Only checking collisions ' ...
       'between terrain contact points and terrain']);
-  else % obj.mex_model_ptr == 0
+  elseif obj.mex_model_ptr == 0
     warning('Drake:RigidBodyManipulator:collisionDetect:noMexPtr', ...
       ['This model has no mex pointer. Only checking collisions between ' ...
       'terrain contact points and terrain']);
@@ -76,7 +90,12 @@ if ~isempty(obj.terrain) && ...
     (force_collisionDetectTerrain || ~isa(obj.terrain,'RigidBodyFlatTerrain'))
   % For each point on the manipulator that can collide with terrain,
   % find the closest point on the terrain geometry
-  terrain_contact_point_struct = getTerrainContactPoints(obj);
+  if isfield(active_collision_options,'body_idx')
+    terrain_contact_point_struct = ...
+      getTerrainContactPoints(obj,active_collision_options.body_idx);
+  else
+    terrain_contact_point_struct = getTerrainContactPoints(obj);
+  end
 
   if ~isempty(terrain_contact_point_struct)
     xA_new = [terrain_contact_point_struct.pts];
@@ -84,13 +103,9 @@ if ~isempty(obj.terrain) && ...
                                  terrain_contact_point_struct, ...
                                  'UniformOutput',false));
 
-    xA_new_in_world = ...
-      cell2mat(arrayfun(@(x)forwardKin(obj,kinsol,x.idx,x.pts), ...
-      terrain_contact_point_struct, 'UniformOutput',false));
-
     % Note: only implements collisions with the obj.terrain so far
     [phi_new,normal_new,xB_new,idxB_new] = ...
-      collisionDetectTerrain(obj,xA_new_in_world);
+      collisionDetectTerrain(obj,kinsol,terrain_contact_point_struct);
 
     phi = [phi;phi_new];
     normal = [normal,normal_new];

@@ -21,8 +21,9 @@ classdef RigidBodyManipulator < Manipulator
     num_contact_pairs;
     contact_options; % struct containing options for contact/collision handling
     frame = [];     % array of RigidBodyFrame objects
+    cached_terrain_contact_point_struct = [];
   end
-  
+
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
     featherstone = [];  
     B = [];
@@ -620,6 +621,10 @@ classdef RigidBodyManipulator < Manipulator
 
       model = adjustContactShapes(model);
       model = setupCollisionFiltering(model);      
+
+      model.cached_terrain_contact_point_struct = [];
+      model.cached_terrain_contact_point_struct = ...
+        model.getTerrainContactPoints();
             
       model.dirty = false;
       
@@ -853,7 +858,7 @@ classdef RigidBodyManipulator < Manipulator
       b = leastCommonAncestor(model,body1.parent,body2);
     end
     
-    function terrain_contact_point_struct = getTerrainContactPoints(obj)
+    function terrain_contact_point_struct = getTerrainContactPoints(obj,body_idx)
       % terrain_contact_point_struct = getTerrainContactPoints(obj)
       %
       % @param obj - RigidBodyManipulator object
@@ -863,8 +868,17 @@ classdef RigidBodyManipulator < Manipulator
       %     * idx - Index of a body in the RigidBodyManipulator
       %     * pts - 3xm array containing points on the body specified by idx
       %             that can collide with non-flat terrain.
+      if nargin < 2
+        if ~isempty(obj.cached_terrain_contact_point_struct)
+          terrain_contact_point_struct = ...
+            obj.cached_terrain_contact_point_struct;
+          return;
+        end
+        body_idx = 2:obj.getNumBodies(); % World-fixed objects can't collide
+                                         % with terrain
+      end
       terrain_contact_point_struct = struct('pts',{},'idx',{});
-      for i = 1:obj.getNumBodies()
+      for i = setdiff(body_idx,1)
         pts = getTerrainContactPoints(obj.body(i));
         if ~isempty(pts)
           terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
