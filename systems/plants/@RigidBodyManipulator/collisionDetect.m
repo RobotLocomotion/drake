@@ -10,7 +10,8 @@ function [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol, ...
 %   * body A and body B, where body A belongs to collision filter groups that
 %     ignore all of the collision filter groups to which body B belongs
 % @param obj
-% @param kinsol
+% @param kinsol result of calling doKinematics(obj, q) where q is a
+%   position vector.  Can also be q, and we'll call doKinematics for you.
 % @param allow_multiple_contacts - Logical indicating whether or not the
 %   collision detection algorithm return multiple contact points for a
 %   single pair of contact elements.
