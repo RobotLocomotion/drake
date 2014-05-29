@@ -1,4 +1,4 @@
-function [x, Jv, Jvdot_times_v] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind)
+function [x, J, Jdot_times_v] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind)
 % computes the position of pts (given in the body frame) in the global
 % frame, as well as the Jacobian Jv that maps the joint velocity vector v
 % to xdot, and d/dt(Jv) * v.
@@ -24,12 +24,9 @@ function [x, Jv, Jvdot_times_v] = forwardKinV(obj, kinsol, body_or_frame_ind, po
 % if pts is a 3xm matrix, then x will be a 3xm matrix
 %  and (following our gradient convention) J will be a ((3xm)x(q))
 %  matrix, with [J1;J2;...;Jm] where Ji = dxidq
-% if rotation_type = 1:
+% if rotation_type = 1 or 2:
 % x will be a 6xm matrix and (following our gradient convention) J will be 
 % a ((6xm)x(q)) matrix, with [J1;J2;...;Jm] where Ji = dxidq
-% if rotation_type = 2:
-% x will be a 7xm matrix and (following out gradient convention) J will be
-% a ((7xm)*(q)) matrix with [J1;J2;....;Jm] where Ji = dxidq
 
 if nargin < 5, rotation_type = 0; end
 if nargin < 6, base_ind = 1; end
@@ -104,18 +101,18 @@ xSize = pointSize + size(JRot, 1);
 posRowIndices = repeatVectorIndices(1 : pointSize, xSize, nPoints);
 rotRowIndices = repeatVectorIndices(pointSize + 1 : xSize, xSize, nPoints);
 
-Jv = zeros(length(posRowIndices) + length(rotRowIndices), vSize);
-Jv(posRowIndices, vIndices) = JX;
-Jv(rotRowIndices, vIndices) = repmat(JRot, nPoints, 1);
+J = zeros(length(posRowIndices) + length(rotRowIndices), vSize);
+J(posRowIndices, vIndices) = JX;
+J(rotRowIndices, vIndices) = repmat(JRot, nPoints, 1);
 
 if computeJvdot_times_v
   JRotdot_times_v = Phid * twist(1 : 3) + Phi * JGeometricdotV(1 : 3);
-  Jvdot_times_v = zeros(length(posRowIndices) + length(rotRowIndices), 1);
+  Jdot_times_v = zeros(length(posRowIndices) + length(rotRowIndices), 1);
   rdots = reshape(-rHats * twist(1 : 3) + repmat(twist(4 : 6), nPoints, 1), pointSize, nPoints);
   XBardotJv = reshape((cross(-rdots, repmat(twist(1 : 3), 1, nPoints))), length(posRowIndices), 1);
   XBarJdotV = -rHats * JGeometricdotV(1 : 3) + repmat(JGeometricdotV(4 : 6), nPoints, 1);
-  Jvdot_times_v(posRowIndices, :) = XBardotJv + XBarJdotV;
-  Jvdot_times_v(rotRowIndices, :) = repmat(JRotdot_times_v, nPoints, 1);
+  Jdot_times_v(posRowIndices, :) = XBardotJv + XBarJdotV;
+  Jdot_times_v(rotRowIndices, :) = repmat(JRotdot_times_v, nPoints, 1);
 end
 end
 

@@ -32,7 +32,7 @@ epsilon = 1e-3;
 while testNumber < nTests
   q = getRandomConfiguration(robot);
   v = randn(nv, 1);
-  kinsol = robot.doKinematics(q, true, false, v);
+  kinsol = robot.doKinematics(q, false, false, v, true);
   
   base = randi(bodyRange);
   endEffector = randi(bodyRange);
