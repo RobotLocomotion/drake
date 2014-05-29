@@ -22,7 +22,7 @@ if (obj.mex_model_ptr == 0)
 end
 
 if ~isstruct(kinsol)  
-  % treat input as collisionDetect(obj,q)
+  % treat input as collisionRaycast(obj,q,origin,ray_endpoint)
   kinsol = doKinematics(obj,kinsol);
 end
 
