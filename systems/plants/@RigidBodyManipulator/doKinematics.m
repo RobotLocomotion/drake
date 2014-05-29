@@ -1,5 +1,5 @@
 function kinsol = doKinematics(model, q, compute_gradients, use_mex, v, compute_JdotV)
-% kinsol=doKinematics(model, q, compute_JdotV, use_mex, v)
+% kinsol=doKinematics(model, q, compute_gradients, use_mex, v, compute_JdotV)
 % Computes the (forward) kinematics of the manipulator.
 %
 % @retval kinsol a certificate containing the solution (or information
