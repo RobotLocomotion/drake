@@ -19,9 +19,7 @@ p_selector = false(4, 4);
 p_selector(1:3, 4) = true;
 dp = dT(p_selector(:), :);
 
-indices = reshape(1:9, size(R));
-indicesT = indices';
-dinvT_rot = dR(indicesT(:), :);
+dinvT_rot = transposeGrad(dR, size(R));
 
 % dinvT_trans = -R'*dp -kron(p', eye(3)) * dinvT_rot;
 % Equivalently:
