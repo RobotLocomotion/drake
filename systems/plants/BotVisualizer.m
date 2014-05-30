@@ -31,7 +31,7 @@ classdef BotVisualizer < RigidBodyVisualizer
       end
       typecheck(manip,'RigidBodyManipulator');
       
-      if ~isSupportedTerrain(manip.terrain)
+      if ~BotVisualizer.isSupportedTerrain(manip.terrain)
         error('Drake:BotVisualizer:UnsupportedModel', ...
           'This model has terrain that is not supported by BotVisualizer (yet)');
       end
