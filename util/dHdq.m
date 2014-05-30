@@ -2,10 +2,11 @@ function ret = dHdq(H, S, qdotToV)
 % DHDQ Computes the gradient of a homogeneous transform H with respect to
 % the vector of coordinates q that determine H.
 % @param H the homogeneous transform describing the configuration of `body'
-% in `base' frame
+% in `base' frame (i.e. H maps vectors in body to base)
 % @param S the motion subspace between `body' and `base', i.e. the mapping
 % from the vector of joint velocities describing the motion of `body' with
-% respect to `base' to the twist of `body' with respect to `base'
+% respect to `base' to the twist of `body' with respect to `base',
+% expressed in `body' frame
 % @param qdotToV matrix describing the mapping from the derivative of the
 % coordinate vector, qdot to the velocity vector, v.
 
