@@ -46,11 +46,11 @@ v.playback(xtraj, struct('slider',true));
 
 end
 
-      function [g,dg] = cost(t,x,u);
-        R = .1;
-        g = u'*R*u;
+      function [g,dg] = cost(t,x,u)
+        Q = zeros(14,14); Q(14,14) = .1;
+        g = x'*Q*x;
         if (nargout>1)
-          dg = [0,zeros(1,length(x)),2*u'*R];
+          dg = [0,2*x'*Q,zeros(1,size(u,1))];
         end
       end
         
