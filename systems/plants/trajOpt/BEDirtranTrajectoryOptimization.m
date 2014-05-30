@@ -10,7 +10,7 @@ classdef BEDirtranTrajectoryOptimization < TrajectoryOptimization
       obj = obj@TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,varargin{:});
     end
     
-    function [constraints,dyn_inds] = createDynamicConstraints(obj)
+    function obj = addDynamicConstraints(obj)
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
       N = obj.N;
@@ -26,6 +26,8 @@ classdef BEDirtranTrajectoryOptimization < TrajectoryOptimization
       for i=1:obj.N-1,        
         dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i)];
         constraints{i} = cnstr;
+        
+        obj = obj.addNonlinearConstraint(constraints{i}, dyn_inds{i});
       end
       
       function [f,df] = constraint_fun(h,x0,x1,u)
