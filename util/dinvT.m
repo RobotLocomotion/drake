@@ -11,13 +11,8 @@ nq = size(dT, 2);
 R = T(1:3, 1:3);
 p = T(1:3, 4);
 
-R_selector = false(4, 4);
-R_selector(1:3, 1:3) = true;
-dR = dT(R_selector(:), :);
-
-p_selector = false(4, 4);
-p_selector(1:3, 4) = true;
-dp = dT(p_selector(:), :);
+dR = getSubMatrixGradient(dT, 1:3, 1:3, size(T));
+dp = getSubMatrixGradient(dT, 1:3, 4, size(T));
 
 dinvT_rot = transposeGrad(dR, size(R));
 
