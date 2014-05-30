@@ -1,7 +1,8 @@
 classdef ContactImplicitTrajectoryOptimization < TrajectoryOptimization
   % phi, lambda
   properties
-    l_inds
+    nC
+    l_inds % orderered [lambda_N;lambda_f1;lambda_f2;...;gamma] for each contact sequentially
   end
   
   methods
@@ -23,20 +24,56 @@ classdef ContactImplicitTrajectoryOptimization < TrajectoryOptimization
       cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,dynfun);
       
       for i=1:obj.N-1,        
-        dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i)];
+        dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.l_inds(:,i)];
         constraints{i} = cnstr;
+        
+        obj = obj.addNonlinearConstraint(constraints{i}, dyn_inds{i});
+        
+        %TODO: generate complementarity constraints
       end
       
-      function [f,df] = dynamics_constraint_fun(h,x0,x1,u)
-        [xdot,dxdot] = geval(@(t,x,u) dynamics(obj.plant,t,x,u),0,x0,u);
-%         [xdot,dxdot] = obj.plant.dynamics(0,x0,u);
-        f = x1 - x0 - h*xdot;
-        df = [-xdot (-eye(nX) - h*dxdot(:,2:1+nX)) eye(nX) -h*dxdot(:,nX+2:end)];
+      function [f,df] = dynamics_constraint_fun(h,x0,x1,u,l)
+        nq = obj.plant.getNumPositions;
+        nv = obj.plant.getNumVelocities;
+        nu = obj.plant.getNumInputs;
+        nl = length(l);
+        
+        assert(nq == nv) % not quite ready for the alternative
+        
+        q0 = x0(1:nq);
+        v0 = x0(obj.nq+1:nq+nv);
+        q0 = x0(1:obj.plant.getNumPositions);
+        v0 = x0(obj.plant.getNumPositions+1:end);
+        
+        [H,C,B,dH,dC,dB] = obj.plant.manipulatorDynamics(q1,v1);
+        
+        fq = q1 - q0 - h*v1;
+        dfq = [-v1, -eye(nq), zeros(nq,nv), eye(nq), -h*eye(nq) zeros(nq,nu+nl)];
+        
+        fv = H*(v1 - v0) - h*(B*u - C) + J*lambda; % todo finish this, get J, l, check gradients
+        
+        % [h q0 v0 q1 v1 u l]
+        dfv = [B*u-C, zeros(nv,nq), -H, dH*(v1-v0)+h*dC(:,1:nq)+dJ*lambda, H+h*dC(:,nq+1:nq+nv),J];
+        
+        f = [fq;fv];
+        df = [dfq;dfv];       
+      end
+      
+      function [f,df] = nonlincompl_fun(x,z)
+        
       end
     end
     
     function obj = setupVariables(obj,N)
-      obj = setupVariables@TrajectoryOptimization(N);
+      obj = setupVariables@TrajectoryOptimization(obj,N);
+      obj.nC = p.getNumContactPairs;
+      [~,normal,d] = obj.plant.contactConstraints(zeros(obj.plant.getNumPositions,1));
+      assert(size(normal,2) == obj.nC); % just a double check
+      
+      nContactForces = obj.nC*(2 + 2*length(d));
+      
+      obj.l_inds = obj.num_vars + (1:N * nContactForces);
+      obj.addDecisionVariable(N * nContactForces);
     end
     
     % evaluates the initial trajectories at the sampled times and
@@ -52,6 +89,7 @@ classdef ContactImplicitTrajectoryOptimization < TrajectoryOptimization
       for i=1:length(t_init),
         z0(obj.x_inds(:,i)) = traj_init.x.eval(t_init(i));
         z0(obj.u_inds(:,i)) = traj_init.u.eval(t_init(i));
+        z0(obj.l_inds(:,i)) = traj_init.l.eval(t_init(i));
       end
     end
     
