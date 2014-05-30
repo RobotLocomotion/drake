@@ -29,7 +29,7 @@ for i = 1 : nTests
   v = randn(nv, 1);
   tau = randn(nActuators, 1);
   
-  kinsol = robot.doKinematics(q,true,false, v);
+  kinsol = robot.doKinematics(q,false,false, v, true);
   [H, C, B] = robot.manipulatorDynamics(q, v, false);
   vdot = H \ (B * tau - C);
   
@@ -55,7 +55,7 @@ for i = 1 : nTests
   A = getCMM(robot, kinsol);
   h = A * v;
   
-  inertias_world = computeInertiasInWorld(robot, kinsol);
+  inertias_world = inertiasInWorldFrame(robot, kinsol);
   h_check = sum(cell2mat(cellfun(@mtimes, inertias_world, kinsol.twists, 'UniformOutput', false)), 2); % in world frame
   com = robot.getCOM(kinsol.q);
   transform_com_to_world = eye(4);
