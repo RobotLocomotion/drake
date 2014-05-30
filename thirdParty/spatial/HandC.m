@@ -35,8 +35,7 @@ if compute_gradients
   [inertias_world, dinertias_world] = inertiasInWorldFrame(manipulator, kinsol);
   [crbs, dcrbs] = compositeRigidBodyInertias(manipulator, inertias_world, dinertias_world);
   [H, dH] = computeMassMatrix(manipulator, kinsol, crbs, dcrbs);
-  C = computeBiasTerm(manipulator, kinsol, inertias_world, f_ext, a_grav); % TODO
-  dC = []; % TODO
+  [C, dC] = computeBiasTerm(manipulator, kinsol, inertias_world, f_ext, a_grav, dinertias_world);
 else
   inertias_world = inertiasInWorldFrame(manipulator, kinsol);
   crbs = compositeRigidBodyInertias(manipulator, inertias_world);
@@ -95,7 +94,7 @@ for i = 2 : NB
 end
 end
 
-function C = computeBiasTerm(manipulator, kinsol, inertias_world, external_wrenches, gravitational_accel)
+function [C, dC] = computeBiasTerm(manipulator, kinsol, inertias_world, external_wrenches, gravitational_accel, dinertias_world)
 nv = length(kinsol.v);
 root_accel = -gravitational_accel; % as if we're standing in an elevator that's accelerating upwards
 JdotV = kinsol.JdotV;
@@ -124,5 +123,7 @@ for i = NB : -1 : 2
   C(body.velocity_num) = tau;
   net_wrenches{body.parent} = net_wrenches{body.parent} + joint_wrench;
 end
+
+dC = []; % TODO
 
 end
