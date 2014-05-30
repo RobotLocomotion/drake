@@ -71,17 +71,15 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
         options.time_option = 1;
       end
       
-      [num_vars,h_inds,x_inds,u_inds] = TrajectoryOptimization.getVarInfo(plant,N,options); 
+      %todo: replace getVarInfo with setupVarInfo
+      % initialize with 0 variables and then add them
       
-      obj = obj@NonlinearProgramWConstraintObjects(num_vars);
-      obj.N = N;
+      obj = obj@NonlinearProgramWConstraintObjects(0);
       obj.options = options;
       obj.plant = plant;
-      obj.h_inds = h_inds;
-      obj.x_inds = x_inds;
-      obj.u_inds = u_inds;
       
-      
+      obj = obj.setupVariables(N);
+
       % Construct total time linear constraint
       switch options.time_option
         case 1 % all timesteps are constant
@@ -96,7 +94,7 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       
       
       % create constraints for dynamics and add them
-      [dynamic_constraints,dyn_inds] = obj.createDynamicConstraints();
+      obj = obj.addDynamicConstraints();
       obj.dynamic_constraints.nlcon = dynamic_constraints;
       obj.dynamic_constraints.var_inds = dyn_inds;
       for i=1:length(dynamic_constraints),
@@ -171,6 +169,33 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
         z0(obj.u_inds(:,i)) = traj_init.u.eval(t_init(i));
       end
     end
+    
+    % Default implementation,
+    % Assumes, if time is not fixed, that there are N-1 time steps
+    % N corresponding state variables
+    % and N-1 corresponding input variables
+    % Overwrite to change
+    %
+    % Generates num_vars total number of decision variables
+    %   h_inds (N-1) x 1 indices for timesteps h so that z(h_inds(i)) = h(i)
+    %   x_inds N x n indices for state
+    %   u_inds N x m indices for time
+    %
+    % @param N number of knot points
+    function obj = setupVariables(obj, N)
+      nH = N-1;
+      nX = obj.plant.getNumStates();
+      nU = obj.plant.getNumInputs();
+      
+      num_vars = nH + N*(nX+nU);
+      obj.h_inds = (1:nH)';
+      obj.x_inds = reshape(nH + (1:nX*N),nX,N);
+      obj.u_inds = reshape(nH + nX*N + (1:nU*N),nU,N);
+
+      obj.N = N;
+      
+      obj = obj.addDecisionVariable(num_vars);
+    end
   end
   
   methods(Abstract)
@@ -180,37 +205,7 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     % method used
     obj = setupCostFunction(obj,initial_cost,running_cost,final_cost);
     
-    % Create a cell array of constraints and a cell array of indices that
-    % represent the dynamics constraints
-    [constraints,dyn_inds] = createDynamicConstraints(obj);
-  end
-  
-  
-  methods(Static)
-    % Default implementation,
-    % Assumes, if time is not fixed, that there are N-1 time steps
-    % N corresponding state variables
-    % and N-1 corresponding input variables
-    % Overwrite to change
-    %
-    % @param plant
-    % @param N number of knot points
-    % @param options
-    %
-    % @return num_vars total number of decision variables
-    % @return h_inds (N-1) x 1 indices for timesteps h so that z(h_inds(i)) = h(i)
-    % @return x_inds N x n indices for state
-    % @return u_inds N x m indices for time
-    function [num_vars,h_inds,x_inds,u_inds] = getVarInfo(plant,N,options)
-      nH = N-1;
-      nX = plant.getNumStates();
-      nU = plant.getNumInputs();
-      
-      num_vars = nH + N*(nX+nU);
-      h_inds = (1:nH)';
-      x_inds = reshape(nH + (1:nX*N),nX,N);
-      u_inds = reshape(nH + nX*N + (1:nU*N),nU,N);
-    end
+    obj = addDynamicConstraints(obj);
   end
 end
 
