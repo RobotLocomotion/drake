@@ -44,6 +44,32 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       obj.Aeq_name = {};
     end
     
+    function obj = addManagedConstraints(obj,mgr,xind)
+      if size(xind,2) > size(xind,1)
+        xind = xind';
+      end
+      % add in slack variables to end, and adjust xind accordingly
+      n_slack = mgr.getNumSlackVariables();
+      var_ind = [xind;(obj.num_vars + 1 : obj.num_vars + n_slack)'];
+      obj = obj.addDecisionVariable(n_slack);
+      
+      % add constraints
+      lincon = mgr.getLinearConstraints();
+      for k=1:length(lincon),
+        obj = obj.addLinearConstraint(lincon{k}, var_ind);
+      end
+      
+      nlncon = mgr.getNonlinearConstraints();
+      for k=1:length(nlncon),
+        obj = obj.addNonlinearConstraint(nlncon{k}, var_ind);
+      end
+      
+      bcon = mgr.getBoundingBoxConstraints();
+      for k=1:length(bcon),
+        obj = obj.addBoundingBoxConstraint(bcon{k}, var_ind);
+      end
+    end
+    
     function obj = addNonlinearConstraint(obj,cnstr,xind)
       % add a NonlinearConstraint to the object, change the constraint evalation of the
       % program. 
