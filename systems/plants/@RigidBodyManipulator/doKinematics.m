@@ -109,7 +109,7 @@ for i = 2 : nb
   HToParent = H{body.parent} \ H{i};
   qdotToVi = qdotToV(body.velocity_num, body.position_num);
   dHToParentdqi = dHdq(HToParent, S{i}, qdotToVi);
-  dHToParentdq = zeros(numel(H{i}), nq);
+  dHToParentdq = zeros(numel(H{i}), nq) * dHToParentdqi(1); % to make TaylorVar work better
   dHToParentdq(:, body.position_num) = dHToParentdqi;
   ret{i} = matGradMultMat(...
     H{body.parent}, HToParent, ret{body.parent}, dHToParentdq);
@@ -132,7 +132,7 @@ for i = 2 : nb
   body = bodies(i);
   nq = size(dHdq{i}, 2);
   Si = S{i};
-  dSdqi = zeros(numel(Si), nq);
+  dSdqi = zeros(numel(Si), nq) * dHdq{i}(1); % to make TaylorVar work better
   dSdqi(:, body.position_num) = dSdq{i};
   ret{i} = dAdHTimesX(H{i}, Si, dHdq{i}, dSdqi);
 end

@@ -96,7 +96,7 @@ classdef RigidBodyManipulator < Manipulator
     function Vq = qdotToV(obj, q)
       bodies = obj.body;
       nb = length(bodies);
-      Vq = zeros(obj.num_velocities, obj.num_positions);
+      Vq = zeros(obj.num_velocities, obj.num_positions) * q(1); % to make TaylorVar work better
       for i = 2 : nb
         bodyI = bodies(i);
         if bodyI.floating == 1
@@ -119,7 +119,7 @@ classdef RigidBodyManipulator < Manipulator
     function VqInv = vToqdot(obj, q)
       bodies = obj.body;
       nb = length(bodies);
-      VqInv = zeros(obj.num_positions, obj.num_velocities);
+      VqInv = zeros(obj.num_positions, obj.num_velocities) * q(1); % to make TaylorVar work better
       for i = 2 : nb
         bodyI = bodies(i);
         if bodyI.floating == 1
