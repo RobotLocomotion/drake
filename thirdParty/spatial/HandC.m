@@ -1,4 +1,4 @@
-function  [H,C] = HandC(manipulator, q, v, f_ext, grav_accn )
+function  [H,C,dH,dC] = HandC(manipulator, q, v, f_ext, grav_accn )
 
 % HandC  Calculate coefficients of equation of motion.
 % [H,C]=HandC(model,q,v,f_ext,grav_accn) calculates the coefficients of
@@ -18,6 +18,8 @@ function  [H,C] = HandC(manipulator, q, v, f_ext, grav_accn )
 %
 % UPDATED by russt:  f_ext is an empty or (sparse) 6 x model.NB matrix
 
+compute_gradients = nargout > 2;
+
 if nargin < 5
   a_grav = [0;0;0;0;0;-9.81];
 else
@@ -28,26 +30,50 @@ if nargin < 4 || isempty(f_ext)
   f_ext = sparse(6, length(manipulator.body));
 end
 
-kinsol = doKinematics(manipulator, q, false, false, v, true);
-inertias_world = inertiasInWorldFrame(manipulator, kinsol);
-composite_inertias = compositeRigidBodyInertias(manipulator, inertias_world);
-H = computeMassMatrix(manipulator, kinsol, composite_inertias);
-C = computeBiasTerm(manipulator, kinsol, inertias_world, f_ext, a_grav);
+kinsol = doKinematics(manipulator, q, compute_gradients, false, v, true);
+if compute_gradients
+  [inertias_world, dinertias_world] = inertiasInWorldFrame(manipulator, kinsol);
+  [crbs, dcrbs] = compositeRigidBodyInertias(manipulator, inertias_world, dinertias_world);
+  [H, dH] = computeMassMatrix(manipulator, kinsol, crbs, dcrbs);
+  C = computeBiasTerm(manipulator, kinsol, inertias_world, f_ext, a_grav); % TODO
+  dC = []; % TODO
+else
+  inertias_world = inertiasInWorldFrame(manipulator, kinsol);
+  crbs = compositeRigidBodyInertias(manipulator, inertias_world);
+  H = computeMassMatrix(manipulator, kinsol, crbs);
+  C = computeBiasTerm(manipulator, kinsol, inertias_world, f_ext, a_grav);
+end
 
 end
 
-function H = computeMassMatrix(manipulator, kinsol, composite_inertias)
+function [H, dH] = computeMassMatrix(manipulator, kinsol, crbs, dcrbs)
+compute_gradient = nargout > 1;
+
 % world frame implementation
 NB = length(manipulator.body);
-nv = length(kinsol.v);
+nv = manipulator.getNumVelocities();
 H = zeros(nv, nv) * kinsol.q(1); % minor adjustment to make TaylorVar work better.
 
+if compute_gradient
+  nq = manipulator.getNumPositions();
+  dH = zeros(numel(H), nq) * kinsol.q(1);
+end
+
 for i = 2 : NB
-  Ic = composite_inertias{i};
+  Ic = crbs{i};
   Si = kinsol.J{i};
   i_indices = manipulator.body(i).velocity_num;
   F = Ic * Si;
-  H(i_indices, i_indices) = Si' * F;
+  Hii = Si' * F;
+  H(i_indices, i_indices) = Hii;
+  
+  if compute_gradient
+    dIc = dcrbs{i};
+    dSi = kinsol.dJdq{i};
+    dF = matGradMultMat(Ic, Si, dIc, dSi);
+    dHii = matGradMultMat(Si', F, transposeGrad(dSi, size(Si)), dF);
+    dH = setSubMatrixGradient(dH, dHii, i_indices, i_indices, size(H));
+  end
   
   j = i;
   while j ~= 2
@@ -58,6 +84,13 @@ for i = 2 : NB
     Hji = Sj' * F;
     H(j_indices, i_indices) = Hji;
     H(i_indices, j_indices) = Hji';
+    
+    if compute_gradient
+      dSj = kinsol.dJdq{j};
+      dHji = matGradMultMat(Sj', F, transposeGrad(dSj, size(Sj)), dF);
+      dH = setSubMatrixGradient(dH, dHji, j_indices, i_indices, size(H));
+      dH = setSubMatrixGradient(dH, transposeGrad(dHji, size(Hji)), i_indices, j_indices, size(H));
+    end
   end
 end
 end

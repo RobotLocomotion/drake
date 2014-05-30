@@ -4,6 +4,7 @@ testBrickQuaternion();
 testActuatedPendulum();
 regressionTestAtlasRPY();
 testAtlasQuat();
+checkMassMatrixGradient(createAtlas('quat'));
 
 end
 
@@ -85,7 +86,7 @@ for i = 1 : nTests
   kinetic_energy = v' * H * v;
   
   kinsol = r.doKinematics(q, false, false, v);
-  kinetic_energy_via_kinsol = compute_kinetic_energy(r, kinsol);
+  kinetic_energy_via_kinsol = computeKineticEnergy(r, kinsol);
   valuecheck(kinetic_energy_via_kinsol, kinetic_energy, 1e-10);
 end
 
@@ -95,7 +96,7 @@ function out = varname(~)
 out = inputname(1);
 end
 
-function ret = compute_kinetic_energy(manipulator, kinsol)
+function ret = computeKineticEnergy(manipulator, kinsol)
 NB = manipulator.getNumBodies();
 twists = kinsol.twists;
 transforms = kinsol.T;
@@ -106,5 +107,15 @@ for i = 2 : NB
   I = manipulator.body(i).I;
   ret = ret + twistInBody' * I * twistInBody;
 end
+end
 
+function checkMassMatrixGradient(robot)
+q = getRandomConfiguration(robot);
+v = randn(robot.getNumVelocities());
+[~,~,dH] = HandC(robot, q, v);
+
+option.grad_method = 'taylorvar';
+[~, dH_geval] = geval(1, @(q) HandC(robot, q, v), q, option);
+
+valuecheck(dH_geval, dH, 1e-12);
 end
