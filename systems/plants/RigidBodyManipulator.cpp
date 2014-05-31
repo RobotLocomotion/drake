@@ -268,6 +268,7 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
   resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
 }
 
+/*
 template <typename T>
 void myrealloc(T* &ptr, int old_size, int new_size)
 {
@@ -284,10 +285,11 @@ void myrealloc(T* &ptr, int old_size, int new_size)
   }
   ptr = newptr;
 }
+*/
 
 void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
 {
-  int last_num_dof = num_dof, last_NB = NB, last_num_bodies = num_bodies, last_num_frames = num_frames;
+  int last_num_dof = num_dof, last_NB = NB, last_num_bodies = num_bodies;
   
   num_dof = ndof;
   joint_limit_min.conservativeResize(num_dof);
@@ -333,20 +335,15 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
     num_bodies = NB+1;  // this was my old assumption, so leave it here as the default behavior
   else
     num_bodies = num_rigid_body_objects;
-  
-  if (num_bodies != last_num_bodies) {
-    myrealloc(bodies,last_num_bodies,num_bodies);
+
+  bodies.resize(num_bodies);
+  for(int i=0; i < num_bodies; i++) bodies[i].setN(NB);
+  for(int i=last_num_bodies; i<num_bodies; i++) bodies[i].dofnum = i-1;  // setup default dofnums
     
-    for(int i=0; i < num_bodies; i++) bodies[i].setN(NB);
-    for(int i=last_num_bodies; i<num_bodies; i++) bodies[i].dofnum = i-1;  // setup default dofnums
-    
-    collision_model->resize(num_bodies);
-  }
+  collision_model->resize(num_bodies);
   
   num_frames = num_rigid_body_frames;
-  if (num_frames != last_num_frames) {
-  	myrealloc(frames,last_num_frames,num_frames);
-  }
+  frames.resize(num_frames);
 
   //Variable allocation for gradient calculations
   dXupdq.resize(NB);
@@ -413,14 +410,6 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   secondDerivativesCached = 0;
 }
 
-RigidBodyManipulator::~RigidBodyManipulator() {
-
-  if (num_bodies>0)
-    delete[] bodies;
-  
-  if (num_frames>0)
-    delete[] frames;
-}
 
 void RigidBodyManipulator::compile(void) 
 {
