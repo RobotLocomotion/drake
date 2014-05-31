@@ -126,9 +126,9 @@ public:
 
   // featherstone data structure
   int NB;  // featherstone bodies
-  int *pitch;
-  int *parent;
-  int *dofnum;
+  VectorXi pitch;
+  VectorXi parent;
+  VectorXi dofnum;
   double* damping;
   double* coulomb_friction;
   double* coulomb_window;

@@ -302,10 +302,10 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   else
     NB = num_featherstone_bodies;
   
+  pitch.resize(NB);
+  parent.resize(NB);
+  dofnum.resize(NB);
   if (NB != last_NB) {
-    myrealloc(pitch,last_NB,NB);
-    myrealloc(parent,last_NB,NB);
-    myrealloc(dofnum,last_NB,NB);
     myrealloc(damping,last_NB,NB);
     myrealloc(coulomb_friction,last_NB,NB);
     myrealloc(static_friction,last_NB,NB);
@@ -448,9 +448,6 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 RigidBodyManipulator::~RigidBodyManipulator() {
 
   if (NB>0) {
-    delete[] pitch;
-    delete[] parent;
-    delete[] dofnum;
     delete[] damping;
     delete[] coulomb_friction;
     delete[] static_friction;
