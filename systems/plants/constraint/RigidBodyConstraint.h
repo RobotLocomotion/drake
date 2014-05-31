@@ -142,15 +142,14 @@ class QuasiStaticConstraint: public RigidBodyConstraint
 class PostureConstraint: public RigidBodyConstraint
 {
   protected:
-    double* lb;
-    double* ub;
+    Eigen::VectorXd lb;
+    Eigen::VectorXd ub;
   public:
     PostureConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     PostureConstraint(const PostureConstraint& rhs);
     bool isTimeValid(const double* t) const;
-    void setJointLimits(int num_idx, const int* joint_idx, const double* lb, const double* ub);
-    void bounds(const double* t,double* joint_min, double* joint_max) const;
-    virtual ~PostureConstraint(void);
+    void setJointLimits(int num_idx, const int* joint_idx, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub);
+    void bounds(const double* t,Eigen::VectorXd& joint_min, Eigen::VectorXd& joint_max) const;
 };
 
 /*
@@ -274,9 +273,9 @@ class MultipleTimeKinematicConstraint : public RigidBodyConstraint
 class PositionConstraint : public SingleTimeKinematicConstraint
 {
   protected:
-    double* lb;
-    double* ub;
-    bool* null_constraint_rows;
+    Eigen::VectorXd lb;
+    Eigen::VectorXd ub;
+    std::vector<bool> null_constraint_rows;
     Eigen::MatrixXd pts; 
     int n_pts;
     virtual void evalPositions(Eigen::MatrixXd &pos,Eigen::MatrixXd &J) const = 0;
@@ -287,7 +286,6 @@ class PositionConstraint : public SingleTimeKinematicConstraint
     virtual void eval(const double* t,Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
-    virtual ~PositionConstraint();
 };
 
 class WorldPositionConstraint: public PositionConstraint
@@ -376,17 +374,16 @@ class RelativeQuatConstraint: public QuatConstraint
 class EulerConstraint: public SingleTimeKinematicConstraint
 {
   protected:
-    double* ub;
-    double* lb;
+    Eigen::VectorXd ub;
+    Eigen::VectorXd lb;
     bool null_constraint_rows[3];
-    double* avg_rpy;
+    Eigen::VectorXd avg_rpy;
     virtual void evalrpy(Eigen::Vector3d &rpy, Eigen::MatrixXd &J) const = 0;
   public:
     EulerConstraint(RigidBodyManipulator *model, Eigen::Vector3d lb, Eigen::Vector3d ub, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     EulerConstraint(const EulerConstraint &rhs);
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
-    virtual ~EulerConstraint();
 };
 
 class WorldEulerConstraint: public EulerConstraint

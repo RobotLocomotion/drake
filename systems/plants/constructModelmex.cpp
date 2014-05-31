@@ -247,8 +247,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     memcpy(model->frames[i].T.data(),mxGetPr(pm),sizeof(double)*4*4);
   }
 
-  memcpy(model->joint_limit_min, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min")), sizeof(double)*model->num_dof);
-  memcpy(model->joint_limit_max, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_max")), sizeof(double)*model->num_dof);
+  
+  memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min")), sizeof(double)*model->num_dof);
+  memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_max")), sizeof(double)*model->num_dof);
   
   const mxArray* a_grav_array = mxGetProperty(prhs[0],0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {
