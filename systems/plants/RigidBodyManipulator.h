@@ -133,8 +133,8 @@ public:
   VectorXd coulomb_friction;
   VectorXd coulomb_window;
   VectorXd static_friction;
-  MatrixXd* Xtree;
-  MatrixXd* I;
+  std::vector<MatrixXd> Xtree;
+  std::vector<MatrixXd> I;
   VectorXd a_grav;
 
   VectorXd cached_q, cached_qd;  // these should be private
@@ -144,24 +144,24 @@ private:
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d& Tframe);
 
   // variables for featherstone dynamics
-  VectorXd* S;
-  MatrixXd* Xup;
-  VectorXd* v;
-  VectorXd* avp;
-  VectorXd* fvp;
-  MatrixXd* IC;
+  std::vector<VectorXd> S;
+  std::vector<MatrixXd> Xup;
+  std::vector<VectorXd> v;
+  std::vector<VectorXd> avp;
+  std::vector<VectorXd> fvp;
+  std::vector<MatrixXd> IC;
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
-  MatrixXd* dXupdq;
-  MatrixXd** dIC;
+  std::vector<MatrixXd> dXupdq;
+  std::vector<std::vector<MatrixXd>> dIC;
 
-  MatrixXd* dvdq;
-  MatrixXd* dvdqd;
-  MatrixXd* davpdq;
-  MatrixXd* davpdqd;
-  MatrixXd* dfvpdq;
-  MatrixXd* dfvpdqd;
+  std::vector<MatrixXd> dvdq;
+  std::vector<MatrixXd> dvdqd;
+  std::vector<MatrixXd> davpdq;
+  std::vector<MatrixXd> davpdqd;
+  std::vector<MatrixXd> dfvpdq;
+  std::vector<MatrixXd> dfvpdqd;
   MatrixXd dvJdqd_mat;
   MatrixXd dcross;
 
@@ -173,12 +173,12 @@ private:
   // preallocate for CMM function
   MatrixXd Xg; // spatial centroidal projection matrix
   MatrixXd dXg;  // dXg_dq * qd  
-  MatrixXd *Ic; // body spatial inertias
-  MatrixXd *dIc; // derivative of body spatial inertias
-  VectorXd *phi; // joint axis vectors
-  MatrixXd *Xworld; // spatial transforms from world to each body
-  MatrixXd *dXworld; // dXworld_dq * qd
-  MatrixXd *dXup; // dXup_dq * qd 
+  std::vector<MatrixXd> Ic; // body spatial inertias
+  std::vector<MatrixXd> dIc; // derivative of body spatial inertias
+  std::vector<VectorXd> phi; // joint axis vectors
+  std::vector<MatrixXd> Xworld; // spatial transforms from world to each body
+  std::vector<MatrixXd> dXworld; // dXworld_dq * qd
+  std::vector<MatrixXd> dXup; // dXup_dq * qd 
   MatrixXd Xcom; // spatial transform from centroid to world
   MatrixXd Jcom; 
   MatrixXd dXcom;

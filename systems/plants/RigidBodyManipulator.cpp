@@ -302,35 +302,31 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   else
     NB = num_featherstone_bodies;
   
-  pitch.resize(NB);
-  parent.resize(NB);
-  dofnum.resize(NB);
-  damping.resize(NB);
-  coulomb_friction.resize(NB);
-  static_friction.resize(NB);
-  coulomb_window.resize(NB);
-  
-  if (NB != last_NB) {
-    myrealloc(Xtree,last_NB,NB);
-    myrealloc(I,last_NB,NB);
-    
-    myrealloc(S,last_NB,NB);
-    myrealloc(Xup,last_NB,NB);
-    myrealloc(v,last_NB,NB);
-    myrealloc(avp,last_NB,NB);
-    myrealloc(fvp,last_NB,NB);
-    myrealloc(IC,last_NB,NB);
-    
-    for(int i=last_NB; i < NB; i++) {
-      Xtree[i] = MatrixXd::Zero(6,6);
-      I[i] = MatrixXd::Zero(6,6);
-      S[i] = VectorXd::Zero(6);
-      Xup[i] = MatrixXd::Zero(6,6);
-      v[i] = VectorXd::Zero(6);
-      avp[i] = VectorXd::Zero(6);
-      fvp[i] = VectorXd::Zero(6);
-      IC[i] = MatrixXd::Zero(6,6);
-    }
+  pitch.conservativeResize(NB);
+  parent.conservativeResize(NB);
+  dofnum.conservativeResize(NB);
+  damping.conservativeResize(NB);
+  coulomb_friction.conservativeResize(NB);
+  static_friction.conservativeResize(NB);
+  coulomb_window.conservativeResize(NB);
+
+  Xtree.resize(NB);
+  I.resize(NB);
+  S.resize(NB);
+  Xup.resize(NB);
+  v.resize(NB);
+  avp.resize(NB);
+  fvp.resize(NB);
+  IC.resize(NB);
+  for(int i=last_NB; i < NB; i++) {
+    Xtree[i] = MatrixXd::Zero(6,6);
+    I[i] = MatrixXd::Zero(6,6);
+    S[i] = VectorXd::Zero(6);
+    Xup[i] = MatrixXd::Zero(6,6);
+    v[i] = VectorXd::Zero(6);
+    avp[i] = VectorXd::Zero(6);
+    fvp[i] = VectorXd::Zero(6);
+    IC[i] = MatrixXd::Zero(6,6);
   }
   
   if (num_rigid_body_objects<0)
@@ -353,38 +349,22 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   }
 
   //Variable allocation for gradient calculations
-  if (last_NB>0) {
-    delete[] dXupdq;
-    for (int i=0; i<last_NB; i++) {
-      delete[] dIC[i];
+  dXupdq.resize(NB);
+  dIC.resize(NB);
+  for(int i=0; i < NB; i++) {
+    dIC[i].resize(NB);
+    for(int j=0; j < NB; j++) {
+      dIC[i][j] = MatrixXd::Zero(6,6);
     }
-    delete[] dIC;
-    delete[] dvdq;
-    delete[] dvdqd;
-    delete[] davpdq;
-    delete[] davpdqd;
-    delete[] dfvpdq;
-    delete[] dfvpdqd;
   }
-
-  if (NB>0) {
-    dXupdq = new MatrixXd[NB];
-    dIC = new MatrixXd*[NB];
-    for(int i=0; i < NB; i++) {
-      dIC[i] = new MatrixXd[NB];
-      for(int j=0; j < NB; j++) {
-	dIC[i][j] = MatrixXd::Zero(6,6);
-      }
-    }
-    //     dcross.resize(6,n);
+  //     dcross.resize(6,n);
     
-    dvdq = new MatrixXd[NB];
-    dvdqd = new MatrixXd[NB];
-    davpdq = new MatrixXd[NB];
-    davpdqd = new MatrixXd[NB];
-    dfvpdq = new MatrixXd[NB];
-    dfvpdqd = new MatrixXd[NB];
-  }
+  dvdq.resize(NB);
+  dvdqd.resize(NB);
+  davpdq.resize(NB);
+  davpdqd.resize(NB);
+  dfvpdq.resize(NB);
+  dfvpdqd.resize(NB);
 
   dvJdqd_mat = MatrixXd::Zero(6,num_dof);
   for(int i=0; i < NB; i++) {
@@ -403,26 +383,19 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   dTdTmult = MatrixXd::Zero(3*num_dof,4);
 
   // preallocate for CMM function
-  if (last_NB>0) {
-    delete[] Xworld;
-    delete[] dXworld;
-    delete[] dXup;
-  }
-  if (NB>0) {
-    Ic = new MatrixXd[NB]; // body spatial inertias
-    dIc = new MatrixXd[NB]; // derivative of body spatial inertias
-    phi = new VectorXd[NB]; // joint axis vectors
-    Xworld = new MatrixXd[NB]; // spatial transforms from world to each body
-    dXworld = new MatrixXd[NB]; // dXworld_dq * qd
-    dXup = new MatrixXd[NB]; // dXup_dq * qd
-    for(int i=0; i < NB; i++) {
-      Ic[i] = MatrixXd::Zero(6,6);
-      dIc[i] = MatrixXd::Zero(6,6);
-      phi[i] = VectorXd::Zero(6);
-      Xworld[i] = MatrixXd::Zero(6,6);
-      dXworld[i] = MatrixXd::Zero(6,6);
-      dXup[i] = MatrixXd::Zero(6,6);
-    }
+  Ic.resize(NB); // body spatial inertias
+  dIc.resize(NB); // derivative of body spatial inertias
+  phi.resize(NB); // joint axis vectors
+  Xworld.resize(NB); // spatial transforms from world to each body
+  dXworld.resize(NB); // dXworld_dq * qd
+  dXup.resize(NB); // dXup_dq * qd
+  for(int i=0; i < NB; i++) {
+    Ic[i] = MatrixXd::Zero(6,6);
+    dIc[i] = MatrixXd::Zero(6,6);
+    phi[i] = VectorXd::Zero(6);
+    Xworld[i] = MatrixXd::Zero(6,6);
+    dXworld[i] = MatrixXd::Zero(6,6);
+    dXup[i] = MatrixXd::Zero(6,6);
   }
   
   Xg = MatrixXd::Zero(6,6); // spatial centroidal projection matrix for a single body
@@ -442,39 +415,11 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
 
 RigidBodyManipulator::~RigidBodyManipulator() {
 
-  if (NB>0) {
-    delete[] Xtree;
-    delete[] I;
-    
-    delete[] S;
-    delete[] Xup;
-    delete[] v;
-    delete[] avp;
-    delete[] fvp;
-    delete[] IC;
-    
-    delete[] dXupdq;
-    for (int i=0; i<NB; i++) {
-      delete[] dIC[i];
-    }
-    delete[] dIC;
-    delete[] dvdq;
-    delete[] dvdqd;
-    delete[] davpdq;
-    delete[] davpdqd;
-    delete[] dfvpdq;
-    delete[] dfvpdqd;
-
-    delete[] Xworld;
-    delete[] dXworld;
-    delete[] dXup;
-  }
-
   if (num_bodies>0)
     delete[] bodies;
   
   if (num_frames>0)
-  	delete[] frames;
+    delete[] frames;
 }
 
 void RigidBodyManipulator::compile(void) 
