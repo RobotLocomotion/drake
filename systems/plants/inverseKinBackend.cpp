@@ -441,8 +441,8 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   MatrixXd joint_limit_max(nq,nT);
   for(int i = 0;i<nT;i++)
   {
-    memcpy(joint_limit_min.data()+i*nq,model->joint_limit_min,sizeof(double)*nq);
-    memcpy(joint_limit_max.data()+i*nq,model->joint_limit_max,sizeof(double)*nq);
+    joint_limit_min.col(i) = model->joint_limit_min;
+    joint_limit_max.col(i) = model->joint_limit_max;
   }
   for(int i = 0;i<num_constraints;i++)
   {
@@ -469,8 +469,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     }
     else if(constraint_category == RigidBodyConstraint::PostureConstraintCategory)
     {
-      double* joint_min = new double[nq];
-      double* joint_max = new double[nq];
+      VectorXd joint_min, joint_max;
       PostureConstraint* pc = static_cast<PostureConstraint*>(constraint);
       for(int j = 0;j<nT;j++)
       {
@@ -485,8 +484,6 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
           }
         }
       }
-      delete[] joint_min;
-      delete[] joint_max;
     }
     else if(constraint_category == RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory)
     {

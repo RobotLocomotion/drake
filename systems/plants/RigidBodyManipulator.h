@@ -113,8 +113,8 @@ public:
   std::vector<std::string> robot_name;
 
   int num_dof;
-  double* joint_limit_min;
-  double* joint_limit_max;
+  VectorXd joint_limit_min;
+  VectorXd joint_limit_max;
 
   // Rigid body objects
   int num_bodies;  // rigid body objects
