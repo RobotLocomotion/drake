@@ -73,19 +73,19 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   pm = mxGetField(featherstone,0,"damping");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.damping.");
-  memcpy(model->damping,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->damping.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   pm = mxGetField(featherstone,0,"coulomb_friction");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_friction.");
-  memcpy(model->coulomb_friction,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->coulomb_friction.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   pm = mxGetField(featherstone,0,"static_friction");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.static_friction.");
-  memcpy(model->static_friction,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->static_friction.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   pm = mxGetField(featherstone,0,"coulomb_window");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_window.");
-  memcpy(model->coulomb_window,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->coulomb_window.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   mxArray* pXtree = mxGetField(featherstone,0,"Xtree");
   if (!pXtree) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.Xtree.");
