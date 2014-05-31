@@ -354,6 +354,9 @@ class WorldQuatConstraint: public QuatConstraint
     WorldQuatConstraint(RigidBodyManipulator *model, int body, Eigen::Vector4d quat_des, double tol, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~WorldQuatConstraint();
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class RelativeQuatConstraint: public QuatConstraint
@@ -369,6 +372,9 @@ class RelativeQuatConstraint: public QuatConstraint
     RelativeQuatConstraint(RigidBodyManipulator *model, int bodyA_idx, int bodyB_idx, Eigen::Vector4d &quat_des, double tol, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~RelativeQuatConstraint();
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class EulerConstraint: public SingleTimeKinematicConstraint
@@ -406,6 +412,9 @@ class GazeConstraint : public SingleTimeKinematicConstraint
   public:
     GazeConstraint(RigidBodyManipulator *model, Eigen::Vector3d axis, double conethreshold = 0.0, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual ~GazeConstraint(void){};
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class GazeOrientConstraint : public GazeConstraint
@@ -419,6 +428,8 @@ class GazeOrientConstraint : public GazeConstraint
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t,Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeOrientConstraint(void){};
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class WorldGazeOrientConstraint: public GazeOrientConstraint
@@ -441,6 +452,8 @@ class GazeDirConstraint: public GazeConstraint
     GazeDirConstraint(RigidBodyManipulator* model, Eigen::Vector3d axis, Eigen::Vector3d dir,double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeDirConstraint(void){};
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class WorldGazeDirConstraint: public GazeDirConstraint
@@ -464,6 +477,8 @@ class GazeTargetConstraint: public GazeConstraint
     GazeTargetConstraint(RigidBodyManipulator* model, Eigen::Vector3d axis, Eigen::Vector3d target, Eigen::Vector4d gaze_origin, double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeTargetConstraint(void){};
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class WorldGazeTargetConstraint: public GazeTargetConstraint
@@ -538,6 +553,8 @@ class Point2LineSegDistConstraint: public SingleTimeKinematicConstraint
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~Point2LineSegDistConstraint(void){};
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class WorldFixedPositionConstraint: public MultipleTimeKinematicConstraint
@@ -612,6 +629,8 @@ class WorldPositionInFrameConstraint: public WorldPositionConstraint
         const Eigen::MatrixXd &pts, const Eigen::Matrix4d& T_world_to_frame, 
         Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual ~WorldPositionInFrameConstraint();
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class PostureChangeConstraint: public MultipleTimeLinearPostureConstraint
