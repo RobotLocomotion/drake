@@ -627,7 +627,7 @@ classdef RigidBodyManipulator < Manipulator
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
-      if (model.mex_model_ptr~=0 && checkDependency('bullet'))
+      if (0) %model.mex_model_ptr~=0 && checkDependency('bullet'))
         phi = model.collisionDetect(zeros(model.getNumPositions,1));
         model.num_contact_pairs = length(phi);
       else
