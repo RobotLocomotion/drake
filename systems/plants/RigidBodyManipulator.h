@@ -21,7 +21,6 @@ class RigidBodyManipulator
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
-  virtual ~RigidBodyManipulator(void);
 
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
@@ -119,11 +118,11 @@ public:
 
   // Rigid body objects
   int num_bodies;  // rigid body objects
-  RigidBody* bodies;
+  std::vector<RigidBody,Eigen::aligned_allocator<RigidBody> > bodies;
 
   // Rigid body frames
   int num_frames;
-  RigidBodyFrame* frames;
+  std::vector<RigidBodyFrame,Eigen::aligned_allocator<RigidBodyFrame> > frames;
 
   // featherstone data structure
   int NB;  // featherstone bodies
