@@ -7,7 +7,6 @@
 #include <boost/algorithm/string.hpp>
 #include <string>
 #include <regex>
-#include <limits>
 
 //DEBUG
 //#include <stdexcept>
@@ -291,9 +290,13 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   int last_num_dof = num_dof, last_NB = NB, last_num_bodies = num_bodies, last_num_frames = num_frames;
   
   num_dof = ndof;
-  joint_limit_min.resize(num_dof,std::numeric_limits<double>::min());
-  joint_limit_max.resize(num_dof,std::numeric_limits<double>::max());
-  
+  joint_limit_min.conservativeResize(num_dof);
+  joint_limit_max.conservativeResize(num_dof);
+  for (int i=last_num_dof; i<num_dof; i++) {
+    joint_limit_min[i] = -1.0/0.0;
+    joint_limit_max[i] = 1.0/0.0;
+  }
+
   if (num_featherstone_bodies<0)
     NB = ndof;
   else
