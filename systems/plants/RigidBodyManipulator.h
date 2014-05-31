@@ -4,7 +4,8 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <set>
-#include <vector>
+//#include <vector>
+#include <Eigen/StdVector>
 
 #include "collision/Model.h"
 
@@ -20,8 +21,8 @@ class RigidBodyManipulator
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
-  ~RigidBodyManipulator(void);
-  
+  virtual ~RigidBodyManipulator(void);
+
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
