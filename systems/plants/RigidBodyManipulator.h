@@ -129,15 +129,15 @@ public:
   VectorXi pitch;
   VectorXi parent;
   VectorXi dofnum;
-  double* damping;
-  double* coulomb_friction;
-  double* coulomb_window;
-  double* static_friction;
+  VectorXd damping;
+  VectorXd coulomb_friction;
+  VectorXd coulomb_window;
+  VectorXd static_friction;
   MatrixXd* Xtree;
   MatrixXd* I;
   VectorXd a_grav;
 
-  double *cached_q, *cached_qd;  // these should be private
+  VectorXd cached_q, cached_qd;  // these should be private
 
 
 private:

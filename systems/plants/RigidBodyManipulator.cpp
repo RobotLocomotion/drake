@@ -305,11 +305,12 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   pitch.resize(NB);
   parent.resize(NB);
   dofnum.resize(NB);
+  damping.resize(NB);
+  coulomb_friction.resize(NB);
+  static_friction.resize(NB);
+  coulomb_window.resize(NB);
+  
   if (NB != last_NB) {
-    myrealloc(damping,last_NB,NB);
-    myrealloc(coulomb_friction,last_NB,NB);
-    myrealloc(static_friction,last_NB,NB);
-    myrealloc(coulomb_window,last_NB,NB);
     myrealloc(Xtree,last_NB,NB);
     myrealloc(I,last_NB,NB);
     
@@ -434,24 +435,14 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   
   initialized = false;
   kinematicsInit = false;
-  if (last_num_dof>0) {
-    delete[] cached_q;
-    delete[] cached_qd;
-  }
-  if (num_dof>0) {
-    cached_q = new double[num_dof];
-    cached_qd = new double[num_dof];
-  }
+  cached_q.resize(num_dof);
+  cached_qd.resize(num_dof);
   secondDerivativesCached = 0;
 }
 
 RigidBodyManipulator::~RigidBodyManipulator() {
 
   if (NB>0) {
-    delete[] damping;
-    delete[] coulomb_friction;
-    delete[] static_friction;
-    delete[] coulomb_window;
     delete[] Xtree;
     delete[] I;
     
@@ -484,11 +475,6 @@ RigidBodyManipulator::~RigidBodyManipulator() {
   
   if (num_frames>0)
   	delete[] frames;
-
-  if (num_dof>0) {
-    delete[] cached_q;
-    delete[] cached_qd;
-  }
 }
 
 void RigidBodyManipulator::compile(void) 
