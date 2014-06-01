@@ -54,7 +54,10 @@ classdef DynamicalSystem
   
   % construction methods
   methods
-
+    function sys = DynamicalSystem()
+      sys.warning_manager = WarningManager();
+    end
+    
     function sys = inInputFrame(sys,frame)
       % Ensures that sys has the specified input frame, by
       % searching for and cascading a coordinate transformation to
@@ -646,7 +649,7 @@ classdef DynamicalSystem
     pmax;         % maximum values for system parameters
   end
   
-  properties (Access=protected)
-    warning_manager = WarningManager; 
+  properties (Access=public)
+    warning_manager;
   end    
 end

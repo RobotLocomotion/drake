@@ -7,20 +7,28 @@ if strcmp(ex.identifier,'Simulink:SFunctions:SFcnErrorStatus')
   if ~isempty(ids), err_id = ids{1}; end
 end
 
-switch testname
-  case {'systems/plants/test/fallingBrickLCP', ...
+switch err_id
+  case 'PathLCP:FailedToSolve'
+    if any(strcmp(testname,{'systems/plants/test/fallingBrickLCP', ...
       'systems/plants/test/fallingCapsulesTest',...
       'systems/plants/test/multiRobotTest', ...
       'systems/plants/test/momentumTest', ...
       'systems/plants/test/terrainTest', ...
-      'systems/plants/test/testFloatingBaseDynamics'}
-    if strcmp(err_id,'PathLCP:FailedToSolve')
+      'systems/plants/test/testFloatingBaseDynamics'}))
       github(18); return;
     end
-  case {'examples/Airplane2D/runDircolWithObs', ...
-      'examples/Airplane2D/runFunnelWithObstacles'}
-    if strcmp(err_id,'Airplane2D:SNOPT:INFO3')
+  case 'Airplane2D:SNOPT:INFO3'
+    if any(strcmp(testname,{'examples/Airplane2D/runDircolWithObs', ...
+      'examples/Airplane2D/runFunnelWithObstacles'}))
       github(125); return;
+    end
+  case {'Simulink:SFunctions:SFcnErrorStatus','Drake:Manipulator:ResolveConstraintsFailed'}
+    if any(strcmp(testname,{'systems/plants/test/coordinateSystemTest', ...
+        'systems/plants/test/fallingBrickLCP', ...
+        'systems/plants/test/fallingCapsulesTest', ...
+        'systems/plants/test/momentumTest',...
+        'systems/plants/test/multiRobotTest'}))
+      github(146); return;
     end
 end
 
@@ -34,5 +42,5 @@ end
 
 function github(issue_id)
   fprintf('\nThis is a known issue.  See <a href="https://github.com/RobotLocomotion/drake/issues/%d">Drake issue %d</a> for more information.\n\n',issue_id,issue_id);
-fprintf('\n<DartMeasurement name="GitHubIssue" type="link/url">https://github.com/RobotLocomotion/drake/issues/%d</DartMeasurement>\n\n',issue_id);
+  fprintf('\n<DartMeasurement name="GitHubIssue" type="link/url">https://github.com/RobotLocomotion/drake/issues/%d</DartMeasurement>\n\n',issue_id);
 end
