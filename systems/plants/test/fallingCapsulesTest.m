@@ -1,3 +1,5 @@
+function fallingCapsulesTest
+
 options.floating = true;
 options.terrain = RigidBodyFlatTerrain();
 N = 4;

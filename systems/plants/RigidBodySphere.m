@@ -95,7 +95,7 @@ classdef RigidBodySphere < RigidBodyGeometry
       if obj.radius == 0
         pts = getPoints(obj);
       else
-        pts = [];
+        pts=[];
       end
     end
   
