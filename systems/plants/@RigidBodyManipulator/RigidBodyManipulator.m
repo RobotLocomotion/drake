@@ -1050,10 +1050,13 @@ classdef RigidBodyManipulator < Manipulator
       while isempty(v)
         type = options.viewer{i};
         
-        if strcmp(type,'NullVisualizer')
-          arg = {getOutputFrame(obj)};
-        else
-          arg = {obj,options.use_contact_shapes};
+        switch (type)
+          case 'NullVisualizer'
+            arg = {getOutputFrame(obj)};
+          case 'BotVisualizer'
+            arg = {obj,options.use_contact_shapes};
+          otherwise
+            arg = {obj,options};
         end
 
         if (i==length(options.viewer))  % then it's the last one
@@ -1807,7 +1810,7 @@ classdef RigidBodyManipulator < Manipulator
             'To silence this warning, construct your manipulator ' ...
             'with: ' ...
             '\n\n' ...
-            '    >> w = warning(''OFF'',%s);\n' ...
+            '    >> w = warning(''off'',''%s'');\n' ...
             '    >> r = %s(...);\n' ...
             '    >> warning(w)' ...
             '\n\n'],changed_body_idx_and_names{:},class(model), ...

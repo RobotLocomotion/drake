@@ -55,14 +55,14 @@ if (obj.mex_model_ptr ~= 0 && kinsol.mex)
   phi = distance';
 else
   force_collisionDetectTerrain = true;
-  if ~kinsol.mex
-    warnOnce(obj.warning_manager,'Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex', ...
-      ['kinsol was generated with use_mex = false. Only checking collisions ' ...
-      'between terrain contact points and terrain']);
-  else % obj.mex_model_ptr == 0
+  if obj.mex_model_ptr == 0
     warnOnce(obj.warning_manager,'Drake:RigidBodyManipulator:collisionDetect:noMexPtr', ...
       ['This model has no mex pointer. Only checking collisions between ' ...
       'terrain contact points and terrain']);
+  else % ~kinsol.mex
+    warnOnce(obj.warning_manager,'Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex', ...
+      ['kinsol was generated with use_mex = false. Only checking collisions ' ...
+      'between terrain contact points and terrain']);
   end
   phi = [];
   normal = [];
