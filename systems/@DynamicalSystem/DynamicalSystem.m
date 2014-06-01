@@ -645,4 +645,8 @@ classdef DynamicalSystem
     pmin;         % minimum values for system parameters
     pmax;         % maximum values for system parameters
   end
+  
+  properties (Access=protected)
+    warning_manager = WarningManager; 
+  end    
 end
