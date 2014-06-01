@@ -555,13 +555,13 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     }
   }
 
-  if (!initialized) compile();
+  if (!initialized) { compile(); } 
 
   Matrix4d TJ, dTJ, ddTJ, Tbinv, Tb, Tmult, dTmult, dTdotmult, TdTmult, TJdot, dTJdot, TddTmult;
   Matrix4d fb_dTJ[6], fb_dTJdot[6], fb_dTmult[6], fb_ddTJ[3][3];  // will be 7 when quats implemented...
 
   Matrix3d rx,drx,ddrx,ry,dry,ddry,rz,drz,ddrz;
-  
+
   for (i = 0; i < num_bodies; i++) {
     int parent = bodies[i].parent;
     if (parent < 0) {
@@ -1011,8 +1011,10 @@ void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase<Derived> &Jdot, 
 /* [body_ind,Tframe] = parseBodyOrFrameID(body_or_frame_id) */
 int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4d& Tframe)
 {
-	int body_ind;
-  if (body_or_frame_id<0) {
+  int body_ind=0;
+  if (body_or_frame_id == -1) {
+    cerr << "parseBodyOrFrameID got a -1, which should have been reserved for COM.  Shouldn't have gotten here." << endl;
+  } else if (body_or_frame_id<0) {
     int frame_ind = -body_or_frame_id-2;
     body_ind = frames[frame_ind].body_ind;
     Tframe = frames[frame_ind].T;
