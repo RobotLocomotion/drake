@@ -2053,7 +2053,7 @@ classdef RigidBodyManipulator < Manipulator
           effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
         end
         if limits.hasAttribute('velocity');
-          warning('Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
+          warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
           velocity_limit = parseParamString(model,robotnum,char(limits.getAttribute('velocity')));
         end
       end
