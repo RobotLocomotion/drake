@@ -22,6 +22,8 @@ classdef BotVisualizer < RigidBodyVisualizer
         error('Drake:BotVisualizer:Disabled','botvis is disabled with g_disable_botvis');
       end
       
+      checkDependency('lcm');
+      
       if ispc
         error('Drake:BotVisualizer:Windows','botvis doesn''t support windows yet');
       end

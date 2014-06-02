@@ -74,7 +74,7 @@ classdef RigidBodySphere < RigidBodyGeometry
       tabprintf(fp,'rotation %f %f %f %f\n',rotmat2axis(obj.T(1:3,1:3)));
 
       tabprintf(fp,'children Shape {\n'); td=td+1;
-      tabprintf(fp,'geometry Sphere { radius %f }]n',obj.radius);
+      tabprintf(fp,'geometry Sphere { radius %f }\n',obj.radius);
       tabprintf(fp,'appearance Appearance { material Material { diffuseColor %f %f %f } }\n',obj.c(1),obj.c(2),obj.c(3));
       td=td-1; tabprintf(fp,'}\n');  % end Shape {
       td=td-1; tabprintf(fp,'}\n'); % end Transform {
