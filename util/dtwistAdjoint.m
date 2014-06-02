@@ -4,8 +4,8 @@ function dadT = dtwistAdjoint(dtwist)
 adT_size = [6 6];
 
 nq = size(dtwist, 2);
-domega = dtwist(1:3);
-dv = dtwist(4:6);
+domega = dtwist(1:3, :);
+dv = dtwist(4:6, :);
 domega_hat = dvectorToSkewSymmetric(domega);
 dv_hat = dvectorToSkewSymmetric(dv);
 dadT = zeros(prod(adT_size), nq);

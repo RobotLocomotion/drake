@@ -225,13 +225,22 @@ JdotV{1} = zeros(6, 1);
 if compute_gradients
   dJdotVdq = cell(1, nb);
   dJdotVdq{1} = zeros(numel(JdotV{1}, nq));
-end % TODO: finish dJdotVdq
+end
 
 for i = 2 : nb
   body = bodies(i);
   parent = body.parent;
-  predecessorAccel = JdotV{parent};
-  jointAccel = transformSpatialAcceleration(SdotV{i}, T, twists, parent, i, i, world);
-  JdotV{i} = predecessorAccel + jointAccel;
+  parent_accel = JdotV{parent};
+  
+  if compute_gradients
+    dparent_accel = dJdotVdq{parent};
+    dSdotVdqi = zeros(numel(SdotV{i}), nq);
+    dSdotVdqi(:, body.position_num) = dSdotVdq{i};
+    [joint_accel, djoint_accel] = transformSpatialAcceleration(SdotV{i}, T, twists, parent, i, i, world, dSdotVdqi, dTdq, dtwistsdq);
+    dJdotVdq{i} = dparent_accel + djoint_accel;
+  else
+    joint_accel = transformSpatialAcceleration(SdotV{i}, T, twists, parent, i, i, world);
+  end
+  JdotV{i} = parent_accel + joint_accel;
 end
 end

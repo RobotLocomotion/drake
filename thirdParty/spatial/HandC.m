@@ -95,35 +95,91 @@ end
 end
 
 function [C, dC] = computeBiasTerm(manipulator, kinsol, inertias_world, external_wrenches, gravitational_accel, dinertias_world)
-nv = length(kinsol.v);
+compute_gradient = nargout > 1;
+
+nBodies = length(manipulator.body);
+twist_size = 6;
+
+
 root_accel = -gravitational_accel; % as if we're standing in an elevator that's accelerating upwards
 JdotV = kinsol.JdotV;
+net_wrenches = cell(nBodies, 1);
+net_wrenches{1} = zeros(twist_size, 1);
 
-NB = length(manipulator.body);
-net_wrenches = cell(NB, 1);
-net_wrenches{1} = zeros(6, 1);
-for i = 2 : NB
+if compute_gradient
+  nq = size(dinertias_world{end}, 2);
+  
+  droot_accel = zeros(twist_size, nq);
+  dJdotV = kinsol.dJdotVdq;
+  dnet_wrenches = cell(nBodies, 1);
+  dnet_wrenches{1} = zeros(twist_size, nq);
+end
+
+for i = 2 : nBodies
   twist = kinsol.twists{i};
   spatial_accel = root_accel + JdotV{i};
   external_wrench = external_wrenches(:, i);
+  
+  if compute_gradient
+    dtwist = kinsol.dtwistsdq{i};
+    dspatial_accel = droot_accel + dJdotV{i};
+    % TODO: implement external wrench gradients
+%     dexternal_wrench = dexternal_wrenches(:, i);
+    dexternal_wrench = zeros(twist_size, nq);
+  end
+  
   if any(external_wrench)
     % transform from body to world
-    H_world_to_i = homogTransInv(kinsol.T{i});
-    external_wrench = transformAdjoint(H_world_to_i)' * external_wrenches(:, i);
+    T_i_to_world = kinsol.T{i};
+    T_world_to_i = homogTransInv(T_i_to_world);
+    external_wrench = transformAdjoint(T_world_to_i)' * external_wrench;
+    
+    if compute_gradient
+      dT_i_to_world = kinsol.dTdq{i};
+      dT_world_to_i = dinvT(T_i_to_world, dT_i_to_world);
+      dexternal_wrench = zeros(twist_size, nq); % TODO: implement external wrench gradients
+    end
   end
   I = inertias_world{i};
-  net_wrenches{i} = I * spatial_accel - twistAdjoint(twist)' * I * twist - external_wrench;
+  I_times_twist = I * twist;
+  adTwist = twistAdjoint(twist);
+  net_wrenches{i} = I * spatial_accel - adTwist' * I_times_twist - external_wrench;
+  
+  if compute_gradient
+    dI = dinertias_world{i};
+    % TODO: use matGradMult instead:
+    dI_times_twist = matGradMultMat(I, twist, dI, dtwist);
+    dadTwist = dtwistAdjoint(dtwist);
+    dnet_wrenches{i} = ...
+      matGradMultMat(I, spatial_accel, dI, dspatial_accel) - ...
+      matGradMultMat(adTwist', I_times_twist, transposeGrad(dadTwist, size(adTwist)), dI_times_twist) - ...
+      dexternal_wrench;
+  end
 end
 
-C = zeros(nv, 1)*kinsol.q(1);
-for i = NB : -1 : 2
+nv = manipulator.getNumVelocities();
+C = zeros(nv, 1) * kinsol.q(1);
+
+if compute_gradient
+  dC = zeros(nv, nq);
+end
+
+for i = nBodies : -1 : 2
   body = manipulator.body(i);
   joint_wrench = net_wrenches{i};
-  tau = kinsol.J{i}' * joint_wrench;
+  Ji = kinsol.J{i};
+  tau = Ji' * joint_wrench;
   C(body.velocity_num) = tau;
   net_wrenches{body.parent} = net_wrenches{body.parent} + joint_wrench;
+  
+  if compute_gradient
+    djoint_wrench = dnet_wrenches{i};
+    dJi = kinsol.dJdq{i};
+    % TODO: use matGradMult instead:
+    dtau = matGradMultMat(Ji', joint_wrench, transposeGrad(dJi, size(Ji)), djoint_wrench);
+    dC = setSubMatrixGradient(dC, dtau, body.velocity_num, 1, size(C));
+    dnet_wrenches{body.parent} = dnet_wrenches{body.parent} + djoint_wrench;
+  end
 end
-
-dC = []; % TODO
 
 end

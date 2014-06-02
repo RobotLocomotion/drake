@@ -4,7 +4,8 @@ testBrickQuaternion();
 testActuatedPendulum();
 regressionTestAtlasRPY();
 testAtlasQuat();
-checkMassMatrixGradient(createAtlas('quat'));
+checkGradients(createAtlas('rpy'));
+checkGradients(createAtlas('quat'));
 
 end
 
@@ -109,13 +110,15 @@ for i = 2 : NB
 end
 end
 
-function checkMassMatrixGradient(robot)
+function checkGradients(robot)
 q = getRandomConfiguration(robot);
 v = randn(robot.getNumVelocities());
-[~,~,dH] = HandC(robot, q, v);
+[~,~,dH,dC] = HandC(robot, q, v);
 
 option.grad_method = 'taylorvar';
-[~, dH_geval] = geval(1, @(q) HandC(robot, q, v), q, option);
+[~, ~, dH_geval, dC_geval] = geval(2, @(q) HandC(robot, q, v), q, option);
 
-valuecheck(dH_geval, dH, 1e-12);
+valuecheck(dH_geval, dH, 1e-10);
+valuecheck(dC_geval, dC, 1e-10);
 end
+
