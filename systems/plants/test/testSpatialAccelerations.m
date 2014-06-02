@@ -18,7 +18,7 @@ nTests = 50;
 for i = 1 : nTests
   q = randn(nq, 1);
   v = randn(nv, 1);
-  kinsol = robot.doKinematics(q, false, false, v);
+  kinsol = robot.doKinematics(q, false, false, v, true);
   twists = kinsol.twists;
   
   vd = randn(nv, 1);
@@ -26,7 +26,7 @@ for i = 1 : nTests
 
   q = q + v * dt;
   v = v + vd * dt;
-  kinsolNew = robot.doKinematics(q, false, false, v);
+  kinsolNew = robot.doKinematics(q, false, false, v, true);
   twistsNew = kinsolNew.twists;
   
   for j = 1 : nBodies

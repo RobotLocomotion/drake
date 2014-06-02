@@ -1,14 +1,11 @@
 function ret = dAdHTimesX(H, X, dHdq, dXdq)
 R = H(1:3, 1:3);
 p = H(1:3, 4);
-pHat = vectorToSkewSymmetric(p);
 
 dRdq = getSubMatrixGradient(dHdq, 1:3, 1:3, size(H));
 dpdq = getSubMatrixGradient(dHdq, 1:3, 4, size(H));
-pToPHatVec = [vectorToSkewSymmetric([-1; 0; 0]);
-              vectorToSkewSymmetric([0; -1; 0]);
-              vectorToSkewSymmetric([0; 0; -1])];
-dpHatdq = pToPHatVec * dpdq;
+pHat = vectorToSkewSymmetric(p);
+dpHatdq = dvectorToSkewSymmetric(dpdq);
 
 Xomega = X(1:3, :);
 Xv = X(4:6, :);
