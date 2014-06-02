@@ -405,8 +405,8 @@ classdef RigidBodyWing < RigidBodyForceElement
       
       sideslip = wingvel_world'*wingYunit;
       if (nargout>1)
-        dsideslipdq = (dwingvel_worlddq'*wingYunit)'+(dwingYunitdq'*wingvel_world)';
-        dsideslipdqd = (dwingvel_worlddqd'*wingYunit)'+(dwingYunitdqd'*wingvel_world)';
+        dsideslipdq = wingYunit'*dwingvel_worlddq + wingvel_world'*dwingYunitdq;
+        dsideslipdqd = wingYunit'*dwingvel_worlddqd + wingvel_world'*dwingYunitdqd;
       end
       
       wingvel_world = wingvel_world - sideslip*wingYunit;
@@ -428,20 +428,15 @@ classdef RigidBodyWing < RigidBodyForceElement
       end
               
       airspeed = norm(wingvel_world);
-      if (nargout>1)  
-        dairspeeddq = (dwingvel_worlddq'*wingvel_world)'/norm(wingvel_world);
-        dairspeeddqd = (dwingvel_worlddqd'*wingvel_world)'/norm(wingvel_world);
+      if (nargout>1)
+        dairspeeddq = (wingvel_world'*dwingvel_worlddq)/norm(wingvel_world);
+        dairspeeddqd = (wingvel_world'*dwingvel_worlddqd)/norm(wingvel_world);
       end
       
       aoa = -(180/pi)*atan2(wingvel_rel(3),wingvel_rel(1));
       if (nargout>1)
         daoadq = -(180/pi)*(wingvel_rel(1)*dwingvel_reldq(3,:)-wingvel_rel(3)*dwingvel_reldq(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
         daoadqd = -(180/pi)*(wingvel_rel(1)*dwingvel_reldqd(3,:)-wingvel_rel(3)*dwingvel_reldqd(1,:))/(wingvel_rel(1)^2+wingvel_rel(3)^2);
-      end
-      
-      force = sparse(6,getNumBodies(manip));
-      if (nargout>1)
-        dforce = sparse(6,getNumBodies(manip)*2*nq);
       end
       
       %lift and drag are the forces on the body in the world frame.
@@ -506,15 +501,18 @@ classdef RigidBodyWing < RigidBodyForceElement
         f = cartesianForceToSpatialForce(manip, kinsol, frame.body_ind, frame.T(1:3,4),lift_world+drag_world);
       end
       
-      force(:,frame.body_ind) = torque_joint + f;  
+      body_force = torque_joint + f;
       if (nargout>1)
-        dforce_bodydq = dtorque_jointdq + dfdq;
-        dforce_bodydqd = dtorque_jointdqd + dfdqd;
-        dforcebody = [dforce_bodydq, dforce_bodydqd];
-        numbodies = getNumBodies(manip);
-        for i=1:2*nq
-          dforce(:,(i-1)*numbodies+frame.body_ind) = dforcebody(:,i);
-        end
+        dbody_forcedq = dtorque_jointdq + dfdq;
+        dbody_forcedqd = dtorque_jointdqd + dfdqd;
+      end
+        
+      force = sparse(6,getNumBodies(manip))*q(1); % q(1) is for taylorvar
+      force(:,frame.body_ind) = body_force;  
+      if (nargout>1)
+        dforce = sparse(numel(force),2*nq);
+        dforce((frame.body_ind-1)*6+1:frame.body_ind*6,:) = [dbody_forcedq,dbody_forcedqd];
+        dforce = reshape(dforce,6,[]);
       end
       
     end
@@ -522,13 +520,13 @@ classdef RigidBodyWing < RigidBodyForceElement
     function [CL, CD, CM, dCL, dCD, dCM] = coeffs(obj, aoa)
       %returns dimensionalized coefficient of lift, drag, and pitch moment for a
       %given angle of attack
-      CL = obj.fCl.fasteval(aoa);
-      CD = obj.fCd.fasteval(aoa);
-      CM = obj.fCm.fasteval(aoa);
+      CL = obj.fCl.eval(aoa);
+      CD = obj.fCd.eval(aoa);
+      CM = obj.fCm.eval(aoa);
       if (nargout>3)
-        dCL = obj.dfCl.fasteval(aoa);
-        dCD = obj.dfCd.fasteval(aoa);
-        dCM = obj.dfCm.fasteval(aoa);
+        dCL = obj.dfCl.eval(aoa);
+        dCD = obj.dfCd.eval(aoa);
+        dCM = obj.dfCm.eval(aoa);
       end
     end
     
