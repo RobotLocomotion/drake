@@ -499,13 +499,13 @@ classdef RigidBodyWing < RigidBodyForceElement
     function [CL, CD, CM, dCL, dCD, dCM] = coeffs(obj, aoa)
       %returns dimensionalized coefficient of lift, drag, and pitch moment for a
       %given angle of attack
-      CL = obj.fCl.fasteval(aoa);
-      CD = obj.fCd.fasteval(aoa);
-      CM = obj.fCm.fasteval(aoa);
+      CL = obj.fCl.eval(aoa);
+      CD = obj.fCd.eval(aoa);
+      CM = obj.fCm.eval(aoa);
       if (nargout>3)
-        dCL = obj.dfCl.fasteval(aoa);
-        dCD = obj.dfCd.fasteval(aoa);
-        dCM = obj.dfCm.fasteval(aoa);
+        dCL = obj.dfCl.eval(aoa);
+        dCD = obj.dfCd.eval(aoa);
+        dCM = obj.dfCm.eval(aoa);
       end
     end
     

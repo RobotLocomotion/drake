@@ -1066,8 +1066,7 @@ classdef RigidBodyManipulator < Manipulator
             v = feval(type,arg{:});
           catch ex
             if ~strncmp(ex.identifier,'Drake:MissingDependency',23)
-              getReport(ex,'extended')
-              warning(ex.identifier,ex.message);
+              rethrow(ex);
             end
           end
         end
