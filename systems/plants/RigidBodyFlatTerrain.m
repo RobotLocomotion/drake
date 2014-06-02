@@ -10,6 +10,8 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
     end
     
     function writeWRL(obj,fptr)
+      return; 
+      
       m=20; n=20;
       color1 = [204 102 0]/256;  % csail orange
       color1 = hex2dec({'ee','cb','ad'})/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
@@ -42,7 +44,8 @@ classdef RigidBodyFlatTerrain < RigidBodyTerrain
       box_depth = 10;
       geom = RigidBodyBox([box_width;box_width;box_depth]);
       geom.T(3,4) = -box_depth/2;
-      geom.c = [0.5,0.5,0.5];
+      geom.c = hex2dec({'ee','cb','ad'})/256;  % something a little brighter (peach puff 2 from http://www.tayloredmktg.com/rgb/)
+      geom.c = hex2dec({'cd','af','95'})/256;
     end
   end
 end
