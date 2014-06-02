@@ -7,7 +7,7 @@ function ok = checkDependency(dep,minimum_version)
 %     if (~checkDependency('snopt')) error('my error'); end
 
 
-persistent conf;
+persistent conf
 
 ldep = lower(dep);
 conf_var = [ldep,'_enabled'];

@@ -106,10 +106,13 @@ classdef RigidBodyMesh < RigidBodyGeometry
         txt=fileread(wrlfile);
         txt = regexprep(txt,'#.*\n','','dotexceptnewline');
       
-        tabprintf(fp,'children Shape {\n'); td=td+1;
-        tabprintf(fp,'geometry %s',txt);
-        tabprintf(fp,'appearance Appearance { material Material { diffuseColor %f %f %f } }\n',obj.c(1),obj.c(2),obj.c(3));
-        td=td-1; tabprintf('}\n');
+        tabprintf(fp,'children [\n'); 
+        fprintf(fp,'%s',txt); 
+        tabprintf(fp,']\n'); % end children
+%        tabprintf(fp,'children Shape {\n'); td=td+1;
+%        tabprintf(fp,'geometry %s',txt);
+%        tabprintf(fp,'appearance Appearance { material Material { diffuseColor %f %f %f } }\n',obj.c(1),obj.c(2),obj.c(3));
+%        td=td-1; tabprintf(fp,'} \n');
       elseif strcmpi(ext,'.wrl')
         wrlfile = obj.filename;
         
