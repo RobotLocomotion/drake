@@ -54,7 +54,20 @@ if (obj.mex_model_ptr ~= 0 && kinsol.mex)
   [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr,allow_multiple_contacts,active_collision_options);
   phi = distance';
 else
+  phi = [];
+  normal = [];
+  xA = [];
+  idxA = [];
+  xB = [];
+  idxB = [];
+  
+  if isempty([obj.body.contact_shapes])
+    % then I don't have any contact geometry.  all done.
+    return;
+  end
+  
   force_collisionDetectTerrain = true;
+  
   if obj.mex_model_ptr == 0
     warnOnce(obj.warning_manager,'Drake:RigidBodyManipulator:collisionDetect:noMexPtr', ...
       ['This model has no mex pointer. Only checking collisions between ' ...
@@ -64,12 +77,6 @@ else
       ['kinsol was generated with use_mex = false. Only checking collisions ' ...
       'between terrain contact points and terrain']);
   end
-  phi = [];
-  normal = [];
-  xA = [];
-  idxA = [];
-  xB = [];
-  idxB = [];
 end
 
 if ~isempty(obj.terrain) && ...
