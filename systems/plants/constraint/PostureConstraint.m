@@ -19,13 +19,14 @@ classdef PostureConstraint<RigidBodyConstraint
       if(nargin == 1)
         tspan = [-inf inf];
       end
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureConstraintType,robot.getMexModelPtr,tspan);
       obj = obj@RigidBodyConstraint(RigidBodyConstraint.PostureConstraintCategory,robot,tspan);
       [obj.joint_limit_min0,obj.joint_limit_max0] = robot.getJointLimits();
       obj.lb = obj.joint_limit_min0;
       obj.ub = obj.joint_limit_max0;
       obj.type = RigidBodyConstraint.PostureConstraintType;
-      obj.mex_ptr = ptr;
+      if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.PostureConstraintType,robot.getMexModelPtr,tspan);
+      end
     end
     
     function flag = isTimeValid(obj,t)
@@ -41,7 +42,9 @@ classdef PostureConstraint<RigidBodyConstraint
     end
     
     function obj = setJointLimits(obj,joint_ind,joint_min,joint_max)
-      obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'bounds',joint_ind,joint_min,joint_max);
+      if obj.mex_ptr~=0
+        obj.mex_ptr = updatePtrRigidBodyConstraintmex(obj.mex_ptr,'bounds',joint_ind,joint_min,joint_max);
+      end
       if(any(~isnumeric(joint_ind)))
         error('The joint index should all be numerical')
       end
