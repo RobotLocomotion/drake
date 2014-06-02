@@ -605,7 +605,7 @@ classdef RigidBodyManipulator < Manipulator
       model.joint_limit_max = [model.body.joint_limit_max]';
      
       if (any(model.joint_limit_min~=-inf) || any(model.joint_limit_max~=inf))
-        warning('Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
+        warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
       
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
@@ -1089,8 +1089,7 @@ classdef RigidBodyManipulator < Manipulator
             v = feval(type,arg{:});
           catch ex
             if ~strncmp(ex.identifier,'Drake:MissingDependency',23)
-              getReport(ex,'extended')
-              warning(ex.identifier,ex.message);
+              rethrow(ex);
             end
           end
         end
