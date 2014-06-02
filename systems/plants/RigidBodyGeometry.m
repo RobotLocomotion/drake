@@ -71,11 +71,30 @@ classdef RigidBodyGeometry
     end
 
     function pts = getTerrainContactPoints(obj)
-      % pts = getTerrainContactPoints(obj)
+      % pts = getTerrainContactPoints(obj) returns the terrain contact points
+      % on this object (in body-frame). This default implementation returns an
+      % empty array, indicating that the object has no terrain contact points.
+      %
+      % Each sub-class of RigidBodyGeometry is responsible for overriding this
+      % method if the geometry it defines has points which should be considered
+      % terrain contact points.
+      %
+      % What are terrain contact points?
+      %   Presently, DrakeCollision, our C++ collision detection library
+      %   (powered by Bullet), only handles collisions with terrain for the
+      %   case of flat terrain. For other terrain types (or for all terrain
+      %   types on systems without Bullet) we look at the interaction between
+      %   the terrain and specific set of points on the manipulator. These are
+      %   refered to as "terrain contact points". The terrain contact points
+      %   are the only ones that can collide with the terrain during
+      %   simulation.
       %
       % @param  obj - RigidBodyGeometry object
-      % @retval pts - 3xm array of points on this geometry (in link frame) that
+      % @retval pts - 3xm array of points on this geometry (in body frame) that
       %               can collide with the world.
+      %
+      % See also RigidBodySphere/getTerrainContactPoints,
+      % RigidBodyBox/getTerrainContactPoints
       pts = [];
     end
     
