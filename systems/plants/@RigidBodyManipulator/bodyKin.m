@@ -59,7 +59,8 @@ else
     for i=1:size(pts,2)
       P((i-1)*3+1:i*3,(i-1)*3+1:i*3)=invT(1:3,1:3);
     end
-  elseif (nargout>1)
+  end
+  if (nargout>1)
     nq = size(kinsol.q,1);
     invT = inv(kinsol.T{body_ind}*Tframe);
     dTdq = cell(1,nq);
