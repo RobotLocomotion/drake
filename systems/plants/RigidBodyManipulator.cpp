@@ -268,24 +268,6 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
   resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
 }
 
-/*
-template <typename T>
-void myrealloc(T* &ptr, int old_size, int new_size)
-{
-  T* newptr = NULL;
-  if (new_size>0) newptr = new T[new_size];
-  if (old_size>0) {
-    int s = old_size;
-    if (new_size<old_size) s = new_size;
-    for (int i=0; i<s; i++) {
-//			cout << "copying " << ptr[i] << endl;
-      newptr[i] = ptr[i];  // invoke c++ copy operator
-    }
-    delete[] ptr;
-  }
-  ptr = newptr;
-}
-*/
 
 void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
 {
@@ -312,6 +294,7 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   static_friction.conservativeResize(NB);
   coulomb_window.conservativeResize(NB);
 
+  // note: these are std:vectors (and the above are eigen vectors)
   Xtree.resize(NB);
   I.resize(NB);
   S.resize(NB);
@@ -337,8 +320,8 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
     num_bodies = num_rigid_body_objects;
 
   bodies.resize(num_bodies);
-  for(int i=0; i < num_bodies; i++) bodies[i].setN(NB);
-  for(int i=last_num_bodies; i<num_bodies; i++) bodies[i].dofnum = i-1;  // setup default dofnums
+  for(int i=0; i < num_bodies; i++) { bodies[i].setN(NB); }
+  for(int i=last_num_bodies; i<num_bodies; i++) { bodies[i].dofnum = i-1; } // setup default dofnums
     
   collision_model->resize(num_bodies);
   
