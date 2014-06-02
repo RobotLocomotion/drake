@@ -90,7 +90,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
     end
     
     function writeWRLShape(obj,fp,td)
-      assert(obj.scale == 1); % todo: handle this case
+      assert(all(obj.scale == 1)); % todo: handle this case
       
       function tabprintf(fp,varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
       tabprintf(fp,'Transform {\n'); td=td+1;

@@ -13,6 +13,14 @@ classdef WarningManager < handle
         obj.disabled_msgids{end+1} = msgid;
       end
     end
+    
+    function tf = isDisabled(obj,msgid)
+      tf = any(strcmp(msgid,obj.disabled_msgids));
+    end
+    
+    function disableWarning(obj,msgid)
+      obj.disabled_msgids{end+1} = msgid;
+    end
   end
   
 end

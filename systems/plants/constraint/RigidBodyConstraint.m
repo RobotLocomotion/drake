@@ -13,7 +13,7 @@ classdef RigidBodyConstraint
     type
     robot
     tspan
-    mex_ptr
+    mex_ptr=0;
   end
   
   properties(Constant)
