@@ -41,19 +41,25 @@ else
   end
   
   if ~isempty(v)
-    kinsol.twists = computeTwistsInBaseFrame(bodies, kinsol.T, S, v);
-    % TODO: remove once there are no more references to this:
-    kinsol.Tdot = computeTdots(kinsol.T, kinsol.twists);
-    
-    if compute_JdotV
-      SdotV = computeMotionSubspacesDotV(bodies, q, v);
-      kinsol.JdotV = computeJacobianDotV(bodies, kinsol.T, kinsol.twists, SdotV);
+    if compute_gradients
+      [kinsol.twists, kinsol.dtwistsdq] = computeTwistsInBaseFrame(bodies, kinsol.T, S, v, kinsol.dTdq, dSdq);
+      if compute_JdotV
+        [SdotV, dSdotVdq] = computeMotionSubspacesDotV(bodies, q, v);
+        [kinsol.JdotV, kinsol.dJdotVdq] = computeJacobianDotV(bodies, kinsol.T, kinsol.twists, SdotV, kinsol.dTdq, kinsol.dtwistsdq, dSdotVdq);
+      end
+    else
+      kinsol.twists = computeTwistsInBaseFrame(bodies, kinsol.T, S, v);
+      if compute_JdotV
+        SdotV = computeMotionSubspacesDotV(bodies, q, v);
+        kinsol.JdotV = computeJacobianDotV(bodies, kinsol.T, kinsol.twists, SdotV);
+      end
     end
   end
-  
+  % TODO: remove once there are no more references to this:
+  kinsol.Tdot = computeTdots(kinsol.T, kinsol.twists);
+end
 end
 
-end
 
 function T = computeTransforms(bodies, q)
 nb = length(bodies);
@@ -138,20 +144,41 @@ for i = 2 : nb
 end
 end
 
-function twists = computeTwistsInBaseFrame(bodies, transforms, S, v)
-nb = length(bodies);
-twists = cell(1, nb);
+function [twists, dtwistsdq] = computeTwistsInBaseFrame(bodies, T, S, v, dTdq, dSdq)
+% TODO: consider computing this based on kinsol.J, kinsol.dJdq instead
 
-for i = 1 : nb
+compute_gradient = nargout > 1;
+if compute_gradient
+  if nargin < 6
+    error('must provide dTdq, dSdq to compute gradient');
+  end
+  nq = size(dTdq{end}, 2);
+end
+
+nb = length(bodies);
+twistSize = 6;
+
+twists = cell(1, nb);
+twists{1} = zeros(twistSize, 1);
+
+if compute_gradient
+  dtwistsdq = cell(1, nb);
+  dtwistsdq{1} = zeros(numel(twists{1}), nq);
+end
+
+for i = 2 : nb
   body = bodies(i);
-  if body.parent > 0
-    parentTwist = twists{body.parent};
-    vBody = v(body.velocity_num);
-    jointTwist = S{i} * vBody;
-    twists{i} = parentTwist + transformTwists(transforms{i}, jointTwist);
-  else
-    twistSize = 6;
-    twists{i} = zeros(twistSize, 1);
+  vBody = v(body.velocity_num);
+
+  parentTwist = twists{body.parent};
+  jointTwist = S{i} * vBody;
+  twists{i} = parentTwist + transformTwists(T{i}, jointTwist);
+  
+  if compute_gradient
+    dparentTwist = dtwistsdq{body.parent};
+    dJointTwistdq = zeros(twistSize, nq);
+    dJointTwistdq(:, body.position_num) = matGradMult(dSdq{i}, vBody);
+    dtwistsdq{i} = dparentTwist + dAdHTimesX(T{i}, jointTwist, dTdq{i}, dJointTwistdq);
   end
 end
 end
@@ -163,27 +190,48 @@ for i = 1 : length(T)
 end
 end
 
-function SdotV = computeMotionSubspacesDotV(bodies, q, v)
+function [SdotV, dSdotVdq] = computeMotionSubspacesDotV(bodies, q, v)
+compute_gradients = nargout > 1;
+
 nb = length(bodies);
 SdotV = cell(1, nb);
+if compute_gradients
+  dSdotVdq = cell(1, nb);
+end
+
 for i = 2 : nb
   body = bodies(i);
   qBody = q(body.position_num);
   vBody = v(body.velocity_num);
-  SdotV{i} = motionSubspaceDotV(body, qBody, vBody);
+  if compute_gradients
+    [SdotV{i}, dSdotVdq{i}] = motionSubspaceDotV(body, qBody, vBody);
+  else
+    SdotV{i} = motionSubspaceDotV(body, qBody, vBody);
+  end
 end
 end
 
-function JdotV = computeJacobianDotV(bodies, transforms, twists, SdotV)
+function [JdotV, dJdotVdq] = computeJacobianDotV(bodies, T, twists, SdotV, dTdq, dtwistsdq, dSdotVdq)
+compute_gradients = nargout > 1;
+
 world = 1;
 nb = length(bodies);
+if compute_gradients
+  nq = size(dTdq{end}, 2);
+end
+
 JdotV = cell(1, nb);
 JdotV{1} = zeros(6, 1);
+if compute_gradients
+  dJdotVdq = cell(1, nb);
+  dJdotVdq{1} = zeros(numel(JdotV{1}, nq));
+end % TODO: finish dJdotVdq
+
 for i = 2 : nb
   body = bodies(i);
   parent = body.parent;
   predecessorAccel = JdotV{parent};
-  jointAccel = transformSpatialAcceleration(SdotV{i}, transforms, twists, parent, i, i, world);
+  jointAccel = transformSpatialAcceleration(SdotV{i}, T, twists, parent, i, i, world);
   JdotV{i} = predecessorAccel + jointAccel;
 end
 end

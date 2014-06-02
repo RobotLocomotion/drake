@@ -1,4 +1,4 @@
-function twist = relativeTwist(transforms, twists, base, endEffector, expressedIn)
+function [twist, dtwist] = relativeTwist(transforms, twists, base, end_effector, expressed_in, dtransforms, dtwists)
 % RELATIVETWIST Computes the relative twist between base and endEffector
 % @param transforms homogeneous transforms from link to world (usually
 % obtained from doKinematics as kinsol.T)
@@ -11,10 +11,27 @@ function twist = relativeTwist(transforms, twists, base, endEffector, expressedI
 % @retval relative twist of endEffector with respect to base, expressed in
 % expressedIn
 
-twist = twists{endEffector} - twists{base};
-if expressedIn ~= 1
-  H = homogTransInv(transforms{expressedIn});
-  twist = transformTwists(H, twist);
+compute_gradient = nargout > 1;
+
+if compute_gradient
+  if nargin < 7
+    error('need dtransforms and dtwists to compute gradient');
+  end
 end
 
+twist = twists{end_effector} - twists{base};
+if compute_gradient
+  dtwist = dtwists{end_effector} - dtwists{base};
+end
+
+if expressed_in ~= 1
+  T = transforms{expressed_in};
+  Tinv = homogTransInv(T);
+  if compute_gradient
+    dT = dtransforms{expressed_in};
+    dTinv = dinvT(T, dT);
+    dtwist = dAdHTimesX(Tinv, twist, dTinv, dtwist);
+  end
+  twist = transformTwists(Tinv, twist);
+end
 end
