@@ -25,6 +25,9 @@ function [x_in_world, J, dJ_or_Jdot] = terrainContactPositions(obj, ...
   %   returns the time derivative of J rather than dJ when second
   %   derivatives are requested.
   %
+  % For a general description of terrain contact points see 
+  % <a href="matlab:help RigidBodyGeometry/getTerrainContactPoints">RigidBodyGeometry/getTerrainContactPoints</a>
+  %
   % @param obj - RigidBodyManipulator object
   % @param kinsol - Structure returned by doKinematics
   % @param body_idx - vector of body indices @default <All bodies>
