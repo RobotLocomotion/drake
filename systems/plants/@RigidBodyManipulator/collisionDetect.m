@@ -1,14 +1,20 @@
 function [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol, ...
                                           allow_multiple_contacts, ...
                                           active_collision_options)
-% function [distance,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol,active_collision_options)
-%
-% Uses bullet to find the points of closest approach between all pairs of
-% collision elements in the subset of the manipulator's collision elements
-% specified by the user, with the following exceptions: 
+% [distance,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol)
+% returns the points of closest approach between all pairs of
+% collision elements in the manipulator, with the following exceptions: 
 %   * any body and it's % parent in the kinematic tree
 %   * body A and body B, where body A belongs to collision filter groups that
 %     ignore all of the collision filter groups to which body B belongs
+% as well as the points of closest approach between the manipulator's
+% terrain contact points and terrain (if applicable). For a description
+% of terrain contact points, see <a href="matlab:help RigidBodyGeometry/getTerrainContactPoints">RigidBodyGeometry/getTerrainContactPoints</a>
+%
+% [...] = collisionDetect(obj,kinsol,active_collision_options) returns
+% the same information as above, but only for those contact pairs that
+% satisfy the criteria in active_collision_options (See below).
+%
 % @param obj
 % @param kinsol result of calling doKinematics(obj, q) where q is a
 %   position vector.  Can also be q, and we'll call doKinematics for you.
@@ -19,12 +25,17 @@ function [phi,normal,xA,xB,idxA,idxB] = collisionDetect(obj,kinsol, ...
 % @param active_collision_options - Struct that may the following fields
 %   * body_idx - vector of body indices. Only these bodies will be
 %       considered for collsion detection
+%       @default - Consider all bodies
 %   * collision_groups - cell array of strings. Only the contact shapes
 %       belonging to these groups will be considered for collision
-%       detection.
-%   Note that the filtering based on collision_filter_groups and
-%   adjacency in the kinematic tree still apply.
-%   @default - Consider all bodies and all groups
+%       detection.Note that the filtering based on
+%       collision_filter_groups and adjacency in the kinematic tree
+%       still apply.
+%       @default - Consider all groups
+%   * terrain_only - Logical scalar. If true, only consider the
+%       interaction between the manipulator's terrain contact points and
+%       terrain. 
+%       @default - false
 % @retval phi - (m x 1)  Vector of gap function values (typically contact
 %   distance), for m possible contacts
 % @retval normal - (3 x m) Contact normal vector in world coordinates,
@@ -47,11 +58,25 @@ if nargin < 4, active_collision_options = struct(); end
 if isfield(active_collision_options,'body_idx')
   active_collision_options.body_idx = int32(active_collision_options.body_idx);
 end
+if ~isfield(active_collision_options,'terrain_only')
+  active_collision_options.terrain_only = false;
+end
 
 force_collisionDetectTerrain = false;
 
-if (obj.mex_model_ptr ~= 0 && kinsol.mex)
+if (~active_collision_options.terrain_only && obj.mex_model_ptr ~= 0 ...
+    && (kinsol.mex || isa(kinsol.q,'TaylorVar')))
   [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr,allow_multiple_contacts,active_collision_options);
+  if isempty(idxA)
+    idxA = [];
+    idxB = [];
+    xA = [];
+    xB = [];
+    distance = [];
+  else
+    idxA = double(idxA);
+    idxB = double(idxB);
+  end
   phi = distance';
 else
   force_collisionDetectTerrain = true;
@@ -59,7 +84,7 @@ else
     warning('Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex', ...
       ['kinsol was generated with use_mex = false. Only checking collisions ' ...
       'between terrain contact points and terrain']);
-  else % obj.mex_model_ptr == 0
+  elseif obj.mex_model_ptr == 0
     warning('Drake:RigidBodyManipulator:collisionDetect:noMexPtr', ...
       ['This model has no mex pointer. Only checking collisions between ' ...
       'terrain contact points and terrain']);
@@ -76,7 +101,12 @@ if ~isempty(obj.terrain) && ...
     (force_collisionDetectTerrain || ~isa(obj.terrain,'RigidBodyFlatTerrain'))
   % For each point on the manipulator that can collide with terrain,
   % find the closest point on the terrain geometry
-  terrain_contact_point_struct = getTerrainContactPoints(obj);
+  if isfield(active_collision_options,'body_idx')
+    terrain_contact_point_struct = ...
+      getTerrainContactPoints(obj,active_collision_options.body_idx);
+  else
+    terrain_contact_point_struct = getTerrainContactPoints(obj);
+  end
 
   if ~isempty(terrain_contact_point_struct)
     xA_new = [terrain_contact_point_struct.pts];
