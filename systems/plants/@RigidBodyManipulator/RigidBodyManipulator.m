@@ -1065,8 +1065,10 @@ classdef RigidBodyManipulator < Manipulator
           try
             v = feval(type,arg{:});
           catch ex
-            getReport(ex,'extended')
-            warning(ex.identifier,ex.message);
+            if ~strncmp(ex.identifier,'Drake:MissingDependency',23)
+              getReport(ex,'extended')
+              warning(ex.identifier,ex.message);
+            end
           end
         end
         i = i+1;
