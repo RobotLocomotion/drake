@@ -61,8 +61,21 @@ classdef RigidBody < RigidBodyElement
     end
 
     function pts = getTerrainContactPoints(body,collision_group)
-      % pts = getTerrainContactPoints(body)
+      % pts = getTerrainContactPoints(body) returns the terrain contact
+      % points of all geometries on this body, in body frame.
+      %
+      % pts = getTerrainContactPoints(body,collision_group) returns the
+      % terrain contact points of all geometries on this body belonging
+      % to the group[s] specified by collision_group
+      %
+      % For a general description of terrain contact points see 
+      % <a href="matlab:help RigidBodyGeometry/getTerrainContactPoints">RigidBodyGeometry/getTerrainContactPoints</a>
+      %
       % @param body - A RigidBody object
+      % @param collision_group - A string or cell array of strings
+      %                          specifying the collision groups whose
+      %                          terrain contact points should be
+      %                          returned
       % @retval pts - A 3xm array of points on body (in body frame) that can collide with
       %               non-flat terrain
       if nargin < 2

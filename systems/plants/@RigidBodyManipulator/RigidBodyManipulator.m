@@ -853,18 +853,33 @@ classdef RigidBodyManipulator < Manipulator
       b = leastCommonAncestor(model,body1.parent,body2);
     end
     
-    function terrain_contact_point_struct = getTerrainContactPoints(obj,body_idx)
+    function terrain_contact_point_struct = ...
+        getTerrainContactPoints(obj,body_idx)
+      % terrain_contact_point_struct = getTerrainContactPoints(obj)
+      % returns a structure array containing the terrain contact points
+      % on all bodies of this manipulator.
+      %
       % terrain_contact_point_struct = getTerrainContactPoints(obj,body_idx)
+      % returns a structure array containing the terrain contact points
+      % on the bodies specified by body_idx.
+      %
+      % For a general description of terrain contact points see 
+      % <a href="matlab:help RigidBodyGeometry/getTerrainContactPoints">RigidBodyGeometry/getTerrainContactPoints</a>
       %
       % @param obj - RigidBodyManipulator object
-      % @param body_idx - vector of body-indices indicating the bodies for
-      %                   which terrain contact points should be found
-      % @retval terrain_contact_point_struct - nx1 structure array, where n is
-      %   the number of bodies with points that can collide with non-flat
-      %   terrain. Each element has the following fields
+      % @param body_idx - vector of body-indices indicating the bodies
+      %                   for which terrain contact points should be
+      %                   found @default All bodies except the world
+      % @retval terrain_contact_point_struct - nx1 structure array,
+      %   where n is the number of bodies with terrain contact points.
+      %   Each element has the following fields
       %     * idx - Index of a body in the RigidBodyManipulator
-      %     * pts - 3xm array containing points on the body specified by idx
-      %             that can collide with non-flat terrain.
+      %     * pts - 3xm array containing points on the body specified by
+      %             idx (in body frame) that can collide with arbitrary
+      %             terrain.
+      %
+      % See also RigidBodyGeometry/getTerrainContactPoints,
+      % RigidBodyManipulator/terrainContactPositions
       if nargin < 2
         body_idx = 2:obj.getNumBodies(); % World-fixed objects can't collide
                                          % with the terrain
