@@ -99,6 +99,7 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
     end
 
     function drawConstraint(obj,q,lcmgl)
+      checkDependency('lcmgl');
       [~,~,ptsA,ptsB,idxA,idxB] = obj.checkConstraint(q);
       
       for i = 1:size(ptsA,2);

@@ -25,9 +25,6 @@ classdef RigidBodySphere < RigidBodyGeometry
     end
     
     function pts = getPoints(obj)
-      if (obj.radius~=0)
-        warning('Drake:RigidBodySphere:SimplifiedCollisionGeometry','for efficiency, 3D sphere geometry will be treated like a point (at the center of the sphere)');
-      end
       pts = obj.T(1:3,4);
     end
 
@@ -84,13 +81,21 @@ classdef RigidBodySphere < RigidBodyGeometry
     end
 
     function pts = getTerrainContactPoints(obj)
-      % pts = getTerrainContactPoints(obj)
+      % pts = getTerrainContactPoints(obj) returns the terrain contact points
+      % of this object. A zero-radius sphere has a single terrain contact point
+      % located at its origin. Non-zeros-radius spheres have no terrain contact
+      % points.
+      %
+      % For a general description of terrain contact points see 
+      % <a href="matlab:help RigidBodyGeometry/getTerrainContactPoints">RigidBodyGeometry/getTerrainContactPoints</a>
       %
       % @param  obj - RigidBodySphere object
       % @retval pts - 3xm array of points on this geometry (in link frame) that
       %               can collide with the world.
       if obj.radius == 0
         pts = getPoints(obj);
+      else
+        pts = [];
       end
     end
   
