@@ -9,8 +9,11 @@ classdef WarningManager < handle
   methods
     function warnOnce(obj,msgid,varargin)
       if ~any(strcmp(msgid,obj.disabled_msgids))
-        warning(msgid,varargin{:});
-        obj.disabled_msgids{end+1} = msgid;
+        status = warning('query',msgid);
+        if strcmp(status.state,'on')
+          warning(msgid,varargin{:});
+          obj.disabled_msgids{end+1} = msgid;
+        end
       end
     end
     
