@@ -8,6 +8,9 @@ function dM_submatrix = getSubMatrixGradient(dM, rows, cols, M_size)
 % number of columns of M
 % @see setSubMatrixGradient
 
+assert(issorted(rows), 'rows must be sorted');
+assert(issorted(cols), 'cols must be sorted');
+
 mask = false(M_size);
 mask(rows, cols) = true;
 dM_submatrix = dM(mask(:), :);
