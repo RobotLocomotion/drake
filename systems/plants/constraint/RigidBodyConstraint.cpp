@@ -17,18 +17,6 @@ double angleDiff(double phi1, double phi2)
   }
   return d;
 }
-template <typename T>
-void myrealloc(T* &ptr, int old_size, int new_size)
-{
-  T* newptr = new T[new_size];
-  if (old_size>0){
-    int s = old_size;
-    if (new_size<old_size) s = new_size;
-    for (int i = 0;i<s;i++) newptr[i] = ptr[i];
-    delete[] ptr;
-  }
-  ptr = newptr;
-}
 
 void drakePrintMatrix(const MatrixXd &mat)
 {
@@ -51,7 +39,7 @@ static void checkBodyInd(int body, int num_bodies, int min_body_ind = 0)
 }
 namespace DrakeRigidBodyConstraint{
   Vector4d com_pts(0.0,0.0,0.0,1.0);
-  const int WorldCoMDefaultRobotNum[1] = {0};
+  int WorldCoMDefaultRobotNum = 0;
   Vector2d default_tspan(-1.0/0.0,1.0/0.0);
 }
 RigidBodyConstraint::RigidBodyConstraint(int category, RigidBodyManipulator* robot, const Vector2d &tspan)
@@ -860,7 +848,7 @@ WorldPositionConstraint::~WorldPositionConstraint()
 
 
 
-const std::set<int> WorldCoMConstraint::defaultRobotNumSet(DrakeRigidBodyConstraint::WorldCoMDefaultRobotNum,DrakeRigidBodyConstraint::WorldCoMDefaultRobotNum+1);
+const std::set<int> WorldCoMConstraint::defaultRobotNumSet(&DrakeRigidBodyConstraint::WorldCoMDefaultRobotNum,&DrakeRigidBodyConstraint::WorldCoMDefaultRobotNum+1);
 
 WorldCoMConstraint::WorldCoMConstraint(RigidBodyManipulator *model, Vector3d lb, Vector3d ub, const Vector2d &tspan, const std::set<int> &robotnum):PositionConstraint(model,DrakeRigidBodyConstraint::com_pts,lb,ub,tspan)
 {
