@@ -54,9 +54,9 @@ else
         kinsol.JdotV = computeJacobianDotV(bodies, kinsol.T, kinsol.twists, SdotV);
       end
     end
+    % TODO: remove once there are no more references to this:
+    kinsol.Tdot = computeTdots(kinsol.T, kinsol.twists);
   end
-  % TODO: remove once there are no more references to this:
-  kinsol.Tdot = computeTdots(kinsol.T, kinsol.twists);
 end
 end
 
