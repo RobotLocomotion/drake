@@ -1,5 +1,5 @@
 function drawPR2
 
-r = RigidBodyManipulator('pr2.urdf');
-
+options.terrain = RigidBodyFlatTerrain();
+r = RigidBodyManipulator('pr2.urdf',options);
 v = r.constructVisualizer();

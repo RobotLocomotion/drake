@@ -23,6 +23,11 @@ if (kinsol.mex)
     Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,rotation_type,true);
   end
 else
+  
+  if isempty(kinsol.dTdqdot{1})
+    error('Drake:RigidBodyManipulator:MissingDerivatives','This kinsol does not have dTdqdot.  You must pass qd into doKinematics before using this method');
+  end
+  
   if (body_or_frame_ind == 0) 
     nq=getNumDOF(obj);
     

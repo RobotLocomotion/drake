@@ -17,5 +17,7 @@ c = EndPointControl(sys,r);
 %xtraj = simulate(feedback(sys,c),[0 tf]);
 %v.playback(xtraj);
 
+w = warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
 simulate(cascade(feedback(sys,c),v),[0 5])
+warning(w);
 

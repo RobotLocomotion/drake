@@ -100,13 +100,18 @@ display('setAdditionaltSamples pass');
 
 % Check updateRobot
 urdf_new = [getDrakePath,'/examples/PR2/pr2.urdf'];
+w = warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
 robot_new = RigidBodyManipulator(urdf_new,struct('floating',true));
+warning(w);
 ikoptions = ikoptions.updateRobot(robot_new);
 checkIKoptions(ikoptions);
 display('updateRobot pass');
 end
 
 function checkIKoptions(ikoptions)
+
+if ikoptions.mex_ptr==0, return; end  % can't test without mex
+
 ikoptions_mex = ikoptions.mex_ptr;
 [robot_address_mex,Q_mex,Qa_mex,Qv_mex,debug_mode_mex,sequentialSeedFlag_mex,...
   majorFeasibilityTolerance_mex,majorIterationsLimit_mex,...

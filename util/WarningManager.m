@@ -13,8 +13,11 @@ classdef WarningManager < handle
       % @param msgid as in warning msgid
       % @param varargin message string + additional info
       if ~isKey(obj.disabled_msgids,msgid)
-        warning(msgid,varargin{:});
-        obj.disabled_msgids(msgid) = true;
+        status = warning('query',msgid);
+        if strcmp(status.state,'on')
+          warning(msgid,varargin{:});
+          obj.disabled_msgids(msgid) = true;
+        end
       end
     end
     

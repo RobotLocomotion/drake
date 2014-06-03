@@ -90,7 +90,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
     end
     
     function writeWRLShape(obj,fp,td)
-      assert(obj.scale == 1); % todo: handle this case
+      assert(all(obj.scale == 1)); % todo: handle this case
       
       function tabprintf(fp,varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
       tabprintf(fp,'Transform {\n'); td=td+1;
@@ -105,11 +105,14 @@ classdef RigidBodyMesh < RigidBodyGeometry
 
         txt=fileread(wrlfile);
         txt = regexprep(txt,'#.*\n','','dotexceptnewline');
-      
-        tabprintf(fp,'children Shape {\n'); td=td+1;
-        tabprintf(fp,'geometry %s',txt);
-        tabprintf(fp,'appearance Appearance { material Material { diffuseColor %f %f %f } }\n',obj.c(1),obj.c(2),obj.c(3));
-        td=td-1; tabprintf('}\n');
+
+        % add appearance info back in manually
+        appearanceString = sprintf('appearance Appearance { material Material { diffuseColor %f %f %f } }\n',obj.c(1),obj.c(2),obj.c(3));
+        txt = regexprep(txt,'geometry',[appearanceString,'geometry']);
+        
+        tabprintf(fp,'children [\n'); 
+        fprintf(fp,'%s',txt); 
+        tabprintf(fp,']\n'); % end children
       elseif strcmpi(ext,'.wrl')
         wrlfile = obj.filename;
         
