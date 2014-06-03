@@ -2439,19 +2439,9 @@ void MinDistanceConstraint::penalty(const Eigen::VectorXd &dist, Eigen::VectorXd
   dcost_ddist = MatrixXd::Zero(nd,nd);
   for (int i = 0; i < nd; ++i) {
     if (dist(i) < 0) {
-      //cost(i) = -dist(i);
-      //dcost_ddist(i,i) = -1;
-      cost(i) = pow(dist(i),2);
-      dcost_ddist(i,i) = 2*dist(i);
-      //cost(i) = pow(dist(i),4);
-      //dcost_ddist(i,i) = 4*pow(dist(i),3);
-      //if (dist(i) > -1) {
-        //cost(i) = 0.5*pow(dist(i),2);
-        //dcost_ddist(i,i) = dist(i);
-      //} else {
-        //cost(i) = -0.5 - dist(i);
-        //dcost_ddist(i,i) = -1;
-      //}
+      double exp_recip_dist = exp(1/dist(i));
+      cost(i) = -dist(i)*exp_recip_dist;
+      dcost_ddist(i,i) = exp_recip_dist*(1/dist(i) - 1);
     }
   }
 }
