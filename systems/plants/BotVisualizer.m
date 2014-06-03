@@ -19,15 +19,17 @@ classdef BotVisualizer < RigidBodyVisualizer
       
       global g_disable_botvis;
       if g_disable_botvis % evaluates to false if empty
-        error('Drake:BotVisualizer:Disabled','botvis is disabled with g_disable_botvis');
+        error('Drake:MissingDependency:BotVisualizerDisabled','botvis is disabled with g_disable_botvis');
       end
       
+      checkDependency('lcm');
+      
       if ispc
-        error('Drake:BotVisualizer:Windows','botvis doesn''t support windows yet');
+        error('Drake:MissingDependency:NoBotVisualizerOnWindowsYet','botvis doesn''t support windows yet');
       end
       
       if ~exist(fullfile(pods_get_bin_path,'drake_viewer'),'file')
-        error('Drake:BotVisualizer:MissingViewer','can''t find drake_viewer executable.  you might need to run make (from the shell).  note: BotVisualizer is not supported on windows yet');
+        error('Drake:MissingDependency:BotVisualizer','can''t find drake_viewer executable.  you might need to run make (from the shell).  note: BotVisualizer is not supported on windows yet');
       end
       typecheck(manip,'RigidBodyManipulator');
       

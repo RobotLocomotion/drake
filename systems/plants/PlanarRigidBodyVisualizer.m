@@ -106,8 +106,8 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
   end
   
   properties
-    xlim=[-1,1]
-    ylim=[-.1,1.9];
+    xlim=[-2,2]
+    ylim=[-2,2];
     debug = false;  % if true, draws extras, like the coordinate frames and COMs for each link
     fade_percent = 0;     % 0 to 1 
     fade_color = [1 1 1];

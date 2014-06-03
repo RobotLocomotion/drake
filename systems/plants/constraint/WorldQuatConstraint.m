@@ -27,7 +27,6 @@ classdef WorldQuatConstraint < QuatConstraint
       if(nargin == 4)
         tspan = [-inf,inf];
       end
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldQuatConstraintType,robot.getMexModelPtr,body,quat_des,tol,tspan);
       obj = obj@QuatConstraint(robot,tol,tspan);
       sizecheck(quat_des,[4,1]);
       if(any(isinf(quat_des)|isnan(quat_des)))
@@ -46,7 +45,9 @@ classdef WorldQuatConstraint < QuatConstraint
       end
       obj.body_name = obj.robot.getBody(obj.body).linkname;
       obj.type = RigidBodyConstraint.WorldQuatConstraintType;
-      obj.mex_ptr = ptr;
+      if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldQuatConstraintType,robot.getMexModelPtr,body,quat_des,tol,tspan);
+      end
     end
     
     

@@ -14,51 +14,52 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
     function [f_ext, df_ext] = computeSpatialForce(obj,manip,q,qd)
       % todo: re-enable mex for planar version when i write mex the planer
       % bodykin
-      kinsol = doKinematics(manip,q,true);  
       
       nq = size(q,1);
       
       if (obj.b~=0)
         if (nargout>1)
-            [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
-            J1dot = forwardJacDot(manip,kinsol,obj.body1,obj.pos1);
-            v1 = J1*qd;
-            dv1dq = J1dot;
-            dv1dqd = J1;
-            [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
-            J2dot = forwardJacDot(manip,kinsol,obj.body2,obj.pos2);
-            v2 = J2*qd;
-            dv2dq = J2dot;
-            dv2dqd = J2;
-            % r = x1-x2; l=sqrt(r'r); ldot=(r'rdot)/sqrt(r'r); 
-            length = norm(x1-x2);
-            dlengthdq = ((x1-x2)'/norm(x1-x2))*(J1-J2);
-            vel = ((x1-x2)'*(v1-v2))/(length+eps);
-            dveldq =  (((J1-J2)'*(v1-v2)+(x1-x2)'*(dv1dq-dv2dq))*(length+eps)-((x1-x2)'*(v1-v2))*dlengthdq)/(length+eps)^2;
-            dveldqd = (((x1-x2)'*(dv1dqd-dv2dqd))*(length+eps))/(length+eps)^2;
+          kinsol = doKinematics(manip,q,false,true,qd);
+          [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
+          J1dot = forwardJacDot(manip,kinsol,obj.body1,obj.pos1);
+          v1 = J1*qd;
+          dv1dq = J1dot;
+          dv1dqd = J1;
+          [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+          J2dot = forwardJacDot(manip,kinsol,obj.body2,obj.pos2);
+          v2 = J2*qd;
+          dv2dq = J2dot;
+          dv2dqd = J2;
+          % r = x1-x2; l=sqrt(r'r); ldot=(r'rdot)/sqrt(r'r);
+          length = norm(x1-x2);
+          dlengthdq = ((x1-x2)'/norm(x1-x2))*(J1-J2);
+          vel = ((x1-x2)'*(v1-v2))/(length+eps);
+          dveldq =  (((J1-J2)'*(v1-v2)+(x1-x2)'*(dv1dq-dv2dq))*(length+eps)-((x1-x2)'*(v1-v2))*dlengthdq)/(length+eps)^2;
+          dveldqd = (((x1-x2)'*(dv1dqd-dv2dqd))*(length+eps))/(length+eps)^2;
         else
-            [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
-            v1 = J1*qd;
-            [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
-            v2 = J2*qd;
-            % r = x1-x2; l=sqrt(r'r); ldot=(r'rdot)/sqrt(r'r); 
-            length = norm(x1-x2);
-            vel = ((x1-x2)'*(v1-v2))/(length+eps);
+          kinsol = doKinematics(manip,q);
+          [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
+          v1 = J1*qd;
+          [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+          v2 = J2*qd;
+          % r = x1-x2; l=sqrt(r'r); ldot=(r'rdot)/sqrt(r'r);
+          length = norm(x1-x2);
+          vel = ((x1-x2)'*(v1-v2))/(length+eps);
         end
       else
         if (nargout>1)
-            [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
-            [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
-            length = norm(x1-x2);
-            dlengthdq = ((x1-x2)'/norm(x1-x2))*(J1-J2);
-            vel = 0;
-            dveldq = zeros(1,nq);
-            dveldqd = zeros(1,nq);
+          [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
+          [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+          length = norm(x1-x2);
+          dlengthdq = ((x1-x2)'/norm(x1-x2))*(J1-J2);
+          vel = 0;
+          dveldq = zeros(1,nq);
+          dveldqd = zeros(1,nq);
         else
-            x1 = forwardKin(manip,kinsol,obj.body1,obj.pos1);
-            x2 = forwardKin(manip,kinsol,obj.body2,obj.pos2);
-            length = norm(x1-x2);
-            vel=0;
+          x1 = forwardKin(manip,kinsol,obj.body1,obj.pos1);
+          x2 = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+          length = norm(x1-x2);
+          vel=0;
         end
       end
       
