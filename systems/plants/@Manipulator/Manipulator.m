@@ -74,7 +74,7 @@ classdef Manipulator < DrakeSystem
       % default relationship is that v = qdot
       assert(obj.num_positions==obj.num_velocities);
       Vq = eye(length(q));
-      dVq = zeros(length(q));
+      dVq = zeros(numel(Vq), obj.num_positions);
     end
     
     function [VqInv,dVqInv] = vToqdot(obj, q)
@@ -82,7 +82,7 @@ classdef Manipulator < DrakeSystem
       % default relationship is that v = qdot
       assert(obj.num_positions==obj.num_velocities);
       VqInv = eye(length(q));
-      dVq = zeros(length(q));
+      dVqInv = zeros(numel(VqInv), obj.num_positions);
     end
     
     function y = output(obj,t,x,u)

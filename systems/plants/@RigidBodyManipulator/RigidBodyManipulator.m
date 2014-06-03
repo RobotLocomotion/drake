@@ -93,49 +93,70 @@ classdef RigidBodyManipulator < Manipulator
   end
   
   methods
-    function Vq = qdotToV(obj, q)
+    function [Vq, dVq] = qdotToV(obj, q)
       bodies = obj.body;
       nb = length(bodies);
-      Vq = zeros(obj.num_velocities, obj.num_positions) * q(1); % to make TaylorVar work better
+      nv = obj.num_velocities;
+      nq = obj.num_positions;
+      Vq = zeros(nv, nq) * q(1); % to make TaylorVar work better
+      dVq = zeros(numel(Vq), nq) * q(1);
       for i = 2 : nb
         bodyI = bodies(i);
         if bodyI.floating == 1
           VqJoint = eye(6);
+          dVqJoint = zeros(numel(VqJoint), size(VqJoint, 2));
         elseif bodyI.floating == 2
           qBody = q(bodyI.position_num);
           quat = qBody(4 : 7);
-          R = quat2rotmat(quat);
-          VqJoint = [zeros(3, 3), R' * quatdot2angularvelMatrix(quat);
+          [R, dR] = quat2rotmat(quat);
+          [M, dM] = quatdot2angularvelMatrix(quat);
+          VqJoint = [zeros(3, 3), R' * M;
             R', zeros(3, 4)];
+          dVqJoint = zeros(numel(VqJoint), size(VqJoint, 2)) * qBody(1);
+          dRTranspose = transposeGrad(dR, size(R));
+          dVqJoint = setSubMatrixGradient(dVqJoint, dRTranspose, 4:6, 1:3, size(VqJoint), 4:7);
+          dRTransposeM = matGradMultMat(R', M, dRTranspose, dM);
+          dVqJoint = setSubMatrixGradient(dVqJoint, dRTransposeM, 1:3, 4:7, size(VqJoint), 4:7);
         elseif bodyI.floating ~= 0
           error('case not handled');
         else
           VqJoint = 1;
+          dVqJoint = 0;
         end
         Vq(bodyI.velocity_num, bodyI.position_num) = VqJoint;
+        dVq = setSubMatrixGradient(dVq, dVqJoint, bodyI.velocity_num, bodyI.position_num, size(Vq), bodyI.position_num);
       end
     end
     
-    function VqInv = vToqdot(obj, q)
+    function [VqInv, dVqInv] = vToqdot(obj, q)
       bodies = obj.body;
       nb = length(bodies);
       VqInv = zeros(obj.num_positions, obj.num_velocities) * q(1); % to make TaylorVar work better
+      dVqInv = zeros(numel(VqInv), obj.num_positions) * q(1);
       for i = 2 : nb
         bodyI = bodies(i);
         if bodyI.floating == 1
           VqInvJoint = eye(6);
+          dVqInvJoint = zeros(numel(VqInvJoint), size(VqInvJoint, 1));
         elseif bodyI.floating == 2
           qBody = q(bodyI.position_num);
           quat = qBody(4 : 7);
-          R = quat2rotmat(quat);
+          [R, dR] = quat2rotmat(quat);
+          [M, dM] = angularvel2quatdotMatrix(quat);
           VqInvJoint = [zeros(3, 3), R;
-            angularvel2quatdotMatrix(quat) * R, zeros(4, 3)];
+            M * R, zeros(4, 3)];
+          dVqInvJoint = zeros(numel(VqInvJoint), size(VqInvJoint, 1)) * qBody(1);
+          dVqInvJoint = setSubMatrixGradient(dVqInvJoint, dR, 1:3, 4:6, size(VqInvJoint), 4:7);
+          dMR = matGradMultMat(M, R, dM, dR);
+          dVqInvJoint = setSubMatrixGradient(dVqInvJoint, dMR, 4:7, 1:3, size(VqInvJoint), 4:7);
         elseif bodyI.floating ~= 0
           error('case not handled');
         else
           VqInvJoint = 1;
+          dVqInvJoint = 0;
         end
         VqInv(bodyI.position_num, bodyI.velocity_num) = VqInvJoint;
+        dVqInv = setSubMatrixGradient(dVqInv, dVqInvJoint, bodyI.position_num, bodyI.velocity_num, size(VqInv), bodyI.position_num);
       end
     end
     
