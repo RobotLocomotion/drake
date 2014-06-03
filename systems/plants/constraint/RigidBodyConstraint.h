@@ -150,6 +150,7 @@ class PostureConstraint: public RigidBodyConstraint
     bool isTimeValid(const double* t) const;
     void setJointLimits(int num_idx, const int* joint_idx, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub);
     void bounds(const double* t,Eigen::VectorXd& joint_min, Eigen::VectorXd& joint_max) const;
+    virtual ~PostureConstraint(void) {};
 };
 
 /*
@@ -232,6 +233,7 @@ class SingleTimeLinearPostureConstraint: public RigidBodyConstraint
     void geval(const double* t, Eigen::VectorXi &iAfun, Eigen::VectorXi &jAvar, Eigen::VectorXd &A) const;
     void eval(const double* t, const Eigen::VectorXd &q, Eigen::VectorXd &c, Eigen::SparseMatrix<double> &dc) const;
     void name(const double* t, std::vector<std::string> &name_str) const;
+    virtual ~SingleTimeLinearPostureConstraint(void) {};
 };
 
 /*
@@ -286,6 +288,7 @@ class PositionConstraint : public SingleTimeKinematicConstraint
     virtual void eval(const double* t,Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
+    virtual ~PositionConstraint(void) {};
 };
 
 class WorldPositionConstraint: public PositionConstraint
@@ -390,6 +393,7 @@ class EulerConstraint: public SingleTimeKinematicConstraint
     EulerConstraint(const EulerConstraint &rhs);
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
+    virtual ~EulerConstraint(void) {};
 };
 
 class WorldEulerConstraint: public EulerConstraint
