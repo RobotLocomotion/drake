@@ -1,24 +1,28 @@
 classdef UnderwaterAcrobotPlant < Manipulator
     % Submerged Acrobot, assumes ellipse-shaped links
     properties
-        g = 9.81;
+        g = 9.81; %Should match RigidBodyManipulator
         rho = 1000;
         
-        semiX1 = 0.5;%Ellipse x semiaxes, link 1
-        semiY1 = 1; %Ellipse y semiaxes, link 1
-        semiX2 = 0.5;%Ellipse x semiaxes, link 2
-        semiY2 = 1; %Ellipse y semiaxes, link 2
+        L1 = 1; %link1 length
+        L2 = 1; %link2 length
+        d1 = .1; %link 1 diameter
+        d2 = .1; %link 2 diameter
         mr1 = .5; %Mass ratio link1 (rholink/rhowater)
         mr2 = .5; %Mass ratio link2 (rholink/rhowater)
         
         %Setting drag to zero for validation against URDF implementation
         cd = 0; %Drag coefficient for bluff body (assume same in x and y)
         
-        %Link 1 derived parameters - sorry, these are big because water is heavy
-        L1=2; lc1=1; m1=800; I1=250; mx1=3000; my1=800; mth1=200;
+        %Link 1 derived parameters
+        %m1; lc1; I1; mx1; my1; mth1;
         
         %Link 2 derived parameters
-        L2=2; lc2=1; m2=800; I2=250; mx2=3000; my2=800; mth2=200;
+        %m2; lc2; I2; mx2; my2; mth2;
+        
+        %Values in URDF file
+        m1=4; lc1=0.5; I1=0.3; mx1=8; my1=0.3; mth1=0.7;
+        m2=4; lc2=0.5; I2=0.3; mx2=8; my2=0.3; mth2=0.7;
         
         xG;
         uG;
@@ -35,13 +39,14 @@ classdef UnderwaterAcrobotPlant < Manipulator
             
             
             obj = setParamFrame(obj,CoordinateFrame('UnderwaterAcrobotParams',9,'p',...
-                { 'g','rho','semiX1','semiY1','semiX2','semiY2','mr1','mr2','cd'}));
+                { 'g','rho','L1','L2','d1','d2','mr1','mr2','cd'}));
             obj = setParamLimits(obj,zeros(obj.getParamFrame.dim,1));
             
-            %Link 1 parameters
-            %[obj.L1,obj.m1,obj.lc1,obj.I1,obj.mx1,obj.my1,obj.mth1] = deriveLinkParams(obj.semiX1,obj.semiY1,obj.mr1,obj.rho);
-            %Link 2 parameters
-            %[obj.L2,obj.m2,obj.lc2,obj.I2,obj.mx2,obj.my2,obj.mth2] = deriveLinkParams(obj.semiX2,obj.semiY2,obj.mr2,obj.rho);
+            % Disable deriving these parameters to instead match the URDF file
+            %Link 1 parameters 
+            %[obj.m1,obj.lc1,obj.I1,obj.mx1,obj.my1,obj.mth1] = deriveLinkParams(obj,obj.L1,obj.d1,obj.mr1,obj.rho);
+            %Link 2 parameters - using simple URDF values instead of deriving
+            %[obj.m2,obj.lc2,obj.I2,obj.mx2,obj.my2,obj.mth2] = deriveLinkParams(obj,obj.L2,obj.d2,obj.mr2,obj.rho);
             
             %Goal position should be unstable eq point
             [~,xUnstable] = eqPoints(obj);
@@ -50,18 +55,19 @@ classdef UnderwaterAcrobotPlant < Manipulator
             obj.uG = Point(obj.getInputFrame,0);
             
         end
-        function [L,m,lc,I,mx,my,mth] = deriveLinkParams(a,b,mr,rho)
+        function [m,lc,I,mx,my,mth] = deriveLinkParams(~,L,d,mr,rho)
             %Sets derived parameters, helper function for constructor
-            %Mass parameters
-            L = b*2;
-            lc = b;
-            m = pi*a*b*mr*rho;
-            I = 1/4*m*(a^2+b^2);
+            r = d/2;
+            
+            %Mass parameters          
+            m = mr*rho*pi*r^2*L;
+            lc = L/2;
+            I = 1/12*m*L^2;
             
             %Added mass coefficients
-            mx = pi*b*b*rho;
-            my = pi*a*a*rho;
-            mth = 1/8*pi*rho*(a^2-b^2)^2;
+            mx = rho*pi*r^2*L;
+            my = 2/3*rho*pi*r^3;
+            mth = 1/12*rho*pi*r^2*L^3;
         end
         function [xStable,xUnstable] = eqPoints(obj)
             %Helper function for constructor, sets stable and unstable eqs
@@ -89,10 +95,10 @@ classdef UnderwaterAcrobotPlant < Manipulator
             
             %Unpack link 1
             m1=obj.m1; mx1=obj.mx1; my1 = obj.my1; I1 = obj.I1; mth1 = obj.mth1; lc1=obj.lc1; L1 = obj.L1;
-            semiX1 = obj.semiX1; mr1=obj.mr1;
+            d1 = obj.d1; mr1=obj.mr1;
             %Unpack link 2
-            m2=obj.m2; mx2=obj.mx2; my2 = obj.my2; I2 = obj.I2; mth2 = obj.mth2; lc2=obj.lc2;
-            semiX2 = obj.semiX2; semiY2 = obj.semiY2; mr2=obj.mr2;
+            m2=obj.m2; mx2=obj.mx2; my2 = obj.my2; I2 = obj.I2; mth2 = obj.mth2; lc2=obj.lc2; L2 = obj.L2;
+            d2 = obj.d2; mr2=obj.mr2;
             
             g=obj.g; cd = obj.cd; rho = obj.rho;
             
@@ -105,9 +111,9 @@ classdef UnderwaterAcrobotPlant < Manipulator
             v1x = w1*lc1;
             v2x = L1*w1.*c2+lc2*(w1+w2);
             v2y = -L1*w1.*s2;
-            Dx1 = rho*semiX1*v1x.*abs(v1x)*cd; %Drag force in link1 x body frame
-            Dx2 = rho*semiX2*v2x.*abs(v2x)*cd; %Drag force in link2 x body frame
-            Dy2 = rho*semiY2*v2y.*abs(v2y)*cd; %Drag force in link2 y body frame
+            Dx1 = 1/2*rho*L1*d1*v1x.*abs(v1x)*cd; %Drag force in link1 x body frame
+            Dx2 = 1/2*rho*L2*d2*v2x.*abs(v2x)*cd; %Drag force in link2 x body frame
+            Dy2 = 1/2*rho*pi*d2^2/4*v2y.*abs(v2y)*cd; %Drag force in link2 y body frame
             
             %% Equations of Motion (from Lagrange derivation)
             % Inertia/added mass
@@ -144,9 +150,19 @@ classdef UnderwaterAcrobotPlant < Manipulator
             end
         end
         
-        function c =balanceLQR(obj)
-            Q = diag([10,10,1,1]); R = 1e-12; %Small R because masses are huge
-            c = tilqr(obj,obj.xG,obj.uG,Q,R);
+        function [c,V] =balanceLQR(obj)
+            Q = diag([1,1,10,10]); R = 1;
+            if (nargout<2)
+                c = tilqr(obj,obj.xG,obj.uG,Q,R);
+            else
+                if any(~isinf([obj.umin;obj.umax]))
+                    error('currently, you must disable input limits to estimate the ROA');
+                end
+                [c,V] = tilqr(obj,obj.xG,obj.uG,Q,R);
+                pp = feedback(obj.taylorApprox(0,obj.xG,obj.uG,3),c);
+                options.method='binary';
+                V=regionOfAttraction(pp,V,options);
+            end
         end
         
         function [utraj,xtraj]=swingUpTrajectory(obj)
