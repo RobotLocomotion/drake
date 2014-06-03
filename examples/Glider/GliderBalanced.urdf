@@ -85,7 +85,7 @@
   <joint
     name="ElevatorHinge"
     type="revolute">
-    <origin xyz="-0.270 0 0" rpy="0 0 0" />    
+    <origin xyz="-0.270 0 0" rpy="0 0 0" /> 
     <parent
       link="fuselage" />
     <child
