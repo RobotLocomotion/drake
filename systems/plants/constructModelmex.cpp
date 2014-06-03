@@ -73,19 +73,19 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   pm = mxGetField(featherstone,0,"damping");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.damping.");
-  memcpy(model->damping,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->damping.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   pm = mxGetField(featherstone,0,"coulomb_friction");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_friction.");
-  memcpy(model->coulomb_friction,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->coulomb_friction.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   pm = mxGetField(featherstone,0,"static_friction");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.static_friction.");
-  memcpy(model->static_friction,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->static_friction.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   pm = mxGetField(featherstone,0,"coulomb_window");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_window.");
-  memcpy(model->coulomb_window,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->coulomb_window.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   mxArray* pXtree = mxGetField(featherstone,0,"Xtree");
   if (!pXtree) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.Xtree.");
@@ -301,8 +301,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     memcpy(model->frames[i].T.data(),mxGetPr(pm),sizeof(double)*4*4);
   }
 
-  memcpy(model->joint_limit_min, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min")), sizeof(double)*model->num_dof);
-  memcpy(model->joint_limit_max, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_max")), sizeof(double)*model->num_dof);
+  
+  memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min")), sizeof(double)*model->num_dof);
+  memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_max")), sizeof(double)*model->num_dof);
   
   const mxArray* a_grav_array = mxGetProperty(prhs[0],0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {

@@ -52,10 +52,8 @@ void IKoptions::setDefaultParams(RigidBodyManipulator* robot)
   this->SNOPT_MajorOptimalityTolerance = 1E-4;
   this->additional_tSamples.resize(0);
   this->fixInitialState = true;
-  this->q0_lb.resize(nq);
-  this->q0_ub.resize(nq);
-  memcpy(this->q0_lb.data(), this->robot->joint_limit_min,sizeof(double)*this->nq);
-  memcpy(this->q0_ub.data(), this->robot->joint_limit_max,sizeof(double)*this->nq);
+  this->q0_lb = this->robot->joint_limit_min;
+  this->q0_ub = this->robot->joint_limit_max;
   this->qd0_ub = VectorXd::Zero(this->nq);
   this->qd0_lb = VectorXd::Zero(this->nq);
   this->qdf_ub = VectorXd::Zero(this->nq);

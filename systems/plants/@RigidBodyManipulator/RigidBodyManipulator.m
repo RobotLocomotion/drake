@@ -627,15 +627,8 @@ classdef RigidBodyManipulator < Manipulator
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
-      if (model.mex_model_ptr~=0 && checkDependency('bullet'))
-        phi = model.collisionDetect(zeros(model.getNumPositions,1));
-        model.num_contact_pairs = length(phi);
-      else
-        if ~isempty([model.body.contact_shapes])
-          warning('Drake:RigidBodyManipulator:ContactGeometryButNoBullet','Your model has contact geometry, but you do not have bullet support.  Contacts will simply be ignored.');
-        end
-        model.num_contact_pairs = 0;
-      end
+      phi = model.collisionDetect(zeros(model.getNumPositions,1));
+      model.num_contact_pairs = length(phi);
       
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
@@ -2060,7 +2053,7 @@ classdef RigidBodyManipulator < Manipulator
           effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
         end
         if limits.hasAttribute('velocity');
-          warning('Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
+          warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
           velocity_limit = parseParamString(model,robotnum,char(limits.getAttribute('velocity')));
         end
       end
