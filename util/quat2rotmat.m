@@ -1,6 +1,8 @@
 function [R, dR] = quat2rotmat(q)
 
-q=q/sqrt(q'*q);  % was norm
+if isnumeric(q)
+  q=q/sqrt(q'*q);  % was norm
+end
 w=q(1); x=q(2); y=q(3); z=q(4);
 
 R = [...
