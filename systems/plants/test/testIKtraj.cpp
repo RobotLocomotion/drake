@@ -11,6 +11,7 @@ using namespace std;
 using namespace Eigen;
 int main()
 {
+  printf("start program\n");
   URDFRigidBodyManipulator* model = loadURDFfromFile("../../examples/Atlas/urdf/atlas_minimal_contact.urdf");
   if(!model)
   {
@@ -31,6 +32,7 @@ int main()
     printf("no xstar in mat file\n");
     return(EXIT_FAILURE);
   }
+  printf("get nom data\n");
   int nT = 4;
   double* t = new double[nT];
   double dt = 1.0/(nT-1);
@@ -56,6 +58,7 @@ int main()
   MatrixXd qddot_sol(model->num_dof,nT);
   int info = 0;
   vector<string> infeasible_constraint;
+  printf("start iktraj\n");
   inverseKinTraj(model,nT,t,qdot0,q0,q0,num_constraints,constraint_array,q_sol,qdot_sol,qddot_sol,info,infeasible_constraint,ikoptions);
   printf("INFO = %d\n",info);
   delete com_kc;

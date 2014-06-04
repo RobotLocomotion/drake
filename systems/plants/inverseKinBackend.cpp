@@ -1047,6 +1047,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   }
   if(mode == 2)
   {
+    printf("start mode 2\n");
     double* dt = new double[nT-1];
     for(int j = 0;j<nT-1;j++)
     {
@@ -1996,6 +1997,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     // end of debugging
     */
 
+      printf("start snopt\n");
     snopt::snopta_
       ( &Cold, &nF, &nx, &nxname, &nFname,
         &ObjAdd, &ObjRow, Prob, snoptIKtrajfun,
@@ -2009,6 +2011,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
         cw, &lencw, iw, &leniw, rw, &lenrw,
         npname, 8*nxname, 8*nFname,
         8*500, 8*500);
+    printf("finish snopt\n");
     if(*INFO_snopt == 41)
     {
       nx_tmp = nx;
