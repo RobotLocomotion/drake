@@ -15,57 +15,57 @@ compareToNumerical(robot, 2);
 
 end
 
-function compareToNumerical(robot, rotationType)
+function compareToNumerical(robot, rotation_type)
 
 nv = robot.getNumVelocities();
 
-nBodies = length(robot.body);
+nb = length(robot.body);
 
-bodyRange = [1, nBodies];
+body_range = [1, nb];
 
-computationTime = 0;
+computation_time = 0;
 
-nTests = 10;
-testNumber = 1;
+n_tests = 10;
+test_number = 1;
 delta = 1e-10;
 epsilon = 1e-3;
-while testNumber < nTests
+while test_number < n_tests
   q = getRandomConfiguration(robot);
   v = randn(nv, 1);
   kinsol = robot.doKinematics(q, false, false, v, true);
   
-  base = randi(bodyRange);
-  endEffector = randi(bodyRange);
-  if base ~= endEffector
+  base = randi(body_range);
+  end_effector = randi(body_range);
+  if base ~= end_effector
     nPoints = randi([1, 10]);
     points = randn(3, nPoints);
     
     tic
-    [x, J, Jvdot_times_v] = robot.forwardKinV(kinsol, endEffector, points, rotationType, base);
-    computationTime = computationTime + toc * 1e3;
+    [x, J, Jvdot_times_v] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
+    computation_time = computation_time + toc * 1e3;
     
     for col = 1 : length(q)
-      qDelta = q;
-      qDelta(col) = qDelta(col) + delta;
-      kinsol = robot.doKinematics(qDelta, false, false);
-      xDelta = robot.forwardKinV(kinsol, endEffector, points, rotationType, base);
-      dxdqNumerical = (xDelta - x) / delta;
-      valuecheck(J(:, col), dxdqNumerical(:), epsilon);
+      q_delta = q;
+      q_delta(col) = q_delta(col) + delta;
+      kinsol = robot.doKinematics(q_delta, false, false);
+      x_delta = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
+      dxdq_numerical = (x_delta - x) / delta;
+      valuecheck(J(:, col), dxdq_numerical(:), epsilon);
     end
     
-    qDelta = q + delta * v;
-    kinsol = robot.doKinematics(qDelta, false, false);
-    [~, JDelta] = robot.forwardKinV(kinsol, endEffector, points, rotationType, base);
-    JdotNumerical = (JDelta - J) / delta;
-    valuecheck(Jvdot_times_v, JdotNumerical * v, epsilon);
+    q_delta = q + delta * v;
+    kinsol = robot.doKinematics(q_delta, false, false);
+    [~, J_delta] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
+    Jdot_numerical = (J_delta - J) / delta;
+    valuecheck(Jvdot_times_v, Jdot_numerical * v, epsilon);
     
-    testNumber = testNumber + 1;
+    test_number = test_number + 1;
   end
 end
 
 displayComputationTime = false;
 if displayComputationTime
-  fprintf('computation time per call: %0.3f ms\n', computationTime / nTests);
+  fprintf('computation time per call: %0.3f ms\n', computation_time / n_tests);
   fprintf('\n');
 end
 end
