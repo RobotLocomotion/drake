@@ -12,13 +12,13 @@ tmax = 5;
 
 for i=1:5
     disp(['Simulation ' mat2str(i,3)]);
-    x0 = double(p.xG)+0.01*randn(4,1);
+    x0 = double(p.xG)+0.05*randn(4,1);
     xtraj=simulate(sys,[0 tmax],x0);
+    %simulate(cascade(sys,v),[0 5],x0);
+    
     v.playback(xtraj);
     if max(abs(eval(xtraj,tmax)-double(p.xG)))>.01
-        warning('Did not stabilize');
+        disp('Did not stabilize');
     end
 end
-
-%playbackAVI(v,xtraj,'lqr');
 end
