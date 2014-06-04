@@ -788,6 +788,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = getCMM(obj.manip,varargin{:});
     end
 
+    function varargout = getCMMdA(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = getCMMdA(obj.manip,varargin{:});
+    end
+
+    function grav = getGravity(obj)
+      grav = obj.manip.gravity;
+    end
+
     function joint_ind = findJointInd(model,varargin)
       joint_ind = findJointInd(model.manip,varargin{:});
     end
