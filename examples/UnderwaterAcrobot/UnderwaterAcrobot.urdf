@@ -54,7 +54,7 @@
     <child link="upper_link" />
     <origin xyz="0 0 0" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0" />
+    <dynamics damping="0.1" />
   </joint>
 
   <joint name="elbow" type="continuous">
@@ -62,7 +62,7 @@
     <child link="lower_link" />
     <origin xyz="0 0 -1" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0" />
+    <dynamics damping="0.1" />
   </joint>
 
   <transmission type="SimpleTransmission" name="elbow_trans">
