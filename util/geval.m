@@ -197,9 +197,9 @@ switch (method)
           for k=1:o
             switch options.diff_type
               case 'forward'
-                varargout{p+k}(:,ind) = (df_p{k}-varargout{k})/da;
+                varargout{p+k}(:,ind) = (df_p{k}(:)-varargout{k}(:))/da;
               case 'central'
-                varargout{p+k}(:,ind) = (df_p{k}-df_m{k})/(2*da);
+                varargout{p+k}(:,ind) = (df_p{k}(:)-df_m{k}(:))/(2*da);
             end
           end
           varargin{i}(j)=varargin{i}(j)+da;
