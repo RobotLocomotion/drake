@@ -69,7 +69,11 @@ classdef WorldEulerConstraint <EulerConstraint
     
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(1,obj.body);
-      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+      if isa(obj.robot,'TimeSteppingRigidBodyManipulator')
+        joint_idx = vertcat(obj.robot.getManipulator().body(joint_path).dofnum)';
+      else
+        joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+      end
     end
   end
 end
