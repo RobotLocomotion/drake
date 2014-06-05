@@ -136,6 +136,7 @@ else
       
     end
     
+    C = zeros(m.NB,1)*q(1);
     dC = zeros(m.NB,2*m.NB)*q(1);
     IC = m.I;				% composite inertia calculation
     dIC = cell(m.NB, m.NB);
