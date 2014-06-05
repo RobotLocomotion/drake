@@ -5,7 +5,6 @@
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
-#include "mat.h"
 
 using namespace std;
 using namespace Eigen;
@@ -18,19 +17,6 @@ int main()
   }
   Vector2d tspan;
   tspan<<0,1;
-  MATFile *pmat;
-  pmat = matOpen("../../examples/Atlas/data/atlas_fp.mat","r");
-  if(pmat == NULL)
-  {
-    printf("Error reading mat file\n");
-    return(EXIT_FAILURE);
-  }
-  mxArray* pxstar = matGetVariable(pmat,"xstar");
-  if(pxstar == NULL)
-  {
-    printf("no xstar in mat file\n");
-    return(EXIT_FAILURE);
-  }
   int l_hand;
   int r_hand;
   //int l_foot;
@@ -55,8 +41,8 @@ int main()
     //}
   }
   int nq = model->num_dof;
-  VectorXd qstar(nq);
-  memcpy(qstar.data(),mxGetPr(pxstar),sizeof(double)*nq);
+  VectorXd qstar = VectorXd::Zero(nq);
+  qstar(3) = 0.8;
   model->doKinematics(qstar.data());
   Vector3d com0;
   model->getCOM(com0);
@@ -75,11 +61,7 @@ int main()
   {
     t[i] = dt*i;
   }
-  MatrixXd q0(model->num_dof,nT);
-  for(int i = 0;i<nT;i++)
-  {
-    memcpy(q0.data()+model->num_dof*i,mxGetPr(pxstar),sizeof(double)*model->num_dof);
-  }
+  MatrixXd q0 = qstar.replicate(1,nT);
   VectorXd qdot0 = VectorXd::Zero(model->num_dof);
   Vector3d com_lb = com0;
   com_lb(0) = nan("");;
@@ -92,7 +74,7 @@ int main()
   Vector3d rhand_pos_lb = rhand_pos0;
   rhand_pos_lb(0) +=0.1;
   rhand_pos_lb(1) +=0.05;
-  rhand_pos_lb(2) +=0.75;
+  rhand_pos_lb(2) +=0.25;
   Vector3d rhand_pos_ub = rhand_pos_lb;
   rhand_pos_ub(2) += 0.25;
   Vector2d tspan_end;
@@ -137,6 +119,5 @@ int main()
   delete com_kc;
   delete[] constraint_array;
   delete[] t;
-  matClose(pmat);
   return 0;
 }
