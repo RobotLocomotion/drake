@@ -31,8 +31,9 @@ if(eigen3_FOUND)
   if (Boost_FOUND)
       add_executable(testConstraintConstructor test/testConstraintConstructor.cpp)
       set_target_properties(testConstraintConstructor PROPERTIES COMPILE_FLAGS -fPIC) 
-      target_link_libraries(testConstraintConstructor drakeRBM drakeRigidBodyConstraint drakeRBMurdf drakeURDFinterface)
-      add_test(testConstraintConstructor ../../../pod-build/bin/testConstraintConstructor)
+      target_link_libraries(testConstraintConstructor drakeRBM
+  drakeRigidBodyConstraint drakeRBMurdf drakeURDFinterface)
+      add_test(testConstraintConstructor ${EXECUTABLE_OUTPUT_PATH}/testConstraintConstructor)
   endif()
           
 endif()
