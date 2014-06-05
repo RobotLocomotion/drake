@@ -85,21 +85,16 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
         case 1 % all timesteps are constant
           A_time = [ones(1,N-1);[eye(N-2) zeros(N-2,1)] - [zeros(N-2,1) eye(N-2)]];
           time_constraint = LinearConstraint([T_span(1);zeros(N-2,1)],[T_span(2);zeros(N-2,1)],A_time);
-          obj = obj.addLinearConstraint(time_constraint,h_inds);
+          obj = obj.addLinearConstraint(time_constraint,obj.h_inds);
         case 2 % all timesteps independent
           A_time = ones(1,N-1);
           time_constraint = LinearConstraint(T_span(1),T_span(2),A_time);
-          obj = obj.addLinearConstraint(time_constraint,h_inds);
+          obj = obj.addLinearConstraint(time_constraint,obj.h_inds);
       end
       
       
       % create constraints for dynamics and add them
       obj = obj.addDynamicConstraints();
-      obj.dynamic_constraints.nlcon = dynamic_constraints;
-      obj.dynamic_constraints.var_inds = dyn_inds;
-      for i=1:length(dynamic_constraints),
-        obj = obj.addNonlinearConstraint(dynamic_constraints{i}, dyn_inds{i});
-      end
       
       % add control inputs as bounding box constraints
       control_limit = BoundingBoxConstraint(repmat(plant.umin,N,1),repmat(plant.umax,N,1));
