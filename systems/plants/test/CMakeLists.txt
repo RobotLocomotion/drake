@@ -14,7 +14,7 @@ if (eigen3_FOUND AND Boost_FOUND)
 endif()
 
 macro(add_ik_cpp)
-  add_mex(${ARGV} EXECUTABLE ${ARGV}.cpp)
+  add_executable(${ARGV} ${ARGV}.cpp)
   include_directories( .. )
   set_target_properties(${ARGV} PROPERTIES COMPILE_FLAGS "-fPIC")
   target_link_libraries(${ARGV} drakeRBMurdf drakeURDFinterface drakeRigidBodyConstraint drakeIK)
