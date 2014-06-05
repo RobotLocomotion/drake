@@ -18,7 +18,7 @@ macro(add_ik_cpp)
   include_directories( .. )
   set_target_properties(${ARGV} PROPERTIES COMPILE_FLAGS "-fPIC")
   target_link_libraries(${ARGV} drakeRBMurdf drakeURDFinterface drakeRigidBodyConstraint drakeIK ${MATLAB_ROOT}/bin/glnxa64/libmat.so ${MATLAB_ROOT}/bin/glnxa64/libmx.so)
-  add_test(${ARGV} ../../../pod-build/bin/${ARGV})
+  add_test(${ARGV} ${ARGV})
 endmacro()
 
 if (gurobi_FOUND)
