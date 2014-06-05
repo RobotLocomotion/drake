@@ -52,7 +52,7 @@ int main()
   for(int i = 0;i<nT;i++)
   {
     printf("INFO[%d] = %d ",i,info[i]);
-    if(info[i]~= 1)
+    if(info[i]!= 1)
     {
       return 1;
     }
