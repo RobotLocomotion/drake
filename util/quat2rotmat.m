@@ -1,8 +1,16 @@
 function [R, dR] = quat2rotmat(q)
 
-if isnumeric(q)
-  q=q/sqrt(q'*q);  % was norm
+% if isnumeric(q)
+%   q=q/sqrt(q'*q);  % was norm
+% end
+% q = q / sqrt(q'*q);
+
+epsilon = 1e-6;
+if isnumeric(q) && abs(q.' * q - 1) > epsilon^2
+  error('q is not a unit quaternion')
 end
+
+
 w=q(1); x=q(2); y=q(3); z=q(4);
 
 R = [...
