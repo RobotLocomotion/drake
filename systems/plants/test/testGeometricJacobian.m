@@ -1,6 +1,6 @@
 function testGeometricJacobian
 
-% testAtlas('rpy');
+testAtlas('rpy');
 testAtlas('quat');
 
 end
@@ -61,22 +61,10 @@ for test = 1 : nTests
   expressed_in = randi(bodyRange);
   
   kinsol = robot.doKinematics(q,true,false);
-  [J, ~, dJdq] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
-  option.grad_method = 'taylorvar';
+  [~, ~, dJdq] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
+  option.grad_method = 'numerical';
   [~, dJdq_geval] = geval(1, @(q) gevalFunction(robot, q, base, end_effector, expressed_in), q, option);
-%   delta = 1e-7;
-%   for i = 1 : nq
-%     dq = zeros(nq, 1);
-%     dq(i) = delta;
-%     kinsol_delta = doKinematics(r, q + dq, false, false);
-%     J_delta = r.geometricJacobian(kinsol_delta, base, endEffector, expressedIn);
-%     dJdqiNumerical = (J_delta - J) / delta;
-%     
-%     for j = 2 : nb
-%       valuecheck(dJdqiNumerical(:), dJdq(:, i), 1e-5);
-%     end
-%   end
-  valuecheck(dJdq_geval, dJdq, 1e-10);
+  valuecheck(dJdq_geval, dJdq, 1e-5);
   
 end
   
@@ -96,4 +84,5 @@ end
 function J = gevalFunction(robot, q, base, end_effector, expressed_in)
 kinsol = robot.doKinematics(q,false,false);
 J = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
+J = J(:);
 end
