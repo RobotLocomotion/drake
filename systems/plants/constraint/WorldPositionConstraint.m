@@ -38,7 +38,6 @@ classdef WorldPositionConstraint < PositionConstraint
       if(nargin == 5)
         tspan = [-inf,inf];
       end
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionConstraintType,robot.getMexModelPtr,body,pts,lb,ub,tspan);
       obj = obj@PositionConstraint(robot,pts,lb,ub,tspan);
       if(isnumeric(body))
         sizecheck(body,[1,1]);
@@ -52,7 +51,9 @@ classdef WorldPositionConstraint < PositionConstraint
       end
       obj.body_name = obj.robot.getBody(obj.body).linkname;
       obj.type = RigidBodyConstraint.WorldPositionConstraintType;
-      obj.mex_ptr = ptr;
+      if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionConstraintType,robot.getMexModelPtr,body,pts,lb,ub,tspan);
+      end
     end
     
     function joint_idx = kinematicsPathJoints(obj)

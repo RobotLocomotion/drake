@@ -7,7 +7,7 @@
   <link name="base_link">
     <visual>
       <geometry>
-         <box size=".5 1 .5" />
+         <box size=".2 1 .2" />
       </geometry>
       <material name="green">
 	<color rgba="0 1 0 1" />
@@ -17,14 +17,14 @@
 
   <link name="upper_link">
     <inertial>
-      <origin xyz="0 0 -1" rpy="0 0 0" />
-      <mass value="800" />
-      <inertia ixx="1" ixy="0" ixz="0" iyy="250" iyz="0" izz="1" />
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <mass value="4" />
+      <inertia ixx="1" ixy="0" ixz="0" iyy="0.3" iyz="0" izz="1" />
     </inertial>
     <visual>
-      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
       <geometry>
-         <box size="1 1 2" />
+         <box size=".1 1 1" />
       </geometry>
       <material name="red">
 	<color rgba="1 0 0 1" />
@@ -34,14 +34,14 @@
 
   <link name="lower_link">
     <inertial>
-      <origin xyz="0 0 -1" rpy="0 0 0" />
-      <mass value="800" />
-      <inertia ixx="1" ixy="0" ixz="0" iyy="250" iyz="0" izz="1" />
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
+      <mass value="4" />
+      <inertia ixx="1" ixy="0" ixz="0" iyy="0.3" iyz="0" izz="1" />
     </inertial>
     <visual>
-      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
       <geometry>
-         <box size="1 1 2" />
+         <box size=".1 1 1" />
       </geometry>
       <material name="blue">
 	<color rgba="0 0 1 1" />
@@ -54,15 +54,15 @@
     <child link="upper_link" />
     <origin xyz="0 0 0" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0" />
+    <dynamics damping="0.1" />
   </joint>
 
   <joint name="elbow" type="continuous">
     <parent link="upper_link" />
     <child link="lower_link" />
-    <origin xyz="0 0 -2" />
+    <origin xyz="0 0 -1" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0" />
+    <dynamics damping="0.1" />
   </joint>
 
   <transmission type="SimpleTransmission" name="elbow_trans">
@@ -72,32 +72,32 @@
   </transmission>
   
 <force_element name="upper_link_buoyancy">
-<buoyancy rho="1000" volume="1.6">
+<buoyancy rho="1000" volume="0.008">
       <parent link="upper_link"/>
-      <origin xyz="0 0 -1" rpy="0 0 0" /> 
+      <origin xyz="0 0 -0.5" rpy="0 0 0" /> 
     </buoyancy>
 </force_element>
 
 <force_element name="lower_link_buoyancy">
-<buoyancy rho="1000" volume="1.6">
+<buoyancy rho="1000" volume="0.008">
       <parent link="lower_link"/>
-      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
     </buoyancy>
 </force_element>
 
 <force_element name="upper_link_addedmass">
-<added_mass m11="3000" m33="800" m55 = "200">
+<added_mass m11="8" m33="0.3" m55 = "0.7">
       <parent link="upper_link"/>
-      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
     </added_mass>
 </force_element>
 
 <force_element name="lower_link_addedmass">
-<added_mass m11="3000" m33="800" m55 = "200">
+<added_mass m11="8" m33="0.3" m55 = "0.7">
       <parent link="lower_link"/>
-      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <origin xyz="0 0 -0.5" rpy="0 0 0" />
     </added_mass>
 </force_element>
 
-  <frame name="hand" link="lower_link" xyz="0 0 -2.1" rpy="0 0 0" />
+  <frame name="hand" link="lower_link" xyz="0 0 -1.1" rpy="0 0 0" />
 </robot>

@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstdlib>
 #include "mat.h"
+#include <Eigen/Dense>
 
 using namespace std;
 using namespace Eigen;
@@ -52,7 +53,15 @@ int main()
   int info;
   vector<string> infeasible_constraint;
   inverseKin(model,q0,q0,num_constraints,constraint_array,q_sol,info,infeasible_constraint,ikoptions);
+  if(info != 1)
+  {
+    return 1;
+  }
   printf("INFO = %d\n",info);
+  model->doKinematics(q_sol.data());
+  Vector3d com;
+  model->getCOM(com);
+  printf("%5.2f\n%5.2f\n%5.2f\n",com(0),com(1),com(2));
   /*MATFile *presultmat;
   presultmat = matOpen("q_sol.mat","w");
   mxArray* pqsol = mxCreateDoubleMatrix(model->num_dof,1,mxREAL);

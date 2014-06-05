@@ -22,7 +22,11 @@ using namespace std;
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs<1) {
-    mexErrMsgIdAndTxt("Drake:HandCmex:NotEnoughInputs","Usage [H,C] = HandCmex(model_ptr,q,qd[,f_ext]).");
+    mexErrMsgIdAndTxt("Drake:HandCmex:NotEnoughInputs","Usage [H,C,dH,dC] = HandCmex(model_ptr,q,qd[,f_ext,df_ext]).");
+  }
+
+  if (nrhs==4 && nlhs>2) {
+    mexErrMsgIdAndTxt("Drake:HandCmex:NotEnoughInputs","You need to provide df_ext if you request dH or dC while supplying f_ext");
   }
 
   // first get the model_ptr back from matlab
@@ -30,6 +34,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   
   double *q,*qd;
   Map<MatrixXd> *f_ext=NULL;
+  Map<MatrixXd> *df_ext=NULL;
   if (static_cast<int>(mxGetNumberOfElements(prhs[1]))!=model->num_dof || static_cast<int>(mxGetNumberOfElements(prhs[2]))!=model->num_dof)
     mexErrMsgIdAndTxt("Drake:HandCmex:BadInputs","q and qd must be size %d x 1",model->num_dof);
   q = mxGetPr(prhs[1]);
@@ -37,6 +42,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
   if (nrhs>3) {
     if (!mxIsEmpty(prhs[3])) {
       f_ext = new Map<MatrixXd>(mxGetPr(prhs[3]),6,model->NB);
+    }
+  }
+  if (nrhs>4) {
+    if (!mxIsEmpty(prhs[4])) {
+      df_ext = new Map<MatrixXd>(mxGetPr(prhs[4]),6*model->NB,2*model->num_dof);
     }
   }
   
@@ -57,10 +67,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] ) {
     dC = new Map<MatrixXd>(mxGetPr(plhs[3]),model->num_dof,2*model->num_dof);
   }  
   
-  model->HandC(q,qd,f_ext,H,C,dH,dC);
+  model->HandC(q,qd,f_ext,H,C,dH,dC,df_ext);
   
   // destroy dynamically allocated Map<MatrixXd> (but not the underlying data!)
   if (f_ext) delete f_ext;
+  if (df_ext) delete df_ext;
   if (nlhs>2) delete dH;
   if (nlhs>3) delete dC;
 }

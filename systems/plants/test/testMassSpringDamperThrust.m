@@ -1,4 +1,5 @@
-function massSpringDamperThrust
+function testMassSpringDamperThrust
+
 x0 = [1e-6;0];%needed to avoid a singularity in the solution
 run_time = 5;
 

@@ -239,13 +239,17 @@ classdef RigidBodyManipulator < Manipulator
       ptr = obj.mex_model_ptr;
     end
     
-    function f = cartesianForceToSpatialForce(obj,kinsol,body_ind,point,force)  
+    function [f,dfdq,dfdforce] = cartesianForceToSpatialForce(obj,kinsol,body_ind,point,force)  
       % @param body_ind is an index of the body
       % @param point is a point on the rigid body (in body coords)
       % @param force is a cartesion force (in world coords)
       
       % convert force to body coordinates
-      ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
+      if (nargout>1)
+        [ftmp,ftmpJ,ftmpP]=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);                                                                                                   
+      else
+        ftmp=bodyKin(obj,kinsol,body_ind,[force,zeros(3,1)]);
+      end
       
       % try to do it the Xtree way
       force = ftmp(:,1)-ftmp(:,2);
@@ -253,6 +257,15 @@ classdef RigidBodyManipulator < Manipulator
       
       % convert to joint frame (featherstone dynamics algorithm never reasons in body coordinates)
       f = obj.body(body_ind).X_joint_to_body'*f_body;
+      
+      if (nargout>1)
+        dforcedq = ftmpJ(1:3,:)-ftmpJ(4:6,:);                                                                                                                                 
+        dforcedforce = ftmpP(1:3,1:size(force,1))-ftmpP(4:6,1:size(force,1));
+        df_bodydq = [ cross(repmat(point,1,size(dforcedq,2)),dforcedq); dforcedq ];                                                                                           
+        df_bodydforce = [ cross(repmat(point,1,size(dforcedforce,2)),dforcedforce); dforcedforce];
+        dfdq = obj.body(body_ind).X_joint_to_body'*df_bodydq;                                                                                                                 
+        dfdforce = obj.body(body_ind).X_joint_to_body'*df_bodydforce;
+      end
     end
     
     function model=addJoint(model,name,type,parent_ind,child_ind,xyz,rpy,axis,damping,coulomb_friction,static_friction,coulomb_window,limits)
@@ -592,7 +605,7 @@ classdef RigidBodyManipulator < Manipulator
       model.joint_limit_max = [model.body.joint_limit_max]';
      
       if (any(model.joint_limit_min~=-inf) || any(model.joint_limit_max~=inf))
-        warning('Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
+        warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
       
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
@@ -616,6 +629,7 @@ classdef RigidBodyManipulator < Manipulator
       % so it should go after createMexPointer
       phi = model.collisionDetect(zeros(model.getNumPositions,1));
       model.num_contact_pairs = length(phi);
+      
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
       end
@@ -832,21 +846,44 @@ classdef RigidBodyManipulator < Manipulator
       b = leastCommonAncestor(model,body1.parent,body2);
     end
     
-    function terrain_contact_point_struct = getTerrainContactPoints(obj)
+    function terrain_contact_point_struct = ...
+        getTerrainContactPoints(obj,body_idx)
       % terrain_contact_point_struct = getTerrainContactPoints(obj)
+      % returns a structure array containing the terrain contact points
+      % on all bodies of this manipulator.
+      %
+      % terrain_contact_point_struct = getTerrainContactPoints(obj,body_idx)
+      % returns a structure array containing the terrain contact points
+      % on the bodies specified by body_idx.
+      %
+      % For a general description of terrain contact points see 
+      % <a href="matlab:help RigidBodyGeometry/getTerrainContactPoints">RigidBodyGeometry/getTerrainContactPoints</a>
       %
       % @param obj - RigidBodyManipulator object
-      % @retval terrain_contact_point_struct - nx1 structure array, where n is
-      %   the number of bodies with points that can collide with non-flat
-      %   terrain. Each element has the following fields
+      % @param body_idx - vector of body-indices indicating the bodies
+      %                   for which terrain contact points should be
+      %                   found @default All bodies except the world
+      % @retval terrain_contact_point_struct - nx1 structure array,
+      %   where n is the number of bodies with terrain contact points.
+      %   Each element has the following fields
       %     * idx - Index of a body in the RigidBodyManipulator
-      %     * pts - 3xm array containing points on the body specified by idx
-      %             that can collide with non-flat terrain.
+      %     * pts - 3xm array containing points on the body specified by
+      %             idx (in body frame) that can collide with arbitrary
+      %             terrain.
+      %
+      % See also RigidBodyGeometry/getTerrainContactPoints,
+      % RigidBodyManipulator/terrainContactPositions
+      if nargin < 2
+        body_idx = 2:obj.getNumBodies(); % World-fixed objects can't collide
+                                         % with the terrain
+      end
       terrain_contact_point_struct = struct('pts',{},'idx',{});
-      for i = 1:obj.getNumBodies()
-        pts = getTerrainContactPoints(obj.body(i));
-        if ~isempty(pts)
-          terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
+      for i = body_idx
+        if i ~= 1
+          pts = getTerrainContactPoints(obj.body(i));
+          if ~isempty(pts)
+            terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
+          end
         end
       end
     end
@@ -1036,10 +1073,13 @@ classdef RigidBodyManipulator < Manipulator
       while isempty(v)
         type = options.viewer{i};
         
-        if strcmp(type,'NullVisualizer')
-          arg = {getOutputFrame(obj)};
-        else
-          arg = {obj,options.use_contact_shapes};
+        switch (type)
+          case 'NullVisualizer'
+            arg = {getOutputFrame(obj)};
+          case 'BotVisualizer'
+            arg = {obj,options.use_contact_shapes};
+          otherwise
+            arg = {obj,options};
         end
 
         if (i==length(options.viewer))  % then it's the last one
@@ -1048,8 +1088,9 @@ classdef RigidBodyManipulator < Manipulator
           try
             v = feval(type,arg{:});
           catch ex
-            getReport(ex,'extended')
-            warning(ex.identifier,ex.message);
+            if ~strncmp(ex.identifier,'Drake:MissingDependency',23)
+              rethrow(ex);
+            end
           end
         end
         i = i+1;
@@ -1351,6 +1392,10 @@ classdef RigidBodyManipulator < Manipulator
 
     function d=surfaceTangents(obj,normal)
       %% compute tangent vectors, according to the description in the last paragraph of Stewart96, p.2678
+      assert(~isempty(normal), ...
+        'Drake:RigidBodyManipulator:surfaceTangents:emptyNormals', ...
+        '''normal'' must be a non-empty array')
+
       t1=normal; % initialize size
       
       % handle the normal = [0;0;1] case
@@ -1789,7 +1834,7 @@ classdef RigidBodyManipulator < Manipulator
             'To silence this warning, construct your manipulator ' ...
             'with: ' ...
             '\n\n' ...
-            '    >> w = warning(''OFF'',%s);\n' ...
+            '    >> w = warning(''off'',''%s'');\n' ...
             '    >> r = %s(...);\n' ...
             '    >> warning(w)' ...
             '\n\n'],changed_body_idx_and_names{:},class(model), ...
@@ -2012,7 +2057,7 @@ classdef RigidBodyManipulator < Manipulator
           effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
         end
         if limits.hasAttribute('velocity');
-          warning('Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
+          warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
           velocity_limit = parseParamString(model,robotnum,char(limits.getAttribute('velocity')));
         end
       end
