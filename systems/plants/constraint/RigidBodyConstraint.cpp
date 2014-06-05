@@ -1258,7 +1258,7 @@ void EulerConstraint::eval(const double* t, VectorXd &c, MatrixXd &dc) const
 void EulerConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) const
 {
   lb = this->lb;
-  ub = this->lb;
+  ub = this->ub;
 }
 
 WorldEulerConstraint::WorldEulerConstraint(RigidBodyManipulator *model, int body, Vector3d lb, Vector3d ub, Vector2d tspan): EulerConstraint(model,lb,ub,tspan)
