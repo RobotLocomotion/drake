@@ -1,6 +1,6 @@
 function testGeometricJacobian
 
-testAtlas('rpy');
+% testAtlas('rpy');
 testAtlas('quat');
 
 end
@@ -47,37 +47,37 @@ for i = 1 : nTests
 end
 end
 
-function checkJacobianGradients(r)
-nq = r.getNumPositions();
-nv = r.getNumVelocities();
-nb = length(r.body);
+function checkJacobianGradients(robot)
+nb = length(robot.body);
 
 bodyRange = [1, nb];
 nTests = 10;
 
 for test = 1 : nTests
-  q = getRandomConfiguration(r);
-  v = randn(nv, 1);
+  q = getRandomConfiguration(robot);
   
   base = randi(bodyRange);
-  endEffector = randi(bodyRange);
-  expressedIn = randi(bodyRange);
+  end_effector = randi(bodyRange);
+  expressed_in = randi(bodyRange);
   
-  kinsol = r.doKinematics(q,true,false, v);
-  [J, ~, dJdq] = r.geometricJacobian(kinsol, base, endEffector, expressedIn);
-
-  delta = 1e-7;
-  for i = 1 : nq
-    dq = zeros(nq, 1);
-    dq(i) = delta;
-    kinsol_delta = doKinematics(r, q + dq, false, false);
-    J_delta = r.geometricJacobian(kinsol_delta, base, endEffector, expressedIn);
-    dJdqiNumerical = (J_delta - J) / delta;
-    
-    for j = 2 : nb
-      valuecheck(dJdqiNumerical(:), dJdq(:, i), 1e-5);
-    end
-  end
+  kinsol = robot.doKinematics(q,true,false);
+  [J, ~, dJdq] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
+  option.grad_method = 'taylorvar';
+  [~, dJdq_geval] = geval(1, @(q) gevalFunction(robot, q, base, end_effector, expressed_in), q, option);
+%   delta = 1e-7;
+%   for i = 1 : nq
+%     dq = zeros(nq, 1);
+%     dq(i) = delta;
+%     kinsol_delta = doKinematics(r, q + dq, false, false);
+%     J_delta = r.geometricJacobian(kinsol_delta, base, endEffector, expressedIn);
+%     dJdqiNumerical = (J_delta - J) / delta;
+%     
+%     for j = 2 : nb
+%       valuecheck(dJdqiNumerical(:), dJdq(:, i), 1e-5);
+%     end
+%   end
+  valuecheck(dJdq_geval, dJdq, 1e-10);
+  
 end
   
 
@@ -91,4 +91,9 @@ function ret = relativeTdot(TBase, TBody, TBaseDot, TBodyDot)
 invTBasedot = -TBase \ TBaseDot / TBase;
 ret = invTBasedot * TBody + TBase \ TBodyDot;
 
+end
+
+function J = gevalFunction(robot, q, base, end_effector, expressed_in)
+kinsol = robot.doKinematics(q,false,false);
+J = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
 end

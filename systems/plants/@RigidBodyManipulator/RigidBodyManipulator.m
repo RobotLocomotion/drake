@@ -110,8 +110,15 @@ classdef RigidBodyManipulator < Manipulator
           quat = qBody(4 : 7);
           [R, dR] = quat2rotmat(quat);
           [M, dM] = quatdot2angularvelMatrix(quat);
-          VqJoint = [zeros(3, 3), R' * M;
+          VqJoint = [...
+            zeros(3, 3), R' * M;
             R', zeros(3, 4)];
+          % TODO: directly use body frame representation:
+%           qs = quat(1);
+%           qv = quat(2:4);
+%           M = 2 * [-qv, qs * eye(3) - vectorToSkewSymmetric(qv)];
+%           VqJoint = [zeros(3, 3), M;
+%             R', zeros(3, 4)];
           dVqJoint = zeros(numel(VqJoint), size(VqJoint, 2)) * qBody(1);
           dRTranspose = transposeGrad(dR, size(R));
           dVqJoint = setSubMatrixGradient(dVqJoint, dRTranspose, 4:6, 1:3, size(VqJoint), 4:7);

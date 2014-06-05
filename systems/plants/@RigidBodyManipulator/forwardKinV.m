@@ -60,7 +60,7 @@ if computeJdot_times_v
 end
 
 % compute position Jacobian
-r_hats = zeros(npoints * point_size, point_size);
+r_hats = zeros(npoints * point_size, point_size) * kinsol.q(1); % for TaylorVar
 for i = 1 : npoints
   point = points(:, i);
   r_hats(point_size * (i - 1) + 1 : point_size * i, :) = vectorToSkewSymmetric(point);
@@ -104,7 +104,7 @@ pos_row_indices = repeatVectorIndices(1 : point_size, x_size, npoints);
 rot_row_indices = repeatVectorIndices(point_size + 1 : x_size, x_size, npoints);
 
 vSize = obj.num_velocities;
-J = zeros(length(pos_row_indices) + length(rot_row_indices), vSize);
+J = zeros(length(pos_row_indices) + length(rot_row_indices), vSize) * kinsol.q(1); % for TaylorVar
 J(pos_row_indices, vIndices) = Jpos;
 J(rot_row_indices, vIndices) = repmat(Jrot, npoints, 1);
 
