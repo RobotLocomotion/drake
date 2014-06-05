@@ -43,15 +43,15 @@ include(cmake/mex.cmake)
 enable_testing()
 include(CTest)
 
-# set up and build lcm types
-include(cmake/lcmtypes.cmake)
-#add_subdirectory(lcmtypes)
-lcmtypes_build()
-
 set(drake_jar_javafiles util/Transform.java)
 set(drake_jar_requires)
 
+# set up and build lcm types
+include(cmake/lcmtypes.cmake)
+
 if (LCM_FOUND)
+  #add_subdirectory(lcmtypes)
+  lcmtypes_build()
   pods_use_pkg_config_classpath(lcm-java)
 
   list(APPEND drake_jar_javafiles 

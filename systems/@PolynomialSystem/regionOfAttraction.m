@@ -322,8 +322,8 @@ end
 function V=levelSetMethodYalmip(V0,f,options)
   checkDependency('yalmip');
 
-  x = V0.frame.poly;
-  [T,V,f] = balance(x,V0.Vpoly,f);
+  x = V0.getFrame.poly;
+  [T,V,f] = balance(x,V0.getPoly,f);
 
   %% compute Vdot
   Vdot = diff(V,x)*f;
@@ -352,14 +352,14 @@ function V=levelSetMethodYalmip(V0,f,options)
 
   %% undo balancing
   V = subss(V,x,inv(T)*x);
-  V = SpotPolynomialLyapunovFunction(V0.frame,V);
+  V = SpotPolynomialLyapunovFunction(V0.getFrame,V);
 end
 
 %% Line search
 
 function V = rhoLineSearch(V0,f,options)
-  x = V0.frame.poly;
-  [T,V,f] = balance(x,V0.Vpoly,f);
+  x = V0.getFrame.poly;
+  [T,V,f] = balance(x,V0.getPoly,f);
 
   %% compute Vdot
   Vdot = diff(V,x)*f;
@@ -385,12 +385,12 @@ function V = rhoLineSearch(V0,f,options)
 
   %% undo balancing
   V = subss(V,x,inv(T)*x);
-  V = SpotPolynomialLyapunovFunction(V0.frame,V);
+  V = SpotPolynomialLyapunovFunction(V0.getFrame,V);
 end
 
 function [slack,info] = checkConstantRho(V0,f,options)
-  x = V0.frame.poly;
-  [T,V,f] = balance(x,V0.Vpoly,f);
+  x = V0.getFrame.poly;
+  [T,V,f] = balance(x,V0.getPoly,f);
 
   %% compute Vdot
   Vdot = diff(V,x)*f;
@@ -461,8 +461,8 @@ function V = sampling(V0,f,options)
 %  No SOS here.  Just use lots and lots of samples to try to estimate level
 %  set of V candidate.
 
-  x = V0.frame.poly;
-  [T,V,f] = balance(x,V0.Vpoly,f);
+  x = V0.getFrame.poly;
+  [T,V,f] = balance(x,V0.getPoly,f);
 
   if (deg(V,x)>2) error('only checks quadratics'); end
 
@@ -503,7 +503,7 @@ function V = sampling(V0,f,options)
 
   %% undo balancing
   V = subss(V,x,inv(T)*x);
-  V = SpotPolynomialLyapunovFunction(V0.frame,V);
+  V = SpotPolynomialLyapunovFunction(V0.getFrame,V);
 end
 
 function m = samplingCheckRho(rho,x,V,Vdot,options)

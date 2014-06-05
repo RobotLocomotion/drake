@@ -1,4 +1,4 @@
-function massSpringDamper  
+function testMassSpringDamper 
 
 r = RigidBodyManipulator('MassSpringDamper.urdf');
 x0 = [5;0];%randn(2,1);

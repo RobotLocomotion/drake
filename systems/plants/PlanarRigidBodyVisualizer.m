@@ -91,7 +91,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       xlabel(obj.model.x_axis_label);
       ylabel(obj.model.y_axis_label);
       
-      if obj.model.getNumContactPairs > 0
+      if isa(obj.model.terrain,'RigidBodyFlatTerrain')
         v=axis;
         line([v(1)-.1*(v(2)-v(1)),v(2)+.1*(v(2)-v(1))],[0 0],'Color','k');
       end
@@ -106,8 +106,8 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
   end
   
   properties
-    xlim=[-1,1]
-    ylim=[-.1,1.9];
+    xlim=[-2,2]
+    ylim=[-2,2];
     debug = false;  % if true, draws extras, like the coordinate frames and COMs for each link
     fade_percent = 0;     % 0 to 1 
     fade_color = [1 1 1];

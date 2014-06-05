@@ -226,6 +226,11 @@ namespace DrakeCollision
 	  return has_result;
       };
       // END Required member functions
+      
+     virtual const Body<ElementT>& getBody(int body_idx) const
+     {
+       return bodies.at(body_idx);
+     };
 
 
     protected:

@@ -16,7 +16,6 @@ else
 end
 
 if (nargin<3) options=struct(); end
-if ~isfield(options,'ground') options.ground = false; end
 
 fp = fopen(wrlfile,'w');
 
@@ -28,25 +27,30 @@ fprintf(fp,'##   EDITING THIS FILE BY HAND IS NOT RECOMMENDED    ##\n');
 fprintf(fp,'## ------------------------------------------------- ##\n\n');
 
 
-if options.ground && ~isempty(model.terrain)
-  fprintf(fp,'Background {\n\tskyColor 0.8818    0.9512    0.9941\n}\n\n');
+fprintf(fp,'PointLight {\n');
+fprintf(fp,'  on TRUE\n');
+fprintf(fp,'  intensity 1\n');
+fprintf(fp,'  location 0 0 20\n');         
+fprintf(fp,'  ambientIntensity 1\n');
+fprintf(fp,'  color 1 1 1\n');
+fprintf(fp,'}\n\n');
 
-  model.terrain.writeWRL(fp);
-else
+if isempty(model.terrain)
   fprintf(fp,'Background {\n\tskyColor 1 1 1\n}\n\n');
-
-end
-
-% write default viewpoints
-if (options.ground)
-  fprintf(fp,'Viewpoint {\n\tdescription "right"\n\tposition 0 -4 2\n\torientation 1 0 0 1.3\n}\n\n');
-  fprintf(fp,'Transform {\n\trotation 0 1 0 1.3\n\tchildren Viewpoint {\n\tdescription "front"\n\tposition -1 0 5\n\torientation 0 0 1 1.5708\n}\n}\n\n');
-  fprintf(fp,'Viewpoint {\n\tdescription "top"\n\tposition 0 0 4\n}\n\n');
-else
+  % write default viewpoints
   fprintf(fp,'Viewpoint {\n\tdescription "right"\n\tposition 0 -4 0\n\torientation 1 0 0 1.5708\n}\n\n');
   fprintf(fp,'Transform {\n\trotation 0 1 0 1.5708\n\tchildren Viewpoint {\n\tdescription "front"\n\tposition 0 0 4\n\torientation 0 0 1 1.5708\n}\n}\n\n');
   fprintf(fp,'Viewpoint {\n\tdescription "top"\n\tposition 0 0 4\n}\n\n');
+else
+  model.terrain.writeWRL(fp);
+  fprintf(fp,'Background {\n\tskyColor 0.8818    0.9512    0.9941\n}\n\n');
+  
+  % write default viewpoints
+  fprintf(fp,'Viewpoint {\n\tdescription "right"\n\tposition 0 -4 2\n\torientation 1 0 0 1.3\n}\n\n');
+  fprintf(fp,'Transform {\n\trotation 0 1 0 1.3\n\tchildren Viewpoint {\n\tdescription "front"\n\tposition -1 0 5\n\torientation 0 0 1 1.5708\n}\n}\n\n');
+  fprintf(fp,'Viewpoint {\n\tdescription "top"\n\tposition 0 0 4\n}\n\n');
 end
+
 % loop through bodies
 for i=1:length(model.body)
   if model.body(i).parent<1

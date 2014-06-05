@@ -60,14 +60,34 @@ classdef RigidBody < RigidBodyElement
       error('forwardKin(body,...) has been replaced by forwardKin(model,body_num,...), because it has a mex version.  please update your kinematics calls');
     end
 
-    function pts = getTerrainContactPoints(body)
-      % pts = getTerrainContactPoints(body)
+    function pts = getTerrainContactPoints(body,collision_group)
+      % pts = getTerrainContactPoints(body) returns the terrain contact
+      % points of all geometries on this body, in body frame.
+      %
+      % pts = getTerrainContactPoints(body,collision_group) returns the
+      % terrain contact points of all geometries on this body belonging
+      % to the group[s] specified by collision_group
+      %
+      % For a general description of terrain contact points see 
+      % <a href="matlab:help RigidBodyGeometry/getTerrainContactPoints">RigidBodyGeometry/getTerrainContactPoints</a>
+      %
       % @param body - A RigidBody object
+      % @param collision_group - A string or cell array of strings
+      %                          specifying the collision groups whose
+      %                          terrain contact points should be
+      %                          returned
       % @retval pts - A 3xm array of points on body (in body frame) that can collide with
       %               non-flat terrain
-      pts = cell2mat(cellfun(@(shape) shape.getTerrainContactPoints(), ...
-                             body.contact_shapes, ...
-                             'UniformOutput',false));
+      if nargin < 2
+        pts = cell2mat(cellfun(@(shape) shape.getTerrainContactPoints(), ...
+                               body.contact_shapes, ...
+                               'UniformOutput',false));
+      else
+        typecheck(collision_group,{'char','cell'});
+        pts = cell2mat(cellfun(@(shape) shape.getTerrainContactPoints(), ...
+          body.getContactShapes(collision_group), ...
+          'UniformOutput',false));
+      end
     end
     
     function [pts,inds] = getContactPoints(body,collision_group)
@@ -80,13 +100,14 @@ classdef RigidBody < RigidBodyElement
       if (nargin<2) 
         shapes = body.contact_shapes;
       else
-        if isa(collision_group,'char')
+        if ~isnumeric(collision_group)
+          typecheck(collision_group,{'char','cell'});
           collision_group = find(strcmpi(collision_group,body.collision_group_name));
         end
-        if (nargin < 2)
-          shapes = body.contact_shapes{body.contact_shape_group{collision_group}};
+        if (nargin < 3)
+          shapes = body.contact_shapes([body.contact_shape_group{collision_group}]);
         else
-          shapes = body.contact_shapes{body.contact_shape_group{collision_group}(collision_ind)};
+          shapes = body.contact_shapes(body.contact_shape_group{collision_group}(collision_ind));
         end
       end
     end
@@ -297,9 +318,6 @@ classdef RigidBody < RigidBodyElement
       eta = 1 + min(1,max(-0.9999,options.inertia_error*randn()));
       inertia = eta*inertia;  
       
-      if isnumeric(inertia) && ~all(eig(inertia)>0)
-        warning('Drake:RigidBodyManipulator:NonPSDInertia','RigidBody: inertia matrix not positive definite!');
-      end
       if any(rpy)
         error([body.linkname,': rpy in inertia block not implemented yet (but would be easy)']);
       end

@@ -179,9 +179,10 @@ URDFRigidBodyManipulator::URDFRigidBodyManipulator(void)
 {
 	bodies[0].linkname = "world";
 	bodies[0].parent = -1;
+        bodies[0].robotnum = 0;
 }
 
-void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, double* joint_limit_min, double* joint_limit_max);
+void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, VectorXd& joint_limit_min, VectorXd& joint_limit_max);
 
 bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _urdf_model, map<string, int> jointname_to_jointnum, map<string,int> dofname_to_dofnum, const string & root_dir)
 {
@@ -208,6 +209,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
   dof_map.push_back(dofname_to_dofnum);
   urdf_model.push_back(_urdf_model);
   
+  int robotnum = static_cast<int>(this->robot_name.size())-1;
   for (map<string, boost::shared_ptr<urdf::Link> >::iterator l=_urdf_model->links_.begin(); l!=_urdf_model->links_.end(); l++) {
     int index, _dofnum;
     if (l->second->parent_joint) {
@@ -231,6 +233,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
         }
 //    	cout << "body[" << index << "] linkname: " << bodies[index].linkname << ", jointname: " << bodies[index].jointname << endl;
 
+        bodies[index].robotnum = robotnum;
 
     	{ // set up parent
     		map<string, boost::shared_ptr<urdf::Link> >::iterator pl=_urdf_model->links_.find(j->parent_link_name);
@@ -311,6 +314,7 @@ bool URDFRigidBodyManipulator::addURDF(boost::shared_ptr<urdf::ModelInterface> _
     	// set up RigidBody (kinematics)
     	bodies[index].linkname = l->first;
     	bodies[index].jointname = jointname;
+        bodies[index].robotnum = robotnum;
 
 //    	cout << "body[" << index << "] linkname: " << bodies[index].linkname << ", jointname: " << bodies[index].jointname << endl;
 
@@ -664,7 +668,7 @@ void setJointNum(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shar
   }
 }
 
-void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, double* joint_limit_min, double* joint_limit_max)
+void setJointLimits(boost::shared_ptr<urdf::ModelInterface> urdf_model, boost::shared_ptr<urdf::Joint> j, const map<string, int> &dofname_to_dofnum, VectorXd& joint_limit_min, VectorXd& joint_limit_max)
 {
   switch (j->type) {
     case urdf::Joint::REVOLUTE:
