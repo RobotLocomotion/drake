@@ -3,7 +3,6 @@
 #include "URDFRigidBodyManipulator.h"
 
 #include "../RigidBodyConstraint.h"
-#include <unistd.h>
 
 using namespace std;
 
