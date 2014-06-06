@@ -5,10 +5,14 @@ classdef Quadrotor < RigidBodyManipulator
     function obj = Quadrotor()
       options.floating = true;
       options.terrain = RigidBodyFlatTerrain();
+      w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
+      warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
       obj = obj@RigidBodyManipulator('quadrotor.urdf',options);
+      warning(w);
       
       obj = addFrame(obj,RigidBodyFrame(findLinkInd(obj,'base_link'),[.35;0;0],zeros(3,1),'lidar_frame'));
       lidar = RigidBodyLidar('lidar',findFrameId(obj,'lidar_frame'),0,0,1,10);
+      obj = addSensor(obj,FullStateFeedbackSensor);
       obj = addSensor(obj,lidar);
       obj = compile(obj);
     end
@@ -49,9 +53,12 @@ classdef Quadrotor < RigidBodyManipulator
       
       sys = cascade(ConstantTrajectory(u0),sys);
 
-      [ytraj,xtraj] = simulate(sys,[0 2],double(x0)+.1*randn(12,1));
-      v.playback(xtraj);
-      figure(1); clf; fnplt(ytraj);
+      sys = cascade(sys,v);
+      simulate(sys,[0 2],double(x0)+.1*randn(12,1));
+      
+%      [ytraj,xtraj] = simulate(sys,[0 2],double(x0)+.1*randn(12,1));
+%      v.playback(xtraj);
+%      figure(1); clf; fnplt(ytraj);
     end
   end
 end

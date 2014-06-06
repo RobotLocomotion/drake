@@ -21,6 +21,9 @@ classdef RigidBodyLidar < RigidBodySensor
       obj.num_pixels = num_pixels;
       obj.range = range;
       
+      checkDependency('lcmgl');
+      obj.lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), obj.lidar_name);
+      obj.lcmgl.glColor3f(1, 0, 0);
     end
     
     function distance = output(obj,manip,t,x,u)
@@ -52,10 +55,12 @@ classdef RigidBodyLidar < RigidBodySensor
         
         distance(i) = collisionRaycast(manip, kinsol, origin(:,i), point_on_ray(:,i));
         
+        point = forwardKin(manip,kinsol,obj.frame_id,distance(i)*[cos(theta(i));sin(theta(i));0]);
+        obj.lcmgl.sphere(point, .1, 20, 20);
+        obj.lcmgl.line3(origin(1), origin(2), origin(3), point(1), point(2), point(3));
       end
       
-      
-      
+      obj.lcmgl.switchBuffers;
     end
     
     function fr = constructFrame(obj,manip)
@@ -76,6 +81,7 @@ classdef RigidBodyLidar < RigidBodySensor
     max_yaw; % maximum yaw of the LIDAR sensor in radians
     num_pixels; % number of points the LIDAR returns on each run
     range; % range of the LIDAR in meters
+    lcmgl; 
   end
   
 end
