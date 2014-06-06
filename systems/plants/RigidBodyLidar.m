@@ -35,10 +35,10 @@ classdef RigidBodyLidar < RigidBodySensor
       
       % compute raycasting points
       
-      kinsol = doKinematics(manip,x(1:getNumPosition(x)));
+      kinsol = doKinematics(manip,x(1:getNumPositions(manip)));
       
       theta = linspace(obj.min_yaw,obj.max_yaw,obj.num_pixels);
-      pts = forwardKin(manip,kinsol,obj.frame_id,[zeros(3,1),obj.range*[cos(theta),sin(theta),0*theta]]);
+      pts = forwardKin(manip,kinsol,obj.frame_id,[zeros(3,1),obj.range*[cos(theta);sin(theta);0*theta]]);
       
       origin = repmat(pts(:,1),1,obj.num_pixels);
       point_on_ray = pts(:,2:end);
@@ -48,7 +48,7 @@ classdef RigidBodyLidar < RigidBodySensor
       
       distance = zeros(obj.num_pixels, 1);
       
-      for (i=1:length(point_on_ray))
+      for (i=1:obj.num_pixels)
         
         distance(i) = collisionRaycast(manip, kinsol, origin(:,i), point_on_ray(:,i));
         
@@ -59,7 +59,7 @@ classdef RigidBodyLidar < RigidBodySensor
     end
     
     function fr = constructFrame(obj,manip)
-      fr = CoordinateFrame([manip.name{obj.robotnum},obj.lidar_name],numel(obj.num_pixels),'d');
+      fr = CoordinateFrame(obj.lidar_name,numel(obj.num_pixels),'d');
     end
     
     function tf = isDirectFeedthrough(obj)

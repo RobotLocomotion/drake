@@ -6,6 +6,11 @@ classdef Quadrotor < RigidBodyManipulator
       options.floating = true;
       options.terrain = RigidBodyFlatTerrain();
       obj = obj@RigidBodyManipulator('quadrotor.urdf',options);
+      
+      obj = addFrame(obj,RigidBodyFrame(findLinkInd(obj,'base_link'),[.35;0;0],zeros(3,1),'lidar_frame'));
+      lidar = RigidBodyLidar('lidar',findFrameId(obj,'lidar_frame'),0,0,1,10);
+      obj = addSensor(obj,lidar);
+      obj = compile(obj);
     end
    
     function u0 = nominalThrust(obj)
@@ -44,8 +49,9 @@ classdef Quadrotor < RigidBodyManipulator
       
       sys = cascade(ConstantTrajectory(u0),sys);
 
-      xtraj = simulate(sys,[0 2],double(x0)+.1*randn(12,1));
+      [ytraj,xtraj] = simulate(sys,[0 2],double(x0)+.1*randn(12,1));
       v.playback(xtraj);
+      figure(1); clf; fnplt(ytraj);
     end
   end
 end
