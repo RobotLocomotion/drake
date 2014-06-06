@@ -6,8 +6,7 @@ if ispc
 end
 
 if (~exist(urdf_kin_test,'file'))
-  error('testURDFmex requires that urdf_kin_test is built (from the command line).  skipping this test');
-  return;
+  error('Drake:MissingDependency','testURDFmex requires that urdf_kin_test is built (from the command line).  skipping this test');
 end
 
 tol = 1e-4; % low tolerance because i'm writing finite precision strings to and from the ascii terminal

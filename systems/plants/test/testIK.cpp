@@ -5,7 +5,7 @@
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
-#include "mat.h"
+#include <Eigen/Dense>
 
 using namespace std;
 using namespace Eigen;
@@ -18,27 +18,9 @@ int main()
   }
   Vector2d tspan;
   tspan<<0,1;
-  VectorXd q0;
-  MATFile *pnommat;
+  VectorXd q0 = VectorXd::Zero(model->num_dof);
   // The state frame of cpp model does not match with the state frame of MATLAB model, since the dofname_to_dofnum is different in cpp and MATLAB
-  pnommat = matOpen("../../examples/Atlas/data/atlas_fp.mat","r");
-  if(pnommat == NULL)
-  {
-    printf("Error reading mat file\n");
-    return(EXIT_FAILURE);
-  }
-  mxArray* pxstar = matGetVariable(pnommat,"xstar");
-  if(pxstar == NULL)
-  {
-    printf("no xstar in mat file\n");
-    return(EXIT_FAILURE);
-  }
-  // for(int i = 0;i<model->num_bodies;i++)
-  // {
-  //   printf("%d %s %5.2f\n",i,model->bodies[i].linkname.c_str(),model->bodies[i].mass);
-  // }
-  q0 = VectorXd(model->num_dof);
-  memcpy(q0.data(),mxGetPr(pxstar),sizeof(double)*model->num_dof);
+  q0(3) = 0.8;
   Vector3d com_lb = Vector3d::Zero(); 
   Vector3d com_ub = Vector3d::Zero(); 
   com_lb(2) = 0.9;
@@ -53,6 +35,14 @@ int main()
   vector<string> infeasible_constraint;
   inverseKin(model,q0,q0,num_constraints,constraint_array,q_sol,info,infeasible_constraint,ikoptions);
   printf("INFO = %d\n",info);
+  if(info != 1)
+  {
+    return 1;
+  }
+  model->doKinematics(q_sol.data());
+  Vector3d com;
+  model->getCOM(com);
+  printf("%5.2f\n%5.2f\n%5.2f\n",com(0),com(1),com(2));
   /*MATFile *presultmat;
   presultmat = matOpen("q_sol.mat","w");
   mxArray* pqsol = mxCreateDoubleMatrix(model->num_dof,1,mxREAL);
@@ -61,7 +51,6 @@ int main()
   matClose(presultmat);*/
   delete com_kc;
   delete[] constraint_array;
-  matClose(pnommat);
   return 0;
 }
   
