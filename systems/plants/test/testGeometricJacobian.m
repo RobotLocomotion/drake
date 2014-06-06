@@ -1,8 +1,17 @@
 function testGeometricJacobian
 
+testFallingBrick('quat');
+testFallingBrick('quat');
 testAtlas('rpy');
 testAtlas('quat');
 
+end
+
+function testFallingBrick(floatingType)
+options.floating = floatingType;
+robot = RigidBodyManipulator('FallingBrick.urdf',options);
+checkTransformDerivatives(robot);
+checkJacobianGradients(robot);
 end
 
 function testAtlas(floatingJointType)
@@ -63,6 +72,7 @@ for test = 1 : nTests
   kinsol = robot.doKinematics(q,true,false);
   [~, ~, dJdq] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
   option.grad_method = 'numerical';
+%   option.grad_method = 'taylorvar';
   [~, dJdq_geval] = geval(1, @(q) gevalFunction(robot, q, base, end_effector, expressed_in), q, option);
   valuecheck(dJdq_geval, dJdq, 1e-5);
   

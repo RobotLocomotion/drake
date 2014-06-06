@@ -2,7 +2,7 @@ function testForwardKin
 
 testFallingBrick('quat');
 
-% testAtlas('rpy');
+testAtlas('rpy');
 testAtlas('quat');
 
 end
@@ -50,7 +50,7 @@ for test_number = 1 : n_tests
   [~, J] = robot.forwardKin(kinsol, end_effector, points, rotation_type);
   computation_time = computation_time + toc * 1e3;
   
-  option.grad_method = 'taylorvar';
+  option.grad_method = 'numerical';
   
   [~, J_numerical] = geval(1, @(q) gevalFunction(robot, q, end_effector, points, rotation_type), q, option);
   valuecheck(J_numerical, J, epsilon);
@@ -69,3 +69,10 @@ kinsol = robot.doKinematics(q,false,false);
 x = robot.forwardKin(kinsol, end_effector, points, rotation_type);
 x = x(:);
 end
+
+% function ret = constraintOrthogonalSubspaceBasis(constraint, q_symbolic, q_numerical)
+% J = simplify(jacobian(constraint, q));
+% JPerp = null(J);
+% [q1, q2, q3, q4] = deal(q(1), q(2), q(3), q(4));
+% ret = reshape([-q2./q1,1.0,0.0,0.0,-q3./q1,0.0,1.0,0.0,-q4./q1,0.0,0.0,1.0],[4,3]);
+% end
