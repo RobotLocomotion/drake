@@ -32,7 +32,10 @@ con.T.ub = 4;
 
 options.method='dircol';
 options.MajorOptimalityTolerance=1e-2;
+<<<<<<< HEAD
 options.grad_method = 'taylorvar';
+=======
+>>>>>>> 4b74cda837e450331fe4d7b4266f1f0871d97c4c
 %options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u,[1 2]);  % for debugging
 %options.grad_test = true;
 
