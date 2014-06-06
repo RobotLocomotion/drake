@@ -11,7 +11,7 @@ classdef Quadrotor < RigidBodyManipulator
       warning(w);
       
       obj = addFrame(obj,RigidBodyFrame(findLinkInd(obj,'base_link'),[.35;0;0],zeros(3,1),'lidar_frame'));
-      lidar = RigidBodyLidar('lidar',findFrameId(obj,'lidar_frame'),0,0,1,10);
+      lidar = RigidBodyLidar('lidar',findFrameId(obj,'lidar_frame'),-.4,.4,40,10);
       obj = addSensor(obj,FullStateFeedbackSensor);
       obj = addSensor(obj,lidar);
       obj = compile(obj);
