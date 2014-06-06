@@ -498,6 +498,15 @@ classdef RigidBodyManipulator < Manipulator
     end
         
     function model = addSensor(model,sensor)
+      % Adds a sensor to the RigidBodyManipulator.  This modifies the
+      % model.sensor parameter and marks the model as dirty.
+      %
+      % @param model existing RigidBodyManipulator the sensor should be
+      %   added to
+      % @param sensor sensor to add
+      %
+      % @retval new RigidBodyManipulator with the sensor added.
+      
       typecheck(sensor,'RigidBodySensor');
       model.sensor{end+1}=sensor;
       model.dirty = true;
