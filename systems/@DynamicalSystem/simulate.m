@@ -157,7 +157,7 @@ if (nargout>0)
           % commands like this are useful for debugging here:
           %  plot(y(2,:),y(3,:),'.-',y(2,zcs(2:end)),y(3,zcs(2:end)),'r*')
           %  keyboard;
-          warning('successive zero crossings');
+          warnOnce(obj.warning_manager,'Drake:DynamicalSystem:SuccessiveZeroCrossings','successive zero crossings');
           i=i+1;
           continue;
         end

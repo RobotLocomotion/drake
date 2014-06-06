@@ -117,13 +117,12 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
           {
             joint_idx[i] = (int) *(mxGetPr(prhs[2])+i)-1;
           }
-          double* lb = new double[num_idx];
-          double* ub = new double[num_idx];
-          memcpy(lb,mxGetPr(prhs[3]),sizeof(double)*num_idx);
-          memcpy(ub,mxGetPr(prhs[4]),sizeof(double)*num_idx);
+          VectorXd lb(num_idx),ub(num_idx);
+          memcpy(lb.data(),mxGetPr(prhs[3]),sizeof(double)*num_idx);
+          memcpy(ub.data(),mxGetPr(prhs[4]),sizeof(double)*num_idx);
           PostureConstraint* pc_new = new PostureConstraint(*pc);
           pc_new->setJointLimits(num_idx,joint_idx,lb,ub);
-          delete[] joint_idx; delete[] lb; delete[] ub;
+          delete[] joint_idx;
           plhs[0] = createDrakeConstraintMexPointer((void*)pc_new,"deleteRigidBodyConstraintmex","PostureConstraint");
         }
         else

@@ -22,8 +22,7 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
       if(nargin<7)
         tspan = [-inf,inf];
       end
-      checkDependency('rigidbodyconstraint_mex');
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.SingleTimeLinearPostureConstraintType,robot.getMexModelPtr,iAfun,jAvar,A,lb,ub,tspan);
+      
       obj = obj@RigidBodyConstraint(RigidBodyConstraint.SingleTimeLinearPostureConstraintCategory,robot,tspan);
       nq = obj.robot.getNumDOF;
       if(~isnumeric(lb))
@@ -76,7 +75,9 @@ classdef SingleTimeLinearPostureConstraint < RigidBodyConstraint
       obj.A = A;
       obj.A_mat = sparse(iAfun,jAvar,A,obj.num_constraint,nq);
       obj.type = RigidBodyConstraint.SingleTimeLinearPostureConstraintType;
-      obj.mex_ptr = ptr;
+      if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.SingleTimeLinearPostureConstraintType,robot.getMexModelPtr,iAfun,jAvar,A,lb,ub,tspan);
+      end
     end
     
     function flag = isTimeValid(obj,t)

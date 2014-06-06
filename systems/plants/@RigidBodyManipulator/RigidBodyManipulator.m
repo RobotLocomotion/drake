@@ -605,7 +605,7 @@ classdef RigidBodyManipulator < Manipulator
       model.joint_limit_max = [model.body.joint_limit_max]';
      
       if (any(model.joint_limit_min~=-inf) || any(model.joint_limit_max~=inf))
-        warning('Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
+        warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedJointLimits','Joint limits are not supported by the dynamics methods of this class.  Consider using HybridPlanarRigidBodyManipulator');
       end
       
       model = model.setInputLimits(u_limit(:,1),u_limit(:,2));
@@ -627,15 +627,8 @@ classdef RigidBodyManipulator < Manipulator
 
       % collisionDetect may require the mex version of the manipulator,
       % so it should go after createMexPointer
-      if (model.mex_model_ptr~=0 && checkDependency('bullet'))
-        phi = model.collisionDetect(zeros(model.getNumPositions,1));
-        model.num_contact_pairs = length(phi);
-      else
-        if ~isempty([model.body.contact_shapes])
-          warning('Drake:RigidBodyManipulator:ContactGeometryButNoBullet','Your model has contact geometry, but you do not have bullet support.  Contacts will simply be ignored.');
-        end
-        model.num_contact_pairs = 0;
-      end
+      phi = model.collisionDetect(zeros(model.getNumPositions,1));
+      model.num_contact_pairs = length(phi);
       
       if (model.num_contact_pairs>0)
         warning('Drake:RigidBodyManipulator:UnsupportedContactPoints','Contact is not supported by the dynamics methods of this class.  Consider using TimeSteppingRigidBodyManipulator or HybridPlanarRigidBodyManipulator');
@@ -1080,10 +1073,13 @@ classdef RigidBodyManipulator < Manipulator
       while isempty(v)
         type = options.viewer{i};
         
-        if strcmp(type,'NullVisualizer')
-          arg = {getOutputFrame(obj)};
-        else
-          arg = {obj,options.use_contact_shapes};
+        switch (type)
+          case 'NullVisualizer'
+            arg = {getOutputFrame(obj)};
+          case 'BotVisualizer'
+            arg = {obj,options.use_contact_shapes};
+          otherwise
+            arg = {obj,options};
         end
 
         if (i==length(options.viewer))  % then it's the last one
@@ -1092,8 +1088,9 @@ classdef RigidBodyManipulator < Manipulator
           try
             v = feval(type,arg{:});
           catch ex
-            getReport(ex,'extended')
-            warning(ex.identifier,ex.message);
+            if ~strncmp(ex.identifier,'Drake:MissingDependency',23)
+              rethrow(ex);
+            end
           end
         end
         i = i+1;
@@ -1837,7 +1834,7 @@ classdef RigidBodyManipulator < Manipulator
             'To silence this warning, construct your manipulator ' ...
             'with: ' ...
             '\n\n' ...
-            '    >> w = warning(''OFF'',%s);\n' ...
+            '    >> w = warning(''off'',''%s'');\n' ...
             '    >> r = %s(...);\n' ...
             '    >> warning(w)' ...
             '\n\n'],changed_body_idx_and_names{:},class(model), ...
@@ -2060,7 +2057,7 @@ classdef RigidBodyManipulator < Manipulator
           effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
         end
         if limits.hasAttribute('velocity');
-          warning('Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
+          warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
           velocity_limit = parseParamString(model,robotnum,char(limits.getAttribute('velocity')));
         end
       end

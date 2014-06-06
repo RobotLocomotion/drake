@@ -31,7 +31,6 @@ classdef WorldGazeOrientConstraint < GazeOrientConstraint
       if(nargin == 6)
         tspan = [-inf inf];
       end
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldGazeOrientConstraintType,robot.getMexModelPtr,body,axis,quat_des,conethreshold,threshold,tspan);
       obj = obj@GazeOrientConstraint(robot,axis,quat_des,conethreshold,threshold,tspan);
       if(isnumeric(body))
         sizecheck(body,[1,1]);
@@ -45,7 +44,9 @@ classdef WorldGazeOrientConstraint < GazeOrientConstraint
       end
       obj.body_name = obj.robot.getBody(obj.body).linkname;
       obj.type = RigidBodyConstraint.WorldGazeOrientConstraintType;
-      obj.mex_ptr = ptr;
+      if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
+        obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldGazeOrientConstraintType,robot.getMexModelPtr,body,axis,quat_des,conethreshold,threshold,tspan);
+      end
     end
 
     function name_str = name(obj,t)
