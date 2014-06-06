@@ -471,9 +471,9 @@ bool RigidBodyManipulator::getPairwiseClosestPoint(const int body_indA, const in
   return collision_model->getClosestPoints(body_indA,body_indB,ptA,ptB,normal,distance);
 };
 
-double RigidBodyManipulator::collisionRaycast(const Vector3d &origin, const Vector3d &ray_endpoint)
+bool RigidBodyManipulator::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances)
 {
-  return collision_model->collisionRaycast(origin, ray_endpoint);
+  return collision_model->collisionRaycast(origins, ray_endpoints, distances);
 }
 
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
