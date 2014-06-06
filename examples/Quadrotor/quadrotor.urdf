@@ -18,6 +18,12 @@
       </geometry>
     </visual>
     <!-- note: the original hector quadrotor urdf had a (simplified, but still complex) collision mesh, too -->
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder radius=".3" length=".1"/>
+      </geometry>
+    </collision>      
   </link>
 
   <force_element name="prop1">
