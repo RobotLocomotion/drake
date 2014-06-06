@@ -1,16 +1,16 @@
-classdef Quadrotor < TimeSteppingRigidBodyManipulator
+classdef Quadrotor < RigidBodyManipulator
   
   methods
     
     function obj = Quadrotor()
       options.floating = true;
       options.terrain = RigidBodyFlatTerrain();
-      obj = obj@TimeSteppingRigidBodyManipulator('quadrotor.urdf',.01,options);
+      obj = obj@RigidBodyManipulator('quadrotor.urdf',options);
     end
    
     function u0 = nominalThrust(obj)
       % each propellor commands -mg/4
-      u0 = Point(getInputFrame(obj),getMass(obj)*norm(obj.manip.gravity)*ones(4,1)/4);
+      u0 = Point(getInputFrame(obj),getMass(obj)*norm(getGravity(obj))*ones(4,1)/4);
     end
     
     function obj = addObstacles(obj,number_of_obstacles)
@@ -25,6 +25,8 @@ classdef Quadrotor < TimeSteppingRigidBodyManipulator
         obj = addShapeToBody(obj,'world',s);
         obj = addContactShapeToBody(obj,'world',s);
       end
+      
+      obj = compile(obj);
     end
   end
   
@@ -32,14 +34,15 @@ classdef Quadrotor < TimeSteppingRigidBodyManipulator
   methods (Static)
     function runOpenLoop
       r = Quadrotor();
-      r = addObstacles(r);
-      r = compile(r);
+      r = addObstacles(r); 
+      sys = TimeSteppingRigidBodyManipulator(r,.01);
+      
       v = r.constructVisualizer();
 
       x0 = [0;0;.5;zeros(9,1)];
       u0 = nominalThrust(r);
       
-      sys = cascade(ConstantTrajectory(u0),r);
+      sys = cascade(ConstantTrajectory(u0),sys);
 
       xtraj = simulate(sys,[0 2],double(x0)+.1*randn(12,1));
       v.playback(xtraj);
