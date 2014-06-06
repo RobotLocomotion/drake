@@ -48,7 +48,7 @@ info = 0;
 
 if (nargout<1)
   v = constructVisualizer(r);
-  v.playback(xtraj);
+  v.playback(xtraj,struct('slider',true));
 end
 
 end
