@@ -23,7 +23,7 @@ classdef RigidBodyLidar < RigidBodySensor
       
       checkDependency('lcmgl');
       obj.lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), obj.lidar_name);
-      obj.lcmgl.glColor3f(1, 0, 0);
+      
     end
     
     function distance = output(obj,manip,t,x,u)
@@ -51,12 +51,19 @@ classdef RigidBodyLidar < RigidBodySensor
       
       distance = zeros(obj.num_pixels, 1);
       
+      obj.lcmgl.glColor3f(1, 0, 0);
+      
       for (i=1:obj.num_pixels)
         
         distance(i) = collisionRaycast(manip, kinsol, origin(:,i), point_on_ray(:,i));
         
+        if (distance(i) < 0)
+          distance(i) = obj.range;
+        end
+        
+        
         point = forwardKin(manip,kinsol,obj.frame_id,distance(i)*[cos(theta(i));sin(theta(i));0]);
-        obj.lcmgl.sphere(point, .1, 20, 20);
+        obj.lcmgl.sphere(point, .025, 20, 20);
         obj.lcmgl.line3(origin(1), origin(2), origin(3), point(1), point(2), point(3));
       end
       
@@ -64,7 +71,7 @@ classdef RigidBodyLidar < RigidBodySensor
     end
     
     function fr = constructFrame(obj,manip)
-      fr = CoordinateFrame(obj.lidar_name,numel(obj.num_pixels),'d');
+      fr = CoordinateFrame(obj.lidar_name,obj.num_pixels,'d');
     end
     
     function tf = isDirectFeedthrough(obj)
