@@ -8,10 +8,10 @@ function distance = collisionRaycast(obj, kinsol, origins, ray_endpoints)
 % @param kinsol result of calling doKinematics(obj, q) where q is a
 %   position vector.
 % @param origin vector of size indicating the origin of the ray. Size is
-%   N x 3.
+%   3 x N.
 % @param ray_endpoint vector of size 3 indicating the end point of the ray,
 %   specifying the direction and maximum length of the raycast.
-%   Size is N x 3.
+%   Size is 3 x N.
 %
 % @retval distance distance to the nearest hit on the ray, or -1 on no
 %    collision.
