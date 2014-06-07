@@ -47,11 +47,11 @@ namespace DrakeCollision
     return false;
   };
   
-  double GenericModel::collisionRaycast(const Vector3d &origin, const Vector3d &ray_endpoint)
+  bool GenericModel::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances)
   {
     cout << "DrakeCollision::GenericModel::collisionRaycast:" << endl;
     cout << "\tRe-compile with Bullet to use this function." << endl;
-    return -1;
+    return false;
   };
   
 };
