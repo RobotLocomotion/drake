@@ -11,7 +11,7 @@ r = compile(r);
 
 % Initialize the viewer
 v = r.constructVisualizer;
-v.display_dt = 0.01;
+v.display_dt = 0.02;
 
 % Compute a feasible set of initial conditions for the simulation (e.g. no
 % penetration)
