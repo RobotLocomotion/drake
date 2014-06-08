@@ -31,11 +31,9 @@ namespace DrakeCollision
   };
 
   class BulletModel 
-    : public ModelTemplate<BulletElement>
   {
     public:
       BulletModel();
-
       ~BulletModel();
 
       virtual void addElement(const int body_ind, const int parent_idx, 
