@@ -7,11 +7,14 @@ namespace DrakeCollision
 {
   class GenericModel : public ModelTemplate<Element> {
     public:
+      GenericModel(void) : print_warning(true) {};
+
       //Required member functions for ModelTemplate
       virtual bool getPointCollision(const int body_idx, 
           const int body_collision_idx, 
           Vector3d &ptA, Vector3d &ptB, 
           Vector3d &normal);
+
 
     protected:
       virtual bool findClosestPointsBtwElements(const int bodyA_idx,
@@ -32,6 +35,9 @@ namespace DrakeCollision
                                  
       virtual bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances);
       // END Required member functions
+
+  private:
+	bool print_warning;
   };
 }
 #endif

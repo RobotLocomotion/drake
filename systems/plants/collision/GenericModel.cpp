@@ -13,8 +13,11 @@ namespace DrakeCollision
                                                   const Element& elemB, 
                                                   const ResultCollShPtr& c) 
   {
-    cout << "DrakeCollision::GenericModel::findClosestPointsBtwElements:" << endl;
-    cout << "\tRe-compile with Bullet to use this function." << endl;
+    if (print_warning) {
+      cout << "DrakeCollision::GenericModel::findClosestPointsBtwElements:" << endl;
+      cout << "\tRe-compile with Bullet to use this function." << endl;
+      print_warning = false;
+    }
     return false;
   };
 
@@ -24,8 +27,11 @@ namespace DrakeCollision
                                                     const Element& elemB, 
                                                     const ResultCollShPtr& c)
   {
-    cout << "DrakeCollision::GenericModel::findCollisionPointsBtwElements:" << endl;
-    cout << "\tRe-compile with Bullet to use this function." << endl;
+    if (print_warning) {
+      cout << "DrakeCollision::GenericModel::findCollisionPointsBtwElements:" << endl;
+      cout << "\tRe-compile with Bullet to use this function." << endl;
+      print_warning = false;
+    }
     return false;
   };
 
@@ -33,8 +39,11 @@ namespace DrakeCollision
                                 const int body_collision_idx, 
                                 Vector3d& ptA, Vector3d& ptB, Vector3d& normal)
   {
-    cout << "DrakeCollision::GenericModel::getPointCollision:" << endl;
-    cout << "\tRe-compile with Bullet to use this function." << endl;
+    if (print_warning) {
+      cout << "DrakeCollision::GenericModel::getPointCollision:" << endl;
+      cout << "\tRe-compile with Bullet to use this function." << endl;
+      print_warning = false;
+    }
     return false;
   };
 
@@ -42,15 +51,21 @@ namespace DrakeCollision
       vector<int>& bodyB_idx, 
       MatrixXd& ptsA, MatrixXd& ptsB)
   {
-    cout << "DrakeCollision::GenericModel::allCollisions:" << endl;
-    cout << "\tRe-compile with Bullet to use this function." << endl;
+    if (print_warning) {
+      cout << "DrakeCollision::GenericModel::allCollisions:" << endl;
+      cout << "\tRe-compile with Bullet to use this function." << endl;
+      print_warning = false;
+    }
     return false;
   };
   
   bool GenericModel::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances)
   {
-    cout << "DrakeCollision::GenericModel::collisionRaycast:" << endl;
-    cout << "\tRe-compile with Bullet to use this function." << endl;
+    if (print_warning) {
+      cout << "DrakeCollision::GenericModel::collisionRaycast:" << endl;
+      cout << "\tRe-compile with Bullet to use this function." << endl;
+      print_warning = false;
+    }
     return false;
   };
   
