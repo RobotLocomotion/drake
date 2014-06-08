@@ -1,6 +1,6 @@
 include_directories ( .. )
 
-find_package( Boost COMPONENTS unit_test_framework test_exec_monitor)
+#find_package( Boost COMPONENTS unit_test_framework test_exec_monitor)
 
 if (Boost_FOUND)
 

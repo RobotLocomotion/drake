@@ -21,7 +21,7 @@ macro(add_ik_cpp)
   add_test(NAME ${ARGV} WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH} COMMAND ${ARGV})
 endmacro()
 
-if (gurobi_FOUND)
+if (gurobi_FOUND AND Boost_FOUND)
   add_ik_cpp(testApproximateIK)
 endif()
 
