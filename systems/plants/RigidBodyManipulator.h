@@ -7,7 +7,7 @@
 //#include <vector>
 #include <Eigen/StdVector>
 
-#include "collision/Model.h"
+//#include "collision/Model.h"
 
 #include "RigidBody.h"
 #include "RigidBodyFrame.h"
@@ -72,8 +72,9 @@ public:
   template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
   void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
 
-
+  /*
   void addCollisionElement(const int body_ind, Matrix4d T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params);
+  */
 
   void updateCollisionElements(const int body_ind);
 
@@ -190,7 +191,7 @@ private:
   bool kinematicsInit;
   int secondDerivativesCached;
 
-  std::shared_ptr< DrakeCollision::Model > collision_model;
+  //  std::shared_ptr< DrakeCollision::Model > collision_model;
 };
 
 template<typename T> int sgn(T val) {

@@ -164,6 +164,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //DEBUG
     //cout << "constructModelmex: About to parse collision geometry"  << endl;
     //END_DEBUG
+    /*
     pm = mxGetProperty(pBodies,i,"contact_shapes");
     Matrix4d T;
     if (!mxIsEmpty(pm)){
@@ -216,7 +217,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             break;
         }
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
-        model->addCollisionElement(i,T,shape,params_vec);
+	model->addCollisionElement(i,T,shape,params_vec);
         if (model->bodies[i].parent<0) {
           model->updateCollisionElements(i);  // update static objects only once - right here on load
         }
@@ -233,6 +234,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //END_DEBUG
       model->setCollisionFilter(i,*group,*mask);
     }
+    */
   }
 
   // THIS IS UGLY: I'm sending the terrain contact points into the

@@ -2,7 +2,7 @@
 # IMPORTANT NOTE!! 
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
-find_package( Boost COMPONENTS filesystem system regex)
+#find_package( Boost COMPONENTS filesystem system regex)
 
 include_directories (${CMAKE_SOURCE_DIR}/util )
 
@@ -16,7 +16,7 @@ if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
 
   add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
-  target_link_libraries(drakeRBM drakeCollision)
+# target_link_libraries(drakeRBM drakeCollision)
 
   pods_install_libraries(drakeRBM)
   pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h DESTINATION drake)
@@ -25,8 +25,8 @@ if (eigen3_FOUND)
     REQUIRES  
     VERSION 0.0.1)
 
-  add_subdirectory(collision)
-  add_subdirectory(constraint)
+# add_subdirectory(collision)
+#  add_subdirectory(constraint)
 
   if (Boost_FOUND)
     add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
@@ -72,11 +72,11 @@ if (eigen3_FOUND)
   pods_find_pkg_config(gurobi)
   pods_find_pkg_config(snopt_cpp)
 
+if (FALSE)
   macro(add_constraint_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeUtil drakeRigidBodyConstraint)
   endmacro()
-
 
   set(drakeIK_SRC_FILES IKoptions.cpp)
   set(drakeIK_PODS_PKG )
@@ -112,6 +112,7 @@ if (eigen3_FOUND)
     add_IK_mex(inverseKinPointwisemex)
     add_IK_mex(inverseKinTrajmex)
   endif()
+endif()
 
   add_subdirectory(test)
 
