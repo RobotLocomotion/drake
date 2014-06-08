@@ -16,7 +16,7 @@ if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
 
   add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
-# target_link_libraries(drakeRBM drakeCollision)
+  target_link_libraries(drakeRBM drakeCollision)
 
   pods_install_libraries(drakeRBM)
   pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h DESTINATION drake)
@@ -25,7 +25,7 @@ if (eigen3_FOUND)
     REQUIRES  
     VERSION 0.0.1)
 
-# add_subdirectory(collision)
+add_subdirectory(collision)
 #  add_subdirectory(constraint)
 
   if (Boost_FOUND)

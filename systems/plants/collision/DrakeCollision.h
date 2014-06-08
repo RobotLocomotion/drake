@@ -69,8 +69,6 @@ namespace DrakeCollision
 
   typedef std::shared_ptr< ResultCollector > ResultCollShPtr;
 
-  std::shared_ptr<Model> newModel();
-  std::shared_ptr<Model> newModel(ModelType model_type);
   ResultCollShPtr newResultCollector();
 }
 #endif
