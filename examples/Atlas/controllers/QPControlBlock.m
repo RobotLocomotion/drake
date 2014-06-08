@@ -1,5 +1,5 @@
 classdef QPControlBlock < MIMODrakeSystem
-
+%NOTEST
   methods
   function obj = QPControlBlock(r,controller_data,options)
     % @param r atlas instance

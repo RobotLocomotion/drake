@@ -1,4 +1,5 @@
 classdef QTrajEvalBlock < MIMODrakeSystem
+% NOTEST
   % passes through the robot state and
   % reads evals qtraj at the current t
   properties
