@@ -1,5 +1,4 @@
 #include "DrakeCollision.h"
-#include "GenericModel.h"
 #include "ResultCollector.h"
 
 #ifdef BULLET_COLLISION

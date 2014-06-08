@@ -1,6 +1,4 @@
 #include "DrakeCollision.h"
-#include "Model.h"
-#include "GenericModel.h"
 
 #ifdef BULLET_COLLISION
 #include "BulletModel.h"
@@ -23,7 +21,7 @@ namespace DrakeCollision
   {
     switch (model_type) {
       case NONE:
-        return shared_ptr<Model>(new GenericModel());
+        return shared_ptr<Model>(new Model());
         break;
       case BULLET:
 #ifdef BULLET_COLLISION
