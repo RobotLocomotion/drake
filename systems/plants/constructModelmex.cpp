@@ -161,10 +161,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
     memcpy(model->bodies[i].T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
 
+    /*
     //DEBUG
     //cout << "constructModelmex: About to parse collision geometry"  << endl;
     //END_DEBUG
-    /*
     pm = mxGetProperty(pBodies,i,"contact_shapes");
     Matrix4d T;
     if (!mxIsEmpty(pm)){
@@ -237,6 +237,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     */
   }
 
+  /*
   // THIS IS UGLY: I'm sending the terrain contact points into the
   // contact_pts field of the cpp RigidBody objects
   //DEBUG
@@ -290,6 +291,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //END_DEBUG
     }
   }
+  */
 
   for (int i=0; i<model->num_frames; i++) {
     pm = mxGetProperty(pFrames,i,"name");

@@ -3,7 +3,7 @@ include_directories ( .. )
 set(drakeCollision_SRC_FILES Model.cpp GenericModel.cpp Element.cpp
   PointPair.cpp DrakeCollision.cpp ResultCollector.cpp
   MinDistResultCollector.cpp simpleClosestPointFunctions.cpp)
-pods_find_pkg_config(bullet)
+#pods_find_pkg_config(bullet)
 
 if (bullet_FOUND)
   add_definitions( -DBULLET_COLLISION -DBT_USE_DOUBLE_PRECISION )   

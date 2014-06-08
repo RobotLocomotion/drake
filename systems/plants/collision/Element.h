@@ -26,6 +26,9 @@ namespace DrakeCollision
       Matrix4d T_elem_to_link;
       Matrix4d T_elem_to_world;
       Shape shape;
+
+  public:
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 }
 #endif
