@@ -1,4 +1,5 @@
 classdef SimplePDBlock < MIMODrakeSystem
+% NOTEST
   % outputs a desired q_ddot (including floating dofs)
   properties
     nq;

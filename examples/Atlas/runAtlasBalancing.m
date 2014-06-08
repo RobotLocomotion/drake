@@ -1,5 +1,10 @@
 function runAtlasBalancing(use_mex)
 
+if ~checkDependency('gurobi')
+  warning('Must have gurobi installed to run this example');
+  return;
+end
+
 addpath(fullfile(getDrakePath,'examples','ZMP'));
 addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
 
@@ -7,7 +12,7 @@ addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
 visualize = true;
 
 if (nargin>0) options.use_mex = use_mex;
-else options.use_mex = false; end
+else options.use_mex = true; end
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
