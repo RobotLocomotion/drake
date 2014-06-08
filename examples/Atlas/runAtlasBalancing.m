@@ -7,7 +7,7 @@ addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
 visualize = true;
 
 if (nargin>0) options.use_mex = use_mex;
-else options.use_mex = true; end
+else options.use_mex = false; end
 
 % silence some warnings
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints')
