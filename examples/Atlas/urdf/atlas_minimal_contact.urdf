@@ -1216,7 +1216,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://mit_drcsim_scripts/models/multisense_sl/meshes/head.wrl"/>
+        <mesh filename="meshes/head.wrl"/>
       </geometry>
       <material name="">
         <color rgba="0.9098 0.44314 0.031373 1"/>
