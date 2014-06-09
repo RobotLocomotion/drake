@@ -1,6 +1,4 @@
 #include "mex.h"
-#include <Eigen/Dense>
-#include <vector>
 #include <iostream>
 #include "drakeUtil.h"
 #include "RigidBodyManipulator.h"
@@ -39,18 +37,19 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","Usage model_ptr = constructModelmex(obj)");
   }
 
+  const mxArray* pRBM = prhs[0];
   RigidBodyManipulator *model=NULL;
 
-//  model->robot_name = get_strings(mxGetProperty(prhs[0],0,"name"));
+//  model->robot_name = get_strings(mxGetProperty(pRBM,0,"name"));
 
-  const mxArray* featherstone = mxGetProperty(prhs[0],0,"featherstone");
+  const mxArray* featherstone = mxGetProperty(pRBM,0,"featherstone");
   if (!featherstone) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs", "the featherstone array is invalid");
 
-  const mxArray* pBodies = mxGetProperty(prhs[0],0,"body");
+  const mxArray* pBodies = mxGetProperty(pRBM,0,"body");
   if (!pBodies) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the body array is invalid");
   int num_bodies = mxGetNumberOfElements(pBodies);
 
-  const mxArray* pFrames = mxGetProperty(prhs[0],0,"frame");
+  const mxArray* pFrames = mxGetProperty(pRBM,0,"frame");
   if (!pFrames) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","the frame array is invalid");
   int num_frames = mxGetNumberOfElements(pFrames);
 
@@ -245,7 +244,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //cout << "constructModelmex: Get struct" << endl;
   //END_DEBUG
   mxArray* contact_pts_struct[1];
-  if (~mexCallMATLAB(1,contact_pts_struct,1,const_cast<mxArray**>(&prhs[0]),"getTerrainContactPoints")) {
+  if (~mexCallMATLAB(1,contact_pts_struct,1,const_cast<mxArray**>(&pRBM),"getTerrainContactPoints")) {
     //DEBUG
     //cout << "constructModelmex: Got struct" << endl;
     //if (contact_pts_struct) {
@@ -306,10 +305,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
 
   
-  memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min")), sizeof(double)*model->num_dof);
-  memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_max")), sizeof(double)*model->num_dof);
+  memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_min")), sizeof(double)*model->num_dof);
+  memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_max")), sizeof(double)*model->num_dof);
   
-  const mxArray* a_grav_array = mxGetProperty(prhs[0],0,"gravity");
+  const mxArray* a_grav_array = mxGetProperty(pRBM,0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {
     double* p = mxGetPr(a_grav_array);
     model->a_grav[3] = p[0];

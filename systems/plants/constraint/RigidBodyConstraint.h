@@ -5,7 +5,7 @@
 #ifndef __RIGIDBODYCONSTRAINT_H__
 #define __RIGIDBODYCONSTRAINT_H__
 #include <iostream>
-#include <vector>
+#include <Eigen/StdVector>
 #include <set>
 #include <string>
 #include <cstdio>

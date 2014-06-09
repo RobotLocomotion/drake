@@ -38,7 +38,6 @@
 #define URDF_INTERFACE_LINK_H
 
 #include <string>
-#include <vector>
 #include <map>
 #include <tinyxml.h>
 #include <boost/shared_ptr.hpp>
