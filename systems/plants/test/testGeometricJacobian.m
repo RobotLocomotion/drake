@@ -1,6 +1,6 @@
 function testGeometricJacobian
 
-testFallingBrick('quat');
+testFallingBrick('rpy');
 testFallingBrick('quat');
 testAtlas('rpy');
 testAtlas('quat');
