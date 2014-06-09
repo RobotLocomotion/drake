@@ -42,13 +42,13 @@ else
   
   if ~isempty(v)
     if compute_gradients
-      [kinsol.twists, kinsol.dtwistsdq] = computeTwistsInBaseFrame(bodies, kinsol.T, S, v, kinsol.dTdq, dSdq);
+      [kinsol.twists, kinsol.dtwistsdq] = computeTwistsInBaseFrame(bodies, kinsol.J, v, kinsol.dJdq);
       if compute_JdotV
         [SdotV, dSdotVdq] = computeMotionSubspacesDotV(bodies, q, v);
         [kinsol.JdotV, kinsol.dJdotVdq] = computeJacobianDotV(bodies, kinsol.T, kinsol.twists, SdotV, kinsol.dTdq, kinsol.dtwistsdq, dSdotVdq);
       end
     else
-      kinsol.twists = computeTwistsInBaseFrame(bodies, kinsol.T, S, v);
+      kinsol.twists = computeTwistsInBaseFrame(bodies, kinsol.J, v);
       if compute_JdotV
         SdotV = computeMotionSubspacesDotV(bodies, q, v);
         kinsol.JdotV = computeJacobianDotV(bodies, kinsol.T, kinsol.twists, SdotV);
@@ -144,15 +144,13 @@ for i = 2 : nb
 end
 end
 
-function [twists, dtwistsdq] = computeTwistsInBaseFrame(bodies, T, S, v, dTdq, dSdq)
-% TODO: consider computing this based on kinsol.J, kinsol.dJdq instead
-
+function [twists, dtwistsdq] = computeTwistsInBaseFrame(bodies, J, v, dJdq)
 compute_gradient = nargout > 1;
 if compute_gradient
-  if nargin < 6
-    error('must provide dTdq, dSdq to compute gradient');
+  if nargin < 4
+    error('must provide dJdq to compute gradient');
   end
-  nq = size(dTdq{end}, 2);
+  nq = size(dJdq{end}, 2);
 end
 
 nb = length(bodies);
@@ -171,14 +169,13 @@ for i = 2 : nb
   vBody = v(body.velocity_num);
 
   parentTwist = twists{body.parent};
-  jointTwist = S{i} * vBody;
-  twists{i} = parentTwist + transformTwists(T{i}, jointTwist);
+  jointTwist = J{i} * vBody;
+  twists{i} = parentTwist + jointTwist;
   
   if compute_gradient
     dparentTwist = dtwistsdq{body.parent};
-    dJointTwistdq = zeros(twistSize, nq);
-    dJointTwistdq(:, body.position_num) = matGradMult(dSdq{i}, vBody);
-    dtwistsdq{i} = dparentTwist + dAdHTimesX(T{i}, jointTwist, dTdq{i}, dJointTwistdq);
+    dJointTwist = matGradMult(dJdq{i}, vBody);
+    dtwistsdq{i} = dparentTwist + dJointTwist;
   end
 end
 end
