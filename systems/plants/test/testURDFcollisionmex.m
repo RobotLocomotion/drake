@@ -12,7 +12,7 @@ function testURDFcollisionmex
 
   tol = 1e-4; % low tolerance because i'm writing finite precision strings to and from the ascii terminal
 
-  for urdf = {'../../../examples/Atlas/urdf/atlas_chull.urdf', ...
+  for urdf = {'../../../examples/Atlas/urdf/atlas_convex_hull.urdf', ...
               '../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'};
 
     urdffile = GetFullPath(urdf{1});
