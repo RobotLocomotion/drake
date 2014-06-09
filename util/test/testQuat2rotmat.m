@@ -2,7 +2,7 @@ function testQuat2rotmat()
 
 for i = 1 : 100
   q = randn(4, 1);
-  q = q / norm(q);
+%   q = q / norm(q);
   [~, dR] = quat2rotmat(q);
   
   option.grad_method = 'taylorvar';

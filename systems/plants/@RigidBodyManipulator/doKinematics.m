@@ -36,7 +36,7 @@ else
   kinsol.qdotToV = qdotToV(model, q);
   kinsol.vToqdot = vToqdot(model, q);
   if compute_gradients
-    kinsol.dTdq = computeTransformGradients(bodies, kinsol.T, S, kinsol.qdotToV);
+    kinsol.dTdq = computeTransformGradients(bodies, q, kinsol.T, S, kinsol.qdotToV);
     kinsol.dJdq = computedJdq(bodies, kinsol.T, S, kinsol.dTdq, dSdq);
   end
   
@@ -105,7 +105,7 @@ for i = 2 : nb
 end
 end
 
-function ret = computeTransformGradients(bodies, H, S, qdotToV)
+function ret = computeTransformGradients(bodies, q, H, S, qdotToV)
 nb = length(bodies);
 nq = size(qdotToV, 2);
 ret = cell(1, nb);
@@ -114,7 +114,18 @@ for i = 2 : nb
   body = bodies(i);
   HToParent = H{body.parent} \ H{i};
   qdotToVi = qdotToV(body.velocity_num, body.position_num);
+  
   dHToParentdqi = dHdq(HToParent, S{i}, qdotToVi);
+  
+  % TODO: clean up hack
+  if body.floating == 2
+    q_body = q(body.position_num);
+    quat = q_body(4:7);
+    [~, dquattildedquat] = normalizeVec(quat);
+    dqtildedq = blkdiag(eye(3), dquattildedquat);
+    dHToParentdqi = dHToParentdqi * dqtildedq;
+  end
+  
   dHToParentdq = zeros(numel(H{i}), nq) * dHToParentdqi(1); % to make TaylorVar work better
   dHToParentdq(:, body.position_num) = dHToParentdqi;
   ret{i} = matGradMultMat(...

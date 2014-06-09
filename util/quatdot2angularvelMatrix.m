@@ -6,14 +6,21 @@ function [M, dM] = quatdot2angularvelMatrix(q)
 % parameters." (self-published)
 % http://bicycle.tudelft.nl/schwab/Publications/quaternion.pdf
 
-q0 = q(1);
-qv = q(2 : 4);
+compute_gradient = nargout > 1;
+
+if compute_gradient
+  [qtilde, dqtildedq] = normalizeVec(q);
+else
+  qtilde = normalizeVec(q);
+end
+
+q0 = qtilde(1);
+qv = qtilde(2 : 4);
 
 M = 2 * [-qv, q0 * eye(3) + vectorToSkewSymmetric(qv)];
 
-compute_gradient = nargout > 1;
 if compute_gradient
-  dM =      [...
+  dMdqtilde =      [...
     0    -2     0     0;
     0     0    -2     0;
     0     0     0    -2;
@@ -26,6 +33,7 @@ if compute_gradient
     0     0     2     0;
     0    -2     0     0;
     2     0     0     0];
+  dM = dMdqtilde * dqtildedq;
 end
 
 end

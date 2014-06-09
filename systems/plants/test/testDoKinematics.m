@@ -68,7 +68,7 @@ function checkKinsolGradients(r, name, gradient_name)
 nq = r.getNumPositions();
 nb = r.getNumBodies();
 
-q = getRandomConfiguration(r);
+q = randn(nq, 1); %getRandomConfiguration(r);
 kinsol = doKinematics(r, q, true, false);
 
 X = kinsol.(name);
