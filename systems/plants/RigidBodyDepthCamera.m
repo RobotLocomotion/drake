@@ -58,14 +58,11 @@ classdef RigidBodyDepthCamera < RigidBodySensor
       distance( distance<0 ) = obj.range;
       
       if ~isempty(obj.lcmgl)
-        obj.lcmgl.glColor3f(1, 0, 0);
         point = forwardKin(manip,kinsol,obj.frame_id,(repmat(distance',3,1)/obj.range).*obj.body_pts);
         
-        % todo: vectorize this
-        for (i=1:size(point,2))
-          obj.lcmgl.sphere(point(:,i), .025, 20, 20);
+        obj.lcmgl.glColor3f(1, 0, 0);
+        obj.lcmgl.points(point(1,:),point(2,:),point(3,:));
 %          obj.lcmgl.line3(origin(1), origin(2), origin(3), point(1,i), point(2,i), point(3,i));
-        end
         obj.lcmgl.switchBuffers;
       end
     end
