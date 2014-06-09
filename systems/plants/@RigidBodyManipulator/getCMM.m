@@ -15,7 +15,7 @@ if nargout > 1
   NB = robot.getNumBodies();
   hdots = cellfun(@mtimes, inertias_world, kinsol.JdotV, 'UniformOutput', false);
   for i = 2 : NB
-    hdots{i} = hdots{i} - twistAdjoint(kinsol.twists{i})' * inertias_world{i} * kinsol.twists{i};
+    hdots{i} = hdots{i} + crf(kinsol.twists{i}) * inertias_world{i} * kinsol.twists{i};
   end
   Adot_times_v = sum(cell2mat(hdots), 2); % Adot_times_v in world
   Adot_times_v = AdH' * Adot_times_v; % change frame to CoM

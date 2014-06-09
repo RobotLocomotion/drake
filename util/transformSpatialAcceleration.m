@@ -38,9 +38,8 @@ T_old = T{old_frame};
 T_new = T{new_frame};
 T_new_inv = homogTransInv(T_new);
 T_old_to_new = T_new_inv * T_old;
-adT_old_wrt_new = twistAdjoint(twist_of_old_wrt_new);
 
-spatial_accel_temp = adT_old_wrt_new * twist_of_body_wrt_base + spatial_accel;
+spatial_accel_temp = crm(twist_of_old_wrt_new) * twist_of_body_wrt_base + spatial_accel;
 spatial_accel = transformAdjoint(T_old_to_new) * spatial_accel_temp;
 
 % this could be faster:
@@ -66,9 +65,8 @@ if compute_gradient
   dT_old = dTdq{old_frame};
   dT_new = dTdq{new_frame};
   dT_old_to_new = matGradMultMat(T_new_inv, T_old, dinvT(T_new, dT_new), dT_old);
-  dadT_old_to_new = dtwistAdjoint(dtwist_of_old_wrt_new);
   
-  dspatial_accel_temp = matGradMultMat(adT_old_wrt_new, twist_of_body_wrt_base, dadT_old_to_new, dtwist_of_body_wrt_base) + dspatial_accel;
+  dspatial_accel_temp = dcrm(twist_of_old_wrt_new, twist_of_body_wrt_base, dtwist_of_old_wrt_new, dtwist_of_body_wrt_base) + dspatial_accel;
   dspatial_accel = dAdHTimesX(T_old_to_new, spatial_accel_temp, dT_old_to_new, dspatial_accel_temp);
 end
 end

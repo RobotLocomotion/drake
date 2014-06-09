@@ -142,18 +142,15 @@ for i = 2 : nBodies
   end
   I = inertias_world{i};
   I_times_twist = I * twist;
-  adTwist = twistAdjoint(twist);
-  net_wrenches{i} = I * spatial_accel - adTwist' * I_times_twist - external_wrench;
+  net_wrenches{i} = I * spatial_accel + crf(twist) * I_times_twist - external_wrench;
   
   if compute_gradient
     dI = dinertias_world{i};
-    % TODO: use matGradMult instead:
-    dI_times_twist = matGradMultMat(I, twist, dI, dtwist);
-    dadTwist = dtwistAdjoint(dtwist);
+    dI_times_twist = I * dtwist + matGradMult(dI, twist);
     dnet_wrenches{i} = ...
-      matGradMultMat(I, spatial_accel, dI, dspatial_accel) - ...
-      matGradMultMat(adTwist', I_times_twist, transposeGrad(dadTwist, size(adTwist)), dI_times_twist) - ...
-      dexternal_wrench;
+      I * dspatial_accel + matGradMult(dI, spatial_accel) ...
+      + dcrf(twist, I_times_twist, dtwist, dI_times_twist) ...
+      - dexternal_wrench;
   end
 end
 
@@ -175,8 +172,8 @@ for i = nBodies : -1 : 2
   if compute_gradient
     djoint_wrench = dnet_wrenches{i};
     dJi = kinsol.dJdq{i};
-    % TODO: use matGradMult instead:
-    dtau = matGradMultMat(Ji', joint_wrench, transposeGrad(dJi, size(Ji)), djoint_wrench);
+    %dtau = matGradMultMat(Ji', joint_wrench, transposeGrad(dJi, size(Ji)), djoint_wrench);
+    dtau = Ji' * djoint_wrench + matGradMult(transposeGrad(dJi, size(Ji)), joint_wrench); 
     dC = setSubMatrixGradient(dC, dtau, body.velocity_num, 1, size(C));
     dnet_wrenches{body.parent} = dnet_wrenches{body.parent} + djoint_wrench;
   end
