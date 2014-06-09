@@ -10,7 +10,7 @@ function AllBodiesClosestDistanceConstraintTest(n,draw_pause)
   warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
   warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');  
   warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
-  r = RigidBodyManipulator([getDrakePath(), '/examples/Atlas/urdf/atlas_chull.urdf'],options);
+  r = RigidBodyManipulator([getDrakePath(), '/examples/Atlas/urdf/atlas_convex_hull.urdf'],options);
   warning(w);
 
   % Alternatively, one could remove the collision elements for these links from
