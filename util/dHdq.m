@@ -27,29 +27,15 @@ function ret = dHdq(H, S, qdotToV)
 %      0     0     0     0     0     1;
 %      0     0     0     0     0     0];
 
+i = [7 10 3 9 2 5 13 14 15];
+j = [1 1 2 2 3 3 4 5 6];
+s = [1 -1 -1 1 1 -1 1 1 1];
+L = sparse(i, j, s, 16, 6);
+
 % S in body frame:
-% ret = kron(eye(4), H) * L * S * qdotToV;
-% Equivalently:
-zero = zeros(4, 1);
-RTilde = [H(1:3, 1:3); zeros(1, 3)];
-[Rx, Ry, Rz] = deal(RTilde(:, 1), RTilde(:, 2), RTilde(:, 3));
-M1 = [zero, -Rz, Ry;
-      Rz, zero, -Rx;
-     -Ry, Rx, zero];
-M = blkdiag(M1, RTilde);
-ret = M * S * qdotToV;
+ret = kron(speye(4), sparse(H)) * L * S * qdotToV;
 
 % S in world frame:
 % ret = kron(H', eye(4)) * L * S * qdotToV;
-% Equivalently:
-% M = [vectorToSkewSymmetric(-H(1:3, 1)) zeros(3);
-%      zeros(1, 6);
-%      vectorToSkewSymmetric(-H(1:3, 2)) zeros(3);
-%      zeros(1, 6);
-%      vectorToSkewSymmetric(-H(1:3, 3)) zeros(3);
-%      zeros(1, 6);
-%      vectorToSkewSymmetric(-H(1:3, 4)) eye(3);
-%      zeros(1, 6)];
-% ret = M * S * qdotToV;
 
 end
