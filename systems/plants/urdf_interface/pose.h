@@ -39,7 +39,7 @@
 
 #include <string>
 #include <sstream>
-#include <vector>
+#include <Eigen/StdVector>
 #include <math.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>

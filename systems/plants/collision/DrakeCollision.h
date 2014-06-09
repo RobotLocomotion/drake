@@ -2,11 +2,10 @@
 #define __DrakeCollision_H__
 
 //#include <memory>
-#include <map>
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-#include <iostream>
+//#include <iostream>
 //#include <stdexcept>
 //#include <bitset>
 
@@ -71,14 +70,14 @@ namespace DrakeCollision
 			       std::vector<int>& bodyB_idx, 
 			       Eigen::MatrixXd& ptsA, Eigen::MatrixXd& ptsB) { return false; };
                                   
-    /**
-     * Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
-     *
-     * @param origin Vector3d specifying the position of the ray's origin
-     * @param ray_endpoint Vector3d specifying a second point on the ray in world coordinates
-     *
-     * @retval distance to the first collision, or -1 on no collision
-     */
+    //
+    // Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
+    //
+    // @param origin Vector3d specifying the position of the ray's origin
+    // @param ray_endpoint Vector3d specifying a second point on the ray in world coordinates
+    //
+    // @retval distance to the first collision, or -1 on no collision
+    //
     virtual double collisionRaycast(const Eigen::Vector3d &origin, const Eigen::Vector3d &ray_endpoint) { return -1.0; };
   };
 

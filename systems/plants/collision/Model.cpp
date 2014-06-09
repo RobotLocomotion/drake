@@ -4,10 +4,11 @@
 #include "BulletModel.h"
 #endif
 
-using namespace std;
+//using namespace std;
 
 namespace DrakeCollision
 {
+  /*
   shared_ptr<Model> newModel()
   {
 #ifdef BULLET_COLLISION
@@ -35,5 +36,5 @@ namespace DrakeCollision
     }
     return shared_ptr<Model>();
   };
-
+  */
 }

@@ -4,8 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <set>
-//#include <vector>
-#include <Eigen/StdVector>
+#include <Eigen/StdVector> //#include <vector>
 
 //#include "collision/DrakeCollision.h"
 
@@ -15,7 +14,7 @@
 #define INF -2147483648
 using namespace Eigen;
 
-extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
+//extern std::set<int> emptyIntSet;  // was const std:set<int> emptyIntSet, but valgrind said I was leaking memory
 
 class RigidBodyManipulator 
 {
@@ -43,16 +42,16 @@ public:
   template <typename Derived>
   void getCOMdJac(MatrixBase<Derived> &dJ, const std::set<int> &robotnum = RigidBody::defaultRobotNumSet);
 
-  int getNumContacts(const std::set<int> &body_idx = emptyIntSet);
+  int getNumContacts(const std::set<int> &body_idx);// = emptyIntSet);
 
   template <typename Derived>
-  void getContactPositions(MatrixBase<Derived> &pos, const std::set<int> &body_idx = emptyIntSet);
+    void getContactPositions(MatrixBase<Derived> &pos, const std::set<int> &body_idx);// = emptyIntSet);
   
   template <typename Derived>
-  void getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx = emptyIntSet);
+    void getContactPositionsJac(MatrixBase<Derived> &J, const std::set<int> &body_idx);// = emptyIntSet);
   
   template <typename Derived>
-  void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx = emptyIntSet);
+    void getContactPositionsJacDot(MatrixBase<Derived> &Jdot, const std::set<int> &body_idx);// = emptyIntSet);
 
   template <typename DerivedA, typename DerivedB>
   void forwardKin(const int body_or_frame_ind, const MatrixBase<DerivedA>& pts, const int rotation_type, MatrixBase<DerivedB> &x);
@@ -193,6 +192,8 @@ private:
   int secondDerivativesCached;
 
   //  std::shared_ptr< DrakeCollision::Model > collision_model;
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /*
