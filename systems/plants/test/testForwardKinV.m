@@ -1,7 +1,6 @@
 function testForwardKinV
 
 testAtlas('rpy');
-% testAtlas('quat'); % TODO: generating robot currently results in an error.
 
 end
 
@@ -18,9 +17,7 @@ end
 function compareToNumerical(robot, rotation_type)
 
 nv = robot.getNumVelocities();
-
 nb = length(robot.body);
-
 body_range = [1, nb];
 
 computation_time = 0;
@@ -50,14 +47,14 @@ while test_number < n_tests
       kinsol = robot.doKinematics(q_delta, false, false);
       x_delta = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
       dxdq_numerical = (x_delta - x) / delta;
-      valuecheck(J(:, col), dxdq_numerical(:), epsilon);
+      valuecheck(dxdq_numerical(:), J(:, col), epsilon);
     end
-    
+
     q_delta = q + delta * v;
     kinsol = robot.doKinematics(q_delta, false, false);
     [~, J_delta] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
     Jdot_numerical = (J_delta - J) / delta;
-    valuecheck(Jvdot_times_v, Jdot_numerical * v, epsilon);
+    valuecheck(Jdot_numerical * v, Jvdot_times_v, epsilon);
     
     test_number = test_number + 1;
   end

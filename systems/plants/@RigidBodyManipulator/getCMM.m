@@ -29,7 +29,6 @@ if compute_gradients
   dA = vertcat(dABlocks{:});
   dtransform_com_to_world = zeros(numel(transform_com_to_world), nq);
   dtransform_com_to_world = setSubMatrixGradient(dtransform_com_to_world, dcom, 1:3, 4, size(transform_com_to_world));
-  
   % TODO: implement and use dAdHTransposeTimesX instead
   dAdH = dAdHTimesX(transform_com_to_world, eye(6), dtransform_com_to_world, zeros(6^2, nq));
   dAdHTranspose = transposeGrad(dAdH, size(AdH));
@@ -53,14 +52,12 @@ if compute_Adot_times_v
     end
   end
   
-%   Adot_times_v = sum(cat(3, hdots{2:end}), 3); % doesn't work with TaylorVar
   Adot_times_v = sum(horzcat(hdots{2:end}), 2);  % Adot_times_v in world
   Adot_times_v = AdH' * Adot_times_v; % change frame to CoM
   % plus AdHdot * h, but this is zero because of the way the com frame is
   % defined.
   if compute_gradients
     dAdot_times_v = sum(cat(3, dhdots{2:end}), 3);
-
     % TODO: implement and use dAdHTransposeTimesX instead
     dAdot_times_v = matGradMultMat(AdH', Adot_times_v, dAdHTranspose, dAdot_times_v);
   end

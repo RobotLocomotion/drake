@@ -30,7 +30,7 @@ function [x, J, Jdot_times_v] = forwardKinV(obj, kinsol, body_or_frame_ind, poin
 
 if nargin < 5, rotation_type = 0; end
 if nargin < 6, base_ind = 1; end
-computeJdot_times_v = nargout > 2;
+compute_Jdot_times_v = nargout > 2;
 
 base = base_ind;
 if (body_or_frame_ind < 0)
@@ -54,7 +54,7 @@ Jomega = JGeometric(1 : 3, :);
 Jv = JGeometric(4 : 6, :);
 
 % compute geometric Jacobian dot times v.
-if computeJdot_times_v
+if compute_Jdot_times_v
   twist = relativeTwist(kinsol.T, kinsol.twists, base, end_effector, expressed_in);
   J_geometric_dot_v = geometricJacobianDotV(obj, kinsol, base, end_effector, expressed_in);
 end
@@ -72,14 +72,14 @@ switch (rotation_type)
   case 0 % no rotation included
     x = points;
     Phi = zeros(0, 3);
-    if computeJdot_times_v
+    if compute_Jdot_times_v
       Phid = zeros(0, 3);
     end
   case 1 % output rpy
     R = transform(1:3, 1:3);
     rpy = rotmat2rpy(R);
     x = [points; repmat(rpy, 1, npoints)];
-    if computeJdot_times_v
+    if compute_Jdot_times_v
       [Phi, Phid] = angularvel2rpydotMatrix(rpy, twist(1 : 3));
     else
       Phi = angularvel2rpydotMatrix(rpy);
@@ -89,7 +89,7 @@ switch (rotation_type)
     quat = rotmat2quat(R);
     x = [points; repmat(quat, 1, npoints)];
     Phi = angularvel2quatdotMatrix(quat);
-    if computeJdot_times_v
+    if compute_Jdot_times_v
       quatd = Phi * twist(1 : 3);
       Phid = angularvel2quatdotMatrix(quatd);
     end
@@ -109,7 +109,7 @@ J(pos_row_indices, vIndices) = Jpos;
 J(rot_row_indices, vIndices) = repmat(Jrot, npoints, 1);
 
 % compute Jdot times v
-if computeJdot_times_v
+if compute_Jdot_times_v
   Jrotdot_times_v = Phid * twist(1 : 3) + Phi * J_geometric_dot_v(1 : 3);
   Jdot_times_v = zeros(length(pos_row_indices) + length(rot_row_indices), 1);
   rdots = reshape(-r_hats * twist(1 : 3) + repmat(twist(4 : 6), npoints, 1), point_size, npoints);
