@@ -27,5 +27,8 @@ valuecheck(dH_mex,dH_tv);
 valuecheck(dC_mex,dC_tv);
 valuecheck(dB_mex,dB_tv);
 
+options.grad_method = {'user','taylorvar'};
+[f,df] = geval(@p.dynamics,0,[q;v],randn(4,1),options);
+
 
 end
