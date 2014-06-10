@@ -37,9 +37,7 @@ computation_time = 0;
 n_tests = 10;
 epsilon = 1e-3;
 for test_number = 1 : n_tests
-%   q = getRandomConfiguration(robot);
-  q = zeros(robot.getNumPositions(), 1);
-  q(4) = 1;
+  q = getRandomConfiguration(robot);
   kinsol = robot.doKinematics(q, false, false);
   
   end_effector = randi(body_range);
