@@ -55,21 +55,26 @@ options.floating = floatingType;
 r = RigidBodyManipulator('FallingBrick.urdf',options);
 checkKinsolGradients(r, 'T', 'dTdq');
 checkKinsolGradients(r, 'J', 'dJdq');
+checkKinsolGradients(r, 'twists', 'dtwistsdq');
+checkKinsolGradients(r, 'JdotV', 'dJdotVdq');
 end
 
 function testAtlas(floatingType)
 r = createAtlas(floatingType);
 checkKinsolGradients(r, 'T', 'dTdq');
 checkKinsolGradients(r, 'J', 'dJdq');
+checkKinsolGradients(r, 'twists', 'dtwistsdq');
+checkKinsolGradients(r, 'JdotV', 'dJdotVdq');
 end
-
 
 function checkKinsolGradients(r, name, gradient_name)
 nq = r.getNumPositions();
+nv = r.getNumVelocities();
 nb = r.getNumBodies();
 
 q = randn(nq, 1); %getRandomConfiguration(r);
-kinsol = doKinematics(r, q, true, false);
+v = randn(nv, 1);
+kinsol = doKinematics(r, q, true, false, v, true);
 
 X = kinsol.(name);
 dXdq = kinsol.(gradient_name);
@@ -78,7 +83,7 @@ delta = 1e-7;
 for i = 1 : nq
   dq = zeros(nq, 1);
   dq(i) = delta;
-  kinsol_delta = doKinematics(r, q + dq, false, false);
+  kinsol_delta = doKinematics(r, q + dq, false, false, v, true);
   X_delta = kinsol_delta.(name);
   dXdqiNumerical = cellfun(@(x, y) (x - y) / delta, X_delta, X, 'UniformOutput', false);
   
