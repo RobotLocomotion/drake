@@ -3,7 +3,6 @@ p = RigidBodyManipulator('../Acrobot.urdf',struct('floating',true));
 q = randn(p.getNumPositions,1);
 v = randn(p.getNumPositions,1);
 
-[H,dH] = getH(q,v);
 [H_tv,dH_tv] = geval(@getH,q,v,struct('grad_method','taylorvar'));
 [H_mat,dH_mat] = getH_nomex(q,v);
 [H_mex,dH_mex] = geval(@getH,q,v);

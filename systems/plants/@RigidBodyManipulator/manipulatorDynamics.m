@@ -1,4 +1,6 @@
 function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd,use_mex)
+% note that you can also get C(q,qdot)*qdot + G(q) separately, because 
+% C = G when qdot=0
 
 checkDirty(obj);
 
@@ -6,6 +8,9 @@ if (nargin<4) use_mex = true; end
 
 m = obj.featherstone;
 B = obj.B;
+if (nargout>3)
+  dB = zeros(m.NB*obj.num_u,2*m.NB);
+end
 
 if length(obj.force)>0
   f_ext = zeros(6,m.NB);
@@ -16,8 +21,12 @@ if length(obj.force)>0
     % compute spatial force should return something that is the same length
     % as the number of bodies in the manipulator
     if (obj.force{i}.direct_feedthrough_flag)
-      [force,B_force] = computeSpatialForce(obj.force{i},obj,q,qd);
-      dforce = zeros(numel(force),size(q,1)+size(qd,1));
+      if (nargout>3)
+        [force,B_force,dforce,dB_force] = computeSpatialForce(obj.force{i},obj,q,qd);
+        dB = dB + dB_force;
+      else
+        [force,B_force] = computeSpatialForce(obj.force{i},obj,q,qd);
+      end
       B = B+B_force;
     else
       if (nargout>3)
@@ -49,7 +58,6 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
     df_ext = full(df_ext);
     [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd,f_ext,df_ext);
     dH = [dH, zeros(m.NB*m.NB,m.NB)];
-    dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
     [H,C] = HandCmex(obj.mex_model_ptr,q,qd,f_ext);
   end
@@ -203,7 +211,6 @@ else
     fc_drv = zeros(m.NB,1);
     fc_drv(ind) =dind;
     dC(:,m.NB+1:end) = dC(:,m.NB+1:end)+ diag(fc_drv);
-    dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
     [H,C] = HandC(m,q,qd,f_ext,obj.gravity);
   end
