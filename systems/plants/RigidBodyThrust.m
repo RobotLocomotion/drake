@@ -26,7 +26,7 @@ classdef RigidBodyThrust < RigidBodyForceElement
     function [force, B_mod, dforce, dB_mod] = computeSpatialForce(obj,manip,q,qd)
       %B_mod maps the input to generalized forces.
       
-      force = sparse(6,getNumBodies(manip));
+      force = sparse(6,getNumBodies(manip))*q(1);
       B_mod = manip.B*0*q(1); %initialize B_mod
 
       if (nargout>2)  % then compute gradients
