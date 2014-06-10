@@ -117,8 +117,6 @@ switch (options.method)
     transcriptionFun=@implicitDirtranSNOPTtranscription;
   case 'rtrl'
     transcriptionFun=@rtrlSNOPTtranscription;
-  case 'multipleShooting'
-    transcriptionFun=@multipleShootingSNOPTtranscription;
   otherwise
     error(['method ', options.method,' unknown, or not implemented yet']);
 end

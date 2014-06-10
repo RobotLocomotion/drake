@@ -1,4 +1,4 @@
-function distance = collisionRaycast(obj, kinsol, origin, ray_endpoint)
+function distance = collisionRaycast(obj, kinsol, origins, ray_endpoints)
 % function distance = collisionRaycast(obj,kinsol, origin, point_on_ray)
 %
 % Uses bullet to perform a raycast, returning the distance or -1 on no hit. 
@@ -7,9 +7,11 @@ function distance = collisionRaycast(obj, kinsol, origin, ray_endpoint)
 %
 % @param kinsol result of calling doKinematics(obj, q) where q is a
 %   position vector.
-% @param origin vector of size 3 indicating the origin of the ray
+% @param origin vector of size indicating the origin of the ray. Size is
+%   3 x N.
 % @param ray_endpoint vector of size 3 indicating the end point of the ray,
 %   specifying the direction and maximum length of the raycast.
+%   Size is 3 x N.
 %
 % @retval distance distance to the nearest hit on the ray, or -1 on no
 %    collision.
@@ -31,4 +33,4 @@ if (kinsol.mex ~= true)
     'Call doKinematics using mex before proceeding (got kinsol.mex ~= true).');
 end
 
-distance = collisionRaycastmex(obj.mex_model_ptr, origin, ray_endpoint);
+distance = collisionRaycastmex(obj.mex_model_ptr, origins, ray_endpoints);

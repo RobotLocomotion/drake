@@ -28,7 +28,7 @@ classdef RigidBodyThrust < RigidBodyForceElement
       kinsol = doKinematics(manip,q);
       
       [x,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
-      B_mod = manip.B*0; %initialize B_mod
+      B_mod = manip.B*0*q(1); %initialize B_mod
       
       axis_world = forwardKin(manip,kinsol,obj.kinframe,obj.axis);
       axis_world = axis_world-x;

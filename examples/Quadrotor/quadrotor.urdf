@@ -2,7 +2,9 @@
 
 <!-- adapted from https://github.com/ktossell/hector_quadrotor/tree/hydro-devel/hector_quadrotor_description/urdf -->
 
-<robot name="quadrotor">
+<robot xmlns="http://drake.mit.edu"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://drake.mit.edu ../../../../pods/drake/doc/drakeURDF.xsd" name="quadrotor">
   <link name="base_link">
     <inertial>
       <mass value="1.477"/>
@@ -16,6 +18,45 @@
       </geometry>
     </visual>
     <!-- note: the original hector quadrotor urdf had a (simplified, but still complex) collision mesh, too -->
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder radius=".3" length=".1"/>
+      </geometry>
+    </collision>      
   </link>
+
+  <force_element name="prop1">
+    <thrust lower_limit="0" upper_limit="10">
+      <parent link="base_link"/>
+      <origin xyz="0 .2 0"/>
+      <axis xyz="0 0 1"/>
+    </thrust>
+  </force_element>
+
+  <force_element name="prop2">
+    <thrust lower_limit="0" upper_limit="10">
+      <parent link="base_link"/>
+      <origin xyz=".2 0 0"/>
+      <axis xyz="0 0 1"/>
+    </thrust>
+  </force_element>
+  
+  <force_element name="prop3">
+    <thrust lower_limit="0" upper_limit="10">
+      <parent link="base_link"/>
+      <origin xyz="0 -.2 0"/>
+      <axis xyz="0 0 1"/>
+    </thrust>
+  </force_element>
+  
+  <force_element name="prop4">
+    <thrust lower_limit="0" upper_limit="10">
+      <parent link="base_link"/>
+      <origin xyz="-.2 0 0"/>
+      <axis xyz="0 0 1"/>
+    </thrust>
+  </force_element>
+  
 </robot>
 

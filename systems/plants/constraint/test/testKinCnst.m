@@ -2,25 +2,25 @@ function testKinCnst
 
 checkDependency('rigidbodyconstraint_mex');
 
-warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_chull.urdf'];
 aff_urdf = [getDrakePath,'/systems/plants/constraint/test/valve_task_wall.urdf'];
 
 options.floating = true;
-w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
-warning('off','Drake:RigidBodyManipulator:NonPSDInertia');
+warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 robot = RigidBodyManipulator(urdf,options);
 nq = robot.getNumDOF();
 
 robot_collision = RigidBodyManipulator(urdf_collision,options);
-warning(w);
 ignored_bodies = {'ltorso','mtorso','r_talus','l_talus'};
 robot_collision = addLinksToCollisionFilterGroup(robot_collision,ignored_bodies,'no_collision',1);
 robot_collision = robot_collision.compile();
 robot_aff = robot.addRobotFromURDF(aff_urdf,[0;0;0],[pi/2;0;0],struct('floating',false));
+warning(w);
 robot_collision_aff = robot_collision.addRobotFromURDF(aff_urdf,[0;0;0],[pi/2;0;0],struct('floating',false));
 robot_collision_aff.collision_filter_groups('aff') = CollisionFilterGroup();
 %aff_link_indices = find([robot_collision_aff.body.robotnum]==2);
