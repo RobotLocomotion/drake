@@ -1292,7 +1292,7 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 
   VectorXd vJ(6), fh(6), dfh(6), dvJdqd(6);
   MatrixXd XJ(6,6), dXJdq(6,6);
-  int i,j,k,n,np;
+  int i,j,k,n,np,nk;
   
   for (i=0; i<NB; i++) {
     n = dofnum[i];
@@ -1394,7 +1394,7 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
         for (k=0; k < NB; k++) {
           dIC[parent[i]][k] += Xup[i].transpose()*dIC[i][k]*Xup[i];
         }
-        dIC[parent[i]][i] += dXupdq[i].transpose()*IC[i]*Xup[i] + Xup[i].transpose()*IC[i]*dXupdq[i];
+        dIC[parent[i]][n] += dXupdq[i].transpose()*IC[i]*Xup[i] + Xup[i].transpose()*IC[i]*dXupdq[i];
       }
       
       if (dC) {
@@ -1422,15 +1422,16 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 
   if (dH) {
     for (k=0; k < NB; k++) {
+      nk = dofnum[k];
       for (i=0; i < NB; i++) {
         n = dofnum[i];
         fh = IC[i] * S[i];
-        dfh = dIC[i][k] * S[i]; //dfh/dqk
-        (*dH)(n + n*NB,k) = S[i].transpose() * dfh;
-        j = i; np=n;
+        dfh = dIC[i][nk] * S[i]; //dfh/dqk
+        (*dH)(n + n*NB,nk) = S[i].transpose() * dfh;
+        j = i; 
         while (parent[j] >= 0) {
           if (j==k) {
-            dfh = Xup[j].transpose() * dfh + dXupdq[k].transpose() * fh;
+            dfh = Xup[j].transpose() * dfh + dXupdq[j].transpose() * fh;
           } else {
             dfh = Xup[j].transpose() * dfh;
           }
@@ -1438,8 +1439,8 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
           
           j = parent[j];
           np = dofnum[j];
-          (*dH)(n + (np)*NB,k) = S[j].transpose() * dfh;
-          (*dH)(np + (n)*NB,k) = (*dH)(n + np*NB,k);
+          (*dH)(n + (np)*NB,nk) = S[j].transpose() * dfh;
+          (*dH)(np + (n)*NB,nk) = (*dH)(n + np*NB,nk);
         }
       }
     }

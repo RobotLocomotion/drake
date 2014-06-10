@@ -66,7 +66,7 @@ else
     
     %Derivatives
     dXupdq = cell(m.NB,1);
-    dvdq = cell(m.NB,1);  %dvdq{i,j} is d/dq(j) v{i}
+    dvdq = cell(m.NB,1);  %dvdq{i}(:,j) is d/dq(j) v{i}
     dvdqd = cell(m.NB,1);
     davpdq = cell(m.NB,1);
     davpdqd = cell(m.NB,1);
@@ -156,7 +156,7 @@ else
         for k=1:m.NB,
           dIC{m.parent(i),k} = dIC{m.parent(i),k} + Xup{i}'*dIC{i,k}*Xup{i};
         end
-        dIC{m.parent(i),i} = dIC{m.parent(i),i} + ...
+        dIC{m.parent(i),n} = dIC{m.parent(i),n} + ...
           dXupdq{i}'*IC{i}*Xup{i} + Xup{i}'*IC{i}*dXupdq{i};
       end
     end
@@ -168,16 +168,17 @@ else
     %Derivatives wrt q(k)
     dH = zeros(m.NB^2,2*m.NB)*q(1);
     for k = 1:m.NB
+      nk = m.dofnum(k);
       for i = 1:m.NB
         n = m.dofnum(i);
         fh = IC{i} * S{i};
-        dfh = dIC{i,k} * S{i};  %dfh/dqk
+        dfh = dIC{i,nk} * S{i};  %dfh/dqk
         H(n,n) = S{i}' * fh;
-        dH(n + (n-1)*m.NB,k) = S{i}' * dfh;
+        dH(n + (n-1)*m.NB,nk) = S{i}' * dfh;
         j = i;
         while m.parent(j) > 0
           if j==k,
-            dfh = Xup{j}' * dfh + dXupdq{k}' * fh;
+            dfh = Xup{j}' * dfh + dXupdq{j}' * fh;
           else
             dfh = Xup{j}' * dfh;
           end
@@ -188,8 +189,8 @@ else
           
           H(n,np) = S{j}' * fh;
           H(np,n) = H(n,np);
-          dH(n + (np-1)*m.NB,k) = S{j}' * dfh;
-          dH(np + (n-1)*m.NB,k) = dH(n + (np-1)*m.NB,k);
+          dH(n + (np-1)*m.NB,nk) = S{j}' * dfh;
+          dH(np + (n-1)*m.NB,nk) = dH(n + (np-1)*m.NB,nk);
         end
       end
     end
