@@ -1,11 +1,17 @@
-function [dH,dH_num,dH_nomex] = dHtest
+function dHtest
 p = RigidBodyManipulator('../Acrobot.urdf',struct('floating',true));
 q = randn(p.getNumPositions,1);
 v = randn(p.getNumPositions,1);
 
 [H,dH] = getH(q,v);
-[H_num,dH_num] = geval(@getH,q,v,struct('grad_method','taylorvar'));
-[H_nomex,dH_nomex] = getH_nomex(q,v);
+[H_tv,dH_tv] = geval(@getH,q,v,struct('grad_method','taylorvar'));
+[H_mat,dH_mat] = getH_nomex(q,v);
+[H_mex,dH_mex] = geval(@getH,q,v);
+valuecheck(H_mat,H_tv);
+valuecheck(dH_mat,dH_tv);
+valuecheck(H_mex,H_tv);
+valuecheck(dH_mex,dH_tv);
+
 
   function [H,dH] = getH(q,v)
     if (nargout>1)
