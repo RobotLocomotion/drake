@@ -232,7 +232,7 @@ JdotV = cell(1, nb);
 JdotV{1} = zeros(6, 1);
 if compute_gradients
   dJdotVdq = cell(1, nb);
-  dJdotVdq{1} = zeros(numel(JdotV{1}, nq));
+  dJdotVdq{1} = zeros(numel(JdotV{1}), nq);
 end
 
 for i = 2 : nb
