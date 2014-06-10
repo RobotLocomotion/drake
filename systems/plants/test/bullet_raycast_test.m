@@ -67,6 +67,7 @@ kinsol = doKinematics(rb, q0);
 distance = [];
 angles = [];
 
+% test the non vectorized case
 for angle = 0:.01:2*pi
     
     origin = [0; 0; zheight];
@@ -77,6 +78,21 @@ for angle = 0:.01:2*pi
     angles(end+1) = angle;
     distance(end+1) = collisionRaycast(rb, kinsol, origin, point_on_ray);
     
+end
+
+
+% test the vectorized case
+angles2 = 0:0.01:2*pi;
+origins = repmat(origin, 1, length(angles2));
+endpoints = [cos(angles2); sin(angles2); 0*angles2] * 1000;
+endpoints(3,:) = zheight;
+
+
+distance2 = collisionRaycast(rb, kinsol, origins, endpoints);
+
+
+if (distance' ~= distance2)
+  error('Error: vecotrized and non-vectorized raycast mismatch.');
 end
 
 if (use_visualizer == 1)
