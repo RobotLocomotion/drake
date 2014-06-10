@@ -108,11 +108,15 @@ classdef RigidBodyManipulator < Manipulator
         elseif bodyI.floating == 2
           qBody = q(bodyI.position_num);
           quat = qBody(4 : 7);
+          [quat, dquattildedquat] = normalizeVec(quat);
+          dqtildedotdqdot = blkdiag(eye(3), dquattildedquat);
           [R, dR] = quat2rotmat(quat);
           [M, dM] = quatdot2angularvelMatrix(quat);
-          VqJoint = [...
+          dvdqtildedot = [...
             zeros(3, 3), R' * M;
             R', zeros(3, 4)];
+          VqJoint = dvdqtildedot * dqtildedotdqdot;
+
           % TODO: directly use body frame representation:
 %           qs = quat(1);
 %           qv = quat(2:4);

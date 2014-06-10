@@ -37,21 +37,21 @@ computation_time = 0;
 n_tests = 10;
 epsilon = 1e-3;
 for test_number = 1 : n_tests
-  q = getRandomConfiguration(robot);
+  q = randn(robot.getNumPositions(), 1); % getRandomConfiguration(robot);
   kinsol = robot.doKinematics(q, false, false);
   
   end_effector = randi(body_range);
-  nPoints = 1; %randi([1, 10]);
+  nPoints = randi([1, 5]);
   points = randn(3, nPoints);
-  
+
   tic
   [~, J] = robot.forwardKin(kinsol, end_effector, points, rotation_type);
   computation_time = computation_time + toc * 1e3;
   
   option.grad_method = 'numerical';
   
-  [~, J_numerical] = geval(1, @(q) gevalFunction(robot, q, end_effector, points, rotation_type), q, option);
-  valuecheck(J_numerical, J, epsilon);
+  [~, J_geval] = geval(1, @(q) gevalFunction(robot, q, end_effector, points, rotation_type), q, option);
+  valuecheck(J_geval, J, epsilon);
   
 end
 
