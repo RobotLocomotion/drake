@@ -5,6 +5,7 @@ for parameterization = floatingBaseParameterizations
   robot = createAtlas(parameterization{:});
   testAtlasExternalWrenchVersusMassMatrix(robot);
   testTotalMomentumVersusTwistsTimesInertias(robot);
+  testGradients(robot);
 end
 
 end
@@ -64,4 +65,19 @@ for i = 1 : nTests
   
   valuecheck(h_check, h, 1e-10);
 end
+end
+
+function testGradients(robot)
+nq = robot.getNumPositions();
+nv = robot.getNumVelocities();
+
+q = randn(nq, 1);
+v = randn(nv, 1);
+kinsol = robot.doKinematics(q,true,false, v, true);
+[~, ~, dA, dAdot_times_v] = getCMM(robot, kinsol);
+
+option.grad_method = {'taylorvar'};
+[~, ~, dA_geval, dAdot_times_v_geval] = geval(2, @(q) robot.getCMM(robot.doKinematics(q, false, false, v, true)), q, option);
+valuecheck(dA_geval, dA, 1e-10);
+valuecheck(dAdot_times_v_geval, dAdot_times_v, 1e-10);
 end
