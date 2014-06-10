@@ -63,7 +63,8 @@ bodyRange = [1, nb];
 nTests = 10;
 
 for test = 1 : nTests
-  q = getRandomConfiguration(robot);
+%   q = getRandomConfiguration(robot);
+  q = randn(robot.getNumPositions(), 1);
   
   base = randi(bodyRange);
   end_effector = randi(bodyRange);
