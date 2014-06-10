@@ -23,7 +23,7 @@ classdef RigidBodyThrust < RigidBodyForceElement
       end
     end %constructor
     
-    function [force, B_mod] = computeSpatialForce(obj,manip,q,qd)
+    function [force, B_mod, dforce, dB_mod] = computeSpatialForce(obj,manip,q,qd)
       %B_mod maps the input to generalized forces.
       kinsol = doKinematics(manip,q);
       
@@ -37,6 +37,14 @@ classdef RigidBodyThrust < RigidBodyForceElement
       
       % apply force along the z-axis of the reference frame
       B_mod(:,obj.input_num) = obj.scaleFactor*J'*axis_world;
+      
+      if (nargout>2)
+        error('not implemented yet');
+        num_states = getNumStates(manip);
+        dforce = sparse(6*getNumBodies(manip),num_states);
+%        dB_mod((obj.input_num-1)*num_states + (1:num_states),:) = obj.scaleFactor*
+      end
+      
     end
     
   end
