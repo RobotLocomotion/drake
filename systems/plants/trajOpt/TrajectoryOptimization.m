@@ -59,11 +59,11 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     
     function obj = TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,constraints,options)
       %#ok<*PROP>
-      if nargin < 8
+      if nargin < 7
         constraints = {};
       end
       
-      if nargin < 9
+      if nargin < 8
         options = struct();
       end
       
@@ -108,7 +108,7 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
           cstr_inds = [];
           for k=1:length(time_index{j}),
             ind_k = time_index{j}(k);
-            cstr_inds = [cstr_inds;x_inds(:,ind_k)]; %#ok<AGROW>
+            cstr_inds = [cstr_inds;obj.x_inds(:,ind_k)]; %#ok<AGROW>
           end
           
           constraints{i}.var_inds{j} = cstr_inds;
