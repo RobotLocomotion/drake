@@ -375,6 +375,75 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         plhs[0] = createDrakeConstraintMexPointer((void*)cnst, "deleteRigidBodyConstraintmex","RelativeGazeTargetConstraint");
       }
       break;
+    // RelativeGazeDirConstraint
+    case RigidBodyConstraint::RelativeGazeDirConstraintType:
+      {
+        if(nrhs != 6 && nrhs != 7 && nrhs != 8)
+        {  
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Usage ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint::RelativeGazeDirConstraintType, robot.mex_model_ptr,bodyA,bodyB,axis,dir,conethreshold,tspan)");
+        }
+        RigidBodyManipulator* model = (RigidBodyManipulator*) getDrakeMexPointer(prhs[1]);
+        Vector2d tspan;
+        if(nrhs < 8)
+        {
+          tspan<<-mxGetInf(),mxGetInf();
+        }
+        else
+        {
+          rigidBodyConstraintParseTspan(prhs[7],tspan);
+        }
+        if(!mxIsNumeric(prhs[2]) || !mxIsNumeric(prhs[3]) || mxGetNumberOfElements(prhs[2]) != 1 || mxGetNumberOfElements(prhs[3]) != 1)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","bodyA and bodyB should be numeric scalars");
+        }
+        int bodyA_idx = (int) mxGetScalar(prhs[2])-1;
+        int bodyB_idx = (int) mxGetScalar(prhs[3])-1;
+        if(!mxIsNumeric(prhs[4]) || mxGetM(prhs[4]) != 3 || mxGetN(prhs[4]) != 1)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","axis should be 3x1 vector");
+        }
+        Vector3d axis;
+        memcpy(axis.data(),mxGetPr(prhs[4]),sizeof(double)*3);
+        double axis_norm = axis.norm();
+        if(axis_norm<1e-10)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","axis should be a nonzero vector");
+        }
+        axis = axis/axis_norm;
+        if(!mxIsNumeric(prhs[5]) || mxGetM(prhs[5]) != 3 || mxGetN(prhs[5]) != 1)
+        {
+          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","dir should be 3x1 vector");
+        }
+        Vector3d dir;
+        memcpy(dir.data(),mxGetPr(prhs[5]),sizeof(double)*3);
+        double conethreshold;
+        if(nrhs<7)
+        {
+          conethreshold = 0.0;
+        }
+        else
+        {
+          if(!mxIsNumeric(prhs[6]) || mxGetNumberOfElements(prhs[6]) != 1)
+          {
+            if(mxGetNumberOfElements(prhs[6]) == 0)
+            {
+              conethreshold = 0.0;
+            }
+            else
+            {
+              mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","conethreshold should be a double scalar");
+            }
+          }
+          conethreshold = mxGetScalar(prhs[6]);
+          if(conethreshold<0)
+          {
+            mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","conethreshold should be nonnegative");
+          }
+        }
+        RelativeGazeDirConstraint* cnst = new RelativeGazeDirConstraint(model,bodyA_idx, bodyB_idx,axis,dir,conethreshold,tspan);
+        plhs[0] = createDrakeConstraintMexPointer((void*)cnst, "deleteRigidBodyConstraintmex","RelativeGazeDirConstraint");
+      }
+      break;
       // WorldCoMConstraint
     case RigidBodyConstraint::WorldCoMConstraintType:
       {

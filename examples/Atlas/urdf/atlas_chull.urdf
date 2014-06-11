@@ -561,14 +561,14 @@
     <member link="r_uleg"/>
     <ignored_collision_filter_group collision_filter_group="core"/>
     <ignored_collision_filter_group collision_filter_group="r_uleg"/>
-    <!--<ignored_collision_filter_group collision_filter_group="l_uleg"/>-->
+    <ignored_collision_filter_group collision_filter_group="l_uleg"/>
   </collision_filter_group>
   <collision_filter_group name="l_uleg">
     <member link="l_uglut"/>
     <member link="l_lglut"/>
     <member link="l_uleg"/>
     <ignored_collision_filter_group collision_filter_group="core"/>
-    <!--<ignored_collision_filter_group collision_filter_group="r_uleg"/>-->
+    <ignored_collision_filter_group collision_filter_group="r_uleg"/>
     <ignored_collision_filter_group collision_filter_group="l_uleg"/>
   </collision_filter_group>
   <collision_filter_group name="r_leg">

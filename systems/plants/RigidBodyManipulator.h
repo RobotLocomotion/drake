@@ -4,7 +4,8 @@
 #include <Eigen/Dense>
 #include <Eigen/LU>
 #include <set>
-#include <vector>
+//#include <vector>
+#include <Eigen/StdVector>
 
 #include "collision/Model.h"
 
@@ -20,8 +21,7 @@ class RigidBodyManipulator
 {
 public:
   RigidBodyManipulator(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
-  ~RigidBodyManipulator(void);
-  
+
   void resize(int num_dof, int num_featherstone_bodies=-1, int num_rigid_body_objects=-1, int num_rigid_body_frames=0);
 
   void compile(void);  // call me after the model is loaded
@@ -65,12 +65,13 @@ public:
   template <typename DerivedA, typename DerivedB>
   void forwarddJac(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &dJ);
 
-  template <typename DerivedA, typename DerivedB>
-  void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x);
+  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
+  void bodyKin(const int body_ind, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J=NULL, MatrixBase<DerivedD> *P=NULL);
 
 
-  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
-  void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL);
+  template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
+  void HandC(double* const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH=NULL, MatrixBase<DerivedE> *dC=NULL, MatrixBase<DerivedF> * const df_ext=NULL);
+
 
   void addCollisionElement(const int body_ind, Matrix4d T_elem_to_lnk, DrakeCollision::Shape shape, std::vector<double> params);
 
@@ -86,6 +87,8 @@ public:
   bool getPointCollision(const int body_ind, const int body_collision_ind, Vector3d &ptA, Vector3d &ptB, Vector3d &normal);
 
   bool getPairwiseClosestPoint(const int body_indA, const int body_indB, Vector3d &ptA, Vector3d &ptB, Vector3d &normal, double &distance);
+  
+  bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances);
 
   //bool closestPointsAllBodies( MatrixXd& ptsA, MatrixXd& ptsB,
                                //MatrixXd& normal, VectorXd& distance,
@@ -98,6 +101,10 @@ public:
                         std::vector<int>& bodyB_idx,
                         std::vector<int>& bodies_idx);
 
+
+  bool allCollisions(std::vector<int>& bodyA_idx, std::vector<int>& bodyB_idx, 
+                     MatrixXd& ptsA, MatrixXd& ptsB);
+
   //bool closestDistanceAllBodies(VectorXd& distance, MatrixXd& Jd);
   
   int findLinkInd(std::string linkname, int robot = -1);
@@ -106,55 +113,55 @@ public:
   std::vector<std::string> robot_name;
 
   int num_dof;
-  double* joint_limit_min;
-  double* joint_limit_max;
+  VectorXd joint_limit_min;
+  VectorXd joint_limit_max;
 
   // Rigid body objects
   int num_bodies;  // rigid body objects
-  RigidBody* bodies;
+  std::vector<RigidBody,Eigen::aligned_allocator<RigidBody> > bodies;
 
   // Rigid body frames
   int num_frames;
-  RigidBodyFrame* frames;
+  std::vector<RigidBodyFrame,Eigen::aligned_allocator<RigidBodyFrame> > frames;
 
   // featherstone data structure
   int NB;  // featherstone bodies
-  int *pitch;
-  int *parent;
-  int *dofnum;
-  double* damping;
-  double* coulomb_friction;
-  double* coulomb_window;
-  double* static_friction;
-  MatrixXd* Xtree;
-  MatrixXd* I;
+  VectorXi pitch;
+  VectorXi parent;
+  VectorXi dofnum;
+  VectorXd damping;
+  VectorXd coulomb_friction;
+  VectorXd coulomb_window;
+  VectorXd static_friction;
+  std::vector<MatrixXd> Xtree;
+  std::vector<MatrixXd> I;
   VectorXd a_grav;
 
-  double *cached_q, *cached_qd;  // these should be private
+  VectorXd cached_q, cached_qd;  // these should be private
 
 
 private:
   int parseBodyOrFrameID(const int body_or_frame_id, Matrix4d& Tframe);
 
   // variables for featherstone dynamics
-  VectorXd* S;
-  MatrixXd* Xup;
-  VectorXd* v;
-  VectorXd* avp;
-  VectorXd* fvp;
-  MatrixXd* IC;
+  std::vector<VectorXd> S;
+  std::vector<MatrixXd> Xup;
+  std::vector<VectorXd> v;
+  std::vector<VectorXd> avp;
+  std::vector<VectorXd> fvp;
+  std::vector<MatrixXd> IC;
 
   //Variables for gradient calculations
   MatrixXd dTdTmult;
-  MatrixXd* dXupdq;
-  MatrixXd** dIC;
+  std::vector<MatrixXd> dXupdq;
+  std::vector<std::vector<MatrixXd>> dIC;
 
-  MatrixXd* dvdq;
-  MatrixXd* dvdqd;
-  MatrixXd* davpdq;
-  MatrixXd* davpdqd;
-  MatrixXd* dfvpdq;
-  MatrixXd* dfvpdqd;
+  std::vector<MatrixXd> dvdq;
+  std::vector<MatrixXd> dvdqd;
+  std::vector<MatrixXd> davpdq;
+  std::vector<MatrixXd> davpdqd;
+  std::vector<MatrixXd> dfvpdq;
+  std::vector<MatrixXd> dfvpdqd;
   MatrixXd dvJdqd_mat;
   MatrixXd dcross;
 
@@ -166,12 +173,12 @@ private:
   // preallocate for CMM function
   MatrixXd Xg; // spatial centroidal projection matrix
   MatrixXd dXg;  // dXg_dq * qd  
-  MatrixXd *Ic; // body spatial inertias
-  MatrixXd *dIc; // derivative of body spatial inertias
-  VectorXd *phi; // joint axis vectors
-  MatrixXd *Xworld; // spatial transforms from world to each body
-  MatrixXd *dXworld; // dXworld_dq * qd
-  MatrixXd *dXup; // dXup_dq * qd 
+  std::vector<MatrixXd> Ic; // body spatial inertias
+  std::vector<MatrixXd> dIc; // derivative of body spatial inertias
+  std::vector<VectorXd> phi; // joint axis vectors
+  std::vector<MatrixXd> Xworld; // spatial transforms from world to each body
+  std::vector<MatrixXd> dXworld; // dXworld_dq * qd
+  std::vector<MatrixXd> dXup; // dXup_dq * qd 
   MatrixXd Xcom; // spatial transform from centroid to world
   MatrixXd Jcom; 
   MatrixXd dXcom;

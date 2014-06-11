@@ -93,8 +93,9 @@ for i=1:100
   valuecheck(xbm,xb);
 end
 
-
+w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 p = RigidBodyManipulator('../../../examples/Pendulum/test/PendulumWithFriction.urdf');
+warning(w);
 
 nq = p.getNumStates()/2;
 

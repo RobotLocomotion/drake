@@ -69,6 +69,7 @@ class RigidBodyConstraint
     static const int PostureChangeConstraintType                = 19;
     static const int RelativePositionConstraintType             = 20;
     static const int RelativeQuatConstraintType                 = 24;
+    static const int RelativeGazeDirConstraintType                 = 25;
 };
 
 /**
@@ -141,15 +142,15 @@ class QuasiStaticConstraint: public RigidBodyConstraint
 class PostureConstraint: public RigidBodyConstraint
 {
   protected:
-    double* lb;
-    double* ub;
+    Eigen::VectorXd lb;
+    Eigen::VectorXd ub;
   public:
     PostureConstraint(RigidBodyManipulator *model, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     PostureConstraint(const PostureConstraint& rhs);
     bool isTimeValid(const double* t) const;
-    void setJointLimits(int num_idx, const int* joint_idx, const double* lb, const double* ub);
-    void bounds(const double* t,double* joint_min, double* joint_max) const;
-    virtual ~PostureConstraint(void);
+    void setJointLimits(int num_idx, const int* joint_idx, const Eigen::VectorXd& lb, const Eigen::VectorXd& ub);
+    void bounds(const double* t,Eigen::VectorXd& joint_min, Eigen::VectorXd& joint_max) const;
+    virtual ~PostureConstraint(void) {};
 };
 
 /*
@@ -232,6 +233,7 @@ class SingleTimeLinearPostureConstraint: public RigidBodyConstraint
     void geval(const double* t, Eigen::VectorXi &iAfun, Eigen::VectorXi &jAvar, Eigen::VectorXd &A) const;
     void eval(const double* t, const Eigen::VectorXd &q, Eigen::VectorXd &c, Eigen::SparseMatrix<double> &dc) const;
     void name(const double* t, std::vector<std::string> &name_str) const;
+    virtual ~SingleTimeLinearPostureConstraint(void) {};
 };
 
 /*
@@ -273,9 +275,9 @@ class MultipleTimeKinematicConstraint : public RigidBodyConstraint
 class PositionConstraint : public SingleTimeKinematicConstraint
 {
   protected:
-    double* lb;
-    double* ub;
-    bool* null_constraint_rows;
+    Eigen::VectorXd lb;
+    Eigen::VectorXd ub;
+    std::vector<bool> null_constraint_rows;
     Eigen::MatrixXd pts; 
     int n_pts;
     virtual void evalPositions(Eigen::MatrixXd &pos,Eigen::MatrixXd &J) const = 0;
@@ -286,7 +288,7 @@ class PositionConstraint : public SingleTimeKinematicConstraint
     virtual void eval(const double* t,Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
-    virtual ~PositionConstraint();
+    virtual ~PositionConstraint(void) {};
 };
 
 class WorldPositionConstraint: public PositionConstraint
@@ -355,6 +357,9 @@ class WorldQuatConstraint: public QuatConstraint
     WorldQuatConstraint(RigidBodyManipulator *model, int body, Eigen::Vector4d quat_des, double tol, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~WorldQuatConstraint();
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class RelativeQuatConstraint: public QuatConstraint
@@ -370,22 +375,25 @@ class RelativeQuatConstraint: public QuatConstraint
     RelativeQuatConstraint(RigidBodyManipulator *model, int bodyA_idx, int bodyB_idx, Eigen::Vector4d &quat_des, double tol, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~RelativeQuatConstraint();
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class EulerConstraint: public SingleTimeKinematicConstraint
 {
   protected:
-    double* ub;
-    double* lb;
+    Eigen::VectorXd ub;
+    Eigen::VectorXd lb;
     bool null_constraint_rows[3];
-    double* avg_rpy;
+    Eigen::VectorXd avg_rpy;
     virtual void evalrpy(Eigen::Vector3d &rpy, Eigen::MatrixXd &J) const = 0;
   public:
     EulerConstraint(RigidBodyManipulator *model, Eigen::Vector3d lb, Eigen::Vector3d ub, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     EulerConstraint(const EulerConstraint &rhs);
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
-    virtual ~EulerConstraint();
+    virtual ~EulerConstraint(void) {};
 };
 
 class WorldEulerConstraint: public EulerConstraint
@@ -408,6 +416,9 @@ class GazeConstraint : public SingleTimeKinematicConstraint
   public:
     GazeConstraint(RigidBodyManipulator *model, Eigen::Vector3d axis, double conethreshold = 0.0, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual ~GazeConstraint(void){};
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class GazeOrientConstraint : public GazeConstraint
@@ -421,6 +432,8 @@ class GazeOrientConstraint : public GazeConstraint
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void bounds(const double* t,Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeOrientConstraint(void){};
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class WorldGazeOrientConstraint: public GazeOrientConstraint
@@ -443,6 +456,8 @@ class GazeDirConstraint: public GazeConstraint
     GazeDirConstraint(RigidBodyManipulator* model, Eigen::Vector3d axis, Eigen::Vector3d dir,double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeDirConstraint(void){};
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class WorldGazeDirConstraint: public GazeDirConstraint
@@ -466,6 +481,8 @@ class GazeTargetConstraint: public GazeConstraint
     GazeTargetConstraint(RigidBodyManipulator* model, Eigen::Vector3d axis, Eigen::Vector3d target, Eigen::Vector4d gaze_origin, double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~GazeTargetConstraint(void){};
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class WorldGazeTargetConstraint: public GazeTargetConstraint
@@ -492,6 +509,20 @@ class RelativeGazeTargetConstraint: public GazeTargetConstraint
     virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual ~RelativeGazeTargetConstraint(void){};
+};
+
+class RelativeGazeDirConstraint: public GazeDirConstraint
+{
+  protected:
+    int bodyA_idx;
+    int bodyB_idx;
+    std::string bodyA_name;
+    std::string bodyB_name;
+  public:
+    RelativeGazeDirConstraint(RigidBodyManipulator* model, int bodyA_idx, int bodyB_idx, const Eigen::Vector3d &axis, const Eigen::Vector3d &dir, double conethreshold, Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
+    virtual void eval(const double* t, Eigen::VectorXd &c, Eigen::MatrixXd &dc) const;
+    virtual void name(const double* t, std::vector<std::string> &name_str) const;
+    virtual ~RelativeGazeDirConstraint(void){};
 };
 
 class Point2PointDistanceConstraint: public SingleTimeKinematicConstraint
@@ -526,6 +557,8 @@ class Point2LineSegDistConstraint: public SingleTimeKinematicConstraint
     virtual void name(const double* t, std::vector<std::string> &name_str) const;
     virtual void bounds(const double* t, Eigen::VectorXd &lb, Eigen::VectorXd &ub) const;
     virtual ~Point2LineSegDistConstraint(void){};
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class WorldFixedPositionConstraint: public MultipleTimeKinematicConstraint
@@ -600,6 +633,8 @@ class WorldPositionInFrameConstraint: public WorldPositionConstraint
         const Eigen::MatrixXd &pts, const Eigen::Matrix4d& T_world_to_frame, 
         Eigen::MatrixXd lb, Eigen::MatrixXd ub, const Eigen::Vector2d &tspan = DrakeRigidBodyConstraint::default_tspan);
     virtual ~WorldPositionInFrameConstraint();
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 class PostureChangeConstraint: public MultipleTimeLinearPostureConstraint

@@ -170,7 +170,7 @@ methods
       
       aoa_command = setOutputFrame(ConstantTrajectory(.5),getInputFrame(r));
       ytraj = simulate(cascade(aoa_command,r),[0 5]);
-      v.playback(ytraj,struct('slider','true'));
+      v.playback(ytraj);
     end
   end
 end

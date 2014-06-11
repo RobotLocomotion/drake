@@ -314,6 +314,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             JL = sparse(1:obj.manip.num_u,pos_control_index,1,obj.manip.num_u,obj.manip.num_q);
             phiL = [phiL;-phiL]; JL = [JL;-JL];
             % dJ = 0 by default, which is correct here
+            dJL = zeros(length(phiL),num_q^2);
           else
             if (nargout<5)
               [phiL,JL] = obj.manip.jointLimitConstraints(q);
@@ -611,6 +612,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function n = getNumDOF(obj)
       error('getNumDOF is deprecated.  In order to fully support quaternion floating base dynamics, we had to change the interface to allow a different number position and velocity elements in the state vector.  Use getNumPositions() and getNumVelocities() instead.');
     end
+
+    function g = getGravity(obj)
+      g = getGravity(obj.manip);
+    end
     
     function n = getNumPositions(obj)
       n = obj.manip.num_positions;
@@ -768,16 +773,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = pairwiseContactConstraintsBV(obj.manip,varargin{:});
     end
 
-    function varargout = contactPositions(obj,varargin)
-      varargout=cell(1,nargout);
-      [varargout{:}] = contactPositions(obj.manip,varargin{:});
-    end
-    
-    function varargout = contactPositionsJdot(obj,varargin)
-      varargout=cell(1,nargout);
-      [varargout{:}] = contactPositionsJdot(obj.manip,varargin{:});
-    end
-    
     function varargout = resolveConstraints(obj,x0,varargin)
       varargout=cell(1,nargout);
       if isnumeric(x0)
@@ -800,10 +795,6 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function varargout = getCMM(obj,varargin)
       varargout=cell(1,nargout);
       [varargout{:}] = getCMM(obj.manip,varargin{:});
-    end
-
-    function grav = getGravity(obj)
-      grav = obj.manip.gravity;
     end
 
     function joint_ind = findJointInd(model,varargin)
@@ -954,6 +945,15 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function model = setParams(model,p)
       model.manip = setParams(model.manip,p);
+    end
+
+    function terrain_contact_point_struct = getTerrainContactPoints(obj,varargin)
+      terrain_contact_point_struct = getTerrainContactPoints(obj.manip,varargin{:});
+    end
+
+    function varargout = terrainContactPositions(obj,varargin)
+      varargout = cell(1,nargout);
+      [varargout{:}] = terrainContactPositions(obj.manip,varargin{:});
     end
     
   end

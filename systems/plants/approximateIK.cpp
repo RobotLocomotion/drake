@@ -17,8 +17,11 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
   SingleTimeKinematicConstraint** kc_array = new SingleTimeKinematicConstraint*[num_constraints];
   double* joint_lb= new double[nq];
   double* joint_ub= new double[nq];
-  memcpy(joint_lb,model->joint_limit_min,sizeof(double)*nq);
-  memcpy(joint_ub,model->joint_limit_max,sizeof(double)*nq);
+  for(int j = 0;j<nq;j++)
+  {
+    joint_lb[j] = model->joint_limit_min[j];
+    joint_ub[j] = model->joint_limit_max[j];
+  }
   for(int i = 0;i<num_constraints;i++)
   {
     int constraint_category = constraint_array[i]->getCategory();
@@ -29,8 +32,7 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
     }
     else if(constraint_category == RigidBodyConstraint::PostureConstraintCategory)
     {
-      double* joint_min = new double[nq];
-      double* joint_max = new double[nq];
+      VectorXd joint_min, joint_max;
       PostureConstraint* pc = static_cast<PostureConstraint*>(constraint_array[i]);
       pc->bounds(nullptr,joint_min,joint_max);
       for(int j = 0;j<nq;j++)
@@ -42,8 +44,6 @@ void approximateIK(RigidBodyManipulator* model, const MatrixBase<DerivedA> &q_se
           cerr<<"Drake:approximateIK:posture constraint has lower bound larger than upper bound"<<endl;
         }
       }
-      delete[] joint_min;
-      delete[] joint_max;
     }
     else
     {

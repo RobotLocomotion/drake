@@ -6,13 +6,42 @@ using namespace std;
 
 namespace DrakeCollision
 {
+  bool OverlapFilterCallback::needBroadphaseCollision(btBroadphaseProxy* proxy0,
+      btBroadphaseProxy* proxy1) const
+  {
+    bool collides = (proxy0->m_collisionFilterGroup & proxy1->m_collisionFilterMask) != 0;
+    collides = collides && (proxy1->m_collisionFilterGroup &
+        proxy0->m_collisionFilterMask);
+
+    //add some additional logic here that modified 'collides'
+    if (collides) {
+      btCollisionObject* bt_collision_object0 = (btCollisionObject*) proxy0->m_clientObject;
+      btCollisionObject* bt_collision_object1 = (btCollisionObject*) proxy1->m_clientObject;
+      if ((bt_collision_object0->getUserPointer() == NULL) || 
+          (bt_collision_object1->getUserPointer() == NULL)) {
+        return false;
+      }
+      auto element_data0 = static_cast< ElementData* >(bt_collision_object0->getUserPointer());
+      auto element_data1 = static_cast< ElementData* >(bt_collision_object1->getUserPointer());
+      const Body<BulletElement>& body0 = parent_model->getBody(element_data0->body_idx);
+      const Body<BulletElement>& body1 = parent_model->getBody(element_data1->body_idx);
+      collides = (body0.getBodyIdx() != body1.getBodyIdx());
+      collides = collides && !body0.adjacentTo(body1);
+      collides = collides && body0.collidesWith(body1);
+    }
+    return collides;
+  }
+
   BulletModel::BulletModel()
     : bt_collision_configuration(),
-      bt_collision_broadphase()
+      bt_collision_broadphase(),
+      filter_callback()
   {
     bt_collision_dispatcher =  new btCollisionDispatcher( &bt_collision_configuration );
     bt_collision_world = new btCollisionWorld(bt_collision_dispatcher,
         &bt_collision_broadphase, &bt_collision_configuration);
+    filter_callback.parent_model = this;
+    bt_collision_world->getPairCache()->setOverlapFilterCallback(&filter_callback);
   }
   BulletModel::~BulletModel() {
     delete bt_collision_world;
@@ -30,6 +59,8 @@ namespace DrakeCollision
       ModelTemplate::addElement(body_idx,parent_idx, T_element_to_link, shape, 
                                 params, is_static);
       const BulletElement& elem = bodies.at(body_idx).back();
+      element_data.push_back(unique_ptr<ElementData>(new ElementData(body_idx,elem.getShape())));
+      elem.bt_obj->setUserPointer(element_data.back().get());
       bt_collision_world->addCollisionObject(elem.bt_obj.get());
       if (is_static) {
         elem.bt_obj->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
@@ -209,5 +240,84 @@ namespace DrakeCollision
 
     return (c->pts.size() > 0);
   };
+  
+  bool BulletModel::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances)
+  {
+    
+    distances.resize(origins.cols());
+    
+    for (int i = 0; i < origins.cols(); i ++)
+    {
+    
+        btVector3 ray_from_world(origins(0,i), origins(1,i), origins(2,i));
+        btVector3 ray_to_world(ray_endpoints(0,i), ray_endpoints(1,i), ray_endpoints(2,i));
+        
+        btCollisionWorld::ClosestRayResultCallback ray_callback(ray_from_world, ray_to_world);
+        
+        bt_collision_world->rayTest(ray_from_world, ray_to_world, ray_callback);
+        
+        if (ray_callback.hasHit()) {
+            
+            // compute distance to hit
+            
+            btVector3 end = ray_callback.m_hitPointWorld;
+            
+            Vector3d end_eigen(end.getX(), end.getY(), end.getZ());
+            
+            distances(i) = (end_eigen - origins.col(i)).norm();
+            
+            
+        } else {
+            distances(i) = -1;
+        }
+    }
+    
+    return true;
+  } 
 
+
+  bool BulletModel::allCollisions(vector<int>& bodyA_idx, 
+      vector<int>& bodyB_idx, 
+      MatrixXd& ptsA, MatrixXd& ptsB)
+  {
+    BulletResultCollector c;
+    MatrixXd normals;
+    vector<double> distance;
+    bt_collision_world->performDiscreteCollisionDetection();
+    int numManifolds = bt_collision_world->getDispatcher()->getNumManifolds();
+    for (int i=0;i<numManifolds;i++)
+    {
+      btPersistentManifold* contactManifold =  bt_collision_world->getDispatcher()->getManifoldByIndexInternal(i);
+      const btCollisionObject* obA = contactManifold->getBody0();
+      const btCollisionObject* obB = contactManifold->getBody1();
+      auto element_dataA = static_cast< ElementData*  >(obA->getUserPointer());
+      auto element_dataB = static_cast< ElementData*  >(obB->getUserPointer());
+      int bodyA_idx_i = element_dataA->body_idx;
+      int bodyB_idx_i = element_dataB->body_idx;
+      Shape shapeA = element_dataA->shape;
+      Shape shapeB = element_dataB->shape;
+      double marginA = 0;
+      double marginB = 0;
+      if (shapeA == MESH) { 
+        marginA = obA->getCollisionShape()->getMargin();
+      }
+      if (shapeB == MESH) { 
+        marginB = obB->getCollisionShape()->getMargin();
+      }
+      int numContacts = contactManifold->getNumContacts();
+      for (int j=0;j<numContacts;j++)
+      {        btManifoldPoint& pt = contactManifold->getContactPoint(j);
+        if (pt.getDistance()+marginA+marginB<0.f)
+        {
+          const btVector3& normalOnB = pt.m_normalWorldOnB;
+          const btVector3& ptA = pt.getPositionWorldOnA() + normalOnB*marginA;
+          const btVector3& ptB = pt.getPositionWorldOnB() - normalOnB*marginB;
+          c.addSingleResult(bodyA_idx_i,bodyB_idx_i,toVector3d(ptA),toVector3d(ptB),
+                            toVector3d(normalOnB),(double) pt.getDistance());
+        }
+      }
+    }   
+    c.getResults(bodyA_idx,bodyB_idx,ptsA,ptsB,normals,distance);
+    return c.pts.size() > 0;
+  }
 }

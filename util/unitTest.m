@@ -668,6 +668,7 @@ else
     if ((strncmp(ex.identifier,'Drake:MissingDependency',23)))
       % ok to let these slip through
       warning(ex.message);
+%      disp(getReport(ex,'extended'))
       lasterr(ex.message,ex.identifier);
       if ~isempty(cdashTestNode)
         appendTextNode(options.cdashNode,cdashCompletionStatus,'Value',ex.message);

@@ -13,5 +13,5 @@ function con = makeCon(r)
   ax = rand(3,1)-[0;0.5;0.5];
   %x = 1; y = 0; z = 0;
   ax = ax/norm(ax);
-  con = RelativeGazeDirConstraint(r,bodyA_idx,bodyB_idx,ax,direction,pi/12,[0 1])
+  con = RelativeGazeDirConstraint(r,bodyA_idx,bodyB_idx,ax,direction,pi/12,[0 1]);
 end

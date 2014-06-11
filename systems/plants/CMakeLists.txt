@@ -1,4 +1,7 @@
 
+# IMPORTANT NOTE!! 
+# matlab has it's own boost libraries.  DO NOT let any mex file depend
+# on the system boost (directly nor indirectly), or you're asking for trouble.
 find_package( Boost COMPONENTS filesystem system regex)
 
 include_directories (${CMAKE_SOURCE_DIR}/util )
@@ -51,6 +54,8 @@ if (eigen3_FOUND)
   add_rbm_mex(forwardKinmex)
   add_rbm_mex(bodyKinmex)
   add_rbm_mex(collisionDetectmex)
+  add_rbm_mex(collisionRaycastmex)
+  add_rbm_mex(allCollisionsmex)
   add_rbm_mex(getCMMmex)
 
   add_library(drakeIKoptions SHARED IKoptions.cpp)

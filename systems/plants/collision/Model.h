@@ -66,6 +66,20 @@ namespace DrakeCollision
                                                MatrixXd& normal, 
                                                VectorXd& distance,
                                                std::vector<int>& bodies_idx)=0;
+
+      virtual bool allCollisions(std::vector<int>& bodyA_idx, 
+                                  std::vector<int>& bodyB_idx, 
+                                  MatrixXd& ptsA, MatrixXd& ptsB)=0;
+                                  
+      /**
+        * Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
+        *
+        * @param origins MatrixX3d specifying the position of the rays' origin
+        * @param ray_endpoints MatrixX3d specifying the end ponit of each ray in world coordinates
+        * @param distances returned VectorXd to the for each ray, or -1 on no collision
+        * 
+        */
+      virtual bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances)=0;
   };
 
   std::shared_ptr<Model> newModel();

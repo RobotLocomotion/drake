@@ -2,28 +2,25 @@ function testKinCnst
 
 checkDependency('rigidbodyconstraint_mex');
 
-warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_chull.urdf'];
 aff_urdf = [getDrakePath,'/systems/plants/constraint/test/valve_task_wall.urdf'];
 
 options.floating = true;
-w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
-warning('off','Drake:RigidBodyManipulator:NonPSDInertia');
+warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 robot = RigidBodyManipulator(urdf,options);
 nq = robot.getNumDOF();
 
-robot_aff = robot.addRobotFromURDF(aff_urdf,[0;0;0],[pi/2;0;0],struct('floating',false));
-nq_aff = robot_aff.getNumDOF();
-
 robot_collision = RigidBodyManipulator(urdf_collision,options);
-warning(w);
 ignored_bodies = {'ltorso','mtorso','r_talus','l_talus'};
 robot_collision = addLinksToCollisionFilterGroup(robot_collision,ignored_bodies,'no_collision',1);
 robot_collision = robot_collision.compile();
 robot_aff = robot.addRobotFromURDF(aff_urdf,[0;0;0],[pi/2;0;0],struct('floating',false));
+warning(w);
 robot_collision_aff = robot_collision.addRobotFromURDF(aff_urdf,[0;0;0],[pi/2;0;0],struct('floating',false));
 robot_collision_aff.collision_filter_groups('aff') = CollisionFilterGroup();
 %aff_link_indices = find([robot_collision_aff.body.robotnum]==2);
@@ -33,7 +30,6 @@ robot_collision_aff = robot_collision_aff.addLinksToCollisionFilterGroup(linknam
 robot_collision_aff = robot_collision_aff.addToIgnoredListOfCollisionFilterGroup('aff','aff');
 robot_collision_aff = robot_collision_aff.compile();
 
-nq_aff = robot_aff.getNumDOF();
 
 l_foot = robot.findLinkInd('l_foot');
 r_foot = robot.findLinkInd('r_foot');
@@ -50,65 +46,77 @@ r_foot_pts = zeros(3,nRPts);
 for i=1:nRPts,
   r_foot_pts(:,i) = robot.getBody(r_foot).getContactShapes{i}.getPoints;
 end
-l_hand_pts = [0;0;0];
-r_hand_pts = [0;0;0];
 
-nom_data = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
 q = randn(nq,1);
 % q_aff = randn(nq_aff,1);
 q_aff = [q;randn(length(robot_aff.getStateFrame.frame{2}.coordinates)/2,1)];
 tspan0 = [0,1];
 tspan1 = [];
-t = 0.5;
-
+t_valid = 0.5;
+t_invalid = 1000;
 q_rot1 = q;
 q_rot1(6) = pi/2 + 0.01;
 kinsol = doKinematics(robot, q_rot1);
 l_foot_pos = forwardKin(robot, kinsol, l_foot, l_foot_pts, 2);
 
 display('Check world CoM constraint');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot,robot_aff,[0;0;0.9],[0;0;1],tspan0,1);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot,robot_aff,[0;0;0.9],[0;0;1],tspan0,1);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldCoMConstraintType,robot,[0;0;0.9],[0;0;1],tspan0,1);
 display('Check world CoM constraint with empty robot number');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot,robot_aff,[0;0;0.9],[0;0;1],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot,robot_aff,[0;0;0.9],[0;0;1],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldCoMConstraintType,robot,[0;0;0.9],[0;0;1],tspan0);
 display('Check world CoM constraint with empty tspan');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot,robot_aff,[0;0;0.9],[0;0;1]);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot,robot_aff,[0;0;0.9],[0;0;1]);
 display('Check world CoM constraint with nan');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot,robot_aff,[-inf;nan;0.9],[nan;inf;0.92],tspan0/2);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot,robot_aff,[-inf;nan;0.9],[nan;inf;0.92],tspan0/2);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldCoMConstraintType,robot,[-inf;nan;0.9],[nan;inf;0.92],tspan0/2);
 display('Check world CoM constraint with multiple robots');
-testKinCnst_userfun(true,t,q_aff,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot_aff,robot_aff,[0;0;0.9],[0;0;1],tspan0,[1,2]);
+testKinCnst_userfun(true,false,t_valid,q_aff,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot_aff,robot_aff,[0;0;0.9],[0;0;1],tspan0,[1,2]);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q_aff,RigidBodyConstraint.WorldCoMConstraintType,robot_aff,[0;0;0.9],[0;0;1],tspan0);
 
 display('Check world position constraint');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldPositionConstraintType,robot,robot_aff,l_foot,l_foot_pts,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldPositionConstraintType,robot,robot_aff,l_foot,l_foot_pts,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldPositionConstraintType,robot,l_foot,l_foot_pts,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
 
 display('Check world position constraint with nan');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldPositionConstraintType,robot,robot_aff,l_foot,l_foot_pts,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldPositionConstraintType,robot,robot_aff,l_foot,l_foot_pts,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldPositionConstraintType,robot,l_foot,l_foot_pts,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan0);
 
 display('Check world quaternion constraint')
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldQuatConstraintType,robot,robot_aff,r_foot,[1;0;0;0],0.01,tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldQuatConstraintType,robot,robot_aff,r_foot,[1;0;0;0],0.01,tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldQuatConstraintType,robot,r_foot,[1;0;0;0],0.01,tspan0);
 
 display('Check world quaternion constraint, a subtle case')
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldQuatConstraintType,robot,robot_aff,l_foot,l_foot_pos(4:7,1),0,tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldQuatConstraintType,robot,robot_aff,l_foot,l_foot_pos(4:7,1),0,tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldQuatConstraintType,robot,l_foot,l_foot_pos(4:7,1),0,tspan0);
 
 display('Check world euler constraint')
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldEulerConstraintType,robot,robot_aff,l_foot,[0;nan;0.9*pi],[0;nan;1.1*pi],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldEulerConstraintType,robot,robot_aff,l_foot,[0;nan;0.9*pi],[0;nan;1.1*pi],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldEulerConstraintType,robot,l_foot,[0;nan;0.9*pi],[0;nan;1.1*pi],tspan0);
 
 display('Check world gaze orientation constraint')
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldGazeOrientConstraintType,robot,robot_aff,head,[1;0;0],[0.5;0.5;-0.5;0.5],0.3*pi,0.1*pi,tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldGazeOrientConstraintType,robot,robot_aff,head,[1;0;0],[0.5;0.5;-0.5;0.5],0.3*pi,0.1*pi,tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldGazeOrientConstraintType,robot,head,[1;0;0],[0.5;0.5;-0.5;0.5],0.3*pi,0.1*pi,tspan0);
 
 display('Check world gaze orientation constraint with empty threshold')
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldGazeOrientConstraintType,robot,robot_aff,head,[1;0;0],[0.5;0.5;-0.5;0.5],[],[],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldGazeOrientConstraintType,robot,robot_aff,head,[1;0;0],[0.5;0.5;-0.5;0.5],[],[],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldGazeOrientConstraintType,robot,head,[1;0;0],[0.5;0.5;-0.5;0.5],[],[],tspan0);
 
 display('Check world gaze direction constraint')
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldGazeDirConstraintType,robot,robot_aff,l_hand,[1;0;0],[0.5;0.3;0.4],0.3*pi,tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldGazeDirConstraintType,robot,robot_aff,l_hand,[1;0;0],[0.5;0.3;0.4],0.3*pi,tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldGazeDirConstraintType,robot,l_hand,[1;0;0],[0.5;0.3;0.4],0.3*pi,tspan0);
 
 display('Check world gaze direction constraint with empty threshold')
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldGazeDirConstraintType,robot,robot_aff,head,[1;0;0],[0.5;0.3;0.4],[],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldGazeDirConstraintType,robot,robot_aff,head,[1;0;0],[0.5;0.3;0.4],[],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldGazeDirConstraintType,robot,head,[1;0;0],[0.5;0.3;0.4],[],tspan0);
 
 display('Check world gaze target constraint');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldGazeTargetConstraintType,robot,robot_aff,head,[1;0;0],[20;10;1],[0.3;0.1;0.2],0.3*pi,tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldGazeTargetConstraintType,robot,robot_aff,head,[1;0;0],[20;10;1],[0.3;0.1;0.2],0.3*pi,tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldGazeTargetConstraintType,robot,head,[1;0;0],[20;10;1],[0.3;0.1;0.2],0.3*pi,tspan0);
 
 display('Check world gaze target constraint with empty threshold');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldGazeTargetConstraintType,robot,robot_aff,head,[1;0;0],[20;10;1],[0.3;0.1;0.2],[],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldGazeTargetConstraintType,robot,robot_aff,head,[1;0;0],[20;10;1],[0.3;0.1;0.2],[],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldGazeTargetConstraintType,robot,head,[1;0;0],[20;10;1],[0.3;0.1;0.2],[],tspan0);
 
 t2 = [0 0.5 1];
 q21 = randn(nq,length(t2));
@@ -123,7 +131,7 @@ q21_aff = [q21;randn(length(robot_aff.getStateFrame.frame{2}.coordinates)/2,leng
 q22_aff = [q22;repmat(randn(length(robot_aff.getStateFrame.frame{2}.coordinates)/2,1),1,length(t2))];
 q31_aff = [q31;repmat(randn(length(robot_aff.getStateFrame.frame{2}.coordinates)/2,1),1,length(t3))];
 display('Check world fixed position constraint')
-testKinCnst_userfun(false,t2,q21,q21_aff,RigidBodyConstraint.WorldFixedPositionConstraintType,robot,robot_aff,l_hand,[[0;0;1] [1;0;1]],tspan0);
+testKinCnst_userfun(false,false,t2,q21,q21_aff,RigidBodyConstraint.WorldFixedPositionConstraintType,robot,robot_aff,l_hand,[[0;0;1] [1;0;1]],tspan0);
 kc = WorldFixedPositionConstraint(robot,l_hand,[[0;0;1] [1;0;1]],tspan0);
 kinsol_cell = cell(1,size(q22,2));
 for i = 1:size(q22,2)
@@ -131,7 +139,7 @@ for i = 1:size(q22,2)
 end
 [c,dc] = kc.eval(t2,kinsol_cell);
 valuecheck(c,[0;0]);
-testKinCnst_userfun(false,t2,q22,q22_aff,RigidBodyConstraint.WorldFixedPositionConstraintType,robot,robot_aff,l_hand,[[0;0;1] [1;0;1]],tspan0);
+testKinCnst_userfun(false,false,t2,q22,q22_aff,RigidBodyConstraint.WorldFixedPositionConstraintType,robot,robot_aff,l_hand,[[0;0;1] [1;0;1]],tspan0);
 
 kc = WorldFixedPositionConstraint(robot,l_hand,[[0;0;1] [1;0;1]],tspan2);
 kinsol_cell = cell(1,size(q31,2));
@@ -140,10 +148,10 @@ for i = 1:size(q31,2)
 end
 [c,dc] = kc.eval(t3,kinsol_cell);
 valuecheck(c,[0;0]);
-testKinCnst_userfun(false,t3,q31,q31_aff,RigidBodyConstraint.WorldFixedPositionConstraintType,robot,robot_aff,l_hand,[[0;0;1] [1;0;1]],tspan2);
+testKinCnst_userfun(false,false,t3,q31,q31_aff,RigidBodyConstraint.WorldFixedPositionConstraintType,robot,robot_aff,l_hand,[[0;0;1] [1;0;1]],tspan2);
 
 display('Check world fixed orientation constraint')
-testKinCnst_userfun(false,t2,q21,q21_aff,RigidBodyConstraint.WorldFixedOrientConstraintType,robot,robot_aff,l_hand,tspan0);
+testKinCnst_userfun(false,false,t2,q21,q21_aff,RigidBodyConstraint.WorldFixedOrientConstraintType,robot,robot_aff,l_hand,tspan0);
 kc = WorldFixedOrientConstraint(robot,l_hand,tspan0);
 kinsol_cell = cell(1,size(q22,2));
 for i = 1:size(q22,2)
@@ -151,7 +159,7 @@ for i = 1:size(q22,2)
 end
 [c,dc] = kc.eval(t2,kinsol_cell);
 valuecheck(c,length(t2));
-testKinCnst_userfun(false,t2,q22,q22_aff,RigidBodyConstraint.WorldFixedOrientConstraintType,robot,robot_aff,l_hand,tspan0);
+testKinCnst_userfun(false,false,t2,q22,q22_aff,RigidBodyConstraint.WorldFixedOrientConstraintType,robot,robot_aff,l_hand,tspan0);
 
 kc = WorldFixedOrientConstraint(robot,l_hand,tspan2);
 kinsol_cell = cell(1,size(q31,2));
@@ -160,10 +168,10 @@ for i = 1:size(q31,2)
 end
 [c,dc] = kc.eval(t3,kinsol_cell);
 valuecheck(c,sum(kc.isTimeValid(t3)));
-testKinCnst_userfun(false,t3,q31,q31_aff,RigidBodyConstraint.WorldFixedOrientConstraintType,robot,robot_aff,l_hand,tspan2);
+testKinCnst_userfun(false,false,t3,q31,q31_aff,RigidBodyConstraint.WorldFixedOrientConstraintType,robot,robot_aff,l_hand,tspan2);
 
 display('Check world fixed body pose constraint')
-testKinCnst_userfun(false,t2,q21,q21_aff,RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot,robot_aff,l_hand,tspan0);
+testKinCnst_userfun(false,false,t2,q21,q21_aff,RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot,robot_aff,l_hand,tspan0);
 kc = WorldFixedBodyPoseConstraint(robot,l_hand,tspan0);
 kinsol_cell = cell(1,size(q22,2));
 for i = 1:size(q22,2)
@@ -171,7 +179,7 @@ for i = 1:size(q22,2)
 end
 [c,dc] = kc.eval(t2,kinsol_cell);
 valuecheck(c,[0;length(t2)]);
-testKinCnst_userfun(false,t2,q22,q22_aff,RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot,robot_aff,l_hand,tspan0);
+testKinCnst_userfun(false,false,t2,q22,q22_aff,RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot,robot_aff,l_hand,tspan0);
 
 kc = WorldFixedBodyPoseConstraint(robot,l_hand,tspan2);
 kinsol_cell = cell(1,size(q31,2));
@@ -180,11 +188,12 @@ for i = 1:size(q31,2)
 end
 [c,dc] = kc.eval(t3,kinsol_cell);
 valuecheck(c,[0;sum(kc.isTimeValid(t3))]);
-testKinCnst_userfun(false,t3,q31,q31_aff,RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot,robot_aff,l_hand,tspan2);
+testKinCnst_userfun(false,false,t3,q31,q31_aff,RigidBodyConstraint.WorldFixedBodyPoseConstraintType,robot,robot_aff,l_hand,tspan2);
 
 
- display('Check all-to-all closest-distance constraint');
- testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,robot_collision_aff,0.05,1e1,tspan0);
+display('Check all-to-all closest-distance constraint');
+testKinCnst_userfun(true,true,t_valid,q,q_aff,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,robot_collision_aff,0.05,1e1,tspan0);
+testKinCnstInvalidTime_userfun(true,true,t_invalid,q,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,0.05,1e1,tspan0);
 
 display('Check point to point distance constraint');
 lhand_pts = rand(3,2);
@@ -193,35 +202,50 @@ kc = Point2PointDistanceConstraint(robot,l_hand,r_hand,lhand_pts,rhand_pts,[0 0]
 kinsol = doKinematics(robot,q);
 lhand_pos = forwardKin(robot,kinsol,l_hand,lhand_pts,0);
 rhand_pos = forwardKin(robot,kinsol,r_hand,rhand_pts,0);
-[c,dc] = kc.eval(t,kinsol);
+[c,dc] = kc.eval(t_valid,kinsol);
 valuecheck(c',sum((lhand_pos-rhand_pos).*(lhand_pos-rhand_pos),1));
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.Point2PointDistanceConstraintType,robot,robot_aff,l_hand,r_hand,lhand_pts,rhand_pts,[0 0],[1 1],tspan0);
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.Point2PointDistanceConstraintType,robot,robot_aff,0,r_hand,rand(3,2),rhand_pts,[0 0],[1 1],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.Point2PointDistanceConstraintType,robot,robot_aff,l_hand,r_hand,lhand_pts,rhand_pts,[0 0],[1 1],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.Point2PointDistanceConstraintType,robot,robot_aff,0,r_hand,rand(3,2),rhand_pts,[0 0],[1 1],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.Point2PointDistanceConstraintType,robot,0,r_hand,rand(3,2),rhand_pts,[0 0],[1 1],tspan0);
 
 display('Check world position in frame constraint');
 rpy = 2*pi*rand(3,1) - pi;
 xyz = [0.2;0.2;0.2].*rand(3,1) + [0.5;0.0;0.5];
 T = [rpy2rotmat(rpy),xyz;zeros(1,3),1];
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.WorldPositionInFrameConstraintType,robot,robot_aff,l_foot,l_foot_pts,T,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.WorldPositionInFrameConstraintType,robot,robot_aff,l_foot,l_foot_pts,T,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.WorldPositionInFrameConstraintType,robot,l_foot,l_foot_pts,T,[-100*ones(2,4);zeros(1,4)],[100*ones(2,4);zeros(1,4)],tspan0);
 
 display('Check point to line segment distance constraint');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.Point2LineSegDistConstraintType,robot,robot_aff,l_hand,[0;0;0],r_foot,r_foot_pts(:,1:2),0.1,1,tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.Point2LineSegDistConstraintType,robot,robot_aff,l_hand,[0;0;0],r_foot,r_foot_pts(:,1:2),0.1,1,tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.Point2LineSegDistConstraintType,robot,l_hand,[0;0;0],r_foot,r_foot_pts(:,1:2),0.1,1,tspan0);
 
 display('Check Relative gaze target constraint');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.RelativeGazeTargetConstraintType,robot,robot_aff,head,r_hand,[1;0;0],[0;0;0],[0;0;0],pi/30,tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.RelativeGazeTargetConstraintType,robot,robot_aff,head,r_hand,[1;0;0],[0;0;0],[0;0;0],pi/30,tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.RelativeGazeTargetConstraintType,robot,head,r_hand,[1;0;0],[0;0;0],[0;0;0],pi/30,tspan0);
+
+display('Check relative gaze direction constraint')
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.RelativeGazeDirConstraintType,robot,robot_aff,head,l_hand,[1;0;0],[0.5;0.3;0.4],0.3*pi,tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.RelativeGazeDirConstraintType,robot,head,l_hand,[1;0;0],[0.5;0.3;0.4],0.3*pi,tspan0);
 
 display('Check Relative position constraint');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.RelativePositionConstraintType,robot,robot_aff,...
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.RelativePositionConstraintType,robot,robot_aff,...
+  [[0;0;0],[0;1;0.2]],[[nan;-0.1;-0.2],[-0.2;nan;-0.4]],[[nan;0.1;0.2],[0.3;nan;0]],...
+  r_hand,head,[[0;0.1;0.2];rpy2quat(randn(3,1))],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.RelativePositionConstraintType,robot,...
   [[0;0;0],[0;1;0.2]],[[nan;-0.1;-0.2],[-0.2;nan;-0.4]],[[nan;0.1;0.2],[0.3;nan;0]],...
   r_hand,head,[[0;0.1;0.2];rpy2quat(randn(3,1))],tspan0);
 
 display('Check Relative quaternion constraint');
-testKinCnst_userfun(true,t,q,q_aff,RigidBodyConstraint.RelativeQuatConstraintType,robot,robot_aff,...
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.RelativeQuatConstraintType,robot,robot_aff,...
+  r_hand,l_hand,rpy2quat(randn(3,1)),5/180*pi,tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.RelativeQuatConstraintType,robot,...
   r_hand,l_hand,rpy2quat(randn(3,1)),5/180*pi,tspan0);
 end
 
-function testKinCnst_userfun(singleTimeFlag,t,q,q_aff,cnst_type,robot,robot_aff,varargin)
+function testKinCnst_userfun(singleTimeFlag,always_use_mex_dynamics,t,q,q_aff,cnst_type,robot,robot_aff,varargin)
 robot_ptr = robot.getMexModelPtr;
+nq = robot.getNumDOF();
+nT = length(t);
 if(singleTimeFlag)
   kc_mex = constructRigidBodyConstraint(cnst_type,true,robot_ptr,varargin{:});
   kc = constructRigidBodyConstraint(cnst_type,false,robot,varargin{:});
@@ -244,15 +268,15 @@ if ~strcmp(type_name,kc_mex.name)
 end
 num_cnst = kc.getNumConstraint(t);
 if(singleTimeFlag)
-  kinsol = kc.robot.doKinematics(q,false,false);
+  kinsol = kc.robot.doKinematics(q,false,always_use_mex_dynamics);
   [c,dc] = kc.eval(t,kinsol);
   cnstr = kc.generateConstraint(t);
-  kinsol = kc.robot.doKinematics(q,false,false);
+  kinsol = kc.robot.doKinematics(q,false,always_use_mex_dynamics);
   [c_cnstr,dc_cnstr] = cnstr{1}.eval(kinsol);
 else
   kinsol_cell = cell(1,length(t));
   for i = 1:length(t)
-    kinsol_cell{i} = doKinematics(robot,q(:,i),false,false);
+    kinsol_cell{i} = doKinematics(robot,q(:,i),false,always_use_mex_dynamics);
   end
   [c,dc] = kc.eval(t,kinsol_cell);
   cnstr = kc.generateConstraint(t);
@@ -263,6 +287,10 @@ cnst_name = kc.name(t);
 valuecheck(strcmp(cnst_name,cnstr{1}.name),1);
 % strcmp(cnst_name_mex,cnst_name);
 valuecheck(num_cnst_mex,num_cnst);
+sizecheck(c,[num_cnst,1]);
+sizecheck(dc,[num_cnst,nq*nT]);
+sizecheck(lb,[num_cnst,1]);
+sizecheck(ub,[num_cnst,1]);
 valuecheck(c_mex,c,1e-8);
 valuecheck(dc_mex,dc,1e-8);
 valuecheck(lb_mex,lb,1e-8);
@@ -278,6 +306,7 @@ valuecheck(ub,cnstr{1}.ub);
 %%%% Check Kinematics Constraint after adding robot
 kc = kc.updateRobot(robot_aff);
 kc_mex = kc.mex_ptr;
+nq_aff = robot_aff.getNumDOF();
 num_cnst = kc.getNumConstraint(t);
 if(singleTimeFlag)
   [type_mex,num_cnst_mex,c_mex,dc_mex,cnst_name_mex,lb_mex,ub_mex] = testSingleTimeKinCnstmex(kc_mex,q_aff,t);
@@ -285,12 +314,12 @@ else
   [type_mex,num_cnst_mex,c_mex,dc_mex,cnst_name_mex,lb_mex,ub_mex] = testMultipleTimeKinCnstmex(kc_mex,q_aff,t);
 end
 if(singleTimeFlag)
-  kinsol = kc.robot.doKinematics(q_aff,false,false);
+  kinsol = kc.robot.doKinematics(q_aff,false,always_use_mex_dynamics);
   [c,dc] = kc.eval(t,kinsol);
 else
   kinsol_cell = cell(1,length(t));
   for i = 1:length(t)
-    kinsol_cell{i} = kc.robot.doKinematics(q_aff(:,i),false,false);
+    kinsol_cell{i} = kc.robot.doKinematics(q_aff(:,i),false,always_use_mex_dynamics);
   end
   [c,dc] = kc.eval(t,kinsol_cell);
 end
@@ -305,10 +334,67 @@ end
 cnst_name = kc.name(t);
 strcmp(cnst_name_mex,cnst_name);
 valuecheck(num_cnst_mex,num_cnst);
+sizecheck(c,[num_cnst,1]);
+sizecheck(dc,[num_cnst,nq_aff*nT]);
+sizecheck(lb,[num_cnst,1]);
+sizecheck(ub,[num_cnst,1]);
+valuecheck(num_cnst_mex,num_cnst);
 valuecheck(c_mex,c,1e-8);
 valuecheck(dc_mex,dc,1e-8);
 valuecheck(lb_mex,lb,1e-8);
 valuecheck(ub_mex,ub,1e-8);
+end
+
+function testKinCnstInvalidTime_userfun(singleTimeFlag,always_use_mex_dynamics,t,q,cnst_type,robot,varargin)
+robot_ptr = robot.getMexModelPtr;
+nq = robot.getNumDOF();
+if(singleTimeFlag)
+  kc_mex = constructRigidBodyConstraint(cnst_type,true,robot_ptr,varargin{:});
+  kc = constructRigidBodyConstraint(cnst_type,false,robot,varargin{:});
+  [type_mex,num_cnst_mex,c_mex,dc_mex,cnst_name_mex,lb_mex,ub_mex] = testSingleTimeKinCnstmex(kc_mex,q,t);
+  [~,~,c_mex_ptr,~,~,~,~] = testSingleTimeKinCnstmex(kc.mex_ptr,q,t);
+  valuecheck(c_mex,c_mex_ptr,1e-5);
+else
+  kc_mex = constructRigidBodyConstraint(cnst_type,true,robot_ptr,varargin{:});
+  kc = constructRigidBodyConstraint(cnst_type,false,robot,varargin{:});
+  [type_mex,num_cnst_mex,c_mex,dc_mex,cnst_name_mex,lb_mex,ub_mex] = testMultipleTimeKinCnstmex(kc_mex,q,t);
+  [~,~,c_mex_ptr,~,~,~,~] = testMultipleTimeKinCnstmex(kc.mex_ptr,q,t);
+  valuecheck(c_mex,c_mex_ptr,1e-5);
+end
+num_cnst = kc.getNumConstraint(t);
+if(singleTimeFlag)
+  kinsol = kc.robot.doKinematics(q,false,always_use_mex_dynamics);
+  [c,dc] = kc.eval(t,kinsol);
+  cnstr = kc.generateConstraint(t);
+  kinsol = kc.robot.doKinematics(q,false,always_use_mex_dynamics);
+  if(~isempty(cnstr))
+    error('Should be empty');
+  end
+else
+  kinsol_cell = cell(1,length(t));
+  for i = 1:length(t)
+    kinsol_cell{i} = doKinematics(robot,q(:,i),false,always_use_mex_dynamics);
+  end
+  [c,dc] = kc.eval(t,kinsol_cell);
+  cnstr = kc.generateConstraint(t);
+  if(~isempty(cnstr))
+    error('Should be empty');
+  end
+end
+[lb,ub] = kc.bounds(t);
+cnst_name = kc.name(t);
+valuecheck(num_cnst_mex,0);
+valuecheck(num_cnst,0);
+if(~isempty(c) || ~isempty(c_mex))
+  error('Should be empty');
+end
+if(~isempty(lb_mex) || ~isempty(ub_mex) || ~isempty(lb) || ~isempty(ub))
+  error('Should be empty');
+end
+if(~isempty(cnst_name) || ~isempty(cnst_name_mex))
+  error('Should be empty');
+end
+
 end
 
 function c = eval_numerical(singleTimeFlag,constraint,t,q)

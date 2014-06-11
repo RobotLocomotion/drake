@@ -1,4 +1,5 @@
 #include <iostream>
+#include <map>
 
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
@@ -6,6 +7,7 @@
 #include <boost/algorithm/string.hpp>
 #include <string>
 #include <regex>
+
 //DEBUG
 //#include <stdexcept>
 //END_DEBUG
@@ -266,120 +268,83 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
   resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
 }
 
-template <typename T>
-void myrealloc(T* &ptr, int old_size, int new_size)
-{
-  T* newptr = NULL;
-  if (new_size>0) newptr = new T[new_size];
-  if (old_size>0) {
-    int s = old_size;
-    if (new_size<old_size) s = new_size;
-    for (int i=0; i<s; i++) {
-//			cout << "copying " << ptr[i] << endl;
-      newptr[i] = ptr[i];  // invoke c++ copy operator
-    }
-    delete[] ptr;
-  }
-  ptr = newptr;
-}
 
 void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
 {
-  int last_num_dof = num_dof, last_NB = NB, last_num_bodies = num_bodies, last_num_frames = num_frames;
+  int last_num_dof = num_dof, last_NB = NB, last_num_bodies = num_bodies;
   
   num_dof = ndof;
-  if (num_dof != last_num_dof) {
-    myrealloc(joint_limit_min,last_num_dof,num_dof);
-    myrealloc(joint_limit_max,last_num_dof,num_dof);
+  joint_limit_min.conservativeResize(num_dof);
+  joint_limit_max.conservativeResize(num_dof);
+  for (int i=last_num_dof; i<num_dof; i++) {
+    joint_limit_min[i] = -1.0/0.0;
+    joint_limit_max[i] = 1.0/0.0;
   }
-  
+
   if (num_featherstone_bodies<0)
     NB = ndof;
   else
     NB = num_featherstone_bodies;
   
-  if (NB != last_NB) {
-    myrealloc(pitch,last_NB,NB);
-    myrealloc(parent,last_NB,NB);
-    myrealloc(dofnum,last_NB,NB);
-    myrealloc(damping,last_NB,NB);
-    myrealloc(coulomb_friction,last_NB,NB);
-    myrealloc(static_friction,last_NB,NB);
-    myrealloc(coulomb_window,last_NB,NB);
-    myrealloc(Xtree,last_NB,NB);
-    myrealloc(I,last_NB,NB);
-    
-    myrealloc(S,last_NB,NB);
-    myrealloc(Xup,last_NB,NB);
-    myrealloc(v,last_NB,NB);
-    myrealloc(avp,last_NB,NB);
-    myrealloc(fvp,last_NB,NB);
-    myrealloc(IC,last_NB,NB);
-    
-    for(int i=last_NB; i < NB; i++) {
-      Xtree[i] = MatrixXd::Zero(6,6);
-      I[i] = MatrixXd::Zero(6,6);
-      S[i] = VectorXd::Zero(6);
-      Xup[i] = MatrixXd::Zero(6,6);
-      v[i] = VectorXd::Zero(6);
-      avp[i] = VectorXd::Zero(6);
-      fvp[i] = VectorXd::Zero(6);
-      IC[i] = MatrixXd::Zero(6,6);
-    }
+  pitch.conservativeResize(NB);
+  parent.conservativeResize(NB);
+  dofnum.conservativeResize(NB);
+  damping.conservativeResize(NB);
+  coulomb_friction.conservativeResize(NB);
+  static_friction.conservativeResize(NB);
+  coulomb_window.conservativeResize(NB);
+
+  // note: these are std:vectors (and the above are eigen vectors)
+  Xtree.resize(NB);
+  I.resize(NB);
+  S.resize(NB);
+  Xup.resize(NB);
+  v.resize(NB);
+  avp.resize(NB);
+  fvp.resize(NB);
+  IC.resize(NB);
+  for(int i=last_NB; i < NB; i++) {
+    Xtree[i] = MatrixXd::Zero(6,6);
+    I[i] = MatrixXd::Zero(6,6);
+    S[i] = VectorXd::Zero(6);
+    Xup[i] = MatrixXd::Zero(6,6);
+    v[i] = VectorXd::Zero(6);
+    avp[i] = VectorXd::Zero(6);
+    fvp[i] = VectorXd::Zero(6);
+    IC[i] = MatrixXd::Zero(6,6);
   }
   
   if (num_rigid_body_objects<0)
     num_bodies = NB+1;  // this was my old assumption, so leave it here as the default behavior
   else
     num_bodies = num_rigid_body_objects;
-  
-  if (num_bodies != last_num_bodies) {
-    myrealloc(bodies,last_num_bodies,num_bodies);
+
+  bodies.resize(num_bodies);
+  for(int i=0; i < num_bodies; i++) { bodies[i].setN(NB); }
+  for(int i=last_num_bodies; i<num_bodies; i++) { bodies[i].dofnum = i-1; } // setup default dofnums
     
-    for(int i=0; i < num_bodies; i++) bodies[i].setN(NB);
-    for(int i=last_num_bodies; i<num_bodies; i++) bodies[i].dofnum = i-1;  // setup default dofnums
-    
-    collision_model->resize(num_bodies);
-  }
+  collision_model->resize(num_bodies);
   
   num_frames = num_rigid_body_frames;
-  if (num_frames != last_num_frames) {
-  	myrealloc(frames,last_num_frames,num_frames);
-  }
+  frames.resize(num_frames);
 
   //Variable allocation for gradient calculations
-  if (last_NB>0) {
-    delete[] dXupdq;
-    for (int i=0; i<last_NB; i++) {
-      delete[] dIC[i];
+  dXupdq.resize(NB);
+  dIC.resize(NB);
+  for(int i=0; i < NB; i++) {
+    dIC[i].resize(NB);
+    for(int j=0; j < NB; j++) {
+      dIC[i][j] = MatrixXd::Zero(6,6);
     }
-    delete[] dIC;
-    delete[] dvdq;
-    delete[] dvdqd;
-    delete[] davpdq;
-    delete[] davpdqd;
-    delete[] dfvpdq;
-    delete[] dfvpdqd;
   }
-
-  if (NB>0) {
-    dXupdq = new MatrixXd[NB];
-    dIC = new MatrixXd*[NB];
-    for(int i=0; i < NB; i++) {
-      dIC[i] = new MatrixXd[NB];
-      for(int j=0; j < NB; j++) {
-	dIC[i][j] = MatrixXd::Zero(6,6);
-      }
-    }
-    //     dcross.resize(6,n);
+  //     dcross.resize(6,n);
     
-    dvdq = new MatrixXd[NB];
-    dvdqd = new MatrixXd[NB];
-    davpdq = new MatrixXd[NB];
-    davpdqd = new MatrixXd[NB];
-    dfvpdq = new MatrixXd[NB];
-    dfvpdqd = new MatrixXd[NB];
-  }
+  dvdq.resize(NB);
+  dvdqd.resize(NB);
+  davpdq.resize(NB);
+  davpdqd.resize(NB);
+  dfvpdq.resize(NB);
+  dfvpdqd.resize(NB);
 
   dvJdqd_mat = MatrixXd::Zero(6,num_dof);
   for(int i=0; i < NB; i++) {
@@ -398,26 +363,19 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   dTdTmult = MatrixXd::Zero(3*num_dof,4);
 
   // preallocate for CMM function
-  if (last_NB>0) {
-    delete[] Xworld;
-    delete[] dXworld;
-    delete[] dXup;
-  }
-  if (NB>0) {
-    Ic = new MatrixXd[NB]; // body spatial inertias
-    dIc = new MatrixXd[NB]; // derivative of body spatial inertias
-    phi = new VectorXd[NB]; // joint axis vectors
-    Xworld = new MatrixXd[NB]; // spatial transforms from world to each body
-    dXworld = new MatrixXd[NB]; // dXworld_dq * qd
-    dXup = new MatrixXd[NB]; // dXup_dq * qd
-    for(int i=0; i < NB; i++) {
-      Ic[i] = MatrixXd::Zero(6,6);
-      dIc[i] = MatrixXd::Zero(6,6);
-      phi[i] = VectorXd::Zero(6);
-      Xworld[i] = MatrixXd::Zero(6,6);
-      dXworld[i] = MatrixXd::Zero(6,6);
-      dXup[i] = MatrixXd::Zero(6,6);
-    }
+  Ic.resize(NB); // body spatial inertias
+  dIc.resize(NB); // derivative of body spatial inertias
+  phi.resize(NB); // joint axis vectors
+  Xworld.resize(NB); // spatial transforms from world to each body
+  dXworld.resize(NB); // dXworld_dq * qd
+  dXup.resize(NB); // dXup_dq * qd
+  for(int i=0; i < NB; i++) {
+    Ic[i] = MatrixXd::Zero(6,6);
+    dIc[i] = MatrixXd::Zero(6,6);
+    phi[i] = VectorXd::Zero(6);
+    Xworld[i] = MatrixXd::Zero(6,6);
+    dXworld[i] = MatrixXd::Zero(6,6);
+    dXup[i] = MatrixXd::Zero(6,6);
   }
   
   Xg = MatrixXd::Zero(6,6); // spatial centroidal projection matrix for a single body
@@ -430,70 +388,11 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
   
   initialized = false;
   kinematicsInit = false;
-  if (last_num_dof>0) {
-    delete[] cached_q;
-    delete[] cached_qd;
-  }
-  if (num_dof>0) {
-    cached_q = new double[num_dof];
-    cached_qd = new double[num_dof];
-  }
+  cached_q.resize(num_dof);
+  cached_qd.resize(num_dof);
   secondDerivativesCached = 0;
 }
 
-RigidBodyManipulator::~RigidBodyManipulator() {
-
-  if (num_dof>0) {
-  	delete[] joint_limit_min;
-  	delete[] joint_limit_max;
-  }
-
-  if (NB>0) {
-    delete[] pitch;
-    delete[] parent;
-    delete[] dofnum;
-    delete[] damping;
-    delete[] coulomb_friction;
-    delete[] static_friction;
-    delete[] coulomb_window;
-    delete[] Xtree;
-    delete[] I;
-    
-    delete[] S;
-    delete[] Xup;
-    delete[] v;
-    delete[] avp;
-    delete[] fvp;
-    delete[] IC;
-    
-    delete[] dXupdq;
-    for (int i=0; i<NB; i++) {
-      delete[] dIC[i];
-    }
-    delete[] dIC;
-    delete[] dvdq;
-    delete[] dvdqd;
-    delete[] davpdq;
-    delete[] davpdqd;
-    delete[] dfvpdq;
-    delete[] dfvpdqd;
-
-    delete[] Xworld;
-    delete[] dXworld;
-    delete[] dXup;
-  }
-
-  if (num_bodies>0)
-    delete[] bodies;
-  
-  if (num_frames>0)
-  	delete[] frames;
-
-  if (num_dof>0) {
-    delete[] cached_q;
-    delete[] cached_qd;
-  }
-}
 
 void RigidBodyManipulator::compile(void) 
 {
@@ -572,6 +471,11 @@ bool RigidBodyManipulator::getPairwiseClosestPoint(const int body_indA, const in
   return collision_model->getClosestPoints(body_indA,body_indB,ptA,ptB,normal,distance);
 };
 
+bool RigidBodyManipulator::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances)
+{
+  return collision_model->collisionRaycast(origins, ray_endpoints, distances);
+}
+
 bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             MatrixXd& normal, 
                                             MatrixXd& xA, 
@@ -583,6 +487,15 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
   collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,normal,phi,bodies_idx);
   return true;
 };
+
+bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx, 
+                                         vector<int>& bodyB_idx, 
+                                         MatrixXd& ptsA, MatrixXd& ptsB)
+{
+  collision_model->allCollisions(bodyA_idx, bodyB_idx, ptsA, ptsB);
+  return true;
+}
+
 
 //bool RigidBodyManipulator::closestDistanceAllBodies(VectorXd& distance,
                                                         //MatrixXd& Jd)
@@ -625,13 +538,13 @@ void RigidBodyManipulator::doKinematics(double* q, bool b_compute_second_derivat
     }
   }
 
-  if (!initialized) compile();
+  if (!initialized) { compile(); } 
 
   Matrix4d TJ, dTJ, ddTJ, Tbinv, Tb, Tmult, dTmult, dTdotmult, TdTmult, TJdot, dTJdot, TddTmult;
   Matrix4d fb_dTJ[6], fb_dTJdot[6], fb_dTmult[6], fb_ddTJ[3][3];  // will be 7 when quats implemented...
 
   Matrix3d rx,drx,ddrx,ry,dry,ddry,rz,drz,ddrz;
-  
+
   for (i = 0; i < num_bodies; i++) {
     int parent = bodies[i].parent;
     if (parent < 0) {
@@ -1081,8 +994,10 @@ void RigidBodyManipulator::getContactPositionsJacDot(MatrixBase<Derived> &Jdot, 
 /* [body_ind,Tframe] = parseBodyOrFrameID(body_or_frame_id) */
 int RigidBodyManipulator::parseBodyOrFrameID(const int body_or_frame_id, Matrix4d& Tframe)
 {
-	int body_ind;
-  if (body_or_frame_id<0) {
+  int body_ind=0;
+  if (body_or_frame_id == -1) {
+    cerr << "parseBodyOrFrameID got a -1, which should have been reserved for COM.  Shouldn't have gotten here." << endl;
+  } else if (body_or_frame_id<0) {
     int frame_ind = -body_or_frame_id-2;
     body_ind = frames[frame_ind].body_ind;
     Tframe = frames[frame_ind].T;
@@ -1162,14 +1077,37 @@ void RigidBodyManipulator::forwardKin(const int body_or_frame_id, const MatrixBa
   }
 }
 
-template <typename DerivedA, typename DerivedB>
-void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x)
+template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD>
+void RigidBodyManipulator::bodyKin(const int body_or_frame_id, const MatrixBase<DerivedA>& pts, MatrixBase<DerivedB> &x, MatrixBase<DerivedC> *J, MatrixBase<DerivedD> *P)
 {
   Matrix4d Tframe;
   int body_ind = parseBodyOrFrameID(body_or_frame_id,Tframe);
 
   MatrixXd Tinv = (bodies[body_ind].T*Tframe).inverse();
   x = Tinv.topLeftCorner(3,4)*pts;
+
+  if (J) {
+    int i;
+    MatrixXd dTdq =  bodies[body_ind].dTdq.topLeftCorner(3*num_dof,4)*Tframe;
+    MatrixXd dTinvdq = dTdq*Tinv;
+    for (i=0;i<num_dof;i++) {
+      MatrixXd dTinvdqi = MatrixXd::Zero(4,4);
+      dTinvdqi.row(0) = dTinvdq.row(i);
+      dTinvdqi.row(1) = dTinvdq.row(num_dof+i);
+      dTinvdqi.row(2) = dTinvdq.row(2*num_dof+i);
+      dTinvdqi = -Tinv*dTinvdqi;
+      MatrixXd dxdqi = dTinvdqi.topLeftCorner(3,4)*pts;
+      dxdqi.resize(dxdqi.rows()*dxdqi.cols(),1);
+      J->col(i) = dxdqi;
+    }
+  }
+  if (P) {
+    int i;
+    for (i=0;i<pts.cols();i++) {
+      P->block(i*3,i*3,3,3) = Tinv.topLeftCorner(3,3);
+    }
+  }
+
 }
 
 template <typename DerivedA, typename DerivedB>
@@ -1345,8 +1283,8 @@ void RigidBodyManipulator::forwarddJac(const int body_or_frame_id, const MatrixB
   dJ = dJ_t.transpose();
 }
 
-template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE>
-void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC)
+template <typename DerivedA, typename DerivedB, typename DerivedC, typename DerivedD, typename DerivedE, typename DerivedF>
+void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase<DerivedA> * const f_ext, MatrixBase<DerivedB> &H, MatrixBase<DerivedC> &C, MatrixBase<DerivedD> *dH, MatrixBase<DerivedE> *dC, MatrixBase<DerivedF> * const df_ext)
 {
   H = MatrixXd::Zero(num_dof,num_dof);
   if (dH) *dH = MatrixXd::Zero(num_dof*num_dof,num_dof);
@@ -1354,7 +1292,7 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 
   VectorXd vJ(6), fh(6), dfh(6), dvJdqd(6);
   MatrixXd XJ(6,6), dXJdq(6,6);
-  int i,j,k,n,np;
+  int i,j,k,n,np,nk;
   
   for (i=0; i<NB; i++) {
     n = dofnum[i];
@@ -1413,6 +1351,10 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
       dfvpdq[i] = I[i]*davpdq[i] + dcross;
       dcrf(v[i],I[i]*v[i],dvdqd[i],I[i]*dvdqd[i],&(dcross));
       dfvpdqd[i] = I[i]*davpdqd[i] + dcross;
+      if (df_ext) {
+	dfvpdq[i] = dfvpdq[i] - df_ext->block(i*6,0,6,num_dof);
+	dfvpdqd[i] = dfvpdqd[i] - df_ext->block(i*6,num_dof,6,num_dof);
+      }
       
     }
   }
@@ -1452,7 +1394,7 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
         for (k=0; k < NB; k++) {
           dIC[parent[i]][k] += Xup[i].transpose()*dIC[i][k]*Xup[i];
         }
-        dIC[parent[i]][i] += dXupdq[i].transpose()*IC[i]*Xup[i] + Xup[i].transpose()*IC[i]*dXupdq[i];
+        dIC[parent[i]][n] += dXupdq[i].transpose()*IC[i]*Xup[i] + Xup[i].transpose()*IC[i]*dXupdq[i];
       }
       
       if (dC) {
@@ -1480,15 +1422,16 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 
   if (dH) {
     for (k=0; k < NB; k++) {
+      nk = dofnum[k];
       for (i=0; i < NB; i++) {
         n = dofnum[i];
         fh = IC[i] * S[i];
-        dfh = dIC[i][k] * S[i]; //dfh/dqk
-        (*dH)(n + n*NB,k) = S[i].transpose() * dfh;
-        j = i; np=n;
+        dfh = dIC[i][nk] * S[i]; //dfh/dqk
+        (*dH)(n + n*NB,nk) = S[i].transpose() * dfh;
+        j = i; 
         while (parent[j] >= 0) {
           if (j==k) {
-            dfh = Xup[j].transpose() * dfh + dXupdq[k].transpose() * fh;
+            dfh = Xup[j].transpose() * dfh + dXupdq[j].transpose() * fh;
           } else {
             dfh = Xup[j].transpose() * dfh;
           }
@@ -1496,14 +1439,12 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
           
           j = parent[j];
           np = dofnum[j];
-          (*dH)(n + (np)*NB,k) = S[j].transpose() * dfh;
-          (*dH)(np + (n)*NB,k) = (*dH)(n + np*NB,k);
+          (*dH)(n + (np)*NB,nk) = S[j].transpose() * dfh;
+          (*dH)(np + (n)*NB,nk) = (*dH)(n + np*NB,nk);
         }
       }
     }
   }
-
-
 }
 
 int RigidBodyManipulator::findLinkInd(string linkname, int robot)
@@ -1595,7 +1536,8 @@ template void RigidBodyManipulator::forwardJac(const int, MatrixBase< Map<Matrix
 template void RigidBodyManipulator::forwardJac(const int, const MatrixBase< Vector4d > &, const int, MatrixBase< MatrixXd > &);
 //template void RigidBodyManipulator::forwardJacDot(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
 //template void RigidBodyManipulator::forwarddJac(const int, const MatrixBase< Vector4d > &, MatrixBase< MatrixXd >&);
-template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &);
+template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
+template void RigidBodyManipulator::bodyKin(const int, const MatrixBase< MatrixXd >&, MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
 
-template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
-template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);
+template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< Map<MatrixXd> > * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<VectorXd> > &, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *, MatrixBase< Map<MatrixXd> > *);
+template void RigidBodyManipulator::HandC(double* const, double * const, MatrixBase< MatrixXd > * const, MatrixBase< MatrixXd > &, MatrixBase< VectorXd > &, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *, MatrixBase< MatrixXd > *);

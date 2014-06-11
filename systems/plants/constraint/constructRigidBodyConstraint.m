@@ -32,6 +32,8 @@ else
       obj = WorldGazeTargetConstraint(varargin{:});
     case RigidBodyConstraint.RelativeGazeTargetConstraintType
       obj = RelativeGazeTargetConstraint(varargin{:});
+    case RigidBodyConstraint.RelativeGazeDirConstraintType
+      obj = RelativeGazeDirConstraint(varargin{:});
     case RigidBodyConstraint.WorldCoMConstraintType
       obj = WorldCoMConstraint(varargin{:});
     case RigidBodyConstraint.WorldPositionConstraintType

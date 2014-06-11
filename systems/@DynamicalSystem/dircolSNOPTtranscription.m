@@ -290,7 +290,7 @@ function [f,G] = dircol_userfun(sys,w,costFun,finalCostFun,tOrig,nX,nU,con,optio
   end
   
   if (isfield(con,'xf'))
-    if (isfield(con,'c'))
+    if (isfield(con.xf,'c'))
       [c,dc] = geval(con.xf.c,x(:,end),options);
       f = [f; c(:)]; G = [G; dc(:)];
     end

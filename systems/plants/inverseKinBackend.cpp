@@ -220,7 +220,7 @@ static void IKtraj_cost_fun(MatrixXd q,const VectorXd &qdot0,const VectorXd &qdo
   dJdqdd.resize(1,nq*nT);
   dJ_vec.block(0,0,1,nq*num_qfree) += dJdqdd*accel_mat.block(0,nq*qstart_idx,nq*nT,nq*num_qfree);
   MatrixXd dJdqdotf;
-  dJdqdotf = dJdqdd*accel_mat_qdf+Qv*qdotf+dJdqd*velocity_mat_qdf;
+  dJdqdotf = dJdqdd*accel_mat_qdf+qdotf.transpose()*Qv+dJdqd*velocity_mat_qdf;
   dJdqdotf.resize(1,nq);
   if(fixInitialState)
   {
@@ -229,7 +229,7 @@ static void IKtraj_cost_fun(MatrixXd q,const VectorXd &qdot0,const VectorXd &qdo
   else
   {
     MatrixXd dJdqdot0;
-    dJdqdot0 = dJdqdd*accel_mat_qd0+Qv*qdot0+dJdqd*velocity_mat_qd0;
+    dJdqdot0 = dJdqdd*accel_mat_qd0+qdot0.transpose()*Qv+dJdqd*velocity_mat_qd0;
     dJdqdot0.resize(1,nq);
     dJ_vec.block(0,nq*num_qfree,1,nq) = dJdqdot0;
     dJ_vec.block(0,nq*num_qfree+nq,1,nq) = dJdqdotf;
@@ -441,8 +441,8 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
   MatrixXd joint_limit_max(nq,nT);
   for(int i = 0;i<nT;i++)
   {
-    memcpy(joint_limit_min.data()+i*nq,model->joint_limit_min,sizeof(double)*nq);
-    memcpy(joint_limit_max.data()+i*nq,model->joint_limit_max,sizeof(double)*nq);
+    joint_limit_min.col(i) = model->joint_limit_min;
+    joint_limit_max.col(i) = model->joint_limit_max;
   }
   for(int i = 0;i<num_constraints;i++)
   {
@@ -469,8 +469,7 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
     }
     else if(constraint_category == RigidBodyConstraint::PostureConstraintCategory)
     {
-      double* joint_min = new double[nq];
-      double* joint_max = new double[nq];
+      VectorXd joint_min, joint_max;
       PostureConstraint* pc = static_cast<PostureConstraint*>(constraint);
       for(int j = 0;j<nT;j++)
       {
@@ -485,8 +484,6 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
           }
         }
       }
-      delete[] joint_min;
-      delete[] joint_max;
     }
     else if(constraint_category == RigidBodyConstraint::MultipleTimeLinearPostureConstraintCategory)
     {
@@ -2047,7 +2044,6 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       MatrixXd df_err2 = df_err.block(1,0,nF-1,nx);
       printf("The maximum gradient numerical error, except in the cost function, is %e\n",df_err2.maxCoeff());
     }
-    q_sol.resize(nq,nT);
     VectorXd qdot0(nq);
     VectorXd qdotf(nq);
     if(fixInitialState)
@@ -2085,12 +2081,16 @@ void inverseKinBackend(RigidBodyManipulator* model_input, const int mode, const 
       }
     }
     qdot_sol.block(0,0,nq,1) = qdot0;
-    qdot_sol.block(nq*(nT-1),0,nq,1) = qdotf;
-    qdot_sol.block(nq,0,nq*(nT-2),1) = velocity_mat*q_sol;
-    qddot_sol = accel_mat*q_sol+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf;
-    q_sol.resize(nq,nT);
-    qdot_sol.resize(nq,nT);
-    qddot_sol.resize(nq,nT);
+    qdot_sol.block(0,nT-1,nq,1) = qdotf;
+    MatrixXd q_sol_tmp = q_sol;
+    q_sol_tmp.resize(nq*nT,1);
+    MatrixXd qdot_sol_tmp = velocity_mat*q_sol_tmp;
+    qdot_sol_tmp.resize(nq,nT-2);
+    qdot_sol.block(0,1,nq,nT-2) = qdot_sol_tmp;
+    MatrixXd qddot_sol_tmp(nq*nT,1);
+    qddot_sol_tmp= accel_mat*q_sol_tmp+accel_mat_qd0*qdot0+accel_mat_qdf*qdotf; 
+    qddot_sol_tmp.resize(nq,nT);
+    qddot_sol = qddot_sol_tmp;
 
     if(*INFO_snopt == 13 || *INFO_snopt == 31 || *INFO_snopt == 32)
     {

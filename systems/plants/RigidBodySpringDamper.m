@@ -11,32 +11,102 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
   end
   
   methods
-    function f_ext = computeSpatialForce(obj,manip,q,qd)
+    function [f_ext, df_ext] = computeSpatialForce(obj,manip,q,qd)
       % todo: re-enable mex for planar version when i write mex the planer
       % bodykin
-      kinsol = doKinematics(manip,q,false,~isa(manip,'PlanarRigidBodyManipulator'));  
+      
+      nq = size(q,1);
       
       if (obj.b~=0)
-        [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
-        v1 = J1*qd;
-        [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
-        v2 = J2*qd;
-        % r = x1-x2; l=sqrt(r'r); ldot=(r'rdot)/sqrt(r'r); 
-        length = norm(x1-x2);
-        vel = ((x1-x2)'*(v1-v2))/(length+eps);   
+        if (nargout>1)
+          kinsol = doKinematics(manip,q,false,true,qd);
+          [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
+          J1dot = forwardJacDot(manip,kinsol,obj.body1,obj.pos1);
+          v1 = J1*qd;
+          dv1dq = J1dot;
+          dv1dqd = J1;
+          [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+          J2dot = forwardJacDot(manip,kinsol,obj.body2,obj.pos2);
+          v2 = J2*qd;
+          dv2dq = J2dot;
+          dv2dqd = J2;
+          % r = x1-x2; l=sqrt(r'r); ldot=(r'rdot)/sqrt(r'r);
+          length = norm(x1-x2);
+          dlengthdq = ((x1-x2)'/norm(x1-x2))*(J1-J2);
+          vel = ((x1-x2)'*(v1-v2))/(length+eps);
+          dveldq =  (((J1-J2)'*(v1-v2)+(x1-x2)'*(dv1dq-dv2dq))*(length+eps)-((x1-x2)'*(v1-v2))*dlengthdq)/(length+eps)^2;
+          dveldqd = (((x1-x2)'*(dv1dqd-dv2dqd))*(length+eps))/(length+eps)^2;
+        else
+          kinsol = doKinematics(manip,q);
+          [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
+          v1 = J1*qd;
+          [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+          v2 = J2*qd;
+          % r = x1-x2; l=sqrt(r'r); ldot=(r'rdot)/sqrt(r'r);
+          length = norm(x1-x2);
+          vel = ((x1-x2)'*(v1-v2))/(length+eps);
+        end
       else
-        x1 = forwardKin(manip,kinsol,obj.body1,obj.pos1);
-        x2 = forwardKin(manip,kinsol,obj.body2,obj.pos2);
-        length = norm(x1-x2);
-        vel=0;
+        if (nargout>1)
+          [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
+          [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+          length = norm(x1-x2);
+          dlengthdq = ((x1-x2)'/norm(x1-x2))*(J1-J2);
+          vel = 0;
+          dveldq = zeros(1,nq);
+          dveldqd = zeros(1,nq);
+        else
+          x1 = forwardKin(manip,kinsol,obj.body1,obj.pos1);
+          x2 = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+          length = norm(x1-x2);
+          vel=0;
+        end
       end
       
       force = obj.k*(length-obj.rest_length) + obj.b*vel;
-      
+      if (nargout>1)
+        dforcedq = obj.k*dlengthdq + obj.b*dveldq;
+        dforcedqd = obj.b*dveldqd;
+      end
+        
       f_ext = sparse(6,getNumBodies(manip));
+      if (nargout>1)
+          df_ext = sparse(6,getNumBodies(manip)*2*nq);
+      end
       
-      f_ext(:,obj.body1)=cartesianForceToSpatialForce(manip,kinsol,obj.body1,obj.pos1,force*(x2-x1)/(length+eps));
-      f_ext(:,obj.body2)=cartesianForceToSpatialForce(manip,kinsol,obj.body2,obj.pos2,force*(x1-x2)/(length+eps));
+      fvect1 = force*(x2-x1)/(length+eps);
+      fvect2 = force*(x1-x2)/(length+eps);
+      if (nargout>1)
+          dfvect1dq = ((dforcedq*(x2-x1)+force*(J2-J1))*(length+eps)-force*(x2-x1)*dlengthdq)/(length+eps)^2;
+          dfvect1dqd = dforcedqd*(x2-x1)*(length+eps)/(length+eps)^2;
+          dfvect2dq = ((dforcedq*(x1-x2)+force*(J1-J2))*(length+eps)-force*(x1-x2)*dlengthdq)/(length+eps)^2;
+          dfvect2dqd = dforcedqd*(x1-x2)*(length+eps)/(length+eps)^2;
+      end
+      
+      if (nargout>1)
+        [f1,df1dq,df1dfvect1] = cartesianForceToSpatialForce(manip,kinsol,obj.body1,obj.pos1,fvect1); 
+        df1dq = df1dq + df1dfvect1*dfvect1dq;
+        df1dqd = df1dfvect1*dfvect1dqd;
+        [f2,df2dq,df2dfvect2] = cartesianForceToSpatialForce(manip,kinsol,obj.body2,obj.pos2,fvect2); 
+        df2dq = df2dq + df2dfvect2*dfvect2dq;
+        df2dqd = df2dfvect2*dfvect2dqd;
+      else
+        f1 = cartesianForceToSpatialForce(manip,kinsol,obj.body1,obj.pos1,fvect1);
+        f2 = cartesianForceToSpatialForce(manip,kinsol,obj.body2,obj.pos2,fvect2);
+      end
+      
+      f_ext(:,obj.body1)=f1;
+      f_ext(:,obj.body2)=f2;
+      if (nargout>1)        
+        df1 = [df1dq, df1dqd];
+        df2 = [df2dq, df2dqd];        
+        numbodies = getNumBodies(manip);
+        for i=1:2*nq
+          df_ext(:,(i-1)*numbodies+obj.body1) = df1(:,i);
+          df_ext(:,(i-1)*numbodies+obj.body2) = df2(:,i);
+        end
+      end
+      
     end
     
     function obj = updateBodyIndices(obj,map_from_old_to_new)

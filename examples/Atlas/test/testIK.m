@@ -2,7 +2,10 @@ function testIK
  
 options.floating = true;
 options.dt = 0.001;
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 r = RigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
+warning(w);
 v = r.constructVisualizer();
  
 cost = Point(r.getStateFrame,1);

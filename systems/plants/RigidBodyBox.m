@@ -37,7 +37,11 @@ classdef RigidBodyBox < RigidBodyGeometry
     end
     
     function pts = getTerrainContactPoints(obj)
-      % pts = getTerrainContactPoints(obj)
+      % pts = getTerrainContactPoints(obj) returns the terrain contact points
+      % of this geometry. The terrain contact points for a box are its corners. 
+      %
+      % For a general description of terrain contact points see 
+      % <a href="matlab:help RigidBodyGeometry/getTerrainContactPoints">RigidBodyGeometry/getTerrainContactPoints</a>
       %
       % @param  obj - RigidBodySphere object
       % @retval pts - 3xm array of points on this geometry (in link frame) that

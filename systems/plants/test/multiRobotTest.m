@@ -1,10 +1,10 @@
 function multiRobotTest
 
 urdf = 'FallingBrick.urdf';
-options.floating = true;
 options.terrain = RigidBodyFlatTerrain();
-r = TimeSteppingRigidBodyManipulator('',.01);
+r = TimeSteppingRigidBodyManipulator('',.01,options);
 
+options.floating = true;
 n = 1+randi(4);
 for i=1:n
   r = addRobotFromURDF(r,urdf,zeros(3,1),zeros(3,1),options);

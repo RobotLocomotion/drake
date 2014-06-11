@@ -40,7 +40,7 @@ if ~ok
       if (~conf.lcm_enabled)
         lcm_java_classpath = getCMakeParam('lcm_java_classpath',conf);
         if ~isempty(lcm_java_classpath)
-          javaaddpath(lcm_java_classpath);
+          javaaddpathProtectGlobals(lcm_java_classpath);
           disp(' Added the lcm jar to your javaclasspath (found via cmake)');
           conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
         end
@@ -50,21 +50,21 @@ if ~ok
         [retval,cp] = system('pkg-config --variable=classpath lcm-java');
         if (retval==0 && ~isempty(cp))
           disp(' Added the lcm jar to your javaclasspath (found via pkg-config)');
-          javaaddpath(strtrim(cp));
+          javaaddpathProtectGlobals(strtrim(cp));
         end
         
         conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
       end
       
       if (conf.lcm_enabled)
-        javaaddpath(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
+        javaaddpathProtectGlobals(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
         [retval,info] = system('util/check_multicast_is_loopback.sh');
         if (retval)
           info = strrep(info,'ERROR: ','');
           info = strrep(info,'./',[conf.root,'/util/']);
           warning('Drake:BroadcastingLCM','Currently all of your LCM traffic will be broadcast to the network, because:\n%s',info);
         end
-      else
+      elseif nargout<1
         disp(' ');
         disp(' LCM not found.  LCM support will be disabled.');
         disp(' To re-enable, add lcm-###.jar to your matlab classpath');
@@ -79,13 +79,13 @@ if ~ok
       if (~conf.lcmgl_enabled)
         try % try to add bot2-lcmgl.jar
           lcm_java_classpath = getCMakeParam('LCMGL_JAR_FILE',conf);
-          javaaddpath(lcm_java_classpath);
+          javaaddpathProtectGlobals(lcm_java_classpath);
           disp(' Added the lcmgl jar to your javaclasspath (found via cmake)');
         catch
         end
         conf.lcmgl_enabled = exist('bot_lcmgl.data_t','class');
       end
-      if (~conf.lcmgl_enabled)
+      if ~conf.lcmgl_enabled && nargout<1
         disp(' ');
         disp(' LCMGL not found.  LCMGL support will be disabled.');
         disp(' To re-enable, add bot2-lcmgl.jar to your matlab classpath using javaaddpath.');
@@ -101,7 +101,7 @@ if ~ok
         end
       end
         
-      if (~conf.ros_enabled)
+      if ~conf.ros_enabled && nargout<1
         disp(' ');
         disp(' ROS not found.  ROS support will be disabled.');
         disp(' To re-enable, install MATLAB''s ROS support from');
@@ -115,7 +115,7 @@ if ~ok
         conf.snopt_enabled = pod_pkg_config('snopt') && logical(exist('snopt','file'));
       end
 
-      if (~conf.snopt_enabled)
+      if ~conf.snopt_enabled && nargout<1
         disp(' ');
         disp(' SNOPT not found.  SNOPT support will be disabled.');
         disp(' To re-enable, add the SNOPT matlab folder to your path and rerun addpath_drake.');
@@ -143,7 +143,7 @@ if ~ok
         conf.vrml_enabled=false;
       end
       
-      if (~conf.vrml_enabled && ~unsupported)
+      if ~conf.vrml_enabled && ~unsupported && nargout<1
         disp(' ');
         disp(' Simulink 3D Animation Toolbox not found.  Have you run ''vrinstall -install viewer''?');
         disp(' ');
@@ -163,7 +163,7 @@ if ~ok
         %  if(~sedumiT)
         %    error('SeDuMi seems to have encountered a problem. Please verify that your SeDuMi install is working.');
         %  end
-      else
+      elseif nargout<1
         disp(' ');
         disp(' SeDuMi not found.  SeDuMi support will be disabled.');
         disp(' To re-enable, add SeDuMi to your matlab path and rerun addpath_drake.');
@@ -192,7 +192,7 @@ if ~ok
         end
       end
       
-      if (~conf.gurobi_enabled)
+      if ~conf.gurobi_enabled && nargout<1
         disp(' ');
         disp(' GUROBI not found or not working. GUROBI support will be disabled.');
         disp('    To enable, install GUROBI and a free academic license from');
@@ -206,8 +206,8 @@ if ~ok
       conf.gurobi_mex_enabled = logical(exist('gurobiQPmex'));
       
       
-      if (~conf.gurobi_mex_enabled)
-	disp(' ');
+      if ~conf.gurobi_mex_enabled && nargout<1
+        disp(' ');
         disp(' GUROBI MEX not found.  GUROBI MEX support will be disabled.');  
         disp('    To enable, install the GUROBI pod in your pod collection, and rerun make config; make in drake');
         disp(' ');
@@ -219,7 +219,7 @@ if ~ok
         conf.bertini_enabled = pod_pkg_config('bertini');
       end
       
-      if (~conf.bertini_enabled)
+      if ~conf.bertini_enabled && nargout<1
         disp(' ');
         disp(' Bertini not found.');
         disp(' ');
@@ -231,7 +231,7 @@ if ~ok
         conf.gloptipoly3_enabled = pod_pkg_config('gloptipoly3');
       end
       
-      if (~conf.gloptipoly3_enabled)
+      if ~conf.gloptipoly3_enabled && nargout<1
         disp(' ');
         disp(' Gloptipoly3 not found.');
         disp(' ');
@@ -239,7 +239,7 @@ if ~ok
       
     case 'cplex'
       conf.cplex_enabled = logical(exist('cplexlp','file'));
-      if (~conf.cplex_enabled)
+      if ~conf.cplex_enabled && nargout<1
         disp(' ');
         disp(' CPLEX not found.  CPLEX support will be disabled.  To re-enable, install CPLEX and add the matlab subdirectory to your matlab path, then rerun addpath_drake');
         disp(' ');
@@ -247,7 +247,7 @@ if ~ok
       
     case 'yalmip'
       conf.yalmip_enabled = logical(exist('sdpvar','file'));
-      if (~conf.yalmip_enabled)
+      if ~conf.yalmip_enabled && nargout<1
         disp(' ');
         disp(' YALMIP not found.  YALMIP support will be disabled.  To re-enable, install YALMIP and rerun addpath_drake.');
         disp(' ');
@@ -255,7 +255,7 @@ if ~ok
       
     case 'rigidbodyconstraint_mex'
       conf.rigidbodyconstraint_mex_enabled = (exist('constructPtrRigidBodyConstraintmex','file')==3);
-      if (~conf.rigidbodyconstraint_mex_enabled)
+      if ~conf.rigidbodyconstraint_mex_enabled && nargout<1
         disp(' ');
         disp(' The RigidBodyManipulatorConstraint classes were not built (because some of the dependencies where missing when cmake was run)');
         disp(' ');
@@ -263,7 +263,7 @@ if ~ok
       
     case 'bullet'
       conf.bullet_enabled = ~isempty(getCMakeParam('bullet',conf));
-      if (~conf.bullet_enabled)
+      if ~conf.bullet_enabled && nargout<1
         disp(' ');
         disp(' Bullet not found.  To resolve this you will have to rerun make (from the shell)');
         disp(' ');
@@ -273,9 +273,11 @@ if ~ok
       if ~isfield(conf,'avl') || isempty(conf.avl)
         path_to_avl = getCMakeParam('avl',conf);
         if isempty(path_to_avl) || strcmp(path_to_avl,'avl-NOTFOUND')
-          disp(' ');
-          disp(' AVL support is disabled.  To enable it, install AVL from here: http://web.mit.edu/drela/Public/web/avl/, then add it to the matlab path or set the path to the avl executable explicitly using editDrakeConfig(''avl'',path_to_avl_executable) and rerun make');
-          disp(' ');
+          if nargout<1
+            disp(' ');
+            disp(' AVL support is disabled.  To enable it, install AVL from here: http://web.mit.edu/drela/Public/web/avl/, then add it to the matlab path or set the path to the avl executable explicitly using editDrakeConfig(''avl'',path_to_avl_executable) and rerun make');
+            disp(' ');
+          end
           conf.avl = '';
         else
           conf.avl = path_to_avl;
@@ -287,9 +289,11 @@ if ~ok
       if ~isfield(conf,'xfoil') || isempty(conf.xfoil)
         path_to_xfoil = getCMakeParam('xfoil',conf);
         if isempty(path_to_xfoil) || strcmp(path_to_xfoil,'xfoil-NOTFOUND')
-          disp(' ');
-          disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun addpath_drake');
-          disp(' ');
+          if nargout<1
+            disp(' ');
+            disp(' XFOIL support is disabled.  To enable it, install XFOIL from here: http://web.mit.edu/drela/Public/web/xfoil/, then add it to the matlab path or set the path to the xfoil executable explicitly using editDrakeConfig(''xfoil'',path_to_avl_executable) and rerun addpath_drake');
+            disp(' ');
+          end
           conf.xfoil = '';
         else
           conf.xfoil = path_to_xfoil;

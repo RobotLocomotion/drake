@@ -31,7 +31,7 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
       mexErrMsgIdAndTxt("Drake:forwardKinmex:InvalidKinematics","This kinsol is no longer valid.  Somebody has called doKinematics with a different q since the solution was computed.");
     }
   }
-  
+
   int body_ind = ((int) mxGetScalar(prhs[2])) - 1;  // note: this is body_ind-1 (so 0 to num_bodies-1)
   bool b_jacdot;
   if(body_ind != -1)
@@ -45,17 +45,13 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (body_ind==-1) {  // compute center of mass
     int num_robot = mxGetNumberOfElements(prhs[3]);
-    int* robotnum = new int[num_robot];
-    double* robotnum_tmp = new double[num_robot];
-    memcpy(robotnum_tmp,mxGetPr(prhs[3]),sizeof(double)*num_robot);
+    set<int> robotnum_set;
+    double* probotnum = mxGetPr(prhs[3]);
     for(int i = 0;i<num_robot;i++)
     {
-      robotnum[i] = (int) robotnum_tmp[i]-1;
+      robotnum_set.insert((int) probotnum[i]-1);
     }
-    set<int> robotnum_set(robotnum,robotnum+num_robot);
-    delete[] robotnum;
-    delete[] robotnum_tmp;
-    if (b_jacdot) {
+    if (b_jacdot && nlhs>0) {
       plhs[0] = mxCreateDoubleMatrix(3,model->num_dof,mxREAL);
       Map<MatrixXd> Jdot(mxGetPr(plhs[0]),3,model->num_dof);
       model->getCOMJacDot(Jdot,robotnum_set);
@@ -107,10 +103,10 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   if (b_jacdot) {
     if (rotation_type>1) mexErrMsgIdAndTxt("Drake:forwardKinmex:NotImplemented","Jacobian dot of quaternions are not implemented yet");
 
-		plhs[0] = mxCreateDoubleMatrix(dim_with_rot*n_pts,model->num_dof,mxREAL); 
+    plhs[0] = mxCreateDoubleMatrix(dim_with_rot*n_pts,model->num_dof,mxREAL); 
     Map<MatrixXd> Jdot(mxGetPr(plhs[0]),dim_with_rot*n_pts,model->num_dof);
     model->forwardJacDot(body_ind,pts,rotation_type,Jdot);
-		return;
+    return;
   } else {
     if (nlhs>0) {
       plhs[0] = mxCreateDoubleMatrix(dim_with_rot,n_pts,mxREAL);

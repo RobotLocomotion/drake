@@ -23,7 +23,6 @@ using namespace Eigen;
 class RigidBody {
 public:
   RigidBody();
-  ~RigidBody();
 
   void setN(int n);
   void computeAncestorDOFs(RigidBodyManipulator* model);
@@ -56,6 +55,9 @@ public:
   Vector4d com;  // this actually stores [com;1] (because that's what's needed in the kinematics functions)
 
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 

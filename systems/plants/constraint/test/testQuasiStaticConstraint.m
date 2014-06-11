@@ -34,6 +34,10 @@ qsc = qsc.setActive(true);
 qsc = qsc.setShrinkFactor(shrinkFactor);
 qsc = qsc.addContact(l_foot,l_foot_pts,r_foot,r_foot_pts);
 
+% todo: move this farther down, so that more tests are included when this
+% dependency is not satisfied...
+checkDependency('rigidbodyconstraint_mex')
+
 category_name_mex = constraintCategorymex(qsc.mex_ptr);
 if(~strcmp(category_name_mex,qsc.categoryString()))
   error('category name string do not match')
@@ -58,9 +62,6 @@ end
 [c,dc] = qsc.eval(t,kinsol,weights);
 valuecheck(c,[0;0]);
 
-% todo: move this farther down, so that more tests are included when this
-% dependency is not satisfied...
-checkDependency('rigidbodyconstraint_mex')
 
 [active_mex,num_weights_mex,c_mex,dc_mex,lb_mex,ub_mex] = testQuasiStaticConstraintmex(qsc.mex_ptr,q,weights,t);
 valuecheck(qsc.active,active_mex);

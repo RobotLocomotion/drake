@@ -29,11 +29,10 @@ void mexFunction(int nlhs,mxArray* plhs[], int nrhs, const mxArray *prhs[])
   }
   PostureConstraint* pc = (PostureConstraint*) getDrakeMexPointer(prhs[0]);
   int nq = pc->getRobotPointer()->num_dof;
-  double* lb = new double[nq];
-  double* ub = new double[nq];
+  VectorXd lb,ub;
   pc->bounds(t_ptr,lb,ub);
   plhs[0] = mxCreateDoubleMatrix(nq,1,mxREAL);
   plhs[1] = mxCreateDoubleMatrix(nq,1,mxREAL);
-  memcpy(mxGetPr(plhs[0]),lb,sizeof(double)*nq);
-  memcpy(mxGetPr(plhs[1]),ub,sizeof(double)*nq);
+  memcpy(mxGetPr(plhs[0]),lb.data(),sizeof(double)*nq);
+  memcpy(mxGetPr(plhs[1]),ub.data(),sizeof(double)*nq);
 }

@@ -6,6 +6,11 @@ options.twoD = true;
 options.terrain = RigidBodyFlatTerrain();
 
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
+warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
+warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
+warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+warning('off','Drake:RigidBodyGeometry:SimplifiedCollisionGeometry');
+warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 r = TimeSteppingRigidBodyManipulator('pr2.urdf',0.01,options);
 warning(w);
 r = setSimulinkParam(r,'MinStep','0.001');

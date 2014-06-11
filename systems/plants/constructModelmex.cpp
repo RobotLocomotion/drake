@@ -73,19 +73,19 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   pm = mxGetField(featherstone,0,"damping");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.damping.");
-  memcpy(model->damping,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->damping.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   pm = mxGetField(featherstone,0,"coulomb_friction");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_friction.");
-  memcpy(model->coulomb_friction,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->coulomb_friction.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   pm = mxGetField(featherstone,0,"static_friction");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.static_friction.");
-  memcpy(model->static_friction,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->static_friction.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   pm = mxGetField(featherstone,0,"coulomb_window");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_window.");
-  memcpy(model->coulomb_window,mxGetPr(pm),sizeof(double)*model->NB);
+  memcpy(model->coulomb_window.data(),mxGetPr(pm),sizeof(double)*model->NB);
   
   mxArray* pXtree = mxGetField(featherstone,0,"Xtree");
   if (!pXtree) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.Xtree.");
@@ -235,6 +235,60 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     }
   }
 
+  // THIS IS UGLY: I'm sending the terrain contact points into the
+  // contact_pts field of the cpp RigidBody objects
+  //DEBUG
+  //cout << "constructModelmex: Parsing contact points " << endl;
+  //cout << "constructModelmex: Get struct" << endl;
+  //END_DEBUG
+  mxArray* contact_pts_struct[1];
+  if (~mexCallMATLAB(1,contact_pts_struct,1,const_cast<mxArray**>(&prhs[0]),"getTerrainContactPoints")) {
+    //DEBUG
+    //cout << "constructModelmex: Got struct" << endl;
+    //if (contact_pts_struct) {
+    //cout << "constructModelmex: Struct pointer: " << contact_pts_struct << endl;
+    //} else {
+    //cout << "constructModelmex: Struct pointer NULL" << endl;
+    //}
+    //cout << "constructModelmex: Get numel of struct" << endl;
+    //END_DEBUG
+    const int n_bodies_w_contact_pts = mxGetNumberOfElements(contact_pts_struct[0]);
+    //DEBUG
+    //cout << "constructModelmex: Got numel of struct:" << n_bodies_w_contact_pts << endl;
+    //END_DEBUG
+    mxArray* pPts;
+    int body_idx;
+    int n_pts;
+    for (int j=0; j < n_bodies_w_contact_pts; j++) {
+      //DEBUG
+      //cout << "constructModelmex: Loop: Iteration " << j << endl;
+      //cout << "constructModelmex: Get body_idx" << endl;
+      //END_DEBUG
+      body_idx = (int) mxGetScalar(mxGetField(contact_pts_struct[0],j,"idx")) - 1;
+      //DEBUG
+      //cout << "constructModelmex: Got body_idx: " << body_idx << endl;
+      //cout << "constructModelmex: Get points" << endl;
+      //END_DEBUG
+      pPts = mxGetField(contact_pts_struct[0],j,"pts");
+      //DEBUG
+      //cout << "constructModelmex: Get points" << endl;
+      //cout << "constructModelmex: Get number of points" << endl;
+      //END_DEBUG
+      n_pts = mxGetN(pPts);
+      //DEBUG
+      //cout << "constructModelmex: Got number of points: " << n_pts << endl;
+      //cout << "constructModelmex: Set contact_pts of body" << endl;
+      //END_DEBUG
+      Map<MatrixXd> pts(mxGetPr(pPts),3,n_pts);
+      model->bodies[body_idx].contact_pts.resize(4,n_pts);
+      model->bodies[body_idx].contact_pts << pts, MatrixXd::Ones(1,n_pts);
+      //DEBUG
+      //cout << "constructModelmex: Contact_pts of body: " << endl;
+      //cout << model->bodies[body_idx].contact_pts << endl;
+      //END_DEBUG
+    }
+  }
+
   for (int i=0; i<model->num_frames; i++) {
     pm = mxGetProperty(pFrames,i,"name");
     mxGetString(pm,buf,100);
@@ -247,8 +301,9 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     memcpy(model->frames[i].T.data(),mxGetPr(pm),sizeof(double)*4*4);
   }
 
-  memcpy(model->joint_limit_min, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min")), sizeof(double)*model->num_dof);
-  memcpy(model->joint_limit_max, mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_max")), sizeof(double)*model->num_dof);
+  
+  memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_min")), sizeof(double)*model->num_dof);
+  memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(prhs[0],0,"joint_limit_max")), sizeof(double)*model->num_dof);
   
   const mxArray* a_grav_array = mxGetProperty(prhs[0],0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {

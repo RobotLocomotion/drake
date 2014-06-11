@@ -31,7 +31,10 @@ for i=1:5
   xtraj=simulate(sys,[0 4],x0);
   xtraj2=simulate(sys2,[0 4],x0);
 
+  w = warning('off','Drake:FunctionHandleTrajectory');
+  warning('off','Drake:PPTrajectory:DifferentBreaks');
   mv.playback([xtraj2;xtraj]);
+  warning(w);
 end
 
 

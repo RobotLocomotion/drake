@@ -1,7 +1,9 @@
 function testFindKinematicPath()
 
 options.floating = true;
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 robot = RigidBodyManipulator(fullfile('../urdf/atlas_minimal_contact.urdf'),options);
+warning(w);
 
 num_bodies = robot.getNumBodies();
 

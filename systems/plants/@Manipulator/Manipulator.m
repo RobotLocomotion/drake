@@ -40,9 +40,10 @@ classdef Manipulator < DrakeSystem
         
         if (obj.num_u>0) 
           vdot = Hinv*(B*u-C); 
-          dvdot = [zeros(obj.num_velocities,1),...
-            Hinv*(matGradMult(dB(:,1:obj.num_positions),u) - matGradMult(dH(:,1:obj.num_positions),vdot) - dC(:,1:obj.num_positions)),...
-            Hinv*(matGradMult(dB(:,obj.num_positions+1:end),u) - dC(:,obj.num_positions+1:end)), Hinv*B];
+          dtau = matGradMult(dB,u) - dC;
+          dvdot = [zeros(obj.num_positions,1),...
+            -Hinv*matGradMult(dH(:,1:obj.num_positions),vdot) + Hinv*dtau(:,1:obj.num_positions),...
+            +Hinv*dtau(:,1+obj.num_positions:end), Hinv*B];
         else
           vdot = -Hinv*C; 
           dvdot = [zeros(obj.num_velocities,1),...
@@ -295,6 +296,26 @@ classdef Manipulator < DrakeSystem
         error('Drake:Manipulator:ResolveConstraintsFailed','failed to resolve constraints');
       end
       x = Point(obj.getStateFrame,x);
+    end
+    
+    function sys = feedback(sys1,sys2)
+      % Attempt to produce a new manipulator system if possible
+      
+      if (isa(sys2,'Manipulator'))
+        % todo: implement this (or decide that it doesn't ever make sense)
+        warning('feedback combinations of manipulators not handled explicitly yet. kicking out to a combination of SecondOrderSystems');
+      end
+      sys = feedback@SecondOrderSystem(sys1,sys2);
+    end
+    
+    function sys = cascade(sys1,sys2)
+      % Attempt to produce a new manipulator system if possible
+
+      if (isa(sys2,'Manipulator'))
+        % todo: implement this (or decide that it doesn't ever make sense)
+        warning('cascade combinations of manipulators not handled explicitly yet. kicking out to a combination of SecondOrderSystems');
+      end
+      sys = cascade@SecondOrderSystem(sys1,sys2);
     end
         
     function polysys = extractTrigPolySystem(obj,options)

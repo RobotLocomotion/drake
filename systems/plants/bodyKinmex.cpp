@@ -19,7 +19,7 @@ using namespace std;
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
 
   if (nrhs < 3) {
-    mexErrMsgIdAndTxt("Drake:bodyKinmex:NotEnoughInputs","Usage x=bodyKinmex(model_ptr,q_cache,body_ind,pts)");
+    mexErrMsgIdAndTxt("Drake:bodyKinmex:NotEnoughInputs","Usage [x,J,P]=bodyKinmex(model_ptr,q_cache,body_ind,pts)");
   }
 
   // first get the model_ptr back from matlab
@@ -47,12 +47,24 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   Map<MatrixXd> pts_tmp(mxGetPr(prhs[3]),dim,n_pts);
   MatrixXd pts(dim+1,n_pts);
   pts << pts_tmp, MatrixXd::Ones(1,n_pts);
+  
+  plhs[0] = mxCreateDoubleMatrix(dim,n_pts,mxREAL);
+  Map<MatrixXd> x(mxGetPr(plhs[0]),dim,n_pts);
 
-  if (nlhs>0) {
-  	plhs[0] = mxCreateDoubleMatrix(dim,n_pts,mxREAL);
-  	if (n_pts>0) {
-  		Map<MatrixXd> x(mxGetPr(plhs[0]),dim,n_pts);
-  		model->bodyKin(body_ind,pts,x);
-  	}
+  Map<MatrixXd> *J=NULL, *P=NULL;
+
+  if (nlhs>1) {
+    plhs[1] = mxCreateDoubleMatrix(dim*n_pts,model->num_dof,mxREAL);
+    J = new Map<MatrixXd>(mxGetPr(plhs[1]),dim*n_pts,model->num_dof);
   }
+  if (nlhs>2) {
+    plhs[2] = mxCreateDoubleMatrix(dim*n_pts,dim*n_pts,mxREAL);
+    P = new Map<MatrixXd>(mxGetPr(plhs[2]),dim*n_pts,dim*n_pts);
+  }
+
+  model->bodyKin(body_ind,pts,x,J,P);
+
+  if (nlhs>1) delete J;
+  if (nlhs>2) delete P;
+
 }

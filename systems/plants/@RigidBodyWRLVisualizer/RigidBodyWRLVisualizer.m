@@ -5,8 +5,6 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
   
   methods
     function obj = RigidBodyWRLVisualizer(manip,options)
-      % @option ground set options.ground = true to have ground visualized
-
       checkDependency('vrml');
       typecheck(manip,'RigidBodyManipulator');
 
@@ -19,7 +17,6 @@ classdef RigidBodyWRLVisualizer < RigidBodyVisualizer
       if nargin<2
         options = struct();
       end
-      if ~isfield(options,'ground'), options.ground = manip.getNumContactPairs>0; end
       
       wrlfile = fullfile(tempdir,[obj.model.name{1},'.wrl']);
       writeWRL(obj,wrlfile,options);

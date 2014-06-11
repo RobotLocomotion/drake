@@ -11,7 +11,7 @@ classdef CartPoleEnergyShaping < DrakeSystem
     function obj = CartPoleEnergyShaping(plant)
       obj = obj@DrakeSystem(0,0,4,1,true,true);
       if (nargin>0)
-        typecheck(plant,'CartPolePlant')
+        typecheck(plant,'CartPolePlant');
         obj.p = plant;
         obj = obj.setInputFrame(plant.getStateFrame);
         obj = obj.setOutputFrame(plant.getInputFrame);

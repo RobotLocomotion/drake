@@ -19,6 +19,11 @@ ub = [0;0;0;0.1*pi];
 tspan = [0 1];
 q = randn(robot.getNumDOF,1);
 stlpc = SingleTimeLinearPostureConstraint(robot,iAfun,jAvar,A,lb,ub,tspan);
+
+% todo: move this farther down, so that more tests are included when this
+% dependency is not satisfied...
+checkDependency('rigidbodyconstraint_mex')
+
 category_name_mex = constraintCategorymex(stlpc.mex_ptr);
 if(~strcmp(category_name_mex,stlpc.categoryString()))
   error('category name string do not match')

@@ -2,7 +2,11 @@ function testCOM
 % test COM computation with/without affordance
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
+w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
+%warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
+warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 r = RigidBodyManipulator(urdf,options);
+warning(w);
 nq = r.getNumDOF();
 
 
@@ -38,7 +42,9 @@ valuecheck(Jdot_mex,Jdot,1e-10);
 
 xyz = 0.1*randn(3,1)+[1;1;1];
 rpy = 0.1*pi*randn(3,1)+[pi/2;0;0];
+w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 r = r.addRobotFromURDF('valve_task_wall.urdf',xyz,rpy,struct('floating',false));
+warning(w);
 nq_aff = length(r.getStateFrame.frame{2}.coordinates)/2;
 q_seed_aff = zeros(nq_aff,1);
 nq = r.getNumDOF();

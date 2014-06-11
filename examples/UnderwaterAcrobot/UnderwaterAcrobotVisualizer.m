@@ -19,21 +19,33 @@ classdef UnderwaterAcrobotVisualizer < Visualizer
             obj.L1 = plant.L1;
             obj.mr1 = plant.mr1;
             obj.mr2 = plant.mr2;
-            npts = 30; %Must be EVEN, same number of points on top and bottom
+            %npts = 30; %Must be EVEN, same number of points on top and bottom
             
             %Points around ellipse
-            obj.X1 = ellipseCircumference(obj,plant.semiX1,plant.semiY1,npts);
-            obj.X2 = ellipseCircumference(obj,plant.semiX2,plant.semiY2,npts);
+%             obj.X1 = ellipseCircumference(obj,plant.semiX1,plant.semiY1,npts);
+%             obj.X2 = ellipseCircumference(obj,plant.semiX2,plant.semiY2,npts);
+            obj.X1 = boxCircumference(obj,plant.L1,plant.d1);
+            obj.X2 = boxCircumference(obj,plant.L2,plant.d2);
             
             %Translate so that rotation is about the top, not the center
-            obj.X1 = obj.X1+repmat([0;-plant.semiY1],1,npts);
-            obj.X2 = obj.X2+repmat([0;-plant.semiY2],1,npts);
+%             obj.X1 = obj.X1+repmat([0;-plant.semiY1],1,npts);
+%             obj.X2 = obj.X2+repmat([0;-plant.semiY2],1,npts);
+            obj.X1 = obj.X1+repmat([0;-plant.L1/2],1,4);
+            obj.X2 = obj.X2+repmat([0;-plant.L2/2],1,4);
         end
         
         function res = ellipseCircumference(obj,a,b,npts)
             %Creates a set of column vectors of the border points of an ellipse
             x = linspace(-a,a,npts/2);
             y = b*sqrt(1-(x/a).^2);
+            
+            x = [x fliplr(x)]; y = [y -fliplr(y)];
+            res = [x;y];
+        end
+        function res = boxCircumference(obj,L,d)
+            %Creates a set of column vectors of the border points of an ellipse
+            x = 0.5*[-d d];
+            y = 0.5*[L L];
             
             x = [x fliplr(x)]; y = [y -fliplr(y)];
             res = [x;y];

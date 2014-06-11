@@ -2,6 +2,10 @@ function testQuat
 % Checks if the cpp and matlab computation are consistent for quatDiff,
 % quatDiffInvAxis, quatProduct, and quatRotateVector
 
+if ~exist('testQuatmex','file')
+  error('Drake:MissingDependency:testQuatmex','Skipping this test because I can''t find testQuatmex (presumably because you didn''t have the prequisites at compile time');
+end
+
 for i = 1:100
   q1 = randn(4,1);
   q2 = randn(4,1);

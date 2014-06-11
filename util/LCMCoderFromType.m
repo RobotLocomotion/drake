@@ -4,6 +4,7 @@ classdef LCMCoderFromType < LCMCoder
   
   methods 
     function obj = LCMCoderFromType(lcmtype)
+      checkDependency('lcm');
       if (ischar(lcmtype))
         lcmtype = eval(lcmtype);
       end
