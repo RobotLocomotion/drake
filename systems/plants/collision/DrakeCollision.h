@@ -5,7 +5,6 @@
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-//#include <iostream>
 //#include <stdexcept>
 //#include <bitset>
 
@@ -85,18 +84,15 @@ namespace DrakeCollision
 
   std::shared_ptr<Model> newModel(ModelType model_type);
 
-/*
 
+  
   typedef std::bitset<16> bitmask;
   // Constants
-  const std::bitset<16> ALL_MASK(std::string(16,'1'));
-  const std::bitset<16> NONE_MASK(0);
-  const std::bitset<16> DEFAULT_GROUP(1);
+  extern const bitmask ALL_MASK;
+  extern const bitmask NONE_MASK;
+  extern const bitmask DEFAULT_GROUP;
 
-  // Forward declarations
-  class BulletModel;
-  class BulletElement;
-  class ResultCollector;
+  // Exceptions
 
   class noClosestPointsResultException : public std::exception {};
 
@@ -138,10 +134,6 @@ namespace DrakeCollision
       return (T(0) < val) - (val < T(0));
   }
 
-  typedef std::shared_ptr< ResultCollector > ResultCollShPtr;
-
-  ResultCollShPtr newResultCollector();
-*/
 }
 #endif
 
