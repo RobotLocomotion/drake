@@ -12,6 +12,8 @@ compareToNumerical(robot, 0);
 compareToNumerical(robot, 1);
 compareToNumerical(robot, 2);
 
+testGradient(robot, 0);
+
 end
 
 function compareToNumerical(robot, rotation_type)
@@ -65,4 +67,37 @@ if displayComputationTime
   fprintf('computation time per call: %0.3f ms\n', computation_time / n_tests);
   fprintf('\n');
 end
+end
+
+function testGradient(robot, rotation_type)
+nv = robot.getNumVelocities();
+nb = length(robot.body);
+body_range = [1, nb];
+
+n_tests = 5;
+test_number = 1;
+while test_number < n_tests
+  base = 1; %TODO: randi(body_range);
+  end_effector = randi(body_range);
+
+  if base ~= end_effector
+    q = getRandomConfiguration(robot);
+    v = randn(nv, 1);
+    nPoints = 1; %randi([1, 10]);
+    points = zeros(3, nPoints);
+    
+    option.grad_method = 'taylorvar';
+    kinsol = robot.doKinematics(q, true, false, v, true);
+    [~, ~, ~, dJ] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
+    [~, dJ_geval] = geval(@(q) gevalFunction(robot, q, v, end_effector, points, rotation_type, base), q, option);
+    valuecheck(dJ_geval, dJ, 1e-10);
+    test_number = test_number + 1;
+  end
+end
+
+end
+
+function [J] = gevalFunction(robot, q, v, end_effector, points, rotation_type, base)
+kinsol = robot.doKinematics(q, false, false, v, true);
+[~, J] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
 end
