@@ -1,5 +1,8 @@
 function runDircol
 
+% simple planning demo which takes the quadrotor from hover at x=0m to a new hover at
+% x=2m with minimal thrust.
+
 r = Quadrotor();
 
 x0 = Point(getStateFrame(r));  % initial conditions: all-zeros
