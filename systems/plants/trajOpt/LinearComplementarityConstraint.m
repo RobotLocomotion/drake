@@ -7,14 +7,14 @@ classdef LinearComplementarityConstraint < ConstraintManager
   %
   % mode 1: (default)
   %         z >= 0 (bb),
-  %         W*z + q >= 0 (lin),
-  %         <z,W*z+q)> = 0 (nl) (elementwise)
+  %         W*z + M*x + q >= 0 (lin),
+  %         <z,W*z+M*x+q)> = 0 (nl) (elementwise)
   %
   % mode 3: (Fischer-Burmeister)
-  %         z + W*z+q - sqrt(z^2 + (W*z+q)^2) (nl) (elementwise)
+  %         z + W*z+M*x+q - sqrt(z^2 + (W*z+M*x+q)^2) (nl) (elementwise)
   methods
     
-    function obj = LinearComplementarityConstraint(W,q,M,mode)
+    function obj = LinearComplementarityConstraint(W,q,M,mode,slack)
       zdim = size(W,2);
       
       if nargin < 3
@@ -23,6 +23,10 @@ classdef LinearComplementarityConstraint < ConstraintManager
       
       if nargin < 4
         mode = 1;
+      end
+      
+      if nargin < 5
+        slack = 0;
       end
       
       xdim = size(M,2);
@@ -38,10 +42,8 @@ classdef LinearComplementarityConstraint < ConstraintManager
         case 1
           bcon = BoundingBoxConstraint([-inf(xdim,1);zeros(zdim,1)],inf(zdim+xdim,1));
           lincon = LinearConstraint(-q,inf(zdim,1),[M W]);
-          nlcon = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@prodfun);
+          nlcon = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
         case 3
-          y = randn(2,1); 
-          [f,df] = geval(@fbfun,y,struct('grad_method','user'));
           nlcon = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),zdim,@fbfun);
       end
       function [f,df] = prodfun(y)
@@ -63,7 +65,7 @@ classdef LinearComplementarityConstraint < ConstraintManager
         dg = [M W];
         
         f = z + g  - sqrt(z.^2 + g.^2);
-        df = [zeros(xdim) eye(zdim)] + dg - diag(1./sqrt(z.^2 + g.^2)) * ([zeros(xdim) diag(z)] + diag(g)*dg);
+        df = [zeros(zdim,xdim) eye(zdim)] + dg - diag(1./sqrt(z.^2 + g.^2 + 1e-6)) * ([zeros(zdim,xdim) diag(z)] + diag(g)*dg);
       end
       
       obj = obj@ConstraintManager(lincon, nlcon, bcon, n);

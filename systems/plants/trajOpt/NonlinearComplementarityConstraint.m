@@ -20,7 +20,13 @@ classdef NonlinearComplementarityConstraint < ConstraintManager
   %         z + f(x,z) - sqrt(z^2 + f(x,z)^2) (elementwise)
   methods
     
-    function obj = NonlinearComplementarityConstraint(fun,xdim,zdim,mode)
+    function obj = NonlinearComplementarityConstraint(fun,xdim,zdim,mode,slack)
+      if nargin < 4
+        mode = 1;
+      end
+      if nargin < 5
+        slack = 0;
+      end
       lincon = {};
       nlcon = {};
       bcon = {};
@@ -29,11 +35,11 @@ classdef NonlinearComplementarityConstraint < ConstraintManager
         case 1
           bcon = BoundingBoxConstraint([-inf(xdim,1);zeros(zdim,1)],inf(zdim+xdim,1));
           nlcon{1} = NonlinearConstraint(zeros(zdim,1),inf(zdim,1),xdim+zdim,fun);
-          nlcon{2} = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@prodfun);
+          nlcon{2} = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
         case 2
           bcon = BoundingBoxConstraint([-inf(xdim,1);zeros(2*zdim,1)],inf(2*zdim+xdim,1));
           nlcon{1} = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),xdim+2*zdim,@slackeq);
-          nlcon{2} = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),xdim+2*zdim,@slackprod);
+          nlcon{2} = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+2*zdim,@slackprod);
           n = zdim;
         case 3
           nlcon = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@fbfun);
@@ -70,7 +76,7 @@ classdef NonlinearComplementarityConstraint < ConstraintManager
         [g,dg] = fun([x;z]);
         
         f = z + g  - sqrt(z.^2 + g.^2);
-        df = [zeros(xdim) eye(zdim)] + dg - diag(1./sqrt(z.^2 + g.^2)) * ([zeros(xdim) diag(z)] + diag(g)*dg);
+        df = [zeros(xdim) eye(zdim)] + dg - diag(1./sqrt(z.^2 + g.^2 + 1e-6)) * ([zeros(xdim) diag(z)] + diag(g)*dg);
       end
       
       obj = obj@ConstraintManager(lincon, nlcon, bcon, n);
