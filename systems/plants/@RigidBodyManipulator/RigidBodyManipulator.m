@@ -108,26 +108,20 @@ classdef RigidBodyManipulator < Manipulator
         elseif bodyI.floating == 2
           qBody = q(bodyI.position_num);
           quat = qBody(4 : 7);
-          [quat, dquattildedquat] = normalizeVec(quat);
-          dqtildedotdqdot = blkdiag(eye(3), dquattildedquat);
+          [quat, dquattildedquat, ddquattildedquat] = normalizeVec(quat);
           [R, dR] = quat2rotmat(quat);
           [M, dM] = quatdot2angularvelMatrix(quat);
-          dvdqtildedot = [...
-            zeros(3, 3), R' * M;
+          RTransposeM = R' * M; % TODO: directly use body frame representation
+          VqJoint = [...
+            zeros(3, 3), RTransposeM * dquattildedquat;
             R', zeros(3, 4)];
-          VqJoint = dvdqtildedot * dqtildedotdqdot;
 
-          % TODO: directly use body frame representation:
-%           qs = quat(1);
-%           qv = quat(2:4);
-%           M = 2 * [-qv, qs * eye(3) - vectorToSkewSymmetric(qv)];
-%           VqJoint = [zeros(3, 3), M;
-%             R', zeros(3, 4)];
-          dVqJoint = zeros(numel(VqJoint), size(VqJoint, 2)) * qBody(1);
           dRTranspose = transposeGrad(dR, size(R));
-          dVqJoint = setSubMatrixGradient(dVqJoint, dRTranspose, 4:6, 1:3, size(VqJoint), 4:7);
           dRTransposeM = matGradMultMat(R', M, dRTranspose, dM);
-          dVqJoint = setSubMatrixGradient(dVqJoint, dRTransposeM, 1:3, 4:7, size(VqJoint), 4:7);
+          dRTransposeMdquattildedquat = matGradMultMat(RTransposeM, dquattildedquat, dRTransposeM, ddquattildedquat);
+          dVqJoint = zeros(numel(VqJoint), length(qBody)) * qBody(1); % for TaylorVar
+          dVqJoint = setSubMatrixGradient(dVqJoint, dRTranspose, 4:6, 1:3, size(VqJoint), 4:7);
+          dVqJoint = setSubMatrixGradient(dVqJoint, dRTransposeMdquattildedquat, 1:3, 4:7, size(VqJoint), 4:7);
         elseif bodyI.floating ~= 0
           error('case not handled');
         else
