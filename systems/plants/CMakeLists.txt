@@ -25,7 +25,7 @@ if (eigen3_FOUND)
     REQUIRES  
     VERSION 0.0.1)
 
-add_subdirectory(collision)
+  add_subdirectory(collision)
 #  add_subdirectory(constraint)
 
   if (Boost_FOUND)
