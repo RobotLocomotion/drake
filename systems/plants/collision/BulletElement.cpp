@@ -12,8 +12,6 @@ namespace DrakeCollision
                                 const vector<double>& params)
     : T_elem_to_link(T_elem_to_link),shape(shape)
   {
-    setWorldTransform(Matrix4d::Identity());
-    
     //DEBUG
     //std::cout << "BulletElement::BulletElement: START" << std::endl;
     //END_DEBUG
@@ -96,11 +94,11 @@ namespace DrakeCollision
     //END_DEBUG
     bt_obj->setCollisionShape(bt_shape);
     //DEBUG
-    //cout << "BulletElement::BulletElement: Setting world transform for bt_ob" << endl;
+    cout << "BulletElement::BulletElement: Setting world transform for bt_ob" << endl;
     //END_DEBUG
-    setWorldTransform(this->T_elem_to_world);
+    setWorldTransform(Matrix4d::Identity());
     //DEBUG
-    //std::cout << "BulletElement::BulletElement: END" << std::endl;
+    cout << "BulletElement::BulletElement: END" << std::endl;
     //END_DEBUG
   }
     
