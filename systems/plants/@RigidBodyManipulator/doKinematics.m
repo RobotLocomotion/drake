@@ -33,8 +33,15 @@ else
     S = computeMotionSubspaces(bodies, q);
   end
   kinsol.J = computeJ(kinsol.T, S);
-  kinsol.qdotToV = qdotToV(model, q);
-  kinsol.vToqdot = vToqdot(model, q);
+  
+  if compute_gradients
+    [kinsol.qdotToV, kinsol.dqdotToVdq] = qdotToV(model, q);
+    [kinsol.vToqdot, kinsol.dvToqdotdq] = vToqdot(model, q);
+  else
+    kinsol.qdotToV = qdotToV(model, q);
+    kinsol.vToqdot = vToqdot(model, q);
+  end
+
   if compute_gradients
     kinsol.dTdq = computeTransformGradients(bodies, kinsol.T, S, kinsol.qdotToV);
     kinsol.dJdq = computedJdq(bodies, kinsol.T, S, kinsol.dTdq, dSdq);
