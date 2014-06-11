@@ -146,12 +146,12 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     else
     	model->bodies[i].parent = mxGetScalar(pm) - 1;
     
-//     if (model->bodies[i].dofnum>=0) {
-//       pm = mxGetProperty(pBodies,i,"joint_limit_min");
-//       model->joint_limit_min[model->bodies[i].dofnum] = mxGetScalar(pm);
-//       pm = mxGetProperty(pBodies,i,"joint_limit_max");
-//       model->joint_limit_max[model->bodies[i].dofnum] = mxGetScalar(pm);
-//     }    
+    if (model->bodies[i].dofnum>=0) {
+       pm = mxGetProperty(pBodies,i,"joint_limit_min");
+       model->joint_limit_min[model->bodies[i].dofnum] = mxGetScalar(pm);
+       pm = mxGetProperty(pBodies,i,"joint_limit_max");
+       model->joint_limit_max[model->bodies[i].dofnum] = mxGetScalar(pm);
+    }
     
     pm = mxGetProperty(pBodies,i,"Ttree");
     // todo: check that the size is 4x4
@@ -160,7 +160,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
     memcpy(model->bodies[i].T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
 
-    /*
     //DEBUG
     //cout << "constructModelmex: About to parse collision geometry"  << endl;
     //END_DEBUG
@@ -233,10 +232,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //END_DEBUG
       model->setCollisionFilter(i,*group,*mask);
     }
-    */
   }
 
-  /*
   // THIS IS UGLY: I'm sending the terrain contact points into the
   // contact_pts field of the cpp RigidBody objects
   //DEBUG
@@ -290,7 +287,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //END_DEBUG
     }
   }
-  */
 
   for (int i=0; i<model->num_frames; i++) {
     pm = mxGetProperty(pFrames,i,"name");
