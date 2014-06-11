@@ -25,7 +25,8 @@ valuecheck(eye(nv), kinsol.qdotToV * kinsol.vToqdot, 1e-12);
 end
 
 function testGradient(robot)
-q = getRandomConfiguration(robot);
+% q = getRandomConfiguration(robot);
+q = randn(robot.getNumPositions(), 1);
 [~, dVq] = robot.qdotToV(q);
 option.grad_method = 'taylorvar';
 [~, dVq_geval] = geval(1, @robot.qdotToV, q, option);

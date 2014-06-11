@@ -108,7 +108,7 @@ classdef RigidBodyManipulator < Manipulator
         elseif bodyI.floating == 2
           qBody = q(bodyI.position_num);
           quat = qBody(4 : 7);
-          [quat, dquattildedquat, ddquattildedquat] = normalizeVec(quat);
+          [~, dquattildedquat, ddquattildedquat] = normalizeVec(quat);
           [R, dR] = quat2rotmat(quat);
           [M, dM] = quatdot2angularvelMatrix(quat);
           RTransposeM = R' * M; % TODO: directly use body frame representation
