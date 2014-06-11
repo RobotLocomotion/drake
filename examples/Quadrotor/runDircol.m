@@ -4,7 +4,7 @@ r = Quadrotor();
 
 x0 = Point(getStateFrame(r));  % initial conditions: all-zeros
 x0.base_z = .5;
-u0 = nominalThrust(r);
+u0 = double(nominalThrust(r));
 
 xf = x0;                       % final conditions: translated in x
 xf.base_x = 2;
@@ -31,8 +31,6 @@ con.T.lb = 0.1;
 con.T.ub = 4;
 
 options.method='dircol';
-options.MajorOptimalityTolerance=1e-2;
-options.grad_method = 'taylorvar';
 %options.trajectory_cost_fun=@(t,x,u)plotDircolTraj(t,x,u,[1 2]);  % for debugging
 %options.grad_test = true;
 
@@ -54,11 +52,11 @@ end
 end
 
       function [g,dg] = cost(t,x,u)
-        R = 0;
+        R = eye(4);
         g = u'*R*u;
         %g = sum((R*u).*u,1);
-        %dg = [zeros(1,1+size(x,1)),2*u'*R];
-        dg = zeros(1, 1 + size(x,1) + size(u,1));
+        dg = [zeros(1,1+size(x,1)),2*u'*R];
+        %dg = zeros(1, 1 + size(x,1) + size(u,1));
       end
       
       function [h,dh] = finalcost(t,x)
