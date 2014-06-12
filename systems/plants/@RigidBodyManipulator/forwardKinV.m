@@ -32,6 +32,7 @@ if nargin < 5, rotation_type = 0; end
 if nargin < 6, base_ind = 1; end
 compute_Jdot_times_v = nargout > 2;
 compute_gradient = nargout > 3;
+nq = obj.getNumPositions();
 
 base = base_ind;
 if (body_or_frame_ind < 0)
@@ -53,7 +54,6 @@ R_frame_to_base = transform_frame_to_base(1:3, 1:3);
 p_frame_to_base = transform_frame_to_base(1:3, 4);
 points_base = R_frame_to_base * points + repmat(p_frame_to_base, [1 npoints]);
 if compute_gradient
-  nq = obj.getNumPositions();
   dtransform_world_to_base = dinvT(kinsol.T{base}, kinsol.dTdq{base});
   dTframe = zeros(numel(Tframe), nq);
   dtransform_frame_to_world = matGradMultMat(kinsol.T{end_effector}, Tframe, kinsol.dTdq{end_effector}, dTframe); % TODO: can be made more efficient due to zero gradient
@@ -106,7 +106,9 @@ for i = 1 : npoints
 end
 Jpos = -r_hats * Jomega + repmat(Jv, npoints, 1);
 if compute_gradient
-  dJpos = matGradMultMat(-r_hats, Jomega, -dr_hats, dJomega) + repmat(dJv, npoints, 1);
+  block_sizes = repmat(size(Jv, 1), npoints, 1);
+  blocks = repmat({dJv}, npoints, 1);
+  dJpos = matGradMultMat(-r_hats, Jomega, -dr_hats, dJomega) + interleaveRows(block_sizes, blocks);
 end
 
 % compute orientation Jacobian
