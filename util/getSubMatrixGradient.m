@@ -4,8 +4,7 @@ function dM_submatrix = getSubMatrixGradient(dM, rows, cols, M_size, q_indices)
 % @param dM gradient of M
 % @param rows vector of row numbers
 % @param cols vector of column numbers
-% @param M_size = [n m] where n is the number of rows of M and m is the
-% number of columns of M
+% @param M_size = size(M)
 % @param q_indices indices into q for which the gradient should be returned
 % @see setSubMatrixGradient
 
@@ -15,11 +14,21 @@ assert(issorted(cols), 'cols must be sorted');
 mask = false(M_size);
 mask(rows, cols) = true;
 
-if nargin < 5
+if nargin < 6
   nq = size(dM, 2);
   q_indices = true(nq, 1);
 end
-dM_submatrix = dM(mask(:), q_indices);
+
+sorted = issorted(rows) && issorted(cols);
+if sorted
+  mask = false(M_size);
+  mask(rows, cols) = true;
+  dM_submatrix = dM(mask(:), q_indices);
+else
+  M_indices = reshape(1:prod(M_size), M_size);
+  M_submatrix_indices = M_indices(rows, cols);
+  dM_submatrix = dM(M_submatrix_indices(:), q_indices);
+end
 
 end
 

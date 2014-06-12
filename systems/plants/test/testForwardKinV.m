@@ -8,9 +8,9 @@ function testAtlas(floatingJointType)
 
 robot = createAtlas(floatingJointType);
 
-compareToNumerical(robot, 0);
-compareToNumerical(robot, 1);
-compareToNumerical(robot, 2);
+% compareToNumerical(robot, 0);
+% compareToNumerical(robot, 1);
+% compareToNumerical(robot, 2);
 
 testGradient(robot, 0);
 
@@ -77,7 +77,7 @@ body_range = [1, nb];
 n_tests = 5;
 test_number = 1;
 while test_number < n_tests
-  base = 1; %TODO: randi(body_range);
+  base = randi(body_range);
   end_effector = randi(body_range);
 
   if base ~= end_effector
