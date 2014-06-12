@@ -14,7 +14,7 @@ compareToNumerical(robot, 2);
 
 testGradient(robot, 0);
 testGradient(robot, 1);
-% testGradient(robot, 2);
+testGradient(robot, 2);
 
 end
 

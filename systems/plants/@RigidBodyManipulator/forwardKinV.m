@@ -133,7 +133,6 @@ switch (rotation_type)
     end
     x = [points_base; repmat(rpy, 1, npoints)];
     if compute_Jdot_times_v
-
       if compute_gradient
         [Phi, dPhidrpy, ddPhidrpy] = angularvel2rpydotMatrix(rpy);
         dPhi = dPhidrpy * drpy;
@@ -156,20 +155,29 @@ switch (rotation_type)
   case 2 % output quaternion
     if compute_gradient
       [quat, dquat] = rotmat2quat(R_frame_to_base, dR_frame_to_base);
-      [Phi, dPhidquat] = angularvel2quatdotMatrix(quat);
-      dPhi = dPhidquat * dquat;
     else
       quat = rotmat2quat(R_frame_to_base);
+    end
+
+    if compute_Jdot_times_v || compute_gradient
+      [Phi, dPhidquat] = angularvel2quatdotMatrix(quat);
+    else
       Phi = angularvel2quatdotMatrix(quat);
     end
+
     x = [points_base; repmat(quat, 1, npoints)];
     if compute_Jdot_times_v
       omega = twist(1 : 3);
       quatd = Phi * omega;
+      Phid = reshape(dPhidquat * quatd, size(Phi));
       if compute_gradient
-        [Phid, dPhid] = angularvel2quatdotMatrix(quatd);
+        dPhi = dPhidquat * dquat;
+        domega = dtwist(1:3, :);
+        dquatd = Phi * domega + matGradMult(dPhi, omega);
+        % ddphidquatdq = 0:
+        dPhid = dPhidquat * dquatd;
       else
-        Phid = angularvel2quatdotMatrix(quatd);
+
       end
     end
   otherwise
