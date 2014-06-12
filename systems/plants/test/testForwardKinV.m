@@ -84,7 +84,7 @@ while test_number < n_tests
     q = getRandomConfiguration(robot);
     v = randn(nv, 1);
     nPoints = 1; %randi([1, 10]);
-    points = zeros(3, nPoints);
+    points = randn(3, nPoints);
     
     option.grad_method = 'taylorvar';
     kinsol = robot.doKinematics(q, true, false, v, true);
