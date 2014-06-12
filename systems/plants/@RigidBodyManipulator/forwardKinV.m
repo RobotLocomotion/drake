@@ -126,11 +126,30 @@ switch (rotation_type)
       end
     end
   case 1 % output rpy
-    % TODO: Gradients
-    rpy = rotmat2rpy(R_frame_to_base);
+    if compute_gradient
+      [rpy, drpy] = rotmat2rpy(R_frame_to_base, dR_frame_to_base);
+    else
+      rpy = rotmat2rpy(R_frame_to_base);
+    end
     x = [points_base; repmat(rpy, 1, npoints)];
     if compute_Jdot_times_v
-      [Phi, Phid] = angularvel2rpydotMatrix(rpy, twist(1 : 3));
+
+      if compute_gradient
+        [Phi, dPhidrpy, ddPhidrpy] = angularvel2rpydotMatrix(rpy);
+        dPhi = dPhidrpy * drpy;
+        ddPhidrpy = reshape(ddPhidrpy, [], numel(rpy));
+        ddPhidrpydq = ddPhidrpy * drpy;
+      else
+        [Phi, dPhidrpy] = angularvel2rpydotMatrix(rpy);
+      end
+      omega = twist(1:3);
+      rpyd = Phi * omega;
+      Phid = reshape(dPhidrpy * rpyd, size(Phi));
+      if compute_gradient
+        domega = dtwist(1:3, :);
+        drpyd = Phi * domega + matGradMult(dPhi, omega);
+        dPhid = dPhidrpy * drpyd + matGradMult(ddPhidrpydq, rpyd);
+      end
     else
       Phi = angularvel2rpydotMatrix(rpy);
     end
@@ -145,9 +164,13 @@ switch (rotation_type)
     end
     x = [points_base; repmat(quat, 1, npoints)];
     if compute_Jdot_times_v
-      quatd = Phi * twist(1 : 3);
-      Phid = angularvel2quatdotMatrix(quatd);
-      % TODO: Gradients
+      omega = twist(1 : 3);
+      quatd = Phi * omega;
+      if compute_gradient
+        [Phid, dPhid] = angularvel2quatdotMatrix(quatd);
+      else
+        Phid = angularvel2quatdotMatrix(quatd);
+      end
     end
   otherwise
     error('rotationType not recognized')
@@ -176,13 +199,17 @@ end
 
 % compute Jdot times v
 if compute_Jdot_times_v
-  Jrotdot_times_v = Phid * twist(1 : 3) + Phi * J_geometric_dot_v(1 : 3);
+  omega = twist(1 : 3);
+  Jrotdot_times_v = Phid * omega + Phi * J_geometric_dot_v(1 : 3);
   Jdot_times_v = zeros(length(pos_row_indices) + length(rot_row_indices), 1);
   rdots = reshape(-r_hats * twist(1 : 3) + repmat(twist(4 : 6), npoints, 1), point_size, npoints);
   XBardotJv = reshape((cross(-rdots, repmat(twist(1 : 3), 1, npoints))), length(pos_row_indices), 1);
   XBarJdotV = -r_hats * J_geometric_dot_v(1 : 3) + repmat(J_geometric_dot_v(4 : 6), npoints, 1);
   Jdot_times_v(pos_row_indices, :) = XBardotJv + XBarJdotV;
   Jdot_times_v(rot_row_indices, :) = repmat(Jrotdot_times_v, npoints, 1);
+  if compute_gradient
+    % TODO
+  end
 end
 end
 
