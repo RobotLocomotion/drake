@@ -1,12 +1,12 @@
 function testForwardKinV
 
-testAtlas('rpy');
+testAtlas();
 
 end
 
-function testAtlas(floatingJointType)
+function testAtlas()
 
-robot = createAtlas(floatingJointType);
+robot = createAtlas('rpy');
 
 compareToNumerical(robot, 0);
 compareToNumerical(robot, 1);
@@ -14,7 +14,7 @@ compareToNumerical(robot, 2);
 
 testGradient(robot, 0);
 testGradient(robot, 1);
-testGradient(robot, 2);
+% testGradient(robot, 2);
 
 end
 
@@ -85,21 +85,22 @@ while test_number < n_tests
   if base ~= end_effector
     q = getRandomConfiguration(robot);
     v = randn(nv, 1);
-    nPoints = randi([1, 10]);
+    nPoints = 1; %randi([1, 10]);
     points = randn(3, nPoints);
     
     option.grad_method = 'taylorvar';
     kinsol = robot.doKinematics(q, true, false, v, true);
-    [~, ~, ~, dJ] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
-    [~, dJ_geval] = geval(@(q) gevalFunction(robot, q, v, end_effector, points, rotation_type, base), q, option);
+    [~, ~, ~, dJ, dJdot_times_v] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
+    [~, ~, dJ_geval, dJdot_times_v_geval] = geval(2, @(q) gevalFunction(robot, q, v, end_effector, points, rotation_type, base), q, option);
     valuecheck(dJ_geval, dJ, 1e-10);
+    valuecheck(dJdot_times_v_geval, dJdot_times_v, 1e-10);
     test_number = test_number + 1;
   end
 end
 
 end
 
-function [J] = gevalFunction(robot, q, v, end_effector, points, rotation_type, base)
+function [J, Jdot_times_v] = gevalFunction(robot, q, v, end_effector, points, rotation_type, base)
 kinsol = robot.doKinematics(q, false, false, v, true);
-[~, J] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
+[~, J, Jdot_times_v] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
 end
