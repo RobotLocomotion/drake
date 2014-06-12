@@ -8,11 +8,12 @@ function testAtlas(floatingJointType)
 
 robot = createAtlas(floatingJointType);
 
-% compareToNumerical(robot, 0);
-% compareToNumerical(robot, 1);
-% compareToNumerical(robot, 2);
+compareToNumerical(robot, 0);
+compareToNumerical(robot, 1);
+compareToNumerical(robot, 2);
 
 testGradient(robot, 0);
+testGradient(robot, 2);
 
 end
 

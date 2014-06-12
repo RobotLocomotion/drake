@@ -126,6 +126,7 @@ switch (rotation_type)
       end
     end
   case 1 % output rpy
+    % TODO: Gradients
     rpy = rotmat2rpy(R_frame_to_base);
     x = [points_base; repmat(rpy, 1, npoints)];
     if compute_Jdot_times_v
@@ -134,12 +135,19 @@ switch (rotation_type)
       Phi = angularvel2rpydotMatrix(rpy);
     end
   case 2 % output quaternion
-    quat = rotmat2quat(R_frame_to_base);
+    if compute_gradient
+      [quat, dquat] = rotmat2quat(R_frame_to_base, dR_frame_to_base);
+      [Phi, dPhidquat] = angularvel2quatdotMatrix(quat);
+      dPhi = dPhidquat * dquat;
+    else
+      quat = rotmat2quat(R_frame_to_base);
+      Phi = angularvel2quatdotMatrix(quat);
+    end
     x = [points_base; repmat(quat, 1, npoints)];
-    Phi = angularvel2quatdotMatrix(quat);
     if compute_Jdot_times_v
       quatd = Phi * twist(1 : 3);
       Phid = angularvel2quatdotMatrix(quatd);
+      % TODO: Gradients
     end
   otherwise
     error('rotationType not recognized')
@@ -160,8 +168,10 @@ J(pos_row_indices, v_indices) = Jpos;
 J(rot_row_indices, v_indices) = repmat(Jrot, npoints, 1);
 if compute_gradient
   dJ = zeros(numel(J), nq) * kinsol.q(1); % for TaylorVar
-  dJ = setSubMatrixGradient(dJ, dJpos, pos_row_indices, v_indices, size(J)); % FIXME: v_indices might not be ordered
-  dJ = setSubMatrixGradient(dJ, repmat(dJrot, npoints, 1), rot_row_indices, v_indices, size(J)); % FIXME: v_indices might not be ordered
+  dJ = setSubMatrixGradient(dJ, dJpos, pos_row_indices, v_indices, size(J));
+  block_sizes = repmat(size(Jrot, 1), npoints, 1);
+  blocks = repmat({dJrot}, npoints, 1);
+  dJ = setSubMatrixGradient(dJ, interleaveRows(block_sizes, blocks), rot_row_indices, v_indices, size(J));
 end
 
 % compute Jdot times v
