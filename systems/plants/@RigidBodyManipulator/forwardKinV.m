@@ -126,8 +126,7 @@ switch (rotation_type)
       end
     end
   case 1 % output rpy
-    R = transform_frame_to_base(1:3, 1:3);
-    rpy = rotmat2rpy(R);
+    rpy = rotmat2rpy(R_frame_to_base);
     x = [points_base; repmat(rpy, 1, npoints)];
     if compute_Jdot_times_v
       [Phi, Phid] = angularvel2rpydotMatrix(rpy, twist(1 : 3));
@@ -135,8 +134,7 @@ switch (rotation_type)
       Phi = angularvel2rpydotMatrix(rpy);
     end
   case 2 % output quaternion
-    R = transform_frame_to_base(1:3, 1:3);
-    quat = rotmat2quat(R);
+    quat = rotmat2quat(R_frame_to_base);
     x = [points_base; repmat(quat, 1, npoints)];
     Phi = angularvel2quatdotMatrix(quat);
     if compute_Jdot_times_v
