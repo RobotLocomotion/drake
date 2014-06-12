@@ -118,6 +118,7 @@ classdef RigidBodyManipulator < Manipulator
 
           dRTranspose = transposeGrad(dR, size(R));
           dRTransposeM = matGradMultMat(R', M, dRTranspose, dM);
+          ddquattildedquat = reshape(ddquattildedquat, numel(dquattildedquat), numel(quat));
           dRTransposeMdquattildedquat = matGradMultMat(RTransposeM, dquattildedquat, dRTransposeM, ddquattildedquat);
           dVqJoint = zeros(numel(VqJoint), length(qBody)) * qBody(1); % for TaylorVar
           dVqJoint = setSubMatrixGradient(dVqJoint, dRTranspose, 4:6, 1:3, size(VqJoint), 4:7);

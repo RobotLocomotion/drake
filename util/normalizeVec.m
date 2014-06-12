@@ -13,5 +13,6 @@ function [x_norm, dx_norm, ddx_norm] = normalizeVec(x)
     ddx_norm_times_norm = -dx_norm_times_xtranspose_norm;
     dnorm_inv = -x' / (xdotx * norm_x);
     ddx_norm = reshape(kron(dnorm_inv, dx_norm * norm_x), numel(dx_norm), numel(x)) + ddx_norm_times_norm / norm_x;
+    ddx_norm = reshape(ddx_norm, length(x), length(x)^2); % to match geval format
   end
 end
