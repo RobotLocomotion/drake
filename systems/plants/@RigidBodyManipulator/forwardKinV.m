@@ -212,8 +212,8 @@ if compute_Jdot_times_v
   Jrotdot_times_v = Phid * omega + Phi * J_geometric_dot_v(1 : 3);
   Jdot_times_v = zeros(length(pos_row_indices) + length(rot_row_indices), 1) * kinsol.q(1); % for TaylorVar
   rdots = reshape(-r_hats * omega + repmat(v_twist, npoints, 1), point_size, npoints);
-  omega_rep = repmat(omega, 1, npoints);
-  XBardotJv = reshape((cross(-rdots, omega_rep)), length(pos_row_indices), 1);
+  omega_hat = vectorToSkewSymmetric(omega);
+  XBardotJv = reshape(omega_hat * rdots, length(pos_row_indices), 1);
   XBarJdotV = -r_hats * J_geometric_dot_v(1 : 3) + repmat(J_geometric_dot_v(4 : 6), npoints, 1);
   Jdot_times_v(pos_row_indices, :) = XBardotJv + XBarJdotV;
   Jdot_times_v(rot_row_indices, :) = repmat(Jrotdot_times_v, npoints, 1);
@@ -223,8 +223,8 @@ if compute_Jdot_times_v
     dJrotdot_times_v = Phid * domega + matGradMult(dPhid, omega) + Phi * dJ_geometric_dot_v(1:3, :) + matGradMult(dPhi, J_geometric_dot_v(1:3));
     dJdot_times_v = zeros(numel(Jdot_times_v), nq);
     drdots = -r_hats * domega + matGradMult(-dr_hats, omega) + repmat(dv_twist, npoints, 1);
-    domega_rep = repmat(domega, npoints, 1);
-    dXBardotJv = bsxfun(@cross,-rdots, domega_rep) - bsxfun(@cross,omega_rep, -drdots);
+    domega_hat = dvectorToSkewSymmetric(domega);
+    dXBardotJv = matGradMultMat(omega_hat, rdots, domega_hat, drdots);
     dXBarJdotV = -r_hats * dJ_geometric_dot_v(1:3, :) + matGradMult(-dr_hats, J_geometric_dot_v(1:3)) + repmat(dJ_geometric_dot_v(4:6, :), npoints, 1);
     allcols = 1:size(Jdot_times_v, 2);
     dJdot_times_v = setSubMatrixGradient(dJdot_times_v, dXBardotJv + dXBarJdotV, pos_row_indices, allcols, size(Jdot_times_v));

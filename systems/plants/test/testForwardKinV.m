@@ -85,7 +85,7 @@ while test_number < n_tests
   if base ~= end_effector
     q = getRandomConfiguration(robot);
     v = randn(nv, 1);
-    nPoints = 1; %randi([1, 10]);
+    nPoints = randi([1, 10]);
     points = randn(3, nPoints);
     
     option.grad_method = 'taylorvar';
