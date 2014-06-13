@@ -1,4 +1,4 @@
-function [x, J] = forwardKin(obj, kinsol, body_or_frame_ind, points, rotation_type)
+function [x, J, dJ] = forwardKin(obj, kinsol, body_or_frame_ind, points, rotation_type)
 % computes the position of pts (given in the body frame) in the global frame
 %
 % @param kinsol solution structure obtained from doKinematics
@@ -24,11 +24,20 @@ function [x, J] = forwardKin(obj, kinsol, body_or_frame_ind, points, rotation_ty
 % x will be a 7xm matrix and (following out gradient convention) J will be
 % a ((7xm)*(q)) matrix with [J1;J2;....;Jm] where Ji = dxidq
 
+compute_jacobian = nargout > 1;
+compute_gradient = nargout > 2;
 if (nargin<5), rotation_type=0; end
 
-if (nargout>1)
-  [x, Jv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, 1);
+if compute_jacobian
+  if compute_gradient
+    [x, Jv, ~, dJv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, 1);
+  else
+    [x, Jv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, 1);
+  end
   J = Jv * kinsol.qdotToV;
+  if compute_gradient
+    dJ = matGradMultMat(Jv, kinsol.qdotToV, dJv, kinsol.dqdotToVdq);
+  end
 else
   x = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, 1);
 end
