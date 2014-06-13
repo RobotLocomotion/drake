@@ -30,7 +30,11 @@ classdef RigidBodyManipulator < Manipulator
     dirty = true;
     %collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
     collision_filter_groups;     
-      % map of CollisionFilterGroup objects
+    % map of CollisionFilterGroup objects
+    damping = [];
+    coulomb_friction = [];
+    static_friction = [];
+    coulomb_window = [];
   end
     
   methods
@@ -294,10 +298,9 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function f_friction = computeFrictionForce(model,qd)
-      m = model.featherstone;
-      f_friction = m.damping'.*qd;
-      if (m.coulomb_friction)
-        f_friction = f_friction + min(1,max(-1,qd./m.coulomb_window')).*m.coulomb_friction';
+      f_friction = model.damping'.*qd;
+      if (model.coulomb_friction)
+        f_friction = f_friction + min(1,max(-1,qd./model.coulomb_window')).*model.coulomb_friction';
       end
     end
         
@@ -1134,7 +1137,9 @@ classdef RigidBodyManipulator < Manipulator
       % construct a transform from the state vector to the COM
       checkDirty(model);
       tf = FunctionHandleCoordinateTransform(0,0,model.getStateFrame(),fr,true,true,[],[], ...
-      @(obj,~,~,x) getCOM(model,x(1:model.getNumBodies() - 1);
+      @(obj,~,~,x) getCOM(model,x(1:model.getNumBodies() - 1)));
+      % +++TK: was getCOM(model,x(1:model.featherstone.NB)). 
+      % Replacing by model.getNumBodies() - 1 shouldn't change functionality, but this line seems wrong to me anyway
       
       model.getStateFrame().addTransform(tf);
     end
@@ -1657,10 +1662,10 @@ classdef RigidBodyManipulator < Manipulator
         if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
           m.pitch(n+(0:2)) = inf;  % prismatic
           m.pitch(n+(3:5)) = 0;    % revolute
-          m.damping(n+(0:5)) = 0;
-          m.coulomb_friction(n+(0:5)) = 0;
-          m.static_friction(n+(0:5)) = 0;
-          m.coulomb_window(n+(0:5)) = eps;
+          model.damping(n+(0:5)) = 0;
+          model.coulomb_friction(n+(0:5)) = 0;
+          model.static_friction(n+(0:5)) = 0;
+          model.coulomb_window(n+(0:5)) = eps;
           m.parent(n+(0:5)) = [model.body(b.parent).position_num,n+(0:4)];  % rel ypr
           m.Xtree{n} = Xroty(pi/2);   % x
           m.Xtree{n+1} = Xrotx(-pi/2)*Xroty(-pi/2); % y (note these are relative changes, x was up, now I'm rotating so y will be up)
@@ -1687,10 +1692,10 @@ classdef RigidBodyManipulator < Manipulator
         elseif (b.floating==2)
           % for now, to get tests to run
           m.pitch(n) = 0;
-          m.damping(n) = 0;
-          m.coulomb_friction(n) = 0;
-          m.static_friction(n) = 0;
-          m.coulomb_window(n) = eps;
+          model.damping(n) = 0;
+          model.coulomb_friction(n) = 0;
+          model.static_friction(n) = 0;
+          model.coulomb_window(n) = eps;
           m.parent(n) = [model.body(b.parent).position_num];
           m.Xtree{n} = eye(6);
           m.I{n} = b.I;
@@ -1701,10 +1706,10 @@ classdef RigidBodyManipulator < Manipulator
           m.pitch(n) = b.pitch;
           m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*model.body(b.parent).X_joint_to_body;
           m.I{n} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
-          m.damping(n) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
-          m.coulomb_friction(n) = b.coulomb_friction;
-          m.static_friction(n) = b.static_friction;
-          m.coulomb_window(n) = b.coulomb_window;
+          model.damping(n) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
+          model.coulomb_friction(n) = b.coulomb_friction;
+          model.static_friction(n) = b.static_friction;
+          model.coulomb_window(n) = b.coulomb_window;
           m.f_ext_map_to = [m.f_ext_map_to,n];
           n=n+1;
         end

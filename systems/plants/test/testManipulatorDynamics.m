@@ -112,11 +112,11 @@ end
 
 function checkGradients(robot)
 q = getRandomConfiguration(robot);
-v = randn(robot.getNumVelocities());
-[~,~,dH,dC] = HandC(robot, q, v);
+v = randn(robot.getNumVelocities(), 1);
+[~,~,~,dH,dC] = manipulatorDynamics(robot, q, v, false);
 
 option.grad_method = 'taylorvar';
-[~, ~, dH_geval, dC_geval] = geval(2, @(q) HandC(robot, q, v), q, option);
+[~, ~, ~,dH_geval, dC_geval] = geval(3, @(q) manipulatorDynamics(robot, q, v, false), q, option);
 
 valuecheck(dH_geval, dH, 1e-10);
 valuecheck(dC_geval, dC, 1e-10);
