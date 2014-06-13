@@ -19,7 +19,7 @@ classdef RigidBodyContactVisualizer < Visualizer
       sfigure(hFig);
       clf; hold on;
       
-      n = obj.model.featherstone.NB;
+      n = obj.getNumBodies() - 1;
       q = x(1:n); qd=x(n+(1:n));
       kinsol = obj.doKinematics(q);
       
