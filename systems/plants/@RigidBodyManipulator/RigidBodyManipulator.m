@@ -297,10 +297,25 @@ classdef RigidBodyManipulator < Manipulator
       g = obj.gravity;
     end
     
-    function f_friction = computeFrictionForce(model,qd)
-      f_friction = model.damping'.*qd;
+    function [f_friction, df_frictiondv] = computeFrictionForce(model,v)
+      % Note: gradient is with respect to v, not q!
+      
+      compute_gradient = nargout > 1;
+      
+      f_friction = model.damping'.*v;
+      if compute_gradient
+        df_frictiondv = diag(model.damping);
+      end
+      
       if (model.coulomb_friction)
-        f_friction = f_friction + min(1,max(-1,qd./model.coulomb_window')).*model.coulomb_friction';
+        f_friction = f_friction + min(1,max(-1,v./model.coulomb_window')).*model.coulomb_friction';
+        if compute_gradient
+          ind = find(abs(v)<model.coulomb_window');
+          dind = sign(v(ind))./model.coulomb_window(ind)' .* model.coulomb_friction(ind)';
+          fc_drv = zeros(NB,1);
+          fc_drv(ind) =dind;
+          df_frictiondv = df_frictiondv + diag(fc_drv);
+        end
       end
     end
         

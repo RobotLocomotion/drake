@@ -55,7 +55,7 @@ H = zeros(nv, nv) * kinsol.q(1); % minor adjustment to make TaylorVar work bette
 
 if compute_gradient
   nq = manipulator.getNumPositions();
-  dH = zeros(numel(H), nq) * kinsol.q(1);
+  dHdq = zeros(numel(H), nq) * kinsol.q(1);
 end
 
 for i = 2 : NB
@@ -71,7 +71,7 @@ for i = 2 : NB
     dSi = kinsol.dJdq{i};
     dF = matGradMultMat(Ic, Si, dIc, dSi);
     dHii = matGradMultMat(Si', F, transposeGrad(dSi, size(Si)), dF);
-    dH = setSubMatrixGradient(dH, dHii, i_indices, i_indices, size(H));
+    dHdq = setSubMatrixGradient(dHdq, dHii, i_indices, i_indices, size(H));
   end
   
   j = i;
@@ -87,10 +87,14 @@ for i = 2 : NB
     if compute_gradient
       dSj = kinsol.dJdq{j};
       dHji = matGradMultMat(Sj', F, transposeGrad(dSj, size(Sj)), dF);
-      dH = setSubMatrixGradient(dH, dHji, j_indices, i_indices, size(H));
-      dH = setSubMatrixGradient(dH, transposeGrad(dHji, size(Hji)), i_indices, j_indices, size(H));
+      dHdq = setSubMatrixGradient(dHdq, dHji, j_indices, i_indices, size(H));
+      dHdq = setSubMatrixGradient(dHdq, transposeGrad(dHji, size(Hji)), i_indices, j_indices, size(H)); % dHdq at this point
     end
   end
+end
+if compute_gradient
+  dHdv = zeros(numel(H), nv);
+  dH = [dHdq, dHdv];
 end
 end
 
@@ -100,6 +104,8 @@ compute_gradient = nargout > 1;
 nBodies = length(manipulator.body);
 twist_size = 6;
 
+nq = manipulator.getNumPositions();
+nv = manipulator.getNumVelocities();
 
 root_accel = -gravitational_accel; % as if we're standing in an elevator that's accelerating upwards
 JdotV = kinsol.JdotV;
@@ -107,8 +113,6 @@ net_wrenches = cell(nBodies, 1);
 net_wrenches{1} = zeros(twist_size, 1);
 
 if compute_gradient
-  nq = size(dinertias_world{end}, 2);
-  
   droot_accel = zeros(twist_size, nq);
   dJdotV = kinsol.dJdotVdq;
   dnet_wrenches = cell(nBodies, 1);
@@ -154,11 +158,10 @@ for i = 2 : nBodies
   end
 end
 
-nv = manipulator.getNumVelocities();
 C = zeros(nv, 1) * kinsol.q(1);
 
 if compute_gradient
-  dC = zeros(nv, nq);
+  dC = zeros(nv, nq + nv);
 end
 
 for i = nBodies : -1 : 2
@@ -174,9 +177,18 @@ for i = nBodies : -1 : 2
     dJi = kinsol.dJdq{i};
     %dtau = matGradMultMat(Ji', joint_wrench, transposeGrad(dJi, size(Ji)), djoint_wrench);
     dtau = Ji' * djoint_wrench + matGradMult(transposeGrad(dJi, size(Ji)), joint_wrench); 
-    dC = setSubMatrixGradient(dC, dtau, body.velocity_num, 1, size(C));
+    dC = setSubMatrixGradient(dC, dtau, body.velocity_num, 1, size(C), 1:nq);
     dnet_wrenches{body.parent} = dnet_wrenches{body.parent} + djoint_wrench;
   end
 end
+
+
+if compute_gradient
+  [tau_friction, dtau_frictiondv] = computeFrictionForce(manipulator, kinsol.v);
+  dC = setSubMatrixGradient(dC, dtau_frictiondv, 1:nv, 1, size(C), nq + (1:nv));
+else
+  tau_friction = computeFrictionForce(manipulator, kinsol.v);
+end
+C = C + tau_friction;
 
 end
