@@ -1092,7 +1092,8 @@ classdef RigidBodyManipulator < Manipulator
           try
             v = feval(type,arg{:});
           catch ex
-            if ~strncmp(ex.identifier,'Drake:MissingDependency',23)
+            if ~strncmp(ex.identifier,'Drake:MissingDependency',23) ...
+              && ~strcmp(ex.identifier,'Drake:RigidBodyMesh:UnsupportedMeshFile')
               rethrow(ex);
             end
           end

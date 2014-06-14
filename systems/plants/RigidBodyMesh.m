@@ -90,12 +90,14 @@ classdef RigidBodyMesh < RigidBodyGeometry
     end
     
     function writeWRLShape(obj,fp,td)
-      assert(all(obj.scale == 1)); % todo: handle this case
       
       function tabprintf(fp,varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
+
       tabprintf(fp,'Transform {\n'); td=td+1;
       tabprintf(fp,'translation %f %f %f\n',obj.T(1:3,4));
       tabprintf(fp,'rotation %f %f %f %f\n',rotmat2axis(obj.T(1:3,1:3)));
+      if numel(obj.scale)==3, scale = obj.scale; else scale = repmat(obj.scale(1),3,1); end
+      tabprintf(fp,'scale %f %f %f\n',scale);
 
       [path,name,ext] = fileparts(obj.filename);
       wrlfile=[];
@@ -123,7 +125,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
         fprintf(fp,'%s',txt); 
         tabprintf(fp,']\n'); % end children
       else
-        error('unknown mesh file extension');
+        error('Drake:RigidBodyMesh:UnsupportedMeshFile','unknown mesh file extension');
       end
       
       td=td-1; tabprintf(fp,'}\n'); % end Transform {

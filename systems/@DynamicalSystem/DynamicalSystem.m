@@ -62,7 +62,7 @@ classdef DynamicalSystem
       % Ensures that sys has the specified input frame, by
       % searching for and cascading a coordinate transformation to
       % the existing input if necessary.
-      if (getInputFrame(sys)~=frame)
+      if ~isequal_modulo_transforms(getInputFrame(sys),frame)
         tf = findTransform(frame,getInputFrame(sys),struct('throw_error_if_fail',true));
         sys = cascade(tf,sys);
       end
@@ -77,7 +77,7 @@ classdef DynamicalSystem
       % Ensures that sys has the specified output frame, by
       % searching for and cascading a coordinate transformation to
       % the existing output if necessary.
-      if (frame ~= sys.getOutputFrame)
+      if ~isequal_modulo_transforms(frame,sys.getOutputFrame)
         tf = findTransform(getOutputFrame(sys),frame,struct('throw_error_if_fail',true));
         sys = cascade(sys,tf);
       end
