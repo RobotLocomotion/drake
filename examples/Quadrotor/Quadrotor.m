@@ -56,7 +56,7 @@ classdef Quadrotor < RigidBodyManipulator
       r = addObstacles(r); 
       sys = TimeSteppingRigidBodyManipulator(r,.01);
       
-      v = r.constructVisualizer();
+      v = sys.constructVisualizer();
 
       x0 = [0;0;.5;zeros(9,1)];
       u0 = nominalThrust(r);
