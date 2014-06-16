@@ -48,7 +48,7 @@ comgoal = mean(foot_pos(1:2,ch(1:end-1)),2);
 limp = LinearInvertedPendulum(com(3));
 [~,V] = lqr(limp,comgoal);
 
-foot_support = SupportState(r,find(~cellfun(@isempty,strfind(r.getLinkNames(),'foot'))));
+foot_support = RigidBodySupportState(r,find(~cellfun(@isempty,strfind(r.getLinkNames(),'foot'))));
     
 ctrl_data = SharedDataHandle(struct(...
   'A',[zeros(2),eye(2); zeros(2,4)],...
