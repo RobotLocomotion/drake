@@ -599,12 +599,6 @@ classdef QPControlBlock < MIMODrakeSystem
           supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,S,s1,s1dot,s2dot,x0,u0,y0,mu, ...
           contact_sensor,contact_thresh,height,obj.include_angular_momentum);
     end
-
-    if ~isempty(active_supports)
-      setVdot(obj.controller_data,Vdot);
-    else
-      setVdot(obj.controller_data,0);
-    end
     
     if (obj.use_mex==2)
       % note: this only works when using gurobi

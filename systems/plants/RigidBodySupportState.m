@@ -1,5 +1,5 @@
-classdef SupportState
-  %SUPPORTSTATE defines a set of supporting bodies and contacts for a rigid
+classdef RigidBodySupportState
+  %RigidBodySupportState defines a set of supporting bodies and contacts for a rigid
   %  body manipulator
   
   properties (SetAccess=protected)
@@ -12,7 +12,7 @@ classdef SupportState
   end
   
   methods
-    function obj = SupportState(r,bodies,contact_pts,contact_surfaces)
+    function obj = RigidBodySupportState(r,bodies,contact_pts,contact_surfaces)
       typecheck(r,'Atlas');
       typecheck(bodies,'double');
       obj.bodies = bodies(bodies~=0);
