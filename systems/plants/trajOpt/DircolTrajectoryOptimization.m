@@ -1,4 +1,4 @@
-classdef DircolTrajectoryOptimization < TrajectoryOptimization
+classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
   % Direct colocation approach
   % Over each interval, f(x(k),u(k)) and f(x(k+1),u(k+1)) are evaluated to
   % determine d/dt x(k) and d/dt x(k+1). A cubic spline is fit over the

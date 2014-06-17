@@ -1,4 +1,4 @@
-classdef FEDirtranTrajectoryOptimization < TrajectoryOptimization
+classdef FEDirtranTrajectoryOptimization < DirectTrajectoryOptimization
   % Forward-Euler integration
   %  dynamics constraints are: x(k+1) = x(k) + h(k)*f(x(k),u(k))
   %  integrated cost is sum of g(h(k),x(k),u(k))
