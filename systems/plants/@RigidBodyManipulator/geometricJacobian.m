@@ -4,6 +4,17 @@ function [J, vIndices, dJdq] = geometricJacobian(obj, kinsol, base, endEffector,
 %   The general contract of this method is that for joint velocity vector
 %   v, the twist of endEffector with respect to base, expressed in
 %   expressedIn, can be computed as J * (v(vIndices)).
+%   In addition, vIndices is guaranteed to be `in order' in the following
+%   two ways:
+%   1) if the joint associated with `body' is on the path between base and
+%   endEffector, then the velocity indices in body.velocity_num will appear
+%   in the same order in vIndices
+%   2) if body1 precedes body2 in the joint path going from base to
+%   endEffector, then body1.velocity_num will precede body2.velocity_num in
+%   vIndices.
+%   Note that this guarantees that the last
+%   length(endEffector.velocity_num) indices of vIndices are exactly
+%   body.velocity_num
 
 compute_gradient = nargout > 2;
 
