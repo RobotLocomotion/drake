@@ -3,7 +3,7 @@ function testKinCnst
 checkDependency('rigidbodyconstraint_mex');
 
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
-urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_chull.urdf'];
+urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_convex_hull.urdf'];
 aff_urdf = [getDrakePath,'/systems/plants/constraint/test/valve_task_wall.urdf'];
 
 options.floating = true;
