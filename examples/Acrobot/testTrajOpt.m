@@ -7,9 +7,9 @@ T = 5;
 T0 = 2;
 
 initial_cost = [];
-% final_cost = NonlinearConstraint(-inf,inf,N+3,@(z) final_cost_fun(z(1:N-1),z(N:N+3)));
+% final_cost = NonlinearConstraint(-inf,inf,N+3,@final_cost_fun);
 final_cost = [];
-running_cost = NonlinearConstraint(-inf,inf,6,@(z) running_cost_fun(z(1),z(2:5),z(6)));
+running_cost = NonlinearConstraint(-inf,inf,6,@running_cost_fun);
 
 
 

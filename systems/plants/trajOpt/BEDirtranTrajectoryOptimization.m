@@ -20,11 +20,10 @@ classdef BEDirtranTrajectoryOptimization < TrajectoryOptimization
       
       
       n_vars = 2*nX + nU + 1;
-      cfun = @(z) constraint_fun(z(1),z(2:nX+1),z(nX+2:2*nX+1),z(2*nX+2:2*nX+nU+1));
-      cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,cfun);
+      cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@constraint_fun);
       
       for i=1:obj.N-1,        
-        dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i)];
+        dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i)};
         constraints{i} = cnstr;
         
         obj = obj.addNonlinearConstraint(constraints{i}, dyn_inds{i});
@@ -49,7 +48,7 @@ classdef BEDirtranTrajectoryOptimization < TrajectoryOptimization
           x_ind = obj.x_inds(:,i+1);
           u_ind = obj.u_inds(:,i);
           
-          obj = obj.addCost(running_cost,[h_ind;x_ind;u_ind]);
+          obj = obj.addCost(running_cost,{h_ind;x_ind;u_ind});
         end        
       end
       
@@ -57,7 +56,7 @@ classdef BEDirtranTrajectoryOptimization < TrajectoryOptimization
       x_ind = obj.x_inds(:,end);
       
       if ~isempty(final_cost)
-        obj = obj.addCost(final_cost,[h_ind;x_ind]);
+        obj = obj.addCost(final_cost,{h_ind;x_ind});
       end
     end
     

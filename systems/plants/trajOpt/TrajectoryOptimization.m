@@ -100,6 +100,11 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       control_limit = BoundingBoxConstraint(repmat(plant.umin,N,1),repmat(plant.umax,N,1));
       obj = obj.addBoundingBoxConstraint(control_limit,obj.u_inds(:));
       
+      % add joint limits as bounding box constraints
+      [joint_lb,joint_ub] = plant.getJointLimits();
+      joint_limit = BoundingBoxConstraint(repmat(joint_lb,N,1),repmat(joint_ub,N,1));
+      obj = obj.addBoundingBoxConstraint(joint_limit,reshape(obj.x_inds(1:plant.getNumPositions,:),[],1));
+      
       % loop over additional constraints
       for i=1:length(constraints),
         mgr = constraints{i}.mgr;
@@ -113,23 +118,7 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
           
           constraints{i}.var_inds{j} = cstr_inds;
           
-          lincon = mgr.getLinearConstraints();
-          constraints{i}.lincon = lincon;          
-          for k=1:length(lincon),
-            obj = obj.addLinearConstraint(lincon{k},cstr_inds);
-          end
-          
-          nlncon = mgr.getNonlinearConstraints();
-          constraints{i}.nlncon = nlncon;
-          for k=1:length(nlncon),
-            obj = obj.addNonlinearConstraint(nlncon{k},cstr_inds);
-          end
-          
-          bcon = mgr.getBoundingBoxConstraints();
-          constraints{i}.bcon = bcon;
-          for k=1:length(bcon),
-            obj = obj.addBoundingBoxConstraint(bcon{k},cstr_inds);
-          end
+          obj = obj.addManagedConstraints(mgr,cstr_inds);
         end
       end
       obj.constraints = constraints;
