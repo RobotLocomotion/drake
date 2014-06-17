@@ -1,4 +1,4 @@
-classdef BEDirtranTrajectoryOptimization < TrajectoryOptimization
+classdef BEDirtranTrajectoryOptimization < DirectTrajectoryOptimization
   % Backwards-Euler integration
   %  dynamics constraints are: x(k+1) = x(k) + h(k)*f(x(k+1),u(k))
   %  integrated cost is sum of g(h(k),x(k+1),u(k))

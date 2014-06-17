@@ -1,4 +1,4 @@
-classdef ContactImplicitTrajectoryOptimization < TrajectoryOptimization
+classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
   % phi, lambda
   properties
     nC
