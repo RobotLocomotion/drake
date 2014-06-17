@@ -11,10 +11,7 @@ function dM_submatrix = getSubMatrixGradient(dM, rows, cols, M_size, q_indices)
 assert(issorted(rows), 'rows must be sorted');
 assert(issorted(cols), 'cols must be sorted');
 
-mask = false(M_size);
-mask(rows, cols) = true;
-
-if nargin < 6
+if nargin < 5
   nq = size(dM, 2);
   q_indices = true(nq, 1);
 end

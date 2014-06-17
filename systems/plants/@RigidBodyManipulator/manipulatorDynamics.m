@@ -40,12 +40,12 @@ else
     [inertias_world, dinertias_world] = inertiasInWorldFrame(obj, kinsol);
     [crbs, dcrbs] = compositeRigidBodyInertias(obj, inertias_world, dinertias_world);
     [H, dH] = computeMassMatrix(obj, kinsol, crbs, dcrbs);
-    [C, dC] = computeBiasTerm(obj, kinsol, inertias_world, f_ext, a_grav, dinertias_world);
+    [C, dC] = computeBiasTerm(obj, kinsol, a_grav, inertias_world, f_ext, dinertias_world, df_ext);
   else
     inertias_world = inertiasInWorldFrame(obj, kinsol);
     crbs = compositeRigidBodyInertias(obj, inertias_world);
     H = computeMassMatrix(obj, kinsol, crbs);
-    C = computeBiasTerm(obj, kinsol, inertias_world, f_ext, a_grav);
+    C = computeBiasTerm(obj, kinsol, a_grav, inertias_world, f_ext);
   end
 end
 
@@ -104,19 +104,8 @@ if compute_gradient
 end
 end
 
-function [C, dC] = computeBiasTerm(manipulator, kinsol, inertias_world, f_ext, gravitational_accel, dinertias_world)
-% f_ext is a cell array specifying external wrenches
-% acting on the bodies.  If f_ext == {} then there are no external
-% wrenches; otherwise, f_ext{i} is a spatial force vector giving the force
-% acting on body i, expressed in body i coordinates.  Empty cells in f_ext
-% are interpreted as zero forces. 
-% UPDATED by russt:  f_ext is an empty or (sparse) 6 x model.NB matrix
-
+function [C, dC] = computeBiasTerm(manipulator, kinsol, gravitational_accel, inertias_world, f_ext, dinertias_world, df_ext)
 compute_gradient = nargout > 1;
-
-if isempty(f_ext)
-  f_ext = sparse(6, length(manipulator.body));
-end
 
 nBodies = length(manipulator.body);
 world = 1;
@@ -150,26 +139,29 @@ for i = 2 : nBodies
     dspatial_accel = dJdotV{i};
     % TODO: implement external wrench gradients
 %     dexternal_wrench = dexternal_wrenches(:, i);
-    dexternal_wrench = zeros(twist_size, nq);
+    dexternal_wrench = getSubMatrixGradient(df_ext,1:twist_size,i,size(f_ext),1:nq);
     
     dtwistdv = zeros(twist_size, nv);
     [J, v_indices] = geometricJacobian(manipulator, kinsol, world, i, world);
     dtwistdv(:, v_indices) = J;
     dspatial_acceldv = kinsol.dJdotVidv{i};
-    dexternal_wrenchdv = zeros(twist_size, nv); % TODO: implement external wrench gradients
+    dexternal_wrenchdv = getSubMatrixGradient(df_ext,1:twist_size,i,size(f_ext),nq+(1:nv));
   end
   
   if any(external_wrench)
     % transform from body to world
     T_i_to_world = kinsol.T{i};
     T_world_to_i = homogTransInv(T_i_to_world);
-    external_wrench = transformAdjoint(T_world_to_i)' * external_wrench;
+    AdT_world_to_i = transformAdjoint(T_world_to_i)';
+    external_wrench = AdT_world_to_i * external_wrench;
     
     if compute_gradient
       dT_i_to_world = kinsol.dTdq{i};
       dT_world_to_i = dinvT(T_i_to_world, dT_i_to_world);
-      dexternal_wrench = zeros(twist_size, nq); % TODO: implement external wrench gradients
-      dexternal_wrenchdv = zeros(twist_size, nv); % TODO: implement external wrench gradients
+      % TODO: implement and dAdHTransposeTimesX instead
+      dAdT_world_to_i = dAdHTimesX(T_world_to_i,eye(size(T_world_to_i, 1)),dT_world_to_i,zeros(numel(T_world_to_i),nq));
+      dexternal_wrench = matGradMultMat(AdT_world_to_i, external_wrench, dAdT_world_to_i, dexternal_wrench);
+      dexternal_wrenchdv = AdT_world_to_i * dexternal_wrenchdv;
     end
   end
   I = inertias_world{i};
@@ -234,9 +226,11 @@ end
 function [f_ext, B, df_ext, dB] = computeExternalForcesAndInputMatrix(obj, q, v)
 compute_gradients = nargout > 2;
 
+% TODO: check body indices, probably need to get rid of -1 in i_to-1 etc.
+
 m = obj.featherstone;
 B = obj.B;
-NB = obj.getNumBodies() - 1;
+NB = obj.getNumBodies();
 if compute_gradients
   dB = zeros(NB*obj.num_u,2*NB);
 end
@@ -275,9 +269,9 @@ if ~isempty(obj.force)
     end
   end
 else
-  f_ext=[];
+  f_ext=sparse(6,NB);
   if compute_gradients
-    df_ext=[];
+    df_ext = sparse(6*NB,size(q,1)+size(v,1));
   end
 end
 end
