@@ -127,6 +127,9 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       if(nargin<3)
         xind = (1:obj.num_vars)';
       end
+      if iscell(xind)
+        xind = cell2mat(xind);
+      end
       xind = xind(:);
       if(~isa(cnstr,'LinearConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addLinearConstraint expects a LinearConstraint object');
@@ -158,6 +161,10 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       if(nargin < 3)
         xind = (1:obj.num_vars)';
       end
+      if iscell(xind)
+        xind = cell2mat(xind);
+      end
+      xind = xind(:);
       if(~isa(cnstr,'BoundingBoxConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addBoundingBoxConstraint expects a BoundingBoxConstraint object');
       end

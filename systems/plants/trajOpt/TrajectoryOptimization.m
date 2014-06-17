@@ -29,8 +29,8 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     h_inds  % (N-1) x 1 indices for timesteps h so that z(h_inds(i)) = h(i)
     x_inds  % N x n indices for state
     u_inds  % N x m indices for time
-    dynamic_constraints
-    constraints
+    dynamic_constraints = {};
+    constraints = {};
   end
   
   methods
@@ -57,13 +57,11 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
     %   and 3 and 4 together.
     % 
     
-    function obj = TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,constraints,options)
+%     function obj = TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,constraints,options)
+    function obj = TrajectoryOptimization(plant,N,T_span,options)
       %#ok<*PROP>
-      if nargin < 7
-        constraints = {};
-      end
-      
-      if nargin < 8
+ 
+      if nargin < 4
         options = struct();
       end
       
@@ -104,26 +102,74 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       [joint_lb,joint_ub] = plant.getJointLimits();
       joint_limit = BoundingBoxConstraint(repmat(joint_lb,N,1),repmat(joint_ub,N,1));
       obj = obj.addBoundingBoxConstraint(joint_limit,reshape(obj.x_inds(1:plant.getNumPositions,:),[],1));
-      
-      % loop over additional constraints
-      for i=1:length(constraints),
-        mgr = constraints{i}.mgr;
-        time_index = constraints{i}.i;
-        for j=1:length(time_index),
-          cstr_inds = [];
-          for k=1:length(time_index{j}),
-            ind_k = time_index{j}(k);
-            cstr_inds = [cstr_inds;obj.x_inds(:,ind_k)]; %#ok<AGROW>
-          end
-          
-          constraints{i}.var_inds{j} = cstr_inds;
-          
-          obj = obj.addManagedConstraints(mgr,cstr_inds);
-        end
+    end
+    
+    % Add a linear constraint that is a function of the state at the
+    % specified time or times.
+    % @param constraint  a ConstraintManager
+    % @param time_index   a cell array of time indices
+    %   ex1., time_index = {1, 2, 3} means the constraint is applied
+    %   individually to knot points 1, 2, and 3
+    %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
+    %   points 1 and 2 together (taking the combined state as an argument)
+    %   and 3 and 4 together.
+    % 
+    function obj = addManagedStateConstraint(obj,constraint,time_index)
+      if ~iscell(time_index)
+        time_index = {time_index};
       end
-      obj.constraints = constraints;
-      % setup the cost function
-      obj = obj.setupCostFunction(initial_cost,running_cost,final_cost);
+      for j=1:length(time_index),       
+        cstr_inds = mat2cell(obj.x_inds(:,time_index{j}),size(obj.x_inds,1),ones(1,length(time_index{j})));
+        
+        % record constraint for posterity
+        obj.constraints{end+1}.constraint = constraint;
+        obj.constraints{end}.var_inds = cstr_inds;
+        obj.constraints{end}.time_index = time_index;
+        
+        obj = obj.addManagedConstraints(constraint,cstr_inds);        
+      end
+    end
+    
+    % Add a linear constraint that is a function of the state at the
+    % specified time or times.
+    % @param constraint  a LinearConstraint
+    % @param time_index   a cell array of time indices
+    %   ex1., time_index = {1, 2, 3} means the constraint is applied
+    %   individually to knot points 1, 2, and 3
+    %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
+    %   points 1 and 2 together (taking the combined state as an argument)
+    %   and 3 and 4 together.
+    % 
+    function obj = addLinearStateConstraint(obj,constraint,time_index)
+      obj = obj.addManagedStateConstraint(ConstraintManager(constraint),time_index);
+    end
+    
+    % Add a nonlinear constraint that is a function of the state at the
+    % specified time or times.
+    % @param constraint  a NonlinearConstraint
+    % @param time_index   a cell array of time indices
+    %   ex1., time_index = {1, 2, 3} means the constraint is applied
+    %   individually to knot points 1, 2, and 3
+    %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
+    %   points 1 and 2 together (taking the combined state as an argument)
+    %   and 3 and 4 together.
+    % 
+    function obj = addNonlinearStateConstraint(obj,constraint,time_index)
+      obj = obj.addManagedStateConstraint(ConstraintManager([],constraint),time_index);
+    end
+    
+    % Add a boundingbox constraint that is a function of the state at the
+    % specified time or times.
+    % @param constraint  a BoundingBoxConstraint
+    % @param time_index   a cell array of time indices
+    %   ex1., time_index = {1, 2, 3} means the constraint is applied
+    %   individually to knot points 1, 2, and 3
+    %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
+    %   points 1 and 2 together (taking the combined state as an argument)
+    %   and 3 and 4 together.
+    %
+    function obj = addBoundingBoxStateConstraint(obj,constraint,time_index)
+      obj = obj.addManagedStateConstraint(ConstraintManager([],[],constraint),time_index);
     end
         
     % Solve the nonlinear program and return resulting trajectory
@@ -180,14 +226,22 @@ classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
       
       obj = obj.addDecisionVariable(num_vars);
     end
+    
+    % Adds a cost to the initial state f(x0)
+    function obj = addInitialCost(obj,initial_cost)
+      obj = obj.addCost(initial_cost,obj.x_inds(:,1));
+    end
+    
+    % adds a cost to the final state and total time f(T,xf);
+    function obj = addFinalCost(obj,final_cost)
+      obj = obj.addCost(final_cost,{obj.h_inds;obj.x_inds(:,end)});
+    end
   end
   
   methods(Abstract)
-    % Add the initial, running, and final costs to the program
-    % this is abstract since the running cost involves numerical
-    % integration, which will vary depending on the particular direct
-    % method used
-    obj = setupCostFunction(obj,initial_cost,running_cost,final_cost);
+    % Adds an integrated cost, f(h,x,u) to all time steps, which is
+    % numerical implementation specific (thus abstract)
+    obj = addRunningCost(obj,running_cost);
     
     obj = addDynamicConstraints(obj);
   end
