@@ -21,11 +21,10 @@ classdef MidpointTrajectoryOptimization < TrajectoryOptimization
       
       
       n_vars = 2*nX + 2*nU + 1;
-      cfun = @(z) constraint_fun(z(1),z(2:nX+1),z(nX+2:2*nX+1),z(2*nX+2:2*nX+nU+1),z(2*nX+nU+2:2*nX+2*nU+1));
-      cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,cfun);
+      cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@constraint_fun);
       
       for i=1:obj.N-1,        
-        dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1)];
+        dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1)};
         constraints{i} = cnstr;
         
         obj = obj.addNonlinearConstraint(constraints{i}, dyn_inds{i});
@@ -48,16 +47,11 @@ classdef MidpointTrajectoryOptimization < TrajectoryOptimization
       end
       
       running_handle = running_cost.eval_handle;
-      running_handle_i = @(z) running_fun(running_handle,z(1),z(2:1+nX), z(2+nX:1+2*nX),z(2+2*nX:1+2*nX+nU),z(2+2*nX+nU:1+2*nX+2*nU)); 
-      running_cost_i = NonlinearConstraint(running_cost.lb,running_cost.ub,1+2*nX+2*nU,running_handle_i);
+      running_cost_i = NonlinearConstraint(running_cost.lb,running_cost.ub,1+2*nX+2*nU,@running_fun);
       
       if ~isempty(running_cost)
-        for i=1:obj.N-1,
-          h_ind = obj.h_inds(i);
-          x_ind = [obj.x_inds(:,i);obj.x_inds(:,i+1)];
-          u_ind = [obj.u_inds(:,i);obj.u_inds(:,i+1)];
-          
-          obj = obj.addCost(running_cost_i,[h_ind;x_ind;u_ind]);
+        for i=1:obj.N-1,          
+          obj = obj.addCost(running_cost_i,{obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1)});
         end        
       end
       
@@ -65,11 +59,11 @@ classdef MidpointTrajectoryOptimization < TrajectoryOptimization
       x_ind = obj.x_inds(:,end);
       
       if ~isempty(final_cost)
-        obj = obj.addCost(final_cost,[h_ind;x_ind]);
+        obj = obj.addCost(final_cost,{h_ind;x_ind});
       end
       
-      function [f,df] = running_fun(cost_handle,h,x0,x1,u0,u1)
-        [f,dg] = cost_handle([h;.5*(x0+x1);.5*(u0+u1)]);
+      function [f,df] = running_fun(h,x0,x1,u0,u1)
+        [f,dg] = running_handle(h,.5*(x0+x1),.5*(u0+u1));
         
         df = [dg(:,1) .5*dg(:,2:1+nX) .5*dg(:,2:1+nX) .5*dg(:,2+nX:1+nX+nU) .5*dg(:,2+nX:1+nX+nU)];
       end

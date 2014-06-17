@@ -19,19 +19,31 @@ classdef ConstraintManager
     function obj = ConstraintManager(lincon,nlcon,bcon,n)
       if nargin > 0
         if ~iscell(lincon)
-          lincon = {lincon};
+          if isempty(lincon)
+            lincon = {};
+          else
+            lincon = {lincon};
+          end
         end
         obj.lincon = lincon;
       end
       if nargin > 1
         if ~iscell(nlcon)
-          nlcon = {nlcon};
+          if isempty(nlcon)
+            nlcon = {};
+          else
+            nlcon = {nlcon};
+          end
         end
         obj.nlcon = nlcon;
       end
       if nargin > 2
         if ~iscell(bcon)
-          bcon = {bcon};
+          if isempty(bcon)
+            bcon = {};
+          else
+            bcon = {bcon};
+          end
         end
         obj.bcon = bcon;
       end

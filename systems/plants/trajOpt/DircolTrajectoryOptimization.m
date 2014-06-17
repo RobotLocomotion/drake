@@ -30,11 +30,10 @@ classdef DircolTrajectoryOptimization < TrajectoryOptimization
       
       
       n_vars = 2*nX + 2*nU + 1;
-      cfun = @(z) constraint_fun(z(1),z(2:nX+1),z(nX+2:2*nX+1),z(2*nX+2:2*nX+nU+1),z(2*nX+nU+2:2*nX+2*nU+1));
-      cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,cfun);
+      cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@constraint_fun);
       
       for i=1:obj.N-1,        
-        dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1)];
+        dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1)};
         constraints{i} = cnstr;
         
         obj = obj.addNonlinearConstraint(constraints{i}, dyn_inds{i});
@@ -114,47 +113,31 @@ classdef DircolTrajectoryOptimization < TrajectoryOptimization
       
       running_handle = running_cost.eval_handle;
       
-      running_handle_end = @(z) running_fun_end(z(1),z(2:1+nX),z(2+nX:1+nX+nU));
-      running_cost_end = NonlinearConstraint(running_cost.lb,running_cost.ub,1+nX+nU,running_handle_end);
+      running_cost_end = NonlinearConstraint(running_cost.lb,running_cost.ub,1+nX+nU,@running_fun_end);      
+      running_cost_mid = NonlinearConstraint(running_cost.lb,running_cost.ub,2+nX+nU,@running_fun_mid);
       
-      running_handle_mid = @(z) running_fun_mid(z(1),z(2),z(3:2+nX),z(3+nX:2+nX+nU));
-      running_cost_mid = NonlinearConstraint(running_cost.lb,running_cost.ub,2+nX+nU,running_handle_mid);
-      
-      h_ind = obj.h_inds(1);
-      x_ind = obj.x_inds(:,1);
-      u_ind = obj.u_inds(:,1);
-      obj = obj.addCost(running_cost_end,[h_ind;x_ind;u_ind]);
-      
+      obj = obj.addCost(running_cost_end,{obj.h_inds(1);obj.x_inds(:,1);obj.u_inds(:,1)});
+
       if ~isempty(running_cost)
         for i=2:obj.N-1,
-          h_ind = [obj.h_inds(i-1);obj.h_inds(i)];
-          x_ind = obj.x_inds(:,i);
-          u_ind = obj.u_inds(:,i);
-          
-          obj = obj.addCost(running_cost_mid,[h_ind;x_ind;u_ind]);
+          obj = obj.addCost(running_cost_mid,{obj.h_inds(i-1);obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)});
         end        
       end
       
-      h_ind = obj.h_inds(end);
-      u_ind = obj.u_inds(:,end);
-      x_ind = obj.x_inds(:,end);
+      obj = obj.addCost(running_cost_end,{obj.h_inds(end);obj.x_inds(:,end);obj.u_inds(:,end)});
       
-      obj = obj.addCost(running_cost_end,[h_ind;x_ind;u_ind]);
-
-      
-      h_ind = obj.h_inds;
       if ~isempty(final_cost)
-        obj = obj.addCost(final_cost,[h_ind;x_ind]);
+        obj = obj.addCost(final_cost,{obj.h_inds;obj.x_inds(:,end)});
       end
       
       function [f,df] = running_fun_end(h,x,u)
-        [f,dg] = running_handle([.5*h;x;u]);
+        [f,dg] = running_handle(.5*h,x,u);
         
         df = [.5*dg(:,1) dg(:,2:end)];
       end
       
       function [f,df] = running_fun_mid(h0,h1,x,u)
-        [f,dg] = running_handle([.5*(h0+h1);x;u]);
+        [f,dg] = running_handle(.5*(h0+h1),x,u);
         
         df = [.5*dg(:,1) .5*dg(:,1) dg(:,2:end)];
       end

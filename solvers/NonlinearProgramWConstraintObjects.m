@@ -17,8 +17,11 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     num_nlcon % number of nonlinear constraints
     num_lcon % number of linear constraints
     
-    nlcon_xind % A cell array, nlcon_xind{i} is an int vector recording the indices of x that is used in evaluation the i'th NonlinearConstraint
-    cost_xind_cell % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
+    nlcon_xind % A cell array, nlcon_xind{i} is a cell array of int vectors recording the indices of x that is used in evaluation the i'th NonlinearConstraint
+               % nlcon{i}.eval(x(nlcon_xind{i}{1},x(nlcon_xind{i}{2},...)
+    nlcon_xind_stacked % a cell array of vectors, the stacked values of nlcon_xind{i}
+    cost_xind_cell % A cell array, cost_xind{i} is a cell array of int vectors recording the indices of x that is used in evaluating obj.cost{i}
+    cost_xind_stacked % A cell array, cost_xind{i} is an int vector recording the indices of x that is used in evaluating obj.cost{i}
     bbcon_xind % A cell array, bbcon_xind{i} is an int vector recording the indices of x used in i'th BoundingBoxConstraint
     nlcon_ineq_idx % row index of nonlinear inequality constraint
     nlcon_eq_idx % row index of nonlinear equality constraint
@@ -34,10 +37,12 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       obj.num_nlcon = 0;
       obj.num_lcon = 0;
       obj.nlcon_xind = {};
+      obj.nlcon_xind_stacked = {};
       obj.nlcon_ineq_idx = [];
       obj.nlcon_eq_idx = [];
       obj.cost = {};
       obj.cost_xind_cell = {};
+      obj.cost_xind_stacked = {};
       obj.cin_name = {};
       obj.ceq_name = {};
       obj.Ain_name = {};
@@ -77,9 +82,13 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       % @param xind      -- Optional argument. The x(xind) is the decision variables used
       % in evaluating the cnstr. Default value is (1:obj.num_vars)
       if(nargin<3)
-        xind = (1:obj.num_vars)';
+        xind = {(1:obj.num_vars)'};
       end
-      xind = xind(:);
+      if ~iscell(xind)
+        xind = {xind};
+      end
+      xind_vec = cell2mat(xind);
+      
       if(~isa(cnstr,'NonlinearConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addNonlinearConstraint expects a NonlinearConstraint object');
       end
@@ -96,15 +105,16 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       inv_cin_idx = zeros(cnstr.num_cnstr,1);
       inv_cin_idx(cnstr.cin_idx) = (1:length(cnstr.cin_idx))';
       obj.iCinfun = [obj.iCinfun;obj.num_cin+inv_cin_idx(cnstr.iCfun(Gin_idx))];
-      obj.jCinvar = [obj.jCinvar;xind(cnstr.jCvar(Gin_idx))];
+      obj.jCinvar = [obj.jCinvar;xind_vec(cnstr.jCvar(Gin_idx))];
       obj.iCeqfun = [obj.iCeqfun;obj.num_ceq+inv_ceq_idx(cnstr.iCfun(Geq_idx))];
-      obj.jCeqvar = [obj.jCeqvar;xind(cnstr.jCvar(Geq_idx))];
+      obj.jCeqvar = [obj.jCeqvar;xind_vec(cnstr.jCvar(Geq_idx))];
       obj.cin_name = [obj.cin_name;cnstr.name(cnstr.cin_idx)];
       obj.ceq_name = [obj.ceq_name;cnstr.name(cnstr.ceq_idx)];
       obj.num_cin = obj.num_cin + length(cnstr.cin_idx);
       obj.num_ceq = obj.num_ceq + length(cnstr.ceq_idx);
       obj.num_nlcon = obj.num_nlcon + cnstr.num_cnstr;
-      obj.nlcon_xind = [obj.nlcon_xind,{xind}];
+      obj.nlcon_xind{end+1} = xind;
+      obj.nlcon_xind_stacked{end+1} = xind_vec;
     end
     
     
@@ -162,9 +172,12 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       % @param xind      -- Optional argument. x(xind) is the decision variables used in
       % evaluating the cost. Default value is (1:obj.num_vars)
       if(nargin<3)
-        xind = (1:obj.num_vars)';
+        xind = {(1:obj.num_vars)'};
       end
-      xind = xind(:);
+      if ~iscell(xind)
+        xind = {xind};
+      end
+      xind_vec = cell2mat(xind);
       if(~isa(cnstr,'LinearConstraint') && ~isa(cnstr,'NonlinearConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addCost expects a LinearConstraint or NonlinearConstraint object');
       end
@@ -173,17 +186,35 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
           error('Drake:NonlinearProgramWConstraint:WrongCost','addCost only accept scalar function');
         end
         obj.cost = [obj.cost,{cnstr}];
-        obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jAvar)}];
-        obj.jFvar = unique([obj.jFvar;xind(cnstr.jAvar)]);
+        obj.cost_xind_cell = [obj.cost_xind_cell,{xind_vec(cnstr.jAvar)}];
+        obj.cost_xind_stacked = [obj.cost_xind_cell,{xind_vec(cnstr.jAvar)}];
+        obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jAvar)]);
         obj.iFfun = ones(length(obj.jFvar),1);
       elseif(isa(cnstr,'NonlinearConstraint'))
         if(cnstr.num_cnstr ~= 1)
           error('Drake:NonlinearProgramWConstraint:WrongCost','addCost only accept scalar function');
         end
         obj.cost = [obj.cost,{cnstr}];
-        obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jCvar)}];
-        obj.jFvar = unique([obj.jFvar;xind(cnstr.jCvar)]);
+        obj.cost_xind_cell{end+1} = xind;
+        obj.cost_xind_stacked{end+1} = xind_vec;
+%         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jCvar)}];
+        obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jCvar)]);
         obj.iFfun = ones(length(obj.jFvar),1);
+      end
+    end
+    
+    % Retrieves the elements from the vector x related to xind and returns
+    % them as a cell array where:
+    % args{i} = x(xind{i})
+    function args = getArgumentArray(obj,x,xind)
+      narg = length(xind);
+      if narg == 1,
+        args = {x(xind{1})};
+      else
+        args = cell(narg,1);
+        for j=1:narg,
+          args{j} = x(xind{j});
+        end
       end
     end
     
@@ -192,8 +223,9 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       G = zeros(obj.num_nlcon,obj.num_vars);
       f_count = 0;
       for i = 1:length(obj.nlcon)
-        [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
-          obj.nlcon{i}.eval(x(obj.nlcon_xind{i}));
+        args = getArgumentArray(obj,x,obj.nlcon_xind{i});
+        [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
+          obj.nlcon{i}.eval(args{:});
         f(f_count+obj.nlcon{i}.ceq_idx) = f(f_count+obj.nlcon{i}.ceq_idx)-obj.nlcon{i}.ub(obj.nlcon{i}.ceq_idx);
         f_count = f_count+obj.nlcon{i}.num_cnstr;
       end
@@ -218,14 +250,16 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       f = zeros(1+obj.num_nlcon,1);
       G = zeros(1+obj.num_nlcon,obj.num_vars);
       for i = 1:length(obj.cost)
-        [fi,dfi] = obj.cost{i}.eval(x(obj.cost_xind_cell{i}));
+        args = getArgumentArray(obj,x,obj.cost_xind_cell{i});
+        [fi,dfi] = obj.cost{i}.eval(args{:});
         f(1) = f(1)+fi;
-        G(1,obj.cost_xind_cell{i}) = G(1,obj.cost_xind_cell{i})+dfi;
+        G(1,obj.cost_xind_stacked{i}) = G(1,obj.cost_xind_stacked{i})+dfi;
       end
       f_count = 1;
       for i = 1:length(obj.nlcon)
-        [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind{i})] = ...
-          obj.nlcon{i}.eval(x(obj.nlcon_xind{i}));
+        args = getArgumentArray(obj,x,obj.nlcon_xind{i});
+        [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
+          obj.nlcon{i}.eval(args{:});
         f(f_count+obj.nlcon{i}.ceq_idx) = f(f_count+obj.nlcon{i}.ceq_idx)-obj.nlcon{i}.ub(obj.nlcon{i}.ceq_idx);
         f_count = f_count+obj.nlcon{i}.num_cnstr;
       end
@@ -272,6 +306,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       cost_xind_tmp{cost_idx} = xind;
       obj.cost = {};
       obj.cost_xind_cell = {};
+      obj.cost_xind_stacked = {};
       for i = 1:num_cost
         obj = obj.addCost(cost_tmp{i},cost_xind_tmp{i});
       end
