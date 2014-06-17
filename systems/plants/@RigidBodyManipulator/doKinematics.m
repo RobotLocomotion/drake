@@ -10,9 +10,12 @@ function kinsol = doKinematics(model, q, compute_gradients, use_mex, v, compute_
 % the answer).
 %
 
+% TODO: currently lots of branch-induced sparsity unexploited in
+% gradient computations.
+
 checkDirty(model);
-if nargin<6, compute_JdotV=false; end
 if nargin<5, v=[]; end
+if nargin<6 && ~isempty(v), compute_JdotV=true; end
 if nargin<4, use_mex = true; end
 if nargin<3, compute_gradients = false; end
 
@@ -51,14 +54,14 @@ else
     if compute_gradients
       [kinsol.twists, kinsol.dtwistsdq] = computeTwistsInBaseFrame(bodies, kinsol.J, v, kinsol.dJdq);
       if compute_JdotV
-        [SdotV, dSdotVdq] = computeMotionSubspacesDotV(bodies, q, v);
-        [kinsol.JdotV, kinsol.dJdotVdq] = computeJacobianDotV(bodies, kinsol.T, kinsol.twists, SdotV, kinsol.dTdq, kinsol.dtwistsdq, dSdotVdq);
+        [SdotV, dSdotVdq, Sdot] = computeMotionSubspacesDotV(bodies, q, v);
+        [kinsol.JdotV, kinsol.dJdotVdq, kinsol.dJdotVidv] = computeJacobianDotV(model, kinsol, SdotV, dSdotVdq, Sdot);
       end
     else
       kinsol.twists = computeTwistsInBaseFrame(bodies, kinsol.J, v);
       if compute_JdotV
         SdotV = computeMotionSubspacesDotV(bodies, q, v);
-        kinsol.JdotV = computeJacobianDotV(bodies, kinsol.T, kinsol.twists, SdotV);
+        kinsol.JdotV = computeJacobianDotV(model, kinsol, SdotV);
       end
     end
     % TODO: remove once there are no more references to this:
@@ -112,21 +115,21 @@ for i = 2 : nb
 end
 end
 
-function ret = computeTransformGradients(bodies, H, S, qdotToV)
+function ret = computeTransformGradients(bodies, T, S, qdotToV)
 nb = length(bodies);
 nq = size(qdotToV, 2);
 ret = cell(1, nb);
 ret{1} = zeros(16, nq);
 for i = 2 : nb
   body = bodies(i);
-  HToParent = H{body.parent} \ H{i};
+  T_body_to_parent = T{body.parent} \ T{i};
   qdotToVi = qdotToV(body.velocity_num, body.position_num);
   
-  dHToParentdqi = dHdq(HToParent, S{i}, qdotToVi);
-  dHToParentdq = zeros(numel(H{i}), nq) * dHToParentdqi(1); % to make TaylorVar work better
-  dHToParentdq(:, body.position_num) = dHToParentdqi;
+  dT_body_to_parentdqi = dHdq(T_body_to_parent, S{i}, qdotToVi);
+  dT_body_to_parentdq = zeros(numel(T{i}), nq) * dT_body_to_parentdqi(1); % to make TaylorVar work better
+  dT_body_to_parentdq(:, body.position_num) = dT_body_to_parentdqi;
   ret{i} = matGradMultMat(...
-    H{body.parent}, HToParent, ret{body.parent}, dHToParentdq);
+    T{body.parent}, T_body_to_parent, ret{body.parent}, dT_body_to_parentdq);
 end
 end
 
@@ -134,21 +137,21 @@ function J = computeJ(transforms, S)
 nb = length(transforms);
 J = cell(1, nb);
 for i = 2 : nb
-  H = transforms{i};
-  J{i} = transformAdjoint(H) * S{i};
+  T = transforms{i};
+  J{i} = transformAdjoint(T) * S{i};
 end
 end
 
-function ret = computedJdq(bodies, H, S, dHdq, dSdq)
-nb = length(H);
+function ret = computedJdq(bodies, T, S, dTdq, dSdq)
+nb = length(T);
 ret = cell(1, nb);
 for i = 2 : nb
   body = bodies(i);
-  nq = size(dHdq{i}, 2);
+  nq = size(dTdq{i}, 2);
   Si = S{i};
-  dSdqi = zeros(numel(Si), nq) * dHdq{i}(1); % to make TaylorVar work better
+  dSdqi = zeros(numel(Si), nq) * dTdq{i}(1); % to make TaylorVar work better
   dSdqi(:, body.position_num) = dSdq{i};
-  ret{i} = dAdHTimesX(H{i}, Si, dHdq{i}, dSdqi);
+  ret{i} = dAdHTimesX(T{i}, Si, dTdq{i}, dSdqi);
 end
 end
 
@@ -195,34 +198,38 @@ for i = 1 : length(T)
 end
 end
 
-function [SdotV, dSdotVdq] = computeMotionSubspacesDotV(bodies, q, v)
+function [SdotV, dSdotVdq, Sdot] = computeMotionSubspacesDotV(bodies, q, v)
 compute_gradients = nargout > 1;
 
 nb = length(bodies);
 SdotV = cell(1, nb);
 if compute_gradients
   dSdotVdq = cell(1, nb);
+  Sdot = cell(1, nb);
 end
 
 for i = 2 : nb
   body = bodies(i);
-  qBody = q(body.position_num);
-  vBody = v(body.velocity_num);
+  qi = q(body.position_num);
+  vi = v(body.velocity_num);
   if compute_gradients
-    [SdotV{i}, dSdotVdq{i}] = motionSubspaceDotV(body, qBody, vBody);
+    [SdotV{i}, dSdotVdq{i}, Sdot{i}] = motionSubspaceDotV(body, qi, vi);
   else
-    SdotV{i} = motionSubspaceDotV(body, qBody, vBody);
+    SdotV{i} = motionSubspaceDotV(body, qi, vi);
   end
 end
 end
 
-function [JdotV, dJdotVdq] = computeJacobianDotV(bodies, T, twists, SdotV, dTdq, dtwistsdq, dSdotVdq)
+function [JdotV, dJdotVdq, dJdotVidv] = computeJacobianDotV(model, kinsol, SdotVi, dSidotVidqi, Sdot)
+% bodies, T, twists, SdotV, J, dTdq, dtwistsdq, S, dSdotVdq, Sdot, v
 compute_gradients = nargout > 1;
 
+bodies = model.body;
 world = 1;
 nb = length(bodies);
 if compute_gradients
-  nq = size(dTdq{end}, 2);
+  nq = size(kinsol.dTdq{end}, 2);
+  nv = length(kinsol.v);
 end
 
 JdotV = cell(1, nb);
@@ -230,22 +237,46 @@ JdotV{1} = zeros(6, 1);
 if compute_gradients
   dJdotVdq = cell(1, nb);
   dJdotVdq{1} = zeros(numel(JdotV{1}), nq);
+  dJdotVidv = cell(1, nb);
+  dJdotVidv{1} = zeros(6, nv);
 end
 
 for i = 2 : nb
   body = bodies(i);
   parent = body.parent;
-  parent_accel = JdotV{parent};
+
+  % joint_accel = transformSpatialAcceleration(SdotV{i}, kinsol.T, kinsol.twists, parent, i, i, world);
+  % faster in this case, and easier to derive gradients:
+  twist = kinsol.twists{i};
+  joint_twist = kinsol.twists{i} - kinsol.twists{parent};
+  joint_accel = crm(twist) * joint_twist + transformAdjoint(kinsol.T{i}) * SdotVi{i};
+  JdotV{i} = JdotV{parent} + joint_accel;
   
   if compute_gradients
-    dparent_accel = dJdotVdq{parent};
-    dSdotVdqi = zeros(numel(SdotV{i}), nq);
-    dSdotVdqi(:, body.position_num) = dSdotVdq{i};
-    [joint_accel, djoint_accel] = transformSpatialAcceleration(SdotV{i}, T, twists, parent, i, i, world, dSdotVdqi, dTdq, dtwistsdq);
-    dJdotVdq{i} = dparent_accel + djoint_accel;
-  else
-    joint_accel = transformSpatialAcceleration(SdotV{i}, T, twists, parent, i, i, world);
+    % q gradient
+    dtwistdq = kinsol.dtwistsdq{i};
+    djoint_twistdq = kinsol.dtwistsdq{i} - kinsol.dtwistsdq{parent};
+    dSdotVidq = zeros(numel(SdotVi{i}), nq);
+    dSdotVidq(:, body.position_num) = dSidotVidqi{i};
+    djoint_acceldq = dcrm(twist, joint_twist, dtwistdq, djoint_twistdq)...
+      + dAdHTimesX(kinsol.T{i}, SdotVi{i}, kinsol.dTdq{i}, dSdotVidq);
+    dJdotVdq{i} = dJdotVdq{parent} + djoint_acceldq;
+
+    % v gradient: dJdot_times_vi/dv
+    [dtwistdv, v_indices] = geometricJacobian(model, kinsol, world, i, world);
+%     dtwistdv = zeros(6, nv);
+%     dtwistdv(:, v_indices) = J;
+    nv_branch = length(v_indices);
+    body_branch_velocity_num = nv_branch - length(body.velocity_num) + 1 : nv_branch;
+    djoint_twistdv = zeros(6, nv_branch);
+    djoint_twistdv(:, body_branch_velocity_num) = kinsol.J{i};
+    dSdotVidv = zeros(6, nv_branch);
+    dSdotVidv(:, body_branch_velocity_num) = Sdot{i};
+    djoint_acceldv = dcrm(twist, joint_twist, dtwistdv, djoint_twistdv)...
+      + transformAdjoint(kinsol.T{i}) * dSdotVidv;
+    dJdotVidv{i} = zeros(6, nv);
+    dJdotVidv{i}(:, v_indices) = djoint_acceldv;
+    dJdotVidv{i} = dJdotVidv{parent} + dJdotVidv{i};
   end
-  JdotV{i} = parent_accel + joint_accel;
 end
 end

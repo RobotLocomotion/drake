@@ -53,21 +53,23 @@ end
 function testFallingBrick(floatingType)
 options.floating = floatingType;
 r = RigidBodyManipulator('FallingBrick.urdf',options);
-checkKinsolGradients(r, 'T', 'dTdq');
-checkKinsolGradients(r, 'J', 'dJdq');
-checkKinsolGradients(r, 'twists', 'dtwistsdq');
-checkKinsolGradients(r, 'JdotV', 'dJdotVdq');
+checkKinsolGradients(r, 'T', 'dTdq', 'q');
+checkKinsolGradients(r, 'J', 'dJdq', 'q');
+checkKinsolGradients(r, 'twists', 'dtwistsdq', 'q');
+checkKinsolGradients(r, 'JdotV', 'dJdotVdq', 'q');
+checkKinsolGradients(r, 'JdotV', 'dJdotVidv', 'v');
 end
 
 function testAtlas(floatingType)
 r = createAtlas(floatingType);
-checkKinsolGradients(r, 'T', 'dTdq');
-checkKinsolGradients(r, 'J', 'dJdq');
-checkKinsolGradients(r, 'twists', 'dtwistsdq');
-checkKinsolGradients(r, 'JdotV', 'dJdotVdq');
+checkKinsolGradients(r, 'T', 'dTdq', 'q');
+checkKinsolGradients(r, 'J', 'dJdq', 'q');
+checkKinsolGradients(r, 'twists', 'dtwistsdq', 'q');
+checkKinsolGradients(r, 'JdotV', 'dJdotVdq', 'q');
+checkKinsolGradients(r, 'JdotV', 'dJdotVidv', 'v');
 end
 
-function checkKinsolGradients(r, name, gradient_name)
+function checkKinsolGradients(r, name, gradient_name, variable_name)
 nq = r.getNumPositions();
 nv = r.getNumVelocities();
 nb = r.getNumBodies();
@@ -77,18 +79,34 @@ v = randn(nv, 1);
 kinsol = doKinematics(r, q, true, false, v, true);
 
 X = kinsol.(name);
-dXdq = kinsol.(gradient_name);
+dXdvar = kinsol.(gradient_name);
 
 delta = 1e-7;
-for i = 1 : nq
-  dq = zeros(nq, 1);
-  dq(i) = delta;
-  kinsol_delta = doKinematics(r, q + dq, false, false, v, true);
-  X_delta = kinsol_delta.(name);
-  dXdqiNumerical = cellfun(@(x, y) (x - y) / delta, X_delta, X, 'UniformOutput', false);
+if strcmp(variable_name, 'q')
+  nvar = nq;
+elseif strcmp(variable_name, 'v')
+  nvar = nv;
+else
+  error('name not recognized');
+end
   
+for i = 1 : nvar
+  if strcmp(variable_name, 'q')
+    dq = zeros(nq, 1);
+    dq(i) = delta;
+    kinsol_delta = doKinematics(r, q + dq, false, false, v, true);
+  elseif strcmp(variable_name, 'v')
+    dv = zeros(nv, 1);
+    dv(i) = delta;
+    kinsol_delta = doKinematics(r, q, false, false, v + dv, true);
+  else
+    error('name not recognized');
+  end
+  X_delta = kinsol_delta.(name);
+  dXdvariNumerical = cellfun(@(x, y) (x - y) / delta, X_delta, X, 'UniformOutput', false);
+
   for j = 2 : nb
-    valuecheck(dXdqiNumerical{j}(:), dXdq{j}(:, i), 1e-5);
+    valuecheck(dXdvariNumerical{j}(:), dXdvar{j}(:, i), 1e-5);
   end
 end
 
