@@ -1,4 +1,4 @@
-classdef Atlas < TimeSteppingRigidBodyManipulator
+classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
   
   methods
     
@@ -22,6 +22,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
   
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
+      obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
       
       if options.floating
@@ -149,5 +150,16 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
   
   properties (SetAccess = protected, GetAccess = public)
     x0
+    default_footstep_params = struct('nom_forward_step', 0.15,... %m
+                                      'max_forward_step', 0.3,...%m
+                                      'max_step_width', 0.40,...%m
+                                      'min_step_width', 0.21,...%m
+                                      'nom_step_width', 0.26,...%m
+                                      'max_outward_angle', pi/8,... % rad
+                                      'max_inward_angle', 0.01,... % rad
+                                      'max_upward_step', 0.2,... % m
+                                      'max_downward_step', 0.2,...%m
+                                      'max_num_steps', 10,...
+                                      'min_num_steps', 1);
   end
 end
