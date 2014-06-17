@@ -4,9 +4,16 @@ testBrickQuaternion();
 testActuatedPendulum();
 regressionTestAtlasRPY();
 testAtlasQuat();
+
+checkGradients(createFallingBrick('quat'));
 checkGradients(createAtlas('rpy'));
 checkGradients(createAtlas('quat'));
 
+end
+
+function robot = createFallingBrick(floating_type)
+options.floating = floating_type;
+robot = RigidBodyManipulator('FallingBrick.urdf',options);
 end
 
 function testBrickQuaternion()

@@ -102,6 +102,7 @@ function [C, dC] = computeBiasTerm(manipulator, kinsol, inertias_world, external
 compute_gradient = nargout > 1;
 
 nBodies = length(manipulator.body);
+world = 1;
 twist_size = 6;
 
 nq = manipulator.getNumPositions();
@@ -113,10 +114,12 @@ net_wrenches = cell(nBodies, 1);
 net_wrenches{1} = zeros(twist_size, 1);
 
 if compute_gradient
-  droot_accel = zeros(twist_size, nq);
   dJdotV = kinsol.dJdotVdq;
   dnet_wrenches = cell(nBodies, 1);
   dnet_wrenches{1} = zeros(twist_size, nq);
+  
+  dnet_wrenchesdv = cell(nBodies, 1);
+  dnet_wrenchesdv{1} = zeros(twist_size, nv);
 end
 
 for i = 2 : nBodies
@@ -126,10 +129,16 @@ for i = 2 : nBodies
   
   if compute_gradient
     dtwist = kinsol.dtwistsdq{i};
-    dspatial_accel = droot_accel + dJdotV{i};
+    dspatial_accel = dJdotV{i};
     % TODO: implement external wrench gradients
 %     dexternal_wrench = dexternal_wrenches(:, i);
     dexternal_wrench = zeros(twist_size, nq);
+    
+    dtwistdv = zeros(twist_size, nv);
+    [J, v_indices] = geometricJacobian(manipulator, kinsol, world, i, world);
+    dtwistdv(:, v_indices) = J;
+    dspatial_acceldv = kinsol.dJdotVidv{i};
+    dexternal_wrenchdv = zeros(twist_size, nv); % TODO: implement external wrench gradients
   end
   
   if any(external_wrench)
@@ -142,6 +151,7 @@ for i = 2 : nBodies
       dT_i_to_world = kinsol.dTdq{i};
       dT_world_to_i = dinvT(T_i_to_world, dT_i_to_world);
       dexternal_wrench = zeros(twist_size, nq); % TODO: implement external wrench gradients
+      dexternal_wrenchdv = zeros(twist_size, nv); % TODO: implement external wrench gradients
     end
   end
   I = inertias_world{i};
@@ -155,6 +165,12 @@ for i = 2 : nBodies
       I * dspatial_accel + matGradMult(dI, spatial_accel) ...
       + dcrf(twist, I_times_twist, dtwist, dI_times_twist) ...
       - dexternal_wrench;
+    
+    dI_times_twistdv = I * dtwistdv;
+    dnet_wrenchesdv{i} = ...
+      I * dspatial_acceldv ...
+      + dcrf(twist, I_times_twist, dtwistdv, dI_times_twistdv) ...
+      - dexternal_wrenchdv;
   end
 end
 
@@ -179,13 +195,18 @@ for i = nBodies : -1 : 2
     dtau = Ji' * djoint_wrench + matGradMult(transposeGrad(dJi, size(Ji)), joint_wrench); 
     dC = setSubMatrixGradient(dC, dtau, body.velocity_num, 1, size(C), 1:nq);
     dnet_wrenches{body.parent} = dnet_wrenches{body.parent} + djoint_wrench;
+    
+    djoint_wrenchdv = dnet_wrenchesdv{i};
+    dtaudv = Ji' * djoint_wrenchdv;
+    dC = setSubMatrixGradient(dC, dtaudv, body.velocity_num, 1, size(C), nq + (1:nv));
+    dnet_wrenchesdv{body.parent} = dnet_wrenchesdv{body.parent} + djoint_wrenchdv;
   end
 end
 
 
 if compute_gradient
   [tau_friction, dtau_frictiondv] = computeFrictionForce(manipulator, kinsol.v);
-  dC = setSubMatrixGradient(dC, dtau_frictiondv, 1:nv, 1, size(C), nq + (1:nv));
+  dC(:, nq + (1:nv)) = dC(:, nq + (1:nv)) + dtau_frictiondv;
 else
   tau_friction = computeFrictionForce(manipulator, kinsol.v);
 end
