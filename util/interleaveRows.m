@@ -4,16 +4,18 @@ if length(block_sizes) ~= n
   error('number of block sizes must equal number of matrices passed in')
 end
 
-row_sizes = cellfun('size', matrices, 1);
+sizes = cellfun(@size, matrices, 'UniformOutput', false);
+sizes = vertcat(sizes{:});
+row_sizes = sizes(:, 1);
 rows = sum(row_sizes);
 
-col_sizes = cellfun('size', matrices, 2);
+col_sizes = sizes(:, 2);
 cols = col_sizes(1);
 if any(col_sizes ~= cols)
   error('column sizes not equal')
 end
 
-ret = zeros(rows, cols);
+ret = zeros(rows, cols) * matrices{1}(1); % for TaylorVar
 block_sizes_sum = sum(block_sizes);
 block_sizes_cumsum = cumsum(block_sizes);
 indices = (1 : rows)';

@@ -33,7 +33,11 @@ s = [1 -1 -1 1 1 -1 1 1 1];
 L = sparse(i, j, s, 16, 6);
 
 % S in body frame:
-ret = kron(speye(4), sparse(H)) * L * S * qdotToV;
+if isnumeric(H)
+  ret = kron(speye(4), sparse(H)) * L * S * qdotToV;
+else
+  ret = kron(eye(4), H) * L * S * qdotToV;
+end
 
 % S in world frame:
 % ret = kron(H', eye(4)) * L * S * qdotToV;
