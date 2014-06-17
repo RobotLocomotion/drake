@@ -27,19 +27,17 @@ T_span = [T/2 T];
 x0 = zeros(4,1);
 xf = [pi;0;0;0];
 
-initial_constraint.mgr = ConstraintManager(LinearConstraint(x0,x0,[eye(4)]));
-initial_constraint.i = {1};
-final_constraint.mgr = ConstraintManager(LinearConstraint(xf,xf,[eye(4)]));
-final_constraint.i = {N};
-
-constraints = {initial_constraint, final_constraint};
-traj_opt = DircolTrajectoryOptimization(p,initial_cost,running_cost,final_cost,N,T_span,constraints,struct());
-% traj_opt = MidpointTrajectoryOptimization(p,initial_cost,running_cost,final_cost,N,T_span,constraints,struct());
-% traj_opt = FEDirtranTrajectoryOptimization(p,initial_cost,running_cost,final_cost,N,T_span,constraints,struct());
-% traj_opt = BEDirtranTrajectoryOptimization(p,initial_cost,running_cost,final_cost,N,T_span,constraints,struct());
+traj_opt = DircolTrajectoryOptimization(p,N,T_span,struct());
+% traj_opt = MidpointTrajectoryOptimization(p,N,T_span,struct());
+% traj_opt = FEDirtranTrajectoryOptimization(p,N,T_span,struct());
+% traj_opt = BEDirtranTrajectoryOptimization(p,N,T_span,struct());
 % traj_opt = traj_opt.setCheckGrad(true);
 snprint('snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
+traj_opt = traj_opt.addRunningCost(running_cost);
+traj_opt = traj_opt.addBoundingBoxStateConstraint(BoundingBoxConstraint(x0,x0),1);
+% traj_opt = traj_opt.addBoundingBoxStateConstraint(BoundingBoxConstraint(xf,xf),N);
+traj_opt = traj_opt.addLinearStateConstraint(LinearConstraint(xf,xf,eye(4)),N);
 [xtraj,utraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
 
 % keyboard

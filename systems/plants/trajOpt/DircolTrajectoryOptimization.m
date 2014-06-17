@@ -16,8 +16,8 @@ classdef DircolTrajectoryOptimization < TrajectoryOptimization
   end
   
   methods
-    function obj = DircolTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,varargin)
-      obj = obj@TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,varargin{:});
+    function obj = DircolTrajectoryOptimization(plant,N,T_span,varargin)
+      obj = obj@TrajectoryOptimization(plant,N,T_span,varargin{:});
     end
     
     function obj = addDynamicConstraints(obj)
@@ -103,14 +103,10 @@ classdef DircolTrajectoryOptimization < TrajectoryOptimization
 %     end
    
     
-    function obj = setupCostFunction(obj,initial_cost,running_cost,final_cost)
+    function obj = addRunningCost(obj,running_cost)
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-      
-      if ~isempty(initial_cost)
-        obj = obj.addCost(initial_cost,obj.x_inds(:,1));
-      end
-      
+
       running_handle = running_cost.eval_handle;
       
       running_cost_end = NonlinearConstraint(running_cost.lb,running_cost.ub,1+nX+nU,@running_fun_end);      
@@ -125,10 +121,6 @@ classdef DircolTrajectoryOptimization < TrajectoryOptimization
       end
       
       obj = obj.addCost(running_cost_end,{obj.h_inds(end);obj.x_inds(:,end);obj.u_inds(:,end)});
-      
-      if ~isempty(final_cost)
-        obj = obj.addCost(final_cost,{obj.h_inds;obj.x_inds(:,end)});
-      end
       
       function [f,df] = running_fun_end(h,x,u)
         [f,dg] = running_handle(.5*h,x,u);

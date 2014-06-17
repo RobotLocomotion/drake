@@ -6,8 +6,8 @@ classdef BEDirtranTrajectoryOptimization < TrajectoryOptimization
   end
   
   methods
-    function obj = BEDirtranTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,varargin)
-      obj = obj@TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,varargin{:});
+    function obj = BEDirtranTrajectoryOptimization(plant,N,T_span,varargin)
+      obj = obj@TrajectoryOptimization(plant,N,T_span,varargin{:});
     end
     
     function obj = addDynamicConstraints(obj)
@@ -36,27 +36,14 @@ classdef BEDirtranTrajectoryOptimization < TrajectoryOptimization
         df = [-xdot -eye(nX) (eye(nX) - h*dxdot(:,2:1+nX)) -h*dxdot(:,nX+2:end)];
       end
     end
-
-    function obj = setupCostFunction(obj,initial_cost,running_cost,final_cost)
-      if ~isempty(initial_cost)
-        obj = obj.addCost(initial_cost,obj.x_inds(:,1));
-      end
-      
-      if ~isempty(running_cost)
-        for i=1:obj.N-1,
-          h_ind = obj.h_inds(i);
-          x_ind = obj.x_inds(:,i+1);
-          u_ind = obj.u_inds(:,i);
-          
-          obj = obj.addCost(running_cost,{h_ind;x_ind;u_ind});
-        end        
-      end
-      
-      h_ind = obj.h_inds;
-      x_ind = obj.x_inds(:,end);
-      
-      if ~isempty(final_cost)
-        obj = obj.addCost(final_cost,{h_ind;x_ind});
+    
+    function obj = addRunningCost(obj,running_cost)
+      for i=1:obj.N-1,
+        h_ind = obj.h_inds(i);
+        x_ind = obj.x_inds(:,i+1);
+        u_ind = obj.u_inds(:,i);
+        
+        obj = obj.addCost(running_cost,{h_ind;x_ind;u_ind});
       end
     end
     

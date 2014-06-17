@@ -7,8 +7,8 @@ classdef MidpointTrajectoryOptimization < TrajectoryOptimization
   end
   
   methods
-    function obj = MidpointTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,varargin)
-      obj = obj@TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,varargin{:});
+    function obj = MidpointTrajectoryOptimization(plant,N,T_span,varargin)
+      obj = obj@TrajectoryOptimization(plant,N,T_span,varargin{:});
     end
     
     function obj = addDynamicConstraints(obj)
@@ -38,13 +38,9 @@ classdef MidpointTrajectoryOptimization < TrajectoryOptimization
       end
     end
     
-    function obj = setupCostFunction(obj,initial_cost,running_cost,final_cost)
+    function obj = addRunningCost(obj,running_cost)
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-      
-      if ~isempty(initial_cost)
-        obj = obj.addCost(initial_cost,obj.x_inds(:,1));
-      end
       
       running_handle = running_cost.eval_handle;
       running_cost_i = NonlinearConstraint(running_cost.lb,running_cost.ub,1+2*nX+2*nU,@running_fun);
@@ -57,10 +53,6 @@ classdef MidpointTrajectoryOptimization < TrajectoryOptimization
       
       h_ind = obj.h_inds;
       x_ind = obj.x_inds(:,end);
-      
-      if ~isempty(final_cost)
-        obj = obj.addCost(final_cost,{h_ind;x_ind});
-      end
       
       function [f,df] = running_fun(h,x0,x1,u0,u1)
         [f,dg] = running_handle(h,.5*(x0+x1),.5*(u0+u1));
