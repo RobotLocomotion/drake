@@ -9,6 +9,7 @@ checkGradients(createFallingBrick('quat'));
 checkGradients(createAtlas('rpy'));
 checkGradients(createAtlas('quat'));
 
+checkHdotMinus2CoriolisMatrixSkewSymmetricMatrix(createAtlas('rpy'))
 end
 
 function robot = createFallingBrick(floating_type)
@@ -91,7 +92,7 @@ for i = 1 : nTests
   q = getRandomConfiguration(r);
   v = randn(nv, 1);
   [H, C, B] = manipulatorDynamics(r, q, v, false);
-  kinetic_energy = v' * H * v;
+  kinetic_energy = 1/2 * v' * H * v;
   
   kinsol = r.doKinematics(q, false, false, v);
   kinetic_energy_via_kinsol = computeKineticEnergy(r, kinsol);
@@ -113,7 +114,7 @@ ret = 0;
 for i = 2 : NB
   twistInBody = relativeTwist(transforms, twists, 1, i, i);
   I = manipulator.body(i).I;
-  ret = ret + twistInBody' * I * twistInBody;
+  ret = ret + 1/2 * twistInBody' * I * twistInBody;
 end
 end
 
@@ -129,3 +130,36 @@ valuecheck(dH_geval, dH, 1e-10);
 valuecheck(dC_geval, dC, 1e-10);
 end
 
+function checkHdotMinus2CoriolisMatrixSkewSymmetricMatrix(robot)
+% Checks that \dot{H} - 2Q(q, v) is skew symmetric, where Q(q, v) is the
+% Coriolis matrix. See Lemma 4.2 in Murray, Li, Sastry - A Mathematical
+% Introduction to Robotic Manipulation.
+% Note that CBar(q, v) = C(q, v) - friction(v) is quadratic in v, i.e. we
+% can write the ith entry of Cbar as
+% Cbar_i(q, v) = v' * A_i(q) v + N_i(q)
+% so dCbar_i(q, v)/dv = 2 * v' * A_i(q)
+% We can also write CBar(q, v) as
+% CBar_i(q, v) = Q_(i,:)(q, v) * v + N_i(q)
+% which shows that Q_(i,:)(q, v) = 1/2 * dCbar_i(q, v)/dv
+
+nq = robot.getNumPositions();
+nv = robot.getNumVelocities();
+q = getRandomConfiguration(robot);
+v = randn(nv, 1);
+
+vToqdot = robot.vToqdot(q);
+if nq ~= nv || any(any(vToqdot - eye(nv)))
+  error('Hdot - 2Q is only skew symmetric if v = qdot')
+end
+
+[~,~,~,dH,dC] = manipulatorDynamics(robot, q, v, false);
+qdot = vToqdot * v;
+dHdq = dH(:, 1:nq);
+Hdot = reshape(dHdq * qdot, [nv, nv]);
+[~, dfrictiondv] = robot.computeFrictionForce(v);
+dCdv = dC(:, nq + (1:nv)) - dfrictiondv;
+coriolis_matrix = 1/2 * dCdv;
+
+Hdot_minus_2_coriolis_matrix = Hdot - 2 * coriolis_matrix;
+valuecheck(zeros(nv, nv), Hdot_minus_2_coriolis_matrix + Hdot_minus_2_coriolis_matrix', 1e-10);
+end
