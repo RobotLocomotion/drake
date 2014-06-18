@@ -34,8 +34,6 @@ classdef RigidBodyManipulator < Manipulator
     coulomb_friction = [];
     static_friction = [];
     coulomb_window = [];
-    f_ext_map_from = [];
-    f_ext_map_to = [];
   end
     
   methods
@@ -1665,9 +1663,7 @@ classdef RigidBodyManipulator < Manipulator
           model.body(i).velocity_num=0;
         end
       end
-      n=1;
-      model.f_ext_map_from = inds;  % index into NB
-      model.f_ext_map_to = [];
+      n=1; % indexes into velocity vector
       model.damping = [];
       model.coulomb_friction = [];
       model.static_friction = [];
@@ -1691,8 +1687,6 @@ classdef RigidBodyManipulator < Manipulator
           % X_joint_to_body get out of sync with the T_body_to_joint, since
           % the kinematics believes one thing and the featherstone dynamics
           % believes another.
-
-          model.f_ext_map_to = [model.f_ext_map_to,n+5];
           n=n+6;
         elseif (b.floating==2)
           % for now, to get tests to run
@@ -1700,14 +1694,12 @@ classdef RigidBodyManipulator < Manipulator
           model.coulomb_friction(n) = 0;
           model.static_friction(n) = 0;
           model.coulomb_window(n) = eps;
-          model.f_ext_map_to = [model.f_ext_map_to,n]; % TODO: check
           n = n + 6;
         else
           model.damping(n) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
           model.coulomb_friction(n) = b.coulomb_friction;
           model.static_friction(n) = b.static_friction;
           model.coulomb_window(n) = b.coulomb_window;
-          model.f_ext_map_to = [model.f_ext_map_to,n];
           n=n+1;
         end
         model.body(inds(i)) = b;  % b isn't a handle anymore, so store any changes

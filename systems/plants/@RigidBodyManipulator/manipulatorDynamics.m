@@ -150,16 +150,16 @@ for i = 2 : nBodies
     % transform from body to world
     T_i_to_world = kinsol.T{i};
     T_world_to_i = homogTransInv(T_i_to_world);
-    AdT_world_to_i = transformAdjoint(T_world_to_i)';
-    external_wrench = AdT_world_to_i * external_wrench;
+    AdT_world_to_i = transformAdjoint(T_world_to_i);
+    external_wrench = AdT_world_to_i' * external_wrench;
     
     if compute_gradient
       dT_i_to_world = kinsol.dTdq{i};
       dT_world_to_i = dinvT(T_i_to_world, dT_i_to_world);
       % TODO: implement and dAdHTransposeTimesX instead
       dAdT_world_to_i = dAdHTimesX(T_world_to_i,eye(size(T_world_to_i, 1)),dT_world_to_i,zeros(numel(T_world_to_i),nq));
-      dexternal_wrench = matGradMultMat(AdT_world_to_i, external_wrench, dAdT_world_to_i, dexternal_wrench);
-      dexternal_wrenchdv = AdT_world_to_i * dexternal_wrenchdv;
+      dexternal_wrench = matGradMultMat(AdT_world_to_i', external_wrench, transposeGrad(dAdT_world_to_i, size(AdT_world_to_i)), dexternal_wrench);
+      dexternal_wrenchdv = AdT_world_to_i' * dexternal_wrenchdv;
     end
   end
   I = inertias_world{i};
@@ -258,13 +258,9 @@ if ~isempty(obj.force)
         force = computeSpatialForce(obj.force{i},obj,q,v);
       end
     end
-    f_ext(:,obj.f_ext_map_to) = f_ext(:,obj.f_ext_map_to)+force(:,obj.f_ext_map_from);
+    f_ext = f_ext + force;
     if compute_gradients
-      for j=1:size(obj.f_ext_map_from,2)
-        i_from = obj.f_ext_map_from(j);
-        i_to = obj.f_ext_map_to(j);
-        df_ext((i_to-1)*size(f_ext,1)+1:i_to*size(f_ext,1),1:size(q,1)+size(v,1)) = df_ext((i_to-1)*size(f_ext,1)+1:i_to*size(f_ext,1),1:size(q,1)+size(v,1)) + dforce((i_from-1)*size(force,1)+1:i_from*size(force,1),1:size(q,1)+size(v,1));
-      end
+      df_ext = df_ext + dforce;
     end
   end
 else

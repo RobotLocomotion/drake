@@ -19,6 +19,8 @@ if nargin<6 && ~isempty(v), compute_JdotV=true; end
 if nargin<4, use_mex = true; end
 if nargin<3, compute_gradients = false; end
 
+use_mex = false; % for now
+
 kinsol.q = q;
 kinsol.v = v;
 
