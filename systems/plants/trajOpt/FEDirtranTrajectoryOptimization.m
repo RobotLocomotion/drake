@@ -2,7 +2,6 @@ classdef FEDirtranTrajectoryOptimization < DirectTrajectoryOptimization
   % Forward-Euler integration
   %  dynamics constraints are: x(k+1) = x(k) + h(k)*f(x(k),u(k))
   %  integrated cost is sum of g(h(k),x(k),u(k))
-  
   properties
   end
   
@@ -17,8 +16,7 @@ classdef FEDirtranTrajectoryOptimization < DirectTrajectoryOptimization
       N = obj.N;
       
       constraints = cell(N-1,1);
-      dyn_inds = cell(N-1,1);
-      
+      dyn_inds = cell(N-1,1);      
       
       n_vars = 2*nX + nU + 1;
       cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@constraint_fun);
@@ -39,18 +37,13 @@ classdef FEDirtranTrajectoryOptimization < DirectTrajectoryOptimization
     end
     
     function obj = addRunningCost(obj,running_cost)
-      if ~isempty(running_cost)
-        for i=1:obj.N-1,
-          h_ind = obj.h_inds(i);
-          x_ind = obj.x_inds(:,i);
-          u_ind = obj.u_inds(:,i);
-          
-          obj = obj.addCost(running_cost,{h_ind;x_ind;u_ind});
-        end        
+      for i=1:obj.N-1,
+        h_ind = obj.h_inds(i);
+        x_ind = obj.x_inds(:,i);
+        u_ind = obj.u_inds(:,i);
+        
+        obj = obj.addCost(running_cost,{h_ind;x_ind;u_ind});
       end
-      
-      h_ind = obj.h_inds;
-      x_ind = obj.x_inds(:,end);  
     end
     
   end
