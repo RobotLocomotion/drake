@@ -85,7 +85,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         xind = {(1:obj.num_vars)'};
       end
       if ~iscell(xind)
-        xind = {xind};
+        xind = {xind(:)};
       end
       xind_vec = cell2mat(xind);
       
@@ -191,7 +191,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         xind = {(1:obj.num_vars)'};
       end
       if ~iscell(xind)
-        xind = {xind};
+        xind = {xind(:)};
       end
       xind_vec = cell2mat(xind);
       if(~isa(cnstr,'LinearConstraint') && ~isa(cnstr,'NonlinearConstraint'))
