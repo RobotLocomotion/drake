@@ -1,7 +1,11 @@
 function [plan, exitflag, output_cost] = footstepNLP(biped, seed_plan, weights, goal_pos)
 
+if checkDependency('snopt')
+  USE_SNOPT = 1;
+else
+  warning('Drake:FootstepNLP:SNOPTNotFound', 'Snopt not found, using (slower) fmincon');
+end
 debug = false;
-USE_SNOPT = 1;
 USE_MEX = 1;
 
 seed_steps = seed_plan.footsteps;
