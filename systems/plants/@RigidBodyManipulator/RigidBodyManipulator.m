@@ -1671,7 +1671,11 @@ classdef RigidBodyManipulator < Manipulator
       n=1;
       model.f_ext_map_from = inds;  % index into NB
       model.f_ext_map_to = [];
-
+      model.damping = [];
+      model.coulomb_friction = [];
+      model.static_friction = [];
+      model.coulomb_window = [];
+      
       for i=1:length(inds) % number of links with parents
         b=model.body(inds(i));
         if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
