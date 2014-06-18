@@ -162,11 +162,51 @@ nlp1 = nlp1.replaceCost(qc1,1,[1;2]);
 F_obj = qc1.eval(x{1}(1:2));
 F_obj = F_obj+cost2_userfun(x{1}([1;3]))+x{1}(3);
 valuecheck(F{1},F_obj,1e-5);
+
+%%%%%%%%%%%%%%%%%%%%%
+display('test multi-input constraint and cost')
+% x1^2+4*x2^2<=4
+% (x1-2)^2+x2^2<=5
+% x1 >= 0
+% 0<=x1+2*x3 <=10
+% x1+3*x3 = 0
+nlp3 = NonlinearProgramWConstraintObjects(3);
+nlp3 = nlp3.setCheckGrad(true);
+cnstr3 = NonlinearConstraint(-inf(2,1),[4;5],2,@cnstr3_userfun);
+cost3 = NonlinearConstraint(-inf,inf,2,@cost3_userfun);
+xind1 = {1;2};
+nlp3 = nlp3.addNonlinearConstraint(cnstr3,xind1);
+nlp3 = nlp3.addCost(cost3,xind1);
+nlp3 = nlp3.addBoundingBoxConstraint(BoundingBoxConstraint(0,inf),1);
+
+A = [1 0 2;1 0 3];
+nlp3 = nlp3.addLinearConstraint(LinearConstraint([0;0],[10;0],[1 2;1 3]),[1;3]);
+x0 = [1;2;4];
+[x3,F,info] = nlp3.solve(x0);
+if(info>10)
+  error('SNOPT fails');
+end
+c3 = cnstr3_userfun(x3(1),x3(2));
+if(c3(1)>4+1e-5 || c3(2)>5+1e-5)
+  error('Wrong transcription for SNOPT nonlinear constraint');
+end
+b1 = A*x3;
+if(b1(1)>1+1e-5 || b1(1)<0-1e-5 || abs(b1(2))>1e-5)
+  error('Wrong transcription for SNOPT linear constraint');
+end
+if(x3(1)<-1e-5)
+  error('Wrong transcription for SNOPT x_lb');
+end
 end
 
 function [c,dc] = cnstr1_userfun(x)
 c = [x(1)^2+4*x(2)^2;(x(1)-2)^2+x(2)^2];
 dc = [2*x(1) 8*x(2);2*(x(1)-2) 2*x(2)];
+end
+
+function [c,dc] = cnstr3_userfun(x1,x2)
+c = [x1^2+4*x2^2;(x1-2)^2+x2^2];
+dc = [2*x1 8*x2;2*(x1-2) 2*x2];
 end
 
 function [c,dc] = cost1_userfun(x)
@@ -177,6 +217,11 @@ end
 function [c,dc] = cost2_userfun(x)
 c = x(1)*x(2);
 dc = [x(2) x(1)];
+end
+
+function [c,dc] = cost3_userfun(x1,x2)
+c = x1*x2;
+dc = [x2 x1];
 end
 
 function [c,dc] = cnstr2_userfun(x)
