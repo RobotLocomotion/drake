@@ -1,4 +1,6 @@
 function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,qd,use_mex)
+% note that you can also get C(q,qdot)*qdot + G(q) separately, because 
+% C = G when qdot=0
 
 checkDirty(obj);
 
@@ -6,6 +8,9 @@ if (nargin<4) use_mex = true; end
 
 m = obj.featherstone;
 B = obj.B;
+if (nargout>3)
+  dB = zeros(m.NB*obj.num_u,2*m.NB);
+end
 
 if length(obj.force)>0
   f_ext = zeros(6,m.NB);
@@ -16,8 +21,12 @@ if length(obj.force)>0
     % compute spatial force should return something that is the same length
     % as the number of bodies in the manipulator
     if (obj.force{i}.direct_feedthrough_flag)
-      [force,B_force] = computeSpatialForce(obj.force{i},obj,q,qd);
-      dforce = zeros(numel(force),size(q,1)+size(qd,1));
+      if (nargout>3)
+        [force,B_force,dforce,dB_force] = computeSpatialForce(obj.force{i},obj,q,qd);
+        dB = dB + dB_force;
+      else
+        [force,B_force] = computeSpatialForce(obj.force{i},obj,q,qd);
+      end
       B = B+B_force;
     else
       if (nargout>3)
@@ -49,7 +58,6 @@ if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(qd))
     df_ext = full(df_ext);
     [H,C,dH,dC] = HandCmex(obj.mex_model_ptr,q,qd,f_ext,df_ext);
     dH = [dH, zeros(m.NB*m.NB,m.NB)];
-    dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
     [H,C] = HandCmex(obj.mex_model_ptr,q,qd,f_ext);
   end
@@ -66,7 +74,7 @@ else
     
     %Derivatives
     dXupdq = cell(m.NB,1);
-    dvdq = cell(m.NB,1);  %dvdq{i,j} is d/dq(j) v{i}
+    dvdq = cell(m.NB,1);  %dvdq{i}(:,j) is d/dq(j) v{i}
     dvdqd = cell(m.NB,1);
     davpdq = cell(m.NB,1);
     davpdqd = cell(m.NB,1);
@@ -136,6 +144,7 @@ else
       
     end
     
+    C = zeros(m.NB,1)*q(1);
     dC = zeros(m.NB,2*m.NB)*q(1);
     IC = m.I;				% composite inertia calculation
     dIC = cell(m.NB, m.NB);
@@ -155,7 +164,7 @@ else
         for k=1:m.NB,
           dIC{m.parent(i),k} = dIC{m.parent(i),k} + Xup{i}'*dIC{i,k}*Xup{i};
         end
-        dIC{m.parent(i),i} = dIC{m.parent(i),i} + ...
+        dIC{m.parent(i),n} = dIC{m.parent(i),n} + ...
           dXupdq{i}'*IC{i}*Xup{i} + Xup{i}'*IC{i}*dXupdq{i};
       end
     end
@@ -167,16 +176,17 @@ else
     %Derivatives wrt q(k)
     dH = zeros(m.NB^2,2*m.NB)*q(1);
     for k = 1:m.NB
+      nk = m.dofnum(k);
       for i = 1:m.NB
         n = m.dofnum(i);
         fh = IC{i} * S{i};
-        dfh = dIC{i,k} * S{i};  %dfh/dqk
+        dfh = dIC{i,nk} * S{i};  %dfh/dqk
         H(n,n) = S{i}' * fh;
-        dH(n + (n-1)*m.NB,k) = S{i}' * dfh;
+        dH(n + (n-1)*m.NB,nk) = S{i}' * dfh;
         j = i;
         while m.parent(j) > 0
           if j==k,
-            dfh = Xup{j}' * dfh + dXupdq{k}' * fh;
+            dfh = Xup{j}' * dfh + dXupdq{j}' * fh;
           else
             dfh = Xup{j}' * dfh;
           end
@@ -187,8 +197,8 @@ else
           
           H(n,np) = S{j}' * fh;
           H(np,n) = H(n,np);
-          dH(n + (np-1)*m.NB,k) = S{j}' * dfh;
-          dH(np + (n-1)*m.NB,k) = dH(n + (np-1)*m.NB,k);
+          dH(n + (np-1)*m.NB,nk) = S{j}' * dfh;
+          dH(np + (n-1)*m.NB,nk) = dH(n + (np-1)*m.NB,nk);
         end
       end
     end
@@ -201,7 +211,6 @@ else
     fc_drv = zeros(m.NB,1);
     fc_drv(ind) =dind;
     dC(:,m.NB+1:end) = dC(:,m.NB+1:end)+ diag(fc_drv);
-    dB = zeros(m.NB*obj.num_u,2*m.NB);
   else
     [H,C] = HandC(m,q,qd,f_ext,obj.gravity);
   end

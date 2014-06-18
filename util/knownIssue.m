@@ -15,13 +15,20 @@ if isempty(err_id)
           'systems/plants/test/multiRobotTest', ...
           'systems/plants/test/momentumTest', ...
           'systems/plants/test/terrainTest', ...
-          'systems/plants/test/testFloatingBaseDynamics'}))
+          'systems/plants/test/testFloatingBaseDynamics', ...
+          'examples/ZMP/CartTable.run'}))
         github(18); return;
       end
     case 'Airplane2D:SNOPT:INFO3'
       if any(strcmp(testname,{'examples/Airplane2D/runDircolWithObs', ...
           'examples/Airplane2D/runFunnelWithObstacles'}))
         github(125); return;
+      end
+    case 'Drake:ValueCheck'
+      if any(strcmp(testname,{'solvers/test/testNLPWConstraint'}))
+        github(135); return;
+      elseif any(strcmp(testname,{'solvers/test/testKinCnst'}))
+        github(136); return;
       end
     case {'Simulink:SFunctions:SFcnErrorStatus','Drake:Manipulator:ResolveConstraintsFailed'}
       if any(strcmp(testname,{'systems/plants/test/coordinateSystemTest', ...
