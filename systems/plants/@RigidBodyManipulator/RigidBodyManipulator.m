@@ -24,7 +24,6 @@ classdef RigidBodyManipulator < Manipulator
   end
   
   properties (Access=public)  % i think these should be private, but probably needed to access them from mex? - Russ
-    featherstone = [];  
     B = [];
     mex_model_ptr = 0;
     dirty = true;
@@ -35,6 +34,8 @@ classdef RigidBodyManipulator < Manipulator
     coulomb_friction = [];
     static_friction = [];
     coulomb_window = [];
+    f_ext_map_from = [];
+    f_ext_map_to = [];
   end
     
   methods
@@ -1667,27 +1668,17 @@ classdef RigidBodyManipulator < Manipulator
           model.body(i).velocity_num=0;
         end
       end
-      m.NB= length(inds); % number of links with parents   
       n=1;
-      m.f_ext_map_from = inds;  % index into NB
-      m.f_ext_map_to = [];
+      model.f_ext_map_from = inds;  % index into NB
+      model.f_ext_map_to = [];
 
       for i=1:length(inds) % number of links with parents
         b=model.body(inds(i));
         if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
-          m.pitch(n+(0:2)) = inf;  % prismatic
-          m.pitch(n+(3:5)) = 0;    % revolute
           model.damping(n+(0:5)) = 0;
           model.coulomb_friction(n+(0:5)) = 0;
           model.static_friction(n+(0:5)) = 0;
           model.coulomb_window(n+(0:5)) = eps;
-          m.parent(n+(0:5)) = [model.body(b.parent).position_num,n+(0:4)];  % rel ypr
-          m.Xtree{n} = Xroty(pi/2);   % x
-          m.Xtree{n+1} = Xrotx(-pi/2)*Xroty(-pi/2); % y (note these are relative changes, x was up, now I'm rotating so y will be up)
-          m.Xtree{n+2} = Xrotx(pi/2); % z
-          m.Xtree{n+3} = eye(6);       % yaw
-          m.Xtree{n+4} = Xrotx(-pi/2);  % pitch
-          m.Xtree{n+5} = Xroty(pi/2)*Xrotx(pi/2);  % roll
 
 %          valuecheck(b.X_joint_to_body,eye(6))); % if this isn't true, then I probably need to handle it better on the line below
           % but I can't leave the check in because it is also very ugly because this method gets run potentially
@@ -1699,38 +1690,27 @@ classdef RigidBodyManipulator < Manipulator
           % X_joint_to_body get out of sync with the T_body_to_joint, since
           % the kinematics believes one thing and the featherstone dynamics
           % believes another.
-          
-          for j=0:4, m.I{n+j} = zeros(6); end
-          m.I{n+5} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
-          m.f_ext_map_to = [m.f_ext_map_to,n+5];
+
+          model.f_ext_map_to = [model.f_ext_map_to,n+5];
           n=n+6;
         elseif (b.floating==2)
           % for now, to get tests to run
-          m.pitch(n) = 0;
           model.damping(n) = 0;
           model.coulomb_friction(n) = 0;
           model.static_friction(n) = 0;
           model.coulomb_window(n) = eps;
-          m.parent(n) = [model.body(b.parent).position_num];
-          m.Xtree{n} = eye(6);
-          m.I{n} = b.I;
-          m.f_ext_map_to = [m.f_ext_map_to,n]; % TODO: check
+          model.f_ext_map_to = [model.f_ext_map_to,n]; % TODO: check
           n = n + 6;
         else
-          m.parent(n) = max(model.body(b.parent).position_num);
-          m.pitch(n) = b.pitch;
-          m.Xtree{n} = inv(b.X_joint_to_body)*b.Xtree*model.body(b.parent).X_joint_to_body;
-          m.I{n} = b.X_joint_to_body'*b.I*b.X_joint_to_body;
           model.damping(n) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
           model.coulomb_friction(n) = b.coulomb_friction;
           model.static_friction(n) = b.static_friction;
           model.coulomb_window(n) = b.coulomb_window;
-          m.f_ext_map_to = [m.f_ext_map_to,n];
+          model.f_ext_map_to = [model.f_ext_map_to,n];
           n=n+1;
         end
         model.body(inds(i)) = b;  % b isn't a handle anymore, so store any changes
       end
-      model.featherstone = m;
     end
       
     function model=removeFixedJoints(model)

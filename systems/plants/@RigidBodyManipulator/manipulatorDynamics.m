@@ -15,7 +15,6 @@ checkDirty(obj);
 compute_gradients = nargout > 3;
 
 if (nargin<4) use_mex = true; end
-
 if compute_gradients
   [f_ext, B, df_ext, dB] = computeExternalForcesAndInputMatrix(obj, q, v);
 else
@@ -23,7 +22,6 @@ else
 end
 
 a_grav = [zeros(3, 1); obj.gravity];
-
 if (use_mex && obj.mex_model_ptr~=0 && isnumeric(q) && isnumeric(v))
   f_ext = full(f_ext);  % makes the mex implementation simpler (for now)
   if compute_gradients
@@ -227,18 +225,19 @@ function [f_ext, B, df_ext, dB] = computeExternalForcesAndInputMatrix(obj, q, v)
 compute_gradients = nargout > 2;
 
 % TODO: check body indices, probably need to get rid of -1 in i_to-1 etc.
+nq = size(q,1);
+nv = size(v,1);
 
-m = obj.featherstone;
 B = obj.B;
 NB = obj.getNumBodies();
 if compute_gradients
-  dB = zeros(NB*obj.num_u,2*NB);
+  dB = zeros(numel(B), nq + nv);
 end
 
 if ~isempty(obj.force)
   f_ext = zeros(6,NB);
   if compute_gradients
-    df_ext = zeros(6*NB,size(q,1)+size(v,1));
+    df_ext = zeros(numel(f_ext), nq + nv);
   end
   for i=1:length(obj.force)
     % compute spatial force should return something that is the same length
@@ -259,11 +258,11 @@ if ~isempty(obj.force)
         force = computeSpatialForce(obj.force{i},obj,q,v);
       end
     end
-    f_ext(:,m.f_ext_map_to) = f_ext(:,m.f_ext_map_to)+force(:,m.f_ext_map_from);
+    f_ext(:,obj.f_ext_map_to) = f_ext(:,obj.f_ext_map_to)+force(:,obj.f_ext_map_from);
     if compute_gradients
-      for j=1:size(m.f_ext_map_from,2)
-        i_from = m.f_ext_map_from(j);
-        i_to = m.f_ext_map_to(j);
+      for j=1:size(obj.f_ext_map_from,2)
+        i_from = obj.f_ext_map_from(j);
+        i_to = obj.f_ext_map_to(j);
         df_ext((i_to-1)*size(f_ext,1)+1:i_to*size(f_ext,1),1:size(q,1)+size(v,1)) = df_ext((i_to-1)*size(f_ext,1)+1:i_to*size(f_ext,1),1:size(q,1)+size(v,1)) + dforce((i_from-1)*size(force,1)+1:i_from*size(force,1),1:size(q,1)+size(v,1));
       end
     end
@@ -271,7 +270,7 @@ if ~isempty(obj.force)
 else
   f_ext=sparse(6,NB);
   if compute_gradients
-    df_ext = sparse(6*NB,size(q,1)+size(v,1));
+    df_ext = sparse(numel(f_ext), nq + nv);
   end
 end
 end
