@@ -100,6 +100,17 @@ classdef FootstepPlan
       end
       lcmgl.switchBuffers();
     end
+
+    function draw_2d(obj)
+      hold on
+      X1 = [obj.footsteps(1:2:end).pos];
+      X2 = [obj.footsteps(2:2:end).pos];
+      plot(X1(1,:), X1(2,:), 'go',...
+          X2(1,:), X2(2,:), 'ro')
+      quiver(X1(1,:), X1(2,:), cos(X1(6,:)), sin(X1(6,:)),'Color', 'g', 'AutoScaleFactor', 0.2);
+      quiver(X2(1,:), X2(2,:), cos(X2(6,:)), sin(X2(6,:)),'Color', 'r', 'AutoScaleFactor', 0.2);
+      axis equal
+    end
   end
 
   methods(Static=true)
