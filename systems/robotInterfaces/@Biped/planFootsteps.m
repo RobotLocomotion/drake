@@ -21,7 +21,7 @@ function plan = planFootsteps(obj, start_pos, goal_pos, safe_regions, options)
 %                      A*v <= b AND normal'*v(1:3) == normal'*point
 % @param options a struct of options
 %
-% @option method (default: @footstepAlternatingMIQP) the footstep planning
+% @option method_handle (default: @footstepAlternatingMIQP) the footstep planning
 %                method to use, expressed as a function handle
 % @option step_params (default: struct()) specific parameters for footstep
 %                     planning. Attributes set here overload those in
@@ -29,7 +29,7 @@ function plan = planFootsteps(obj, start_pos, goal_pos, safe_regions, options)
 
 if nargin < 5; options = struct(); end
 if nargin < 4; safe_regions = []; end
-if ~isfield(options, 'method'); options.method = @footstepAlternatingMIQP; end
+if ~isfield(options, 'method_handle'); options.method_handle = @footstepAlternatingMIQP; end
 if ~isfield(options, 'step_params'); options.step_params = struct(); end
 options.step_params = obj.applyDefaultFootstepParams(options.step_params);
 sizecheck(start_pos.right, [6,1]);
@@ -60,7 +60,7 @@ start_pos.left(4:5) = 0;
 
 weights = getFootstepOptimizationWeights(obj);
 
-plan = options.method(obj, plan, weights, goal_pos);
+plan = options.method_handle(obj, plan, weights, goal_pos);
 
 end
 
