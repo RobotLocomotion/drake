@@ -1,4 +1,4 @@
-classdef TrajectoryOptimization < NonlinearProgramWConstraintObjects
+classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
   %TRAJECTORYOPTIMIZATION An abstract class for direct method approaches to
   % trajectory optimization.
   % 
