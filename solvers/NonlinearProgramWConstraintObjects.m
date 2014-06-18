@@ -50,6 +50,17 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     end
     
     function obj = addManagedConstraints(obj,mgr,xind)
+      % add a ConstraintManager to the object, change the constraint evalation of the
+      % program.
+      % @param mgr     -- A ConstraintManager object
+      % @param xind      -- Optional argument. The x(xind) is the decision variables used
+      % in evaluating the cnstr. Default value is (1:obj.num_vars)
+      if(~isa(mgr,'ConstraintManager'))
+        error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addManagedConstraints expects a ConstraintManager object');
+      end
+      if(nargin<3)
+        xind = {(1:obj.num_vars)'};
+      end
       if size(xind,2) > size(xind,1)
         xind = xind';
       end
