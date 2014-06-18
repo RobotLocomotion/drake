@@ -230,10 +230,10 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       end
     end
     
-    % Retrieves the elements from the vector x related to xind and returns
+    function args = getArgumentArray(obj,x,xind)
+      % Retrieves the elements from the vector x related to xind and returns
     % them as a cell array where:
     % args{i} = x(xind{i})
-    function args = getArgumentArray(obj,x,xind)
       narg = length(xind);
       if narg == 1,
         args = {x(xind{1})};
@@ -267,9 +267,10 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       f = 0;
       df = zeros(1,obj.num_vars);
       for i = 1:length(obj.cost)
-        [fi,dfi] = obj.cost{i}.eval(x(obj.cost_xind_cell{i}));
+        args = getArgumentArray(obj,x,obj.cost_xind_cell{i});
+        [fi,dfi] = obj.cost{i}.eval(args{:});
         f = f+fi;
-        df(obj.cost_xind_cell{i}) = df(obj.cost_xind_cell{i})+dfi;
+        df(obj.cost_xind_stacked{i}) = df(obj.cost_xind_stacked{i})+dfi;
       end
     end
     
@@ -317,9 +318,11 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       % @param xind     -- Optional argument. x(xind) is the decision variables used in
       % evaluating the cost. Default value is (1:obj.num_vars)
       if(nargin<4)
-        xind = (1:obj.num_vars)';
+        xind = {(1:obj.num_vars)'};
       end
-      xind = xind(:);
+      if ~iscell(xind)
+        xind = {xind(:)};
+      end
       obj.iFfun = [];
       obj.jFvar = [];
       num_cost = length(obj.cost);
