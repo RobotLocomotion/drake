@@ -15,7 +15,7 @@ if any(col_sizes ~= cols)
   error('column sizes not equal')
 end
 
-ret = zeros(rows, cols) * matrices{1}(1); % for TaylorVar
+ret = zeros(rows, cols);
 block_sizes_sum = sum(block_sizes);
 block_sizes_cumsum = cumsum(block_sizes);
 indices = (1 : rows)';
