@@ -92,6 +92,9 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       if(~isa(cnstr,'NonlinearConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addNonlinearConstraint expects a NonlinearConstraint object');
       end
+      if length(xind_vec) ~= cnstr.xdim
+        error('Drake:NonlinearProgramWConstraint:InvalidArgument','the length of xind must match the x-dimension of the constraint');
+      end
       obj.nlcon = [obj.nlcon,{cnstr}];
       
       obj.cin_ub = [obj.cin_ub;cnstr.ub(cnstr.cin_idx)];
@@ -134,6 +137,9 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       if(~isa(cnstr,'LinearConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addLinearConstraint expects a LinearConstraint object');
       end
+      if length(xind) ~= cnstr.xdim
+        error('Drake:NonlinearProgramWConstraint:InvalidArgument','the length of xind must match the x-dimension of the constraint');
+      end
       obj.lcon = [obj.lcon,{cnstr}];
       
       cnstr_A = sparse(cnstr.iAfun,xind(cnstr.jAvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr.nnz);
@@ -167,6 +173,9 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       xind = xind(:);
       if(~isa(cnstr,'BoundingBoxConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addBoundingBoxConstraint expects a BoundingBoxConstraint object');
+      end
+      if length(xind) ~= cnstr.xdim
+        error('Drake:NonlinearProgramWConstraint:InvalidArgument','the length of xind must match the x-dimension of the constraint');
       end
       obj.bbcon = [obj.bbcon,{cnstr}];
       obj.x_lb(xind) = max([cnstr.lb obj.x_lb(xind)],[],2);
