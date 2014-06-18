@@ -61,28 +61,30 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       if(nargin<3)
         xind = {(1:obj.num_vars)'};
       end
-      if size(xind,2) > size(xind,1)
-        xind = xind';
+      if ~iscell(xind)
+        xind = {xind(:)};
       end
       % add in slack variables to end, and adjust xind accordingly
       n_slack = mgr.getNumSlackVariables();
-      var_ind = [xind;(obj.num_vars + 1 : obj.num_vars + n_slack)'];
+      for i=1:length(xind)
+        xind{i} = [xind{i};(obj.num_vars + 1 : obj.num_vars + n_slack)'];
+      end
       obj = obj.addDecisionVariable(n_slack);
       
       % add constraints
       lincon = mgr.getLinearConstraints();
       for k=1:length(lincon),
-        obj = obj.addLinearConstraint(lincon{k}, var_ind);
+        obj = obj.addLinearConstraint(lincon{k}, xind);
       end
       
       nlncon = mgr.getNonlinearConstraints();
       for k=1:length(nlncon),
-        obj = obj.addNonlinearConstraint(nlncon{k}, var_ind);
+        obj = obj.addNonlinearConstraint(nlncon{k}, xind);
       end
       
       bcon = mgr.getBoundingBoxConstraints();
       for k=1:length(bcon),
-        obj = obj.addBoundingBoxConstraint(bcon{k}, var_ind);
+        obj = obj.addBoundingBoxConstraint(bcon{k}, xind);
       end
     end
     
