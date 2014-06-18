@@ -1636,7 +1636,7 @@ classdef RigidBodyManipulator < Manipulator
       % @ingroup Kinematic Tree
       
       %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
-      num_q=0;num_v=0;inds=[];
+      num_q=0;num_v=0;
       for i=1:length(model.body)
         if model.body(i).parent>0
           if (model.body(i).floating==1)
@@ -1644,19 +1644,16 @@ classdef RigidBodyManipulator < Manipulator
             num_q=num_q+6;
             model.body(i).velocity_num=num_v+(1:6)';
             num_v=num_v+6;
-            inds = [inds,i];
           elseif (model.body(i).floating==2)
             model.body(i).position_num=num_q+(1:7)';
             num_q=num_q+7;
             model.body(i).velocity_num=num_v+(1:6)';
             num_v=num_v+6;
-            inds = [inds,i];
           else
             num_q=num_q+1;
             model.body(i).position_num=num_q;
             num_v=num_v+1;
             model.body(i).velocity_num=num_v;
-            inds = [inds,i];
           end
         else
           model.body(i).position_num=0;
@@ -1669,8 +1666,8 @@ classdef RigidBodyManipulator < Manipulator
       model.static_friction = [];
       model.coulomb_window = [];
       
-      for i=1:length(inds) % number of links with parents
-        b=model.body(inds(i));
+      for i = 2 : model.getNumBodies() % links with parents
+        b=model.body(i);
         if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
           model.damping(n+(0:5)) = 0;
           model.coulomb_friction(n+(0:5)) = 0;
@@ -1702,7 +1699,7 @@ classdef RigidBodyManipulator < Manipulator
           model.coulomb_window(n) = b.coulomb_window;
           n=n+1;
         end
-        model.body(inds(i)) = b;  % b isn't a handle anymore, so store any changes
+        model.body(i) = b;  % b isn't a handle anymore, so store any changes
       end
     end
       
