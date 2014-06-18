@@ -29,8 +29,7 @@ classdef FEDirtranTrajectoryOptimization < DirectTrajectoryOptimization
       end
       
       function [f,df] = constraint_fun(h,x0,x1,u)
-        [xdot,dxdot] = geval(@(t,x,u) dynamics(obj.plant,t,x,u),0,x0,u);
-%         [xdot,dxdot] = obj.plant.dynamics(0,x0,u);
+        [xdot,dxdot] = obj.plant.dynamics(0,x0,u);
         f = x1 - x0 - h*xdot;
         df = [-xdot (-eye(nX) - h*dxdot(:,2:1+nX)) eye(nX) -h*dxdot(:,nX+2:end)];
       end

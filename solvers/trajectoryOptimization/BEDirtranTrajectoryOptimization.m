@@ -17,8 +17,7 @@ classdef BEDirtranTrajectoryOptimization < DirectTrajectoryOptimization
       
       constraints = cell(N-1,1);
       dyn_inds = cell(N-1,1);
-      
-      
+
       n_vars = 2*nX + nU + 1;
       cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@constraint_fun);
       

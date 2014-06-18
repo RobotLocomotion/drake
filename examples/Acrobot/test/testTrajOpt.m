@@ -1,5 +1,5 @@
 function [p,xtraj,utraj,z,F,info,traj_opt] = testTrajOpt(xtraj,utraj)
-p = PlanarRigidBodyManipulator('Acrobot.urdf');
+p = PlanarRigidBodyManipulator('../Acrobot.urdf');
 % p = AcrobotPlant();
 
 N = 30;
@@ -27,10 +27,10 @@ T_span = [T/2 T];
 x0 = zeros(4,1);
 xf = [pi;0;0;0];
 
-traj_opt = DircolTrajectoryOptimization(p,N,T_span,struct());
-% traj_opt = MidpointTrajectoryOptimization(p,N,T_span,struct());
-% traj_opt = FEDirtranTrajectoryOptimization(p,N,T_span,struct());
-% traj_opt = BEDirtranTrajectoryOptimization(p,N,T_span,struct());
+% traj_opt = DirtranTrajectoryOptimization(DirtranTrajectoryOptimization.MIDPOINT,p,N,T_span,struct());
+% traj_opt = DirtranTrajectoryOptimization(DirtranTrajectoryOptimization.FORWARD_EULER,p,N,T_span,struct());
+traj_opt = DirtranTrajectoryOptimization(DirtranTrajectoryOptimization.BACKWARD_EULER,p,N,T_span,struct());
+% traj_opt = DircolTrajectoryOptimization(p,N,T_span,struct());
 % traj_opt = traj_opt.setCheckGrad(true);
 snprint('snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
