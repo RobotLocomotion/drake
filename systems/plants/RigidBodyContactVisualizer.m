@@ -19,7 +19,7 @@ classdef RigidBodyContactVisualizer < Visualizer
       sfigure(hFig);
       clf; hold on;
       
-      n = obj.getNumBodies() - 1;
+      n = obj.getNumPositions();
       q = x(1:n); qd=x(n+(1:n));
       kinsol = obj.doKinematics(q);
       

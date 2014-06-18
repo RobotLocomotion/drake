@@ -30,7 +30,7 @@ classdef HuboReachingControl < DrakeSystem
       % Controller implementation.  
       % See derivation in HuboReachingControl.pdf
       
-      n = obj.getNumBodies() - 1;
+      n = obj.getNumPositions();
       q = x(1:n); qd=x(n+(1:n));
       
       eta = [.01;1;.01];  
