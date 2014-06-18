@@ -8,7 +8,7 @@ classdef MidpointTrajectoryOptimization < DirectTrajectoryOptimization
   
   methods
     function obj = MidpointTrajectoryOptimization(plant,N,T_span,varargin)
-      obj = obj@TrajectoryOptimization(plant,N,T_span,varargin{:});
+      obj = obj@DirectTrajectoryOptimization(plant,N,T_span,varargin{:});
     end
     
     function obj = addDynamicConstraints(obj)
