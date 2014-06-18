@@ -77,7 +77,6 @@ classdef FootstepPlan
       end
     end
 
-
     function varargout = sanity_check(obj)
       ok = true;
       frame_ids = [obj.footsteps.frame_id];
@@ -88,6 +87,18 @@ classdef FootstepPlan
         end
       end
       varargout = {ok};
+    end
+
+    function draw_lcmgl(obj, lcmgl)
+      for j = 1:length(obj.footsteps)
+        if mod(j, 2)
+          lcmgl.glColor3f(1,0,0);
+        else
+          lcmgl.glColor3f(0,1,0);
+        end
+        lcmgl.sphere(obj.footsteps(j).pos(1:3), 0.02, 20, 20);
+      end
+      lcmgl.switchBuffers();
     end
   end
 
