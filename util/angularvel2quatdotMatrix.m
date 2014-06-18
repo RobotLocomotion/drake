@@ -7,11 +7,14 @@ function [M, dM] = angularvel2quatdotMatrix(q)
 % http://bicycle.tudelft.nl/schwab/Publications/quaternion.pdf
 
 compute_gradient = nargout > 1;
-if compute_gradient
-  [qtilde, dqtildedq] = normalizeVec(q);
-else
-  qtilde = normalizeVec(q);
-end
+% NOTE: enabling normalization causes testForwardKinV to fail.
+
+% if compute_gradient
+%   [qtilde, dqtildedq] = normalizeVec(q);
+% else
+%   qtilde = normalizeVec(q);
+% end
+qtilde = q;
 
 qs = qtilde(1);
 qv = qtilde(2 : 4);
@@ -20,7 +23,6 @@ M = 1/2 * ...
   [-qv';
   qs * eye(3) - vectorToSkewSymmetric(qv)];
 
-compute_gradient = nargout > 1;
 if compute_gradient
   dM = [...
        0      -0.5   0      0;
@@ -34,6 +36,6 @@ if compute_gradient
        0      0      0      -0.5;
        0      0      -0.5   0;
        0      0.5    0      0;
-       0.5    0      0      0] * dqtildedq;
+       0.5    0      0      0]; % * dqtildedq;
 end
 end
