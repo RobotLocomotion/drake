@@ -1,5 +1,5 @@
 classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
-  %TRAJECTORYOPTIMIZATION An abstract class for direct method approaches to
+  %DIRECTTRAJECTORYOPTIMIZATION An abstract class for direct method approaches to
   % trajectory optimization.
   % 
   % Generally considers cost functions of the form:
@@ -35,7 +35,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
   
   methods
     % function obj =
-    % TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,...
+    % DirectTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,...
     % t_init,traj_init,T_span,constraints, options)
     % Trajectory optimization constructor 
     
@@ -56,9 +56,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
     %   points 1 and 2 together (taking the combined state as an argument)
     %   and 3 and 4 together.
     % 
-    
-%     function obj = TrajectoryOptimization(plant,initial_cost,running_cost,final_cost,N,T_span,constraints,options)
-    function obj = TrajectoryOptimization(plant,N,T_span,options)
+    function obj = DirectTrajectoryOptimization(plant,N,T_span,options)
       %#ok<*PROP>
  
       if nargin < 4
