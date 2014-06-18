@@ -74,16 +74,16 @@
   <force_element name="MyUpperThrust">
     <thrust lower_limit="0" upper_limit="255" scale_factor="1">
       <parent link="upper_link"/>
-      <origin xyz="0 0 -1"/>
       <axis xyz="-1 0 1"/>
+      <origin xyz="0 0 -.5"/>
     </thrust>
   </force_element>
 
   <force_element name="MyLowerThrust">
     <thrust lower_limit="0" upper_limit="255" scale_factor="1">
       <parent link="lower_link"/>
-      <origin xyz="0 0 -.5"/>
-      <axis xyz="0 0 -1"/>
+      <origin xyz="0 0 -1"/>
+      <axis xyz="-1 0 0"/>
     </thrust>
   </force_element>
 

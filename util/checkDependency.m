@@ -40,7 +40,7 @@ if ~ok
       if (~conf.lcm_enabled)
         lcm_java_classpath = getCMakeParam('lcm_java_classpath',conf);
         if ~isempty(lcm_java_classpath)
-          javaaddpath(lcm_java_classpath);
+          javaaddpathProtectGlobals(lcm_java_classpath);
           disp(' Added the lcm jar to your javaclasspath (found via cmake)');
           conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
         end
@@ -50,14 +50,14 @@ if ~ok
         [retval,cp] = system('pkg-config --variable=classpath lcm-java');
         if (retval==0 && ~isempty(cp))
           disp(' Added the lcm jar to your javaclasspath (found via pkg-config)');
-          javaaddpath(strtrim(cp));
+          javaaddpathProtectGlobals(strtrim(cp));
         end
         
         conf.lcm_enabled = logical(exist('lcm.lcm.LCM','class'));
       end
       
       if (conf.lcm_enabled)
-        javaaddpath(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
+        javaaddpathProtectGlobals(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));
         [retval,info] = system('util/check_multicast_is_loopback.sh');
         if (retval)
           info = strrep(info,'ERROR: ','');
@@ -79,7 +79,7 @@ if ~ok
       if (~conf.lcmgl_enabled)
         try % try to add bot2-lcmgl.jar
           lcm_java_classpath = getCMakeParam('LCMGL_JAR_FILE',conf);
-          javaaddpath(lcm_java_classpath);
+          javaaddpathProtectGlobals(lcm_java_classpath);
           disp(' Added the lcmgl jar to your javaclasspath (found via cmake)');
         catch
         end

@@ -14,6 +14,9 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
       if ~isfield(options,'floating')
         options.floating = true;
       end
+      if ~isfield(options,'terrain')
+        options.terrain = RigidBodyFlatTerrain;
+      end
       
       addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
   

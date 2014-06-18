@@ -74,12 +74,12 @@ namespace DrakeCollision
       /**
         * Performs raycasting collision detecting (like a LIDAR / laser rangefinder)
         *
-        * @param origin Vector3d specifying the position of the ray's origin
-        * @param ray_endpoint Vector3d specifying a second point on the ray in world coordinates
-        *
-        * @retval distance to the first collision, or -1 on no collision
+        * @param origins MatrixX3d specifying the position of the rays' origin
+        * @param ray_endpoints MatrixX3d specifying the end ponit of each ray in world coordinates
+        * @param distances returned VectorXd to the for each ray, or -1 on no collision
+        * 
         */
-      virtual double collisionRaycast(const Vector3d &origin, const Vector3d &ray_endpoint)=0;
+      virtual bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances)=0;
   };
 
   std::shared_ptr<Model> newModel();

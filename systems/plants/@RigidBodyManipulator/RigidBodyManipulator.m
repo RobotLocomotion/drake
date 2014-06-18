@@ -223,7 +223,11 @@ classdef RigidBodyManipulator < Manipulator
       obj.gravity = grav;
       obj.dirty = true;
     end
-
+    
+    function g = getGravity(obj,grav)
+      g = obj.gravity;
+    end
+    
     function f_friction = computeFrictionForce(model,qd)
       m = model.featherstone;
       f_friction = m.damping'.*qd;
