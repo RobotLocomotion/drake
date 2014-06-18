@@ -405,8 +405,9 @@ classdef RigidBodyManipulator < Manipulator
         child.wrljoint = wrl_joint_origin;
       end      
 
-      child.Xtree = Xrotx(rpy(1))*Xroty(rpy(2))*Xrotz(rpy(3))*Xtrans(xyz);
-      child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];  % equivalent to rpy2rotmat
+%       child.Ttree = [rotz(rpy(3))*roty(rpy(2))*rotx(rpy(1)),xyz; 0,0,0,1];  % equivalent to rpy2rotmat
+      child.Ttree = [rpy2rotmat(rpy), xyz; 0,0,0,1];
+      child.Xtree = transformAdjoint(homogTransInv(child.Ttree)); % +++TK: should really be named XtreeInv...
 
       % note that I only now finally understand that my Ttree*[x;1] is
       % *ALMOST* (up to translation?? need to resolve this!) the same as inv(Xtree)*[x;zeros(3,1)].  sigh.
@@ -424,9 +425,11 @@ classdef RigidBodyManipulator < Manipulator
           valuecheck(sin(axis_angle(4)),0,1e-4);  
           axis_angle(1:3)=[0;1;0];  
         end
-        jointrpy = quat2rpy(axis2quat(axis_angle));
-        child.X_joint_to_body=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
-        child.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
+%         jointrpy = quat2rpy(axis2quat(axis_angle));
+%         child.X_joint_to_body=Xrotx(jointrpy(1))*Xroty(jointrpy(2))*Xrotz(jointrpy(3));
+%         child.T_body_to_joint=[rotz(jointrpy(3))*roty(jointrpy(2))*rotx(jointrpy(1)),zeros(3,1); 0,0,0,1];
+        child.T_body_to_joint = [axis2rotmat(axis_angle), zeros(3,1); 0,0,0,1];
+        child.X_joint_to_body=transformAdjoint(homogTransInv(child.T_body_to_joint));
 
         valuecheck(inv(child.X_joint_to_body)*[axis;zeros(3,1)],[0;0;1;zeros(3,1)],1e-6);
         valuecheck(child.T_body_to_joint*[axis;1],[0;0;1;1],1e-6);
@@ -613,8 +616,49 @@ classdef RigidBodyManipulator < Manipulator
         i=i+1;
       end
             
-      %% extract featherstone model structure
-      [model,num_q,num_v] = extractFeatherstone(model);
+      % set position and velocity vector indices
+      num_q=0;num_v=0;
+      for i=1:length(model.body)
+        if model.body(i).parent>0
+          if (model.body(i).floating==1)
+            model.body(i).position_num=num_q+(1:6)';
+            num_q=num_q+6;
+            model.body(i).velocity_num=num_v+(1:6)';
+            num_v=num_v+6;
+          elseif (model.body(i).floating==2)
+            model.body(i).position_num=num_q+(1:7)';
+            num_q=num_q+7;
+            model.body(i).velocity_num=num_v+(1:6)';
+            num_v=num_v+6;
+          else
+            num_q=num_q+1;
+            model.body(i).position_num=num_q;
+            num_v=num_v+1;
+            model.body(i).velocity_num=num_v;
+          end
+        else
+          model.body(i).position_num=0;
+          model.body(i).velocity_num=0;
+        end
+      end
+      
+      model.damping = zeros(1, num_v);
+      model.coulomb_friction = zeros(1, num_v);
+      model.static_friction = zeros(1, num_v);
+      model.coulomb_window = zeros(1, num_v);
+      
+      for i = 2 : model.getNumBodies() % links with parents
+        b=model.body(i);
+        
+        % these exist so that they're faster to look up in the dynamics
+        % functions:
+        model.damping(b.velocity_num) = b.damping;
+        model.coulomb_friction(b.velocity_num) = b.coulomb_friction;
+        model.static_friction(b.velocity_num) = b.static_friction;
+        model.coulomb_window(b.velocity_num) = b.coulomb_window;
+        
+        model.body(i) = b;  % b isn't a handle anymore, so store any changes
+      end
       
       if (num_q<1) error('This model has no DOF!'); end
 
@@ -1631,78 +1675,7 @@ classdef RigidBodyManipulator < Manipulator
       frame_dims = [inputparents.robotnum];
       fr = MultiCoordinateFrame.constructFrame(fr,frame_dims,true);
     end
-        
-    function [model,num_q,num_v] = extractFeatherstone(model)
-      % @ingroup Kinematic Tree
-      
-      %      m=struct('NB',{},'parent',{},'jcode',{},'Xtree',{},'I',{});
-      num_q=0;num_v=0;
-      for i=1:length(model.body)
-        if model.body(i).parent>0
-          if (model.body(i).floating==1)
-            model.body(i).position_num=num_q+(1:6)';
-            num_q=num_q+6;
-            model.body(i).velocity_num=num_v+(1:6)';
-            num_v=num_v+6;
-          elseif (model.body(i).floating==2)
-            model.body(i).position_num=num_q+(1:7)';
-            num_q=num_q+7;
-            model.body(i).velocity_num=num_v+(1:6)';
-            num_v=num_v+6;
-          else
-            num_q=num_q+1;
-            model.body(i).position_num=num_q;
-            num_v=num_v+1;
-            model.body(i).velocity_num=num_v;
-          end
-        else
-          model.body(i).position_num=0;
-          model.body(i).velocity_num=0;
-        end
-      end
-      n=1; % indexes into velocity vector
-      model.damping = [];
-      model.coulomb_friction = [];
-      model.static_friction = [];
-      model.coulomb_window = [];
-      
-      for i = 2 : model.getNumBodies() % links with parents
-        b=model.body(i);
-        if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
-          model.damping(n+(0:5)) = 0;
-          model.coulomb_friction(n+(0:5)) = 0;
-          model.static_friction(n+(0:5)) = 0;
-          model.coulomb_window(n+(0:5)) = eps;
-
-%          valuecheck(b.X_joint_to_body,eye(6))); % if this isn't true, then I probably need to handle it better on the line below
-          % but I can't leave the check in because it is also very ugly because this method gets run potentially
-          % multiple times, and will update b each time! (so the test will
-          % fail on the second pass)
-          
-          b.X_joint_to_body = Xroty(-pi/2); 
-          % note: this is a strange and ugly case where I have to let the
-          % X_joint_to_body get out of sync with the T_body_to_joint, since
-          % the kinematics believes one thing and the featherstone dynamics
-          % believes another.
-          n=n+6;
-        elseif (b.floating==2)
-          % for now, to get tests to run
-          model.damping(n) = 0;
-          model.coulomb_friction(n) = 0;
-          model.static_friction(n) = 0;
-          model.coulomb_window(n) = eps;
-          n = n + 6;
-        else
-          model.damping(n) = b.damping;  % add damping so that it's faster to look up in the dynamics functions.
-          model.coulomb_friction(n) = b.coulomb_friction;
-          model.static_friction(n) = b.static_friction;
-          model.coulomb_window(n) = b.coulomb_window;
-          n=n+1;
-        end
-        model.body(i) = b;  % b isn't a handle anymore, so store any changes
-      end
-    end
-      
+     
     function model=removeFixedJoints(model)
       % takes any fixed joints out of the tree, adding their visuals and
       % inertia to their parents, and connecting their children directly to

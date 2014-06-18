@@ -92,7 +92,8 @@ for i=1:nb
       qi = q(body.position_num);
       TJ = Tjcalc(body.pitch,qi);
     end
-    T{i}=T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+    T_body_to_parent = body.Ttree*homogTransInv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
+    T{i}=T{body.parent}*T_body_to_parent;
   end
 end
 end
