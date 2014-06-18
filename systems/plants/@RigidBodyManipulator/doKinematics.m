@@ -80,19 +80,18 @@ for i=1:nb
   body = bodies(i);
   if body.parent<1
     T{i} = body.Ttree;
-  elseif body.floating==1
-    qi = q(body.position_num); % qi is 6x1
-    rx = rotx(qi(4)); ry = roty(qi(5)); rz = rotz(qi(6));
-    TJ = [rz*ry*rx,qi(1:3);zeros(1,3),1];
-    T{i}=T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
-  elseif body.floating==2
-    qi = q(body.position_num);  % qi is 7x1
-    TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(1,3),1];
-    T{i}=T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
   else
-    qi = q(body.position_num);
-    
-    TJ = Tjcalc(body.pitch,qi);
+    if body.floating==1
+      qi = q(body.position_num); % qi is 6x1
+      rx = rotx(qi(4)); ry = roty(qi(5)); rz = rotz(qi(6));
+      TJ = [rz*ry*rx,qi(1:3);zeros(1,3),1];
+    elseif body.floating==2
+      qi = q(body.position_num);  % qi is 7x1
+      TJ = [quat2rotmat(qi(4:7)),qi(1:3);zeros(1,3),1];
+    else
+      qi = q(body.position_num);
+      TJ = Tjcalc(body.pitch,qi);
+    end
     T{i}=T{body.parent}*body.Ttree*inv(body.T_body_to_joint)*TJ*body.T_body_to_joint;
   end
 end
