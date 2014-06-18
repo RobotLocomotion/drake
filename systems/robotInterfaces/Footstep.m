@@ -8,7 +8,6 @@ classdef Footstep
     terrain_pts
     infeasibility
     walking_params
-    frames
   end
 
   methods

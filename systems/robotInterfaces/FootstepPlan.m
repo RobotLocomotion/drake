@@ -96,7 +96,20 @@ classdef FootstepPlan
         else
           lcmgl.glColor3f(0,1,0);
         end
-        lcmgl.sphere(obj.footsteps(j).pos(1:3), 0.02, 20, 20);
+        lcmgl.glPushMatrix();
+        lcmgl.glTranslated(obj.footsteps(j).pos(1),...
+                           obj.footsteps(j).pos(2),...
+                           obj.footsteps(j).pos(3));
+        axis = rpy2axis(obj.footsteps(j).pos(4:6));
+        axis(1) = 180 / pi * axis(1);
+        lcmgl.glRotated(axis(1), axis(2), axis(3), axis(4));
+        lcmgl.sphere([0;0;0], 0.015, 20, 20);
+        lcmgl.glPushMatrix();
+        len = 0.1;
+        lcmgl.glTranslated(len / 2, 0, 0);
+        lcmgl.drawArrow3d(len, 0.02, 0.02, 0.005);
+        lcmgl.glPopMatrix();
+        lcmgl.glPopMatrix();
       end
       lcmgl.switchBuffers();
     end
