@@ -18,7 +18,8 @@ if isa(v, 'BotVisualizer')
   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'footstep_plan');
   plan.draw_lcmgl(lcmgl);
 else
-  disp('Sorry, I don''t know how to draw footstep plans without the BotVisualizer client');
+  figure(25)
+  plan.draw_2d();
 end
 
 end
