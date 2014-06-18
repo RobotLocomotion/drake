@@ -1,4 +1,4 @@
-function plan = footstepMIQP(biped, seed_plan, weights, goal_pos)
+function plan = footstepMIQPWRotation(biped, seed_plan, weights, goal_pos, min_num_steps, max_num_steps)
 % Run the Mixed Integer Quadratic Program form of the footstep planning problem.
 % This form can efficiently choose the assignment of individual foot positions to
 % safe (obstacle-free) regions, but always keeps the yaw value of every foot
@@ -11,32 +11,33 @@ function plan = footstepMIQP(biped, seed_plan, weights, goal_pos)
 %                  but undetermined footstep positions and region assignments
 %                  can be NaN. The first two footstep poses must not be NaN,
 %                  since they correspond to the current positions of the feet
-% @retval plan a FootstepPlan matching the number of footsteps, frame_id, etc.
+% @retval plan a FootstepPlan matching the number of footsteps, body_idx, etc.
 %              of the seed plan, but with the footstep positions and region_order
 %              replaced by the results of the MIQP
 
-DEBUG = false;
-
-checkDependency('gurobi');
-
 seed_plan.sanity_check();
-max_num_steps = seed_plan.params.max_num_steps + 2;
-min_num_steps = max([seed_plan.params.min_num_steps + 2, 3]);
+checkDependency('gurobi');
 
 nsteps = length(seed_plan.footsteps); % ignore the first fixed footstep since it has no effect
 nr = length(seed_plan.safe_regions);
 nx = 4 * nsteps;
 ns = (nsteps) * nr;
 nt = nsteps;
-nvar = nx + ns + nt;
+
+yaw_slots = 17;
+yaw_increment = pi/8;
+
+nrot = yaw_slots * nsteps;
+nvar = nx + ns + nt + nrot;
 x_ndx = reshape(1:nx, 4, nsteps);
 s_ndx = reshape(nx + (1:ns), nr, ns / nr);
 t_ndx = reshape(nx + ns + (1:nt), 1, nsteps);
+rot_ndx = reshape(nx + ns + nt + (1:nrot), [], nsteps);
 goal_pos.center = mean([goal_pos.right, goal_pos.left],2);
 
 x0 = nan(1, nvar);
 R = cell(nsteps, 1);
-seed_steps = [seed_plan.footsteps.pos];
+seed_steps = seed_plan.step_matrix();
 start_pos = seed_steps(:,2);
 for j = 1:nsteps
   if ~any(isnan(seed_steps(:,j)))
@@ -79,7 +80,8 @@ end
 x0(t_ndx(end-1:end)) = true;
 
 % nom_step = [seed_plan.params.nom_forward_step; seed_plan.params.nom_step_width; 0; 0]
-nom_step = [0; seed_plan.params.nom_step_width; 0; 0];
+% nom_step = [0; seed_plan.params.nom_step_width; 0; 0];
+nom_step = zeros(4,1);
 w_trim = weights.relative(1) * seed_plan.params.nom_forward_step^2;
 
 A = [];
@@ -91,16 +93,37 @@ c = zeros(nvar, 1);
 lb = -inf(nvar, 1);
 ub = inf(nvar, 1);
 
+M = 100;
 for j = 3:nsteps
-  [A_reach, b_reach] = biped.getReachabilityPolytope(seed_plan.footsteps(j-1).frame_id, seed_plan.footsteps(j).frame_id, seed_plan.params);
+  [A_reach, b_reach] = biped.getReachabilityPolytope(seed_plan.footsteps(j-1).body_idx, seed_plan.footsteps(j).body_idx, seed_plan.params);
   A_reach = A_reach(:,[1:3,6]);
-  Ai = zeros(size(A_reach, 1), nvar);
-  rA_reach = A_reach * R{j};
-  Ai(:,x_ndx(:,j)) = rA_reach;
-  Ai(:,x_ndx(:,j-1)) = -rA_reach;
-  bi = b_reach;
-  A = [A; Ai];
-  b = [b; bi];
+
+  if j > 3
+    for k = 1:yaw_slots
+      yaw = x0(x_ndx(4,1)) + yaw_increment * (k - ceil(yaw_slots / 2));
+      rmat = [rotmat(-yaw), zeros(2,2);
+             zeros(2,2), eye(2)];
+      Ai = zeros(size(A_reach, 1), nvar);
+      rA_reach = A_reach * rmat;
+      Ai(:,x_ndx(:,j)) = rA_reach;
+      Ai(:,x_ndx(:,j-1)) = -rA_reach;
+      Ai(:,rot_ndx(k,j-1)) = M;
+      bi = b_reach + M;
+      A = [A; Ai];
+      b = [b; bi];
+    end
+  else
+    yaw = x0(x_ndx(4,2));
+    rmat = [rotmat(-yaw), zeros(2,2);
+             zeros(2,2), eye(2)];
+    Ai = zeros(size(A_reach, 1), nvar);
+    rA_reach = A_reach * rmat;
+    Ai(:,x_ndx(:,j)) = rA_reach;
+    Ai(:,x_ndx(:,j-1)) = -rA_reach;
+    bi = b_reach;
+    A = [A; Ai];
+    b = [b; bi];
+  end
 end
 
 % Require that t(j) <= t(j+1)
@@ -135,7 +158,7 @@ for j = 3:nsteps
 end
 
 w_goal = diag(weights.goal([1,2,3,6]));
-if seed_plan.footsteps(end).frame_id == biped.foot_frame_id.right
+if seed_plan.footsteps(end).body_idx == biped.foot_bodies_idx.right
   xg = reshape(goal_pos.right([1,2,3,6]), [], 1);
 else
   xg = reshape(goal_pos.left([1,2,3,6]), [], 1);
@@ -156,7 +179,7 @@ for j = 3:nsteps
   Q(x_ndx(:,j), x_ndx(:,j-1)) = Q(x_ndx(:,j), x_ndx(:,j-1)) - R{j}' * w_rel * R{j};
   Q(x_ndx(:,j-1), x_ndx(:,j-1)) = Q(x_ndx(:,j-1), x_ndx(:,j-1)) + R{j}' * w_rel * R{j};
 
-  if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
+  if seed_plan.footsteps(j).body_idx == biped.foot_bodies_idx.right
     nom = diag([1,-1,1,-1]) *nom_step;
   else
     nom = nom_step;
@@ -165,14 +188,13 @@ for j = 3:nsteps
   c(x_ndx(:,j-1)) = c(x_ndx(:,j-1)) + (2 * nom' * w_rel * R{j})';
 end
 
-for j = 3:nsteps
-  Aeqi = zeros(1, nvar);
-  Aeqi(1, s_ndx(:,j)) = 1;
-  beqi = 1;
-  Aeq = [Aeq; Aeqi];
-  beq = [beq; beqi];
-end
 
+% The s_ndx variables are binary selectors on the safe terrain regions
+% If x(s_ndx(r,j)) == 1, then step j must be in region r, and thus
+% safe_regions(r).A * x(x_ndx(:,j)) <= safe_regions(r).b
+%
+% Additionally, each safe region has a point and vector defining a plane
+% and any steps in that region must live in that plane.
 M = 100;
 Ar = zeros((nsteps-2) * sum(cellfun(@(x) size(x, 1), {seed_plan.safe_regions.A})), nvar);
 br = zeros(size(Ar, 1), 1);
@@ -201,13 +223,90 @@ assert(offset == size(Ar, 1));
 A = [A; Ar];
 b = [b; br];
 
-step1 = seed_plan.footsteps(1).pos;
-step2 = seed_plan.footsteps(2).pos;
+% Each step must be in exactly one safe region
+for j = 3:nsteps
+  Aeqi = zeros(1, nvar);
+  Aeqi(1, s_ndx(:,j)) = 1;
+  beqi = 1;
+  Aeq = [Aeq; Aeqi];
+  beq = [beq; beqi];
+end
+
+% The rot_ndx variables are binary selectors on rotation bins.
+% Require that if x(rot_ndx(k,j)) is 1, then x(x_ndx(4,j)) == x0(x_ndx(4,1) + pi/8 * (k - 5)
+% x_4j + M * rot_kj <= M + x0_4 + pi/8 * (k-5)
+% x_4j - M * rot_kj >= -M + x0_4 + pi/8 * (k-5)
+%
+% x_4j + M * rot_kj <= M + x0_4 + pi/8 * (k-5)
+% -x_4j + M * rot_kj <= M - (x0_4 + pi/8 * (k-5))
+A_rot = zeros((nsteps-2) * yaw_slots * 2, nvar);
+b_rot = zeros(size(A_rot, 1), 1);
+con_ndx = 1;
+M = 4 * pi;
+for j = 3:nsteps
+  for k = 1:yaw_slots
+    A_rot(con_ndx, rot_ndx(k,j)) = M;
+    A_rot(con_ndx, x_ndx(4,j)) = 1;
+    b_rot(con_ndx) = M + x0(x_ndx(4,1)) + yaw_increment * (k - ceil(yaw_slots / 2));
+    con_ndx = con_ndx + 1;
+
+    A_rot(con_ndx, rot_ndx(k,j)) = M;
+    A_rot(con_ndx, x_ndx(4,j)) = -1;
+    b_rot(con_ndx) = M -  (x0(x_ndx(4,1)) + yaw_increment * (k - ceil(yaw_slots / 2)));
+    con_ndx = con_ndx + 1;
+  end
+end
+A = [A; A_rot];
+b = [b; b_rot];
+
+% Exactly one rotation slot can be occupied per step
+Aeq_rot = zeros(nsteps - 2, nvar);
+beq_rot = zeros(size(Aeq_rot, 1), 1);
+for j = 3:nsteps
+  con_ndx = j - 2;
+  Aeq_rot(con_ndx, rot_ndx(:,j)) = 1;
+  beq_rot(con_ndx) = 1;
+end
+Aeq = [Aeq; Aeq_rot];
+beq = [beq; beq_rot];
+
+% Rotation can never change by more than one slot per step
+A_rot = zeros((nsteps - 3) * yaw_slots, nvar);
+b_rot = zeros(size(A_rot, 1), 1);
+con_ndx = 1;
+for j = 4:nsteps
+  if seed_plan.footsteps(j).body_idx == biped.foot_bodies_idx.left
+    for k = 1:yaw_slots
+      A_rot(con_ndx, rot_ndx(k,j-1)) = 1;
+      A_rot(con_ndx, rot_ndx(k,j)) = -1;
+      if k < yaw_slots
+        A_rot(con_ndx, rot_ndx(k+1,j)) = -1;
+      end
+      b_rot(con_ndx) = 0;
+      con_ndx = con_ndx + 1;
+    end
+  else
+    for k = 1:yaw_slots
+      A_rot(con_ndx, rot_ndx(k,j-1)) = 1;
+      A_rot(con_ndx, rot_ndx(k,j)) = -1;
+      if k > 1
+        A_rot(con_ndx, rot_ndx(k-1,j)) = -1;
+      end
+      b_rot(con_ndx) = 0;
+    end
+    con_ndx = con_ndx + 1;
+  end
+end
+A = [A; A_rot];
+b = [b; b_rot];
+
+step1 = seed_plan.footsteps(1).pos.inFrame(seed_plan.footsteps(1).frames.center);
+step2 = seed_plan.footsteps(2).pos.inFrame(seed_plan.footsteps(2).frames.center);
 lb(x_ndx(:,1)) = step1([1,2,3,6]);
 lb(x_ndx(:,2)) = step2([1,2,3,6]);
 ub(x_ndx(:,1:2)) = lb(x_ndx(:,1:2));
-lb(x_ndx(4,:)) = x0(x_ndx(4,:)) - 0.05;
-ub(x_ndx(4,:)) = x0(x_ndx(4,:)) + 0.05;
+% lb(x_ndx(4,:)) = x0(x_ndx(4,:)) - 0.05;
+% ub(x_ndx(4,:)) = x0(x_ndx(4,:)) + 0.05;
 lb(s_ndx(:,1:2)) = [1, 1; zeros(nr-1, 2)];
 ub(s_ndx(:,1:2)) = lb(s_ndx(:,1:2));
 ub(t_ndx(1:2)) = 0;
@@ -222,17 +321,14 @@ model.sense = [repmat('<', size(A,1), 1); repmat('=', size(Aeq, 1), 1)];
 model.rhs = [b; beq];
 model.lb = lb;
 model.ub = ub;
-model.vtype = [repmat('C', nx, 1); repmat('B', ns, 1); repmat('B', nt, 1)];
+model.vtype = [repmat('C', nx, 1); repmat('B', ns, 1); repmat('B', nt, 1); repmat('B', nrot, 1)];
 model.Q = sparse(Q);
 model.start = x0;
 params = struct();
-params.timelimit = 5;
-params.mipgap = 1e-3;
-if DEBUG
-  params.outputflag = 1;
-else
-  params.outputflag = 0;
-end
+% params.timelimit = 20;
+% params.mipgap = 3e-4;
+params.mipgap = 1e-2;
+params.outputflag = 1;
 
 result = gurobi(model, params);
 if strcmp(result.status, 'INFEASIBLE') || strcmp(result.status, 'INF_OR_UNBD')
@@ -251,29 +347,60 @@ assert(length(region_order) == size(region_assignments, 2));
 
 plan = seed_plan;
 for j = 1:nsteps
-  plan.footsteps(j).pos = steps(:,j);
+  plan.footsteps(j).pos = Point(plan.footsteps(j).frames.center, steps(:,j));
 end
 plan.region_order = region_order;
 
 trim = xstar(t_ndx);
 final_steps = find(trim, 2);
-if plan.footsteps(end).frame_id == biped.foot_frame_id.right
+if plan.footsteps(end).body_idx == biped.foot_bodies_idx.right
   dtheta = abs(angleDiff(plan.footsteps(end).pos(6), goal_pos.right(6)));
 else
   dtheta = abs(angleDiff(plan.footsteps(end).pos(6), goal_pos.left(6)));
 end
+final_step_idx = min(nsteps, final_steps(end) + ceil(2 * dtheta / (pi/8)));
 
-max_yaw_rate = max([seed_plan.params.max_outward_angle, seed_plan.params.max_inward_angle]);
-
-final_step_idx = min(nsteps, final_steps(end) + ceil(2 * dtheta / max_yaw_rate));
-
-if plan.footsteps(1).frame_id == biped.foot_frame_id.right
+if plan.footsteps(1).body_idx == biped.foot_bodies_idx.right
   dtheta = abs(angleDiff(plan.footsteps(1).pos(6), goal_pos.right(6)));
 else
   dtheta = abs(angleDiff(plan.footsteps(1).pos(6), goal_pos.left(6)));
 end
-min_num_steps = max(min_num_steps, ceil(2 * dtheta / max_yaw_rate + 2));
+% TODO: don't hardcode the turning rate here
+min_num_steps = max(min_num_steps, ceil(2 * dtheta / (pi/8) + 2));
+
+rot = xstar(rot_ndx);
+for j = 3:nsteps
+  assert(abs(sum(rot(:,j)) - 1) < 1e-2);
+  for k = 1:yaw_slots
+    if rot(k,j) > (1 - 1e-2);
+      assert(abs(xstar(x_ndx(4,j)) - (x0(x_ndx(4,1)) + yaw_increment * (k - ceil(yaw_slots / 2)))) < 1e-2);
+    end
+  end
+end
 
 
 final_nsteps = min(max_num_steps, max(min_num_steps, final_step_idx));
 plan = plan.slice(1:final_nsteps);
+
+if 0
+  right_foot_lead = plan.footsteps(1).body_idx == biped.foot_bodies_idx.right;
+  if ~right_foot_lead
+    r_ndx = 1:2:nsteps;
+    l_ndx = 2:2:nsteps;
+  else
+    r_ndx = 2:2:nsteps;
+    l_ndx = 1:2:nsteps;
+  end
+  figure(1);
+  clf
+  plot(steps(1,r_ndx), steps(2, r_ndx), 'bo')
+  hold on
+  plot(steps(1,l_ndx), steps(2,l_ndx), 'ro')
+  plot(steps(1,:), steps(2,:), 'k:')
+  for j = 1:length(seed_plan.safe_regions)
+    V = iris.thirdParty.polytopes.lcon2vert(seed_plan.safe_regions(j).A(:,1:2), seed_plan.safe_regions(j).b);
+    k = convhull(V(:,1), V(:,2));
+    patch(V(k,1), V(k,2), 'k', 'FaceAlpha', 0.2);
+  end
+  axis equal
+end

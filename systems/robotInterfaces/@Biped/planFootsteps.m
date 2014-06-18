@@ -1,13 +1,13 @@
 function plan = planFootsteps(obj, start_pos, goal_pos, safe_regions, options)
 % planFootsteps: find a set of reachable foot positions from the start to
-% the goal. 
+% the goal.
 % @param start_pos a struct with fields 'right' and 'left'.
-%                  start_pos.right is the 6 DOF initial pose 
+%                  start_pos.right is the 6 DOF initial pose
 %                  of the right foot sole and start_pos.left
 %                  is the 6 DOF pose of the left sole.
 % @param goal_pos a struct with fields 'right' and 'left'.
 %                 goal_pos.right is the desired 6 DOF pose
-%                 of the right foot, and likewise for 
+%                 of the right foot, and likewise for
 %                 goal_pos.left
 % @params safe_regions a list of planar polytopic regions into which the footstep
 %                      locations must be placed. Can be empty. If
@@ -15,19 +15,20 @@ function plan = planFootsteps(obj, start_pos, goal_pos, safe_regions, options)
 %                      not constrained in this way. Otherwise, each
 %                      footstpe must fall within at least one of the
 %                      defined safe_regions. safe_regions should be a list
-%                      of objects or structures which have fields 'A', 
-%                      'b', 'point', and 'normal' which define a region in 
-%                      v = [x,y,z,yaw] as 
+%                      of objects or structures which have fields 'A',
+%                      'b', 'point', and 'normal' which define a region in
+%                      v = [x,y,z,yaw] as
 %                      A*v <= b AND normal'*v(1:3) == normal'*point
 % @param options a struct of options
-% 
-% @option method (default: @footstepAlternatingMIQP) the footstep planning 
+%
+% @option method (default: @footstepAlternatingMIQP) the footstep planning
 %                method to use, expressed as a function handle
 % @option step_params (default: struct()) specific parameters for footstep
 %                     planning. Attributes set here overload those in
 %                     obj.default_footstep_params
 
 if nargin < 5; options = struct(); end
+if nargin < 4; safe_regions = []; end
 if ~isfield(options, 'method'); options.method = @footstepAlternatingMIQP; end
 if ~isfield(options, 'step_params'); options.step_params = struct(); end
 options.step_params = obj.applyDefaultFootstepParams(options.step_params);
