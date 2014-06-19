@@ -424,7 +424,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       if ~iscell(xind)
         xind = {xind(:)};
       end
-      obj.shared_data_functions{end+1} = user_fun;
+      obj.shared_data_functions{end+1} = FunctionWrapper(user_fun);
       obj.shared_data_xind_cell{end+1} = xind;
       ind = obj.getNumSharedDataFunctions();
     end
@@ -439,7 +439,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       data = cell(nData,1);
       for i=1:nData
         args = getArgumentArray(obj,x,obj.shared_data_xind_cell{i});
-        data{i} = obj.shared_data_functions{i}(obj,args{:});
+        data{i} = obj.shared_data_functions{i}.eval(args{:});
       end
     end
     

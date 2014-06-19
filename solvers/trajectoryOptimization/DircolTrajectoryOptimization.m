@@ -31,9 +31,11 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       n_vars = 2*nX + 2*nU + 1;
       cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.constraint_fun);
       
+      % create shared data functions to calculate dynamics at the knot
+      % points
       shared_data_index = obj.getNumSharedDataFunctions;
       for i=1:obj.N,
-        obj = obj.addSharedDataFunction(@dynamics_data,{obj.x_inds(:,i);obj.u_inds(:,i)});
+        obj = obj.addSharedDataFunction(@obj.dynamics_data,{obj.x_inds(:,i);obj.u_inds(:,i)});
       end
       
       for i=1:obj.N-1,
@@ -52,6 +54,7 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
       
+      % use the shared data objects for the dynamics at the knot points
       xdot0 = data0.xdot;
       dxdot0 = data0.dxdot;
       xdot1 = data1.xdot;
