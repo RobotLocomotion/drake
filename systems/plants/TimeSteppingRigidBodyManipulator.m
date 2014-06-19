@@ -238,7 +238,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dtau = [zeros(num_q,1), matGradMult(dB,u) - dC, B];
           else
             tau = -C;
-            dtau = [zeros(num_q,1), -dC];
+            dtau = [zeros(num_q,1), -dC, zeros(size(B))];
           end
         end
         
@@ -296,7 +296,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           nC=0;
           J = zeros(nL+nP,num_q);
           if (nargout>4)
-            dJ = sparse(nL+nP,num_q^2);
+            dJ = zeros(nL+nP,num_q^2);
           end
         end
         
