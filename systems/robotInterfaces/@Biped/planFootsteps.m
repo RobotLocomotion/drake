@@ -1,7 +1,7 @@
-function plan = planFootsteps(obj, start_pos, goal_pos, safe_regions, options)
+function plan = planFootsteps(obj, start_pos_or_q, goal_pos, safe_regions, options)
 % planFootsteps: find a set of reachable foot positions from the start to
 % the goal.
-% @param start_pos a struct with fields 'right' and 'left'.
+% @param start_pos_or_q a struct with fields 'right' and 'left' OR a configuration vector
 %                  start_pos.right is the 6 DOF initial pose
 %                  of the right foot sole and start_pos.left
 %                  is the 6 DOF pose of the left sole.
@@ -32,6 +32,13 @@ if nargin < 4; safe_regions = []; end
 if ~isfield(options, 'method_handle'); options.method_handle = @footstepAlternatingMIQP; end
 if ~isfield(options, 'step_params'); options.step_params = struct(); end
 options.step_params = obj.applyDefaultFootstepParams(options.step_params);
+
+if isnumeric(start_pos_or_q)
+  start_pos = obj.feetPosition(start_pos_or_q);
+else
+  typecheck(start_pos_or_q, 'struct');
+  start_pos = start_pos_or_q;
+end
 sizecheck(start_pos.right, [6,1]);
 sizecheck(start_pos.left, [6,1]);
 sizecheck(goal_pos.right, [6,1]);
