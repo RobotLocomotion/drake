@@ -7,7 +7,7 @@ w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 r = RigidBodyManipulator(urdf,options);
 warning(w);
-nq = r.getNumDOF();
+nq = r.getNumPositions();
 
 
 nom_data = load('../../../examples/Atlas/data/atlas_fp.mat');
