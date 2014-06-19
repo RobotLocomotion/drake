@@ -81,6 +81,9 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
     end
     
     function obj = addRunningCost(obj,running_cost)
+      % Adds the running cost term
+      % This implementation assumes a ZOH, but where the values of
+      % x(i),u(i) are held over an interval spanned by .5(h(i-1) + h(i))
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
       
