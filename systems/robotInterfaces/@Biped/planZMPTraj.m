@@ -1,4 +1,4 @@
-function [zmptraj, foottraj, support_times, supports] = planZMPTraj(biped, q0, footsteps, options)
+function [zmptraj, bodytraj, support_times, supports] = planZMPTraj(biped, q0, footsteps, options)
 
 if nargin < 4; options = struct(); end
 
@@ -134,9 +134,12 @@ zmpf = zmpf(1:2);
 zmp_knots(end+1) =  struct('t', step_knots(end).t, 'zmp', zmpf, 'supp', struct('right', 1, 'left', 1));
 
 % Build trajectories
+bodytraj = containers.Map('KeyType', 'int32', 'ValueType', 'any');
 for f = {'right', 'left'}
   foot = f{1};
-  foottraj.(foot) = PPTrajectory(foh([step_knots.t], [step_knots.(foot)]));
+  id = biped.foot_frame_id.(foot);
+  bodytraj(id) = PPTrajectory(foh([step_knots.t], [step_knots.(foot)]));
+  % foottraj.(foot) = PPTrajectory(foh([step_knots.t], [step_knots.(foot)]));
 end
 zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
 
