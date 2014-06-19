@@ -54,7 +54,7 @@ classdef IKoptions
   methods(Access = protected)
     function obj = setDefaultParams(obj,robot)
       obj.robot = robot;
-      obj.nq = obj.robot.getNumDOF();
+      obj.nq = obj.robot.getNumPositions();
       obj.Q = eye(obj.nq);
       obj.Qa = 0.1*eye(obj.nq);
       obj.Qv = zeros(obj.nq);
