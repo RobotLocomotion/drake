@@ -80,7 +80,7 @@ for i = 2 : NB
   end
   
   j = i;
-  while j ~= 2
+  while manipulator.body(j).parent ~= 1
     j = manipulator.body(j).parent;
     body_j = manipulator.body(j);
     j_indices = body_j.velocity_num;

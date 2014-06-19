@@ -1623,7 +1623,7 @@ classdef RigidBodyManipulator < Manipulator
             if (b.floating==1)
               newpos = {[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_roll'];[b.jointname,'_pitch'];[b.jointname,'_yaw']};
               positions = vertcat(positions,newpos);
-              velocities = vertcat(velocities,cellfun(@(a) [a,'dot'],positions,'UniformOutput',false));
+              velocities = vertcat(velocities,cellfun(@(a) [a,'dot'],newpos,'UniformOutput',false));
             elseif (b.floating==2)
               positions = vertcat(positions,{[b.jointname,'_x'];[b.jointname,'_y'];[b.jointname,'_z'];[b.jointname,'_qw'];[b.jointname,'_qx'];[b.jointname,'_qy'];[b.jointname,'_qz']});
               velocities = vertcat(velocities,{[b.jointname,'_xdot'];[b.jointname,'_ydot'];[b.jointname,'_zdot'];[b.jointname,'_wx'];[b.jointname,'_wy'];[b.jointname,'_wz']});
@@ -1632,7 +1632,7 @@ classdef RigidBodyManipulator < Manipulator
               velocities = vertcat(velocities,{[b.jointname,'dot']});
             end
             frame_dims(b.position_num)=i;
-            frame_dims(b.velocity_num)=i;
+            frame_dims(model.getNumPositions() + b.velocity_num)=i;
           end
         end
         coordinates = [positions; velocities];
