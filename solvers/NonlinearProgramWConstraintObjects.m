@@ -25,6 +25,20 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     bbcon_xind % A cell array, bbcon_xind{i} is an int vector recording the indices of x used in i'th BoundingBoxConstraint
     nlcon_ineq_idx % row index of nonlinear inequality constraint
     nlcon_eq_idx % row index of nonlinear equality constraint
+    
+    % a cell array like nlcon_xind, where shared_data_xind_cell{i} is a
+    % cell array of int vectors recording indices used in evaluating the 
+    % shared_data_function
+    shared_data_xind_cell  
+    
+    % a cell array of function handles, each of which returns a data object
+    % so that shared_data{i} = shared_data_functions(shared_data_xind_cell{i}{1},shared_data_xind_cell{i}{2},...)
+    shared_data_functions 
+    
+    % cell arrays of vectors where nlcon_dataind{i} are indices into the
+    % shared_data used by nonlinear constraints and cost functions
+    nlcon_dataind 
+    cost_dataind
   end
   
   methods
@@ -47,14 +61,20 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       obj.ceq_name = {};
       obj.Ain_name = {};
       obj.Aeq_name = {};
+      
+      obj.shared_data_xind_cell = {};
+      obj.shared_data_functions = {};
+      obj.nlcon_dataind = {};
+      obj.cost_dataind = {};
     end
     
-    function obj = addManagedConstraints(obj,mgr,xind)
+    function obj = addManagedConstraints(obj,mgr,xind,data_ind)
       % add a ConstraintManager to the object, change the constraint evalation of the
       % program.
       % @param mgr     -- A ConstraintManager object
       % @param xind      -- Optional argument. The x(xind) is the decision variables used
       % in evaluating the cnstr. Default value is (1:obj.num_vars)
+      % @param data_ind  -- Optional argument. shared_data{data_ind} are the data objects used
       if(~isa(mgr,'ConstraintManager'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addManagedConstraints expects a ConstraintManager object');
       end
@@ -63,6 +83,12 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       end
       if ~iscell(xind)
         xind = {xind(:)};
+      end
+      if(nargin<4)
+        data_ind = {[]};
+      end
+      if ~iscell(data_ind)
+        data_ind = {data_ind(:)};
       end
       % add in slack variables to end, and adjust xind accordingly
       n_slack = mgr.getNumSlackVariables();
@@ -79,7 +105,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       
       nlncon = mgr.getNonlinearConstraints();
       for k=1:length(nlncon),
-        obj = obj.addNonlinearConstraint(nlncon{k}, xind);
+        obj = obj.addNonlinearConstraint(nlncon{k}, xind, data_ind);
       end
       
       bcon = mgr.getBoundingBoxConstraints();
@@ -88,12 +114,13 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       end
     end
     
-    function obj = addNonlinearConstraint(obj,cnstr,xind)
+    function obj = addNonlinearConstraint(obj,cnstr,xind, data_ind)
       % add a NonlinearConstraint to the object, change the constraint evalation of the
       % program. 
       % @param cnstr     -- A NonlinearConstraint object
       % @param xind      -- Optional argument. The x(xind) is the decision variables used
       % in evaluating the cnstr. Default value is (1:obj.num_vars)
+      % @param data_ind  -- Optional argument. shared_data{data_ind} are the data objects used
       if(nargin<3)
         xind = {(1:obj.num_vars)'};
       end
@@ -101,6 +128,11 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         xind = {xind(:)};
       end
       xind_vec = cell2mat(xind);
+      
+      if(nargin<4)
+        data_ind = [];
+      end
+      data_ind = data_ind(:);
       
       if(~isa(cnstr,'NonlinearConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addNonlinearConstraint expects a NonlinearConstraint object');
@@ -131,6 +163,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       obj.num_nlcon = obj.num_nlcon + cnstr.num_cnstr;
       obj.nlcon_xind{end+1} = xind;
       obj.nlcon_xind_stacked{end+1} = xind_vec;
+      obj.nlcon_dataind{end+1} = data_ind;
     end
     
     
@@ -195,11 +228,12 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       obj.x_ub(xind) = min([cnstr.ub obj.x_ub(xind)],[],2);
     end
     
-    function obj = addCost(obj,cnstr,xind)
+    function obj = addCost(obj,cnstr,xind,data_ind)
       % Add a cost to the objective function
       % @param cnstr   -- A NonlinearConstraint or a LinearConstraint
       % @param xind      -- Optional argument. x(xind) is the decision variables used in
       % evaluating the cost. Default value is (1:obj.num_vars)
+      % @param data_ind  -- Optional argument. shared_data{data_ind} are the data objects used
       if(nargin<3)
         xind = {(1:obj.num_vars)'};
       end
@@ -207,6 +241,10 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         xind = {xind(:)};
       end
       xind_vec = cell2mat(xind);
+      if(nargin<4)
+        data_ind = [];
+      end
+      data_ind = data_ind(:);
       if(~isa(cnstr,'LinearConstraint') && ~isa(cnstr,'NonlinearConstraint'))
         error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addCost expects a LinearConstraint or NonlinearConstraint object');
       end
@@ -226,6 +264,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         obj.cost = [obj.cost,{cnstr}];
         obj.cost_xind_cell{end+1} = xind;
         obj.cost_xind_stacked{end+1} = xind_vec;
+        obj.cost_dataind{end+1} = data_ind;
 %         obj.cost_xind_cell = [obj.cost_xind_cell,{xind(cnstr.jCvar)}];
         obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jCvar)]);
         obj.iFfun = ones(length(obj.jFvar),1);
@@ -234,25 +273,22 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     
     function args = getArgumentArray(obj,x,xind)
       % Retrieves the elements from the vector x related to xind and returns
-    % them as a cell array where:
-    % args{i} = x(xind{i})
+      % them as a cell array where:
+      % args{i} = x(xind{i})
       narg = length(xind);
-      if narg == 1,
-        args = {x(xind{1})};
-      else
-        args = cell(narg,1);
-        for j=1:narg,
-          args{j} = x(xind{j});
-        end
+      args = cell(narg,1);
+      for j=1:narg,
+        args{j} = x(xind{j});
       end
     end
     
     function [g,h,dg,dh] = nonlinearConstraints(obj,x)
+      shared_data = obj.evaluateSharedDataFunctions(x);
       f = zeros(obj.num_nlcon,1);
       G = zeros(obj.num_nlcon,obj.num_vars);
       f_count = 0;
       for i = 1:length(obj.nlcon)
-        args = getArgumentArray(obj,x,obj.nlcon_xind{i});
+        args = [getArgumentArray(obj,x,obj.nlcon_xind{i});shared_data(obj.nlcon_dataind{i})];
         [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
           obj.nlcon{i}.eval(args{:});
         f(f_count+obj.nlcon{i}.ceq_idx) = f(f_count+obj.nlcon{i}.ceq_idx)-obj.nlcon{i}.ub(obj.nlcon{i}.ceq_idx);
@@ -266,10 +302,11 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     
     
     function [f,df] = objective(obj,x)
+      shared_data = obj.evaluateSharedDataFunctions(x);
       f = 0;
       df = zeros(1,obj.num_vars);
       for i = 1:length(obj.cost)
-        args = getArgumentArray(obj,x,obj.cost_xind_cell{i});
+        args = [getArgumentArray(obj,x,obj.cost_xind_cell{i});shared_data(obj.cost_dataind{i})];
         [fi,dfi] = obj.cost{i}.eval(args{:});
         f = f+fi;
         df(obj.cost_xind_stacked{i}) = df(obj.cost_xind_stacked{i})+dfi;
@@ -277,17 +314,18 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     end
     
     function [f,G] = objectiveAndNonlinearConstraints(obj,x)
+      shared_data = obj.evaluateSharedDataFunctions(x);
       f = zeros(1+obj.num_nlcon,1);
       G = zeros(1+obj.num_nlcon,obj.num_vars);
       for i = 1:length(obj.cost)
-        args = getArgumentArray(obj,x,obj.cost_xind_cell{i});
+        args = [getArgumentArray(obj,x,obj.cost_xind_cell{i});shared_data(obj.cost_dataind{i})];
         [fi,dfi] = obj.cost{i}.eval(args{:});
         f(1) = f(1)+fi;
         G(1,obj.cost_xind_stacked{i}) = G(1,obj.cost_xind_stacked{i})+dfi;
       end
       f_count = 1;
       for i = 1:length(obj.nlcon)
-        args = getArgumentArray(obj,x,obj.nlcon_xind{i});
+        args = [getArgumentArray(obj,x,obj.nlcon_xind{i});shared_data(obj.nlcon_dataind{i})];
         [f(f_count+(1:obj.nlcon{i}.num_cnstr)),G(f_count+(1:obj.nlcon{i}.num_cnstr),obj.nlcon_xind_stacked{i})] = ...
           obj.nlcon{i}.eval(args{:});
         f(f_count+obj.nlcon{i}.ceq_idx) = f(f_count+obj.nlcon{i}.ceq_idx)-obj.nlcon{i}.ub(obj.nlcon{i}.ceq_idx);
@@ -370,6 +408,38 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       obj.bbcon_xind = {};
       for i = 1:length(obj.bbcon)
         obj = obj.addBoundingBoxConstraint(bbcon_tmp{i},bbcon_xind_tmp{i});
+      end
+    end
+    
+    function [obj,ind] = addSharedDataFunction(obj,user_fun,xind)
+      % Adds the specified shared data function to be evaluated within each iteration of the program     
+      % @param user_fun -- The function to be evaluated, where
+      %   shared_data{ind} = user_fun(x(xind));
+      % @param xind      -- Optional argument. The x(xind) is the decision variables used
+      %   in evaluating the cnstr. Default value is (1:obj.num_vars)
+      % @return ind -- the shared data index
+      if(nargin<3)
+        xind = {(1:obj.num_vars)'};
+      end
+      if ~iscell(xind)
+        xind = {xind(:)};
+      end
+      obj.shared_data_functions{end+1} = user_fun;
+      obj.shared_data_xind_cell{end+1} = xind;
+      ind = obj.getNumSharedDataFunctions();
+    end
+    
+    function n = getNumSharedDataFunctions(obj)
+      n = length(obj.shared_data_functions);
+    end
+    
+    function data = evaluateSharedDataFunctions(obj,x)
+      % Evaluate all shared data functions and return the data object
+      nData = length(obj.shared_data_functions);
+      data = cell(nData,1);
+      for i=1:nData
+        args = getArgumentArray(obj,x,obj.shared_data_xind_cell{i});
+        data{i} = obj.shared_data_functions{i}(obj,args{:});
       end
     end
     
