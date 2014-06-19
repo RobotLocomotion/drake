@@ -1,12 +1,12 @@
 #ifndef __DrakeCollision_H__
 #define __DrakeCollision_H__
 
-//#include <memory>
+#include <memory>
 #include <Eigen/Dense>
 #include <Eigen/StdVector>
 
-//#include <stdexcept>
-//#include <bitset>
+#include <stdexcept>
+#include <bitset>
 
 namespace DrakeCollision
 {
