@@ -20,9 +20,9 @@ classdef NonlinearProgramWKinsol < NonlinearProgramWConstraintObjects
       if(~isa(robot,'RigidBodyManipulator') && ~isa(robot,'TimeSteppingRigidBodyManipulator'))
         error('Drake:NonlinearProgramWKinsol:robot should be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
-      obj = obj@NonlinearProgramWConstraintObjects(robot.getNumDOF*nT);
+      obj = obj@NonlinearProgramWConstraintObjects(robot.getNumPositions*nT);
       obj.robot = robot;
-      obj.nq = robot.getNumDOF;
+      obj.nq = robot.getNumPositions;
       obj.nT = nT;
       obj.x_name = cell(obj.nq*obj.nT,1);
       for i = 1:obj.nT
