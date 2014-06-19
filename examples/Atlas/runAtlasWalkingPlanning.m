@@ -6,14 +6,11 @@ x0 = xstar;
 r = Atlas('urdf/atlas_minimal_contact.urdf');
 r = r.setInitialState(x0);
 
-% Find the initial positions of the feet
-kinsol = doKinematics(r, x0(1:r.getNumDOF()));
-start_pos = struct('right', forwardKin(r, kinsol, r.foot_frame_id.right, [0;0;0], 1), ...
-                   'left', forwardKin(r, kinsol, r.foot_frame_id.left, [0;0;0], 1));
 
 % Plan footsteps to the goal
+q0 = x0(1:r.getNumDOF());
 goal_pos = struct('right', [1;0;0;0;0;0], 'left', [1;0.26;0;0;0;0]);
-footstep_plan = r.planFootsteps(start_pos, goal_pos);
+footstep_plan = r.planFootsteps(q0, goal_pos);
 
 % Show the result
 v = r.constructVisualizer();

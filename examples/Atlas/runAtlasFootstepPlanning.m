@@ -9,7 +9,7 @@ r = r.setInitialState(xstar);
 kinsol = doKinematics(r, xstar(1:r.getNumDOF()));
 start_pos = struct('right', forwardKin(r, kinsol, r.foot_frame_id.right, [0;0;0], 1), ...
                    'left', forwardKin(r, kinsol, r.foot_frame_id.left, [0;0;0], 1));
-                 
+
 % Plan footsteps to the goal
 goal_pos = struct('right', [1;0;0;0;0;0], 'left', [1;0.26;0;0;0;0]);
 plan = r.planFootsteps(start_pos, goal_pos);
