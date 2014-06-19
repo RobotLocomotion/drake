@@ -54,8 +54,10 @@ classdef BotVisualizer < RigidBodyVisualizer
         disp('launching drake_viewer...');
         retval = systemWCMakeEnv([fullfile(pods_get_bin_path,'drake_viewer'),' &> drake_viewer.out &']);
         
+        if ismac % I'm missing valid acks on mac
+          pause(1);
         % listen for ready message
-        if isempty(obj.status_agg.getNextMessage(5000)) % wait for viewer to come up
+        elseif isempty(obj.status_agg.getNextMessage(5000)) % wait for viewer to come up
           error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer');
         end
       end
