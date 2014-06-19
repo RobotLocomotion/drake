@@ -32,7 +32,7 @@ T_span = [T/2 T];
 % traj_opt = DirtranTrajectoryOptimization(DirtranTrajectoryOptimization.BACKWARD_EULER,p,N,T_span,struct());
 traj_opt = DircolTrajectoryOptimization(p,N,T_span,struct());
 % traj_opt = traj_opt.setCheckGrad(true);
-snprint('snopt.out');
+% snprint('snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
 traj_opt = traj_opt.addRunningCost(running_cost);
 traj_opt = traj_opt.addFinalCost(final_cost);
