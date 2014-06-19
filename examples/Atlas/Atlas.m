@@ -161,10 +161,10 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                       'max_downward_step', 0.2,...% m
                                       'max_num_steps', 10,...
                                       'min_num_steps', 1);
-    default_walking_params = struct('step_speed', 1.5,... % speed of the swing foot (m/s)
+    default_walking_params = struct('step_speed', 0.5,... % speed of the swing foot (m/s)
                                     'step_height', 0.05,... % approximate clearance over terrain (m)
                                     'hold_frac', 0.4,... % fraction of the swing time spent in double support
-                                    'drake_min_hold_time', 0.5,... % minimum time in double support (s)
+                                    'drake_min_hold_time', 1.0,... % minimum time in double support (s)
                                     'mu', 1.0,... % friction coefficient
                                     'constrain_full_foot_pose', true); % whether to constrain the swing foot roll and pitch
   end
