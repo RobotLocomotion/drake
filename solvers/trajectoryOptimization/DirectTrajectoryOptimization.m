@@ -4,13 +4,13 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
   %
   % Generally considers cost functions of the form:
   % e(x0) + int(f(x(t),u(t)) + g(T,xf)
-  %
+  %    
   % Subclasses must implement the two abstract methods:
-  %  obj = setupCostFunction(obj,initial_cost,running_cost,final_cost);
+  %  obj = addRunningCost(obj,running_cost);
+  %     where running_cost is a NonlinearConstraint f(h,x,u)
   % and
-  %  [constraints,dyn_inds] = createDynamicConstraints(obj);
-  % which each determine how the dynamic constraints are evaluated and how
-  % the cost function is integrated.
+  %  obj = addDynamicConstraints(obj);
+  %   which add the constraints to enforce \dot x = f(x,u)
   %
   % This class assumes that there are a fixed number (N) time steps, and
   % that the trajectory is discreteized into timesteps h (N-1), state x
@@ -176,8 +176,16 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       z0(obj.h_inds) = diff(t_init);
       
       for i=1:length(t_init),
-        z0(obj.x_inds(:,i)) = traj_init.x.eval(t_init(i));
         z0(obj.u_inds(:,i)) = traj_init.u.eval(t_init(i));
+        
+        if isfield(traj_init,'x')
+          z0(obj.x_inds(:,i)) = traj_init.x.eval(t_init(i));
+        else
+          %simulate
+          sys_ol = cascade(traj_init.u,obj.plant);
+          [~,x_sim] = sys_ol.simulate([t_init(1) t_init(end)]);
+          z0(obj.x_inds(:,i)) = x_sim.x.eval(t_init(i));
+        end
       end
     end
     

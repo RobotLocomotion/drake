@@ -21,119 +21,97 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
     end
     
     function obj = addDynamicConstraints(obj)
+      N = obj.N;
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-      N = obj.N;
-      
       constraints = cell(N-1,1);
       dyn_inds = cell(N-1,1);
       
       
       n_vars = 2*nX + 2*nU + 1;
-      cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@constraint_fun);
+      cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.constraint_fun);
       
-      for i=1:obj.N-1,        
+      shared_data_index = obj.getNumSharedDataFunctions;
+      for i=1:obj.N,
+        obj = obj.addSharedDataFunction(@dynamics_data,{obj.x_inds(:,i);obj.u_inds(:,i)});
+      end
+      
+      for i=1:obj.N-1,
         dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1)};
         constraints{i} = cnstr;
         
-        obj = obj.addNonlinearConstraint(constraints{i}, dyn_inds{i});
-      end
-      
-      function [f,df] = constraint_fun(h,x0,x1,u0,u1)
-        % This is going to result in unnecessary repeated calculations, so
-        % it should be fixed at some later point
-        
-        % calculate xdot at knot points
-        [xdot0,dxdot0] = obj.plant.dynamics(0,x0,u0);
-        [xdot1,dxdot1] = obj.plant.dynamics(0,x1,u1);
-        
-        % cubic interpolation to get xcol and xdotcol, as well as
-        % derivatives
-        xcol = .5*(x0+x1) + h/8*(xdot0-xdot1);
-        dxcol = [1/8*(xdot0-xdot1) (.5*eye(nX) + h/8*dxdot0(:,2:1+nX)) ...
-          (.5*eye(nX) - h/8*dxdot1(:,2:1+nX)) h/8*dxdot0(:,nX+2:1+nX+nU) -h/8*dxdot1(:,nX+2:1+nX+nU)];
-        xdotcol = -1.5*(x0-x1)/h - .25*(xdot0+xdot1);
-        dxdotcol = [1.5*(x0-x1)/h^2 (-1.5*eye(nX)/h - .25*dxdot0(:,2:1+nX)) ...
-          (1.5*eye(nX)/h - .25*dxdot1(:,2:1+nX)) -.25*dxdot0(:,nX+2:1+nX+nU) -.25*dxdot1(:,nX+2:1+nX+nU)];
-
-        % evaluate xdot at xcol, using foh on control input
-        [g,dgdxcol] = obj.plant.dynamics(0,xcol,.5*(u0+u1));
-        dg = dgdxcol(:,2:1+nX)*dxcol + [zeros(nX,1+2*nX) .5*dgdxcol(:,2+nX:1+nX+nU) .5*dgdxcol(:,2+nX:1+nX+nU)];
-        
-        % constrait is the difference between the two
-        f = xdotcol - g;
-        df = dxdotcol - dg;
+        obj = obj.addNonlinearConstraint(constraints{i}, dyn_inds{i},[shared_data_index+i;shared_data_index+i+1]);
       end
     end
     
-%     function obj = setupCostFunction(obj,initial_cost,running_cost,final_cost)
-%       nX = obj.plant.getNumStates();
-%       nU = obj.plant.getNumInputs();
-%       
-%       if ~isempty(initial_cost)
-%         obj = obj.addCost(initial_cost,obj.x_inds(:,1));
-%       end
-%       
-%       running_handle = running_cost.eval_handle;
-%       running_handle_i = @(z) running_fun(running_handle,z(1),z(2:1+nX), z(2+nX:1+2*nX),z(2+2*nX:1+2*nX+nU),z(2+2*nX+nU:1+2*nX+2*nU)); 
-%       running_cost_i = NonlinearConstraint(running_cost.lb,running_cost.ub,1+2*nX+2*nU,running_handle_i);
-%       
-%       if ~isempty(running_cost)
-%         for i=1:obj.N-1,
-%           h_ind = obj.h_inds(i);
-%           x_ind = [obj.x_inds(:,i);obj.x_inds(:,i+1)];
-%           u_ind = [obj.u_inds(:,i);obj.u_inds(:,i+1)];
-%           
-%           obj = obj.addCost(running_cost_i,[h_ind;x_ind;u_ind]);
-%         end        
-%       end
-%       
-%       h_ind = obj.h_inds;
-%       x_ind = obj.x_inds(:,end);
-%       
-%       if ~isempty(final_cost)
-%         obj = obj.addCost(final_cost,[h_ind;x_ind]);
-%       end
-%       
-%       function [f,df] = running_fun(cost_handle,h,x0,x1,u0,u1)
-%         [f,dg] = cost_handle([h;.5*(x0+x1);.5*(u0+u1)]);
-%         
-%         df = [dg(:,1) .5*dg(:,2:1+nX) .5*dg(:,2:1+nX) .5*dg(:,2+nX:1+nX+nU) .5*dg(:,2+nX:1+nX+nU)];
-%       end
-%     end
-   
+    function [f,df] = constraint_fun(obj,h,x0,x1,u0,u1,data0,data1)
+      % calculate xdot at knot points
+      %  [xdot0,dxdot0] = obj.plant.dynamics(0,x0,u0);
+      %  [xdot1,dxdot1] = obj.plant.dynamics(0,x1,u1);
+      
+      nX = obj.plant.getNumStates();
+      nU = obj.plant.getNumInputs();
+      
+      xdot0 = data0.xdot;
+      dxdot0 = data0.dxdot;
+      xdot1 = data1.xdot;
+      dxdot1 = data1.dxdot;
+      
+      % cubic interpolation to get xcol and xdotcol, as well as
+      % derivatives
+      xcol = .5*(x0+x1) + h/8*(xdot0-xdot1);
+      dxcol = [1/8*(xdot0-xdot1) (.5*eye(nX) + h/8*dxdot0(:,2:1+nX)) ...
+        (.5*eye(nX) - h/8*dxdot1(:,2:1+nX)) h/8*dxdot0(:,nX+2:1+nX+nU) -h/8*dxdot1(:,nX+2:1+nX+nU)];
+      xdotcol = -1.5*(x0-x1)/h - .25*(xdot0+xdot1);
+      dxdotcol = [1.5*(x0-x1)/h^2 (-1.5*eye(nX)/h - .25*dxdot0(:,2:1+nX)) ...
+        (1.5*eye(nX)/h - .25*dxdot1(:,2:1+nX)) -.25*dxdot0(:,nX+2:1+nX+nU) -.25*dxdot1(:,nX+2:1+nX+nU)];
+      
+      % evaluate xdot at xcol, using foh on control input
+      [g,dgdxcol] = obj.plant.dynamics(0,xcol,.5*(u0+u1));
+      dg = dgdxcol(:,2:1+nX)*dxcol + [zeros(nX,1+2*nX) .5*dgdxcol(:,2+nX:1+nX+nU) .5*dgdxcol(:,2+nX:1+nX+nU)];
+      
+      % constrait is the difference between the two
+      f = xdotcol - g;
+      df = dxdotcol - dg;
+    end
+    
+    
+    function data = dynamics_data(obj,x,u)
+      [data.xdot,data.dxdot] = obj.plant.dynamics(0,x,u);
+    end
     
     function obj = addRunningCost(obj,running_cost)
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-
+      
       running_handle = running_cost.eval_handle;
       
-      running_cost_end = NonlinearConstraint(running_cost.lb,running_cost.ub,1+nX+nU,@running_fun_end);      
-      running_cost_mid = NonlinearConstraint(running_cost.lb,running_cost.ub,2+nX+nU,@running_fun_mid);
+      running_cost_end = NonlinearConstraint(running_cost.lb,running_cost.ub,1+nX+nU,@(h,x,u) obj.running_fun_end(running_handle,h,x,u));
+      running_cost_mid = NonlinearConstraint(running_cost.lb,running_cost.ub,2+nX+nU,@(h0,h1,x,u) obj.running_fun_mid(running_handle,h0,h1,x,u));
       
       obj = obj.addCost(running_cost_end,{obj.h_inds(1);obj.x_inds(:,1);obj.u_inds(:,1)});
-
+      
       if ~isempty(running_cost)
         for i=2:obj.N-1,
           obj = obj.addCost(running_cost_mid,{obj.h_inds(i-1);obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)});
-        end        
+        end
       end
       
       obj = obj.addCost(running_cost_end,{obj.h_inds(end);obj.x_inds(:,end);obj.u_inds(:,end)});
+    end
+  end
+  
+  methods (Access = protected)
+    function [f,df] = running_fun_end(obj, running_handle,h,x,u)
+      [f,dg] = running_handle(.5*h,x,u);
       
-      function [f,df] = running_fun_end(h,x,u)
-        [f,dg] = running_handle(.5*h,x,u);
-        
-        df = [.5*dg(:,1) dg(:,2:end)];
-      end
-      
-      function [f,df] = running_fun_mid(h0,h1,x,u)
-        [f,dg] = running_handle(.5*(h0+h1),x,u);
-        
-        df = [.5*dg(:,1) .5*dg(:,1) dg(:,2:end)];
-      end
+      df = [.5*dg(:,1) dg(:,2:end)];
     end
     
+    function [f,df] = running_fun_mid(obj, running_handle,h0,h1,x,u)
+      [f,dg] = running_handle(.5*(h0+h1),x,u);
+      
+      df = [.5*dg(:,1) .5*dg(:,1) dg(:,2:end)];
+    end
   end
 end

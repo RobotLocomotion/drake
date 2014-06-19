@@ -42,8 +42,11 @@ classdef Constraint
         c = feval(obj.eval_handle,varargin{:});
         varargout{1} = c;
       elseif(nargout == 2)
-        [c,dc] = obj.eval_handle(varargin{:});
-%         [c,dc] = geval(obj.eval_handle,varargin{:},struct('grad_method',obj.grad_method));
+        if strcmp(obj.grad_method,'user')
+          [c,dc] = obj.eval_handle(varargin{:});
+        else
+          [c,dc] = geval(obj.eval_handle,varargin{:},struct('grad_method',obj.grad_method));
+        end
         varargout{1} = c;
         varargout{2} = dc;
       elseif(nargout == 3)

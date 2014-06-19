@@ -6,6 +6,8 @@ classdef Manipulator < SecondOrderSystem
     function obj = Manipulator(num_q, num_u)
       % Constructor
       obj = obj@SecondOrderSystem(num_q,num_u,true);
+      obj.joint_limit_min = -inf(num_q,1);
+      obj.joint_limit_max = inf(num_q,1);
     end
   end
   
