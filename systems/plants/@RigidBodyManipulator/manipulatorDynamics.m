@@ -147,19 +147,23 @@ for i = 2 : nBodies
   end
   
   if any(external_wrench)
-    % transform from body to world
-    T_i_to_world = kinsol.T{i};
-    T_world_to_i = homogTransInv(T_i_to_world);
-    AdT_world_to_i = transformAdjoint(T_world_to_i);
-    external_wrench = AdT_world_to_i' * external_wrench;
+    % external wrenches are expressed in 'joint' frame. Transform from
+    % joint to world:
+    T_joint_to_body = homogTransInv(manipulator.body(i).T_body_to_joint);
+    T_joint_to_world = kinsol.T{i} * T_joint_to_body;
+    T_world_to_joint = homogTransInv(T_joint_to_world);
+    AdT_world_to_joint = transformAdjoint(T_world_to_joint);
+    external_wrench = AdT_world_to_joint' * external_wrench;
     
     if compute_gradient
-      dT_i_to_world = kinsol.dTdq{i};
-      dT_world_to_i = dinvT(T_i_to_world, dT_i_to_world);
+      % TODO: fix
+      dT_joint_to_body = zeros(numel(T_joint_to_body), nq);
+      dT_joint_to_world = matGradMultMat(kinsol.T{i}, T_joint_to_body, kinsol.dTdq{i}, dT_joint_to_body); % TODO: inefficient due to zeros in dT_joint_to_body
+      dT_world_to_joint = dinvT(T_joint_to_world, dT_joint_to_world);
       % TODO: implement and dAdHTransposeTimesX instead
-      dAdT_world_to_i = dAdHTimesX(T_world_to_i,eye(size(T_world_to_i, 1)),dT_world_to_i,zeros(numel(T_world_to_i),nq));
-      dexternal_wrench = matGradMultMat(AdT_world_to_i', external_wrench, transposeGrad(dAdT_world_to_i, size(AdT_world_to_i)), dexternal_wrench);
-      dexternal_wrenchdv = AdT_world_to_i' * dexternal_wrenchdv;
+      dAdT_world_to_i = dAdHTimesX(T_world_to_joint,eye(size(T_world_to_joint, 1)),dT_world_to_joint,zeros(numel(T_world_to_joint),nq));
+      dexternal_wrench = matGradMultMat(AdT_world_to_joint', external_wrench, transposeGrad(dAdT_world_to_i, size(AdT_world_to_joint)), dexternal_wrench);
+      dexternal_wrenchdv = AdT_world_to_joint' * dexternal_wrenchdv;
     end
   end
   I = inertias_world{i};

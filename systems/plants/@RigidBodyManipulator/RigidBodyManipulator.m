@@ -657,7 +657,20 @@ classdef RigidBodyManipulator < Manipulator
         model.static_friction(b.velocity_num) = b.static_friction;
         model.coulomb_window(b.velocity_num) = b.coulomb_window;
         
-        model.body(i) = b;  % b isn't a handle anymore, so store any changes
+%         if (b.floating==1)   % implement relative ypr, but with dofnums as rpy
+%           %          valuecheck(b.X_joint_to_body,eye(6))); % if this isn't true, then I probably need to handle it better on the line below
+%           % but I can't leave the check in because it is also very ugly because this method gets run potentially
+%           % multiple times, and will update b each time! (so the test will
+%           % fail on the second pass)
+%           
+%           b.X_joint_to_body = Xroty(-pi/2);
+%           % note: this is a strange and ugly case where I have to let the
+%           % X_joint_to_body get out of sync with the T_body_to_joint, since
+%           % the kinematics believes one thing and the featherstone dynamics
+%           % believes another.
+%           model.body(i) = b;  % b isn't a handle anymore, so store changes
+%         end
+
       end
       
       if (num_q<1) error('This model has no DOF!'); end
