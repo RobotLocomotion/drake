@@ -18,7 +18,8 @@ footstep_plan = r.planFootsteps(start_pos, goal_pos);
 % Show the result
 v = r.constructVisualizer();
 v.draw(0, x0);
-walking_plan_data = r.planWalking(x0, footstep_plan);
+walking_plan_data = r.planWalkingZMP(x0, footstep_plan);
+[xtraj, htraj, ts] = r.planWalkingStateTraj(walking_plan_data);
 
 if isa(v, 'BotVisualizer')
   checkDependency('lcmgl');
@@ -30,6 +31,8 @@ else
   figure(25)
   footstep_plan.draw_2d();
 end
+
+v.playback(xtraj);
 
 
 

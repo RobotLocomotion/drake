@@ -1,23 +1,27 @@
 classdef WalkingPlanData
   properties
+    x0
     support_times
     supports
-    foottraj
+    bodytraj
     zmptraj
     V
     c
     comtraj
+    mu
   end
 
   methods
-    function obj = WalkingPlanData(support_times, supports, foottraj, zmptraj, V, c, comtraj)
+    function obj = WalkingPlanData(x0, support_times, supports, bodytraj, zmptraj, V, c, comtraj, mu)
+      obj.x0 = x0;
       obj.support_times = support_times;
       obj.supports = supports;
-      obj.foottraj = foottraj;
+      obj.bodytraj = bodytraj;
       obj.zmptraj = zmptraj;
       obj.V = V;
       obj.c = c;
       obj.comtraj = comtraj;
+      obj.mu = mu;
     end
 
     function draw_lcmgl(obj, lcmgl)
@@ -35,9 +39,10 @@ classdef WalkingPlanData
         end
         lcmgl.glEnd();
       end
-      
-      plot_traj_foh(obj.foottraj.right, [0.8, 0.8, 0.2]);
-      plot_traj_foh(obj.foottraj.left, [0.2, 0.8, 0.8]);
+
+      keys = obj.bodytraj.keys();
+      plot_traj_foh(obj.bodytraj(keys{1}), [0.8, 0.8, 0.2]);
+      plot_traj_foh(obj.bodytraj(keys{2}), [0.2, 0.8, 0.8]);
       plot_traj_foh(obj.comtraj, [0,1,0]);
       plot_traj_foh(obj.zmptraj, [0,0,1]);
 

@@ -1,4 +1,4 @@
-function walking_plan_data = planWalking(obj, x0, footstep_plan)
+function walking_plan_data = planWalkingZMP(obj, x0, footstep_plan)
 
 footstep_plan.sanity_check();
 for j = 1:length(footstep_plan.footsteps)
@@ -9,7 +9,7 @@ end
 nq = getNumDOF(obj);
 q0 = x0(1:nq);
 
-[zmptraj,foottraj, support_times, supports] = planZMPTraj(obj, q0, footstep_plan.footsteps);
+[zmptraj,bodytraj, support_times, supports] = planZMPTraj(obj, q0, footstep_plan.footsteps);
 zmptraj = setOutputFrame(zmptraj,desiredZMP);
 
 kinsol = doKinematics(obj, q0);
@@ -22,4 +22,9 @@ zfeet = mean(foot_pos(3,:));
 options.com0 = com(1:2);
 [c,V,comtraj] = LinearInvertedPendulum.ZMPtrackerClosedForm(com(3)-zfeet,zmptraj,options);
 
-walking_plan_data = WalkingPlanData(support_times, supports, foottraj, zmptraj, V, c, comtraj);
+mu = zeros(length(footstep_plan.footsteps), 1);
+for j = 1:length(footstep_plan.footsteps)
+  mu(j) = footstep_plan.footsteps(j).walking_params.mu;
+end
+
+walking_plan_data = WalkingPlanData(x0, support_times, supports, bodytraj, zmptraj, V, c, comtraj, mu);
