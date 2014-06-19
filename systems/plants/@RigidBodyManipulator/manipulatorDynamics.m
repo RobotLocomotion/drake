@@ -14,7 +14,8 @@ function [H,C,B,dH,dC,dB] = manipulatorDynamics(obj,q,v,use_mex)
 checkDirty(obj);
 compute_gradients = nargout > 3;
 
-if (nargin<4) use_mex = true; end
+% if (nargin<4) use_mex = true; end
+use_mex = false; % for now
 if compute_gradients
   [f_ext, B, df_ext, dB] = computeExternalForcesAndInputMatrix(obj, q, v);
 else
@@ -156,9 +157,9 @@ for i = 2 : nBodies
     external_wrench = AdT_world_to_joint' * external_wrench;
     
     if compute_gradient
-      % TODO: fix
+      % TODO: inefficient due to zeros in dT_joint_to_body
       dT_joint_to_body = zeros(numel(T_joint_to_body), nq);
-      dT_joint_to_world = matGradMultMat(kinsol.T{i}, T_joint_to_body, kinsol.dTdq{i}, dT_joint_to_body); % TODO: inefficient due to zeros in dT_joint_to_body
+      dT_joint_to_world = matGradMultMat(kinsol.T{i}, T_joint_to_body, kinsol.dTdq{i}, dT_joint_to_body);
       dT_world_to_joint = dinvT(T_joint_to_world, dT_joint_to_world);
       % TODO: implement and dAdHTransposeTimesX instead
       dAdT_world_to_i = dAdHTimesX(T_world_to_joint,eye(size(T_world_to_joint, 1)),dT_world_to_joint,zeros(numel(T_world_to_joint),nq));
