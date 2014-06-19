@@ -19,7 +19,7 @@ for urdf = {'./FallingBrick.urdf',...
   fprintf(1,'testing %s\n', urdffile);
   r = RigidBodyManipulator(urdffile,struct('floating',true));
   
-  q = 0*rand(getNumDOF(r),1);
+  q = 0*rand(getNumPositions(r),1);
   kinsol = doKinematics(r,q);
   
   [retval,outstr] = systemWCMakeEnv([urdf_kin_test,' ',urdffile,sprintf(' %f',q),' 2> /dev/null']);

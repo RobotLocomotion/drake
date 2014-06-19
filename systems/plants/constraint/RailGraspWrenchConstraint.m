@@ -146,7 +146,7 @@ classdef RailGraspWrenchConstraint < ContactWrenchConstraint
       % @retval jCvar   -- A num_pts x 1 double vector. The column index of the nonzero entries
       % @retval nnz     -- A scalar. The maximum non-zero entries in the sparse matrix.
       if(obj.isTimeValid(t))
-        nq = obj.robot.getNumDOF;
+        nq = obj.robot.getNumPositions;
         iCfun = reshape(bsxfun(@times,ones(3,1),(1:4)),[],1);
         jCvar = nq+[1;2;3;1;2;3;4;5;6;4;5;6];
         nnz = 12;

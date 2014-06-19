@@ -9,8 +9,8 @@ classdef RigidBodyVisualizer < Visualizer
     end
     function inspector(obj,x0, state_dims,minrange,maxrange)
       if (nargin<2), x0 = getInitialState(obj.model); end
-      if (nargin<3), state_dims = 1:getNumDOF(obj.model); end
-      if any(state_dims)>getNumDOF(obj.model)
+      if (nargin<3), state_dims = 1:getNumPositions(obj.model); end
+      if any(state_dims)>getNumPositions(obj.model)
         error('can''t draw velocities');
       end
       [jlmin,jlmax] = getJointLimits(obj.model);

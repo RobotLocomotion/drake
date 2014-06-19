@@ -43,7 +43,7 @@ classdef PolygonalContactAffordance < ContactAffordance
     function [dist, dDist] = distancePts2Aff(obj,q,pts)
 %       [n_pts,n_q] = size(dPts,2);
       n_pts = size(pts,2);
-      nq = obj.robot.getNumDOF();
+      nq = obj.robot.getNumPositions();
       sizecheck(q,[nq,1]);
       if(obj.is_fixed)
           normal_abs = obj.normal;
@@ -74,7 +74,7 @@ classdef PolygonalContactAffordance < ContactAffordance
       % res >= 0 means that the projection of the pts are within the
       % polygon
       n_pts = size(pts,2);
-      nq = obj.robot.getNumDOF();
+      nq = obj.robot.getNumPositions();
       sizecheck(q,[nq,1]);
       if(obj.is_fixed)
           vert_abs = obj.vertices;

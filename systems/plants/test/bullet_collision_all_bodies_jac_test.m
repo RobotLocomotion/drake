@@ -32,7 +32,7 @@ v = r.constructVisualizer();
 dist_min = 2;
 dist_max = 1e3;
 
-%c = mycon(randn(r.getNumDOF(),1));  % call it once to make sure it doesn't crash
+%c = mycon(randn(r.getNumPositions(),1));  % call it once to make sure it doesn't crash
 
 problem.objective = @(q) myfun(q); % feasibility problem
 problem.nonlcon = @(q) mycon(q,r,dist_min,dist_max);
@@ -50,7 +50,7 @@ problem.options=optimset('GradObj',     'on', ...
 tic;
 for i=1:10
   %theta = linspace(0,2*pi,n_bricks+1); theta(end) = [];
-  %q0 = rand(r.getNumDOF(),1);
+  %q0 = rand(r.getNumPositions(),1);
   %q0(1:6:end) = 5*cos(theta);
   %q0(2:6:end) = 5*sin(theta);
   %q0(3:6:end) = 0;

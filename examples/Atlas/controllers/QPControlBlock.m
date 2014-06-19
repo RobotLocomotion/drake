@@ -145,7 +145,7 @@ classdef QPControlBlock < MIMODrakeSystem
     obj.lfoot_idx = findLinkInd(r,'l_foot');
     obj.rhand_idx = findLinkInd(r,'r_hand');
     obj.lhand_idx = findLinkInd(r,'l_hand');
-    obj.nq = getNumDOF(r);
+    obj.nq = getNumPositions(r);
     
     if obj.lcm_foot_contacts
       obj.contact_est_monitor = drake.util.MessageMonitor(drc.foot_contact_estimate_t,'utime');
@@ -370,7 +370,7 @@ classdef QPControlBlock < MIMODrakeSystem
       %----------------------------------------------------------------------
       
       nu = getNumInputs(r);
-      nq = getNumDOF(r);
+      nq = getNumPositions(r);
       dim = 3; % 3D
       nd = 4; % for friction cone approx, hard coded for now
       float_idx = 1:6; % indices for floating base dofs

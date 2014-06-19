@@ -3,7 +3,7 @@ function testQuasiStaticConstraint
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
 r = RigidBodyManipulator(urdf,options);
-nq = r.getNumDOF();
+nq = r.getNumPositions();
 
 l_foot = r.findLinkInd('l_foot');
 r_foot = r.findLinkInd('r_foot');
@@ -75,7 +75,7 @@ display('Check qsc with an affordance in the robot');
 nq_cache = nq;
 r = r.addRobotFromURDF('valve_task_wall.urdf',rand(3,1),pi*randn(3,1),struct('floating',false));
 qsc = qsc.updateRobot(r);
-nq = r.getNumDOF();
+nq = r.getNumPositions();
 q = [q;randn(length(r.getStateFrame.frame{2}.coordinates)/2,1)];
 kinsol = doKinematics(r,q);
 [c2,dc2] = qsc.eval(t,kinsol,weights);

@@ -48,7 +48,7 @@ classdef PostureConstraint<RigidBodyConstraint
       if(any(~isnumeric(joint_ind)))
         error('The joint index should all be numerical')
       end
-      if(any(joint_ind<0)||any(joint_ind>obj.robot.getNumDOF))
+      if(any(joint_ind<0)||any(joint_ind>obj.robot.getNumPositions))
         error('The joint index must be within [1 nq]')
       end
       if(any(size(joint_ind)~=size(joint_min))||any(size(joint_ind)~=size(joint_max)))

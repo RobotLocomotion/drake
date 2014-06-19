@@ -38,7 +38,7 @@ classdef ContactShapeAffordance < ContactAffordance
       % Returns the vector r expressed in the collision geometry frame, where
       % pts_world is the same vector r expressed in the world frame.
       npts = size(r_world,2);
-      nq = obj.robot.getNumDOF();
+      nq = obj.robot.getNumPositions();
       if nargout < 2 
         [T_geom_to_world] = getTransform(obj);
       else

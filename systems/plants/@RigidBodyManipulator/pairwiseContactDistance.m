@@ -21,7 +21,7 @@ end
 
 if isempty(ptsA)
   phi = 1;
-  Jphi = zeros(1,getNumDOF(obj));
+  Jphi = zeros(1,getNumPositions(obj));
 else
   p = ptsA(:)-ptsB(:);
   phi = -p'*p;

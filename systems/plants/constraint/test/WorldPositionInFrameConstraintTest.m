@@ -4,7 +4,7 @@ function WorldPositionInFrameConstraintTest(varargin)
   warning('off','Drake:RigidBodyManipulator:BodyHasZeroInertia');
   r = RigidBodyManipulator(fullfile(getDrakePath(),'examples','PR2','pr2.urdf'));
   warning(w);
-  q_nom = zeros(r.getNumDOF(),1);
+  q_nom = zeros(r.getNumPositions(),1);
   constraintTester('WorldPositionInFrameConstraintTest', r, @makeCon, @(r) q_nom, @(r) q_nom, 10, varargin{:});
 end
 

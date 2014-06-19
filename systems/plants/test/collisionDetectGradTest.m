@@ -47,11 +47,6 @@ function collisionDetectGradTest(visualize,n_debris)
   end
 end
 
-% Remove this when the RBM method is implemented
-function n_pos = getNumPositions(r)
-  n_pos = r.getNumDOF();
-end
-
 function [ptsA_in_world, ptsB_in_world, ptsA, ptsB, idxA, idxB] = drawClosestPoints(r,q,v,lcmgl)
   kinsol = doKinematics(r,q);
   [~,~,ptsA,ptsB,idxA,idxB] = collisionDetect(r,kinsol);

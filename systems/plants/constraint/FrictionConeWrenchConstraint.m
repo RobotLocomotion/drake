@@ -110,7 +110,7 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       % @retval jCvar   -- A num_pts x 1 double vector. The column index of the nonzero entries
       % @retval nnz     -- A scalar. The maximum non-zero entries in the sparse matrix.
       if(obj.isTimeValid(t))
-        nq = obj.robot.getNumDOF;
+        nq = obj.robot.getNumPositions;
         iCfun = reshape(bsxfun(@times,ones(3,1),(1:obj.num_pts)),[],1);
         jCvar = nq+(1:3*obj.num_pts)';
         nnz = 3*obj.num_pts;
@@ -148,7 +148,7 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
         if(~valid_F)
           error('Drake:FrictionConeWrenchConstraint:friction force should be 3 x n_pts matrix');
         end
-        nq = obj.robot.getNumDOF();
+        nq = obj.robot.getNumPositions();
         [body_pos,dbody_pos] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
         tau = sum(cross(body_pos,F,1),2);
         dtau = zeros(3,nq+3*obj.num_pts);

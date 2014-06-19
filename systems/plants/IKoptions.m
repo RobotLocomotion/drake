@@ -307,7 +307,7 @@ classdef IKoptions
       end
       obj.robot = robot;
       nq_cache = obj.nq;
-      obj.nq = obj.robot.getNumDOF();
+      obj.nq = obj.robot.getNumPositions();
       if(obj.nq ~= nq_cache)
         obj = setDefaultParams(obj,robot);
       end

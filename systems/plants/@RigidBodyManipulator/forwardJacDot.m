@@ -29,7 +29,7 @@ else
   end
   
   if (body_or_frame_ind == 0) 
-    nq=getNumDOF(obj);
+    nq=getNumPositions(obj);
     
     % return center of mass for the entire model
     m=0;
@@ -60,11 +60,11 @@ else
     pts = [pts;ones(1,m)];
     
     if rotation_type==0
-      Jdot = reshape(kinsol.dTdqdot{body_ind}*Tframe*pts,obj.getNumDOF,[])';
+      Jdot = reshape(kinsol.dTdqdot{body_ind}*Tframe*pts,obj.getNumPositions,[])';
     elseif rotation_type==1
       T = kinsol.T{body_ind}*Tframe;
       R = T(1:3,1:3);
-      nq=getNumDOF(obj);
+      nq=getNumPositions(obj);
       dTdqdot = kinsol.dTdqdot{body_ind}*Tframe;
       Jx = reshape(dTdqdot*pts,nq,[])';
 

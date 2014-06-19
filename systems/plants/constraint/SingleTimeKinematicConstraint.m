@@ -53,7 +53,7 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
       % generate a NonlinearConstraint object if time is valid
       if(obj.isTimeValid(t))
         [lb,ub] = obj.bounds(t);
-        cnstr = {NonlinearConstraint(lb,ub,obj.robot.getNumDOF,@(kinsol) obj.eval(t,kinsol))};
+        cnstr = {NonlinearConstraint(lb,ub,obj.robot.getNumPositions,@(kinsol) obj.eval(t,kinsol))};
         name_str = obj.name(t);
         cnstr{1} = cnstr{1}.setName(name_str);
         joint_idx = obj.kinematicsPathJoints();
@@ -66,8 +66,8 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
     
     function joint_idx = kinematicsPathJoints(obj)
       % return the indices of the joints used to evaluate the constraint. The default
-      % value is (1:obj.robot.getNumDOF);
-      joint_idx = (1:obj.robot.getNumDOF);
+      % value is (1:obj.robot.getNumPositions);
+      joint_idx = (1:obj.robot.getNumPositions);
     end
   end
   

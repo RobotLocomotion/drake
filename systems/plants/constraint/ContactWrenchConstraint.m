@@ -53,7 +53,7 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       A = obj.force(t);
       [tau,dtau] = obj.torque(t,kinsol,F);
       w = [A*F(:);tau];
-      dw = [zeros(3,obj.robot.getNumDOF()) A;dtau];
+      dw = [zeros(3,obj.robot.getNumPositions()) A;dtau];
     end
     
     function [c,dc] = eval(obj,t,kinsol,F)
@@ -67,7 +67,7 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
         [c,dc_val] = obj.evalSparse(t,kinsol,F);
         [iCfun,jCvar,nnz] = obj.evalSparseStructure(t);
         m = obj.getNumConstraint(t);
-        n = obj.robot.getNumDOF+prod(obj.F_size);
+        n = obj.robot.getNumPositions+prod(obj.F_size);
         dc = sparse(iCfun,jCvar,dc_val,m,n,nnz);
       else
         c = [];
@@ -80,7 +80,7 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
       % for F
       if(obj.isTimeValid(t))
         [lb,ub] = obj.bounds(t);
-        cnstr = {NonlinearConstraint(lb,ub,obj.robot.getNumDOF+prod(obj.F_size),@(kinsol,F) obj.eval(t,kinsol,F)),...
+        cnstr = {NonlinearConstraint(lb,ub,obj.robot.getNumPositions+prod(obj.F_size),@(kinsol,F) obj.eval(t,kinsol,F)),...
           BoundingBoxConstraint(obj.F_lb(:),obj.F_ub(:))};
         [iCfun,jCvar] = obj.evalSparseStructure(t);
         cnstr{1} = cnstr{1}.setSparseStructure(iCfun,jCvar);  

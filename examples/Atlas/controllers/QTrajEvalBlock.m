@@ -31,7 +31,7 @@ classdef QTrajEvalBlock < MIMODrakeSystem
           else
             typecheck(ctrl_data.integral,'double');
             typecheck(ctrl_data.integral_gains,'double');
-            sizecheck(ctrl_data.integral_gains,[getNumDOF(r) 1]);
+            sizecheck(ctrl_data.integral_gains,[getNumPositions(r) 1]);
           end
         end
       else

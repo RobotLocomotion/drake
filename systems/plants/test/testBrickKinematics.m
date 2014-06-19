@@ -5,7 +5,7 @@ for fb = {'rpy','RPY'};%,'quat'};
   options.floating = fb{1};
   m = RigidBodyManipulator('FallingBrick.urdf',options);
   
-  nq=getNumDOF(m);
+  nq=getNumPositions(m);
   for i=1:25
     q = randn(nq,1); qd = randn(nq,1);
     options.grad_method = {'user','taylorvar'};

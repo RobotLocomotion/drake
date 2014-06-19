@@ -47,7 +47,7 @@ r = r.addRobotFromURDF('valve_task_wall.urdf',xyz,rpy,struct('floating',false));
 warning(w);
 nq_aff = length(r.getStateFrame.frame{2}.coordinates)/2;
 q_seed_aff = zeros(nq_aff,1);
-nq = r.getNumDOF();
+nq = r.getNumPositions();
 qdot = randn(nq,1);
 
 display('Check if MATLAB and mex are consistent for robot and affordance together');

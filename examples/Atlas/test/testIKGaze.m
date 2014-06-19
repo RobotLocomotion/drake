@@ -17,14 +17,14 @@ cost.back_bky = 100;
 cost.back_bkx = 100;
 options = struct();
 cost = double(cost);
-options.Q = diag(cost(1:r.getNumDOF)) + 10*eye(34);
+options.Q = diag(cost(1:r.getNumPositions)) + 10*eye(34);
 
 options.use_mex = false;
 
 % set initial state to fixed point
 load('../data/atlas_fp.mat');
 
-q0 = xstar(1:r.getNumDOF);
+q0 = xstar(1:r.getNumPositions);
 
 % q = inverseKin(r,q0,options);
 % qmex = inverseKin(r,q0,mexoptions);

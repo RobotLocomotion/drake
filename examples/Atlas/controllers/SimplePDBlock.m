@@ -23,7 +23,7 @@ classdef SimplePDBlock < MIMODrakeSystem
       obj = setInputFrame(obj,input_frame);
       obj = setOutputFrame(obj,coords);
 
-      obj.nq = getNumDOF(r);
+      obj.nq = getNumPositions(r);
 
       if nargin<3
         options = struct();

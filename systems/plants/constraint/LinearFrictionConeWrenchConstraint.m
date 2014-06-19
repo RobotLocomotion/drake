@@ -88,7 +88,7 @@ classdef LinearFrictionConeWrenchConstraint < ContactWrenchConstraint
         if(~valid_F)
           error('Drake:LinearFrictionConeWrenchConstraint:friction force should be num_edges x n_pts matrix');
         end
-        nq = obj.robot.getNumDOF();
+        nq = obj.robot.getNumPositions();
         [body_pos,dbody_pos] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
         force = obj.FC_edge*F;
         tau = sum(cross(body_pos,force,1),2);

@@ -19,7 +19,7 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
   methods(Access = protected)
     function [c,dc_valid] = evalValidTime(obj,valid_kinsol_cell)
       num_valid_t = length(valid_kinsol_cell);
-      nq = obj.robot.getNumDOF();
+      nq = obj.robot.getNumPositions();
       n_pts = size(obj.pts,2);
       pos = zeros(3*n_pts,num_valid_t);
       if(nargout == 2)

@@ -29,7 +29,7 @@ function testURDFcollisionmex
     r = compile(r);
     warning(w);
 
-    q = 0*rand(getNumDOF(r),1);
+    q = 0*rand(getNumPositions(r),1);
     kinsol = doKinematics(r,q);
 
     if (~exist(urdf_collision_test,'file'))
