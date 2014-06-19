@@ -140,16 +140,16 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
     end
     
     function obj = addBoundingBoxStateConstraint(obj,constraint,time_index)
-          % Add a boundingbox constraint that is a function of the state at the
-    % specified time or times.
-    % @param constraint  a BoundingBoxConstraint
-    % @param time_index   a cell array of time indices
-    %   ex1., time_index = {1, 2, 3} means the constraint is applied
-    %   individually to knot points 1, 2, and 3
-    %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
-    %   points 1 and 2 together (taking the combined state as an argument)
-    %   and 3 and 4 together.
-    %
+      % Add a boundingbox constraint that is a function of the state at the
+      % specified time or times.
+      % @param constraint  a BoundingBoxConstraint
+      % @param time_index   a cell array of time indices
+      %   ex1., time_index = {1, 2, 3} means the constraint is applied
+      %   individually to knot points 1, 2, and 3
+      %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
+      %   points 1 and 2 together (taking the combined state as an argument)
+      %   and 3 and 4 together.
+      %
       obj = obj.addManagedStateConstraint(ConstraintManager([],[],constraint),time_index);
     end
     
