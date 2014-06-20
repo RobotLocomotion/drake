@@ -84,6 +84,12 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       if ~iscell(xind)
         xind = {xind(:)};
       end
+      if size(xind,1) < size(xind,2)
+        xind = xind';
+      end
+      if size(xind,2) ~= 1
+        error('Drake:NonlinearProgramWConstraint:InvalidArgument','xind must be a 1-D vector or 1-D cell array');
+      end
       if(nargin<4)
         data_ind = [];
       end
@@ -126,6 +132,13 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       if ~iscell(xind)
         xind = {xind(:)};
       end
+      if size(xind,1) < size(xind,2)
+        xind = xind';
+      end
+      if size(xind,2) ~= 1
+        error('Drake:NonlinearProgramWConstraint:InvalidArgument','xind must be a 1-D vector or 1-D cell array');
+      end
+      
       xind_vec = cell2mat(xind);
       
       if(nargin<4)
@@ -438,6 +451,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       data = cell(nData,1);
       for i=1:nData
         args = getArgumentArray(obj,x,obj.shared_data_xind_cell{i});
+%         data{i} = obj.shared_data_functions{i}.eval(args{:});
         data{i} = obj.shared_data_functions{i}.eval(args{:});
       end
     end
