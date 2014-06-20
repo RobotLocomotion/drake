@@ -1,4 +1,4 @@
-function plan = footstepMISOCP(biped, seed_plan, weights, goal_pos, min_num_steps, max_num_steps)
+function plan = footstepMISOCP(biped, seed_plan, weights, goal_pos)
 
 checkDependency('yalmip');
 checkDependency('gurobi');
@@ -7,6 +7,8 @@ rangecheck(seed_plan.footsteps(1).pos(6), -pi, pi);
 rangecheck(seed_plan.footsteps(2).pos(6), -pi, pi);
 
 nsteps = length(seed_plan.footsteps);
+max_num_steps = seed_plan.params.max_num_steps + 2;
+min_num_steps = max([seed_plan.params.min_num_steps + 2, 3]);
 
 x = sdpvar(4, nsteps, 'full');
 cos_yaw = sdpvar(1, nsteps, 'full');
@@ -21,7 +23,7 @@ region = binvar(length(seed_plan.safe_regions), nsteps, 'full');
 foci = [[0.05; 0.1], [0.05; -0.6]];
 ellipse_l = 0.45;
 
-seed_steps = seed_plan.step_matrix();
+seed_steps = [seed_plan.footsteps.pos];
 
 min_yaw = pi * floor(seed_steps(6,1) / pi - 1);
 max_yaw = pi * ceil(seed_steps(6,1) / pi + 1);
@@ -88,7 +90,7 @@ end
 
 for j = 3:nsteps
   % Ensure that the foot doesn't yaw too much per step
-  if seed_plan.footsteps(j).body_idx == biped.foot_bodies_idx.left
+  if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.left
     rel_foci = [foci(1,:); -foci(2,:)];
     Constraints = [Constraints, 0 <= yaw(j) - yaw(j-1) <= pi/8];
     for k = 1:size(cos_sector, 1) - 1
@@ -129,7 +131,7 @@ end
 % trim(j) fixes step j to its starting pose (so we can remove it from the
 % plan later)
 for j = 3:(nsteps)
-  if seed_plan.footsteps(j).body_idx == seed_plan.footsteps(1).body_idx
+  if seed_plan.footsteps(j).frame_id == seed_plan.footsteps(1).frame_id
     Constraints = [Constraints, implies(trim(j), x(:,j) == seed_steps([1,2,3,6],1))];
   else
     Constraints = [Constraints, implies(trim(j), x(:,j) == seed_steps([1,2,3,6],2))];
@@ -140,7 +142,7 @@ w_goal = diag(weights.goal([1,2,3,6]));
 w_rel = diag(weights.relative([1,2,3,6]));
 w_trim = w_rel(1) * (seed_plan.params.nom_forward_step^2 + seed_plan.params.nom_step_width^2);
 
-if seed_plan.footsteps(end).body_idx == biped.foot_bodies_idx.right
+if seed_plan.footsteps(end).frame_id == biped.foot_frame_id.right
   goal = goal_pos.right([1,2,3,6]);
 else
   goal = goal_pos.left([1,2,3,6]);
@@ -170,7 +172,7 @@ assert(length(region_order) == size(region, 2));
 
 plan = seed_plan;
 for j = 1:nsteps
-  plan.footsteps(j).pos = Point(plan.footsteps(j).frames.center, steps(:,j));
+  plan.footsteps(j).pos = steps(:,j);
 end
 plan.region_order = region_order;
 
@@ -180,7 +182,7 @@ trim(1:2) = 0;
 plan = plan.slice(~trim);
 
 % Fix the order of the first two steps as necessary
-if plan.footsteps(3).body_idx == plan.footsteps(2).body_idx
+if plan.footsteps(3).frame_id == plan.footsteps(2).frame_id
   plan = plan.slice([2,1,3:length(plan.footsteps)]);
 end
 
