@@ -164,8 +164,9 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       obj = obj.setSolverOptions('snopt','superbasicslimit',2000);
       obj = obj.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
       obj = obj.setSolverOptions('snopt','iterationslimit',1e5);
-      obj = obj.setSolverOptions('snopt','majoriterationslimit',500);
+      obj = obj.setSolverOptions('snopt','majoriterationslimit',200);
     end
+
     function data = kinematicsData(obj,q)
       data = doKinematics(obj.plant,q,false,false);
     end
