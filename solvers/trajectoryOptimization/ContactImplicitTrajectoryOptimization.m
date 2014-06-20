@@ -247,11 +247,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
     
     function obj = addRunningCost(obj,running_cost)
       for i=1:obj.N-1,
-        h_ind = obj.h_inds(i);
-        x_ind = obj.x_inds(:,i);
-        u_ind = obj.u_inds(:,i);
-        
-        obj = obj.addCost(running_cost,{h_ind;x_ind;u_ind});
+        obj = obj.addCost(running_cost,{obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)});
       end
     end
     

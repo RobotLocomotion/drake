@@ -32,17 +32,17 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
   end
   
   methods
-    % function obj =
-    % DirectTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,...
-    % t_init,traj_init,T_span,constraints, options)
-    % Trajectory optimization constructor
-    % @param plant
-    % @param N the number of time samples
-    % @param T_span  The lower and upper bounds on total time for the trajectory [lb ub]
-    % @param options (optional)
-    %        options.time_option {1: all time steps are constant, 2: all
-    %        time steps are independent}
     function obj = DirectTrajectoryOptimization(plant,N,T_span,options)
+      % function obj =
+      % DirectTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,...
+      % t_init,traj_init,T_span,constraints, options)
+      % Trajectory optimization constructor
+      % @param plant
+      % @param N the number of time samples
+      % @param T_span  The lower and upper bounds on total time for the trajectory [lb ub]
+      % @param options (optional)
+      %        options.time_option {1: all time steps are constant, 2: all
+      %        time steps are independent}
       %#ok<*PROP>
       
       if nargin < 4
