@@ -107,12 +107,10 @@ end
 
 function ret = computeKineticEnergy(manipulator, kinsol)
 NB = manipulator.getNumBodies();
-twists = kinsol.twists;
-transforms = kinsol.T;
 ret = 0;
 
 for i = 2 : NB
-  twistInBody = relativeTwist(transforms, twists, 1, i, i);
+  twistInBody = relativeTwist(kinsol, 1, i, i);
   I = manipulator.body(i).I;
   ret = ret + 1/2 * twistInBody' * I * twistInBody;
 end

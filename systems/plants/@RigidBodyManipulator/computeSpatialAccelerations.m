@@ -1,4 +1,4 @@
-function ret = computeSpatialAccelerations(obj, transforms, twists, q, v, vd, root_accel)
+function ret = computeSpatialAccelerations(obj, kinsol, vd, root_accel)
 % COMPUTESPATIALACCELERATIONS Computes the spatial accelerations (time 
 % derivatives of twists) of all bodies in the RigidBodyManipulator,
 % expressed in world
@@ -19,21 +19,16 @@ ret{world} = root_accel;
 for i = 2 : nBodies
   body = obj.body(i);
   
-  qBody = q(body.position_num);
-  vBody = v(body.velocity_num);
+  qBody = kinsol.q(body.position_num);
+  vBody = kinsol.v(body.velocity_num);
   vdBody = vd(body.velocity_num);
   
   predecessor = body.parent;
   
   predecessorAccel = ret{predecessor};
   jointAccelInBody = motionSubspace(body, qBody) * vdBody + motionSubspaceDotV(body, qBody, vBody);
-  jointAccelInBase = transformSpatialAcceleration(jointAccelInBody, transforms, twists, predecessor, i, i, world);
+  jointAccelInBase = transformSpatialAcceleration(kinsol, predecessor, i, i, world, jointAccelInBody);
   ret{i} = predecessorAccel + jointAccelInBase;
-  
-  % implementation with spatial accelerations expressed in body frame:
-  % predecessorAccel = transformSpatialAcceleration(ret{predecessor}, transforms, twists, world, predecessor, predecessor, i);
-  % jointAccel = motionSubspace(body, qBody) * vdBody + motionSubspaceDotV(body, qBody, vBody);
-  % ret{i} = predecessorAccel + jointAccel;
 end
 
 end

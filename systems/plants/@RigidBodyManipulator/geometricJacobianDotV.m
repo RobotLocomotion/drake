@@ -24,9 +24,9 @@ compute_gradient = nargout > 1;
 Jdot_times_v = kinsol.JdotV{endEffector} - kinsol.JdotV{base};
 if compute_gradient
   dJdot_times_v = kinsol.dJdotVdq{endEffector} - kinsol.dJdotVdq{base};
-  [Jdot_times_v, dJdot_times_v] = transformSpatialAcceleration(Jdot_times_v, kinsol.T, kinsol.twists, base, endEffector, 1, expressedIn, dJdot_times_v, kinsol.dTdq, kinsol.dtwistsdq);
+  [Jdot_times_v, dJdot_times_v] = transformSpatialAcceleration(kinsol, base, endEffector, 1, expressedIn, Jdot_times_v, dJdot_times_v);
 else
-  Jdot_times_v = transformSpatialAcceleration(Jdot_times_v, kinsol.T, kinsol.twists, base, endEffector, 1, expressedIn);
+  Jdot_times_v = transformSpatialAcceleration(kinsol, base, endEffector, 1, expressedIn, Jdot_times_v);
 end
 
 

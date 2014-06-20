@@ -25,7 +25,7 @@ while test_number < nTests
   expressed_in = randi(bodyRange);
   
   if base ~= end_effector
-    twist = relativeTwist(kinsol.T, kinsol.twists, base, end_effector, expressed_in);
+    twist = relativeTwist(kinsol, base, end_effector, expressed_in);
     [jacobian, v_indices] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
     twistViaJacobian = jacobian * (v(v_indices));
     valuecheck(twistViaJacobian, twist, 1e-12);
@@ -49,7 +49,7 @@ while test_number < nTests
     q = getRandomConfiguration(robot);
     v = randn(robot.getNumVelocities());
     kinsol = robot.doKinematics(q, true, false, v, false);
-    [~, dtwist] = relativeTwist(kinsol.T, kinsol.twists, base, end_effector, expressed_in, kinsol.dTdq, kinsol.dtwistsdq);
+    [~, dtwist] = relativeTwist(kinsol, base, end_effector, expressed_in);
 
     option.grad_method = 'taylorvar';
     [~, dtwistCheck] = geval(1, @(q) gevalFunction(robot, q, v, base, end_effector, expressed_in), q, option);
@@ -62,5 +62,5 @@ end
 
 function ret = gevalFunction(robot, q, v, base, end_effector, expressed_in)
 kinsol = robot.doKinematics(q, false, false, v, false);
-ret = relativeTwist(kinsol.T, kinsol.twists, base, end_effector, expressed_in);
+ret = relativeTwist(kinsol, base, end_effector, expressed_in);
 end
