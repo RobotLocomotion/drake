@@ -16,15 +16,18 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
   properties (Constant)
     FORWARD_EULER = 1;
     BACKWARD_EULER = 2;
-    MIDPOINT = 3;
+    MIDPOINT = 3;  % DEFAULT
   end
   
   methods
-    function obj = DirtranTrajectoryOptimization(integration_method,plant,N,T_span,options)
+    function obj = DirtranTrajectoryOptimization(plant,N,T_span,options)
       if nargin < 4
         options = struct();
       end
-      options.integration_method = integration_method;
+      if ~isfield(options,'integration_method')
+        options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;  
+      end
+      
       obj = obj@DirectTrajectoryOptimization(plant,N,T_span,options);
     end
     
