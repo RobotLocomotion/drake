@@ -34,34 +34,46 @@ compute_Jdot_times_v = nargout > 2;
 compute_gradient = nargout > 3;
 nq = obj.getNumPositions();
 
-base = base_ind;
+if (base_ind < 0)
+  base_frame = obj.frame(-base_ind);
+  base = base_frame.body_ind;
+  Tbase_frame = base_frame.T;
+else
+  base = base_ind;
+  Tbase_frame=eye(4);
+end
+
 if (body_or_frame_ind < 0)
-  frame = obj.frame(-body_or_frame_ind);
-  end_effector = frame.body_ind;
-  Tframe = frame.T;
+  body_frame = obj.frame(-body_or_frame_ind);
+  end_effector = body_frame.body_ind;
+  Tbody_frame = body_frame.T;
 else
   end_effector = body_or_frame_ind;
-  Tframe=eye(4);
+  Tbody_frame=eye(4);
 end
+
 expressed_in = base; % todo: pass this in as an argument
 [point_size, npoints] = size(points);
 
 % transform points from end effector frame to base frame
-transform_world_to_base = homogTransInv(kinsol.T{base});
-transform_frame_to_world = kinsol.T{end_effector} * Tframe;
-transform_frame_to_base = transform_world_to_base * transform_frame_to_world;
-R_frame_to_base = transform_frame_to_base(1:3, 1:3);
-p_frame_to_base = transform_frame_to_base(1:3, 4);
-points_base = R_frame_to_base * points + repmat(p_frame_to_base, [1 npoints]);
+Tbaseframe_to_world = kinsol.T{base} * Tbase_frame;
+Tworld_to_baseframe = homogTransInv(Tbaseframe_to_world);
+Tbodyframe_to_world = kinsol.T{end_effector} * Tbody_frame;
+Tbodyframe_to_baseframe = Tworld_to_baseframe * Tbodyframe_to_world;
+Rbodyframe_to_baseframe = Tbodyframe_to_baseframe(1:3, 1:3);
+pbodyframe_to_baseframe = Tbodyframe_to_baseframe(1:3, 4);
+points_base = Rbodyframe_to_baseframe * points + repmat(pbodyframe_to_baseframe, [1 npoints]);
 if compute_gradient
-  dtransform_world_to_base = dinvT(kinsol.T{base}, kinsol.dTdq{base});
-  dTframe = zeros(numel(Tframe), nq);
-  dtransform_frame_to_world = matGradMultMat(kinsol.T{end_effector}, Tframe, kinsol.dTdq{end_effector}, dTframe); % TODO: can be made more efficient due to zero gradient
-  dtransform_frame_to_base = matGradMultMat(transform_world_to_base, transform_frame_to_world, dtransform_world_to_base, dtransform_frame_to_world);
-  dR_frame_to_base = getSubMatrixGradient(dtransform_frame_to_base, 1:3, 1:3, size(transform_frame_to_base));
-  dp_frame_to_base = getSubMatrixGradient(dtransform_frame_to_base, 1:3, 4, size(transform_frame_to_base));
+  dTbase_frame = zeros(numel(Tbase_frame), nq); % TODO: can be made more efficient due to zero gradient
+  dTbaseframe_to_world = matGradMultMat(kinsol.T{base}, Tbase_frame, kinsol.dTdq{base}, dTbase_frame);
+  dTworld_to_baseframe = dinvT(Tbaseframe_to_world, dTbaseframe_to_world);
+  dTbody_frame = zeros(numel(Tbody_frame), nq); % TODO: can be made more efficient due to zero gradient
+  dTbodyframe_to_world = matGradMultMat(kinsol.T{end_effector}, Tbody_frame, kinsol.dTdq{end_effector}, dTbody_frame);
+  dTbodyframe_to_baseframe = matGradMultMat(Tworld_to_baseframe, Tbodyframe_to_world, dTworld_to_baseframe, dTbodyframe_to_world);
+  dRbodyframe_to_baseframe = getSubMatrixGradient(dTbodyframe_to_baseframe, 1:3, 1:3, size(Tbodyframe_to_baseframe));
+  dpbodyframe_to_baseframe = getSubMatrixGradient(dTbodyframe_to_baseframe, 1:3, 4, size(Tbodyframe_to_baseframe));
   dpoints = zeros(numel(points), nq);
-  dpoints_base = matGradMultMat(R_frame_to_base, points, dR_frame_to_base, dpoints) + repmat(dp_frame_to_base, [npoints, 1]); % TODO: can be made more efficient due to zero gradient
+  dpoints_base = matGradMultMat(Rbodyframe_to_baseframe, points, dRbodyframe_to_baseframe, dpoints) + repmat(dpbodyframe_to_baseframe, [npoints, 1]); % TODO: can be made more efficient due to zero gradient
 end
 
 % compute geometric Jacobian
@@ -127,9 +139,9 @@ switch (rotation_type)
     end
   case 1 % output rpy
     if compute_gradient
-      [rpy, drpy] = rotmat2rpy(R_frame_to_base, dR_frame_to_base);
+      [rpy, drpy] = rotmat2rpy(Rbodyframe_to_baseframe, dRbodyframe_to_baseframe);
     else
-      rpy = rotmat2rpy(R_frame_to_base);
+      rpy = rotmat2rpy(Rbodyframe_to_baseframe);
     end
     x = [points_base; repmat(rpy, 1, npoints)];
     if compute_Jdot_times_v
@@ -154,9 +166,9 @@ switch (rotation_type)
     end
   case 2 % output quaternion
     if compute_gradient
-      [quat, dquat] = rotmat2quat(R_frame_to_base, dR_frame_to_base);
+      [quat, dquat] = rotmat2quat(Rbodyframe_to_baseframe, dRbodyframe_to_baseframe);
     else
-      quat = rotmat2quat(R_frame_to_base);
+      quat = rotmat2quat(Rbodyframe_to_baseframe);
     end
 
     if compute_Jdot_times_v || compute_gradient

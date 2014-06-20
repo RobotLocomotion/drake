@@ -38,49 +38,13 @@ if (kinsol.mex)
   end
     
 else
-  if (body_or_frame_ind < 0)
-    frame = obj.frame(-body_or_frame_ind);
-    body_ind = frame.body_ind;
-    Tframe = frame.T;
+  if nargout > 2
+    error('not yet implemented')
+  elseif nargout > 1
+    [x, J] = forwardKin(obj, kinsol, 1, pts, 0, body_or_frame_ind);
   else
-    body_ind = body_or_frame_ind;
-    Tframe=eye(4);
+    x = forwardKin(obj, kinsol, 1, pts, 0, body_or_frame_ind);
   end
-  
-  m = size(pts,2);
-  pts = [pts;ones(1,m)];
-  invT = inv(kinsol.T{body_ind}*Tframe);
-  x = invT*pts;
-  x = x(1:3,:);
-  
-  % Jacobians make use of d(inv(T))dqi = -inv(T)*dTdqi*inv(T)
-  if (nargout>2)
-    P = zeros(3*m,3*m);
-    for i=1:size(pts,2)
-      P((i-1)*3+1:i*3,(i-1)*3+1:i*3)=invT(1:3,1:3);
-    end
-  end
-  if (nargout>1)
-    nq = size(kinsol.q,1);
-    invT = inv(kinsol.T{body_ind}*Tframe);
-    dTdq = cell(1,nq);
-    for i=1:nq
-      dTdq{i} = [kinsol.dTdq{body_ind}(i:nq:end,:);zeros(1,size(kinsol.dTdq{body_ind},2))];
-      dTdq{i} = dTdq{i}*Tframe;
-    end
-    dinvTdq = cell(1,nq);
-    for i=1:nq
-      dinvTdq{i} = -invT*dTdq{i}*invT;
-    end
-    J = zeros(3*m,nq);
-    for i=1:nq
-      grad = dinvTdq{i}*pts;
-      grad = grad(1:3,:);
-      J(:,i) = reshape(grad,[],1);
-    end
-  end
-  
 end
-
 
 end
