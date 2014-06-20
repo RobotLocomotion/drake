@@ -85,11 +85,10 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         xind = {xind(:)};
       end
       if(nargin<4)
-        data_ind = {[]};
+        data_ind = [];
       end
-      if ~iscell(data_ind)
-        data_ind = {data_ind(:)};
-      end
+      data_ind = data_ind(:);
+
       % add in slack variables to end, and adjust xind accordingly
       n_slack = mgr.getNumSlackVariables();
       for i=1:length(xind)
