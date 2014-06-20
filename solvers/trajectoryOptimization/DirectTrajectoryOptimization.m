@@ -153,6 +153,31 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       obj = obj.addManagedStateConstraint(ConstraintManager([],[],constraint),time_index);
     end
     
+    function obj = addStateConstraint(obj,constraint,time_index)
+      % Add a constraint that is a function of the state at the
+      % specified time or times.
+      % @param constraint  a NonlinearConstraint or ConstraintManager object
+      % @param time_index   a cell array of time indices
+      %   ex1., time_index = {1, 2, 3} means the constraint is applied
+      %   individually to knot points 1, 2, and 3
+      %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
+      %   points 1 and 2 together (taking the combined state as an argument)
+      %   and 3 and 4 together.
+      %
+      
+      if isa(constraint,'BoundingBoxConstraint')
+        obj = addBoundingBoxStateConstraint(obj,constraint,time_index);
+      elseif isa(constraint,'LinearConstraint')
+        obj = addLinearStateConstraint(obj,constraint,time_index);
+      elseif isa(constrain,'NonlinearConstraint')
+        obj = addNonlinearStateConstraint(obj,constraint,time_index);
+      elseif isa(constraint,'ConstraintManager')
+        obj = addManagedStateConstraint(obj,ConstraintManager,time_index);
+      else
+        error('Drake:DirectTrajectoryOptimization:UnsupportedStateConstraint','Unsupported state constraint type');
+      end
+    end
+    
     % Solve the nonlinear program and return resulting trajectory
     function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
       z0 = obj.getInitialVars(t_init,traj_init);

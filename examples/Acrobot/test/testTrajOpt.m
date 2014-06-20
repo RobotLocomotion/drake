@@ -7,8 +7,8 @@ N = 21;
 T = 6;
 T0 = 4;
 
-final_cost = NonlinearConstraint(-inf,inf,N+3,@final_cost_fun);
-running_cost = NonlinearConstraint(-inf,inf,6,@running_cost_fun);
+final_cost = NonlinearObjective(-inf,inf,N+3,@final_cost_fun);
+running_cost = NonlinearObjective(-inf,inf,6,@running_cost_fun);
 
 x0 = zeros(4,1);
 xf = [pi;0;0;0];
@@ -36,10 +36,17 @@ traj_opt = DircolTrajectoryOptimization(p,N,T_span,struct());
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
 traj_opt = traj_opt.addRunningCost(running_cost);
 traj_opt = traj_opt.addFinalCost(final_cost);
-traj_opt = traj_opt.addBoundingBoxStateConstraint(BoundingBoxConstraint(x0,x0),1);
-traj_opt = traj_opt.addBoundingBoxStateConstraint(BoundingBoxConstraint(xf,xf),N);
+traj_opt = traj_opt.addStateConstraint(EqualityConstraint(x0),1);
+traj_opt = traj_opt.addStateConstraint(EqualityConstraint(xf),N);
 % traj_opt = traj_opt.addLinearStateConstraint(LinearConstraint(xf,xf,eye(4)),N);
+
+tic
 [xtraj,utraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
+toc
+
+
+v = p.constructVisualizer();
+v.playback(xtraj);
 
 % keyboard
 end
