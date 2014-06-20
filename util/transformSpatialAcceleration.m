@@ -19,6 +19,10 @@ function [spatial_accel, dspatial_accel] = transformSpatialAcceleration(spatial_
 % @retval spatialAccel, transformed from oldExpressedIn to newExpressedIn
 % frame
 
+if old_frame == new_frame
+  return
+end
+
 compute_gradient = nargout > 1;
 if compute_gradient
   if nargin < 10
