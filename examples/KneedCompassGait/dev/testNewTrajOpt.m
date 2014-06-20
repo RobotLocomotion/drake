@@ -69,11 +69,11 @@ x0_max = [x0(1:5);inf;  inf; 0; inf(4,1)];
 xf_min = [.4;-inf(11,1)];
 xf_max = inf(12,1);
 
-to_options.nlcc_mode = 2;
+to_options.nlcc_mode = 3;
 to_options.lincc_mode = 1;
-to_options.compl_slack = .001;
-to_options.lincompl_slack = .0001;
-to_options.jlcompl_slack = .001;
+to_options.compl_slack = .00;
+to_options.lincompl_slack = .000;
+to_options.jlcompl_slack = .00;
 to_options.lambda_mult = p.getMass*9.81*T0/N;
 to_options.lambda_jl_mult = T0/N;
 
@@ -84,7 +84,7 @@ traj_opt = traj_opt.addBoundingBoxStateConstraint(BoundingBoxConstraint(xf_min,x
 traj_opt = traj_opt.addManagedStateConstraint(periodic_constraint.mgr,periodic_constraint.i);
 % traj_opt = traj_opt.setCheckGrad(true);
 snprint('snopt.out');
-traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',50);
+traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',100);
 traj_opt = traj_opt.setSolverOptions('snopt','MinorIterationsLimit',200000);
 traj_opt = traj_opt.setSolverOptions('snopt','IterationsLimit',200000);
 [xtraj,utraj,ltraj,ljltraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);

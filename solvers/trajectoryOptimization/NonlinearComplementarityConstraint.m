@@ -18,6 +18,8 @@ classdef NonlinearComplementarityConstraint < ConstraintManager
   %
   % mode 3: (Fischer-Burmeister)
   %         z + f(x,z) - sqrt(z^2 + f(x,z)^2) (elementwise)
+  % mode 4: (prox)
+  %         z - max(0,z - r*f(x,z)) for some r
   methods
     
     function obj = NonlinearComplementarityConstraint(fun,xdim,zdim,mode,slack)
@@ -43,6 +45,8 @@ classdef NonlinearComplementarityConstraint < ConstraintManager
           n = zdim;
         case 3
           nlcon = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@fbfun);
+        case 4
+          nlcon = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@proxfun);
       end
       function [f,df] = prodfun(y)
         z = y(xdim+1:xdim+zdim);
@@ -76,7 +80,22 @@ classdef NonlinearComplementarityConstraint < ConstraintManager
         [g,dg] = fun([x;z]);
         
         f = z + g  - sqrt(z.^2 + g.^2);
-        df = [zeros(xdim) eye(zdim)] + dg - diag(1./sqrt(z.^2 + g.^2 + 1e-6)) * ([zeros(xdim) diag(z)] + diag(g)*dg);
+        df = [zeros(zdim, xdim) eye(zdim)] + dg - diag(1./sqrt(z.^2 + g.^2 + 1e-6)) * ([zeros(zdim, xdim) diag(z)] + diag(g)*dg);
+      end
+      
+      function [f,df] = proxfun(y)
+        x = y(1:xdim);
+        z = y(xdim+1:xdim+zdim);
+        r = 1;
+        
+        [g,dg] = fun([x;z]);
+        
+        f = z - max(0,z - r*g);
+        df = [zeros(zdim, xdim) eye(zdim)];
+        
+        I_pos = find(z - r*g >= 0);
+        df(I_pos,zdim+I_pos) = 0;
+        df(I_pos,:) = df(I_pos,:)-r*dg(I_pos,:);
       end
       
       obj = obj@ConstraintManager(lincon, nlcon, bcon, n);
