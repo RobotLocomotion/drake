@@ -1,4 +1,4 @@
-function plan = footstepMIQPWRotation(biped, seed_plan, weights, goal_pos, min_num_steps, max_num_steps)
+function plan = footstepMIQPWRotation(biped, seed_plan, weights, goal_pos)
 % Run the Mixed Integer Quadratic Program form of the footstep planning problem.
 % This form can efficiently choose the assignment of individual foot positions to
 % safe (obstacle-free) regions, but always keeps the yaw value of every foot
@@ -17,6 +17,8 @@ function plan = footstepMIQPWRotation(biped, seed_plan, weights, goal_pos, min_n
 
 seed_plan.sanity_check();
 checkDependency('gurobi');
+max_num_steps = seed_plan.params.max_num_steps + 2;
+min_num_steps = max([seed_plan.params.min_num_steps + 2, 3]);
 
 nsteps = length(seed_plan.footsteps); % ignore the first fixed footstep since it has no effect
 nr = length(seed_plan.safe_regions);

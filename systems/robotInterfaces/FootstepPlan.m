@@ -4,22 +4,24 @@ classdef FootstepPlan
     params
     safe_regions
     region_order
+    biped
   end
 
   methods
-    function obj = FootstepPlan(footsteps, params, safe_regions, region_order)
+    function obj = FootstepPlan(footsteps, biped, params, safe_regions, region_order)
       obj.footsteps = footsteps;
+      obj.biped = biped;
       obj.params = struct(params);
       obj.safe_regions = safe_regions;
       obj.region_order = region_order;
     end
 
-    function msg = to_footstep_plan_t(obj, biped)
+    function msg = to_footstep_plan_t(obj)
       msg = drc.footstep_plan_t();
       msg.num_steps = length(obj.footsteps);
       step_msgs = javaArray('drc.footstep_t', msg.num_steps);
       for j = 1:msg.num_steps
-        step_msgs(j) = obj.footsteps(j).to_footstep_t(biped);
+        step_msgs(j) = obj.footsteps(j).to_footstep_t(obj.biped);
       end
       msg.footsteps = step_msgs;
       msg.params = obj.params;
@@ -70,6 +72,9 @@ classdef FootstepPlan
       %            (return to double support) of each step in the plan. The first
       %            two entries of ts will always be zero, since the first two steps
       %            in the plan correspond to the current locations of the feet.
+      if nargin < 2
+        biped = obj.biped;
+      end
       ts = zeros(1, length(obj.footsteps));
       for j = 3:length(obj.footsteps)
         [swing_ts, ~, ~, ~] = planSwing(biped, obj.footsteps(j-2), obj.footsteps(j));
@@ -124,6 +129,23 @@ classdef FootstepPlan
       quiver(X2(1,:), X2(2,:), cos(X2(6,:)), sin(X2(6,:)),'Color', 'r', 'AutoScaleFactor', 0.2);
       axis equal
     end
+    
+    function steps_rel = relative_step_offsets(obj)
+      steps = obj.step_matrix();
+      nsteps = length(obj.footsteps);
+      steps_rel = zeros(6, nsteps-1);
+      for j = 2:nsteps
+        R = rotmat(-steps(6,j-1));
+        steps_rel(:,j-1) = [R * (steps(1:2,j) - steps(1:2,j-1));
+                    steps(3:6,j) - steps(3:6,j-1)];
+      end
+    end
+    
+    function steps = step_matrix(obj)
+      % Return the footstep positions as a 6xnsteps matrix in x y z roll
+      % pitch yaw
+      steps = [obj.footsteps.pos];
+    end
   end
 
   methods(Static=true)
@@ -132,10 +154,10 @@ classdef FootstepPlan
       for j = 1:msg.num_steps
         footsteps(j) = Footstep.from_footstep_t(msg.footsteps(j), biped);
       end
-      plan = FootstepPlan(footsteps, msg.params, [], []);
+      plan = FootstepPlan(footsteps, biped, msg.params, [], []);
     end
 
-    function plan = blank_plan(nsteps, ordered_frame_id, params, safe_regions)
+    function plan = blank_plan(biped, nsteps, ordered_frame_id, params, safe_regions)
       footsteps = Footstep.empty();
 
       for j = 1:nsteps
@@ -150,7 +172,7 @@ classdef FootstepPlan
         footsteps(j) = Footstep(pos, id, frame_id, is_in_contact, pos_fixed, terrain_pts, infeasibility, walking_params);
       end
       region_order = nan(1, nsteps);
-      plan = FootstepPlan(footsteps, params, safe_regions, region_order);
+      plan = FootstepPlan(footsteps, biped, params, safe_regions, region_order);
     end
   end
 end

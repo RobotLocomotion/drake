@@ -24,7 +24,12 @@ classdef Footstep
 
     function msg = to_footstep_t(obj, biped)
       msg = drc.footstep_t();
-      msg.pos = encodePosition3d(obj.pos);
+      T = inv(biped.getFrame(obj.frame_id).T);
+      pos = zeros(6,1);
+      xyz1 = T * [obj.pos(1:3);1];
+      pos(1:3) = xyz1(1:3);
+      pos(4:6) = rotmat2rpy(T(1:3,1:3) * rpy2rotmat(obj.pos(4:6)));
+      msg.pos = encodePosition3d(pos);
       msg.id = obj.id;
       if obj.frame_id == biped.foot_frame_id.right
         msg.is_right_foot = true;
@@ -52,13 +57,18 @@ classdef Footstep
 
   methods(Static=true)
     function footstep = from_footstep_t(msg, biped)
-      pos = decodePosition3d(msg.pos);
       id = msg.id;
       if msg.is_right_foot
         frame_id = biped.foot_frame_id.right;
       else
         frame_id = biped.foot_frame_id.left;
       end
+      msg_pos = decodePosition3d(msg.pos);
+      T = biped.getFrame(frame_id).T;
+      pos = zeros(6,1);
+      xyz1 = T * [msg_pos(1:3);1];
+      pos(1:3) = xyz1(1:3);
+      pos(4:6) = rotmat2rpy(T(1:3,1:3) * rpy2rotmat(msg_pos(4:6)));
       is_in_contact = msg.is_in_contact;
       pos_fixed = [msg.fixed_x;
                    msg.fixed_y;
@@ -70,7 +80,7 @@ classdef Footstep
                      reshape(msg.terrain_height, 1, []);];
       infeasibility = msg.infeasibility;
       walking_params = msg.params;
-      footstep = Footstep(biped, pos, id, frame_id, is_in_contact, pos_fixed, terrain_pts, infeasibility, walking_params);
+      footstep = Footstep(pos, id, frame_id, is_in_contact, pos_fixed, terrain_pts, infeasibility, walking_params);
     end
   end
 end

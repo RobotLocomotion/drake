@@ -50,14 +50,14 @@ if isempty(safe_regions)
   safe_regions = [struct('A', zeros(0,4), 'b', zeros(0,1), 'point', pt, 'normal', n)];
 end
 for j = 1:length(safe_regions)
-  sizecheck(safe_regions(j).A, [NaN, 4]);
+  sizecheck(safe_regions(j).A, [NaN, 3]);
   sizecheck(safe_regions(j).b, [size(safe_regions(j).A, 1), 1]);
   sizecheck(safe_regions(j).point, [3,1]);
   sizecheck(safe_regions(j).normal, [3,1]);
 end
 
 % Currently we always lead with the right foot, but this should change soon
-plan = FootstepPlan.blank_plan(options.step_params.max_num_steps + 2, [obj.foot_frame_id.right, obj.foot_frame_id.left], options.step_params, safe_regions);
+plan = FootstepPlan.blank_plan(obj, options.step_params.max_num_steps + 2, [obj.foot_frame_id.right, obj.foot_frame_id.left], options.step_params, safe_regions);
 plan.footsteps(1).pos = start_pos.right;
 plan.footsteps(2).pos = start_pos.left;
 
