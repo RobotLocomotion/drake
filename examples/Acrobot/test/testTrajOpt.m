@@ -26,11 +26,11 @@ else
 end
 T_span = [T/2 T];
 
-
-% traj_opt = DirtranTrajectoryOptimization(DirtranTrajectoryOptimization.MIDPOINT,p,N,T_span,struct());
-% traj_opt = DirtranTrajectoryOptimization(DirtranTrajectoryOptimization.FORWARD_EULER,p,N,T_span,struct());
-% traj_opt = DirtranTrajectoryOptimization(DirtranTrajectoryOptimization.BACKWARD_EULER,p,N,T_span,struct());
-traj_opt = DircolTrajectoryOptimization(p,N,T_span,struct());
+options = struct();
+% options.integration_method = DirtranTrajectoryOptimization.FORWARD_EULER;
+% options.integration_method = DirtranTrajectoryOptimization.BACKWARD_EULER;
+traj_opt = DirtranTrajectoryOptimization(p,N,T_span,options);
+% traj_opt = DircolTrajectoryOptimization(p,N,T_span,struct());
 % traj_opt = traj_opt.setCheckGrad(true);
 % snprint('snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);

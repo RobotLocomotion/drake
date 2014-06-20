@@ -153,16 +153,23 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       obj = obj.addManagedStateConstraint(ConstraintManager([],[],constraint),time_index);
     end
     
-    % Solve the nonlinear program and return resulting trajectory
     function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
+      % Solve the nonlinear program and return resulting trajectory
       z0 = obj.getInitialVars(t_init,traj_init);
       [z,F,info] = obj.solve(z0);
       t = [0; cumsum(z(obj.h_inds))];
-      xtraj = PPTrajectory(foh(t,reshape(z(obj.x_inds),[],obj.N)));
-      utraj = PPTrajectory(foh(t,reshape(z(obj.u_inds),[],obj.N)));
+      [xtraj,utraj] = obj.reconstructTrajectory(t,reshape(z(obj.x_inds),[],obj.N),reshape(z(obj.u_inds),[],obj.N));
       
       xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
       utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+    end
+    
+    function [xtraj,utraj] = reconstructTrajectory(obj,t,x,u)
+      % Interpolate between knot points to reconstruct a trajectory. By
+      % default, uses a first order hold. Override this function in
+      % subclasses to use a different interpolation method
+      xtraj = PPTrajectory(foh(t,x));
+      utraj = PPTrajectory(foh(t,u));
     end
     
     % evaluates the initial trajectories at the sampled times and
