@@ -136,8 +136,6 @@ for i = 2 : nBodies
   if compute_gradient
     dtwist = kinsol.dtwistsdq{i};
     dspatial_accel = dJdotV{i};
-    % TODO: implement external wrench gradients
-%     dexternal_wrench = dexternal_wrenches(:, i);
     dexternal_wrench = getSubMatrixGradient(df_ext,1:twist_size,i,size(f_ext),1:nq);
     
     dtwistdv = zeros(twist_size, nv);
@@ -161,9 +159,8 @@ for i = 2 : nBodies
       dT_joint_to_body = zeros(numel(T_joint_to_body), nq);
       dT_joint_to_world = matGradMultMat(kinsol.T{i}, T_joint_to_body, kinsol.dTdq{i}, dT_joint_to_body);
       dT_world_to_joint = dinvT(T_joint_to_world, dT_joint_to_world);
-      % TODO: implement and dAdHTransposeTimesX instead
-      dAdT_world_to_i = dAdHTimesX(T_world_to_joint,eye(size(T_world_to_joint, 1)),dT_world_to_joint,zeros(numel(T_world_to_joint),nq));
-      dexternal_wrench = matGradMultMat(AdT_world_to_joint', external_wrench, transposeGrad(dAdT_world_to_i, size(AdT_world_to_joint)), dexternal_wrench);
+      dexternal_wrench = dAdHTransposeTimesX(T_world_to_joint, external_wrench, dT_world_to_joint, dexternal_wrench);
+      
       dexternal_wrenchdv = AdT_world_to_joint' * dexternal_wrenchdv;
     end
   end
@@ -204,7 +201,6 @@ for i = nBodies : -1 : 2
   if compute_gradient
     djoint_wrench = dnet_wrenches{i};
     dJi = kinsol.dJdq{i};
-    %dtau = matGradMultMat(Ji', joint_wrench, transposeGrad(dJi, size(Ji)), djoint_wrench);
     dtau = Ji' * djoint_wrench + matGradMult(transposeGrad(dJi, size(Ji)), joint_wrench); 
     dC = setSubMatrixGradient(dC, dtau, body.velocity_num, 1, size(C), 1:nq);
     dnet_wrenches{body.parent} = dnet_wrenches{body.parent} + djoint_wrench;
