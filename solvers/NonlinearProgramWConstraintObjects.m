@@ -43,7 +43,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     shared_data_xind_cell  
     
     % a cell array of function handles, each of which returns a data object
-    % so that shared_data{i} = shared_data_functions(shared_data_xind_cell{i}{1},shared_data_xind_cell{i}{2},...)
+    % so that shared_data{i} = shared_data_functions(x(shared_data_xind_cell{i}{1}),x(shared_data_xind_cell{i}{2}),...)
     shared_data_functions 
     
     % cell arrays of vectors where nlcon_dataind{i} are indices into the
