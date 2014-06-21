@@ -4,9 +4,8 @@ classdef NonlinearObjective < NonlinearConstraint
 % NonlinearConstraint class, to aid in readability of the code.
   
   methods
-    function obj = NonlinearObjective(varargin)
-      % note: would it make sense to enforce lb=-inf and ub=inf?
-      obj = obj@NonlinearConstraint(varargin{:});
+    function obj = NonlinearObjective(xdim,eval_handle)
+      obj = obj@NonlinearConstraint(-inf,inf,xdim,eval_handle);
     end
   end
 end
