@@ -53,7 +53,7 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
       if(num_valid_t >= 2)
         [lb,ub] = obj.bounds(t);
         nq = obj.robot.getNumDOF;
-        cnstr = {NonlinearConstraint(lb,ub,length(t)*nq,@(kinsol_cell) obj.eval(t,kinsol_cell))};
+        cnstr = {NonlinearConstraint(lb,ub,length(t)*nq,@(varargin) obj.eval(t,varargin(num_valid_t+(1:num_valid_t))))};
         num_cnstr = obj.getNumConstraint(t);
         joint_idx = obj.kinematicPathJoints();
         iCfun = reshape(bsxfun(@times,(1:num_cnstr)',ones(1,length(joint_idx)*num_valid_t)),[],1);

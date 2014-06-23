@@ -53,7 +53,7 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
       % generate a NonlinearConstraint object if time is valid
       if(obj.isTimeValid(t))
         [lb,ub] = obj.bounds(t);
-        cnstr = {NonlinearConstraint(lb,ub,obj.robot.getNumDOF,@(kinsol) obj.eval(t,kinsol))};
+        cnstr = {NonlinearConstraint(lb,ub,obj.robot.getNumDOF,@(~,kinsol) obj.eval(t,kinsol))};
         name_str = obj.name(t);
         cnstr{1} = cnstr{1}.setName(name_str);
         joint_idx = obj.kinematicsPathJoints();
