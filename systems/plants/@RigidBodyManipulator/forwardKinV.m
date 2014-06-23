@@ -82,9 +82,9 @@ if compute_J
   
   % compute position Jacobian
   if compute_gradient
-    [r_hats, dr_hats] = vectorsToSkewSymmetricMatrices(points_base, dpoints_base);
+    [r_hats, dr_hats] = vectorToSkewSymmetric(points_base, dpoints_base);
   else
-    r_hats = vectorsToSkewSymmetricMatrices(points_base);
+    r_hats = vectorToSkewSymmetric(points_base);
   end
   Jpos = -r_hats * Jomega + repmat(Jv, npoints, 1);
   if compute_gradient
@@ -142,27 +142,6 @@ offsets = reshape(repmat(0 : subvectorSize : (nRepeats - 1) * subvectorSize,leng
 ret = subvectorIndicesRepeated + offsets;
 end
 
-function [r_hats, dr_hats] = vectorsToSkewSymmetricMatrices(points_base, dpoints_base)
-compute_gradient = nargout > 1;
-
-[point_size, npoints] = size(points_base);
-r_hats = zeros(npoints * point_size, point_size) * points_base(1); % for TaylorVar
-if compute_gradient
-  nq = size(dpoints_base, 2);
-  dr_hats = zeros(numel(r_hats), nq) * points_base(1); % for TaylorVar
-end
-
-for i = 1 : npoints
-  point = points_base(:, i);
-  r_rows = point_size * (i - 1) + 1 : point_size * i;
-  r_hats(r_rows, :) = vectorToSkewSymmetric(point);
-  if compute_gradient
-    dpoint = getSubMatrixGradient(dpoints_base, 1:size(points_base,1), i, size(points_base));
-    dr_hats = setSubMatrixGradient(dr_hats, dvectorToSkewSymmetric(dpoint), r_rows, 1:size(r_hats,2), size(r_hats));
-  end
-end
-end
-
 function [Jdot_times_v, dJdot_times_v] = forwardJacdotTimesV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind)
 compute_gradient = nargout > 1;
 
@@ -187,11 +166,11 @@ if compute_gradient
 end
 
 if compute_gradient
-  [r_hats, dr_hats] = vectorsToSkewSymmetricMatrices(points_base, dpoints_base);
+  [r_hats, dr_hats] = vectorToSkewSymmetric(points_base, dpoints_base);
   [qrot, dqrot] = rotmat2Representation(rotation_type, R, dR);
   [Phi, dPhidqrot, dPhi, ddPhidqrotdq] = angularVel2RepresentationDotMatrix(rotation_type, qrot, dqrot);
 else
-  r_hats = vectorsToSkewSymmetricMatrices(points_base);
+  r_hats = vectorToSkewSymmetric(points_base);
   qrot = rotmat2Representation(rotation_type, R);
   [Phi, dPhidqrot] = angularVel2RepresentationDotMatrix(rotation_type, qrot);
 end
@@ -236,7 +215,7 @@ if compute_gradient
   
   dJdot_times_v = zeros(numel(Jdot_times_v), length(kinsol.q));
   drdots = -r_hats * domega + matGradMult(-dr_hats, omega) + repmat(dv_twist, npoints, 1);
-  domega_hat = dvectorToSkewSymmetric(domega);
+  [omega_hat, domega_hat] = vectorToSkewSymmetric(omega, domega);
   dXBardotJv = matGradMultMat(omega_hat, rdots, domega_hat, drdots);
   dXBarJdotV = -r_hats * dJ_geometric_dot_v(1:3, :) + matGradMult(-dr_hats, J_geometric_dot_v(1:3)) + repmat(dJ_geometric_dot_v(4:6, :), npoints, 1);
   allcols = 1:size(Jdot_times_v, 2);

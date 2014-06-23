@@ -1,20 +1,19 @@
-function ret = dAdHTimesX(H, X, dHdq, dXdq)
+function ret = dAdHTimesX(H, X, dH, dX)
 R = H(1:3, 1:3);
 p = H(1:3, 4);
 
-dRdq = getSubMatrixGradient(dHdq, 1:3, 1:3, size(H));
-dpdq = getSubMatrixGradient(dHdq, 1:3, 4, size(H));
-pHat = vectorToSkewSymmetric(p);
-dpHatdq = dvectorToSkewSymmetric(dpdq);
+dR = getSubMatrixGradient(dH, 1:3, 1:3, size(H));
+dp = getSubMatrixGradient(dH, 1:3, 4, size(H));
+[p_hat, dp_hat] = vectorToSkewSymmetric(p, dp);
 
 Xomega = X(1:3, :);
 Xv = X(4:6, :);
 
-dXomegadq = getSubMatrixGradient(dXdq, 1:3, 1:size(X,2), size(X));
-dXvdq = getSubMatrixGradient(dXdq, 4:6, 1:size(X,2), size(X));
+dXomega = getSubMatrixGradient(dX, 1:3, 1:size(X,2), size(X));
+dXv = getSubMatrixGradient(dX, 4:6, 1:size(X,2), size(X));
 
-dRXomegadq = matGradMultMat(R, Xomega, dRdq, dXomegadq);
-dRXvdq = matGradMultMat(R, Xv, dRdq, dXvdq);
-dpHatRXomegadq = matGradMultMat(pHat, R * Xomega, dpHatdq, dRXomegadq);
-ret = interleaveRows([3 3], {dRXomegadq, dpHatRXomegadq + dRXvdq});
+dRXomega = matGradMultMat(R, Xomega, dR, dXomega);
+dRXv = matGradMultMat(R, Xv, dR, dXv);
+dpHatRXomega = matGradMultMat(p_hat, R * Xomega, dp_hat, dRXomega);
+ret = interleaveRows([3 3], {dRXomega, dpHatRXomega + dRXv});
 end
