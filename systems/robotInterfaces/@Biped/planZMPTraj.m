@@ -1,4 +1,9 @@
 function [zmptraj, link_constraints, support_times, supports] = planZMPTraj(biped, q0, footsteps, options)
+% Plan the trajectories of the ZMP and the feet in order to follow the given footsteps
+% @param q0 the initial configuration vector
+% @param footsteps a list of Footstep objects
+% @option t0 the initial time offset of the trajectories to be generated (default: 0)
+% @option first_step_hold_s the number of seconds to wait before lifting the first foot (default: 1)
 
 if nargin < 4; options = struct(); end
 

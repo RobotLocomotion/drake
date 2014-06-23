@@ -1,4 +1,12 @@
 function [A, b, Aeq, beq, step_map] = constructCollocationAb(biped, seed_plan, params)
+  % Build the linear constraint matrices for the nonlinear footstep planner.
+  % These constraint matrices enforce the relative footstep reachability constraints
+  % and the constraints that the relative footstep displacments match the absolute
+  % footstep displacements.
+  % @retval step_map a struct with fields 'ineq' and 'eq'. Each field is a map from
+  %                  a footstep index to the constraints relating specifically to
+  %                  that footstep, which we use to view the infeasability of
+  %                  individual footsteps later
 
   nsteps = length(seed_plan.footsteps) - 1;
   nv = 12 * nsteps;

@@ -1,9 +1,12 @@
 classdef FootstepPlan
+% A container for footstep plans. A footstep plan contains the location of each
+% footstep, the safe terrain regions that those steps occupy, and the assignments
+% of each step to a safe region.
   properties
-    footsteps
-    params
-    safe_regions
-    region_order
+    footsteps % a list of Footstep objects
+    params % footstep plan params, as in drc.footstep_plan_params_t
+    safe_regions % a list of safe regions, as described in planFootsteps.m
+    region_order % a list of the same length as footsteps. If region_order(i) == j, then footsteps(i).pos must be within safe_regions(j)
     biped
   end
 
@@ -83,6 +86,7 @@ classdef FootstepPlan
     end
 
     function varargout = sanity_check(obj)
+      % Self-test for footstep plans.
       ok = true;
       frame_ids = [obj.footsteps.frame_id];
       if any(frame_ids(1:end-1) == frame_ids(2:end))
@@ -129,8 +133,9 @@ classdef FootstepPlan
       quiver(X2(1,:), X2(2,:), cos(X2(6,:)), sin(X2(6,:)),'Color', 'r', 'AutoScaleFactor', 0.2);
       axis equal
     end
-    
+
     function steps_rel = relative_step_offsets(obj)
+      % Compute the relative displacements of the footsteps (for checking collocation results from footstepNLP)
       steps = obj.step_matrix();
       nsteps = length(obj.footsteps);
       steps_rel = zeros(6, nsteps-1);
@@ -140,7 +145,7 @@ classdef FootstepPlan
                     steps(3:6,j) - steps(3:6,j-1)];
       end
     end
-    
+
     function steps = step_matrix(obj)
       % Return the footstep positions as a 6xnsteps matrix in x y z roll
       % pitch yaw
@@ -158,6 +163,10 @@ classdef FootstepPlan
     end
 
     function plan = blank_plan(biped, nsteps, ordered_frame_id, params, safe_regions)
+      % Construct a FootstepPlan with all footstep poses set to NaN, but with the individual
+      % step frame_id fields filled out appropriately. This is useful because all of the
+      % existing footstep optimizations require that the maximum number of footsteps and the
+      % sequence of the feet be assigned beforehand.
       footsteps = Footstep.empty();
 
       for j = 1:nsteps

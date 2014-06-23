@@ -1,4 +1,17 @@
 function [plan, exitflag, output_cost] = footstepNLP(biped, seed_plan, weights, goal_pos)
+% A nonlinear footstep planner. This planner takes both the absolute pose of each footstep
+% and the relative displacements between footsteps as decision variables, while
+% constraining that they agree with one another. It optimizes the distance from the final step
+% to the goal pose while minimizing relative footstep displacements and respecting reachability
+% constraints.
+% @param biped a Biped descendant (like Atlas.m)
+% @param seed_plan a FootstepPlan to be optimized. The first two footsteps in the plan
+%                  must be set to the current poses of the robot's feet, but the remainder
+%                  can be NaN if desired. FootstepPlan.blank_plan() will produce a simple
+%                  seed plan if desired.
+% @param weights a struct of optimization weights, as returned by biped.getFootstepOptimizationWeights()
+% @goal_pos a struct containing fields 'right' and 'left', indicating the desired positions of
+%           the feet after walking
 
 if checkDependency('snopt')
   USE_SNOPT = 1;
