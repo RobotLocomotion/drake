@@ -39,7 +39,7 @@ else
     J = zeros(d,nq);
   end
   
-  dJ = zeros(d*nq,nq);
+  dJ = zeros(d,nq^2);
   for i=1:length(model.body)
     if(any(model.body(i).robotnum == robotnum))
       bm = model.body(i).mass;
@@ -60,7 +60,7 @@ else
       end
     end
   end
-  dJ = reshape(dJ, [d, nq^2]); % change to strange second derivative size
+%   dJ = reshape(dJ, [d, nq^2]); % change to strange second derivative size
 end
 
 end

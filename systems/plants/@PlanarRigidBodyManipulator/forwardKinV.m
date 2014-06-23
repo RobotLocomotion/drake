@@ -32,7 +32,8 @@ if (n==2)
     nv = size(J,2);
     J = reshape(T_3D_to_2D * reshape(J,3,m*nv),2*m,nv);
     if compute_gradient
-      error('need to implement and test');
+      dJ = reshape(T_3D_to_2D * reshape(dJ,3,m*nv^2),2*m,nv^2);
+%       error('need to implement and test');
     end
   end
 end
