@@ -11,12 +11,9 @@ Tbodyframe_to_world = kinsol.T{end_effector} * Tbody_frame;
 T = Tworld_to_baseframe * Tbodyframe_to_world;
 
 if compute_gradient
-  nq = obj.getNumPositions();
-  dTbase_frame = zeros(numel(Tbase_frame), nq); % TODO: can be made more efficient due to zero gradient
-  dTbaseframe_to_world = matGradMultMat(kinsol.T{base}, Tbase_frame, kinsol.dTdq{base}, dTbase_frame);
+  dTbaseframe_to_world = matGradMult(kinsol.dTdq{base}, Tbase_frame);
   dTworld_to_baseframe = dinvT(Tbaseframe_to_world, dTbaseframe_to_world);
-  dTbody_frame = zeros(numel(Tbody_frame), nq); % TODO: can be made more efficient due to zero gradient
-  dTbodyframe_to_world = matGradMultMat(kinsol.T{end_effector}, Tbody_frame, kinsol.dTdq{end_effector}, dTbody_frame);
+  dTbodyframe_to_world = matGradMult(kinsol.dTdq{end_effector}, Tbody_frame);
   dTdq = matGradMultMat(Tworld_to_baseframe, Tbodyframe_to_world, dTworld_to_baseframe, dTbodyframe_to_world);
 end
 

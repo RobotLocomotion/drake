@@ -49,8 +49,7 @@ points_base = Rbodyframe_to_baseframe * points + repmat(pbodyframe_to_baseframe,
 if compute_gradient
   dRbodyframe_to_baseframe = getSubMatrixGradient(dTbodyframe_to_baseframe, 1:3, 1:3, size(Tbodyframe_to_baseframe));
   dpbodyframe_to_baseframe = getSubMatrixGradient(dTbodyframe_to_baseframe, 1:3, 4, size(Tbodyframe_to_baseframe));
-  dpoints = zeros(numel(points), nq); % TODO: can be made more efficient due to zero gradient
-  dpoints_base = matGradMultMat(Rbodyframe_to_baseframe, points, dRbodyframe_to_baseframe, dpoints) + repmat(dpbodyframe_to_baseframe, [npoints, 1]);
+  dpoints_base = matGradMult(dRbodyframe_to_baseframe, points) + repmat(dpbodyframe_to_baseframe, [npoints, 1]);
 end
 
 % compute geometric Jacobian
@@ -65,17 +64,6 @@ Jv = J_geometric(4 : 6, :);
 if compute_gradient
   dJomega = getSubMatrixGradient(dJ_geometric, 1:3, 1:size(J_geometric,2), size(J_geometric));
   dJv = getSubMatrixGradient(dJ_geometric, 4:6, 1:size(J_geometric,2), size(J_geometric));
-end
-
-% compute geometric Jacobian dot times v.
-if compute_Jdot_times_v
-  if compute_gradient
-    [twist, dtwist] = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-    [J_geometric_dot_v, dJ_geometric_dot_v] = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-  else
-    twist = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-    J_geometric_dot_v = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-  end
 end
 
 % compute position Jacobian
@@ -103,44 +91,34 @@ end
 % compute orientation Jacobian
 switch (rotation_type)
   case 0 % no rotation included
-    x = points_base;
     Phi = zeros(0, 3);
-    if compute_gradient
+    if compute_gradient || compute_Jdot_times_v
+      dPhidqi = zeros(numel(Phi), 0);
       dPhi = zeros(numel(Phi), nq);
-    end
-    if compute_Jdot_times_v
-      Phid = zeros(0, 3);
       if compute_gradient
-        dPhid = zeros(numel(Phid), nq);
+        ddPhidqidq = zeros(numel(dPhi), nq);
       end
     end
+    x = points_base;
   case 1 % output rpy
     if compute_gradient
       [rpy, drpy] = rotmat2rpy(Rbodyframe_to_baseframe, dRbodyframe_to_baseframe);
     else
       rpy = rotmat2rpy(Rbodyframe_to_baseframe);
     end
-    x = [points_base; repmat(rpy, 1, npoints)];
     if compute_Jdot_times_v
       if compute_gradient
-        [Phi, dPhidrpy, ddPhidrpy] = angularvel2rpydotMatrix(rpy);
-        dPhi = dPhidrpy * drpy;
-        ddPhidrpy = reshape(ddPhidrpy, [], numel(rpy));
-        ddPhidrpydq = ddPhidrpy * drpy;
+        [Phi, dPhidqi, ddPhidqidqi] = angularvel2rpydotMatrix(rpy);
+        dPhi = dPhidqi * drpy;
+        ddPhidqidqi = reshape(ddPhidqidqi, [], numel(rpy));
+        ddPhidqidq = ddPhidqidqi * drpy;
       else
-        [Phi, dPhidrpy] = angularvel2rpydotMatrix(rpy);
-      end
-      omega = twist(1:3);
-      rpyd = Phi * omega;
-      Phid = reshape(dPhidrpy * rpyd, size(Phi));
-      if compute_gradient
-        domega = dtwist(1:3, :);
-        drpyd = Phi * domega + matGradMult(dPhi, omega);
-        dPhid = dPhidrpy * drpyd + matGradMult(ddPhidrpydq, rpyd);
+        [Phi, dPhidqi] = angularvel2rpydotMatrix(rpy);
       end
     else
       Phi = angularvel2rpydotMatrix(rpy);
     end
+    x = [points_base; repmat(rpy, 1, npoints)];
   case 2 % output quaternion
     if compute_gradient
       [quat, dquat] = rotmat2quat(Rbodyframe_to_baseframe, dRbodyframe_to_baseframe);
@@ -149,26 +127,16 @@ switch (rotation_type)
     end
 
     if compute_Jdot_times_v || compute_gradient
-      [Phi, dPhidquat] = angularvel2quatdotMatrix(quat);
+      [Phi, dPhidqi] = angularvel2quatdotMatrix(quat);
+      if compute_gradient
+        dPhi = dPhidqi * dquat;
+        ddPhidqidq = sparse(numel(dPhidqi), nq);
+      end
     else
       Phi = angularvel2quatdotMatrix(quat);
     end
 
     x = [points_base; repmat(quat, 1, npoints)];
-    if compute_Jdot_times_v
-      omega = twist(1 : 3);
-      quatd = Phi * omega;
-      Phid = reshape(dPhidquat * quatd, size(Phi));
-      if compute_gradient
-        dPhi = dPhidquat * dquat;
-        domega = dtwist(1:3, :);
-        dquatd = Phi * domega + matGradMult(dPhi, omega);
-        % ddphidquatdq = 0:
-        dPhid = dPhidquat * dquatd;
-      else
-
-      end
-    end
   otherwise
     error('rotationType not recognized')
 end
@@ -202,6 +170,24 @@ end
 
 % compute Jdot times v
 if compute_Jdot_times_v
+  if compute_gradient
+    [twist, dtwist] = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+    [J_geometric_dot_v, dJ_geometric_dot_v] = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+  else
+    twist = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+    J_geometric_dot_v = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+  end
+  
+  omega = twist(1 : 3);
+  qidot = Phi * omega;
+  Phid = reshape(dPhidqi * qidot, size(Phi));
+  
+  if compute_gradient
+    domega = dtwist(1:3, :);
+    dqidot = Phi * domega + matGradMult(dPhi, omega);
+    dPhid = dPhidqi * dqidot + matGradMult(ddPhidqidq, qidot);
+  end
+
   omega = twist(1 : 3);
   v_twist = twist(4 : 6);
   Jrotdot_times_v = Phid * omega + Phi * J_geometric_dot_v(1 : 3);
