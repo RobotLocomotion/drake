@@ -53,7 +53,9 @@ classdef Manipulator < DrakeSystem
         
         [VqInv,dVqInv] = vToqdot(obj,q);
         xdot = [VqInv*v;vdot];
-        dxdot = [zeros(obj.num_positions,1),dVqInv*v,VqInv,zeros(obj.num_positions,obj.num_u);dvdot];
+        dxdot = [...
+          zeros(obj.num_positions,1), matGradMult(dVqInv, v), VqInv, zeros(obj.num_positions,obj.num_u);
+          dvdot];
       else
         [H,C,B] = manipulatorDynamics(obj,q,v);
         Hinv = inv(H);
