@@ -1,4 +1,6 @@
 function plan = footstepMISOCP(biped, seed_plan, weights, goal_pos)
+% New, experimental footstep planner based on a Mixed-Integer Second-Order Cone Program.
+% This planner allows footstep rotation with a piecewise approximation of sine and cosine.
 
 checkDependency('yalmip');
 checkDependency('gurobi');
@@ -105,7 +107,7 @@ for j = 3:nsteps
                                   sum(sin_sector(k-1:k,j)) >= sin_sector(k,j-1)];
     end
   end
-  
+
   % Enforce relative step reachability
   for k = 1:size(rel_foci, 2)
     Constraints = [Constraints, ...
@@ -113,7 +115,7 @@ for j = 3:nsteps
 %       cone(x(1:3,j) - x(1:3,j-1) .* xyz_ellipse_weights, 1),...
       abs(x(3,j) - x(3,j-1)) <= seed_plan.params.nom_upward_step,...
       ];
-    
+
   end
 
 end
