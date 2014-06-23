@@ -50,6 +50,12 @@ classdef Biped < LeggedRobot
         warning('Drake:Biped:BadNominalStepWidth', 'Nominal step width should be greater than min step width');
         params.min_step_width = params.nom_step_width * 0.99;
       end
+      if params.nom_upward_step <= 0
+        params.nom_upward_step = 0.01;
+      end
+      if params.nom_downward_step <= 0
+        params.nom_downward_step = 0.01;
+      end
 
       [Axy, bxy] = poly2lincon([0, params.max_forward_step, 0, -params.max_forward_step],...
                                [params.min_step_width, params.nom_step_width, params.max_step_width, params.nom_step_width]);

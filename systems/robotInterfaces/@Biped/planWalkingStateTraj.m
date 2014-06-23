@@ -29,39 +29,24 @@ cost = double(cost);
 ikoptions = IKoptions(obj);
 ikoptions = ikoptions.setQ(diag(cost(1:obj.getNumDOF)));
 
-% Mex constraints don't support Drake Frames attached to URDFs, so we need to look up each frame's parent body and associated transform. We'll do this once now for efficiency's sake.
-parent_bodies = containers.Map('KeyType', 'int32', 'ValueType', 'int32');
-parent_T = containers.Map('KeyType', 'int32', 'ValueType', 'any');
-body_ids = walking_plan_data.bodytraj.keys();
-for j = 1:length(body_ids)
-  if body_ids{j} < 0
-    % Then this is a frame ID, so we should find its parent body and transform
-    body_ind = obj.getFrame(body_ids{j}).body_ind;
-    T = inv(obj.getFrame(body_ids{j}).T);
-    parent_bodies(body_ids{j}) = body_ind;
-    parent_T(body_ids{j}) = T;
-  else
-    parent_bodies(body_ids{j}) = body_ids{j};
-    parent_T(body_ids{j}) = eye(4);
-  end
-end
-
 htraj = [];
 full_IK_calls = 0;
 for i=1:length(ts)
   t = ts(i);
   if (i>1)
     ik_args = {};
-    body_ids = walking_plan_data.bodytraj.keys();
-    for j = 1:length(body_ids)
-      body_ind = parent_bodies(body_ids{j});
-      xyzrpy = walking_plan_data.bodytraj(body_ids{j}).eval(t);
-      T = parent_T(body_ids{j});
-      xyz1 = T * [xyzrpy(1:3); 1];
-      rpy = rotmat2rpy(rpy2rotmat(xyzrpy(4:6)) * T(1:3,1:3));
+    for j = 1:length(walking_plan_data.link_constraints)
+      body_ind = walking_plan_data.link_constraints(j).link_ndx;
+      if ~isempty(walking_plan_data.link_constraints(j).traj)
+        min_pos = walking_plan_data.link_constraints(j).traj.eval(t);
+        max_pos = min_pos;
+      else
+        min_pos = walking_plan_data.link_constraints(j).min_traj.eval(t);
+        max_pos = walking_plan_data.link_constraints(j).max_traj.eval(t);
+      end
       ik_args = [ik_args,{constructRigidBodyConstraint(RigidBodyConstraint.WorldPositionConstraintType,true,...
-          obj,body_ind, [0;0;0],xyz1(1:3),xyz1(1:3)),...
-          constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,true,obj,body_ind,rpy,rpy)}];
+          obj,body_ind, [0;0;0],min_pos(1:3),max_pos(1:3)),...
+          constructRigidBodyConstraint(RigidBodyConstraint.WorldEulerConstraintType,true,obj,body_ind,min_pos(4:6),max_pos(4:6))}];
     end
     kc_com = constructRigidBodyConstraint(RigidBodyConstraint.WorldCoMConstraintType,true,obj.getMexModelPtr,[walking_plan_data.comtraj.eval(t);nan],[walking_plan_data.comtraj.eval(t);nan]);
     [q(:,i),info] = approximateIKmex(obj.getMexModelPtr,q(:,i-1),qstar,kc_com,ik_args{:},ikoptions.mex_ptr);
@@ -86,4 +71,7 @@ x = zeros(getNumStates(obj),length(ts));
 x(1:getNumDOF(obj),:) = q;
 xtraj = PPTrajectory(spline(ts, x));
 xtraj = xtraj.setOutputFrame(obj.getStateFrame());
+
+end
+
 

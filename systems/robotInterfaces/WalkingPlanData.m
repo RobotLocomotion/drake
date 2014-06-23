@@ -3,7 +3,7 @@ classdef WalkingPlanData
     x0
     support_times
     supports
-    bodytraj
+    link_constraints
     zmptraj
     V
     c
@@ -12,16 +12,26 @@ classdef WalkingPlanData
   end
 
   methods
-    function obj = WalkingPlanData(x0, support_times, supports, bodytraj, zmptraj, V, c, comtraj, mu)
+    function obj = WalkingPlanData(x0, support_times, supports, link_constraints, zmptraj, V, c, comtraj, mu)
       obj.x0 = x0;
       obj.support_times = support_times;
       obj.supports = supports;
-      obj.bodytraj = bodytraj;
+
+      
+      obj.link_constraints = link_constraints;
+
       obj.zmptraj = zmptraj;
       obj.V = V;
       obj.c = c;
       obj.comtraj = comtraj;
       obj.mu = mu;
+    end
+
+    function obj = fix_link(obj, biped, kinsol, link, pt, tolerance_xyz, tolerance_rpy)
+      pos = biped.forwardKin(kinsol, link, pt, 1);
+      pos_min = pos - [tolerance_xyz; tolerance_rpy];
+      pos_max = pos + [tolerance_xyz; tolerance_rpy];
+      obj.link_constraints(end+1) = struct('link_ndx', link, 'pt', pt, 'min_traj', ConstantTrajectory(pos_min), 'max_traj', ConstantTrajectory(pos_max));
     end
 
     function draw_lcmgl(obj, lcmgl)
@@ -40,9 +50,14 @@ classdef WalkingPlanData
         lcmgl.glEnd();
       end
 
-      keys = obj.bodytraj.keys();
-      plot_traj_foh(obj.bodytraj(keys{1}), [0.8, 0.8, 0.2]);
-      plot_traj_foh(obj.bodytraj(keys{2}), [0.2, 0.8, 0.8]);
+      for j = 1:length(obj.link_constraints)
+        if ~isempty(obj.link_constraints(j).traj)
+          plot_traj_foh(obj.link_constraints(j).traj, [0.8, 0.8, 0.2]);
+        else
+          plot_traj_foh(obj.link_constraints(j).traj_min, [0.8, 0.8, 0.2]);
+          plot_traj_foh(obj.link_constraints(j).traj_max, [0.2, 0.8, 0.8]);
+        end
+      end
       plot_traj_foh(obj.comtraj, [0,1,0]);
       plot_traj_foh(obj.zmptraj, [0,0,1]);
 

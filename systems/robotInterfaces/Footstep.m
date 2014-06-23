@@ -28,7 +28,7 @@ classdef Footstep
       pos = zeros(6,1);
       xyz1 = T * [obj.pos(1:3);1];
       pos(1:3) = xyz1(1:3);
-      pos(4:6) = rotmat2rpy(T(1:3,1:3) * rpy2rotmat(obj.pos(4:6)));
+      pos(4:6) = rotmat2rpy(rpy2rotmat(obj.pos(4:6)) * T(1:3,1:3));
       msg.pos = encodePosition3d(pos);
       msg.id = obj.id;
       if obj.frame_id == biped.foot_frame_id.right
@@ -68,7 +68,7 @@ classdef Footstep
       pos = zeros(6,1);
       xyz1 = T * [msg_pos(1:3);1];
       pos(1:3) = xyz1(1:3);
-      pos(4:6) = rotmat2rpy(T(1:3,1:3) * rpy2rotmat(msg_pos(4:6)));
+      pos(4:6) = rotmat2rpy(rpy2rotmat(msg_pos(4:6)) * T(1:3,1:3));
       is_in_contact = msg.is_in_contact;
       pos_fixed = [msg.fixed_x;
                    msg.fixed_y;
