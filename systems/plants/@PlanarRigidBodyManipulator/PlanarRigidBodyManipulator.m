@@ -178,15 +178,15 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
   end
   
   methods (Access=protected)
-    function [phi,dphi,ddphi] = loopConstraintsV(obj,q,v)
+    function [phi,J,Jdot_times_v] = loopConstraintsV(obj,q,v)
       % handle kinematic loops
       if nargout>2
-        [phi,dphi,ddphi] = loopConstraintsV@RigidBodyManipulator(obj,q,v);
-        dphi = obj.T_2D_to_3D'*dphi;
-        ddphi = obj.T_2D_to_3D'*ddphi;
+        [phi,J,Jdot_times_v] = loopConstraintsV@RigidBodyManipulator(obj,q,v);
+        J = obj.T_2D_to_3D'*J;
+        Jdot_times_v = obj.T_2D_to_3D'*Jdot_times_v;
       elseif nargout>1
-        [phi,dphi] = loopConstraintsV@RigidBodyManipulator(obj,q,v);
-        dphi = obj.T_2D_to_3D'*dphi;
+        [phi,J] = loopConstraintsV@RigidBodyManipulator(obj,q,v);
+        J = obj.T_2D_to_3D'*J;
       else
         phi = loopConstraintsV@RigidBodyManipulator(obj,q,v);
       end

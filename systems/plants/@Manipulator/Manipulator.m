@@ -198,9 +198,9 @@ classdef Manipulator < DrakeSystem
     function [phi,Jv,Jvdot_times_v] = positionConstraintsV(obj,q,v)
       [phi,J,dJ] = geval(@obj.positionConstraints,q);
       A = vToqdot(q);
-      qd = vToqdot(q)*v;
+      qd = A*v;
       Jv = J*A;
-      Jv_times_v = dJ*reshape(qd*qd',obj.num_q^2,1);
+      Jvdot_times_v = dJ*reshape(qd*qd',obj.num_q^2,1);
     end
     
     function psi = velocityConstraints(obj,q,v)

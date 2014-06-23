@@ -1,4 +1,6 @@
 function [Jdot_times_v, dJdot_times_v] = forwardJacDotTimesV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind)
+if (nargin<6), base_or_frame_ind=1; end
+if (nargin<5), rotation_type=0; end
 compute_gradient = nargout > 1;
 
 % BEGIN REPEATED COMPUTATION FROM FORWARDKINV

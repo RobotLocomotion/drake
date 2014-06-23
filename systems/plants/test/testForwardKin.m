@@ -49,7 +49,6 @@ for test_number = 1 : n_tests
   [~, J_geval, dJ_geval] = geval(1, @(q) robot.forwardKin(robot.doKinematics(q,false,false), end_effector, points, rotation_type), q, option);
   valuecheck(J_geval, J, epsilon);
   valuecheck(dJ_geval, dJ, epsilon);
-  disp(test_number)
 end
 
 end
