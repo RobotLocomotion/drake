@@ -1,6 +1,16 @@
 classdef NonlinearProgramWConstraintObjects < NonlinearProgram
   % The constraint of this nonlinear program is specified using 'Constraint' class in
   % drake
+  %
+  % Generally speaking, this class manages the association between
+  % DifferentiableConstraint objects and NonlinearPrograms. With the goal
+  % of improved performance by avoiding redundant calculations, the
+  % DifferentiableConstraint eval function is assumed to be of the form
+  % eval(args{:},data{:}) where args are the standard, numerical valued
+  % arguments that are a subset of the NLP decision variables. data is a
+  % reference to shared data objects that are pre-computed once per
+  % iteration and can be shared between Constraint objects. See
+  % addSharedDataFunction() for more details
   
   properties(SetAccess = protected)
     cin_name % A cell array of strings. cin_name{i} is the name of i'th nonlinear inequality constraint
