@@ -157,8 +157,8 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
                                       'nom_step_width', 0.26,...% m
                                       'max_outward_angle', pi/8,... % rad
                                       'max_inward_angle', 0.01,... % rad
-                                      'max_upward_step', 0.2,... % m
-                                      'max_downward_step', 0.2,...% m
+                                      'nom_upward_step', 0.2,... % m
+                                      'nom_downward_step', 0.2,...% m
                                       'max_num_steps', 10,...
                                       'min_num_steps', 1);
     default_walking_params = struct('step_speed', 0.5,... % speed of the swing foot (m/s)
