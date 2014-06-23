@@ -1,4 +1,4 @@
-classdef CubicPostureError < NonlinearConstraint
+classdef CubicPostureError < DifferentiableConstraint
   % approximate the posture as a cubic spline, and penalize the cost
   % sum_i (q(:,i)-q_nom(:,i))'*Q*(q(:,i)-q_nom(:,i))+
   % sum_i qdot(:,i)'*Qv*qdot(:,i) +
@@ -37,7 +37,7 @@ classdef CubicPostureError < NonlinearConstraint
   methods
     function obj = CubicPostureError(t,Q,q_nom,Qv,Qa)
       t = unique(t(:))';
-      obj = obj@NonlinearConstraint(-inf,inf,size(q_nom,1)*(length(t)+2));
+      obj = obj@DifferentiableConstraint(-inf,inf,size(q_nom,1)*(length(t)+2));
       if(~isnumeric(t))
         error('Drake:CubicPostureError:t should be numeric');
       end
@@ -101,7 +101,19 @@ classdef CubicPostureError < NonlinearConstraint
       obj.accel_mat_qdf = accel_mat2(:,end-obj.nq+1:end)+accel_mat2(:,obj.nq+1:obj.nq*(obj.nT-1))*obj.velocity_mat_qdf;
     end
     
-    function [c,dc] = eval(obj,x)
+    function [q,qdot,qddot] = cubicSpline(obj,x)
+      % return the cubic spline at knot point
+      q = x(1:obj.nq*obj.nT);
+      qdot0 = x(obj.nq*obj.nT+(1:obj.nq));
+      qdotf = x(obj.nq*obj.nT+obj.nq+(1:obj.nq));
+      qdot = [qdot0 reshape(obj.velocity_mat*q+obj.velocity_mat_qd0*qdot0+obj.velocity_mat_qdf*qdotf,obj.nq,obj.nT-2) qdotf];
+      qddot = reshape(obj.accel_mat*q+obj.accel_mat_qd0*qdot0+obj.accel_mat_qdf*qdotf,obj.nq,obj.nT);
+      q = reshape(q,obj.nq,obj.nT);
+    end
+  end
+
+  methods (Access = protected)
+    function [c,dc] = constraintEval(obj,x)
       % @param x    -- A double array of size nq*(nT+2). x =
       % [q(:,1);q(:,2);...;q(:,nT);qdot(:,1);qdot(:,nT)]
       q = x(1:obj.nq*obj.nT);
@@ -119,16 +131,6 @@ classdef CubicPostureError < NonlinearConstraint
       dc(1:obj.nq*obj.nT) = reshape(2*Qqerr,1,[])+reshape(2*Qqdot(:,2:obj.nT-1),1,[])*obj.velocity_mat+reshape(2*Qqddot,1,[])*obj.accel_mat;
       dc(obj.nq*obj.nT+(1:obj.nq)) = reshape(2*Qqdot(:,2:obj.nT-1),1,[])*obj.velocity_mat_qd0+reshape(2*Qqdot(:,1),1,[])+reshape(2*Qqddot,1,[])*obj.accel_mat_qd0;
       dc(obj.nq*obj.nT+obj.nq+(1:obj.nq)) = reshape(2*Qqdot(:,2:obj.nT-1),1,[])*obj.velocity_mat_qdf+reshape(2*Qqdot(:,obj.nT),1,[])+reshape(2*Qqddot,1,[])*obj.accel_mat_qdf;
-    end
-    
-    function [q,qdot,qddot] = cubicSpline(obj,x)
-      % return the cubic spline at knot point
-      q = x(1:obj.nq*obj.nT);
-      qdot0 = x(obj.nq*obj.nT+(1:obj.nq));
-      qdotf = x(obj.nq*obj.nT+obj.nq+(1:obj.nq));
-      qdot = [qdot0 reshape(obj.velocity_mat*q+obj.velocity_mat_qd0*qdot0+obj.velocity_mat_qdf*qdotf,obj.nq,obj.nT-2) qdotf];
-      qddot = reshape(obj.accel_mat*q+obj.accel_mat_qd0*qdot0+obj.accel_mat_qdf*qdotf,obj.nq,obj.nT);
-      q = reshape(q,obj.nq,obj.nT);
     end
   end
 end
