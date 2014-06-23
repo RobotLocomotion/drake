@@ -85,10 +85,10 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       control_limit = BoundingBoxConstraint(repmat(plant.umin,N,1),repmat(plant.umax,N,1));
       obj = obj.addConstraint(control_limit,obj.u_inds(:));
       
-      % add joint limits as bounding box constraints
-      [joint_lb,joint_ub] = plant.getJointLimits();
-      joint_limit = BoundingBoxConstraint(repmat(joint_lb,N,1),repmat(joint_ub,N,1));
-      obj = obj.addConstraint(joint_limit,reshape(obj.x_inds(1:plant.getNumPositions,:),[],1));
+      % add state limits as bounding box constraints
+      [state_lb,state_ub] = plant.getStateLimits();
+      state_limit = BoundingBoxConstraint(repmat(state_lb,N,1),repmat(state_ub,N,1));
+      obj = obj.addConstraint(state_limit,obj.x_inds(:));
     end
     
     function obj = addStateConstraint(obj,constraint,time_index)
@@ -184,9 +184,21 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       obj = obj.addCost(initial_cost,obj.x_inds(:,1));
     end
     
-    function obj = addFinalCost(obj,final_cost)
-      % adds a cost to the final state and total time f(T,xf);
-      obj = obj.addCost(final_cost,{obj.h_inds;obj.x_inds(:,end)});
+    function obj = addFinalCost(obj,final_cost_function)
+      % adds a cost to the final state and total time
+      % @param final_cost_function a function handle f(T,xf)
+      nX = obj.plant.getNumStates();
+      nH = obj.N-1;
+      cost = FunctionHandleObjective(nH+nX,@(h,x) obj.final_cost(final_cost_function,h,x));
+      obj = obj.addCost(cost,{obj.h_inds;obj.x_inds(:,end)});
+    end
+  end
+  
+  methods(Access=protected)
+    function [f,df] = final_cost(obj,final_cost_function,h,x)
+      T = sum(h);
+      [f,dg] = final_cost_function(T,x);
+      df = [repmat(dg(:,1),1,length(h)) dg(:,2:end)];
     end
   end
   
