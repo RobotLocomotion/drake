@@ -355,6 +355,14 @@ classdef Manipulator < SecondOrderSystem
       jl_min = obj.joint_limit_min;
       jl_max = obj.joint_limit_max;
     end
+    
+    function [lb,ub] = getStateLimits(obj)
+      % Returns lower and upper state vectors. Uses joint limits for
+      % positions and +/-inf for velocities
+      [jl_min, jl_max] = getJointLimits(obj);
+      lb = [jl_min; -inf(obj.getNumVelocities,1)];
+      ub = [jl_max; inf(obj.getNumVelocities,1)];
+    end
   end  
   
   properties (SetAccess = protected, GetAccess = public)
