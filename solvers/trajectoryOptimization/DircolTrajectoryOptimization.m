@@ -29,7 +29,7 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       
       
       n_vars = 2*nX + 2*nU + 1;
-      cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.constraint_fun);
+      cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.constraint_fun);
       
       % create shared data functions to calculate dynamics at the knot
       % points
@@ -42,7 +42,7 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
         dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1)};
         constraints{i} = cnstr;
         
-        obj = obj.addNonlinearConstraint(constraints{i}, dyn_inds{i},[shared_data_index+i;shared_data_index+i+1]);
+        obj = obj.addConstraint(constraints{i}, dyn_inds{i},[shared_data_index+i;shared_data_index+i+1]);
       end
     end
     
@@ -83,24 +83,24 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       [data.xdot,data.dxdot] = obj.plant.dynamics(0,x,u);
     end
     
-    function obj = addRunningCost(obj,running_cost)
-      % Adds the running cost term
+    function obj = addRunningCost(obj,running_cost_function)
+      % Adds an integrated cost to all time steps, which is
+      % numerical implementation specific (thus abstract)
+      % this cost is assumed to be time-invariant
+      % @param running_cost_function a function handle
       % This implementation assumes a ZOH, but where the values of
       % x(i),u(i) are held over an interval spanned by .5(h(i-1) + h(i))
+      
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
       
-      running_handle = running_cost.eval_handle;
-      
-      running_cost_end = NonlinearConstraint(running_cost.lb,running_cost.ub,1+nX+nU,@(h,x,u) obj.running_fun_end(running_handle,h,x,u));
-      running_cost_mid = NonlinearConstraint(running_cost.lb,running_cost.ub,2+nX+nU,@(h0,h1,x,u) obj.running_fun_mid(running_handle,h0,h1,x,u));
+      running_cost_end = FunctionHandleObjective(1+nX+nU,@(h,x,u) obj.running_fun_end(running_cost_function,h,x,u));
+      running_cost_mid = FunctionHandleObjective(2+nX+nU,@(h0,h1,x,u) obj.running_fun_mid(running_cost_function,h0,h1,x,u));
       
       obj = obj.addCost(running_cost_end,{obj.h_inds(1);obj.x_inds(:,1);obj.u_inds(:,1)});
       
-      if ~isempty(running_cost)
-        for i=2:obj.N-1,
-          obj = obj.addCost(running_cost_mid,{obj.h_inds(i-1);obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)});
-        end
+      for i=2:obj.N-1,
+        obj = obj.addCost(running_cost_mid,{obj.h_inds(i-1);obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)});
       end
       
       obj = obj.addCost(running_cost_end,{obj.h_inds(end);obj.x_inds(:,end);obj.u_inds(:,end)});
@@ -119,13 +119,13 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
   end
   
   methods (Access = protected)
-    function [f,df] = running_fun_end(obj, running_handle,h,x,u)
+    function [f,df] = running_fun_end(obj,running_handle,h,x,u)
       [f,dg] = running_handle(.5*h,x,u);
       
       df = [.5*dg(:,1) dg(:,2:end)];
     end
     
-    function [f,df] = running_fun_mid(obj, running_handle,h0,h1,x,u)
+    function [f,df] = running_fun_mid(obj,running_handle,h0,h1,x,u)
       [f,dg] = running_handle(.5*(h0+h1),x,u);
       
       df = [.5*dg(:,1) .5*dg(:,1) dg(:,2:end)];

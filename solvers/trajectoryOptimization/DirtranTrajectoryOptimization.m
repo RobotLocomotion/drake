@@ -3,7 +3,7 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
   %  implements multiple possible integration schemes for the dynamics
   %  constraints \dot x = f(x,u) and for for integrating the running cost
   %  term.
-  %  
+  %
   %  For forward euler integratino:
   %    dynamics constraints are: x(k+1) = x(k) + h(k)*f(x(k),u(k))
   %    integrated cost is sum of g(h(k),x(k),u(k))
@@ -12,7 +12,7 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
   %    integrated cost is sum of g(h(k),x(k+1),u(k))
   %  For midpoint integration:
   %    dynamics constraints are: x(k+1) = x(k) + h(k)*f(.5*x(k)+.5*x(k+1),.5*u(k)+.5*u(k+1))
-  %    integrated cost is sum of g(h(k),.5*x(k)+.5*x(k+1),.5*u(k)+.5*u(k+1))  
+  %    integrated cost is sum of g(h(k),.5*x(k)+.5*x(k+1),.5*u(k)+.5*u(k+1))
   properties (Constant)
     FORWARD_EULER = 1;
     BACKWARD_EULER = 2;
@@ -25,7 +25,7 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
         options = struct();
       end
       if ~isfield(options,'integration_method')
-        options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;  
+        options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
       end
       
       obj = obj@DirectTrajectoryOptimization(plant,N,T_span,options);
@@ -42,13 +42,13 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
       switch obj.options.integration_method
         case DirtranTrajectoryOptimization.FORWARD_EULER
           n_vars = 2*nX + nU + 1;
-          cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.forward_constraint_fun);
+          cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.forward_constraint_fun);
         case DirtranTrajectoryOptimization.BACKWARD_EULER
           n_vars = 2*nX + nU + 1;
-          cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.backward_constraint_fun);
+          cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.backward_constraint_fun);
         case DirtranTrajectoryOptimization.MIDPOINT
           n_vars = 2*nX + 2*nU + 1;
-          cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.midpoint_constraint_fun);
+          cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.midpoint_constraint_fun);
         otherwise
           error('Drake:DirtranTrajectoryOptimization:InvalidArgument','Unknown integration method');
       end
@@ -66,33 +66,38 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
         end
         constraints{i} = cnstr;
         
-        obj = obj.addNonlinearConstraint(constraints{i}, dyn_inds{i});
-      end      
+        obj = obj.addConstraint(constraints{i}, dyn_inds{i});
+      end
     end
     
-    function obj = addRunningCost(obj,running_cost)
-      % Setup (if necessary)
-      switch obj.options.integration_method
-        case DirtranTrajectoryOptimization.MIDPOINT
-          nX = obj.plant.getNumStates();
-          nU = obj.plant.getNumInputs();          
-          running_handle = running_cost.eval_handle;
-          running_cost_midpoint = NonlinearConstraint(running_cost.lb,running_cost.ub,1+2*nX+2*nU,@(h,x0,x1,u0,u1) obj.midpoint_running_fun(running_handle,h,x0,x1,u0,u1));
-      end
+    function obj = addRunningCost(obj,running_cost_function)
+      % Adds an integrated cost to all time steps, which is
+      % numerical implementation specific (thus abstract)
+      % this cost is assumed to be time-invariant
+      % @param running_cost_function a function handle
+      
+      nX = obj.plant.getNumStates();
+      nU = obj.plant.getNumInputs();
       
       for i=1:obj.N-1,
         switch obj.options.integration_method
           case DirtranTrajectoryOptimization.FORWARD_EULER
-            obj = obj.addCost(running_cost,{obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)});
+            running_cost = FunctionHandleObjective(1+nX+nU, running_cost_function);
+            inds_i = {obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)};
           case DirtranTrajectoryOptimization.BACKWARD_EULER
-            obj = obj.addCost(running_cost,{obj.h_inds(i);obj.x_inds(:,i+1);obj.u_inds(:,i)});
+            running_cost = FunctionHandleObjective(1+nX+nU, running_cost_function);
+            inds_i = {obj.h_inds(i);obj.x_inds(:,i+1);obj.u_inds(:,i)};
           case DirtranTrajectoryOptimization.MIDPOINT
-            obj = obj.addCost(running_cost_midpoint,{obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1)});
+            running_cost = FunctionHandleObjective(1+2*nX+2*nU,...
+              @(h,x0,x1,u0,u1) obj.midpoint_running_fun(running_cost_function,h,x0,x1,u0,u1));
+            inds_i = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1)};
           otherwise
             error('Drake:DirtranTrajectoryOptimization:InvalidArgument','Unknown integration method');
         end
+        
+        obj = obj.addCost(running_cost,inds_i);
       end
-    end    
+    end
   end
   
   methods (Access=protected)

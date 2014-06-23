@@ -7,8 +7,7 @@ N = 21;
 T = 6;
 T0 = 4;
 
-final_cost = NonlinearObjective(N+3,@final_cost_fun);
-running_cost = NonlinearObjective(6,@running_cost_fun);
+final_cost = FunctionHandleObjective(N+3,@final_cost_fun);
 
 x0 = zeros(4,1);
 xf = [pi;0;0;0];
@@ -32,9 +31,10 @@ options = struct();
 % traj_opt = DirtranTrajectoryOptimization(p,N,T_span,options);
 traj_opt = DircolTrajectoryOptimization(p,N,T_span,struct());
 % traj_opt = traj_opt.setCheckGrad(true);
-% snprint('snopt.out');
+snprint('snopt.out');
+snsummary('snsummary.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',200);
-traj_opt = traj_opt.addRunningCost(running_cost);
+traj_opt = traj_opt.addRunningCost(@running_cost_fun);
 traj_opt = traj_opt.addFinalCost(final_cost);
 traj_opt = traj_opt.addStateConstraint(ConstantConstraint(x0),1);
 traj_opt = traj_opt.addStateConstraint(ConstantConstraint(xf),N);
@@ -43,10 +43,6 @@ traj_opt = traj_opt.addStateConstraint(ConstantConstraint(xf),N);
 tic
 [xtraj,utraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
 toc
-
-
-v = p.constructVisualizer();
-v.playback(xtraj);
 
 % keyboard
 end

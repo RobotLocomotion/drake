@@ -52,6 +52,9 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       if ~isfield(options,'time_option')
         options.time_option = 1;
       end
+      if ~plant.isTI
+        error('Drake:DirectTrajectoryOptimization:UnsupportedPlant','Only time-invariant plants are currently supported');
+      end
       
       %todo: replace getVarInfo with setupVarInfo
       % initialize with 0 variables and then add them
@@ -67,11 +70,11 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
         case 1 % all timesteps are constant
           A_time = [ones(1,N-1);[eye(N-2) zeros(N-2,1)] - [zeros(N-2,1) eye(N-2)]];
           time_constraint = LinearConstraint([T_span(1);zeros(N-2,1)],[T_span(2);zeros(N-2,1)],A_time);
-          obj = obj.addLinearConstraint(time_constraint,obj.h_inds);
+          obj = obj.addConstraint(time_constraint,obj.h_inds);
         case 2 % all timesteps independent
           A_time = ones(1,N-1);
           time_constraint = LinearConstraint(T_span(1),T_span(2),A_time);
-          obj = obj.addLinearConstraint(time_constraint,obj.h_inds);
+          obj = obj.addConstraint(time_constraint,obj.h_inds);
       end
       
       
@@ -80,18 +83,18 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       
       % add control inputs as bounding box constraints
       control_limit = BoundingBoxConstraint(repmat(plant.umin,N,1),repmat(plant.umax,N,1));
-      obj = obj.addBoundingBoxConstraint(control_limit,obj.u_inds(:));
+      obj = obj.addConstraint(control_limit,obj.u_inds(:));
       
       % add joint limits as bounding box constraints
       [joint_lb,joint_ub] = plant.getJointLimits();
       joint_limit = BoundingBoxConstraint(repmat(joint_lb,N,1),repmat(joint_ub,N,1));
-      obj = obj.addBoundingBoxConstraint(joint_limit,reshape(obj.x_inds(1:plant.getNumPositions,:),[],1));
+      obj = obj.addConstraint(joint_limit,reshape(obj.x_inds(1:plant.getNumPositions,:),[],1));
     end
     
-    function obj = addManagedStateConstraint(obj,constraint,time_index)
-      % Add a linear constraint that is a function of the state at the
-      % specified time or times.
-      % @param constraint  a ConstraintManager
+    function obj = addStateConstraint(obj,constraint,time_index)
+      % Add constraint (or composite constraint that is a function of the 
+      % state at the specified time or times.
+      % @param constraint  a CompositeConstraint
       % @param time_index   a cell array of time indices
       %   ex1., time_index = {1, 2, 3} means the constraint is applied
       %   individually to knot points 1, 2, and 3
@@ -109,74 +112,9 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
         obj.constraints{end}.var_inds = cstr_inds;
         obj.constraints{end}.time_index = time_index;
         
-        obj = obj.addManagedConstraints(constraint,cstr_inds);
-      end
-    end
-    
-    function obj = addLinearStateConstraint(obj,constraint,time_index)
-      % Add a linear constraint that is a function of the state at the
-      % specified time or times.
-      % @param constraint  a LinearConstraint
-      % @param time_index   a cell array of time indices
-      %   ex1., time_index = {1, 2, 3} means the constraint is applied
-      %   individually to knot points 1, 2, and 3
-      %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
-      %   points 1 and 2 together (taking the combined state as an argument)
-      %   and 3 and 4 together.
-      obj = obj.addManagedStateConstraint(ConstraintManager(constraint),time_index);
-    end
-    
-    function obj = addNonlinearStateConstraint(obj,constraint,time_index)
-      % Add a nonlinear constraint that is a function of the state at the
-      % specified time or times.
-      % @param constraint  a NonlinearConstraint
-      % @param time_index   a cell array of time indices
-      %   ex1., time_index = {1, 2, 3} means the constraint is applied
-      %   individually to knot points 1, 2, and 3
-      %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
-      %   points 1 and 2 together (taking the combined state as an argument)
-      %   and 3 and 4 together.
-      obj = obj.addManagedStateConstraint(ConstraintManager([],constraint),time_index);
-    end
-    
-    function obj = addBoundingBoxStateConstraint(obj,constraint,time_index)
-      % Add a boundingbox constraint that is a function of the state at the
-      % specified time or times.
-      % @param constraint  a BoundingBoxConstraint
-      % @param time_index   a cell array of time indices
-      %   ex1., time_index = {1, 2, 3} means the constraint is applied
-      %   individually to knot points 1, 2, and 3
-      %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
-      %   points 1 and 2 together (taking the combined state as an argument)
-      %   and 3 and 4 together.
-      %
-      obj = obj.addManagedStateConstraint(ConstraintManager([],[],constraint),time_index);
-    end
-    
-    function obj = addStateConstraint(obj,constraint,time_index)
-      % Add a constraint that is a function of the state at the
-      % specified time or times.
-      % @param constraint  a NonlinearConstraint or ConstraintManager object
-      % @param time_index   a cell array of time indices
-      %   ex1., time_index = {1, 2, 3} means the constraint is applied
-      %   individually to knot points 1, 2, and 3
-      %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
-      %   points 1 and 2 together (taking the combined state as an argument)
-      %   and 3 and 4 together.
-      %
-      
-      if isa(constraint,'BoundingBoxConstraint')
-        obj = addBoundingBoxStateConstraint(obj,constraint,time_index);
-      elseif isa(constraint,'LinearConstraint')
-        obj = addLinearStateConstraint(obj,constraint,time_index);
-      elseif isa(constrain,'NonlinearConstraint')
-        obj = addNonlinearStateConstraint(obj,constraint,time_index);
-      elseif isa(constraint,'ConstraintManager')
-        obj = addManagedStateConstraint(obj,ConstraintManager,time_index);
-      else
-        error('Drake:DirectTrajectoryOptimization:UnsupportedStateConstraint','Unsupported state constraint type');
-      end
-    end
+        obj = obj.addConstraint(constraint,cstr_inds);
+      end      
+    end    
     
     % Solve the nonlinear program and return resulting trajectory
     function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
@@ -253,9 +191,12 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
   end
   
   methods(Abstract)
-    % Adds an integrated cost, f(h,x,u) to all time steps, which is
+    % Adds an integrated cost to all time steps, which is
     % numerical implementation specific (thus abstract)
-    obj = addRunningCost(obj,running_cost);
+    % this cost is assumed to be time-invariant
+    % @param running_cost_function a function handle
+    obj = addRunningCost(obj,running_cost_function);
+ 
     
     obj = addDynamicConstraints(obj);
   end
