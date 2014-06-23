@@ -16,8 +16,8 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
   end
   
   methods
-    function obj = DircolTrajectoryOptimization(plant,N,T_span,varargin)
-      obj = obj@DirectTrajectoryOptimization(plant,N,T_span,varargin{:});
+    function obj = DircolTrajectoryOptimization(plant,N,duration,varargin)
+      obj = obj@DirectTrajectoryOptimization(plant,N,duration,varargin{:});
     end
     
     function obj = addDynamicConstraints(obj)
