@@ -29,17 +29,14 @@ compute_gradient = nargout > 2;
 if (nargin<6), base_ind=1; end
 if (nargin<5), rotation_type=0; end
 
-
 if compute_jacobian
   if compute_gradient
-    [x, Jv, ~, dJv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
+    [x, Jv, dJv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
+    dJ = matGradMultMat(Jv, kinsol.qdotToV, dJv, kinsol.dqdotToVdq);
   else
     [x, Jv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
   end
   J = Jv * kinsol.qdotToV;
-  if compute_gradient
-    dJ = matGradMultMat(Jv, kinsol.qdotToV, dJv, kinsol.dqdotToVdq);
-  end
 else
   x = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
 end

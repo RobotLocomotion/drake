@@ -1,10 +1,8 @@
-function [x,J,Jdot_times_v,dJ,dJdot_times_v] = forwardKinV(obj,kinsol,body_ind,pts,rotation_type,base_ind)
-%
-% see RigidBodyManipulator/fowardKinV
+function [x,J,dJ] = forwardKinV(obj,kinsol,body_ind,pts,rotation_type,base_ind)
+% see RigidBodyManipulator/forwardKinV
 
 compute_jacobian = nargout > 1;
-compute_Jdot_times_v = nargout > 2;
-compute_gradients = nargout > 3;
+compute_gradient = nargout > 2;
 
 if nargin<6, base_ind = 1; end
 if nargin<5, rotation_type = 0; end
@@ -20,10 +18,8 @@ if (n==2)
   end
 end
 
-if compute_gradients
-  [x,J,Jdot_times_v,dJ,dJdot_times_v] = forwardKinV@RigidBodyManipulator(obj,kinsol,body_ind,pts,rotation_type,base_ind);
-elseif compute_Jdot_times_v
-  [x,J,Jdot_times_v] = forwardKinV@RigidBodyManipulator(obj,kinsol,body_ind,pts,rotation_type,base_ind);
+if compute_gradient
+  [x,J,dJ] = forwardKinV@RigidBodyManipulator(obj,kinsol,body_ind,pts,rotation_type,base_ind);
 elseif compute_jacobian
   [x,J] = forwardKinV@RigidBodyManipulator(obj,kinsol,body_ind,pts,rotation_type,base_ind);
 else
@@ -35,10 +31,7 @@ if (n==2)
   if (compute_jacobian)
     nv = size(J,2);
     J = reshape(T_3D_to_2D * reshape(J,3,m*nv),2*m,nv);
-    if (compute_Jdot_times_v)
-      Jdot_times_v = T_3D_to_2D * Jdot_times_v;
-    end
-    if compute_gradients
+    if compute_gradient
       error('need to implement and test');
     end
   end

@@ -1776,10 +1776,10 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
     
-    function [phi,Jv,Jvdot_times_v] = loopConstraintsV(obj,q,v)
+    function [phi,dphi,ddphi] = loopConstraintsV(obj,q,v)
       % handle kinematic loops
 
-      phi=[];Jv=[];Jvdot_times_v=[];
+      phi=[];dphi=[];ddphi=[];
 
       kinsol = doKinematics(obj,q,nargout>2,true,v);
       
@@ -1788,17 +1788,17 @@ classdef RigidBodyManipulator < Manipulator
         % the same location as pt2 on body2
         
         if (nargout>2)
-          [pt1,Jv1,Jv1dot_times_v] = obj.forwardKinV(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          [pt2,Jv2,Jv2dot_times_v] = obj.forwardKinV(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-          Jvdot_times_v = [Jvdot_times_v; Jv1dot_times_v - Jv2dot_times_v];
-          Jv = [Jv; Jv1-Jv2];
+          [pt1,Jv1,dJv1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
+          [pt2,Jv2,dJv2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
+          ddphi = [ddphi; dJv1 - dJv2];
+          dphi = [dphi; Jv1-Jv2];
         elseif nargout>1
-          [pt1,Jv1] = obj.forwardKinV(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          [pt2,Jv2] = obj.forwardKinV(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
-          Jv = [Jv; Jv1-Jv2];
+          [pt1,Jv1] = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
+          [pt2,Jv2] = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
+          dphi = [dphi; Jv1-Jv2];
         else
-          pt1 = obj.forwardKinV(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
-          pt2 = obj.forwardKinV(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
+          pt1 = obj.forwardKin(kinsol,obj.loop(i).body1,obj.loop(i).pt1);
+          pt2 = obj.forwardKin(kinsol,obj.loop(i).body2,obj.loop(i).pt2);
         end
         phi = [phi; pt1-pt2];
       end
