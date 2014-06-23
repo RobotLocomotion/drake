@@ -1,8 +1,14 @@
-classdef NonlinearConstraint < Constraint
-  % Nonlinear constraint. Support computing the non-zero entries in the first order
+classdef DifferentiableConstraint < Constraint
+  % Differentiable constraint. Support computing the non-zero entries in the first order
   % gradient. The default sparsity pattern is the the gradient matrix being dense. Use
   % 'setSparsityStructure' to set the sparsity pattern.
-  % @param num_cnstr      -- An int scalar. The number of constraints
+  %
+  % Extends Constraint by identifying the sparsity structure of the
+  % gradient, but is still an abstract class. In the case where the
+  % constraint is a function of multiple arguments, the gradient
+  % information here (and xdim) considers the arguments in a stacked
+  % manner, [arg1(:),arg2(:);...]
+  %
   % @param xdim           -- An int scalar. The decision variable is an xdim x 1 double
   % vector
   % @param iCfun          -- An int vector. The row index of non-zero entries of the
@@ -11,54 +17,27 @@ classdef NonlinearConstraint < Constraint
   % the gradient matrix
   % @param nnz            -- An int scalar. The maximal number of non-zero entries in the
   % gradient matrix
-  % @param ceq_idx        -- The row index of the equality constraint
-  % @param cin_idx        -- The row index of the inequality constraint
   properties(SetAccess = protected)
-    num_cnstr
     xdim
     iCfun
     jCvar
     nnz
-    ceq_idx
-    cin_idx
   end
   
   methods
-    function obj = NonlinearConstraint(lb,ub,xdim,eval_handle)
+    function obj = DifferentiableConstraint(lb,ub,xdim)
       % @param lb    -- The lower bound of the constraint
       % @param ub    -- The upper bound of the constraint
       % @param xdim  -- An int scalar. x is double vector of xdim x 1
-      % @param eval_handle   -- The function handle to evaluate constraint. An optional
-      % argument.
-      if(nargin < 4)
-        eval_handle = [];
-      end
-      obj = obj@Constraint(lb,ub,eval_handle);
-      if(~isnumeric(lb) || ~isnumeric(ub))
-        error('Drake:NonlinearConstraint:BadInputs','NonlinearConstraint lb and ub should be numeric')
-      end
-      obj.lb = obj.lb(:);
-      obj.ub = obj.ub(:);
-      obj.num_cnstr = numel(obj.lb);
-      if(obj.num_cnstr ~= numel(obj.ub))
-        error('Drake:NonlinearConstraint:BadInputs','NonlinearConstraint lb and ub should have same number of elements');
-      end
-      if(any(obj.lb>obj.ub))
-        error('Drake:NonlinearConstraint:BadInputs','NonlinearConstraint lb should be no larger than ub');
-      end
-      c_idx = (1:obj.num_cnstr)';
-      obj.ceq_idx = c_idx(obj.lb == obj.ub);
-      obj.cin_idx = c_idx(obj.lb ~= obj.ub);
-      
+      obj = obj@Constraint(lb,ub);
       if(~isnumeric(xdim) || numel(xdim) ~= 1 || xdim<0 || xdim ~= floor(xdim))
-        error('Drake:NonlinearConstraint:BadInputs','NonlinearConstraint xdim should be a non-negative integer');
+        error('Drake:DifferentiableConstraint:BadInputs','xdim should be a non-negative integer');
       end
       obj.xdim = xdim;
       
       obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
       obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
       obj.nnz = obj.num_cnstr*obj.xdim;
-      obj.name = repmat({''},obj.num_cnstr,1);
     end
     
     function obj = setSparseStructure(obj,iCfun,jCvar)
@@ -70,10 +49,10 @@ classdef NonlinearConstraint < Constraint
       iCfun = iCfun(:);
       jCvar = jCvar(:);
       if(numel(iCfun) ~= numel(jCvar))
-        error('Drake:NonlinearConstraint:WrongSparseStructure','NonlinearConstraint iCfun and jCvar should have the same number of elements');
+        error('Drake:DifferentiableConstraint:WrongSparseStructure','iCfun and jCvar should have the same number of elements');
       end
       if(any(iCfun<1) || any(iCfun>obj.num_cnstr) || any(jCvar<1) || any(jCvar>obj.xdim))
-        error('Drake:NonlinearConstraint:WrongSparseStructure','NonlinearConstraint iCfun or jCvar has incorrect index');
+        error('Drake:DifferentiableConstraint:WrongSparseStructure','iCfun or jCvar has incorrect index');
       end
       obj.iCfun = iCfun;
       obj.jCvar = jCvar;
@@ -94,7 +73,7 @@ classdef NonlinearConstraint < Constraint
     function obj = setName(obj,name)
       % @param name   -- A cell array, name{i} is the name string of i'th constraint
       if(~iscellstr(name))
-        error('Drake:NonlinearConstraint:name should be a cell array of string');
+        error('Drake:DifferentiableConstraint:name should be a cell array of string');
       end
       sizecheck(name,[obj.num_cnstr,1]);
       obj.name = name;
