@@ -13,8 +13,14 @@ classdef CompositeConstraint
   end
   
   methods
-    function obj = ConstraintManager(constraints,n)
+    function obj = CompositeConstraint(constraints,n)
       if nargin > 0
+        if ~iscell(constraints)
+          if ~isa(constraints,'Constraint')
+            error('Drake:CompositeConstraint:InvalidArgument','constraints argument must be a cell-array of constraints or a Constraint type');
+          end
+          constraints = {constraints};
+        end
         obj.constraints = constraints;
       end
       if nargin > 1

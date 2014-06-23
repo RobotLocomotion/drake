@@ -1,4 +1,4 @@
-classdef LinearComplementarityConstraint < ConstraintManager
+classdef LinearComplementarityConstraint < CompositeConstraint
   % LinearComplementarityConstraint
   % A constraint of the form z >= 0, Wz + Mx + q >= 0, <z,Wz + q> = 0
   %  for given W,q
@@ -34,17 +34,16 @@ classdef LinearComplementarityConstraint < ConstraintManager
       assert(zdim == size(W,1));
       assert(zdim == size(M,1));
       
-      lincon = {};
-      nlcon = {};
-      bcon = {};
+      constraints = {};
       n = 0;
       switch mode
         case 1
           bcon = BoundingBoxConstraint([-inf(xdim,1);zeros(zdim,1)],inf(zdim+xdim,1));
           lincon = LinearConstraint(-q,inf(zdim,1),[M W]);
-          nlcon = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
+          nlcon = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
+          constraints = {bcon;lincon;nlcon};
         case 3
-          nlcon = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),zdim,@fbfun);
+          constraints = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1),zdim,@fbfun);
       end
       function [f,df] = prodfun(y)
         x = y(1:xdim);
@@ -68,7 +67,7 @@ classdef LinearComplementarityConstraint < ConstraintManager
         df = [zeros(zdim,xdim) eye(zdim)] + dg - diag(1./sqrt(z.^2 + g.^2 + 1e-6)) * ([zeros(zdim,xdim) diag(z)] + diag(g)*dg);
       end
       
-      obj = obj@ConstraintManager(lincon, nlcon, bcon, n);
+      obj = obj@CompositeConstraint(constraints, n);
     end
   end
 end

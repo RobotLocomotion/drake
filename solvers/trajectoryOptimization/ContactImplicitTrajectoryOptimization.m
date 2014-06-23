@@ -53,7 +53,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       dyn_inds = cell(N-1,1);      
       
       n_vars = 2*nX + nU + 1 + obj.nC*(2+obj.nD) + obj.nJL;
-      cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@dynamics_constraint_fun);
+      cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@dynamics_constraint_fun);
       
       [~,~,~,~,~,~,~,mu] = obj.plant.contactConstraints(zeros(nq,1));
       
@@ -62,7 +62,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.l_inds(:,i);obj.ljl_inds(:,i)};
         constraints{i} = cnstr;
         
-        obj = obj.addNonlinearConstraint(constraints{i}, dyn_inds{i});
+        obj = obj.addConstraint(constraints{i}, dyn_inds{i});
         
         if obj.nC > 0
           % indices for (i) gamma
@@ -73,7 +73,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           
           nonlincompl_constraints{i} = NonlinearComplementarityConstraint(@nonlincompl_fun,nX + obj.nC,obj.nC*(1+obj.nD),obj.options.nlcc_mode,obj.options.compl_slack);
           
-          obj = obj.addManagedConstraints(nonlincompl_constraints{i},[obj.x_inds(:,i+1);gamma_inds;lambda_inds]);
+          obj = obj.addConstraint(nonlincompl_constraints{i},[obj.x_inds(:,i+1);gamma_inds;lambda_inds]);
           
           % linear complementarity constraint
           %   gamma /perp mu*lambda_N - sum(lambda_fi)
@@ -90,7 +90,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           end
           
           lincompl_constraints{i} = LinearComplementarityConstraint(W,r,M,obj.options.lincc_mode,obj.options.lincompl_slack);
-          obj = obj.addManagedConstraints(lincompl_constraints{i},[lambda_inds;gamma_inds]);
+          obj = obj.addConstraint(lincompl_constraints{i},[lambda_inds;gamma_inds]);
         end
         
         if obj.nJL > 0
@@ -100,7 +100,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           [r_jl,M_jl] = jointLimitConstraints(obj.plant,zeros(nq,1));
           jlcompl_constraints{i} = LinearComplementarityConstraint(W_jl,r_jl,M_jl,obj.options.lincc_mode,obj.options.jlcompl_slack);
           
-          obj = obj.addManagedConstraints(jlcompl_constraints{i},[obj.x_inds(1:nq,i+1);obj.ljl_inds(:,i)]);
+          obj = obj.addConstraint(jlcompl_constraints{i},[obj.x_inds(1:nq,i+1);obj.ljl_inds(:,i)]);
         end
       end
       
@@ -245,7 +245,10 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       end
     end
     
-    function obj = addRunningCost(obj,running_cost)
+    function obj = addRunningCost(obj,running_cost_function)
+      nX = obj.plant.getNumStates();
+      nU = obj.plant.getNumInputs();
+      running_cost = FunctionHandleObjective(1+nX+nU,running_cost_function);
       for i=1:obj.N-1,
         obj = obj.addCost(running_cost,{obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)});
       end
