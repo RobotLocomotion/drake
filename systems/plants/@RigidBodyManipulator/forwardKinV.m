@@ -64,10 +64,12 @@ x = [points_base; repmat(qrot, 1, npoints)];
 
 if compute_J
   % compute geometric Jacobian
+  body = extractFrameInfo(obj, body_or_frame_ind);
+  base = extractFrameInfo(obj, base_or_frame_ind);
   if compute_gradient
-    [J_geometric, v_indices, dJ_geometric] = geometricJacobian(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+    [J_geometric, v_indices, dJ_geometric] = geometricJacobian(obj, kinsol, base, body, expressed_in);
   else
-    [J_geometric, v_indices] = geometricJacobian(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+    [J_geometric, v_indices] = geometricJacobian(obj, kinsol, base, body, expressed_in);
   end
   
   % split up into rotational and translational parts
@@ -121,6 +123,9 @@ if compute_J
       blocks = repmat({dJrot}, npoints, 1);
       dJ = setSubMatrixGradient(dJ, interleaveRows(block_sizes, blocks), rot_row_indices, v_indices, size(J));
     end
+  end
+  if compute_gradient
+    dJ = reshape(dJ, size(J, 1), []); % convert to strange second derivative output format
   end
 end
 

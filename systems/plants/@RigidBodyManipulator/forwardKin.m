@@ -32,7 +32,9 @@ if (nargin<5), rotation_type=0; end
 if compute_jacobian
   if compute_gradient
     [x, Jv, dJv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
+    dJv = reshape(dJv, [], obj.getNumPositions()); % convert to standard derivative format
     dJ = matGradMultMat(Jv, kinsol.qdotToV, dJv, kinsol.dqdotToVdq);
+    dJ = reshape(dJ, size(Jv, 1), []); % convert to strange second derivative output format
   else
     [x, Jv] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind);
   end
