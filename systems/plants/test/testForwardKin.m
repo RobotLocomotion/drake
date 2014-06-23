@@ -33,12 +33,11 @@ function compareToGeval(robot, rotation_type)
 nb = length(robot.body);
 body_range = [2, nb];
 
-n_tests = 10;
+n_tests = 2;
 epsilon = 1e-10;
 for test_number = 1 : n_tests
   q = randn(robot.getNumPositions(), 1); % getRandomConfiguration(robot);
-  v = randn(robot.getNumVelocities(), 1);
-  kinsol = robot.doKinematics(q, true, false, v, true);
+  kinsol = robot.doKinematics(q, true, false);
   
   end_effector = randi(body_range);
   nPoints = randi([1, 5]);
@@ -50,6 +49,7 @@ for test_number = 1 : n_tests
   [~, J_geval, dJ_geval] = geval(1, @(q) robot.forwardKin(robot.doKinematics(q,false,false), end_effector, points, rotation_type), q, option);
   valuecheck(J_geval, J, epsilon);
   valuecheck(dJ_geval, dJ, epsilon);
+  disp(test_number)
 end
 
 end
