@@ -1,4 +1,15 @@
 function [Q, c] = footstepQuadraticCost(biped, seed_plan, weights, goal_pos, nominal_dxy)
+% Build the Q matrix and c vector to be used as the cost function in footstepNLP.m
+% Q and c are defined such that the total cost of the NLP can be evaluated as
+% x'Qx + cx
+%
+% @param biped the Biped for which this footstep plan is being formed
+% @param seed_plan a FootstepPlan
+% @param weights optimization weights, as given by biped.getFootstepOptimizationWeights()
+% @param goal_pos a struct with fields 'right' and 'left' describing the desired poses of the feet
+% @param nominal_dxy a 2x1 vector expressing the nominal relative displacement of one foot in
+%                    the frame of the prior foot. The first element is the nominal forward step
+%                    in meters and the second element is the nominal step width in meters.
 
 nsteps = length(seed_plan.footsteps);
 nom_step = [reshape(nominal_dxy, [], 1); zeros(4,1)];

@@ -1,4 +1,14 @@
 classdef Biped < LeggedRobot
+% Interface class for a bipedal robot. Being a Biped currently affords
+% footstep planning and ZMP-based walking planning, but these capabilities
+% will expand in the future.
+% In order to function as a Biped, a robot's URDF must be tagged with two
+% Drake-style <frame> tags indicating the centers of the soles of its feet,
+% oriented with the x-axis pointing forward. Such a frame might look something
+% like:
+% <frame link="r_foot" name="r_foot_sole" rpy="0 0 0" xyz="0.0480 0 -0.081119"/>
+%
+% see examples/Atlas/Atlas.m for an example implementation
 
   properties
     foot_frame_id
@@ -11,6 +21,8 @@ classdef Biped < LeggedRobot
 
   methods
     function obj = Biped(r_foot_id_or_name, l_foot_id_or_name)
+      % Construct a biped by identifying the Drake frame's corresponding
+      % to the soles of its feet.
       if nargin == 0
         l_foot_id_or_name = 'r_foot_sole';
         r_foot_id_or_name = 'l_foot_sole';
@@ -35,6 +47,31 @@ classdef Biped < LeggedRobot
       % swing foot during walking. This polytope is a constraint on the
       % [x,y,z,roll,pitch,yaw] position of the swing foot sole expressed in the
       % frame of the stance foot sole.
+      % @param stance_foot_frame the ID of the frame of the stance foot
+      % @param swing_foot_frame the ID of the frame of the moving foot
+      % @param params parameters describing the footstep reachability:
+      %
+      %               Lateral extent of reachable set:
+      %               min_step_width (m)
+      %               nom_step_width (m)
+      %               max_step_width (m)
+      %
+      %               Forward/backward extent of reachable set:
+      %               max_forward_step (m)
+      %               nom_forward_step (m)
+      %
+      %               Vertical extent of reachable set:
+      %               nom_upward_step (m)
+      %               nom_downward_step (m)
+      %
+      %               Amount of rotation allowed between adjacent steps
+      %               max_outward_angle (rad)
+      %               max_inward_angle (rad)
+      %
+      %               These quantities are expressed as if we are describing the
+      %               pose of the left foot relative to the right, and signs will be
+      %               automatically adjusted to describe the pose of the right foot
+      %               relative to the left
 
       bodies = [stance_foot_frame, swing_foot_frame];
 

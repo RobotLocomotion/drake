@@ -1,4 +1,11 @@
 function [xtraj, htraj, ts] = planWalkingStateTraj(obj, walking_plan_data, xstar)
+% Given the results of the ZMP tracker, find a state trajectory for the robot to execute
+% its walking plan.
+% @param walking_plan_data a WalkingPlanData, such as that returned by biped.planWalkingZMP()
+% @param xstar the nominal robot state vector
+% @retval xtraj a PPTrajectory of robot states
+% @retval htraj a PPTrajectory of CoM heights
+% @retval ts the time points at which the trajectory constraints were applied
 
 if nargin < 3
   xstar = obj.loadFixedPoint();

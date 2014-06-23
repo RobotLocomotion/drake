@@ -1,4 +1,8 @@
 classdef Footstep
+% A data structure for a single footstep position.
+% The pose of the footstep is assumed to be expressed as the [x,y,z,r,p,y] pose
+% of the center sole of the foot, which is the location expressed by the Drake
+% frame given by frame_id
   properties
     pos
     id

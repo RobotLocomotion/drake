@@ -1,4 +1,6 @@
 classdef WalkingPlanData
+% Container for the results of the ZMP walking planning, which can be consumed by planWalkingStateTraj
+% to generate the full walking motion.
   properties
     x0
     support_times
@@ -17,7 +19,7 @@ classdef WalkingPlanData
       obj.support_times = support_times;
       obj.supports = supports;
 
-      
+
       obj.link_constraints = link_constraints;
 
       obj.zmptraj = zmptraj;
@@ -28,6 +30,8 @@ classdef WalkingPlanData
     end
 
     function obj = fix_link(obj, biped, kinsol, link, pt, tolerance_xyz, tolerance_rpy)
+      % Add a new link constraint which fixes the point pt on the given link to its
+      % pose as given in kinsol, within the tolerance specified.
       pos = biped.forwardKin(kinsol, link, pt, 1);
       pos_min = pos - [tolerance_xyz; tolerance_rpy];
       pos_max = pos + [tolerance_xyz; tolerance_rpy];
