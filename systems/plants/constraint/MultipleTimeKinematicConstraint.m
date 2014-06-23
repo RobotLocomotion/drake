@@ -44,7 +44,7 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
     end
     
     function cnstr = generateConstraint(obj,t)
-      % generate a NonlinearConstraint for postures at all time t
+      % generate a FunctionHandleConstraint for postures at all time t
       t = t(:)';
       valid_t_idx = obj.isTimeValid(t);
       t_idx = (1:length(t));
@@ -53,7 +53,7 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
       if(num_valid_t >= 2)
         [lb,ub] = obj.bounds(t);
         nq = obj.robot.getNumDOF;
-        cnstr = {NonlinearConstraint(lb,ub,length(t)*nq,@(kinsol_cell) obj.eval(t,kinsol_cell))};
+        cnstr = {FunctionHandleConstraint(lb,ub,length(t)*nq,@(varargin) obj.eval(t,varargin(num_valid_t+(1:num_valid_t))))};
         num_cnstr = obj.getNumConstraint(t);
         joint_idx = obj.kinematicPathJoints();
         iCfun = reshape(bsxfun(@times,(1:num_cnstr)',ones(1,length(joint_idx)*num_valid_t)),[],1);

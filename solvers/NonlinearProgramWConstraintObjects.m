@@ -280,9 +280,9 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
           error('Drake:NonlinearProgramWConstraint:WrongCost','addCost only accept scalar function');
         end
         obj.cost = [obj.cost,{cnstr}];
-        obj.cost_xind_cell{end+1} = {xind_vec(cnstr.jAvar);};
-        obj.cost_xind_stacked{end+1} = xind_vec(cnstr.jAvar);
-        obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jAvar)]);
+        obj.cost_xind_cell{end+1} = {xind_vec(cnstr.jCvar);};
+        obj.cost_xind_stacked{end+1} = xind_vec(cnstr.jCvar);
+        obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jCvar)]);
         obj.iFfun = ones(length(obj.jFvar),1);
       else
         if(cnstr.num_cnstr ~= 1)
