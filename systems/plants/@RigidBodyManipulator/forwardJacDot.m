@@ -27,10 +27,10 @@ else
   
   if compute_com_jacobian_dot
     [~,J,dJ] = getCOM(obj,kinsol,robotnum);
-    dJ = reshape(dJ, numel(J), []);
   else
     [~,J,dJ] = forwardKin(obj, kinsol, body_or_frame_ind,pts,rotation_type);
   end
+  dJ = reshape(dJ, numel(J), []);
   qd = kinsol.vToqdot * kinsol.v;
   Jdot = reshape(dJ * qd, size(J));
 end

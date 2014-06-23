@@ -42,7 +42,7 @@ while test_number < n_tests
     
     [~, J, dJ] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
     qdot = kinsol.vToqdot * v;
-    Jdot = reshape(dJ * qdot, size(J));
+    Jdot = reshape(reshape(dJ, numel(J), []) * qdot, size(J));
     Jvdot_times_v = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
     
     valuecheck(Jdot * v, Jvdot_times_v, epsilon);
