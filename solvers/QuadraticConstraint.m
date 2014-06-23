@@ -15,15 +15,20 @@ classdef QuadraticConstraint < DifferentiableConstraint
       obj = obj@DifferentiableConstraint(lb,ub,nx);
       sizecheck(Q,[nx,nx]);
       sizecheck(b,[nx,1]);
-      obj.Q = Q;
+      obj.Q = (Q + Q')/2;  % ensure that Q is symmetric
       obj.b = b;
     end
   end
   
   methods (Access = protected)
-    function [c,dc] = constraintEval(obj,x)
-      c = (x-obj.a)'*obj.Q*(x-obj.a);
-      dc = 2*(x-obj.a)'*obj.Q;
+    function [c,dc,ddc] = constraintEval(obj,x)
+      c = .5*x'*obj.Q*x + obj.b'*x;
+      if nargout > 1
+        dc = x'*obj.Q + obj.b';
+      end
+      if nargout > 2
+        ddc = reshape(obj.Q,1,[]);
+      end
     end
   end
 end
