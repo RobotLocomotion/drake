@@ -4,6 +4,7 @@ function [swing_ts, swing_poses, takeoff_time, landing_time] = planSwing(biped, 
 assert(step1.frame_id == step2.frame_id, 'planSwing expects to plan a swing trajcectory between two positions of the /same/ foot body')
 
 params = struct(step2.walking_params);
+params = applyDefaults(params, biped.default_walking_params);
 last_pos = step1.pos;
 next_pos = step2.pos;
 

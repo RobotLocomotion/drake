@@ -2,14 +2,14 @@ function walking_plan_data = planWalkingZMP(obj, x0, footstep_plan)
 
 footstep_plan.sanity_check();
 for j = 1:length(footstep_plan.footsteps)
-  footstep_plan.footsteps(j).walking_params = applyDefaults(footstep_plan.footsteps(j).walking_params,...
+  footstep_plan.footsteps(j).walking_params = applyDefaults(struct(footstep_plan.footsteps(j).walking_params),...
     obj.default_walking_params);
 end
 
 nq = getNumDOF(obj);
 q0 = x0(1:nq);
 
-[zmptraj,bodytraj, support_times, supports] = planZMPTraj(obj, q0, footstep_plan.footsteps);
+[zmptraj,link_constraints, support_times, supports] = planZMPTraj(obj, q0, footstep_plan.footsteps);
 zmptraj = setOutputFrame(zmptraj,desiredZMP);
 
 kinsol = doKinematics(obj, q0);
@@ -27,4 +27,4 @@ for j = 1:length(footstep_plan.footsteps)
   mu(j) = footstep_plan.footsteps(j).walking_params.mu;
 end
 
-walking_plan_data = WalkingPlanData(x0, support_times, supports, bodytraj, zmptraj, V, c, comtraj, mu);
+walking_plan_data = WalkingPlanData(x0, support_times, supports, link_constraints, zmptraj, V, c, comtraj, mu);

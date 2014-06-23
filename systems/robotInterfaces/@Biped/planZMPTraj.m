@@ -1,4 +1,4 @@
-function [zmptraj, bodytraj, support_times, supports] = planZMPTraj(biped, q0, footsteps, options)
+function [zmptraj, link_constraints, support_times, supports] = planZMPTraj(biped, q0, footsteps, options)
 
 if nargin < 4; options = struct(); end
 
@@ -135,11 +135,19 @@ zmp_knots(end+1) =  struct('t', step_knots(end).t, 'zmp', zmpf, 'supp', struct('
 
 % Build trajectories
 bodytraj = containers.Map('KeyType', 'int32', 'ValueType', 'any');
+link_constraints = struct('link_ndx',{}, 'pt', {}, 'min_traj', {}, 'max_traj', {}, 'traj', {});
 for f = {'right', 'left'}
   foot = f{1};
-  id = biped.foot_frame_id.(foot);
-  bodytraj(id) = PPTrajectory(foh([step_knots.t], [step_knots.(foot)]));
-  % foottraj.(foot) = PPTrajectory(foh([step_knots.t], [step_knots.(foot)]));
+  frame_id = biped.foot_frame_id.(foot);
+  body_ind = biped.getFrame(frame_id).body_ind;
+  T = inv(biped.getFrame(frame_id).T);
+  step_poses = [step_knots.(foot)];
+  for j = 1:size(step_poses, 2);
+    xyz1 = T * [step_poses(1:3,j); 1];
+    rpy = rotmat2rpy(rpy2rotmat(step_poses(4:6,j)) * T(1:3,1:3));
+    step_poses(:,j) = [xyz1(1:3); rpy];
+  end
+  link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'min_traj', [], 'max_traj', [], 'traj', PPTrajectory(foh([step_knots.t], step_poses)));
 end
 zmptraj = PPTrajectory(foh([zmp_knots.t], [zmp_knots.zmp]));
 
