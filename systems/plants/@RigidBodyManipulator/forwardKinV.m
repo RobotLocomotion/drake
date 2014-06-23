@@ -11,8 +11,8 @@ function [x, J, Jdot_times_v, dJ, dJdot_times_v] = forwardKinV(obj, kinsol, body
 % @param base_ind index of the base rigid body. Default is 1 (world).
 % @retval x the position of pts (given in the body frame) in the base frame
 % frame. If rotation_type, x is 6-by-num_pts where the final 3
-% components are the roll/pitch/yaw of the body frame (same for all points 
-% on the body) 
+% components are the roll/pitch/yaw of the body frame (same for all points
+% on the body)
 % @retval J the Jacobian, that maps the joint velocity vector v to xdot
 % @retval Jdot_times_v the time derivative of the Jacobian J multiplied
 % by the joint velocity vector, d/dt(J) * v
@@ -25,51 +25,131 @@ function [x, J, Jdot_times_v, dJ, dJdot_times_v] = forwardKinV(obj, kinsol, body
 %  and (following our gradient convention) J will be a ((3xm)x(q))
 %  matrix, with [J1;J2;...;Jm] where Ji = dxidq
 % if rotation_type = 1 or 2:
-% x will be a 6xm matrix and (following our gradient convention) J will be 
+% x will be a 6xm matrix and (following our gradient convention) J will be
 % a ((6xm)x(q)) matrix, with [J1;J2;...;Jm] where Ji = dxidq
 
 if nargin < 5, rotation_type = 0; end
 if nargin < 6, base_or_frame_ind = 1; end
+compute_J = nargout > 1;
 compute_Jdot_times_v = nargout > 2;
 compute_gradient = nargout > 3;
 nq = obj.getNumPositions();
 
 expressed_in = base_or_frame_ind; % TODO
+
+% transform points to base frame
+if compute_gradient
+  [T, dT] = relativeTransform(obj, kinsol, base_or_frame_ind, body_or_frame_ind);
+else
+  T = relativeTransform(obj, kinsol, base_or_frame_ind, body_or_frame_ind);
+end
+
 [point_size, npoints] = size(points);
-
+R = T(1:3, 1:3);
+p = T(1:3, 4);
+points_base = R * points + repmat(p, 1, npoints);
 if compute_gradient
-  [Tbodyframe_to_baseframe, dTbodyframe_to_baseframe] = relativeTransform(obj, kinsol, base_or_frame_ind, body_or_frame_ind);
+  dR = getSubMatrixGradient(dT, 1:3, 1:3, size(T));
+  dp = getSubMatrixGradient(dT, 1:3, 4, size(T));
+  dpoints_base = matGradMult(dR, points) + repmat(dp, [npoints, 1]);
+end
+
+% compute rotation representation
+if compute_gradient
+  [qrot, dqrot] = rotmat2Representation(rotation_type, R, dR);
 else
-  Tbodyframe_to_baseframe = relativeTransform(obj, kinsol, base_or_frame_ind, body_or_frame_ind);
+  qrot = rotmat2Representation(rotation_type, R);
 end
 
-Rbodyframe_to_baseframe = Tbodyframe_to_baseframe(1:3, 1:3);
-pbodyframe_to_baseframe = Tbodyframe_to_baseframe(1:3, 4);
-points_base = Rbodyframe_to_baseframe * points + repmat(pbodyframe_to_baseframe, 1, npoints);
-if compute_gradient
-  dRbodyframe_to_baseframe = getSubMatrixGradient(dTbodyframe_to_baseframe, 1:3, 1:3, size(Tbodyframe_to_baseframe));
-  dpbodyframe_to_baseframe = getSubMatrixGradient(dTbodyframe_to_baseframe, 1:3, 4, size(Tbodyframe_to_baseframe));
-  dpoints_base = matGradMult(dRbodyframe_to_baseframe, points) + repmat(dpbodyframe_to_baseframe, [npoints, 1]);
+% compute x output
+x = [points_base; repmat(qrot, 1, npoints)];
+
+if compute_J
+  % compute geometric Jacobian
+  if compute_gradient
+    [J_geometric, v_indices, dJ_geometric] = geometricJacobian(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+  else
+    [J_geometric, v_indices] = geometricJacobian(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+  end
+  
+  % split up into rotational and translational parts
+  Jomega = J_geometric(1 : 3, :);
+  Jv = J_geometric(4 : 6, :);
+  if compute_gradient
+    dJomega = getSubMatrixGradient(dJ_geometric, 1:3, 1:size(J_geometric,2), size(J_geometric));
+    dJv = getSubMatrixGradient(dJ_geometric, 4:6, 1:size(J_geometric,2), size(J_geometric));
+  end
+  
+  % compute position Jacobian
+  if compute_gradient
+    [r_hats, dr_hats] = vectorsToSkewSymmetricMatrices(points_base, dpoints_base);
+  else
+    r_hats = vectorsToSkewSymmetricMatrices(points_base);
+  end
+  Jpos = -r_hats * Jomega + repmat(Jv, npoints, 1);
+  if compute_gradient
+    block_sizes = repmat(size(Jv, 1), npoints, 1);
+    blocks = repmat({dJv}, npoints, 1);
+    dJpos = matGradMultMat(-r_hats, Jomega, -dr_hats, dJomega) + interleaveRows(block_sizes, blocks);
+  end
+  
+  % compute rotation Jacobian
+  if compute_gradient
+    [Phi, ~, dPhi, ~] = angularVel2RepresentationDotMatrix(rotation_type, qrot, dqrot);
+    dJrot = matGradMultMat(Phi, Jomega, dPhi, dJomega);
+  else
+    Phi = angularVel2RepresentationDotMatrix(rotation_type, qrot);
+  end
+  Jrot = Phi * Jomega;
+  
+  % compute J from JPos and JRot
+  x_size = point_size + size(Phi, 1);
+  pos_row_indices = repeatVectorIndices(1 : point_size, x_size, npoints);
+  rot_row_indices = repeatVectorIndices(point_size + 1 : x_size, x_size, npoints);
+  
+  nv = obj.num_velocities;
+  J = zeros(length(pos_row_indices) + length(rot_row_indices), nv) * kinsol.q(1); % for TaylorVar
+  J(pos_row_indices, v_indices) = Jpos;
+  
+  if compute_gradient
+    dJ = zeros(numel(J), nq) * kinsol.q(1); % for TaylorVar
+    dJ = setSubMatrixGradient(dJ, dJpos, pos_row_indices, v_indices, size(J));
+  end
+  
+  if rotation_type ~= 0
+    J(rot_row_indices, v_indices) = repmat(Jrot, npoints, 1);
+    if compute_gradient
+      block_sizes = repmat(size(Jrot, 1), npoints, 1);
+      blocks = repmat({dJrot}, npoints, 1);
+      dJ = setSubMatrixGradient(dJ, interleaveRows(block_sizes, blocks), rot_row_indices, v_indices, size(J));
+    end
+  end
 end
 
-% compute geometric Jacobian
-if compute_gradient
-  [J_geometric, v_indices, dJ_geometric] = geometricJacobian(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-else
-  [J_geometric, v_indices] = geometricJacobian(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+% compute Jdot times v
+if compute_Jdot_times_v
+  if compute_gradient
+    [Jdot_times_v, dJdot_times_v] = forwardJacdotTimesV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind);
+  else
+    Jdot_times_v = forwardJacdotTimesV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind);
+  end
+end
 end
 
-Jomega = J_geometric(1 : 3, :);
-Jv = J_geometric(4 : 6, :);
-if compute_gradient
-  dJomega = getSubMatrixGradient(dJ_geometric, 1:3, 1:size(J_geometric,2), size(J_geometric));
-  dJv = getSubMatrixGradient(dJ_geometric, 4:6, 1:size(J_geometric,2), size(J_geometric));
+function ret = repeatVectorIndices(subvectorIndices, subvectorSize, nRepeats)
+subvectorIndicesRepeated = repmat(subvectorIndices, 1, nRepeats);
+offsets = reshape(repmat(0 : subvectorSize : (nRepeats - 1) * subvectorSize,length(subvectorIndices),1),1,[]);
+ret = subvectorIndicesRepeated + offsets;
 end
 
-% compute position Jacobian
-r_hats = zeros(npoints * point_size, point_size) * kinsol.q(1); % for TaylorVar
+function [r_hats, dr_hats] = vectorsToSkewSymmetricMatrices(points_base, dpoints_base)
+compute_gradient = nargout > 1;
+
+[point_size, npoints] = size(points_base);
+r_hats = zeros(npoints * point_size, point_size) * points_base(1); % for TaylorVar
 if compute_gradient
-  dr_hats = zeros(numel(r_hats), nq) * kinsol.q(1); % for TaylorVar
+  nq = size(dpoints_base, 2);
+  dr_hats = zeros(numel(r_hats), nq) * points_base(1); % for TaylorVar
 end
 
 for i = 1 : npoints
@@ -81,149 +161,92 @@ for i = 1 : npoints
     dr_hats = setSubMatrixGradient(dr_hats, dvectorToSkewSymmetric(dpoint), r_rows, 1:size(r_hats,2), size(r_hats));
   end
 end
-Jpos = -r_hats * Jomega + repmat(Jv, npoints, 1);
+end
+
+function [Jdot_times_v, dJdot_times_v] = forwardJacdotTimesV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind)
+compute_gradient = nargout > 1;
+
+% BEGIN REPEATED COMPUTATION
+expressed_in = base_or_frame_ind; % TODO
+
+% transform points to base frame
 if compute_gradient
-  block_sizes = repmat(size(Jv, 1), npoints, 1);
-  blocks = repmat({dJv}, npoints, 1);
-  dJpos = matGradMultMat(-r_hats, Jomega, -dr_hats, dJomega) + interleaveRows(block_sizes, blocks);
+  [T, dT] = relativeTransform(obj, kinsol, base_or_frame_ind, body_or_frame_ind);
+else
+  T = relativeTransform(obj, kinsol, base_or_frame_ind, body_or_frame_ind);
 end
 
-% compute orientation Jacobian
-switch (rotation_type)
-  case 0 % no rotation included
-    Phi = zeros(0, 3);
-    if compute_gradient || compute_Jdot_times_v
-      dPhidqi = zeros(numel(Phi), 0);
-      dPhi = zeros(numel(Phi), nq);
-      if compute_gradient
-        ddPhidqidq = zeros(numel(dPhi), nq);
-      end
-    end
-    x = points_base;
-  case 1 % output rpy
-    if compute_gradient
-      [rpy, drpy] = rotmat2rpy(Rbodyframe_to_baseframe, dRbodyframe_to_baseframe);
-    else
-      rpy = rotmat2rpy(Rbodyframe_to_baseframe);
-    end
-    if compute_Jdot_times_v
-      if compute_gradient
-        [Phi, dPhidqi, ddPhidqidqi] = angularvel2rpydotMatrix(rpy);
-        dPhi = dPhidqi * drpy;
-        ddPhidqidqi = reshape(ddPhidqidqi, [], numel(rpy));
-        ddPhidqidq = ddPhidqidqi * drpy;
-      else
-        [Phi, dPhidqi] = angularvel2rpydotMatrix(rpy);
-      end
-    else
-      Phi = angularvel2rpydotMatrix(rpy);
-    end
-    x = [points_base; repmat(rpy, 1, npoints)];
-  case 2 % output quaternion
-    if compute_gradient
-      [quat, dquat] = rotmat2quat(Rbodyframe_to_baseframe, dRbodyframe_to_baseframe);
-    else
-      quat = rotmat2quat(Rbodyframe_to_baseframe);
-    end
-
-    if compute_Jdot_times_v || compute_gradient
-      [Phi, dPhidqi] = angularvel2quatdotMatrix(quat);
-      if compute_gradient
-        dPhi = dPhidqi * dquat;
-        ddPhidqidq = sparse(numel(dPhidqi), nq);
-      end
-    else
-      Phi = angularvel2quatdotMatrix(quat);
-    end
-
-    x = [points_base; repmat(quat, 1, npoints)];
-  otherwise
-    error('rotationType not recognized')
-end
-Jrot = Phi * Jomega;
+[point_size, npoints] = size(points);
+R = T(1:3, 1:3);
+p = T(1:3, 4);
+points_base = R * points + repmat(p, 1, npoints);
 if compute_gradient
-  dJrot = matGradMultMat(Phi, Jomega, dPhi, dJomega);
+  dR = getSubMatrixGradient(dT, 1:3, 1:3, size(T));
+  dp = getSubMatrixGradient(dT, 1:3, 4, size(T));
+  dpoints_base = matGradMult(dR, points) + repmat(dp, [npoints, 1]);
 end
 
-% compute J from JPos and JRot
-x_size = point_size + size(Jrot, 1);
+if compute_gradient
+  [r_hats, dr_hats] = vectorsToSkewSymmetricMatrices(points_base, dpoints_base);
+  [qrot, dqrot] = rotmat2Representation(rotation_type, R, dR);
+  [Phi, dPhidqrot, dPhi, ddPhidqrotdq] = angularVel2RepresentationDotMatrix(rotation_type, qrot, dqrot);
+else
+  r_hats = vectorsToSkewSymmetricMatrices(points_base);
+  qrot = rotmat2Representation(rotation_type, R);
+  [Phi, dPhidqrot] = angularVel2RepresentationDotMatrix(rotation_type, qrot);
+end
+% END REPEATED COMPUTATION
+
+if compute_gradient
+  [twist, dtwist] = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+  [J_geometric_dot_v, dJ_geometric_dot_v] = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+else
+  twist = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+  J_geometric_dot_v = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+end
+
+omega = twist(1 : 3);
+v_twist = twist(4 : 6);
+
+qidot = Phi * omega;
+Phid = reshape(dPhidqrot * qidot, size(Phi));
+
+x_size = point_size + size(Phi, 1);
 pos_row_indices = repeatVectorIndices(1 : point_size, x_size, npoints);
 rot_row_indices = repeatVectorIndices(point_size + 1 : x_size, x_size, npoints);
 
-vSize = obj.num_velocities;
-J = zeros(length(pos_row_indices) + length(rot_row_indices), vSize) * kinsol.q(1); % for TaylorVar
-J(pos_row_indices, v_indices) = Jpos;
-
-if compute_gradient
-  dJ = zeros(numel(J), nq) * kinsol.q(1); % for TaylorVar
-  dJ = setSubMatrixGradient(dJ, dJpos, pos_row_indices, v_indices, size(J));
-end
+Jrotdot_times_v = Phid * omega + Phi * J_geometric_dot_v(1 : 3);
+Jdot_times_v = zeros(length(pos_row_indices) + length(rot_row_indices), 1) * kinsol.q(1); % for TaylorVar
+rdots = reshape(-r_hats * omega + repmat(v_twist, npoints, 1), point_size, npoints);
+omega_hat = vectorToSkewSymmetric(omega);
+XBardotJv = reshape(omega_hat * rdots, length(pos_row_indices), 1);
+XBarJdotV = -r_hats * J_geometric_dot_v(1 : 3) + repmat(J_geometric_dot_v(4 : 6), npoints, 1);
+Jdot_times_v(pos_row_indices, :) = XBardotJv + XBarJdotV;
 
 if rotation_type ~= 0
-  J(rot_row_indices, v_indices) = repmat(Jrot, npoints, 1);
-  if compute_gradient
-    block_sizes = repmat(size(Jrot, 1), npoints, 1);
-    blocks = repmat({dJrot}, npoints, 1);
-    dJ = setSubMatrixGradient(dJ, interleaveRows(block_sizes, blocks), rot_row_indices, v_indices, size(J));
-  end
+  Jdot_times_v(rot_row_indices, :) = repmat(Jrotdot_times_v, npoints, 1);
 end
 
-% compute Jdot times v
-if compute_Jdot_times_v
-  if compute_gradient
-    [twist, dtwist] = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-    [J_geometric_dot_v, dJ_geometric_dot_v] = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-  else
-    twist = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-    J_geometric_dot_v = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-  end
+if compute_gradient
+  domega = dtwist(1:3, :);
+  dv_twist = dtwist(4:6, :);
   
-  omega = twist(1 : 3);
-  qidot = Phi * omega;
-  Phid = reshape(dPhidqi * qidot, size(Phi));
+  dqidot = Phi * domega + matGradMult(dPhi, omega);
+  dPhid = dPhidqrot * dqidot + matGradMult(ddPhidqrotdq, qidot);
   
-  if compute_gradient
-    domega = dtwist(1:3, :);
-    dqidot = Phi * domega + matGradMult(dPhi, omega);
-    dPhid = dPhidqi * dqidot + matGradMult(ddPhidqidq, qidot);
-  end
-
-  omega = twist(1 : 3);
-  v_twist = twist(4 : 6);
-  Jrotdot_times_v = Phid * omega + Phi * J_geometric_dot_v(1 : 3);
-  Jdot_times_v = zeros(length(pos_row_indices) + length(rot_row_indices), 1) * kinsol.q(1); % for TaylorVar
-  rdots = reshape(-r_hats * omega + repmat(v_twist, npoints, 1), point_size, npoints);
-  omega_hat = vectorToSkewSymmetric(omega);
-  XBardotJv = reshape(omega_hat * rdots, length(pos_row_indices), 1);
-  XBarJdotV = -r_hats * J_geometric_dot_v(1 : 3) + repmat(J_geometric_dot_v(4 : 6), npoints, 1);
-  Jdot_times_v(pos_row_indices, :) = XBardotJv + XBarJdotV;
-
+  dJdot_times_v = zeros(numel(Jdot_times_v), length(kinsol.q));
+  drdots = -r_hats * domega + matGradMult(-dr_hats, omega) + repmat(dv_twist, npoints, 1);
+  domega_hat = dvectorToSkewSymmetric(domega);
+  dXBardotJv = matGradMultMat(omega_hat, rdots, domega_hat, drdots);
+  dXBarJdotV = -r_hats * dJ_geometric_dot_v(1:3, :) + matGradMult(-dr_hats, J_geometric_dot_v(1:3)) + repmat(dJ_geometric_dot_v(4:6, :), npoints, 1);
+  allcols = 1:size(Jdot_times_v, 2);
+  dJdot_times_v = setSubMatrixGradient(dJdot_times_v, dXBardotJv + dXBarJdotV, pos_row_indices, allcols, size(Jdot_times_v));
+  
   if rotation_type ~= 0
-    Jdot_times_v(rot_row_indices, :) = repmat(Jrotdot_times_v, npoints, 1);
-  end
-  if compute_gradient
-    domega = dtwist(1:3, :);
-    dv_twist = dtwist(4:6, :);
-    dJdot_times_v = zeros(numel(Jdot_times_v), nq);
-    drdots = -r_hats * domega + matGradMult(-dr_hats, omega) + repmat(dv_twist, npoints, 1);
-    domega_hat = dvectorToSkewSymmetric(domega);
-    dXBardotJv = matGradMultMat(omega_hat, rdots, domega_hat, drdots);
-    dXBarJdotV = -r_hats * dJ_geometric_dot_v(1:3, :) + matGradMult(-dr_hats, J_geometric_dot_v(1:3)) + repmat(dJ_geometric_dot_v(4:6, :), npoints, 1);
-    allcols = 1:size(Jdot_times_v, 2);
-    dJdot_times_v = setSubMatrixGradient(dJdot_times_v, dXBardotJv + dXBarJdotV, pos_row_indices, allcols, size(Jdot_times_v));
-    
-    if rotation_type ~= 0
-      dJrotdot_times_v = Phid * domega + matGradMult(dPhid, omega) + Phi * dJ_geometric_dot_v(1:3, :) + matGradMult(dPhi, J_geometric_dot_v(1:3));
-      block_sizes = repmat(size(Jrotdot_times_v, 1), npoints, 1);
-      blocks = repmat({dJrotdot_times_v}, npoints, 1);
-      dJdot_times_v = setSubMatrixGradient(dJdot_times_v, interleaveRows(block_sizes, blocks), rot_row_indices, allcols, size(Jdot_times_v));
-    end
+    dJrotdot_times_v = Phid * domega + matGradMult(dPhid, omega) + Phi * dJ_geometric_dot_v(1:3, :) + matGradMult(dPhi, J_geometric_dot_v(1:3));
+    block_sizes = repmat(size(Jrotdot_times_v, 1), npoints, 1);
+    blocks = repmat({dJrotdot_times_v}, npoints, 1);
+    dJdot_times_v = setSubMatrixGradient(dJdot_times_v, interleaveRows(block_sizes, blocks), rot_row_indices, allcols, size(Jdot_times_v));
   end
 end
-end
-
-function ret = repeatVectorIndices(subvectorIndices, subvectorSize, nRepeats)
-subvectorIndicesRepeated = repmat(subvectorIndices, 1, nRepeats);
-offsets = reshape(repmat(0 : subvectorSize : (nRepeats - 1) * subvectorSize,length(subvectorIndices),1),1,[]);
-ret = subvectorIndicesRepeated + offsets;
 end
