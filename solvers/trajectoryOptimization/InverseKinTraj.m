@@ -129,7 +129,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraintObjects
           for j = t_start:obj.nT
             if(varargin{i}.isTimeValid(obj.t_knot(j)))
               cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
-              obj = obj.addManagedKinematicConstraint(cnstr{1},j);
+              obj = obj.addKinematicConstraint(cnstr{1},j);
             end
           end
         elseif(isa(varargin{i},'PostureConstraint'))
@@ -152,7 +152,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraintObjects
               end
               obj.qsc_weight_idx{j} = obj.num_vars+(1:varargin{i}.num_pts)';
               obj = obj.addDecisionVariable(varargin{i}.num_pts,qsc_weight_names);
-              obj = obj.addNonlinearConstraint(cnstr{1},{obj.q_idx(:,j);obj.qsc_weight_idx{j}},obj.kinsol_dataind(j));
+              obj = obj.addDifferentiableConstraint(cnstr{1},{obj.q_idx(:,j);obj.qsc_weight_idx{j}},obj.kinsol_dataind(j));
               obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_idx{j});
               obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_idx{j});
             end
@@ -169,7 +169,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraintObjects
           t_idx = (t_start:obj.nT);
           valid_t_idx = t_idx(valid_t_flag);
           cnstr = varargin{i}.generateConstraint(obj.t_knot(valid_t_idx));
-          obj = obj.addManagedKinematicConstraint(cnstr{1},valid_t_idx);
+          obj = obj.addKinematicConstraint(cnstr{1},valid_t_idx);
         elseif(isa(varargin{i},'MultipleTimeLinearPostureConstraint'))
           cnstr = varargin{i}.generateConstraint(obj.t_knot(t_start:end));
           obj = obj.addLinearConstraint(cnstr{1},reshape(obj.q_idx(:,t_start:end),[],1));
@@ -273,19 +273,16 @@ classdef InverseKinTraj < NonlinearProgramWConstraintObjects
       obj.x_name = [obj.x_name;var_names];
     end
 
-    function obj = addManagedKinematicConstraint(obj,constraint,time_index)
+    function obj = addKinematicConstraint(obj,constraint,time_index)
       % Add a constraint that is a function of the generalized positions
       % at the specified time or times.
-      % @param constraint  a ConstraintManager
+      % @param constraint  a Constraint object
       % @param time_index   a cell array of time indices
       %   ex1., time_index = {1, 2, 3} means the constraint is applied
       %   individually to knot points 1, 2, and 3
       %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
-      if ~isa(constraint,'ConstraintManager')
-        constraint = ConstraintManager([],constraint);
-      end
       if ~iscell(time_index)
         time_index = {time_index};
       end
@@ -293,7 +290,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraintObjects
         kinsol_inds = obj.kinsol_dataind(time_index{j}); 
         cnstr_inds = mat2cell(obj.q_idx(:,time_index{j}),size(obj.q_idx,1),ones(1,length(time_index{j})));
         
-        obj = obj.addManagedConstraints(constraint,cnstr_inds,kinsol_inds);
+        obj = obj.addConstraint(constraint,cnstr_inds,kinsol_inds);
       end
     end
 
