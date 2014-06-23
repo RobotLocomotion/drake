@@ -1,13 +1,13 @@
 function testForwardJacDotTimesV
 
-testAtlas();
+testAtlas('rpy');
+testAtlas('quat');
 
 end
 
-function testAtlas()
+function testAtlas(floating_type)
 
-% test only works for rpy parameterized robots, since in this case qdot = v
-robot = createAtlas('rpy');
+robot = createAtlas(floating_type);
 
 compareToJacobianGradientMethod(robot, 0);
 compareToJacobianGradientMethod(robot, 1);
@@ -40,12 +40,13 @@ while test_number < n_tests
     nPoints = randi([1, 10]);
     points = randn(3, nPoints);
     
-    [~, J, dJ] = robot.forwardKinV(kinsol, end_effector, points, rotation_type, base);
+    [~, J, dJ] = robot.forwardKin(kinsol, end_effector, points, rotation_type, base);
     qdot = kinsol.vToqdot * v;
     Jdot = reshape(reshape(dJ, numel(J), []) * qdot, size(J));
     Jvdot_times_v = robot.forwardJacDotTimesV(kinsol, end_effector, points, rotation_type, base);
     
-    valuecheck(Jdot * v, Jvdot_times_v, epsilon);
+%     valuecheck(Jdot * qdot, Jvdot_times_v, epsilon);
+    valuecheck(Jdot * qdot - Jvdot_times_v, zeros(size(Jdot, 1), 1), epsilon);
     
     test_number = test_number + 1;
   end
