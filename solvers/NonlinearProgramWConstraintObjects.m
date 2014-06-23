@@ -119,6 +119,20 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       end
     end
     
+    function obj = addConstraint(obj,cnstr,xind,varargin)
+      if isa(cnstr,'BoundingBoxConstraint')
+        obj = addBoundingBoxConstraint(obj,cnstr,xind);
+      elseif isa(cnstr,'LinearConstraint')
+        obj = addLinearConstraint(obj,cnstr,xind);
+      elseif isa(cnstr,'NonlinearConstraint')
+        obj = addNonlinearConstraint(obj,cnstr,xind,varargin{:});
+      elseif isa(cnstr,'ConstraintManager')
+        obj = addManagedConstraint(obj,cnstr,xind,varargin{:});
+      else
+        error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','Unsupported constraint type');
+      end
+    end
+    
     function obj = addNonlinearConstraint(obj,cnstr,xind, data_ind)
       % add a NonlinearConstraint to the object, change the constraint evalation of the
       % program. 
@@ -136,7 +150,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         xind = xind';
       end
       if size(xind,2) ~= 1
-        error('Drake:NonlinearProgramWConstraint:InvalidArgument','xind must be a 1-D vector or 1-D cell array');
+        error('Drake:NonlinearProgramWConstraintObjects:InvalidArgument','xind must be a 1-D vector or 1-D cell array');
       end
       
       xind_vec = cell2mat(xind);
@@ -147,10 +161,10 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       data_ind = data_ind(:);
       
       if(~isa(cnstr,'NonlinearConstraint'))
-        error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addNonlinearConstraint expects a NonlinearConstraint object');
+        error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','addNonlinearConstraint expects a NonlinearConstraint object');
       end
       if length(xind_vec) ~= cnstr.xdim
-        error('Drake:NonlinearProgramWConstraint:InvalidArgument','the length of xind must match the x-dimension of the constraint');
+        error('Drake:NonlinearProgramWConstraintObjects:InvalidArgument','the length of xind must match the x-dimension of the constraint');
       end
       obj.nlcon = [obj.nlcon,{cnstr}];
       
