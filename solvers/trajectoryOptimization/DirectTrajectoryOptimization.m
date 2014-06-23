@@ -77,6 +77,8 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
           obj = obj.addConstraint(time_constraint,obj.h_inds);
       end
       
+      % Ensure that all h values are non-negative
+      obj = obj.addConstraint(BoundingBoxConstraint(zeros(N-1,1),inf(N-1,1)),obj.h_inds);
       
       % create constraints for dynamics and add them
       obj = obj.addDynamicConstraints();
