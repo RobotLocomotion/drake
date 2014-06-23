@@ -27,7 +27,8 @@ if isempty(jointPath)
   return;
 end
 
-JBlocks = cellfun(@times, kinsol.J(jointPath), num2cell(signs'), 'UniformOutput', false);
+% mtimes to please MSSPoly for TrigPoly
+JBlocks = cellfun(@mtimes, kinsol.J(jointPath), num2cell(signs'), 'UniformOutput', false);
 J = [JBlocks{:}];
 % J = cell2mat(JBlocks); % doesn't work with TaylorVar
 

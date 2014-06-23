@@ -62,7 +62,7 @@ Tbodyframe_to_world = kinsol.T{end_effector} * Tbody_frame;
 Tbodyframe_to_baseframe = Tworld_to_baseframe * Tbodyframe_to_world;
 Rbodyframe_to_baseframe = Tbodyframe_to_baseframe(1:3, 1:3);
 pbodyframe_to_baseframe = Tbodyframe_to_baseframe(1:3, 4);
-points_base = Rbodyframe_to_baseframe * points + repmat(pbodyframe_to_baseframe, [1 npoints]);
+points_base = Rbodyframe_to_baseframe * points + repmat(pbodyframe_to_baseframe, 1, npoints);
 if compute_gradient
   dTbase_frame = zeros(numel(Tbase_frame), nq); % TODO: can be made more efficient due to zero gradient
   dTbaseframe_to_world = matGradMultMat(kinsol.T{base}, Tbase_frame, kinsol.dTdq{base}, dTbase_frame);

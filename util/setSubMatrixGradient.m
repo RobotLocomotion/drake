@@ -15,8 +15,8 @@ if nargin < 6
   q_indices = true(nq, 1);
 end
 
-sorted = issorted(rows) && issorted(cols);
-if sorted
+% the isnumeric checks are to get TrigPoly to work...
+if isnumeric(dM) && isnumeric(dM_submatrix) && issorted(rows) && issorted(cols)
   mask = false(M_size);
   mask(rows, cols) = true;
   dM(mask(:), q_indices) = dM_submatrix;
