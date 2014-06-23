@@ -9,7 +9,7 @@ rangecheck(seed_plan.footsteps(1).pos(6), -pi, pi);
 rangecheck(seed_plan.footsteps(2).pos(6), -pi, pi);
 
 nsteps = length(seed_plan.footsteps);
-num_precise_steps = 6;
+num_precise_steps = 10;
 max_num_steps = seed_plan.params.max_num_steps + 2;
 min_num_steps = max([seed_plan.params.min_num_steps + 2, 3]);
 
