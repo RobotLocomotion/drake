@@ -1,4 +1,4 @@
-function [x, J, Jdot_times_v, dJ, dJdot_times_v] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_ind)
+function [x, J, Jdot_times_v, dJ, dJdot_times_v] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind)
 % computes the position of pts (given in the body frame) in the global
 % frame, as well as the Jacobian J that maps the joint velocity vector v
 % to xdot, and d/dt(J) * v.
@@ -29,58 +29,35 @@ function [x, J, Jdot_times_v, dJ, dJdot_times_v] = forwardKinV(obj, kinsol, body
 % a ((6xm)x(q)) matrix, with [J1;J2;...;Jm] where Ji = dxidq
 
 if nargin < 5, rotation_type = 0; end
-if nargin < 6, base_ind = 1; end
+if nargin < 6, base_or_frame_ind = 1; end
 compute_Jdot_times_v = nargout > 2;
 compute_gradient = nargout > 3;
 nq = obj.getNumPositions();
 
-if (base_ind < 0)
-  base_frame = obj.frame(-base_ind);
-  base = base_frame.body_ind;
-  Tbase_frame = base_frame.T;
-else
-  base = base_ind;
-  Tbase_frame=eye(4);
-end
-
-if (body_or_frame_ind < 0)
-  body_frame = obj.frame(-body_or_frame_ind);
-  end_effector = body_frame.body_ind;
-  Tbody_frame = body_frame.T;
-else
-  end_effector = body_or_frame_ind;
-  Tbody_frame=eye(4);
-end
-
-expressed_in = base; % todo: pass this in as an argument
+expressed_in = base_or_frame_ind; % TODO
 [point_size, npoints] = size(points);
 
-% transform points from end effector frame to base frame
-Tbaseframe_to_world = kinsol.T{base} * Tbase_frame;
-Tworld_to_baseframe = homogTransInv(Tbaseframe_to_world);
-Tbodyframe_to_world = kinsol.T{end_effector} * Tbody_frame;
-Tbodyframe_to_baseframe = Tworld_to_baseframe * Tbodyframe_to_world;
+if compute_gradient
+  [Tbodyframe_to_baseframe, dTbodyframe_to_baseframe] = relativeTransform(obj, kinsol, base_or_frame_ind, body_or_frame_ind);
+else
+  Tbodyframe_to_baseframe = relativeTransform(obj, kinsol, base_or_frame_ind, body_or_frame_ind);
+end
+
 Rbodyframe_to_baseframe = Tbodyframe_to_baseframe(1:3, 1:3);
 pbodyframe_to_baseframe = Tbodyframe_to_baseframe(1:3, 4);
 points_base = Rbodyframe_to_baseframe * points + repmat(pbodyframe_to_baseframe, 1, npoints);
 if compute_gradient
-  dTbase_frame = zeros(numel(Tbase_frame), nq); % TODO: can be made more efficient due to zero gradient
-  dTbaseframe_to_world = matGradMultMat(kinsol.T{base}, Tbase_frame, kinsol.dTdq{base}, dTbase_frame);
-  dTworld_to_baseframe = dinvT(Tbaseframe_to_world, dTbaseframe_to_world);
-  dTbody_frame = zeros(numel(Tbody_frame), nq); % TODO: can be made more efficient due to zero gradient
-  dTbodyframe_to_world = matGradMultMat(kinsol.T{end_effector}, Tbody_frame, kinsol.dTdq{end_effector}, dTbody_frame);
-  dTbodyframe_to_baseframe = matGradMultMat(Tworld_to_baseframe, Tbodyframe_to_world, dTworld_to_baseframe, dTbodyframe_to_world);
   dRbodyframe_to_baseframe = getSubMatrixGradient(dTbodyframe_to_baseframe, 1:3, 1:3, size(Tbodyframe_to_baseframe));
   dpbodyframe_to_baseframe = getSubMatrixGradient(dTbodyframe_to_baseframe, 1:3, 4, size(Tbodyframe_to_baseframe));
-  dpoints = zeros(numel(points), nq);
-  dpoints_base = matGradMultMat(Rbodyframe_to_baseframe, points, dRbodyframe_to_baseframe, dpoints) + repmat(dpbodyframe_to_baseframe, [npoints, 1]); % TODO: can be made more efficient due to zero gradient
+  dpoints = zeros(numel(points), nq); % TODO: can be made more efficient due to zero gradient
+  dpoints_base = matGradMultMat(Rbodyframe_to_baseframe, points, dRbodyframe_to_baseframe, dpoints) + repmat(dpbodyframe_to_baseframe, [npoints, 1]);
 end
 
 % compute geometric Jacobian
 if compute_gradient
-  [J_geometric, v_indices, dJ_geometric] = geometricJacobian(obj, kinsol, base, end_effector, expressed_in);
+  [J_geometric, v_indices, dJ_geometric] = geometricJacobian(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
 else
-  [J_geometric, v_indices] = geometricJacobian(obj, kinsol, base, end_effector, expressed_in);
+  [J_geometric, v_indices] = geometricJacobian(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
 end
 
 Jomega = J_geometric(1 : 3, :);
@@ -93,11 +70,11 @@ end
 % compute geometric Jacobian dot times v.
 if compute_Jdot_times_v
   if compute_gradient
-    [twist, dtwist] = relativeTwist(kinsol, base, end_effector, expressed_in);
-    [J_geometric_dot_v, dJ_geometric_dot_v] = geometricJacobianDotV(obj, kinsol, base, end_effector, expressed_in);
+    [twist, dtwist] = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+    [J_geometric_dot_v, dJ_geometric_dot_v] = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
   else
-    twist = relativeTwist(kinsol, base, end_effector, expressed_in);
-    J_geometric_dot_v = geometricJacobianDotV(obj, kinsol, base, end_effector, expressed_in);
+    twist = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+    J_geometric_dot_v = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
   end
 end
 
