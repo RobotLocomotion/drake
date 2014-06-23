@@ -220,9 +220,9 @@ classdef Manipulator < SecondOrderSystem
       
       if (isa(sys2,'Manipulator'))
         % todo: implement this (or decide that it doesn't ever make sense)
-        warning('feedback combinations of manipulators not handled explicitly yet. kicking out to a combination of SecondOrderSystems');
+        warning('feedback combinations of manipulators not handled explicitly yet. kicking out to a combination of DrakeSystems');
       end
-      sys = feedback@SecondOrderSystem(sys1,sys2);
+      sys = feedback@DrakeSystem(sys1,sys2);
     end
     
     function sys = cascade(sys1,sys2)
@@ -230,9 +230,9 @@ classdef Manipulator < SecondOrderSystem
 
       if (isa(sys2,'Manipulator'))
         % todo: implement this (or decide that it doesn't ever make sense)
-        warning('cascade combinations of manipulators not handled explicitly yet. kicking out to a combination of SecondOrderSystems');
+        warning('cascade combinations of manipulators not handled explicitly yet. kicking out to a combination of DrakeSystems');
       end
-      sys = cascade@SecondOrderSystem(sys1,sys2);
+      sys = cascade@DrakeSystem(sys1,sys2);
     end
     
     function polysys = extractTrigPolySystem(obj,options)
