@@ -38,11 +38,11 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
     % Trajectory optimization constructor
     % @param plant
     % @param N the number of time samples
-    % @param T_span  The lower and upper bounds on total time for the trajectory [lb ub]
+    % @param duration  The lower and upper bounds on total time for the trajectory [lb ub]
     % @param options (optional)
     %        options.time_option {1: all time steps are constant, 2: all
     %        time steps are independent}
-    function obj = DirectTrajectoryOptimization(plant,N,T_span,options)
+    function obj = DirectTrajectoryOptimization(plant,N,durations,options)
       %#ok<*PROP>
       
       if nargin < 4
@@ -69,11 +69,11 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       switch options.time_option
         case 1 % all timesteps are constant
           A_time = [ones(1,N-1);[eye(N-2) zeros(N-2,1)] - [zeros(N-2,1) eye(N-2)]];
-          time_constraint = LinearConstraint([T_span(1);zeros(N-2,1)],[T_span(2);zeros(N-2,1)],A_time);
+          time_constraint = LinearConstraint([durations(1);zeros(N-2,1)],[durations(2);zeros(N-2,1)],A_time);
           obj = obj.addConstraint(time_constraint,obj.h_inds);
         case 2 % all timesteps independent
           A_time = ones(1,N-1);
-          time_constraint = LinearConstraint(T_span(1),T_span(2),A_time);
+          time_constraint = LinearConstraint(durations(1),durations(2),A_time);
           obj = obj.addConstraint(time_constraint,obj.h_inds);
       end
       

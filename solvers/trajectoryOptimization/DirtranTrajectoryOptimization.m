@@ -20,7 +20,7 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
   end
   
   methods
-    function obj = DirtranTrajectoryOptimization(plant,N,T_span,options)
+    function obj = DirtranTrajectoryOptimization(plant,N,duration,options)
       if nargin < 4
         options = struct();
       end
@@ -28,7 +28,7 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
         options.integration_method = DirtranTrajectoryOptimization.MIDPOINT;
       end
       
-      obj = obj@DirectTrajectoryOptimization(plant,N,T_span,options);
+      obj = obj@DirectTrajectoryOptimization(plant,N,duration,options);
     end
     
     function obj = addDynamicConstraints(obj)

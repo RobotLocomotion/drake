@@ -14,8 +14,8 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
   end
   
   methods
-    function obj = ContactImplicitTrajectoryOptimization(plant,N,T_span,varargin)
-      obj = obj@DirectTrajectoryOptimization(plant,N,T_span,varargin{:});
+    function obj = ContactImplicitTrajectoryOptimization(plant,N,duration,varargin)
+      obj = obj@DirectTrajectoryOptimization(plant,N,duration,varargin{:});
       
       if ~isfield(obj.options,'nlcc_mode')
         obj.options.nlcc_mode = 1;
