@@ -10,7 +10,7 @@ function [z,F,info,np]=testMPCC
   %   constraint = NonlinearComplementarityConstraint(@testfun,xdim,N,3);
   constraint = LinearComplementarityConstraint(zeros(N),zeros(N,1),eye(N),1);
   
-  np = np.addManagedConstraints(constraint,(1:nvars)');
+  np = np.addConstraint(constraint,(1:nvars)');
   
 %   
 %   
@@ -29,10 +29,10 @@ function [z,F,info,np]=testMPCC
 %     np = np.addBoundingBoxConstraint(bcon{k});
 %   end
   
-  cost = NonlinearConstraint(-inf,inf,N + xdim,@costfun);
+  cost = FunctionHandleObjective(N + xdim,@costfun);
   np = np.addCost(cost,1:N+xdim);
   
-  np = np.addLinearConstraint(LinearConstraint(1,1,[ones(1,N) zeros(1,xdim-N) ones(1,N)]));
+  np = np.addConstraint(LinearConstraint(1,1,[ones(1,N) zeros(1,xdim-N) ones(1,N)]));
   
   [z,F,info] = np.solve(randn(np.num_vars,1));
 %   [z,F,info] = np.solve([1;0]);

@@ -1,4 +1,4 @@
-classdef NonlinearComplementarityConstraint < ConstraintManager
+classdef NonlinearComplementarityConstraint < CompositeConstraint
   % NonlinearComplementarityConstraint
   % A constraint of the form z >= 0, f(x,z) >= 0, <z,f(x,z)> = 0
   %
@@ -29,24 +29,22 @@ classdef NonlinearComplementarityConstraint < ConstraintManager
       if nargin < 5
         slack = 0;
       end
-      lincon = {};
-      nlcon = {};
-      bcon = {};
+
       n = 0;
       switch mode
         case 1
-          bcon = BoundingBoxConstraint([-inf(xdim,1);zeros(zdim,1)],inf(zdim+xdim,1));
-          nlcon{1} = NonlinearConstraint(zeros(zdim,1),inf(zdim,1),xdim+zdim,fun);
-          nlcon{2} = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
+          constraints{1} = BoundingBoxConstraint([-inf(xdim,1);zeros(zdim,1)],inf(zdim+xdim,1));
+          constraints{2} = NonlinearConstraint(zeros(zdim,1),inf(zdim,1),xdim+zdim,fun);
+          constraints{3} = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
         case 2
-          bcon = BoundingBoxConstraint([-inf(xdim,1);zeros(2*zdim,1)],inf(2*zdim+xdim,1));
-          nlcon{1} = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),xdim+2*zdim,@slackeq);
-          nlcon{2} = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+2*zdim,@slackprod);
+          constraints{1} = BoundingBoxConstraint([-inf(xdim,1);zeros(2*zdim,1)],inf(2*zdim+xdim,1));
+          constraints{2} = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1),xdim+2*zdim,@slackeq);
+          constraints{3} = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+2*zdim,@slackprod);
           n = zdim;
         case 3
-          nlcon = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@fbfun);
+          constraints = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@fbfun);
         case 4
-          nlcon = NonlinearConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@proxfun);
+          constraints = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@proxfun);
       end
       function [f,df] = prodfun(y)
         z = y(xdim+1:xdim+zdim);
@@ -98,7 +96,7 @@ classdef NonlinearComplementarityConstraint < ConstraintManager
         df(I_pos,:) = df(I_pos,:)-r*dg(I_pos,:);
       end
       
-      obj = obj@ConstraintManager(lincon, nlcon, bcon, n);
+      obj = obj@CompositeConstraint(constraints, n);
     end
   end
 end

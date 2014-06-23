@@ -14,8 +14,6 @@ N = 10;
 T = 3;
 T0 = 3;
 
-running_cost = NonlinearConstraint(-inf,inf,16,@running_cost_fun);
-
 % periodic constraint
 R_periodic = zeros(p.getNumStates,2*p.getNumStates);
 R_periodic(2,2) = 1; %z 
@@ -35,8 +33,7 @@ R_periodic(11,11) = -1; %hip w/symmetry
 
 R_periodic(2:end,p.getNumStates+2:end) = -eye(p.getNumStates-1);
 
-periodic_constraint.mgr = ConstraintManager(LinearConstraint(zeros(p.getNumStates,1),zeros(p.getNumStates,1),R_periodic));
-periodic_constraint.i = {[1 N]};
+periodic_constraint = LinearConstraint(zeros(p.getNumStates,1),zeros(p.getNumStates,1),R_periodic);
 
 % x0 = [0;0;1;zeros(15,1)];
 % xf = [0;0;1;zeros(15,1)];
@@ -69,7 +66,7 @@ x0_max = [x0(1:5);inf;  inf; 0; inf(4,1)];
 xf_min = [.4;-inf(11,1)];
 xf_max = inf(12,1);
 
-to_options.nlcc_mode = 4;
+to_options.nlcc_mode = 2;
 to_options.lincc_mode = 1;
 to_options.compl_slack = .01;
 to_options.lincompl_slack = .001;
@@ -78,10 +75,10 @@ to_options.lambda_mult = p.getMass*9.81*T0/N;
 to_options.lambda_jl_mult = T0/N;
 
 traj_opt = ContactImplicitTrajectoryOptimization(p,N,T_span,to_options);
-traj_opt = traj_opt.addRunningCost(running_cost);
-traj_opt = traj_opt.addBoundingBoxStateConstraint(BoundingBoxConstraint(x0_min,x0_max),1);
-traj_opt = traj_opt.addBoundingBoxStateConstraint(BoundingBoxConstraint(xf_min,xf_max),N);
-traj_opt = traj_opt.addManagedStateConstraint(periodic_constraint.mgr,periodic_constraint.i);
+traj_opt = traj_opt.addRunningCost(@running_cost_fun);
+traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(x0_min,x0_max),1);
+traj_opt = traj_opt.addStateConstraint(BoundingBoxConstraint(xf_min,xf_max),N);
+traj_opt = traj_opt.addStateConstraint(periodic_constraint,{[1 N]});
 % traj_opt = traj_opt.setCheckGrad(true);
 snprint('snopt.out');
 traj_opt = traj_opt.setSolverOptions('snopt','MajorIterationsLimit',100);
