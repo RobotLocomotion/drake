@@ -118,6 +118,11 @@ end
 end
 
 function ret = computeTransformGradients(bodies, T, S, qdotToV)
+% computes the gradients of T{i} with respect to q
+% makes use of the fact that the gradients of the joint transforms are
+% dT/dq = dTdot/dqdot, where Tdot depends on v through the joint motion
+% subspace S and qdot depends on v via the qdotToV mapping.
+
 nb = length(bodies);
 nq = size(qdotToV, 2);
 ret = cell(1, nb);
@@ -135,16 +140,22 @@ for i = 2 : nb
 end
 end
 
-function J = computeJ(transforms, S)
-nb = length(transforms);
+function J = computeJ(T, S)
+% Computes motion subspaces transformed to world frame, i.e.
+% transformAdjoint(T{i}) * S{i}
+
+nb = length(T);
 J = cell(1, nb);
 for i = 2 : nb
-  T = transforms{i};
-  J{i} = transformAdjoint(T) * S{i};
+  J{i} = transformAdjoint(T{i}) * S{i};
 end
 end
 
 function ret = computedJdq(bodies, T, S, dTdq, dSdq)
+% Computes the gradient of transformAdjoint(T{i}) * S{i} with respect to q
+% For uses, see e.g. geometricJacobianDotTimesV, gradients of mass matrix
+% and bias vector in manipulatorDynamics
+
 nb = length(T);
 ret = cell(1, nb);
 for i = 2 : nb

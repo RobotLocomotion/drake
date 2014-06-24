@@ -1,32 +1,23 @@
-function [Jdot_times_v, dJdot_times_v] = geometricJacobianDotTimesV(obj, kinsol, base, endEffector, expressedIn)
-% geometricJacobianDotTimesV computes the 'convective term' d/dt(J) * v, where J
-% is a geometric Jacobian and v is the vector of joint velocities across
-% the same joints that the geometric Jacobian spans
+function [Jdot_times_v, dJdot_times_v] = geometricJacobianDotTimesV(obj, kinsol, base, end_effector, expressed_in)
+% geometricJacobianDotTimesV computes the `convective term' d/dt(J) * v, 
+% where J is a geometric Jacobian and v is the vector of joint velocities 
+% across the same joints that the geometric Jacobian spans
 % @param kinsol solution structure obtained from doKinematics
 % @param twists twists of all links with respect to base, expressed in body
 % frame
 % @param base base frame of the geometric Jacobian
-% @param endEffector end effector frame of the geometric Jacobian
-% @param expressedIn frame in which the geometric Jacobian is expressed
+% @param end_effector end effector frame of the geometric Jacobian
+% @param expressed_in frame in which the geometric Jacobian is expressed
 % @retval d/dt(J) * v
-
-% Implementation makes use of the fact that
-% d/dt(twist) = J * vdot + Jdot * v
-% If we set vdot to zero, then Jdot * v can be found using any algorithm
-% that computes the relative spatial acceleration between base and
-% endEffector, expressed in expressedIn.
-% The relative spatial acceleration is the sum of the spatial accelerations
-% across the individual joints (with vdot set to zero), transformed to
-% expressedIn frame before addition.
 
 compute_gradient = nargout > 1;
 
-Jdot_times_v = kinsol.JdotV{endEffector} - kinsol.JdotV{base};
+Jdot_times_v = kinsol.JdotV{end_effector} - kinsol.JdotV{base};
 if compute_gradient
-  dJdot_times_v = kinsol.dJdotVdq{endEffector} - kinsol.dJdotVdq{base};
-  [Jdot_times_v, dJdot_times_v] = transformSpatialAcceleration(kinsol, base, endEffector, 1, expressedIn, Jdot_times_v, dJdot_times_v);
+  dJdot_times_v = kinsol.dJdotVdq{end_effector} - kinsol.dJdotVdq{base};
+  [Jdot_times_v, dJdot_times_v] = transformSpatialAcceleration(kinsol, base, end_effector, 1, expressed_in, Jdot_times_v, dJdot_times_v);
 else
-  Jdot_times_v = transformSpatialAcceleration(kinsol, base, endEffector, 1, expressedIn, Jdot_times_v);
+  Jdot_times_v = transformSpatialAcceleration(kinsol, base, end_effector, 1, expressed_in, Jdot_times_v);
 end
 
 
