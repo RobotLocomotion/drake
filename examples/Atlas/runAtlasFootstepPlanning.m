@@ -1,4 +1,10 @@
 function plan = runAtlasFootstepPlanning()
+% Demonstration of footstep planning for the Atlas biped. We choose to define the footstep
+% planning problem as one of finding a set of sequential foot positions which are
+% kinematically reachable and which are *likely* to yield a dynamically stable walking
+% motion. See also: runAtlasWalkingPlanning for the full dynamical plan.
+% @retval plan a FootstepPlan describing the sequence of foot positions
+
 
 % Set up the model
 load('data/atlas_fp.mat', 'xstar');
