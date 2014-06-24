@@ -372,6 +372,14 @@ classdef Manipulator < DrakeSystem
       %      Kp = diag([10,10,10,10])
       %      Kd = diag([1, 1, 1, 1])
       %      and the default index would automatically be index = 4:7
+      
+      % todo: consider adding an option that would give [q_d;qd_d] as in
+      % input.  would be trivial to type in, but doesn't add any richness
+      % to the control input (and increases the dimensionality)
+      
+      % todo: consider allowing the user to specify less than num_u gains
+      % (e.g., PD control just part of the system).  And pass the original
+      % input through on the other inputs.
 
       if nargin<4 || isempty(index)
         % try to extract the index from B
@@ -414,7 +422,38 @@ classdef Manipulator < DrakeSystem
       end
       
       varargout=cell(1,nargout);
-      [varargout{:}] = pdcontrol@SecondOrderSystem(sys,Kp,Kd,index);
+      
+      sizecheck(Kp,[sys.num_u,sys.num_u]);
+      sizecheck(Kd,[sys.num_u,sys.num_u]);
+      
+      if nargin<4 || isempty(index)
+        index = 1:sys.num_u;
+      end
+      sizecheck(index,sys.num_u);
+      rangecheck(index,0,sys.num_positions);
+      
+      % pdfb = prop-derivative control feedback term:
+      % tau = -Kp*theta - Kd*thetadot
+      D = zeros(sys.num_u,sys.num_x);
+      D(:,index) = -Kp;
+      D(:,sys.num_positions + index) = -Kd;
+      pdfb = LinearSystem([],[],[],[],[],D);
+      pdfb = setOutputFrame(pdfb,sys.getInputFrame);
+      pdfb = setInputFrame(pdfb,sys.getStateFrame);  % note: assume full-state feedback for now
+      
+      % pdff = prop-derivative control feedforward term:
+      % tau = Kp*thetadesired
+      pdff = LinearSystem([],[],[],[],[],Kp*eye(sys.num_u));
+      pdff = setOutputFrame(pdff,sys.getInputFrame);
+      pdff = setInputFrame(pdff,CoordinateFrame('q_d',length(index),'d',{sys.getStateFrame.coordinates{index}}));
+
+      if nargout>1
+        varargout{1} = pdff;
+        varargout{2} = pdfb;
+      else
+%        sys = cascade(cascade(ScopeSystem(sys.getInputFrame),sys),ScopeSystem(sys.getInputFrame));
+        varargout{1} = cascade(pdff,feedback(sys,pdfb));
+      end
     end
     
     function [jl_min, jl_max] = getJointLimits(obj)
