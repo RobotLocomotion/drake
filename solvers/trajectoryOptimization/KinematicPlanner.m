@@ -3,6 +3,11 @@ classdef KinematicPlanner < SimpleDynamicsFullKinematicsPlanner
     function obj = KinematicPlanner(plant,varargin)
       plant = plant.setNumInputs(plant.getNumVelocities());
       obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,varargin{:});
+
+      % Make timesteps equal
+      A_time = [eye(obj.N-2) zeros(obj.N-2,1)] - [zeros(obj.N-2,1) eye(obj.N-2)];
+      time_constraint = LinearConstraint(zeros(obj.N-2,1),zeros(obj.N-2,1),A_time);
+      obj = obj.addLinearConstraint(time_constraint,obj.h_inds);
     end
 
     function obj = addDynamicConstraints(obj)
@@ -39,6 +44,9 @@ classdef KinematicPlanner < SimpleDynamicsFullKinematicsPlanner
         
         obj = obj.addCost(running_cost,{h_ind;x_ind;u_ind});
       end
+    end
+
+    function obj = addContactDynamicConstraints(obj)
     end
   end
 end

@@ -38,7 +38,7 @@ function [xtraj,utraj,info,r,v,planner] = testKinematicPlanner(visualize,nT)
   ub = target; ub(2) = NaN;
   grasp = WorldPositionConstraint(r,3,end_effector,lb,ub,tspan([2,2]));
 
-  q_nom_traj = PPTrajectory(foh(t_seed,rand(nQ,nT)));
+  q_nom_traj = PPTrajectory(foh(t_seed,pi*(2*rand(nQ,nT)-1)));
   x_nom_traj = PPTrajectory(foh(t_seed,[q_nom_traj.eval(t_seed);zeros(nQ,nT)]));
   x_nom_traj = x_nom_traj.setOutputFrame(r.getStateFrame());
 
@@ -48,9 +48,12 @@ function [xtraj,utraj,info,r,v,planner] = testKinematicPlanner(visualize,nT)
 
   traj_init.x = x_nom_traj;
   traj_init.u = PPTrajectory(foh(t_seed,rand(nU,nT)));
-  planner = KinematicPlanner(r,t_seed,t_seed([1,end]),q_nom_traj,true,x0,grasp);
+  tf_range = t_seed(end)*[1,2];
+  planner = KinematicPlanner(r,nT,tf_range,q_nom_traj.eval(t_seed));
   planner = planner.addRunningCost(NonlinearConstraint(0,0,nX+nU+1,@squaredEffort));
-  planner = planner.addManagedStateConstraint(ConstraintManager([],NonlinearConstraint(0,0,nX,@final_cost_fun)),nT);
+  planner = planner.setFixInitialState(true,x0);
+  planner = planner.addManagedStateConstraint(ConstraintManager([],NonlinearConstraint(0,0,nX,@velocityPenalty)),{1,nT});
+  planner = planner.addRigidBodyConstraint(grasp,nT);
   [xtraj,utraj,z,F,info] = solveTraj(planner,t_seed,traj_init);
   if visualize
     v.playback(xtraj);
@@ -67,7 +70,7 @@ function [xtraj,utraj,info,r,v,planner] = testKinematicPlanner(visualize,nT)
   end
 end
 
-function [f,df] = final_cost_fun(x)
+function [f,df] = velocityPenalty(x)
   f = sum(x(3:4).^2);
   df = [zeros(1,2), 2*x(3:4)'];
 end

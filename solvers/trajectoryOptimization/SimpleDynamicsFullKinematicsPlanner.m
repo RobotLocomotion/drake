@@ -5,6 +5,8 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
     nv % number of velocities in state
     q_inds % An nq x obj.N matrix. x(q_inds(:,i)) is the posture at i'th knot
     v_inds % An nv x obj.N matrix. x(v_inds(:,i)) is the velocity at i'th knot 
+    qsc_weight_inds = {}
+    fix_initial_state = false
     g
     % N-element vector of indices into the shared_data, where
     % shared_data{kinsol_dataind(i)} is the kinsol for knot point i
@@ -55,6 +57,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       obj.nv = obj.robot.getNumDOF();
       obj.q_inds = obj.x_inds(1:obj.nq,:);
       obj.v_inds = obj.x_inds(obj.nq+(1:obj.nv),:);
+      obj.qsc_weight_inds = cell(1,obj.N);
       obj.g = 9.81;
       % create shared data functions to calculate kinematics at the knot
       % points
@@ -123,7 +126,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
 
 
     function obj = addManagedKinematicConstraint(obj,constraint,time_index)
-      % Add a linear constraint that is a function of the state at the
+      % Add a kinematic constraint that is a function of the state at the
       % specified time or times.
       % @param constraint  a ConstraintManager
       % @param time_index   a cell array of time indices
@@ -149,6 +152,53 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         obj.constraints{end}.time_index = time_index;
         
         obj = obj.addManagedConstraints(constraint,cnstr_inds,kinsol_inds);
+      end
+    end
+
+    function obj = addRigidBodyConstraint(obj,constraint,time_index)
+      % Add a kinematic constraint that is a function of the state at the
+      % specified time or times.
+      % @param constraint  a RigidBodyConstraint object
+      % @param time_index   a cell array of time indices
+      %   ex1., time_index = {1, 2, 3} means the constraint is applied
+      %   individually to knot points 1, 2, and 3
+      %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
+      %   points 1 and 2 together (taking the combined state as an argument)
+      %   and 3 and 4 together.
+      typecheck(constraint,'RigidBodyConstraint');
+      cnstr = constraint.generateConstraint();
+      for j = 1:numel(time_index)
+        if isa(constraint,'SingleTimeKinematicConstraint')
+          obj = obj.addManagedKinematicConstraint(cnstr{1},time_index{j});
+        elseif isa(constraint, 'PostureConstraint')
+          obj = obj.addBoundingBoxConstraint(cnstr{1}, ...
+            obj.q_inds(:,time_index{j}));
+        elseif isa(constraint,'QuasiStaticConstraint')
+          if(constraint.active)
+            if(~isempty(obj.qsc_weight_inds{time_index{j}}))
+              error('Drake:SimpleDynamicsFullKinematicsPlanner', ...
+                ['We currently support at most one ' ...
+                'QuasiStaticConstraint at an individual time']);
+            end
+            qsc_weight_names = cell(constraint.num_pts,1);
+            for k = 1:constraint.num_pts
+              qsc_weight_names{k} = sprintf('qsc_weight%d',k);
+            end
+            obj.qsc_weight_inds{time_index{j}} = obj.num_vars+(1:constraint.num_pts)';
+            obj = obj.addDecisionVariable(constraint.num_pts,qsc_weight_names);
+            obj = obj.addNonlinearConstraint(cnstr{1},{obj.q_inds(:,time_index{j});obj.qsc_weight_inds{time_index{j}}},obj.kinsol_dataind(time_index{j}));
+            obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_inds{time_index{j}});
+            obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_inds{time_index{j}});
+          end
+        elseif isa(constraint,'SingleTimeLinearPostureConstraint')
+          obj = obj.addLinearConstraint(cnstr{1},obj.q_inds(:,time_index{j}));
+        else
+          id = ['Drake:SimpleDynamicsFullKinematicsPlanner:' ...
+            'unknownRBConstraint'];
+          msg = ['Constraints of class %s are not currently ' ...
+            'supported by %s'];
+          error(id,msg,class(constraint),class(obj));
+        end
       end
     end
     
