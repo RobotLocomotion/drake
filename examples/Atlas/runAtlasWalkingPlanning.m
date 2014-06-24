@@ -1,4 +1,11 @@
 function plan = runAtlasWalkingPlanning()
+% Demonstration of footstep and walking planning on Atlas. First, the footstep planning
+% step generates a set of reachable footstep poses. Next, we use those foot poses to
+% plan a trajectory of the Zero Moment Point (ZMP), from which we can derive a
+% trajectory for the robot's Center of Mass. From this, we can plan a full state
+% trajectory for the robot.
+% @retval plan a WalkingPlanData object including the zmp and com trajectories
+
 
 addpath(fullfile(getDrakePath(), 'examples', 'ZMP'));
 % Set up the model
