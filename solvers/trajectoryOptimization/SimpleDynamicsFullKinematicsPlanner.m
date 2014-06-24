@@ -45,6 +45,9 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       if(nargin<6)
         options = struct();
       end
+      if(nargin<5)
+        contact_wrench_cnstr_struct = [];
+      end
       if(~isfield(options,'time_option'))
         options.time_option = 2;
       end

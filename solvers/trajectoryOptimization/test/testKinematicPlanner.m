@@ -49,11 +49,11 @@ function [xtraj,utraj,info,r,v,planner] = testKinematicPlanner(visualize,nT)
   traj_init.x = x_nom_traj;
   traj_init.u = PPTrajectory(foh(t_seed,rand(nU,nT)));
   tf_range = t_seed(end)*[1,2];
-  planner = KinematicPlanner(r,nT,tf_range,q_nom_traj.eval(t_seed));
+  planner = KinematicPlanner(r,nT,tf_range);
   planner = planner.addRunningCost(NonlinearConstraint(0,0,nX+nU+1,@squaredEffort));
   planner = planner.setFixInitialState(true,x0);
   planner = planner.addManagedStateConstraint(ConstraintManager([],NonlinearConstraint(0,0,nX,@velocityPenalty)),{1,nT});
-  planner = planner.addRigidBodyConstraint(grasp,nT);
+  planner = planner.addRigidBodyConstraint(grasp,{nT});
   [xtraj,utraj,z,F,info] = solveTraj(planner,t_seed,traj_init);
   if visualize
     v.playback(xtraj);
