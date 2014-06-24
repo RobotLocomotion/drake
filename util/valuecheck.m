@@ -75,5 +75,5 @@ if (tf && any(abs(val(:)-desired_val(:))>tol))
 end
 
 if ~tf, 
-  error(errstr); 
+  error('Drake:ValueCheck',errstr); 
 end

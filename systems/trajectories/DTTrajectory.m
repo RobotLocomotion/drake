@@ -15,6 +15,11 @@ classdef (InferiorClasses = {?ConstantTrajectory,?FunctionHandleTrajectory,?PPTr
       if (~issorted(tt)) error('tt should be monotonically increasing'); end
 
       ts = mean(diff(tt));
+      if ts>(tt(end)-tt(end-1))+1e-6    % handle the case where the final time was not a multiple of the sample time
+        tt = tt(1:end-1);
+        xx = xx(:,1:end-1);
+        ts = mean(diff(tt));
+      end
       if (max(diff(tt))-ts>1e-6 || ts-min(diff(tt))>1e-6)
         error('tt doesn''t appear to have a fixed sample time'); 
       end

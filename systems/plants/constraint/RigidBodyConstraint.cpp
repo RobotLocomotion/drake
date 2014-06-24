@@ -17,18 +17,6 @@ double angleDiff(double phi1, double phi2)
   }
   return d;
 }
-template <typename T>
-void myrealloc(T* &ptr, int old_size, int new_size)
-{
-  T* newptr = new T[new_size];
-  if (old_size>0){
-    int s = old_size;
-    if (new_size<old_size) s = new_size;
-    for (int i = 0;i<s;i++) newptr[i] = ptr[i];
-    delete[] ptr;
-  }
-  ptr = newptr;
-}
 
 void drakePrintMatrix(const MatrixXd &mat)
 {
@@ -799,8 +787,11 @@ void PositionConstraint::eval(const double* t, VectorXd &c, MatrixXd &dc) const
 
 void PositionConstraint::bounds(const double* t,VectorXd &lb, VectorXd &ub) const
 {
-  lb = this->lb;
-  ub = this->ub;
+  if(this->isTimeValid(t))
+  {
+    lb = this->lb;
+    ub = this->ub;
+  }
 }
 
 void PositionConstraint::name(const double* t, std::vector<std::string> &name_str) const
@@ -940,8 +931,8 @@ void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
   Vector3d bTw_trans;
   Matrix<double,3,7> dbTw_trans;
   quatRotateVec(bTw_quat,-wTb.block(0,0,3,1),bTw_trans,dbTw_trans);
-  MatrixXd dbTw_transdq(4,nq);
-  dbTw_transdq = dbTw_trans.block(0,0,4,4)*dbTw_quatdq-dbTw_trans.block(0,4,4,3)*dwTb.block(0,0,3,nq);
+  MatrixXd dbTw_transdq(3,nq);
+  dbTw_transdq = dbTw_trans.block(0,0,3,4)*dbTw_quatdq-dbTw_trans.block(0,4,3,3)*dwTb.block(0,0,3,nq);
 
   Vector3d bpTw_trans1;
   Matrix<double,3,7> dbpTw_trans1;
@@ -1257,8 +1248,11 @@ void EulerConstraint::eval(const double* t, VectorXd &c, MatrixXd &dc) const
 
 void EulerConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) const
 {
-  lb = this->lb;
-  ub = this->lb;
+  if(this->isTimeValid(t))
+  {
+    lb = this->lb;
+    ub = this->ub;
+  }
 }
 
 WorldEulerConstraint::WorldEulerConstraint(RigidBodyManipulator *model, int body, Vector3d lb, Vector3d ub, Vector2d tspan): EulerConstraint(model,lb,ub,tspan)
@@ -1569,7 +1563,7 @@ void WorldGazeTargetConstraint::eval(const double* t,VectorXd &c, MatrixXd &dc) 
   if(this->isTimeValid(t))
   {
     MatrixXd body_axis_ends(4,2);
-    body_axis_ends.block(0,0,3,1) = this->gaze_origin;
+    body_axis_ends.block(0,0,4,1) = this->gaze_origin;
     body_axis_ends.block(0,1,3,1) = this->gaze_origin.block(0,0,3,1)+this->axis;
     body_axis_ends.block(3,0,1,2) = MatrixXd::Ones(1,2);
     int nq = this->robot->num_dof;

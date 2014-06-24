@@ -75,7 +75,7 @@ namespace DrakeCollision
           std::vector<int>& bodyB_idx, 
           MatrixXd& ptsA, MatrixXd& ptsB);
           
-      double collisionRaycast(const Vector3d &origin, const Vector3d &ray_endpoint);
+      virtual bool collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances);
 
       btDefaultCollisionConfiguration bt_collision_configuration;
       btCollisionDispatcher* bt_collision_dispatcher;

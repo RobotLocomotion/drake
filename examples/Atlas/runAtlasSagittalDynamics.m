@@ -5,11 +5,12 @@ options.twoD = true;
 options.view = 'right';
 options.floating = true;
 options.terrain = RigidBodyFlatTerrain();
-%s = 'urdf/simple_atlas_minimal_contact.urdf';
 s = 'urdf/atlas_minimal_contact.urdf';
 dt = 0.005;
 w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 r = TimeSteppingRigidBodyManipulator(s,dt,options);
+r = r.removeCollisionGroupsExcept({'heel','toe','back','front','knee','butt'});
+r = compile(r);
 warning(w);
 
 v = r.constructVisualizer;

@@ -30,7 +30,7 @@ classdef RigidBodySensor < RigidBodyElement
   end
   
   properties
-    name;
+    name;  % name of this sensor as a string
   end
 end
     

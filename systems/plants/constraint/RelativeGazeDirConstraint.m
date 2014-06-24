@@ -32,10 +32,10 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
     function obj = RelativeGazeDirConstraint(robot,body_a_idx, ...
                                              body_b_idx,axis,dir, ...
                                              conethreshold,tspan)
-      if(nargin < 8)
+      if(nargin < 7)
         tspan = [-inf inf];
       end
-      if(nargin<7)
+      if(nargin<6)
         conethreshold = 0;
       end
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeGazeDirConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,axis,dir,conethreshold,tspan);

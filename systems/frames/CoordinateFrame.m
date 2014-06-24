@@ -98,6 +98,10 @@ classdef CoordinateFrame < handle
     end
     
     function tf = isequal_modulo_transforms(a,b)
+      % returns true if the two coordinate frames are the same.  
+      % the "modulo transforms" refers to the fact that two identical
+      % frames, A and B, could be different if B knows how to transform to
+      % C, but A does not.  
       tf = isequal(a.name,b.name) && ...
         isequal(a.dim,b.dim) && ...
         isequal(a.coordinates,b.coordinates) && ...
@@ -217,7 +221,12 @@ classdef CoordinateFrame < handle
       % intended only for internal use.
       %
       
-      if (obj==target)
+      if (obj==target)  
+        % note: it's tempting to replace this with
+        % isequal_modulo_transforms, but I think it's more appropriate to
+        % keep this more exclusive.  For example, in each call to lqr, I construct
+        % multiple frames that are equal by the isequal_modulo_transforms
+        % test, but actually point to different coordinates.
         tf = ConstOrPassthroughSystem(repmat(nan,obj.dim,1),obj.dim);
         return;
       end
