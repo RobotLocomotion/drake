@@ -1266,8 +1266,7 @@ classdef RigidBodyManipulator < Manipulator
       end
       
       varargout=cell(1,nargout);
-      % note: intentionally jump straight to second order system (skipping manipulator)... even though it's bad form
-      [varargout{:}] = pdcontrol@SecondOrderSystem(sys,Kp,Kd,index);
+      [varargout{:}] = pdcontrol@Manipulator(sys,Kp,Kd,index);
     end    
     
     function [phi,dphi,ddphi] = positionConstraints(obj,q)
