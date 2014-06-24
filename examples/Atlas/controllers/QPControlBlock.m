@@ -376,7 +376,7 @@ classdef QPControlBlock < MIMODrakeSystem
       float_idx = 1:6; % indices for floating base dofs
       act_idx = 7:nq; % indices for actuated dofs
 
-      kinsol = doKinematics(r,q,false,true,qd);
+      kinsol = doKinematics(r,q,true,true,qd);
       
       [H,C,B] = manipulatorDynamics(r,q,qd);
 
@@ -391,10 +391,10 @@ classdef QPControlBlock < MIMODrakeSystem
       C_act = C(act_idx);
       B_act = B(act_idx,:);
 
-      [xcom,J] = getCOM(r,kinsol);
+      [xcom,J,dJ] = getCOM(r,kinsol);
+      qdot = kinsol.vToqdot * kinsol.v;
+      Jdot = reshape(reshape(dJ, numel(J), nq) * qdot, size(J));
       
-      
-      Jdot = forwardJacDot(r,kinsol,0);
       J = J(1:2,:); % only need COM x-y
       Jdot = Jdot(1:2,:);
       
