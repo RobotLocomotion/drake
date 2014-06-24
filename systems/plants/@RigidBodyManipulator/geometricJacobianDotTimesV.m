@@ -1,5 +1,5 @@
-function [Jdot_times_v, dJdot_times_v] = geometricJacobianDotV(obj, kinsol, base, endEffector, expressedIn)
-% GEOMETRICJACOBIANDOTV computes the 'convective term' d/dt(J) * v, where J
+function [Jdot_times_v, dJdot_times_v] = geometricJacobianDotTimesV(obj, kinsol, base, endEffector, expressedIn)
+% geometricJacobianDotTimesV computes the 'convective term' d/dt(J) * v, where J
 % is a geometric Jacobian and v is the vector of joint velocities across
 % the same joints that the geometric Jacobian spans
 % @param kinsol solution structure obtained from doKinematics

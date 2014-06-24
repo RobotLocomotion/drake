@@ -36,10 +36,10 @@ end
 
 if compute_gradient
   [twist, dtwist] = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-  [J_geometric_dot_v, dJ_geometric_dot_v] = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+  [J_geometric_dot_v, dJ_geometric_dot_v] = geometricJacobianDotTimesV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
 else
   twist = relativeTwist(kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
-  J_geometric_dot_v = geometricJacobianDotV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
+  J_geometric_dot_v = geometricJacobianDotTimesV(obj, kinsol, base_or_frame_ind, body_or_frame_ind, expressed_in);
 end
 
 omega = twist(1 : 3);

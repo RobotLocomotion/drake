@@ -1,4 +1,4 @@
-function testGeometricJacobianDotV()
+function testgeometricJacobianDotTimesV()
 testAtlas('rpy');
 testAtlas('quat');
 
@@ -29,7 +29,7 @@ while test_number <= ntests
     % compute Jacobian, JDotV
     kinsol = robot.doKinematics(q, false, false, v, true);
     [J0, vIndices] = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
-    Jdot_times_v = robot.geometricJacobianDotV(kinsol, base, end_effector, expressed_in);
+    Jdot_times_v = robot.geometricJacobianDotTimesV(kinsol, base, end_effector, expressed_in);
     
     % integrate
     q = q + kinsol.vToqdot * v * dt;
@@ -73,7 +73,7 @@ while test_number <= ntests
     v = randn(robot.getNumVelocities(), 1);
     
     kinsol = robot.doKinematics(q, true, false, v, true);
-    [~, dJdot_times_v] = robot.geometricJacobianDotV(kinsol, base, end_effector, expressed_in);
+    [~, dJdot_times_v] = robot.geometricJacobianDotTimesV(kinsol, base, end_effector, expressed_in);
     
     option.grad_method = 'taylorvar';
     [~, dJdot_times_v_geval] = geval(1, @(q) gevalFunction(robot, q, v, base, end_effector, expressed_in), q, option);
@@ -87,5 +87,5 @@ end
 
 function Jdot_times_v = gevalFunction(robot, q, v, base, end_effector, expressed_in)
 kinsol = robot.doKinematics(q, false, false, v, true);
-Jdot_times_v = robot.geometricJacobianDotV(kinsol, base, end_effector, expressed_in);
+Jdot_times_v = robot.geometricJacobianDotTimesV(kinsol, base, end_effector, expressed_in);
 end
