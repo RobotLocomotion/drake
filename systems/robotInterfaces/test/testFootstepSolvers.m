@@ -1,4 +1,4 @@
-function test_footstep_solvers()
+function testFootstepSolvers()
 
 checkDependency('yalmip');
 checkDependency('gurobi');
@@ -89,7 +89,7 @@ function test_solver(solver)
   end
   axis equal
 end
-               
+
 figure(1)
 test_solver(@footstepMIQP);
 figure(2)
