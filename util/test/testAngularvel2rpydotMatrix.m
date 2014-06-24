@@ -5,10 +5,14 @@ testGradient();
 end
 
 function testGradient()
-nTests = 100;
-for i = 1 : nTests
+n_tests = 100;
+test_number = 1;
+option.grad_method = {'taylorvar', 'user'};
+while test_number < n_tests
   rpy = randn(3, 1);
-  option.grad_method = {'taylorvar', 'user'};
-  [~, ~, ~] = geval(1, @angularvel2rpydotMatrix, rpy, option);
+  if abs(cos(rpy(2))) > 1e-2
+    [~, ~, ~] = geval(1, @angularvel2rpydotMatrix, rpy, option);
+    test_number = test_number + 1;
+  end
 end
 end
