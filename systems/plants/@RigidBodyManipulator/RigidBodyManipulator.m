@@ -311,7 +311,7 @@ classdef RigidBodyManipulator < Manipulator
         if compute_gradient
           ind = find(abs(v)<model.coulomb_window');
           dind = sign(v(ind))./model.coulomb_window(ind)' .* model.coulomb_friction(ind)';
-          fc_drv = zeros(NB,1);
+          fc_drv = zeros(model.getNumVelocities(),1);
           fc_drv(ind) =dind;
           df_frictiondv = df_frictiondv + diag(fc_drv);
         end
