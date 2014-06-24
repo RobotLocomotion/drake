@@ -273,7 +273,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         %
         % use qn = q + h*vn
         % where H(q)*(vn - v)/h = B*u - C(q) + J(q)'*z
-        %  or vn = qd + H\(h*tau + J'*z)
+        %  or vn = v + H\(h*tau + J'*z)
         %  with z = [h*cL; h*cP; h*cN; h*beta{1}; ...; h*beta{mC}; lambda]
         %
         % and implement equation (7) from Anitescu97, by collecting
@@ -881,8 +881,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       groups = getCollisionGroups(obj.manip);
     end
 
-    function f_friction = computeFrictionForce(obj,qd)
-      f_friction = computeFrictionForce(obj.manip,qd);
+    function f_friction = computeFrictionForce(obj,v)
+      f_friction = computeFrictionForce(obj.manip,v);
     end
     
     function obj = removeCollisionGroups(obj,contact_groups)
