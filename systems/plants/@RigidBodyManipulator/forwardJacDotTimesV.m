@@ -45,8 +45,8 @@ end
 omega = twist(1 : 3);
 v_twist = twist(4 : 6);
 
-qidot = Phi * omega;
-Phid = reshape(dPhidqrot * qidot, size(Phi));
+qrotdot = Phi * omega;
+Phid = reshape(dPhidqrot * qrotdot, size(Phi));
 
 x_size = point_size + size(Phi, 1);
 pos_row_indices = repeatVectorIndices(1 : point_size, x_size, npoints);
@@ -69,7 +69,7 @@ if compute_gradient
   dv_twist = dtwist(4:6, :);
   
   dqidot = Phi * domega + matGradMult(dPhi, omega);
-  dPhid = dPhidqrot * dqidot + matGradMult(ddPhidqrotdq, qidot);
+  dPhid = dPhidqrot * dqidot + matGradMult(ddPhidqrotdq, qrotdot);
   
   dJdot_times_v = zeros(numel(Jdot_times_v), length(kinsol.q));
   drdots = -r_hats * domega + matGradMult(-dr_hats, omega) + repmat(dv_twist, npoints, 1);
