@@ -150,7 +150,30 @@ classdef TaylorVar
     function a=bsxfun(fun,a,b)
       if (isa(a,'TaylorVar'))
         if (any(a.dim~=size(b)))
-          error('not implemented yet'); 
+          % from help bsxfun:
+          % Whenever a dimension of A or B is singleton (equal to 
+          % one), bsxfun virtually replicates the array along that dimension to 
+          % match the other array. In the case where a dimension of A or B is 
+          % singleton and the corresponding dimension in the other array is zero,
+          % bsxfun virtually diminishes the singleton dimension to zero.
+          
+          a_repmat_pattern = ones(size(a.dim));
+          a_singleton_dims = a.dim == 1;
+          a_repmat_pattern(a_singleton_dims) = b.dim(a_singleton_dims);
+          a_rep = repmat(a, a_repmat_pattern);
+          
+          b_repmat_pattern = ones(size(b.dim));
+          b_singleton_dims = b.dim == 1;
+          b_repmat_pattern(b_singleton_dims) = a.dim(b_singleton_dims);
+          b_rep = repmat(b, b_repmat_pattern);
+          
+          if a_rep.dim ~= b_rep.dim
+            % failed to make a and b of equal size by replicating along
+            % singleton dimensions
+            error('Non-singleton dimensions of the two input arrays must match each other.');
+          end
+          
+          a = bsxfun(fun, a_rep, b_rep);
         end
         for i=1:prod(a.dim)
 %          a(i)=feval(fun,a(i),b(i));  % want this, but can't call subsref
