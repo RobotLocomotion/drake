@@ -161,7 +161,8 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
         [obj,z,Mvn,wvn] = solveLCP(obj,t,x,u);
       end
       
-      num_q = obj.manip.num_positions;
+      num_q = obj.manip.getNumPositions();
+      num_v = obj.manip.getNumVelocities();
       q=x(1:num_q); v=x((num_q+1):end);
       h = obj.timestep;
 
