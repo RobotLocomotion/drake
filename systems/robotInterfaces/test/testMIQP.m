@@ -1,6 +1,5 @@
-function test_MISOCP()
+function testMIQP()
 
-checkDependency('yalmip');
 checkDependency('gurobi');
 addpath(fullfile(getDrakePath, 'examples', 'Atlas'));
 options.floating = true;
@@ -47,16 +46,16 @@ else
   safe_regions(1) = struct('A', Ai, 'b', bi, 'point', [0;0;0], 'normal', [0;0;1]);
 end
 
-goal_pos = struct('right', [2;2-0.15;0.1;0;0;pi/2],...
-                  'left',  [2;2+0.15;0.1;0;0;pi/2]);
+goal_pos = struct('right', [1;-0.15;0.1;0;0;0],...
+                  'left',  [1;+0.15;0.1;0;0;0]);
 
 params = r.default_footstep_params;
-params.max_num_steps = 20;
+params.max_num_steps = 30;
 params.min_num_steps = 0;
 params.min_step_width = 0.25;
 params.nom_step_width = 0.26;
 params.max_step_width = 0.27;
-params.nom_forward_step = 0.25;
+params.nom_forward_step = 0.15;
 params.max_forward_step = 0.4;
 params.nom_upward_step = 0.25;
 params.nom_downward_step = 0.15;
@@ -73,10 +72,9 @@ nsteps = params.max_num_steps + 2;
 seed_plan = FootstepPlan.blank_plan(r, nsteps, [r.foot_frame_id.right, r.foot_frame_id.left], params, safe_regions);
 seed_plan.footsteps(1).pos = foot_orig.right;
 seed_plan.footsteps(2).pos = foot_orig.left;
-plan = footstepMISOCP(r, seed_plan, weights, goal_pos);
+plan = footstepMIQP(r, seed_plan, weights, goal_pos);
 toc
 
-steps_rel = plan.relative_step_offsets()
 
 figure(1);
 clf
