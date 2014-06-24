@@ -241,32 +241,38 @@ namespace DrakeCollision
     return (c->pts.size() > 0);
   };
   
-  double BulletModel::collisionRaycast(const Vector3d &origin, const Vector3d &ray_endpoint)
+  bool BulletModel::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances)
   {
-      
-    btVector3 ray_from_world(origin(0), origin(1), origin(2));
-    btVector3 ray_to_world(ray_endpoint(0), ray_endpoint(1), ray_endpoint(2));
     
-    btCollisionWorld::ClosestRayResultCallback ray_callback(ray_from_world, ray_to_world);
+    distances.resize(origins.cols());
     
-    bt_collision_world->rayTest(ray_from_world, ray_to_world, ray_callback);
+    for (int i = 0; i < origins.cols(); i ++)
+    {
     
-    if (ray_callback.hasHit()) {
+        btVector3 ray_from_world(origins(0,i), origins(1,i), origins(2,i));
+        btVector3 ray_to_world(ray_endpoints(0,i), ray_endpoints(1,i), ray_endpoints(2,i));
         
-        // compute distance to hit
+        btCollisionWorld::ClosestRayResultCallback ray_callback(ray_from_world, ray_to_world);
         
-        btVector3 end = ray_callback.m_hitPointWorld;
+        bt_collision_world->rayTest(ray_from_world, ray_to_world, ray_callback);
         
-        Vector3d end_eigen(end.getX(), end.getY(), end.getZ());
-        
-        return (end_eigen - origin).norm();
-        
-        
-    } else {
-        return -1;
+        if (ray_callback.hasHit()) {
+            
+            // compute distance to hit
+            
+            btVector3 end = ray_callback.m_hitPointWorld;
+            
+            Vector3d end_eigen(end.getX(), end.getY(), end.getZ());
+            
+            distances(i) = (end_eigen - origins.col(i)).norm();
+            
+            
+        } else {
+            distances(i) = -1;
+        }
     }
     
-    
+    return true;
   } 
 
 
@@ -300,8 +306,7 @@ namespace DrakeCollision
       }
       int numContacts = contactManifold->getNumContacts();
       for (int j=0;j<numContacts;j++)
-      {
-        btManifoldPoint& pt = contactManifold->getContactPoint(j);
+      {        btManifoldPoint& pt = contactManifold->getContactPoint(j);
         if (pt.getDistance()+marginA+marginB<0.f)
         {
           const btVector3& normalOnB = pt.m_normalWorldOnB;

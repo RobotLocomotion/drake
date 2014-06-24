@@ -5,7 +5,7 @@ classdef SWFWriter < hgsetget
 
 properties
   fps = 30;        % frames per second
-  poster = false;  % set to true to have a pdf of the first frame saved with the same filename (+.pdf).  
+  poster = true;  % set to true to have a pdf of the first frame saved with the same filename (+.pdf).  
   loop = false;    % set to true to have it loop
 end
 

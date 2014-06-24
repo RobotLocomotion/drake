@@ -10,6 +10,8 @@ classdef UnderwaterAcrobotPlant < Manipulator
         d2 = .1; %link 2 diameter
         mr1 = .5; %Mass ratio link1 (rholink/rhowater)
         mr2 = .5; %Mass ratio link2 (rholink/rhowater)
+        b1 = 0.1;  %Shoulder joint viscous damping
+        b2 = 0.1;  %Elbow joint viscous damping
         
         %Setting drag to zero for validation against URDF implementation
         cd = 0; %Drag coefficient for bluff body (assume same in x and y)
@@ -31,7 +33,7 @@ classdef UnderwaterAcrobotPlant < Manipulator
     methods
         function obj = UnderwaterAcrobotPlant
             obj = obj@Manipulator(2,1);
-            %obj = setInputLimits(obj,-10,10);
+            obj = setInputLimits(obj,-50,50);
             
             obj = setInputFrame(obj,CoordinateFrame('UnderwaterAcrobotInput',1,'u',{'tau'}));
             obj = setStateFrame(obj,CoordinateFrame('UnderwaterAcrobotState',4,'x',{'theta1','theta2','theta1dot','theta2dot'}));
@@ -132,7 +134,7 @@ classdef UnderwaterAcrobotPlant < Manipulator
             D2 = lc2*Dx2; % Drag moment from link 2 on joint
             
             H = [H11 H12; H21 H22];
-            C = [C1; C2]+[G1; G2]+[D1;D2];
+            C = [C1; C2]+[G1; G2]+[D1;D2]+[obj.b1;obj.b2].*qd;
             
             B = [0; 1];
             
@@ -143,6 +145,7 @@ classdef UnderwaterAcrobotPlant < Manipulator
             f = dynamics@Manipulator(obj,t,x,u);
             if (nargout>1)
                 df = dynamicsGradients(obj,t,x,u,1);
+                %[~,df] = geval('dynamics',obj,t,x,u,struct('grad_method','taylorvar'));
                 if (nargout>2)
                     % Analytic gradients did not solve for n>2, so using geval
                     [~,~,d2f,d3f] = geval('dynamics',obj,t,x,u,struct('grad_method','taylorvar'));
@@ -151,7 +154,7 @@ classdef UnderwaterAcrobotPlant < Manipulator
         end
         
         function [c,V] =balanceLQR(obj)
-            Q = diag([1,1,10,10]); R = 1;
+            Q = diag([1,1,1,1]); R = 1;
             if (nargout<2)
                 c = tilqr(obj,obj.xG,obj.uG,Q,R);
             else
@@ -178,6 +181,7 @@ classdef UnderwaterAcrobotPlant < Manipulator
             con.T.ub = 6;
             
             options.method='dircol';
+            
             %options.grad_test = true;
             info=0;
             while (info~=1)

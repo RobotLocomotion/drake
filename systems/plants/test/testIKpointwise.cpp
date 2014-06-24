@@ -5,7 +5,6 @@
 #include "../IKoptions.h"
 #include <iostream>
 #include <cstdlib>
-#include "mat.h"
 
 using namespace std;
 using namespace Eigen;
@@ -18,25 +17,12 @@ int main()
   }
   Vector2d tspan;
   tspan<<0,1;
-  MATFile *pmat;
-  pmat = matOpen("../../examples/Atlas/data/atlas_fp.mat","r");
-  if(pmat == NULL)
-  {
-    printf("Error reading mat file\n");
-    return(EXIT_FAILURE);
-  }
-  mxArray* pxstar = matGetVariable(pmat,"xstar");
-  if(pxstar == NULL)
-  {
-    printf("no xstar in mat file\n");
-    return(EXIT_FAILURE);
-  }
   int nT = 3;
   double t[3]={0.0,0.5,1.0};
-  MatrixXd q0(model->num_dof,nT);
+  MatrixXd q0 = MatrixXd::Zero(model->num_dof,nT);
   for(int i = 0;i<nT;i++)
   {
-    memcpy(q0.data()+model->num_dof*i,mxGetPr(pxstar),sizeof(double)*model->num_dof);
+    q0(3,i) = 0.8;
   }
   Vector3d com_des = Vector3d::Zero();
   com_des(2) = nan("");
@@ -52,11 +38,14 @@ int main()
   for(int i = 0;i<nT;i++)
   {
     printf("INFO[%d] = %d ",i,info[i]);
+    if(info[i]!= 1)
+    {
+      return 1;
+    }
   }
   printf("\n");
   delete com_kc;
   delete[] constraint_array;
   delete[] info;
-  matClose(pmat);
   return 0;
 }

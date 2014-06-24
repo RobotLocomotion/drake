@@ -8,15 +8,6 @@ classdef RigidBodyTerrain < RigidBodyElement
     function obj = RigidBodyTerrain()
       obj.geom = constructRigidBodyGeometry(obj);
     end
-
-    function feas_check = getStepFeasibilityChecker(obj,foot_radius,options)
-      % Stub for a general purpose function for checking step feasibility. See DRCTerrainMap.m for a real implementation.
-
-      function feas = feas_check_fcn(xy)
-        feas = ones(1, size(xy, 2));
-      end
-      feas_check = @feas_check_fcn;
-    end
     
     function geom = getRigidBodyGeometry(obj)
       geom = obj.geom;

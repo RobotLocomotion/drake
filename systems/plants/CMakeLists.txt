@@ -1,4 +1,7 @@
 
+# IMPORTANT NOTE!! 
+# matlab has it's own boost libraries.  DO NOT let any mex file depend
+# on the system boost (directly nor indirectly), or you're asking for trouble.
 find_package( Boost COMPONENTS filesystem system regex)
 
 include_directories (${CMAKE_SOURCE_DIR}/util )
