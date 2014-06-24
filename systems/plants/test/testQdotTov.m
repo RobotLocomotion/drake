@@ -22,6 +22,7 @@ nv = robot.getNumVelocities();
 q = getRandomConfiguration(robot);
 kinsol = doKinematics(robot, q, false, false);
 valuecheck(eye(nv), kinsol.qdotToV * kinsol.vToqdot, 1e-12);
+valuecheck(pinv(kinsol.qdotToV), kinsol.vToqdot, 1e-12);
 end
 
 function testGradient(robot)
