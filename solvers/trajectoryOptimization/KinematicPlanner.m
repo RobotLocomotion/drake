@@ -1,8 +1,8 @@
 classdef KinematicPlanner < SimpleDynamicsFullKinematicsPlanner
   methods
-    function obj = KinematicPlanner(plant,varargin)
-      plant = plant.setNumInputs(plant.getNumVelocities());
-      obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,varargin{:});
+    function obj = KinematicPlanner(robot,varargin)
+      plant = robot.setNumInputs(robot.getNumVelocities());
+      obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,robot,varargin{:});
 
       % Make timesteps equal
       A_time = [eye(obj.N-2) zeros(obj.N-2,1)] - [zeros(obj.N-2,1) eye(obj.N-2)];
