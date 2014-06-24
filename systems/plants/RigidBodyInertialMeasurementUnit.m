@@ -26,16 +26,18 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
       warning('the IMU outputs have not been tested yet (due to bug 1728)'); 
     end  
 
-    function y = output(obj,manip,t,x,u)
+    function y = output(obj,manip,t,x,u)      
       nq = getNumPositions(manip);
       q = x(1:nq);
-      qd = x(nq+1:end);
-      qdd = sodynamics(manip,t,x,u);  % todo: this could be much more efficient if I cached qdd
+      v = x(nq+1:end);
+      vd = sodynamics(manip,t,x,u);  % todo: this could be much more efficient if I cached qdd
       
-      kinsol = doKinematics(manip,q,false,qd);
-      
-      [x,J] = forwardKin(manip,kinsol,obj.body,obj.xyz,1);   % ask for rpy (because I want to output omega in rpy)
-      Jdot = forwardJacDot(manip,kinsol,obj.body,obj.xyz,0,0);
+      kinsol = doKinematics(manip,q,false,false,v);     
+      [x,J] = forwardKinV(manip,kinsol,obj.body,obj.xyz,1);   % ask for rpy (because I want to output omega in rpy)
+%       qd = kinsol.vToqdot * v;
+%       Jdot = forwardJacDot(manip,kinsol,obj.body,obj.xyz,0,0);
+%       Jdot_times_qd = Jdot * qd;
+      Jdot_times_v = forwardJacDotTimesV(obj, kinsol, obj.body,obj.xyz,0,0);
       
       % x = f(q)
       % xdot = dfdq*dqdt = J*qd
@@ -45,11 +47,11 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
       if numel(obj.xyz)==2  % 2D version
         y = [ x(3); ...
           J(3,:)*qd; ...
-          Jdot*qd + J(1:2,:)*qdd ];
+          Jdot_times_v + J(1:2,:)*vd ];
       else  % 3D version
         y = [ rpy2quat(x(4:6)); ...
           J(4:6,:)*qd; ...
-          Jdot*qd + J(1:3,:)*qdd ];
+          Jdot_times_v + J(1:3,:)*vd ];
       end
     end
     
