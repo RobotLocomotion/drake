@@ -68,8 +68,8 @@ if compute_gradient
   domega = dtwist(1:3, :);
   dv_twist = dtwist(4:6, :);
   
-  dqidot = Phi * domega + matGradMult(dPhi, omega);
-  dPhid = dPhidqrot * dqidot + matGradMult(ddPhidqrotdq, qrotdot);
+  dqrotdot = Phi * domega + matGradMult(dPhi, omega);
+  dPhid = dPhidqrot * dqrotdot + matGradMult(ddPhidqrotdq, qrotdot);
   
   dJdot_times_v = zeros(numel(Jdot_times_v), length(kinsol.q));
   drdots = -r_hats * domega + matGradMult(-dr_hats, omega) + repmat(dv_twist, npoints, 1);
