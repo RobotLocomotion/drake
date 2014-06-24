@@ -15,7 +15,14 @@ if any(col_sizes ~= cols)
   error('column sizes not equal')
 end
 
-ret = zeros(rows, cols) * matrices{1}(1); % for TaylorVar
+% ugly...
+% to handle the case that matrices{1} is empty
+if isa(matrices{1}, 'TaylorVar')
+  ret = zeros(rows, cols) * matrices{1}(1);
+else
+  ret = zeros(rows, cols);
+
+  
 block_sizes_sum = sum(block_sizes);
 block_sizes_cumsum = cumsum(block_sizes);
 indices = (1 : rows)';
