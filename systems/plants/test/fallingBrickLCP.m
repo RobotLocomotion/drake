@@ -1,9 +1,9 @@
 function fallingBrickLCP
 
-options.floating = true;
+options.floating = true; % 'quat'; 
 options.terrain = RigidBodyFlatTerrain();
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
-x0 = p.resolveConstraints([0;1+rand;randn(10,1)]);
+x0 = p.resolveConstraints([getRandomConfiguration(p); randn(p.getNumVelocities(), 1)]);
 
 if 0 
   v = p.constructVisualizer();

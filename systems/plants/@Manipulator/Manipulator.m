@@ -219,7 +219,7 @@ classdef Manipulator < DrakeSystem
       if (obj.num_position_constraints>0)
         [phi,Jv] = positionConstraintsV(obj,q,v);
       else
-        phi=[]; Jv=zeros(0,obj.num_positions);
+        phi=[]; Jv=zeros(0,obj.num_velocities);
       end
       if (obj.num_velocity_constraints>0)
         psi = obj.velocityConstraints(q,v);

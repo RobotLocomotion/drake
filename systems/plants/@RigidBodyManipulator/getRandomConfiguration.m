@@ -1,8 +1,7 @@
-%NOTEST
-function q = getRandomConfiguration(manipulator)
-q = zeros(manipulator.getNumPositions(), 1);
-for i = 2 : manipulator.getNumBodies()
-  body = manipulator.body(i);
+function q = getRandomConfiguration(obj)
+q = zeros(obj.getNumPositions(), 1);
+for i = 2 : obj.getNumBodies()
+  body = obj.body(i);
   if body.floating == 0
     if isinf(body.joint_limit_min) || isinf(body.joint_limit_max)
       qBody = randn;
