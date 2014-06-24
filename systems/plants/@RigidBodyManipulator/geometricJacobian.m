@@ -39,13 +39,13 @@ end
 
 if expressed_in ~= 1
   % change frame from world to expressedIn
-  T = kinsol.T{expressed_in};
-  TInv = inv(T);
   if compute_gradient
-    dTInvdq = dinvT(T, kinsol.dTdq{expressed_in});
-    dJdq = dAdHTimesX(TInv, J, dTInvdq, dJdq);
+    [T, dTdq] = relativeTransform(obj, kinsol, expressed_in, 1);
+    dJdq = dAdHTimesX(T, J, dTdq, dJdq);
+  else
+    T = relativeTransform(obj, kinsol, expressed_in, 1);
   end
-  J = transformTwists(TInv, J);
+  J = transformTwists(T, J);
 end
 
 end

@@ -39,7 +39,15 @@ if (kinsol.mex)
     
 else
   if nargout > 2
-    error('not yet implemented')
+    [x, J] = forwardKin(obj, kinsol, 1, pts, 0, body_or_frame_ind);
+    
+    % P computation
+    m = size(pts,2);
+    invT = relativeTransform(obj, kinsol, body_or_frame_ind, 1);
+    P = zeros(3*m,3*m);
+    for i=1:size(pts,2)
+      P((i-1)*3+1:i*3,(i-1)*3+1:i*3)=invT(1:3,1:3);
+    end
   elseif nargout > 1
     [x, J] = forwardKin(obj, kinsol, 1, pts, 0, body_or_frame_ind);
   else
