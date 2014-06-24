@@ -282,6 +282,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         obj.cost = [obj.cost,{cnstr}];
         obj.cost_xind_cell{end+1} = {xind_vec(cnstr.jCvar);};
         obj.cost_xind_stacked{end+1} = xind_vec(cnstr.jCvar);
+        obj.cost_dataind{end+1} = data_ind;
         obj.jFvar = unique([obj.jFvar;xind_vec(cnstr.jCvar)]);
         obj.iFfun = ones(length(obj.jFvar),1);
       else

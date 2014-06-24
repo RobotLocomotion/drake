@@ -7,10 +7,10 @@ warning('Off','optimlib:fmincon:SwitchingToMediumScale');
 % x1^2+4*x2^2<=4
 % (x1-2)^2+x2^2<=5
 % x1 >= 0
-cnstr1 = NonlinearConstraint(-inf(2,1),[4;5],2,@cnstr1_userfun);
+cnstr1 = FunctionHandleConstraint(-inf(2,1),[4;5],2,@cnstr1_userfun);
 xind1 = [1;2];
-nlp1 = nlp1.addNonlinearConstraint(cnstr1,xind1);
-nlp1 = nlp1.addBoundingBoxConstraint(BoundingBoxConstraint(0,inf),1);
+nlp1 = nlp1.addConstraint(cnstr1,xind1);
+nlp1 = nlp1.addConstraint(BoundingBoxConstraint(0,inf),1);
 x1 = [1;2;1];
 [g1,h1,dg1,dh1] = nlp1.nonlinearConstraints(x1);
 [g1_user,dg1_user] = cnstr1_userfun(x1(xind1));
@@ -67,8 +67,8 @@ end
 % x1 >= 0
 % 0<=x1+2*x3 <=10
 % x1+3*x3 = 0
-nlp1 = nlp1.addCost(NonlinearConstraint(-inf,inf,1,@cost1_userfun),2);
-nlp1 = nlp1.addCost(NonlinearConstraint(-inf,inf,2,@cost2_userfun),[1;3]);
+nlp1 = nlp1.addCost(FunctionHandleObjective(1,@cost1_userfun),2);
+nlp1 = nlp1.addCost(FunctionHandleObjective(2,@cost2_userfun),[1;3]);
 nlp1 = nlp1.addCost(LinearConstraint(-inf,inf,1),3);
 [x2,F,info] = nlp1.solve(x0);
 if(info>10)
@@ -100,9 +100,9 @@ valuecheck(x2,x2_fmincon,1e-4);
 % x1+3*x3 = 0
 % x1*x2*x3 = 1/6;
 % -10<=x2^2+x2*x3+2*x3^2<=30
-nc2 = NonlinearConstraint([1/6;-10],[1/6;30],3,@cnstr2_userfun);
+nc2 = FunctionHandleConstraint([1/6;-10],[1/6;30],3,@cnstr2_userfun);
 nc2 = nc2.setSparseStructure([1;1;1;2;2],[1;2;3;2;3]);
-nlp1 = nlp1.addNonlinearConstraint(nc2);
+nlp1 = nlp1.addConstraint(nc2);
 x0 = [1;2;3];
 [x,F,info] = nlp1.solve(x0);
 c2 = cnstr2_userfun(x);
@@ -172,10 +172,10 @@ display('test multi-input constraint and cost')
 % x1+3*x3 = 0
 nlp3 = NonlinearProgramWConstraintObjects(3);
 nlp3 = nlp3.setCheckGrad(true);
-cnstr3 = NonlinearConstraint(-inf(2,1),[4;5],2,@cnstr3_userfun);
-cost3 = NonlinearConstraint(-inf,inf,2,@cost3_userfun);
+cnstr3 = FunctionHandleConstraint(-inf(2,1),[4;5],2,@cnstr3_userfun);
+cost3 = FunctionHandleObjective(2,@cost3_userfun);
 xind1 = {1;2};
-nlp3 = nlp3.addNonlinearConstraint(cnstr3,xind1);
+nlp3 = nlp3.addConstraint(cnstr3,xind1);
 nlp3 = nlp3.addCost(cost3,xind1);
 nlp3 = nlp3.addBoundingBoxConstraint(BoundingBoxConstraint(0,inf),1);
 
