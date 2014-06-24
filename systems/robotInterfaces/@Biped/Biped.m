@@ -72,6 +72,7 @@ classdef Biped < LeggedRobot
       %               pose of the left foot relative to the right, and signs will be
       %               automatically adjusted to describe the pose of the right foot
       %               relative to the left
+      params = applyDefaults(params, obj.default_footstep_params);
 
       bodies = [stance_foot_frame, swing_foot_frame];
 
