@@ -35,12 +35,18 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
   end
   
   methods
-    function obj = SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,varargin)
+    function obj = SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,contact_wrench_cnstr_struct,options)
       % @param robot   A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
       % @param N   The number of knot points
       % @param tf_range  A double. The bounds on the total time
-      % @param varargin  A cell of of structs, with fields 'active_knot' and 'cwc'
-      obj = obj@DirectTrajectoryOptimization(plant,N,tf_range,struct('time_option',2));
+      % @param contact_wrench_cnstr_struct  A cell of of structs, with fields 'active_knot' and 'cwc'
+      if(nargin<6)
+        options = struct();
+      end
+      if(~isfield(options,'time_option'))
+        options.time_option = 2;
+      end
+      obj = obj@DirectTrajectoryOptimization(plant,N,tf_range,struct('time_option',options.time_option));
       if(~isa(robot,'RigidBodyManipulator') && ~isa(robot,'TimeSteppingRigidBodyManipulator'))
         error('Drake:SimpleDynamicsFullKinematicsPlanner:expect a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
@@ -55,25 +61,28 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       [joint_lb,joint_ub] = obj.robot.getJointLimits();
       obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(reshape(bsxfun(@times,joint_lb,ones(1,obj.N)),[],1),...
         reshape(bsxfun(@times,joint_ub,ones(1,obj.N)),[],1)),obj.q_inds(:));
+      obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(obj.N-1,1),inf(obj.N-1,1)),obj.h_inds);
       kinsol_dataind = zeros(obj.N,1);
       for i=1:obj.N,
         [obj,kinsol_dataind(i)] = obj.addSharedDataFunction(@obj.kinematicsData,{obj.q_inds(:,i)});
       end
       obj.kinsol_dataind = kinsol_dataind;
       
-      num_cwc = nargin-4;
+      num_cwc = length(contact_wrench_cnstr_struct);
       obj.contact_wrench_cnstr = cell(1,num_cwc);
       obj.contact_wrench_cnstr_active_knot = cell(1,num_cwc);
       for i = 1:num_cwc
-        if(~isstruct(varargin{i}) || ~isfield(varargin{i},'active_knot') || ~isfield(varargin{i},'cwc') || ~isa(varargin{i}.cwc,'ContactWrenchConstraint'))
+        if(~isstruct(contact_wrench_cnstr_struct) ||...
+            ~isfield(contact_wrench_cnstr_struct(i),'active_knot') || ~isfield(contact_wrench_cnstr_struct(i),'cwc') || ...
+            ~isa(contact_wrench_cnstr_struct(i).cwc,'ContactWrenchConstraint'))
           error('Drake:SimpleDynamicsFullKinematicsPlanner: expect a struct containing active_knot and a ContactWrenchConstraint');
         end
-        if(~all(isinf(varargin{i}.cwc.tspan)))
+        if(~all(isinf(contact_wrench_cnstr_struct(i).cwc.tspan)))
           error('Drake:SimpleDynamicsFullKinematicsPlanner: all the ContactWrenchConstraint should have tspan = [-inf inf]');
         end
         % I am supposing that a body only has one type of contact.
-        obj.contact_wrench_cnstr{i} = varargin{i}.cwc;
-        obj.contact_wrench_cnstr_active_knot{i} = varargin{i}.active_knot;
+        obj.contact_wrench_cnstr{i} = contact_wrench_cnstr_struct(i).cwc;
+        obj.contact_wrench_cnstr_active_knot{i} = contact_wrench_cnstr_struct(i).active_knot;
       end
       obj.robot_mass = obj.robot.getMass();
       obj = obj.parseContactWrenchConstraint();
@@ -131,7 +140,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       end
       for j=1:length(time_index),
         kinsol_inds = obj.kinsol_dataind(time_index{j}); 
-        cstr_inds = mat2cell(obj.q_inds(:,time_index{j}),size(obj.q_inds,1),ones(1,length(time_index{j})));
+        cnstr_inds = mat2cell(obj.q_inds(:,time_index{j}),size(obj.q_inds,1),ones(1,length(time_index{j})));
         
         % record constraint for posterity
         obj.constraints{end+1}.constraint = constraint;

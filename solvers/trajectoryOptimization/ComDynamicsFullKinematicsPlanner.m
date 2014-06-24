@@ -149,9 +149,10 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
             joint_idx_j = vertcat(obj.robot.body(joint_path).dofnum)';
           end
           joint_idx = [joint_idx joint_idx_j];
+          lambda_count_tmp = lambda_count_tmp+num_lambda_j;
         end
         joint_idx = unique(joint_idx);
-        newton_cnstr = LinearConstraint([0;0;-obj.robot_mass*obj.g],[0;0;-obj.robot_mass*obj.g],[eye(3) -A_force_stack]);
+        newton_cnstr = LinearConstraint([0;0;-obj.robot_mass*obj.g],[0;0;-obj.robot_mass*obj.g],[obj.robot_mass*eye(3) -A_force_stack]);
         newton_cnstr = newton_cnstr.setName([{sprintf('F_x=ma_x[%d]',knot_idx)};{sprintf('F_y=ma_y[%d]',knot_idx)};{sprintf('F_z=ma_z[%d]',knot_idx)}]);
         obj = obj.addLinearConstraint(newton_cnstr,[obj.comddot_inds(:,knot_idx);knot_lambda_idx]);
         Hdot_cnstr = NonlinearConstraint(zeros(3,1),zeros(3,1),obj.nq+3+num_lambda+3,@(~,com,lambda,Hdot,kinsol) singleTimeDynFun(kinsol,com,lambda,Hdot));
@@ -194,6 +195,16 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
           {obj.com_inds(:,knot_idx(2))};{obj.com_inds(:,knot_idx(1))};{obj.comdot_inds(:,knot_idx(1))};{obj.comdot_inds(:,knot_idx(2))};...
           {obj.comddot_inds(:,knot_idx(2))};{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{obj.v_inds(:,knot_idx(2))}]);
       end
+    end
+    
+    function obj = addCoMBounds(obj,knot_idx,com_lb,com_ub)
+      % @param knot_idx  The indices of the knots on which the com position will be
+      % constrained within the bounding box.
+      knot_idx = knot_idx(:)';
+      num_knots = numel(knot_idx);
+      sizecheck(com_lb,[3,num_knots]);
+      sizecheck(com_ub,[3,num_knots]);
+      obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(com_lb(:),com_ub(:)),reshape(obj.com_inds(:,knot_idx),[],1));
     end
     
     function obj = addRunningCost(obj,running_cost)
