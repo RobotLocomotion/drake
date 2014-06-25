@@ -19,12 +19,12 @@
 
   <link name="pendulum">
     <inertial>
-      <origin xyz=".5 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 -1" rpy="0 0 0" />
       <mass value="1" />
-      <inertia ixx="0" ixy="0" ixz="0" iyy="1" iyz="0" izz="0" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
     </inertial>
     <visual>
-      <origin xyz=".5 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
       <geometry>
          <cylinder length="1" radius=".05" />
       </geometry>
@@ -39,10 +39,11 @@
     <child link="pendulum" />
     <origin xyz="0 0 0" />
     <axis xyz="0 1 0" />
+    <dynamics damping="1" />
   </joint>
 
   <force_element name="spring">
-    <torsional_spring stiffness="1" rest_angle="pi/2">
+    <torsional_spring stiffness="10" rest_angle="pi/2">
       <joint name="shoulder" />
     </torsional_spring>
   </force_element>
