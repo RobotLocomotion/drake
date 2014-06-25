@@ -64,8 +64,6 @@ classdef WalkingPlanData
       end
       plot_traj_foh(obj.comtraj, [0,1,0]);
       plot_traj_foh(obj.zmptraj, [0,0,1]);
-
-      lcmgl.switchBuffers();
     end
 
   end
