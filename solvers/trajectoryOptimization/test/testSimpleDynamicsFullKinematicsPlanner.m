@@ -145,14 +145,29 @@ x_seed(sdfkp.lambda_inds{2}(:)) = reshape(bsxfun(@times,[0;0;sdfkp.robot_mass*sd
 % add a cost to maximize com apex_height
 sdfkp = sdfkp.addCost(NonlinearConstraint(-inf,inf,2,@comApexHeightCost),{sdfkp.com_inds(3,toe_takeoff_idx);sdfkp.comdot_inds(3,toe_takeoff_idx)});
 % add a constraint on the com apex height
+apex_height_cnstr = NonlinearConstraint(1.4,inf,2,@comApexHeight);
+apex_height_cnstr = apex_height_cnstr.setName({'com apex height'});
+sdfkp = sdfkp.addNonlinearConstraint(apex_height_cnstr,{sdfkp.com_inds(3,toe_takeoff_idx);sdfkp.comdot_inds(3,toe_takeoff_idx)});
+
+% add a symmetric constraint
+symmetry_cnstr = symmetryConstraint(robot,2:nT-1);
+sdfkp = sdfkp.addLinearConstraint(symmetry_cnstr,reshape(sdfkp.q_inds(:,2:nT-1),[],1));
+% no yawing on the back
+bkz_idx = robot.getBody(robot.findJointInd('back_bkz')).dofnum;
+sdfkp = sdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(nT-2,1),zeros(nT-2,1)),reshape(sdfkp.q_inds(bkz_idx,2:nT-1),[],1));
+sdfkp = sdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(nT-2,1),zeros(nT-2,1)),reshape(sdfkp.q_inds(6,2:nT-1),[],1));
+sdfkp = sdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(nT-2,1),zeros(nT-2,1)),reshape(sdfkp.q_inds(4,2:nT-1),[],1));
+
 sdfkp = sdfkp.setSolverOptions('snopt','iterationslimit',1e6);
 sdfkp = sdfkp.setSolverOptions('snopt','majoriterationslimit',2000);
 sdfkp = sdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',5e-5);
-sdfkp = sdfkp.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
+sdfkp = sdfkp.setSolverOptions('snopt','majoroptimalitytolerance',1e-5);
 sdfkp = sdfkp.setSolverOptions('snopt','superbasicslimit',2000);
 sdfkp = sdfkp.setSolverOptions('snopt','print','snopt.out');
+
+slight_jump = load('medium_jump_0625','-mat','x_sol');
 tic
-[x_sol,F,info] = sdfkp.solve(x_seed);
+[x_sol,F,info] = sdfkp.solve(slight_jump.x_sol);
 toc
 q_sol = reshape(x_sol(sdfkp.q_inds(:)),nq,nT);
 v_sol = reshape(x_sol(sdfkp.v_inds(:)),nq,nT);
@@ -175,13 +190,63 @@ function [h,dh] = comApexHeight(takeoff_height,takeoff_vel)
 g = 9.81;
 h = takeoff_height+takeoff_vel^2/(2*g);
 dh = [1 takeoff_vel/g];
-h = scaler*h;
-dh = scaler*dh;
 end
 
 function [h,dh] = comApexHeightCost(takeoff_height,takeoff_vel)
-scaler = -100;
+scaler = -200;
 [h1,dh1] = comApexHeight(takeoff_height,takeoff_vel);
 h = scaler*h1;
 dh = scaler*dh1;
+end
+
+function symmetry_cnstr = symmetryConstraint(robot,t_idx)
+N = numel(t_idx);
+num_symmetry = 10;
+symmetric_matrix = zeros(num_symmetry,robot.getNumPositions);
+l_arm_usy_idx = robot.getBody(robot.findJointInd('l_arm_usy')).dofnum;
+r_arm_usy_idx = robot.getBody(robot.findJointInd('r_arm_usy')).dofnum;
+symmetric_matrix(1,[l_arm_usy_idx r_arm_usy_idx]) = [1 -1];
+l_arm_shx_idx = robot.getBody(robot.findJointInd('l_arm_shx')).dofnum;
+r_arm_shx_idx = robot.getBody(robot.findJointInd('r_arm_shx')).dofnum;
+symmetric_matrix(2,[l_arm_shx_idx r_arm_shx_idx]) = [1 1];
+l_arm_ely_idx = robot.getBody(robot.findJointInd('l_arm_ely')).dofnum;
+r_arm_ely_idx = robot.getBody(robot.findJointInd('r_arm_ely')).dofnum;
+symmetric_matrix(3,[l_arm_ely_idx r_arm_ely_idx]) = [1 -1];
+l_arm_elx_idx = robot.getBody(robot.findJointInd('l_arm_elx')).dofnum;
+r_arm_elx_idx = robot.getBody(robot.findJointInd('r_arm_elx')).dofnum;
+symmetric_matrix(4,[l_arm_elx_idx r_arm_elx_idx]) = [1 1];
+l_arm_uwy_idx = robot.getBody(robot.findJointInd('l_arm_uwy')).dofnum;
+r_arm_uwy_idx = robot.getBody(robot.findJointInd('r_arm_uwy')).dofnum;
+symmetric_matrix(5,[l_arm_uwy_idx r_arm_uwy_idx]) = [1 -1];
+l_leg_hpz_idx = robot.getBody(robot.findJointInd('l_leg_hpz')).dofnum;
+r_leg_hpz_idx = robot.getBody(robot.findJointInd('r_leg_hpz')).dofnum;
+symmetric_matrix(6,[l_leg_hpz_idx r_leg_hpz_idx]) = [1 1];
+l_leg_hpx_idx = robot.getBody(robot.findJointInd('l_leg_hpx')).dofnum;
+r_leg_hpx_idx = robot.getBody(robot.findJointInd('r_leg_hpx')).dofnum;
+symmetric_matrix(7,[l_leg_hpx_idx r_leg_hpx_idx]) = [1 1];
+l_leg_hpy_idx = robot.getBody(robot.findJointInd('l_leg_hpy')).dofnum;
+r_leg_hpy_idx = robot.getBody(robot.findJointInd('r_leg_hpy')).dofnum;
+symmetric_matrix(8,[l_leg_hpy_idx r_leg_hpy_idx]) = [1 -1];
+l_leg_aky_idx = robot.getBody(robot.findJointInd('l_leg_aky')).dofnum;
+r_leg_aky_idx = robot.getBody(robot.findJointInd('r_leg_aky')).dofnum;
+symmetric_matrix(9,[l_leg_aky_idx r_leg_aky_idx]) = [1 -1];
+l_leg_kny_idx = robot.getBody(robot.findJointInd('l_leg_kny')).dofnum;
+r_leg_kny_idx = robot.getBody(robot.findJointInd('r_leg_kny')).dofnum;
+symmetric_matrix(10,[l_leg_kny_idx r_leg_kny_idx]) = [1 -1];
+
+symmetry_cnstr = LinearConstraint(zeros(num_symmetry*N,1),zeros(num_symmetry*N,1),kron(speye(N),symmetric_matrix));
+cnstr_name = cell(num_symmetry*N,1);
+for i = 1:N
+  cnstr_name{(i-1)*num_symmetry+1} = sprintf('arm_usy_symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_symmetry+2} = sprintf('arm_shx_symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_symmetry+3} = sprintf('arm_ely_symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_symmetry+4} = sprintf('arm_elx_symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_symmetry+5} = sprintf('arm_uwy_symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_symmetry+6} = sprintf('leg_hpz_symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_symmetry+7} = sprintf('leg_hpx_symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_symmetry+8} = sprintf('leg_hpy_symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_symmetry+9} = sprintf('leg_aky_symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_symmetry+10} = sprintf('leg_kyy_symmetry[%d]',t_idx(i));
+end
+symmetry_cnstr = symmetry_cnstr.setName(cnstr_name);
 end
