@@ -1,13 +1,9 @@
 classdef KinematicPlanner < SimpleDynamicsFullKinematicsPlanner
   methods
-    function obj = KinematicPlanner(robot,varargin)
+    function obj = KinematicPlanner(robot,N,tf_range)
       plant = robot.setNumInputs(robot.getNumVelocities());
-      obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,robot,varargin{:});
-
-      % Make timesteps equal
-      A_time = [eye(obj.N-2) zeros(obj.N-2,1)] - [zeros(obj.N-2,1) eye(obj.N-2)];
-      time_constraint = LinearConstraint(zeros(obj.N-2,1),zeros(obj.N-2,1),A_time);
-      obj = obj.addLinearConstraint(time_constraint,obj.h_inds);
+      options.time_option = 1;
+      obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,[],options);
     end
 
     function obj = addDynamicConstraints(obj)
