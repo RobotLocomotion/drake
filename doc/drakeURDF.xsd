@@ -144,7 +144,7 @@ of the spring/damper with an (optional) pose specified relative to the coordinat
         </xs:attribute>
     </xs:complexType>
 
-    <xs:complexType name="torsional_spring_damper">
+    <xs:complexType name="torsional_spring">
         <xs:annotation>
             <xs:documentation>currently only supported for continuous and rotational joints.  </xs:documentation>
         </xs:annotation>
