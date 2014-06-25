@@ -151,8 +151,7 @@ of the spring/damper with an (optional) pose specified relative to the coordinat
         <xs:all>
             <xs:element name="joint" type="joint_reference">
                 <xs:annotation>
-                    <xs:documentation>String naming the link on one side
-of the spring/damper with an (optional) pose specified relative to the coordinate system on the link</xs:documentation>
+                    <xs:documentation>String naming the joint of the spring/damper</xs:documentation>
                 </xs:annotation>
             </xs:element>
         </xs:all>
