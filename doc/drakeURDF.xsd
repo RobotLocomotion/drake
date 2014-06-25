@@ -105,6 +105,16 @@ These forces are represented by a 6x6 matrix 'Ma' similar to a mass matrix, wher
         </xs:attribute>
     </xs:complexType>
 
+
+
+
+
+
+
+
+
+
+
     <xs:complexType name="linear_spring_damper">
         <xs:all>
             <xs:element name="link1" type="link_reference_w_pose">
@@ -133,6 +143,30 @@ of the spring/damper with an (optional) pose specified relative to the coordinat
             </xs:annotation>
         </xs:attribute>
     </xs:complexType>
+
+    <xs:complexType name="torsional_spring_damper">
+        <xs:all>
+            <xs:element name="joint" type="joint_reference" >
+                <xs:annotation>
+                    <xs:documentation>String naming the link on one side
+of the spring/damper with an (optional) pose specified relative to the coordinate system on the link</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute default="0" name="rest_length" type="xs:double"/>
+        <xs:attribute default="0" name="stiffness" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>in Newtons per meter
+</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute default="0" name="damping" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>in Newton seconds per meter.  positive values resist motion.</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
     <xs:complexType name="wing">
         <xs:all>
             <xs:element name="parent" type="link_reference">
