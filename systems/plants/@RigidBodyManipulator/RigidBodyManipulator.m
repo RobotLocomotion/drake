@@ -656,7 +656,7 @@ classdef RigidBodyManipulator < Manipulator
         model.coulomb_friction(b.velocity_num) = b.coulomb_friction;
         model.static_friction(b.velocity_num) = b.static_friction;
         model.coulomb_window(b.velocity_num) = b.coulomb_window;
-    end
+      end
       
       if (num_q<1) error('This model has no DOF!'); end
 
