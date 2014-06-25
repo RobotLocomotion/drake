@@ -11,7 +11,7 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
       theta = q(manip.body(obj.joint).dofnum);
       torque = obj.k*(obj.rest_angle - theta);
       f_ext = sparse(6,getNumBodies(manip));
-      f_ext(:,obj.joint) = manip.body(obj.joint).X_joint_to_body'*[zeros(3,1);torque*manip.body(obj.joint).joint_axis];
+      f_ext(:,obj.joint) = [zeros(2,1);torque;zeros(3,1)]; %manip.body(obj.joint).X_joint_to_body'*[zeros(3,1);torque*manip.body(obj.joint).joint_axis];
     end
     
     function obj = updateBodyIndices(obj,map_from_old_to_new)
@@ -42,6 +42,8 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
       
       jointNode = node.getElementsByTagName('joint').item(0);
       obj.joint = findJointInd(model,char(jointNode.getAttribute('name')),robotnum);
+      
+      % todo: error if not a pin joint
     end
   end
 end
