@@ -1,6 +1,6 @@
 function fallingCapsulesTest
 
-options.floating = true;
+options.floating = 'quat'; % 'rpy';
 options.terrain = RigidBodyFlatTerrain();
 N = 4;
 p = TimeSteppingRigidBodyManipulator('Capsule.urdf',.01,options);
@@ -10,8 +10,21 @@ for i=2:N,
 end
 % p = p.addRobotFromURDF('ground_plane.urdf');
 
-x0 = .2*randn(p.getNumDiscStates,1);
-x0(3:6:end) = x0(3:6:end) + .5;
+% x0 = .2*randn(p.getNumDiscStates,1);
+q0 = getRandomConfiguration(p);
+v0 = 0.2 * randn(p.getNumVelocities(), 1);
+for i = 2 : p.getNumBodies()
+  z_num = p.getManipulator.body(i).position_num(3);
+  q0(z_num) = q0(z_num) + 0.5;
+end
+kinsol = p.doKinematics(q0);
+for i = 2 : p.getNumBodies()
+  vel_num = p.getManipulator.body(i).velocity_num(4:6);
+  R = kinsol.T{i}(1:3, 1:3);
+  v0(vel_num) = v0(vel_num) + R' * [0; 0; 0.5];
+end
+
+x0 = [q0; v0];
 % x0(N*6+1:end) = 0;
 
 x0 = p.resolveConstraints(x0);
