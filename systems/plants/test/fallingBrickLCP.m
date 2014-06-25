@@ -1,6 +1,12 @@
 function fallingBrickLCP
 
-options.floating = true; % 'quat'; 
+testFallingBrick('rpy');
+testFallingBrick('quat');
+
+end
+
+function testFallingBrick(floating_type)
+options.floating = floating_type;
 options.terrain = RigidBodyFlatTerrain();
 p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
 x0 = p.resolveConstraints([getRandomConfiguration(p); randn(p.getNumVelocities(), 1)]);
@@ -19,9 +25,11 @@ v.playback(xtraj);
 
 for t=xtraj.getBreaks()
   x=xtraj.eval(t);
-  phi = p.contactConstraints(x(1:6));
+  q=x(1:p.getNumPositions());
+  phi = p.contactConstraints(q);
   if any(phi<-0.05)
     phi
     error('penetration');
   end
+end
 end
