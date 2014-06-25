@@ -110,6 +110,7 @@ classdef FootstepPlan
                            obj.footsteps(j).pos(2),...
                            obj.footsteps(j).pos(3));
         axis = rpy2axis(obj.footsteps(j).pos(4:6));
+        axis = axis([4,1:3]); % LCMGL wants [angle; axis], not [axis; angle]
         axis(1) = 180 / pi * axis(1);
         lcmgl.glRotated(axis(1), axis(2), axis(3), axis(4));
         lcmgl.sphere([0;0;0], 0.015, 20, 20);
@@ -120,7 +121,6 @@ classdef FootstepPlan
         lcmgl.glPopMatrix();
         lcmgl.glPopMatrix();
       end
-      lcmgl.switchBuffers();
     end
 
     function draw_2d(obj)
