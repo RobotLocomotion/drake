@@ -15,7 +15,7 @@ rest_angle = pi/2;
 for i=1:100
   x = randn(2,1);
   xdot = dynamics(r,0,x,[]);
-  theta_ddot_desired = (-b*x(2) -m*g*l*sin(x(1)) - k*(rest_angle - x(1)))/I;
+  theta_ddot_desired = (-b*x(2) -m*g*l*sin(x(1)) + k*(rest_angle - x(1)))/I;
   valuecheck(xdot(2),theta_ddot_desired);
 end
 
