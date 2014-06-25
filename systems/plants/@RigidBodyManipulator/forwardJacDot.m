@@ -1,5 +1,7 @@
 function Jdot = forwardJacDot(obj,kinsol,body_or_frame_ind,pts,rotation_type,robotnum)
 
+warnOnce(obj.warning_manager,'Drake:RigidBodyManipulator:Inefficient','Inefficient call. If you''re already computing J using forwardKin, it is faster to call forwardKin with gradient output and compute Jdot from dJ: reshape(reshape(dJ, numel(J), []) * kinsol.vToqdot * kinsol.v, size(J)).');
+
 % same input as [x,J] = forwardKin but returns Jdot
 % note: you must have called kinsol = doKinematics with qd passed in as the
 % last argument
