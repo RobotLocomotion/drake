@@ -284,7 +284,7 @@ classdef RigidBody < RigidBodyElement
     
     function body=parseInertial(body,node,model,options)
       mass = 0;
-      inertia = eye(3);
+      inertia = zeros(3);
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)

@@ -55,8 +55,12 @@ doc/drake.pdf :
 	cd doc && make -f ~/code/latex/makefile_tex drake.pdf
 
 doc/urdf/drakeURDF.html : doc/drakeURDF.xsd
-	# apologies for hard-coding this for my mac for now... - Russ
-	cd doc && /Applications/oxygen/schemaDocumentationMac.sh drakeURDF.xsd -cfg:oxygen_export_settings_html.xml
+	ifeq ($(shell uname -p),Darwin)
+	  cd doc && /Applications/oxygen/schemaDocumentationMac.sh drakeURDF.xsd -cfg:oxygen_export_settings_html.xml	
+	else
+	  # note that I manually installed oxygen to my home oxygen directory
+	  cd doc && $(HOME)/oxygen/schemaDocumentation.sh drakeURDF.xsd -cfg:oxygen_export_settings_html.xml	
+	endif 
 
 .PHONY: mlint
 mlint	:
