@@ -27,7 +27,7 @@ classdef FootstepPlan
         step_msgs(j) = obj.footsteps(j).to_footstep_t(obj.biped);
       end
       msg.footsteps = step_msgs;
-      msg.params = obj.params;
+      msg.params = populateLCMFields(drc.footstep_plan_params_t(), obj.params);
     end
 
     function msg = toLCM(obj)
