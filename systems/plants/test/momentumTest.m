@@ -27,7 +27,7 @@ x0(6+6) = 0.5*randn();
   function A = myfun(q)
     % for derivative check
     kinsol = doKinematics(r,q,false);
-    A = getCMM(r,kinsol);
+    A = centroidalMomentumMatrix(r,kinsol);
   end
 
 T = 3.0;
@@ -54,12 +54,14 @@ for t=0:0.05:T
   end
   
   kinsol = doKinematics(r,q,false,false,v,true);
-  [A,Adot_times_v] = getCMM(r,kinsol);
+  A = centroidalMomentumMatrix(r,kinsol);
+  Adot_times_v = centroidalMomentumMatrixDotTimesV(r,kinsol);
   valuecheck(Adot_times_v,Adot_geval * v);
 
   % test mex
   kinsol_mex = doKinematics(r,q,false,true,v,true);
-  [A_mex,Adot_times_v_mex] = getCMM(r,kinsol_mex);
+  A_mex = centroidalMomentumMatrix(r,kinsol_mex);
+  Adot_times_v_mex = centroidalMomentumMatrixDotTimesV(r,kinsol_mex);
   valuecheck(A,A_mex);
   valuecheck(Adot_times_v,Adot_times_v_mex);
   
@@ -153,7 +155,7 @@ for t=0:0.05:T
   qd = r.getManipulator.vToqdot(q) * v;
   kinsol = doKinematics(r,q,false,true);
   
-  A = getCMM(r,kinsol);
+  A = centroidalMomentumMatrix(r,kinsol);
   h = A*qd;
   
   omega = rpydot2angularvel(q(4:6),qd(4:6));

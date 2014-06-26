@@ -793,11 +793,16 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = getCOM(obj.manip,varargin{:});
     end
 
-    function varargout = getCMM(obj,varargin)
+    function varargout = centroidalMomentumMatrix(obj,varargin)
       varargout=cell(1,nargout);
-      [varargout{:}] = getCMM(obj.manip,varargin{:});
+      [varargout{:}] = centroidalMomentumMatrix(obj.manip,varargin{:});
     end
 
+    function varargout = centroidalMomentumMatrixDotTimesV(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = centroidalMomentumMatrixDotTimesV(obj.manip,varargin{:});
+    end
+    
     function joint_ind = findJointInd(model,varargin)
       joint_ind = findJointInd(model.manip,varargin{:});
     end
