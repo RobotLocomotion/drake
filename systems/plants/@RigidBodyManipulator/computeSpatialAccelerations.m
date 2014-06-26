@@ -8,7 +8,7 @@ function ret = computeSpatialAccelerations(obj, kinsol, vd, root_accel)
 % @retval twistdot cell array containing spatial accelerations of all rigid
 % bodies with respect to the world, expressed in world
 
-if nargin < 7
+if nargin < 4
   root_accel = zeros(6, 1);
 end
 
