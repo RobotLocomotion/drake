@@ -125,19 +125,16 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
     end
 
 
-    function obj = addManagedKinematicConstraint(obj,constraint,time_index)
+    function obj = addKinematicConstraint(obj,constraint,time_index)
       % Add a kinematic constraint that is a function of the state at the
       % specified time or times.
-      % @param constraint  a ConstraintManager
+      % @param constraint  a CompositeConstraint
       % @param time_index   a cell array of time indices
       %   ex1., time_index = {1, 2, 3} means the constraint is applied
       %   individually to knot points 1, 2, and 3
       %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
-      if ~isa(constraint,'ConstraintManager')
-        constraint = ConstraintManager([],constraint);
-      end
       if ~iscell(time_index)
         time_index = {time_index};
       end
@@ -151,7 +148,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         obj.constraints{end}.kinsol_inds = kinsol_inds;
         obj.constraints{end}.time_index = time_index;
         
-        obj = obj.addManagedConstraints(constraint,cnstr_inds,kinsol_inds);
+        obj = obj.addConstraint(constraint,cnstr_inds,kinsol_inds);
       end
     end
 
@@ -169,7 +166,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       cnstr = constraint.generateConstraint();
       for j = 1:numel(time_index)
         if isa(constraint,'SingleTimeKinematicConstraint')
-          obj = obj.addManagedKinematicConstraint(cnstr{1},time_index{j});
+          obj = obj.addKinematicConstraint(cnstr{1},time_index{j});
         elseif isa(constraint, 'PostureConstraint')
           obj = obj.addBoundingBoxConstraint(cnstr{1}, ...
             obj.q_inds(:,time_index{j}));
@@ -186,7 +183,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
             end
             obj.qsc_weight_inds{time_index{j}} = obj.num_vars+(1:constraint.num_pts)';
             obj = obj.addDecisionVariable(constraint.num_pts,qsc_weight_names);
-            obj = obj.addNonlinearConstraint(cnstr{1},{obj.q_inds(:,time_index{j});obj.qsc_weight_inds{time_index{j}}},obj.kinsol_dataind(time_index{j}));
+            obj = obj.addDifferentiableConstraint(cnstr{1},{obj.q_inds(:,time_index{j});obj.qsc_weight_inds{time_index{j}}},obj.kinsol_dataind(time_index{j}));
             obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_inds{time_index{j}});
             obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_inds{time_index{j}});
           end
@@ -286,7 +283,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
               end
               nlcon_wrench = nlcon_wrench.setName(nlcon_name);
               
-              obj = obj.addNonlinearConstraint(nlcon_wrench,[{obj.q_inds(:,k)};{reshape(lambda_idx_ijk,[],1)}],obj.kinsol_dataind(k));
+              obj = obj.addDifferentiableConstraint(nlcon_wrench,[{obj.q_inds(:,k)};{reshape(lambda_idx_ijk,[],1)}],obj.kinsol_dataind(k));
               lincon_name = cell(lincon_wrench.num_cnstr,1);
               for l = 1:lincon_wrench.num_cnstr
                 lincon_name{l} = sprintf('%s[%d]',lincon_wrench.name{l},k);

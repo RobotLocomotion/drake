@@ -63,12 +63,12 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       end
       
       for i = 1:obj.N
-        com_cnstr = NonlinearConstraint(zeros(3,1),zeros(3,1),obj.nq+3,@(~,com,kinsol) comMatch(kinsol,com));
+        com_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+3,@(~,com,kinsol) comMatch(kinsol,com));
         com_cnstr = com_cnstr.setName([{sprintf('com_x(q)=com_x[%d]',i)};{sprintf('com_y(q)=com_y[%d]',i)};{sprintf('com_z(q)=com_z[%d]',i)}]);
-        obj = obj.addNonlinearConstraint(com_cnstr,[{obj.q_inds(:,i)};{obj.com_inds(:,i)}],obj.kinsol_dataind(i));
-        H_cnstr = NonlinearConstraint(zeros(3,1),zeros(3,1),obj.nq+obj.nv+3,@(~,v,H,kinsol) angularMomentumMatch(kinsol,v,H));
+        obj = obj.addDifferentiableConstraint(com_cnstr,[{obj.q_inds(:,i)};{obj.com_inds(:,i)}],obj.kinsol_dataind(i));
+        H_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+obj.nv+3,@(~,v,H,kinsol) angularMomentumMatch(kinsol,v,H));
         H_cnstr = H_cnstr.setName([{sprintf('A_x*v=H_x[%d]',i)};{sprintf('A_y*v=H_y[%d]',i)};{sprintf('A_z*v=H_z[%d]',i)}]);
-        obj = obj.addNonlinearConstraint(H_cnstr,[{obj.q_inds(:,i)};{obj.v_inds(:,i)};{obj.H_inds(:,i)}],obj.kinsol_dataind(i));
+        obj = obj.addDifferentiableConstraint(H_cnstr,[{obj.q_inds(:,i)};{obj.v_inds(:,i)};{obj.H_inds(:,i)}],obj.kinsol_dataind(i));
       end
       obj.add_dynamic_constraint_flag = true;
       obj = obj.addDynamicConstraints();
@@ -161,7 +161,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         newton_cnstr = LinearConstraint([0;0;-obj.robot_mass*obj.g],[0;0;-obj.robot_mass*obj.g],[obj.robot_mass*eye(3) -A_force_stack]);
         newton_cnstr = newton_cnstr.setName([{sprintf('F_x=ma_x[%d]',knot_idx)};{sprintf('F_y=ma_y[%d]',knot_idx)};{sprintf('F_z=ma_z[%d]',knot_idx)}]);
         obj = obj.addLinearConstraint(newton_cnstr,[obj.comddot_inds(:,knot_idx);knot_lambda_idx]);
-        Hdot_cnstr = NonlinearConstraint(zeros(3,1),zeros(3,1),obj.nq+3+num_lambda+3,@(~,com,lambda,Hdot,kinsol) singleTimeDynFun(kinsol,com,lambda,Hdot));
+        Hdot_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+3+num_lambda+3,@(~,com,lambda,Hdot,kinsol) singleTimeDynFun(kinsol,com,lambda,Hdot));
         Hdot_cnstr = Hdot_cnstr.setName([{sprintf('Hdot_x[%d]=rxF',knot_idx)};{sprintf('Hdot_y[%d]=rxF',knot_idx)};{sprintf('Hdot_z[%d]=rxF',knot_idx)}]);
         Hdot_sparse_pattern = zeros(3,Hdot_cnstr.xdim);
         Hdot_sparse_pattern(:,joint_idx) = 1;
@@ -169,7 +169,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         Hdot_sparse_pattern(:,obj.nq+3+num_lambda+(1:3)) = eye(3);
         [Hdot_row,Hdot_col] = find(Hdot_sparse_pattern);
         Hdot_cnstr = Hdot_cnstr.setSparseStructure(Hdot_row,Hdot_col);
-        obj = obj.addNonlinearConstraint(Hdot_cnstr,[{obj.q_inds(:,knot_idx)};{obj.com_inds(:,knot_idx)};{knot_lambda_idx};{obj.Hdot_inds(:,knot_idx)}],obj.kinsol_dataind(knot_idx));
+        obj = obj.addDifferentiableConstraint(Hdot_cnstr,[{obj.q_inds(:,knot_idx)};{obj.com_inds(:,knot_idx)};{knot_lambda_idx};{obj.Hdot_inds(:,knot_idx)}],obj.kinsol_dataind(knot_idx));
       elseif(num_knots == 2)
 				h_sparse_pattern = zeros(3+3+3+obj.nq,1+24+2*obj.nq+obj.nv);
         h_sparse_pattern(1:3,1) = ones(3,1);
@@ -180,7 +180,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
 				h_sparse_pattern(7:9,1+15+(1:9)) = [eye(3) eye(3) eye(3)];
         h_sparse_pattern(9+(1:obj.nq),1) = 1;
         h_sparse_pattern(9+(1:obj.nq),1+24+(1:2*obj.nq+obj.nv)) = [eye(obj.nq) eye(obj.nq) eye(obj.nv)];
-        h_cnstr = NonlinearConstraint(zeros(9+obj.nq,1),zeros(9+obj.nq,1),1+24+2*obj.nq+obj.nv,@dtDynFun);
+        h_cnstr = FunctionHandleConstraint(zeros(9+obj.nq,1),zeros(9+obj.nq,1),1+24+2*obj.nq+obj.nv,@dtDynFun);
         cnstr_names = cell(9+obj.nq,1);
         cnstr_names(1:9) = [{sprintf('H_x[%d]-H_x[%d]=Hdot_x[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
                        {sprintf('H_y[%d]-H_y[%d]=Hdot_y[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
@@ -197,7 +197,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         h_cnstr = h_cnstr.setName(cnstr_names);
         [h_row,h_col] = find(h_sparse_pattern);
         h_cnstr = h_cnstr.setSparseStructure(h_row,h_col);
-        obj = obj.addNonlinearConstraint(h_cnstr,[{obj.h_inds(knot_idx(1))};{obj.H_inds(:,knot_idx(1))};{obj.H_inds(:,knot_idx(2))};{obj.Hdot_inds(:,knot_idx(2))};...
+        obj = obj.addDifferentiableConstraint(h_cnstr,[{obj.h_inds(knot_idx(1))};{obj.H_inds(:,knot_idx(1))};{obj.H_inds(:,knot_idx(2))};{obj.Hdot_inds(:,knot_idx(2))};...
           {obj.com_inds(:,knot_idx(1))};{obj.com_inds(:,knot_idx(2))};{obj.comdot_inds(:,knot_idx(1))};{obj.comdot_inds(:,knot_idx(2))};...
           {obj.comddot_inds(:,knot_idx(2))};{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{obj.v_inds(:,knot_idx(2))}]);
       end

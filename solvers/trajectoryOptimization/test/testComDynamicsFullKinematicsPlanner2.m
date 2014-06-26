@@ -146,11 +146,11 @@ x_seed(cdfkp.lambda_inds{1}(:)) = reshape(bsxfun(@times,[0;0;cdfkp.robot_mass*cd
 x_seed(cdfkp.lambda_inds{2}(:)) = reshape(bsxfun(@times,[0;0;cdfkp.robot_mass*cdfkp.g/8],ones(1,4,nT)),[],1);
 
 % add a cost to maximize com apex_height
-cdfkp = cdfkp.addCost(NonlinearConstraint(-inf,inf,2,@comApexHeightCost),{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
+cdfkp = cdfkp.addCost(FunctionHandleConstraint(-inf,inf,2,@comApexHeightCost),{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
 % add a constraint on the com apex height
-apex_height_cnstr = NonlinearConstraint(1.4,inf,2,@comApexHeight);
+apex_height_cnstr = FunctionHandleConstraint(1.4,inf,2,@comApexHeight);
 apex_height_cnstr = apex_height_cnstr.setName({'com apex height'});
-cdfkp = cdfkp.addNonlinearConstraint(apex_height_cnstr,{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
+cdfkp = cdfkp.addDifferentiableConstraint(apex_height_cnstr,{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
 
 % add a symmetric constraint
 symmetry_cnstr = symmetryConstraint(robot,2:nT-1);
