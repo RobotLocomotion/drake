@@ -17,7 +17,7 @@ r = compile(r);
 fp = load(fullfile(getDrakePath, 'examples', 'Atlas', 'data', 'atlas_fp.mat'));
 fp.xstar(3) = fp.xstar(3) + 0.50; % make sure we're not assuming z = 0
 
-% r = r.setTerrain(KinematicTerrainMap(r, fp.xstar(1:r.getNumDOF), true));
+% r = r.setTerrain(KinematicTerrainMap(r, fp.xstar(1:r.getNumPositions), true));
 
 foot_orig = struct('right', [0;-0.15;0;0;0;0], 'left', [0;0.15;0;0;0;0]);
 

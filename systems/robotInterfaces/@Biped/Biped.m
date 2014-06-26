@@ -134,7 +134,7 @@ classdef Biped < LeggedRobot
       % configuration vector q0
 
       typecheck(q0,'numeric');
-      sizecheck(q0,[obj.getNumDOF,1]);
+      sizecheck(q0,[obj.getNumPositions,1]);
 
       kinsol = doKinematics(obj,q0);
 

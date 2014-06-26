@@ -17,7 +17,7 @@ if ~isfield(options, 'first_step_hold_s'); options.first_step_hold_s = 1; end
 
 typecheck(biped,{'RigidBodyManipulator','TimeSteppingRigidBodyManipulator'});
 typecheck(q0,'numeric');
-sizecheck(q0,[biped.getNumDOF,1]);
+sizecheck(q0,[biped.getNumPositions,1]);
 
 is_right_foot = footsteps(1).frame_id == biped.foot_frame_id.right;
 
