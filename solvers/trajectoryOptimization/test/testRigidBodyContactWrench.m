@@ -63,13 +63,20 @@ testRigidBodyContactWrench_userfun(fc_wrench,qstar+1e-2*randn(nq,1),F);
 
 %%%%%%
 display('Check GraspWrench');
+l_hand = robot.findLinkInd('l_hand');
 force_max = 100;
 A_torque = [eye(3);ones(1,3)];
 b_torque_ub = [10;20;30;40];
 b_torque_lb = [-10;-20;-30;-40];
 grasp_wrench = GraspWrench(robot,l_hand,[0;0;0],force_max,A_torque,b_torque_lb,b_torque_ub);
+[lincon,nlcon,bcon] = grasp_wrench.generateWrenchConstraint();
 F = 10*randn(6,100);
-
+valid_flag = all([sum(F(1:3,:).^2,1)<force_max^2;A_torque*F(4:6,:)<=bsxfun(@times,b_torque_ub,ones(1,100));A_torque*F(4:6,:)>=bsxfun(@times,b_torque_lb,ones(1,100))],1);
+for i = 1:100
+  nlcon_val = nlcon.eval(q,F(:,i),kinsol);
+  valuecheck(valid_flag(i),all(lincon.A*F(:,i)<=lincon.ub) & all(lincon.A*F(:,i)>=lincon.lb) & all(nlcon_val<=nlcon.ub) &all(nlcon_val>=nlcon.lb) & all(F(:,i)<=bcon.ub) &all(F(:,i)>=bcon.lb));
+end
+F = randn(6,1);
 testRigidBodyContactWrench_userfun(grasp_wrench,qstar+1e-2*randn(nq,1),F);
 end
 

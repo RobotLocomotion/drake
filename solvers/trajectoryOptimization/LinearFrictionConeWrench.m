@@ -33,13 +33,13 @@ classdef LinearFrictionConeWrench < RigidBodyContactWrench
       obj.wrench_jCvar = [];
       obj.wrench_cnstr_lb = [];
       obj.wrench_cnstr_ub = [];
-      obj.wrench_cnstr_name = [];
+      obj.wrench_cnstr_name = {};
     end
     
     function [c,dc] = evalWrenchConstraint(obj,kinsol,F)
       % return the constraint. There is no nonlinear constraint on the force paramter
       c = [];
-      dc = [];
+      dc = zeros(0,obj.robot.getNumPositions+obj.num_pt_F*obj.num_pts);
     end
     
     function A = torque(obj)
