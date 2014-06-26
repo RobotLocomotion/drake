@@ -46,8 +46,9 @@ for i = 1 : nTests
   
   HBase = kinsol.T{base};
   HBody = kinsol.T{endEffector};
-  HBaseDot = kinsol.Tdot{base};
-  HBodyDot = kinsol.Tdot{endEffector};
+  Tdot = computeTdots(kinsol.T, kinsol.twists);
+  HBaseDot = Tdot{base};
+  HBodyDot = Tdot{endEffector};
   
   HBodyToBase = HBase \ HBody;
   transformDot = twistToTildeForm(twist) * HBodyToBase;

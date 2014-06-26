@@ -66,8 +66,6 @@ else
         kinsol.JdotV = computeJacobianDotV(model, kinsol, SdotV);
       end
     end
-    % TODO: remove once there are no more references to this:
-    kinsol.Tdot = computeTdots(kinsol.T, kinsol.twists);
   end
 end
 end
@@ -201,13 +199,6 @@ for i = 2 : nb
     dJointTwist = matGradMult(dJdq{i}, vBody);
     dtwistsdq{i} = dparentTwist + dJointTwist;
   end
-end
-end
-
-function Tdot = computeTdots(T, twist)
-Tdot = cell(length(T), 1);
-for i = 1 : length(T)
-  Tdot{i} = twistToTildeForm(twist{i}) * T{i};
 end
 end
 

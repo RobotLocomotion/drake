@@ -34,13 +34,14 @@ if replaceMatFile
 else
   data = load(filename);
   kinsolsFromMat = data.kinsols;
+  Tdot = computeTdots(kinsols{i}.T, kinsols{i}.twists);
   for i = 1 : nTests
     if ~isequal(kinsols{i}.T, kinsolsFromMat{i}.T);
       error('kinsols not equal')
     end
 
     for index = 1 : length(robot.body)
-      if norm(kinsols{i}.Tdot{index} - kinsolsFromMat{i}.Tdot{index}, Inf) > 1e-13
+      if norm(Tdot{index} - Tdot{index}, Inf) > 1e-13
         error('kinsols not equal')
       end
     end
