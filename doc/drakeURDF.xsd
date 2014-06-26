@@ -151,7 +151,7 @@ of the spring/damper with an (optional) pose specified relative to the coordinat
         </xs:attribute>
         <xs:attribute default="0" name="stiffness" type="xs:double">
             <xs:annotation>
-                <xs:documentation>in Newtons per meter
+                <xs:documentation>in Newton-meters per radian
 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
