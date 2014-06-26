@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+
+<robot name="torsional_spring_test">
+
+  <link name="base">
+    <inertial>
+      <mass value="10" />
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="0.083" />
+    </inertial>
+    <visual>
+      <geometry>
+         <box size=".2 .2 .2" />
+      </geometry>
+      <material name="green">
+      	<color rgba="0 1 0 1" />
+      </material>
+    </visual>
+  </link>
+
+  <link name="pendulum">
+    <inertial>
+      <origin xyz="0 0 -1" rpy="0 0 0" />
+      <mass value="1" />
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 -.5" rpy="0 0 0" />
+      <geometry>
+         <cylinder length="1" radius=".05" />
+      </geometry>
+      <material name="red">
+	      <color rgba="1 0 0 1" />
+      </material>
+    </visual>
+  </link>
+
+  <joint name="shoulder" type="continuous">
+    <parent link="base" />
+    <child link="pendulum" />
+    <origin xyz="0 0 0" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="1" />
+  </joint>
+
+  <force_element name="spring">
+    <torsional_spring stiffness="10" rest_angle="pi/2">
+      <joint name="shoulder" />
+    </torsional_spring>
+  </force_element>
+
+</robot>
