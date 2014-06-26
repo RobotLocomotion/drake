@@ -1,0 +1,3 @@
+add_mex(footstepCollocationConstraintsMex footstepCollocationConstraintsMex.cpp)
+set_target_properties(footstepCollocationConstraintsMex PROPERTIES COMPILE_FLAGS "-std=c++0x")
+pods_use_pkg_config_packages(footstepCollocationConstraintsMex eigen3)

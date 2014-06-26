@@ -2132,6 +2132,11 @@ classdef RigidBodyManipulator < Manipulator
         [model,fe] = RigidBodySpringDamper.parseURDFNode(model,robotnum,elnode,options);
       end
       
+      elnode = node.getElementsByTagName('torsional_spring').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyTorsionalSpring.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
       elnode = node.getElementsByTagName('wing').item(0);
       if ~isempty(elnode)
         [model,fe] = RigidBodyWing.parseURDFNode(model,robotnum,elnode,options);

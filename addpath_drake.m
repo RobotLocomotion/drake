@@ -52,6 +52,7 @@ addpath(fullfile(conf.root,'systems','observers'));
 addpath(fullfile(conf.root,'systems','trajectories'));
 addpath(fullfile(conf.root,'systems','frames'));
 addpath(fullfile(conf.root,'systems','visualizers'));
+addpath(fullfile(conf.root,'systems','robotInterfaces'));
 addpath(fullfile(conf.root,'solvers'));
 addpath(fullfile(conf.root,'util'));
 addpath(fullfile(conf.root,'util','obstacles'));
