@@ -46,8 +46,16 @@ com_star = robot.getCOM(kinsol_star);
 
 mu = 1;
 nT = 7;
-l_foot_contact_wrench = struct('active_knot',1:nT,'cw',FrictionConeWrench(robot,l_foot,l_foot_bottom,mu,[0;0;1]));
-r_foot_contact_wrench = struct('active_knot',1:nT,'cw',FrictionConeWrench(robot,r_foot,r_foot_bottom,mu,[0;0;1]));
+num_edges = 3;
+FC_angles = linspace(0,2*pi,num_edges+1);FC_angles(end) = [];
+FC_axis = [0;0;1];
+FC_perp1 = rotx(pi/2)*FC_axis;
+FC_perp2 = cross(FC_axis,FC_perp1);
+FC_edge = bsxfun(@plus,FC_axis,mu*(bsxfun(@times,cos(FC_angles),FC_perp1) + ...
+                                   bsxfun(@times,sin(FC_angles),FC_perp2)));
+FC_edge = bsxfun(@rdivide,FC_edge,sqrt(sum(FC_edge.^2,1)));
+l_foot_contact_wrench = struct('active_knot',1:nT,'cw',LinearFrictionConeWrench(robot,l_foot,l_foot_bottom,FC_edge));
+r_foot_contact_wrench = struct('active_knot',1:nT,'cw',LinearFrictionConeWrench(robot,r_foot,r_foot_bottom,FC_edge));
 
 bky_idx = robot.getBody(robot.findJointInd('back_bky')).dofnum;
 
@@ -86,8 +94,8 @@ x_seed = zeros(cdfkp.num_vars,1);
 x_seed(cdfkp.h_inds) = 0.1;
 x_seed(cdfkp.q_inds(:)) = reshape(bsxfun(@times,qstar,ones(1,nT)),[],1);
 x_seed(cdfkp.com_inds(:)) = reshape(bsxfun(@times,com_star,ones(1,nT)),[],1);
-x_seed(cdfkp.lambda_inds{1}(:)) = reshape(bsxfun(@times,[0;0;cdfkp.robot_mass*cdfkp.g/8],ones(1,4,nT)),[],1);
-x_seed(cdfkp.lambda_inds{2}(:)) = reshape(bsxfun(@times,[0;0;cdfkp.robot_mass*cdfkp.g/8],ones(1,4,nT)),[],1);
+x_seed(cdfkp.lambda_inds{1}(:)) = reshape(cdfkp.robot_mass*cdfkp.g/8/4/0.4*ones(num_edges,4,7),[],1);
+x_seed(cdfkp.lambda_inds{2}(:)) = reshape(cdfkp.robot_mass*cdfkp.g/8/4/0.4*ones(num_edges,4,7),[],1);
 
 cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
 cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',2000);
