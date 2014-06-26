@@ -55,7 +55,7 @@ classdef Footstep
         msg.terrain_height = obj.terrain_pts(2,:);
       end
       msg.infeasibility = obj.infeasibility;
-      msg.params = obj.walking_params;
+      msg.params = populateLCMFields(drc.footstep_params_t(), obj.walking_params);
     end
   end
 
