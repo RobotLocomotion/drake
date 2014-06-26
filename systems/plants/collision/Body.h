@@ -70,6 +70,8 @@ namespace DrakeCollision
 
       int getBodyIdx() const { return body_idx; };
 
+      void setBodyIdx(const int body_idx) { this->body_idx = body_idx; };
+
       int getParentIdx() const { return parent_idx; };
 
       const bitmask& getGroup() const { return group; };
