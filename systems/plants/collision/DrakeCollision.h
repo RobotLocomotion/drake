@@ -74,10 +74,9 @@ namespace DrakeCollision
     //
     // @param origin Vector3d specifying the position of the ray's origin
     // @param ray_endpoint Vector3d specifying a second point on the ray in world coordinates
+    // @param distance to the first collision, or -1 on no collision
     //
-    // @retval distance to the first collision, or -1 on no collision
-    //
-    virtual double collisionRaycast(const Eigen::Vector3d &origin, const Eigen::Vector3d &ray_endpoint) { return -1.0; };
+    virtual bool collisionRaycast(const Eigen::Matrix3Xd &origin, const Eigen::Matrix3Xd &ray_endpoint, Eigen::VectorXd &distances) { return false; };
   };
 
   std::shared_ptr<Model> newModel();
