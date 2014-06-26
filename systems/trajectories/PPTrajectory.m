@@ -523,19 +523,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
           ' but the second trajectory starts at t = ', num2str(secondStart)));
       end
       
-      
-      % check for join condition (1st trajectory must end where the second
-      % trajectory begins)
-      
-      firstEnd = obj.eval(trajAtEnd.pp.breaks(1));
-      secondStart = trajAtEnd.eval(trajAtEnd.pp.breaks(1));
-      if max(abs(firstEnd - secondStart)) > 1e-2
-        
-        error(strcat('Cannot append trajectories that do not start/end at the same spot.', ...
-          'First trajectory ends at x = ', mat2str(firstEnd, 3), ...
-          ' but the second trajectory starts at x = ', mat2str(secondStart, 3)));
-      end
-      
+            
       % check for the same dimensions
       if (obj.pp.dim ~= trajAtEnd.pp.dim)
         error(strcat('Cannot append trajectories with different dimensionality.', ...
@@ -578,7 +566,7 @@ classdef (InferiorClasses = {?ConstantTrajectory}) PPTrajectory < Trajectory
       % update javapp (could also construct a new object)
 %      newtraj.javapp = drake.systems.trajectories.JavaPP(...
 %          newtraj.pp.breaks, newtraj.pp.coefs, newtraj.pp.order, newtraj.pp.dim);
-      newtraj = PPTrajectory(newtraj.pp);
+      newtraj = setOutputFrame(PPTrajectory(newtraj.pp),getOutputFrame(obj));
       
       newtraj.dim = obj.dim;
       

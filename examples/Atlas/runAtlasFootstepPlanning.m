@@ -6,6 +6,7 @@ function plan = runAtlasFootstepPlanning()
 % @retval plan a FootstepPlan describing the sequence of foot positions
 
 
+checkDependency('lcmgl');
 % Set up the model
 load('data/atlas_fp.mat', 'xstar');
 r = Atlas('urdf/atlas_minimal_contact.urdf');
@@ -24,7 +25,6 @@ plan = r.planFootsteps(start_pos, goal_pos);
 v = r.constructVisualizer();
 v.draw(0, xstar);
 if isa(v, 'BotVisualizer')
-  checkDependency('lcmgl');
   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'footstep_plan');
   plan.draw_lcmgl(lcmgl);
   lcmgl.switchBuffers();

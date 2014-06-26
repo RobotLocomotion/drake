@@ -18,7 +18,7 @@ macro(add_ik_cpp)
   include_directories( .. )
   set_target_properties(${ARGV} PROPERTIES COMPILE_FLAGS "-fPIC")
   target_link_libraries(${ARGV} drakeRBMurdf drakeURDFinterface drakeRigidBodyConstraint drakeIK)
-  add_test(${ARGV} ${ARGV})
+  add_test(NAME ${ARGV} WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH} COMMAND ${ARGV})
 endmacro()
 
 if (gurobi_FOUND)

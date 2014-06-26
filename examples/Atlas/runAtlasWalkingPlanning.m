@@ -7,6 +7,7 @@ function plan = runAtlasWalkingPlanning()
 % @retval plan a WalkingPlanData object including the zmp and com trajectories
 
 
+checkDependency('lcmgl');
 addpath(fullfile(getDrakePath(), 'examples', 'ZMP'));
 % Set up the model
 load('data/atlas_fp.mat', 'xstar');
@@ -27,7 +28,6 @@ walking_plan_data = r.planWalkingZMP(x0, footstep_plan);
 [xtraj, htraj, ts] = r.planWalkingStateTraj(walking_plan_data);
 
 if isa(v, 'BotVisualizer')
-  checkDependency('lcmgl');
   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'footstep_plan');
   footstep_plan.draw_lcmgl(lcmgl);
   lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), 'walking_plan');
