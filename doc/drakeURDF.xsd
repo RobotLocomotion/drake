@@ -104,17 +104,6 @@ These forces are represented by a 6x6 matrix 'Ma' similar to a mass matrix, wher
             </xs:annotation>
         </xs:attribute>
     </xs:complexType>
-
-
-
-
-
-
-
-
-
-
-
     <xs:complexType name="linear_spring_damper">
         <xs:all>
             <xs:element name="link1" type="link_reference_w_pose">
