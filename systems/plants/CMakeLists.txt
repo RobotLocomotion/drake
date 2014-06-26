@@ -26,7 +26,7 @@ if (eigen3_FOUND)
     VERSION 0.0.1)
 
   add_subdirectory(collision)
-#  add_subdirectory(constraint)
+  add_subdirectory(constraint)
 
   if (Boost_FOUND)
     add_library(drakeRBMurdf URDFRigidBodyManipulator.cpp)
@@ -72,7 +72,6 @@ if (eigen3_FOUND)
   pods_find_pkg_config(gurobi)
   pods_find_pkg_config(snopt_cpp)
 
-if (FALSE)
   macro(add_constraint_mex)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeUtil drakeRigidBodyConstraint)
@@ -112,7 +111,6 @@ if (FALSE)
     add_IK_mex(inverseKinPointwisemex)
     add_IK_mex(inverseKinTrajmex)
   endif()
-endif()
 
   add_subdirectory(test)
 
