@@ -54,9 +54,9 @@ classdef RigidBodyContactWrench
     
     function [lincon,nlcon,bcon] = generateWrenchConstraint(obj)
       % @retval lincon   A LinearConstraint object on parameter F
-      % @retval nlcon    A NonlinearConstraint object on q and F
+      % @retval nlcon    A FunctionHandleConstraint object on q and F
       % @retval bcon     A BoundingBoxConstraint on F
-      nlcon = NonlinearConstraint(obj.wrench_cnstr_lb,obj.wrench_cnstr_ub,obj.robot.getNumDOF+obj.num_pt_F*obj.num_pts,@(~,F,kinsol) obj.evalWrenchConstraint(kinsol,reshape(F,obj.num_pt_F,obj.num_pts)));
+      nlcon = FunctionHandleConstraint(obj.wrench_cnstr_lb,obj.wrench_cnstr_ub,obj.robot.getNumDOF+obj.num_pt_F*obj.num_pts,@(~,F,kinsol) obj.evalWrenchConstraint(kinsol,reshape(F,obj.num_pt_F,obj.num_pts)));
       nlcon = nlcon.setSparseStructure(obj.wrench_iCfun,obj.wrench_jCvar);  
       nlcon = nlcon.setName(obj.wrench_cnstr_name);
       bcon =  BoundingBoxConstraint(obj.F_lb(:),obj.F_ub(:));
