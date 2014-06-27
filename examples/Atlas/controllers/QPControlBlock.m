@@ -377,8 +377,7 @@ classdef QPControlBlock < MIMODrakeSystem
       act_idx = 7:nq; % indices for actuated dofs
 
       % TODO: don't compute gradient output once
-      % terrainContactPointPositions jacobianDotTimesV exists
-      kinsol = doKinematics(r,q,true,true,qd);
+      kinsol = doKinematics(r,q,false,true,qd);
       
       [H,C,B] = manipulatorDynamics(r,q,qd);
 
@@ -413,9 +412,12 @@ classdef QPControlBlock < MIMODrakeSystem
         Dbar_float = Dbar(float_idx,:);
         Dbar_act = Dbar(act_idx,:);
 
-        [~,Jp,Jpdot] = terrainContactPositions(r,kinsol,[1,active_supports],true);
+%         [~,Jp,Jpdot] = terrainContactPositions(r,kinsol,[1,active_supports],true);
+%         Jp = sparse(Jp);
+%         Jpdot = sparse(Jpdot);
+        [~,Jp] = terrainContactPositions(r,kinsol,[1,active_supports]);
         Jp = sparse(Jp);
-        Jpdot = sparse(Jpdot);
+        Jpdot_times_v = terrainContactJacobianDotTimesV(r,kinsol,[1,active_supports]);
 
         xlimp = [xcom(1:2); J*qd]; % state of LIP model
         x_bar = xlimp - x0;      
@@ -474,7 +476,7 @@ classdef QPControlBlock < MIMODrakeSystem
       if nc > 0
         % relative acceleration constraint
         Aeq_{2} = Jp*Iqdd + Ieps;
-        beq_{2} = -Jpdot*qd - 1.0*Jp*qd;
+        beq_{2} = -Jpdot_times_v - 1.0*Jp*qd;
       end
       
       % linear equality constraints: Aeq*alpha = beq
