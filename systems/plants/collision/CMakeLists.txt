@@ -17,6 +17,6 @@ endif()
 enable_testing()
 add_subdirectory(test)
 
-#pods_install_libraries(drakeCollision)
-#pods_install_headers(DrakeCollision.h simpleClosestPointFunctions.h DESTINATION drake/collision)
+pods_install_libraries(drakeCollision)
+pods_install_headers(DrakeCollision.h DESTINATION drake/collision)
   
