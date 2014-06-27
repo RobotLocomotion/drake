@@ -146,3 +146,5 @@ function [Vmin,xopt] = blah(V,x,A,b)
   xopt = quadprog(H,f,[-A zeros(size(A,1),n-size(A,2))],-b,[],[],[],[],[],opt);
   Vmin = double(subs(V,x,xopt));
 end
+
+% TIMEOUT 1500
