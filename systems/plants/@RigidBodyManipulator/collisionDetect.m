@@ -67,6 +67,7 @@ force_collisionDetectTerrain = false;
 if (~active_collision_options.terrain_only && obj.mex_model_ptr ~= 0 ...
     && (kinsol.mex || isa(kinsol.q,'TaylorVar')))
   [xA,xB,normal,distance,idxA,idxB] = collisionDetectmex(obj.mex_model_ptr,allow_multiple_contacts,active_collision_options);
+  normal = repmat([0;0;-1],1,length(idxA)); %pending Andres' bug fix
   if isempty(idxA)
     idxA = [];
     idxB = [];

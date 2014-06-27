@@ -7,5 +7,8 @@ q(3) = 1;
 
 q2 = q;
 q2(4) = 1e-6;
-[phi,normal,d,xA,xB,idxA,idxB] = p.contactConstraints(q,false,struct('terrain_only',true));
-[phi2,normal2,d2,xA2,xB2,idxA2,idxB2] = p.contactConstraints(q2,false,struct('terrain_only',true));
+[phi,normal,d,xA,xB,idxA,idxB] = p.contactConstraints(q,false,struct('terrain_only',false));
+[phi2,normal2,d2,xA2,xB2,idxA2,idxB2] = p.contactConstraints(q2,false,struct('terrain_only',false));
+
+normal
+normal2

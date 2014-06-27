@@ -1,0 +1,224 @@
+<?xml version="1.0"?>
+<!-- spring_flamingo revision 3 for questions/bugs/etc. email woursler@gmail.com-->
+<robot name="spring_flamingo" xmlns:xacro="http://www.ros.org/wiki/xacro">
+	<!-- body property xacros -->
+	<xacro:property name="BODY_MASS" value="1" />
+	<xacro:property name="BODY_CG" value="0 0 0.20" /><!--measured relative to the center of the line connecting the hips-->
+	<xacro:property name="FAN_RADIUS" value=".385" />
+	<xacro:property name="FAN_THICKNESS" value=".12" />
+	<xacro:property name="FAN_MIN_ANGLE" value="0.610865238" />
+	<xacro:property name="FAN_INC_ANGLE" value="0.127990812" />
+	<xacro:property name="FAN_ELEMENT_WIDTH" value=".05" />
+	<xacro:property name="HIP_OFFSET" value="0.12" />
+
+	<!-- upper leg property xacros -->
+	<xacro:property name="UPPER_LEG_MASS" value="0.4598" />
+	<xacro:property name="UPPER_LEG_Ixx" value="0.01256" />
+	<xacro:property name="UPPER_LEG_Iyy" value="0.01256" />
+	<xacro:property name="UPPER_LEG_Izz" value="0.00013" />
+	<xacro:property name="UPPER_LEG_LENGTH" value="0.42" />
+	<xacro:property name="UPPER_LEG_RADIUS" value="0.010875" />
+
+	<!-- lower leg property xacros -->
+	<xacro:property name="LOWER_LEG_MASS" value="0.306" />
+	<xacro:property name="LOWER_LEG_Ixx" value="0.00952" />
+	<xacro:property name="LOWER_LEG_Iyy" value="0.00952" />
+	<xacro:property name="LOWER_LEG_Izz" value="0.0000567" />
+	<xacro:property name="LOWER_LEG_LENGTH" value="0.42" />
+	<xacro:property name="LOWER_LEG_RADIUS" value="0.010875" />
+	   
+	<!-- foot property xacros -->
+	<xacro:property name="FOOT_MASS" value="0.3466" />
+	<xacro:property name="FOOT_Ixx" value="0.0000715" />
+	<xacro:property name="FOOT_Iyy" value="0.0015" />
+	<xacro:property name="FOOT_Izz" value="0.0015" />
+	<xacro:property name="FOOT_WIDTH" value="0.04" />
+	<xacro:property name="FOOT_LENGTH" value="0.23" />
+	<xacro:property name="FOOT_HEIGHT" value="0.03" />
+	<xacro:property name="FOOT_OFFSET_PERCENT" value="0.25" />
+	
+	<xacro:macro name="strut" params="prefix suffix angle">
+		<link name="${prefix}_strut_${suffix}">
+			<visual>
+				<geometry>
+					<box size="${FAN_THICKNESS} ${FAN_RADIUS} ${FAN_ELEMENT_WIDTH}"/>
+				</geometry>
+				<origin rpy="0 0 0" xyz="0 ${FAN_RADIUS / 2} 0"/>
+				<material name="grey">
+					<color rgba=".8 .8 .8 1"/>
+				</material>
+			</visual>
+		</link>
+		<joint name="${prefix}_fixed_joint_${suffix}" type="fixed">
+			<parent link="${prefix}_fan"/>
+			<child link="${prefix}_strut_${suffix}"/>
+			<origin rpy="${angle} 0 0" xyz="0 0 0"/>
+			<axis xyz="0 1 0" />
+		</joint>
+	</xacro:macro>
+	<xacro:macro name="fan" params="prefix offset">
+		<link name="${prefix}_fan">
+			<visual>
+				<geometry>
+					<cylinder length="${FAN_THICKNESS}" radius="${FAN_ELEMENT_WIDTH / 2}"/>
+				</geometry>
+				<origin rpy="0 1.57075 0" xyz="0 0 0"/>
+				<material name="grey">
+					<color rgba=".8 .8 .8 1"/>
+				</material>
+			</visual>
+		</link>
+		<joint name="${prefix}_fan_fixed_joint" type="fixed">
+			<parent link="base_link"/>
+			<child link="${prefix}_fan"/>
+			<origin rpy="0 0 0" xyz="${offset}"/>
+			<axis xyz="0 1 0" />
+		</joint>
+		<!--There has got to be a better way to do this, even without meshes...-->
+		<xacro:strut prefix="${prefix}" suffix="1" angle="${FAN_MIN_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="2" angle="${FAN_MIN_ANGLE + FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="3" angle="${FAN_MIN_ANGLE + 2 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="4" angle="${FAN_MIN_ANGLE + 3 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="5" angle="${FAN_MIN_ANGLE + 4 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="6" angle="${FAN_MIN_ANGLE + 5 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="7" angle="${FAN_MIN_ANGLE + 6 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="8" angle="${FAN_MIN_ANGLE + 7 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="9" angle="${FAN_MIN_ANGLE + 8 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="10" angle="${FAN_MIN_ANGLE + 9 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="11" angle="${FAN_MIN_ANGLE + 10 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="12" angle="${FAN_MIN_ANGLE + 11 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="13" angle="${FAN_MIN_ANGLE + 12 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="14" angle="${FAN_MIN_ANGLE + 13 * FAN_INC_ANGLE}"/>
+		<xacro:strut prefix="${prefix}" suffix="15" angle="${FAN_MIN_ANGLE + 14 * FAN_INC_ANGLE}"/>
+	</xacro:macro>
+
+	<!-- Encapsulates the body code.-->
+	<xacro:macro name="body">
+		<link name="base_link">
+			<visual>
+				<geometry>
+					<cylinder length="${ 2 * HIP_OFFSET }" radius="${FAN_ELEMENT_WIDTH / 2}"/>
+				</geometry>
+				<origin rpy="0 1.57075 0" xyz="0 0 0"/>
+				<material name="grey">
+					<color rgba=".8 .8 .8 1"/>
+				</material>
+			</visual>
+			<inertial>
+				<origin xyz="${BODY_CG}" rpy="0 0 0"/>
+				<mass value="${BODY_MASS}"/>
+				<inertia ixx="100"  ixy="0"  ixz="0" iyy="100" iyz="0" izz="100" />
+			</inertial>
+		</link>
+		<xacro:fan prefix="left" offset="${HIP_OFFSET} 0 0"/>
+		<xacro:fan prefix="right" offset="${ -1 * HIP_OFFSET} 0 0"/>
+	</xacro:macro>
+
+	<xacro:body/>
+
+	<!-- Defines a ground contact point xacro-->
+	<xacro:macro name="contact_point" params="suffix">
+		<link name="${suffix}_contact_point">
+			<visual>
+				<geometry>
+					<sphere radius="0.025"/>
+				</geometry>
+				<material name="black">
+					<color rgba="0 0 0 1"/>
+				</material>
+			</visual>
+			<collision>
+				<geometry>
+					<sphere radius="0"/>
+				</geometry>
+			</collision>
+		</link>
+	</xacro:macro>
+	<!-- Defines a leg xacro. Most of the action is here.-->
+	<xacro:macro name="leg" params="suffix hip_xyz">
+		<link name="${suffix}_upper_leg">
+			<visual>
+				<geometry>
+					<cylinder length="${UPPER_LEG_LENGTH}" radius="${UPPER_LEG_RADIUS}"/>
+				</geometry>
+				<origin rpy="0 1.57075 0" xyz="${UPPER_LEG_LENGTH / 2} 0 0"/>
+				<material name="black">
+					<color rgba="0 0 0 1"/>
+				</material>
+			</visual>
+			<inertial>
+				<origin xyz="${UPPER_LEG_LENGTH / 2} 0 0" rpy="0 0 0"/>
+				<mass value="${UPPER_LEG_MASS}"/>
+				<inertia ixx="${UPPER_LEG_Ixx}"  ixy="0"  ixz="0" iyy="${UPPER_LEG_Iyy}" iyz="0" izz="${UPPER_LEG_Izz}" />
+			</inertial>
+		</link>
+		<joint name="${suffix}_hip" type="continuous">
+			<parent link="base_link"/>
+			<child link="${suffix}_upper_leg"/>
+			<origin xyz="${hip_xyz}" rpy="0 1.57075 0"/>
+			<axis xyz="0 1 0" />
+		</joint>
+		<link name="${suffix}_lower_leg">
+			<visual>
+				<geometry>
+					<cylinder length="${LOWER_LEG_LENGTH}" radius="${LOWER_LEG_RADIUS}"/>
+				</geometry>
+				<origin rpy="0 1.57075 0" xyz="${LOWER_LEG_LENGTH / 2} 0 0"/>
+				<material name="black">
+					<color rgba="0 0 0 1"/>
+				</material>
+			</visual>
+			<inertial>
+				<origin xyz="${LOWER_LEG_LENGTH / 2} 0 0" rpy="0 0 0"/>
+				<mass value="${LOWER_LEG_MASS}"/>
+				<inertia ixx="${LOWER_LEG_Ixx}"  ixy="0"  ixz="0" iyy="${LOWER_LEG_Iyy}" iyz="0" izz="${LOWER_LEG_Izz}" />
+			</inertial>
+		</link>
+		<joint name="${suffix}_knee" type="continuous">
+			<parent link="${suffix}_upper_leg"/>
+			<child link="${suffix}_lower_leg"/>
+			<origin xyz="${UPPER_LEG_LENGTH} 0 0"/>
+			<axis xyz="0 1 0" />
+		</joint>
+		<link name="${suffix}_foot">
+			<visual>
+				<geometry>
+					<box size="${FOOT_HEIGHT} ${FOOT_LENGTH} ${FOOT_WIDTH}"/>
+				</geometry>
+				<origin rpy="0 0 0" xyz="0 ${ FOOT_LENGTH * ( FOOT_OFFSET_PERCENT - 0.5 ) } 0"/>
+				<material name="grey">
+					<color rgba=".8 .8 .8 1"/>
+				</material>
+			</visual>
+			<inertial>
+				<origin xyz="0 0 0" rpy="0 0 0"/>
+				<mass value="${FOOT_MASS}"/>
+				<inertia ixx="${FOOT_Ixx}"  ixy="0"  ixz="0" iyy="${FOOT_Iyy}" iyz="0" izz="${FOOT_Izz}" />
+			</inertial>
+		</link>
+		<joint name="${suffix}_ankle" type="continuous">
+			<parent link="${suffix}_lower_leg"/>
+			<child link="${suffix}_foot"/>
+			<origin xyz="${LOWER_LEG_LENGTH} 0 0"/>
+			<axis xyz="0 1 0" />
+		</joint>
+		<xacro:contact_point suffix="${suffix}_forward"/>
+		<xacro:contact_point suffix="${suffix}_rear"/>
+		<joint name="${suffix}_j1" type="fixed">
+			<parent link="${suffix}_foot"/>
+			<child link="${suffix}_forward_contact_point"/>
+			<origin xyz="0 ${FOOT_LENGTH * FOOT_OFFSET_PERCENT} 0"/>
+			<axis xyz="0 1 0" />
+		</joint>
+		<joint name="${suffix}_j2" type="fixed">
+			<parent link="${suffix}_foot"/>
+			<child link="${suffix}_rear_contact_point"/>
+			<origin xyz="0 -${ ( 1 -FOOT_OFFSET_PERCENT ) * FOOT_LENGTH } 0"/>
+			<axis xyz="0 1 0" />
+		</joint>
+	</xacro:macro>
+  
+	<xacro:leg suffix="right" hip_xyz="${HIP_OFFSET} 0 0"/>
+	<xacro:leg suffix="left" hip_xyz="-${HIP_OFFSET} 0 0"/>
+</robot>
+
