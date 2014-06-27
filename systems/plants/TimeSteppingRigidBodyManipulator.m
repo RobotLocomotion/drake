@@ -792,7 +792,12 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       varargout=cell(1,nargout);
       [varargout{:}] = centerOfMass(obj.manip,varargin{:});
     end
-
+    
+    function varargout = centerOfMassJacobianDotTimesV(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = centerOfMassJacobianDotTimesV(obj.manip,varargin{:});
+    end
+    
     function varargout = centroidalMomentumMatrix(obj,varargin)
       varargout=cell(1,nargout);
       [varargout{:}] = centroidalMomentumMatrix(obj.manip,varargin{:});

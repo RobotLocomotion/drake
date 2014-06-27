@@ -376,6 +376,8 @@ classdef QPControlBlock < MIMODrakeSystem
       float_idx = 1:6; % indices for floating base dofs
       act_idx = 7:nq; % indices for actuated dofs
 
+      % TODO: don't compute gradient output once
+      % terrainContactPointPositions jacobianDotTimesV exists
       kinsol = doKinematics(r,q,true,true,qd);
       
       [H,C,B] = manipulatorDynamics(r,q,qd);
@@ -391,12 +393,12 @@ classdef QPControlBlock < MIMODrakeSystem
       C_act = C(act_idx);
       B_act = B(act_idx,:);
 
-      [xcom,J,dJ] = centerOfMass(r,kinsol);
-      qdot = kinsol.vToqdot * kinsol.v;
-      Jdot = reshape(reshape(dJ, numel(J), nq) * qdot, size(J));
+      [xcom,J] = centerOfMass(r,kinsol);
+%       Jdot = reshape(reshape(dJ, numel(J), nq) * qdot, size(J));
+      Jdot_times_v = centerOfMassJacobianDotTimesV(r, kinsol);
       
       J = J(1:2,:); % only need COM x-y
-      Jdot = Jdot(1:2,:);
+      Jdot_times_v = Jdot_times_v(1:2,:);
       
       if ~isempty(active_supports)
         nc = sum(num_active_contacts);
@@ -493,7 +495,7 @@ classdef QPControlBlock < MIMODrakeSystem
         Hqp(1:nq,1:nq) = Hqp(1:nq,1:nq) + obj.w*eye(nq);
         
         fqp = xlimp'*C_ls'*Qy*D_ls*J*Iqdd;
-        fqp = fqp + qd'*Jdot'*R_DQyD_ls*J*Iqdd;
+        fqp = fqp + Jdot_times_v'*R_DQyD_ls*J*Iqdd;
         fqp = fqp + (x_bar'*S + 0.5*s1')*B_ls*J*Iqdd;
         fqp = fqp - u0'*R_ls*J*Iqdd;
         fqp = fqp - y0'*Qy*D_ls*J*Iqdd;
@@ -580,7 +582,7 @@ classdef QPControlBlock < MIMODrakeSystem
         %Vdot = (2*x_bar'*S + s1')*(A_ls*x_bar + B_ls*(Jdot*qd + J*qdd)) + x_bar'*Sdot*x_bar + x_bar'*s1dot + s2dot;
         % note for ZMP dynamics, S is constant so Sdot=0
       
-        Vdot = (2*x_bar'*S + s1')*(A_ls*x_bar + B_ls*(Jdot*qd + J*qdd)) + x_bar'*s1dot + s2dot;
+        Vdot = (2*x_bar'*S + s1')*(A_ls*x_bar + B_ls*(Jdot_times_v + J*qdd)) + x_bar'*s1dot + s2dot;
       end
     end
   
@@ -633,7 +635,7 @@ classdef QPControlBlock < MIMODrakeSystem
     
    
     if obj.debug && (obj.use_mex==0 || obj.use_mex==2) && nc > 0
-      xcomdd = Jdot * qd + J * qdd;
+      xcomdd = Jdot_times_v + J * qdd;
       zmppos = xcom(1:2) + D_ls * xcomdd;
       zmp = [zmppos', mean(cpos(3,:))];
       convh = convhull(cpos(1,:), cpos(2,:));
