@@ -81,7 +81,10 @@ if ~ok
           lcm_java_classpath = getCMakeParam('LCMGL_JAR_FILE',conf);
           javaaddpathProtectGlobals(lcm_java_classpath);
           disp(' Added the lcmgl jar to your javaclasspath (found via cmake)');
-        catch
+        catch err
+          if strcmp(err.identifier, 'Drake:CannotClearJava')
+            rethrow(err);
+          end
         end
         conf.lcmgl_enabled = exist('bot_lcmgl.data_t','class');
       end
