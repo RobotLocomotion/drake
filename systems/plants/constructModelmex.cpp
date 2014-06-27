@@ -171,6 +171,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         //cout << "constructModelmex: Body " << i << ", Element " << j << endl;
         //END_DEBUG
         mxArray* pShape = mxGetCell(pm,j);
+        string group_name(mxArrayToString(mxGetProperty(pShape,0,"name")));
         auto shape = (DrakeCollision::Shape)mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id"));
         vector<double> params_vec;
         switch (shape) {
@@ -215,7 +216,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             break;
         }
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
-	model->addCollisionElement(i,T,shape,params_vec);
+        model->addCollisionElement(i,T,shape,params_vec,group_name);
         if (model->bodies[i].parent<0) {
           model->updateCollisionElements(i);  // update static objects only once - right here on load
         }
