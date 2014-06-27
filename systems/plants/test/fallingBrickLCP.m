@@ -1,6 +1,6 @@
 function fallingBrickLCP
 
-testFallingBrick('rpy');
+% testFallingBrick('rpy');
 testFallingBrick('quat');
 
 end

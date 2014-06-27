@@ -4,7 +4,7 @@ urdf = 'FallingBrick.urdf';
 options.terrain = RigidBodyFlatTerrain();
 r = TimeSteppingRigidBodyManipulator('',.01,options);
 
-options.floating = 'quat';
+options.floating = 'quat'; % 'rpy';
 n = 1+randi(4);
 for i=1:n
   r = addRobotFromURDF(r,urdf,zeros(3,1),zeros(3,1),options);
