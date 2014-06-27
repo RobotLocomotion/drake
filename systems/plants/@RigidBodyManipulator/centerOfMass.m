@@ -4,7 +4,7 @@ function [com,J,dJ] = centerOfMass(model,kinsol,robotnum)
 %                              - Otherwise, the bodies that belong to robot(robotnum) is
 %                                computed
 
-if(nargin == 2)
+if(nargin < 3)
   robotnum = 1;
 end
 if ~isstruct(kinsol)  
