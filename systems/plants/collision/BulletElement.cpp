@@ -94,11 +94,11 @@ namespace DrakeCollision
     //END_DEBUG
     bt_obj->setCollisionShape(bt_shape);
     //DEBUG
-    cout << "BulletElement::BulletElement: Setting world transform for bt_ob" << endl;
+    //cout << "BulletElement::BulletElement: Setting world transform for bt_ob" << endl;
     //END_DEBUG
     setWorldTransform(Matrix4d::Identity());
     //DEBUG
-    cout << "BulletElement::BulletElement: END" << std::endl;
+    //cout << "BulletElement::BulletElement: END" << std::endl;
     //END_DEBUG
   }
     
