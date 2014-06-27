@@ -1,11 +1,9 @@
 function testTerrainContactJacobianDotTimesV()
-floatingBaseParameterizations = {'rpy', 'quat'};
-
-for parameterization = floatingBaseParameterizations
-  robot = createAtlas(parameterization{:});
-  testAgainstJdotFromGradient(robot);
-  testGradients(robot);
-end
+% tests only meaningful for rpy parameterization (derivative of
+% kinsol.vToqdot needs to be zero)
+robot = createAtlas('rpy');
+testAgainstJdotFromGradient(robot);
+testGradients(robot);
 end
 
 function testAgainstJdotFromGradient(robot)

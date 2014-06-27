@@ -1,13 +1,7 @@
 function testForwardJacDotTimesV
-
-testAtlas('rpy');
-testAtlas('quat');
-
-end
-
-function testAtlas(floating_type)
-
-robot = createAtlas(floating_type);
+% tests only meaningful for rpy parameterization (derivative of
+% kinsol.vToqdot needs to be zero)
+robot = createAtlas('rpy');
 
 compareToJacobianGradientMethod(robot, 0);
 compareToJacobianGradientMethod(robot, 1);
