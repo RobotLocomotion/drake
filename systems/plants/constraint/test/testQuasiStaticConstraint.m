@@ -46,7 +46,7 @@ end
 kinsol = doKinematics(r,q,false,false);
 l_foot_pos = forwardKin(r,kinsol,l_foot,l_foot_pts,0);
 r_foot_pos = forwardKin(r,kinsol,r_foot,r_foot_pts,0);
-com = getCOM(r,kinsol);
+com = centerOfMass(r,kinsol);
 center_pos = mean([l_foot_pos r_foot_pos],2);
 shrink_vertices = [l_foot_pos r_foot_pos]*shrinkFactor+repmat(center_pos*(1-shrinkFactor),1,size(l_foot_pts,2)+size(r_foot_pts,2));
 num_vertices = size(shrink_vertices,2);

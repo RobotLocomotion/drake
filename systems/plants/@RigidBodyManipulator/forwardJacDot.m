@@ -28,7 +28,7 @@ else
   compute_com_jacobian_dot = body_or_frame_ind == 0;
   
   if compute_com_jacobian_dot
-    [~,J,dJ] = getCOM(obj,kinsol,robotnum);
+    [~,J,dJ] = centerOfMass(obj,kinsol,robotnum);
   else
     [~,J,dJ] = forwardKin(obj, kinsol, body_or_frame_ind,pts,rotation_type);
   end

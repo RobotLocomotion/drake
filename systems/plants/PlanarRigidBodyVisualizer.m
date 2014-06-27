@@ -67,7 +67,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       end
 
       if (obj.debug)
-        com = getCOM(obj.model,q);
+        com = centerOfMass(obj.model,q);
         plot(com(1),com(2),'bo','MarkerSize',15,'LineWidth',3);
         plot(com(1),com(2),'b+','MarkerSize',15,'LineWidth',3);
         plot([com(1) com(1)], [0 com(2)],'b--');

@@ -75,7 +75,7 @@ for t=0:0.05:T
   
   if display
     xyzrpy = forwardKin(r,kinsol,2,[0;0;0],1);
-    xcom = getCOM(r,kinsol);
+    xcom = centerOfMass(r,kinsol);
 
     % plot centroidal linear momentum
     lcmgl.glPushMatrix();
@@ -166,7 +166,7 @@ for t=0:0.05:T
 
   if display
     xyzrpy = forwardKin(r,kinsol,2,[0;0;0],1);
-    xcom = getCOM(r,kinsol);
+    xcom = centerOfMass(r,kinsol);
 
     % plot centroidal linear momentum
     lcmgl.glPushMatrix();

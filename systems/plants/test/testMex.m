@@ -73,12 +73,12 @@ for i=1:100
   rb = randi(3);
   rp = rand(3,1);
   [xm,Jm,dJm] = forwardKin(p,kinsol,rb,rp);
-  [commex,Jcommex,dJcommex]=getCOM(p,kinsol);
+  [commex,Jcommex,dJcommex]=centerOfMass(p,kinsol);
   xbm = bodyKin(p,kinsol,rb,rp);
   
   kinsol=p.doKinematics(rq,true,false);
   [x,J,dJ] = forwardKin(p,kinsol,rb,rp);
-  [com,Jcom,dJcom]=getCOM(p,kinsol);
+  [com,Jcom,dJcom]=centerOfMass(p,kinsol);
   xb = bodyKin(p,kinsol,rb,rp);
 
   valuecheck(x,xm,1e-8);
@@ -127,13 +127,13 @@ for i=1:100
   kinsol=p.doKinematics(rq,true,true,rqd);
   rp = rand(3,1);
   [xm,Jm,dJm] = forwardKin(p,kinsol,1,rp);
-  [commex,Jcommex,dJcommex]=getCOM(p,kinsol);
+  [commex,Jcommex,dJcommex]=centerOfMass(p,kinsol);
   xbm = bodyKin(p,kinsol,1,rp);
   Jdotm = forwardJacDot(p,kinsol,1,rp,1);
   
   kinsol=p.doKinematics(rq,true,false,rqd);
   [x,J,dJ] = forwardKin(p,kinsol,1,rp);
-  [com,Jcom,dJcom]=getCOM(p,kinsol);
+  [com,Jcom,dJcom]=centerOfMass(p,kinsol);
   xb = bodyKin(p,kinsol,1,rp);
   Jdot = forwardJacDot(p,kinsol,1,rp,1);
 

@@ -58,7 +58,7 @@ kc1prime = WorldCoMConstraint(robot,[nan;nan;0.9],[nan;nan;0.92],tspan/2,1);
 display('Check a single CoM constraint')
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,ikoptions);
 kinsol = doKinematics(robot,q);
-com = getCOM(robot,kinsol);
+com = centerOfMass(robot,kinsol);
 valuecheck(com(1:2),[0;0],1e-5);
 if(com(3)>1+1e-5 || com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied')
@@ -67,7 +67,7 @@ display('Check IK pointwise with a single CoM constraint')
 q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed],[q_nom q_nom],kc1,ikoptions);
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
-  com = getCOM(robot,kinsol);
+  com = centerOfMass(robot,kinsol);
   valuecheck(com(1:2),[0;0],1e-5);
   if(com(3)>1+1e-5 ||com(3)<0.9-1e-5)
     error('CoM constraint is not satisfied');
@@ -76,13 +76,13 @@ end
 display('Check IK pointwise with multiple CoM constraints')
 q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed],[q_nom q_nom],kc1,kc1prime,ikoptions);
 kinsol = doKinematics(robot,q(:,1));
-com = getCOM(robot,kinsol);
+com = centerOfMass(robot,kinsol);
 valuecheck(com(1:2),[0;0],1e-5);
 if(com(3)>0.92+1e-5 ||com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied');
 end
 kinsol = doKinematics(robot,q(:,2));
-com = getCOM(robot,kinsol);
+com = centerOfMass(robot,kinsol);
 valuecheck(com(1:2),[0;0],1e-5);
 if(com(3)>1+1e-5 ||com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied');
@@ -98,7 +98,7 @@ if(any(q([l_knee_idx;r_knee_idx])<0.2-1e-5))
   error('Posture constraint is not satisfied');
 end
 kinsol = doKinematics(robot,q);
-com = getCOM(robot,kinsol);
+com = centerOfMass(robot,kinsol);
 valuecheck(com(1:2),[0;0],1e-5);
 if(com(3)>1+1e-5 || com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied')
@@ -111,7 +111,7 @@ if(any(q([l_knee_idx;r_knee_idx],:)<0.2-1e-5))
 end
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
-  com = getCOM(robot,kinsol);
+  com = centerOfMass(robot,kinsol);
   valuecheck(com(1:2),[0;0],1e-5);
   if(com(3)>1+1e-5 ||com(3)<0.9-1e-5)
     error('CoM constraint is not satisfied');
@@ -124,13 +124,13 @@ if(any(q([l_knee_idx;r_knee_idx],:)<0.2-1e-5))
   error('Posture constraint is not satisfied');
 end
 kinsol = doKinematics(robot,q(:,1));
-com = getCOM(robot,kinsol);
+com = centerOfMass(robot,kinsol);
 valuecheck(com(1:2),[0;0],1e-5);
 if(com(3)>0.92+1e-5 ||com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied');
 end
 kinsol = doKinematics(robot,q(:,2));
-com = getCOM(robot,kinsol);
+com = centerOfMass(robot,kinsol);
 valuecheck(com(1:2),[0;0],1e-5);
 if(com(3)>1+1e-5 ||com(3)<0.9-1e-5)
   error('CoM constraint is not satisfied');
@@ -396,7 +396,7 @@ q_seed_aff = zeros(nq_aff,1);
 q_nom_aff = zeros(nq_aff,1);
 q = test_IK_userfun(robot,[q_seed;q_seed_aff],[q_nom;q_nom_aff],kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
 kinsol = doKinematics(robot,q);
-com = robot.getCOM(kinsol,1);
+com = robot.centerOfMass(kinsol,1);
 if(com(3)>1+1e-5 || com(3)<0.9-1e-5)
   error('CoM constraint not satisfied');
 end

@@ -391,7 +391,7 @@ classdef QPControlBlock < MIMODrakeSystem
       C_act = C(act_idx);
       B_act = B(act_idx,:);
 
-      [xcom,J,dJ] = getCOM(r,kinsol);
+      [xcom,J,dJ] = centerOfMass(r,kinsol);
       qdot = kinsol.vToqdot * kinsol.v;
       Jdot = reshape(reshape(dJ, numel(J), nq) * qdot, size(J));
       

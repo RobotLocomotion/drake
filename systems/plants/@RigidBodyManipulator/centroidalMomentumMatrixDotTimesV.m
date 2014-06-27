@@ -4,10 +4,10 @@ nq = robot.getNumPositions();
 
 if compute_gradients
   [inertias_world, dinertias_world] = inertiasInWorldFrame(robot, kinsol);
-  [com, dcom] = robot.getCOM(kinsol);
+  [com, dcom] = robot.centerOfMass(kinsol);
 else
   inertias_world = inertiasInWorldFrame(robot, kinsol);
-  com = robot.getCOM(kinsol);
+  com = robot.centerOfMass(kinsol);
 end
 
 NB = robot.getNumBodies();

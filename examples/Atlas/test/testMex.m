@@ -84,9 +84,9 @@ for i=1:25
 
   % test mex COM
   kinsol = p.doKinematics(rq,true,false);
-  [com,Jcom,dJcom]=getCOM(p,kinsol);
+  [com,Jcom,dJcom]=centerOfMass(p,kinsol);
   kinsol = p.doKinematics(rq,true,true);
-  [commex,Jcommex,dJcommex]=getCOM(p,kinsol);
+  [commex,Jcommex,dJcommex]=centerOfMass(p,kinsol);
   
   valuecheck(commex,com,1e-8);
   valuecheck(Jcommex,Jcom,1e-8);

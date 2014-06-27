@@ -27,7 +27,7 @@ for i = 1 : nTests
   
   inertias_world = inertiasInWorldFrame(robot, kinsol);
   h_check = sum(cell2mat(cellfun(@mtimes, inertias_world, kinsol.twists, 'UniformOutput', false)), 2); % in world frame
-  com = robot.getCOM(kinsol.q);
+  com = robot.centerOfMass(kinsol.q);
   transform_com_to_world = eye(4);
   transform_com_to_world(1:3, 4) = com;
   h_check = transformAdjoint(transform_com_to_world)' * h_check;

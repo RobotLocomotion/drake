@@ -16,7 +16,7 @@ q0 = x0(1:nq);
 zmptraj = setOutputFrame(zmptraj,desiredZMP);
 
 kinsol = doKinematics(obj, q0);
-com = getCOM(obj, kinsol);
+com = centerOfMass(obj, kinsol);
 
 foot_pos = forwardKin(obj, kinsol, [obj.foot_frame_id.right, obj.foot_frame_id.left], [0;0;0]);
 zfeet = mean(foot_pos(3,:));

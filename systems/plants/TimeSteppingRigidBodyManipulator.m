@@ -788,9 +788,9 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = getMass(obj.manip,varargin{:});
     end
 
-    function varargout = getCOM(obj,varargin)
+    function varargout = centerOfMass(obj,varargin)
       varargout=cell(1,nargout);
-      [varargout{:}] = getCOM(obj.manip,varargin{:});
+      [varargout{:}] = centerOfMass(obj.manip,varargin{:});
     end
 
     function varargout = centroidalMomentumMatrix(obj,varargin)

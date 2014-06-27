@@ -36,8 +36,8 @@ classdef HuboReachingControl < DrakeSystem
       eta = [.01;1;.01];  
       desired_height = .7;
       
-%      doKinematics(obj.model,q);  % getCOM call below also runs kinematics
-      [com,Jcom] = obj.model.getCOM([q(1:3);qa_d]);
+%      doKinematics(obj.model,q);  % centerOfMass call below also runs kinematics
+      [com,Jcom] = obj.model.centerOfMass([q(1:3);qa_d]);
       
       % assume for now that all feet contact points are on the ground
       % (could check this once force output is available)

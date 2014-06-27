@@ -65,7 +65,7 @@ for i=1:length(ts)
   else
     q = q0;
   end
-  com = getCOM(obj,q(:,i));
+  com = centerOfMass(obj,q(:,i));
   htraj = [htraj com(3)];
 end
 

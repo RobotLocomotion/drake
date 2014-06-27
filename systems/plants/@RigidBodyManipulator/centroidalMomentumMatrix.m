@@ -5,11 +5,11 @@ compute_gradients = nargout > 1;
 if compute_gradients
   [inertias_world, dinertias_world] = inertiasInWorldFrame(robot, kinsol);
   [crbs_world, dcrbs_world] = compositeRigidBodyInertias(robot, inertias_world, dinertias_world);
-  [com, dcom] = robot.getCOM(kinsol);
+  [com, dcom] = robot.centerOfMass(kinsol);
 else
   inertias_world = inertiasInWorldFrame(robot, kinsol);
   crbs_world = compositeRigidBodyInertias(robot, inertias_world);
-  com = robot.getCOM(kinsol);
+  com = robot.centerOfMass(kinsol);
 end
 
 ABlocks = cellfun(@mtimes, crbs_world(2:end), kinsol.J(2:end), 'UniformOutput', false);

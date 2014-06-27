@@ -38,7 +38,7 @@ x0 = xstar;
 q0 = x0(1:nq);
 kinsol = doKinematics(r,q0);
 
-com = getCOM(r,kinsol);
+com = centerOfMass(r,kinsol);
 
 % build TI-ZMP controller 
 footidx = [findLinkInd(r,'r_foot'), findLinkInd(r,'l_foot')];
