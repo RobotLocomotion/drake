@@ -30,10 +30,6 @@ classdef RigidBodyManipulator < Manipulator
     %collision_filter_groups=containers.Map('KeyType','char','ValueType','any');     
     collision_filter_groups;     
     % map of CollisionFilterGroup objects
-    damping = [];
-    coulomb_friction = [];
-    static_friction = [];
-    coulomb_window = [];
   end
     
   methods
@@ -301,16 +297,31 @@ classdef RigidBodyManipulator < Manipulator
       
       compute_gradient = nargout > 1;
       
-      f_friction = model.damping'.*v;
-      if compute_gradient
-        df_frictiondv = diag(model.damping);
+      nv = model.getNumVelocities();
+      damping = zeros(nv, 1);
+      coulomb_friction = zeros(nv, 1);
+      static_friction = zeros(nv, 1);
+      coulomb_window = zeros(nv, 1);
+
+      for i = 2 : model.getNumBodies() % links with parents
+        b = model.body(i);
+        damping(b.velocity_num) = b.damping;
+        coulomb_friction(b.velocity_num) = b.coulomb_friction;
+        static_friction(b.velocity_num) = b.static_friction;
+        coulomb_window(b.velocity_num) = b.coulomb_window;
       end
       
-      if (model.coulomb_friction)
-        f_friction = f_friction + min(1,max(-1,v./model.coulomb_window')).*model.coulomb_friction';
+      
+      f_friction = damping .* v;
+      if compute_gradient
+        df_frictiondv = diag(damping);
+      end
+      
+      if (coulomb_friction)
+        f_friction = f_friction + min(1,max(-1,v./coulomb_window')).*coulomb_friction';
         if compute_gradient
-          ind = find(abs(v)<model.coulomb_window');
-          dind = sign(v(ind))./model.coulomb_window(ind)' .* model.coulomb_friction(ind)';
+          ind = find(abs(v)<coulomb_window');
+          dind = sign(v(ind))./coulomb_window(ind)' .* coulomb_window(ind)';
           fc_drv = zeros(model.getNumVelocities(),1);
           fc_drv(ind) =dind;
           df_frictiondv = df_frictiondv + diag(fc_drv);
@@ -640,22 +651,6 @@ classdef RigidBodyManipulator < Manipulator
           model.body(i).position_num=0;
           model.body(i).velocity_num=0;
         end
-      end
-      
-      model.damping = zeros(1, num_v);
-      model.coulomb_friction = zeros(1, num_v);
-      model.static_friction = zeros(1, num_v);
-      model.coulomb_window = zeros(1, num_v);
-      
-      for i = 2 : model.getNumBodies() % links with parents
-        b=model.body(i);
-        
-        % these exist so that they're faster to look up in the dynamics
-        % functions:
-        model.damping(b.velocity_num) = b.damping;
-        model.coulomb_friction(b.velocity_num) = b.coulomb_friction;
-        model.static_friction(b.velocity_num) = b.static_friction;
-        model.coulomb_window(b.velocity_num) = b.coulomb_window;
       end
       
       if (num_q<1) error('This model has no DOF!'); end
