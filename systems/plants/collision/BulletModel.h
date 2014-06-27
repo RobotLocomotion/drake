@@ -47,6 +47,7 @@ namespace DrakeCollision
       virtual void addElement(const int body_ind, const int parent_idx, 
                               const Eigen::Matrix4d& T_elem_to_link, Shape shape, 
                               const std::vector<double>& params, 
+                              const std::string& group_name,
                               bool is_static);
 
       virtual bool updateElementsForBody(const int body_idx,
