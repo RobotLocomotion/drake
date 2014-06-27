@@ -3,10 +3,11 @@
 
 #include <iostream>
 
-#include "Model.h"
+#include "DrakeCollision.h"
 
 using namespace DrakeCollision;
 using namespace std;
+using namespace Eigen;
 
 /*
  * Three bodies (cube (1 m edges) and two spheres (0.5 m radii) arranged like this

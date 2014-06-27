@@ -52,13 +52,14 @@ namespace DrakeCollision
 
   void BulletModel::addElement(const int body_idx, const int parent_idx, 
                                 const Matrix4d& T_element_to_link, Shape shape, 
-                                const vector<double>& params, bool is_static)
+                                const vector<double>& params, 
+                                const string& group_name, bool is_static)
   {
     //DEBUG
     //cout << "BulletModel::addElement: START" << endl;
     //END_DEBUG
     try {
-      bodies[body_idx].addElement(body_idx, parent_idx, T_element_to_link, shape, params );
+      bodies[body_idx].addElement(body_idx, parent_idx, T_element_to_link, shape, params, group_name );
       
       const BulletElement& elem = bodies.at(body_idx).back();
       element_data.push_back(unique_ptr<ElementData>(new ElementData(body_idx,elem.getShape())));
