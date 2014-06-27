@@ -38,7 +38,7 @@ else
   footstep_plan.draw_2d();
 end
 
-v.playback(xtraj);
+v.playback(xtraj, struct('slider', true));
 
 
 
