@@ -50,6 +50,55 @@ end
 
 end
 
+function [f_ext, B, df_ext, dB] = computeExternalForcesAndInputMatrix(obj, q, v)
+compute_gradients = nargout > 2;
+
+nq = size(q,1);
+nv = size(v,1);
+
+B = obj.B;
+NB = obj.getNumBodies();
+if compute_gradients
+  dB = zeros(numel(B), nq + nv);
+end
+
+if ~isempty(obj.force)
+  f_ext = zeros(6,NB);
+  if compute_gradients
+    df_ext = zeros(numel(f_ext), nq + nv);
+  end
+  for i=1:length(obj.force)
+    % compute spatial force should return something that is the same length
+    % as the number of bodies in the manipulator
+    if (obj.force{i}.direct_feedthrough_flag)
+      if compute_gradients
+        [force,B_force,dforce,dB_force] = computeSpatialForce(obj.force{i},obj,q,v);
+        dB = dB + dB_force;
+      else
+        [force,B_force] = computeSpatialForce(obj.force{i},obj,q,v);
+      end
+      B = B+B_force;
+    else
+      if compute_gradients
+        [force,dforce] = computeSpatialForce(obj.force{i},obj,q,v);
+        dforce = reshape(dforce,numel(force),[]);
+      else
+        force = computeSpatialForce(obj.force{i},obj,q,v);
+      end
+    end
+    f_ext = f_ext + force;
+    if compute_gradients
+      df_ext = df_ext + dforce;
+    end
+  end
+else
+  f_ext=sparse(6,NB);
+  if compute_gradients
+    df_ext = sparse(numel(f_ext), nq + nv);
+  end
+end
+end
+
 function [H, dH] = computeMassMatrix(manipulator, kinsol, crbs, dcrbs)
 compute_gradient = nargout > 1;
 
@@ -219,55 +268,4 @@ else
   tau_friction = computeFrictionForce(manipulator, kinsol.v);
 end
 C = C + tau_friction;
-end
-
-
-function [f_ext, B, df_ext, dB] = computeExternalForcesAndInputMatrix(obj, q, v)
-compute_gradients = nargout > 2;
-
-% TODO: check body indices, probably need to get rid of -1 in i_to-1 etc.
-nq = size(q,1);
-nv = size(v,1);
-
-B = obj.B;
-NB = obj.getNumBodies();
-if compute_gradients
-  dB = zeros(numel(B), nq + nv);
-end
-
-if ~isempty(obj.force)
-  f_ext = zeros(6,NB);
-  if compute_gradients
-    df_ext = zeros(numel(f_ext), nq + nv);
-  end
-  for i=1:length(obj.force)
-    % compute spatial force should return something that is the same length
-    % as the number of bodies in the manipulator
-    if (obj.force{i}.direct_feedthrough_flag)
-      if compute_gradients
-        [force,B_force,dforce,dB_force] = computeSpatialForce(obj.force{i},obj,q,v);
-        dB = dB + dB_force;
-      else
-        [force,B_force] = computeSpatialForce(obj.force{i},obj,q,v);
-      end
-      B = B+B_force;
-    else
-      if compute_gradients
-        [force,dforce] = computeSpatialForce(obj.force{i},obj,q,v);
-        dforce = reshape(dforce,numel(force),[]);
-      else
-        force = computeSpatialForce(obj.force{i},obj,q,v);
-      end
-    end
-    f_ext = f_ext + force;
-    if compute_gradients
-      df_ext = df_ext + dforce;
-    end
-  end
-else
-  f_ext=sparse(6,NB);
-  if compute_gradients
-    df_ext = sparse(numel(f_ext), nq + nv);
-  end
-end
 end
