@@ -1,7 +1,7 @@
 #ifndef __INVERSEKINBACKEND_H__
 #define __INVERSEKINBACKEND_H__
 #include <string>
-#include <vector>
+#include <Eigen/StdVector>
 #include <Eigen/Dense>
 class RigidBodyManipulator;
 class RigidBodyConstraint;

@@ -3,6 +3,7 @@
 #include "primitiveTest.h"
 
 using namespace std;
+using namespace Eigen;
 
 BOOST_AUTO_TEST_CASE(pointPointTest)
 {

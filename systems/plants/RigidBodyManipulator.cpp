@@ -3,8 +3,7 @@
 
 //#include "mex.h"
 #include "RigidBodyManipulator.h"
-#include "collision/Model.h"
-#include <boost/algorithm/string.hpp>
+#include <algorithm>
 #include <string>
 #include <regex>
 
@@ -268,6 +267,12 @@ RigidBodyManipulator::RigidBodyManipulator(int ndof, int num_featherstone_bodies
   resize(ndof,num_featherstone_bodies,num_rigid_body_objects,num_rigid_body_frames);
 }
 
+RigidBodyManipulator::~RigidBodyManipulator(void) 
+{
+  //  if (collision_model) 
+  //    delete collision_model;
+}
+
 
 void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num_rigid_body_objects, int num_rigid_body_frames)
 {
@@ -337,7 +342,8 @@ void RigidBodyManipulator::resize(int ndof, int num_featherstone_bodies, int num
       dIC[i][j] = MatrixXd::Zero(6,6);
     }
   }
-  //     dcross.resize(6,n);
+
+  // don't need to resize dcross (it gets resized in dcrm)
     
   dvdq.resize(NB);
   dvdqd.resize(NB);
@@ -439,8 +445,8 @@ bool RigidBodyManipulator::getPairwisePointCollision(const int body_indA,
                                                      Vector3d &normal)
 {
   if (collision_model->getPairwisePointCollision(body_indA, body_indB,
-                                                 body_collision_indA,
-                                                 ptA,ptB,normal)) {
+          body_collision_indA,
+          ptA,ptB,normal)) {
     return true;
   } else {
 		ptA << 1,1,1;
@@ -456,7 +462,7 @@ bool RigidBodyManipulator::getPointCollision(const int body_ind,
                                              Vector3d &normal)
 {
   if (collision_model->getPointCollision(body_ind, body_collision_ind, ptA,ptB,
-                                         normal)) {
+          normal)) {
     return true;
   } else {
     ptA << 1,1,1;
@@ -484,16 +490,14 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             vector<int>& bodyB_idx,
                                             vector<int>& bodies_idx)
 {
-  collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,normal,phi,bodies_idx);
-  return true;
+  return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,normal,phi,bodies_idx);
 };
 
 bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx, 
                                          vector<int>& bodyB_idx, 
                                          MatrixXd& ptsA, MatrixXd& ptsB)
 {
-  collision_model->allCollisions(bodyA_idx, bodyB_idx, ptsA, ptsB);
-  return true;
+  return collision_model->allCollisions(bodyA_idx, bodyB_idx, ptsA, ptsB);
 }
 
 
@@ -1449,7 +1453,8 @@ void RigidBodyManipulator::HandC(double * const q, double * const qd, MatrixBase
 
 int RigidBodyManipulator::findLinkInd(string linkname, int robot)
 {
-  boost::algorithm::to_lower(linkname);
+  std::transform(linkname.begin(), linkname.end(), linkname.begin(), ::tolower); // convert to lower case
+
   //std::regex linkname_connector("[abc]");
   //cout<<"get linkname_connector"<<endl;
   //linkname = std::regex_replace(linkname,linkname_connector,string("_"));
@@ -1457,7 +1462,7 @@ int RigidBodyManipulator::findLinkInd(string linkname, int robot)
   for(int i = 0;i<this->num_bodies;i++)
   {
     string lower_linkname = this->bodies[i].linkname;
-    boost::algorithm::to_lower(lower_linkname);
+    std::transform(lower_linkname.begin(), lower_linkname.end(), lower_linkname.begin(), ::tolower); // convert to lower case
     if(lower_linkname.find(linkname) != string::npos)
     {
       name_match[i] = true;
