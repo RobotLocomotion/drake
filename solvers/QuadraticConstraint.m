@@ -1,27 +1,34 @@
-classdef QuadraticConstraint < NonlinearConstraint
-  % lb <= (x-a)'Q(x-a) <= ub
+classdef QuadraticConstraint < DifferentiableConstraint
+  % a quadratic constraint of the form lb <= .5 * x'*Q*x + b'*x <= ub
   % @param Q    -- A square matrix of size nx x nx
-  % @param a    -- A double vector of size nx x 1
+  % @param b    -- A double vector of size nx x 1
   properties(SetAccess = protected)
     Q
-    a
+    b
   end
   
   methods
-    function obj = QuadraticConstraint(lb,ub,Q,a)
+    function obj = QuadraticConstraint(lb,ub,Q,b)
       sizecheck(lb,[1,1]);
       sizecheck(ub,[1,1]);
       nx = size(Q,1);
-      obj = obj@NonlinearConstraint(lb,ub,nx);
+      obj = obj@DifferentiableConstraint(lb,ub,nx);
       sizecheck(Q,[nx,nx]);
-      sizecheck(a,[nx,1]);
-      obj.Q = Q;
-      obj.a = a;
+      sizecheck(b,[nx,1]);
+      obj.Q = (Q + Q')/2;  % ensure that Q is symmetric
+      obj.b = b;
     end
-    
-    function [c,dc] = eval(obj,x)
-      c = (x-obj.a)'*obj.Q*(x-obj.a);
-      dc = 2*(x-obj.a)'*obj.Q;
+  end
+  
+  methods (Access = protected)
+    function [c,dc,ddc] = constraintEval(obj,x)
+      c = .5*x'*obj.Q*x + obj.b'*x;
+      if nargout > 1
+        dc = x'*obj.Q + obj.b';
+      end
+      if nargout > 2
+        ddc = reshape(obj.Q,1,[]);
+      end
     end
   end
 end

@@ -626,6 +626,13 @@ classdef DrakeSystem < DynamicalSystem
 
       sys = extractLinearSystem(extractAffineSystem(obj));
     end
+    
+    function [lb,ub] = getStateLimits(obj)
+      % Get the lower and upper bounds on the state, currently implemented
+      % to just return inf/-inf
+      lb = -inf(obj.num_x,1);
+      ub = inf(obj.num_x,1);
+    end
   end
   
   methods % deprecated (due to refactoring)
