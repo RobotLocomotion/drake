@@ -188,6 +188,10 @@ classdef RigidBodyManipulator < Manipulator
       n = obj.num_q; %placeholder waiting for Russ' changes
     end
     
+    function n = getNumVelocities(obj)
+      n = obj.num_q; %placeholder waiting for Russ' changes
+    end
+    
     function n = getNumDOF(obj)
       n = obj.num_q;
     end

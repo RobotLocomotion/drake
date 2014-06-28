@@ -272,7 +272,7 @@ if(singleTimeFlag)
   [c,dc] = kc.eval(t,kinsol);
   cnstr = kc.generateConstraint(t);
   kinsol = kc.robot.doKinematics(q,false,always_use_mex_dynamics);
-  [c_cnstr,dc_cnstr] = cnstr{1}.eval(kinsol);
+  [c_cnstr,dc_cnstr] = cnstr{1}.eval(q,kinsol);
 else
   kinsol_cell = cell(1,length(t));
   for i = 1:length(t)
@@ -280,7 +280,8 @@ else
   end
   [c,dc] = kc.eval(t,kinsol_cell);
   cnstr = kc.generateConstraint(t);
-  [c_cnstr,dc_cnstr] = cnstr{1}.eval(kinsol_cell);
+  q_cell = mat2cell(q,size(q,1),ones(1,size(q,2)));
+  [c_cnstr,dc_cnstr] = cnstr{1}.eval(q_cell{:},kinsol_cell{:});
 end
 [lb,ub] = kc.bounds(t);
 cnst_name = kc.name(t);

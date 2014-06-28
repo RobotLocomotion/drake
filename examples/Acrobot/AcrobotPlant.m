@@ -71,6 +71,14 @@ classdef AcrobotPlant < Manipulator
       x = .1*randn(4,1);
     end
     
+    function n = getNumPositions(obj)
+      n = 2;
+    end
+    
+    function n = getNumVelocities(obj)
+      n = 2;
+    end
+    
     function [c,V]=balanceLQR(obj)
       Q = diag([10,10,1,1]); R = 1;
       if (nargout<2)
@@ -102,7 +110,7 @@ classdef AcrobotPlant < Manipulator
       %options.grad_test = true;
       info=0;
       while (info~=1)
-        utraj0 = PPTrajectory(foh(linspace(0,tf0,21),randn(1,21)));
+        utraj0 = PPTrajectory(foh(linspace(0,tf0,21),0*randn(1,21)));
         tic
         [utraj,xtraj,info] = trajectoryOptimization(obj,@cost,@finalcost,x0,utraj0,con,options);
         toc
@@ -145,7 +153,7 @@ classdef AcrobotPlant < Manipulator
         if (nargout>1)
           dh = [0, 2*xerr'*Qf];
         end
-      end  
+      end      
 
     end
 
