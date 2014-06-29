@@ -145,7 +145,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       end      
     end    
     
-    function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,varargin)
+    function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
       % Solve the nonlinear program and return resulting trajectory
       % @param t_init initial timespan for solution.  can be a vector of
       % length obj.N specifying the times of each segment, or a scalar
@@ -156,7 +156,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       % initial guess for the state trajectory @default obtained via
       % simulation
     
-      z0 = obj.getInitialVars(t_init,varargin{:});
+      z0 = obj.getInitialVars(t_init,traj_init);
       [z,F,info] = obj.solve(z0);
       t = [0; cumsum(z(obj.h_inds))];
       [xtraj,utraj] = reconstructTrajectory(obj,t,reshape(z(obj.x_inds),[],obj.N),reshape(z(obj.u_inds),[],obj.N));
@@ -165,7 +165,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
     end
     
-    function z0 = getInitialVars(obj,t_init,u_init_traj,x_init_traj)
+    function z0 = getInitialVars(obj,t_init,traj_init)
     % evaluates the initial trajectories at the sampled times and
     % constructs the nominal z0. Overwrite to implement in a different
     % manner
@@ -177,25 +177,27 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       z0 = zeros(obj.num_vars,1);
       z0(obj.h_inds) = diff(t_init);
       
-      if nargin>2 && ~isempty(u_init_traj)
-        z0(obj.u_inds) = u_init_traj.eval(t_init);
+      if nargin<2, traj_init = struct(); end
+      
+      if isfield(traj_init,'u')
+        z0(obj.u_inds) = traj_init.u.eval(t_init);
       else
         nU = getNumInputs(obj.plant);
         z0(obj.u_inds) = 0.01*randn(nU,obj.N);
       end
         
-      if nargin>3
-        z0(obj.x_inds) = x_init_traj.eval(t_init);
+      if isfield(traj_init,'x')
+        z0(obj.x_inds) = traj_init.x.eval(t_init);
       else
-        if nargin<3 || isempty(u_init_traj)
-          u_init_traj = setOutputFrame(PPTrajectory(foh(t_init,reshape(z0(obj.u_inds),nU,obj.N))),getInputFrame(obj.plant));
+        if ~isfield(traj_init,'u')
+          traj_init.u = setOutputFrame(PPTrajectory(foh(t_init,reshape(z0(obj.u_inds),nU,obj.N))),getInputFrame(obj.plant));
         end
         
         % todo: if x0 and xf are equality constrained, then initialize with
         % a straight line from x0 to xf (this was the previous behavior)
         
         %simulate
-        sys_ol = cascade(u_init_traj,obj.plant);
+        sys_ol = cascade(traj_init.u,obj.plant);
         [~,x_sim] = sys_ol.simulate([t_init(1) t_init(end)]);
         z0(obj.x_inds) = x_sim.eval(t_init);
       end

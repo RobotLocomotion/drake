@@ -23,13 +23,13 @@ traj_opt = traj_opt.addInputConstraint(ConstantConstraint(u0),N);
 traj_opt = traj_opt.addRunningCost(@cost);
 traj_opt = traj_opt.addFinalCost(@final_cost);
 
-xtraj0 = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
-
 tf0 = 2;                      % initial guess at duration 
+traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
+
 info=0;
 while (info~=1)
   tic
-  [xtraj,utraj,z,F,info] = traj_opt.solveTraj(tf0,[],xtraj0);
+  [xtraj,utraj,z,F,info] = traj_opt.solveTraj(tf0,traj_init);
   toc
 end
 
