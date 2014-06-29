@@ -46,7 +46,6 @@ addpath(fullfile(conf.root,'systems','plants'));
 addpath(fullfile(conf.root,'systems','plants','affordance'));
 addpath(fullfile(conf.root,'systems','plants','collision'));
 addpath(fullfile(conf.root,'systems','plants','constraint'));
-addpath(fullfile(conf.root,'systems','plants','trajOpt'));
 addpath(fullfile(conf.root,'systems','controllers'));
 addpath(fullfile(conf.root,'systems','observers'));
 addpath(fullfile(conf.root,'systems','trajectories'));
