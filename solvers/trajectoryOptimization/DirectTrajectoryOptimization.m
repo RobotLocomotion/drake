@@ -131,7 +131,9 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
       if ~iscell(time_index)
-        time_index = {time_index};
+        % then use { time_index(1), time_index(2), ... } , 
+        % aka independent constraints for each time
+        time_index = mat2cell(reshape(time_index,1,[]),1,ones(1,numel(time_index)));
       end
       for j=1:length(time_index),
         cstr_inds = mat2cell(obj.x_inds(:,time_index{j}),size(obj.x_inds,1),ones(1,length(time_index{j})));
@@ -158,11 +160,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
     
       z0 = obj.getInitialVars(t_init,traj_init);
       [z,F,info] = obj.solve(z0);
-      t = [0; cumsum(z(obj.h_inds))];
-      [xtraj,utraj] = reconstructTrajectory(obj,t,reshape(z(obj.x_inds),[],obj.N),reshape(z(obj.u_inds),[],obj.N));
-      
-      xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
-      utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+      [xtraj,utraj] = reconstructTrajectory(obj,z);
     end
     
     function z0 = getInitialVars(obj,t_init,traj_init)
@@ -243,6 +241,28 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       cost = FunctionHandleObjective(nH+nX,@(h,x) obj.final_cost(final_cost_function,h,x));
       obj = obj.addCost(cost,{obj.h_inds;obj.x_inds(:,end)});
     end
+    
+    function [xtraj,utraj] = reconstructTrajectory(obj,z)
+      % default behavior is to use first order holds, but this can be
+      % re-implemented by a subclass.
+      t = [0; cumsum(z(obj.h_inds))];
+      x = reshape(z(obj.x_inds),[],obj.N);
+      u = reshape(z(obj.u_inds),[],obj.N);
+
+      xtraj = PPTrajectory(foh(t,x));
+      utraj = PPTrajectory(foh(t,u));
+
+      xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
+      utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+    end
+    
+    function u0 = extractFirstInput(obj,z)
+      % When using trajectory optimization a part of a model-predictive
+      % control system, we often only need to extract u(0).  This method
+      % does exactly that.
+      
+      u0 = z(obj.u_inds(:,1));
+    end
   end
   
   methods(Access=protected)
@@ -250,13 +270,6 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       T = sum(h);
       [f,dg] = final_cost_function(T,x);
       df = [repmat(dg(:,1),1,length(h)) dg(:,2:end)];
-    end
-    
-    function [xtraj,utraj] = reconstructTrajectory(obj,t,x,u)
-      % default behavior is to use first order holds, but this can be
-      % re-implemented by a subclass.
-      xtraj = PPTrajectory(foh(t,x));
-      utraj = PPTrajectory(foh(t,u));
     end
   end
   
