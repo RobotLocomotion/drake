@@ -95,8 +95,33 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       obj = obj.addConstraint(state_limit,obj.x_inds(:));
     end
     
+    function obj = addInputConstraint(obj,constraint,time_index)
+      % Add constraint (or composite constraint) that is a function of the 
+      % input at the specified time or times.
+      % @param constraint  a Constraint or CompositeConstraint
+      % @param time_index   a cell array of time indices
+      %   ex1., time_index = {1, 2, 3} means the constraint is applied
+      %   individually to knot points 1, 2, and 3
+      %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
+      %   points 1 and 2 together (taking the combined state as an argument)
+      %   and 3 and 4 together.
+      if ~iscell(time_index)
+        time_index = {time_index};
+      end
+      for j=1:length(time_index),
+        cstr_inds = mat2cell(obj.u_inds(:,time_index{j}),size(obj.u_inds,1),ones(1,length(time_index{j})));
+        
+        % record constraint for posterity
+        obj.constraints{end+1}.constraint = constraint;
+        obj.constraints{end}.var_inds = cstr_inds;
+        obj.constraints{end}.time_index = time_index;
+        
+        obj = obj.addConstraint(constraint,cstr_inds);
+      end      
+    end
+    
     function obj = addStateConstraint(obj,constraint,time_index)
-      % Add constraint (or composite constraint that is a function of the 
+      % Add constraint (or composite constraint) that is a function of the 
       % state at the specified time or times.
       % @param constraint  a CompositeConstraint
       % @param time_index   a cell array of time indices
