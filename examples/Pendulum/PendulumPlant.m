@@ -69,7 +69,7 @@ classdef PendulumPlant < SecondOrderSystem
       tf0 = 4;
 
       N = 21;
-      traj_opt = DircolTrajectoryOptimization(obj,N,[2 6],struct());
+      traj_opt = DircolTrajectoryOptimization(obj,N,[2 6]);
       traj_opt = traj_opt.addStateConstraint(ConstantConstraint(x0),1);
       traj_opt = traj_opt.addStateConstraint(ConstantConstraint(xf),N);
       traj_opt = traj_opt.addRunningCost(@cost);
@@ -98,7 +98,6 @@ classdef PendulumPlant < SecondOrderSystem
         [xtraj,utraj,z,F,info] = traj_opt.solveTraj(tf0);
         toc
       end
-      figure(1); fnplt(xtraj);
     end
     
     function c=trajectorySwingUpAndBalance(obj)
