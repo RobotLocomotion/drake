@@ -123,8 +123,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       z0 = obj.getInitialVars(t_init,traj_init);
       [z,F,info] = obj.solve(z0);
       t = [0; cumsum(z(obj.h_inds))];
-      xtraj = PPTrajectory(foh(t,reshape(z(obj.x_inds),[],obj.N)));
-      utraj = PPTrajectory(foh(t,reshape(z(obj.u_inds),[],obj.N)));
+      [xtraj,utraj] = reconstructTrajectory(obj,t,reshape(z(obj.x_inds),[],obj.N),reshape(z(obj.u_inds),[],obj.N));
       
       xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
       utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
@@ -201,6 +200,13 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       T = sum(h);
       [f,dg] = final_cost_function(T,x);
       df = [repmat(dg(:,1),1,length(h)) dg(:,2:end)];
+    end
+    
+    function [xtraj,utraj] = reconstructTrajectory(obj,t,x,u)
+      % default behavior is to use first order holds, but this can be
+      % re-implemented by a subclass.
+      xtraj = PPTrajectory(foh(t,x));
+      utraj = PPTrajectory(foh(t,u));
     end
   end
   
