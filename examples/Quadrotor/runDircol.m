@@ -21,7 +21,7 @@ traj_opt = traj_opt.addStateConstraint(ConstantConstraint(double(xf)),N);
 traj_opt = traj_opt.addInputConstraint(ConstantConstraint(u0),N);
 
 traj_opt = traj_opt.addRunningCost(@cost);
-traj_opt = traj_opt.addFinalCost(@final_cost);
+traj_opt = traj_opt.addFinalCost(@finalCost);
 
 tf0 = 2;                      % initial guess at duration 
 traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
@@ -48,7 +48,7 @@ end
         %dg = zeros(1, 1 + size(x,1) + size(u,1));
       end
       
-      function [h,dh] = final_cost(t,x)
+      function [h,dh] = finalCost(t,x)
         h = t;
         dh = [1,zeros(1,size(x,1))];
       end
