@@ -88,15 +88,16 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       % numerical implementation specific (thus abstract)
       % this cost is assumed to be time-invariant
       % @param running_cost_function a function handle
+      %  of the form running_cost_function(dt,x,u)
       % This implementation assumes a ZOH, but where the values of
-      % x(i),u(i) are held over an interval spanned by .5(h(i-1) + h(i))
+      % x(i),u(i) are held over an interval spanned by .5(dt(i-1) + dt(i))
       
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-      
+            
       running_cost_end = FunctionHandleObjective(1+nX+nU,@(h,x,u) obj.running_fun_end(running_cost_function,h,x,u));
       running_cost_mid = FunctionHandleObjective(2+nX+nU,@(h0,h1,x,u) obj.running_fun_mid(running_cost_function,h0,h1,x,u));
-      
+
       obj = obj.addCost(running_cost_end,{obj.h_inds(1);obj.x_inds(:,1);obj.u_inds(:,1)});
       
       for i=2:obj.N-1,
