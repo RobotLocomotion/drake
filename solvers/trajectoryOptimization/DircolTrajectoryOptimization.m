@@ -88,15 +88,16 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       % numerical implementation specific (thus abstract)
       % this cost is assumed to be time-invariant
       % @param running_cost_function a function handle
+      %  of the form running_cost_function(dt,x,u)
       % This implementation assumes a ZOH, but where the values of
-      % x(i),u(i) are held over an interval spanned by .5(h(i-1) + h(i))
+      % x(i),u(i) are held over an interval spanned by .5(dt(i-1) + dt(i))
       
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-      
+            
       running_cost_end = FunctionHandleObjective(1+nX+nU,@(h,x,u) obj.running_fun_end(running_cost_function,h,x,u));
       running_cost_mid = FunctionHandleObjective(2+nX+nU,@(h0,h1,x,u) obj.running_fun_mid(running_cost_function,h0,h1,x,u));
-      
+
       obj = obj.addCost(running_cost_end,{obj.h_inds(1);obj.x_inds(:,1);obj.u_inds(:,1)});
       
       for i=2:obj.N-1,
@@ -106,16 +107,6 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       obj = obj.addCost(running_cost_end,{obj.h_inds(end);obj.x_inds(:,end);obj.u_inds(:,end)});
     end
     
-    function [xtraj,utraj] = reconstructTrajectory(obj,t,x,u)
-      % Interpolate between knot points to reconstruct a trajectory using
-      % the hermite spline
-      xdot = zeros(size(x,1),obj.N);
-      for i=1:obj.N,
-        xdot(:,i) = obj.plant.dynamics(t(i),x(:,i),u(:,i));
-      end
-      xtraj = PPTrajectory(pchipDeriv(t,x,xdot));
-      utraj = PPTrajectory(foh(t,u));
-    end
   end
   
   methods (Access = protected)
@@ -129,6 +120,17 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       [f,dg] = running_handle(.5*(h0+h1),x,u);
       
       df = [.5*dg(:,1) .5*dg(:,1) dg(:,2:end)];
+    end
+    
+    function [xtraj,utraj] = reconstructTrajectory(obj,t,x,u)
+      % Interpolate between knot points to reconstruct a trajectory using
+      % the hermite spline
+      xdot = zeros(size(x,1),obj.N);
+      for i=1:obj.N,
+        xdot(:,i) = obj.plant.dynamics(t(i),x(:,i),u(:,i));
+      end
+      xtraj = PPTrajectory(pchipDeriv(t,x,xdot));
+      utraj = PPTrajectory(foh(t,u));
     end
   end
 end
