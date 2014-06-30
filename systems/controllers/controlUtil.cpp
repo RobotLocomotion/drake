@@ -1,19 +1,4 @@
-#include <mex.h>
-
-#define _USE_MATH_DEFINES
-#include <math.h>
-#include <set>
-#include <vector>
-#include <Eigen/Dense>
-
-#ifdef USE_MAPS
-#include "mexmaps/MapLib.hpp"
-#include <maps/ViewBase.hpp>
-#endif
-
-#include "drake/RigidBodyManipulator.h"
-
-const int m_surface_tangents = 2;  // number of faces in the friction cone approx
+#include "controlUtil.h"
 
 // helper function for shuffling debugging data back into matlab
 template <int Rows, int Cols>
@@ -38,14 +23,6 @@ mxArray* myGetField(const mxArray* pobj, const char* propname)
   if (!pm) mexErrMsgIdAndTxt("DRC:ControlUtil:BadInput","ControlUtil is trying to load object field '%s', but failed.", propname);
   return pm;
 }
-
-typedef struct _support_state_element
-{
-  int body_idx;
-  std::set<int> contact_pt_inds;
-  int contact_surface;
-} SupportStateElement;
-
 
 bool inSupport(std::vector<SupportStateElement> supports, int body_idx) {
   for (int i=0; i<supports.size(); i++) {
