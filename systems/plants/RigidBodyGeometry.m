@@ -141,7 +141,7 @@ classdef RigidBodyGeometry
               filename = fullfile(path,[name,ext]);
             end
             
-            obj = RigidBodyMesh(GetFullPath(filename));
+            obj = RigidBodyMesh(which(filename));
             obj.scale = scale;
           case 'capsule'
             r = parseParamString(model,robotnum,char(thisNode.getAttribute('radius')));
