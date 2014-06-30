@@ -1,4 +1,4 @@
-function ret = dAdHTimesX(T, X, dT, dX)
+function ret = dTransformAdjoint(T, X, dT, dX)
 % returns the gradient of transformAdjoint(T) * X
 % @param T a homogeneous transform. No checks are performed to ascertain
 % that T is indeed a homogeneous transform

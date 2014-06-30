@@ -25,7 +25,7 @@ if expressed_in ~= 1
   if compute_gradient
     dT = kinsol.dTdq{expressed_in};
     dTinv = dinvT(T, dT);
-    dtwist = dAdHTimesX(Tinv, twist, dTinv, dtwist);
+    dtwist = dTransformAdjoint(Tinv, twist, dTinv, dtwist);
   end
   twist = transformTwists(Tinv, twist);
 end

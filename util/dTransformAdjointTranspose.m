@@ -1,4 +1,4 @@
-function ret = dAdHTransposeTimesX(H, X, dHdq, dXdq)
+function ret = dTransformAdjointTranspose(H, X, dHdq, dXdq)
 R = H(1:3, 1:3);
 p = H(1:3, 4);
 

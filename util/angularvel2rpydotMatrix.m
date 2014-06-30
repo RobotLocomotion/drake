@@ -1,8 +1,15 @@
 function [Phi, dPhi, ddPhi] = angularvel2rpydotMatrix(rpy)
-
-% computes the matrix that transforms the angular velocity vector to the
+% Computes the matrix that transforms the angular velocity vector to the
 % time derivatives of rpy (rolldot, pitchdot, yawdot).
 % See eq. (5.41) in Craig05. Derivation in rpydot2angularvel.
+%
+% @param rpy [roll; pitch; yaw]
+% @retval Phi matrix such that Phi * omega = rpyd, where omega is the
+% angular velocity in world frame, and rpyd is the time derivative of
+% [roll; pitch; yaw]
+%
+% @retval dPhi gradient of Phi with respect to rpy
+% @retval ddPhi gradient of dPhi with respect to rpy
 
 compute_gradient = nargout > 1;
 compute_second_deriv = nargout > 2;

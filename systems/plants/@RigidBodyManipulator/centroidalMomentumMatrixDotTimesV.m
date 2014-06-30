@@ -39,6 +39,6 @@ if compute_gradients
   dtransform_com_to_world = zeros(numel(transform_com_to_world), nq);
   dtransform_com_to_world = setSubMatrixGradient(dtransform_com_to_world, dcom, 1:3, 4, size(transform_com_to_world));
   dAdot_times_v = sum(cat(3, dhdots{2:end}), 3);
-  dAdot_times_v = dAdHTransposeTimesX(transform_com_to_world, Adot_times_v, dtransform_com_to_world, dAdot_times_v);
+  dAdot_times_v = dTransformAdjointTranspose(transform_com_to_world, Adot_times_v, dtransform_com_to_world, dAdot_times_v);
 end
 end

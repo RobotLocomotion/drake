@@ -1,5 +1,5 @@
 function [M, dM] = angularvel2quatdotMatrix(q)
-% Computes matrix that maps angular velocity in space-fixed frame to
+% Computes matrix that maps angular velocity in world-fixed frame to
 % quaternion derivative
 %
 % From Schwab, Arend L. "Quaternions, finite rotation and euler

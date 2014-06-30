@@ -208,7 +208,7 @@ for i = 2 : nBodies
       dT_joint_to_body = zeros(numel(T_joint_to_body), nq);
       dT_joint_to_world = matGradMultMat(kinsol.T{i}, T_joint_to_body, kinsol.dTdq{i}, dT_joint_to_body);
       dT_world_to_joint = dinvT(T_joint_to_world, dT_joint_to_world);
-      dexternal_wrench = dAdHTransposeTimesX(T_world_to_joint, external_wrench, dT_world_to_joint, dexternal_wrench);
+      dexternal_wrench = dTransformAdjointTranspose(T_world_to_joint, external_wrench, dT_world_to_joint, dexternal_wrench);
       
       dexternal_wrenchdv = AdT_world_to_joint' * dexternal_wrenchdv;
     end
