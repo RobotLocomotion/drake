@@ -43,6 +43,8 @@ tic
 [xtraj,utraj,z,F,info] = traj_opt.solveTraj(t_init,traj_init);
 toc
 
+v = p.constructVisualizer();
+v.playback(xtraj);
 % keyboard
 end
 
