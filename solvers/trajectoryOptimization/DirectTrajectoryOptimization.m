@@ -120,7 +120,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       end      
     end
     
-    function obj = addStateConstraint(obj,constraint,time_index)
+    function obj = addStateConstraint(obj,constraint,time_index,x_indices)
       % Add constraint (or composite constraint) that is a function of the 
       % state at the specified time or times.
       % @param constraint  a CompositeConstraint
@@ -130,13 +130,17 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
+      % @param x_index optional subset of the state vector x which this
+      % constraint depends upon @default 1:num_x
       if ~iscell(time_index)
         % then use { time_index(1), time_index(2), ... } , 
         % aka independent constraints for each time
         time_index = mat2cell(reshape(time_index,1,[]),1,ones(1,numel(time_index)));
       end
+      if nargin<4, x_indices = 1:size(obj.x_inds,1); end
+      
       for j=1:length(time_index),
-        cstr_inds = mat2cell(obj.x_inds(:,time_index{j}),size(obj.x_inds,1),ones(1,length(time_index{j})));
+        cstr_inds = mat2cell(obj.x_inds(x_indices,time_index{j}),numel(x_indices),ones(1,length(time_index{j})));
         
         % record constraint for posterity
         obj.constraints{end+1}.constraint = constraint;
