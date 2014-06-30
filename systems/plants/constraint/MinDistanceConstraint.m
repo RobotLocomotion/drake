@@ -8,21 +8,30 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
   properties
     min_distance
   end
-  
+
   methods(Access=protected)
-   function [c,dc] = evalValidTime(obj,kinsol)
-     [dist,ddist_dq] = closestDistance(obj.robot,kinsol);
-     [scaled_dist,dscaled_dist_ddist] = scaleDistance(obj,dist);
-     [pairwise_costs,dpairwise_cost_dscaled_dist] = penalty(obj,scaled_dist);
-     c = sum(pairwise_costs);
-     dcost_dscaled_dist = sum(dpairwise_cost_dscaled_dist,1);
-     dc = dcost_dscaled_dist*dscaled_dist_ddist*ddist_dq;
+    function [c,dc] = evalValidTime(obj,kinsol)
+      if ~kinsol.mex
+        error('Drake:MinDistanceConstraint:evalValidTime:NoMexDynamics', ...
+          'This method requires a kinsol generated with mex enabled');
+      else
+        [c,dc] = evalLocal(obj,kinsol);
+      end
+    end
+
+    function [c,dc] = evalLocal(obj,q_or_kinsol)
+      [dist,ddist_dq] = closestDistance(obj.robot,q_or_kinsol);
+      [scaled_dist,dscaled_dist_ddist] = scaleDistance(obj,dist);
+      [pairwise_costs,dpairwise_cost_dscaled_dist] = penalty(obj,scaled_dist);
+      c = sum(pairwise_costs);
+      dcost_dscaled_dist = sum(dpairwise_cost_dscaled_dist,1);
+      dc = dcost_dscaled_dist*dscaled_dist_ddist*ddist_dq;
     end
   end
 
   methods
     function obj = MinDistanceConstraint(robot,min_distance,tspan)
-    % obj = MinDistanceConstraint(robot,min_distance,tspan)
+      % obj = MinDistanceConstraint(robot,min_distance,tspan)
       if(nargin == 2)
         tspan = [-inf inf];
       end
@@ -33,6 +42,13 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
       obj.min_distance = min_distance;
       obj.mex_ptr = ptr;
       obj.num_constraint = 1;
+    end
+
+    function cnstr = generateConstraint(obj,t)
+      cnstr = generateConstraint@SingleTimeKinematicConstraint(obj,t);
+      if ~isempty(cnstr)
+        cnstr{1} = setEvalHandle(cnstr{1},@(q,~) obj.evalLocal(q));
+      end
     end
 
     function [scaled_dist,dscaled_dist_ddist] = scaleDistance(obj,dist)
