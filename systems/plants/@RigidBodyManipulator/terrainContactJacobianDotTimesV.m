@@ -1,7 +1,9 @@
 function [Jdot_times_v, dJdot_times_v] = terrainContactJacobianDotTimesV(obj, ...
   kinsol, varargin)
-% Computes dJ/dt * v, where J is the Jacobian output of
-% terrainContactPositions and v is the joint velocity vector
+% Computes dJ/dt * v, where J is the matrix that maps the velocity vector
+% v to a stacked vector of terrain contact point velocities. Note that this
+% is <b>not</b> the same as dx/dq * qd, where x are the contact point
+% positions, when the mapping from v to qd is time-variant.
 
 compute_gradient = nargout > 1;
 
