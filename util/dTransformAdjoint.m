@@ -1,5 +1,6 @@
 function ret = dTransformAdjoint(T, X, dT, dX)
-% returns the gradient of transformAdjoint(T) * X
+% Computes the gradient of transformAdjoint(T) * X
+%
 % @param T a homogeneous transform. No checks are performed to ascertain
 % that T is indeed a homogeneous transform
 % @param X a 6xn matrix
@@ -7,6 +8,7 @@ function ret = dTransformAdjoint(T, X, dT, dX)
 % 36 x m matrix, where m is the dimension of x
 % @param dX the gradient of X with respect to a vector x. dX is a (6*n) x m
 % matrix, where m is the dimension of x
+%
 % @retval ret the gradient of transformAdjoint(T) * X with respect to x
 
 R = T(1:3, 1:3);

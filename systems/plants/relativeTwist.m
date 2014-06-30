@@ -24,7 +24,7 @@ if expressed_in ~= 1
   Tinv = homogTransInv(T);
   if compute_gradient
     dT = kinsol.dTdq{expressed_in};
-    dTinv = dinvT(T, dT);
+    dTinv = dHomogTransInv(T, dT);
     dtwist = dTransformAdjoint(Tinv, twist, dTinv, dtwist);
   end
   twist = transformTwists(Tinv, twist);

@@ -1,5 +1,5 @@
-function ret = dinvT(T, dT)
-% ret = dinvT(T,dT)
+function ret = dHomogTransInv(T, dT)
+% ret = dHomogTransInv(T,dT)
 % returns the Jacobian of the inverse of the homogeneous transform T
 %
 % @param T a 4x4 array representing a homogenous transform

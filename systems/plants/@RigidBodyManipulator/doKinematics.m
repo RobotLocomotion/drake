@@ -56,8 +56,8 @@ else
     if compute_gradients
       [kinsol.twists, kinsol.dtwistsdq] = computeTwistsInBaseFrame(bodies, kinsol.J, v, kinsol.dJdq);
       if compute_JdotV
-        [SdotV, dSdotVdq, Sdot] = computeMotionSubspacesDotV(bodies, q, v);
-        [kinsol.JdotV, kinsol.dJdotVdq, kinsol.dJdotVidv] = computeJacobianDotV(model, kinsol, SdotV, dSdotVdq, Sdot);
+        [SdotV, dSdotVdq, dSdotVdv] = computeMotionSubspacesDotV(bodies, q, v);
+        [kinsol.JdotV, kinsol.dJdotVdq, kinsol.dJdotVidv] = computeJacobianDotV(model, kinsol, SdotV, dSdotVdq, dSdotVdv);
       end
     else
       kinsol.twists = computeTwistsInBaseFrame(bodies, kinsol.J, v);
@@ -130,7 +130,7 @@ for i = 2 : nb
   T_body_to_parent = T{body.parent} \ T{i};
   qdotToVi = qdotToV(body.velocity_num, body.position_num);
   
-  dT_body_to_parentdqi = dHdq(T_body_to_parent, S{i}, qdotToVi);
+  dT_body_to_parentdqi = dHomogTrans(T_body_to_parent, S{i}, qdotToVi);
   dT_body_to_parentdq = zeros(numel(T{i}), nq) * dT_body_to_parentdqi(1); % to make TaylorVar work better
   dT_body_to_parentdq(:, body.position_num) = dT_body_to_parentdqi;
   ret{i} = matGradMultMat(...
@@ -202,14 +202,14 @@ for i = 2 : nb
 end
 end
 
-function [SdotV, dSdotVdq, Sdot] = computeMotionSubspacesDotV(bodies, q, v)
+function [SdotV, dSdotVdq, dSdotVdv] = computeMotionSubspacesDotV(bodies, q, v)
 compute_gradients = nargout > 1;
 
 nb = length(bodies);
 SdotV = cell(1, nb);
 if compute_gradients
   dSdotVdq = cell(1, nb);
-  Sdot = cell(1, nb);
+  dSdotVdv = cell(1, nb);
 end
 
 for i = 2 : nb
@@ -217,9 +217,9 @@ for i = 2 : nb
   qi = q(body.position_num);
   vi = v(body.velocity_num);
   if compute_gradients
-    [SdotV{i}, dSdotVdq{i}, Sdot{i}] = motionSubspaceDotV(body, qi, vi);
+    [SdotV{i}, dSdotVdq{i}, dSdotVdv{i}] = motionSubspaceDotTimesV(body, qi, vi);
   else
-    SdotV{i} = motionSubspaceDotV(body, qi, vi);
+    SdotV{i} = motionSubspaceDotTimesV(body, qi, vi);
   end
 end
 end

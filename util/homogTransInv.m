@@ -1,8 +1,8 @@
-function HInv = homogTransInv(H)
-HInv = 0*H; % for symbolic
-R = H(1:3, 1:3);
-p = H(1:3, 4);
-HInv(1:3, 1:3) = R';
-HInv(1:3, 4) = -R' * p;
-HInv(4, 4) = 1;
+function TInv = homogTransInv(T)
+TInv = 0*T; % for symbolic
+R = T(1:3, 1:3);
+p = T(1:3, 4);
+TInv(1:3, 1:3) = R';
+TInv(1:3, 4) = -R' * p;
+TInv(4, 4) = 1;
 end
