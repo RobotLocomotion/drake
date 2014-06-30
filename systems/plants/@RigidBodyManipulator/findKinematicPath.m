@@ -25,8 +25,8 @@ common_size = min(size(ancestors1, 1), size(ancestors2, 1));
 reduced_ancestors1 = ancestors1(end - common_size + 1: end);
 reduced_ancestors2 = ancestors2(end - common_size + 1: end);
 
-commonIndices = reduced_ancestors1 == reduced_ancestors2;
-lca_index = find(commonIndices, 1);
+common_indices = reduced_ancestors1 == reduced_ancestors2;
+lca_index = find(common_indices, 1);
 if isempty(lca_index)
   error(['there is no path between ' start_body ' and ' end_body]);
 end
