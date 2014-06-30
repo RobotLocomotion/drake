@@ -1,9 +1,17 @@
 function [com,J,dJ] = centerOfMassV(model,kinsol,robotnum)
-% @param robotnum              -- An int array. Default is 1
-%                              - Not given, the COM of the whole model is computed. 
-%                              - Otherwise, the bodies that belong to robot(robotnum) is
-%                                computed
-% note: for Jdot, call forwardJacDot with body_ind = 0
+% Computes the COM of (part of) a RigidBodyManipulator, as well as the COM
+% velocity Jacobian, i.e. the matrix J such that d(com)/dt = J * v, where v
+% is the robot's velocity vector. Gradient output dJ/dq is also available.
+%
+% @param kinsol solution structure obtained from doKinematics
+% @param robotnum vector of submodel identifiers. COM will be computed only
+% for bodies such that body.robotnum matches one of the entries of 
+% \p robotnum. @default 1
+%
+% @retval com center of mass position in world frame
+% @retval J matrix such that d(com)/dt = J * v, where v is the robot's 
+% velocity vector
+% @retval dJ dJ/dq
 
 if(nargin == 2)
   robotnum = 1;

@@ -1,4 +1,4 @@
-function testCOM
+function testCenterOfMass
 % test COM computation with/without affordance
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;

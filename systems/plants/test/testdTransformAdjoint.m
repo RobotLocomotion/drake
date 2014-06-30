@@ -1,4 +1,4 @@
-function testdAdHTimesX()
+function testdTransformAdjoint()
 testFallingBrick('rpy');
 testFallingBrick('quat');
 end

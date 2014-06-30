@@ -1,4 +1,16 @@
 function [T, dTdq] = relativeTransform(obj, kinsol, base, body)
+% Computes the transform that maps vectors from body to base
+%
+% @param kinsol solution structure obtained from doKinematics
+% @param base an integer ID for a RigidBody or RigidBodyFrame
+% (obtained via e.g., findLinkInd or findFrameInd) signifying the base
+% frame.
+% @param body an integer ID for a RigidBody or RigidBodyFrame
+% (obtained via e.g., findLinkInd or findFrameInd) signifying the body
+% frame.
+%
+% @retval T transform from body frame to base frame
+% @retval dTdq gradient of T with respect to robot position vector q.
 
 compute_gradient = nargout > 1;
 

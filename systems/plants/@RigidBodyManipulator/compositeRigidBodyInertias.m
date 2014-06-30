@@ -1,5 +1,12 @@
 function [crbs, dcrbs] = compositeRigidBodyInertias(manipulator, inertias_world, dinertias_world)
-% computes composite rigid body inertias expressed in world frame
+% Computes composite rigid body inertias expressed in world frame.
+%
+% @param inertias_world cell array of 6x6 body inertia matrices,
+% transformed to world frame
+% @param dinertias_world gradient of inertias_world
+%
+% @retval crbs cell array of composite rigid body inertias
+% @retval dcrbs gradient of crbs
 
 compute_gradients = nargout > 1;
 

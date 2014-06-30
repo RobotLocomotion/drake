@@ -1,4 +1,22 @@
 function [Jdot_times_v, dJdot_times_v] = forwardJacDotTimesV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind)
+% Computes Jd * v, where J is a matrix that maps from the joint velocity
+% vector v to the time derivative of x (x and J of format specified in
+% forwardKinV). Gradient output is also available.
+% Note that this is in general <b>not</b> the same as dx/dq * qd when the
+% mapping from v to qd is time-variant!
+%
+% @param body_or_frame_ind, an integer ID for a RigidBody or RigidBodyFrame
+% (obtained via e.g., findLinkInd or findFrameInd)
+% @param points a 3 x m matrix where each column represents a point in the
+% frame specified by \p body_or_frame_ind
+% @param rotation_type integer flag indicated whether rotations and
+% derivatives should be computed (0 - no rotations, 1 - rpy, 2 - quat)
+% @param base_or_frame_ind an integer ID for a RigidBody or RigidBodyFrame
+% (obtained via e.g., findLinkInd or findFrameInd) @default 1 (world)
+%
+% @see forwardKin
+
+
 if (nargin<6), base_or_frame_ind=1; end
 if (nargin<5), rotation_type=0; end
 compute_gradient = nargout > 1;

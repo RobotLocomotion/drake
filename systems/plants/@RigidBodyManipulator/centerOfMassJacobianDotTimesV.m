@@ -1,21 +1,23 @@
 function [com_Jacobian_dot_times_v, dcom_Jacobian_dot_times_v] = ...
   centerOfMassJacobianDotTimesV(model,kinsol,robotnum)
-% computes the quantity Jdot * v == d(dcom/dq) * qdot, where Jdot is the
+% computes the quantity Jd * v == d(dcom/dq) * qd, where J is the
 % second output of centerOfMassJacobianV.
+%
+% Algorithm: let J be the matrix such that J * v = comd. Take derivative:
+% Jd * v + J * vd = comdd, so Jd * v = comdd when vd = 0 --> can use an
+% algorithm that computes the COM acceleration with vd set to zero. COM
+% acceleration is robot linear momentum rate of change divided by total
+% mass. Robot linear momentum rate of change is sum of linear momentum
+% rates of change of individual links. Individual link momentum rates of
+% change are link COM acceleration times link mass.
 %
 % @param kinsol solution structure obtained from doKinematics
 % @param robotnum an int array. Jdot * v for the bodies that belong to 
 % robot(robotnum) is computed. Default is 1.
+%
 % @retval com_Jacobian_dot_times_v Jdot * v == d(dcom/dq) * qdot
 % @retval dcom_Jacobian_dot_times_v gradient with respect to q
-%
-% Algorithm: let J be the COM Jacobian. Then J * v = comd. Take derivative:
-% Jd * v + J * vd = comdd, so Jd * v = comdd when vd = 0 --> can use an
-% algorithm that computes the COM acceleration with vd set to zero. COM
-% acceleration is robot linear momentum rate of change divided by total
-% mass. Robot linear momentum rate of change is sum of linear momentum rate
-% of changes of individual links. Individual link momentum rates of change
-% are link COM acceleration times link mass.
+
 
 compute_gradient = nargout > 1;
 if(nargin < 3)

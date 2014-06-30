@@ -1,16 +1,21 @@
 function [x, J, dJ] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind)
-% computes the position of pts (given in the body frame) in the global
+% computes the position of points (given in the body frame) in base
 % frame, as well as the Jacobian J that maps the joint velocity vector v
-% to xdot and its gradient
+% to xdot. The gradient of J with respect to the joint configuration vector
+% q is also available.
 %
 % @param kinsol solution structure obtained from doKinematics
 % @param body_or_frame_ind, an integer ID for a RigidBody or RigidBodyFrame
 % (obtained via e.g., findLinkInd or findFrameInd)
+% @param points a 3 x m matrix where each column represents a point in the
+% frame specified by \p body_or_frame_ind
 % @param rotation_type integer flag indicated whether rotations and
 % derivatives should be computed (0 - no rotations, 1 - rpy, 2 - quat)
-% @param base_ind index of the base rigid body. Default is 1 (world).
-% @retval x the position of pts (given in the body frame) in the base frame
-% frame. If rotation_type, x is 6-by-num_pts where the final 3
+% @param base_or_frame_ind an integer ID for a RigidBody or RigidBodyFrame
+% (obtained via e.g., findLinkInd or findFrameInd) @default 1 (world)
+%
+% @retval x the position of points (given in the body frame) in the base frame
+% frame. If rotation_type, x is 6-by-num_points where the final 3
 % components are the roll/pitch/yaw of the body frame (same for all points
 % on the body)
 % @retval J the Jacobian, that maps the joint velocity vector v to xdot
@@ -20,7 +25,7 @@ function [x, J, dJ] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotati
 %                -- 1, output Euler angle
 %                -- 2, output quaternion
 % if rotation_type = 0:
-% if pts is a 3xm matrix, then x will be a 3xm matrix
+% if points is a 3xm matrix, then x will be a 3xm matrix
 %  and (following our gradient convention) J will be a ((3xm)x(q))
 %  matrix, with [J1;J2;...;Jm] where Ji = dxidq
 % if rotation_type = 1 or 2:

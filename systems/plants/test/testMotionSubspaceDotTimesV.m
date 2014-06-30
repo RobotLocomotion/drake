@@ -1,4 +1,4 @@
-function testMotionSubspaceDotV()
+function testMotionSubspaceDotTimesV()
 
 testRPYVersusSymbolic();
 

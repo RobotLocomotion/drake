@@ -1,4 +1,13 @@
 function [A, dA] = centroidalMomentumMatrix(robot, kinsol)
+% Computes the centroidal momentum matrix (CMM), i.e. the matrix that maps
+% the joint velocity vector v to the robot's momentum h = [k; l], with
+% angular momentum k and linear momentum l, expressed in a centroidal
+% frame. See Orin13.
+%
+% @param kinsol solution structure obtained from doKinematics
+%
+% @retval A CMM
+% @retval dA gradient of A with respect to coordinate vector q
 
 compute_gradients = nargout > 1;
 

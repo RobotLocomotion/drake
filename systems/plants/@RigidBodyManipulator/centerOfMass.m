@@ -1,8 +1,16 @@
 function [com,J,dJ] = centerOfMass(model,kinsol,robotnum)
-% @param robotnum              -- An int array. Default is 1
-%                              - Not given, the COM of the whole model is computed.
-%                              - Otherwise, the bodies that belong to robot(robotnum) is
-%                                computed
+% Computes the COM of (part of) a RigidBodyManipulator, as well as the COM
+% Jacobian (gradient with respect to q), J = dcom/dq, and its gradient
+%
+% @param kinsol solution structure obtained from doKinematics
+% @param robotnum vector of submodel identifiers. COM will be computed only
+% for bodies such that body.robotnum matches one of the entries of 
+% \p robotnum. @default 1
+%
+% @retval com center of mass position in world frame
+% @retval J dcom/dq
+% @retval dJ dJ/dq
+
 
 if(nargin < 3)
   robotnum = 1;

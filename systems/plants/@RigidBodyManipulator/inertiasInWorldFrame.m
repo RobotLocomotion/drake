@@ -2,6 +2,7 @@ function [inertias, dinertias] = inertiasInWorldFrame(manipulator, kinsol)
 % Transforms 6x6 inertia matrices from body frame to world frame
 %
 % @param kinsol solution structure from doKinematics
+% 
 % @retval inertias inertia matrices in world frame
 % @retval dinertias gradients of inertia matrices with respect to joint
 % configuration vector q
