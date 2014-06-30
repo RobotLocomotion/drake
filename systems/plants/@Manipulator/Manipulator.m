@@ -8,6 +8,8 @@ classdef Manipulator < DrakeSystem
       obj = obj@DrakeSystem(num_q+num_v,0,num_u,num_q+num_v,false,true);
       obj.num_positions = num_q;
       obj.num_velocities = num_v;
+      obj.joint_limit_min = -inf(num_q,1);
+      obj.joint_limit_max = inf(num_q,1);
     end
   end
   
@@ -460,6 +462,14 @@ classdef Manipulator < DrakeSystem
       % Returns lower and upper joint limit vectors
       jl_min = obj.joint_limit_min;
       jl_max = obj.joint_limit_max;
+    end
+    
+    function [lb,ub] = getStateLimits(obj)
+      % Returns lower and upper state vectors. Uses joint limits for
+      % positions and +/-inf for velocities
+      [jl_min, jl_max] = getJointLimits(obj);
+      lb = [jl_min; -inf(obj.getNumVelocities,1)];
+      ub = [jl_max; inf(obj.getNumVelocities,1)];
     end
   end  
   

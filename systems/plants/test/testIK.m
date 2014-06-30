@@ -1,6 +1,7 @@
 function testIK
-warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
+w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
+warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
@@ -303,7 +304,7 @@ ikproblem = ikproblem.setQ(ikoptions.Q);
 ikproblem = ikproblem.addDecisionVariable(1,{'max_weight'});
 ikproblem = ikproblem.addLinearConstraint(LinearConstraint(zeros(qsc.num_pts,1),inf(qsc.num_pts,1),[ones(qsc.num_pts,1) -eye(qsc.num_pts)]),...
   [ikproblem.num_vars;ikproblem.qsc_weight_idx]);
-ikproblem = ikproblem.addCost(LinearConstraint(-inf,inf,1),[],[],ikproblem.num_vars);
+ikproblem = ikproblem.addCost(LinearConstraint(-inf,inf,1),ikproblem.num_vars);
 [q,F,info,infeasible_constraint] = ikproblem.solve(q_seed);
 
 display('Check quasi static constraint for pointwise');
@@ -420,6 +421,7 @@ q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1);q_seed_
 % display('Check sequentialSeedFlag for pointwise');
 % q = test_IKpointwise_userfun(r,[0,1],[q_seed q_seed],[q_nom q_nom],kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptions);
 
+warning(w);
 end
 
 function qik = test_IK_userfun(r,q_seed,q_nom,varargin)

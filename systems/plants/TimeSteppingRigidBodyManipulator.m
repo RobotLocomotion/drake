@@ -961,6 +961,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
     function model = setParams(model,p)
       model.manip = setParams(model.manip,p);
     end
+    
+    function [lb,ub] = getStateLimits(obj)
+      [lb,ub] = obj.manip.getStateLimits();
+    end
 
     function terrain_contact_point_struct = getTerrainContactPoints(obj,varargin)
       terrain_contact_point_struct = getTerrainContactPoints(obj.manip,varargin{:});

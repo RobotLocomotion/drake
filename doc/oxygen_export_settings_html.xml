@@ -89,13 +89,13 @@
 					<Boolean>false</Boolean>
 				</field>
 				<field name="detailsAnnotations">
-					<Boolean>false</Boolean>
+					<Boolean>true</Boolean>
 				</field>
 				<field name="includeIndexLocalComponents">
 					<Boolean>false</Boolean>
 				</field>
 				<field name="showAnnotationsInDiagram">
-					<Boolean>true</Boolean>
+					<Boolean>false</Boolean>
 				</field>
 				<field name="filterByLanguage">
 					<Boolean>false</Boolean>

@@ -1,6 +1,6 @@
 function testConstraint
 display('Check constructing constraint with anonymous function handle without gradient');
-cnstr1 = Constraint(0,1,@(x) x+1);
+cnstr1 = FunctionHandleConstraint(0,1,1,@(x) x+1);
 cnstr1.grad_method = 'numerical';
 [c1,dc1] = cnstr1.eval(1);
 valuecheck(c1,2);
@@ -9,22 +9,22 @@ valuecheck(cnstr1.lb,0);
 valuecheck(cnstr1.ub,1);
 
 display('Check constructing constraint with function handle and 1st order gradient');
-cnstr2 = Constraint([0;1],[0;2],@cnstr_userfun2);
+cnstr2 = FunctionHandleConstraint([0;1],[0;2],2,@cnstr_userfun2);
 [c2,dc2] = cnstr2.eval([1;2]);
 [c2_user,dc2_user] = geval(@cnstr_userfun2,[1;2],struct('grad_method','taylorvar'));
 valuecheck(c2,c2_user);
 valuecheck(dc2,dc2_user);
 
 display('Check constructing constraint with function handle and 2nd order gradient');
-cnstr3 = Constraint([0;1],[0;2],@cnstr_userfun3);
+cnstr3 = FunctionHandleConstraint([0;1],[0;2],2,@cnstr_userfun3);
 [c3,dc3,ddc3] = cnstr3.eval([1;2]);
 [c3_user,dc3_user,ddc3_user] = cnstr_userfun3([1;2]);
 valuecheck(c3,c3_user);
 valuecheck(dc3,dc3_user);
 valuecheck(ddc3,ddc3_user);
 
-display('Check NonlinearConstraint with function handle');
-cnstr4 = NonlinearConstraint([0;0],[0;1],3,@cnstr_userfun4);
+display('Check DifferentiableCnostraint with function handle');
+cnstr4 = FunctionHandleConstraint([0;0],[0;1],3,@cnstr_userfun4);
 valuecheck(cnstr4.ceq_idx,1);
 valuecheck(cnstr4.cin_idx,2);
 [c4,dc4] = cnstr4.eval([1;2;0]);

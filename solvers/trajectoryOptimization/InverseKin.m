@@ -1,4 +1,4 @@
-classdef InverseKin < NonlinearProgramWKinsol
+classdef InverseKin < NonlinearProgramWConstraintObjects
   % solve the inverse kinematics problem
   % min_q 0.5*(q-qnom)'Q(q-qnom)+cost1(q)+cost2(q)+...
   % s.t    lb<= kc(q) <=ub
@@ -13,6 +13,10 @@ classdef InverseKin < NonlinearProgramWKinsol
     q_nom
     q_idx   % q=x(q_idx), the robot posture
     qsc_weight_idx   % qsc_weight = x(qsc_weight_idx), the weight used in QuasiStaticConstraint
+    nq
+    x_name
+    robot
+    kinsol_dataind
   end
   
   properties(Access = protected)
@@ -31,7 +35,15 @@ classdef InverseKin < NonlinearProgramWKinsol
       if(~isa(robot,'RigidBodyManipulator') && ~isa(robot,'TimeSteppingRigidBodyManipulator'))
         error('Drake:InverseKin:robot should be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
-      obj = obj@NonlinearProgramWKinsol(robot,1);
+      nq_tmp = robot.getNumPositions();
+      obj = obj@NonlinearProgramWConstraintObjects(nq_tmp);
+      obj.nq = nq_tmp;
+      obj.robot = robot;
+      obj.x_name = cell(obj.nq,1);
+      for j = 1:obj.nq
+        obj.x_name{j} = sprintf('q%d',j);
+      end
+
       if(~isnumeric(q_nom))
         error('Drake:InverseKin:q_nom should be a numeric vector');
       end
@@ -43,13 +55,17 @@ classdef InverseKin < NonlinearProgramWKinsol
       obj.qsc_weight_idx = [];
       [q_lb,q_ub] = obj.robot.getJointLimits();
       obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(q_lb,q_ub),obj.q_idx);
+
+      [obj,kinsol_dataind] = obj.addSharedDataFunction(@obj.kinematicsData,{obj.q_idx});
+      obj.kinsol_dataind = kinsol_dataind;
+
       for i = 1:num_rbcnstr
         if(~isa(varargin{i},'RigidBodyConstraint'))
           error('Drake:InverseKin:the input should be a RigidBodyConstraint');
         end
         if(isa(varargin{i},'SingleTimeKinematicConstraint'))
           cnstr = varargin{i}.generateConstraint(t);
-          obj = obj.addNonlinearConstraint(cnstr{1},1,[],obj.q_idx);
+          obj = obj.addDifferentiableConstraint(cnstr{1},obj.q_idx,obj.kinsol_dataind);
         elseif(isa(varargin{i},'PostureConstraint'))
           cnstr = varargin{i}.generateConstraint(t);
           obj = obj.addBoundingBoxConstraint(cnstr{1},obj.q_idx);
@@ -62,7 +78,7 @@ classdef InverseKin < NonlinearProgramWKinsol
             end
             obj = obj.addDecisionVariable(varargin{i}.num_pts,qsc_weight_names);
             cnstr = varargin{i}.generateConstraint(t);
-            obj = obj.addNonlinearConstraint(cnstr{1},1,obj.qsc_weight_idx,[obj.q_idx;obj.qsc_weight_idx]);
+            obj = obj.addDifferentiableConstraint(cnstr{1},{obj.q_idx;obj.qsc_weight_idx},obj.kinsol_dataind);
             obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_idx);
             obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_idx);
           end
@@ -81,6 +97,10 @@ classdef InverseKin < NonlinearProgramWKinsol
       obj = obj.setSolverOptions('snopt','majoriterationslimit',200);
     end
     
+    function data = kinematicsData(obj,q)
+      data = doKinematics(obj.robot,q,false,false);
+    end
+    
     function obj = setQ(obj,Q)
       % set the Q matrix in the cost function 0.5(q-q_nom)'Q(q-q_nom)
       % @param Q    -- An nq x nq double PSD matrix
@@ -88,9 +108,9 @@ classdef InverseKin < NonlinearProgramWKinsol
       obj.Q = Q;
       obj.pe = PostureError(obj.Q,obj.q_nom);
       if(isempty(obj.cost))
-        obj = obj.addCost(obj.pe,[],obj.q_idx,obj.q_idx);
+        obj = obj.addCost(obj.pe,obj.q_idx);
       else
-        obj = obj.replaceCost(obj.pe,1,[],obj.q_idx,obj.q_idx);
+        obj = obj.replaceCost(obj.pe,1,obj.q_idx);
       end
     end
     
@@ -107,5 +127,61 @@ classdef InverseKin < NonlinearProgramWKinsol
       [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
     end
 
+    function obj = addDecisionVariable(obj,num_new_vars,var_names)
+      % appending new decision variables to the end of the current decision variables
+      % @param num_new_vars      -- An integer. The newly added decision variable is an
+      % num_new_vars x 1 double vector.
+      % @param var_names         -- A cell of strings. var_names{i} is the name of the
+      % i'th new decision variable
+      if(nargin<3)
+        var_names = cell(num_new_vars,1);
+        for i = 1:num_new_vars
+          var_names{i} = sprintf('x%d',obj.num_vars+i);
+        end
+      else
+        if(~iscellstr(var_names))
+          error('Drake:NonlinearProgramWKinsol:addDecisionVariable:var_names should be a cell of strings');
+        end
+      end
+      obj = addDecisionVariable@NonlinearProgramWConstraintObjects(obj,num_new_vars);
+      obj.x_name = [obj.x_name;var_names];
+    end
+
+    function [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info)
+      % return the name of the infeasible nonlinear constraint
+      % @retval info     -- change the return info from nonlinear solver based on how much
+      % the solution violate the constraint
+      % @retval infeasible_constraint  -- A cell of strings.
+      infeasible_constraint = {};
+      if(strcmp(obj.solver,'snopt'))
+        if(info>10)
+          fval = obj.objectiveAndNonlinearConstraints(x);
+          A = [obj.Ain;obj.Aeq];
+          if(~isempty(A))
+            fval = [fval;A*x];
+          end
+          [lb,ub] = obj.bounds();
+          ub_err = fval(2:end)-ub(2:end);
+          max_ub_err = max(ub_err);
+          max_ub_err = max_ub_err*(max_ub_err>0);
+          lb_err = lb(2:end)-fval(2:end);
+          max_lb_err = max(lb_err);
+          max_lb_err = max_lb_err*(max_lb_err>0);
+          cnstr_name = [obj.cin_name;obj.ceq_name;obj.Ain_name;obj.Aeq_name];
+          if(max_ub_err+max_lb_err>1e-4)
+            infeasible_constraint_idx = (ub_err>5e-5) | (lb_err>5e-5);
+            infeasible_constraint = cnstr_name(infeasible_constraint_idx);
+          elseif(info == 13)
+            info = 4;
+          elseif(info == 31)
+            info = 5;
+          elseif(info == 32)
+            info = 6;
+          end
+        end
+      else
+        error('not implemented yet');
+      end
+    end
   end
 end

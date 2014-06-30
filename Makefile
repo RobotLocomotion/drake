@@ -27,7 +27,7 @@ endif
 CMAKE_MAKE_PROGRAM="`cmake -LA -N | grep CMAKE_MAKE_PROGRAM | cut -d "=" -f2`"
 
 all: pod-build/Makefile
-	cd pod-build && $(CMAKE_MAKE_PROGRAM) all install 
+	cd pod-build && $(CMAKE_MAKE_PROGRAM) all install
 
 pod-build/Makefile:
 	$(MAKE) configure
@@ -44,7 +44,7 @@ configure:
 	@cd pod-build && cmake -DCMAKE_INSTALL_PREFIX="$(BUILD_PREFIX)" \
 		   -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) ..
 
-.PHONY: doc doxygen 
+.PHONY: doc doxygen
 doc:	doxygen doc/drake.pdf doc/urdf/drakeURDF.html
 
 doxygen :
@@ -55,12 +55,13 @@ doc/drake.pdf :
 	cd doc && make -f ~/code/latex/makefile_tex drake.pdf
 
 doc/urdf/drakeURDF.html : doc/drakeURDF.xsd
-	ifeq ($(shell uname -p),Darwin)
-	  cd doc && /Applications/oxygen/schemaDocumentationMac.sh drakeURDF.xsd -cfg:oxygen_export_settings_html.xml	
-	else
-	  # note that I manually installed oxygen to my home oxygen directory
-	  cd doc && $(HOME)/oxygen/schemaDocumentation.sh drakeURDF.xsd -cfg:oxygen_export_settings_html.xml	
-	endif 
+ifeq ($(shell uname -s),Darwin)
+	cd doc && /Applications/oxygen/schemaDocumentationMac.sh drakeURDF.xsd -cfg:oxygen_export_settings_html.xml
+else ifeq ($(OXYGEN_DIR),)
+	echo "You must set the OXYGEN_DIR environment variable"
+else
+	cd doc && $(OXYGEN_DIR)/schemaDocumentation.sh drakeURDF.xsd -cfg:oxygen_export_settings_html.xml
+endif
 
 .PHONY: mlint
 mlint	:
@@ -73,7 +74,7 @@ test_continuous : configure
 	while true; do $(MAKE) Continuous; sleep 300; done
 
 .PHONY: check_prereqs install_prereqs_macports install_prereqs_homebrew install_prereqs_ubuntu
-check_prereqs: 
+check_prereqs:
 	if javac -source 1.6 -version > /dev/null 2> /dev/null; then exit 0; else echo "ERROR: Java 6 (or greater) sdk is required."; exit 1; fi  # test for javac >= 1.6
 
 install_prereqs_macports : check_prereqs
@@ -94,11 +95,10 @@ clean:
 	-if [ -e pod-build/install_manifest.txt ]; then rm -f `cat pod-build/install_manifest.txt`; fi
 	-if [ -d pod-build ]; then cd pod-build && $(CMAKE_MAKE_PROGRAM) clean; cd ..; rm -rf pod-build; fi
 
-# other (custom) targets are passed through to the cmake-generated Makefile 
+# other (custom) targets are passed through to the cmake-generated Makefile
 %::
 	cd pod-build && $(CMAKE_MAKE_PROGRAM) $@
 
 # Default to a less-verbose build.  If you want all the gory compiler output,
 # run "make VERBOSE=1"
 $(VERBOSE).SILENT:
-

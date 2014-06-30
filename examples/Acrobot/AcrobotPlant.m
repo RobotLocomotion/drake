@@ -71,6 +71,14 @@ classdef AcrobotPlant < Manipulator
       x = .1*randn(4,1);
     end
     
+    function n = getNumPositions(obj)
+      n = 2;
+    end
+    
+    function n = getNumVelocities(obj)
+      n = 2;
+    end
+    
     function [c,V]=balanceLQR(obj)
       Q = diag([10,10,1,1]); R = 1;
       if (nargout<2)
@@ -87,24 +95,23 @@ classdef AcrobotPlant < Manipulator
     end
     
     function [utraj,xtraj]=swingUpTrajectory(obj)
-      x0 = zeros(4,1); tf0 = 4; xf = double(obj.xG);
-
-      con.u.lb = obj.umin;
-      con.u.ub = obj.umax;
-      con.x0.lb = x0;
-      con.x0.ub = x0;
-      con.xf.lb = xf;
-      con.xf.ub = xf;
-      con.T.lb = 2;
-      con.T.ub = 6;
-
-      options.method='dircol';
-      %options.grad_test = true;
+      x0 = zeros(4,1); 
+      xf = double(obj.xG);
+      tf0 = 4;
+      
+      N = 21;
+      traj_opt = DircolTrajectoryOptimization(obj,N,[2 6]);
+      traj_opt = traj_opt.addStateConstraint(ConstantConstraint(x0),1);
+      traj_opt = traj_opt.addStateConstraint(ConstantConstraint(xf),N);
+      traj_opt = traj_opt.addRunningCost(@cost);
+      traj_opt = traj_opt.addFinalCost(@final_cost);
+      
+      traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
+      
       info=0;
       while (info~=1)
-        utraj0 = PPTrajectory(foh(linspace(0,tf0,21),randn(1,21)));
         tic
-        [utraj,xtraj,info] = trajectoryOptimization(obj,@cost,@finalcost,x0,utraj0,con,options);
+        [xtraj,utraj,z,F,info] = traj_opt.solveTraj(tf0,traj_init);
         toc
       end
 
@@ -130,7 +137,7 @@ classdef AcrobotPlant < Manipulator
         end
       end
       
-      function [h,dh] = finalcost(t,x)
+      function [h,dh] = final_cost(t,x)
         h = t;
         dh = [1,zeros(1,size(x,1))];
         return;
@@ -145,7 +152,7 @@ classdef AcrobotPlant < Manipulator
         if (nargout>1)
           dh = [0, 2*xerr'*Qf];
         end
-      end  
+      end      
 
     end
 
