@@ -98,3 +98,10 @@ kinsol = robot.doKinematics(q,false,false);
 J = robot.geometricJacobian(kinsol, base, end_effector, expressed_in);
 J = J(:);
 end
+
+function ret = twistToTildeForm(twist)
+omega = twist(1 : 3);
+v = twist(4 : 6);
+ret = [vectorToSkewSymmetric(omega), v;
+       zeros(1, 4)];
+end

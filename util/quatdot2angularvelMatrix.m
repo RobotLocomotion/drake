@@ -5,6 +5,13 @@ function [M, dM] = quatdot2angularvelMatrix(q)
 % from Schwab, Arend L. "Quaternions, finite rotation and euler
 % parameters." (self-published)
 % http://bicycle.tudelft.nl/schwab/Publications/quaternion.pdf
+%
+% @param q a quaternion
+%
+% @retval M matrix such that omega = M * qd, where omega is the angular
+% velocity in base frame and qd is the time derivative of q
+% @retval dM gradient of M with respect to q. Quaternion normalization is
+% included in the gradient.
 
 compute_gradient = nargout > 1;
 

@@ -45,7 +45,7 @@ if expressed_in ~= 1
   else
     T = relativeTransform(obj, kinsol, expressed_in, 1);
   end
-  J = transformTwists(T, J);
+  J = transformAdjoint(T) * J;
 end
 
 end

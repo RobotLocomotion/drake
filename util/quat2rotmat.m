@@ -1,8 +1,10 @@
 function [R, dR] = quat2rotmat(q)
-
-% if isnumeric(q)
-%   q=q/sqrt(q'*q);  % was norm
-% end
+% Compute rotation matrix equivalent of a quaternion
+%
+% @param q a quaternion
+% @retval R 3x3 rotation matrix representing the same orientation as q
+% @retval dR gradient of R with respect to q. Quaternion normalization is
+% included in the gradient.
 
 compute_gradient = nargout > 1;
 if compute_gradient
@@ -10,13 +12,6 @@ if compute_gradient
 else
   qtilde = normalizeVec(q);
 end
-
-
-% epsilon = 1e-6;
-% if isnumeric(q) && abs(q.' * q - 1) > epsilon^2
-%   error('q is not a unit quaternion')
-% end
-
 
 w=qtilde(1); x=qtilde(2); y=qtilde(3); z=qtilde(4);
 

@@ -1,5 +1,5 @@
 function [twist, dtwist] = relativeTwist(kinsol, base, end_effector, expressed_in)
-% RELATIVETWIST Computes the relative twist between base and end effector
+% Computes the relative twist between base and end effector
 % @param transforms homogeneous transforms from link to world (usually
 % obtained from doKinematics as kinsol.T)
 % @param kinsol solution structure returned by doKinematics
@@ -27,6 +27,6 @@ if expressed_in ~= 1
     dTinv = dHomogTransInv(T, dT);
     dtwist = dTransformAdjoint(Tinv, twist, dTinv, dtwist);
   end
-  twist = transformTwists(Tinv, twist);
+  twist = transformAdjoint(Tinv) * twist;
 end
 end

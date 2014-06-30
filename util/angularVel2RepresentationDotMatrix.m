@@ -3,7 +3,7 @@ function [Phi, dPhidqrot, dPhidq, ddPhidqrotdq] = angularVel2RepresentationDotMa
 % frame to the time derivative of a given representation of orientation, as
 % specified by \p rotation_type. A useful helper function in functions that
 % allow you to specify desired orientation output in various
-% representations.
+% representations. Front-end for the various angularVel2* functions.
 %
 % @param rotation_type 0: no rotation, just return zeros \n
 %                      1: rpy representation \n
