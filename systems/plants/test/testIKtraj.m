@@ -330,7 +330,7 @@ for i = 1:nargin-4
     for j = t_start_idx:nT
       if(varargin{i}.isTimeValid(t(j)))
         [lb,ub] = varargin{i}.bounds(t(j));
-        if(any(q_sol(:,j)>ub) || any(q_sol(:,j)<lb))
+        if(any(q_sol(:,j)>ub+1e-10) || any(q_sol(:,j)<lb-1e-10))
           error('solution does not satisfy the PostureConstraint');
         end
       end

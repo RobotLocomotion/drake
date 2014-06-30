@@ -40,7 +40,6 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
     qd0_idx  
     qdf_idx  
     qsc_weight_idx
-    x_name
     robot
 
     % nT-element vector of indices into the shared_data, where
@@ -256,26 +255,6 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
       [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
     end
     
-    function obj = addDecisionVariable(obj,num_new_vars,var_names)
-      % appending new decision variables to the end of the current decision variables
-      % @param num_new_vars      -- An integer. The newly added decision variable is an
-      % num_new_vars x 1 double vector.
-      % @param var_names         -- A cell of strings. var_names{i} is the name of the
-      % i'th new decision variable
-      if(nargin<3)
-        var_names = cell(num_new_vars,1);
-        for i = 1:num_new_vars
-          var_names{i} = sprintf('x%d',obj.num_vars+i);
-        end
-      else
-        if(~iscellstr(var_names))
-          error('Drake:NonlinearProgramWKinsol:addDecisionVariable:var_names should be a cell of strings');
-        end
-      end
-      obj = addDecisionVariable@NonlinearProgramWConstraintObjects(obj,num_new_vars);
-      obj.x_name = [obj.x_name;var_names];
-    end
-
     function obj = addKinematicConstraint(obj,constraint,time_index)
       % Add a constraint that is a function of the generalized positions
       % at the specified time or times.

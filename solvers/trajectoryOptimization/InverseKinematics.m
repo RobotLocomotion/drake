@@ -14,7 +14,6 @@ classdef InverseKinematics < NonlinearProgramWConstraintObjects
     q_idx   % q=x(q_idx), the robot posture
     qsc_weight_idx   % qsc_weight = x(qsc_weight_idx), the weight used in QuasiStaticConstraint
     nq
-    x_name
     robot
     kinsol_dataind
   end
@@ -125,26 +124,6 @@ classdef InverseKinematics < NonlinearProgramWConstraintObjects
       q = max([obj.x_lb(obj.q_idx) q],[],2);
       q = min([obj.x_ub(obj.q_idx) q],[],2);
       [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
-    end
-
-    function obj = addDecisionVariable(obj,num_new_vars,var_names)
-      % appending new decision variables to the end of the current decision variables
-      % @param num_new_vars      -- An integer. The newly added decision variable is an
-      % num_new_vars x 1 double vector.
-      % @param var_names         -- A cell of strings. var_names{i} is the name of the
-      % i'th new decision variable
-      if(nargin<3)
-        var_names = cell(num_new_vars,1);
-        for i = 1:num_new_vars
-          var_names{i} = sprintf('x%d',obj.num_vars+i);
-        end
-      else
-        if(~iscellstr(var_names))
-          error('Drake:NonlinearProgramWKinsol:addDecisionVariable:var_names should be a cell of strings');
-        end
-      end
-      obj = addDecisionVariable@NonlinearProgramWConstraintObjects(obj,num_new_vars);
-      obj.x_name = [obj.x_name;var_names];
     end
 
     function [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info)
