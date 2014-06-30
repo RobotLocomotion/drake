@@ -339,10 +339,6 @@ classdef Visualizer < DrakeSystem
       %
       % Note that you can control the length/speed of your video by
       % changing your visualizer's display_dt property.
-      %
-      % @param xtraj Trajectory to make the movie around
-      % @param filename name of swf file. (optional, if it isn't given a GUI will pop
-      %   up and ask for it.)
 
       typecheck(xtraj,'Trajectory');
       if (xtraj.getOutputFrame()~=obj.getInputFrame)
