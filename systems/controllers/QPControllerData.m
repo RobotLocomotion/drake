@@ -53,16 +53,14 @@ classdef QPControllerData < ControllerData
     function obj = QPControllerData(is_time_varying,data)
       typecheck(is_time_varying,'logical');
       typecheck(data,'struct');
-      
-      obj.is_time_varying = is_time_varying;
-      data=verifyControllerData(obj,data);
-      updateControllerData(obj,data);
+      data.is_time_varying = is_time_varying;
+      obj = obj@ControllerData(data);
     end
  
-    function data=verifyControllerData(obj,data)
+    function data=verifyControllerData(~,data)
       assert(isa(data.acceleration_input_frame,'CoordinateFrame'));      
       assert(isa(data.qtraj,'Trajectory') || isnumeric(data.qtraj));      
-      if obj.is_time_varying
+      if data.is_time_varying
         assert(isa(data.comtraj,'Trajectory'));
         assert(isa(data.y0,'Trajectory'));
         assert(isa(data.s1,'Trajectory'));
@@ -111,6 +109,9 @@ classdef QPControllerData < ControllerData
     end
     
     function updateControllerData(obj,data)
+      if isfield(data,'is_time_varying')
+        obj.is_time_varying = data.is_time_varying;
+      end
       if isfield(data,'acceleration_input_frame')
         obj.acceleration_input_frame = data.acceleration_input_frame;
       end
