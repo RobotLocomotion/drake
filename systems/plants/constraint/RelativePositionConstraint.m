@@ -105,7 +105,7 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
       pts_w = forwardKin(obj.robot,kinsol,1,obj.pts);
-      wTbp = kinsol.T{obj.bodyB_idx}*invHT([quat2rotmat(obj.bpTb(4:7)) obj.bpTb(1:3);0 0 0 1]);
+      wTbp = kinsol.T{obj.bodyB_idx}*homogTransInv([quat2rotmat(obj.bpTb(4:7)) obj.bpTb(1:3);0 0 0 1]);
       wPbp = wTbp(1:3,4);
       lcmgl.glDrawAxes();
       for pt = pts_w

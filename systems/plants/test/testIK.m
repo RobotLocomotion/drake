@@ -166,8 +166,8 @@ kc2l_frame = WorldPositionInFrameConstraint(robot,l_foot,l_foot_pts,T,[nan(2,4);
 kc2r_frame = WorldPositionInFrameConstraint(robot,r_foot,r_foot_pts,T,[nan(2,4);zeros(1,4)],[nan(2,4);zeros(1,4)],tspan);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,pc_knee,kc2l_frame,kc2r_frame,ikoptions);
 kinsol = doKinematics(robot,q);
-lfoot_pos = homogTransMult(invHT(T),forwardKin(robot,kinsol,l_foot,l_foot_pts,0));
-rfoot_pos = homogTransMult(invHT(T),forwardKin(robot,kinsol,r_foot,r_foot_pts,0));
+lfoot_pos = homogTransMult(homogTransInv(T),forwardKin(robot,kinsol,l_foot,l_foot_pts,0));
+rfoot_pos = homogTransMult(homogTransInv(T),forwardKin(robot,kinsol,r_foot,r_foot_pts,0));
 valuecheck(lfoot_pos(3,:),[0 0 0 0],1e-5);
 valuecheck(rfoot_pos(3,:),[0 0 0 0],1e-5);
 
@@ -175,8 +175,8 @@ display('Check IK pointwise with body position (in random frame) constraint');
 q = test_IKpointwise_userfun(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc1,pc_knee,kc2l_frame,kc2r_frame,ikoptions);
 for i = 1:size(q,2)
   kinsol = doKinematics(robot,q(:,i));
-  lfoot_pos = homogTransMult(invHT(T),forwardKin(robot,kinsol,l_foot,l_foot_pts,0));
-  rfoot_pos = homogTransMult(invHT(T),forwardKin(robot,kinsol,r_foot,r_foot_pts,0));
+  lfoot_pos = homogTransMult(homogTransInv(T),forwardKin(robot,kinsol,l_foot,l_foot_pts,0));
+  rfoot_pos = homogTransMult(homogTransInv(T),forwardKin(robot,kinsol,r_foot,r_foot_pts,0));
   valuecheck(lfoot_pos(3,:),[0 0 0 0],1e-5);
   valuecheck(rfoot_pos(3,:),[0 0 0 0],1e-5);
 end
