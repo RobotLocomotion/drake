@@ -15,10 +15,10 @@ classdef RigidBodyThrust < RigidBodyForceElement
       obj.direct_feedthrough_flag = true;
       obj.input_num = 0;
       obj.input_limits = [-inf inf];
-      if (nargin > 3)
+      if (nargin > 2)
         obj.scale_factor = scale_factor;
       end
-      if (nargin > 4)
+      if (nargin > 3)
         obj.input_limits = limits;
       end
     end %constructor
