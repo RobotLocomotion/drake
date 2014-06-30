@@ -53,7 +53,7 @@ foreach $my_fic (@listeFic)
   $listeEnumeration = 0;
 #  $inComment = 0;
   $listeEvents = 0;
-  
+
   #default to public methods since if we're in a file that is not the main class file
   # we might end up not hitting a method block first, in which case the functions should be public
   $methodAttribute = "public:";
@@ -61,30 +61,30 @@ foreach $my_fic (@listeFic)
 
   while (<$in>)
   {
-  
+
     # convert matlab sytle comments to C style comments
     if (/(^\s*)(%>)(.*)/)
     {
       $output=$output."$1///$3";
     }
-    
+
     #if inside a property block, we'll take all the comments, not just ones pointed
     # explicitly at us (ue take % and %> comments)
     # also do this for an abstract method block
     if ( $listeProperties == 1 )
     {
-        if  ((/(^\s*)(%)(.*)/)) 
+        if  ((/(^\s*)(%)(.*)/))
         {
             $output=$output."$1///$3";
         }
     }
-    
+
     if ( ($inAbstractMethodBlock == 1 && (/(^\s*)(%)(.*)/))  )
     {
-      
+
       $output=$output."$1///$3";
     }
-    
+
     # check for matlab end's
     if (($listeProperties == 1) && (/(^\s*\bend\b\s*)/))
     {
@@ -94,13 +94,18 @@ foreach $my_fic (@listeFic)
     {
       $inAbstractMethodBlock = 0;
     }
-    
+
     if (($listeProperties == 1) && (/^\s*([\w\d]*)\s*(=\s*[\w\d{}'',\s\[\]\(\)\.]*)?[;\s]*(%[>]?.*)?/))
     {
       $propertyName = $1;
-      $propertyValue = $2;
-      $propertyComment = $3;
-      
+      if (/^\s*([\w\d]*)\s*(=\s*[\w\d{}'',\s\[\]\(\)\.]*)[;\s]*(%[>]?.*)/) {
+	$propertyValue = $2;
+        $propertyComment = $3;
+      } else {
+	$propertyValue = "";
+        $propertyComment = "";
+      }
+
       if (!($propertyName =~ /^$/))
       {
         if ($typeProperties =~ /Constant/)
@@ -182,7 +187,7 @@ foreach $my_fic (@listeFic)
       {
         $arguments = "";
       }
-      $ligne = "$methodAttribute $functionKeyWord $functionName($arguments);"; 
+      $ligne = "$methodAttribute $functionKeyWord $functionName($arguments);";
       $output=$output.$ligne;
     }
     # Signature of functions in abstract methods
@@ -197,17 +202,15 @@ foreach $my_fic (@listeFic)
       {
         $arguments = "";
       }
-      $ligne = "$methodAttribute $functionKeyWord $functionName($arguments);"; 
+      $ligne = "$methodAttribute function $functionName($arguments);";
       $output=$output.$ligne;
     }
     # inheritance for classes
-    if (/(^\s*classdef)\s*(\s*\([\{\}\?\w,=\s]+\s*\))?\s*([\w\d_]+)\s*<?\s*([\s\w\d._&]+)?(.*)/) 
+    if (/(^\s*classdef)\s*(\s*\([\{\}\?\w,=\s]+\s*\))?\s*([\w\d_]+)\s*<?\s*([\s\w\d._&]+)?(.*)/)
     {
       $className = $3;
-      $classInheritance = $4;
-#      $classAttributes = $2;
-      if (!($classInheritance =~ /^$/))
-      {
+      if (/(^\s*classdef)\s*(\s*\([\{\}\?\w,=\s]+\s*\))?\s*([\w\d_]+)\s*<\s*([\s\w\d._&]+)(.*)/) {
+	$classInheritance = $4;
         $classInheritance =~ s/&/,public /g;
         $classDef = "class ".$className.":public $classInheritance";
       }
@@ -224,26 +227,28 @@ foreach $my_fic (@listeFic)
     if (/(^\s*properties)\s*(\s*\([\w,=\s]+\s*\))?(.*)/)
     {
       $listeProperties = 1;
-      $propertiesAttributes = $2;
       $typeProperties = "public:\n";
-      if (lc($propertiesAttributes) =~ /(access\s*=\s*private)/)
-      {
-        $typeProperties = "private:\n"
-      }
-      elsif (lc($propertiesAttributes) =~ /(access\s*=\s*public)/)
-      {
-        $typeProperties = "public:\n"
-      }
-      elsif (lc($propertiesAttributes) =~ /(access\s*=\s*protected)/)
-      {
-        $typeProperties = "protected:\n"
-      }
-      if ((lc($propertiesAttributes) =~ /(constant\s*=\s*false)/) || (lc($propertiesAttributes) =~ /(~constant)/))
-      {
-      }
-      elsif (lc($propertiesAttributes) =~ /(constant(\s*=\s*true\s*)?)/)
-      {
-        $typeProperties = $typeProperties." Constant ";
+      if (/(^\s*properties)\s*(\s*\([\w,=\s]+\s*\))(.*)/) {
+	$propertiesAttributes = $2;
+	if (lc($propertiesAttributes) =~ /(access\s*=\s*private)/)
+	  {
+	    $typeProperties = "private:\n"
+	  }
+	elsif (lc($propertiesAttributes) =~ /(access\s*=\s*public)/)
+	  {
+	    $typeProperties = "public:\n"
+	  }
+	elsif (lc($propertiesAttributes) =~ /(access\s*=\s*protected)/)
+	  {
+	    $typeProperties = "protected:\n"
+	  }
+	if ((lc($propertiesAttributes) =~ /(constant\s*=\s*false)/) || (lc($propertiesAttributes) =~ /(~constant)/))
+	  {
+	  }
+	elsif (lc($propertiesAttributes) =~ /(constant(\s*=\s*true\s*)?)/)
+	  {
+	    $typeProperties = $typeProperties." Constant ";
+	  }
       }
     }
     if (/(^\s*enumeration)\s*(.*)/)
@@ -256,42 +261,45 @@ foreach $my_fic (@listeFic)
       $listeEvents = 1;
       $output=$output."public:\nenum Events {";
     }
-    if (/(^\s*methods)\s*(\s*\([\w,=\s]+\s*\))?(.*)/)
+    if (/(^\s*methods)\s*(.*)/)
     {
       $methodAttribute = "public:\n";
-      $methodsAttributes = $2;
-      if (lc($methodsAttributes) =~ /(access\s*=\s*private)/)
+      if (/^\s*methods\s*(\([\w,=\s]+\s*\)).*/)
       {
-        $methodAttribute = "private:\n"
-      }
-      elsif (lc($methodsAttributes) =~ /(access\s*=\s*protected)/)
-      {
-        $methodAttribute = "protected:\n"
-      }
-      elsif (lc($methodsAttributes) =~ /(access\s*=\s*public)/)
-      {
-        $methodAttribute = "public:\n"
-      }
-      if (lc($methodsAttributes) =~ /(abstract(\s*=\s*true\s*)?)/)
-      {
-        $inAbstractMethodBlock = 1;
-        $methodAttribute = $methodAttribute." virtual ";
-      }
-      if ((lc($methodsAttributes) =~ /(static\s*=\s*false)/) || (lc($methodsAttributes) =~ /(~static)/))
-      {
-      }
-      elsif (lc($methodsAttributes) =~ /(static(\s*=\s*true\s*)?)/)
-      {
-        $methodAttribute = $methodAttribute." static";
+	$methodsAttributes = $1;
+	if (lc($methodsAttributes) =~ /(access\s*=\s*private)/)
+	  {
+	    $methodAttribute = "private:\n"
+	  }
+	elsif (lc($methodsAttributes) =~ /(access\s*=\s*protected)/)
+	  {
+	    $methodAttribute = "protected:\n"
+	  }
+	elsif (lc($methodsAttributes) =~ /(access\s*=\s*public)/)
+	  {
+	    $methodAttribute = "public:\n"
+	  }
+	if (lc($methodsAttributes) =~ /(abstract(\s*=\s*true\s*)?)/)
+	  {
+	    $inAbstractMethodBlock = 1;
+	    $methodAttribute = $methodAttribute." virtual ";
+	  }
+	if ((lc($methodsAttributes) =~ /(static\s*=\s*false)/) || (lc($methodsAttributes) =~ /(~static)/))
+	  {
+	  }
+	elsif (lc($methodsAttributes) =~ /(static(\s*=\s*true\s*)?)/)
+	  {
+	    $methodAttribute = $methodAttribute." static";
+	  }
       }
     }
     $output=$output."\n";
   }
   close $in;
-  
+
   # delete the preprocess file
   unlink($my_fic2);
-  
+
 }
 $output=$output."};\n";
 #print $output;
