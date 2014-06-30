@@ -51,6 +51,7 @@ end
 R = T(1:3, 1:3);
 p = T(1:3, 4);
 points_base = R * points + repmat(p, 1, npoints);
+% points_base = homogTransMult(T, points); % doesn't work with TaylorVar yet
 if compute_gradient
   dR = getSubMatrixGradient(dT, 1:3, 1:3, size(T));
   dp = getSubMatrixGradient(dT, 1:3, 4, size(T));
@@ -122,7 +123,7 @@ if compute_J
   end
   
   if rotation_type ~= 0
-    J(rot_row_indices, v_indices) = repmat(Jrot, npoints, 1);
+    J(rot_row_indices, v_indices) = Jrot(reshape(bsxfun(@times,(1:size(Jrot, 1))',ones(1,npoints)), [], 1), :);
     if compute_gradient
       block_sizes = repmat(size(Jrot, 1), npoints, 1);
       blocks = repmat({dJrot}, npoints, 1);
@@ -136,8 +137,8 @@ end
 
 end
 
-function ret = repeatVectorIndices(subvectorIndices, subvectorSize, nRepeats)
-subvectorIndicesRepeated = repmat(subvectorIndices, 1, nRepeats);
-offsets = reshape(repmat(0 : subvectorSize : (nRepeats - 1) * subvectorSize,length(subvectorIndices),1),1,[]);
-ret = subvectorIndicesRepeated + offsets;
+function ret = repeatVectorIndices(subvector_indices, subvector_size, nrepeats)
+subvector_indices_repeated = reshape(bsxfun(@times,subvector_indices',ones(1,nrepeats)), [], 1);
+offsets = reshape(bsxfun(@times,ones(length(subvector_indices),nrepeats),(0:subvector_size:(nrepeats-1) * subvector_size)), [], 1);
+ret = subvector_indices_repeated + offsets;
 end
