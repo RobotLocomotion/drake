@@ -193,7 +193,7 @@ if(info_mex ~= 13)
 end
 display('The infeasible constraints are');
 disp(infeasible_constraint_mex);
-ikproblem = InverseKin(robot,q_nom,kc_err,kc2l,kc2r);
+ikproblem = InverseKinematics(robot,q_nom,kc_err,kc2l,kc2r);
 [qik,F,info,infeasible_constraint_ik] = ikproblem.solve(q_seed);
 [qmex,info_mex,infeasible_constraint_mex] = inverseKinPointwise(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc_err,kc2l,kc2r,ikmexoptions);
 display('The infeasible constraints are');
@@ -298,8 +298,8 @@ q = test_IK_userfun(robot,q_seed,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptio
 kinsol = doKinematics(robot,q);
 valuecheck(qsc.checkConstraint(kinsol),true);
 
-% check addCost in InverseKin, minimizing the largest QuasiStaticWeight
-ikproblem = InverseKin(robot,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6);
+% check addCost in InverseKinematics, minimizing the largest QuasiStaticWeight
+ikproblem = InverseKinematics(robot,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6);
 ikproblem = ikproblem.setQ(ikoptions.Q);
 ikproblem = ikproblem.addDecisionVariable(1,{'max_weight'});
 ikproblem = ikproblem.addLinearConstraint(LinearConstraint(zeros(qsc.num_pts,1),inf(qsc.num_pts,1),[ones(qsc.num_pts,1) -eye(qsc.num_pts)]),...
@@ -439,7 +439,7 @@ if(info>10)
 end
 testConstraint(r,[],q,varargin{1:end-1});
 tic
-ikproblem = InverseKin(r,q_nom,varargin{1:end-1});
+ikproblem = InverseKinematics(r,q_nom,varargin{1:end-1});
 ikproblem = ikproblem.setQ(ikoptions.Q);
 [qik,F,info,infeasible_cnstr_ik] = ikproblem.solve(q_seed);
 toc

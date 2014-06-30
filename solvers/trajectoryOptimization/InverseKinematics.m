@@ -1,4 +1,4 @@
-classdef InverseKin < NonlinearProgramWConstraintObjects
+classdef InverseKinematics < NonlinearProgramWConstraintObjects
   % solve the inverse kinematics problem
   % min_q 0.5*(q-qnom)'Q(q-qnom)+cost1(q)+cost2(q)+...
   % s.t    lb<= kc(q) <=ub
@@ -24,8 +24,8 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
   end
   
   methods
-    function obj = InverseKin(robot,q_nom,varargin)
-      % InverseKin(robot,q_nom,RigidBodyConstraint1,RigidBodyConstraint2,...)
+    function obj = InverseKinematics(robot,q_nom,varargin)
+      % InverseKinematics(robot,q_nom,RigidBodyConstraint1,RigidBodyConstraint2,...)
       % @param robot    -- A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
       % object
       % @param q_nom    -- A nq x 1 double vector. The nominal posture
@@ -33,7 +33,7 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
       % SingleTimeKinematicConstraint, PostureConstraint, QuasiStaticConstraint and
       % SingleTimeLinearPostureConstraint
       if(~isa(robot,'RigidBodyManipulator') && ~isa(robot,'TimeSteppingRigidBodyManipulator'))
-        error('Drake:InverseKin:robot should be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
+        error('Drake:InverseKinematics:robot should be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
       nq_tmp = robot.getNumPositions();
       obj = obj@NonlinearProgramWConstraintObjects(nq_tmp);
@@ -45,7 +45,7 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
       end
 
       if(~isnumeric(q_nom))
-        error('Drake:InverseKin:q_nom should be a numeric vector');
+        error('Drake:InverseKinematics:q_nom should be a numeric vector');
       end
       sizecheck(q_nom,[obj.nq,1]);
       obj.q_nom = q_nom;
@@ -61,7 +61,7 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
 
       for i = 1:num_rbcnstr
         if(~isa(varargin{i},'RigidBodyConstraint'))
-          error('Drake:InverseKin:the input should be a RigidBodyConstraint');
+          error('Drake:InverseKinematics:the input should be a RigidBodyConstraint');
         end
         if(isa(varargin{i},'SingleTimeKinematicConstraint'))
           cnstr = varargin{i}.generateConstraint(t);
@@ -86,7 +86,7 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
           cnstr = varargin{i}.generateConstraint(t);
           obj = obj.addLinearConstraint(cnstr{1},obj.q_idx);
         else
-          error('Drake:InverseKin:the input RigidBodyConstraint is not accepted');
+          error('Drake:InverseKinematics:the input RigidBodyConstraint is not accepted');
         end
       end
       obj = obj.setQ(eye(obj.nq));
