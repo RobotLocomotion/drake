@@ -38,7 +38,7 @@ classdef QPControllerData < ControllerData
     qtraj % generalize configuration vector or trajectory 
     comtraj % COM state trajectory
     support_times % vector of contact transition times
-    supports % (array of) SupportState(s)
+    supports % (array of) RigidBodySupportState object(s)
     ignore_terrain %
     link_constraints=[] % structure of link motion constraints, see Biped class
     constrained_dofs=[] % array of joint indices
