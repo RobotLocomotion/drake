@@ -5,6 +5,9 @@ classdef QPController < MIMODrakeSystem
   methods
   function obj = QPController(r,body_accel_input_frames,controller_data,options)
     % @param r rigid body manipulator instance
+    % @param body_accel_input_frames cell array or coordinate frames for 
+    %    desired body accelerations. coordinates are ordered as:
+    %    [body_index, xdot, ydot, zdot, roll_dot, pitch_dot, yaw_dot]
     % @param controller_data QPControllerData object containing the matrices that
     % define the underlying linear system, the ZMP trajectory, Riccati
     % solution, etc.
@@ -22,7 +25,8 @@ classdef QPController < MIMODrakeSystem
     qddframe = controller_data.acceleration_input_frame; % input frame for desired qddot 
         
     input_frame = MultiCoordinateFrame({r.getStateFrame,qddframe,FootContactState,body_accel_input_frames{:}});
-    
+
+    % whether to output generalized accelerations AND inputs (u)    
     if ~isfield(options,'output_qdd')
       options.output_qdd = false;
     else
