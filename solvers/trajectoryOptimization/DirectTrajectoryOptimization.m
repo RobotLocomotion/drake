@@ -84,8 +84,10 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       obj = obj.addDynamicConstraints();
       
       % add control inputs as bounding box constraints
-      control_limit = BoundingBoxConstraint(repmat(plant.umin,N,1),repmat(plant.umax,N,1));
-      obj = obj.addConstraint(control_limit,obj.u_inds(:));
+      if any(~isinf(plant.umin)) || any(~isinf(plant.umax))
+        control_limit = BoundingBoxConstraint(repmat(plant.umin,N,1),repmat(plant.umax,N,1));
+        obj = obj.addConstraint(control_limit,obj.u_inds(:));
+      end
       
       % add state limits as bounding box constraints
       [state_lb,state_ub] = plant.getStateLimits();
@@ -93,8 +95,33 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       obj = obj.addConstraint(state_limit,obj.x_inds(:));
     end
     
+    function obj = addInputConstraint(obj,constraint,time_index)
+      % Add constraint (or composite constraint) that is a function of the 
+      % input at the specified time or times.
+      % @param constraint  a Constraint or CompositeConstraint
+      % @param time_index   a cell array of time indices
+      %   ex1., time_index = {1, 2, 3} means the constraint is applied
+      %   individually to knot points 1, 2, and 3
+      %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
+      %   points 1 and 2 together (taking the combined state as an argument)
+      %   and 3 and 4 together.
+      if ~iscell(time_index)
+        time_index = {time_index};
+      end
+      for j=1:length(time_index),
+        cstr_inds = mat2cell(obj.u_inds(:,time_index{j}),size(obj.u_inds,1),ones(1,length(time_index{j})));
+        
+        % record constraint for posterity
+        obj.constraints{end+1}.constraint = constraint;
+        obj.constraints{end}.var_inds = cstr_inds;
+        obj.constraints{end}.time_index = time_index;
+        
+        obj = obj.addConstraint(constraint,cstr_inds);
+      end      
+    end
+    
     function obj = addStateConstraint(obj,constraint,time_index)
-      % Add constraint (or composite constraint that is a function of the 
+      % Add constraint (or composite constraint) that is a function of the 
       % state at the specified time or times.
       % @param constraint  a CompositeConstraint
       % @param time_index   a cell array of time indices
@@ -118,39 +145,61 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       end      
     end    
     
-    % Solve the nonlinear program and return resulting trajectory
     function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
+      % Solve the nonlinear program and return resulting trajectory
+      % @param t_init initial timespan for solution.  can be a vector of
+      % length obj.N specifying the times of each segment, or a scalar
+      % indicating the final time.
+      % @param u_init_traj (optional) a Trajectory object specifying the initial guess
+      % for the system inputs @default small random numbers
+      % @param x_init_traj (optional) a Trajectory object specifying the
+      % initial guess for the state trajectory @default obtained via
+      % simulation
+    
       z0 = obj.getInitialVars(t_init,traj_init);
       [z,F,info] = obj.solve(z0);
       t = [0; cumsum(z(obj.h_inds))];
-      xtraj = PPTrajectory(foh(t,reshape(z(obj.x_inds),[],obj.N)));
-      utraj = PPTrajectory(foh(t,reshape(z(obj.u_inds),[],obj.N)));
+      [xtraj,utraj] = reconstructTrajectory(obj,t,reshape(z(obj.x_inds),[],obj.N),reshape(z(obj.u_inds),[],obj.N));
       
       xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
       utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
     end
     
+    function z0 = getInitialVars(obj,t_init,traj_init)
     % evaluates the initial trajectories at the sampled times and
     % constructs the nominal z0. Overwrite to implement in a different
     % manner
-    function z0 = getInitialVars(obj,t_init,traj_init)
-      if length(t_init) ~= obj.N
+      if isscalar(t_init)
+        t_init = linspace(0,t_init,obj.N);
+      elseif length(t_init) ~= obj.N
         error('The initial sample times must have the same length as property N')
       end
       z0 = zeros(obj.num_vars,1);
       z0(obj.h_inds) = diff(t_init);
       
-      for i=1:length(t_init),
-        z0(obj.u_inds(:,i)) = traj_init.u.eval(t_init(i));
+      if nargin<2, traj_init = struct(); end
+      
+      if isfield(traj_init,'u')
+        z0(obj.u_inds) = traj_init.u.eval(t_init);
+      else
+        nU = getNumInputs(obj.plant);
+        z0(obj.u_inds) = 0.01*randn(nU,obj.N);
+      end
         
-        if isfield(traj_init,'x')
-          z0(obj.x_inds(:,i)) = traj_init.x.eval(t_init(i));
-        else
-          %simulate
-          sys_ol = cascade(traj_init.u,obj.plant);
-          [~,x_sim] = sys_ol.simulate([t_init(1) t_init(end)]);
-          z0(obj.x_inds(:,i)) = x_sim.x.eval(t_init(i));
+      if isfield(traj_init,'x')
+        z0(obj.x_inds) = traj_init.x.eval(t_init);
+      else
+        if ~isfield(traj_init,'u')
+          traj_init.u = setOutputFrame(PPTrajectory(foh(t_init,reshape(z0(obj.u_inds),nU,obj.N))),getInputFrame(obj.plant));
         end
+        
+        % todo: if x0 and xf are equality constrained, then initialize with
+        % a straight line from x0 to xf (this was the previous behavior)
+        
+        %simulate
+        sys_ol = cascade(traj_init.u,obj.plant);
+        [~,x_sim] = sys_ol.simulate([t_init(1) t_init(end)]);
+        z0(obj.x_inds) = x_sim.eval(t_init);
       end
     end
     
@@ -201,6 +250,13 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       T = sum(h);
       [f,dg] = final_cost_function(T,x);
       df = [repmat(dg(:,1),1,length(h)) dg(:,2:end)];
+    end
+    
+    function [xtraj,utraj] = reconstructTrajectory(obj,t,x,u)
+      % default behavior is to use first order holds, but this can be
+      % re-implemented by a subclass.
+      xtraj = PPTrajectory(foh(t,x));
+      utraj = PPTrajectory(foh(t,u));
     end
   end
   
