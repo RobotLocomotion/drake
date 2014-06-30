@@ -10,7 +10,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
   %     where running_cost is a NonlinearConstraint f(h,x,u)
   % and
   %  obj = addDynamicConstraints(obj);
-  %   which add the constraints to enforce \dot x = f(x,u)
+  %   which add the constraints to enforce xdot = f(x,u)
   %
   % This class assumes that there are a fixed number (N) time steps, and
   % that the trajectory is discreteized into timesteps h (N-1), state x
@@ -32,6 +32,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
   end
   
   methods
+    function obj = DirectTrajectoryOptimization(plant,N,durations,options)
     % function obj =
     % DirectTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,...
     % t_init,traj_init,T_span,constraints, options)
@@ -42,8 +43,8 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
     % @param options (optional)
     %        options.time_option {1: all time steps are constant, 2: all
     %        time steps are independent}
-    function obj = DirectTrajectoryOptimization(plant,N,durations,options)
-      %#ok<*PROP>
+
+    %#ok<*PROP>
       
       if nargin < 4
         options = struct();
