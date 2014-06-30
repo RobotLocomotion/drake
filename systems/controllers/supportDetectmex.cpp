@@ -1,4 +1,4 @@
-#include "controlUtil.cpp"
+#include "controlUtil.h"
 
 using namespace std;
 
@@ -9,7 +9,6 @@ struct SupportDetectData {
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
-  int error;
   if (nrhs<1) mexErrMsgTxt("usage: ptr = supportDetectmex(0,robot_obj,...); alpha=supportDetectmex(ptr,...,...)");
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
   

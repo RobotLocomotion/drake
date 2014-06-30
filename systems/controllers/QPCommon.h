@@ -1,7 +1,4 @@
-#include <mex.h>
-
-#include "controlUtil.cpp"
-
+#include "controlUtil.h"
 #include "drake/fastQP.h"
 #include "drake/gurobiQP.h"
 
@@ -42,4 +39,3 @@ struct QPControllerData {
   int vbasis_len;
   int cbasis_len;
 };
-
