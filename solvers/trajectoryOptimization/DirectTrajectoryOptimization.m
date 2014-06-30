@@ -250,14 +250,16 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       % default behavior is to use first order holds, but this can be
       % re-implemented by a subclass.
       t = [0; cumsum(z(obj.h_inds))];
+
       x = reshape(z(obj.x_inds),[],obj.N);
-      u = reshape(z(obj.u_inds),[],obj.N);
-
       xtraj = PPTrajectory(foh(t,x));
-      utraj = PPTrajectory(foh(t,u));
-
       xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
-      utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+
+      if nargout>1
+        u = reshape(z(obj.u_inds),[],obj.N);
+        utraj = PPTrajectory(foh(t,u));
+        utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+      end
     end
     
     function u0 = extractFirstInput(obj,z)
