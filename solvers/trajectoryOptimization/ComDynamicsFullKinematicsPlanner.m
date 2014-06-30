@@ -107,8 +107,11 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
           num_pts_i = obj.contact_wrench{i}.num_pts;
           num_lambda_i = obj.contact_wrench{i}.num_pt_F*num_pts_i;
           force_i = reshape(A_force{i}*lambda(lambda_count+(1:num_lambda_i)),3,num_pts_i);
+          pt_torque_i = reshape(A_torque{i}*lambda(lambda_count+(1:num_lambda_i)),3,num_pts_i);
           [contact_pos_i,dcontact_pos_i_dq] = obj.robot.forwardKin(kinsol,obj.contact_wrench{i}.body,obj.contact_wrench{i}.body_pts,0);
           [torque_i,dtorque_i] = crossSum(contact_pos_i-bsxfun(@times,com,ones(1,num_pts_i)),force_i);
+          torque_i = torque_i+sum(pt_torque_i,2);
+          dtorque_i(:,3*num_pts_i+1:end) = dtorque_i(:,3*num_pts_i+1:end)+sparse(reshape(bsxfun(@times,(1:3)',ones(1,num_pts_i)),[],1),(1:3*num_pts_i)',ones(3*num_pts_i,1),3,3*num_pts_i)*A_torque{i};
           c(1:3) = c(1:3)-torque_i;
           dc(1:3,1:obj.nq) = dc(1:3,1:obj.nq)-dtorque_i(:,1:num_pts_i*3)*dcontact_pos_i_dq;
           dc(1:3,obj.nq+(1:3)) = dc(1:3,obj.nq+(1:3))+dtorque_i(:,1:num_pts_i*3)*sparse((1:num_pts_i*3)',reshape(bsxfun(@times,[1;2;3],ones(1,num_pts_i)),[],1),ones(3*num_pts_i,1));
@@ -142,11 +145,13 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         A_force_stack = zeros(3,num_lambda);
         lambda_count_tmp = 0;
         A_force = cell(1,length(contact_wrench_idx));
+        A_torque = cell(1,length(contact_wrench_idx));
         joint_idx = [];
         for j = contact_wrench_idx
           num_pts_j = obj.contact_wrench{j}.num_pts;
           num_lambda_j = obj.contact_wrench{j}.num_pt_F*num_pts_j;
           A_force{j} = obj.contact_wrench{j}.force();
+          A_torque{j} = obj.contact_wrench{j}.torque();
           A_force_stack(:,lambda_count_tmp+(1:num_lambda_j)) = sparse(reshape(bsxfun(@times,[1;2;3],ones(1,num_pts_j)),[],1),(1:3*num_pts_j)',ones(3*num_pts_j,1))*A_force{j};
           [~,joint_path] = obj.robot.findKinematicPath(1,obj.contact_wrench{j}.body);
           if isa(obj.robot,'TimeSteppingRigidBodyManipulator')

@@ -162,7 +162,7 @@ cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(nT-2,1),zeros
 % sdfkp = sdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(nT-2,1),zeros(nT-2,1)),reshape(sdfkp.q_inds(4,2:nT-1),[],1));
 
 % no large pelvis pitch
-cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint((qstar(5)-0.2)*ones(nT-2,1),(qstar(5)+0.2)*ones(nT-2,1)),cdfkp.q_inds(5,2:nT-1));
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint((qstar(5)-0.3)*ones(nT-2,1),(qstar(5)+0.4)*ones(nT-2,1)),cdfkp.q_inds(5,2:nT-1));
 
 cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
 cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',2000);

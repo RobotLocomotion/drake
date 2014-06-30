@@ -67,7 +67,7 @@ classdef RigidBodyContactWrench
       nlcon = obj.generateWrenchNlcon();
       bcon = obj.generateWrenchBcon();
       lincon = obj.generateWrenchLincon();
-      num_slack = obj.slack_name;
+      num_slack = obj.num_slack;
       if(length(obj.slack_name) ~= obj.num_slack)
         error('Drake:RigidBodyContactWrench:The slack_name has incorrect dimension');
       end

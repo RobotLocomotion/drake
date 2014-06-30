@@ -276,21 +276,25 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
           for j = reshape(unique_contact_wrench_idx,1,[])
             lambda_idx_ijk = obj.lambda_inds{i}(:,contact_wrench_idx==j,k); % lambda_idx_jk is the indices of lambda used for i'th body, with j'th RigidBodyContactWrench, at k'th knot point
             if(j > 0)
-              [lincon_wrench,nlcon_wrench,bcon_wrench] = obj.contact_wrench{j}.generateWrenchConstraint();
+              [lincon_wrench,nlcon_wrench,bcon_wrench,num_slack,slack_name] = obj.contact_wrench{j}.generateWrenchConstraint();
+              new_slack_inds = obj.num_vars+(1:num_slack)';
+              if(num_slack>0)
+                obj = obj.addDecisionVariable(num_slack,slack_name);
+              end
               nlcon_name = cell(nlcon_wrench.num_cnstr,1);
               for l = 1:nlcon_wrench.num_cnstr
                 nlcon_name{l} = sprintf('%s[%d]',nlcon_wrench.name{l},k);
               end
               nlcon_wrench = nlcon_wrench.setName(nlcon_name);
               
-              obj = obj.addDifferentiableConstraint(nlcon_wrench,[{obj.q_inds(:,k)};{reshape(lambda_idx_ijk,[],1)}],obj.kinsol_dataind(k));
+              obj = obj.addDifferentiableConstraint(nlcon_wrench,[{obj.q_inds(:,k)};{reshape(lambda_idx_ijk,[],1)};{new_slack_inds}],obj.kinsol_dataind(k));
               lincon_name = cell(lincon_wrench.num_cnstr,1);
               for l = 1:lincon_wrench.num_cnstr
                 lincon_name{l} = sprintf('%s[%d]',lincon_wrench.name{l},k);
               end
               lincon_wrench = lincon_wrench.setName(lincon_name);
-              obj = obj.addLinearConstraint(lincon_wrench,reshape(lambda_idx_ijk,[],1));
-              obj = obj.addBoundingBoxConstraint(bcon_wrench,reshape(lambda_idx_ijk,[],1));
+              obj = obj.addLinearConstraint(lincon_wrench,[reshape(lambda_idx_ijk,[],1);new_slack_inds]);
+              obj = obj.addBoundingBoxConstraint(bcon_wrench,[reshape(lambda_idx_ijk,[],1);new_slack_inds]);
             else
               obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(zeros(numel(lambda_idx_ijk),1),zeros(numel(lambda_idx_ijk),1)),lambda_idx_ijk);
             end
