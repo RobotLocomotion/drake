@@ -25,6 +25,8 @@ classdef PPRateTransition < DrakeSystem
       obj.num_pieces = num_pieces;
       obj.order = order;
       obj.dimension = dimension;
+      
+      obj = setSampleTime(obj,[0;0]);
     end
     
     function y = output(obj,t,x,u)
