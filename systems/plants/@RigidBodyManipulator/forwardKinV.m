@@ -1,36 +1,34 @@
 function [x, J, dJ] = forwardKinV(obj, kinsol, body_or_frame_ind, points, rotation_type, base_or_frame_ind)
-% computes the position of points (given in the body frame) in base
-% frame, as well as the Jacobian J that maps the joint velocity vector v
-% to xdot. The gradient of J with respect to the joint configuration vector
-% q is also available.
+% Transforms \p points given in a frame identified by \p body_or_frame_ind 
+% to a frame identified by \p base_or_frame_ind, and also computes a
+% representation of the relative rotation (of type specified by 
+% \p rotation_type), stacked in a matrix \p x. 
+% Also returns the Jacobian \p J that maps the joint velocity vector v to 
+% xdot, as well as the gradient of J with respect to the joint
+% configuration vector q.
 %
 % @param kinsol solution structure obtained from doKinematics
 % @param body_or_frame_ind, an integer ID for a RigidBody or RigidBodyFrame
 % (obtained via e.g., findLinkInd or findFrameInd)
 % @param points a 3 x m matrix where each column represents a point in the
 % frame specified by \p body_or_frame_ind
-% @param rotation_type integer flag indicated whether rotations and
-% derivatives should be computed (0 - no rotations, 1 - rpy, 2 - quat)
+% @param rotation_type integer flag indicated whether rotation output
+% should be included in the return values (0 - no rotation, 1 - rpy,
+% 2 - quat).
 % @param base_or_frame_ind an integer ID for a RigidBody or RigidBodyFrame
-% (obtained via e.g., findLinkInd or findFrameInd) @default 1 (world)
+% (obtained via e.g., findLinkInd or findFrameInd) @default 1 (world).
 %
-% @retval x the position of points (given in the body frame) in the base frame
-% frame. If rotation_type, x is 6-by-num_points where the final 3
-% components are the roll/pitch/yaw of the body frame (same for all points
-% on the body)
-% @retval J the Jacobian, that maps the joint velocity vector v to xdot
-% @retval dJ the gradient of J with respect to q
-%
-% rotation_type  -- 0, no rotation included
-%                -- 1, output Euler angle
-%                -- 2, output quaternion
-% if rotation_type = 0:
-% if points is a 3xm matrix, then x will be a 3xm matrix
-%  and (following our gradient convention) J will be a ((3xm)x(q))
-%  matrix, with [J1;J2;...;Jm] where Ji = dxidq
-% if rotation_type = 1 or 2:
-% x will be a 6xm matrix and (following our gradient convention) J will be
-% a ((6xm)x(q)) matrix, with [J1;J2;...;Jm] where Ji = dxidq
+% @retval x a matrix with m columns, such that column i is 
+% [points_base_i; q_rot], where points_base_i is points(:, i) transformed 
+% to the frame identified by \p body_or_frame_ind, and q_rot is a 
+% representation of the relative rotation (the same for all m columns).
+% That is, if rotation_type = 0 then \p x will be a 3xm matrix with column
+% i equal to [points_base_i]. If rotation_type = 1 \p x will be 6xm, with 
+% column i equal to [points_base_i; rpy], and if rotation_type = 2, \p will
+% be 7xm with column i equal to [points_base_i; quat]
+% @retval J the Jacobian that maps the joint velocity vector v to xd, the
+% time derivative of x.
+% @retval dJ the gradient of J with respect to the coordinate vector q.
 
 if nargin < 5, rotation_type = 0; end
 if nargin < 6, base_or_frame_ind = 1; end
