@@ -17,6 +17,16 @@
 
 using namespace std;
 
+template <int Rows, int Cols>
+mxArray* eigenToMatlab(Matrix<double,Rows,Cols> &m)
+{
+  mxArray* pm = mxCreateDoubleMatrix(m.rows(),m.cols(),mxREAL);
+  if (m.rows()*m.cols()>0)
+    memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
+  return pm;
+}
+
+
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   int error;

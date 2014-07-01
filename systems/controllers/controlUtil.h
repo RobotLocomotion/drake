@@ -24,16 +24,6 @@ typedef struct _support_state_element
   int contact_surface;
 } SupportStateElement;
 
-// helper function for shuffling debugging data back into matlab
-template <int Rows, int Cols>
-mxArray* eigenToMatlab(Matrix<double,Rows,Cols> &m)
-{
-  mxArray* pm = mxCreateDoubleMatrix(m.rows(),m.cols(),mxREAL);
-  if (m.rows()*m.cols()>0)
-    memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
-  return pm;
-}
-
 template <typename DerivedA, typename DerivedB>
 void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub);
 
