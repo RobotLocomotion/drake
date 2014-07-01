@@ -163,14 +163,16 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
       typecheck(constraint,'RigidBodyConstraint');
-      cnstr = constraint.generateConstraint();
       for j = 1:numel(time_index)
         if isa(constraint,'SingleTimeKinematicConstraint')
+          cnstr = constraint.generateConstraint();
           obj = obj.addKinematicConstraint(cnstr{1},time_index{j});
         elseif isa(constraint, 'PostureConstraint')
+          cnstr = constraint.generateConstraint();
           obj = obj.addBoundingBoxConstraint(cnstr{1}, ...
             obj.q_inds(:,time_index{j}));
         elseif isa(constraint,'QuasiStaticConstraint')
+          cnstr = constraint.generateConstraint();
           if(constraint.active)
             if(~isempty(obj.qsc_weight_inds{time_index{j}}))
               error('Drake:SimpleDynamicsFullKinematicsPlanner', ...
@@ -188,7 +190,11 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
             obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_inds{time_index{j}});
           end
         elseif isa(constraint,'SingleTimeLinearPostureConstraint')
+          cnstr = constraint.generateConstraint();
           obj = obj.addLinearConstraint(cnstr{1},obj.q_inds(:,time_index{j}));
+        elseif isa(constraint,'MultipleTimeKinematicConstraint')
+          cnstr = constraint.generateConstraint(numel(time_index{j}));
+          obj = obj.addKinematicConstraint(cnstr{1},time_index{j});
         else
           id = ['Drake:SimpleDynamicsFullKinematicsPlanner:' ...
             'unknownRBConstraint'];
