@@ -1,5 +1,30 @@
 #include "controlUtil.h"
 
+template <typename DerivedA, typename DerivedB>
+void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub)
+{
+  if (rows.size()==M.rows()) {
+    Msub = M; 
+    return;
+  }
+  
+  int i=0;
+  for (std::set<int>::iterator iter=rows.begin(); iter!=rows.end(); iter++)
+    Msub.row(i++) = M.row(*iter);
+}
+
+template <typename DerivedA, typename DerivedB>
+void getCols(std::set<int> &cols, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub)
+{
+  if (cols.size()==M.cols()) {
+    Msub = M;
+    return;
+  }
+  int i=0;
+  for (std::set<int>::iterator iter=cols.begin(); iter!=cols.end(); iter++)
+    Msub.col(i++) = M.col(*iter);
+}
+
 mxArray* myGetProperty(const mxArray* pobj, const char* propname)
 {
   mxArray* pm = mxGetProperty(pobj,0,propname);
@@ -186,3 +211,6 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   
   return k;
 }
+
+template void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
