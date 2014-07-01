@@ -153,12 +153,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
           A_force{j} = obj.contact_wrench{j}.force();
           A_torque{j} = obj.contact_wrench{j}.torque();
           A_force_stack(:,lambda_count_tmp+(1:num_lambda_j)) = sparse(reshape(bsxfun(@times,[1;2;3],ones(1,num_pts_j)),[],1),(1:3*num_pts_j)',ones(3*num_pts_j,1))*A_force{j};
-          [~,joint_path] = obj.robot.findKinematicPath(1,obj.contact_wrench{j}.body);
-          if isa(obj.robot,'TimeSteppingRigidBodyManipulator')
-            joint_idx_j = vertcat(obj.robot.getManipulator().body(joint_path).dofnum)';
-          else
-            joint_idx_j = vertcat(obj.robot.body(joint_path).dofnum)';
-          end
+          joint_idx_j = obj.contact_wrench{j}.kinematics_chain_idx;
           joint_idx = [joint_idx joint_idx_j];
           lambda_count_tmp = lambda_count_tmp+num_lambda_j;
         end

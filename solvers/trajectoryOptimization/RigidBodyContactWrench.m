@@ -23,6 +23,7 @@ classdef RigidBodyContactWrench
     slack_name % A cell of strings containing the name of slack variables
     slack_lb  % A num_slack x 1 vector. The lower bound of the slack variable;
     slack_ub  % A num_salck x 1 vector. The upper bound of the slack variable;
+    kinematics_chain_idx % An vector in integers. It contains the indices of the joints that are on the kinematics chain to compute the body posture
   end
   
   properties(Constant)
@@ -58,6 +59,12 @@ classdef RigidBodyContactWrench
       obj.slack_name = {};
       obj.slack_lb = [];
       obj.slack_ub = [];
+      [~,joint_path] = obj.robot.findKinematicPath(1,obj.body);
+      if isa(obj.robot,'TimeSteppingRigidBodyManipulator')
+        obj.kinematics_chain_idx = vertcat(obj.robot.getManipulator().body(joint_path).dofnum)';
+      else
+        obj.kinematics_chain_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+      end
     end
     
     function [lincon,nlcon,bcon,num_slack,slack_name] = generateWrenchConstraint(obj)
