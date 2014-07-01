@@ -205,6 +205,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         % find out the RigidBodyWrench on the same body and same body_pts
         lambda1_start_idx = 0;
         for wrench_idx1 = contact_wrench_idx{1}
+          lambda1_idx = knot_lambda_idx{1}(lambda1_start_idx+(1:obj.contact_wrench{wrench_idx1}.num_pt_F*obj.contact_wrench{wrench_idx1}.num_pts));
           lambda2_start_idx = 0;
           for wrench_idx2 = contact_wrench_idx{2}
             if(obj.contact_wrench{wrench_idx1}.contact_force_type == obj.contact_wrench{wrench_idx2}.contact_force_type &&...
@@ -213,8 +214,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
               if(sum(sum((obj.contact_wrench{wrench_idx1}.body_pts-obj.contact_wrench{wrench_idx2}.body_pts).^2,1))<1e-4)
                 % Now the two contact wrenches are on the same body, same points with same
                 % type of contact forces
-                lambda1_idx = knot_lambda_idx{1}(lambda1_start_idx+(1:obj.contact_wrench{wrench_idx1}.num_pt_F*obj.contact_wrench{wrench_idx1}.num_pts));
-                lambda2_idx = knot_lambda_idx{2}(lambda1_start_idx+(1:obj.contact_wrench{wrench_idx2}.num_pt_F*obj.contact_wrench{wrench_idx2}.num_pts));
+                lambda2_idx = knot_lambda_idx{2}(lambda2_start_idx+(1:obj.contact_wrench{wrench_idx2}.num_pt_F*obj.contact_wrench{wrench_idx2}.num_pts));
                 if(obj.contact_wrench{wrench_idx1}.complementarity_flag && obj.contact_wrench{wrench_idx2}.complementarity_flag)
                   csc_cnstr = ComplementarityStaticContactConstraint(obj.contact_wrench{wrench_idx1});
                   csc_cnstr_name = cell(csc_cnstr.num_cnstr,1);
