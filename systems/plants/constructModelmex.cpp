@@ -171,7 +171,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         //cout << "constructModelmex: Body " << i << ", Element " << j << endl;
         //END_DEBUG
         mxArray* pShape = mxGetCell(pm,j);
-        string group_name(mxArrayToString(mxGetProperty(pShape,0,"name")));
+        char* group_name_cstr = mxArrayToString(mxGetProperty(pShape,0,"name"));
+        string group_name;
+        if (group_name_cstr) {
+          group_name = group_name_cstr;
+        } else {
+          group_name = "default";
+        }
+
         auto shape = (DrakeCollision::Shape)mxGetScalar(mxGetProperty(pShape,0,"bullet_shape_id"));
         vector<double> params_vec;
         switch (shape) {
