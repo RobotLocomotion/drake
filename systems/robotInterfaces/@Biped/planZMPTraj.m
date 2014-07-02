@@ -145,12 +145,12 @@ for f = {'right', 'left'}
   foot = f{1};
   frame_id = biped.foot_frame_id.(foot);
   body_ind = biped.getFrame(frame_id).body_ind;
-  T = inv(biped.getFrame(frame_id).T);
+  T = biped.getFrame(frame_id).T;
   step_poses = [step_knots.(foot)];
   for j = 1:size(step_poses, 2);
-    xyz1 = T * [step_poses(1:3,j); 1];
-    rpy = rotmat2rpy(rpy2rotmat(step_poses(4:6,j)) * T(1:3,1:3));
-    step_poses(:,j) = [xyz1(1:3); rpy];
+    Tsole = [rpy2rotmat(step_poses(4:6,j)), step_poses(1:3,j); 0 0 0 1];
+    Torig = Tsole * inv(T);
+    step_poses(:,j) = [Torig(1:3,4); rotmat2rpy(Torig(1:3,1:3))];
   end
   link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'min_traj', [], 'max_traj', [], 'traj', PPTrajectory(foh([step_knots.t], step_poses)));
 end
