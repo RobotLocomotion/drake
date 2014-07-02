@@ -9,9 +9,13 @@ classdef ComplementarityFrictionConeWrench < FrictionConeWrench
   end
   
   methods
-    function obj = ComplementarityFrictionConeWrench(robot,body,body_pts,FC_mu,FC_axis,phi_handle)
-      % @param phi_handle  A function handle. pho_handle(kinsol) returns the distance from the body contact point to the contact enviroment, and its gradient
-      obj = obj@FrictionConeWrench(robot,body,body_pts,FC_mu,FC_axis);
+    function obj = ComplementarityFrictionConeWrench(robot,body,body_pts,FC_mu,FC_axis,phi_handle,force_normalize_factor)
+      % @param phi_handle  A function handle. pho_handle(pt_pos) returns the distance from each pt_pos to the contact enviroment, and its gradient
+      if(nargin<7)
+        g = 9.81;
+        force_normalize_factor = robot.getMass*g;
+      end
+      obj = obj@FrictionConeWrench(robot,body,body_pts,FC_mu,FC_axis,force_normalize_factor);
       obj.phi_handle = phi_handle;
       obj.num_slack = obj.num_pts;
       obj.slack_name = cell(obj.num_pts,1);

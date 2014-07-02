@@ -43,7 +43,7 @@ valuecheck(reshape(A*F(:),3,num_pts),zeros(3,num_pts),1e-5);
 display('Check force');
 F = 10*randn(3,num_pts);
 A = fc_wrench.force();
-valuecheck(reshape(A*F(:),3,num_pts),F,1e-5);
+valuecheck(reshape(A*F(:),3,num_pts),F*fc_wrench.force_normalize_factor,1e-5);
 
 testRigidBodyContactWrench_userfun(fc_wrench,qstar+1e-2*randn(nq,1),F,[]);
 
