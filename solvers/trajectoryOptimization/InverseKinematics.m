@@ -1,4 +1,4 @@
-classdef InverseKin < NonlinearProgramWConstraintObjects
+classdef InverseKinematics < NonlinearProgramWConstraintObjects
   % solve the inverse kinematics problem
   % min_q 0.5*(q-qnom)'Q(q-qnom)+cost1(q)+cost2(q)+...
   % s.t    lb<= kc(q) <=ub
@@ -14,7 +14,6 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
     q_idx   % q=x(q_idx), the robot posture
     qsc_weight_idx   % qsc_weight = x(qsc_weight_idx), the weight used in QuasiStaticConstraint
     nq
-    x_name
     robot
     kinsol_dataind
   end
@@ -24,8 +23,8 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
   end
   
   methods
-    function obj = InverseKin(robot,q_nom,varargin)
-      % InverseKin(robot,q_nom,RigidBodyConstraint1,RigidBodyConstraint2,...)
+    function obj = InverseKinematics(robot,q_nom,varargin)
+      % InverseKinematics(robot,q_nom,RigidBodyConstraint1,RigidBodyConstraint2,...)
       % @param robot    -- A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
       % object
       % @param q_nom    -- A nq x 1 double vector. The nominal posture
@@ -33,7 +32,7 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
       % SingleTimeKinematicConstraint, PostureConstraint, QuasiStaticConstraint and
       % SingleTimeLinearPostureConstraint
       if(~isa(robot,'RigidBodyManipulator') && ~isa(robot,'TimeSteppingRigidBodyManipulator'))
-        error('Drake:InverseKin:robot should be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
+        error('Drake:InverseKinematics:robot should be a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
       nq_tmp = robot.getNumPositions();
       obj = obj@NonlinearProgramWConstraintObjects(nq_tmp);
@@ -45,7 +44,7 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
       end
 
       if(~isnumeric(q_nom))
-        error('Drake:InverseKin:q_nom should be a numeric vector');
+        error('Drake:InverseKinematics:q_nom should be a numeric vector');
       end
       sizecheck(q_nom,[obj.nq,1]);
       obj.q_nom = q_nom;
@@ -61,7 +60,7 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
 
       for i = 1:num_rbcnstr
         if(~isa(varargin{i},'RigidBodyConstraint'))
-          error('Drake:InverseKin:the input should be a RigidBodyConstraint');
+          error('Drake:InverseKinematics:the input should be a RigidBodyConstraint');
         end
         if(isa(varargin{i},'SingleTimeKinematicConstraint'))
           cnstr = varargin{i}.generateConstraint(t);
@@ -86,7 +85,7 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
           cnstr = varargin{i}.generateConstraint(t);
           obj = obj.addLinearConstraint(cnstr{1},obj.q_idx);
         else
-          error('Drake:InverseKin:the input RigidBodyConstraint is not accepted');
+          error('Drake:InverseKinematics:the input RigidBodyConstraint is not accepted');
         end
       end
       obj = obj.setQ(eye(obj.nq));
@@ -125,26 +124,6 @@ classdef InverseKin < NonlinearProgramWConstraintObjects
       q = max([obj.x_lb(obj.q_idx) q],[],2);
       q = min([obj.x_ub(obj.q_idx) q],[],2);
       [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
-    end
-
-    function obj = addDecisionVariable(obj,num_new_vars,var_names)
-      % appending new decision variables to the end of the current decision variables
-      % @param num_new_vars      -- An integer. The newly added decision variable is an
-      % num_new_vars x 1 double vector.
-      % @param var_names         -- A cell of strings. var_names{i} is the name of the
-      % i'th new decision variable
-      if(nargin<3)
-        var_names = cell(num_new_vars,1);
-        for i = 1:num_new_vars
-          var_names{i} = sprintf('x%d',obj.num_vars+i);
-        end
-      else
-        if(~iscellstr(var_names))
-          error('Drake:NonlinearProgramWKinsol:addDecisionVariable:var_names should be a cell of strings');
-        end
-      end
-      obj = addDecisionVariable@NonlinearProgramWConstraintObjects(obj,num_new_vars);
-      obj.x_name = [obj.x_name;var_names];
     end
 
     function [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info)
