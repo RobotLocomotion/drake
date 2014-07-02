@@ -9,7 +9,7 @@ rangecheck(seed_plan.footsteps(1).pos(6), -pi, pi);
 rangecheck(seed_plan.footsteps(2).pos(6), -pi, pi);
 
 nsteps = length(seed_plan.footsteps);
-num_precise_steps = 10;
+num_precise_steps = nsteps;
 max_num_steps = seed_plan.params.max_num_steps + 2;
 min_num_steps = max([seed_plan.params.min_num_steps + 2, 3]);
 
@@ -23,8 +23,8 @@ trim = binvar(1, nsteps, 'full');
 region = binvar(length(seed_plan.safe_regions), nsteps, 'full');
 
 
-foci = [[0.05; 0.1], [0.05; -0.6]];
-ellipse_l = 0.45;
+foci = [[0.05; 0.1], [0.05; -0.65]];
+ellipse_l = 0.5;
 
 seed_steps = [seed_plan.footsteps.pos];
 
@@ -44,7 +44,7 @@ Constraints = [x(:,1) == seed_steps([1,2,3,6],1),...
                -1 <= cos_yaw <= 1,...
                -1 <= sin_yaw <= 1,...
                region(:,1:2) == [1, 1; zeros(size(region, 1)-1, 2)],...
-               sum(region, 1) >= 1,...
+               sum(region, 1) == 1,...
                sum(sin_sector, 1) == 1,...
                sum(cos_sector, 1) == 1,...
                trim(end-1:end) == 1,...
@@ -155,9 +155,8 @@ for j = 3:(nsteps-2)
 end
 
 w_goal = diag(weights.goal([1,2,3,6]));
-w_rel = diag(weights.relative([1,2,3,6]));
-% w_trim = w_rel(1) * (seed_plan.params.nom_forward_step^2 + seed_plan.params.nom_step_width^2);
-w_trim = 0;
+w_rel = diag(weights.relative([1,1,3,6]));
+w_trim = w_rel(1) * (seed_plan.params.nom_forward_step^2 + seed_plan.params.nom_step_width^2);
 
 if seed_plan.footsteps(end).frame_id == biped.foot_frame_id.right
   goal = goal_pos.right([1,2,3,6]);
