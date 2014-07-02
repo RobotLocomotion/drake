@@ -18,14 +18,15 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
   end
   
   methods
-    function obj = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,contact_wrench_struct,torque_multiplier)
+    function obj = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,contact_wrench_struct,torque_multiplier,options)
       % @param Q_comddot  A 3 x 3 matrix. penalize sum_j comddot(:,j)*Q_comddot*comddot(:,j)
       % @param Q  an nq x nq matrix. Add the cost sum_j
       % (q(:,j)-q_nom(:,j))'*Q*(q(:,j)-q_nom(:,j));
+      if nargin < 10, options = struct(); end
       plant = SimpleDynamicsDummyPlant(robot.getNumPositions());
-      obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,contact_wrench_struct);
+      obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,contact_wrench_struct,options);
 %       obj = obj.setSolverOptions('snopt','scaleoption',2);
-      if(nargin<9)
+      if(nargin<9) || isempty(torque_multiplier)
         torque_multiplier = obj.robot_mass*obj.g*1;
       else
         if(~isnumeric(torque_multiplier) || numel(torque_multiplier)~= 1 || torque_multiplier<=0)
