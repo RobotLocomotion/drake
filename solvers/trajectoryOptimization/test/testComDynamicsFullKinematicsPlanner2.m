@@ -159,7 +159,7 @@ x_seed(cdfkp.lambda_inds{2}(:)) = reshape(bsxfun(@times,1/num_edges*ones(num_edg
 % add a cost to maximize com apex_height
 cdfkp = cdfkp.addCost(FunctionHandleConstraint(-inf,inf,2,@comApexHeightCost),{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
 % add a constraint on the com apex height
-apex_height_cnstr = FunctionHandleConstraint(1.1,inf,2,@comApexHeight);
+apex_height_cnstr = FunctionHandleConstraint(1.4,inf,2,@comApexHeight);
 apex_height_cnstr = apex_height_cnstr.setName({'com apex height'});
 cdfkp = cdfkp.addDifferentiableConstraint(apex_height_cnstr,{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
 
@@ -182,9 +182,9 @@ cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
 cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
 cdfkp = cdfkp.setSolverOptions('snopt','print','test_cdfkp2.out');
 
-% seed_sol = load('test_cdfkp2','-mat','x_sol');
+seed_sol = load('test_cdfkp2','-mat','x_sol');
 tic
-[x_sol,F,info] = cdfkp.solve(x_seed);
+[x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
 toc
 q_sol = reshape(x_sol(cdfkp.q_inds(:)),nq,nT);
 v_sol = reshape(x_sol(cdfkp.v_inds(:)),nq,nT);
@@ -194,7 +194,7 @@ com_sol = reshape(x_sol(cdfkp.com_inds),3,[]);
 comdot_sol = reshape(x_sol(cdfkp.comdot_inds),3,[]);
 comddot_sol = reshape(x_sol(cdfkp.comddot_inds),3,[]);
 H_sol = reshape(x_sol(cdfkp.H_inds),3,[]);
-Hdot_sol = reshape(x_sol(cdfkp.Hdot_inds),3,[]);
+Hdot_sol = reshape(x_sol(cdfkp.Hdot_inds),3,[])*cdfkp.torque_multiplier;
 lambda_sol = cell(2,1);
 lambda_sol{1} = reshape(x_sol(cdfkp.lambda_inds{1}),size(cdfkp.lambda_inds{1},1),[],nT);
 lambda_sol{2} = reshape(x_sol(cdfkp.lambda_inds{2}),size(cdfkp.lambda_inds{2},1),[],nT);
