@@ -14,15 +14,25 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
     comddot_inds % A 3 x obj.N matrix. x(comddot_inds(:,i)) is the com acceleation at i'th knot point
     H_inds % A 3 x obj.N matrix. x(H_inds(:,i)) is the centroidal angular momentum at i'th knot point
     Hdot_inds % A 3 x obj.N matrix. x(Hdot_inds(:,i)) is the rate of centroidal angular momentum at i'th knot point
+    torque_multiplier % A positive scaler. 
   end
   
   methods
-    function obj = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,varargin)
+    function obj = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,contact_wrench_struct,torque_multiplier)
       % @param Q_comddot  A 3 x 3 matrix. penalize sum_j comddot(:,j)*Q_comddot*comddot(:,j)
       % @param Q  an nq x nq matrix. Add the cost sum_j
       % (q(:,j)-q_nom(:,j))'*Q*(q(:,j)-q_nom(:,j));
       plant = SimpleDynamicsDummyPlant(robot.getNumPositions());
-      obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,varargin{:});
+      obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,contact_wrench_struct);
+%       obj = obj.setSolverOptions('snopt','scaleoption',2);
+      if(nargin<9)
+        torque_multiplier = obj.robot_mass*obj.g*1;
+      else
+        if(~isnumeric(torque_multiplier) || numel(torque_multiplier)~= 1 || torque_multiplier<=0)
+          error('Drake:ComDynamicsFullKinematicsPlanner:torque_multiplier should be positive scaler');
+        end
+      end
+      obj.torque_multiplier = torque_multiplier;
       obj.com_inds = obj.num_vars+reshape(1:3*obj.N,3,obj.N);
       obj.comdot_inds = obj.num_vars+3*obj.N+reshape(1:3*obj.N,3,obj.N);
       obj.comddot_inds = obj.num_vars+6*obj.N+reshape(1:3*obj.N,3,obj.N);
@@ -100,9 +110,9 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       
       function [c,dc] = singleTimeDynFun(kinsol,com,lambda,Hdot)
         lambda_count = 0;
-        c = Hdot;
+        c = Hdot*obj.torque_multiplier;
         dc = zeros(3,obj.nq+3+num_lambda1+3);
-        dc(1:3,obj.nq+3+num_lambda1+(1:3)) = eye(3);
+        dc(1:3,obj.nq+3+num_lambda1+(1:3)) = eye(3)*obj.torque_multiplier;
         for i = contact_wrench_idx{1}
           num_pts_i = obj.contact_wrench{i}.num_pts;
           num_lambda_i = obj.contact_wrench{i}.num_pt_F*num_pts_i;
@@ -124,11 +134,11 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
 			function [c,dc] = dtDynFun(h,H_l,H_r,Hdot,com_l,com_r,comdot_l,comdot_r,comddot,q_l,q_r,v)
 			  c = zeros(3+3+3+obj.nq,1);
 				dc = zeros(3+3+3+obj.nq,1+3+3+3+3+3+3+3+3+2*obj.nq+obj.nv);
-				c(1:3) = H_r-H_l-Hdot*h;
-			  dc(1:3,1) = -Hdot;
-				dc(1:3,1+(1:9)) = [-eye(3) eye(3) -h*eye(3)];
+				c(1:3) = H_r-H_l-Hdot*h*obj.torque_multiplier;
+			  dc(1:3,1) = -Hdot*obj.torque_multiplier;
+				dc(1:3,1+(1:9)) = [-eye(3) eye(3) -h*eye(3)*obj.torque_multiplier];
 				c(4:6) = com_r-com_l-(comdot_l+comdot_r)*h/2;
-				dc(4:6,1) = (comdot_l-comdot_r)/2;
+				dc(4:6,1) = -(comdot_l+comdot_r)/2;
 				dc(4:6,1+9+(1:12)) = [-eye(3) eye(3) -h/2*eye(3) -h/2*eye(3)];
 				c(7:9) = comdot_r-comdot_l-comddot*h;
 				dc(7:9,1) = -comddot;
@@ -185,9 +195,9 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         cnstr_names(1:9) = [{sprintf('H_x[%d]-H_x[%d]=Hdot_x[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
                        {sprintf('H_y[%d]-H_y[%d]=Hdot_y[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
                        {sprintf('H_z[%d]-H_z[%d]=Hdot_z[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
-                       {sprintf('com_x[%d]-com_x[%d]=comdot_x[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
-                       {sprintf('com_y[%d]-com_y[%d]=comdot_y[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
-                       {sprintf('com_z[%d]-com_z[%d]=comdot_z[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
+                       {sprintf('com_x[%d]-com_x[%d]=(comdot_x[%d]+comdot_x[%d])/2*dt',knot_idx(2),knot_idx(1),knot_idx(1),knot_idx(2))},...
+                       {sprintf('com_y[%d]-com_y[%d]=(comdot_y[%d]+comdot_y[%d])/2*dt',knot_idx(2),knot_idx(1),knot_idx(1),knot_idx(2))},...
+                       {sprintf('com_z[%d]-com_z[%d]=(comdot_z[%d]+comdot_z[%d])/2*dt',knot_idx(2),knot_idx(1),knot_idx(1),knot_idx(2))},...
                        {sprintf('comdot_x[%d]-comdot_x[%d]=comddot_x[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
                        {sprintf('comdot_x[%d]-comdot_y[%d]=comddot_y[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
                        {sprintf('comdot_x[%d]-comdot_z[%d]=comddot_z[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))}];
