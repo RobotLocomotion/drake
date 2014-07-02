@@ -28,11 +28,10 @@ classdef Footstep
 
     function msg = to_footstep_t(obj, biped)
       msg = drc.footstep_t();
-      T = inv(biped.getFrame(obj.frame_id).T);
-      pos = zeros(6,1);
-      xyz1 = T * [obj.pos(1:3);1];
-      pos(1:3) = xyz1(1:3);
-      pos(4:6) = rotmat2rpy(rpy2rotmat(obj.pos(4:6)) * T(1:3,1:3));
+      T = biped.getFrame(obj.frame_id).T;
+      Tsole = [rpy2rotmat(obj.pos(4:6)), obj.pos(1:3); 0 0 0 1];
+      Torig = Tsole * inv(T);
+      pos = [Torig(1:3,4); rotmat2rpy(Torig(1:3,1:3))];
       msg.pos = encodePosition3d(pos);
       msg.id = obj.id;
       if obj.frame_id == biped.foot_frame_id.right
@@ -69,10 +68,9 @@ classdef Footstep
       end
       msg_pos = decodePosition3d(msg.pos);
       T = biped.getFrame(frame_id).T;
-      pos = zeros(6,1);
-      xyz1 = T * [msg_pos(1:3);1];
-      pos(1:3) = xyz1(1:3);
-      pos(4:6) = rotmat2rpy(rpy2rotmat(msg_pos(4:6)) * T(1:3,1:3));
+      Torig = [rpy2rotmat(msg_pos(4:6)), msg_pos(1:3); 0 0 0 1];
+      Tsole = Torig * T;
+      pos = [Tsole(1:3,4); rotmat2rpy(Tsole(1:3,1:3))];
       is_in_contact = msg.is_in_contact;
       pos_fixed = [msg.fixed_x;
                    msg.fixed_y;
