@@ -17,6 +17,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     ceq_name % A cell array of strings. ceq_name{i} is the name of i'th nonlinear equality constraint
     Ain_name % A cell array of strings. Ain_name{i} is the name of i'th linear inequality constraint
     Aeq_name % A cell array of strings. Aeq_name{i} is the name of i'th linear equality constraint
+    x_name   % A cell array of strings. x_name{i} is the name of i'th decision variable
   end
   
   properties(SetAccess = protected)
@@ -52,9 +53,20 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
   end
   
   methods
-    function obj = NonlinearProgramWConstraintObjects(num_vars)
+    function obj = NonlinearProgramWConstraintObjects(num_vars,x_name)
       % @param num_vars     -- The number of decision variables
+      % @param x_name       -- An optional argument. A cell of strings containing the name
+      % of each decision variable
       obj = obj@NonlinearProgram(num_vars,0,0);
+      if(nargin<2)
+        x_name = cellfun(@(i) sprintf('x%d',i),num2cell((1:obj.num_vars)'),'UniformOutput',false);
+      else
+        if(~iscellstr(x_name) || numel(x_name) ~= obj.num_vars)
+          error('Drake:NonlinearProgramWConstraintObjects:InvalidArgument','Argument x_name should be a cell containing %d strings',obj.num_vars);
+        end
+        x_name = x_name(:);
+      end
+      obj.x_name = x_name;
       obj.nlcon = {};
       obj.lcon = {};
       obj.bbcon = {};
@@ -362,11 +374,22 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       G = [G(1,:);G(1+obj.nlcon_ineq_idx,:);G(1+obj.nlcon_eq_idx,:)];
     end
     
-    function obj = addDecisionVariable(obj,num_new_vars)
+    function obj = addDecisionVariable(obj,num_new_vars,var_name)
       % appending new decision variables to the end of the current decision variables
       % @param num_new_vars      -- An integer. The newly added decision variable is an
       % num_new_vars x 1 double vector.
+      % @param var_name       -- An optional argument. A cell of strings containing the
+      % name of the new decision variables
+      if(nargin<3)
+        var_name = cellfun(@(i) sprintf('x%d',i),num2cell(obj.num_vars+(1:num_new_vars)'),'UniformOutput',false);
+      else
+        if(~iscellstr(var_name) || numel(var_name) ~= num_new_vars)
+          error('Drake:NonlinearProgramWConstraintObjects:addDecisionVariable:InvalidArgument','Argument var_name should be a cell of %d strings',num_new_vars);
+        end
+        var_name = var_name(:);
+      end
       obj.num_vars = obj.num_vars+num_new_vars;
+      obj.x_name = [obj.x_name;var_name];
       obj.x_lb = [obj.x_lb;-inf(num_new_vars,1)];
       obj.x_ub = [obj.x_ub;inf(num_new_vars,1)];
       if(~isempty(obj.Aeq))

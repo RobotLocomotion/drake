@@ -1,4 +1,4 @@
-classdef InverseKinTraj < NonlinearProgramWConstraintObjects
+classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
 % solve IK
 %   min_q sum_i
 %   qdd(:,i)'*Qa*qdd(:,i)+qd(:,i)'*Qv*qd(:,i)+(q(:,i)-q_nom(:,i))'*Q*(q(:,i)-q_nom(:,i))]+additional_cost1+additional_cost2+...
@@ -40,7 +40,6 @@ classdef InverseKinTraj < NonlinearProgramWConstraintObjects
     qd0_idx  
     qdf_idx  
     qsc_weight_idx
-    x_name
     robot
 
     % nT-element vector of indices into the shared_data, where
@@ -58,9 +57,9 @@ classdef InverseKinTraj < NonlinearProgramWConstraintObjects
   end
   
   methods
-    function obj = InverseKinTraj(robot,t,q_nom_traj,fix_initial_state,x0,varargin)
+    function obj = InverseKinematicsTrajectory(robot,t,q_nom_traj,fix_initial_state,x0,varargin)
       % obj =
-      % InverseKinTraj(robot,t,q_nom_traj,RigidBodyConstraint1,RigidBodyConstraint2,...,RigidBodyConstraintN)
+      % InverseKinematicsTrajectory(robot,t,q_nom_traj,RigidBodyConstraint1,RigidBodyConstraint2,...,RigidBodyConstraintN)
       % @param robot    -- A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
       % @param t   -- A 1 x nT double vector. t(i) is the time of the i'th knot
       % point
@@ -93,7 +92,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraintObjects
       end
       obj = obj.addDecisionVariable(2*obj.nq,qd_name);
       if(~isa(q_nom_traj,'Trajectory'))
-        error('Drake:InverseKinTraj:q_nom_traj should be a trajectory');
+        error('Drake:InverseKinematicsTrajectory:q_nom_traj should be a trajectory');
       end
       obj.q_nom_traj = q_nom_traj;
       obj.q_nom = obj.q_nom_traj.eval(obj.t_knot);
@@ -123,7 +122,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraintObjects
 
       for i = 1:num_rbcnstr
         if(~isa(varargin{i},'RigidBodyConstraint'))
-          error('Drake:InverseKinTraj:the input should be a RigidBodyConstraint');
+          error('Drake:InverseKinematicsTrajectory:the input should be a RigidBodyConstraint');
         end
         if(isa(varargin{i},'SingleTimeKinematicConstraint'))
           for j = t_start:obj.nT
@@ -143,7 +142,7 @@ classdef InverseKinTraj < NonlinearProgramWConstraintObjects
           for j = t_start:obj.nT
             if(varargin{i}.isTimeValid(obj.t_knot(j)) && varargin{i}.active)
               if(~isempty(obj.qsc_weight_idx{j}))
-                error('Drake:InverseKinTraj:currently only support at most one QuasiStaticConstraint at an individual time');
+                error('Drake:InverseKinematicsTrajectory:currently only support at most one QuasiStaticConstraint at an individual time');
               end
               cnstr = varargin{i}.generateConstraint(obj.t_knot(j));
               qsc_weight_names = cell(varargin{i}.num_pts,1);
@@ -248,31 +247,14 @@ classdef InverseKinTraj < NonlinearProgramWConstraintObjects
       end
       [x,F,info] = solve@NonlinearProgramWConstraintObjects(obj,x0);
       [q,qdot,qddot] = obj.cpe.cubicSpline(x([obj.q_idx(:);obj.qd0_idx;obj.qdf_idx]));
+      q = max([q(:) reshape(obj.x_lb(obj.q_idx),[],1)],[],2);
+      q = min([q(:) reshape(obj.x_ub(obj.q_idx),[],1)],[],2);
+      q = reshape(q,obj.robot.getNumPositions,[]);
       xtraj = PPTrajectory(pchipDeriv(obj.t_knot,[q;qdot],[qdot;qddot]));
       xtraj = xtraj.setOutputFrame(obj.robot.getStateFrame);
       [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
     end
     
-    function obj = addDecisionVariable(obj,num_new_vars,var_names)
-      % appending new decision variables to the end of the current decision variables
-      % @param num_new_vars      -- An integer. The newly added decision variable is an
-      % num_new_vars x 1 double vector.
-      % @param var_names         -- A cell of strings. var_names{i} is the name of the
-      % i'th new decision variable
-      if(nargin<3)
-        var_names = cell(num_new_vars,1);
-        for i = 1:num_new_vars
-          var_names{i} = sprintf('x%d',obj.num_vars+i);
-        end
-      else
-        if(~iscellstr(var_names))
-          error('Drake:NonlinearProgramWKinsol:addDecisionVariable:var_names should be a cell of strings');
-        end
-      end
-      obj = addDecisionVariable@NonlinearProgramWConstraintObjects(obj,num_new_vars);
-      obj.x_name = [obj.x_name;var_names];
-    end
-
     function obj = addKinematicConstraint(obj,constraint,time_index)
       % Add a constraint that is a function of the generalized positions
       % at the specified time or times.
