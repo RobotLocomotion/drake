@@ -47,11 +47,15 @@ else
   safe_regions(1) = struct('A', Ai, 'b', bi, 'point', [0;0;0], 'normal', [0;0;1]);
 end
 
-goal_pos = struct('right', [2;2-0.15;0.1;0;0;pi/2],...
-                  'left',  [2;2+0.15;0.1;0;0;pi/2]);
+goal = [rand(2,1) * 2;0;0;0;rand(1,1)*pi - pi/2];
+R = rotmat(goal(6));
+goal_pos = struct('right', [goal(1:2) + R * [0;-0.15]; 0;0;0;goal(6)],...
+                  'left', [goal(1:2) + R * [0;0.15]; 0;0;0;goal(6)]);
+% goal_pos = struct('right', [2;2-0.15;0.1;0;0;0],...
+%                   'left',  [2;2+0.15;0.1;0;0;0]);
 
 params = r.default_footstep_params;
-params.max_num_steps = 20;
+params.max_num_steps = 12;
 params.min_num_steps = 0;
 params.min_step_width = 0.25;
 params.nom_step_width = 0.26;
@@ -81,16 +85,28 @@ steps_rel = plan.relative_step_offsets()
 figure(1);
 clf
 nsteps = length(plan.footsteps);
-r_ndx = 2:2:nsteps;
-l_ndx = 1:2:nsteps;
+r_ndx = 1:2:nsteps;
+l_ndx = 2:2:nsteps;
 steps = plan.step_matrix();
-quiver(steps(1,r_ndx), steps(2, r_ndx), cos(steps(6,r_ndx)), sin(steps(6,r_ndx)), 'b', 'AutoScaleFactor', 0.2)
+k = 0.2;
+arrow_props = {'AutoScale', 'off', 'LineWidth', 2, 'MaxHeadSize', 0.5};
+quiver(steps(1,r_ndx), steps(2, r_ndx), k*cos(steps(6,r_ndx)), k*sin(steps(6,r_ndx)), 'Color', [0.2,0.8,0.2], arrow_props{:})
 hold on
-quiver(steps(1,l_ndx), steps(2,l_ndx), cos(steps(6,l_ndx)), sin(steps(6,l_ndx)), 'r', 'AutoScaleFactor', 0.2)
+quiver(steps(1,l_ndx), steps(2,l_ndx), k*cos(steps(6,l_ndx)), k*sin(steps(6,l_ndx)), 'Color', [0.7,0.7,0.1], arrow_props{:})
+plot(steps(1,r_ndx), steps(2,r_ndx), 'ko', 'MarkerFaceColor', [0.2,0.8,0.2], 'MarkerSize', 10)
+plot(steps(1,l_ndx), steps(2,l_ndx), 'ko', 'MarkerFaceColor', [0.8,0.8,0.2], 'MarkerSize', 10)
+goal_pos.center = mean([goal_pos.right, goal_pos.left], 2);
+k = 0.15;
+quiver(goal_pos.center(1), goal_pos.center(2), k*cos(goal_pos.center(6)), k*sin(goal_pos.center(6)), 'Color', [0,0,0], arrow_props{:}, 'ShowArrowHead', 'off', 'Marker', 'o', 'MarkerSize', 30)
 plot(steps(1,:), steps(2,:), 'k:')
 for j = 1:length(stones)
   pts = [stones(1,j) + stone_scale*[-1, -1, 1, 1];
            stones(2,j) + stone_scale*[-1, 1, 1, -1]];
   patch(pts(1,:), pts(2,:), 'k', 'FaceAlpha', 0.2);
 end
+xlim([-0.5,2.5])
+ylim([-0.5,2.5])
 axis equal
+set(gca, 'XTick', []);
+set(gca, 'YTick', []);
+print('MISOCP_example.pdf', '-dpdf')
