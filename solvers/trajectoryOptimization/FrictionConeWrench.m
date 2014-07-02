@@ -5,6 +5,8 @@ classdef FrictionConeWrench < RigidBodyContactWrench
           % of the friction cone at contact point body_pts(:,i)
     FC_axis % A 3 x num_pts double matrix, FC_axis(:,i) is the axis of the
             % friction cone at the contact point body_pts(:,i). FC_axis(:,i) is in the world frame
+    force_normalize_factor   % A positive double scaler. The actual force is force_normalize_factor*force_parameter,
+                             % where force parameters are the arguments being constrained
   end
   
   properties(Access = protected)
@@ -12,7 +14,7 @@ classdef FrictionConeWrench < RigidBodyContactWrench
   end
   
   methods
-    function obj = FrictionConeWrench(robot,body,body_pts,FC_mu,FC_axis)
+    function obj = FrictionConeWrench(robot,body,body_pts,FC_mu,FC_axis,force_normalize_factor)
       % @param robot    A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
       % object
       % @param body       -- The index of contact body on the robot
@@ -25,6 +27,9 @@ classdef FrictionConeWrench < RigidBodyContactWrench
       % friction cone at the contact point body_pts(:,i). FC_axis(:,i) is in the world
       % frame. If FC_axis is a 3 x 1 vector, then that axis is used for every friction
       % cone
+      % @param force_normalize_factor   -- A positive double scalar. The actual force is
+      % force_normalize_factor*force_parameter, where force_parameters are the argument to
+      % the constraint. Default value is robot_mass*g
       obj = obj@RigidBodyContactWrench(robot,body,body_pts);
       mu_size = size(FC_mu);
       if(length(mu_size) == 2 && mu_size(1) == 1 && mu_size(2) == 1)
@@ -32,7 +37,7 @@ classdef FrictionConeWrench < RigidBodyContactWrench
         mu_size = size(FC_mu);
       end
       if(~isnumeric(FC_mu) || any(FC_mu<0) || length(mu_size) ~= 2 || mu_size(1) ~= 1 || mu_size(2) ~= obj.num_pts)
-        error('Drake:RigidBodyFrictionCone: FC_mu should be a non-negative 1 x num_pts array');
+        error('Drake:FrictionConeWrench: FC_mu should be a non-negative 1 x num_pts array');
       end
       obj.FC_mu = FC_mu;
       axis_size = size(FC_axis);
@@ -41,10 +46,19 @@ classdef FrictionConeWrench < RigidBodyContactWrench
         axis_size = size(FC_axis);
       end
       if(~isnumeric(FC_axis) || length(axis_size) ~= 2 || axis_size(1) ~= 3 || axis_size(2) ~= obj.num_pts)
-        error('Drake:RigidBodyFrictionCone: FC_axis should be a 3 x num_pts array');
+        error('Drake:FrictionConeWrench: FC_axis should be a 3 x num_pts array');
       end
       FC_axis_norm = sqrt(sum(FC_axis.^2,1));
       obj.FC_axis = FC_axis./(bsxfun(@times,FC_axis_norm,ones(3,1)));
+      g = 9.81;
+      if(nargin<6)
+        force_normalize_factor = obj.robot.getMass*g;
+      else
+        if(~isnumeric(force_normalize_factor) || numel(force_normalize_factor) ~= 1 || force_normalize_factor<=0)
+          error('Drake:RigidBodyConeWrench: force_normalize_factor should be a positive scalar');
+        end
+      end
+      obj.force_normalize_factor = force_normalize_factor;
       obj.cos_theta_square = 1./(obj.FC_mu.^2+ones(1,obj.num_pts));
       obj.num_wrench_constraint = obj.num_pts;
       obj.num_pt_F = 3;
@@ -86,7 +100,7 @@ classdef FrictionConeWrench < RigidBodyContactWrench
       % Compute the indivisual force from the force parameters F. The individual forces
       % are reshape(A*F,3,obj.num_pts)
       % @retval A    -- A (3*num_pts) x (obj.num_pt_F*obj.num_pts) double matrix
-      A = speye(3*obj.num_pts);
+      A = obj.force_normalize_factor*speye(3*obj.num_pts);
     end
     
     function A = torque(obj)

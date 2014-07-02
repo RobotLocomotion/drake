@@ -48,23 +48,33 @@ lfoot_heel_pos_star = robot.forwardKin(kinsol_star,l_foot,l_foot_heel,0);
 rfoot_heel_pos_star = robot.forwardKin(kinsol_star,r_foot,r_foot_heel,0);
 com_star = robot.getCOM(kinsol_star);
 
-mu = 1;
 
 heel_takeoff_idx = 5;
 toe_takeoff_idx = 7;
 heel_land_idx = 14;
 toe_land_idx = 12;
 nT = 17;
+mu = 1;
+num_edges = 3;
+FC_angles = linspace(0,2*pi,num_edges+1);FC_angles(end) = [];
+g = 9.81;
+FC_axis = [0;0;1];
+FC_perp1 = rotx(pi/2)*FC_axis;
+FC_perp2 = cross(FC_axis,FC_perp1);
+FC_edge = bsxfun(@plus,FC_axis,mu*(bsxfun(@times,cos(FC_angles),FC_perp1) + ...
+                                   bsxfun(@times,sin(FC_angles),FC_perp2)));
+FC_edge = bsxfun(@rdivide,FC_edge,sqrt(sum(FC_edge.^2,1)));
+FC_edge = FC_edge*robot.getMass*g;
 l_foot_contact_wrench = struct('active_knot',[],'cw',[]);
-l_foot_contact_wrench(1) = struct('active_knot',1:heel_takeoff_idx,'cw',FrictionConeWrench(robot,l_foot,l_foot_heel,mu,[0;0;1]));
-l_foot_contact_wrench(2) = struct('active_knot',1:toe_takeoff_idx,'cw',FrictionConeWrench(robot,l_foot,l_foot_toe,mu,[0;0;1]));
-l_foot_contact_wrench(3) = struct('active_knot',heel_land_idx:nT,'cw',FrictionConeWrench(robot,l_foot,l_foot_heel,mu,[0;0;1]));
-l_foot_contact_wrench(4) = struct('active_knot',toe_land_idx:nT,'cw',FrictionConeWrench(robot,l_foot,l_foot_toe,mu,[0;0;1]));
+l_foot_contact_wrench(1) = struct('active_knot',1:heel_takeoff_idx,'cw',LinearFrictionConeWrench(robot,l_foot,l_foot_heel,FC_edge));
+l_foot_contact_wrench(2) = struct('active_knot',1:toe_takeoff_idx,'cw',LinearFrictionConeWrench(robot,l_foot,l_foot_toe,FC_edge));
+l_foot_contact_wrench(3) = struct('active_knot',heel_land_idx:nT,'cw',LinearFrictionConeWrench(robot,l_foot,l_foot_heel,FC_edge));
+l_foot_contact_wrench(4) = struct('active_knot',toe_land_idx:nT,'cw',LinearFrictionConeWrench(robot,l_foot,l_foot_toe,FC_edge));
 r_foot_contact_wrench = struct('active_knot',[],'cw',[]);
-r_foot_contact_wrench(1) = struct('active_knot',1:heel_takeoff_idx,'cw',FrictionConeWrench(robot,r_foot,r_foot_heel,mu,[0;0;1]));
-r_foot_contact_wrench(2) = struct('active_knot',1:toe_takeoff_idx,'cw',FrictionConeWrench(robot,r_foot,r_foot_toe,mu,[0;0;1]));
-r_foot_contact_wrench(3) = struct('active_knot',heel_land_idx:nT,'cw',FrictionConeWrench(robot,r_foot,r_foot_heel,mu,[0;0;1]));
-r_foot_contact_wrench(4) = struct('active_knot',toe_land_idx:nT,'cw',FrictionConeWrench(robot,r_foot,r_foot_toe,mu,[0;0;1]));
+r_foot_contact_wrench(1) = struct('active_knot',1:heel_takeoff_idx,'cw',LinearFrictionConeWrench(robot,r_foot,r_foot_heel,FC_edge));
+r_foot_contact_wrench(2) = struct('active_knot',1:toe_takeoff_idx,'cw',LinearFrictionConeWrench(robot,r_foot,r_foot_toe,FC_edge));
+r_foot_contact_wrench(3) = struct('active_knot',heel_land_idx:nT,'cw',LinearFrictionConeWrench(robot,r_foot,r_foot_heel,FC_edge));
+r_foot_contact_wrench(4) = struct('active_knot',toe_land_idx:nT,'cw',LinearFrictionConeWrench(robot,r_foot,r_foot_toe,FC_edge));
 
 bky_idx = robot.getBody(robot.findJointInd('back_bky')).dofnum;
 
@@ -143,13 +153,13 @@ x_seed = zeros(cdfkp.num_vars,1);
 x_seed(cdfkp.h_inds) = 0.1;
 x_seed(cdfkp.q_inds(:)) = reshape(bsxfun(@times,qstar,ones(1,nT)),[],1);
 x_seed(cdfkp.com_inds(:)) = reshape(bsxfun(@times,com_star,ones(1,nT)),[],1);
-x_seed(cdfkp.lambda_inds{1}(:)) = reshape(bsxfun(@times,[0;0;cdfkp.robot_mass*cdfkp.g/8],ones(1,4,nT)),[],1);
-x_seed(cdfkp.lambda_inds{2}(:)) = reshape(bsxfun(@times,[0;0;cdfkp.robot_mass*cdfkp.g/8],ones(1,4,nT)),[],1);
+x_seed(cdfkp.lambda_inds{1}(:)) = reshape(bsxfun(@times,1/num_edges*ones(num_edges,4,1),ones(1,1,nT)),[],1);
+x_seed(cdfkp.lambda_inds{2}(:)) = reshape(bsxfun(@times,1/num_edges*ones(num_edges,4,1),ones(1,1,nT)),[],1);
 
 % add a cost to maximize com apex_height
 cdfkp = cdfkp.addCost(FunctionHandleConstraint(-inf,inf,2,@comApexHeightCost),{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
 % add a constraint on the com apex height
-apex_height_cnstr = FunctionHandleConstraint(1.4,inf,2,@comApexHeight);
+apex_height_cnstr = FunctionHandleConstraint(1.1,inf,2,@comApexHeight);
 apex_height_cnstr = apex_height_cnstr.setName({'com apex height'});
 cdfkp = cdfkp.addDifferentiableConstraint(apex_height_cnstr,{cdfkp.com_inds(3,toe_takeoff_idx);cdfkp.comdot_inds(3,toe_takeoff_idx)});
 
@@ -172,9 +182,9 @@ cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
 cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
 cdfkp = cdfkp.setSolverOptions('snopt','print','test_cdfkp2.out');
 
-seed_sol = load('test_cdfkp2','-mat','x_sol');
+% seed_sol = load('test_cdfkp2','-mat','x_sol');
 tic
-[x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
+[x_sol,F,info] = cdfkp.solve(x_seed);
 toc
 q_sol = reshape(x_sol(cdfkp.q_inds(:)),nq,nT);
 v_sol = reshape(x_sol(cdfkp.v_inds(:)),nq,nT);
@@ -187,7 +197,7 @@ H_sol = reshape(x_sol(cdfkp.H_inds),3,[]);
 Hdot_sol = reshape(x_sol(cdfkp.Hdot_inds),3,[]);
 lambda_sol = cell(2,1);
 lambda_sol{1} = reshape(x_sol(cdfkp.lambda_inds{1}),size(cdfkp.lambda_inds{1},1),[],nT);
-lambda_sol{2} = reshape(x_sol(cdfkp.lambda_inds{1}),size(cdfkp.lambda_inds{2},1),[],nT);
+lambda_sol{2} = reshape(x_sol(cdfkp.lambda_inds{2}),size(cdfkp.lambda_inds{2},1),[],nT);
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
 xtraj_sol = xtraj_sol.setOutputFrame(robot.getStateFrame);
 keyboard;

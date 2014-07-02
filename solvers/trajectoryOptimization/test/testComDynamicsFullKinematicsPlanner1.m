@@ -11,7 +11,7 @@ robot = RigidBodyManipulator(urdf,options);
 nomdata = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
 nq = robot.getNumPositions();
 qstar = nomdata.xstar(1:nq);
-kinsol_star = robot.doKinematics(qstar);
+kinsol_star = robot.doKinematics(qstar,false,false);
 nv = robot.getNumDOF();
 vstar = zeros(nv,1);
 
@@ -48,12 +48,14 @@ mu = 1;
 nT = 7;
 num_edges = 3;
 FC_angles = linspace(0,2*pi,num_edges+1);FC_angles(end) = [];
+g = 9.81;
 FC_axis = [0;0;1];
 FC_perp1 = rotx(pi/2)*FC_axis;
 FC_perp2 = cross(FC_axis,FC_perp1);
 FC_edge = bsxfun(@plus,FC_axis,mu*(bsxfun(@times,cos(FC_angles),FC_perp1) + ...
                                    bsxfun(@times,sin(FC_angles),FC_perp2)));
 FC_edge = bsxfun(@rdivide,FC_edge,sqrt(sum(FC_edge.^2,1)));
+FC_edge = FC_edge*robot.getMass*g;
 l_foot_contact_wrench = struct('active_knot',1:nT,'cw',LinearFrictionConeWrench(robot,l_foot,l_foot_bottom,FC_edge));
 r_foot_contact_wrench = struct('active_knot',1:nT,'cw',LinearFrictionConeWrench(robot,r_foot,r_foot_bottom,FC_edge));
 
@@ -88,14 +90,16 @@ cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.02*ones(nT-1,1),0
 
 middle_knot = ceil(nT/2);
 
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint((qstar(5)-0.3)*ones(nT-2,1),(qstar(5)+0.3)*ones(nT-2,1)),cdfkp.q_inds(5,2:nT-1));
+
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint([com_star(1:2);com_star(3)-0.5],[com_star(1:2);com_star(3)-0.3]),cdfkp.com_inds(:,middle_knot));
 
 x_seed = zeros(cdfkp.num_vars,1);
 x_seed(cdfkp.h_inds) = 0.1;
 x_seed(cdfkp.q_inds(:)) = reshape(bsxfun(@times,qstar,ones(1,nT)),[],1);
 x_seed(cdfkp.com_inds(:)) = reshape(bsxfun(@times,com_star,ones(1,nT)),[],1);
-x_seed(cdfkp.lambda_inds{1}(:)) = reshape(cdfkp.robot_mass*cdfkp.g/8/4/0.4*ones(num_edges,4,7),[],1);
-x_seed(cdfkp.lambda_inds{2}(:)) = reshape(cdfkp.robot_mass*cdfkp.g/8/4/0.4*ones(num_edges,4,7),[],1);
+x_seed(cdfkp.lambda_inds{1}(:)) = reshape(1/(8*num_edges)*ones(num_edges,4,7),[],1);
+x_seed(cdfkp.lambda_inds{2}(:)) = reshape(1/(8*num_edges)*ones(num_edges,4,7),[],1);
 
 cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
 cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',2000);
@@ -118,8 +122,30 @@ H_sol = reshape(x_sol(cdfkp.H_inds),3,[]);
 Hdot_sol = reshape(x_sol(cdfkp.Hdot_inds),3,[]);
 lambda_sol = cell(2,1);
 lambda_sol{1} = reshape(x_sol(cdfkp.lambda_inds{1}),size(cdfkp.lambda_inds{1},1),[],nT);
-lambda_sol{2} = reshape(x_sol(cdfkp.lambda_inds{1}),size(cdfkp.lambda_inds{2},1),[],nT);
+lambda_sol{2} = reshape(x_sol(cdfkp.lambda_inds{2}),size(cdfkp.lambda_inds{2},1),[],nT);
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
 xtraj_sol = xtraj_sol.setOutputFrame(robot.getStateFrame);
+for i = 1:nT
+  kinsol_tmp = robot.doKinematics(q_sol(:,i),false,false);
+  valuecheck(robot.getCOM(kinsol_tmp),com_sol(:,i),1e-3);
+  A = robot.getCMMdA(kinsol_tmp);
+  valuecheck(A(1:3,:)*v_sol(:,i),H_sol(:,i),1e-3);
+end
+valuecheck(diff(com_sol,[],2)./bsxfun(@times,ones(3,1),h_sol),(comdot_sol(:,1:end-1)+comdot_sol(:,2:end))/2,1e-3);
+valuecheck(diff(comdot_sol,[],2)./bsxfun(@times,ones(3,1),h_sol),comddot_sol(:,2:end),1e-3);
+valuecheck(diff(H_sol,[],2)./bsxfun(@times,ones(3,1),h_sol),Hdot_sol(:,2:end),1e-3);
+lfoot_force = reshape(l_foot_contact_wrench.cw.force*reshape(lambda_sol{1},[],nT),3,[],nT);
+rfoot_force = reshape(r_foot_contact_wrench.cw.force*reshape(lambda_sol{2},[],nT),3,[],nT);
+total_force = squeeze(sum(lfoot_force,2)+sum(rfoot_force,2))-bsxfun(@times,[0;0;cdfkp.robot_mass*cdfkp.g],ones(1,nT));
+valuecheck(total_force/cdfkp.robot_mass,comddot_sol,1e-3);
+lfoot_contact_pos = robot.forwardKin(kinsol_star,l_foot,l_foot_bottom,0);
+rfoot_contact_pos = robot.forwardKin(kinsol_star,r_foot,r_foot_bottom,0);
+for i = 1:nT
+torque = crossSum(lfoot_contact_pos-bsxfun(@times,com_sol(:,i),ones(1,size(lfoot_contact_pos,2))),lfoot_force(:,:,i))...
+  +crossSum(rfoot_contact_pos-bsxfun(@times,com_sol(:,i),ones(1,size(rfoot_contact_pos,2))),rfoot_force(:,:,i));
+if(norm(torque-Hdot_sol(:,i))>1e-2*norm(torque))
+  error('Centroidal angular momentum has large numerical error');
+end
+end
 keyboard;
 end
