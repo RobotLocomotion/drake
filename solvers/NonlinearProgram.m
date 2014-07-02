@@ -179,6 +179,10 @@ classdef NonlinearProgram
       obj.solver_options.snopt.DerivativeOption = 1;
       obj.solver_options.snopt.print = '';
       obj.solver_options.snopt.scaleoption = 0;
+      obj.solver_options.snopt.NewBasisFile = 0;
+      obj.solver_options.snopt.OldBasisFile = 0;
+      obj.solver_options.snopt.BackupBasisFile = 0;
+      obj.solver_options.snopt.LinesearchTolerance = 0.9;
       obj.check_grad = false;
     end
     
@@ -346,6 +350,29 @@ classdef NonlinearProgram
             error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be either 0,1 or 2');
           end
           obj.solver_options.snopt.scaleoption = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'oldbasisfile'))
+          if(~isnumeric(optionval) || numel(optionval) ~= 1)
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'OldBasisFile should be a scaler');
+          end
+          obj.solver_options.snopt.OldBasisFile = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'newbasisfile'))
+          if(~isnumeric(optionval) || numel(optionval) ~= 1)
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'NewBasisFile should be a scaler');
+          end
+          obj.solver_options.snopt.NewBasisFile = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'backupbasisfile'))
+          if(~isnumeric(optionval) || numel(optionval) ~= 1)
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'BackupBasisFile should be a scaler');
+          end
+          obj.solver_options.snopt.BackupBasisFile = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'linesearchtolerance'))
+          if(~isnumeric(optionval) || numel(optionval) ~= 1)
+            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scaler');
+          end
+          if(optionval < 0 || optionval > 1)
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'LinesearchTolerance should be between 0 and 1');
+          end
+          obj.solver_options.snopt.LinesearchTolerance = optionval;
         end
       elseif(strcmpi((solver),'fmincon'))
         error('Not implemented yet');
@@ -487,6 +514,10 @@ classdef NonlinearProgram
       snseti('Verify level',obj.solver_options.snopt.VerifyLevel);
       snseti('Iterations Limit',obj.solver_options.snopt.IterationsLimit);
       snseti('Scale option',obj.solver_options.snopt.scaleoption);
+      snseti('New Basis File',obj.solver_options.snopt.NewBasisFile);
+      snseti('Old Basis File',obj.solver_options.snopt.OldBasisFile);
+      snseti('Backup Basis File',obj.solver_options.snopt.BackupBasisFile);
+      snsetr('Linesearch tolerance',obj.solver_options.snopt.LinesearchTolerance);
 
       function [f,G] = snopt_userfun(x_free)
         x_all = zeros(obj.num_vars,1);
