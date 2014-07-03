@@ -191,15 +191,15 @@ classdef Visualizer < DrakeSystem
       % coordinates.
 
       fr = obj.getInputFrame();
-      if (nargin<2) x0 = zeros(fr.dim,1); end
-      if (nargin<3) state_dims = (1:fr.dim)'; end
-      if (nargin<4) minrange = repmat(-5,size(state_dims)); end
-      if (nargin<5) maxrange = -minrange; end
-      if (nargin<6) model = []; end
-      
+      if (nargin<2), x0 = zeros(fr.dim,1); end
+      if (nargin<3), state_dims = (1:fr.dim)'; end
+      if (nargin<4), minrange = repmat(-5,size(state_dims)); end
+      if (nargin<5), maxrange = -minrange; end
+      if (nargin<6), model = []; end
+
       x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
       if ~isempty(visualized_system), x0 = resolveConstraints(visualized_system,x0); end
-      
+
       obj.drawWrapper(0,x0);
 
       rows = ceil(length(state_dims)/2);
