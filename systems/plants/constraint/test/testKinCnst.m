@@ -195,6 +195,10 @@ display('Check all-to-all closest-distance constraint');
 testKinCnst_userfun(true,true,t_valid,q,q_aff,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,robot_collision_aff,0.05,1e1,tspan0);
 testKinCnstInvalidTime_userfun(true,true,t_invalid,q,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,0.05,1e1,tspan0);
 
+display('Check minimum distance constraint');
+testKinCnst_userfun(true,true,t_valid,q,q_aff,RigidBodyConstraint.MinDistanceConstraintType,robot_collision,robot_collision_aff,0.05,tspan0);
+testKinCnstInvalidTime_userfun(true,true,t_invalid,q,RigidBodyConstraint.MinDistanceConstraintType,robot_collision,0.05,tspan0);
+
 display('Check point to point distance constraint');
 lhand_pts = rand(3,2);
 rhand_pts = rand(3,2);

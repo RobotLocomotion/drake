@@ -17,6 +17,10 @@ classdef FunctionHandleConstraint < DifferentiableConstraint
       obj = obj@DifferentiableConstraint(lb,ub,xdim);
       obj.eval_handle = eval_handle;
     end
+
+    function obj = setEvalHandle(obj,eval_handle_new)
+      obj.eval_handle = eval_handle_new;
+    end
     
   end
   methods (Access = protected)
