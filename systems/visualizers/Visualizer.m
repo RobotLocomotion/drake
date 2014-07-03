@@ -186,17 +186,19 @@ classdef Visualizer < DrakeSystem
       end
     end
 
-    function inspector(obj,x0,state_dims,minrange,maxrange)
+    function inspector(obj,x0,state_dims,minrange,maxrange,visualized_system)
       % set up a little gui with sliders to manually adjust each of the
       % coordinates.
 
       fr = obj.getInputFrame();
-      if (nargin<2) x0 = zeros(fr.dim,1); end
-      if (nargin<3) state_dims = (1:fr.dim)'; end
-      if (nargin<4) minrange = repmat(-5,size(state_dims)); end
-      if (nargin<5) maxrange = -minrange; end
+      if (nargin<2), x0 = zeros(fr.dim,1); end
+      if (nargin<3), state_dims = (1:fr.dim)'; end
+      if (nargin<4), minrange = repmat(-5,size(state_dims)); end
+      if (nargin<5), maxrange = -minrange; end
+      if (nargin<6), model = []; end
 
       x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
+      if ~isempty(visualized_system), x0 = resolveConstraints(visualized_system,x0); end
 
       obj.drawWrapper(0,x0);
 
@@ -222,7 +224,14 @@ classdef Visualizer < DrakeSystem
         for i=state_dims(:)'
           x(state_dims(i)) = get(slider{i}, 'Value');
         end
-        x
+        if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)>0)
+          % todo: pass in additional constriants to keep it inside the
+          % slider values
+          x = resolveConstraints(visualized_system,x)
+          for i=state_dims(:)'
+            set(slider{i},'Value',x(state_dims(i)));
+          end
+        end
         obj.drawWrapper(t,x);
       end
     end

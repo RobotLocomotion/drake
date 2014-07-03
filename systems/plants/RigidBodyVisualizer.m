@@ -14,11 +14,11 @@ classdef RigidBodyVisualizer < Visualizer
         error('can''t draw velocities');
       end
       [jlmin,jlmax] = getJointLimits(obj.model);
-      jlmin(isinf(jlmin))=-pi; jlmax(isinf(jlmax))=pi;
+      jlmin(isinf(jlmin))=-2*pi; jlmax(isinf(jlmax))=2*pi;
       if (nargin<4), minrange = jlmin(state_dims); end
       if (nargin<5), maxrange = jlmax(state_dims); end
       
-      inspector@Visualizer(obj,x0,state_dims,minrange,maxrange);
+      inspector@Visualizer(obj,x0,state_dims,minrange,maxrange,obj.model);
     end
   end
 end
