@@ -23,7 +23,7 @@ trim = binvar(1, nsteps, 'full');
 region = binvar(length(seed_plan.safe_regions), nsteps, 'full');
 
 
-foci = [[0.05; 0.1], [0.05; -0.65]];
+foci = [[0; 0.1], [0; -0.65]];
 ellipse_l = 0.5;
 
 seed_steps = [seed_plan.footsteps.pos];
@@ -112,7 +112,7 @@ for j = 3:num_precise_steps
   % Enforce relative step reachability
   for k = 1:size(rel_foci, 2)
     Constraints = [Constraints, ...
-      cone(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * rel_foci(:,k) - x(1:2,j), ellipse_l),...
+      cone(x(1:2,j-1) + [cos_yaw(j-1), -sin_yaw(j-1); sin_yaw(j-1), cos_yaw(j-1)] * rel_foci(:,k) - x(1:2,j), ellipse_l + seed_plan.params.max_step_width * trim(j-1)),...
 %       cone(x(1:3,j) - x(1:3,j-1) .* xyz_ellipse_weights, 1),...
       abs(x(3,j) - x(3,j-1)) <= seed_plan.params.nom_upward_step,...
       ];
@@ -147,11 +147,11 @@ end
 
 % trim(j) fixes step j to the final pose of that foot (so we can trim it out of the plan later)
 for j = 3:(nsteps-2)
-  if seed_plan.footsteps(j).frame_id == seed_plan.footsteps(end).frame_id
+  % if seed_plan.footsteps(j).frame_id == seed_plan.footsteps(end).frame_id
     Constraints = [Constraints, implies(trim(j), x(:,j) == x(:,end))];
-  else
-    Constraints = [Constraints, implies(trim(j), x(:,j) == x(:,end-1))];
-  end
+  % else
+  %   Constraints = [Constraints, implies(trim(j), x(:,j) == x(:,end-1))];
+  % end
 end
 
 w_goal = diag(weights.goal([1,2,3,6]));
@@ -194,7 +194,7 @@ plan.region_order = region_order;
 
 % Remove unnecessary footsteps
 % trim(1:2) = 0;
-trim(find(trim, 2, 'first')) = 0;
+trim(find(trim, 1, 'first')) = 0;
 plan = plan.slice(~trim);
 
 % Fix the order of the first two steps as necessary
