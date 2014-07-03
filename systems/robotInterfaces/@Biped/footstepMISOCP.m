@@ -210,6 +210,7 @@ end
 plan.region_order = region_order;
 
 % Remove unnecessary footsteps
+trim = round(trim);
 trim(1:2) = 0;
 % trim(find(trim, 1, 'first')) = 0;
 % trim(end) = 0;
@@ -219,4 +220,5 @@ plan = plan.slice(~trim);
 if plan.footsteps(3).frame_id == plan.footsteps(2).frame_id
   plan = plan.slice([2,1,3:length(plan.footsteps)]);
 end
+plan.sanity_check();
 
