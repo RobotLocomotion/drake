@@ -9,16 +9,25 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
     ub
     lb
   end
-  
+
   methods(Access=protected)
     function obj = setNumConstraint(obj)
       kinsol = doKinematics(obj.robot,zeros(obj.robot.getNumDOF(),1));
       phi = evalValidTime(obj,kinsol);
       obj.num_constraint = numel(phi);
     end
-    
-   function [c,dc] = evalValidTime(obj,kinsol)
-      [c,dc] = closestDistance(obj.robot,kinsol);
+
+    function [c,dc] = evalValidTime(obj,kinsol)
+      if ~kinsol.mex
+        error('Drake:AllBodiesClosestDistanceConstraint:evalValidTime:NoMexDynamics', ...
+          'This method requires a kinsol generated with mex enabled');
+      else
+        [c,dc] = evalLocal(obj,kinsol);
+      end
+    end
+
+    function [c,dc] = evalLocal(obj,q_or_kinsol)
+      [c,dc] = closestDistance(obj.robot,q_or_kinsol);
     end
   end
   methods
@@ -35,6 +44,13 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
       obj.ub = repmat(ub,obj.num_constraint,1);
       obj.type = RigidBodyConstraint.AllBodiesClosestDistanceConstraintType;
       obj.mex_ptr = ptr;
+    end
+
+    function cnstr = generateConstraint(obj,t)
+      cnstr = generateConstraint@SingleTimeKinematicConstraint(obj,t);
+      if ~isempty(cnstr)
+        cnstr{1} = setEvalHandle(cnstr{1},@(q,~) obj.evalLocal(q));
+      end
     end
 
     function obj = updateRobot(obj,robot)
@@ -101,7 +117,7 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
     function drawConstraint(obj,q,lcmgl)
       checkDependency('lcmgl');
       [~,~,ptsA,ptsB,idxA,idxB] = obj.checkConstraint(q);
-      
+
       for i = 1:size(ptsA,2);
         lcmgl.glColor3f(0,0,0); % black
 
