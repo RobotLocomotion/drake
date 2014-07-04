@@ -1,4 +1,4 @@
-function testComDynamicsFullKinematicsPlanner1
+function testSquat
 % The robot stands there, lowering down the com, and then bring the com back again.
 warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');

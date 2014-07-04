@@ -121,13 +121,13 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
           pt_torque_i = reshape(A_torque{i}*lambda(lambda_count+(1:num_lambda_i)),3,num_pts_i);
           [contact_pos_i,dcontact_pos_i_dq] = obj.robot.forwardKin(kinsol,obj.contact_wrench{i}.body,obj.contact_wrench{i}.body_pts,0);
           [torque_i,dtorque_i] = crossSum(contact_pos_i-bsxfun(@times,com,ones(1,num_pts_i)),force_i);
-          torque_i = torque_i+sum(pt_torque_i,2);
-          dtorque_i(:,3*num_pts_i+1:end) = dtorque_i(:,3*num_pts_i+1:end)+sparse(reshape(bsxfun(@times,(1:3)',ones(1,num_pts_i)),[],1),(1:3*num_pts_i)',ones(3*num_pts_i,1),3,3*num_pts_i)*A_torque{i};
-          c(1:3) = c(1:3)-torque_i;
+          
+          c(1:3) = c(1:3)-torque_i-sum(pt_torque_i,2);
           dc(1:3,1:obj.nq) = dc(1:3,1:obj.nq)-dtorque_i(:,1:num_pts_i*3)*dcontact_pos_i_dq;
           dc(1:3,obj.nq+(1:3)) = dc(1:3,obj.nq+(1:3))+dtorque_i(:,1:num_pts_i*3)*sparse((1:num_pts_i*3)',reshape(bsxfun(@times,[1;2;3],ones(1,num_pts_i)),[],1),ones(3*num_pts_i,1));
           dc(1:3,obj.nq+3+lambda_count+(1:num_lambda_i)) = dc(1:3,obj.nq+3+lambda_count+(1:num_lambda_i))-...
-            dtorque_i(:,3*num_pts_i+(1:3*num_pts_i))*A_force{i};
+            dtorque_i(:,3*num_pts_i+(1:3*num_pts_i))*A_force{i}-...
+            sparse(reshape(bsxfun(@times,(1:3)',ones(1,num_pts_i)),[],1),(1:3*num_pts_i)',ones(3*num_pts_i,1),3,3*num_pts_i)*A_torque{i};
           lambda_count = lambda_count+num_lambda_i;
         end
       end
