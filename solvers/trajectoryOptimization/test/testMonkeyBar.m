@@ -55,6 +55,8 @@ l_arm_shx = robot.getBody(robot.findJointInd('l_arm_shx')).dofnum;
 r_arm_shx = robot.getBody(robot.findJointInd('r_arm_shx')).dofnum;
 l_arm_elx = robot.getBody(robot.findJointInd('l_arm_elx')).dofnum;
 r_arm_elx = robot.getBody(robot.findJointInd('r_arm_elx')).dofnum;
+l_leg_hpz = robot.getBody(robot.findJointInd('l_leg_hpz')).dofnum;
+r_leg_hpz = robot.getBody(robot.findJointInd('r_leg_hpz')).dofnum;
 %%
 % Find the initial fix point first
 nu = robot.getNumInputs();
@@ -93,8 +95,8 @@ R(l_leg_kny_motor) = 100;
 R(r_leg_kny_motor) = 100;
 R(l_leg_aky_motor) = 100;
 R(r_leg_aky_motor) = 100;
-R(l_leg_akx_motor) = 1000;
-R(r_leg_akx_motor) = 1000;
+R(l_leg_akx_motor) = 100;
+R(r_leg_akx_motor) = 100;
 R = diag(R);
 fixed_pt_search = fixed_pt_search.addCost(QuadraticConstraint(-inf,inf,R,zeros(nu,1)),nq+(1:nu));
 [q_lb,q_ub] = robot.getJointLimits();
@@ -102,7 +104,10 @@ fixed_pt_search = fixed_pt_search.addBoundingBoxConstraint(BoundingBoxConstraint
 leg_symmetry = legSymmetricConstraint(robot,1);
 fixed_pt_search = fixed_pt_search.addLinearConstraint(leg_symmetry,(1:nq)');
 fixed_pt_search = fixed_pt_search.addBoundingBoxConstraint(ConstantConstraint(0),6);
-% fixed_pt_search = fixed_pt_search.addBoundingBoxConstraint(BoundingBoxConstraint([q_lb(l_arm_elx)+0.01;q_lb(r_arm_elx)],[q_ub(l_arm_elx);q_ub(r_arm_elx)-0.01]),[l_arm_elx;r_arm_elx]);
+fixed_pt_search = fixed_pt_search.addBoundingBoxConstraint(BoundingBoxConstraint([q_lb(l_arm_elx)+0.1;q_lb(r_arm_elx)],[q_ub(l_arm_elx);q_ub(r_arm_elx)-0.1]),[l_arm_elx;r_arm_elx]);
+fixed_pt_search = fixed_pt_search.addDifferentiableConstraint(FunctionHandleConstraint(0.8,1.2,nq,@(~,kinsol) graspDistance(kinsol,robot,l_hand,r_hand,l_hand_pt,r_hand_pt)),{(1:nq)'},1);
+fixed_pt_search = fixed_pt_search.addBoundingBoxConstraint(ConstantConstraint(monkeybar_pos1(2)),2);
+fixed_pt_search = fixed_pt_search.addBoundingBoxConstraint(BoundingBoxConstraint([0;-0.2],[0.2;0]),[l_leg_hpz;r_leg_hpz]);
 q_fp_seed = qstar;
 q_fp_seed(l_arm_shx) = pi/2;
 q_fp_seed(r_arm_shx) = -pi/2;
@@ -208,6 +213,10 @@ cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,r_foot,r_foot
 arm_symmetry = armSymmetricConstraint(robot,1:grasp_idx1);
 cdfkp = cdfkp.addLinearConstraint(arm_symmetry,reshape(cdfkp.q_inds(:,1:grasp_idx1),[],1));
 
+% leg symmetry
+leg_symmetry = legSymmetricConstraint(robot,1:grasp_idx1);
+% cdfkp = cdfkp.addLinearConstraint(leg_symmetry,reshape(cdfkp.q_inds(:,1:grasp_idx1),[],1));
+
 % time bounds
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.02*ones(nT1-1,1),0.2*ones(nT1-1,1)),cdfkp.h_inds(:));
 
@@ -215,6 +224,13 @@ cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.02*ones(nT1-1,1),
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(...
   reshape(bsxfun(@times,[-9.81/2;-9.81/2;-9.81],ones(1,nT1)),[],1),...
   reshape(bsxfun(@times,[9.81/2;9.81/2;9.81],ones(1,nT1)),[],1)),cdfkp.comddot_inds(:));
+
+% bound the pitch angle
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.2*ones(toe_takeoff_idx,1),0.3*ones(toe_takeoff_idx,1)),cdfkp.q_inds(5,1:toe_takeoff_idx)');
+
+% bound the position of the hand prior to grasping
+cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,l_hand,l_hand_pt,nan(3,1),[monkeybar_pos1(1);nan(2,1)]),{grasp_idx1-1});
+cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,r_hand,r_hand_pt,nan(3,1),[monkeybar_pos1(1);nan(2,1)]),{grasp_idx1-1});
 
 x_seed = zeros(cdfkp.num_vars,1);
 x_seed(cdfkp.q_inds(:,1:toe_takeoff_idx)) = reshape(bsxfun(@times,q_initial,ones(1,toe_takeoff_idx)),[],1);
@@ -231,11 +247,11 @@ cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',2000);
 cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
 cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
 cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
-cdfkp = cdfkp.setSolverOptions('snopt','print','test_monkeybar2.out');
+cdfkp = cdfkp.setSolverOptions('snopt','print','test_monkeybar3.out');
 
 seed_sol = load('test_monkeybar_takeoff','-mat','x_sol');
 tic
-[x_sol,F,info] = cdfkp.solve(x_seed);
+[x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
 toc
 q_sol = reshape(x_sol(cdfkp.q_inds(:)),nq,nT1);
 v_sol = reshape(x_sol(cdfkp.v_inds(:)),nq,nT1);
@@ -420,12 +436,12 @@ A(6,[l_leg_akx r_leg_akx]) = [1 1];
 cnstr = LinearConstraint(zeros(num_cnstr*N,1),zeros(num_cnstr*N,1),kron(speye(N),A));
 cnstr_name = cell(num_cnstr*N,1);
 for i = 1:N
-  cnstr_name{(i-1)*N+1} = sprintf('l_leg_hpz symmetry[%d]',t_idx(i));
-  cnstr_name{(i-1)*N+2} = sprintf('l_leg_hpx symmetry[%d]',t_idx(i));
-  cnstr_name{(i-1)*N+3} = sprintf('l_leg_hpy symmetry[%d]',t_idx(i));
-  cnstr_name{(i-1)*N+4} = sprintf('l_leg_kny symmetry[%d]',t_idx(i));
-  cnstr_name{(i-1)*N+5} = sprintf('l_leg_aky symmetry[%d]',t_idx(i));
-  cnstr_name{(i-1)*N+6} = sprintf('l_leg_akx symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_cnstr+1} = sprintf('l_leg_hpz symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_cnstr+2} = sprintf('l_leg_hpx symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_cnstr+3} = sprintf('l_leg_hpy symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_cnstr+4} = sprintf('l_leg_kny symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_cnstr+5} = sprintf('l_leg_aky symmetry[%d]',t_idx(i));
+  cnstr_name{(i-1)*num_cnstr+6} = sprintf('l_leg_akx symmetry[%d]',t_idx(i));
 end
 cnstr = cnstr.setName(cnstr_name);
 end
@@ -473,4 +489,12 @@ b_torque_lb = -b_torque_ub;
 T_bar_to_world = [rpy2rotmat(bar_pos(4:6)) bar_pos(1:3);0 0 0 1];
 A_torque = A_torque*T_bar_to_world(1:3,1:3)';
 wrench = GraspWrench(robot,hand,hand_pt,force_max,A_torque,b_torque_lb,b_torque_ub);
+end
+
+function [c,dc] = graspDistance(kinsol,robot,l_hand,r_hand,l_hand_pt,r_hand_pt)
+[l_hand_pos,J_lhand] = robot.forwardKin(kinsol,l_hand,l_hand_pt,0);
+[r_hand_pos,J_rhand] = robot.forwardKin(kinsol,r_hand,r_hand_pt,0);
+displacement = l_hand_pos-r_hand_pos;
+c = sum(displacement.^2);
+dc = 2*displacement'*J_lhand-2*displacement'*J_rhand;
 end
