@@ -88,13 +88,13 @@ nsteps = length(plan.footsteps);
 r_ndx = 1:2:nsteps;
 l_ndx = 2:2:nsteps;
 steps = plan.step_matrix();
-k = 0.2;
-arrow_props = {'AutoScale', 'off', 'LineWidth', 2, 'MaxHeadSize', 0.5};
+k = 0.25;
+arrow_props = {'AutoScale', 'off', 'LineWidth', 2, 'MaxHeadSize', 0.8};
 quiver(steps(1,r_ndx), steps(2, r_ndx), k*cos(steps(6,r_ndx)), k*sin(steps(6,r_ndx)), 'Color', [0.2,0.8,0.2], arrow_props{:})
 hold on
-quiver(steps(1,l_ndx), steps(2,l_ndx), k*cos(steps(6,l_ndx)), k*sin(steps(6,l_ndx)), 'Color', [0.7,0.7,0.1], arrow_props{:})
+quiver(steps(1,l_ndx), steps(2,l_ndx), k*cos(steps(6,l_ndx)), k*sin(steps(6,l_ndx)), 'Color', [1, 204/255,0], arrow_props{:})
 plot(steps(1,r_ndx), steps(2,r_ndx), 'ko', 'MarkerFaceColor', [0.2,0.8,0.2], 'MarkerSize', 10)
-plot(steps(1,l_ndx), steps(2,l_ndx), 'ko', 'MarkerFaceColor', [0.8,0.8,0.2], 'MarkerSize', 10)
+plot(steps(1,l_ndx), steps(2,l_ndx), 'ko', 'MarkerFaceColor', [1, 204/255,0], 'MarkerSize', 10)
 goal_pos.center = mean([goal_pos.right, goal_pos.left], 2);
 k = 0.15;
 quiver(goal_pos.center(1), goal_pos.center(2), k*cos(goal_pos.center(6)), k*sin(goal_pos.center(6)), 'Color', [0,0,0], arrow_props{:}, 'ShowArrowHead', 'off', 'Marker', 'o', 'MarkerSize', 30)
