@@ -20,14 +20,14 @@ yaw = x(4,:);
 
 
 trim = binvar(1, nsteps, 'full');
+
 region = binvar(length(seed_plan.safe_regions), nsteps, 'full');
 
 
-foci = [[0; 0.1], [0; -0.65]];
-ellipse_l = 0.5;
+foci = [[0; 0.15], [0; -0.7]];
+ellipse_l = 0.55;
 
 seed_steps = [seed_plan.footsteps.pos];
-% seed_steps(6,1) = seed_steps(6,2);
 
 min_yaw = pi * floor(seed_steps(6,1) / pi - 1);
 max_yaw = pi * ceil(seed_steps(6,1) / pi + 1);
@@ -44,14 +44,11 @@ Constraints = [x(:,1) == seed_steps([1,2,3,6],1),...
                x(1:3,:) <= 100 + repmat(seed_steps(1:3,1), 1, nsteps)...
                -1 <= cos_yaw <= 1,...
                -1 <= sin_yaw <= 1,...
-               sum(region, 1) == 1,...
+               sum(region, 1) + trim == 1,...
                sum(sin_sector, 1) == 1,...
                sum(cos_sector, 1) == 1,...
                trim(1:2) == 1,...
                trim(1:end-1) >= trim(2:end),...
-               % trim(end-1:end) == 1,...
-               % trim(1:end-1) <= trim(2:end),...
-               region(:,1:2) == [1, 1; zeros(size(region, 1)-1, 2)],...
                ];
 
 % Enforce min number of steps
@@ -144,23 +141,21 @@ for j = 3:nsteps
   for r = 1:length(seed_plan.safe_regions)
     Ar = [seed_plan.safe_regions(r).A(:,1:2), zeros(size(seed_plan.safe_regions(r).A, 1), 1), seed_plan.safe_regions(r).A(:,3)];
     Constraints = [Constraints, ...
-       implies(region(r,j) & ~trim(j), Ar * x(:,j) <= seed_plan.safe_regions(r).b),...
-       implies(region(r,j) & ~trim(j), seed_plan.safe_regions(r).normal' * x(1:3,j) == seed_plan.safe_regions(r).normal' * seed_plan.safe_regions(r).point)];
+       implies(region(r,j), Ar * x(:,j) <= seed_plan.safe_regions(r).b),...
+       implies(region(r,j), seed_plan.safe_regions(r).normal' * x(1:3,j) == seed_plan.safe_regions(r).normal' * seed_plan.safe_regions(r).point)];
   end
 end
 
 % trim(j) fixes step j to the initial pose of that foot (so we can trim it out of the plan later)
 for j = 3:(nsteps)
   if seed_plan.footsteps(j).frame_id == seed_plan.footsteps(1).frame_id
-    Constraints = [Constraints, implies(trim(j), x(:,j) == seed_steps([1,2,3,6],1)),...
-                   implies(trim(j), region(:,j) == region(:,1))];
+    Constraints = [Constraints, implies(trim(j), x(:,j) == seed_steps([1,2,3,6],1))];
   else
-    Constraints = [Constraints, implies(trim(j), x(:,j) == seed_steps([1,2,3,6], 2)),...
-                   implies(trim(j), region(:,j) == region(:,2))];
+    Constraints = [Constraints, implies(trim(j), x(:,j) == seed_steps([1,2,3,6], 2))];
   end
 end
 
-w_goal = diag(weights.goal([1,2,3,6]));
+w_goal = diag(weights.goal([1,1,3,6]));
 w_rel = diag(weights.relative([1,1,3,6]));
 w_trim = w_rel(1) * (seed_plan.params.nom_forward_step^2 + seed_plan.params.nom_step_width^2);
 %        + (seed_steps([1,2,3,6], 2) - seed_steps([1,2,3,6], 1))' * w_rel * (seed_steps([1,2,3,6], 2) - seed_steps([1,2,3,6], 1));
@@ -174,16 +169,9 @@ else
 end
 Objective = (x(:,nsteps-1) - goal1)' * w_goal * (x(:,nsteps-1) - goal1) ...
           + (x(:,nsteps) - goal2)' * w_goal * (x(:,nsteps) - goal2);
-%   Objective = (x(:,nsteps) - goal_pos.right([1,2,3,6]))' * w_goal * (x(:,nsteps) - goal_pos.right([1,2,3,6])) ...
-%             + (x(:,nsteps-1) - goal_pos.left([1,2,3,6]))' * w_goal * (x(:,nsteps) - goal_pos.right([1,2,3,6]))
-%   goal = goal_pos.right([1,2,3,6]);
-% else
-%   goal = goal_pos.left([1,2,3,6]);
-% end
-% Objective = (x(:,nsteps) - goal)' * w_goal * (x(:,nsteps) - goal);
 for j = 2:nsteps
   if j == nsteps
-    w_rel = diag(weights.relative_final([1,2,3,6]));
+    w_rel = diag(weights.relative_final([1,1,3,6]));
   end
   Objective = Objective + (x(:,j) - x(:,j-1))' * w_rel * (x(:,j) - x(:,j-1)) + -1 * w_trim * trim(j);
 end
@@ -200,25 +188,24 @@ steps = zeros(6,nsteps);
 steps([1,2,3,6],:) = x;
 
 plan = seed_plan;
-[region_order, ~] = find(abs(region - 1) < 1e-2);
+region_order = nan(1, size(region, 2));
+for j = 1:length(region_order)
+  i = find(round(region(:,j)));
+  if ~isempty(i)
+    region_order(j) = i;
+  end
+end
 assert(length(region_order) == size(region, 2));
+plan.region_order = region_order;
 
-plan = seed_plan;
 for j = 1:nsteps
   plan.footsteps(j).pos = steps(:,j);
 end
-plan.region_order = region_order;
 
 % Remove unnecessary footsteps
 trim = round(trim);
-trim(1:2) = 0;
-% trim(find(trim, 1, 'first')) = 0;
-% trim(end) = 0;
+trim(find(trim, 2, 'last')) = 0;
 plan = plan.slice(~trim);
 
-% Fix the order of the first two steps as necessary
-if plan.footsteps(3).frame_id == plan.footsteps(2).frame_id
-  plan = plan.slice([2,1,3:length(plan.footsteps)]);
-end
 plan.sanity_check();
 
