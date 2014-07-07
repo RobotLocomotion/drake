@@ -69,8 +69,11 @@ l_arm_uwy = robot.getBody(robot.findJointInd('l_arm_uwy')).dofnum;
 r_arm_uwy = robot.getBody(robot.findJointInd('r_arm_uwy')).dofnum;
 back_bkx = robot.getBody(robot.findJointInd('back_bkx')).dofnum;
 back_bky = robot.getBody(robot.findJointInd('back_bky')).dofnum;
+back_bkz = robot.getBody(robot.findJointInd('back_bkz')).dofnum;
 l_leg_kny = robot.getBody(robot.findJointInd('l_leg_kny')).dofnum;
 r_leg_kny = robot.getBody(robot.findJointInd('r_leg_kny')).dofnum;
+l_leg_hpx = robot.getBody(robot.findJointInd('l_leg_hpx')).dofnum;
+r_leg_hpx = robot.getBody(robot.findJointInd('r_leg_hpx')).dofnum;
 %%
 % Find the initial fix point first
 nu = robot.getNumInputs();
@@ -198,8 +201,8 @@ if(mode == 1)
   q_nom = bsxfun(@times,qstar,ones(1,nT1));
   Q_comddot = eye(3);
   Q = zeros(nq);
-  Qv = 0.1*eye(nv);
-  Q_contact_force = 0/(robot_mass*g)^2*eye(3);
+  Qv = 1*eye(nv);
+  Q_contact_force = 5/(robot_mass*g)^2*eye(3);
   cdfkp = ComDynamicsFullKinematicsPlanner(robot,nT1,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,takeoff_contact_wrench_struct);
 
   % add initial and final state constraint
@@ -260,12 +263,25 @@ if(mode == 1)
 %   cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.2*ones(toe_takeoff_idx)
   % bend the knee in taking off
   knee_bend_idx = ceil((1+heel_takeoff_idx)/2);
-  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(q_initial(l_leg_kny)+0.15,inf),cdfkp.q_inds(l_leg_kny,knee_bend_idx));
-  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(q_initial(r_leg_kny)+0.15,inf),cdfkp.q_inds(r_leg_kny,knee_bend_idx));
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(q_initial(l_leg_kny)+0.35,inf),cdfkp.q_inds(l_leg_kny,knee_bend_idx));
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(q_initial(r_leg_kny)+0.35,inf),cdfkp.q_inds(r_leg_kny,knee_bend_idx));
   
   % bound the torso direction. To be as straight as possible
   torso_straight_cnstr = WorldGazeDirConstraint(robot,utorso,[0;0;1],[0;0;1],0.15);
   cdfkp = cdfkp.addRigidBodyConstraint(torso_straight_cnstr,num2cell(1:grasp_idx1));
+  
+  % bound back_bkz
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.05*ones(nT1,1),0.05*ones(nT1,1)),cdfkp.q_inds(back_bkz,:)');
+  
+  % bound the yaw
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.1*ones(nT1,1),0.1*ones(nT1,1)),cdfkp.q_inds(6,:)');
+  
+  % bound roll
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.05*ones(nT1,1),0.05*ones(nT1,1)),cdfkp.q_inds(4,:)');
+  
+  % bound leg_hpx
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.1*ones(nT1,1),0.1*ones(nT1,1)),cdfkp.q_inds(l_leg_hpx,:)');
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.1*ones(nT1,1),0.1*ones(nT1,1)),cdfkp.q_inds(r_leg_hpx,:)');
   
   x_seed = zeros(cdfkp.num_vars,1);
   x_seed(cdfkp.q_inds(:,1:toe_takeoff_idx)) = reshape(bsxfun(@times,q_initial,ones(1,toe_takeoff_idx)),[],1);
@@ -419,7 +435,7 @@ if(mode == 3)
   % landing
   % add the landing stage
   land_height = 2.6;
-  stage_pos2 = [monkeybar_pos1(1:3)+[1.3;0;-land_height-0.05];0;pi/2;0];
+  stage_pos2 = [monkeybar_pos1(1:3)+[1.3;0;-land_height-0.05];0;-pi/2;0];
   robot = robot.addRobotFromURDF(stage_urdf,stage_pos2(1:3),stage_pos2(4:6));
   v = robot.constructVisualizer();
   land_start_idx = 1;
@@ -469,26 +485,26 @@ if(mode == 3)
   
   % add landing kinematic constraint
   T_stage2_to_world = [rpy2rotmat(stage_pos2(4:6)) stage_pos2(1:3);0 0 0 1];
-  lfoot_heel_pos_cnstr = WorldPositionInFrameConstraint(robot,l_foot,l_foot_heel,T_stage2_to_world,repmat([-0.05;-1;-1],1,2),repmat([-0.05;1;1],1,2));
+  lfoot_heel_pos_cnstr = WorldPositionInFrameConstraint(robot,l_foot,l_foot_heel,T_stage2_to_world,repmat([0.05;-1;-1],1,2),repmat([0.05;1;1],1,2));
   cdfkp = cdfkp.addRigidBodyConstraint(lfoot_heel_pos_cnstr,{heel_land_idx});
-  rfoot_heel_pos_cnstr = WorldPositionInFrameConstraint(robot,r_foot,r_foot_heel,T_stage2_to_world,repmat([-0.05;-1;-1],1,2),repmat([-0.05;1;1],1,2));
+  rfoot_heel_pos_cnstr = WorldPositionInFrameConstraint(robot,r_foot,r_foot_heel,T_stage2_to_world,repmat([0.05;-1;-1],1,2),repmat([0.05;1;1],1,2));
   cdfkp = cdfkp.addRigidBodyConstraint(rfoot_heel_pos_cnstr,{heel_land_idx});
   lfoot_heel_fixed_cnstr = WorldFixedPositionConstraint(robot,l_foot,l_foot_heel);
   cdfkp = cdfkp.addRigidBodyConstraint(lfoot_heel_fixed_cnstr,{heel_land_idx:toe_land_idx});
   rfoot_heel_fixed_cnstr = WorldFixedPositionConstraint(robot,r_foot,r_foot_heel);
   cdfkp = cdfkp.addRigidBodyConstraint(rfoot_heel_fixed_cnstr,{heel_land_idx:toe_land_idx});
-  lfoot_heel_above_ground_cnstr = WorldPositionInFrameConstraint(robot,l_foot,l_foot_heel,T_stage2_to_world,-inf(3,2),[nan(2,2);-0.05 -0.05]);
+  lfoot_heel_above_ground_cnstr = WorldPositionInFrameConstraint(robot,l_foot,l_foot_heel,T_stage2_to_world,[0.05 0.05;inf(2,2)],inf(3,2));
   cdfkp = cdfkp.addRigidBodyConstraint(lfoot_heel_above_ground_cnstr,num2cell(land_start_idx:heel_land_idx-1));
-  rfoot_heel_above_ground_cnstr = WorldPositionInFrameConstraint(robot,r_foot,r_foot_heel,T_stage2_to_world,-inf(3,2),[nan(2,2);-0.05 -0.05]);
+  rfoot_heel_above_ground_cnstr = WorldPositionInFrameConstraint(robot,r_foot,r_foot_heel,T_stage2_to_world,[0.05 0.05;inf(2,2)],inf(3,2));
   cdfkp = cdfkp.addRigidBodyConstraint(rfoot_heel_above_ground_cnstr,num2cell(land_start_idx:heel_land_idx-1));
   
-  lfoot_toe_pos_cnstr = WorldPositionInFrameConstraint(robot,l_foot,l_foot_toe,T_stage2_to_world,repmat([-0.05;-1;-1],1,2),repmat([-0.05;1;1],1,2));
+  lfoot_toe_pos_cnstr = WorldPositionInFrameConstraint(robot,l_foot,l_foot_toe,T_stage2_to_world,repmat([0.05;-1;-1],1,2),repmat([0.05;1;1],1,2));
   cdfkp = cdfkp.addRigidBodyConstraint(lfoot_toe_pos_cnstr,{toe_land_idx});
-  rfoot_toe_pos_cnstr = WorldPositionInFrameConstraint(robot,r_foot,r_foot_toe,T_stage2_to_world,repmat([-0.05;-1;-1],1,2),repmat([-0.05;1;1],1,2));
+  rfoot_toe_pos_cnstr = WorldPositionInFrameConstraint(robot,r_foot,r_foot_toe,T_stage2_to_world,repmat([0.05;-1;-1],1,2),repmat([0.05;1;1],1,2));
   cdfkp = cdfkp.addRigidBodyConstraint(rfoot_toe_pos_cnstr,{toe_land_idx});
-  lfoot_toe_above_ground_cnstr = WorldPositionInFrameConstraint(robot,l_foot,l_foot_toe,T_stage2_to_world,-inf(3,2),[nan(2,2);-0.05 -0.05]);
+  lfoot_toe_above_ground_cnstr = WorldPositionInFrameConstraint(robot,l_foot,l_foot_toe,T_stage2_to_world,[0.05 0.05;inf(2,2)],inf(3,2));
   cdfkp = cdfkp.addRigidBodyConstraint(lfoot_toe_above_ground_cnstr,num2cell(land_start_idx:toe_land_idx-1));
-  rfoot_toe_above_ground_cnstr = WorldPositionInFrameConstraint(robot,r_foot,r_foot_toe,T_stage2_to_world,-inf(3,2),[nan(2,2);-0.05 -0.05]);
+  rfoot_toe_above_ground_cnstr = WorldPositionInFrameConstraint(robot,r_foot,r_foot_toe,T_stage2_to_world,[0.05 0.05;inf(2,2)],inf(3,2));
   cdfkp = cdfkp.addRigidBodyConstraint(rfoot_toe_above_ground_cnstr,num2cell(land_start_idx:toe_land_idx-1));
   
   lfoot_fixed_cnstr = WorldFixedBodyPoseConstraint(robot,l_foot);
@@ -503,12 +519,12 @@ if(mode == 3)
     reshape(bsxfun(@times,[9.81;9.81;1.5*9.81],ones(1,nT3)),[],1)),cdfkp.comddot_inds(:));
   
   % arm and leg symmetry
-  arm_symmetry = armSymmetricConstraint(robot,land_ungrasp_idx+1:land_static_idx);
-  cdfkp = cdfkp.addLinearConstraint(arm_symmetry,reshape(cdfkp.q_inds(:,land_ungrasp_idx+1:land_static_idx),[],1));
+%   arm_symmetry = armSymmetricConstraint(robot,land_ungrasp_idx+1:land_static_idx);
+%   cdfkp = cdfkp.addLinearConstraint(arm_symmetry,reshape(cdfkp.q_inds(:,land_ungrasp_idx+1:land_static_idx),[],1));
 
   % leg symmetry
-  leg_symmetry = legSymmetricConstraint(robot,land_ungrasp_idx+1:land_static_idx);
-  cdfkp = cdfkp.addLinearConstraint(leg_symmetry,reshape(cdfkp.q_inds(:,land_ungrasp_idx+1:land_static_idx),[],1));
+%   leg_symmetry = legSymmetricConstraint(robot,land_ungrasp_idx+1:land_static_idx);
+%   cdfkp = cdfkp.addLinearConstraint(leg_symmetry,reshape(cdfkp.q_inds(:,land_ungrasp_idx+1:land_static_idx),[],1));
   
   x_seed = zeros(cdfkp.num_vars,1);
   q_land_start = q_fp;
@@ -546,6 +562,9 @@ if(mode == 3)
   lambda_sol{2} = reshape(x_sol(cdfkp.lambda_inds{2}),size(cdfkp.lambda_inds{2},1),[],nT3);
   lambda_sol{3} = reshape(x_sol(cdfkp.lambda_inds{3}),size(cdfkp.lambda_inds{3},1),[],nT3);
   lambda_sol{4} = reshape(x_sol(cdfkp.lambda_inds{4}),size(cdfkp.lambda_inds{4},1),[],nT3);
+  xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
+  xtraj_sol = xtraj_sol.setOutputFrame(robot.getStateFrame);
+  wrench_sol = cdfkp.contactWrench(x_sol);
   keyboard;
 end
 
