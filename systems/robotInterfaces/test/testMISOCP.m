@@ -2,7 +2,6 @@ function testMISOCP()
 
 checkDependency('yalmip');
 checkDependency('gurobi');
-addpath(fullfile(getDrakePath, 'examples', 'Atlas'));
 options.floating = true;
 options.dt = 0.001;
 

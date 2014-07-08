@@ -1,4 +1,4 @@
-function plan = footstepMISOCP(biped, seed_plan, weights, goal_pos)
+function [plan, sin_yaw, cos_yaw] = footstepMISOCP(biped, seed_plan, weights, goal_pos)
 % New, experimental footstep planner based on a Mixed-Integer Second-Order Cone Program.
 % This planner allows footstep rotation with a piecewise approximation of sine and cosine.
 
@@ -206,6 +206,8 @@ end
 trim = round(trim);
 trim(find(trim, 2, 'last')) = 0;
 plan = plan.slice(~trim);
+sin_yaw = sin_yaw(~trim);
+cos_yaw = cos_yaw(~trim);
 
 plan.sanity_check();
 
