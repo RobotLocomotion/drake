@@ -228,28 +228,40 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
                 lambda2_idx = knot_lambda_idx{2}(lambda2_start_idx+(1:obj.contact_wrench{wrench_idx2}.num_pt_F*obj.contact_wrench{wrench_idx2}.num_pts));
                 if(obj.contact_wrench{wrench_idx1}.complementarity_flag && obj.contact_wrench{wrench_idx2}.complementarity_flag)
                   csc_cnstr = ComplementarityStaticContactConstraint(obj.contact_wrench{wrench_idx1});
-                  csc_cnstr_name = cell(csc_cnstr.num_cnstr,1);
-                  for csc_cnstr_idx = 1:csc_cnstr.num_cnstr
-                    csc_cnstr_name{csc_cnstr_idx} = sprintf('%s_knot%d&%d',csc_cnstr.name{csc_cnstr_idx},knot_idx(1),knot_idx(2));
+                  [csc_nlcon,slack_bcon,num_csc_slack,csc_slack_name] = csc_cnstr.generateConstraint();
+                  csc_cnstr_name = cell(csc_nlcon.num_cnstr,1);
+                  for csc_cnstr_idx = 1:csc_nlcon.num_cnstr
+                    csc_cnstr_name{csc_cnstr_idx} = sprintf('%s_knot%d&%d',csc_nlcon.name{csc_cnstr_idx},knot_idx(1),knot_idx(2));
                   end
-                  csc_cnstr = csc_cnstr.setName(csc_cnstr_name);
-                  obj = obj.addDifferentiableConstraint(csc_cnstr,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda1_idx};{lambda2_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
+                  csc_nlcon = csc_nlcon.setName(csc_cnstr_name);
+                  csc_slack_idx = obj.num_vars+(1:num_csc_slack)';
+                  obj = obj.addDecisionVariable(num_csc_slack,csc_slack_name);
+                  obj = obj.addDifferentiableConstraint(csc_nlcon,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda1_idx};{lambda2_idx};{csc_slack_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
+                  obj = obj.addBoundingBoxConstraint(slack_bcon,csc_slack_idx);
                 elseif(obj.contact_wrench{wrench_idx1}.complementarity_flag)
                   csssc_cnstr = ComplementaritySingleSideStaticContactConstraint(obj.contact_wrench{wrench_idx1});
-                  csssc_cnstr_name = cell(csssc_cnstr.num_cnstr,1);
-                  for csssc_cnstr_idx = 1:csssc_cnstr.num_cnstr
-                    csssc_cnstr_name{csssc_cnstr_idx} = sprintf('%s_knot%d&%d',csssc_cnstr.name{csssc_cnstr_idx},knot_idx(1),knot_idx(2));
+                  [csssc_nlcon,slack_bcon,num_csssc_slack,csssc_slack_name] = csssc_cnstr.generateConstraint();
+                  csssc_cnstr_name = cell(csssc_nlcon.num_cnstr,1);
+                  for csssc_cnstr_idx = 1:csssc_nlcon.num_cnstr
+                    csssc_cnstr_name{csssc_cnstr_idx} = sprintf('%s_knot%d&%d',csssc_nlcon.name{csssc_cnstr_idx},knot_idx(1),knot_idx(2));
                   end
-                  csssc_cnstr = csssc_cnstr.setName(csssc_cnstr_name);
-                  obj = obj.addDifferentiableConstraint(csssc_cnstr,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda1_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
+                  csssc_nlcon = csssc_nlcon.setName(csssc_cnstr_name);
+                  csssc_slack_idx = obj.num_vars+(1:num_csssc_slack)';
+                  obj = obj.addDecisionVariable(num_csssc_slack,csssc_slack_name);
+                  obj = obj.addDifferentiableConstraint(csssc_nlcon,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda1_idx};{csssc_slack_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
+                  obj = obj.addBoundingBoxConstraint(slack_bcon,csssc_slack_idx);
                 elseif(obj.contact_wrench{wrench_idx2}.complementarity_flag)
                   csssc_cnstr = ComplementaritySingleSideStaticContactConstraint(obj.contact_wrench{wrench_idx1});
-                  csssc_cnstr_name = cell(csssc_cnstr.num_cnstr,1);
-                  for csssc_cnstr_idx = 1:csssc_cnstr.num_cnstr
-                    csssc_cnstr_name{csssc_cnstr_idx} = sprintf('%s_knot%d&%d',csssc_cnstr.name{csssc_cnstr_idx},knot_idx(1),knot_idx(2));
+                  [csssc_nlcon,slack_bcon,num_csssc_slack,csssc_slack_name] = csssc_cnstr.generateConstraint();
+                  csssc_cnstr_name = cell(csssc_nlcon.num_cnstr,1);
+                  for csssc_cnstr_idx = 1:csssc_nlcon.num_cnstr
+                    csssc_cnstr_name{csssc_cnstr_idx} = sprintf('%s_knot%d&%d',csssc_nlcon.name{csssc_cnstr_idx},knot_idx(1),knot_idx(2));
                   end
-                  csssc_cnstr = csssc_cnstr.setName(csssc_cnstr_name);
-                  obj = obj.addDifferentiableConstraint(csssc_cnstr,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda2_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
+                  csssc_nlcon = csssc_nlcon.setName(csssc_cnstr_name);
+                  csssc_slack_idx = obj.num_vars+(1:num_csssc_slack)';
+                  obj = obj.addDecisionVariable(num_csssc_slack,csssc_slack_name);
+                  obj = obj.addDifferentiableConstraint(csssc_nlcon,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda2_idx};{csssc_slack_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
+                  obj = obj.addBoundingBoxConstraint(slack_bcon,csssc_slack_idx);
                 end
               end
             end
