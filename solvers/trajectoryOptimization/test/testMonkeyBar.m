@@ -168,7 +168,7 @@ robot = robot.addRobotFromURDF(monkeybar_urdf,monkeybar_pos4(1:3),monkeybar_pos4
 robot = robot.addRobotFromURDF(monkeybar_urdf,monkeybar_pos5(1:3),monkeybar_pos5(4:6));
 
 land_height = 2.6;
-stage_pos2 = [monkeybar_pos5(1:3)+[1.25;0;-land_height-0.05];0;-pi/2;0];
+stage_pos2 = [monkeybar_pos5(1:3)+[1.45;0;-land_height-0.05];0;-pi/2;0];
 robot = robot.addRobotFromURDF(stage_urdf,stage_pos2(1:3),stage_pos2(4:6));
 v = robot.constructVisualizer();
 %%%%%%%%%%%%%%%%%%
@@ -547,10 +547,10 @@ if(mode == 3)
   
   % bend the knee at landing
   knee_bend_idx = heel_land_idx+1;
-  cdfkp= cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint([0.5;0.5],[inf;inf]),cdfkp.q_inds([l_leg_kny;r_leg_kny],knee_bend_idx));
+%   cdfkp= cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint([0.5;0.5],[inf;inf]),cdfkp.q_inds([l_leg_kny;r_leg_kny],knee_bend_idx));
   
   % Do not bend ankle too much
-  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint([-0.35;-0.35],[inf;inf]),cdfkp.q_inds([l_leg_aky;r_leg_aky],land_static_idx));
+%   cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint([-0.35;-0.35],[inf;inf]),cdfkp.q_inds([l_leg_aky;r_leg_aky],land_static_idx));
   
   x_seed = zeros(cdfkp.num_vars,1);
   q_land_start = q_fp;
@@ -567,7 +567,7 @@ if(mode == 3)
   cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
   cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',1000);
   cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
-  cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',5e-4);
+  cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',6e-4);
   cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
   cdfkp = cdfkp.setSolverOptions('snopt','print','test_monkeybar_land.out');
 
