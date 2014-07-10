@@ -166,6 +166,10 @@ robot = robot.addRobotFromURDF(monkeybar_urdf,monkeybar_pos2(1:3),monkeybar_pos2
 robot = robot.addRobotFromURDF(monkeybar_urdf,monkeybar_pos3(1:3),monkeybar_pos3(4:6));
 robot = robot.addRobotFromURDF(monkeybar_urdf,monkeybar_pos4(1:3),monkeybar_pos4(4:6));
 robot = robot.addRobotFromURDF(monkeybar_urdf,monkeybar_pos5(1:3),monkeybar_pos5(4:6));
+
+land_height = 2.6;
+stage_pos2 = [monkeybar_pos5(1:3)+[1.25;0;-land_height-0.05];0;-pi/2;0];
+robot = robot.addRobotFromURDF(stage_urdf,stage_pos2(1:3),stage_pos2(4:6));
 v = robot.constructVisualizer();
 %%%%%%%%%%%%%%%%%%
 %%
@@ -419,21 +423,16 @@ end
 %%
 if(mode == 3)
   % landing
-  % add the landing stage
-  land_height = 2.6;
-  stage_pos2 = [monkeybar_pos1(1:3)+[1.25;0;-land_height-0.05];0;-pi/2;0];
-  robot = robot.addRobotFromURDF(stage_urdf,stage_pos2(1:3),stage_pos2(4:6));
-  v = robot.constructVisualizer();
   land_start_idx = 1;
   land_ungrasp_idx = 6;
   toe_land_idx = 9;
   heel_land_idx = 11;
   land_static_idx = 14;
   land_contact_wrench_struct = struct('active_knot',[],'cw',[]);
-  lhand_bar1_grasp_wrench = generateBarGraspingWrench(robot,l_hand,l_hand_pt,monkeybar_pos1);
-  rhand_bar1_grasp_wrench = generateBarGraspingWrench(robot,r_hand,r_hand_pt,monkeybar_pos1);
-  land_contact_wrench_struct(1) = struct('active_knot',land_start_idx:land_ungrasp_idx,'cw',lhand_bar1_grasp_wrench);
-  land_contact_wrench_struct(2) = struct('active_knot',land_start_idx:land_ungrasp_idx,'cw',rhand_bar1_grasp_wrench);
+  lhand_bar_grasp_wrench = generateBarGraspingWrench(robot,l_hand,l_hand_pt,monkeybar_pos5);
+  rhand_bar_grasp_wrench = generateBarGraspingWrench(robot,r_hand,r_hand_pt,monkeybar_pos5);
+  land_contact_wrench_struct(1) = struct('active_knot',land_start_idx:land_ungrasp_idx,'cw',lhand_bar_grasp_wrench);
+  land_contact_wrench_struct(2) = struct('active_knot',land_start_idx:land_ungrasp_idx,'cw',rhand_bar_grasp_wrench);
   num_edges = 4;
   FC_theta = linspace(0,2*pi,num_edges+1);
   mu = 1;
@@ -454,7 +453,14 @@ if(mode == 3)
   cdfkp = ComDynamicsFullKinematicsPlanner(robot,nT3,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,land_contact_wrench_struct);
   
   % add initial and final state constraint
-  cdfkp = cdfkp.addBoundingBoxConstraint(ConstantConstraint(q_fp),cdfkp.q_inds(:,land_start_idx));
+  q_start = q_fp;
+  q_start(1:3) = q_start(1:3)+monkeybar_pos5(1:3)-monkeybar_pos1(1:3);
+  l_hand_pos_start = l_hand_pos_fp;
+  l_hand_pos_start = l_hand_pos_start(1:3)+monkeybar_pos5(1:3)-monkeybar_pos1(1:3);
+  r_hand_pos_start = r_hand_pos_fp;
+  r_hand_pos_start = r_hand_pos_start(1:3)+monkeybar_pos5(1:3)-monkeybar_pos1(1:3);
+  
+  cdfkp = cdfkp.addBoundingBoxConstraint(ConstantConstraint(q_start),cdfkp.q_inds(:,land_start_idx));
   cdfkp = cdfkp.addBoundingBoxConstraint(ConstantConstraint(zeros(nv,1)),cdfkp.v_inds(:,land_start_idx));
   cdfkp = cdfkp.addBoundingBoxConstraint(ConstantConstraint(zeros(nv,1)),cdfkp.v_inds(:,land_static_idx));
   
@@ -462,11 +468,11 @@ if(mode == 3)
   cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.05*ones(nT3-1,1),0.2*ones(nT3-1,1)),cdfkp.h_inds(:));
   
   % add grasping kinematic constraint
-  [~,lhand_grasp_dir_cnstr] = generateBarGraspConstraint(robot,l_hand,l_hand_pt,l_hand_grasp_axis,monkeybar_pos1,bar_length,bar_width);
-  cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,l_hand,l_hand_pt,l_hand_pos_fp(1:3),l_hand_pos_fp(1:3)),num2cell(land_start_idx+1:land_ungrasp_idx));
+  [~,lhand_grasp_dir_cnstr] = generateBarGraspConstraint(robot,l_hand,l_hand_pt,l_hand_grasp_axis,monkeybar_pos5,bar_length,bar_width);
+  cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,l_hand,l_hand_pt,l_hand_pos_start(1:3),l_hand_pos_start(1:3)),num2cell(land_start_idx+1:land_ungrasp_idx));
   cdfkp = cdfkp.addRigidBodyConstraint(lhand_grasp_dir_cnstr,num2cell(land_start_idx+1:land_ungrasp_idx));
-  [~,rhand_grasp_dir_cnstr] = generateBarGraspConstraint(robot,r_hand,r_hand_pt,r_hand_grasp_axis,monkeybar_pos1,bar_length,bar_width);
-  cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,r_hand,r_hand_pt,r_hand_pos_fp(1:3),r_hand_pos_fp(1:3)),num2cell(land_start_idx+1:land_ungrasp_idx));
+  [~,rhand_grasp_dir_cnstr] = generateBarGraspConstraint(robot,r_hand,r_hand_pt,r_hand_grasp_axis,monkeybar_pos5,bar_length,bar_width);
+  cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,r_hand,r_hand_pt,r_hand_pos_start(1:3),r_hand_pos_start(1:3)),num2cell(land_start_idx+1:land_ungrasp_idx));
   cdfkp = cdfkp.addRigidBodyConstraint(rhand_grasp_dir_cnstr,num2cell(land_start_idx+1:land_ungrasp_idx));
   
   % add landing kinematic constraint
@@ -648,19 +654,15 @@ if(mode == 5)
 end
 
 if(mode == 6)
-  land_height = 2.6;
-  stage_pos2 = [monkeybar_pos1(1:3)+[1.25;0;-land_height-0.05];0;-pi/2;0];
-  robot = robot.addRobotFromURDF(stage_urdf,stage_pos2(1:3),stage_pos2(4:6));
-  v = robot.constructVisualizer();
   land_start_idx = 1;
   land_ungrasp_idx = 6;
   foot_contact_idx = 9;
   land_static_idx = 14;
   land_contact_wrench_struct = struct('active_knot',[],'cw',[]);
-  lhand_bar1_grasp_wrench = generateBarGraspingWrench(robot,l_hand,l_hand_pt,monkeybar_pos1);
-  rhand_bar1_grasp_wrench = generateBarGraspingWrench(robot,r_hand,r_hand_pt,monkeybar_pos1);
-  land_contact_wrench_struct(1) = struct('active_knot',land_start_idx:land_ungrasp_idx,'cw',lhand_bar1_grasp_wrench);
-  land_contact_wrench_struct(2) = struct('active_knot',land_start_idx:land_ungrasp_idx,'cw',rhand_bar1_grasp_wrench);
+  lhand_bar_grasp_wrench = generateBarGraspingWrench(robot,l_hand,l_hand_pt,monkeybar_pos5);
+  rhand_bar_grasp_wrench = generateBarGraspingWrench(robot,r_hand,r_hand_pt,monkeybar_pos5);
+  land_contact_wrench_struct(1) = struct('active_knot',land_start_idx:land_ungrasp_idx,'cw',lhand_bar_grasp_wrench);
+  land_contact_wrench_struct(2) = struct('active_knot',land_start_idx:land_ungrasp_idx,'cw',rhand_bar_grasp_wrench);
   num_edges = 4;
   FC_theta = linspace(0,2*pi,num_edges+1);
   mu = 1;
@@ -682,8 +684,15 @@ if(mode == 6)
   Q_contact_force = 0/(robot_mass*g)^2*eye(3);
   cdfkp = ComDynamicsFullKinematicsPlanner(robot,nT3,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,land_contact_wrench_struct,struct('ncp_tol',ncp_tol));
   
+  q_start = q_fp;
+  q_start(1:3) = q_start(1:3)+monkeybar_pos5(1:3)-monkeybar_pos1(1:3);
+  l_hand_pos_start = l_hand_pos_fp;
+  l_hand_pos_start = l_hand_pos_start(1:3)+monkeybar_pos5(1:3)-monkeybar_pos1(1:3);
+  r_hand_pos_start = r_hand_pos_fp;
+  r_hand_pos_start = r_hand_pos_start(1:3)+monkeybar_pos5(1:3)-monkeybar_pos1(1:3);
+  
   % add initial and final state constraint
-  cdfkp = cdfkp.addBoundingBoxConstraint(ConstantConstraint(q_fp),cdfkp.q_inds(:,land_start_idx));
+  cdfkp = cdfkp.addBoundingBoxConstraint(ConstantConstraint(q_start),cdfkp.q_inds(:,land_start_idx));
   cdfkp = cdfkp.addBoundingBoxConstraint(ConstantConstraint(zeros(nv,1)),cdfkp.v_inds(:,land_start_idx));
   cdfkp = cdfkp.addBoundingBoxConstraint(ConstantConstraint(zeros(nv,1)),cdfkp.v_inds(:,land_static_idx));
   
@@ -692,11 +701,11 @@ if(mode == 6)
   cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.0001*ones(land_static_idx-foot_contact_idx,1),0.2*ones(land_static_idx-foot_contact_idx,1)),cdfkp.h_inds(foot_contact_idx:land_static_idx-1));
   
   % add grasping kinematic constraint
-  [~,lhand_grasp_dir_cnstr] = generateBarGraspConstraint(robot,l_hand,l_hand_pt,l_hand_grasp_axis,monkeybar_pos1,bar_length,bar_width);
-  cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,l_hand,l_hand_pt,l_hand_pos_fp(1:3),l_hand_pos_fp(1:3)),num2cell(land_start_idx+1:land_ungrasp_idx));
+  [~,lhand_grasp_dir_cnstr] = generateBarGraspConstraint(robot,l_hand,l_hand_pt,l_hand_grasp_axis,monkeybar_pos5,bar_length,bar_width);
+  cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,l_hand,l_hand_pt,l_hand_pos_start(1:3),l_hand_pos_start(1:3)),num2cell(land_start_idx+1:land_ungrasp_idx));
   cdfkp = cdfkp.addRigidBodyConstraint(lhand_grasp_dir_cnstr,num2cell(land_start_idx+1:land_ungrasp_idx));
-  [~,rhand_grasp_dir_cnstr] = generateBarGraspConstraint(robot,r_hand,r_hand_pt,r_hand_grasp_axis,monkeybar_pos1,bar_length,bar_width);
-  cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,r_hand,r_hand_pt,r_hand_pos_fp(1:3),r_hand_pos_fp(1:3)),num2cell(land_start_idx+1:land_ungrasp_idx));
+  [~,rhand_grasp_dir_cnstr] = generateBarGraspConstraint(robot,r_hand,r_hand_pt,r_hand_grasp_axis,monkeybar_pos5,bar_length,bar_width);
+  cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,r_hand,r_hand_pt,r_hand_pos_start(1:3),r_hand_pos_start(1:3)),num2cell(land_start_idx+1:land_ungrasp_idx));
   cdfkp = cdfkp.addRigidBodyConstraint(rhand_grasp_dir_cnstr,num2cell(land_start_idx+1:land_ungrasp_idx));
   
   % add landing kinematic constraint
@@ -735,6 +744,14 @@ if(mode == 6)
 %   leg_symmetry = legSymmetricConstraint(robot,land_ungrasp_idx+1:land_static_idx);
 %   cdfkp = cdfkp.addLinearConstraint(leg_symmetry,reshape(cdfkp.q_inds(:,land_ungrasp_idx+1:land_static_idx),[],1));
   % add a torso direction constraint
+   % add a final posture cost
+  Q = 10*eye(nq);
+  Q(1,1) = 0;
+  Q(2,2) = 0;
+  Q(6,6) = 0;
+  cdfkp = cdfkp.addCost(QuadraticConstraint(-inf,inf,Q,-Q*qstar),cdfkp.q_inds(:,land_static_idx));
+  
+  % add a torso direction constraint
   torso_dir_cnstr = WorldGazeDirConstraint(robot,utorso,[0;0;1],[0;0;1],0.25);
   cdfkp = cdfkp.addRigidBodyConstraint(torso_dir_cnstr,{land_static_idx});
   
@@ -752,26 +769,29 @@ if(mode == 6)
   
   cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
   cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',3000);
-  cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
-  cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
+  cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',2e-6);
+  cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',6e-4);
   cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
   cdfkp = cdfkp.setSolverOptions('snopt','print','test_monkeybar_land_complementarity.out');
 
-  seed_sol = load('test_monkeybar_land','-mat','q_sol','v_sol','h_sol','com_sol','comdot_sol','comddot_sol','H_sol','Hdot_sol','lambda_sol');
-  seed_x_sol = zeros(cdfkp.num_vars,1);
-  seed_x_sol(cdfkp.h_inds(:)) = seed_sol.h_sol;
-  seed_x_sol(cdfkp.q_inds(:)) = seed_sol.q_sol(:);
-  seed_x_sol(cdfkp.v_inds(:)) = seed_sol.v_sol(:);
-  seed_x_sol(cdfkp.com_inds(:)) = seed_sol.com_sol(:);
-  seed_x_sol(cdfkp.comdot_inds(:)) = seed_sol.comdot_sol(:);
-  seed_x_sol(cdfkp.comddot_inds(:)) = seed_sol.comddot_sol(:);
-  seed_x_sol(cdfkp.H_inds(:)) = seed_sol.H_sol(:);
-  seed_x_sol(cdfkp.Hdot_inds(:)) = seed_sol.Hdot_sol(:)/cdfkp.torque_multiplier;
-  seed_x_sol(cdfkp.lambda_inds{1}(:)) = seed_sol.lambda_sol{1}(:);
-  seed_x_sol(cdfkp.lambda_inds{2}(:)) = seed_sol.lambda_sol{2}(:);
-  seed_x_sol(cdfkp.lambda_inds{3}(:)) = seed_sol.lambda_sol{3}(:);
-  seed_x_sol(cdfkp.lambda_inds{4}(:)) = seed_sol.lambda_sol{4}(:);
-  
+  seed_sol = load('test_monkeybar_land_complementarity','-mat','x_sol');
+  seed_x_sol = seed_sol.x_sol;
+%   seed_sol = load('test_monkeybar_land_complementarity','-mat','q_sol','v_sol','h_sol','com_sol','comdot_sol','comddot_sol','H_sol','Hdot_sol','lambda_sol');
+%   seed_x_sol = zeros(cdfkp.num_vars,1);
+%   seed_x_sol(cdfkp.h_inds(:)) = seed_sol.h_sol;
+%   seed_x_sol(cdfkp.q_inds(:)) = seed_sol.q_sol(:);
+%   seed_x_sol(cdfkp.v_inds(:)) = seed_sol.v_sol(:);
+%   seed_x_sol(cdfkp.com_inds(:)) = seed_sol.com_sol(:);
+%   seed_x_sol(cdfkp.comdot_inds(:)) = seed_sol.comdot_sol(:);
+%   seed_x_sol(cdfkp.comddot_inds(:)) = seed_sol.comddot_sol(:);
+%   seed_x_sol(cdfkp.H_inds(:)) = seed_sol.H_sol(:);
+%   seed_x_sol(cdfkp.Hdot_inds(:)) = seed_sol.Hdot_sol(:)/cdfkp.torque_multiplier;
+%   seed_x_sol(cdfkp.lambda_inds{1}(:)) = seed_sol.lambda_sol{1}(:);
+%   seed_x_sol(cdfkp.lambda_inds{2}(:)) = seed_sol.lambda_sol{2}(:);
+%   seed_x_sol(cdfkp.lambda_inds{3}(:)) = seed_sol.lambda_sol{3}(:);
+%   seed_x_sol(cdfkp.lambda_inds{4}(:)) = seed_sol.lambda_sol{4}(:);
+    
+
 %   cdfkp_initial_gamma = cdfkp;
 %   cdfkp_initial_gamma = cdfkp_initial_gamma.addBoundingBoxConstraint(ConstantConstraint(seed_sol.h_sol),cdfkp_initial_gamma.h_inds(:));
 %   cdfkp_initial_gamma = cdfkp_initial_gamma.addBoundingBoxConstraint(ConstantConstraint(seed_sol.q_sol(:)),cdfkp_initial_gamma.q_inds(:));
