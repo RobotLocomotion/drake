@@ -3,7 +3,7 @@ classdef KinematicPlanner < SimpleDynamicsFullKinematicsPlanner
     function obj = KinematicPlanner(robot,N,tf_range)
       plant = robot.setNumInputs(robot.getNumVelocities());
       options.time_option = 1;
-      obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,[],options);
+      obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,zeros(3),[],options);
     end
 
     function obj = addDynamicConstraints(obj)
@@ -18,11 +18,11 @@ classdef KinematicPlanner < SimpleDynamicsFullKinematicsPlanner
       dyn_inds = cell(N-1,1);      
       n_vars = 2*nX + nU + 1;
 
-      cnstr = NonlinearConstraint(zeros(nX,1),zeros(nX,1),n_vars,@constraint_fun);
+      cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@constraint_fun);
       
       for i=1:obj.N-1,        
         dyn_inds{i} = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i)};
-        obj = obj.addNonlinearConstraint(cnstr, dyn_inds{i});
+        obj = obj.addConstraint(cnstr, dyn_inds{i});
       end
 
       function [f,df] = constraint_fun(h,x0,x1,u)
