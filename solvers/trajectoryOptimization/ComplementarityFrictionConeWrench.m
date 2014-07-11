@@ -9,11 +9,14 @@ classdef ComplementarityFrictionConeWrench < FrictionConeWrench
   end
   
   methods
-    function obj = ComplementarityFrictionConeWrench(robot,body,body_pts,FC_mu,FC_axis,phi_handle,force_normalize_factor)
+    function obj = ComplementarityFrictionConeWrench(robot,body,body_pts,FC_mu,FC_axis,phi_handle,force_normalize_factor,ncp_tol)
       % @param phi_handle  A function handle. pho_handle(pt_pos) returns the distance from each pt_pos to the contact enviroment, and its gradient
       if(nargin<7)
         g = 9.81;
         force_normalize_factor = robot.getMass*g;
+      end
+      if(nargin<8)
+        ncp_tol = 0;
       end
       obj = obj@FrictionConeWrench(robot,body,body_pts,FC_mu,FC_axis,force_normalize_factor);
       obj.phi_handle = phi_handle;
@@ -31,8 +34,8 @@ classdef ComplementarityFrictionConeWrench < FrictionConeWrench
         old_num_wrench_constraint+obj.num_pts+reshape(bsxfun(@times,ones(3,1),1:obj.num_pts),[],1);old_num_wrench_constraint+obj.num_pts+(1:obj.num_pts)']; % <force,gamma> = 0]
       obj.wrench_jCvar = [obj.wrench_jCvar;reshape(bsxfun(@times,ones(obj.num_pts,1),(1:nq)),[],1);nq+3*obj.num_pts+(1:obj.num_pts)';...
         nq+(1:3*obj.num_pts)';nq+3*obj.num_pts+(1:obj.num_pts)'];
-      obj.wrench_cnstr_ub = [obj.wrench_cnstr_ub;zeros(2*obj.num_pts,1)];
-      obj.wrench_cnstr_lb = [obj.wrench_cnstr_lb;zeros(2*obj.num_pts,1)];
+      obj.wrench_cnstr_ub = [obj.wrench_cnstr_ub;zeros(obj.num_pts,1);-ncp_tol*ones(obj.num_pts,1)];
+      obj.wrench_cnstr_lb = [obj.wrench_cnstr_lb;zeros(obj.num_pts,1);ncp_tol*ones(obj.num_pts,1)];
       comp_name = cell(2*obj.num_pts,1);
       for i = 1:obj.num_pts
         comp_name{i} = sprintf('%s_pt%d_contact_distance-gamma=0',obj.body_name,i);

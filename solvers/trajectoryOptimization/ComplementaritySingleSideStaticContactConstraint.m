@@ -26,7 +26,10 @@ classdef ComplementaritySingleSideStaticContactConstraint
   end
   
   methods
-    function obj = ComplementaritySingleSideStaticContactConstraint(rb_wrench)
+    function obj = ComplementaritySingleSideStaticContactConstraint(rb_wrench,ncp_tol)
+      if(nargin<2)
+        ncp_tol = 0;
+      end
       if(~isa(rb_wrench,'RigidBodyContactWrench'))
         error('Drake:ComplementaritySingleSideStaticContactConstraint:InvalidArguments','Argument rb_wrench should be a RigidBodyContactWrench object');
       end
@@ -51,7 +54,7 @@ classdef ComplementaritySingleSideStaticContactConstraint
         nlcon_name{i+obj.num_pts} = sprintf('%s_ComplementaritySingleSideStaticContact_pos%d',obj.rb_wrench.body_name,i);
         nlcon_name{i+2*obj.num_pts} = sprintf('%s_ComplementaritySingleSideStaticContact_product%d',obj.rb_wrench.body_name,i);
       end
-      obj.nlcon = FunctionHandleConstraint(zeros(3*obj.num_pts,1),zeros(3*obj.num_pts,1),2*obj.nq+obj.num_lambda+2*obj.num_pts,@(~,~,lambda,gamma,kinsol1,kinsol2) nlconEval(obj,kinsol1,kinsol2,lambda,gamma));
+      obj.nlcon = FunctionHandleConstraint([zeros(2*obj.num_pts,1);-ncp_tol*ones(obj.num_pts,1)],[zeros(2*obj.num_pts,1);ncp_tol*ones(obj.num_pts,1)],2*obj.nq+obj.num_lambda+2*obj.num_pts,@(~,~,lambda,gamma,kinsol1,kinsol2) nlconEval(obj,kinsol1,kinsol2,lambda,gamma));
       obj.nlcon = obj.nlcon.setName(nlcon_name);
       
       nlcon_iCfun1 = [reshape(bsxfun(@times,ones(obj.num_pt_F,1),1:obj.num_pts),[],1);(1:obj.num_pts)'];

@@ -4,7 +4,7 @@ classdef LinearFrictionConeWrench < RigidBodyContactWrench
   % the K'th edge of the linearized friction cone, fK is the force paramter along the K'th
   % edge
   properties(SetAccess = protected)
-    
+    normal_dir % A 3 x obj.num_pts vector. The axis of the cone
     FC_edge % A 3 x num_edge double matrix. FC_edge(:,i) is the i'th edge of
             % the linearized friction cone in the world frame.
   end
@@ -24,6 +24,10 @@ classdef LinearFrictionConeWrench < RigidBodyContactWrench
       end
       obj.num_pt_F = FC_edge_size(2);
       obj.FC_edge = FC_edge;
+      FC_edge_norm = sqrt(sum(obj.FC_edge.^2,1));
+      FC_edge_normalized = obj.FC_edge./bsxfun(@times,FC_edge_norm,ones(3,1));
+      obj.normal_dir = sum(FC_edge_normalized,2);
+      obj.normal_dir = bsxfun(@times,ones(1,obj.num_pts),obj.normal_dir/norm(obj.normal_dir));
       obj.F_lb = zeros(obj.num_pt_F,obj.num_pts);
       obj.F_ub = inf(obj.num_pt_F,obj.num_pts);
       obj.contact_force_type = RigidBodyContactWrench.LinearFrictionConeType;

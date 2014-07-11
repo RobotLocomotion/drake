@@ -70,11 +70,14 @@ Q(1,1) = 0;
 Q(2,2) = 0;
 Q(6,6) = 0;
 Qv = 0.1*eye(nv); 
-cdfkp = ComDynamicsFullKinematicsPlanner(robot,nT,tf_range,Q_comddot,Qv,Q,q_nom,rb_wrench);
+Q_contact_force = 0*eye(3);
+cdfkp = ComDynamicsFullKinematicsPlanner(robot,nT,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,rb_wrench);
 cdfkp = cdfkp.addRigidBodyConstraint(WorldFixedBodyPoseConstraint(robot,l_foot),{2:nT-1});
 cdfkp = cdfkp.addRigidBodyConstraint(WorldFixedBodyPoseConstraint(robot,r_foot),{2:nT-1});
 cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,l_foot,l_foot_bottom,[nan(2,size(l_foot_bottom,2));zeros(1,size(l_foot_bottom,2))],[nan(2,size(l_foot_bottom,2));zeros(1,size(l_foot_bottom,2))]),{2});
 cdfkp = cdfkp.addRigidBodyConstraint(WorldPositionConstraint(robot,r_foot,r_foot_bottom,[nan(2,size(r_foot_bottom,2));zeros(1,size(r_foot_bottom,2))],[nan(2,size(r_foot_bottom,2));zeros(1,size(r_foot_bottom,2))]),{2});
+
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(com_star(3)-0.2,com_star(3)-0.1),cdfkp.com_inds(3,nT));
 
 x_seed = zeros(cdfkp.num_vars,1);
 x_seed(cdfkp.h_inds) = 0.2;
@@ -101,6 +104,7 @@ lambda_sol{1} = reshape(x_sol(cdfkp.lambda_inds{1}),size(cdfkp.lambda_inds{1},1)
 lambda_sol{2} = reshape(x_sol(cdfkp.lambda_inds{1}),size(cdfkp.lambda_inds{2},1),[],nT);
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
 xtraj_sol = xtraj_sol.setOutputFrame(robot.getStateFrame);
+wrench_sol = cdfkp.contactWrench(x_sol);
 keyboard;
 end
 

@@ -15,25 +15,32 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
     H_inds % A 3 x obj.N matrix. x(H_inds(:,i)) is the centroidal angular momentum at i'th knot point
     Hdot_inds % A 3 x obj.N matrix. x(Hdot_inds(:,i)) is the rate of centroidal angular momentum at i'th knot point
     torque_multiplier % A positive scaler. 
+    ncp_tol; % The tolerance for nonlinear complementarity constraint
   end
   
   methods
-    function obj = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,contact_wrench_struct,torque_multiplier,options)
+    function obj = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,contact_wrench_struct,options)
       % @param Q_comddot  A 3 x 3 matrix. penalize sum_j comddot(:,j)*Q_comddot*comddot(:,j)
       % @param Q  an nq x nq matrix. Add the cost sum_j
       % (q(:,j)-q_nom(:,j))'*Q*(q(:,j)-q_nom(:,j));
-      if nargin < 11, options = struct(); end
+      if nargin < 10, options = struct(); end
+      if(~isfield(options,'ncp_tol'))
+        options.ncp_tol = 0;
+      end
+      
       plant = SimpleDynamicsDummyPlant(robot.getNumPositions());
       obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,Q_contact_force,contact_wrench_struct,options);
 %       obj = obj.setSolverOptions('snopt','scaleoption',2);
-      if(nargin<10) || isempty(torque_multiplier)
-        torque_multiplier = obj.robot_mass*obj.g*1;
+      if(~isfield(options,'torque_multiplier'))
+        options.torque_multiplier = obj.robot_mass*obj.g*1;
       else
-        if(~isnumeric(torque_multiplier) || numel(torque_multiplier)~= 1 || torque_multiplier<=0)
+        if(~isnumeric(options.torque_multiplier) || numel(options.torque_multiplier)~= 1 || options.torque_multiplier<=0)
           error('Drake:ComDynamicsFullKinematicsPlanner:torque_multiplier should be positive scaler');
         end
       end
-      obj.torque_multiplier = torque_multiplier;
+      
+      obj.torque_multiplier = options.torque_multiplier;
+      obj.ncp_tol = options.ncp_tol;
       obj.com_inds = obj.num_vars+reshape(1:3*obj.N,3,obj.N);
       obj.comdot_inds = obj.num_vars+3*obj.N+reshape(1:3*obj.N,3,obj.N);
       obj.comddot_inds = obj.num_vars+6*obj.N+reshape(1:3*obj.N,3,obj.N);
@@ -226,8 +233,8 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
                 % Now the two contact wrenches are on the same body, same points with same
                 % type of contact forces
                 lambda2_idx = knot_lambda_idx{2}(lambda2_start_idx+(1:obj.contact_wrench{wrench_idx2}.num_pt_F*obj.contact_wrench{wrench_idx2}.num_pts));
-                if(obj.contact_wrench{wrench_idx1}.complementarity_flag && obj.contact_wrench{wrench_idx2}.complementarity_flag)
-                  csc_cnstr = ComplementarityStaticContactConstraint(obj.contact_wrench{wrench_idx1});
+                if(obj.contact_wrench{wrench_idx1}.complementarity_flag || obj.contact_wrench{wrench_idx2}.complementarity_flag)
+                  csc_cnstr = ComplementarityStaticContactConstraint(obj.contact_wrench{wrench_idx1},obj.ncp_tol);
                   [csc_nlcon,slack_bcon,num_csc_slack,csc_slack_name] = csc_cnstr.generateConstraint();
                   csc_cnstr_name = cell(csc_nlcon.num_cnstr,1);
                   for csc_cnstr_idx = 1:csc_nlcon.num_cnstr
@@ -236,32 +243,15 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
                   csc_nlcon = csc_nlcon.setName(csc_cnstr_name);
                   csc_slack_idx = obj.num_vars+(1:num_csc_slack)';
                   obj = obj.addDecisionVariable(num_csc_slack,csc_slack_name);
-                  obj = obj.addDifferentiableConstraint(csc_nlcon,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda1_idx};{lambda2_idx};{csc_slack_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
                   obj = obj.addBoundingBoxConstraint(slack_bcon,csc_slack_idx);
-                elseif(obj.contact_wrench{wrench_idx1}.complementarity_flag)
-                  csssc_cnstr = ComplementaritySingleSideStaticContactConstraint(obj.contact_wrench{wrench_idx1});
-                  [csssc_nlcon,slack_bcon,num_csssc_slack,csssc_slack_name] = csssc_cnstr.generateConstraint();
-                  csssc_cnstr_name = cell(csssc_nlcon.num_cnstr,1);
-                  for csssc_cnstr_idx = 1:csssc_nlcon.num_cnstr
-                    csssc_cnstr_name{csssc_cnstr_idx} = sprintf('%s_knot%d&%d',csssc_nlcon.name{csssc_cnstr_idx},knot_idx(1),knot_idx(2));
+                  if(obj.contact_wrench{wrench_idx1}.complementarity_flag && obj.contact_wrench{wrench_idx2}.complementarity_flag)
+                    lambda_idx = lambda2_idx;
+                  elseif(obj.contact_wrench{wrench_idx1}.complementarity_flag)
+                    lambda_idx = lambda1_idx;
+                  elseif(obj.contact_wrench{wrench_idx2}.complementarity_flag)
+                    lambda_idx = lambda2_idx;
                   end
-                  csssc_nlcon = csssc_nlcon.setName(csssc_cnstr_name);
-                  csssc_slack_idx = obj.num_vars+(1:num_csssc_slack)';
-                  obj = obj.addDecisionVariable(num_csssc_slack,csssc_slack_name);
-                  obj = obj.addDifferentiableConstraint(csssc_nlcon,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda1_idx};{csssc_slack_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
-                  obj = obj.addBoundingBoxConstraint(slack_bcon,csssc_slack_idx);
-                elseif(obj.contact_wrench{wrench_idx2}.complementarity_flag)
-                  csssc_cnstr = ComplementaritySingleSideStaticContactConstraint(obj.contact_wrench{wrench_idx1});
-                  [csssc_nlcon,slack_bcon,num_csssc_slack,csssc_slack_name] = csssc_cnstr.generateConstraint();
-                  csssc_cnstr_name = cell(csssc_nlcon.num_cnstr,1);
-                  for csssc_cnstr_idx = 1:csssc_nlcon.num_cnstr
-                    csssc_cnstr_name{csssc_cnstr_idx} = sprintf('%s_knot%d&%d',csssc_nlcon.name{csssc_cnstr_idx},knot_idx(1),knot_idx(2));
-                  end
-                  csssc_nlcon = csssc_nlcon.setName(csssc_cnstr_name);
-                  csssc_slack_idx = obj.num_vars+(1:num_csssc_slack)';
-                  obj = obj.addDecisionVariable(num_csssc_slack,csssc_slack_name);
-                  obj = obj.addDifferentiableConstraint(csssc_nlcon,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda2_idx};{csssc_slack_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
-                  obj = obj.addBoundingBoxConstraint(slack_bcon,csssc_slack_idx);
+                  obj = obj.addDifferentiableConstraint(csc_nlcon,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda_idx};{csc_slack_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
                 end
               end
             end

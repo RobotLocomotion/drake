@@ -9,7 +9,10 @@ classdef ComplementarityLinearFrictionConeWrench < LinearFrictionConeWrench
   end
   
   methods
-    function obj = ComplementarityLinearFrictionConeWrench(robot,body,body_pts,FC_edge,phi_handle)
+    function obj = ComplementarityLinearFrictionConeWrench(robot,body,body_pts,FC_edge,phi_handle,ncp_tol)
+      if(nargin<6)
+        ncp_tol = 0;
+      end
       obj = obj@LinearFrictionConeWrench(robot,body,body_pts,FC_edge);
       obj.phi_handle = phi_handle;
       obj.num_slack = obj.num_pts;
@@ -21,8 +24,8 @@ classdef ComplementarityLinearFrictionConeWrench < LinearFrictionConeWrench
       obj.slack_ub = inf(obj.num_pts,1);
       old_num_wrench_cnstr = obj.num_wrench_constraint;
       obj.num_wrench_constraint = obj.num_wrench_constraint+2*obj.num_pts;
-      obj.wrench_cnstr_lb = [obj.wrench_cnstr_lb;zeros(2*obj.num_pts,1)];
-      obj.wrench_cnstr_ub = [obj.wrench_cnstr_ub;zeros(2*obj.num_pts,1)];
+      obj.wrench_cnstr_lb = [obj.wrench_cnstr_lb;zeros(obj.num_pts,1);-ncp_tol*ones(obj.num_pts,1)];
+      obj.wrench_cnstr_ub = [obj.wrench_cnstr_ub;zeros(obj.num_pts,1);ncp_tol*ones(obj.num_pts,1)];
       nq = obj.robot.getNumPositions();
       obj.wrench_iCfun = [obj.wrench_iCfun;old_num_wrench_cnstr+reshape(bsxfun(@times,(1:obj.num_pts)',ones(1,nq)),[],1);old_num_wrench_cnstr+(1:obj.num_pts)';...distance-gamma = 0
         old_num_wrench_cnstr+obj.num_pts+reshape(bsxfun(@times,ones(obj.num_pt_F,1),1:obj.num_pts),[],1);old_num_wrench_cnstr+obj.num_pts+(1:obj.num_pts)'];%<force,gamma>=0
