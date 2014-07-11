@@ -260,7 +260,8 @@ if(mode == 1)
 % 
   % time bounds
   cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.08*ones(nT1-1,1),0.2*ones(nT1-1,1)),cdfkp.h_inds(:));
-
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.1*ones(grasp_idx1-toe_takeoff_idx,1),0.2*ones(grasp_idx1-toe_takeoff_idx,1)),cdfkp.h_inds(toe_takeoff_idx:grasp_idx1-1)');
+  
   % comddot bounds
   cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(...
     reshape(bsxfun(@times,[-9.81;-9.81;-1.5*9.81],ones(1,nT1)),[],1),...
@@ -288,17 +289,21 @@ if(mode == 1)
   cdfkp = cdfkp.addRigidBodyConstraint(torso_straight_cnstr,num2cell(1:grasp_idx1));
 %   
   % bound back_bkz
-  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.05*ones(nT1,1),0.02*ones(nT1,1)),cdfkp.q_inds(back_bkz,:)');
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.05*ones(nT1,1),0.05*ones(nT1,1)),cdfkp.q_inds(back_bkz,:)');
+  
+  % bound the velocity of back_bkz
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.1*ones(nT1,1),0.1*ones(nT1,1)),cdfkp.v_inds(back_bkz,:)');
+  
+  % bound the yaw
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.1*ones(nT1,1),0.1*ones(nT1,1)),cdfkp.q_inds(6,:)');
+  
+  % bound roll
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.05*ones(nT1,1),0.05*ones(nT1,1)),cdfkp.q_inds(4,:)');
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.1*ones(nT1,1),0.1*ones(nT1,1)),cdfkp.v_inds(4,:)');
 %   
-%   % bound the yaw
-%   cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.1*ones(nT1,1),0.1*ones(nT1,1)),cdfkp.q_inds(6,:)');
-%   
-%   % bound roll
-%   cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.05*ones(nT1,1),0.05*ones(nT1,1)),cdfkp.q_inds(4,:)');
-%   
-%   % bound leg_hpx
-%   cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.1*ones(nT1,1),0.1*ones(nT1,1)),cdfkp.q_inds(l_leg_hpx,:)');
-%   cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.1*ones(nT1,1),0.1*ones(nT1,1)),cdfkp.q_inds(r_leg_hpx,:)');
+  % bound leg_hpx
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.07*ones(nT1,1),0.1*ones(nT1,1)),cdfkp.q_inds(l_leg_hpx,:)');
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.07*ones(nT1,1),0.1*ones(nT1,1)),cdfkp.q_inds(r_leg_hpx,:)');
   
   x_seed = zeros(cdfkp.num_vars,1);
   x_seed(cdfkp.q_inds(:,1:toe_takeoff_idx)) = reshape(bsxfun(@times,q_initial,ones(1,toe_takeoff_idx)),[],1);
@@ -782,14 +787,14 @@ if(mode == 6)
   
   cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
   cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',3000);
-  cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',2e-6);
-  cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',6e-4);
+  cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
+  cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',5e-4);
   cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
   cdfkp = cdfkp.setSolverOptions('snopt','print','test_monkeybar_land_complementarity.out');
 
   seed_sol = load('test_monkeybar_land_complementarity','-mat','x_sol');
   seed_x_sol = seed_sol.x_sol;
-%   seed_sol = load('test_monkeybar_land_complementarity','-mat','q_sol','v_sol','h_sol','com_sol','comdot_sol','comddot_sol','H_sol','Hdot_sol','lambda_sol');
+%   seed_sol = load('test_monkeybar_land','-mat','q_sol','v_sol','h_sol','com_sol','comdot_sol','comddot_sol','H_sol','Hdot_sol','lambda_sol');
 %   seed_x_sol = zeros(cdfkp.num_vars,1);
 %   seed_x_sol(cdfkp.h_inds(:)) = seed_sol.h_sol;
 %   seed_x_sol(cdfkp.q_inds(:)) = seed_sol.q_sol(:);
