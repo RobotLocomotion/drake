@@ -1,6 +1,7 @@
 classdef FrictionConeWrench < RigidBodyContactWrench
   % constrain the friction force to be within a friction cone.
   properties(SetAccess = protected)
+    normal_dir % A 3 x 1 vector. The normal direction
     FC_mu % A 1 x num_pts double vector, FC_mu(i) is the friction coefficient
           % of the friction cone at contact point body_pts(:,i)
     FC_axis % A 3 x num_pts double matrix, FC_axis(:,i) is the axis of the
@@ -50,6 +51,7 @@ classdef FrictionConeWrench < RigidBodyContactWrench
       end
       FC_axis_norm = sqrt(sum(FC_axis.^2,1));
       obj.FC_axis = FC_axis./(bsxfun(@times,FC_axis_norm,ones(3,1)));
+      obj.normal_dir = obj.FC_axis;
       g = 9.81;
       if(nargin<6)
         force_normalize_factor = obj.robot.getMass*g;

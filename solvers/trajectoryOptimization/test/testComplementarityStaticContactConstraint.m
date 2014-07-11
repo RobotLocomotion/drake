@@ -20,14 +20,12 @@ csc_cnstr = ComplementarityStaticContactConstraint(fc_wrench);
 [nlcon,slack_bcon,num_slack,slack_name] = csc_cnstr.generateConstraint();
 q1 = qstar+1e-2*randn(nq,1);
 q2 = qstar+1e-2*randn(nq,1);
-lambda1 = randn(fc_wrench.num_pt_F,fc_wrench.num_pts);
-lambda2 = randn(fc_wrench.num_pt_F,fc_wrench.num_pts);
+lambda = randn(fc_wrench.num_pt_F,fc_wrench.num_pts);
 kinsol1 = robot.doKinematics(q1,false,false);
 kinsol2 = robot.doKinematics(q2,false,false);
-gamma1 = randn(fc_wrench.num_pts,1);
-gamma2 = randn(fc_wrench.num_pts,1);
-[c,dc] = nlcon.eval(q1,q2,lambda1,lambda2,[gamma1;gamma2],kinsol1,kinsol2);
-[~,dc_numeric] = geval(@(q1,q2,lambda1,lambda2,gamma) evalComplementarityStaticConstraint(nlcon,robot,q1,q2,lambda1,lambda2,gamma),q1,q2,lambda1,lambda2,[gamma1;gamma2],struct('grad_method','numerical'));
+gamma = randn(fc_wrench.num_pts,1);
+[c,dc] = nlcon.eval(q1,q2,lambda,gamma,kinsol1,kinsol2);
+[~,dc_numeric] = geval(@(q1,q2,lambda,gamma) evalComplementarityStaticConstraint(nlcon,robot,q1,q2,lambda,gamma),q1,q2,lambda,gamma,struct('grad_method','numerical'));
 valuecheck(dc,dc_numeric,1e-3);
 dc_sparse = zeros(nlcon.num_cnstr,nlcon.xdim);
 dc_sparse(sub2ind([nlcon.num_cnstr,nlcon.xdim],nlcon.iCfun,nlcon.jCvar)) = dc(sub2ind([nlcon.num_cnstr,nlcon.xdim],nlcon.iCfun,nlcon.jCvar)); 
@@ -43,14 +41,14 @@ dc_sparse(sub2ind([nlcon.num_cnstr,nlcon.xdim],nlcon.iCfun,nlcon.jCvar)) = dc(su
 valuecheck(dc,dc_sparse);
 end
 
-function [c,dc] = evalComplementarityStaticConstraint(nlcon,robot,q1,q2,lambda1,lambda2,gamma)
-kinsol1 = robot.doKinematics(q1,false,false);
-kinsol2 = robot.doKinematics(q2,false,false);
-[c,dc] = nlcon.eval(q1,q2,lambda1,lambda2,gamma,kinsol1,kinsol2);
-end
-
-function [c,dc] = evalComplementaritySingleSideStaticContactConstraint(nlcon,robot,q1,q2,lambda,gamma)
+function [c,dc] = evalComplementarityStaticConstraint(nlcon,robot,q1,q2,lambda,gamma)
 kinsol1 = robot.doKinematics(q1,false,false);
 kinsol2 = robot.doKinematics(q2,false,false);
 [c,dc] = nlcon.eval(q1,q2,lambda,gamma,kinsol1,kinsol2);
 end
+
+% function [c,dc] = evalComplementaritySingleSideStaticContactConstraint(nlcon,robot,q1,q2,lambda,gamma)
+% kinsol1 = robot.doKinematics(q1,false,false);
+% kinsol2 = robot.doKinematics(q2,false,false);
+% [c,dc] = nlcon.eval(q1,q2,lambda,gamma,kinsol1,kinsol2);
+% end

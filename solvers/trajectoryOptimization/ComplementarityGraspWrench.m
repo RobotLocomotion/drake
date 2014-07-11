@@ -9,7 +9,10 @@ classdef ComplementarityGraspWrench < GraspWrench
   end
 
   methods
-    function obj = ComplementarityGraspWrench(robot,body,grasp_pt,force_max,A_torque,b_torque_lb,b_torque_ub,phi_handle)
+    function obj = ComplementarityGraspWrench(robot,body,grasp_pt,force_max,A_torque,b_torque_lb,b_torque_ub,phi_handle,ncp_tol)
+      if(nargin<9)
+        ncp_tol = 0;
+      end
       obj = obj@GraspWrench(robot,body,grasp_pt,force_max,A_torque,b_torque_lb,b_torque_ub);
       obj.phi_handle = phi_handle;
       obj.num_slack = obj.num_pts;
@@ -21,8 +24,8 @@ classdef ComplementarityGraspWrench < GraspWrench
       obj.slack_ub = inf(obj.num_slack,1);
       old_num_wrench_cnstr = obj.num_wrench_constraint;
       obj.num_wrench_constraint = obj.num_wrench_constraint+2*obj.num_pts;
-      obj.wrench_cnstr_lb = [obj.wrench_cnstr_lb;zeros(2*obj.num_pts,1)];
-      obj.wrench_cnstr_ub = [obj.wrench_cnstr_ub;zeros(2*obj.num_pts,1)];
+      obj.wrench_cnstr_lb = [obj.wrench_cnstr_lb;zeros(obj.num_pts,1);-ncp_tol*ones(obj.num_pts,1)];
+      obj.wrench_cnstr_ub = [obj.wrench_cnstr_ub;zeros(obj.num_pts,1);ncp_tol*ones(obj.num_pts,1)];
       nq = obj.robot.getNumPositions();
       obj.wrench_iCfun = [obj.wrench_iCfun;old_num_wrench_cnstr+reshape(bsxfun(@times,(1:obj.num_pts)',ones(1,nq)),[],1);old_num_wrench_cnstr+(1:obj.num_pts)';...
         old_num_wrench_cnstr+obj.num_pts+reshape(bsxfun(@times,ones(obj.num_pt_F,1),1:obj.num_pts),[],1);old_num_wrench_cnstr+obj.num_pts+(1:obj.num_pts)'];%<force,gamma>=0
@@ -48,9 +51,10 @@ classdef ComplementarityGraspWrench < GraspWrench
       dc2 = [dphidq zeros(obj.num_pts,obj.num_pt_F*obj.num_pts) -1];
       F_normal = sum(F.*F);
       dF_normaldF = 2*F';
-      c3 = gamma*F_normal;
-      dc3dF = gamma*dF_normaldF;
-      dc3dgamma = F_normal;
+      scale_factor = obj.robot.getMass*9.81;
+      c3 = gamma*F_normal/scale_factor;
+      dc3dF = gamma*dF_normaldF/scale_factor;
+      dc3dgamma = F_normal/scale_factor;
       nq = obj.robot.getNumPositions();
       dc3 = [zeros(1,nq) dc3dF dc3dgamma];
       c = [c1;c2;c3];
