@@ -73,19 +73,6 @@ test	:  configure
 test_continuous : configure
 	while true; do $(MAKE) Continuous; sleep 300; done
 
-.PHONY: check_prereqs install_prereqs_macports install_prereqs_homebrew install_prereqs_ubuntu
-check_prereqs:
-	if javac -source 1.6 -version > /dev/null 2> /dev/null; then exit 0; else echo "ERROR: Java 6 (or greater) sdk is required."; exit 1; fi  # test for javac >= 1.6
-
-install_prereqs_macports : check_prereqs
-	port install graphviz
-
-install_prereqs_homebrew : check_prereqs
-	brew install boost graphviz
-
-install_prereqs_ubuntu : check_prereqs
-	apt-get install graphviz libboost-dev libboost-filesystem-dev libboost-system-dev libboost-regex-dev
-
 release_filelist:
 	echo ".UNITTEST"
 	echo ".mlintopts"
