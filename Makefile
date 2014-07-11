@@ -18,7 +18,7 @@ export BUILD_PREFIX
 # build quietly by default.  For a verbose build, run "make VERBOSE=1"
 $(VERBOSE).SILENT:
 
-all: 
+all:
 	@[ -d "$(BUILD_PREFIX)" ] || mkdir -p "$(BUILD_PREFIX)" || exit 1
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
@@ -47,7 +47,7 @@ clean:
 	done
 	@# Place additional commands here if you have any
 
-# other (custom) targets are passed through to the cmake-generated Makefile 
+# other (custom) targets are passed through to the cmake-generated Makefile
 %::
 	@for subdir in $(SUBDIRS); do \
 		echo "\n-------------------------------------------"; \
@@ -56,30 +56,6 @@ clean:
 		$(MAKE) -C $$subdir $@; \
 	done
 	@# Place additional commands here if you have any
-
-install_prereqs_homebrew:
-	brew install cmake pkg-config gtk+
-	@for subdir in $(SUBDIRS); do \
-		$(MAKE) -C $$subdir $@; \
-	done
-
-install_prereqs_macports:
-	port install cmake gtk2
-	@for subdir in $(SUBDIRS); do \
-		$(MAKE) -C $$subdir $@; \
-	done
-
-install_prereqs_ubuntu:
-	apt-get install cmake 
-	@for subdir in $(SUBDIRS); do \
-		$(MAKE) -C $$subdir $@; \
-	done
-
-install_prereqs_cygwin:
-	cygwin-setup -q -P pkg-config
-	@for subdir in $(SUBDIRS); do \
-		$(MAKE) -C $$subdir $@; \
-	done
 
 release_filelist:
 	find * -maxdepth 0 -type f | grep -v ".zip"
