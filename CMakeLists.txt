@@ -33,7 +33,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 #   be worried about sharing pointers between objects compiled against
 #   different c++ libs, so removing it)
 #    # http://stackoverflow.com/questions/13445742/apple-and-shared-ptr
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")  
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
   endif()
 endif()
 
@@ -54,7 +54,7 @@ if (LCM_FOUND)
   lcmtypes_build()
   pods_use_pkg_config_classpath(lcm-java)
 
-  list(APPEND drake_jar_javafiles 
+  list(APPEND drake_jar_javafiles
         util/MyLCMTypeDatabase.java
 	util/MessageMonitor.java
 	util/CoordinateFrameData.java
@@ -77,7 +77,7 @@ if (LCM_FOUND)
        message(STATUS "Found bot2-lcmgl")
     endif()
     set(CMAKE_JAVA_INCLUDE_PATH ${CMAKE_JAVA_INCLUDE_PATH}:${LCMGL_JAR_FILE})
-    list(APPEND drake_jar_javafiles 
+    list(APPEND drake_jar_javafiles
  	util/BotLCMGLClient.java
 	)
   endif()
@@ -107,7 +107,6 @@ endif()
 add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)
-add_subdirectory(thirdParty/GetFullPath)
 
 # setup matlab pods-compliance
 include(cmake/matlab_pods.cmake)
@@ -115,7 +114,7 @@ pods_configure_matlab_paths()
 
 get_relative_path("${CMAKE_INSTALL_PREFIX}/matlab" "${CMAKE_CURRENT_SOURCE_DIR}" relpath)
 
-message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab") 
+message(STATUS "Writing addpath_drake.m and rmpath_drake.m to ${CMAKE_INSTALL_PREFIX}/matlab")
 file(WRITE ${CMAKE_INSTALL_PREFIX}/matlab/addpath_drake.m
 	   "function addpath_drake()\n"
 	   "  mfiledir = fileparts(which(mfilename));\n"
@@ -151,7 +150,6 @@ endif()
 
 add_test(NAME "RigidBodyManipulatorMemoryTest"
 	WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/examples/Acrobot"
-	COMMAND "matlab" #"${CMAKE_SOURCE_DIR}/cmake/matlab_clean.pl" 
+	COMMAND "matlab" #"${CMAKE_SOURCE_DIR}/cmake/matlab_clean.pl"
 	"-nosplash" "-nodisplay" "-r" "addpath('${CMAKE_INSTALL_PREFIX}/matlab'); addpath_${POD_NAME}; try, r = RigidBodyManipulator('Acrobot.urdf'); megaclear; catch ex, disp(getReport(ex,'extended')); disp(''); knownIssue('$testname',ex); force_close_system; exit(1); end; force_close_system; exit(0)")
 set_tests_properties(RigidBodyManipulatorMemoryTest PROPERTIES TIMEOUT 60)
-
