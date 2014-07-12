@@ -15,12 +15,12 @@ classdef Quadrotor < RigidBodyManipulator
         case 'lidar'
           obj = addFrame(obj,RigidBodyFrame(findLinkInd(obj,'base_link'),[.35;0;0],zeros(3,1),'lidar_frame'));
           lidar = RigidBodyLidar('lidar',findFrameId(obj,'lidar_frame'),-.4,.4,40,10);
-%          lidar = enableLCMGL(lidar);
+          lidar = enableLCMGL(lidar);
           obj = addSensor(obj,lidar);
         case 'kinect'
           obj = addFrame(obj,RigidBodyFrame(findLinkInd(obj,'base_link'),[.35;0;0],zeros(3,1),'kinect_frame'));
-          kinect = RigidBodyDepthCamera('kinect',findFrameId(obj,'kinect_frame'),-.1,.1,12,-.5,.5,30,10);
-%          kinect = enableLCMGL(kinect);
+          kinect = RigidBodyDepthCamera('kinect',findFrameId(obj,'kinect_frame'),-.4,.4,12,-.5,.5,30,10);
+          kinect = enableLCMGL(kinect);
           obj = addSensor(obj,kinect);
       end
       obj = addSensor(obj,FullStateFeedbackSensor);

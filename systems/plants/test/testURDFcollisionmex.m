@@ -15,7 +15,7 @@ function testURDFcollisionmex
   for urdf = {'../../../examples/Atlas/urdf/atlas_convex_hull.urdf', ...
               '../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'};
 
-    urdffile = GetFullPath(urdf{1});
+    urdffile = which(urdf{1});
     fprintf(1,'testing %s\n', urdffile);
     w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
     warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');

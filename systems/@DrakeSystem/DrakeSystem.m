@@ -169,14 +169,15 @@ classdef DrakeSystem < DynamicalSystem
       % 
       % @param ts a 2-by-n matrix with each column containing a sample time
       %    redundant colums are eliminated automatically.  
-      ts = unique(ts','rows')';
-
       % only a few possibilities are allowed/supported
       %   inherited, single continuous, single discrete, single continuous+single
       %   discrete (note: disabled single continuous + single discrete
       %   because it wasn't obviously the right thing... e.g. in the
       %   visualizer who asked for the output to be at fixed dt, but after
       %   combination, the output gets called continuously).
+      
+      ts = unique(ts','rows')';
+
       if size(ts,2)>1  % if only one ts, then all is well
         if any(ts(1,:)==-1)  % zap superfluous inherited
           ts=ts(:,ts(1,:)~=-1);

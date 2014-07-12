@@ -104,7 +104,7 @@ classdef AcrobotPlant < Manipulator
       traj_opt = traj_opt.addStateConstraint(ConstantConstraint(x0),1);
       traj_opt = traj_opt.addStateConstraint(ConstantConstraint(xf),N);
       traj_opt = traj_opt.addRunningCost(@cost);
-      traj_opt = traj_opt.addFinalCost(@final_cost);
+      traj_opt = traj_opt.addFinalCost(@finalCost);
       
       traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
       
@@ -137,7 +137,7 @@ classdef AcrobotPlant < Manipulator
         end
       end
       
-      function [h,dh] = final_cost(t,x)
+      function [h,dh] = finalCost(t,x)
         h = t;
         dh = [1,zeros(1,size(x,1))];
         return;
