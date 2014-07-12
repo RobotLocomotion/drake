@@ -51,9 +51,9 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   qf(1) = stride_length/4;
 
   % Set up time limits
-  N = 15;
+  N = 18;
   tf_range = [0.2,2];
-  h_min = 0.01; h_max = 0.2;
+  h_min = 0.01; h_max_stance = 0.05; h_max_flight = 0.3;
 
   % Set up cost variables
   q_nom = bsxfun(@times,qstar,ones(1,N));
@@ -84,8 +84,10 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   FC_edge = robot.getMass()*norm(robot.getGravity)*bsxfun(@rdivide,FC_edge,sqrt(sum(FC_edge.^2,1)));
 
   % Create stance constraints
-  in_stance.toe = 4:12;
-  in_stance.heel = 7:9;
+  in_stance.toe = 4:15;
+  in_stance.heel = 8:11;
+  in_stance.total = union(in_stance.toe,in_stance.heel);
+  in_flight = setdiff(1:N,in_stance.total);
   contact_wrench_struct(1).active_knot = in_stance.toe;
   contact_wrench_struct(1).cw = ...
     LinearFrictionConeWrench(robot,l_foot,l_foot_toe,FC_edge);
@@ -104,7 +106,8 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   cdfkp = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,contact_wrench_struct);
 
   % Add Timestep bounds
-  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(h_min*ones(N-1,1),h_max*ones(N-1,1)),cdfkp.h_inds);
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(h_min*ones(numel(in_flight)-1,1),h_max_flight*ones(numel(in_flight)-1,1)),cdfkp.h_inds(in_flight(1:end-1)));
+  cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(h_min*ones(numel(in_stance.total)-1,1),h_max_stance*ones(numel(in_stance.total)-1,1)),cdfkp.h_inds(in_stance.total(1:end-1)));
   
   % Add initial contition constraints
   cdfkp = cdfkp.addConstraint(ConstantConstraint([-stride_length/4;0;0]), ...
@@ -148,7 +151,7 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   % TODO: Set up seed
   if isempty(seed)
     x_seed = zeros(cdfkp.num_vars,1);
-    x_seed(cdfkp.h_inds) = (h_min+h_max)/2;
+    x_seed(cdfkp.h_inds) = (h_min+h_max_flight+h_max_stance)/2;
     x_seed(cdfkp.q_inds(:)) = reshape(linspacevec(q0,qf,N),[],1);
   else
     x_seed = seed.x_sol;
