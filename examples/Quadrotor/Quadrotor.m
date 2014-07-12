@@ -47,13 +47,33 @@ classdef Quadrotor < RigidBodyManipulator
       
       obj = compile(obj);
     end
+    
+    function obj = addTrees(obj,number_of_obstacles)
+      if nargin<2, number_of_obstacles = 5*(randi(5)+2); end
+      for i=1:number_of_obstacles
+        xy = 5*randn(2,1);
+        while(norm(xy)<1 || (xy(2,1)<=1 && xy(2,1)>=-1)), xy = randn(2,1); end
+        height = 1+rand;
+        param1 = rand(1,2);
+        param2 = randn;
+        s = RigidBodyBox([.2+.8*param1 height],[xy;height/2],[0;0;param2]);
+        s.c = [83,53,10]/255;
+        obj = addShapeToBody(obj,'world',s);
+        obj = addContactShapeToBody(obj,'world',s);
+        s = RigidBodyBox(1.5*[.2+.8*param1 height/4],[xy;height + height/8],[0;0;param2]);
+        s.c = [0,0.7,0];
+        obj = addShapeToBody(obj,'world',s);
+        obj = addContactShapeToBody(obj,'world',s);
+      end
+      obj = compile(obj);
+    end
   end
   
   
   methods (Static)
     function runOpenLoop
       r = Quadrotor('lidar');
-      r = addObstacles(r); 
+      r = addTrees(r); 
       sys = TimeSteppingRigidBodyManipulator(r,.01);
       
       v = sys.constructVisualizer();
