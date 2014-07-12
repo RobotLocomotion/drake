@@ -124,6 +124,7 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   half_periodic_constraint = halfPeriodicConstraint(robot);
   cdfkp = cdfkp.addConstraint(half_periodic_constraint,cdfkp.q_inds(:,[1,end]));
   cdfkp = cdfkp.addConstraint(half_periodic_constraint,cdfkp.v_inds(:,[1,end]));
+  cdfkp = cdfkp.addConstraint(LinearConstraint(0,0,[1,-1]),cdfkp.v_inds(1,[1,end]));
   %cdfkp = cdfkp.addConstraint(LinearConstraint(zeros(2,1),zeros(2,1),[eye(2),-eye(2)]), ...
                               %cdfkp.com_inds(2:3,[1,end]));
   %cdfkp = cdfkp.addConstraint(LinearConstraint(zeros(3,1),zeros(3,1),[eye(3),diag([-1,1,-1])]), ...
