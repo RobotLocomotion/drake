@@ -51,9 +51,9 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   qf(1) = stride_length/4;
 
   % Set up time limits
-  N = 12;
-  tf_range = stride_length/2/6*[1,1];
-  h_min = tf_range(1)/(2*N); h_max = 2*tf_range(2)/N;
+  N = 15;
+  tf_range = [0.2,2];
+  h_min = 0.01; h_max = 0.2;
 
   % Set up cost variables
   q_nom = bsxfun(@times,qstar,ones(1,N));
@@ -84,8 +84,8 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   FC_edge = robot.getMass()*norm(robot.getGravity)*bsxfun(@rdivide,FC_edge,sqrt(sum(FC_edge.^2,1)));
 
   % Create stance constraints
-  in_stance.toe = 4:9;
-  in_stance.heel = 6:7;
+  in_stance.toe = 4:12;
+  in_stance.heel = 7:9;
   contact_wrench_struct(1).active_knot = in_stance.toe;
   contact_wrench_struct(1).cw = ...
     LinearFrictionConeWrench(robot,l_foot,l_foot_toe,FC_edge);
