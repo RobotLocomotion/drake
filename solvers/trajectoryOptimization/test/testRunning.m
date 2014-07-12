@@ -162,9 +162,9 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
   cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',major_iteration_limit);
   cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-5);
-  cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',1e-5);
+  cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',1e-4);
   cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
-  cdfkp = cdfkp.setSolverOptions('snopt','linesearchtolerance',0.99);
+  cdfkp = cdfkp.setSolverOptions('snopt','linesearchtolerance',0.9);
   cdfkp = cdfkp.setSolverOptions('snopt','print',sprintf('snopt_%s.out',suffix));
   
   % Solve trajectory optimization
