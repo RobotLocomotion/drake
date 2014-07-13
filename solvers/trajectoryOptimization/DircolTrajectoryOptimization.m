@@ -120,6 +120,7 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       % Interpolate between knot points to reconstruct a trajectory using
       % the hermite spline
       t = [0; cumsum(z(obj.h_inds))];
+      u = reshape(z(obj.u_inds),[],obj.N);
 
       x = reshape(z(obj.x_inds),[],obj.N);
       xdot = zeros(size(x,1),obj.N);
