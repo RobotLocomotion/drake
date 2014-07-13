@@ -51,5 +51,18 @@ classdef XCubed < PolynomialSystem
       v.playback(x);
 %      v.playbackSWF(x,'xcubed');
     end
+    
+    function findFixedPointTest()
+      p=XCubed();
+      
+      xstar = findFixedPoint(p,.1*randn,[]);
+      valuecheck(xstar,0,1e-4);
+
+      xstar = findFixedPoint(p,1+.1*randn,[]);
+      valuecheck(xstar,1,1e-4);
+      
+      xstar = findFixedPoint(p,-1+.1*randn,[]);
+      valuecheck(xstar,-1,1e-4);
+    end
   end
 end

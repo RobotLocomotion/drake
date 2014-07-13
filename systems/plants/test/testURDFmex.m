@@ -15,7 +15,7 @@ for urdf = {'./FallingBrick.urdf',...
     '../../../examples/FurutaPendulum/FurutaPendulum.urdf', ...
     '../../../examples/Atlas/urdf/atlas_minimal_contact.urdf'};
 
-  urdffile = which(urdf{1});
+  urdffile = GetFullPath(urdf{1});
   fprintf(1,'testing %s\n', urdffile);
   r = RigidBodyManipulator(urdffile,struct('floating',true));
   
