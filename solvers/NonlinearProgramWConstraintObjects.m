@@ -133,7 +133,11 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     end
     
     function obj = addConstraint(obj,cnstr,varargin)
-      if isa(cnstr,'BoundingBoxConstraint')
+      if iscell(cnstr)
+        for i=1:numel(cnstr)
+          obj = addConstraint(obj,cnstr{i},varargin);
+        end
+      elseif isa(cnstr,'BoundingBoxConstraint')
         obj = addBoundingBoxConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'LinearConstraint')
         obj = addLinearConstraint(obj,cnstr,varargin{:});
