@@ -56,7 +56,6 @@ classdef SecondOrderSystem < DrakeSystem
       if (num_xc<0 || rem(num_xc,2)) error('num_x must be even for a SecondOrderDynamics'); end 
       obj.num_q = num_xc/2;
       obj = setNumContStates@DrakeSystem(obj,num_xc);
-      obj = setNumOutputs(obj,num_xc); 
     end
     
     
