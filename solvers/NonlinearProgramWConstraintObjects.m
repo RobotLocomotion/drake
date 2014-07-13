@@ -342,6 +342,11 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
      
     function [f,df] = objective(obj,x)
       shared_data = obj.evaluateSharedDataFunctions(x);
+
+      for i=1:length(obj.display_funs)
+        obj.display_funs{i}(x(obj.display_fun_indices{i}));
+      end
+      
       f = 0;
       df = zeros(1,obj.num_vars);
       for i = 1:length(obj.cost)
@@ -354,6 +359,11 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     
     function [f,G] = objectiveAndNonlinearConstraints(obj,x)
       shared_data = obj.evaluateSharedDataFunctions(x);
+      
+      for i=1:length(obj.display_funs)
+        obj.display_funs{i}(x(obj.display_fun_indices{i}));
+      end
+      
       f = zeros(1+obj.num_nlcon,1);
       G = zeros(1+obj.num_nlcon,obj.num_vars);
       for i = 1:length(obj.cost)
