@@ -292,84 +292,20 @@ classdef DrakeSystem < DynamicalSystem
       x = Point(obj.getStateFrame,x);
     end
     
-    function [xstar,ustar,success] = findFixedPoint(obj,x0,u0,v)
+    function [xstar,ustar,info] = findFixedPoint(obj,x0,u0)
       % attempts to find a fixed point (xstar,ustar) which also satisfies the constraints,
       % using (x0,u0) as the initial guess.  
       %
       % @param x0 initial guess for the state
       % @param u0 initial guess for the input
-      % @param v (optional) a visualizer that should be called while the
-      % solver is doing it's thing  
-      %
+      % 
+      % Note: consider manually constructing a FixedPointProgram
+      % for a much richer interface where you can set solver 
+      % parameters and/or add additional objectives/constraints.
       
-      if isa(x0,'Point')
-        x0 = double(x0.inFrame(obj.getStateFrame));
-      end
-      if isa(u0,'Point')
-        u0 = double(u0.inFrame(obj.getInputFrame));
-      end
-   
-      if ~isTI(obj), error('only makes sense for time invariant systems'); end
-            
-      function [f,df] = myobj(xu)
-        f = 0; df = 0*xu;  % feasibility problem, no objective
-%         err = [xu-[x0;u0]];
-%         f = err'*err;
-%         df = 2*err;
-      end
-      problem.objective = @myobj;
-      problem.x0 = [x0;u0];
-      
-      function [c,ceq,GC,GCeq] = mycon(xu)
-        x = xu(1:obj.num_x);
-        u = xu(obj.num_x + (1:obj.num_u));
-
-        c=[]; GC=[];
-        ceq=[]; GCeq=[];
-        
-        if (obj.num_xc>0)
-          [xdot,df] = geval(@obj.dynamics,0,x,u);
-          ceq = [ceq; xdot];
-          GCeq = [GCeq, df(:,2:end)'];
-        end
-        
-        if (obj.num_xd>0)
-          [xdn,df] = geval(@obj.update,0,x,u);
-          ceq=[ceq;x-xdn]; GCeq=[GCeq,([eye(obj.num_x),zeros(obj.num_x,obj.num_u)]-df(:,2:end))'];
-        end
-        
-        if (obj.num_xcon>0)
-          [phi,dphi] = geval(@obj.stateConstraints,x);
-          ceq = [ceq; phi];
-          GCeq = [GCeq, [dphi,zeros(obj.num_xcon,obj.num_u)]'];
-        end
-        
-        if (obj.getNumUnilateralConstraints > 0)
-          [phi,dphi] = geval(@obj.unilateralConstraints,x);
-          c = [c;phi];
-          GC = [GC, [dphi,zeros(obj.getNumUnilateralConstraints,obj.num_u)]'];
-        end
-      end
-      problem.nonlcon = @mycon;
-      problem.solver = 'fmincon';
-
-      function stop=drawme(xu,optimValues,state)
-        stop=false;
-        v.draw(0,xu(1:obj.num_x));
-      end
-      if (nargin>3 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
-        problem.options=optimset('GradObj','on','GradConstr','on','Algorithm','active-set','Display','iter','OutputFcn',@drawme,'TolX',1e-9);
-      else
-        problem.options=optimset('GradObj','on','GradConstr','on','Algorithm','active-set','Display','off');
-      end
-      [xu,~,exitflag] = fmincon(problem);
-      xstar = Point(obj.getStateFrame,xu(1:obj.num_x));
-      ustar = Point(obj.getInputFrame,xu(obj.num_x + (1:obj.num_u)));
-      success=(exitflag>0);
-      if (~success)
-        error('Drake:DrakeSystem:FixedPointSearchFailed','failed to find a fixed point (exitflag=%d)',exitflag);
-      end
-    end    
+      prog = FixedPointProgram(obj);
+      [xstar,ustar,info] = findFixedPoint(prog,x0,u0);
+    end
   end
   
   % access methods

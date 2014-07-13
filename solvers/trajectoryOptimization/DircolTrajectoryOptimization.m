@@ -107,23 +107,28 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       obj = obj.addCost(running_cost_end,{obj.h_inds(end);obj.x_inds(:,end);obj.u_inds(:,end)});
     end
     
-    function [utraj,xtraj] = reconstructTrajectory(obj,z)
+    function [utraj,xtraj] = reconstructInputTrajectory(obj,z)
       % Interpolate between knot points to reconstruct a trajectory using
       % the hermite spline
       t = [0; cumsum(z(obj.h_inds))];
       u = reshape(z(obj.u_inds),[],obj.N);
       utraj = PPTrajectory(foh(t,u));
       utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+    end
+    
+    function xtraj = reconstructStateTrajectory(obj,z)
+      % Interpolate between knot points to reconstruct a trajectory using
+      % the hermite spline
+      t = [0; cumsum(z(obj.h_inds))];
+      u = reshape(z(obj.u_inds),[],obj.N);
 
-      if nargout>1
-        x = reshape(z(obj.x_inds),[],obj.N);
-        xdot = zeros(size(x,1),obj.N);
-        for i=1:obj.N,
-          xdot(:,i) = obj.plant.dynamics(t(i),x(:,i),u(:,i));
-        end
-        xtraj = PPTrajectory(pchipDeriv(t,x,xdot));
-        xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
+      x = reshape(z(obj.x_inds),[],obj.N);
+      xdot = zeros(size(x,1),obj.N);
+      for i=1:obj.N,
+        xdot(:,i) = obj.plant.dynamics(t(i),x(:,i),u(:,i));
       end
+      xtraj = PPTrajectory(pchipDeriv(t,x,xdot));
+      xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
     end
   end
   

@@ -25,6 +25,7 @@ rmpath(fullfile(conf.root,'thirdParty'));
 rmpath(fullfile(conf.root,'thirdParty','path'));
 rmpath(fullfile(conf.root,'thirdParty','spatial'));
 rmpath(fullfile(conf.root,'thirdParty','cprintf'));
+rmpath(fullfile(conf.root,'thirdParty','GetFullPath'));
 
 javarmpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 javarmpath(fullfile(pods_get_base_path,'share','java','lcmtypes_drake.jar'));

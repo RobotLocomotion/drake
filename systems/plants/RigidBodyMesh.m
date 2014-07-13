@@ -34,7 +34,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
       elseif strcmpi(ext,'.wrl')
         wrlfile = obj.filename;
       else
-        error('unknown mesh file extension');
+        error(['unknown mesh file extension ',ext]);
       end
       
       txt=fileread(wrlfile);
