@@ -30,6 +30,8 @@ classdef NonlinearProgram
     x_lb,x_ub
     solver
     solver_options
+    display_funs
+    display_fun_indices
     grad_method
     check_grad
   end
@@ -108,6 +110,10 @@ classdef NonlinearProgram
         error('Drake:NonlinearProgram:AbstractMethod','all derived classes must implement objective or objectiveAndNonlinearConstraints');
       end
 
+      for i=1:length(obj.display_funs)
+        obj.display_funs{i}(x(obj.display_fun_indices{i}));
+      end
+      
       obj.objcon_logic = true;
       if nargout>1
         [f,df] = objective(obj,x);
@@ -189,6 +195,20 @@ classdef NonlinearProgram
       obj.beq = vertcat(obj.beq,beq);
     end
 
+    function obj = addDisplayFunction(obj,display_fun,indices)
+      % add a dispay function that gets called on every iteration of the
+      % algorithm
+      % @param displayFun a function handle of the form displayFun(x(indices))
+      % @param indices optionally specify a subset of the decision
+      % variables to be passed to the displayFun @default 1:obj.num_vars
+      
+      typecheck(display_fun,'function_handle');
+      if nargin<3, indices = 1:obj.num_vars; end
+
+      obj.display_funs = vertcat(obj.display_funs,{display_fun});
+      obj.display_fun_indices = vertcat(obj.display_fun_indices,{indices});
+    end
+    
     function obj = setVarBounds(obj,x_lb,x_ub)
       % set the lower and upper bounds of the decision variables
       sizecheck(x_lb,[obj.num_vars,1]);
@@ -478,7 +498,7 @@ classdef NonlinearProgram
       end
       
       objval = objval(1);
-      if exitflag~=1, disp(snoptInfo(exitflag)); end
+      if exitflag~=1, fprintf(' %3d %s\n',exitflag,snoptInfo(exitflag)); end
     end
     
     function [x,objval,exitflag] = fmincon(obj,x0)
