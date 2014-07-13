@@ -10,7 +10,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
   %     where running_cost is a NonlinearConstraint f(h,x,u)
   % and
   %  obj = addDynamicConstraints(obj);
-  %   which add the constraints to enforce \dot x = f(x,u)
+  %   which add the constraints to enforce xdot = f(x,u)
   %
   % This class assumes that there are a fixed number (N) time steps, and
   % that the trajectory is discreteized into timesteps h (N-1), state x
@@ -32,6 +32,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
   end
   
   methods
+    function obj = DirectTrajectoryOptimization(plant,N,durations,options)
     % function obj =
     % DirectTrajectoryOptimization(plant,initial_cost,running_cost,final_cost,...
     % t_init,traj_init,T_span,constraints, options)
@@ -42,8 +43,8 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
     % @param options (optional)
     %        options.time_option {1: all time steps are constant, 2: all
     %        time steps are independent}
-    function obj = DirectTrajectoryOptimization(plant,N,durations,options)
-      %#ok<*PROP>
+
+    %#ok<*PROP>
       
       if nargin < 4
         options = struct();
@@ -164,7 +165,8 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
     
       z0 = obj.getInitialVars(t_init,traj_init);
       [z,F,info] = obj.solve(z0);
-      [utraj,xtraj] = reconstructTrajectory(obj,z);
+      utraj = reconstructInputTrajectory(obj,z);
+      if nargin>1, xtraj = reconstructStateTrajectory(obj,z); end
     end
     
     function z0 = getInitialVars(obj,t_init,traj_init)
@@ -246,7 +248,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       obj = obj.addCost(cost,{obj.h_inds;obj.x_inds(:,end)});
     end
     
-    function [utraj,xtraj] = reconstructTrajectory(obj,z)
+    function utraj = reconstructInputTrajectory(obj,z)
       % default behavior is to use first order holds, but this can be
       % re-implemented by a subclass.
       t = [0; cumsum(z(obj.h_inds))];
@@ -254,12 +256,16 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       u = reshape(z(obj.u_inds),[],obj.N);
       utraj = PPTrajectory(foh(t,u));
       utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
-      
-      if nargout>1
-        x = reshape(z(obj.x_inds),[],obj.N);
-        xtraj = PPTrajectory(foh(t,x));
-        xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
-      end
+    end
+    
+    function xtraj = reconstructStateTrajectory(obj,z)
+      % default behavior is to use first order holds, but this can be
+      % re-implemented by a subclass.
+      t = [0; cumsum(z(obj.h_inds))];
+
+      x = reshape(z(obj.x_inds),[],obj.N);
+      xtraj = PPTrajectory(foh(t,x));
+      xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
     end
     
     function u0 = extractFirstInput(obj,z)
