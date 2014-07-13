@@ -133,7 +133,21 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     end
     
     function obj = addConstraint(obj,cnstr,varargin)
-      if isa(cnstr,'BoundingBoxConstraint')
+      % obj = addConstraint(obj,cnstr,varargin)
+      % Queries the constraint type and calls the appropriate addConstraint
+      % method (e.g. addLinearConstraint, etc)
+      %
+      % @param cnstr a Constraint object.  if cnstr is a cell array, then
+      % each of the constraints are added individually.
+      % @param varargin the remaining arguments are passed directly through
+      % to the specialized methods. Note that if cnstr is a cell array,
+      % then the same varargin is passed to all of the specialized methods.
+      
+      if iscell(cnstr)
+        for i=1:numel(cnstr)
+          obj = addConstraint(obj,cnstr{i},varargin);
+        end
+      elseif isa(cnstr,'BoundingBoxConstraint')
         obj = addBoundingBoxConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'LinearConstraint')
         obj = addLinearConstraint(obj,cnstr,varargin{:});
