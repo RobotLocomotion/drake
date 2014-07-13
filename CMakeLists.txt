@@ -107,6 +107,7 @@ endif()
 add_subdirectory(util)
 add_subdirectory(solvers)
 add_subdirectory(systems)
+add_subdirectory(thirdParty/GetFullPath)
 
 # setup matlab pods-compliance
 include(cmake/matlab_pods.cmake)
