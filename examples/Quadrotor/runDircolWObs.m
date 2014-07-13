@@ -1,7 +1,7 @@
 function runDircolWObs
 
-% simple planning demo which takes the quadrotor from hover at x=0m to a new hover at
-% x=2m with minimal thrust.
+% simple planning demo which takes the quadrotor from hover at y=0m to a new hover at
+% y=10m with minimal thrust.
 
 r = Quadrotor();
 r = addTrees(r,15);
