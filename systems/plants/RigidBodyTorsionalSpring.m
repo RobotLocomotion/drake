@@ -10,15 +10,25 @@ classdef RigidBodyTorsionalSpring < RigidBodyForceElement
   end
   
   methods
-    function f_ext = computeSpatialForce(obj,manip,q,qd)
+    function [f_ext,df_ext] = computeSpatialForce(obj,manip,q,qd)
       theta = q(manip.body(obj.joint).dofnum);
       torque = obj.k*(obj.rest_angle - theta);
       f_ext = sparse(6,getNumBodies(manip));
+      
+      if (nargout>1)
+         dthetadq = zeros(1,size(q,1)); dthetadq(manip.body(obj.joint).dofnum) = 1;
+         dtorquedq = -obj.k*dthetadq;
+         df_ext = sparse(6*getNumBodies(manip),size(q,1)+size(qd,1));
+      end
 
       % note, because featherstone coordinates do everything about the
       % z-axis, the below is actually equivalent to
       % f_ext(:,obj.joint) = manip.body(obj.joint).X_joint_to_body'*[zeros(3,1);torque*manip.body(obj.joint).joint_axis];
       f_ext(:,obj.joint) = [zeros(2,1);torque;zeros(3,1)]; 
+      if (nargout>1)
+         df_ext((obj.joint-1)*6+1:obj.joint*6,1:size(q,1)) = [zeros(2,size(q,1));dtorquedq;zeros(3,size(q,1))];
+         df_ext = reshape(df_ext,6,[]);
+      end
     end
     
     function obj = updateBodyIndices(obj,map_from_old_to_new)
