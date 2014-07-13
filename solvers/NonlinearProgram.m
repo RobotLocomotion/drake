@@ -155,8 +155,11 @@ classdef NonlinearProgram
       obj.iCeqfun = reshape(bsxfun(@times,(1:obj.num_ceq)',ones(1,obj.num_vars)),[],1);
       obj.jCeqvar = reshape(bsxfun(@times,ones(obj.num_ceq,1),(1:obj.num_vars)),[],1);
       
-      % todo : check dependencies and then go through the list
-      obj.solver = 'snopt';
+      if checkDependency('snopt')
+        obj.solver = 'snopt';
+      else % todo: check for fmincon?
+        obj.solver = 'fmincon';
+      end
       obj.solver_options.fmincon = optimset('Display','off');
       obj.solver_options.snopt = struct();
       obj.solver_options.snopt.MajorIterationsLimit = 1000;
