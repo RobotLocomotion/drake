@@ -561,16 +561,13 @@ classdef RigidBodyManipulator < Manipulator
       end
       model.B = full(B);
 
-      model = setNumInputs(model,size(model.B,2));
-      model = setNumDOF(model,num_dof);
-      model = setNumOutputs(model,2*num_dof);
-
       [model,paramframe,~,pmin,pmax] = constructParamFrame(model);
       if ~isequal_modulo_transforms(paramframe,getParamFrame(model)) % let the previous handle stay valid if possible
         model = setParamFrame(model,paramframe);
       end
       model = setParamLimits(model,pmin,pmax);
       
+      model = setNumInputs(model,size(model.B,2));
       if getNumInputs(model)>0
         inputframe = constructInputFrame(model);
         if ~isequal_modulo_transforms(inputframe,getInputFrame(model)) % let the previous handle stay valid if possible
@@ -578,6 +575,7 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
 
+      model = setNumDOF(model,num_dof);
       if getNumStates(model)>0
         stateframe = constructStateFrame(model);
         if ~isequal_modulo_transforms(stateframe,getStateFrame(model)) % let the previous handle stay valid if possible
@@ -599,6 +597,7 @@ classdef RigidBodyManipulator < Manipulator
         end
         model = setDirectFeedthrough(model,feedthrough);
       else
+        model = setNumOutputs(model,2*num_dof);
         model = setOutputFrame(model,getStateFrame(model));  % output = state
         model = setDirectFeedthrough(model,false);
       end
