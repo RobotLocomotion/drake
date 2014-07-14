@@ -33,24 +33,13 @@ prog = prog.addInputConstraint(ConstantConstraint(u0),N);
 prog = prog.addRunningCost(@cost);
 prog = prog.addFinalCost(@final_cost);
 
-tf0 = 6;                      % initial guess at duration
-
-disp('solving w/o obstacles');
-traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
-traj_init.u = ConstantTrajectory(u0);
-
-%traj_opt = setCheckGrad(traj_opt,true);
-
-tic
-[xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init);
-toc
-
-disp('resolving w/ obstacles');
-snprint('snopt.out');
 collision_constraint = generateConstraint(MinDistanceConstraint(r,0.1),0);
 prog = prog.addStateConstraint(collision_constraint{1},1:N,1:getNumPositions(r));
-traj_init.x = xtraj;
-traj_init.u = utraj;
+
+tf0 = 6;                      % initial guess at duration
+
+traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
+traj_init.u = ConstantTrajectory(u0);
 
 tic
 [xtraj,utraj,z,F,info] = prog.solveTraj(tf0,traj_init);
