@@ -3,7 +3,7 @@ function manipulatorGradients
 
 w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-p = RigidBodyManipulator('../Quadrotor.urdf',struct('floating',true));
+p = RigidBodyManipulator('../quadrotor.urdf',struct('floating',true));
 warning(w);
 q = randn(p.getNumPositions,1);
 v = randn(p.getNumPositions,1);
