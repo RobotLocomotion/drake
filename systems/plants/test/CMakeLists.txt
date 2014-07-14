@@ -30,3 +30,7 @@ if (snopt_cpp_FOUND AND Boost_FOUND)
   add_ik_cpp(testIKpointwise)
   add_ik_cpp(testIKtraj)
 endif()
+
+add_executable(testDrakeJoint testDrakeJoint.cpp)
+include_directories( .. )
+target_link_libraries(testDrakeJoint drakeRBM)
