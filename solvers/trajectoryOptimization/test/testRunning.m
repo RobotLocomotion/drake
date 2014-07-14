@@ -51,9 +51,9 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   qf(1) = stride_length/4;
 
   % Set up time limits
-  N = 18;
+  N = 15;
   tf_range = [0.2,2];
-  h_min = 0.01; h_max_stance = 0.05; h_max_flight = 0.3;
+  h_min = 0.01; h_max_stance = 0.1; h_max_flight = 0.3;
 
   % Set up cost variables
   q_nom = bsxfun(@times,qstar,ones(1,N));
@@ -72,6 +72,11 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   % Ignore left foot
   active_collision_options.body_idx = setdiff(1:robot.getNumBodies(),l_foot);
   min_distance_constraint.stance = MinDistanceConstraint(robot,min_distance,[-inf,inf],active_collision_options);
+  n_interp_points = 2;
+  %interp_min_distance_constraint.flight = ...
+    %generateInterpolatedMinDistanceConstraint(min_distance_constraint.flight,(1:n_interp_points)/(n_interp_points+1));
+  interp_min_distance_constraint.stance = ...
+    generateInterpolatedMinDistanceConstraint(min_distance_constraint.stance,(1:n_interp_points)/(n_interp_points+1));
 
   % Set up linearized friction cone edges
   num_edges = 3;
@@ -84,8 +89,8 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   FC_edge = robot.getMass()*norm(robot.getGravity)*bsxfun(@rdivide,FC_edge,sqrt(sum(FC_edge.^2,1)));
 
   % Create stance constraints
-  in_stance.toe = 4:15;
-  in_stance.heel = 8:11;
+  in_stance.toe = 4:12;
+  in_stance.heel = 7:9;
   in_stance.total = union(in_stance.toe,in_stance.heel);
   in_flight = setdiff(1:N,in_stance.total);
   contact_wrench_struct(1).active_knot = in_stance.toe;
@@ -127,6 +132,7 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   cdfkp = cdfkp.addConstraint(LinearConstraint(0,0,[1,-1]),cdfkp.v_inds(1,[1,end]));
   %cdfkp = cdfkp.addConstraint(LinearConstraint(zeros(2,1),zeros(2,1),[eye(2),-eye(2)]), ...
                               %cdfkp.com_inds(2:3,[1,end]));
+  cdfkp = cdfkp.addConstraint(LinearConstraint(0,0,[1,-1]), cdfkp.comdot_inds(3,[1,end]));
   %cdfkp = cdfkp.addConstraint(LinearConstraint(zeros(3,1),zeros(3,1),[eye(3),diag([-1,1,-1])]), ...
                               %cdfkp.comdot_inds(1:3,[1,end]));
   %cdfkp = cdfkp.addConstraint(LinearConstraint(zeros(3,1),zeros(3,1),[eye(3),diag([-1,1,-1])]), ...
@@ -147,7 +153,13 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
 
   % Add collision avoidance constraints
   cdfkp = cdfkp.addRigidBodyConstraint(min_distance_constraint.flight,num2cell(setdiff(1:N,[in_stance.toe,in_stance.heel])));
+  %for i = in_flight(1:end-1)
+    %cdfkp = cdfkp.addConstraint(interp_min_distance_constraint.flight,{cdfkp.q_idx(:,i),cdfkp.q_idx(:,i+1)});
+  %end
   cdfkp = cdfkp.addRigidBodyConstraint(min_distance_constraint.stance,num2cell(union(in_stance.toe,in_stance.heel)));
+  for i = in_stance(1:end-1)
+    cdfkp = cdfkp.addConstraint(interp_min_distance_constraint.flight,{cdfkp.q_idx(:,i),cdfkp.q_idx(:,i+1)});
+  end
   
   % TODO: Set up seed
   if isempty(seed)
