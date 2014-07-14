@@ -84,6 +84,9 @@ classdef Quadrotor < RigidBodyManipulator
       traj_opt = traj_opt.addDisplayFunction(@(x)visualizePlan(x,lcmgl),traj_opt.x_inds(1:3,:));
       
       function visualizePlan(x,lcmgl)
+        lcmgl.glColor3f(1, 0, 0);
+        lcmgl.glPointSize(3);
+        lcmgl.points(x(1,:),x(2,:),x(3,:));
         lcmgl.glColor3f(.5, .5, 1);
         lcmgl.plot3(x(1,:),x(2,:),x(3,:));
         lcmgl.switchBuffers;
