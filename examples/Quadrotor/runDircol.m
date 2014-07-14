@@ -6,7 +6,9 @@ function [utraj,xtraj,prog] = runDircol
 r = Quadrotor();
 
 N = 11;
-prog = DircolTrajectoryOptimization(r,N,[.1 4]);
+minumum_duration = .1;
+maximum_duration = 4;
+traj_opt = DircolTrajectoryOptimization(r,N,[minimum_duration maximum_duration]);  
 
 x0 = Point(getStateFrame(r));  % initial conditions: all-zeros
 x0.base_z = .5;
@@ -41,24 +43,20 @@ end
 
 end
 
-      function [g,dg] = cost(dt,x,u)
-        R = eye(4);
-        g = u'*R*u;
-        %g = sum((R*u).*u,1);
-        dg = [zeros(1,1+size(x,1)),2*u'*R];
-        %dg = zeros(1, 1 + size(x,1) + size(u,1));
-      end
-      
-      function [h,dh] = finalCost(t,x)
-        h = t;
-        dh = [1,zeros(1,size(x,1))];
-      end
+function [g,dg] = cost(dt,x,u)
 
-      function [J,dJ]=plotDircolTraj(t,x,u,plotdims)
-        figure(25);
-        h=plot(x(plotdims(1),:),x(plotdims(2),:),'r.-');
-        drawnow;
-        delete(h);
-        J=0;
-        dJ=[0*t(:);0*x(:);0*u(:)]';
-      end
+R = eye(4);
+g = u'*R*u;
+%g = sum((R*u).*u,1);
+dg = [zeros(1,1+size(x,1)),2*u'*R];
+%dg = zeros(1, 1 + size(x,1) + size(u,1));
+
+end
+
+function [h,dh] = finalCost(t,x)
+
+h = t;
+dh = [1,zeros(1,size(x,1))];
+
+end
+
