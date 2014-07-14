@@ -288,20 +288,20 @@ function [y0,C,D] = getOutputTrajectories(plant,ts,xtraj,utraj,options)
   D = PPTrajectory(spline(ts,D));
 end
 
-% function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,options)
-%   x0 = xtraj.eval(t); u0 = utraj.eval(t);
-%   Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
-%   nX = length(x0); nU = length(u0);
-%   [f,df] = geval(@plant.dynamics,t,x0,u0,options);
-%   A = df(:,1+(1:nX));
-%   B = df(:,nX+1+(1:nU));
-%   Sdot = -(Q - S*B*Ri*B'*S + S*A + A'*S);
-%   if (min(eig(S))<0) warning('S is not positive definite'); end
-% end
+function Sdot = Sdynamics(t,S,plant,Qtraj,Rtraj,xtraj,utraj,xdottraj,options)
+  x0 = xtraj.eval(t); u0 = utraj.eval(t);
+  Q = Qtraj.eval(t); Ri = inv(Rtraj.eval(t));
+  nX = length(x0); nU = length(u0);
+  [f,df] = geval(@plant.dynamics,t,x0,u0,options);
+  A = df(:,1+(1:nX));
+  B = df(:,nX+1+(1:nU));
+  Sdot = -(Q - S*B*Ri*B'*S + S*A + A'*S);
+  if (min(eig(S))<0) warning('S is not positive definite'); end
+end
 
-% function K = Ksoln(S,Ri,B)
-%   K = -Ri*B'*S;
-% end
+function K = Ksoln(S,Ri,B,N)
+  K = -Ri*B'*S;
+end
 
 function Sdot = affineSdynamics(t,S,plant,Qtraj,Rtraj,Ntraj,xtraj,utraj,xdottraj,options)
   % see doc/derivations/tvlqr-latexit.pdf 
