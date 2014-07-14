@@ -7,9 +7,9 @@ r = Quadrotor();
 r = addTrees(r,15);
 
 N = 21;
-minumum_duration = 2;
+minimum_duration = 2;
 maximum_duration = 10;
-traj_opt = DircolTrajectoryOptimization(r,N,[minimum_duration maximum_duration]);  
+prog = DircolTrajectoryOptimization(r,N,[minimum_duration maximum_duration]);  
 
 x0 = Point(getStateFrame(r));  % initial conditions: all-zeros
 x0.base_z = .5;

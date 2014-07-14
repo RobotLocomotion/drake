@@ -6,9 +6,9 @@ function [utraj,xtraj,prog] = runDircol
 r = Quadrotor();
 
 N = 11;
-minumum_duration = .1;
+minimum_duration = .1;
 maximum_duration = 4;
-traj_opt = DircolTrajectoryOptimization(r,N,[minimum_duration maximum_duration]);  
+prog = DircolTrajectoryOptimization(r,N,[minimum_duration maximum_duration]);  
 
 x0 = Point(getStateFrame(r));  % initial conditions: all-zeros
 x0.base_z = .5;
