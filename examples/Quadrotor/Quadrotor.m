@@ -39,10 +39,10 @@ classdef Quadrotor < RigidBodyManipulator
         xy = randn(2,1);
         while(norm(xy)<1), xy = randn(2,1); end
         height = .5+rand;
-        s = RigidBodyBox([.2+.8*rand(1,2) height],[xy;height/2],[0;0;randn]);
-        s.c = rand(3,1);
-        obj = addShapeToBody(obj,'world',s);
-        obj = addContactShapeToBody(obj,'world',s);
+        shape = RigidBodyBox([.2+.8*rand(1,2) height],[xy;height/2],[0;0;randn]);
+        shape.c = rand(3,1);
+        obj = addShapeToBody(obj,'world',shape);
+        obj = addContactShapeToBody(obj,'world',shape);
       end
       
       obj = compile(obj);
@@ -54,16 +54,16 @@ classdef Quadrotor < RigidBodyManipulator
         xy = 5*randn(2,1);
         while(norm(xy)<1 || (xy(2,1)<=1 && xy(2,1)>=-1)), xy = randn(2,1); end
         height = 1+rand;
-        param1 = rand(1,2);
-        param2 = randn;
-        s = RigidBodyBox([.2+.8*param1 height],[xy;height/2],[0;0;param2]);
-        s.c = [83,53,10]/255;
-        obj = addShapeToBody(obj,'world',s);
-        obj = addContactShapeToBody(obj,'world',s);
-        s = RigidBodyBox(1.5*[.2+.8*param1 height/4],[xy;height + height/8],[0;0;param2]);
-        s.c = [0,0.7,0];
-        obj = addShapeToBody(obj,'world',s);
-        obj = addContactShapeToBody(obj,'world',s);
+        width_param = rand(1,2);
+        yaw = randn;
+        shape = RigidBodyBox([.2+.8*width_param height],[xy;height/2],[0;0;yaw]);
+        shape.c = [83,53,10]/255;  % brown
+        obj = addShapeToBody(obj,'world',shape);
+        obj = addContactShapeToBody(obj,'world',shape);
+        shape = RigidBodyBox(1.5*[.2+.8*width_param height/4],[xy;height + height/8],[0;0;yaw]);
+        shape.c = [0,0.7,0];  % green
+        obj = addShapeToBody(obj,'world',shape);
+        obj = addContactShapeToBody(obj,'world',shape);
       end
       obj = compile(obj);
     end
