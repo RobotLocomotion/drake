@@ -47,7 +47,7 @@ classdef GraspWrench < RigidBodyContactWrench
       obj.F_ub = inf(6,1);
       obj.num_pt_F = 6;
       obj.num_wrench_constraint = 1;
-      obj.wrench_cnstr_ub = obj.force_max^2;
+      obj.wrench_cnstr_ub = obj.force_max^2/(obj.robot.getMass*9.81)^2;
       obj.wrench_cnstr_lb = 0;
       obj.wrench_iCfun = [1;1;1];
       obj.wrench_jCvar = obj.robot.getNumPositions+[1;2;3];
@@ -62,11 +62,11 @@ classdef GraspWrench < RigidBodyContactWrench
     end
     
     function A = force(obj)
-      A = speye(3,6);
+      A = obj.robot.getMass*9.81*speye(3,6);
     end
     
     function A = torque(obj)
-      A = [sparse(3,3) speye(3)];
+      A = obj.robot.getMass*9.81/100*[sparse(3,3) speye(3)];
     end
     
     function [pos,J] = contactPosition(obj,kinsol)
@@ -76,7 +76,8 @@ classdef GraspWrench < RigidBodyContactWrench
   
   methods(Access=protected)
     function lincon = generateWrenchLincon(obj)
-      lincon = LinearConstraint(obj.b_torque_lb,obj.b_torque_ub,[zeros(obj.num_torque_cnstr,3) obj.A_torque]);
+      A_torque = obj.torque();
+      lincon = LinearConstraint(obj.b_torque_lb,obj.b_torque_ub,[zeros(obj.num_torque_cnstr,3) obj.A_torque*A_torque(:,4:6)]);
       lincon = lincon.setName(repmat({sprintf('%s_grasp_torque_constraint',obj.body_name)},obj.num_torque_cnstr,1));
     end
   end

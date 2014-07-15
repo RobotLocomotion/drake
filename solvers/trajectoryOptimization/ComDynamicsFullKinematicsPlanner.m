@@ -274,5 +274,24 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
     
     function obj = addRunningCost(obj,running_cost)
     end
+    
+    function [q,v,h,t,com,comdot,comddot,H,Hdot,lambda,wrench] = parseSolution(obj,x_sol)
+      nq = obj.robot.getNumPositions;
+      nT = obj.N;
+      q = reshape(x_sol(obj.q_inds(:)),nq,nT);
+      v = reshape(x_sol(obj.v_inds(:)),nq,nT);
+      h = reshape(x_sol(obj.h_inds),1,[]);
+      t = cumsum([0 h]);
+      com = reshape(x_sol(obj.com_inds),3,[]);
+      comdot = reshape(x_sol(obj.comdot_inds),3,[]);
+      comddot = reshape(x_sol(obj.comddot_inds),3,[]);
+      H = reshape(x_sol(obj.H_inds),3,[]);
+      Hdot = reshape(x_sol(obj.Hdot_inds),3,[])*obj.torque_multiplier;
+      lambda = cell(length(obj.unique_contact_bodies),1);
+      for i = 1:length(obj.unique_contact_bodies)
+        lambda{i} = reshape(x_sol(obj.lambda_inds{i}),size(obj.lambda_inds{i},1),[],nT);
+      end
+      wrench = obj.contactWrench(x_sol);
+    end
   end
 end

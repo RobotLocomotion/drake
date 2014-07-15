@@ -1,5 +1,5 @@
 classdef WorldQuatConstraint < QuatConstraint
-% Constrain the body satisfies (quat'*quat_des)^2 in [1-tol, tol];
+% Constrain the body satisfies 2*(quat'*quat_des)^2-1 in [cos(tol), 1];
 % @param robot            A RigidBodyManipulator, or a
 %                         TimeSteppingRigidBodyManipulator
 % @param body             A scalar. The index of the body
