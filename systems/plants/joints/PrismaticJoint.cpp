@@ -19,9 +19,9 @@ e::AffineCompact3d PrismaticJoint::jointTransform(double* const q) const
   return ret;
 }
 
-e::Matrix<double, PrismaticJoint::TWIST_SIZE, 1> PrismaticJoint::spatialJointAxis(e::Vector3d translation_axis)
+e::Matrix<double, TWIST_SIZE, 1> PrismaticJoint::spatialJointAxis(e::Vector3d translation_axis)
 {
-  Matrix<double, PrismaticJoint::TWIST_SIZE, 1> ret;
+  Matrix<double, TWIST_SIZE, 1> ret;
   ret.topRows<3>() = translation_axis;
   ret.bottomRows<3>() = Vector3d::Zero();
   return ret;

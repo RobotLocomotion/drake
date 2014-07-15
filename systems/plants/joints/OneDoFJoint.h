@@ -2,9 +2,8 @@
 #define ONEDOFJOINT_H_
 
 #include "DrakeJoint.h"
-#include "DrakeJoint.cpp" // need to include .cpp as well because DrakeJoint is a template class
 
-class OneDoFJoint: public DrakeJoint<1, 1>
+class OneDoFJoint: public DrakeJoint
 {
 private:
   e::Matrix<double, TWIST_SIZE, 1> joint_axis;
@@ -15,9 +14,7 @@ protected:
 public:
   virtual ~OneDoFJoint();
 
-//  virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, DMotionSubspaceType* dmotion_subspace = nullptr) const override;
-
-//  virtual e::AffineCompact3d jointTransform(double* const q) const override;
+  virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, e::MatrixXd* dmotion_subspace) const override;
 };
 
 #endif /* ONEDOFJOINT_H_ */

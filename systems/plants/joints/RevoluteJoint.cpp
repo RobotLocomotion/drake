@@ -16,9 +16,9 @@ e::AffineCompact3d RevoluteJoint::jointTransform(double* const q) const
   return e::AffineCompact3d(e::AngleAxisd(q[0], rotation_axis));
 }
 
-e::Matrix<double, RevoluteJoint::TWIST_SIZE, 1> RevoluteJoint::spatialJointAxis(e::Vector3d rotation_axis)
+e::Matrix<double, TWIST_SIZE, 1> RevoluteJoint::spatialJointAxis(e::Vector3d rotation_axis)
 {
-  Matrix<double, RevoluteJoint::TWIST_SIZE, 1> ret;
+  Matrix<double, TWIST_SIZE, 1> ret;
   ret.topRows<3>() = Vector3d::Zero();
   ret.bottomRows<3>() = rotation_axis;
   return ret;

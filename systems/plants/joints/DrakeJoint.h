@@ -5,35 +5,41 @@
 #include <Eigen/Geometry>
 #include "RigidBody.h"
 
+#define TWIST_SIZE (int) 6
+
 class RigidBody;
 
 namespace e = Eigen;
 
 class DrakeJoint
 {
-public:
-  static const int TWIST_SIZE = 6; // TODO: move to a better place
 
 private:
   const RigidBody& parent_body;
   const e::AffineCompact3d transform_to_parent_body;
+  const int num_positions;
+  const int num_velocities;
 
 protected:
-  DrakeJoint(const RigidBody& parent_body, const e::AffineCompact3d& transform_to_parent_body);
+  DrakeJoint(const RigidBody& parent_body, const e::AffineCompact3d& transform_to_parent_body, int num_positions, int num_velocities);
 
 public:
+  typedef e::Matrix<double, TWIST_SIZE, e::Dynamic> MotionSubspaceType;
+
   virtual ~DrakeJoint();
 
   const RigidBody& getParentBody() const;
 
   const e::AffineCompact3d& getTransformToParentBody() const;
 
-  template <typename DerivedA, typename DerivedB>
-  virtual void motionSubspace(double* const q, MatrixBase<DerivedA>& motion_subspace, MatrixBase<DerivedB>* dmotion_subspace = nullptr) const = 0;
+  virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, e::MatrixXd* dmotion_subspace) const = 0;
 
   virtual e::AffineCompact3d jointTransform(double* const q) const = 0;
 
-public:
+  const int getNumPositions() const;
+
+  const int getNumVelocities() const;
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
