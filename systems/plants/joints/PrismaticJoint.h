@@ -1,9 +1,9 @@
 #ifndef PRISMATICJOINT_H_
 #define PRISMATICJOINT_H_
 
-#include "OneDoFJoint.h"
+#include "FixedAxisOneDoFJoint.h"
 
-class PrismaticJoint: public OneDoFJoint
+class PrismaticJoint: public FixedAxisOneDoFJoint
 {
 private:
   e::Vector3d translation_axis;
@@ -15,7 +15,7 @@ public:
   virtual e::AffineCompact3d jointTransform(double* const q) const override;
 
 private:
-  static e::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(e::Vector3d translation_axis);
+  static e::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(const e::Vector3d& translation_axis);
 };
 
 #endif /* PRISMATICJOINT_H_ */

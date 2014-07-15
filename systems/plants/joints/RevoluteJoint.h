@@ -1,9 +1,9 @@
 #ifndef REVOLUTEJOINT_H_
 #define REVOLUTEJOINT_H_
 
-#include "OneDoFJoint.h"
+#include "FixedAxisOneDoFJoint.h"
 
-class RevoluteJoint: public OneDoFJoint
+class RevoluteJoint: public FixedAxisOneDoFJoint
 {
 private:
   e::Vector3d rotation_axis;
@@ -15,7 +15,7 @@ public:
   virtual e::AffineCompact3d jointTransform(double* const q) const override;
 
 private:
-  static e::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(e::Vector3d rotation_axis);
+  static e::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(const e::Vector3d& rotation_axis);
 };
 
 #endif /* REVOLUTEJOINT_H_ */

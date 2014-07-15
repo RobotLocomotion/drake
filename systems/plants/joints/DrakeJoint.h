@@ -6,6 +6,7 @@
 #include "RigidBody.h"
 
 #define TWIST_SIZE (int) 6
+typedef Eigen::Matrix<double, TWIST_SIZE, 1> Vector6d;
 
 class RigidBody;
 
@@ -32,14 +33,19 @@ public:
 
   const e::AffineCompact3d& getTransformToParentBody() const;
 
-  virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, e::MatrixXd* dmotion_subspace) const = 0;
-
   virtual e::AffineCompact3d jointTransform(double* const q) const = 0;
+
+  virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, e::MatrixXd* dmotion_subspace = nullptr) const = 0;
+
+  virtual void motionSubspaceDotTimesV(double* const q, double* const v, Vector6d& motion_subspace_dot_times_v,
+      e::Matrix<double, TWIST_SIZE, e::Dynamic>* dmotion_subspace_dot_times_vdq = nullptr,
+      e::Matrix<double, TWIST_SIZE, e::Dynamic>* dmotion_subspace_dot_times_vdv = nullptr) const = 0;
 
   const int getNumPositions() const;
 
   const int getNumVelocities() const;
 
+public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
