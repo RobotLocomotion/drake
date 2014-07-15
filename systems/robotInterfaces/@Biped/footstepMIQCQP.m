@@ -80,16 +80,12 @@ quadcon = struct('Qc', {}, 'q', {}, 'rhs', {});
 objcon = 0;
 
 % x(:,1) == seed_steps([1,2,3,6],1),...
-ai = zeros(4, nv);
-ai(:,v.x.i(:,1)) = eye(4);
-bi = seed_steps([1,2,3,6], 1);
-Aeq = [Aeq; ai]; beq = [beq; bi];
+v.x.lb(:,1) = seed_steps([1,2,3,6], 1);
+v.x.ub(:,1) = seed_steps([1,2,3,6], 1);
 
 % x(:,2) == seed_steps([1,2,3,6],2),...
-ai = zeros(4, nv);
-ai(:,v.x.i(:,2)) = eye(4);
-bi = seed_steps([1,2,3,6], 2);
-Aeq = [Aeq; ai]; beq = [beq; bi];
+v.x.lb(:,2) = seed_steps([1,2,3,6], 2);
+v.x.ub(:,2) = seed_steps([1,2,3,6], 2);
 
 % sum(region, 1) + trim == 1,...
 offset = 0;
@@ -126,6 +122,10 @@ end
 % trim(1:2) == 1
 v.trim.lb(1:2) = 1;
 v.trim.ub(1:2) = 1;
+
+% trim(end) == 0
+v.trim.lb(end) = 0;
+v.trim.ub(end) = 0;
 
 % trim(1:end-1) >= trim(2:end)
 offset = 0;
@@ -224,24 +224,26 @@ assert(offset == expected_offset);
 A = [A; As];
 b = [b; bs];
 
-% offset = 0;
-% As = zeros(2 * v.sin_sector.size(1) * nsteps, nv);
-% bs = zeros(size(As, 1), 1);
-% % Enforce range between sin/cos sectors
-% for j = 1:nsteps
-%   for k = 1:v.sin_sector.size(1)
-%     % sum(sin_sector(max(1,k-1):min(k+1,size(sin_sector,1)),j)) >= cos_sector(k,j),...
-%     As(offset+1, v.sin_sector.i(max(1,k-1):min(k+1,v.sin_sector.size(1)),j)) = -1;
-%     As(offset+1, v.cos_sector.i(k,j)) = 1;
-%     % sum(cos_sector(max(1,k-1):min(k+1,size(cos_sector,1)),j)) >= sin_sector(k,j)];
-%     As(offset+2, v.cos_sector.i(max(1,k-1):min(k+1,v.cos_sector.size(1)),j)) = -1;
-%     As(offset+2, v.sin_sector.i(k,j)) = 1;
-%     offset = offset + 2;
-%   end
-% end
-% assert(offset == size(As, 1));
-% A = [A; As];
-% b = [b; bs];
+offset = 0;
+As = zeros(2 * v.sin_sector.size(1) * nsteps, nv);
+bs = zeros(size(As, 1), 1);
+% Enforce range between sin/cos sectors
+for j = 1:nsteps
+  for k = 1:v.sin_sector.size(1)
+    % sum(sin_sector(max(1,k-1):min(k+1,size(sin_sector,1)),j)) >= cos_sector(k,j),...
+    As(offset+1, v.sin_sector.i(max(1,k-1):min(k+1,v.sin_sector.size(1)),j)) = -1;
+    As(offset+1, v.cos_sector.i(k,j)) = 1;
+%     As(offset+1, v.trim.i(j)) = -5;
+    % sum(cos_sector(max(1,k-1):min(k+1,size(cos_sector,1)),j)) >= sin_sector(k,j)];
+    As(offset+2, v.cos_sector.i(max(1,k-1):min(k+1,v.cos_sector.size(1)),j)) = -1;
+    As(offset+2, v.sin_sector.i(k,j)) = 1;
+%     As(offset+2, v.trim.i(j)) = -5;
+    offset = offset + 2;
+  end
+end
+assert(offset == size(As, 1));
+A = [A; As];
+b = [b; bs];
 
 disp('before reach')
 size(A, 1)
@@ -264,21 +266,21 @@ for j = 2:nsteps-1
   for k = 1:v.cos_sector.size(1)
     As(offset+1, v.cos_sector.i(k, j)) = 1;
     As(offset+1, v.cos_sector.i(max(k-1, 1):min(k+1,v.cos_sector.size(1)), j+1)) = -1;
-    As(offset+1, v.trim.i(j+1)) = -5;
+%     As(offset+1, v.trim.i(j+1)) = -5;
     As(offset+2, v.sin_sector.i(k, j)) = 1;
     As(offset+2, v.sin_sector.i(max(k-1, 1):min(k+1,v.cos_sector.size(1)), j+1)) = -1;
-    As(offset+2, v.trim.i(j+1)) = -5;
+%     As(offset+2, v.trim.i(j+1)) = -5;
     offset = offset + 2;
   end
 
   % implies(~trim(j+1), yaw_range(1) <= yaw(j+1) - yaw(j) <= yaw_range(2));
   As(offset+1, v.x.i(4,j)) = 1;
   As(offset+1, v.x.i(4,j+1)) = -1;
-  As(offset+1, v.trim.i(j+1)) = -pi;
+%   As(offset+1, v.trim.i(j+1)) = -pi;
   bs(offset+1) = -yaw_range(1);
   As(offset+2, v.x.i(4,j)) = -1;
   As(offset+2, v.x.i(4,j+1)) = 1;
-  As(offset+2, v.trim.i(j+1)) = -pi;
+%   As(offset+2, v.trim.i(j+1)) = -pi;
   bs(offset+2) = yaw_range(2);
   offset = offset + 2;
 
@@ -369,12 +371,12 @@ A = [A; Ar];
 b = [b; br];
 
 % trim(j) fixes step j to the initial pose of that foot (so we can trim it out of the plan later)
-A_i = zeros((8)*(nsteps - 2), nv);
+A_i = zeros((8)*(nsteps - 3), nv);
 b_i = zeros(size(A_i, 1), 1);
 offset = 0;
 expected_offset = size(A_i, 1);
 M = 100;
-for j = 3:nsteps
+for j = 3:nsteps-1
   if seed_plan.footsteps(j).frame_id == seed_plan.footsteps(1).frame_id
     % Constraints = [Constraints, implies(trim(j), x(:,j) == seed_steps([1,2,3,6],1))];
     k = 1;
@@ -386,12 +388,14 @@ for j = 3:nsteps
   % x(:,j) <= target
   A_i(offset+(1:4), v.x.i(:,j)) = eye(4);
   A_i(offset+(1:4), v.trim.i(j)) = M;
+  A_i(offset+(1:4), v.trim.i(j+1)) = -M;
   b_i(offset+(1:4)) = target + M;
   offset = offset + 4;
 
   % x(:,j) >= target ---> -x(:,j) <= -target
   A_i(offset+(1:4), v.x.i(:,j)) = -eye(4);
   A_i(offset+(1:4), v.trim.i(j)) = M;
+  A_i(offset+(1:4), v.trim.i(j+1)) = -M;
   b_i(offset+(1:4)) = -target + M;
   offset = offset + 4;
 end
@@ -410,8 +414,30 @@ for j = nsteps-1:nsteps
   end
   Q(v.x.i(:,j), v.x.i(:,j)) = w_goal;
   c(v.x.i(:,j)) = -2 * xg' * w_goal;
-%   objcon = objcon + xg' * w_goal * xg;
+  objcon = objcon + xg' * w_goal * xg;
 end
+
+% % Goal pose constraint
+% Aeq_i = zeros(3 * 2, nv);
+% beq_i = zeros(size(Aeq_i, 1), 1);
+% offset = 0;
+% expected_offset = size(Aeq_i, 1);
+% for j = nsteps-1:nsteps
+%   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
+%     xg = reshape(goal_pos.right([1,2,6]), [], 1);
+%   else
+%     xg = reshape(goal_pos.left([1,2,6]), [], 1);
+%   end
+%   Aeq_i(offset+(1:3), v.x.i([1,2,4],j)) = eye(3);
+%   beq_i(offset+(1:3)) = xg;
+%   offset = offset + 3;
+% %   Q(v.x.i(:,j), v.x.i(:,j)) = w_goal;
+% %   c(v.x.i(:,j)) = -2 * xg' * w_goal;
+% %   objcon = objcon + xg' * w_goal * xg;
+% end
+% assert(offset == expected_offset);
+% Aeq = [Aeq; Aeq_i];
+% beq = [beq; beq_i];
 
 % Step displacement objective
 w_rel = diag(weights.relative([1,1,3,6]));
@@ -425,9 +451,10 @@ for j = 3:nsteps
 end
 
 % Trim objective
-w_trim = 1 * w_rel(1) * (seed_plan.params.nom_forward_step^2);
+w_trim = 10 * w_rel(1) * (seed_plan.params.nom_forward_step^2);
 for j = 3:nsteps
   c(v.trim.i(j)) = -w_trim;
+  objcon = objcon + w_trim;
 end
 
 var_names = fieldnames(v);
@@ -454,8 +481,9 @@ for j = 1:length(var_names)
   model.start(i) = reshape(v.(name).start, [], 1);
 end
 
-params.mipgap = 1e-3;
+params.mipgap = 1e-4;
 params.outputflag = 1;
+% params.MIPFocus = 1;
 
 % Solve the problem
 result = gurobi(model, params);

@@ -108,4 +108,3 @@ ylim([-0.5,2.5])
 axis equal
 set(gca, 'XTick', []);
 set(gca, 'YTick', []);
-print('MISOCP_example.pdf', '-dpdf')
