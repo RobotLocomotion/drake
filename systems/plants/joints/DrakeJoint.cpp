@@ -1,10 +1,13 @@
 #include "DrakeJoint.h"
 
+using namespace Eigen;
+
 DrakeJoint::DrakeJoint(
+    const std::string& name,
     const RigidBody& parent_body,
-    const e::AffineCompact3d& transform_to_parent_body,
+    const AffineCompact3d& transform_to_parent_body,
     int num_positions, int num_velocities) :
-parent_body(parent_body), transform_to_parent_body(transform_to_parent_body), num_positions(num_positions), num_velocities(num_velocities)
+name(name), parent_body(parent_body), transform_to_parent_body(transform_to_parent_body), num_positions(num_positions), num_velocities(num_velocities)
 {
   // empty;
 }
@@ -19,7 +22,7 @@ const RigidBody& DrakeJoint::getParentBody() const
   return parent_body;
 }
 
-const e::AffineCompact3d& DrakeJoint::getTransformToParentBody() const
+const AffineCompact3d& DrakeJoint::getTransformToParentBody() const
 {
   return transform_to_parent_body;
 }
@@ -32,4 +35,9 @@ const int DrakeJoint::getNumPositions() const
 const int DrakeJoint::getNumVelocities() const
 {
   return num_velocities;
+}
+
+const std::string& DrakeJoint::getName() const
+{
+  return name;
 }

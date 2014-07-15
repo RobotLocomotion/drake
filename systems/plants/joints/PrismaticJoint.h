@@ -6,16 +6,16 @@
 class PrismaticJoint: public FixedAxisOneDoFJoint
 {
 private:
-  e::Vector3d translation_axis;
+  Eigen::Vector3d translation_axis;
 public:
-  PrismaticJoint(const RigidBody& parent_body, const e::AffineCompact3d& transform_to_parent_body, const e::Vector3d& translation_axis);
+  PrismaticJoint(const std::string& name, const RigidBody& parent_body, const Eigen::AffineCompact3d& transform_to_parent_body, const Eigen::Vector3d& translation_axis);
 
   virtual ~PrismaticJoint();
 
-  virtual e::AffineCompact3d jointTransform(double* const q) const override;
+  virtual Eigen::AffineCompact3d jointTransform(double* const q) const override;
 
 private:
-  static e::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(const e::Vector3d& translation_axis);
+  static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(const Eigen::Vector3d& translation_axis);
 };
 
 #endif /* PRISMATICJOINT_H_ */
