@@ -17,8 +17,11 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
   
   methods(Access = protected)
     function [c,dc] = evalValidTime(obj,kinsol)
-      u_ga = kinsol.T{obj.body_a.idx}(1:3,1:3)*obj.axis;
-      du_ga_dq = reshape(kinsol.dTdq{obj.body_a.idx}(:,1:3)*obj.axis,[obj.robot.getNumDOF,3])';
+      [pos_a,dpos_a_dq] = obj.robot.forwardKin(kinsol,obj.body_a.idx,[0;0;0],2);
+      [u_ga,du_ga] = quatRotateVec(pos_a(4:7),obj.axis);
+      du_ga_dq = du_ga(:,1:4)*dpos_a_dq(4:7,:);
+%       u_ga = kinsol.T{obj.body_a.idx}(1:3,1:3)*obj.axis;
+%       du_ga_dq = reshape(kinsol.dTdq{obj.body_a.idx}(:,1:3)*obj.axis,[obj.robot.getNumDOF,3])';
       [r_go,dr_go_dq] = forwardKin(obj.robot,kinsol,obj.body_a.idx,obj.gaze_origin,0);
       [r_gt,dr_gt_dq] = forwardKin(obj.robot,kinsol,obj.body_b.idx,obj.target,0);
       r_gv = r_gt - r_go;
