@@ -124,8 +124,20 @@ v.trim.lb(1:2) = 1;
 v.trim.ub(1:2) = 1;
 
 % trim(end) == 0
-v.trim.lb(end) = 0;
-v.trim.ub(end) = 0;
+% v.trim.lb(end) = 0;
+% v.trim.ub(end) = 0;
+
+% Debug: uncomment these to fix the sin and cos sectors
+% ai = zeros(nsteps, nv);
+% ai(:,v.sin_sector.i(3,:)) = eye(nsteps);
+% bi = ones(nsteps, 1);
+% Aeq = [Aeq; ai];
+% beq = [beq; bi];
+% ai = zeros(nsteps, nv);
+% ai(:,v.cos_sector.i(3,:)) = eye(nsteps);
+% bi = ones(nsteps, 1);
+% Aeq = [Aeq; ai];
+% beq = [beq; bi];
 
 % trim(1:end-1) >= trim(2:end)
 offset = 0;
@@ -370,6 +382,26 @@ assert(offset == expected_offset);
 A = [A; Ar];
 b = [b; br];
 
+% % Allowed transitions between regions
+% for j = 3:nsteps-1
+%   ai = zeros(6, nv);
+%   bi = zeros(6,1);
+%   ai(1, v.region.i(1,j)) = 1;
+%   ai(1, v.region.i([1,2],j+1)) = -1;
+%   ai(2, v.region.i(2,j)) = 1;
+%   ai(2, v.region.i([1,2,3],j+1)) = -1;
+%   ai(3, v.region.i(3,j)) = 1;
+%   ai(3, v.region.i([2,3,4],j+1)) = -1;
+%   ai(4, v.region.i(4,j)) = 1;
+%   ai(4, v.region.i([3,4,5],j+1)) = -1;
+%   ai(5, v.region.i(5,j)) = 1;
+%   ai(5, v.region.i([4,5,6],j+1)) = -1;
+%   ai(6, v.region.i(6,j)) = 1;
+%   ai(6, v.region.i([5,6],j+1)) = -1;
+%   A = [A; ai];
+%   b = [b; bi];
+% end
+
 % trim(j) fixes step j to the initial pose of that foot (so we can trim it out of the plan later)
 A_i = zeros((8)*(nsteps - 3), nv);
 b_i = zeros(size(A_i, 1), 1);
@@ -451,7 +483,7 @@ for j = 3:nsteps
 end
 
 % Trim objective
-w_trim = 10 * w_rel(1) * (seed_plan.params.nom_forward_step^2);
+w_trim = 1 * w_rel(1) * (seed_plan.params.nom_forward_step^2);
 for j = 3:nsteps
   c(v.trim.i(j)) = -w_trim;
   objcon = objcon + w_trim;
@@ -483,7 +515,13 @@ end
 
 params.mipgap = 1e-4;
 params.outputflag = 1;
-% params.MIPFocus = 1;
+params.ConcurrentMIP = 4;
+params.NodeMethod = 0;
+% params.Cuts = 3;
+% params.Heuristics = 0.2;
+% params.Presolve = 2;
+% params.MIQCPMethod = 1;
+% params.MIPFocus = 2;
 
 % Solve the problem
 result = gurobi(model, params);
