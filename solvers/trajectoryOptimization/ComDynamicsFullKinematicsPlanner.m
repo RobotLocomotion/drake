@@ -101,14 +101,25 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       if(any(eig(Q_comddot)<0))
         error('Drake:ComDynamicsFullKinematicsPlanner:Q_comddot should be PSD');
       end
-      com_accel_cost = QuadraticSumConstraint(-inf,inf,Q_comddot,zeros(3,obj.N));
-      obj = obj.addCost(com_accel_cost,reshape(obj.comddot_inds,[],1));
+      %com_accel_cost = QuadraticSumConstraint(-inf,inf,Q_comddot,zeros(3,obj.N));
+      %obj = obj.addCost(com_accel_cost,reshape(obj.comddot_inds,[],1));
+      com_accel_cost = FunctionHandleConstraint(-inf,inf,5,@(h,comddot) comAccelCost(Q_comddot,h,comddot));
+      obj = obj.addCost(com_accel_cost,{obj.h_inds([1,1]);obj.comddot_inds(:,1)});
+      for i = 2:obj.N-1
+        obj = obj.addCost(com_accel_cost,{obj.h_inds([i-1,i]);obj.comddot_inds(:,i)});
+      end
+      obj = obj.addCost(com_accel_cost,{obj.h_inds([N-1,N-1]);obj.comddot_inds(:,1)});
       sizecheck(Qv,[obj.nv,obj.nv]);
       if(any(eig(Qv)<0))
         error('Drake:ComDynamicsFullKinematicsPlanner:Q_v should be PSD');
       end
       v_cost = QuadraticSumConstraint(-inf,inf,Qv,zeros(obj.nv,obj.N));
       obj = obj.addCost(v_cost,reshape(obj.v_inds,[],1));
+
+      function [f,df] = comAccelCost(Q,h,comddot)
+        f = 0.5*(h(1)+h(2))^2*(comddot'*Q*comddot);
+        df = [(h(1)+h(2))*(comddot'*Q*comddot)*[1,1], (h(1)+h(2))^2*comddot'*Q];
+      end
     end
     
     function obj = addContactDynamicConstraints(obj,knot_idx,contact_wrench_idx,knot_lambda_idx)
