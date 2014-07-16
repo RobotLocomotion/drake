@@ -28,20 +28,22 @@ classdef RigidBodyMesh < RigidBodyGeometry
     function [pts,ind,normals] = loadFile(obj)
       [path,name,ext] = fileparts(obj.filename);
       wrlfile=[];
-      if strcmpi(ext,'.stl')
+      if strcmpi(ext,'.wrl') || exist(fullfile(path,[name,'.wrl']),'file')
+        if ~strcmpi(ext,'.wrl'), ext = '.wrl'; end
+        wrlfile = fullfile(path,[name,ext]);
+      elseif strcmpi(ext,'.stl') || exist(fullfile(path,[name,'.stl']),'file')
+        if ~strcmpi(ext,'.stl'), ext = '.stl'; end
         wrlfile = fullfile(tempdir,[name,'.wrl']);
         stl2vrml(fullfile(path,[name,ext]),tempdir);
-      elseif strcmpi(ext,'.wrl')
-        wrlfile = obj.filename;
       else
-        error(['unknown mesh file extension ',ext]);
+        error(['unknown mesh file extension ',obj.filename]);
       end
       
       txt=fileread(wrlfile);
         
       pts=regexp(txt,'point[\s\n]*\[([^\]]*)\]','tokens'); pts = pts{1}{1};
       pts=strread(pts,'%f','delimiter',' ,');
-      pts=reshape(pts,3,[]);
+      pts=diag(obj.scale)*reshape(pts,3,[]);
       pts=obj.T(1:3,:)*[pts;ones(1,size(pts,2))];
 
       if (nargout>1)
@@ -72,7 +74,7 @@ classdef RigidBodyMesh < RigidBodyGeometry
     end
     
     function pts = getPoints(obj)
-      assert(all(obj.scale == 1)); % todo: handle this case
+%      assert(all(obj.scale == 1)); % todo: handle this case
       pts = loadFile(obj);
     end
 
@@ -90,16 +92,30 @@ classdef RigidBodyMesh < RigidBodyGeometry
     end
     
     function writeWRLShape(obj,fp,td)
-      assert(all(obj.scale == 1)); % todo: handle this case
+%      assert(all(obj.scale == 1)); % todo: handle this case
+      assert(numel(obj.scale)==3);
       
       function tabprintf(fp,varargin), for i=1:td, fprintf(fp,'\t'); end, fprintf(fp,varargin{:}); end
       tabprintf(fp,'Transform {\n'); td=td+1;
+      tabprintf(fp,'scale %f %f %f\n',obj.scale);
       tabprintf(fp,'translation %f %f %f\n',obj.T(1:3,4));
       tabprintf(fp,'rotation %f %f %f %f\n',rotmat2axis(obj.T(1:3,1:3)));
 
       [path,name,ext] = fileparts(obj.filename);
       wrlfile=[];
-      if strcmpi(ext,'.stl')
+      if strcmpi(ext,'.wrl') || exist(fullfile(path,[name,'.wrl']),'file')
+        if ~strcmpi(ext,'.wrl'), ext = '.wrl'; end
+        wrlfile = fullfile(path,[name,ext]);
+
+        txt=fileread(wrlfile);
+        txt = regexprep(txt,'#.*\n','','dotexceptnewline');
+      
+        tabprintf(fp,'children [\n'); 
+        fprintf(fp,'%s',txt); 
+        tabprintf(fp,']\n'); % end children
+
+      elseif strcmpi(ext,'.stl') || exist(fullfile(path,[name,'.stl']),'file')
+        if ~strcmpi(ext,'.stl'), ext = '.stl'; end
         wrlfile = fullfile(tempdir,[name,'.wrl']);
         stl2vrml(fullfile(path,[name,ext]),tempdir);
 
@@ -110,15 +126,6 @@ classdef RigidBodyMesh < RigidBodyGeometry
         appearanceString = sprintf('appearance Appearance { material Material { diffuseColor %f %f %f } }\n',obj.c(1),obj.c(2),obj.c(3));
         txt = regexprep(txt,'geometry',[appearanceString,'geometry']);
         
-        tabprintf(fp,'children [\n'); 
-        fprintf(fp,'%s',txt); 
-        tabprintf(fp,']\n'); % end children
-      elseif strcmpi(ext,'.wrl')
-        wrlfile = obj.filename;
-        
-        txt=fileread(wrlfile);
-        txt = regexprep(txt,'#.*\n','','dotexceptnewline');
-      
         tabprintf(fp,'children [\n'); 
         fprintf(fp,'%s',txt); 
         tabprintf(fp,']\n'); % end children
