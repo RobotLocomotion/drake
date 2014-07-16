@@ -1,6 +1,7 @@
 function testRigidBodyInertialMeasurementUnit()
 
 testAtlas('rpy');
+compare2dTo3d();
 
 end
 
@@ -60,5 +61,50 @@ for i = 1 : 100
   accel_check_world = cross(omegad_body, p) + vd_body + cross(omega_body, cross(omega_body, p) + v_body);
   accel_check_body = Rframe' * accel_check_world;
   valuecheck(accel_check_body, accel, 1e-10);
+end
+end
+
+function compare2dTo3d()
+r2d = PlanarRigidBodyManipulator('DoublePendWBiceptSpring.urdf');
+r3d = RigidBodyManipulator('DoublePendWBiceptSpring.urdf');
+
+nbodies = r2d.getNumBodies();
+body = nbodies;
+rpy = zeros(3, 1); % TODO: change once nonzero rpy is supported
+xyz = randn(3, 1);
+xy = xyz(1:2);
+
+imu2d = RigidBodyInertialMeasurementUnit(r2d, body, xy, rpy);
+r2d = r2d.addSensor(imu2d);
+r2d = compile(r2d);
+
+imu3d = RigidBodyInertialMeasurementUnit(r3d, body, xyz, rpy);
+r3d = r3d.addSensor(imu3d);
+r3d = compile(r3d);
+
+nq = r2d.getNumPositions();
+nv = r2d.getNumVelocities();
+nu = r2d.getNumInputs();
+for i = 1 : 100
+  t = rand();
+  q = randn(nq, 1); % TODO: use getRandomConfiguration once floatingBase branch is merged in so that it also works for quat parameterized robots
+  v = randn(nv, 1);
+  x = [q; v];
+  u = randn(nu, 1);
+  y2d = r2d.output(t, x, u);
+  y3d = r3d.output(t, x, u);
+  
+  angle = y2d(1);
+  angledot = y2d(2);
+  accel2d = y2d(3:4);
+  
+  quat = y3d(1:4);
+  omega = y3d(5:7);
+  accel = y3d(8:10);
+  axis = quat2axis(quat);
+  
+  valuecheck(0, angleDiff(axis(4), angle));
+  valuecheck(omega(3), angledot);
+  valuecheck(accel(1:2), accel2d);
 end
 end
