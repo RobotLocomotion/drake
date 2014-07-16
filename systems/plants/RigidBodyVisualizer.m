@@ -79,7 +79,7 @@ classdef RigidBodyVisualizer < Visualizer
           desired_pt(i) = get(slider{i}, 'Value');
         end
         ik_constraint = WorldPositionConstraint(obj.model,body_or_frame_id,pt,desired_pt,desired_pt);
-        [q,info] = inverseKin(obj.model,q0,q,ik_constraint);
+        [q,info] = inverseKin(obj.model,q,q,ik_constraint);
         if info~=1, info, end
         x(1:nq) = q;
         
