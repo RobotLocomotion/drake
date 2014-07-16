@@ -36,6 +36,7 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
         tspan = [-inf inf];
       end
       sizecheck(min_distance,[1,1]);
+      assert(min_distance>0);
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,robot.getMexModelPtr,min_distance,tspan);
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       obj.type = RigidBodyConstraint.MinDistanceConstraintType;
