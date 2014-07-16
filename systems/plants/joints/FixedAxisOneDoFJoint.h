@@ -23,6 +23,8 @@ public:
   virtual void motionSubspaceDotTimesV(double* const q, double* const v, Vector6d& motion_subspace_dot_times_v,
       Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic>* dmotion_subspace_dot_times_vdq = nullptr,
       Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic>* dmotion_subspace_dot_times_vdv = nullptr) const override;
+
+  virtual void randomConfiguration(double* q, std::default_random_engine& generator) const override;
 };
 
 #endif /* ONEDOFJOINT_H_ */

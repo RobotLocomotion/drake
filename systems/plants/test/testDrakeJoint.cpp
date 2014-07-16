@@ -34,9 +34,16 @@ int main(int argc, char **argv)
   {
     double q[joint->getNumPositions()];
 
-    q[0] = 1.0; // TODO
+    joint->randomConfiguration(q, generator);
 
     std::cout << "Joint name: " << joint->getName() << std::endl;
+
+    std::cout << "q: " << std::endl;
+    for (int i = 0; i < joint->getNumPositions(); ++i) {
+      std::cout << q[i] << ", ";
+    }
+    std::cout << std::endl;
+
 
     DrakeJoint::MotionSubspaceType S;
     MatrixXd dS;

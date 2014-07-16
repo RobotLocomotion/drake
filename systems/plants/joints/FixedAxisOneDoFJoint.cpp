@@ -35,3 +35,10 @@ void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(double* const q, double* cons
     dmotion_subspace_dot_times_vdv->setZero(TWIST_SIZE, 1);
   }
 }
+
+void FixedAxisOneDoFJoint::randomConfiguration(double* q, std::default_random_engine& generator) const
+{
+  // TODO: take joint limits into account
+  std::normal_distribution<double> distribution;
+  q[0] = distribution(generator);
+}

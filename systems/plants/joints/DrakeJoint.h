@@ -4,6 +4,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include "RigidBody.h"
+#include <random>
 
 #define TWIST_SIZE (int) 6
 typedef Eigen::Matrix<double, TWIST_SIZE, 1> Vector6d;
@@ -48,6 +49,8 @@ public:
   virtual void motionSubspaceDotTimesV(double* const q, double* const v, Vector6d& motion_subspace_dot_times_v,
       Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic>* dmotion_subspace_dot_times_vdq = nullptr,
       Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic>* dmotion_subspace_dot_times_vdv = nullptr) const = 0;
+
+  virtual void randomConfiguration(double* q, std::default_random_engine& generator) const = 0;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
