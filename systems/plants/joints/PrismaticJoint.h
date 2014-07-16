@@ -5,6 +5,10 @@
 
 class PrismaticJoint: public FixedAxisOneDoFJoint
 {
+  // disable copy construction and assignment
+  PrismaticJoint(const PrismaticJoint&) = delete;
+  PrismaticJoint& operator=(const PrismaticJoint&) = delete;
+
 private:
   Eigen::Vector3d translation_axis;
 public:

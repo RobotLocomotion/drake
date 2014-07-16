@@ -5,6 +5,10 @@
 
 class RevoluteJoint: public FixedAxisOneDoFJoint
 {
+  // disable copy construction and assignment
+  RevoluteJoint(const RevoluteJoint&) = delete;
+  RevoluteJoint& operator=(const RevoluteJoint&) = delete;
+
 private:
   Eigen::Vector3d rotation_axis;
 public:

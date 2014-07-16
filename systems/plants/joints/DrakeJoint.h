@@ -12,6 +12,9 @@ class RigidBody;
 
 class DrakeJoint
 {
+  // disable copy construction and assignment
+  DrakeJoint(const DrakeJoint&) = delete;
+  DrakeJoint& operator=(const DrakeJoint&) = delete;
 
 private:
   const std::string name;
@@ -32,6 +35,12 @@ public:
 
   const Eigen::AffineCompact3d& getTransformToParentBody() const;
 
+  const int getNumPositions() const;
+
+  const int getNumVelocities() const;
+
+  const std::string& getName() const;
+
   virtual Eigen::AffineCompact3d jointTransform(double* const q) const = 0;
 
   virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace = nullptr) const = 0;
@@ -39,12 +48,6 @@ public:
   virtual void motionSubspaceDotTimesV(double* const q, double* const v, Vector6d& motion_subspace_dot_times_v,
       Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic>* dmotion_subspace_dot_times_vdq = nullptr,
       Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic>* dmotion_subspace_dot_times_vdv = nullptr) const = 0;
-
-  const int getNumPositions() const;
-
-  const int getNumVelocities() const;
-
-  const std::string& getName() const;
 
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;

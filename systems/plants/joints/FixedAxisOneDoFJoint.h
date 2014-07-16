@@ -5,6 +5,10 @@
 
 class FixedAxisOneDoFJoint: public DrakeJoint
 {
+  // disable copy construction and assignment
+  FixedAxisOneDoFJoint(const DrakeJoint&) = delete;
+  FixedAxisOneDoFJoint& operator=(const FixedAxisOneDoFJoint&) = delete;
+
 private:
   Eigen::Matrix<double, TWIST_SIZE, 1> joint_axis;
 
