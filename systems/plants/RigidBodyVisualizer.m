@@ -55,7 +55,7 @@ classdef RigidBodyVisualizer < Visualizer
 
       varnames = {'x','y','z'};
       rows = length(varnames);
-      f = sfigure(99); clf;
+      f = sfigure(98); clf;
       set(f, 'Position', [560 400 280 20 + 30*rows]);
       
       y=30*rows-10;
