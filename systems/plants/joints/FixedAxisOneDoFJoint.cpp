@@ -1,11 +1,17 @@
 #include "FixedAxisOneDoFJoint.h"
 #include <cmath>
 #include <Eigen/Core>
+#include <limits>
+#include <exception>
+#include <cstdio>
 
 using namespace Eigen;
 
 FixedAxisOneDoFJoint::FixedAxisOneDoFJoint(const std::string& name, const RigidBody& parent_body, const AffineCompact3d& transform_to_parent_body, const Matrix<double, TWIST_SIZE, 1>& joint_axis) :
-    DrakeJoint(name, parent_body, transform_to_parent_body, 1, 1), joint_axis(joint_axis)
+    DrakeJoint(name, parent_body, transform_to_parent_body, 1, 1),
+    joint_axis(joint_axis),
+    joint_limit_min(-std::numeric_limits<double>::infinity()),
+    joint_limit_max(std::numeric_limits<double>::infinity())
 {
   // empty
 }
@@ -13,6 +19,16 @@ FixedAxisOneDoFJoint::FixedAxisOneDoFJoint(const std::string& name, const RigidB
 FixedAxisOneDoFJoint::~FixedAxisOneDoFJoint()
 {
   // empty
+}
+
+void FixedAxisOneDoFJoint::setJointLimits(double joint_limit_min, double joint_limit_max)
+{
+  if (joint_limit_min > joint_limit_max) {
+    throw std::logic_error("joint_limit_min cannot be larger than joint_limit_max");
+  }
+
+  this->joint_limit_min = joint_limit_min;
+  this->joint_limit_max = joint_limit_max;
 }
 
 void FixedAxisOneDoFJoint::motionSubspace(double* const q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
@@ -38,7 +54,34 @@ void FixedAxisOneDoFJoint::motionSubspaceDotTimesV(double* const q, double* cons
 
 void FixedAxisOneDoFJoint::randomConfiguration(double* q, std::default_random_engine& generator) const
 {
-  // TODO: take joint limits into account
-  std::normal_distribution<double> distribution;
-  q[0] = distribution(generator);
+  std::cout << "joint_limit_min: " << joint_limit_min << std::endl;
+  std::cout << "joint_limit_max: " << joint_limit_max << std::endl;
+
+  if (std::isfinite(joint_limit_min) && std::isfinite(joint_limit_max)) {
+    std::uniform_real_distribution<double> distribution(joint_limit_min, joint_limit_max);
+    q[0] = distribution(generator);
+  }
+  else {
+    std::normal_distribution<double> distribution;
+    double stddev = 1.0;
+    double joint_limit_offset = 1.0;
+    if (std::isfinite(joint_limit_min)) {
+      distribution = std::normal_distribution<double>(joint_limit_min + joint_limit_offset, stddev);
+    }
+    else if (std::isfinite(joint_limit_max)) {
+      distribution = std::normal_distribution<double>(joint_limit_max - joint_limit_offset, stddev);
+    }
+    else {
+      distribution = std::normal_distribution<double>();
+    }
+
+    q[0] = distribution(generator);
+    if (q[0] < joint_limit_min) {
+      q[0] = joint_limit_min;
+    }
+    if (q[0] > joint_limit_max) {
+      q[0] = joint_limit_max;
+    }
+  }
+  std::cout << "q[0]: " << q[0] << std::endl;
 }

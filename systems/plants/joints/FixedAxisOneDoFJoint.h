@@ -11,12 +11,16 @@ class FixedAxisOneDoFJoint: public DrakeJoint
 
 private:
   Eigen::Matrix<double, TWIST_SIZE, 1> joint_axis;
+  double joint_limit_min;
+  double joint_limit_max;
 
 protected:
   FixedAxisOneDoFJoint(const std::string& name, const RigidBody& parent_body, const Eigen::AffineCompact3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& joint_axis);
 
 public:
   virtual ~FixedAxisOneDoFJoint();
+
+  void setJointLimits(double joint_limit_min, double joint_limit_max);
 
   virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace) const override;
 

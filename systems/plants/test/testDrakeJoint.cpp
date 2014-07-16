@@ -9,6 +9,8 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <climits>
+#include <ctime>
 //#include <cstdlib>
 
 
@@ -20,13 +22,15 @@ int main(int argc, char **argv)
   auto transform_to_parent_body = AffineCompact3d::Identity();
 
   std::default_random_engine generator;
+  generator.seed(time(0));
   std::normal_distribution<double> distribution;
   double pitch = distribution(generator);
 
   std::vector<std::unique_ptr<DrakeJoint>> joints;
-  joints.push_back(std::unique_ptr<DrakeJoint>(new RevoluteJoint("revoluteJoint", body, transform_to_parent_body, Vector3d::Random())));
   joints.push_back(std::unique_ptr<DrakeJoint>(new HelicalJoint("helicalJoint", body, transform_to_parent_body, Vector3d::Random(), pitch)));
-  joints.push_back(std::unique_ptr<DrakeJoint>(new PrismaticJoint("prismaticJoint", body, transform_to_parent_body, Vector3d::Random())));
+  RevoluteJoint* revolute_joint = new RevoluteJoint("revoluteJoint", body, transform_to_parent_body, Vector3d::Random());
+  revolute_joint->setJointLimits(-1.0, std::numeric_limits<double>::infinity());
+  joints.push_back(std::unique_ptr<DrakeJoint>(revolute_joint));
   joints.push_back(std::unique_ptr<DrakeJoint>(new PrismaticJoint("prismaticJoint", body, transform_to_parent_body, Vector3d::Random())));
   joints.push_back(std::unique_ptr<DrakeJoint>(new QuaternionFloatingJoint("quaternionFloatingJoint", body, transform_to_parent_body)));
 
