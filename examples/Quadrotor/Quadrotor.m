@@ -49,24 +49,38 @@ classdef Quadrotor < RigidBodyManipulator
     end
     
     function obj = addTrees(obj,number_of_obstacles)
+      % Adds a random forest of trees
       if nargin<2, number_of_obstacles = 5*(randi(5)+2); end
       for i=1:number_of_obstacles
-        xy = 5*randn(2,1);
-        while(norm(xy)<1 || (xy(2,1)<=1 && xy(2,1)>=-1)), xy = randn(2,1); end
+        % Populates an area of the forest
+        xy = [20,0;0,12]*(rand(2,1) - [0.5;0]);
+        % Creates a clear path through the middle of the forest
+        while(norm(xy)<1 || (xy(1,1)<=1.5 && xy(1,1)>=-1.5)), xy = randn(2,1); end
         height = 1+rand;
         width_param = rand(1,2);
         yaw = randn;
-        shape = RigidBodyBox([.2+.8*width_param height],[xy;height/2],[0;0;yaw]);
-        shape.c = [83,53,10]/255;  % brown
-        obj = addShapeToBody(obj,'world',shape);
-        obj = addContactShapeToBody(obj,'world',shape);
-        shape = RigidBodyBox(1.5*[.2+.8*width_param height/4],[xy;height + height/8],[0;0;yaw]);
-        shape.c = [0,0.7,0];  % green
-        obj = addShapeToBody(obj,'world',shape);
-        obj = addContactShapeToBody(obj,'world',shape);
+        obj = obj.addTree([width_param height],xy,yaw);
       end
       obj = compile(obj);
     end
+    
+    function obj = addTree(obj, lwh, xy, yaw)
+      % Adds a single tree with specified length width height, xy
+      % location, and yaw orientation.
+      height = lwh(1,3);
+      width_param = lwh(1,1:2);
+      treeTrunk = RigidBodyBox([.2+.8*width_param height],...
+          [xy;height/2],[0;0;yaw]);
+      treeTrunk.c = [83,53,10]/255;  % brown
+      obj = addShapeToBody(obj,'world',treeTrunk);
+      obj = addContactShapeToBody(obj,'world',treeTrunk);
+      treeLeaves = RigidBodyBox(1.5*[.2+.8*width_param height/4],...
+          [xy;height + height/8],[0;0;yaw]);
+      treeLeaves.c = [0,0.7,0];  % green
+      obj = addShapeToBody(obj,'world',treeLeaves);
+      obj = addContactShapeToBody(obj,'world',treeLeaves);
+      obj = compile(obj);
+    end    
     
     function traj_opt = addPlanVisualizer(obj,traj_opt)
       % spew out an lcmgl visualization of the trajectory.  intended to be
