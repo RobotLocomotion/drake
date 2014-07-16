@@ -24,6 +24,6 @@ end
 
 function [c,dc] = interpEvalWrapper(constraint,interpolation_parameter,q1,q2)
   nq = numel(q1);
-  [c,dc_dq_interp] = constraint.eval((1-interpolation_parameter)*q1+interpolation_parameter*q2);
+  [c,dc_dq_interp] = constraint.eval(0,(1-interpolation_parameter)*q1+interpolation_parameter*q2);
   dc = dc_dq_interp*[(1-interpolation_parameter)*eye(nq),interpolation_parameter*eye(nq)];
 end
