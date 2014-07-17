@@ -20,7 +20,7 @@
 
     <visual>
       <geometry>
-        <box size = "0.1 0.05 0.05"/>
+        <box size = "0.06 0.05 0.05"/>
 	<!--<cylinder length="2" radius="0.05"/>-->
       </geometry>
       <material name="Red"/>
@@ -28,7 +28,7 @@
 
     <collision>
       <geometry>
-        <box size = "0.1 0.05 0.05"/>
+        <box size = "0.06 0.05 0.05"/>
       </geometry>
     </collision>
 
