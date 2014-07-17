@@ -4,7 +4,7 @@ classdef ContactWrenchVisualizer < BotVisualizer
   properties(SetAccess = protected)
     t_knot
     wrench_sol
-    wrench_lcmgl
+    wrench_lcmgl = LCMGLClient('wrench');
   end
   
   properties(Access = protected)
@@ -34,16 +34,13 @@ classdef ContactWrenchVisualizer < BotVisualizer
         error('Drake:ContactWrenchVisualizer: wrench_sol should have %d columns',length(obj.t_knot));
       end
       obj.wrench_sol = wrench_sol;
-      obj.wrench_lcmgl = cell(obj.num_contact_bodies,1);
-      for i = 1:obj.num_contact_bodies
-        obj.wrench_lcmgl{i} = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),sprintf('%s_wrench',obj.model.getBody(obj.wrench_sol(i,1).body).linkname));
-      end
+      obj.wrench_lcmgl = LCMGLClient('wrench');
       obj.force_scaler = manip.getMass*9.81/3;
       obj.torque_scaler = manip.getMass*9.81/50;
+      obj.display_dt = 0.033; % Otherwise there's just too much lcmgl
     end
     
     function draw(obj,t,y)
-      draw@BotVisualizer(obj,t,y);
       t_ind1 = find(t>obj.t_knot,1,'last');
       if(isempty(t_ind1))
         t_ind1 = 1;
@@ -72,15 +69,15 @@ classdef ContactWrenchVisualizer < BotVisualizer
             force_ij = zeros(3,1);
           end
           if(norm(force_ij)>0.01)
-            obj.wrench_lcmgl{i}.glLineWidth(2);
-            obj.wrench_lcmgl{i}.glPushMatrix();
-            obj.wrench_lcmgl{i}.glTranslated(pts_pos_i(1,j),pts_pos_i(2,j),pts_pos_i(3,j));
-            obj.wrench_lcmgl{i}.glColor3f(0,0,1);
-            obj.wrench_lcmgl{i}.glBegin(obj.wrench_lcmgl{i}.LCMGL_LINES);
-            obj.wrench_lcmgl{i}.glVertex3f(0,0,0);
-            obj.wrench_lcmgl{i}.glVertex3f(force_ij(1)/obj.force_scaler,force_ij(2)/obj.force_scaler,force_ij(3)/obj.force_scaler);
-            obj.wrench_lcmgl{i}.glEnd();
-            obj.wrench_lcmgl{i}.glPopMatrix();
+            obj.wrench_lcmgl.glLineWidth(2);
+            obj.wrench_lcmgl.glPushMatrix();
+            obj.wrench_lcmgl.glTranslated(pts_pos_i(1,j),pts_pos_i(2,j),pts_pos_i(3,j));
+            obj.wrench_lcmgl.glColor3f(0,0,1);
+            obj.wrench_lcmgl.glBegin(obj.wrench_lcmgl{i}.LCMGL_LINES);
+            obj.wrench_lcmgl.glVertex3f(0,0,0);
+            obj.wrench_lcmgl.glVertex3f(force_ij(1)/obj.force_scaler,force_ij(2)/obj.force_scaler,force_ij(3)/obj.force_scaler);
+            obj.wrench_lcmgl.glEnd();
+            obj.wrench_lcmgl.glPopMatrix();
           end
           if(torque_i1_norm(j)>0.01 && torque_i2_norm(j)>0.01)
             torque_ij = torque_i2(:,j);
@@ -92,19 +89,20 @@ classdef ContactWrenchVisualizer < BotVisualizer
             torque_ij = zeros(3,1);
           end
           if(norm(torque_ij)>0.01)
-            obj.wrench_lcmgl{i}.glLineWidth(2);
-            obj.wrench_lcmgl{i}.glPushMatrix();
-            obj.wrench_lcmgl{i}.glTranslated(pts_pos_i(1,j),pts_pos_i(2,j),pts_pos_i(3,j));
-            obj.wrench_lcmgl{i}.glColor3f(0,0.3,0.8);
-            obj.wrench_lcmgl{i}.glBegin(obj.wrench_lcmgl{i}.LCMGL_LINES);
-            obj.wrench_lcmgl{i}.glVertex3f(0,0,0);
-            obj.wrench_lcmgl{i}.glVertex3f(torque_ij(1)/obj.torque_scaler,torque_ij(2)/obj.torque_scaler,torque_ij(3)/obj.torque_scaler);
-            obj.wrench_lcmgl{i}.glEnd();
-            obj.wrench_lcmgl{i}.glPopMatrix();
+            obj.wrench_lcmgl.glLineWidth(2);
+            obj.wrench_lcmgl.glPushMatrix();
+            obj.wrench_lcmgl.glTranslated(pts_pos_i(1,j),pts_pos_i(2,j),pts_pos_i(3,j));
+            obj.wrench_lcmgl.glColor3f(0,0.3,0.8);
+            obj.wrench_lcmgl.glBegin(obj.wrench_lcmgl{i}.LCMGL_LINES);
+            obj.wrench_lcmgl.glVertex3f(0,0,0);
+            obj.wrench_lcmgl.glVertex3f(torque_ij(1)/obj.torque_scaler,torque_ij(2)/obj.torque_scaler,torque_ij(3)/obj.torque_scaler);
+            obj.wrench_lcmgl.glEnd();
+            obj.wrench_lcmgl.glPopMatrix();
           end
         end
-        obj.wrench_lcmgl{i}.switchBuffers();
       end
+      obj.wrench_lcmgl.switchBuffers();
+      draw@BotVisualizer(obj,t,y);
     end
   end
 end
