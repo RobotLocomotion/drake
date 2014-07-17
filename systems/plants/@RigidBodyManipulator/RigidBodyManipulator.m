@@ -755,6 +755,15 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
     
+    
+    function str = getBodyOrFrameName(model,body_or_frame_id)
+      if (body_or_frame_id>0)
+        str = model.body(body_or_frame_id).linkname;
+      else
+        str = model.frame(-body_or_frame_id).name;
+      end
+    end
+    
     function model = setParams(model,p)
       fr = getParamFrame(model);
       if isa(p,'Point')
