@@ -49,7 +49,7 @@ classdef RigidBodyContactWrench
         error('Drake:ContactWrenchConstraint: body should be a numeric scalar');
       end
       obj.body = body;
-      obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.body_name = obj.robot.getBodyOrFrameName(obj.body);
       body_pts_size = size(body_pts);
       if(~isnumeric(body_pts) || length(body_pts_size) ~= 2 || body_pts_size(1) ~= 3)
         error('Drake:ContactWrenchConstraint: body_pts should be 3 x num_pts double matrix');
