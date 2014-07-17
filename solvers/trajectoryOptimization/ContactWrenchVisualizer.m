@@ -82,12 +82,25 @@ classdef ContactWrenchVisualizer < BotVisualizer
             obj.wrench_lcmgl{i}.glEnd();
             obj.wrench_lcmgl{i}.glPopMatrix();
           end
-          if(torque_i1_norm(j)>0.01)
+          if(torque_i1_norm(j)>0.01 && torque_i2_norm(j)>0.01)
+            torque_ij = torque_i2(:,j);
+          elseif(torque_i1_norm(j)<=0.01 && torque_i2_norm(j) <= 0.01)
+            torque_ij = zeros(3,1);
+          elseif(torque_i1_norm(j)<=0.01 && torque_i2_norm(j) <= 0.01)
+            torque_ij = zeros(3,1);
+          else
+            torque_ij = zeros(3,1);
+          end
+          if(norm(torque_ij)>0.01)
             obj.wrench_lcmgl{i}.glLineWidth(2);
             obj.wrench_lcmgl{i}.glPushMatrix();
             obj.wrench_lcmgl{i}.glTranslated(pts_pos_i(1,j),pts_pos_i(2,j),pts_pos_i(3,j));
             obj.wrench_lcmgl{i}.glColor3f(0,0.3,0.8);
             obj.wrench_lcmgl{i}.glBegin(obj.wrench_lcmgl{i}.LCMGL_LINES);
+            obj.wrench_lcmgl{i}.glVertex3f(0,0,0);
+            obj.wrench_lcmgl{i}.glVertex3f(torque_ij(1)/obj.torque_scaler,torque_ij(2)/obj.torque_scaler,torque_ij(3)/obj.torque_scaler);
+            obj.wrench_lcmgl{i}.glEnd();
+            obj.wrench_lcmgl{i}.glPopMatrix();
           end
         end
         obj.wrench_lcmgl{i}.switchBuffers();

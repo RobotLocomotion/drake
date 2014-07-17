@@ -892,14 +892,14 @@ if(mode == 7)
   x_seed(cdfkp.lambda_inds{2}(:)) = reshape(bsxfun(@times,[0;0;1/2;zeros(3,1)],ones(1,nT_swing1)),[],1);
 
   cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
-  cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',250);
+  cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',500);
   cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
   cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
   cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
   cdfkp = cdfkp.setSolverOptions('snopt','print','test_monkeybar_swing4.out');
 %   cdfkp = cdfkp.setSolverOptions('snopt','scaleoption',2);
   
-%   seed_sol = load('test_monkeybar_swing4','-mat','x_sol');
+  seed_sol = load('test_monkeybar_swing4','-mat','x_sol');
 % %   seed_sol.x_sol(cdfkp.q_inds(1:3,:)) = reshape(reshape(seed_sol.x_sol(cdfkp.q_inds(1:3,:)),3,[])+bsxfun(@times,monkeybar_pos4(1:3)-monkeybar_pos1(1:3),ones(1,nT_swing1)),[],1);
 % %   seed_sol.x_sol(cdfkp.com_inds(:)) = reshape(reshape(seed_sol.x_sol(cdfkp.com_inds(:)),3,[])+bsxfun(@times,monkeybar_pos4(1:3)-monkeybar_pos1(1:3),ones(1,nT_swing1)),[],1);
 % seed_sol.x_sol(cdfkp.lambda_inds{1}(1:3,:,:)) = seed_sol.x_sol(cdfkp.lambda_inds{1}(1:3,:,:))/(robot_mass*9.81);
@@ -908,7 +908,7 @@ if(mode == 7)
 %   seed_sol.x_sol(cdfkp.lambda_inds{2}(4:6,:,:)) = seed_sol.x_sol(cdfkp.lambda_inds{2}(4:6,:,:))/(robot_mass*9.81/100);
   
   tic
-  [x_sol,F,info] = cdfkp.solve(x_seed);
+  [x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
   toc
   [q_sol,v_sol,h_sol,t_sol,com_sol,comdot_sol,comddot_sol,H_sol,Hdot_sol,lambda_sol,wrench_sol] = parseSolution(cdfkp,x_sol);
   xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
