@@ -37,7 +37,7 @@ classdef SalmonBarVisualizer < ContactWrenchVisualizer
       rotate_angle = asin(norm(rotate_axis));
       lcmgl.glPushMatrix();
       lcmgl.glTranslated(bar_middle(1),bar_middle(2),bar_middle(3));
-      lcmgl.glRotated(rotate_angle/pi*180,rotate_axis(1),rotate_axis(2),rotate_axis(3));
+      lcmgl.glRotated(-rotate_angle/pi*180,rotate_axis(1),rotate_axis(2),rotate_axis(3));
       lcmgl.cylinder([0;0;-bar_length/2],bar_radius,bar_radius,bar_length,20,20);
       lcmgl.glPopMatrix;
       lcmgl.switchBuffers();

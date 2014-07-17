@@ -27,10 +27,12 @@ land_height = 2.6;
 stage_pos2 = [monkeybar_pos5(1:3)+[1.45;0;-land_height-0.05];0;-pi/2;0];
 robot = robot.addRobotFromURDF(stage_urdf,stage_pos2(1:3),stage_pos2(4:6));
 warning(w);
-v = robot.constructVisualizer();
+% v = robot.constructVisualizer();
+
 %%%%%%%%%%%%%%%%%%
 %%
 % add the takeoff stage
-S = load(filename,'xtraj_all');
+S = load(filename,'xtraj_all','t_all','wrench_all');
+v = ContactWrenchVisualizer(robot,S.t_all,S.wrench_all);
 xtraj = S.xtraj_all.setOutputFrame(robot.getStateFrame());
 end
