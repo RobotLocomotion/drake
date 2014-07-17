@@ -1,4 +1,7 @@
 function testSalmonBar(mode)
+if(nargin<1)
+  mode = 0;
+end
 checkDependency('lcmgl');
 w = warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
@@ -132,6 +135,13 @@ robot = robot.addRobotFromURDF(rung_urdf,r_rung_pos2(1:3),r_rung_pos2(4:6));
 v = robot.constructVisualizer();
 v.draw(0,[q_fp;zeros(nv,1)]);
 
+if(mode == 0)
+  sol = load('test_salmonbar_ladder1','-mat','t_sol','q_sol','v_sol','wrench_sol');
+  xtraj = PPTrajectory(foh(sol.t_sol,[sol.q_sol;sol.v_sol]));
+  xtraj = xtraj.setOutputFrame(robot.getStateFrame);
+  v = SalmonBarVisualizer(robot,sol.t_sol,sol.wrench_sol,l_hand,r_hand,l_hand_pt,r_hand_pt);
+  v.playback(xtraj,struct('slider',true));
+end
 if(mode == 1)
   q_start = q_fp;
   kinsol_start = robot.doKinematics(q_start);
@@ -338,7 +348,7 @@ cdfkp = ComDynamicsFullKinematicsPlanner(robot,nT,tf_range,Q_comddot,Qv,Q,q_nom,
 
 % add h bounds
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.02*ones(nT-1,1),0.15*ones(nT-1,1)),cdfkp.h_inds(:));
-cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.04*ones(land_idx-takeoff_idx,1),0.15*ones(land_idx-takeoff_idx,1)),cdfkp.h_inds(takeoff_idx:land_idx-1)');
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.05*ones(land_idx-takeoff_idx,1),0.12*ones(land_idx-takeoff_idx,1)),cdfkp.h_inds(takeoff_idx:land_idx-1)');
 
 % initial and final state constraint
 cdfkp = cdfkp.addBoundingBoxConstraint(ConstantConstraint(q_start),cdfkp.q_inds(:,1));
@@ -370,9 +380,9 @@ cdfkp = cdfkp.addRigidBodyConstraint(WorldFixedPositionConstraint(robot,l_hand,l
 cdfkp = cdfkp.addRigidBodyConstraint(WorldFixedPositionConstraint(robot,r_hand,r_hand_pt),{land_idx:static_idx});
 
 % add the constraint that the bar should be away from the pole
-lhand_flight_cnstr = WorldPositionConstraint(robot,l_hand,l_hand_pt,-inf(3,1),[l_pole_pos(1)-0.025-bar_radius-0.04;inf;inf]);
+lhand_flight_cnstr = WorldPositionConstraint(robot,l_hand,l_hand_pt,-inf(3,1),[l_pole_pos(1)-0.025-bar_radius-0.05;inf;inf]);
 cdfkp = cdfkp.addRigidBodyConstraint(lhand_flight_cnstr,{takeoff_idx+1});
-rhand_flight_cnstr = WorldPositionConstraint(robot,r_hand,r_hand_pt,-inf(3,1),[r_pole_pos(1)-0.025-bar_radius-0.04;inf;inf]);
+rhand_flight_cnstr = WorldPositionConstraint(robot,r_hand,r_hand_pt,-inf(3,1),[r_pole_pos(1)-0.025-bar_radius-0.05;inf;inf]);
 cdfkp = cdfkp.addRigidBodyConstraint(rhand_flight_cnstr,{takeoff_idx+1});
 
 lhand_flight_cnstr = WorldPositionConstraint(robot,l_hand,l_hand_pt,-inf(3,1),[l_pole_pos(1)-0.025-bar_radius-0.05;inf;inf]);
@@ -407,7 +417,7 @@ cdfkp = cdfkp.addLinearConstraint(arm_symmetry,reshape(cdfkp.q_inds(:,2:land_idx
 cdfkp = cdfkp.addBoundingBoxConstraint(ConstantConstraint(0),cdfkp.q_inds(4,static_idx));
 
 % add a roll constraint for all
-cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.3*ones(static_idx-2,1),0.3*ones(static_idx-2,1)),cdfkp.q_inds(4,2:static_idx-1)');
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(-0.4*ones(static_idx-2,1),0.4*ones(static_idx-2,1)),cdfkp.q_inds(4,2:static_idx-1)');
 % add a cost on the final posture
 Q = 5*eye(nq);
 Q(1,1) = 0;
