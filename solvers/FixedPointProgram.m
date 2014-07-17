@@ -5,15 +5,21 @@ classdef FixedPointProgram < NonlinearProgramWConstraintObjects
   end
   
   methods
-    function obj = FixedPointProgram(sys)
+    function obj = FixedPointProgram(sys,x_dimensions_to_ignore)
+      % @param sys a DrakeSystem
+      % @param x_dimensions_to_ignore if this is specified then xdot need
+      % not be zero in the ignored dimensions (e.g. useful for finding a
+      % trim condition of an aircraft instead of a true fixed point)
+      
       typecheck(sys,'DrakeSystem');
       if ~isTI(sys), error('only makes sense for time invariant systems'); end
-
+      if nargin<2, x_dimensions_to_ignore = []; end
+      
       num_x = getNumStates(sys);
       num_u = getNumInputs(sys);
       obj = obj@NonlinearProgramWConstraintObjects(num_x+num_u,vertcat(getCoordinateNames(sys.getStateFrame), getCoordinateNames(sys.getInputFrame)));
       obj.sys = sys;
-      obj = addDynamicConstraints(obj);
+      obj = addDynamicConstraints(obj,x_dimensions_to_ignore);
       
       function [c,dc] = state_constraints(x)
         [c,dc] = geval(@sys.stateConstraints,x);
@@ -34,23 +40,31 @@ classdef FixedPointProgram < NonlinearProgramWConstraintObjects
       end
     end
     
-    function obj = addDynamicConstraints(obj)
+    function obj = addDynamicConstraints(obj,x_dimensions_to_ignore)
       sys = obj.sys;
       
       num_x = getNumStates(sys);
       num_u = getNumInputs(sys);
       num_xc = getNumContStates(sys);
       num_xd = getNumDiscStates(sys);
+
+      xc_indices = 1:num_xc;  xc_indices(x_dimensions_to_ignore(x_dimensions_to_ignore<num_xc))=[];
+      num_xc_constraints = numel(xc_indices);
+        
       function [c,dc] = dynamics_constraints(w)
         x=w(1:num_x);
         u=w(num_x + (1:num_u));
         [c,dc] = geval(@sys.dynamics,0,x,u);
-        dc = dc(:,2:end);
+        c = c(xc_indices);
+        dc = dc(xc_indices,2:end);
       end
       
       if (num_xc>0)
-        obj = addConstraint(obj,FunctionHandleConstraint(zeros(num_xc,1),zeros(num_xc,1),num_x+num_u,@dynamics_constraints));
+        obj = addConstraint(obj,FunctionHandleConstraint(zeros(num_xc_constraints,1),zeros(num_xc_constraints,1),num_x+num_u,@dynamics_constraints));
       end
+      
+      xd_indices = 1:num_xd;  xd_indices(x_dimensions_to_ignore(x_dimensions_to_ignore>num_xc)-num_xc)=[];
+      num_xd_constraints = numel(xd_indices);
       
       function [c,dc] = update_constraints(w)
         x=w(1:num_x);
@@ -58,10 +72,12 @@ classdef FixedPointProgram < NonlinearProgramWConstraintObjects
         [c,dc] = geval(@sys.update,0,x,u);
         c = c - x;
         dc = dc(:,2:end) - [eye(num_x),zeros(num_x,num_u)];
+        c = c(xd_indices);
+        dc = dc(xd_indices,:);
       end
       
       if (num_xd>0)
-        obj = addConstraint(obj,FunctionHandleConstraint(zeros(num_xd,1),zeros(num_xd,1),num_x+num_u,@update_constraints));
+        obj = addConstraint(obj,FunctionHandleConstraint(zeros(num_xd_constraints,1),zeros(num_xd_constraints,1),num_x+num_u,@update_constraints));
       end
     end
     
