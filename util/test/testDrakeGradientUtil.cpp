@@ -2,6 +2,8 @@
 #include <Eigen/Core>
 #include <iostream>
 #include <chrono>
+#include <typeinfo>
+
 
 using namespace Eigen;
 
@@ -25,21 +27,26 @@ struct measure
 
 void testTransposeGrad(int ntests)
 {
-  const int rows_X = 3;
-  const int cols_X = 2;
+  const int rows_X = 6;
+  const int cols_X = 15;
   const int numel_X = rows_X * cols_X;
-  const int nq = 8;
-  MatrixXd dX = Matrix<double, numel_X, nq>();
-  for (int col = 0; col < nq; col++) {
-    for (int row = 0; row < numel_X; row++) {
-      dX(row, col) = row + col * numel_X + 1;
-    }
-  }
-  MatrixXd dX_transpose = Matrix<double, numel_X, nq>::Random();
+  const int nq = 34;
+//  Matrix<double, numel_X, nq> dX;
+////  MatrixXd dX(numel_X, nq);
+//  for (int col = 0; col < nq; col++) {
+//    for (int row = 0; row < numel_X; row++) {
+//      dX(row, col) = row + col * numel_X + 1;
+//    }
+//  }
+
+//  Matrix<double, numel_X, nq> dX_transpose;
 
   for (int testnr = 0; testnr < ntests; testnr++) {
+    Matrix<double, numel_X, nq> dX = Matrix<double, numel_X, nq>::Random();
 //    std::cout << "dX:\n" << dX << std::endl << std::endl;
-    transposeGrad(dX, rows_X, dX_transpose);
+    auto dX_transpose = transposeGrad(dX, rows_X);
+
+//    transposeGrad(dX, rows_X, dX_transpose);
     volatile auto vol = dX_transpose.eval(); // to make sure that the result doesn't get discarded in compiler optimization
 //    std::cout << "dX_transpose:\n" << dX_transpose << std::endl;
   }
@@ -47,4 +54,5 @@ void testTransposeGrad(int ntests)
 
 int main(int argc, char **argv) {
   std::cout << "elapsed time: " << measure<>::execution(testTransposeGrad, 500000) << std::endl;
+  return 0;
 }
