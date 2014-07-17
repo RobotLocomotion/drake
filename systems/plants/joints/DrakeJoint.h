@@ -52,6 +52,10 @@ public:
 
   virtual void randomConfiguration(double* q, std::default_random_engine& generator) const = 0;
 
+  virtual void qdotToV(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const = 0;
+
+  virtual void vToQdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const = 0;
+
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };

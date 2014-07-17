@@ -15,6 +15,8 @@ if (eigen3_FOUND)
   add_mex(test/testQuatmex test/testQuatmex.cpp) 
   target_link_libraries(test/testQuatmex drakeQuatUtil)
   pods_install_libraries(drakeQuatUtil)
+
+  pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 endif()
 
 add_subdirectory(test)

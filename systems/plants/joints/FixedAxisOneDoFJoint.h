@@ -29,6 +29,10 @@ public:
       Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic>* dmotion_subspace_dot_times_vdv = nullptr) const override;
 
   virtual void randomConfiguration(double* q, std::default_random_engine& generator) const override;
+
+  virtual void qdotToV(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const override;
+
+  virtual void vToQdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const override;
 };
 
 #endif /* ONEDOFJOINT_H_ */

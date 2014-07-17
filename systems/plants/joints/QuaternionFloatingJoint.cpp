@@ -64,3 +64,11 @@ void QuaternionFloatingJoint::randomConfiguration(double* q, std::default_random
   q[5] = quat.y();
   q[6] = quat.z();
 }
+
+void QuaternionFloatingJoint::qdotToV(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
+{
+}
+
+void QuaternionFloatingJoint::vToQdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const
+{
+}

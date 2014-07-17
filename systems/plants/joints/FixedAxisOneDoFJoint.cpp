@@ -85,3 +85,19 @@ void FixedAxisOneDoFJoint::randomConfiguration(double* q, std::default_random_en
   }
   std::cout << "q[0]: " << q[0] << std::endl;
 }
+
+void FixedAxisOneDoFJoint::qdotToV(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
+{
+  qdot_to_v.setIdentity(getNumVelocities(), getNumPositions());
+  if (dqdot_to_v) {
+    dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
+  }
+}
+
+void FixedAxisOneDoFJoint::vToQdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const
+{
+  v_to_qdot.setIdentity(getNumPositions(), getNumVelocities());
+  if (dv_to_qdot) {
+    dv_to_qdot->setZero(v_to_qdot.size(), getNumPositions());
+  }
+}
