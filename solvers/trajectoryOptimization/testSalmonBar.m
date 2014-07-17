@@ -380,14 +380,14 @@ cdfkp = cdfkp.addRigidBodyConstraint(WorldFixedPositionConstraint(robot,l_hand,l
 cdfkp = cdfkp.addRigidBodyConstraint(WorldFixedPositionConstraint(robot,r_hand,r_hand_pt),{land_idx:static_idx});
 
 % add the constraint that the bar should be away from the pole
-lhand_flight_cnstr = WorldPositionConstraint(robot,l_hand,l_hand_pt,-inf(3,1),[l_pole_pos(1)-0.025-bar_radius-0.05;inf;inf]);
+lhand_flight_cnstr = WorldPositionConstraint(robot,l_hand,l_hand_pt,-inf(3,1),[l_pole_pos(1)-0.025-bar_radius-0.06;inf;inf]);
 cdfkp = cdfkp.addRigidBodyConstraint(lhand_flight_cnstr,{takeoff_idx+1});
-rhand_flight_cnstr = WorldPositionConstraint(robot,r_hand,r_hand_pt,-inf(3,1),[r_pole_pos(1)-0.025-bar_radius-0.05;inf;inf]);
+rhand_flight_cnstr = WorldPositionConstraint(robot,r_hand,r_hand_pt,-inf(3,1),[r_pole_pos(1)-0.025-bar_radius-0.06;inf;inf]);
 cdfkp = cdfkp.addRigidBodyConstraint(rhand_flight_cnstr,{takeoff_idx+1});
 
-lhand_flight_cnstr = WorldPositionConstraint(robot,l_hand,l_hand_pt,-inf(3,1),[l_pole_pos(1)-0.025-bar_radius-0.05;inf;inf]);
+lhand_flight_cnstr = WorldPositionConstraint(robot,l_hand,l_hand_pt,-inf(3,1),[l_pole_pos(1)-0.025-bar_radius-0.06;inf;inf]);
 cdfkp = cdfkp.addRigidBodyConstraint(lhand_flight_cnstr,{takeoff_idx+2});
-rhand_flight_cnstr = WorldPositionConstraint(robot,r_hand,r_hand_pt,-inf(3,1),[r_pole_pos(1)-0.025-bar_radius-0.05;inf;inf]);
+rhand_flight_cnstr = WorldPositionConstraint(robot,r_hand,r_hand_pt,-inf(3,1),[r_pole_pos(1)-0.025-bar_radius-0.06;inf;inf]);
 cdfkp = cdfkp.addRigidBodyConstraint(rhand_flight_cnstr,{takeoff_idx+2});
 
 
