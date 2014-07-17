@@ -5,11 +5,14 @@
 #include <cmath>
 #include <iostream>
 
+/*
+ * Profile results: looks like return value optimization works; a version that sets a reference
+ * instead of returning a value is just as fast and this is cleaner.
+ */
 template <typename Derived>
-void transposeGrad(const Eigen::MatrixBase<Derived>& dX, int rows_X, Eigen::MatrixXd& dX_transpose)
+typename Derived::PlainObject transposeGrad(const Eigen::MatrixBase<Derived>& dX, int rows_X)
 {
-//  Eigen::MatrixXd dX_transpose(dX.rows(), dX.cols());
-  dX_transpose.resize(dX.rows(), dX.cols());
+  typename Derived::PlainObject dX_transpose;
   int numel = dX.rows();
   int index = 0;
   for (int i = 0; i < numel; i++) {
@@ -19,8 +22,8 @@ void transposeGrad(const Eigen::MatrixBase<Derived>& dX, int rows_X, Eigen::Matr
       index = (index % numel) + 1;
     }
   }
+  return dX_transpose;
 }
-
 
 
 #endif /* DRAKEGRADIENTUTIL_H_ */
