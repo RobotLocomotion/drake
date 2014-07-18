@@ -59,7 +59,7 @@ classdef WorldFixedPositionConstraint < MultipleTimeKinematicConstraint
         error('Drake:WorldFixedPositionConstraint: body must be an integer');
       end
       obj.body = floor(body);
-      obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.body_name = obj.robot.getBodyOrFrameName(obj.body);
       sizecheck(pts,[3,nan]);
       if(~isnumeric(pts))
         error('Drake:WorldFixedPositionConstraint: pts must be a double array');

@@ -49,7 +49,7 @@ classdef WorldPositionConstraint < PositionConstraint
       else
         error('Drake:WorldPositionConstraint:Body must be either the link name or the link index');
       end
-      obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.body_name = obj.robot.getBodyOrFrameName(obj.body);
       obj.type = RigidBodyConstraint.WorldPositionConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
         obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionConstraintType,robot.getMexModelPtr,body,pts,lb,ub,tspan);
