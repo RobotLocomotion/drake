@@ -1,9 +1,9 @@
 #include "drakeGradientUtil.h"
 #include <Eigen/Core>
+#include <Eigen/KroneckerProduct> // unsupported...
 #include <iostream>
 #include <chrono>
-#include <typeinfo>
-
+#include <stdexcept>
 
 using namespace Eigen;
 
@@ -52,22 +52,48 @@ void testTransposeGrad(int ntests)
   }
 }
 
-void testMatGradMultMat(int ntests)
+void testMatGradMultMat(int ntests, bool check)
 {
-  int nq = 34;
+  const int nq = 5; // 34
   for (int testnr = 0; testnr < ntests; testnr++) {
-    MatrixXd A = MatrixXd::Random(8, 6);
-    MatrixXd B = MatrixXd::Random(A.cols(), 9);
-    MatrixXd dA = MatrixXd::Random(A.size(), nq);
-    MatrixXd dB = MatrixXd::Random(B.size(), nq);
-    auto dAB = matGradMultMat(A, B, dA, dB); // volatile to make sure that the result doesn't get discarded in compiler optimization
-//    std::cout << "size of dAB: " << dAB.rows() << "x" << dAB.cols() << std::endl;
+
+//    MatrixXd A = MatrixXd::Random(8, 6).eval();
+//    MatrixXd B = MatrixXd::Random(A.cols(), 9).eval();
+    auto A = Matrix<double, 8, 6>::Random().eval();
+    auto B = Matrix<double, A.ColsAtCompileTime, 9>::Random().eval();
+
+    MatrixXd dA = MatrixXd::Random(A.size(), nq).eval();
+    MatrixXd dB = MatrixXd::Random(B.size(), nq).eval();
+//    auto dA = Matrix<double, A.SizeAtCompileTime, nq>::Random().eval();
+//    auto dB = Matrix<double, B.SizeAtCompileTime, nq>::Random().eval();
+
+//    //    MatrixXd A = MatrixXd::Random(8, 6).eval();
+//    //    MatrixXd B = MatrixXd::Random(A.cols(), 9).eval();
+//        auto A = Matrix<double, 5, 3>::Random().eval();
+//        auto B = Matrix<double, A.ColsAtCompileTime, 2>::Random().eval();
+//
+//    //    MatrixXd dA = MatrixXd::Random(A.size(), nq).eval();
+//    //    MatrixXd dB = MatrixXd::Random(B.size(), nq).eval();
+//        auto dA = Matrix<double, A.SizeAtCompileTime, nq>::Random().eval();
+//        auto dB = Matrix<double, B.SizeAtCompileTime, nq>::Random().eval();
+
+    auto dAB = matGradMultMat(A, B, dA, dB).eval(); // volatile to make sure that the result doesn't get discarded in compiler optimization
     volatile auto vol = dAB;
+
+    if (check) {
+      auto dABCheck = Eigen::kroneckerProduct(Eigen::MatrixXd::Identity(B.cols(), B.cols()), A) * dB
+          + Eigen::kroneckerProduct(B.transpose(), Eigen::MatrixXd::Identity(A.rows(), A.rows())) * dA;
+
+      if (!dAB.isApprox(dABCheck, 1e-10)) {
+        throw std::runtime_error("Wrong.");
+      }
+    }
   }
 }
 
 int main(int argc, char **argv) {
 //  std::cout << "elapsed time: " << measure<>::execution(testTransposeGrad, 500000) << std::endl;
-  std::cout << "elapsed time: " << measure<>::execution(testMatGradMultMat, 100000) << std::endl;
+  std::cout << "elapsed time: " << measure<>::execution(testMatGradMultMat, 100000, false) << std::endl;
+  testMatGradMultMat(1000, true);
   return 0;
 }
