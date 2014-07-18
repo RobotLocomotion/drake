@@ -44,15 +44,30 @@ void testTransposeGrad(int ntests)
   for (int testnr = 0; testnr < ntests; testnr++) {
     Matrix<double, numel_X, nq> dX = Matrix<double, numel_X, nq>::Random();
 //    std::cout << "dX:\n" << dX << std::endl << std::endl;
-    auto dX_transpose = transposeGrad(dX, rows_X);
+    auto dX_transpose = transposeGrad(dX, rows_X); // volatile to make sure that the result doesn't get discarded in compiler optimization
+    volatile auto vol = dX_transpose;
 
 //    transposeGrad(dX, rows_X, dX_transpose);
-    volatile auto vol = dX_transpose.eval(); // to make sure that the result doesn't get discarded in compiler optimization
 //    std::cout << "dX_transpose:\n" << dX_transpose << std::endl;
   }
 }
 
+void testMatGradMultMat(int ntests)
+{
+  int nq = 34;
+  for (int testnr = 0; testnr < ntests; testnr++) {
+    MatrixXd A = MatrixXd::Random(8, 6);
+    MatrixXd B = MatrixXd::Random(A.cols(), 9);
+    MatrixXd dA = MatrixXd::Random(A.size(), nq);
+    MatrixXd dB = MatrixXd::Random(B.size(), nq);
+    auto dAB = matGradMultMat(A, B, dA, dB); // volatile to make sure that the result doesn't get discarded in compiler optimization
+//    std::cout << "size of dAB: " << dAB.rows() << "x" << dAB.cols() << std::endl;
+    volatile auto vol = dAB;
+  }
+}
+
 int main(int argc, char **argv) {
-  std::cout << "elapsed time: " << measure<>::execution(testTransposeGrad, 500000) << std::endl;
+//  std::cout << "elapsed time: " << measure<>::execution(testTransposeGrad, 500000) << std::endl;
+  std::cout << "elapsed time: " << measure<>::execution(testMatGradMultMat, 100000) << std::endl;
   return 0;
 }
