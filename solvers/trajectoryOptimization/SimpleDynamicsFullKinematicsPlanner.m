@@ -175,6 +175,11 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
       typecheck(constraint,'RigidBodyConstraint');
+      if ~iscell(time_index)
+        % then use { time_index(1), time_index(2), ... } ,
+        % aka independent constraints for each time
+        time_index = mat2cell(reshape(time_index,1,[]),1,ones(1,numel(time_index)));
+      end
       for j = 1:numel(time_index)
         if isa(constraint,'SingleTimeKinematicConstraint')
           cnstr = constraint.generateConstraint();
