@@ -183,7 +183,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       for j = 1:numel(time_index)
         if isa(constraint,'SingleTimeKinematicConstraint')
           cnstr = constraint.generateConstraint();
-          obj = obj.addKinematicConstraint(cnstr{1},time_index{j});
+          obj = obj.addKinematicConstraint(cnstr{1},time_index(j));
         elseif isa(constraint, 'PostureConstraint')
           cnstr = constraint.generateConstraint();
           obj = obj.addBoundingBoxConstraint(cnstr{1}, ...
@@ -212,7 +212,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         elseif isa(constraint,'MultipleTimeKinematicConstraint')
           cnstr = constraint.generateConstraint(numel(time_index{j}));
           if ~isempty(cnstr)
-            obj = obj.addKinematicConstraint(cnstr{1},time_index{j});
+            obj = obj.addKinematicConstraint(cnstr{1},time_index(j));
           end
         else
           id = ['Drake:SimpleDynamicsFullKinematicsPlanner:' ...
