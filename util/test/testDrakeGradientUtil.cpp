@@ -27,8 +27,8 @@ struct measure
 
 void testTransposeGrad(int ntests)
 {
-  const int rows_X = 6;
-  const int cols_X = 15;
+  const int rows_X = 8;
+  const int cols_X = 6;
   const int numel_X = rows_X * cols_X;
   const int nq = 34;
 //  Matrix<double, numel_X, nq> dX;
@@ -44,8 +44,8 @@ void testTransposeGrad(int ntests)
   for (int testnr = 0; testnr < ntests; testnr++) {
     Matrix<double, numel_X, nq> dX = Matrix<double, numel_X, nq>::Random();
 //    std::cout << "dX:\n" << dX << std::endl << std::endl;
-    auto dX_transpose = transposeGrad(dX, rows_X); // volatile to make sure that the result doesn't get discarded in compiler optimization
-    volatile auto vol = dX_transpose;
+    auto dX_transpose = transposeGrad(dX, rows_X);
+    volatile auto vol = dX_transpose; // volatile to make sure that the result doesn't get discarded in compiler optimization
 
 //    transposeGrad(dX, rows_X, dX_transpose);
 //    std::cout << "dX_transpose:\n" << dX_transpose << std::endl;
@@ -54,7 +54,7 @@ void testTransposeGrad(int ntests)
 
 void testMatGradMultMat(int ntests, bool check)
 {
-  const int nq = 5; // 34
+  const int nq = 34;
   for (int testnr = 0; testnr < ntests; testnr++) {
 
 //    MatrixXd A = MatrixXd::Random(8, 6).eval();
@@ -77,23 +77,68 @@ void testMatGradMultMat(int ntests, bool check)
 //        auto dA = Matrix<double, A.SizeAtCompileTime, nq>::Random().eval();
 //        auto dB = Matrix<double, B.SizeAtCompileTime, nq>::Random().eval();
 
-    auto dAB = matGradMultMat(A, B, dA, dB).eval(); // volatile to make sure that the result doesn't get discarded in compiler optimization
-    volatile auto vol = dAB;
+    auto dAB = matGradMultMat(A, B, dA, dB).eval();
+    volatile auto vol = dAB; // volatile to make sure that the result doesn't get discarded in compiler optimization
 
     if (check) {
-      auto dABCheck = Eigen::kroneckerProduct(Eigen::MatrixXd::Identity(B.cols(), B.cols()), A) * dB
+      auto dAB_check = Eigen::kroneckerProduct(Eigen::MatrixXd::Identity(B.cols(), B.cols()), A) * dB
           + Eigen::kroneckerProduct(B.transpose(), Eigen::MatrixXd::Identity(A.rows(), A.rows())) * dA;
 
-      if (!dAB.isApprox(dABCheck, 1e-10)) {
-        throw std::runtime_error("Wrong.");
+      if (!dAB.isApprox(dAB_check, 1e-10)) {
+        throw std::runtime_error("wrong.");
       }
     }
   }
 }
 
+void testMatGradMult(int ntests, bool check) {
+  const int nq = 34;
+  const int A_rows = 8;
+  const int A_cols = 6;
+  for (int testnr = 0; testnr < ntests; testnr++) {
+//    MatrixXd dA = MatrixXd::Random(A_rows * A_cols, nq).eval();
+    auto dA = Matrix<double, A_rows * A_cols, nq>::Random().eval();
+    auto b = Matrix<double, A_cols, 1>::Random().eval();
+    auto dAb = matGradMult(dA, b).eval();
+
+    if (check) {
+      auto A = Matrix<double, A_rows, A_cols>::Random().eval();
+      auto db = Matrix<double, b.RowsAtCompileTime, nq>::Zero(b.rows(), nq).eval();
+      auto dAb_check = matGradMultMat(A, b, dA, db);
+//      std::cout << dAb << std::endl << std::endl;
+//      std::cout << dAb_check << std::endl << std::endl;
+
+      if (!dAb.isApprox(dAb_check, 1e-10)) {
+        throw std::runtime_error("wrong.");
+      }
+    }
+  }
+}
+
+void testNormalizeVec() {
+  const int x_rows = 3;
+
+  Matrix<double, x_rows, 1> x;
+  x << 1.0, 2.0, 3.0;
+
+  Matrix<double, x_rows, 1> x_norm;
+  MatrixXd dx_norm(x_norm.size(), x_rows);
+  MatrixXd ddx_norm(dx_norm.size(), x_rows);
+  normalizeVec(x, x_norm, &dx_norm, &ddx_norm);
+  std::cout << "x_norm: " << x_norm << std::endl << std::endl;
+  std::cout << "dx_norm: " << dx_norm << std::endl << std::endl;
+  std::cout << "ddx_norm: " << ddx_norm << std::endl << std::endl;
+}
+
 int main(int argc, char **argv) {
-//  std::cout << "elapsed time: " << measure<>::execution(testTransposeGrad, 500000) << std::endl;
-  std::cout << "elapsed time: " << measure<>::execution(testMatGradMultMat, 100000, false) << std::endl;
+  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, 100000) << std::endl;
+
+  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, 100000, false) << std::endl;
   testMatGradMultMat(1000, true);
+
+  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, 100000, false) << std::endl;
+  testMatGradMult(1000, true);
+
+  testNormalizeVec();
   return 0;
 }
