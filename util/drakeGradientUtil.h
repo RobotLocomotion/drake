@@ -136,12 +136,14 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBa
 
 // TODO: move to different file
 // WARNING: not reshaping to Matlab geval output format!
-template <typename DerivedA, typename DerivedB>
+#define NORMALIZEVEC_SECOND_DERIV_ROWS(x_rows) ((int) x_rows == Eigen::Dynamic ? Eigen::Dynamic : x_rows * x_rows)
+
+template <typename DerivedA>
 void normalizeVec(
     const Eigen::MatrixBase<DerivedA>& x,
-    Eigen::MatrixBase<DerivedB>& x_norm,
-    Eigen::MatrixXd* dx_norm = nullptr, // TODO: type
-    Eigen::MatrixXd* ddx_norm = nullptr) { // TODO: type
+    typename DerivedA::PlainObject& x_norm,
+    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime, DerivedA::RowsAtCompileTime>* dx_norm = nullptr,
+    Eigen::Matrix<typename DerivedA::Scalar, NORMALIZEVEC_SECOND_DERIV_ROWS(DerivedA::RowsAtCompileTime), DerivedA::RowsAtCompileTime>* ddx_norm = nullptr) {
 
   typename DerivedA::Scalar xdotx = x.squaredNorm();
   typename DerivedA::Scalar norm_x = std::sqrt(xdotx);
