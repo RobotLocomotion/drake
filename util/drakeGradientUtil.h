@@ -35,11 +35,12 @@ Eigen::Matrix<typename Derived::Scalar, Derived::RowsAtCompileTime, Derived::Col
   return dX_transpose;
 }
 
-#define MATGRADMULTMAT_NUMROWS(rows_A, cols_B) (((int)rows_A == Eigen::Dynamic || (int)cols_B == Eigen::Dynamic) ? Eigen::Dynamic \
-		: ((int)rows_A * (int)cols_B))
+constexpr int matGradMultMatNumRows(int rows_A, int cols_B) {
+  return (rows_A == Eigen::Dynamic || cols_B == Eigen::Dynamic) ? Eigen::Dynamic : (rows_A * cols_B);
+}
 
 template <typename DerivedA, typename DerivedB, typename DerivedDA, typename DerivedDB>
-Eigen::Matrix<typename DerivedA::Scalar, MATGRADMULTMAT_NUMROWS(DerivedA::RowsAtCompileTime, DerivedB::ColsAtCompileTime), DerivedDA::ColsAtCompileTime>
+Eigen::Matrix<typename DerivedA::Scalar, matGradMultMatNumRows(DerivedA::RowsAtCompileTime, DerivedB::ColsAtCompileTime), DerivedDA::ColsAtCompileTime>
 matGradMultMat(
     const Eigen::MatrixBase<DerivedA>& A,
     const Eigen::MatrixBase<DerivedB>& B,
@@ -49,7 +50,7 @@ matGradMultMat(
   const int nq = dA.cols();
 
   Eigen::Matrix<typename DerivedA::Scalar,
-  MATGRADMULTMAT_NUMROWS(DerivedA::RowsAtCompileTime, DerivedB::ColsAtCompileTime),
+  matGradMultMatNumRows(DerivedA::RowsAtCompileTime, DerivedB::ColsAtCompileTime),
   DerivedDA::ColsAtCompileTime> ret(A.rows() * B.cols(), nq);
 
   for (int col = 0; col < B.cols(); col++) {
@@ -69,19 +70,18 @@ matGradMultMat(
   //  return Eigen::kroneckerProduct(Eigen::MatrixXd::Identity(B.cols(), B.cols()), A) * dB + Eigen::kroneckerProduct(B.transpose(), Eigen::MatrixXd::Identity(A.rows(), A.rows())) * dA;
 }
 
-
-#define MATGRADMULT_NUMROWS(rows_dA, rows_b) (((int)rows_dA == Eigen::Dynamic || (int)rows_b == Eigen::Dynamic) ? Eigen::Dynamic \
-		: ((int)rows_dA / (int)rows_b))
-
+constexpr int matGradMultNumRows(int rows_dA, int rows_b) {
+  return (rows_dA == Eigen::Dynamic || rows_b == Eigen::Dynamic) ? Eigen::Dynamic : (rows_dA / rows_b);
+}
 template<typename DerivedDA, typename Derivedb>
-Eigen::Matrix<typename DerivedDA::Scalar, MATGRADMULT_NUMROWS(DerivedDA::RowsAtCompileTime, Derivedb::RowsAtCompileTime), DerivedDA::ColsAtCompileTime>
+Eigen::Matrix<typename DerivedDA::Scalar, matGradMultNumRows(DerivedDA::RowsAtCompileTime, Derivedb::RowsAtCompileTime), DerivedDA::ColsAtCompileTime>
 matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Derivedb>& b) {
   const int nq = dA.cols();
   assert(b.cols() == 1);
   assert(dA.rows() % b.rows() == 0);
   const int A_rows = dA.rows() / b.rows();
 
-  Eigen::Matrix<typename DerivedDA::Scalar, MATGRADMULT_NUMROWS(DerivedDA::RowsAtCompileTime, Derivedb::RowsAtCompileTime), DerivedDA::ColsAtCompileTime> ret(A_rows, nq);
+  Eigen::Matrix<typename DerivedDA::Scalar, matGradMultNumRows(DerivedDA::RowsAtCompileTime, Derivedb::RowsAtCompileTime), DerivedDA::ColsAtCompileTime> ret(A_rows, nq);
 
   ret.setZero();
   for (int row = 0; row < b.rows(); row++) {
@@ -134,24 +134,34 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBa
   }
 }
 
+template<typename Derived, int Nq, int DerivativeOrder>
+struct GradientType {
+  static constexpr const int gradientNumRows(int A_size, int nq, int derivativeOrder) {
+    return (A_size == Eigen::Dynamic || nq == Eigen::Dynamic)
+        ? Eigen::Dynamic
+        : (derivativeOrder == 1 ? A_size : nq * gradientNumRows(A_size, nq, derivativeOrder - 1));
+  }
+
+  typedef Eigen::Matrix<typename Derived::Scalar, gradientNumRows(Derived::SizeAtCompileTime, Nq, DerivativeOrder), Nq> Type;
+};
+
 // TODO: move to different file
 // WARNING: not reshaping to Matlab geval output format!
-#define NORMALIZEVEC_SECOND_DERIV_ROWS(x_rows) ((int) x_rows == Eigen::Dynamic ? Eigen::Dynamic : x_rows * x_rows)
-
-template <typename DerivedA>
+template <typename Derived>
 void normalizeVec(
-    const Eigen::MatrixBase<DerivedA>& x,
-    typename DerivedA::PlainObject& x_norm,
-    Eigen::Matrix<typename DerivedA::Scalar, DerivedA::RowsAtCompileTime, DerivedA::RowsAtCompileTime>* dx_norm = nullptr,
-    Eigen::Matrix<typename DerivedA::Scalar, NORMALIZEVEC_SECOND_DERIV_ROWS(DerivedA::RowsAtCompileTime), DerivedA::RowsAtCompileTime>* ddx_norm = nullptr) {
+    const Eigen::MatrixBase<Derived>& x,
+    typename Derived::PlainObject& x_norm,
+    typename GradientType<Derived, Derived::RowsAtCompileTime, 1>::Type* dx_norm = nullptr,
+    typename GradientType<Derived, Derived::RowsAtCompileTime, 2>::Type* ddx_norm = nullptr) {
 
-  typename DerivedA::Scalar xdotx = x.squaredNorm();
-  typename DerivedA::Scalar norm_x = std::sqrt(xdotx);
+  typename Derived::Scalar xdotx = x.squaredNorm();
+  typename Derived::Scalar norm_x = std::sqrt(xdotx);
   x_norm = x / norm_x;
 
   if (dx_norm) {
-    const int rows = DerivedA::RowsAtCompileTime;
-    (*dx_norm) = (Eigen::Matrix<typename DerivedA::Scalar, rows, rows>::Identity(x.rows(), x.rows()) - x * x.transpose() / xdotx) / norm_x;
+    dx_norm->setIdentity(x.rows(), x.rows());
+    (*dx_norm) -= x * x.transpose() / xdotx;
+    (*dx_norm) /= norm_x;
 
     if (ddx_norm) {
       auto dx_norm_transpose = transposeGrad(*dx_norm, x.rows());
