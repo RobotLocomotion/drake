@@ -4,6 +4,8 @@
 #include <iostream>
 #include <chrono>
 #include <stdexcept>
+#include <vector>
+#include <array>
 
 using namespace Eigen;
 
@@ -115,6 +117,35 @@ void testMatGradMult(int ntests, bool check) {
   }
 }
 
+void testSubMatrixGradient(int ntests) {
+  const int A_rows = 4;
+  const int A_cols = 4;
+  const int nq = 34;
+
+//  std::vector<int> rows {0, 1, 2};
+//  std::vector<int> cols {0, 1, 2};
+
+  std::array<int, 3> rows {0, 1, 2};
+  std::array<int, 3> cols {0, 1, 2};
+
+  for (int testnr = 0; testnr < ntests; testnr++) {
+    Matrix<double, A_rows * A_cols, nq> dA = Matrix<double, A_rows * A_cols, nq>::Random().eval();
+//    Matrix<double, A_rows * A_cols, Dynamic> dA = Matrix<double, A_rows * A_cols, Dynamic>::Random(A_rows * A_cols, nq);
+//    const int numel_A = A_rows * A_cols;
+    //  for (int col = 0; col < nq; col++) {
+    //    for (int row = 0; row < numel_A; row++) {
+    //      dA(row, col) = row + col * numel_A + 1;
+    //    }
+    //  }
+
+    auto dA_submatrix = getSubMatrixGradient(dA, rows, cols, A_rows);
+    volatile auto vol = dA_submatrix.eval();
+  }
+//  std::cout << "dA:\n" << dA << "\n\n";
+//  std::cout << "dA_submatrix:\n" << dA_submatrix << "\n\n";
+
+}
+
 void testNormalizeVec() {
   const int x_rows = 3;
 
@@ -131,14 +162,17 @@ void testNormalizeVec() {
 }
 
 int main(int argc, char **argv) {
-  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, 100000) << std::endl;
+//  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, 100000) << std::endl;
+//
+//  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, 100000, false) << std::endl;
+//  testMatGradMultMat(1000, true);
+//
+//  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, 100000, false) << std::endl;
+//  testMatGradMult(1000, true);
+//
+//  testNormalizeVec();
 
-  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, 100000, false) << std::endl;
-  testMatGradMultMat(1000, true);
+  std::cout << "testSubMatrixGradient elapsed time: " << measure<>::execution(testSubMatrixGradient, 100000) << std::endl;
 
-  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, 100000, false) << std::endl;
-  testMatGradMult(1000, true);
-
-  testNormalizeVec();
   return 0;
 }
