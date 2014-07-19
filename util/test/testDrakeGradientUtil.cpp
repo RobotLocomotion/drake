@@ -44,7 +44,7 @@ void testTransposeGrad(int ntests)
   const int numel_X = rows_X * cols_X;
   const int nq = 34;
 //  Matrix<double, numel_X, nq> dX;
-////  MatrixXd dX(numel_X, nq);
+//  MatrixXd dX(numel_X, nq);
 
 //  Matrix<double, numel_X, nq> dX_transpose;
 
@@ -71,18 +71,18 @@ void testMatGradMultMat(int ntests, bool check)
 
     MatrixXd dA = MatrixXd::Random(A.size(), nq).eval();
     MatrixXd dB = MatrixXd::Random(B.size(), nq).eval();
-//    auto dA = Matrix<double, A.SizeAtCompileTime, nq>::Random().eval();
-//    auto dB = Matrix<double, B.SizeAtCompileTime, nq>::Random().eval();
-
-//    //    MatrixXd A = MatrixXd::Random(8, 6).eval();
-//    //    MatrixXd B = MatrixXd::Random(A.cols(), 9).eval();
-//        auto A = Matrix<double, 5, 3>::Random().eval();
-//        auto B = Matrix<double, A.ColsAtCompileTime, 2>::Random().eval();
-//
-//    //    MatrixXd dA = MatrixXd::Random(A.size(), nq).eval();
-//    //    MatrixXd dB = MatrixXd::Random(B.size(), nq).eval();
-//        auto dA = Matrix<double, A.SizeAtCompileTime, nq>::Random().eval();
-//        auto dB = Matrix<double, B.SizeAtCompileTime, nq>::Random().eval();
+    //    auto dA = Matrix<double, A.SizeAtCompileTime, nq>::Random().eval();
+    //    auto dB = Matrix<double, B.SizeAtCompileTime, nq>::Random().eval();
+    //
+    //    MatrixXd A = MatrixXd::Random(8, 6).eval();
+    //    MatrixXd B = MatrixXd::Random(A.cols(), 9).eval();
+    //    auto A = Matrix<double, 5, 3>::Random().eval();
+    //    auto B = Matrix<double, A.ColsAtCompileTime, 2>::Random().eval();
+    //
+    //    MatrixXd dA = MatrixXd::Random(A.size(), nq).eval();
+    //    MatrixXd dB = MatrixXd::Random(B.size(), nq).eval();
+    //    auto dA = Matrix<double, A.SizeAtCompileTime, nq>::Random().eval();
+    //    auto dB = Matrix<double, B.SizeAtCompileTime, nq>::Random().eval();
 
     auto dAB = matGradMultMat(A, B, dA, dB).eval();
     volatile auto vol = dAB; // volatile to make sure that the result doesn't get discarded in compiler optimization
@@ -180,6 +180,7 @@ void testNormalizeVec(int ntests) {
     Matrix<double, x_rows, x_rows> dx_norm;
     Matrix<double, x_rows * x_rows, x_rows> ddx_norm;
     normalizeVec(x, x_norm, &dx_norm, &ddx_norm);
+//    std::cout << "gradientNumRows: " << gradientNumRows(x_rows, x_rows, 1) << std::endl;
 
     volatile auto volx_norm = x_norm;
     volatile auto voldx_norm = dx_norm;
