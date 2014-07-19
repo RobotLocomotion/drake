@@ -171,19 +171,24 @@ void testSetSubMatrixGradient(int ntests, bool check) {
   }
 }
 
-void testNormalizeVec() {
-  const int x_rows = 3;
+void testNormalizeVec(int ntests) {
+  const int x_rows = 4;
 
-  Matrix<double, x_rows, 1> x;
-  x << 1.0, 2.0, 3.0;
+  for (int testnr = 0; testnr < ntests; testnr++) {
+    auto x = Matrix<double, x_rows, 1>::Random().eval();
+    Matrix<double, x_rows, 1> x_norm;
+    Matrix<double, x_rows, x_rows> dx_norm;
+    Matrix<double, x_rows * x_rows, x_rows> ddx_norm;
+    normalizeVec(x, x_norm, &dx_norm, &ddx_norm);
 
-  Matrix<double, x_rows, 1> x_norm;
-  MatrixXd dx_norm(x_norm.size(), x_rows);
-  MatrixXd ddx_norm(dx_norm.size(), x_rows);
-  normalizeVec(x, x_norm, &dx_norm, &ddx_norm);
-  std::cout << "x_norm:\n" << x_norm << std::endl << std::endl;
-  std::cout << "dx_norm:\n" << dx_norm << std::endl << std::endl;
-  std::cout << "ddx_norm:\n" << ddx_norm << std::endl << std::endl;
+    volatile auto volx_norm = x_norm;
+    volatile auto voldx_norm = dx_norm;
+    volatile auto volddx_norm = ddx_norm;
+
+//    std::cout << "x_norm:\n" << x_norm << std::endl << std::endl;
+//    std::cout << "dx_norm:\n" << dx_norm << std::endl << std::endl;
+//    std::cout << "ddx_norm:\n" << ddx_norm << std::endl << std::endl;
+  }
 }
 
 int main(int argc, char **argv) {
@@ -200,7 +205,7 @@ int main(int argc, char **argv) {
   std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, 100000, false) << std::endl;
   testSetSubMatrixGradient(1000, true);
 
-  testNormalizeVec();
+  std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, 100000) << std::endl;
 
   return 0;
 }
