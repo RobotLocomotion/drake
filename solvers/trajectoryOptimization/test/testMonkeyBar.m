@@ -637,8 +637,8 @@ if(mode == 4)
   x_seed(cdfkp.h_inds) = 0.1;
   x_seed(cdfkp.q_inds(:)) = reshape(bsxfun(@times,q_start,ones(1,nT_swing1)),[],1);
   x_seed(cdfkp.com_inds(:)) = reshape(bsxfun(@times,com_start,ones(1,nT_swing1)),[],1);
-  x_seed(cdfkp.lambda_inds{1}(:)) = reshape(bsxfun(@times,[l_hand_force_fp;zeros(3,1)],ones(1,nT_swing1)),[],1);
-  x_seed(cdfkp.lambda_inds{2}(:)) = reshape(bsxfun(@times,[r_hand_force_fp;zeros(3,1)],ones(1,nT_swing1)),[],1);
+  x_seed(cdfkp.lambda_inds{1}(:)) = reshape(bsxfun(@times,[0;0;1/2;zeros(3,1)],ones(1,nT_swing1)),[],1);
+  x_seed(cdfkp.lambda_inds{2}(:)) = reshape(bsxfun(@times,[0;0;1/2;zeros(3,1)],ones(1,nT_swing1)),[],1);
 
   cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
   cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',3000);

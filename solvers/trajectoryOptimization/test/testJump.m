@@ -1,4 +1,6 @@
-function testJump
+function testJump(mode)
+% mode 0 play back
+% mode 1 trajectory optimization
 % Jumping with fixed contact sequence
 warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
@@ -8,6 +10,8 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
 options.floating = true;
 robot = RigidBodyManipulator(urdf,options);
+stage_urdf = [getDrakePath,'/solvers/trajectoryOptimization/test/MonkeyBar_stage.urdf'];
+robot = robot.addRobotFromURDF(stage_urdf,[0;0;-0.05],[0;pi/2;0]);
 nomdata = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
 nq = robot.getNumPositions();
 qstar = nomdata.xstar(1:nq);
@@ -142,7 +146,7 @@ cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(qstar,qstar),cdfkp.
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(vstar,vstar),cdfkp.v_inds(:,1));
 cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(vstar,vstar),cdfkp.v_inds(:,end));
 
-cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.02*ones(nT-1,1),0.2*ones(nT-1,1)),cdfkp.h_inds(:));
+cdfkp = cdfkp.addBoundingBoxConstraint(BoundingBoxConstraint(0.04*ones(nT-1,1),0.1*ones(nT-1,1)),cdfkp.h_inds(:));
 
 cdfkp = cdfkp.addCoMBounds(1:nT,bsxfun(@times,com_star-[0.5;0.5;0.5],ones(1,nT)),bsxfun(@times,com_star+[0.5;0.5;1],ones(1,nT)));
 
@@ -181,27 +185,43 @@ cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',2000);
 cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
 cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',2e-4);
 cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
-cdfkp = cdfkp.setSolverOptions('snopt','print','test_cdfkp2.out');
+cdfkp = cdfkp.setSolverOptions('snopt','print','test_jump.out');
 
-seed_sol = load('test_cdfkp2','-mat','x_sol');
+seed_sol = load('test_jump','-mat','x_sol');
+if(mode == 0)
+  jump = load('test_jump','-mat','t_sol','v_sol','q_sol','wrench_sol','com_sol','comdot_sol','comddot_sol');
+  v = ContactWrenchVisualizer(robot,jump.t_sol,jump.wrench_sol);
+  xtraj = PPTrajectory(foh(jump.t_sol,[jump.q_sol;jump.v_sol]));
+  xtraj = xtraj.setOutputFrame(robot.getStateFrame);
+  v.playback(xtraj,struct('slider',true));
+  t_samples = linspace(jump.t_sol(1),jump.t_sol(end),1000);
+  com_traj = PPTrajectory(pchipDeriv(jump.t_sol,jump.com_sol,jump.comdot_sol));
+  com_samples = com_traj.eval(t_samples);
+  figure;
+  plot(jump.t_sol,jump.com_sol(3,:),'*','Markersize',10);
+  hold on;
+  plot(t_samples,com_samples(3,:),'LineWidth',2);
+  title('CoM height','fontsize',22);
+  xlabel('time (seconds)','fontsize',22);
+  ylabel('CoM height (meters)','fontsize',22);
+  plot(jump.t_sol(toe_takeoff_idx),jump.com_sol(3,toe_takeoff_idx),'*','Markersize',10,'Color','r');
+  text(jump.t_sol(toe_takeoff_idx)-0.01,jump.com_sol(3,toe_takeoff_idx)-0.03,'toe take off','fontsize',22);
+  plot(jump.t_sol(heel_takeoff_idx),jump.com_sol(3,heel_takeoff_idx),'*','Markersize',10,'Color','r');
+  text(jump.t_sol(heel_takeoff_idx)-0.02,jump.com_sol(3,heel_takeoff_idx)-0.02,'heel take off','fontsize',22);
+  plot(jump.t_sol(toe_land_idx),jump.com_sol(3,toe_land_idx),'*','Markersize',10,'Color','r');
+  text(jump.t_sol(toe_land_idx)+0.02,jump.com_sol(3,toe_land_idx),'toe touch down','fontsize',22);
+  plot(jump.t_sol(heel_land_idx),jump.com_sol(3,heel_land_idx),'*','Markersize',10,'Color','r');
+  text(jump.t_sol(heel_land_idx)-0.07,jump.com_sol(3,heel_land_idx)-0.02,'heel touch down','fontsize',22);
+  set(gca,'Fontsize',18);
+end
+if(mode == 1)
 tic
 [x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
 toc
-q_sol = reshape(x_sol(cdfkp.q_inds(:)),nq,nT);
-v_sol = reshape(x_sol(cdfkp.v_inds(:)),nq,nT);
-h_sol = reshape(x_sol(cdfkp.h_inds),1,[]);
-t_sol = cumsum([0 h_sol]);
-com_sol = reshape(x_sol(cdfkp.com_inds),3,[]);
-comdot_sol = reshape(x_sol(cdfkp.comdot_inds),3,[]);
-comddot_sol = reshape(x_sol(cdfkp.comddot_inds),3,[]);
-H_sol = reshape(x_sol(cdfkp.H_inds),3,[]);
-Hdot_sol = reshape(x_sol(cdfkp.Hdot_inds),3,[])*cdfkp.torque_multiplier;
-lambda_sol = cell(2,1);
-lambda_sol{1} = reshape(x_sol(cdfkp.lambda_inds{1}),size(cdfkp.lambda_inds{1},1),[],nT);
-lambda_sol{2} = reshape(x_sol(cdfkp.lambda_inds{2}),size(cdfkp.lambda_inds{2},1),[],nT);
+[q_sol,v_sol,h_sol,t_sol,com_sol,comdot_sol,comddot_sol,H_sol,Hdot_sol,lambda_sol,wrench_sol] = parseSolution(cdfkp,x_sol);
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
 xtraj_sol = xtraj_sol.setOutputFrame(robot.getStateFrame);
-wrench_sol = cdfkp.contactWrench(x_sol);
+end
 keyboard;
 end
 
