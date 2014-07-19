@@ -27,6 +27,16 @@ struct measure
   }
 };
 
+template<typename Derived>
+void setLinearIndices(MatrixBase<Derived>& A)
+{
+  for (int col = 0; col < A.cols(); col++) {
+    for (int row = 0; row < A.rows(); row++) {
+      A(row, col) = row + col * A.rows() + 1;
+    }
+  }
+}
+
 void testTransposeGrad(int ntests)
 {
   const int rows_X = 8;
@@ -35,11 +45,6 @@ void testTransposeGrad(int ntests)
   const int nq = 34;
 //  Matrix<double, numel_X, nq> dX;
 ////  MatrixXd dX(numel_X, nq);
-//  for (int col = 0; col < nq; col++) {
-//    for (int row = 0; row < numel_X; row++) {
-//      dX(row, col) = row + col * numel_X + 1;
-//    }
-//  }
 
 //  Matrix<double, numel_X, nq> dX_transpose;
 
@@ -117,33 +122,53 @@ void testMatGradMult(int ntests, bool check) {
   }
 }
 
-void testSubMatrixGradient(int ntests) {
+void testGetSubMatrixGradient(int ntests) {
   const int A_rows = 4;
   const int A_cols = 4;
   const int nq = 34;
 
-//  std::vector<int> rows {0, 1, 2};
-//  std::vector<int> cols {0, 1, 2};
+  std::vector<int> rows {0, 1, 2};
+  std::vector<int> cols {0, 1, 2};
 
-  std::array<int, 3> rows {0, 1, 2};
-  std::array<int, 3> cols {0, 1, 2};
+//  std::array<int, 3> rows {0, 1, 2};
+//  std::array<int, 3> cols {0, 1, 2};
 
   for (int testnr = 0; testnr < ntests; testnr++) {
     Matrix<double, A_rows * A_cols, nq> dA = Matrix<double, A_rows * A_cols, nq>::Random().eval();
 //    Matrix<double, A_rows * A_cols, Dynamic> dA = Matrix<double, A_rows * A_cols, Dynamic>::Random(A_rows * A_cols, nq);
-//    const int numel_A = A_rows * A_cols;
-    //  for (int col = 0; col < nq; col++) {
-    //    for (int row = 0; row < numel_A; row++) {
-    //      dA(row, col) = row + col * numel_A + 1;
-    //    }
-    //  }
 
-    auto dA_submatrix = getSubMatrixGradient(dA, rows, cols, A_rows);
+    auto dA_submatrix = getSubMatrixGradient(dA, rows, cols, A_rows, 1, 2);
     volatile auto vol = dA_submatrix.eval();
+//    std::cout << "dA:\n" << dA << "\n\n";
+//    std::cout << "dA_submatrix:\n" << dA_submatrix << "\n\n";
   }
-//  std::cout << "dA:\n" << dA << "\n\n";
-//  std::cout << "dA_submatrix:\n" << dA_submatrix << "\n\n";
+}
 
+void testSetSubMatrixGradient(int ntests, bool check) {
+  const int A_rows = 4;
+  const int A_cols = 4;
+  const int nq = 34;
+
+  std::vector<int> rows {0, 1, 2};
+  std::vector<int> cols {0, 1, 2};
+
+  int q_start = 2;
+  int q_subvector_size = 6;
+  MatrixXd dA_submatrix = MatrixXd::Random(rows.size(), cols.size());
+
+  for (int testnr = 0; testnr < ntests; testnr++) {
+    Matrix<double, A_rows * A_cols, nq> dA = Matrix<double, A_rows * A_cols, nq>::Random().eval();
+    setSubMatrixGradient(dA, dA_submatrix, rows, cols, A_rows, q_start, q_subvector_size);
+
+    if (check) {
+      auto dA_submatrix_back = getSubMatrixGradient(dA, rows, cols, A_rows, q_start, q_subvector_size);
+      if (!dA_submatrix_back.isApprox(dA_submatrix, 1e-10)) {
+//        std::cout << "dA_submatrix" << dA_submatrix << std::endl << std::endl;
+//        std::cout << "dA_submatrix_back" << dA_submatrix_back << std::endl << std::endl;
+        throw std::runtime_error("wrong.");
+      }
+    }
+  }
 }
 
 void testNormalizeVec() {
@@ -156,23 +181,26 @@ void testNormalizeVec() {
   MatrixXd dx_norm(x_norm.size(), x_rows);
   MatrixXd ddx_norm(dx_norm.size(), x_rows);
   normalizeVec(x, x_norm, &dx_norm, &ddx_norm);
-  std::cout << "x_norm: " << x_norm << std::endl << std::endl;
-  std::cout << "dx_norm: " << dx_norm << std::endl << std::endl;
-  std::cout << "ddx_norm: " << ddx_norm << std::endl << std::endl;
+  std::cout << "x_norm:\n" << x_norm << std::endl << std::endl;
+  std::cout << "dx_norm:\n" << dx_norm << std::endl << std::endl;
+  std::cout << "ddx_norm:\n" << ddx_norm << std::endl << std::endl;
 }
 
 int main(int argc, char **argv) {
-//  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, 100000) << std::endl;
-//
-//  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, 100000, false) << std::endl;
-//  testMatGradMultMat(1000, true);
-//
-//  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, 100000, false) << std::endl;
-//  testMatGradMult(1000, true);
-//
-//  testNormalizeVec();
+  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, 100000) << std::endl;
 
-  std::cout << "testSubMatrixGradient elapsed time: " << measure<>::execution(testSubMatrixGradient, 100000) << std::endl;
+  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, 100000, false) << std::endl;
+  testMatGradMultMat(1000, true);
+
+  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, 100000, false) << std::endl;
+  testMatGradMult(1000, true);
+
+  std::cout << "testGetSubMatrixGradient elapsed time: " << measure<>::execution(testGetSubMatrixGradient, 100000) << std::endl;
+
+  std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, 100000, false) << std::endl;
+  testSetSubMatrixGradient(1000, true);
+
+  testNormalizeVec();
 
   return 0;
 }
