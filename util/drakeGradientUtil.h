@@ -5,6 +5,8 @@
 #include <cmath>
 #include <iostream> // TODO: get rid of this one
 #include <cassert>
+#include <vector>
+#include <array>
 
 /*
  * Methods are templated, which is why declaration and implementation are in the same file
@@ -51,7 +53,7 @@ matGradMultMat(
   DerivedDA::ColsAtCompileTime> ret(A.rows() * B.cols(), nq);
 
   for (int col = 0; col < B.cols(); col++) {
-    auto block = ret.block(col * A.rows(), 0, A.rows(), nq);
+    auto block = ret.block(col * A.rows(), 0, A.rows(), nq).noalias();
 
     // A * dB part:
     block = A * dB.block(col * A.cols(), 0, A.cols(), nq);
@@ -83,9 +85,37 @@ matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Deri
 
   ret.setZero();
   for (int row = 0; row < b.rows(); row++) {
-    ret += b(row, 0) * dA.block(row * A_rows, 0, A_rows, nq);
+    ret.noalias() += b(row, 0) * dA.block(row * A_rows, 0, A_rows, nq);
   }
   return ret;
+}
+
+// TODO: could save copies once http://eigen.tuxfamily.org/bz/show_bug.cgi?id=329 is fixed
+template<typename Derived>
+Eigen::MatrixXd getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, const std::vector<int>& rows, const std::vector<int>& cols, int M_rows, std::vector<int>* q_indices = nullptr) {
+  Eigen::MatrixXd dM_submatrix(rows.size() * cols.size(), dM.cols());
+  int index = 0;
+  for (int col : cols) {
+    for (int row : rows) {
+      dM_submatrix.row(index) = dM.row(row + col * M_rows);
+      index++;
+    }
+  }
+  return dM_submatrix;
+}
+
+template<typename Derived, unsigned long NRows, unsigned long NCols>
+Eigen::Matrix<typename Derived::Scalar, NRows * NCols, Derived::ColsAtCompileTime>
+getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, const std::array<int, NRows>& rows, const std::array<int, NCols>& cols, int M_rows) {
+  Eigen::Matrix<typename Derived::Scalar, NRows * NCols, Derived::ColsAtCompileTime> dM_submatrix(rows.size() * cols.size(), dM.cols());
+  int index = 0;
+  for (int col : cols) {
+    for (int row : rows) {
+      dM_submatrix.row(index) = dM.row(row + col * M_rows);
+      index++;
+    }
+  }
+  return dM_submatrix;
 }
 
 // TODO: move to different file
