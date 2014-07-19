@@ -92,12 +92,15 @@ matGradMult(const Eigen::MatrixBase<DerivedDA>& dA, const Eigen::MatrixBase<Deri
 
 // TODO: could save copies once http://eigen.tuxfamily.org/bz/show_bug.cgi?id=329 is fixed
 template<typename Derived>
-Eigen::MatrixXd getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, const std::vector<int>& rows, const std::vector<int>& cols, int M_rows, std::vector<int>* q_indices = nullptr) {
-  Eigen::MatrixXd dM_submatrix(rows.size() * cols.size(), dM.cols());
+Eigen::MatrixXd getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, const std::vector<int>& rows, const std::vector<int>& cols, int M_rows, int q_start = 0, int q_subvector_size = -1) {
+  if (q_subvector_size < 0) {
+    q_subvector_size = dM.cols() - q_start;
+  }
+  Eigen::MatrixXd dM_submatrix(rows.size() * cols.size(), q_subvector_size);
   int index = 0;
   for (int col : cols) {
     for (int row : rows) {
-      dM_submatrix.row(index) = dM.row(row + col * M_rows);
+      dM_submatrix.row(index) = dM.block(row + col * M_rows, q_start, 1, q_subvector_size);
       index++;
     }
   }
@@ -111,11 +114,24 @@ getSubMatrixGradient(const Eigen::MatrixBase<Derived>& dM, const std::array<int,
   int index = 0;
   for (int col : cols) {
     for (int row : rows) {
-      dM_submatrix.row(index) = dM.row(row + col * M_rows);
-      index++;
+      dM_submatrix.row(index++) = dM.row(row + col * M_rows);
     }
   }
   return dM_submatrix;
+}
+
+template<typename DerivedA, typename DerivedB>
+void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBase<DerivedB>& dM_submatrix,
+    const std::vector<int>& rows, const std::vector<int>& cols, int M_rows, int q_start = 0, int q_subvector_size = -1) {
+  if (q_subvector_size < 0) {
+    q_subvector_size = dM.cols() - q_start;
+  }
+  int index = 0;
+  for (int col : cols) {
+    for (int row : rows) {
+      dM.block(row + col * M_rows, q_start, 1, q_subvector_size) = dM_submatrix.row(index++);
+    }
+  }
 }
 
 // TODO: move to different file
