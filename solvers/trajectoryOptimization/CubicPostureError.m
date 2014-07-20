@@ -1,4 +1,4 @@
-classdef CubicPostureError < DifferentiableConstraint
+classdef CubicPostureError < Constraint
   % approximate the posture as a cubic spline, and penalize the cost
   % sum_i (q(:,i)-q_nom(:,i))'*Q*(q(:,i)-q_nom(:,i))+
   % sum_i qdot(:,i)'*Qv*qdot(:,i) +
@@ -37,7 +37,7 @@ classdef CubicPostureError < DifferentiableConstraint
   methods
     function obj = CubicPostureError(t,Q,q_nom,Qv,Qa)
       t = unique(t(:))';
-      obj = obj@DifferentiableConstraint(-inf,inf,size(q_nom,1)*(length(t)+2));
+      obj = obj@Constraint(-inf,inf,size(q_nom,1)*(length(t)+2));
       if(~isnumeric(t))
         error('Drake:CubicPostureError:t should be numeric');
       end
