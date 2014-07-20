@@ -18,7 +18,6 @@ classdef DifferentiableConstraint < Constraint
   % @param nnz            -- An int scalar. The maximal number of non-zero entries in the
   % gradient matrix
   properties(SetAccess = protected)
-    xdim
     iCfun
     jCvar
     nnz
@@ -29,11 +28,7 @@ classdef DifferentiableConstraint < Constraint
       % @param lb    -- The lower bound of the constraint
       % @param ub    -- The upper bound of the constraint
       % @param xdim  -- An int scalar. x is double vector of xdim x 1
-      obj = obj@Constraint(lb,ub);
-      if(~isnumeric(xdim) || numel(xdim) ~= 1 || xdim<0 || xdim ~= floor(xdim))
-        error('Drake:DifferentiableConstraint:BadInputs','xdim should be a non-negative integer');
-      end
-      obj.xdim = xdim;
+      obj = obj@Constraint(lb,ub,xdim);
       
       obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
       obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);

@@ -8,9 +8,10 @@ classdef FunctionHandleConstraint < Constraint
   end
   
   methods
-    function obj = FunctionHandleConstraint(lb,ub,eval_handle)
+    function obj = FunctionHandleConstraint(lb,ub,xdim,eval_handle)
       % @param lb    -- The lower bound of the constraint
       % @param ub    -- The upper bound of the constraint
+      % @param xdim  -- An int scalar. x is double vector of xdim x 1
       % @param eval_handle -- A function handle which performs the
       % constraint evaluation
       
@@ -18,7 +19,7 @@ classdef FunctionHandleConstraint < Constraint
       % the old FunctionHandleConstraint class is now
       % FunctionHandleDifferentiableConstraint
       
-      obj = obj@Constraint(lb,ub);
+      obj = obj@Constraint(lb,ub,xdim);
       obj.eval_handle = eval_handle;
     end
 
