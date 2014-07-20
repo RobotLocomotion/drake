@@ -109,25 +109,27 @@ end
 if (method==12 || method == 13) % user then taylorvar or user then numerical
   if grad_level==-1
     try
-      grad_level=nargout(fun);
+      n=nargout(fun);
     catch
       % nargout isn't going to work for class methods
+      n=-1;
     end
+  else
+    n=(grad_level+1)*p;
   end
-  if (grad_level==-1) % unknown derivative level
+  if (n<0) % unknown derivative level
     % call it with the requested and catch if it fails:
     try
       [varargout{:}]=feval(fun,varargin{:});
       return;  % if i get here, then it passed and I'm done
     catch exception
       if (strcmp(exception.identifier,'MATLAB:maxlhs') || strcmp(exception.identifier,'MATLAB:TooManyOutputs'))
-        grad_level=0;  % it failed, assume it only has the nominal outputs
+        n=p;  % it failed, assume it only has the nominal outputs
       else  % it was some different error
         rethrow(exception);
       end
     end
   end
-  n = (grad_level+1)*p;
   if (n<nargout)
     method=method-10;
   else
