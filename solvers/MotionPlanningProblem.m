@@ -58,22 +58,19 @@ classdef MotionPlanningProblem
       % options
       if nargin<5, options=struct(); end
       defaultOptions.distance_metric_fcn = @MotionPlanningProblem.euclideanDistance;
+      defaultOptions.display_fcn = @MotionPlanningProblem.drawFirstTwoCoordinates;
       defaultOptions.display_after_every = 50;
-      defaultOptions.figure_num = 23;
       defaultOptions.max_edge_length = inf;  % because i don't have any sense of scale here
       defaultOptions.max_length_between_constraint_checks = inf;
       options = applyDefaults(options,defaultOptions);
       typecheck(options.distance_metric_fcn,'function_handle');
       
-      
       N = 10000;  % for pre-allocating memory
       V = repmat(x_start,1,N);  % vertices
       parent = nan(1,N-1); % edges
       
-      figure(options.figure_num); hold on; last_edge=1;
-      plot(x_start(1),x_start(2),'bx',x_goal(1),x_goal(2),'gx','MarkerSize',20,'LineWidth',3);
-
       n=2;
+      n_at_last_display=0;
       info=2; xtraj=[];  % default return values
       while n<=N
         xs = random_sample_fcn();
@@ -110,16 +107,14 @@ classdef MotionPlanningProblem
           while path(1)>1
             path = [parent(path(1)-1),path];
           end
-          figure(options.figure_num);
-          line([V(1,path(1:end-1));V(1,path(2:end))],[V(2,path(1:end-1));V(2,path(2:end))],'Color','b','LineWidth',2);
           xtraj = PPTrajectory(foh(1:length(path),V(:,path)));
           info = 1;
         end
         
         if mod(n,options.display_after_every)==0 || info==1
-          figure(options.figure_num);
-          line([V(1,last_edge+1:n);V(1,parent(last_edge:n-1))],[V(2,last_edge+1:n);V(2,parent(last_edge:n-1))],'Color',0.3*[1 1 1]);
-          last_edge = n;
+          options.display_fcn(V(:,1:n),parent(1:n-1),n_at_last_display);
+          drawnow;
+          n_at_last_display = n;
         end
         
         if info==1, return; end
@@ -151,6 +146,10 @@ classdef MotionPlanningProblem
   methods (Static=true)
     function d = euclideanDistance(X,xs)
       d = sqrt(sum((X-repmat(xs,1,size(X,2))).^2,1));
+    end
+    
+    function drawFirstTwoCoordinates(V,parent,last_drawn_edge_num)
+      line([V(1,(last_drawn_edge_num+2):end);V(1,parent((last_drawn_edge_num+1):end))],[V(2,last_drawn_edge_num+2:end);V(2,parent(last_drawn_edge_num+1:end))],'Color',0.3*[1 1 1]);
     end
   end
   
