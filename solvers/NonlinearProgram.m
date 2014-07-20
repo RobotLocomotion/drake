@@ -501,7 +501,7 @@ classdef NonlinearProgram
       end
       
       objval = objval(1);
-      if exitflag~=1, fprintf(' %3d %s\n',exitflag,snoptInfo(exitflag)); end
+      if exitflag~=1, warning('Drake:NonlinearProgram:SNOPTExitFlag',' %3d %s\n',exitflag,snoptInfo(exitflag)); end
     end
     
     function [x,objval,exitflag] = fmincon(obj,x0)
@@ -523,6 +523,29 @@ classdef NonlinearProgram
       [x,objval,exitflag] = fmincon(@obj.objective,x0,obj.Ain,...
         obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
       objval = full(objval);
+      
+      if exitflag~=1, 
+        switch (exitflag)
+          case 0
+            msg='Number of iterations exceeded';
+          case -1
+            msg='Stopped by an output function or plot function';
+          case -2
+            msg='No feasible point was found';
+          case 2
+            msg='Change in x was less than options.TolX and maximum constraint violation was less than options.TolCon';
+          case 3
+            msg='Change in the objective function value was less than options.TolFun and maximum constraint violation was less than options.TolCon';
+          case 4
+            msg='Magnitude of the search direction was less than 2*options.TolX and maximum constraint violation was less than options.TolCon';
+          case 5
+            msg='Magnitude of directional derivative in search direction was less than 2*options.TolFun and maximum constraint violation was less than options.TolCon';
+          case -3
+            msg='Objective function at current iteration went below options.ObjectiveLimit and maximum constraint violation was less than options.TolCon';
+        end        
+        warning('Drake:NonlinearProgram:FMINCONExitFlag',' FMINCON %2d %s',exitflag,msg); 
+      end
+      
     end
   end
   
