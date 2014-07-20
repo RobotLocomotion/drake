@@ -34,7 +34,7 @@ classdef MotionPlanningProblem
       
     end
 
-    function [xtraj,info] = rrt(obj,x_start,x_goal,tolerance,random_sample_fcn,options)
+    function [xtraj,info] = rrt(obj,x_start,x_goal,random_sample_fcn,options)
       % Simple RRT algorithm
       % @param x_start
       % @param x_goal
@@ -46,10 +46,13 @@ classdef MotionPlanningProblem
       %    d = distance_metric_fcn(X,xs)
       % where X is a nX-by-N list of points, and xs is an nX-by-1 sample.
       % d should be a 1-by-N list of distances @default euclideanDistance
+      % @option display_fcn @default drawFirstTwoCoordinates
       % @option display_after_every draws the tree after this many points
       % are added
       % @option max_edge_length a distance by which to trim
-
+      % @options max_length_between_constraint_checks 
+      % @options goal_bias @default P(try_goal)=.05
+            
       % parameters
       sizecheck(x_start,[obj.num_vars,1]);
       sizecheck(x_goal,[obj.num_vars,1]);
@@ -62,6 +65,7 @@ classdef MotionPlanningProblem
       defaultOptions.display_after_every = 50;
       defaultOptions.max_edge_length = inf;  % because i don't have any sense of scale here
       defaultOptions.max_length_between_constraint_checks = inf;
+      defaultOptions.goal_bias = .05;
       options = applyDefaults(options,defaultOptions);
       typecheck(options.distance_metric_fcn,'function_handle');
       
@@ -73,8 +77,13 @@ classdef MotionPlanningProblem
       n_at_last_display=0;
       info=2; xtraj=[];  % default return values
       while n<=N
-        xs = random_sample_fcn();
-        if ~checkConstraints(obj,xs), continue; end
+        try_goal = rand<options.goal_bias;
+        if try_goal
+          xs = x_goal;
+        else
+          xs = random_sample_fcn();
+          if ~checkConstraints(obj,xs), continue; end
+        end
         
         d = options.distance_metric_fcn(V(:,1:n-1),xs);
         [dmin,imin] = min(d);
@@ -83,6 +92,7 @@ classdef MotionPlanningProblem
           % then linearly interpolate along that distance
           xs = V(:,imin)+(options.max_edge_length/dmin)*(xs - V(:,imin));
           dmin = options.max_edge_length;
+          try_goal = false;
         end
 
         if dmin>options.max_length_between_constraint_checks
@@ -102,7 +112,7 @@ classdef MotionPlanningProblem
         V(:,n) = xs;
         parent(n-1) = imin;
 
-        if (options.distance_metric_fcn(x_goal,xs)<tolerance)
+        if (try_goal)  % if I get here, then I successfully connected to the goal
           path = n;
           while path(1)>1
             path = [parent(path(1)-1),path];
@@ -111,13 +121,13 @@ classdef MotionPlanningProblem
           info = 1;
         end
         
-        if mod(n,options.display_after_every)==0 || info==1
+        if mod(n,options.display_after_every)==0 || try_goal
           options.display_fcn(V(:,1:n),parent(1:n-1),n_at_last_display);
           drawnow;
           n_at_last_display = n;
         end
         
-        if info==1, return; end
+        if try_goal, return; end
         n=n+1;
       end
     end

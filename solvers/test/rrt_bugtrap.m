@@ -18,7 +18,7 @@ prob = addConstraint(prob,FunctionHandleConstraint(0,0,2,@(x)inpolygon(x(1),x(2)
 options.figure_num = gcf;
 options.max_edge_length = .1;
 options.max_length_between_constraint_checks = .01;
-xtraj = prob.rrt(x_start,x_goal,.05,@uniformSamples,options);
+xtraj = prob.rrt(x_start,x_goal,@uniformSamples,options);
 
 fnplt(xtraj);
 
