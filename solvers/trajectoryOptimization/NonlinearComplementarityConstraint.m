@@ -35,16 +35,16 @@ classdef NonlinearComplementarityConstraint < CompositeConstraint
         case 1
           constraints{1} = BoundingBoxConstraint([-inf(xdim,1);zeros(zdim,1)],inf(zdim+xdim,1));
           constraints{2} = NonlinearConstraint(zeros(zdim,1),inf(zdim,1),xdim+zdim,fun);
-          constraints{3} = FunctionHandleDifferentiableConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
+          constraints{3} = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
         case 2
           constraints{1} = BoundingBoxConstraint([-inf(xdim,1);zeros(2*zdim,1)],inf(2*zdim+xdim,1));
-          constraints{2} = FunctionHandleDifferentiableConstraint(zeros(zdim,1),zeros(zdim,1),xdim+2*zdim,@slackeq);
-          constraints{3} = FunctionHandleDifferentiableConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+2*zdim,@slackprod);
+          constraints{2} = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1),xdim+2*zdim,@slackeq);
+          constraints{3} = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+2*zdim,@slackprod);
           n = zdim;
         case 3
-          constraints = FunctionHandleDifferentiableConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@fbfun);
+          constraints = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@fbfun);
         case 4
-          constraints = FunctionHandleDifferentiableConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@proxfun);
+          constraints = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1),xdim+zdim,@proxfun);
       end
       function [f,df] = prodfun(y)
         z = y(xdim+1:xdim+zdim);
