@@ -13,7 +13,7 @@ x_start = [.3;.3];
 plot(x_start(1),x_start(2),'bx',x_goal(1),x_goal(2),'gx','MarkerSize',20,'LineWidth',3);
 
 prob = MotionPlanningProblem(2);
-prob = addConstraint(prob,FunctionHandleConstraint(0,0,2,@(x)inpolygon(x(1),x(2),bugtrap(1,:),bugtrap(2,:))));
+prob = addConstraint(prob,FunctionHandleConstraint(0,0,2,@(x)inpolygon(x(1),x(2),bugtrap(1,:),bugtrap(2,:)),-2));
 
 options.figure_num = gcf;
 options.max_edge_length = .1;
