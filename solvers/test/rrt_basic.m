@@ -7,7 +7,7 @@ plot(x_start(1),x_start(2),'bx',x_goal(1),x_goal(2),'gx','MarkerSize',20,'LineWi
 
 prob = MotionPlanningProblem(2);
 options.max_edge_length = .1;
-xtraj = prob.rrt(x_start,x_goal,.05,@uniformSamples,options);
+xtraj = prob.rrt(x_start,x_goal,@uniformSamples,options);
 
 fnplt(xtraj);
 
