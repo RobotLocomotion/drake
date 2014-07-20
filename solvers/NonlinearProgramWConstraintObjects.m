@@ -151,16 +151,16 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         obj = addBoundingBoxConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'LinearConstraint')
         obj = addLinearConstraint(obj,cnstr,varargin{:});
-      elseif isa(cnstr,'Constraint')
-        obj = addConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'CompositeConstraint')
         obj = addCompositeConstraints(obj,cnstr,varargin{:});
+      elseif isa(cnstr,'Constraint')
+        obj = addNonlinearConstraint(obj,cnstr,varargin{:});
       else
         error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','Unsupported constraint type');
       end
     end
     
-    function obj = addConstraint(obj,cnstr,xind, data_ind)
+    function obj = addNonlinearConstraint(obj,cnstr,xind, data_ind)
       % add a NonlinearConstraint to the object, change the constraint evalation of the
       % program. 
       % @param cnstr     -- A NonlinearConstraint object
