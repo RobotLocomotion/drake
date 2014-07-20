@@ -38,6 +38,7 @@ swing2 = load('test_monkeybar_swing2.mat','t_sol','q_sol','v_sol','wrench_sol');
 swing3 = load('test_monkeybar_swing3.mat','t_sol','q_sol','v_sol','wrench_sol');
 swing4 = load('test_monkeybar_swing4.mat','t_sol','q_sol','v_sol','wrench_sol');
 land = load('test_monkeybar_land_complementarity2.mat','t_sol','q_sol','v_sol','wrench_sol');
+% land = load('test_monkeybar_land.mat','t_sol','q_sol','v_sol','wrench_sol');
 
 q_all = [takeoff.q_sol swing1.q_sol(:,2:end) swing2.q_sol(:,2:end) swing3.q_sol(:,2:end) swing4.q_sol(:,2:end) land.q_sol(:,2:end)];
 v_all = [takeoff.v_sol swing1.v_sol(:,2:end) swing2.v_sol(:,2:end) swing3.v_sol(:,2:end) swing4.v_sol(:,2:end) land.v_sol(:,2:end)];
