@@ -1,4 +1,4 @@
-classdef PostureError < DifferentiableConstraint
+classdef PostureError < Constraint
   % penalize the cost sum_i (q(:,i)-q_nom(:,i))'*Q*(q(:,i)-q_nom(:,i))
   % @param Q     -- A nq x nq PSD matrix
   % @param q_nom -- A nq x nT double matrix. The nominal posture
@@ -9,7 +9,7 @@ classdef PostureError < DifferentiableConstraint
   
   methods
     function obj = PostureError(Q,q_nom)
-      obj = obj@DifferentiableConstraint(-inf,inf,numel(q_nom));
+      obj = obj@Constraint(-inf,inf,numel(q_nom));
       nq = size(q_nom,1);
       Q = (Q+Q')/2;
       sizecheck(Q,[nq,nq]);
