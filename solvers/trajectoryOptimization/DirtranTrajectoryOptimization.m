@@ -42,13 +42,13 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
       switch obj.options.integration_method
         case DirtranTrajectoryOptimization.FORWARD_EULER
           n_vars = 2*nX + nU + 1;
-          cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.forward_constraint_fun);
+          cnstr = FunctionHandleDifferentiableConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.forward_constraint_fun);
         case DirtranTrajectoryOptimization.BACKWARD_EULER
           n_vars = 2*nX + nU + 1;
-          cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.backward_constraint_fun);
+          cnstr = FunctionHandleDifferentiableConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.backward_constraint_fun);
         case DirtranTrajectoryOptimization.MIDPOINT
           n_vars = 2*nX + 2*nU + 1;
-          cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.midpoint_constraint_fun);
+          cnstr = FunctionHandleDifferentiableConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.midpoint_constraint_fun);
         otherwise
           error('Drake:DirtranTrajectoryOptimization:InvalidArgument','Unknown integration method');
       end
@@ -82,13 +82,13 @@ classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
       for i=1:obj.N-1,
         switch obj.options.integration_method
           case DirtranTrajectoryOptimization.FORWARD_EULER
-            running_cost = FunctionHandleObjective(1+nX+nU, running_cost_function);
+            running_cost = FunctionHandleDifferentiableObjective(1+nX+nU, running_cost_function);
             inds_i = {obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)};
           case DirtranTrajectoryOptimization.BACKWARD_EULER
-            running_cost = FunctionHandleObjective(1+nX+nU, running_cost_function);
+            running_cost = FunctionHandleDifferentiableObjective(1+nX+nU, running_cost_function);
             inds_i = {obj.h_inds(i);obj.x_inds(:,i+1);obj.u_inds(:,i)};
           case DirtranTrajectoryOptimization.MIDPOINT
-            running_cost = FunctionHandleObjective(1+2*nX+2*nU,...
+            running_cost = FunctionHandleDifferentiableObjective(1+2*nX+2*nU,...
               @(h,x0,x1,u0,u1) obj.midpoint_running_fun(running_cost_function,h,x0,x1,u0,u1));
             inds_i = {obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.u_inds(:,i+1)};
           otherwise
