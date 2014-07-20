@@ -16,15 +16,15 @@ classdef LinearConstraint < Constraint
     A
     A_val
   end
-  
-  
+
+
   methods
     function obj = LinearConstraint(lb,ub,A)
       % @param lb    -- The lower bound of the constraint
       % @param ub    -- The upper bound of the constraint
       % @param A     -- A matrix of size num_cnstr x xdim. The linear constraint matrix
       xdim = size(A,2);
-      obj = obj@Constraint(lb,ub,xdim);
+      obj = obj@Constraint(lb,ub,xdim,2);
       if(~isnumeric(lb) || ~isnumeric(ub))
         error('Drake:LinearConstraint:BadInputs','LinearConstraint lb and ub should be numeric')
       end
@@ -37,7 +37,7 @@ classdef LinearConstraint < Constraint
       obj = obj.setSparseStructure(iAfun,jAvar);
       obj.A = sparse(A);
     end
-    
+
     function obj = setName(obj,name)
       % @param name   -- A cell array, name{i} is the name string of i'th constraint
       if(~iscell(name))
@@ -50,18 +50,15 @@ classdef LinearConstraint < Constraint
       obj.name = name;
     end
   end
-  
+
   methods (Access = protected)
-    function varargout = constraintEval(obj,x)
+    function [c,dc,ddc] = constraintEval(obj,x)
       c = obj.A*x;
-      varargout{1} = c;
       if(nargout>1)
         dc = obj.A;
-        varargout{2} = dc;
       end
       if(nargout>2)
         ddc = sparse(numel(obj.A),obj.xdim);
-        varargout{3} = ddc;
       end
     end
 end
