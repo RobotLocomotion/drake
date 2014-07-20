@@ -1,6 +1,6 @@
-classdef FunctionHandleConstraint < Constraint
+classdef FunctionHandleConstraint < DifferentiableConstraint
   %FUNCTIONHANDLECONSTRAINT 
-  % A Constraint implementation where the constraint is given
+  % A DifferentiableConstraint implementation where the constraint is given
   % by a function handle.
   
   properties(SetAccess = protected)
@@ -14,12 +14,8 @@ classdef FunctionHandleConstraint < Constraint
       % @param xdim  -- An int scalar. x is double vector of xdim x 1
       % @param eval_handle -- A function handle which performs the
       % constraint evaluation
-      
-      % NOTE: if you got a "too many inputs" error, it's probably because
-      % the old FunctionHandleConstraint class is now
-      % FunctionHandleDifferentiableConstraint
-      
-      obj = obj@Constraint(lb,ub,xdim);
+
+      obj = obj@DifferentiableConstraint(lb,ub,xdim);
       obj.eval_handle = eval_handle;
     end
 

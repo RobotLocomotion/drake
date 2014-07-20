@@ -76,11 +76,11 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
     end
     
     function cnstr = generateConstraint(obj,t)
-      % generate a FunctionHandleDifferentiableConstraint for 'eval' function, and a BoundingBoxConstraint
+      % generate a FunctionHandleConstraint for 'eval' function, and a BoundingBoxConstraint
       % for F
       if(obj.isTimeValid(t))
         [lb,ub] = obj.bounds(t);
-        cnstr = {FunctionHandleDifferentiableConstraint(lb,ub,obj.robot.getNumDOF+prod(obj.F_size),@(kinsol,F) obj.eval(t,kinsol,F)),...
+        cnstr = {FunctionHandleConstraint(lb,ub,obj.robot.getNumDOF+prod(obj.F_size),@(kinsol,F) obj.eval(t,kinsol,F)),...
           BoundingBoxConstraint(obj.F_lb(:),obj.F_ub(:))};
         [iCfun,jCvar] = obj.evalSparseStructure(t);
         cnstr{1} = cnstr{1}.setSparseStructure(iCfun,jCvar);  

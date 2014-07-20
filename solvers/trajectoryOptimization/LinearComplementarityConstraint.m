@@ -40,10 +40,10 @@ classdef LinearComplementarityConstraint < CompositeConstraint
         case 1
           bcon = BoundingBoxConstraint([-inf(xdim,1);zeros(zdim,1)],inf(zdim+xdim,1));
           lincon = LinearConstraint(-q,inf(zdim,1),[M W]);
-          nlcon = FunctionHandleDifferentiableConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
+          nlcon = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
           constraints = {bcon;lincon;nlcon};
         case 3
-          constraints = FunctionHandleDifferentiableConstraint(zeros(zdim,1),zeros(zdim,1),zdim,@fbfun);
+          constraints = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1),zdim,@fbfun);
       end
       function [f,df] = prodfun(y)
         x = y(1:xdim);

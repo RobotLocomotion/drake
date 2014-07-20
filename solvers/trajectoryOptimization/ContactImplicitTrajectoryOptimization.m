@@ -53,7 +53,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       dyn_inds = cell(N-1,1);      
       
       n_vars = 2*nX + nU + 1 + obj.nC*(2+obj.nD) + obj.nJL;
-      cnstr = FunctionHandleDifferentiableConstraint(zeros(nX,1),zeros(nX,1),n_vars,@dynamics_constraint_fun);
+      cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@dynamics_constraint_fun);
       
       [~,~,~,~,~,~,~,mu] = obj.plant.contactConstraints(zeros(nq,1));
       
@@ -248,7 +248,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
     function obj = addRunningCost(obj,running_cost_function)
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-      running_cost = FunctionHandleDifferentiableObjective(1+nX+nU,running_cost_function);
+      running_cost = FunctionHandleObjective(1+nX+nU,running_cost_function);
       for i=1:obj.N-1,
         obj = obj.addCost(running_cost,{obj.h_inds(i);obj.x_inds(:,i);obj.u_inds(:,i)});
       end
