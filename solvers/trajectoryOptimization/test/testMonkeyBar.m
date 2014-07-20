@@ -599,23 +599,23 @@ if(mode == 3)
   x_seed(cdfkp.q_inds(:,land_start_idx:land_ungrasp_idx)) = reshape(bsxfun(@times,q_land_start,ones(1,land_ungrasp_idx-land_start_idx+1)),[],1);
   x_seed(cdfkp.q_inds(:,land_ungrasp_idx+1:land_static_idx)) = reshape(bsxfun(@times,q_final_guess,ones(1,land_static_idx-land_ungrasp_idx)),[],1);
   x_seed(cdfkp.com_inds(:,land_start_idx:land_static_idx)) = reshape(bsxfun(@times,com_fp,ones(1,land_static_idx-land_start_idx+1)),[],1);
-  x_seed(cdfkp.lambda_inds{1}(:,:,1:land_ungrasp_idx)) = reshape(bsxfun(@times,[l_hand_force_fp;0;0;0],ones(1,land_ungrasp_idx-land_start_idx+1)),[],1);
-  x_seed(cdfkp.lambda_inds{2}(:,:,1:land_ungrasp_idx)) = reshape(bsxfun(@times,[r_hand_force_fp;0;0;0],ones(1,land_ungrasp_idx-land_start_idx+1)),[],1);
+  x_seed(cdfkp.lambda_inds{1}(:,:,1:land_ungrasp_idx)) = reshape(bsxfun(@times,[0;0;1/2;0;0;0],ones(1,land_ungrasp_idx-land_start_idx+1)),[],1);
+  x_seed(cdfkp.lambda_inds{2}(:,:,1:land_ungrasp_idx)) = reshape(bsxfun(@times,[0;0;1/2;0;0;0],ones(1,land_ungrasp_idx-land_start_idx+1)),[],1);
   x_seed(cdfkp.lambda_inds{3}(:,:,toe_land_idx:land_static_idx)) = reshape(bsxfun(@times,0.5/(num_edges*4)*ones(num_edges,4,1),ones(1,1,land_static_idx-toe_land_idx+1)),[],1);
   x_seed(cdfkp.lambda_inds{4}(:,:,toe_land_idx:land_static_idx)) = reshape(bsxfun(@times,0.5/(num_edges*4)*ones(num_edges,4,1),ones(1,1,land_static_idx-toe_land_idx+1)),[],1);
   
   cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
-  cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',1000);
+  cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',3000);
   cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
   cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',6e-4);
   cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
   cdfkp = cdfkp.setSolverOptions('snopt','print','test_monkeybar_land.out');
 
   seed_sol = load('test_monkeybar_land','-mat','x_sol');
-  seed_sol.x_sol(cdfkp.lambda_inds{1}(1:3,:,:)) = seed_sol.x_sol(cdfkp.lambda_inds{1}(1:3,:,:))/(robot_mass*9.81);
-  seed_sol.x_sol(cdfkp.lambda_inds{2}(1:3,:,:)) = seed_sol.x_sol(cdfkp.lambda_inds{2}(1:3,:,:))/(robot_mass*9.81);
-  seed_sol.x_sol(cdfkp.lambda_inds{1}(4:6,:,:)) = seed_sol.x_sol(cdfkp.lambda_inds{1}(4:6,:,:))/(robot_mass*9.81/100);
-  seed_sol.x_sol(cdfkp.lambda_inds{2}(4:6,:,:)) = seed_sol.x_sol(cdfkp.lambda_inds{2}(4:6,:,:))/(robot_mass*9.81/100);
+%   seed_sol.x_sol(cdfkp.lambda_inds{1}(1:3,:,:)) = seed_sol.x_sol(cdfkp.lambda_inds{1}(1:3,:,:))/(robot_mass*9.81);
+%   seed_sol.x_sol(cdfkp.lambda_inds{2}(1:3,:,:)) = seed_sol.x_sol(cdfkp.lambda_inds{2}(1:3,:,:))/(robot_mass*9.81);
+%   seed_sol.x_sol(cdfkp.lambda_inds{1}(4:6,:,:)) = seed_sol.x_sol(cdfkp.lambda_inds{1}(4:6,:,:))/(robot_mass*9.81/100);
+%   seed_sol.x_sol(cdfkp.lambda_inds{2}(4:6,:,:)) = seed_sol.x_sol(cdfkp.lambda_inds{2}(4:6,:,:))/(robot_mass*9.81/100);
   tic
   [x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
   toc

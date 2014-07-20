@@ -44,7 +44,7 @@ for i = 9:14
   contact_pt_active_complementarity(1:4,i-8) = (land_complementarity.wrench_sol(3,i).pts_pos(3,:)<-0.2+0.001)';
   contact_pt_active_complementarity(5:8,i-8) = (land_complementarity.wrench_sol(4,i).pts_pos(3,:)<-0.2+0.001)';
 end
-pt_name = {'l_foot_l_heel';'l_foot_r_heel';'l_foot_l_toe';'l_foot_r_toe';'r_foot_l_heel';'r_foot_r_heel';'r_foot_l_toe';'r_foot_l_toe'};
+pt_name = {'l_foot_l_heel  ';'l_foot_r_heel  ';'l_foot_l_toe  ';'l_foot_r_toe  ';'r_foot_l_heel  ';'r_foot_r_heel  ';'r_foot_l_toe  ';'r_foot_l_toe  '};
 figure;
 subplot(1,2,1)
 hold on;
@@ -60,8 +60,8 @@ for i = 1:6
   active_i = [active_i;i*ones(length(active_idx_i),1)];
   active_j = [active_j;active_idx_i];
 end
-plot(active_i,active_j,'.','Markersize',70,'Color','r');
-plot(inactive_i,inactive_j,'.','Markersize',70,'Color','b');
+plot(active_i,active_j,'.','Markersize',100,'Color','r');
+plot(inactive_i,inactive_j,'.','Markersize',100,'Color','b');
 legend('active contact','inactive contact','Fontsize',14);
 
 set(gca,'YTickLabel',pt_name,'Fontsize',28)
@@ -82,8 +82,8 @@ for i = 1:6
   active_i = [active_i;i*ones(length(active_idx_i),1)];
   active_j = [active_j;active_idx_i];
 end
-plot(active_i,active_j,'.','Markersize',70,'Color','r');
-plot(inactive_i,inactive_j,'.','Markersize',70,'Color','b');
+plot(active_i,active_j,'.','Markersize',100,'Color','r');
+plot(inactive_i,inactive_j,'.','Markersize',100,'Color','b');
 % legend('active contact','inactive contact');
 
 set(gca,'YTickLabel',[],'Fontsize',28)
