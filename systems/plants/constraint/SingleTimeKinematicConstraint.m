@@ -50,10 +50,10 @@ classdef SingleTimeKinematicConstraint < RigidBodyConstraint
     end
     
     function cnstr = generateConstraint(obj,t)
-      % generate a FunctionHandleDifferentiableConstraint object if time is valid
+      % generate a FunctionHandleConstraint object if time is valid
       if(obj.isTimeValid(t))
         [lb,ub] = obj.bounds(t);
-        cnstr = {FunctionHandleDifferentiableConstraint(lb,ub,obj.robot.getNumDOF,@(~,kinsol) obj.eval(t,kinsol))};
+        cnstr = {FunctionHandleConstraint(lb,ub,obj.robot.getNumDOF,@(~,kinsol) obj.eval(t,kinsol))};
         name_str = obj.name(t);
         cnstr{1} = cnstr{1}.setName(name_str);
         joint_idx = obj.kinematicsPathJoints();

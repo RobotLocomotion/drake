@@ -27,7 +27,7 @@ classdef FixedPointProgram < NonlinearProgramWConstraintObjects
         
       if (sys.getNumStateConstraints>0)
         num_xcon = sys.getNumStateConstraints();
-        obj = addConstraint(obj,FunctionHandleDifferentiableConstraint(zeros(num_xcon,1),zeros(num_xcon,1),num_x,@state_constraints),1:num_x);
+        obj = addConstraint(obj,FunctionHandleConstraint(zeros(num_xcon,1),zeros(num_xcon,1),num_x,@state_constraints),1:num_x);
       end
       
       function [c,dc] = unilateral_constraints(x)
@@ -36,7 +36,7 @@ classdef FixedPointProgram < NonlinearProgramWConstraintObjects
       
       if (sys.getNumUnilateralConstraints > 0)
         nc = sys.getNumUnilateralConstraints;
-        obj = addConstraint(obj,FunctionHandleDifferentiableConstraint(zeros(nc,1),inf(nc,1),num_x,@unilateral_constraints),1:sys.num_x);
+        obj = addConstraint(obj,FunctionHandleConstraint(zeros(nc,1),inf(nc,1),num_x,@unilateral_constraints),1:sys.num_x);
       end
     end
     
@@ -60,7 +60,7 @@ classdef FixedPointProgram < NonlinearProgramWConstraintObjects
       end
       
       if (num_xc>0)
-        obj = addConstraint(obj,FunctionHandleDifferentiableConstraint(zeros(num_xc_constraints,1),zeros(num_xc_constraints,1),num_x+num_u,@dynamics_constraints));
+        obj = addConstraint(obj,FunctionHandleConstraint(zeros(num_xc_constraints,1),zeros(num_xc_constraints,1),num_x+num_u,@dynamics_constraints));
       end
       
       xd_indices = 1:num_xd;  xd_indices(x_dimensions_to_ignore(x_dimensions_to_ignore>num_xc)-num_xc)=[];
@@ -77,7 +77,7 @@ classdef FixedPointProgram < NonlinearProgramWConstraintObjects
       end
       
       if (num_xd>0)
-        obj = addConstraint(obj,FunctionHandleDifferentiableConstraint(zeros(num_xd_constraints,1),zeros(num_xd_constraints,1),num_x+num_u,@update_constraints));
+        obj = addConstraint(obj,FunctionHandleConstraint(zeros(num_xd_constraints,1),zeros(num_xd_constraints,1),num_x+num_u,@update_constraints));
       end
     end
     
