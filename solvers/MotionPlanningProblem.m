@@ -14,6 +14,7 @@ classdef MotionPlanningProblem
     var_names
     constraints={};  % a cell array of Constraint objects
     % todo: add differential constraints?  control affine only?
+    % todo: add objectives?
   end
 
   methods
