@@ -1,4 +1,4 @@
-classdef LinearConstraint < DifferentiableConstraint
+classdef LinearConstraint < Constraint
   % Linear Constraint. lb <= Ax <= ub. Support the linear constraint being sparse
   % @param num_cnstr     -- An int scalar. The number of constraints
   % @param xdim          -- An int scalar. The decision variable is an xdim x 1 double
@@ -24,7 +24,7 @@ classdef LinearConstraint < DifferentiableConstraint
       % @param ub    -- The upper bound of the constraint
       % @param A     -- A matrix of size num_cnstr x xdim. The linear constraint matrix
       xdim = size(A,2);
-      obj = obj@DifferentiableConstraint(lb,ub,xdim);
+      obj = obj@Constraint(lb,ub,xdim);
       if(~isnumeric(lb) || ~isnumeric(ub))
         error('Drake:LinearConstraint:BadInputs','LinearConstraint lb and ub should be numeric')
       end

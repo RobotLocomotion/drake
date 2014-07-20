@@ -1,6 +1,6 @@
-classdef FunctionHandleConstraint < DifferentiableConstraint
+classdef FunctionHandleConstraint < Constraint
   %FUNCTIONHANDLECONSTRAINT 
-  % A DifferentiableConstraint implementation where the constraint is given
+  % A Constraint implementation where the constraint is given
   % by a function handle.
   
   properties(SetAccess = protected)
@@ -15,7 +15,7 @@ classdef FunctionHandleConstraint < DifferentiableConstraint
       % @param eval_handle -- A function handle which performs the
       % constraint evaluation
 
-      obj = obj@DifferentiableConstraint(lb,ub,xdim);
+      obj = obj@Constraint(lb,ub,xdim);
       obj.eval_handle = eval_handle;
     end
 
@@ -26,15 +26,8 @@ classdef FunctionHandleConstraint < DifferentiableConstraint
   end
   methods (Access = protected)
     function varargout = constraintEval(obj,varargin)
-      if nargout <= 1,
-        varargout{1} = obj.eval_handle(varargin{:});
-      elseif nargout == 2,
-        [varargout{1},varargout{2}] = obj.eval_handle(varargin{:});
-      elseif nargout == 3,
-        [varargout{1},varargout{2},varargout{3}] = obj.eval_handle(varargin{:});
-      else
-        error('Drake:FunctionHandleConstraint:UnsupportedEval','Only support 2nd order gradient at most');
-      end      
+      varargout = cell(1,nargout);
+      [varargout{:}] = obj.eval_handle(varargin{:});
     end
   end
 end
