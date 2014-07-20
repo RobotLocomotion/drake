@@ -6,10 +6,10 @@ classdef PostureError < Constraint
     Q
     q_nom
   end
-  
+
   methods
     function obj = PostureError(Q,q_nom)
-      obj = obj@Constraint(-inf,inf,numel(q_nom));
+      obj = obj@Constraint(-inf,inf,numel(q_nom),1);
       nq = size(q_nom,1);
       Q = (Q+Q')/2;
       sizecheck(Q,[nq,nq]);
@@ -26,7 +26,9 @@ classdef PostureError < Constraint
       q_err = x-obj.q_nom;
       Qqerr = obj.Q*q_err;
       c = sum(sum(q_err.*Qqerr));
-      dc = reshape(2*Qqerr,1,[]);
+      if nargout>1
+        dc = reshape(2*Qqerr,1,[]);
+      end
     end
   end
 end
