@@ -219,13 +219,13 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     end
     
     function cnstr = generateConstraint(obj,t)
-      % generate a FunctionHandleConstraint, a LinearConstraint and a BoundingBoxConstraint if the time is valid
-      % @retval cnstr  -- A FunctionHandleConstraint enforcing the CoM on xy-plane matches
+      % generate a FunctionHandleDifferentiableConstraint, a LinearConstraint and a BoundingBoxConstraint if the time is valid
+      % @retval cnstr  -- A FunctionHandleDifferentiableConstraint enforcing the CoM on xy-plane matches
       % witht the weighted sum of the shrunk vertices; A LinearConstraint on the weighted
       % sum only, and a BoundingBoxConstraint on the weighted sum only
       if(obj.isTimeValid(t) && obj.active)
         name_str = obj.name(t);
-        cnstr = {FunctionHandleConstraint([0;0],[0;0],obj.nq+obj.num_pts,@(~,weights,kinsol) obj.evalValidTime(kinsol,weights)),...
+        cnstr = {FunctionHandleDifferentiableConstraint([0;0],[0;0],obj.nq+obj.num_pts,@(~,weights,kinsol) obj.evalValidTime(kinsol,weights)),...
           LinearConstraint(1,1,ones(1,obj.num_pts)),...
           BoundingBoxConstraint(zeros(obj.num_pts,1),ones(obj.num_pts,1))};
         cnstr{1} = cnstr{1}.setName(name_str(1:2));

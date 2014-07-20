@@ -29,7 +29,7 @@ function [z,F,info,np]=testMPCC
 %     np = np.addBoundingBoxConstraint(bcon{k});
 %   end
   
-  cost = FunctionHandleObjective(N + xdim,@costfun);
+  cost = FunctionHandleDifferentiableObjective(N + xdim,@costfun);
   np = np.addCost(cost,1:N+xdim);
   
   np = np.addConstraint(LinearConstraint(1,1,[ones(1,N) zeros(1,xdim-N) ones(1,N)]));

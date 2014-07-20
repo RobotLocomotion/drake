@@ -29,7 +29,7 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       
       
       n_vars = 2*nX + 2*nU + 1;
-      cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.constraint_fun);
+      cnstr = FunctionHandleDifferentiableConstraint(zeros(nX,1),zeros(nX,1),n_vars,@obj.constraint_fun);
       
       % create shared data functions to calculate dynamics at the knot
       % points
@@ -95,8 +95,8 @@ classdef DircolTrajectoryOptimization < DirectTrajectoryOptimization
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
             
-      running_cost_end = FunctionHandleObjective(1+nX+nU,@(h,x,u) obj.running_fun_end(running_cost_function,h,x,u));
-      running_cost_mid = FunctionHandleObjective(2+nX+nU,@(h0,h1,x,u) obj.running_fun_mid(running_cost_function,h0,h1,x,u));
+      running_cost_end = FunctionHandleDifferentiableObjective(1+nX+nU,@(h,x,u) obj.running_fun_end(running_cost_function,h,x,u));
+      running_cost_mid = FunctionHandleDifferentiableObjective(2+nX+nU,@(h0,h1,x,u) obj.running_fun_mid(running_cost_function,h0,h1,x,u));
 
       obj = obj.addCost(running_cost_end,{obj.h_inds(1);obj.x_inds(:,1);obj.u_inds(:,1)});
       
