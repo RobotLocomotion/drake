@@ -6,28 +6,28 @@ classdef Constraint
   %
   % Constraints may be functions of multiple arguments.
   %
-  
+
   properties(SetAccess = protected)
     lb      % The lower bound of the constraint
     ub      % The upper bound of the constraint
     xdim    % The name of the constraint. If not specified, it is an empty string
-    name
     num_cnstr % An int scalar. The number of constraints
+    name    % cell array of constraint names
     ceq_idx   % The row index of the equality constraint
     cin_idx   % The row index of the inequality constraint
-    
+
     % gradient sparsity information
     iCfun   % An int vector. The row index of non-zero entries of the gradient matrix
     jCvar   % An int vector. The column index of the non-zero entries of the gradient matrix
     nnz     % An int scalar. The maximal number of non-zero entries in the gradient matrix
   end
-  
+
   properties
     grad_level    % derivative level of user gradients provided
     grad_method   % A string indicating the method to compute gradient. Refer to
-                  %    'geval' for all supported method. @default ''
+                  %    'geval' for all supported method. @default 'user'
   end
-  
+
   methods
     function obj = Constraint(lb,ub,xdim,grad_level)
       % Constraint(lb,ub) or Constraint(lb,ub,eval_handle)
@@ -57,24 +57,24 @@ classdef Constraint
         error('Drake:Constraint:BadInputs','xdim should be a non-negative integer');
       end
       obj.xdim = xdim;
-      
+
       if (nargin<4), grad_level = -1; end
       obj.grad_level = grad_level;
-      
+
       obj.num_cnstr = numel(obj.lb);
       obj.name = repmat({''},obj.num_cnstr,1);
-      
+
       c_idx = (1:obj.num_cnstr)';
       obj.ceq_idx = c_idx(obj.lb == obj.ub);
       obj.cin_idx = c_idx(obj.lb ~= obj.ub);
-      
-      obj.grad_method = [];
-      
+
+      obj.grad_method = 'user';
+
       obj.iCfun = reshape(bsxfun(@times,(1:obj.num_cnstr)',ones(1,obj.xdim)),[],1);
       obj.jCvar = reshape(bsxfun(@times,1:obj.xdim,ones(obj.num_cnstr,1)),[],1);
       obj.nnz = obj.num_cnstr*obj.xdim;
     end
-    
+
     function obj = setSparseStructure(obj,iCfun,jCvar)
       % set the sparse structure of the 1st order gradient matrix
       % @param iCfun          -- An int vector. The row index of non-zero entries of the
@@ -93,7 +93,7 @@ classdef Constraint
       obj.jCvar = jCvar;
       obj.nnz = numel(iCfun);
     end
-    
+
     function checkGradient(obj,tol,varargin)
       % Check the accuracy and sparsity pattern of the gradient
       % @param tol    -- A double scalar. The tolerance of the user gradient, compared with
@@ -104,7 +104,7 @@ classdef Constraint
       valuecheck(dc,dc_numeric,tol);
       valuecheck(dc,sparse(obj.iCfun,obj.jCvar,dc(sub2ind([obj.num_cnstr,obj.xdim],obj.iCfun,obj.jCvar)),obj.num_cnstr,obj.xdim,obj.nnz));
     end
-    
+
     function obj = setName(obj,name)
       % @param name   -- A cell array, name{i} is the name string of i'th constraint
       if(~iscellstr(name))
@@ -113,26 +113,25 @@ classdef Constraint
       sizecheck(name,[obj.num_cnstr,1]);
       obj.name = name;
     end
-    
+
     function varargout = eval(obj,varargin)
-      % special casing 'user' to avoid geval for speed reasons
-      varargout=cell(1,nargout);
-      if (isempty(obj.grad_method) && nargout<=obj.grad_level+1)) ...
-          || strcmp(obj.grad_method,'user')
-        [varargout{:}] = obj.constraintEval(varargin{:});
+      if obj.grad_level==-2  % no gradients available
+        varargout{1} = obj.constraintEval(varargin{:});
       else
-        [varargout{:}] = geval(@obj.constraintEval,varargin{:},struct('grad_method',obj.grad_method,'grad_level',obj.grad_level));
+        % special casing 'user' to avoid geval for speed reasons
+        varargout=cell(1,nargout);
+        if (isempty(obj.grad_method) && nargout<=obj.grad_level+1) ...
+            || strcmp(obj.grad_method,'user')
+          [varargout{:}] = obj.constraintEval(varargin{:});
+        else
+          [varargout{:}] = geval(@obj.constraintEval,varargin{:},struct('grad_method',obj.grad_method,'grad_level',obj.grad_level));
+        end
       end
     end
-    
-    function obj = setName(obj,name)
-      % set the name of the constraint
-      obj.name = name;
-    end
   end
-  
+
   methods(Abstract, Access = protected)
     varargout = constraintEval(obj, varargin);
   end
-  
+
 end
