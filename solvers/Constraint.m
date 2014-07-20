@@ -10,13 +10,14 @@ classdef Constraint
   % @param ub    -- The upper bound of the constraint
   % @param name  -- The name of the constraint. If not specified, it is an empty string
   % @param grad_method   -- A string indicating the method to compute gradient. Refer to
+  %                        'geval' for all supported method. Default is 'user'
   % @param num_cnstr      -- An int scalar. The number of constraints
   % @param ceq_idx        -- The row index of the equality constraint
   % @param cin_idx        -- The row index of the inequality constraint
-  % 'geval' for all supported method. Default is 'user'
   properties(SetAccess = protected)
     lb
     ub
+    xdim
     name
     num_cnstr
     ceq_idx
@@ -28,7 +29,7 @@ classdef Constraint
   end
   
   methods
-    function obj = Constraint(lb,ub)
+    function obj = Constraint(lb,ub,xdim)
       % Constraint(lb,ub) or Constraint(lb,ub,eval_handle)
       % @param lb    -- The lower bound of the constraint
       % @param ub    -- The upper bound of the constraint
@@ -41,6 +42,10 @@ classdef Constraint
       if(any(obj.lb>obj.ub))
         error('Drake:Constraint:BadInputs','Constraint lb should be no larger than ub');
       end
+      if(~isnumeric(xdim) || numel(xdim) ~= 1 || xdim<0 || xdim ~= floor(xdim))
+        error('Drake:DifferentiableConstraint:BadInputs','xdim should be a non-negative integer');
+      end
+      obj.xdim = xdim;
       obj.lb = lb(:);
       obj.ub = ub(:);
       obj.num_cnstr = numel(obj.lb);
