@@ -1,5 +1,6 @@
 classdef QPController < MIMODrakeSystem
-  % A QP-based balancing and walking controller that exploits ZMP-LQR solutions.
+  % A QP-based balancing and walking controller that exploits TV-LQR solutions
+  % for (time-varing) linear COM/ZMP dynamics.  
   % optionally supports including angular momentum and body acceleration
   % costs/constraints.
   methods
@@ -206,29 +207,57 @@ classdef QPController < MIMODrakeSystem
     qd = x(nq+(1:nq)); 
             
     %----------------------------------------------------------------------
-    % Linear system stuff for zmp/com control -----------------------------
-    A_ls = ctrl_data.A; % always TI
-    B_ls = ctrl_data.B; % always TI
+    % Linear system/LQR terms ---------------------------------------------
+    if ctrl_data.A_is_time_varying
+      A_ls = fasteval(ctrl_data.A,t); 
+    else
+      A_ls = ctrl_data.A; 
+    end
+    if ctrl_data.B_is_time_varying
+      B_ls = fasteval(ctrl_data.B,t); 
+    else
+      B_ls = ctrl_data.B; 
+    end
+    if ctrl_data.C_is_time_varying
+      C_ls = fasteval(ctrl_data.C,t); 
+    else
+      C_ls = ctrl_data.C; 
+    end
+    if ctrl_data.D_is_time_varying
+      D_ls = fasteval(ctrl_data.D,t); 
+    else
+      D_ls = ctrl_data.D; 
+    end
+    Q = ctrl_data.Q;
     Qy = ctrl_data.Qy;
     R_ls = ctrl_data.R;
-    C_ls = ctrl_data.C;
-    D_ls = ctrl_data.D;
-    S = ctrl_data.S;
-    Sdot = 0*S; % constant for ZMP/double integrator dynamics
-    x0 = ctrl_data.x0 - [ctrl_data.plan_shift(1:2);0;0]; % for x-y plan adjustment
-    u0 = ctrl_data.u0;
-    if (ctrl_data.is_time_varying)
+    if (ctrl_data.lqr_is_time_varying)
+      if isa(ctrl_data.S,'Trajectory')
+        S = fasteval(ctrl_data.S,t);
+%       Sdot = fasteval(ctrl_data.Sdot,t); 
+      else
+        S = ctrl_data.S;
+%       Sdot = 0*S; 
+      end
       s1 = fasteval(ctrl_data.s1,t);
 %       s2 = fasteval(ctrl_data.s2,t);
-      s1dot = fasteval(ctrl_data.s1dot,t);
-      s2dot = fasteval(ctrl_data.s2dot,t);
-      y0 = fasteval(ctrl_data.y0,t) - ctrl_data.plan_shift(1:2); % for x-y plan adjustment
-    else
-      s1 = ctrl_data.s1;
-%       s2 = ctrl_data.s2;
+%       s1dot = fasteval(ctrl_data.s1dot,t);
+%       s2dot = fasteval(ctrl_data.s2dot,t);
       s1dot = 0*s1;
       s2dot = 0;
-      y0 = ctrl_data.y0 - ctrl_data.plan_shift(1:2); % for x-y plan adjustment
+      x0 = fasteval(ctrl_data.x0,t);
+      y0 = fasteval(ctrl_data.y0,t);
+      u0 = fasteval(ctrl_data.u0,t);
+    else
+      S = ctrl_data.S;
+      s1 = ctrl_data.s1;
+%       s2 = ctrl_data.s2;
+%       Sdot = 0*S; 
+      s1dot = 0*s1;
+      s2dot = 0;
+      x0 = ctrl_data.x0;
+      y0 = ctrl_data.y0;
+      u0 = ctrl_data.u0;
     end
     mu = ctrl_data.mu;
     R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
@@ -299,8 +328,10 @@ classdef QPController < MIMODrakeSystem
       end
       
       Jcomdot = forwardJacDot(r,kinsol,0);
-      Jcom = Jcom(1:2,:); % only need COM x-y
-      Jcomdot = Jcomdot(1:2,:);
+      if length(x0)==4
+       Jcom = Jcom(1:2,:); % only need COM x-y
+       Jcomdot = Jcomdot(1:2,:);
+      end
 
       if ~isempty(active_supports)
         nc = sum(num_active_contacts);
@@ -319,7 +350,11 @@ classdef QPController < MIMODrakeSystem
         Jp = sparse(Jp);
         Jpdot = sparse(Jpdot);
 
-        xlimp = [xcom(1:2); Jcom*qd]; % state of LIP model
+        if length(x0)==4
+          xlimp = [xcom(1:2); Jcom*qd]; % state of LIP model
+        else
+          xlimp = [xcom;Jcom*qd];
+        end
         x_bar = xlimp - x0;
       else
         nc = 0;
@@ -419,8 +454,9 @@ classdef QPController < MIMODrakeSystem
       %----------------------------------------------------------------------
       % QP cost function ----------------------------------------------------
       %
-      % TODO: update this comment
-      %  min: quad(Jdot*qd + J*qdd,R_ls) + quad(C*x_bar+D*(Jdot*qd + J*qdd),Q) + (2*x_bar'*S + s1')*(A*x_bar + B*(Jdot*qd + J*qdd)) + w*quad(qddot_ref - qdd) + 0.001*quad(epsilon)
+      % min: ybar*Qy*ybar + ubar*R*ubar + (2*S*xbar + s1)*(A*x + B*u) +
+      % w_qdd*quad(qddot_ref - qdd) + w_eps*quad(epsilon) +
+      % w_grf*quad(beta) + quad(kdot_des - (A*qdd + Adot*qd))
       if nc > 0
         Hqp = Iqdd'*Jcom'*R_DQyD_ls*Jcom*Iqdd;
         Hqp(1:nq,1:nq) = Hqp(1:nq,1:nq) + diag(obj.w_qdd);
