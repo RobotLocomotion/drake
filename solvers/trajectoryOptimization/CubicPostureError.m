@@ -1,4 +1,4 @@
-classdef CubicPostureError < DifferentiableConstraint
+classdef CubicPostureError < Constraint
   % approximate the posture as a cubic spline, and penalize the cost
   % sum_i (q(:,i)-q_nom(:,i))'*Q*(q(:,i)-q_nom(:,i))+
   % sum_i qdot(:,i)'*Qv*qdot(:,i) +
@@ -26,18 +26,18 @@ classdef CubicPostureError < DifferentiableConstraint
     accel_mat_qd0
     accel_mat_qdf
   end
-  
+
   properties(Access = private)
     dt
     dt_ratio;
     nq
     nT
   end
-  
+
   methods
     function obj = CubicPostureError(t,Q,q_nom,Qv,Qa)
       t = unique(t(:))';
-      obj = obj@DifferentiableConstraint(-inf,inf,size(q_nom,1)*(length(t)+2));
+      obj = obj@Constraint(-inf,inf,size(q_nom,1)*(length(t)+2),1);
       if(~isnumeric(t))
         error('Drake:CubicPostureError:t should be numeric');
       end
@@ -83,7 +83,7 @@ classdef CubicPostureError < DifferentiableConstraint
       obj.velocity_mat = obj.velocity_mat(obj.nq+1:end-obj.nq,:);
       obj.velocity_mat_qd0 = -velocity_mat1(obj.nq+1:obj.nq*(obj.nT-1),obj.nq+1:obj.nq*(obj.nT-1))\velocity_mat1(obj.nq+(1:obj.nq*(obj.nT-2)),1:obj.nq);
       obj.velocity_mat_qdf = -velocity_mat1(obj.nq+1:obj.nq*(obj.nT-1),obj.nq+1:obj.nq*(obj.nT-1))\velocity_mat1(obj.nq+(1:obj.nq*(obj.nT-2)),obj.nq*(obj.nT-1)+(1:obj.nq));
-      
+
       accel_mat1_diag1 = reshape(bsxfun(@times,[-6./(obj.dt.^2) -6/(obj.dt(end)^2)],ones(obj.nq,1)),[],1);
       accel_mat1_diag2 = reshape(bsxfun(@times,6./(obj.dt.^2),ones(obj.nq,1)),[],1);
       accel_mat1_diag3 = 6/(obj.dt(end)^2)*ones(obj.nq,1);
@@ -100,7 +100,7 @@ classdef CubicPostureError < DifferentiableConstraint
       obj.accel_mat_qd0 = accel_mat2(:,1:obj.nq)+accel_mat2(:,obj.nq+1:obj.nq*(obj.nT-1))*obj.velocity_mat_qd0;
       obj.accel_mat_qdf = accel_mat2(:,end-obj.nq+1:end)+accel_mat2(:,obj.nq+1:obj.nq*(obj.nT-1))*obj.velocity_mat_qdf;
     end
-    
+
     function [q,qdot,qddot] = cubicSpline(obj,x)
       % return the cubic spline at knot point
       q = x(1:obj.nq*obj.nT);
@@ -127,10 +127,12 @@ classdef CubicPostureError < DifferentiableConstraint
       Qqdot = obj.Qv*qdot;
       Qqddot = obj.Qa*qddot;
       c = sum(sum(qerr.*Qqerr))+sum(sum(qdot.*Qqdot))+sum(sum(qddot.*Qqddot));
-      dc = zeros(1,obj.nq*(obj.nT+2));
-      dc(1:obj.nq*obj.nT) = reshape(2*Qqerr,1,[])+reshape(2*Qqdot(:,2:obj.nT-1),1,[])*obj.velocity_mat+reshape(2*Qqddot,1,[])*obj.accel_mat;
-      dc(obj.nq*obj.nT+(1:obj.nq)) = reshape(2*Qqdot(:,2:obj.nT-1),1,[])*obj.velocity_mat_qd0+reshape(2*Qqdot(:,1),1,[])+reshape(2*Qqddot,1,[])*obj.accel_mat_qd0;
-      dc(obj.nq*obj.nT+obj.nq+(1:obj.nq)) = reshape(2*Qqdot(:,2:obj.nT-1),1,[])*obj.velocity_mat_qdf+reshape(2*Qqdot(:,obj.nT),1,[])+reshape(2*Qqddot,1,[])*obj.accel_mat_qdf;
+      if nargout>1
+        dc = zeros(1,obj.nq*(obj.nT+2));
+        dc(1:obj.nq*obj.nT) = reshape(2*Qqerr,1,[])+reshape(2*Qqdot(:,2:obj.nT-1),1,[])*obj.velocity_mat+reshape(2*Qqddot,1,[])*obj.accel_mat;
+        dc(obj.nq*obj.nT+(1:obj.nq)) = reshape(2*Qqdot(:,2:obj.nT-1),1,[])*obj.velocity_mat_qd0+reshape(2*Qqdot(:,1),1,[])+reshape(2*Qqddot,1,[])*obj.accel_mat_qd0;
+        dc(obj.nq*obj.nT+obj.nq+(1:obj.nq)) = reshape(2*Qqdot(:,2:obj.nT-1),1,[])*obj.velocity_mat_qdf+reshape(2*Qqdot(:,obj.nT),1,[])+reshape(2*Qqddot,1,[])*obj.accel_mat_qdf;
+      end
     end
   end
 end

@@ -16,7 +16,6 @@ else
   n_points = 3;
 end
 
-lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_all_bodies_jac_test');
 r = RigidBodyManipulator([],struct('terrain',[]));
 for i=1:n_points
   fprintf('Adding point no. %d ...\n',i);
