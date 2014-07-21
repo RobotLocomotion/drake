@@ -8,7 +8,7 @@ classdef Quadrotor < RigidBodyManipulator
       options.terrain = RigidBodyFlatTerrain();
       w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
       warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-      obj = obj@RigidBodyManipulator('quadrotor.urdf',options);
+      obj = obj@RigidBodyManipulator(getFullPathFromRelativePath('quadrotor.urdf'),options);
       warning(w);
       
       switch (sensor)
