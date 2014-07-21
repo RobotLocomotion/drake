@@ -58,7 +58,7 @@ classdef LinearConstraint < Constraint
         dc = obj.A;
       end
       if(nargout>2)
-        ddc = sparse(numel(obj.A),obj.xdim);
+        ddc = sparse(size(obj.A,1),obj.xdim^2);
       end
     end
 end
