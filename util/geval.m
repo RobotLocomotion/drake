@@ -5,26 +5,26 @@ function varargout = geval(fun,varargin)
 %
 % For a single-output (+ user gradients) function
 %      [f,df,d2f,...,dnf] = fun(a1,a2,a3,...)
-% the call 
+% the call
 %      [f,df,d2f,...,dmf] = geval(fun,a1,a2,a3,...,options)
 % If (m<=n), then it uses the user supplied gradients naturally output by
-% the function. 
+% the function.
 % If (m>n), then it performs a taylor expansion to compute *all* of the
 % gradients. (so it doesn't currently pay to provide 2nd order gradients if
 % you ask for 3rd order).
 %
 % For a function with p>1 different outputs (+ user gradients):
 %      [f1,f2,...fp,df1,df2,...,dfp,d2f1,...,dmf1,...,dmfn] = fun(a1,a2,a3,...)
-% use the notation 
-%      geval(p,fun,varargin) 
+% use the notation
+%      geval(p,fun,varargin)
 % to tell geval that there are p different outputs.
 %
 % If the output is a matrix (or ND-array), then the gradients are reshaped
 % so that size(df) = [prod(size(f)), prod(size(a))]
 %
-% Higher order gradients are output as a q x r^o sparse matrix , where 
+% Higher order gradients are output as a q x r^o sparse matrix , where
 %    q is the dimension of the output, r is the dimension of the input, and o is the order.
-%    e.g. 
+%    e.g.
 %        d^2 f(i,j)/da1_k da1_l =
 %             d2f(sub2ind(size(f),i,j),sub2ind([p p],k,l))
 %        where p = prod(size(a1))
@@ -36,14 +36,17 @@ function varargout = geval(fun,varargin)
 %    grad_method can also be a cell array of the strings above, in which
 %    case geval will run both methods and compare the output.
 %      e.g. option.grad_method = {'user','taylorvar'};
+% @option grad_level if specified, then geval trusts that the function provided has user derivatives up to this level
+%               -2 - non-differentiable
+%               -1 - unknown
+%                0 - no user gradients
+%                1 - first derivatives provided
+%                ...
+%              @default -1
 
-% todo: implement options? (without sacrificing too much performance?)
-%% Options:
-%%   grad_method:  {'user_then_taylorvar','user','taylorvar','numerical','symbolic'}
-%         default is user_then_taylorvar
 
 p=1;
-if (isnumeric(fun)) 
+if (isnumeric(fun))
   p=fun;
   fun=varargin{1};
   varargin={varargin{2:end}};
@@ -52,6 +55,7 @@ end
 varargout=cell(1,nargout);
 
 method = 12; % user if possible, otherwise taylorvar
+grad_level = -1;
 if (isstruct(varargin{end}))
   options=varargin{end};
   varargin={varargin{1:end-1}};
@@ -76,7 +80,7 @@ if (isstruct(varargin{end}))
       end
       return;
     end
-      
+
     switch (lower(options.grad_method))
       case 'user'
         method=1;
@@ -91,22 +95,30 @@ if (isstruct(varargin{end}))
       case 'user_then_numerical'
         method=13;
       otherwise
-        error('i don''t know what you''re talking about'); 
+        error('i don''t know what you''re talking about');
     end
+
   end
-else
-  options=struct();
+  if isfield(options,'grad_level'), grad_level = options.grad_level; end
+end
+
+if grad_level==-2 && nargout>p,
+  error('Drake:geval:NonDifferentiable','Attempting to take the derivatives of a function that is not differentiable (grad_level==-2)');
 end
 
 if (method==12 || method == 13) % user then taylorvar or user then numerical
-  try
-    n=nargout(fun);
-  catch
-    % nargout isn't going to work for class methods
-    n=-1;
+  if grad_level==-1
+    try
+      n=nargout(fun);
+    catch
+      % nargout isn't going to work for class methods
+      n=-1;
+    end
+  else
+    n=(grad_level+1)*p;
   end
-  if (n<0) % variable number of outputs
-    % then just call it with the requested and catch if it fails:
+  if (n<0) % unknown derivative level
+    % call it with the requested and catch if it fails:
     try
       [varargout{:}]=feval(fun,varargin{:});
       return;  % if i get here, then it passed and I'm done
@@ -130,9 +142,9 @@ order=ceil(nargout/p)-1;
 switch (method)
   case 1  % user
     [varargout{:}]=feval(fun,varargin{:});
-    
+
   case 2  % taylorvar
-    
+
     avec=[];
     for i=1:length(varargin),
       if (isa(varargin{i},'TaylorVar'))
@@ -152,7 +164,7 @@ switch (method)
         a{i}=varargin{i};
       end
     end
-    
+
     f=cell(1,p);
     [f{:}]=feval(fun,a{:});
     for i=1:p
@@ -167,19 +179,19 @@ switch (method)
         error('non-double outputs not supported (yet?)');
       end
     end
-    
+
   case 3  % numerical
 
     if (order>1) error('higher order numerical gradients not implemented yet'); end
-    
+
     [varargout{1:p}]=feval(fun,varargin{:});
     df_p = cell(1,p);
     df_m = cell(1,p);
     o = nargout-p;
     ind=1;
-    
-    if ~isfield(options,'diff_type'), options.diff_type = 'forward'; end; 
-    if isfield(options,'da') 
+
+    if ~isfield(options,'diff_type'), options.diff_type = 'forward'; end;
+    if isfield(options,'da')
       da = options.da;
     else
       da = 1e-7;
@@ -207,11 +219,11 @@ switch (method)
         warning(['input ',num2str(i), 'is not a double nor an object... I will not take gradients w/respect to this input']);
       end
     end
-    
+
   case 4  % symbolic
     % note that this is inefficient (making a new symbolic thing each
     % time), but is very useful for debugging.
-    
+
     s=[]; s0=[];
     for i=1:length(varargin)
       if (isobject(varargin{i}))
@@ -232,7 +244,7 @@ switch (method)
     f = feval(fun,a{:});
     m = prod(size(f));
     n = length(s);
-    
+
     varargout{1}=double(subs(f,s,s0));
 
     df{1} = jacobian(reshape(f,m,1),s);
@@ -241,8 +253,7 @@ switch (method)
       df{o} = reshape(jacobian(reshape(df{o-1},m*n^(o-1),1),s),m,n^o);
       varargout{o+1}=double(subs(df{o},s,s0));
     end
-    
+
   otherwise
     error('shouldn''t get here');
-end    
-
+end

@@ -3,9 +3,9 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
   % drake
   %
   % Generally speaking, this class manages the association between
-  % DifferentiableConstraint objects and NonlinearPrograms. With the goal
+  % Constraint objects and NonlinearPrograms. With the goal
   % of improved performance by avoiding redundant calculations, the
-  % DifferentiableConstraint eval function is assumed to be of the form
+  % Constraint eval function is assumed to be of the form
   % eval(args{:},data{:}) where args are the standard, numerical valued
   % arguments that are a subset of the NLP decision variables. data is a
   % reference to shared data objects that are pre-computed once per
@@ -151,16 +151,16 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         obj = addBoundingBoxConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'LinearConstraint')
         obj = addLinearConstraint(obj,cnstr,varargin{:});
-      elseif isa(cnstr,'DifferentiableConstraint')
-        obj = addDifferentiableConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'CompositeConstraint')
         obj = addCompositeConstraints(obj,cnstr,varargin{:});
+      elseif isa(cnstr,'Constraint')
+        obj = addNonlinearConstraint(obj,cnstr,varargin{:});
       else
         error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','Unsupported constraint type');
       end
     end
     
-    function obj = addDifferentiableConstraint(obj,cnstr,xind, data_ind)
+    function obj = addNonlinearConstraint(obj,cnstr,xind, data_ind)
       % add a NonlinearConstraint to the object, change the constraint evalation of the
       % program. 
       % @param cnstr     -- A NonlinearConstraint object
@@ -187,8 +187,8 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       end
       data_ind = data_ind(:);
       
-      if(~isa(cnstr,'DifferentiableConstraint'))
-        error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','addNonlinearConstraint expects a DifferentiableConstraint object');
+      if(~isa(cnstr,'Constraint'))
+        error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','addNonlinearConstraint expects a Constraint object');
       end
       if length(xind_vec) ~= cnstr.xdim
         error('Drake:NonlinearProgramWConstraintObjects:InvalidArgument','the length of xind must match the x-dimension of the constraint');
@@ -296,8 +296,8 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         data_ind = [];
       end
       data_ind = data_ind(:);
-      if ~isa(cnstr,'DifferentiableConstraint')
-        error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addCost expects a DifferentiableConstraint object');
+      if ~isa(cnstr,'Constraint')
+        error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addCost expects a Constraint object');
       end
       
       if(isa(cnstr,'LinearConstraint'))
