@@ -228,7 +228,6 @@ classdef QPController < MIMODrakeSystem
     else
       D_ls = ctrl_data.D; 
     end
-    Q = ctrl_data.Q;
     Qy = ctrl_data.Qy;
     R_ls = ctrl_data.R;
     if (ctrl_data.lqr_is_time_varying)
@@ -262,15 +261,6 @@ classdef QPController < MIMODrakeSystem
     mu = ctrl_data.mu;
     R_DQyD_ls = R_ls + D_ls'*Qy*D_ls;
 
-    if isfield(ctrl_data,'comz_traj')
-      comz_des = fasteval(ctrl_data.comz_traj,t);
-      dcomz_des = fasteval(ctrl_data.dcomz_traj,t);
-      ddcomz_des = fasteval(ctrl_data.ddcomz_traj,t);
-    else
-      comz_des = 1.03;
-      dcomz_des = 0;
-      ddcomz_des = 0;
-    end
     condof = ctrl_data.constrained_dofs; % dof indices for which qdd_des is a constraint
         
     fc = varargin{3};
@@ -280,16 +270,20 @@ classdef QPController < MIMODrakeSystem
     contact_pts = {};
     n_contact_pts = [];
     ind = 1;
+    
+    supp_idx = find(ctrl_data.support_times<=t,1,'last');
+    plan_supp = ctrl_data.supports(supp_idx);
+    
     if fc(1)>0
       support_bodies(ind) = obj.lfoot_idx;
-      contact_pts{ind} = 1:4;
-      n_contact_pts(ind) = 4;
+      contact_pts{ind} = 1:4;%plan_supp.contact_pts{plan_supp.bodies==obj.lfoot_idx};
+      n_contact_pts(ind) = length(contact_pts{ind});
       ind=ind+1;
     end
     if fc(2)>0
       support_bodies(ind) = obj.rfoot_idx;
-      contact_pts{ind} = 1:4;
-      n_contact_pts(ind) = 4;
+      contact_pts{ind} = 1:4;%plan_supp.contact_pts{plan_supp.bodies==obj.rfoot_idx};
+      n_contact_pts(ind) = length(contact_pts{ind});
     end
     
 %    supp = SupportState(r,support_bodies,contact_pts);
@@ -443,7 +437,9 @@ classdef QPController < MIMODrakeSystem
       % linear inequality constraints: Ain*alpha <= bin
       Ain = sparse(vertcat(Ain_{:}));
       bin = vertcat(bin_{:});
-
+      Ain = Ain(bin~=inf,:);
+      bin = bin(bin~=inf);
+      
       if include_angular_momentum
         Ak = A(1:3,:);
         Akdot = Adot(1:3,:);
@@ -518,7 +514,7 @@ classdef QPController < MIMODrakeSystem
 
       if info_fqp<0
         % then call gurobi
-        disp('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!failed over to gurobi');
+        disp('QPController: failed over to gurobi');
         model.Q = sparse(Hqp + REG*eye(nparams));
         model.A = [Aeq; Ain];
         model.rhs = [beq; bin];
@@ -581,7 +577,7 @@ classdef QPController < MIMODrakeSystem
       end
 
       if (obj.use_mex==1)
-        [y,qdd,info_fqp,active_supports,alpha] = QPControllermex(obj.mex_ptr.data,obj.solver==0,qddot_des,x,...
+        [y,qdd] = QPControllermex(obj.mex_ptr.data,obj.solver==0,qddot_des,x,...
             varargin{4:end},condof,supp,A_ls,B_ls,Qy,R_ls,C_ls,D_ls,...
             S,s1,s1dot,s2dot,x0,u0,y0,mu,height);        
       else 
