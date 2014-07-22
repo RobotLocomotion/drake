@@ -28,7 +28,6 @@ classdef QPControllerData < ControllerData
     x0 % nominal state (possibly time-varying)
     y0 % nominal output (possibly time-varying)
     u0=zeros(2,1) % nominal input (possibly time-varying)
-    Q=zeros(4) % state LQR cost
     R=zeros(2) % input LQR cost
     Qy % output LQR cost
     S % cost-to-go terms: x'Sx + x's1 + s2
@@ -98,9 +97,6 @@ classdef QPControllerData < ControllerData
       assert(islogical(data.ignore_terrain));
       assert(isnumeric(data.mu));
       assert(isnumeric(data.Qy));
-      if isfield(data,'Q')
-        assert(isnumeric(data.Q));
-      end
       % optional properties
       if isfield(data,'link_constraints')
         assert(isstruct(data.link_constraints));
@@ -152,9 +148,6 @@ classdef QPControllerData < ControllerData
       end
       if isfield(data,'Qy')
         obj.Qy = data.Qy;       
-      end      
-      if isfield(data,'Q')
-        obj.Q = data.Q;       
       end      
       if isfield(data,'y0')
         obj.y0 = data.y0;
