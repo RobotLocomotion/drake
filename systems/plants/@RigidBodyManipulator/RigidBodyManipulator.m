@@ -2053,15 +2053,21 @@ classdef RigidBodyManipulator < Manipulator
           joint_limit_max = parseParamString(model,robotnum,char(limits.getAttribute('upper')));
         end
         if limits.hasAttribute('effort');
-          effort = parseParamString(model,robotnum,char(limits.getAttribute('effort')));
-          effort_min = min(-effort,effort); % just in case someone puts the min effort in the URDF
-          effort_max = max(-effort,effort);
+          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
+            effort = parseParamString(model,robotnum,char(limits.getAttribute('effort')));
+            effort_min = min(-effort,effort); % just in case someone puts the min effort in the URDF
+            effort_max = max(-effort,effort);
+          end
         end
         if limits.hasAttribute('effort_min');
-          effort_min = parseParamString(model,robotnum,char(limits.getAttribute('effort_min')));
+          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
+            effort_min = parseParamString(model,robotnum,char(limits.getAttribute('effort_min')));
+          end
         end
         if limits.hasAttribute('effort_max');
-          effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
+          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
+            effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
+          end
         end
         if limits.hasAttribute('velocity');
           warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
