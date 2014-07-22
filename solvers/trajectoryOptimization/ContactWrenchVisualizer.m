@@ -87,7 +87,7 @@ classdef ContactWrenchVisualizer < BotVisualizer
             torque_ij = zeros(3,1);
           end
           if(norm(torque_ij)>0.01)
-            obj.drawArrow(pts_pos_i(:,j),torque_ij/obj.torque_scaler,0.03,0.05,0.01,[0,0.5,0.5]);
+            obj.drawArrow(pts_pos_i(:,j),torque_ij/obj.torque_scaler,0.03,0.05,0.01,[0,0.8,0.5]);
           end
         end
         Ldot = Ldot+sum(force_i2,2);
@@ -95,13 +95,13 @@ classdef ContactWrenchVisualizer < BotVisualizer
       end
       
       % Draw the rate of centroidal momenta
-%       if(~isempty(obj.force_scaler))
-%         obj.wrench_lcmgl.glColor3f(1,0,0);
-%         obj.wrench_lcmgl.sphere(com,0.05,20,20);
-% %         obj.wrench_lcmgl.text(com,'CoM',0,0);
-%         drawArrow(obj,com,Ldot/obj.force_scaler,0.03,0.05,0.01,[0,0,1]);
-%         drawArrow(obj,com,Hdot/obj.force_scaler,0.03,0.05,0.01,[0,0.5,0.5]);
-%       end
+      if(~isempty(obj.force_scaler))
+        obj.wrench_lcmgl.glColor3f(1,0,0);
+        obj.wrench_lcmgl.sphere(com,0.05,20,20);
+%         obj.wrench_lcmgl.text(com,'CoM',0,0);
+        drawArrow(obj,com,Ldot/obj.force_scaler,0.03,0.05,0.01,[0,0,1]);
+        drawArrow(obj,com,Hdot/obj.force_scaler,0.03,0.05,0.01,[0,0.8,0.5]);
+      end
       
       obj.wrench_lcmgl.switchBuffers();
       if(isempty(obj.atlas))
