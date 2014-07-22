@@ -201,50 +201,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   int desired_support_argid = narg++;
-  
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==4);
-  Map< Matrix4d > A_ls(mxGetPr(prhs[narg++]));
 
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==2);
-  Map< Matrix<double,4,2> > B_ls(mxGetPr(prhs[narg++]));
+  Map<MatrixXd> A_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> B_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> Qy  (mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> R_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> C_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> D_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> S   (mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
 
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==2);
-  Map< Matrix2d > Qy(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==2);
-  Map< Matrix2d > R_ls(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==4);
-  Map< Matrix<double,2,4> > C_ls(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==2);
-  Map< Matrix2d > D_ls(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==4);
-  Map< Matrix4d > S(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==1);
-  Map< Vector4d > s1(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==1);
-  Map< Vector4d > s1dot(mxGetPr(prhs[narg++]));
-
+  Map<VectorXd> s1(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  Map<VectorXd> s1dot(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
   double s2dot = mxGetScalar(prhs[narg++]);
-
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==1);
-  Map< Vector4d > x0(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==1);
-  Map< Vector2d > u0(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==1);
-  Map< Vector2d > y0(mxGetPr(prhs[narg++]));
+  Map<VectorXd> x0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  Map<VectorXd> u0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  Map<VectorXd> y0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
 
   double mu = mxGetScalar(prhs[narg++]);
   double terrain_height = mxGetScalar(prhs[narg++]); // nonzero if we're using DRCFlatTerrainMap
 
-  Matrix2d R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
-  
+  MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
+
   pdata->r->doKinematics(q,false,qd);
 
   //---------------------------------------------------------------------
@@ -303,20 +280,39 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->r->getCOM(xcom);
   pdata->r->getCOMJac(pdata->J);
   pdata->r->getCOMJacDot(pdata->Jdot);
-  // copy to xy versions for computations below (avoid doing topRows a bunch of times)
   pdata->J_xy = pdata->J.topRows(2);
   pdata->Jdot_xy = pdata->Jdot.topRows(2);
 
+  MatrixXd Jcom,Jcomdot;
+
+  if (x0.size()==6) {
+    Jcom = pdata->J;
+    Jcomdot = pdata->Jdot;
+  }
+  else {
+    Jcom = pdata->J_xy;
+    Jcomdot = pdata->Jdot_xy;
+  }
   Map<VectorXd> qdvec(qd,nq);
   
   MatrixXd Jz,Jp,Jpdot,D;
   int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,Jz,D,Jp,Jpdot,terrain_height);
   int neps = nc*dim;
 
-  Vector4d x_bar,xlimp;
+  VectorXd x_bar,xlimp;
   MatrixXd D_float(6,D.cols()), D_act(nu,D.cols());
   if (nc>0) {
-    xlimp << xcom.topRows(2),pdata->J_xy*qdvec;
+    if (x0.size()==6) {
+      // x,y,z com 
+      xlimp.resize(6); 
+      xlimp.topRows(3) = xcom;
+      xlimp.bottomRows(3) = Jcom*qdvec;
+    }
+    else {
+      xlimp.resize(4); 
+      xlimp.topRows(2) = xcom.topRows(2);
+      xlimp.bottomRows(2) = Jcom*qdvec;
+    }
     x_bar = xlimp-x0;
 
     D_float = D.topRows(6);
@@ -340,12 +336,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   {      
     if (nc > 0) {
       // NOTE: moved Hqp calcs below, because I compute the inverse directly for FastQP (and sparse Hqp for gurobi)
+      VectorXd tmp = C_ls*xlimp;
+      VectorXd tmp1 = Jcomdot*qdvec;
+      MatrixXd tmp2 = R_DQyD_ls*Jcom;
 
-      pdata->fqp = (C_ls*xlimp).transpose()*Qy*D_ls*pdata->J_xy;
-      pdata->fqp += (pdata->Jdot_xy*qdvec).transpose()*R_DQyD_ls*pdata->J_xy;
-      pdata->fqp += (S*x_bar + 0.5*s1).transpose()*B_ls*pdata->J_xy;
-      pdata->fqp -= u0.transpose()*R_DQyD_ls*pdata->J_xy;
-      pdata->fqp -= y0.transpose()*Qy*D_ls*pdata->J_xy;
+      pdata->fqp = tmp.transpose()*Qy*D_ls*Jcom;
+      pdata->fqp += tmp1.transpose()*tmp2;
+      pdata->fqp += (S*x_bar + 0.5*s1).transpose()*B_ls*Jcom;
+      pdata->fqp -= u0.transpose()*tmp2;
+      pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
       pdata->fqp -= (pdata->w_qdd.array()*qddot_des.array()).matrix().transpose();
       if (include_angular_momentum) {
         pdata->fqp += qdvec.transpose()*pdata->Akdot.transpose()*pdata->W_kdot*pdata->Ak;
@@ -429,6 +428,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Ain.block(nu,0,nu,nparams) = -1*Ain.block(0,0,nu,nparams);
   bin.segment(nu,nu) = pdata->B_act.transpose()*pdata->C_act - pdata->umin;
 
+  for (int i=0; i<2*nu; i++) {
+    // remove inf constraints---needed by gurobi
+    if (std::isinf(double(bin(i)))) {
+      Ain.row(i) = 0*Ain.row(i);
+      bin(i)=0;
+    }  
+  }
+
 
   GRBmodel * model = NULL;
   int info=-1;
@@ -460,7 +467,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   	if (nc>0) {
       MatrixXd Wi = ((1/(pdata->w_qdd.array() + REG)).matrix()).asDiagonal();
   		if (R_DQyD_ls.trace()>1e-15) { // R_DQyD_ls is not zero
-  			pdata->Hqp = Wi - Wi*pdata->J_xy.transpose()*(R_DQyD_ls.inverse() + pdata->J_xy*Wi*pdata->J_xy.transpose()).inverse()*pdata->J_xy*Wi;
+  			pdata->Hqp = Wi - Wi*Jcom.transpose()*(R_DQyD_ls.inverse() + Jcom*Wi*Jcom.transpose()).inverse()*Jcom*Wi;
       }
   	} 
     else {
@@ -471,7 +478,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   	  if (nc>0) {
         MatrixXd Hqp_test(nq,nq);
         MatrixXd W = w.asDiagonal();
-        Hqp_test = (pdata->J_xy.transpose()*R_DQyD_ls*pdata->J_xy + W).inverse();
+        Hqp_test = (Jcom.transpose()*R_DQyD_ls*Jcom + W).inverse();
     	  if (((Hqp_test-pdata->Hqp).array().abs()).maxCoeff() > 1e-6) {
     		  mexErrMsgTxt("Q submatrix inverse from matrix inversion lemma does not match direct Q inverse.");
         }
@@ -501,16 +508,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   else {
   #endif
     if (nc>0) {
-      pdata->Hqp = pdata->J_xy.transpose()*R_DQyD_ls*pdata->J_xy;
+      pdata->Hqp = Jcom.transpose()*R_DQyD_ls*Jcom;
       if (include_angular_momentum) {
         pdata->Hqp += pdata->Ak.transpose()*pdata->W_kdot*pdata->Ak;
       }
       pdata->Hqp += pdata->w_qdd.asDiagonal();
       pdata->Hqp += REG*MatrixXd::Identity(nq,nq);
     } else {
-      pdata->Hqp = MatrixXd::Constant(nq,1,1+REG);
+      pdata->Hqp = (1+REG)*MatrixXd::Identity(nq,nq);
     }
-
 
     // add in body spatial acceleration cost terms
     int w_i;
@@ -648,7 +654,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double Vdot;
     if (nc>0) 
       // note: Sdot is 0 for ZMP/double integrator dynamics, so we omit that term here
-      Vdot = ((2*x_bar.transpose()*S + s1.transpose())*(A_ls*x_bar + B_ls*(pdata->Jdot_xy*qdvec + pdata->J_xy*qdd)) + s1dot.transpose()*x_bar)(0) + s2dot;
+      Vdot = ((2*x_bar.transpose()*S + s1.transpose())*(A_ls*x_bar + B_ls*(Jcomdot*qdvec + Jcom*qdd)) + s1dot.transpose()*x_bar)(0) + s2dot;
     else
       Vdot = 0;
     plhs[13] = mxCreateDoubleScalar(Vdot);
