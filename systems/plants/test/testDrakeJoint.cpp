@@ -19,7 +19,7 @@ using namespace Eigen;
 int main(int argc, char **argv)
 {
   RigidBody body;
-  auto transform_to_parent_body = AffineCompact3d::Identity();
+  auto transform_to_parent_body = Isometry3d::Identity();
 
   std::default_random_engine generator;
   generator.seed(time(0));

@@ -3,7 +3,7 @@
 
 using namespace Eigen;
 
-RevoluteJoint::RevoluteJoint(const std::string& name, const RigidBody& parent_body, const AffineCompact3d& transform_to_parent_body, const Vector3d& rotation_axis) :
+RevoluteJoint::RevoluteJoint(const std::string& name, const RigidBody& parent_body, const Isometry3d& transform_to_parent_body, const Vector3d& rotation_axis) :
     FixedAxisOneDoFJoint(name, parent_body, transform_to_parent_body, spatialJointAxis(rotation_axis)), rotation_axis(rotation_axis)
 {
 }
@@ -13,9 +13,9 @@ RevoluteJoint::~RevoluteJoint()
   // empty
 }
 
-AffineCompact3d RevoluteJoint::jointTransform(double* const q) const
+Isometry3d RevoluteJoint::jointTransform(double* const q) const
 {
-  return AffineCompact3d(AngleAxisd(q[0], rotation_axis));
+  return Isometry3d(AngleAxisd(q[0], rotation_axis));
 }
 
 Matrix<double, TWIST_SIZE, 1> RevoluteJoint::spatialJointAxis(const Vector3d& rotation_axis)

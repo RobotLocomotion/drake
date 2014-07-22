@@ -1,11 +1,14 @@
 #include "drakeGradientUtil.h"
+#include "drakeQuatUtil.h"
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <Eigen/KroneckerProduct> // unsupported...
 #include <iostream>
 #include <chrono>
 #include <stdexcept>
 #include <vector>
 #include <array>
+#include <random>
 
 using namespace Eigen;
 
@@ -171,6 +174,33 @@ void testSetSubMatrixGradient(int ntests, bool check) {
   }
 }
 
+void testDHomogTrans(int ntests) {
+  Isometry3d T;
+  std::default_random_engine generator;
+
+  for (int testnr = 0; testnr < ntests; testnr++) {
+    T = uniformlyRandomQuat(generator);
+    //  T.setIdentity();
+    //  T = AngleAxisd(M_PI_2, Vector3d(1.0, 0.0, 0.0));
+
+    const int nv = 6;
+    const int nq = 7;
+
+    auto S = Matrix<double, 6, nv>::Random().eval();
+//    setLinearIndices(S);
+//    S.setIdentity();
+//    std::cout << S << "\n\n";
+
+    auto qdot_to_v = Matrix<double, nv, nq>::Random().eval();
+//    setLinearIndices(qdot_to_v);
+//    std::cout << qdot_to_v << "\n\n";
+
+    auto dT = dHomogTrans(T, S, qdot_to_v).eval();
+    volatile auto vol = dT;
+    //  std::cout << dT << std::endl << std::endl;
+  }
+}
+
 void testNormalizeVec(int ntests) {
   const int x_rows = 4;
 
@@ -193,20 +223,21 @@ void testNormalizeVec(int ntests) {
 }
 
 int main(int argc, char **argv) {
-  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, 100000) << std::endl;
+//  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, 100000) << std::endl;
+//
+//  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, 100000, false) << std::endl;
+//  testMatGradMultMat(1000, true);
+//
+//  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, 100000, false) << std::endl;
+//  testMatGradMult(1000, true);
+//
+//  std::cout << "testGetSubMatrixGradient elapsed time: " << measure<>::execution(testGetSubMatrixGradient, 100000) << std::endl;
+//
+//  std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, 100000, false) << std::endl;
+//  testSetSubMatrixGradient(1000, true);
 
-  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, 100000, false) << std::endl;
-  testMatGradMultMat(1000, true);
+  std::cout << "testDHomogTrans elapsed time: " << measure<>::execution(testDHomogTrans, 100000) << std::endl;
 
-  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, 100000, false) << std::endl;
-  testMatGradMult(1000, true);
-
-  std::cout << "testGetSubMatrixGradient elapsed time: " << measure<>::execution(testGetSubMatrixGradient, 100000) << std::endl;
-
-  std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, 100000, false) << std::endl;
-  testSetSubMatrixGradient(1000, true);
-
-  std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, 100000) << std::endl;
-
+//  std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, 100000) << std::endl;
   return 0;
 }

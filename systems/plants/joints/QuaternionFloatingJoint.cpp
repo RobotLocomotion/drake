@@ -1,12 +1,10 @@
 #include "QuaternionFloatingJoint.h"
 #include <random>
-
-#define _USE_MATH_DEFINES
-#include <cmath>
+#include "drakeQuatUtil.h"
 
 using namespace Eigen;
 
-QuaternionFloatingJoint::QuaternionFloatingJoint(const std::string& name, const RigidBody& parent_body, const AffineCompact3d& transform_to_parent_body) :
+QuaternionFloatingJoint::QuaternionFloatingJoint(const std::string& name, const RigidBody& parent_body, const Isometry3d& transform_to_parent_body) :
   DrakeJoint(name, parent_body, transform_to_parent_body, 7, 6)
 {
   // empty
@@ -17,9 +15,9 @@ QuaternionFloatingJoint::~QuaternionFloatingJoint()
   // empty
 }
 
-AffineCompact3d QuaternionFloatingJoint::jointTransform(double* const q) const
+Isometry3d QuaternionFloatingJoint::jointTransform(double* const q) const
 {
-  return AffineCompact3d(Quaterniond(q[3], q[4], q[5], q[6]) * Translation3d(q[0], q[1], q[2]));
+  return Isometry3d(Quaterniond(q[3], q[4], q[5], q[6]) * Translation3d(q[0], q[1], q[2]));
 }
 
 void QuaternionFloatingJoint::motionSubspace(double* const q, MotionSubspaceType& motion_subspace, MatrixXd* dmotion_subspace) const
@@ -46,7 +44,6 @@ void QuaternionFloatingJoint::motionSubspaceDotTimesV(double* const q, double* c
 void QuaternionFloatingJoint::randomConfiguration(double* q, std::default_random_engine& generator) const
 {
   std::normal_distribution<double> normal;
-  std::uniform_real_distribution<double> uniform(-M_PI, M_PI);
 
   // position
   q[0] = normal(generator);
@@ -54,11 +51,7 @@ void QuaternionFloatingJoint::randomConfiguration(double* q, std::default_random
   q[2] = normal(generator);
 
   // orientation
-  double angle = uniform(generator);
-  Eigen::Vector3d axis = Vector3d(normal(generator), normal(generator), normal(generator));
-  axis.normalize();
-  Quaterniond quat;
-  quat = AngleAxisd(angle, axis);
+  Quaterniond quat = uniformlyRandomQuat(generator);
   q[3] = quat.w();
   q[4] = quat.x();
   q[5] = quat.y();

@@ -15,7 +15,7 @@ private:
   double joint_limit_max;
 
 protected:
-  FixedAxisOneDoFJoint(const std::string& name, const RigidBody& parent_body, const Eigen::AffineCompact3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& joint_axis);
+  FixedAxisOneDoFJoint(const std::string& name, const RigidBody& parent_body, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Matrix<double, TWIST_SIZE, 1>& joint_axis);
 
 public:
   virtual ~FixedAxisOneDoFJoint();

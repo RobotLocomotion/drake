@@ -3,7 +3,7 @@
 
 using namespace Eigen;
 
-PrismaticJoint::PrismaticJoint(const std::string& name, const RigidBody& parent_body, const AffineCompact3d& transform_to_parent_body, const Vector3d& translation_axis) :
+PrismaticJoint::PrismaticJoint(const std::string& name, const RigidBody& parent_body, const Isometry3d& transform_to_parent_body, const Vector3d& translation_axis) :
     FixedAxisOneDoFJoint(name, parent_body, transform_to_parent_body, spatialJointAxis(translation_axis)), translation_axis(translation_axis)
 {
 }
@@ -13,9 +13,9 @@ PrismaticJoint::~PrismaticJoint()
   // empty
 }
 
-AffineCompact3d PrismaticJoint::jointTransform(double* const q) const
+Isometry3d PrismaticJoint::jointTransform(double* const q) const
 {
-  AffineCompact3d ret;
+  Isometry3d ret;
   ret.linear().setIdentity();
   ret.translation() = q[0] * translation_axis;
   return ret;

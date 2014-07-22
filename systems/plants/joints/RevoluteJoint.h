@@ -12,11 +12,11 @@ class RevoluteJoint: public FixedAxisOneDoFJoint
 private:
   Eigen::Vector3d rotation_axis;
 public:
-  RevoluteJoint(const std::string& name, const RigidBody& parent_body, const Eigen::AffineCompact3d& transform_to_parent_body, const Eigen::Vector3d& rotation_axis);
+  RevoluteJoint(const std::string& name, const RigidBody& parent_body, const Eigen::Isometry3d& transform_to_parent_body, const Eigen::Vector3d& rotation_axis);
 
   virtual ~RevoluteJoint();
 
-  virtual Eigen::AffineCompact3d jointTransform(double* const q) const override;
+  virtual Eigen::Isometry3d jointTransform(double* const q) const override;
 
 private:
   static Eigen::Matrix<double, TWIST_SIZE, 1> spatialJointAxis(const Eigen::Vector3d& rotation_axis);

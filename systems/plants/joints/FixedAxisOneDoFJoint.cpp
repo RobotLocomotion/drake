@@ -7,7 +7,7 @@
 
 using namespace Eigen;
 
-FixedAxisOneDoFJoint::FixedAxisOneDoFJoint(const std::string& name, const RigidBody& parent_body, const AffineCompact3d& transform_to_parent_body, const Matrix<double, TWIST_SIZE, 1>& joint_axis) :
+FixedAxisOneDoFJoint::FixedAxisOneDoFJoint(const std::string& name, const RigidBody& parent_body, const Isometry3d& transform_to_parent_body, const Matrix<double, TWIST_SIZE, 1>& joint_axis) :
     DrakeJoint(name, parent_body, transform_to_parent_body, 1, 1),
     joint_axis(joint_axis),
     joint_limit_min(-std::numeric_limits<double>::infinity()),

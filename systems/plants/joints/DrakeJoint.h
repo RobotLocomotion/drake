@@ -20,12 +20,12 @@ class DrakeJoint
 private:
   const std::string name;
   const RigidBody& parent_body;
-  const Eigen::AffineCompact3d transform_to_parent_body;
+  const Eigen::Isometry3d transform_to_parent_body;
   const int num_positions;
   const int num_velocities;
 
 protected:
-  DrakeJoint(const std::string& name, const RigidBody& parent_body, const Eigen::AffineCompact3d& transform_to_parent_body, int num_positions, int num_velocities);
+  DrakeJoint(const std::string& name, const RigidBody& parent_body, const Eigen::Isometry3d& transform_to_parent_body, int num_positions, int num_velocities);
 
 public:
   typedef Eigen::Matrix<double, TWIST_SIZE, Eigen::Dynamic> MotionSubspaceType;
@@ -34,7 +34,7 @@ public:
 
   const RigidBody& getParentBody() const;
 
-  const Eigen::AffineCompact3d& getTransformToParentBody() const;
+  const Eigen::Isometry3d& getTransformToParentBody() const;
 
   const int getNumPositions() const;
 
@@ -42,7 +42,7 @@ public:
 
   const std::string& getName() const;
 
-  virtual Eigen::AffineCompact3d jointTransform(double* const q) const = 0;
+  virtual Eigen::Isometry3d jointTransform(double* const q) const = 0;
 
   virtual void motionSubspace(double* const q, MotionSubspaceType& motion_subspace, Eigen::MatrixXd* dmotion_subspace = nullptr) const = 0;
 

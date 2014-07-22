@@ -5,7 +5,7 @@ using namespace Eigen;
 DrakeJoint::DrakeJoint(
     const std::string& name,
     const RigidBody& parent_body,
-    const AffineCompact3d& transform_to_parent_body,
+    const Isometry3d& transform_to_parent_body,
     int num_positions, int num_velocities) :
 name(name), parent_body(parent_body), transform_to_parent_body(transform_to_parent_body), num_positions(num_positions), num_velocities(num_velocities)
 {
@@ -22,7 +22,7 @@ const RigidBody& DrakeJoint::getParentBody() const
   return parent_body;
 }
 
-const AffineCompact3d& DrakeJoint::getTransformToParentBody() const
+const Isometry3d& DrakeJoint::getTransformToParentBody() const
 {
   return transform_to_parent_body;
 }

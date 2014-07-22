@@ -13,6 +13,17 @@
  * (otherwise you'd have to include the .cpp anyway).
  */
 
+template<typename Derived, int Nq, int DerivativeOrder>
+struct GradientType {
+  static constexpr const int gradientNumRows(int A_size, int nq, int derivativeOrder) {
+    return (A_size == Eigen::Dynamic || nq == Eigen::Dynamic)
+        ? Eigen::Dynamic
+        : (derivativeOrder == 1 ? A_size : nq * gradientNumRows(A_size, nq, derivativeOrder - 1));
+  }
+
+  typedef Eigen::Matrix<typename Derived::Scalar, gradientNumRows(Derived::SizeAtCompileTime, Nq, DerivativeOrder), Nq> Type;
+};
+
 /*
  * Profile results: looks like return value optimization works; a version that sets a reference
  * instead of returning a value is just as fast and this is cleaner.
@@ -66,7 +77,7 @@ matGradMultMat(
   }
   return ret;
 
-  // much slower and requires unsupported eigen/unsupported:
+  // much slower and requires eigen/unsupported:
   //  return Eigen::kroneckerProduct(Eigen::MatrixXd::Identity(B.cols(), B.cols()), A) * dB + Eigen::kroneckerProduct(B.transpose(), Eigen::MatrixXd::Identity(A.rows(), A.rows())) * dA;
 }
 
@@ -134,16 +145,40 @@ void setSubMatrixGradient(Eigen::MatrixBase<DerivedA>& dM, const Eigen::MatrixBa
   }
 }
 
-template<typename Derived, int Nq, int DerivativeOrder>
-struct GradientType {
-  static constexpr const int gradientNumRows(int A_size, int nq, int derivativeOrder) {
-    return (A_size == Eigen::Dynamic || nq == Eigen::Dynamic)
-        ? Eigen::Dynamic
-        : (derivativeOrder == 1 ? A_size : nq * gradientNumRows(A_size, nq, derivativeOrder - 1));
-  }
+template<typename Scalar, typename DerivedS, typename DerivedQdotToV>
+Eigen::Matrix<Scalar, 16, Eigen::Dynamic> dHomogTrans(
+    const Eigen::Transform<Scalar, 3, Eigen::Isometry>& T,
+    const Eigen::MatrixBase<DerivedS>& S,
+    const Eigen::MatrixBase<DerivedQdotToV>& qdot_to_v) {
+  const int nq_at_compile_time = DerivedQdotToV::ColsAtCompileTime;
+  int nq = qdot_to_v.cols();
+  auto qdot_to_twist = S * qdot_to_v;
 
-  typedef Eigen::Matrix<typename Derived::Scalar, gradientNumRows(Derived::SizeAtCompileTime, Nq, DerivativeOrder), Nq> Type;
-};
+  const int numel = 16;
+  Eigen::Matrix<Scalar, numel, nq_at_compile_time> ret(numel, nq);
+
+  const auto& Rx = T.linear().col(0);
+  const auto& Ry = T.linear().col(1);
+  const auto& Rz = T.linear().col(2);
+
+  const auto& qdot_to_omega_x = qdot_to_twist.row(0);
+  const auto& qdot_to_omega_y = qdot_to_twist.row(1);
+  const auto& qdot_to_omega_z = qdot_to_twist.row(2);
+
+  ret.middleRows(0, 3) = -Rz * qdot_to_omega_y + Ry * qdot_to_omega_z;
+  ret.row(3).setZero();
+
+  ret.middleRows(4, 3) = Rz * qdot_to_omega_x - Rx * qdot_to_omega_z;
+  ret.row(7).setZero();
+
+  ret.middleRows(8, 3) = -Ry * qdot_to_omega_x + Rx * qdot_to_omega_y;
+  ret.row(11).setZero();
+
+  ret.middleRows(12, 3) = T.linear() * qdot_to_twist.bottomRows(3);
+  ret.row(15).setZero();
+
+  return ret;
+}
 
 // TODO: move to different file
 // WARNING: not reshaping to Matlab geval output format!
