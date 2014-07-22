@@ -48,16 +48,16 @@ pt_name = {'l_foot_l_heel  ';'l_foot_r_heel  ';'l_foot_l_toe  ';'l_foot_r_toe  '
 figure;
 subplot(1,2,1)
 hold on;
-inactive_i = zeros(8,1);
+inactive_i = 8*ones(8,1);
 inactive_j = (1:8)';
 active_i = [];
 active_j = [];
 for i = 1:6 
   active_idx_i = find(contact_pt_active(:,i));
   inactive_idx_i = find(~contact_pt_active(:,i));
-  inactive_i = [inactive_i;i*ones(length(inactive_idx_i),1)];
+  inactive_i = [inactive_i;(i+8)*ones(length(inactive_idx_i),1)];
   inactive_j = [inactive_j;inactive_idx_i];
-  active_i = [active_i;i*ones(length(active_idx_i),1)];
+  active_i = [active_i;(i+8)*ones(length(active_idx_i),1)];
   active_j = [active_j;active_idx_i];
 end
 plot(active_i,active_j,'.','Markersize',100,'Color','r');
@@ -65,21 +65,22 @@ plot(inactive_i,inactive_j,'.','Markersize',100,'Color','b');
 legend('active contact','inactive contact','Fontsize',14);
 
 set(gca,'YTickLabel',pt_name,'Fontsize',28)
+set(gca,'XTick',8:14);
 xlabel('knot')
 title(sprintf('Contact sequence BEFORE optimizing \n with complementarity constraints'),'Fontsize',28);
 
 subplot(1,2,2)
 hold on;
-inactive_i = zeros(8,1);
+inactive_i = 8*ones(8,1);
 inactive_j = (1:8)';
 active_i = [];
 active_j = [];
 for i = 1:6 
   active_idx_i = find(contact_pt_active_complementarity(:,i));
   inactive_idx_i = find(~contact_pt_active_complementarity(:,i));
-  inactive_i = [inactive_i;i*ones(length(inactive_idx_i),1)];
+  inactive_i = [inactive_i;(i+8)*ones(length(inactive_idx_i),1)];
   inactive_j = [inactive_j;inactive_idx_i];
-  active_i = [active_i;i*ones(length(active_idx_i),1)];
+  active_i = [active_i;(i+8)*ones(length(active_idx_i),1)];
   active_j = [active_j;active_idx_i];
 end
 plot(active_i,active_j,'.','Markersize',100,'Color','r');
@@ -87,6 +88,7 @@ plot(inactive_i,inactive_j,'.','Markersize',100,'Color','b');
 % legend('active contact','inactive contact');
 
 set(gca,'YTickLabel',[],'Fontsize',28)
+set(gca,'XTick',8:14);
 xlabel('knot')
 title(sprintf('Contact sequence AFTER optimizing \n with complementarity constraints'),'Fontsize',28);
 end
