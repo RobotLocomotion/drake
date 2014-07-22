@@ -201,6 +201,39 @@ void testDHomogTrans(int ntests) {
   }
 }
 
+void testDHomogTransInv(int ntests, bool check) {
+  Isometry3d T;
+  std::default_random_engine generator;
+  for (int testnr = 0; testnr < ntests; testnr++) {
+    T = uniformlyRandomQuat(generator) * Translation3d(Vector3d::Random());
+//    T.setIdentity();
+
+    const int nv = 6;
+    const int nq = 7;
+
+    auto S = Matrix<double, 6, nv>::Random().eval();
+    S << 0, 0, 1, 0, 0, 0;
+    auto qdot_to_v = Matrix<double, nv, nq>::Random().eval();
+
+    auto dT = dHomogTrans(T, S, qdot_to_v).eval();
+    auto dTInv = dHomogTransInv(T, dT);
+    volatile auto vol = dTInv;
+
+    if (check) {
+      auto dTInvInv = dHomogTransInv(T.inverse(), dTInv);
+
+      if (!dT.matrix().isApprox(dTInvInv.matrix(), 1e-10)) {
+        std::cout << "dTInv:\n" << dTInv << "\n\n";
+        std::cout << "dT:\n" << dT << "\n\n";
+        std::cout << "dTInvInv:\n" << dTInvInv << "\n\n";
+        std::cout << "dTInvInv - dT:\n" << dTInvInv - dT << "\n\n";
+
+        throw std::runtime_error("wrong");
+      }
+    }
+  }
+}
+
 void testNormalizeVec(int ntests) {
   const int x_rows = 4;
 
@@ -223,21 +256,24 @@ void testNormalizeVec(int ntests) {
 }
 
 int main(int argc, char **argv) {
-//  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, 100000) << std::endl;
-//
-//  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, 100000, false) << std::endl;
-//  testMatGradMultMat(1000, true);
-//
-//  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, 100000, false) << std::endl;
-//  testMatGradMult(1000, true);
-//
-//  std::cout << "testGetSubMatrixGradient elapsed time: " << measure<>::execution(testGetSubMatrixGradient, 100000) << std::endl;
-//
-//  std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, 100000, false) << std::endl;
-//  testSetSubMatrixGradient(1000, true);
+  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, 100000) << std::endl;
+
+  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, 100000, false) << std::endl;
+  testMatGradMultMat(1000, true);
+
+  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, 100000, false) << std::endl;
+  testMatGradMult(1000, true);
+
+  std::cout << "testGetSubMatrixGradient elapsed time: " << measure<>::execution(testGetSubMatrixGradient, 100000) << std::endl;
+
+  std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, 100000, false) << std::endl;
+  testSetSubMatrixGradient(1000, true);
 
   std::cout << "testDHomogTrans elapsed time: " << measure<>::execution(testDHomogTrans, 100000) << std::endl;
 
-//  std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, 100000) << std::endl;
+  std::cout << "testDHomogTransInv elapsed time: " << measure<>::execution(testDHomogTransInv, 100000, false) << std::endl;
+  testDHomogTransInv(100, true);
+
+  std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, 100000) << std::endl;
   return 0;
 }
