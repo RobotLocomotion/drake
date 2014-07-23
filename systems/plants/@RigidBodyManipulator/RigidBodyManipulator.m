@@ -854,7 +854,7 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function terrain_contact_point_struct = ...
-        getTerrainContactPoints(obj,body_idx)
+        getTerrainContactPoints(obj,body_idx,contact_groups)
       % terrain_contact_point_struct = getTerrainContactPoints(obj)
       % returns a structure array containing the terrain contact points
       % on all bodies of this manipulator.
@@ -870,6 +870,8 @@ classdef RigidBodyManipulator < Manipulator
       % @param body_idx - vector of body-indices indicating the bodies
       %                   for which terrain contact points should be
       %                   found @default All bodies except the world
+      % @param contact_groups - (optional) cell array of cell arrays
+      %   containing contact group names for each body
       % @retval terrain_contact_point_struct - nx1 structure array,
       %   where n is the number of bodies with terrain contact points.
       %   Each element has the following fields
@@ -885,11 +887,16 @@ classdef RigidBodyManipulator < Manipulator
                                          % with the terrain
       end
       terrain_contact_point_struct = struct('pts',{},'idx',{});
-      for i = body_idx
-        if i ~= 1
-          pts = getTerrainContactPoints(obj.body(i));
+      for i = 1:length(body_idx)
+        bi=body_idx(i);
+        if bi ~= 1
+          if nargin < 3
+            pts = getTerrainContactPoints(obj.body(bi));
+          else
+            pts = getTerrainContactPoints(obj.body(bi),contact_groups{i});
+          end
           if ~isempty(pts)
-            terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
+            terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',bi);
           end
         end
       end
