@@ -1,3 +1,11 @@
+/* lcmLogger 
+ *   An S-function, with no inputs and no outputs, that will simply 
+ * collect LCM traffic on the known channel and save it to a workspace
+ * variable in a matlab structure.
+ *
+ * Use the mex file publishLCMLog to publish those messages back out.
+ */
+
 #define S_FUNCTION_NAME  lcmLogger
 #define S_FUNCTION_LEVEL 2
 #include "simstruc.h"
@@ -102,24 +110,27 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   if (!lcm) ssSetErrorStatus(S, "Invalid LCM object.");
   
   simtime = ssGetT(S);
-
-  // setup the LCM file descriptor for waiting.
-  int lcm_fd = lcm_get_fileno(lcm);
-  fd_set fds;
-  FD_ZERO(&fds);
-  FD_SET(lcm_fd, &fds);
   
-  // wait a limited amount of time for an incoming message
-  struct timeval timeout = {
-    0,  // seconds
-    0   // microseconds
-  };
-  int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
-  
-  if(status!=0 && FD_ISSET(lcm_fd, &fds)) {
-    // LCM has events ready to be processed.
-    lcm_handle(lcm);
+  while (true) {
+    // setup the LCM file descriptor for waiting.
+    int lcm_fd = lcm_get_fileno(lcm);
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(lcm_fd, &fds);
+    
+    // wait a limited amount of time for an incoming message
+    struct timeval timeout = {
+      0,  // seconds
+      0   // microseconds
+    };
+    int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
+    
+    if(status!=0 && FD_ISSET(lcm_fd, &fds)) {
+      // LCM has events ready to be processed.
+      lcm_handle(lcm);
+    } else { break; }
   }
+  
 }
 
 
