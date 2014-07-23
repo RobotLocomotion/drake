@@ -91,14 +91,12 @@ end
 % manually extracting the support traj for now
 l_foot = r.findLinkInd('l_foot');
 r_foot = r.findLinkInd('r_foot');
-l_toe_pts = r.getBody(l_foot).contact_shape_group{strcmp(r.getBody(l_foot).collision_group_name,'toe')};
-r_toe_pts = r.getBody(r_foot).contact_shape_group{strcmp(r.getBody(l_foot).collision_group_name,'toe')};
 
 flight = RigidBodySupportState(r,[]);
-l_foot_support = RigidBodySupportState(r,l_foot);
-l_toe_support = RigidBodySupportState(r,l_foot,{l_toe_pts});
-r_foot_support = RigidBodySupportState(r,r_foot);
-r_toe_support = RigidBodySupportState(r,r_foot,{r_toe_pts});
+l_foot_support = RigidBodySupportState(r,l_foot,{{'toe','heel'}});
+l_toe_support = RigidBodySupportState(r,l_foot,{{'toe'}});
+r_foot_support = RigidBodySupportState(r,r_foot,{{'toe','heel'}});
+r_toe_support = RigidBodySupportState(r,r_foot,{{'toe'}});
 
 left_phase = [flight;flight;flight;flight;l_foot_support;l_foot_support;l_foot_support; ...
   l_foot_support;l_foot_support;l_foot_support;l_toe_support; ...
@@ -155,7 +153,7 @@ ctrl_data = QPControllerData(true,struct(...
 options.slack_limit = 100;
 options.w_qdd = 0.1*ones(nq,1);
 options.w_grf = 0;
-options.w_slack = 0.005;
+options.w_slack = 5;
 options.debug = false;
 options.use_mex = use_mex;
 options.contact_threshold = 0.0005;
@@ -174,7 +172,7 @@ rfoot_motion = BodyMotionControlBlock(r,'r_foot',ctrl_data,boptions);
 pelvis_motion = BodyMotionControlBlock(r,'pelvis',ctrl_data,boptions);
 lhand_motion = BodyMotionControlBlock(r,'l_hand',ctrl_data,boptions);
 rhand_motion = BodyMotionControlBlock(r,'r_hand',ctrl_data,boptions);
-boptions.Kp(4:6) = NaN; % don't constraint orientation
+boptions.Kp(4:6) = NaN; % don't constrain orientation
 boptions.Kd(4:6) = NaN;
 torso_motion = BodyMotionControlBlock(r,'utorso',ctrl_data,boptions);
 
@@ -183,7 +181,7 @@ motion_frames = {lfoot_motion.getOutputFrame,rfoot_motion.getOutputFrame,...
   lhand_motion.getOutputFrame,rhand_motion.getOutputFrame,...
 	pelvis_motion.getOutputFrame,torso_motion.getOutputFrame};
 
-options.body_accel_input_weights = [100 100 10 10 100 1];
+options.body_accel_input_weights = [100 100 10 10 100 10];
 qp = QPController(r,motion_frames,ctrl_data,options);
 
 % feedback QP controller with atlas

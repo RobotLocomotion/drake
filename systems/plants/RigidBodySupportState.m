@@ -4,7 +4,8 @@ classdef RigidBodySupportState
 
   properties (SetAccess=protected)
     bodies; % array of supporting body indices
-    contact_pts; % cell array of supporting contact point indices
+    contact_pts; % cell array of vectors of supporting contact point indices
+    contact_groups; % cell array of cell arrays of contact group strings, 1 for each body
     num_contact_pts;  % convenience array containing the desired number of
                       %             contact points for each support body
     contact_surfaces; % int IDs either: 0 (terrain), -1 (any body in bullet collision world)
@@ -12,30 +13,35 @@ classdef RigidBodySupportState
   end
 
   methods
-    function obj = RigidBodySupportState(r,bodies,contact_pts,contact_surfaces)
+    function obj = RigidBodySupportState(r,bodies,contact_groups,contact_surfaces)
       typecheck(r,'Biped');
       typecheck(bodies,'double');
       obj.bodies = bodies(bodies~=0);
 
       obj.num_contact_pts=zeros(length(obj.bodies),1);
+      obj.contact_pts = cell(1,length(obj.bodies));
+      obj.contact_groups = {};
       if nargin>2
-        typecheck(contact_pts,'cell');
-        sizecheck(contact_pts,length(obj.bodies));
+        typecheck(contact_groups,'cell');
+        sizecheck(contact_groups,length(obj.bodies));
         for i=1:length(obj.bodies)
-          % verify that contact point indices are valid
-          terrain_contact_point_struct = getTerrainContactPoints(r,obj.bodies(i));
-          if any(contact_pts{i}>size(terrain_contact_point_struct.pts,2))
-            error('SupportState: contact_pts indices exceed number of contact points');
+          body = r.getBody(bodies(i));
+          body_groups = contact_groups{i};
+          body_points = [];
+          for j=1:length(body_groups)
+            group_pts = body.contact_shape_group{strcmp(body.collision_group_name,body_groups{j})};
+            body_points = [body_points,group_pts];
           end
-          obj.num_contact_pts(i)=length(contact_pts{i});
+          obj.contact_pts{i} = body_points;
+          obj.contact_groups{i} = contact_groups{i};
+          obj.num_contact_pts(i)=length(body_points);
         end
-        obj.contact_pts = contact_pts;
       else
         % use all points on body
-        obj.contact_pts = cell(1,length(obj.bodies));
         for i=1:length(obj.bodies)
           terrain_contact_point_struct = getTerrainContactPoints(r,obj.bodies(i));
           obj.contact_pts{i} = 1:size(terrain_contact_point_struct.pts,2);
+          obj.contact_groups{i} = r.getBody(bodies(i)).collision_group_name;
           obj.num_contact_pts(i)=length(obj.contact_pts{i});
         end
       end
@@ -53,27 +59,6 @@ classdef RigidBodySupportState
       obj.contact_surfaces = contact_surfaces;
     end
 
-    function pts = contactPositions(obj,r,kinsol)
-      pts=[];
-      for i=1:length(obj.bodies)
-        bp = getTerrainContactPoints(r,obj.bodies(i));
-        pts = [pts,forwardKin(r,kinsol,obj.bodies(i),bp.pts(:,obj.contact_pts{i}))];
-      end
-    end
-
-    function obj = removeBody(obj,index_into_bodies_not_body_idx)
-      obj.bodies(index_into_bodies_not_body_idx)=[];
-      obj.contact_pts(index_into_bodies_not_body_idx)=[]; % note: this is correct, even though it's a cell array
-      obj.num_contact_pts(index_into_bodies_not_body_idx)=[];
-      obj.contact_surfaces(index_into_bodies_not_body_idx)=[];
-    end
-
-    function obj = removeBodyIdx(obj,body_idx)
-      ind = find(obj.bodies==body_idx);
-      if ~isempty(idx)
-        obj = removeBody(obj,ind);
-      end
-    end
   end
 
 end
