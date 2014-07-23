@@ -607,6 +607,14 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       num_q = obj.manip.num_q;
     end
 
+    function num_p = getNumPositions(obj)
+      num_p = obj.manip.getNumPositions();
+    end
+
+    function num_v = getNumVelocities(obj)
+      num_v = obj.manip.getNumVelocities();
+    end
+
     function obj = setStateFrame(obj,fr)
       obj = setStateFrame@DrakeSystem(obj,fr);
 
