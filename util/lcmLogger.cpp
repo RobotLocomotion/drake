@@ -2,6 +2,8 @@
 #define S_FUNCTION_LEVEL 2
 #include "simstruc.h"
 
+#include <inttypes.h>
+#include <sys/select.h>
 #include <lcm/lcm.h>
 
 #define UNUSED(x) (void)(x)
@@ -45,12 +47,10 @@ static void message_handler (const lcm_recv_buf_t *rbuf, const char *channel, vo
 #define MDL_START
 static void mdlStart(SimStruct *S)
 {
-  if (lcm)
-    ssSetErrorStatus(S, "LCM already exists. I've assumed that only one of these is used at a time (though it might not be catastrophic if there were more).");
+  if (lcm) ssSetErrorStatus(S, "LCM already exists. I've assumed that only one of these is used at a time (though it might not be catastrophic if there were more).");
 
   lcm = lcm_create(NULL);
-  if (!lcm)
-    ssSetErrorStatus(S, "Failed to create LCM object in lcmLog block.");
+  if (!lcm) ssSetErrorStatus(S, "Failed to create LCM object in lcmLog block.");
   
   char* channel_regex = mxArrayToString(ssGetSFcnParam(S, 0));
   
@@ -60,30 +60,45 @@ static void mdlStart(SimStruct *S)
   mxFree(channel_regex);
 }
 
-#define MDL_UPDATE
-static void mdlUpdate(SimStruct *S, int_T tid)
-{
-  UNUSED(tid);
-  simtime = ssGetT(S);
-  
-  if (lcm)
-    lcm_handle(lcm);
-}
-
 
 #define MDL_OUTPUTS
 static void mdlOutputs(SimStruct *S, int_T tid) 
 {
-  UNUSED(S);
   UNUSED(tid);
+  
+  if (!lcm) ssSetErrorStatus(S, "Invalid LCM object.");
+  
+  simtime = ssGetT(S);
+
+  // setup the LCM file descriptor for waiting.
+  int lcm_fd = lcm_get_fileno(lcm);
+  fd_set fds;
+  FD_ZERO(&fds);
+  FD_SET(lcm_fd, &fds);
+  
+  // wait a limited amount of time for an incoming message
+  struct timeval timeout = {
+    0,  // seconds
+    0   // microseconds
+  };
+  int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
+  
+  if(status!=0 && FD_ISSET(lcm_fd, &fds)) {
+    // LCM has events ready to be processed.
+    mexPrintf("lcm_handle\n");
+
+    lcm_handle(lcm);
+  }
 }
 
 
 static void mdlTerminate(SimStruct *S) 
 {
   UNUSED(S);
-  if (lcm)
-    lcm_destroy(lcm);
+  if (!lcm) ssSetErrorStatus(S, "Invalid LCM object.");
+  
+  lcm_destroy(lcm);
+  lcm = NULL;
   
   char* log_variable_name = mxArrayToString(ssGetSFcnParam(S, 1));
 
@@ -91,7 +106,6 @@ static void mdlTerminate(SimStruct *S)
   // todo: write log to mxArray named in S
   
   mxFree(log_variable_name);
-  
 }
 
 #ifdef MATLAB_MEX_FILE    /* Is this file being compiled as a 
