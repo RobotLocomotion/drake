@@ -6,10 +6,30 @@
 #include <sys/select.h>
 #include <lcm/lcm.h>
 
+#include <string>
+#include <list>
+using namespace std;
+
+
 #define UNUSED(x) (void)(x)
+
+class LCMMessage
+{
+public:
+  double simtime;
+  string channel;
+  char* data = NULL;
+
+  virtual ~LCMMessage(void)
+  {
+    if (!data) delete[] data;
+  }
+};
 
 static double simtime = -1.0;
 static lcm_t* lcm = NULL;
+list<LCMMessage> message_log;
+
 
 #define MDL_INITIAL_SIZES
 static void mdlInitializeSizes(SimStruct *S)
@@ -41,7 +61,16 @@ static void mdlCheckParameters(SimStruct *S)
 
 static void message_handler (const lcm_recv_buf_t *rbuf, const char *channel, void *u)
 {
-  mexPrintf("got message at simtime %f\n",simtime);
+  mexPrintf("simtime %f\t",simtime);
+  mexPrintf("channel %s\n",channel);
+  
+  LCMMessage m;
+  m.simtime = simtime;
+  m.channel = channel;
+  m.data = new char[rbuf->data_size];
+  memcpy(m.data,rbuf->data,rbuf->data_size);
+  
+  message_log.push_back(m);
 }
 
 #define MDL_START
@@ -85,8 +114,6 @@ static void mdlOutputs(SimStruct *S, int_T tid)
   
   if(status!=0 && FD_ISSET(lcm_fd, &fds)) {
     // LCM has events ready to be processed.
-    mexPrintf("lcm_handle\n");
-
     lcm_handle(lcm);
   }
 }
@@ -103,7 +130,13 @@ static void mdlTerminate(SimStruct *S)
   char* log_variable_name = mxArrayToString(ssGetSFcnParam(S, 1));
 
   mexPrintf("Writing LCM log to %s\n",log_variable_name);
-  // todo: write log to mxArray named in S
+
+  for (list<LCMMessage>::iterator iter=message_log.begin(); iter!=message_log.end(); iter++) {
+    mexPrintf("got %s at time %f\n", iter->channel.c_str(), iter->simtime);
+  }
+  
+  // todo: write to variable.  drake mex pointer?
+  message_log.clear();
   
   mxFree(log_variable_name);
 }
