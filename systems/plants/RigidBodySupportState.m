@@ -25,7 +25,7 @@ classdef RigidBodySupportState
         typecheck(contact_groups,'cell');
         sizecheck(contact_groups,length(obj.bodies));
         for i=1:length(obj.bodies)
-          body = r.getBody(bodies(i));
+          body = r.getBody(obj.bodies(i));
           body_groups = contact_groups{i};
           body_points = [];
           for j=1:length(body_groups)
@@ -41,7 +41,7 @@ classdef RigidBodySupportState
         for i=1:length(obj.bodies)
           terrain_contact_point_struct = getTerrainContactPoints(r,obj.bodies(i));
           obj.contact_pts{i} = 1:size(terrain_contact_point_struct.pts,2);
-          obj.contact_groups{i} = r.getBody(bodies(i)).collision_group_name;
+          obj.contact_groups{i} = r.getBody(obj.bodies(i)).collision_group_name;
           obj.num_contact_pts(i)=length(obj.contact_pts{i});
         end
       end
