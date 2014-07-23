@@ -18,11 +18,12 @@ class LCMMessage
 public:
   double simtime;
   string channel;
-  char* data = NULL;
+  mxArray* data = NULL;
 
   virtual ~LCMMessage(void)
   {
-    if (!data) delete[] data;
+    // don't actually free this memory, as I'm going to return it to matlab
+//    if (!data) mxDestroyArray(data);
   }
 };
 
@@ -67,9 +68,12 @@ static void message_handler (const lcm_recv_buf_t *rbuf, const char *channel, vo
   LCMMessage m;
   m.simtime = simtime;
   m.channel = channel;
-  m.data = new char[rbuf->data_size];
-  memcpy(m.data,rbuf->data,rbuf->data_size);
   
+  mwSize size[2] = {static_cast<mwSize>(rbuf->data_size),1};
+  m.data = mxCreateCharArray(2,size);
+  memcpy(mxGetData(m.data),rbuf->data,rbuf->data_size);
+  mexMakeArrayPersistent(m.data);
+          
   message_log.push_back(m);
 }
 
@@ -131,13 +135,21 @@ static void mdlTerminate(SimStruct *S)
 
   mexPrintf("Writing LCM log to %s\n",log_variable_name);
 
+  const char *fieldnames[] = {"simtime", "channel", "data"};
+  
+  mxArray* pData = mxCreateStructMatrix(message_log.size(),1,3,fieldnames);
+
+  int i=0;
   for (list<LCMMessage>::iterator iter=message_log.begin(); iter!=message_log.end(); iter++) {
-    mexPrintf("got %s at time %f\n", iter->channel.c_str(), iter->simtime);
+    mxSetFieldByNumber(pData,i,0,mxCreateDoubleScalar(iter->simtime));
+    mxSetFieldByNumber(pData,i,1,mxCreateString(iter->channel.c_str()));
+    mxSetFieldByNumber(pData,i,2,iter->data);
+    i++;
   }
+
+  mexPutVariable("base",log_variable_name,pData);
   
-  // todo: write to variable.  drake mex pointer?
   message_log.clear();
-  
   mxFree(log_variable_name);
 }
 
