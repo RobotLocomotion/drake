@@ -268,35 +268,41 @@ classdef QPController < MIMODrakeSystem
     % TODO: generalize this again to arbitrary body contacts
     support_bodies = [];
     contact_pts = {};
+    contact_groups = {};
     n_contact_pts = [];
     ind = 1;
     
     supp_idx = find(ctrl_data.support_times<=t,1,'last');
     plan_supp = ctrl_data.supports(supp_idx);
-    
+
+    lfoot_plan_supp_ind = plan_supp.bodies==obj.lfoot_idx;
+    rfoot_plan_supp_ind = plan_supp.bodies==obj.rfoot_idx;
     if fc(1)>0
       support_bodies(ind) = obj.lfoot_idx;
-      contact_pts{ind} = 1:4;%plan_supp.contact_pts{plan_supp.bodies==obj.lfoot_idx};
-      n_contact_pts(ind) = length(contact_pts{ind});
+      contact_pts{ind} = plan_supp.contact_pts{lfoot_plan_supp_ind};
+      contact_groups{ind} = plan_supp.contact_groups{lfoot_plan_supp_ind};
+      n_contact_pts(ind) = plan_supp.num_contact_pts(lfoot_plan_supp_ind);
       ind=ind+1;
     end
     if fc(2)>0
       support_bodies(ind) = obj.rfoot_idx;
-      contact_pts{ind} = 1:4;%plan_supp.contact_pts{plan_supp.bodies==obj.rfoot_idx};
-      n_contact_pts(ind) = length(contact_pts{ind});
+      contact_pts{ind} = plan_supp.contact_pts{rfoot_plan_supp_ind};
+      contact_groups{ind} = plan_supp.contact_groups{rfoot_plan_supp_ind};
+      n_contact_pts(ind) = plan_supp.num_contact_pts(rfoot_plan_supp_ind);
     end
     
-%    supp = SupportState(r,support_bodies,contact_pts);
     supp.bodies = support_bodies;
-    supp.contact_surfaces = 0*support_bodies;
     supp.contact_pts = contact_pts;
+    supp.contact_groups = contact_groups;
     supp.num_contact_pts = n_contact_pts;
+    supp.contact_surfaces = 0*support_bodies;
     
     if (obj.use_mex==0 || obj.use_mex==2)
       kinsol = doKinematics(r,q,false,true,qd);
 
       active_supports = supp.bodies;
       active_contact_pts = supp.contact_pts;
+      active_contact_groups = supp.contact_groups;
       num_active_contacts = supp.num_contact_pts;      
 
       dim = 3; % 3D
@@ -332,15 +338,20 @@ classdef QPController < MIMODrakeSystem
         c_pre = 0;
         Dbar = [];
         for j=1:length(active_supports)
-          [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,'body_idx',[1,active_supports(j)]));
-          Dbar = [Dbar, vertcat(JB{:})'];
+          if (num_active_contacts==2)
+            a=1;
+          end
+          [~,~,JB] = contactConstraintsBV(r,kinsol,false,struct('terrain_only',~obj.use_bullet,...
+            'body_idx',[1,active_supports(j)],'collision_groups',active_contact_groups(j)));
+          Dbar = [Dbar, vertcat(JB{active_contact_pts{j}})']; % because contact constraints seems to ignore the collision_groups option
           c_pre = c_pre + length(active_contact_pts{j});
         end
 
         Dbar_float = Dbar(float_idx,:);
         Dbar_act = Dbar(act_idx,:);
-
-        [~,Jp,Jpdot] = terrainContactPositions(r,kinsol,active_supports,true);
+        
+        terrain_pts = getTerrainContactPoints(r,active_supports,active_contact_groups);
+        [~,Jp,Jpdot] = terrainContactPositions(r,kinsol,terrain_pts,true);
         Jp = sparse(Jp);
         Jpdot = sparse(Jpdot);
 
