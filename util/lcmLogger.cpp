@@ -70,9 +70,6 @@ static void mdlCheckParameters(SimStruct *S)
 
 static void message_handler (const lcm_recv_buf_t *rbuf, const char *channel, void *u)
 {
-  mexPrintf("simtime %f\t",simtime);
-  mexPrintf("channel %s\n",channel);
-  
   LCMMessage m;
   m.simtime = simtime;
   m.channel = channel;
@@ -144,7 +141,7 @@ static void mdlTerminate(SimStruct *S)
   
   char* log_variable_name = mxArrayToString(ssGetSFcnParam(S, 1));
 
-  mexPrintf("Writing LCM log to %s\n",log_variable_name);
+//  mexPrintf("Writing LCM log to %s\n",log_variable_name);
 
   const char *fieldnames[] = {"simtime", "channel", "data"};
   

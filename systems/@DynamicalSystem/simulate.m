@@ -1,4 +1,4 @@
-function [ytraj,xtraj] = simulate(obj,tspan,x0,options)
+function [ytraj,xtraj,lcmlog] = simulate(obj,tspan,x0,options)
 % Simulates the dynamical system (using the simulink solvers)
 %
 % @param tspan a 1x2 vector of the form [t0 tf]
@@ -27,8 +27,10 @@ if (strcmp(get_param(mdl,'SimulationStatus'),'paused'))
 end
 
 % add realtime block
-if isfield(options,'capture_lcm_channels') && ~isempty(options.capture_lcm_channels)
-  add_block('drake/lcmLogger',[mdl,'/lcmLogger']);%,'channel_regex','''mychannel''','log_to_workspace_variable',['''',mdl,'_lcm_log''']);
+lcmlog = []; log_name=[];
+if isfield(options,'capture_lcm_channels') && ~isempty(options.capture_lcm_channels) && nargout>2
+  log_name = [mdl,'_lcm_log'];
+  add_block('drake/lcmLogger',[mdl,'/lcmLogger'],'channel_regex',['''',options.capture_lcm_channels,''''],'log_to_workspace_variable',['''',log_name,'''']);
 end
 
 pstruct = obj.simulink_params;
@@ -197,6 +199,12 @@ if (nargout>0)
       end
     end
   end
+  
+  if nargout>2 && ~isempty(log_name)
+    lcmlog = evalin('base',log_name);
+    evalin('base',['clear ',log_name]);
+  end
+    
 else
   sim(mdl,pstruct);
 end
