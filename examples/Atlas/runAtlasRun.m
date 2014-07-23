@@ -150,10 +150,10 @@ ctrl_data = QPControllerData(true,struct(...
   'constrained_dofs',[]));
 
 % instantiate QP controller
-options.slack_limit = 100;
+options.slack_limit = 1000;
 options.w_qdd = 0.1*ones(nq,1);
 options.w_grf = 0;
-options.w_slack = 5;
+options.w_slack = 3;
 options.debug = false;
 options.use_mex = use_mex;
 options.contact_threshold = 0.0005;
