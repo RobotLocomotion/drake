@@ -331,7 +331,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   //----------------------------------------------------------------------
   // QP cost function ----------------------------------------------------
   //
-  //  min: quad(Jdot*qd + J*qdd,R_ls)+quad(C*x+D*(Jdot*qd + J*qdd),Qy) + (2*x'*S + s1')*(A*x + B*(Jdot*qd + J*qdd)) + w*quad(qddot_ref - qdd) + quad(u,R) + quad(epsilon)
+  //  min: ybar*Qy*ybar + ubar*R*ubar + (2*S*xbar + s1)*(A*x + B*u) +
+  //    w_qdd*quad(qddot_ref - qdd) + w_eps*quad(epsilon) +
+  //    w_grf*quad(beta) + quad(kdot_des - (A*qdd + Adot*qd))  
   VectorXd f(nparams);
   {      
     if (nc > 0) {
