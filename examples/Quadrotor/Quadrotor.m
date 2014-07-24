@@ -123,11 +123,13 @@ classdef Quadrotor < RigidBodyManipulator
       
       sys = cascade(ConstantTrajectory(u0),sys);
 
-      sys = cascade(sys,v);
-      simulate(sys,[0 2],double(x0)+.1*randn(12,1));
+%      sys = cascade(sys,v);
+%      simulate(sys,[0 2],double(x0)+.1*randn(12,1));
       
-%      [ytraj,xtraj] = simulate(sys,[0 2],double(x0)+.1*randn(12,1));
-%      v.playback(xtraj);
+      options.capture_lcm_channels = 'LCMGL';
+      [ytraj,xtraj,lcmlog] = simulate(sys,[0 2],double(x0)+.1*randn(12,1),options);
+      lcmlog
+      v.playback(xtraj,struct('lcmlog',lcmlog));
 %      figure(1); clf; fnplt(ytraj);
     end
   end
