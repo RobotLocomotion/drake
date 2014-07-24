@@ -132,7 +132,7 @@ classdef RigidBodyManipulator < Manipulator
         geom = obj.terrain.getRigidBodyGeometry();
         if ~isempty(geom)
           if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
-            obj.body(1).contact_shapes{end+1} = geom;
+            obj = obj.addContactShapeToBody(1,geom,'terrain');
           end
           if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
             obj.body(1).visual_shapes{end+1} = geom;
@@ -931,16 +931,19 @@ classdef RigidBodyManipulator < Manipulator
       end
     end
 
-    function obj = addContactShapeToBody(obj,body_id,shape)
-      % obj = addContactShapeToBody(obj,body_id,shape)
+    function obj = addContactShapeToBody(obj,body_id,shape,varargin)
+      % obj = addContactShapeToBody(obj,body_id,shape,group_name)
       %
       % obj must be re-compiled after calling this method
       %
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
       % @param shape - RigidBodyGeometry (or child class) object 
+      % @param group_name - String containing the name of the collision group
+      %   (optional) @default 'default'
+
       body_idx = obj.parseBodyID(body_id);
-      obj.body(body_idx).contact_shapes{end+1} = shape;
+      obj.body(body_idx) = obj.body(body_idx).addContactShape(shape, varargin{:});
       obj.dirty = true;
     end
 
@@ -954,14 +957,16 @@ classdef RigidBodyManipulator < Manipulator
       obj.body(body_idx).visual_shapes{end+1} = shape;
     end
 
-    function obj = addShapeToBody(obj,body_id,shape)
+    function obj = addShapeToBody(obj,body_id,shape,varargin)
       % obj = addShapeToBody(obj,body_id,shape)
       %
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
       % @param shape - RigidBodyGeometry (or child class) object 
+      % @param group_name - String containing the name of the collision group
+      %   (optional) @default 'default'
       obj = obj.addVisualShapeToBody(body_id,shape);
-      obj = obj.addContactShapeToBody(body_id,shape);
+      obj = obj.addContactShapeToBody(body_id,shape,varargin{:});
     end
 
     function model = replaceContactShapesWithCHull(model,body_indices,varargin)
