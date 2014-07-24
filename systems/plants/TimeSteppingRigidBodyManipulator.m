@@ -518,9 +518,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
           % for all j, dMbar/da_j * zbar + Mbar * dzbar / da_j + dqbar / da_j = 0
           % or
           %
-          % dzbar / da_j =  - inv(Mbar)*(dMbar/da_j * zbar + dqbar / da_j)
+          % dzbar / da_j =  -pinv(Mbar)*(dMbar/da_j * zbar + dqbar / da_j)
           %
-          % I'm pretty sure that Mbar will always be invertible when the LCP is solvable.
+          % Note that there may be multiple solutions to the above equation
+          %    so we use the pseudoinverse to select the min norm solution
 
           dz = zeros(size(z,1),1+obj.num_x+obj.num_u);
           zposind = find(z>0);
@@ -529,7 +530,7 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
             dMbar = reshape(dM(zposind,zposind,:),numel(Mbar),[]);
             zbar = z(zposind);
             dwbar = dw(zposind,:);
-            dz(zposind,:) = -Mbar\(matGradMult(dMbar,zbar) + dwbar);
+            dz(zposind,:) = -pinv(Mbar)*(matGradMult(dMbar,zbar) + dwbar);
           end
           obj.LCP_cache.dz = dz;
           obj.LCP_cache.dMqdn = dMqdn;
@@ -605,6 +606,14 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
 
     function num_q = getNumDOF(obj)
       num_q = obj.manip.num_q;
+    end
+
+    function num_p = getNumPositions(obj)
+      num_p = obj.manip.getNumPositions();
+    end
+
+    function num_v = getNumVelocities(obj)
+      num_v = obj.manip.getNumVelocities();
     end
 
     function obj = setStateFrame(obj,fr)

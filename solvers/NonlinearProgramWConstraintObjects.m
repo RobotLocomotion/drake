@@ -3,9 +3,9 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
   % drake
   %
   % Generally speaking, this class manages the association between
-  % DifferentiableConstraint objects and NonlinearPrograms. With the goal
+  % Constraint objects and NonlinearPrograms. With the goal
   % of improved performance by avoiding redundant calculations, the
-  % DifferentiableConstraint eval function is assumed to be of the form
+  % Constraint eval function is assumed to be of the form
   % eval(args{:},data{:}) where args are the standard, numerical valued
   % arguments that are a subset of the NLP decision variables. data is a
   % reference to shared data objects that are pre-computed once per
@@ -133,20 +133,34 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     end
     
     function obj = addConstraint(obj,cnstr,varargin)
-      if isa(cnstr,'BoundingBoxConstraint')
+      % obj = addConstraint(obj,cnstr,varargin)
+      % Queries the constraint type and calls the appropriate addConstraint
+      % method (e.g. addLinearConstraint, etc)
+      %
+      % @param cnstr a Constraint object.  if cnstr is a cell array, then
+      % each of the constraints are added individually.
+      % @param varargin the remaining arguments are passed directly through
+      % to the specialized methods. Note that if cnstr is a cell array,
+      % then the same varargin is passed to all of the specialized methods.
+      
+      if iscell(cnstr)
+        for i=1:numel(cnstr)
+          obj = addConstraint(obj,cnstr{i},varargin);
+        end
+      elseif isa(cnstr,'BoundingBoxConstraint')
         obj = addBoundingBoxConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'LinearConstraint')
         obj = addLinearConstraint(obj,cnstr,varargin{:});
-      elseif isa(cnstr,'DifferentiableConstraint')
-        obj = addDifferentiableConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'CompositeConstraint')
         obj = addCompositeConstraints(obj,cnstr,varargin{:});
+      elseif isa(cnstr,'Constraint')
+        obj = addNonlinearConstraint(obj,cnstr,varargin{:});
       else
         error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','Unsupported constraint type');
       end
     end
     
-    function obj = addDifferentiableConstraint(obj,cnstr,xind, data_ind)
+    function obj = addNonlinearConstraint(obj,cnstr,xind, data_ind)
       % add a NonlinearConstraint to the object, change the constraint evalation of the
       % program. 
       % @param cnstr     -- A NonlinearConstraint object
@@ -173,8 +187,8 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       end
       data_ind = data_ind(:);
       
-      if(~isa(cnstr,'DifferentiableConstraint'))
-        error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','addNonlinearConstraint expects a DifferentiableConstraint object');
+      if(~isa(cnstr,'Constraint'))
+        error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','addNonlinearConstraint expects a Constraint object');
       end
       if length(xind_vec) ~= cnstr.xdim
         error('Drake:NonlinearProgramWConstraintObjects:InvalidArgument','the length of xind must match the x-dimension of the constraint');
@@ -282,8 +296,8 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         data_ind = [];
       end
       data_ind = data_ind(:);
-      if ~isa(cnstr,'DifferentiableConstraint')
-        error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addCost expects a DifferentiableConstraint object');
+      if ~isa(cnstr,'Constraint')
+        error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addCost expects a Constraint object');
       end
       
       if(isa(cnstr,'LinearConstraint'))
@@ -342,6 +356,11 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
      
     function [f,df] = objective(obj,x)
       shared_data = obj.evaluateSharedDataFunctions(x);
+
+      for i=1:length(obj.display_funs)
+        obj.display_funs{i}(x(obj.display_fun_indices{i}));
+      end
+      
       f = 0;
       df = zeros(1,obj.num_vars);
       for i = 1:length(obj.cost)
@@ -354,6 +373,11 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     
     function [f,G] = objectiveAndNonlinearConstraints(obj,x)
       shared_data = obj.evaluateSharedDataFunctions(x);
+      
+      for i=1:length(obj.display_funs)
+        obj.display_funs{i}(x(obj.display_fun_indices{i}));
+      end
+      
       f = zeros(1+obj.num_nlcon,1);
       G = zeros(1+obj.num_nlcon,obj.num_vars);
       for i = 1:length(obj.cost)

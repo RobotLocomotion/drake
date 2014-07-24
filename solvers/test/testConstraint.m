@@ -42,7 +42,7 @@ x5 = randn(4,1);
 [c5,dc5,ddc5] = cnstr5.eval(x5);
 valuecheck(A*x5,c5);
 valuecheck(dc5,A);
-valuecheck(ddc5,zeros(12,4));
+valuecheck(ddc5,zeros(3,16));
 valuecheck(cnstr5.ceq_idx,[1;3]);
 valuecheck(cnstr5.cin_idx,2);
 

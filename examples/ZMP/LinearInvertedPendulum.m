@@ -22,7 +22,7 @@ classdef LinearInvertedPendulum < LinearSystem
         D = [zeros(4,2);Dzmp];
       elseif(isa(h,'PPTrajectory'))
         Czmp = [eye(2),zeros(2)];
-        C = [eye(4);Czmp]
+        C = [eye(4);Czmp];
         h_breaks = h.getBreaks;
         ddh = fnder(h,2);
         Dzmp_val = -h.eval(h_breaks)./(g+ddh.eval(h_breaks));
