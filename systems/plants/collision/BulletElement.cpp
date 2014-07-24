@@ -9,11 +9,9 @@ using namespace Eigen;
 namespace DrakeCollision
 {
   BulletElement::BulletElement(const Matrix4d& T_elem_to_link, Shape shape, 
-                                const vector<double>& params,
-                                const string& group_name)
+                                const vector<double>& params)
     : T_elem_to_link(T_elem_to_link),shape(shape)
   {
-    setGroupName(group_name);
     //DEBUG
     //std::cout << "BulletElement::BulletElement: START" << std::endl;
     //END_DEBUG
@@ -140,15 +138,5 @@ namespace DrakeCollision
     btT.setOrigin(pos);
 
     bt_obj->setWorldTransform(btT);
-  }
-
-  const string& BulletElement::getGroupName() const
-  {
-    return group_name;
-  }
-
-  void BulletElement::setGroupName(const string& group_name)
-  {
-    this->group_name = group_name;
   }
 }
