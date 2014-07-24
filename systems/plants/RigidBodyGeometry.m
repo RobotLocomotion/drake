@@ -172,6 +172,5 @@ classdef RigidBodyGeometry
                  
     c = [.7 .7 .7];  % 3x1 color
     bullet_shape_id = 0;  % UNKNOWN
-    name % String identifier
   end
 end

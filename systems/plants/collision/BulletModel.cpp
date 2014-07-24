@@ -52,14 +52,13 @@ namespace DrakeCollision
 
   void BulletModel::addElement(const int body_idx, const int parent_idx, 
                                 const Matrix4d& T_element_to_link, Shape shape, 
-                                const vector<double>& params, 
-                                const string& group_name, bool is_static)
+                                const vector<double>& params, bool is_static)
   {
     //DEBUG
     //cout << "BulletModel::addElement: START" << endl;
     //END_DEBUG
     try {
-      bodies[body_idx].addElement(body_idx, parent_idx, T_element_to_link, shape, params, group_name );
+      bodies[body_idx].addElement(body_idx, parent_idx, T_element_to_link, shape, params );
       
       const BulletElement& elem = bodies.at(body_idx).back();
       element_data.push_back(unique_ptr<ElementData>(new ElementData(body_idx,elem.getShape())));
@@ -114,7 +113,6 @@ namespace DrakeCollision
                                                  const int bodyB_idx,
                                                  const BulletElement& elemA, 
                                                  const BulletElement& elemB, 
-                                                 const set<string>& active_element_groups,
                                                  const ResultCollShPtr& c) 
   {
     //DEBUG
@@ -222,7 +220,7 @@ namespace DrakeCollision
     auto bt_c = static_pointer_cast<BulletResultCollector>(c);
     bt_c->setBodyIdx(bodyA_idx, bodyB_idx);
     bt_collision_world->contactPairTest(elemA.bt_obj.get(),elemB.bt_obj.get(),
-        *bt_c->getBtPtr());
+                                        *bt_c->getBtPtr());
 
     return (c->pts.size() > 0);
   }
@@ -329,7 +327,7 @@ namespace DrakeCollision
     //try {
     //END_DEBUG
     ResultCollShPtr c(new MinDistResultCollector());
-    findClosestPointsBtwBodies(bodyA_idx,bodyB_idx,elementGroupNames(),c);
+    findClosestPointsBtwBodies(bodyA_idx,bodyB_idx,c);
     c->pts.at(0).getResults(ptA, ptB, normal, distance);
     return (c->pts.size() > 0);
     //DEBUG
@@ -345,8 +343,7 @@ namespace DrakeCollision
           MatrixXd& ptsA, MatrixXd& ptsB,
           MatrixXd& normal,
           VectorXd& distance,
-          const std::vector<int>& bodies_idx,
-          const std::set<std::string>& active_element_groups)
+          std::vector<int>& bodies_idx)
   {
     bool has_result=false;
     //DEBUG
@@ -354,6 +351,11 @@ namespace DrakeCollision
     //END_DEBUG
     //ResultCollector c;
     ResultCollShPtr c = std::make_shared<ResultCollector>();
+    if (bodies_idx.size() == 0) {
+      for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+        bodies_idx.push_back(it->first);
+      }
+    }
     //DEBUG
     //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
     //std::cout << "Num active bodies: " << bodies_idx.size() << std::endl;
@@ -387,7 +389,7 @@ namespace DrakeCollision
               //std::cout << "ModelTemplate::closestPointsAllBodies: Body B: " << bodyB.getBodyIdx() << std::endl;
               //END_DEBUG
               has_result = findClosestPointsBtwBodies(bodyA.getBodyIdx(),
-                      bodyB.getBodyIdx(), active_element_groups,
+                      bodyB.getBodyIdx(),
                       c);
             }
           }
@@ -457,14 +459,5 @@ namespace DrakeCollision
     }   
     c.getResults(bodyA_idx,bodyB_idx,ptsA,ptsB,normals,distance);
     return c.pts.size() > 0;
-  }
-
-  const vector<int> BulletModel::bodyIndices() const
-  {
-    std::vector<int> bodies_idx;
-    for (auto it = bodies.begin(); it != bodies.end(); ++it) {
-      bodies_idx.push_back(it->first);
-    }
-    return bodies_idx;
   }
 }
