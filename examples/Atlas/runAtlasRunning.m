@@ -1,4 +1,4 @@
-function runAtlasRun(use_mex,use_angular_momentum)
+function runAtlasRunning(use_mex,use_angular_momentum)
 
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
