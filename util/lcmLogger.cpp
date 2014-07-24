@@ -56,7 +56,7 @@ static void mdlInitializeSizes(SimStruct *S)
 #define MDL_INITIALIZE_SAMPLE_TIMES
 static void mdlInitializeSampleTimes(SimStruct *S)
 {
-  ssSetSampleTime(S, 0, mxGetScalar(ssGetSFcnParam(S, 0)));
+  ssSetSampleTime(S, 0, 0);
 }
 
 #define MDL_CHECK_PARAMETERS
@@ -88,23 +88,20 @@ static void mdlStart(SimStruct *S)
   if (lcm) ssSetErrorStatus(S, "LCM already exists. I've assumed that only one of these is used at a time (though it might not be catastrophic if there were more).");
 
   lcm = lcm_create(NULL);
-  if (!lcm) ssSetErrorStatus(S, "Failed to create LCM object in lcmLog block.");
+  if (!lcm) ssSetErrorStatus(S, "Failed to create LCM object in lcmLogger s-function.");
   
   char* channel_regex = mxArrayToString(ssGetSFcnParam(S, 0));
-  
-  mexPrintf("Logging LCM channels '%s'\n",channel_regex);
   lcm_subscribe(lcm, channel_regex, message_handler, NULL);
-
+  
   mxFree(channel_regex);
+
 }
 
 
-#define MDL_OUTPUTS
-static void mdlOutputs(SimStruct *S, int_T tid) 
+#define MDL_UPDATE
+static void mdlUpdate(SimStruct *S, int_T tid)
 {
   UNUSED(tid);
-  
-  if (!lcm) ssSetErrorStatus(S, "Invalid LCM object.");
   
   simtime = ssGetT(S);
   
@@ -122,13 +119,23 @@ static void mdlOutputs(SimStruct *S, int_T tid)
     };
     int status = select(lcm_fd + 1, &fds, 0, 0, &timeout);
     
-    if(status!=0 && FD_ISSET(lcm_fd, &fds)) {
+    if(status==0) {
+      break; // no messages
+    } else if(FD_ISSET(lcm_fd, &fds)) {
       // LCM has events ready to be processed.
       lcm_handle(lcm);
-    } else { break; }
+    }
   }
   
 }
+
+#define MDL_OUTPUTS
+static void mdlOutputs(SimStruct *S, int_T tid) 
+{
+  UNUSED(S);
+  UNUSED(tid);
+}
+
 
 
 static void mdlTerminate(SimStruct *S) 

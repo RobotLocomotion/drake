@@ -75,7 +75,7 @@ classdef Visualizer < DrakeSystem
       if nargin < 3, options = struct(); end
       defaultOptions.slider = false;
       defaultOptions.lcmlog = [];
-      options = parseOptions(options,defaultOptions);
+      options = applyDefaults(options,defaultOptions);
 
       f = sfigure(89);
       set(f, 'Visible', 'off');
@@ -124,7 +124,12 @@ classdef Visualizer < DrakeSystem
         set(time_display, 'String', sprintf(time_format, t));
         obj.drawWrapper(t, xtraj.eval(t));
         if ~isempty(options.lcmlog)
-          publishLCMLog(options.lcmlog(options.lcmlog.simtime>last_display_time && options.lcmlog.simtime<=t));
+          % note: could make this faster by not checking the times which I
+          % know have passed
+          topublish = options.lcmlog([options.lcmlog.simtime]>last_display_time & [options.lcmlog.simtime]<=t);
+          if ~isempty(topublish)
+            publishLCMLog(topublish);
+          end
         end
         last_display_time = t;
       end

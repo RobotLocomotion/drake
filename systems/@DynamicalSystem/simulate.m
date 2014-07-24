@@ -31,6 +31,7 @@ lcmlog = []; log_name=[];
 if isfield(options,'capture_lcm_channels') && ~isempty(options.capture_lcm_channels) && nargout>2
   log_name = [mdl,'_lcm_log'];
   add_block('drake/lcmLogger',[mdl,'/lcmLogger'],'channel_regex',['''',options.capture_lcm_channels,''''],'log_to_workspace_variable',['''',log_name,'''']);
+  fprintf(1,'Logging LCM channels ''%s''\n', options.capture_lcm_channels);
 end
 
 pstruct = obj.simulink_params;
@@ -51,7 +52,7 @@ if (nargin>2 && ~isempty(x0)) % handle initial conditions
     typecheck(x0,'double');
     sizecheck(x0,[obj.getStateFrame.dim,1]);
   end
-  x0 = obj.stateVectorToStructure(x0);
+  x0 = stateVectorToStructure(obj,x0,mdl);
   assignin('base',[mdl,'_x0'],x0);
   pstruct.InitialState = [mdl,'_x0'];
   pstruct.LoadInitialState = 'on';
