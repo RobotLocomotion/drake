@@ -4,7 +4,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include <set>
-#include <vector>
+#include <Eigen/StdVector>
 
 class IndexRange {
  public:

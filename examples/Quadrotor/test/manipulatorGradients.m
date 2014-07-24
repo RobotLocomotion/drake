@@ -3,13 +3,12 @@ function manipulatorGradients
 
 w = warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
-p = RigidBodyManipulator('../Quadrotor.urdf',struct('floating',true));
+p = RigidBodyManipulator('../quadrotor.urdf',struct('floating',true));
 warning(w);
-q = randn(p.getNumPositions,1);
-v = randn(p.getNumPositions,1);
 
-% NOTEST: user gradients aren't actually implemented yet for
-% RigidBodyThrust
+for i=1:20
+q = randn(p.getNumPositions,1);
+v = randn(p.getNumVelocities,1);
 
 [H_tv,C_tv,B_tv,dH_tv,dC_tv,dB_tv] = geval(3,@p.manipulatorDynamics,q,v,struct('grad_method','taylorvar'));
 [H_mat,C_mat,B_mat,dH_mat,dC_mat,dB_mat] = p.manipulatorDynamics(q,v,false);
@@ -27,5 +26,8 @@ valuecheck(dH_mex,dH_tv);
 valuecheck(dC_mex,dC_tv);
 valuecheck(dB_mex,dB_tv);
 
+options.grad_method = {'user','taylorvar'};
+[f,df] = geval(@p.dynamics,0,[q;v],randn(4,1),options);
+end
 
 end

@@ -46,4 +46,4 @@ function [h,dh] = finalcost(t,x)
     dh = [1,zeros(1,size(x,1))];
 end
 
-
+% TIMEOUT 1500

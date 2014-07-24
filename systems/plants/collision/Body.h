@@ -1,18 +1,15 @@
 #ifndef __DrakeCollisionBody_H__
 #define __DrakeCollisionBody_H__
 
-#include "DrakeCollision.h"
-
 namespace DrakeCollision
 {
-  template<typename ElementT>
   class Body {
     public:
       Body() : body_idx(-1), parent_idx(-1), group(DEFAULT_GROUP), 
       mask(ALL_MASK), elements() {};
 
       void addElement(const int body_idx, const int parent_idx, 
-                      const Matrix4d& T_elem_to_link, Shape shape, 
+                      const Eigen::Matrix4d& T_elem_to_link, Shape shape, 
                       const std::vector<double>& params)
       {
         //DEBUG
@@ -59,19 +56,21 @@ namespace DrakeCollision
         }
       };
 
-      const ElementT& operator[] (const int elem_idx) const 
+      const BulletElement& operator[] (const int elem_idx) const 
       { 
         return elements[elem_idx];
       };
 
-      const ElementT& at(const int elem_idx) const 
+      const BulletElement& at(const int elem_idx) const 
       { 
         return elements.at(elem_idx); 
       };
 
-      const ElementT& back() const { return elements.back(); };
+      const BulletElement& back() const { return elements.back(); };
 
       int getBodyIdx() const { return body_idx; };
+
+      void setBodyIdx(const int body_idx) { this->body_idx = body_idx; };
 
       int getParentIdx() const { return parent_idx; };
 
@@ -83,7 +82,7 @@ namespace DrakeCollision
 
       void setMask(const bitmask& mask) { this->mask = mask; };
 
-      const std::vector<ElementT>& getElements() const { return elements; };
+      const std::vector<BulletElement>& getElements() const { return elements; };
 
       void addToGroup(const bitmask& group) { this->group |= group; }; 
 
@@ -91,20 +90,20 @@ namespace DrakeCollision
 
       void collideWithGroup(const bitmask& group) { this->mask |= group; };
 
-      void updateElements(const Matrix4d& T_link_to_world)
+      void updateElements(const Eigen::Matrix4d& T_link_to_world)
       {
         for (auto elem : elements) {
           elem.updateWorldTransform(T_link_to_world);
         }
       };
 
-      bool adjacentTo(const Body<ElementT>& other) const
+      bool adjacentTo(const Body& other) const
       {
         return (body_idx == other.getParentIdx()) || 
                (parent_idx == other.getBodyIdx());
       };
 
-      bool collidesWith(const Body<ElementT>& other) const
+      bool collidesWith(const Body& other) const
       {
         return  ( !adjacentTo(other) || (body_idx == 0) || (other.getBodyIdx() == 0) ) &&
                 (body_idx != other.getBodyIdx()) && 
@@ -117,7 +116,7 @@ namespace DrakeCollision
       int parent_idx;
       bitmask group;
       bitmask  mask;
-      std::vector<ElementT> elements;
+      std::vector<BulletElement> elements;
   };
 }
 #endif

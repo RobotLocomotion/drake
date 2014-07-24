@@ -146,7 +146,7 @@ display('The infeasible constraints returned from IKtraj is');
 display(infeasible_constraint);
 
 % x0 = [q_seed_traj.eval(t(1));q_seed_traj.deriv(t(1))];
-% ikproblem = InverseKinTraj(r,t,q_nom_traj,ikoptions.fixInitialState,x0,kc_err,kc2{:},kc3,kc4,kc5,pc_knee,qsc);
+% ikproblem = InverseKinematicsTrajectory(r,t,q_nom_traj,ikoptions.fixInitialState,x0,kc_err,kc2{:},kc3,kc4,kc5,pc_knee,qsc);
 % ikproblem = ikproblem.addBoundingBoxConstraint(BoundingBoxConstraint(ikoptions.qdf_lb,ikoptions.qdf_ub),ikproblem.qdf_idx);
 % ikproblem = ikproblem.setSolverOptions('snopt','MajorIterationsLimit',ikoptions.SNOPT_MajorIterationsLimit);
 % ikproblem = ikproblem.setSolverOptions('snopt','IterationsLimit',ikoptions.SNOPT_IterationsLimit);
@@ -271,13 +271,13 @@ q_sol = x_sol(1:r.getNumDOF,:);
 testConstraint(r,t,q_sol,ikoptions.fixInitialState,varargin{1:end-1});
 tic
 x0 = [q_seed.eval(t(1));q_seed.deriv(t(1))];
-ikproblem = InverseKinTraj(r,t,q_nom,ikoptions.fixInitialState,x0,varargin{1:end-1});
+ikproblem = InverseKinematicsTrajectory(r,t,q_nom,ikoptions.fixInitialState,x0,varargin{1:end-1});
 ikproblem = ikproblem.addBoundingBoxConstraint(BoundingBoxConstraint(ikoptions.qdf_lb,ikoptions.qdf_ub),ikproblem.qdf_idx);
 ikproblem = ikproblem.setSolverOptions('snopt','MajorIterationsLimit',ikoptions.SNOPT_MajorIterationsLimit);
 % ikproblem = ikproblem.setSolverOptions('snopt','print','iktraj.out');
 [xtraj,F,info,infeasible_constraint] = ikproblem.solve(q_seed);
 if(info>10)
-  error('SNOPT info is %d, InverseKinTraj fails to solve the problem',info);
+  error('SNOPT info is %d, InverseKinematicsTrajectory fails to solve the problem',info);
 end
 toc
 x_sol = xtraj.eval(t);
@@ -330,7 +330,7 @@ for i = 1:nargin-4
     for j = t_start_idx:nT
       if(varargin{i}.isTimeValid(t(j)))
         [lb,ub] = varargin{i}.bounds(t(j));
-        if(any(q_sol(:,j)>ub) || any(q_sol(:,j)<lb))
+        if(any(q_sol(:,j)>ub+1e-10) || any(q_sol(:,j)<lb-1e-10))
           error('solution does not satisfy the PostureConstraint');
         end
       end

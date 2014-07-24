@@ -2331,6 +2331,154 @@ void AllBodiesClosestDistanceConstraint::name(const double* t, std::vector<std::
   }
 }
 
+MinDistanceConstraint::MinDistanceConstraint( RigidBodyManipulator* model, double min_distance, Vector2d tspan)
+  : SingleTimeKinematicConstraint(model, tspan), min_distance(min_distance)
+{
+  this->num_constraint = 1;
+  this->type = RigidBodyConstraint::MinDistanceConstraintType;
+};
+
+void 
+MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
+{
+  //DEBUG
+  //std::cout << "MinDistanceConstraint::eval: START" << std::endl;
+  //END_DEBUG
+  VectorXd dist, scaled_dist, pairwise_costs;
+  MatrixXd xA, xB, normal, ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
+  std::vector<int> idxA; 
+  std::vector<int> idxB;
+  std::vector<int> bodies_idx; // empty vector -> all bodies
+
+  robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,bodies_idx);
+
+  int num_pts = xA.cols();
+  ddist_dq = MatrixXd::Zero(num_pts,robot->num_dof);
+
+  // Compute Jacobian of closest distance vector
+  //DEBUG
+  //std:: cout << "IntegratedClosestDistanceConstraint::eval_valid: Compute distance Jacobian" << std::endl;
+  //END_DEBUG
+  scaleDistance(dist,scaled_dist,dscaled_dist_ddist);
+  penalty(scaled_dist, pairwise_costs, dpairwise_costs_dscaled_dist);
+
+  std::vector< std::vector<int> > orig_idx_of_pt_on_bodyA(robot->num_bodies);
+  std::vector< std::vector<int> > orig_idx_of_pt_on_bodyB(robot->num_bodies);
+  for (int k = 0; k < num_pts; ++k) {
+    //DEBUG
+    //std::cout << "MinDistanceConstraint::eval: First loop: " << k << std::endl;
+    //std::cout << "pairwise_costs.size() = " << pairwise_costs.size() << std::endl;
+    //std::cout << "pairwise_costs.size() = " << pairwise_costs.size() << std::endl;
+    //END_DEBUG
+    if (pairwise_costs(k) > 0) {
+      orig_idx_of_pt_on_bodyA.at(idxA.at(k)).push_back(k);
+      orig_idx_of_pt_on_bodyB.at(idxB.at(k)).push_back(k);
+    }
+  }
+  for (int k = 0; k < robot->num_bodies; ++k) {
+    //DEBUG
+    //std::cout << "MinDistanceConstraint::eval: Second loop: " << k << std::endl;
+    //END_DEBUG
+    int l = 0;
+    int numA = orig_idx_of_pt_on_bodyA.at(k).size();
+    int numB = orig_idx_of_pt_on_bodyB.at(k).size();
+    MatrixXd x_k(3, numA + numB);
+    for (; l < numA; ++l) {
+      //DEBUG
+      //std::cout << "MinDistanceConstraint::eval: Third loop: " << l << std::endl;
+      //END_DEBUG
+      x_k.col(l) = xA.col(orig_idx_of_pt_on_bodyA.at(k).at(l));
+    }
+    for (; l < numA + numB; ++l) {
+      //DEBUG
+      //std::cout << "MinDistanceConstraint::eval: Fourth loop: " << l << std::endl;
+      //END_DEBUG
+      x_k.col(l) = xB.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA));
+    }
+    MatrixXd x_k_1(4,x_k.cols());
+    MatrixXd J_k(3*x_k.cols(),robot->num_dof);
+    x_k_1 << x_k, MatrixXd::Ones(1,x_k.cols());
+    robot->forwardJac(k,x_k_1,0,J_k);
+    l = 0;
+    for (; l < numA; ++l) {
+      //DEBUG
+      //std::cout << "MinDistanceConstraint::eval: Fifth loop: " << l << std::endl;
+      //END_DEBUG
+      ddist_dq.row(orig_idx_of_pt_on_bodyA.at(k).at(l)) += normal.col(orig_idx_of_pt_on_bodyA.at(k).at(l)).transpose() * J_k.block(3*l,0,3,robot->num_dof);
+    }
+    for (; l < numA+numB; ++l) {
+      //DEBUG
+      //std::cout << "MinDistanceConstraint::eval: Sixth loop: " << l << std::endl;
+      //END_DEBUG
+      ddist_dq.row(orig_idx_of_pt_on_bodyB.at(k).at(l-numA)) += -normal.col(orig_idx_of_pt_on_bodyB.at(k).at(l-numA)).transpose() * J_k.block(3*l,0,3,robot->num_dof);
+    }
+  }
+  //DEBUG
+  //std::cout << "MinDistanceConstraint::eval: Set outputs" << std::endl;
+  //END_DEBUG
+  MatrixXd dcost_dscaled_dist(dpairwise_costs_dscaled_dist.colwise().sum());
+  c(0) = pairwise_costs.sum();
+  dc = dcost_dscaled_dist*dscaled_dist_ddist*ddist_dq;
+  //DEBUG
+  //std::cout << "MinDistanceConstraint::eval: END" << std::endl;
+  //END_DEBUG
+};
+
+void MinDistanceConstraint::scaleDistance(const Eigen::VectorXd &dist, Eigen::VectorXd &scaled_dist, Eigen::MatrixXd &dscaled_dist_ddist) const
+{
+  int nd = dist.size();
+  double recip_min_dist = 1/this->min_distance;
+  scaled_dist = recip_min_dist*dist - VectorXd::Ones(nd,1);
+  dscaled_dist_ddist = recip_min_dist*MatrixXd::Identity(nd,nd);
+}
+
+void MinDistanceConstraint::penalty(const Eigen::VectorXd &dist, Eigen::VectorXd &cost, Eigen::MatrixXd &dcost_ddist) const
+{
+  int nd = dist.size();
+  cost = VectorXd::Zero(nd,1);
+  dcost_ddist = MatrixXd::Zero(nd,nd);
+  for (int i = 0; i < nd; ++i) {
+    if (dist(i) < 0) {
+      double exp_recip_dist = exp(1/dist(i));
+      cost(i) = -dist(i)*exp_recip_dist;
+      dcost_ddist(i,i) = exp_recip_dist*(1/dist(i) - 1);
+    }
+  }
+}
+
+void MinDistanceConstraint::bounds(const double* t, VectorXd& lb, VectorXd& ub) const
+{
+  lb.resize(this->num_constraint);
+  ub.resize(this->num_constraint);
+  if(this->isTimeValid(t))
+  {
+    lb = VectorXd::Zero(num_constraint);
+    ub = VectorXd::Zero(num_constraint);
+  }
+}
+
+void MinDistanceConstraint::name(const double* t, std::vector<std::string> &name) const
+{
+  if(this->isTimeValid(t))
+  {
+    char cnst_name_buffer[100]; 
+    if(t == nullptr)
+    {
+      sprintf(cnst_name_buffer,"Minimum distance constraint");
+    }
+    else
+    {
+      sprintf(cnst_name_buffer,
+          "Minimum distance constraint at time %10.4f",*t);
+    }
+    std::string cnst_name(cnst_name_buffer);
+    name.push_back(cnst_name);
+  }
+  else
+  {
+    name.push_back("");
+  }
+}
 
 WorldPositionInFrameConstraint::WorldPositionInFrameConstraint(
     RigidBodyManipulator *model, int body, const Eigen::MatrixXd &pts, 

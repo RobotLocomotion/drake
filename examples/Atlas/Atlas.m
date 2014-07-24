@@ -1,7 +1,7 @@
-classdef Atlas < TimeSteppingRigidBodyManipulator
-  
+classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
+
   methods
-    
+
     function obj=Atlas(urdf,options)
       typecheck(urdf,'char');
 
@@ -14,13 +14,17 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
       if ~isfield(options,'floating')
         options.floating = true;
       end
-      
+      if ~isfield(options,'terrain')
+        options.terrain = RigidBodyFlatTerrain;
+      end
+
       addpath(fullfile(getDrakePath,'examples','Atlas','frames'));
-  
+
       w = warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
       obj = obj@TimeSteppingRigidBodyManipulator(urdf,options.dt,options);
+      obj = obj@Biped('r_foot_sole', 'l_foot_sole');
       warning(w);
-      
+
       if options.floating
         % could also do fixed point search here
         obj = obj.setInitialState(obj.resolveConstraints(zeros(obj.getNumStates(),1)));
@@ -31,7 +35,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
         obj = obj.setInitialState(zeros(obj.getNumStates(),1));
       end
     end
-    
+
     function obj = compile(obj)
       obj = compile@TimeSteppingRigidBodyManipulator(obj);
 
@@ -47,7 +51,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
       obj.manip = obj.manip.setOutputFrame(atlas_state_frame);
       obj = obj.setStateFrame(state_frame);
       obj = obj.setOutputFrame(state_frame);
-    
+
       input_frame = AtlasInput(obj);
       obj = obj.setInputFrame(input_frame);
       obj.manip = obj.manip.setInputFrame(input_frame);
@@ -62,16 +66,16 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
         obj.x0 = x0;
       end
     end
-    
+
     function x0 = getInitialState(obj)
       x0 = obj.x0;
-    end    
-    
+    end
+
     function [xstar,ustar,zstar] = getFixedPoint(obj,options)
       if nargin < 2 || ~isfield(options,'visualize')
         options.visualize = false;
       end
-      
+
       x0 = Point(obj.getStateFrame());
       x0 = resolveConstraints(obj,x0);
       u0 = zeros(obj.getNumInputs(),1);
@@ -81,7 +85,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
       nz = obj.getNumContacts()*3;
       z0 = zeros(nz,1);
       q0 = x0(1:nq);
-    
+
       problem.x0 = [q0;u0;z0];
       problem.objective = @(quz) 0; % feasibility problem
       problem.nonlcon = @(quz) mycon(quz);
@@ -94,11 +98,11 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
       else
         problem.options=optimset('GradConstr','on','Algorithm','interior-point','TolX',1e-14,'MaxFunEvals',5000);
       end
-      
+
       lb_z = -1e6*ones(nz,1);
       lb_z(3:3:end) = 0; % normal forces must be >=0
       ub_z = 1e6*ones(nz,1);
-    
+
       [jl_min,jl_max] = obj.getJointLimits();
       % force search to be close to starting position
       problem.lb = [max(q0-0.05,jl_min+0.01); obj.umin; lb_z];
@@ -127,24 +131,44 @@ classdef Atlas < TimeSteppingRigidBodyManipulator
         [~,C,B,~,dC,~] = obj.manip.manipulatorDynamics(q,zeros(nq,1));
         [phiC,JC] = obj.contactConstraints(q);
         [~,J,dJ] = obj.contactPositions(q);
-        
+
         % ignore friction constraints for now
         c = 0;
-        GC = zeros(nq+nu+nz,1); 
-        
+        GC = zeros(nq+nu+nz,1);
+
         dJz = zeros(nq,nq);
         for i=1:nq
             dJz(:,i) = dJ(:,(i-1)*nq+1:i*nq)'*z;
         end
-        
+
         ceq = [C-B*u-J'*z; phiC];
-        GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[JC'; zeros(nu+nz,length(phiC))]]; 
+        GCeq = [[dC(1:nq,1:nq)-dJz,-B,-J']',[JC'; zeros(nu+nz,length(phiC))]];
       end
     end
-      
+
   end
-  
+
   properties (SetAccess = protected, GetAccess = public)
     x0
+    default_footstep_params = struct('nom_forward_step', 0.15,... % m
+                                      'max_forward_step', 0.3,...% m
+                                      'max_step_width', 0.40,...% m
+                                      'min_step_width', 0.21,...% m
+                                      'nom_step_width', 0.26,...% m
+                                      'max_outward_angle', pi/8,... % rad
+                                      'max_inward_angle', 0.01,... % rad
+                                      'nom_upward_step', 0.2,... % m
+                                      'nom_downward_step', 0.2,...% m
+                                      'max_num_steps', 10,...
+                                      'min_num_steps', 1);
+    default_walking_params = struct('step_speed', 0.5,... % speed of the swing foot (m/s)
+                                    'step_height', 0.05,... % approximate clearance over terrain (m)
+                                    'hold_frac', 0.4,... % fraction of the swing time spent in double support
+                                    'drake_min_hold_time', 1.0,... % minimum time in double support (s)
+                                    'mu', 1.0,... % friction coefficient
+                                    'constrain_full_foot_pose', true); % whether to constrain the swing foot roll and pitch
+  end
+  properties
+    fixed_point_file = fullfile(getDrakePath(), 'examples', 'Atlas', 'data', 'atlas_fp.mat');
   end
 end

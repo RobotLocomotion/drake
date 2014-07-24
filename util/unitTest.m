@@ -29,6 +29,13 @@ function gui_tree_or_command_line_data =unitTest(options)
 %     systems TEST_DIRS_ONLY
 %     examples ALL
 %
+% If a file or static method has the string 'TIMEOUT' inside it, followed
+% by a numeric value in seconds, then the ctest unit tests (only) will
+% treat this as a test-specific timeout - in units of seconds.  E.g.
+% 'TIMEOUT 60' will override the default timeouts for that particular file
+% and replace it with 60 seconds.  This is particularly useful if you have
+% a test which is known to take a long time to run (that way the timeout
+% for the rest of the tests can be left at a reasonable value).
 %
 % @option autorun if true, starts running the tests immediately.  @default
 % false
@@ -406,7 +413,8 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
         end
         
         if options.test_list_file>=0
-          fprintf(options.test_list_file,[testname,'.',m{j},'\t',pwd,'\n']);
+          [tf,timeout] = checkMethod(fname,m{j},'TIMEOUT');
+          fprintf(options.test_list_file,[testname,'.',m{j},'\t',pwd,'\t',timeout,'\n']);
         end
         
         if options.gui
@@ -427,7 +435,8 @@ function pnode = crawlDir(pdir,pnode,only_test_dirs,options)
       end
       
       if options.test_list_file>=0
-        fprintf(options.test_list_file,[testname,'\t',pwd,'\n']);
+        [tf,timeout] = checkFile(files(i).name,'TIMEOUT');
+        fprintf(options.test_list_file,[testname,'\t',pwd,'\t',timeout,'\n']);
       end
       
       if (options.gui)
@@ -743,7 +752,7 @@ function feval_in_contained_workspace(f) % helps with scripts
   feval(f);
 end
 
-function bfound = checkFile(filename,strings,search_comments)
+function [bfound, trailing_text] = checkFile(filename,strings,search_comments)
 % opens the file and checks for the existence of the string (or strings)
 
 if nargin<3, search_comments=true; end
@@ -751,6 +760,7 @@ if nargin<3, search_comments=true; end
 if ~iscell(strings), strings = {strings}; end
 
 bfound = false;
+trailing_text = '';
 fid=fopen(filename);
 if (fid<0) return; end  % couldn't open the file.  skip it.
 while true  % check the file for the strings
@@ -763,6 +773,9 @@ while true  % check the file for the strings
   end
   for i=1:length(strings)
     if (~isempty(strfind(tline,strings{i})))
+      if (nargout>1)
+        trailing_text = tline(strfind(tline,strings{i})+length(strings{i}) : end);
+      end
       fclose(fid);
       bfound = true;
       return;
@@ -773,12 +786,13 @@ fclose(fid);
 
 end
 
-function bfound = checkMethod(filename,methodname,strings)
+function [bfound, trailing_text] = checkMethod(filename,methodname,strings)
 
 if ~iscell(strings), strings = {strings}; end
 strings = lower(strings);
 
 bfound = false;
+trailing_text = '';
 bInMethod = false;
 endcount = 0;
 fid=fopen(filename);
@@ -801,6 +815,9 @@ while true  % check the file for the strings
     
     for i=1:length(strings)
       if (~isempty(strfind(tline,strings{i})))
+        if (nargout>1)
+          trailing_text = tline(strfind(tline,strings{i})+length(strings{i}) : end);
+        end
         fclose(fid);
         bfound = true;
         return;

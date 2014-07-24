@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6)
 
-pods_find_pkg_config(bullet)
+#pods_find_pkg_config(bullet)
 
 if (eigen3_FOUND AND Boost_FOUND)
   add_executable(urdf_kin_test urdf_kin_test.cpp)
@@ -18,10 +18,10 @@ macro(add_ik_cpp)
   include_directories( .. )
   set_target_properties(${ARGV} PROPERTIES COMPILE_FLAGS "-fPIC")
   target_link_libraries(${ARGV} drakeRBMurdf drakeURDFinterface drakeRigidBodyConstraint drakeIK)
-  add_test(${ARGV} ${ARGV})
-endmacro()
+  add_test( NAME ${ARGV} WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}" COMMAND ${ARGV})
+	endmacro()
 
-if (gurobi_FOUND)
+if (gurobi_FOUND AND Boost_FOUND)
   add_ik_cpp(testApproximateIK)
 endif()
 
