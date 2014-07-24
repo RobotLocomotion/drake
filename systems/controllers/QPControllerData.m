@@ -2,15 +2,20 @@ classdef QPControllerData < ControllerData
   % Class that contains data needed by the QPController and cascaded modules.
 
   % properties that change infrequently or never
-  properties (SetAccess=public,GetAccess=public)
-    % ZMP dynamics ---------------------------------------------------------------
+  properties (SetAccess=private,GetAccess=public)
+    % linear dynamics (default: ZMP) ---------------------------------------------
     A = [zeros(2),eye(2); zeros(2,4)] % COM state map
     B = [zeros(2); eye(2)] % COM input map
     C = [eye(2),zeros(2)] % ZMP state-output map
     D % ZMP input-output map
 
+    A_is_time_varying=false 
+    B_is_time_varying=false 
+    C_is_time_varying=false 
+    D_is_time_varying=false 
+    
     % dynamics related -----------------------------------------------------------
-    mu; % friction coefficient    
+    mu % friction coefficient    
   end
   
   % properties that can be modified 'on the fly'
@@ -19,50 +24,51 @@ classdef QPControllerData < ControllerData
     infocount=0 % number of consecutive iterations with solver info < 0
     qp_active_set=[]% active set of inequality constraints from pervious iteration
     
-    % ZMP-LQR terms --------------------------------------------------------------
-    x0 % nominal COM state: [x_com;y_com;xd_com;yd_com], typically centered 
-    % between feet for standing, or at end of walking trajectory
-    y0 % nominal ZMP: [x_zmp;y_zmp]
-    u0=zeros(2,1) % nominal input: [xdd_com;ydd_com]
-    Qy % ZMP output LQR cost
-    R=zeros(2) % ZMP input cost
+    % LQR solution terms ---------------------------------------------------------
+    x0 % nominal state (possibly time-varying)
+    y0 % nominal output (possibly time-varying)
+    u0=zeros(2,1) % nominal input (possibly time-varying)
+    R=zeros(2) % input LQR cost
+    Qy % output LQR cost
     S % cost-to-go terms: x'Sx + x's1 + s2
     s1
     s2
     Sdot % cost-to-go derivatives
     s1dot
     s2dot
-    is_time_varying
+    lqr_is_time_varying % true if TVLQR, false if TILQR
 
-    % motion planning ------------------------------------------------------------
+    % whole-body stuff -----------------------------------------------------------
     qtraj % generalize configuration vector or trajectory 
+    % note that qtraj can be time-varying, even if LQR system is not
     comtraj % COM state trajectory
     support_times % vector of contact transition times
     supports % (array of) RigidBodySupportState object(s)
-    ignore_terrain %
+    ignore_terrain 
     link_constraints=[] % structure of link motion constraints, see Biped class
     constrained_dofs=[] % array of joint indices
-    plan_shift=[0;0;0] % linear translation to apply to walking plan (applied to 
-    % COM and ZMP trajectories)  
-    
     acceleration_input_frame; % input coordinate frame for desired 
     % generalized accelerations
   end
   
   methods 
-    function obj = QPControllerData(is_time_varying,data)
-      typecheck(is_time_varying,'logical');
+    function obj = QPControllerData(lqr_is_time_varying,data)
+      typecheck(lqr_is_time_varying,'logical');
       typecheck(data,'struct');
-      data.is_time_varying = is_time_varying;
+      data.lqr_is_time_varying = lqr_is_time_varying; % true if LQR problem is tv
       obj = obj@ControllerData(data);
     end
  
     function data=verifyControllerData(~,data)
       assert(isa(data.acceleration_input_frame,'CoordinateFrame'));      
       assert(isa(data.qtraj,'Trajectory') || isnumeric(data.qtraj));      
-      if data.is_time_varying
-        assert(isa(data.comtraj,'Trajectory'));
+      if data.lqr_is_time_varying
+        if isfield(data,'comtraj')
+          assert(isa(data.comtraj,'Trajectory'));
+        end
+        assert(isa(data.x0,'Trajectory'));
         assert(isa(data.y0,'Trajectory'));
+        assert(isa(data.S,'Trajectory'));
         assert(isa(data.s1,'Trajectory'));
         assert(isa(data.s2,'Trajectory'));
         if isfield(data,'s1dot')
@@ -75,42 +81,46 @@ classdef QPControllerData < ControllerData
         else
           data.s2dot = fnder(data.s2,1);
         end
+        if isfield(data,'u0')
+          assert(isa(data.u0,'Trajectory'));
+        end
       else
         assert(isnumeric(data.y0));
+        assert(isnumeric(data.S));
         assert(isnumeric(data.s1));
         assert(isnumeric(data.s2));
+        if isfield(data,'u0')
+          assert(isnumeric(data.u0));
+        end
       end
       assert(isnumeric(data.support_times));
-      assert(isnumeric(data.x0));
-      sizecheck(data.x0,[4 1]);
-      assert(isnumeric(data.mu));
       assert(islogical(data.ignore_terrain));
-      assert(isnumeric(data.D));
-      sizecheck(data.D,[2 2]);
+      assert(isnumeric(data.mu));
       assert(isnumeric(data.Qy));
-      assert(isnumeric(data.S));
-      sizecheck(data.S,[4 4]);
-      sizecheck(data.s1,[4 1]);
-      sizecheck(data.s2,1);
       % optional properties
       if isfield(data,'link_constraints')
         assert(isstruct(data.link_constraints));
       end
       if isfield(data,'R')
         assert(isnumeric(data.R));
-        sizecheck(data.R,[2 2]);
+      end
+      if isfield(data,'A')
+        assert(isnumeric(data.A) || isa(data.A,'Trajectory'));
+      end
+      if isfield(data,'B')
+        assert(isnumeric(data.B) || isa(data.B,'Trajectory'));
       end
       if isfield(data,'C')
-        assert(isnumeric(data.C));
+        assert(isnumeric(data.C) || isa(data.C,'Trajectory'));
       end
-      if isfield(data,'u0')
-        assert(isnumeric(data.u0));
+      if isfield(data,'D')
+        assert(isnumeric(data.D) || isa(data.D,'Trajectory'));
       end
     end
-    
+        
     function updateControllerData(obj,data)
-      if isfield(data,'is_time_varying')
-        obj.is_time_varying = data.is_time_varying;
+      if isfield(data,'lqr_is_time_varying')
+        obj.lqr_is_time_varying = data.lqr_is_time_varying;
       end
       if isfield(data,'acceleration_input_frame')
         obj.acceleration_input_frame = data.acceleration_input_frame;
@@ -145,6 +155,9 @@ classdef QPControllerData < ControllerData
       if isfield(data,'x0')
         obj.x0 = data.x0;
       end
+      if isfield(data,'u0')
+        obj.u0 = data.u0;
+      end
       if isfield(data,'mu')
         obj.mu = data.mu;
       end
@@ -156,9 +169,6 @@ classdef QPControllerData < ControllerData
       end
       if isfield(data,'support_times')
         obj.support_times = data.support_times;
-      end
-      if isfield(data,'D')
-        obj.D = data.D;
       end
       if isfield(data,'qp_active_set')
         obj.qp_active_set = data.qp_active_set;
@@ -172,11 +182,29 @@ classdef QPControllerData < ControllerData
       if isfield(data,'R')
         obj.R = data.R;
       end
+      if isfield(data,'A')
+        if isa(data.A,'Trajectory')
+          obj.A_is_time_varying = true;
+        end
+        obj.A = data.A;
+      end
+      if isfield(data,'B')
+        if isa(data.B,'Trajectory')
+          obj.B_is_time_varying = true;
+        end
+        obj.B = data.B;
+      end
       if isfield(data,'C')
+        if isa(data.C,'Trajectory')
+          obj.C_is_time_varying = true;
+        end
         obj.C = data.C;
       end
-      if isfield(data,'u0')
-        obj.u0 = data.u0;
+      if isfield(data,'D')
+        if isa(data.D,'Trajectory')
+          obj.D_is_time_varying = true;
+        end
+        obj.D = data.D;
       end
     end
   end
