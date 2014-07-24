@@ -43,7 +43,7 @@ classdef RigidBodyDepthCamera < RigidBodySensor
       obj.lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), obj.name);
     end
     
-    function distance = output(obj,manip,t,x,u)
+    function points = output(obj,manip,t,x,u)
       % Computes the output of the sensor
       % @param manip RigidBodyManipulator with collision geometries
       % @param t time (unused)
@@ -51,7 +51,7 @@ classdef RigidBodyDepthCamera < RigidBodySensor
       % @param u control input (unused)
       %
       % @retval distance array of distances returned by the sensor, size
-      %  will equal obj.num_pixel_rows x obj.num_pixel_cols.
+      %  will equal 3 x obj.num_pixel_rows x obj.num_pixel_cols.
       
       % compute raycasting points
       
@@ -64,18 +64,20 @@ classdef RigidBodyDepthCamera < RigidBodySensor
       distance = collisionRaycast(manip, kinsol, origin, point_on_ray);
       distance( distance<0 ) = obj.range;
       
+      points = forwardKin(manip,kinsol,obj.frame_id,(repmat(distance',3,1)/obj.range).*obj.body_pts);
+      
       if ~isempty(obj.lcmgl)
-        point = forwardKin(manip,kinsol,obj.frame_id,(repmat(distance',3,1)/obj.range).*obj.body_pts);
-        
         obj.lcmgl.glColor3f(1, 0, 0);
-        obj.lcmgl.points(point(1,:),point(2,:),point(3,:));
+        obj.lcmgl.points(points(1,:),points(2,:),points(3,:));
 %          obj.lcmgl.line3(origin(1), origin(2), origin(3), point(1,i), point(2,i), point(3,i));
         obj.lcmgl.switchBuffers;
       end
+      
+      points = points(:);
     end
     
     function fr = constructFrame(obj,manip)
-      fr = CoordinateFrame(obj.name,obj.num_pixel_rows*obj.num_pixel_cols,'d');
+      fr = CoordinateFrame(obj.name,3*obj.num_pixel_rows*obj.num_pixel_cols,'d');
     end
     
     function tf = isDirectFeedthrough(obj)

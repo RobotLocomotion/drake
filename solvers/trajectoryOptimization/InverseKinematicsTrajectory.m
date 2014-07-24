@@ -151,7 +151,7 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
               end
               obj.qsc_weight_idx{j} = obj.num_vars+(1:varargin{i}.num_pts)';
               obj = obj.addDecisionVariable(varargin{i}.num_pts,qsc_weight_names);
-              obj = obj.addDifferentiableConstraint(cnstr{1},{obj.q_idx(:,j);obj.qsc_weight_idx{j}},obj.kinsol_dataind(j));
+              obj = obj.addConstraint(cnstr{1},{obj.q_idx(:,j);obj.qsc_weight_idx{j}},obj.kinsol_dataind(j));
               obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_idx{j});
               obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_idx{j});
             end
