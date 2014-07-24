@@ -37,6 +37,12 @@ or
         </xs:attribute>
     </xs:complexType>
     <xs:complexType name="loop_joint">
+        <xs:annotation>
+            <xs:documentation>You can add a loop joint if you have a kinematic loop (e.g. four-bar linkage, or even something more complicated) in your robot.  To use this interface, you must first describe every link in your robot as part of a kinematic tree (no loops). You should be able to take a path through the linkages that touches everything without any loops. Then add the remaining loops by referencing existing links from the tree. 
+
+There are a few limitations with the current implementation.  We do not currently support joint limits nor actuators at the new joint created by the loop_joint tag.  For all of the systems we have modeled so far, there has always been at least one of these "simple" joints in each kinematic loop; and we are simply careful to write down the initial kinematic tree so that it includes all of the more complex joints, leaving the simple joint as the loop joint. 
+</xs:documentation>
+        </xs:annotation>
         <xs:all>
             <xs:element name="link1" type="link_reference_w_pose" maxOccurs="1" minOccurs="1">
                 <xs:annotation>
@@ -77,14 +83,14 @@ produced by a propeller on an airplane, or thrusters on the hands and
 feet of an Atlas robot to make Iron Man.</xs:documentation>
                 </xs:annotation>
             </xs:element>
-<xs:element name="added_mass" type="added_mass">
+            <xs:element name="added_mass" type="added_mass">
                 <xs:annotation>
                     <xs:documentation> Places added-mass coefficients on a point on the parent body. Added-mass forces act like a 'drag' that is proportional to the acceleration of the body, rather than the velocity. Important when the body is comparable in mass to the surrounding fluid, or if rapid motions are needed. 
 
 These forces are represented by a 6x6 matrix 'Ma' similar to a mass matrix, where the force is F=-Ma*a (+coriolis terms). Each matrix element is refered as 'mij', where 'i' and 'j' are the rows and columns of the matrix. As is standard in the oceanographic literature, rows 123 are the linear accelerations, and 456 are the angular accelerations [note this is opposite of Featherstone's notation] </xs:documentation>
                 </xs:annotation>
             </xs:element>
-<xs:element name="buoyancy" type="buoyancy">
+            <xs:element name="buoyancy" type="buoyancy">
                 <xs:annotation>
                     <xs:documentation> Adds a buoyancy force to the parent body, placed at a defined center of buoyancy. </xs:documentation>
                 </xs:annotation>
@@ -104,7 +110,6 @@ These forces are represented by a 6x6 matrix 'Ma' similar to a mass matrix, wher
             </xs:annotation>
         </xs:attribute>
     </xs:complexType>
-
     <xs:complexType name="linear_spring_damper">
         <xs:all>
             <xs:element name="link1" type="link_reference_w_pose">
@@ -133,6 +138,31 @@ of the spring/damper with an (optional) pose specified relative to the coordinat
             </xs:annotation>
         </xs:attribute>
     </xs:complexType>
+
+    <xs:complexType name="torsional_spring">
+        <xs:annotation>
+            <xs:documentation>currently only supported for continuous and rotational joints.  </xs:documentation>
+        </xs:annotation>
+        <xs:all>
+            <xs:element name="joint" type="joint_reference">
+                <xs:annotation>
+                    <xs:documentation>String naming the joint of the spring/damper</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:all>
+        <xs:attribute default="0" name="rest_angle" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>in radians</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute default="0" name="stiffness" type="xs:double">
+            <xs:annotation>
+                <xs:documentation>in Newton-meters per radian
+</xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
     <xs:complexType name="wing">
         <xs:all>
             <xs:element name="parent" type="link_reference">
@@ -221,7 +251,7 @@ input to Newtons of force.</xs:documentation>
         </xs:attribute>
     </xs:complexType>
 
-<xs:complexType name="added_mass">
+    <xs:complexType name="added_mass">
         <xs:all>
             <xs:element name="parent" type="link_reference">
                 <xs:annotation>
@@ -236,44 +266,44 @@ this added-mass is attached.</xs:documentation>
             </xs:element>
         </xs:all>
         <xs:attribute name="m11" type="xs:double" default="0"/>
-	<xs:attribute name="m12" type="xs:double" default="0"/>
-	<xs:attribute name="m13" type="xs:double" default="0"/>
-	<xs:attribute name="m14" type="xs:double" default="0"/>
-	<xs:attribute name="m15" type="xs:double" default="0"/>
-	<xs:attribute name="m16" type="xs:double" default="0"/>
-	<xs:attribute name="m21" type="xs:double" default="0"/>
-	<xs:attribute name="m22" type="xs:double" default="0"/>
-	<xs:attribute name="m23" type="xs:double" default="0"/>
-	<xs:attribute name="m24" type="xs:double" default="0"/>
-	<xs:attribute name="m25" type="xs:double" default="0"/>
-	<xs:attribute name="m26" type="xs:double" default="0"/>
-	<xs:attribute name="m31" type="xs:double" default="0"/>
-	<xs:attribute name="m32" type="xs:double" default="0"/>
-	<xs:attribute name="m33" type="xs:double" default="0"/>
-	<xs:attribute name="m34" type="xs:double" default="0"/>
-	<xs:attribute name="m35" type="xs:double" default="0"/>
-	<xs:attribute name="m36" type="xs:double" default="0"/>
+        <xs:attribute name="m12" type="xs:double" default="0"/>
+        <xs:attribute name="m13" type="xs:double" default="0"/>
+        <xs:attribute name="m14" type="xs:double" default="0"/>
+        <xs:attribute name="m15" type="xs:double" default="0"/>
+        <xs:attribute name="m16" type="xs:double" default="0"/>
+        <xs:attribute name="m21" type="xs:double" default="0"/>
+        <xs:attribute name="m22" type="xs:double" default="0"/>
+        <xs:attribute name="m23" type="xs:double" default="0"/>
+        <xs:attribute name="m24" type="xs:double" default="0"/>
+        <xs:attribute name="m25" type="xs:double" default="0"/>
+        <xs:attribute name="m26" type="xs:double" default="0"/>
+        <xs:attribute name="m31" type="xs:double" default="0"/>
+        <xs:attribute name="m32" type="xs:double" default="0"/>
+        <xs:attribute name="m33" type="xs:double" default="0"/>
+        <xs:attribute name="m34" type="xs:double" default="0"/>
+        <xs:attribute name="m35" type="xs:double" default="0"/>
+        <xs:attribute name="m36" type="xs:double" default="0"/>
         <xs:attribute name="m41" type="xs:double" default="0"/>
-	<xs:attribute name="m42" type="xs:double" default="0"/>
-	<xs:attribute name="m43" type="xs:double" default="0"/>
-	<xs:attribute name="m44" type="xs:double" default="0"/>
-	<xs:attribute name="m45" type="xs:double" default="0"/>
-	<xs:attribute name="m46" type="xs:double" default="0"/>
-	<xs:attribute name="m51" type="xs:double" default="0"/>
-	<xs:attribute name="m52" type="xs:double" default="0"/>
-	<xs:attribute name="m53" type="xs:double" default="0"/>
-	<xs:attribute name="m54" type="xs:double" default="0"/>
-	<xs:attribute name="m55" type="xs:double" default="0"/>
-	<xs:attribute name="m56" type="xs:double" default="0"/>
-	<xs:attribute name="m61" type="xs:double" default="0"/>
-	<xs:attribute name="m62" type="xs:double" default="0"/>
-	<xs:attribute name="m63" type="xs:double" default="0"/>
-	<xs:attribute name="m64" type="xs:double" default="0"/>
-	<xs:attribute name="m65" type="xs:double" default="0"/>
-	<xs:attribute name="m66" type="xs:double" default="0"/>
+        <xs:attribute name="m42" type="xs:double" default="0"/>
+        <xs:attribute name="m43" type="xs:double" default="0"/>
+        <xs:attribute name="m44" type="xs:double" default="0"/>
+        <xs:attribute name="m45" type="xs:double" default="0"/>
+        <xs:attribute name="m46" type="xs:double" default="0"/>
+        <xs:attribute name="m51" type="xs:double" default="0"/>
+        <xs:attribute name="m52" type="xs:double" default="0"/>
+        <xs:attribute name="m53" type="xs:double" default="0"/>
+        <xs:attribute name="m54" type="xs:double" default="0"/>
+        <xs:attribute name="m55" type="xs:double" default="0"/>
+        <xs:attribute name="m56" type="xs:double" default="0"/>
+        <xs:attribute name="m61" type="xs:double" default="0"/>
+        <xs:attribute name="m62" type="xs:double" default="0"/>
+        <xs:attribute name="m63" type="xs:double" default="0"/>
+        <xs:attribute name="m64" type="xs:double" default="0"/>
+        <xs:attribute name="m65" type="xs:double" default="0"/>
+        <xs:attribute name="m66" type="xs:double" default="0"/>
     </xs:complexType>
 
-<xs:complexType name="buoyancy">
+    <xs:complexType name="buoyancy">
         <xs:all>
             <xs:element name="parent" type="link_reference">
                 <xs:annotation>
@@ -292,7 +322,7 @@ this buoyancy is attached.</xs:documentation>
                 <xs:documentation>Volume of the body</xs:documentation>
             </xs:annotation>
         </xs:attribute>
-	<xs:attribute name="rho" type="xs:double" default="1">
+        <xs:attribute name="rho" type="xs:double" default="1">
             <xs:annotation>
                 <xs:documentation>Density of the fluid</xs:documentation>
             </xs:annotation>

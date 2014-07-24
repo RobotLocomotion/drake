@@ -14,7 +14,7 @@ end
 q = zeros(getNumDOF(r),1);
 
 kinsol = doKinematics(r,q);
-pts = contactPositions(r,kinsol);
+pts = terrainContactPositions(r,kinsol);
 bnd.xmin=min(pts(1,:));
 bnd.xmax=max(pts(1,:));
 bnd.ymin=min(pts(2,:));
@@ -94,7 +94,7 @@ end
 end
 
 function debugLCMGL(r,v,kinsol,ptsA,ptsB)
-    pts = contactPositions(r,kinsol);
+    pts = terrainContactPositions(r,kinsol);
   
     v.draw(0,[q;0*q]);
     obj.lcmgl.glColor3f(0,0,1); % blue
@@ -115,7 +115,7 @@ function debugLCMGL(r,v,kinsol,ptsA,ptsB)
 end
 
 function debugPlot(r,kinsol,ptsA,ptsB)
-    pts = contactPositions(r,kinsol);
+    pts = terrainContactPositions(r,kinsol);
   
     figure(1); clf; hold on;
     plotBox(pts(:,1:8));

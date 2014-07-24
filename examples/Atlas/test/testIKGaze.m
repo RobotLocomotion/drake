@@ -86,11 +86,18 @@ rangecheck(head_err,cos(head_con2.gaze_conethreshold) - 1e5,1 + 1e5);
 v.draw(1,[q;0*q]); drawnow;
 
 % CHECK WITH THRESHOLD
-head_con3 = head_con;
-head_con3.gaze_orientation = rpy2quat([randn/10;randn/10;randn]);
-head_con3.gaze_threshold = .5;
-[q_seed,q_nom,constraint,ikoptions] = inverseKinWrapup(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con3,options);
-[q,info] = inverseKin(r,q_seed,q_nom,constraint{:},ikoptions);
+% Some desired gaze orientations are infeasible, so loop till we get a
+% feasible one. It doesn't make sense to check solver error if the
+% solver tells you it couldn't find a solution
+info = Inf;
+while info > 10   
+  head_con3 = head_con;
+  head_con3.gaze_orientation = rpy2quat([randn/10;randn/10;randn]);
+  disp(head_con3.gaze_orientation);
+  head_con3.gaze_threshold = .5;
+  [q_seed,q_nom,constraint,ikoptions] = inverseKinWrapup(r,q0,0,[0;0;.95],r_foot,[0;0;0],[0;-.1;.2],head,[],head_con3,options);
+  [q,info] = inverseKin(r,q_seed,q_nom,constraint{:},ikoptions);
+end
 
 kinsol = r.doKinematics(q);
 xhead = r.forwardKin(kinsol,head,zeros(3,1),2);

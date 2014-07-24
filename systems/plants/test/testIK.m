@@ -6,7 +6,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
 warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 warning('off','Drake:RigidBodyManipulator:UnsupportedVelocityLimits');
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
-urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_chull.urdf'];
+urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_convex_hull.urdf'];
 options.floating = true;
 robot = RigidBodyManipulator(urdf,options);
 nq = robot.getNumDOF();
@@ -51,6 +51,7 @@ q_seed = q_nom+1e-2*randn(nq,1);
 ikoptions = IKoptions(robot);
 ikoptions = ikoptions.setDebug(true);
 ikoptions = ikoptions.setMex(false);
+ikoptions = ikoptions.setMajorIterationsLimit(500);
 ikmexoptions = ikoptions;
 ikmexoptions = ikmexoptions.setMex(true);
 
@@ -193,7 +194,7 @@ if(info_mex ~= 13)
 end
 display('The infeasible constraints are');
 disp(infeasible_constraint_mex);
-ikproblem = InverseKin(robot,q_nom,kc_err,kc2l,kc2r);
+ikproblem = InverseKinematics(robot,q_nom,kc_err,kc2l,kc2r);
 [qik,F,info,infeasible_constraint_ik] = ikproblem.solve(q_seed);
 [qmex,info_mex,infeasible_constraint_mex] = inverseKinPointwise(robot,[0,1],[q_seed q_seed+1e-3*randn(nq,1)],[q_nom q_nom],kc_err,kc2l,kc2r,ikmexoptions);
 display('The infeasible constraints are');
@@ -282,11 +283,17 @@ for i = 1:size(q,2)
   end
 end
 
-% display('Check all-to-all closest distance constraint')
-% abcdc = AllBodiesClosestDistanceConstraint(robot,0.05,1e3,tspan);
-% q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
-% display('Check IK pointwise with all-to-all closest distance constraint')
-% q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
+display('Check all-to-all closest distance constraint')
+abcdc = AllBodiesClosestDistanceConstraint(robot,0.05,1e3,tspan);
+q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
+display('Check IK pointwise with all-to-all closest distance constraint')
+q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
+
+display('Check minimum-distance constraint')
+min_dist_cnstr = MinDistanceConstraint(robot,0.05,tspan);
+q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
+display('Check IK pointwise with minimum-distance constraint')
+q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
 
 display('Check quasi static constraint')
 qsc = QuasiStaticConstraint(robot);
@@ -298,8 +305,8 @@ q = test_IK_userfun(robot,q_seed,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6,ikoptio
 kinsol = doKinematics(robot,q);
 valuecheck(qsc.checkConstraint(kinsol),true);
 
-% check addCost in InverseKin, minimizing the largest QuasiStaticWeight
-ikproblem = InverseKin(robot,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6);
+% check addCost in InverseKinematics, minimizing the largest QuasiStaticWeight
+ikproblem = InverseKinematics(robot,q_nom,kc1,qsc,kc2l,kc2r,kc3,kc4,kc5,kc6);
 ikproblem = ikproblem.setQ(ikoptions.Q);
 ikproblem = ikproblem.addDecisionVariable(1,{'max_weight'});
 ikproblem = ikproblem.addLinearConstraint(LinearConstraint(zeros(qsc.num_pts,1),inf(qsc.num_pts,1),[ones(qsc.num_pts,1) -eye(qsc.num_pts)]),...
@@ -431,15 +438,15 @@ ikmexoptions = ikoptions;
 ikmexoptions = ikmexoptions.setMex(true);
 % [f,G,iGfun,jGvar,Fupp,Flow,xupp,xlow,iAfun,jAvar,A,nF] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 % keyboard;
+%tic
+%[q,info] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikoptions);
+%toc
+%if(info>10)
+  %error('SNOPT info is %d, IK fails to solve the problem',info);
+%end
+%testConstraint(r,[],q,varargin{1:end-1});
 tic
-[q,info] = inverseKin(r,q_seed,q_nom,varargin{1:end-1},ikoptions);
-toc
-if(info>10)
-  error('SNOPT info is %d, IK fails to solve the problem',info);
-end
-testConstraint(r,[],q,varargin{1:end-1});
-tic
-ikproblem = InverseKin(r,q_nom,varargin{1:end-1});
+ikproblem = InverseKinematics(r,q_nom,varargin{1:end-1});
 ikproblem = ikproblem.setQ(ikoptions.Q);
 [qik,F,info,infeasible_cnstr_ik] = ikproblem.solve(q_seed);
 toc
@@ -460,15 +467,15 @@ ikoptions = varargin{end};
 ikoptions = ikoptions.setMex(false);
 ikmexoptions = ikoptions;
 ikmexoptions = ikmexoptions.setMex(true);
-tic
-[q,info] = inverseKinPointwise(r,t,q_seed,q_nom,varargin{1:end-1},ikoptions);
-toc
-if(info>10)
-  error('SNOPT info is %d, IK pointwisefails to solve the problem',info);
-end
-for i = 1:length(t)
-  testConstraint(r,t(i),q(:,i),varargin{1:end-1});
-end
+%tic
+%[q,info] = inverseKinPointwise(r,t,q_seed,q_nom,varargin{1:end-1},ikoptions);
+%toc
+%if(info>10)
+  %error('SNOPT info is %d, IK pointwisefails to solve the problem',info);
+%end
+%for i = 1:length(t)
+  %testConstraint(r,t(i),q(:,i),varargin{1:end-1});
+%end
 tic
 [qmex,info] = inverseKinPointwise(r,t,q_seed,q_nom,varargin{1:end-1},ikmexoptions);
 toc
@@ -476,13 +483,13 @@ if(info>10)
   error('SNOPT info is %d, IK pointwise mex fails to solve the problem',info);
 end
 for i = 1:length(t)
-  testConstraint(r,t(i),q(:,i),varargin{1:end-1});
+  testConstraint(r,t(i),qmex(:,i),varargin{1:end-1});
 end
 % valuecheck(q,qmex,5e-2);
 end
 
 function testConstraint(robot,t,q_sol,varargin)
-kinsol = robot.doKinematics(q_sol,false,false);
+kinsol = robot.doKinematics(q_sol,false,true);
 [q_lb,q_ub] = robot.getJointLimits();
 if(any(q_sol>q_ub) || any(q_sol<q_lb))
   error('solution must be within the robot default joint limits');

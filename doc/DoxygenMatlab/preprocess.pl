@@ -59,8 +59,8 @@ sub preprocess
             # we've matched an ellipse, so this line should be the beginning of the next line
             #print "MATCH";
             $_ =~ s/\.\.\.//;
-            $_ =~ s/\n// . " ";
-            $ellipseRollover = $_;
+            $_ =~ s/\n//;
+            $ellipseRollover = $_ . " ";
         } else {
             #print "no match";
 
@@ -297,7 +297,10 @@ sub preprocess
                     $incommentblock = 1;
                     $blankLineCheck = 1; # check for a single blank line before the comment block
 
-                    $functionReturnVals = $2;
+                    $functionReturnVals = "";
+		    if (/(^\s*function)\s*([\] \w\d,_\[]+=)/) {
+		      $functionReturnVals = $2;
+		    }
 
                 } elsif (/(\bfor\b|\bwhile\b|\bswitch\b|\btry\b|\bif\b|\bparfor\b|\bmethods\b|\bproperties\b)/) {
 

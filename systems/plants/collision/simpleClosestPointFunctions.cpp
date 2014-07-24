@@ -1,6 +1,10 @@
+#include <cmath>
+#include <iostream>
+
 #include "simpleClosestPointFunctions.h"
 
 using namespace std;
+using namespace Eigen;
 
 double pointPointDist(const Vector3d y11, const Vector3d y21)
 {

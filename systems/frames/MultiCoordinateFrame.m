@@ -131,7 +131,8 @@ classdef MultiCoordinateFrame < CoordinateFrame
       % There are two ways to get a transform from this multiframe to
       % another frame.  One is if a transform exists directly from the
       % multi-frame.  The other is if the required transforms exist for ALL
-      % of the child frames.
+      % of the child frames.  see the mimoCascade and mimoFeedback methods
+      % for more complex combinations.
 
       if (nargin<3) options=struct(); end
       if ~isfield(options,'throw_error_if_fail') options.throw_error_if_fail = false; end
@@ -278,6 +279,14 @@ classdef MultiCoordinateFrame < CoordinateFrame
     function fr = getFrameByNum(obj,n)
       rangecheck(n,1,length(obj.frame));
       fr = obj.frame{n};
+    end
+
+    function fr = getFrameByName(obj,name)
+      id = find(cellfun(@(a)strcmp(a.name,name),obj.frame));
+      if length(id)~=1
+        error(['couldn''t find unique frame named ',name]);
+      end
+      fr = obj.frame{id};
     end
     
     function id = getFrameNum(obj,frame)

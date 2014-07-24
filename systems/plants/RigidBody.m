@@ -102,7 +102,7 @@ classdef RigidBody < RigidBodyElement
       else
         if ~isnumeric(collision_group)
           typecheck(collision_group,{'char','cell'});
-          collision_group = find(strcmpi(collision_group,body.collision_group_name));
+          collision_group = find(ismember(body.collision_group_name,collision_group));
         end
         if (nargin < 3)
           shapes = body.contact_shapes([body.contact_shape_group{collision_group}]);
@@ -284,7 +284,7 @@ classdef RigidBody < RigidBodyElement
     
     function body=parseInertial(body,node,model,options)
       mass = 0;
-      inertia = eye(3);
+      inertia = zeros(3);
       xyz=zeros(3,1); rpy=zeros(3,1);
       origin = node.getElementsByTagName('origin').item(0);  % seems to be ok, even if origin tag doesn't exist
       if ~isempty(origin)
