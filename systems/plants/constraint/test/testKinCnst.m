@@ -3,7 +3,7 @@ function testKinCnst
 checkDependency('rigidbodyconstraint_mex');
 
 urdf = [getDrakePath,'/examples/Atlas/urdf/atlas_minimal_contact.urdf'];
-urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_chull.urdf'];
+urdf_collision = [getDrakePath,'/examples/Atlas/urdf/atlas_convex_hull.urdf'];
 aff_urdf = [getDrakePath,'/systems/plants/constraint/test/valve_task_wall.urdf'];
 
 options.floating = true;
@@ -195,6 +195,10 @@ display('Check all-to-all closest-distance constraint');
 testKinCnst_userfun(true,true,t_valid,q,q_aff,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,robot_collision_aff,0.05,1e1,tspan0);
 testKinCnstInvalidTime_userfun(true,true,t_invalid,q,RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot_collision,0.05,1e1,tspan0);
 
+display('Check minimum distance constraint');
+testKinCnst_userfun(true,true,t_valid,q,q_aff,RigidBodyConstraint.MinDistanceConstraintType,robot_collision,robot_collision_aff,0.05,tspan0);
+testKinCnstInvalidTime_userfun(true,true,t_invalid,q,RigidBodyConstraint.MinDistanceConstraintType,robot_collision,0.05,tspan0);
+
 display('Check point to point distance constraint');
 lhand_pts = rand(3,2);
 rhand_pts = rand(3,2);
@@ -272,7 +276,7 @@ if(singleTimeFlag)
   [c,dc] = kc.eval(t,kinsol);
   cnstr = kc.generateConstraint(t);
   kinsol = kc.robot.doKinematics(q,false,always_use_mex_dynamics);
-  [c_cnstr,dc_cnstr] = cnstr{1}.eval(kinsol);
+  [c_cnstr,dc_cnstr] = cnstr{1}.eval(q,kinsol);
 else
   kinsol_cell = cell(1,length(t));
   for i = 1:length(t)
@@ -280,7 +284,8 @@ else
   end
   [c,dc] = kc.eval(t,kinsol_cell);
   cnstr = kc.generateConstraint(t);
-  [c_cnstr,dc_cnstr] = cnstr{1}.eval(kinsol_cell);
+  q_cell = mat2cell(q,size(q,1),ones(1,size(q,2)));
+  [c_cnstr,dc_cnstr] = cnstr{1}.eval(q_cell{:},kinsol_cell{:});
 end
 [lb,ub] = kc.bounds(t);
 cnst_name = kc.name(t);

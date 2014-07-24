@@ -1,6 +1,4 @@
 #include "mex.h"
-#include <Eigen/Dense>
-#include <vector>
 #include <iostream>
 #include "drakeUtil.h"
 #include "RigidBodyManipulator.h"

@@ -1,4 +1,9 @@
+
+#include "DrakeCollision.h"
 #include "PointPair.h"
+
+using namespace std;
+using namespace Eigen;
 
 namespace DrakeCollision
 {
@@ -14,9 +19,4 @@ namespace DrakeCollision
     getResults(ptA,ptB,normal);
     distance = this->distance;
   }
-
-  Vector3d toVector3d(const Vector3d& vec)
-  {
-    return vec;
-  };
 }

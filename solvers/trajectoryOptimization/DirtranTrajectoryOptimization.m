@@ -1,7 +1,7 @@
 classdef DirtranTrajectoryOptimization < DirectTrajectoryOptimization
   % Direct transcription trajectory optimization
   %  implements multiple possible integration schemes for the dynamics
-  %  constraints \dot x = f(x,u) and for for integrating the running cost
+  %  constraints xdot = f(x,u) and for for integrating the running cost
   %  term.
   %
   %  For forward euler integratino:

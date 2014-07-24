@@ -2,7 +2,7 @@ classdef LuenbergerObserver < Observer
   % A potentially nonlinear observer with linear (possibly 
   % time-varying) observer gains
   % \begin{gather*} 
-  %   \dot{\hat{x}}_c(t) = f_c(t,\hat{x},u) + L_c(t) ( y - \hat{y} ) \\
+  %   \hat{xdot}_c(t) = f_c(t,\hat{x},u) + L_c(t) ( y - \hat{y} ) \\
   %   \hat{x}_d[n+1] = f_d(t,\hat{x},u) + L_d(t) (y - \hat{y} ) \\
   %   \hat{y} = g(t,\hat{x},u) \\
   %   y = \hat{x}

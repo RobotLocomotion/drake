@@ -18,7 +18,6 @@ classdef PlanarNLink < PlanarRigidBodyManipulator
       body=RigidBody();
       body.linkname='base';
       body.robotnum=1;
-      body.Ttree=[-1,0,0,0; 0,1,0,0; 0,0,1,0; 0 0 0 1];
       model.body=body;
       
       % first link

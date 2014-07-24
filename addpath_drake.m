@@ -40,18 +40,18 @@ end
 % todo: try setting this before simulating, then resetting it after the
 % simulate?
 
-% add package directories to the matlab path 
+% add package directories to the matlab path
 addpath(fullfile(conf.root,'systems'));
 addpath(fullfile(conf.root,'systems','plants'));
 addpath(fullfile(conf.root,'systems','plants','affordance'));
 addpath(fullfile(conf.root,'systems','plants','collision'));
 addpath(fullfile(conf.root,'systems','plants','constraint'));
-addpath(fullfile(conf.root,'systems','plants','trajOpt'));
 addpath(fullfile(conf.root,'systems','controllers'));
 addpath(fullfile(conf.root,'systems','observers'));
 addpath(fullfile(conf.root,'systems','trajectories'));
 addpath(fullfile(conf.root,'systems','frames'));
 addpath(fullfile(conf.root,'systems','visualizers'));
+addpath(fullfile(conf.root,'systems','robotInterfaces'));
 addpath(fullfile(conf.root,'solvers'));
 addpath(fullfile(conf.root,'solvers','trajectoryOptimization'));
 addpath(fullfile(conf.root,'util'));
@@ -67,7 +67,7 @@ javaaddpath(fullfile(pods_get_base_path,'share','java','drake.jar'));
 % check for all dependencies
 
 v=ver('simulink');
-if (isempty(v)) 
+if (isempty(v))
   conf.simulink_enabled = false;
 elseif verLessThan('simulink','7.3')
   warning('Drake:SimulinkVersion','Most features of Drake reguires SIMULINK version 7.3 or above.');
@@ -78,7 +78,7 @@ else
 end
 
 setenv('PATH_LICENSE_STRING', '1926793586&Courtesy&&&USR&54782&7_1_2014&1000&PATH&GEN&31_12_2015&0_0_0&5000&0_0');
-  
+
 try
   x = pathlcp(speye(500),-ones(500,1));
   valuecheck(x,ones(500,1));
@@ -106,10 +106,7 @@ save([conf.root,'/util/drake_config.mat'],'conf');
 
 clear util/checkDependency;  % makes sure that the persistent variable in the dependency checker gets cleared
 
-checkDependency('spotless'); % require spotless 
-tf = checkDependency('lcm'); % optional dependency on lcm, but load it now 
+checkDependency('spotless'); % require spotless
+tf = checkDependency('lcm'); % optional dependency on lcm, but load it now
 
 end
-
-
-

@@ -30,5 +30,19 @@ classdef SharedDataHandle < handle
         feval(obj.deleteFcn,obj.data);
       end
     end
+    
+    function setData(obj,data)
+      obj.data = data;
+    end
+    
+    function setField(obj,fieldname,val)
+ %     typecheck(obj.data,'struct');
+      obj.data.(fieldname)=val;
+    end
+        
+    function d=getField(obj,fieldname)  % recommend using obj.data.fieldname instead
+%      typecheck(obj.data,'struct');
+      d = obj.data.(fieldname);
+    end
   end
 end
