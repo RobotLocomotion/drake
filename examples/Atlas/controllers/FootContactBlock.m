@@ -110,7 +110,7 @@ classdef FootContactBlock < MIMODrakeSystem
     function varargout=mimoOutput(obj,t,~,x)      
       ctrl_data = obj.controller_data;
 
-      if (ctrl_data.is_time_varying)
+      if (ctrl_data.lqr_is_time_varying)
         % extract current desired supports
         supp_idx = find(ctrl_data.support_times<=t,1,'last');
         supp = ctrl_data.supports(supp_idx);      
