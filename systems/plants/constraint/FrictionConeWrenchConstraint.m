@@ -18,11 +18,9 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
     FC_axis
   end
   
-  properties(SetAccess = protected, GetAccess = protected)
-    FC_lb;
-    FC_ub;
+  properties(Access = protected)
+    cos_theta_square; % theta being the half angle of the cone.
   end
-  
   methods
     function obj = FrictionConeWrenchConstraint(robot,body,body_pts,FC_mu,FC_axis,tspan)
       % @param body       -- The index of contact body on the robot
@@ -70,16 +68,15 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       FC_axis_norm = sqrt(sum(FC_axis.^2,1));
       obj.FC_axis = FC_axis./(bsxfun(@times,FC_axis_norm,ones(3,1)));
       obj.type = RigidBodyConstraint.FrictionConeWrenchConstraintType;
-      obj.FC_lb = reshape(ones(1,obj.num_pts)./sqrt(obj.FC_mu.^2+ones(1,obj.num_pts)),[],1);
-      obj.FC_ub = ones(obj.num_pts,1);
-      obj.num_constraint = obj.num_pts;
+      obj.cos_theta_square = 1./(obj.FC_mu.^2+ones(1,obj.num_pts));
+      obj.num_constraint = obj.num_pts*2;
       obj.pt_num_F = 3;
       obj.type = RigidBodyConstraint.FrictionConeWrenchConstraintType;
       obj.F_lb = -inf(obj.pt_num_F,obj.num_pts);
       obj.F_ub = inf(obj.pt_num_F,obj.num_pts);
     end
     
-    function [c,dc_val] = evalSparse(obj,kinsol,F)
+    function [c,dc_val] = evalValidTime(obj,kinsol,F)
       % This function evaluates the constraint and its non-zero entries in the sparse
       % gradient matrix.
       % @param t       - A scalar, the time to evaluate friction cone constraint
@@ -91,11 +88,14 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       if(~valid_F)
         error('Drake:FrictionConeWrenchConstraint:friction force should be 3 x n_pts matrix');
       end
-      F_norm = sqrt(sum(F.^2,1));
-      c = reshape(sum(F.*obj.FC_axis,1)./F_norm,[],1);
-      dc_entry = (obj.FC_axis'.*bsxfun(@times,(F_norm').^2,ones(1,3))-...
-        bsxfun(@times,sum(F'.*obj.FC_axis',2),ones(1,3)).*F')./bsxfun(@times,(F_norm').^3,ones(1,3));
-      dc_val = reshape(dc_entry',[],1);
+      % The constraint is (F'*axis)^2>cos_theta^2*F_norm_square and F'*axis>0
+      F_norm_square = sum(F.^2,1);
+      F_times_axis = sum(F.*obj.FC_axis,1);
+      c = zeros(2*obj.num_pts,1);
+      c(1:obj.num_pts) = F_times_axis(:);
+      dc_val = reshape(obj.FC_axis',[],1);
+      c(obj.num_pts+(1:obj.num_pts)) = reshape(F_times_axis.^2-obj.cos_theta_square.*F_norm_square,[],1);
+      dc_val = [dc_val;reshape(bsxfun(@times,2*F_times_axis',ones(1,3)).*obj.FC_axis'-2*bsxfun(@times,obj.cos_theta_square',ones(1,3)).*F',[],1)];
     end
     
     function [iCfun,jCvar,nnz] = evalSparseStructure(obj)
@@ -107,7 +107,9 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       nq = obj.robot.getNumDOF;
       iCfun = reshape(bsxfun(@times,ones(3,1),(1:obj.num_pts)),[],1);
       jCvar = nq+(1:3*obj.num_pts)';
-      nnz = 3*obj.num_pts;
+      iCfun = [iCfun;iCfun+obj.num_pts];
+      jCvar = [jCvar;jCvar];
+      nnz = 6*obj.num_pts;
     end
        
     function [lb,ub] = bounds(obj,t)
@@ -116,8 +118,8 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       % @retval lb  -- A num_pts x 1 double vector. The lower bound of the constraint
       % @retval ub  -- A num_pts x 1 double vector. The upper bound of the constraint
       if(obj.isTimeValid(t))
-        lb = obj.FC_lb;
-        ub = obj.FC_ub;
+        lb = zeros(obj.num_constraint,1);
+        ub = inf(obj.num_constraint,1);
       else
         lb = [];
         ub = [];
