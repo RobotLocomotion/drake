@@ -1,6 +1,28 @@
 function [plan, sin_yaw, cos_yaw] = footstepMISOCP(biped, seed_plan, weights, goal_pos)
-% New, experimental footstep planner based on a Mixed-Integer Second-Order Cone Program.
-% This planner allows footstep rotation with a piecewise approximation of sine and cosine.
+% This planner is the first prototype of the mixed-integer planner
+% described in "Footstep Planning on Uneven Terrain with Mixed-Integer 
+% Convex Optimization" by Robin Deits and Russ Tedrake. 
+% 
+% Note: this is now obsolete: please use footstepMIQCQP.m instead.
+% 
+% This implementation uses a mixed-integer SOCP to plan the number of footsteps to take,
+% the position and yaw of those steps, and the assignments of footsteps to
+% convex regions of obstacle-free terrain. 
+%
+% This planner should be used by passing the 'method_handle', @footstepMISOCP 
+% option to planFootsteps.m.
+% 
+% @param seed_plan a blank footstep plan, provinding the structure of the
+%                  desired plan. Probably generated with
+%                  FootstepPlan.blank_plan()
+% @param weights a struct with fields 'goal', 'relative', and
+%                'relative_final' describing the various contributions to
+%                the cost function. These are described in detail in
+%                Biped.getFootstepOptimizationWeights()
+% @param goal_pos a struct with fields 'right' and 'left'.
+%                 goal_pos.right is the desired 6 DOF pose
+%                 of the right foot sole, and likewise for
+%                 goal_pos.left
 
 checkDependency('yalmip');
 checkDependency('gurobi');

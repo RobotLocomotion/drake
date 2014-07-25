@@ -120,6 +120,20 @@ classdef Biped < LeggedRobot
     end
 
     function weights = getFootstepOptimizationWeights(obj)
+      % Return a reasonable set of default weights for the footstep planner
+      % optimization. The weights describe the following quantities:
+      % 'relative': the contribution to the cost function of the 
+      %             displacement from one step to the next 
+      % 'relative_final': the cost contribution of the displacement of the
+      %                   displacement of the very last step (this can be 
+      %                   larger than the normal 'relative' cost in
+      %                   order to encourage the feet to be close together
+      %                   at the end of a plan)
+      % 'goal': the cost contribution on the distances from the last two
+      %         footsteps to their respective goal poses.
+      % Each weight is a 6 element vector, describing the weights on
+      % [x, y, z, roll, pitch, yaw]
+      
       weights = struct('relative', [1;1;1;0;0;0.05],...
                        'relative_final', [10;10;10;0;0;1],...
                        'goal', [1000;1000;0;0;0;100]);
