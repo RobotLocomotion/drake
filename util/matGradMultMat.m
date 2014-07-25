@@ -12,10 +12,7 @@ if (mn ~= m*n) error('dimension mismatch'); end
 if (np ~= n*p) error('dimension mismatch'); end
 if (q2 ~= q) error('dA and dB must have the same number of gradient terms'); end
 
-B_diag_row = reshape(bsxfun(@times,reshape(1:n2*q,n2,1,q),ones(1,p,1)),[],1);
-B_diag_col = reshape(bsxfun(@times,ones(n2,1),(1:p*q)),[],1);
-B_diag_val = reshape(bsxfun(@times,B(:),ones(1,q)),[],1);
-B_diag = sparse(B_diag_row,B_diag_col,B_diag_val,n2*q,p*q);
+B_diag = kron(speye(q),B);
 dAB = reshape(reshape(dA,m,n*q)*B_diag + A*reshape(dB,n,p*q),m*p,q);
 
 

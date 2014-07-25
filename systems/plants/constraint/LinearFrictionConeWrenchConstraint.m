@@ -109,10 +109,7 @@ classdef LinearFrictionConeWrenchConstraint < ContactWrenchConstraint
       % Compute the indivisual force from the force parameters F. The individual forces
       % are reshape(A*F,3,obj.num_pts)
       % @retval A    -- A (3*num_pts) x (obj.pt_num_F*obj.num_pts) double matrix
-      iAfun = reshape(repmat(reshape(1:3*obj.num_pts,3,obj.num_pts),obj.num_edges,1),[],1);
-      jAvar = reshape(bsxfun(@times,ones(3,1),(1:obj.num_pts*obj.num_edges)),[],1);
-      Aval = reshape(bsxfun(@times,obj.FC_edge(:),ones(1,obj.num_pts)),[],1);
-      A = sparse(iAfun,jAvar,Aval,3*obj.num_pts,obj.num_edges*obj.num_pts);
+      A = kron(speye(obj.num_pts),obj.FC_edge);
     end
     
     function name_str = name(obj,t)
