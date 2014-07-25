@@ -18,10 +18,13 @@ classdef FrictionConeWrench < RigidBodyContactWrench
       % @param body       -- The index of contact body on the robot
       % @param body_pts   -- A 3 x num_pts double matrix, each column represents the coordinate
       % of the contact point on the body frame.
-      % @param FC_mu      -- A 1 x num_pts double vector, FC_mu(i) is the friction coefficient
-      % of the friction cone at contact point body_pts(:,i)
-      % @param FC_axis    -- A 3 x num_pts double matrix, FC_axis(:,i) is the axis of the
-      % friction cone at the contact point body_pts(:,i). FC_axis(:,i) is in the world frame
+      % @param FC_mu      -- A 1 x num_pts double vector or a scalar, FC_mu(i) is the friction coefficient
+      % of the friction cone at contact point body_pts(:,i). If FC_mu is a scalar, then
+      % that friciton coefficient is used for every contact point
+      % @param FC_axis    -- A 3 x num_pts double matrix or a 3 x 1 vector, FC_axis(:,i) is the axis of the
+      % friction cone at the contact point body_pts(:,i). FC_axis(:,i) is in the world
+      % frame. If FC_axis is a 3 x 1 vector, then that axis is used for every friction
+      % cone
       obj = obj@RigidBodyContactWrench(robot,body,body_pts);
       mu_size = size(FC_mu);
       if(length(mu_size) == 2 && mu_size(1) == 1 && mu_size(2) == 1)
@@ -58,18 +61,7 @@ classdef FrictionConeWrench < RigidBodyContactWrench
       obj.wrench_jCvar = obj.robot.getNumPositions+(1:3*obj.num_pts)';
     end
     
-    function [lincon,nlcon,bcon] = generateWrenchConstraint(obj)
-      [~,nlcon,bcon] = generateWrenchConstraint@RigidBodyContactWrench(obj);
-      lincon_mat = sparse(reshape(bsxfun(@times,ones(3,1),1:obj.num_pts),[],1),(1:obj.num_pt_F*obj.num_pts)',obj.FC_axis(:),obj.num_pts,3*obj.num_pts);
-      lincon = LinearConstraint(zeros(obj.num_pts,1),inf(obj.num_pts,1),lincon_mat);
-      lincon_name = cell(obj.num_pts,1);
-      for i = 1:obj.num_pts
-        lincon_name{i} = sprintf('%s_pt%d_friction_cone',obj.body_name,i);
-      end
-      lincon = lincon.setName(lincon_name);
-    end
-    
-    function [c,dc] = evalWrenchConstraint(obj,kinsol,F)
+    function [c,dc] = evalWrenchConstraint(obj,kinsol,F,slack)
       % This function evaluates the constraint and its non-zero entries in the sparse
       % gradient matrix.
       % @param t       - A scalar, the time to evaluate friction cone constraint
@@ -114,4 +106,15 @@ classdef FrictionConeWrench < RigidBodyContactWrench
     end
   end
   
+  methods(Access = protected)
+    function lincon = generateWrenchLincon(obj)
+      lincon_mat = sparse(reshape(bsxfun(@times,ones(3,1),1:obj.num_pts),[],1),(1:obj.num_pt_F*obj.num_pts)',obj.FC_axis(:),obj.num_pts,3*obj.num_pts);
+      lincon = LinearConstraint(zeros(obj.num_pts,1),inf(obj.num_pts,1),lincon_mat);
+      lincon_name = cell(obj.num_pts,1);
+      for i = 1:obj.num_pts
+        lincon_name{i} = sprintf('%s_pt%d_friction_cone',obj.body_name,i);
+      end
+      lincon = lincon.setName(lincon_name);
+    end
+  end
 end
