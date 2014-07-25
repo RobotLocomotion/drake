@@ -121,7 +121,7 @@ kinsol_fp = robot.doKinematics(q_fp);
 l_hand_pos_fp = robot.forwardKin(kinsol_fp,l_hand,l_hand_pt,2);
 r_hand_pos_fp = robot.forwardKin(kinsol_fp,r_hand,r_hand_pt,2);
 hand_distance = norm(l_hand_pos_fp(1:3)-r_hand_pos_fp(1:3));
-drawBar(l_hand_pos_fp(1:3),r_hand_pos_fp(1:3),bar_radius);
+% drawBar(l_hand_pos_fp(1:3),r_hand_pos_fp(1:3),bar_radius);
 
 l_rung_pos2 = l_rung_pos1;
 l_rung_pos2(3) = l_rung_pos2(3)+0.4;
@@ -139,7 +139,7 @@ if(mode == 1)
   cdfkp = climbOneStep(robot,l_hand,r_hand,l_hand_pt,r_hand_pt,l_hand_grasp_axis,r_hand_grasp_axis,l_rung_pos1,r_rung_pos1,l_rung_pos2,r_rung_pos2,l_pole_pos,r_pole_pos,bar_radius,q_start);
   
   cdfkp = cdfkp.setSolverOptions('snopt','iterationslimit',1e6);
-  cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',3000);
+  cdfkp = cdfkp.setSolverOptions('snopt','majoriterationslimit',300);
   cdfkp = cdfkp.setSolverOptions('snopt','majorfeasibilitytolerance',1e-5);
   cdfkp = cdfkp.setSolverOptions('snopt','majoroptimalitytolerance',1e-3);
   cdfkp = cdfkp.setSolverOptions('snopt','superbasicslimit',2000);
@@ -152,8 +152,9 @@ if(mode == 1)
   x_seed(cdfkp.com_inds(:)) = reshape(bsxfun(@times,com_start,ones(1,nT)),[],1);
   x_seed(cdfkp.lambda_inds{1}(:)) = 1/16;
   
+  seed_sol = load('test_salmonbar_ladder1','-mat','x_sol');
   tic
-  [x_sol,F,info] = cdfkp.solve(x_seed);
+  [x_sol,F,info] = cdfkp.solve(seed_sol.x_sol);
   toc
   [q_sol,v_sol,h_sol,t_sol,com_sol,comdot_sol,comddot_sol,H_sol,Hdot_sol,lambda_sol,wrench_sol] = parseSolution(cdfkp,x_sol);
   xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
@@ -332,7 +333,7 @@ Q(2,2) = 0;
 Q_comddot = eye(3);
 
 Qv = 0.1*eye(nv);
-Q_contact_force = zeros(3);
+Q_contact_force = 10/(robot_mass*g)^2*eye(3);
 cdfkp = ComDynamicsFullKinematicsPlanner(robot,nT,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,wrench_struct);
 
 % add h bounds
@@ -367,21 +368,27 @@ cdfkp = cdfkp.addRigidBodyConstraint(rhand_land_pos_cnstr,{land_idx});
 cdfkp = cdfkp.addRigidBodyConstraint(WorldFixedPositionConstraint(robot,l_hand,l_hand_pt),{land_idx:static_idx});
 cdfkp = cdfkp.addRigidBodyConstraint(WorldFixedPositionConstraint(robot,r_hand,r_hand_pt),{land_idx:static_idx});
 
+% add the constraint that the bar should be away from the pole
+lhand_flight_cnstr = WorldPositionConstraint(robot,l_hand,l_hand_pt,-inf(3,1),[l_pole_pos(1)-0.025-bar_radius-0.005;inf;inf]);
+cdfkp = cdfkp.addRigidBodyConstraint(lhand_flight_cnstr,num2cell(takeoff_idx+1:land_idx-1));
+rhand_flight_cnstr = WorldPositionConstraint(robot,r_hand,r_hand_pt,-inf(3,1),[r_pole_pos(1)-0.025-bar_radius-0.005;inf;inf]);
+cdfkp = cdfkp.addRigidBodyConstraint(rhand_flight_cnstr,num2cell(takeoff_idx+1:land_idx-1));
+
+% add a prelanding constraint
+lhand_preland_cnstr = WorldPositionConstraint(robot,l_hand,l_hand_pt,[-inf;-inf;l_pole_contact_pt2(3)+0.01],[l_pole_contact_pt2(1)-bar_radius-0.01;inf;inf]);
+cdfkp = cdfkp.addRigidBodyConstraint(lhand_preland_cnstr,{land_idx-1});
+rhand_preland_cnstr = WorldPositionConstraint(robot,r_hand,r_hand_pt,[-inf;-inf;r_pole_contact_pt2(3)+0.01],[r_pole_contact_pt2(1)-bar_radius-0.01;inf;inf]);
+cdfkp = cdfkp.addRigidBodyConstraint(rhand_preland_cnstr,{land_idx-1});
+
+% add final comddot constraint
+cdfkp = cdfkp.addBoundingBoxConstraint(ConstantConstraint(zeros(3,1)),cdfkp.comddot_inds(:,static_idx));
+
+% add arm symmetric constraint
+arm_symmetry = armSymmetricConstraint(robot,2:land_idx);
+cdfkp = cdfkp.addLinearConstraint(arm_symmetry,reshape(cdfkp.q_inds(:,2:land_idx),[],1));
+
+% add leg symmetric constraint
+leg_symmetry = legSymmetricConstraint(robot,2:land_idx);
+cdfkp = cdfkp.addLinearConstraint(leg_symmetry,reshape(cdfkp.q_inds(:,2:land_idx),[],1));
 end
 
-function drawBar(lhand_pos,rhand_pos,bar_radius)
-bar_length = 3;
-lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton,'bar');
-lcmgl.glColor3f(0.5,0.5,0);
-bar_middle = (lhand_pos(1:3)+rhand_pos(1:3))/2;
-hand_diff = rhand_pos(1:3)-lhand_pos(1:3);
-hand_diff = hand_diff/norm(hand_diff);
-rotate_axis = cross([0;0;1],hand_diff);
-rotate_angle = asin(norm(rotate_axis));
-lcmgl.glPushMatrix();
-lcmgl.glTranslated(bar_middle(1),bar_middle(2),bar_middle(3));
-lcmgl.glRotated(rotate_angle/pi*180,rotate_axis(1),rotate_axis(2),rotate_axis(3));
-lcmgl.cylinder([0;0;-bar_length/2],bar_radius,bar_radius,bar_length,20,20);
-lcmgl.glPopMatrix;
-lcmgl.switchBuffers();
-end
