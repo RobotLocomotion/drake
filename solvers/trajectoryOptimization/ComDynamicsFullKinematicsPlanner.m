@@ -17,8 +17,12 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
   end
   
   methods
-    function obj = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,q_nom,varargin)
-      obj = obj@SimpleDynamicsFullKinematicsPlanner(robot,N,tf_range,q_nom,varargin{:});
+    function obj = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Q,q_nom,varargin)
+      % @param Q_comddot  A 3 x 3 matrix. penalize sum_j comddot(:,j)*Q_comddot*comddot(:,j)
+      % @param Q  an nq x nq matrix. Add the cost sum_j
+      % (q(:,j)-q_nom(:,j))'*Q*(q(:,j)-q_nom(:,j));
+      plant = SimpleDynamicsDummyPlant(robot.getNumPositions());
+      obj = obj@SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,varargin{:});
       obj.com_inds = obj.num_vars+reshape(1:3*obj.N,3,obj.N);
       obj.comdot_inds = obj.num_vars+3*obj.N+reshape(1:3*obj.N,3,obj.N);
       obj.comddot_inds = obj.num_vars+6*obj.N+reshape(1:3*obj.N,3,obj.N);
@@ -48,12 +52,12 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       end
       obj = obj.addDecisionVariable(6*obj.N,x_name);
       function [c,dc] = comMatch(kinsol,com)
-        [com_q,dcom_q] = obj.plant.getCOM(kinsol);
+        [com_q,dcom_q] = obj.robot.getCOM(kinsol);
         c = com_q-com;
         dc = [dcom_q -eye(3)];
       end
       function [c,dc] = angularMomentumMatch(kinsol,v,H)
-        [A,dA] = obj.plant.getCMMdA(kinsol);
+        [A,dA] = obj.robot.getCMMdA(kinsol);
         c = A(1:3,:)*v-H;
         dc = [[eye(3) zeros(3)]*matGradMult(dA,v) A(1:3,:) -eye(3)];
       end
@@ -68,6 +72,19 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       end
       obj.add_dynamic_constraint_flag = true;
       obj = obj.addDynamicConstraints();
+      sizecheck(Q,[obj.nq,obj.nq]);
+      if(any(eig(Q)<0))
+        error('Drake:ComDynamicsFullKinematicsPlanner:Q should be PSD');
+      end
+      sizecheck(q_nom,[obj.nq,obj.N]);
+      posture_err_cost = QuadraticSumConstraint(-inf,inf,Q,q_nom);
+      obj = obj.addCost(posture_err_cost,reshape(obj.q_inds,[],1));
+      sizecheck(Q_comddot,[3,3]);
+      if(any(eig(Q_comddot)<0))
+        error('Drake:ComDynamicsFullKinematicsPlanner:Q_comddot should be PSD');
+      end
+      com_accel_cost = QuadraticSumConstraint(-inf,inf,Q_comddot,zeros(3,obj.N));
+      obj = obj.addCost(com_accel_cost,reshape(obj.comddot_inds,[],1));
     end
     
     function obj = addContactDynamicConstraints(obj,knot_idx,contact_wrench_cnstr_idx,knot_lambda_idx)
@@ -84,7 +101,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
           num_pts_i = obj.contact_wrench_cnstr{i}.num_pts;
           num_lambda_i = obj.contact_wrench_cnstr{i}.pt_num_F*num_pts_i;
           force_i = reshape(A_force{i}*lambda(lambda_count+(1:num_lambda_i)),3,num_pts_i);
-          [contact_pos_i,dcontact_pos_i_dq] = obj.plant.forwardKin(kinsol,obj.contact_wrench_cnstr{i}.body,obj.contact_wrench_cnstr{i}.body_pts,0);
+          [contact_pos_i,dcontact_pos_i_dq] = obj.robot.forwardKin(kinsol,obj.contact_wrench_cnstr{i}.body,obj.contact_wrench_cnstr{i}.body_pts,0);
           [torque_i,dtorque_i] = crossSum(contact_pos_i-bsxfun(@times,com,ones(1,num_pts_i)),force_i);
           c(1:3) = c(1:3)-torque_i;
           dc(1:3,1:obj.nq) = dc(1:3,1:obj.nq)-dtorque_i(:,1:num_pts_i*3)*dcontact_pos_i_dq;
@@ -125,11 +142,11 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
           num_lambda_j = obj.contact_wrench_cnstr{j}.pt_num_F*num_pts_j;
           A_force{j} = obj.contact_wrench_cnstr{j}.force();
           A_force_stack(:,lambda_count_tmp+(1:num_lambda_j)) = sparse(reshape(bsxfun(@times,[1;2;3],ones(1,num_pts_j)),[],1),(1:3*num_pts_j)',ones(3*num_pts_j,1))*A_force{j};
-          [~,joint_path] = obj.plant.findKinematicPath(1,obj.contact_wrench_cnstr{j}.body);
-          if isa(obj.plant,'TimeSteppingRigidBodyManipulator')
-            joint_idx_j = vertcat(obj.plant.getManipulator().body(joint_path).dofnum)';
+          [~,joint_path] = obj.robot.findKinematicPath(1,obj.contact_wrench_cnstr{j}.body);
+          if isa(obj.robot,'TimeSteppingRigidBodyManipulator')
+            joint_idx_j = vertcat(obj.robot.getManipulator().body(joint_path).dofnum)';
           else
-            joint_idx_j = vertcat(obj.plant.body(joint_path).dofnum)';
+            joint_idx_j = vertcat(obj.robot.body(joint_path).dofnum)';
           end
           joint_idx = [joint_idx joint_idx_j];
         end

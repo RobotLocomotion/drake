@@ -1,15 +1,11 @@
 classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
   properties(SetAccess = protected)
+    robot % A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
     nq % number of positions in state
     nv % number of velocities in state
     q_inds % An nq x obj.N matrix. x(q_inds(:,i)) is the posture at i'th knot
     v_inds % An nv x obj.N matrix. x(v_inds(:,i)) is the velocity at i'th knot 
-    Q
-    fix_initial_state = false
     g
-    dynamics_constraint;
-    position_error;
-    q_nom;
     % N-element vector of indices into the shared_data, where
     % shared_data{kinsol_dataind(i)} is the kinsol for knot point i
     kinsol_dataind 
@@ -39,28 +35,31 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
   end
   
   methods
-    function obj = SimpleDynamicsFullKinematicsPlanner(robot,N,tf_range,q_nom,varargin)
+    function obj = SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,varargin)
       % @param robot   A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
       % @param N   The number of knot points
       % @param tf_range  A double. The bounds on the total time
       % @param varargin  A cell of of structs, with fields 'active_knot' and 'cwc'
-      obj = obj@DirectTrajectoryOptimization(robot,N,tf_range,struct('time_option',2));
-      obj.nq = obj.plant.getNumPositions();
-      obj.nv = obj.plant.getNumDOF();
+      obj = obj@DirectTrajectoryOptimization(plant,N,tf_range,struct('time_option',2));
+      if(~isa(robot,'RigidBodyManipulator') && ~isa(robot,'TimeSteppingRigidBodyManipulator'))
+        error('Drake:SimpleDynamicsFullKinematicsPlanner:expect a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
+      end
+      obj.robot = robot;
+      obj.nq = obj.robot.getNumPositions();
+      obj.nv = obj.robot.getNumDOF();
       obj.q_inds = obj.x_inds(1:obj.nq,:);
       obj.v_inds = obj.x_inds(obj.nq+(1:obj.nv),:);
-      sizecheck(q_nom,[obj.nq,obj.N]);
-      obj.q_nom = q_nom;
       obj.g = 9.81;
       % create shared data functions to calculate kinematics at the knot
       % points
+      [joint_lb,joint_ub] = obj.robot.getJointLimits();
+      obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(reshape(bsxfun(@times,joint_lb,ones(1,obj.N)),[],1),...
+        reshape(bsxfun(@times,joint_ub,ones(1,obj.N)),[],1)),obj.q_inds(:));
       kinsol_dataind = zeros(obj.N,1);
       for i=1:obj.N,
         [obj,kinsol_dataind(i)] = obj.addSharedDataFunction(@obj.kinematicsData,{obj.q_inds(:,i)});
       end
       obj.kinsol_dataind = kinsol_dataind;
-
-      obj.Q = eye(obj.nq);
       
       num_cwc = nargin-4;
       obj.contact_wrench_cnstr = cell(1,num_cwc);
@@ -76,7 +75,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         obj.contact_wrench_cnstr{i} = varargin{i}.cwc;
         obj.contact_wrench_cnstr_active_knot{i} = varargin{i}.active_knot;
       end
-      obj.robot_mass = obj.plant.getMass();
+      obj.robot_mass = obj.robot.getMass();
       obj = obj.parseContactWrenchConstraint();
       obj = obj.addDynamicConstraints();
       
@@ -88,12 +87,12 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
     end
 
     function data = kinematicsData(obj,q)
-      data = doKinematics(obj.plant,q,false,false);
+      data = doKinematics(obj.robot,q,false,false);
     end
 
     function obj = setFixInitialState(obj,flag,x0)
       % set obj.fix_initial_state = flag. If flag = true, then fix the initial state to x0
-      % @param x0   A 2*obj.plant.getNumPositions() x 1 double vector. x0 = [q0;qdot0]. The initial state
+      % @param x0   A 2*obj.robot.getNumPositions() x 1 double vector. x0 = [q0;qdot0]. The initial state
       sizecheck(flag,[1,1]);
       flag = logical(flag);
       if(isempty(obj.bbcon))
@@ -101,14 +100,14 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         if(obj.fix_initial_state)
           obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(x0,x0),obj.x_inds(:,1));
         else
-          obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(-inf(obj.plant.getNumStates(),1),inf(obj.plant.getNumStates(),1)),obj.x_inds(:,1));
+          obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(-inf(obj.robot.getNumStates(),1),inf(obj.robot.getNumStates(),1)),obj.x_inds(:,1));
         end
       elseif(obj.fix_initial_state ~= flag)
         obj.fix_initial_state = flag;
         if(obj.fix_initial_state)
           obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(x0,x0),obj.x_inds(:,1));
         else
-          obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(-inf(obj.plant.getNumStates(),1),inf(obj.plant.getNumStates(),1)),obj.x_inds(:,1));
+          obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint(-inf(obj.robot.getNumStates(),1),inf(obj.robot.getNumStates(),1)),obj.x_inds(:,1));
         end
       end
     end
