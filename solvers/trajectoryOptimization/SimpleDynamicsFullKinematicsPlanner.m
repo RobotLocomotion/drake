@@ -30,6 +30,8 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
                  % [1;2;1;1;2];
      num_lambda_knot % An integer. The number of external force parameters at any one knot point
      robot_mass  % A double scalar.
+     
+     Q_contact_force % A 3 x 3 PSD matrix. minimize the weighted L2 norm of the contact force.
   end
   
   properties(Access = protected)
@@ -37,15 +39,17 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
   end
   
   methods
-    function obj = SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,contact_wrench_struct,options)
+    function obj = SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,Q_contact_force,contact_wrench_struct,options)
       % @param robot   A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
       % @param N   The number of knot points
       % @param tf_range  A double. The bounds on the total time
+      % @param Q_contact_force. A 3 x 3 PSD matrix. minimize the weighted L2 norm of the
+      % contact force
       % @param contact_wrench_struct  A cell of of structs, with fields 'active_knot' and 'cwc'
-      if(nargin<6)
+      if(nargin<7)
         options = struct();
       end
-      if(nargin<5)
+      if(nargin<6)
         contact_wrench_struct = [];
       end
       if(~isfield(options,'time_option'))
@@ -55,6 +59,14 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       if(~isa(robot,'RigidBodyManipulator') && ~isa(robot,'TimeSteppingRigidBodyManipulator'))
         error('Drake:SimpleDynamicsFullKinematicsPlanner:expect a RigidBodyManipulator or a TimeSteppingRigidBodyManipulator');
       end
+      if(~isnumeric(Q_contact_force))
+        error('Drake:SimpleDynamicsFullKinematicsPlanner:Argument Q_contact_force should be numeric');
+      end
+      sizecheck(Q_contact_force,[3,3]);
+      if(any(eig(Q_contact_force)<0))
+        error('Drake:SimpleDynamicsFullKinematicsPlanner:Argument Q_contact_force should be a PSD matrix');
+      end
+      obj.Q_contact_force = Q_contact_force;
       obj.robot = robot;
       obj.nq = obj.robot.getNumPositions();
       obj.nv = obj.robot.getNumDOF();
@@ -309,6 +321,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
           end
         end
       end
+      obj = obj.addForceNormCost();
     end
     
     function obj = addDynamicConstraints(obj)
@@ -348,6 +361,74 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
           tLeft_lambda_count = tRight_lambda_count;
         end
       end
+    end
+    
+    function wrench_sol = contactWrench(obj,x)
+      % Given x as the decision variables, find out the contact wrench
+      % @param x   An obj.num_vars x 1 vector
+      % @retval wrench_sol   An length(obj.unique_contact_bodies) x obj.N array of struct, each struct contains fiels of body,
+      % body_pts, pts_pos, force and torque
+      wrench_sol = struct('body',[],'body_pts',[],'pts_pos',[],'force',[],'torque',[]);
+      for j = 1:obj.N
+        q = x(obj.q_inds(:,j));
+        kinsol = obj.robot.doKinematics(q);
+        for i = 1:length(obj.unique_contact_bodies)
+          wrench_sol(i,j).body = obj.unique_contact_bodies(i);
+          wrench_sol(i,j).body_pts = obj.unique_body_contact_pts{i};
+          wrench_sol(i,j).pts_pos = forwardKin(obj.robot,kinsol,wrench_sol(i,j).body,wrench_sol(i,j).body_pts,0);
+          num_pts_i = size(obj.unique_body_contact_pts{i},2);
+          lambda_ij = reshape(x(obj.lambda_inds{i}(:,:,j)),size(obj.lambda_inds{i}(:,:,j),1),num_pts_i);
+          force_ij = zeros(3,num_pts_i);
+          torque_ij = zeros(3,num_pts_i);
+          unique_contact_wrench_ij = unique(obj.lambda2contact_wrench{i}(obj.lambda2contact_wrench{i}(:,j)~= 0,j))';
+          for k = unique_contact_wrench_ij
+            body_pts_ijk_idx = obj.lambda2contact_wrench{i}(:,j) == k;
+            A_force = obj.contact_wrench{k}.force;
+            A_torque = obj.contact_wrench{k}.torque;
+            force_ij(:,body_pts_ijk_idx) = reshape(A_force*reshape(lambda_ij(:,body_pts_ijk_idx),[],1),3,[]);
+            torque_ij(:,body_pts_ijk_idx) = reshape(A_torque*reshape(lambda_ij(:,body_pts_ijk_idx),[],1),3,[]);
+          end
+          wrench_sol(i,j).force = force_ij;
+          wrench_sol(i,j).torque = torque_ij;
+        end
+      end
+    end
+    
+    function obj = addForceNormCost(obj)
+      % add a quadratic cost on sum_i,j force_j[i]'*obj.Q_contact_force*force_j[i]
+      A_force = cell(length(obj.contact_wrench),1);
+      for i = 1:length(obj.contact_wrench)
+        A_force{i} = obj.contact_wrench{i}.force;
+      end
+      total_num_contact_pts = 0;
+      for i = 1:length(obj.unique_body_contact_pts)
+        total_num_contact_pts = total_num_contact_pts+size(obj.unique_body_contact_pts{i},2);
+      end
+      iAfun = [];
+      jAvar = [];
+      Aval = [];
+      active_lambda_inds = [];
+      for j = 1:obj.N
+        count_num_pts_j = 0;
+        for i = 1:length(obj.unique_contact_bodies)
+          num_pts_i = size(obj.unique_body_contact_pts{i},2);
+          unique_contact_wrench_ij = unique(obj.lambda2contact_wrench{i}(obj.lambda2contact_wrench{i}(:,j)~=0,j))';
+          for k = unique_contact_wrench_ij
+            num_pt_F_ijk = obj.contact_wrench{k}.num_pt_F;
+            body_pts_ijk_idx = find(obj.lambda2contact_wrench{i}(:,j) == k)';            
+            iAfun = [iAfun;reshape(bsxfun(@times,(j-1)*3*total_num_contact_pts+3*count_num_pts_j+reshape(bsxfun(@plus,[1;2;3],(body_pts_ijk_idx-1)*3),[],1),ones(1,num_pt_F_ijk*length(body_pts_ijk_idx))),[],1)];
+            jAvar = [jAvar;reshape(bsxfun(@times,reshape(obj.lambda_inds{i}(:,body_pts_ijk_idx,j),1,[]),ones(3*length(body_pts_ijk_idx),1)),[],1)];
+            Aval = [Aval;A_force{k}(:)];
+            active_lambda_inds = [active_lambda_inds;reshape(obj.lambda_inds{i}(:,body_pts_ijk_idx,j),[],1)];
+          end
+          count_num_pts_j = count_num_pts_j+num_pts_i;
+        end
+      end
+      A_force_total = sparse(iAfun,jAvar,Aval,3*total_num_contact_pts*obj.N,obj.num_vars);
+      Q_diag = kron(speye(total_num_contact_pts*obj.N),obj.Q_contact_force);
+      force_norm_cost = QuadraticConstraint(-inf,inf,2*A_force_total'*Q_diag*A_force_total,zeros(obj.num_vars,1));
+      force_norm_cost = force_norm_cost.setSparseStructure(ones(length(active_lambda_inds),1),active_lambda_inds);
+      obj = obj.addCost(force_norm_cost);
     end
   end
   

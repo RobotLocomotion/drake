@@ -87,7 +87,8 @@ Q(2,2) = 0;
 Q(6,6) = 0;
 Q(bky_idx,bky_idx) = 100*Q(bky_idx,bky_idx);
 Qv = 0.1*eye(nv);
-cdfkp = ComDynamicsFullKinematicsPlanner(robot,nT,tf_range,Q_comddot,Qv,Q,q_nom,[l_foot_contact_wrench r_foot_contact_wrench]);
+Q_contact_force = 20/(robot.getMass*g)^2*eye(3);
+cdfkp = ComDynamicsFullKinematicsPlanner(robot,nT,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,[l_foot_contact_wrench r_foot_contact_wrench]);
 
 lfoot_toe_above_ground = WorldPositionConstraint(robot,l_foot,l_foot_toe,[nan(2,2);0.01*ones(1,2)],nan(3,2));
 % lfoot_toe_above_ground = lfoot_toe_above_ground.generateConstraint([]);
@@ -200,6 +201,7 @@ lambda_sol{1} = reshape(x_sol(cdfkp.lambda_inds{1}),size(cdfkp.lambda_inds{1},1)
 lambda_sol{2} = reshape(x_sol(cdfkp.lambda_inds{2}),size(cdfkp.lambda_inds{2},1),[],nT);
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
 xtraj_sol = xtraj_sol.setOutputFrame(robot.getStateFrame);
+wrench_sol = cdfkp.contactWrench(x_sol);
 keyboard;
 end
 
