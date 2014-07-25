@@ -10,6 +10,10 @@ class QuaternionFloatingJoint: public DrakeJoint
   QuaternionFloatingJoint& operator=(const QuaternionFloatingJoint&) = delete;
 
 public:
+  static const int NUM_POSITIONS = 7;
+  static const int NUM_VELOCITIES = 6;
+
+public:
   QuaternionFloatingJoint(const std::string& name, const RigidBody& parent_body, const Eigen::Isometry3d& transform_to_parent_body);
 
   virtual ~QuaternionFloatingJoint();

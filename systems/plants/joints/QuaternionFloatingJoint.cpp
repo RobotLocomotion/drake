@@ -60,6 +60,15 @@ void QuaternionFloatingJoint::randomConfiguration(double* q, std::default_random
 
 void QuaternionFloatingJoint::qdotToV(double* q, Eigen::MatrixXd& qdot_to_v, Eigen::MatrixXd* dqdot_to_v) const
 {
+  qdot_to_v.resize(getNumVelocities(), getNumPositions());
+
+  Quaterniond quat(q[3], q[4], q[5], q[6]);
+  const auto R = quat.toRotationMatrix();
+
+  if (dqdot_to_v) {
+    dqdot_to_v->setZero(qdot_to_v.size(), getNumPositions());
+  }
+//  Matrix<double, num_velocities, num_positions> mat;
 }
 
 void QuaternionFloatingJoint::vToQdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const

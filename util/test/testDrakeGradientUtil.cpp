@@ -1,5 +1,6 @@
 #include "drakeGradientUtil.h"
 #include "drakeQuatUtil.h"
+#include "GradientVar.h"
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/KroneckerProduct> // unsupported...
@@ -349,32 +350,54 @@ void testNormalizeVec(int ntests) {
   }
 }
 
+void testGradientVar() {
+  const int nq = 34;
+  const int order = 3;
+
+  const int n = 5;
+  const int m = 7;
+  const int p = 8;
+
+  GradientVar<Matrix<double, n, m>> var1(nq, order);
+//  var1.addGradient();
+//  var1.setGradientOrder(3);
+  var1.val().setRandom();
+  var1.getGradient().val().setRandom();
+  std::cout << "var1.mat:\n" << var1.val() << "\n\n";
+  std::cout << "var1.gradient.mat:\n" << var1.getGradient().val() << "\n\n";
+
+//  auto var2(var1);
+
+//  std::cout << "var2.mat:\n" << var2.val() << "\n\n";
+}
+
 int main(int argc, char **argv) {
-  int ntests = 100000;
-  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, ntests) << std::endl;
+//  int ntests = 100000;
+//  std::cout << "testTransposeGrad elapsed time: " << measure<>::execution(testTransposeGrad, ntests) << std::endl;
+//
+//  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, ntests, false) << std::endl;
+//  testMatGradMultMat(1000, true);
+//
+//  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, ntests, false) << std::endl;
+//  testMatGradMult(1000, true);
+//
+//  std::cout << "testGetSubMatrixGradient elapsed time: " << measure<>::execution(testGetSubMatrixGradient, ntests) << std::endl;
+//
+//  std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, ntests, false) << std::endl;
+//  testSetSubMatrixGradient(1000, true);
+//
+//  std::cout << "testDHomogTrans elapsed time: " << measure<>::execution(testDHomogTrans, ntests) << std::endl;
+//
+//  std::cout << "testDHomogTransInv elapsed time: " << measure<>::execution(testDHomogTransInv, ntests, false) << std::endl;
+//  testDHomogTransInv(1000, true);
+//
+//  std::cout << "testDTransformAdjoint elapsed time: " << measure<>::execution(testDTransformAdjoint, ntests, false) << std::endl;
+//
+//  std::cout << "testDTransformAdjointTranspose elapsed time: " << measure<>::execution(testDTransformAdjointTranspose, ntests, false) << std::endl;
+//
+//  std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, ntests) << std::endl;
 
-  std::cout << "testMatGradMultMat elapsed time: " << measure<>::execution(testMatGradMultMat, ntests, false) << std::endl;
-  testMatGradMultMat(1000, true);
-
-  std::cout << "testMatGradMult elapsed time: " << measure<>::execution(testMatGradMult, ntests, false) << std::endl;
-  testMatGradMult(1000, true);
-
-  std::cout << "testGetSubMatrixGradient elapsed time: " << measure<>::execution(testGetSubMatrixGradient, ntests) << std::endl;
-
-  std::cout << "testSetSubMatrixGradient elapsed time: " << measure<>::execution(testSetSubMatrixGradient, ntests, false) << std::endl;
-  testSetSubMatrixGradient(1000, true);
-
-  std::cout << "testDHomogTrans elapsed time: " << measure<>::execution(testDHomogTrans, ntests) << std::endl;
-
-  std::cout << "testDHomogTransInv elapsed time: " << measure<>::execution(testDHomogTransInv, ntests, false) << std::endl;
-  testDHomogTransInv(1000, true);
-
-  std::cout << "testDTransformAdjoint elapsed time: " << measure<>::execution(testDTransformAdjoint, ntests, false) << std::endl;
-
-  std::cout << "testDTransformAdjointTranspose elapsed time: " << measure<>::execution(testDTransformAdjointTranspose, ntests, false) << std::endl;
-
-  std::cout << "testNormalizeVec elapsed time: " << measure<>::execution(testNormalizeVec, ntests) << std::endl;
-
+  testGradientVar();
 
   return 0;
 }
