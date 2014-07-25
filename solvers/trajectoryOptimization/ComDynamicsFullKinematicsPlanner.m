@@ -93,7 +93,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       obj = obj.addCost(v_cost,reshape(obj.v_inds,[],1));
     end
     
-    function obj = addContactDynamicConstraints(obj,knot_idx,contact_wrench_cnstr_idx,knot_lambda_idx)
+    function obj = addContactDynamicConstraints(obj,knot_idx,contact_wrench_idx,knot_lambda_idx)
       num_knots = numel(knot_idx);
       sizecheck(num_knots,[1,1]);
       num_lambda = length(knot_lambda_idx);
@@ -103,11 +103,11 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         c = Hdot;
         dc = zeros(3,obj.nq+3+num_lambda+3);
         dc(1:3,obj.nq+3+num_lambda+(1:3)) = eye(3);
-        for i = contact_wrench_cnstr_idx
-          num_pts_i = obj.contact_wrench_cnstr{i}.num_pts;
-          num_lambda_i = obj.contact_wrench_cnstr{i}.pt_num_F*num_pts_i;
+        for i = contact_wrench_idx
+          num_pts_i = obj.contact_wrench{i}.num_pts;
+          num_lambda_i = obj.contact_wrench{i}.num_pt_F*num_pts_i;
           force_i = reshape(A_force{i}*lambda(lambda_count+(1:num_lambda_i)),3,num_pts_i);
-          [contact_pos_i,dcontact_pos_i_dq] = obj.robot.forwardKin(kinsol,obj.contact_wrench_cnstr{i}.body,obj.contact_wrench_cnstr{i}.body_pts,0);
+          [contact_pos_i,dcontact_pos_i_dq] = obj.robot.forwardKin(kinsol,obj.contact_wrench{i}.body,obj.contact_wrench{i}.body_pts,0);
           [torque_i,dtorque_i] = crossSum(contact_pos_i-bsxfun(@times,com,ones(1,num_pts_i)),force_i);
           c(1:3) = c(1:3)-torque_i;
           dc(1:3,1:obj.nq) = dc(1:3,1:obj.nq)-dtorque_i(:,1:num_pts_i*3)*dcontact_pos_i_dq;
@@ -141,14 +141,14 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         % m*comddot+m*g = sum_j F_j
         A_force_stack = zeros(3,num_lambda);
         lambda_count_tmp = 0;
-        A_force = cell(1,length(contact_wrench_cnstr_idx));
+        A_force = cell(1,length(contact_wrench_idx));
         joint_idx = [];
-        for j = contact_wrench_cnstr_idx
-          num_pts_j = obj.contact_wrench_cnstr{j}.num_pts;
-          num_lambda_j = obj.contact_wrench_cnstr{j}.pt_num_F*num_pts_j;
-          A_force{j} = obj.contact_wrench_cnstr{j}.force();
+        for j = contact_wrench_idx
+          num_pts_j = obj.contact_wrench{j}.num_pts;
+          num_lambda_j = obj.contact_wrench{j}.num_pt_F*num_pts_j;
+          A_force{j} = obj.contact_wrench{j}.force();
           A_force_stack(:,lambda_count_tmp+(1:num_lambda_j)) = sparse(reshape(bsxfun(@times,[1;2;3],ones(1,num_pts_j)),[],1),(1:3*num_pts_j)',ones(3*num_pts_j,1))*A_force{j};
-          [~,joint_path] = obj.robot.findKinematicPath(1,obj.contact_wrench_cnstr{j}.body);
+          [~,joint_path] = obj.robot.findKinematicPath(1,obj.contact_wrench{j}.body);
           if isa(obj.robot,'TimeSteppingRigidBodyManipulator')
             joint_idx_j = vertcat(obj.robot.getManipulator().body(joint_path).dofnum)';
           else
