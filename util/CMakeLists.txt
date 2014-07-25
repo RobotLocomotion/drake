@@ -1,14 +1,6 @@
 
 add_mex(realtime realtime.cpp)
 
-if (LCM_FOUND)
-  add_mex(lcmLogger lcmLogger.cpp)
-  pods_use_pkg_config_packages(lcmLogger lcm)
-
-  add_mex(publishLCMLog publishLCMLog.cpp)
-  pods_use_pkg_config_packages(publishLCMLog lcm)
-endif()
-
 # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
 #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 #add_mex(deleteMexPointer deleteMexPointer.cpp $<TARGET_OBJECTS:drakeUtil>)
