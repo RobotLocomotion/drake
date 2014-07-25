@@ -219,13 +219,13 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
           obj.unique_contact_bodies(end+1) =  obj.contact_wrench{i}.body;
           num_pt_F_contact_bodies(end+1) = obj.contact_wrench{i}.num_pt_F;
           obj.unique_body_contact_pts{end+1} = obj.contact_wrench{i}.body_pts;
-          body_contact_type(end+1) = obj.contact_wrench{i}.type;
+          body_contact_type(end+1) = obj.contact_wrench{i}.contact_force_type;
           unique_body2contact_wrench{end+1} = i;
         else
           if(sum(repeat_body)>1)
             error('Drake:SimpleDynamicsFullKinematics:parseRigidBodyContactWrench: there should be at most one existing contact body with the same body index');
           end
-          if(obj.contact_wrench{i}.type ~= body_contact_type(repeat_body))
+          if(obj.contact_wrench{i}.contact_force_type ~= body_contact_type(repeat_body))
             error('Drake:SimpleDynamicsFullKinematics:parseRigidBodyContactWrench: Currently we only support one type of RigidBodyContactWrench for one contact body');
           end
           if(obj.contact_wrench{i}.num_pt_F ~= num_pt_F_contact_bodies(repeat_body))
@@ -325,7 +325,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
           tLeft_contact_wrench_idx = [tLeft_contact_wrench_idx unique(obj.lambda2contact_wrench{j}(tLeft_valid_pt_idx,1)','stable')];
         end
         tLeft_lambda_idx = tLeft_lambda_idx(1:tLeft_lambda_count);
-        obj = obj.addContactDynamicConstraints(1,tLeft_contact_wrench_idx,tLeft_lambda_idx);
+        obj = obj.addContactDynamicConstraints(1,{tLeft_contact_wrench_idx},{tLeft_lambda_idx});
         for i = 2:obj.N
           tRight_contact_wrench_idx = [];
           tRight_lambda_idx = zeros(obj.num_lambda_knot,1);
@@ -339,7 +339,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
             tRight_contact_wrench_idx = [tRight_contact_wrench_idx unique(obj.lambda2contact_wrench{j}(tRight_valid_pt_idx,i)','stable')];
           end
           tRight_lambda_idx = tRight_lambda_idx(1:tRight_lambda_count);
-          obj = obj.addContactDynamicConstraints(i,tRight_contact_wrench_idx,tRight_lambda_idx);
+          obj = obj.addContactDynamicConstraints(i,{tRight_contact_wrench_idx},{tRight_lambda_idx});
           obj = obj.addContactDynamicConstraints([i-1,i],[{tLeft_contact_wrench_idx},{tRight_contact_wrench_idx}],[{tLeft_lambda_idx},{tRight_lambda_idx}]);
           tLeft_contact_wrench_idx = tRight_contact_wrench_idx;
           tLeft_lambda_idx = tRight_lambda_idx;

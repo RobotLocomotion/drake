@@ -5,7 +5,7 @@ classdef ComplementarityFrictionConeWrench < FrictionConeWrench
   % <force,gamma> = 0 (nlcon)
   % gamma >= 0 (bcon)
   properties
-    phi_handle % A function handle. phi_handle(kinsol) returns the distance from the body contact point to the contact enviroment, and its gradient
+    phi_handle % A function handle. phi_handle(pt_pos) returns the distance from the body contact point to the contact enviroment, and its gradient
   end
   
   methods
@@ -35,13 +35,16 @@ classdef ComplementarityFrictionConeWrench < FrictionConeWrench
         comp_name{obj.num_pts+i} = sprintf('<%s_pt%d_normal_force,gamma>=0',obj.body_name,i);
       end
       obj.wrench_cnstr_name = [obj.wrench_cnstr_name;comp_name];
+      obj.complementarity_flag = true;
     end
     
     function [c,dc] = evalWrenchConstraint(obj,kinsol,F,slack)
       gamma = slack;
       [c1,dc1] = evalWrenchConstraint@FrictionConeWrench(obj,kinsol,F,slack);
       dc1 = [dc1 zeros(numel(c1),obj.num_slack)];
-      [phi,dphidq] = obj.phi_handle(kinsol);
+      [pt_pos,dpt_pos] = obj.robot.forwardKin(kinsol,obj.body,obj.body_pts,0);
+      [phi,dphidpos] = obj.phi_handle(pt_pos);
+      dphidq = dphidpos*dpt_pos;
       c2 = phi-gamma;
       dc2 = [dphidq zeros(obj.num_pts,3*obj.num_pts) -eye(obj.num_pts)];
       F_normal = sum(F.*obj.FC_axis,1);

@@ -1,4 +1,5 @@
 function testComDynamicsFullKinematicsPlanner2
+% Jumping with fixed contact sequence
 warning('off','Drake:RigidBody:SimplifiedCollisionGeometry');
 warning('off','Drake:RigidBody:NonPositiveInertiaMatrix');
 warning('off','Drake:RigidBodyManipulator:UnsupportedContactPoints');
