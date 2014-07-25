@@ -5,7 +5,6 @@ classdef RigidBodyDepthSensorMeasurementsToOcTree < DrakeSystem
   properties (SetAccess=private)
     manip  % a RigidBodyManipulator (or TimeSteppingRigidBodyManipulator)
     octree % an OcTree object
-    lcmgl 
   end
 
   methods
@@ -18,7 +17,7 @@ classdef RigidBodyDepthSensorMeasurementsToOcTree < DrakeSystem
     end
     
     function obj = enableLCMGL(obj,channel_name)
-      obj.lcmgl = channel_name;
+      enableLCMGL(obj.octree,channel_name);
     end
     
     function y=output(obj,t,~,u)
@@ -35,10 +34,7 @@ classdef RigidBodyDepthSensorMeasurementsToOcTree < DrakeSystem
 
       % todo: obj.tree.castRay();
       
-      % todo: publish LCMGL
-%      if ~isempty(obj.lcmgl)
-%        obj.tree.publishLCMGL(obj.lcmgl);
-%      end
+      obj.tree.publishLCMGL();  % if it was enabled
     end
   end
   

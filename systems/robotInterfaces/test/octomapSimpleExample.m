@@ -16,3 +16,6 @@ tree.search([0;0;0])
 tree.search([-1;-1;-1])
 tree.search([1;1;1])
 
+% display the tree (note: an lcmgl visualizer needs to be open already)
+tree.enableLCMGL('octree');
+tree.publishLCMGL();

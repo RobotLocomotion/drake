@@ -18,13 +18,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   //
   //   Queries:
   //    results = octomapWrapper(octree,1,pts) // search
+  //    leaf_nodes = octomapWrapper(octree,2)  // getLeafNodes
   //
   //   Update tree:
   //    octomapWrapper(octree,11,pts,occupied)   // updateNote(pts,occupied).  pts is 3-by-n, occupied is 1-by-n logical
   //
   //   General operations:
-  //    octomapWrapper(octree,21,lcmgl_name)  // publish to lcmgl
-  //    octomapWrapper(octree,22,filename)    // save to file
+  //    octomapWrapper(octree,21,filename)    // save to file
 
 
   OcTree* tree=NULL;
@@ -74,6 +74,28 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         }
       }
       break;
+    case 2:  // get leaf nodes
+      {
+//      mexPrintf("octree get leaf nodes\n");
+        int N = tree->getNumLeafNodes();
+        plhs[0] = mxCreateDoubleMatrix(3,N,mxREAL);
+        double* leaf_xyz = mxGetPr(plhs[0]);
+
+        double* leaf_value = NULL;
+        if (nhls>1) {
+          plhs[1] = mxCreateDoubleMatrix(1,N,mxREAL);
+          leaf_value = mxGetPr(plhs[1]);
+        }
+
+        for(OcTreeTYPE::leaf_iterator leaf = tree->begin_leafs(),
+          end=tree->end_leafs(); leaf!= end; ++leaf)
+          leaf_xyz[0] = leaf->getX();
+          leaf_xyz[1] = leaf->getY();
+          leaf_xyz[2] = leaf->getZ();
+          leaf_xyz += 3;
+          if (leaf_value) *leaf_value++ = leaf->getValue();
+        }
+      } break;
     case 11:  // add occupied pts
       {
 //        mexPrintf("octree updateNode\n");
@@ -86,6 +108,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         }
       }
       break;
+    case 21:  // save to file
+      {
+        char* filename = mxArrayToString(prhs[2]);
+//        mexPrintf("writing octree to %s\n",filename);
+        tree->writeBinary(filename);
+        mxFree(filename);
+      } break;
     default:
       mexErrMsgTxt("octomapWrapper: Unknown command");
   }

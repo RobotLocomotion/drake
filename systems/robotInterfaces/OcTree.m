@@ -7,6 +7,7 @@ classdef OcTree < handle
   
   properties (SetAccess=private)
     mex_ptr
+    lcmgl
   end
   
   methods
@@ -21,6 +22,13 @@ classdef OcTree < handle
       
       typecheck(resolution_or_filename,{'double','char'});
       obj.mex_ptr = octomapWrapper(resolution_or_filename);
+      
+    end
+
+    function enableLCMGL(lcmgl_channel)
+      if (checkDependency('lcmgl'))
+        obj.lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), lcmgl_channel);
+      end
     end
     
     function updateNode(tree,pts,occupied)
@@ -39,6 +47,17 @@ classdef OcTree < handle
     
     function occupancy_probability = search(tree,pts)
       occupancy_probability = octomapWrapper(tree.mex_ptr,1,pts);
+    end
+    
+    function [nodes,values] = getLeafNodes(tree);
+    
+    function publishToLCMGL(tree)
+      if (obj.lcmgl) % fail quietly if dependency is missing
+        [nodes,values] = getLeafNodes(tree);
+        obj.lcmgl.glColor3f(1, 0, 0);
+        obj.lcmgl.points(points(1,:),points(2,:),points(3,:));
+        obj.lcmgl.switchBuffers();
+      end
     end
   end
   
