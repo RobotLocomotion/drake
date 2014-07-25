@@ -1,4 +1,39 @@
-function [plan, v] = footstepMISOCP_grb(biped, seed_plan, weights, goal_pos, v_seed)
+function [plan, v] = footstepMIQCQP(biped, seed_plan, weights, goal_pos, v_seed)
+% Footstep planner based on the approach presented in "Footstep Planning on
+% Uneven Terrain with Mixed-Integer Convex Optimization" by Robin Deits and
+% Russ Tedrake. This implementation uses a mixed-integer
+% quadratically-constrained program to plan the number of footsteps to take,
+% the position and yaw of those steps, and the assignments of footsteps to
+% convex regions of obstacle-free terrain. 
+%
+% This planner should be used by passing the 'method_handle', @footstepMIQCQP 
+% option to planFootsteps.m.
+% 
+% @param seed_plan a blank footstep plan, provinding the structure of the
+%                  desired plan. Probably generated with
+%                  FootstepPlan.blank_plan()
+% @param weights a struct with fields 'goal', 'relative', and
+%                'relative_final' describing the various contributions to
+%                the cost function. These are described in detail in
+%                Biped.getFootstepOptimizationWeights()
+% @param goal_pos a struct with fields 'right' and 'left'.
+%                 goal_pos.right is the desired 6 DOF pose
+%                 of the right foot sole, and likewise for
+%                 goal_pos.left
+% @param v_seed (optional) an advanced starting point for the mixed-integer
+%               solver. This should be a structure of the same form as 'v'
+%               returned by this function, and may be useful for re-running
+%               the planner after making a small change to the problem. If
+%               the values contained in this seed lead to a feasible
+%               solution, then this can dramatically improve the
+%               performance of the optimization. 
+% @retval plan a FootstepPlan with the results of the optimization
+% @retval v a data structure describing all of the variables in the
+%           optimization. This is only useful to you if you intend to pass
+%           it in as 'v_seed' to another run of this planner.
+
+
+DEBUG_GOAL_CONSTRAINT = false; % if true, force the final steps to the goal pose as a constraint instead of an objective
 
 checkDependency('gurobi');
 if nargin < 5
@@ -21,6 +56,30 @@ sin_boundaries = reshape(bsxfun(@plus, [min_yaw:pi:max_yaw; min_yaw:pi:max_yaw],
 
 
 % Build a struct to hold the sizes and indices of our decision variables
+% This is a new approach that I'm experimenting with, which should offer
+% a mix of the advantages of symbolic and matrix-based optimization
+% frameworks. The idea is that we have a single Matlab struct (named just
+% 'v' for convenience) and each variable in the optimization has a
+% corresponding named field in v. For each variable, we have subfields as
+% follows:
+% type: 'B', 'I', or 'C' for binary, integer, or continuous variables
+% size: a 2x1 vector describing the shape of the variable
+% i: the indices corresponding to the variable, as a matrix of the same size as 
+% the 'size' field above. 
+% lb: lower bound, as a matrix of the same size as 'size'
+% ub: upper bound, a matrix
+% start:  the initial values as a matrix of the same size as 'size'
+%
+% After optimization, there will be an additional field added to v, called
+% 'value', which will contain the final values after optimization.
+% 
+% The 'i' field of indices is useful because when
+% we actually set up the problem in gurobi or another solver, all of the
+% optimization variables are combined into one long vector. This index
+% field lets us easily address parts of that vector. For example, to set
+% the entry in a constraint matrix A corresponding to the jth row and kth column 
+% of variable 'foo' to 1, we can do the following:
+% A(1, v.foo.i(j,k)) = 1;
 nv = 0;
 v = struct();
 
@@ -41,9 +100,6 @@ function add_var(name, type_, size_, lb, ub, start_)
   if nargin < 6
     start_ = [];
   end
-  % if isscalar(start_)
-  %   start_ = repmat(start_, v.(name).size);
-  % end
   v.(name).start = nan(v.(name).size);
   v.(name).start(1:size(start_, 1), 1:size(start_, 2)) = start_;
 end
@@ -122,10 +178,6 @@ end
 % trim(1:2) == 1
 v.trim.lb(1:2) = 1;
 v.trim.ub(1:2) = 1;
-
-% trim(end) == 0
-% v.trim.lb(end) = 0;
-% v.trim.ub(end) = 0;
 
 % Debug: uncomment these to fix the sin and cos sectors
 % ai = zeros(nsteps, nv);
@@ -245,11 +297,9 @@ for j = 1:nsteps
     % sum(sin_sector(max(1,k-1):min(k+1,size(sin_sector,1)),j)) >= cos_sector(k,j),...
     As(offset+1, v.sin_sector.i(max(1,k-1):min(k+1,v.sin_sector.size(1)),j)) = -1;
     As(offset+1, v.cos_sector.i(k,j)) = 1;
-%     As(offset+1, v.trim.i(j)) = -5;
     % sum(cos_sector(max(1,k-1):min(k+1,size(cos_sector,1)),j)) >= sin_sector(k,j)];
     As(offset+2, v.cos_sector.i(max(1,k-1):min(k+1,v.cos_sector.size(1)),j)) = -1;
     As(offset+2, v.sin_sector.i(k,j)) = 1;
-%     As(offset+2, v.trim.i(j)) = -5;
     offset = offset + 2;
   end
 end
@@ -382,26 +432,6 @@ assert(offset == expected_offset);
 A = [A; Ar];
 b = [b; br];
 
-% % Allowed transitions between regions
-% for j = 3:nsteps-1
-%   ai = zeros(6, nv);
-%   bi = zeros(6,1);
-%   ai(1, v.region.i(1,j)) = 1;
-%   ai(1, v.region.i([1,2],j+1)) = -1;
-%   ai(2, v.region.i(2,j)) = 1;
-%   ai(2, v.region.i([1,2,3],j+1)) = -1;
-%   ai(3, v.region.i(3,j)) = 1;
-%   ai(3, v.region.i([2,3,4],j+1)) = -1;
-%   ai(4, v.region.i(4,j)) = 1;
-%   ai(4, v.region.i([3,4,5],j+1)) = -1;
-%   ai(5, v.region.i(5,j)) = 1;
-%   ai(5, v.region.i([4,5,6],j+1)) = -1;
-%   ai(6, v.region.i(6,j)) = 1;
-%   ai(6, v.region.i([5,6],j+1)) = -1;
-%   A = [A; ai];
-%   b = [b; bi];
-% end
-
 % trim(j) fixes step j to the initial pose of that foot (so we can trim it out of the plan later)
 A_i = zeros((8)*(nsteps - 3), nv);
 b_i = zeros(size(A_i, 1), 1);
@@ -436,40 +466,42 @@ A = [A; A_i];
 b = [b; b_i];
 
 
-% Distance to goal objective
-w_goal = diag(weights.goal([1,2,3,6]));
-for j = nsteps-1:nsteps
-  if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
-    xg = reshape(goal_pos.right([1,2,3,6]), [], 1);
-  else
-    xg = reshape(goal_pos.left([1,2,3,6]), [], 1);
+if DEBUG_GOAL_CONSTRAINT
+  % Goal pose constraint
+  Aeq_i = zeros(3 * 2, nv);
+  beq_i = zeros(size(Aeq_i, 1), 1);
+  offset = 0;
+  expected_offset = size(Aeq_i, 1);
+  for j = nsteps-1:nsteps
+    if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
+      xg = reshape(goal_pos.right([1,2,6]), [], 1);
+    else
+      xg = reshape(goal_pos.left([1,2,6]), [], 1);
+    end
+    Aeq_i(offset+(1:3), v.x.i([1,2,4],j)) = eye(3);
+    beq_i(offset+(1:3)) = xg;
+    offset = offset + 3;
+  %   Q(v.x.i(:,j), v.x.i(:,j)) = w_goal;
+  %   c(v.x.i(:,j)) = -2 * xg' * w_goal;
+  %   objcon = objcon + xg' * w_goal * xg;
   end
-  Q(v.x.i(:,j), v.x.i(:,j)) = w_goal;
-  c(v.x.i(:,j)) = -2 * xg' * w_goal;
-  objcon = objcon + xg' * w_goal * xg;
+  assert(offset == expected_offset);
+  Aeq = [Aeq; Aeq_i];
+  beq = [beq; beq_i];
+else
+  % Distance to goal objective
+  w_goal = diag(weights.goal([1,2,3,6]));
+  for j = nsteps-1:nsteps
+    if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
+      xg = reshape(goal_pos.right([1,2,3,6]), [], 1);
+    else
+      xg = reshape(goal_pos.left([1,2,3,6]), [], 1);
+    end
+    Q(v.x.i(:,j), v.x.i(:,j)) = w_goal;
+    c(v.x.i(:,j)) = -2 * xg' * w_goal;
+    objcon = objcon + xg' * w_goal * xg;
+  end
 end
-
-% % Goal pose constraint
-% Aeq_i = zeros(3 * 2, nv);
-% beq_i = zeros(size(Aeq_i, 1), 1);
-% offset = 0;
-% expected_offset = size(Aeq_i, 1);
-% for j = nsteps-1:nsteps
-%   if seed_plan.footsteps(j).frame_id == biped.foot_frame_id.right
-%     xg = reshape(goal_pos.right([1,2,6]), [], 1);
-%   else
-%     xg = reshape(goal_pos.left([1,2,6]), [], 1);
-%   end
-%   Aeq_i(offset+(1:3), v.x.i([1,2,4],j)) = eye(3);
-%   beq_i(offset+(1:3)) = xg;
-%   offset = offset + 3;
-% %   Q(v.x.i(:,j), v.x.i(:,j)) = w_goal;
-% %   c(v.x.i(:,j)) = -2 * xg' * w_goal;
-% %   objcon = objcon + xg' * w_goal * xg;
-% end
-% assert(offset == expected_offset);
-% Aeq = [Aeq; Aeq_i];
-% beq = [beq; beq_i];
 
 % Step displacement objective
 w_rel = diag(weights.relative([1,1,3,6]));
@@ -590,11 +622,8 @@ assert(length(region_order) == length(plan.footsteps));
 plan.region_order = region_order;
 
 % Remove unnecessary footsteps
-% trim = round(trim);
 v.trim.value(find(v.trim.value, 2, 'last')) = false;
 plan = plan.slice(~v.trim.value);
-% sin_yaw = sin_yaw(~trim);
-% cos_yaw = cos_yaw(~trim);
 
 plan.sanity_check();
 end
