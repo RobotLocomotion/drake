@@ -11,6 +11,8 @@ tree.updateNode(.05*[x(:)';y(:)';z(:)'],true);
 [x,y,z]=ndgrid(-30:30,-30:30,-30:30);
 tree.updateNode(.02*[x(:)';y(:)';z(:)']-1,false);
 
+% perform some queries
 tree.search([0;0;0])
 tree.search([-1;-1;-1])
 tree.search([1;1;1])
+
