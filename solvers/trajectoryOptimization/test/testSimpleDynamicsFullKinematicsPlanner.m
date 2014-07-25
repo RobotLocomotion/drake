@@ -51,5 +51,10 @@ r_foot_contact_cnstr{2} = struct('active_knot',10:17,'cwc',LinearFrictionConeWre
 tf_range = [1.6 2.5];
 nT = 17;
 q_nom = bsxfun(@times,qstar,ones(1,nT));
-sdfkp = ComDynamicsFullKinematicsPlanner(robot,17,tf_range,q_nom,l_foot_contact_cnstr{:},r_foot_contact_cnstr{:});
+Q_comddot = eye(3);
+Q = eye(nq);
+Q(1,1) = 0;
+Q(2,2) = 0;
+Q(6,6) = 0;
+sdfkp = ComDynamicsFullKinematicsPlanner(robot,nT,tf_range,Q_comddot,Q,q_nom,l_foot_contact_cnstr{:},r_foot_contact_cnstr{:});
 end

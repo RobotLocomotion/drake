@@ -232,7 +232,9 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       obj.N = N;
       x_names = cell(num_vars,1);
       for i = 1:N
-        x_names{i} = sprintf('h[%d]',i);
+        if(i<N)
+          x_names{i} = sprintf('h[%d]',i);
+        end
         for j = 1:nX
           x_names{nH+(i-1)*nX+j}=sprintf('x%d[%d]',j,i);
         end
