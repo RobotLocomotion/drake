@@ -38,32 +38,56 @@ classdef ContactWrenchVisualizer < BotVisualizer
       for i = 1:obj.num_contact_bodies
         obj.wrench_lcmgl{i} = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),sprintf('%s_wrench',obj.model.getBody(obj.wrench_sol(i,1).body).linkname));
       end
-      obj.force_scaler = manip.getMass*9.81;
-      obj.torque_scaler = manip.getMass*9.81;
+      obj.force_scaler = manip.getMass*9.81/3;
+      obj.torque_scaler = manip.getMass*9.81/50;
     end
     
     function draw(obj,t,y)
       draw@BotVisualizer(obj,t,y);
-      t_ind = find(t<=obj.t_knot,1,'first');
+      t_ind1 = find(t>obj.t_knot,1,'last');
+      if(isempty(t_ind1))
+        t_ind1 = 1;
+        t_ind2 = 1;
+      else
+        t_ind2 = t_ind1+1;
+      end
       for i = 1:obj.num_contact_bodies
-        pts_pos_i = obj.wrench_sol(i,t_ind).pts_pos;
-        force_i = obj.wrench_sol(i,t_ind).force;
-        torque_i = obj.wrench_sol(i,t_ind).torque;
-        force_i_norm = sum(force_i.^2,1);
-        torque_i_norm = sum(torque_i.^2,1);
+        pts_pos_i = obj.wrench_sol(i,t_ind1).pts_pos;
+        force_i1 = obj.wrench_sol(i,t_ind1).force;
+        torque_i1 = obj.wrench_sol(i,t_ind1).torque;
+        force_i1_norm = sum(force_i1.^2,1);
+        torque_i1_norm = sum(torque_i1.^2,1);
+        force_i2 = obj.wrench_sol(i,t_ind2).force;
+        torque_i2 = obj.wrench_sol(i,t_ind2).torque;
+        force_i2_norm = sum(force_i2.^2,1);
+        torque_i2_norm = sum(torque_i2.^2,1);
         for j = 1:size(pts_pos_i,2)
-          if(force_i_norm(j)>0.01)
+          if(force_i1_norm(j)>0.01&&force_i2_norm(j)>0.01)
+            force_ij = force_i2(:,j);
+          elseif(force_i1_norm(j)<=0.01 && force_i2_norm(j)>0.01)
+            force_ij = zeros(3,1);
+          elseif(force_i1_norm(j)>0.01 && force_i2_norm(j)<=0.01)
+            force_ij = zeros(3,1);
+          else
+            force_ij = zeros(3,1);
+          end
+          if(norm(force_ij)>0.01)
             obj.wrench_lcmgl{i}.glLineWidth(2);
             obj.wrench_lcmgl{i}.glPushMatrix();
             obj.wrench_lcmgl{i}.glTranslated(pts_pos_i(1,j),pts_pos_i(2,j),pts_pos_i(3,j));
-            obj.wrench_lcmgl{i}.glColor3f(0,1,0);
+            obj.wrench_lcmgl{i}.glColor3f(0,0,1);
             obj.wrench_lcmgl{i}.glBegin(obj.wrench_lcmgl{i}.LCMGL_LINES);
             obj.wrench_lcmgl{i}.glVertex3f(0,0,0);
-            obj.wrench_lcmgl{i}.glVertex3f(force_i(1,j)/obj.force_scaler,force_i(2,j)/obj.force_scaler,force_i(3,j)/obj.force_scaler);
+            obj.wrench_lcmgl{i}.glVertex3f(force_ij(1)/obj.force_scaler,force_ij(2)/obj.force_scaler,force_ij(3)/obj.force_scaler);
             obj.wrench_lcmgl{i}.glEnd();
             obj.wrench_lcmgl{i}.glPopMatrix();
           end
-          if(torque_i_norm(j)>0.01)
+          if(torque_i1_norm(j)>0.01)
+            obj.wrench_lcmgl{i}.glLineWidth(2);
+            obj.wrench_lcmgl{i}.glPushMatrix();
+            obj.wrench_lcmgl{i}.glTranslated(pts_pos_i(1,j),pts_pos_i(2,j),pts_pos_i(3,j));
+            obj.wrench_lcmgl{i}.glColor3f(0,0.3,0.8);
+            obj.wrench_lcmgl{i}.glBegin(obj.wrench_lcmgl{i}.LCMGL_LINES);
           end
         end
         obj.wrench_lcmgl{i}.switchBuffers();
