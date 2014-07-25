@@ -17,8 +17,8 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
   end
   
   methods
-    function obj = ComDynamicsFullKinematicsPlanner(robot,t_seed,tf_range,q_nom_traj,fix_initial_state,x0,varargin)
-      obj = obj@SimpleDynamicsFullKinematicsPlanner(robot,t_seed,tf_range,q_nom_traj,fix_initial_state,x0,varargin{:});
+    function obj = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,q_nom,varargin)
+      obj = obj@SimpleDynamicsFullKinematicsPlanner(robot,N,tf_range,q_nom,varargin{:});
       obj.com_inds = obj.num_vars+reshape(1:3*obj.N,3,obj.N);
       obj.comdot_inds = obj.num_vars+3*obj.N+reshape(1:3*obj.N,3,obj.N);
       obj.comddot_inds = obj.num_vars+6*obj.N+reshape(1:3*obj.N,3,obj.N);
@@ -59,10 +59,12 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       end
       
       for i = 1:obj.N
-        obj = obj.addNonlinearConstraint(NonlinearConstraint(zeros(3,1),zeros(3,1),obj.nq+3,@(~,com,kinsol) comMatch(kinsol,com)),...
-          [{obj.q_inds(:,i)};{obj.com_inds(:,i)}],obj.kinsol_dataind(i));
-        obj = obj.addNonlinearConstraint(NonlinearConstraint(zeros(3,1),zeros(3,1),obj.nq+obj.nv+3,@(~,v,H,kinsol) angularMomentumMatch(kinsol,v,H)),...
-          [{obj.q_inds(:,i)};{obj.v_inds(:,i)};{obj.H_inds(:,i)}],obj.kinsol_dataind(i));
+        com_cnstr = NonlinearConstraint(zeros(3,1),zeros(3,1),obj.nq+3,@(~,com,kinsol) comMatch(kinsol,com));
+        com_cnstr = com_cnstr.setName([{sprintf('com_x(q)=com_x[%d]',i)};{sprintf('com_y(q)=com_y[%d]',i)};{sprintf('com_z(q)=com_z[%d]',i)}]);
+        obj = obj.addNonlinearConstraint(com_cnstr,[{obj.q_inds(:,i)};{obj.com_inds(:,i)}],obj.kinsol_dataind(i));
+        H_cnstr = NonlinearConstraint(zeros(3,1),zeros(3,1),obj.nq+obj.nv+3,@(~,v,H,kinsol) angularMomentumMatch(kinsol,v,H));
+        H_cnstr = H_cnstr.setName([{sprintf('A_x*v=H_x[%d]',i)};{sprintf('A_y*v=H_y[%d]',i)};{sprintf('A_z*v=H_z[%d]',i)}]);
+        obj = obj.addNonlinearConstraint(H_cnstr,[{obj.q_inds(:,i)};{obj.v_inds(:,i)};{obj.H_inds(:,i)}],obj.kinsol_dataind(i));
       end
       obj.add_dynamic_constraint_flag = true;
       obj = obj.addDynamicConstraints();
@@ -104,7 +106,10 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
 				dc(4:6,1+9+(1:12)) = [-eye(3) eye(3) zeros(3) -h*eye(3)];
 				c(7:9) = comdot_r-comdot_l-comddot*h;
 				dc(7:9,1) = -comddot;
-				dc(7:9,1+9+6+(1:9)) = [-eye(3) eye(3) -h*eye(3)];
+				dc(7:9,1+15+(1:9)) = [-eye(3) eye(3) -h*eye(3)];
+        c(9+(1:obj.nq)) = q_r-q_l-v*h;
+        dc(9+(1:obj.nq),1) = -v;
+        dc(9+(1:obj.nq),1+24+(1:2*obj.nq+obj.nv)) = [-eye(obj.nq) eye(obj.nq) -h*eye(obj.nv)];
 			end
 
       if(num_knots == 1)
@@ -124,7 +129,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
           if isa(obj.plant,'TimeSteppingRigidBodyManipulator')
             joint_idx_j = vertcat(obj.plant.getManipulator().body(joint_path).dofnum)';
           else
-            joint_idx_j = vertcat(obj.path.body(joint_path).dofnum)';
+            joint_idx_j = vertcat(obj.plant.body(joint_path).dofnum)';
           end
           joint_idx = [joint_idx joint_idx_j];
         end
@@ -142,13 +147,35 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         Hdot_cnstr = Hdot_cnstr.setSparseStructure(Hdot_row,Hdot_col);
         obj = obj.addNonlinearConstraint(Hdot_cnstr,[{obj.q_inds(:,knot_idx)};{obj.com_inds(:,knot_idx)};{knot_lambda_idx};{obj.Hdot_inds(:,knot_idx)}],obj.kinsol_dataind(knot_idx));
       elseif(num_knots == 2)
-				h_sparse_pattern = zeros(3+3+3+obj.nq,1+3+3+3+3+3+3+3+3+2*obj.nq+obj.nv);
+				h_sparse_pattern = zeros(3+3+3+obj.nq,1+24+2*obj.nq+obj.nv);
         h_sparse_pattern(1:3,1) = ones(3,1);
 				h_sparse_pattern(1:3,1+(1:9)) = [eye(3) eye(3) eye(3)];
 				h_sparse_pattern(4:6,1) = ones(3,1);
 				h_sparse_pattern(4:6,1+9+(1:12)) = [eye(3) eye(3) zeros(3) eye(3)];
 				h_sparse_pattern(7:9,1) = ones(3,1);
-				h_sparse_pattern(7:9,1+9+6+(1:9)) = [eye(3) eye(3) eye(3)];
+				h_sparse_pattern(7:9,1+15+(1:9)) = [eye(3) eye(3) eye(3)];
+        h_sparse_pattern(9+(1:obj.nq),1) = 1;
+        h_sparse_pattern(9+(1:obj.nq),1+24+(1:2*obj.nq+obj.nv)) = [eye(obj.nq) eye(obj.nq) eye(obj.nv)];
+        h_cnstr = NonlinearConstraint(zeros(9+obj.nq,1),zeros(9+obj.nq,1),1+24+2*obj.nq+obj.nv,@dtDynFun);
+        cnstr_names = cell(9+obj.nq,1);
+        cnstr_names(1:9) = [{sprintf('H_x[%d]-H_x[%d]=Hdot_x[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
+                       {sprintf('H_y[%d]-H_y[%d]=Hdot_y[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
+                       {sprintf('H_z[%d]-H_z[%d]=Hdot_z[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
+                       {sprintf('com_x[%d]-com_x[%d]=comdot_x[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
+                       {sprintf('com_y[%d]-com_y[%d]=comdot_y[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
+                       {sprintf('com_z[%d]-com_z[%d]=comdot_z[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
+                       {sprintf('comdot_x[%d]-comdot_x[%d]=comddot_x[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
+                       {sprintf('comdot_x[%d]-comdot_y[%d]=comddot_y[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))},...
+                       {sprintf('comdot_x[%d]-comdot_z[%d]=comddot_z[%d]*dt',knot_idx(2),knot_idx(1),knot_idx(2))}];
+        for j = 1:obj.nq
+          cnstr_names{9+j} = sprintf('q%d[%d]-q%d[%d]=v%d[%d]',j,knot_idx(2),j,knot_idx(1),j,knot_idx(2));
+        end
+        h_cnstr = h_cnstr.setName(cnstr_names);
+        [h_row,h_col] = find(h_sparse_pattern);
+        h_cnstr = h_cnstr.setSparseStructure(h_row,h_col);
+        obj = obj.addNonlinearConstraint(h_cnstr,[{obj.h_inds(knot_idx(1))};{obj.H_inds(:,knot_idx(1))};{obj.H_inds(:,knot_idx(2))};{obj.Hdot_inds(:,knot_idx(2))};...
+          {obj.com_inds(:,knot_idx(2))};{obj.com_inds(:,knot_idx(1))};{obj.comdot_inds(:,knot_idx(1))};{obj.comdot_inds(:,knot_idx(2))};...
+          {obj.comddot_inds(:,knot_idx(2))};{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{obj.v_inds(:,knot_idx(2))}]);
       end
     end
     

@@ -4,21 +4,18 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
     nv % number of velocities in state
     q_inds % An nq x obj.N matrix. x(q_inds(:,i)) is the posture at i'th knot
     v_inds % An nv x obj.N matrix. x(v_inds(:,i)) is the velocity at i'th knot 
-    qsc_weight_idx
     Q
-    t_seed
     fix_initial_state = false
     g
     dynamics_constraint;
     position_error;
-    q_nom_traj;
-    dt_inds  % A 1 x obj.N-1 array. x(dt_inds(i)) is the decision variable dt(i) = t(i+1)-t(i)
-
+    q_nom;
     % N-element vector of indices into the shared_data, where
     % shared_data{kinsol_dataind(i)} is the kinsol for knot point i
     kinsol_dataind 
-
+    
     contact_wrench_cnstr % A cell of ContactWrenchConstraint objects
+    contact_wrench_cnstr_active_knot  % A cell with same length as contact_wrench_cnstr. contact_wrench_cnstr_active_knot{i} contains all the indices of the knots that the constraint is active
     unique_contact_bodies; % An integer array. The indices of the unique contact bodies. It is in the order of obj.contact_wrench_cnstr. Namely if obj.contact_wrench_cnstr has body indices [3 2 4 3 1 2], theun unique_contact_bodies = [3 2 4 1]
     unique_body_contact_pts; % A length(unique_contact_bodies x 1) cell. unique_body_contact_pts{i} is a 3 x num_pts array, which contains all the contact points for unique_contact_bodies(i)
     lambda_inds % A length(unique_contact_bodies) x 1 cell. lambda_idx{i} is an N x size(unique_body_contact_pts{i},2) x N array. where N is the number of force parameters for one contact point
@@ -42,24 +39,18 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
   end
   
   methods
-    function obj = SimpleDynamicsFullKinematicsPlanner(robot,t_seed,tf_range,q_nom_traj, ...
-                                    fix_initial_state,x0,varargin)
-      t_seed = unique(t_seed(:)');
-      obj = obj@DirectTrajectoryOptimization(robot,numel(t_seed),tf_range);
+    function obj = SimpleDynamicsFullKinematicsPlanner(robot,N,tf_range,q_nom,varargin)
+      % @param robot   A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
+      % @param N   The number of knot points
+      % @param tf_range  A double. The bounds on the total time
+      % @param varargin  A cell of of structs, with fields 'active_knot' and 'cwc'
+      obj = obj@DirectTrajectoryOptimization(robot,N,tf_range,struct('time_option',2));
       obj.nq = obj.plant.getNumPositions();
-      obj.t_seed = t_seed;
-      sizecheck(fix_initial_state,[1,1]);
       obj.nv = obj.plant.getNumDOF();
       obj.q_inds = obj.x_inds(1:obj.nq,:);
       obj.v_inds = obj.x_inds(obj.nq+(1:obj.nv),:);
-      obj.dt_inds = obj.num_vars+(1:obj.N-1);
-      x_name = cell(obj.N-1,1);
-      for i = 1:obj.N-1
-        x_name{i} = sprintf('dt[%d]',i);
-      end
-      obj = obj.addDecisionVariable(obj.N-1,x_name);
-      obj = obj.setFixInitialState(fix_initial_state,x0);
-      obj.q_nom_traj = q_nom_traj;
+      sizecheck(q_nom,[obj.nq,obj.N]);
+      obj.q_nom = q_nom;
       obj.g = 9.81;
       % create shared data functions to calculate kinematics at the knot
       % points
@@ -70,75 +61,20 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       obj.kinsol_dataind = kinsol_dataind;
 
       obj.Q = eye(obj.nq);
-      obj.qsc_weight_idx = cell(1,obj.N);
-      num_rbcnstr = nargin-6;
-      [q_lb,q_ub] = obj.plant.getJointLimits();
-      obj = obj.addBoundingBoxConstraint(BoundingBoxConstraint( ...
-        reshape(bsxfun(@times,q_lb,ones(1,obj.N)),[],1),...
-        reshape(bsxfun(@times,q_ub,ones(1,obj.N)),[],1)),obj.q_inds(:));
-      if(obj.fix_initial_state)
-        t_start = 2;
-      else
-        t_start = 1;
-      end
-      obj.contact_wrench_cnstr = {};
-      for i = 1:num_rbcnstr
-        if(~isa(varargin{i},'RigidBodyConstraint'))
-          error('Drake:WholeBodyPlanner:NonRBConstraint', ...
-                'The input should be a RigidBodyConstraint');
+      
+      num_cwc = nargin-4;
+      obj.contact_wrench_cnstr = cell(1,num_cwc);
+      obj.contact_wrench_cnstr_active_knot = cell(1,num_cwc);
+      for i = 1:num_cwc
+        if(~isstruct(varargin{i}) || ~isfield(varargin{i},'active_knot') || ~isfield(varargin{i},'cwc') || ~isa(varargin{i}.cwc,'ContactWrenchConstraint'))
+          error('Drake:SimpleDynamicsFullKinematicsPlanner: expect a struct containing active_knot and a ContactWrenchConstraint');
         end
-        if(isa(varargin{i},'SingleTimeKinematicConstraint'))
-          for j = t_start:obj.N
-            if(varargin{i}.isTimeValid(obj.t_seed(j)))
-              cnstr = varargin{i}.generateConstraint(obj.t_seed(j));
-              obj = obj.addManagedKinematicConstraint(cnstr{1},j);
-            end
-          end
-        elseif(isa(varargin{i},'PostureConstraint'))
-          for j = t_start:obj.N
-            if(varargin{i}.isTimeValid(obj.t_seed(j)))
-              cnstr = varargin{i}.generateConstraint(obj.t_seed(j));
-              obj = obj.addBoundingBoxConstraint(cnstr{1},obj.q_inds(:,j));
-            end
-          end
-        elseif(isa(varargin{i},'QuasiStaticConstraint'))
-          for j = t_start:obj.N
-            if(varargin{i}.isTimeValid(obj.t_seed(j)) && varargin{i}.active)
-              if(~isempty(obj.qsc_weight_idx{j}))
-                error('Drake:InverseKinTraj:currently only support at most one QuasiStaticConstraint at an individual time');
-              end
-              cnstr = varargin{i}.generateConstraint(obj.t_seed(j));
-              qsc_weight_names = cell(varargin{i}.num_pts,1);
-              for k = 1:varargin{i}.num_pts
-                qsc_weight_names{k} = sprintf('qsc_weight%d',k);
-              end
-              obj.qsc_weight_idx{j} = obj.num_vars+(1:varargin{i}.num_pts)';
-              obj = obj.addDecisionVariable(varargin{i}.num_pts,qsc_weight_names);
-              obj = obj.addNonlinearConstraint(cnstr{1},{obj.q_inds(:,j);obj.qsc_weight_idx{j}},obj.kinsol_dataind(j));
-              obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_idx{j});
-              obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_idx{j});
-            end
-          end
-        elseif(isa(varargin{i},'SingleTimeLinearPostureConstraint'))
-          for j = t_start:obj.N
-            if(varargin{i}.isTimeValid(obj.t_seed(j)))
-              cnstr = varargin{i}.generateConstraint(obj.t_seed(j));
-              obj = obj.addLinearConstraint(cnstr{1},obj.q_inds(:,j));
-            end
-          end
-        elseif(isa(varargin{i},'MultipleTimeKinematicConstraint'))
-          valid_t_flag = varargin{i}.isTimeValid(obj.t_seed(t_start:end));
-          t_idx = (t_start:obj.N);
-          valid_t_idx = t_idx(valid_t_flag);
-          cnstr = varargin{i}.generateConstraint(obj.t_seed(valid_t_idx));
-          obj = obj.addNonlinearConstraint(cnstr{1},valid_t_idx,[],reshape(obj.q_inds(:,valid_t_idx),[],1));
-        elseif(isa(varargin{i},'MultipleTimeLinearPostureConstraint'))
-          cnstr = varargin{i}.generateConstraint(obj.t_seed(t_start:end));
-          obj = obj.addLinearConstraint(cnstr{1},reshape(obj.q_inds(:,t_start:end),[],1));
-        elseif(isa(varargin{i},'ContactWrenchConstraint'))
-          % I am supposing that a body only has one type of contact.
-          obj.contact_wrench_cnstr{end+1} = varargin{i};
+        if(~all(isinf(varargin{i}.cwc.tspan)))
+          error('Drake:SimpleDynamicsFullKinematicsPlanner: all the ContactWrenchConstraint should have tspan = [-inf inf]');
         end
+        % I am supposing that a body only has one type of contact.
+        obj.contact_wrench_cnstr{i} = varargin{i}.cwc;
+        obj.contact_wrench_cnstr_active_knot{i} = varargin{i}.active_knot;
       end
       obj.robot_mass = obj.plant.getMass();
       obj = obj.parseContactWrenchConstraint();
@@ -244,7 +180,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         obj.lambda2contact_wrench_cnstr{i} = zeros(size(obj.unique_body_contact_pts{i},2),obj.N);
         for cwc_idx = unique_body2contact_wrench_cnstr{i}
           for t_idx = 1:obj.N
-            if(obj.contact_wrench_cnstr{cwc_idx}.isTimeValid(obj.t_seed(t_idx)))
+            if(any(obj.contact_wrench_cnstr_active_knot{cwc_idx} == t_idx))
               [~,pt_idx] = intersect(obj.unique_body_contact_pts{i}',obj.contact_wrench_cnstr{cwc_idx}.body_pts','rows','stable'); 
               if(any(obj.lambda2contact_wrench_cnstr{i}(pt_idx,t_idx) ~= 0))
                 pt_coord = obj.unique_body_contact_pts{i}(:,pt_idx(1));
@@ -285,7 +221,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
           for j = reshape(unique_contact_wrench_idx,1,[])
             lambda_idx_ijk = obj.lambda_inds{i}(:,contact_wrench_idx==j,k); % lambda_idx_jk is the indices of lambda used for i'th body, with j'th ContactWrenchConstraint, at k'th knot point
             if(j > 0)
-              cnstr_tmp = obj.contact_wrench_cnstr{j}.generateConstraint(obj.t_seed(k));
+              cnstr_tmp = obj.contact_wrench_cnstr{j}.generateConstraint([]);
               cnstr_name = repmat({sprintf('contact_wrench_cnstr%d_nlcon[%d]',j,k)},cnstr_tmp{1}.num_cnstr,1);
               cnstr_tmp{1} = cnstr_tmp{1}.setName(cnstr_name);
               obj = obj.addNonlinearConstraint(cnstr_tmp{1},[{obj.q_inds(:,k)};{reshape(lambda_idx_ijk,[],1)}],obj.kinsol_dataind(k));
