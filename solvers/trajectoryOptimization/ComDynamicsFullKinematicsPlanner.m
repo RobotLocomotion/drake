@@ -83,10 +83,10 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       for i = 1:obj.N
         com_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+3,@(~,com,kinsol) comMatch(kinsol,com));
         com_cnstr = com_cnstr.setName([{sprintf('com_x(q)=com_x[%d]',i)};{sprintf('com_y(q)=com_y[%d]',i)};{sprintf('com_z(q)=com_z[%d]',i)}]);
-        obj = obj.addDifferentiableConstraint(com_cnstr,[{obj.q_inds(:,i)};{obj.com_inds(:,i)}],obj.kinsol_dataind(i));
+        obj = obj.addConstraint(com_cnstr,[{obj.q_inds(:,i)};{obj.com_inds(:,i)}],obj.kinsol_dataind(i));
         H_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+obj.nv+3,@(~,v,H,kinsol) angularMomentumMatch(kinsol,v,H));
         H_cnstr = H_cnstr.setName([{sprintf('A_x*v=H_x[%d]',i)};{sprintf('A_y*v=H_y[%d]',i)};{sprintf('A_z*v=H_z[%d]',i)}]);
-        obj = obj.addDifferentiableConstraint(H_cnstr,[{obj.q_inds(:,i)};{obj.v_inds(:,i)};{obj.H_inds(:,i)}],obj.kinsol_dataind(i));
+        obj = obj.addConstraint(H_cnstr,[{obj.q_inds(:,i)};{obj.v_inds(:,i)};{obj.H_inds(:,i)}],obj.kinsol_dataind(i));
       end
       obj.add_dynamic_constraint_flag = true;
       obj = obj.addDynamicConstraints();
@@ -231,7 +231,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         Hdot_sparse_pattern(:,obj.nq+3+num_lambda1+(1:3)) = eye(3);
         [Hdot_row,Hdot_col] = find(Hdot_sparse_pattern);
         Hdot_cnstr = Hdot_cnstr.setSparseStructure(Hdot_row,Hdot_col);
-        obj = obj.addDifferentiableConstraint(Hdot_cnstr,[{obj.q_inds(:,knot_idx)};{obj.com_inds(:,knot_idx)};knot_lambda_idx;{obj.Hdot_inds(:,knot_idx)}],obj.kinsol_dataind(knot_idx));
+        obj = obj.addConstraint(Hdot_cnstr,[{obj.q_inds(:,knot_idx)};{obj.com_inds(:,knot_idx)};knot_lambda_idx;{obj.Hdot_inds(:,knot_idx)}],obj.kinsol_dataind(knot_idx));
       elseif(num_knots == 2)
 				h_sparse_pattern = zeros(3+3+3+obj.nq,1+24+2*obj.nq+obj.nv);
         h_sparse_pattern(1:3,1) = ones(3,1);
@@ -259,7 +259,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         h_cnstr = h_cnstr.setName(cnstr_names);
         [h_row,h_col] = find(h_sparse_pattern);
         h_cnstr = h_cnstr.setSparseStructure(h_row,h_col);
-        obj = obj.addDifferentiableConstraint(h_cnstr,[{obj.h_inds(knot_idx(1))};{obj.H_inds(:,knot_idx(1))};{obj.H_inds(:,knot_idx(2))};{obj.Hdot_inds(:,knot_idx(2))};...
+        obj = obj.addConstraint(h_cnstr,[{obj.h_inds(knot_idx(1))};{obj.H_inds(:,knot_idx(1))};{obj.H_inds(:,knot_idx(2))};{obj.Hdot_inds(:,knot_idx(2))};...
           {obj.com_inds(:,knot_idx(1))};{obj.com_inds(:,knot_idx(2))};{obj.comdot_inds(:,knot_idx(1))};{obj.comdot_inds(:,knot_idx(2))};...
           {obj.comddot_inds(:,knot_idx(2))};{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{obj.v_inds(:,knot_idx(2))}]);
         %%%%
@@ -295,7 +295,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
                   elseif(obj.contact_wrench{wrench_idx2}.complementarity_flag)
                     lambda_idx = lambda2_idx;
                   end
-                  obj = obj.addDifferentiableConstraint(csc_nlcon,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda_idx};{csc_slack_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
+                  obj = obj.addConstraint(csc_nlcon,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda_idx};{csc_slack_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
                 end
               end
             end

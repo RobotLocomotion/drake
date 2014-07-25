@@ -193,7 +193,8 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       if length(xind_vec) ~= cnstr.xdim
         error('Drake:NonlinearProgramWConstraintObjects:InvalidArgument','the length of xind must match the x-dimension of the constraint');
       end
-      obj.nlcon = [obj.nlcon,{cnstr}];
+%       obj.nlcon = [obj.nlcon,{cnstr}];
+      obj.nlcon{end+1} = cnstr;
       
       obj.cin_ub = [obj.cin_ub;cnstr.ub(cnstr.cin_idx)];
       obj.cin_lb = [obj.cin_lb;cnstr.lb(cnstr.cin_idx)];

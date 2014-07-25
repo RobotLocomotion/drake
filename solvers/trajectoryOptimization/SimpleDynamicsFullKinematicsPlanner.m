@@ -312,7 +312,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
               end
               nlcon_wrench = nlcon_wrench.setName(nlcon_name);
               
-              obj = obj.addDifferentiableConstraint(nlcon_wrench,[{obj.q_inds(:,k)};{reshape(lambda_idx_ijk,[],1)};{new_slack_inds}],obj.kinsol_dataind(k));
+              obj = obj.addConstraint(nlcon_wrench,[{obj.q_inds(:,k)};{reshape(lambda_idx_ijk,[],1)};{new_slack_inds}],obj.kinsol_dataind(k));
               lincon_name = cell(lincon_wrench.num_cnstr,1);
               for l = 1:lincon_wrench.num_cnstr
                 lincon_name{l} = sprintf('%s[%d]',lincon_wrench.name{l},k);

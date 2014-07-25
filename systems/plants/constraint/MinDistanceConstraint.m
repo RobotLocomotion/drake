@@ -47,8 +47,8 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
       obj.active_collision_options = active_collision_options;
     end
 
-    function cnstr = generateConstraint(obj,t)
-      cnstr = generateConstraint@SingleTimeKinematicConstraint(obj,t);
+    function cnstr = generateConstraint(obj,varargin)
+      cnstr = generateConstraint@SingleTimeKinematicConstraint(obj,varargin{:});
       if ~isempty(cnstr)
         cnstr{1} = setEvalHandle(cnstr{1},@(q,~) obj.evalLocal(q));
       end
