@@ -17,7 +17,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
   end
   
   methods
-    function obj = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Q,q_nom,varargin)
+    function obj = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,varargin)
       % @param Q_comddot  A 3 x 3 matrix. penalize sum_j comddot(:,j)*Q_comddot*comddot(:,j)
       % @param Q  an nq x nq matrix. Add the cost sum_j
       % (q(:,j)-q_nom(:,j))'*Q*(q(:,j)-q_nom(:,j));
@@ -85,6 +85,12 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       end
       com_accel_cost = QuadraticSumConstraint(-inf,inf,Q_comddot,zeros(3,obj.N));
       obj = obj.addCost(com_accel_cost,reshape(obj.comddot_inds,[],1));
+      sizecheck(Qv,[obj.nv,obj.nv]);
+      if(any(eig(Qv)<0))
+        error('Drake:ComDynamicsFullKinematicsPlanner:Q_v should be PSD');
+      end
+      v_cost = QuadraticSumConstraint(-inf,inf,Qv,zeros(obj.nv,obj.N));
+      obj = obj.addCost(v_cost,reshape(obj.v_inds,[],1));
     end
     
     function obj = addContactDynamicConstraints(obj,knot_idx,contact_wrench_cnstr_idx,knot_lambda_idx)
@@ -118,9 +124,9 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
 				c(1:3) = H_r-H_l-Hdot*h;
 			  dc(1:3,1) = -Hdot;
 				dc(1:3,1+(1:9)) = [-eye(3) eye(3) -h*eye(3)];
-				c(4:6) = com_r-com_l-comdot_r*h;
-				dc(4:6,1) = -comdot_r;
-				dc(4:6,1+9+(1:12)) = [-eye(3) eye(3) zeros(3) -h*eye(3)];
+				c(4:6) = com_r-com_l-(comdot_l+comdot_r)*h/2;
+				dc(4:6,1) = (comdot_l-comdot_r)/2;
+				dc(4:6,1+9+(1:12)) = [-eye(3) eye(3) -h/2*eye(3) -h/2*eye(3)];
 				c(7:9) = comdot_r-comdot_l-comddot*h;
 				dc(7:9,1) = -comddot;
 				dc(7:9,1+15+(1:9)) = [-eye(3) eye(3) -h*eye(3)];
@@ -169,7 +175,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         h_sparse_pattern(1:3,1) = ones(3,1);
 				h_sparse_pattern(1:3,1+(1:9)) = [eye(3) eye(3) eye(3)];
 				h_sparse_pattern(4:6,1) = ones(3,1);
-				h_sparse_pattern(4:6,1+9+(1:12)) = [eye(3) eye(3) zeros(3) eye(3)];
+				h_sparse_pattern(4:6,1+9+(1:12)) = [eye(3) eye(3) eye(3) eye(3)];
 				h_sparse_pattern(7:9,1) = ones(3,1);
 				h_sparse_pattern(7:9,1+15+(1:9)) = [eye(3) eye(3) eye(3)];
         h_sparse_pattern(9+(1:obj.nq),1) = 1;
@@ -192,7 +198,7 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         [h_row,h_col] = find(h_sparse_pattern);
         h_cnstr = h_cnstr.setSparseStructure(h_row,h_col);
         obj = obj.addNonlinearConstraint(h_cnstr,[{obj.h_inds(knot_idx(1))};{obj.H_inds(:,knot_idx(1))};{obj.H_inds(:,knot_idx(2))};{obj.Hdot_inds(:,knot_idx(2))};...
-          {obj.com_inds(:,knot_idx(2))};{obj.com_inds(:,knot_idx(1))};{obj.comdot_inds(:,knot_idx(1))};{obj.comdot_inds(:,knot_idx(2))};...
+          {obj.com_inds(:,knot_idx(1))};{obj.com_inds(:,knot_idx(2))};{obj.comdot_inds(:,knot_idx(1))};{obj.comdot_inds(:,knot_idx(2))};...
           {obj.comddot_inds(:,knot_idx(2))};{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{obj.v_inds(:,knot_idx(2))}]);
       end
     end
