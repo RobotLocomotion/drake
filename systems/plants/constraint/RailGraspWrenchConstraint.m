@@ -92,7 +92,7 @@ classdef RailGraspWrenchConstraint < ContactWrenchConstraint
       obj.torque_bnd_height = obj.force_max*obj.rail_radius;
       obj.torque_bnd_radius = obj.force_max*obj.grasp_length/2;
       obj.num_constraint = 4;
-      obj.F_size = [6,1];
+      obj.pt_num_F = 6;
       obj.type = RigidBodyConstraint.RailGraspWrenchConstraintType;
       obj.F_lb = -[obj.force_max*ones(3,1);sqrt(obj.torque_bnd_height^2+obj.torque_bnd_radius^2)*ones(3,1)];
       obj.F_ub = [obj.force_max*ones(3,1);sqrt(obj.torque_bnd_height^2+obj.torque_bnd_radius^2)*ones(3,1)];
@@ -112,83 +112,68 @@ classdef RailGraspWrenchConstraint < ContactWrenchConstraint
         ub = [];
       end
     end
-    function [c,dc_val] = evalSparse(obj,t,kinsol,F)
+    function [c,dc_val] = evalSparse(obj,kinsol,F)
       % This function evaluates the friction cone constraint on the force,magnitude
       % constraint on the force, and cylinder constraint on the torque.
-      % @param t       - A scalar, the time to evaluate friction cone constraint
       % @param kinsol  - kinematics tree returned from doKinematics function
       % @param F       - A 6 x 1 double vector. The contact forces and torque about the
       % contact point
       % @retval c      - A 4 x 1 double vector, the constraint value
       % @retval dc_val - A double column vector. The nonzero entries of constraint gradient w.r.t F 
-      if(obj.isTimeValid(t))
-        f_mag = norm(F(1:3));
-        df_magdforce = F(1:3)'/f_mag;
-        fc_cnst = F(1:3)'*obj.rail_axis/f_mag;
-        dfc_cnstdforce = (obj.rail_axis'*f_mag-F(1:3)'*obj.rail_axis*df_magdforce)/f_mag^2;
-        tau = F(4:6);
-        tau_axis = tau'*obj.rail_axis;
-        dtau_axisdtau = obj.rail_axis';
-        tau_radius = norm(tau-tau_axis*obj.rail_axis);
-        dtau_radiusdtau = (tau-tau_axis*obj.rail_axis)'*(eye(3)-obj.rail_axis*dtau_axisdtau)/tau_radius;
-        c = [fc_cnst;f_mag;tau_axis;tau_radius];
-        dc_val = [dfc_cnstdforce(:);df_magdforce(:);dtau_axisdtau(:);dtau_radiusdtau(:)];
-      else
-        c = [];
-        dc_val = [];
-      end
+      f_mag = norm(F(1:3));
+      df_magdforce = F(1:3)'/f_mag;
+      fc_cnst = F(1:3)'*obj.rail_axis/f_mag;
+      dfc_cnstdforce = (obj.rail_axis'*f_mag-F(1:3)'*obj.rail_axis*df_magdforce)/f_mag^2;
+      tau = F(4:6);
+      tau_axis = tau'*obj.rail_axis;
+      dtau_axisdtau = obj.rail_axis';
+      tau_radius = norm(tau-tau_axis*obj.rail_axis);
+      dtau_radiusdtau = (tau-tau_axis*obj.rail_axis)'*(eye(3)-obj.rail_axis*dtau_axisdtau)/tau_radius;
+      c = [fc_cnst;f_mag;tau_axis;tau_radius];
+      dc_val = [dfc_cnstdforce(:);df_magdforce(:);dtau_axisdtau(:);dtau_radiusdtau(:)];
     end
     
-    function [iCfun,jCvar,nnz] = evalSparseStructure(obj,t)
+    function [iCfun,jCvar,nnz] = evalSparseStructure(obj)
       % This function returns the sparsity structure of the constraint gradient.
       % sparse(iCfun,jCvar,dc_val,m,n,nnz) is the actual gradient matrix
       % @retval iCfun   -- A num_pts x 1 double vector. The row index of the nonzero entries
       % @retval jCvar   -- A num_pts x 1 double vector. The column index of the nonzero entries
       % @retval nnz     -- A scalar. The maximum non-zero entries in the sparse matrix.
-      if(obj.isTimeValid(t))
-        nq = obj.robot.getNumDOF;
-        iCfun = reshape(bsxfun(@times,ones(3,1),(1:4)),[],1);
-        jCvar = nq+[1;2;3;1;2;3;4;5;6;4;5;6];
-        nnz = 12;
-      else
-        iCfun = [];
-        jCvar = [];
-        nnz = 0;
-      end
+      nq = obj.robot.getNumDOF;
+      iCfun = reshape(bsxfun(@times,ones(3,1),(1:4)),[],1);
+      jCvar = nq+[1;2;3;1;2;3;4;5;6;4;5;6];
+      nnz = 12;
     end
     
-    function [tau,dtau] = torque(obj,t,kinsol,F)
+    function [tau,dtau] = torqueSum(obj,kinsol,F)
       % Compute the total torque from contact position and contact force, together with
       % its gradient
       % @param F       -- a 6 x 1 double vector. The contact force and torque at the
       % contact point
       % @retval tau    -- a 3 x 1 double vector, the total torque around origin.
       % @retval dtau   -- a 3 x (nq+6) double matrix. The gradient of tau
-      if(obj.isTimeValid(t))
-        valid_F = checkForceSize(obj,F);
-        if(~valid_F)
-          error('Drake:RailGraspWrenchConstraint:friction force should be 6 x 1 matrix');
-        end
-        [pos,dpos] = obj.robot.forwardKin(kinsol,obj.body,obj.grasp_center_pt,0);
-        tau = cross(pos,F(1:3))+F(4:6);
-        dtau1 = dcross(pos,F(1:3));
-        dtau = [dtau1(:,1:3)*dpos dtau1(:,4:6) eye(3)];
-      else
-        tau = [];
-        dtau = [];
+      valid_F = checkForceSize(obj,F);
+      if(~valid_F)
+        error('Drake:RailGraspWrenchConstraint:friction force should be 6 x 1 matrix');
       end
+      [pos,dpos] = obj.robot.forwardKin(kinsol,obj.body,obj.grasp_center_pt,0);
+      tau = cross(pos,F(1:3))+F(4:6);
+      dtau1 = dcross(pos,F(1:3));
+      dtau = [dtau1(:,1:3)*dpos dtau1(:,4:6) eye(3)];
     end
     
-    function A = force(obj,t)
+    function A = forceSum(obj)
       % Compute total force from all the contact force parameters F. The total force is a
       % linear transformation from F. total_force = A*F(:)
-      % @param t    -- A double scalar. The time to evaluate force
       % @param A    -- A 3 x 6 double matrix.
-      if(obj.isTimeValid(t))
-        A = [speye(3) sparse(3,3)];
-      else
-        A = sparse(0,0);
-      end
+      A = [speye(3) sparse(3,3)];
+    end
+    
+    function A = force(obj)
+      % Compute the indivisual force from the force parameters F. The individual forces
+      % are reshape(A*F,3,obj.num_pts)
+      % @retval A     -- A (3*num_pts) x (obj.pt_num_F*obj.num_pts) double matrix
+      A = [speye(3) sparse(3,3)];
     end
     
     function name_str = name(obj,t)
@@ -212,19 +197,13 @@ classdef RailGraspWrenchConstraint < ContactWrenchConstraint
       end
     end
     
-    function [pos,J] = contactPosition(obj,t,kinsol)
+    function [pos,J] = contactPosition(obj,kinsol)
       % Returns the contact positions and its gradient w.r.t q
-      % @param t        -- A double scalar, the time to evaluate the contact position
       % @param kinsol   -- The kinematics tree
       % @retval pos     -- A 3 x 1 double vector. The position of the center grasp point
       % @retval J       -- A 3 x nq double matrix. The gradient of pos
       % w.r.t q
-      if(obj.isTimeValid(t))
-        [pos,J] = forwardKin(obj.robot,kinsol,obj.body,obj.grasp_center_pt,0);
-      else
-        pos = [];
-        J = [];
-      end
+      [pos,J] = forwardKin(obj.robot,kinsol,obj.body,obj.grasp_center_pt,0);
     end
   end
 end
