@@ -25,7 +25,7 @@ classdef OcTree < handle
       
     end
 
-    function enableLCMGL(lcmgl_channel)
+    function enableLCMGL(obj,lcmgl_channel)
       if (checkDependency('lcmgl'))
         obj.lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(), lcmgl_channel);
       end
@@ -49,13 +49,21 @@ classdef OcTree < handle
       occupancy_probability = octomapWrapper(tree.mex_ptr,1,pts);
     end
     
-    function [nodes,values] = getLeafNodes(tree);
+    function [nodes,values] = getLeafNodes(tree)
+      [nodes,values] = octomapWrapper(tree.mex_ptr,2);
+    end
     
-    function publishToLCMGL(tree)
-      if (obj.lcmgl) % fail quietly if dependency is missing
-        [nodes,values] = getLeafNodes(tree);
-        obj.lcmgl.glColor3f(1, 0, 0);
-        obj.lcmgl.points(points(1,:),points(2,:),points(3,:));
+    function publishLCMGL(obj,threshold)
+      if nargin<2, threshold = .5; end
+      if ~isempty(obj.lcmgl) % fail quietly if dependency is missing
+        [points,values,size] = octomapWrapper(obj.mex_ptr,2);
+        points = points(:,values>threshold);
+        size = size(values>threshold);
+        size=repmat(size,3,1);
+        obj.lcmgl.glColor3f(.5, .5, 1);
+        for i=1:length(size)
+          obj.lcmgl.box(points(:,i),size(:,i));
+        end
         obj.lcmgl.switchBuffers();
       end
     end

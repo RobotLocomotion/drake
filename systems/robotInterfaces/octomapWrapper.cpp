@@ -79,21 +79,26 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 //      mexPrintf("octree get leaf nodes\n");
         int N = tree->getNumLeafNodes();
         plhs[0] = mxCreateDoubleMatrix(3,N,mxREAL);
-        double* leaf_xyz = mxGetPr(plhs[0]);
+        double *leaf_xyz = mxGetPr(plhs[0]);
 
-        double* leaf_value = NULL;
-        if (nhls>1) {
+        double *leaf_value = NULL, *leaf_size=NULL;
+        if (nlhs>1) { // return value
           plhs[1] = mxCreateDoubleMatrix(1,N,mxREAL);
           leaf_value = mxGetPr(plhs[1]);
         }
+        if (nlhs>2) { // return size
+          plhs[2] = mxCreateDoubleMatrix(1,N,mxREAL);
+          leaf_size = mxGetPr(plhs[2]);
+        }
 
-        for(OcTreeTYPE::leaf_iterator leaf = tree->begin_leafs(),
-          end=tree->end_leafs(); leaf!= end; ++leaf)
-          leaf_xyz[0] = leaf->getX();
-          leaf_xyz[1] = leaf->getY();
-          leaf_xyz[2] = leaf->getZ();
+        for(OcTree::leaf_iterator leaf = tree->begin_leafs(),
+          end=tree->end_leafs(); leaf!= end; ++leaf) {
+          leaf_xyz[0] = leaf.getX();
+          leaf_xyz[1] = leaf.getY();
+          leaf_xyz[2] = leaf.getZ();
           leaf_xyz += 3;
           if (leaf_value) *leaf_value++ = leaf->getValue();
+          if (leaf_size) *leaf_size++ = leaf.getSize();
         }
       } break;
     case 11:  // add occupied pts
