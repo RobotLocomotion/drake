@@ -46,7 +46,6 @@ options.affine_dynamics=0; % do not use affine dynamics
 
 [tv,Vtraj] = tvlqr(p,xtraj,utraj,Q,R,Qf);
 
-     
 disp('create polynomial system');
 psys = taylorApprox(feedback(p,tv),xtraj,[],3); %generate 3rd tayalor approximation of feedback system
 
