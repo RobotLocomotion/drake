@@ -19,6 +19,10 @@ classdef RigidBodyContactWrench
     wrench_cnstr_lb % A num_wrench_constraint x 1 vector. The lower bound of the wrench constraint
     wrench_cnstr_name % A num_wrench_constraint x 1 cell of strings.
     type
+    num_slack  % An integer. The number of slack variables introduced to the wrench constraint
+    slack_name % A cell of strings containing the name of slack variables
+    slack_lb  % A num_slack x 1 vector. The lower bound of the slack variable;
+    slack_ub  % A num_salck x 1 vector. The upper bound of the slack variable;
   end
   
   properties(Constant)
@@ -50,17 +54,24 @@ classdef RigidBodyContactWrench
       end
       obj.body_pts = body_pts;
       obj.num_pts = body_pts_size(2);
+      obj.num_slack = 0;
+      obj.slack_name = {};
+      obj.slack_lb = [];
+      obj.slack_ub = [];
     end
     
-    function [lincon,nlcon,bcon] = generateWrenchConstraint(obj)
-      % @retval lincon   A LinearConstraint object on parameter F
-      % @retval nlcon    A FunctionHandleConstraint object on q and F
-      % @retval bcon     A BoundingBoxConstraint on F
-      nlcon = FunctionHandleConstraint(obj.wrench_cnstr_lb,obj.wrench_cnstr_ub,obj.robot.getNumDOF+obj.num_pt_F*obj.num_pts,@(~,F,kinsol) obj.evalWrenchConstraint(kinsol,reshape(F,obj.num_pt_F,obj.num_pts)));
-      nlcon = nlcon.setSparseStructure(obj.wrench_iCfun,obj.wrench_jCvar);  
-      nlcon = nlcon.setName(obj.wrench_cnstr_name);
-      bcon =  BoundingBoxConstraint(obj.F_lb(:),obj.F_ub(:));
-      lincon = LinearConstraint([],[],zeros(0,obj.num_pt_F*obj.num_pts));
+    function [lincon,nlcon,bcon,num_slack,slack_name] = generateWrenchConstraint(obj)
+      % @retval lincon   A LinearConstraint object on parameter F and slack variables
+      % @retval nlcon    A FunctionHandleConstraint object on q, F and slack variables
+      % @retval bcon     A BoundingBoxConstraint on F and slack variables
+      nlcon = obj.generateWrenchNlcon();
+      bcon = obj.generateWrenchBcon();
+      lincon = obj.generateWrenchLincon();
+      num_slack = obj.slack_name;
+      if(length(obj.slack_name) ~= obj.num_slack)
+        error('Drake:RigidBodyContactWrench:The slack_name has incorrect dimension');
+      end
+      slack_name = obj.slack_name;
     end
   end
   
@@ -72,10 +83,11 @@ classdef RigidBodyContactWrench
   end
   
   methods(Abstract)
-    [c,dc] = evalWrenchConstraint(obj,kinsol,F);
+    [c,dc] = evalWrenchConstraint(obj,kinsol,F,slack);
       % This function evaluates the constraint and its gradient
       % @param kinsol  - kinematics tree returned from doKinematics function
       % @param F       - A double matrix of obj.num_pt_F*obj.num_pts. The contact forces parameter
+      % @param slack   - A obj.num_slack x 1 vector. The slack variables
       % @retval c      - A double column vector, the constraint value. The size of the
       % vector is obj.getNumConstraint(t) x 1
       % @retval dc - A double matrix. The gradient of c w.r.t q and F.
@@ -93,5 +105,21 @@ classdef RigidBodyContactWrench
       % @retval pos     -- A matrix with 3 rows. pos(:,i) is the i'th contact position
       % @retval J       -- A matrix of size prod(size(pos)) x nq. The gradient of pos
       % w.r.t q
+  end
+  
+  methods(Access=protected,Abstract)
+    lincon = generateWrenchLincon(obj);
+  end
+  
+  methods(Access = private)
+    function nlcon = generateWrenchNlcon(obj)
+      nlcon = FunctionHandleConstraint(obj.wrench_cnstr_lb,obj.wrench_cnstr_ub,obj.robot.getNumDOF+obj.num_pt_F*obj.num_pts+obj.num_slack,@(~,F,slack,kinsol) obj.evalWrenchConstraint(kinsol,reshape(F,obj.num_pt_F,obj.num_pts),slack));
+      nlcon = nlcon.setSparseStructure(obj.wrench_iCfun,obj.wrench_jCvar);  
+      nlcon = nlcon.setName(obj.wrench_cnstr_name);
+    end
+    
+    function bcon = generateWrenchBcon(obj)
+      bcon = BoundingBoxConstraint([obj.F_lb(:);obj.slack_lb],[obj.F_ub(:);obj.slack_ub]);
+    end
   end
 end

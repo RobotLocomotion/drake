@@ -4,7 +4,7 @@ classdef LinearFrictionConeWrench < RigidBodyContactWrench
   % the K'th edge of the linearized friction cone, fK is the force paramter along the K'th
   % edge
   properties(SetAccess = protected)
-    num_edges % A scalar. The number of edges in one linearized friction cone
+    
     FC_edge % A 3 x num_edge double matrix. FC_edge(:,i) is the i'th edge of
             % the linearized friction cone in the world frame.
   end
@@ -16,15 +16,14 @@ classdef LinearFrictionConeWrench < RigidBodyContactWrench
       % of the contact point on the body frame. Every contact point shares the same friction
       % cone.
       % @param FC_edge    -- A 3 x num_edge double matrix. FC_edge(:,i) is the i'th edge of
-      % the linearized friction cone
+      % the linearized friction cone in the WORLD frame
       obj = obj@RigidBodyContactWrench(robot,body,body_pts);
       FC_edge_size = size(FC_edge);
       if(~isnumeric(FC_edge_size) || length(FC_edge_size) ~= 2 || FC_edge_size(1) ~= 3)
         error('Drake:LinearFrictionConeWrench: FC_edge should be a 3 x num_edges numeric matrix');
       end
-      obj.num_edges = FC_edge_size(2);
+      obj.num_pt_F = FC_edge_size(2);
       obj.FC_edge = FC_edge;
-      obj.num_pt_F = obj.num_edges;
       obj.F_lb = zeros(obj.num_pt_F,obj.num_pts);
       obj.F_ub = inf(obj.num_pt_F,obj.num_pts);
       obj.type = RigidBodyContactWrench.LinearFrictionConeType;
@@ -36,10 +35,10 @@ classdef LinearFrictionConeWrench < RigidBodyContactWrench
       obj.wrench_cnstr_name = {};
     end
     
-    function [c,dc] = evalWrenchConstraint(obj,kinsol,F)
+    function [c,dc] = evalWrenchConstraint(obj,kinsol,F,slack)
       % return the constraint. There is no nonlinear constraint on the force paramter
       c = [];
-      dc = zeros(0,obj.robot.getNumPositions+obj.num_pt_F*obj.num_pts);
+      dc = zeros(0,obj.robot.getNumPositions+obj.num_pt_F*obj.num_pts+obj.num_slack);
     end
     
     function A = torque(obj)
@@ -64,6 +63,12 @@ classdef LinearFrictionConeWrench < RigidBodyContactWrench
       % @retval J       -- A matrix of size prod(size(pos)) x nq. The gradient of pos
       % w.r.t q
       [pos,J] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
+    end
+  end
+  
+  methods(Access=protected)
+    function lincon = generateWrenchLincon(obj)
+      lincon = LinearConstraint([],[],zeros(0,obj.num_pt_F*obj.num_pts));
     end
   end
 end
