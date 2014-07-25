@@ -18,12 +18,13 @@ classdef RigidBodyContactWrench
     wrench_cnstr_ub % A num_wrench_constraint x 1 vector. The upper bound of the wrench constraint
     wrench_cnstr_lb % A num_wrench_constraint x 1 vector. The lower bound of the wrench constraint
     wrench_cnstr_name % A num_wrench_constraint x 1 cell of strings.
-    type
+    contact_force_type
     num_slack  % An integer. The number of slack variables introduced to the wrench constraint
     slack_name % A cell of strings containing the name of slack variables
     slack_lb  % A num_slack x 1 vector. The lower bound of the slack variable;
     slack_ub  % A num_salck x 1 vector. The upper bound of the slack variable;
     kinematics_chain_idx % An vector in integers. It contains the indices of the joints that are on the kinematics chain to compute the body posture
+    complementarity_flag % A boolean flag. True if we implement the complementarity contact constraint. @default is false
   end
   
   properties(Constant)
@@ -65,6 +66,7 @@ classdef RigidBodyContactWrench
       else
         obj.kinematics_chain_idx = vertcat(obj.robot.body(joint_path).dofnum)';
       end
+      obj.complementarity_flag = false;
     end
     
     function [lincon,nlcon,bcon,num_slack,slack_name] = generateWrenchConstraint(obj)

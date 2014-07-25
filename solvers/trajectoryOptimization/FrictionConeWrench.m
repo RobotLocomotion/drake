@@ -50,7 +50,7 @@ classdef FrictionConeWrench < RigidBodyContactWrench
       obj.num_pt_F = 3;
       obj.F_lb = -inf(obj.num_pt_F,obj.num_pts);
       obj.F_ub = inf(obj.num_pt_F,obj.num_pts);
-      obj.type = RigidBodyContactWrench.FrictionConeType;
+      obj.contact_force_type = RigidBodyContactWrench.FrictionConeType;
       obj.wrench_cnstr_lb = zeros(obj.num_pts,1);
       obj.wrench_cnstr_ub = inf(obj.num_pts,1);
       obj.wrench_cnstr_name = cell(obj.num_pts,1);

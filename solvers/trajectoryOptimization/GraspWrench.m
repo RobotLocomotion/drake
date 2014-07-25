@@ -42,7 +42,7 @@ classdef GraspWrench < RigidBodyContactWrench
       obj.A_torque = A_torque;
       obj.b_torque_lb = b_torque_lb;
       obj.b_torque_ub = b_torque_ub;
-      obj.type = RigidBodyContactWrench.GraspType;
+      obj.contact_force_type = RigidBodyContactWrench.GraspType;
       obj.F_lb = -inf(6,1);
       obj.F_ub = inf(6,1);
       obj.num_pt_F = 6;

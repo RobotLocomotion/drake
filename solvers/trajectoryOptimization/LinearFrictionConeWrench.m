@@ -26,7 +26,7 @@ classdef LinearFrictionConeWrench < RigidBodyContactWrench
       obj.FC_edge = FC_edge;
       obj.F_lb = zeros(obj.num_pt_F,obj.num_pts);
       obj.F_ub = inf(obj.num_pt_F,obj.num_pts);
-      obj.type = RigidBodyContactWrench.LinearFrictionConeType;
+      obj.contact_force_type = RigidBodyContactWrench.LinearFrictionConeType;
       obj.num_wrench_constraint = 0;
       obj.wrench_iCfun = [];
       obj.wrench_jCvar = [];

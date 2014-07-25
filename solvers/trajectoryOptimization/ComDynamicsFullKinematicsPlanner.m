@@ -96,14 +96,14 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
     function obj = addContactDynamicConstraints(obj,knot_idx,contact_wrench_idx,knot_lambda_idx)
       num_knots = numel(knot_idx);
       sizecheck(num_knots,[1,1]);
-      num_lambda = length(knot_lambda_idx);
+      num_lambda1 = length(knot_lambda_idx{1});
       
       function [c,dc] = singleTimeDynFun(kinsol,com,lambda,Hdot)
         lambda_count = 0;
         c = Hdot;
-        dc = zeros(3,obj.nq+3+num_lambda+3);
-        dc(1:3,obj.nq+3+num_lambda+(1:3)) = eye(3);
-        for i = contact_wrench_idx
+        dc = zeros(3,obj.nq+3+num_lambda1+3);
+        dc(1:3,obj.nq+3+num_lambda1+(1:3)) = eye(3);
+        for i = contact_wrench_idx{1}
           num_pts_i = obj.contact_wrench{i}.num_pts;
           num_lambda_i = obj.contact_wrench{i}.num_pt_F*num_pts_i;
           force_i = reshape(A_force{i}*lambda(lambda_count+(1:num_lambda_i)),3,num_pts_i);
@@ -142,12 +142,12 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         % Add the dynamic constraints for a single time
         % Hdot = sum_j cross((contact_pos_j-com),F_j)
         % m*comddot+m*g = sum_j F_j
-        A_force_stack = zeros(3,num_lambda);
+        A_force_stack = zeros(3,num_lambda1);
         lambda_count_tmp = 0;
-        A_force = cell(1,length(contact_wrench_idx));
-        A_torque = cell(1,length(contact_wrench_idx));
+        A_force = cell(1,length(contact_wrench_idx{1}));
+        A_torque = cell(1,length(contact_wrench_idx{1}));
         joint_idx = [];
-        for j = contact_wrench_idx
+        for j = contact_wrench_idx{1}
           num_pts_j = obj.contact_wrench{j}.num_pts;
           num_lambda_j = obj.contact_wrench{j}.num_pt_F*num_pts_j;
           A_force{j} = obj.contact_wrench{j}.force();
@@ -160,16 +160,16 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         joint_idx = unique(joint_idx);
         newton_cnstr = LinearConstraint([0;0;-obj.robot_mass*obj.g],[0;0;-obj.robot_mass*obj.g],[obj.robot_mass*eye(3) -A_force_stack]);
         newton_cnstr = newton_cnstr.setName([{sprintf('F_x=ma_x[%d]',knot_idx)};{sprintf('F_y=ma_y[%d]',knot_idx)};{sprintf('F_z=ma_z[%d]',knot_idx)}]);
-        obj = obj.addLinearConstraint(newton_cnstr,[obj.comddot_inds(:,knot_idx);knot_lambda_idx]);
-        Hdot_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+3+num_lambda+3,@(~,com,lambda,Hdot,kinsol) singleTimeDynFun(kinsol,com,lambda,Hdot));
+        obj = obj.addLinearConstraint(newton_cnstr,[obj.comddot_inds(:,knot_idx);knot_lambda_idx{1}]);
+        Hdot_cnstr = FunctionHandleConstraint(zeros(3,1),zeros(3,1),obj.nq+3+num_lambda1+3,@(~,com,lambda,Hdot,kinsol) singleTimeDynFun(kinsol,com,lambda,Hdot));
         Hdot_cnstr = Hdot_cnstr.setName([{sprintf('Hdot_x[%d]=rxF',knot_idx)};{sprintf('Hdot_y[%d]=rxF',knot_idx)};{sprintf('Hdot_z[%d]=rxF',knot_idx)}]);
         Hdot_sparse_pattern = zeros(3,Hdot_cnstr.xdim);
         Hdot_sparse_pattern(:,joint_idx) = 1;
-        Hdot_sparse_pattern(:,obj.nq+(1:3+num_lambda)) = 1;
-        Hdot_sparse_pattern(:,obj.nq+3+num_lambda+(1:3)) = eye(3);
+        Hdot_sparse_pattern(:,obj.nq+(1:3+num_lambda1)) = 1;
+        Hdot_sparse_pattern(:,obj.nq+3+num_lambda1+(1:3)) = eye(3);
         [Hdot_row,Hdot_col] = find(Hdot_sparse_pattern);
         Hdot_cnstr = Hdot_cnstr.setSparseStructure(Hdot_row,Hdot_col);
-        obj = obj.addDifferentiableConstraint(Hdot_cnstr,[{obj.q_inds(:,knot_idx)};{obj.com_inds(:,knot_idx)};{knot_lambda_idx};{obj.Hdot_inds(:,knot_idx)}],obj.kinsol_dataind(knot_idx));
+        obj = obj.addDifferentiableConstraint(Hdot_cnstr,[{obj.q_inds(:,knot_idx)};{obj.com_inds(:,knot_idx)};knot_lambda_idx;{obj.Hdot_inds(:,knot_idx)}],obj.kinsol_dataind(knot_idx));
       elseif(num_knots == 2)
 				h_sparse_pattern = zeros(3+3+3+obj.nq,1+24+2*obj.nq+obj.nv);
         h_sparse_pattern(1:3,1) = ones(3,1);
@@ -200,6 +200,52 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
         obj = obj.addDifferentiableConstraint(h_cnstr,[{obj.h_inds(knot_idx(1))};{obj.H_inds(:,knot_idx(1))};{obj.H_inds(:,knot_idx(2))};{obj.Hdot_inds(:,knot_idx(2))};...
           {obj.com_inds(:,knot_idx(1))};{obj.com_inds(:,knot_idx(2))};{obj.comdot_inds(:,knot_idx(1))};{obj.comdot_inds(:,knot_idx(2))};...
           {obj.comddot_inds(:,knot_idx(2))};{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{obj.v_inds(:,knot_idx(2))}]);
+        %%%%
+        % add the complementarity contact constraint
+        % find out the RigidBodyWrench on the same body and same body_pts
+        lambda1_start_idx = 0;
+        for wrench_idx1 = contact_wrench_idx{1}
+          lambda2_start_idx = 0;
+          for wrench_idx2 = contact_wrench_idx{2}
+            if(obj.contact_wrench{wrench_idx1}.contact_force_type == obj.contact_wrench{wrench_idx2}.contact_force_type &&...
+                obj.contact_wrench{wrench_idx1}.body == obj.contact_wrench{wrench_idx2}.body && ...
+                obj.contact_wrench{wrench_idx1}.num_pts == obj.contact_wrench{wrench_idx2}.num_pts)
+              if(sum(sum((obj.contact_wrench{wrench_idx1}.body_pts-obj.contact_wrench{wrench_idx2}.body_pts).^2,1))<1e-4)
+                % Now the two contact wrenches are on the same body, same points with same
+                % type of contact forces
+                lambda1_idx = knot_lambda_idx{1}(lambda1_start_idx+(1:obj.contact_wrench{wrench_idx1}.num_pt_F*obj.contact_wrench{wrench_idx1}.num_pts));
+                lambda2_idx = knot_lambda_idx{2}(lambda1_start_idx+(1:obj.contact_wrench{wrench_idx2}.num_pt_F*obj.contact_wrench{wrench_idx2}.num_pts));
+                if(obj.contact_wrench{wrench_idx1}.complementarity_flag && obj.contact_wrench{wrench_idx2}.complementarity_flag)
+                  csc_cnstr = ComplementarityStaticContactConstraint(obj.contact_wrench{wrench_idx1});
+                  csc_cnstr_name = cell(csc_cnstr.num_cnstr,1);
+                  for csc_cnstr_idx = 1:csc_cnstr.num_cnstr
+                    csc_cnstr_name{csc_cnstr_idx} = sprintf('%s_knot%d&%d',csc_cnstr.name{csc_cnstr_idx},knot_idx(1),knot_idx(2));
+                  end
+                  csc_cnstr = csc_cnstr.setName(csc_cnstr_name);
+                  obj = obj.addDifferentiableConstraint(csc_cnstr,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda1_idx};{lambda2_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
+                elseif(obj.contact_wrench{wrench_idx1}.complementarity_flag)
+                  csssc_cnstr = ComplementaritySingleSideStaticContactConstraint(obj.contact_wrench{wrench_idx1});
+                  csssc_cnstr_name = cell(csssc_cnstr.num_cnstr,1);
+                  for csssc_cnstr_idx = 1:csssc_cnstr.num_cnstr
+                    csssc_cnstr_name{csssc_cnstr_idx} = sprintf('%s_knot%d&%d',csssc_cnstr.name{csssc_cnstr_idx},knot_idx(1),knot_idx(2));
+                  end
+                  csssc_cnstr = csssc_cnstr.setName(csssc_cnstr_name);
+                  obj = obj.addDifferentiableConstraint(csssc_cnstr,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda1_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
+                elseif(obj.contact_wrench{wrench_idx2}.complementarity_flag)
+                  csssc_cnstr = ComplementaritySingleSideStaticContactConstraint(obj.contact_wrench{wrench_idx1});
+                  csssc_cnstr_name = cell(csssc_cnstr.num_cnstr,1);
+                  for csssc_cnstr_idx = 1:csssc_cnstr.num_cnstr
+                    csssc_cnstr_name{csssc_cnstr_idx} = sprintf('%s_knot%d&%d',csssc_cnstr.name{csssc_cnstr_idx},knot_idx(1),knot_idx(2));
+                  end
+                  csssc_cnstr = csssc_cnstr.setName(csssc_cnstr_name);
+                  obj = obj.addDifferentiableConstraint(csssc_cnstr,[{obj.q_inds(:,knot_idx(1))};{obj.q_inds(:,knot_idx(2))};{lambda2_idx}],[obj.kinsol_dataind(knot_idx(1)),obj.kinsol_dataind(knot_idx(2))]);
+                end
+              end
+            end
+            lambda2_start_idx = lambda2_start_idx+obj.contact_wrench{wrench_idx2}.num_pt_F*obj.contact_wrench{wrench_idx2}.num_pts;
+          end
+          lambda1_start_idx = lambda1_start_idx+obj.contact_wrench{wrench_idx1}.num_pt_F*obj.contact_wrench{wrench_idx1}.num_pts;
+        end
       end
     end
     

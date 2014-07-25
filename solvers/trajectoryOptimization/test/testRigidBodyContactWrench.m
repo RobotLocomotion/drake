@@ -86,12 +86,13 @@ display('Check ComplementarityFrictionConeWrench');
 plane_normal = randn(3,1);
 plane_normal = plane_normal/norm(plane_normal);
 plane_pt = randn(3,1);
-cfc_wrench = ComplementarityFrictionConeWrench(robot,l_foot,l_foot_pt,mu,FC_axis,@(kinsol) phi_distance(robot,kinsol,l_foot,l_foot_pt,plane_normal,plane_pt));
+cfc_wrench = ComplementarityFrictionConeWrench(robot,l_foot,l_foot_pt,mu,FC_axis,@(pt_pos) phi_distance(pt_pos,plane_normal,plane_pt));
 [lincon,nlcon,bcon] = cfc_wrench.generateWrenchConstraint();
 F = randn(3,size(l_foot_pt,2));
 kinsol_star = robot.doKinematics(qstar,false,false);
-[c,dc] = phi_distance(robot,kinsol_star,l_foot,l_foot_pt,plane_normal,plane_pt);
-[~,dc_numeric] = geval(@(q) phi_distance(robot,robot.doKinematics(q),l_foot,l_foot_pt,plane_normal,plane_pt),qstar,struct('grad_method','numerical'));
+pt_pos = randn(3,4);
+[c,dc] = phi_distance(pt_pos,plane_normal,plane_pt);
+[~,dc_numeric] = geval(@(pt_pos) phi_distance(pt_pos,plane_normal,plane_pt),pt_pos,struct('grad_method','numerical'));
 valuecheck(dc,dc_numeric,1e-3);
 valuecheck(bcon.lb(end-size(l_foot_pt,2)+1:end),zeros(size(l_foot_pt,2),1));
 gamma = randn(size(l_foot_pt,2),1);
@@ -101,7 +102,7 @@ kinsol = robot.doKinematics(q,false,false);
 l_foot_pos = robot.forwardKin(kinsol,l_foot,l_foot_pt,0);
 l_foot_pos_normal = cross(l_foot_pos(:,2)-l_foot_pos(:,1),l_foot_pos(:,3)-l_foot_pos(:,1));
 l_foot_pos_normal = l_foot_pos_normal/norm(l_foot_pos_normal);
-cfc_wrench = ComplementarityFrictionConeWrench(robot,l_foot,l_foot_pt,mu,l_foot_pos_normal,@(kinsol) phi_distance(robot,kinsol,l_foot,l_foot_pt,l_foot_pos_normal,l_foot_pos(:,1)));
+cfc_wrench = ComplementarityFrictionConeWrench(robot,l_foot,l_foot_pt,mu,l_foot_pos_normal,@(pt_pos) phi_distance(pt_pos,l_foot_pos_normal,l_foot_pos(:,1)));
 [lincon,nlcon,bcon] = cfc_wrench.generateWrenchConstraint();
 F_valid = false;
 while(~F_valid)
@@ -127,7 +128,7 @@ display('Check ComplementarityLinearFrictionConeWrench');
 plane_normal = randn(3,1);
 plane_normal = plane_normal/norm(plane_normal);
 plane_pt = randn(3,1);
-clfc_wrench = ComplementarityLinearFrictionConeWrench(robot,l_foot,l_foot_pt,FC_edge,@(kinsol) phi_distance(robot,kinsol,l_foot,l_foot_pt,plane_normal,plane_pt));
+clfc_wrench = ComplementarityLinearFrictionConeWrench(robot,l_foot,l_foot_pt,FC_edge,@(pt_pos) phi_distance(pt_pos,plane_normal,plane_pt));
 [lincon,nlcon,bcon] = clfc_wrench.generateWrenchConstraint();
 F = 10*rand(size(FC_edge,2),size(l_foot_pt,2));
 slack = randn(size(l_foot_pt,2),1);
@@ -139,7 +140,7 @@ kinsol = robot.doKinematics(q);
 l_foot_pos = robot.forwardKin(kinsol,l_foot,[l_foot_pt mean(l_foot_pt,2)],0);
 l_foot_pos_normal = cross(l_foot_pos(:,2)-l_foot_pos(:,1),l_foot_pos(:,3)-l_foot_pos(:,1));
 FC_edge = repmat(l_foot_pos_normal,1,size(l_foot_pt,2))+l_foot_pos(:,1:end-1)-repmat(l_foot_pos(:,end),1,size(l_foot_pt,2));
-clfc_wrench = ComplementarityLinearFrictionConeWrench(robot,l_foot,l_foot_pt,FC_edge,@(kinsol) phi_distance(robot,kinsol,l_foot,l_foot_pt,l_foot_pos_normal,l_foot_pos(:,1)));
+clfc_wrench = ComplementarityLinearFrictionConeWrench(robot,l_foot,l_foot_pt,FC_edge,@(pt_pos) phi_distance(pt_pos,l_foot_pos_normal,l_foot_pos(:,1)));
 F = rand(size(l_foot_pt,2),size(l_foot_pt,2));
 [lincon,nlcon,bcon] = clfc_wrench.generateWrenchConstraint();
 c = nlcon.eval(q,F,gamma,kinsol);
@@ -159,7 +160,7 @@ force_max = 100;
 A_torque = [eye(3);ones(1,3)];
 b_torque_ub = [10;20;30;40];
 b_torque_lb = [-10;-20;-30;-40];
-cg_wrench = ComplementarityGraspWrench(robot,l_hand,[0;0;0],force_max,A_torque,b_torque_lb,b_torque_ub,@(kinsol) phi_distance(robot,kinsol,l_hand,[0;0;0],l_foot_pos_normal,l_foot_pos(:,1)));
+cg_wrench = ComplementarityGraspWrench(robot,l_hand,[0;0;0],force_max,A_torque,b_torque_lb,b_torque_ub,@(pt_pos) phi_distance(pt_pos,l_foot_pos_normal,l_foot_pos(:,1)));
 slack = randn();
 F = randn(6,1);
 testRigidBodyContactWrench_userfun(cg_wrench,q,F,slack);
@@ -186,10 +187,9 @@ kinsol = robot.doKinematics(q);
 c = nlcon.eval(q,F,slack,kinsol);
 end
 
-function [c,dc] = phi_distance(robot,kinsol,body,body_pts,plane_normal,plane_pt)
-num_pts = size(body_pts,2);
-[pos,J] = robot.forwardKin(kinsol,body,body_pts,0);
-pos2pt = pos-bsxfun(@times,plane_pt,ones(1,num_pts));
+function [c,dc] = phi_distance(pt_pos,plane_normal,plane_pt)
+num_pts = size(pt_pos,2);
+pos2pt = pt_pos-bsxfun(@times,plane_pt,ones(1,num_pts));
 c = sum(pos2pt.*bsxfun(@times,plane_normal,ones(1,num_pts)),1)';
-dc = kron(speye(num_pts),plane_normal')*J;
+dc = kron(speye(num_pts),plane_normal');
 end

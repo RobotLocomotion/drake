@@ -5,7 +5,7 @@ classdef ComplementarityGraspWrench < GraspWrench
 % <force,gamma> = 0 (nlcon)
 % gamma >= 0 (bcon)
   properties(SetAccess = protected)
-    phi_handle % A function handle. phi_handle(kinsol) returns the contact distance at each body point, and their gradient w.r.t q
+    phi_handle % A function handle. phi_handle(pt_pos) returns the contact distance at each pt_pos, and their gradient w.r.t q
   end
 
   methods
@@ -34,13 +34,16 @@ classdef ComplementarityGraspWrench < GraspWrench
         comp_name{obj.num_pts+i} = sprintf('<%s_pt%d_force,gamma>=0',obj.body_name,i);
       end
       obj.wrench_cnstr_name = [obj.wrench_cnstr_name;comp_name];
+      obj.complementarity_flag = true;
     end
     
     function [c,dc] = evalWrenchConstraint(obj,kinsol,F,slack)
       gamma = slack;
       [c1,dc1] = evalWrenchConstraint@GraspWrench(obj,kinsol,F,[]);
       dc1 = [dc1 zeros(numel(c1),obj.num_slack)];
-      [phi,dphidq] = obj.phi_handle(kinsol);
+      [pt_pos,dpt_pos] = obj.robot.forwardKin(kinsol,obj.body,obj.body_pts,0);
+      [phi,dphidpos] = obj.phi_handle(pt_pos);
+      dphidq = dphidpos*dpt_pos;
       c2 = phi-gamma;
       dc2 = [dphidq zeros(obj.num_pts,obj.num_pt_F*obj.num_pts) -1];
       F_normal = sum(F.*F);
