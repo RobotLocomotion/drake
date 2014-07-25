@@ -140,6 +140,9 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     end
     
     function [c,dc] = evalValidTime(obj,kinsol,weights)
+      if ~isstruct(kinsol)
+        kinsol = obj.robot.doKinematics(kinsol);
+      end
       [com,dcom] = obj.robot.getCOM(kinsol,obj.robotnum);
       contact_pos = zeros(3,obj.num_pts);
       dcontact_pos = zeros(3*obj.num_pts,obj.nq);
