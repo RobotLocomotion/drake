@@ -70,7 +70,8 @@ Q(2,2) = 0;
 Q(6,6) = 0;
 Q(bky_idx,bky_idx) = 100*Q(bky_idx,bky_idx);
 Qv = 0.1*eye(nv);
-cdfkp = ComDynamicsFullKinematicsPlanner(robot,nT,tf_range,Q_comddot,Qv,Q,q_nom,[l_foot_contact_wrench r_foot_contact_wrench]);
+Q_contact_force = 1/(robot.getMass*g)^2*eye(3);
+cdfkp = ComDynamicsFullKinematicsPlanner(robot,nT,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,[l_foot_contact_wrench r_foot_contact_wrench]);
 
 lfoot_on_ground = {WorldPositionConstraint(robot,l_foot,[0;0;0],lfoot_pos_star(1:3),lfoot_pos_star(1:3)),...
   WorldQuatConstraint(robot,l_foot,lfoot_pos_star(4:7),0)};
@@ -125,6 +126,7 @@ lambda_sol{1} = reshape(x_sol(cdfkp.lambda_inds{1}),size(cdfkp.lambda_inds{1},1)
 lambda_sol{2} = reshape(x_sol(cdfkp.lambda_inds{2}),size(cdfkp.lambda_inds{2},1),[],nT);
 xtraj_sol = PPTrajectory(foh(cumsum([0 h_sol]),[q_sol;v_sol]));
 xtraj_sol = xtraj_sol.setOutputFrame(robot.getStateFrame);
+wrench_sol = cdfkp.contactWrench(x_sol);
 for i = 1:nT
   kinsol_tmp = robot.doKinematics(q_sol(:,i),false,false);
   valuecheck(robot.getCOM(kinsol_tmp),com_sol(:,i),1e-3);
