@@ -226,6 +226,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       % @retval cnstr  -- A FunctionHandleConstraint enforcing the CoM on xy-plane matches
       % witht the weighted sum of the shrunk vertices; A LinearConstraint on the weighted
       % sum only, and a BoundingBoxConstraint on the weighted sum only
+      if nargin < 2, t = obj.tspan(1); end;
       if(obj.isTimeValid(t) && obj.active)
         name_str = obj.name(t);
         cnstr = {FunctionHandleConstraint([0;0],[0;0],obj.nq+obj.num_pts,@(~,weights,kinsol) obj.evalValidTime(kinsol,weights)),...

@@ -101,6 +101,7 @@ classdef ContactWrenchConstraint < RigidBodyConstraint
     function cnstr = generateConstraint(obj,t)
       % generate a FunctionHandleConstraint for 'eval' function, and a BoundingBoxConstraint
       % for F
+      if nargin < 2, t = obj.tspan(1); end;
       if(obj.isTimeValid(t))
         [lb,ub] = obj.bounds(t);
         cnstr = {FunctionHandleConstraint(lb,ub,obj.robot.getNumDOF+prod(obj.F_size),@(kinsol,F) obj.eval(t,kinsol,F)),...
