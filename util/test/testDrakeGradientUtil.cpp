@@ -351,24 +351,42 @@ void testNormalizeVec(int ntests) {
 }
 
 void testGradientVar() {
-  const int nq = 34;
-  const int order = 3;
+  const int nq = 5;
 
-  const int n = 5;
-  const int m = 7;
-  const int p = 8;
+  const int n = 2;
+  const int m = 3;
+  const int p = 4;
 
-  GradientVar<Matrix<double, n, m>> var1(nq, order);
-//  var1.addGradient();
-//  var1.setGradientOrder(3);
+  GradientVar<Matrix<double, n, m>> var1(nq);
+
   var1.val().setRandom();
-  var1.getGradient().val().setRandom();
+  var1.getGradient().setRandom();
   std::cout << "var1.mat:\n" << var1.val() << "\n\n";
-  std::cout << "var1.gradient.mat:\n" << var1.getGradient().val() << "\n\n";
+  std::cout << "var1.gradient.mat:\n" << var1.getGradient() << "\n\n";
 
-//  auto var2(var1);
+  GradientVar<Matrix<double, m, p>> var2(nq);
+  var2.val().setRandom();
+  var2.getGradient().setRandom();
 
-//  std::cout << "var2.mat:\n" << var2.val() << "\n\n";
+  auto var3 = var1 * var2;
+  std::cout << "var3.mat:\n" << var3.val() << "\n\n";
+  std::cout << "var3.gradient:\n" << var3.getGradient() << "\n\n";
+
+  GradientVar<MatrixXd> var4(nq, var3.val().rows(), var3.val().cols());
+  var4.val().setRandom();
+  var4.getGradient().setRandom();
+  auto var5 = var3 + var4;
+  std::cout << "var5.mat:\n" << var5.val() << "\n\n";
+  std::cout << "var5.gradient:\n" << var5.getGradient() << "\n\n";
+
+  auto var6 = var5.transpose();
+  std::cout << "var6.mat:\n" << var6.val() << "\n\n";
+  std::cout << "var6.gradient:\n" << var6.getGradient() << "\n\n";
+
+  GradientVar<MatrixXd> var7(nq, var6.val().rows(), var6.val().cols());
+  var7 = var6;
+  std::cout << "var7.mat:\n" << var7.val() << "\n\n";
+  std::cout << "var7.gradient:\n" << var7.getGradient() << "\n\n";
 }
 
 int main(int argc, char **argv) {

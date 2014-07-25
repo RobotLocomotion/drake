@@ -4,61 +4,78 @@
 #include "drakeGradientUtil.h"
 #include <Eigen/Core>
 #include <exception>
+//#include <Core/GeneralProduct.h>
 
-template <typename MatrixType>
+template <typename Derived>
 class GradientVar
 {
-  typedef typename Gradient<MatrixType, Eigen::Dynamic>::type GradientMatrixType;
+  typedef typename Gradient<Derived, Eigen::Dynamic>::type GradientMatrixType;
 
 private:
-  MatrixType mat;
-  const int numVars;
-  std::unique_ptr<GradientVar<GradientMatrixType>> gradient;
-
+  Derived mat;
+  GradientMatrixType gradient;
 
 public:
-  GradientVar(int numVars, int order = 0, int rows = MatrixType::RowsAtCompileTime, int cols = MatrixType::ColsAtCompileTime) :
-    mat(rows, cols), numVars(numVars), gradient(order > 0 ? new GradientVar<GradientMatrixType>(numVars, order - 1, rows * cols, numVars) : nullptr) {
+  GradientVar(const Derived& mat, const GradientMatrixType& gradient) :
+    mat(mat), gradient(gradient){
     // empty
   }
 
-  virtual ~GradientVar() {
+  GradientVar(int numVars, int rows = Derived::RowsAtCompileTime, int cols = Derived::ColsAtCompileTime) :
+    mat(rows, cols), gradient(mat.size(), numVars) {
     // empty
   }
 
-  const GradientVar<GradientMatrixType>& getGradient() const
+  virtual ~GradientVar()
   {
-    if (gradient) {
-      return *gradient;
-    }
-    else {
-      throw std::runtime_error("This GradientVar has no gradient");
-    }
+    // empty
   }
 
-  GradientVar<GradientMatrixType>& getGradient()
-  {
-    if (gradient) {
-      return *gradient;
-    }
-    else {
-      throw std::runtime_error("This GradientVar has no gradient");
-    }
+  template <typename OtherDerived>
+  GradientVar<Derived>& operator=(const GradientVar<OtherDerived>& other) {
+    mat = other.val();
+    gradient = other.getGradient();
+    return *this;
   }
 
-  const MatrixType& val() const
+  template<typename OtherDerived>
+  const GradientVar<typename Eigen::ProductReturnType<Derived,OtherDerived>::Type>
+  operator*(const GradientVar<OtherDerived> &other) const {
+    return GradientVar<typename Eigen::ProductReturnType<Derived,OtherDerived>::Type>(val() * other.val(), matGradMultMat(val(), other.val(), getGradient(), other.getGradient()));
+  }
+
+  template<typename OtherDerived>
+  const GradientVar< typename Eigen::CwiseBinaryOp< Eigen::internal::scalar_sum_op <typename Derived::Scalar>, const Derived, const OtherDerived> > operator+ ( const GradientVar< OtherDerived >& other) const {
+    return GradientVar< typename Eigen::CwiseBinaryOp< Eigen::internal::scalar_sum_op <typename Derived::Scalar>, const Derived, const OtherDerived> >(val() + other.val(), getGradient() + other.getGradient());
+  }
+
+  GradientVar<Eigen::Transpose<Derived>> transpose() {
+    return GradientVar<Eigen::Transpose<Derived>>(mat.transpose(), transposeGrad(gradient, mat.rows()));
+  }
+
+  const Derived& val() const
   {
     return mat;
   }
 
-  MatrixType& val()
+  Derived& val()
   {
     return mat;
   }
 
-  const int getNumVars() const
+  int getNumVars() const
   {
-    return numVars;
+    return gradient.cols();
+  }
+
+  const GradientMatrixType& getGradient() const
+  {
+    return gradient;
+  }
+
+  GradientMatrixType& getGradient()
+  {
+    return gradient;
   }
 };
 
