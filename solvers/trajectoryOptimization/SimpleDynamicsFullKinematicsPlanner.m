@@ -194,7 +194,9 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
           obj = obj.addLinearConstraint(cnstr{1},obj.q_inds(:,time_index{j}));
         elseif isa(constraint,'MultipleTimeKinematicConstraint')
           cnstr = constraint.generateConstraint(numel(time_index{j}));
-          obj = obj.addKinematicConstraint(cnstr{1},time_index{j});
+          if ~isempty(cnstr)
+            obj = obj.addKinematicConstraint(cnstr{1},time_index{j});
+          end
         else
           id = ['Drake:SimpleDynamicsFullKinematicsPlanner:' ...
             'unknownRBConstraint'];

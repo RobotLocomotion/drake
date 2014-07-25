@@ -224,36 +224,47 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       % @param cnstr     -- A LinearConstraint object
       % @param xind      -- Optional argument. x(xind) is the decision variables used in
       % evaluating the constraint. Default value is (1:obj.num_vars)
-      if(nargin<3)
-        xind = (1:obj.num_vars)';
+      % @param cnstr_name  -- An optional argument. A cell of strings. cnstr_name{i} is
+      % the name of the i'th constraint. If not given, the cnstr.name will be used instead
+      if cnstr.num_cnstr > 0
+        if(nargin<4)
+          cnstr_name = cnstr.name;
+        else
+          if(~iscellstr(cnstr_name))
+            error('Drake:NonlinearProgramWConstraintObjects:cnstr_name should be a cell of strings');
+          end
+        end
+        if(nargin<3)
+          xind = (1:obj.num_vars)';
+        end
+        if iscell(xind)
+          xind = cell2mat(xind);
+        end
+        xind = xind(:);
+        if(~isa(cnstr,'LinearConstraint'))
+          error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addLinearConstraint expects a LinearConstraint object');
+        end
+        if length(xind) ~= cnstr.xdim
+          error('Drake:NonlinearProgramWConstraint:InvalidArgument','the length of xind must match the x-dimension of the constraint');
+        end
+        obj.lcon = [obj.lcon,{cnstr}];
+
+        cnstr_A = sparse(cnstr.iCfun,xind(cnstr.jCvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr.nnz);
+        cnstr_beq = (cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2;
+        cnstr_Aeq = cnstr_A(cnstr.ceq_idx,:);
+        cnstr_Ain = cnstr_A(cnstr.cin_idx,:);
+        cnstr_bin_lb = cnstr.lb(cnstr.cin_idx);
+        cnstr_bin_ub = cnstr.ub(cnstr.cin_idx);
+        bin_ub_inf_idx = ~isinf(cnstr_bin_ub);
+        bin_lb_inf_idx = ~isinf(cnstr_bin_lb);
+        if(sum(bin_ub_inf_idx | bin_lb_inf_idx)>0)
+          obj = obj.addLinearInequalityConstraints([cnstr_Ain(bin_ub_inf_idx,:);-cnstr_Ain(bin_lb_inf_idx,:)],...
+            [cnstr_bin_ub(bin_ub_inf_idx);-cnstr_bin_lb(bin_lb_inf_idx)]);
+        end
+        obj.Ain_name = [obj.Ain_name;cnstr_name(cnstr.cin_idx)];
+        obj.Aeq_name = [obj.Aeq_name;cnstr_name(cnstr.ceq_idx)];
+        obj = obj.addLinearEqualityConstraints(cnstr_Aeq,cnstr_beq);
       end
-      if iscell(xind)
-        xind = cell2mat(xind);
-      end
-      xind = xind(:);
-      if(~isa(cnstr,'LinearConstraint'))
-        error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addLinearConstraint expects a LinearConstraint object');
-      end
-      if length(xind) ~= cnstr.xdim
-        error('Drake:NonlinearProgramWConstraint:InvalidArgument','the length of xind must match the x-dimension of the constraint');
-      end
-      obj.lcon = [obj.lcon,{cnstr}];
-      
-      cnstr_A = sparse(cnstr.iCfun,xind(cnstr.jCvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr.nnz);
-      cnstr_beq = (cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2;
-      cnstr_Aeq = cnstr_A(cnstr.ceq_idx,:);
-      cnstr_Ain = cnstr_A(cnstr.cin_idx,:);
-      cnstr_bin_lb = cnstr.lb(cnstr.cin_idx);
-      cnstr_bin_ub = cnstr.ub(cnstr.cin_idx);
-      bin_ub_inf_idx = ~isinf(cnstr_bin_ub);
-      bin_lb_inf_idx = ~isinf(cnstr_bin_lb);
-      if(sum(bin_ub_inf_idx | bin_lb_inf_idx)>0)
-        obj = obj.addLinearInequalityConstraints([cnstr_Ain(bin_ub_inf_idx,:);-cnstr_Ain(bin_lb_inf_idx,:)],...
-          [cnstr_bin_ub(bin_ub_inf_idx);-cnstr_bin_lb(bin_lb_inf_idx)]);
-      end
-      obj.Ain_name = [obj.Ain_name;cnstr.name(cnstr.cin_idx)];
-      obj.Aeq_name = [obj.Aeq_name;cnstr.name(cnstr.ceq_idx)];
-      obj = obj.addLinearEqualityConstraints(cnstr_Aeq,cnstr_beq);
     end
     
     function obj = addBoundingBoxConstraint(obj,cnstr,xind)

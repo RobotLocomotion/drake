@@ -199,8 +199,10 @@ classdef NonlinearProgram
       [m,n] = size(Aeq);
       assert(n == obj.num_vars);
       sizecheck(beq,[m,1]);
-      obj.Aeq = vertcat(obj.Aeq,Aeq);
-      obj.beq = vertcat(obj.beq,beq);
+      if numel(Aeq) > 0
+        obj.Aeq = vertcat(obj.Aeq,Aeq);
+        obj.beq = vertcat(obj.beq,beq);
+      end
     end
 
     function obj = addDisplayFunction(obj,display_fun,indices)
