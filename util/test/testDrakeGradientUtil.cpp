@@ -387,6 +387,27 @@ void testGradientVar() {
   var7 = var6;
   std::cout << "var7.mat:\n" << var7.val() << "\n\n";
   std::cout << "var7.gradient:\n" << var7.getGradient() << "\n\n";
+
+  auto var8 = var7.template block<3, 2>(1, 0);
+  std::cout << "var8.mat:\n" << var8.val() << "\n\n";
+  std::cout << "var8.gradient:\n" << var8.getGradient() << "\n\n";
+
+  auto var9 = var7.block(1, 0, 3, 2);
+  if (!var9.val().isApprox(var8.val(), 1e-10)) {
+    throw std::runtime_error("wrong");
+  }
+  else {
+    std::cout << "success!" << std::endl;
+  }
+
+  GradientVar<Matrix2d> var10(nq);
+  var10.val() << 1, 2, 3, 4;
+  auto var10Block = var10.template block<1, 2>(0, 0);
+  GradientVar<Matrix<double, 1, 2>> newBlock(nq);
+  newBlock.val() << 5, 6;
+  var10Block = newBlock;
+  std::cout << "var10.mat:\n" << var10.val() << "\n\n";
+
 }
 
 int main(int argc, char **argv) {
