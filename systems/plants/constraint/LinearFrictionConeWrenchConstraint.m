@@ -53,20 +53,20 @@ classdef LinearFrictionConeWrenchConstraint < ContactWrenchConstraint
       end
       obj.num_edges = FC_edge_size(2);
       obj.FC_edge = FC_edge;
-      obj.F_size = [obj.num_edges obj.num_pts];
-      obj.F_lb = zeros(obj.F_size);
-      obj.F_ub = inf(obj.F_size);
+      obj.pt_num_F = obj.num_edges;
+      obj.F_lb = zeros(obj.pt_num_F,obj.num_pts);
+      obj.F_ub = inf(obj.pt_num_F,obj.num_pts);
       obj.num_constraint = 0;
       obj.type = RigidBodyConstraint.LinearFrictionConeWrenchConstraintType;
     end
     
-    function [c,dc_val] = evalSparse(obj,t,kinsol,F)
+    function [c,dc_val] = evalSparse(obj,kinsol,F)
       % return the constraint. There is no nonlinear constraint on the force paramter
       c = [];
       dc_val = [];
     end
     
-    function [iCfun,jCvar,nnz] = evalSparseStructure(obj,t)
+    function [iCfun,jCvar,nnz] = evalSparseStructure(obj)
       % return the sparse structure of the nonlinear constraint gradient. In this case the
       % gradient matrix is empty.
       iCfun = [];
@@ -81,56 +81,52 @@ classdef LinearFrictionConeWrenchConstraint < ContactWrenchConstraint
       ub = [];
     end
     
-    function [tau,dtau] = torque(obj,t,kinsol,F)
-      % Compute the total torque and its gradient
-      if(obj.isTimeValid(t))
-        valid_F = checkForceSize(obj,F);
-        if(~valid_F)
-          error('Drake:LinearFrictionConeWrenchConstraint:friction force should be num_edges x n_pts matrix');
-        end
-        nq = obj.robot.getNumDOF();
-        [body_pos,dbody_pos] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
-        force = obj.FC_edge*F;
-        tau = sum(cross(body_pos,force,1),2);
-        dtau = zeros(3,nq+obj.num_pts*obj.num_edges);
-        for i = 1:obj.num_pts
-          dtau_tmp = dcross(body_pos(:,i),force(:,i));
-          dtau(:,1:nq) = dtau(:,1:nq)+dtau_tmp(:,1:3)*dbody_pos((i-1)*3+(1:3),:);
-          dtau(:,nq+(i-1)*obj.num_edges+(1:obj.num_edges)) = dtau_tmp(:,4:6)*obj.FC_edge; 
-        end
-      else
-        tau = [];
-        dtau = [];
+    function [tau,dtau] = torqueSum(obj,kinsol,F)
+      % Compute the total torque and its gradient      
+      valid_F = checkForceSize(obj,F);
+      if(~valid_F)
+        error('Drake:LinearFrictionConeWrenchConstraint:friction force should be num_edges x n_pts matrix');
+      end
+      nq = obj.robot.getNumDOF();
+      [body_pos,dbody_pos] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
+      force = obj.FC_edge*F;
+      tau = sum(cross(body_pos,force,1),2);
+      dtau = zeros(3,nq+obj.num_pts*obj.num_edges);
+      for i = 1:obj.num_pts
+        dtau_tmp = dcross(body_pos(:,i),force(:,i));
+        dtau(:,1:nq) = dtau(:,1:nq)+dtau_tmp(:,1:3)*dbody_pos((i-1)*3+(1:3),:);
+        dtau(:,nq+(i-1)*obj.num_edges+(1:obj.num_edges)) = dtau_tmp(:,4:6)*obj.FC_edge; 
       end
     end
     
-    function A = force(obj,t)
+    function A = forceSum(obj)
       % Compute total force from contact force parameters F. The total force is a linear
       % transformation from F, total_force = A*F(:);
-      if(obj.isTimeValid(t))
-        A = repmat(obj.FC_edge,1,obj.num_pts);
-      else
-        A = sparse(0,0);
-      end
+      A = repmat(obj.FC_edge,1,obj.num_pts);
+    end
+    
+    function A = force(obj)
+      % Compute the indivisual force from the force parameters F. The individual forces
+      % are reshape(A*F,3,obj.num_pts)
+      % @retval A    -- A (3*num_pts) x (obj.pt_num_F*obj.num_pts) double matrix
+      iAfun = reshape(repmat(reshape(1:3*obj.num_pts,3,obj.num_pts),obj.num_edges,1),[],1);
+      jAvar = reshape(bsxfun(@times,ones(3,1),(1:obj.num_pts*obj.num_edges)),[],1);
+      Aval = reshape(bsxfun(@times,obj.FC_edge(:),ones(1,obj.num_pts)),[],1);
+      A = sparse(iAfun,jAvar,Aval,3*obj.num_pts,obj.num_edges*obj.num_pts);
     end
     
     function name_str = name(obj,t)
       name_str = {};
     end
     
-    function [pos,J] = contactPosition(obj,t,kinsol)
+    function [pos,J] = contactPosition(obj,kinsol)
       % Returns the contact positions and its gradient w.r.t q
       % @param t        -- A double scalar, the time to evaluate the contact position
       % @param kinsol   -- The kinematics tree
       % @retval pos     -- A matrix with 3 rows. pos(:,i) is the i'th contact position
       % @retval J       -- A matrix of size prod(size(pos)) x nq. The gradient of pos
       % w.r.t q
-      if(obj.isTimeValid(t))
-        [pos,J] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
-      else
-        pos = [];
-        J = [];
-      end
+      [pos,J] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
     end
   end
 end

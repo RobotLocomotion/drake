@@ -25,8 +25,8 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
     options % options, yup
     plant   % the plant
     h_inds  % (N-1) x 1 indices for timesteps h so that z(h_inds(i)) = h(i)
-    x_inds  % N x n indices for state
-    u_inds  % N x m indices for time
+    x_inds  % n x N indices for state
+    u_inds  % m x N indices for time
     dynamic_constraints = {};
     constraints = {};
   end

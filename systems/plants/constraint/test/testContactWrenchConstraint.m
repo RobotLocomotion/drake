@@ -38,19 +38,21 @@ display('Check torque');
 F = 10*randn(3,num_pts);
 kinsol = robot.doKinematics(qstar);
 l_foot_pos = forwardKin(robot,kinsol,l_foot,l_foot_pt,0);
-[tau,dtau] = fc_cnst.torque(t,kinsol,F);
+[tau,dtau] = fc_cnst.torqueSum(kinsol,F);
 valuecheck(tau,sum(cross(l_foot_pos,F,1),2),1e-5);
 
 display('Check force');
 F = 10*randn(3,num_pts);
-A = fc_cnst.force(t);
+A = fc_cnst.forceSum();
 valuecheck(A*F(:),sum(F,2),1e-5);
+A2 = fc_cnst.force();
+valuecheck(reshape(A2*F(:),3,num_pts),F,1e-5);
 
 display('Check wrench')
 F = 10*randn(3,num_pts);
 kinsol = robot.doKinematics(qstar);
-[w,dw] = fc_cnst.wrench(t,kinsol,F);
-valuecheck(w,evalWrench(fc_cnst,t,qstar,F),1e-10);
+[w,dw] = fc_cnst.wrenchSum(kinsol,F);
+valuecheck(w,evalWrench(fc_cnst,qstar,F),1e-10);
 
 testContactWrenchConstraint_userfun(fc_cnst,t,qstar+1e-2*randn(nq,1),F);
 
@@ -62,14 +64,16 @@ FC_edge = rpy2rotmat(0.05*randn(3,1))*[mu*cos(linspace(0,2*pi,4));mu*sin(linspac
 fc_cnst = LinearFrictionConeWrenchConstraint(robot,l_foot,l_foot_pt,FC_edge,tspan);
 valuecheck(num_pts,fc_cnst.num_pts);
 F = rand(4,num_pts);
-A = fc_cnst.force(t);
+A = fc_cnst.forceSum();
 valuecheck(A*F(:),sum(fc_cnst.FC_edge*F,2));
+A2 = fc_cnst.force();
+valuecheck(reshape(A2*F(:),3,[]),fc_cnst.FC_edge*F,1e-5);
 kinsol = fc_cnst.robot.doKinematics(q);
-[~,dtau] = fc_cnst.torque(t,kinsol,F);
-[~,dtau_numeric] = geval(@(x) evalTorque(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
+[~,dtau] = fc_cnst.torqueSum(kinsol,F);
+[~,dtau_numeric] = geval(@(x) evalTorque(fc_cnst,x(1:nq),reshape(x(nq+1:end),fc_cnst.pt_num_F,fc_cnst.num_pts)),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dtau,dtau_numeric,1e-4);
-[~,dw] = fc_cnst.wrench(t,kinsol,F);
-[~,dw_numeric] = geval(@(x) evalWrench(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
+[~,dw] = fc_cnst.wrenchSum(kinsol,F);
+[~,dw_numeric] = geval(@(x) evalWrench(fc_cnst,x(1:nq),reshape(x(nq+1:end),fc_cnst.pt_num_F,fc_cnst.num_pts)),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dw,dw_numeric,1e-4);
 
 %%%%%%
@@ -81,12 +85,14 @@ rail_fc_mu = 0.7;
 force_max = 50;
 rg_cnst = RailGraspWrenchConstraint(robot,r_hand,[0;0;0],0.1,rail_axis,rail_radius,rail_fc_mu,force_max,tspan);
 valuecheck(rg_cnst.num_pts,1);
-valuecheck(rg_cnst.F_size,[6,1]);
+valuecheck([rg_cnst.pt_num_F,rg_cnst.num_pts],[6,1]);
 F = rand(6,1);
 kinsol = rg_cnst.robot.doKinematics(q);
-A = rg_cnst.force(t);
+A = rg_cnst.forceSum();
 valuecheck(A*F(:),F(1:3),1e-8);
-tau = rg_cnst.torque(t,kinsol,F);
+A2 = rg_cnst.force();
+valuecheck(A2*F(:),F(1:3),1e-8);
+tau = rg_cnst.torqueSum(kinsol,F);
 grasp_pos = robot.forwardKin(kinsol,r_hand,[0;0;0],0);
 valuecheck(tau,cross(grasp_pos,F(1:3))+F(4:6),1e-8);
 testContactWrenchConstraint_userfun(rg_cnst,t,q,F);
@@ -97,21 +103,21 @@ function testContactWrenchConstraint_userfun(fc_cnst,t,q,F)
 nq = fc_cnst.robot.getNumDOF();
 kinsol = fc_cnst.robot.doKinematics(q);
 [c,dc] = fc_cnst.eval(t,kinsol,F);
-[~,dc_numeric] = geval(@(x) evalConstraint(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
+[~,dc_numeric] = geval(@(x) evalConstraint(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.pt_num_F,fc_cnst.num_pts)),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dc,dc_numeric,1e-5);
 kinsol = fc_cnst.robot.doKinematics(q);
-[~,dtau] = fc_cnst.torque(t,kinsol,F);
-[~,dtau_numeric] = geval(@(x) evalTorque(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
+[~,dtau] = fc_cnst.torqueSum(kinsol,F);
+[~,dtau_numeric] = geval(@(x) evalTorque(fc_cnst,x(1:nq),reshape(x(nq+1:end),fc_cnst.pt_num_F,fc_cnst.num_pts)),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dtau,dtau_numeric,1e-4);
-[~,dw] = fc_cnst.wrench(t,kinsol,F);
-[~,dw_numeric] = geval(@(x) evalWrench(fc_cnst,t,x(1:nq),reshape(x(nq+1:end),fc_cnst.F_size(1),fc_cnst.F_size(2))),[q;F(:)],struct('grad_method','numerical'));
+[~,dw] = fc_cnst.wrenchSum(kinsol,F);
+[~,dw_numeric] = geval(@(x) evalWrench(fc_cnst,x(1:nq),reshape(x(nq+1:end),fc_cnst.pt_num_F,fc_cnst.num_pts)),[q;F(:)],struct('grad_method','numerical'));
 valuecheck(dw,dw_numeric,1e-4);
 [lb,ub] = fc_cnst.bounds(t);
 cnstr = fc_cnst.generateConstraint(t);
 sizecheck(cnstr,[1,2]);
 valuecheck(cnstr{1}.lb,lb);
 valuecheck(cnstr{1}.ub,ub);
-[c_cnstr,dc_cnstr] = cnstr{1}.eval(kinsol,F);
+[c_cnstr,dc_cnstr] = cnstr{1}.eval(q,F,kinsol);
 valuecheck(c,c_cnstr);
 valuecheck(dc,dc_cnstr);
 valuecheck(sparse(cnstr{1}.iCfun,cnstr{1}.jCvar,dc_cnstr(sub2ind([cnstr{1}.num_cnstr,cnstr{1}.xdim],cnstr{1}.iCfun,cnstr{1}.jCvar)),...
@@ -125,13 +131,13 @@ kinsol = fc_cnst.robot.doKinematics(q);
 c = fc_cnst.eval(t,kinsol,F);
 end
 
-function tau = evalTorque(fc_cnst,t,q,F)
+function tau = evalTorque(fc_cnst,q,F)
 kinsol = fc_cnst.robot.doKinematics(q);
-tau = fc_cnst.torque(t,kinsol,F);
+tau = fc_cnst.torqueSum(kinsol,F);
 end
 
-function w = evalWrench(fc_cnst,t,q,F)
-  tau = evalTorque(fc_cnst,t,q,F);
-  A = fc_cnst.force(t);
+function w = evalWrench(fc_cnst,q,F)
+  tau = evalTorque(fc_cnst,q,F);
+  A = fc_cnst.forceSum();
   w = [A*F(:);tau];
 end

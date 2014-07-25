@@ -73,13 +73,13 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       obj.FC_lb = reshape(ones(1,obj.num_pts)./sqrt(obj.FC_mu.^2+ones(1,obj.num_pts)),[],1);
       obj.FC_ub = ones(obj.num_pts,1);
       obj.num_constraint = obj.num_pts;
-      obj.F_size = [3,obj.num_pts];
+      obj.pt_num_F = 3;
       obj.type = RigidBodyConstraint.FrictionConeWrenchConstraintType;
-      obj.F_lb = -inf(obj.F_size);
-      obj.F_ub = inf(obj.F_size);
+      obj.F_lb = -inf(obj.pt_num_F,obj.num_pts);
+      obj.F_ub = inf(obj.pt_num_F,obj.num_pts);
     end
     
-    function [c,dc_val] = evalSparse(obj,t,kinsol,F)
+    function [c,dc_val] = evalSparse(obj,kinsol,F)
       % This function evaluates the constraint and its non-zero entries in the sparse
       % gradient matrix.
       % @param t       - A scalar, the time to evaluate friction cone constraint
@@ -87,38 +87,27 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       % @param F       - A 3 x num_pts double matrix. The contact forces
       % @retval c      - A num_pts x 1 double vector, the constraint value
       % @retval dc_val - A 3*obj.num_pts x 1 double vector. The nonzero entries of constraint gradient w.r.t F
-      if(obj.isTimeValid(t))
-        valid_F = checkForceSize(obj,F);
-        if(~valid_F)
-          error('Drake:FrictionConeWrenchConstraint:friction force should be 3 x n_pts matrix');
-        end
-        F_norm = sqrt(sum(F.^2,1));
-        c = reshape(sum(F.*obj.FC_axis,1)./F_norm,[],1);
-        dc_entry = (obj.FC_axis'.*bsxfun(@times,(F_norm').^2,ones(1,3))-...
-          bsxfun(@times,sum(F'.*obj.FC_axis',2),ones(1,3)).*F')./bsxfun(@times,(F_norm').^3,ones(1,3));
-        dc_val = reshape(dc_entry',[],1);
-      else
-        c = [];
-        dc_val = [];
+      valid_F = checkForceSize(obj,F);
+      if(~valid_F)
+        error('Drake:FrictionConeWrenchConstraint:friction force should be 3 x n_pts matrix');
       end
+      F_norm = sqrt(sum(F.^2,1));
+      c = reshape(sum(F.*obj.FC_axis,1)./F_norm,[],1);
+      dc_entry = (obj.FC_axis'.*bsxfun(@times,(F_norm').^2,ones(1,3))-...
+        bsxfun(@times,sum(F'.*obj.FC_axis',2),ones(1,3)).*F')./bsxfun(@times,(F_norm').^3,ones(1,3));
+      dc_val = reshape(dc_entry',[],1);
     end
     
-    function [iCfun,jCvar,nnz] = evalSparseStructure(obj,t)
+    function [iCfun,jCvar,nnz] = evalSparseStructure(obj)
       % This function returns the sparsity structure of the constraint gradient.
       % sparse(iCfun,jCvar,dc,m,n,nnz) is the actual gradient matrix
       % @retval iCfun   -- A num_pts x 1 double vector. The row index of the nonzero entries
       % @retval jCvar   -- A num_pts x 1 double vector. The column index of the nonzero entries
       % @retval nnz     -- A scalar. The maximum non-zero entries in the sparse matrix.
-      if(obj.isTimeValid(t))
-        nq = obj.robot.getNumDOF;
-        iCfun = reshape(bsxfun(@times,ones(3,1),(1:obj.num_pts)),[],1);
-        jCvar = nq+(1:3*obj.num_pts)';
-        nnz = 3*obj.num_pts;
-      else
-        iCfun = [];
-        jCvar = [];
-        nnz = 0;
-      end
+      nq = obj.robot.getNumDOF;
+      iCfun = reshape(bsxfun(@times,ones(3,1),(1:obj.num_pts)),[],1);
+      jCvar = nq+(1:3*obj.num_pts)';
+      nnz = 3*obj.num_pts;
     end
        
     function [lb,ub] = bounds(obj,t)
@@ -135,7 +124,7 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       end
     end
     
-    function [tau,dtau] = torque(obj,t,kinsol,F)
+    function [tau,dtau] = torqueSum(obj,kinsol,F)
       % Compute the total torque from contact position and contact force, together with
       % its gradient
       % @param F     -- a 3 x num_pts double matrix. F(:,i) is the contact force at
@@ -143,38 +132,36 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       % @retval tau    -- a 3 x 1 double vector, the total torque around origin.
       % @retval dtau   -- a 3 x (nq+3*obj.num_pts) double matrix. The gradient of tau
       % w.r.t q and F
-      if(obj.isTimeValid(t))
-        valid_F = checkForceSize(obj,F);
-        if(~valid_F)
-          error('Drake:FrictionConeWrenchConstraint:friction force should be 3 x n_pts matrix');
-        end
-        nq = obj.robot.getNumDOF();
-        [body_pos,dbody_pos] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
-        tau = sum(cross(body_pos,F,1),2);
-        dtau = zeros(3,nq+3*obj.num_pts);
-        for i = 1:obj.num_pts
-          dtau_tmp = dcross(body_pos(:,i),F(:,i));
-          dtau(:,1:nq) = dtau(:,1:nq)+dtau_tmp(:,1:3)*dbody_pos((i-1)*3+(1:3),:);
-          dtau(:,nq+(i-1)*3+(1:3)) = dtau_tmp(:,4:6);
-        end
-      else
-        tau = [];
-        dtau = [];
+      valid_F = checkForceSize(obj,F);
+      if(~valid_F)
+        error('Drake:FrictionConeWrenchConstraint:friction force should be 3 x n_pts matrix');
+      end
+      nq = obj.robot.getNumDOF();
+      [body_pos,dbody_pos] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
+      tau = sum(cross(body_pos,F,1),2);
+      dtau = zeros(3,nq+3*obj.num_pts);
+      for i = 1:obj.num_pts
+        dtau_tmp = dcross(body_pos(:,i),F(:,i));
+        dtau(:,1:nq) = dtau(:,1:nq)+dtau_tmp(:,1:3)*dbody_pos((i-1)*3+(1:3),:);
+        dtau(:,nq+(i-1)*3+(1:3)) = dtau_tmp(:,4:6);
       end
     end
     
     
-    function A = force(obj,t)
+    function A = forceSum(obj)
       % Compute total force from all the contact force parameters F. The total force is a
       % linear transformation from F. total_force = A*F(:)
-      % @param t    -- A double scalar. The time to evaluate force
       % @param A    -- A 3 x 3*obj.num_pts double matrix.
-      if(obj.isTimeValid(t))
-        A = sparse(reshape(bsxfun(@times,(1:3)',ones(1,obj.num_pts)),[],1),...
-          (1:3*obj.num_pts)',ones(3*obj.num_pts,1),3,3*obj.num_pts,3*obj.num_pts);
-      else
-        A = sparse(0,0);
-      end
+      A = sparse(reshape(bsxfun(@times,(1:3)',ones(1,obj.num_pts)),[],1),...
+        (1:3*obj.num_pts)',ones(3*obj.num_pts,1),3,3*obj.num_pts,3*obj.num_pts);
+      
+    end
+    
+    function A = force(obj)
+      % Compute the indivisual force from the force parameters F. The individual forces
+      % are reshape(A*F,3,obj.num_pts)
+      % @retval A    -- A (3*num_pts) x (obj.pt_num_F*obj.num_pts) double matrix
+      A = speye(3*obj.num_pts);
     end
     
     function name_str = name(obj,t)
@@ -197,19 +184,13 @@ classdef FrictionConeWrenchConstraint < ContactWrenchConstraint
       end
     end
     
-    function [pos,J] = contactPosition(obj,t,kinsol)
+    function [pos,J] = contactPosition(obj,kinsol)
       % Returns the contact positions and its gradient w.r.t q
-      % @param t        -- A double scalar, the time to evaluate the contact position
       % @param kinsol   -- The kinematics tree
       % @retval pos     -- A matrix with 3 rows. pos(:,i) is the i'th contact position
       % @retval J       -- A matrix of size prod(size(pos)) x nq. The gradient of pos
       % w.r.t q
-      if(obj.isTimeValid(t))
-        [pos,J] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
-      else
-        pos = [];
-        J = [];
-      end
+      [pos,J] = forwardKin(obj.robot,kinsol,obj.body,obj.body_pts,0);
     end
   end
   
