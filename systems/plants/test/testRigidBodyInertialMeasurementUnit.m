@@ -1,12 +1,11 @@
 function testRigidBodyInertialMeasurementUnit()
 
-testAtlas('rpy');
+testVersusTwistMethod(createAtlas('rpy'));
 compare2dTo3d();
 
 end
 
-function testAtlas(floatingtype)
-r = createAtlas(floatingtype);
+function testVersusTwistMethod(r)
 
 nbodies = r.getNumBodies();
 body = randi([2 nbodies]);
@@ -49,6 +48,7 @@ for i = 1 : 100
 
   xdot = r.dynamics(t, x, u);
   vd = xdot(nq + 1 : end);
+
   spatial_accels = r.spatialAccelerations(kinsol.T, twists, q, v, vd);
   body_spatial_accel = transformSpatialAcceleration(spatial_accels{body}, kinsol.T, twists, world, body, body, world); % TODO: update once floatingBase branch is merged in: output of spatialAccelerations changed from body frame to world frame
   
@@ -65,10 +65,16 @@ end
 end
 
 function compare2dTo3d()
-rng(125,'twister');
-options.view = 'front';
-r2d = PlanarRigidBodyManipulator('DoublePendWBiceptSpringFront.urdf', options);
-r3d = RigidBodyManipulator('DoublePendWBiceptSpringFront.urdf');
+rng(55, 'twister'); % angledot wrong on first test
+% rng(541, 'twister'); % angledot wrong on first test
+% rng(125, 'twister'); % angledot right on first couple of tests, but accels wrong due to rotation in wrong direction in RigidBodyInertialMeasurementUnit
+r2d = PlanarRigidBodyManipulator('DoublePendWBiceptSpring.urdf');
+r3d = RigidBodyManipulator('DoublePendWBiceptSpring.urdf');
+
+% works:
+% options.view = 'front';
+% r2d = PlanarRigidBodyManipulator('DoublePendWBiceptSpringFront.urdf', options);
+% r3d = RigidBodyManipulator('DoublePendWBiceptSpringFront.urdf');
 assert(getNumStates(r2d)==getNumStates(r3d));
 
 nbodies = r2d.getNumBodies();
@@ -130,5 +136,6 @@ for i = 1 : 100
   % view axis for IMUs on PlanarRigidBodyManipulators, because I'm having a
   % hard time seeing what the right thing to do is here and the behavior
   % will be unclear to users.
+  disp(i)
 end
 end
