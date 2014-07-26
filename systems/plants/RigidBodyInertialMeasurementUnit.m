@@ -2,29 +2,10 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
   % outputs angular orientation, angular velocity, and linear acceleration
 
   methods
-    function obj = RigidBodyInertialMeasurementUnit(manip,body,xyz,rpy)
-      typecheck(body,'double');  % must be a body index
-      
-      if isa(manip,'PlanarRigidBodyManipulator')
-        error('need to update kinematics implementation for planar manipulators (bug 1728) before this will work'); 
-        if (nargin<3) xyz=zeros(2,1);
-        else sizecheck(xyz,[2,1]); end
-        if (nargin<4) rpy=0;
-        else sizecheck(rpy,1); end
-      else
-        if (nargin<3) xyz=zeros(3,1);
-        else sizecheck(xyz,[3,1]); end
-        if (nargin<4) rpy=zeros(3,1);
-        else sizecheck(rpy,[3,1]); end
-      end      
-
-      if (any(rpy)) error('Drake:RigidBodyInertialMeasurementUnit:RPYNotImplemented', 'non-zero rpy not supported yet'); end  % but it wouldn't be too hard (see ContactForceTorque)
-      
-      obj.body = body;
-      obj.xyz = xyz;
-      
-      warning('the IMU outputs have not been tested yet (due to bug 1728)'); 
-    end  
+    function obj = RigidBodyInertialMeasurementUnit(manip,frame_id)
+      typecheck(frame_id,'double');  % must be a body index
+      obj.frame_id = frame_id;
+    end
 
     function y = output(obj,manip,t,x,u)
       numdof = getNumDOF(manip);
@@ -34,15 +15,19 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
       
       kinsol = doKinematics(manip,q,false,true,qd);
       
-      [x,J] = forwardKin(manip,kinsol,obj.body,obj.xyz,1);
-      Jdot = forwardJacDot(manip,kinsol,obj.body,obj.xyz,0,0);
+      is_planar = isa(manip,'PlanarRigidBodyManipulator');
+      if is_planar, zero_vec = zeros(2,1); 
+      else zero_vec = zeros(3,1); end
+      
+      [x,J] = forwardKin(manip,kinsol,obj.frame_id,zero_vec,1);
+      Jdot = forwardJacDot(manip,kinsol,obj.frame_id,zero_vec,0,0);
       
       % x = f(q)
       % xdot = dfdq*dqdt = J*qd
       % xddot = dJdq*qd + J*qdd = Jdot*qd + J*qdd
       
       % note: x,J above have angles, but Jdot does not
-      if numel(obj.xyz)==2  % 2D version
+      if is_planar
         angle = x(3);
         omega_body = J(3,:)*qd;
         
@@ -72,8 +57,9 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
     end
     
     function fr = constructFrame(obj,manip)
-      body = getBody(manip,obj.body);
-      if numel(obj.xyz)==2
+      sensor_frame = getFrame(manip,obj.frame_id);
+      body = getBody(manip,sensor_frame.body_ind);
+      if isa(manip,'PlanarRigidBodyManipulator')
         fr = CoordinateFrame([strtok(body.linkname,'+'),'IMU'],4,'y', ...
           {'q', ...     % absolute orientation
           'w', ...      % angular rate
@@ -113,8 +99,7 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
   end
   
   properties
-    body
-    xyz
+    frame_id
   end
   
 end

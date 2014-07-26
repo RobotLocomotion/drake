@@ -45,9 +45,16 @@ if (n==2)
   x = T_3D_to_2D * x;
   if (nargout>1)
     nq = size(J,2);
-    J = reshape(T_3D_to_2D * reshape(J,3,m*nq),2*m,nq);
-    if nargout>2
-      dJ = reshape(T_3D_to_2D * reshape(dJ,3,m*nq^2),2*m,nq^2);
+    if rotation_type>0
+      J = reshape(T_3D_to_2D * reshape(J,6,m*nq),3*m,nq);
+      if nargout>2
+        dJ = reshape(T_3D_to_2D * reshape(dJ,6,m*nq^2),3*m,nq^2);
+      end
+    else
+      J = reshape(T_3D_to_2D * reshape(J,3,m*nq),2*m,nq);
+      if nargout>2
+        dJ = reshape(T_3D_to_2D * reshape(dJ,3,m*nq^2),2*m,nq^2);
+      end
     end
   end
 end

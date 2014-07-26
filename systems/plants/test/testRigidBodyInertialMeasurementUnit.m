@@ -11,9 +11,9 @@ r = createAtlas(floatingtype);
 nbodies = r.getNumBodies();
 body = randi([2 nbodies]);
 xyz = randn(3, 1);
-rpy = zeros(3, 1); % TODO: change once nonzero rpy is supported
-imu = RigidBodyInertialMeasurementUnit(r, body, xyz, rpy);
-r = r.addSensor(imu);
+rpy = randn(3, 1); 
+[r,imu_frame] = addFrame(r,RigidBodyFrame(body,xyz,rpy,'imu'));
+r = r.addSensor(RigidBodyInertialMeasurementUnit(r, imu_frame));
 r = compile(r);
 
 nq = r.getNumPositions();
@@ -70,16 +70,16 @@ r3d = RigidBodyManipulator('DoublePendWBiceptSpring.urdf');
 
 nbodies = r2d.getNumBodies();
 body = nbodies;
-rpy = zeros(3, 1); % TODO: change once nonzero rpy is supported
+rpy = randn(3, 1); 
 xyz = randn(3, 1);
 xy = xyz(1:2);
 
-imu2d = RigidBodyInertialMeasurementUnit(r2d, body, xy, rpy);
-r2d = r2d.addSensor(imu2d);
+[r2d,imu_frame] = addFrame(r2d,RigidBodyFrame(body,xyz,rpy,'imu'));
+r2d = r2d.addSensor(RigidBodyInertialMeasurementUnit(r2d, imu_frame));
 r2d = compile(r2d);
 
-imu3d = RigidBodyInertialMeasurementUnit(r3d, body, xyz, rpy);
-r3d = r3d.addSensor(imu3d);
+[r3d,imu_frame] = addFrame(r3d,RigidBodyFrame(body,xyz,rpy,'imu'));
+r3d = r3d.addSensor(RigidBodyInertialMeasurementUnit(r3d, imu_frame));
 r3d = compile(r3d);
 
 nq = r2d.getNumPositions();
