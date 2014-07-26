@@ -66,8 +66,8 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
           'ax','az'});  % linear acceleration
       else
         fr = CoordinateFrame([strtok(body.linkname,'+'),'IMU'],10,'y', ...
-          {'qx','qy','qz','qw', ...  % quaternion orientation
-          'wx','wy','wz', ...       % angular rate (omega)
+          {'qw','qx','qy','qz', ...  % quaternion orientation
+          'wx','wy','wz', ...       % angular velocity vector (omega)
           'ax','ay','az'});         % linear acceleration
       end
     end

@@ -67,18 +67,21 @@ end
 function compare2dTo3d()
 r2d = PlanarRigidBodyManipulator('DoublePendWBiceptSpring.urdf');
 r3d = RigidBodyManipulator('DoublePendWBiceptSpring.urdf');
+assert(getNumStates(r2d)==getNumStates(r3d));
 
 nbodies = r2d.getNumBodies();
-body = nbodies;
-rpy = randn(3, 1); 
+body2d = randi([2 nbodies]);
+b = getBody(r2d,body2d);
+body3d = findLinkInd(r3d,b.linkname);
+rpy = randn(3,1); %randn*r2d.view_axis; 
 xyz = randn(3, 1);
 xy = xyz(1:2);
 
-[r2d,imu_frame] = addFrame(r2d,RigidBodyFrame(body,xyz,rpy,'imu'));
+[r2d,imu_frame] = addFrame(r2d,RigidBodyFrame(body2d,xyz,rpy,'imu'));
 r2d = r2d.addSensor(RigidBodyInertialMeasurementUnit(r2d, imu_frame));
 r2d = compile(r2d);
 
-[r3d,imu_frame] = addFrame(r3d,RigidBodyFrame(body,xyz,rpy,'imu'));
+[r3d,imu_frame] = addFrame(r3d,RigidBodyFrame(body3d,xyz,rpy,'imu'));
 r3d = r3d.addSensor(RigidBodyInertialMeasurementUnit(r3d, imu_frame));
 r3d = compile(r3d);
 
@@ -101,10 +104,10 @@ for i = 1 : 100
   quat = y3d(1:4);
   omega = y3d(5:7);
   accel = y3d(8:10);
-  axis = quat2axis(quat);
+  rpydot = angularvel2rpydot(quat2rpy(quat),omega);
   
-  valuecheck(0, angleDiff(axis(4), angle));
-  valuecheck(omega(3), angledot);
-  valuecheck(accel(1:2), accel2d);
+  valuecheck(angle, r2d.view_axis'*quat2rpy(quat));
+  valuecheck(r2d.view_axis'*rpydot, angledot);
+  valuecheck(r2d.T_2D_to_3D'*accel, accel2d);
 end
 end
