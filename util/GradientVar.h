@@ -34,8 +34,10 @@ public:
 
   template <typename OtherDerived>
   GradientVar<Derived>& operator=(const GradientVar<OtherDerived>& other) {
-    mat = other.val();
-    gradient = other.getGradient();
+    if (this != &other) {
+      mat = other.val();
+      gradient = other.getGradient();
+    }
     return *this;
   }
 
