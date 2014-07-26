@@ -8,9 +8,9 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
     end
 
     function y = output(obj,manip,t,x,u)
-      numdof = getNumDOF(manip);
-      q = x(1:numdof);
-      qd = x(numdof+1:end);
+      nq = getNumPositions(manip);
+      q = x(1:nq);
+      qd = x(nq+1:end);
       qdd = sodynamics(manip,t,q,qd,u);  % todo: this could be much more efficient if I cached qdd
       
       kinsol = doKinematics(manip,q,false,true,qd);

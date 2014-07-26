@@ -1,6 +1,6 @@
 function testRigidBodyInertialMeasurementUnit()
 
-testAtlas('rpy');
+% testAtlas('rpy');
 compare2dTo3d();
 
 end
@@ -65,17 +65,17 @@ end
 end
 
 function compare2dTo3d()
-r2d = PlanarRigidBodyManipulator('DoublePendWBiceptSpring.urdf');
-r3d = RigidBodyManipulator('DoublePendWBiceptSpring.urdf');
+options.view = 'front';
+r2d = PlanarRigidBodyManipulator('DoublePendWBiceptSpringFront.urdf', options);
+r3d = RigidBodyManipulator('DoublePendWBiceptSpringFront.urdf');
 assert(getNumStates(r2d)==getNumStates(r3d));
 
 nbodies = r2d.getNumBodies();
 body2d = randi([2 nbodies]);
 b = getBody(r2d,body2d);
 body3d = findLinkInd(r3d,b.linkname);
-rpy = randn(3,1); %randn*r2d.view_axis; 
+rpy = zeros(3,1); %randn*r2d.view_axis; 
 xyz = randn(3, 1);
-xy = xyz(1:2);
 
 [r2d,imu_frame] = addFrame(r2d,RigidBodyFrame(body2d,xyz,rpy,'imu'));
 r2d = r2d.addSensor(RigidBodyInertialMeasurementUnit(r2d, imu_frame));
@@ -104,9 +104,10 @@ for i = 1 : 100
   quat = y3d(1:4);
   omega = y3d(5:7);
   accel = y3d(8:10);
-  rpydot = angularvel2rpydot(quat2rpy(quat),omega);
+  rpy = quat2rpy(quat);
+  rpydot = angularvel2rpydot(rpy,omega);
   
-  valuecheck(angle, r2d.view_axis'*quat2rpy(quat));
+  valuecheck(angle, r2d.view_axis'*rpy);
   valuecheck(r2d.view_axis'*rpydot, angledot);
   valuecheck(r2d.T_2D_to_3D'*accel, accel2d);
 end
