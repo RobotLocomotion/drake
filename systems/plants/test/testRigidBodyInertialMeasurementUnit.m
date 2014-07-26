@@ -1,6 +1,6 @@
 function testRigidBodyInertialMeasurementUnit()
 
-% testAtlas('rpy');
+testAtlas('rpy');
 compare2dTo3d();
 
 end
@@ -65,6 +65,7 @@ end
 end
 
 function compare2dTo3d()
+rng(125,'twister');
 options.view = 'front';
 r2d = PlanarRigidBodyManipulator('DoublePendWBiceptSpringFront.urdf', options);
 r3d = RigidBodyManipulator('DoublePendWBiceptSpringFront.urdf');
@@ -74,7 +75,7 @@ nbodies = r2d.getNumBodies();
 body2d = randi([2 nbodies]);
 b = getBody(r2d,body2d);
 body3d = findLinkInd(r3d,b.linkname);
-rpy = zeros(3,1); %randn*r2d.view_axis; 
+rpy = randn*r2d.view_axis; % randn(3, 1);
 xyz = randn(3, 1);
 
 [r2d,imu_frame] = addFrame(r2d,RigidBodyFrame(body2d,xyz,rpy,'imu'));
@@ -105,10 +106,29 @@ for i = 1 : 100
   omega = y3d(5:7);
   accel = y3d(8:10);
   rpy = quat2rpy(quat);
-  rpydot = angularvel2rpydot(rpy,omega);
   
   valuecheck(angle, r2d.view_axis'*rpy);
-  valuecheck(r2d.view_axis'*rpydot, angledot);
-  valuecheck(r2d.T_2D_to_3D'*accel, accel2d);
+  valuecheck(r2d.view_axis'*omega, angledot);
+  valuecheck(r2d.T_2D_to_3D' * accel, accel2d);
+  % The above tests aren't a good check for the current IMU implementation
+  % if the IMU is rotated about an axis other than the view axis.
+  %
+  % A RigidBodyInertialMeasurementUnit returns (and should return)
+  % its output in IMU frame. Currently, an IMU on a
+  % PlanarRigidBodyManipulator takes the 2D acceleration expressed in base
+  % frame and performs a 2D rotation to 'imu frame', although it isn't
+  % really the IMU frame, which is rotated about other axes as well.
+  % We could rotate it to the actual IMU frame, but then we'd have to
+  % either use the 3D forwardKin, or use the 2D forwardKin with a
+  % non-rotated but translated intermediate frame and do a manual 3D
+  % rotation in RigidBodyInertialMeasurementUnit afterward. Also, in this
+  % case a RigidBodyInertialMeasurementUnit could have nonzero
+  % accelerations in all three directions, even though it is attached to
+  % a planar manipulator, so how do you project it down to 2 directions?
+  %
+  % I think we should just disallow rotations about axes other than the
+  % view axis for IMUs on PlanarRigidBodyManipulators, because I'm having a
+  % hard time seeing what the right thing to do is here and the behavior
+  % will be unclear to users.
 end
 end
