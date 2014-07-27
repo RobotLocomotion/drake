@@ -76,12 +76,12 @@ classdef QPControllerData < ControllerData
         if isfield(data,'s1dot')
           assert(isa(data.s1dot,'Trajectory'));
         else
-          data.s1dot = fnder(data.s1,1);
+          data.s1dot = fnder(data.s1);
         end
         if isfield(data,'s2dot')
           assert(isa(data.s2dot,'Trajectory'));
         else
-          data.s2dot = fnder(data.s2,1);
+          data.s2dot = fnder(data.s2);
         end
         assert(isa(data.u0,'Trajectory'));
       else
