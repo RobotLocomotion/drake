@@ -521,7 +521,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
 
     // add in body spatial acceleration cost terms
-    int w_i;
+    double w_i;
     for (int i=0; i<pdata->n_body_accel_inputs; i++) {
       w_i=pdata->body_accel_input_weights(i);
       if (w_i > 0) {
