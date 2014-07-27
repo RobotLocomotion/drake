@@ -804,22 +804,24 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
         
-    function body_ind = findJointInd(model,jointname,robot)
-      % @param robot can be the robot number or the name of a robot
-      % robot=0 means look at all robots
+    function body_ind = findJointInd(model,jointname,robot_num,error_level)
+      % @param robot_num can be the robot number or the name of a robot
+      % robot_num=0 means look at all robots
       % @ingroup Kinematic Tree
-      if nargin<3 || isempty(robot), robot=0; end
+      if nargin<3 || isempty(robot_num), robot_num=0; end
       jointname = lower(jointname);
-      if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
+      if ischar(robot_num) robot_num = strmatch(lower(robot_num),lower({model.name})); end
       items = strfind(lower({model.body.jointname}),jointname);
       ind = find(~cellfun(@isempty,items));
-      if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
+      if (robot_num~=0), ind = ind([model.body(ind).robotnum]==robot_num); end
       if (length(ind)~=1)
-        if (nargin<4 || throw_error)
+        if (nargin<4 || error_level>0)
           error(['couldn''t find unique joint ' ,jointname]);
         else 
-          warning(['couldn''t find unique joint ' ,jointname]);
           body_ind=0;
+          if (error_level==0)
+            warning(['couldn''t find unique joint ' ,jointname]);
+          end
         end
       else
         body_ind = ind;
