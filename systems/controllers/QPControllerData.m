@@ -49,6 +49,8 @@ classdef QPControllerData < ControllerData
     constrained_dofs=[] % array of joint indices
     acceleration_input_frame; % input coordinate frame for desired 
     % generalized accelerations
+    
+    plan_shift % linear offset to be applied to x0
   end
   
   methods 
@@ -68,7 +70,7 @@ classdef QPControllerData < ControllerData
         end
         assert(isa(data.x0,'Trajectory'));
         assert(isa(data.y0,'Trajectory'));
-        assert(isa(data.S,'Trajectory'));
+        assert(isa(data.S,'Trajectory') || isnumeric(data.S)); % handle constant case
         assert(isa(data.s1,'Trajectory'));
         assert(isa(data.s2,'Trajectory'));
         if isfield(data,'s1dot')
@@ -81,17 +83,13 @@ classdef QPControllerData < ControllerData
         else
           data.s2dot = fnder(data.s2,1);
         end
-        if isfield(data,'u0')
-          assert(isa(data.u0,'Trajectory'));
-        end
+        assert(isa(data.u0,'Trajectory'));
       else
         assert(isnumeric(data.y0));
         assert(isnumeric(data.S));
         assert(isnumeric(data.s1));
         assert(isnumeric(data.s2));
-        if isfield(data,'u0')
-          assert(isnumeric(data.u0));
-        end
+        assert(isnumeric(data.u0));
       end
       assert(isnumeric(data.support_times));
       assert(islogical(data.ignore_terrain));
@@ -178,6 +176,9 @@ classdef QPControllerData < ControllerData
       end
       if isfield(data,'constrained_dofs')
         obj.constrained_dofs = data.constrained_dofs;
+      end
+      if isfield(data,'plan_shift')
+        obj.plan_shift = data.plan_shift;
       end
       if isfield(data,'R')
         obj.R = data.R;
