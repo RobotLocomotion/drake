@@ -61,6 +61,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pm = myGetProperty(pobj,"Kp_ang");
     pdata->Kp_ang = mxGetScalar(pm);
 
+    pm = myGetProperty(pobj,"Kp_accel");
+    pdata->Kp_accel = mxGetScalar(pm);
+
     pm= myGetProperty(pobj,"n_body_accel_inputs");
     pdata->n_body_accel_inputs = mxGetScalar(pm); 
 
@@ -377,8 +380,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     Aeq.block(6,0,neps,nq) = Jp;
     Aeq.block(6,nq,neps,nf) = MatrixXd::Zero(neps,nf);  // note: obvious sparsity here
     Aeq.block(6,nq+nf,neps,neps) = MatrixXd::Identity(neps,neps);             // note: obvious sparsity here
-    // beq.segment(6,neps) = (-Jpdot - 1.0*Jp)*qdvec; // TODO: parameterize
-    beq.segment(6,neps) = -Jpdot*qdvec; // TODO: parameterize
+    beq.segment(6,neps) = (-Jpdot -pdata->Kp_accel*Jp)*qdvec; 
   }    
   
   // add in body spatial equality constraints
