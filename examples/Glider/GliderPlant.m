@@ -22,7 +22,7 @@ classdef GliderPlant < DrakeSystem
     I = 0.0015;
     m = 0.08;
     g = 9.81; % m/s^2
-    rho = 1.292; % kg/m^3
+    rho = 1.204; % kg/m^3
     xd = [0,0,pi/4,0,0,0,0]';% the goal
     phi_lo_limit = -0.9473; % lower elevator angle limit
     phi_up_limit = 0.4463; % upper elevator angle limit
