@@ -15,6 +15,18 @@ classdef FootContactBlock < MIMODrakeSystem
   
   methods
     function obj = FootContactBlock(r,controller_data,options)
+      % @param r rigid body manipulator instance
+      % @param controller_data QPControllerData object 
+      % @param options struct
+      % @option num_outputs - specifies the number of output copies (>1)
+      % @option contact_threshold - minimum height above terrain for points to be in contact
+      % @option use_lcm - whether or not to listen for foot contact signals over LCM
+      % @option use_contact_logic_OR - only applies for time-varying case
+      %         if false: always do a logical AND with planned support 
+      %           and sensed support
+      %         if true: do logical OR with planned support and sensed 
+      %           support except when breaking contact
+
       typecheck(r,'Biped');
       typecheck(controller_data,'QPControllerData');
        
@@ -63,6 +75,7 @@ classdef FootContactBlock < MIMODrakeSystem
       end
 
       if isfield(options,'use_contact_logic_OR')
+        % only applies for time-varying case
         % false: always do a logical AND with planned support and sensed support
         % true: do logical OR with planned support and sensed support
         % except when breaking contact

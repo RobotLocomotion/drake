@@ -109,9 +109,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
       else {
         contactPhi(pdata->r,se,pdata->map_ptr,phi,terrain_height);
         bool in_contact = true;
-        if (contact_logic_AND) {
+        if (contact_logic_AND) { // plan is true, now check contact sensor/kinematics
           in_contact =  (phi.minCoeff()<=contact_threshold || contact_sensor(i)==1); // any contact below threshold (kinematically) OR contact sensor says yes contact
         }
+        // else: (plan) OR (sensor), so in_contact = true
 
         if (in_contact) { 
           active_supports.push_back(se);
