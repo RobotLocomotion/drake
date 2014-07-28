@@ -76,7 +76,7 @@ classdef GliderPlant < DrakeSystem
       % phi_lo_limit < x(4) < phi_up_limit
       
       if (nargout>1)
-        [df]= dynamicsGradients(obj,t,x,u);
+        [df]= dynamicsGradients(obj,t,x,u,nargout-1);
       end
     end
     
