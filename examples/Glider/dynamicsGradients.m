@@ -1,4 +1,7 @@
-function [df] = dynamicsGradients(obj,t,x,u)
+function [df] = dynamicsGradients(obj,t,x,u,order)
+
+if (nargin<4) order=1; end
+if (order<1) error(' order must be >= 1'); end
 
 Sw=obj.S_w;
 Se=obj.S_e;
