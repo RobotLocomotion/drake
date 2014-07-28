@@ -912,16 +912,40 @@ classdef RigidBodyManipulator < Manipulator
       groups = unique(groups);
     end
     
-    function model = removeCollisionGroups(model,contact_groups)
+    function model = removeCollisionGroups(model,contact_groups,robotnum)
+      % model = removeCollisionGroups(model,contact_groups,robotnum) returns
+      % the model with the specified contact groups removed
+      %
+      % @param model          -- RigidBodyManipulator object
+      % @param contact_groups -- String or cell array of strings specifying the
+      %                          contact groups to be removed
+      % @param robotnum       -- Vector of robot indices to which operation
+      %                          will be restricted. Optional.
+      %                          @default 1:numel(model.name)
+      if nargin < 3, robotnum = 1:numel(model.name); end
       for i=1:length(model.body)
-        model.body(i) = removeCollisionGroups(model.body(i),contact_groups);
+        if ismember(model.body(i).robotnum,robotnum)
+          model.body(i) = removeCollisionGroups(model.body(i),contact_groups);
+        end
       end
       model.dirty = true;
     end
     
-    function model = removeCollisionGroupsExcept(model,contact_groups)
+    function model = removeCollisionGroupsExcept(model,contact_groups,robotnum)
+      % model = removeCollisionGroups(model,contact_groups,robotnum) returns
+      % the model with all contact groups removed except for those specified
+      %
+      % @param model          -- RigidBodyManipulator object
+      % @param contact_groups -- String or cell array of strings specifying the
+      %                          contact groups to be preserved.
+      % @param robotnum       -- Vector of robot indices to which operation
+      %                          will be restricted. Optional.
+      %                          @default 1:numel(model.name)
+      if nargin < 3, robotnum = 1:numel(model.name); end
       for i=1:length(model.body)
-        model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
+        if ismember(model.body(i).robotnum,robotnum)
+          model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
+        end
       end
       model.dirty = true;
     end
