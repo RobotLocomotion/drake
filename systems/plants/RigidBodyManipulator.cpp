@@ -1541,6 +1541,17 @@ int RigidBodyManipulator::findLinkInd(string linkname, int robot)
   delete[] name_match;
 }
 
+std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
+{
+  if (body_or_frame_id>=0) {
+    return bodies[body_or_frame_id].linkname;
+  } else if (body_or_frame_id < -1) {
+    return frames[-body_or_frame_id-2].name;
+  } else {
+    return "COM";
+  }
+}
+
 
 // explicit instantiations (required for linking):
 template void RigidBodyManipulator::getCMM(double * const, double * const, MatrixBase< Map<MatrixXd> > &, MatrixBase< Map<MatrixXd> > &);
