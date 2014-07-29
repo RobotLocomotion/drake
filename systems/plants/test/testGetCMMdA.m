@@ -18,7 +18,6 @@ function testGetCMMdA()
     q = rand(nq,1);
     [A,dA] = geval(@r.getCMMdA,q,struct('grad_method',{{'user','taylorvar'}}));
     [A,dA] = geval(@r.getCMMdA,q, ...
-                   struct('grad_method',{{'user','numerical'}},'tol',1e-6));
+                   struct('grad_method',{{'user','numerical'}},'tol',1e-6,'diff_type','central'));
   end
 end
-
