@@ -922,7 +922,8 @@ classdef RigidBodyManipulator < Manipulator
       % @param robotnum       -- Vector of robot indices to which operation
       %                          will be restricted. Optional.
       %                          @default 1:numel(model.name)
-      if nargin < 3, robotnum = 1:numel(model.name); end
+      if nargin < 3,          robotnum = 1:numel(model.name); end
+      if all(robotnum == 0),  robotnum = 0:numel(model.name); end;
       for i=1:length(model.body)
         if ismember(model.body(i).robotnum,robotnum)
           model.body(i) = removeCollisionGroups(model.body(i),contact_groups);
@@ -942,6 +943,7 @@ classdef RigidBodyManipulator < Manipulator
       %                          will be restricted. Optional.
       %                          @default 1:numel(model.name)
       if nargin < 3, robotnum = 1:numel(model.name); end
+      if all(robotnum == 0),  robotnum = 0:numel(model.name); end;
       for i=1:length(model.body)
         if ismember(model.body(i).robotnum,robotnum)
           model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
