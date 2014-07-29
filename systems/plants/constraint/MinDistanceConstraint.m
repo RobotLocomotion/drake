@@ -31,14 +31,14 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
   end
 
   methods
-    function obj = MinDistanceConstraint(robot,min_distance,tspan,active_collision_options)
-      if(nargin < 3)
+    function obj = MinDistanceConstraint(robot,min_distance,active_collision_options,tspan)
+      if(nargin < 4)
         tspan = [-inf inf];
       end
-      if nargin < 4, active_collision_options = struct(); end;
+      if nargin < 3, active_collision_options = struct(); end;
       sizecheck(min_distance,[1,1]);
       assert(min_distance>0);
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,robot.getMexModelPtr,min_distance,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,robot.getMexModelPtr,min_distance,active_collision_options,tspan);
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       obj.type = RigidBodyConstraint.MinDistanceConstraintType;
       obj.min_distance = min_distance;
