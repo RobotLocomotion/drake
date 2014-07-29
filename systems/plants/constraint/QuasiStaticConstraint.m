@@ -86,15 +86,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       while(i<length(varargin))
         body = varargin{i};
         body_pts = varargin{i+1};
-        if(isnumeric(body))
-          sizecheck(body,[1,1]);
-        elseif(ischar(body))
-          body = obj.robot.findLinkInd(body);
-        elseif(typecheck(body,'RigidBody'))
-          body = obj.robot.findLinkInd(body.linkname);
-        else
-          error('Drake:QuasiStaticConstraint:Body must be either the link name or the link index');
-        end
+        body = obj.robot.parseBodyOrFrameID(body);
         body_idx = find(obj.bodies == body);
         if(isempty(body_idx))
           obj.bodies = [obj.bodies body];

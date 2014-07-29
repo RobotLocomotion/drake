@@ -70,14 +70,24 @@ classdef WorldFixedOrientConstraint < MultipleTimeKinematicConstraint
     
     
     function [lb,ub] = bounds(obj,t)
-      valid_t = t(obj.isTimeValid(t));
-      if(length(valid_t)>=2)
-        num_valid_t = length(valid_t);
-        lb = num_valid_t;
-        ub = num_valid_t;
+      if isempty(t);
+        if(N>=2)
+          lb = [0;N];
+          ub = [0;N];
+        else
+          lb = [];
+          ub = [];
+        end
       else
-        lb = [];
-        ub = [];
+        valid_t = t(obj.isTimeValid(t));
+        if(length(valid_t)>=2)
+          num_valid_t = length(valid_t);
+          lb = num_valid_t;
+          ub = num_valid_t;
+        else
+          lb = [];
+          ub = [];
+        end
       end
     end
     

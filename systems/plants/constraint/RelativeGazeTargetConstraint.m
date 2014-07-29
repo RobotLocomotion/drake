@@ -1,8 +1,8 @@
 classdef RelativeGazeTargetConstraint < GazeTargetConstraint
   % This constrains that a camera on body_a can gaze at a point on body_b
   % @param robot
-  % @param body_a_idx             -- A scalar, the index of body_a
-  % @param body_b_idx             -- A scalar, the index of body_b
+  % @param body_a             -- A scalar, the index of body_a
+  % @param body_b             -- A scalar, the index of body_b
   % @param axis                   -- A 3x1 unit vector, the gaze axis on body_a frame
   % @param target                 -- A 3x1 vector, the gaze target on body_b frame
   % @param gaze_origin            -- A 3x1 vector, the gaze origin on body_a frame
@@ -34,20 +34,22 @@ classdef RelativeGazeTargetConstraint < GazeTargetConstraint
   end
   
   methods
-    function obj = RelativeGazeTargetConstraint(robot,body_a_idx, ...
-        body_b_idx,axis,target,gaze_origin,conethreshold,tspan)
+    function obj = RelativeGazeTargetConstraint(robot,body_a, ...
+        body_b,axis,target,gaze_origin,conethreshold,tspan)
       if(nargin < 8)
         tspan = [-inf inf];
       end
       if(nargin<7)
         conethreshold = 0;
       end
+      body_a_idx = robot.parseBodyOrFrameID(body_a);
+      body_b_idx = robot.parseBodyOrFrameID(body_b);
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeGazeTargetConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,axis,target,gaze_origin,conethreshold,tspan);
       obj = obj@GazeTargetConstraint(robot,axis,target,gaze_origin,conethreshold,tspan);
       obj.body_a.idx = body_a_idx;
-      obj.body_a.name = getLinkName(obj.robot, obj.body_a.idx);
+      obj.body_a.name = getBodyOrFrameName(obj.robot, obj.body_a.idx);
       obj.body_b.idx = body_b_idx;
-      obj.body_b.name = getLinkName(obj.robot, obj.body_b.idx);
+      obj.body_b.name = getBodyOrFrameName(obj.robot, obj.body_b.idx);
       obj.type = RigidBodyConstraint.RelativeGazeTargetConstraintType;
       obj.mex_ptr = ptr;
     end
