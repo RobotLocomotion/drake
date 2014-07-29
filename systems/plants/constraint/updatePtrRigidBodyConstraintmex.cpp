@@ -436,6 +436,22 @@ void mexFunction(int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[])
         }
       }
       break;
+    case RigidBodyConstraint::MinDistanceConstraintType:
+      {
+        MinDistanceConstraint* cnst = (MinDistanceConstraint*) constraint;
+        if(field_str=="robot")
+        {
+          RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[2]);
+          MinDistanceConstraint* cnst_new = new MinDistanceConstraint(*cnst);
+          cnst_new->updateRobot(robot);
+          plhs[0] = createDrakeConstraintMexPointer((void*) cnst_new,"deleteRigidBodyConstraintmex","MinDistanceConstraint");
+        }
+        else
+        {
+          mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","MinDistanceConstraint:argument 2 is not accepted");
+        }
+      }
+      break;
     default:
       mexErrMsgIdAndTxt("Drake:updatePtrRigidBodyConstraintmex:BadInputs","Unsupported constraint type");
       break;

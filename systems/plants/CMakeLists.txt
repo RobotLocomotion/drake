@@ -16,7 +16,7 @@ if (eigen3_FOUND)
   # todo: check eigen version.  3.1.0 didn't work for clang.  3.2.0 did.
 
   add_library(drakeRBM SHARED RigidBodyManipulator.cpp RigidBody.cpp)
-  target_link_libraries(drakeRBM drakeCollision)
+ target_link_libraries(drakeRBM drakeCollision)
 
   pods_install_libraries(drakeRBM)
   pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h DESTINATION drake)
@@ -76,7 +76,6 @@ if (eigen3_FOUND)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeUtil drakeRigidBodyConstraint)
   endmacro()
-
 
   set(drakeIK_SRC_FILES IKoptions.cpp)
   set(drakeIK_PODS_PKG )

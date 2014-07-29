@@ -35,22 +35,22 @@ for j = 1:size(neighbors, 2)
   end
 end
 
-figure(4)
-clf
-meshutil.plot_mesh(vertices, faces);
-axis equal
-view(40, 32)
-title('original')
+%figure(4)
+%clf
+%meshutil.plot_mesh(vertices, faces);
+%axis equal
+%view(40, 32)
+%title('original')
 
-figure(3);
-clf;
+%figure(3);
+%clf;
 hold on
 for j = 1:length(lines)
   plot3(lines{j}([1,4]), lines{j}([2,5]), lines{j}([3,6]), 'k-')
 end
 meshutil.plot_mesh(vertices, faces, struct('patch_spec', {{[.7,.7,.7], 'FaceAlpha', 1, 'EdgeColor', 'none'}}));
-axis equal
-view(40, 32)
-title('sketch')
+%axis equal
+%view(40, 32)
+%title('sketch')
 
       

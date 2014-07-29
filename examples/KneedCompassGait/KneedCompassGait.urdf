@@ -195,5 +195,16 @@
     <joint name="right_knee_pin"/>
     <mechanicalReduction>1</mechanicalReduction>
   </transmission>
+  <collision_filter_group name="robot_links">
+    <member link="left_lower_leg_mass"/>
+    <member link="right_lower_leg_mass"/>
+    <member link="left_lower_leg"/>
+    <member link="right_lower_leg"/>
+    <member link="right_upper_leg"/>
+    <member link="left_upper_leg"/>
+    <member link="hip"/>
+    <ignored_collision_filter_group collision_filter_group="robot_links"/>
+  </collision_filter_group>
 </robot>
+
 

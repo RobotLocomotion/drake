@@ -1,6 +1,5 @@
 function yy = ppvalSafe(pp,xx,bLimitStart,bLimitEnd)
-
-% PPVAL (SAFE)
+% PPVALSAFE(pp,xx,bLimitStart,bLimitEnd)
 %    Checks to see if xx is beyond the breaks in pp before evaluating
 %    ppval.  If bLimitStart (or End) is true (default), then an error is thrown if
 %    the spline is evaluated past its breaks.  If bLimitStart (or End) is
