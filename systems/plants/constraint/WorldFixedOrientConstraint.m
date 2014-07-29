@@ -69,7 +69,16 @@ classdef WorldFixedOrientConstraint < MultipleTimeKinematicConstraint
     end
     
     
-    function [lb,ub] = bounds(obj,t)
+    function [lb,ub] = bounds(obj,t,N)
+      % [lb,ub] = bounds(obj,t) returns the upper and lower bounds for this
+      % constraint at all valid times given in t.
+      %
+      % [lb,ub] = bounds(obj,[],N) returns the upper and lower bounds for this
+      % constraint for N valid times
+      %
+      % @param obj  -- WorldFixedOrientationConstraint object
+      % @param t    -- Vector of times
+      % @param N    -- Integer number of time points
       if isempty(t);
         if(N>=2)
           lb = [0;N];
