@@ -487,21 +487,33 @@ classdef NonlinearProgram
       
       if(~isempty(obj.Ain))
         Ain_free = obj.Ain(:,free_x_idx);
-        bin_free = obj.bin-obj.Ain(:,fix_x_idx)*x_fix;
+        if any(fix_x_idx)
+          bin_free = obj.bin-obj.Ain(:,fix_x_idx)*x_fix;
+        else
+          bin_free = obj.bin;
+        end
       else
         Ain_free = [];
         bin_free = [];
       end
       if(~isempty(obj.Aeq))
         Aeq_free = obj.Aeq(:,free_x_idx);
-        beq_free = obj.beq-obj.Aeq(:,fix_x_idx)*x_fix;
+        if any(fix_x_idx)
+          beq_free = obj.beq-obj.Aeq(:,fix_x_idx)*x_fix;
+        else
+          beq_free = obj.beq;
+        end
       else
         Aeq_free = [];
         beq_free = [];
       end
       
       [iGfun,jGvar] = obj.getNonlinearGradientSparsity();
-      jGvar_free_idx = all(bsxfun(@minus,jGvar,reshape(fix_x_idx,1,[])),2);
+      if any(fix_x_idx)
+        jGvar_free_idx = all(bsxfun(@minus,jGvar,reshape(fix_x_idx,1,[])),2);
+      else
+        jGvar_free_idx = true(size(jGvar));
+      end
       iGfun_free = iGfun(jGvar_free_idx);
       jGvar_free = x2freeXmap(jGvar(jGvar_free_idx));
       
