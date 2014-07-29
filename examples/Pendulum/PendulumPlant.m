@@ -64,27 +64,20 @@ classdef PendulumPlant < SecondOrderSystem
     end
     
     function [utraj,xtraj]=swingUpTrajectory(obj,options)
-      x0 = [0;0]; tf0 = 4; xf = double(obj.xG);
+      x0 = [0;0]; 
+      xf = double(obj.xG);
+      tf0 = 4;
 
-      con.u.lb = obj.umin;
-      con.u.ub = obj.umax;
-      %con.u0.lb = 0;
-      %con.u0.ub = 0;
-      %con.uf.lb = 0;
-      %con.uf.ub = 0;
-      con.x0.lb = x0;
-      con.x0.ub = x0;
-      con.xf.lb = xf;
-      con.xf.ub = xf;
-      con.T.lb = 2;
-      con.T.ub = 6;
+      N = 21;
+      traj_opt = DircolTrajectoryOptimization(obj,N,[2 6]);
+      traj_opt = traj_opt.addStateConstraint(ConstantConstraint(x0),1);
+      traj_opt = traj_opt.addStateConstraint(ConstantConstraint(xf),N);
+      traj_opt = traj_opt.addRunningCost(@cost);
+      traj_opt = traj_opt.addFinalCost(@finalCost);
+      traj_init.x = PPTrajectory(foh([0,tf0],[double(x0),double(xf)]));
       
-      if nargin<2, options=struct(); end
-      if ~isfield(options,'method') options.method='dircol'; end
-      %options.grad_method='numerical';
-      %options.grad_method={'user','numerical'};
       
-      function [g,dg] = cost(t,x,u);
+      function [g,dg] = cost(dt,x,u);
         R = 10;
         g = (R*u).*u;
         
@@ -93,8 +86,8 @@ classdef PendulumPlant < SecondOrderSystem
         end
       end
       
-      function [h,dh] = finalcost(t,x)
-        h = t;
+      function [h,dh] = finalCost(tf,x)
+        h = tf;
         if (nargout>1)
           dh = [1, zeros(1,2)];
         end
@@ -102,10 +95,8 @@ classdef PendulumPlant < SecondOrderSystem
       
       info=0;
       while (info~=1)
-        utraj0 = PPTrajectory(foh(linspace(0,tf0,21),randn(1,21)));
         tic
-        %options.grad_test = true;
-        [utraj,xtraj,info] = trajectoryOptimization(obj,@cost,@finalcost,x0,utraj0,con,options);
+        [xtraj,utraj,z,F,info] = traj_opt.solveTraj(tf0,traj_init);
         toc
       end
     end

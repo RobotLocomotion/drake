@@ -1,8 +1,8 @@
 #ifndef __RIGIDBODYIK_H__
 #define __RIGIDBODYIK_H__
-#include <Eigen/Dense>
 #include <string>
-#include <vector>
+#include <Eigen/Dense>
+#include <Eigen/StdVector>
 class RigidBodyManipulator;
 class RigidBodyConstraint;
 class IKoptions;

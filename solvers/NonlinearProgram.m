@@ -30,6 +30,8 @@ classdef NonlinearProgram
     x_lb,x_ub
     solver
     solver_options
+    display_funs
+    display_fun_indices
     grad_method
     check_grad
   end
@@ -108,6 +110,10 @@ classdef NonlinearProgram
         error('Drake:NonlinearProgram:AbstractMethod','all derived classes must implement objective or objectiveAndNonlinearConstraints');
       end
 
+      for i=1:length(obj.display_funs)
+        obj.display_funs{i}(x(obj.display_fun_indices{i}));
+      end
+      
       obj.objcon_logic = true;
       if nargout>1
         [f,df] = objective(obj,x);
@@ -155,8 +161,11 @@ classdef NonlinearProgram
       obj.iCeqfun = reshape(bsxfun(@times,(1:obj.num_ceq)',ones(1,obj.num_vars)),[],1);
       obj.jCeqvar = reshape(bsxfun(@times,ones(obj.num_ceq,1),(1:obj.num_vars)),[],1);
       
-      % todo : check dependencies and then go through the list
-      obj.solver = 'snopt';
+      if checkDependency('snopt')
+        obj.solver = 'snopt';
+      else % todo: check for fmincon?
+        obj.solver = 'fmincon';
+      end
       obj.solver_options.fmincon = optimset('Display','off');
       obj.solver_options.snopt = struct();
       obj.solver_options.snopt.MajorIterationsLimit = 1000;
@@ -189,6 +198,20 @@ classdef NonlinearProgram
       obj.beq = vertcat(obj.beq,beq);
     end
 
+    function obj = addDisplayFunction(obj,display_fun,indices)
+      % add a dispay function that gets called on every iteration of the
+      % algorithm
+      % @param displayFun a function handle of the form displayFun(x(indices))
+      % @param indices optionally specify a subset of the decision
+      % variables to be passed to the displayFun @default 1:obj.num_vars
+      
+      typecheck(display_fun,'function_handle');
+      if nargin<3, indices = 1:obj.num_vars; end
+
+      obj.display_funs = vertcat(obj.display_funs,{display_fun});
+      obj.display_fun_indices = vertcat(obj.display_fun_indices,{indices});
+    end
+    
     function obj = setVarBounds(obj,x_lb,x_ub)
       % set the lower and upper bounds of the decision variables
       sizecheck(x_lb,[obj.num_vars,1]);
@@ -478,7 +501,7 @@ classdef NonlinearProgram
       end
       
       objval = objval(1);
-      if exitflag~=1, disp(snoptInfo(exitflag)); end
+      if exitflag~=1, warning('Drake:NonlinearProgram:SNOPTExitFlag',' %3d %s\n',exitflag,snoptInfo(exitflag)); end
     end
     
     function [x,objval,exitflag] = fmincon(obj,x0)
@@ -500,6 +523,29 @@ classdef NonlinearProgram
       [x,objval,exitflag] = fmincon(@obj.objective,x0,obj.Ain,...
         obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
       objval = full(objval);
+      
+      if exitflag~=1, 
+        switch (exitflag)
+          case 0
+            msg='Number of iterations exceeded';
+          case -1
+            msg='Stopped by an output function or plot function';
+          case -2
+            msg='No feasible point was found';
+          case 2
+            msg='Change in x was less than options.TolX and maximum constraint violation was less than options.TolCon';
+          case 3
+            msg='Change in the objective function value was less than options.TolFun and maximum constraint violation was less than options.TolCon';
+          case 4
+            msg='Magnitude of the search direction was less than 2*options.TolX and maximum constraint violation was less than options.TolCon';
+          case 5
+            msg='Magnitude of directional derivative in search direction was less than 2*options.TolFun and maximum constraint violation was less than options.TolCon';
+          case -3
+            msg='Objective function at current iteration went below options.ObjectiveLimit and maximum constraint violation was less than options.TolCon';
+        end        
+        warning('Drake:NonlinearProgram:FMINCONExitFlag',' FMINCON %2d %s',exitflag,msg); 
+      end
+      
     end
   end
   

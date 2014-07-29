@@ -1,8 +1,10 @@
+#include <iostream>
+
+#include "DrakeCollision.h"
 #include "BulletModel.h"
-#include "BulletElement.h"
-#include "BulletResultCollector.h"
 
 using namespace std;
+using namespace Eigen;
 
 namespace DrakeCollision
 {
@@ -23,8 +25,8 @@ namespace DrakeCollision
       }
       auto element_data0 = static_cast< ElementData* >(bt_collision_object0->getUserPointer());
       auto element_data1 = static_cast< ElementData* >(bt_collision_object1->getUserPointer());
-      const Body<BulletElement>& body0 = parent_model->getBody(element_data0->body_idx);
-      const Body<BulletElement>& body1 = parent_model->getBody(element_data1->body_idx);
+      const Body& body0 = parent_model->getBody(element_data0->body_idx);
+      const Body& body1 = parent_model->getBody(element_data1->body_idx);
       collides = (body0.getBodyIdx() != body1.getBodyIdx());
       collides = collides && !body0.adjacentTo(body1);
       collides = collides && body0.collidesWith(body1);
@@ -56,8 +58,8 @@ namespace DrakeCollision
     //cout << "BulletModel::addElement: START" << endl;
     //END_DEBUG
     try {
-      ModelTemplate::addElement(body_idx,parent_idx, T_element_to_link, shape, 
-                                params, is_static);
+      bodies[body_idx].addElement(body_idx, parent_idx, T_element_to_link, shape, params );
+      
       const BulletElement& elem = bodies.at(body_idx).back();
       element_data.push_back(unique_ptr<ElementData>(new ElementData(body_idx,elem.getShape())));
       elem.bt_obj->setUserPointer(element_data.back().get());
@@ -81,33 +83,31 @@ namespace DrakeCollision
   bool BulletModel::updateElementsForBody(const int body_idx,
                                   const Matrix4d& T_link_to_world)
   {
-    bool idx_valid = ModelTemplate::updateElementsForBody(body_idx, T_link_to_world);
-    if (idx_valid) {
+    auto iter_for_body( bodies.find(body_idx) );
+    if ( iter_for_body!=bodies.end() ) { // Then bodies[body_idx] exists
+      iter_for_body->second.updateElements(T_link_to_world);
       for (const BulletElement& elem : bodies.at(body_idx).getElements()) {
         bt_collision_world->updateSingleAabb(elem.bt_obj.get());
       }
+      return true;
+    } else {
+      return false;
     }
-    return idx_valid;
   }
 
-  //void BulletModel::setCollisionFilter(Body<BulletElement>& body,
-                                       //const bitmask& group,
-                                       //const bitmask&  mask)
-  //{
-    // Bullet uses the 6 lowest bits for its internal collision groups
-    // Don't change those bits. 
-    //
-    // Disregard. They only use those in their dynamics code
-    //const bitmask bt_internal = bitmask(string(6,'1')); 
-    //const bitmask bt_group = bitmask(group<<6) | (body.getGroup() & bt_internal); 
-    //const bitmask bt_mask = bitmask(mask<<6) | (body.getMask() & bt_internal);
-    //DEBUG
-    //cout << "BulletModel::setCollisionFilter: Group: " << bt_group << endl;
-    //cout << "BulletModel::setCollisionFilter: Mask: " << bt_mask << endl;
-    //END_DEBUG
+  bool BulletModel::setCollisionFilter(const int body_idx,
+                                      const uint16_t group, 
+                                      const uint16_t mask)
+  {
+    auto iter_for_body( bodies.find(body_idx) );
+    if ( iter_for_body!=bodies.end() ) { // Then bodies[body_idx] exists
+      setCollisionFilter(iter_for_body->second,group,mask);
+      return true;
+    } else {
+      return false;
+    }
+  }
 
-    //ModelTemplate<BulletElement>::setCollisionFilter(body,bt_group,bt_mask);
-  //}
 
   bool BulletModel::findClosestPointsBtwElements(const int bodyA_idx,
                                                  const int bodyB_idx,
@@ -230,7 +230,7 @@ namespace DrakeCollision
                                       Vector3d& ptA, Vector3d& ptB, 
                                       Vector3d& normal)
   {
-    ResultCollShPtr c = newResultCollector();
+    ResultCollShPtr c = ResultCollShPtr(new BulletResultCollector());
     const BulletElement& elem = bodies.at(body_idx).at(body_collision_idx);
 
     bt_collision_world->contactTest(elem.bt_obj.get(),
@@ -239,6 +239,50 @@ namespace DrakeCollision
     c->getResults(ptA,ptB,normal);
 
     return (c->pts.size() > 0);
+  };
+  
+  bool BulletModel::getPairwiseCollision(const int bodyA_idx, 
+          const int bodyB_idx,
+          MatrixXd& ptsA, MatrixXd& ptsB,
+          MatrixXd& normals)
+  {
+    //DEBUG
+    //try {
+    //END_DEBUG
+    ResultCollShPtr c = ResultCollShPtr(new BulletResultCollector());
+    findCollisionPointsBtwBodies(bodyA_idx,bodyB_idx,c);
+    c->getResults(ptsA,ptsB,normals);
+    
+    return (c->pts.size() > 0);
+    //DEBUG
+    //} catch (const std::out_of_range& oor) {
+    //std::string msg("In ModelTemplate::getPairwiseCollision:\n");
+    //throw std::out_of_range(msg + oor.what());
+    //}
+    //END_DEBUG
+  };
+
+  bool BulletModel::getPairwisePointCollision(const int bodyA_idx,
+          const int bodyB_idx,
+          const int bodyA_collision_idx,
+          Vector3d &ptA, Vector3d &ptB,
+          Vector3d &normal)
+  {
+    //DEBUG
+    //try {
+    //END_DEBUG
+    ResultCollShPtr c = ResultCollShPtr(new BulletResultCollector());
+    const BulletElement& elemA = bodies.at(bodyA_idx).at(bodyA_collision_idx);
+    findCollisionPointsBtwElements(bodyA_idx,bodyB_idx,elemA,bodies[bodyB_idx].getElements(),c);
+    c->getResults(ptA,ptB,normal);
+    
+    return (c->pts.size() > 0);
+    //DEBUG
+    //} catch (const std::out_of_range& oor) {
+    //std::string msg("In ModelTemplate::getPairwisePointCollision:\n");
+    //throw std::out_of_range(msg + oor.what());
+    //}
+    //END_DEBUG
   };
   
   bool BulletModel::collisionRaycast(const Matrix3Xd &origins, const Matrix3Xd &ray_endpoints, VectorXd &distances)
@@ -275,10 +319,106 @@ namespace DrakeCollision
     return true;
   } 
 
-
-  bool BulletModel::allCollisions(vector<int>& bodyA_idx, 
-      vector<int>& bodyB_idx, 
-      MatrixXd& ptsA, MatrixXd& ptsB)
+  bool BulletModel::getClosestPoints(const int bodyA_idx, const int bodyB_idx,
+          Vector3d& ptA, Vector3d& ptB, Vector3d& normal,
+          double& distance)
+  {
+    //DEBUG
+    //try {
+    //END_DEBUG
+    ResultCollShPtr c(new MinDistResultCollector());
+    findClosestPointsBtwBodies(bodyA_idx,bodyB_idx,c);
+    c->pts.at(0).getResults(ptA, ptB, normal, distance);
+    return (c->pts.size() > 0);
+    //DEBUG
+    //} catch (const std::out_of_range& oor) {
+    //std::string msg("In ModelTemplate::getClosestPoints:\n");
+    //throw std::out_of_range(msg + oor.what());
+    //}
+    //END_DEBUG
+  }
+     
+  bool BulletModel::closestPointsAllBodies(std::vector<int>& bodyA_idx,
+          std::vector<int>& bodyB_idx,
+          MatrixXd& ptsA, MatrixXd& ptsB,
+          MatrixXd& normal,
+          VectorXd& distance,
+          std::vector<int>& bodies_idx)
+  {
+    bool has_result=false;
+    //DEBUG
+    //try {
+    //END_DEBUG
+    //ResultCollector c;
+    ResultCollShPtr c = std::make_shared<ResultCollector>();
+    if (bodies_idx.size() == 0) {
+      for (auto it = bodies.begin(); it != bodies.end(); ++it) {
+        bodies_idx.push_back(it->first);
+      }
+    }
+    //DEBUG
+    //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
+    //std::cout << "Num active bodies: " << bodies_idx.size() << std::endl;
+    //END_DEBUG
+    //for (auto itA=bodies.begin(); itA!=bodies.end(); ++itA) {
+    for (typename std::vector<int>::const_iterator itA=bodies_idx.begin(); itA!=bodies_idx.end(); ++itA) {
+      if (bodies.count(*itA) > 0) {
+        //DEBUG
+        //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
+        //std::cout << "Body A found" << std::endl;
+        //END_DEBUG
+        //for (typename std::map<int,Body<ElementT>>::iterator itB=itA; itB!=bodies.end(); ++itB) {
+        for (typename std::vector<int>::const_iterator itB=itA; itB!=bodies_idx.end(); ++itB) {
+          //for (auto itB=bodies.begin(); itB!=bodies.end(); ++itB) {
+          if (bodies.count(*itB) > 0) {
+            //DEBUG
+            //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
+            //std::cout << "Body B found" << std::endl;
+            //END_DEBUG
+            Body& bodyA(bodies[*itA]);
+            Body& bodyB(bodies[*itB]);
+            //DEBUG
+            //std::cout << "ModelTemplate::closestPointsAllBodies: " << std::endl;
+            //std::cout << "Body A idx:" << bodyA.getBodyIdx() << std::endl;
+            //std::cout << "Body B idx:" << bodyB.getBodyIdx() << std::endl;
+            //END_DEBUG
+            //ResultCollShPtr c_min_dist = std::make_shared<MinDistResultCollector>();
+            if ( bodyA.collidesWith(bodyB) ) {
+              //DEBUG
+              //std::cout << "ModelTemplate::closestPointsAllBodies: Body A: " << bodyA.getBodyIdx() << std::endl;
+              //std::cout << "ModelTemplate::closestPointsAllBodies: Body B: " << bodyB.getBodyIdx() << std::endl;
+              //END_DEBUG
+              has_result = findClosestPointsBtwBodies(bodyA.getBodyIdx(),
+                      bodyB.getBodyIdx(),
+                      c);
+            }
+          }
+        }
+      }
+    }
+    c->getResults(bodyA_idx, bodyB_idx, ptsA, ptsB,normal,distance);
+    
+    //DEBUG
+    //std::cout << "ModelTemplate:closestPointsAllBodies:" << std::endl;
+    //std::cout << "ptsA:" << std::endl;
+    //std::cout << ptsA.transpose() << std::endl;
+    //std::cout << "ptsB:" << std::endl;
+    //std::cout << ptsB.transpose() << std::endl;
+    //std::cout << "normal:" << std::endl;
+    //std::cout << normal.transpose() << std::endl;
+    //END_DEBUG
+    //DEBUG
+    //} catch (const std::out_of_range& oor) {
+    //std::string msg("In ModelTemplate::closestPointsAllBodies:\n");
+    //throw std::out_of_range(msg + oor.what());
+    //}
+    //END_DEBUG
+    return has_result;
+  };
+  
+  bool BulletModel::allCollisions(vector<int>& bodyA_idx,
+          vector<int>& bodyB_idx,
+          MatrixXd& ptsA, MatrixXd& ptsB)
   {
     BulletResultCollector c;
     MatrixXd normals;

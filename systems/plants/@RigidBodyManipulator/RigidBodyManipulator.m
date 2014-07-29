@@ -188,6 +188,10 @@ classdef RigidBodyManipulator < Manipulator
       n = obj.num_q; %placeholder waiting for Russ' changes
     end
     
+    function n = getNumVelocities(obj)
+      n = obj.num_q; %placeholder waiting for Russ' changes
+    end
+    
     function n = getNumDOF(obj)
       n = obj.num_q;
     end
@@ -566,16 +570,13 @@ classdef RigidBodyManipulator < Manipulator
       end
       model.B = full(B);
 
-      model = setNumInputs(model,size(model.B,2));
-      model = setNumDOF(model,num_dof);
-      model = setNumOutputs(model,2*num_dof);
-
       [model,paramframe,~,pmin,pmax] = constructParamFrame(model);
       if ~isequal_modulo_transforms(paramframe,getParamFrame(model)) % let the previous handle stay valid if possible
         model = setParamFrame(model,paramframe);
       end
       model = setParamLimits(model,pmin,pmax);
       
+      model = setNumInputs(model,size(model.B,2));
       if getNumInputs(model)>0
         inputframe = constructInputFrame(model);
         if ~isequal_modulo_transforms(inputframe,getInputFrame(model)) % let the previous handle stay valid if possible
@@ -583,6 +584,7 @@ classdef RigidBodyManipulator < Manipulator
         end
       end
 
+      model = setNumDOF(model,num_dof);
       if getNumStates(model)>0
         stateframe = constructStateFrame(model);
         if ~isequal_modulo_transforms(stateframe,getStateFrame(model)) % let the previous handle stay valid if possible
@@ -604,6 +606,7 @@ classdef RigidBodyManipulator < Manipulator
         end
         model = setDirectFeedthrough(model,feedthrough);
       else
+        model = setNumOutputs(model,2*num_dof);
         model = setOutputFrame(model,getStateFrame(model));  % output = state
         model = setDirectFeedthrough(model,false);
       end
@@ -810,22 +813,24 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
         
-    function body_ind = findJointInd(model,jointname,robot)
-      % @param robot can be the robot number or the name of a robot
-      % robot=0 means look at all robots
+    function body_ind = findJointInd(model,jointname,robot_num,error_level)
+      % @param robot_num can be the robot number or the name of a robot
+      % robot_num=0 means look at all robots
       % @ingroup Kinematic Tree
-      if nargin<3 || isempty(robot), robot=0; end
+      if nargin<3 || isempty(robot_num), robot_num=0; end
       jointname = lower(jointname);
-      if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
+      if ischar(robot_num) robot_num = strmatch(lower(robot_num),lower({model.name})); end
       items = strfind(lower({model.body.jointname}),jointname);
       ind = find(~cellfun(@isempty,items));
-      if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
+      if (robot_num~=0), ind = ind([model.body(ind).robotnum]==robot_num); end
       if (length(ind)~=1)
-        if (nargin<4 || throw_error)
+        if (nargin<4 || error_level>0)
           error(['couldn''t find unique joint ' ,jointname]);
         else 
-          warning(['couldn''t find unique joint ' ,jointname]);
           body_ind=0;
+          if (error_level==0)
+            warning(['couldn''t find unique joint ' ,jointname]);
+          end
         end
       else
         body_ind = ind;
@@ -860,7 +865,7 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function terrain_contact_point_struct = ...
-        getTerrainContactPoints(obj,body_idx)
+        getTerrainContactPoints(obj,body_idx,contact_groups)
       % terrain_contact_point_struct = getTerrainContactPoints(obj)
       % returns a structure array containing the terrain contact points
       % on all bodies of this manipulator.
@@ -876,6 +881,8 @@ classdef RigidBodyManipulator < Manipulator
       % @param body_idx - vector of body-indices indicating the bodies
       %                   for which terrain contact points should be
       %                   found @default All bodies except the world
+      % @param contact_groups - (optional) cell array of cell arrays
+      %   containing contact group names for each body
       % @retval terrain_contact_point_struct - nx1 structure array,
       %   where n is the number of bodies with terrain contact points.
       %   Each element has the following fields
@@ -891,11 +898,16 @@ classdef RigidBodyManipulator < Manipulator
                                          % with the terrain
       end
       terrain_contact_point_struct = struct('pts',{},'idx',{});
-      for i = body_idx
-        if i ~= 1
-          pts = getTerrainContactPoints(obj.body(i));
+      for i = 1:length(body_idx)
+        bi=body_idx(i);
+        if bi ~= 1
+          if nargin < 3
+            pts = getTerrainContactPoints(obj.body(bi));
+          else
+            pts = getTerrainContactPoints(obj.body(bi),contact_groups{i});
+          end
           if ~isempty(pts)
-            terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
+            terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',bi);
           end
         end
       end
@@ -2059,15 +2071,21 @@ classdef RigidBodyManipulator < Manipulator
           joint_limit_max = parseParamString(model,robotnum,char(limits.getAttribute('upper')));
         end
         if limits.hasAttribute('effort');
-          effort = parseParamString(model,robotnum,char(limits.getAttribute('effort')));
-          effort_min = min(-effort,effort); % just in case someone puts the min effort in the URDF
-          effort_max = max(-effort,effort);
+          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
+            effort = parseParamString(model,robotnum,char(limits.getAttribute('effort')));
+            effort_min = min(-effort,effort); % just in case someone puts the min effort in the URDF
+            effort_max = max(-effort,effort);
+          end
         end
         if limits.hasAttribute('effort_min');
-          effort_min = parseParamString(model,robotnum,char(limits.getAttribute('effort_min')));
+          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
+            effort_min = parseParamString(model,robotnum,char(limits.getAttribute('effort_min')));
+          end
         end
         if limits.hasAttribute('effort_max');
-          effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
+          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
+            effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
+          end
         end
         if limits.hasAttribute('velocity');
           warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');
@@ -2139,6 +2157,11 @@ classdef RigidBodyManipulator < Manipulator
       elnode = node.getElementsByTagName('linear_spring_damper').item(0);
       if ~isempty(elnode)
         [model,fe] = RigidBodySpringDamper.parseURDFNode(model,robotnum,elnode,options);
+      end
+      
+      elnode = node.getElementsByTagName('torsional_spring').item(0);
+      if ~isempty(elnode)
+        [model,fe] = RigidBodyTorsionalSpring.parseURDFNode(model,robotnum,elnode,options);
       end
       
       elnode = node.getElementsByTagName('wing').item(0);
