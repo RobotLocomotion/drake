@@ -5,6 +5,16 @@
 using namespace Eigen;
 using namespace std;
 
+void checkBodyOrFrameID(const int body, const RigidBodyManipulator* model, const char* body_var_name="body")
+{
+  if(body >= model->num_bodies) {
+    mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","%s must be less than %d",body_var_name,model->num_bodies);
+  } else if(body < -model->num_frames - 1) {
+    mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","%s must be greater than %d",body_var_name,-model->num_frames);
+  } else if(body == -1){
+    mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Recieved %s == 0, which is reserved for the center of mass. Please use a WorldCoMConstraint instead.");
+  }
+}
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -180,6 +190,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","body must be numeric");
         }
         int body = (int) mxGetScalar(prhs[2])-1;
+        checkBodyOrFrameID(body, model);
 
         if(mxGetM(prhs[3]) != 3 || mxGetM(prhs[4]) != 3 || mxGetN(prhs[3]) != 1 || mxGetN(prhs[4]) != 1)
         {
@@ -216,6 +227,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","body must be numeric");
         }
         int body = (int) mxGetScalar(prhs[2])-1;
+        checkBodyOrFrameID(body, model);
         Vector3d axis;
         rigidBodyConstraintParse3dUnitVector(prhs[3], axis);
         Vector3d dir;
@@ -248,6 +260,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","body must be numeric");
         }
         int body = (int) mxGetScalar(prhs[2])-1;
+        checkBodyOrFrameID(body, model);
         Vector3d axis;
         rigidBodyConstraintParse3dUnitVector(prhs[3],axis);
         Vector4d quat_des;
@@ -281,6 +294,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","body must be numeric");
         }
         int body = (int) mxGetScalar(prhs[2])-1;
+        checkBodyOrFrameID(body, model);
         Vector3d axis;
         rigidBodyConstraintParse3dUnitVector(prhs[3],axis);
         Vector3d target;
@@ -322,6 +336,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         int bodyA_idx = (int) mxGetScalar(prhs[2])-1;
         int bodyB_idx = (int) mxGetScalar(prhs[3])-1;
+        checkBodyOrFrameID(bodyA_idx, model,"bodyA");
+        checkBodyOrFrameID(bodyB_idx, model,"bodyB");
         if(!mxIsNumeric(prhs[4]) || mxGetM(prhs[4]) != 3 || mxGetN(prhs[4]) != 1)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","axis should be 3x1 vector");
@@ -398,6 +414,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         int bodyA_idx = (int) mxGetScalar(prhs[2])-1;
         int bodyB_idx = (int) mxGetScalar(prhs[3])-1;
+        checkBodyOrFrameID(bodyA_idx, model,"bodyA");
+        checkBodyOrFrameID(bodyB_idx, model,"bodyB");
         if(!mxIsNumeric(prhs[4]) || mxGetM(prhs[4]) != 3 || mxGetN(prhs[4]) != 1)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","axis should be 3x1 vector");
@@ -520,6 +538,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","body must be numeric");
         }
         int body = (int) mxGetScalar(prhs[2])-1;
+        checkBodyOrFrameID(body, model);
         int n_pts = mxGetN(prhs[3]);
         if(!mxIsNumeric(prhs[3])||mxGetM(prhs[3]) != 3)
         {
@@ -562,6 +581,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           rigidBodyConstraintParseTspan(prhs[7],tspan);
         }
         int body = (int) mxGetScalar(prhs[2])-1;
+        checkBodyOrFrameID(body, model);
         int n_pts = mxGetN(prhs[3]);
         if(!mxIsNumeric(prhs[3])||mxGetM(prhs[3]) != 3)
         {
@@ -613,6 +633,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           rigidBodyConstraintParseTspan(prhs[5],tspan);
         }
         int body = (int) mxGetScalar(prhs[2])-1;
+        checkBodyOrFrameID(body, model);
         Vector4d quat_des;
         rigidBodyConstraintParseQuat(prhs[3],quat_des);
         double tol = mxGetScalar(prhs[4]);
@@ -647,10 +668,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         int bodyA = (int) mxGetScalar(prhs[2])-1;
         int bodyB = (int) mxGetScalar(prhs[3])-1;
-        if(bodyA>=model->num_bodies || bodyA < -1 || bodyB>= model->num_bodies || bodyB < -1)
-        {
-          mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","bodyA and bodyB must be within [0 robot.getNumBodies]");
-        }
+        checkBodyOrFrameID(bodyA, model,"bodyA");
+        checkBodyOrFrameID(bodyB, model,"bodyB");
         if(bodyA == bodyB)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","bodyA and bodyB should be different");
@@ -942,6 +961,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         int bodyA_idx = static_cast<int>(mxGetScalar(prhs[5])-1);
         int bodyB_idx = static_cast<int>(mxGetScalar(prhs[6])-1);
+        checkBodyOrFrameID(bodyA_idx,model,"bodyA");
+        checkBodyOrFrameID(bodyB_idx,model,"bodyB");
 
         Matrix<double,7,1> bTbp;
         if(!mxIsNumeric(prhs[7]) || mxGetM(prhs[7]) != 7 || mxGetN(prhs[7]) != 1)
@@ -981,6 +1002,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
         int bodyA_idx = static_cast<int>(mxGetScalar(prhs[2]))-1;
         int bodyB_idx = static_cast<int>(mxGetScalar(prhs[3]))-1;
+        checkBodyOrFrameID(bodyA_idx,model,"bodyA");
+        checkBodyOrFrameID(bodyB_idx,model,"bodyB");
         if(!mxIsNumeric(prhs[4]) || mxGetM(prhs[4]) != 4 || mxGetN(prhs[4]) != 1)
         {
           mexErrMsgIdAndTxt("Drake:constructPtrRigidBodyConstraintmex:BadInputs","Argument 5 (quat_des) should be 4 x 1 double vector");
