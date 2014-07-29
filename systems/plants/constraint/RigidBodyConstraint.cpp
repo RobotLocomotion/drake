@@ -1760,7 +1760,7 @@ void Point2PointDistanceConstraint::eval(const double* t, VectorXd &c, MatrixXd 
     int num_cnst = this->getNumConstraint(t);
     MatrixXd posA(3,this->ptA.cols());
     MatrixXd dposA(3*this->ptA.cols(),this->robot->num_dof);
-    if(this->bodyA != -1)
+    if(this->bodyA != 0)
     {
       this->robot->forwardKin(this->bodyA,this->ptA,0,posA);
       this->robot->forwardJac(this->bodyA,this->ptA,0,dposA);
@@ -1772,7 +1772,7 @@ void Point2PointDistanceConstraint::eval(const double* t, VectorXd &c, MatrixXd 
     }
     MatrixXd posB(3,this->ptB.cols());
     MatrixXd dposB(3*this->ptB.cols(),this->robot->num_dof);
-    if(this->bodyB != -1)
+    if(this->bodyB != 0)
     {
       this->robot->forwardKin(this->bodyB,this->ptB,0,posB);
       this->robot->forwardJac(this->bodyB,this->ptB,0,dposB);
@@ -1810,7 +1810,7 @@ void Point2PointDistanceConstraint::name(const double* t, std::vector<std::strin
     {
       char cnst_name_buffer[1000];
       std::string bodyA_name;
-      if(this->bodyA != -1)
+      if(this->bodyA != 0)
       {
         bodyA_name = this->robot->bodies[bodyA].linkname;
       }
@@ -1819,7 +1819,7 @@ void Point2PointDistanceConstraint::name(const double* t, std::vector<std::strin
         bodyA_name = "World";
       }
       std::string bodyB_name;
-      if(this->bodyB != -1)
+      if(this->bodyB != 0)
       {
         bodyB_name = this->robot->bodies[bodyB].linkname;
       }
@@ -2232,8 +2232,11 @@ void WorldFixedBodyPoseConstraint::name(const double* t, int n_breaks, std::vect
 
 
 AllBodiesClosestDistanceConstraint::AllBodiesClosestDistanceConstraint(
-    RigidBodyManipulator* robot, double lb, double ub, Vector2d tspan)
-  : SingleTimeKinematicConstraint(robot, tspan), lb(lb), ub(ub)
+    RigidBodyManipulator* robot, double lb, double ub, 
+    std::vector<int> active_bodies_idx, 
+    std::set<std::string> active_group_names, Vector2d tspan)
+  : SingleTimeKinematicConstraint(robot, tspan), lb(lb), ub(ub),
+    active_bodies_idx(active_bodies_idx), active_group_names(active_group_names)
 {
   VectorXd c;
   MatrixXd dc;
@@ -2272,25 +2275,40 @@ void AllBodiesClosestDistanceConstraint::updateRobot(RigidBodyManipulator* robot
 void 
 AllBodiesClosestDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
 {
-  MatrixXd xA, xB, normal;
-  std::vector<int> idxA; 
-  std::vector<int> idxB;
-  std::vector<int> bodies_idx; // empty vector -> all bodies
+  if(this->isTimeValid(t)) {
+    MatrixXd xA, xB, normal;
+    std::vector<int> idxA; 
+    std::vector<int> idxB;
 
-  robot->collisionDetect(c,normal,xA,xB,idxA,idxB,bodies_idx);
-
-  int num_pts = xA.cols();
-  dc = MatrixXd::Zero(num_pts,robot->num_dof);
-  MatrixXd JA = MatrixXd::Zero(3,robot->num_dof);     
-  MatrixXd JB = MatrixXd::Zero(3,robot->num_dof);     
-  for (int i = 0; i < num_pts; ++i) {
-    Vector4d xA_1; 
-    Vector4d xB_1; 
-    xA_1 << xA.col(i), 1;
-    xB_1 << xB.col(i), 1;
-    robot->forwardJac(idxA.at(i),xA_1,0,JA);
-    robot->forwardJac(idxB.at(i),xB_1,0,JB);
-    dc.row(i) = normal.col(i).transpose()*(JA-JB);
+    if (active_bodies_idx.size() > 0) {
+      if (active_group_names.size() > 0) {
+        robot->collisionDetect(c,normal,xA,xB,idxA,idxB,active_bodies_idx,active_group_names);
+      } else {
+        robot->collisionDetect(c,normal,xA,xB,idxA,idxB,active_bodies_idx);
+      }
+    } else {
+      if (active_group_names.size() > 0) {
+        robot->collisionDetect(c,normal,xA,xB,idxA,idxB,active_group_names);
+      } else {
+        robot->collisionDetect(c,normal,xA,xB,idxA,idxB);
+      }
+    }
+    int num_pts = xA.cols();
+    dc = MatrixXd::Zero(num_pts,robot->num_dof);
+    MatrixXd JA = MatrixXd::Zero(3,robot->num_dof);     
+    MatrixXd JB = MatrixXd::Zero(3,robot->num_dof);     
+    for (int i = 0; i < num_pts; ++i) {
+      Vector4d xA_1; 
+      Vector4d xB_1; 
+      xA_1 << xA.col(i), 1;
+      xB_1 << xB.col(i), 1;
+      robot->forwardJac(idxA.at(i),xA_1,0,JA);
+      robot->forwardJac(idxB.at(i),xB_1,0,JB);
+      dc.row(i) = normal.col(i).transpose()*(JA-JB);
+    }
+  } else {
+    c.resize(0);
+    dc.resize(0,0);
   }
 };
 
@@ -2331,8 +2349,11 @@ void AllBodiesClosestDistanceConstraint::name(const double* t, std::vector<std::
   }
 }
 
-MinDistanceConstraint::MinDistanceConstraint( RigidBodyManipulator* robot, double min_distance, Vector2d tspan)
-  : SingleTimeKinematicConstraint(robot, tspan), min_distance(min_distance)
+MinDistanceConstraint::MinDistanceConstraint( RigidBodyManipulator* robot, 
+    double min_distance, std::vector<int> active_bodies_idx, 
+    std::set<std::string> active_group_names, Vector2d tspan)
+  : SingleTimeKinematicConstraint(robot, tspan), min_distance(min_distance),
+    active_bodies_idx(active_bodies_idx), active_group_names(active_group_names)
 {
   this->num_constraint = 1;
   this->type = RigidBodyConstraint::MinDistanceConstraintType;
@@ -2348,9 +2369,20 @@ MinDistanceConstraint::eval(const double* t, VectorXd& c, MatrixXd& dc) const
   MatrixXd xA, xB, normal, ddist_dq, dscaled_dist_ddist, dpairwise_costs_dscaled_dist;
   std::vector<int> idxA; 
   std::vector<int> idxB;
-  std::vector<int> bodies_idx; // empty vector -> all bodies
 
-  robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,bodies_idx);
+  if (active_bodies_idx.size() > 0) {
+    if (active_group_names.size() > 0) {
+      robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_bodies_idx,active_group_names);
+    } else {
+      robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_bodies_idx);
+    }
+  } else {
+    if (active_group_names.size() > 0) {
+      robot->collisionDetect(dist,normal,xA,xB,idxA,idxB,active_group_names);
+    } else {
+      robot->collisionDetect(dist,normal,xA,xB,idxA,idxB);
+    }
+  }
 
   int num_pts = xA.cols();
   ddist_dq = MatrixXd::Zero(num_pts,robot->num_dof);

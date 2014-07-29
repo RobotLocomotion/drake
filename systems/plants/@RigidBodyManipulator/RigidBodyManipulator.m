@@ -679,7 +679,14 @@ classdef RigidBodyManipulator < Manipulator
       end
       if (length(ind)~=1)
         if (nargin<4 || error_level>0)
-          error(['couldn''t find unique link ' ,linkname]);
+          if robot == 0
+            error('Drake:RigidBodyManipulator:UniqueLinkNotFound', ...
+              'couldn''t find unique link %s.',linkname);
+          else
+            error('Drake:RigidBodyManipulator:UniqueLinkNotFound', ...
+              'couldn''t find unique link %s on robot number %d.', ...
+              linkname,robot);
+          end
         else 
           body_ind=0;
           if (error_level==0)
@@ -717,7 +724,9 @@ classdef RigidBodyManipulator < Manipulator
       else
         ind = [];
       end
-      if numel(ind)~=1, error('Drake:RigidBodyManipulator:UniqueFrameNotFound',['Cannot find unique frame named ', name, ' on robot number ',num2str(robotnum)]); end
+      if numel(ind)~=1 
+        error('Drake:RigidBodyManipulator:UniqueFrameNotFound',['Cannot find unique frame named ', name, ' on robot number ',num2str(robotnum)]); 
+      end
       frame_id = -ind;  % keep frame_ind distinct from body_ind
     end
         
@@ -959,17 +968,47 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
     
-    function body_idx = parseBodyID(obj,body_id)
-      % body_idx = parseBodyID(obj,body_id)
-      % @param obj - RigidBodyManipulator object
-      % @param body_id - Body index or body name
+    function body_idx_or_frame_id = parseBodyOrFrameID(obj,body_or_frame,robotnum)
+      % body_idx = parseBodyOrFrameID(obj,body_or_frame) returns the body index or frame
+      % id associated with the input.
+      % @param obj            -- RigidBodyManipulator object
+      % @param body_or_frame  -- Can be either: 
+      %                           * Numeric body index or frame id
+      %                           * String containing body or frame name
+      % @param robotnum       -- Scalar restricting the search to a particular
+      %                          robot. Optional. @default 0 (all robots)
       %
-      % @retval body_idx - Body index
-      typecheck(body_id,{'numeric','char'});
-      if isnumeric(body_id)
-        body_idx = body_id;
+      % @retval body_idx_or_frame_id  -- Numeric body index or frame id
+      typecheck(body_or_frame,{'numeric','char'});
+      if nargin < 3, robotnum = 0; end
+      if isnumeric(body_or_frame)
+        sizecheck(body_or_frame,[1,1]);
+        body_idx_or_frame_id = body_or_frame;
       else % then it's a string
-        body_idx = findLinkInd(obj,body_id);
+        try
+          body_idx_or_frame_id = findLinkInd(obj,body_or_frame,robotnum);
+        catch ex
+          if strcmp(ex.id,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
+            try
+              body_idx_or_frame_id = findFrameID(obj,body_or_frame,robotnum);
+            catch ex2
+              if strcmp(ex.id,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
+                if robotnum == 0
+                  error('Drake:RigidBodyManipulator:UniqueFrameOrLinkNotFound', ...
+                    'Cannot find unique link or frame named %s',body_or_frame); 
+                else
+                  error('Drake:RigidBodyManipulator:UniqueFrameOrLinkNotFound', ...
+                    'Cannot find unique link or frame named %s on robot %d', ...
+                    body_or_frame, robotnum); 
+                end
+              else
+                rethrow(ex2);
+              end
+            end
+          else
+            rethrow(ex);
+          end
+        end
       end
     end
 
@@ -984,7 +1023,7 @@ classdef RigidBodyManipulator < Manipulator
       % @param group_name - String containing the name of the collision group
       %   (optional) @default 'default'
 
-      body_idx = obj.parseBodyID(body_id);
+      body_idx = obj.parseBodyOrFrameID(body_id);
       obj.body(body_idx) = obj.body(body_idx).addContactShape(shape, varargin{:});
       obj.dirty = true;
     end
@@ -995,7 +1034,7 @@ classdef RigidBodyManipulator < Manipulator
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
       % @param shape - RigidBodyGeometry (or child class) object 
-      body_idx = obj.parseBodyID(body_id);
+      body_idx = obj.parseBodyOrFrameID(body_id);
       obj.body(body_idx).visual_shapes{end+1} = shape;
     end
 

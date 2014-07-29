@@ -77,13 +77,25 @@ classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
     end
     
     
-    function [lb,ub] = bounds(obj,N)
-      if(N>=2)
-        lb = [0;N];
-        ub = [0;N];
+    function [lb,ub] = bounds(obj,t,N)
+      if isempty(t);
+        if(N>=2)
+          lb = [0;N];
+          ub = [0;N];
+        else
+          lb = [];
+          ub = [];
+        end
       else
-        lb = [];
-        ub = [];
+        valid_t = t(obj.isTimeValid(t));
+        if(length(valid_t)>=2)
+          n_breaks = length(valid_t);
+          lb = [0;n_breaks];
+          ub = [0;n_breaks];
+        else
+          lb = [];
+          ub = [];
+        end
       end
     end
     
