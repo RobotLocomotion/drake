@@ -34,10 +34,8 @@ public:
 
   template <typename OtherDerived>
   GradientVar<Derived>& operator=(const GradientVar<OtherDerived>& other) {
-    if (this != &other) {
-      mat = other.val();
-      gradient = other.getGradient();
-    }
+    mat = other.val();
+    gradient = other.getGradient();
     return *this;
   }
 
@@ -57,7 +55,7 @@ public:
   }
 
   template<int BlockRows, int BlockCols>
-  inline GradientVar<Eigen::Block<Derived, BlockRows, BlockCols>> block(int startRow, int startCol)
+  inline const GradientVar<const Eigen::Block<const Derived, BlockRows, BlockCols>> getBlock(int startRow, int startCol) const
   {
     std::array<int, BlockRows> rows;
     for (int i = 0; i < BlockRows; ++i) {
@@ -69,10 +67,10 @@ public:
       cols[i] = startCol + i;
     }
 
-    return GradientVar<Eigen::Block<Derived, BlockRows, BlockCols>>(mat.template block<BlockRows, BlockCols>(startRow, startCol), getSubMatrixGradient(gradient, rows, cols, mat.rows()));
+    return GradientVar<const Eigen::Block<const Derived, BlockRows, BlockCols>>(mat.template block<BlockRows, BlockCols>(startRow, startCol), getSubMatrixGradient(gradient, rows, cols, mat.rows()));
   }
 
-  inline GradientVar<Eigen::Block<Derived>> block(int startRow, int startCol, int blockRows, int blockCols)
+  inline const GradientVar<const Eigen::Block<const Derived>> getBlock(int startRow, int startCol, int blockRows, int blockCols) const
   {
     std::vector<int> rows(blockRows);
     for (int i = 0; i < blockRows; ++i) {
@@ -84,9 +82,42 @@ public:
       cols.push_back(startCol + i);
     }
 
-    return GradientVar<Eigen::Block<Derived>>(mat.block(startRow, startCol, blockRows, blockCols), getSubMatrixGradient(gradient, rows, cols, mat.rows()));
+    return GradientVar<const Eigen::Block<const Derived>>(mat.block(startRow, startCol, blockRows, blockCols), getSubMatrixGradient(gradient, rows, cols, mat.rows()));
   }
 
+  template<int BlockRows, int BlockCols, typename OtherDerived>
+  void setBlock(const GradientVar<OtherDerived>& block, int start_row, int start_col, int block_rows = BlockRows, int block_cols = BlockCols)
+  {
+    std::array<int, BlockRows> rows;
+    for (int i = 0; i < BlockRows; ++i) {
+      rows[i] = start_row + i;
+    }
+
+    std::array<int, BlockCols> cols;
+    for (int i = 0; i < BlockCols; ++i) {
+      cols[i] = start_col + i;
+    }
+
+    mat.template block<BlockRows, BlockCols>(start_row, start_col) = block.val();
+    setSubMatrixGradient(gradient, block.getGradient(), rows, cols, rows());
+  }
+
+  template<typename OtherDerived>
+  void setBlock(const GradientVar<OtherDerived>& block, int start_row, int start_col, int block_rows, int block_cols)
+  {
+    std::vector<int> rows(block_rows);
+    for (int i = 0; i < block_rows; ++i) {
+      rows.push_back(start_row + i);
+    }
+
+    std::vector<int> cols(block_cols);
+    for (int i = 0; i < block_cols; ++i) {
+      cols.push_back(start_col + i);
+    }
+
+    mat.block(start_row, start_col, block_rows, block_cols) = block.val();
+    setSubMatrixGradient(gradient, block.getGradient(), rows, cols, this->rows());
+  }
 
   const Derived& val() const
   {
@@ -98,15 +129,18 @@ public:
     return mat;
   }
 
-  int cols() {
+  int cols() const
+  {
     return mat.cols();
   }
 
-  int rows() {
+  int rows() const
+  {
     return mat.rows();
   }
 
-  int size() {
+  int size() const
+  {
     return mat.size();
   }
 
