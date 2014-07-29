@@ -209,8 +209,8 @@ rhand_pos = forwardKin(robot,kinsol,r_hand,rhand_pts,0);
 [c,dc] = kc.eval(t_valid,kinsol);
 valuecheck(c',sum((lhand_pos-rhand_pos).*(lhand_pos-rhand_pos),1));
 testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.Point2PointDistanceConstraintType,robot,robot_aff,l_hand,r_hand,lhand_pts,rhand_pts,[0 0],[1 1],tspan0);
-testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.Point2PointDistanceConstraintType,robot,robot_aff,0,r_hand,rand(3,2),rhand_pts,[0 0],[1 1],tspan0);
-testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.Point2PointDistanceConstraintType,robot,0,r_hand,rand(3,2),rhand_pts,[0 0],[1 1],tspan0);
+testKinCnst_userfun(true,false,t_valid,q,q_aff,RigidBodyConstraint.Point2PointDistanceConstraintType,robot,robot_aff,1,r_hand,rand(3,2),rhand_pts,[0 0],[1 1],tspan0);
+testKinCnstInvalidTime_userfun(true,false,t_invalid,q,RigidBodyConstraint.Point2PointDistanceConstraintType,robot,1,r_hand,rand(3,2),rhand_pts,[0 0],[1 1],tspan0);
 
 display('Check world position in frame constraint');
 rpy = 2*pi*rand(3,1) - pi;
