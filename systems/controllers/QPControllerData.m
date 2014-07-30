@@ -13,9 +13,6 @@ classdef QPControllerData < ControllerData
     B_is_time_varying=false 
     C_is_time_varying=false 
     D_is_time_varying=false 
-    
-    % dynamics related -----------------------------------------------------------
-    mu % friction coefficient    
   end
   
   % properties that can be modified 'on the fly'
@@ -49,8 +46,10 @@ classdef QPControllerData < ControllerData
     constrained_dofs=[] % array of joint indices
     acceleration_input_frame; % input coordinate frame for desired 
     % generalized accelerations
-    
     plan_shift % linear offset to be applied to x0
+    
+    % dynamics related -----------------------------------------------------------
+    mu % friction coefficient    
   end
   
   methods 
