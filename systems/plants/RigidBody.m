@@ -147,7 +147,10 @@ classdef RigidBody < RigidBodyElement
           mean_of_pts = mean(pts,2);
           pts = bsxfun(@plus,scale_factor*bsxfun(@minus,pts,mean_of_pts),mean_of_pts);
         end
-        body.contact_shapes = { RigidBodyMeshPoints(pts) };
+        body.contact_shapes = {};
+        body.contact_shape_group = {};
+        body.collision_group_name = {};
+        body = body.addContactShape(RigidBodyMeshPoints(pts));
       end
     end
     
