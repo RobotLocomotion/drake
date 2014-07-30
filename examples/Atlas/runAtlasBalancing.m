@@ -117,7 +117,7 @@ sys = mimoFeedback(qt,sys,[],[],[],outs);
 
 if visualize
   v = r.constructVisualizer;
-  v.display_dt = 0.05;
+  v.display_dt = 0.01;
   S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
   output_select(1).system=1;
   output_select(1).output=1;
