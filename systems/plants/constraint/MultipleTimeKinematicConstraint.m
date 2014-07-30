@@ -47,7 +47,7 @@ classdef MultipleTimeKinematicConstraint < RigidBodyConstraint
       % generate a FunctionHandleConstraint for postures at all time t
       if isempty(t)
         if(N >= 2)
-          [lb,ub] = obj.bounds(N);
+          [lb,ub] = obj.bounds([],N);
           nq = obj.robot.getNumPositions;
           cnstr = {FunctionHandleConstraint(lb,ub,N*nq,@(varargin) obj.evalValidTime(varargin(N+(1:N))))};
           %num_cnstr = obj.getNumConstraint(N);
