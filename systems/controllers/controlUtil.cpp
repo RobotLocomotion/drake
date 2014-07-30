@@ -25,6 +25,21 @@ void getCols(std::set<int> &cols, MatrixBase<DerivedA> const &M, MatrixBase<Deri
     Msub.col(i++) = M.col(*iter);
 }
 
+template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
+void angleDiff(const MatrixBase<DerivedPhi1>& phi1, const MatrixBase<DerivedPhi2>& phi2, MatrixBase<DerivedD>& d) {
+  d = phi2 - phi1;
+  
+  for (int i = 0; i < phi1.rows(); i++) {
+    for (int j = 0; j < phi1.cols(); j++) {
+      if (d(i,j) < -M_PI) {
+        d(i,j) = fmod(d(i,j) + M_PI, 2*M_PI) + M_PI;
+      } else {
+        d(i,j) = fmod(d(i,j) + M_PI, 2*M_PI) - M_PI;
+      }
+    }
+  }
+}
+
 mxArray* myGetProperty(const mxArray* pobj, const char* propname)
 {
   mxArray* pm = mxGetProperty(pobj,0,propname);

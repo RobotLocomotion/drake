@@ -30,6 +30,9 @@ void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<Deri
 template <typename DerivedA, typename DerivedB>
 void getCols(std::set<int> &cols, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub);
 
+template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
+void angleDiff(const MatrixBase<DerivedPhi1>& phi1, const MatrixBase<DerivedPhi2>& phi2, MatrixBase<DerivedD>& d);
+
 mxArray* myGetProperty(const mxArray* pobj, const char* propname);
 mxArray* myGetField(const mxArray* pobj, const char* propname);
 bool inSupport(std::vector<SupportStateElement> supports, int body_idx);
