@@ -16,6 +16,8 @@ r = addRobotFromURDF(r,s,[0;0;0],[0;0;0],options);
 options.namesuffix = 'rotated';
 
 r = addRobotFromURDF(r,s,[1;0;0],[0;0;0],options);
+r = r.removeCollisionGroupsExcept({'toe','heel'});
+r = compile(r);
 warning(w);
 
 %options.viewer = 'BotVisualizer';
