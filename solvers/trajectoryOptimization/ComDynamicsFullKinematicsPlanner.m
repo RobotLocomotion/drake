@@ -90,13 +90,23 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       end
       obj.add_dynamic_constraint_flag = true;
       obj = obj.addDynamicConstraints();
+
       sizecheck(Q,[obj.nq,obj.nq]);
       if(any(eig(Q)<0))
         error('Drake:ComDynamicsFullKinematicsPlanner:Q should be PSD');
       end
       sizecheck(q_nom,[obj.nq,obj.N]);
-      posture_err_cost = QuadraticSumConstraint(-inf,inf,Q,q_nom);
-      obj = obj.addCost(posture_err_cost,reshape(obj.q_inds,[],1));
+      %posture_err_cost = QuadraticSumConstraint(-inf,inf,Q,q_nom);
+      %obj = obj.addCost(posture_err_cost,reshape(obj.q_inds,[],1));
+      q_cost = FunctionHandleConstraint(-inf,inf,2+obj.nq,@(h,q) qCost(0.5*Q,q_nom(:,1),h,q));
+      obj = obj.addCost(q_cost,{obj.h_inds([1,1]);obj.q_inds(:,1)});
+      for i = 2:obj.N-1
+        q_cost = FunctionHandleConstraint(-inf,inf,2+obj.nq,@(h,q) qCost(Q,q_nom(:,i),h,q));
+        obj = obj.addCost(q_cost,{obj.h_inds([i-1,i]);obj.q_inds(:,i)});
+      end
+      q_cost = FunctionHandleConstraint(-inf,inf,2+obj.nq,@(h,q) qCost(0.5*Q,q_nom(:,end),h,q));
+      obj = obj.addCost(q_cost,{obj.h_inds([end,end]);obj.q_inds(:,end)});
+
       sizecheck(Q_comddot,[3,3]);
       if(any(eig(Q_comddot)<0))
         error('Drake:ComDynamicsFullKinematicsPlanner:Q_comddot should be PSD');
@@ -113,12 +123,35 @@ classdef ComDynamicsFullKinematicsPlanner < SimpleDynamicsFullKinematicsPlanner
       if(any(eig(Qv)<0))
         error('Drake:ComDynamicsFullKinematicsPlanner:Q_v should be PSD');
       end
-      v_cost = QuadraticSumConstraint(-inf,inf,Qv,zeros(obj.nv,obj.N));
-      obj = obj.addCost(v_cost,reshape(obj.v_inds,[],1));
+      %v_cost = QuadraticSumConstraint(-inf,inf,Qv,zeros(obj.nv,obj.N));
+      %obj = obj.addCost(v_cost,reshape(obj.v_inds,[],1));
+      v_cost = FunctionHandleConstraint(-inf,inf,1+obj.nv,@(h,v) vCost(Qv,h,v));
+      for i = 1:obj.N-1
+        obj = obj.addCost(v_cost,{obj.h_inds(i);obj.v_inds(:,i+1)});
+      end
+      
+      %e = ones(obj.nq*(obj.N-2),1);
+      %second_diff_mat = spdiags([e,-2*e,e],[-obj.nq,0,obj.nq],obj.nq*(obj.N-2),obj.nq*obj.N);
+      %Qa = second_diff_mat'*kron(eye(obj.N-2),Qv)*second_diff_mat;
+      %obj = obj.addCost(QuadraticConstraint(0,0,Qa,zeros(obj.nq*obj.N,1)),obj.q_inds);;
 
       function [f,df] = comAccelCost(Q,h,comddot)
-        f = 0.5*(h(1)+h(2))^2*(comddot'*Q*comddot);
-        df = [(h(1)+h(2))*(comddot'*Q*comddot)*[1,1], (h(1)+h(2))^2*comddot'*Q];
+        %f = 0.5*(h(1)+h(2))^2*(comddot'*Q*comddot);
+        %df = [(h(1)+h(2))*(comddot'*Q*comddot)*[1,1], (h(1)+h(2))^2*comddot'*Q];
+        f = 0.5*(h(1)+h(2))*(comddot'*Q*comddot);
+        df = [0.5*(comddot'*Q*comddot)*[1,1], (h(1)+h(2))*comddot'*Q];
+      end
+
+      function [f,df] = vCost(Q,h,v)
+        %f = h^2*(v'*Q*v);
+        %df = [2*h*(v'*Q*v), 2*h^2*v'*Q];
+        f = h*(v'*Q*v);
+        df = [v'*Q*v, 2*h*v'*Q];
+      end
+
+      function [f,df] = qCost(Q,q_nom,h,q)
+        f = 0.5*(h(1)+h(2))*((q-q_nom)'*Q*(q-q_nom));
+        df = [0.5*(q-q_nom)'*Q*(q-q_nom)*[1,1], (h(1)+h(2))*(q-q_nom)'*Q];
       end
     end
     
