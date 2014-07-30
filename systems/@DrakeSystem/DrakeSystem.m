@@ -256,42 +256,6 @@ classdef DrakeSystem < DynamicalSystem
       end
     end
     
-    function [x,success] = resolveConstraints(obj,x0,v)
-      % Attempts to find a x which satisfies the constraints,
-      % using x0 as the initial guess.
-      %
-      % @param x0 initial guess for state satisfying constraints
-      % @param v (optional) a visualizer that should be called while the
-      % solver is doing it's thing
-
-      if isa(x0,'Point')
-        x0 = double(x0.inFrame(obj.getStateFrame));
-      end
-      
-      if (obj.num_xcon < 1)
-        x=Point(obj.getStateFrame,x0);
-        success=true;
-        return;
-      end
-      
-      function stop=drawme(x,optimValues,state)
-        stop=false;
-        v.draw(0,x);
-      end
-        
-      if (nargin>2 && ~isempty(v))  % useful for debugging (only but only works for URDF manipulators)
-        options=optimset('Display','iter','Algorithm','levenberg-marquardt','OutputFcn',@drawme,'TolX',1e-9);
-      else
-        options=optimset('Display','off','Algorithm','levenberg-marquardt');
-      end
-      [x,~,exitflag] = fsolve(@(x)stateConstraints(obj,x),x0,options);      
-      success=(exitflag==1);
-      if (nargout<2 && ~success)
-        error('Drake:DrakeSystem:ResolveConstraintsFailed','failed to resolve constraints');
-      end
-      x = Point(obj.getStateFrame,x);
-    end
-    
     function [xstar,ustar,info] = findFixedPoint(obj,x0,u0)
       % attempts to find a fixed point (xstar,ustar) which also satisfies the constraints,
       % using (x0,u0) as the initial guess.  
