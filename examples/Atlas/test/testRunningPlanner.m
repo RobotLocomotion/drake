@@ -1,9 +1,9 @@
-function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteration_limit, suffix,options)
+function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_iteration_limit, suffix,options)
   checkDependency('lcmgl');
   if nargin < 1, seed = []; end
   if (nargin < 2 || isempty(stride_length)), stride_length = 2; end
-  if (nargin < 3 || isempty(major_iteration_limit)), major_iteration_limit = 5; end
-  if (nargin < 4 || isempty(suffix)), suffix = ''; end
+  if (nargin < 3 || isempty(major_iteration_limit)), major_iteration_limit = 200; end
+  if (nargin < 4 || isempty(suffix)), suffix = 'testRunning'; end
   if (nargin < 5 || isempty(options)) 
     options = defaultOptionsStruct(); 
   else
@@ -34,7 +34,6 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   %mu = 1.16; % rubber on rubber
   mu = 1; % rubber on rubber
   warning(w);
-  plan_publisher = RobotPlanPublisherWKeyFrames('CANDIDATE_MANIP_PLAN',true,robot.getStateFrame.coordinates);
 
 
   % Create convenience variables
@@ -51,10 +50,10 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   r_foot_bottom = robot.getBody(r_foot).getTerrainContactPoints();
   l_foot_toe    = robot.getBody(l_foot).getTerrainContactPoints('toe');
   l_foot_heel   = robot.getBody(l_foot).getTerrainContactPoints('heel');
-  arm_idx = findJointIndices(robot,'arm');
-  leg_idx = findJointIndices(robot,'leg');
-  back_idx = findJointIndices(robot,'back');
-  wrist_idx = [findJointIndices(robot,'uwy');findJointIndices(robot,'mwx');findJointIndices(robot,'ely');findJointIndices(robot,'shx')];
+  %arm_idx = findJointIndices(robot,'arm');
+  %leg_idx = findJointIndices(robot,'leg');
+  %back_idx = findJointIndices(robot,'back');
+  %wrist_idx = [findJointIndices(robot,'uwy');findJointIndices(robot,'mwx');findJointIndices(robot,'ely');findJointIndices(robot,'shx')];
 
   % Construct visualization tools
   v = constructVisualizer(robot_vis);
@@ -122,25 +121,25 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   Q(2,2) = 0;
   Q(6,6) = 0;
   Qv = 1e0*eye(nq);
-  Qv(arm_idx,arm_idx) = 1e1*eye(numel(arm_idx));
+  %Qv(arm_idx,arm_idx) = 1e1*eye(numel(arm_idx));
   Q_comddot = diag([1,1,1]);
   Q_contact_force = 0e-4*eye(3);
 
   % Create collision avoidance constraints
   if options.enable_collision
     % Consider all bodies
-    min_distance_constraint.flight = MinDistanceConstraint(robot,options.min_distance,[-inf,inf]);
+    min_distance_constraint.flight = MinDistanceConstraint(robot,options.min_distance);
     if options.start_from_standing
       % Ignore both feet
       active_collision_options.body_idx = setdiff(1:robot.getNumBodies(),[l_foot,r_foot,l_uleg,r_uleg]);
-      min_distance_constraint.double_stance = MinDistanceConstraint(robot,options.min_distance,[-inf,inf],active_collision_options);
+      min_distance_constraint.double_stance = MinDistanceConstraint(robot,options.min_distance,active_collision_options);
       % Ignore left foot
       active_collision_options.body_idx = setdiff(1:robot.getNumBodies(),[l_foot]);
-      min_distance_constraint.stance = MinDistanceConstraint(robot,options.min_distance,[-inf,inf],active_collision_options);
+      min_distance_constraint.stance = MinDistanceConstraint(robot,options.min_distance,active_collision_options);
     else
       % Ignore left foot
       active_collision_options.body_idx = setdiff(1:robot.getNumBodies(),l_foot);
-      min_distance_constraint.stance = MinDistanceConstraint(robot,options.min_distance,[-inf,inf],active_collision_options);
+      min_distance_constraint.stance = MinDistanceConstraint(robot,options.min_distance,active_collision_options);
     end
     if options.n_interp_points > 0
       interp_min_distance_constraint.flight = ...
@@ -226,7 +225,7 @@ function [sol,robot_vis,v,cdfkp] = testRunning(seed,stride_length,major_iteratio
   % Create trajectory optimization
   cdfkp = ComDynamicsFullKinematicsPlanner(robot,N,tf_range,Q_comddot,Qv,Q,q_nom,Q_contact_force,contact_wrench_struct,options);
   if options.visualize
-    cdfkp = cdfkp.addDisplayFunction(@(q)displayCallback(plan_publisher,in_stance.total,N,q),[cdfkp.h_inds(:);reshape(cdfkp.com_inds(3,:),[],1);reshape(cdfkp.comdot_inds(1,:),[],1);cdfkp.q_inds(:)]);
+    cdfkp = cdfkp.addDisplayFunction(@(q)displayCallback(in_stance.total,N,q),[cdfkp.h_inds(:);reshape(cdfkp.com_inds(3,:),[],1);reshape(cdfkp.comdot_inds(1,:),[],1);cdfkp.q_inds(:)]);
   end
 
   % Add Timestep bounds
@@ -533,28 +532,29 @@ function half_periodic_constraint = halfPeriodicConstraint(robot)
   r_leg_aky_idx = robot.getBody(robot.findJointInd('r_leg_aky')).dofnum;
   symmetric_matrix = addSymmetricPair(symmetric_matrix,23:24,l_leg_aky_idx,r_leg_aky_idx);
 
-  base_y = findJointIndices(robot,'base_y'); base_y = base_y(1);
+  %base_y = findJointIndices(robot,'base_y'); base_y = base_y(1);
+  base_y = 2;
   equal_matrix = addOpposite(equal_matrix,1,base_y);
 
-  base_z = findJointIndices(robot,'base_z');
+  base_z = 3;
   equal_matrix = addEquality(equal_matrix,2,base_z);
 
-  base_roll = findJointIndices(robot,'base_roll');
+  base_roll = 4;
   equal_matrix = addOpposite(equal_matrix,3,base_roll);
 
-  base_pitch = findJointIndices(robot,'base_pitch');
+  base_pitch = 5;
   equal_matrix = addEquality(equal_matrix,4,base_pitch);
 
-  base_yaw = findJointIndices(robot,'base_yaw');
+  base_yaw = 6;
   equal_matrix = addOpposite(equal_matrix,5,base_yaw);
 
-  back_bkz = findJointIndices(robot,'back_bkz');
+  back_bkz = robot.getBody(robot.findJointInd('back_bkz')).dofnum;
   equal_matrix = addOpposite(equal_matrix,6,back_bkz);
 
-  back_bky = findJointIndices(robot,'back_bky');
+  back_bky = robot.getBody(robot.findJointInd('back_bky')).dofnum;
   equal_matrix = addEquality(equal_matrix,7,back_bky);
 
-  back_bkx = findJointIndices(robot,'back_bkx');
+  back_bkx = robot.getBody(robot.findJointInd('back_bkx')).dofnum;
   equal_matrix = addOpposite(equal_matrix,8,back_bkx);
 
   lb = zeros(2*num_symmetry+num_equal,1);
@@ -562,7 +562,7 @@ function half_periodic_constraint = halfPeriodicConstraint(robot)
   half_periodic_constraint = LinearConstraint(lb,ub,[symmetric_matrix;equal_matrix]);
 end
 
-function displayCallback(publisher,in_stance,N,x)
+function displayCallback(in_stance,N,x)
   h = x(1:N-1);
   ts = [0;cumsum(h)];
   com_z = x(N-1+(1:N));
@@ -571,7 +571,6 @@ function displayCallback(publisher,in_stance,N,x)
   x_data = [zeros(2,numel(ts));q;0*q];
   utime = now() * 24 * 60 * 60;
   snopt_info_vector = ones(1, size(x_data,2));
-  publisher.publish(x_data, ts, utime, snopt_info_vector);
   sfigure(7); 
   subplot(2,1,1);
   plot(ts,com_z,'bo-'); 
@@ -610,7 +609,7 @@ end
 function options = defaultOptionsStruct()
   options.visualize = true;
   options.toe_first = false;
-  options.n_interp_points = 7;
+  options.n_interp_points = 0;
   options.speed = 2;
   options.constrain_head_gaze = true;
   options.head_gaze_tol = 15*pi/180;
