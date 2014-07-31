@@ -37,7 +37,7 @@ load('data/atlas_fp.mat');
 r = r.setInitialState(xstar);
 
 v = r.constructVisualizer;
-v.display_dt = 0.01;
+v.display_dt = 0.03;
 
 nq = getNumPositions(r);
 
