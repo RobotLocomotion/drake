@@ -1,4 +1,5 @@
 classdef BodyMotionControlBlock < DrakeSystem
+ % A simple PD control block for regulating a body pose given a desired position, velocity, and acceleration.   
 
   properties
     nq;

@@ -26,7 +26,7 @@ void getCols(std::set<int> &cols, MatrixBase<DerivedA> const &M, MatrixBase<Deri
 }
 
 template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
-void angleDiff(const MatrixBase<DerivedPhi1>& phi1, const MatrixBase<DerivedPhi2>& phi2, MatrixBase<DerivedD>& d) {
+void angleDiff(MatrixBase<DerivedPhi1> const &phi1, MatrixBase<DerivedPhi2> const &phi2, MatrixBase<DerivedD> &d) {
   d = phi2 - phi1;
   
   for (int i = 0; i < phi1.rows(); i++) {
@@ -38,6 +38,15 @@ void angleDiff(const MatrixBase<DerivedPhi1>& phi1, const MatrixBase<DerivedPhi2
       }
     }
   }
+}
+
+template <int Rows, int Cols>
+mxArray* eigenToMatlab(Matrix<double,Rows,Cols> &m)
+{
+ mxArray* pm = mxCreateDoubleMatrix(m.rows(),m.cols(),mxREAL);
+ if (m.rows()*m.cols()>0)
+   memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
+ return pm;
 }
 
 mxArray* myGetProperty(const mxArray* pobj, const char* propname)
@@ -229,3 +238,8 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
 
 template void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
+template void angleDiff(const MatrixBase<MatrixXd> &, const MatrixBase<MatrixXd> &, MatrixBase<MatrixXd> &);
+template void angleDiff(const MatrixBase<Vector3d> &, const MatrixBase<Vector3d> &, MatrixBase<Vector3d> &);
+template mxArray* eigenToMatlab(Matrix<double,-1,-1> &);
+template mxArray* eigenToMatlab(Matrix<double,-1,1> &);
+template mxArray* eigenToMatlab(Matrix<double,6,1> &);
