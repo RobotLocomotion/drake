@@ -8,6 +8,8 @@ classdef BodyMotionControlBlock < DrakeSystem
     controller_data; % pointer to shared data handle containing qtraj
     robot;
     body_ind;
+    mex_ptr;
+    use_mex;
   end
   
   methods
@@ -54,26 +56,53 @@ classdef BodyMotionControlBlock < DrakeSystem
       obj = setSampleTime(obj,[obj.dt;0]); % sets controller update rate
       obj.robot = r;
       obj.body_ind = findLinkInd(r,name);
+
+      if isfield(options,'use_mex')
+        sizecheck(options.use_mex,1);
+        obj.use_mex = uint32(options.use_mex);
+        rangecheck(obj.use_mex,0,2);
+        if (obj.use_mex && exist('bodyMotionControlmex','file')~=3)
+          error('can''t find bodyMotionControlmex.  did you build it?');
+        end
+      else
+        obj.use_mex = 1;
+      end
+
+      if (obj.use_mex>0)
+        obj.mex_ptr = SharedDataHandle(bodyMotionControlmex(0,obj.robot.getMexModelPtr.ptr,obj.Kp,obj.Kd,obj.body_ind));
+      end
     end
    
     function y=output(obj,t,~,x)
-      q = x(1:obj.nq);
-      qd = x(obj.nq+1:end);
-      kinsol = doKinematics(obj.robot,q,false,true,qd);
-
-      % TODO: this should be updated to use quaternions/spatial velocity
       ctrl_data = obj.controller_data;
-      [p,J] = forwardKin(obj.robot,kinsol,obj.body_ind,[0;0;0],1); 
-      
       link_con_ind = [ctrl_data.link_constraints.link_ndx]==obj.body_ind;
       body_des = fasteval(ctrl_data.link_constraints(link_con_ind).traj,t);
-      err = [body_des(1:3)-p(1:3);angleDiff(p(4:end),body_des(4:end))];
-      
-      body_vel_des = fasteval(ctrl_data.link_constraints(link_con_ind).dtraj,t);
-      body_acc_des = fasteval(ctrl_data.link_constraints(link_con_ind).ddtraj,t);
-      
-      body_acc = obj.Kp.*err + obj.Kd.*(body_vel_des-J*qd) + body_acc_des;
-      y = [obj.body_ind;body_acc];
+      if isfield(ctrl_data.link_constraints(link_con_ind),'dtraj')
+        body_v_des = fasteval(ctrl_data.link_constraints(link_con_ind).dtraj,t);
+      else
+        body_v_des = [0;0;0;0;0;0];
+      end
+      if isfield(ctrl_data.link_constraints(link_con_ind),'ddtraj')
+        body_vdot_des = fasteval(ctrl_data.link_constraints(link_con_ind).ddtraj,t);
+      else
+        body_vdot_des = [0;0;0;0;0;0];
+      end 
+      if (obj.use_mex == 0)
+        q = x(1:obj.nq);
+        qd = x(obj.nq+1:end);
+        kinsol = doKinematics(obj.robot,q,false,true,qd);
+
+        % TODO: this should be updated to use quaternions/spatial velocity
+        [p,J] = forwardKin(obj.robot,kinsol,obj.body_ind,[0;0;0],1); 
+
+        err = [body_des(1:3)-p(1:3);angleDiff(p(4:end),body_des(4:end))];
+
+        body_vdot = obj.Kp.*err + obj.Kd.*(body_v_des-J*qd) + body_vdot_des; 
+  		
+      else
+        body_vdot = bodyMotionControlmex(obj.mex_ptr.data,x,body_des,body_v_des,body_vdot_des);  
+      end
+      y = [obj.body_ind;body_vdot];
     end
   end
   
