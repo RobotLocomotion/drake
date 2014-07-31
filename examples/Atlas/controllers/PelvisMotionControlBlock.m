@@ -1,13 +1,13 @@
 classdef PelvisMotionControlBlock < DrakeSystem
  % A simple pelvis motion control block for use with bipeds. Uses PD control to regulate the pelvis
  % to a fixed height above the feet and drives the yaw to match the average foot yaw.  
- %
+ 
   properties
     nq;
     Kp;
     Kd;
     dt;
-    controller_data; % pointer to shared data handle containing qtraj
+    controller_data; 
     robot;
     body_ind;
     rfoot_ind;
@@ -96,7 +96,6 @@ classdef PelvisMotionControlBlock < DrakeSystem
         % TODO: this must be updated to use quaternions/spatial velocity
         [p,J] = forwardKin(obj.robot,kinsol,obj.body_ind,[0;0;0],1); 
         
-        % terrible hack
         lfoot = forwardKin(obj.robot,kinsol,obj.lfoot_ind,[0;0;0],1);
         rfoot = forwardKin(obj.robot,kinsol,obj.rfoot_ind,[0;0;0],1);
         
