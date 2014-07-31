@@ -59,7 +59,7 @@ function [sol,robot_vis,v,cdfkp] = testRunningPlanner(seed,stride_length,major_i
   v = constructVisualizer(robot_vis);
 
   % Load nominal data
-  nomdata = load([getenv('DRC_BASE'),'/software/control/matlab/data/atlas_fp.mat']);
+  nomdata = load([getDrakePath(), '/examples/Atlas/data/atlas_fp.mat']);
   qstar = nomdata.xstar(1:nq);
   v.draw(0,qstar);
   q0 = qstar;
