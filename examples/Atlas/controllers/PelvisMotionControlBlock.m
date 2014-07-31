@@ -1,5 +1,7 @@
 classdef PelvisMotionControlBlock < DrakeSystem
-
+ % A simple pelvis motion control block for use with bipeds. Uses PD control to regulate the pelvis
+ % to a fixed height above the feet and drives the yaw to match the average foot yaw.  
+ %
   properties
     nq;
     Kp;

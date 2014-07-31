@@ -1,23 +1,7 @@
-#include <mex.h>
-#include <algorithm>
-#include <limits>
-#include <cmath>
-#include <math.h>
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
-#include "drake/RigidBodyManipulator.h"
- 
-using namespace std;
-template <int Rows, int Cols>
-mxArray* eigenToMatlab(Matrix<double,Rows,Cols> &m)
-{
- mxArray* pm = mxCreateDoubleMatrix(m.rows(),m.cols(),mxREAL);
- if (m.rows()*m.cols()>0)
-   memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
- return pm;
-}
-
-typedef Matrix<double, 6,1> Vector6d;
+/* 
+ * A simple PD control block for regulating a body pose given a desired position, velocity, and acceleration.   
+ */
+ #include "controlUtil.h"
 
 struct BodyMotionControlData {
   RigidBodyManipulator* r;
@@ -25,25 +9,6 @@ struct BodyMotionControlData {
   Vector6d Kd;
   int body_index;
 };
-
-
-// TODO: remove me---stick me in controlUtil in drake 
-template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
-void angleDiff(const MatrixBase<DerivedPhi1>& phi1, const MatrixBase<DerivedPhi2>& phi2, MatrixBase<DerivedD>& d) {
-  d = phi2 - phi1;
-  
-  for (int i = 0; i < phi1.rows(); i++) {
-    for (int j = 0; j < phi1.cols(); j++) {
-      if (d(i,j) < -M_PI) {
-        d(i,j) = fmod(d(i,j) + M_PI, 2*M_PI) + M_PI;
-      } else {
-        d(i,j) = fmod(d(i,j) + M_PI, 2*M_PI) - M_PI;
-      }
-    }
-  }
-}
-
-
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -92,16 +57,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int narg = 1;
   double *q = mxGetPr(prhs[narg++]);
   double *qd = &q[nq];
-  Map<VectorXd> qdvec(qd,nq);
+  Map< VectorXd > qdvec(qd,nq);
 
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
-  Map< Matrix<double,6,1> > body_pose_des(mxGetPr(prhs[narg++]));
+  Map< Vector6d > body_pose_des(mxGetPr(prhs[narg++]));
 
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
-  Map< Matrix<double,6,1> > body_v_des(mxGetPr(prhs[narg++]));
+  Map< Vector6d > body_v_des(mxGetPr(prhs[narg++]));
 
   assert(mxGetM(prhs[narg])==6); assert(mxGetN(prhs[narg])==1);
-  Map< Matrix<double,6,1> > body_vdot_des(mxGetPr(prhs[narg++]));
+  Map< Vector6d > body_vdot_des(mxGetPr(prhs[narg++]));
 
   pdata->r->doKinematics(q,false,qd);
 
@@ -116,11 +81,15 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Vector6d body_error;
   body_error.head<3>()= body_pose_des.head<3>()-body_pose.head<3>();
 
-  Vector3d error_rpy;
-  angleDiff(body_pose.tail<3>(),body_pose_des.tail<3>(),error_rpy);
+  Vector3d error_rpy,pose_rpy,des_rpy;
+  pose_rpy = body_pose.tail<3>();
+  des_rpy = body_pose_des.tail<3>();
+  angleDiff(pose_rpy,des_rpy,error_rpy);
   body_error.tail(3) = error_rpy;
 
-  Matrix<double,6,1> body_vdot = (pdata->Kp.array()*body_error.array()).matrix() + (pdata->Kd.array()*(body_v_des-J*qdvec).array()).matrix() + body_vdot_des;
+  Vector6d body_vdot = (pdata->Kp.array()*body_error.array()).matrix() + (pdata->Kd.array()*(body_v_des-J*qdvec).array()).matrix() + body_vdot_des;
   
   plhs[0] = eigenToMatlab(body_vdot);
 }
+
+

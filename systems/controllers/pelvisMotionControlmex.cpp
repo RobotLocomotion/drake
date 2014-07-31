@@ -1,24 +1,11 @@
-#include <mex.h>
-#include <algorithm>
-#include <limits>
-#include <cmath>
-#include <math.h>
-#include <Eigen/Dense>
-#include <Eigen/StdVector>
-#include "drake/RigidBodyManipulator.h"
+/* 
+ * A simple pelvis motion control block for use with bipeds. Uses PD control to regulate the pelvis
+ * to a fixed height above the feet and drives the yaw to match the average foot yaw.  
+ *
+ */
+
+ #include "controlUtil.h"
  
-using namespace std;
-template <int Rows, int Cols>
-mxArray* eigenToMatlab(Matrix<double,Rows,Cols> &m)
-{
- mxArray* pm = mxCreateDoubleMatrix(m.rows(),m.cols(),mxREAL);
- if (m.rows()*m.cols()>0)
-   memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
- return pm;
-}
-
-typedef Matrix<double, 6,1> Vector6d;
-
 struct PelvisMotionControlData {
   RigidBodyManipulator* r;
   double alpha;
@@ -31,25 +18,6 @@ struct PelvisMotionControlData {
   int rfoot_body_index;
   int lfoot_body_index;
 };
-
-// TODO: remove me---stick me in controlUtil in drake and templetize
-
-template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
-void angleDiff(const MatrixBase<DerivedPhi1>& phi1, const MatrixBase<DerivedPhi2>& phi2, MatrixBase<DerivedD>& d) {
-  d = phi2 - phi1;
-  
-  for (int i = 0; i < phi1.rows(); i++) {
-    for (int j = 0; j < phi1.cols(); j++) {
-      if (d(i,j) < -M_PI) {
-        d(i,j) = fmod(d(i,j) + M_PI, 2*M_PI) + M_PI;
-      } else {
-        d(i,j) = fmod(d(i,j) + M_PI, 2*M_PI) - M_PI;
-      }
-    }
-  }
-}
-
-
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
@@ -139,11 +107,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Vector6d error;
   error.head<3>()= body_des.head<3>()-pelvis_pose.head<3>();
 
-  Vector3d error_rpy;
-  angleDiff(pelvis_pose.tail<3>(),body_des.tail<3>(),error_rpy);
+  Vector3d error_rpy,pose_rpy,des_rpy;
+  pose_rpy = pelvis_pose.tail<3>();
+  des_rpy = body_des.tail<3>();
+  angleDiff(pose_rpy,des_rpy,error_rpy);
   error.tail(3) = error_rpy;
 
-  Matrix<double,6,1> body_vdot = (pdata->Kp.array()*error.array()).matrix() - (pdata->Kd.array()*(Jpelvis*qdvec).array()).matrix();
+  Vector6d body_vdot = (pdata->Kp.array()*error.array()).matrix() - (pdata->Kd.array()*(Jpelvis*qdvec).array()).matrix();
   
   plhs[0] = eigenToMatlab(body_vdot);
 }
