@@ -796,6 +796,10 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       body_ind = findLinkInd(model.manip,varargin{:});
     end
 
+    function indices = findJointIndices(model, varargin)
+      indices = findJointIndices(model.manip,varargin{:});
+    end
+
     function body = findLink(model,varargin)
       body = findLink(model.manip,varargin{:});
     end
