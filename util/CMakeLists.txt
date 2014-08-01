@@ -19,6 +19,8 @@ if (eigen3_FOUND)
   pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 endif()
 
+pods_install_headers(makeUnique.h DESTINATION drake)
+
 add_subdirectory(test)
 
 

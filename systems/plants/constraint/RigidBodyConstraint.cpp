@@ -813,7 +813,7 @@ void PositionConstraint::name(const double* t, std::vector<std::string> &name_st
 WorldPositionConstraint::WorldPositionConstraint(RigidBodyManipulator *model, int body, const MatrixXd &pts, MatrixXd lb, MatrixXd ub, const Vector2d &tspan):PositionConstraint(model,pts,lb,ub,tspan)
 {
   this->body = body;
-  this->body_name = model->bodies[body].linkname;
+  this->body_name = model->bodies[body]->linkname;
   this->type = RigidBodyConstraint::WorldPositionConstraintType;
 }
 
@@ -901,8 +901,8 @@ RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* mod
   this->bTbp = bTbp;
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
-  this->bodyA_name = this->robot->bodies[this->bodyA_idx].linkname;
-  this->bodyB_name = this->robot->bodies[this->bodyB_idx].linkname;
+  this->bodyA_name = this->robot->bodies[this->bodyA_idx]->linkname;
+  this->bodyB_name = this->robot->bodies[this->bodyB_idx]->linkname;
   Vector4d bpTb_quat;
   quatConjugate(bTbp.block(3,0,4,1),bpTb_quat);
   Vector3d bpTb_trans;
@@ -1031,7 +1031,7 @@ QuatConstraint::~QuatConstraint(void)
 WorldQuatConstraint::WorldQuatConstraint(RigidBodyManipulator *model, int body, Vector4d quat_des, double tol, Vector2d tspan):QuatConstraint(model,tol,tspan)
 {
   this->body = body;
-  this->body_name = this->robot->bodies[this->body].linkname;
+  this->body_name = this->robot->bodies[this->body]->linkname;
   if(quat_des.norm()<=0)
   {
     std::cerr<<"quat_des must be non-zero"<<std::endl;
@@ -1085,8 +1085,8 @@ RelativeQuatConstraint::RelativeQuatConstraint(RigidBodyManipulator* model, int 
 {
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
-  this->bodyA_name = this->robot->bodies[bodyA_idx].linkname;
-  this->bodyB_name = this->robot->bodies[bodyB_idx].linkname;
+  this->bodyA_name = this->robot->bodies[bodyA_idx]->linkname;
+  this->bodyB_name = this->robot->bodies[bodyB_idx]->linkname;
   double quat_norm = quat_des.norm();
   this->quat_des = quat_des/quat_norm;
   this->type = RigidBodyConstraint::RelativeQuatConstraintType;
@@ -1258,7 +1258,7 @@ void EulerConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) const
 WorldEulerConstraint::WorldEulerConstraint(RigidBodyManipulator *model, int body, Vector3d lb, Vector3d ub, Vector2d tspan): EulerConstraint(model,lb,ub,tspan)
 {
   this->body = body;
-  this->body_name = this->robot->bodies[body].linkname;
+  this->body_name = this->robot->bodies[body]->linkname;
   this->type = RigidBodyConstraint::WorldEulerConstraintType;
 }
 
@@ -1407,7 +1407,7 @@ void GazeOrientConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) c
 WorldGazeOrientConstraint::WorldGazeOrientConstraint(RigidBodyManipulator* model, int body, Vector3d axis, Vector4d quat_des,double conethreshold, double threshold, Vector2d tspan): GazeOrientConstraint(model,axis,quat_des,conethreshold,threshold,tspan)
 {
   this->body = body;
-  this->body_name = this->robot->bodies[this->body].linkname;
+  this->body_name = this->robot->bodies[this->body]->linkname;
   this->type = RigidBodyConstraint::WorldGazeOrientConstraintType;
 }
 
@@ -1479,7 +1479,7 @@ void GazeDirConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) cons
 WorldGazeDirConstraint::WorldGazeDirConstraint(RigidBodyManipulator *model, int body, Vector3d axis, Vector3d dir, double conethreshold, Vector2d tspan): GazeDirConstraint(model,axis,dir,conethreshold,tspan)
 {
   this->body = body;
-  this->body_name = this->robot->bodies[this->body].linkname;
+  this->body_name = this->robot->bodies[this->body]->linkname;
   this->type = RigidBodyConstraint::WorldGazeDirConstraintType;
 }
 
@@ -1550,7 +1550,7 @@ void GazeTargetConstraint::bounds(const double* t, VectorXd &lb, VectorXd &ub) c
 WorldGazeTargetConstraint::WorldGazeTargetConstraint(RigidBodyManipulator* model, int body, Vector3d axis, Vector3d target, Vector4d gaze_origin, double conethreshold, Vector2d tspan): GazeTargetConstraint(model,axis,target,gaze_origin,conethreshold,tspan)
 {
   this->body = body;
-  this->body_name = this->robot->bodies[body].linkname;
+  this->body_name = this->robot->bodies[body]->linkname;
   this->type = RigidBodyConstraint::WorldGazeTargetConstraintType;
 }
 
@@ -1611,8 +1611,8 @@ RelativeGazeTargetConstraint::RelativeGazeTargetConstraint(RigidBodyManipulator 
 {
   this->bodyA_idx = bodyA_idx;
   this->bodyB_idx = bodyB_idx;
-  this->bodyA_name = this->robot->bodies[this->bodyA_idx].linkname;
-  this->bodyB_name = this->robot->bodies[this->bodyB_idx].linkname;
+  this->bodyA_name = this->robot->bodies[this->bodyA_idx]->linkname;
+  this->bodyB_name = this->robot->bodies[this->bodyB_idx]->linkname;
   this->type = RigidBodyConstraint::RelativeGazeTargetConstraintType;
 }
 
@@ -1680,8 +1680,8 @@ RelativeGazeDirConstraint(RigidBodyManipulator *robot, int bodyA_idx,
 : GazeDirConstraint(robot,axis,dir,conethreshold,tspan),
   bodyA_idx(bodyA_idx), bodyB_idx(bodyB_idx)
 {
-  this->bodyA_name = this->robot->bodies[this->bodyA_idx].linkname;
-  this->bodyB_name = this->robot->bodies[this->bodyB_idx].linkname;
+  this->bodyA_name = this->robot->bodies[this->bodyA_idx]->linkname;
+  this->bodyB_name = this->robot->bodies[this->bodyB_idx]->linkname;
   this->type = RigidBodyConstraint::RelativeGazeDirConstraintType;
 }
 
@@ -1812,7 +1812,7 @@ void Point2PointDistanceConstraint::name(const double* t, std::vector<std::strin
       std::string bodyA_name;
       if(this->bodyA != -1)
       {
-        bodyA_name = this->robot->bodies[bodyA].linkname;
+        bodyA_name = this->robot->bodies[bodyA]->linkname;
       }
       else
       {
@@ -1821,7 +1821,7 @@ void Point2PointDistanceConstraint::name(const double* t, std::vector<std::strin
       std::string bodyB_name;
       if(this->bodyB != -1)
       {
-        bodyB_name = this->robot->bodies[bodyB].linkname;
+        bodyB_name = this->robot->bodies[bodyB]->linkname;
       }
       else
       {
@@ -1925,7 +1925,7 @@ void Point2LineSegDistConstraint::name(const double* t, std::vector<std::string>
   if(this->isTimeValid(t))
   {
     char cnst_name_buffer1[2000];
-    sprintf(cnst_name_buffer1,"Distance from %s pt to a line on %s",this->robot->bodies[this->pt_body].linkname.c_str(),this->robot->bodies[this->line_body].linkname.c_str());
+    sprintf(cnst_name_buffer1,"Distance from %s pt to a line on %s",this->robot->bodies[this->pt_body]->linkname.c_str(),this->robot->bodies[this->line_body]->linkname.c_str());
     std::string cnst_name_str1(cnst_name_buffer1);
     name_str.push_back(cnst_name_str1);
     char cnst_name_buffer2[100];
@@ -1944,7 +1944,7 @@ WorldFixedPositionConstraint::WorldFixedPositionConstraint(RigidBodyManipulator*
     std::cerr<<"pts must have 4 rows"<<std::endl;
   }
   this->pts = pts;
-  this->body_name = this->robot->bodies[body].linkname;
+  this->body_name = this->robot->bodies[body]->linkname;
   this->type = RigidBodyConstraint::WorldFixedPositionConstraintType;
 }
 
@@ -2041,7 +2041,7 @@ void WorldFixedPositionConstraint::name(const double* t, int n_breaks,std::vecto
 WorldFixedOrientConstraint::WorldFixedOrientConstraint(RigidBodyManipulator* robot, int body, const Vector2d &tspan): MultipleTimeKinematicConstraint(robot,tspan)
 {
   this->body = body;
-  this->body_name = this->robot->bodies[body].linkname;
+  this->body_name = this->robot->bodies[body]->linkname;
   this->type = RigidBodyConstraint::WorldFixedOrientConstraintType;
 }
 
@@ -2128,7 +2128,7 @@ void WorldFixedOrientConstraint::name(const double* t, int n_breaks, std::vector
 WorldFixedBodyPoseConstraint::WorldFixedBodyPoseConstraint(RigidBodyManipulator *robot, int body, const Vector2d &tspan): MultipleTimeKinematicConstraint(robot,tspan)
 {
   this->body = body;
-  this->body_name = this->robot->bodies[this->body].linkname;
+  this->body_name = this->robot->bodies[this->body]->linkname;
   this->type = RigidBodyConstraint::WorldFixedBodyPoseConstraintType;
 }
 

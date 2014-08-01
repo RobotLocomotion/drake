@@ -173,7 +173,7 @@ void surfaceTangents(const Vector3d & normal, Matrix<double,3,m_surface_tangents
 
 int contactPhi(struct QPControllerData* pdata, SupportStateElement& supp, VectorXd &phi, double terrain_height)
 {
-  RigidBody* b = &(pdata->r->bodies[supp.body_idx]);
+  auto& b = pdata->r->bodies[supp.body_idx];
 	int nc = supp.contact_pt_inds.size();
 	phi.resize(nc);
 
@@ -234,7 +234,7 @@ int contactConstraints(struct QPControllerData* pdata, int nc, vector<SupportSta
   Matrix<double,3,m_surface_tangents> d;
   
   for (vector<SupportStateElement>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
-    RigidBody* b = &(pdata->r->bodies[iter->body_idx]);
+    auto& b = pdata->r->bodies[iter->body_idx];
     if (nc>0) {
       for (set<int>::iterator pt_iter=iter->contact_pt_inds.begin(); pt_iter!=iter->contact_pt_inds.end(); pt_iter++) {
       	if (*pt_iter<0 || *pt_iter>=b->contact_pts.cols()) mexErrMsgIdAndTxt("DRC:QPControllermex:BadInput","requesting contact pt %d but body only has %d pts",*pt_iter,b->contact_pts.cols());
@@ -301,7 +301,7 @@ int contactConstraintsBV(struct QPControllerData* pdata, int nc, double mu, vect
   double norm = sqrt(1+mu*mu); // because normals and ds are orthogonal, the norm has a simple form
   
   for (vector<SupportStateElement>::iterator iter = supp.begin(); iter!=supp.end(); iter++) {
-    RigidBody* b = &(pdata->r->bodies[iter->body_idx]);
+    auto& b = pdata->r->bodies[iter->body_idx];
     if (nc>0) {
       for (set<int>::iterator pt_iter=iter->contact_pt_inds.begin(); pt_iter!=iter->contact_pt_inds.end(); pt_iter++) {
       	if (*pt_iter<0 || *pt_iter>=b->contact_pts.cols()) mexErrMsgIdAndTxt("DRC:QPControllermex:BadInput","requesting contact pt %d but body only has %d pts",*pt_iter,b->contact_pts.cols());

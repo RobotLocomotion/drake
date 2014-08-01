@@ -5,6 +5,7 @@
 #include <iostream>
 #include <set>
 #include <Eigen/StdVector>
+#include "joints/DrakeJoint.h"
 
 class IndexRange {
  public:
@@ -24,6 +25,10 @@ public:
 
   void setN(int n);
   void computeAncestorDOFs(RigidBodyManipulator* model);
+  void setJoint(std::unique_ptr<DrakeJoint> joint);
+
+private:
+  std::unique_ptr<DrakeJoint> joint;
 
 public:
   std::string linkname;

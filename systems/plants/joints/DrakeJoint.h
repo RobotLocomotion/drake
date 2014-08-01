@@ -3,7 +3,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include "RigidBody.h"
+//#include "RigidBody.h"
 #include <random>
 
 #define TWIST_SIZE (int) 6

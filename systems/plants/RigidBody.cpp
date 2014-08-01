@@ -6,7 +6,7 @@ using namespace std;
 const int defaultRobotNum[1] = {0};
 const set<int> RigidBody::defaultRobotNumSet(defaultRobotNum,defaultRobotNum+1);
 
-RigidBody::RigidBody(void)
+RigidBody::RigidBody(void) : joint(nullptr)
 {
 	dofnum=0;
 	mass = 0.0;
@@ -24,13 +24,18 @@ void RigidBody::setN(int n) {
   ddTdqdq = MatrixXd::Zero(3*n*n,4);
 }
 
+void RigidBody::setJoint(std::unique_ptr<DrakeJoint> joint)
+{
+  this->joint = std::move(joint);
+}
+
 void RigidBody::computeAncestorDOFs(RigidBodyManipulator* model)
 {
   if (dofnum>=0) {
     int i,j;
     if (parent>=0) {
-      ancestor_dofs = model->bodies[parent].ancestor_dofs;
-      ddTdqdq_nonzero_rows = model->bodies[parent].ddTdqdq_nonzero_rows;
+      ancestor_dofs = model->bodies[parent]->ancestor_dofs;
+      ddTdqdq_nonzero_rows = model->bodies[parent]->ddTdqdq_nonzero_rows;
     }
 
     if (floating==1) {
@@ -84,6 +89,4 @@ ostream &operator<<( ostream &out, const RigidBody &b)
 	out << "RigidBody(" << b.linkname << "," << b.jointname << ")";
 	return out;
 }
-
-
 
