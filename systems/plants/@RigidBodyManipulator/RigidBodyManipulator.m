@@ -656,6 +656,14 @@ classdef RigidBodyManipulator < Manipulator
 %      end
     end
     
+    function indices = findJointIndices(model, str)
+      %findJointIndices Returns indices in the state vector for joints whose
+      % name contains a specified string.
+      %   @param str (sub)string to be searched for
+      %   @retvall indices array of indices into state vector
+      indices = find(~cellfun('isempty',strfind(model.getStateFrame().coordinates(1:getNumPositions(model)),str)));
+    end
+
     function body_ind = findLinkInd(model,linkname,robot,error_level)
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots

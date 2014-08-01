@@ -17,16 +17,6 @@
 
 using namespace std;
 
-template <int Rows, int Cols>
-mxArray* eigenToMatlab(Matrix<double,Rows,Cols> &m)
-{
-  mxArray* pm = mxCreateDoubleMatrix(m.rows(),m.cols(),mxREAL);
-  if (m.rows()*m.cols()>0)
-    memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
-  return pm;
-}
-
-
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   int error;
@@ -79,7 +69,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     // get robot mex model ptr
     if (!mxIsNumeric(prhs[2]) || mxGetNumberOfElements(prhs[2])!=1)
-      mexErrMsgIdAndTxt("DRC:QPControllermex:BadInputs","the third argument should be the robot mex ptr");
+      mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the third argument should be the robot mex ptr");
     memcpy(&(pdata->r),mxGetData(prhs[2]),sizeof(pdata->r));
     
     pdata->B.resize(mxGetM(prhs[3]),mxGetN(prhs[3]));
@@ -101,7 +91,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
      // get the map ptr back from matlab
      if (!mxIsNumeric(prhs[6]) || mxGetNumberOfElements(prhs[6])!=1)
-     mexErrMsgIdAndTxt("DRC:QPControllermex:BadInputs","the seventh argument should be the map ptr");
+     mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the seventh argument should be the map ptr");
      memcpy(&pdata->map_ptr,mxGetPr(prhs[6]),sizeof(pdata->map_ptr));
     
 //    pdata->map_ptr = NULL;
@@ -161,7 +151,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   // first get the ptr back from matlab
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("DRC:QPControllermex:BadInputs","the first argument should be the ptr");
+    mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the first argument should be the ptr");
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
 
 //  for (i=0; i<pdata->r->num_bodies; i++)
