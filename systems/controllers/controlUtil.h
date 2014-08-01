@@ -17,6 +17,8 @@
 
 const int m_surface_tangents = 2;  // number of faces in the friction cone approx
 
+typedef Matrix<double, 6,1> Vector6d;
+
 typedef struct _support_state_element
 {
   int body_idx;
@@ -29,6 +31,12 @@ void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<Deri
 
 template <typename DerivedA, typename DerivedB>
 void getCols(std::set<int> &cols, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub);
+
+template <typename DerivedPhi1, typename DerivedPhi2, typename DerivedD>
+void angleDiff(MatrixBase<DerivedPhi1> const &phi1, MatrixBase<DerivedPhi2> const &phi2, MatrixBase<DerivedD> &d);
+
+template <int Rows, int Cols>
+mxArray* eigenToMatlab(Matrix<double,Rows,Cols> &m);
 
 mxArray* myGetProperty(const mxArray* pobj, const char* propname);
 mxArray* myGetField(const mxArray* pobj, const char* propname);
