@@ -103,12 +103,13 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       % @param constraint  a Constraint or CompositeConstraint
       % @param time_index   a cell array of time indices
       %   ex1., time_index = {1, 2, 3} means the constraint is applied
-      %   individually to knot points 1, 2, and 3
+      %   individually to knot points 1, 2, and 3. For convenience, [1,2,3] is also
+      %   interpreted as {1,2,3}.
       %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
       if ~iscell(time_index)
-        time_index = {time_index};
+        time_index = mat2cell(reshape(time_index,1,[]),1,ones(1,numel(time_index)));
       end
       for j=1:length(time_index),
         cstr_inds = mat2cell(obj.u_inds(:,time_index{j}),size(obj.u_inds,1),ones(1,length(time_index{j})));
@@ -128,7 +129,8 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       % @param constraint  a CompositeConstraint
       % @param time_index   a cell array of time indices
       %   ex1., time_index = {1, 2, 3} means the constraint is applied
-      %   individually to knot points 1, 2, and 3
+      %   individually to knot points 1, 2, and 3. For convenience, [1,2,3] is also
+      %   interpreted as {1,2,3}.
       %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
