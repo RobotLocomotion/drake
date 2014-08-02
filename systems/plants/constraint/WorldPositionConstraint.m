@@ -35,9 +35,8 @@ classdef WorldPositionConstraint < PositionConstraint
   
   methods
     function obj = WorldPositionConstraint(robot,body,pts,lb,ub,tspan)
-      if(nargin == 5)
-        tspan = [-inf,inf];
-      end
+      if(nargin<5), ub = lb; end
+      if(nargin<6), tspan = [-inf,inf]; end
       obj = obj@PositionConstraint(robot,pts,lb,ub,tspan);
       obj.body = obj.robot.parseBodyOrFrameID(body);
       obj.body_name = obj.robot.getBodyOrFrameName(obj.body);
