@@ -46,6 +46,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
 
     %#ok<*PROP>
       
+      if isscalar(durations), durations=[durations,durations]; end
       if nargin < 4
         options = struct();
       end
@@ -157,12 +158,13 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       % @param t_init initial timespan for solution.  can be a vector of
       % length obj.N specifying the times of each segment, or a scalar
       % indicating the final time.
-      % @param u_init_traj (optional) a Trajectory object specifying the initial guess
-      % for the system inputs @default small random numbers
-      % @param x_init_traj (optional) a Trajectory object specifying the
-      % initial guess for the state trajectory @default obtained via
-      % simulation
+      % @param traj_init (optional) a structure containing Trajectory 
+      % objects specifying the initial guess for the system inputs 
+      %    traj_init.u , traj_init.x, ...
+      % @default small random numbers
     
+      if nargin<3, traj_init = struct(); end
+      
       z0 = obj.getInitialVars(t_init,traj_init);
       [z,F,info] = obj.solve(z0);
       utraj = reconstructInputTrajectory(obj,z);
@@ -181,7 +183,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       z0 = zeros(obj.num_vars,1);
       z0(obj.h_inds) = diff(t_init);
       
-      if nargin<2, traj_init = struct(); end
+      if nargin<3, traj_init = struct(); end
       
       if isfield(traj_init,'u')
         z0(obj.u_inds) = traj_init.u.eval(t_init);
