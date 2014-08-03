@@ -161,7 +161,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
           end
 
           fv = fv - J'*lambda;
-          dfv(:,2+nq+nv:1+2*nq+nv) = -matGradMult(dJ,lambda,true);
+          dfv(:,2+nq+nv:1+2*nq+nv) = dfv(:,2+nq+nv:1+2*nq+nv) - matGradMult(dJ,lambda,true);
           dfv(:,2+2*nq+2*nv+nu:1+2*nq+2*nv+nu+nl) = -J'*obj.options.lambda_mult;
         end
         
