@@ -38,6 +38,9 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       if ~isfield(options,'lambda_jl_mult')
         options.lambda_jl_mult = 1;
       end
+      if ~isfield(options,'active_collision_options')
+        options.active_collision_options = struct();
+      end
       
       obj = obj@DirectTrajectoryOptimization(plant,N,duration,options);
 
@@ -58,7 +61,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
       n_vars = 2*nX + nU + 1 + obj.nC*(2+obj.nD) + obj.nJL;
       cnstr = FunctionHandleConstraint(zeros(nX,1),zeros(nX,1),n_vars,@dynamics_constraint_fun);
       
-      [~,~,~,~,~,~,~,mu] = obj.plant.contactConstraints(zeros(nq,1));
+      [~,~,~,~,~,~,~,mu] = obj.plant.contactConstraints(zeros(nq,1),false,obj.options.active_collision_options);
       
       for i=1:obj.N-1,        
 %         dyn_inds{i} = [obj.h_inds(i);obj.x_inds(:,i);obj.x_inds(:,i+1);obj.u_inds(:,i);obj.l_inds(:,i);obj.ljl_inds(:,i)];
@@ -134,9 +137,9 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         % [h q0 v0 q1 v1 u l ljl]
         dfv = [-B*u+C, zeros(nv,nq), -H, zeros(nv,nq), H, -h*B, zeros(nv,nl+njl)] + ...
           [zeros(nv,1+nq+nv) matGradMult(dH,v1-v0)-h*(matGradMult(dB,u) - dC) zeros(nv,nu+nl+njl)];
-
+        
         if nl>0
-          [phi,~,~,~,~,~,~,~,n,D,dn,dD] = obj.plant.contactConstraints(q1,false,struct('terrain_only',true));
+          [phi,~,~,~,~,~,~,~,n,D,dn,dD] = obj.plant.contactConstraints(q1,false,obj.options.active_collision_options);
           % construct J and dJ from n,D,dn, and dD so they relate to the
           % lambda vector
           J = zeros(nl,nq);
@@ -180,7 +183,7 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         q = x(1:nq);
         v = x(nq+1:nq+nv);
         
-        [phi,~,~,~,~,~,~,~,n,D,~,dD] = obj.plant.contactConstraints(q,false,struct('terrain_only',true));
+        [phi,~,~,~,~,~,~,~,n,D,~,dD] = obj.plant.contactConstraints(q,false,obj.options.active_collision_options);
         
         f = zeros(obj.nC*(1+obj.nD),1);
         df = zeros(obj.nC*(1+obj.nD),nq+nv+obj.nC*(2+obj.nD));
