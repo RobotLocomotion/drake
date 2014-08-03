@@ -21,9 +21,9 @@ function [phi,Jphi] = closestDistance(obj,kinsol,varargin)
 % @ingroup Collision
 
 if nargout > 1
-  [phi,~,~,~,~,~,~,~,Jphi] = contactConstraints(obj,kinsol,false,varargin);
+  [phi,~,~,~,~,~,~,~,Jphi] = contactConstraints(obj,kinsol,false,varargin{:});
 else
-  phi = contactConstraints(obj,kinsol,false,varargin);
+  phi = contactConstraints(obj,kinsol,false,varargin{:});
 end
 
 end

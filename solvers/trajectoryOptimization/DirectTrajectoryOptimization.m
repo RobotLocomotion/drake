@@ -25,8 +25,8 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
     options % options, yup
     plant   % the plant
     h_inds  % (N-1) x 1 indices for timesteps h so that z(h_inds(i)) = h(i)
-    x_inds  % N x n indices for state
-    u_inds  % N x m indices for time
+    x_inds  % n x N indices for state
+    u_inds  % m x N indices for time
     dynamic_constraints = {};
     constraints = {};
   end
@@ -230,8 +230,20 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       obj.u_inds = reshape(nH + nX*N + (1:nU*N),nU,N);
       
       obj.N = N;
+      x_names = cell(num_vars,1);
+      for i = 1:N
+        if(i<N)
+          x_names{i} = sprintf('h[%d]',i);
+        end
+        for j = 1:nX
+          x_names{nH+(i-1)*nX+j}=sprintf('x%d[%d]',j,i);
+        end
+        for j = 1:nU
+          x_names{nH+nX*N+(i-1)*nU+j} = sprintf('u%d[%d]',j,i);
+        end
+      end
       
-      obj = obj.addDecisionVariable(num_vars);
+      obj = obj.addDecisionVariable(num_vars,x_names);
     end
     
     function obj = addInitialCost(obj,initial_cost)

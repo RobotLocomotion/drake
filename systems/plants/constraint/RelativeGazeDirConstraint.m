@@ -2,8 +2,8 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
   % This constrains that an axis on body A is aligned with a direction on body
   % B to within a given threshold
   % @param robot
-  % @param body_a_idx             -- A scalar, the index of body_a
-  % @param body_b_idx             -- A scalar, the index of body_b
+  % @param body_a             -- A scalar, the index of body_a
+  % @param body_b             -- A scalar, the index of body_b
   % @param axis                   -- A 3x1 unit vector, in the body_a frame
   % @param dir                    -- A 3x1 unit vector, in the body_b frame
   % @param conethreshold          -- A double scalar, the angle of the gaze cone, default
@@ -29,8 +29,8 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
   end
   
   methods  
-    function obj = RelativeGazeDirConstraint(robot,body_a_idx, ...
-                                             body_b_idx,axis,dir, ...
+    function obj = RelativeGazeDirConstraint(robot,body_a, ...
+                                             body_b,axis,dir, ...
                                              conethreshold,tspan)
       if(nargin < 7)
         tspan = [-inf inf];
@@ -38,12 +38,14 @@ classdef RelativeGazeDirConstraint < GazeDirConstraint
       if(nargin<6)
         conethreshold = 0;
       end
+      body_a_idx = robot.parseBodyOrFrameID(body_a);
+      body_b_idx = robot.parseBodyOrFrameID(body_b);
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeGazeDirConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,axis,dir,conethreshold,tspan);
       obj = obj@GazeDirConstraint(robot,axis,dir,conethreshold,tspan);
       obj.body_a.idx = body_a_idx;
-      obj.body_a.name = getLinkName(obj.robot, obj.body_a.idx);
+      obj.body_a.name = getBodyOrFrameName(obj.robot, obj.body_a.idx);
       obj.body_b.idx = body_b_idx;
-      obj.body_b.name = getLinkName(obj.robot, obj.body_b.idx);
+      obj.body_b.name = getBodyOrFrameName(obj.robot, obj.body_b.idx);
       obj.type = RigidBodyConstraint.RelativeGazeDirConstraintType;
       obj.mex_ptr = ptr;
     end
