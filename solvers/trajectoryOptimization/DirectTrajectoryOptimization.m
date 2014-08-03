@@ -269,9 +269,13 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       % re-implemented by a subclass.
       t = [0; cumsum(z(obj.h_inds))];
 
-      u = reshape(z(obj.u_inds),[],obj.N);
-      utraj = PPTrajectory(foh(t,u));
-      utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+      if size(obj.u_inds,1)>0
+        u = reshape(z(obj.u_inds),[],obj.N);
+        utraj = PPTrajectory(foh(t,u));
+        utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+      else
+        utraj=[];
+      end
     end
     
     function xtraj = reconstructStateTrajectory(obj,z)

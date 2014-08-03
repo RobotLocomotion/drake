@@ -132,11 +132,19 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
         fq = q1 - q0 - h*v1;
         dfq = [-v1, -eye(nq), zeros(nq,nv), eye(nq), -h*eye(nq) zeros(nq,nu+nl+njl)];
 
+        if nu>0, 
+          BuminusC = B*u-C; 
+          dBuminusC = matGradMult(dB,u) - dC;
+        else
+          BuminusC = -C;
+          dBuminusC = -dC;
+        end
+        
         % H*v1 = H*v0 + h*(B*u - C) + n^T lambda_N + d^T * lambda_f
-        fv = H*(v1 - v0) - h*(B*u - C);
+        fv = H*(v1 - v0) - h*BuminusC;
         % [h q0 v0 q1 v1 u l ljl]
-        dfv = [-B*u+C, zeros(nv,nq), -H, zeros(nv,nq), H, -h*B, zeros(nv,nl+njl)] + ...
-          [zeros(nv,1+nq+nv) matGradMult(dH,v1-v0)-h*(matGradMult(dB,u) - dC) zeros(nv,nu+nl+njl)];
+        dfv = [-BuminusC, zeros(nv,nq), -H, zeros(nv,nq), H, -h*B, zeros(nv,nl+njl)] + ...
+          [zeros(nv,1+nq+nv) matGradMult(dH,v1-v0)-h*dBuminusC zeros(nv,nu+nl+njl)];
         
         if nl>0
           [phi,~,~,~,~,~,~,~,n,D,dn,dD] = obj.plant.contactConstraints(q1,false,obj.options.active_collision_options);
