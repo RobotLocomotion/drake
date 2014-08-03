@@ -36,26 +36,26 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
     Qa
     rgc
     fix_initial_state
-    q_idx   
-    qd0_idx  
-    qdf_idx  
+    q_idx
+    qd0_idx
+    qdf_idx
     qsc_weight_idx
     robot
 
     % nT-element vector of indices into the shared_data, where
     % shared_data{kinsol_dataind(i)} is the kinsol for knot point i
-    kinsol_dataind 
+    kinsol_dataind
   end
-  
+
   properties(Access = protected)
     q_nom   % a nq x nT matrix. q_nom = q_nom_traj.eval(t)
-    
+
     cpe   % A CubicPostureError object.
     nT    % Number of knot points
     nq    % Number of generalized positions
     t_kinsol % A 1 x nT boolean array. t_kinsol(i) is true if doKinematics should be called at time t_knot(i)
   end
-  
+
   methods
     function obj = InverseKinematicsTrajectory(robot,t,q_nom_traj,fix_initial_state,x0,varargin)
       % obj =
@@ -188,7 +188,7 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
     function data = kinematicsData(obj,q)
       data = doKinematics(obj.robot,q,false,false);
     end
-    
+
     function obj = setCubicPostureError(obj,Q,Qv,Qa)
       % set the cost sum_i qdd(:,i)'*Qa*qdd(:,i)+qd(:,i)'*Qv*qd(:,i)+(q(:,i)-q_nom(:,i))'*Q*(q(:,i)-q_nom(:,i))]
       obj.Q = (Q+Q')/2;
@@ -203,7 +203,7 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
         obj = obj.replaceCost(obj.cpe,1,xind);
       end
     end
-    
+
     function obj = setFixInitialState(obj,flag,x0)
       % set obj.fix_initial_state = flag. If flag = true, then fix the initial state to x0
       % @param x0   A 2*obj.nq x 1 double vector. x0 = [q0;qdot0]. The initial state
@@ -225,8 +225,8 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
         end
       end
     end
-    
-    
+
+
     function [xtraj,F,info,infeasible_constraint] = solve(obj,qtraj_seed)
       % @param qtraj_seed.   A Trajectory object. The initial guess of posture trajectory.
       % @retval xtraj.       A Cubic spline trajectory. The solution of state trajectory,
@@ -254,7 +254,7 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
       xtraj = xtraj.setOutputFrame(obj.robot.getStateFrame);
       [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
     end
-    
+
     function obj = addKinematicConstraint(obj,constraint,time_index)
       % Add a constraint that is a function of the generalized positions
       % at the specified time or times.
@@ -266,12 +266,12 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
       if ~iscell(time_index)
-        time_index = {time_index};
+        time_index = num2cell(reshape(time_index,1,[]));
       end
       for j=1:length(time_index),
-        kinsol_inds = obj.kinsol_dataind(time_index{j}); 
+        kinsol_inds = obj.kinsol_dataind(time_index{j});
         cnstr_inds = mat2cell(obj.q_idx(:,time_index{j}),size(obj.q_idx,1),ones(1,length(time_index{j})));
-        
+
         obj = obj.addConstraint(constraint,cnstr_inds,kinsol_inds);
       end
     end

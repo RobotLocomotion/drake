@@ -418,10 +418,10 @@ classdef RigidBodyManipulator < Manipulator
 
       switch (joint_type)
         case 'rpy'  % extrinsic coordinates 
-          model = addJoint(model,'base','floating_rpy',parent,rootlink,zeros(3,1),zeros(3,1));
+          model = addJoint(model,'base','floating_rpy',parent,rootlink,xyz,rpy);
 
         case 'quat'
-          model = addJoint(model,'base','floating_quat',parent,rootlink,zeros(3,1),zeros(3,1));
+          model = addJoint(model,'base','floating_quat',parent,rootlink,xyz,rpy);
         
         case 'RPY'  % instrinsic coordinates
           body1 = newBody(model);

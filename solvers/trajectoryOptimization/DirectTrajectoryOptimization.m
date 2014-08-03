@@ -4,7 +4,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
   %
   % Generally considers cost functions of the form:
   % e(x0) + int(f(x(t),u(t)) + g(T,xf)
-  %    
+  %
   % Subclasses must implement the two abstract methods:
   %  obj = addRunningCost(obj,running_cost);
   %     where running_cost is a NonlinearConstraint f(h,x,u)
@@ -19,7 +19,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
   % To maintain nominal sparsity in the optimization programs, this
   % implementation assumes that all constraints and costs are
   % time-invariant.
-  
+
   properties (SetAccess = protected)
     N       % number of timesteps
     options % options, yup
@@ -30,7 +30,7 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
     dynamic_constraints = {};
     constraints = {};
   end
-  
+
   methods
     function obj = DirectTrajectoryOptimization(plant,N,durations,options)
     % function obj =
@@ -45,27 +45,28 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
     %        time steps are independent}
 
     %#ok<*PROP>
-      
+
+      if isscalar(durations), durations=[durations,durations]; end
       if nargin < 4
         options = struct();
       end
-      
+
       if ~isfield(options,'time_option')
         options.time_option = 1;
       end
       if ~plant.isTI
         error('Drake:DirectTrajectoryOptimization:UnsupportedPlant','Only time-invariant plants are currently supported');
       end
-      
+
       %todo: replace getVarInfo with setupVarInfo
       % initialize with 0 variables and then add them
-      
+
       obj = obj@NonlinearProgramWConstraintObjects(0);
       obj.options = options;
       obj.plant = plant;
-      
+
       obj = obj.setupVariables(N);
-      
+
       % Construct total time linear constraint
       switch options.time_option
         case 1 % all timesteps are constant
@@ -77,98 +78,101 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
           time_constraint = LinearConstraint(durations(1),durations(2),A_time);
           obj = obj.addConstraint(time_constraint,obj.h_inds);
       end
-      
+
       % Ensure that all h values are non-negative
       obj = obj.addConstraint(BoundingBoxConstraint(zeros(N-1,1),inf(N-1,1)),obj.h_inds);
-      
+
       % create constraints for dynamics and add them
       obj = obj.addDynamicConstraints();
-      
+
       % add control inputs as bounding box constraints
       if any(~isinf(plant.umin)) || any(~isinf(plant.umax))
         control_limit = BoundingBoxConstraint(repmat(plant.umin,N,1),repmat(plant.umax,N,1));
         obj = obj.addConstraint(control_limit,obj.u_inds(:));
       end
-      
+
       % add state limits as bounding box constraints
       [state_lb,state_ub] = plant.getStateLimits();
       state_limit = BoundingBoxConstraint(repmat(state_lb,N,1),repmat(state_ub,N,1));
       obj = obj.addConstraint(state_limit,obj.x_inds(:));
     end
-    
+
     function obj = addInputConstraint(obj,constraint,time_index)
-      % Add constraint (or composite constraint) that is a function of the 
+      % Add constraint (or composite constraint) that is a function of the
       % input at the specified time or times.
       % @param constraint  a Constraint or CompositeConstraint
       % @param time_index   a cell array of time indices
       %   ex1., time_index = {1, 2, 3} means the constraint is applied
-      %   individually to knot points 1, 2, and 3
+      %   individually to knot points 1, 2, and 3. For convenience, [1,2,3] is also
+      %   interpreted as {1,2,3}.
       %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
       if ~iscell(time_index)
-        time_index = {time_index};
+        time_index = num2cell(reshape(time_index,1,[]));
       end
       for j=1:length(time_index),
         cstr_inds = mat2cell(obj.u_inds(:,time_index{j}),size(obj.u_inds,1),ones(1,length(time_index{j})));
-        
+
         % record constraint for posterity
         obj.constraints{end+1}.constraint = constraint;
         obj.constraints{end}.var_inds = cstr_inds;
         obj.constraints{end}.time_index = time_index;
-        
+
         obj = obj.addConstraint(constraint,cstr_inds);
-      end      
+      end
     end
-    
+
     function obj = addStateConstraint(obj,constraint,time_index,x_indices)
-      % Add constraint (or composite constraint) that is a function of the 
+      % Add constraint (or composite constraint) that is a function of the
       % state at the specified time or times.
       % @param constraint  a CompositeConstraint
       % @param time_index   a cell array of time indices
       %   ex1., time_index = {1, 2, 3} means the constraint is applied
-      %   individually to knot points 1, 2, and 3
+      %   individually to knot points 1, 2, and 3. For convenience, [1,2,3] is also
+      %   interpreted as {1,2,3}.
       %   ex2,. time_index = {[1 2], [3 4]} means the constraint is applied to knot
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
       % @param x_index optional subset of the state vector x which this
       % constraint depends upon @default 1:num_x
       if ~iscell(time_index)
-        % then use { time_index(1), time_index(2), ... } , 
+        % then use { time_index(1), time_index(2), ... } ,
         % aka independent constraints for each time
-        time_index = mat2cell(reshape(time_index,1,[]),1,ones(1,numel(time_index)));
+        time_index = num2cell(reshape(time_index,1,[]));
       end
       if nargin<4, x_indices = 1:size(obj.x_inds,1); end
-      
+
       for j=1:length(time_index),
         cstr_inds = mat2cell(obj.x_inds(x_indices,time_index{j}),numel(x_indices),ones(1,length(time_index{j})));
-        
+
         % record constraint for posterity
         obj.constraints{end+1}.constraint = constraint;
         obj.constraints{end}.var_inds = cstr_inds;
         obj.constraints{end}.time_index = time_index;
-        
+
         obj = obj.addConstraint(constraint,cstr_inds);
-      end      
-    end    
-    
+      end
+    end
+
     function [xtraj,utraj,z,F,info] = solveTraj(obj,t_init,traj_init)
       % Solve the nonlinear program and return resulting trajectory
       % @param t_init initial timespan for solution.  can be a vector of
       % length obj.N specifying the times of each segment, or a scalar
       % indicating the final time.
-      % @param u_init_traj (optional) a Trajectory object specifying the initial guess
-      % for the system inputs @default small random numbers
-      % @param x_init_traj (optional) a Trajectory object specifying the
-      % initial guess for the state trajectory @default obtained via
-      % simulation
-    
+      % @param traj_init (optional) a structure containing Trajectory
+      % objects specifying the initial guess for the system inputs
+      %    traj_init.u , traj_init.x, ...
+      % @default small random numbers
+
+      if nargin<3, traj_init = struct(); end
+
       z0 = obj.getInitialVars(t_init,traj_init);
       [z,F,info] = obj.solve(z0);
       utraj = reconstructInputTrajectory(obj,z);
       if nargin>1, xtraj = reconstructStateTrajectory(obj,z); end
     end
-    
+
     function z0 = getInitialVars(obj,t_init,traj_init)
     % evaluates the initial trajectories at the sampled times and
     % constructs the nominal z0. Overwrite to implement in a different
@@ -180,33 +184,33 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       end
       z0 = zeros(obj.num_vars,1);
       z0(obj.h_inds) = diff(t_init);
-      
-      if nargin<2, traj_init = struct(); end
-      
+
+      if nargin<3, traj_init = struct(); end
+
       if isfield(traj_init,'u')
         z0(obj.u_inds) = traj_init.u.eval(t_init);
       else
         nU = getNumInputs(obj.plant);
         z0(obj.u_inds) = 0.01*randn(nU,obj.N);
       end
-        
+
       if isfield(traj_init,'x')
         z0(obj.x_inds) = traj_init.x.eval(t_init);
       else
         if ~isfield(traj_init,'u')
           traj_init.u = setOutputFrame(PPTrajectory(foh(t_init,reshape(z0(obj.u_inds),nU,obj.N))),getInputFrame(obj.plant));
         end
-        
+
         % todo: if x0 and xf are equality constrained, then initialize with
         % a straight line from x0 to xf (this was the previous behavior)
-        
+
         %simulate
         sys_ol = cascade(traj_init.u,obj.plant);
         [~,x_sim] = sys_ol.simulate([t_init(1) t_init(end)]);
         z0(obj.x_inds) = x_sim.eval(t_init);
       end
     end
-    
+
     function obj = setupVariables(obj, N)
       % Default implementation,
       % Assumes, if time is not fixed, that there are N-1 time steps
@@ -223,12 +227,12 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       nH = N-1;
       nX = obj.plant.getNumStates();
       nU = obj.plant.getNumInputs();
-      
+
       num_vars = nH + N*(nX+nU);
       obj.h_inds = (1:nH)';
       obj.x_inds = reshape(nH + (1:nX*N),nX,N);
       obj.u_inds = reshape(nH + nX*N + (1:nU*N),nU,N);
-      
+
       obj.N = N;
       x_names = cell(num_vars,1);
       for i = 1:N
@@ -242,15 +246,15 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
           x_names{nH+nX*N+(i-1)*nU+j} = sprintf('u%d[%d]',j,i);
         end
       end
-      
+
       obj = obj.addDecisionVariable(num_vars,x_names);
     end
-    
+
     function obj = addInitialCost(obj,initial_cost)
       % Adds a cost to the initial state f(x0)
       obj = obj.addCost(initial_cost,obj.x_inds(:,1));
     end
-    
+
     function obj = addFinalCost(obj,final_cost_function)
       % adds a cost to the final state and total time
       % @param final_cost_function a function handle f(T,xf)
@@ -259,17 +263,21 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       cost = FunctionHandleObjective(nH+nX,@(h,x) obj.final_cost(final_cost_function,h,x));
       obj = obj.addCost(cost,{obj.h_inds;obj.x_inds(:,end)});
     end
-    
+
     function utraj = reconstructInputTrajectory(obj,z)
       % default behavior is to use first order holds, but this can be
       % re-implemented by a subclass.
       t = [0; cumsum(z(obj.h_inds))];
 
-      u = reshape(z(obj.u_inds),[],obj.N);
-      utraj = PPTrajectory(foh(t,u));
-      utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+      if size(obj.u_inds,1)>0
+        u = reshape(z(obj.u_inds),[],obj.N);
+        utraj = PPTrajectory(foh(t,u));
+        utraj = utraj.setOutputFrame(obj.plant.getInputFrame);
+      else
+        utraj=[];
+      end
     end
-    
+
     function xtraj = reconstructStateTrajectory(obj,z)
       % default behavior is to use first order holds, but this can be
       % re-implemented by a subclass.
@@ -279,16 +287,16 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       xtraj = PPTrajectory(foh(t,x));
       xtraj = xtraj.setOutputFrame(obj.plant.getStateFrame);
     end
-    
+
     function u0 = extractFirstInput(obj,z)
       % When using trajectory optimization a part of a model-predictive
       % control system, we often only need to extract u(0).  This method
       % does exactly that.
-      
+
       u0 = z(obj.u_inds(:,1));
     end
   end
-  
+
   methods(Access=protected)
     function [f,df] = final_cost(obj,final_cost_function,h,x)
       T = sum(h);
@@ -296,16 +304,15 @@ classdef DirectTrajectoryOptimization < NonlinearProgramWConstraintObjects
       df = [repmat(dg(:,1),1,length(h)) dg(:,2:end)];
     end
   end
-  
+
   methods(Abstract)
     % Adds an integrated cost to all time steps, which is
     % numerical implementation specific (thus abstract)
     % this cost is assumed to be time-invariant
     % @param running_cost_function a function handle
     obj = addRunningCost(obj,running_cost_function);
- 
-    
+
+
     obj = addDynamicConstraints(obj);
   end
 end
-
