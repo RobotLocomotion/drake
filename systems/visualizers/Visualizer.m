@@ -233,6 +233,7 @@ classdef Visualizer < DrakeSystem
         for i=state_dims(:)'
           x(state_dims(i)) = get(slider{i}, 'Value');
         end
+        x
         if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)>0)
           % todo: pass in additional constriants to keep it inside the
           % slider values
