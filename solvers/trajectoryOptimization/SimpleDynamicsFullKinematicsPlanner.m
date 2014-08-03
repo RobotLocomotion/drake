@@ -4,14 +4,14 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
     nq % number of positions in state
     nv % number of velocities in state
     q_inds % An nq x obj.N matrix. x(q_inds(:,i)) is the posture at i'th knot
-    v_inds % An nv x obj.N matrix. x(v_inds(:,i)) is the velocity at i'th knot 
+    v_inds % An nv x obj.N matrix. x(v_inds(:,i)) is the velocity at i'th knot
     qsc_weight_inds = {}
     fix_initial_state = false
     g
     % N-element vector of indices into the shared_data, where
     % shared_data{kinsol_dataind(i)} is the kinsol for knot point i
-    kinsol_dataind 
-    
+    kinsol_dataind
+
     contact_wrench % A cell of RigidBodyContactWrench objects
     contact_wrench_active_knot  % A cell with same length as contact_wrench. contact_wrench_active_knot{i} contains all the indices of the knots that the constraint is active
     unique_contact_bodies; % An integer array. The indices of the unique contact bodies. It is in the order of obj.contact_wrench. Namely if obj.contact_wrench has body indices [3 2 4 3 1 2], theun unique_contact_bodies = [3 2 4 1]
@@ -30,14 +30,14 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
                  % [1;2;1;1;2];
      num_lambda_knot % An integer. The number of external force parameters at any one knot point
      robot_mass  % A double scalar.
-     
+
      Q_contact_force % A 3 x 3 PSD matrix. minimize the weighted L2 norm of the contact force.
   end
-  
+
   properties(Access = protected)
     add_dynamic_constraint_flag = false;% If this flag is false, then bypass the addDynamicConstraint function
   end
-  
+
   methods
     function obj = SimpleDynamicsFullKinematicsPlanner(plant,robot,N,tf_range,Q_contact_force,contact_wrench_struct,options)
       % @param robot   A RigidBodyManipulator or a TimeSteppingRigidBodyManipulator
@@ -85,7 +85,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         [obj,kinsol_dataind(i)] = obj.addSharedDataFunction(@obj.kinematicsData,{obj.q_inds(:,i)});
       end
       obj.kinsol_dataind = kinsol_dataind;
-      
+
       num_cw = numel(contact_wrench_struct);
       obj.contact_wrench = cell(1,num_cw);
       obj.contact_wrench_active_knot = cell(1,num_cw);
@@ -102,7 +102,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       obj.robot_mass = obj.robot.getMass();
       obj = obj.parseRigidBodyContactWrench();
       obj = obj.addDynamicConstraints();
-      
+
       obj = obj.setSolverOptions('snopt','majoroptimalitytolerance',1e-5);
       obj = obj.setSolverOptions('snopt','superbasicslimit',2000);
       obj = obj.setSolverOptions('snopt','majorfeasibilitytolerance',1e-6);
@@ -148,18 +148,18 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       %   points 1 and 2 together (taking the combined state as an argument)
       %   and 3 and 4 together.
       if ~iscell(time_index)
-        time_index = {time_index};
+        time_index = num2cell(reshape(time_index,1,[]));
       end
       for j=1:length(time_index),
-        kinsol_inds = obj.kinsol_dataind(time_index{j}); 
+        kinsol_inds = obj.kinsol_dataind(time_index{j});
         cnstr_inds = mat2cell(obj.q_inds(:,time_index{j}),size(obj.q_inds,1),ones(1,length(time_index{j})));
-        
+
         % record constraint for posterity
         obj.constraints{end+1}.constraint = constraint;
         obj.constraints{end}.var_inds = cnstr_inds;
         obj.constraints{end}.kinsol_inds = kinsol_inds;
         obj.constraints{end}.time_index = time_index;
-        
+
         obj = obj.addConstraint(constraint,cnstr_inds,kinsol_inds);
       end
     end
@@ -178,7 +178,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       if ~iscell(time_index)
         % then use { time_index(1), time_index(2), ... } ,
         % aka independent constraints for each time
-        time_index = mat2cell(reshape(time_index,1,[]),1,ones(1,numel(time_index)));
+        time_index = num2cell(reshape(time_index,1,[]));
       end
       for j = 1:numel(time_index)
         if isa(constraint,'SingleTimeKinematicConstraint')
@@ -223,14 +223,14 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         end
       end
     end
-    
+
     function obj = parseRigidBodyContactWrench(obj)
       num_contact_wrench = length(obj.contact_wrench);
       obj.unique_contact_bodies = [];
       num_pt_F_contact_bodies = []; % num_pt_F_contact_bodies(i) is the field num_pt_F of the RigidBodyContactWrench for body unique_contact_bodies(i)
       obj.unique_body_contact_pts = {};
       body_contact_type = []; % body_contact_type(i) is the type of RigidBodyContactWrench for body unique_contact_bodies(i)
-      
+
       unique_body2contact_wrench = {}; % unique_body2contact_wrench{i} contains all the indices of the RigidBodyContactWrench that impose constraint on unique_contact_bodies(i)
       for i = 1:num_contact_wrench
         repeat_body = obj.contact_wrench{i}.body == obj.unique_contact_bodies;
@@ -261,7 +261,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         for cwc_idx = unique_body2contact_wrench{i}
           for t_idx = 1:obj.N
             if(any(obj.contact_wrench_active_knot{cwc_idx} == t_idx))
-              [~,pt_idx] = intersect(obj.unique_body_contact_pts{i}',obj.contact_wrench{cwc_idx}.body_pts','rows','stable'); 
+              [~,pt_idx] = intersect(obj.unique_body_contact_pts{i}',obj.contact_wrench{cwc_idx}.body_pts','rows','stable');
               if(any(obj.lambda2contact_wrench{i}(pt_idx,t_idx) ~= 0))
                 pt_coord = obj.unique_body_contact_pts{i}(:,pt_idx(1));
                 error('Drake:SimpleDynamicsFullKinematics:parseRigidBodyContactWrench: at knot %d, %s pt [%5.2f %5.2f %5.2f] is active for more than 1 RigidBodyContactWrench, one of which is obj.contact_wrench{%d}',...
@@ -311,7 +311,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
                 nlcon_name{l} = sprintf('%s[%d]',nlcon_wrench.name{l},k);
               end
               nlcon_wrench = nlcon_wrench.setName(nlcon_name);
-              
+
               obj = obj.addConstraint(nlcon_wrench,[{obj.q_inds(:,k)};{reshape(lambda_idx_ijk,[],1)};{new_slack_inds}],obj.kinsol_dataind(k));
               lincon_name = cell(lincon_wrench.num_cnstr,1);
               for l = 1:lincon_wrench.num_cnstr
@@ -328,7 +328,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       end
       obj = obj.addForceNormCost();
     end
-    
+
     function obj = addDynamicConstraints(obj)
       % First I find out the order of the contact_wrench such that it is in the same
       % order of lambda
@@ -367,7 +367,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         end
       end
     end
-    
+
     function wrench_sol = contactWrench(obj,x)
       % Given x as the decision variables, find out the contact wrench
       % @param x   An obj.num_vars x 1 vector
@@ -398,7 +398,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
         end
       end
     end
-    
+
     function obj = addForceNormCost(obj)
       % add a quadratic cost on sum_i,j force_j[i]'*obj.Q_contact_force*force_j[i]
       A_force = cell(length(obj.contact_wrench),1);
@@ -420,7 +420,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
           unique_contact_wrench_ij = unique(obj.lambda2contact_wrench{i}(obj.lambda2contact_wrench{i}(:,j)~=0,j))';
           for k = unique_contact_wrench_ij
             num_pt_F_ijk = obj.contact_wrench{k}.num_pt_F;
-            body_pts_ijk_idx = find(obj.lambda2contact_wrench{i}(:,j) == k)';            
+            body_pts_ijk_idx = find(obj.lambda2contact_wrench{i}(:,j) == k)';
             iAfun = [iAfun;reshape(bsxfun(@times,(j-1)*3*total_num_contact_pts+3*count_num_pts_j+reshape(bsxfun(@plus,[1;2;3],(body_pts_ijk_idx-1)*3),[],1),ones(1,num_pt_F_ijk*length(body_pts_ijk_idx))),[],1)];
             jAvar = [jAvar;reshape(bsxfun(@times,reshape(obj.lambda_inds{i}(:,body_pts_ijk_idx,j),1,[]),ones(3*length(body_pts_ijk_idx),1)),[],1)];
             Aval = [Aval;A_force{k}(:)];
@@ -436,7 +436,7 @@ classdef SimpleDynamicsFullKinematicsPlanner < DirectTrajectoryOptimization
       obj = obj.addCost(force_norm_cost);
     end
   end
-  
+
   methods(Abstract)
     obj = addContactDynamicConstraints(obj,num_knot,contact_wrench_idx, knot_lambda_idx)
   end
