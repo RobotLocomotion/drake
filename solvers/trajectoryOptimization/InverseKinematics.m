@@ -123,7 +123,9 @@ classdef InverseKinematics < NonlinearProgramWConstraintObjects
       q = x(obj.q_idx);
       q = max([obj.x_lb(obj.q_idx) q],[],2);
       q = min([obj.x_ub(obj.q_idx) q],[],2);
-      [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
+      if nargout > 3
+        [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
+      end
     end
 
     function [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info)

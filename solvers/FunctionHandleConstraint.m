@@ -22,8 +22,19 @@ classdef FunctionHandleConstraint < Constraint
       obj.eval_handle = eval_handle;
     end
 
-    function obj = setEvalHandle(obj,eval_handle_new)
-      obj.eval_handle = eval_handle_new;
+    function obj_new = setEvalHandle(obj,eval_handle_new)
+      % obj_new = setEvalHandle(obj,eval_handle_new) returns a
+      % FunctionHandleConstraint object the same as this one, but with a new
+      % eval_handle. 
+      %
+      % Note: We're constructing a new constraint object here because altering
+      % the eval_handle property of an existing constraint object makes
+      % concatenating that object in a cell array *very* slow. We don't know why
+      % that is.
+      
+      obj_new = FunctionHandleConstraint(obj.lb,obj.ub,obj.xdim,eval_handle_new);
+      obj_new = obj_new.setSparseStructure(obj.iCfun,obj.jCvar);
+      obj_new = obj_new.setName(obj.name);
     end
 
   end

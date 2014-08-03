@@ -14,17 +14,17 @@ classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
   end
   
   methods(Access = protected)
-    function [c,dc_valid] = evalValidTime(obj,valid_kinsol_cell)
-      num_valid_t = length(valid_kinsol_cell);
-      nq = obj.robot.getNumDOF();
-      pos = zeros(3,num_valid_t);
-      quat = zeros(4,num_valid_t);
+    function [c,dc_valid] = evalValidTime(obj,kinsol_cell)
+      N = length(kinsol_cell);
+      nq = obj.robot.getNumPositions();
+      pos = zeros(3,N);
+      quat = zeros(4,N);
       if(nargout == 2)
-        dpos = zeros(3*num_valid_t,nq);
-        dquat = zeros(4*num_valid_t,nq);
+        dpos = zeros(3*N,nq);
+        dquat = zeros(4*N,nq);
       end
-      for i = 1:num_valid_t
-        kinsol = valid_kinsol_cell{i};
+      for i = 1:N
+        kinsol = kinsol_cell{i};
         if(nargout == 1)
           pos_tmp = forwardKin(obj.robot,kinsol,obj.body,[0;0;0],2);
         elseif(nargout == 2)
@@ -36,16 +36,16 @@ classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
         quat(:,i) = pos_tmp(4:7);
       end
       diff_pos = diff(pos,[],2);
-      diff_pos = [diff_pos pos(:,1)-pos(:,num_valid_t)];
+      diff_pos = [diff_pos pos(:,1)-pos(:,N)];
       quat2 = [quat(:,2:end) quat(:,1)];
       c1 = sum(diff_pos.*diff_pos,2);
       c2 = sum(quat.*quat2,1);
       c = [sum(c1,1);sum(c2.^2)];
       if(nargout == 2)
         dc1 = reshape(permute(reshape((bsxfun(@times,reshape((4*pos-2*[pos(:,2:end) pos(:,1)]-2*[pos(:,end) pos(:,1:end-1)]),[],1),ones(1,nq))...
-          .*dpos)',nq,3,num_valid_t),[2,1,3]),3,nq*num_valid_t);
+          .*dpos)',nq,3,N),[2,1,3]),3,nq*N);
         dcdquat = (bsxfun(@times,ones(4,1),2*c2).*quat2+bsxfun(@times,ones(4,1),2*[c2(end) c2(1:end-1)]).*[quat(:,end) quat(:,1:end-1)]);
-        dc_valid = reshape([sum(dc1,1);sum(reshape(permute(reshape((bsxfun(@times,ones(1,nq),reshape(dcdquat,[],1)).*dquat)',nq,4,num_valid_t),[2,1,3]),4,nq*num_valid_t),1)],2,nq*num_valid_t);
+        dc_valid = reshape([sum(dc1,1);sum(reshape(permute(reshape((bsxfun(@times,ones(1,nq),reshape(dcdquat,[],1)).*dquat)',nq,4,N),[2,1,3]),4,nq*N),1)],2,nq*N);
       end
     end
   end
@@ -77,15 +77,34 @@ classdef WorldFixedBodyPoseConstraint < MultipleTimeKinematicConstraint
     end
     
     
-    function [lb,ub] = bounds(obj,t)
-      valid_t = t(obj.isTimeValid(t));
-      if(length(valid_t)>=2)
-        n_breaks = length(valid_t);
-        lb = [0;n_breaks];
-        ub = [0;n_breaks];
+    function [lb,ub] = bounds(obj,t,N)
+      % [lb,ub] = bounds(obj,t) returns the upper and lower bounds for this
+      % constraint at all valid times given in t.
+      %
+      % [lb,ub] = bounds(obj,[],N) returns the upper and lower bounds for this
+      % constraint for N valid times
+      %
+      % @param obj  -- WorldFixedBodyPoseConstraint object
+      % @param t    -- Vector of times
+      % @param N    -- Integer number of time points
+      if isempty(t);
+        if(N>=2)
+          lb = [0;N];
+          ub = [0;N];
+        else
+          lb = [];
+          ub = [];
+        end
       else
-        lb = [];
-        ub = [];
+        valid_t = t(obj.isTimeValid(t));
+        if(length(valid_t)>=2)
+          n_breaks = length(valid_t);
+          lb = [0;n_breaks];
+          ub = [0;n_breaks];
+        else
+          lb = [];
+          ub = [];
+        end
       end
     end
     

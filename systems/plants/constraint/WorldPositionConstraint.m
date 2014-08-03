@@ -39,17 +39,8 @@ classdef WorldPositionConstraint < PositionConstraint
         tspan = [-inf,inf];
       end
       obj = obj@PositionConstraint(robot,pts,lb,ub,tspan);
-      if(isnumeric(body))
-        sizecheck(body,[1,1]);
-        obj.body = body;
-      elseif(typecheck(body,'char'))
-        obj.body = robot.findLinkInd(body);
-      elseif(typecheck(body,'RigidBody'))
-        obj.body = robot.findLinkInd(body.linkname);
-      else
-        error('Drake:WorldPositionConstraint:Body must be either the link name or the link index');
-      end
-      obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.body = obj.robot.parseBodyOrFrameID(body);
+      obj.body_name = obj.robot.getBodyOrFrameName(obj.body);
       obj.type = RigidBodyConstraint.WorldPositionConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
         obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionConstraintType,robot.getMexModelPtr,body,pts,lb,ub,tspan);
@@ -58,7 +49,11 @@ classdef WorldPositionConstraint < PositionConstraint
     
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(1,obj.body);
-      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+      if isa(obj.robot,'TimeSteppingRigidBodyManipulator')
+        joint_idx = vertcat(obj.robot.getManipulator().body(joint_path).dofnum)';
+      else
+        joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+      end
     end
     
   end
