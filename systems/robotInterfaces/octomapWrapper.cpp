@@ -113,6 +113,21 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         }
       }
       break;
+    case 12: // insert a scan of endpoints and sensor origin
+      {
+        // pointsA should be 3xN, originA is 3x1
+        double* points = mxGetPr(prhs[2]);
+        double* originA = mxGetPr(prhs[3]);
+        int n = mxGetN(prhs[2]);
+        point3d origin ((float)originA[0],(float)originA[1],(float)originA[2]);
+        Pointcloud pointCloud;
+        for (int i = 0; i < n; i++) {
+          point3d point ((float)points[3*i],(float)points[3*i+1],(float)points[3*i+2]);
+          pointCloud.push_back(point);
+        }
+        tree->insertPointCloud(pointCloud,origin);
+      }
+      break;
     case 21:  // save to file
       {
         char* filename = mxArrayToString(prhs[2]);
@@ -123,5 +138,4 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     default:
       mexErrMsgTxt("octomapWrapper: Unknown command");
   }
-
 }
