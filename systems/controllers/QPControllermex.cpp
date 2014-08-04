@@ -11,6 +11,8 @@
 
 #include "QPCommon.h"
 #include <Eigen/StdVector>
+#include <limits>
+#include <cmath>
 
 //#define TEST_FAST_QP
 //#define USE_MATRIX_INVERSION_LEMMA
@@ -22,7 +24,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int error;
   if (nrhs<1) mexErrMsgTxt("usage: ptr = QPControllermex(0,control_obj,robot_obj,...); alpha=QPControllermex(ptr,...,...)");
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
-  
+
   struct QPControllerData* pdata;
   mxArray* pm;
   double* pr;
@@ -288,12 +290,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   Map<VectorXd> qdvec(qd,nq);
   
-  MatrixXd Jz,Jp,Jpdot,D;
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,Jz,D,Jp,Jpdot,terrain_height);
+  MatrixXd B,JB,Jp,Jpdot,normals;
+  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdot,normals,terrain_height);
   int neps = nc*dim;
 
   VectorXd x_bar,xlimp;
-  MatrixXd D_float(6,D.cols()), D_act(nu,D.cols());
+  MatrixXd D_float(6,JB.cols()), D_act(nu,JB.cols());
   if (nc>0) {
     if (x0.size()==6) {
       // x,y,z com 
@@ -308,8 +310,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     x_bar = xlimp-x0;
 
-    D_float = D.topRows(6);
-    D_act = D.bottomRows(nu);
+    D_float = JB.topRows(6);
+    D_act = JB.bottomRows(nu);
   }
 
   int nf = nc*nd; // number of contact force variables
@@ -652,6 +654,59 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     else
       Vdot = 0;
     plhs[13] = mxCreateDoubleScalar(Vdot);
+  }
+
+  if (nlhs>14) {
+    VectorXd individual_cops(3 * active_supports.size());
+    individual_cops.fill(std::numeric_limits<double>::quiet_NaN());
+    int normals_start_col = 0;
+    int active_support_start_col = 0;
+    for (int j = 0; j < active_supports.size(); j++) {
+      auto active_support = active_supports[j];
+      auto contact_pt_inds = active_support.contact_pt_inds;
+      
+      int ncj = contact_pt_inds.size();
+      int active_support_length = nd * ncj;
+      auto normalsj = normals.middleCols(normals_start_col, ncj);
+      Vector3d normalj = normalsj.col(0);
+      bool norms_identical = (normalsj.colwise().operator-(normalj)).squaredNorm() < 1e-15;
+
+      if (norms_identical) { // otherwise computing a COP doesn't make sense
+        const auto& Bj = B.middleCols(active_support_start_col, active_support_length);
+        const auto& betaj = beta.segment(active_support_start_col, active_support_length);
+        const auto& contact_positionsj = pdata->r->bodies[active_support.body_idx].contact_pts;
+        Vector3d forcej = Vector3d::Zero();
+        Vector3d torquej = Vector3d::Zero();
+        double min_contact_position_z = std::numeric_limits<double>::infinity();
+
+        for (const auto& k : contact_pt_inds) {
+          const auto& Bjk = Bj.middleCols(k * nd, nd);
+          const auto& betajk = betaj.segment(k * nd, nd);
+          Vector3d contact_positionjk = contact_positionsj.col(k);
+          Vector3d forcejk = Bjk * betajk;
+          forcej += forcejk;
+          auto torquejk = contact_positionjk.cross(forcejk);
+          torquej += torquejk;
+          double contact_position_z = normalj.dot(contact_positionjk);
+          if (contact_position_z < min_contact_position_z) {
+            min_contact_position_z = contact_position_z;
+          }
+        }
+        double fzj = normalj.dot(forcej);
+        if (std::abs(fzj) > 1e-7) {
+          auto normal_torquej = normalj.dot(torquej);
+          auto tangential_torquej = torquej - normalj * normal_torquej;
+          Vector4d cop_bodyj;
+          cop_bodyj << normalj.cross(tangential_torquej) / fzj + min_contact_position_z * normalj, 1.0;
+          Vector3d cop_worldj;
+          pdata->r->forwardKin(active_support.body_idx, cop_bodyj, 0, cop_worldj);
+          individual_cops.segment<3>(3 * j) =  cop_worldj;
+        }
+      }
+      normals_start_col += ncj;
+      active_support_start_col += active_support_length;
+    }
+    plhs[14] = eigenToMatlab(individual_cops);
   }
 
   if (model) { 
