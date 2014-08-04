@@ -19,7 +19,7 @@ classdef Quadrotor < RigidBodyManipulator
           obj = addSensor(obj,lidar);
         case 'kinect'
           obj = addFrame(obj,RigidBodyFrame(findLinkInd(obj,'base_link'),[.35;0;0],zeros(3,1),'kinect_frame'));
-          kinect = RigidBodyDepthCamera('kinect',findFrameId(obj,'kinect_frame'),-.4,.4,12,-.5,.5,30,10);
+          kinect = RigidBodyDepthSensor('kinect',findFrameId(obj,'kinect_frame'),-.4,.4,12,-.5,.5,30,10);
           kinect = enableLCMGL(kinect);
           obj = addSensor(obj,kinect);
       end
