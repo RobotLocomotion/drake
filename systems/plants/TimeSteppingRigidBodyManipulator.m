@@ -800,6 +800,11 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = getCMMdA(obj.manip,varargin{:});
     end
 
+    function varargout = parseBodyOrFrameID(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = parseBodyOrFrameID(obj.manip,varargin{:});
+    end
+
     function joint_ind = findJointInd(model,varargin)
       joint_ind = findJointInd(model.manip,varargin{:});
     end
