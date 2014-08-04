@@ -189,7 +189,7 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
 }
 
 
-int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, MatrixXd &Jpdot,double terrain_height)
+int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, MatrixXd &Jpdot, MatrixXd &normals, double terrain_height)
 {
   int j, k=0, nq = r->num_dof;
 
@@ -197,6 +197,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   JB.resize(nq,nc*2*m_surface_tangents);
   Jp.resize(3*nc,nq);
   Jpdot.resize(3*nc,nq);
+  normals.resize(3, nc);
   
   Vector3d contact_pos,pos,posB,normal; Vector4d tmp;
   MatrixXd J(3,nq);
@@ -227,6 +228,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
         Jp.block(3*k,0,3,nq) = J;
         r->forwardJacDot(iter->body_idx,tmp,0,J);
         Jpdot.block(3*k,0,3,nq) = J;
+        normals.col(k) = normal;
         
         k++;
       }
