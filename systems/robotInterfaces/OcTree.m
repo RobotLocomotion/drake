@@ -53,16 +53,21 @@ classdef OcTree < handle
       [nodes,values] = octomapWrapper(tree.mex_ptr,2);
     end
     
+    function insertPointCloud(tree,pointCloud,origin)
+      octomapWrapper(tree.mex_ptr,12,pointCloud,origin);
+    end
+    
     function publishLCMGL(obj,threshold)
       if nargin<2, threshold = .5; end
       if ~isempty(obj.lcmgl) % fail quietly if dependency is missing
-        [points,values,size] = octomapWrapper(obj.mex_ptr,2);
+        [points,values,sizeVar] = octomapWrapper(obj.mex_ptr,2);
         points = points(:,values>threshold);
-        size = size(values>threshold);
-        size=repmat(size,3,1);
+        sizeVar = sizeVar(values>threshold);
+        sizeVar=repmat(sizeVar,3,1);
         obj.lcmgl.glColor3f(.5, .5, 1);
-        for i=1:length(size)
-          obj.lcmgl.box(points(:,i),size(:,i));
+        
+        for i=1:size(sizeVar,2)
+          obj.lcmgl.box(points(:,i),sizeVar(:,i));
         end
         obj.lcmgl.switchBuffers();
       end
