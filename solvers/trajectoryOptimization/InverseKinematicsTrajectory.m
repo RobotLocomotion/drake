@@ -168,7 +168,7 @@ classdef InverseKinematicsTrajectory < NonlinearProgramWConstraintObjects
           t_idx = (t_start:obj.nT);
           valid_t_idx = t_idx(valid_t_flag);
           cnstr = varargin{i}.generateConstraint(obj.t_knot(valid_t_idx));
-          obj = obj.addKinematicConstraint(cnstr{1},valid_t_idx);
+          obj = obj.addKinematicConstraint(cnstr{1},{[valid_t_idx]});
         elseif(isa(varargin{i},'MultipleTimeLinearPostureConstraint'))
           cnstr = varargin{i}.generateConstraint(obj.t_knot(t_start:end));
           obj = obj.addLinearConstraint(cnstr{1},reshape(obj.q_idx(:,t_start:end),[],1));
