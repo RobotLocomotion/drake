@@ -63,7 +63,7 @@ for i = 1:length(varargin)
     error('Drake:inverseKin: The input should be a RigidBodyConstraint or a pointer to RigidBodyConstraint');
   end
 end
-if(use_mex || ikoptions.use_mex )
+if (use_mex || ikoptions.use_mex) && exist('inverseKinmex','file')
   [q,info,infeasible_constraint] = inverseKinmex(obj.getMexModelPtr,q_seed,q_nom,constraint_mex{:},ikoptions_mex);
 else
   [q,info,infeasible_constraint]= inverseKinBackend(obj,1,[],q_seed,q_nom,varargin{:});
