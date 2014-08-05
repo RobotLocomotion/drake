@@ -657,55 +657,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   if (nlhs>14) {
-    VectorXd individual_cops(3 * active_supports.size());
-    individual_cops.fill(std::numeric_limits<double>::quiet_NaN());
-    int normals_start_col = 0;
-    int active_support_start_col = 0;
-    for (int j = 0; j < active_supports.size(); j++) {
-      auto active_support = active_supports[j];
-      auto contact_pt_inds = active_support.contact_pt_inds;
-      
-      int ncj = contact_pt_inds.size();
-      int active_support_length = nd * ncj;
-      auto normalsj = normals.middleCols(normals_start_col, ncj);
-      Vector3d normalj = normalsj.col(0);
-      bool norms_identical = (normalsj.colwise().operator-(normalj)).squaredNorm() < 1e-15;
+    RigidBodyManipulator* r = pdata->r;
 
-      if (norms_identical) { // otherwise computing a COP doesn't make sense
-        const auto& Bj = B.middleCols(active_support_start_col, active_support_length);
-        const auto& betaj = beta.segment(active_support_start_col, active_support_length);
-        const auto& contact_positionsj = pdata->r->bodies[active_support.body_idx].contact_pts;
-        Vector3d forcej = Vector3d::Zero();
-        Vector3d torquej = Vector3d::Zero();
-        double min_contact_position_z = std::numeric_limits<double>::infinity();
-
-        for (const auto& k : contact_pt_inds) {
-          const auto& Bjk = Bj.middleCols(k * nd, nd);
-          const auto& betajk = betaj.segment(k * nd, nd);
-          Vector3d contact_positionjk = contact_positionsj.col(k);
-          Vector3d forcejk = Bjk * betajk;
-          forcej += forcejk;
-          auto torquejk = contact_positionjk.cross(forcejk);
-          torquej += torquejk;
-          double contact_position_z = normalj.dot(contact_positionjk);
-          if (contact_position_z < min_contact_position_z) {
-            min_contact_position_z = contact_position_z;
-          }
-        }
-        double fzj = normalj.dot(forcej);
-        if (std::abs(fzj) > 1e-7) {
-          auto normal_torquej = normalj.dot(torquej);
-          auto tangential_torquej = torquej - normalj * normal_torquej;
-          Vector4d cop_bodyj;
-          cop_bodyj << normalj.cross(tangential_torquej) / fzj + min_contact_position_z * normalj, 1.0;
-          Vector3d cop_worldj;
-          pdata->r->forwardKin(active_support.body_idx, cop_bodyj, 0, cop_worldj);
-          individual_cops.segment<3>(3 * j) =  cop_worldj;
-        }
-      }
-      normals_start_col += ncj;
-      active_support_start_col += active_support_length;
-    }
+    VectorXd individual_cops = individualSupportCOPs(r, active_supports, nd, normals, B, beta);
     plhs[14] = eigenToMatlab(individual_cops);
   }
 
