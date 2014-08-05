@@ -6,7 +6,7 @@
 //#include "RigidBody.h"
 #include <random>
 
-#define TWIST_SIZE (int) 6
+#define TWIST_SIZE 6
 typedef Eigen::Matrix<double, TWIST_SIZE, 1> Vector6d;
 
 class RigidBody;

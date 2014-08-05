@@ -1,18 +1,19 @@
-#ifndef QUATERNIONFLOATINGJOINT_H_
-#define QUATERNIONFLOATINGJOINT_H_
+#ifndef ROLLPITCHYAWFLOATINGJOINT_H_
+#define ROLLPITCHYAWFLOATINGJOINT_H_
 
 #include "DrakeJoint.h"
 
-class QuaternionFloatingJoint: public DrakeJoint
+class RollPitchYawFloatingJoint: public DrakeJoint
 {
+public:
   // disable copy construction and assignment
-  QuaternionFloatingJoint(const QuaternionFloatingJoint&) = delete;
-  QuaternionFloatingJoint& operator=(const QuaternionFloatingJoint&) = delete;
+  RollPitchYawFloatingJoint(const RollPitchYawFloatingJoint&) = delete;
+  RollPitchYawFloatingJoint& operator=(const RollPitchYawFloatingJoint&) = delete;
 
 public:
-  QuaternionFloatingJoint(const std::string& name, const RigidBody& parent_body, const Eigen::Isometry3d& transform_to_parent_body);
+  RollPitchYawFloatingJoint(const std::string& name, const RigidBody& parent_body, const Eigen::Isometry3d& transform_to_parent_body);
 
-  virtual ~QuaternionFloatingJoint();
+  virtual ~RollPitchYawFloatingJoint();
 
   virtual Eigen::Isometry3d jointTransform(double* const q) const override;
 
@@ -29,4 +30,4 @@ public:
   virtual void vToQdot(double* q, Eigen::MatrixXd& v_to_qdot, Eigen::MatrixXd* dv_to_qdot) const override;
 };
 
-#endif /* QUATERNIONFLOATINGJOINT_H_ */
+#endif /* ROLLPITCHYAWFLOATINGJOINT_H_ */
