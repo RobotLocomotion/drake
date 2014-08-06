@@ -87,7 +87,7 @@ classdef PelvisMotionControlBlock < DrakeSystem
     end
    
     function y=output(obj,t,~,x)
-      if (obj.use_mex == 0)
+      if (obj.use_mex == 0 || obj.use_mex == 2)
         persistent z_prev
         q = x(1:obj.nq);
         qd = x(obj.nq+1:end);
@@ -109,6 +109,11 @@ classdef PelvisMotionControlBlock < DrakeSystem
         err = [body_des(1:3)-p(1:3);angleDiff(p(4:end),body_des(4:end))];
 
         body_vdot = obj.Kp.*err - obj.Kd.*(J*qd);
+        if obj.use_mex == 2
+          % check that matlab/mex agree
+          body_vdot_mex = pelvisMotionControlmex(obj.mex_ptr.data,x);  
+          valuecheck(body_vdot_mex,body_vdot);
+        end
       else
         body_vdot = pelvisMotionControlmex(obj.mex_ptr.data,x);  
       end
