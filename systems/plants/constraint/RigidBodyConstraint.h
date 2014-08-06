@@ -610,9 +610,13 @@ class AllBodiesClosestDistanceConstraint : public SingleTimeKinematicConstraint
   protected:
     double ub;
     double lb;
+    std::vector<int> active_bodies_idx;
+    std::set<std::string> active_group_names;
   public:
     AllBodiesClosestDistanceConstraint(RigidBodyManipulator* model, 
                                        double lb, double ub,
+                                       std::vector<int> active_bodies_idx,
+                                       std::set<std::string> active_group_names,
                                        Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     //AllBodiesClosestDistanceConstraint(const AllBodiesClosestDistanceConstraint& rhs);
     virtual void updateRobot(RigidBodyManipulator *robot);
@@ -626,8 +630,12 @@ class MinDistanceConstraint : public SingleTimeKinematicConstraint
 {
   protected:
     double min_distance;
+    std::vector<int> active_bodies_idx;
+    std::set<std::string> active_group_names;
   public:
     MinDistanceConstraint(RigidBodyManipulator* model, double min_distance,
+                                       std::vector<int> active_bodies_idx,
+                                       std::set<std::string> active_group_names,
                                        Eigen::Vector2d tspan = DrakeRigidBodyConstraint::default_tspan);
     //MinDistanceConstraint(const MinDistanceConstraint& rhs);
     virtual void eval(const double* t,Eigen::VectorXd& c, Eigen::MatrixXd& dc) const;

@@ -1,20 +1,10 @@
 classdef LinearConstraint < Constraint
   % Linear Constraint. lb <= Ax <= ub. Support the linear constraint being sparse
-  % @param num_cnstr     -- An int scalar. The number of constraints
-  % @param xdim          -- An int scalar. The decision variable is an xdim x 1 double
-  % vector
-  % @param A_val          -- A double vector. The value of the non-zero entries of the
-  % gradient matrix. These correspond to iCfun and jCvar parameters from
-  % the superclass
-  % @param nnz            -- An int scalar. The maximal number of non-zero entries in the
-  % gradient matrix
-  % @param A              -- A matrix of size num_cnstr x xdim. The linear constraint
-  % matrix
-  % @param ceq_idx        -- The row index of the equality constraint
-  % @param cin_idx        -- The row index of the inequality constraint
   properties(SetAccess = protected)
-    A
-    A_val
+    A % A matrix of size num_cnstr x xdim. The linear constraint matrix
+    A_val % A double vector. The value of the non-zero entries of the
+          % gradient matrix. These correspond to iCfun and jCvar parameters from
+          % the superclass
   end
 
 

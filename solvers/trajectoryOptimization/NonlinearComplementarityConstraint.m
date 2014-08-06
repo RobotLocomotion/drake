@@ -34,7 +34,7 @@ classdef NonlinearComplementarityConstraint < CompositeConstraint
       switch mode
         case 1
           constraints{1} = BoundingBoxConstraint([-inf(xdim,1);zeros(zdim,1)],inf(zdim+xdim,1));
-          constraints{2} = NonlinearConstraint(zeros(zdim,1),inf(zdim,1),xdim+zdim,fun);
+          constraints{2} = FunctionHandleConstraint(zeros(zdim,1),inf(zdim,1),xdim+zdim,fun);
           constraints{3} = FunctionHandleConstraint(zeros(zdim,1),zeros(zdim,1)+slack,xdim+zdim,@prodfun);
         case 2
           constraints{1} = BoundingBoxConstraint([-inf(xdim,1);zeros(2*zdim,1)],inf(2*zdim+xdim,1));

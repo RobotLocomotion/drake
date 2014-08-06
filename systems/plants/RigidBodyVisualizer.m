@@ -85,6 +85,7 @@ classdef RigidBodyVisualizer < Visualizer
         
         obj.drawWrapper(0,x);
         desired_pt'
+        q'
       end      
     end    
   end

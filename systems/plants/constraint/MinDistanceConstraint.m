@@ -7,6 +7,7 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
   %                   active
   properties
     min_distance
+    active_collision_options
   end
 
   methods(Access=protected)
@@ -20,7 +21,7 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
     end
 
     function [c,dc] = evalLocal(obj,q_or_kinsol)
-      [dist,ddist_dq] = closestDistance(obj.robot,q_or_kinsol);
+      [dist,ddist_dq] = closestDistance(obj.robot,q_or_kinsol,obj.active_collision_options);
       [scaled_dist,dscaled_dist_ddist] = scaleDistance(obj,dist);
       [pairwise_costs,dpairwise_cost_dscaled_dist] = penalty(obj,scaled_dist);
       c = sum(pairwise_costs);
@@ -30,23 +31,24 @@ classdef MinDistanceConstraint < SingleTimeKinematicConstraint
   end
 
   methods
-    function obj = MinDistanceConstraint(robot,min_distance,tspan)
-      % obj = MinDistanceConstraint(robot,min_distance,tspan)
-      if(nargin == 2)
+    function obj = MinDistanceConstraint(robot,min_distance,active_collision_options,tspan)
+      if(nargin < 4)
         tspan = [-inf inf];
       end
+      if nargin < 3, active_collision_options = struct(); end;
       sizecheck(min_distance,[1,1]);
       assert(min_distance>0);
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,robot.getMexModelPtr,min_distance,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.MinDistanceConstraintType,robot.getMexModelPtr,min_distance,active_collision_options,tspan);
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       obj.type = RigidBodyConstraint.MinDistanceConstraintType;
       obj.min_distance = min_distance;
       obj.mex_ptr = ptr;
       obj.num_constraint = 1;
+      obj.active_collision_options = active_collision_options;
     end
 
-    function cnstr = generateConstraint(obj,t)
-      cnstr = generateConstraint@SingleTimeKinematicConstraint(obj,t);
+    function cnstr = generateConstraint(obj,varargin)
+      cnstr = generateConstraint@SingleTimeKinematicConstraint(obj,varargin{:});
       if ~isempty(cnstr)
         cnstr{1} = setEvalHandle(cnstr{1},@(q,~) obj.evalLocal(q));
       end

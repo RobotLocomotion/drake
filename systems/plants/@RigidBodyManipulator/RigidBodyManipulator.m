@@ -132,7 +132,7 @@ classdef RigidBodyManipulator < Manipulator
         geom = obj.terrain.getRigidBodyGeometry();
         if ~isempty(geom)
           if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
-            obj.body(1).contact_shapes{end+1} = geom;
+            obj = obj.addContactShapeToBody(1,geom,'terrain');
           end
           if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
             obj.body(1).visual_shapes{end+1} = geom;
@@ -418,10 +418,10 @@ classdef RigidBodyManipulator < Manipulator
 
       switch (joint_type)
         case 'rpy'  % extrinsic coordinates 
-          model = addJoint(model,'base','floating_rpy',parent,rootlink,zeros(3,1),zeros(3,1));
+          model = addJoint(model,'base','floating_rpy',parent,rootlink,xyz,rpy);
 
         case 'quat'
-          model = addJoint(model,'base','floating_quat',parent,rootlink,zeros(3,1),zeros(3,1));
+          model = addJoint(model,'base','floating_quat',parent,rootlink,xyz,rpy);
         
         case 'RPY'  % instrinsic coordinates
           body1 = newBody(model);
@@ -696,7 +696,14 @@ classdef RigidBodyManipulator < Manipulator
       end
       if (length(ind)~=1)
         if (nargin<4 || error_level>0)
-          error(['couldn''t find unique link ' ,linkname]);
+          if robot == 0
+            error('Drake:RigidBodyManipulator:UniqueLinkNotFound', ...
+              'couldn''t find unique link %s.',linkname);
+          else
+            error('Drake:RigidBodyManipulator:UniqueLinkNotFound', ...
+              'couldn''t find unique link %s on robot number %d.', ...
+              linkname,robot);
+          end
         else 
           body_ind=0;
           if (error_level==0)
@@ -734,7 +741,9 @@ classdef RigidBodyManipulator < Manipulator
       else
         ind = [];
       end
-      if numel(ind)~=1, error('Drake:RigidBodyManipulator:UniqueFrameNotFound',['Cannot find unique frame named ', name, ' on robot number ',num2str(robotnum)]); end
+      if numel(ind)~=1 
+        error('Drake:RigidBodyManipulator:UniqueFrameNotFound',['Cannot find unique frame named ', name, ' on robot number ',num2str(robotnum)]); 
+      end
       frame_id = -ind;  % keep frame_ind distinct from body_ind
     end
         
@@ -770,6 +779,15 @@ classdef RigidBodyManipulator < Manipulator
       typecheck(frame,'RigidBodyFrame');
       model.frame(-frame_id) = frame;
       model.dirty = true;
+    end
+    
+    
+    function str = getBodyOrFrameName(model,body_or_frame_id)
+      if (body_or_frame_id>0)
+        str = model.body(body_or_frame_id).linkname;
+      else
+        str = model.frame(-body_or_frame_id).name;
+      end
     end
     
     function model = setParams(model,p)
@@ -929,44 +947,103 @@ classdef RigidBodyManipulator < Manipulator
       groups = unique(groups);
     end
     
-    function model = removeCollisionGroups(model,contact_groups)
-      for i=1:length(model.body)
-        model.body(i) = removeCollisionGroups(model.body(i),contact_groups);
-      end
-      model.dirty = true;
-    end
-    
-    function model = removeCollisionGroupsExcept(model,contact_groups)
-      for i=1:length(model.body)
-        model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
-      end
-      model.dirty = true;
-    end
-    
-    function body_idx = parseBodyID(obj,body_id)
-      % body_idx = parseBodyID(obj,body_id)
-      % @param obj - RigidBodyManipulator object
-      % @param body_id - Body index or body name
+    function model = removeCollisionGroups(model,contact_groups,robotnum)
+      % model = removeCollisionGroups(model,contact_groups,robotnum) returns
+      % the model with the specified contact groups removed
       %
-      % @retval body_idx - Body index
-      typecheck(body_id,{'numeric','char'});
-      if isnumeric(body_id)
-        body_idx = body_id;
+      % @param model          -- RigidBodyManipulator object
+      % @param contact_groups -- String or cell array of strings specifying the
+      %                          contact groups to be removed
+      % @param robotnum       -- Vector of robot indices to which operation
+      %                          will be restricted. Optional.
+      %                          @default 1:numel(model.name)
+      if nargin < 3,          robotnum = 1:numel(model.name); end
+      if all(robotnum == 0),  robotnum = 0:numel(model.name); end
+      for i=1:length(model.body)
+        if ismember(model.body(i).robotnum,robotnum)
+          model.body(i) = removeCollisionGroups(model.body(i),contact_groups);
+        end
+      end
+      model.dirty = true;
+    end
+    
+    function model = removeCollisionGroupsExcept(model,contact_groups,robotnum)
+      % model = removeCollisionGroups(model,contact_groups,robotnum) returns
+      % the model with all contact groups removed except for those specified
+      %
+      % @param model          -- RigidBodyManipulator object
+      % @param contact_groups -- String or cell array of strings specifying the
+      %                          contact groups to be preserved.
+      % @param robotnum       -- Vector of robot indices to which operation
+      %                          will be restricted. Optional.
+      %                          @default 1:numel(model.name)
+      if nargin < 3,          robotnum = 1:numel(model.name); end
+      if all(robotnum == 0),  robotnum = 0:numel(model.name); end
+      for i=1:length(model.body)
+        if ismember(model.body(i).robotnum,robotnum)
+          model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
+        end
+      end
+      model.dirty = true;
+    end
+    
+    function body_idx_or_frame_id = parseBodyOrFrameID(obj,body_or_frame,robotnum)
+      % body_idx = parseBodyOrFrameID(obj,body_or_frame) returns the body index or frame
+      % id associated with the input.
+      % @param obj            -- RigidBodyManipulator object
+      % @param body_or_frame  -- Can be either: 
+      %                           * Numeric body index or frame id
+      %                           * String containing body or frame name
+      % @param robotnum       -- Scalar restricting the search to a particular
+      %                          robot. Optional. @default 0 (all robots)
+      %
+      % @retval body_idx_or_frame_id  -- Numeric body index or frame id
+      typecheck(body_or_frame,{'numeric','char'});
+      if nargin < 3, robotnum = 0; end
+      if isnumeric(body_or_frame)
+        sizecheck(body_or_frame,[1,1]);
+        body_idx_or_frame_id = body_or_frame;
       else % then it's a string
-        body_idx = findLinkInd(obj,body_id);
+        try
+          body_idx_or_frame_id = findLinkInd(obj,body_or_frame,robotnum);
+        catch ex
+          if strcmp(ex.id,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
+            try
+              body_idx_or_frame_id = findFrameID(obj,body_or_frame,robotnum);
+            catch ex2
+              if strcmp(ex.id,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
+                if robotnum == 0
+                  error('Drake:RigidBodyManipulator:UniqueFrameOrLinkNotFound', ...
+                    'Cannot find unique link or frame named %s',body_or_frame); 
+                else
+                  error('Drake:RigidBodyManipulator:UniqueFrameOrLinkNotFound', ...
+                    'Cannot find unique link or frame named %s on robot %d', ...
+                    body_or_frame, robotnum); 
+                end
+              else
+                rethrow(ex2);
+              end
+            end
+          else
+            rethrow(ex);
+          end
+        end
       end
     end
 
-    function obj = addContactShapeToBody(obj,body_id,shape)
-      % obj = addContactShapeToBody(obj,body_id,shape)
+    function obj = addContactShapeToBody(obj,body_id,shape,varargin)
+      % obj = addContactShapeToBody(obj,body_id,shape,group_name)
       %
       % obj must be re-compiled after calling this method
       %
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
       % @param shape - RigidBodyGeometry (or child class) object 
-      body_idx = obj.parseBodyID(body_id);
-      obj.body(body_idx).contact_shapes{end+1} = shape;
+      % @param group_name - String containing the name of the collision group
+      %   (optional) @default 'default'
+
+      body_idx = obj.parseBodyOrFrameID(body_id);
+      obj.body(body_idx) = obj.body(body_idx).addContactShape(shape, varargin{:});
       obj.dirty = true;
     end
 
@@ -976,18 +1053,20 @@ classdef RigidBodyManipulator < Manipulator
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
       % @param shape - RigidBodyGeometry (or child class) object 
-      body_idx = obj.parseBodyID(body_id);
+      body_idx = obj.parseBodyOrFrameID(body_id);
       obj.body(body_idx).visual_shapes{end+1} = shape;
     end
 
-    function obj = addShapeToBody(obj,body_id,shape)
+    function obj = addShapeToBody(obj,body_id,shape,varargin)
       % obj = addShapeToBody(obj,body_id,shape)
       %
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
       % @param shape - RigidBodyGeometry (or child class) object 
+      % @param group_name - String containing the name of the collision group
+      %   (optional) @default 'default'
       obj = obj.addVisualShapeToBody(body_id,shape);
-      obj = obj.addContactShapeToBody(body_id,shape);
+      obj = obj.addContactShapeToBody(body_id,shape,varargin{:});
     end
 
     function model = replaceContactShapesWithCHull(model,body_indices,varargin)
