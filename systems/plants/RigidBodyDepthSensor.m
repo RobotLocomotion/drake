@@ -1,10 +1,10 @@
-classdef RigidBodyDepthCamera < RigidBodySensor
+classdef RigidBodyDepthSensor < RigidBodySensor
   % Uses collision detection framework to simulate a depth camera rangefinder.
   %
   %
 
   methods
-    function obj = RigidBodyDepthCamera(camera_name, frame_id, min_pitch, max_pitch, num_pixel_rows, min_yaw, max_yaw, num_pixel_cols, range)
+    function obj = RigidBodyDepthSensor(sensor_name, frame_id, min_pitch, max_pitch, num_pixel_rows, min_yaw, max_yaw, num_pixel_cols, range)
       % @param name name of this camera (as a string)
       % @param frame_id ID of the RigidBodyFrame
       % @param min_pitch minimum pitch angle (in radians) that the sensor
@@ -21,7 +21,7 @@ classdef RigidBodyDepthCamera < RigidBodySensor
       %   yaw axis
       % @param range maximum range of the sensor (in meters).  can be inf.
 
-      obj.name = camera_name;
+      obj.name = sensor_name;
       obj.frame_id = frame_id;
       obj.min_pitch = min_pitch;
       obj.max_pitch = max_pitch;

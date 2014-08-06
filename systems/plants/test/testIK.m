@@ -21,6 +21,7 @@ r_foot = robot.findLinkInd('r_foot');
 l_hand = robot.findLinkInd('l_hand');
 r_hand = robot.findLinkInd('r_hand');
 head = robot.findLinkInd('head');
+world = robot.findLinkInd('world');
 l_foot_shapes = robot.getBody(l_foot).getContactShapes;
 r_foot_shapes = robot.getBody(r_foot).getContactShapes;
 l_foot_pts = [];
@@ -290,7 +291,7 @@ display('Check IK pointwise with all-to-all closest distance constraint')
 q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,abcdc,ikoptions);
 
 display('Check minimum-distance constraint')
-min_dist_cnstr = MinDistanceConstraint(robot,0.05,tspan);
+min_dist_cnstr = MinDistanceConstraint(robot,0.05,[],tspan);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
 display('Check IK pointwise with minimum-distance constraint')
 q = test_IKpointwise_userfun(robot,[0,1],[q_seed,q_seed+1e-3*randn(nq,1)],[q_nom,q_nom],kc1,pc_knee,kc2l,kc2r,kc3,kc4,kc5,kc6,min_dist_cnstr,ikoptions);
@@ -364,7 +365,7 @@ end
 
 head_pts = [[0;0;0] [0.1;0;0]];
 world_pts = [[0;0;0] [0.1;0;0]];
-head_world_dist_cnst = Point2PointDistanceConstraint(robot,head,0,head_pts,world_pts,[1.6 1.6],[1.9 1.9],tspan);
+head_world_dist_cnst = Point2PointDistanceConstraint(robot,head,world,head_pts,world_pts,[1.6 1.6],[1.9 1.9],tspan);
 q = test_IK_userfun(robot,q_seed,q_nom,kc1,qsc,kc2l,kc2r,kc3,head_world_dist_cnst,ikoptions);
 kinsol = doKinematics(robot,q);
 head_pos = forwardKin(robot,kinsol,head,head_pts,0);

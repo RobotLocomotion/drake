@@ -7,9 +7,32 @@
 using namespace Eigen;
 using namespace std;
 
+// convert Matlab cell array of strings into a C++ vector of strings
+vector<string> get_strings(const mxArray *rhs) {
+  int num = mxGetNumberOfElements(rhs);
+  vector<string> strings(num);
+  for (int i=0; i<num; i++) {
+    const mxArray *ptr = mxGetCell(rhs,i);
+    int buflen = mxGetN(ptr)*sizeof(mxChar)+1;
+    char* str = (char*)mxMalloc(buflen);
+    mxGetString(ptr, str, buflen);
+    strings[i] = string(str);
+    mxFree(str);
+  }
+  return strings;
+}
+
+
+
 /*
  * mex interface for bullet collision detection
  * closest-distance for each body to all other bodies (~(NB^2-NB)/2 points)
+ *
+ * MATLAB signature:
+ *
+ * [xA,xB,normal,distance,idxA,idxB] = ...
+ *    collisionDetectmex( mex_model_ptr,allow_multiple_contacts,
+ *                        active_collision_options);
  */
 
 void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
@@ -21,17 +44,11 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
   // first get the model_ptr back from matlab
   RigidBodyManipulator *model= (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
 
-  // Now get the list of body indices for which to compute distances
+  // Parse `active_collision_options`
   vector<int> active_bodies_idx;
+  set<string> active_group_names;
+  // First get the list of body indices for which to compute distances
   const mxArray* active_collision_options = prhs[2];
-  //DEBUG
-  //cout << "collisionDetectmex: Num fields in active_collision_options" << mxGetNumberOfFields(active_collision_options) << endl;
-  //for (int i = 0; i < mxGetNumberOfFields(active_collision_options); ++i) {
-    //const char* fieldname;
-    //fieldname = mxGetFieldNameByNumber(active_collision_options,i);
-    //cout << *fieldname << endl;
-  //}
-  //END_DEBUG
   const mxArray* body_idx = mxGetField(active_collision_options,0,"body_idx");
   if (body_idx != NULL) {
     //DEBUG
@@ -42,15 +59,41 @@ void mexFunction( int nlhs, mxArray *plhs[],int nrhs, const mxArray *prhs[] ) {
     //cout << "collisionDetectmex: n_active_bodies = " << n_active_bodies << endl;
     //END_DEBUG
     active_bodies_idx.resize(n_active_bodies);
-    memcpy(active_bodies_idx.data(),(int*) mxGetData(body_idx),sizeof(int)*n_active_bodies);
-    transform(active_bodies_idx.begin(),active_bodies_idx.end(),active_bodies_idx.begin(),
-        [](int i){return --i;});
+    memcpy(active_bodies_idx.data(),(int*) mxGetData(body_idx),
+           sizeof(int)*n_active_bodies);
+    transform(active_bodies_idx.begin(),active_bodies_idx.end(),
+              active_bodies_idx.begin(),
+              [](int i){return --i;});
+  }
+
+  // Then get the group names for which to compute distances
+  const mxArray* collision_groups = mxGetField(active_collision_options,0,
+                                               "collision_groups");
+  if (collision_groups != NULL) {
+    for (const string& str : get_strings(collision_groups)) {
+      active_group_names.insert(str);
+    }
   }
 
   vector<int> bodyA_idx, bodyB_idx;
   MatrixXd ptsA, ptsB, normals, JA, JB, Jd;
   VectorXd dist;
-  model->collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,active_bodies_idx);
+  if (active_bodies_idx.size() > 0) {
+    if (active_group_names.size() > 0) {
+      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+                              active_bodies_idx,active_group_names);
+    } else {
+      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+                              active_bodies_idx);
+    }
+  } else {
+    if (active_group_names.size() > 0) {
+      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx,
+                             active_group_names);
+    } else {
+      model-> collisionDetect(dist, normals, ptsA, ptsB, bodyA_idx, bodyB_idx);
+    }
+  }
 
   vector<int32_T> idxA(bodyA_idx.size());
   transform(bodyA_idx.begin(),bodyA_idx.end(),idxA.begin(),

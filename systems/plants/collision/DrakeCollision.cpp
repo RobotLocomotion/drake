@@ -9,6 +9,7 @@
 #endif
 
 using namespace std;
+using namespace Eigen;
 
 namespace DrakeCollision
 {
@@ -70,6 +71,49 @@ namespace DrakeCollision
   const char* unsupportedShapeException::what() const throw()
   {
     return ("Unsupported collision shape: " + shape_str + ". " +  badShapeException::what()).c_str();
+  }
+
+  bool Model::closestPointsAllBodies(std::vector<int>& bodyA_idx, 
+      std::vector<int>& bodyB_idx, 
+      MatrixXd& ptsA, MatrixXd& ptsB,
+      MatrixXd& normal, 
+      VectorXd& distance,
+      const std::set<std::string>& active_element_groups)
+  {
+    return closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB,normal,distance,
+        bodyIndices(),active_element_groups);
+  }
+
+  bool Model::closestPointsAllBodies(std::vector<int>& bodyA_idx, 
+      std::vector<int>& bodyB_idx, 
+      MatrixXd& ptsA, MatrixXd& ptsB,
+      MatrixXd& normal, 
+      VectorXd& distance,
+      const std::vector<int>& bodies_idx)
+  {
+    return closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB,normal,distance,
+        bodies_idx,elementGroupNames());
+  }
+
+  bool Model::closestPointsAllBodies(std::vector<int>& bodyA_idx, 
+      std::vector<int>& bodyB_idx, 
+      MatrixXd& ptsA, MatrixXd& ptsB,
+      MatrixXd& normal, 
+      VectorXd& distance)
+  {
+    return closestPointsAllBodies(bodyA_idx,bodyB_idx,ptsA,ptsB,normal,distance,
+        bodyIndices(),elementGroupNames());
+  }
+
+  const std::vector<int> Model::bodyIndices() const 
+  {
+    const std::vector<int> bodies_idx;
+    return bodies_idx;
+  }
+  const std::set<std::string> Model::elementGroupNames() const 
+  {
+    const std::set<std::string> active_element_groups;
+    return active_element_groups;
   }
 
 };
