@@ -147,7 +147,10 @@ classdef RigidBody < RigidBodyElement
           mean_of_pts = mean(pts,2);
           pts = bsxfun(@plus,scale_factor*bsxfun(@minus,pts,mean_of_pts),mean_of_pts);
         end
-        body.contact_shapes = { RigidBodyMeshPoints(pts) };
+        body.contact_shapes = {};
+        body.contact_shape_group = {};
+        body.collision_group_name = {};
+        body = body.addContactShape(RigidBodyMeshPoints(pts));
       end
     end
     
@@ -421,13 +424,19 @@ classdef RigidBody < RigidBodyElement
       geomnode = node.getElementsByTagName('geometry').item(0);
       if ~isempty(geomnode)
         shape = RigidBodyGeometry.parseURDFNode(geomnode,xyz,rpy,model,body.robotnum,options);
-        body.contact_shapes = {body.contact_shapes{:},shape};
+        if (node.hasAttribute('group'))
+          name=char(node.getAttribute('group'));
+        else
+          name='default';
+        end
+        body = addContactShape(body,shape,name);
       end
-      if (node.hasAttribute('group'))
-        name=char(node.getAttribute('group'));
-      else
-        name='default';
-      end
+    end
+
+    function body = addContactShape(body,shape,name)
+      if nargin < 3, name='default'; end
+      shape.name = name;
+      body.contact_shapes = [body.contact_shapes,{shape}];
       ind = find(strcmp(body.collision_group_name,name));
       if isempty(ind)
         body.collision_group_name=horzcat(body.collision_group_name,name);

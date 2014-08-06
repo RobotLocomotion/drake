@@ -1,4 +1,4 @@
-function [ytraj,xtraj] = simulate(obj,tspan,x0,options)
+function [ytraj,xtraj,lcmlog] = simulate(obj,tspan,x0,options)
 % Simulates the dynamical system (using the simulink solvers)
 %
 % @param tspan a 1x2 vector of the form [t0 tf]
@@ -9,6 +9,9 @@ function [ytraj,xtraj] = simulate(obj,tspan,x0,options)
 % @option OutputOption 'RefineOutputTimes' | 'AdditionalOutputTimes' | 'SpecifiedOutputTimes' 
 %            For variable step solver only
 % @option OutputTimes to generate output in the time sequence options.OutputTimes
+% @option capture_lcm_channels a string containing the regular expression of the
+%           channels to subscribe to (e.g. '.*' for all).  
+%           @default '' -> don't record lcm
 
 if(exist('DCSFunction') ~=3)
     error('Sorry, it looks like you have not run make yet. Please run configure and make, then rerun drake.')
@@ -23,6 +26,14 @@ if (strcmp(get_param(mdl,'SimulationStatus'),'paused'))
   feval(mdl,[],[],[],'term');  % terminate model, in case it was still running before
 end
 
+% add realtime block
+lcmlog = []; log_name=[];
+if isfield(options,'capture_lcm_channels') && ~isempty(options.capture_lcm_channels) && nargout>2
+  log_name = [mdl,'_lcm_log'];
+  add_block('drake/lcmLogger',[mdl,'/lcmLogger'],'channel_regex',['''',options.capture_lcm_channels,''''],'log_to_workspace_variable',['''',log_name,'''']);
+  fprintf(1,'Logging LCM channels ''%s''\n', options.capture_lcm_channels);
+end
+
 pstruct = obj.simulink_params;
 pstruct.StartTime = num2str(tspan(1));
 pstruct.StopTime = num2str(tspan(end));
@@ -34,14 +45,14 @@ if(isfield(options,'FixedStep'))%if using fixed-step solver and want to generate
         warning('FixedStep option can only be used for fixed-step solver');
     end
 end
-if (nargin>2) % handle initial conditions
+if (nargin>2 && ~isempty(x0)) % handle initial conditions
   if (isa(x0,'Point'))
     x0 = double(x0.inFrame(obj.getStateFrame));
   else
     typecheck(x0,'double');
     sizecheck(x0,[obj.getStateFrame.dim,1]);
   end
-  x0 = obj.stateVectorToStructure(x0);
+  x0 = stateVectorToStructure(obj,x0,mdl);
   assignin('base',[mdl,'_x0'],x0);
   pstruct.InitialState = [mdl,'_x0'];
   pstruct.LoadInitialState = 'on';
@@ -189,6 +200,12 @@ if (nargout>0)
       end
     end
   end
+  
+  if nargout>2 && ~isempty(log_name)
+    lcmlog = evalin('base',log_name);
+    evalin('base',['clear ',log_name]);
+  end
+    
 else
   sim(mdl,pstruct);
 end

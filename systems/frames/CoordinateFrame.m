@@ -290,6 +290,10 @@ classdef CoordinateFrame < handle
       str = obj.coordinates{i};
     end
     
+    function ind = findCoordinateIndex(obj,varname)
+      ind = find(strcmp(varname,obj.coordinates));
+    end
+    
     function strs = getCoordinateNames(obj)
       strs = obj.coordinates;
     end

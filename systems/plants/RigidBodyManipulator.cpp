@@ -410,10 +410,10 @@ void RigidBodyManipulator::compile(void)
   initialized=true;
 }
 
-void RigidBodyManipulator::addCollisionElement(const int body_ind, Matrix4d T_elem_to_lnk, DrakeCollision::Shape shape, vector<double> params)
+void RigidBodyManipulator::addCollisionElement(const int body_ind, Matrix4d T_elem_to_lnk, DrakeCollision::Shape shape, vector<double> params, string group_name)
 {
   bool is_static = (bodies[body_ind].parent==0);
-  collision_model->addElement(body_ind,bodies[body_ind].parent,T_elem_to_lnk,shape,params,is_static);
+  collision_model->addElement(body_ind,bodies[body_ind].parent,T_elem_to_lnk,shape,params,group_name,is_static);
 }
 
 void RigidBodyManipulator::updateCollisionElements(const int body_ind)
@@ -488,10 +488,46 @@ bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
                                             MatrixXd& xB,
                                             vector<int>& bodyA_idx,
                                             vector<int>& bodyB_idx,
-                                            vector<int>& bodies_idx)
+                                            const vector<int>& bodies_idx,
+                                            const set<string>& active_element_groups)
 {
-  return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,normal,phi,bodies_idx);
-};
+  return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
+      normal,phi,bodies_idx,active_element_groups);
+}
+
+bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
+                                            MatrixXd& normal, 
+                                            MatrixXd& xA, 
+                                            MatrixXd& xB,
+                                            vector<int>& bodyA_idx, 
+                                            vector<int>& bodyB_idx,
+                                            const vector<int>& bodies_idx)
+{
+  return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
+      normal,phi,bodies_idx);
+}
+
+bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
+                                            MatrixXd& normal, 
+                                            MatrixXd& xA, 
+                                            MatrixXd& xB,
+                                            vector<int>& bodyA_idx, 
+                                            vector<int>& bodyB_idx,
+                                            const set<string>& active_element_groups)
+{
+  return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,
+      normal,phi,active_element_groups);
+}
+
+bool RigidBodyManipulator::collisionDetect( VectorXd& phi,
+                                            MatrixXd& normal, 
+                                            MatrixXd& xA, 
+                                            MatrixXd& xB,
+                                            vector<int>& bodyA_idx, 
+                                            vector<int>& bodyB_idx)
+{
+  return collision_model->closestPointsAllBodies(bodyA_idx,bodyB_idx,xA,xB,normal,phi);
+}
 
 bool RigidBodyManipulator::allCollisions(vector<int>& bodyA_idx,
                                          vector<int>& bodyB_idx,
@@ -1503,6 +1539,17 @@ int RigidBodyManipulator::findLinkInd(string linkname, int robot)
     return ind_match;
   }
   delete[] name_match;
+}
+
+std::string RigidBodyManipulator::getBodyOrFrameName(int body_or_frame_id)
+{
+  if (body_or_frame_id>=0) {
+    return bodies[body_or_frame_id].linkname;
+  } else if (body_or_frame_id < -1) {
+    return frames[-body_or_frame_id-2].name;
+  } else {
+    return "COM";
+  }
 }
 
 

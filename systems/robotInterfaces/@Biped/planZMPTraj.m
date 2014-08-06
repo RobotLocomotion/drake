@@ -63,7 +63,9 @@ end
 
 step_knots = struct('t', options.t0, ...
   'right', steps.right(1).pos,...
-  'left', steps.left(1).pos);
+  'right_isnan', false(6,1),...
+  'left', steps.left(1).pos,...
+  'left_isnan', false(6,1));
 zmp_knots = struct('t', options.t0, 'zmp', zmp0, 'supp', supp0);
 
 istep = struct('right', 1, 'left', 1);
@@ -100,12 +102,14 @@ while 1
 
     if ~sw1.walking_params.constrain_full_foot_pose && j >= 3 && j <= (length(swing_ts) - 4)
       % Release orientation constraints on the foot during the middle of the swing
-      step_knots(end).(sw_foot)(4:5) = nan;
+      step_knots(end).([sw_foot, '_isnan']) = [false;false;false;true;true;false];
+    else
+      step_knots(end).([sw_foot, '_isnan']) = false(6,1);
     end
   end
 
   if isempty(zmp_pts)
-    instep_shift = [0.0;0.025;0];
+    instep_shift = [0.0;0.035;0]; % TODO: make this a parameter
     zmp1 = shift_step_inward(biped, st, instep_shift);
     zmp2 = feetCenter(sw1, st);
     zmp2 = zmp2(1:2);
@@ -151,6 +155,7 @@ for f = {'right', 'left'}
     Tsole = [rpy2rotmat(step_poses(4:6,j)), step_poses(1:3,j); 0 0 0 1];
     Torig = Tsole * inv(T);
     step_poses(:,j) = [Torig(1:3,4); rotmat2rpy(Torig(1:3,1:3))];
+    step_poses(step_knots(j).([foot, '_isnan']), j) = nan;
   end
   link_constraints(end+1) = struct('link_ndx', body_ind, 'pt', [0;0;0], 'min_traj', [], 'max_traj', [], 'traj', PPTrajectory(foh([step_knots.t], step_poses)));
 end

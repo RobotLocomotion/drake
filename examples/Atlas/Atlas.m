@@ -150,19 +150,19 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
 
   properties (SetAccess = protected, GetAccess = public)
     x0
-    default_footstep_params = struct('nom_forward_step', 0.15,... % m
-                                      'max_forward_step', 0.3,...% m
-                                      'max_step_width', 0.40,...% m
-                                      'min_step_width', 0.21,...% m
+    default_footstep_params = struct('nom_forward_step', 0.17,... % m
+                                      'max_forward_step', 0.18,...% m
+                                      'max_step_width', 0.32,...% m
+                                      'min_step_width', 0.23,...% m
                                       'nom_step_width', 0.26,...% m
                                       'max_outward_angle', pi/8,... % rad
                                       'max_inward_angle', 0.01,... % rad
                                       'nom_upward_step', 0.2,... % m
                                       'nom_downward_step', 0.2,...% m
-                                      'max_num_steps', 10,...
+                                      'max_num_steps', 20,...
                                       'min_num_steps', 1);
-    default_walking_params = struct('step_speed', 0.5,... % speed of the swing foot (m/s)
-                                    'step_height', 0.05,... % approximate clearance over terrain (m)
+    default_walking_params = struct('step_speed', 0.3,... % speed of the swing foot (m/s)
+                                    'step_height', 0.065,... % approximate clearance over terrain (m)
                                     'hold_frac', 0.4,... % fraction of the swing time spent in double support
                                     'drake_min_hold_time', 1.0,... % minimum time in double support (s)
                                     'mu', 1.0,... % friction coefficient

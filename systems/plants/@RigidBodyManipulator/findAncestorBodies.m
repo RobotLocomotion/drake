@@ -5,8 +5,11 @@ function ancestor_bodies = findAncestorBodies(obj, body_index)
 %   body_index, not including body_index, ordered from closest to most
 %   distant ancestor
 
-if (body_index < 1)
-  error('body index should be positive')
+if (body_index==0)
+  error('invalid body_index');
+elseif (body_index < 0)
+  fr = getFrame(obj,body_index);
+  body_index = fr.body_ind;
 end
 
 ancestor_bodies = nan(getNumBodies(obj), 1); % conservative vector size

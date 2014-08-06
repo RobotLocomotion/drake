@@ -5,17 +5,15 @@ classdef RelativeQuatConstraint < QuatConstraint
   %
   % 2(quat_a2b'*quat_des)^2-1 in [cos(tol) 1]
   properties(SetAccess = protected)
-    bodyA_idx
-    bodyB_idx
-    bodyA_name
-    bodyB_name
+    body_a = struct('idx',[],'name','');
+    body_b = struct('idx',[],'name','');
     quat_des
   end
   
   methods(Access = protected)
     function [orient_prod, dorient_prod] = evalOrientationProduct(obj,kinsol)
-      [pos_a,J_a] = forwardKin(obj.robot,kinsol,obj.bodyA_idx,[0;0;0],2);
-      [pos_b,J_b] = forwardKin(obj.robot,kinsol,obj.bodyB_idx,[0;0;0],2);
+      [pos_a,J_a] = forwardKin(obj.robot,kinsol,obj.body_a.idx,[0;0;0],2);
+      [pos_b,J_b] = forwardKin(obj.robot,kinsol,obj.body_b.idx,[0;0;0],2);
       quat_a2w = pos_a(4:7,1);
       dquat_a2w = J_a(4:7,:);
       quat_b2w = pos_b(4:7,1);
@@ -32,10 +30,10 @@ classdef RelativeQuatConstraint < QuatConstraint
   end
   
   methods
-    function obj = RelativeQuatConstraint(robot,bodyA_idx,bodyB_idx,quat_des,tol,tspan)
+    function obj = RelativeQuatConstraint(robot,body_a,body_b,quat_des,tol,tspan)
       % @param robot
-      % @param bodyA_idx     -- An int scalar, the bodyA index
-      % @param bodyB_idx     -- An int scalar, the bodyB index
+      % @param body_a     -- An int scalar, the bodyA index
+      % @param body_b     -- An int scalar, the bodyB index
       % @param quat_des      -- A 4x1 vector. The quaternion that represents the desired rotation
       % from body A frame to bodyB frame
       % @param tol           -- A scalar, the maximum allowable angle between the desired
@@ -43,17 +41,15 @@ classdef RelativeQuatConstraint < QuatConstraint
       if(nargin<6)
         tspan = [-inf,inf];
       end
+      body_a_idx = robot.parseBodyOrFrameID(body_a);
+      body_b_idx = robot.parseBodyOrFrameID(body_b);
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativeQuatConstraintType,...
-        robot.getMexModelPtr,bodyA_idx,bodyB_idx,quat_des,tol,tspan);
+        robot.getMexModelPtr,body_a_idx,body_b_idx,quat_des,tol,tspan);
       obj = obj@QuatConstraint(robot, tol,tspan);
-      typecheck(bodyA_idx,'double');
-      sizecheck(bodyA_idx,[1,1]);
-      obj.bodyA_idx = bodyA_idx;
-      obj.bodyA_name = obj.robot.getBody(obj.bodyA_idx).linkname;
-      typecheck(bodyB_idx,'double');
-      sizecheck(bodyB_idx,[1,1]);
-      obj.bodyB_idx = bodyB_idx;
-      obj.bodyB_name = obj.robot.getBody(obj.bodyB_idx).linkname;
+      obj.body_a.idx = body_a_idx;
+      obj.body_a.name = getBodyOrFrameName(obj.robot, obj.body_a.idx);
+      obj.body_b.idx = body_b_idx;
+      obj.body_b.name = getBodyOrFrameName(obj.robot, obj.body_b.idx);
       typecheck(quat_des,'double');
       sizecheck(quat_des,[4,1]);
       quat_norm = norm(quat_des);
@@ -76,7 +72,7 @@ classdef RelativeQuatConstraint < QuatConstraint
         end
           
         name_str = {sprintf('%s relative to %s orientation constraint %s', ...
-                        obj.bodyA_name,obj.bodyB_name,time_str)};
+                        obj.body_a.name,obj.body_b.name,time_str)};
       else
         name_str = [];
       end
@@ -86,8 +82,8 @@ classdef RelativeQuatConstraint < QuatConstraint
     
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
-      wTa = kinsol.T{obj.bodyA_idx};
-      wTb = kinsol.T{obj.bodyB_idx};
+      wTa = kinsol.T{obj.body_a.idx};
+      wTb = kinsol.T{obj.body_b.idx};
       bTbp = [quat2rotmat(obj.quat_des),zeros(3,1); zeros(1,3),1];
       wTbp = wTb*bTbp;
       ang_ax_a = rotmat2axis(wTa(1:3,1:3));
@@ -108,7 +104,7 @@ classdef RelativeQuatConstraint < QuatConstraint
     end
     
     function joint_idx = kinematicsPathJoints(obj)
-      [~,joint_path] = obj.robot.findKinematicPath(obj.bodyA_idx,obj.bodyB_idx);
+      [~,joint_path] = obj.robot.findKinematicPath(obj.body_a.idx,obj.body_b.idx);
       joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
     end
   end

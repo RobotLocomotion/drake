@@ -65,6 +65,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   double contact_threshold = mxGetScalar(prhs[narg++]);
   double terrain_height = mxGetScalar(prhs[narg++]); // nonzero if we're using DRCFlatTerrainMap
   
+  int contact_logic_AND = (int) mxGetScalar(prhs[narg++]); // true if we should AND plan and sensor, false if we should OR them
+
   pdata->r->doKinematics(q,false,qd);
 
   //---------------------------------------------------------------------
@@ -103,9 +105,16 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
           num_active_contact_pts += nc;
           contact_bodies.insert((int)se.body_idx); 
         }
-      } else {
+      } 
+      else {
         contactPhi(pdata->r,se,pdata->map_ptr,phi,terrain_height);
-        if (phi.minCoeff()<=contact_threshold || contact_sensor(i)==1) { // any contact below threshold (kinematically) OR contact sensor says yes contact
+        bool in_contact = true;
+        if (contact_logic_AND) { // plan is true, now check contact sensor/kinematics
+          in_contact =  (phi.minCoeff()<=contact_threshold || contact_sensor(i)==1); // any contact below threshold (kinematically) OR contact sensor says yes contact
+        }
+        // else: (plan) OR (sensor), so in_contact = true
+
+        if (in_contact) { 
           active_supports.push_back(se);
           num_active_contact_pts += nc;
           contact_bodies.insert((int)se.body_idx);
