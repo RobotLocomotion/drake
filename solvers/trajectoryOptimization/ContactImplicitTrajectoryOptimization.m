@@ -264,6 +264,8 @@ classdef ContactImplicitTrajectoryOptimization < DirectTrajectoryOptimization
     % constructs the nominal z0. Overwrite to implement in a different
     % manner
     function z0 = getInitialVars(obj,t_init,traj_init)
+      if isscalar(t_init)
+        t_init = linspace(0,t_init,obj.N);
       elseif length(t_init) ~= obj.N
         error('The initial sample times must have the same length as property N')
       end
