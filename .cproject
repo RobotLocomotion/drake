@@ -60,6 +60,7 @@
 							<builder id="org.eclipse.cdt.build.core.settings.default.builder.216261103" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="org.eclipse.cdt.build.core.settings.default.builder">
 								<outputEntries>
 									<entry excluding="include" flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="build"/>
+									<entry flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="drake/pod-build/bin"/>
 								</outputEntries>
 							</builder>
 							<tool id="cdt.managedbuild.tool.llvm.assembler.base.736592948" name="LLVM assembler" superClass="cdt.managedbuild.tool.llvm.assembler.base"/>
@@ -116,6 +117,7 @@
 							<builder id="cdt.managedbuild.target.gnu.builder.base.1207896501" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="optimal" superClass="cdt.managedbuild.target.gnu.builder.base">
 								<outputEntries>
 									<entry flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="build"/>
+									<entry excluding="include" flags="VALUE_WORKSPACE_PATH" kind="outputPath" name="drake/pod-build"/>
 								</outputEntries>
 							</builder>
 							<tool id="cdt.managedbuild.tool.gnu.archiver.base.926009875" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
@@ -172,6 +174,15 @@
 		</configuration>
 		<configuration configurationName="drake-linux"/>
 	</storageModule>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641;cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641.;cdt.managedbuild.tool.gnu.cpp.compiler.base.518212408;cdt.managedbuild.tool.gnu.cpp.compiler.input.2043481619">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641;cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641.;cdt.managedbuild.tool.gnu.c.compiler.base.501578390;cdt.managedbuild.tool.gnu.c.compiler.input.701310235">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
 		<buildTargets>
 			<target name="all" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
@@ -191,14 +202,5 @@
 				<runAllBuilders>true</runAllBuilders>
 			</target>
 		</buildTargets>
-	</storageModule>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641;cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641.;cdt.managedbuild.tool.gnu.cpp.compiler.base.518212408;cdt.managedbuild.tool.gnu.cpp.compiler.input.2043481619">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641;cdt.managedbuild.toolchain.llvm.clang.macosx.base.970840552.1256585170.47481641.;cdt.managedbuild.tool.gnu.c.compiler.base.501578390;cdt.managedbuild.tool.gnu.c.compiler.input.701310235">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
 	</storageModule>
 </cproject>
