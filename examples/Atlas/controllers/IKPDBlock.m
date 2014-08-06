@@ -124,7 +124,7 @@ classdef IKPDBlock < MIMODrakeSystem
         cdata = obj.controller_data;
         approx_args = {};
         for j = 1:length(cdata.link_constraints)
-          if cdata.is_time_varying && ~isempty(cdata.link_constraints(j).traj)
+          if cdata.lqr_is_time_varying && ~isempty(cdata.link_constraints(j).traj)
             pos = fasteval(cdata.link_constraints(j).traj,t);
             pos(1:3) = pos(1:3) - cdata.plan_shift;
             approx_args(end+1:end+3) = {cdata.link_constraints(j).link_ndx, cdata.link_constraints(j).pt, pos};
@@ -136,7 +136,7 @@ classdef IKPDBlock < MIMODrakeSystem
         
         % note: we should really only try to control COM position when in
         % contact with the environment
-        if cdata.is_time_varying
+        if cdata.lqr_is_time_varying
           com = fasteval(cdata.comtraj,t);
         else
           com = cdata.comtraj;

@@ -1,11 +1,9 @@
 classdef RelativePositionConstraint < PositionConstraint
-  % Constraining points in bodyA to be within a bounding box in B' frame on bodyB
+  % Constraining points in body A to be within a bounding box in B' frame on body B
   
   properties(SetAccess = protected)
-    bodyA_idx
-    bodyB_idx
-    bodyA_name
-    bodyB_name
+    body_a = struct('idx',[],'name','');
+    body_b = struct('idx',[],'name','');
     bTbp
   end
   
@@ -16,8 +14,8 @@ classdef RelativePositionConstraint < PositionConstraint
     function [pos,J] = evalPositions(obj,kinsol)
       % nq = obj.robot.getNumDOF();
       %[pts_world, J_world] = forwardKin(obj.robot,kinsol,obj.body,obj.pts,0);
-      [bodyA_pos,JA] = forwardKin(obj.robot,kinsol,obj.bodyA_idx,obj.pts,0);
-      [wTb,dwTb] = forwardKin(obj.robot,kinsol,obj.bodyB_idx,[0;0;0],2);
+      [bodyA_pos,JA] = forwardKin(obj.robot,kinsol,obj.body_a.idx,obj.pts,0);
+      [wTb,dwTb] = forwardKin(obj.robot,kinsol,obj.body_b.idx,[0;0;0],2);
       [bTw_quat,dbTw_quat] = quatConjugate(wTb(4:7));
       dbTw_quat = dbTw_quat*dwTb(4:7,:);
       [bTw_trans,dbTw_trans] = quatRotateVec(bTw_quat,wTb(1:3));
@@ -49,20 +47,24 @@ classdef RelativePositionConstraint < PositionConstraint
         time_str = sprintf('at time %5.2f',t);
       end
       for i = 1:obj.n_pts
-        cnst_names{3*(i-1)+1} = sprintf('%s pts(:,%d) in %s x %s',obj.bodyA_name,i,obj.bodyB_name,time_str);
-        cnst_names{3*(i-1)+2} = sprintf('%s pts(:,%d) in %s y %s',obj.bodyA_name,i,obj.bodyB_name,time_str);
-        cnst_names{3*(i-1)+3} = sprintf('%s pts(:,%d) in %s z %s',obj.bodyA_name,i,obj.bodyB_name,time_str);
+        cnst_names{3*(i-1)+1} = sprintf('%s pts(:,%d) in %s x %s',obj.body_a.name,i,obj.body_b.name,time_str);
+        cnst_names{3*(i-1)+2} = sprintf('%s pts(:,%d) in %s y %s',obj.body_a.name,i,obj.body_b.name,time_str);
+        cnst_names{3*(i-1)+3} = sprintf('%s pts(:,%d) in %s z %s',obj.body_a.name,i,obj.body_b.name,time_str);
       end
     end
   end
   
   methods
 function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
-                      bodyA_idx,bodyB_idx,bTbp,tspan)
+                      body_a,body_b,bTbp,tspan)
     % @param robot
-    % @param bodyA_idx -- An int scalar, the bodyA index
-    % @param bodyB_idx -- An int scalar, the bodyB index
-    % @param pts -- A 3xnpts double matrix, points in bodyA frame
+      % @param body_a         -- Either:
+      %                             * An integer body index or frame id OR
+      %                             * A string containing a body or frame name
+      % @param body_b         -- Either:
+      %                             * An integer body index or frame id OR
+      %                             * A string containing a body or frame name
+    % @param pts -- A 3xnpts double matrix, points in body A frame
     % @param lb -- A 3xnpts double matrix, the lower bound of the
     % position
     % @param ub -- A 3xnpts double matrix, the upper bound of the
@@ -76,12 +78,10 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
       if(nargin < 8)
         tspan = [-inf,inf];
       end
+      body_a_idx = robot.parseBodyOrFrameID(body_a);
+      body_b_idx = robot.parseBodyOrFrameID(body_b);
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.RelativePositionConstraintType,...
-        robot.getMexModelPtr,pts,lb,ub,bodyA_idx,bodyB_idx,bTbp,tspan);
-      typecheck(bodyA_idx,'double');
-      typecheck(bodyB_idx,'double');
-      sizecheck(bodyA_idx,[1,1]);
-      sizecheck(bodyB_idx,[1,1]);
+        robot.getMexModelPtr,pts,lb,ub,body_a_idx,body_b_idx,bTbp,tspan);
       typecheck(bTbp,'double');
       sizecheck(bTbp,[7,1]);
       quat_norm = norm(bTbp(4:7));
@@ -91,10 +91,10 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
       bTbp(4:7) = bTbp(4:7)/quat_norm;
 
       obj = obj@PositionConstraint(robot, pts, lb, ub,tspan);
-      obj.bodyA_idx = bodyA_idx;
-      obj.bodyA_name = obj.robot.getBody(obj.bodyA_idx).linkname;
-      obj.bodyB_idx = bodyB_idx;
-      obj.bodyB_name = obj.robot.getBody(obj.bodyB_idx).linkname;
+      obj.body_a.idx = body_a_idx;
+      obj.body_a.name = getBodyOrFrameName(obj.robot, obj.body_a.idx);
+      obj.body_b.idx = body_b_idx;
+      obj.body_b.name = getBodyOrFrameName(obj.robot, obj.body_b.idx);
       obj.bTbp = bTbp;
       bpTb_quat = quatConjugate(bTbp(4:7));
       obj.bpTb = [-quatRotateVec(bpTb_quat,bTbp(1:3));bpTb_quat];
@@ -105,7 +105,7 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
       pts_w = forwardKin(obj.robot,kinsol,1,obj.pts);
-      wTbp = kinsol.T{obj.bodyB_idx}*invHT([quat2rotmat(obj.bpTb(4:7)) obj.bpTb(1:3);0 0 0 1]);
+      wTbp = kinsol.T{obj.body_b.idx}*invHT([quat2rotmat(obj.bpTb(4:7)) obj.bpTb(1:3);0 0 0 1]);
       wPbp = wTbp(1:3,4);
       lcmgl.glDrawAxes();
       for pt = pts_w
@@ -122,7 +122,7 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
     end
     
     function joint_idx = kinematicsPathJoints(obj)
-      [~,joint_path] = obj.robot.findKinematicPath(obj.bodyA_idx,obj.bodyB_idx);
+      [~,joint_path] = obj.robot.findKinematicPath(obj.body_a.idx,obj.body_b.idx);
       joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
     end
   end

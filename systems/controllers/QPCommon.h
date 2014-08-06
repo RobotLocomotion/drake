@@ -29,6 +29,8 @@ struct QPControllerData {
   double w_grf; 
   double w_slack; 
   double Kp_ang; // angular momentum (k) P gain 
+  double Kp_accel; // gain for support acceleration constraint: accel=-Kp_accel*vel
+
   int n_body_accel_inputs;
   int n_body_accel_constraints;
   VectorXd body_accel_input_weights;

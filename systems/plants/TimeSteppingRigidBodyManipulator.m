@@ -788,12 +788,21 @@ classdef TimeSteppingRigidBodyManipulator < DrakeSystem
       [varargout{:}] = getCMM(obj.manip,varargin{:});
     end
 
+    function varargout = getCMMdA(obj,varargin)
+      varargout=cell(1,nargout);
+      [varargout{:}] = getCMMdA(obj.manip,varargin{:});
+    end
+
     function joint_ind = findJointInd(model,varargin)
       joint_ind = findJointInd(model.manip,varargin{:});
     end
 
     function body_ind = findLinkInd(model,varargin)
       body_ind = findLinkInd(model.manip,varargin{:});
+    end
+
+    function indices = findJointIndices(model, varargin)
+      indices = findJointIndices(model.manip,varargin{:});
     end
 
     function body = findLink(model,varargin)

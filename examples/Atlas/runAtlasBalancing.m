@@ -8,7 +8,7 @@ end
 addpath(fullfile(getDrakePath,'examples','ZMP'));
 addpath(fullfile(getDrakePath,'examples','Atlas','controllers'));
 
-% put robot in a random x,y,yaw position and balance for 3 seconds
+% put robot in a random x,y,yaw position and balance for 2 seconds
 visualize = true;
 
 if (nargin<1); use_mex = true; end
@@ -117,7 +117,7 @@ sys = mimoFeedback(qt,sys,[],[],[],outs);
 
 if visualize
   v = r.constructVisualizer;
-  v.display_dt = 0.05;
+  v.display_dt = 0.01;
   S=warning('off','Drake:DrakeSystem:UnsupportedSampleTime');
   output_select(1).system=1;
   output_select(1).output=1;
@@ -126,7 +126,7 @@ if visualize
 end
 x0(3) = 1.0; % drop it a bit
 
-traj = simulate(sys,[0 3],x0);
+traj = simulate(sys,[0 2],x0);
 if visualize
   playback(v,traj,struct('slider',true));
 end

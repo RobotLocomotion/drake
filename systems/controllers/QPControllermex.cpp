@@ -17,16 +17,6 @@
 
 using namespace std;
 
-template <int Rows, int Cols>
-mxArray* eigenToMatlab(Matrix<double,Rows,Cols> &m)
-{
-  mxArray* pm = mxCreateDoubleMatrix(m.rows(),m.cols(),mxREAL);
-  if (m.rows()*m.cols()>0)
-    memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
-  return pm;
-}
-
-
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   int error;
@@ -61,6 +51,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pm = myGetProperty(pobj,"Kp_ang");
     pdata->Kp_ang = mxGetScalar(pm);
 
+    pm = myGetProperty(pobj,"Kp_accel");
+    pdata->Kp_accel = mxGetScalar(pm);
+
     pm= myGetProperty(pobj,"n_body_accel_inputs");
     pdata->n_body_accel_inputs = mxGetScalar(pm); 
 
@@ -76,7 +69,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     // get robot mex model ptr
     if (!mxIsNumeric(prhs[2]) || mxGetNumberOfElements(prhs[2])!=1)
-      mexErrMsgIdAndTxt("DRC:QPControllermex:BadInputs","the third argument should be the robot mex ptr");
+      mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the third argument should be the robot mex ptr");
     memcpy(&(pdata->r),mxGetData(prhs[2]),sizeof(pdata->r));
     
     pdata->B.resize(mxGetM(prhs[3]),mxGetN(prhs[3]));
@@ -98,7 +91,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
      // get the map ptr back from matlab
      if (!mxIsNumeric(prhs[6]) || mxGetNumberOfElements(prhs[6])!=1)
-     mexErrMsgIdAndTxt("DRC:QPControllermex:BadInputs","the seventh argument should be the map ptr");
+     mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the seventh argument should be the map ptr");
      memcpy(&pdata->map_ptr,mxGetPr(prhs[6]),sizeof(pdata->map_ptr));
     
 //    pdata->map_ptr = NULL;
@@ -158,7 +151,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   // first get the ptr back from matlab
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("DRC:QPControllermex:BadInputs","the first argument should be the ptr");
+    mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the first argument should be the ptr");
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
 
 //  for (i=0; i<pdata->r->num_bodies; i++)
@@ -377,8 +370,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     Aeq.block(6,0,neps,nq) = Jp;
     Aeq.block(6,nq,neps,nf) = MatrixXd::Zero(neps,nf);  // note: obvious sparsity here
     Aeq.block(6,nq+nf,neps,neps) = MatrixXd::Identity(neps,neps);             // note: obvious sparsity here
-    // beq.segment(6,neps) = (-Jpdot - 1.0*Jp)*qdvec; // TODO: parameterize
-    beq.segment(6,neps) = -Jpdot*qdvec; // TODO: parameterize
+    beq.segment(6,neps) = (-Jpdot -pdata->Kp_accel*Jp)*qdvec; 
   }    
   
   // add in body spatial equality constraints
@@ -521,7 +513,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
 
     // add in body spatial acceleration cost terms
-    int w_i;
+    double w_i;
     for (int i=0; i<pdata->n_body_accel_inputs; i++) {
       w_i=pdata->body_accel_input_weights(i);
       if (w_i > 0) {

@@ -78,7 +78,7 @@ end
 q_seed = q_seed_traj.eval(t);
 q_nom = q_nom_traj.eval(t);
 qdot0_seed = q_seed_traj.deriv(t(1));
-if(use_mex || ikoptions.use_mex )
+if (use_mex || ikoptions.use_mex) && exist('inverseKinTrajmex','file')
   [q,qdot,qddot,info,infeasible_constraint] = inverseKinTrajmex(obj.getMexModelPtr,t,qdot0_seed,q_seed,q_nom,constraint_mex{:},ikoptions_mex);
 else
   if(ikoptions.fixInitialState)

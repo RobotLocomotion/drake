@@ -10,7 +10,7 @@ if (size(b,2)>1) % then b is a matrix, call my other method
   n = size(b,1);
   m = size(A,2);
   k = size(A,1)/n;
-  y = matGradMultMat(sparse(k,n),b,A,sparse(prod(size(b)),m)); % with a minor abuse of notation
+  y = matGradMultMat(sparse(k,n),b,A,sparse(numel(b),m)); % with a minor abuse of notation
   return;
 end
 
@@ -29,7 +29,7 @@ n = length(b);
 m = size(A,2);
 k = size(A,1)/n;
 
-B = sparse(repmat((1:k)',n,1),1:k*n,reshape(repmat(b',k,1),k*n,1),k,k*n);
+B = sparse(repmat((1:k)',n,1),1:k*n,reshape(bsxfun(@times,b',ones(k,1)),k*n,1),k,k*n);
 y = B*A;
 % B_row=repmat(reshape(diag([b;zeros(k-n-1,1)]),1,(k-1)^2),1,k);
 % B =  reshape(B_row(1:k*k*n),k*n,k)';
