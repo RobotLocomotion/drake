@@ -75,16 +75,16 @@ classdef BodyMotionControlBlock < DrakeSystem
     end
    
     function y=output(obj,t,~,x)
-      ctrl_data = obj.controller_data;
-      link_con_ind = [ctrl_data.link_constraints.link_ndx]==obj.body_ind;
-      body_des = fasteval(ctrl_data.link_constraints(link_con_ind).traj,t);
-      if isfield(ctrl_data.link_constraints(link_con_ind),'dtraj')
-        body_v_des = fasteval(ctrl_data.link_constraints(link_con_ind).dtraj,t);
+      link_con = obj.controller_data.link_constraints;
+      ind = [link_con.link_ndx]==obj.body_ind;
+      body_des = fasteval(link_con(ind).traj,t);
+      if isfield(link_con(ind),'dtraj') && ~isempty(link_con(ind).dtraj)
+        body_v_des = fasteval(link_con(ind).dtraj,t);
       else
         body_v_des = [0;0;0;0;0;0];
       end
-      if isfield(ctrl_data.link_constraints(link_con_ind),'ddtraj')
-        body_vdot_des = fasteval(ctrl_data.link_constraints(link_con_ind).ddtraj,t);
+      if isfield(link_con(ind),'ddtraj') && ~isempty(link_con(ind).ddtraj)
+        body_vdot_des = fasteval(link_con(ind).ddtraj,t);
       else
         body_vdot_des = [0;0;0;0;0;0];
       end 
