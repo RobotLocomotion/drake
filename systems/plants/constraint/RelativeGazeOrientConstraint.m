@@ -18,15 +18,17 @@ classdef RelativeGazeOrientConstraint < GazeOrientConstraint
   end
   
   methods
-    function obj = RelativeGazeOrientConstraint(robot,tspan,body_a_idx, ...
-        body_b_idx,axis,quat_des, ...
+    function obj = RelativeGazeOrientConstraint(robot,tspan,body_a, ...
+        body_b,axis,quat_des, ...
         threshold,conethreshold)
       obj = obj@GazeOrientConstraint(robot,tspan,axis,quat_des,threshold, ...
         conethreshold);
+      body_a_idx = robot.parseBodyOrFrameID(body_a);
+      body_b_idx = robot.parseBodyOrFrameID(body_b);
       obj.body_a.idx = body_a_idx;
-      obj.body_a.name = getLinkName(obj.robot, obj.body_a.idx);
+      obj.body_a.name = getBodyOrFrameName(obj.robot, obj.body_a.idx);
       obj.body_b.idx = body_b_idx;
-      obj.body_b.name = getLinkName(obj.robot, obj.body_b.idx);
+      obj.body_b.name = getBodyOrFrameName(obj.robot, obj.body_b.idx);
     end
 
     

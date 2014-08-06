@@ -15,7 +15,15 @@ function [body_path, joint_path, signs] = findKinematicPath(obj, start_body, end
 % Throws an error if there is no path between the bodies
 % 
 
+if (start_body < 0)
+  fr = getFrame(obj,start_body);
+  start_body = fr.body_ind;
+end
 
+if (end_body < 0)
+  fr = getFrame(obj,end_body);
+  end_body = fr.body_ind;
+end
 
 ancestors1 = [start_body; findAncestorBodies(obj, start_body)];
 ancestors2 = [end_body; findAncestorBodies(obj, end_body)];

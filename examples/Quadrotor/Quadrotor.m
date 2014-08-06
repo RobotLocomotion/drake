@@ -19,7 +19,7 @@ classdef Quadrotor < RigidBodyManipulator
           obj = addSensor(obj,lidar);
         case 'kinect'
           obj = addFrame(obj,RigidBodyFrame(findLinkInd(obj,'base_link'),[.35;0;0],zeros(3,1),'kinect_frame'));
-          kinect = RigidBodyDepthCamera('kinect',findFrameId(obj,'kinect_frame'),-.4,.4,12,-.5,.5,30,10);
+          kinect = RigidBodyDepthSensor('kinect',findFrameId(obj,'kinect_frame'),-.4,.4,12,-.5,.5,30,10);
           kinect = enableLCMGL(kinect);
           obj = addSensor(obj,kinect);
       end
@@ -123,11 +123,13 @@ classdef Quadrotor < RigidBodyManipulator
       
       sys = cascade(ConstantTrajectory(u0),sys);
 
-      sys = cascade(sys,v);
-      simulate(sys,[0 2],double(x0)+.1*randn(12,1));
+%      sys = cascade(sys,v);
+%      simulate(sys,[0 2],double(x0)+.1*randn(12,1));
       
-%      [ytraj,xtraj] = simulate(sys,[0 2],double(x0)+.1*randn(12,1));
-%      v.playback(xtraj);
+      options.capture_lcm_channels = 'LCMGL';
+      [ytraj,xtraj,lcmlog] = simulate(sys,[0 2],double(x0)+.1*randn(12,1),options);
+      lcmlog
+      v.playback(xtraj,struct('lcmlog',lcmlog));
 %      figure(1); clf; fnplt(ytraj);
     end
   end

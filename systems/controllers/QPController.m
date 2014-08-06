@@ -110,6 +110,15 @@ classdef QPController < MIMODrakeSystem
       obj.Kp_ang = 1.0;
     end       
 
+    % gain for support acceleration constraint: accel=-Kp_accel*vel
+    if isfield(options,'Kp_accel')
+      typecheck(options.Kp_accel,'double');
+      sizecheck(options.Kp_accel,1);
+      obj.Kp_accel = options.Kp_accel;
+    else
+      obj.Kp_accel = 0.0; % default desired acceleration=0
+    end       
+
     % hard bound on slack variable values
     if isfield(options,'slack_limit')
       typecheck(options.slack_limit,'double');
@@ -412,7 +421,7 @@ classdef QPController < MIMODrakeSystem
       if nc > 0
         % relative acceleration constraint
         Aeq_{2} = Jp*Iqdd + Ieps;
-        beq_{2} = -Jpdot*qd - 0.0*Jp*qd; % TODO: parameterize
+        beq_{2} = -Jpdot*qd - obj.Kp_accel*Jp*qd; 
       end
 
       eq_count=3;
@@ -667,6 +676,7 @@ classdef QPController < MIMODrakeSystem
     w_slack; % scalar slack var weight
     slack_limit; % maximum absolute magnitude of acceleration slack variable values
     Kp_ang; % proportunal gain for angular momentum feedback
+    Kp_accel; % gain for support acceleration constraint: accel=-Kp_accel*vel
     rfoot_idx;
     lfoot_idx;
     gurobi_options = struct();

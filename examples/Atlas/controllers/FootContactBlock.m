@@ -10,10 +10,23 @@ classdef FootContactBlock < MIMODrakeSystem
     using_flat_terrain; % true if using DRCFlatTerrain
     contact_threshold; % min height above terrain to be considered in contact
     use_lcm;
+    use_contact_logic_OR;
   end
   
   methods
     function obj = FootContactBlock(r,controller_data,options)
+      % @param r rigid body manipulator instance
+      % @param controller_data QPControllerData object 
+      % @param options struct
+      % @option num_outputs - specifies the number of output copies (>1)
+      % @option contact_threshold - minimum height above terrain for points to be in contact
+      % @option use_lcm - whether or not to listen for foot contact signals over LCM
+      % @option use_contact_logic_OR - only applies for time-varying case
+      %         if false: always do a logical AND with planned support 
+      %           and sensed support
+      %         if true: do logical OR with planned support and sensed 
+      %           support except when breaking contact
+
       typecheck(r,'Biped');
       typecheck(controller_data,'QPControllerData');
        
@@ -61,6 +74,18 @@ classdef FootContactBlock < MIMODrakeSystem
         obj.use_lcm = true;
       end
 
+      if isfield(options,'use_contact_logic_OR')
+        % only applies for time-varying case
+        % false: always do a logical AND with planned support and sensed support
+        % true: do logical OR with planned support and sensed support
+        % except when breaking contact
+        typecheck(options.use_contact_logic_OR,'logical');
+        sizecheck(options.use_contact_logic_OR,[1 1]);
+        obj.use_contact_logic_OR = options.use_contact_logic_OR;
+      else
+        obj.use_contact_logic_OR = false;
+      end
+      
       if isfield(options,'dt')
         typecheck(options.dt,'double');
         sizecheck(options.dt,[1 1]);
@@ -110,11 +135,17 @@ classdef FootContactBlock < MIMODrakeSystem
     function varargout=mimoOutput(obj,t,~,x)      
       ctrl_data = obj.controller_data;
 
+      contact_logic_AND = true;
       if (ctrl_data.lqr_is_time_varying)
         % extract current desired supports
         supp_idx = find(ctrl_data.support_times<=t,1,'last');
         supp = ctrl_data.supports(supp_idx);      
-      else
+        if obj.use_contact_logic_OR && supp_idx > 1
+          supp_prev = ctrl_data.supports(supp_idx-1);
+          breaking_contact = length(supp_prev.bodies)>length(supp.bodies);
+          contact_logic_AND = breaking_contact;
+        end  
+      else      
         supp = ctrl_data.supports;
       end
       
@@ -142,7 +173,7 @@ classdef FootContactBlock < MIMODrakeSystem
         height = 0;
       end
       
-      active_supports = supportDetectmex(obj.mex_ptr.data,x,supp,contact_sensor,contact_thresh,height);
+      active_supports = supportDetectmex(obj.mex_ptr.data,x,supp,contact_sensor,contact_thresh,height,contact_logic_AND);
 
       y = [1.0*any(active_supports==obj.lfoot_idx); 1.0*any(active_supports==obj.rfoot_idx)];
       if obj.num_outputs > 1

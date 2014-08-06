@@ -1,38 +1,27 @@
 classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
-  % constrain the distance between ptA(:,i) on bodyA to ptB(:,i) on bodyB to be within the range of
+  % constrain the distance between ptA(:,i) on body A to ptB(:,i) on body B to be within the range of
   % [lb(i) ub(i)]. To avoid singularity, the constraint is distance^2 in
   % [lb^2 ub^2]
-  % @param robot          -- 
-  % @param bodyA          -- A scalar, the index of bodyA. If it is the world, set bodyA=0
-  % @param bodyB          -- A scalar, the index of bodyB. If it is the world, set bodyB=0
-  % @param ptA            -- A 3xnpts vector. The location of ptA in bodyA frame
-  % @param ptB            -- A 3xnpts vector. The location of ptB in bodyB frame
-  % @param dist_lb        -- A 1xnpts nonnegative vector. the lower bound of the distance
-  % @param dist_ub        -- A 1xnpts nonnegative vector. the upper bound of the distance
-  % @param tspan          -- A 1x2 array, the time span of the constraint. Optional
-  %                          argument, default is [-inf inf]
   properties(SetAccess = protected)
-    bodyA
-    bodyB
+    body_a = struct('idx',[],'name','');
+    body_b = struct('idx',[],'name','');
     ptA
     ptB
     dist_lb
     dist_ub
-    bodyA_name;
-    bodyB_name;
   end
   
   methods(Access = protected)
     function [c,dc] = evalValidTime(obj,kinsol)      
       nq = obj.robot.getNumDOF();
-      if(obj.bodyA ~= 0)
-        [posA,dposA] = forwardKin(obj.robot,kinsol,obj.bodyA,obj.ptA,0);
+      if(obj.body_a.idx ~= 1)
+        [posA,dposA] = forwardKin(obj.robot,kinsol,obj.body_a.idx,obj.ptA,0);
       else
         posA = obj.ptA;
         dposA = zeros(3*obj.num_constraint,nq);
       end
-      if(obj.bodyB ~= 0)
-        [posB,dposB] = forwardKin(obj.robot,kinsol,obj.bodyB,obj.ptB,0);
+      if(obj.body_b.idx ~= 1)
+        [posB,dposB] = forwardKin(obj.robot,kinsol,obj.body_b.idx,obj.ptB,0);
       else
         posB = obj.ptB;
         dposB = zeros(3*obj.num_constraint,nq);
@@ -46,41 +35,35 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
   end
   
   methods
-    function obj = Point2PointDistanceConstraint(robot,bodyA,bodyB,ptA,ptB,dist_lb,dist_ub,tspan)
+    function obj = Point2PointDistanceConstraint(robot,body_a,body_b,ptA,ptB,dist_lb,dist_ub,tspan)
+      % @param robot          -- RigidBodyManipulator object
+      % @param body_a         -- Either:
+      %                             * An integer body index or frame id OR
+      %                             * A string containing a body or frame name
+      % @param body_b         -- Either:
+      %                             * An integer body index or frame id OR
+      %                             * A string containing a body or frame name
+      % @param ptA            -- A 3xnpts vector. The location of ptA in body A frame
+      % @param ptB            -- A 3xnpts vector. The location of ptB in body B frame
+      % @param dist_lb        -- A 1xnpts nonnegative vector. the lower bound of the distance
+      % @param dist_ub        -- A 1xnpts nonnegative vector. the upper bound of the distance
+      % @param tspan          -- A 1x2 array, the time span of the constraint. Optional
+      %                          argument, default is [-inf inf]
       if(nargin == 7)
         tspan = [-inf inf];
       end
-      mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.Point2PointDistanceConstraintType,robot.getMexModelPtr,bodyA,bodyB,ptA,ptB,dist_lb,dist_ub,tspan);
+      body_a_idx = robot.parseBodyOrFrameID(body_a);
+      body_b_idx = robot.parseBodyOrFrameID(body_b);
+      if(body_a_idx == body_b_idx)
+        error('Point2PointDistanceConstraint:SameBodies',  ...
+        'body_a and body_b should refer different frames or bodies');
+      end
+      mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.Point2PointDistanceConstraintType,robot.getMexModelPtr,body_a_idx,body_b_idx,ptA,ptB,dist_lb,dist_ub,tspan);
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
-      if(~isnumeric(bodyA))
-        error('Point2PointDistanceConstraint: bodyA should be numeric');
-      end
-      if(~isnumeric(bodyB))
-        error('Point2PointDistanceConstraint: bodyB should be numeric');
-      end
-      sizecheck(bodyA,[1,1]);
-      sizecheck(bodyB,[1,1]);
-      if(bodyA>robot.getNumBodies || bodyA <0)
-        error('Point2PointDistanceConstraint: bodyA should be within [0 robot.getNumBodies]');
-      end
-      if(bodyB>robot.getNumBodies || bodyB <0)
-        error('Point2PointDistanceConstraint: bodyB should be within [0 robot.getNumBodies]');
-      end
-      if(bodyA == bodyB)
-        error('Point2PointDistanceConstraint: bodyA and bodyB should be different');
-      end
-      obj.bodyA = floor(bodyA);
-      obj.bodyB = floor(bodyB);
-      if(obj.bodyA ~= 0)
-        obj.bodyA_name = obj.robot.getBody(obj.bodyA).linkname;
-      else
-        obj.bodyA_name = 'World';
-      end
-      if(obj.bodyB ~= 0)
-        obj.bodyB_name = obj.robot.getBody(obj.bodyB).linkname;
-      else
-        obj.bodyB_name = 'World';
-      end
+      obj.body_a.idx = body_a_idx;
+      obj.body_b.idx = body_b_idx;
+      obj.body_a.name = getBodyOrFrameName(obj.robot, obj.body_a.idx);
+      obj.body_b.name = getBodyOrFrameName(obj.robot, obj.body_b.idx);
       if(~isnumeric(ptA))
         error('Point2PointDistanceConstraint: ptA should be numeric');
       end
@@ -124,7 +107,7 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
       if(obj.isTimeValid(t))
         name_str = cell(obj.num_constraint,1);
         for i = 1:obj.num_constraint
-          name_str{i} = sprintf('distance between %s pt %d to %s pt %d',obj.bodyA_name,i,obj.bodyB_name,i);
+          name_str{i} = sprintf('distance between %s pt %d to %s pt %d',obj.body_a.name,i,obj.body_a.name,i);
         end
       else
         name_str = {};
@@ -132,13 +115,7 @@ classdef Point2PointDistanceConstraint < SingleTimeKinematicConstraint
     end
     
     function joint_idx = kinematicsPathJoints(obj)
-      if(obj.bodyA == 0)
-        [~,joint_path] = obj.robot.findKinematicPath(1,obj.bodyB);
-      elseif(obj.bodyB == 0)
-        [~,joint_path] = obj.robot.findKinematicPath(obj.bodyA,1);
-      else
-        [~,joint_path] = obj.robot.findKinematicPath(obj.bodyA,obj.bodyB);
-      end
+      [~,joint_path] = obj.robot.findKinematicPath(obj.body_a.idx,obj.body_b.idx);
       joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
     end
   end

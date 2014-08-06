@@ -16,9 +16,9 @@ Library {
   ModifiedByFormat	  "%<Auto>"
   LastModifiedBy	  "russt"
   ModifiedDateFormat	  "%<Auto>"
-  LastModifiedDate	  "Sat Oct 19 02:02:00 2013"
-  RTWModifiedTimeStamp	  304048914
-  ModelVersionFormat	  "1.%<AutoIncrement:26>"
+  LastModifiedDate	  "Tue Jul 22 07:06:43 2014"
+  RTWModifiedTimeStamp	  327913595
+  ModelVersionFormat	  "1.%<AutoIncrement:29>"
   ConfigurationManager	  "None"
   SampleTimeColors	  off
   SampleTimeAnnotations	  off
@@ -566,7 +566,7 @@ Library {
       }
       Name		      "Configuration"
       CurrentDlgPage	      "Solver"
-      ConfigPrmDlgPosition     [ 1480, 274, 2360, 904 ] 
+      ConfigPrmDlgPosition     [ 1480, 274, 2360, 904 ]
     }
     PropName		    "ConfigurationSets"
   }
@@ -618,7 +618,7 @@ Library {
   }
   System {
     Name		    "drake"
-    Location		    [450, 368, 1030, 628]
+    Location		    [451, 413, 1031, 673]
     Open		    on
     ModelBrowserVisibility  off
     ModelBrowserWidth	    200
@@ -632,7 +632,7 @@ Library {
     ShowPageBoundaries	    off
     ZoomFactor		    "100"
     ReportName		    "simulink-default.rpt"
-    SIDHighWatermark	    "6"
+    SIDHighWatermark	    "7"
     Block {
       BlockType		      S-Function
       Name		      "DrakeSystem"
@@ -680,6 +680,31 @@ Library {
       MaskPortRotate	      "default"
       MaskIconUnits	      "autoscale"
       MaskValueString	      "'channel'|1|0|[.005,0]"
+    }
+    Block {
+      BlockType		      S-Function
+      Name		      "lcmLogger"
+      SID		      "7"
+      Ports		      []
+      Position		      [290, 25, 371, 54]
+      FunctionName	      "lcmLogger"
+      Parameters	      "channel_regex,log_to_workspace_variable"
+      EnableBusSupport	      off
+      MaskPromptString	      "Channel Regex|Workspace log variable"
+      MaskStyleString	      "edit,edit"
+      MaskVariables	      "channel_regex=@1;log_to_workspace_variable=@2;"
+      MaskTunableValueString  "on,on"
+      MaskCallbackString      "|"
+      MaskEnableString	      "on,on"
+      MaskVisibilityString    "on,on"
+      MaskToolTipString	      "on,on"
+      MaskDisplay	      "fprintf('LCM Logger')"
+      MaskIconFrame	      on
+      MaskIconOpaque	      on
+      MaskIconRotate	      "none"
+      MaskPortRotate	      "default"
+      MaskIconUnits	      "autoscale"
+      MaskValueString	      "'.*'|'lcm_log'"
     }
     Block {
       BlockType		      M-S-Function
