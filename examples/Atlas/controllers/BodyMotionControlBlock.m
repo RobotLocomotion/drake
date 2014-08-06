@@ -88,7 +88,7 @@ classdef BodyMotionControlBlock < DrakeSystem
       else
         body_vdot_des = [0;0;0;0;0;0];
       end 
-      if (obj.use_mex == 0)
+      if (obj.use_mex == 0 || obj.use_mex==2)
         q = x(1:obj.nq);
         qd = x(obj.nq+1:end);
         kinsol = doKinematics(obj.robot,q,false,true,qd);
@@ -99,7 +99,11 @@ classdef BodyMotionControlBlock < DrakeSystem
         err = [body_des(1:3)-p(1:3);angleDiff(p(4:end),body_des(4:end))];
 
         body_vdot = obj.Kp.*err + obj.Kd.*(body_v_des-J*qd) + body_vdot_des; 
-  		
+        if obj.use_mex == 2
+          % check that matlab/mex agree
+          body_vdot_mex = bodyMotionControlmex(obj.mex_ptr.data,x,body_des,body_v_des,body_vdot_des);  
+          valuecheck(body_vdot_mex,body_vdot);
+        end
       else
         body_vdot = bodyMotionControlmex(obj.mex_ptr.data,x,body_des,body_v_des,body_vdot_des);  
       end
