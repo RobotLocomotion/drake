@@ -27,3 +27,5 @@ if (eigen3_FOUND)
   target_link_libraries(supportDetectmex drakeRBM drakeControlUtil)
 
 endif(eigen3_FOUND)
+
+add_subdirectory(test)

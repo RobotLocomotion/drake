@@ -238,8 +238,10 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   return k;
 }
 
-VectorXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement>& active_supports, const int nd, const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta)
+VectorXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement>& active_supports,
+    const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta)
 {
+  const int nd = B.cols() / normals.cols();
   VectorXd individual_cops(3 * active_supports.size());
   individual_cops.fill(std::numeric_limits<double>::quiet_NaN());
   int normals_start_col = 0;
@@ -281,7 +283,7 @@ VectorXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
         auto normal_torquej = normalj.dot(torquej);
         auto tangential_torquej = torquej - normalj * normal_torquej;
         Vector4d cop_bodyj;
-        cop_bodyj << normalj.cross(tangential_torquej) / fzj + min_contact_position_z * normalj, 1.0;
+        cop_bodyj << normalj.cross(tangential_torquej) / fzj + min_contact_position_z * normalj, 1.0; // TODO: should translate along force line of action
         Vector3d cop_worldj;
         r->forwardKin(active_support.body_idx, cop_bodyj, 0, cop_worldj);
         individual_cops.segment<3>(3 * j) = cop_worldj;
