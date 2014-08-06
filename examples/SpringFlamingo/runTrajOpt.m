@@ -5,7 +5,7 @@ warning('off','Drake:RigidBodyManipulator:UnsupportedJointLimits');
 options.terrain = RigidBodyFlatTerrain();
 options.floating = true;
 options.ignore_self_collisions = true;
-p = PlanarRigidBodyManipulator('../spring_flamingo_nobase.urdf',options);
+p = PlanarRigidBodyManipulator('spring_flamingo_nobase.urdf',options);
 % trajopt = ContactImplicitTrajectoryOptimization(p,[],[],[],10,[1 1]);
 
 %todo: add joint limits, periodicity constraint
