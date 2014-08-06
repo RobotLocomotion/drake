@@ -96,7 +96,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   double min_foot_z = std::min(lfoot_pose(2),rfoot_pose(2));
-  double mean_foot_yaw = (lfoot_pose(5)+rfoot_pose(5))/2.0;
+  double mean_foot_yaw = angleAverage(lfoot_pose(5),rfoot_pose(5));
 
   double pelvis_height_desired = pdata->alpha*pdata->pelvis_height_previous + (1.0-pdata->alpha)*(min_foot_z + pdata->nominal_pelvis_height); 
   pdata->pelvis_height_previous = pelvis_height_desired;
