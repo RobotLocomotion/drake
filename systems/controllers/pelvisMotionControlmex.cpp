@@ -4,7 +4,8 @@
  *
  */
 
- #include "controlUtil.h"
+#include "controlUtil.h"
+#include "drakeUtil.h"
  
 struct PelvisMotionControlData {
   RigidBodyManipulator* r;
