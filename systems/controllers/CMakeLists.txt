@@ -1,8 +1,9 @@
 if (eigen3_FOUND)
+  include_directories (${CMAKE_SOURCE_DIR}/util )
   pods_find_pkg_config(gurobi)
 
   add_mex(drakeControlUtil SHARED controlUtil.cpp)
-  target_link_libraries(drakeControlUtil drakeRBM drakeUtil)
+  target_link_libraries(drakeControlUtil drakeRBM)
   pods_install_libraries(drakeControlUtil)
   pods_install_headers(controlUtil.h DESTINATION drake)
   pods_install_pkg_config_file(drake-control-util
@@ -20,9 +21,9 @@ if (eigen3_FOUND)
   target_link_libraries(bodyMotionControlmex drakeRBM drakeControlUtil)
 
   add_mex(pelvisMotionControlmex pelvisMotionControlmex.cpp)
-  target_link_libraries(pelvisMotionControlmex drakeRBM drakeControlUtil)
+  target_link_libraries(pelvisMotionControlmex drakeRBM drakeUtil drakeControlUtil)
 
   add_mex(supportDetectmex supportDetectmex.cpp)
-  target_link_libraries(supportDetectmex drakeRBM drakeUtil drakeControlUtil)
+  target_link_libraries(supportDetectmex drakeRBM drakeControlUtil)
 
 endif(eigen3_FOUND)
