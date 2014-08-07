@@ -5,10 +5,12 @@
  *      Author: russt
  */
 
-#include <mex.h>
+#include "drakeUtil.h"
 #include <string.h>
 #include <string>
 #include <math.h>
+#include <limits>
+#include <Eigen/Dense>
 
 using namespace std;
 
@@ -112,3 +114,32 @@ double angleAverage(double theta1, double theta2) {
   return angle_mean;
 }
 
+std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torque, Eigen::Vector3d force, Eigen::Vector3d normal, Eigen::Vector3d point_on_contact_plane)
+{
+  // TODO: implement multi-column version
+  using namespace Eigen;
+
+  if (abs(normal.squaredNorm() - 1.0) > 1e-12) {
+    mexErrMsgIdAndTxt("Drake:resolveCenterOfPressure:BadInputs", "normal should be a unit vector");
+  }
+
+  Vector3d cop;
+  double normal_torque_at_cop;
+
+  double fz = normal.dot(force);
+  bool cop_exists = abs(fz) > 1e-12;
+
+  if (cop_exists) {
+    auto torque_at_point_on_contact_plane = torque - point_on_contact_plane.cross(force);
+    double normal_torque_at_point_on_contact_plane = normal.dot(torque_at_point_on_contact_plane);
+    auto tangential_torque = torque_at_point_on_contact_plane - normal * normal_torque_at_point_on_contact_plane;
+    cop = normal.cross(tangential_torque) / fz + point_on_contact_plane;
+    auto torque_at_cop = torque - cop.cross(force);
+    normal_torque_at_cop = normal.dot(torque_at_cop);
+  }
+  else {
+    cop.setConstant(std::numeric_limits<double>::quiet_NaN());
+    normal_torque_at_cop = std::numeric_limits<double>::quiet_NaN();
+  }
+  return std::pair<Vector3d, double>(cop, normal_torque_at_cop);
+}
