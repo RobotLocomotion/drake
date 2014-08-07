@@ -20,14 +20,26 @@ namespace DrakeCollision
     btCollisionShape* bt_shape;
     switch (shape) {
       case BOX:
+        {
         //DEBUG
         //std::cout << "BulletElement::BulletElement: Create BOX ..." << std::endl;
         //END_DEBUG
-        bt_shape = new btBoxShape( btVector3(params[0]/2,params[1]/2,params[2]/2) );
-        bt_shape->setMargin(0.0);
+        btBoxShape bt_box( btVector3(params[0]/2,params[1]/2,params[2]/2) );
+        /* Strange things happen to the collision-normals when we use the
+         * convex interface to the btBoxShape. Instead, we'll explicitly create
+         * a btConvexHullShape.
+         */
+        bt_shape = new btConvexHullShape();
+        bt_shape->setMargin(0.05);
+        for (int i=0; i<8; ++i){
+          btVector3 vtx;
+          bt_box.getVertex(i,vtx);
+          dynamic_cast<btConvexHullShape*>(bt_shape)->addPoint(vtx);
+        }
         //DEBUG
         //std::cout << "BulletElement::BulletElement: Created BOX" << std::endl;
         //END_DEBUG
+        }
         break;
       case SPHERE:
         if (true || params[0] != 0) {
