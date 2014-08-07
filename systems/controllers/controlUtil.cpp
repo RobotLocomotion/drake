@@ -1,4 +1,5 @@
 #include "controlUtil.h"
+#include "drakeUtil.h"
 #include "mex.h"
 
 template <typename DerivedA, typename DerivedB>
@@ -242,57 +243,54 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
 MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement>& active_supports,
     const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta)
 {
-  const int nd = B.cols() / normals.cols();
-  MatrixXd individual_cops(3, active_supports.size());
+  const int n_basis_vectors_per_contact = B.cols() / normals.cols();
+  const int n = active_supports.size();
+
+  int normals_start = 0;
+  int beta_start = 0;
+
+  MatrixXd individual_cops(3, n);
   individual_cops.fill(std::numeric_limits<double>::quiet_NaN());
-  int normals_start_col = 0;
-  int active_support_start_col = 0;
+
   for (int j = 0; j < active_supports.size(); j++) {
     auto active_support = active_supports[j];
     auto contact_pt_inds = active_support.contact_pt_inds;
 
     int ncj = contact_pt_inds.size();
-    int active_support_length = nd * ncj;
-    auto normalsj = normals.middleCols(normals_start_col, ncj);
-    Vector3d normalj = normalsj.col(0);
-    bool normals_identical = (normalsj.colwise().operator-(normalj)).squaredNorm() < 1e-15;
+    int active_support_length = n_basis_vectors_per_contact * ncj;
+    auto normalsj = normals.middleCols(normals_start, ncj);
+    Vector3d normal = normalsj.col(0);
+    bool normals_identical = (normalsj.colwise().operator-(normal)).squaredNorm() < 1e-15;
 
     if (normals_identical) { // otherwise computing a COP doesn't make sense
-      const auto& Bj = B.middleCols(active_support_start_col, active_support_length);
-      const auto& betaj = beta.segment(active_support_start_col, active_support_length);
+      const auto& Bj = B.middleCols(beta_start, active_support_length);
+      const auto& betaj = beta.segment(beta_start, active_support_length);
 
-      const auto& contact_positionsj = r->bodies[active_support.body_idx].contact_pts;
-      Vector3d forcej = Vector3d::Zero();
-      Vector3d torquej = Vector3d::Zero();
-      double min_contact_position_z = std::numeric_limits<double>::infinity();
+      const auto& contact_positions = r->bodies[active_support.body_idx].contact_pts;
+      Vector3d force = Vector3d::Zero();
+      Vector3d torque = Vector3d::Zero();
 
       for (const auto& k : contact_pt_inds) {
-        const auto& Bjk = Bj.middleCols(k * nd, nd);
-        const auto& betajk = betaj.segment(k * nd, nd);
-        Vector3d contact_positionjk = contact_positionsj.col(k);
-        Vector3d forcejk = Bjk * betajk;
-        forcej += forcejk;
-        auto torquejk = contact_positionjk.cross(forcejk);
-        torquej += torquejk;
-        double contact_position_z = normalj.dot(contact_positionjk);
-        if (contact_position_z < min_contact_position_z) {
-          min_contact_position_z = contact_position_z;
-        }
+        const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+        const auto& betablock = betaj.segment(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+        Vector3d contact_position = contact_positions.col(k);
+        Vector3d point_force = Bblock * betablock;
+        force += point_force;
+        auto torquejk = contact_position.cross(point_force);
+        torque += torquejk;
       }
 
-      double fzj = normalj.dot(forcej);
-      if (std::abs(fzj) > 1e-7) {
-        auto normal_torquej = normalj.dot(torquej);
-        auto tangential_torquej = torquej - normalj * normal_torquej;
-        Vector4d cop_bodyj;
-        cop_bodyj << normalj.cross(tangential_torquej) / fzj + min_contact_position_z * normalj, 1.0; // TODO: should translate along force line of action
-        Vector3d cop_worldj;
-        r->forwardKin(active_support.body_idx, cop_bodyj, 0, cop_worldj);
-        individual_cops.col(j) = cop_worldj;
-      }
+      Vector3d point_on_contact_plane = contact_positions.col(0);
+      std::pair<Vector3d, double> cop_and_normal_torque = resolveCenterOfPressure(torque, force, normal, point_on_contact_plane);
+      Vector4d cop_body;
+      cop_body << cop_and_normal_torque.first, 1.0;
+      Vector3d cop_world;
+      r->forwardKin(active_support.body_idx, cop_body, 0, cop_world);
+      individual_cops.col(j) = cop_world;
     }
-    normals_start_col += ncj;
-    active_support_start_col += active_support_length;
+
+    normals_start += ncj;
+    beta_start += active_support_length;
   }
   return individual_cops;
 }
