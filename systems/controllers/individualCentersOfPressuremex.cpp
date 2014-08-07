@@ -1,13 +1,14 @@
 #include "mex.h"
 #include "controlUtil.h"
 #include "drakeUtil.h"
+#include <iostream>
 
 using namespace std;
 using namespace Eigen;
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 {
-  if(nlhs != 6 || nrhs != 1)
+  if (nrhs != 6 || nlhs != 1)
   {
     mexErrMsgIdAndTxt("Drake:testControlUtil:BadInputs","Usage r, active_supports, normals, nd, B, beta");
   }
@@ -57,11 +58,12 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
 
   int nd = mxGetScalar(prhs[3]);
   MatrixXd B(3, num_active_contact_pts * nd);
-  memcpy(normals.data(), mxGetPr(prhs[4]), sizeof(double)*B.size());
+  memcpy(B.data(), mxGetPr(prhs[4]), sizeof(double)*B.size());
 
   VectorXd beta(num_active_contact_pts * nd);
   memcpy(beta.data(), mxGetPr(prhs[5]), sizeof(double)*beta.size());
 
-  VectorXd individual_cops = individualSupportCOPs(r, active_supports, normals, B, beta);
+  MatrixXd individual_cops = individualSupportCOPs(r, active_supports, normals, B, beta);
+
   plhs[0] = eigenToMatlab(individual_cops);
 }

@@ -1,4 +1,5 @@
 #include "controlUtil.h"
+#include "mex.h"
 
 template <typename DerivedA, typename DerivedB>
 void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub)
@@ -238,11 +239,11 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   return k;
 }
 
-VectorXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement>& active_supports,
+MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement>& active_supports,
     const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta)
 {
   const int nd = B.cols() / normals.cols();
-  VectorXd individual_cops(3 * active_supports.size());
+  MatrixXd individual_cops(3, active_supports.size());
   individual_cops.fill(std::numeric_limits<double>::quiet_NaN());
   int normals_start_col = 0;
   int active_support_start_col = 0;
@@ -254,9 +255,9 @@ VectorXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
     int active_support_length = nd * ncj;
     auto normalsj = normals.middleCols(normals_start_col, ncj);
     Vector3d normalj = normalsj.col(0);
-    bool norms_identical = (normalsj.colwise().operator-(normalj)).squaredNorm() < 1e-15;
+    bool normals_identical = (normalsj.colwise().operator-(normalj)).squaredNorm() < 1e-15;
 
-    if (norms_identical) { // otherwise computing a COP doesn't make sense
+    if (normals_identical) { // otherwise computing a COP doesn't make sense
       const auto& Bj = B.middleCols(active_support_start_col, active_support_length);
       const auto& betaj = beta.segment(active_support_start_col, active_support_length);
 
@@ -278,6 +279,7 @@ VectorXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
           min_contact_position_z = contact_position_z;
         }
       }
+
       double fzj = normalj.dot(forcej);
       if (std::abs(fzj) > 1e-7) {
         auto normal_torquej = normalj.dot(torquej);
@@ -286,7 +288,7 @@ VectorXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<Suppor
         cop_bodyj << normalj.cross(tangential_torquej) / fzj + min_contact_position_z * normalj, 1.0; // TODO: should translate along force line of action
         Vector3d cop_worldj;
         r->forwardKin(active_support.body_idx, cop_bodyj, 0, cop_worldj);
-        individual_cops.segment<3>(3 * j) = cop_worldj;
+        individual_cops.col(j) = cop_worldj;
       }
     }
     normals_start_col += ncj;
