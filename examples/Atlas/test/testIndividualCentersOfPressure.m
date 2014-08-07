@@ -7,8 +7,10 @@ r = Atlas('../urdf/atlas_minimal_contact.urdf',options);
 r = r.removeCollisionGroupsExcept({'heel','toe'});
 r = compile(r);
 
-% testTangentialTorque(r);
+w = warning('off','Drake:RigidBodyManipulator:collisionDetect:doKinematicsMex');
+testTangentialTorque(r);
 testMex(r);
+warning(w);
 
 end
 
@@ -56,40 +58,51 @@ end
 
 function testMex(r)
 nq = r.getNumPositions();
-q = randn(nq, 1);
-q(3) = -10; % make sure we're completely under the ground so that both feet are in contact.
+ntests = 100;
 
-sides = {'l', 'r'};
-active_supports = nan(1, length(sides));
-for i = 1 : length(sides)
-  active_supports(i) = r.findLinkInd([sides{i} '_foot']);
+for testnr = 1 : ntests
+  q = randn(nq, 1);
+  q(3) = -10; % make sure we're completely under the ground so that both feet are in contact.
+  
+  sides = {'l', 'r'};
+  active_supports = nan(1, length(sides));
+  for i = 1 : length(sides)
+    active_supports(i) = r.findLinkInd([sides{i} '_foot']);
+  end
+  
+  kinsol = r.doKinematics(q, false, false);
+  
+  [~,B,~,~,normals] = contactConstraintsBV(r,kinsol);
+  nbeta = sum(cellfun('size', B, 2));
+  ncontact_points = size(B, 2);
+  nsupports = length(active_supports);
+  
+  beta = rand(nbeta, 1);
+  for i = 1 : nsupports
+    set_beta_for_support_to_zero = rand > 0.5;
+    if set_beta_for_support_to_zero
+      nbeta_per_support = (nbeta / nsupports);
+      beta((i-1) * nbeta_per_support + (1:nbeta_per_support)) = zeros(nbeta_per_support, 1);
+    end
+  end
+
+  cops = individualCentersOfPressure(r, kinsol, active_supports, normals, B, beta);
+  
+  [~] = r.doKinematics(q, false, true);
+  
+  nd = nbeta / ncontact_points;
+  ncontact_points_per_foot = ncontact_points / length(active_supports);
+  
+  supp.bodies = active_supports;
+  supp.contact_pts = {1:ncontact_points_per_foot, 1:ncontact_points_per_foot};
+  supp.contact_groups = {{'heel', 'toe'}, {'heel', 'toe'}};
+  supp.num_contact_pts = [ncontact_points_per_foot ncontact_points_per_foot];
+  supp.contact_surfaces = 0*active_supports;
+  
+  B = [B{:}];
+  
+  cops_mex = individualCentersOfPressuremex(r.getMexModelPtr, supp, normals, nd, B, beta);
+  valuecheck(cops, cops_mex);
 end
-
-kinsol = r.doKinematics(q, false, false);
-
-[~,B,~,~,normals] = contactConstraintsBV(r,kinsol);
-nbeta = sum(cellfun('size', B, 2));
-beta = rand(nbeta, 1);
-cops = individualCentersOfPressure(r, kinsol, active_supports, normals, B, beta);
-
-
-[~] = r.doKinematics(q, false, true);
-
-ncontact_points = size(B, 2);
-nd = nbeta / ncontact_points;
-ncontact_points_per_foot = ncontact_points / length(active_supports);
-
-supp.bodies = active_supports;
-supp.contact_pts = {1:ncontact_points_per_foot, 1:ncontact_points_per_foot};
-supp.contact_groups = {{'heel', 'toe'}, {'heel', 'toe'}};
-supp.num_contact_pts = [ncontact_points_per_foot ncontact_points_per_foot];
-supp.contact_surfaces = 0*active_supports;
-
-B = [B{:}];
-
-cops_mex = individualCentersOfPressuremex(r.getMexModelPtr, supp, normals, nd, B, beta);
-disp(cops);
-disp(cops_mex);
-% valuecheck(cops, cops_mex);
 
 end
