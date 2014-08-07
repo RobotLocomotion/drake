@@ -8,6 +8,7 @@
 #include <mex.h>
 #include <string.h>
 #include <string>
+#include <math.h>
 
 using namespace std;
 
@@ -94,5 +95,20 @@ void* getDrakeMexPointer(const mxArray* mx)
   memcpy(&ptr,mxGetData(ptrArray),sizeof(ptr));     // note: could use a reinterpret_cast here instead
 
   return ptr;
+}
+
+double angleAverage(double theta1, double theta2) {
+  // Computes the average between two angles by averaging points on the unit
+  // circle and taking the arctan of the result.
+  //   see: http://en.wikipedia.org/wiki/Mean_of_circular_quantities
+  // theta1 is a scalar or column vector of angles (rad)
+  // theta2 is a scalar or column vector of angles (rad)
+
+  double x_mean = 0.5*(cos(theta1)+cos(theta2));
+  double y_mean = 0.5*(sin(theta1)+sin(theta2));
+
+  double angle_mean = atan2(y_mean,x_mean);
+
+  return angle_mean;
 }
 
