@@ -5,6 +5,10 @@
  *      Author: russt
  */
 
+#include "mex.h"
+#include <utility>
+#include <Eigen/Core>
+
 #ifndef DRAKE_UTIL_H_
 #define DRAKE_UTIL_H_
 
@@ -19,5 +23,6 @@ void* getDrakeMexPointer(const mxArray* mx);
 
 double angleAverage(double theta1, double theta2);
 
+std::pair<Eigen::Vector3d, double> resolveCenterOfPressure(Eigen::Vector3d torque, Eigen::Vector3d force, Eigen::Vector3d normal, Eigen::Vector3d point_on_contact_plane);
 
 #endif /* DRAKE_UTIL_H_ */

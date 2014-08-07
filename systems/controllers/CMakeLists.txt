@@ -3,7 +3,7 @@ if (eigen3_FOUND)
   pods_find_pkg_config(gurobi)
 
   add_mex(drakeControlUtil SHARED controlUtil.cpp)
-  target_link_libraries(drakeControlUtil drakeRBM)
+  target_link_libraries(drakeControlUtil drakeRBM drakeUtil)
   pods_install_libraries(drakeControlUtil)
   pods_install_headers(controlUtil.h DESTINATION drake)
   pods_install_pkg_config_file(drake-control-util
@@ -26,4 +26,9 @@ if (eigen3_FOUND)
   add_mex(supportDetectmex supportDetectmex.cpp)
   target_link_libraries(supportDetectmex drakeRBM drakeControlUtil)
 
+  add_mex(individualCentersOfPressuremex individualCentersOfPressuremex.cpp)
+  include_directories (${CMAKE_SOURCE_DIR}/util )
+  target_link_libraries(individualCentersOfPressuremex drakeRBM drakeUtil drakeControlUtil)
+
 endif(eigen3_FOUND)
+
