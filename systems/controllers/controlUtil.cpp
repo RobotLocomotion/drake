@@ -236,6 +236,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   return k;
 }
 
+
 template void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template void getCols(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);
 template void angleDiff(const MatrixBase<MatrixXd> &, const MatrixBase<MatrixXd> &, MatrixBase<MatrixXd> &);

@@ -17,5 +17,7 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
 mxArray* createDrakeMexPointer(void* ptr, const char* deleteMethod="", const char* name="");
 void* getDrakeMexPointer(const mxArray* mx);
 
+double angleAverage(double theta1, double theta2);
+
 
 #endif /* DRAKE_UTIL_H_ */
