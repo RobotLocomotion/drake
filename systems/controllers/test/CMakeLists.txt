@@ -1,6 +1,0 @@
-if (eigen3_FOUND)
-  add_mex(individualCopsmex individualCopsmex.cpp)
-  include_directories( .. )
-  include_directories (${CMAKE_SOURCE_DIR}/util )
-  target_link_libraries(individualCopsmex drakeRBM drakeUtil drakeControlUtil)
-endif(eigen3_FOUND)
