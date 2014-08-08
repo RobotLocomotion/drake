@@ -35,14 +35,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         double resolution = mxGetScalar(prhs[0]);
 //        mexPrintf("Creating octree w/ resolution %f\n", resolution);
         tree = new OcTree(resolution);
-        plhs[0] = createDrakeMexPointer((void*)tree,"octomapWrapper","OcTree");
+        plhs[0] = createDrakeMexPointer((void*)tree,"OcTree");
       }
     } else if (mxIsChar(prhs[0])) {
       if (nlhs>0) {
         char* filename = mxArrayToString(prhs[0]);
 //        mexPrintf("Loading octree from %s\n", filename);
         tree = new OcTree(filename);
-        plhs[0] = createDrakeMexPointer((void*)tree,"octomapWrapper","OcTree");
+        plhs[0] = createDrakeMexPointer((void*)tree,"OcTree");
         mxFree(filename);
       }
     } else { // destructor.  note: assumes prhs[0] is a DrakeMexPointer (todo: could check)
