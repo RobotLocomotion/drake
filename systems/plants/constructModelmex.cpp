@@ -36,7 +36,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
 
   if (isa(prhs[0],"DrakeMexPointer")) {  // then it's calling the destructor
-    destroyDrakeMexPointer<RigidBodyManipulator>(prhs[0]);
+    destroyDrakeMexPointer<RigidBodyManipulator*>(prhs[0]);
     return;
   }
 

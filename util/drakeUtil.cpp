@@ -59,15 +59,16 @@ bool mexCallMATLABsafe(int nlhs, mxArray* plhs[], int nrhs, mxArray* prhs[], con
 
 
 
-mxArray* createDrakeMexPointer(void* ptr, const char* name)
+mxArray* createDrakeMexPointer(void* ptr, const char* name, int additional_inputs, mxArray* delete_fcn_additional_inputs[])
 {
 	mxClassID cid;
 	if (sizeof(ptr)==4) cid = mxUINT32_CLASS;
 	else if (sizeof(ptr)==8) cid = mxUINT64_CLASS;
   else mexErrMsgIdAndTxt("Drake:constructDrakeMexPointer:PointerSize","Are you on a 32-bit machine or 64-bit machine??");
 
-	const int nrhs=3;
-	mxArray *prhs[nrhs], *plhs[1];
+	int nrhs=3+additional_inputs;
+	mxArray *plhs[1];
+  mxArray **prhs;  prhs = new mxArray*[nrhs];
 
 	prhs[0] = mxCreateNumericMatrix(1,1,cid,mxREAL);
   memcpy(mxGetData(prhs[0]),&ptr,sizeof(ptr));
@@ -75,6 +76,9 @@ mxArray* createDrakeMexPointer(void* ptr, const char* name)
 	prhs[1] = mxCreateString(mexFunctionName());
 
   prhs[2] = mxCreateString(name);
+
+  for (int i=0; i<additional_inputs; i++)
+    prhs[3+i] = delete_fcn_additional_inputs[i];
 
 //  mexPrintf("deleteMethod = %s\n name =%s\n", deleteMethod,name);
 
@@ -84,6 +88,7 @@ mxArray* createDrakeMexPointer(void* ptr, const char* name)
 
 //  mexPrintf("incrementing lock count\n");
 
+  delete[] prhs;
   return plhs[0];
 }
 
