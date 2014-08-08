@@ -14,7 +14,7 @@ classdef RigidBodySupportState
 
   methods
     function obj = RigidBodySupportState(r,bodies,contact_groups,contact_surfaces)
-      typecheck(r,'Biped');
+      typecheck(r,{'Biped','TimeSteppingRigidBodyManipulator'});
       typecheck(bodies,'double');
       obj.bodies = bodies(bodies~=0);
 
