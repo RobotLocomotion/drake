@@ -3,12 +3,14 @@
 #include <Eigen/Dense>
 #include <cstring>
 #include <cmath>
-void quatConjugate(const Eigen::Vector4d &q, Eigen::Vector4d &q_conj);
-void quatConjugate(const Eigen::Vector4d &q, Eigen::Vector4d &q_conj, Eigen::Matrix4d &dq_conj);
-void quatProduct(const Eigen::Vector4d &q1,const Eigen::Vector4d &q2, Eigen::Vector4d &r);
-void quatProduct(const Eigen::Vector4d &q1,const Eigen::Vector4d &q2, Eigen::Vector4d &r, Eigen::Matrix<double,4,8> &dr);
-void quatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v, Eigen::Vector3d &r);
-void quatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v, Eigen::Vector3d &r, Eigen::Matrix<double,3,7> &dr);
-void quatDiff(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, Eigen::Vector4d &r, Eigen::Matrix<double,4,8> &dr);
-void quatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u, double &e, Eigen::Matrix<double,1,11> &de);
+Eigen::Vector4d quatConjugate(const Eigen::Vector4d &q);
+Eigen::Matrix4d dquatConjugate(const Eigen::Vector4d &q);
+Eigen::Vector4d quatProduct(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
+Eigen::Matrix<double, 4, 8> dquatProduct(const Eigen::Vector4d &q1,const Eigen::Vector4d &q2);
+Eigen::Vector3d quatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v);
+Eigen::Matrix<double, 3, 7> dquatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v);
+Eigen::Vector4d quatDiff(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
+Eigen::Matrix<double, 4, 8> dquatDiff(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
+double quatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
+Eigen::Matrix<double, 1, 11> dquatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
 #endif
