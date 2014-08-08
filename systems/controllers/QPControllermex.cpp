@@ -11,6 +11,8 @@
 
 #include "QPCommon.h"
 #include <Eigen/StdVector>
+#include <limits>
+#include <cmath>
 
 //#define TEST_FAST_QP
 //#define USE_MATRIX_INVERSION_LEMMA
@@ -22,7 +24,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   int error;
   if (nrhs<1) mexErrMsgTxt("usage: ptr = QPControllermex(0,control_obj,robot_obj,...); alpha=QPControllermex(ptr,...,...)");
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
-  
+
   struct QPControllerData* pdata;
   mxArray* pm;
   double* pr;
@@ -288,12 +290,12 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
   Map<VectorXd> qdvec(qd,nq);
   
-  MatrixXd Jz,Jp,Jpdot,D;
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,Jz,D,Jp,Jpdot,terrain_height);
+  MatrixXd B,JB,Jp,Jpdot,normals;
+  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdot,normals,terrain_height);
   int neps = nc*dim;
 
   VectorXd x_bar,xlimp;
-  MatrixXd D_float(6,D.cols()), D_act(nu,D.cols());
+  MatrixXd D_float(6,JB.cols()), D_act(nu,JB.cols());
   if (nc>0) {
     if (x0.size()==6) {
       // x,y,z com 
@@ -308,8 +310,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     }
     x_bar = xlimp-x0;
 
-    D_float = D.topRows(6);
-    D_act = D.bottomRows(nu);
+    D_float = JB.topRows(6);
+    D_act = JB.bottomRows(nu);
   }
 
   int nf = nc*nd; // number of contact force variables
@@ -652,6 +654,13 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     else
       Vdot = 0;
     plhs[13] = mxCreateDoubleScalar(Vdot);
+  }
+
+  if (nlhs>14) {
+    RigidBodyManipulator* r = pdata->r;
+
+    VectorXd individual_cops = individualSupportCOPs(r, active_supports, normals, B, beta);
+    plhs[14] = eigenToMatlab(individual_cops);
   }
 
   if (model) { 

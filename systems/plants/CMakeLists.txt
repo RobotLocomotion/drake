@@ -1,5 +1,5 @@
 
-# IMPORTANT NOTE!! 
+# IMPORTANT NOTE!!
 # matlab has it's own boost libraries.  DO NOT let any mex file depend
 # on the system boost (directly nor indirectly), or you're asking for trouble.
 find_package( Boost COMPONENTS filesystem system regex)
@@ -22,7 +22,7 @@ if (eigen3_FOUND)
   pods_install_headers(RigidBodyManipulator.h RigidBody.h RigidBodyFrame.h DESTINATION drake)
   pods_install_pkg_config_file(drake-rbm
     LIBS -ldrakeRBM
-    REQUIRES  
+    REQUIRES
     VERSION 0.0.1)
 
   add_subdirectory(collision)
@@ -48,7 +48,6 @@ if (eigen3_FOUND)
   endmacro()
 
   add_rbm_mex(constructModelmex)
-  add_rbm_mex(deleteModelmex)
   add_rbm_mex(HandCmex)
   add_rbm_mex(doKinematicsmex)
   add_rbm_mex(forwardKinmex)
@@ -64,9 +63,7 @@ if (eigen3_FOUND)
     add_mex(${ARGV} ${ARGV}.cpp)
     target_link_libraries(${ARGV} drakeRBM drakeUtil drakeIKoptions)
   endmacro()
-  add_ikoptions_mex(constructPtrIKoptionsmex)
-  add_ikoptions_mex(deletePtrIKoptionsmex)
-  add_ikoptions_mex(updatePtrIKoptionsmex)
+  add_ikoptions_mex(IKoptionsmex)
   add_ikoptions_mex(testIKoptionsmex)
 
   pods_find_pkg_config(gurobi)
@@ -115,4 +112,3 @@ if (eigen3_FOUND)
   add_subdirectory(test)
 
 endif(eigen3_FOUND)
-
