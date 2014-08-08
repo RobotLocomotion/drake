@@ -93,75 +93,116 @@ classdef RigidBodyManipulator < Manipulator
   
   methods
     function [Vq, dVq] = qdotToV(obj, q)
+      compute_gradient = nargout > 1;
+      
       bodies = obj.body;
       nb = length(bodies);
       nv = obj.num_velocities;
       nq = obj.num_positions;
       Vq = zeros(nv, nq) * q(1); % to make TaylorVar work better
-      dVq = zeros(numel(Vq), nq) * q(1);
+      
+      if compute_gradient
+        dVq = zeros(numel(Vq), nq) * q(1);
+      end
       for i = 2 : nb
         bodyI = bodies(i);
         if bodyI.floating == 1
           VqJoint = eye(6);
-          dVqJoint = zeros(numel(VqJoint), size(VqJoint, 2));
+          if compute_gradient
+            dVqJoint = zeros(numel(VqJoint), size(VqJoint, 2));
+          end
         elseif bodyI.floating == 2
           qBody = q(bodyI.position_num);
           quat = qBody(4 : 7);
-          [~, dquattildedquat, ddquattildedquat] = normalizeVec(quat);
-          [R, dR] = quat2rotmat(quat);
-          [M, dM] = quatdot2angularvelMatrix(quat);
+          
+          if compute_gradient
+            [~, dquattildedquat, ddquattildedquat] = normalizeVec(quat);
+            [R, dR] = quat2rotmat(quat);
+            [M, dM] = quatdot2angularvelMatrix(quat);
+          else
+            [~, dquattildedquat] = normalizeVec(quat);
+            R = quat2rotmat(quat);
+            M = quatdot2angularvelMatrix(quat);
+          end
+
           RTransposeM = R' * M; % TODO: directly use body frame representation
           VqJoint = [...
             zeros(3, 3), RTransposeM * dquattildedquat;
             R', zeros(3, 4)];
 
-          dRTranspose = transposeGrad(dR, size(R));
-          dRTransposeM = matGradMultMat(R', M, dRTranspose, dM);
-          ddquattildedquat = reshape(ddquattildedquat, numel(dquattildedquat), numel(quat));
-          dRTransposeMdquattildedquat = matGradMultMat(RTransposeM, dquattildedquat, dRTransposeM, ddquattildedquat);
-          dVqJoint = zeros(numel(VqJoint), length(qBody)) * qBody(1); % for TaylorVar
-          dVqJoint = setSubMatrixGradient(dVqJoint, dRTranspose, 4:6, 1:3, size(VqJoint), 4:7);
-          dVqJoint = setSubMatrixGradient(dVqJoint, dRTransposeMdquattildedquat, 1:3, 4:7, size(VqJoint), 4:7);
+          if compute_gradient
+            dRTranspose = transposeGrad(dR, size(R));
+            dRTransposeM = matGradMultMat(R', M, dRTranspose, dM);
+            ddquattildedquat = reshape(ddquattildedquat, numel(dquattildedquat), numel(quat));
+            dRTransposeMdquattildedquat = matGradMultMat(RTransposeM, dquattildedquat, dRTransposeM, ddquattildedquat);
+            dVqJoint = zeros(numel(VqJoint), length(qBody)) * qBody(1); % for TaylorVar
+            dVqJoint = setSubMatrixGradient(dVqJoint, dRTranspose, 4:6, 1:3, size(VqJoint), 4:7);
+            dVqJoint = setSubMatrixGradient(dVqJoint, dRTransposeMdquattildedquat, 1:3, 4:7, size(VqJoint), 4:7);
+          end
         elseif bodyI.floating ~= 0
           error('case not handled');
         else
           VqJoint = 1;
-          dVqJoint = 0;
+          if compute_gradient
+            dVqJoint = 0;
+          end
         end
         Vq(bodyI.velocity_num, bodyI.position_num) = VqJoint;
-        dVq = setSubMatrixGradient(dVq, dVqJoint, bodyI.velocity_num, bodyI.position_num, size(Vq), bodyI.position_num);
+        if compute_gradient
+          dVq = setSubMatrixGradient(dVq, dVqJoint, bodyI.velocity_num, bodyI.position_num, size(Vq), bodyI.position_num);
+        end
       end
     end
     
     function [VqInv, dVqInv] = vToqdot(obj, q)
+      compute_gradient = nargout > 1;
+      
       bodies = obj.body;
       nb = length(bodies);
       VqInv = zeros(obj.num_positions, obj.num_velocities) * q(1); % to make TaylorVar work better
-      dVqInv = zeros(numel(VqInv), obj.num_positions) * q(1);
+      
+      if compute_gradient
+        dVqInv = zeros(numel(VqInv), obj.num_positions) * q(1);
+      end
       for i = 2 : nb
         bodyI = bodies(i);
         if bodyI.floating == 1
           VqInvJoint = eye(6);
-          dVqInvJoint = zeros(numel(VqInvJoint), size(VqInvJoint, 1));
+          if compute_gradient
+            dVqInvJoint = zeros(numel(VqInvJoint), size(VqInvJoint, 1));
+          end
         elseif bodyI.floating == 2
           qBody = q(bodyI.position_num);
           quat = qBody(4 : 7);
-          [R, dR] = quat2rotmat(quat);
-          [M, dM] = angularvel2quatdotMatrix(quat);
+          if compute_gradient
+            [R, dR] = quat2rotmat(quat);
+            [M, dM] = angularvel2quatdotMatrix(quat);
+          else
+            R = quat2rotmat(quat);
+            M = angularvel2quatdotMatrix(quat);
+          end
+
           VqInvJoint = [zeros(3, 3), R;
             M * R, zeros(4, 3)];
-          dVqInvJoint = zeros(numel(VqInvJoint), size(VqInvJoint, 1)) * qBody(1);
-          dVqInvJoint = setSubMatrixGradient(dVqInvJoint, dR, 1:3, 4:6, size(VqInvJoint), 4:7);
-          dMR = matGradMultMat(M, R, dM, dR);
-          dVqInvJoint = setSubMatrixGradient(dVqInvJoint, dMR, 4:7, 1:3, size(VqInvJoint), 4:7);
+          
+          if compute_gradient
+            dVqInvJoint = zeros(numel(VqInvJoint), size(VqInvJoint, 1)) * qBody(1);
+            dVqInvJoint = setSubMatrixGradient(dVqInvJoint, dR, 1:3, 4:6, size(VqInvJoint), 4:7);
+            dMR = matGradMultMat(M, R, dM, dR);
+            dVqInvJoint = setSubMatrixGradient(dVqInvJoint, dMR, 4:7, 1:3, size(VqInvJoint), 4:7);
+          end
         elseif bodyI.floating ~= 0
           error('case not handled');
         else
           VqInvJoint = 1;
-          dVqInvJoint = 0;
+          if compute_gradient
+            dVqInvJoint = 0;
+          end
         end
         VqInv(bodyI.position_num, bodyI.velocity_num) = VqInvJoint;
-        dVqInv = setSubMatrixGradient(dVqInv, dVqInvJoint, bodyI.position_num, bodyI.velocity_num, size(VqInv), bodyI.position_num);
+        if compute_gradient
+          dVqInv = setSubMatrixGradient(dVqInv, dVqInvJoint, bodyI.position_num, bodyI.velocity_num, size(VqInv), bodyI.position_num);
+        end
       end
     end
     
@@ -204,7 +245,7 @@ classdef RigidBodyManipulator < Manipulator
         geom = obj.terrain.getRigidBodyGeometry();
         if ~isempty(geom)
           if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).contact_shapes))
-            obj.body(1).contact_shapes{end+1} = geom;
+            obj = obj.addContactShapeToBody(1,geom,'terrain');
           end
           if ~any(cellfun(@(shape) isequal(geom,shape),obj.body(1).visual_shapes))
             obj.body(1).visual_shapes{end+1} = geom;
@@ -510,10 +551,10 @@ classdef RigidBodyManipulator < Manipulator
 
       switch (joint_type)
         case 'rpy'  % extrinsic coordinates 
-          model = addJoint(model,'base','floating_rpy',parent,rootlink,zeros(3,1),zeros(3,1));
+          model = addJoint(model,'base','floating_rpy',parent,rootlink,xyz,rpy);
 
         case 'quat'
-          model = addJoint(model,'base','floating_quat',parent,rootlink,zeros(3,1),zeros(3,1));
+          model = addJoint(model,'base','floating_quat',parent,rootlink,xyz,rpy);
         
         case 'RPY'  % instrinsic coordinates
           body1 = newBody(model);
@@ -765,6 +806,14 @@ classdef RigidBodyManipulator < Manipulator
 %      end
     end
     
+    function indices = findJointIndices(model, str)
+      %findJointIndices Returns indices in the state vector for joints whose
+      % name contains a specified string.
+      %   @param str (sub)string to be searched for
+      %   @retvall indices array of indices into state vector
+      indices = find(~cellfun('isempty',strfind(model.getStateFrame().coordinates(1:getNumPositions(model)),str)));
+    end
+
     function body_ind = findLinkInd(model,linkname,robot,error_level)
       % @param robot can be the robot number or the name of a robot
       % robot=0 means look at all robots
@@ -797,7 +846,14 @@ classdef RigidBodyManipulator < Manipulator
       end
       if (length(ind)~=1)
         if (nargin<4 || error_level>0)
-          error(['couldn''t find unique link ' ,linkname]);
+          if robot == 0
+            error('Drake:RigidBodyManipulator:UniqueLinkNotFound', ...
+              'couldn''t find unique link %s.',linkname);
+          else
+            error('Drake:RigidBodyManipulator:UniqueLinkNotFound', ...
+              'couldn''t find unique link %s on robot number %d.', ...
+              linkname,robot);
+          end
         else 
           body_ind=0;
           if (error_level==0)
@@ -835,7 +891,9 @@ classdef RigidBodyManipulator < Manipulator
       else
         ind = [];
       end
-      if numel(ind)~=1, error('Drake:RigidBodyManipulator:UniqueFrameNotFound',['Cannot find unique frame named ', name, ' on robot number ',num2str(robotnum)]); end
+      if numel(ind)~=1 
+        error('Drake:RigidBodyManipulator:UniqueFrameNotFound',['Cannot find unique frame named ', name, ' on robot number ',num2str(robotnum)]); 
+      end
       frame_id = -ind;  % keep frame_ind distinct from body_ind
     end
         
@@ -871,6 +929,15 @@ classdef RigidBodyManipulator < Manipulator
       typecheck(frame,'RigidBodyFrame');
       model.frame(-frame_id) = frame;
       model.dirty = true;
+    end
+    
+    
+    function str = getBodyOrFrameName(model,body_or_frame_id)
+      if (body_or_frame_id>0)
+        str = model.body(body_or_frame_id).linkname;
+      else
+        str = model.frame(-body_or_frame_id).name;
+      end
     end
     
     function model = setParams(model,p)
@@ -922,22 +989,24 @@ classdef RigidBodyManipulator < Manipulator
       model.dirty = true;
     end
         
-    function body_ind = findJointInd(model,jointname,robot)
-      % @param robot can be the robot number or the name of a robot
-      % robot=0 means look at all robots
+    function body_ind = findJointInd(model,jointname,robot_num,error_level)
+      % @param robot_num can be the robot number or the name of a robot
+      % robot_num=0 means look at all robots
       % @ingroup Kinematic Tree
-      if nargin<3 || isempty(robot), robot=0; end
+      if nargin<3 || isempty(robot_num), robot_num=0; end
       jointname = lower(jointname);
-      if ischar(robot) robot = strmatch(lower(robot),lower({model.name})); end
+      if ischar(robot_num) robot_num = strmatch(lower(robot_num),lower({model.name})); end
       items = strfind(lower({model.body.jointname}),jointname);
       ind = find(~cellfun(@isempty,items));
-      if (robot~=0), ind = ind([model.body(ind).robotnum]==robot); end
+      if (robot_num~=0), ind = ind([model.body(ind).robotnum]==robot_num); end
       if (length(ind)~=1)
-        if (nargin<4 || throw_error)
+        if (nargin<4 || error_level>0)
           error(['couldn''t find unique joint ' ,jointname]);
         else 
-          warning(['couldn''t find unique joint ' ,jointname]);
           body_ind=0;
+          if (error_level==0)
+            warning(['couldn''t find unique joint ' ,jointname]);
+          end
         end
       else
         body_ind = ind;
@@ -972,7 +1041,7 @@ classdef RigidBodyManipulator < Manipulator
     end
     
     function terrain_contact_point_struct = ...
-        getTerrainContactPoints(obj,body_idx)
+        getTerrainContactPoints(obj,body_idx,contact_groups)
       % terrain_contact_point_struct = getTerrainContactPoints(obj)
       % returns a structure array containing the terrain contact points
       % on all bodies of this manipulator.
@@ -988,6 +1057,8 @@ classdef RigidBodyManipulator < Manipulator
       % @param body_idx - vector of body-indices indicating the bodies
       %                   for which terrain contact points should be
       %                   found @default All bodies except the world
+      % @param contact_groups - (optional) cell array of cell arrays
+      %   containing contact group names for each body
       % @retval terrain_contact_point_struct - nx1 structure array,
       %   where n is the number of bodies with terrain contact points.
       %   Each element has the following fields
@@ -1003,11 +1074,16 @@ classdef RigidBodyManipulator < Manipulator
                                          % with the terrain
       end
       terrain_contact_point_struct = struct('pts',{},'idx',{});
-      for i = body_idx
-        if i ~= 1
-          pts = getTerrainContactPoints(obj.body(i));
+      for i = 1:length(body_idx)
+        bi=body_idx(i);
+        if bi ~= 1
+          if nargin < 3
+            pts = getTerrainContactPoints(obj.body(bi));
+          else
+            pts = getTerrainContactPoints(obj.body(bi),contact_groups{i});
+          end
           if ~isempty(pts)
-            terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',i);
+            terrain_contact_point_struct(end+1) = struct('pts',pts,'idx',bi);
           end
         end
       end
@@ -1021,44 +1097,103 @@ classdef RigidBodyManipulator < Manipulator
       groups = unique(groups);
     end
     
-    function model = removeCollisionGroups(model,contact_groups)
-      for i=1:length(model.body)
-        model.body(i) = removeCollisionGroups(model.body(i),contact_groups);
-      end
-      model.dirty = true;
-    end
-    
-    function model = removeCollisionGroupsExcept(model,contact_groups)
-      for i=1:length(model.body)
-        model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
-      end
-      model.dirty = true;
-    end
-    
-    function body_idx = parseBodyID(obj,body_id)
-      % body_idx = parseBodyID(obj,body_id)
-      % @param obj - RigidBodyManipulator object
-      % @param body_id - Body index or body name
+    function model = removeCollisionGroups(model,contact_groups,robotnum)
+      % model = removeCollisionGroups(model,contact_groups,robotnum) returns
+      % the model with the specified contact groups removed
       %
-      % @retval body_idx - Body index
-      typecheck(body_id,{'numeric','char'});
-      if isnumeric(body_id)
-        body_idx = body_id;
+      % @param model          -- RigidBodyManipulator object
+      % @param contact_groups -- String or cell array of strings specifying the
+      %                          contact groups to be removed
+      % @param robotnum       -- Vector of robot indices to which operation
+      %                          will be restricted. Optional.
+      %                          @default 1:numel(model.name)
+      if nargin < 3,          robotnum = 1:numel(model.name); end
+      if all(robotnum == 0),  robotnum = 0:numel(model.name); end
+      for i=1:length(model.body)
+        if ismember(model.body(i).robotnum,robotnum)
+          model.body(i) = removeCollisionGroups(model.body(i),contact_groups);
+        end
+      end
+      model.dirty = true;
+    end
+    
+    function model = removeCollisionGroupsExcept(model,contact_groups,robotnum)
+      % model = removeCollisionGroups(model,contact_groups,robotnum) returns
+      % the model with all contact groups removed except for those specified
+      %
+      % @param model          -- RigidBodyManipulator object
+      % @param contact_groups -- String or cell array of strings specifying the
+      %                          contact groups to be preserved.
+      % @param robotnum       -- Vector of robot indices to which operation
+      %                          will be restricted. Optional.
+      %                          @default 1:numel(model.name)
+      if nargin < 3,          robotnum = 1:numel(model.name); end
+      if all(robotnum == 0),  robotnum = 0:numel(model.name); end
+      for i=1:length(model.body)
+        if ismember(model.body(i).robotnum,robotnum)
+          model.body(i) = removeCollisionGroupsExcept(model.body(i),contact_groups);
+        end
+      end
+      model.dirty = true;
+    end
+    
+    function body_idx_or_frame_id = parseBodyOrFrameID(obj,body_or_frame,robotnum)
+      % body_idx = parseBodyOrFrameID(obj,body_or_frame) returns the body index or frame
+      % id associated with the input.
+      % @param obj            -- RigidBodyManipulator object
+      % @param body_or_frame  -- Can be either: 
+      %                           * Numeric body index or frame id
+      %                           * String containing body or frame name
+      % @param robotnum       -- Scalar restricting the search to a particular
+      %                          robot. Optional. @default 0 (all robots)
+      %
+      % @retval body_idx_or_frame_id  -- Numeric body index or frame id
+      typecheck(body_or_frame,{'numeric','char'});
+      if nargin < 3, robotnum = 0; end
+      if isnumeric(body_or_frame)
+        sizecheck(body_or_frame,[1,1]);
+        body_idx_or_frame_id = body_or_frame;
       else % then it's a string
-        body_idx = findLinkInd(obj,body_id);
+        try
+          body_idx_or_frame_id = findLinkInd(obj,body_or_frame,robotnum);
+        catch ex
+          if strcmp(ex.id,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
+            try
+              body_idx_or_frame_id = findFrameID(obj,body_or_frame,robotnum);
+            catch ex2
+              if strcmp(ex.id,'Drake:RigidBodyManipulator:UniqueLinkNotFound')
+                if robotnum == 0
+                  error('Drake:RigidBodyManipulator:UniqueFrameOrLinkNotFound', ...
+                    'Cannot find unique link or frame named %s',body_or_frame); 
+                else
+                  error('Drake:RigidBodyManipulator:UniqueFrameOrLinkNotFound', ...
+                    'Cannot find unique link or frame named %s on robot %d', ...
+                    body_or_frame, robotnum); 
+                end
+              else
+                rethrow(ex2);
+              end
+            end
+          else
+            rethrow(ex);
+          end
+        end
       end
     end
 
-    function obj = addContactShapeToBody(obj,body_id,shape)
-      % obj = addContactShapeToBody(obj,body_id,shape)
+    function obj = addContactShapeToBody(obj,body_id,shape,varargin)
+      % obj = addContactShapeToBody(obj,body_id,shape,group_name)
       %
       % obj must be re-compiled after calling this method
       %
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
       % @param shape - RigidBodyGeometry (or child class) object 
-      body_idx = obj.parseBodyID(body_id);
-      obj.body(body_idx).contact_shapes{end+1} = shape;
+      % @param group_name - String containing the name of the collision group
+      %   (optional) @default 'default'
+
+      body_idx = obj.parseBodyOrFrameID(body_id);
+      obj.body(body_idx) = obj.body(body_idx).addContactShape(shape, varargin{:});
       obj.dirty = true;
     end
 
@@ -1068,18 +1203,20 @@ classdef RigidBodyManipulator < Manipulator
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
       % @param shape - RigidBodyGeometry (or child class) object 
-      body_idx = obj.parseBodyID(body_id);
+      body_idx = obj.parseBodyOrFrameID(body_id);
       obj.body(body_idx).visual_shapes{end+1} = shape;
     end
 
-    function obj = addShapeToBody(obj,body_id,shape)
+    function obj = addShapeToBody(obj,body_id,shape,varargin)
       % obj = addShapeToBody(obj,body_id,shape)
       %
       % @param obj - RigidBodyManipulator object
       % @param body_id - Body index or body name
       % @param shape - RigidBodyGeometry (or child class) object 
+      % @param group_name - String containing the name of the collision group
+      %   (optional) @default 'default'
       obj = obj.addVisualShapeToBody(body_id,shape);
-      obj = obj.addContactShapeToBody(body_id,shape);
+      obj = obj.addContactShapeToBody(body_id,shape,varargin{:});
     end
 
     function model = replaceContactShapesWithCHull(model,body_indices,varargin)
@@ -2102,15 +2239,21 @@ classdef RigidBodyManipulator < Manipulator
           joint_limit_max = parseParamString(model,robotnum,char(limits.getAttribute('upper')));
         end
         if limits.hasAttribute('effort');
-          effort = parseParamString(model,robotnum,char(limits.getAttribute('effort')));
-          effort_min = min(-effort,effort); % just in case someone puts the min effort in the URDF
-          effort_max = max(-effort,effort);
+          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
+            effort = parseParamString(model,robotnum,char(limits.getAttribute('effort')));
+            effort_min = min(-effort,effort); % just in case someone puts the min effort in the URDF
+            effort_max = max(-effort,effort);
+          end
         end
         if limits.hasAttribute('effort_min');
-          effort_min = parseParamString(model,robotnum,char(limits.getAttribute('effort_min')));
+          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
+            effort_min = parseParamString(model,robotnum,char(limits.getAttribute('effort_min')));
+          end
         end
         if limits.hasAttribute('effort_max');
-          effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
+          if ~isfield(options,'ignore_effort_limits') || ~options.ignore_effort_limits
+            effort_max = parseParamString(model,robotnum,char(limits.getAttribute('effort_max')));
+          end
         end
         if limits.hasAttribute('velocity');
           warnOnce(model.warning_manager,'Drake:RigidBodyManipulator:UnsupportedVelocityLimits','RigidBodyManipulator: velocity limits are not supported yet');

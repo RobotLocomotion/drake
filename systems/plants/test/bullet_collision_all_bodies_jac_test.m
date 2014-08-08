@@ -17,8 +17,6 @@ else
   n_bricks = 3;
 end
 
-lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'bullet_collision_all_bodies_jac_test');
-
 options.floating = true;
 r = RigidBodyManipulator([],options);
 

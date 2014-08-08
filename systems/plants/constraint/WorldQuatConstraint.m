@@ -1,5 +1,5 @@
 classdef WorldQuatConstraint < QuatConstraint
-% Constrain the body satisfies (quat'*quat_des)^2 in [1-tol, tol];
+% Constrain the body satisfies 2*(quat'*quat_des)^2-1 in [cos(tol), 1];
 % @param robot            A RigidBodyManipulator, or a
 %                         TimeSteppingRigidBodyManipulator
 % @param body             A scalar. The index of the body
@@ -33,17 +33,8 @@ classdef WorldQuatConstraint < QuatConstraint
         error('Drake:orientConstraint:quat_des cannot have nan or inf entries');
       end
       obj.quat_des = quat_des./norm(quat_des);
-      if(isnumeric(body))
-        sizecheck(body,[1,1]);
-        obj.body = body;
-      elseif(typecheck(body,'char'))
-        obj.body = robot.findLinkInd(body);
-      elseif(typecheck(body,'RigidBody'))
-        obj.body = robot.findLinkInd(body.linkname);
-      else
-        error('Drake:WorldQuatConstraint:Body must be either the link name or the link index');
-      end
-      obj.body_name = obj.robot.getBody(obj.body).linkname;
+      obj.body = obj.robot.parseBodyOrFrameID(body);
+      obj.body_name = obj.robot.getBodyOrFrameName(obj.body);
       obj.type = RigidBodyConstraint.WorldQuatConstraintType;
       if robot.getMexModelPtr~=0 && exist('constructPtrRigidBodyConstraintmex','file')
         obj.mex_ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldQuatConstraintType,robot.getMexModelPtr,body,quat_des,tol,tspan);

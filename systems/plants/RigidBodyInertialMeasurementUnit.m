@@ -26,18 +26,16 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
       warning('the IMU outputs have not been tested yet (due to bug 1728)'); 
     end  
 
-    function y = output(obj,manip,t,x,u)      
-      nq = getNumPositions(manip);
-      q = x(1:nq);
-      v = x(nq+1:end);
-      vd = sodynamics(manip,t,x,u);  % todo: this could be much more efficient if I cached qdd
+    function y = output(obj,manip,t,x,u)
+      numdof = getNumDOF(manip);
+      q = x(1:numdof);
+      qd = x(numdof+1:end);
+      qdd = sodynamics(manip,t, q, qd,u);  % todo: this could be much more efficient if I cached qdd
       
-      kinsol = doKinematics(manip,q,false,false,v);     
-      [x,J] = forwardKinV(manip,kinsol,obj.body,obj.xyz,1);   % ask for rpy (because I want to output omega in rpy)
-%       qd = kinsol.vToqdot * v;
-%       Jdot = forwardJacDot(manip,kinsol,obj.body,obj.xyz,0,0);
-%       Jdot_times_qd = Jdot * qd;
-      Jdot_times_v = forwardJacDotTimesV(obj, kinsol, obj.body,obj.xyz,0,0);
+      kinsol = doKinematics(manip,q,false,true,qd);
+      
+      [x,J] = forwardKin(manip,kinsol,obj.body,obj.xyz,1);
+      Jdot = forwardJacDot(manip,kinsol,obj.body,obj.xyz,0,0);
       
       % x = f(q)
       % xdot = dfdq*dqdt = J*qd
@@ -45,13 +43,31 @@ classdef RigidBodyInertialMeasurementUnit < RigidBodySensor
       
       % note: x,J above have angles, but Jdot does not
       if numel(obj.xyz)==2  % 2D version
-        y = [ x(3); ...
-          J(3,:)*v; ...
-          Jdot_times_v + J(1:2,:)*vd ];
+        angle = x(3);
+        omega_body = J(3,:)*qd;
+        
+        accel_base = Jdot*qd + J(1:2,:)*qdd;
+        R_base_to_body = rotmat(-angle);
+        accel_body = R_base_to_body * accel_base;
+        
+        y = [ angle; ...
+          omega_body; ...
+          accel_body ];
       else  % 3D version
-        y = [ rpy2quat(x(4:6)); ...
-          J(4:6,:)*v; ...
-          Jdot_times_v + J(1:3,:)*vd ];
+        quat_body_to_world = rpy2quat(x(4:6));
+        quat_world_to_body = quatConjugate(quat_body_to_world);
+        
+        rpy = x(4:6);
+        rpydot = J(4:6,:)*qd;
+        omega_base = rpydot2angularvel(rpy, rpydot); % TODO: replace with computation based on kinsol.twists
+        omega_body = quatRotateVec(quat_world_to_body, omega_base);
+        
+        accel_base = Jdot*qd + J(1:3,:)*qdd; % TODO: possibly replace with computation based on spatial accelerations
+        accel_body = quatRotateVec(quat_world_to_body, accel_base);
+        
+        y = [ quat_body_to_world; ...
+          omega_body; ...
+          accel_body ];
       end
     end
     

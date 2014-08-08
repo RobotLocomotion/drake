@@ -1,15 +1,16 @@
 function fallingBrickLCP
 
-% testFallingBrick('rpy');
-testFallingBrick('quat');
+testFallingBrick('rpy');
+% testFallingBrick('quat');
 
 end
 
 function testFallingBrick(floating_type)
 options.floating = floating_type;
 options.terrain = RigidBodyFlatTerrain();
-p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
-x0 = p.resolveConstraints([getRandomConfiguration(p); randn(p.getNumVelocities(), 1)]);
+p = TimeSteppingRigidBodyManipulator('FallingBrickBetterCollisionGeometry.urdf',.01,options);
+x0 = p.resolveConstraints([0;1+rand;randn(10,1)]);
+% x0 = p.resolveConstraints([getRandomConfiguration(p); randn(p.getNumVelocities(), 1)]); % TODO: use something like this to get quat to work
 
 if 0 
   v = p.constructVisualizer();

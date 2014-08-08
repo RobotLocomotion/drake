@@ -62,21 +62,20 @@ classdef Visualizer < DrakeSystem
       %   Animates the trajectory in quasi- correct time using a matlab timer
       %     optional controlobj will playback the corresponding control scopes
       %
-      %   @param xtraj trajectory to visualize
-      %   @param options visualizer configuration:
-      %                     slider: create playback slider to control time and speed
+      % @param xtraj trajectory to visualize
+      % @option slider set to true to create playback slider to control time and speed
+      % @option lcmlog plays back an lcmlog while calling the draw methods.
+      %                (useful for, e.g., lcmgl debugging)
 
       typecheck(xtraj,'Trajectory');
       if (xtraj.getOutputFrame()~=obj.getInputFrame)
         xtraj = xtraj.inFrame(obj.getInputFrame);  % try to convert it
       end
 
-      if nargin < 3
-        options = struct();
-      end
-      if ~isfield(options, 'slider')
-        options.slider = false;
-      end
+      if nargin < 3, options = struct(); end
+      defaultOptions.slider = false;
+      defaultOptions.lcmlog = [];
+      options = applyDefaults(options,defaultOptions);
 
       f = sfigure(89);
       set(f, 'Visible', 'off');
@@ -86,6 +85,7 @@ classdef Visualizer < DrakeSystem
       t0 = tspan(1);
       ts = getSampleTime(xtraj);
       time_steps = (tspan(end)-tspan(1))/max(obj.display_dt,eps);
+      last_display_time = tspan(1)-eps;
 
       speed_format = 'Speed = %.3g';
       time_format = 'Time = %.3g';
@@ -123,6 +123,15 @@ classdef Visualizer < DrakeSystem
         if (ts(1)>0) t = round((t-ts(2))/ts(1))*ts(1) + ts(2); end  % align with sample times if necessary
         set(time_display, 'String', sprintf(time_format, t));
         obj.drawWrapper(t, xtraj.eval(t));
+        if ~isempty(options.lcmlog)
+          % note: could make this faster by not checking the times which I
+          % know have passed
+          topublish = options.lcmlog([options.lcmlog.simtime]>last_display_time & [options.lcmlog.simtime]<=t);
+          if ~isempty(topublish)
+            publishLCMLog(topublish);
+          end
+        end
+        last_display_time = t;
       end
       function start_playback(source, eventdata)
         if ~ishandle(play_button)
@@ -186,17 +195,19 @@ classdef Visualizer < DrakeSystem
       end
     end
 
-    function inspector(obj,x0,state_dims,minrange,maxrange)
+    function inspector(obj,x0,state_dims,minrange,maxrange,visualized_system)
       % set up a little gui with sliders to manually adjust each of the
       % coordinates.
 
       fr = obj.getInputFrame();
-      if (nargin<2) x0 = zeros(fr.dim,1); end
-      if (nargin<3) state_dims = (1:fr.dim)'; end
-      if (nargin<4) minrange = repmat(-5,size(state_dims)); end
-      if (nargin<5) maxrange = -minrange; end
+      if (nargin<2), x0 = zeros(fr.dim,1); end
+      if (nargin<3), state_dims = (1:fr.dim)'; end
+      if (nargin<4), minrange = repmat(-5,size(state_dims)); end
+      if (nargin<5), maxrange = -minrange; end
+      if (nargin<6), model = []; end
 
       x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
+      if ~isempty(visualized_system), x0 = resolveConstraints(visualized_system,x0); end
 
       obj.drawWrapper(0,x0);
 
@@ -223,6 +234,14 @@ classdef Visualizer < DrakeSystem
           x(state_dims(i)) = get(slider{i}, 'Value');
         end
         x
+        if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)>0)
+          % todo: pass in additional constriants to keep it inside the
+          % slider values
+          x = resolveConstraints(visualized_system,x)
+          for i=state_dims(:)'
+            set(slider{i},'Value',x(state_dims(i)));
+          end
+        end
         obj.drawWrapper(t,x);
       end
     end

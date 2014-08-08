@@ -76,6 +76,8 @@ classdef PostureConstraint<RigidBodyConstraint
     
     function cnstr = generateConstraint(obj,t)
       % generate a BoundingBoxConstraint on the robot posture if t is a valid time
+      % or if no time is given
+      if nargin < 2, t = obj.tspan(1); end;
       if(obj.isTimeValid(t))
         cnstr = {BoundingBoxConstraint(obj.lb,obj.ub)};
       else

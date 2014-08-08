@@ -30,6 +30,8 @@ classdef NonlinearProgram
     x_lb,x_ub
     solver
     solver_options
+    display_funs
+    display_fun_indices
     grad_method
     check_grad
   end
@@ -108,6 +110,10 @@ classdef NonlinearProgram
         error('Drake:NonlinearProgram:AbstractMethod','all derived classes must implement objective or objectiveAndNonlinearConstraints');
       end
 
+      for i=1:length(obj.display_funs)
+        obj.display_funs{i}(x(obj.display_fun_indices{i}));
+      end
+      
       obj.objcon_logic = true;
       if nargout>1
         [f,df] = objective(obj,x);
@@ -155,8 +161,11 @@ classdef NonlinearProgram
       obj.iCeqfun = reshape(bsxfun(@times,(1:obj.num_ceq)',ones(1,obj.num_vars)),[],1);
       obj.jCeqvar = reshape(bsxfun(@times,ones(obj.num_ceq,1),(1:obj.num_vars)),[],1);
       
-      % todo : check dependencies and then go through the list
-      obj.solver = 'snopt';
+      if checkDependency('snopt')
+        obj.solver = 'snopt';
+      else % todo: check for fmincon?
+        obj.solver = 'fmincon';
+      end
       obj.solver_options.fmincon = optimset('Display','off');
       obj.solver_options.snopt = struct();
       obj.solver_options.snopt.MajorIterationsLimit = 1000;
@@ -169,6 +178,11 @@ classdef NonlinearProgram
       obj.solver_options.snopt.VerifyLevel = 0;
       obj.solver_options.snopt.DerivativeOption = 1;
       obj.solver_options.snopt.print = '';
+      obj.solver_options.snopt.scaleoption = 0;
+      obj.solver_options.snopt.NewBasisFile = 0;
+      obj.solver_options.snopt.OldBasisFile = 0;
+      obj.solver_options.snopt.BackupBasisFile = 0;
+      obj.solver_options.snopt.LinesearchTolerance = 0.9;
       obj.check_grad = false;
     end
     
@@ -185,10 +199,26 @@ classdef NonlinearProgram
       [m,n] = size(Aeq);
       assert(n == obj.num_vars);
       sizecheck(beq,[m,1]);
-      obj.Aeq = vertcat(obj.Aeq,Aeq);
-      obj.beq = vertcat(obj.beq,beq);
+      if numel(Aeq) > 0
+        obj.Aeq = vertcat(obj.Aeq,Aeq);
+        obj.beq = vertcat(obj.beq,beq);
+      end
     end
 
+    function obj = addDisplayFunction(obj,display_fun,indices)
+      % add a dispay function that gets called on every iteration of the
+      % algorithm
+      % @param displayFun a function handle of the form displayFun(x(indices))
+      % @param indices optionally specify a subset of the decision
+      % variables to be passed to the displayFun @default 1:obj.num_vars
+      
+      typecheck(display_fun,'function_handle');
+      if nargin<3, indices = 1:obj.num_vars; end
+
+      obj.display_funs = vertcat(obj.display_funs,{display_fun});
+      obj.display_fun_indices = vertcat(obj.display_fun_indices,{indices});
+    end
+    
     function obj = setVarBounds(obj,x_lb,x_ub)
       % set the lower and upper bounds of the decision variables
       sizecheck(x_lb,[obj.num_vars,1]);
@@ -314,6 +344,37 @@ classdef NonlinearProgram
             error('Drake:NonlinearProgram:setSolverOptions:print should be the file name string');
           end
           obj.solver_options.snopt.print = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'scaleoption'))
+          if(~isnumeric(optionval) || numel(optionval) ~= 1)
+            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scaler');
+          end
+          if(optionval ~= 0 && optionval ~= 1 && optionval ~= 2)
+            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be either 0,1 or 2');
+          end
+          obj.solver_options.snopt.scaleoption = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'oldbasisfile'))
+          if(~isnumeric(optionval) || numel(optionval) ~= 1)
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'OldBasisFile should be a scaler');
+          end
+          obj.solver_options.snopt.OldBasisFile = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'newbasisfile'))
+          if(~isnumeric(optionval) || numel(optionval) ~= 1)
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'NewBasisFile should be a scaler');
+          end
+          obj.solver_options.snopt.NewBasisFile = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'backupbasisfile'))
+          if(~isnumeric(optionval) || numel(optionval) ~= 1)
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'BackupBasisFile should be a scaler');
+          end
+          obj.solver_options.snopt.BackupBasisFile = optionval;
+        elseif(strcmpi(optionname(~isspace(optionname)),'linesearchtolerance'))
+          if(~isnumeric(optionval) || numel(optionval) ~= 1)
+            error('Drake:NonlinearProgram:setSolverOptions:scaleoption should be a scaler');
+          end
+          if(optionval < 0 || optionval > 1)
+            error('Drake:NonlinearProgram:setSolverOptions:OptionVal', 'LinesearchTolerance should be between 0 and 1');
+          end
+          obj.solver_options.snopt.LinesearchTolerance = optionval;
         end
       elseif(strcmpi((solver),'fmincon'))
         error('Not implemented yet');
@@ -411,9 +472,52 @@ classdef NonlinearProgram
 
       global SNOPT_USERFUN;
       SNOPT_USERFUN = @snopt_userfun;
+      % Find out the decision variables with lower and upper bounds being equal, remove
+      % those decision variables
+      x_idx = (1:obj.num_vars)';
+      free_x_idx = x_idx(obj.x_lb~=obj.x_ub);
+      fix_x_idx = x_idx(obj.x_lb == obj.x_ub);
+      x_fix = obj.x_lb(fix_x_idx);
+      num_x_free = length(free_x_idx);
+      x2freeXmap = zeros(obj.num_vars,1);
+      x2freeXmap(free_x_idx) = (1:num_x_free)';
+      x_lb_free = obj.x_lb(free_x_idx);
+      x_ub_free = obj.x_ub(free_x_idx);
+      x0_free = x0(free_x_idx);
       
-      A = [obj.Ain;obj.Aeq];
+      if(~isempty(obj.Ain))
+        Ain_free = obj.Ain(:,free_x_idx);
+        if any(fix_x_idx)
+          bin_free = obj.bin-obj.Ain(:,fix_x_idx)*x_fix;
+        else
+          bin_free = obj.bin;
+        end
+      else
+        Ain_free = [];
+        bin_free = [];
+      end
+      if(~isempty(obj.Aeq))
+        Aeq_free = obj.Aeq(:,free_x_idx);
+        if any(fix_x_idx)
+          beq_free = obj.beq-obj.Aeq(:,fix_x_idx)*x_fix;
+        else
+          beq_free = obj.beq;
+        end
+      else
+        Aeq_free = [];
+        beq_free = [];
+      end
       
+      [iGfun,jGvar] = obj.getNonlinearGradientSparsity();
+      if any(fix_x_idx)
+        jGvar_free_idx = all(bsxfun(@minus,jGvar,reshape(fix_x_idx,1,[])),2);
+      else
+        jGvar_free_idx = true(size(jGvar));
+      end
+      iGfun_free = iGfun(jGvar_free_idx);
+      jGvar_free = x2freeXmap(jGvar(jGvar_free_idx));
+      
+      A_free = [Ain_free;Aeq_free];
       snseti('Major Iterations Limit',obj.solver_options.snopt.MajorIterationsLimit);
       snseti('Minor Iterations Limit',obj.solver_options.snopt.MinorIterationsLimit);
       snsetr('Major Optimality Tolerance',obj.solver_options.snopt.MajorOptimalityTolerance);
@@ -423,19 +527,28 @@ classdef NonlinearProgram
       snseti('Derivative Option',obj.solver_options.snopt.DerivativeOption);
       snseti('Verify level',obj.solver_options.snopt.VerifyLevel);
       snseti('Iterations Limit',obj.solver_options.snopt.IterationsLimit);
+      snseti('Scale option',obj.solver_options.snopt.scaleoption);
+      snseti('New Basis File',obj.solver_options.snopt.NewBasisFile);
+      snseti('Old Basis File',obj.solver_options.snopt.OldBasisFile);
+      snseti('Backup Basis File',obj.solver_options.snopt.BackupBasisFile);
+      snsetr('Linesearch tolerance',obj.solver_options.snopt.LinesearchTolerance);
 
-      function [f,G] = snopt_userfun(x)
-        [f,G] = geval(@obj.objectiveAndNonlinearConstraints,x);
-        f = [f;zeros(length(obj.bin)+length(obj.beq),1)];
+      function [f,G] = snopt_userfun(x_free)
+        x_all = zeros(obj.num_vars,1);
+        x_all(free_x_idx) = x_free;
+        x_all(fix_x_idx) = x_fix;
+        [f,G] = geval(@obj.objectiveAndNonlinearConstraints,x_all);
+        f = [f;zeros(length(bin_free)+length(beq_free),1)];
         
         G = G(sub2ind(size(G),iGfun,jGvar));
+        G = G(jGvar_free_idx);
       end      
 
-      function checkGradient(x)
+      function checkGradient(x_free)
         num_rows_G = 1+obj.num_ceq+obj.num_cin+length(obj.beq)+length(obj.bin);
-        [f,G] = snopt_userfun(x);
-        [~,G_numerical] = geval(@snopt_userfun,x,struct('grad_method','numerical'));
-        G_user = full(sparse(iGfun,jGvar,G,num_rows_G,obj.num_vars));
+        [f,G] = snopt_userfun(x_free);
+        [~,G_numerical] = geval(@snopt_userfun,x_free,struct('grad_method','numerical'));
+        G_user = full(sparse(iGfun_free,jGvar_free,G,num_rows_G,num_x_free));
         G_err = G_user-G_numerical;
         [max_err,max_err_idx] = max(abs(G_err(:)));
         [max_err_row,max_err_col] = ind2sub([num_rows_G,obj.num_vars],max_err_idx);
@@ -443,42 +556,45 @@ classdef NonlinearProgram
           max_err_row,max_err_col,max_err,G_user(max_err_row,max_err_col),G_numerical(max_err_row,max_err_col)));
       end
       
-      if isempty(A)
+      if isempty(A_free)
         Avals = [];
         iAfun = [];
         jAvar = [];
       else
-        [iAfun,jAvar,Avals] = find(A);
+        [iAfun,jAvar,Avals] = find(A_free);
         iAfun = iAfun(:);
         jAvar = jAvar(:);
         Avals = Avals(:);
         iAfun = iAfun + 1 + obj.num_cin + obj.num_ceq;
       end
         
-      [iGfun,jGvar] = obj.getNonlinearGradientSparsity();
-      [lb,ub] = obj.bounds();
+      
+      lb = [-inf;obj.cin_lb;zeros(obj.num_ceq,1);-inf(length(bin_free),1);beq_free];
+      ub = [inf;obj.cin_ub;zeros(obj.num_ceq,1);bin_free;beq_free];
       if(obj.check_grad)
         display('check the gradient for the initial guess');
-        checkGradient(x0);
+        checkGradient(x0_free);
       end
       
       if(~isempty(obj.solver_options.snopt.print))
         snprint(obj.solver_options.snopt.print);
       end
-      [x,objval,exitflag] = snopt(x0, ...
-        obj.x_lb,obj.x_ub, ...
+      [x_free,objval,exitflag] = snopt(x0_free, ...
+        x_lb_free,x_ub_free, ...
         lb,ub,...
         'snoptUserfun',...
         0,1,...
         Avals,iAfun,jAvar,...
-        iGfun,jGvar);
+        iGfun_free,jGvar_free);
       if(obj.check_grad)
         display('check the gradient for the SNOPT solution');
-        checkGradient(x);
+        checkGradient(x_free);
       end
-      
+      x = zeros(obj.num_vars,1);
+      x(free_x_idx) = x_free;
+      x(fix_x_idx) = x_fix;
       objval = objval(1);
-      if exitflag~=1, disp(snoptInfo(exitflag)); end
+      if exitflag~=1, warning('Drake:NonlinearProgram:SNOPTExitFlag',' %3d %s\n',exitflag,snoptInfo(exitflag)); end
     end
     
     function [x,objval,exitflag] = fmincon(obj,x0)
@@ -500,7 +616,29 @@ classdef NonlinearProgram
       [x,objval,exitflag] = fmincon(@obj.objective,x0,obj.Ain,...
         obj.bin,obj.Aeq,obj.beq,obj.x_lb,obj.x_ub,@fmincon_userfun,obj.solver_options.fmincon);
       objval = full(objval);
+      
+      if exitflag~=1, 
+        switch (exitflag)
+          case 0
+            msg='Number of iterations exceeded';
+          case -1
+            msg='Stopped by an output function or plot function';
+          case -2
+            msg='No feasible point was found';
+          case 2
+            msg='Change in x was less than options.TolX and maximum constraint violation was less than options.TolCon';
+          case 3
+            msg='Change in the objective function value was less than options.TolFun and maximum constraint violation was less than options.TolCon';
+          case 4
+            msg='Magnitude of the search direction was less than 2*options.TolX and maximum constraint violation was less than options.TolCon';
+          case 5
+            msg='Magnitude of directional derivative in search direction was less than 2*options.TolFun and maximum constraint violation was less than options.TolCon';
+          case -3
+            msg='Objective function at current iteration went below options.ObjectiveLimit and maximum constraint violation was less than options.TolCon';
+        end        
+        warning('Drake:NonlinearProgram:FMINCONExitFlag',' FMINCON %2d %s',exitflag,msg); 
+      end
+      
     end
   end
-  
 end
