@@ -39,7 +39,7 @@ classdef RigidBodyAddedMass < RigidBodyForceElement
             %Augment spatial inertia with added mass
             manip = manip.setBody(body_ind,manip.body(body_ind).setInertial(Imass,obj.MaBody));
         end
-        function force = computeSpatialForce(obj,manip,q,qd)
+        function force = computeSpatialForce(obj,manip,q,v)
             % Adds the gravity correction from added mass
             % This force is ONLY necessary because the Featherstone solver
             % imposes gravitational acceleration at the base of the

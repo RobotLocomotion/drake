@@ -20,7 +20,7 @@ function AllBodiesClosestDistanceConstraintTest(n,draw_pause)
   r = compile(r);
 
   S = load([getDrakePath,'/examples/Atlas/data/atlas_fp.mat']);
-  q_nom = S.xstar(1:r.getNumDOF());
+  q_nom = S.xstar(1:r.getNumPositions());
   options = optimset('TolFun',1e-5,'TolX',1e-6);
   constraintTester('AllBodiesClosestDistanceConstraintTest',r,@makeCon, @(r) q_nom, @makeQseed, n, draw_pause,options,@objFun);
 

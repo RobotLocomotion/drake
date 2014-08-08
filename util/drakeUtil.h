@@ -5,12 +5,13 @@
  *      Author: russt
  */
 
-#include "mex.h"
-#include <utility>
-#include <Eigen/Core>
 
 #ifndef DRAKE_UTIL_H_
 #define DRAKE_UTIL_H_
+
+#include "mex.h"
+#include <utility>
+#include <Eigen/Core>
 
 // Helper routines
 bool isa(const mxArray* mxa, const char* class_str);

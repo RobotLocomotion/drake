@@ -45,7 +45,7 @@ classdef WorldPositionInFrameConstraint < WorldPositionConstraint
       ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.WorldPositionInFrameConstraintType,robot.getMexModelPtr,body,pts,o_T_f,lb,ub,tspan);
       obj = obj@WorldPositionConstraint(robot,body,pts,lb,ub,tspan);
       obj.o_T_f = o_T_f;
-      obj.f_T_o = invHT(o_T_f);
+      obj.f_T_o = homogTransInv(o_T_f);
       obj.type = RigidBodyConstraint.WorldPositionInFrameConstraintType;
       obj.mex_ptr = ptr;
     end

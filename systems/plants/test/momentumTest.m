@@ -27,7 +27,7 @@ x0(6+6) = 0.5*randn();
   function A = myfun(q)
     % for derivative check
     kinsol = doKinematics(r,q,false);
-    A = getCMM(r,kinsol);
+    A = centroidalMomentumMatrix(r,kinsol);
   end
 
 T = 3.0;
@@ -35,34 +35,38 @@ xtraj = r.simulate([0 T],x0);
 
 body = getBody(r,2); % get ball
 
-nq = getNumDOF(r);
+nq = getNumPositions(r);
+nv = getNumVelocities(r);
 for t=0:0.05:T
   x = xtraj.eval(t);
   if display
     draw(v,t,x);
   end
   q = x(1:nq);
-  qd = x(nq+(1:nq));
+  v = x(nq+1:end);
+  qd = r.getManipulator.vToqdot(q) * v;
   
   % test derivative
   [A,dAdq] = geval(@myfun,q);
-  Adot_tv = 0*A;
+  Adot_geval = 0*A;
   for jj=1:nq
-    Adot_tv = Adot_tv + reshape(dAdq(:,jj),size(A)) * qd(jj);
+    Adot_geval = Adot_geval + reshape(dAdq(:,jj),size(A)) * qd(jj);
   end
   
-  kinsol = doKinematics(r,q,false,true);
-  [A,Adot] = getCMM(r,kinsol,qd);
-  valuecheck(Adot,Adot_tv);
+  kinsol = doKinematics(r,q,false,false,v,true);
+  A = centroidalMomentumMatrix(r,kinsol);
+  Adot_times_v = centroidalMomentumMatrixDotTimesV(r,kinsol);
+  valuecheck(Adot_times_v,Adot_geval * v);
 
   % test mex
-  kinsol_matlab = doKinematics(r,q,false,false);
-  [A_mat,Adot_mat] = getCMM(r,kinsol_matlab,qd);
-  valuecheck(A,A_mat);
-  valuecheck(Adot,Adot_mat);
+  kinsol_mex = doKinematics(r,q,false,true,v,true);
+  A_mex = centroidalMomentumMatrix(r,kinsol_mex);
+  Adot_times_v_mex = centroidalMomentumMatrixDotTimesV(r,kinsol_mex);
+  valuecheck(A,A_mex);
+  valuecheck(Adot_times_v,Adot_times_v_mex);
   
   % test physics
-  h = A*qd;
+  h = A*v;
   omega = rpydot2angularvel(q(4:6),qd(4:6));
   am = body.inertia * omega;
 
@@ -71,7 +75,7 @@ for t=0:0.05:T
   
   if display
     xyzrpy = forwardKin(r,kinsol,2,[0;0;0],1);
-    xcom = getCOM(r,kinsol);
+    xcom = centerOfMass(r,kinsol);
 
     % plot centroidal linear momentum
     lcmgl.glPushMatrix();
@@ -140,17 +144,18 @@ xtraj = r.simulate([0 T],x0);
 
 body = getBody(r,2); % get brick
 
-nq = getNumDOF(r);
+nq = getNumPositions(r);
 for t=0:0.05:T
   x = xtraj.eval(t);
   if display
     draw(v,t,x);
   end
   q = x(1:nq);
-  qd = x(nq+(1:nq));
+  v = x(nq+1:end);
+  qd = r.getManipulator.vToqdot(q) * v;
   kinsol = doKinematics(r,q,false,true);
   
-  A = getCMM(r,q);
+  A = centroidalMomentumMatrix(r,kinsol);
   h = A*qd;
   
   omega = rpydot2angularvel(q(4:6),qd(4:6));
@@ -161,7 +166,7 @@ for t=0:0.05:T
 
   if display
     xyzrpy = forwardKin(r,kinsol,2,[0;0;0],1);
-    xcom = getCOM(r,kinsol);
+    xcom = centerOfMass(r,kinsol);
 
     % plot centroidal linear momentum
     lcmgl.glPushMatrix();

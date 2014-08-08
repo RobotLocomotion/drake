@@ -28,7 +28,7 @@ for i=1:length(t),
   kinsol = doKinematics(p,q);
   [H,C,B] = manipulatorDynamics(p,q,qd);
   T(i) = .5*qd'*H*qd;
-  com = p.getCOM(kinsol);
+  com = p.centerOfMass(kinsol);
   U(i) = com(3)*M*9.81;
   T2(i) = .5*qd(7:end)'*H(7:end,7:end)*qd(7:end);
 end

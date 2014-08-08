@@ -78,7 +78,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
 %      xft = splitCoordinates(getInputFrame(obj),xft);
 %      x = xft{1}; ft = xft{2};
 % 
-%      kinsol = doKinematics(obj.manip,x(1:obj.manip.getNumDOF),false,false);
+%      kinsol = doKinematics(obj.manip,x(1:obj.manip.getNumPositions),false,false);
 % 
 %      body_pts = kinsol.T{obj.body}\[obj.xyz, obj.xyz+.001*ft(1:2); 1 1];  % convert force from sensor coords to body coords
 %      body_pts = body_pts(1:2,:);
@@ -112,7 +112,7 @@ classdef ContactForceTorqueSensor < TimeSteppingRigidBodySensorWithState %& Visu
      % internal RigidBodyManipulator
      manip = tsmanip.getManipulator();
      
-     kinsol = doKinematics(manip,x(1:manip.getNumDOF));
+     kinsol = doKinematics(manip,x(1:manip.getNumPositions));
      contact_pos = forwardKin(manip,kinsol,obj.kinframe.body_ind,body.contact_pts);
 
      [d,N] = size(contact_pos);

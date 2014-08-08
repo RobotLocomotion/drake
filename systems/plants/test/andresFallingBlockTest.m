@@ -5,13 +5,13 @@ function andresFallingBlockTest
 % gravity.
 
 options = [];
-options.floating = true;
+options.floating = true; % 'quat'
 r = PlanarRigidBodyManipulator('block_offset.urdf', options);
-q = zeros(3,1);
-qd = zeros(3,1);
-[H,C] = manipulatorDynamics(r,q,qd);
-qddot0 = inv(H)*C;
-valuecheck(qddot0(3),0);  % there should be no rotational acceleration
+q = zeros(r.getNumPositions(),1);
+v = zeros(r.getNumVelocities(),1);
+[H,C] = manipulatorDynamics(r,q,v);
+vd0 = inv(H)*C;
+valuecheck(vd0(3),0);  % there should be no rotational acceleration
 
 v = r.constructVisualizer;
 

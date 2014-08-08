@@ -17,7 +17,7 @@ for i=1:100
   Jdot = forwardJacDot(p,kinsol,body_ind,pt);
   valuecheck(Jdot,matGradMult(reshape(dJ,3*nq,nq),qd));
   
-  [c,Jc,dJc] = getCOM(p,kinsol); %geval(@myfun,q,options);
+  [c,Jc,dJc] = centerOfMass(p,kinsol); %geval(@myfun,q,options);
   Jcdot = forwardJacDot(p,kinsol,0);
   valuecheck(Jcdot,matGradMult(reshape(dJc,3*nq,nq),qd));
 
@@ -28,7 +28,7 @@ for i=1:100
   valuecheck(Jdotmex,Jdot);
   valuecheck(matGradMult(reshape(dJmex,3*nq,nq),qd),Jdotmex);
 
-  [cmex,Jcmex,dJcmex] = getCOM(p,kinsol);
+  [cmex,Jcmex,dJcmex] = centerOfMass(p,kinsol);
   valuecheck(dJcmex,dJc);
   Jcdotmex = forwardJacDot(p,kinsol,0);
   valuecheck(Jcdotmex,matGradMult(reshape(dJcmex,3*nq,nq),qd));

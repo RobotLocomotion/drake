@@ -1,9 +1,11 @@
 function ancestor_bodies = findAncestorBodies(obj, body_index)
 %findAncestorBodies    Find indices of ancestors of a body
-%   @param body_index index of a rigid body in this RigidBodyManipulator
-%   @retval the indices of the parents of the rigid body with index
-%   body_index, not including body_index, ordered from closest to most
-%   distant ancestor
+%
+% @param body_index index of a rigid body in this RigidBodyManipulator
+%
+% @retval the indices of the parents of the rigid body with index
+% body_index, not including body_index, ordered from closest to most
+% distant ancestor
 
 if (body_index==0)
   error('invalid body_index');

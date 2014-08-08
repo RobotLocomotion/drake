@@ -3,7 +3,7 @@ classdef AtlasCoordinates < SingletonCoordinateFrame
   methods
     function obj=AtlasCoordinates(r)
       typecheck(r,'TimeSteppingRigidBodyManipulator');
-      nq = r.getNumDOF();
+      nq = r.getNumPositions();
       obj = obj@SingletonCoordinateFrame('AtlasCoordinates',nq,'x',r.getStateFrame.coordinates(1:nq));
     end
   end

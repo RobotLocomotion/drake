@@ -1,5 +1,7 @@
 function Jdot = forwardJacDot(obj,kinsol,body_or_frame_ind,pts,rotation_type,robotnum)
 
+warnOnce(obj.warning_manager,'Drake:RigidBodyManipulator:Inefficient','Inefficient call. If you''re already computing J using forwardKin, it is faster to call forwardKin with gradient output and compute Jdot from dJ: reshape(reshape(dJ, numel(J), []) * kinsol.vToqdot * kinsol.v, size(J)).');
+
 % same input as [x,J] = forwardKin but returns Jdot
 % note: you must have called kinsol = doKinematics with qd passed in as the
 % last argument
@@ -23,82 +25,14 @@ if (kinsol.mex)
     Jdot = forwardKinmex(obj.mex_model_ptr,kinsol.q,body_or_frame_ind,pts,rotation_type,true);
   end
 else
+  compute_com_jacobian_dot = body_or_frame_ind == 0;
   
-  if isempty(kinsol.dTdqdot{1})
-    error('Drake:RigidBodyManipulator:MissingDerivatives','This kinsol does not have dTdqdot.  You must pass qd into doKinematics before using this method');
-  end
-  
-  if (body_or_frame_ind == 0) 
-    nq=getNumDOF(obj);
-    
-    % return center of mass for the entire model
-    m=0;
-    Jdot = zeros(3,nq);
-    
-    for i=1:length(obj.body)
-      if(any(obj.body(i).robotnum == robotnum))
-        bm = obj.body(i).mass;
-        if (bm>0)
-          bc = obj.body(i).com;
-          bJdot = forwardJacDot(obj,kinsol,i,bc);
-          Jdot = (m*Jdot + bm*bJdot)/(m+bm);
-          m = m + bm;
-        end
-      end
-    end
+  if compute_com_jacobian_dot
+    [~,J,dJ] = centerOfMass(obj,kinsol,robotnum);
   else
-    if (body_or_frame_ind < 0)
-      frame = obj.frame(-body_or_frame_ind);
-      body_ind = frame.body_ind;
-      Tframe = frame.T;
-    else
-      body_ind = body_or_frame_ind;
-      Tframe=eye(4);
-    end
-  
-    m = size(pts,2);
-    pts = [pts;ones(1,m)];
-    
-    if rotation_type==0
-      Jdot = reshape(kinsol.dTdqdot{body_ind}*Tframe*pts,obj.getNumDOF,[])';
-    elseif rotation_type==1
-      T = kinsol.T{body_ind}*Tframe;
-      R = T(1:3,1:3);
-      nq=getNumDOF(obj);
-      dTdqdot = kinsol.dTdqdot{body_ind}*Tframe;
-      Jx = reshape(dTdqdot*pts,nq,[])';
-
-      Jr = zeros(3,nq);
-      % note the unusual format of dTdq 
-      % dTdq = [dT(1,:)dq1; dT(1,:)dq2; ...; dT(1,:)dqN; dT(2,dq1) ...]
-    
-      % droll_dqdot
-      idx = sub2ind(size(dTdqdot),(3-1)*nq+(1:nq),2*ones(1,nq));
-      dR32_dqdot = dTdqdot(idx);
-      idx = sub2ind(size(dTdqdot),(3-1)*nq+(1:nq),3*ones(1,nq));
-      dR33_dqdot = dTdqdot(idx);
-      sqterm = R(3,2)^2 + R(3,3)^2;
-      Jr(1,:) = (R(3,3)*dR32_dqdot - R(3,2)*dR33_dqdot)/sqterm;
-
-      % dpitch_dqdot
-      idx = sub2ind(size(dTdqdot),(3-1)*nq+(1:nq),ones(1,nq));
-      dR31_dqdot = dTdqdot(idx);
-      Jr(2,:) = (-sqrt(sqterm)*dR31_dqdot + R(3,1)/sqrt(sqterm)*(R(3,2)*dR32_dqdot + R(3,3)*dR33_dqdot) )/(R(3,1)^2 + R(3,2)^2 + R(3,3)^2);
-
-      % dyaw_dqdot
-      idx = sub2ind(size(dTdqdot),(1-1)*nq+(1:nq),ones(1,nq));
-      dR11_dqdot = dTdqdot(idx);
-      idx = sub2ind(size(dTdqdot),(2-1)*nq+(1:nq),ones(1,nq));
-      dR21_dqdot = dTdqdot(idx);
-      sqterm = R(1,1)^2 + R(2,1)^2;
-      Jr(3,:) = (R(1,1)*dR21_dqdot - R(2,1)*dR11_dqdot)/sqterm;
-
-      Jtmp = [Jx;Jr];
-      Jrow_ind = reshape([reshape(1:3*m,3,m);bsxfun(@times,3*m+(1:3)',ones(1,m))],[],1);
-      Jdot = Jtmp(Jrow_ind,:);
-    elseif rotation_type==2
-      error('forwardJacDot: quaternions not yet supported');
-    end
+    [~,J,dJ] = forwardKin(obj, kinsol, body_or_frame_ind,pts,rotation_type);
   end
-  
+  dJ = reshape(dJ, numel(J), []);
+  qd = kinsol.vToqdot * kinsol.v;
+  Jdot = reshape(dJ * qd, size(J));
 end

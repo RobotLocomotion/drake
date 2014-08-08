@@ -5,6 +5,7 @@
 #include <iostream>
 #include <set>
 #include <Eigen/StdVector>
+#include "joints/DrakeJoint.h"
 
 class IndexRange {
  public:
@@ -18,14 +19,16 @@ class IndexRange {
 
 class RigidBodyManipulator;
 
-using namespace Eigen;
-
 class RigidBody {
 public:
   RigidBody();
 
   void setN(int n);
   void computeAncestorDOFs(RigidBodyManipulator* model);
+  void setJoint(std::unique_ptr<DrakeJoint> joint);
+
+private:
+  std::unique_ptr<DrakeJoint> joint;
 
 public:
   std::string linkname;
@@ -37,22 +40,22 @@ public:
   int dofnum;
   int floating;
   int pitch;
-  MatrixXd contact_pts;
-  Matrix4d Ttree;
-  Matrix4d T_body_to_joint;
+  Eigen::MatrixXd contact_pts;
+  Eigen::Matrix4d Ttree;
+  Eigen::Matrix4d T_body_to_joint;
 
   std::set<int> ancestor_dofs;
   std::set<int> ddTdqdq_nonzero_rows;
   std::set<IndexRange> ddTdqdq_nonzero_rows_grouped;
 
-  Matrix4d T;
-  MatrixXd dTdq;
-  MatrixXd dTdqdot;
-  Matrix4d Tdot;
-  MatrixXd ddTdqdq;
+  Eigen::Matrix4d T;
+  Eigen::MatrixXd dTdq;
+  Eigen::MatrixXd dTdqdot;
+  Eigen::Matrix4d Tdot;
+  Eigen::MatrixXd ddTdqdq;
 
   double mass;
-  Vector4d com;  // this actually stores [com;1] (because that's what's needed in the kinematics functions)
+  Eigen::Vector4d com;  // this actually stores [com;1] (because that's what's needed in the kinematics functions)
 
   friend std::ostream& operator<<( std::ostream &out, const RigidBody &b);
 

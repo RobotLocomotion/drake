@@ -21,7 +21,7 @@ classdef PlanarContactAffordance < ContactAffordance
         function [dist,dDist] = distancePts2Aff(obj,q,pts)
             sizecheck(pts,[3,nan]);
             n_pts = size(pts,2);
-            nq = obj.robot.getNumDOF();
+            nq = obj.robot.getNumPositions();
             sizecheck(q,[nq,1]);
             if(obj.is_fixed)
                 normal_abs = obj.normal;

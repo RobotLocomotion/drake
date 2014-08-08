@@ -80,7 +80,7 @@ classdef Atlas < TimeSteppingRigidBodyManipulator & Biped
       x0 = resolveConstraints(obj,x0);
       u0 = zeros(obj.getNumInputs(),1);
 
-      nq = obj.getNumDOF();
+      nq = obj.getNumPositions();
       nu = obj.getNumInputs();
       nz = obj.getNumContacts()*3;
       z0 = zeros(nz,1);

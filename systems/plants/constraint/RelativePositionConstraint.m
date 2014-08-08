@@ -12,7 +12,7 @@ classdef RelativePositionConstraint < PositionConstraint
   end
   methods(Access = protected)
     function [pos,J] = evalPositions(obj,kinsol)
-      % nq = obj.robot.getNumDOF();
+      % nq = obj.robot.getNumPositions();
       %[pts_world, J_world] = forwardKin(obj.robot,kinsol,obj.body,obj.pts,0);
       [bodyA_pos,JA] = forwardKin(obj.robot,kinsol,obj.body_a.idx,obj.pts,0);
       [wTb,dwTb] = forwardKin(obj.robot,kinsol,obj.body_b.idx,[0;0;0],2);
@@ -30,7 +30,7 @@ classdef RelativePositionConstraint < PositionConstraint
       dbpTw_quat = dbpTw_quat(:,5:8)*dbTw_quat;
 
       pos = zeros(3,obj.n_pts);
-      J = zeros(3*obj.n_pts,obj.robot.getNumDOF());
+      J = zeros(3*obj.n_pts,obj.robot.getNumPositions());
       for i = 1:obj.n_pts
         [bp_bodyA_pos1,dbp_bodyA_pos1] = quatRotateVec(bpTw_quat,bodyA_pos(:,i));
         dbp_bodyA_pos1 = dbp_bodyA_pos1*[dbpTw_quat;JA(3*(i-1)+(1:3),:)];
@@ -105,7 +105,7 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
     function drawConstraint(obj,q,lcmgl)
       kinsol = doKinematics(obj.robot,q,false,false);
       pts_w = forwardKin(obj.robot,kinsol,1,obj.pts);
-      wTbp = kinsol.T{obj.body_b.idx}*invHT([quat2rotmat(obj.bpTb(4:7)) obj.bpTb(1:3);0 0 0 1]);
+      wTbp = kinsol.T{obj.body_b.idx}* homogTransInv([quat2rotmat(obj.bpTb(4:7)) obj.bpTb(1:3);0 0 0 1]);
       wPbp = wTbp(1:3,4);
       lcmgl.glDrawAxes();
       for pt = pts_w
@@ -123,7 +123,7 @@ function obj = RelativePositionConstraint(robot,pts,lb,ub, ...
     
     function joint_idx = kinematicsPathJoints(obj)
       [~,joint_path] = obj.robot.findKinematicPath(obj.body_a.idx,obj.body_b.idx);
-      joint_idx = vertcat(obj.robot.body(joint_path).dofnum)';
+      joint_idx = vertcat(obj.robot.body(joint_path).position_num)';
     end
   end
 end

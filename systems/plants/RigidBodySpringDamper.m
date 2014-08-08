@@ -11,7 +11,7 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
   end
   
   methods
-    function [f_ext, df_ext] = computeSpatialForce(obj,manip,q,qd)
+    function [f_ext, df_ext] = computeSpatialForce(obj,manip,q,v)
       % todo: re-enable mex for planar version when i write mex the planer
       % bodykin
       
@@ -19,14 +19,17 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
       
       if (obj.b~=0)
         if (nargout>1)
-          kinsol = doKinematics(manip,q,false,true,qd);
-          [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
-          J1dot = forwardJacDot(manip,kinsol,obj.body1,obj.pos1);
+          kinsol = doKinematics(manip,q,true,true,v);
+          qd = kinsol.vToqdot * v;
+          [x1,J1,dJ1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
+%           J1dot = forwardJacDot(manip,kinsol,obj.body1,obj.pos1);
+          J1dot = reshape(reshape(dJ1, numel(J1), []) * qd, size(J1));
           v1 = J1*qd;
           dv1dq = J1dot;
           dv1dqd = J1;
-          [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
-          J2dot = forwardJacDot(manip,kinsol,obj.body2,obj.pos2);
+          [x2,J2,dJ2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);
+%           J2dot = forwardJacDot(manip,kinsol,obj.body2,obj.pos2);
+          J2dot = reshape(reshape(dJ2, numel(J2), []) * qd, size(J2));
           v2 = J2*qd;
           dv2dq = J2dot;
           dv2dqd = J2;
@@ -38,6 +41,7 @@ classdef RigidBodySpringDamper < RigidBodyForceElement
           dveldqd = (((x1-x2)'*(dv1dqd-dv2dqd))*(length+eps))/(length+eps)^2;
         else
           kinsol = doKinematics(manip,q);
+          qd = kinsol.vToqdot * v;
           [x1,J1] = forwardKin(manip,kinsol,obj.body1,obj.pos1);
           v1 = J1*qd;
           [x2,J2] = forwardKin(manip,kinsol,obj.body2,obj.pos2);

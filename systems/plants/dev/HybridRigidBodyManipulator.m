@@ -17,7 +17,7 @@ classdef HybridRigidBodyManipulator < HybridDrakeSystem
         error('model must be a RigidBodyModel, PlanarRigidBodyModel or the name of a urdf file'); 
       end
 
-      obj = obj@HybridDrakeSystem(size(model.B,2),2*model.featherstone.NB);
+      obj = obj@HybridDrakeSystem(size(model.B,2),model.getNumPositions() + model.getNumVelocities());
       obj.model = model;
       
       % now construct all of the modes

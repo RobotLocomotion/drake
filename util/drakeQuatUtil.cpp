@@ -1,5 +1,8 @@
 #include "drakeQuatUtil.h"
 #include <iostream>
+#include <random>
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 using namespace Eigen;
 void quatConjugate(const Vector4d &q, Vector4d &q_conj)
@@ -102,4 +105,15 @@ void quatDiffAxisInvar(const Vector4d &q1, const Vector4d &q2, const Vector3d &u
   de << 4*r(0)*dr.row(0)+4*u.transpose()*r.tail(3)*u.transpose()*dr.block(1,0,3,8),4*u.transpose()*r.tail(3)*r.tail(3).transpose();
 }
 
+Quaterniond uniformlyRandomQuat(std::default_random_engine& generator)
+{
+  std::normal_distribution<double> normal;
+  std::uniform_real_distribution<double> uniform(-M_PI, M_PI);
+  double angle = uniform(generator);
+  Eigen::Vector3d axis = Vector3d(normal(generator), normal(generator), normal(generator));
+  axis.normalize();
+  Quaterniond quat;
+  quat = AngleAxisd(angle, axis);
+  return quat;
+}
 

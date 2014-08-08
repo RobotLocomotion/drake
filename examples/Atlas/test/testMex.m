@@ -2,7 +2,7 @@ function testMex
 
 options.floating=true;
 p = PlanarRigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
-nq = getNumDOF(p);
+nq = getNumPositions(p);
 
 for i=1:100
   q = randn(nq,1);
@@ -44,7 +44,7 @@ end
 
 options.floating=true;
 p = RigidBodyManipulator('../urdf/atlas_minimal_contact.urdf',options);
-nq = getNumDOF(p);
+nq = getNumPositions(p);
 
 for i=1:25
   q = randn(nq,1);
@@ -84,9 +84,9 @@ for i=1:25
 
   % test mex COM
   kinsol = p.doKinematics(rq,true,false);
-  [com,Jcom,dJcom]=getCOM(p,kinsol);
+  [com,Jcom,dJcom]=centerOfMass(p,kinsol);
   kinsol = p.doKinematics(rq,true,true);
-  [commex,Jcommex,dJcommex]=getCOM(p,kinsol);
+  [commex,Jcommex,dJcommex]=centerOfMass(p,kinsol);
   
   valuecheck(commex,com,1e-8);
   valuecheck(Jcommex,Jcom,1e-8);

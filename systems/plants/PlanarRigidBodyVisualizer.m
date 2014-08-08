@@ -27,8 +27,8 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
     
     function draw(obj,t,x)
 
-      n = obj.model.num_q;
-      q = x(1:n); %qd=x(n+(1:n));
+      n = obj.model.num_positions;
+      q = x(1:n); %v=x(n+1:end);
       kinsol = obj.model.doKinematics(q);
       
       % for debugging:
@@ -67,7 +67,7 @@ classdef PlanarRigidBodyVisualizer < RigidBodyVisualizer
       end
 
       if (obj.debug)
-        com = getCOM(obj.model,q);
+        com = centerOfMass(obj.model,q);
         plot(com(1),com(2),'bo','MarkerSize',15,'LineWidth',3);
         plot(com(1),com(2),'b+','MarkerSize',15,'LineWidth',3);
         plot([com(1) com(1)], [0 com(2)],'b--');

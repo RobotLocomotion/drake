@@ -14,7 +14,7 @@ classdef WorldCoMConstraint < PositionConstraint
   
   methods(Access = protected)
     function [pos,J] = evalPositions(obj,kinsol)
-      [pos,J] = getCOM(obj.robot,kinsol,obj.robotnum);
+      [pos,J] = centerOfMass(obj.robot,kinsol,obj.robotnum);
     end
     
     function cnst_names = evalNames(obj,t)

@@ -119,49 +119,50 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     //END_DEBUG
     pm = mxGetProperty(pBodies,i,"linkname");
     mxGetString(pm,buf,100);
-    model->bodies[i].linkname.assign(buf,strlen(buf));
+    auto& body = *(model->bodies[i]);
+    body.linkname.assign(buf, strlen(buf));
 
     pm = mxGetProperty(pBodies,i,"jointname");
     mxGetString(pm,buf,100);
-    model->bodies[i].jointname.assign(buf,strlen(buf));
+    body.jointname.assign(buf,strlen(buf));
 
     pm = mxGetProperty(pBodies,i,"robotnum");
-    model->bodies[i].robotnum = (int) mxGetScalar(pm)-1;
+    body.robotnum = (int) mxGetScalar(pm)-1;
 
     pm = mxGetProperty(pBodies,i,"mass");
-    model->bodies[i].mass = (double) mxGetScalar(pm);
+    body.mass = (double) mxGetScalar(pm);
 
     pm = mxGetProperty(pBodies,i,"com");
-    if (!mxIsEmpty(pm)) memcpy(model->bodies[i].com.data(),mxGetPr(pm),sizeof(double)*3);
+    if (!mxIsEmpty(pm)) memcpy(body.com.data(),mxGetPr(pm),sizeof(double)*3);
 
     pm = mxGetProperty(pBodies,i,"dofnum");
-    model->bodies[i].dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
+    body.dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
 
     pm = mxGetProperty(pBodies,i,"floating");
-    model->bodies[i].floating = (int) mxGetScalar(pm);
+    body.floating = (int) mxGetScalar(pm);
 
     pm = mxGetProperty(pBodies,i,"pitch");
-    model->bodies[i].pitch = (int) mxGetScalar(pm);
+    body.pitch = (int) mxGetScalar(pm);
 
     pm = mxGetProperty(pBodies,i,"parent");
     if (!pm || mxIsEmpty(pm))
-    	model->bodies[i].parent = -1;
+    	body.parent = -1;
     else
-    	model->bodies[i].parent = mxGetScalar(pm) - 1;
+    	body.parent = mxGetScalar(pm) - 1;
 
-    if (model->bodies[i].dofnum>=0) {
+    if (body.dofnum>=0) {
        pm = mxGetProperty(pBodies,i,"joint_limit_min");
-       model->joint_limit_min[model->bodies[i].dofnum] = mxGetScalar(pm);
+       model->joint_limit_min[body.dofnum] = mxGetScalar(pm);
        pm = mxGetProperty(pBodies,i,"joint_limit_max");
-       model->joint_limit_max[model->bodies[i].dofnum] = mxGetScalar(pm);
+       model->joint_limit_max[body.dofnum] = mxGetScalar(pm);
     }
 
     pm = mxGetProperty(pBodies,i,"Ttree");
     // todo: check that the size is 4x4
-    memcpy(model->bodies[i].Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
+    memcpy(body.Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
 
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
-    memcpy(model->bodies[i].T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
+    memcpy(body.T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
 
     //DEBUG
     //cout << "constructModelmex: About to parse collision geometry"  << endl;
@@ -227,7 +228,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         }
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
         model->addCollisionElement(i,T,shape,params_vec,group_name);
-        if (model->bodies[i].parent<0) {
+        if (model->bodies[i]->parent<0) {
           model->updateCollisionElements(i);  // update static objects only once - right here on load
         }
       }
@@ -290,8 +291,8 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       //cout << "constructModelmex: Set contact_pts of body" << endl;
       //END_DEBUG
       Map<MatrixXd> pts(mxGetPr(pPts),3,n_pts);
-      model->bodies[body_idx].contact_pts.resize(4,n_pts);
-      model->bodies[body_idx].contact_pts << pts, MatrixXd::Ones(1,n_pts);
+      model->bodies[body_idx]->contact_pts.resize(4,n_pts);
+      model->bodies[body_idx]->contact_pts << pts, MatrixXd::Ones(1,n_pts);
       //DEBUG
       //cout << "constructModelmex: Contact_pts of body: " << endl;
       //cout << model->bodies[body_idx].contact_pts << endl;

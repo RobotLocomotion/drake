@@ -171,7 +171,7 @@ function [xstar,ustar,zstar] = computeFixedPoint(r,x0,u0,v)
       plot(foot_pos(1,k),foot_pos(2,k),'bx','MarkerSize',10);
       hold on;
 %       plot(com_des(1),com_des(2),'go','MarkerSize',10);
-      cm = r.getCOM(quz(1:nq));
+      cm = r.centerOfMass(quz(1:nq));
       plot(cm(1),cm(2),'ro','MarkerSize',10);
       hold off;
     end
@@ -179,7 +179,7 @@ function [xstar,ustar,zstar] = computeFixedPoint(r,x0,u0,v)
     
   function [f,df] = myobj(quz)
     q=quz(1:nq);
-    [cm,J] = r.getCOM(q);
+    [cm,J] = r.centerOfMass(q);
     W = diag([ones(1,dim-1),0]); % ignore z-component
     f = 0.5*(com_des-cm)'*W*(com_des-cm);
     df = [-(com_des-cm)'*W*J,zeros(1,nu+nz)];

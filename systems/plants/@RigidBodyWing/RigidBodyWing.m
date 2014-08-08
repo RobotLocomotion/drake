@@ -363,20 +363,22 @@ classdef RigidBodyWing < RigidBodyForceElement
       
     end %constructor
 
-    function [force, dforce] = computeSpatialForce(obj,manip,q,qd) 
+    function [force, dforce] = computeSpatialForce(obj,manip,q,v) 
       nq = size(q,1);
       frame = getFrame(manip,obj.kinframe);
       
       if (nargout>1)
-        kinsol = doKinematics(manip,q,true,true,qd);
-        [~,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
-        Jdot = forwardJacDot(manip,kinsol,obj.kinframe,zeros(3,1));
+        kinsol = doKinematics(manip,q,true,true,v);
+        [~,J, dJ] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
+        qd = kinsol.vToqdot * v;
+        Jdot = reshape(reshape(dJ, numel(J), nq) * qd, size(J));
         wingvel_world = J*qd; % assume still air. Air flow over the wing
         dwingvel_worlddq = Jdot;
         dwingvel_worlddqd = J;
       else
         kinsol = doKinematics(manip,q);
         [~,J] = forwardKin(manip,kinsol,obj.kinframe,zeros(3,1));
+        qd = kinsol.vToqdot * v;
         wingvel_world = J*qd; % assume still air. Air flow over the wing
       end
       

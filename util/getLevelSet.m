@@ -10,9 +10,9 @@ function y=getLevelSet(x,f,options)
 % @option plotdims restrict level set points to a subset of the dimensions.
 
 if (nargin<3) options=struct(); end
-if (~isfield(options,'tol')) options.tol = 2e-3; end % default tolerance of fplot
-if ~isfield(options,'num_samples') options.num_samples = 100; end
-if ~isfield(options,'x0') options.x0 = zeros(size(x)); end
+if ~isfield(options,'tol'), options.tol = 2e-3; end % default tolerance of fplot
+if ~isfield(options,'num_samples'), options.num_samples = 100; end
+if ~isfield(options,'x0'), options.x0 = zeros(size(x)); end
 
 if isfield(options,'plotdims') 
   no_plot_dims=1:length(options.x0);  no_plot_dims(options.plotdims)=[];

@@ -23,7 +23,7 @@ classdef CylindricalContactAffordance < ContactAffordance
         
         function [dist,dDist] = distancePts2Aff(obj,q,pts)
             n_pts = size(pts,2);
-            nq = obj.robot.getNumDOF();
+            nq = obj.robot.getNumPositions();
             sizecheck(q,[nq,1]);
             if(obj.is_fixed)
                 poles_abs = obj.poles;
@@ -54,7 +54,7 @@ classdef CylindricalContactAffordance < ContactAffordance
             % is within the cylinder. The projection is in the cylinder if
             % -obj.height/2<=res<=obj.height/2
             n_pts = size(pts,2);
-            nq = obj.robot.getNumDOF();
+            nq = obj.robot.getNumPositions();
             sizecheck(q,[nq,1]);
             if(obj.is_fixed)
                 center_abs = obj.center;

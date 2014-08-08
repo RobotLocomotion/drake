@@ -91,7 +91,7 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
       warning(w);
       
       if ~isfield(options,'q_nominal') 
-        options.q_nominal = zeros(getNumDOF(model),1); 
+        options.q_nominal = zeros(getNumPositions(model),1); 
       else
         error('not quite implemented yet.  need removeFixedJoint logic to reason about the non-zero joint transform instead of just Ttree for propagating points to the parent'); 
       end
@@ -178,17 +178,17 @@ classdef PlanarRigidBodyManipulator < RigidBodyManipulator
   end
   
   methods (Access=protected)
-    function [phi,dphi,ddphi] = loopConstraints(obj,q)
+    function [phi,J,Jdot_times_v] = loopConstraintsV(obj,q,v)
       % handle kinematic loops
       if nargout>2
-        [phi,dphi,ddphi] = loopConstraints@RigidBodyManipulator(obj,q);
-        dphi = obj.T_2D_to_3D'*dphi;
-        ddphi = obj.T_2D_to_3D'*ddphi;
+        [phi,J,Jdot_times_v] = loopConstraintsV@RigidBodyManipulator(obj,q,v);
+        J = obj.T_2D_to_3D'*J;
+        Jdot_times_v = obj.T_2D_to_3D'*Jdot_times_v;
       elseif nargout>1
-        [phi,dphi] = loopConstraints@RigidBodyManipulator(obj,q);
-        dphi = obj.T_2D_to_3D'*dphi;
+        [phi,J] = loopConstraintsV@RigidBodyManipulator(obj,q,v);
+        J = obj.T_2D_to_3D'*J;
       else
-        phi = loopConstraints@RigidBodyManipulator(obj,q);
+        phi = loopConstraintsV@RigidBodyManipulator(obj,q,v);
       end
       phi = obj.T_2D_to_3D'*phi;
     end  

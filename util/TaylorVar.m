@@ -212,10 +212,10 @@ classdef TaylorVar
         tmp=a; a=b; b=tmp;    % switch them (so we have less cases below)
       end
       
+      if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
+      if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
+      
       if (isa(b,'TaylorVar')) % then both are taylorvars
-        if (isscalar(a) && ~isscalar(b)) a=repmat(a,size(b)); end
-        if (isscalar(b) && ~isscalar(a)) b=repmat(b,size(a)); end
-        
         f=a.f .* b.f;
         m=prod(a.dim);
         ra = reshape(a,m,1); rb=reshape(b,m,1);

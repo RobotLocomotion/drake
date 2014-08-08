@@ -17,8 +17,8 @@ function [phi,normal,d,xA,xB,idxA,idxB,mu,n,D,dn,dD] = contactConstraints(obj,ki
 % @retval idxA (m x 1) The index of body A. 0 is the special case for the environment/terrain
 % @retval idxB (m x 1) The index of body B. 0 is the special case for the environment/terrain
 % @retval mu (m x 1) Coefficients of friction
-% @retval n (m x n) normal vector in joint coordinates, state vector length n
-% @retval D {k}(m x n) friction cone basis in joint coordinates, for k directions
+% @retval n (m x n) 'normal vector in joint coordinates', maps from velocity vector v to normal component of contact point velocities, velocity vector length n
+% @retval D {k}(m x n) 'friction cone basis in joint coordinates', for k directions, D{i} maps from velocity vector v to tangential component i of contact point velocities.
 % @retval dn (mn x n) dn/dq derivative
 % @retval dD {k}(mn x n) dD/dq derivative
 
@@ -59,12 +59,13 @@ mu = ones(nC,1);
 
 d = obj.surfaceTangents(normal);
 if compute_first_derivative
-  nq = obj.getNumPositions;  
+  nq = obj.getNumPositions;
+  nv = obj.getNumVelocities;
   nk = size(d,2);
   
-  J = zeros(3*nC,nq)*kinsol.q(1);
+  J = zeros(3*nC,nv)*kinsol.q(1);
   if compute_second_derivative,
-    dJ = zeros(3*nC,nq*nq)*kinsol.q(1);;
+    dJ = zeros(3*nC,nv*nq)*kinsol.q(1);
   end
   
 %   assert(isequal(idxA,sort(idxA)))
@@ -97,11 +98,11 @@ if compute_first_derivative
       JindB = [];
     end
     if compute_second_derivative,
-      [~,J_tmp,dJ_tmp] = obj.forwardKin(kinsol,body_inds(i),[xA(:,cindA) xB(:,cindB)]);
+      [~,J_tmp,dJ_tmp] = obj.forwardKinV(kinsol,body_inds(i),[xA(:,cindA) xB(:,cindB)]);
       dJ(JindA,:) = dJ(JindA,:) + dJ_tmp(1:3*length(cindA),:);
       dJ(JindB,:) = dJ(JindB,:) - dJ_tmp(3*length(cindA)+1:end,:);
     else
-      [~,J_tmp] = obj.forwardKin(kinsol,body_inds(i),[xA(:,cindA) xB(:,cindB)]);
+      [~,J_tmp] = obj.forwardKinV(kinsol,body_inds(i),[xA(:,cindA) xB(:,cindB)]);
     end
     J(JindA,:) = J(JindA,:) + J_tmp(1:3*length(cindA),:);
     J(JindB,:) = J(JindB,:) - J_tmp(3*length(cindA)+1:end,:);

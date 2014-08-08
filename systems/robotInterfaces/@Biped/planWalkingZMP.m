@@ -9,14 +9,14 @@ for j = 1:length(footstep_plan.footsteps)
     obj.default_walking_params);
 end
 
-nq = getNumDOF(obj);
+nq = getNumPositions(obj);
 q0 = x0(1:nq);
 
 [zmptraj,link_constraints, support_times, supports] = planZMPTraj(obj, q0, footstep_plan.footsteps);
 zmptraj = setOutputFrame(zmptraj,desiredZMP);
 
 kinsol = doKinematics(obj, q0);
-com = getCOM(obj, kinsol);
+com = centerOfMass(obj, kinsol);
 
 foot_pos = forwardKin(obj, kinsol, [obj.foot_frame_id.right, obj.foot_frame_id.left], [0;0;0]);
 zfeet = mean(foot_pos(3,:));

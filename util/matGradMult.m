@@ -6,7 +6,12 @@ function [y] = matGradMult(A,b,transposeA)
 % @param b a vector
 % @retval y a matrix, the result of d(C*b)/dX
 
-if (size(b,2)>1) % then b is a matrix, call my other method
+if isempty(A)
+  y = A; % output should be empty matrix of the same size as A
+  return;
+end
+
+if (size(b,2)>1 || ~isnumeric(A) || ~isnumeric(b)) % call my other method
   n = size(b,1);
   m = size(A,2);
   k = size(A,1)/n;

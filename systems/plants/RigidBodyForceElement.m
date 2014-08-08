@@ -10,9 +10,9 @@ classdef RigidBodyForceElement < RigidBodyElement
   methods
     % f_ext is a (potentially sparse) matrix with manip.getNumBodies columns
     % B is (nq x nu) matrix which contributes a control-affine term 
-    %      + B(q,qd)*u 
+    %      + B(q,v)*u 
     % to the manipulator dynamics
-    [f_ext,B] = computeSpatialForce(obj,manip,q,qd)
+    [f_ext,B] = computeSpatialForce(obj,manip,q,v)
   end
   
   methods
