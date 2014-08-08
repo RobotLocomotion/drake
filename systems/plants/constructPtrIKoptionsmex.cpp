@@ -14,6 +14,6 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   }
   RigidBodyManipulator* robot = (RigidBodyManipulator*) getDrakeMexPointer(prhs[0]);
   IKoptions* ikoptions = new IKoptions(robot);
-  plhs[0] = createDrakeMexPointer((void*) ikoptions,"deletePtrIKoptionsmex","IKoptions");
+  plhs[0] = createDrakeMexPointer((void*) ikoptions,"IKoptions");
+  mexErrMsgTxt("need to implement destructor here");
 }
-

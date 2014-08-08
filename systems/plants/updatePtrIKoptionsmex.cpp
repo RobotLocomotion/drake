@@ -23,7 +23,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   {
     if(!mxIsNumeric(prhs[2]) || mxGetM(prhs[2]) != nq || mxGetN(prhs[2]) != nq)
     {
-      mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","Q must be nq x nq double matrix"); 
+      mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","Q must be nq x nq double matrix");
     }
     MatrixXd Q(nq,nq);
     memcpy(Q.data(),mxGetPr(prhs[2]),sizeof(double)*nq*nq);
@@ -33,7 +33,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   {
     if(!mxIsNumeric(prhs[2]) || mxGetM(prhs[2]) != nq || mxGetN(prhs[2]) != nq)
     {
-      mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","Qa must be nq x nq double matrix"); 
+      mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","Qa must be nq x nq double matrix");
     }
     MatrixXd Qa(nq,nq);
     memcpy(Qa.data(),mxGetPr(prhs[2]),sizeof(double)*nq*nq);
@@ -43,7 +43,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   {
     if(!mxIsNumeric(prhs[2]) || mxGetM(prhs[2]) != nq || mxGetN(prhs[2]) != nq)
     {
-      mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","Qv must be nq x nq double matrix"); 
+      mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","Qv must be nq x nq double matrix");
     }
     MatrixXd Qv(nq,nq);
     memcpy(Qv.data(),mxGetPr(prhs[2]),sizeof(double)*nq*nq);
@@ -205,6 +205,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[])
   {
     mexErrMsgIdAndTxt("Drake:updatePtrIKoptionsmex:BadInputs","Unsupported field");
   }
-  plhs[0] = createDrakeMexPointer((void*) ikoptions_new,"deletePtrIKoptionsmex","IKoptions");
+  plhs[0] = createDrakeMexPointer((void*) ikoptions_new,"IKoptions");
+  mexErrMsgTxt("need to implement destructor here");
   delete[] field;
 }
