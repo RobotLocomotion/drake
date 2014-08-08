@@ -1,4 +1,4 @@
-#include "drakeQuatUtil.h"
+#include "drakeGeometryUtil.h"
 #include <iostream>
 
 using namespace Eigen;
@@ -10,7 +10,7 @@ Eigen::Vector4d quatConjugate(const Eigen::Vector4d& q)
   return q_conj;
 }
 
-Eigen::Matrix4d dquatConjugate(const Eigen::Vector4d& q)
+Eigen::Matrix4d dquatConjugate()
 {
   Matrix4d dq_conj = Matrix4d::Identity();
   dq_conj(1, 1) = -1.0;
@@ -71,7 +71,7 @@ Eigen::Matrix<double, 3, 7> dquatRotateVec(const Eigen::Vector4d& q, const Eigen
   Matrix<double, 4, 8> dq_times_v_tmp = dquatProduct(q, v_quat);
   Matrix<double, 4, 7> dq_times_v = dq_times_v_tmp * dqdv;
 
-  Matrix<double, 4, 7> dq_conj = dquatConjugate(q) * dq;
+  Matrix<double, 4, 7> dq_conj = dquatConjugate() * dq;
   Matrix<double, 8, 7> dq_times_v_dq_conj;
   dq_times_v_dq_conj << dq_times_v, dq_conj;
   Matrix<double, 4, 8> dv_rot_tmp = dquatProduct(q_times_v, quatConjugate(q));

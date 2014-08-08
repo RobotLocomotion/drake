@@ -1,6 +1,6 @@
 #include "RigidBodyConstraint.h"
 #include "../RigidBodyManipulator.h"
-#include "../../../util/drakeQuatUtil.h"
+#include "../../../util/drakeGeometryUtil.h"
 using namespace Eigen;
 
 
@@ -923,7 +923,7 @@ void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
   this->robot->forwardKin(this->bodyB_idx,origin_pt,2,wTb);
   this->robot->forwardJac(this->bodyB_idx,origin_pt,2,dwTb);
   Vector4d bTw_quat = quatConjugate(wTb.block(3,0,4,1));
-  Matrix4d dbTw_quat = dquatConjugate(wTb.block(3,0,4,1));
+  Matrix4d dbTw_quat = dquatConjugate();
   MatrixXd dbTw_quatdq = dbTw_quat*dwTb.block(3,0,4,nq); 
   Vector3d bTw_trans = quatRotateVec(bTw_quat,-wTb.block(0,0,3,1));
   Matrix<double,3,7> dbTw_trans = dquatRotateVec(bTw_quat,-wTb.block(0,0,3,1));
@@ -1106,7 +1106,7 @@ void RelativeQuatConstraint::evalOrientationProduct(double &prod, MatrixXd &dpro
   Vector4d quat_b2w = pos_b.block(3,0,4,1);
   MatrixXd dquat_b2w = J_b.block(3,0,4,nq);
   Vector4d quat_w2b = quatConjugate(quat_b2w);
-  Matrix<double,4,4> dquat_w2b = dquatConjugate(quat_b2w);
+  Matrix<double,4,4> dquat_w2b = dquatConjugate();
   MatrixXd dquat_w2bdq = dquat_w2b*dquat_b2w;
   
   Vector4d quat_a2b = quatProduct(quat_w2b,quat_a2w);

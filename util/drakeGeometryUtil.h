@@ -1,10 +1,10 @@
-#ifndef __DRAKE_QUAT_UTIL_H__
-#define __DRAKE_QUAT_UTIL_H__
+#ifndef __DRAKE_GEOMETRY_UTIL_H__
+#define __DRAKE_GEOMETRY_UTIL_H__
 #include <Eigen/Dense>
 #include <cstring>
 #include <cmath>
 Eigen::Vector4d quatConjugate(const Eigen::Vector4d &q);
-Eigen::Matrix4d dquatConjugate(const Eigen::Vector4d &q);
+Eigen::Matrix4d dquatConjugate();
 Eigen::Vector4d quatProduct(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2);
 Eigen::Matrix<double, 4, 8> dquatProduct(const Eigen::Vector4d &q1,const Eigen::Vector4d &q2);
 Eigen::Vector3d quatRotateVec(const Eigen::Vector4d &q, const Eigen::Vector3d &v);
