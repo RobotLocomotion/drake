@@ -41,24 +41,6 @@ Eigen::Matrix<typename Derived::Scalar, 3, 3> axis2rotmat(const Eigen::MatrixBas
 }
 
 template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(const Eigen::MatrixBase<Derived>& a)
-{
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  return quat2rpy(axis2quat(a));
-}
-
-template <typename Derived>
-Eigen::Matrix<typename Derived::Scalar, 4, 1> quat2axis(const Eigen::MatrixBase<Derived>& q)
-{
-  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
-  auto q_normalized = q.normalized();
-  auto s = std::sqrt(1 - q_normalized(0) * q_normalized(0)) + std::numeric_limits<typename Derived::Scalar>::epsilon();
-  Eigen::Matrix<typename Derived::Scalar, 4, 1> a;
-
-  a << q_normalized.template tail<3>() / s, 2 * std::acos(q_normalized(1));
-}
-
-template <typename Derived>
 Eigen::Matrix<typename Derived::Scalar, 3, 1> quat2rpy(const Eigen::MatrixBase<Derived>& q)
 {
   EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
@@ -74,5 +56,25 @@ Eigen::Matrix<typename Derived::Scalar, 3, 1> quat2rpy(const Eigen::MatrixBase<D
       std::atan2(2.0*(w*z + x*y), w*w + x*x-(y*y+z*z));
   return ret;
 }
+
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 3, 1> axis2rpy(const Eigen::MatrixBase<Derived>& a)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
+  return quat2rpy(axis2quat(a));
+}
+
+template <typename Derived>
+Eigen::Matrix<typename Derived::Scalar, 4, 1> quat2axis(const Eigen::MatrixBase<Derived>& q)
+{
+  EIGEN_STATIC_ASSERT_VECTOR_SPECIFIC_SIZE(Eigen::MatrixBase<Derived>, 4);
+  auto q_normalized = q.normalized();
+  auto s = std::sqrt(1 - q_normalized(0) * q_normalized(0)) + std::numeric_limits<typename Derived::Scalar>::epsilon();
+  Eigen::Matrix<typename Derived::Scalar, 4, 1> a;
+
+  a << q_normalized.template tail<3>() / s, 2 * std::acos(q_normalized(1));
+  return a;
+}
+
 
 #endif /* DRAKEGEOMETRYUTIL_H_ */
