@@ -47,6 +47,7 @@ classdef QPControllerData < ControllerData
     acceleration_input_frame; % input coordinate frame for desired 
     % generalized accelerations
     plan_shift % linear offset to be applied to x0
+    pelvis_z_prev 
     
     % dynamics related -----------------------------------------------------------
     mu % friction coefficient    
