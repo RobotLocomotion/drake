@@ -188,7 +188,7 @@ classdef AffineSystem < PolynomialSystem
       sys2 = sys2.inOutputFrame(sys1.getInputFrame);
 
       if ~isa(sys2,'AffineSystem') || any(~isinf([sys1.umin;sys1.umax;sys2.umin;sys2.umax]))
-        sys = feedback@PolynomailSystem(sys1,sys2);
+        sys = feedback@PolynomialSystem(sys1,sys2);
         return;
       end
         
