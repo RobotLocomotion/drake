@@ -111,6 +111,11 @@ Eigen::Matrix<double, 1, 11> dquatDiffAxisInvar(const Eigen::Vector4d& q1, const
   return de;
 }
 
+double quatNorm(const Eigen::Vector4d& q)
+{
+  return std::acos(q(0));
+}
+
 template <typename Derived>
 Eigen::Vector4d axis2quat(const Eigen::MatrixBase<Derived>& a)
 {
@@ -178,6 +183,14 @@ Eigen::Matrix<typename Derived::Scalar, 4, 1> quat2axis(const Eigen::MatrixBase<
   auto s = std::sqrt(1 - q_normalized(0) * q_normalized(0)) + std::numeric_limits<typename Derived::Scalar>::epsilon();
   Eigen::Matrix<typename Derived::Scalar, 4, 1> a;
 
-  a << q_normalized.template tail<3>() / s, 2 * std::acos(q_normalized(1));
+  a << q_normalized.template tail<3>() / s, 2 * std::acos(q_normalized(0));
   return a;
 }
+
+// explicit instantiations
+template Vector4d axis2quat(const MatrixBase<Vector4d>&);
+template Matrix3d axis2rotmat(const MatrixBase<Vector4d>&);
+template Vector3d quat2rpy(const MatrixBase<Vector4d>&);
+template Vector3d axis2rpy(const MatrixBase<Vector4d>&);
+template Vector4d quat2axis(const MatrixBase<Vector4d>&);
+
