@@ -47,8 +47,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
       }
     } else { // destructor.  note: assumes prhs[0] is a DrakeMexPointer (todo: could check)
 //      mexPrintf("Deleting octree\n");
-      tree = (OcTree*) getDrakeMexPointer(prhs[0]);
-      if (tree) delete tree;
+      destroyDrakeMexPointer<OcTree*>(prhs[0]);
     }
     return;
   }
