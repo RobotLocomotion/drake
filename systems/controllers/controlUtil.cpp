@@ -1,4 +1,6 @@
 #include "controlUtil.h"
+#include "drakeUtil.h"
+#include "mex.h"
 
 template <typename DerivedA, typename DerivedB>
 void getRows(std::set<int> &rows, MatrixBase<DerivedA> const &M, MatrixBase<DerivedB> &Msub)
@@ -189,7 +191,7 @@ int contactConstraints(RigidBodyManipulator *r, int nc, std::vector<SupportState
 }
 
 
-int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, MatrixXd &Jpdot,double terrain_height)
+int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector<SupportStateElement>& supp, void *map_ptr, MatrixXd &B, MatrixXd &JB, MatrixXd &Jp, MatrixXd &Jpdot, MatrixXd &normals, double terrain_height)
 {
   int j, k=0, nq = r->num_dof;
 
@@ -197,6 +199,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   JB.resize(nq,nc*2*m_surface_tangents);
   Jp.resize(3*nc,nq);
   Jpdot.resize(3*nc,nq);
+  normals.resize(3, nc);
   
   Vector3d contact_pos,pos,posB,normal; Vector4d tmp;
   MatrixXd J(3,nq);
@@ -227,6 +230,7 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
         Jp.block(3*k,0,3,nq) = J;
         r->forwardJacDot(iter->body_idx,tmp,0,J);
         Jpdot.block(3*k,0,3,nq) = J;
+        normals.col(k) = normal;
         
         k++;
       }
@@ -234,6 +238,61 @@ int contactConstraintsBV(RigidBodyManipulator *r, int nc, double mu, std::vector
   }
   
   return k;
+}
+
+MatrixXd individualSupportCOPs(RigidBodyManipulator* r, const std::vector<SupportStateElement>& active_supports,
+    const MatrixXd& normals, const MatrixXd& B, const VectorXd& beta)
+{
+  const int n_basis_vectors_per_contact = B.cols() / normals.cols();
+  const int n = active_supports.size();
+
+  int normals_start = 0;
+  int beta_start = 0;
+
+  MatrixXd individual_cops(3, n);
+  individual_cops.fill(std::numeric_limits<double>::quiet_NaN());
+
+  for (int j = 0; j < active_supports.size(); j++) {
+    auto active_support = active_supports[j];
+    auto contact_pt_inds = active_support.contact_pt_inds;
+
+    int ncj = contact_pt_inds.size();
+    int active_support_length = n_basis_vectors_per_contact * ncj;
+    auto normalsj = normals.middleCols(normals_start, ncj);
+    Vector3d normal = normalsj.col(0);
+    bool normals_identical = (normalsj.colwise().operator-(normal)).squaredNorm() < 1e-15;
+
+    if (normals_identical) { // otherwise computing a COP doesn't make sense
+      const auto& Bj = B.middleCols(beta_start, active_support_length);
+      const auto& betaj = beta.segment(beta_start, active_support_length);
+
+      const auto& contact_positions = r->bodies[active_support.body_idx].contact_pts;
+      Vector3d force = Vector3d::Zero();
+      Vector3d torque = Vector3d::Zero();
+
+      for (const auto& k : contact_pt_inds) {
+        const auto& Bblock = Bj.middleCols(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+        const auto& betablock = betaj.segment(k * n_basis_vectors_per_contact, n_basis_vectors_per_contact);
+        Vector3d contact_position = contact_positions.col(k);
+        Vector3d point_force = Bblock * betablock;
+        force += point_force;
+        auto torquejk = contact_position.cross(point_force);
+        torque += torquejk;
+      }
+
+      Vector3d point_on_contact_plane = contact_positions.col(0);
+      std::pair<Vector3d, double> cop_and_normal_torque = resolveCenterOfPressure(torque, force, normal, point_on_contact_plane);
+      Vector4d cop_body;
+      cop_body << cop_and_normal_torque.first, 1.0;
+      Vector3d cop_world;
+      r->forwardKin(active_support.body_idx, cop_body, 0, cop_world);
+      individual_cops.col(j) = cop_world;
+    }
+
+    normals_start += ncj;
+    beta_start += active_support_length;
+  }
+  return individual_cops;
 }
 
 template void getRows(std::set<int> &, const MatrixBase< MatrixXd > &, MatrixBase< MatrixXd > &);

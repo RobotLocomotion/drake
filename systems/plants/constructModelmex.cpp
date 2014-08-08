@@ -23,8 +23,6 @@ vector<string> get_strings(const mxArray *rhs) {
   return strings;
 }
 
-
-
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
   //DEBUG
@@ -35,6 +33,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
   if (nrhs!=1) {
     mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","Usage model_ptr = constructModelmex(obj)");
+  }
+
+  if (isa(prhs[0],"DrakeMexPointer")) {  // then it's calling the destructor
+    destroyDrakeMexPointer<RigidBodyManipulator*>(prhs[0]);
+    return;
   }
 
   const mxArray* pRBM = prhs[0];
@@ -57,15 +60,15 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   pm = mxGetField(featherstone,0,"NB");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.NB.  Are you passing in the correct structure?");
   model = new RigidBodyManipulator((int) mxGetScalar(pm), (int) mxGetScalar(pm), num_bodies, num_frames);
-  
+
   pm = mxGetField(featherstone,0,"parent");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.parent.");
   double* parent = mxGetPr(pm);
-  
+
   pm = mxGetField(featherstone,0,"pitch");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.pitch.");
   double* pitch = mxGetPr(pm);
-  
+
   pm = mxGetField(featherstone,0,"dofnum");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.dofnum.");
   double* dofnum = mxGetPr(pm);
@@ -73,25 +76,25 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   pm = mxGetField(featherstone,0,"damping");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.damping.");
   memcpy(model->damping.data(),mxGetPr(pm),sizeof(double)*model->NB);
-  
+
   pm = mxGetField(featherstone,0,"coulomb_friction");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_friction.");
   memcpy(model->coulomb_friction.data(),mxGetPr(pm),sizeof(double)*model->NB);
-  
+
   pm = mxGetField(featherstone,0,"static_friction");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.static_friction.");
   memcpy(model->static_friction.data(),mxGetPr(pm),sizeof(double)*model->NB);
-  
+
   pm = mxGetField(featherstone,0,"coulomb_window");
   if (!pm) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.coulomb_window.");
   memcpy(model->coulomb_window.data(),mxGetPr(pm),sizeof(double)*model->NB);
-  
+
   mxArray* pXtree = mxGetField(featherstone,0,"Xtree");
   if (!pXtree) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.Xtree.");
-  
+
   mxArray* pI = mxGetField(featherstone,0,"I");
   if (!pI) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't find field model.featherstone.I.");
-  
+
   for (int i=0; i<model->NB; i++) {
     model->parent[i] = ((int) parent[i]) - 1;  // since it will be used as a C index
     model->pitch[i] = (int) pitch[i];
@@ -99,13 +102,13 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
     mxArray* pXtreei = mxGetCell(pXtree,i);
     if (!pXtreei) mexErrMsgIdAndTxt("Drake:HandCpmex:BadInputs","can't access model.featherstone.Xtree{%d}",i);
-    
+
     // todo: check that the size is 6x6
     memcpy(model->Xtree[i].data(),mxGetPr(pXtreei),sizeof(double)*6*6);
-    
+
     mxArray* pIi = mxGetCell(pI,i);
     if (!pIi) mexErrMsgIdAndTxt("Drake:constructModelmex:BadInputs","can't access model.featherstone.I{%d}",i);
-    
+
     // todo: check that the size is 6x6
     memcpy(model->I[i].data(),mxGetPr(pIi),sizeof(double)*6*6);
   }
@@ -133,30 +136,30 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
     pm = mxGetProperty(pBodies,i,"dofnum");
     model->bodies[i].dofnum = (int) mxGetScalar(pm) - 1;  //zero-indexed
-    
+
     pm = mxGetProperty(pBodies,i,"floating");
     model->bodies[i].floating = (int) mxGetScalar(pm);
 
     pm = mxGetProperty(pBodies,i,"pitch");
     model->bodies[i].pitch = (int) mxGetScalar(pm);
-    
+
     pm = mxGetProperty(pBodies,i,"parent");
     if (!pm || mxIsEmpty(pm))
     	model->bodies[i].parent = -1;
     else
     	model->bodies[i].parent = mxGetScalar(pm) - 1;
-    
+
     if (model->bodies[i].dofnum>=0) {
        pm = mxGetProperty(pBodies,i,"joint_limit_min");
        model->joint_limit_min[model->bodies[i].dofnum] = mxGetScalar(pm);
        pm = mxGetProperty(pBodies,i,"joint_limit_max");
        model->joint_limit_max[model->bodies[i].dofnum] = mxGetScalar(pm);
     }
-    
+
     pm = mxGetProperty(pBodies,i,"Ttree");
     // todo: check that the size is 4x4
     memcpy(model->bodies[i].Ttree.data(),mxGetPr(pm),sizeof(double)*4*4);
-    
+
     pm = mxGetProperty(pBodies,i,"T_body_to_joint");
     memcpy(model->bodies[i].T_body_to_joint.data(),mxGetPr(pm),sizeof(double)*4*4);
 
@@ -207,7 +210,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
             mexCallMATLAB(1,&pPoints,1,&pShape,"getPoints");
             double* params = mxGetPr(pPoints);
             int n_params = (int) mxGetNumberOfElements(pPoints);
-            for (int k=0; k<n_params; k++) 
+            for (int k=0; k<n_params; k++)
               params_vec.push_back(params[k]);
             mxDestroyArray(pPoints);
           }
@@ -219,7 +222,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
           }
             break;
           default:
-            // intentionally do nothing.. 
+            // intentionally do nothing..
             break;
         }
         memcpy(T.data(), mxGetPr(mxGetProperty(pShape,0,"T")), sizeof(double)*4*4);
@@ -308,10 +311,10 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     memcpy(model->frames[i].T.data(),mxGetPr(pm),sizeof(double)*4*4);
   }
 
-  
+
   memcpy(model->joint_limit_min.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_min")), sizeof(double)*model->num_dof);
   memcpy(model->joint_limit_max.data(), mxGetPr(mxGetProperty(pRBM,0,"joint_limit_max")), sizeof(double)*model->num_dof);
-  
+
   const mxArray* a_grav_array = mxGetProperty(pRBM,0,"gravity");
   if (a_grav_array && mxGetNumberOfElements(a_grav_array)==3) {
     double* p = mxGetPr(a_grav_array);
@@ -323,9 +326,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
   }
 
   model->compile();
-  
-  if (nlhs>0) {  // return a pointer to the model
-  	plhs[0] = createDrakeMexPointer((void*)model,"deleteModelmex","RigidBodyManipulator");
-  }
 
+  plhs[0] = createDrakeMexPointer((void*)model,"RigidBodyManipulator");
 }

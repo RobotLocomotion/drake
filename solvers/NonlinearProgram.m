@@ -553,7 +553,7 @@ classdef NonlinearProgram
         [max_err,max_err_idx] = max(abs(G_err(:)));
         [max_err_row,max_err_col] = ind2sub([num_rows_G,obj.num_vars],max_err_idx);
         display(sprintf('maximum gradient error is in row %d for x[%d], with error %f\nuser gradient %f, numerical gradient %f',...
-          max_err_row,max_err_col,max_err,G_user(max_err_row,free_x_idx(max_err_col)),G_numerical(max_err_row,max_err_col)));
+          max_err_row,max_err_col,max_err,G_user(max_err_row,max_err_col),G_numerical(max_err_row,max_err_col)));
       end
       
       if isempty(A_free)
