@@ -1,6 +1,6 @@
 function runAtlasWalking(use_mex,use_bullet,use_angular_momentum,navgoal)
 
-% see Kuindersma, Permenter, Tedrake, ICRA 2011 
+% see Kuindersma, Permenter, Tedrake, ICRA 2014 
 
 if ~checkDependency('gurobi')
   warning('Must have gurobi installed to run this example');
