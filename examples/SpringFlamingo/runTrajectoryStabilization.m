@@ -29,7 +29,6 @@ if exist(traj_file, 'file') ~= 2
   system(['mv traj.mat ',data_dir]);
 end
 load(traj_file);
-load('data/traj.mat');
 xtraj = xtraj.setOutputFrame(getStateFrame(r));
 % v.playback(xtraj,struct('slider',true));
 
