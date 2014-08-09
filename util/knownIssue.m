@@ -47,7 +47,9 @@ if isempty(err_id)
   end
 end
 
-fprintf('\nThis issue is not listed as known.  Please seriously consider reporting it on <a href="http://groups.csail.mit.edu/locomotion/bugs/">bugzilla</a>.\n\n');
+fprintf('\nThis issue is not listed as known.  Please seriously consider reporting it on <a href="http://groups.csail.mit.edu/locomotion/bugs/">bugzilla</a>.\n');
+fprintf('testname: %s\n',testname);
+fprintf('error ID: %s\n\n',err_id);
 
 end
 
