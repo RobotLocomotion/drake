@@ -1,7 +1,12 @@
 function E = rpydot2angularvelMatrix(rpy)
-
-% matrix that converts time derivatives of rpy (rolldot, pitchdot, yawdot) into the
-% angular velocity vector expressed in base frame.  See eq. (5.41) in Craig05.
+% Computes matrix that converts time derivatives of rpy 
+% (rolldot, pitchdot, yawdot) into the angular velocity vector expressed in
+% base frame.  See eq. (5.41) in Craig05.
+%
+% @param rpy [roll; pitch; yaw]
+%
+% @retval E matrix such that omega = E * rpyd, where omega is the angular
+% velocity vector in base frame and rpyd is the time derivative of rpy
 
 % Derived using:
 % syms r p y real; rpy=[r p y];
