@@ -1,6 +1,6 @@
 #include <Eigen/Core>
 #include "drakeGeometryUtil.h"
-#include <exception>
+#include <stdexcept>
 #include <iostream>
 #include <cmath>
 
@@ -11,18 +11,18 @@ template<typename DerivedA, typename DerivedB>
 void valuecheck(const DenseBase<DerivedA>& a, const DenseBase<DerivedB>& b, typename DerivedA::Scalar tolerance = 1e-8)
 {
   if (!a.isApprox(b)) {
-    std::ostringstream stream;
+    ostringstream stream;
     stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
-    throw std::runtime_error(stream.str());
+    throw runtime_error(stream.str());
   }
 }
 
 void valuecheck(double a, double b, double tolerance = 1e-8)
 {
-  if (std::abs(a - b) > tolerance) {
-    std::ostringstream stream;
+  if (abs(a - b) > tolerance) {
+    ostringstream stream;
     stream << "Expected:\n" << a << "\nbut got:" << b << "\n";
-    throw std::runtime_error(stream.str());
+    throw runtime_error(stream.str());
   }
 }
 
@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 {
   int ntests = 100;
 
-  std::default_random_engine generator;
+  default_random_engine generator;
 
   // quat2axis, axis2quat
   for (int i = 0; i < ntests; i++) {
