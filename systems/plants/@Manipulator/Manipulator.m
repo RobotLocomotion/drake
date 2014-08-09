@@ -144,23 +144,35 @@ classdef Manipulator < SecondOrderSystem
       error('manipulators with velocity constraints must overload this function'); 
     end
     
-    function con = stateConstraints(obj,x)
+    function [con,dcon] = stateConstraints(obj,x)
       % wraps up the position and velocity constraints into the general constriant
       % method.  note that each position constraint (phi=0) also imposes an implicit
       % velocity constraint on the system (phidot=0).
 
       q=x(1:obj.num_q); qd=x(obj.num_q+1:end);
       if (obj.num_position_constraints>0)
-        [phi,J] = geval(@obj.positionConstraints,q);
+        if (nargout>1)
+          [phi,J,dJ] = geval(@obj.positionConstraints,q);
+        else
+          [phi,J] = geval(@obj.positionConstraints,q);
+        end
       else
-        phi=[]; J=zeros(0,obj.num_q);
+        phi=[]; J=zeros(0,obj.num_q); dJ=zeros(0,obj.num_q^2);
       end
       if (obj.num_velocity_constraints>0)
-        psi = obj.velocityConstraints(q,qd);
+        if (nargout>1)
+          [psi,dpsi] = obj.velocityConstraints(q,qd);
+        else
+          psi = obj.velocityConstraints(q,qd);
+        end
       else
-        psi=[];
+        psi=[]; dpsi=zeros(0,obj.num_x);
       end
+        
       con = [phi; J*qd; psi];  % phi=0, phidot=0, psi=0
+      if (nargout>1)
+        dcon = [J,0*J; matGradMult(reshape(dJ,size(dJ,1)*obj.num_q,obj.num_q),qd), J; dpsi];
+      end
     end
     
     function n = getNumJointLimitConstraints(obj)

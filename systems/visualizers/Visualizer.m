@@ -263,8 +263,8 @@ classdef Visualizer < DrakeSystem
           objective = QuadraticConstraint(0,inf,Q,b);
           this_prog = addCost(this_prog,objective,remaining_state_dims);
           x = solve(this_prog,x);
-          .5*(x0(remaining_state_dims) - x(remaining_state_dims))^2
-          fval = objective.eval(x(remaining_state_dims))
+%          .5*(x0(remaining_state_dims) - x(remaining_state_dims))^2
+%          fval = objective.eval(x(remaining_state_dims))
           for i=1:numel(state_dims)
             set(slider{i},'Value',x(state_dims(i)));
           end
