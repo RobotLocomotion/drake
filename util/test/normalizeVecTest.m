@@ -1,5 +1,5 @@
 function normalizeVecTest
-  options.grad_method = {'user','taylorvar'}
-  x = rand(3,1);
-  [x_norm,dx_norm] = geval(@normalizeVec,x,options);
+  options.grad_method = {'taylorvar', 'user'};
+  x = rand(5,1);
+  [~,~,~] = geval(@normalizeVec,x,options);
 end
