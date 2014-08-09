@@ -30,11 +30,9 @@ if(eigen3_FOUND)
   add_constraint_mex(updatePtrRigidBodyConstraintmex)
   if (Boost_FOUND)
       add_executable(testConstraintConstructor test/testConstraintConstructor.cpp)
-      set_target_properties(testConstraintConstructor PROPERTIES COMPILE_FLAGS -fPIC) 
-      target_link_libraries(testConstraintConstructor drakeRBM
-  drakeRigidBodyConstraint drakeRBMurdf drakeURDFinterface)
-      add_test(testConstraintConstructor ${EXECUTABLE_OUTPUT_PATH}/testConstraintConstructor)
+      set_target_properties(testConstraintConstructor PROPERTIES COMPILE_FLAGS -fPIC)
+      target_link_libraries(testConstraintConstructor drakeRBM drakeRigidBodyConstraint drakeRBMurdf drakeURDFinterface)
+      add_test(NAME testConstraintConstructor WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test" COMMAND testConstraintConstructor)
   endif()
-          
-endif()
 
+endif()
