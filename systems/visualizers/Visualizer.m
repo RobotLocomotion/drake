@@ -209,39 +209,53 @@ classdef Visualizer < DrakeSystem
       x0(state_dims) = max(min(x0(state_dims),maxrange),minrange);
       if ~isempty(visualized_system), x0 = resolveConstraints(visualized_system,x0); end
 
-      obj.drawWrapper(0,x0);
-
       rows = ceil(length(state_dims)/2);
       f = sfigure(99); clf;
-      set(f, 'Position', [560 400 560 20 + 30*rows]);
+      set(f,'ResizeFcn',@resize_gui);
 
-      y=30*rows-10;
       for i=reshape(state_dims,1,[])
         label{i} = uicontrol('Style','text','String',getCoordinateName(fr,state_dims(i)), ...
-          'Position',[10+280*(i>rows), y+30*rows*(i>rows), 90, 20],'BackgroundColor',[.8 .8 .8]);
+          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','right');
         slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
-          'Value', x0(i), 'Position', [100+280*(i>rows), y+30*rows*(i>rows), 170, 20],...
-          'Callback',{@update_display});
+          'Value', x0(i), 'Callback',{@update_display});
+        value{i} = uicontrol('Style','text','String',num2str(x0(i)), ...
+          'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','left');
 
         % use a little undocumented matlab to get continuous slider feedback:
         slider_listener{i} = handle.listener(slider{i},'ActionEvent',@update_display);
-        y = y - 30;
+      end
+      
+      set(f, 'Position', [560 400 560 20 + 30*rows]);
+      resize_gui();
+      update_display();
+      
+      function resize_gui(source, eventdata)
+        p = get(gcf,'Position');
+        width = p(3); 
+        y=30*rows-10;
+        for i=reshape(state_dims,1,[])
+          set(label{i},'Position',[20+width/2*(i>rows), y+30*rows*(i>rows), width/2-220, 20]);
+          set(slider{i},'Position', [width/2-190+width/2*(i>rows), y+30*rows*(i>rows), 140, 20]);
+          set(value{i},'Position', [width/2-45+width/2*(i>rows), y+30*rows*(i>rows), 45, 20]);
+          y = y - 30;
+        end
       end
 
       function update_display(source, eventdata)
         t = 0; x = x0;
         for i=state_dims(:)'
           x(state_dims(i)) = get(slider{i}, 'Value');
+          set(value{i},'String',num2str(x(state_dims(i)),'%4.3f'));
         end
-        x
         if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)>0)
           % todo: pass in additional constriants to keep it inside the
           % slider values
-          x = resolveConstraints(visualized_system,x)
+          x = resolveConstraints(visualized_system,x);
           for i=state_dims(:)'
             set(slider{i},'Value',x(state_dims(i)));
           end
         end
+%        x
         obj.drawWrapper(t,x);
       end
     end
