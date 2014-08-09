@@ -19,10 +19,10 @@ pods_install_libraries(drakeUtil)
 endif(NOT WIN32)
 
 if (eigen3_FOUND)
-  add_library(drakeQuatUtil SHARED drakeQuatUtil.cpp)
+  add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp)
   add_mex(test/testQuatmex test/testQuatmex.cpp) 
-  target_link_libraries(test/testQuatmex drakeQuatUtil)
-  pods_install_libraries(drakeQuatUtil)
+  target_link_libraries(test/testQuatmex drakeGeometryUtil)
+  pods_install_libraries(drakeGeometryUtil)
 endif()
 
 add_subdirectory(test)
