@@ -1,6 +1,6 @@
 #include "RigidBodyConstraint.h"
 #include "../RigidBodyManipulator.h"
-#include "../../../util/drakeQuatUtil.h"
+#include "../../../util/drakeGeometryUtil.h"
 using namespace Eigen;
 
 
@@ -903,10 +903,8 @@ RelativePositionConstraint::RelativePositionConstraint(RigidBodyManipulator* rob
   this->bodyB_idx = bodyB_idx;
   this->bodyA_name = this->robot->bodies[this->bodyA_idx].linkname;
   this->bodyB_name = this->robot->bodies[this->bodyB_idx].linkname;
-  Vector4d bpTb_quat;
-  quatConjugate(bTbp.block(3,0,4,1),bpTb_quat);
-  Vector3d bpTb_trans;
-  quatRotateVec(bpTb_quat,-bTbp.block(0,0,3,1),bpTb_trans);
+  Vector4d bpTb_quat = quatConjugate(bTbp.block(3,0,4,1));
+  Vector3d bpTb_trans = quatRotateVec(bpTb_quat,-bTbp.block(0,0,3,1));
   this->bpTb << bpTb_trans, bpTb_quat; 
   this->type = RigidBodyConstraint::RelativePositionConstraintType;
 }
@@ -924,34 +922,32 @@ void RelativePositionConstraint::evalPositions(MatrixXd &pos, MatrixXd &J) const
   origin_pt << 0,0,0,1.0;
   this->robot->forwardKin(this->bodyB_idx,origin_pt,2,wTb);
   this->robot->forwardJac(this->bodyB_idx,origin_pt,2,dwTb);
-  Vector4d bTw_quat;
-  Matrix4d dbTw_quat;
-  quatConjugate(wTb.block(3,0,4,1),bTw_quat,dbTw_quat);
+  Vector4d bTw_quat = quatConjugate(wTb.block(3,0,4,1));
+  Matrix4d dbTw_quat = dquatConjugate();
   MatrixXd dbTw_quatdq = dbTw_quat*dwTb.block(3,0,4,nq); 
-  Vector3d bTw_trans;
-  Matrix<double,3,7> dbTw_trans;
-  quatRotateVec(bTw_quat,-wTb.block(0,0,3,1),bTw_trans,dbTw_trans);
+  Vector3d bTw_trans = quatRotateVec(bTw_quat,-wTb.block(0,0,3,1));
+  Matrix<double,3,7> dbTw_trans = dquatRotateVec(bTw_quat,-wTb.block(0,0,3,1));
+
   MatrixXd dbTw_transdq(3,nq);
   dbTw_transdq = dbTw_trans.block(0,0,3,4)*dbTw_quatdq-dbTw_trans.block(0,4,3,3)*dwTb.block(0,0,3,nq);
 
-  Vector3d bpTw_trans1;
-  Matrix<double,3,7> dbpTw_trans1;
-  quatRotateVec(this->bpTb.block(3,0,4,1),bTw_trans,bpTw_trans1,dbpTw_trans1);
+  Vector3d bpTw_trans1 = quatRotateVec(this->bpTb.block(3,0,4,1),bTw_trans);
+  Matrix<double,3,7> dbpTw_trans1 = dquatRotateVec(this->bpTb.block(3,0,4,1),bTw_trans);
+
   MatrixXd dbpTw_trans1dq = dbpTw_trans1.block(0,4,3,3)*dbTw_transdq; 
   Vector3d bpTw_trans = bpTw_trans1+this->bpTb.block(0,0,3,1);
   MatrixXd dbpTw_transdq = dbpTw_trans1dq;
-  Vector4d bpTw_quat;
-  Matrix<double,4,8> dbpTw_quat;
-  quatProduct(this->bpTb.block(3,0,4,1),bTw_quat,bpTw_quat,dbpTw_quat);
+  Vector4d bpTw_quat = quatProduct(this->bpTb.block(3,0,4,1),bTw_quat);
+  Matrix<double,4,8> dbpTw_quat = dquatProduct(this->bpTb.block(3,0,4,1),bTw_quat);
   MatrixXd dbpTw_quatdq = dbpTw_quat.block(0,4,4,4)*dbTw_quatdq;
 
   pos.resize(3,this->n_pts);
   J.resize(3*this->n_pts,nq);
   for(int i = 0;i<this->n_pts;i++)
   {
-    Vector3d bp_bodyA_pos1;
-    Matrix<double,3,7> dbp_bodyA_pos1;
-    quatRotateVec(bpTw_quat,bodyA_pos.col(i),bp_bodyA_pos1,dbp_bodyA_pos1);
+    Vector3d bp_bodyA_pos1 = quatRotateVec(bpTw_quat,bodyA_pos.col(i));
+    Matrix<double,3,7> dbp_bodyA_pos1 = dquatRotateVec(bpTw_quat,bodyA_pos.col(i));
+
     MatrixXd dbp_bodyA_pos1dq = dbp_bodyA_pos1.block(0,0,3,4)*dbpTw_quatdq+dbp_bodyA_pos1.block(0,4,3,3)*JA.block(3*i,0,3,nq);
     pos.col(i) = bp_bodyA_pos1+bpTw_trans;
     J.block(3*i,0,3,nq) = dbp_bodyA_pos1dq+dbpTw_transdq;
@@ -1109,14 +1105,13 @@ void RelativeQuatConstraint::evalOrientationProduct(double &prod, MatrixXd &dpro
   MatrixXd dquat_a2w = J_a.block(3,0,4,nq);
   Vector4d quat_b2w = pos_b.block(3,0,4,1);
   MatrixXd dquat_b2w = J_b.block(3,0,4,nq);
-  Vector4d quat_w2b;
-  Matrix<double,4,4> dquat_w2b;
-  quatConjugate(quat_b2w,quat_w2b,dquat_w2b);
+  Vector4d quat_w2b = quatConjugate(quat_b2w);
+  Matrix<double,4,4> dquat_w2b = dquatConjugate();
   MatrixXd dquat_w2bdq = dquat_w2b*dquat_b2w;
   
-  Vector4d quat_a2b;
-  Matrix<double,4,8> dquat_a2b;
-  quatProduct(quat_w2b,quat_a2w,quat_a2b,dquat_a2b);
+  Vector4d quat_a2b = quatProduct(quat_w2b,quat_a2w);
+  Matrix<double,4,8> dquat_a2b = dquatProduct(quat_w2b,quat_a2w);
+
   MatrixXd dquat_a2bdq = dquat_a2b.block(0,0,4,4)*dquat_w2bdq+dquat_a2b.block(0,4,4,4)*dquat_a2w;
 
   prod = quat_a2b.dot(this->quat_des);
@@ -1372,14 +1367,14 @@ void GazeOrientConstraint::eval(const double* t, VectorXd &c, MatrixXd &dc) cons
     int nq = this->robot->num_dof;
     MatrixXd dquat(4,nq);
     this->evalOrientation(quat,dquat);
-    double axis_err;
-    Matrix<double,1,11> daxis_err; 
-    quatDiffAxisInvar(quat,this->quat_des,this->axis,axis_err,daxis_err);
+    double axis_err = quatDiffAxisInvar(quat,this->quat_des,this->axis);
+    Matrix<double,1,11> daxis_err = dquatDiffAxisInvar(quat,this->quat_des,this->axis);
+
     MatrixXd daxis_err_dq(1,nq);
     daxis_err_dq = daxis_err.block(0,0,1,4)*dquat;
-    Vector4d q_diff;
-    Matrix<double,4,8> dq_diff;
-    quatDiff(quat,this->quat_des,q_diff,dq_diff);
+    Vector4d q_diff = quatDiff(quat,this->quat_des);
+    Matrix<double,4,8> dq_diff = dquatDiff(quat,this->quat_des);
+
     MatrixXd dq_diff_dq(4,nq);
     dq_diff_dq = dq_diff.block(0,0,4,4)*dquat;
     c << axis_err, q_diff(0);
