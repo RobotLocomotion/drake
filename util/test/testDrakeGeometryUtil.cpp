@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 
   // rpy2axis, axis2rpy
   for (int i = 0; i < ntests; i++) {
-    Vector3d rpy = uniformlyRandomRpy(generator);
+    Vector3d rpy = uniformlyRandomRPY(generator);
     Vector4d axis = rpy2axis(rpy);
     Vector3d rpy_back = axis2rpy(axis);
     valuecheck(rpy, rpy_back, 1e-6);

@@ -130,7 +130,7 @@ double quatNorm(const Eigen::Vector4d& q)
   return std::acos(q(0));
 }
 
-Vector4d uniformlyRandomAngleAxis(std::default_random_engine& generator)
+Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator)
 {
   std::normal_distribution<double> normal;
   std::uniform_real_distribution<double> uniform(-M_PI, M_PI);
@@ -144,17 +144,17 @@ Vector4d uniformlyRandomAngleAxis(std::default_random_engine& generator)
 
 Vector4d uniformlyRandomQuat(std::default_random_engine& generator)
 {
-  return axis2quat(uniformlyRandomAngleAxis(generator));
+  return axis2quat(uniformlyRandomAxisAngle(generator));
 }
 
 Eigen::Matrix3d uniformlyRandomRotmat(std::default_random_engine& generator)
 {
-  return axis2rotmat(uniformlyRandomAngleAxis(generator));
+  return axis2rotmat(uniformlyRandomAxisAngle(generator));
 }
 
-Eigen::Vector3d uniformlyRandomRpy(std::default_random_engine& generator)
+Eigen::Vector3d uniformlyRandomRPY(std::default_random_engine& generator)
 {
-  return axis2rpy(uniformlyRandomAngleAxis(generator));
+  return axis2rpy(uniformlyRandomAxisAngle(generator));
 }
 
 template <typename Derived>
