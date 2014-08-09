@@ -200,7 +200,7 @@ classdef Visualizer < DrakeSystem
       % coordinates.
 
       fr = obj.getInputFrame();
-      if (nargin<2), x0 = zeros(fr.dim,1); end
+      if (nargin<2 || isempty(x0)), x0 = zeros(fr.dim,1); end
       if (nargin<3), state_dims = (1:fr.dim)'; end
       if (nargin<4), minrange = repmat(-5,size(state_dims)); end
       if (nargin<5), maxrange = -minrange; end
@@ -215,7 +215,7 @@ classdef Visualizer < DrakeSystem
       f = sfigure(99); clf;
       set(f,'ResizeFcn',@resize_gui);
 
-      for i=reshape(state_dims,1,[])
+      for i=1:numel(state_dims)
         label{i} = uicontrol('Style','text','String',getCoordinateName(fr,state_dims(i)), ...
           'BackgroundColor',[.8 .8 .8],'HorizontalAlignment','right');
         slider{i} = uicontrol('Style', 'slider', 'Min', minrange(i), 'Max', maxrange(i), ...
@@ -235,7 +235,7 @@ classdef Visualizer < DrakeSystem
         p = get(gcf,'Position');
         width = p(3); 
         y=30*rows-10;
-        for i=reshape(state_dims,1,[])
+        for i=1:numel(state_dims)
           set(label{i},'Position',[20+width/2*(i>rows), y+30*rows*(i>rows), width/2-220, 20]);
           set(slider{i},'Position', [width/2-190+width/2*(i>rows), y+30*rows*(i>rows), 140, 20]);
           set(value{i},'Position', [width/2-45+width/2*(i>rows), y+30*rows*(i>rows), 45, 20]);
@@ -245,14 +245,14 @@ classdef Visualizer < DrakeSystem
 
       function update_display(source, eventdata)
         t = 0; x = x0;
-        for i=state_dims(:)'
+        for i=1:numel(state_dims)
           x(state_dims(i)) = get(slider{i}, 'Value');
           set(value{i},'String',num2str(x(state_dims(i)),'%4.3f'));
         end
         if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)>0)
           current_slider_statedim = get(source,'UserData');
           x = solve(addConstraint(prog,ConstantConstraint(get(source,'Value')),current_slider_statedim),x);
-          for i=state_dims(:)'
+          for i=1:numel(state_dims)
             set(slider{i},'Value',x(state_dims(i)));
           end
         end
