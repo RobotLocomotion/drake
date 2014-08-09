@@ -250,13 +250,26 @@ classdef Visualizer < DrakeSystem
           set(value{i},'String',num2str(x(state_dims(i)),'%4.3f'));
         end
         if (~isempty(visualized_system) && getNumStateConstraints(visualized_system)>0)
+          % constrain the current slider to be exact the specified value
           current_slider_statedim = get(source,'UserData');
-          x = solve(addConstraint(prog,ConstantConstraint(get(source,'Value')),current_slider_statedim),x);
+          this_prog = addConstraint(prog,ConstantConstraint(get(source,'Value')),current_slider_statedim);
+          
+          % and add an objective to be as close as possible to the previous
+          % solution on the other sliders.
+          % objective = sum_over_remaining_state_dims .5*(x_i-x0_i)^2
+          remaining_state_dims = state_dims(state_dims~=current_slider_statedim);
+          Q = eye(numel(remaining_state_dims));
+          b = -x0(remaining_state_dims);
+          objective = QuadraticConstraint(0,inf,Q,b);
+          this_prog = addCost(this_prog,objective,remaining_state_dims);
+          x = solve(this_prog,x);
+          .5*(x0(remaining_state_dims) - x(remaining_state_dims))^2
+          fval = objective.eval(x(remaining_state_dims))
           for i=1:numel(state_dims)
             set(slider{i},'Value',x(state_dims(i)));
           end
         end
-%        x
+        x0 = x;
         obj.drawWrapper(t,x);
       end
     end
