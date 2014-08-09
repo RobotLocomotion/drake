@@ -22,10 +22,10 @@ Eigen::Matrix<double, 4, 8> dquatDiff(const Eigen::Vector4d &q1, const Eigen::Ve
 double quatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
 Eigen::Matrix<double, 1, 11> dquatDiffAxisInvar(const Eigen::Vector4d &q1, const Eigen::Vector4d &q2, const Eigen::Vector3d &u);
 double quatNorm(const Eigen::Vector4d& q);
-Eigen::Vector4d uniformlyRandomAngleAxis(std::default_random_engine& generator);
+Eigen::Vector4d uniformlyRandomAxisAngle(std::default_random_engine& generator);
 Eigen::Vector4d uniformlyRandomQuat(std::default_random_engine& generator);
 Eigen::Matrix3d uniformlyRandomRotmat(std::default_random_engine& generator);
-Eigen::Vector3d uniformlyRandomRpy(std::default_random_engine& generator);
+Eigen::Vector3d uniformlyRandomRPY(std::default_random_engine& generator);
 
 /*
  * quat2x
