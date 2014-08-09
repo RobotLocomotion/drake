@@ -11,28 +11,20 @@
 
 #include "QPCommon.h"
 #include <Eigen/StdVector>
+#include <limits>
+#include <cmath>
 
 //#define TEST_FAST_QP
 //#define USE_MATRIX_INVERSION_LEMMA
 
 using namespace std;
 
-template <int Rows, int Cols>
-mxArray* eigenToMatlab(Matrix<double,Rows,Cols> &m)
-{
-  mxArray* pm = mxCreateDoubleMatrix(m.rows(),m.cols(),mxREAL);
-  if (m.rows()*m.cols()>0)
-    memcpy(mxGetPr(pm),m.data(),sizeof(double)*m.rows()*m.cols());
-  return pm;
-}
-
-
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 {
   int error;
   if (nrhs<1) mexErrMsgTxt("usage: ptr = QPControllermex(0,control_obj,robot_obj,...); alpha=QPControllermex(ptr,...,...)");
   if (nlhs<1) mexErrMsgTxt("take at least one output... please.");
-  
+
   struct QPControllerData* pdata;
   mxArray* pm;
   double* pr;
@@ -61,6 +53,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     pm = myGetProperty(pobj,"Kp_ang");
     pdata->Kp_ang = mxGetScalar(pm);
 
+    pm = myGetProperty(pobj,"Kp_accel");
+    pdata->Kp_accel = mxGetScalar(pm);
+
     pm= myGetProperty(pobj,"n_body_accel_inputs");
     pdata->n_body_accel_inputs = mxGetScalar(pm); 
 
@@ -76,7 +71,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
     // get robot mex model ptr
     if (!mxIsNumeric(prhs[2]) || mxGetNumberOfElements(prhs[2])!=1)
-      mexErrMsgIdAndTxt("DRC:QPControllermex:BadInputs","the third argument should be the robot mex ptr");
+      mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the third argument should be the robot mex ptr");
     memcpy(&(pdata->r),mxGetData(prhs[2]),sizeof(pdata->r));
     
     pdata->B.resize(mxGetM(prhs[3]),mxGetN(prhs[3]));
@@ -98,7 +93,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
      // get the map ptr back from matlab
      if (!mxIsNumeric(prhs[6]) || mxGetNumberOfElements(prhs[6])!=1)
-     mexErrMsgIdAndTxt("DRC:QPControllermex:BadInputs","the seventh argument should be the map ptr");
+     mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the seventh argument should be the map ptr");
      memcpy(&pdata->map_ptr,mxGetPr(prhs[6]),sizeof(pdata->map_ptr));
     
 //    pdata->map_ptr = NULL;
@@ -158,7 +153,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   
   // first get the ptr back from matlab
   if (!mxIsNumeric(prhs[0]) || mxGetNumberOfElements(prhs[0])!=1)
-    mexErrMsgIdAndTxt("DRC:QPControllermex:BadInputs","the first argument should be the ptr");
+    mexErrMsgIdAndTxt("Drake:QPControllermex:BadInputs","the first argument should be the ptr");
   memcpy(&pdata,mxGetData(prhs[0]),sizeof(pdata));
 
 //  for (i=0; i<pdata->r->num_bodies; i++)
@@ -201,50 +196,27 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   }
 
   int desired_support_argid = narg++;
-  
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==4);
-  Map< Matrix4d > A_ls(mxGetPr(prhs[narg++]));
 
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==2);
-  Map< Matrix<double,4,2> > B_ls(mxGetPr(prhs[narg++]));
+  Map<MatrixXd> A_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> B_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> Qy  (mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> R_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> C_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> D_ls(mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
+  Map<MatrixXd> S   (mxGetPr(prhs[narg]),mxGetM(prhs[narg]),mxGetN(prhs[narg])); narg++;
 
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==2);
-  Map< Matrix2d > Qy(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==2);
-  Map< Matrix2d > R_ls(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==4);
-  Map< Matrix<double,2,4> > C_ls(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==2);
-  Map< Matrix2d > D_ls(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==4);
-  Map< Matrix4d > S(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==1);
-  Map< Vector4d > s1(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==1);
-  Map< Vector4d > s1dot(mxGetPr(prhs[narg++]));
-
+  Map<VectorXd> s1(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  Map<VectorXd> s1dot(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
   double s2dot = mxGetScalar(prhs[narg++]);
-
-  assert(mxGetM(prhs[narg])==4); assert(mxGetN(prhs[narg])==1);
-  Map< Vector4d > x0(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==1);
-  Map< Vector2d > u0(mxGetPr(prhs[narg++]));
-
-  assert(mxGetM(prhs[narg])==2); assert(mxGetN(prhs[narg])==1);
-  Map< Vector2d > y0(mxGetPr(prhs[narg++]));
+  Map<VectorXd> x0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  Map<VectorXd> u0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
+  Map<VectorXd> y0(mxGetPr(prhs[narg]),mxGetM(prhs[narg])); narg++;
 
   double mu = mxGetScalar(prhs[narg++]);
   double terrain_height = mxGetScalar(prhs[narg++]); // nonzero if we're using DRCFlatTerrainMap
 
-  Matrix2d R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
-  
+  MatrixXd R_DQyD_ls = R_ls + D_ls.transpose()*Qy*D_ls;
+
   pdata->r->doKinematics(q,false,qd);
 
   //---------------------------------------------------------------------
@@ -303,24 +275,43 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   pdata->r->getCOM(xcom);
   pdata->r->getCOMJac(pdata->J);
   pdata->r->getCOMJacDot(pdata->Jdot);
-  // copy to xy versions for computations below (avoid doing topRows a bunch of times)
   pdata->J_xy = pdata->J.topRows(2);
   pdata->Jdot_xy = pdata->Jdot.topRows(2);
 
+  MatrixXd Jcom,Jcomdot;
+
+  if (x0.size()==6) {
+    Jcom = pdata->J;
+    Jcomdot = pdata->Jdot;
+  }
+  else {
+    Jcom = pdata->J_xy;
+    Jcomdot = pdata->Jdot_xy;
+  }
   Map<VectorXd> qdvec(qd,nq);
   
-  MatrixXd Jz,Jp,Jpdot,D;
-  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,Jz,D,Jp,Jpdot,terrain_height);
+  MatrixXd B,JB,Jp,Jpdot,normals;
+  int nc = contactConstraintsBV(pdata->r,num_active_contact_pts,mu,active_supports,pdata->map_ptr,B,JB,Jp,Jpdot,normals,terrain_height);
   int neps = nc*dim;
 
-  Vector4d x_bar,xlimp;
-  MatrixXd D_float(6,D.cols()), D_act(nu,D.cols());
+  VectorXd x_bar,xlimp;
+  MatrixXd D_float(6,JB.cols()), D_act(nu,JB.cols());
   if (nc>0) {
-    xlimp << xcom.topRows(2),pdata->J_xy*qdvec;
+    if (x0.size()==6) {
+      // x,y,z com 
+      xlimp.resize(6); 
+      xlimp.topRows(3) = xcom;
+      xlimp.bottomRows(3) = Jcom*qdvec;
+    }
+    else {
+      xlimp.resize(4); 
+      xlimp.topRows(2) = xcom.topRows(2);
+      xlimp.bottomRows(2) = Jcom*qdvec;
+    }
     x_bar = xlimp-x0;
 
-    D_float = D.topRows(6);
-    D_act = D.bottomRows(nu);
+    D_float = JB.topRows(6);
+    D_act = JB.bottomRows(nu);
   }
 
   int nf = nc*nd; // number of contact force variables
@@ -335,17 +326,22 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   //----------------------------------------------------------------------
   // QP cost function ----------------------------------------------------
   //
-  //  min: quad(Jdot*qd + J*qdd,R_ls)+quad(C*x+D*(Jdot*qd + J*qdd),Qy) + (2*x'*S + s1')*(A*x + B*(Jdot*qd + J*qdd)) + w*quad(qddot_ref - qdd) + quad(u,R) + quad(epsilon)
+  //  min: ybar*Qy*ybar + ubar*R*ubar + (2*S*xbar + s1)*(A*x + B*u) +
+  //    w_qdd*quad(qddot_ref - qdd) + w_eps*quad(epsilon) +
+  //    w_grf*quad(beta) + quad(kdot_des - (A*qdd + Adot*qd))  
   VectorXd f(nparams);
   {      
     if (nc > 0) {
       // NOTE: moved Hqp calcs below, because I compute the inverse directly for FastQP (and sparse Hqp for gurobi)
+      VectorXd tmp = C_ls*xlimp;
+      VectorXd tmp1 = Jcomdot*qdvec;
+      MatrixXd tmp2 = R_DQyD_ls*Jcom;
 
-      pdata->fqp = (C_ls*xlimp).transpose()*Qy*D_ls*pdata->J_xy;
-      pdata->fqp += (pdata->Jdot_xy*qdvec).transpose()*R_DQyD_ls*pdata->J_xy;
-      pdata->fqp += (S*x_bar + 0.5*s1).transpose()*B_ls*pdata->J_xy;
-      pdata->fqp -= u0.transpose()*R_DQyD_ls*pdata->J_xy;
-      pdata->fqp -= y0.transpose()*Qy*D_ls*pdata->J_xy;
+      pdata->fqp = tmp.transpose()*Qy*D_ls*Jcom;
+      pdata->fqp += tmp1.transpose()*tmp2;
+      pdata->fqp += (S*x_bar + 0.5*s1).transpose()*B_ls*Jcom;
+      pdata->fqp -= u0.transpose()*tmp2;
+      pdata->fqp -= y0.transpose()*Qy*D_ls*Jcom;
       pdata->fqp -= (pdata->w_qdd.array()*qddot_des.array()).matrix().transpose();
       if (include_angular_momentum) {
         pdata->fqp += qdvec.transpose()*pdata->Akdot.transpose()*pdata->W_kdot*pdata->Ak;
@@ -376,8 +372,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     Aeq.block(6,0,neps,nq) = Jp;
     Aeq.block(6,nq,neps,nf) = MatrixXd::Zero(neps,nf);  // note: obvious sparsity here
     Aeq.block(6,nq+nf,neps,neps) = MatrixXd::Identity(neps,neps);             // note: obvious sparsity here
-    // beq.segment(6,neps) = (-Jpdot - 1.0*Jp)*qdvec; // TODO: parameterize
-    beq.segment(6,neps) = -Jpdot*qdvec; // TODO: parameterize
+    beq.segment(6,neps) = (-Jpdot -pdata->Kp_accel*Jp)*qdvec; 
   }    
   
   // add in body spatial equality constraints
@@ -429,6 +424,14 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   Ain.block(nu,0,nu,nparams) = -1*Ain.block(0,0,nu,nparams);
   bin.segment(nu,nu) = pdata->B_act.transpose()*pdata->C_act - pdata->umin;
 
+  for (int i=0; i<2*nu; i++) {
+    // remove inf constraints---needed by gurobi
+    if (std::isinf(double(bin(i)))) {
+      Ain.row(i) = 0*Ain.row(i);
+      bin(i)=0;
+    }  
+  }
+
 
   GRBmodel * model = NULL;
   int info=-1;
@@ -460,7 +463,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   	if (nc>0) {
       MatrixXd Wi = ((1/(pdata->w_qdd.array() + REG)).matrix()).asDiagonal();
   		if (R_DQyD_ls.trace()>1e-15) { // R_DQyD_ls is not zero
-  			pdata->Hqp = Wi - Wi*pdata->J_xy.transpose()*(R_DQyD_ls.inverse() + pdata->J_xy*Wi*pdata->J_xy.transpose()).inverse()*pdata->J_xy*Wi;
+  			pdata->Hqp = Wi - Wi*Jcom.transpose()*(R_DQyD_ls.inverse() + Jcom*Wi*Jcom.transpose()).inverse()*Jcom*Wi;
       }
   	} 
     else {
@@ -471,7 +474,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   	  if (nc>0) {
         MatrixXd Hqp_test(nq,nq);
         MatrixXd W = w.asDiagonal();
-        Hqp_test = (pdata->J_xy.transpose()*R_DQyD_ls*pdata->J_xy + W).inverse();
+        Hqp_test = (Jcom.transpose()*R_DQyD_ls*Jcom + W).inverse();
     	  if (((Hqp_test-pdata->Hqp).array().abs()).maxCoeff() > 1e-6) {
     		  mexErrMsgTxt("Q submatrix inverse from matrix inversion lemma does not match direct Q inverse.");
         }
@@ -501,19 +504,18 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
   else {
   #endif
     if (nc>0) {
-      pdata->Hqp = pdata->J_xy.transpose()*R_DQyD_ls*pdata->J_xy;
+      pdata->Hqp = Jcom.transpose()*R_DQyD_ls*Jcom;
       if (include_angular_momentum) {
         pdata->Hqp += pdata->Ak.transpose()*pdata->W_kdot*pdata->Ak;
       }
       pdata->Hqp += pdata->w_qdd.asDiagonal();
       pdata->Hqp += REG*MatrixXd::Identity(nq,nq);
     } else {
-      pdata->Hqp = MatrixXd::Constant(nq,1,1+REG);
+      pdata->Hqp = (1+REG)*MatrixXd::Identity(nq,nq);
     }
 
-
     // add in body spatial acceleration cost terms
-    int w_i;
+    double w_i;
     for (int i=0; i<pdata->n_body_accel_inputs; i++) {
       w_i=pdata->body_accel_input_weights(i);
       if (w_i > 0) {
@@ -648,10 +650,17 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     double Vdot;
     if (nc>0) 
       // note: Sdot is 0 for ZMP/double integrator dynamics, so we omit that term here
-      Vdot = ((2*x_bar.transpose()*S + s1.transpose())*(A_ls*x_bar + B_ls*(pdata->Jdot_xy*qdvec + pdata->J_xy*qdd)) + s1dot.transpose()*x_bar)(0) + s2dot;
+      Vdot = ((2*x_bar.transpose()*S + s1.transpose())*(A_ls*x_bar + B_ls*(Jcomdot*qdvec + Jcom*qdd)) + s1dot.transpose()*x_bar)(0) + s2dot;
     else
       Vdot = 0;
     plhs[13] = mxCreateDoubleScalar(Vdot);
+  }
+
+  if (nlhs>14) {
+    RigidBodyManipulator* r = pdata->r;
+
+    VectorXd individual_cops = individualSupportCOPs(r, active_supports, normals, B, beta);
+    plhs[14] = eigenToMatlab(individual_cops);
   }
 
   if (model) { 

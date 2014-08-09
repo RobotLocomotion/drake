@@ -3,9 +3,9 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
   % drake
   %
   % Generally speaking, this class manages the association between
-  % DifferentiableConstraint objects and NonlinearPrograms. With the goal
+  % Constraint objects and NonlinearPrograms. With the goal
   % of improved performance by avoiding redundant calculations, the
-  % DifferentiableConstraint eval function is assumed to be of the form
+  % Constraint eval function is assumed to be of the form
   % eval(args{:},data{:}) where args are the standard, numerical valued
   % arguments that are a subset of the NLP decision variables. data is a
   % reference to shared data objects that are pre-computed once per
@@ -43,7 +43,7 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
     shared_data_xind_cell  
     
     % a cell array of function handles, each of which returns a data object
-    % so that shared_data{i} = shared_data_functions(shared_data_xind_cell{i}{1},shared_data_xind_cell{i}{2},...)
+    % so that shared_data{i} = shared_data_functions(x(shared_data_xind_cell{i}{1}),x(shared_data_xind_cell{i}{2}),...)
     shared_data_functions 
     
     % cell arrays of vectors where nlcon_dataind{i} are indices into the
@@ -145,22 +145,22 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       
       if iscell(cnstr)
         for i=1:numel(cnstr)
-          obj = addConstraint(obj,cnstr{i},varargin);
+          obj = addConstraint(obj,cnstr{i},varargin{:});
         end
       elseif isa(cnstr,'BoundingBoxConstraint')
         obj = addBoundingBoxConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'LinearConstraint')
         obj = addLinearConstraint(obj,cnstr,varargin{:});
-      elseif isa(cnstr,'DifferentiableConstraint')
-        obj = addDifferentiableConstraint(obj,cnstr,varargin{:});
       elseif isa(cnstr,'CompositeConstraint')
         obj = addCompositeConstraints(obj,cnstr,varargin{:});
+      elseif isa(cnstr,'Constraint')
+        obj = addNonlinearConstraint(obj,cnstr,varargin{:});
       else
         error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','Unsupported constraint type');
       end
     end
     
-    function obj = addDifferentiableConstraint(obj,cnstr,xind, data_ind)
+    function obj = addNonlinearConstraint(obj,cnstr,xind, data_ind)
       % add a NonlinearConstraint to the object, change the constraint evalation of the
       % program. 
       % @param cnstr     -- A NonlinearConstraint object
@@ -187,13 +187,14 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       end
       data_ind = data_ind(:);
       
-      if(~isa(cnstr,'DifferentiableConstraint'))
-        error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','addNonlinearConstraint expects a DifferentiableConstraint object');
+      if(~isa(cnstr,'Constraint'))
+        error('Drake:NonlinearProgramWConstraintObjects:UnsupportedConstraint','addNonlinearConstraint expects a Constraint object');
       end
       if length(xind_vec) ~= cnstr.xdim
         error('Drake:NonlinearProgramWConstraintObjects:InvalidArgument','the length of xind must match the x-dimension of the constraint');
       end
-      obj.nlcon = [obj.nlcon,{cnstr}];
+%       obj.nlcon = [obj.nlcon,{cnstr}];
+      obj.nlcon{end+1} = cnstr;
       
       obj.cin_ub = [obj.cin_ub;cnstr.ub(cnstr.cin_idx)];
       obj.cin_lb = [obj.cin_lb;cnstr.lb(cnstr.cin_idx)];
@@ -224,36 +225,47 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
       % @param cnstr     -- A LinearConstraint object
       % @param xind      -- Optional argument. x(xind) is the decision variables used in
       % evaluating the constraint. Default value is (1:obj.num_vars)
-      if(nargin<3)
-        xind = (1:obj.num_vars)';
+      % @param cnstr_name  -- An optional argument. A cell of strings. cnstr_name{i} is
+      % the name of the i'th constraint. If not given, the cnstr.name will be used instead
+      if cnstr.num_cnstr > 0
+        if(nargin<4)
+          cnstr_name = cnstr.name;
+        else
+          if(~iscellstr(cnstr_name))
+            error('Drake:NonlinearProgramWConstraintObjects:cnstr_name should be a cell of strings');
+          end
+        end
+        if(nargin<3)
+          xind = (1:obj.num_vars)';
+        end
+        if iscell(xind)
+          xind = cell2mat(xind);
+        end
+        xind = xind(:);
+        if(~isa(cnstr,'LinearConstraint'))
+          error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addLinearConstraint expects a LinearConstraint object');
+        end
+        if length(xind) ~= cnstr.xdim
+          error('Drake:NonlinearProgramWConstraint:InvalidArgument','the length of xind must match the x-dimension of the constraint');
+        end
+        obj.lcon = [obj.lcon,{cnstr}];
+
+        cnstr_A = sparse(cnstr.iCfun,xind(cnstr.jCvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr.nnz);
+        cnstr_beq = (cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2;
+        cnstr_Aeq = cnstr_A(cnstr.ceq_idx,:);
+        cnstr_Ain = cnstr_A(cnstr.cin_idx,:);
+        cnstr_bin_lb = cnstr.lb(cnstr.cin_idx);
+        cnstr_bin_ub = cnstr.ub(cnstr.cin_idx);
+        bin_ub_inf_idx = ~isinf(cnstr_bin_ub);
+        bin_lb_inf_idx = ~isinf(cnstr_bin_lb);
+        if(sum(bin_ub_inf_idx | bin_lb_inf_idx)>0)
+          obj = obj.addLinearInequalityConstraints([cnstr_Ain(bin_ub_inf_idx,:);-cnstr_Ain(bin_lb_inf_idx,:)],...
+            [cnstr_bin_ub(bin_ub_inf_idx);-cnstr_bin_lb(bin_lb_inf_idx)]);
+        end
+        obj.Ain_name = [obj.Ain_name;cnstr_name(cnstr.cin_idx)];
+        obj.Aeq_name = [obj.Aeq_name;cnstr_name(cnstr.ceq_idx)];
+        obj = obj.addLinearEqualityConstraints(cnstr_Aeq,cnstr_beq);
       end
-      if iscell(xind)
-        xind = cell2mat(xind);
-      end
-      xind = xind(:);
-      if(~isa(cnstr,'LinearConstraint'))
-        error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addLinearConstraint expects a LinearConstraint object');
-      end
-      if length(xind) ~= cnstr.xdim
-        error('Drake:NonlinearProgramWConstraint:InvalidArgument','the length of xind must match the x-dimension of the constraint');
-      end
-      obj.lcon = [obj.lcon,{cnstr}];
-      
-      cnstr_A = sparse(cnstr.iCfun,xind(cnstr.jCvar),cnstr.A_val,cnstr.num_cnstr,obj.num_vars,cnstr.nnz);
-      cnstr_beq = (cnstr.lb(cnstr.ceq_idx)+cnstr.ub(cnstr.ceq_idx))/2;
-      cnstr_Aeq = cnstr_A(cnstr.ceq_idx,:);
-      cnstr_Ain = cnstr_A(cnstr.cin_idx,:);
-      cnstr_bin_lb = cnstr.lb(cnstr.cin_idx);
-      cnstr_bin_ub = cnstr.ub(cnstr.cin_idx);
-      bin_ub_inf_idx = ~isinf(cnstr_bin_ub);
-      bin_lb_inf_idx = ~isinf(cnstr_bin_lb);
-      if(sum(bin_ub_inf_idx | bin_lb_inf_idx)>0)
-        obj = obj.addLinearInequalityConstraints([cnstr_Ain(bin_ub_inf_idx,:);-cnstr_Ain(bin_lb_inf_idx,:)],...
-          [cnstr_bin_ub(bin_ub_inf_idx);-cnstr_bin_lb(bin_lb_inf_idx)]);
-      end
-      obj.Ain_name = [obj.Ain_name;cnstr.name(cnstr.cin_idx)];
-      obj.Aeq_name = [obj.Aeq_name;cnstr.name(cnstr.ceq_idx)];
-      obj = obj.addLinearEqualityConstraints(cnstr_Aeq,cnstr_beq);
     end
     
     function obj = addBoundingBoxConstraint(obj,cnstr,xind)
@@ -296,8 +308,8 @@ classdef NonlinearProgramWConstraintObjects < NonlinearProgram
         data_ind = [];
       end
       data_ind = data_ind(:);
-      if ~isa(cnstr,'DifferentiableConstraint')
-        error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addCost expects a DifferentiableConstraint object');
+      if ~isa(cnstr,'Constraint')
+        error('Drake:NonlinearProgramWConstraint:UnsupportedConstraint','addCost expects a Constraint object');
       end
       
       if(isa(cnstr,'LinearConstraint'))

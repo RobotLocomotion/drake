@@ -137,10 +137,12 @@ ind = find([model.body.parent]<1);
 rootlink = ind([model.body(ind).robotnum]==robotnum);
 worldlink = 1;
 
-if ~isempty(options.floating)
-  model = addFloatingBase(model,worldlink,rootlink,xyz,rpy,options.floating);
-else
-  model = addJoint(model,'','fixed',worldlink,rootlink,xyz,rpy);
+for i=1:length(rootlink)
+  if ~isempty(options.floating)
+    model = addFloatingBase(model,worldlink,rootlink(i),xyz,rpy,options.floating);
+  else
+    model = addJoint(model,'','fixed',worldlink,rootlink(i),xyz,rpy);
+  end
 end
 
 if options.sensors

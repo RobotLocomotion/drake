@@ -5,6 +5,10 @@ function plan = footstepAlternatingMIQP(obj, plan, weights, goal_pos)
 % @param plan a blank footstep plan, provinding the structure of the
 %             desired plan. Probably generated with
 %             FootstepPlan.blank_plan()
+% @param weights a struct with fields 'goal', 'relative', and
+%                'relative_final' describing the various contributions to
+%                the cost function. These are described in detail in
+%                Biped.getFootstepOptimizationWeights()
 % @param goal_pos a struct with fields 'right' and 'left'.
 %                 goal_pos.right is the desired 6 DOF pose
 %                 of the right foot sole, and likewise for

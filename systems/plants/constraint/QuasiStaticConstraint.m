@@ -86,15 +86,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       while(i<length(varargin))
         body = varargin{i};
         body_pts = varargin{i+1};
-        if(isnumeric(body))
-          sizecheck(body,[1,1]);
-        elseif(ischar(body))
-          body = obj.robot.findLinkInd(body);
-        elseif(typecheck(body,'RigidBody'))
-          body = obj.robot.findLinkInd(body.linkname);
-        else
-          error('Drake:QuasiStaticConstraint:Body must be either the link name or the link index');
-        end
+        body = obj.robot.parseBodyOrFrameID(body);
         body_idx = find(obj.bodies == body);
         if(isempty(body_idx))
           obj.bodies = [obj.bodies body];
@@ -140,6 +132,9 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
     end
     
     function [c,dc] = evalValidTime(obj,kinsol,weights)
+      if ~isstruct(kinsol)
+        kinsol = obj.robot.doKinematics(kinsol);
+      end
       [com,dcom] = obj.robot.getCOM(kinsol,obj.robotnum);
       contact_pos = zeros(3,obj.num_pts);
       dcontact_pos = zeros(3*obj.num_pts,obj.nq);
@@ -223,6 +218,7 @@ classdef QuasiStaticConstraint<RigidBodyConstraint
       % @retval cnstr  -- A FunctionHandleConstraint enforcing the CoM on xy-plane matches
       % witht the weighted sum of the shrunk vertices; A LinearConstraint on the weighted
       % sum only, and a BoundingBoxConstraint on the weighted sum only
+      if nargin < 2, t = obj.tspan(1); end;
       if(obj.isTimeValid(t) && obj.active)
         name_str = obj.name(t);
         cnstr = {FunctionHandleConstraint([0;0],[0;0],obj.nq+obj.num_pts,@(~,weights,kinsol) obj.evalValidTime(kinsol,weights)),...

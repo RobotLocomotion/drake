@@ -2,7 +2,7 @@ function fallingBrickLCP
 
 options.floating = true;
 options.terrain = RigidBodyFlatTerrain();
-p = TimeSteppingRigidBodyManipulator('FallingBrick.urdf',.01,options);
+p = TimeSteppingRigidBodyManipulator('FallingBrickBetterCollisionGeometry.urdf',.01,options);
 x0 = p.resolveConstraints([0;1+rand;randn(10,1)]);
 
 if 0 

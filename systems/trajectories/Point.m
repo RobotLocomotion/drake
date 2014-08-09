@@ -54,6 +54,8 @@ classdef Point
           obj.p(ind)=val;
           varargout = {obj};
           return;
+        else
+          error('Drake:Point:BadAssign',sprintf('unknown coordinate name %s',s(1).subs));
         end
       end
       % otherwise, call the builting subsasgn

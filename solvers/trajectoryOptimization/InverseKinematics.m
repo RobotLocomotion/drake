@@ -64,7 +64,7 @@ classdef InverseKinematics < NonlinearProgramWConstraintObjects
         end
         if(isa(varargin{i},'SingleTimeKinematicConstraint'))
           cnstr = varargin{i}.generateConstraint(t);
-          obj = obj.addDifferentiableConstraint(cnstr{1},obj.q_idx,obj.kinsol_dataind);
+          obj = obj.addConstraint(cnstr{1},obj.q_idx,obj.kinsol_dataind);
         elseif(isa(varargin{i},'PostureConstraint'))
           cnstr = varargin{i}.generateConstraint(t);
           obj = obj.addBoundingBoxConstraint(cnstr{1},obj.q_idx);
@@ -77,7 +77,7 @@ classdef InverseKinematics < NonlinearProgramWConstraintObjects
             end
             obj = obj.addDecisionVariable(varargin{i}.num_pts,qsc_weight_names);
             cnstr = varargin{i}.generateConstraint(t);
-            obj = obj.addDifferentiableConstraint(cnstr{1},{obj.q_idx;obj.qsc_weight_idx},obj.kinsol_dataind);
+            obj = obj.addConstraint(cnstr{1},{obj.q_idx;obj.qsc_weight_idx},obj.kinsol_dataind);
             obj = obj.addLinearConstraint(cnstr{2},obj.qsc_weight_idx);
             obj = obj.addBoundingBoxConstraint(cnstr{3},obj.qsc_weight_idx);
           end
@@ -123,7 +123,9 @@ classdef InverseKinematics < NonlinearProgramWConstraintObjects
       q = x(obj.q_idx);
       q = max([obj.x_lb(obj.q_idx) q],[],2);
       q = min([obj.x_ub(obj.q_idx) q],[],2);
-      [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
+      if nargout > 3
+        [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info);
+      end
     end
 
     function [info,infeasible_constraint] = infeasibleConstraintName(obj,x,info)

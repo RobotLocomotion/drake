@@ -1,4 +1,4 @@
-function ret = vectorToSkewSymmetric(p)
+function pHat = vectorToSkewSymmetric(p)
 %VECTORTOSKEWSYMMETRIC Computes the skew symmetric matrix
 % [0, -pz, py;
 %  pz, 0, -px;
@@ -9,7 +9,7 @@ px = p(1);
 py = p(2);
 pz = p(3);
 
-ret = [0, -pz, py;
+pHat = [0, -pz, py;
        pz, 0, -px;
        -py, px, 0];
 end

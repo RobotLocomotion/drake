@@ -54,7 +54,7 @@ if ~isstruct(kinsol)
 end
 
 if nargin < 3, allow_multiple_contacts = false; end
-if nargin < 4, active_collision_options = struct(); end
+if nargin < 4 || isempty(active_collision_options), active_collision_options = struct(); end
 if isfield(active_collision_options,'body_idx')
   active_collision_options.body_idx = int32(active_collision_options.body_idx);
 end

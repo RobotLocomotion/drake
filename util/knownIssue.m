@@ -16,6 +16,7 @@ if isempty(err_id)
           'systems/plants/test/momentumTest', ...
           'systems/plants/test/terrainTest', ...
           'systems/plants/test/testFloatingBaseDynamics', ...
+          'examples/Quadrotor/Quadrotor.runOpenLoop', ...
           'examples/ZMP/CartTable.run'}))
         github(18); return;
       end
@@ -46,10 +47,12 @@ if isempty(err_id)
   end
 end
 
-fprintf('\nThis issue is not listed as known.  Please seriously consider reporting it on <a href="http://groups.csail.mit.edu/locomotion/bugs/">bugzilla</a>.\n\n');
-      
+fprintf('\nThis issue is not listed as known.  Please seriously consider reporting it on <a href="http://groups.csail.mit.edu/locomotion/bugs/">bugzilla</a>.\n');
+fprintf('testname: %s\n',testname);
+fprintf('error ID: %s\n\n',err_id);
+
 end
-      
+
 function bugzilla(bug_id)
   fprintf('\nThis is a known issue.  See <a href="http://groups.csail.mit.edu/locomotion/bugs/show_bug.cgi?id=%d">Bugzilla bug %d</a> for more information.\n\n',bug_id,bug_id);
 end

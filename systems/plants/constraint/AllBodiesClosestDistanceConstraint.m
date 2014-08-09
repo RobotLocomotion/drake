@@ -8,6 +8,7 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
   properties(SetAccess = protected)
     ub
     lb
+    active_collision_options
   end
 
   methods(Access=protected)
@@ -27,17 +28,20 @@ classdef AllBodiesClosestDistanceConstraint < SingleTimeKinematicConstraint
     end
 
     function [c,dc] = evalLocal(obj,q_or_kinsol)
-      [c,dc] = closestDistance(obj.robot,q_or_kinsol);
+      [c,dc] = closestDistance(obj.robot,q_or_kinsol,obj.active_collision_options);
     end
   end
   methods
-    function obj = AllBodiesClosestDistanceConstraint(robot,lb,ub,tspan)
-      if(nargin == 3)
+    function obj = AllBodiesClosestDistanceConstraint(robot,lb,ub,active_collision_options,tspan)
+      if(nargin < 5)
         tspan = [-inf inf];
       end
+      if nargin < 3 || isempty(active_collision_options) 
+        active_collision_options = struct(); 
+      end;
       sizecheck(lb,[1,1]);
       sizecheck(ub,[1,1]);
-      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot.getMexModelPtr,lb,ub,tspan);
+      ptr = constructPtrRigidBodyConstraintmex(RigidBodyConstraint.AllBodiesClosestDistanceConstraintType,robot.getMexModelPtr,lb,ub,active_collision_options,tspan);
       obj = obj@SingleTimeKinematicConstraint(robot,tspan);
       obj = setNumConstraint(obj);
       obj.lb = repmat(lb,obj.num_constraint,1);
